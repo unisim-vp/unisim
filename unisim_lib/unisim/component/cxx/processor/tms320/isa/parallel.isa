@@ -142,13 +142,10 @@ ABSI_STI_ext.disasm = {
 	return true;
 }
 
+//    abs(indir(src2)) -> reg(dst1)
+// ||
+//    reg(src3) -> indir(dst2)
 ABSI_STI.execute = {
-	// Check that 'src3' and 'dst1' registers are valid
-	if(unlikely(!cpu.HasReg(src3) || !cpu.HasReg(dst1)))
-	{
-		throw BogusOpcodeException<CONFIG, DEBUG>(this);
-	}
-
 	// Check that indirect addressing mode is valid and compute the effective address of 'src2' operand
 	typename CONFIG::address_t s2_ea;        // The effective address
 	bool s2_update_ar;                       // Whether to update ARn
@@ -213,23 +210,22 @@ ABSI_STI.execute = {
 		cpu.SetAR(d2_ar, d2_output_ar);
 	}
 
-	// Check whether 'dst1' operand is an extended precision register
-	if(cpu.IsExtReg(dst1))
-	{
-		// Generate flags (into ST)
-		cpu.GenFlags(
-			result,
-			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-			M_ST_Z | M_ST_V,    // or mask
-			0,
-			overflow
-		);
-	}
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		result,
+		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+		M_ST_Z | M_ST_V,    // or mask
+		0,
+		overflow
+	);
 }
 
+//    abs(reg(src2)) -> reg(dst1)
+// ||
+//    reg(src3) -> indir(dst2)
 ABSI_STI_ext.execute = {
-	// Check that 'src2', 'src3' and 'dst1' registers are valid
-	if(unlikely(!cpu.HasReg(src2) || !cpu.HasReg(src3) || !cpu.HasReg(dst1)))
+	// Check that 'src2' register is valid
+	if(unlikely(!cpu.HasReg(src2)))
 	{
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
@@ -278,18 +274,14 @@ ABSI_STI_ext.execute = {
 		cpu.SetAR(d2_ar, d2_output_ar);
 	}
 
-	// Check whether 'dst1' operand is an extended precision register
-	if(cpu.IsExtReg(dst1))
-	{
-		// Generate flags (into ST)
-		cpu.GenFlags(
-			result,
-			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-			M_ST_Z | M_ST_V,    // or mask
-			0,
-			overflow
-		);
-	}
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		result,
+		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+		M_ST_Z | M_ST_V,    // or mask
+		0,
+		overflow
+	);
 }
 
 /*
@@ -378,6 +370,149 @@ ADDI3_STI_ext.disasm = {
 	return true;
 }
 
+//    reg(src1) + indir(src2) -> reg(dst1)
+// ||
+//    reg(src3) -> indir(dst2)
+ADDI3_STI.execute = {
+	// Read 'src1' operand
+	uint32_t src1_value = cpu.GetIntReg(src1);
+
+	// Check that indirect addressing mode is valid and compute the effective address of the 'src2' operand
+	typename CONFIG::address_t s2_ea;        // The effective address
+	bool s2_update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t s2_output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(s2_ea, s2_update_ar, s2_output_ar, s2_mod, s2_ar)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read 'src2' operand from memory
+	uint32_t src2_value = cpu.IntLoad(s2_ea);
+
+	// Read the 'src3' register operand
+	uint32_t src3_value = cpu.GetIntReg(src3);
+
+	// Check that indirect addressing mode is valid and compute the effective address of 'dst2' operand
+	typename CONFIG::address_t d2_ea;        // The effective address
+	bool d2_update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t d2_output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(d2_ea, d2_update_ar, d2_output_ar, d2_mod, d2_ar)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Compute the result of ADDI3
+	uint32_t result;      // the 32-bit result
+	uint8_t carry_out;    // the carry out (0 or 1)
+	uint8_t overflow;     // the overflow (0 or 1)
+
+	// Depending on overflow mode do signed saturation or not 
+	if(cpu.GetST_OVM())
+		SignedSatAdd32(result, carry_out, overflow, src1_value, src2_value, 0);
+	else
+		Add32(result, carry_out, overflow, src1_value, src2_value, 0);
+
+	// Store the word into memory
+	cpu.IntStore(d2_ea, src3_value);
+
+	// Write back result
+	cpu.SetIntReg(dst1, result);
+
+	// Note: ...if the src3 and src4 fields use the same auxiliary register,
+	// both addresses are correctly generated, but only the value created by
+	// the src3 field is saved in the auxiliary register specified...
+
+	if(s2_update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR(s2_ar, s2_output_ar);
+	}
+
+	if(d2_update_ar && s2_ar != d2_ar)
+	{
+		// Write back ARn
+		cpu.SetAR(d2_ar, d2_output_ar);
+	}
+
+	// Check whether 'dst1' operand is an extended precision register
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		result,
+		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
+		M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
+		carry_out,
+		overflow
+	);
+}
+
+//    reg(src1) + reg(src2) -> reg(dst1)
+// ||
+//    reg(src3) -> indir(dst2)
+ADDI3_STI_ext.execute = {
+	// Check whether 'src2' registers is valid
+	if(unlikely(!cpu.HasReg(src2)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read 'src1' operand
+	uint32_t src1_value = cpu.GetIntReg(src1);
+
+	// Read the 'src2' register operand
+	uint32_t src2_value = cpu.GetIntReg(src2);
+
+	// Read the 'src3' register operand
+	uint32_t src3_value = cpu.GetIntReg(src3);
+
+	// Check that indirect addressing mode is valid and compute the effective address of 'dst2' operand
+	typename CONFIG::address_t d2_ea;        // The effective address
+	bool d2_update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t d2_output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(d2_ea, d2_update_ar, d2_output_ar, d2_mod, d2_ar)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Compute the result of ADDI3
+	uint32_t result;      // the 32-bit result
+	uint8_t carry_out;    // the carry out (0 or 1)
+	uint8_t overflow;     // the overflow (0 or 1)
+
+	// Depending on overflow mode do signed saturation or not 
+	if(cpu.GetST_OVM())
+		SignedSatAdd32(result, carry_out, overflow, src1_value, src2_value, 0);
+	else
+		Add32(result, carry_out, overflow, src1_value, src2_value, 0);
+
+	// Store the word into memory
+	cpu.IntStore(d2_ea, src3_value);
+
+	// Write back result
+	cpu.SetIntReg(dst1, result);
+
+	// Note: ...if the src3 and src4 fields use the same auxiliary register,
+	// both addresses are correctly generated, but only the value created by
+	// the src3 field is saved in the auxiliary register specified...
+
+	if(d2_update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR(d2_ar, d2_output_ar);
+	}
+
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		result,
+		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
+		M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
+		carry_out,
+		overflow
+	);
+}
+
 /*
  * end of ADDI3 || STI (add integers and store integer)
  **********************************************************/
@@ -421,6 +556,124 @@ AND3_STI_ext.disasm = {
 	return true;
 }
 
+//    reg(src1) AND indir(src2) -> reg(dst1)
+// ||
+//    reg(src3) -> indir(dst2)
+AND3_STI.execute = {
+	// Read 'src1' operand
+	uint32_t src1_value = cpu.GetIntReg(src1);
+
+	// Check that indirect addressing mode is valid and compute the effective address of the 'src2' operand
+	typename CONFIG::address_t s2_ea;        // The effective address
+	bool s2_update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t s2_output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(s2_ea, s2_update_ar, s2_output_ar, s2_mod, s2_ar)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read 'src2' operand from memory
+	uint32_t src2_value = cpu.IntLoad(s2_ea);
+
+	// Read the 'src3' register operand
+	uint32_t src3_value = cpu.GetIntReg(src3);
+
+	// Check that indirect addressing mode is valid and compute the effective address of 'dst2' operand
+	typename CONFIG::address_t d2_ea;        // The effective address
+	bool d2_update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t d2_output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(d2_ea, d2_update_ar, d2_output_ar, d2_mod, d2_ar)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Compute the result of ANDI3
+	uint32_t result = src1_value & src2_value;
+
+	// Store the word into memory
+	cpu.IntStore(d2_ea, src3_value);
+
+	// Write back result
+	cpu.SetIntReg(dst1, result);
+
+	// Note: ...if the src3 and src4 fields use the same auxiliary register,
+	// both addresses are correctly generated, but only the value created by
+	// the src3 field is saved in the auxiliary register specified...
+
+	if(s2_update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR(s2_ar, s2_output_ar);
+	}
+
+	if(d2_update_ar && s2_ar != d2_ar)
+	{
+		// Write back ARn
+		cpu.SetAR(d2_ar, d2_output_ar);
+	}
+
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		result,
+		M_ST_UF | M_ST_V,  // reset mask
+		M_ST_N | M_ST_Z    // or mask
+	);
+}
+
+//    reg(src1) AND reg(src2) -> reg(dst1)
+// ||
+//    reg(src3) -> indir(dst2)
+AND3_STI_ext.execute = {
+	// Check whether 'src2' register is valid
+	if(unlikely(!cpu.HasReg(src2)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read the 'src1' register operand
+	uint32_t src1_value = cpu.GetIntReg(src1);
+
+	// Read the 'src2' register operand
+	uint32_t src2_value = cpu.GetIntReg(src2);
+
+	// Read the 'src3' register operand
+	uint32_t src3_value = cpu.GetIntReg(src3);
+
+	// Check that indirect addressing mode is valid and compute the effective address of 'dst2' operand
+	typename CONFIG::address_t d2_ea;        // The effective address
+	bool d2_update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t d2_output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(d2_ea, d2_update_ar, d2_output_ar, d2_mod, d2_ar)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Compute the result of ANDI3
+	uint32_t result = src1_value & src2_value;
+
+	// Store the word into memory
+	cpu.IntStore(d2_ea, src3_value);
+
+	// Write back result
+	cpu.SetIntReg(dst1, result);
+
+	if(d2_update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR(d2_ar, d2_output_ar);
+	}
+
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		result,
+		M_ST_UF | M_ST_V,  // reset mask
+		M_ST_N | M_ST_Z    // or mask
+	);
+}
+
 /*
  * end of AND3 || STI (bitwise-logical AND and store integer)
  **********************************************************/
@@ -462,6 +715,190 @@ ASH3_STI_ext.disasm = {
 	os << "ASH3 " << count_name << ", " << src2_name << ", " << dst1_name
 		<< " || " << "STI " << src3_name << ", " << disasm_dst2_indir;
 	return true;
+}
+
+//    ash(indir(src2), reg(count)) -> reg(dst1)
+// ||
+//    reg(src3) -> indir(dst2)
+ASH3_STI.execute = {
+	// Check that indirect addressing mode is valid and compute the effective address of the 'src2' operand
+	typename CONFIG::address_t s2_ea;        // The effective address
+	bool s2_update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t s2_output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(s2_ea, s2_update_ar, s2_output_ar, s2_mod, s2_ar)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read 'src2' operand from memory
+	uint32_t src2_value = cpu.IntLoad(s2_ea);
+
+	// Read the 'src3' register operand
+	uint32_t src3_value = cpu.GetIntReg(src3);
+
+	// Read the 'count' register operand and sign extend the 7 LSB to get the shift count
+	int32_t count_value = SignExtend(cpu.GetIntReg(count), 7);
+
+	// Check that indirect addressing mode is valid and compute the effective address of 'dst2' operand
+	typename CONFIG::address_t d2_ea;        // The effective address
+	bool d2_update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t d2_output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(d2_ea, d2_update_ar, d2_output_ar, d2_mod, d2_ar)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Compute the result of ASH3
+	uint8_t carry_out;
+	uint32_t result;
+
+	if(count_value == 0)
+	{
+		result = src2_value;
+		carry_out = 0;
+	}
+	else if(count_value >= 0)
+	{
+		if(count_value >= 32)
+		{
+			result = 0;
+			carry_out = 0;
+		}
+		else
+		{
+			result = ShiftLeft(src2_value, count_value, carry_out);
+		}
+	}
+	else
+	{
+		count_value = -count_value;
+		if(count_value >= 32)
+		{
+			result = 0;
+			carry_out = 0;
+		}
+		else
+		{
+			result = ShiftArithmeticRight(src2_value, count_value, carry_out);
+		}
+	}
+
+	// Store the word into memory
+	cpu.IntStore(d2_ea, src3_value);
+
+	// Write back result
+	cpu.SetIntReg(dst1, result);
+
+	// Note: ...if the src3 and src4 fields use the same auxiliary register,
+	// both addresses are correctly generated, but only the value created by
+	// the src3 field is saved in the auxiliary register specified...
+
+	if(s2_update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR(s2_ar, s2_output_ar);
+	}
+
+	if(d2_update_ar && s2_ar != d2_ar)
+	{
+		// Write back ARn
+		cpu.SetAR(d2_ar, d2_output_ar);
+	}
+
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		result,
+		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
+		M_ST_N | M_ST_Z | M_ST_C,  // or mask
+		carry_out
+	);
+}
+
+//    ash(reg(src2), reg(count)) -> reg(dst1)
+// ||
+//    reg(src3) -> indir(dst2)
+ASH3_STI_ext.execute = {
+	// Check whether 'src2' register is valid
+	if(unlikely(!cpu.HasReg(src2)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read the 'src2' register operand
+	uint32_t src2_value = cpu.GetIntReg(src2);
+
+	// Read the 'src3' register operand
+	uint32_t src3_value = cpu.GetIntReg(src3);
+
+	// Read the 'count' register operand and sign extend the 7 LSB to get the shift count
+	int32_t count_value = SignExtend(cpu.GetIntReg(count), 7);
+
+	// Check that indirect addressing mode is valid and compute the effective address of 'dst2' operand
+	typename CONFIG::address_t d2_ea;        // The effective address
+	bool d2_update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t d2_output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(d2_ea, d2_update_ar, d2_output_ar, d2_mod, d2_ar)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Compute the result of ASH3
+	uint8_t carry_out;
+	uint32_t result;
+
+	if(count_value == 0)
+	{
+		result = src2_value;
+		carry_out = 0;
+	}
+	else if(count_value >= 0)
+	{
+		if(count_value >= 32)
+		{
+			result = 0;
+			carry_out = 0;
+		}
+		else
+		{
+			result = ShiftLeft(src2_value, count_value, carry_out);
+		}
+	}
+	else
+	{
+		count_value = -count_value;
+		if(count_value >= 32)
+		{
+			result = 0;
+			carry_out = 0;
+		}
+		else
+		{
+			result = ShiftArithmeticRight(src2_value, count_value, carry_out);
+		}
+	}
+
+	// Store the word into memory
+	cpu.IntStore(d2_ea, src3_value);
+
+	// Write back result
+	cpu.SetIntReg(dst1, result);
+
+	if(d2_update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR(d2_ar, d2_output_ar);
+	}
+
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		result,
+		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
+		M_ST_N | M_ST_Z | M_ST_C,  // or mask
+		carry_out
+	);
 }
 
 /*
@@ -626,6 +1063,94 @@ LDI_STI_ext.disasm = {
 	return true;
 }
 
+//    indir(src2) -> reg(dst1)
+// ||
+//    reg(src3) -> indir(dst2)
+LDI_STI.execute = {
+	// Check that indirect addressing mode is valid and compute the effective address for the 'src2' operand
+	typename CONFIG::address_t s2_ea;        // The effective address
+	bool s2_update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t s2_output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(s2_ea, s2_update_ar, s2_output_ar, s2_mod, s2_ar)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Check that indirect addressing mode is valid and compute the effective address for the 'dst2' operand
+	typename CONFIG::address_t d2_ea;        // The effective address
+	bool d2_update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t d2_output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(d2_ea, d2_update_ar, d2_output_ar, d2_mod, d2_ar)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read 'src3' register operand
+	uint32_t src3_value = cpu.GetIntReg(src3);
+
+	// Load 'src2' value from memory
+	uint32_t src2_value = cpu.IntLoad(s2_ea);
+
+	// Store 'src3' value into memory
+	cpu.IntStore(d2_ea, src3_value);
+
+	// Write back result
+	cpu.SetIntReg(dst1, src2_value);
+
+	if(s2_update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR(s2_ar, s2_output_ar);
+	}
+
+	if(d2_update_ar && s2_ar != d2_ar)
+	{
+		// Write back ARn
+		cpu.SetAR(d2_ar, d2_output_ar);
+	}
+}
+
+//    reg(src2) -> reg(dst1)
+// ||
+//    reg(src3) -> indir(dst2)
+LDI_STI_ext.execute = {
+	// Check whether the 'src2' register operand is valid
+	if(unlikely(!cpu.HasReg(src2)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Check that indirect addressing mode is valid and compute the effective address for the 'dst2' operand
+	typename CONFIG::address_t d2_ea;        // The effective address
+	bool d2_update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t d2_output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(d2_ea, d2_update_ar, d2_output_ar, d2_mod, d2_ar)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read 'src2' register operand
+	uint32_t src2_value = cpu.GetIntReg(src2);
+
+	// Read 'src3' register operand
+	uint32_t src3_value = cpu.GetIntReg(src3);
+
+	// Store 'src3' value into memory
+	cpu.IntStore(d2_ea, src3_value);
+
+	// Write back result
+	cpu.SetIntReg(dst1, src2_value);
+
+	if(d2_update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR(d2_ar, d2_output_ar);
+	}
+}
+
 /* end of LDI || STI (load integer and store integer)
  **********************************************************/
 
@@ -666,6 +1191,190 @@ LSH3_STI_ext.disasm = {
 	os << "LSH3 " << count << ", " << src2_name << ", " << dst1_name
 		<< " || " << "STI " << src3_name << ", " << disasm_dst2_indir;
 	return true;
+}
+
+//    lsh(indir(src2), reg(count)) -> reg(dst1)
+// ||
+//    reg(src3) -> indir(dst2)
+LSH3_STI.execute = {
+	// Check that indirect addressing mode is valid and compute the effective address of the 'src2' operand
+	typename CONFIG::address_t s2_ea;        // The effective address
+	bool s2_update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t s2_output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(s2_ea, s2_update_ar, s2_output_ar, s2_mod, s2_ar)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read 'src2' operand from memory
+	uint32_t src2_value = cpu.IntLoad(s2_ea);
+
+	// Read the 'src3' register operand
+	uint32_t src3_value = cpu.GetIntReg(src3);
+
+	// Read the 'count' register operand and sign extend the 7 LSB to get the shift count
+	int32_t count_value = SignExtend(cpu.GetIntReg(count), 7);
+
+	// Check that indirect addressing mode is valid and compute the effective address of 'dst2' operand
+	typename CONFIG::address_t d2_ea;        // The effective address
+	bool d2_update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t d2_output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(d2_ea, d2_update_ar, d2_output_ar, d2_mod, d2_ar)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Compute the result of LSH3
+	uint8_t carry_out;
+	uint32_t result;
+
+	if(count_value == 0)
+	{
+		result = src2_value;
+		carry_out = 0;
+	}
+	else if(count_value >= 0)
+	{
+		if(count_value >= 32)
+		{
+			result = 0;
+			carry_out = 0;
+		}
+		else
+		{
+			result = ShiftLeft(src2_value, count_value, carry_out);
+		}
+	}
+	else
+	{
+		count_value = -count_value;
+		if(count_value >= 32)
+		{
+			result = 0;
+			carry_out = 0;
+		}
+		else
+		{
+			result = ShiftRight(src2_value, count_value, carry_out);
+		}
+	}
+
+	// Store the word into memory
+	cpu.IntStore(d2_ea, src3_value);
+
+	// Write back result
+	cpu.SetIntReg(dst1, result);
+
+	// Note: ...if the src3 and src4 fields use the same auxiliary register,
+	// both addresses are correctly generated, but only the value created by
+	// the src3 field is saved in the auxiliary register specified...
+
+	if(s2_update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR(s2_ar, s2_output_ar);
+	}
+
+	if(d2_update_ar && s2_ar != d2_ar)
+	{
+		// Write back ARn
+		cpu.SetAR(d2_ar, d2_output_ar);
+	}
+
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		result,
+		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
+		M_ST_N | M_ST_Z | M_ST_C,  // or mask
+		carry_out
+	);
+}
+
+//    lsh(reg(src2), reg(count)) -> reg(dst1)
+// ||
+//    reg(src3) -> indir(dst2)
+LSH3_STI_ext.execute = {
+	// Check whether 'src2' register is valid
+	if(unlikely(!cpu.HasReg(src2)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read the 'src2' register operand
+	uint32_t src2_value = cpu.GetIntReg(src2);
+
+	// Read the 'src3' register operand
+	uint32_t src3_value = cpu.GetIntReg(src3);
+
+	// Read the 'count' register operand and sign extend the 7 LSB to get the shift count
+	int32_t count_value = SignExtend(cpu.GetIntReg(count), 7);
+
+	// Check that indirect addressing mode is valid and compute the effective address of 'dst2' operand
+	typename CONFIG::address_t d2_ea;        // The effective address
+	bool d2_update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t d2_output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(d2_ea, d2_update_ar, d2_output_ar, d2_mod, d2_ar)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Compute the result of LSH3
+	uint8_t carry_out;
+	uint32_t result;
+
+	if(count_value == 0)
+	{
+		result = src2_value;
+		carry_out = 0;
+	}
+	else if(count_value >= 0)
+	{
+		if(count_value >= 32)
+		{
+			result = 0;
+			carry_out = 0;
+		}
+		else
+		{
+			result = ShiftLeft(src2_value, count_value, carry_out);
+		}
+	}
+	else
+	{
+		count_value = -count_value;
+		if(count_value >= 32)
+		{
+			result = 0;
+			carry_out = 0;
+		}
+		else
+		{
+			result = ShiftRight(src2_value, count_value, carry_out);
+		}
+	}
+
+	// Store the word into memory
+	cpu.IntStore(d2_ea, src3_value);
+
+	// Write back result
+	cpu.SetIntReg(dst1, result);
+
+	if(d2_update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR(d2_ar, d2_output_ar);
+	}
+
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		result,
+		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
+		M_ST_N | M_ST_Z | M_ST_C,  // or mask
+		carry_out
+	);
 }
 
 /* end of LSH3 || STI (logical shift and store integer)
@@ -752,6 +1461,154 @@ MPYI3_STI_ext.disasm = {
 	return true;
 }
 
+//    reg(src1) * indir(src2) -> reg(dst1)
+// ||
+//    reg(src3) -> indir(dst2)
+MPYI3_STI.execute = {
+	// Read 'src1' operand and sign extend value from 24 bits to 64 bits
+	int64_t src1_value = SignExtend((uint64_t)(cpu.GetIntReg(src1) & 0xffffff), 24);
+
+	// Check that indirect addressing mode is valid and compute the effective address of the 'src2' operand
+	typename CONFIG::address_t s2_ea;        // The effective address
+	bool s2_update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t s2_output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(s2_ea, s2_update_ar, s2_output_ar, s2_mod, s2_ar)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read 'src2' operand from memory and sign extend value from 24 bits to 64 bits
+	int64_t src2_value = SignExtend((uint64_t)(cpu.IntLoad(s2_ea) & 0xffffff), 24);
+
+	// Read the 'src3' register operand
+	uint32_t src3_value = cpu.GetIntReg(src3);
+
+	// Check that indirect addressing mode is valid and compute the effective address of 'dst2' operand
+	typename CONFIG::address_t d2_ea;        // The effective address
+	bool d2_update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t d2_output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(d2_ea, d2_update_ar, d2_output_ar, d2_mod, d2_ar)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Compute the 32-bit result and overflow of MPYI3
+	int64_t result64 = src1_value * src2_value; // Only 48 bits are useful
+	int32_t lo32 = (int32_t) result64;          // the 32 LSBs of the result
+	int32_t hi32 = (int32_t) (result64 >> 32);  // the 32 MSBs of the result
+	// An overflow occurs if any of the 32-bit MSB of the result differ from MSB of the 32-bit output value
+	// An arithmetic shift of 31 bits is used to duplicate 32 times the MSB of lo32
+	uint8_t overflow = ((lo32 >> 31) != hi32);
+	uint32_t result;
+	
+	if(cpu.GetST_OVM() && overflow)
+		result = (result64 < 0) ? 0x80000000 : 0x7fffffff; // Saturate the result
+	else
+		result = lo32;                                     // No saturation
+
+	// Store the word into memory
+	cpu.IntStore(d2_ea, src3_value);
+
+	// Write back result
+	cpu.SetIntReg(dst1, result);
+
+	// Note: ...if the src3 and src4 fields use the same auxiliary register,
+	// both addresses are correctly generated, but only the value created by
+	// the src3 field is saved in the auxiliary register specified...
+
+	if(s2_update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR(s2_ar, s2_output_ar);
+	}
+
+	if(d2_update_ar && s2_ar != d2_ar)
+	{
+		// Write back ARn
+		cpu.SetAR(d2_ar, d2_output_ar);
+	}
+
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		result,
+		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+		M_ST_LV | M_ST_N | M_ST_Z | M_ST_V,  // or mask
+		0,
+		overflow
+	);
+}
+
+//    reg(src1) + reg(src2) -> reg(dst1)
+// ||
+//    reg(src3) -> indir(dst2)
+MPYI3_STI_ext.execute = {
+	// Check whether 'src2' register is valid
+	if(unlikely(!cpu.HasReg(src2)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read 'src1' operand and sign extend value from 24 bits to 64 bits
+	int64_t src1_value = SignExtend((uint64_t)(cpu.GetIntReg(src1) & 0xffffff), 24);
+
+	// Read 'src2' operand and sign extend value from 24 bits to 64 bits
+	int64_t src2_value = SignExtend((uint64_t)(cpu.GetIntReg(src2) & 0xffffff), 24);
+
+	// Read the 'src3' register operand
+	uint32_t src3_value = cpu.GetIntReg(src3);
+
+	// Check that indirect addressing mode is valid and compute the effective address of 'dst2' operand
+	typename CONFIG::address_t d2_ea;        // The effective address
+	bool d2_update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t d2_output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(d2_ea, d2_update_ar, d2_output_ar, d2_mod, d2_ar)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Compute the 32-bit result and overflow of MPYI3
+	int64_t result64 = src1_value * src2_value; // Only 48 bits are useful
+	int32_t lo32 = (int32_t) result64;          // the 32 LSBs of the result
+	int32_t hi32 = (int32_t) (result64 >> 32);  // the 32 MSBs of the result
+	// An overflow occurs if any of the 32-bit MSB of the result differ from MSB of the 32-bit output value
+	// An arithmetic shift of 31 bits is used to duplicate 32 times the MSB of lo32
+	uint8_t overflow = ((lo32 >> 31) != hi32);
+	uint32_t result;
+	
+	if(cpu.GetST_OVM() && overflow)
+		result = (result64 < 0) ? 0x80000000 : 0x7fffffff; // Saturate the result
+	else
+		result = lo32;                                     // No saturation
+
+	// Store the word into memory
+	cpu.IntStore(d2_ea, src3_value);
+
+	// Write back result
+	cpu.SetIntReg(dst1, result);
+
+	// Note: ...if the src3 and src4 fields use the same auxiliary register,
+	// both addresses are correctly generated, but only the value created by
+	// the src3 field is saved in the auxiliary register specified...
+
+	if(d2_update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR(d2_ar, d2_output_ar);
+	}
+
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		result,
+		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+		M_ST_LV | M_ST_N | M_ST_Z | M_ST_V,  // or mask
+		0,
+		overflow
+	);
+}
+
 /* end of MPYI3 || STI (multiply integer and store integer)
  **********************************************************/
 
@@ -832,6 +1689,138 @@ NEGI_STI_ext.disasm = {
 	return true;
 }
 
+//    neg(indir(src2)) -> reg(dst1)
+// ||
+//    reg(src3) -> indir(dst2)
+NEGI_STI.execute = {
+	// Check that indirect addressing mode is valid and compute the effective address of 'src2' operand
+	typename CONFIG::address_t s2_ea;        // The effective address
+	bool s2_update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t s2_output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(s2_ea, s2_update_ar, s2_output_ar, s2_mod, s2_ar)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read the 'src3' register operand
+	uint32_t src3_value = cpu.GetIntReg(src3);
+
+	// Check that indirect addressing mode is valid and compute the effective address of 'dst2' operand
+	typename CONFIG::address_t d2_ea;        // The effective address
+	bool d2_update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t d2_output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(d2_ea, d2_update_ar, d2_output_ar, d2_mod, d2_ar)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read the 'src2' operand from memory
+	uint32_t src2_value = cpu.IntLoad(s2_ea);
+
+	// Compute the result of NEGI
+	uint32_t result;      // the 32-bit result
+	uint8_t borrow_out;   // the borrow out (0 or 1)
+	uint8_t overflow;     // the overflow (0 or 1)
+
+	// Depending on overflow mode do signed saturation or not 
+	if(cpu.GetST_OVM())
+		SignedSatSub32(result, borrow_out, overflow, 0, src2_value, 0);
+	else
+		Sub32(result, borrow_out, overflow, 0, src2_value, 0);
+
+	// Store the word into memory
+	cpu.IntStore(d2_ea, src3_value);
+
+	// Write back result of NEGI in register 'dst1'
+	cpu.SetIntReg(dst1, result);
+
+	// Note: ...if the src3 and src4 fields use the same auxiliary register,
+	// both addresses are correctly generated, but only the value created by
+	// the src3 field is saved in the auxiliary register specified...
+
+	if(s2_update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR(s2_ar, s2_output_ar);
+	}
+
+	if(d2_update_ar && s2_ar != d2_ar)
+	{
+		// Write back ARn
+		cpu.SetAR(d2_ar, d2_output_ar);
+	}
+
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		result,
+		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
+		M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
+		borrow_out,
+		overflow
+	);
+}
+
+//    neg(reg(src2)) -> reg(dst1)
+// ||
+//    reg(src3) -> indir(dst2)
+NEGI_STI_ext.execute = {
+	// Check that 'src2' register is valid
+	if(unlikely(!cpu.HasReg(src2)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read the 'src2' register operand
+	uint32_t src2_value = cpu.GetIntReg(src2);
+
+	// Read the 'src3' register operand
+	uint32_t src3_value = cpu.GetIntReg(src3);
+
+	// Check that indirect addressing mode is valid and compute the effective address of 'dst2' operand
+	typename CONFIG::address_t d2_ea;        // The effective address
+	bool d2_update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t d2_output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(d2_ea, d2_update_ar, d2_output_ar, d2_mod, d2_ar)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Compute the result of NEGI
+	uint32_t result;      // the 32-bit result
+	uint8_t borrow_out;   // the borrow out (0 or 1)
+	uint8_t overflow;     // the overflow (0 or 1)
+
+	// Depending on overflow mode do signed saturation or not 
+	if(cpu.GetST_OVM())
+		SignedSatSub32(result, borrow_out, overflow, 0, src2_value, 0);
+	else
+		Sub32(result, borrow_out, overflow, 0, src2_value, 0);
+
+	// Store the word into memory
+	cpu.IntStore(d2_ea, src3_value);
+
+	// Write back result of NEGI in register 'dst1'
+	cpu.SetIntReg(dst1, result);
+
+	if(d2_update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR(d2_ar, d2_output_ar);
+	}
+
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		result,
+		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
+		M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
+		borrow_out,
+		overflow
+	);
+}
+
 /* end of NEGI || STI (negate integer and store integer)
  **********************************************************/
 
@@ -870,6 +1859,118 @@ NOT_STI_ext.disasm = {
 	os << "NOT " << src2_name << ", " << dst1_name
 		<< " || " << "STI " << src3_name << ", " << disasm_dst2_indir;
 	return true;
+}
+
+//    not(indir(src2)) -> reg(dst1)
+// ||
+//    reg(src3) -> indir(dst2)
+NOT_STI.execute = {
+	// Check that indirect addressing mode is valid and compute the effective address of 'src2' operand
+	typename CONFIG::address_t s2_ea;        // The effective address
+	bool s2_update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t s2_output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(s2_ea, s2_update_ar, s2_output_ar, s2_mod, s2_ar)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read the 'src3' register operand
+	uint32_t src3_value = cpu.GetIntReg(src3);
+
+	// Check that indirect addressing mode is valid and compute the effective address of 'dst2' operand
+	typename CONFIG::address_t d2_ea;        // The effective address
+	bool d2_update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t d2_output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(d2_ea, d2_update_ar, d2_output_ar, d2_mod, d2_ar)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read the 'src2' operand from memory
+	uint32_t src2_value = cpu.IntLoad(s2_ea);
+
+	// Compute the result of NOT
+	uint32_t result = ~src2_value;
+
+	// Store the word into memory
+	cpu.IntStore(d2_ea, src3_value);
+
+	// Write back result of NOT in register 'dst1'
+	cpu.SetIntReg(dst1, result);
+
+	// Note: ...if the src3 and src4 fields use the same auxiliary register,
+	// both addresses are correctly generated, but only the value created by
+	// the src3 field is saved in the auxiliary register specified...
+
+	if(s2_update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR(s2_ar, s2_output_ar);
+	}
+
+	if(d2_update_ar && s2_ar != d2_ar)
+	{
+		// Write back ARn
+		cpu.SetAR(d2_ar, d2_output_ar);
+	}
+
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		result,
+		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+		M_ST_N | M_ST_Z    // or mask
+	);
+}
+
+//    not(reg(src2)) -> reg(dst1)
+// ||
+//    reg(src3) -> indir(dst2)
+NOT_STI_ext.execute = {
+	// Check that 'src2' register is valid
+	if(unlikely(!cpu.HasReg(src2)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read the 'src2' register operand
+	uint32_t src2_value = cpu.GetIntReg(src2);
+
+	// Read the 'src3' register operand
+	uint32_t src3_value = cpu.GetIntReg(src3);
+
+	// Check that indirect addressing mode is valid and compute the effective address of 'dst2' operand
+	typename CONFIG::address_t d2_ea;        // The effective address
+	bool d2_update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t d2_output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(d2_ea, d2_update_ar, d2_output_ar, d2_mod, d2_ar)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Compute the result of NOT
+	uint32_t result = ~src2_value;
+
+	// Store the word into memory
+	cpu.IntStore(d2_ea, src3_value);
+
+	// Write back result of NOT in register 'dst1'
+	cpu.SetIntReg(dst1, result);
+
+	if(d2_update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR(d2_ar, d2_output_ar);
+	}
+
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		result,
+		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+		M_ST_N | M_ST_Z    // or mask
+	);
 }
 
 /* end of NOT || STI (complement value and store integer)
@@ -912,6 +2013,124 @@ OR3_STI_ext.disasm = {
 	os << "OR3 " << src2_name << ", " << src1_name << ", " << dst1_name
 		<< " || " << "STI " << src3_name << ", " << disasm_dst2_indir;
 	return true;
+}
+
+//    reg(src1) OR indir(src2) -> reg(dst1)
+// ||
+//    reg(src3) -> indir(dst2)
+OR3_STI.execute = {
+	// Read 'src1' operand
+	uint32_t src1_value = cpu.GetIntReg(src1);
+
+	// Check that indirect addressing mode is valid and compute the effective address of the 'src2' operand
+	typename CONFIG::address_t s2_ea;        // The effective address
+	bool s2_update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t s2_output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(s2_ea, s2_update_ar, s2_output_ar, s2_mod, s2_ar)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read 'src2' operand from memory
+	uint32_t src2_value = cpu.IntLoad(s2_ea);
+
+	// Read the 'src3' register operand
+	uint32_t src3_value = cpu.GetIntReg(src3);
+
+	// Check that indirect addressing mode is valid and compute the effective address of 'dst2' operand
+	typename CONFIG::address_t d2_ea;        // The effective address
+	bool d2_update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t d2_output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(d2_ea, d2_update_ar, d2_output_ar, d2_mod, d2_ar)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Compute the result of OR3
+	uint32_t result = src1_value | src2_value;
+
+	// Store the word into memory
+	cpu.IntStore(d2_ea, src3_value);
+
+	// Write back result
+	cpu.SetIntReg(dst1, result);
+
+	// Note: ...if the src3 and src4 fields use the same auxiliary register,
+	// both addresses are correctly generated, but only the value created by
+	// the src3 field is saved in the auxiliary register specified...
+
+	if(s2_update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR(s2_ar, s2_output_ar);
+	}
+
+	if(d2_update_ar && s2_ar != d2_ar)
+	{
+		// Write back ARn
+		cpu.SetAR(d2_ar, d2_output_ar);
+	}
+
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		result,
+		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+		M_ST_N | M_ST_Z    // or mask
+	);
+}
+
+//    reg(src1) OR reg(src2) -> reg(dst1)
+// ||
+//    reg(src3) -> indir(dst2)
+OR3_STI_ext.execute = {
+	// Check whether 'src2' register is valid
+	if(unlikely(!cpu.HasReg(src2)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read the 'src1' register operand
+	uint32_t src1_value = cpu.GetIntReg(src1);
+
+	// Read the 'src2' register operand
+	uint32_t src2_value = cpu.GetIntReg(src2);
+
+	// Read the 'src3' register operand
+	uint32_t src3_value = cpu.GetIntReg(src3);
+
+	// Check that indirect addressing mode is valid and compute the effective address of 'dst2' operand
+	typename CONFIG::address_t d2_ea;        // The effective address
+	bool d2_update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t d2_output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(d2_ea, d2_update_ar, d2_output_ar, d2_mod, d2_ar)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Compute the result of OR3
+	uint32_t result = src1_value | src2_value;
+
+	// Store the word into memory
+	cpu.IntStore(d2_ea, src3_value);
+
+	// Write back result
+	cpu.SetIntReg(dst1, result);
+
+	if(d2_update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR(d2_ar, d2_output_ar);
+	}
+
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		result,
+		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+		M_ST_N | M_ST_Z    // or mask
+	);
 }
 
 /* end of OR3 || STI (bitwise-logical OR value and store integer)
@@ -958,7 +2177,7 @@ STF_STF_ext.disasm = {
  **********************************************************/
 
 /**********************************************************
- * STI || STI (sotre integers)
+ * STI || STI (store integers)
  * op STI_STI(0b11[2]:0b00001[5]:src2[3]:0b000[3]:src1[3]:dst1[8]:dst2[8])
  */
 
@@ -992,6 +2211,97 @@ STI_STI_ext.disasm = {
 	os << "STI " << src2_name << ", " << dst2_name
 		<< " || " << "STI " << src1_name << ", " << disasm_dst1_indir;
 	return true;
+}
+
+//    reg(src2) -> indir(dst2)
+// ||
+//    reg(src1) -> indir(dst1)
+STI_STI.execute = {
+	// Read the 'src1' operand
+	uint32_t src1_value = cpu.GetIntReg(src1);
+
+	// Read the 'src2' operand
+	uint32_t src2_value = cpu.GetIntReg(src2);
+
+	// Check that indirect addressing mode is valid and compute the effective address of operand 'dst1'
+	typename CONFIG::address_t d1_ea;        // The effective address
+	bool d1_update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t d1_output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(d1_ea, d1_update_ar, d1_output_ar, d1_mod, d1_ar)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Check that indirect addressing mode is valid and compute the effective address of operand 'dst2'
+	typename CONFIG::address_t d2_ea;        // The effective address
+	bool d2_update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t d2_output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(d2_ea, d2_update_ar, d2_output_ar, d2_mod, d2_ar)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Store the word into memory
+	cpu.IntStore(d2_ea, src2_value);
+
+	// Store the word into memory
+	if(d1_ea != d2_ea)
+	{
+		cpu.IntStore(d1_ea, src1_value);
+	}
+
+	if(d2_update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR(d2_ar, d2_output_ar);
+	}
+
+	if(d1_update_ar && d1_ar != d2_ar)
+	{
+		// Write back ARn
+		cpu.SetAR(d1_ar, d1_output_ar);
+	}
+}
+
+//    reg(src2) -> reg(dst2)
+// ||
+//    reg(src1) -> indir(dst1)
+STI_STI_ext.execute = {
+	// Check whether 'dst2' register is valid
+	if(unlikely(!cpu.HasReg(dst2)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read the 'src1' operand
+	uint32_t src1_value = cpu.GetIntReg(src1);
+
+	// Read the 'src2' operand
+	uint32_t src2_value = cpu.GetIntReg(src2);
+
+	// Check that indirect addressing mode is valid and compute the effective address of operand 'dst1'
+	typename CONFIG::address_t d1_ea;        // The effective address
+	bool d1_update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t d1_output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(d1_ea, d1_update_ar, d1_output_ar, d1_mod, d1_ar)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Write back 'src2' into 'dst2' register
+	cpu.SetIntReg(dst2, src2_value);
+
+	// Store the word into memory
+	cpu.IntStore(d1_ea, src1_value);
+
+	if(d1_update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR(d1_ar, d1_output_ar);
+	}
 }
 
 /* end of STI || STI (sotre integers)
@@ -1078,6 +2388,148 @@ SUBI3_STI_ext.disasm = {
 	return true;
 }
 
+//    indir(src2) - reg(src1)  -> reg(dst1)
+// ||
+//    reg(src3) -> indir(dst2)
+SUBI3_STI.execute = {
+	// Read 'src1' operand
+	uint32_t src1_value = cpu.GetIntReg(src1);
+
+	// Check that indirect addressing mode is valid and compute the effective address of the 'src2' operand
+	typename CONFIG::address_t s2_ea;        // The effective address
+	bool s2_update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t s2_output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(s2_ea, s2_update_ar, s2_output_ar, s2_mod, s2_ar)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read 'src2' operand from memory
+	uint32_t src2_value = cpu.IntLoad(s2_ea);
+
+	// Read the 'src3' register operand
+	uint32_t src3_value = cpu.GetIntReg(src3);
+
+	// Check that indirect addressing mode is valid and compute the effective address of 'dst2' operand
+	typename CONFIG::address_t d2_ea;        // The effective address
+	bool d2_update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t d2_output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(d2_ea, d2_update_ar, d2_output_ar, d2_mod, d2_ar)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Compute the result of SUBI3
+	uint32_t result;      // the 32-bit result
+	uint8_t borrow_out;   // the borrow out (0 or 1)
+	uint8_t overflow;     // the overflow (0 or 1)
+
+	// Depending on overflow mode do signed saturation or not 
+	if(cpu.GetST_OVM())
+		SignedSatSub32(result, borrow_out, overflow, src2_value, src1_value, 0);
+	else
+		Sub32(result, borrow_out, overflow, src2_value, src1_value, 0);
+
+	// Store the word into memory
+	cpu.IntStore(d2_ea, src3_value);
+
+	// Write back result
+	cpu.SetIntReg(dst1, result);
+
+	// Note: ...if the src3 and src4 fields use the same auxiliary register,
+	// both addresses are correctly generated, but only the value created by
+	// the src3 field is saved in the auxiliary register specified...
+
+	if(s2_update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR(s2_ar, s2_output_ar);
+	}
+
+	if(d2_update_ar && s2_ar != d2_ar)
+	{
+		// Write back ARn
+		cpu.SetAR(d2_ar, d2_output_ar);
+	}
+
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		result,
+		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
+		M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
+		borrow_out,
+		overflow
+	);
+}
+
+//    reg(src2) - reg(src1) -> reg(dst1)
+// ||
+//    reg(src3) -> indir(dst2)
+SUBI3_STI_ext.execute = {
+	// Check whether 'src2' register is valid
+	if(unlikely(!cpu.HasReg(src2)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read 'src1' operand
+	uint32_t src1_value = cpu.GetIntReg(src1);
+
+	// Read the 'src2' register operand
+	uint32_t src2_value = cpu.GetIntReg(src2);
+
+	// Read the 'src3' register operand
+	uint32_t src3_value = cpu.GetIntReg(src3);
+
+	// Check that indirect addressing mode is valid and compute the effective address of 'dst2' operand
+	typename CONFIG::address_t d2_ea;        // The effective address
+	bool d2_update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t d2_output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(d2_ea, d2_update_ar, d2_output_ar, d2_mod, d2_ar)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Compute the result of SUBI3
+	uint32_t result;      // the 32-bit result
+	uint8_t borrow_out;   // the borrow out (0 or 1)
+	uint8_t overflow;     // the overflow (0 or 1)
+
+	// Depending on overflow mode do signed saturation or not 
+	if(cpu.GetST_OVM())
+		SignedSatSub32(result, borrow_out, overflow, src2_value, src1_value, 0);
+	else
+		Sub32(result, borrow_out, overflow, src2_value, src1_value, 0);
+
+	// Store the word into memory
+	cpu.IntStore(d2_ea, src3_value);
+
+	// Write back result
+	cpu.SetIntReg(dst1, result);
+
+	// Note: ...if the src3 and src4 fields use the same auxiliary register,
+	// both addresses are correctly generated, but only the value created by
+	// the src3 field is saved in the auxiliary register specified...
+
+	if(d2_update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR(d2_ar, d2_output_ar);
+	}
+
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		result,
+		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
+		M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
+		borrow_out,
+		overflow
+	);
+}
+
 /* end of SUBI3 || STI (subtract integer and store integer)
  **********************************************************/
 
@@ -1118,6 +2570,124 @@ XOR3_STI_ext.disasm = {
 	os << "XOR3 " << src2_name << ", " << src1_name << ", " << dst1_name
 		<< " || " << "STI " << src3_name << ", " << disasm_dst2_indir;
 	return true;
+}
+
+//    reg(src1) XOR indir(src2) -> reg(dst1)
+// ||
+//    reg(src3) -> indir(dst2)
+XOR3_STI.execute = {
+	// Read 'src1' operand
+	uint32_t src1_value = cpu.GetIntReg(src1);
+
+	// Check that indirect addressing mode is valid and compute the effective address of the 'src2' operand
+	typename CONFIG::address_t s2_ea;        // The effective address
+	bool s2_update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t s2_output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(s2_ea, s2_update_ar, s2_output_ar, s2_mod, s2_ar)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read 'src2' operand from memory
+	uint32_t src2_value = cpu.IntLoad(s2_ea);
+
+	// Read the 'src3' register operand
+	uint32_t src3_value = cpu.GetIntReg(src3);
+
+	// Check that indirect addressing mode is valid and compute the effective address of 'dst2' operand
+	typename CONFIG::address_t d2_ea;        // The effective address
+	bool d2_update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t d2_output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(d2_ea, d2_update_ar, d2_output_ar, d2_mod, d2_ar)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Compute the result of XORI3
+	uint32_t result = src1_value ^ src2_value;
+
+	// Store the word into memory
+	cpu.IntStore(d2_ea, src3_value);
+
+	// Write back result
+	cpu.SetIntReg(dst1, result);
+
+	// Note: ...if the src3 and src4 fields use the same auxiliary register,
+	// both addresses are correctly generated, but only the value created by
+	// the src3 field is saved in the auxiliary register specified...
+
+	if(s2_update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR(s2_ar, s2_output_ar);
+	}
+
+	if(d2_update_ar && s2_ar != d2_ar)
+	{
+		// Write back ARn
+		cpu.SetAR(d2_ar, d2_output_ar);
+	}
+
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		result,
+		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+		M_ST_N | M_ST_Z    // or mask
+	);
+}
+
+//    reg(src1) XOR reg(src2) -> reg(dst1)
+// ||
+//    reg(src3) -> indir(dst2)
+XOR3_STI_ext.execute = {
+	// Check whether 'src2' register is valid
+	if(unlikely(!cpu.HasReg(src2)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read the 'src1' register operand
+	uint32_t src1_value = cpu.GetIntReg(src1);
+
+	// Read the 'src2' register operand
+	uint32_t src2_value = cpu.GetIntReg(src2);
+
+	// Read the 'src3' register operand
+	uint32_t src3_value = cpu.GetIntReg(src3);
+
+	// Check that indirect addressing mode is valid and compute the effective address of 'dst2' operand
+	typename CONFIG::address_t d2_ea;        // The effective address
+	bool d2_update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t d2_output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(d2_ea, d2_update_ar, d2_output_ar, d2_mod, d2_ar)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Compute the result of XORI3
+	uint32_t result = src1_value ^ src2_value;
+
+	// Store the word into memory
+	cpu.IntStore(d2_ea, src3_value);
+
+	// Write back result
+	cpu.SetIntReg(dst1, result);
+
+	if(d2_update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR(d2_ar, d2_output_ar);
+	}
+
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		result,
+		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+		M_ST_N | M_ST_Z    // or mask
+	);
 }
 
 /* end of XOR3 || STI (bitwise-exclusive OR values and store integer)
@@ -1198,6 +2768,94 @@ LDI_LDI_ext.disasm = {
 	os << "LDI " << ", " << src2_name << ", " << dst2_name
 		<< " || " << "LDI " << disasm_src1_indir << ", " << dst2_name;
 	return true;
+}
+
+LDI_LDI.execute = {
+	// Check that indirect addressing mode is valid and compute the effective address of 'src1' operand
+	typename CONFIG::address_t s1_ea;        // The effective address
+	bool s1_update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t s1_output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(s1_ea, s1_update_ar, s1_output_ar, s1_mod, s1_ar)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Check that indirect addressing mode is valid and compute the effective address of 'src2' operand
+	typename CONFIG::address_t s2_ea;        // The effective address
+	bool s2_update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t s2_output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(s2_ea, s2_update_ar, s2_output_ar, s2_mod, s2_ar)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Load the 'src1' operand value from memory
+	uint32_t src1_value = cpu.IntLoad(s1_ea);
+
+	// Load the 'src2' operand value from memory
+	uint32_t src2_value = cpu.IntLoad(s2_ea);
+
+	// Write back register operand 'dst2'
+	cpu.SetIntReg(dst2, src2_value);
+
+	// Write back register operand 'dst1'
+	if(dst1 != dst2)
+	{
+		cpu.SetIntReg(dst1, src1_value);
+	}
+
+	if(s2_update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR(s2_ar, s2_output_ar);
+	}
+
+	if(s1_update_ar && s1_ar != s2_ar)
+	{
+		// Write back ARn
+		cpu.SetAR(s1_ar, s1_output_ar);
+	}
+}
+
+LDI_LDI_ext.execute = {
+	// Check whether 'src2' register is valid
+	if(unlikely(!cpu.HasReg(src2)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Check that indirect addressing mode is valid and compute the effective address of 'src1' operand
+	typename CONFIG::address_t s1_ea;        // The effective address
+	bool s1_update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t s1_output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(s1_ea, s1_update_ar, s1_output_ar, s1_mod, s1_ar)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Load the 'src1' operand value from memory
+	uint32_t src1_value = cpu.IntLoad(s1_ea);
+
+	// Read the 'src2' register operand value
+	uint32_t src2_value = cpu.GetIntReg(src2);
+
+	// Write back register operand 'dst2'
+	cpu.SetIntReg(dst2, src2_value);
+
+	// Write back register operand 'dst1'
+	if(dst1 != dst2)
+	{
+		cpu.SetIntReg(dst1, src1_value);
+	}
+
+	if(s1_update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR(s1_ar, s1_output_ar);
+	}
 }
 
 /* end of LDI || LDI (load integer)
@@ -1527,6 +3185,240 @@ MPYI3_ADDI3_ext.disasm = {
 	return true;
 }
 
+//    srcA * srcB -> dst1
+// ||
+//    srcD + srcC -> dst2
+MPYI3_ADDI3.execute = {
+	// Read 'src1' register operand
+	uint32_t src1_value = cpu.GetIntReg(src1);
+
+	// Read 'src2' register operand
+	uint32_t src2_value = cpu.GetIntReg(src2);
+
+	// Check that indirect addressing mode is valid and compute the effective address of 'src3' operand
+	typename CONFIG::address_t s3_ea;        // The effective address
+	bool s3_update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t s3_output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(s3_ea, s3_update_ar, s3_output_ar, s3_mod, s3_ar)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Check that indirect addressing mode is valid and compute the effective address of 'src4' operand
+	typename CONFIG::address_t s4_ea;        // The effective address
+	bool s4_update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t s4_output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(s4_ea, s4_update_ar, s4_output_ar, s4_mod, s4_ar)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Load 'src3' operand from memory
+	uint32_t src3_value = cpu.IntLoad(s3_ea);
+
+	// Load 'src4' operand from memory
+	uint32_t src4_value = cpu.IntLoad(s4_ea);
+
+	// Map 'src1', 'src2', 'src3', and 'src4' to 'srcA', 'srcB', 'srcC', and 'srcD'
+	// depending on the parallel addressing mode used
+	uint32_t srcA_value;
+	uint32_t srcB_value;
+	uint32_t srcC_value;
+	uint32_t srcD_value;
+
+	switch(p)
+	{
+		case 0: // 00
+			srcA_value = src3_value;
+			srcB_value = src4_value;
+			srcC_value = src2_value;
+			srcD_value = src1_value;
+			break;
+		case 1: // 01
+			srcA_value = src3_value;
+			srcB_value = src1_value;
+			srcC_value = src4_value;
+			srcD_value = src2_value;
+			break;
+		case 2: // 10
+			srcA_value = src1_value;
+			srcB_value = src2_value;
+			srcC_value = src3_value;
+			srcD_value = src4_value;
+			break;
+		case 3: // 11
+			srcA_value = src3_value;
+			srcB_value = src1_value;
+			srcC_value = src2_value;
+			srcD_value = src4_value;
+			break;
+	}
+
+	// Compute the 32-bit result and overflow of MPYI3
+	// Source operand values are sign extended from 24 bits to 64 bits before the actual computation
+	int64_t mpyi3_result64 = SignExtend((uint64_t)(srcA_value & 0xffffff), 24) * SignExtend((uint64_t)(srcB_value & 0xffffff), 24); // Only 48 bits are useful
+	int32_t lo32 = (int32_t) mpyi3_result64;          // the 32 LSBs of the result
+	int32_t hi32 = (int32_t) (mpyi3_result64 >> 32);  // the 32 MSBs of the result
+	// An overflow occurs if any of the 32-bit MSB of the result differ from MSB of the 32-bit output value
+	// An arithmetic shift of 31 bits is used to duplicate 32 times the MSB of lo32
+	uint8_t mpyi3_overflow = ((lo32 >> 31) != hi32);
+	uint32_t mpyi3_result;
+	
+	if(cpu.GetST_OVM() && mpyi3_overflow)
+		mpyi3_result = (mpyi3_result64 < 0) ? 0x80000000 : 0x7fffffff; // Saturate the result
+	else
+		mpyi3_result = lo32;                                     // No saturation
+
+	// Compute the result of ADDI3
+	uint32_t addi3_result;      // the 32-bit result
+	uint8_t addi3_carry_out;    // the carry out (0 or 1)
+	uint8_t addi3_overflow;     // the overflow (0 or 1)
+
+	// Depending on overflow mode do signed saturation or not 
+	if(cpu.GetST_OVM())
+		SignedSatAdd32(addi3_result, addi3_carry_out, addi3_overflow, srcD_value, srcC_value, 0);
+	else
+		Add32(addi3_result, addi3_carry_out, addi3_overflow, srcD_value, srcC_value, 0);
+
+	// Summarize overflow bit of MPYI3 and ADDI3
+	uint8_t overflow = mpyi3_overflow | addi3_overflow;
+
+	// Write back 'dst1' register operand
+	unsigned int dst1 = d1;
+	cpu.SetIntReg(dst1, mpyi3_result);
+
+	// Write back 'dst2' register operand
+	unsigned int dst2 = d2 + 2;
+	cpu.SetIntReg(2 + dst2, addi3_result);
+
+	if(s3_update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR(s3_ar, s3_output_ar);
+	}
+
+	if(s4_update_ar && s4_ar != s4_ar)
+	{
+		// Write back ARn
+		cpu.SetAR(s4_ar, s4_output_ar);
+	}
+
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		0,
+		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+		M_ST_LV | M_ST_V,  // or mask
+		0,
+		overflow
+	);
+}
+
+//    srcA * srcB -> dst1
+// ||
+//    srcD + srcC -> dst2
+MPYI3_ADDI3_ext.execute = {
+	// Check whether 'src3' and 'src4' are valid registers
+	if(unlikely(!cpu.HasReg(src3) || !cpu.HasReg(src4)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read 'src1' register operand
+	uint32_t src1_value = cpu.GetIntReg(src1);
+
+	// Read 'src2' register operand
+	uint32_t src2_value = cpu.GetIntReg(src2);
+
+	// Read 'src3' register operand
+	uint32_t src3_value = cpu.GetIntReg(src3);
+
+	// Read 'src4' register operand
+	uint32_t src4_value = cpu.GetIntReg(src4);
+
+	// Map 'src1', 'src2', 'src3', and 'src4' to 'srcA', 'srcB', 'srcC', and 'srcD'
+	// depending on the parallel addressing mode used
+	uint32_t srcA_value;
+	uint32_t srcB_value;
+	uint32_t srcC_value;
+	uint32_t srcD_value;
+
+	switch(p)
+	{
+		case 0: // 00
+			srcA_value = src3_value;
+			srcB_value = src4_value;
+			srcC_value = src2_value;
+			srcD_value = src1_value;
+			break;
+		case 1: // 01
+			srcA_value = src3_value;
+			srcB_value = src1_value;
+			srcC_value = src4_value;
+			srcD_value = src2_value;
+			break;
+		case 2: // 10
+			srcA_value = src1_value;
+			srcB_value = src2_value;
+			srcC_value = src3_value;
+			srcD_value = src4_value;
+			break;
+		case 3: // 11
+			srcA_value = src3_value;
+			srcB_value = src1_value;
+			srcC_value = src2_value;
+			srcD_value = src4_value;
+			break;
+	}
+
+	// Compute the 32-bit result and overflow of MPYI3
+	// Source operand values are sign extended from 24 bits to 64 bits before the actual computation
+	int64_t mpyi3_result64 = SignExtend((uint64_t)(srcA_value & 0xffffff), 24) * SignExtend((uint64_t)(srcB_value & 0xffffff), 24); // Only 48 bits are useful
+	int32_t lo32 = (int32_t) mpyi3_result64;          // the 32 LSBs of the result
+	int32_t hi32 = (int32_t) (mpyi3_result64 >> 32);  // the 32 MSBs of the result
+	// An overflow occurs if any of the 32-bit MSB of the result differ from MSB of the 32-bit output value
+	// An arithmetic shift of 31 bits is used to duplicate 32 times the MSB of lo32
+	uint8_t mpyi3_overflow = ((lo32 >> 31) != hi32);
+	uint32_t mpyi3_result;
+	
+	if(cpu.GetST_OVM() && mpyi3_overflow)
+		mpyi3_result = (mpyi3_result64 < 0) ? 0x80000000 : 0x7fffffff; // Saturate the result
+	else
+		mpyi3_result = lo32;                                     // No saturation
+
+	// Compute the result of ADDI3
+	uint32_t addi3_result;      // the 32-bit result
+	uint8_t addi3_carry_out;    // the carry out (0 or 1)
+	uint8_t addi3_overflow;     // the overflow (0 or 1)
+
+	// Depending on overflow mode do signed saturation or not 
+	if(cpu.GetST_OVM())
+		SignedSatAdd32(addi3_result, addi3_carry_out, addi3_overflow, srcD_value, srcC_value, 0);
+	else
+		Add32(addi3_result, addi3_carry_out, addi3_overflow, srcD_value, srcC_value, 0);
+
+	// Summarize overflow bit of MPYI3 and ADDI3
+	uint8_t overflow = mpyi3_overflow | addi3_overflow;
+
+	// Write back 'dst1' register operand
+	unsigned int dst1 = d1;
+	cpu.SetIntReg(dst1, mpyi3_result);
+
+	// Write back 'dst2' register operand
+	unsigned int dst2 = d2 + 2;
+	cpu.SetIntReg(2 + dst2, addi3_result);
+
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		0,
+		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+		M_ST_LV | M_ST_V,  // or mask
+		0,
+		overflow
+	);
+}
+
 /* end of MPYI3 || ADDI3 (multiply and add integer)
  **********************************************************/
 
@@ -1634,6 +3526,244 @@ MPYI3_SUBI3_ext.disasm = {
 	os << "MPYI3 " << srcA_name << ", " << srcB_name << ", " << dst1_name
 		<< " || " << "SUBI3 " << srcC_name << ", " << srcD_name << ", " << dst2_name;
 	return true;
+}
+
+//    srcA * srcB -> dst1
+// ||
+//    srcD + srcC -> dst2
+MPYI3_SUBI3.execute = {
+	// Read 'src1' register operand
+	uint32_t src1_value = cpu.GetIntReg(src1);
+
+	// Read 'src2' register operand
+	uint32_t src2_value = cpu.GetIntReg(src2);
+
+	// Check that indirect addressing mode is valid and compute the effective address of 'src3' operand
+	typename CONFIG::address_t s3_ea;        // The effective address
+	bool s3_update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t s3_output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(s3_ea, s3_update_ar, s3_output_ar, s3_mod, s3_ar)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Check that indirect addressing mode is valid and compute the effective address of 'src4' operand
+	typename CONFIG::address_t s4_ea;        // The effective address
+	bool s4_update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t s4_output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(s4_ea, s4_update_ar, s4_output_ar, s4_mod, s4_ar)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Load 'src3' operand from memory
+	uint32_t src3_value = cpu.IntLoad(s3_ea);
+
+	// Load 'src4' operand from memory
+	uint32_t src4_value = cpu.IntLoad(s4_ea);
+
+	// Map 'src1', 'src2', 'src3', and 'src4' to 'srcA', 'srcB', 'srcC', and 'srcD'
+	// depending on the parallel addressing mode used
+	uint32_t srcA_value;
+	uint32_t srcB_value;
+	uint32_t srcC_value;
+	uint32_t srcD_value;
+
+	switch(p)
+	{
+		case 0: // 00
+			srcA_value = src3_value;
+			srcB_value = src4_value;
+			srcC_value = src2_value;
+			srcD_value = src1_value;
+			break;
+		case 1: // 01
+			srcA_value = src3_value;
+			srcB_value = src1_value;
+			srcC_value = src4_value;
+			srcD_value = src2_value;
+			break;
+		case 2: // 10
+			srcA_value = src1_value;
+			srcB_value = src2_value;
+			srcC_value = src3_value;
+			srcD_value = src4_value;
+			break;
+		case 3: // 11
+			srcA_value = src3_value;
+			srcB_value = src1_value;
+			srcC_value = src2_value;
+			srcD_value = src4_value;
+			break;
+	}
+
+	// Compute the 32-bit result and overflow of MPYI3
+	// Source operand values are sign extended from 24 bits to 64 bits before the actual computation
+	int64_t mpyi3_result64 = SignExtend((uint64_t)(srcA_value & 0xffffff), 24) * SignExtend((uint64_t)(srcB_value & 0xffffff), 24); // Only 48 bits are useful
+	int32_t lo32 = (int32_t) mpyi3_result64;          // the 32 LSBs of the result
+	int32_t hi32 = (int32_t) (mpyi3_result64 >> 32);  // the 32 MSBs of the result
+	// An overflow occurs if any of the 32-bit MSB of the result differ from MSB of the 32-bit output value
+	// An arithmetic shift of 31 bits is used to duplicate 32 times the MSB of lo32
+	uint8_t mpyi3_overflow = ((lo32 >> 31) != hi32);
+	uint32_t mpyi3_result;
+	
+	if(cpu.GetST_OVM() && mpyi3_overflow)
+		mpyi3_result = (mpyi3_result64 < 0) ? 0x80000000 : 0x7fffffff; // Saturate the result
+	else
+		mpyi3_result = lo32;                                     // No saturation
+
+	// Compute the result of SUBI3
+	uint32_t subi3_result;      // the 32-bit result
+	uint8_t subi3_borrow_out;   // the borrow out (0 or 1)
+	uint8_t subi3_overflow;     // the overflow (0 or 1)
+
+	// Depending on overflow mode do signed saturation or not 
+	if(cpu.GetST_OVM())
+		SignedSatSub32(subi3_result, subi3_borrow_out, subi3_overflow, srcD_value, srcC_value, 0);
+	else
+		Sub32(subi3_result, subi3_borrow_out, subi3_overflow, srcD_value, srcC_value, 0);
+
+	// Summarize overflow bit of MPYI3 and SUBI3
+	uint8_t overflow = mpyi3_overflow | subi3_overflow;
+
+	// Write back 'dst1' register operand
+	unsigned int dst1 = d1;
+	cpu.SetIntReg(dst1, mpyi3_result);
+
+	// Write back 'dst2' register operand
+	unsigned int dst2 = d2 + 2;
+	cpu.SetIntReg(2 + dst2, subi3_result);
+
+	if(s3_update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR(s3_ar, s3_output_ar);
+	}
+
+	if(s4_update_ar && s4_ar != s4_ar)
+	{
+		// Write back ARn
+		cpu.SetAR(s4_ar, s4_output_ar);
+	}
+
+	// FIXME: Don't known how to generate the underflow flag
+
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		0,
+		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+		M_ST_LV | M_ST_UF | M_ST_V,  // or mask
+		0,
+		overflow
+	);
+}
+
+//    srcA * srcB -> dst1
+// ||
+//    srcD + srcC -> dst2
+MPYI3_SUBI3_ext.execute = {
+	// Check whether 'src3' and 'src4' are valid registers
+	if(unlikely(!cpu.HasReg(src3) || !cpu.HasReg(src4)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read 'src1' register operand
+	uint32_t src1_value = cpu.GetIntReg(src1);
+
+	// Read 'src2' register operand
+	uint32_t src2_value = cpu.GetIntReg(src2);
+
+	// Read 'src3' register operand
+	uint32_t src3_value = cpu.GetIntReg(src3);
+
+	// Read 'src4' register operand
+	uint32_t src4_value = cpu.GetIntReg(src4);
+
+	// Map 'src1', 'src2', 'src3', and 'src4' to 'srcA', 'srcB', 'srcC', and 'srcD'
+	// depending on the parallel addressing mode used
+	uint32_t srcA_value;
+	uint32_t srcB_value;
+	uint32_t srcC_value;
+	uint32_t srcD_value;
+
+	switch(p)
+	{
+		case 0: // 00
+			srcA_value = src3_value;
+			srcB_value = src4_value;
+			srcC_value = src2_value;
+			srcD_value = src1_value;
+			break;
+		case 1: // 01
+			srcA_value = src3_value;
+			srcB_value = src1_value;
+			srcC_value = src4_value;
+			srcD_value = src2_value;
+			break;
+		case 2: // 10
+			srcA_value = src1_value;
+			srcB_value = src2_value;
+			srcC_value = src3_value;
+			srcD_value = src4_value;
+			break;
+		case 3: // 11
+			srcA_value = src3_value;
+			srcB_value = src1_value;
+			srcC_value = src2_value;
+			srcD_value = src4_value;
+			break;
+	}
+
+	// Compute the 32-bit result and overflow of MPYI3
+	// Source operand values are sign extended from 24 bits to 64 bits before the actual computation
+	int64_t mpyi3_result64 = SignExtend((uint64_t)(srcA_value & 0xffffff), 24) * SignExtend((uint64_t)(srcB_value & 0xffffff), 24); // Only 48 bits are useful
+	int32_t lo32 = (int32_t) mpyi3_result64;          // the 32 LSBs of the result
+	int32_t hi32 = (int32_t) (mpyi3_result64 >> 32);  // the 32 MSBs of the result
+	// An overflow occurs if any of the 32-bit MSB of the result differ from MSB of the 32-bit output value
+	// An arithmetic shift of 31 bits is used to duplicate 32 times the MSB of lo32
+	uint8_t mpyi3_overflow = ((lo32 >> 31) != hi32);
+	uint32_t mpyi3_result;
+	
+	if(cpu.GetST_OVM() && mpyi3_overflow)
+		mpyi3_result = (mpyi3_result64 < 0) ? 0x80000000 : 0x7fffffff; // Saturate the result
+	else
+		mpyi3_result = lo32;                                     // No saturation
+
+	// Compute the result of SUBI3
+	uint32_t subi3_result;      // the 32-bit result
+	uint8_t subi3_borrow_out;   // the borrow out (0 or 1)
+	uint8_t subi3_overflow;     // the overflow (0 or 1)
+
+	// Depending on overflow mode do signed saturation or not 
+	if(cpu.GetST_OVM())
+		SignedSatSub32(subi3_result, subi3_borrow_out, subi3_overflow, srcD_value, srcC_value, 0);
+	else
+		Sub32(subi3_result, subi3_borrow_out, subi3_overflow, srcD_value, srcC_value, 0);
+
+	// Summarize overflow bit of MPYI3 and SUBI3
+	uint8_t overflow = mpyi3_overflow | subi3_overflow;
+
+	// Write back 'dst1' register operand
+	unsigned int dst1 = d1;
+	cpu.SetIntReg(dst1, mpyi3_result);
+
+	// Write back 'dst2' register operand
+	unsigned int dst2 = d2 + 2;
+	cpu.SetIntReg(2 + dst2, subi3_result);
+
+	// FIXME: Don't known how to generate the underflow flag
+
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		0,
+		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+		M_ST_LV | M_ST_UF | M_ST_V,  // or mask
+		0,
+		overflow
+	);
 }
 
 /* end of MPYI3 || SUBI3 (multiply and subtract integer)
