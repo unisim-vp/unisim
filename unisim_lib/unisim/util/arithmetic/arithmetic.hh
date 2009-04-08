@@ -622,6 +622,10 @@ inline uint32_t ShiftArithmeticRight(uint32_t v, unsigned int n, uint8_t& bit_ou
 #endif
 }
 
+//=============================================================================
+//=                             Bit Scanning                                  =
+//=============================================================================
+
 inline bool BitScanForward(unsigned int& n, uint32_t v)
 {
 #if defined(__GNUC__) && (__GNUC__ >= 3) && defined(__i386)
@@ -660,10 +664,6 @@ inline bool BitScanForward(unsigned int& n, uint64_t v)
 	}
 	return false;
 }
-
-//=============================================================================
-//=                             Bit Scanning                                  =
-//=============================================================================
 
 inline bool BitScanReverse(unsigned int& n, uint32_t v)
 {

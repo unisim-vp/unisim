@@ -124,6 +124,22 @@ ABSF_imm.disasm = {
 	return true;
 }
 
+ABSF_reg.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
+ABSF_dir.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
+ABSF_indir.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
+ABSF_imm.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
 /* end of ABSF (absolute value of a floating-point number)
  **********************************************************/
 
@@ -676,6 +692,21 @@ ADDF_imm.disasm = {
 	return true;
 }
 
+ADDF_reg.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
+ADDF_dir.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
+ADDF_indir.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
+ADDF_imm.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
 
 /* end of ADDF (add floating-point values)
  **********************************************************/
@@ -1698,6 +1729,22 @@ CMPF_imm.disasm = {
 	return true;
 }
 
+CMPF_reg.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
+CMPF_dir.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
+CMPF_indir.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
+CMPF_imm.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
 /* end of CMPF (compare floating-point values)
  **********************************************************/
 
@@ -1947,6 +1994,22 @@ FIX_imm.disasm = {
 	return true;
 }
 
+FIX_reg.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
+FIX_dir.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
+FIX_indir.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
+FIX_imm.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
 /* end of FIX (convert floating-point value to integer)
  **********************************************************/
 
@@ -2001,6 +2064,22 @@ FLOAT_imm.disasm = {
 
 	os << "FLOAT " << cpu.DisasmShortFloat(imm) << ", " << dst_name;
 	return true;
+}
+
+FLOAT_reg.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
+FLOAT_dir.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
+FLOAT_indir.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
+FLOAT_imm.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
 }
 
 /* end of FLOAT (convert integer to floating-point value)
@@ -2391,6 +2470,22 @@ MPYF_imm.disasm = {
 
 	os << "MPYF " << cpu.DisasmShortFloat(imm) << ", " << dst_name;
 	return true;
+}
+
+MPYF_reg.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
+MPYF_dir.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
+MPYF_indir.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
+MPYF_imm.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
 }
 
 /* end of MPYF (multiply floating-point values)
@@ -2935,6 +3030,22 @@ NEGF_imm.disasm = {
 	return true;
 }
 
+NEGF_reg.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
+NEGF_dir.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
+NEGF_indir.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
+NEGF_imm.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
 /* end of NEGF (negate floating-point value)
  **********************************************************/
 
@@ -3216,6 +3327,22 @@ NORM_imm.disasm = {
 
 	os << "NORM " << imm << ", " << dst_name;
 	return true;
+}
+
+NORM_reg.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
+NORM_dir.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
+NORM_indir.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
+NORM_imm.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
 }
 
 /* end of NORM (normalize floating-point value)
@@ -3655,6 +3782,22 @@ RND_imm.disasm = {
 
 	os << "RND " << imm << ", " << dst_name;
 	return true;
+}
+
+RND_reg.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
+RND_dir.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
+RND_indir.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
+RND_imm.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
 }
 
 /* end of RND (round floating-point value)
@@ -4324,6 +4467,22 @@ SUBF_imm.disasm = {
 	return true;
 }
 
+SUBF_reg.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
+SUBF_dir.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
+SUBF_indir.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
+SUBF_imm.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
 /* end of SUBF (subtract floating-point values)
  **********************************************************/
 
@@ -4864,6 +5023,22 @@ SUBRF_imm.disasm = {
 
 	os << "SUBRF " << cpu.DisasmShortFloat(imm) << ", " << dst_name;
 	return true;
+}
+
+SUBRF_reg.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
+SUBRF_dir.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
+SUBRF_indir.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
+SUBRF_imm.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
 }
 
 /* end of SUBRF (subtract reverse floating-point value)

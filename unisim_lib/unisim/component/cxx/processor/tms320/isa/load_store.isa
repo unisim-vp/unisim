@@ -65,6 +65,10 @@ LDE_reg.disasm = {
 	return true;
 }
 
+LDE_reg.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
 op LDE_dir  (0b000[3]:0b001101[6]:0b01[2]:0b00[2]:dst[3]:direct[16])
 
 LDE_dir.disasm = {
@@ -73,6 +77,10 @@ LDE_dir.disasm = {
 
 	os << "LDE " << hex << cpu.DisasmDir(Operation<CONFIG, DEBUG>::GetAddr() / 4, direct) << dec << ", " << dst_reg_name;
 	return true;
+}
+
+LDE_dir.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
 }
 
 op LDE_indir(0b000[3]:0b001101[6]:0b10[2]:0b00[2]:dst[3]:mod[5]:ar[3]:disp[8])
@@ -86,6 +94,10 @@ LDE_indir.disasm = {
 	return true;
 }
 
+LDE_indir.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
 op LDE_imm  (0b000[3]:0b001101[6]:0b11[2]:0b00[2]:dst[3]:imm[16])
 
 LDE_imm.disasm = {
@@ -94,6 +106,10 @@ LDE_imm.disasm = {
 	if(!dst_reg_name) return false;
 	os << "LDE " << cpu.DisasmShortFloat(imm) << ", " << dst_reg_name;
 	return true;
+}
+
+LDE_imm.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
 }
 
 /* end of LDE (load floating-point exponent)
@@ -115,6 +131,10 @@ LDF_reg.disasm = {
 	return true;
 }
 
+LDF_reg.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
 op LDF_dir  (0b000[3]:0b001110[6]:0b01[2]:0b00[2]:dst[3]:direct[16])
 
 LDF_dir.disasm = {
@@ -123,6 +143,10 @@ LDF_dir.disasm = {
 
 	os << "LDF " << hex << cpu.DisasmDir(Operation<CONFIG, DEBUG>::GetAddr() / 4, direct) << dec << ", " << dst_reg_name;
 	return true;
+}
+
+LDF_dir.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
 }
 
 op LDF_indir(0b000[3]:0b001110[6]:0b10[2]:0b00[2]:dst[3]:mod[5]:ar[3]:disp[8])
@@ -136,6 +160,10 @@ LDF_indir.disasm = {
 	return true;
 }
 
+LDF_indir.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
 op LDF_imm  (0b000[3]:0b001110[6]:0b11[2]:0b00[2]:dst[3]:imm[16])
 
 LDF_imm.disasm = {
@@ -144,6 +172,10 @@ LDF_imm.disasm = {
 	if(!dst_reg_name) return false;
 	os << "LDF " << cpu.DisasmShortFloat(imm) << ", " << dst_reg_name;
 	return true;
+}
+
+LDF_imm.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
 }
 
 /* end of LDF (load floating-point value)
@@ -166,6 +198,10 @@ LDFcond_reg.disasm = {
 	return true;
 }
 
+LDFcond_reg.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
 op LDFcond_dir  (0b0100[4]:cond[5]:0b01[2]:0b00[2]:dst[3]:direct[16])
 
 LDFcond_dir.disasm = {
@@ -175,6 +211,10 @@ LDFcond_dir.disasm = {
 
 	os << "LDF" << cond_name << " " << hex << cpu.DisasmDir(Operation<CONFIG, DEBUG>::GetAddr() / 4, direct) << dec << ", " << dst_reg_name;
 	return true;
+}
+
+LDFcond_dir.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
 }
 
 op LDFcond_indir(0b0100[4]:cond[5]:0b10[2]:0b00[2]:dst[3]:mod[5]:ar[3]:disp[8])
@@ -189,6 +229,10 @@ LDFcond_indir.disasm = {
 	return true;
 }
 
+LDFcond_indir.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
 op LDFcond_imm  (0b0100[4]:cond[5]:0b11[2]:0b00[2]:dst[3]:imm[16])
 
 LDFcond_imm.disasm = {
@@ -198,6 +242,10 @@ LDFcond_imm.disasm = {
 	if(!cond_name || !dst_reg_name) return false;
 	os << "LDF" << cond_name << " " << cpu.DisasmShortFloat(imm) << ", " << dst_reg_name;
 	return true;
+}
+
+LDFcond_imm.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
 }
 
 /* end of LDFcond (load floating-point value conditionally)
@@ -535,6 +583,10 @@ LDM_reg.disasm = {
 	return true;
 }
 
+LDM_reg.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
 op LDM_dir  (0b000[3]:0b010010[6]:0b01[2]:0b00[2]:dst[3]:direct[16])
 
 LDM_dir.disasm = {
@@ -543,6 +595,10 @@ LDM_dir.disasm = {
 
 	os << "LDM " << hex << cpu.DisasmDir(Operation<CONFIG, DEBUG>::GetAddr() / 4, direct) << dec << ", " << dst_reg_name;
 	return true;
+}
+
+LDM_dir.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
 }
 
 op LDM_indir(0b000[3]:0b010010[6]:0b10[2]:0b00[2]:dst[3]:mod[5]:ar[3]:disp[8])
@@ -556,6 +612,10 @@ LDM_indir.disasm = {
 	return true;
 }
 
+LDM_indir.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
 op LDM_imm  (0b000[3]:0b010010[6]:0b11[2]:0b00[2]:dst[3]:0[4]:imm[12])
 
 LDM_imm.disasm = {
@@ -564,6 +624,10 @@ LDM_imm.disasm = {
 	if(!dst_reg_name) return false;
 	os << "LDM " << cpu.DisasmShortFloat(imm) << ", " << dst_reg_name;
 	return true;
+}
+
+LDM_imm.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
 }
 
 /* end of LDM (load floating-point mantissa)
@@ -663,6 +727,10 @@ POPF.disasm = {
 	return true;
 }
 
+POPF.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
 /* end of POPF (pop floating-point value from stack)
  *************************************************/
 
@@ -726,6 +794,10 @@ PUSHF.disasm = {
 	return true;
 }
 
+PUSHF.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
 /* end of PUSHF (push floating-point value on stack)
  *************************************************/
 
@@ -744,6 +816,10 @@ STF_dir.disasm = {
 	return true;
 }
 
+STF_dir.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
 op STF_indir(0b000[3]:0b101000[6]:0b10[2]:0b00[2]:src[3]:mod[5]:ar[3]:disp[8])
 
 STF_indir.disasm = {
@@ -755,6 +831,9 @@ STF_indir.disasm = {
 	return true;
 }
 
+STF_indir.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
 
 /* end of STF (store floating-point value)
  *************************************************/

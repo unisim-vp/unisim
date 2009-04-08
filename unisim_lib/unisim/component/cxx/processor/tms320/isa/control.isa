@@ -108,11 +108,11 @@ Bcond_disp.execute = {
 	// Check the condition
 	if(!cpu.CheckCondition(cond)) return;
 
-	// Read the PC
-	typename CONFIG::address_t pc = cpu.GetPC();
+	// Read the next PC
+	typename CONFIG::address_t next_pc = cpu.GetNPC();
 
 	// Compute the branch target address
-	typename CONFIG::address_t target_addr = pc + imm + 1;
+	typename CONFIG::address_t target_addr = next_pc + imm;
 
 	// Branch to the target address
 	cpu.Branch(target_addr);
@@ -176,11 +176,11 @@ BcondD_disp.execute = {
 	// Check the condition
 	if(!cpu.CheckCondition(cond)) return;
 
-	// Read the PC
-	typename CONFIG::address_t pc = cpu.GetPC();
+	// Read the next PC
+	typename CONFIG::address_t next_pc = cpu.GetNPC();
 
 	// Compute the branch target address
-	typename CONFIG::address_t target_addr = pc + imm + 3;
+	typename CONFIG::address_t target_addr = next_pc + imm + 2;
 
 	// Branch to the target address with a delay of 3 instructions
 	cpu.Branch(target_addr, 3);
@@ -251,14 +251,11 @@ CALL.disasm = {
 }
 
 CALL.execute = {
-	// Read the PC
-	typename CONFIG::address_t pc = cpu.GetPC();
-
 	// Read SP and compute its new value
 	typename CONFIG::address_t sp = cpu.GetSP() + 1;
 
-	// Compute the next PC
-	typename CONFIG::address_t next_pc = pc + 1;
+	// Read the next PC
+	typename CONFIG::address_t next_pc = cpu.GetNPC();
 
 	// Compute the target call address
 	typename CONFIG::address_t target_addr = src;
@@ -306,14 +303,11 @@ CALLcond_reg.execute = {
 	// Read the source operand
 	typename CONFIG::address_t target_addr = cpu.GetIntReg(reg);
 
-	// Read the PC
-	typename CONFIG::address_t pc = cpu.GetPC();
-
 	// Read SP and compute its new value
 	typename CONFIG::address_t sp = cpu.GetSP() + 1;
 
-	// Compute the next PC
-	typename CONFIG::address_t next_pc = pc + 1;
+	// Read the next PC
+	typename CONFIG::address_t next_pc = cpu.GetNPC();
 
 	// Store the next PC at SP + 1
 	cpu.IntStore(sp, next_pc);
@@ -346,17 +340,14 @@ CALLcond_disp.execute = {
 	// Check the condition
 	if(!cpu.CheckCondition(cond)) return;
 
-	// Read the PC
-	typename CONFIG::address_t pc = cpu.GetPC();
-
 	// Read SP and compute its new value
 	typename CONFIG::address_t sp = cpu.GetSP() + 1;
 
-	// Compute the next PC
-	typename CONFIG::address_t next_pc = pc + 1;
+	// Read the next PC
+	typename CONFIG::address_t next_pc = cpu.GetNPC();
 
 	// Compute the target address
-	typename CONFIG::address_t target_addr = pc + imm + 1;
+	typename CONFIG::address_t target_addr = next_pc + imm;
 
 	// Store the next PC at SP + 1
 	cpu.IntStore(sp, next_pc);
@@ -450,11 +441,11 @@ DBcond_disp.execute = {
 	// Check whether ARn is >= 0
 	if(ar_value < 0) return;
 
-	// Read the PC
-	typename CONFIG::address_t pc = cpu.GetPC();
+	// Read the next PC
+	typename CONFIG::address_t next_pc = cpu.GetNPC();
 
 	// Compute the target address
-	typename CONFIG::address_t target_addr = pc + imm + 1;
+	typename CONFIG::address_t target_addr = next_pc + imm;
 
 	// Branch to the target address
 	cpu.Branch(target_addr);
@@ -542,11 +533,11 @@ DBcondD_disp.execute = {
 	// Check whether ARn is >= 0
 	if(ar_value < 0) return;
 
-	// Read the PC
-	typename CONFIG::address_t pc = cpu.GetPC();
+	// Read the next PC
+	typename CONFIG::address_t next_pc = cpu.GetNPC();
 
 	// Compute the target address
-	typename CONFIG::address_t target_addr = pc + imm + 3;
+	typename CONFIG::address_t target_addr = next_pc + imm + 2;
 
 	// Branch to the target address with a delay of 3 instructions
 	cpu.Branch(target_addr, 3);
@@ -567,6 +558,10 @@ IACK_dir.disasm = {
 	return true;
 }
 
+IACK_dir.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
 op IACK_indir(0b000[3]:0b110110[6]:0b10[2]:0b00000[5]:mod[5]:ar[3]:disp[8])
 
 IACK_indir.disasm = {
@@ -574,6 +569,10 @@ IACK_indir.disasm = {
 	if(!cpu.DisasmIndir(disasm_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, mod, ar, disp)) return false;
 	os << "IACK " << disasm_indir;
 	return true;
+}
+
+IACK_indir.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
 }
 
 /* end of IACK (interrupt acknowledge)
@@ -590,7 +589,11 @@ IDLE.disasm = {
 	os << "IDLE";
 	return true;
 }
- 
+
+IDLE.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
 /* end of IDLE (idle until interrupt)
  **********************************************************/
 
@@ -745,11 +748,8 @@ RPTB.disasm = {
 }
 
 RPTB.execute = {
-	// Read the PC
-	typename CONFIG::address_t pc = cpu.GetPC();
-
-	// Compute next PC
-	typename CONFIG::address_t next_pc = pc + 1;
+	// Read the next PC
+	typename CONFIG::address_t next_pc = cpu.GetNPC();
 
 	// Write next PC into RS and RE
 	cpu.SetRS(next_pc);
@@ -789,14 +789,11 @@ RPTS_reg.execute = {
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 
-	// Read the PC
-	typename CONFIG::address_t pc = cpu.GetPC();
-
 	// Read the source operand
 	typename CONFIG::address_t src_value = cpu.GetIntReg(src);
 
-	// Compute next PC
-	typename CONFIG::address_t next_pc = pc + 1;
+	// Read the next PC
+	typename CONFIG::address_t next_pc = cpu.GetNPC();
 
 	// Write next PC into RS and RE
 	cpu.SetRS(next_pc);
@@ -820,17 +817,14 @@ RPTS_dir.disasm = {
 }
 
 RPTS_dir.execute = {
-	// Read the PC
-	typename CONFIG::address_t pc = cpu.GetPC();
-
 	// Compute the effective address of the source operand
 	typename CONFIG::address_t ea = cpu.ComputeDirEA(direct);
 
 	// Load the source operand value from memory
 	typename CONFIG::address_t src_value = cpu.IntLoad(ea);
 
-	// Compute next PC
-	typename CONFIG::address_t next_pc = pc + 1;
+	// Read the next PC
+	typename CONFIG::address_t next_pc = cpu.GetNPC();
 
 	// Write next PC into RS and RE
 	cpu.SetRS(next_pc);
@@ -856,9 +850,6 @@ RPTS_indir.disasm = {
 }
 
 RPTS_indir.execute = {
-	// Read the PC
-	typename CONFIG::address_t pc = cpu.GetPC();
-
 	// Check that indirect addressing mode is valid and compute the effective address of the source operand
 	typename CONFIG::address_t ea;        // The effective address
 	bool update_ar;                       // Whether to update ARn
@@ -872,8 +863,8 @@ RPTS_indir.execute = {
 	// Load the source operand value from memory
 	typename CONFIG::address_t src_value = cpu.IntLoad(ea);
 
-	// Compute next PC
-	typename CONFIG::address_t next_pc = pc + 1;
+	// Read the next PC
+	typename CONFIG::address_t next_pc = cpu.GetNPC();
 
 	// Write next PC into RS and RE
 	cpu.SetRS(next_pc);
@@ -897,14 +888,11 @@ RPTS_imm.disasm = {
 }
 
 RPTS_imm.execute = {
-	// Read the PC
-	typename CONFIG::address_t pc = cpu.GetPC();
-
 	// Compute the result
 	uint32_t src_value = imm; // imm has already been sign extended by the decoder
 
-	// Compute next PC
-	typename CONFIG::address_t next_pc = pc + 1;
+	// Read the next PC
+	typename CONFIG::address_t next_pc = cpu.GetNPC();
 
 	// Write next PC into RS and RE
 	cpu.SetRS(next_pc);
@@ -935,6 +923,11 @@ SWI.disasm = {
 	return true;
 }
 
+SWI.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
+
 /* end of SWI (software interrupt)
  **********************************************************/
 
@@ -950,6 +943,38 @@ TRAPcond.disasm = {
 	if(!cond_name) return false;
 	os << "TRAP" << cond_name << " " << n;
 	return true;
+}
+
+TRAPcond.execute = {
+	// Check whether the condition is valid
+	if(unlikely(!cpu.HasCondition(cond)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Check the condition
+	if(!cpu.CheckCondition(cond)) return;
+
+	// Read SP and compute its new value
+	typename CONFIG::address_t sp = cpu.GetSP() + 1;
+
+	// Read the next PC
+	typename CONFIG::address_t next_pc = cpu.GetNPC();
+
+	// Store the next PC at SP + 1
+	cpu.IntStore(sp, next_pc);
+
+	// Update SP
+	cpu.SetSP(sp);
+
+	// Load trap handler address
+	typename CONFIG::address_t trap_handler_addr = cpu.IntLoad(0x20 + n);
+
+	// Reset ST[GIE] to disable further interrupts until reactivated by the software
+	cpu.ResetST_GIE();
+
+	// Branch to trap handler
+	cpu.Branch(trap_handler_addr);
 }
 
 /* end of TRAPcond (trap conditionally)

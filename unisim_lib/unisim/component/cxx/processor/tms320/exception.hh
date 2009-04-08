@@ -47,12 +47,36 @@ namespace tms320 {
 class Exception : public std::exception {};
 
 template <class CONFIG, bool DEBUG>
+class InternalErrorException : public Exception
+{
+public:
+	InternalErrorException(const char *msg);
+	virtual const char * what () const throw ();
+	virtual ~InternalErrorException() throw();
+private:
+	string what_str;
+};
+
+template <class CONFIG, bool DEBUG>
 class UnknownOpcodeException : public Exception
 {
 public:
 	UnknownOpcodeException(isa::tms320::Operation<CONFIG, DEBUG> *operation = 0);
 	virtual const char * what () const throw ();
 	virtual ~UnknownOpcodeException() throw();
+	isa::tms320::Operation<CONFIG, DEBUG> *GetOperation() const;
+private:
+	isa::tms320::Operation<CONFIG, DEBUG> *operation;
+	string what_str;
+};
+
+template <class CONFIG, bool DEBUG>
+class UnimplementedOpcodeException : public Exception
+{
+public:
+	UnimplementedOpcodeException(isa::tms320::Operation<CONFIG, DEBUG> *operation = 0);
+	virtual const char * what () const throw ();
+	virtual ~UnimplementedOpcodeException() throw();
 	isa::tms320::Operation<CONFIG, DEBUG> *GetOperation() const;
 private:
 	isa::tms320::Operation<CONFIG, DEBUG> *operation;

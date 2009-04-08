@@ -407,6 +407,22 @@ ADDF3_indir_indir.disasm = {
 	return true;
 }
 
+ADDF3_reg_reg.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
+ADDF3_indir_reg.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
+ADDF3_reg_indir.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
+ADDF3_indir_indir.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
 /* end of ADDF3 (add floating-point values)
  **********************************************************/
 
@@ -1624,6 +1640,22 @@ CMPF3_indir_indir.disasm = {
 	return true;
 }
 
+CMPF3_reg_reg.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
+CMPF3_indir_reg.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
+CMPF3_reg_indir.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
+CMPF3_indir_indir.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
 /* end of CMPF3 (compare floating-point values)
  **********************************************************/
 
@@ -2301,6 +2333,22 @@ MPYF3_indir_indir.disasm = {
 
 	os << "MPYF3 " << disasm_src2_indir << ", " << disasm_src1_indir << ", " << dst_name;
 	return true;
+}
+
+MPYF3_reg_reg.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
+MPYF3_indir_reg.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
+MPYF3_reg_indir.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
+MPYF3_indir_indir.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
 }
 
 /* end of MPYF3 (multiply floating-point values)
@@ -3199,6 +3247,22 @@ SUBF3_indir_indir.disasm = {
 
 	os << "SUBF3 " << disasm_src2_indir << ", " << disasm_src1_indir << ", " << dst_name;
 	return true;
+}
+
+SUBF3_reg_reg.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
+SUBF3_indir_reg.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
+SUBF3_reg_indir.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
+SUBF3_indir_indir.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
 }
 
 /* end of SUBF3 (subtract floating-point values)

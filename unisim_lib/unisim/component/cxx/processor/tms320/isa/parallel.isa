@@ -101,6 +101,14 @@ ABSF_STF_ext.disasm = {
 	return true;
 }
 
+ABSF_STF.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
+ABSF_STF_ext.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
 /*
  * end of ABSF || STF (absolute value of a floating-point number and store floating-point value)
  **********************************************************/
@@ -325,6 +333,14 @@ ADDF3_STF_ext.disasm = {
 	os << "ADDF3 " << src2_name << ", " << src1_name << ", " << dst1_name
 		<< " || " << "STF " << src3_name << ", " << disasm_dst2_indir;
 	return true;
+}
+
+ADDF3_STF.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
+ADDF3_STF_ext.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
 }
 
 /*
@@ -942,6 +958,14 @@ FIX_STI_ext.disasm = {
 	return true;
 }
 
+FIX_STI.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
+FIX_STI_ext.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
 /*
  * end of FIX || STI (convert floating-point value to integer and store integer)
  **********************************************************/
@@ -983,6 +1007,14 @@ FLOAT_STF_ext.disasm = {
 	return true;
 }
 
+FLOAT_STF.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
+FLOAT_STF_ext.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
 /* end of FLOAT || STF (convert integer to floating-point value and store floating-point value)
  **********************************************************/
 
@@ -1021,6 +1053,14 @@ LDF_STF_ext.disasm = {
 	os << "LDF " << src2_name << ", " << dst1_name
 		<< " || " << "STF " << src3_name << ", " << disasm_dst2_indir;
 	return true;
+}
+
+LDF_STF.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
+LDF_STF_ext.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
 }
 
 /* end of LDF || STF (load floating-point value and store floating-point value)
@@ -1419,6 +1459,14 @@ MPYF3_STF_ext.disasm = {
 	return true;
 }
 
+MPYF3_STF.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
+MPYF3_STF_ext.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
 /* end of MPYF3 || STF (multiply floating-point values and store floating-point value)
  **********************************************************/
 
@@ -1647,6 +1695,14 @@ NEGF_STF_ext.disasm = {
 	os << "NEGF " << src2_name << ", " << dst1_name
 		<< " || " << "STF " << src3_name << ", " << disasm_dst2_indir;
 	return true;
+}
+
+NEGF_STF.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
+NEGF_STF_ext.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
 }
 
 /* end of NEGF || STF (negate floating-point value and store floating-point value)
@@ -2173,6 +2229,14 @@ STF_STF_ext.disasm = {
 	return true;
 }
 
+STF_STF.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
+STF_STF_ext.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
 /* end of STF || STF (store floating-point values)
  **********************************************************/
 
@@ -2344,6 +2408,14 @@ SUBF3_STF_ext.disasm = {
 	os << "SUBF3 " << src1_name << ", " << src2_name << ", " << dst1_name
 		<< " || " << "STF " << src3_name << ", " << disasm_dst2_indir;
 	return true;
+}
+
+SUBF3_STF.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
+SUBF3_STF_ext.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
 }
 
 /* end of SUBF3 || STF (subtract floating-point value and store floating-point value)
@@ -2730,6 +2802,14 @@ LDF_LDF_ext.disasm = {
 	return true;
 }
 
+LDF_LDF.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
+LDF_LDF_ext.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
 /* end of LDF || LDF (load floating-point value)
  **********************************************************/
 
@@ -2967,6 +3047,14 @@ MPYF3_ADDF3_ext.disasm = {
 	return true;
 }
 
+MPYF3_ADDF3.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
+MPYF3_ADDF3_ext.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
 /* end of MPYF3 || ADDF3 (multiply and add floating-point value)
  **********************************************************/
 
@@ -3074,6 +3162,14 @@ MPYF3_SUBF3_ext.disasm = {
 	os << "MPYF3 " << srcA_name << ", " << srcB_name << ", " << dst1_name
 		<< " || " << "SUBF3 " << srcC_name << ", " << srcD_name << ", " << dst2_name;
 	return true;
+}
+
+MPYF3_SUBF3.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
+MPYF3_SUBF3_ext.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
 }
 
 /* end of MPYF3 || SUBF3 (multiply and subtract floating-point value)

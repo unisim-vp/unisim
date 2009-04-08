@@ -43,6 +43,25 @@ namespace processor {
 namespace tms320 {
 
 template<class CONFIG, bool DEBUG>
+InternalErrorException<CONFIG, DEBUG>::InternalErrorException(const char *msg)
+{
+	stringstream sstr;
+	sstr << "Internal error! " << msg;
+	what_str = sstr.str();
+}
+
+template<class CONFIG, bool DEBUG>
+InternalErrorException<CONFIG, DEBUG>::~InternalErrorException() throw ()
+{
+}
+
+template<class CONFIG, bool DEBUG>
+const char * InternalErrorException<CONFIG, DEBUG>::what () const throw ()
+{
+	return what_str.c_str();
+}
+
+template<class CONFIG, bool DEBUG>
 UnknownOpcodeException<CONFIG, DEBUG>::UnknownOpcodeException(isa::tms320::Operation<CONFIG, DEBUG> *_operation)
 	: operation(_operation)
 {
@@ -68,6 +87,36 @@ const char * UnknownOpcodeException<CONFIG, DEBUG>::what () const throw ()
 
 template<class CONFIG, bool DEBUG>
 isa::tms320::Operation<CONFIG, DEBUG> *UnknownOpcodeException<CONFIG, DEBUG>::GetOperation() const
+{
+	return operation;
+}
+
+template<class CONFIG, bool DEBUG>
+UnimplementedOpcodeException<CONFIG, DEBUG>::UnimplementedOpcodeException(isa::tms320::Operation<CONFIG, DEBUG> *_operation)
+	: operation(_operation)
+{
+	stringstream sstr;
+	sstr << "Unimplemented opcode";
+	if(operation)
+	{
+		sstr << " 0x" << hex << operation->GetEncoding() << " (\"" << operation->GetName() << "\") at 0x" << (operation->GetAddr() / 4);
+	}
+	what_str = sstr.str();
+}
+
+template<class CONFIG, bool DEBUG>
+UnimplementedOpcodeException<CONFIG, DEBUG>::~UnimplementedOpcodeException() throw ()
+{
+}
+
+template<class CONFIG, bool DEBUG>
+const char * UnimplementedOpcodeException<CONFIG, DEBUG>::what () const throw ()
+{
+	return what_str.c_str();
+}
+
+template<class CONFIG, bool DEBUG>
+isa::tms320::Operation<CONFIG, DEBUG> *UnimplementedOpcodeException<CONFIG, DEBUG>::GetOperation() const
 {
 	return operation;
 }

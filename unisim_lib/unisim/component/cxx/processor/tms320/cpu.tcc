@@ -47,6 +47,7 @@
 #endif
 
 #include "unisim/component/cxx/processor/tms320/isa_tms320.tcc"
+#include "unisim/util/arithmetic/arithmetic.hh"
 
 #include "unisim/util/debug/simple_register.hh"
 
@@ -66,6 +67,7 @@ using unisim::util::endian::LittleEndian2Host;
 using unisim::util::endian::Host2LittleEndian;
 using unisim::util::arithmetic::Log2;
 using unisim::util::arithmetic::ReverseCarryPropagationAdd;
+using unisim::util::arithmetic::BitScanForward;
 
 using std::endl;
 using std::hex;
@@ -1088,56 +1090,62 @@ StepInstruction()
 
 	try
 	{
-		// Check whether the processor is running in repeat mode (RPTB or RPTS)
-		if(unlikely(GetST_RM()))
+		// Check if there are some enabled pending IRQs
+		if(unlikely((GetIF() & GetIE() & IRQ_MASK) && !GetST_GIE()))
 		{
-			// Check whether this is a repeat single (RPTS)
-			if(repeat_single)
+			unsigned int irq_num;
+
+			// Select an IRQ according priority (from the higher to the lower)
+			if(unlikely(!BitScanForward(irq_num, GetIF())))
 			{
-				// Check whether instruction to repeat has already been fetched from memory to IR
-				if(unlikely(first_time_through_repeat_single))
-				{
-					// Fetch the instruction from memory into IR
-					reg_ir = Fetch(reg_pc);
-					first_time_through_repeat_single = false;
-				}
-
-				// Decrement RC
-				regs[REG_RC].lo = regs[REG_RC].lo - 1;
-
-				// Check if RC is < 0
-				if((int32_t) regs[REG_RC].lo < 0)
-				{
-					// Disable the repeat mode by resetting ST[RM] bit
-					ResetST_RM();
-					repeat_single = false;
-					// Compute the address of the next instruction, i.e. PC + 1
-					reg_npc = reg_pc + 1;
-				}
-				else
-				{
-					// Compute the address of the next instruction, i.e. PC so that current instruction in IR will be repeated again
-					reg_npc = reg_pc;
-				}
+				throw InternalErrorException<CONFIG, DEBUG>("No pending IRQ found");
 			}
-			else
-			{
-				// Fetch the instruction from memory into IR
-				reg_ir = Fetch(reg_pc);
 
-				// Check whether the end of the block to repeat has been reached
-				if(reg_pc == regs[REG_RE].lo)
+			// Read SP and compute its new value
+			typename CONFIG::address_t sp = GetSP() + 1;
+
+			// Store the PC at SP + 1
+			IntStore(sp, reg_pc);
+
+			// Update SP
+			SetSP(sp);
+
+			// Load the interrupt handler address
+			address_t interrupt_handler_addr = IntLoad(irq_num + 1);
+
+			// Branch to interrupt handler
+			reg_pc = interrupt_handler_addr;
+
+			// Reset ST[GIE] to disable further IRQs until reactivated by software
+			ResetST_GIE();
+
+			// Reset bit corresponding to the IRQ in register IF
+			SetIRQLevel(irq_num, false);
+
+			// Fetch first instruction of the interrupt handler
+			reg_ir = Fetch(reg_pc);
+		}
+		else
+		{
+			// Check whether the processor is running in repeat mode (RPTB or RPTS)
+			if(unlikely(GetST_RM()))
+			{
+				// Check whether this is a repeat single (RPTS)
+				if(repeat_single)
 				{
+					// Check whether instruction to repeat has already been fetched from memory to IR
+					if(unlikely(first_time_through_repeat_single))
+					{
+						// Fetch the instruction from memory into IR
+						reg_ir = Fetch(reg_pc);
+						first_time_through_repeat_single = false;
+					}
+
 					// Decrement RC
 					regs[REG_RC].lo = regs[REG_RC].lo - 1;
 
-					// Check if RC is >= 0
-					if((int32_t) regs[REG_RC].lo >= 0)
-					{
-						// Compute the address the next instruction, i.e. the start of the block to repeat
-						reg_npc = regs[REG_RS].lo;
-					}
-					else
+					// Check if RC is < 0
+					if((int32_t) regs[REG_RC].lo < 0)
 					{
 						// Disable the repeat mode by resetting ST[RM] bit
 						ResetST_RM();
@@ -1145,21 +1153,53 @@ StepInstruction()
 						// Compute the address of the next instruction, i.e. PC + 1
 						reg_npc = reg_pc + 1;
 					}
+					else
+					{
+						// Compute the address of the next instruction, i.e. PC so that current instruction in IR will be repeated again
+						reg_npc = reg_pc;
+					}
 				}
 				else
 				{
-					// Compute the address of the next instruction, i.e. PC + 1
-					reg_npc = reg_pc + 1;
+					// Fetch the instruction from memory into IR
+					reg_ir = Fetch(reg_pc);
+
+					// Check whether the end of the block to repeat has been reached
+					if(reg_pc == regs[REG_RE].lo)
+					{
+						// Decrement RC
+						regs[REG_RC].lo = regs[REG_RC].lo - 1;
+
+						// Check if RC is >= 0
+						if((int32_t) regs[REG_RC].lo >= 0)
+						{
+							// Compute the address the next instruction, i.e. the start of the block to repeat
+							reg_npc = regs[REG_RS].lo;
+						}
+						else
+						{
+							// Disable the repeat mode by resetting ST[RM] bit
+							ResetST_RM();
+							repeat_single = false;
+							// Compute the address of the next instruction, i.e. PC + 1
+							reg_npc = reg_pc + 1;
+						}
+					}
+					else
+					{
+						// Compute the address of the next instruction, i.e. PC + 1
+						reg_npc = reg_pc + 1;
+					}
 				}
 			}
-		}
-		else
-		{
-			// Fetch the instruction from memory into IR
-			reg_ir = Fetch(reg_pc);
+			else
+			{
+				// Fetch the instruction from memory into IR
+				reg_ir = Fetch(reg_pc);
 
-			// Compute the address of the next instruction, i.e. PC + 1
-			reg_npc = reg_pc + 1;
+				// Compute the address of the next instruction, i.e. PC + 1
+				reg_npc = reg_pc + 1;
+			}
 		}
 
 		// Decode the instruction
@@ -1193,6 +1233,11 @@ StepInstruction()
 		}
 	}
 	catch(BogusOpcodeException<CONFIG, DEBUG>& exc)
+	{
+		logger << DebugError << exc.what() << EndDebugError;
+		Stop(-1);
+	}
+	catch(UnimplementedOpcodeException<CONFIG, DEBUG>& exc)
 	{
 		logger << DebugError << exc.what() << EndDebugError;
 		Stop(-1);

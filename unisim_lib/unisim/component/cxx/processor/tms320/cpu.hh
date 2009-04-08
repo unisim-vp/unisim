@@ -342,6 +342,42 @@ public:
 	inline address_t ComputeDirEA(uint32_t direct) const INLINE;
 
     //===============================================================
+	//= Interrupts handling                                   START =
+	//===============================================================
+
+	// Hardware interrupts either internal or external (INT0-3)
+	static const unsigned int IRQ_INT0 = 0;
+	static const unsigned int IRQ_INT1 = 1;
+	static const unsigned int IRQ_INT2 = 2;
+	static const unsigned int IRQ_INT3 = 3;
+	static const unsigned int IRQ_XINT0 = 4;
+	static const unsigned int IRQ_RINT0 = 5;
+	//static const unsigned int IRQ_XINT1 = 6;
+	//static const unsigned int IRQ_RINT1 = 7;
+	static const unsigned int IRQ_TINT0 = 8;
+	static const unsigned int IRQ_TINT1 = 9;
+	static const unsigned int IRQ_DINT = 10;
+
+	static const uint32_t IRQ_MASK =
+		(1 << IRQ_INT0) | (1 << IRQ_INT1) | (1 << IRQ_INT2) | (1 << IRQ_INT3) |
+		(1 << IRQ_XINT0) | (1 << IRQ_RINT0) | //(1 << IRQ_XINT1) | (1 << IRQ_RINT1) |
+		(1 << IRQ_TINT0) | (1 << IRQ_TINT1) | (1 << IRQ_DINT);
+
+	/** Set IRQ level
+	    @param n IRQ number (0 <= n <= 12)
+		@param level either true (1) or false (0)
+	*/
+	inline void SetIRQLevel(unsigned int n, bool level)
+	{
+		uint32_t mask = (1 << n) & IRQ_MASK;
+		regs[REG_IF].lo = (regs[REG_IF].lo & ~mask) | mask;
+	}
+
+    //===============================================================
+	//= Interrupts handling                                    STOP =
+	//===============================================================
+
+    //===============================================================
 	//= Execution methods                                     START =
 	//===============================================================
 
@@ -362,7 +398,7 @@ public:
 	virtual bool PrRead(address_t addr, void *buffer, uint32_t size) = 0;
 
     //===============================================================
-	//= Interface with the outside world                        END =
+	//= Interface with the outside world                       STOP =
 	//===============================================================
 
 private:
@@ -460,6 +496,9 @@ private:
 	bool repeat_single;                     // Whether repeat operation is a RPTS or not
 	bool first_time_through_repeat_single;  // Whether we need to fetch the instruction to memory the first time the repeated instruction is executed
 
+	// External signals
+	bool mcbl_mp;                           // MCBL/MP#: 0=microprocessor mode, 1=microcomputer mode
+
 	// Registers
 	uint32_t reg_ir;     // Instruction Register
 	address_t reg_pc;    // Program counter
@@ -490,6 +529,22 @@ public:
 	inline uint32_t GetST() const
 	{
 		return regs[REG_ST].lo;
+	}
+
+	/** Get register IF
+	    @return value of register IF
+	*/
+	inline uint32_t GetIF() const
+	{
+		return regs[REG_IF].lo;
+	}
+
+	/** Get register IE
+	    @return value of register IE
+	*/
+	inline uint32_t GetIE() const
+	{
+		return regs[REG_IE].lo;
 	}
 
 	/** Get the 8 least significative bits of DP
@@ -745,6 +800,10 @@ public:
 	/** Set bit GIE of register ST
 	*/
 	inline void SetST_GIE() { SetST(GetST() | (1 << ST_GIE)); }
+
+	/** Reset bit GIE of register ST
+	*/
+	inline void ResetST_GIE() { SetST(GetST() & ~(1 << ST_GIE)); }
 
 	/** Set repeat-single bit
 	*/

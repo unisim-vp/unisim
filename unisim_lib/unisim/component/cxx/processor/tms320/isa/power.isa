@@ -51,6 +51,10 @@ IDLE2.disasm = {
 	return true;
 }
 
+IDLE2.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
 /* end of IDLE2 (low-power idle)
  **********************************************************/
 
@@ -66,6 +70,10 @@ LOPOWER.disasm = {
 	return true;
 }
 
+LOPOWER.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+}
+
 /* end of LOPOWER (divide clock by 16)
  **********************************************************/
 
@@ -79,6 +87,10 @@ op MAXSPEED(0b000[3]:0b100001[6]:0[23])
 MAXSPEED.disasm = {
 	os << "MAXSPEED";
 	return true;
+}
+
+MAXSPEED.execute = {
+	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
 }
 
 /* end of MAXSPEED (restore clock to regular speed)
