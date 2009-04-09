@@ -261,7 +261,7 @@ CALL.execute = {
 	typename CONFIG::address_t target_addr = src;
 
 	// Store the next PC at SP + 1
-	cpu.IntStore(sp, next_pc);
+	cpu.IntStore(sp & ADDRESS_MASK, next_pc);
 
 	// Update SP
 	cpu.SetSP(sp);
@@ -310,7 +310,7 @@ CALLcond_reg.execute = {
 	typename CONFIG::address_t next_pc = cpu.GetNPC();
 
 	// Store the next PC at SP + 1
-	cpu.IntStore(sp, next_pc);
+	cpu.IntStore(sp & ADDRESS_MASK, next_pc);
 
 	// Update SP
 	cpu.SetSP(sp);
@@ -350,7 +350,7 @@ CALLcond_disp.execute = {
 	typename CONFIG::address_t target_addr = next_pc + imm;
 
 	// Store the next PC at SP + 1
-	cpu.IntStore(sp, next_pc);
+	cpu.IntStore(sp & ADDRESS_MASK, next_pc);
 
 	// Update SP
 	cpu.SetSP(sp);
@@ -396,7 +396,7 @@ DBcond_reg.execute = {
 	ar_value = ar_value - 1;
 
 	// Update ARn
-	cpu.SetAR(ar, (uint32_t) ar_value);
+	cpu.SetAR23_0(ar, (uint32_t) ar_value);
 
 	// Check whether ARn is >= 0
 	if(ar_value < 0) return;
@@ -436,7 +436,7 @@ DBcond_disp.execute = {
 	ar_value = ar_value - 1;
 
 	// Update ARn
-	cpu.SetAR(ar, (uint32_t) ar_value);
+	cpu.SetAR23_0(ar, (uint32_t) ar_value);
 
 	// Check whether ARn is >= 0
 	if(ar_value < 0) return;
@@ -488,7 +488,7 @@ DBcondD_reg.execute = {
 	ar_value = ar_value - 1;
 
 	// Update ARn
-	cpu.SetAR(ar, (uint32_t) ar_value);
+	cpu.SetAR23_0(ar, (uint32_t) ar_value);
 
 	// Check whether ARn is >= 0
 	if(ar_value < 0) return;
@@ -528,7 +528,7 @@ DBcondD_disp.execute = {
 	ar_value = ar_value - 1;
 
 	// Update ARn
-	cpu.SetAR(ar, (uint32_t) ar_value);
+	cpu.SetAR23_0(ar, (uint32_t) ar_value);
 
 	// Check whether ARn is >= 0
 	if(ar_value < 0) return;
@@ -653,7 +653,7 @@ RETIcond.disasm = {
 
 	if(!cond_name) return false;
 	os << "RETI" << cond_name;
-	os << " <" << cpu.GetFunctionFriendlyName(cpu.IntLoad(cpu.GetSP())) << ">";
+	os << " <" << cpu.GetFunctionFriendlyName(cpu.IntLoad(cpu.GetSP() & ADDRESS_MASK)) << ">";
 	return true;
 }
 
@@ -671,7 +671,7 @@ RETIcond.execute = {
 	typename CONFIG::address_t sp = cpu.GetSP();
 
 	// Load the target address stored at SP
-	typename CONFIG::address_t target_addr = cpu.IntLoad(sp);
+	typename CONFIG::address_t target_addr = cpu.IntLoad(sp & ADDRESS_MASK);
 
 	// Compute the new value of SP
 	sp = sp - 1;
@@ -701,7 +701,7 @@ RETScond.disasm = {
 
 	if(!cond_name) return false;
 	os << "RETS" << cond_name;
-	os << " <" << cpu.GetFunctionFriendlyName(cpu.IntLoad(cpu.GetSP())) << ">";
+	os << " <" << cpu.GetFunctionFriendlyName(cpu.IntLoad(cpu.GetSP() & ADDRESS_MASK)) << ">";
 	return true;
 }
 
@@ -719,7 +719,7 @@ RETScond.execute = {
 	typename CONFIG::address_t sp = cpu.GetSP();
 
 	// Load the target address stored at SP
-	typename CONFIG::address_t target_addr = cpu.IntLoad(sp);
+	typename CONFIG::address_t target_addr = cpu.IntLoad(sp & ADDRESS_MASK);
 
 	// Compute the new value of SP
 	sp = sp - 1;
@@ -962,7 +962,7 @@ TRAPcond.execute = {
 	typename CONFIG::address_t next_pc = cpu.GetNPC();
 
 	// Store the next PC at SP + 1
-	cpu.IntStore(sp, next_pc);
+	cpu.IntStore(sp & ADDRESS_MASK, next_pc);
 
 	// Update SP
 	cpu.SetSP(sp);

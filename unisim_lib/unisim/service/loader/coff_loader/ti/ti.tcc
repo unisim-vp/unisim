@@ -450,7 +450,7 @@ MEMORY_ADDR File<MEMORY_ADDR>::GetDataSize() const
 template <class MEMORY_ADDR>
 MEMORY_ADDR File<MEMORY_ADDR>::GetBssSize() const
 {
-	return (bss_size + 31) / 32;
+	return bss_size;
 }
 
 template <class MEMORY_ADDR>
@@ -482,7 +482,7 @@ void File<MEMORY_ADDR>::DumpAoutHeader(ostream& os) const
 	os << endl << "data base: 0x" << hex << data_base << dec;
 	os << endl << "text size: " << text_size << " 32-bit words";
 	os << endl << "data size: " << data_size << " 32-bit words";
-	os << endl << "bss size: " << bss_size << " bits";
+	os << endl << "bss size: " << bss_size << " 32-bit words";
 	os << endl;
 }
 

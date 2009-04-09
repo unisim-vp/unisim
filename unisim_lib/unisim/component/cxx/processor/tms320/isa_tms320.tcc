@@ -47263,7 +47263,7 @@ cpu
 		if(update_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(ar, output_ar);
+			cpu.SetAR23_0(ar, output_ar);
 		}
 
 		// Check whether destination operand is an extended precision register
@@ -47887,7 +47887,7 @@ cpu
 		if(update_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(ar, output_ar);
+			cpu.SetAR23_0(ar, output_ar);
 		}
 	}
 #line 47894 "isa_tms320.tcc"
@@ -48847,7 +48847,7 @@ cpu
 		typename CONFIG::address_t sp = cpu.GetSP();
 
 		// Read the word at SP from memory
-		uint32_t result = cpu.IntLoad(sp);
+		uint32_t result = cpu.IntLoad(sp & ADDRESS_MASK);
 
 		// Compute the new value of SP
 		sp = sp - 1;
@@ -49159,7 +49159,7 @@ cpu
 		typename CONFIG::address_t sp = cpu.GetSP() + 1;
 
 		// Store the source operand at SP + 1
-		cpu.IntStore(sp, src_value);
+		cpu.IntStore(sp & ADDRESS_MASK, src_value);
 
 		// Update SP
 		cpu.SetSP(sp);
@@ -49873,7 +49873,7 @@ cpu
 		if(update_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(ar, output_ar);
+			cpu.SetAR23_0(ar, output_ar);
 		}
 	}
 #line 49880 "isa_tms320.tcc"
@@ -51009,7 +51009,7 @@ cpu
 		if(update_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(ar, output_ar);
+			cpu.SetAR23_0(ar, output_ar);
 		}
 
 		// Check whether destination operand is an extended precision register
@@ -51725,7 +51725,7 @@ cpu
 		if(update_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(ar, output_ar);
+			cpu.SetAR23_0(ar, output_ar);
 		}
 
 		// Check whether destination operand is an extended precision register
@@ -52967,7 +52967,7 @@ cpu
 		if(update_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(ar, output_ar);
+			cpu.SetAR23_0(ar, output_ar);
 		}
 
 		// Check whether destination operand is an extended precision register
@@ -53641,7 +53641,7 @@ cpu
 		if(update_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(ar, output_ar);
+			cpu.SetAR23_0(ar, output_ar);
 		}
 
 		// Check whether destination operand is an extended precision register
@@ -54303,7 +54303,7 @@ cpu
 		if(update_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(ar, output_ar);
+			cpu.SetAR23_0(ar, output_ar);
 		}
 
 		// Check whether destination operand is an extended precision register
@@ -56300,7 +56300,7 @@ cpu
 		if(update_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(ar, output_ar);
+			cpu.SetAR23_0(ar, output_ar);
 		}
 
 		// Generate flags (into ST)
@@ -59405,7 +59405,7 @@ cpu
 		if(update_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(ar, output_ar);
+			cpu.SetAR23_0(ar, output_ar);
 		}
 
 		// Check whether destination operand is an extended precision register
@@ -60111,7 +60111,7 @@ cpu
 		if(update_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(ar, output_ar);
+			cpu.SetAR23_0(ar, output_ar);
 		}
 
 		// Check whether destination operand is an extended precision register
@@ -61340,7 +61340,7 @@ cpu
 		if(update_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(ar, output_ar);
+			cpu.SetAR23_0(ar, output_ar);
 		}
 
 		// Check whether destination operand is an extended precision register
@@ -62541,7 +62541,7 @@ cpu
 		if(update_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(ar, output_ar);
+			cpu.SetAR23_0(ar, output_ar);
 		}
 
 		// Check whether destination operand is an extended precision register
@@ -63202,7 +63202,7 @@ cpu
 		if(update_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(ar, output_ar);
+			cpu.SetAR23_0(ar, output_ar);
 		}
 
 		// Check whether destination operand is an extended precision register
@@ -65100,7 +65100,7 @@ cpu
 		if(update_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(ar, output_ar);
+			cpu.SetAR23_0(ar, output_ar);
 		}
 
 		// Check whether destination operand is an extended precision register
@@ -65757,7 +65757,7 @@ cpu
 		if(update_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(ar, output_ar);
+			cpu.SetAR23_0(ar, output_ar);
 		}
 	}
 #line 65764 "isa_tms320.tcc"
@@ -66963,7 +66963,7 @@ cpu
 		if(update_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(ar, output_ar);
+			cpu.SetAR23_0(ar, output_ar);
 		}
 
 		// Check whether destination operand is an extended precision register
@@ -67674,7 +67674,7 @@ cpu
 		if(update_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(ar, output_ar);
+			cpu.SetAR23_0(ar, output_ar);
 		}
 
 		// Check whether destination operand is an extended precision register
@@ -69566,7 +69566,7 @@ cpu
 		if(update_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(ar, output_ar);
+			cpu.SetAR23_0(ar, output_ar);
 		}
 
 		// Generate flags (into ST)
@@ -70216,7 +70216,7 @@ cpu
 		if(update_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(ar, output_ar);
+			cpu.SetAR23_0(ar, output_ar);
 		}
 
 		// Check whether destination operand is an extended precision register
@@ -71169,7 +71169,7 @@ cpu
 		if(update_ar1)
 		{
 			// Write back ARn
-			cpu.SetAR(ar1, output_ar1);
+			cpu.SetAR23_0(ar1, output_ar1);
 		}
 
 		// Note: 13.4.2 3-Operand Addressing Modes, page 13-24
@@ -71181,7 +71181,7 @@ cpu
 		if(update_ar2 && ar1 != ar2)
 		{
 			// Write back ARn
-			cpu.SetAR(ar2, output_ar2);
+			cpu.SetAR23_0(ar2, output_ar2);
 		}
 
 		// Write back result
@@ -72460,7 +72460,7 @@ cpu
 		if(update_ar1)
 		{
 			// Write back ARn
-			cpu.SetAR(ar1, output_ar1);
+			cpu.SetAR23_0(ar1, output_ar1);
 		}
 
 		// Note: 13.4.2 3-Operand Addressing Modes, page 13-24
@@ -72472,7 +72472,7 @@ cpu
 		if(update_ar2 && ar1 != ar2)
 		{
 			// Write back ARn
-			cpu.SetAR(ar2, output_ar2);
+			cpu.SetAR23_0(ar2, output_ar2);
 		}
 
 		// Write back result
@@ -73171,7 +73171,7 @@ cpu
 		if(update_ar1)
 		{
 			// Write back ARn
-			cpu.SetAR(ar1, output_ar1);
+			cpu.SetAR23_0(ar1, output_ar1);
 		}
 
 		// Note: 13.4.2 3-Operand Addressing Modes, page 13-24
@@ -73183,7 +73183,7 @@ cpu
 		if(update_ar2 && ar1 != ar2)
 		{
 			// Write back ARn
-			cpu.SetAR(ar2, output_ar2);
+			cpu.SetAR23_0(ar2, output_ar2);
 		}
 
 		// Write back result
@@ -73877,7 +73877,7 @@ cpu
 		if(update_ar1)
 		{
 			// Write back ARn
-			cpu.SetAR(ar1, output_ar1);
+			cpu.SetAR23_0(ar1, output_ar1);
 		}
 
 		// Note: 13.4.2 3-Operand Addressing Modes, page 13-24
@@ -73889,7 +73889,7 @@ cpu
 		if(update_ar2 && ar1 != ar2)
 		{
 			// Write back ARn
-			cpu.SetAR(ar2, output_ar2);
+			cpu.SetAR23_0(ar2, output_ar2);
 		}
 
 		// Write back result
@@ -74729,7 +74729,7 @@ cpu
 		if(update_ar1)
 		{
 			// Write back ARn
-			cpu.SetAR(ar1, output_ar1);
+			cpu.SetAR23_0(ar1, output_ar1);
 		}
 
 		// Note: 13.4.2 3-Operand Addressing Modes, page 13-24
@@ -74741,7 +74741,7 @@ cpu
 		if(update_ar2 && ar1 != ar2)
 		{
 			// Write back ARn
-			cpu.SetAR(ar2, output_ar2);
+			cpu.SetAR23_0(ar2, output_ar2);
 		}
 
 		// Write back result
@@ -75968,7 +75968,7 @@ cpu
 		if(update_ar1)
 		{
 			// Write back ARn
-			cpu.SetAR(ar1, output_ar1);
+			cpu.SetAR23_0(ar1, output_ar1);
 		}
 
 		// Note: 13.4.2 3-Operand Addressing Modes, page 13-24
@@ -75980,7 +75980,7 @@ cpu
 		if(update_ar2 && ar1 != ar2)
 		{
 			// Write back ARn
-			cpu.SetAR(ar2, output_ar2);
+			cpu.SetAR23_0(ar2, output_ar2);
 		}
 
 		// Generate flags (into ST)
@@ -76815,7 +76815,7 @@ cpu
 		if(update_ar1)
 		{
 			// Write back ARn
-			cpu.SetAR(ar1, output_ar1);
+			cpu.SetAR23_0(ar1, output_ar1);
 		}
 
 		// Note: 13.4.2 3-Operand Addressing Modes, page 13-24
@@ -76827,7 +76827,7 @@ cpu
 		if(update_ar2 && ar1 != ar2)
 		{
 			// Write back ARn
-			cpu.SetAR(ar2, output_ar2);
+			cpu.SetAR23_0(ar2, output_ar2);
 		}
 
 		// Write back result
@@ -78117,7 +78117,7 @@ cpu
 		if(update_ar1)
 		{
 			// Write back ARn
-			cpu.SetAR(ar1, output_ar1);
+			cpu.SetAR23_0(ar1, output_ar1);
 		}
 
 		// Note: 13.4.2 3-Operand Addressing Modes, page 13-24
@@ -78129,7 +78129,7 @@ cpu
 		if(update_ar2 && ar1 != ar2)
 		{
 			// Write back ARn
-			cpu.SetAR(ar2, output_ar2);
+			cpu.SetAR23_0(ar2, output_ar2);
 		}
 
 		// Write back result
@@ -78828,7 +78828,7 @@ cpu
 		if(update_ar1)
 		{
 			// Write back ARn
-			cpu.SetAR(ar1, output_ar1);
+			cpu.SetAR23_0(ar1, output_ar1);
 		}
 
 		// Note: 13.4.2 3-Operand Addressing Modes, page 13-24
@@ -78840,7 +78840,7 @@ cpu
 		if(update_ar2 && ar1 != ar2)
 		{
 			// Write back ARn
-			cpu.SetAR(ar2, output_ar2);
+			cpu.SetAR23_0(ar2, output_ar2);
 		}
 
 		// Write back result
@@ -79587,7 +79587,7 @@ cpu
 		if(update_ar1)
 		{
 			// Write back ARn
-			cpu.SetAR(ar1, output_ar1);
+			cpu.SetAR23_0(ar1, output_ar1);
 		}
 
 		// Note: 13.4.2 3-Operand Addressing Modes, page 13-24
@@ -79599,7 +79599,7 @@ cpu
 		if(update_ar2 && ar1 != ar2)
 		{
 			// Write back ARn
-			cpu.SetAR(ar2, output_ar2);
+			cpu.SetAR23_0(ar2, output_ar2);
 		}
 
 		// Write back result
@@ -80878,7 +80878,7 @@ cpu
 		if(update_ar1)
 		{
 			// Write back ARn
-			cpu.SetAR(ar1, output_ar1);
+			cpu.SetAR23_0(ar1, output_ar1);
 		}
 
 		// Note: 13.4.2 3-Operand Addressing Modes, page 13-24
@@ -80890,7 +80890,7 @@ cpu
 		if(update_ar2 && ar1 != ar2)
 		{
 			// Write back ARn
-			cpu.SetAR(ar2, output_ar2);
+			cpu.SetAR23_0(ar2, output_ar2);
 		}
 
 		// Write back result
@@ -81558,7 +81558,7 @@ cpu
 		if(update_ar1)
 		{
 			// Write back ARn
-			cpu.SetAR(ar1, output_ar1);
+			cpu.SetAR23_0(ar1, output_ar1);
 		}
 
 		// Note: 13.4.2 3-Operand Addressing Modes, page 13-24
@@ -81570,7 +81570,7 @@ cpu
 		if(update_ar2 && ar1 != ar2)
 		{
 			// Write back ARn
-			cpu.SetAR(ar2, output_ar2);
+			cpu.SetAR23_0(ar2, output_ar2);
 		}
 
 		// Generate flags (into ST)
@@ -82260,7 +82260,7 @@ cpu
 		if(update_ar1)
 		{
 			// Write back ARn
-			cpu.SetAR(ar1, output_ar1);
+			cpu.SetAR23_0(ar1, output_ar1);
 		}
 
 		// Note: 13.4.2 3-Operand Addressing Modes, page 13-24
@@ -82272,7 +82272,7 @@ cpu
 		if(update_ar2 && ar1 != ar2)
 		{
 			// Write back ARn
-			cpu.SetAR(ar2, output_ar2);
+			cpu.SetAR23_0(ar2, output_ar2);
 		}
 
 		// Write back result
@@ -83356,7 +83356,7 @@ cpu
 		typename CONFIG::address_t target_addr = src;
 
 		// Store the next PC at SP + 1
-		cpu.IntStore(sp, next_pc);
+		cpu.IntStore(sp & ADDRESS_MASK, next_pc);
 
 		// Update SP
 		cpu.SetSP(sp);
@@ -83519,7 +83519,7 @@ cpu
 		typename CONFIG::address_t next_pc = cpu.GetNPC();
 
 		// Store the next PC at SP + 1
-		cpu.IntStore(sp, next_pc);
+		cpu.IntStore(sp & ADDRESS_MASK, next_pc);
 
 		// Update SP
 		cpu.SetSP(sp);
@@ -83675,7 +83675,7 @@ cpu
 		typename CONFIG::address_t target_addr = next_pc + imm;
 
 		// Store the next PC at SP + 1
-		cpu.IntStore(sp, next_pc);
+		cpu.IntStore(sp & ADDRESS_MASK, next_pc);
 
 		// Update SP
 		cpu.SetSP(sp);
@@ -83835,7 +83835,7 @@ cpu
 		ar_value = ar_value - 1;
 
 		// Update ARn
-		cpu.SetAR(ar, (uint32_t) ar_value);
+		cpu.SetAR23_0(ar, (uint32_t) ar_value);
 
 		// Check whether ARn is >= 0
 		if(ar_value < 0) return;
@@ -83991,7 +83991,7 @@ cpu
 		ar_value = ar_value - 1;
 
 		// Update ARn
-		cpu.SetAR(ar, (uint32_t) ar_value);
+		cpu.SetAR23_0(ar, (uint32_t) ar_value);
 
 		// Check whether ARn is >= 0
 		if(ar_value < 0) return;
@@ -84157,7 +84157,7 @@ cpu
 		ar_value = ar_value - 1;
 
 		// Update ARn
-		cpu.SetAR(ar, (uint32_t) ar_value);
+		cpu.SetAR23_0(ar, (uint32_t) ar_value);
 
 		// Check whether ARn is >= 0
 		if(ar_value < 0) return;
@@ -84313,7 +84313,7 @@ cpu
 		ar_value = ar_value - 1;
 
 		// Update ARn
-		cpu.SetAR(ar, (uint32_t) ar_value);
+		cpu.SetAR23_0(ar, (uint32_t) ar_value);
 
 		// Check whether ARn is >= 0
 		if(ar_value < 0) return;
@@ -85089,7 +85089,7 @@ os
 
 		if(!cond_name) return false;
 		os << "RETI" << cond_name;
-		os << " <" << cpu.GetFunctionFriendlyName(cpu.IntLoad(cpu.GetSP())) << ">";
+		os << " <" << cpu.GetFunctionFriendlyName(cpu.IntLoad(cpu.GetSP() & ADDRESS_MASK)) << ">";
 		return true;
 	}
 #line 85096 "isa_tms320.tcc"
@@ -85144,7 +85144,7 @@ cpu
 		typename CONFIG::address_t sp = cpu.GetSP();
 
 		// Load the target address stored at SP
-		typename CONFIG::address_t target_addr = cpu.IntLoad(sp);
+		typename CONFIG::address_t target_addr = cpu.IntLoad(sp & ADDRESS_MASK);
 
 		// Compute the new value of SP
 		sp = sp - 1;
@@ -85251,7 +85251,7 @@ os
 
 		if(!cond_name) return false;
 		os << "RETS" << cond_name;
-		os << " <" << cpu.GetFunctionFriendlyName(cpu.IntLoad(cpu.GetSP())) << ">";
+		os << " <" << cpu.GetFunctionFriendlyName(cpu.IntLoad(cpu.GetSP() & ADDRESS_MASK)) << ">";
 		return true;
 	}
 #line 85258 "isa_tms320.tcc"
@@ -85306,7 +85306,7 @@ cpu
 		typename CONFIG::address_t sp = cpu.GetSP();
 
 		// Load the target address stored at SP
-		typename CONFIG::address_t target_addr = cpu.IntLoad(sp);
+		typename CONFIG::address_t target_addr = cpu.IntLoad(sp & ADDRESS_MASK);
 
 		// Compute the new value of SP
 		sp = sp - 1;
@@ -86352,7 +86352,7 @@ cpu
 		typename CONFIG::address_t next_pc = cpu.GetNPC();
 
 		// Store the next PC at SP + 1
-		cpu.IntStore(sp, next_pc);
+		cpu.IntStore(sp & ADDRESS_MASK, next_pc);
 
 		// Update SP
 		cpu.SetSP(sp);
@@ -88120,13 +88120,13 @@ cpu
 		if(s2_update_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(s2_ar, s2_output_ar);
+			cpu.SetAR23_0(s2_ar, s2_output_ar);
 		}
 
 		if(d2_update_ar && s2_ar != d2_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(d2_ar, d2_output_ar);
+			cpu.SetAR23_0(d2_ar, d2_output_ar);
 		}
 
 		// Generate flags (into ST)
@@ -88322,7 +88322,7 @@ cpu
 		if(d2_update_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(d2_ar, d2_output_ar);
+			cpu.SetAR23_0(d2_ar, d2_output_ar);
 		}
 
 		// Generate flags (into ST)
@@ -88815,13 +88815,13 @@ cpu
 		if(s2_update_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(s2_ar, s2_output_ar);
+			cpu.SetAR23_0(s2_ar, s2_output_ar);
 		}
 
 		if(d2_update_ar && s2_ar != d2_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(d2_ar, d2_output_ar);
+			cpu.SetAR23_0(d2_ar, d2_output_ar);
 		}
 
 		// Check whether 'dst1' operand is an extended precision register
@@ -89021,7 +89021,7 @@ cpu
 		if(d2_update_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(d2_ar, d2_output_ar);
+			cpu.SetAR23_0(d2_ar, d2_output_ar);
 		}
 
 		// Generate flags (into ST)
@@ -89224,13 +89224,13 @@ cpu
 		if(s2_update_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(s2_ar, s2_output_ar);
+			cpu.SetAR23_0(s2_ar, s2_output_ar);
 		}
 
 		if(d2_update_ar && s2_ar != d2_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(d2_ar, d2_output_ar);
+			cpu.SetAR23_0(d2_ar, d2_output_ar);
 		}
 
 		// Generate flags (into ST)
@@ -89415,7 +89415,7 @@ cpu
 		if(d2_update_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(d2_ar, d2_output_ar);
+			cpu.SetAR23_0(d2_ar, d2_output_ar);
 		}
 
 		// Generate flags (into ST)
@@ -89648,13 +89648,13 @@ cpu
 		if(s2_update_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(s2_ar, s2_output_ar);
+			cpu.SetAR23_0(s2_ar, s2_output_ar);
 		}
 
 		if(d2_update_ar && s2_ar != d2_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(d2_ar, d2_output_ar);
+			cpu.SetAR23_0(d2_ar, d2_output_ar);
 		}
 
 		// Generate flags (into ST)
@@ -89872,7 +89872,7 @@ cpu
 		if(d2_update_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(d2_ar, d2_output_ar);
+			cpu.SetAR23_0(d2_ar, d2_output_ar);
 		}
 
 		// Generate flags (into ST)
@@ -90901,13 +90901,13 @@ cpu
 		if(s2_update_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(s2_ar, s2_output_ar);
+			cpu.SetAR23_0(s2_ar, s2_output_ar);
 		}
 
 		if(d2_update_ar && s2_ar != d2_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(d2_ar, d2_output_ar);
+			cpu.SetAR23_0(d2_ar, d2_output_ar);
 		}
 	}
 #line 90914 "isa_tms320.tcc"
@@ -91078,7 +91078,7 @@ cpu
 		if(d2_update_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(d2_ar, d2_output_ar);
+			cpu.SetAR23_0(d2_ar, d2_output_ar);
 		}
 	}
 #line 91085 "isa_tms320.tcc"
@@ -91303,13 +91303,13 @@ cpu
 		if(s2_update_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(s2_ar, s2_output_ar);
+			cpu.SetAR23_0(s2_ar, s2_output_ar);
 		}
 
 		if(d2_update_ar && s2_ar != d2_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(d2_ar, d2_output_ar);
+			cpu.SetAR23_0(d2_ar, d2_output_ar);
 		}
 
 		// Generate flags (into ST)
@@ -91527,7 +91527,7 @@ cpu
 		if(d2_update_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(d2_ar, d2_output_ar);
+			cpu.SetAR23_0(d2_ar, d2_output_ar);
 		}
 
 		// Generate flags (into ST)
@@ -92020,13 +92020,13 @@ cpu
 		if(s2_update_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(s2_ar, s2_output_ar);
+			cpu.SetAR23_0(s2_ar, s2_output_ar);
 		}
 
 		if(d2_update_ar && s2_ar != d2_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(d2_ar, d2_output_ar);
+			cpu.SetAR23_0(d2_ar, d2_output_ar);
 		}
 
 		// Generate flags (into ST)
@@ -92228,7 +92228,7 @@ cpu
 		if(d2_update_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(d2_ar, d2_output_ar);
+			cpu.SetAR23_0(d2_ar, d2_output_ar);
 		}
 
 		// Generate flags (into ST)
@@ -92713,13 +92713,13 @@ cpu
 		if(s2_update_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(s2_ar, s2_output_ar);
+			cpu.SetAR23_0(s2_ar, s2_output_ar);
 		}
 
 		if(d2_update_ar && s2_ar != d2_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(d2_ar, d2_output_ar);
+			cpu.SetAR23_0(d2_ar, d2_output_ar);
 		}
 
 		// Generate flags (into ST)
@@ -92910,7 +92910,7 @@ cpu
 		if(d2_update_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(d2_ar, d2_output_ar);
+			cpu.SetAR23_0(d2_ar, d2_output_ar);
 		}
 
 		// Generate flags (into ST)
@@ -93108,13 +93108,13 @@ cpu
 		if(s2_update_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(s2_ar, s2_output_ar);
+			cpu.SetAR23_0(s2_ar, s2_output_ar);
 		}
 
 		if(d2_update_ar && s2_ar != d2_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(d2_ar, d2_output_ar);
+			cpu.SetAR23_0(d2_ar, d2_output_ar);
 		}
 
 		// Generate flags (into ST)
@@ -93295,7 +93295,7 @@ cpu
 		if(d2_update_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(d2_ar, d2_output_ar);
+			cpu.SetAR23_0(d2_ar, d2_output_ar);
 		}
 
 		// Generate flags (into ST)
@@ -93495,13 +93495,13 @@ cpu
 		if(s2_update_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(s2_ar, s2_output_ar);
+			cpu.SetAR23_0(s2_ar, s2_output_ar);
 		}
 
 		if(d2_update_ar && s2_ar != d2_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(d2_ar, d2_output_ar);
+			cpu.SetAR23_0(d2_ar, d2_output_ar);
 		}
 
 		// Generate flags (into ST)
@@ -93686,7 +93686,7 @@ cpu
 		if(d2_update_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(d2_ar, d2_output_ar);
+			cpu.SetAR23_0(d2_ar, d2_output_ar);
 		}
 
 		// Generate flags (into ST)
@@ -94157,13 +94157,13 @@ cpu
 		if(d2_update_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(d2_ar, d2_output_ar);
+			cpu.SetAR23_0(d2_ar, d2_output_ar);
 		}
 
 		if(d1_update_ar && d1_ar != d2_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(d1_ar, d1_output_ar);
+			cpu.SetAR23_0(d1_ar, d1_output_ar);
 		}
 	}
 #line 94170 "isa_tms320.tcc"
@@ -94334,7 +94334,7 @@ cpu
 		if(d1_update_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(d1_ar, d1_output_ar);
+			cpu.SetAR23_0(d1_ar, d1_output_ar);
 		}
 	}
 #line 94341 "isa_tms320.tcc"
@@ -94816,13 +94816,13 @@ cpu
 		if(s2_update_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(s2_ar, s2_output_ar);
+			cpu.SetAR23_0(s2_ar, s2_output_ar);
 		}
 
 		if(d2_update_ar && s2_ar != d2_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(d2_ar, d2_output_ar);
+			cpu.SetAR23_0(d2_ar, d2_output_ar);
 		}
 
 		// Generate flags (into ST)
@@ -95021,7 +95021,7 @@ cpu
 		if(d2_update_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(d2_ar, d2_output_ar);
+			cpu.SetAR23_0(d2_ar, d2_output_ar);
 		}
 
 		// Generate flags (into ST)
@@ -95223,13 +95223,13 @@ cpu
 		if(s2_update_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(s2_ar, s2_output_ar);
+			cpu.SetAR23_0(s2_ar, s2_output_ar);
 		}
 
 		if(d2_update_ar && s2_ar != d2_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(d2_ar, d2_output_ar);
+			cpu.SetAR23_0(d2_ar, d2_output_ar);
 		}
 
 		// Generate flags (into ST)
@@ -95414,7 +95414,7 @@ cpu
 		if(d2_update_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(d2_ar, d2_output_ar);
+			cpu.SetAR23_0(d2_ar, d2_output_ar);
 		}
 
 		// Generate flags (into ST)
@@ -95882,13 +95882,13 @@ cpu
 		if(s2_update_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(s2_ar, s2_output_ar);
+			cpu.SetAR23_0(s2_ar, s2_output_ar);
 		}
 
 		if(s1_update_ar && s1_ar != s2_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(s1_ar, s1_output_ar);
+			cpu.SetAR23_0(s1_ar, s1_output_ar);
 		}
 	}
 #line 95895 "isa_tms320.tcc"
@@ -96059,7 +96059,7 @@ cpu
 		if(s1_update_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(s1_ar, s1_output_ar);
+			cpu.SetAR23_0(s1_ar, s1_output_ar);
 		}
 	}
 #line 96066 "isa_tms320.tcc"
@@ -97043,13 +97043,13 @@ cpu
 		if(s3_update_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(s3_ar, s3_output_ar);
+			cpu.SetAR23_0(s3_ar, s3_output_ar);
 		}
 
 		if(s4_update_ar && s4_ar != s4_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(s4_ar, s4_output_ar);
+			cpu.SetAR23_0(s4_ar, s4_output_ar);
 		}
 
 		// Generate flags (into ST)
@@ -97617,13 +97617,13 @@ cpu
 		if(s3_update_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(s3_ar, s3_output_ar);
+			cpu.SetAR23_0(s3_ar, s3_output_ar);
 		}
 
 		if(s4_update_ar && s4_ar != s4_ar)
 		{
 			// Write back ARn
-			cpu.SetAR(s4_ar, s4_output_ar);
+			cpu.SetAR23_0(s4_ar, s4_output_ar);
 		}
 
 		// FIXME: Don't known how to generate the underflow flag

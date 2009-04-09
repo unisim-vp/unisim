@@ -369,7 +369,7 @@ LDI_indir.execute = {
 	if(update_ar)
 	{
 		// Write back ARn
-		cpu.SetAR(ar, output_ar);
+		cpu.SetAR23_0(ar, output_ar);
 	}
 
 	// Check whether destination operand is an extended precision register
@@ -531,7 +531,7 @@ LDIcond_indir.execute = {
 	if(update_ar)
 	{
 		// Write back ARn
-		cpu.SetAR(ar, output_ar);
+		cpu.SetAR23_0(ar, output_ar);
 	}
 }
 
@@ -685,7 +685,7 @@ POP.execute = {
 	typename CONFIG::address_t sp = cpu.GetSP();
 
 	// Read the word at SP from memory
-	uint32_t result = cpu.IntLoad(sp);
+	uint32_t result = cpu.IntLoad(sp & ADDRESS_MASK);
 
 	// Compute the new value of SP
 	sp = sp - 1;
@@ -769,7 +769,7 @@ PUSH.execute = {
 	typename CONFIG::address_t sp = cpu.GetSP() + 1;
 
 	// Store the source operand at SP + 1
-	cpu.IntStore(sp, src_value);
+	cpu.IntStore(sp & ADDRESS_MASK, src_value);
 
 	// Update SP
 	cpu.SetSP(sp);
@@ -909,7 +909,7 @@ STI_indir.execute = {
 	if(update_ar)
 	{
 		// Write back ARn
-		cpu.SetAR(ar, output_ar);
+		cpu.SetAR23_0(ar, output_ar);
 	}
 }
 

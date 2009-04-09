@@ -305,6 +305,7 @@ template<class CONFIG, bool DEBUG>
 void 
 TMS320<CONFIG, DEBUG> :: 
 Reset() {
+	inherited::Reset();
 }
 	
 /**

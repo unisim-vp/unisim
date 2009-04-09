@@ -120,6 +120,8 @@ static const unsigned int M_ST_CE = 1 << ST_CE;
 static const unsigned int M_ST_CC = 1 << ST_CC;
 static const unsigned int M_ST_GIE = 1 << ST_GIE;
 
+static const uint32_t ADDRESS_MASK = 0xffffff; // 24-bit mask
+
 typedef struct
 {
 	uint32_t lo; // 32 LSB
@@ -325,9 +327,9 @@ public:
 	inline uint32_t CircularSubstract(uint32_t ar, uint32_t bk, uint32_t step) INLINE;
 
 	/** Compute the effective address for indirect addressing mode
-	    @param ea The effective address (output)
+	    @param ea The 24-bit effective address (output)
 	    @param update_ar Whether the auxiliary register must be updated with 'next_ar' (output)
-	    @param output_ar The effective address to write into the auxiliary register (output)
+	    @param output_ar The 24-bit effective address to write into the auxiliary register (output)
 	    @param mod The 5-bit 'mod' instruction bit field
 	    @param ar_num The 3-bit 'ar' instruction bit field (AR register number)
 	    @param mod The 8-bit 'disp' instruction bit field (sign extended) or an implied 1 displacement
@@ -497,6 +499,7 @@ private:
 	bool first_time_through_repeat_single;  // Whether we need to fetch the instruction to memory the first time the repeated instruction is executed
 
 	// External signals
+	bool reset;                             // RESET: 1=reset, 0=normal operation
 	bool mcbl_mp;                           // MCBL/MP#: 0=microprocessor mode, 1=microcomputer mode
 
 	// Registers
@@ -506,21 +509,38 @@ private:
 	reg_t regs[32];
 
 public:
+	/** Get ARn
+	    @param reg_num the AR register number
+	    @return 32-bit value of ARn
+	*/
+	inline uint32_t GetAR(unsigned int reg_num) const
+	{
+		return regs[REG_AR0 + reg_num].lo;
+	}
+
 	/** Get ARn[23-0]
 	    @param reg_num the AR register number
 	    @return bits 23-0 of ARn
 	*/
-	inline uint32_t GetAR(unsigned int reg_num) const
+	inline uint32_t GetAR23_0(unsigned int reg_num) const
 	{
-		return regs[REG_AR0 + reg_num].lo & 0xffffff;
+		return regs[REG_AR0 + reg_num].lo & ADDRESS_MASK;
+	}
+
+	/** Get SP (stack pointer)
+	    @return 32-bit value of SP
+	*/
+	inline uint32_t GetSP() const
+	{
+		return regs[REG_SP].lo;
 	}
 
 	/** Get SP[23-0]
 	    @return bits 23-0 of SP
 	*/
-	inline uint32_t GetSP() const
+	inline uint32_t GetSP23_0() const
 	{
-		return regs[REG_SP].lo & 0xffffff;
+		return regs[REG_SP].lo & ADDRESS_MASK;
 	}
 
 	/** Get ST
@@ -547,18 +567,34 @@ public:
 		return regs[REG_IE].lo;
 	}
 
-	/** Get the 8 least significative bits of DP
-	    @return 8 least significative bits of DP
+	/** Get DP (data-page pointer)
+	    @return 32-bit value of DP
 	*/
 	inline uint32_t GetDP() const
+	{
+		return regs[REG_DP].lo;
+	}
+
+	/** Get DP[7-0]
+	    @return bits 8-0 of DP
+	*/
+	inline uint32_t GetDP8_0() const
 	{
 		return regs[REG_DP].lo & 0xff;
 	}
 
-	/** Set the 8 least significative bits of DP
-	    @param 8-bit value to write
+	/** Set DP (data-page pointer)
+	    @param 32-bit value to write into DP
 	*/
 	inline void SetDP(uint32_t value)
+	{
+		regs[REG_DP].lo = value;
+	}
+
+	/** Set DP[7-0]
+	    @param 8-bit value to write into DP[7-0]
+	*/
+	inline void SetDP7_0(uint32_t value)
 	{
 		regs[REG_DP].lo = (regs[REG_DP].lo & ~0xff) | (value & 0xff);
 	}
@@ -638,17 +674,34 @@ public:
 	    @param reg_num the AR register number
 	    @param value the value to write (bits 31-24 are ignored)
 	*/
-	inline void SetAR(unsigned int reg_num, uint32_t value)
+	inline void SetAR23_0(unsigned int reg_num, uint32_t value)
 	{
-		regs[REG_AR0 + reg_num].lo = (regs[REG_AR0 + reg_num].lo & 0xff000000) | (value & 0xffffff);
+		regs[REG_AR0 + reg_num].lo = (regs[REG_AR0 + reg_num].lo & ~ADDRESS_MASK) | value;
 	}
 
-	/** Set SP[23-0] to a new value
-	    @param value the value to write (bits 31-24 are ignored)
+	/** Set ARn to a new value
+	    @param reg_num the AR register number
+	    @param value the value to write
+	*/
+	inline void SetAR(unsigned int reg_num, uint32_t value)
+	{
+		regs[REG_AR0 + reg_num].lo = value;
+	}
+
+	/** Set SP
+	    @param value the value to write into the stack pointer
 	*/
 	inline void SetSP(uint32_t value)
 	{
-		regs[REG_SP].lo = (regs[REG_SP].lo & 0xff000000) | (value & 0xffffff);
+		regs[REG_SP].lo = value;
+	}
+
+	/** Set SP[23-0]
+	    @param value the 24-bit value to write into SP[23-0]
+	*/
+	inline void SetSP23_0(uint32_t value)
+	{
+		regs[REG_SP].lo = (regs[REG_SP].lo & ~ADDRESS_MASK) | value;
 	}
 
 	/** Set 40-bit extended precision register value.
@@ -660,10 +713,15 @@ public:
 		regs[REG_R0 + reg_num] = value;
 	}
 
-	/** Get the address of the current instruction
-	    @param addr the current instruction word address
+	/** Get PC
+	    @return the 32-bit program counter value
 	*/
 	inline address_t GetPC() const { return reg_pc; }
+
+	/** Get PC[23-0]
+	    @return bits 23-0 of the program counter
+	*/
+	inline address_t GetPC23_0() const { return reg_pc & ADDRESS_MASK; }
 
 	/** Set the address of the current instruction
 	    @param addr the current instruction word address
@@ -695,15 +753,25 @@ public:
 	*/
 	inline uint32_t GetBK() const { return regs[REG_BK].lo; }
 
+	/** Get IR0
+	    @return 32-bit value of IR0
+	*/
+	inline uint32_t GetIR0() const { return regs[REG_IR0].lo; }
+
 	/** Get IR0[23-0]
 	    @return bits 23-0 of IR0
 	*/
-	inline uint32_t GetIR0() const { return regs[REG_IR0].lo & 0xffffff; }
+	inline uint32_t GetIR0_23_0() const { return regs[REG_IR0].lo & ADDRESS_MASK; }
+
+	/** Get IR1
+	    @return 32-bit value of IR0
+	*/
+	inline uint32_t GetIR1() const { return regs[REG_IR0].lo; }
 
 	/** Get IR1[23-0]
 	    @return bits 23-0 of IR1
 	*/
-	inline uint32_t GetIR1() const { return regs[REG_IR1].lo & 0xffffff; }
+	inline uint32_t GetIR1_23_0() const { return regs[REG_IR1].lo & ADDRESS_MASK; }
 
 	/** Store a 32-bit integer into memory
 	    @param ea the effective word address

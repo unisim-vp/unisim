@@ -327,7 +327,7 @@ ABSI_indir.execute = {
 	if(update_ar)
 	{
 		// Write back ARn
-		cpu.SetAR(ar, output_ar);
+		cpu.SetAR23_0(ar, output_ar);
 	}
 
 	// Check whether destination operand is an extended precision register
@@ -578,7 +578,7 @@ ADDC_indir.execute = {
 	if(update_ar)
 	{
 		// Write back ARn
-		cpu.SetAR(ar, output_ar);
+		cpu.SetAR23_0(ar, output_ar);
 	}
 
 	// Check whether destination operand is an extended precision register
@@ -890,7 +890,7 @@ ADDI_indir.execute = {
 	if(update_ar)
 	{
 		// Write back ARn
-		cpu.SetAR(ar, output_ar);
+		cpu.SetAR23_0(ar, output_ar);
 	}
 
 	// Check whether destination operand is an extended precision register
@@ -1099,7 +1099,7 @@ AND_indir.execute = {
 	if(update_ar)
 	{
 		// Write back ARn
-		cpu.SetAR(ar, output_ar);
+		cpu.SetAR23_0(ar, output_ar);
 	}
 
 	// Check whether destination operand is an extended precision register
@@ -1296,7 +1296,7 @@ ANDN_indir.execute = {
 	if(update_ar)
 	{
 		// Write back ARn
-		cpu.SetAR(ar, output_ar);
+		cpu.SetAR23_0(ar, output_ar);
 	}
 
 	// Check whether destination operand is an extended precision register
@@ -1898,7 +1898,7 @@ CMPI_indir.execute = {
 	if(update_ar)
 	{
 		// Write back ARn
-		cpu.SetAR(ar, output_ar);
+		cpu.SetAR23_0(ar, output_ar);
 	}
 
 	// Generate flags (into ST)
@@ -2678,7 +2678,7 @@ MPYI_indir.execute = {
 	if(update_ar)
 	{
 		// Write back ARn
-		cpu.SetAR(ar, output_ar);
+		cpu.SetAR23_0(ar, output_ar);
 	}
 
 	// Check whether destination operand is an extended precision register
@@ -2919,7 +2919,7 @@ NEGB_indir.execute = {
 	if(update_ar)
 	{
 		// Write back ARn
-		cpu.SetAR(ar, output_ar);
+		cpu.SetAR23_0(ar, output_ar);
 	}
 
 	// Check whether destination operand is an extended precision register
@@ -3218,7 +3218,7 @@ NEGI_indir.execute = {
 	if(update_ar)
 	{
 		// Write back ARn
-		cpu.SetAR(ar, output_ar);
+		cpu.SetAR23_0(ar, output_ar);
 	}
 
 	// Check whether destination operand is an extended precision register
@@ -3489,7 +3489,7 @@ NOT_indir.execute = {
 	if(update_ar)
 	{
 		// Write back ARn
-		cpu.SetAR(ar, output_ar);
+		cpu.SetAR23_0(ar, output_ar);
 	}
 
 	// Check whether destination operand is an extended precision register
@@ -3685,7 +3685,7 @@ OR_indir.execute = {
 	if(update_ar)
 	{
 		// Write back ARn
-		cpu.SetAR(ar, output_ar);
+		cpu.SetAR23_0(ar, output_ar);
 	}
 
 	// Check whether destination operand is an extended precision register
@@ -4197,7 +4197,7 @@ SUBB_indir.execute = {
 	if(update_ar)
 	{
 		// Write back ARn
-		cpu.SetAR(ar, output_ar);
+		cpu.SetAR23_0(ar, output_ar);
 	}
 
 	// Check whether destination operand is an extended precision register
@@ -4389,7 +4389,7 @@ SUBC_indir.execute = {
 	if(update_ar)
 	{
 		// Write back ARn
-		cpu.SetAR(ar, output_ar);
+		cpu.SetAR23_0(ar, output_ar);
 	}
 }
 
@@ -4665,7 +4665,7 @@ SUBI_indir.execute = {
 	if(update_ar)
 	{
 		// Write back ARn
-		cpu.SetAR(ar, output_ar);
+		cpu.SetAR23_0(ar, output_ar);
 	}
 
 	// Check whether destination operand is an extended precision register
@@ -4911,7 +4911,7 @@ SUBRB_indir.execute = {
 	if(update_ar)
 	{
 		// Write back ARn
-		cpu.SetAR(ar, output_ar);
+		cpu.SetAR23_0(ar, output_ar);
 	}
 
 	// Check whether destination operand is an extended precision register
@@ -5408,7 +5408,7 @@ TSTB_indir.execute = {
 	if(update_ar)
 	{
 		// Write back ARn
-		cpu.SetAR(ar, output_ar);
+		cpu.SetAR23_0(ar, output_ar);
 	}
 
 	// Generate flags (into ST)
@@ -5593,7 +5593,7 @@ XOR_indir.execute = {
 	if(update_ar)
 	{
 		// Write back ARn
-		cpu.SetAR(ar, output_ar);
+		cpu.SetAR23_0(ar, output_ar);
 	}
 
 	// Check whether destination operand is an extended precision register

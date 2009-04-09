@@ -314,7 +314,7 @@ ADDC3_indir_indir.execute = {
 	if(update_ar1)
 	{
 		// Write back ARn
-		cpu.SetAR(ar1, output_ar1);
+		cpu.SetAR23_0(ar1, output_ar1);
 	}
 
 	// Note: 13.4.2 3-Operand Addressing Modes, page 13-24
@@ -326,7 +326,7 @@ ADDC3_indir_indir.execute = {
 	if(update_ar2 && ar1 != ar2)
 	{
 		// Write back ARn
-		cpu.SetAR(ar2, output_ar2);
+		cpu.SetAR23_0(ar2, output_ar2);
 	}
 
 	// Write back result
@@ -675,7 +675,7 @@ ADDI3_indir_indir.execute = {
 	if(update_ar1)
 	{
 		// Write back ARn
-		cpu.SetAR(ar1, output_ar1);
+		cpu.SetAR23_0(ar1, output_ar1);
 	}
 
 	// Note: 13.4.2 3-Operand Addressing Modes, page 13-24
@@ -687,7 +687,7 @@ ADDI3_indir_indir.execute = {
 	if(update_ar2 && ar1 != ar2)
 	{
 		// Write back ARn
-		cpu.SetAR(ar2, output_ar2);
+		cpu.SetAR23_0(ar2, output_ar2);
 	}
 
 	// Write back result
@@ -923,7 +923,7 @@ AND3_indir_indir.execute = {
 	if(update_ar1)
 	{
 		// Write back ARn
-		cpu.SetAR(ar1, output_ar1);
+		cpu.SetAR23_0(ar1, output_ar1);
 	}
 
 	// Note: 13.4.2 3-Operand Addressing Modes, page 13-24
@@ -935,7 +935,7 @@ AND3_indir_indir.execute = {
 	if(update_ar2 && ar1 != ar2)
 	{
 		// Write back ARn
-		cpu.SetAR(ar2, output_ar2);
+		cpu.SetAR23_0(ar2, output_ar2);
 	}
 
 	// Write back result
@@ -1165,7 +1165,7 @@ ANDN3_indir_indir.execute = {
 	if(update_ar1)
 	{
 		// Write back ARn
-		cpu.SetAR(ar1, output_ar1);
+		cpu.SetAR23_0(ar1, output_ar1);
 	}
 
 	// Note: 13.4.2 3-Operand Addressing Modes, page 13-24
@@ -1177,7 +1177,7 @@ ANDN3_indir_indir.execute = {
 	if(update_ar2 && ar1 != ar2)
 	{
 		// Write back ARn
-		cpu.SetAR(ar2, output_ar2);
+		cpu.SetAR23_0(ar2, output_ar2);
 	}
 
 	// Write back result
@@ -1552,7 +1552,7 @@ ASH3_indir_indir.execute = {
 	if(update_ar1)
 	{
 		// Write back ARn
-		cpu.SetAR(ar1, output_ar1);
+		cpu.SetAR23_0(ar1, output_ar1);
 	}
 
 	// Note: 13.4.2 3-Operand Addressing Modes, page 13-24
@@ -1564,7 +1564,7 @@ ASH3_indir_indir.execute = {
 	if(update_ar2 && ar1 != ar2)
 	{
 		// Write back ARn
-		cpu.SetAR(ar2, output_ar2);
+		cpu.SetAR23_0(ar2, output_ar2);
 	}
 
 	// Write back result
@@ -1861,7 +1861,7 @@ CMPI3_indir_indir.execute = {
 	if(update_ar1)
 	{
 		// Write back ARn
-		cpu.SetAR(ar1, output_ar1);
+		cpu.SetAR23_0(ar1, output_ar1);
 	}
 
 	// Note: 13.4.2 3-Operand Addressing Modes, page 13-24
@@ -1873,7 +1873,7 @@ CMPI3_indir_indir.execute = {
 	if(update_ar2 && ar1 != ar2)
 	{
 		// Write back ARn
-		cpu.SetAR(ar2, output_ar2);
+		cpu.SetAR23_0(ar2, output_ar2);
 	}
 
 	// Generate flags (into ST)
@@ -2243,7 +2243,7 @@ LSH3_indir_indir.execute = {
 	if(update_ar1)
 	{
 		// Write back ARn
-		cpu.SetAR(ar1, output_ar1);
+		cpu.SetAR23_0(ar1, output_ar1);
 	}
 
 	// Note: 13.4.2 3-Operand Addressing Modes, page 13-24
@@ -2255,7 +2255,7 @@ LSH3_indir_indir.execute = {
 	if(update_ar2 && ar1 != ar2)
 	{
 		// Write back ARn
-		cpu.SetAR(ar2, output_ar2);
+		cpu.SetAR23_0(ar2, output_ar2);
 	}
 
 	// Write back result
@@ -2615,7 +2615,7 @@ MPYI3_indir_indir.execute = {
 	if(update_ar1)
 	{
 		// Write back ARn
-		cpu.SetAR(ar1, output_ar1);
+		cpu.SetAR23_0(ar1, output_ar1);
 	}
 
 	// Note: 13.4.2 3-Operand Addressing Modes, page 13-24
@@ -2627,7 +2627,7 @@ MPYI3_indir_indir.execute = {
 	if(update_ar2 && ar1 != ar2)
 	{
 		// Write back ARn
-		cpu.SetAR(ar2, output_ar2);
+		cpu.SetAR23_0(ar2, output_ar2);
 	}
 
 	// Write back result
@@ -2862,7 +2862,7 @@ OR3_indir_indir.execute = {
 	if(update_ar1)
 	{
 		// Write back ARn
-		cpu.SetAR(ar1, output_ar1);
+		cpu.SetAR23_0(ar1, output_ar1);
 	}
 
 	// Note: 13.4.2 3-Operand Addressing Modes, page 13-24
@@ -2874,7 +2874,7 @@ OR3_indir_indir.execute = {
 	if(update_ar2 && ar1 != ar2)
 	{
 		// Write back ARn
-		cpu.SetAR(ar2, output_ar2);
+		cpu.SetAR23_0(ar2, output_ar2);
 	}
 
 	// Write back result
@@ -3156,7 +3156,7 @@ SUBB3_indir_indir.execute = {
 	if(update_ar1)
 	{
 		// Write back ARn
-		cpu.SetAR(ar1, output_ar1);
+		cpu.SetAR23_0(ar1, output_ar1);
 	}
 
 	// Note: 13.4.2 3-Operand Addressing Modes, page 13-24
@@ -3168,7 +3168,7 @@ SUBB3_indir_indir.execute = {
 	if(update_ar2 && ar1 != ar2)
 	{
 		// Write back ARn
-		cpu.SetAR(ar2, output_ar2);
+		cpu.SetAR23_0(ar2, output_ar2);
 	}
 
 	// Write back result
@@ -3517,7 +3517,7 @@ SUBI3_indir_indir.execute = {
 	if(update_ar1)
 	{
 		// Write back ARn
-		cpu.SetAR(ar1, output_ar1);
+		cpu.SetAR23_0(ar1, output_ar1);
 	}
 
 	// Note: 13.4.2 3-Operand Addressing Modes, page 13-24
@@ -3529,7 +3529,7 @@ SUBI3_indir_indir.execute = {
 	if(update_ar2 && ar1 != ar2)
 	{
 		// Write back ARn
-		cpu.SetAR(ar2, output_ar2);
+		cpu.SetAR23_0(ar2, output_ar2);
 	}
 
 	// Write back result
@@ -3733,7 +3733,7 @@ TSTB3_indir_indir.execute = {
 	if(update_ar1)
 	{
 		// Write back ARn
-		cpu.SetAR(ar1, output_ar1);
+		cpu.SetAR23_0(ar1, output_ar1);
 	}
 
 	// Note: 13.4.2 3-Operand Addressing Modes, page 13-24
@@ -3745,7 +3745,7 @@ TSTB3_indir_indir.execute = {
 	if(update_ar2 && ar1 != ar2)
 	{
 		// Write back ARn
-		cpu.SetAR(ar2, output_ar2);
+		cpu.SetAR23_0(ar2, output_ar2);
 	}
 
 	// Generate flags (into ST)
@@ -3971,7 +3971,7 @@ XOR3_indir_indir.execute = {
 	if(update_ar1)
 	{
 		// Write back ARn
-		cpu.SetAR(ar1, output_ar1);
+		cpu.SetAR23_0(ar1, output_ar1);
 	}
 
 	// Note: 13.4.2 3-Operand Addressing Modes, page 13-24
@@ -3983,7 +3983,7 @@ XOR3_indir_indir.execute = {
 	if(update_ar2 && ar1 != ar2)
 	{
 		// Write back ARn
-		cpu.SetAR(ar2, output_ar2);
+		cpu.SetAR23_0(ar2, output_ar2);
 	}
 
 	// Write back result

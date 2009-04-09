@@ -260,9 +260,7 @@ Reset()
 	reg_pc = 0;
 	reg_npc = 0;
 	memset(regs, 0, sizeof(regs));
-
-	SetPC(0x1d);
-	SetSP(0x1000);
+	reset = true;
 }
 
 template<class CONFIG, bool DEBUG>
@@ -371,132 +369,132 @@ bool CPU<CONFIG, DEBUG>::DisasmIndir(string& s, address_t pc, unsigned int mod, 
 	{
 		case MOD_INDIRECT_ADDRESSING_WITH_PREDISPLACEMENT_ADD:
 			sstr << "*+AR" << ar << "("<< disp << ")";
-			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR(ar) + disp) << ">";
+			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName((GetAR23_0(ar) + disp) & ADDRESS_MASK) << ">";
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_PREDISPLACEMENT_SUBSTRACT:
 			sstr << "*-AR" << ar << "("<< disp << ")";
-			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR(ar) - disp) << ">";
+			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName((GetAR23_0(ar) - disp) & ADDRESS_MASK) << ">";
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_PREDISPLACEMENT_ADD_AND_MODIFY:
 			sstr << "*++AR" << ar << "("<< disp << ")";
-			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR(ar) + disp) << ">";
+			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName((GetAR23_0(ar) + disp) & ADDRESS_MASK) << ">";
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_PREDISPLACEMENT_SUBSTRACT_AND_MODIFY:
 			sstr << "*--AR" << ar << "("<< disp << ")";
-			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR(ar) - disp) << ">";
+			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName((GetAR23_0(ar) - disp) & ADDRESS_MASK) << ">";
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTDISPLACEMENT_ADD_AND_MODIFY:
 			sstr << "*AR" << ar << "++("<< disp << ")";
-			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR(ar)) << ">";
+			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR23_0(ar)) << ">";
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTDISPLACEMENT_SUBSTRACT_AND_MODIFY:
 			sstr << "*AR" << ar << "--("<< disp << ")";
-			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR(ar)) << ">";
+			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR23_0(ar)) << ">";
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTDISPLACEMENT_ADD_AND_CIRCULAR_MODIFY:
 			sstr << "*AR" << ar << "++("<< disp << ")%";
-			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR(ar)) << ">";
+			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR23_0(ar)) << ">";
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTDISPLACEMENT_SUBSTRACT_AND_CIRCULAR_MODIFY:
 			sstr << "*AR" << ar << "--("<< disp << ")%";
-			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR(ar)) << ">";
+			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR23_0(ar)) << ">";
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_PREINDEX_IR0_ADD:
 			sstr << "*+AR" << ar << "(IR0)";
-			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR(ar) + GetIR0()) << ">";
+			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName((GetAR23_0(ar) + GetIR0_23_0()) & ADDRESS_MASK) << ">";
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_PREINDEX_IR0_SUBSTRACT:
 			sstr << "*-AR" << ar << "(IR0)";
-			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR(ar) - GetIR0()) << ">";
+			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName((GetAR23_0(ar) - GetIR0_23_0()) & ADDRESS_MASK) << ">";
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_PREINDEX_IR0_ADD_AND_MODIFY:
 			sstr << "*++AR" << ar << "(IR0)";
-			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR(ar) + GetIR0()) << ">";
+			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName((GetAR23_0(ar) + GetIR0_23_0()) & ADDRESS_MASK) << ">";
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_PREINDEX_IR0_SUBSTRACT_AND_MODIFY:
 			sstr << "*--AR" << ar << "(IR0)";
-			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR(ar) - GetIR0()) << ">";
+			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName((GetAR23_0(ar) - GetIR0_23_0()) & ADDRESS_MASK) << ">";
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR0_ADD_AND_MODIFY:
 			sstr << "*AR" << ar << "++(IR0)";
-			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR(ar)) << ">";
+			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR23_0(ar)) << ">";
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR0_SUBSTRACT_AND_MODIFY:
 			sstr << "*AR" << ar << "--(IR0)";
-			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR(ar)) << ">";
+			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR23_0(ar)) << ">";
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR0_ADD_AND_CIRCULAR_MODIFY:
 			sstr << "*AR" << ar << "++(IR0)%";
-			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR(ar)) << ">";
+			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR23_0(ar)) << ">";
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR0_SUBSTRACT_AND_CIRCULAR_MODIFY:
 			sstr << "*AR" << ar << "--(IR0)%";
-			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR(ar)) << ">";
+			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR23_0(ar)) << ">";
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_PREINDEX_IR1_ADD:
 			sstr << "*+AR" << ar << "(IR1)";
-			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR(ar) + GetIR1()) << ">";
+			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName((GetAR23_0(ar) + GetIR1_23_0()) & ADDRESS_MASK) << ">";
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_PREINDEX_IR1_SUBSTRACT:
 			sstr << "*-AR" << ar << "(IR1)";
-			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR(ar) - GetIR1()) << ">";
+			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName((GetAR23_0(ar) - GetIR1_23_0()) & ADDRESS_MASK) << ">";
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_PREINDEX_IR1_ADD_AND_MODIFY:
 			sstr << "*++AR" << ar << "(IR1)";
-			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR(ar) + GetIR1()) << ">";
+			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName((GetAR23_0(ar) + GetIR1_23_0()) & ADDRESS_MASK) << ">";
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_PREINDEX_IR1_SUBSTRACT_AND_MODIFY:
 			sstr << "*--AR" << ar << "(IR1)";
-			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR(ar) - GetIR1()) << ">";
+			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName((GetAR23_0(ar) - GetIR1_23_0()) & ADDRESS_MASK) << ">";
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR1_ADD_AND_MODIFY:
 			sstr << "*AR" << ar << "++(IR1)";
-			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR(ar)) << ">";
+			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR23_0(ar)) << ">";
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR1_SUBSTRACT_AND_MODIFY:
 			sstr << "*AR" << ar << "--(IR1)";
-			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR(ar)) << ">";
+			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR23_0(ar)) << ">";
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR1_ADD_AND_CIRCULAR_MODIFY:
 			sstr << "*AR" << ar << "++(IR1)%";
-			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR(ar)) << ">";
+			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR23_0(ar)) << ">";
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR1_SUBSTRACT_AND_CIRCULAR_MODIFY:
 			sstr << "*AR" << ar << "--(IR1)%";
-			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR(ar)) << ">";
+			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR23_0(ar)) << ">";
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING:
 			sstr << "*AR" << ar;
-			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR(ar)) << ">";
+			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR23_0(ar)) << ">";
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR0_ADD_AND_BIT_REVERSED_MODIFY:
 			sstr << "*AR" << ar << "++(IR0)B";
-			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR(ar)) << ">";
+			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR23_0(ar)) << ">";
 			s = sstr.str();
 			return true;
 	}
@@ -578,7 +576,7 @@ CircularAdd(uint32_t ar, uint32_t bk, uint32_t step)
 	if(index > bk) index = index - bk;
 
 	// Return the new circular address
-	return base_addr + index;
+	return (base_addr + index) & ADDRESS_MASK;
 }
 
 template<class CONFIG, bool DEBUG>
@@ -608,7 +606,7 @@ CircularSubstract(uint32_t ar, uint32_t bk, uint32_t step)
 	if(index < 0) index = index + bk;
 
 	// Return the new circular address
-	return base_addr + index;
+	return (base_addr + index) & ADDRESS_MASK;
 }
 
 template<class CONFIG, bool DEBUG>
@@ -617,7 +615,7 @@ CPU<CONFIG, DEBUG> ::
 ComputeIndirEA(address_t& output_ea, bool& update_ar, address_t& output_ar, unsigned int mod, unsigned int ar_num, uint32_t disp)
 {
 	// Read ARn
-	address_t ar = GetAR(ar_num);
+	address_t ar = GetAR23_0(ar_num);
 
 	switch(mod)
 	{
@@ -625,7 +623,7 @@ ComputeIndirEA(address_t& output_ea, bool& update_ar, address_t& output_ar, unsi
 			// mnemonic: *+ARn(disp)
 			{
 				// Compute the effective address
-				address_t ea = ar + disp;
+				address_t ea = (ar + disp) & ADDRESS_MASK;
 
 				// Output the effective address
 				output_ea = ea;
@@ -638,7 +636,7 @@ ComputeIndirEA(address_t& output_ea, bool& update_ar, address_t& output_ar, unsi
 			// mnemonic: *-ARn(disp)
 			{
 				// Compute the effective address
-				address_t ea = ar - disp;
+				address_t ea = (ar - disp) & ADDRESS_MASK;
 
 				// Output the effective address
 				output_ea = ea;
@@ -651,7 +649,7 @@ ComputeIndirEA(address_t& output_ea, bool& update_ar, address_t& output_ar, unsi
 			// mnemonic: *++ARn(disp)
 			{
 				// Compute the effective address
-				address_t ea = ar + disp;
+				address_t ea = (ar + disp) & ADDRESS_MASK;
 
 				// Output the effective address
 				output_ea = ea;
@@ -665,7 +663,7 @@ ComputeIndirEA(address_t& output_ea, bool& update_ar, address_t& output_ar, unsi
 			// mnemonic: *--ARn(disp)
 			{
 				// Compute the effective address
-				address_t ea = ar - disp;
+				address_t ea = (ar - disp) & ADDRESS_MASK;
 
 				// Output the effective address
 				output_ea = ea;
@@ -686,7 +684,7 @@ ComputeIndirEA(address_t& output_ea, bool& update_ar, address_t& output_ar, unsi
 
 				// Compute and output update for ARn
 				update_ar = true;
-				output_ar = ar + disp;
+				output_ar = (ar + disp) & ADDRESS_MASK;
 			}
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTDISPLACEMENT_SUBSTRACT_AND_MODIFY:
@@ -700,7 +698,7 @@ ComputeIndirEA(address_t& output_ea, bool& update_ar, address_t& output_ar, unsi
 
 				// Compute and output update for ARn
 				update_ar = true;
-				output_ar = ar - disp;
+				output_ar = (ar - disp) & ADDRESS_MASK;
 			}
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTDISPLACEMENT_ADD_AND_CIRCULAR_MODIFY:
@@ -741,10 +739,10 @@ ComputeIndirEA(address_t& output_ea, bool& update_ar, address_t& output_ar, unsi
 			// mnemonic: *+ARn(IR0)
 			{
 				// Read IR0
-				uint32_t ir0 = GetIR0();
+				uint32_t ir0 = GetIR0_23_0();
 
 				// Compute the effective address
-				address_t ea = ar + ir0;
+				address_t ea = (ar + ir0) & ADDRESS_MASK;
 
 				// Output the effective address
 				output_ea = ea;
@@ -757,10 +755,10 @@ ComputeIndirEA(address_t& output_ea, bool& update_ar, address_t& output_ar, unsi
 			// mnemonic: *-ARn(IR0)
 			{
 				// Read IR0
-				uint32_t ir0 = GetIR0();
+				uint32_t ir0 = GetIR0_23_0();
 
 				// Compute the effective address
-				address_t ea = ar - ir0;
+				address_t ea = (ar - ir0) & ADDRESS_MASK;
 
 				// Output the effective address
 				output_ea = ea;
@@ -773,10 +771,10 @@ ComputeIndirEA(address_t& output_ea, bool& update_ar, address_t& output_ar, unsi
 			// mnemonic: *++ARn(IR0)
 			{
 				// Read IR0
-				uint32_t ir0 = GetIR0();
+				uint32_t ir0 = GetIR0_23_0();
 
 				// Compute the effective address
-				address_t ea = ar + ir0;
+				address_t ea = (ar + ir0) & ADDRESS_MASK;
 
 				// Output the effective address
 				output_ea = ea;
@@ -790,10 +788,10 @@ ComputeIndirEA(address_t& output_ea, bool& update_ar, address_t& output_ar, unsi
 			// mnemonic: *--ARn(IR0)
 			{
 				// Read IR0
-				uint32_t ir0 = GetIR0();
+				uint32_t ir0 = GetIR0_23_0();
 
 				// Compute the effective address
-				address_t ea = ar - ir0;
+				address_t ea = (ar - ir0) & ADDRESS_MASK;
 
 				// Output the effective address
 				output_ea = ea;
@@ -807,7 +805,7 @@ ComputeIndirEA(address_t& output_ea, bool& update_ar, address_t& output_ar, unsi
 			// mnemonic: *ARn++(IR0)
 			{
 				// Read IR0
-				uint32_t ir0 = GetIR0();
+				uint32_t ir0 = GetIR0_23_0();
 
 				// Compute the effective address
 				address_t ea = ar;
@@ -817,14 +815,14 @@ ComputeIndirEA(address_t& output_ea, bool& update_ar, address_t& output_ar, unsi
 
 				// Compute and output update for ARn
 				update_ar = true;
-				output_ar = ar + ir0;
+				output_ar = (ar + ir0) & ADDRESS_MASK;
 			}
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR0_SUBSTRACT_AND_MODIFY:
 			// mnemonic: *ARn--(IR0)
 			{
 				// Read IR0
-				uint32_t ir0 = GetIR0();
+				uint32_t ir0 = GetIR0_23_0();
 
 				// Compute the effective address
 				address_t ea = ar;
@@ -834,14 +832,14 @@ ComputeIndirEA(address_t& output_ea, bool& update_ar, address_t& output_ar, unsi
 
 				// Compute and output update for ARn
 				update_ar = true;
-				output_ar = ar - ir0;
+				output_ar = (ar - ir0) & ADDRESS_MASK;
 			}
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR0_ADD_AND_CIRCULAR_MODIFY:
 			// mnemonic: *ARn++(IR0)%
 			{
 				// Read IR0
-				uint32_t ir0 = GetIR0();
+				uint32_t ir0 = GetIR0_23_0();
 
 				// Read BK
 				uint32_t bk = GetBK();
@@ -861,7 +859,7 @@ ComputeIndirEA(address_t& output_ea, bool& update_ar, address_t& output_ar, unsi
 			// mnemonic: *ARn--(IR0)%
 			{
 				// Read IR0
-				uint32_t ir0 = GetIR0();
+				uint32_t ir0 = GetIR0_23_0();
 
 				// Read BK
 				uint32_t bk = GetBK();
@@ -881,10 +879,10 @@ ComputeIndirEA(address_t& output_ea, bool& update_ar, address_t& output_ar, unsi
 			// mnemonic: *+ARn(IR1)
 			{
 				// Read IR1
-				uint32_t ir1 = GetIR1();
+				uint32_t ir1 = GetIR1_23_0();
 
 				// Compute the effective address
-				address_t ea = ar + ir1;
+				address_t ea = (ar + ir1) & ADDRESS_MASK;
 
 				// Output the effective address
 				output_ea = ea;
@@ -897,10 +895,10 @@ ComputeIndirEA(address_t& output_ea, bool& update_ar, address_t& output_ar, unsi
 			// mnemonic: *-ARn(IR1)
 			{
 				// Read IR1
-				uint32_t ir1 = GetIR1();
+				uint32_t ir1 = GetIR1_23_0();
 
 				// Compute the effective address
-				address_t ea = ar - ir1;
+				address_t ea = (ar - ir1) & ADDRESS_MASK;
 
 				// Output the effective address
 				output_ea = ea;
@@ -913,10 +911,10 @@ ComputeIndirEA(address_t& output_ea, bool& update_ar, address_t& output_ar, unsi
 			// mnemonic: *++ARn(IR1)
 			{
 				// Read IR1
-				uint32_t ir1 = GetIR1();
+				uint32_t ir1 = GetIR1_23_0();
 
 				// Compute the effective address
-				address_t ea = ar + ir1;
+				address_t ea = (ar + ir1) & ADDRESS_MASK;
 
 				// Output the effective address
 				output_ea = ea;
@@ -930,10 +928,10 @@ ComputeIndirEA(address_t& output_ea, bool& update_ar, address_t& output_ar, unsi
 			// mnemonic: *--ARn(IR1)
 			{
 				// Read IR1
-				uint32_t ir1 = GetIR1();
+				uint32_t ir1 = GetIR1_23_0();
 
 				// Compute the effective address
-				address_t ea = ar - ir1;
+				address_t ea = (ar - ir1) & ADDRESS_MASK;
 
 				// Output the effective address
 				output_ea = ea;
@@ -947,7 +945,7 @@ ComputeIndirEA(address_t& output_ea, bool& update_ar, address_t& output_ar, unsi
 			// mnemonic: *ARn++(IR1)
 			{
 				// Read IR1
-				uint32_t ir1 = GetIR1();
+				uint32_t ir1 = GetIR1_23_0();
 
 				// Compute the effective address
 				address_t ea = ar;
@@ -957,14 +955,14 @@ ComputeIndirEA(address_t& output_ea, bool& update_ar, address_t& output_ar, unsi
 
 				// Compute and output update for ARn
 				update_ar = true;
-				output_ar = ar + ir1;
+				output_ar = (ar + ir1) & ADDRESS_MASK;
 			}
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR1_SUBSTRACT_AND_MODIFY:
 			// mnemonic: *ARn--(IR1)
 			{
 				// Read IR1
-				uint32_t ir1 = GetIR1();
+				uint32_t ir1 = GetIR1_23_0();
 
 				// Compute the effective address
 				address_t ea = ar;
@@ -974,14 +972,14 @@ ComputeIndirEA(address_t& output_ea, bool& update_ar, address_t& output_ar, unsi
 
 				// Compute and output update for ARn
 				update_ar = true;
-				output_ar = ar - ir1;
+				output_ar = (ar - ir1) & ADDRESS_MASK;
 			}
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR1_ADD_AND_CIRCULAR_MODIFY:
 			// mnemonic: *ARn++(IR1)%
 			{
 				// Read IR1
-				uint32_t ir1 = GetIR1();
+				uint32_t ir1 = GetIR1_23_0();
 
 				// Read BK
 				uint32_t bk = GetBK();
@@ -1001,7 +999,7 @@ ComputeIndirEA(address_t& output_ea, bool& update_ar, address_t& output_ar, unsi
 			// mnemonic: *ARn--(IR1)%
 			{
 				// Read IR1
-				uint32_t ir1 = GetIR1();
+				uint32_t ir1 = GetIR1_23_0();
 
 				// Read BK
 				uint32_t bk = GetBK();
@@ -1034,7 +1032,7 @@ ComputeIndirEA(address_t& output_ea, bool& update_ar, address_t& output_ar, unsi
 			// mnemonic: *ARn++(IR0)B
 			{
 				// Read IR0
-				uint32_t ir0 = GetIR0();
+				uint32_t ir0 = GetIR0_23_0();
 
 				// Compute the effective address
 				address_t ea = ar;
@@ -1090,93 +1088,84 @@ StepInstruction()
 
 	try
 	{
-		// Check if there are some enabled pending IRQs
-		if(unlikely((GetIF() & GetIE() & IRQ_MASK) && !GetST_GIE()))
+		if(unlikely(reset))
 		{
-			unsigned int irq_num;
+			// Load the reset interrupt handler address
+			address_t reset_interrupt_handler_addr = IntLoad(0);
 
-			// Select an IRQ according priority (from the higher to the lower)
-			if(unlikely(!BitScanForward(irq_num, GetIF())))
-			{
-				throw InternalErrorException<CONFIG, DEBUG>("No pending IRQ found");
-			}
-
-			// Read SP and compute its new value
-			typename CONFIG::address_t sp = GetSP() + 1;
-
-			// Store the PC at SP + 1
-			IntStore(sp, reg_pc);
-
-			// Update SP
-			SetSP(sp);
-
-			// Load the interrupt handler address
-			address_t interrupt_handler_addr = IntLoad(irq_num + 1);
-
-			// Branch to interrupt handler
-			reg_pc = interrupt_handler_addr;
-
-			// Reset ST[GIE] to disable further IRQs until reactivated by software
-			ResetST_GIE();
-
-			// Reset bit corresponding to the IRQ in register IF
-			SetIRQLevel(irq_num, false);
+			// Branch to the reset interrupt handler
+			reg_pc = reset_interrupt_handler_addr;
 
 			// Fetch first instruction of the interrupt handler
-			reg_ir = Fetch(reg_pc);
+			reg_ir = Fetch(reg_pc & ADDRESS_MASK);
+
+			// Compute the address of the next instruction, i.e. PC + 1
+			reg_npc = reg_pc + 1;
+
+			// Reset finished
+			reset = false;
 		}
 		else
 		{
-			// Check whether the processor is running in repeat mode (RPTB or RPTS)
-			if(unlikely(GetST_RM()))
+			// Check if there are some enabled pending IRQs
+			if(unlikely((GetIF() & GetIE() & IRQ_MASK) && !GetST_GIE()))
 			{
-				// Check whether this is a repeat single (RPTS)
-				if(repeat_single)
+				unsigned int irq_num;
+
+				// Select an IRQ according priority (from the higher to the lower)
+				if(unlikely(!BitScanForward(irq_num, GetIF())))
 				{
-					// Check whether instruction to repeat has already been fetched from memory to IR
-					if(unlikely(first_time_through_repeat_single))
-					{
-						// Fetch the instruction from memory into IR
-						reg_ir = Fetch(reg_pc);
-						first_time_through_repeat_single = false;
-					}
-
-					// Decrement RC
-					regs[REG_RC].lo = regs[REG_RC].lo - 1;
-
-					// Check if RC is < 0
-					if((int32_t) regs[REG_RC].lo < 0)
-					{
-						// Disable the repeat mode by resetting ST[RM] bit
-						ResetST_RM();
-						repeat_single = false;
-						// Compute the address of the next instruction, i.e. PC + 1
-						reg_npc = reg_pc + 1;
-					}
-					else
-					{
-						// Compute the address of the next instruction, i.e. PC so that current instruction in IR will be repeated again
-						reg_npc = reg_pc;
-					}
+					throw InternalErrorException<CONFIG, DEBUG>("No pending IRQ found");
 				}
-				else
-				{
-					// Fetch the instruction from memory into IR
-					reg_ir = Fetch(reg_pc);
 
-					// Check whether the end of the block to repeat has been reached
-					if(reg_pc == regs[REG_RE].lo)
+				// Read SP and compute its new value
+				typename CONFIG::address_t sp = GetSP() + 1;
+
+				// Store the PC at SP + 1
+				IntStore(sp & ADDRESS_MASK, reg_pc);
+
+				// Update SP
+				SetSP(sp);
+
+				// Load the interrupt handler address
+				address_t interrupt_handler_addr = IntLoad(irq_num + 1);
+
+				// Branch to interrupt handler
+				reg_pc = interrupt_handler_addr;
+
+				// Reset ST[GIE] to disable further IRQs until reactivated by software
+				ResetST_GIE();
+
+				// Reset bit corresponding to the IRQ in register IF
+				SetIRQLevel(irq_num, false);
+
+				// Fetch first instruction of the interrupt handler
+				reg_ir = Fetch(reg_pc & ADDRESS_MASK);
+
+				// Compute the address of the next instruction, i.e. PC + 1
+				reg_npc = reg_pc + 1;
+			}
+			else
+			{
+				// Check whether the processor is running in repeat mode (RPTB or RPTS)
+				if(unlikely(GetST_RM()))
+				{
+					// Check whether this is a repeat single (RPTS)
+					if(repeat_single)
 					{
+						// Check whether instruction to repeat has already been fetched from memory to IR
+						if(unlikely(first_time_through_repeat_single))
+						{
+							// Fetch the instruction from memory into IR
+							reg_ir = Fetch(reg_pc & ADDRESS_MASK);
+							first_time_through_repeat_single = false;
+						}
+
 						// Decrement RC
 						regs[REG_RC].lo = regs[REG_RC].lo - 1;
 
-						// Check if RC is >= 0
-						if((int32_t) regs[REG_RC].lo >= 0)
-						{
-							// Compute the address the next instruction, i.e. the start of the block to repeat
-							reg_npc = regs[REG_RS].lo;
-						}
-						else
+						// Check if RC is < 0
+						if((int32_t) regs[REG_RC].lo < 0)
 						{
 							// Disable the repeat mode by resetting ST[RM] bit
 							ResetST_RM();
@@ -1184,21 +1173,53 @@ StepInstruction()
 							// Compute the address of the next instruction, i.e. PC + 1
 							reg_npc = reg_pc + 1;
 						}
+						else
+						{
+							// Compute the address of the next instruction, i.e. PC so that current instruction in IR will be repeated again
+							reg_npc = reg_pc;
+						}
 					}
 					else
 					{
-						// Compute the address of the next instruction, i.e. PC + 1
-						reg_npc = reg_pc + 1;
+						// Fetch the instruction from memory into IR
+						reg_ir = Fetch(reg_pc & ADDRESS_MASK);
+
+						// Check whether the end of the block to repeat has been reached
+						if(reg_pc == regs[REG_RE].lo)
+						{
+							// Decrement RC
+							regs[REG_RC].lo = regs[REG_RC].lo - 1;
+
+							// Check if RC is >= 0
+							if((int32_t) regs[REG_RC].lo >= 0)
+							{
+								// Compute the address the next instruction, i.e. the start of the block to repeat
+								reg_npc = regs[REG_RS].lo;
+							}
+							else
+							{
+								// Disable the repeat mode by resetting ST[RM] bit
+								ResetST_RM();
+								repeat_single = false;
+								// Compute the address of the next instruction, i.e. PC + 1
+								reg_npc = reg_pc + 1;
+							}
+						}
+						else
+						{
+							// Compute the address of the next instruction, i.e. PC + 1
+							reg_npc = reg_pc + 1;
+						}
 					}
 				}
-			}
-			else
-			{
-				// Fetch the instruction from memory into IR
-				reg_ir = Fetch(reg_pc);
+				else
+				{
+					// Fetch the instruction from memory into IR
+					reg_ir = Fetch(reg_pc & ADDRESS_MASK);
 
-				// Compute the address of the next instruction, i.e. PC + 1
-				reg_npc = reg_pc + 1;
+					// Compute the address of the next instruction, i.e. PC + 1
+					reg_npc = reg_pc + 1;
+				}
 			}
 		}
 
