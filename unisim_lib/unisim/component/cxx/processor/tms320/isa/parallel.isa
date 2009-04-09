@@ -206,16 +206,16 @@ ABSI_STI.execute = {
 	// both addresses are correctly generated, but only the value created by
 	// the src3 field is saved in the auxiliary register specified...
 
-	if(s2_update_ar)
-	{
-		// Write back ARn
-		cpu.SetAR23_0(s2_ar, s2_output_ar);
-	}
-
-	if(d2_update_ar && s2_ar != d2_ar)
+	if(d2_update_ar)
 	{
 		// Write back ARn
 		cpu.SetAR23_0(d2_ar, d2_output_ar);
+	}
+
+	if(s2_update_ar && s2_ar != d2_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(s2_ar, s2_output_ar);
 	}
 
 	// Generate flags (into ST)
@@ -440,16 +440,16 @@ ADDI3_STI.execute = {
 	// both addresses are correctly generated, but only the value created by
 	// the src3 field is saved in the auxiliary register specified...
 
-	if(s2_update_ar)
-	{
-		// Write back ARn
-		cpu.SetAR23_0(s2_ar, s2_output_ar);
-	}
-
-	if(d2_update_ar && s2_ar != d2_ar)
+	if(d2_update_ar)
 	{
 		// Write back ARn
 		cpu.SetAR23_0(d2_ar, d2_output_ar);
+	}
+
+	if(s2_update_ar && s2_ar != d2_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(s2_ar, s2_output_ar);
 	}
 
 	// Check whether 'dst1' operand is an extended precision register
@@ -618,16 +618,16 @@ AND3_STI.execute = {
 	// both addresses are correctly generated, but only the value created by
 	// the src3 field is saved in the auxiliary register specified...
 
-	if(s2_update_ar)
-	{
-		// Write back ARn
-		cpu.SetAR23_0(s2_ar, s2_output_ar);
-	}
-
-	if(d2_update_ar && s2_ar != d2_ar)
+	if(d2_update_ar)
 	{
 		// Write back ARn
 		cpu.SetAR23_0(d2_ar, d2_output_ar);
+	}
+
+	if(s2_update_ar && s2_ar != d2_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(s2_ar, s2_output_ar);
 	}
 
 	// Generate flags (into ST)
@@ -811,16 +811,16 @@ ASH3_STI.execute = {
 	// both addresses are correctly generated, but only the value created by
 	// the src3 field is saved in the auxiliary register specified...
 
-	if(s2_update_ar)
-	{
-		// Write back ARn
-		cpu.SetAR23_0(s2_ar, s2_output_ar);
-	}
-
-	if(d2_update_ar && s2_ar != d2_ar)
+	if(d2_update_ar)
 	{
 		// Write back ARn
 		cpu.SetAR23_0(d2_ar, d2_output_ar);
+	}
+
+	if(s2_update_ar && s2_ar != d2_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(s2_ar, s2_output_ar);
 	}
 
 	// Generate flags (into ST)
@@ -1139,17 +1139,18 @@ LDI_STI.execute = {
 	// Write back result
 	cpu.SetIntReg(dst1, src2_value);
 
-	if(s2_update_ar)
+	if(d2_update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(d2_ar, d2_output_ar);
+	}
+
+	if(s2_update_ar && s2_ar != d2_ar)
 	{
 		// Write back ARn
 		cpu.SetAR23_0(s2_ar, s2_output_ar);
 	}
 
-	if(d2_update_ar && s2_ar != d2_ar)
-	{
-		// Write back ARn
-		cpu.SetAR23_0(d2_ar, d2_output_ar);
-	}
 }
 
 //    reg(src2) -> reg(dst1)
@@ -1311,16 +1312,16 @@ LSH3_STI.execute = {
 	// both addresses are correctly generated, but only the value created by
 	// the src3 field is saved in the auxiliary register specified...
 
-	if(s2_update_ar)
-	{
-		// Write back ARn
-		cpu.SetAR23_0(s2_ar, s2_output_ar);
-	}
-
-	if(d2_update_ar && s2_ar != d2_ar)
+	if(d2_update_ar)
 	{
 		// Write back ARn
 		cpu.SetAR23_0(d2_ar, d2_output_ar);
+	}
+
+	if(s2_update_ar && s2_ar != d2_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(s2_ar, s2_output_ar);
 	}
 
 	// Generate flags (into ST)
@@ -1566,16 +1567,16 @@ MPYI3_STI.execute = {
 	// both addresses are correctly generated, but only the value created by
 	// the src3 field is saved in the auxiliary register specified...
 
-	if(s2_update_ar)
-	{
-		// Write back ARn
-		cpu.SetAR23_0(s2_ar, s2_output_ar);
-	}
-
-	if(d2_update_ar && s2_ar != d2_ar)
+	if(d2_update_ar)
 	{
 		// Write back ARn
 		cpu.SetAR23_0(d2_ar, d2_output_ar);
+	}
+
+	if(s2_update_ar && s2_ar != d2_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(s2_ar, s2_output_ar);
 	}
 
 	// Generate flags (into ST)
@@ -1796,16 +1797,16 @@ NEGI_STI.execute = {
 	// both addresses are correctly generated, but only the value created by
 	// the src3 field is saved in the auxiliary register specified...
 
-	if(s2_update_ar)
-	{
-		// Write back ARn
-		cpu.SetAR23_0(s2_ar, s2_output_ar);
-	}
-
-	if(d2_update_ar && s2_ar != d2_ar)
+	if(d2_update_ar)
 	{
 		// Write back ARn
 		cpu.SetAR23_0(d2_ar, d2_output_ar);
+	}
+
+	if(s2_update_ar && s2_ar != d2_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(s2_ar, s2_output_ar);
 	}
 
 	// Generate flags (into ST)
@@ -1960,16 +1961,16 @@ NOT_STI.execute = {
 	// both addresses are correctly generated, but only the value created by
 	// the src3 field is saved in the auxiliary register specified...
 
-	if(s2_update_ar)
-	{
-		// Write back ARn
-		cpu.SetAR23_0(s2_ar, s2_output_ar);
-	}
-
-	if(d2_update_ar && s2_ar != d2_ar)
+	if(d2_update_ar)
 	{
 		// Write back ARn
 		cpu.SetAR23_0(d2_ar, d2_output_ar);
+	}
+
+	if(s2_update_ar && s2_ar != d2_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(s2_ar, s2_output_ar);
 	}
 
 	// Generate flags (into ST)
@@ -2117,16 +2118,16 @@ OR3_STI.execute = {
 	// both addresses are correctly generated, but only the value created by
 	// the src3 field is saved in the auxiliary register specified...
 
-	if(s2_update_ar)
-	{
-		// Write back ARn
-		cpu.SetAR23_0(s2_ar, s2_output_ar);
-	}
-
-	if(d2_update_ar && s2_ar != d2_ar)
+	if(d2_update_ar)
 	{
 		// Write back ARn
 		cpu.SetAR23_0(d2_ar, d2_output_ar);
+	}
+
+	if(s2_update_ar && s2_ar != d2_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(s2_ar, s2_output_ar);
 	}
 
 	// Generate flags (into ST)
@@ -2310,22 +2311,25 @@ STI_STI.execute = {
 	// Store the word into memory
 	cpu.IntStore(d2_ea, src2_value);
 
+	// Note: If both stores are executed to the
+	// same address, the value written is that of STI src2, dst2.
+
 	// Store the word into memory
 	if(d1_ea != d2_ea)
 	{
 		cpu.IntStore(d1_ea, src1_value);
 	}
 
-	if(d2_update_ar)
-	{
-		// Write back ARn
-		cpu.SetAR23_0(d2_ar, d2_output_ar);
-	}
-
-	if(d1_update_ar && d1_ar != d2_ar)
+	if(d1_update_ar)
 	{
 		// Write back ARn
 		cpu.SetAR23_0(d1_ar, d1_output_ar);
+	}
+
+	if(d2_update_ar && d1_ar != d2_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(d2_ar, d2_output_ar);
 	}
 }
 
@@ -2355,11 +2359,11 @@ STI_STI_ext.execute = {
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 
-	// Write back 'src2' into 'dst2' register
-	cpu.SetIntReg(dst2, src2_value);
-
 	// Store the word into memory
 	cpu.IntStore(d1_ea, src1_value);
+
+	// Write back 'src2' into 'dst2' register
+	cpu.SetIntReg(dst2, src2_value);
 
 	if(d1_update_ar)
 	{
@@ -2514,16 +2518,16 @@ SUBI3_STI.execute = {
 	// both addresses are correctly generated, but only the value created by
 	// the src3 field is saved in the auxiliary register specified...
 
-	if(s2_update_ar)
-	{
-		// Write back ARn
-		cpu.SetAR23_0(s2_ar, s2_output_ar);
-	}
-
-	if(d2_update_ar && s2_ar != d2_ar)
+	if(d2_update_ar)
 	{
 		// Write back ARn
 		cpu.SetAR23_0(d2_ar, d2_output_ar);
+	}
+
+	if(s2_update_ar && s2_ar != d2_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(s2_ar, s2_output_ar);
 	}
 
 	// Generate flags (into ST)
@@ -2690,16 +2694,16 @@ XOR3_STI.execute = {
 	// both addresses are correctly generated, but only the value created by
 	// the src3 field is saved in the auxiliary register specified...
 
-	if(s2_update_ar)
-	{
-		// Write back ARn
-		cpu.SetAR23_0(s2_ar, s2_output_ar);
-	}
-
-	if(d2_update_ar && s2_ar != d2_ar)
+	if(d2_update_ar)
 	{
 		// Write back ARn
 		cpu.SetAR23_0(d2_ar, d2_output_ar);
+	}
+
+	if(s2_update_ar && s2_ar != d2_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(s2_ar, s2_output_ar);
 	}
 
 	// Generate flags (into ST)
@@ -2886,16 +2890,16 @@ LDI_LDI.execute = {
 		cpu.SetIntReg(dst1, src1_value);
 	}
 
-	if(s2_update_ar)
-	{
-		// Write back ARn
-		cpu.SetAR23_0(s2_ar, s2_output_ar);
-	}
-
-	if(s1_update_ar && s1_ar != s2_ar)
+	if(s1_update_ar)
 	{
 		// Write back ARn
 		cpu.SetAR23_0(s1_ar, s1_output_ar);
+	}
+
+	if(s2_update_ar && s1_ar != s2_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(s2_ar, s2_output_ar);
 	}
 }
 
@@ -2921,6 +2925,10 @@ LDI_LDI_ext.execute = {
 
 	// Read the 'src2' register operand value
 	uint32_t src2_value = cpu.GetIntReg(src2);
+
+	// Note: The assembler issues a warning
+	// if the LDIs load the same register.
+	// The result is that of LDI src2, dst2 (pp 13-129).
 
 	// Write back register operand 'dst2'
 	cpu.SetIntReg(dst2, src2_value);
@@ -3389,6 +3397,10 @@ MPYI3_ADDI3.execute = {
 	unsigned int dst2 = d2 + 2;
 	cpu.SetIntReg(2 + dst2, addi3_result);
 
+	// Note: ...if the src3 and src4 fields use the same auxiliary register,
+	// both addresses are correctly generated, but only the value created by
+	// the src3 field is saved in the auxiliary register specified...
+
 	if(s3_update_ar)
 	{
 		// Write back ARn
@@ -3731,6 +3743,10 @@ MPYI3_SUBI3.execute = {
 	// Write back 'dst2' register operand
 	unsigned int dst2 = d2 + 2;
 	cpu.SetIntReg(2 + dst2, subi3_result);
+
+	// Note: ...if the src3 and src4 fields use the same auxiliary register,
+	// both addresses are correctly generated, but only the value created by
+	// the src3 field is saved in the auxiliary register specified...
 
 	if(s3_update_ar)
 	{
