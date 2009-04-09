@@ -374,7 +374,7 @@ int Device<CONFIG>::Attribute(int attrib)
     case CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT:
     	return CONFIG::CORE_COUNT;
 	case CU_DEVICE_ATTRIBUTE_KERNEL_EXEC_TIMEOUT:
-		return 1664;  // undocumented attribute, random value used.
+		return 0;  // No timeout
 	case 0x20080403:
 		//return 1;    // Happy birthday!
 	default:

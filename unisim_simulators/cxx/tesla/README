@@ -1,6 +1,6 @@
 Barra - NVidia G80 functional simulator
  Version 0.1
- Sylvain Collange (sylvain.collange @ univ-perp.fr), 2009
+ 04/2009
 
 Barra simulates CUDA programs at the assembly language level (Tesla ISA). Its
 ultimate goal is to provide a 100% bit-accurate simulation, offering
