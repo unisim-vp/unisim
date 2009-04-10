@@ -508,6 +508,38 @@ private:
 	address_t reg_npc;   // Next program counter (invisible for the programmer)
 	reg_t regs[32];
 
+	//===============================================================
+	//= Instruction cache                                     START =
+	//===============================================================
+
+	uint64_t insn_cache_hits;
+	uint64_t insn_cache_misses;
+	Statistic<uint64_t> stat_insn_cache_hits;
+	Statistic<uint64_t> stat_insn_cache_misses;
+
+	static const uint32_t INSN_CACHE_ASSOCIATIVITY = (CONFIG::INSN_CACHE_ASSOCIATIVITY > 2) ? 2 : CONFIG::INSN_CACHE_ASSOCIATIVITY;
+	static const uint32_t NUM_INSN_CACHE_SETS = CONFIG::INSN_CACHE_SIZE / CONFIG::INSN_CACHE_ASSOCIATIVITY;
+
+	class InsnCacheBlock
+	{
+	public:
+		bool valid;
+		address_t addr;
+		uint32_t insn;
+	};
+
+	class InsnCacheSet
+	{
+	public:
+		uint32_t mru_way;
+		InsnCacheBlock blocks[CONFIG::INSN_CACHE_ASSOCIATIVITY];
+	};
+
+	InsnCacheSet insn_cache[NUM_INSN_CACHE_SETS];
+
+	//===============================================================
+	//= Instruction cache                                      STOP =
+	//===============================================================
 public:
 	/** Get ARn
 	    @param reg_num the AR register number
@@ -872,6 +904,14 @@ public:
 	/** Reset bit GIE of register ST
 	*/
 	inline void ResetST_GIE() { SetST(GetST() & ~(1 << ST_GIE)); }
+
+	/** Reset bit CC of register ST
+	*/
+	inline void ResetST_CC() { SetST(GetST() & ~(1 << ST_CC)); }
+
+	/** Set bit CE of register ST
+	*/
+	inline void SetST_CE() { SetST(GetST() | (1 << ST_CE)); }
 
 	/** Set repeat-single bit
 	*/

@@ -113,7 +113,9 @@ CPU(const char *name,
 	instruction_counter(0),
 	stat_instruction_counter("instruction-counter", this, instruction_counter),
 	max_inst(0xffffffffffffffffULL),
-	param_max_inst("max-inst", this, max_inst)
+	param_max_inst("max-inst", this, max_inst),
+	stat_insn_cache_hits("insn-cache-hits", this, insn_cache_hits),
+	stat_insn_cache_misses("insn-cache-misses", this, insn_cache_misses)
 {
 	registers_registry["PC"] = new unisim::util::debug::SimpleRegister<uint32_t>("PC", &reg_pc);
 
@@ -174,11 +176,18 @@ Setup()
 {
 	bool success = true;
 	
+
 	if (VerboseAll())
 	{
 		verbose_setup = true;
 	}
 	
+	if(CONFIG::INSN_CACHE_ASSOCIATIVITY > 2)
+	{
+		logger << DebugError << "Instruction cache associativity must be 1 or 2" << EndDebugError;
+		return false;
+	}
+
 	if (VerboseSetup())
 	{
 		logger << DebugInfo << "Starting \"" << Object::GetName() << "\" setup" << endl;
@@ -1365,17 +1374,95 @@ uint32_t
 CPU<CONFIG, DEBUG> ::
 Fetch(address_t addr)
 {
-	uint32_t insn;
+	// Memory access reporting
+	if(unlikely(requires_memory_access_reporting && memory_access_reporting_import))
+	{
+		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<uint64_t>::MAT_READ, MemoryAccessReporting<uint64_t>::MT_INSN, 4 * addr, 4);
+	}
 
+	uint32_t insn;
+	InsnCacheSet *insn_cache_set;
+
+	// Check wether instruction cache is being cleared
+	if(unlikely(CONFIG::ENABLE_INSN_CACHE && GetST_CC()))
+	{
+		uint32_t insn_cache_index;
+		for(insn_cache_index = 0; insn_cache_index < NUM_INSN_CACHE_SETS; insn_cache_index++)
+		{
+			uint32_t insn_cache_way;
+
+			insn_cache_set = &insn_cache[insn_cache_index];
+			insn_cache_set->mru_way = 0;
+
+			for(insn_cache_way = 0; insn_cache_way < INSN_CACHE_ASSOCIATIVITY; insn_cache_way++)
+			{
+				InsnCacheBlock *insn_cache_block = &insn_cache_set->blocks[insn_cache_way];
+				insn_cache_block->valid = false;
+			}
+		}
+		ResetST_CC();
+	}
+
+	// Check wether instruction cache is enabled
+	if(likely(CONFIG::ENABLE_INSN_CACHE && GetST_CE()))
+	{
+		uint32_t insn_cache_index;
+		insn_cache_index = addr % NUM_INSN_CACHE_SETS;
+		insn_cache_set = &insn_cache[insn_cache_index];
+
+		// Associative search
+		uint32_t insn_cache_way;
+		unsigned i;
+
+		// the most recently used way is the first that is checked
+		for(insn_cache_way = insn_cache_set->mru_way, i = 0; i < INSN_CACHE_ASSOCIATIVITY; insn_cache_way = insn_cache_way ^ 1, i++)
+		{
+			InsnCacheBlock *insn_cache_block = &insn_cache_set->blocks[insn_cache_way];
+			if(insn_cache_block->valid && insn_cache_block->addr == addr)
+			{
+				// Hit
+				insn_cache_hits++;
+
+				// Read the instruction word from the cache block
+				insn = insn_cache_block->insn;
+
+				// Update the replacement policy
+				if(INSN_CACHE_ASSOCIATIVITY > 1 && !GetST_CF())
+				{
+					insn_cache_set->mru_way = insn_cache_way;
+				}
+
+				return LittleEndian2Host(insn);
+			}
+		}
+	}
+
+	// Fetch instruction from memory
 	if(unlikely(!PrRead(addr, &insn, sizeof(insn))))
 	{
 		throw BadMemoryAccessException<CONFIG, DEBUG>(addr);
 	}
 
-	// Memory access reporting
-	if(unlikely(requires_memory_access_reporting && memory_access_reporting_import))
+	if(likely(CONFIG::ENABLE_INSN_CACHE && GetST_CE() && !GetST_CF()))
 	{
-		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<uint64_t>::MAT_READ, MemoryAccessReporting<uint64_t>::MT_INSN, 4 * addr, 4);
+		// Instruction cache miss
+		insn_cache_misses++;
+
+		// Choose a way
+		uint32_t insn_cache_way = (INSN_CACHE_ASSOCIATIVITY > 1) ? insn_cache_set->mru_way ^ 1 : 0;
+			
+		InsnCacheBlock *insn_cache_block = &insn_cache_set->blocks[insn_cache_way];
+
+		// Refill instruction cache
+		insn_cache_block->valid = true;
+		insn_cache_block->addr = addr;
+		insn_cache_block->insn = insn;
+
+		// Update the replacement policy
+		if(INSN_CACHE_ASSOCIATIVITY > 1)
+		{
+			insn_cache_set->mru_way = insn_cache_way;
+		}
 	}
 
 	return LittleEndian2Host(insn);

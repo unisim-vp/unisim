@@ -88117,16 +88117,16 @@ cpu
 		// both addresses are correctly generated, but only the value created by
 		// the src3 field is saved in the auxiliary register specified...
 
-		if(s2_update_ar)
-		{
-			// Write back ARn
-			cpu.SetAR23_0(s2_ar, s2_output_ar);
-		}
-
-		if(d2_update_ar && s2_ar != d2_ar)
+		if(d2_update_ar)
 		{
 			// Write back ARn
 			cpu.SetAR23_0(d2_ar, d2_output_ar);
+		}
+
+		if(s2_update_ar && s2_ar != d2_ar)
+		{
+			// Write back ARn
+			cpu.SetAR23_0(s2_ar, s2_output_ar);
 		}
 
 		// Generate flags (into ST)
@@ -88812,16 +88812,16 @@ cpu
 		// both addresses are correctly generated, but only the value created by
 		// the src3 field is saved in the auxiliary register specified...
 
-		if(s2_update_ar)
-		{
-			// Write back ARn
-			cpu.SetAR23_0(s2_ar, s2_output_ar);
-		}
-
-		if(d2_update_ar && s2_ar != d2_ar)
+		if(d2_update_ar)
 		{
 			// Write back ARn
 			cpu.SetAR23_0(d2_ar, d2_output_ar);
+		}
+
+		if(s2_update_ar && s2_ar != d2_ar)
+		{
+			// Write back ARn
+			cpu.SetAR23_0(s2_ar, s2_output_ar);
 		}
 
 		// Check whether 'dst1' operand is an extended precision register
@@ -89221,16 +89221,16 @@ cpu
 		// both addresses are correctly generated, but only the value created by
 		// the src3 field is saved in the auxiliary register specified...
 
-		if(s2_update_ar)
-		{
-			// Write back ARn
-			cpu.SetAR23_0(s2_ar, s2_output_ar);
-		}
-
-		if(d2_update_ar && s2_ar != d2_ar)
+		if(d2_update_ar)
 		{
 			// Write back ARn
 			cpu.SetAR23_0(d2_ar, d2_output_ar);
+		}
+
+		if(s2_update_ar && s2_ar != d2_ar)
+		{
+			// Write back ARn
+			cpu.SetAR23_0(s2_ar, s2_output_ar);
 		}
 
 		// Generate flags (into ST)
@@ -89645,16 +89645,16 @@ cpu
 		// both addresses are correctly generated, but only the value created by
 		// the src3 field is saved in the auxiliary register specified...
 
-		if(s2_update_ar)
-		{
-			// Write back ARn
-			cpu.SetAR23_0(s2_ar, s2_output_ar);
-		}
-
-		if(d2_update_ar && s2_ar != d2_ar)
+		if(d2_update_ar)
 		{
 			// Write back ARn
 			cpu.SetAR23_0(d2_ar, d2_output_ar);
+		}
+
+		if(s2_update_ar && s2_ar != d2_ar)
+		{
+			// Write back ARn
+			cpu.SetAR23_0(s2_ar, s2_output_ar);
 		}
 
 		// Generate flags (into ST)
@@ -90898,97 +90898,98 @@ cpu
 		// Write back result
 		cpu.SetIntReg(dst1, src2_value);
 
-		if(s2_update_ar)
+		if(d2_update_ar)
+		{
+			// Write back ARn
+			cpu.SetAR23_0(d2_ar, d2_output_ar);
+		}
+
+		if(s2_update_ar && s2_ar != d2_ar)
 		{
 			// Write back ARn
 			cpu.SetAR23_0(s2_ar, s2_output_ar);
 		}
 
-		if(d2_update_ar && s2_ar != d2_ar)
-		{
-			// Write back ARn
-			cpu.SetAR23_0(d2_ar, d2_output_ar);
-		}
 	}
-#line 90914 "isa_tms320.tcc"
+#line 90915 "isa_tms320.tcc"
 }
 
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 90920 "isa_tms320.tcc"
+#line 90921 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 90923 "isa_tms320.tcc"
+#line 90924 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 90927 "isa_tms320.tcc"
+#line 90928 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 90930 "isa_tms320.tcc"
+#line 90931 "isa_tms320.tcc"
 >
 static Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 90935 "isa_tms320.tcc"
+#line 90936 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 90939 "isa_tms320.tcc"
+#line 90940 "isa_tms320.tcc"
 > *DecodeOpLDI_STI(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpLDI_STI<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 90945 "isa_tms320.tcc"
+#line 90946 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 90949 "isa_tms320.tcc"
+#line 90950 "isa_tms320.tcc"
 	>(code, addr);
 }
 
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 90956 "isa_tms320.tcc"
+#line 90957 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 90959 "isa_tms320.tcc"
+#line 90960 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 90963 "isa_tms320.tcc"
+#line 90964 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 90966 "isa_tms320.tcc"
+#line 90967 "isa_tms320.tcc"
 >
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 bool
-#line 90970 "isa_tms320.tcc"
+#line 90971 "isa_tms320.tcc"
 OpLDI_STI_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 90974 "isa_tms320.tcc"
+#line 90975 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 90978 "isa_tms320.tcc"
+#line 90979 "isa_tms320.tcc"
 >::disasm(
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 90982 "isa_tms320.tcc"
+#line 90983 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 90985 "isa_tms320.tcc"
+#line 90986 "isa_tms320.tcc"
 ,
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 std::ostream &
-#line 90989 "isa_tms320.tcc"
+#line 90990 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 os
-#line 90992 "isa_tms320.tcc"
+#line 90993 "isa_tms320.tcc"
 )
 {
 #line 1092 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
@@ -91005,7 +91006,7 @@ os
 		<< " || " << "STI " << src3_name << ", " << disasm_dst2_indir;
 		return true;
 	}
-#line 91009 "isa_tms320.tcc"
+#line 91010 "isa_tms320.tcc"
 }
 //    reg(src2) -> reg(dst1)
 // ||
@@ -91013,39 +91014,39 @@ os
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 91017 "isa_tms320.tcc"
+#line 91018 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 91020 "isa_tms320.tcc"
+#line 91021 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 91024 "isa_tms320.tcc"
+#line 91025 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 91027 "isa_tms320.tcc"
+#line 91028 "isa_tms320.tcc"
 >
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 void
-#line 91031 "isa_tms320.tcc"
+#line 91032 "isa_tms320.tcc"
 OpLDI_STI_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 91035 "isa_tms320.tcc"
+#line 91036 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 91039 "isa_tms320.tcc"
+#line 91040 "isa_tms320.tcc"
 >::execute(
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 91043 "isa_tms320.tcc"
+#line 91044 "isa_tms320.tcc"
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 91046 "isa_tms320.tcc"
+#line 91047 "isa_tms320.tcc"
 )
 {
-#line 1158 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 1159 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		// Check whether the 'src2' register operand is valid
 		if(unlikely(!cpu.HasReg(src2)))
@@ -91081,42 +91082,42 @@ cpu
 			cpu.SetAR23_0(d2_ar, d2_output_ar);
 		}
 	}
-#line 91085 "isa_tms320.tcc"
+#line 91086 "isa_tms320.tcc"
 }
 
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 91091 "isa_tms320.tcc"
+#line 91092 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 91094 "isa_tms320.tcc"
+#line 91095 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 91098 "isa_tms320.tcc"
+#line 91099 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 91101 "isa_tms320.tcc"
+#line 91102 "isa_tms320.tcc"
 >
 static Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 91106 "isa_tms320.tcc"
+#line 91107 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 91110 "isa_tms320.tcc"
+#line 91111 "isa_tms320.tcc"
 > *DecodeOpLDI_STI_ext(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpLDI_STI_ext<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 91116 "isa_tms320.tcc"
+#line 91117 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 91120 "isa_tms320.tcc"
+#line 91121 "isa_tms320.tcc"
 	>(code, addr);
 }
 
@@ -91129,46 +91130,46 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 91133 "isa_tms320.tcc"
+#line 91134 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 91136 "isa_tms320.tcc"
+#line 91137 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 91140 "isa_tms320.tcc"
+#line 91141 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 91143 "isa_tms320.tcc"
+#line 91144 "isa_tms320.tcc"
 >
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 bool
-#line 91147 "isa_tms320.tcc"
+#line 91148 "isa_tms320.tcc"
 OpLSH3_STI<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 91151 "isa_tms320.tcc"
+#line 91152 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 91155 "isa_tms320.tcc"
+#line 91156 "isa_tms320.tcc"
 >::disasm(
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 91159 "isa_tms320.tcc"
+#line 91160 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 91162 "isa_tms320.tcc"
+#line 91163 "isa_tms320.tcc"
 ,
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 std::ostream &
-#line 91166 "isa_tms320.tcc"
+#line 91167 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 os
-#line 91169 "isa_tms320.tcc"
+#line 91170 "isa_tms320.tcc"
 )
 {
-#line 1205 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 1206 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		const char *count_name = REG_NAME[count];
 		const char *dst1_name = REG_NAME[dst1];
@@ -91184,7 +91185,7 @@ os
 		<< " || " << "STI " << src3_name << ", " << disasm_dst2_indir;
 		return true;
 	}
-#line 91188 "isa_tms320.tcc"
+#line 91189 "isa_tms320.tcc"
 }
 //    lsh(indir(src2), reg(count)) -> reg(dst1)
 // ||
@@ -91192,39 +91193,39 @@ os
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 91196 "isa_tms320.tcc"
+#line 91197 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 91199 "isa_tms320.tcc"
+#line 91200 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 91203 "isa_tms320.tcc"
+#line 91204 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 91206 "isa_tms320.tcc"
+#line 91207 "isa_tms320.tcc"
 >
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 void
-#line 91210 "isa_tms320.tcc"
+#line 91211 "isa_tms320.tcc"
 OpLSH3_STI<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 91214 "isa_tms320.tcc"
+#line 91215 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 91218 "isa_tms320.tcc"
+#line 91219 "isa_tms320.tcc"
 >::execute(
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 91222 "isa_tms320.tcc"
+#line 91223 "isa_tms320.tcc"
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 91225 "isa_tms320.tcc"
+#line 91226 "isa_tms320.tcc"
 )
 {
-#line 1239 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 1240 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		// Check that indirect addressing mode is valid and compute the effective address of the 'src2' operand
 		typename CONFIG::address_t s2_ea;        // The effective address
@@ -91300,16 +91301,16 @@ cpu
 		// both addresses are correctly generated, but only the value created by
 		// the src3 field is saved in the auxiliary register specified...
 
-		if(s2_update_ar)
-		{
-			// Write back ARn
-			cpu.SetAR23_0(s2_ar, s2_output_ar);
-		}
-
-		if(d2_update_ar && s2_ar != d2_ar)
+		if(d2_update_ar)
 		{
 			// Write back ARn
 			cpu.SetAR23_0(d2_ar, d2_output_ar);
+		}
+
+		if(s2_update_ar && s2_ar != d2_ar)
+		{
+			// Write back ARn
+			cpu.SetAR23_0(s2_ar, s2_output_ar);
 		}
 
 		// Generate flags (into ST)
@@ -91320,88 +91321,88 @@ cpu
 		carry_out
 		);
 	}
-#line 91324 "isa_tms320.tcc"
+#line 91325 "isa_tms320.tcc"
 }
 
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 91330 "isa_tms320.tcc"
+#line 91331 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 91333 "isa_tms320.tcc"
+#line 91334 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 91337 "isa_tms320.tcc"
+#line 91338 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 91340 "isa_tms320.tcc"
+#line 91341 "isa_tms320.tcc"
 >
 static Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 91345 "isa_tms320.tcc"
+#line 91346 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 91349 "isa_tms320.tcc"
+#line 91350 "isa_tms320.tcc"
 > *DecodeOpLSH3_STI(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpLSH3_STI<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 91355 "isa_tms320.tcc"
+#line 91356 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 91359 "isa_tms320.tcc"
+#line 91360 "isa_tms320.tcc"
 	>(code, addr);
 }
 
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 91366 "isa_tms320.tcc"
+#line 91367 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 91369 "isa_tms320.tcc"
+#line 91370 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 91373 "isa_tms320.tcc"
+#line 91374 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 91376 "isa_tms320.tcc"
+#line 91377 "isa_tms320.tcc"
 >
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 bool
-#line 91380 "isa_tms320.tcc"
+#line 91381 "isa_tms320.tcc"
 OpLSH3_STI_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 91384 "isa_tms320.tcc"
+#line 91385 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 91388 "isa_tms320.tcc"
+#line 91389 "isa_tms320.tcc"
 >::disasm(
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 91392 "isa_tms320.tcc"
+#line 91393 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 91395 "isa_tms320.tcc"
+#line 91396 "isa_tms320.tcc"
 ,
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 std::ostream &
-#line 91399 "isa_tms320.tcc"
+#line 91400 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 os
-#line 91402 "isa_tms320.tcc"
+#line 91403 "isa_tms320.tcc"
 )
 {
-#line 1221 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 1222 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		const char *count_name = REG_NAME[count];
 		const char *dst1_name = REG_NAME[dst1];
@@ -91416,7 +91417,7 @@ os
 		<< " || " << "STI " << src3_name << ", " << disasm_dst2_indir;
 		return true;
 	}
-#line 91420 "isa_tms320.tcc"
+#line 91421 "isa_tms320.tcc"
 }
 //    lsh(reg(src2), reg(count)) -> reg(dst1)
 // ||
@@ -91424,39 +91425,39 @@ os
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 91428 "isa_tms320.tcc"
+#line 91429 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 91431 "isa_tms320.tcc"
+#line 91432 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 91435 "isa_tms320.tcc"
+#line 91436 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 91438 "isa_tms320.tcc"
+#line 91439 "isa_tms320.tcc"
 >
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 void
-#line 91442 "isa_tms320.tcc"
+#line 91443 "isa_tms320.tcc"
 OpLSH3_STI_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 91446 "isa_tms320.tcc"
+#line 91447 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 91450 "isa_tms320.tcc"
+#line 91451 "isa_tms320.tcc"
 >::execute(
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 91454 "isa_tms320.tcc"
+#line 91455 "isa_tms320.tcc"
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 91457 "isa_tms320.tcc"
+#line 91458 "isa_tms320.tcc"
 )
 {
-#line 1338 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 1339 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		// Check whether 'src2' register is valid
 		if(unlikely(!cpu.HasReg(src2)))
@@ -91538,42 +91539,42 @@ cpu
 		carry_out
 		);
 	}
-#line 91542 "isa_tms320.tcc"
+#line 91543 "isa_tms320.tcc"
 }
 
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 91548 "isa_tms320.tcc"
+#line 91549 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 91551 "isa_tms320.tcc"
+#line 91552 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 91555 "isa_tms320.tcc"
+#line 91556 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 91558 "isa_tms320.tcc"
+#line 91559 "isa_tms320.tcc"
 >
 static Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 91563 "isa_tms320.tcc"
+#line 91564 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 91567 "isa_tms320.tcc"
+#line 91568 "isa_tms320.tcc"
 > *DecodeOpLSH3_STI_ext(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpLSH3_STI_ext<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 91573 "isa_tms320.tcc"
+#line 91574 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 91577 "isa_tms320.tcc"
+#line 91578 "isa_tms320.tcc"
 	>(code, addr);
 }
 
@@ -91586,46 +91587,46 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 91590 "isa_tms320.tcc"
+#line 91591 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 91593 "isa_tms320.tcc"
+#line 91594 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 91597 "isa_tms320.tcc"
+#line 91598 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 91600 "isa_tms320.tcc"
+#line 91601 "isa_tms320.tcc"
 >
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 bool
-#line 91604 "isa_tms320.tcc"
+#line 91605 "isa_tms320.tcc"
 OpMPYF3_STF<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 91608 "isa_tms320.tcc"
+#line 91609 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 91612 "isa_tms320.tcc"
+#line 91613 "isa_tms320.tcc"
 >::disasm(
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 91616 "isa_tms320.tcc"
+#line 91617 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 91619 "isa_tms320.tcc"
+#line 91620 "isa_tms320.tcc"
 ,
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 std::ostream &
-#line 91623 "isa_tms320.tcc"
+#line 91624 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 os
-#line 91626 "isa_tms320.tcc"
+#line 91627 "isa_tms320.tcc"
 )
 {
-#line 1431 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 1432 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		const char *dst1_name = REG_NAME[dst1];
 		const char *src1_name = REG_NAME[src1];
@@ -91641,129 +91642,129 @@ os
 		<< " || " << "STF " << src3_name << ", " << disasm_dst2_indir;
 		return true;
 	}
-#line 91645 "isa_tms320.tcc"
+#line 91646 "isa_tms320.tcc"
 }
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 91650 "isa_tms320.tcc"
+#line 91651 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 91653 "isa_tms320.tcc"
+#line 91654 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 91657 "isa_tms320.tcc"
+#line 91658 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 91660 "isa_tms320.tcc"
+#line 91661 "isa_tms320.tcc"
 >
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 void
-#line 91664 "isa_tms320.tcc"
+#line 91665 "isa_tms320.tcc"
 OpMPYF3_STF<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 91668 "isa_tms320.tcc"
+#line 91669 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 91672 "isa_tms320.tcc"
+#line 91673 "isa_tms320.tcc"
 >::execute(
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 91676 "isa_tms320.tcc"
+#line 91677 "isa_tms320.tcc"
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 91679 "isa_tms320.tcc"
+#line 91680 "isa_tms320.tcc"
 )
 {
-#line 1462 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 1463 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
 	}
-#line 91686 "isa_tms320.tcc"
+#line 91687 "isa_tms320.tcc"
 }
 
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 91692 "isa_tms320.tcc"
+#line 91693 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 91695 "isa_tms320.tcc"
+#line 91696 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 91699 "isa_tms320.tcc"
+#line 91700 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 91702 "isa_tms320.tcc"
+#line 91703 "isa_tms320.tcc"
 >
 static Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 91707 "isa_tms320.tcc"
+#line 91708 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 91711 "isa_tms320.tcc"
+#line 91712 "isa_tms320.tcc"
 > *DecodeOpMPYF3_STF(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpMPYF3_STF<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 91717 "isa_tms320.tcc"
+#line 91718 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 91721 "isa_tms320.tcc"
+#line 91722 "isa_tms320.tcc"
 	>(code, addr);
 }
 
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 91728 "isa_tms320.tcc"
+#line 91729 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 91731 "isa_tms320.tcc"
+#line 91732 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 91735 "isa_tms320.tcc"
+#line 91736 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 91738 "isa_tms320.tcc"
+#line 91739 "isa_tms320.tcc"
 >
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 bool
-#line 91742 "isa_tms320.tcc"
+#line 91743 "isa_tms320.tcc"
 OpMPYF3_STF_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 91746 "isa_tms320.tcc"
+#line 91747 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 91750 "isa_tms320.tcc"
+#line 91751 "isa_tms320.tcc"
 >::disasm(
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 91754 "isa_tms320.tcc"
+#line 91755 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 91757 "isa_tms320.tcc"
+#line 91758 "isa_tms320.tcc"
 ,
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 std::ostream &
-#line 91761 "isa_tms320.tcc"
+#line 91762 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 os
-#line 91764 "isa_tms320.tcc"
+#line 91765 "isa_tms320.tcc"
 )
 {
-#line 1447 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 1448 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		const char *dst1_name = REG_NAME[dst1];
 		const char *src1_name = REG_NAME[src1];
@@ -91778,83 +91779,83 @@ os
 		<< " || " << "STF " << src3_name << ", " << disasm_dst2_indir;
 		return true;
 	}
-#line 91782 "isa_tms320.tcc"
+#line 91783 "isa_tms320.tcc"
 }
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 91787 "isa_tms320.tcc"
+#line 91788 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 91790 "isa_tms320.tcc"
+#line 91791 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 91794 "isa_tms320.tcc"
+#line 91795 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 91797 "isa_tms320.tcc"
+#line 91798 "isa_tms320.tcc"
 >
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 void
-#line 91801 "isa_tms320.tcc"
+#line 91802 "isa_tms320.tcc"
 OpMPYF3_STF_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 91805 "isa_tms320.tcc"
+#line 91806 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 91809 "isa_tms320.tcc"
+#line 91810 "isa_tms320.tcc"
 >::execute(
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 91813 "isa_tms320.tcc"
+#line 91814 "isa_tms320.tcc"
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 91816 "isa_tms320.tcc"
+#line 91817 "isa_tms320.tcc"
 )
 {
-#line 1466 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 1467 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
 	}
-#line 91823 "isa_tms320.tcc"
+#line 91824 "isa_tms320.tcc"
 }
 
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 91829 "isa_tms320.tcc"
+#line 91830 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 91832 "isa_tms320.tcc"
+#line 91833 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 91836 "isa_tms320.tcc"
+#line 91837 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 91839 "isa_tms320.tcc"
+#line 91840 "isa_tms320.tcc"
 >
 static Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 91844 "isa_tms320.tcc"
+#line 91845 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 91848 "isa_tms320.tcc"
+#line 91849 "isa_tms320.tcc"
 > *DecodeOpMPYF3_STF_ext(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpMPYF3_STF_ext<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 91854 "isa_tms320.tcc"
+#line 91855 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 91858 "isa_tms320.tcc"
+#line 91859 "isa_tms320.tcc"
 	>(code, addr);
 }
 
@@ -91867,46 +91868,46 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 91871 "isa_tms320.tcc"
+#line 91872 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 91874 "isa_tms320.tcc"
+#line 91875 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 91878 "isa_tms320.tcc"
+#line 91879 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 91881 "isa_tms320.tcc"
+#line 91882 "isa_tms320.tcc"
 >
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 bool
-#line 91885 "isa_tms320.tcc"
+#line 91886 "isa_tms320.tcc"
 OpMPYI3_STI<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 91889 "isa_tms320.tcc"
+#line 91890 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 91893 "isa_tms320.tcc"
+#line 91894 "isa_tms320.tcc"
 >::disasm(
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 91897 "isa_tms320.tcc"
+#line 91898 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 91900 "isa_tms320.tcc"
+#line 91901 "isa_tms320.tcc"
 ,
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 std::ostream &
-#line 91904 "isa_tms320.tcc"
+#line 91905 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 os
-#line 91907 "isa_tms320.tcc"
+#line 91908 "isa_tms320.tcc"
 )
 {
-#line 1481 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 1482 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		const char *dst1_name = REG_NAME[dst1];
 		const char *src1_name = REG_NAME[src1];
@@ -91922,7 +91923,7 @@ os
 		<< " || " << "STI " << src3_name << ", " << disasm_dst2_indir;
 		return true;
 	}
-#line 91926 "isa_tms320.tcc"
+#line 91927 "isa_tms320.tcc"
 }
 //    reg(src1) * indir(src2) -> reg(dst1)
 // ||
@@ -91930,39 +91931,39 @@ os
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 91934 "isa_tms320.tcc"
+#line 91935 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 91937 "isa_tms320.tcc"
+#line 91938 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 91941 "isa_tms320.tcc"
+#line 91942 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 91944 "isa_tms320.tcc"
+#line 91945 "isa_tms320.tcc"
 >
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 void
-#line 91948 "isa_tms320.tcc"
+#line 91949 "isa_tms320.tcc"
 OpMPYI3_STI<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 91952 "isa_tms320.tcc"
+#line 91953 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 91956 "isa_tms320.tcc"
+#line 91957 "isa_tms320.tcc"
 >::execute(
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 91960 "isa_tms320.tcc"
+#line 91961 "isa_tms320.tcc"
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 91963 "isa_tms320.tcc"
+#line 91964 "isa_tms320.tcc"
 )
 {
-#line 1515 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 1516 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		// Read 'src1' operand and sign extend value from 24 bits to 64 bits
 		int64_t src1_value = SignExtend((uint64_t)(cpu.GetIntReg(src1) & 0xffffff), 24);
@@ -92017,16 +92018,16 @@ cpu
 		// both addresses are correctly generated, but only the value created by
 		// the src3 field is saved in the auxiliary register specified...
 
-		if(s2_update_ar)
-		{
-			// Write back ARn
-			cpu.SetAR23_0(s2_ar, s2_output_ar);
-		}
-
-		if(d2_update_ar && s2_ar != d2_ar)
+		if(d2_update_ar)
 		{
 			// Write back ARn
 			cpu.SetAR23_0(d2_ar, d2_output_ar);
+		}
+
+		if(s2_update_ar && s2_ar != d2_ar)
+		{
+			// Write back ARn
+			cpu.SetAR23_0(s2_ar, s2_output_ar);
 		}
 
 		// Generate flags (into ST)
@@ -92038,88 +92039,88 @@ cpu
 		overflow
 		);
 	}
-#line 92042 "isa_tms320.tcc"
+#line 92043 "isa_tms320.tcc"
 }
 
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 92048 "isa_tms320.tcc"
+#line 92049 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 92051 "isa_tms320.tcc"
+#line 92052 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 92055 "isa_tms320.tcc"
+#line 92056 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 92058 "isa_tms320.tcc"
+#line 92059 "isa_tms320.tcc"
 >
 static Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 92063 "isa_tms320.tcc"
+#line 92064 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 92067 "isa_tms320.tcc"
+#line 92068 "isa_tms320.tcc"
 > *DecodeOpMPYI3_STI(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpMPYI3_STI<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 92073 "isa_tms320.tcc"
+#line 92074 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 92077 "isa_tms320.tcc"
+#line 92078 "isa_tms320.tcc"
 	>(code, addr);
 }
 
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 92084 "isa_tms320.tcc"
+#line 92085 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 92087 "isa_tms320.tcc"
+#line 92088 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 92091 "isa_tms320.tcc"
+#line 92092 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 92094 "isa_tms320.tcc"
+#line 92095 "isa_tms320.tcc"
 >
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 bool
-#line 92098 "isa_tms320.tcc"
+#line 92099 "isa_tms320.tcc"
 OpMPYI3_STI_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 92102 "isa_tms320.tcc"
+#line 92103 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 92106 "isa_tms320.tcc"
+#line 92107 "isa_tms320.tcc"
 >::disasm(
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 92110 "isa_tms320.tcc"
+#line 92111 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 92113 "isa_tms320.tcc"
+#line 92114 "isa_tms320.tcc"
 ,
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 std::ostream &
-#line 92117 "isa_tms320.tcc"
+#line 92118 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 os
-#line 92120 "isa_tms320.tcc"
+#line 92121 "isa_tms320.tcc"
 )
 {
-#line 1497 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 1498 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		const char *dst1_name = REG_NAME[dst1];
 		const char *src1_name = REG_NAME[src1];
@@ -92134,7 +92135,7 @@ os
 		<< " || " << "STI " << src3_name << ", " << disasm_dst2_indir;
 		return true;
 	}
-#line 92138 "isa_tms320.tcc"
+#line 92139 "isa_tms320.tcc"
 }
 //    reg(src1) + reg(src2) -> reg(dst1)
 // ||
@@ -92142,39 +92143,39 @@ os
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 92146 "isa_tms320.tcc"
+#line 92147 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 92149 "isa_tms320.tcc"
+#line 92150 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 92153 "isa_tms320.tcc"
+#line 92154 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 92156 "isa_tms320.tcc"
+#line 92157 "isa_tms320.tcc"
 >
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 void
-#line 92160 "isa_tms320.tcc"
+#line 92161 "isa_tms320.tcc"
 OpMPYI3_STI_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 92164 "isa_tms320.tcc"
+#line 92165 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 92168 "isa_tms320.tcc"
+#line 92169 "isa_tms320.tcc"
 >::execute(
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 92172 "isa_tms320.tcc"
+#line 92173 "isa_tms320.tcc"
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 92175 "isa_tms320.tcc"
+#line 92176 "isa_tms320.tcc"
 )
 {
-#line 1594 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 1595 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		// Check whether 'src2' register is valid
 		if(unlikely(!cpu.HasReg(src2)))
@@ -92240,42 +92241,42 @@ cpu
 		overflow
 		);
 	}
-#line 92244 "isa_tms320.tcc"
+#line 92245 "isa_tms320.tcc"
 }
 
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 92250 "isa_tms320.tcc"
+#line 92251 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 92253 "isa_tms320.tcc"
+#line 92254 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 92257 "isa_tms320.tcc"
+#line 92258 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 92260 "isa_tms320.tcc"
+#line 92261 "isa_tms320.tcc"
 >
 static Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 92265 "isa_tms320.tcc"
+#line 92266 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 92269 "isa_tms320.tcc"
+#line 92270 "isa_tms320.tcc"
 > *DecodeOpMPYI3_STI_ext(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpMPYI3_STI_ext<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 92275 "isa_tms320.tcc"
+#line 92276 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 92279 "isa_tms320.tcc"
+#line 92280 "isa_tms320.tcc"
 	>(code, addr);
 }
 
@@ -92288,46 +92289,46 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 92292 "isa_tms320.tcc"
+#line 92293 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 92295 "isa_tms320.tcc"
+#line 92296 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 92299 "isa_tms320.tcc"
+#line 92300 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 92302 "isa_tms320.tcc"
+#line 92303 "isa_tms320.tcc"
 >
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 bool
-#line 92306 "isa_tms320.tcc"
+#line 92307 "isa_tms320.tcc"
 OpNEGF_STF<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 92310 "isa_tms320.tcc"
+#line 92311 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 92314 "isa_tms320.tcc"
+#line 92315 "isa_tms320.tcc"
 >::disasm(
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 92318 "isa_tms320.tcc"
+#line 92319 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 92321 "isa_tms320.tcc"
+#line 92322 "isa_tms320.tcc"
 ,
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 std::ostream &
-#line 92325 "isa_tms320.tcc"
+#line 92326 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 os
-#line 92328 "isa_tms320.tcc"
+#line 92329 "isa_tms320.tcc"
 )
 {
-#line 1671 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 1672 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		const char *dst1_name = REG_NAME[dst1];
 		const char *src3_name = REG_NAME[src3];
@@ -92342,129 +92343,129 @@ os
 		<< " || " << "STF " << src3_name << ", " << disasm_dst2_indir;
 		return true;
 	}
-#line 92346 "isa_tms320.tcc"
+#line 92347 "isa_tms320.tcc"
 }
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 92351 "isa_tms320.tcc"
+#line 92352 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 92354 "isa_tms320.tcc"
+#line 92355 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 92358 "isa_tms320.tcc"
+#line 92359 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 92361 "isa_tms320.tcc"
+#line 92362 "isa_tms320.tcc"
 >
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 void
-#line 92365 "isa_tms320.tcc"
+#line 92366 "isa_tms320.tcc"
 OpNEGF_STF<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 92369 "isa_tms320.tcc"
+#line 92370 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 92373 "isa_tms320.tcc"
+#line 92374 "isa_tms320.tcc"
 >::execute(
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 92377 "isa_tms320.tcc"
+#line 92378 "isa_tms320.tcc"
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 92380 "isa_tms320.tcc"
+#line 92381 "isa_tms320.tcc"
 )
 {
-#line 1700 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 1701 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
 	}
-#line 92387 "isa_tms320.tcc"
+#line 92388 "isa_tms320.tcc"
 }
 
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 92393 "isa_tms320.tcc"
+#line 92394 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 92396 "isa_tms320.tcc"
+#line 92397 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 92400 "isa_tms320.tcc"
+#line 92401 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 92403 "isa_tms320.tcc"
+#line 92404 "isa_tms320.tcc"
 >
 static Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 92408 "isa_tms320.tcc"
+#line 92409 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 92412 "isa_tms320.tcc"
+#line 92413 "isa_tms320.tcc"
 > *DecodeOpNEGF_STF(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpNEGF_STF<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 92418 "isa_tms320.tcc"
+#line 92419 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 92422 "isa_tms320.tcc"
+#line 92423 "isa_tms320.tcc"
 	>(code, addr);
 }
 
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 92429 "isa_tms320.tcc"
+#line 92430 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 92432 "isa_tms320.tcc"
+#line 92433 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 92436 "isa_tms320.tcc"
+#line 92437 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 92439 "isa_tms320.tcc"
+#line 92440 "isa_tms320.tcc"
 >
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 bool
-#line 92443 "isa_tms320.tcc"
+#line 92444 "isa_tms320.tcc"
 OpNEGF_STF_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 92447 "isa_tms320.tcc"
+#line 92448 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 92451 "isa_tms320.tcc"
+#line 92452 "isa_tms320.tcc"
 >::disasm(
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 92455 "isa_tms320.tcc"
+#line 92456 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 92458 "isa_tms320.tcc"
+#line 92459 "isa_tms320.tcc"
 ,
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 std::ostream &
-#line 92462 "isa_tms320.tcc"
+#line 92463 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 os
-#line 92465 "isa_tms320.tcc"
+#line 92466 "isa_tms320.tcc"
 )
 {
-#line 1686 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 1687 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		const char *dst1_name = REG_NAME[dst1];
 		const char *src2_name = REG_NAME[src2];
@@ -92478,83 +92479,83 @@ os
 		<< " || " << "STF " << src3_name << ", " << disasm_dst2_indir;
 		return true;
 	}
-#line 92482 "isa_tms320.tcc"
+#line 92483 "isa_tms320.tcc"
 }
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 92487 "isa_tms320.tcc"
+#line 92488 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 92490 "isa_tms320.tcc"
+#line 92491 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 92494 "isa_tms320.tcc"
+#line 92495 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 92497 "isa_tms320.tcc"
+#line 92498 "isa_tms320.tcc"
 >
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 void
-#line 92501 "isa_tms320.tcc"
+#line 92502 "isa_tms320.tcc"
 OpNEGF_STF_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 92505 "isa_tms320.tcc"
+#line 92506 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 92509 "isa_tms320.tcc"
+#line 92510 "isa_tms320.tcc"
 >::execute(
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 92513 "isa_tms320.tcc"
+#line 92514 "isa_tms320.tcc"
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 92516 "isa_tms320.tcc"
+#line 92517 "isa_tms320.tcc"
 )
 {
-#line 1704 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 1705 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
 	}
-#line 92523 "isa_tms320.tcc"
+#line 92524 "isa_tms320.tcc"
 }
 
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 92529 "isa_tms320.tcc"
+#line 92530 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 92532 "isa_tms320.tcc"
+#line 92533 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 92536 "isa_tms320.tcc"
+#line 92537 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 92539 "isa_tms320.tcc"
+#line 92540 "isa_tms320.tcc"
 >
 static Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 92544 "isa_tms320.tcc"
+#line 92545 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 92548 "isa_tms320.tcc"
+#line 92549 "isa_tms320.tcc"
 > *DecodeOpNEGF_STF_ext(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpNEGF_STF_ext<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 92554 "isa_tms320.tcc"
+#line 92555 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 92558 "isa_tms320.tcc"
+#line 92559 "isa_tms320.tcc"
 	>(code, addr);
 }
 
@@ -92567,46 +92568,46 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 92571 "isa_tms320.tcc"
+#line 92572 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 92574 "isa_tms320.tcc"
+#line 92575 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 92578 "isa_tms320.tcc"
+#line 92579 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 92581 "isa_tms320.tcc"
+#line 92582 "isa_tms320.tcc"
 >
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 bool
-#line 92585 "isa_tms320.tcc"
+#line 92586 "isa_tms320.tcc"
 OpNEGI_STI<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 92589 "isa_tms320.tcc"
+#line 92590 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 92593 "isa_tms320.tcc"
+#line 92594 "isa_tms320.tcc"
 >::disasm(
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 92597 "isa_tms320.tcc"
+#line 92598 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 92600 "isa_tms320.tcc"
+#line 92601 "isa_tms320.tcc"
 ,
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 std::ostream &
-#line 92604 "isa_tms320.tcc"
+#line 92605 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 os
-#line 92607 "isa_tms320.tcc"
+#line 92608 "isa_tms320.tcc"
 )
 {
-#line 1719 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 1720 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		const char *dst1_name = REG_NAME[dst1];
 		const char *src3_name = REG_NAME[src3];
@@ -92621,7 +92622,7 @@ os
 		<< " || " << "STI " << src3_name << ", " << disasm_dst2_indir;
 		return true;
 	}
-#line 92625 "isa_tms320.tcc"
+#line 92626 "isa_tms320.tcc"
 }
 //    neg(indir(src2)) -> reg(dst1)
 // ||
@@ -92629,39 +92630,39 @@ os
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 92633 "isa_tms320.tcc"
+#line 92634 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 92636 "isa_tms320.tcc"
+#line 92637 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 92640 "isa_tms320.tcc"
+#line 92641 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 92643 "isa_tms320.tcc"
+#line 92644 "isa_tms320.tcc"
 >
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 void
-#line 92647 "isa_tms320.tcc"
+#line 92648 "isa_tms320.tcc"
 OpNEGI_STI<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 92651 "isa_tms320.tcc"
+#line 92652 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 92655 "isa_tms320.tcc"
+#line 92656 "isa_tms320.tcc"
 >::execute(
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 92659 "isa_tms320.tcc"
+#line 92660 "isa_tms320.tcc"
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 92662 "isa_tms320.tcc"
+#line 92663 "isa_tms320.tcc"
 )
 {
-#line 1751 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 1752 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		// Check that indirect addressing mode is valid and compute the effective address of 'src2' operand
 		typename CONFIG::address_t s2_ea;        // The effective address
@@ -92710,16 +92711,16 @@ cpu
 		// both addresses are correctly generated, but only the value created by
 		// the src3 field is saved in the auxiliary register specified...
 
-		if(s2_update_ar)
-		{
-			// Write back ARn
-			cpu.SetAR23_0(s2_ar, s2_output_ar);
-		}
-
-		if(d2_update_ar && s2_ar != d2_ar)
+		if(d2_update_ar)
 		{
 			// Write back ARn
 			cpu.SetAR23_0(d2_ar, d2_output_ar);
+		}
+
+		if(s2_update_ar && s2_ar != d2_ar)
+		{
+			// Write back ARn
+			cpu.SetAR23_0(s2_ar, s2_output_ar);
 		}
 
 		// Generate flags (into ST)
@@ -92731,88 +92732,88 @@ cpu
 		overflow
 		);
 	}
-#line 92735 "isa_tms320.tcc"
+#line 92736 "isa_tms320.tcc"
 }
 
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 92741 "isa_tms320.tcc"
+#line 92742 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 92744 "isa_tms320.tcc"
+#line 92745 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 92748 "isa_tms320.tcc"
+#line 92749 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 92751 "isa_tms320.tcc"
+#line 92752 "isa_tms320.tcc"
 >
 static Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 92756 "isa_tms320.tcc"
+#line 92757 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 92760 "isa_tms320.tcc"
+#line 92761 "isa_tms320.tcc"
 > *DecodeOpNEGI_STI(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpNEGI_STI<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 92766 "isa_tms320.tcc"
+#line 92767 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 92770 "isa_tms320.tcc"
+#line 92771 "isa_tms320.tcc"
 	>(code, addr);
 }
 
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 92777 "isa_tms320.tcc"
+#line 92778 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 92780 "isa_tms320.tcc"
+#line 92781 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 92784 "isa_tms320.tcc"
+#line 92785 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 92787 "isa_tms320.tcc"
+#line 92788 "isa_tms320.tcc"
 >
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 bool
-#line 92791 "isa_tms320.tcc"
+#line 92792 "isa_tms320.tcc"
 OpNEGI_STI_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 92795 "isa_tms320.tcc"
+#line 92796 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 92799 "isa_tms320.tcc"
+#line 92800 "isa_tms320.tcc"
 >::disasm(
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 92803 "isa_tms320.tcc"
+#line 92804 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 92806 "isa_tms320.tcc"
+#line 92807 "isa_tms320.tcc"
 ,
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 std::ostream &
-#line 92810 "isa_tms320.tcc"
+#line 92811 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 os
-#line 92813 "isa_tms320.tcc"
+#line 92814 "isa_tms320.tcc"
 )
 {
-#line 1734 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 1735 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		const char *dst1_name = REG_NAME[dst1];
 		const char *src2_name = REG_NAME[src2];
@@ -92826,7 +92827,7 @@ os
 		<< " || " << "STI " << src3_name << ", " << disasm_dst2_indir;
 		return true;
 	}
-#line 92830 "isa_tms320.tcc"
+#line 92831 "isa_tms320.tcc"
 }
 //    neg(reg(src2)) -> reg(dst1)
 // ||
@@ -92834,39 +92835,39 @@ os
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 92838 "isa_tms320.tcc"
+#line 92839 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 92841 "isa_tms320.tcc"
+#line 92842 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 92845 "isa_tms320.tcc"
+#line 92846 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 92848 "isa_tms320.tcc"
+#line 92849 "isa_tms320.tcc"
 >
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 void
-#line 92852 "isa_tms320.tcc"
+#line 92853 "isa_tms320.tcc"
 OpNEGI_STI_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 92856 "isa_tms320.tcc"
+#line 92857 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 92860 "isa_tms320.tcc"
+#line 92861 "isa_tms320.tcc"
 >::execute(
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 92864 "isa_tms320.tcc"
+#line 92865 "isa_tms320.tcc"
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 92867 "isa_tms320.tcc"
+#line 92868 "isa_tms320.tcc"
 )
 {
-#line 1824 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 1825 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		// Check that 'src2' register is valid
 		if(unlikely(!cpu.HasReg(src2)))
@@ -92922,42 +92923,42 @@ cpu
 		overflow
 		);
 	}
-#line 92926 "isa_tms320.tcc"
+#line 92927 "isa_tms320.tcc"
 }
 
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 92932 "isa_tms320.tcc"
+#line 92933 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 92935 "isa_tms320.tcc"
+#line 92936 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 92939 "isa_tms320.tcc"
+#line 92940 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 92942 "isa_tms320.tcc"
+#line 92943 "isa_tms320.tcc"
 >
 static Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 92947 "isa_tms320.tcc"
+#line 92948 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 92951 "isa_tms320.tcc"
+#line 92952 "isa_tms320.tcc"
 > *DecodeOpNEGI_STI_ext(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpNEGI_STI_ext<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 92957 "isa_tms320.tcc"
+#line 92958 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 92961 "isa_tms320.tcc"
+#line 92962 "isa_tms320.tcc"
 	>(code, addr);
 }
 
@@ -92970,46 +92971,46 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 92974 "isa_tms320.tcc"
+#line 92975 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 92977 "isa_tms320.tcc"
+#line 92978 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 92981 "isa_tms320.tcc"
+#line 92982 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 92984 "isa_tms320.tcc"
+#line 92985 "isa_tms320.tcc"
 >
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 bool
-#line 92988 "isa_tms320.tcc"
+#line 92989 "isa_tms320.tcc"
 OpNOT_STI<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 92992 "isa_tms320.tcc"
+#line 92993 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 92996 "isa_tms320.tcc"
+#line 92997 "isa_tms320.tcc"
 >::disasm(
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 93000 "isa_tms320.tcc"
+#line 93001 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 93003 "isa_tms320.tcc"
+#line 93004 "isa_tms320.tcc"
 ,
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 std::ostream &
-#line 93007 "isa_tms320.tcc"
+#line 93008 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 os
-#line 93010 "isa_tms320.tcc"
+#line 93011 "isa_tms320.tcc"
 )
 {
-#line 1891 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 1892 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		const char *dst1_name = REG_NAME[dst1];
 		const char *src3_name = REG_NAME[src3];
@@ -93024,7 +93025,7 @@ os
 		<< " || " << "STI " << src3_name << ", " << disasm_dst2_indir;
 		return true;
 	}
-#line 93028 "isa_tms320.tcc"
+#line 93029 "isa_tms320.tcc"
 }
 //    not(indir(src2)) -> reg(dst1)
 // ||
@@ -93032,39 +93033,39 @@ os
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 93036 "isa_tms320.tcc"
+#line 93037 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 93039 "isa_tms320.tcc"
+#line 93040 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 93043 "isa_tms320.tcc"
+#line 93044 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 93046 "isa_tms320.tcc"
+#line 93047 "isa_tms320.tcc"
 >
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 void
-#line 93050 "isa_tms320.tcc"
+#line 93051 "isa_tms320.tcc"
 OpNOT_STI<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 93054 "isa_tms320.tcc"
+#line 93055 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 93058 "isa_tms320.tcc"
+#line 93059 "isa_tms320.tcc"
 >::execute(
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 93062 "isa_tms320.tcc"
+#line 93063 "isa_tms320.tcc"
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 93065 "isa_tms320.tcc"
+#line 93066 "isa_tms320.tcc"
 )
 {
-#line 1923 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 1924 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		// Check that indirect addressing mode is valid and compute the effective address of 'src2' operand
 		typename CONFIG::address_t s2_ea;        // The effective address
@@ -93105,16 +93106,16 @@ cpu
 		// both addresses are correctly generated, but only the value created by
 		// the src3 field is saved in the auxiliary register specified...
 
-		if(s2_update_ar)
-		{
-			// Write back ARn
-			cpu.SetAR23_0(s2_ar, s2_output_ar);
-		}
-
-		if(d2_update_ar && s2_ar != d2_ar)
+		if(d2_update_ar)
 		{
 			// Write back ARn
 			cpu.SetAR23_0(d2_ar, d2_output_ar);
+		}
+
+		if(s2_update_ar && s2_ar != d2_ar)
+		{
+			// Write back ARn
+			cpu.SetAR23_0(s2_ar, s2_output_ar);
 		}
 
 		// Generate flags (into ST)
@@ -93124,88 +93125,88 @@ cpu
 		M_ST_N | M_ST_Z    // or mask
 		);
 	}
-#line 93128 "isa_tms320.tcc"
+#line 93129 "isa_tms320.tcc"
 }
 
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 93134 "isa_tms320.tcc"
+#line 93135 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 93137 "isa_tms320.tcc"
+#line 93138 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 93141 "isa_tms320.tcc"
+#line 93142 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 93144 "isa_tms320.tcc"
+#line 93145 "isa_tms320.tcc"
 >
 static Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 93149 "isa_tms320.tcc"
+#line 93150 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 93153 "isa_tms320.tcc"
+#line 93154 "isa_tms320.tcc"
 > *DecodeOpNOT_STI(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpNOT_STI<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 93159 "isa_tms320.tcc"
+#line 93160 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 93163 "isa_tms320.tcc"
+#line 93164 "isa_tms320.tcc"
 	>(code, addr);
 }
 
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 93170 "isa_tms320.tcc"
+#line 93171 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 93173 "isa_tms320.tcc"
+#line 93174 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 93177 "isa_tms320.tcc"
+#line 93178 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 93180 "isa_tms320.tcc"
+#line 93181 "isa_tms320.tcc"
 >
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 bool
-#line 93184 "isa_tms320.tcc"
+#line 93185 "isa_tms320.tcc"
 OpNOT_STI_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 93188 "isa_tms320.tcc"
+#line 93189 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 93192 "isa_tms320.tcc"
+#line 93193 "isa_tms320.tcc"
 >::disasm(
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 93196 "isa_tms320.tcc"
+#line 93197 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 93199 "isa_tms320.tcc"
+#line 93200 "isa_tms320.tcc"
 ,
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 std::ostream &
-#line 93203 "isa_tms320.tcc"
+#line 93204 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 os
-#line 93206 "isa_tms320.tcc"
+#line 93207 "isa_tms320.tcc"
 )
 {
-#line 1906 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 1907 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		const char *dst1_name = REG_NAME[dst1];
 		const char *src2_name = REG_NAME[src2];
@@ -93219,7 +93220,7 @@ os
 		<< " || " << "STI " << src3_name << ", " << disasm_dst2_indir;
 		return true;
 	}
-#line 93223 "isa_tms320.tcc"
+#line 93224 "isa_tms320.tcc"
 }
 //    not(reg(src2)) -> reg(dst1)
 // ||
@@ -93227,39 +93228,39 @@ os
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 93231 "isa_tms320.tcc"
+#line 93232 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 93234 "isa_tms320.tcc"
+#line 93235 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 93238 "isa_tms320.tcc"
+#line 93239 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 93241 "isa_tms320.tcc"
+#line 93242 "isa_tms320.tcc"
 >
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 void
-#line 93245 "isa_tms320.tcc"
+#line 93246 "isa_tms320.tcc"
 OpNOT_STI_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 93249 "isa_tms320.tcc"
+#line 93250 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 93253 "isa_tms320.tcc"
+#line 93254 "isa_tms320.tcc"
 >::execute(
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 93257 "isa_tms320.tcc"
+#line 93258 "isa_tms320.tcc"
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 93260 "isa_tms320.tcc"
+#line 93261 "isa_tms320.tcc"
 )
 {
-#line 1986 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 1987 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		// Check that 'src2' register is valid
 		if(unlikely(!cpu.HasReg(src2)))
@@ -93305,42 +93306,42 @@ cpu
 		M_ST_N | M_ST_Z    // or mask
 		);
 	}
-#line 93309 "isa_tms320.tcc"
+#line 93310 "isa_tms320.tcc"
 }
 
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 93315 "isa_tms320.tcc"
+#line 93316 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 93318 "isa_tms320.tcc"
+#line 93319 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 93322 "isa_tms320.tcc"
+#line 93323 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 93325 "isa_tms320.tcc"
+#line 93326 "isa_tms320.tcc"
 >
 static Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 93330 "isa_tms320.tcc"
+#line 93331 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 93334 "isa_tms320.tcc"
+#line 93335 "isa_tms320.tcc"
 > *DecodeOpNOT_STI_ext(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpNOT_STI_ext<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 93340 "isa_tms320.tcc"
+#line 93341 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 93344 "isa_tms320.tcc"
+#line 93345 "isa_tms320.tcc"
 	>(code, addr);
 }
 
@@ -93353,46 +93354,46 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 93357 "isa_tms320.tcc"
+#line 93358 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 93360 "isa_tms320.tcc"
+#line 93361 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 93364 "isa_tms320.tcc"
+#line 93365 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 93367 "isa_tms320.tcc"
+#line 93368 "isa_tms320.tcc"
 >
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 bool
-#line 93371 "isa_tms320.tcc"
+#line 93372 "isa_tms320.tcc"
 OpOR3_STI<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 93375 "isa_tms320.tcc"
+#line 93376 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 93379 "isa_tms320.tcc"
+#line 93380 "isa_tms320.tcc"
 >::disasm(
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 93383 "isa_tms320.tcc"
+#line 93384 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 93386 "isa_tms320.tcc"
+#line 93387 "isa_tms320.tcc"
 ,
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 std::ostream &
-#line 93390 "isa_tms320.tcc"
+#line 93391 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 os
-#line 93393 "isa_tms320.tcc"
+#line 93394 "isa_tms320.tcc"
 )
 {
-#line 2043 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 2044 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		const char *dst1_name = REG_NAME[dst1];
 		const char *src1_name = REG_NAME[src1];
@@ -93408,7 +93409,7 @@ os
 		<< " || " << "STI " << src3_name << ", " << disasm_dst2_indir;
 		return true;
 	}
-#line 93412 "isa_tms320.tcc"
+#line 93413 "isa_tms320.tcc"
 }
 //    reg(src1) OR indir(src2) -> reg(dst1)
 // ||
@@ -93416,39 +93417,39 @@ os
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 93420 "isa_tms320.tcc"
+#line 93421 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 93423 "isa_tms320.tcc"
+#line 93424 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 93427 "isa_tms320.tcc"
+#line 93428 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 93430 "isa_tms320.tcc"
+#line 93431 "isa_tms320.tcc"
 >
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 void
-#line 93434 "isa_tms320.tcc"
+#line 93435 "isa_tms320.tcc"
 OpOR3_STI<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 93438 "isa_tms320.tcc"
+#line 93439 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 93442 "isa_tms320.tcc"
+#line 93443 "isa_tms320.tcc"
 >::execute(
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 93446 "isa_tms320.tcc"
+#line 93447 "isa_tms320.tcc"
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 93449 "isa_tms320.tcc"
+#line 93450 "isa_tms320.tcc"
 )
 {
-#line 2077 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 2078 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		// Read 'src1' operand
 		uint32_t src1_value = cpu.GetIntReg(src1);
@@ -93492,16 +93493,16 @@ cpu
 		// both addresses are correctly generated, but only the value created by
 		// the src3 field is saved in the auxiliary register specified...
 
-		if(s2_update_ar)
-		{
-			// Write back ARn
-			cpu.SetAR23_0(s2_ar, s2_output_ar);
-		}
-
-		if(d2_update_ar && s2_ar != d2_ar)
+		if(d2_update_ar)
 		{
 			// Write back ARn
 			cpu.SetAR23_0(d2_ar, d2_output_ar);
+		}
+
+		if(s2_update_ar && s2_ar != d2_ar)
+		{
+			// Write back ARn
+			cpu.SetAR23_0(s2_ar, s2_output_ar);
 		}
 
 		// Generate flags (into ST)
@@ -93511,88 +93512,88 @@ cpu
 		M_ST_N | M_ST_Z    // or mask
 		);
 	}
-#line 93515 "isa_tms320.tcc"
+#line 93516 "isa_tms320.tcc"
 }
 
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 93521 "isa_tms320.tcc"
+#line 93522 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 93524 "isa_tms320.tcc"
+#line 93525 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 93528 "isa_tms320.tcc"
+#line 93529 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 93531 "isa_tms320.tcc"
+#line 93532 "isa_tms320.tcc"
 >
 static Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 93536 "isa_tms320.tcc"
+#line 93537 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 93540 "isa_tms320.tcc"
+#line 93541 "isa_tms320.tcc"
 > *DecodeOpOR3_STI(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpOR3_STI<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 93546 "isa_tms320.tcc"
+#line 93547 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 93550 "isa_tms320.tcc"
+#line 93551 "isa_tms320.tcc"
 	>(code, addr);
 }
 
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 93557 "isa_tms320.tcc"
+#line 93558 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 93560 "isa_tms320.tcc"
+#line 93561 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 93564 "isa_tms320.tcc"
+#line 93565 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 93567 "isa_tms320.tcc"
+#line 93568 "isa_tms320.tcc"
 >
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 bool
-#line 93571 "isa_tms320.tcc"
+#line 93572 "isa_tms320.tcc"
 OpOR3_STI_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 93575 "isa_tms320.tcc"
+#line 93576 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 93579 "isa_tms320.tcc"
+#line 93580 "isa_tms320.tcc"
 >::disasm(
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 93583 "isa_tms320.tcc"
+#line 93584 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 93586 "isa_tms320.tcc"
+#line 93587 "isa_tms320.tcc"
 ,
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 std::ostream &
-#line 93590 "isa_tms320.tcc"
+#line 93591 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 os
-#line 93593 "isa_tms320.tcc"
+#line 93594 "isa_tms320.tcc"
 )
 {
-#line 2059 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 2060 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		const char *dst1_name = REG_NAME[dst1];
 		const char *src1_name = REG_NAME[src1];
@@ -93607,7 +93608,7 @@ os
 		<< " || " << "STI " << src3_name << ", " << disasm_dst2_indir;
 		return true;
 	}
-#line 93611 "isa_tms320.tcc"
+#line 93612 "isa_tms320.tcc"
 }
 //    reg(src1) OR reg(src2) -> reg(dst1)
 // ||
@@ -93615,39 +93616,39 @@ os
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 93619 "isa_tms320.tcc"
+#line 93620 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 93622 "isa_tms320.tcc"
+#line 93623 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 93626 "isa_tms320.tcc"
+#line 93627 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 93629 "isa_tms320.tcc"
+#line 93630 "isa_tms320.tcc"
 >
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 void
-#line 93633 "isa_tms320.tcc"
+#line 93634 "isa_tms320.tcc"
 OpOR3_STI_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 93637 "isa_tms320.tcc"
+#line 93638 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 93641 "isa_tms320.tcc"
+#line 93642 "isa_tms320.tcc"
 >::execute(
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 93645 "isa_tms320.tcc"
+#line 93646 "isa_tms320.tcc"
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 93648 "isa_tms320.tcc"
+#line 93649 "isa_tms320.tcc"
 )
 {
-#line 2143 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 2144 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		// Check whether 'src2' register is valid
 		if(unlikely(!cpu.HasReg(src2)))
@@ -93696,42 +93697,42 @@ cpu
 		M_ST_N | M_ST_Z    // or mask
 		);
 	}
-#line 93700 "isa_tms320.tcc"
+#line 93701 "isa_tms320.tcc"
 }
 
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 93706 "isa_tms320.tcc"
+#line 93707 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 93709 "isa_tms320.tcc"
+#line 93710 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 93713 "isa_tms320.tcc"
+#line 93714 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 93716 "isa_tms320.tcc"
+#line 93717 "isa_tms320.tcc"
 >
 static Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 93721 "isa_tms320.tcc"
+#line 93722 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 93725 "isa_tms320.tcc"
+#line 93726 "isa_tms320.tcc"
 > *DecodeOpOR3_STI_ext(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpOR3_STI_ext<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 93731 "isa_tms320.tcc"
+#line 93732 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 93735 "isa_tms320.tcc"
+#line 93736 "isa_tms320.tcc"
 	>(code, addr);
 }
 
@@ -93744,46 +93745,46 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 93748 "isa_tms320.tcc"
+#line 93749 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 93751 "isa_tms320.tcc"
+#line 93752 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 93755 "isa_tms320.tcc"
+#line 93756 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 93758 "isa_tms320.tcc"
+#line 93759 "isa_tms320.tcc"
 >
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 bool
-#line 93762 "isa_tms320.tcc"
+#line 93763 "isa_tms320.tcc"
 OpSTF_STF<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 93766 "isa_tms320.tcc"
+#line 93767 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 93770 "isa_tms320.tcc"
+#line 93771 "isa_tms320.tcc"
 >::disasm(
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 93774 "isa_tms320.tcc"
+#line 93775 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 93777 "isa_tms320.tcc"
+#line 93778 "isa_tms320.tcc"
 ,
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 std::ostream &
-#line 93781 "isa_tms320.tcc"
+#line 93782 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 os
-#line 93784 "isa_tms320.tcc"
+#line 93785 "isa_tms320.tcc"
 )
 {
-#line 2203 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 2204 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		const char *src1_name = REG_NAME[src1];
 		const char *src2_name = REG_NAME[src2];
@@ -93798,129 +93799,129 @@ os
 		<< " || " << "STF " << src1_name << ", " << disasm_dst1_indir;
 		return true;
 	}
-#line 93802 "isa_tms320.tcc"
+#line 93803 "isa_tms320.tcc"
 }
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 93807 "isa_tms320.tcc"
+#line 93808 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 93810 "isa_tms320.tcc"
+#line 93811 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 93814 "isa_tms320.tcc"
+#line 93815 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 93817 "isa_tms320.tcc"
+#line 93818 "isa_tms320.tcc"
 >
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 void
-#line 93821 "isa_tms320.tcc"
+#line 93822 "isa_tms320.tcc"
 OpSTF_STF<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 93825 "isa_tms320.tcc"
+#line 93826 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 93829 "isa_tms320.tcc"
+#line 93830 "isa_tms320.tcc"
 >::execute(
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 93833 "isa_tms320.tcc"
+#line 93834 "isa_tms320.tcc"
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 93836 "isa_tms320.tcc"
+#line 93837 "isa_tms320.tcc"
 )
 {
-#line 2232 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 2233 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
 	}
-#line 93843 "isa_tms320.tcc"
+#line 93844 "isa_tms320.tcc"
 }
 
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 93849 "isa_tms320.tcc"
+#line 93850 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 93852 "isa_tms320.tcc"
+#line 93853 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 93856 "isa_tms320.tcc"
+#line 93857 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 93859 "isa_tms320.tcc"
+#line 93860 "isa_tms320.tcc"
 >
 static Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 93864 "isa_tms320.tcc"
+#line 93865 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 93868 "isa_tms320.tcc"
+#line 93869 "isa_tms320.tcc"
 > *DecodeOpSTF_STF(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpSTF_STF<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 93874 "isa_tms320.tcc"
+#line 93875 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 93878 "isa_tms320.tcc"
+#line 93879 "isa_tms320.tcc"
 	>(code, addr);
 }
 
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 93885 "isa_tms320.tcc"
+#line 93886 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 93888 "isa_tms320.tcc"
+#line 93889 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 93892 "isa_tms320.tcc"
+#line 93893 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 93895 "isa_tms320.tcc"
+#line 93896 "isa_tms320.tcc"
 >
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 bool
-#line 93899 "isa_tms320.tcc"
+#line 93900 "isa_tms320.tcc"
 OpSTF_STF_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 93903 "isa_tms320.tcc"
+#line 93904 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 93907 "isa_tms320.tcc"
+#line 93908 "isa_tms320.tcc"
 >::disasm(
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 93911 "isa_tms320.tcc"
+#line 93912 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 93914 "isa_tms320.tcc"
+#line 93915 "isa_tms320.tcc"
 ,
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 std::ostream &
-#line 93918 "isa_tms320.tcc"
+#line 93919 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 os
-#line 93921 "isa_tms320.tcc"
+#line 93922 "isa_tms320.tcc"
 )
 {
-#line 2218 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 2219 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		const char *src1_name = REG_NAME[src1];
 		const char *src2_name = REG_NAME[src2];
@@ -93934,83 +93935,83 @@ os
 		<< " || " << "STF " << src1_name << ", " << disasm_dst1_indir;
 		return true;
 	}
-#line 93938 "isa_tms320.tcc"
+#line 93939 "isa_tms320.tcc"
 }
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 93943 "isa_tms320.tcc"
+#line 93944 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 93946 "isa_tms320.tcc"
+#line 93947 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 93950 "isa_tms320.tcc"
+#line 93951 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 93953 "isa_tms320.tcc"
+#line 93954 "isa_tms320.tcc"
 >
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 void
-#line 93957 "isa_tms320.tcc"
+#line 93958 "isa_tms320.tcc"
 OpSTF_STF_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 93961 "isa_tms320.tcc"
+#line 93962 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 93965 "isa_tms320.tcc"
+#line 93966 "isa_tms320.tcc"
 >::execute(
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 93969 "isa_tms320.tcc"
+#line 93970 "isa_tms320.tcc"
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 93972 "isa_tms320.tcc"
+#line 93973 "isa_tms320.tcc"
 )
 {
-#line 2236 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 2237 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
 	}
-#line 93979 "isa_tms320.tcc"
+#line 93980 "isa_tms320.tcc"
 }
 
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 93985 "isa_tms320.tcc"
+#line 93986 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 93988 "isa_tms320.tcc"
+#line 93989 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 93992 "isa_tms320.tcc"
+#line 93993 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 93995 "isa_tms320.tcc"
+#line 93996 "isa_tms320.tcc"
 >
 static Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 94000 "isa_tms320.tcc"
+#line 94001 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 94004 "isa_tms320.tcc"
+#line 94005 "isa_tms320.tcc"
 > *DecodeOpSTF_STF_ext(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpSTF_STF_ext<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 94010 "isa_tms320.tcc"
+#line 94011 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 94014 "isa_tms320.tcc"
+#line 94015 "isa_tms320.tcc"
 	>(code, addr);
 }
 
@@ -94023,46 +94024,46 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 94027 "isa_tms320.tcc"
+#line 94028 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 94030 "isa_tms320.tcc"
+#line 94031 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 94034 "isa_tms320.tcc"
+#line 94035 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 94037 "isa_tms320.tcc"
+#line 94038 "isa_tms320.tcc"
 >
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 bool
-#line 94041 "isa_tms320.tcc"
+#line 94042 "isa_tms320.tcc"
 OpSTI_STI<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 94045 "isa_tms320.tcc"
+#line 94046 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 94049 "isa_tms320.tcc"
+#line 94050 "isa_tms320.tcc"
 >::disasm(
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 94053 "isa_tms320.tcc"
+#line 94054 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 94056 "isa_tms320.tcc"
+#line 94057 "isa_tms320.tcc"
 ,
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 std::ostream &
-#line 94060 "isa_tms320.tcc"
+#line 94061 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 os
-#line 94063 "isa_tms320.tcc"
+#line 94064 "isa_tms320.tcc"
 )
 {
-#line 2251 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 2252 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		const char *src1_name = REG_NAME[src1];
 		const char *src2_name = REG_NAME[src2];
@@ -94077,7 +94078,7 @@ os
 		<< " || " << "STI " << src1_name << ", " << disasm_dst1_indir;
 		return true;
 	}
-#line 94081 "isa_tms320.tcc"
+#line 94082 "isa_tms320.tcc"
 }
 //    reg(src2) -> indir(dst2)
 // ||
@@ -94085,39 +94086,39 @@ os
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 94089 "isa_tms320.tcc"
+#line 94090 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 94092 "isa_tms320.tcc"
+#line 94093 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 94096 "isa_tms320.tcc"
+#line 94097 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 94099 "isa_tms320.tcc"
+#line 94100 "isa_tms320.tcc"
 >
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 void
-#line 94103 "isa_tms320.tcc"
+#line 94104 "isa_tms320.tcc"
 OpSTI_STI<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 94107 "isa_tms320.tcc"
+#line 94108 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 94111 "isa_tms320.tcc"
+#line 94112 "isa_tms320.tcc"
 >::execute(
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 94115 "isa_tms320.tcc"
+#line 94116 "isa_tms320.tcc"
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 94118 "isa_tms320.tcc"
+#line 94119 "isa_tms320.tcc"
 )
 {
-#line 2283 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 2284 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		// Read the 'src1' operand
 		uint32_t src1_value = cpu.GetIntReg(src1);
@@ -94148,106 +94149,109 @@ cpu
 		// Store the word into memory
 		cpu.IntStore(d2_ea, src2_value);
 
+		// Note: If both stores are executed to the
+		// same address, the value written is that of STI src2, dst2.
+
 		// Store the word into memory
 		if(d1_ea != d2_ea)
 		{
 			cpu.IntStore(d1_ea, src1_value);
 		}
 
-		if(d2_update_ar)
-		{
-			// Write back ARn
-			cpu.SetAR23_0(d2_ar, d2_output_ar);
-		}
-
-		if(d1_update_ar && d1_ar != d2_ar)
+		if(d1_update_ar)
 		{
 			// Write back ARn
 			cpu.SetAR23_0(d1_ar, d1_output_ar);
 		}
+
+		if(d2_update_ar && d1_ar != d2_ar)
+		{
+			// Write back ARn
+			cpu.SetAR23_0(d2_ar, d2_output_ar);
+		}
 	}
-#line 94170 "isa_tms320.tcc"
+#line 94174 "isa_tms320.tcc"
 }
 
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 94176 "isa_tms320.tcc"
+#line 94180 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 94179 "isa_tms320.tcc"
+#line 94183 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 94183 "isa_tms320.tcc"
+#line 94187 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 94186 "isa_tms320.tcc"
+#line 94190 "isa_tms320.tcc"
 >
 static Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 94191 "isa_tms320.tcc"
+#line 94195 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 94195 "isa_tms320.tcc"
+#line 94199 "isa_tms320.tcc"
 > *DecodeOpSTI_STI(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpSTI_STI<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 94201 "isa_tms320.tcc"
+#line 94205 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 94205 "isa_tms320.tcc"
+#line 94209 "isa_tms320.tcc"
 	>(code, addr);
 }
 
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 94212 "isa_tms320.tcc"
+#line 94216 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 94215 "isa_tms320.tcc"
+#line 94219 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 94219 "isa_tms320.tcc"
+#line 94223 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 94222 "isa_tms320.tcc"
+#line 94226 "isa_tms320.tcc"
 >
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 bool
-#line 94226 "isa_tms320.tcc"
+#line 94230 "isa_tms320.tcc"
 OpSTI_STI_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 94230 "isa_tms320.tcc"
+#line 94234 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 94234 "isa_tms320.tcc"
+#line 94238 "isa_tms320.tcc"
 >::disasm(
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 94238 "isa_tms320.tcc"
+#line 94242 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 94241 "isa_tms320.tcc"
+#line 94245 "isa_tms320.tcc"
 ,
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 std::ostream &
-#line 94245 "isa_tms320.tcc"
+#line 94249 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 os
-#line 94248 "isa_tms320.tcc"
+#line 94252 "isa_tms320.tcc"
 )
 {
-#line 2266 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 2267 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		const char *src1_name = REG_NAME[src1];
 		const char *src2_name = REG_NAME[src2];
@@ -94261,7 +94265,7 @@ os
 		<< " || " << "STI " << src1_name << ", " << disasm_dst1_indir;
 		return true;
 	}
-#line 94265 "isa_tms320.tcc"
+#line 94269 "isa_tms320.tcc"
 }
 //    reg(src2) -> reg(dst2)
 // ||
@@ -94269,39 +94273,39 @@ os
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 94273 "isa_tms320.tcc"
+#line 94277 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 94276 "isa_tms320.tcc"
+#line 94280 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 94280 "isa_tms320.tcc"
+#line 94284 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 94283 "isa_tms320.tcc"
+#line 94287 "isa_tms320.tcc"
 >
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 void
-#line 94287 "isa_tms320.tcc"
+#line 94291 "isa_tms320.tcc"
 OpSTI_STI_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 94291 "isa_tms320.tcc"
+#line 94295 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 94295 "isa_tms320.tcc"
+#line 94299 "isa_tms320.tcc"
 >::execute(
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 94299 "isa_tms320.tcc"
+#line 94303 "isa_tms320.tcc"
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 94302 "isa_tms320.tcc"
+#line 94306 "isa_tms320.tcc"
 )
 {
-#line 2335 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 2339 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		// Check whether 'dst2' register is valid
 		if(unlikely(!cpu.HasReg(dst2)))
@@ -94325,11 +94329,11 @@ cpu
 			throw BogusOpcodeException<CONFIG, DEBUG>(this);
 		}
 
-		// Write back 'src2' into 'dst2' register
-		cpu.SetIntReg(dst2, src2_value);
-
 		// Store the word into memory
 		cpu.IntStore(d1_ea, src1_value);
+
+		// Write back 'src2' into 'dst2' register
+		cpu.SetIntReg(dst2, src2_value);
 
 		if(d1_update_ar)
 		{
@@ -94337,42 +94341,42 @@ cpu
 			cpu.SetAR23_0(d1_ar, d1_output_ar);
 		}
 	}
-#line 94341 "isa_tms320.tcc"
+#line 94345 "isa_tms320.tcc"
 }
 
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 94347 "isa_tms320.tcc"
+#line 94351 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 94350 "isa_tms320.tcc"
+#line 94354 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 94354 "isa_tms320.tcc"
+#line 94358 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 94357 "isa_tms320.tcc"
+#line 94361 "isa_tms320.tcc"
 >
 static Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 94362 "isa_tms320.tcc"
+#line 94366 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 94366 "isa_tms320.tcc"
+#line 94370 "isa_tms320.tcc"
 > *DecodeOpSTI_STI_ext(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpSTI_STI_ext<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 94372 "isa_tms320.tcc"
+#line 94376 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 94376 "isa_tms320.tcc"
+#line 94380 "isa_tms320.tcc"
 	>(code, addr);
 }
 
@@ -94385,46 +94389,46 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 94389 "isa_tms320.tcc"
+#line 94393 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 94392 "isa_tms320.tcc"
+#line 94396 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 94396 "isa_tms320.tcc"
+#line 94400 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 94399 "isa_tms320.tcc"
+#line 94403 "isa_tms320.tcc"
 >
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 bool
-#line 94403 "isa_tms320.tcc"
+#line 94407 "isa_tms320.tcc"
 OpSUBF3_STF<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 94407 "isa_tms320.tcc"
+#line 94411 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 94411 "isa_tms320.tcc"
+#line 94415 "isa_tms320.tcc"
 >::disasm(
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 94415 "isa_tms320.tcc"
+#line 94419 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 94418 "isa_tms320.tcc"
+#line 94422 "isa_tms320.tcc"
 ,
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 std::ostream &
-#line 94422 "isa_tms320.tcc"
+#line 94426 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 os
-#line 94425 "isa_tms320.tcc"
+#line 94429 "isa_tms320.tcc"
 )
 {
-#line 2382 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 2386 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		const char *dst1_name = REG_NAME[dst1];
 		const char *src1_name = REG_NAME[src1];
@@ -94440,129 +94444,129 @@ os
 		<< " || " << "STF " << src3_name << ", " << disasm_dst2_indir;
 		return true;
 	}
-#line 94444 "isa_tms320.tcc"
+#line 94448 "isa_tms320.tcc"
 }
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 94449 "isa_tms320.tcc"
+#line 94453 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 94452 "isa_tms320.tcc"
+#line 94456 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 94456 "isa_tms320.tcc"
+#line 94460 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 94459 "isa_tms320.tcc"
+#line 94463 "isa_tms320.tcc"
 >
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 void
-#line 94463 "isa_tms320.tcc"
+#line 94467 "isa_tms320.tcc"
 OpSUBF3_STF<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 94467 "isa_tms320.tcc"
+#line 94471 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 94471 "isa_tms320.tcc"
+#line 94475 "isa_tms320.tcc"
 >::execute(
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 94475 "isa_tms320.tcc"
+#line 94479 "isa_tms320.tcc"
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 94478 "isa_tms320.tcc"
+#line 94482 "isa_tms320.tcc"
 )
 {
-#line 2413 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 2417 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
 	}
-#line 94485 "isa_tms320.tcc"
+#line 94489 "isa_tms320.tcc"
 }
 
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 94491 "isa_tms320.tcc"
+#line 94495 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 94494 "isa_tms320.tcc"
+#line 94498 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 94498 "isa_tms320.tcc"
+#line 94502 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 94501 "isa_tms320.tcc"
+#line 94505 "isa_tms320.tcc"
 >
 static Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 94506 "isa_tms320.tcc"
+#line 94510 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 94510 "isa_tms320.tcc"
+#line 94514 "isa_tms320.tcc"
 > *DecodeOpSUBF3_STF(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpSUBF3_STF<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 94516 "isa_tms320.tcc"
+#line 94520 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 94520 "isa_tms320.tcc"
+#line 94524 "isa_tms320.tcc"
 	>(code, addr);
 }
 
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 94527 "isa_tms320.tcc"
+#line 94531 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 94530 "isa_tms320.tcc"
+#line 94534 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 94534 "isa_tms320.tcc"
+#line 94538 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 94537 "isa_tms320.tcc"
+#line 94541 "isa_tms320.tcc"
 >
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 bool
-#line 94541 "isa_tms320.tcc"
+#line 94545 "isa_tms320.tcc"
 OpSUBF3_STF_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 94545 "isa_tms320.tcc"
+#line 94549 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 94549 "isa_tms320.tcc"
+#line 94553 "isa_tms320.tcc"
 >::disasm(
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 94553 "isa_tms320.tcc"
+#line 94557 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 94556 "isa_tms320.tcc"
+#line 94560 "isa_tms320.tcc"
 ,
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 std::ostream &
-#line 94560 "isa_tms320.tcc"
+#line 94564 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 os
-#line 94563 "isa_tms320.tcc"
+#line 94567 "isa_tms320.tcc"
 )
 {
-#line 2398 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 2402 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		const char *dst1_name = REG_NAME[dst1];
 		const char *src1_name = REG_NAME[src1];
@@ -94577,83 +94581,83 @@ os
 		<< " || " << "STF " << src3_name << ", " << disasm_dst2_indir;
 		return true;
 	}
-#line 94581 "isa_tms320.tcc"
+#line 94585 "isa_tms320.tcc"
 }
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 94586 "isa_tms320.tcc"
+#line 94590 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 94589 "isa_tms320.tcc"
+#line 94593 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 94593 "isa_tms320.tcc"
+#line 94597 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 94596 "isa_tms320.tcc"
+#line 94600 "isa_tms320.tcc"
 >
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 void
-#line 94600 "isa_tms320.tcc"
+#line 94604 "isa_tms320.tcc"
 OpSUBF3_STF_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 94604 "isa_tms320.tcc"
+#line 94608 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 94608 "isa_tms320.tcc"
+#line 94612 "isa_tms320.tcc"
 >::execute(
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 94612 "isa_tms320.tcc"
+#line 94616 "isa_tms320.tcc"
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 94615 "isa_tms320.tcc"
+#line 94619 "isa_tms320.tcc"
 )
 {
-#line 2417 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 2421 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
 	}
-#line 94622 "isa_tms320.tcc"
+#line 94626 "isa_tms320.tcc"
 }
 
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 94628 "isa_tms320.tcc"
+#line 94632 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 94631 "isa_tms320.tcc"
+#line 94635 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 94635 "isa_tms320.tcc"
+#line 94639 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 94638 "isa_tms320.tcc"
+#line 94642 "isa_tms320.tcc"
 >
 static Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 94643 "isa_tms320.tcc"
+#line 94647 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 94647 "isa_tms320.tcc"
+#line 94651 "isa_tms320.tcc"
 > *DecodeOpSUBF3_STF_ext(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpSUBF3_STF_ext<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 94653 "isa_tms320.tcc"
+#line 94657 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 94657 "isa_tms320.tcc"
+#line 94661 "isa_tms320.tcc"
 	>(code, addr);
 }
 
@@ -94666,46 +94670,46 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 94670 "isa_tms320.tcc"
+#line 94674 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 94673 "isa_tms320.tcc"
+#line 94677 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 94677 "isa_tms320.tcc"
+#line 94681 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 94680 "isa_tms320.tcc"
+#line 94684 "isa_tms320.tcc"
 >
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 bool
-#line 94684 "isa_tms320.tcc"
+#line 94688 "isa_tms320.tcc"
 OpSUBI3_STI<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 94688 "isa_tms320.tcc"
+#line 94692 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 94692 "isa_tms320.tcc"
+#line 94696 "isa_tms320.tcc"
 >::disasm(
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 94696 "isa_tms320.tcc"
+#line 94700 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 94699 "isa_tms320.tcc"
+#line 94703 "isa_tms320.tcc"
 ,
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 std::ostream &
-#line 94703 "isa_tms320.tcc"
+#line 94707 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 os
-#line 94706 "isa_tms320.tcc"
+#line 94710 "isa_tms320.tcc"
 )
 {
-#line 2432 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 2436 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		const char *dst1_name = REG_NAME[dst1];
 		const char *src1_name = REG_NAME[src1];
@@ -94721,7 +94725,7 @@ os
 		<< " || " << "STI " << src3_name << ", " << disasm_dst2_indir;
 		return true;
 	}
-#line 94725 "isa_tms320.tcc"
+#line 94729 "isa_tms320.tcc"
 }
 //    indir(src2) - reg(src1)  -> reg(dst1)
 // ||
@@ -94729,39 +94733,39 @@ os
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 94733 "isa_tms320.tcc"
+#line 94737 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 94736 "isa_tms320.tcc"
+#line 94740 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 94740 "isa_tms320.tcc"
+#line 94744 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 94743 "isa_tms320.tcc"
+#line 94747 "isa_tms320.tcc"
 >
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 void
-#line 94747 "isa_tms320.tcc"
+#line 94751 "isa_tms320.tcc"
 OpSUBI3_STI<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 94751 "isa_tms320.tcc"
+#line 94755 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 94755 "isa_tms320.tcc"
+#line 94759 "isa_tms320.tcc"
 >::execute(
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 94759 "isa_tms320.tcc"
+#line 94763 "isa_tms320.tcc"
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 94762 "isa_tms320.tcc"
+#line 94766 "isa_tms320.tcc"
 )
 {
-#line 2466 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 2470 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		// Read 'src1' operand
 		uint32_t src1_value = cpu.GetIntReg(src1);
@@ -94813,16 +94817,16 @@ cpu
 		// both addresses are correctly generated, but only the value created by
 		// the src3 field is saved in the auxiliary register specified...
 
-		if(s2_update_ar)
-		{
-			// Write back ARn
-			cpu.SetAR23_0(s2_ar, s2_output_ar);
-		}
-
-		if(d2_update_ar && s2_ar != d2_ar)
+		if(d2_update_ar)
 		{
 			// Write back ARn
 			cpu.SetAR23_0(d2_ar, d2_output_ar);
+		}
+
+		if(s2_update_ar && s2_ar != d2_ar)
+		{
+			// Write back ARn
+			cpu.SetAR23_0(s2_ar, s2_output_ar);
 		}
 
 		// Generate flags (into ST)
@@ -94834,88 +94838,88 @@ cpu
 		overflow
 		);
 	}
-#line 94838 "isa_tms320.tcc"
+#line 94842 "isa_tms320.tcc"
 }
 
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 94844 "isa_tms320.tcc"
+#line 94848 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 94847 "isa_tms320.tcc"
+#line 94851 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 94851 "isa_tms320.tcc"
+#line 94855 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 94854 "isa_tms320.tcc"
+#line 94858 "isa_tms320.tcc"
 >
 static Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 94859 "isa_tms320.tcc"
+#line 94863 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 94863 "isa_tms320.tcc"
+#line 94867 "isa_tms320.tcc"
 > *DecodeOpSUBI3_STI(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpSUBI3_STI<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 94869 "isa_tms320.tcc"
+#line 94873 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 94873 "isa_tms320.tcc"
+#line 94877 "isa_tms320.tcc"
 	>(code, addr);
 }
 
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 94880 "isa_tms320.tcc"
+#line 94884 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 94883 "isa_tms320.tcc"
+#line 94887 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 94887 "isa_tms320.tcc"
+#line 94891 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 94890 "isa_tms320.tcc"
+#line 94894 "isa_tms320.tcc"
 >
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 bool
-#line 94894 "isa_tms320.tcc"
+#line 94898 "isa_tms320.tcc"
 OpSUBI3_STI_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 94898 "isa_tms320.tcc"
+#line 94902 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 94902 "isa_tms320.tcc"
+#line 94906 "isa_tms320.tcc"
 >::disasm(
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 94906 "isa_tms320.tcc"
+#line 94910 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 94909 "isa_tms320.tcc"
+#line 94913 "isa_tms320.tcc"
 ,
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 std::ostream &
-#line 94913 "isa_tms320.tcc"
+#line 94917 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 os
-#line 94916 "isa_tms320.tcc"
+#line 94920 "isa_tms320.tcc"
 )
 {
-#line 2448 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 2452 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		const char *dst1_name = REG_NAME[dst1];
 		const char *src1_name = REG_NAME[src1];
@@ -94930,7 +94934,7 @@ os
 		<< " || " << "STI " << src3_name << ", " << disasm_dst2_indir;
 		return true;
 	}
-#line 94934 "isa_tms320.tcc"
+#line 94938 "isa_tms320.tcc"
 }
 //    reg(src2) - reg(src1) -> reg(dst1)
 // ||
@@ -94938,39 +94942,39 @@ os
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 94942 "isa_tms320.tcc"
+#line 94946 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 94945 "isa_tms320.tcc"
+#line 94949 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 94949 "isa_tms320.tcc"
+#line 94953 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 94952 "isa_tms320.tcc"
+#line 94956 "isa_tms320.tcc"
 >
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 void
-#line 94956 "isa_tms320.tcc"
+#line 94960 "isa_tms320.tcc"
 OpSUBI3_STI_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 94960 "isa_tms320.tcc"
+#line 94964 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 94964 "isa_tms320.tcc"
+#line 94968 "isa_tms320.tcc"
 >::execute(
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 94968 "isa_tms320.tcc"
+#line 94972 "isa_tms320.tcc"
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 94971 "isa_tms320.tcc"
+#line 94975 "isa_tms320.tcc"
 )
 {
-#line 2542 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 2546 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		// Check whether 'src2' register is valid
 		if(unlikely(!cpu.HasReg(src2)))
@@ -95033,42 +95037,42 @@ cpu
 		overflow
 		);
 	}
-#line 95037 "isa_tms320.tcc"
+#line 95041 "isa_tms320.tcc"
 }
 
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 95043 "isa_tms320.tcc"
+#line 95047 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 95046 "isa_tms320.tcc"
+#line 95050 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 95050 "isa_tms320.tcc"
+#line 95054 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 95053 "isa_tms320.tcc"
+#line 95057 "isa_tms320.tcc"
 >
 static Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 95058 "isa_tms320.tcc"
+#line 95062 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 95062 "isa_tms320.tcc"
+#line 95066 "isa_tms320.tcc"
 > *DecodeOpSUBI3_STI_ext(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpSUBI3_STI_ext<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 95068 "isa_tms320.tcc"
+#line 95072 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 95072 "isa_tms320.tcc"
+#line 95076 "isa_tms320.tcc"
 	>(code, addr);
 }
 
@@ -95081,46 +95085,46 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 95085 "isa_tms320.tcc"
+#line 95089 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 95088 "isa_tms320.tcc"
+#line 95092 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 95092 "isa_tms320.tcc"
+#line 95096 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 95095 "isa_tms320.tcc"
+#line 95099 "isa_tms320.tcc"
 >
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 bool
-#line 95099 "isa_tms320.tcc"
+#line 95103 "isa_tms320.tcc"
 OpXOR3_STI<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 95103 "isa_tms320.tcc"
+#line 95107 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 95107 "isa_tms320.tcc"
+#line 95111 "isa_tms320.tcc"
 >::disasm(
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 95111 "isa_tms320.tcc"
+#line 95115 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 95114 "isa_tms320.tcc"
+#line 95118 "isa_tms320.tcc"
 ,
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 std::ostream &
-#line 95118 "isa_tms320.tcc"
+#line 95122 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 os
-#line 95121 "isa_tms320.tcc"
+#line 95125 "isa_tms320.tcc"
 )
 {
-#line 2616 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 2620 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		const char *dst1_name = REG_NAME[dst1];
 		const char *src1_name = REG_NAME[src1];
@@ -95136,7 +95140,7 @@ os
 		<< " || " << "STI " << src3_name << ", " << disasm_dst2_indir;
 		return true;
 	}
-#line 95140 "isa_tms320.tcc"
+#line 95144 "isa_tms320.tcc"
 }
 //    reg(src1) XOR indir(src2) -> reg(dst1)
 // ||
@@ -95144,39 +95148,39 @@ os
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 95148 "isa_tms320.tcc"
+#line 95152 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 95151 "isa_tms320.tcc"
+#line 95155 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 95155 "isa_tms320.tcc"
+#line 95159 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 95158 "isa_tms320.tcc"
+#line 95162 "isa_tms320.tcc"
 >
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 void
-#line 95162 "isa_tms320.tcc"
+#line 95166 "isa_tms320.tcc"
 OpXOR3_STI<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 95166 "isa_tms320.tcc"
+#line 95170 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 95170 "isa_tms320.tcc"
+#line 95174 "isa_tms320.tcc"
 >::execute(
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 95174 "isa_tms320.tcc"
+#line 95178 "isa_tms320.tcc"
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 95177 "isa_tms320.tcc"
+#line 95181 "isa_tms320.tcc"
 )
 {
-#line 2650 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 2654 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		// Read 'src1' operand
 		uint32_t src1_value = cpu.GetIntReg(src1);
@@ -95220,16 +95224,16 @@ cpu
 		// both addresses are correctly generated, but only the value created by
 		// the src3 field is saved in the auxiliary register specified...
 
-		if(s2_update_ar)
-		{
-			// Write back ARn
-			cpu.SetAR23_0(s2_ar, s2_output_ar);
-		}
-
-		if(d2_update_ar && s2_ar != d2_ar)
+		if(d2_update_ar)
 		{
 			// Write back ARn
 			cpu.SetAR23_0(d2_ar, d2_output_ar);
+		}
+
+		if(s2_update_ar && s2_ar != d2_ar)
+		{
+			// Write back ARn
+			cpu.SetAR23_0(s2_ar, s2_output_ar);
 		}
 
 		// Generate flags (into ST)
@@ -95239,88 +95243,88 @@ cpu
 		M_ST_N | M_ST_Z    // or mask
 		);
 	}
-#line 95243 "isa_tms320.tcc"
+#line 95247 "isa_tms320.tcc"
 }
 
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 95249 "isa_tms320.tcc"
+#line 95253 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 95252 "isa_tms320.tcc"
+#line 95256 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 95256 "isa_tms320.tcc"
+#line 95260 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 95259 "isa_tms320.tcc"
+#line 95263 "isa_tms320.tcc"
 >
 static Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 95264 "isa_tms320.tcc"
+#line 95268 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 95268 "isa_tms320.tcc"
+#line 95272 "isa_tms320.tcc"
 > *DecodeOpXOR3_STI(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpXOR3_STI<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 95274 "isa_tms320.tcc"
+#line 95278 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 95278 "isa_tms320.tcc"
+#line 95282 "isa_tms320.tcc"
 	>(code, addr);
 }
 
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 95285 "isa_tms320.tcc"
+#line 95289 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 95288 "isa_tms320.tcc"
+#line 95292 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 95292 "isa_tms320.tcc"
+#line 95296 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 95295 "isa_tms320.tcc"
+#line 95299 "isa_tms320.tcc"
 >
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 bool
-#line 95299 "isa_tms320.tcc"
+#line 95303 "isa_tms320.tcc"
 OpXOR3_STI_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 95303 "isa_tms320.tcc"
+#line 95307 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 95307 "isa_tms320.tcc"
+#line 95311 "isa_tms320.tcc"
 >::disasm(
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 95311 "isa_tms320.tcc"
+#line 95315 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 95314 "isa_tms320.tcc"
+#line 95318 "isa_tms320.tcc"
 ,
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 std::ostream &
-#line 95318 "isa_tms320.tcc"
+#line 95322 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 os
-#line 95321 "isa_tms320.tcc"
+#line 95325 "isa_tms320.tcc"
 )
 {
-#line 2632 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 2636 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		const char *dst1_name = REG_NAME[dst1];
 		const char *src1_name = REG_NAME[src1];
@@ -95335,7 +95339,7 @@ os
 		<< " || " << "STI " << src3_name << ", " << disasm_dst2_indir;
 		return true;
 	}
-#line 95339 "isa_tms320.tcc"
+#line 95343 "isa_tms320.tcc"
 }
 //    reg(src1) XOR reg(src2) -> reg(dst1)
 // ||
@@ -95343,39 +95347,39 @@ os
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 95347 "isa_tms320.tcc"
+#line 95351 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 95350 "isa_tms320.tcc"
+#line 95354 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 95354 "isa_tms320.tcc"
+#line 95358 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 95357 "isa_tms320.tcc"
+#line 95361 "isa_tms320.tcc"
 >
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 void
-#line 95361 "isa_tms320.tcc"
+#line 95365 "isa_tms320.tcc"
 OpXOR3_STI_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 95365 "isa_tms320.tcc"
+#line 95369 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 95369 "isa_tms320.tcc"
+#line 95373 "isa_tms320.tcc"
 >::execute(
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 95373 "isa_tms320.tcc"
+#line 95377 "isa_tms320.tcc"
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 95376 "isa_tms320.tcc"
+#line 95380 "isa_tms320.tcc"
 )
 {
-#line 2716 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 2720 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		// Check whether 'src2' register is valid
 		if(unlikely(!cpu.HasReg(src2)))
@@ -95424,42 +95428,42 @@ cpu
 		M_ST_N | M_ST_Z    // or mask
 		);
 	}
-#line 95428 "isa_tms320.tcc"
+#line 95432 "isa_tms320.tcc"
 }
 
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 95434 "isa_tms320.tcc"
+#line 95438 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 95437 "isa_tms320.tcc"
+#line 95441 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 95441 "isa_tms320.tcc"
+#line 95445 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 95444 "isa_tms320.tcc"
+#line 95448 "isa_tms320.tcc"
 >
 static Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 95449 "isa_tms320.tcc"
+#line 95453 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 95453 "isa_tms320.tcc"
+#line 95457 "isa_tms320.tcc"
 > *DecodeOpXOR3_STI_ext(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpXOR3_STI_ext<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 95459 "isa_tms320.tcc"
+#line 95463 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 95463 "isa_tms320.tcc"
+#line 95467 "isa_tms320.tcc"
 	>(code, addr);
 }
 
@@ -95472,46 +95476,46 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 95476 "isa_tms320.tcc"
+#line 95480 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 95479 "isa_tms320.tcc"
+#line 95483 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 95483 "isa_tms320.tcc"
+#line 95487 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 95486 "isa_tms320.tcc"
+#line 95490 "isa_tms320.tcc"
 >
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 bool
-#line 95490 "isa_tms320.tcc"
+#line 95494 "isa_tms320.tcc"
 OpLDF_LDF<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 95494 "isa_tms320.tcc"
+#line 95498 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 95498 "isa_tms320.tcc"
+#line 95502 "isa_tms320.tcc"
 >::disasm(
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 95502 "isa_tms320.tcc"
+#line 95506 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 95505 "isa_tms320.tcc"
+#line 95509 "isa_tms320.tcc"
 ,
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 std::ostream &
-#line 95509 "isa_tms320.tcc"
+#line 95513 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 os
-#line 95512 "isa_tms320.tcc"
+#line 95516 "isa_tms320.tcc"
 )
 {
-#line 2776 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 2780 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		const char *dst1_name = REG_NAME[dst1];
 		const char *dst2_name = REG_NAME[dst2];
@@ -95526,129 +95530,129 @@ os
 		<< " || " << "LDF " << disasm_src1_indir << ", " << dst1_name;
 		return true;
 	}
-#line 95530 "isa_tms320.tcc"
+#line 95534 "isa_tms320.tcc"
 }
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 95535 "isa_tms320.tcc"
+#line 95539 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 95538 "isa_tms320.tcc"
+#line 95542 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 95542 "isa_tms320.tcc"
+#line 95546 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 95545 "isa_tms320.tcc"
+#line 95549 "isa_tms320.tcc"
 >
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 void
-#line 95549 "isa_tms320.tcc"
+#line 95553 "isa_tms320.tcc"
 OpLDF_LDF<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 95553 "isa_tms320.tcc"
+#line 95557 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 95557 "isa_tms320.tcc"
+#line 95561 "isa_tms320.tcc"
 >::execute(
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 95561 "isa_tms320.tcc"
+#line 95565 "isa_tms320.tcc"
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 95564 "isa_tms320.tcc"
+#line 95568 "isa_tms320.tcc"
 )
 {
-#line 2805 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 2809 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
 	}
-#line 95571 "isa_tms320.tcc"
+#line 95575 "isa_tms320.tcc"
 }
 
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 95577 "isa_tms320.tcc"
+#line 95581 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 95580 "isa_tms320.tcc"
+#line 95584 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 95584 "isa_tms320.tcc"
+#line 95588 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 95587 "isa_tms320.tcc"
+#line 95591 "isa_tms320.tcc"
 >
 static Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 95592 "isa_tms320.tcc"
+#line 95596 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 95596 "isa_tms320.tcc"
+#line 95600 "isa_tms320.tcc"
 > *DecodeOpLDF_LDF(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpLDF_LDF<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 95602 "isa_tms320.tcc"
+#line 95606 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 95606 "isa_tms320.tcc"
+#line 95610 "isa_tms320.tcc"
 	>(code, addr);
 }
 
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 95613 "isa_tms320.tcc"
+#line 95617 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 95616 "isa_tms320.tcc"
+#line 95620 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 95620 "isa_tms320.tcc"
+#line 95624 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 95623 "isa_tms320.tcc"
+#line 95627 "isa_tms320.tcc"
 >
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 bool
-#line 95627 "isa_tms320.tcc"
+#line 95631 "isa_tms320.tcc"
 OpLDF_LDF_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 95631 "isa_tms320.tcc"
+#line 95635 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 95635 "isa_tms320.tcc"
+#line 95639 "isa_tms320.tcc"
 >::disasm(
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 95639 "isa_tms320.tcc"
+#line 95643 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 95642 "isa_tms320.tcc"
+#line 95646 "isa_tms320.tcc"
 ,
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 std::ostream &
-#line 95646 "isa_tms320.tcc"
+#line 95650 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 os
-#line 95649 "isa_tms320.tcc"
+#line 95653 "isa_tms320.tcc"
 )
 {
-#line 2791 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 2795 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		const char *dst1_name = REG_NAME[dst1];
 		const char *dst2_name = REG_NAME[dst2];
@@ -95662,83 +95666,83 @@ os
 		<< " || " << "LDF " << disasm_src1_indir << ", " << dst2_name;
 		return true;
 	}
-#line 95666 "isa_tms320.tcc"
+#line 95670 "isa_tms320.tcc"
 }
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 95671 "isa_tms320.tcc"
+#line 95675 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 95674 "isa_tms320.tcc"
+#line 95678 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 95678 "isa_tms320.tcc"
+#line 95682 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 95681 "isa_tms320.tcc"
+#line 95685 "isa_tms320.tcc"
 >
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 void
-#line 95685 "isa_tms320.tcc"
+#line 95689 "isa_tms320.tcc"
 OpLDF_LDF_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 95689 "isa_tms320.tcc"
+#line 95693 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 95693 "isa_tms320.tcc"
+#line 95697 "isa_tms320.tcc"
 >::execute(
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 95697 "isa_tms320.tcc"
+#line 95701 "isa_tms320.tcc"
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 95700 "isa_tms320.tcc"
+#line 95704 "isa_tms320.tcc"
 )
 {
-#line 2809 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 2813 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
 	}
-#line 95707 "isa_tms320.tcc"
+#line 95711 "isa_tms320.tcc"
 }
 
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 95713 "isa_tms320.tcc"
+#line 95717 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 95716 "isa_tms320.tcc"
+#line 95720 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 95720 "isa_tms320.tcc"
+#line 95724 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 95723 "isa_tms320.tcc"
+#line 95727 "isa_tms320.tcc"
 >
 static Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 95728 "isa_tms320.tcc"
+#line 95732 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 95732 "isa_tms320.tcc"
+#line 95736 "isa_tms320.tcc"
 > *DecodeOpLDF_LDF_ext(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpLDF_LDF_ext<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 95738 "isa_tms320.tcc"
+#line 95742 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 95742 "isa_tms320.tcc"
+#line 95746 "isa_tms320.tcc"
 	>(code, addr);
 }
 
@@ -95751,46 +95755,46 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 95755 "isa_tms320.tcc"
+#line 95759 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 95758 "isa_tms320.tcc"
+#line 95762 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 95762 "isa_tms320.tcc"
+#line 95766 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 95765 "isa_tms320.tcc"
+#line 95769 "isa_tms320.tcc"
 >
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 bool
-#line 95769 "isa_tms320.tcc"
+#line 95773 "isa_tms320.tcc"
 OpLDI_LDI<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 95773 "isa_tms320.tcc"
+#line 95777 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 95777 "isa_tms320.tcc"
+#line 95781 "isa_tms320.tcc"
 >::disasm(
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 95781 "isa_tms320.tcc"
+#line 95785 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 95784 "isa_tms320.tcc"
+#line 95788 "isa_tms320.tcc"
 ,
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 std::ostream &
-#line 95788 "isa_tms320.tcc"
+#line 95792 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 os
-#line 95791 "isa_tms320.tcc"
+#line 95795 "isa_tms320.tcc"
 )
 {
-#line 2824 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 2828 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		const char *dst1_name = REG_NAME[dst1];
 		const char *dst2_name = REG_NAME[dst2];
@@ -95805,44 +95809,44 @@ os
 		<< " || " << "LDI " << disasm_src1_indir << ", " << dst1_name;
 		return true;
 	}
-#line 95809 "isa_tms320.tcc"
+#line 95813 "isa_tms320.tcc"
 }
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 95814 "isa_tms320.tcc"
+#line 95818 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 95817 "isa_tms320.tcc"
+#line 95821 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 95821 "isa_tms320.tcc"
+#line 95825 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 95824 "isa_tms320.tcc"
+#line 95828 "isa_tms320.tcc"
 >
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 void
-#line 95828 "isa_tms320.tcc"
+#line 95832 "isa_tms320.tcc"
 OpLDI_LDI<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 95832 "isa_tms320.tcc"
+#line 95836 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 95836 "isa_tms320.tcc"
+#line 95840 "isa_tms320.tcc"
 >::execute(
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 95840 "isa_tms320.tcc"
+#line 95844 "isa_tms320.tcc"
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 95843 "isa_tms320.tcc"
+#line 95847 "isa_tms320.tcc"
 )
 {
-#line 2853 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 2857 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		// Check that indirect addressing mode is valid and compute the effective address of 'src1' operand
 		typename CONFIG::address_t s1_ea;        // The effective address
@@ -95879,100 +95883,100 @@ cpu
 			cpu.SetIntReg(dst1, src1_value);
 		}
 
-		if(s2_update_ar)
-		{
-			// Write back ARn
-			cpu.SetAR23_0(s2_ar, s2_output_ar);
-		}
-
-		if(s1_update_ar && s1_ar != s2_ar)
+		if(s1_update_ar)
 		{
 			// Write back ARn
 			cpu.SetAR23_0(s1_ar, s1_output_ar);
 		}
+
+		if(s2_update_ar && s1_ar != s2_ar)
+		{
+			// Write back ARn
+			cpu.SetAR23_0(s2_ar, s2_output_ar);
+		}
 	}
-#line 95895 "isa_tms320.tcc"
+#line 95899 "isa_tms320.tcc"
 }
 
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 95901 "isa_tms320.tcc"
+#line 95905 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 95904 "isa_tms320.tcc"
+#line 95908 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 95908 "isa_tms320.tcc"
+#line 95912 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 95911 "isa_tms320.tcc"
+#line 95915 "isa_tms320.tcc"
 >
 static Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 95916 "isa_tms320.tcc"
+#line 95920 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 95920 "isa_tms320.tcc"
+#line 95924 "isa_tms320.tcc"
 > *DecodeOpLDI_LDI(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpLDI_LDI<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 95926 "isa_tms320.tcc"
+#line 95930 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 95930 "isa_tms320.tcc"
+#line 95934 "isa_tms320.tcc"
 	>(code, addr);
 }
 
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 95937 "isa_tms320.tcc"
+#line 95941 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 95940 "isa_tms320.tcc"
+#line 95944 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 95944 "isa_tms320.tcc"
+#line 95948 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 95947 "isa_tms320.tcc"
+#line 95951 "isa_tms320.tcc"
 >
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 bool
-#line 95951 "isa_tms320.tcc"
+#line 95955 "isa_tms320.tcc"
 OpLDI_LDI_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 95955 "isa_tms320.tcc"
+#line 95959 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 95959 "isa_tms320.tcc"
+#line 95963 "isa_tms320.tcc"
 >::disasm(
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 95963 "isa_tms320.tcc"
+#line 95967 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 95966 "isa_tms320.tcc"
+#line 95970 "isa_tms320.tcc"
 ,
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 std::ostream &
-#line 95970 "isa_tms320.tcc"
+#line 95974 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 os
-#line 95973 "isa_tms320.tcc"
+#line 95977 "isa_tms320.tcc"
 )
 {
-#line 2839 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 2843 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		const char *dst1_name = REG_NAME[dst1];
 		const char *dst2_name = REG_NAME[dst2];
@@ -95986,44 +95990,44 @@ os
 		<< " || " << "LDI " << disasm_src1_indir << ", " << dst2_name;
 		return true;
 	}
-#line 95990 "isa_tms320.tcc"
+#line 95994 "isa_tms320.tcc"
 }
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 95995 "isa_tms320.tcc"
+#line 95999 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 95998 "isa_tms320.tcc"
+#line 96002 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 96002 "isa_tms320.tcc"
+#line 96006 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 96005 "isa_tms320.tcc"
+#line 96009 "isa_tms320.tcc"
 >
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 void
-#line 96009 "isa_tms320.tcc"
+#line 96013 "isa_tms320.tcc"
 OpLDI_LDI_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 96013 "isa_tms320.tcc"
+#line 96017 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 96017 "isa_tms320.tcc"
+#line 96021 "isa_tms320.tcc"
 >::execute(
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 96021 "isa_tms320.tcc"
+#line 96025 "isa_tms320.tcc"
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 96024 "isa_tms320.tcc"
+#line 96028 "isa_tms320.tcc"
 )
 {
-#line 2902 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 2906 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		// Check whether 'src2' register is valid
 		if(unlikely(!cpu.HasReg(src2)))
@@ -96047,6 +96051,10 @@ cpu
 		// Read the 'src2' register operand value
 		uint32_t src2_value = cpu.GetIntReg(src2);
 
+		// Note: The assembler issues a warning
+		// if the LDIs load the same register.
+		// The result is that of LDI src2, dst2 (pp 13-129).
+
 		// Write back register operand 'dst2'
 		cpu.SetIntReg(dst2, src2_value);
 
@@ -96062,42 +96070,42 @@ cpu
 			cpu.SetAR23_0(s1_ar, s1_output_ar);
 		}
 	}
-#line 96066 "isa_tms320.tcc"
+#line 96074 "isa_tms320.tcc"
 }
 
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 96072 "isa_tms320.tcc"
+#line 96080 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 96075 "isa_tms320.tcc"
+#line 96083 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 96079 "isa_tms320.tcc"
+#line 96087 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 96082 "isa_tms320.tcc"
+#line 96090 "isa_tms320.tcc"
 >
 static Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 96087 "isa_tms320.tcc"
+#line 96095 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 96091 "isa_tms320.tcc"
+#line 96099 "isa_tms320.tcc"
 > *DecodeOpLDI_LDI_ext(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpLDI_LDI_ext<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 96097 "isa_tms320.tcc"
+#line 96105 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 96101 "isa_tms320.tcc"
+#line 96109 "isa_tms320.tcc"
 	>(code, addr);
 }
 
@@ -96110,46 +96118,46 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 96114 "isa_tms320.tcc"
+#line 96122 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 96117 "isa_tms320.tcc"
+#line 96125 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 96121 "isa_tms320.tcc"
+#line 96129 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 96124 "isa_tms320.tcc"
+#line 96132 "isa_tms320.tcc"
 >
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 bool
-#line 96128 "isa_tms320.tcc"
+#line 96136 "isa_tms320.tcc"
 OpMPYF3_ADDF3<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 96132 "isa_tms320.tcc"
+#line 96140 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 96136 "isa_tms320.tcc"
+#line 96144 "isa_tms320.tcc"
 >::disasm(
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 96140 "isa_tms320.tcc"
+#line 96148 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 96143 "isa_tms320.tcc"
+#line 96151 "isa_tms320.tcc"
 ,
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 std::ostream &
-#line 96147 "isa_tms320.tcc"
+#line 96155 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 os
-#line 96150 "isa_tms320.tcc"
+#line 96158 "isa_tms320.tcc"
 )
 {
-#line 2952 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 2960 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		const char *dst1_name = REG_NAME[d1];
 		const char *dst2_name = REG_NAME[d2 + 2];
@@ -96198,129 +96206,129 @@ os
 		<< " || " << "ADDF3 " << srcC_name << ", " << srcD_name << ", " << dst2_name;
 		return true;
 	}
-#line 96202 "isa_tms320.tcc"
+#line 96210 "isa_tms320.tcc"
 }
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 96207 "isa_tms320.tcc"
+#line 96215 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 96210 "isa_tms320.tcc"
+#line 96218 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 96214 "isa_tms320.tcc"
+#line 96222 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 96217 "isa_tms320.tcc"
+#line 96225 "isa_tms320.tcc"
 >
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 void
-#line 96221 "isa_tms320.tcc"
+#line 96229 "isa_tms320.tcc"
 OpMPYF3_ADDF3<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 96225 "isa_tms320.tcc"
+#line 96233 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 96229 "isa_tms320.tcc"
+#line 96237 "isa_tms320.tcc"
 >::execute(
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 96233 "isa_tms320.tcc"
+#line 96241 "isa_tms320.tcc"
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 96236 "isa_tms320.tcc"
+#line 96244 "isa_tms320.tcc"
 )
 {
-#line 3050 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 3058 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
 	}
-#line 96243 "isa_tms320.tcc"
+#line 96251 "isa_tms320.tcc"
 }
 
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 96249 "isa_tms320.tcc"
+#line 96257 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 96252 "isa_tms320.tcc"
+#line 96260 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 96256 "isa_tms320.tcc"
+#line 96264 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 96259 "isa_tms320.tcc"
+#line 96267 "isa_tms320.tcc"
 >
 static Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 96264 "isa_tms320.tcc"
+#line 96272 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 96268 "isa_tms320.tcc"
+#line 96276 "isa_tms320.tcc"
 > *DecodeOpMPYF3_ADDF3(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpMPYF3_ADDF3<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 96274 "isa_tms320.tcc"
+#line 96282 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 96278 "isa_tms320.tcc"
+#line 96286 "isa_tms320.tcc"
 	>(code, addr);
 }
 
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 96285 "isa_tms320.tcc"
+#line 96293 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 96288 "isa_tms320.tcc"
+#line 96296 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 96292 "isa_tms320.tcc"
+#line 96300 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 96295 "isa_tms320.tcc"
+#line 96303 "isa_tms320.tcc"
 >
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 bool
-#line 96299 "isa_tms320.tcc"
+#line 96307 "isa_tms320.tcc"
 OpMPYF3_ADDF3_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 96303 "isa_tms320.tcc"
+#line 96311 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 96307 "isa_tms320.tcc"
+#line 96315 "isa_tms320.tcc"
 >::disasm(
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 96311 "isa_tms320.tcc"
+#line 96319 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 96314 "isa_tms320.tcc"
+#line 96322 "isa_tms320.tcc"
 ,
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 std::ostream &
-#line 96318 "isa_tms320.tcc"
+#line 96326 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 os
-#line 96321 "isa_tms320.tcc"
+#line 96329 "isa_tms320.tcc"
 )
 {
-#line 3001 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 3009 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		const char *dst1_name = REG_NAME[d1];
 		const char *dst2_name = REG_NAME[d2 + 2];
@@ -96369,83 +96377,83 @@ os
 		<< " || " << "ADDF3 " << srcC_name << ", " << srcD_name << ", " << dst2_name;
 		return true;
 	}
-#line 96373 "isa_tms320.tcc"
+#line 96381 "isa_tms320.tcc"
 }
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 96378 "isa_tms320.tcc"
+#line 96386 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 96381 "isa_tms320.tcc"
+#line 96389 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 96385 "isa_tms320.tcc"
+#line 96393 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 96388 "isa_tms320.tcc"
+#line 96396 "isa_tms320.tcc"
 >
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 void
-#line 96392 "isa_tms320.tcc"
+#line 96400 "isa_tms320.tcc"
 OpMPYF3_ADDF3_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 96396 "isa_tms320.tcc"
+#line 96404 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 96400 "isa_tms320.tcc"
+#line 96408 "isa_tms320.tcc"
 >::execute(
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 96404 "isa_tms320.tcc"
+#line 96412 "isa_tms320.tcc"
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 96407 "isa_tms320.tcc"
+#line 96415 "isa_tms320.tcc"
 )
 {
-#line 3054 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 3062 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
 	}
-#line 96414 "isa_tms320.tcc"
+#line 96422 "isa_tms320.tcc"
 }
 
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 96420 "isa_tms320.tcc"
+#line 96428 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 96423 "isa_tms320.tcc"
+#line 96431 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 96427 "isa_tms320.tcc"
+#line 96435 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 96430 "isa_tms320.tcc"
+#line 96438 "isa_tms320.tcc"
 >
 static Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 96435 "isa_tms320.tcc"
+#line 96443 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 96439 "isa_tms320.tcc"
+#line 96447 "isa_tms320.tcc"
 > *DecodeOpMPYF3_ADDF3_ext(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpMPYF3_ADDF3_ext<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 96445 "isa_tms320.tcc"
+#line 96453 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 96449 "isa_tms320.tcc"
+#line 96457 "isa_tms320.tcc"
 	>(code, addr);
 }
 
@@ -96458,46 +96466,46 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 96462 "isa_tms320.tcc"
+#line 96470 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 96465 "isa_tms320.tcc"
+#line 96473 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 96469 "isa_tms320.tcc"
+#line 96477 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 96472 "isa_tms320.tcc"
+#line 96480 "isa_tms320.tcc"
 >
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 bool
-#line 96476 "isa_tms320.tcc"
+#line 96484 "isa_tms320.tcc"
 OpMPYF3_SUBF3<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 96480 "isa_tms320.tcc"
+#line 96488 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 96484 "isa_tms320.tcc"
+#line 96492 "isa_tms320.tcc"
 >::disasm(
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 96488 "isa_tms320.tcc"
+#line 96496 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 96491 "isa_tms320.tcc"
+#line 96499 "isa_tms320.tcc"
 ,
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 std::ostream &
-#line 96495 "isa_tms320.tcc"
+#line 96503 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 os
-#line 96498 "isa_tms320.tcc"
+#line 96506 "isa_tms320.tcc"
 )
 {
-#line 3069 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 3077 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		const char *dst1_name = REG_NAME[d1];
 		const char *dst2_name = REG_NAME[d2 + 2];
@@ -96546,129 +96554,129 @@ os
 		<< " || " << "SUBF3 " << srcC_name << ", " << srcD_name << ", " << dst2_name;
 		return true;
 	}
-#line 96550 "isa_tms320.tcc"
+#line 96558 "isa_tms320.tcc"
 }
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 96555 "isa_tms320.tcc"
+#line 96563 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 96558 "isa_tms320.tcc"
+#line 96566 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 96562 "isa_tms320.tcc"
+#line 96570 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 96565 "isa_tms320.tcc"
+#line 96573 "isa_tms320.tcc"
 >
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 void
-#line 96569 "isa_tms320.tcc"
+#line 96577 "isa_tms320.tcc"
 OpMPYF3_SUBF3<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 96573 "isa_tms320.tcc"
+#line 96581 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 96577 "isa_tms320.tcc"
+#line 96585 "isa_tms320.tcc"
 >::execute(
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 96581 "isa_tms320.tcc"
+#line 96589 "isa_tms320.tcc"
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 96584 "isa_tms320.tcc"
+#line 96592 "isa_tms320.tcc"
 )
 {
-#line 3167 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 3175 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
 	}
-#line 96591 "isa_tms320.tcc"
+#line 96599 "isa_tms320.tcc"
 }
 
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 96597 "isa_tms320.tcc"
+#line 96605 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 96600 "isa_tms320.tcc"
+#line 96608 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 96604 "isa_tms320.tcc"
+#line 96612 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 96607 "isa_tms320.tcc"
+#line 96615 "isa_tms320.tcc"
 >
 static Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 96612 "isa_tms320.tcc"
+#line 96620 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 96616 "isa_tms320.tcc"
+#line 96624 "isa_tms320.tcc"
 > *DecodeOpMPYF3_SUBF3(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpMPYF3_SUBF3<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 96622 "isa_tms320.tcc"
+#line 96630 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 96626 "isa_tms320.tcc"
+#line 96634 "isa_tms320.tcc"
 	>(code, addr);
 }
 
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 96633 "isa_tms320.tcc"
+#line 96641 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 96636 "isa_tms320.tcc"
+#line 96644 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 96640 "isa_tms320.tcc"
+#line 96648 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 96643 "isa_tms320.tcc"
+#line 96651 "isa_tms320.tcc"
 >
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 bool
-#line 96647 "isa_tms320.tcc"
+#line 96655 "isa_tms320.tcc"
 OpMPYF3_SUBF3_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 96651 "isa_tms320.tcc"
+#line 96659 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 96655 "isa_tms320.tcc"
+#line 96663 "isa_tms320.tcc"
 >::disasm(
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 96659 "isa_tms320.tcc"
+#line 96667 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 96662 "isa_tms320.tcc"
+#line 96670 "isa_tms320.tcc"
 ,
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 std::ostream &
-#line 96666 "isa_tms320.tcc"
+#line 96674 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 os
-#line 96669 "isa_tms320.tcc"
+#line 96677 "isa_tms320.tcc"
 )
 {
-#line 3118 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 3126 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		const char *dst1_name = REG_NAME[d1];
 		const char *dst2_name = REG_NAME[d2 + 2];
@@ -96717,83 +96725,83 @@ os
 		<< " || " << "SUBF3 " << srcC_name << ", " << srcD_name << ", " << dst2_name;
 		return true;
 	}
-#line 96721 "isa_tms320.tcc"
+#line 96729 "isa_tms320.tcc"
 }
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 96726 "isa_tms320.tcc"
+#line 96734 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 96729 "isa_tms320.tcc"
+#line 96737 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 96733 "isa_tms320.tcc"
+#line 96741 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 96736 "isa_tms320.tcc"
+#line 96744 "isa_tms320.tcc"
 >
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 void
-#line 96740 "isa_tms320.tcc"
+#line 96748 "isa_tms320.tcc"
 OpMPYF3_SUBF3_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 96744 "isa_tms320.tcc"
+#line 96752 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 96748 "isa_tms320.tcc"
+#line 96756 "isa_tms320.tcc"
 >::execute(
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 96752 "isa_tms320.tcc"
+#line 96760 "isa_tms320.tcc"
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 96755 "isa_tms320.tcc"
+#line 96763 "isa_tms320.tcc"
 )
 {
-#line 3171 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 3179 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
 	}
-#line 96762 "isa_tms320.tcc"
+#line 96770 "isa_tms320.tcc"
 }
 
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 96768 "isa_tms320.tcc"
+#line 96776 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 96771 "isa_tms320.tcc"
+#line 96779 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 96775 "isa_tms320.tcc"
+#line 96783 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 96778 "isa_tms320.tcc"
+#line 96786 "isa_tms320.tcc"
 >
 static Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 96783 "isa_tms320.tcc"
+#line 96791 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 96787 "isa_tms320.tcc"
+#line 96795 "isa_tms320.tcc"
 > *DecodeOpMPYF3_SUBF3_ext(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpMPYF3_SUBF3_ext<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 96793 "isa_tms320.tcc"
+#line 96801 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 96797 "isa_tms320.tcc"
+#line 96805 "isa_tms320.tcc"
 	>(code, addr);
 }
 
@@ -96806,46 +96814,46 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 96810 "isa_tms320.tcc"
+#line 96818 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 96813 "isa_tms320.tcc"
+#line 96821 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 96817 "isa_tms320.tcc"
+#line 96825 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 96820 "isa_tms320.tcc"
+#line 96828 "isa_tms320.tcc"
 >
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 bool
-#line 96824 "isa_tms320.tcc"
+#line 96832 "isa_tms320.tcc"
 OpMPYI3_ADDI3<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 96828 "isa_tms320.tcc"
+#line 96836 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 96832 "isa_tms320.tcc"
+#line 96840 "isa_tms320.tcc"
 >::disasm(
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 96836 "isa_tms320.tcc"
+#line 96844 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 96839 "isa_tms320.tcc"
+#line 96847 "isa_tms320.tcc"
 ,
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 std::ostream &
-#line 96843 "isa_tms320.tcc"
+#line 96851 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 os
-#line 96846 "isa_tms320.tcc"
+#line 96854 "isa_tms320.tcc"
 )
 {
-#line 3186 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 3194 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		const char *dst1_name = REG_NAME[d1];
 		const char *dst2_name = REG_NAME[d2 + 2];
@@ -96894,7 +96902,7 @@ os
 		<< " || " << "ADDI3 " << srcC_name << ", " << srcD_name << ", " << dst2_name;
 		return true;
 	}
-#line 96898 "isa_tms320.tcc"
+#line 96906 "isa_tms320.tcc"
 }
 //    srcA * srcB -> dst1
 // ||
@@ -96902,39 +96910,39 @@ os
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 96906 "isa_tms320.tcc"
+#line 96914 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 96909 "isa_tms320.tcc"
+#line 96917 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 96913 "isa_tms320.tcc"
+#line 96921 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 96916 "isa_tms320.tcc"
+#line 96924 "isa_tms320.tcc"
 >
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 void
-#line 96920 "isa_tms320.tcc"
+#line 96928 "isa_tms320.tcc"
 OpMPYI3_ADDI3<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 96924 "isa_tms320.tcc"
+#line 96932 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 96928 "isa_tms320.tcc"
+#line 96936 "isa_tms320.tcc"
 >::execute(
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 96932 "isa_tms320.tcc"
+#line 96940 "isa_tms320.tcc"
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 96935 "isa_tms320.tcc"
+#line 96943 "isa_tms320.tcc"
 )
 {
-#line 3287 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 3295 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		// Read 'src1' register operand
 		uint32_t src1_value = cpu.GetIntReg(src1);
@@ -97040,6 +97048,10 @@ cpu
 		unsigned int dst2 = d2 + 2;
 		cpu.SetIntReg(2 + dst2, addi3_result);
 
+		// Note: ...if the src3 and src4 fields use the same auxiliary register,
+		// both addresses are correctly generated, but only the value created by
+		// the src3 field is saved in the auxiliary register specified...
+
 		if(s3_update_ar)
 		{
 			// Write back ARn
@@ -97061,88 +97073,88 @@ cpu
 		overflow
 		);
 	}
-#line 97065 "isa_tms320.tcc"
+#line 97077 "isa_tms320.tcc"
 }
 
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 97071 "isa_tms320.tcc"
-#line 45 "isa/tms320.isa"
-CONFIG
-#line 97074 "isa_tms320.tcc"
-,
-#line 45 "isa/tms320.isa"
-bool
-#line 97078 "isa_tms320.tcc"
-#line 45 "isa/tms320.isa"
-DEBUG
-#line 97081 "isa_tms320.tcc"
->
-static Operation<
+#line 97083 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
 #line 97086 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
-DEBUG
+bool
 #line 97090 "isa_tms320.tcc"
+#line 45 "isa/tms320.isa"
+DEBUG
+#line 97093 "isa_tms320.tcc"
+>
+static Operation<
+#line 45 "isa/tms320.isa"
+CONFIG
+#line 97098 "isa_tms320.tcc"
+,
+#line 45 "isa/tms320.isa"
+DEBUG
+#line 97102 "isa_tms320.tcc"
 > *DecodeOpMPYI3_ADDI3(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpMPYI3_ADDI3<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 97096 "isa_tms320.tcc"
+#line 97108 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 97100 "isa_tms320.tcc"
+#line 97112 "isa_tms320.tcc"
 	>(code, addr);
 }
 
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 97107 "isa_tms320.tcc"
+#line 97119 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 97110 "isa_tms320.tcc"
+#line 97122 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 97114 "isa_tms320.tcc"
-#line 45 "isa/tms320.isa"
-DEBUG
-#line 97117 "isa_tms320.tcc"
->
-#line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
-bool
-#line 97121 "isa_tms320.tcc"
-OpMPYI3_ADDI3_ext<
-#line 45 "isa/tms320.isa"
-CONFIG
-#line 97125 "isa_tms320.tcc"
-,
+#line 97126 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
 #line 97129 "isa_tms320.tcc"
+>
+#line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
+bool
+#line 97133 "isa_tms320.tcc"
+OpMPYI3_ADDI3_ext<
+#line 45 "isa/tms320.isa"
+CONFIG
+#line 97137 "isa_tms320.tcc"
+,
+#line 45 "isa/tms320.isa"
+DEBUG
+#line 97141 "isa_tms320.tcc"
 >::disasm(
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 97133 "isa_tms320.tcc"
+#line 97145 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 97136 "isa_tms320.tcc"
+#line 97148 "isa_tms320.tcc"
 ,
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 std::ostream &
-#line 97140 "isa_tms320.tcc"
+#line 97152 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 os
-#line 97143 "isa_tms320.tcc"
+#line 97155 "isa_tms320.tcc"
 )
 {
-#line 3235 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 3243 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		const char *dst1_name = REG_NAME[d1];
 		const char *dst2_name = REG_NAME[d2 + 2];
@@ -97191,7 +97203,7 @@ os
 		<< " || " << "ADDI3 " << srcC_name << ", " << srcD_name << ", " << dst2_name;
 		return true;
 	}
-#line 97195 "isa_tms320.tcc"
+#line 97207 "isa_tms320.tcc"
 }
 //    srcA * srcB -> dst1
 // ||
@@ -97199,39 +97211,39 @@ os
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 97203 "isa_tms320.tcc"
+#line 97215 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 97206 "isa_tms320.tcc"
+#line 97218 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 97210 "isa_tms320.tcc"
-#line 45 "isa/tms320.isa"
-DEBUG
-#line 97213 "isa_tms320.tcc"
->
-#line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
-void
-#line 97217 "isa_tms320.tcc"
-OpMPYI3_ADDI3_ext<
-#line 45 "isa/tms320.isa"
-CONFIG
-#line 97221 "isa_tms320.tcc"
-,
+#line 97222 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
 #line 97225 "isa_tms320.tcc"
+>
+#line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
+void
+#line 97229 "isa_tms320.tcc"
+OpMPYI3_ADDI3_ext<
+#line 45 "isa/tms320.isa"
+CONFIG
+#line 97233 "isa_tms320.tcc"
+,
+#line 45 "isa/tms320.isa"
+DEBUG
+#line 97237 "isa_tms320.tcc"
 >::execute(
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 97229 "isa_tms320.tcc"
+#line 97241 "isa_tms320.tcc"
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 97232 "isa_tms320.tcc"
+#line 97244 "isa_tms320.tcc"
 )
 {
-#line 3417 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 3429 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		// Check whether 'src3' and 'src4' are valid registers
 		if(unlikely(!cpu.HasReg(src3) || !cpu.HasReg(src4)))
@@ -97332,42 +97344,42 @@ cpu
 		overflow
 		);
 	}
-#line 97336 "isa_tms320.tcc"
+#line 97348 "isa_tms320.tcc"
 }
 
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 97342 "isa_tms320.tcc"
-#line 45 "isa/tms320.isa"
-CONFIG
-#line 97345 "isa_tms320.tcc"
-,
-#line 45 "isa/tms320.isa"
-bool
-#line 97349 "isa_tms320.tcc"
-#line 45 "isa/tms320.isa"
-DEBUG
-#line 97352 "isa_tms320.tcc"
->
-static Operation<
+#line 97354 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
 #line 97357 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
-DEBUG
+bool
 #line 97361 "isa_tms320.tcc"
+#line 45 "isa/tms320.isa"
+DEBUG
+#line 97364 "isa_tms320.tcc"
+>
+static Operation<
+#line 45 "isa/tms320.isa"
+CONFIG
+#line 97369 "isa_tms320.tcc"
+,
+#line 45 "isa/tms320.isa"
+DEBUG
+#line 97373 "isa_tms320.tcc"
 > *DecodeOpMPYI3_ADDI3_ext(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpMPYI3_ADDI3_ext<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 97367 "isa_tms320.tcc"
+#line 97379 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 97371 "isa_tms320.tcc"
+#line 97383 "isa_tms320.tcc"
 	>(code, addr);
 }
 
@@ -97380,46 +97392,46 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 97384 "isa_tms320.tcc"
+#line 97396 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 97387 "isa_tms320.tcc"
+#line 97399 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 97391 "isa_tms320.tcc"
-#line 45 "isa/tms320.isa"
-DEBUG
-#line 97394 "isa_tms320.tcc"
->
-#line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
-bool
-#line 97398 "isa_tms320.tcc"
-OpMPYI3_SUBI3<
-#line 45 "isa/tms320.isa"
-CONFIG
-#line 97402 "isa_tms320.tcc"
-,
+#line 97403 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
 #line 97406 "isa_tms320.tcc"
+>
+#line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
+bool
+#line 97410 "isa_tms320.tcc"
+OpMPYI3_SUBI3<
+#line 45 "isa/tms320.isa"
+CONFIG
+#line 97414 "isa_tms320.tcc"
+,
+#line 45 "isa/tms320.isa"
+DEBUG
+#line 97418 "isa_tms320.tcc"
 >::disasm(
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 97410 "isa_tms320.tcc"
+#line 97422 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 97413 "isa_tms320.tcc"
+#line 97425 "isa_tms320.tcc"
 ,
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 std::ostream &
-#line 97417 "isa_tms320.tcc"
+#line 97429 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 os
-#line 97420 "isa_tms320.tcc"
+#line 97432 "isa_tms320.tcc"
 )
 {
-#line 3529 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 3541 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		const char *dst1_name = REG_NAME[d1];
 		const char *dst2_name = REG_NAME[d2 + 2];
@@ -97468,7 +97480,7 @@ os
 		<< " || " << "SUBI3 " << srcC_name << ", " << srcD_name << ", " << dst2_name;
 		return true;
 	}
-#line 97472 "isa_tms320.tcc"
+#line 97484 "isa_tms320.tcc"
 }
 //    srcA * srcB -> dst1
 // ||
@@ -97476,39 +97488,39 @@ os
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 97480 "isa_tms320.tcc"
+#line 97492 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 97483 "isa_tms320.tcc"
+#line 97495 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 97487 "isa_tms320.tcc"
-#line 45 "isa/tms320.isa"
-DEBUG
-#line 97490 "isa_tms320.tcc"
->
-#line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
-void
-#line 97494 "isa_tms320.tcc"
-OpMPYI3_SUBI3<
-#line 45 "isa/tms320.isa"
-CONFIG
-#line 97498 "isa_tms320.tcc"
-,
+#line 97499 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
 #line 97502 "isa_tms320.tcc"
+>
+#line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
+void
+#line 97506 "isa_tms320.tcc"
+OpMPYI3_SUBI3<
+#line 45 "isa/tms320.isa"
+CONFIG
+#line 97510 "isa_tms320.tcc"
+,
+#line 45 "isa/tms320.isa"
+DEBUG
+#line 97514 "isa_tms320.tcc"
 >::execute(
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 97506 "isa_tms320.tcc"
+#line 97518 "isa_tms320.tcc"
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 97509 "isa_tms320.tcc"
+#line 97521 "isa_tms320.tcc"
 )
 {
-#line 3630 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 3642 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		// Read 'src1' register operand
 		uint32_t src1_value = cpu.GetIntReg(src1);
@@ -97614,6 +97626,10 @@ cpu
 		unsigned int dst2 = d2 + 2;
 		cpu.SetIntReg(2 + dst2, subi3_result);
 
+		// Note: ...if the src3 and src4 fields use the same auxiliary register,
+		// both addresses are correctly generated, but only the value created by
+		// the src3 field is saved in the auxiliary register specified...
+
 		if(s3_update_ar)
 		{
 			// Write back ARn
@@ -97637,88 +97653,88 @@ cpu
 		overflow
 		);
 	}
-#line 97641 "isa_tms320.tcc"
+#line 97657 "isa_tms320.tcc"
 }
 
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 97647 "isa_tms320.tcc"
+#line 97663 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 97650 "isa_tms320.tcc"
+#line 97666 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 97654 "isa_tms320.tcc"
+#line 97670 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 97657 "isa_tms320.tcc"
+#line 97673 "isa_tms320.tcc"
 >
 static Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 97662 "isa_tms320.tcc"
+#line 97678 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 97666 "isa_tms320.tcc"
+#line 97682 "isa_tms320.tcc"
 > *DecodeOpMPYI3_SUBI3(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpMPYI3_SUBI3<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 97672 "isa_tms320.tcc"
+#line 97688 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 97676 "isa_tms320.tcc"
+#line 97692 "isa_tms320.tcc"
 	>(code, addr);
 }
 
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 97683 "isa_tms320.tcc"
+#line 97699 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 97686 "isa_tms320.tcc"
+#line 97702 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 97690 "isa_tms320.tcc"
+#line 97706 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 97693 "isa_tms320.tcc"
+#line 97709 "isa_tms320.tcc"
 >
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 bool
-#line 97697 "isa_tms320.tcc"
+#line 97713 "isa_tms320.tcc"
 OpMPYI3_SUBI3_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 97701 "isa_tms320.tcc"
+#line 97717 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 97705 "isa_tms320.tcc"
+#line 97721 "isa_tms320.tcc"
 >::disasm(
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 97709 "isa_tms320.tcc"
+#line 97725 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 97712 "isa_tms320.tcc"
+#line 97728 "isa_tms320.tcc"
 ,
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 std::ostream &
-#line 97716 "isa_tms320.tcc"
+#line 97732 "isa_tms320.tcc"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 os
-#line 97719 "isa_tms320.tcc"
+#line 97735 "isa_tms320.tcc"
 )
 {
-#line 3578 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 3590 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		const char *dst1_name = REG_NAME[d1];
 		const char *dst2_name = REG_NAME[d2 + 2];
@@ -97767,7 +97783,7 @@ os
 		<< " || " << "SUBI3 " << srcC_name << ", " << srcD_name << ", " << dst2_name;
 		return true;
 	}
-#line 97771 "isa_tms320.tcc"
+#line 97787 "isa_tms320.tcc"
 }
 //    srcA * srcB -> dst1
 // ||
@@ -97775,39 +97791,39 @@ os
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 97779 "isa_tms320.tcc"
+#line 97795 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 97782 "isa_tms320.tcc"
+#line 97798 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 97786 "isa_tms320.tcc"
+#line 97802 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 97789 "isa_tms320.tcc"
+#line 97805 "isa_tms320.tcc"
 >
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 void
-#line 97793 "isa_tms320.tcc"
+#line 97809 "isa_tms320.tcc"
 OpMPYI3_SUBI3_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 97797 "isa_tms320.tcc"
+#line 97813 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 97801 "isa_tms320.tcc"
+#line 97817 "isa_tms320.tcc"
 >::execute(
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 CPU<CONFIG, DEBUG> &
-#line 97805 "isa_tms320.tcc"
+#line 97821 "isa_tms320.tcc"
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 cpu
-#line 97808 "isa_tms320.tcc"
+#line 97824 "isa_tms320.tcc"
 )
 {
-#line 3762 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
+#line 3778 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/parallel.isa"
 	{
 		// Check whether 'src3' and 'src4' are valid registers
 		if(unlikely(!cpu.HasReg(src3) || !cpu.HasReg(src4)))
@@ -97910,76 +97926,76 @@ cpu
 		overflow
 		);
 	}
-#line 97914 "isa_tms320.tcc"
+#line 97930 "isa_tms320.tcc"
 }
 
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 97920 "isa_tms320.tcc"
+#line 97936 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 97923 "isa_tms320.tcc"
+#line 97939 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 97927 "isa_tms320.tcc"
+#line 97943 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 97930 "isa_tms320.tcc"
+#line 97946 "isa_tms320.tcc"
 >
 static Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 97935 "isa_tms320.tcc"
+#line 97951 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 97939 "isa_tms320.tcc"
+#line 97955 "isa_tms320.tcc"
 > *DecodeOpMPYI3_SUBI3_ext(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpMPYI3_SUBI3_ext<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 97945 "isa_tms320.tcc"
+#line 97961 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 97949 "isa_tms320.tcc"
+#line 97965 "isa_tms320.tcc"
 	>(code, addr);
 }
 
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 97956 "isa_tms320.tcc"
+#line 97972 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 97959 "isa_tms320.tcc"
+#line 97975 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 97963 "isa_tms320.tcc"
+#line 97979 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 97966 "isa_tms320.tcc"
+#line 97982 "isa_tms320.tcc"
 >
 OpLDE_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 97971 "isa_tms320.tcc"
+#line 97987 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 97975 "isa_tms320.tcc"
+#line 97991 "isa_tms320.tcc"
 >::OpLDE_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 97979 "isa_tms320.tcc"
+#line 97995 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 97983 "isa_tms320.tcc"
+#line 97999 "isa_tms320.tcc"
 >(code, addr, "LDE_reg")
 {
 	dst = ((code >> 16) & 0x7);
@@ -97989,34 +98005,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 97993 "isa_tms320.tcc"
+#line 98009 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 97996 "isa_tms320.tcc"
+#line 98012 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 98000 "isa_tms320.tcc"
+#line 98016 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98003 "isa_tms320.tcc"
+#line 98019 "isa_tms320.tcc"
 >
 OpLDE_dir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98008 "isa_tms320.tcc"
+#line 98024 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98012 "isa_tms320.tcc"
+#line 98028 "isa_tms320.tcc"
 >::OpLDE_dir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98016 "isa_tms320.tcc"
+#line 98032 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98020 "isa_tms320.tcc"
+#line 98036 "isa_tms320.tcc"
 >(code, addr, "LDE_dir")
 {
 	dst = ((code >> 16) & 0x7);
@@ -98026,34 +98042,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 98030 "isa_tms320.tcc"
+#line 98046 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98033 "isa_tms320.tcc"
+#line 98049 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 98037 "isa_tms320.tcc"
+#line 98053 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98040 "isa_tms320.tcc"
+#line 98056 "isa_tms320.tcc"
 >
 OpLDE_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98045 "isa_tms320.tcc"
+#line 98061 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98049 "isa_tms320.tcc"
+#line 98065 "isa_tms320.tcc"
 >::OpLDE_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98053 "isa_tms320.tcc"
+#line 98069 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98057 "isa_tms320.tcc"
+#line 98073 "isa_tms320.tcc"
 >(code, addr, "LDE_indir")
 {
 	dst = ((code >> 16) & 0x7);
@@ -98065,34 +98081,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 98069 "isa_tms320.tcc"
+#line 98085 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98072 "isa_tms320.tcc"
+#line 98088 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 98076 "isa_tms320.tcc"
+#line 98092 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98079 "isa_tms320.tcc"
+#line 98095 "isa_tms320.tcc"
 >
 OpLDE_imm<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98084 "isa_tms320.tcc"
+#line 98100 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98088 "isa_tms320.tcc"
+#line 98104 "isa_tms320.tcc"
 >::OpLDE_imm(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98092 "isa_tms320.tcc"
+#line 98108 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98096 "isa_tms320.tcc"
+#line 98112 "isa_tms320.tcc"
 >(code, addr, "LDE_imm")
 {
 	dst = ((code >> 16) & 0x7);
@@ -98102,34 +98118,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 98106 "isa_tms320.tcc"
+#line 98122 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98109 "isa_tms320.tcc"
+#line 98125 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 98113 "isa_tms320.tcc"
+#line 98129 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98116 "isa_tms320.tcc"
+#line 98132 "isa_tms320.tcc"
 >
 OpLDF_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98121 "isa_tms320.tcc"
+#line 98137 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98125 "isa_tms320.tcc"
+#line 98141 "isa_tms320.tcc"
 >::OpLDF_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98129 "isa_tms320.tcc"
+#line 98145 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98133 "isa_tms320.tcc"
+#line 98149 "isa_tms320.tcc"
 >(code, addr, "LDF_reg")
 {
 	dst = ((code >> 16) & 0x7);
@@ -98139,34 +98155,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 98143 "isa_tms320.tcc"
+#line 98159 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98146 "isa_tms320.tcc"
+#line 98162 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 98150 "isa_tms320.tcc"
+#line 98166 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98153 "isa_tms320.tcc"
+#line 98169 "isa_tms320.tcc"
 >
 OpLDF_dir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98158 "isa_tms320.tcc"
+#line 98174 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98162 "isa_tms320.tcc"
+#line 98178 "isa_tms320.tcc"
 >::OpLDF_dir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98166 "isa_tms320.tcc"
+#line 98182 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98170 "isa_tms320.tcc"
+#line 98186 "isa_tms320.tcc"
 >(code, addr, "LDF_dir")
 {
 	dst = ((code >> 16) & 0x7);
@@ -98176,34 +98192,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 98180 "isa_tms320.tcc"
+#line 98196 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98183 "isa_tms320.tcc"
+#line 98199 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 98187 "isa_tms320.tcc"
+#line 98203 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98190 "isa_tms320.tcc"
+#line 98206 "isa_tms320.tcc"
 >
 OpLDF_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98195 "isa_tms320.tcc"
+#line 98211 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98199 "isa_tms320.tcc"
+#line 98215 "isa_tms320.tcc"
 >::OpLDF_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98203 "isa_tms320.tcc"
+#line 98219 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98207 "isa_tms320.tcc"
+#line 98223 "isa_tms320.tcc"
 >(code, addr, "LDF_indir")
 {
 	dst = ((code >> 16) & 0x7);
@@ -98215,34 +98231,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 98219 "isa_tms320.tcc"
+#line 98235 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98222 "isa_tms320.tcc"
+#line 98238 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 98226 "isa_tms320.tcc"
+#line 98242 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98229 "isa_tms320.tcc"
+#line 98245 "isa_tms320.tcc"
 >
 OpLDF_imm<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98234 "isa_tms320.tcc"
+#line 98250 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98238 "isa_tms320.tcc"
+#line 98254 "isa_tms320.tcc"
 >::OpLDF_imm(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98242 "isa_tms320.tcc"
+#line 98258 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98246 "isa_tms320.tcc"
+#line 98262 "isa_tms320.tcc"
 >(code, addr, "LDF_imm")
 {
 	dst = ((code >> 16) & 0x7);
@@ -98252,34 +98268,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 98256 "isa_tms320.tcc"
+#line 98272 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98259 "isa_tms320.tcc"
+#line 98275 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 98263 "isa_tms320.tcc"
+#line 98279 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98266 "isa_tms320.tcc"
+#line 98282 "isa_tms320.tcc"
 >
 OpLDFcond_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98271 "isa_tms320.tcc"
+#line 98287 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98275 "isa_tms320.tcc"
+#line 98291 "isa_tms320.tcc"
 >::OpLDFcond_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98279 "isa_tms320.tcc"
+#line 98295 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98283 "isa_tms320.tcc"
+#line 98299 "isa_tms320.tcc"
 >(code, addr, "LDFcond_reg")
 {
 	cond = ((code >> 23) & 0x1f);
@@ -98290,34 +98306,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 98294 "isa_tms320.tcc"
+#line 98310 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98297 "isa_tms320.tcc"
+#line 98313 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 98301 "isa_tms320.tcc"
+#line 98317 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98304 "isa_tms320.tcc"
+#line 98320 "isa_tms320.tcc"
 >
 OpLDFcond_dir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98309 "isa_tms320.tcc"
+#line 98325 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98313 "isa_tms320.tcc"
+#line 98329 "isa_tms320.tcc"
 >::OpLDFcond_dir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98317 "isa_tms320.tcc"
+#line 98333 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98321 "isa_tms320.tcc"
+#line 98337 "isa_tms320.tcc"
 >(code, addr, "LDFcond_dir")
 {
 	cond = ((code >> 23) & 0x1f);
@@ -98328,34 +98344,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 98332 "isa_tms320.tcc"
+#line 98348 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98335 "isa_tms320.tcc"
+#line 98351 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 98339 "isa_tms320.tcc"
+#line 98355 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98342 "isa_tms320.tcc"
+#line 98358 "isa_tms320.tcc"
 >
 OpLDFcond_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98347 "isa_tms320.tcc"
+#line 98363 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98351 "isa_tms320.tcc"
+#line 98367 "isa_tms320.tcc"
 >::OpLDFcond_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98355 "isa_tms320.tcc"
+#line 98371 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98359 "isa_tms320.tcc"
+#line 98375 "isa_tms320.tcc"
 >(code, addr, "LDFcond_indir")
 {
 	cond = ((code >> 23) & 0x1f);
@@ -98368,34 +98384,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 98372 "isa_tms320.tcc"
+#line 98388 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98375 "isa_tms320.tcc"
+#line 98391 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 98379 "isa_tms320.tcc"
+#line 98395 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98382 "isa_tms320.tcc"
+#line 98398 "isa_tms320.tcc"
 >
 OpLDFcond_imm<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98387 "isa_tms320.tcc"
+#line 98403 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98391 "isa_tms320.tcc"
+#line 98407 "isa_tms320.tcc"
 >::OpLDFcond_imm(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98395 "isa_tms320.tcc"
+#line 98411 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98399 "isa_tms320.tcc"
+#line 98415 "isa_tms320.tcc"
 >(code, addr, "LDFcond_imm")
 {
 	cond = ((code >> 23) & 0x1f);
@@ -98406,34 +98422,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 98410 "isa_tms320.tcc"
+#line 98426 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98413 "isa_tms320.tcc"
+#line 98429 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 98417 "isa_tms320.tcc"
+#line 98433 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98420 "isa_tms320.tcc"
+#line 98436 "isa_tms320.tcc"
 >
 OpLDI_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98425 "isa_tms320.tcc"
+#line 98441 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98429 "isa_tms320.tcc"
+#line 98445 "isa_tms320.tcc"
 >::OpLDI_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98433 "isa_tms320.tcc"
+#line 98449 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98437 "isa_tms320.tcc"
+#line 98453 "isa_tms320.tcc"
 >(code, addr, "LDI_reg")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -98443,34 +98459,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 98447 "isa_tms320.tcc"
+#line 98463 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98450 "isa_tms320.tcc"
+#line 98466 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 98454 "isa_tms320.tcc"
+#line 98470 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98457 "isa_tms320.tcc"
+#line 98473 "isa_tms320.tcc"
 >
 OpLDI_dir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98462 "isa_tms320.tcc"
+#line 98478 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98466 "isa_tms320.tcc"
+#line 98482 "isa_tms320.tcc"
 >::OpLDI_dir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98470 "isa_tms320.tcc"
+#line 98486 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98474 "isa_tms320.tcc"
+#line 98490 "isa_tms320.tcc"
 >(code, addr, "LDI_dir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -98480,34 +98496,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 98484 "isa_tms320.tcc"
+#line 98500 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98487 "isa_tms320.tcc"
+#line 98503 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 98491 "isa_tms320.tcc"
+#line 98507 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98494 "isa_tms320.tcc"
+#line 98510 "isa_tms320.tcc"
 >
 OpLDI_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98499 "isa_tms320.tcc"
+#line 98515 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98503 "isa_tms320.tcc"
+#line 98519 "isa_tms320.tcc"
 >::OpLDI_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98507 "isa_tms320.tcc"
+#line 98523 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98511 "isa_tms320.tcc"
+#line 98527 "isa_tms320.tcc"
 >(code, addr, "LDI_indir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -98519,34 +98535,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 98523 "isa_tms320.tcc"
+#line 98539 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98526 "isa_tms320.tcc"
+#line 98542 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 98530 "isa_tms320.tcc"
+#line 98546 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98533 "isa_tms320.tcc"
+#line 98549 "isa_tms320.tcc"
 >
 OpLDI_imm<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98538 "isa_tms320.tcc"
+#line 98554 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98542 "isa_tms320.tcc"
+#line 98558 "isa_tms320.tcc"
 >::OpLDI_imm(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98546 "isa_tms320.tcc"
+#line 98562 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98550 "isa_tms320.tcc"
+#line 98566 "isa_tms320.tcc"
 >(code, addr, "LDI_imm")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -98556,34 +98572,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 98560 "isa_tms320.tcc"
+#line 98576 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98563 "isa_tms320.tcc"
+#line 98579 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 98567 "isa_tms320.tcc"
+#line 98583 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98570 "isa_tms320.tcc"
+#line 98586 "isa_tms320.tcc"
 >
 OpLDIcond_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98575 "isa_tms320.tcc"
+#line 98591 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98579 "isa_tms320.tcc"
+#line 98595 "isa_tms320.tcc"
 >::OpLDIcond_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98583 "isa_tms320.tcc"
+#line 98599 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98587 "isa_tms320.tcc"
+#line 98603 "isa_tms320.tcc"
 >(code, addr, "LDIcond_reg")
 {
 	cond = ((code >> 23) & 0x1f);
@@ -98594,34 +98610,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 98598 "isa_tms320.tcc"
+#line 98614 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98601 "isa_tms320.tcc"
+#line 98617 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 98605 "isa_tms320.tcc"
+#line 98621 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98608 "isa_tms320.tcc"
+#line 98624 "isa_tms320.tcc"
 >
 OpLDIcond_dir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98613 "isa_tms320.tcc"
+#line 98629 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98617 "isa_tms320.tcc"
+#line 98633 "isa_tms320.tcc"
 >::OpLDIcond_dir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98621 "isa_tms320.tcc"
+#line 98637 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98625 "isa_tms320.tcc"
+#line 98641 "isa_tms320.tcc"
 >(code, addr, "LDIcond_dir")
 {
 	cond = ((code >> 23) & 0x1f);
@@ -98632,34 +98648,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 98636 "isa_tms320.tcc"
+#line 98652 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98639 "isa_tms320.tcc"
+#line 98655 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 98643 "isa_tms320.tcc"
+#line 98659 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98646 "isa_tms320.tcc"
+#line 98662 "isa_tms320.tcc"
 >
 OpLDIcond_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98651 "isa_tms320.tcc"
+#line 98667 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98655 "isa_tms320.tcc"
+#line 98671 "isa_tms320.tcc"
 >::OpLDIcond_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98659 "isa_tms320.tcc"
+#line 98675 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98663 "isa_tms320.tcc"
+#line 98679 "isa_tms320.tcc"
 >(code, addr, "LDIcond_indir")
 {
 	cond = ((code >> 23) & 0x1f);
@@ -98672,34 +98688,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 98676 "isa_tms320.tcc"
+#line 98692 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98679 "isa_tms320.tcc"
+#line 98695 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 98683 "isa_tms320.tcc"
+#line 98699 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98686 "isa_tms320.tcc"
+#line 98702 "isa_tms320.tcc"
 >
 OpLDIcond_imm<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98691 "isa_tms320.tcc"
+#line 98707 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98695 "isa_tms320.tcc"
+#line 98711 "isa_tms320.tcc"
 >::OpLDIcond_imm(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98699 "isa_tms320.tcc"
+#line 98715 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98703 "isa_tms320.tcc"
+#line 98719 "isa_tms320.tcc"
 >(code, addr, "LDIcond_imm")
 {
 	cond = ((code >> 23) & 0x1f);
@@ -98710,34 +98726,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 98714 "isa_tms320.tcc"
+#line 98730 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98717 "isa_tms320.tcc"
+#line 98733 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 98721 "isa_tms320.tcc"
+#line 98737 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98724 "isa_tms320.tcc"
+#line 98740 "isa_tms320.tcc"
 >
 OpLDM_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98729 "isa_tms320.tcc"
+#line 98745 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98733 "isa_tms320.tcc"
+#line 98749 "isa_tms320.tcc"
 >::OpLDM_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98737 "isa_tms320.tcc"
+#line 98753 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98741 "isa_tms320.tcc"
+#line 98757 "isa_tms320.tcc"
 >(code, addr, "LDM_reg")
 {
 	dst = ((code >> 16) & 0x7);
@@ -98747,34 +98763,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 98751 "isa_tms320.tcc"
+#line 98767 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98754 "isa_tms320.tcc"
+#line 98770 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 98758 "isa_tms320.tcc"
+#line 98774 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98761 "isa_tms320.tcc"
+#line 98777 "isa_tms320.tcc"
 >
 OpLDM_dir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98766 "isa_tms320.tcc"
+#line 98782 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98770 "isa_tms320.tcc"
+#line 98786 "isa_tms320.tcc"
 >::OpLDM_dir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98774 "isa_tms320.tcc"
+#line 98790 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98778 "isa_tms320.tcc"
+#line 98794 "isa_tms320.tcc"
 >(code, addr, "LDM_dir")
 {
 	dst = ((code >> 16) & 0x7);
@@ -98784,34 +98800,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 98788 "isa_tms320.tcc"
+#line 98804 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98791 "isa_tms320.tcc"
+#line 98807 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 98795 "isa_tms320.tcc"
+#line 98811 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98798 "isa_tms320.tcc"
+#line 98814 "isa_tms320.tcc"
 >
 OpLDM_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98803 "isa_tms320.tcc"
+#line 98819 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98807 "isa_tms320.tcc"
+#line 98823 "isa_tms320.tcc"
 >::OpLDM_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98811 "isa_tms320.tcc"
+#line 98827 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98815 "isa_tms320.tcc"
+#line 98831 "isa_tms320.tcc"
 >(code, addr, "LDM_indir")
 {
 	dst = ((code >> 16) & 0x7);
@@ -98823,34 +98839,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 98827 "isa_tms320.tcc"
+#line 98843 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98830 "isa_tms320.tcc"
+#line 98846 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 98834 "isa_tms320.tcc"
+#line 98850 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98837 "isa_tms320.tcc"
+#line 98853 "isa_tms320.tcc"
 >
 OpLDM_imm<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98842 "isa_tms320.tcc"
+#line 98858 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98846 "isa_tms320.tcc"
+#line 98862 "isa_tms320.tcc"
 >::OpLDM_imm(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98850 "isa_tms320.tcc"
+#line 98866 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98854 "isa_tms320.tcc"
+#line 98870 "isa_tms320.tcc"
 >(code, addr, "LDM_imm")
 {
 	dst = ((code >> 16) & 0x7);
@@ -98860,34 +98876,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 98864 "isa_tms320.tcc"
+#line 98880 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98867 "isa_tms320.tcc"
+#line 98883 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 98871 "isa_tms320.tcc"
+#line 98887 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98874 "isa_tms320.tcc"
+#line 98890 "isa_tms320.tcc"
 >
 OpLDP<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98879 "isa_tms320.tcc"
+#line 98895 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98883 "isa_tms320.tcc"
+#line 98899 "isa_tms320.tcc"
 >::OpLDP(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98887 "isa_tms320.tcc"
+#line 98903 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98891 "isa_tms320.tcc"
+#line 98907 "isa_tms320.tcc"
 >(code, addr, "LDP")
 {
 	src = ((code >> 0) & 0xff);
@@ -98896,34 +98912,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 98900 "isa_tms320.tcc"
+#line 98916 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98903 "isa_tms320.tcc"
+#line 98919 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 98907 "isa_tms320.tcc"
+#line 98923 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98910 "isa_tms320.tcc"
+#line 98926 "isa_tms320.tcc"
 >
 OpPOP<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98915 "isa_tms320.tcc"
+#line 98931 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98919 "isa_tms320.tcc"
+#line 98935 "isa_tms320.tcc"
 >::OpPOP(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98923 "isa_tms320.tcc"
+#line 98939 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98927 "isa_tms320.tcc"
+#line 98943 "isa_tms320.tcc"
 >(code, addr, "POP")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -98932,34 +98948,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 98936 "isa_tms320.tcc"
+#line 98952 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98939 "isa_tms320.tcc"
+#line 98955 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 98943 "isa_tms320.tcc"
+#line 98959 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98946 "isa_tms320.tcc"
+#line 98962 "isa_tms320.tcc"
 >
 OpPOPF<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98951 "isa_tms320.tcc"
+#line 98967 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98955 "isa_tms320.tcc"
+#line 98971 "isa_tms320.tcc"
 >::OpPOPF(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98959 "isa_tms320.tcc"
+#line 98975 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98963 "isa_tms320.tcc"
+#line 98979 "isa_tms320.tcc"
 >(code, addr, "POPF")
 {
 	dst = ((code >> 16) & 0x7);
@@ -98968,34 +98984,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 98972 "isa_tms320.tcc"
+#line 98988 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98975 "isa_tms320.tcc"
+#line 98991 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 98979 "isa_tms320.tcc"
+#line 98995 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98982 "isa_tms320.tcc"
+#line 98998 "isa_tms320.tcc"
 >
 OpPUSH<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98987 "isa_tms320.tcc"
+#line 99003 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98991 "isa_tms320.tcc"
+#line 99007 "isa_tms320.tcc"
 >::OpPUSH(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 98995 "isa_tms320.tcc"
+#line 99011 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 98999 "isa_tms320.tcc"
+#line 99015 "isa_tms320.tcc"
 >(code, addr, "PUSH")
 {
 	src = ((code >> 16) & 0x1f);
@@ -99004,34 +99020,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 99008 "isa_tms320.tcc"
+#line 99024 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99011 "isa_tms320.tcc"
+#line 99027 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 99015 "isa_tms320.tcc"
+#line 99031 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99018 "isa_tms320.tcc"
+#line 99034 "isa_tms320.tcc"
 >
 OpPUSHF<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99023 "isa_tms320.tcc"
+#line 99039 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99027 "isa_tms320.tcc"
+#line 99043 "isa_tms320.tcc"
 >::OpPUSHF(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99031 "isa_tms320.tcc"
+#line 99047 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99035 "isa_tms320.tcc"
+#line 99051 "isa_tms320.tcc"
 >(code, addr, "PUSHF")
 {
 	src = ((code >> 16) & 0x7);
@@ -99040,34 +99056,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 99044 "isa_tms320.tcc"
+#line 99060 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99047 "isa_tms320.tcc"
+#line 99063 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 99051 "isa_tms320.tcc"
+#line 99067 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99054 "isa_tms320.tcc"
+#line 99070 "isa_tms320.tcc"
 >
 OpSTF_dir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99059 "isa_tms320.tcc"
+#line 99075 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99063 "isa_tms320.tcc"
+#line 99079 "isa_tms320.tcc"
 >::OpSTF_dir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99067 "isa_tms320.tcc"
+#line 99083 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99071 "isa_tms320.tcc"
+#line 99087 "isa_tms320.tcc"
 >(code, addr, "STF_dir")
 {
 	src = ((code >> 16) & 0x1f);
@@ -99077,34 +99093,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 99081 "isa_tms320.tcc"
+#line 99097 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99084 "isa_tms320.tcc"
+#line 99100 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 99088 "isa_tms320.tcc"
+#line 99104 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99091 "isa_tms320.tcc"
+#line 99107 "isa_tms320.tcc"
 >
 OpSTF_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99096 "isa_tms320.tcc"
+#line 99112 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99100 "isa_tms320.tcc"
+#line 99116 "isa_tms320.tcc"
 >::OpSTF_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99104 "isa_tms320.tcc"
+#line 99120 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99108 "isa_tms320.tcc"
+#line 99124 "isa_tms320.tcc"
 >(code, addr, "STF_indir")
 {
 	src = ((code >> 16) & 0x7);
@@ -99116,34 +99132,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 99120 "isa_tms320.tcc"
+#line 99136 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99123 "isa_tms320.tcc"
+#line 99139 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 99127 "isa_tms320.tcc"
+#line 99143 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99130 "isa_tms320.tcc"
+#line 99146 "isa_tms320.tcc"
 >
 OpSTI_dir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99135 "isa_tms320.tcc"
+#line 99151 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99139 "isa_tms320.tcc"
+#line 99155 "isa_tms320.tcc"
 >::OpSTI_dir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99143 "isa_tms320.tcc"
+#line 99159 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99147 "isa_tms320.tcc"
+#line 99163 "isa_tms320.tcc"
 >(code, addr, "STI_dir")
 {
 	src = ((code >> 16) & 0x1f);
@@ -99153,34 +99169,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 99157 "isa_tms320.tcc"
+#line 99173 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99160 "isa_tms320.tcc"
+#line 99176 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 99164 "isa_tms320.tcc"
+#line 99180 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99167 "isa_tms320.tcc"
+#line 99183 "isa_tms320.tcc"
 >
 OpSTI_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99172 "isa_tms320.tcc"
+#line 99188 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99176 "isa_tms320.tcc"
+#line 99192 "isa_tms320.tcc"
 >::OpSTI_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99180 "isa_tms320.tcc"
+#line 99196 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99184 "isa_tms320.tcc"
+#line 99200 "isa_tms320.tcc"
 >(code, addr, "STI_indir")
 {
 	src = ((code >> 16) & 0x1f);
@@ -99192,34 +99208,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 99196 "isa_tms320.tcc"
+#line 99212 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99199 "isa_tms320.tcc"
+#line 99215 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 99203 "isa_tms320.tcc"
+#line 99219 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99206 "isa_tms320.tcc"
+#line 99222 "isa_tms320.tcc"
 >
 OpABSF_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99211 "isa_tms320.tcc"
+#line 99227 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99215 "isa_tms320.tcc"
+#line 99231 "isa_tms320.tcc"
 >::OpABSF_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99219 "isa_tms320.tcc"
+#line 99235 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99223 "isa_tms320.tcc"
+#line 99239 "isa_tms320.tcc"
 >(code, addr, "ABSF_reg")
 {
 	dst = ((code >> 16) & 0x7);
@@ -99229,34 +99245,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 99233 "isa_tms320.tcc"
+#line 99249 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99236 "isa_tms320.tcc"
+#line 99252 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 99240 "isa_tms320.tcc"
+#line 99256 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99243 "isa_tms320.tcc"
+#line 99259 "isa_tms320.tcc"
 >
 OpABSF_dir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99248 "isa_tms320.tcc"
+#line 99264 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99252 "isa_tms320.tcc"
+#line 99268 "isa_tms320.tcc"
 >::OpABSF_dir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99256 "isa_tms320.tcc"
+#line 99272 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99260 "isa_tms320.tcc"
+#line 99276 "isa_tms320.tcc"
 >(code, addr, "ABSF_dir")
 {
 	dst = ((code >> 16) & 0x7);
@@ -99266,34 +99282,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 99270 "isa_tms320.tcc"
+#line 99286 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99273 "isa_tms320.tcc"
+#line 99289 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 99277 "isa_tms320.tcc"
+#line 99293 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99280 "isa_tms320.tcc"
+#line 99296 "isa_tms320.tcc"
 >
 OpABSF_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99285 "isa_tms320.tcc"
+#line 99301 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99289 "isa_tms320.tcc"
+#line 99305 "isa_tms320.tcc"
 >::OpABSF_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99293 "isa_tms320.tcc"
+#line 99309 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99297 "isa_tms320.tcc"
+#line 99313 "isa_tms320.tcc"
 >(code, addr, "ABSF_indir")
 {
 	dst = ((code >> 16) & 0x7);
@@ -99305,34 +99321,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 99309 "isa_tms320.tcc"
+#line 99325 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99312 "isa_tms320.tcc"
+#line 99328 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 99316 "isa_tms320.tcc"
+#line 99332 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99319 "isa_tms320.tcc"
+#line 99335 "isa_tms320.tcc"
 >
 OpABSF_imm<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99324 "isa_tms320.tcc"
+#line 99340 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99328 "isa_tms320.tcc"
+#line 99344 "isa_tms320.tcc"
 >::OpABSF_imm(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99332 "isa_tms320.tcc"
+#line 99348 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99336 "isa_tms320.tcc"
+#line 99352 "isa_tms320.tcc"
 >(code, addr, "ABSF_imm")
 {
 	dst = ((code >> 16) & 0x7);
@@ -99342,34 +99358,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 99346 "isa_tms320.tcc"
+#line 99362 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99349 "isa_tms320.tcc"
+#line 99365 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 99353 "isa_tms320.tcc"
+#line 99369 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99356 "isa_tms320.tcc"
+#line 99372 "isa_tms320.tcc"
 >
 OpABSI_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99361 "isa_tms320.tcc"
+#line 99377 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99365 "isa_tms320.tcc"
+#line 99381 "isa_tms320.tcc"
 >::OpABSI_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99369 "isa_tms320.tcc"
+#line 99385 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99373 "isa_tms320.tcc"
+#line 99389 "isa_tms320.tcc"
 >(code, addr, "ABSI_reg")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -99379,34 +99395,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 99383 "isa_tms320.tcc"
+#line 99399 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99386 "isa_tms320.tcc"
+#line 99402 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 99390 "isa_tms320.tcc"
+#line 99406 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99393 "isa_tms320.tcc"
+#line 99409 "isa_tms320.tcc"
 >
 OpABSI_dir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99398 "isa_tms320.tcc"
+#line 99414 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99402 "isa_tms320.tcc"
+#line 99418 "isa_tms320.tcc"
 >::OpABSI_dir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99406 "isa_tms320.tcc"
+#line 99422 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99410 "isa_tms320.tcc"
+#line 99426 "isa_tms320.tcc"
 >(code, addr, "ABSI_dir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -99416,34 +99432,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 99420 "isa_tms320.tcc"
+#line 99436 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99423 "isa_tms320.tcc"
+#line 99439 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 99427 "isa_tms320.tcc"
+#line 99443 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99430 "isa_tms320.tcc"
+#line 99446 "isa_tms320.tcc"
 >
 OpABSI_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99435 "isa_tms320.tcc"
+#line 99451 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99439 "isa_tms320.tcc"
+#line 99455 "isa_tms320.tcc"
 >::OpABSI_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99443 "isa_tms320.tcc"
+#line 99459 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99447 "isa_tms320.tcc"
+#line 99463 "isa_tms320.tcc"
 >(code, addr, "ABSI_indir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -99455,34 +99471,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 99459 "isa_tms320.tcc"
+#line 99475 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99462 "isa_tms320.tcc"
+#line 99478 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 99466 "isa_tms320.tcc"
+#line 99482 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99469 "isa_tms320.tcc"
+#line 99485 "isa_tms320.tcc"
 >
 OpABSI_imm<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99474 "isa_tms320.tcc"
+#line 99490 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99478 "isa_tms320.tcc"
+#line 99494 "isa_tms320.tcc"
 >::OpABSI_imm(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99482 "isa_tms320.tcc"
+#line 99498 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99486 "isa_tms320.tcc"
+#line 99502 "isa_tms320.tcc"
 >(code, addr, "ABSI_imm")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -99492,34 +99508,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 99496 "isa_tms320.tcc"
+#line 99512 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99499 "isa_tms320.tcc"
+#line 99515 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 99503 "isa_tms320.tcc"
+#line 99519 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99506 "isa_tms320.tcc"
+#line 99522 "isa_tms320.tcc"
 >
 OpADDC_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99511 "isa_tms320.tcc"
+#line 99527 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99515 "isa_tms320.tcc"
+#line 99531 "isa_tms320.tcc"
 >::OpADDC_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99519 "isa_tms320.tcc"
+#line 99535 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99523 "isa_tms320.tcc"
+#line 99539 "isa_tms320.tcc"
 >(code, addr, "ADDC_reg")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -99529,34 +99545,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 99533 "isa_tms320.tcc"
+#line 99549 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99536 "isa_tms320.tcc"
+#line 99552 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 99540 "isa_tms320.tcc"
+#line 99556 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99543 "isa_tms320.tcc"
+#line 99559 "isa_tms320.tcc"
 >
 OpADDC_dir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99548 "isa_tms320.tcc"
+#line 99564 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99552 "isa_tms320.tcc"
+#line 99568 "isa_tms320.tcc"
 >::OpADDC_dir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99556 "isa_tms320.tcc"
+#line 99572 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99560 "isa_tms320.tcc"
+#line 99576 "isa_tms320.tcc"
 >(code, addr, "ADDC_dir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -99566,34 +99582,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 99570 "isa_tms320.tcc"
+#line 99586 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99573 "isa_tms320.tcc"
+#line 99589 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 99577 "isa_tms320.tcc"
+#line 99593 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99580 "isa_tms320.tcc"
+#line 99596 "isa_tms320.tcc"
 >
 OpADDC_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99585 "isa_tms320.tcc"
+#line 99601 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99589 "isa_tms320.tcc"
+#line 99605 "isa_tms320.tcc"
 >::OpADDC_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99593 "isa_tms320.tcc"
+#line 99609 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99597 "isa_tms320.tcc"
+#line 99613 "isa_tms320.tcc"
 >(code, addr, "ADDC_indir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -99605,34 +99621,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 99609 "isa_tms320.tcc"
+#line 99625 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99612 "isa_tms320.tcc"
+#line 99628 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 99616 "isa_tms320.tcc"
+#line 99632 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99619 "isa_tms320.tcc"
+#line 99635 "isa_tms320.tcc"
 >
 OpADDC_imm<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99624 "isa_tms320.tcc"
+#line 99640 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99628 "isa_tms320.tcc"
+#line 99644 "isa_tms320.tcc"
 >::OpADDC_imm(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99632 "isa_tms320.tcc"
+#line 99648 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99636 "isa_tms320.tcc"
+#line 99652 "isa_tms320.tcc"
 >(code, addr, "ADDC_imm")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -99642,34 +99658,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 99646 "isa_tms320.tcc"
+#line 99662 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99649 "isa_tms320.tcc"
+#line 99665 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 99653 "isa_tms320.tcc"
+#line 99669 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99656 "isa_tms320.tcc"
+#line 99672 "isa_tms320.tcc"
 >
 OpADDF_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99661 "isa_tms320.tcc"
+#line 99677 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99665 "isa_tms320.tcc"
+#line 99681 "isa_tms320.tcc"
 >::OpADDF_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99669 "isa_tms320.tcc"
+#line 99685 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99673 "isa_tms320.tcc"
+#line 99689 "isa_tms320.tcc"
 >(code, addr, "ADDF_reg")
 {
 	dst = ((code >> 16) & 0x7);
@@ -99679,34 +99695,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 99683 "isa_tms320.tcc"
+#line 99699 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99686 "isa_tms320.tcc"
+#line 99702 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 99690 "isa_tms320.tcc"
+#line 99706 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99693 "isa_tms320.tcc"
+#line 99709 "isa_tms320.tcc"
 >
 OpADDF_dir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99698 "isa_tms320.tcc"
+#line 99714 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99702 "isa_tms320.tcc"
+#line 99718 "isa_tms320.tcc"
 >::OpADDF_dir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99706 "isa_tms320.tcc"
+#line 99722 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99710 "isa_tms320.tcc"
+#line 99726 "isa_tms320.tcc"
 >(code, addr, "ADDF_dir")
 {
 	dst = ((code >> 16) & 0x7);
@@ -99716,34 +99732,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 99720 "isa_tms320.tcc"
+#line 99736 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99723 "isa_tms320.tcc"
+#line 99739 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 99727 "isa_tms320.tcc"
+#line 99743 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99730 "isa_tms320.tcc"
+#line 99746 "isa_tms320.tcc"
 >
 OpADDF_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99735 "isa_tms320.tcc"
+#line 99751 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99739 "isa_tms320.tcc"
+#line 99755 "isa_tms320.tcc"
 >::OpADDF_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99743 "isa_tms320.tcc"
+#line 99759 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99747 "isa_tms320.tcc"
+#line 99763 "isa_tms320.tcc"
 >(code, addr, "ADDF_indir")
 {
 	dst = ((code >> 16) & 0x7);
@@ -99755,34 +99771,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 99759 "isa_tms320.tcc"
+#line 99775 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99762 "isa_tms320.tcc"
+#line 99778 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 99766 "isa_tms320.tcc"
+#line 99782 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99769 "isa_tms320.tcc"
+#line 99785 "isa_tms320.tcc"
 >
 OpADDF_imm<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99774 "isa_tms320.tcc"
+#line 99790 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99778 "isa_tms320.tcc"
+#line 99794 "isa_tms320.tcc"
 >::OpADDF_imm(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99782 "isa_tms320.tcc"
+#line 99798 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99786 "isa_tms320.tcc"
+#line 99802 "isa_tms320.tcc"
 >(code, addr, "ADDF_imm")
 {
 	dst = ((code >> 16) & 0x7);
@@ -99792,34 +99808,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 99796 "isa_tms320.tcc"
+#line 99812 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99799 "isa_tms320.tcc"
+#line 99815 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 99803 "isa_tms320.tcc"
+#line 99819 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99806 "isa_tms320.tcc"
+#line 99822 "isa_tms320.tcc"
 >
 OpADDI_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99811 "isa_tms320.tcc"
+#line 99827 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99815 "isa_tms320.tcc"
+#line 99831 "isa_tms320.tcc"
 >::OpADDI_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99819 "isa_tms320.tcc"
+#line 99835 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99823 "isa_tms320.tcc"
+#line 99839 "isa_tms320.tcc"
 >(code, addr, "ADDI_reg")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -99829,34 +99845,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 99833 "isa_tms320.tcc"
+#line 99849 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99836 "isa_tms320.tcc"
+#line 99852 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 99840 "isa_tms320.tcc"
+#line 99856 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99843 "isa_tms320.tcc"
+#line 99859 "isa_tms320.tcc"
 >
 OpADDI_dir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99848 "isa_tms320.tcc"
+#line 99864 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99852 "isa_tms320.tcc"
+#line 99868 "isa_tms320.tcc"
 >::OpADDI_dir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99856 "isa_tms320.tcc"
+#line 99872 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99860 "isa_tms320.tcc"
+#line 99876 "isa_tms320.tcc"
 >(code, addr, "ADDI_dir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -99866,34 +99882,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 99870 "isa_tms320.tcc"
+#line 99886 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99873 "isa_tms320.tcc"
+#line 99889 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 99877 "isa_tms320.tcc"
+#line 99893 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99880 "isa_tms320.tcc"
+#line 99896 "isa_tms320.tcc"
 >
 OpADDI_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99885 "isa_tms320.tcc"
+#line 99901 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99889 "isa_tms320.tcc"
+#line 99905 "isa_tms320.tcc"
 >::OpADDI_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99893 "isa_tms320.tcc"
+#line 99909 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99897 "isa_tms320.tcc"
+#line 99913 "isa_tms320.tcc"
 >(code, addr, "ADDI_indir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -99905,34 +99921,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 99909 "isa_tms320.tcc"
+#line 99925 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99912 "isa_tms320.tcc"
+#line 99928 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 99916 "isa_tms320.tcc"
+#line 99932 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99919 "isa_tms320.tcc"
+#line 99935 "isa_tms320.tcc"
 >
 OpADDI_imm<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99924 "isa_tms320.tcc"
+#line 99940 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99928 "isa_tms320.tcc"
+#line 99944 "isa_tms320.tcc"
 >::OpADDI_imm(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99932 "isa_tms320.tcc"
+#line 99948 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99936 "isa_tms320.tcc"
+#line 99952 "isa_tms320.tcc"
 >(code, addr, "ADDI_imm")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -99942,34 +99958,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 99946 "isa_tms320.tcc"
+#line 99962 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99949 "isa_tms320.tcc"
+#line 99965 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 99953 "isa_tms320.tcc"
+#line 99969 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99956 "isa_tms320.tcc"
+#line 99972 "isa_tms320.tcc"
 >
 OpAND_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99961 "isa_tms320.tcc"
+#line 99977 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99965 "isa_tms320.tcc"
+#line 99981 "isa_tms320.tcc"
 >::OpAND_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99969 "isa_tms320.tcc"
+#line 99985 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99973 "isa_tms320.tcc"
+#line 99989 "isa_tms320.tcc"
 >(code, addr, "AND_reg")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -99979,34 +99995,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 99983 "isa_tms320.tcc"
+#line 99999 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99986 "isa_tms320.tcc"
+#line 100002 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 99990 "isa_tms320.tcc"
+#line 100006 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 99993 "isa_tms320.tcc"
+#line 100009 "isa_tms320.tcc"
 >
 OpAND_dir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 99998 "isa_tms320.tcc"
+#line 100014 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100002 "isa_tms320.tcc"
+#line 100018 "isa_tms320.tcc"
 >::OpAND_dir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100006 "isa_tms320.tcc"
+#line 100022 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100010 "isa_tms320.tcc"
+#line 100026 "isa_tms320.tcc"
 >(code, addr, "AND_dir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -100016,34 +100032,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 100020 "isa_tms320.tcc"
+#line 100036 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100023 "isa_tms320.tcc"
+#line 100039 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 100027 "isa_tms320.tcc"
+#line 100043 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100030 "isa_tms320.tcc"
+#line 100046 "isa_tms320.tcc"
 >
 OpAND_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100035 "isa_tms320.tcc"
+#line 100051 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100039 "isa_tms320.tcc"
+#line 100055 "isa_tms320.tcc"
 >::OpAND_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100043 "isa_tms320.tcc"
+#line 100059 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100047 "isa_tms320.tcc"
+#line 100063 "isa_tms320.tcc"
 >(code, addr, "AND_indir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -100055,34 +100071,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 100059 "isa_tms320.tcc"
+#line 100075 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100062 "isa_tms320.tcc"
+#line 100078 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 100066 "isa_tms320.tcc"
+#line 100082 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100069 "isa_tms320.tcc"
+#line 100085 "isa_tms320.tcc"
 >
 OpAND_imm<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100074 "isa_tms320.tcc"
+#line 100090 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100078 "isa_tms320.tcc"
+#line 100094 "isa_tms320.tcc"
 >::OpAND_imm(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100082 "isa_tms320.tcc"
+#line 100098 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100086 "isa_tms320.tcc"
+#line 100102 "isa_tms320.tcc"
 >(code, addr, "AND_imm")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -100092,34 +100108,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 100096 "isa_tms320.tcc"
+#line 100112 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100099 "isa_tms320.tcc"
+#line 100115 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 100103 "isa_tms320.tcc"
+#line 100119 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100106 "isa_tms320.tcc"
+#line 100122 "isa_tms320.tcc"
 >
 OpANDN_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100111 "isa_tms320.tcc"
+#line 100127 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100115 "isa_tms320.tcc"
+#line 100131 "isa_tms320.tcc"
 >::OpANDN_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100119 "isa_tms320.tcc"
+#line 100135 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100123 "isa_tms320.tcc"
+#line 100139 "isa_tms320.tcc"
 >(code, addr, "ANDN_reg")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -100129,34 +100145,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 100133 "isa_tms320.tcc"
+#line 100149 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100136 "isa_tms320.tcc"
+#line 100152 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 100140 "isa_tms320.tcc"
+#line 100156 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100143 "isa_tms320.tcc"
+#line 100159 "isa_tms320.tcc"
 >
 OpANDN_dir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100148 "isa_tms320.tcc"
+#line 100164 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100152 "isa_tms320.tcc"
+#line 100168 "isa_tms320.tcc"
 >::OpANDN_dir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100156 "isa_tms320.tcc"
+#line 100172 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100160 "isa_tms320.tcc"
+#line 100176 "isa_tms320.tcc"
 >(code, addr, "ANDN_dir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -100166,34 +100182,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 100170 "isa_tms320.tcc"
+#line 100186 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100173 "isa_tms320.tcc"
+#line 100189 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 100177 "isa_tms320.tcc"
+#line 100193 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100180 "isa_tms320.tcc"
+#line 100196 "isa_tms320.tcc"
 >
 OpANDN_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100185 "isa_tms320.tcc"
+#line 100201 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100189 "isa_tms320.tcc"
+#line 100205 "isa_tms320.tcc"
 >::OpANDN_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100193 "isa_tms320.tcc"
+#line 100209 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100197 "isa_tms320.tcc"
+#line 100213 "isa_tms320.tcc"
 >(code, addr, "ANDN_indir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -100205,34 +100221,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 100209 "isa_tms320.tcc"
+#line 100225 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100212 "isa_tms320.tcc"
+#line 100228 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 100216 "isa_tms320.tcc"
+#line 100232 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100219 "isa_tms320.tcc"
+#line 100235 "isa_tms320.tcc"
 >
 OpANDN_imm<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100224 "isa_tms320.tcc"
+#line 100240 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100228 "isa_tms320.tcc"
+#line 100244 "isa_tms320.tcc"
 >::OpANDN_imm(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100232 "isa_tms320.tcc"
+#line 100248 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100236 "isa_tms320.tcc"
+#line 100252 "isa_tms320.tcc"
 >(code, addr, "ANDN_imm")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -100242,34 +100258,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 100246 "isa_tms320.tcc"
+#line 100262 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100249 "isa_tms320.tcc"
+#line 100265 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 100253 "isa_tms320.tcc"
+#line 100269 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100256 "isa_tms320.tcc"
+#line 100272 "isa_tms320.tcc"
 >
 OpASH_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100261 "isa_tms320.tcc"
+#line 100277 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100265 "isa_tms320.tcc"
+#line 100281 "isa_tms320.tcc"
 >::OpASH_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100269 "isa_tms320.tcc"
+#line 100285 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100273 "isa_tms320.tcc"
+#line 100289 "isa_tms320.tcc"
 >(code, addr, "ASH_reg")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -100279,34 +100295,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 100283 "isa_tms320.tcc"
+#line 100299 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100286 "isa_tms320.tcc"
+#line 100302 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 100290 "isa_tms320.tcc"
+#line 100306 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100293 "isa_tms320.tcc"
+#line 100309 "isa_tms320.tcc"
 >
 OpASH_dir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100298 "isa_tms320.tcc"
+#line 100314 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100302 "isa_tms320.tcc"
+#line 100318 "isa_tms320.tcc"
 >::OpASH_dir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100306 "isa_tms320.tcc"
+#line 100322 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100310 "isa_tms320.tcc"
+#line 100326 "isa_tms320.tcc"
 >(code, addr, "ASH_dir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -100316,34 +100332,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 100320 "isa_tms320.tcc"
+#line 100336 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100323 "isa_tms320.tcc"
+#line 100339 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 100327 "isa_tms320.tcc"
+#line 100343 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100330 "isa_tms320.tcc"
+#line 100346 "isa_tms320.tcc"
 >
 OpASH_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100335 "isa_tms320.tcc"
+#line 100351 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100339 "isa_tms320.tcc"
+#line 100355 "isa_tms320.tcc"
 >::OpASH_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100343 "isa_tms320.tcc"
+#line 100359 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100347 "isa_tms320.tcc"
+#line 100363 "isa_tms320.tcc"
 >(code, addr, "ASH_indir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -100355,34 +100371,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 100359 "isa_tms320.tcc"
+#line 100375 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100362 "isa_tms320.tcc"
+#line 100378 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 100366 "isa_tms320.tcc"
+#line 100382 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100369 "isa_tms320.tcc"
+#line 100385 "isa_tms320.tcc"
 >
 OpASH_imm<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100374 "isa_tms320.tcc"
+#line 100390 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100378 "isa_tms320.tcc"
+#line 100394 "isa_tms320.tcc"
 >::OpASH_imm(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100382 "isa_tms320.tcc"
+#line 100398 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100386 "isa_tms320.tcc"
+#line 100402 "isa_tms320.tcc"
 >(code, addr, "ASH_imm")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -100392,34 +100408,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 100396 "isa_tms320.tcc"
+#line 100412 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100399 "isa_tms320.tcc"
+#line 100415 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 100403 "isa_tms320.tcc"
+#line 100419 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100406 "isa_tms320.tcc"
+#line 100422 "isa_tms320.tcc"
 >
 OpCMPF_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100411 "isa_tms320.tcc"
+#line 100427 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100415 "isa_tms320.tcc"
+#line 100431 "isa_tms320.tcc"
 >::OpCMPF_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100419 "isa_tms320.tcc"
+#line 100435 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100423 "isa_tms320.tcc"
+#line 100439 "isa_tms320.tcc"
 >(code, addr, "CMPF_reg")
 {
 	dst = ((code >> 16) & 0x7);
@@ -100429,34 +100445,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 100433 "isa_tms320.tcc"
+#line 100449 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100436 "isa_tms320.tcc"
+#line 100452 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 100440 "isa_tms320.tcc"
+#line 100456 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100443 "isa_tms320.tcc"
+#line 100459 "isa_tms320.tcc"
 >
 OpCMPF_dir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100448 "isa_tms320.tcc"
+#line 100464 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100452 "isa_tms320.tcc"
+#line 100468 "isa_tms320.tcc"
 >::OpCMPF_dir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100456 "isa_tms320.tcc"
+#line 100472 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100460 "isa_tms320.tcc"
+#line 100476 "isa_tms320.tcc"
 >(code, addr, "CMPF_dir")
 {
 	dst = ((code >> 16) & 0x7);
@@ -100466,34 +100482,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 100470 "isa_tms320.tcc"
+#line 100486 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100473 "isa_tms320.tcc"
+#line 100489 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 100477 "isa_tms320.tcc"
+#line 100493 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100480 "isa_tms320.tcc"
+#line 100496 "isa_tms320.tcc"
 >
 OpCMPF_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100485 "isa_tms320.tcc"
+#line 100501 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100489 "isa_tms320.tcc"
+#line 100505 "isa_tms320.tcc"
 >::OpCMPF_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100493 "isa_tms320.tcc"
+#line 100509 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100497 "isa_tms320.tcc"
+#line 100513 "isa_tms320.tcc"
 >(code, addr, "CMPF_indir")
 {
 	dst = ((code >> 16) & 0x7);
@@ -100505,34 +100521,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 100509 "isa_tms320.tcc"
+#line 100525 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100512 "isa_tms320.tcc"
+#line 100528 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 100516 "isa_tms320.tcc"
+#line 100532 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100519 "isa_tms320.tcc"
+#line 100535 "isa_tms320.tcc"
 >
 OpCMPF_imm<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100524 "isa_tms320.tcc"
+#line 100540 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100528 "isa_tms320.tcc"
+#line 100544 "isa_tms320.tcc"
 >::OpCMPF_imm(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100532 "isa_tms320.tcc"
+#line 100548 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100536 "isa_tms320.tcc"
+#line 100552 "isa_tms320.tcc"
 >(code, addr, "CMPF_imm")
 {
 	dst = ((code >> 16) & 0x7);
@@ -100542,34 +100558,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 100546 "isa_tms320.tcc"
+#line 100562 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100549 "isa_tms320.tcc"
+#line 100565 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 100553 "isa_tms320.tcc"
+#line 100569 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100556 "isa_tms320.tcc"
+#line 100572 "isa_tms320.tcc"
 >
 OpCMPI_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100561 "isa_tms320.tcc"
+#line 100577 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100565 "isa_tms320.tcc"
+#line 100581 "isa_tms320.tcc"
 >::OpCMPI_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100569 "isa_tms320.tcc"
+#line 100585 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100573 "isa_tms320.tcc"
+#line 100589 "isa_tms320.tcc"
 >(code, addr, "CMPI_reg")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -100579,34 +100595,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 100583 "isa_tms320.tcc"
+#line 100599 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100586 "isa_tms320.tcc"
+#line 100602 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 100590 "isa_tms320.tcc"
+#line 100606 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100593 "isa_tms320.tcc"
+#line 100609 "isa_tms320.tcc"
 >
 OpCMPI_dir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100598 "isa_tms320.tcc"
+#line 100614 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100602 "isa_tms320.tcc"
+#line 100618 "isa_tms320.tcc"
 >::OpCMPI_dir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100606 "isa_tms320.tcc"
+#line 100622 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100610 "isa_tms320.tcc"
+#line 100626 "isa_tms320.tcc"
 >(code, addr, "CMPI_dir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -100616,34 +100632,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 100620 "isa_tms320.tcc"
+#line 100636 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100623 "isa_tms320.tcc"
+#line 100639 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 100627 "isa_tms320.tcc"
+#line 100643 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100630 "isa_tms320.tcc"
+#line 100646 "isa_tms320.tcc"
 >
 OpCMPI_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100635 "isa_tms320.tcc"
+#line 100651 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100639 "isa_tms320.tcc"
+#line 100655 "isa_tms320.tcc"
 >::OpCMPI_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100643 "isa_tms320.tcc"
+#line 100659 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100647 "isa_tms320.tcc"
+#line 100663 "isa_tms320.tcc"
 >(code, addr, "CMPI_indir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -100655,34 +100671,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 100659 "isa_tms320.tcc"
+#line 100675 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100662 "isa_tms320.tcc"
+#line 100678 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 100666 "isa_tms320.tcc"
+#line 100682 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100669 "isa_tms320.tcc"
+#line 100685 "isa_tms320.tcc"
 >
 OpCMPI_imm<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100674 "isa_tms320.tcc"
+#line 100690 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100678 "isa_tms320.tcc"
+#line 100694 "isa_tms320.tcc"
 >::OpCMPI_imm(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100682 "isa_tms320.tcc"
+#line 100698 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100686 "isa_tms320.tcc"
+#line 100702 "isa_tms320.tcc"
 >(code, addr, "CMPI_imm")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -100692,34 +100708,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 100696 "isa_tms320.tcc"
+#line 100712 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100699 "isa_tms320.tcc"
+#line 100715 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 100703 "isa_tms320.tcc"
+#line 100719 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100706 "isa_tms320.tcc"
+#line 100722 "isa_tms320.tcc"
 >
 OpFIX_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100711 "isa_tms320.tcc"
+#line 100727 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100715 "isa_tms320.tcc"
+#line 100731 "isa_tms320.tcc"
 >::OpFIX_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100719 "isa_tms320.tcc"
+#line 100735 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100723 "isa_tms320.tcc"
+#line 100739 "isa_tms320.tcc"
 >(code, addr, "FIX_reg")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -100729,34 +100745,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 100733 "isa_tms320.tcc"
+#line 100749 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100736 "isa_tms320.tcc"
+#line 100752 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 100740 "isa_tms320.tcc"
+#line 100756 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100743 "isa_tms320.tcc"
+#line 100759 "isa_tms320.tcc"
 >
 OpFIX_dir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100748 "isa_tms320.tcc"
+#line 100764 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100752 "isa_tms320.tcc"
+#line 100768 "isa_tms320.tcc"
 >::OpFIX_dir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100756 "isa_tms320.tcc"
+#line 100772 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100760 "isa_tms320.tcc"
+#line 100776 "isa_tms320.tcc"
 >(code, addr, "FIX_dir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -100766,34 +100782,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 100770 "isa_tms320.tcc"
+#line 100786 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100773 "isa_tms320.tcc"
+#line 100789 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 100777 "isa_tms320.tcc"
+#line 100793 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100780 "isa_tms320.tcc"
+#line 100796 "isa_tms320.tcc"
 >
 OpFIX_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100785 "isa_tms320.tcc"
+#line 100801 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100789 "isa_tms320.tcc"
+#line 100805 "isa_tms320.tcc"
 >::OpFIX_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100793 "isa_tms320.tcc"
+#line 100809 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100797 "isa_tms320.tcc"
+#line 100813 "isa_tms320.tcc"
 >(code, addr, "FIX_indir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -100805,34 +100821,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 100809 "isa_tms320.tcc"
+#line 100825 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100812 "isa_tms320.tcc"
+#line 100828 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 100816 "isa_tms320.tcc"
+#line 100832 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100819 "isa_tms320.tcc"
+#line 100835 "isa_tms320.tcc"
 >
 OpFIX_imm<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100824 "isa_tms320.tcc"
+#line 100840 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100828 "isa_tms320.tcc"
+#line 100844 "isa_tms320.tcc"
 >::OpFIX_imm(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100832 "isa_tms320.tcc"
+#line 100848 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100836 "isa_tms320.tcc"
+#line 100852 "isa_tms320.tcc"
 >(code, addr, "FIX_imm")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -100842,34 +100858,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 100846 "isa_tms320.tcc"
+#line 100862 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100849 "isa_tms320.tcc"
+#line 100865 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 100853 "isa_tms320.tcc"
+#line 100869 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100856 "isa_tms320.tcc"
+#line 100872 "isa_tms320.tcc"
 >
 OpFLOAT_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100861 "isa_tms320.tcc"
+#line 100877 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100865 "isa_tms320.tcc"
+#line 100881 "isa_tms320.tcc"
 >::OpFLOAT_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100869 "isa_tms320.tcc"
+#line 100885 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100873 "isa_tms320.tcc"
+#line 100889 "isa_tms320.tcc"
 >(code, addr, "FLOAT_reg")
 {
 	dst = ((code >> 16) & 0x7);
@@ -100879,34 +100895,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 100883 "isa_tms320.tcc"
+#line 100899 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100886 "isa_tms320.tcc"
+#line 100902 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 100890 "isa_tms320.tcc"
+#line 100906 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100893 "isa_tms320.tcc"
+#line 100909 "isa_tms320.tcc"
 >
 OpFLOAT_dir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100898 "isa_tms320.tcc"
+#line 100914 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100902 "isa_tms320.tcc"
+#line 100918 "isa_tms320.tcc"
 >::OpFLOAT_dir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100906 "isa_tms320.tcc"
+#line 100922 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100910 "isa_tms320.tcc"
+#line 100926 "isa_tms320.tcc"
 >(code, addr, "FLOAT_dir")
 {
 	dst = ((code >> 16) & 0x7);
@@ -100916,34 +100932,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 100920 "isa_tms320.tcc"
+#line 100936 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100923 "isa_tms320.tcc"
+#line 100939 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 100927 "isa_tms320.tcc"
+#line 100943 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100930 "isa_tms320.tcc"
+#line 100946 "isa_tms320.tcc"
 >
 OpFLOAT_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100935 "isa_tms320.tcc"
+#line 100951 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100939 "isa_tms320.tcc"
+#line 100955 "isa_tms320.tcc"
 >::OpFLOAT_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100943 "isa_tms320.tcc"
+#line 100959 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100947 "isa_tms320.tcc"
+#line 100963 "isa_tms320.tcc"
 >(code, addr, "FLOAT_indir")
 {
 	dst = ((code >> 16) & 0x7);
@@ -100955,34 +100971,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 100959 "isa_tms320.tcc"
+#line 100975 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100962 "isa_tms320.tcc"
+#line 100978 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 100966 "isa_tms320.tcc"
+#line 100982 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100969 "isa_tms320.tcc"
+#line 100985 "isa_tms320.tcc"
 >
 OpFLOAT_imm<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100974 "isa_tms320.tcc"
+#line 100990 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100978 "isa_tms320.tcc"
+#line 100994 "isa_tms320.tcc"
 >::OpFLOAT_imm(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100982 "isa_tms320.tcc"
+#line 100998 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 100986 "isa_tms320.tcc"
+#line 101002 "isa_tms320.tcc"
 >(code, addr, "FLOAT_imm")
 {
 	dst = ((code >> 16) & 0x7);
@@ -100992,34 +101008,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 100996 "isa_tms320.tcc"
+#line 101012 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 100999 "isa_tms320.tcc"
+#line 101015 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 101003 "isa_tms320.tcc"
+#line 101019 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101006 "isa_tms320.tcc"
+#line 101022 "isa_tms320.tcc"
 >
 OpLSH_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101011 "isa_tms320.tcc"
+#line 101027 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101015 "isa_tms320.tcc"
+#line 101031 "isa_tms320.tcc"
 >::OpLSH_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101019 "isa_tms320.tcc"
+#line 101035 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101023 "isa_tms320.tcc"
+#line 101039 "isa_tms320.tcc"
 >(code, addr, "LSH_reg")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -101029,34 +101045,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 101033 "isa_tms320.tcc"
+#line 101049 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101036 "isa_tms320.tcc"
+#line 101052 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 101040 "isa_tms320.tcc"
+#line 101056 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101043 "isa_tms320.tcc"
+#line 101059 "isa_tms320.tcc"
 >
 OpLSH_dir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101048 "isa_tms320.tcc"
+#line 101064 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101052 "isa_tms320.tcc"
+#line 101068 "isa_tms320.tcc"
 >::OpLSH_dir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101056 "isa_tms320.tcc"
+#line 101072 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101060 "isa_tms320.tcc"
+#line 101076 "isa_tms320.tcc"
 >(code, addr, "LSH_dir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -101066,34 +101082,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 101070 "isa_tms320.tcc"
+#line 101086 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101073 "isa_tms320.tcc"
+#line 101089 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 101077 "isa_tms320.tcc"
+#line 101093 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101080 "isa_tms320.tcc"
+#line 101096 "isa_tms320.tcc"
 >
 OpLSH_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101085 "isa_tms320.tcc"
+#line 101101 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101089 "isa_tms320.tcc"
+#line 101105 "isa_tms320.tcc"
 >::OpLSH_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101093 "isa_tms320.tcc"
+#line 101109 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101097 "isa_tms320.tcc"
+#line 101113 "isa_tms320.tcc"
 >(code, addr, "LSH_indir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -101105,34 +101121,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 101109 "isa_tms320.tcc"
+#line 101125 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101112 "isa_tms320.tcc"
+#line 101128 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 101116 "isa_tms320.tcc"
+#line 101132 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101119 "isa_tms320.tcc"
+#line 101135 "isa_tms320.tcc"
 >
 OpLSH_imm<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101124 "isa_tms320.tcc"
+#line 101140 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101128 "isa_tms320.tcc"
+#line 101144 "isa_tms320.tcc"
 >::OpLSH_imm(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101132 "isa_tms320.tcc"
+#line 101148 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101136 "isa_tms320.tcc"
+#line 101152 "isa_tms320.tcc"
 >(code, addr, "LSH_imm")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -101142,34 +101158,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 101146 "isa_tms320.tcc"
+#line 101162 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101149 "isa_tms320.tcc"
+#line 101165 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 101153 "isa_tms320.tcc"
+#line 101169 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101156 "isa_tms320.tcc"
+#line 101172 "isa_tms320.tcc"
 >
 OpMPYF_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101161 "isa_tms320.tcc"
+#line 101177 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101165 "isa_tms320.tcc"
+#line 101181 "isa_tms320.tcc"
 >::OpMPYF_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101169 "isa_tms320.tcc"
+#line 101185 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101173 "isa_tms320.tcc"
+#line 101189 "isa_tms320.tcc"
 >(code, addr, "MPYF_reg")
 {
 	dst = ((code >> 16) & 0x7);
@@ -101179,34 +101195,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 101183 "isa_tms320.tcc"
+#line 101199 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101186 "isa_tms320.tcc"
+#line 101202 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 101190 "isa_tms320.tcc"
+#line 101206 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101193 "isa_tms320.tcc"
+#line 101209 "isa_tms320.tcc"
 >
 OpMPYF_dir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101198 "isa_tms320.tcc"
+#line 101214 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101202 "isa_tms320.tcc"
+#line 101218 "isa_tms320.tcc"
 >::OpMPYF_dir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101206 "isa_tms320.tcc"
+#line 101222 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101210 "isa_tms320.tcc"
+#line 101226 "isa_tms320.tcc"
 >(code, addr, "MPYF_dir")
 {
 	dst = ((code >> 16) & 0x7);
@@ -101216,34 +101232,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 101220 "isa_tms320.tcc"
+#line 101236 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101223 "isa_tms320.tcc"
+#line 101239 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 101227 "isa_tms320.tcc"
+#line 101243 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101230 "isa_tms320.tcc"
+#line 101246 "isa_tms320.tcc"
 >
 OpMPYF_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101235 "isa_tms320.tcc"
+#line 101251 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101239 "isa_tms320.tcc"
+#line 101255 "isa_tms320.tcc"
 >::OpMPYF_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101243 "isa_tms320.tcc"
+#line 101259 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101247 "isa_tms320.tcc"
+#line 101263 "isa_tms320.tcc"
 >(code, addr, "MPYF_indir")
 {
 	dst = ((code >> 16) & 0x7);
@@ -101255,34 +101271,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 101259 "isa_tms320.tcc"
+#line 101275 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101262 "isa_tms320.tcc"
+#line 101278 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 101266 "isa_tms320.tcc"
+#line 101282 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101269 "isa_tms320.tcc"
+#line 101285 "isa_tms320.tcc"
 >
 OpMPYF_imm<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101274 "isa_tms320.tcc"
+#line 101290 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101278 "isa_tms320.tcc"
+#line 101294 "isa_tms320.tcc"
 >::OpMPYF_imm(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101282 "isa_tms320.tcc"
+#line 101298 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101286 "isa_tms320.tcc"
+#line 101302 "isa_tms320.tcc"
 >(code, addr, "MPYF_imm")
 {
 	dst = ((code >> 16) & 0x7);
@@ -101292,34 +101308,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 101296 "isa_tms320.tcc"
+#line 101312 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101299 "isa_tms320.tcc"
+#line 101315 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 101303 "isa_tms320.tcc"
+#line 101319 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101306 "isa_tms320.tcc"
+#line 101322 "isa_tms320.tcc"
 >
 OpMPYI_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101311 "isa_tms320.tcc"
+#line 101327 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101315 "isa_tms320.tcc"
+#line 101331 "isa_tms320.tcc"
 >::OpMPYI_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101319 "isa_tms320.tcc"
+#line 101335 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101323 "isa_tms320.tcc"
+#line 101339 "isa_tms320.tcc"
 >(code, addr, "MPYI_reg")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -101329,34 +101345,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 101333 "isa_tms320.tcc"
+#line 101349 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101336 "isa_tms320.tcc"
+#line 101352 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 101340 "isa_tms320.tcc"
+#line 101356 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101343 "isa_tms320.tcc"
+#line 101359 "isa_tms320.tcc"
 >
 OpMPYI_dir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101348 "isa_tms320.tcc"
+#line 101364 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101352 "isa_tms320.tcc"
+#line 101368 "isa_tms320.tcc"
 >::OpMPYI_dir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101356 "isa_tms320.tcc"
+#line 101372 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101360 "isa_tms320.tcc"
+#line 101376 "isa_tms320.tcc"
 >(code, addr, "MPYI_dir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -101366,34 +101382,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 101370 "isa_tms320.tcc"
+#line 101386 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101373 "isa_tms320.tcc"
+#line 101389 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 101377 "isa_tms320.tcc"
+#line 101393 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101380 "isa_tms320.tcc"
+#line 101396 "isa_tms320.tcc"
 >
 OpMPYI_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101385 "isa_tms320.tcc"
+#line 101401 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101389 "isa_tms320.tcc"
+#line 101405 "isa_tms320.tcc"
 >::OpMPYI_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101393 "isa_tms320.tcc"
+#line 101409 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101397 "isa_tms320.tcc"
+#line 101413 "isa_tms320.tcc"
 >(code, addr, "MPYI_indir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -101405,34 +101421,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 101409 "isa_tms320.tcc"
+#line 101425 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101412 "isa_tms320.tcc"
+#line 101428 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 101416 "isa_tms320.tcc"
+#line 101432 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101419 "isa_tms320.tcc"
+#line 101435 "isa_tms320.tcc"
 >
 OpMPYI_imm<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101424 "isa_tms320.tcc"
+#line 101440 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101428 "isa_tms320.tcc"
+#line 101444 "isa_tms320.tcc"
 >::OpMPYI_imm(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101432 "isa_tms320.tcc"
+#line 101448 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101436 "isa_tms320.tcc"
+#line 101452 "isa_tms320.tcc"
 >(code, addr, "MPYI_imm")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -101442,34 +101458,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 101446 "isa_tms320.tcc"
+#line 101462 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101449 "isa_tms320.tcc"
+#line 101465 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 101453 "isa_tms320.tcc"
+#line 101469 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101456 "isa_tms320.tcc"
+#line 101472 "isa_tms320.tcc"
 >
 OpNEGB_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101461 "isa_tms320.tcc"
+#line 101477 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101465 "isa_tms320.tcc"
+#line 101481 "isa_tms320.tcc"
 >::OpNEGB_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101469 "isa_tms320.tcc"
+#line 101485 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101473 "isa_tms320.tcc"
+#line 101489 "isa_tms320.tcc"
 >(code, addr, "NEGB_reg")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -101479,34 +101495,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 101483 "isa_tms320.tcc"
+#line 101499 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101486 "isa_tms320.tcc"
+#line 101502 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 101490 "isa_tms320.tcc"
+#line 101506 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101493 "isa_tms320.tcc"
+#line 101509 "isa_tms320.tcc"
 >
 OpNEGB_dir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101498 "isa_tms320.tcc"
+#line 101514 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101502 "isa_tms320.tcc"
+#line 101518 "isa_tms320.tcc"
 >::OpNEGB_dir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101506 "isa_tms320.tcc"
+#line 101522 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101510 "isa_tms320.tcc"
+#line 101526 "isa_tms320.tcc"
 >(code, addr, "NEGB_dir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -101516,34 +101532,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 101520 "isa_tms320.tcc"
+#line 101536 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101523 "isa_tms320.tcc"
+#line 101539 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 101527 "isa_tms320.tcc"
+#line 101543 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101530 "isa_tms320.tcc"
+#line 101546 "isa_tms320.tcc"
 >
 OpNEGB_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101535 "isa_tms320.tcc"
+#line 101551 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101539 "isa_tms320.tcc"
+#line 101555 "isa_tms320.tcc"
 >::OpNEGB_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101543 "isa_tms320.tcc"
+#line 101559 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101547 "isa_tms320.tcc"
+#line 101563 "isa_tms320.tcc"
 >(code, addr, "NEGB_indir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -101555,34 +101571,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 101559 "isa_tms320.tcc"
+#line 101575 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101562 "isa_tms320.tcc"
+#line 101578 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 101566 "isa_tms320.tcc"
+#line 101582 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101569 "isa_tms320.tcc"
+#line 101585 "isa_tms320.tcc"
 >
 OpNEGB_imm<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101574 "isa_tms320.tcc"
+#line 101590 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101578 "isa_tms320.tcc"
+#line 101594 "isa_tms320.tcc"
 >::OpNEGB_imm(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101582 "isa_tms320.tcc"
+#line 101598 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101586 "isa_tms320.tcc"
+#line 101602 "isa_tms320.tcc"
 >(code, addr, "NEGB_imm")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -101592,34 +101608,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 101596 "isa_tms320.tcc"
+#line 101612 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101599 "isa_tms320.tcc"
+#line 101615 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 101603 "isa_tms320.tcc"
+#line 101619 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101606 "isa_tms320.tcc"
+#line 101622 "isa_tms320.tcc"
 >
 OpNEGF_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101611 "isa_tms320.tcc"
+#line 101627 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101615 "isa_tms320.tcc"
+#line 101631 "isa_tms320.tcc"
 >::OpNEGF_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101619 "isa_tms320.tcc"
+#line 101635 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101623 "isa_tms320.tcc"
+#line 101639 "isa_tms320.tcc"
 >(code, addr, "NEGF_reg")
 {
 	dst = ((code >> 16) & 0x7);
@@ -101629,34 +101645,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 101633 "isa_tms320.tcc"
+#line 101649 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101636 "isa_tms320.tcc"
+#line 101652 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 101640 "isa_tms320.tcc"
+#line 101656 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101643 "isa_tms320.tcc"
+#line 101659 "isa_tms320.tcc"
 >
 OpNEGF_dir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101648 "isa_tms320.tcc"
+#line 101664 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101652 "isa_tms320.tcc"
+#line 101668 "isa_tms320.tcc"
 >::OpNEGF_dir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101656 "isa_tms320.tcc"
+#line 101672 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101660 "isa_tms320.tcc"
+#line 101676 "isa_tms320.tcc"
 >(code, addr, "NEGF_dir")
 {
 	dst = ((code >> 16) & 0x7);
@@ -101666,34 +101682,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 101670 "isa_tms320.tcc"
+#line 101686 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101673 "isa_tms320.tcc"
+#line 101689 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 101677 "isa_tms320.tcc"
+#line 101693 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101680 "isa_tms320.tcc"
+#line 101696 "isa_tms320.tcc"
 >
 OpNEGF_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101685 "isa_tms320.tcc"
+#line 101701 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101689 "isa_tms320.tcc"
+#line 101705 "isa_tms320.tcc"
 >::OpNEGF_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101693 "isa_tms320.tcc"
+#line 101709 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101697 "isa_tms320.tcc"
+#line 101713 "isa_tms320.tcc"
 >(code, addr, "NEGF_indir")
 {
 	dst = ((code >> 16) & 0x7);
@@ -101705,34 +101721,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 101709 "isa_tms320.tcc"
+#line 101725 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101712 "isa_tms320.tcc"
+#line 101728 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 101716 "isa_tms320.tcc"
+#line 101732 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101719 "isa_tms320.tcc"
+#line 101735 "isa_tms320.tcc"
 >
 OpNEGF_imm<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101724 "isa_tms320.tcc"
+#line 101740 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101728 "isa_tms320.tcc"
+#line 101744 "isa_tms320.tcc"
 >::OpNEGF_imm(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101732 "isa_tms320.tcc"
+#line 101748 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101736 "isa_tms320.tcc"
+#line 101752 "isa_tms320.tcc"
 >(code, addr, "NEGF_imm")
 {
 	dst = ((code >> 16) & 0x7);
@@ -101742,34 +101758,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 101746 "isa_tms320.tcc"
+#line 101762 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101749 "isa_tms320.tcc"
+#line 101765 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 101753 "isa_tms320.tcc"
+#line 101769 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101756 "isa_tms320.tcc"
+#line 101772 "isa_tms320.tcc"
 >
 OpNEGI_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101761 "isa_tms320.tcc"
+#line 101777 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101765 "isa_tms320.tcc"
+#line 101781 "isa_tms320.tcc"
 >::OpNEGI_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101769 "isa_tms320.tcc"
+#line 101785 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101773 "isa_tms320.tcc"
+#line 101789 "isa_tms320.tcc"
 >(code, addr, "NEGI_reg")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -101779,34 +101795,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 101783 "isa_tms320.tcc"
+#line 101799 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101786 "isa_tms320.tcc"
+#line 101802 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 101790 "isa_tms320.tcc"
+#line 101806 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101793 "isa_tms320.tcc"
+#line 101809 "isa_tms320.tcc"
 >
 OpNEGI_dir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101798 "isa_tms320.tcc"
+#line 101814 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101802 "isa_tms320.tcc"
+#line 101818 "isa_tms320.tcc"
 >::OpNEGI_dir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101806 "isa_tms320.tcc"
+#line 101822 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101810 "isa_tms320.tcc"
+#line 101826 "isa_tms320.tcc"
 >(code, addr, "NEGI_dir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -101816,34 +101832,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 101820 "isa_tms320.tcc"
+#line 101836 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101823 "isa_tms320.tcc"
+#line 101839 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 101827 "isa_tms320.tcc"
+#line 101843 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101830 "isa_tms320.tcc"
+#line 101846 "isa_tms320.tcc"
 >
 OpNEGI_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101835 "isa_tms320.tcc"
+#line 101851 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101839 "isa_tms320.tcc"
+#line 101855 "isa_tms320.tcc"
 >::OpNEGI_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101843 "isa_tms320.tcc"
+#line 101859 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101847 "isa_tms320.tcc"
+#line 101863 "isa_tms320.tcc"
 >(code, addr, "NEGI_indir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -101855,34 +101871,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 101859 "isa_tms320.tcc"
+#line 101875 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101862 "isa_tms320.tcc"
+#line 101878 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 101866 "isa_tms320.tcc"
+#line 101882 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101869 "isa_tms320.tcc"
+#line 101885 "isa_tms320.tcc"
 >
 OpNEGI_imm<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101874 "isa_tms320.tcc"
+#line 101890 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101878 "isa_tms320.tcc"
+#line 101894 "isa_tms320.tcc"
 >::OpNEGI_imm(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101882 "isa_tms320.tcc"
+#line 101898 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101886 "isa_tms320.tcc"
+#line 101902 "isa_tms320.tcc"
 >(code, addr, "NEGI_imm")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -101892,34 +101908,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 101896 "isa_tms320.tcc"
+#line 101912 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101899 "isa_tms320.tcc"
+#line 101915 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 101903 "isa_tms320.tcc"
+#line 101919 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101906 "isa_tms320.tcc"
+#line 101922 "isa_tms320.tcc"
 >
 OpNORM_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101911 "isa_tms320.tcc"
+#line 101927 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101915 "isa_tms320.tcc"
+#line 101931 "isa_tms320.tcc"
 >::OpNORM_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101919 "isa_tms320.tcc"
+#line 101935 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101923 "isa_tms320.tcc"
+#line 101939 "isa_tms320.tcc"
 >(code, addr, "NORM_reg")
 {
 	dst = ((code >> 16) & 0x7);
@@ -101929,34 +101945,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 101933 "isa_tms320.tcc"
+#line 101949 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101936 "isa_tms320.tcc"
+#line 101952 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 101940 "isa_tms320.tcc"
+#line 101956 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101943 "isa_tms320.tcc"
+#line 101959 "isa_tms320.tcc"
 >
 OpNORM_dir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101948 "isa_tms320.tcc"
+#line 101964 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101952 "isa_tms320.tcc"
+#line 101968 "isa_tms320.tcc"
 >::OpNORM_dir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101956 "isa_tms320.tcc"
+#line 101972 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101960 "isa_tms320.tcc"
+#line 101976 "isa_tms320.tcc"
 >(code, addr, "NORM_dir")
 {
 	dst = ((code >> 16) & 0x7);
@@ -101966,34 +101982,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 101970 "isa_tms320.tcc"
+#line 101986 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101973 "isa_tms320.tcc"
+#line 101989 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 101977 "isa_tms320.tcc"
+#line 101993 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101980 "isa_tms320.tcc"
+#line 101996 "isa_tms320.tcc"
 >
 OpNORM_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101985 "isa_tms320.tcc"
+#line 102001 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101989 "isa_tms320.tcc"
+#line 102005 "isa_tms320.tcc"
 >::OpNORM_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 101993 "isa_tms320.tcc"
+#line 102009 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 101997 "isa_tms320.tcc"
+#line 102013 "isa_tms320.tcc"
 >(code, addr, "NORM_indir")
 {
 	dst = ((code >> 16) & 0x7);
@@ -102005,34 +102021,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 102009 "isa_tms320.tcc"
+#line 102025 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102012 "isa_tms320.tcc"
+#line 102028 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 102016 "isa_tms320.tcc"
+#line 102032 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102019 "isa_tms320.tcc"
+#line 102035 "isa_tms320.tcc"
 >
 OpNORM_imm<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102024 "isa_tms320.tcc"
+#line 102040 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102028 "isa_tms320.tcc"
+#line 102044 "isa_tms320.tcc"
 >::OpNORM_imm(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102032 "isa_tms320.tcc"
+#line 102048 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102036 "isa_tms320.tcc"
+#line 102052 "isa_tms320.tcc"
 >(code, addr, "NORM_imm")
 {
 	dst = ((code >> 16) & 0x7);
@@ -102042,34 +102058,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 102046 "isa_tms320.tcc"
+#line 102062 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102049 "isa_tms320.tcc"
+#line 102065 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 102053 "isa_tms320.tcc"
+#line 102069 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102056 "isa_tms320.tcc"
+#line 102072 "isa_tms320.tcc"
 >
 OpNOT_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102061 "isa_tms320.tcc"
+#line 102077 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102065 "isa_tms320.tcc"
+#line 102081 "isa_tms320.tcc"
 >::OpNOT_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102069 "isa_tms320.tcc"
+#line 102085 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102073 "isa_tms320.tcc"
+#line 102089 "isa_tms320.tcc"
 >(code, addr, "NOT_reg")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -102079,34 +102095,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 102083 "isa_tms320.tcc"
+#line 102099 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102086 "isa_tms320.tcc"
+#line 102102 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 102090 "isa_tms320.tcc"
+#line 102106 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102093 "isa_tms320.tcc"
+#line 102109 "isa_tms320.tcc"
 >
 OpNOT_dir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102098 "isa_tms320.tcc"
+#line 102114 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102102 "isa_tms320.tcc"
+#line 102118 "isa_tms320.tcc"
 >::OpNOT_dir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102106 "isa_tms320.tcc"
+#line 102122 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102110 "isa_tms320.tcc"
+#line 102126 "isa_tms320.tcc"
 >(code, addr, "NOT_dir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -102116,34 +102132,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 102120 "isa_tms320.tcc"
+#line 102136 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102123 "isa_tms320.tcc"
+#line 102139 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 102127 "isa_tms320.tcc"
+#line 102143 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102130 "isa_tms320.tcc"
+#line 102146 "isa_tms320.tcc"
 >
 OpNOT_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102135 "isa_tms320.tcc"
+#line 102151 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102139 "isa_tms320.tcc"
+#line 102155 "isa_tms320.tcc"
 >::OpNOT_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102143 "isa_tms320.tcc"
+#line 102159 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102147 "isa_tms320.tcc"
+#line 102163 "isa_tms320.tcc"
 >(code, addr, "NOT_indir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -102155,34 +102171,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 102159 "isa_tms320.tcc"
+#line 102175 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102162 "isa_tms320.tcc"
+#line 102178 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 102166 "isa_tms320.tcc"
+#line 102182 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102169 "isa_tms320.tcc"
+#line 102185 "isa_tms320.tcc"
 >
 OpNOT_imm<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102174 "isa_tms320.tcc"
+#line 102190 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102178 "isa_tms320.tcc"
+#line 102194 "isa_tms320.tcc"
 >::OpNOT_imm(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102182 "isa_tms320.tcc"
+#line 102198 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102186 "isa_tms320.tcc"
+#line 102202 "isa_tms320.tcc"
 >(code, addr, "NOT_imm")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -102192,34 +102208,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 102196 "isa_tms320.tcc"
+#line 102212 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102199 "isa_tms320.tcc"
+#line 102215 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 102203 "isa_tms320.tcc"
+#line 102219 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102206 "isa_tms320.tcc"
+#line 102222 "isa_tms320.tcc"
 >
 OpOR_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102211 "isa_tms320.tcc"
+#line 102227 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102215 "isa_tms320.tcc"
+#line 102231 "isa_tms320.tcc"
 >::OpOR_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102219 "isa_tms320.tcc"
+#line 102235 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102223 "isa_tms320.tcc"
+#line 102239 "isa_tms320.tcc"
 >(code, addr, "OR_reg")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -102229,34 +102245,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 102233 "isa_tms320.tcc"
+#line 102249 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102236 "isa_tms320.tcc"
+#line 102252 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 102240 "isa_tms320.tcc"
+#line 102256 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102243 "isa_tms320.tcc"
+#line 102259 "isa_tms320.tcc"
 >
 OpOR_dir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102248 "isa_tms320.tcc"
+#line 102264 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102252 "isa_tms320.tcc"
+#line 102268 "isa_tms320.tcc"
 >::OpOR_dir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102256 "isa_tms320.tcc"
+#line 102272 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102260 "isa_tms320.tcc"
+#line 102276 "isa_tms320.tcc"
 >(code, addr, "OR_dir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -102266,34 +102282,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 102270 "isa_tms320.tcc"
+#line 102286 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102273 "isa_tms320.tcc"
+#line 102289 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 102277 "isa_tms320.tcc"
+#line 102293 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102280 "isa_tms320.tcc"
+#line 102296 "isa_tms320.tcc"
 >
 OpOR_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102285 "isa_tms320.tcc"
+#line 102301 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102289 "isa_tms320.tcc"
+#line 102305 "isa_tms320.tcc"
 >::OpOR_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102293 "isa_tms320.tcc"
+#line 102309 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102297 "isa_tms320.tcc"
+#line 102313 "isa_tms320.tcc"
 >(code, addr, "OR_indir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -102305,34 +102321,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 102309 "isa_tms320.tcc"
+#line 102325 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102312 "isa_tms320.tcc"
+#line 102328 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 102316 "isa_tms320.tcc"
+#line 102332 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102319 "isa_tms320.tcc"
+#line 102335 "isa_tms320.tcc"
 >
 OpOR_imm<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102324 "isa_tms320.tcc"
+#line 102340 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102328 "isa_tms320.tcc"
+#line 102344 "isa_tms320.tcc"
 >::OpOR_imm(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102332 "isa_tms320.tcc"
+#line 102348 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102336 "isa_tms320.tcc"
+#line 102352 "isa_tms320.tcc"
 >(code, addr, "OR_imm")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -102342,34 +102358,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 102346 "isa_tms320.tcc"
+#line 102362 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102349 "isa_tms320.tcc"
+#line 102365 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 102353 "isa_tms320.tcc"
+#line 102369 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102356 "isa_tms320.tcc"
+#line 102372 "isa_tms320.tcc"
 >
 OpRND_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102361 "isa_tms320.tcc"
+#line 102377 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102365 "isa_tms320.tcc"
+#line 102381 "isa_tms320.tcc"
 >::OpRND_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102369 "isa_tms320.tcc"
+#line 102385 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102373 "isa_tms320.tcc"
+#line 102389 "isa_tms320.tcc"
 >(code, addr, "RND_reg")
 {
 	dst = ((code >> 16) & 0x7);
@@ -102379,34 +102395,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 102383 "isa_tms320.tcc"
+#line 102399 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102386 "isa_tms320.tcc"
+#line 102402 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 102390 "isa_tms320.tcc"
+#line 102406 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102393 "isa_tms320.tcc"
+#line 102409 "isa_tms320.tcc"
 >
 OpRND_dir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102398 "isa_tms320.tcc"
+#line 102414 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102402 "isa_tms320.tcc"
+#line 102418 "isa_tms320.tcc"
 >::OpRND_dir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102406 "isa_tms320.tcc"
+#line 102422 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102410 "isa_tms320.tcc"
+#line 102426 "isa_tms320.tcc"
 >(code, addr, "RND_dir")
 {
 	dst = ((code >> 16) & 0x7);
@@ -102416,34 +102432,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 102420 "isa_tms320.tcc"
+#line 102436 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102423 "isa_tms320.tcc"
+#line 102439 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 102427 "isa_tms320.tcc"
+#line 102443 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102430 "isa_tms320.tcc"
+#line 102446 "isa_tms320.tcc"
 >
 OpRND_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102435 "isa_tms320.tcc"
+#line 102451 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102439 "isa_tms320.tcc"
+#line 102455 "isa_tms320.tcc"
 >::OpRND_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102443 "isa_tms320.tcc"
+#line 102459 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102447 "isa_tms320.tcc"
+#line 102463 "isa_tms320.tcc"
 >(code, addr, "RND_indir")
 {
 	dst = ((code >> 16) & 0x7);
@@ -102455,34 +102471,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 102459 "isa_tms320.tcc"
+#line 102475 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102462 "isa_tms320.tcc"
+#line 102478 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 102466 "isa_tms320.tcc"
+#line 102482 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102469 "isa_tms320.tcc"
+#line 102485 "isa_tms320.tcc"
 >
 OpRND_imm<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102474 "isa_tms320.tcc"
+#line 102490 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102478 "isa_tms320.tcc"
+#line 102494 "isa_tms320.tcc"
 >::OpRND_imm(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102482 "isa_tms320.tcc"
+#line 102498 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102486 "isa_tms320.tcc"
+#line 102502 "isa_tms320.tcc"
 >(code, addr, "RND_imm")
 {
 	dst = ((code >> 16) & 0x7);
@@ -102492,34 +102508,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 102496 "isa_tms320.tcc"
+#line 102512 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102499 "isa_tms320.tcc"
+#line 102515 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 102503 "isa_tms320.tcc"
+#line 102519 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102506 "isa_tms320.tcc"
+#line 102522 "isa_tms320.tcc"
 >
 OpROL<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102511 "isa_tms320.tcc"
+#line 102527 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102515 "isa_tms320.tcc"
+#line 102531 "isa_tms320.tcc"
 >::OpROL(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102519 "isa_tms320.tcc"
+#line 102535 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102523 "isa_tms320.tcc"
+#line 102539 "isa_tms320.tcc"
 >(code, addr, "ROL")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -102528,34 +102544,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 102532 "isa_tms320.tcc"
+#line 102548 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102535 "isa_tms320.tcc"
+#line 102551 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 102539 "isa_tms320.tcc"
+#line 102555 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102542 "isa_tms320.tcc"
+#line 102558 "isa_tms320.tcc"
 >
 OpROLC<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102547 "isa_tms320.tcc"
+#line 102563 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102551 "isa_tms320.tcc"
+#line 102567 "isa_tms320.tcc"
 >::OpROLC(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102555 "isa_tms320.tcc"
+#line 102571 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102559 "isa_tms320.tcc"
+#line 102575 "isa_tms320.tcc"
 >(code, addr, "ROLC")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -102564,34 +102580,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 102568 "isa_tms320.tcc"
+#line 102584 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102571 "isa_tms320.tcc"
+#line 102587 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 102575 "isa_tms320.tcc"
+#line 102591 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102578 "isa_tms320.tcc"
+#line 102594 "isa_tms320.tcc"
 >
 OpROR<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102583 "isa_tms320.tcc"
+#line 102599 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102587 "isa_tms320.tcc"
+#line 102603 "isa_tms320.tcc"
 >::OpROR(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102591 "isa_tms320.tcc"
+#line 102607 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102595 "isa_tms320.tcc"
+#line 102611 "isa_tms320.tcc"
 >(code, addr, "ROR")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -102600,34 +102616,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 102604 "isa_tms320.tcc"
+#line 102620 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102607 "isa_tms320.tcc"
+#line 102623 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 102611 "isa_tms320.tcc"
+#line 102627 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102614 "isa_tms320.tcc"
+#line 102630 "isa_tms320.tcc"
 >
 OpRORC<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102619 "isa_tms320.tcc"
+#line 102635 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102623 "isa_tms320.tcc"
+#line 102639 "isa_tms320.tcc"
 >::OpRORC(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102627 "isa_tms320.tcc"
+#line 102643 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102631 "isa_tms320.tcc"
+#line 102647 "isa_tms320.tcc"
 >(code, addr, "RORC")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -102636,34 +102652,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 102640 "isa_tms320.tcc"
+#line 102656 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102643 "isa_tms320.tcc"
+#line 102659 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 102647 "isa_tms320.tcc"
+#line 102663 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102650 "isa_tms320.tcc"
+#line 102666 "isa_tms320.tcc"
 >
 OpSUBB_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102655 "isa_tms320.tcc"
+#line 102671 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102659 "isa_tms320.tcc"
+#line 102675 "isa_tms320.tcc"
 >::OpSUBB_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102663 "isa_tms320.tcc"
+#line 102679 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102667 "isa_tms320.tcc"
+#line 102683 "isa_tms320.tcc"
 >(code, addr, "SUBB_reg")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -102673,34 +102689,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 102677 "isa_tms320.tcc"
+#line 102693 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102680 "isa_tms320.tcc"
+#line 102696 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 102684 "isa_tms320.tcc"
+#line 102700 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102687 "isa_tms320.tcc"
+#line 102703 "isa_tms320.tcc"
 >
 OpSUBB_dir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102692 "isa_tms320.tcc"
+#line 102708 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102696 "isa_tms320.tcc"
+#line 102712 "isa_tms320.tcc"
 >::OpSUBB_dir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102700 "isa_tms320.tcc"
+#line 102716 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102704 "isa_tms320.tcc"
+#line 102720 "isa_tms320.tcc"
 >(code, addr, "SUBB_dir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -102710,34 +102726,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 102714 "isa_tms320.tcc"
+#line 102730 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102717 "isa_tms320.tcc"
+#line 102733 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 102721 "isa_tms320.tcc"
+#line 102737 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102724 "isa_tms320.tcc"
+#line 102740 "isa_tms320.tcc"
 >
 OpSUBB_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102729 "isa_tms320.tcc"
+#line 102745 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102733 "isa_tms320.tcc"
+#line 102749 "isa_tms320.tcc"
 >::OpSUBB_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102737 "isa_tms320.tcc"
+#line 102753 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102741 "isa_tms320.tcc"
+#line 102757 "isa_tms320.tcc"
 >(code, addr, "SUBB_indir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -102749,34 +102765,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 102753 "isa_tms320.tcc"
+#line 102769 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102756 "isa_tms320.tcc"
+#line 102772 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 102760 "isa_tms320.tcc"
+#line 102776 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102763 "isa_tms320.tcc"
+#line 102779 "isa_tms320.tcc"
 >
 OpSUBB_imm<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102768 "isa_tms320.tcc"
+#line 102784 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102772 "isa_tms320.tcc"
+#line 102788 "isa_tms320.tcc"
 >::OpSUBB_imm(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102776 "isa_tms320.tcc"
+#line 102792 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102780 "isa_tms320.tcc"
+#line 102796 "isa_tms320.tcc"
 >(code, addr, "SUBB_imm")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -102786,34 +102802,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 102790 "isa_tms320.tcc"
+#line 102806 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102793 "isa_tms320.tcc"
+#line 102809 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 102797 "isa_tms320.tcc"
+#line 102813 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102800 "isa_tms320.tcc"
+#line 102816 "isa_tms320.tcc"
 >
 OpSUBC_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102805 "isa_tms320.tcc"
+#line 102821 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102809 "isa_tms320.tcc"
+#line 102825 "isa_tms320.tcc"
 >::OpSUBC_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102813 "isa_tms320.tcc"
+#line 102829 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102817 "isa_tms320.tcc"
+#line 102833 "isa_tms320.tcc"
 >(code, addr, "SUBC_reg")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -102823,34 +102839,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 102827 "isa_tms320.tcc"
+#line 102843 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102830 "isa_tms320.tcc"
+#line 102846 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 102834 "isa_tms320.tcc"
+#line 102850 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102837 "isa_tms320.tcc"
+#line 102853 "isa_tms320.tcc"
 >
 OpSUBC_dir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102842 "isa_tms320.tcc"
+#line 102858 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102846 "isa_tms320.tcc"
+#line 102862 "isa_tms320.tcc"
 >::OpSUBC_dir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102850 "isa_tms320.tcc"
+#line 102866 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102854 "isa_tms320.tcc"
+#line 102870 "isa_tms320.tcc"
 >(code, addr, "SUBC_dir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -102860,34 +102876,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 102864 "isa_tms320.tcc"
+#line 102880 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102867 "isa_tms320.tcc"
+#line 102883 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 102871 "isa_tms320.tcc"
+#line 102887 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102874 "isa_tms320.tcc"
+#line 102890 "isa_tms320.tcc"
 >
 OpSUBC_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102879 "isa_tms320.tcc"
+#line 102895 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102883 "isa_tms320.tcc"
+#line 102899 "isa_tms320.tcc"
 >::OpSUBC_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102887 "isa_tms320.tcc"
+#line 102903 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102891 "isa_tms320.tcc"
+#line 102907 "isa_tms320.tcc"
 >(code, addr, "SUBC_indir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -102899,34 +102915,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 102903 "isa_tms320.tcc"
+#line 102919 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102906 "isa_tms320.tcc"
+#line 102922 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 102910 "isa_tms320.tcc"
+#line 102926 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102913 "isa_tms320.tcc"
+#line 102929 "isa_tms320.tcc"
 >
 OpSUBC_imm<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102918 "isa_tms320.tcc"
+#line 102934 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102922 "isa_tms320.tcc"
+#line 102938 "isa_tms320.tcc"
 >::OpSUBC_imm(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102926 "isa_tms320.tcc"
+#line 102942 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102930 "isa_tms320.tcc"
+#line 102946 "isa_tms320.tcc"
 >(code, addr, "SUBC_imm")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -102936,34 +102952,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 102940 "isa_tms320.tcc"
+#line 102956 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102943 "isa_tms320.tcc"
+#line 102959 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 102947 "isa_tms320.tcc"
+#line 102963 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102950 "isa_tms320.tcc"
+#line 102966 "isa_tms320.tcc"
 >
 OpSUBF_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102955 "isa_tms320.tcc"
+#line 102971 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102959 "isa_tms320.tcc"
+#line 102975 "isa_tms320.tcc"
 >::OpSUBF_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102963 "isa_tms320.tcc"
+#line 102979 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102967 "isa_tms320.tcc"
+#line 102983 "isa_tms320.tcc"
 >(code, addr, "SUBF_reg")
 {
 	dst = ((code >> 16) & 0x7);
@@ -102973,34 +102989,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 102977 "isa_tms320.tcc"
+#line 102993 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102980 "isa_tms320.tcc"
+#line 102996 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 102984 "isa_tms320.tcc"
+#line 103000 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102987 "isa_tms320.tcc"
+#line 103003 "isa_tms320.tcc"
 >
 OpSUBF_dir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 102992 "isa_tms320.tcc"
+#line 103008 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 102996 "isa_tms320.tcc"
+#line 103012 "isa_tms320.tcc"
 >::OpSUBF_dir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103000 "isa_tms320.tcc"
+#line 103016 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103004 "isa_tms320.tcc"
+#line 103020 "isa_tms320.tcc"
 >(code, addr, "SUBF_dir")
 {
 	dst = ((code >> 16) & 0x7);
@@ -103010,34 +103026,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 103014 "isa_tms320.tcc"
+#line 103030 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103017 "isa_tms320.tcc"
+#line 103033 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 103021 "isa_tms320.tcc"
+#line 103037 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103024 "isa_tms320.tcc"
+#line 103040 "isa_tms320.tcc"
 >
 OpSUBF_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103029 "isa_tms320.tcc"
+#line 103045 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103033 "isa_tms320.tcc"
+#line 103049 "isa_tms320.tcc"
 >::OpSUBF_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103037 "isa_tms320.tcc"
+#line 103053 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103041 "isa_tms320.tcc"
+#line 103057 "isa_tms320.tcc"
 >(code, addr, "SUBF_indir")
 {
 	dst = ((code >> 16) & 0x7);
@@ -103049,34 +103065,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 103053 "isa_tms320.tcc"
+#line 103069 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103056 "isa_tms320.tcc"
+#line 103072 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 103060 "isa_tms320.tcc"
+#line 103076 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103063 "isa_tms320.tcc"
+#line 103079 "isa_tms320.tcc"
 >
 OpSUBF_imm<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103068 "isa_tms320.tcc"
+#line 103084 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103072 "isa_tms320.tcc"
+#line 103088 "isa_tms320.tcc"
 >::OpSUBF_imm(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103076 "isa_tms320.tcc"
+#line 103092 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103080 "isa_tms320.tcc"
+#line 103096 "isa_tms320.tcc"
 >(code, addr, "SUBF_imm")
 {
 	dst = ((code >> 16) & 0x7);
@@ -103086,34 +103102,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 103090 "isa_tms320.tcc"
+#line 103106 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103093 "isa_tms320.tcc"
+#line 103109 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 103097 "isa_tms320.tcc"
+#line 103113 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103100 "isa_tms320.tcc"
+#line 103116 "isa_tms320.tcc"
 >
 OpSUBI_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103105 "isa_tms320.tcc"
+#line 103121 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103109 "isa_tms320.tcc"
+#line 103125 "isa_tms320.tcc"
 >::OpSUBI_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103113 "isa_tms320.tcc"
+#line 103129 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103117 "isa_tms320.tcc"
+#line 103133 "isa_tms320.tcc"
 >(code, addr, "SUBI_reg")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -103123,34 +103139,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 103127 "isa_tms320.tcc"
+#line 103143 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103130 "isa_tms320.tcc"
+#line 103146 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 103134 "isa_tms320.tcc"
+#line 103150 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103137 "isa_tms320.tcc"
+#line 103153 "isa_tms320.tcc"
 >
 OpSUBI_dir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103142 "isa_tms320.tcc"
+#line 103158 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103146 "isa_tms320.tcc"
+#line 103162 "isa_tms320.tcc"
 >::OpSUBI_dir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103150 "isa_tms320.tcc"
+#line 103166 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103154 "isa_tms320.tcc"
+#line 103170 "isa_tms320.tcc"
 >(code, addr, "SUBI_dir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -103160,34 +103176,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 103164 "isa_tms320.tcc"
+#line 103180 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103167 "isa_tms320.tcc"
+#line 103183 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 103171 "isa_tms320.tcc"
+#line 103187 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103174 "isa_tms320.tcc"
+#line 103190 "isa_tms320.tcc"
 >
 OpSUBI_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103179 "isa_tms320.tcc"
+#line 103195 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103183 "isa_tms320.tcc"
+#line 103199 "isa_tms320.tcc"
 >::OpSUBI_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103187 "isa_tms320.tcc"
+#line 103203 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103191 "isa_tms320.tcc"
+#line 103207 "isa_tms320.tcc"
 >(code, addr, "SUBI_indir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -103199,34 +103215,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 103203 "isa_tms320.tcc"
+#line 103219 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103206 "isa_tms320.tcc"
+#line 103222 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 103210 "isa_tms320.tcc"
+#line 103226 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103213 "isa_tms320.tcc"
+#line 103229 "isa_tms320.tcc"
 >
 OpSUBI_imm<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103218 "isa_tms320.tcc"
+#line 103234 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103222 "isa_tms320.tcc"
+#line 103238 "isa_tms320.tcc"
 >::OpSUBI_imm(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103226 "isa_tms320.tcc"
+#line 103242 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103230 "isa_tms320.tcc"
+#line 103246 "isa_tms320.tcc"
 >(code, addr, "SUBI_imm")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -103236,34 +103252,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 103240 "isa_tms320.tcc"
+#line 103256 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103243 "isa_tms320.tcc"
+#line 103259 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 103247 "isa_tms320.tcc"
+#line 103263 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103250 "isa_tms320.tcc"
+#line 103266 "isa_tms320.tcc"
 >
 OpSUBRB_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103255 "isa_tms320.tcc"
+#line 103271 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103259 "isa_tms320.tcc"
+#line 103275 "isa_tms320.tcc"
 >::OpSUBRB_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103263 "isa_tms320.tcc"
+#line 103279 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103267 "isa_tms320.tcc"
+#line 103283 "isa_tms320.tcc"
 >(code, addr, "SUBRB_reg")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -103273,34 +103289,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 103277 "isa_tms320.tcc"
+#line 103293 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103280 "isa_tms320.tcc"
+#line 103296 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 103284 "isa_tms320.tcc"
+#line 103300 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103287 "isa_tms320.tcc"
+#line 103303 "isa_tms320.tcc"
 >
 OpSUBRB_dir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103292 "isa_tms320.tcc"
+#line 103308 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103296 "isa_tms320.tcc"
+#line 103312 "isa_tms320.tcc"
 >::OpSUBRB_dir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103300 "isa_tms320.tcc"
+#line 103316 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103304 "isa_tms320.tcc"
+#line 103320 "isa_tms320.tcc"
 >(code, addr, "SUBRB_dir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -103310,34 +103326,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 103314 "isa_tms320.tcc"
+#line 103330 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103317 "isa_tms320.tcc"
+#line 103333 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 103321 "isa_tms320.tcc"
+#line 103337 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103324 "isa_tms320.tcc"
+#line 103340 "isa_tms320.tcc"
 >
 OpSUBRB_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103329 "isa_tms320.tcc"
+#line 103345 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103333 "isa_tms320.tcc"
+#line 103349 "isa_tms320.tcc"
 >::OpSUBRB_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103337 "isa_tms320.tcc"
+#line 103353 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103341 "isa_tms320.tcc"
+#line 103357 "isa_tms320.tcc"
 >(code, addr, "SUBRB_indir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -103349,34 +103365,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 103353 "isa_tms320.tcc"
+#line 103369 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103356 "isa_tms320.tcc"
+#line 103372 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 103360 "isa_tms320.tcc"
+#line 103376 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103363 "isa_tms320.tcc"
+#line 103379 "isa_tms320.tcc"
 >
 OpSUBRB_imm<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103368 "isa_tms320.tcc"
+#line 103384 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103372 "isa_tms320.tcc"
+#line 103388 "isa_tms320.tcc"
 >::OpSUBRB_imm(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103376 "isa_tms320.tcc"
+#line 103392 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103380 "isa_tms320.tcc"
+#line 103396 "isa_tms320.tcc"
 >(code, addr, "SUBRB_imm")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -103386,34 +103402,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 103390 "isa_tms320.tcc"
+#line 103406 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103393 "isa_tms320.tcc"
+#line 103409 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 103397 "isa_tms320.tcc"
+#line 103413 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103400 "isa_tms320.tcc"
+#line 103416 "isa_tms320.tcc"
 >
 OpSUBRF_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103405 "isa_tms320.tcc"
+#line 103421 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103409 "isa_tms320.tcc"
+#line 103425 "isa_tms320.tcc"
 >::OpSUBRF_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103413 "isa_tms320.tcc"
+#line 103429 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103417 "isa_tms320.tcc"
+#line 103433 "isa_tms320.tcc"
 >(code, addr, "SUBRF_reg")
 {
 	dst = ((code >> 16) & 0x7);
@@ -103423,34 +103439,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 103427 "isa_tms320.tcc"
+#line 103443 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103430 "isa_tms320.tcc"
+#line 103446 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 103434 "isa_tms320.tcc"
+#line 103450 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103437 "isa_tms320.tcc"
+#line 103453 "isa_tms320.tcc"
 >
 OpSUBRF_dir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103442 "isa_tms320.tcc"
+#line 103458 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103446 "isa_tms320.tcc"
+#line 103462 "isa_tms320.tcc"
 >::OpSUBRF_dir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103450 "isa_tms320.tcc"
+#line 103466 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103454 "isa_tms320.tcc"
+#line 103470 "isa_tms320.tcc"
 >(code, addr, "SUBRF_dir")
 {
 	dst = ((code >> 16) & 0x7);
@@ -103460,34 +103476,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 103464 "isa_tms320.tcc"
+#line 103480 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103467 "isa_tms320.tcc"
+#line 103483 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 103471 "isa_tms320.tcc"
+#line 103487 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103474 "isa_tms320.tcc"
+#line 103490 "isa_tms320.tcc"
 >
 OpSUBRF_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103479 "isa_tms320.tcc"
+#line 103495 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103483 "isa_tms320.tcc"
+#line 103499 "isa_tms320.tcc"
 >::OpSUBRF_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103487 "isa_tms320.tcc"
+#line 103503 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103491 "isa_tms320.tcc"
+#line 103507 "isa_tms320.tcc"
 >(code, addr, "SUBRF_indir")
 {
 	dst = ((code >> 16) & 0x7);
@@ -103499,34 +103515,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 103503 "isa_tms320.tcc"
+#line 103519 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103506 "isa_tms320.tcc"
+#line 103522 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 103510 "isa_tms320.tcc"
+#line 103526 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103513 "isa_tms320.tcc"
+#line 103529 "isa_tms320.tcc"
 >
 OpSUBRF_imm<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103518 "isa_tms320.tcc"
+#line 103534 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103522 "isa_tms320.tcc"
+#line 103538 "isa_tms320.tcc"
 >::OpSUBRF_imm(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103526 "isa_tms320.tcc"
+#line 103542 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103530 "isa_tms320.tcc"
+#line 103546 "isa_tms320.tcc"
 >(code, addr, "SUBRF_imm")
 {
 	dst = ((code >> 16) & 0x7);
@@ -103536,34 +103552,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 103540 "isa_tms320.tcc"
+#line 103556 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103543 "isa_tms320.tcc"
+#line 103559 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 103547 "isa_tms320.tcc"
+#line 103563 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103550 "isa_tms320.tcc"
+#line 103566 "isa_tms320.tcc"
 >
 OpSUBRI_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103555 "isa_tms320.tcc"
+#line 103571 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103559 "isa_tms320.tcc"
+#line 103575 "isa_tms320.tcc"
 >::OpSUBRI_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103563 "isa_tms320.tcc"
+#line 103579 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103567 "isa_tms320.tcc"
+#line 103583 "isa_tms320.tcc"
 >(code, addr, "SUBRI_reg")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -103573,34 +103589,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 103577 "isa_tms320.tcc"
+#line 103593 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103580 "isa_tms320.tcc"
+#line 103596 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 103584 "isa_tms320.tcc"
+#line 103600 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103587 "isa_tms320.tcc"
+#line 103603 "isa_tms320.tcc"
 >
 OpSUBRI_dir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103592 "isa_tms320.tcc"
+#line 103608 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103596 "isa_tms320.tcc"
+#line 103612 "isa_tms320.tcc"
 >::OpSUBRI_dir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103600 "isa_tms320.tcc"
+#line 103616 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103604 "isa_tms320.tcc"
+#line 103620 "isa_tms320.tcc"
 >(code, addr, "SUBRI_dir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -103610,34 +103626,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 103614 "isa_tms320.tcc"
+#line 103630 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103617 "isa_tms320.tcc"
+#line 103633 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 103621 "isa_tms320.tcc"
+#line 103637 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103624 "isa_tms320.tcc"
+#line 103640 "isa_tms320.tcc"
 >
 OpSUBRI_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103629 "isa_tms320.tcc"
+#line 103645 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103633 "isa_tms320.tcc"
+#line 103649 "isa_tms320.tcc"
 >::OpSUBRI_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103637 "isa_tms320.tcc"
+#line 103653 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103641 "isa_tms320.tcc"
+#line 103657 "isa_tms320.tcc"
 >(code, addr, "SUBRI_indir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -103649,34 +103665,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 103653 "isa_tms320.tcc"
+#line 103669 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103656 "isa_tms320.tcc"
+#line 103672 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 103660 "isa_tms320.tcc"
+#line 103676 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103663 "isa_tms320.tcc"
+#line 103679 "isa_tms320.tcc"
 >
 OpSUBRI_imm<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103668 "isa_tms320.tcc"
+#line 103684 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103672 "isa_tms320.tcc"
+#line 103688 "isa_tms320.tcc"
 >::OpSUBRI_imm(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103676 "isa_tms320.tcc"
+#line 103692 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103680 "isa_tms320.tcc"
+#line 103696 "isa_tms320.tcc"
 >(code, addr, "SUBRI_imm")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -103686,34 +103702,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 103690 "isa_tms320.tcc"
+#line 103706 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103693 "isa_tms320.tcc"
+#line 103709 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 103697 "isa_tms320.tcc"
+#line 103713 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103700 "isa_tms320.tcc"
+#line 103716 "isa_tms320.tcc"
 >
 OpTSTB_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103705 "isa_tms320.tcc"
+#line 103721 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103709 "isa_tms320.tcc"
+#line 103725 "isa_tms320.tcc"
 >::OpTSTB_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103713 "isa_tms320.tcc"
+#line 103729 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103717 "isa_tms320.tcc"
+#line 103733 "isa_tms320.tcc"
 >(code, addr, "TSTB_reg")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -103723,34 +103739,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 103727 "isa_tms320.tcc"
+#line 103743 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103730 "isa_tms320.tcc"
+#line 103746 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 103734 "isa_tms320.tcc"
+#line 103750 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103737 "isa_tms320.tcc"
+#line 103753 "isa_tms320.tcc"
 >
 OpTSTB_dir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103742 "isa_tms320.tcc"
+#line 103758 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103746 "isa_tms320.tcc"
+#line 103762 "isa_tms320.tcc"
 >::OpTSTB_dir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103750 "isa_tms320.tcc"
+#line 103766 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103754 "isa_tms320.tcc"
+#line 103770 "isa_tms320.tcc"
 >(code, addr, "TSTB_dir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -103760,34 +103776,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 103764 "isa_tms320.tcc"
+#line 103780 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103767 "isa_tms320.tcc"
+#line 103783 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 103771 "isa_tms320.tcc"
+#line 103787 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103774 "isa_tms320.tcc"
+#line 103790 "isa_tms320.tcc"
 >
 OpTSTB_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103779 "isa_tms320.tcc"
+#line 103795 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103783 "isa_tms320.tcc"
+#line 103799 "isa_tms320.tcc"
 >::OpTSTB_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103787 "isa_tms320.tcc"
+#line 103803 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103791 "isa_tms320.tcc"
+#line 103807 "isa_tms320.tcc"
 >(code, addr, "TSTB_indir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -103799,34 +103815,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 103803 "isa_tms320.tcc"
+#line 103819 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103806 "isa_tms320.tcc"
+#line 103822 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 103810 "isa_tms320.tcc"
+#line 103826 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103813 "isa_tms320.tcc"
+#line 103829 "isa_tms320.tcc"
 >
 OpTSTB_imm<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103818 "isa_tms320.tcc"
+#line 103834 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103822 "isa_tms320.tcc"
+#line 103838 "isa_tms320.tcc"
 >::OpTSTB_imm(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103826 "isa_tms320.tcc"
+#line 103842 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103830 "isa_tms320.tcc"
+#line 103846 "isa_tms320.tcc"
 >(code, addr, "TSTB_imm")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -103836,34 +103852,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 103840 "isa_tms320.tcc"
+#line 103856 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103843 "isa_tms320.tcc"
+#line 103859 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 103847 "isa_tms320.tcc"
+#line 103863 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103850 "isa_tms320.tcc"
+#line 103866 "isa_tms320.tcc"
 >
 OpXOR_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103855 "isa_tms320.tcc"
+#line 103871 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103859 "isa_tms320.tcc"
+#line 103875 "isa_tms320.tcc"
 >::OpXOR_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103863 "isa_tms320.tcc"
+#line 103879 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103867 "isa_tms320.tcc"
+#line 103883 "isa_tms320.tcc"
 >(code, addr, "XOR_reg")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -103873,34 +103889,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 103877 "isa_tms320.tcc"
+#line 103893 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103880 "isa_tms320.tcc"
+#line 103896 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 103884 "isa_tms320.tcc"
+#line 103900 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103887 "isa_tms320.tcc"
+#line 103903 "isa_tms320.tcc"
 >
 OpXOR_dir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103892 "isa_tms320.tcc"
+#line 103908 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103896 "isa_tms320.tcc"
+#line 103912 "isa_tms320.tcc"
 >::OpXOR_dir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103900 "isa_tms320.tcc"
+#line 103916 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103904 "isa_tms320.tcc"
+#line 103920 "isa_tms320.tcc"
 >(code, addr, "XOR_dir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -103910,34 +103926,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 103914 "isa_tms320.tcc"
+#line 103930 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103917 "isa_tms320.tcc"
+#line 103933 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 103921 "isa_tms320.tcc"
+#line 103937 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103924 "isa_tms320.tcc"
+#line 103940 "isa_tms320.tcc"
 >
 OpXOR_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103929 "isa_tms320.tcc"
+#line 103945 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103933 "isa_tms320.tcc"
+#line 103949 "isa_tms320.tcc"
 >::OpXOR_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103937 "isa_tms320.tcc"
+#line 103953 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103941 "isa_tms320.tcc"
+#line 103957 "isa_tms320.tcc"
 >(code, addr, "XOR_indir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -103949,34 +103965,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 103953 "isa_tms320.tcc"
+#line 103969 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103956 "isa_tms320.tcc"
+#line 103972 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 103960 "isa_tms320.tcc"
+#line 103976 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103963 "isa_tms320.tcc"
+#line 103979 "isa_tms320.tcc"
 >
 OpXOR_imm<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103968 "isa_tms320.tcc"
+#line 103984 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103972 "isa_tms320.tcc"
+#line 103988 "isa_tms320.tcc"
 >::OpXOR_imm(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103976 "isa_tms320.tcc"
+#line 103992 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 103980 "isa_tms320.tcc"
+#line 103996 "isa_tms320.tcc"
 >(code, addr, "XOR_imm")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -103986,34 +104002,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 103990 "isa_tms320.tcc"
+#line 104006 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 103993 "isa_tms320.tcc"
+#line 104009 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 103997 "isa_tms320.tcc"
+#line 104013 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104000 "isa_tms320.tcc"
+#line 104016 "isa_tms320.tcc"
 >
 OpADDC3_reg_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104005 "isa_tms320.tcc"
+#line 104021 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104009 "isa_tms320.tcc"
+#line 104025 "isa_tms320.tcc"
 >::OpADDC3_reg_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104013 "isa_tms320.tcc"
+#line 104029 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104017 "isa_tms320.tcc"
+#line 104033 "isa_tms320.tcc"
 >(code, addr, "ADDC3_reg_reg")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -104024,34 +104040,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 104028 "isa_tms320.tcc"
+#line 104044 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104031 "isa_tms320.tcc"
+#line 104047 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 104035 "isa_tms320.tcc"
+#line 104051 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104038 "isa_tms320.tcc"
+#line 104054 "isa_tms320.tcc"
 >
 OpADDC3_indir_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104043 "isa_tms320.tcc"
+#line 104059 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104047 "isa_tms320.tcc"
+#line 104063 "isa_tms320.tcc"
 >::OpADDC3_indir_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104051 "isa_tms320.tcc"
+#line 104067 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104055 "isa_tms320.tcc"
+#line 104071 "isa_tms320.tcc"
 >(code, addr, "ADDC3_indir_reg")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -104063,34 +104079,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 104067 "isa_tms320.tcc"
+#line 104083 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104070 "isa_tms320.tcc"
+#line 104086 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 104074 "isa_tms320.tcc"
+#line 104090 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104077 "isa_tms320.tcc"
+#line 104093 "isa_tms320.tcc"
 >
 OpADDC3_reg_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104082 "isa_tms320.tcc"
+#line 104098 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104086 "isa_tms320.tcc"
+#line 104102 "isa_tms320.tcc"
 >::OpADDC3_reg_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104090 "isa_tms320.tcc"
+#line 104106 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104094 "isa_tms320.tcc"
+#line 104110 "isa_tms320.tcc"
 >(code, addr, "ADDC3_reg_indir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -104102,34 +104118,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 104106 "isa_tms320.tcc"
+#line 104122 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104109 "isa_tms320.tcc"
+#line 104125 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 104113 "isa_tms320.tcc"
+#line 104129 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104116 "isa_tms320.tcc"
+#line 104132 "isa_tms320.tcc"
 >
 OpADDC3_indir_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104121 "isa_tms320.tcc"
+#line 104137 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104125 "isa_tms320.tcc"
+#line 104141 "isa_tms320.tcc"
 >::OpADDC3_indir_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104129 "isa_tms320.tcc"
+#line 104145 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104133 "isa_tms320.tcc"
+#line 104149 "isa_tms320.tcc"
 >(code, addr, "ADDC3_indir_indir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -104142,34 +104158,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 104146 "isa_tms320.tcc"
+#line 104162 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104149 "isa_tms320.tcc"
+#line 104165 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 104153 "isa_tms320.tcc"
+#line 104169 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104156 "isa_tms320.tcc"
+#line 104172 "isa_tms320.tcc"
 >
 OpADDF3_reg_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104161 "isa_tms320.tcc"
+#line 104177 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104165 "isa_tms320.tcc"
+#line 104181 "isa_tms320.tcc"
 >::OpADDF3_reg_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104169 "isa_tms320.tcc"
+#line 104185 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104173 "isa_tms320.tcc"
+#line 104189 "isa_tms320.tcc"
 >(code, addr, "ADDF3_reg_reg")
 {
 	dst = ((code >> 16) & 0x7);
@@ -104180,34 +104196,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 104184 "isa_tms320.tcc"
+#line 104200 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104187 "isa_tms320.tcc"
+#line 104203 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 104191 "isa_tms320.tcc"
+#line 104207 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104194 "isa_tms320.tcc"
+#line 104210 "isa_tms320.tcc"
 >
 OpADDF3_indir_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104199 "isa_tms320.tcc"
+#line 104215 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104203 "isa_tms320.tcc"
+#line 104219 "isa_tms320.tcc"
 >::OpADDF3_indir_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104207 "isa_tms320.tcc"
+#line 104223 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104211 "isa_tms320.tcc"
+#line 104227 "isa_tms320.tcc"
 >(code, addr, "ADDF3_indir_reg")
 {
 	dst = ((code >> 16) & 0x7);
@@ -104219,34 +104235,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 104223 "isa_tms320.tcc"
+#line 104239 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104226 "isa_tms320.tcc"
+#line 104242 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 104230 "isa_tms320.tcc"
+#line 104246 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104233 "isa_tms320.tcc"
+#line 104249 "isa_tms320.tcc"
 >
 OpADDF3_reg_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104238 "isa_tms320.tcc"
+#line 104254 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104242 "isa_tms320.tcc"
+#line 104258 "isa_tms320.tcc"
 >::OpADDF3_reg_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104246 "isa_tms320.tcc"
+#line 104262 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104250 "isa_tms320.tcc"
+#line 104266 "isa_tms320.tcc"
 >(code, addr, "ADDF3_reg_indir")
 {
 	dst = ((code >> 16) & 0x7);
@@ -104258,34 +104274,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 104262 "isa_tms320.tcc"
+#line 104278 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104265 "isa_tms320.tcc"
+#line 104281 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 104269 "isa_tms320.tcc"
+#line 104285 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104272 "isa_tms320.tcc"
+#line 104288 "isa_tms320.tcc"
 >
 OpADDF3_indir_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104277 "isa_tms320.tcc"
+#line 104293 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104281 "isa_tms320.tcc"
+#line 104297 "isa_tms320.tcc"
 >::OpADDF3_indir_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104285 "isa_tms320.tcc"
+#line 104301 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104289 "isa_tms320.tcc"
+#line 104305 "isa_tms320.tcc"
 >(code, addr, "ADDF3_indir_indir")
 {
 	dst = ((code >> 16) & 0x7);
@@ -104298,34 +104314,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 104302 "isa_tms320.tcc"
+#line 104318 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104305 "isa_tms320.tcc"
+#line 104321 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 104309 "isa_tms320.tcc"
+#line 104325 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104312 "isa_tms320.tcc"
+#line 104328 "isa_tms320.tcc"
 >
 OpADDI3_reg_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104317 "isa_tms320.tcc"
+#line 104333 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104321 "isa_tms320.tcc"
+#line 104337 "isa_tms320.tcc"
 >::OpADDI3_reg_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104325 "isa_tms320.tcc"
+#line 104341 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104329 "isa_tms320.tcc"
+#line 104345 "isa_tms320.tcc"
 >(code, addr, "ADDI3_reg_reg")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -104336,34 +104352,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 104340 "isa_tms320.tcc"
+#line 104356 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104343 "isa_tms320.tcc"
+#line 104359 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 104347 "isa_tms320.tcc"
+#line 104363 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104350 "isa_tms320.tcc"
+#line 104366 "isa_tms320.tcc"
 >
 OpADDI3_indir_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104355 "isa_tms320.tcc"
+#line 104371 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104359 "isa_tms320.tcc"
+#line 104375 "isa_tms320.tcc"
 >::OpADDI3_indir_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104363 "isa_tms320.tcc"
+#line 104379 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104367 "isa_tms320.tcc"
+#line 104383 "isa_tms320.tcc"
 >(code, addr, "ADDI3_indir_reg")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -104375,34 +104391,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 104379 "isa_tms320.tcc"
+#line 104395 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104382 "isa_tms320.tcc"
+#line 104398 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 104386 "isa_tms320.tcc"
+#line 104402 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104389 "isa_tms320.tcc"
+#line 104405 "isa_tms320.tcc"
 >
 OpADDI3_reg_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104394 "isa_tms320.tcc"
+#line 104410 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104398 "isa_tms320.tcc"
+#line 104414 "isa_tms320.tcc"
 >::OpADDI3_reg_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104402 "isa_tms320.tcc"
+#line 104418 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104406 "isa_tms320.tcc"
+#line 104422 "isa_tms320.tcc"
 >(code, addr, "ADDI3_reg_indir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -104414,34 +104430,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 104418 "isa_tms320.tcc"
+#line 104434 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104421 "isa_tms320.tcc"
+#line 104437 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 104425 "isa_tms320.tcc"
+#line 104441 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104428 "isa_tms320.tcc"
+#line 104444 "isa_tms320.tcc"
 >
 OpADDI3_indir_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104433 "isa_tms320.tcc"
+#line 104449 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104437 "isa_tms320.tcc"
+#line 104453 "isa_tms320.tcc"
 >::OpADDI3_indir_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104441 "isa_tms320.tcc"
+#line 104457 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104445 "isa_tms320.tcc"
+#line 104461 "isa_tms320.tcc"
 >(code, addr, "ADDI3_indir_indir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -104454,34 +104470,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 104458 "isa_tms320.tcc"
+#line 104474 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104461 "isa_tms320.tcc"
+#line 104477 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 104465 "isa_tms320.tcc"
+#line 104481 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104468 "isa_tms320.tcc"
+#line 104484 "isa_tms320.tcc"
 >
 OpAND3_reg_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104473 "isa_tms320.tcc"
+#line 104489 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104477 "isa_tms320.tcc"
+#line 104493 "isa_tms320.tcc"
 >::OpAND3_reg_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104481 "isa_tms320.tcc"
+#line 104497 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104485 "isa_tms320.tcc"
+#line 104501 "isa_tms320.tcc"
 >(code, addr, "AND3_reg_reg")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -104492,34 +104508,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 104496 "isa_tms320.tcc"
+#line 104512 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104499 "isa_tms320.tcc"
+#line 104515 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 104503 "isa_tms320.tcc"
+#line 104519 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104506 "isa_tms320.tcc"
+#line 104522 "isa_tms320.tcc"
 >
 OpAND3_indir_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104511 "isa_tms320.tcc"
+#line 104527 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104515 "isa_tms320.tcc"
+#line 104531 "isa_tms320.tcc"
 >::OpAND3_indir_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104519 "isa_tms320.tcc"
+#line 104535 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104523 "isa_tms320.tcc"
+#line 104539 "isa_tms320.tcc"
 >(code, addr, "AND3_indir_reg")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -104531,34 +104547,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 104535 "isa_tms320.tcc"
+#line 104551 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104538 "isa_tms320.tcc"
+#line 104554 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 104542 "isa_tms320.tcc"
+#line 104558 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104545 "isa_tms320.tcc"
+#line 104561 "isa_tms320.tcc"
 >
 OpAND3_reg_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104550 "isa_tms320.tcc"
+#line 104566 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104554 "isa_tms320.tcc"
+#line 104570 "isa_tms320.tcc"
 >::OpAND3_reg_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104558 "isa_tms320.tcc"
+#line 104574 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104562 "isa_tms320.tcc"
+#line 104578 "isa_tms320.tcc"
 >(code, addr, "AND3_reg_indir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -104570,34 +104586,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 104574 "isa_tms320.tcc"
+#line 104590 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104577 "isa_tms320.tcc"
+#line 104593 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 104581 "isa_tms320.tcc"
+#line 104597 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104584 "isa_tms320.tcc"
+#line 104600 "isa_tms320.tcc"
 >
 OpAND3_indir_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104589 "isa_tms320.tcc"
+#line 104605 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104593 "isa_tms320.tcc"
+#line 104609 "isa_tms320.tcc"
 >::OpAND3_indir_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104597 "isa_tms320.tcc"
+#line 104613 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104601 "isa_tms320.tcc"
+#line 104617 "isa_tms320.tcc"
 >(code, addr, "AND3_indir_indir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -104610,34 +104626,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 104614 "isa_tms320.tcc"
+#line 104630 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104617 "isa_tms320.tcc"
+#line 104633 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 104621 "isa_tms320.tcc"
+#line 104637 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104624 "isa_tms320.tcc"
+#line 104640 "isa_tms320.tcc"
 >
 OpANDN3_reg_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104629 "isa_tms320.tcc"
+#line 104645 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104633 "isa_tms320.tcc"
+#line 104649 "isa_tms320.tcc"
 >::OpANDN3_reg_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104637 "isa_tms320.tcc"
+#line 104653 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104641 "isa_tms320.tcc"
+#line 104657 "isa_tms320.tcc"
 >(code, addr, "ANDN3_reg_reg")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -104648,34 +104664,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 104652 "isa_tms320.tcc"
+#line 104668 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104655 "isa_tms320.tcc"
+#line 104671 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 104659 "isa_tms320.tcc"
+#line 104675 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104662 "isa_tms320.tcc"
+#line 104678 "isa_tms320.tcc"
 >
 OpANDN3_indir_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104667 "isa_tms320.tcc"
+#line 104683 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104671 "isa_tms320.tcc"
+#line 104687 "isa_tms320.tcc"
 >::OpANDN3_indir_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104675 "isa_tms320.tcc"
+#line 104691 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104679 "isa_tms320.tcc"
+#line 104695 "isa_tms320.tcc"
 >(code, addr, "ANDN3_indir_reg")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -104687,34 +104703,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 104691 "isa_tms320.tcc"
+#line 104707 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104694 "isa_tms320.tcc"
+#line 104710 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 104698 "isa_tms320.tcc"
+#line 104714 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104701 "isa_tms320.tcc"
+#line 104717 "isa_tms320.tcc"
 >
 OpANDN3_reg_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104706 "isa_tms320.tcc"
+#line 104722 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104710 "isa_tms320.tcc"
+#line 104726 "isa_tms320.tcc"
 >::OpANDN3_reg_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104714 "isa_tms320.tcc"
+#line 104730 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104718 "isa_tms320.tcc"
+#line 104734 "isa_tms320.tcc"
 >(code, addr, "ANDN3_reg_indir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -104726,34 +104742,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 104730 "isa_tms320.tcc"
+#line 104746 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104733 "isa_tms320.tcc"
+#line 104749 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 104737 "isa_tms320.tcc"
+#line 104753 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104740 "isa_tms320.tcc"
+#line 104756 "isa_tms320.tcc"
 >
 OpANDN3_indir_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104745 "isa_tms320.tcc"
+#line 104761 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104749 "isa_tms320.tcc"
+#line 104765 "isa_tms320.tcc"
 >::OpANDN3_indir_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104753 "isa_tms320.tcc"
+#line 104769 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104757 "isa_tms320.tcc"
+#line 104773 "isa_tms320.tcc"
 >(code, addr, "ANDN3_indir_indir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -104766,34 +104782,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 104770 "isa_tms320.tcc"
+#line 104786 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104773 "isa_tms320.tcc"
+#line 104789 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 104777 "isa_tms320.tcc"
+#line 104793 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104780 "isa_tms320.tcc"
+#line 104796 "isa_tms320.tcc"
 >
 OpASH3_reg_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104785 "isa_tms320.tcc"
+#line 104801 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104789 "isa_tms320.tcc"
+#line 104805 "isa_tms320.tcc"
 >::OpASH3_reg_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104793 "isa_tms320.tcc"
+#line 104809 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104797 "isa_tms320.tcc"
+#line 104813 "isa_tms320.tcc"
 >(code, addr, "ASH3_reg_reg")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -104804,34 +104820,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 104808 "isa_tms320.tcc"
+#line 104824 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104811 "isa_tms320.tcc"
+#line 104827 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 104815 "isa_tms320.tcc"
+#line 104831 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104818 "isa_tms320.tcc"
+#line 104834 "isa_tms320.tcc"
 >
 OpASH3_indir_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104823 "isa_tms320.tcc"
+#line 104839 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104827 "isa_tms320.tcc"
+#line 104843 "isa_tms320.tcc"
 >::OpASH3_indir_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104831 "isa_tms320.tcc"
+#line 104847 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104835 "isa_tms320.tcc"
+#line 104851 "isa_tms320.tcc"
 >(code, addr, "ASH3_indir_reg")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -104843,34 +104859,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 104847 "isa_tms320.tcc"
+#line 104863 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104850 "isa_tms320.tcc"
+#line 104866 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 104854 "isa_tms320.tcc"
+#line 104870 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104857 "isa_tms320.tcc"
+#line 104873 "isa_tms320.tcc"
 >
 OpASH3_reg_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104862 "isa_tms320.tcc"
+#line 104878 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104866 "isa_tms320.tcc"
+#line 104882 "isa_tms320.tcc"
 >::OpASH3_reg_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104870 "isa_tms320.tcc"
+#line 104886 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104874 "isa_tms320.tcc"
+#line 104890 "isa_tms320.tcc"
 >(code, addr, "ASH3_reg_indir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -104882,34 +104898,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 104886 "isa_tms320.tcc"
+#line 104902 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104889 "isa_tms320.tcc"
+#line 104905 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 104893 "isa_tms320.tcc"
+#line 104909 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104896 "isa_tms320.tcc"
+#line 104912 "isa_tms320.tcc"
 >
 OpASH3_indir_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104901 "isa_tms320.tcc"
+#line 104917 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104905 "isa_tms320.tcc"
+#line 104921 "isa_tms320.tcc"
 >::OpASH3_indir_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104909 "isa_tms320.tcc"
+#line 104925 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104913 "isa_tms320.tcc"
+#line 104929 "isa_tms320.tcc"
 >(code, addr, "ASH3_indir_indir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -104922,34 +104938,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 104926 "isa_tms320.tcc"
+#line 104942 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104929 "isa_tms320.tcc"
+#line 104945 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 104933 "isa_tms320.tcc"
+#line 104949 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104936 "isa_tms320.tcc"
+#line 104952 "isa_tms320.tcc"
 >
 OpCMPF3_reg_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104941 "isa_tms320.tcc"
+#line 104957 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104945 "isa_tms320.tcc"
+#line 104961 "isa_tms320.tcc"
 >::OpCMPF3_reg_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104949 "isa_tms320.tcc"
+#line 104965 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104953 "isa_tms320.tcc"
+#line 104969 "isa_tms320.tcc"
 >(code, addr, "CMPF3_reg_reg")
 {
 	src1 = ((code >> 8) & 0x7);
@@ -104959,34 +104975,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 104963 "isa_tms320.tcc"
+#line 104979 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104966 "isa_tms320.tcc"
+#line 104982 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 104970 "isa_tms320.tcc"
+#line 104986 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104973 "isa_tms320.tcc"
+#line 104989 "isa_tms320.tcc"
 >
 OpCMPF3_indir_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104978 "isa_tms320.tcc"
+#line 104994 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104982 "isa_tms320.tcc"
+#line 104998 "isa_tms320.tcc"
 >::OpCMPF3_indir_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 104986 "isa_tms320.tcc"
+#line 105002 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 104990 "isa_tms320.tcc"
+#line 105006 "isa_tms320.tcc"
 >(code, addr, "CMPF3_indir_reg")
 {
 	mod1 = ((code >> 11) & 0x1f);
@@ -104997,34 +105013,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 105001 "isa_tms320.tcc"
+#line 105017 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105004 "isa_tms320.tcc"
+#line 105020 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 105008 "isa_tms320.tcc"
+#line 105024 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105011 "isa_tms320.tcc"
+#line 105027 "isa_tms320.tcc"
 >
 OpCMPF3_reg_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105016 "isa_tms320.tcc"
+#line 105032 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105020 "isa_tms320.tcc"
+#line 105036 "isa_tms320.tcc"
 >::OpCMPF3_reg_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105024 "isa_tms320.tcc"
+#line 105040 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105028 "isa_tms320.tcc"
+#line 105044 "isa_tms320.tcc"
 >(code, addr, "CMPF3_reg_indir")
 {
 	src1 = ((code >> 8) & 0x7);
@@ -105035,34 +105051,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 105039 "isa_tms320.tcc"
+#line 105055 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105042 "isa_tms320.tcc"
+#line 105058 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 105046 "isa_tms320.tcc"
+#line 105062 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105049 "isa_tms320.tcc"
+#line 105065 "isa_tms320.tcc"
 >
 OpCMPF3_indir_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105054 "isa_tms320.tcc"
+#line 105070 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105058 "isa_tms320.tcc"
+#line 105074 "isa_tms320.tcc"
 >::OpCMPF3_indir_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105062 "isa_tms320.tcc"
+#line 105078 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105066 "isa_tms320.tcc"
+#line 105082 "isa_tms320.tcc"
 >(code, addr, "CMPF3_indir_indir")
 {
 	mod1 = ((code >> 11) & 0x1f);
@@ -105074,34 +105090,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 105078 "isa_tms320.tcc"
+#line 105094 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105081 "isa_tms320.tcc"
+#line 105097 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 105085 "isa_tms320.tcc"
+#line 105101 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105088 "isa_tms320.tcc"
+#line 105104 "isa_tms320.tcc"
 >
 OpCMPI3_reg_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105093 "isa_tms320.tcc"
+#line 105109 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105097 "isa_tms320.tcc"
+#line 105113 "isa_tms320.tcc"
 >::OpCMPI3_reg_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105101 "isa_tms320.tcc"
+#line 105117 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105105 "isa_tms320.tcc"
+#line 105121 "isa_tms320.tcc"
 >(code, addr, "CMPI3_reg_reg")
 {
 	src1 = ((code >> 8) & 0x1f);
@@ -105111,34 +105127,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 105115 "isa_tms320.tcc"
+#line 105131 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105118 "isa_tms320.tcc"
+#line 105134 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 105122 "isa_tms320.tcc"
+#line 105138 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105125 "isa_tms320.tcc"
+#line 105141 "isa_tms320.tcc"
 >
 OpCMPI3_indir_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105130 "isa_tms320.tcc"
+#line 105146 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105134 "isa_tms320.tcc"
+#line 105150 "isa_tms320.tcc"
 >::OpCMPI3_indir_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105138 "isa_tms320.tcc"
+#line 105154 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105142 "isa_tms320.tcc"
+#line 105158 "isa_tms320.tcc"
 >(code, addr, "CMPI3_indir_reg")
 {
 	mod1 = ((code >> 11) & 0x1f);
@@ -105149,34 +105165,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 105153 "isa_tms320.tcc"
+#line 105169 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105156 "isa_tms320.tcc"
+#line 105172 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 105160 "isa_tms320.tcc"
+#line 105176 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105163 "isa_tms320.tcc"
+#line 105179 "isa_tms320.tcc"
 >
 OpCMPI3_reg_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105168 "isa_tms320.tcc"
+#line 105184 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105172 "isa_tms320.tcc"
+#line 105188 "isa_tms320.tcc"
 >::OpCMPI3_reg_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105176 "isa_tms320.tcc"
+#line 105192 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105180 "isa_tms320.tcc"
+#line 105196 "isa_tms320.tcc"
 >(code, addr, "CMPI3_reg_indir")
 {
 	src1 = ((code >> 8) & 0x1f);
@@ -105187,34 +105203,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 105191 "isa_tms320.tcc"
+#line 105207 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105194 "isa_tms320.tcc"
+#line 105210 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 105198 "isa_tms320.tcc"
+#line 105214 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105201 "isa_tms320.tcc"
+#line 105217 "isa_tms320.tcc"
 >
 OpCMPI3_indir_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105206 "isa_tms320.tcc"
+#line 105222 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105210 "isa_tms320.tcc"
+#line 105226 "isa_tms320.tcc"
 >::OpCMPI3_indir_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105214 "isa_tms320.tcc"
+#line 105230 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105218 "isa_tms320.tcc"
+#line 105234 "isa_tms320.tcc"
 >(code, addr, "CMPI3_indir_indir")
 {
 	mod1 = ((code >> 11) & 0x1f);
@@ -105226,34 +105242,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 105230 "isa_tms320.tcc"
+#line 105246 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105233 "isa_tms320.tcc"
+#line 105249 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 105237 "isa_tms320.tcc"
+#line 105253 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105240 "isa_tms320.tcc"
+#line 105256 "isa_tms320.tcc"
 >
 OpLSH3_reg_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105245 "isa_tms320.tcc"
+#line 105261 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105249 "isa_tms320.tcc"
+#line 105265 "isa_tms320.tcc"
 >::OpLSH3_reg_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105253 "isa_tms320.tcc"
+#line 105269 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105257 "isa_tms320.tcc"
+#line 105273 "isa_tms320.tcc"
 >(code, addr, "LSH3_reg_reg")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -105264,34 +105280,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 105268 "isa_tms320.tcc"
+#line 105284 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105271 "isa_tms320.tcc"
+#line 105287 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 105275 "isa_tms320.tcc"
+#line 105291 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105278 "isa_tms320.tcc"
+#line 105294 "isa_tms320.tcc"
 >
 OpLSH3_indir_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105283 "isa_tms320.tcc"
+#line 105299 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105287 "isa_tms320.tcc"
+#line 105303 "isa_tms320.tcc"
 >::OpLSH3_indir_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105291 "isa_tms320.tcc"
+#line 105307 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105295 "isa_tms320.tcc"
+#line 105311 "isa_tms320.tcc"
 >(code, addr, "LSH3_indir_reg")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -105303,34 +105319,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 105307 "isa_tms320.tcc"
+#line 105323 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105310 "isa_tms320.tcc"
+#line 105326 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 105314 "isa_tms320.tcc"
+#line 105330 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105317 "isa_tms320.tcc"
+#line 105333 "isa_tms320.tcc"
 >
 OpLSH3_reg_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105322 "isa_tms320.tcc"
+#line 105338 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105326 "isa_tms320.tcc"
+#line 105342 "isa_tms320.tcc"
 >::OpLSH3_reg_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105330 "isa_tms320.tcc"
+#line 105346 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105334 "isa_tms320.tcc"
+#line 105350 "isa_tms320.tcc"
 >(code, addr, "LSH3_reg_indir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -105342,34 +105358,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 105346 "isa_tms320.tcc"
+#line 105362 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105349 "isa_tms320.tcc"
+#line 105365 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 105353 "isa_tms320.tcc"
+#line 105369 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105356 "isa_tms320.tcc"
+#line 105372 "isa_tms320.tcc"
 >
 OpLSH3_indir_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105361 "isa_tms320.tcc"
+#line 105377 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105365 "isa_tms320.tcc"
+#line 105381 "isa_tms320.tcc"
 >::OpLSH3_indir_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105369 "isa_tms320.tcc"
+#line 105385 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105373 "isa_tms320.tcc"
+#line 105389 "isa_tms320.tcc"
 >(code, addr, "LSH3_indir_indir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -105382,34 +105398,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 105386 "isa_tms320.tcc"
+#line 105402 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105389 "isa_tms320.tcc"
+#line 105405 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 105393 "isa_tms320.tcc"
+#line 105409 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105396 "isa_tms320.tcc"
+#line 105412 "isa_tms320.tcc"
 >
 OpMPYF3_reg_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105401 "isa_tms320.tcc"
+#line 105417 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105405 "isa_tms320.tcc"
+#line 105421 "isa_tms320.tcc"
 >::OpMPYF3_reg_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105409 "isa_tms320.tcc"
+#line 105425 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105413 "isa_tms320.tcc"
+#line 105429 "isa_tms320.tcc"
 >(code, addr, "MPYF3_reg_reg")
 {
 	dst = ((code >> 16) & 0x7);
@@ -105420,34 +105436,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 105424 "isa_tms320.tcc"
+#line 105440 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105427 "isa_tms320.tcc"
+#line 105443 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 105431 "isa_tms320.tcc"
+#line 105447 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105434 "isa_tms320.tcc"
+#line 105450 "isa_tms320.tcc"
 >
 OpMPYF3_indir_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105439 "isa_tms320.tcc"
+#line 105455 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105443 "isa_tms320.tcc"
+#line 105459 "isa_tms320.tcc"
 >::OpMPYF3_indir_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105447 "isa_tms320.tcc"
+#line 105463 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105451 "isa_tms320.tcc"
+#line 105467 "isa_tms320.tcc"
 >(code, addr, "MPYF3_indir_reg")
 {
 	dst = ((code >> 16) & 0x7);
@@ -105459,34 +105475,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 105463 "isa_tms320.tcc"
+#line 105479 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105466 "isa_tms320.tcc"
+#line 105482 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 105470 "isa_tms320.tcc"
+#line 105486 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105473 "isa_tms320.tcc"
+#line 105489 "isa_tms320.tcc"
 >
 OpMPYF3_reg_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105478 "isa_tms320.tcc"
+#line 105494 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105482 "isa_tms320.tcc"
+#line 105498 "isa_tms320.tcc"
 >::OpMPYF3_reg_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105486 "isa_tms320.tcc"
+#line 105502 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105490 "isa_tms320.tcc"
+#line 105506 "isa_tms320.tcc"
 >(code, addr, "MPYF3_reg_indir")
 {
 	dst = ((code >> 16) & 0x7);
@@ -105498,34 +105514,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 105502 "isa_tms320.tcc"
+#line 105518 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105505 "isa_tms320.tcc"
+#line 105521 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 105509 "isa_tms320.tcc"
+#line 105525 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105512 "isa_tms320.tcc"
+#line 105528 "isa_tms320.tcc"
 >
 OpMPYF3_indir_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105517 "isa_tms320.tcc"
+#line 105533 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105521 "isa_tms320.tcc"
+#line 105537 "isa_tms320.tcc"
 >::OpMPYF3_indir_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105525 "isa_tms320.tcc"
+#line 105541 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105529 "isa_tms320.tcc"
+#line 105545 "isa_tms320.tcc"
 >(code, addr, "MPYF3_indir_indir")
 {
 	dst = ((code >> 16) & 0x7);
@@ -105538,34 +105554,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 105542 "isa_tms320.tcc"
+#line 105558 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105545 "isa_tms320.tcc"
+#line 105561 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 105549 "isa_tms320.tcc"
+#line 105565 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105552 "isa_tms320.tcc"
+#line 105568 "isa_tms320.tcc"
 >
 OpMPYI3_reg_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105557 "isa_tms320.tcc"
+#line 105573 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105561 "isa_tms320.tcc"
+#line 105577 "isa_tms320.tcc"
 >::OpMPYI3_reg_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105565 "isa_tms320.tcc"
+#line 105581 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105569 "isa_tms320.tcc"
+#line 105585 "isa_tms320.tcc"
 >(code, addr, "MPYI3_reg_reg")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -105576,34 +105592,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 105580 "isa_tms320.tcc"
+#line 105596 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105583 "isa_tms320.tcc"
+#line 105599 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 105587 "isa_tms320.tcc"
+#line 105603 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105590 "isa_tms320.tcc"
+#line 105606 "isa_tms320.tcc"
 >
 OpMPYI3_indir_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105595 "isa_tms320.tcc"
+#line 105611 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105599 "isa_tms320.tcc"
+#line 105615 "isa_tms320.tcc"
 >::OpMPYI3_indir_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105603 "isa_tms320.tcc"
+#line 105619 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105607 "isa_tms320.tcc"
+#line 105623 "isa_tms320.tcc"
 >(code, addr, "MPYI3_indir_reg")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -105615,34 +105631,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 105619 "isa_tms320.tcc"
+#line 105635 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105622 "isa_tms320.tcc"
+#line 105638 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 105626 "isa_tms320.tcc"
+#line 105642 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105629 "isa_tms320.tcc"
+#line 105645 "isa_tms320.tcc"
 >
 OpMPYI3_reg_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105634 "isa_tms320.tcc"
+#line 105650 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105638 "isa_tms320.tcc"
+#line 105654 "isa_tms320.tcc"
 >::OpMPYI3_reg_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105642 "isa_tms320.tcc"
+#line 105658 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105646 "isa_tms320.tcc"
+#line 105662 "isa_tms320.tcc"
 >(code, addr, "MPYI3_reg_indir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -105654,34 +105670,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 105658 "isa_tms320.tcc"
+#line 105674 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105661 "isa_tms320.tcc"
+#line 105677 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 105665 "isa_tms320.tcc"
+#line 105681 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105668 "isa_tms320.tcc"
+#line 105684 "isa_tms320.tcc"
 >
 OpMPYI3_indir_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105673 "isa_tms320.tcc"
+#line 105689 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105677 "isa_tms320.tcc"
+#line 105693 "isa_tms320.tcc"
 >::OpMPYI3_indir_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105681 "isa_tms320.tcc"
+#line 105697 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105685 "isa_tms320.tcc"
+#line 105701 "isa_tms320.tcc"
 >(code, addr, "MPYI3_indir_indir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -105694,34 +105710,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 105698 "isa_tms320.tcc"
+#line 105714 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105701 "isa_tms320.tcc"
+#line 105717 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 105705 "isa_tms320.tcc"
+#line 105721 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105708 "isa_tms320.tcc"
+#line 105724 "isa_tms320.tcc"
 >
 OpOR3_reg_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105713 "isa_tms320.tcc"
+#line 105729 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105717 "isa_tms320.tcc"
+#line 105733 "isa_tms320.tcc"
 >::OpOR3_reg_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105721 "isa_tms320.tcc"
+#line 105737 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105725 "isa_tms320.tcc"
+#line 105741 "isa_tms320.tcc"
 >(code, addr, "OR3_reg_reg")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -105732,34 +105748,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 105736 "isa_tms320.tcc"
+#line 105752 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105739 "isa_tms320.tcc"
+#line 105755 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 105743 "isa_tms320.tcc"
+#line 105759 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105746 "isa_tms320.tcc"
+#line 105762 "isa_tms320.tcc"
 >
 OpOR3_indir_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105751 "isa_tms320.tcc"
+#line 105767 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105755 "isa_tms320.tcc"
+#line 105771 "isa_tms320.tcc"
 >::OpOR3_indir_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105759 "isa_tms320.tcc"
+#line 105775 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105763 "isa_tms320.tcc"
+#line 105779 "isa_tms320.tcc"
 >(code, addr, "OR3_indir_reg")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -105771,34 +105787,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 105775 "isa_tms320.tcc"
+#line 105791 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105778 "isa_tms320.tcc"
+#line 105794 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 105782 "isa_tms320.tcc"
+#line 105798 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105785 "isa_tms320.tcc"
+#line 105801 "isa_tms320.tcc"
 >
 OpOR3_reg_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105790 "isa_tms320.tcc"
+#line 105806 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105794 "isa_tms320.tcc"
+#line 105810 "isa_tms320.tcc"
 >::OpOR3_reg_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105798 "isa_tms320.tcc"
+#line 105814 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105802 "isa_tms320.tcc"
+#line 105818 "isa_tms320.tcc"
 >(code, addr, "OR3_reg_indir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -105810,34 +105826,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 105814 "isa_tms320.tcc"
+#line 105830 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105817 "isa_tms320.tcc"
+#line 105833 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 105821 "isa_tms320.tcc"
+#line 105837 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105824 "isa_tms320.tcc"
+#line 105840 "isa_tms320.tcc"
 >
 OpOR3_indir_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105829 "isa_tms320.tcc"
+#line 105845 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105833 "isa_tms320.tcc"
+#line 105849 "isa_tms320.tcc"
 >::OpOR3_indir_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105837 "isa_tms320.tcc"
+#line 105853 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105841 "isa_tms320.tcc"
+#line 105857 "isa_tms320.tcc"
 >(code, addr, "OR3_indir_indir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -105850,34 +105866,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 105854 "isa_tms320.tcc"
+#line 105870 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105857 "isa_tms320.tcc"
+#line 105873 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 105861 "isa_tms320.tcc"
+#line 105877 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105864 "isa_tms320.tcc"
+#line 105880 "isa_tms320.tcc"
 >
 OpSUBB3_reg_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105869 "isa_tms320.tcc"
+#line 105885 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105873 "isa_tms320.tcc"
+#line 105889 "isa_tms320.tcc"
 >::OpSUBB3_reg_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105877 "isa_tms320.tcc"
+#line 105893 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105881 "isa_tms320.tcc"
+#line 105897 "isa_tms320.tcc"
 >(code, addr, "SUBB3_reg_reg")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -105888,34 +105904,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 105892 "isa_tms320.tcc"
+#line 105908 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105895 "isa_tms320.tcc"
+#line 105911 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 105899 "isa_tms320.tcc"
+#line 105915 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105902 "isa_tms320.tcc"
+#line 105918 "isa_tms320.tcc"
 >
 OpSUBB3_indir_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105907 "isa_tms320.tcc"
+#line 105923 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105911 "isa_tms320.tcc"
+#line 105927 "isa_tms320.tcc"
 >::OpSUBB3_indir_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105915 "isa_tms320.tcc"
+#line 105931 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105919 "isa_tms320.tcc"
+#line 105935 "isa_tms320.tcc"
 >(code, addr, "SUBB3_indir_reg")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -105927,34 +105943,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 105931 "isa_tms320.tcc"
+#line 105947 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105934 "isa_tms320.tcc"
+#line 105950 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 105938 "isa_tms320.tcc"
+#line 105954 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105941 "isa_tms320.tcc"
+#line 105957 "isa_tms320.tcc"
 >
 OpSUBB3_reg_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105946 "isa_tms320.tcc"
+#line 105962 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105950 "isa_tms320.tcc"
+#line 105966 "isa_tms320.tcc"
 >::OpSUBB3_reg_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105954 "isa_tms320.tcc"
+#line 105970 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105958 "isa_tms320.tcc"
+#line 105974 "isa_tms320.tcc"
 >(code, addr, "SUBB3_reg_indir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -105966,34 +105982,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 105970 "isa_tms320.tcc"
+#line 105986 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105973 "isa_tms320.tcc"
+#line 105989 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 105977 "isa_tms320.tcc"
+#line 105993 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105980 "isa_tms320.tcc"
+#line 105996 "isa_tms320.tcc"
 >
 OpSUBB3_indir_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105985 "isa_tms320.tcc"
+#line 106001 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105989 "isa_tms320.tcc"
+#line 106005 "isa_tms320.tcc"
 >::OpSUBB3_indir_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 105993 "isa_tms320.tcc"
+#line 106009 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 105997 "isa_tms320.tcc"
+#line 106013 "isa_tms320.tcc"
 >(code, addr, "SUBB3_indir_indir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -106006,34 +106022,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 106010 "isa_tms320.tcc"
+#line 106026 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106013 "isa_tms320.tcc"
+#line 106029 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 106017 "isa_tms320.tcc"
+#line 106033 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106020 "isa_tms320.tcc"
+#line 106036 "isa_tms320.tcc"
 >
 OpSUBF3_reg_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106025 "isa_tms320.tcc"
+#line 106041 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106029 "isa_tms320.tcc"
+#line 106045 "isa_tms320.tcc"
 >::OpSUBF3_reg_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106033 "isa_tms320.tcc"
+#line 106049 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106037 "isa_tms320.tcc"
+#line 106053 "isa_tms320.tcc"
 >(code, addr, "SUBF3_reg_reg")
 {
 	dst = ((code >> 16) & 0x7);
@@ -106044,34 +106060,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 106048 "isa_tms320.tcc"
+#line 106064 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106051 "isa_tms320.tcc"
+#line 106067 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 106055 "isa_tms320.tcc"
+#line 106071 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106058 "isa_tms320.tcc"
+#line 106074 "isa_tms320.tcc"
 >
 OpSUBF3_indir_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106063 "isa_tms320.tcc"
+#line 106079 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106067 "isa_tms320.tcc"
+#line 106083 "isa_tms320.tcc"
 >::OpSUBF3_indir_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106071 "isa_tms320.tcc"
+#line 106087 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106075 "isa_tms320.tcc"
+#line 106091 "isa_tms320.tcc"
 >(code, addr, "SUBF3_indir_reg")
 {
 	dst = ((code >> 16) & 0x7);
@@ -106083,34 +106099,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 106087 "isa_tms320.tcc"
+#line 106103 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106090 "isa_tms320.tcc"
+#line 106106 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 106094 "isa_tms320.tcc"
+#line 106110 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106097 "isa_tms320.tcc"
+#line 106113 "isa_tms320.tcc"
 >
 OpSUBF3_reg_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106102 "isa_tms320.tcc"
+#line 106118 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106106 "isa_tms320.tcc"
+#line 106122 "isa_tms320.tcc"
 >::OpSUBF3_reg_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106110 "isa_tms320.tcc"
+#line 106126 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106114 "isa_tms320.tcc"
+#line 106130 "isa_tms320.tcc"
 >(code, addr, "SUBF3_reg_indir")
 {
 	dst = ((code >> 16) & 0x7);
@@ -106122,34 +106138,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 106126 "isa_tms320.tcc"
+#line 106142 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106129 "isa_tms320.tcc"
+#line 106145 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 106133 "isa_tms320.tcc"
+#line 106149 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106136 "isa_tms320.tcc"
+#line 106152 "isa_tms320.tcc"
 >
 OpSUBF3_indir_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106141 "isa_tms320.tcc"
+#line 106157 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106145 "isa_tms320.tcc"
+#line 106161 "isa_tms320.tcc"
 >::OpSUBF3_indir_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106149 "isa_tms320.tcc"
+#line 106165 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106153 "isa_tms320.tcc"
+#line 106169 "isa_tms320.tcc"
 >(code, addr, "SUBF3_indir_indir")
 {
 	dst = ((code >> 16) & 0x7);
@@ -106162,34 +106178,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 106166 "isa_tms320.tcc"
+#line 106182 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106169 "isa_tms320.tcc"
+#line 106185 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 106173 "isa_tms320.tcc"
+#line 106189 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106176 "isa_tms320.tcc"
+#line 106192 "isa_tms320.tcc"
 >
 OpSUBI3_reg_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106181 "isa_tms320.tcc"
+#line 106197 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106185 "isa_tms320.tcc"
+#line 106201 "isa_tms320.tcc"
 >::OpSUBI3_reg_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106189 "isa_tms320.tcc"
+#line 106205 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106193 "isa_tms320.tcc"
+#line 106209 "isa_tms320.tcc"
 >(code, addr, "SUBI3_reg_reg")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -106200,34 +106216,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 106204 "isa_tms320.tcc"
+#line 106220 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106207 "isa_tms320.tcc"
+#line 106223 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 106211 "isa_tms320.tcc"
+#line 106227 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106214 "isa_tms320.tcc"
+#line 106230 "isa_tms320.tcc"
 >
 OpSUBI3_indir_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106219 "isa_tms320.tcc"
+#line 106235 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106223 "isa_tms320.tcc"
+#line 106239 "isa_tms320.tcc"
 >::OpSUBI3_indir_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106227 "isa_tms320.tcc"
+#line 106243 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106231 "isa_tms320.tcc"
+#line 106247 "isa_tms320.tcc"
 >(code, addr, "SUBI3_indir_reg")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -106239,34 +106255,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 106243 "isa_tms320.tcc"
+#line 106259 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106246 "isa_tms320.tcc"
+#line 106262 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 106250 "isa_tms320.tcc"
+#line 106266 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106253 "isa_tms320.tcc"
+#line 106269 "isa_tms320.tcc"
 >
 OpSUBI3_reg_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106258 "isa_tms320.tcc"
+#line 106274 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106262 "isa_tms320.tcc"
+#line 106278 "isa_tms320.tcc"
 >::OpSUBI3_reg_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106266 "isa_tms320.tcc"
+#line 106282 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106270 "isa_tms320.tcc"
+#line 106286 "isa_tms320.tcc"
 >(code, addr, "SUBI3_reg_indir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -106278,34 +106294,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 106282 "isa_tms320.tcc"
+#line 106298 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106285 "isa_tms320.tcc"
+#line 106301 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 106289 "isa_tms320.tcc"
+#line 106305 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106292 "isa_tms320.tcc"
+#line 106308 "isa_tms320.tcc"
 >
 OpSUBI3_indir_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106297 "isa_tms320.tcc"
+#line 106313 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106301 "isa_tms320.tcc"
+#line 106317 "isa_tms320.tcc"
 >::OpSUBI3_indir_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106305 "isa_tms320.tcc"
+#line 106321 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106309 "isa_tms320.tcc"
+#line 106325 "isa_tms320.tcc"
 >(code, addr, "SUBI3_indir_indir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -106318,34 +106334,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 106322 "isa_tms320.tcc"
+#line 106338 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106325 "isa_tms320.tcc"
+#line 106341 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 106329 "isa_tms320.tcc"
+#line 106345 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106332 "isa_tms320.tcc"
+#line 106348 "isa_tms320.tcc"
 >
 OpTSTB3_reg_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106337 "isa_tms320.tcc"
+#line 106353 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106341 "isa_tms320.tcc"
+#line 106357 "isa_tms320.tcc"
 >::OpTSTB3_reg_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106345 "isa_tms320.tcc"
+#line 106361 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106349 "isa_tms320.tcc"
+#line 106365 "isa_tms320.tcc"
 >(code, addr, "TSTB3_reg_reg")
 {
 	src1 = ((code >> 8) & 0x1f);
@@ -106355,34 +106371,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 106359 "isa_tms320.tcc"
+#line 106375 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106362 "isa_tms320.tcc"
+#line 106378 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 106366 "isa_tms320.tcc"
+#line 106382 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106369 "isa_tms320.tcc"
+#line 106385 "isa_tms320.tcc"
 >
 OpTSTB3_indir_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106374 "isa_tms320.tcc"
+#line 106390 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106378 "isa_tms320.tcc"
+#line 106394 "isa_tms320.tcc"
 >::OpTSTB3_indir_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106382 "isa_tms320.tcc"
+#line 106398 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106386 "isa_tms320.tcc"
+#line 106402 "isa_tms320.tcc"
 >(code, addr, "TSTB3_indir_reg")
 {
 	mod1 = ((code >> 11) & 0x1f);
@@ -106393,34 +106409,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 106397 "isa_tms320.tcc"
+#line 106413 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106400 "isa_tms320.tcc"
+#line 106416 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 106404 "isa_tms320.tcc"
+#line 106420 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106407 "isa_tms320.tcc"
+#line 106423 "isa_tms320.tcc"
 >
 OpTSTB3_reg_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106412 "isa_tms320.tcc"
+#line 106428 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106416 "isa_tms320.tcc"
+#line 106432 "isa_tms320.tcc"
 >::OpTSTB3_reg_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106420 "isa_tms320.tcc"
+#line 106436 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106424 "isa_tms320.tcc"
+#line 106440 "isa_tms320.tcc"
 >(code, addr, "TSTB3_reg_indir")
 {
 	src1 = ((code >> 8) & 0x1f);
@@ -106431,34 +106447,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 106435 "isa_tms320.tcc"
+#line 106451 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106438 "isa_tms320.tcc"
+#line 106454 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 106442 "isa_tms320.tcc"
+#line 106458 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106445 "isa_tms320.tcc"
+#line 106461 "isa_tms320.tcc"
 >
 OpTSTB3_indir_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106450 "isa_tms320.tcc"
+#line 106466 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106454 "isa_tms320.tcc"
+#line 106470 "isa_tms320.tcc"
 >::OpTSTB3_indir_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106458 "isa_tms320.tcc"
+#line 106474 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106462 "isa_tms320.tcc"
+#line 106478 "isa_tms320.tcc"
 >(code, addr, "TSTB3_indir_indir")
 {
 	mod1 = ((code >> 11) & 0x1f);
@@ -106470,34 +106486,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 106474 "isa_tms320.tcc"
+#line 106490 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106477 "isa_tms320.tcc"
+#line 106493 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 106481 "isa_tms320.tcc"
+#line 106497 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106484 "isa_tms320.tcc"
+#line 106500 "isa_tms320.tcc"
 >
 OpXOR3_reg_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106489 "isa_tms320.tcc"
+#line 106505 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106493 "isa_tms320.tcc"
+#line 106509 "isa_tms320.tcc"
 >::OpXOR3_reg_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106497 "isa_tms320.tcc"
+#line 106513 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106501 "isa_tms320.tcc"
+#line 106517 "isa_tms320.tcc"
 >(code, addr, "XOR3_reg_reg")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -106508,34 +106524,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 106512 "isa_tms320.tcc"
+#line 106528 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106515 "isa_tms320.tcc"
+#line 106531 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 106519 "isa_tms320.tcc"
+#line 106535 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106522 "isa_tms320.tcc"
+#line 106538 "isa_tms320.tcc"
 >
 OpXOR3_indir_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106527 "isa_tms320.tcc"
+#line 106543 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106531 "isa_tms320.tcc"
+#line 106547 "isa_tms320.tcc"
 >::OpXOR3_indir_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106535 "isa_tms320.tcc"
+#line 106551 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106539 "isa_tms320.tcc"
+#line 106555 "isa_tms320.tcc"
 >(code, addr, "XOR3_indir_reg")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -106547,34 +106563,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 106551 "isa_tms320.tcc"
+#line 106567 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106554 "isa_tms320.tcc"
+#line 106570 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 106558 "isa_tms320.tcc"
+#line 106574 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106561 "isa_tms320.tcc"
+#line 106577 "isa_tms320.tcc"
 >
 OpXOR3_reg_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106566 "isa_tms320.tcc"
+#line 106582 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106570 "isa_tms320.tcc"
+#line 106586 "isa_tms320.tcc"
 >::OpXOR3_reg_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106574 "isa_tms320.tcc"
+#line 106590 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106578 "isa_tms320.tcc"
+#line 106594 "isa_tms320.tcc"
 >(code, addr, "XOR3_reg_indir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -106586,34 +106602,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 106590 "isa_tms320.tcc"
+#line 106606 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106593 "isa_tms320.tcc"
+#line 106609 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 106597 "isa_tms320.tcc"
+#line 106613 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106600 "isa_tms320.tcc"
+#line 106616 "isa_tms320.tcc"
 >
 OpXOR3_indir_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106605 "isa_tms320.tcc"
+#line 106621 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106609 "isa_tms320.tcc"
+#line 106625 "isa_tms320.tcc"
 >::OpXOR3_indir_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106613 "isa_tms320.tcc"
+#line 106629 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106617 "isa_tms320.tcc"
+#line 106633 "isa_tms320.tcc"
 >(code, addr, "XOR3_indir_indir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -106626,34 +106642,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 106630 "isa_tms320.tcc"
+#line 106646 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106633 "isa_tms320.tcc"
+#line 106649 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 106637 "isa_tms320.tcc"
+#line 106653 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106640 "isa_tms320.tcc"
+#line 106656 "isa_tms320.tcc"
 >
 OpBcond_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106645 "isa_tms320.tcc"
+#line 106661 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106649 "isa_tms320.tcc"
+#line 106665 "isa_tms320.tcc"
 >::OpBcond_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106653 "isa_tms320.tcc"
+#line 106669 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106657 "isa_tms320.tcc"
+#line 106673 "isa_tms320.tcc"
 >(code, addr, "Bcond_reg")
 {
 	cond = ((code >> 16) & 0x1f);
@@ -106663,34 +106679,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 106667 "isa_tms320.tcc"
+#line 106683 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106670 "isa_tms320.tcc"
+#line 106686 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 106674 "isa_tms320.tcc"
+#line 106690 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106677 "isa_tms320.tcc"
+#line 106693 "isa_tms320.tcc"
 >
 OpBcond_disp<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106682 "isa_tms320.tcc"
+#line 106698 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106686 "isa_tms320.tcc"
+#line 106702 "isa_tms320.tcc"
 >::OpBcond_disp(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106690 "isa_tms320.tcc"
+#line 106706 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106694 "isa_tms320.tcc"
+#line 106710 "isa_tms320.tcc"
 >(code, addr, "Bcond_disp")
 {
 	cond = ((code >> 16) & 0x1f);
@@ -106700,34 +106716,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 106704 "isa_tms320.tcc"
+#line 106720 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106707 "isa_tms320.tcc"
+#line 106723 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 106711 "isa_tms320.tcc"
+#line 106727 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106714 "isa_tms320.tcc"
+#line 106730 "isa_tms320.tcc"
 >
 OpBcondD_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106719 "isa_tms320.tcc"
+#line 106735 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106723 "isa_tms320.tcc"
+#line 106739 "isa_tms320.tcc"
 >::OpBcondD_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106727 "isa_tms320.tcc"
+#line 106743 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106731 "isa_tms320.tcc"
+#line 106747 "isa_tms320.tcc"
 >(code, addr, "BcondD_reg")
 {
 	cond = ((code >> 16) & 0x1f);
@@ -106737,34 +106753,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 106741 "isa_tms320.tcc"
+#line 106757 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106744 "isa_tms320.tcc"
+#line 106760 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 106748 "isa_tms320.tcc"
+#line 106764 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106751 "isa_tms320.tcc"
+#line 106767 "isa_tms320.tcc"
 >
 OpBcondD_disp<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106756 "isa_tms320.tcc"
+#line 106772 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106760 "isa_tms320.tcc"
+#line 106776 "isa_tms320.tcc"
 >::OpBcondD_disp(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106764 "isa_tms320.tcc"
+#line 106780 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106768 "isa_tms320.tcc"
+#line 106784 "isa_tms320.tcc"
 >(code, addr, "BcondD_disp")
 {
 	cond = ((code >> 16) & 0x1f);
@@ -106774,34 +106790,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 106778 "isa_tms320.tcc"
+#line 106794 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106781 "isa_tms320.tcc"
+#line 106797 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 106785 "isa_tms320.tcc"
+#line 106801 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106788 "isa_tms320.tcc"
+#line 106804 "isa_tms320.tcc"
 >
 OpBR<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106793 "isa_tms320.tcc"
+#line 106809 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106797 "isa_tms320.tcc"
+#line 106813 "isa_tms320.tcc"
 >::OpBR(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106801 "isa_tms320.tcc"
+#line 106817 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106805 "isa_tms320.tcc"
+#line 106821 "isa_tms320.tcc"
 >(code, addr, "BR")
 {
 	src = ((code >> 0) & 0xffffff);
@@ -106810,34 +106826,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 106814 "isa_tms320.tcc"
+#line 106830 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106817 "isa_tms320.tcc"
+#line 106833 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 106821 "isa_tms320.tcc"
+#line 106837 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106824 "isa_tms320.tcc"
+#line 106840 "isa_tms320.tcc"
 >
 OpBRD<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106829 "isa_tms320.tcc"
+#line 106845 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106833 "isa_tms320.tcc"
+#line 106849 "isa_tms320.tcc"
 >::OpBRD(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106837 "isa_tms320.tcc"
+#line 106853 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106841 "isa_tms320.tcc"
+#line 106857 "isa_tms320.tcc"
 >(code, addr, "BRD")
 {
 	src = ((code >> 0) & 0xffffff);
@@ -106846,34 +106862,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 106850 "isa_tms320.tcc"
+#line 106866 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106853 "isa_tms320.tcc"
+#line 106869 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 106857 "isa_tms320.tcc"
+#line 106873 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106860 "isa_tms320.tcc"
+#line 106876 "isa_tms320.tcc"
 >
 OpCALL<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106865 "isa_tms320.tcc"
+#line 106881 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106869 "isa_tms320.tcc"
+#line 106885 "isa_tms320.tcc"
 >::OpCALL(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106873 "isa_tms320.tcc"
+#line 106889 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106877 "isa_tms320.tcc"
+#line 106893 "isa_tms320.tcc"
 >(code, addr, "CALL")
 {
 	src = ((code >> 0) & 0xffffff);
@@ -106882,34 +106898,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 106886 "isa_tms320.tcc"
+#line 106902 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106889 "isa_tms320.tcc"
+#line 106905 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 106893 "isa_tms320.tcc"
+#line 106909 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106896 "isa_tms320.tcc"
+#line 106912 "isa_tms320.tcc"
 >
 OpCALLcond_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106901 "isa_tms320.tcc"
+#line 106917 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106905 "isa_tms320.tcc"
+#line 106921 "isa_tms320.tcc"
 >::OpCALLcond_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106909 "isa_tms320.tcc"
+#line 106925 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106913 "isa_tms320.tcc"
+#line 106929 "isa_tms320.tcc"
 >(code, addr, "CALLcond_reg")
 {
 	cond = ((code >> 16) & 0x1f);
@@ -106919,34 +106935,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 106923 "isa_tms320.tcc"
+#line 106939 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106926 "isa_tms320.tcc"
+#line 106942 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 106930 "isa_tms320.tcc"
+#line 106946 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106933 "isa_tms320.tcc"
+#line 106949 "isa_tms320.tcc"
 >
 OpCALLcond_disp<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106938 "isa_tms320.tcc"
+#line 106954 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106942 "isa_tms320.tcc"
+#line 106958 "isa_tms320.tcc"
 >::OpCALLcond_disp(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106946 "isa_tms320.tcc"
+#line 106962 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106950 "isa_tms320.tcc"
+#line 106966 "isa_tms320.tcc"
 >(code, addr, "CALLcond_disp")
 {
 	cond = ((code >> 16) & 0x1f);
@@ -106956,34 +106972,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 106960 "isa_tms320.tcc"
+#line 106976 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106963 "isa_tms320.tcc"
+#line 106979 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 106967 "isa_tms320.tcc"
+#line 106983 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106970 "isa_tms320.tcc"
+#line 106986 "isa_tms320.tcc"
 >
 OpDBcond_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106975 "isa_tms320.tcc"
+#line 106991 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106979 "isa_tms320.tcc"
+#line 106995 "isa_tms320.tcc"
 >::OpDBcond_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 106983 "isa_tms320.tcc"
+#line 106999 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 106987 "isa_tms320.tcc"
+#line 107003 "isa_tms320.tcc"
 >(code, addr, "DBcond_reg")
 {
 	ar = ((code >> 22) & 0x7);
@@ -106994,34 +107010,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 106998 "isa_tms320.tcc"
+#line 107014 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107001 "isa_tms320.tcc"
+#line 107017 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 107005 "isa_tms320.tcc"
+#line 107021 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107008 "isa_tms320.tcc"
+#line 107024 "isa_tms320.tcc"
 >
 OpDBcond_disp<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107013 "isa_tms320.tcc"
+#line 107029 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107017 "isa_tms320.tcc"
+#line 107033 "isa_tms320.tcc"
 >::OpDBcond_disp(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107021 "isa_tms320.tcc"
+#line 107037 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107025 "isa_tms320.tcc"
+#line 107041 "isa_tms320.tcc"
 >(code, addr, "DBcond_disp")
 {
 	ar = ((code >> 22) & 0x7);
@@ -107032,34 +107048,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 107036 "isa_tms320.tcc"
+#line 107052 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107039 "isa_tms320.tcc"
+#line 107055 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 107043 "isa_tms320.tcc"
+#line 107059 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107046 "isa_tms320.tcc"
+#line 107062 "isa_tms320.tcc"
 >
 OpDBcondD_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107051 "isa_tms320.tcc"
+#line 107067 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107055 "isa_tms320.tcc"
+#line 107071 "isa_tms320.tcc"
 >::OpDBcondD_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107059 "isa_tms320.tcc"
+#line 107075 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107063 "isa_tms320.tcc"
+#line 107079 "isa_tms320.tcc"
 >(code, addr, "DBcondD_reg")
 {
 	ar = ((code >> 22) & 0x7);
@@ -107070,34 +107086,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 107074 "isa_tms320.tcc"
+#line 107090 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107077 "isa_tms320.tcc"
+#line 107093 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 107081 "isa_tms320.tcc"
+#line 107097 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107084 "isa_tms320.tcc"
+#line 107100 "isa_tms320.tcc"
 >
 OpDBcondD_disp<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107089 "isa_tms320.tcc"
+#line 107105 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107093 "isa_tms320.tcc"
+#line 107109 "isa_tms320.tcc"
 >::OpDBcondD_disp(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107097 "isa_tms320.tcc"
+#line 107113 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107101 "isa_tms320.tcc"
+#line 107117 "isa_tms320.tcc"
 >(code, addr, "DBcondD_disp")
 {
 	ar = ((code >> 22) & 0x7);
@@ -107108,34 +107124,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 107112 "isa_tms320.tcc"
+#line 107128 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107115 "isa_tms320.tcc"
+#line 107131 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 107119 "isa_tms320.tcc"
+#line 107135 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107122 "isa_tms320.tcc"
+#line 107138 "isa_tms320.tcc"
 >
 OpIACK_dir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107127 "isa_tms320.tcc"
+#line 107143 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107131 "isa_tms320.tcc"
+#line 107147 "isa_tms320.tcc"
 >::OpIACK_dir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107135 "isa_tms320.tcc"
+#line 107151 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107139 "isa_tms320.tcc"
+#line 107155 "isa_tms320.tcc"
 >(code, addr, "IACK_dir")
 {
 	direct = ((code >> 0) & 0xffff);
@@ -107144,34 +107160,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 107148 "isa_tms320.tcc"
+#line 107164 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107151 "isa_tms320.tcc"
+#line 107167 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 107155 "isa_tms320.tcc"
+#line 107171 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107158 "isa_tms320.tcc"
+#line 107174 "isa_tms320.tcc"
 >
 OpIACK_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107163 "isa_tms320.tcc"
+#line 107179 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107167 "isa_tms320.tcc"
+#line 107183 "isa_tms320.tcc"
 >::OpIACK_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107171 "isa_tms320.tcc"
+#line 107187 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107175 "isa_tms320.tcc"
+#line 107191 "isa_tms320.tcc"
 >(code, addr, "IACK_indir")
 {
 	mod = ((code >> 11) & 0x1f);
@@ -107182,34 +107198,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 107186 "isa_tms320.tcc"
+#line 107202 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107189 "isa_tms320.tcc"
+#line 107205 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 107193 "isa_tms320.tcc"
+#line 107209 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107196 "isa_tms320.tcc"
+#line 107212 "isa_tms320.tcc"
 >
 OpIDLE<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107201 "isa_tms320.tcc"
+#line 107217 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107205 "isa_tms320.tcc"
+#line 107221 "isa_tms320.tcc"
 >::OpIDLE(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107209 "isa_tms320.tcc"
+#line 107225 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107213 "isa_tms320.tcc"
+#line 107229 "isa_tms320.tcc"
 >(code, addr, "IDLE")
 {
 }
@@ -107217,34 +107233,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 107221 "isa_tms320.tcc"
+#line 107237 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107224 "isa_tms320.tcc"
+#line 107240 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 107228 "isa_tms320.tcc"
+#line 107244 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107231 "isa_tms320.tcc"
+#line 107247 "isa_tms320.tcc"
 >
 OpNOP_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107236 "isa_tms320.tcc"
+#line 107252 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107240 "isa_tms320.tcc"
+#line 107256 "isa_tms320.tcc"
 >::OpNOP_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107244 "isa_tms320.tcc"
+#line 107260 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107248 "isa_tms320.tcc"
+#line 107264 "isa_tms320.tcc"
 >(code, addr, "NOP_reg")
 {
 	reg = ((code >> 0) & 0x1f);
@@ -107253,34 +107269,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 107257 "isa_tms320.tcc"
+#line 107273 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107260 "isa_tms320.tcc"
+#line 107276 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 107264 "isa_tms320.tcc"
+#line 107280 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107267 "isa_tms320.tcc"
+#line 107283 "isa_tms320.tcc"
 >
 OpNOP_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107272 "isa_tms320.tcc"
+#line 107288 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107276 "isa_tms320.tcc"
+#line 107292 "isa_tms320.tcc"
 >::OpNOP_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107280 "isa_tms320.tcc"
+#line 107296 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107284 "isa_tms320.tcc"
+#line 107300 "isa_tms320.tcc"
 >(code, addr, "NOP_indir")
 {
 	mod = ((code >> 11) & 0x1f);
@@ -107291,34 +107307,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 107295 "isa_tms320.tcc"
+#line 107311 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107298 "isa_tms320.tcc"
+#line 107314 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 107302 "isa_tms320.tcc"
+#line 107318 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107305 "isa_tms320.tcc"
+#line 107321 "isa_tms320.tcc"
 >
 OpRETIcond<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107310 "isa_tms320.tcc"
+#line 107326 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107314 "isa_tms320.tcc"
+#line 107330 "isa_tms320.tcc"
 >::OpRETIcond(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107318 "isa_tms320.tcc"
+#line 107334 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107322 "isa_tms320.tcc"
+#line 107338 "isa_tms320.tcc"
 >(code, addr, "RETIcond")
 {
 	cond = ((code >> 16) & 0x1f);
@@ -107327,34 +107343,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 107331 "isa_tms320.tcc"
+#line 107347 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107334 "isa_tms320.tcc"
+#line 107350 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 107338 "isa_tms320.tcc"
+#line 107354 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107341 "isa_tms320.tcc"
+#line 107357 "isa_tms320.tcc"
 >
 OpRETScond<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107346 "isa_tms320.tcc"
+#line 107362 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107350 "isa_tms320.tcc"
+#line 107366 "isa_tms320.tcc"
 >::OpRETScond(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107354 "isa_tms320.tcc"
+#line 107370 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107358 "isa_tms320.tcc"
+#line 107374 "isa_tms320.tcc"
 >(code, addr, "RETScond")
 {
 	cond = ((code >> 16) & 0x1f);
@@ -107363,34 +107379,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 107367 "isa_tms320.tcc"
+#line 107383 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107370 "isa_tms320.tcc"
+#line 107386 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 107374 "isa_tms320.tcc"
+#line 107390 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107377 "isa_tms320.tcc"
+#line 107393 "isa_tms320.tcc"
 >
 OpRPTB<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107382 "isa_tms320.tcc"
+#line 107398 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107386 "isa_tms320.tcc"
+#line 107402 "isa_tms320.tcc"
 >::OpRPTB(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107390 "isa_tms320.tcc"
+#line 107406 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107394 "isa_tms320.tcc"
+#line 107410 "isa_tms320.tcc"
 >(code, addr, "RPTB")
 {
 	src = ((code >> 0) & 0xffffff);
@@ -107399,34 +107415,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 107403 "isa_tms320.tcc"
+#line 107419 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107406 "isa_tms320.tcc"
+#line 107422 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 107410 "isa_tms320.tcc"
+#line 107426 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107413 "isa_tms320.tcc"
+#line 107429 "isa_tms320.tcc"
 >
 OpRPTS_reg<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107418 "isa_tms320.tcc"
+#line 107434 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107422 "isa_tms320.tcc"
+#line 107438 "isa_tms320.tcc"
 >::OpRPTS_reg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107426 "isa_tms320.tcc"
+#line 107442 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107430 "isa_tms320.tcc"
+#line 107446 "isa_tms320.tcc"
 >(code, addr, "RPTS_reg")
 {
 	src = ((code >> 0) & 0x1f);
@@ -107435,34 +107451,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 107439 "isa_tms320.tcc"
+#line 107455 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107442 "isa_tms320.tcc"
+#line 107458 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 107446 "isa_tms320.tcc"
+#line 107462 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107449 "isa_tms320.tcc"
+#line 107465 "isa_tms320.tcc"
 >
 OpRPTS_dir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107454 "isa_tms320.tcc"
+#line 107470 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107458 "isa_tms320.tcc"
+#line 107474 "isa_tms320.tcc"
 >::OpRPTS_dir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107462 "isa_tms320.tcc"
+#line 107478 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107466 "isa_tms320.tcc"
+#line 107482 "isa_tms320.tcc"
 >(code, addr, "RPTS_dir")
 {
 	direct = ((code >> 0) & 0xffff);
@@ -107471,34 +107487,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 107475 "isa_tms320.tcc"
+#line 107491 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107478 "isa_tms320.tcc"
+#line 107494 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 107482 "isa_tms320.tcc"
+#line 107498 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107485 "isa_tms320.tcc"
+#line 107501 "isa_tms320.tcc"
 >
 OpRPTS_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107490 "isa_tms320.tcc"
+#line 107506 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107494 "isa_tms320.tcc"
+#line 107510 "isa_tms320.tcc"
 >::OpRPTS_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107498 "isa_tms320.tcc"
+#line 107514 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107502 "isa_tms320.tcc"
+#line 107518 "isa_tms320.tcc"
 >(code, addr, "RPTS_indir")
 {
 	mod = ((code >> 11) & 0x1f);
@@ -107509,34 +107525,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 107513 "isa_tms320.tcc"
+#line 107529 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107516 "isa_tms320.tcc"
+#line 107532 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 107520 "isa_tms320.tcc"
+#line 107536 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107523 "isa_tms320.tcc"
+#line 107539 "isa_tms320.tcc"
 >
 OpRPTS_imm<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107528 "isa_tms320.tcc"
+#line 107544 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107532 "isa_tms320.tcc"
+#line 107548 "isa_tms320.tcc"
 >::OpRPTS_imm(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107536 "isa_tms320.tcc"
+#line 107552 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107540 "isa_tms320.tcc"
+#line 107556 "isa_tms320.tcc"
 >(code, addr, "RPTS_imm")
 {
 	imm = ((code >> 0) & 0xffff);
@@ -107545,34 +107561,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 107549 "isa_tms320.tcc"
+#line 107565 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107552 "isa_tms320.tcc"
+#line 107568 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 107556 "isa_tms320.tcc"
+#line 107572 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107559 "isa_tms320.tcc"
+#line 107575 "isa_tms320.tcc"
 >
 OpSWI<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107564 "isa_tms320.tcc"
+#line 107580 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107568 "isa_tms320.tcc"
+#line 107584 "isa_tms320.tcc"
 >::OpSWI(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107572 "isa_tms320.tcc"
+#line 107588 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107576 "isa_tms320.tcc"
+#line 107592 "isa_tms320.tcc"
 >(code, addr, "SWI")
 {
 }
@@ -107580,34 +107596,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 107584 "isa_tms320.tcc"
+#line 107600 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107587 "isa_tms320.tcc"
+#line 107603 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 107591 "isa_tms320.tcc"
+#line 107607 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107594 "isa_tms320.tcc"
+#line 107610 "isa_tms320.tcc"
 >
 OpTRAPcond<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107599 "isa_tms320.tcc"
+#line 107615 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107603 "isa_tms320.tcc"
+#line 107619 "isa_tms320.tcc"
 >::OpTRAPcond(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107607 "isa_tms320.tcc"
+#line 107623 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107611 "isa_tms320.tcc"
+#line 107627 "isa_tms320.tcc"
 >(code, addr, "TRAPcond")
 {
 	cond = ((code >> 16) & 0x1f);
@@ -107617,34 +107633,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 107621 "isa_tms320.tcc"
+#line 107637 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107624 "isa_tms320.tcc"
+#line 107640 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 107628 "isa_tms320.tcc"
+#line 107644 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107631 "isa_tms320.tcc"
+#line 107647 "isa_tms320.tcc"
 >
 OpIDLE2<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107636 "isa_tms320.tcc"
+#line 107652 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107640 "isa_tms320.tcc"
+#line 107656 "isa_tms320.tcc"
 >::OpIDLE2(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107644 "isa_tms320.tcc"
+#line 107660 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107648 "isa_tms320.tcc"
+#line 107664 "isa_tms320.tcc"
 >(code, addr, "IDLE2")
 {
 }
@@ -107652,34 +107668,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 107656 "isa_tms320.tcc"
+#line 107672 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107659 "isa_tms320.tcc"
+#line 107675 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 107663 "isa_tms320.tcc"
+#line 107679 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107666 "isa_tms320.tcc"
+#line 107682 "isa_tms320.tcc"
 >
 OpLOPOWER<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107671 "isa_tms320.tcc"
+#line 107687 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107675 "isa_tms320.tcc"
+#line 107691 "isa_tms320.tcc"
 >::OpLOPOWER(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107679 "isa_tms320.tcc"
+#line 107695 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107683 "isa_tms320.tcc"
+#line 107699 "isa_tms320.tcc"
 >(code, addr, "LOPOWER")
 {
 }
@@ -107687,34 +107703,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 107691 "isa_tms320.tcc"
+#line 107707 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107694 "isa_tms320.tcc"
+#line 107710 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 107698 "isa_tms320.tcc"
+#line 107714 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107701 "isa_tms320.tcc"
+#line 107717 "isa_tms320.tcc"
 >
 OpMAXSPEED<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107706 "isa_tms320.tcc"
+#line 107722 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107710 "isa_tms320.tcc"
+#line 107726 "isa_tms320.tcc"
 >::OpMAXSPEED(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107714 "isa_tms320.tcc"
+#line 107730 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107718 "isa_tms320.tcc"
+#line 107734 "isa_tms320.tcc"
 >(code, addr, "MAXSPEED")
 {
 }
@@ -107722,34 +107738,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 107726 "isa_tms320.tcc"
+#line 107742 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107729 "isa_tms320.tcc"
+#line 107745 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 107733 "isa_tms320.tcc"
+#line 107749 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107736 "isa_tms320.tcc"
+#line 107752 "isa_tms320.tcc"
 >
 OpLDFI_dir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107741 "isa_tms320.tcc"
+#line 107757 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107745 "isa_tms320.tcc"
+#line 107761 "isa_tms320.tcc"
 >::OpLDFI_dir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107749 "isa_tms320.tcc"
+#line 107765 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107753 "isa_tms320.tcc"
+#line 107769 "isa_tms320.tcc"
 >(code, addr, "LDFI_dir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -107759,34 +107775,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 107763 "isa_tms320.tcc"
+#line 107779 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107766 "isa_tms320.tcc"
+#line 107782 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 107770 "isa_tms320.tcc"
+#line 107786 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107773 "isa_tms320.tcc"
+#line 107789 "isa_tms320.tcc"
 >
 OpLDFI_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107778 "isa_tms320.tcc"
+#line 107794 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107782 "isa_tms320.tcc"
+#line 107798 "isa_tms320.tcc"
 >::OpLDFI_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107786 "isa_tms320.tcc"
+#line 107802 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107790 "isa_tms320.tcc"
+#line 107806 "isa_tms320.tcc"
 >(code, addr, "LDFI_indir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -107798,34 +107814,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 107802 "isa_tms320.tcc"
+#line 107818 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107805 "isa_tms320.tcc"
+#line 107821 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 107809 "isa_tms320.tcc"
+#line 107825 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107812 "isa_tms320.tcc"
+#line 107828 "isa_tms320.tcc"
 >
 OpLDII_dir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107817 "isa_tms320.tcc"
+#line 107833 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107821 "isa_tms320.tcc"
+#line 107837 "isa_tms320.tcc"
 >::OpLDII_dir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107825 "isa_tms320.tcc"
+#line 107841 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107829 "isa_tms320.tcc"
+#line 107845 "isa_tms320.tcc"
 >(code, addr, "LDII_dir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -107835,34 +107851,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 107839 "isa_tms320.tcc"
+#line 107855 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107842 "isa_tms320.tcc"
+#line 107858 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 107846 "isa_tms320.tcc"
+#line 107862 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107849 "isa_tms320.tcc"
+#line 107865 "isa_tms320.tcc"
 >
 OpLDII_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107854 "isa_tms320.tcc"
+#line 107870 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107858 "isa_tms320.tcc"
+#line 107874 "isa_tms320.tcc"
 >::OpLDII_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107862 "isa_tms320.tcc"
+#line 107878 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107866 "isa_tms320.tcc"
+#line 107882 "isa_tms320.tcc"
 >(code, addr, "LDII_indir")
 {
 	dst = ((code >> 16) & 0x1f);
@@ -107874,34 +107890,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 107878 "isa_tms320.tcc"
+#line 107894 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107881 "isa_tms320.tcc"
+#line 107897 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 107885 "isa_tms320.tcc"
+#line 107901 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107888 "isa_tms320.tcc"
+#line 107904 "isa_tms320.tcc"
 >
 OpSIGI<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107893 "isa_tms320.tcc"
+#line 107909 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107897 "isa_tms320.tcc"
+#line 107913 "isa_tms320.tcc"
 >::OpSIGI(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107901 "isa_tms320.tcc"
+#line 107917 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107905 "isa_tms320.tcc"
+#line 107921 "isa_tms320.tcc"
 >(code, addr, "SIGI")
 {
 }
@@ -107909,34 +107925,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 107913 "isa_tms320.tcc"
+#line 107929 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107916 "isa_tms320.tcc"
+#line 107932 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 107920 "isa_tms320.tcc"
+#line 107936 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107923 "isa_tms320.tcc"
+#line 107939 "isa_tms320.tcc"
 >
 OpSTFI_dir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107928 "isa_tms320.tcc"
+#line 107944 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107932 "isa_tms320.tcc"
+#line 107948 "isa_tms320.tcc"
 >::OpSTFI_dir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107936 "isa_tms320.tcc"
+#line 107952 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107940 "isa_tms320.tcc"
+#line 107956 "isa_tms320.tcc"
 >(code, addr, "STFI_dir")
 {
 	src = ((code >> 16) & 0x1f);
@@ -107946,34 +107962,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 107950 "isa_tms320.tcc"
+#line 107966 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107953 "isa_tms320.tcc"
+#line 107969 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 107957 "isa_tms320.tcc"
+#line 107973 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107960 "isa_tms320.tcc"
+#line 107976 "isa_tms320.tcc"
 >
 OpSTFI_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107965 "isa_tms320.tcc"
+#line 107981 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107969 "isa_tms320.tcc"
+#line 107985 "isa_tms320.tcc"
 >::OpSTFI_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107973 "isa_tms320.tcc"
+#line 107989 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107977 "isa_tms320.tcc"
+#line 107993 "isa_tms320.tcc"
 >(code, addr, "STFI_indir")
 {
 	src = ((code >> 16) & 0x1f);
@@ -107985,34 +108001,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 107989 "isa_tms320.tcc"
+#line 108005 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 107992 "isa_tms320.tcc"
+#line 108008 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 107996 "isa_tms320.tcc"
+#line 108012 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 107999 "isa_tms320.tcc"
+#line 108015 "isa_tms320.tcc"
 >
 OpSTII_dir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108004 "isa_tms320.tcc"
+#line 108020 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108008 "isa_tms320.tcc"
+#line 108024 "isa_tms320.tcc"
 >::OpSTII_dir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108012 "isa_tms320.tcc"
+#line 108028 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108016 "isa_tms320.tcc"
+#line 108032 "isa_tms320.tcc"
 >(code, addr, "STII_dir")
 {
 	src = ((code >> 16) & 0x1f);
@@ -108022,34 +108038,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 108026 "isa_tms320.tcc"
+#line 108042 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108029 "isa_tms320.tcc"
+#line 108045 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 108033 "isa_tms320.tcc"
+#line 108049 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108036 "isa_tms320.tcc"
+#line 108052 "isa_tms320.tcc"
 >
 OpSTII_indir<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108041 "isa_tms320.tcc"
+#line 108057 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108045 "isa_tms320.tcc"
+#line 108061 "isa_tms320.tcc"
 >::OpSTII_indir(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108049 "isa_tms320.tcc"
+#line 108065 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108053 "isa_tms320.tcc"
+#line 108069 "isa_tms320.tcc"
 >(code, addr, "STII_indir")
 {
 	src = ((code >> 16) & 0x1f);
@@ -108061,34 +108077,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 108065 "isa_tms320.tcc"
+#line 108081 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108068 "isa_tms320.tcc"
+#line 108084 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 108072 "isa_tms320.tcc"
+#line 108088 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108075 "isa_tms320.tcc"
+#line 108091 "isa_tms320.tcc"
 >
 OpABSF_STF<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108080 "isa_tms320.tcc"
+#line 108096 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108084 "isa_tms320.tcc"
+#line 108100 "isa_tms320.tcc"
 >::OpABSF_STF(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108088 "isa_tms320.tcc"
+#line 108104 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108092 "isa_tms320.tcc"
+#line 108108 "isa_tms320.tcc"
 >(code, addr, "ABSF_STF")
 {
 	dst1 = ((code >> 22) & 0x7);
@@ -108102,34 +108118,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 108106 "isa_tms320.tcc"
+#line 108122 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108109 "isa_tms320.tcc"
+#line 108125 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 108113 "isa_tms320.tcc"
+#line 108129 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108116 "isa_tms320.tcc"
+#line 108132 "isa_tms320.tcc"
 >
 OpABSF_STF_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108121 "isa_tms320.tcc"
+#line 108137 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108125 "isa_tms320.tcc"
+#line 108141 "isa_tms320.tcc"
 >::OpABSF_STF_ext(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108129 "isa_tms320.tcc"
+#line 108145 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108133 "isa_tms320.tcc"
+#line 108149 "isa_tms320.tcc"
 >(code, addr, "ABSF_STF_ext")
 {
 	dst1 = ((code >> 22) & 0x7);
@@ -108142,34 +108158,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 108146 "isa_tms320.tcc"
+#line 108162 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108149 "isa_tms320.tcc"
+#line 108165 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 108153 "isa_tms320.tcc"
+#line 108169 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108156 "isa_tms320.tcc"
+#line 108172 "isa_tms320.tcc"
 >
 OpABSI_STI<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108161 "isa_tms320.tcc"
+#line 108177 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108165 "isa_tms320.tcc"
+#line 108181 "isa_tms320.tcc"
 >::OpABSI_STI(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108169 "isa_tms320.tcc"
+#line 108185 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108173 "isa_tms320.tcc"
+#line 108189 "isa_tms320.tcc"
 >(code, addr, "ABSI_STI")
 {
 	dst1 = ((code >> 22) & 0x7);
@@ -108183,34 +108199,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 108187 "isa_tms320.tcc"
+#line 108203 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108190 "isa_tms320.tcc"
+#line 108206 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 108194 "isa_tms320.tcc"
+#line 108210 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108197 "isa_tms320.tcc"
+#line 108213 "isa_tms320.tcc"
 >
 OpABSI_STI_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108202 "isa_tms320.tcc"
+#line 108218 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108206 "isa_tms320.tcc"
+#line 108222 "isa_tms320.tcc"
 >::OpABSI_STI_ext(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108210 "isa_tms320.tcc"
+#line 108226 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108214 "isa_tms320.tcc"
+#line 108230 "isa_tms320.tcc"
 >(code, addr, "ABSI_STI_ext")
 {
 	dst1 = ((code >> 22) & 0x7);
@@ -108223,34 +108239,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 108227 "isa_tms320.tcc"
+#line 108243 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108230 "isa_tms320.tcc"
+#line 108246 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 108234 "isa_tms320.tcc"
+#line 108250 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108237 "isa_tms320.tcc"
+#line 108253 "isa_tms320.tcc"
 >
 OpADDF3_STF<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108242 "isa_tms320.tcc"
+#line 108258 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108246 "isa_tms320.tcc"
+#line 108262 "isa_tms320.tcc"
 >::OpADDF3_STF(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108250 "isa_tms320.tcc"
+#line 108266 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108254 "isa_tms320.tcc"
+#line 108270 "isa_tms320.tcc"
 >(code, addr, "ADDF3_STF")
 {
 	dst1 = ((code >> 22) & 0x7);
@@ -108265,34 +108281,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 108269 "isa_tms320.tcc"
+#line 108285 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108272 "isa_tms320.tcc"
+#line 108288 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 108276 "isa_tms320.tcc"
+#line 108292 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108279 "isa_tms320.tcc"
+#line 108295 "isa_tms320.tcc"
 >
 OpADDF3_STF_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108284 "isa_tms320.tcc"
+#line 108300 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108288 "isa_tms320.tcc"
+#line 108304 "isa_tms320.tcc"
 >::OpADDF3_STF_ext(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108292 "isa_tms320.tcc"
+#line 108308 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108296 "isa_tms320.tcc"
+#line 108312 "isa_tms320.tcc"
 >(code, addr, "ADDF3_STF_ext")
 {
 	dst1 = ((code >> 22) & 0x7);
@@ -108306,34 +108322,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 108310 "isa_tms320.tcc"
+#line 108326 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108313 "isa_tms320.tcc"
+#line 108329 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 108317 "isa_tms320.tcc"
+#line 108333 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108320 "isa_tms320.tcc"
+#line 108336 "isa_tms320.tcc"
 >
 OpADDI3_STI<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108325 "isa_tms320.tcc"
+#line 108341 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108329 "isa_tms320.tcc"
+#line 108345 "isa_tms320.tcc"
 >::OpADDI3_STI(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108333 "isa_tms320.tcc"
+#line 108349 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108337 "isa_tms320.tcc"
+#line 108353 "isa_tms320.tcc"
 >(code, addr, "ADDI3_STI")
 {
 	dst1 = ((code >> 22) & 0x7);
@@ -108348,34 +108364,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 108352 "isa_tms320.tcc"
+#line 108368 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108355 "isa_tms320.tcc"
+#line 108371 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 108359 "isa_tms320.tcc"
+#line 108375 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108362 "isa_tms320.tcc"
+#line 108378 "isa_tms320.tcc"
 >
 OpADDI3_STI_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108367 "isa_tms320.tcc"
+#line 108383 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108371 "isa_tms320.tcc"
+#line 108387 "isa_tms320.tcc"
 >::OpADDI3_STI_ext(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108375 "isa_tms320.tcc"
+#line 108391 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108379 "isa_tms320.tcc"
+#line 108395 "isa_tms320.tcc"
 >(code, addr, "ADDI3_STI_ext")
 {
 	dst1 = ((code >> 22) & 0x7);
@@ -108389,34 +108405,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 108393 "isa_tms320.tcc"
+#line 108409 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108396 "isa_tms320.tcc"
+#line 108412 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 108400 "isa_tms320.tcc"
+#line 108416 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108403 "isa_tms320.tcc"
+#line 108419 "isa_tms320.tcc"
 >
 OpAND3_STI<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108408 "isa_tms320.tcc"
+#line 108424 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108412 "isa_tms320.tcc"
+#line 108428 "isa_tms320.tcc"
 >::OpAND3_STI(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108416 "isa_tms320.tcc"
+#line 108432 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108420 "isa_tms320.tcc"
+#line 108436 "isa_tms320.tcc"
 >(code, addr, "AND3_STI")
 {
 	dst1 = ((code >> 22) & 0x7);
@@ -108431,34 +108447,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 108435 "isa_tms320.tcc"
+#line 108451 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108438 "isa_tms320.tcc"
+#line 108454 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 108442 "isa_tms320.tcc"
+#line 108458 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108445 "isa_tms320.tcc"
+#line 108461 "isa_tms320.tcc"
 >
 OpAND3_STI_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108450 "isa_tms320.tcc"
+#line 108466 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108454 "isa_tms320.tcc"
+#line 108470 "isa_tms320.tcc"
 >::OpAND3_STI_ext(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108458 "isa_tms320.tcc"
+#line 108474 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108462 "isa_tms320.tcc"
+#line 108478 "isa_tms320.tcc"
 >(code, addr, "AND3_STI_ext")
 {
 	dst1 = ((code >> 22) & 0x7);
@@ -108472,34 +108488,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 108476 "isa_tms320.tcc"
+#line 108492 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108479 "isa_tms320.tcc"
+#line 108495 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 108483 "isa_tms320.tcc"
+#line 108499 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108486 "isa_tms320.tcc"
+#line 108502 "isa_tms320.tcc"
 >
 OpASH3_STI<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108491 "isa_tms320.tcc"
+#line 108507 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108495 "isa_tms320.tcc"
+#line 108511 "isa_tms320.tcc"
 >::OpASH3_STI(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108499 "isa_tms320.tcc"
+#line 108515 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108503 "isa_tms320.tcc"
+#line 108519 "isa_tms320.tcc"
 >(code, addr, "ASH3_STI")
 {
 	dst1 = ((code >> 22) & 0x7);
@@ -108514,34 +108530,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 108518 "isa_tms320.tcc"
+#line 108534 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108521 "isa_tms320.tcc"
+#line 108537 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 108525 "isa_tms320.tcc"
+#line 108541 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108528 "isa_tms320.tcc"
+#line 108544 "isa_tms320.tcc"
 >
 OpASH3_STI_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108533 "isa_tms320.tcc"
+#line 108549 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108537 "isa_tms320.tcc"
+#line 108553 "isa_tms320.tcc"
 >::OpASH3_STI_ext(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108541 "isa_tms320.tcc"
+#line 108557 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108545 "isa_tms320.tcc"
+#line 108561 "isa_tms320.tcc"
 >(code, addr, "ASH3_STI_ext")
 {
 	dst1 = ((code >> 22) & 0x7);
@@ -108555,34 +108571,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 108559 "isa_tms320.tcc"
+#line 108575 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108562 "isa_tms320.tcc"
+#line 108578 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 108566 "isa_tms320.tcc"
+#line 108582 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108569 "isa_tms320.tcc"
+#line 108585 "isa_tms320.tcc"
 >
 OpFIX_STI<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108574 "isa_tms320.tcc"
+#line 108590 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108578 "isa_tms320.tcc"
+#line 108594 "isa_tms320.tcc"
 >::OpFIX_STI(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108582 "isa_tms320.tcc"
+#line 108598 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108586 "isa_tms320.tcc"
+#line 108602 "isa_tms320.tcc"
 >(code, addr, "FIX_STI")
 {
 	dst1 = ((code >> 22) & 0x7);
@@ -108596,34 +108612,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 108600 "isa_tms320.tcc"
+#line 108616 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108603 "isa_tms320.tcc"
+#line 108619 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 108607 "isa_tms320.tcc"
+#line 108623 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108610 "isa_tms320.tcc"
+#line 108626 "isa_tms320.tcc"
 >
 OpFIX_STI_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108615 "isa_tms320.tcc"
+#line 108631 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108619 "isa_tms320.tcc"
+#line 108635 "isa_tms320.tcc"
 >::OpFIX_STI_ext(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108623 "isa_tms320.tcc"
+#line 108639 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108627 "isa_tms320.tcc"
+#line 108643 "isa_tms320.tcc"
 >(code, addr, "FIX_STI_ext")
 {
 	dst1 = ((code >> 22) & 0x7);
@@ -108636,34 +108652,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 108640 "isa_tms320.tcc"
+#line 108656 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108643 "isa_tms320.tcc"
+#line 108659 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 108647 "isa_tms320.tcc"
+#line 108663 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108650 "isa_tms320.tcc"
+#line 108666 "isa_tms320.tcc"
 >
 OpFLOAT_STF<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108655 "isa_tms320.tcc"
+#line 108671 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108659 "isa_tms320.tcc"
+#line 108675 "isa_tms320.tcc"
 >::OpFLOAT_STF(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108663 "isa_tms320.tcc"
+#line 108679 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108667 "isa_tms320.tcc"
+#line 108683 "isa_tms320.tcc"
 >(code, addr, "FLOAT_STF")
 {
 	dst1 = ((code >> 22) & 0x7);
@@ -108677,34 +108693,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 108681 "isa_tms320.tcc"
+#line 108697 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108684 "isa_tms320.tcc"
+#line 108700 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 108688 "isa_tms320.tcc"
+#line 108704 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108691 "isa_tms320.tcc"
+#line 108707 "isa_tms320.tcc"
 >
 OpFLOAT_STF_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108696 "isa_tms320.tcc"
+#line 108712 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108700 "isa_tms320.tcc"
+#line 108716 "isa_tms320.tcc"
 >::OpFLOAT_STF_ext(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108704 "isa_tms320.tcc"
+#line 108720 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108708 "isa_tms320.tcc"
+#line 108724 "isa_tms320.tcc"
 >(code, addr, "FLOAT_STF_ext")
 {
 	dst1 = ((code >> 22) & 0x7);
@@ -108717,34 +108733,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 108721 "isa_tms320.tcc"
+#line 108737 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108724 "isa_tms320.tcc"
+#line 108740 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 108728 "isa_tms320.tcc"
+#line 108744 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108731 "isa_tms320.tcc"
+#line 108747 "isa_tms320.tcc"
 >
 OpLDF_STF<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108736 "isa_tms320.tcc"
+#line 108752 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108740 "isa_tms320.tcc"
+#line 108756 "isa_tms320.tcc"
 >::OpLDF_STF(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108744 "isa_tms320.tcc"
+#line 108760 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108748 "isa_tms320.tcc"
+#line 108764 "isa_tms320.tcc"
 >(code, addr, "LDF_STF")
 {
 	dst1 = ((code >> 22) & 0x7);
@@ -108758,34 +108774,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 108762 "isa_tms320.tcc"
+#line 108778 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108765 "isa_tms320.tcc"
+#line 108781 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 108769 "isa_tms320.tcc"
+#line 108785 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108772 "isa_tms320.tcc"
+#line 108788 "isa_tms320.tcc"
 >
 OpLDF_STF_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108777 "isa_tms320.tcc"
+#line 108793 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108781 "isa_tms320.tcc"
+#line 108797 "isa_tms320.tcc"
 >::OpLDF_STF_ext(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108785 "isa_tms320.tcc"
+#line 108801 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108789 "isa_tms320.tcc"
+#line 108805 "isa_tms320.tcc"
 >(code, addr, "LDF_STF_ext")
 {
 	dst1 = ((code >> 22) & 0x7);
@@ -108798,34 +108814,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 108802 "isa_tms320.tcc"
+#line 108818 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108805 "isa_tms320.tcc"
+#line 108821 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 108809 "isa_tms320.tcc"
+#line 108825 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108812 "isa_tms320.tcc"
+#line 108828 "isa_tms320.tcc"
 >
 OpLDI_STI<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108817 "isa_tms320.tcc"
+#line 108833 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108821 "isa_tms320.tcc"
+#line 108837 "isa_tms320.tcc"
 >::OpLDI_STI(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108825 "isa_tms320.tcc"
+#line 108841 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108829 "isa_tms320.tcc"
+#line 108845 "isa_tms320.tcc"
 >(code, addr, "LDI_STI")
 {
 	dst1 = ((code >> 22) & 0x7);
@@ -108839,34 +108855,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 108843 "isa_tms320.tcc"
+#line 108859 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108846 "isa_tms320.tcc"
+#line 108862 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 108850 "isa_tms320.tcc"
+#line 108866 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108853 "isa_tms320.tcc"
+#line 108869 "isa_tms320.tcc"
 >
 OpLDI_STI_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108858 "isa_tms320.tcc"
+#line 108874 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108862 "isa_tms320.tcc"
+#line 108878 "isa_tms320.tcc"
 >::OpLDI_STI_ext(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108866 "isa_tms320.tcc"
+#line 108882 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108870 "isa_tms320.tcc"
+#line 108886 "isa_tms320.tcc"
 >(code, addr, "LDI_STI_ext")
 {
 	dst1 = ((code >> 22) & 0x7);
@@ -108879,34 +108895,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 108883 "isa_tms320.tcc"
+#line 108899 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108886 "isa_tms320.tcc"
+#line 108902 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 108890 "isa_tms320.tcc"
+#line 108906 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108893 "isa_tms320.tcc"
+#line 108909 "isa_tms320.tcc"
 >
 OpLSH3_STI<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108898 "isa_tms320.tcc"
+#line 108914 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108902 "isa_tms320.tcc"
+#line 108918 "isa_tms320.tcc"
 >::OpLSH3_STI(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108906 "isa_tms320.tcc"
+#line 108922 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108910 "isa_tms320.tcc"
+#line 108926 "isa_tms320.tcc"
 >(code, addr, "LSH3_STI")
 {
 	dst1 = ((code >> 22) & 0x7);
@@ -108921,34 +108937,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 108925 "isa_tms320.tcc"
+#line 108941 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108928 "isa_tms320.tcc"
+#line 108944 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 108932 "isa_tms320.tcc"
+#line 108948 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108935 "isa_tms320.tcc"
+#line 108951 "isa_tms320.tcc"
 >
 OpLSH3_STI_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108940 "isa_tms320.tcc"
+#line 108956 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108944 "isa_tms320.tcc"
+#line 108960 "isa_tms320.tcc"
 >::OpLSH3_STI_ext(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108948 "isa_tms320.tcc"
+#line 108964 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108952 "isa_tms320.tcc"
+#line 108968 "isa_tms320.tcc"
 >(code, addr, "LSH3_STI_ext")
 {
 	dst1 = ((code >> 22) & 0x7);
@@ -108962,34 +108978,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 108966 "isa_tms320.tcc"
+#line 108982 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108969 "isa_tms320.tcc"
+#line 108985 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 108973 "isa_tms320.tcc"
+#line 108989 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108976 "isa_tms320.tcc"
+#line 108992 "isa_tms320.tcc"
 >
 OpMPYF3_STF<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108981 "isa_tms320.tcc"
+#line 108997 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108985 "isa_tms320.tcc"
+#line 109001 "isa_tms320.tcc"
 >::OpMPYF3_STF(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 108989 "isa_tms320.tcc"
+#line 109005 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 108993 "isa_tms320.tcc"
+#line 109009 "isa_tms320.tcc"
 >(code, addr, "MPYF3_STF")
 {
 	dst1 = ((code >> 22) & 0x7);
@@ -109004,34 +109020,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 109008 "isa_tms320.tcc"
+#line 109024 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109011 "isa_tms320.tcc"
+#line 109027 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 109015 "isa_tms320.tcc"
+#line 109031 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109018 "isa_tms320.tcc"
+#line 109034 "isa_tms320.tcc"
 >
 OpMPYF3_STF_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109023 "isa_tms320.tcc"
+#line 109039 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109027 "isa_tms320.tcc"
+#line 109043 "isa_tms320.tcc"
 >::OpMPYF3_STF_ext(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109031 "isa_tms320.tcc"
+#line 109047 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109035 "isa_tms320.tcc"
+#line 109051 "isa_tms320.tcc"
 >(code, addr, "MPYF3_STF_ext")
 {
 	dst1 = ((code >> 22) & 0x7);
@@ -109045,34 +109061,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 109049 "isa_tms320.tcc"
+#line 109065 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109052 "isa_tms320.tcc"
+#line 109068 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 109056 "isa_tms320.tcc"
+#line 109072 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109059 "isa_tms320.tcc"
+#line 109075 "isa_tms320.tcc"
 >
 OpMPYI3_STI<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109064 "isa_tms320.tcc"
+#line 109080 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109068 "isa_tms320.tcc"
+#line 109084 "isa_tms320.tcc"
 >::OpMPYI3_STI(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109072 "isa_tms320.tcc"
+#line 109088 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109076 "isa_tms320.tcc"
+#line 109092 "isa_tms320.tcc"
 >(code, addr, "MPYI3_STI")
 {
 	dst1 = ((code >> 22) & 0x7);
@@ -109087,34 +109103,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 109091 "isa_tms320.tcc"
+#line 109107 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109094 "isa_tms320.tcc"
+#line 109110 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 109098 "isa_tms320.tcc"
+#line 109114 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109101 "isa_tms320.tcc"
+#line 109117 "isa_tms320.tcc"
 >
 OpMPYI3_STI_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109106 "isa_tms320.tcc"
+#line 109122 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109110 "isa_tms320.tcc"
+#line 109126 "isa_tms320.tcc"
 >::OpMPYI3_STI_ext(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109114 "isa_tms320.tcc"
+#line 109130 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109118 "isa_tms320.tcc"
+#line 109134 "isa_tms320.tcc"
 >(code, addr, "MPYI3_STI_ext")
 {
 	dst1 = ((code >> 22) & 0x7);
@@ -109128,34 +109144,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 109132 "isa_tms320.tcc"
+#line 109148 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109135 "isa_tms320.tcc"
+#line 109151 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 109139 "isa_tms320.tcc"
+#line 109155 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109142 "isa_tms320.tcc"
+#line 109158 "isa_tms320.tcc"
 >
 OpNEGF_STF<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109147 "isa_tms320.tcc"
+#line 109163 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109151 "isa_tms320.tcc"
+#line 109167 "isa_tms320.tcc"
 >::OpNEGF_STF(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109155 "isa_tms320.tcc"
+#line 109171 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109159 "isa_tms320.tcc"
+#line 109175 "isa_tms320.tcc"
 >(code, addr, "NEGF_STF")
 {
 	dst1 = ((code >> 22) & 0x7);
@@ -109169,34 +109185,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 109173 "isa_tms320.tcc"
+#line 109189 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109176 "isa_tms320.tcc"
+#line 109192 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 109180 "isa_tms320.tcc"
+#line 109196 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109183 "isa_tms320.tcc"
+#line 109199 "isa_tms320.tcc"
 >
 OpNEGF_STF_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109188 "isa_tms320.tcc"
+#line 109204 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109192 "isa_tms320.tcc"
+#line 109208 "isa_tms320.tcc"
 >::OpNEGF_STF_ext(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109196 "isa_tms320.tcc"
+#line 109212 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109200 "isa_tms320.tcc"
+#line 109216 "isa_tms320.tcc"
 >(code, addr, "NEGF_STF_ext")
 {
 	dst1 = ((code >> 22) & 0x7);
@@ -109209,34 +109225,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 109213 "isa_tms320.tcc"
+#line 109229 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109216 "isa_tms320.tcc"
+#line 109232 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 109220 "isa_tms320.tcc"
+#line 109236 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109223 "isa_tms320.tcc"
+#line 109239 "isa_tms320.tcc"
 >
 OpNEGI_STI<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109228 "isa_tms320.tcc"
+#line 109244 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109232 "isa_tms320.tcc"
+#line 109248 "isa_tms320.tcc"
 >::OpNEGI_STI(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109236 "isa_tms320.tcc"
+#line 109252 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109240 "isa_tms320.tcc"
+#line 109256 "isa_tms320.tcc"
 >(code, addr, "NEGI_STI")
 {
 	dst1 = ((code >> 22) & 0x7);
@@ -109250,34 +109266,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 109254 "isa_tms320.tcc"
+#line 109270 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109257 "isa_tms320.tcc"
+#line 109273 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 109261 "isa_tms320.tcc"
+#line 109277 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109264 "isa_tms320.tcc"
+#line 109280 "isa_tms320.tcc"
 >
 OpNEGI_STI_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109269 "isa_tms320.tcc"
+#line 109285 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109273 "isa_tms320.tcc"
+#line 109289 "isa_tms320.tcc"
 >::OpNEGI_STI_ext(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109277 "isa_tms320.tcc"
+#line 109293 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109281 "isa_tms320.tcc"
+#line 109297 "isa_tms320.tcc"
 >(code, addr, "NEGI_STI_ext")
 {
 	dst1 = ((code >> 22) & 0x7);
@@ -109290,34 +109306,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 109294 "isa_tms320.tcc"
+#line 109310 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109297 "isa_tms320.tcc"
+#line 109313 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 109301 "isa_tms320.tcc"
+#line 109317 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109304 "isa_tms320.tcc"
+#line 109320 "isa_tms320.tcc"
 >
 OpNOT_STI<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109309 "isa_tms320.tcc"
+#line 109325 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109313 "isa_tms320.tcc"
+#line 109329 "isa_tms320.tcc"
 >::OpNOT_STI(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109317 "isa_tms320.tcc"
+#line 109333 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109321 "isa_tms320.tcc"
+#line 109337 "isa_tms320.tcc"
 >(code, addr, "NOT_STI")
 {
 	dst1 = ((code >> 22) & 0x7);
@@ -109331,34 +109347,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 109335 "isa_tms320.tcc"
+#line 109351 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109338 "isa_tms320.tcc"
+#line 109354 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 109342 "isa_tms320.tcc"
+#line 109358 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109345 "isa_tms320.tcc"
+#line 109361 "isa_tms320.tcc"
 >
 OpNOT_STI_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109350 "isa_tms320.tcc"
+#line 109366 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109354 "isa_tms320.tcc"
+#line 109370 "isa_tms320.tcc"
 >::OpNOT_STI_ext(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109358 "isa_tms320.tcc"
+#line 109374 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109362 "isa_tms320.tcc"
+#line 109378 "isa_tms320.tcc"
 >(code, addr, "NOT_STI_ext")
 {
 	dst1 = ((code >> 22) & 0x7);
@@ -109371,34 +109387,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 109375 "isa_tms320.tcc"
+#line 109391 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109378 "isa_tms320.tcc"
+#line 109394 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 109382 "isa_tms320.tcc"
+#line 109398 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109385 "isa_tms320.tcc"
+#line 109401 "isa_tms320.tcc"
 >
 OpOR3_STI<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109390 "isa_tms320.tcc"
+#line 109406 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109394 "isa_tms320.tcc"
+#line 109410 "isa_tms320.tcc"
 >::OpOR3_STI(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109398 "isa_tms320.tcc"
+#line 109414 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109402 "isa_tms320.tcc"
+#line 109418 "isa_tms320.tcc"
 >(code, addr, "OR3_STI")
 {
 	dst1 = ((code >> 22) & 0x7);
@@ -109413,34 +109429,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 109417 "isa_tms320.tcc"
+#line 109433 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109420 "isa_tms320.tcc"
+#line 109436 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 109424 "isa_tms320.tcc"
+#line 109440 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109427 "isa_tms320.tcc"
+#line 109443 "isa_tms320.tcc"
 >
 OpOR3_STI_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109432 "isa_tms320.tcc"
+#line 109448 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109436 "isa_tms320.tcc"
+#line 109452 "isa_tms320.tcc"
 >::OpOR3_STI_ext(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109440 "isa_tms320.tcc"
+#line 109456 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109444 "isa_tms320.tcc"
+#line 109460 "isa_tms320.tcc"
 >(code, addr, "OR3_STI_ext")
 {
 	dst1 = ((code >> 22) & 0x7);
@@ -109454,34 +109470,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 109458 "isa_tms320.tcc"
+#line 109474 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109461 "isa_tms320.tcc"
+#line 109477 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 109465 "isa_tms320.tcc"
+#line 109481 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109468 "isa_tms320.tcc"
+#line 109484 "isa_tms320.tcc"
 >
 OpSTF_STF<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109473 "isa_tms320.tcc"
+#line 109489 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109477 "isa_tms320.tcc"
+#line 109493 "isa_tms320.tcc"
 >::OpSTF_STF(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109481 "isa_tms320.tcc"
+#line 109497 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109485 "isa_tms320.tcc"
+#line 109501 "isa_tms320.tcc"
 >(code, addr, "STF_STF")
 {
 	src2 = ((code >> 22) & 0x7);
@@ -109495,34 +109511,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 109499 "isa_tms320.tcc"
+#line 109515 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109502 "isa_tms320.tcc"
+#line 109518 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 109506 "isa_tms320.tcc"
+#line 109522 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109509 "isa_tms320.tcc"
+#line 109525 "isa_tms320.tcc"
 >
 OpSTF_STF_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109514 "isa_tms320.tcc"
+#line 109530 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109518 "isa_tms320.tcc"
+#line 109534 "isa_tms320.tcc"
 >::OpSTF_STF_ext(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109522 "isa_tms320.tcc"
+#line 109538 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109526 "isa_tms320.tcc"
+#line 109542 "isa_tms320.tcc"
 >(code, addr, "STF_STF_ext")
 {
 	src2 = ((code >> 22) & 0x7);
@@ -109535,34 +109551,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 109539 "isa_tms320.tcc"
+#line 109555 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109542 "isa_tms320.tcc"
+#line 109558 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 109546 "isa_tms320.tcc"
+#line 109562 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109549 "isa_tms320.tcc"
+#line 109565 "isa_tms320.tcc"
 >
 OpSTI_STI<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109554 "isa_tms320.tcc"
+#line 109570 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109558 "isa_tms320.tcc"
+#line 109574 "isa_tms320.tcc"
 >::OpSTI_STI(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109562 "isa_tms320.tcc"
+#line 109578 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109566 "isa_tms320.tcc"
+#line 109582 "isa_tms320.tcc"
 >(code, addr, "STI_STI")
 {
 	src2 = ((code >> 22) & 0x7);
@@ -109576,34 +109592,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 109580 "isa_tms320.tcc"
+#line 109596 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109583 "isa_tms320.tcc"
+#line 109599 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 109587 "isa_tms320.tcc"
+#line 109603 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109590 "isa_tms320.tcc"
+#line 109606 "isa_tms320.tcc"
 >
 OpSTI_STI_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109595 "isa_tms320.tcc"
+#line 109611 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109599 "isa_tms320.tcc"
+#line 109615 "isa_tms320.tcc"
 >::OpSTI_STI_ext(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109603 "isa_tms320.tcc"
+#line 109619 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109607 "isa_tms320.tcc"
+#line 109623 "isa_tms320.tcc"
 >(code, addr, "STI_STI_ext")
 {
 	src2 = ((code >> 22) & 0x7);
@@ -109616,34 +109632,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 109620 "isa_tms320.tcc"
+#line 109636 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109623 "isa_tms320.tcc"
+#line 109639 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 109627 "isa_tms320.tcc"
+#line 109643 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109630 "isa_tms320.tcc"
+#line 109646 "isa_tms320.tcc"
 >
 OpSUBF3_STF<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109635 "isa_tms320.tcc"
+#line 109651 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109639 "isa_tms320.tcc"
+#line 109655 "isa_tms320.tcc"
 >::OpSUBF3_STF(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109643 "isa_tms320.tcc"
+#line 109659 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109647 "isa_tms320.tcc"
+#line 109663 "isa_tms320.tcc"
 >(code, addr, "SUBF3_STF")
 {
 	dst1 = ((code >> 22) & 0x7);
@@ -109658,34 +109674,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 109662 "isa_tms320.tcc"
+#line 109678 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109665 "isa_tms320.tcc"
+#line 109681 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 109669 "isa_tms320.tcc"
+#line 109685 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109672 "isa_tms320.tcc"
+#line 109688 "isa_tms320.tcc"
 >
 OpSUBF3_STF_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109677 "isa_tms320.tcc"
+#line 109693 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109681 "isa_tms320.tcc"
+#line 109697 "isa_tms320.tcc"
 >::OpSUBF3_STF_ext(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109685 "isa_tms320.tcc"
+#line 109701 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109689 "isa_tms320.tcc"
+#line 109705 "isa_tms320.tcc"
 >(code, addr, "SUBF3_STF_ext")
 {
 	dst1 = ((code >> 22) & 0x7);
@@ -109699,34 +109715,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 109703 "isa_tms320.tcc"
+#line 109719 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109706 "isa_tms320.tcc"
+#line 109722 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 109710 "isa_tms320.tcc"
+#line 109726 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109713 "isa_tms320.tcc"
+#line 109729 "isa_tms320.tcc"
 >
 OpSUBI3_STI<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109718 "isa_tms320.tcc"
+#line 109734 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109722 "isa_tms320.tcc"
+#line 109738 "isa_tms320.tcc"
 >::OpSUBI3_STI(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109726 "isa_tms320.tcc"
+#line 109742 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109730 "isa_tms320.tcc"
+#line 109746 "isa_tms320.tcc"
 >(code, addr, "SUBI3_STI")
 {
 	dst1 = ((code >> 22) & 0x7);
@@ -109741,34 +109757,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 109745 "isa_tms320.tcc"
+#line 109761 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109748 "isa_tms320.tcc"
+#line 109764 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 109752 "isa_tms320.tcc"
+#line 109768 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109755 "isa_tms320.tcc"
+#line 109771 "isa_tms320.tcc"
 >
 OpSUBI3_STI_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109760 "isa_tms320.tcc"
+#line 109776 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109764 "isa_tms320.tcc"
+#line 109780 "isa_tms320.tcc"
 >::OpSUBI3_STI_ext(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109768 "isa_tms320.tcc"
+#line 109784 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109772 "isa_tms320.tcc"
+#line 109788 "isa_tms320.tcc"
 >(code, addr, "SUBI3_STI_ext")
 {
 	dst1 = ((code >> 22) & 0x7);
@@ -109782,34 +109798,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 109786 "isa_tms320.tcc"
+#line 109802 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109789 "isa_tms320.tcc"
+#line 109805 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 109793 "isa_tms320.tcc"
+#line 109809 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109796 "isa_tms320.tcc"
+#line 109812 "isa_tms320.tcc"
 >
 OpXOR3_STI<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109801 "isa_tms320.tcc"
+#line 109817 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109805 "isa_tms320.tcc"
+#line 109821 "isa_tms320.tcc"
 >::OpXOR3_STI(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109809 "isa_tms320.tcc"
+#line 109825 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109813 "isa_tms320.tcc"
+#line 109829 "isa_tms320.tcc"
 >(code, addr, "XOR3_STI")
 {
 	dst1 = ((code >> 22) & 0x7);
@@ -109824,34 +109840,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 109828 "isa_tms320.tcc"
+#line 109844 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109831 "isa_tms320.tcc"
+#line 109847 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 109835 "isa_tms320.tcc"
+#line 109851 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109838 "isa_tms320.tcc"
+#line 109854 "isa_tms320.tcc"
 >
 OpXOR3_STI_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109843 "isa_tms320.tcc"
+#line 109859 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109847 "isa_tms320.tcc"
+#line 109863 "isa_tms320.tcc"
 >::OpXOR3_STI_ext(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109851 "isa_tms320.tcc"
+#line 109867 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109855 "isa_tms320.tcc"
+#line 109871 "isa_tms320.tcc"
 >(code, addr, "XOR3_STI_ext")
 {
 	dst1 = ((code >> 22) & 0x7);
@@ -109865,34 +109881,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 109869 "isa_tms320.tcc"
+#line 109885 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109872 "isa_tms320.tcc"
+#line 109888 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 109876 "isa_tms320.tcc"
+#line 109892 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109879 "isa_tms320.tcc"
+#line 109895 "isa_tms320.tcc"
 >
 OpLDF_LDF<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109884 "isa_tms320.tcc"
+#line 109900 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109888 "isa_tms320.tcc"
+#line 109904 "isa_tms320.tcc"
 >::OpLDF_LDF(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109892 "isa_tms320.tcc"
+#line 109908 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109896 "isa_tms320.tcc"
+#line 109912 "isa_tms320.tcc"
 >(code, addr, "LDF_LDF")
 {
 	dst1 = ((code >> 22) & 0x7);
@@ -109906,34 +109922,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 109910 "isa_tms320.tcc"
+#line 109926 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109913 "isa_tms320.tcc"
+#line 109929 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 109917 "isa_tms320.tcc"
+#line 109933 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109920 "isa_tms320.tcc"
+#line 109936 "isa_tms320.tcc"
 >
 OpLDF_LDF_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109925 "isa_tms320.tcc"
+#line 109941 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109929 "isa_tms320.tcc"
+#line 109945 "isa_tms320.tcc"
 >::OpLDF_LDF_ext(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109933 "isa_tms320.tcc"
+#line 109949 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109937 "isa_tms320.tcc"
+#line 109953 "isa_tms320.tcc"
 >(code, addr, "LDF_LDF_ext")
 {
 	dst1 = ((code >> 22) & 0x7);
@@ -109946,34 +109962,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 109950 "isa_tms320.tcc"
+#line 109966 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109953 "isa_tms320.tcc"
+#line 109969 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 109957 "isa_tms320.tcc"
+#line 109973 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109960 "isa_tms320.tcc"
+#line 109976 "isa_tms320.tcc"
 >
 OpLDI_LDI<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109965 "isa_tms320.tcc"
+#line 109981 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109969 "isa_tms320.tcc"
+#line 109985 "isa_tms320.tcc"
 >::OpLDI_LDI(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109973 "isa_tms320.tcc"
+#line 109989 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 109977 "isa_tms320.tcc"
+#line 109993 "isa_tms320.tcc"
 >(code, addr, "LDI_LDI")
 {
 	dst1 = ((code >> 22) & 0x7);
@@ -109987,34 +110003,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 109991 "isa_tms320.tcc"
+#line 110007 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 109994 "isa_tms320.tcc"
+#line 110010 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 109998 "isa_tms320.tcc"
+#line 110014 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 110001 "isa_tms320.tcc"
+#line 110017 "isa_tms320.tcc"
 >
 OpLDI_LDI_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 110006 "isa_tms320.tcc"
+#line 110022 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 110010 "isa_tms320.tcc"
+#line 110026 "isa_tms320.tcc"
 >::OpLDI_LDI_ext(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 110014 "isa_tms320.tcc"
+#line 110030 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 110018 "isa_tms320.tcc"
+#line 110034 "isa_tms320.tcc"
 >(code, addr, "LDI_LDI_ext")
 {
 	dst1 = ((code >> 22) & 0x7);
@@ -110027,34 +110043,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 110031 "isa_tms320.tcc"
+#line 110047 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 110034 "isa_tms320.tcc"
+#line 110050 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 110038 "isa_tms320.tcc"
+#line 110054 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 110041 "isa_tms320.tcc"
+#line 110057 "isa_tms320.tcc"
 >
 OpMPYF3_ADDF3<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 110046 "isa_tms320.tcc"
+#line 110062 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 110050 "isa_tms320.tcc"
+#line 110066 "isa_tms320.tcc"
 >::OpMPYF3_ADDF3(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 110054 "isa_tms320.tcc"
+#line 110070 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 110058 "isa_tms320.tcc"
+#line 110074 "isa_tms320.tcc"
 >(code, addr, "MPYF3_ADDF3")
 {
 	p = ((code >> 24) & 0x3);
@@ -110071,34 +110087,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 110075 "isa_tms320.tcc"
+#line 110091 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 110078 "isa_tms320.tcc"
+#line 110094 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 110082 "isa_tms320.tcc"
+#line 110098 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 110085 "isa_tms320.tcc"
+#line 110101 "isa_tms320.tcc"
 >
 OpMPYF3_ADDF3_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 110090 "isa_tms320.tcc"
+#line 110106 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 110094 "isa_tms320.tcc"
+#line 110110 "isa_tms320.tcc"
 >::OpMPYF3_ADDF3_ext(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 110098 "isa_tms320.tcc"
+#line 110114 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 110102 "isa_tms320.tcc"
+#line 110118 "isa_tms320.tcc"
 >(code, addr, "MPYF3_ADDF3_ext")
 {
 	p = ((code >> 24) & 0x3);
@@ -110113,34 +110129,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 110117 "isa_tms320.tcc"
+#line 110133 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 110120 "isa_tms320.tcc"
+#line 110136 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 110124 "isa_tms320.tcc"
+#line 110140 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 110127 "isa_tms320.tcc"
+#line 110143 "isa_tms320.tcc"
 >
 OpMPYF3_SUBF3<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 110132 "isa_tms320.tcc"
+#line 110148 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 110136 "isa_tms320.tcc"
+#line 110152 "isa_tms320.tcc"
 >::OpMPYF3_SUBF3(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 110140 "isa_tms320.tcc"
+#line 110156 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 110144 "isa_tms320.tcc"
+#line 110160 "isa_tms320.tcc"
 >(code, addr, "MPYF3_SUBF3")
 {
 	p = ((code >> 24) & 0x3);
@@ -110157,34 +110173,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 110161 "isa_tms320.tcc"
+#line 110177 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 110164 "isa_tms320.tcc"
+#line 110180 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 110168 "isa_tms320.tcc"
+#line 110184 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 110171 "isa_tms320.tcc"
+#line 110187 "isa_tms320.tcc"
 >
 OpMPYF3_SUBF3_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 110176 "isa_tms320.tcc"
+#line 110192 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 110180 "isa_tms320.tcc"
+#line 110196 "isa_tms320.tcc"
 >::OpMPYF3_SUBF3_ext(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 110184 "isa_tms320.tcc"
+#line 110200 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 110188 "isa_tms320.tcc"
+#line 110204 "isa_tms320.tcc"
 >(code, addr, "MPYF3_SUBF3_ext")
 {
 	p = ((code >> 24) & 0x3);
@@ -110199,34 +110215,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 110203 "isa_tms320.tcc"
+#line 110219 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 110206 "isa_tms320.tcc"
+#line 110222 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 110210 "isa_tms320.tcc"
+#line 110226 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 110213 "isa_tms320.tcc"
+#line 110229 "isa_tms320.tcc"
 >
 OpMPYI3_ADDI3<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 110218 "isa_tms320.tcc"
+#line 110234 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 110222 "isa_tms320.tcc"
+#line 110238 "isa_tms320.tcc"
 >::OpMPYI3_ADDI3(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 110226 "isa_tms320.tcc"
+#line 110242 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 110230 "isa_tms320.tcc"
+#line 110246 "isa_tms320.tcc"
 >(code, addr, "MPYI3_ADDI3")
 {
 	p = ((code >> 24) & 0x3);
@@ -110243,34 +110259,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 110247 "isa_tms320.tcc"
+#line 110263 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 110250 "isa_tms320.tcc"
+#line 110266 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 110254 "isa_tms320.tcc"
+#line 110270 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 110257 "isa_tms320.tcc"
+#line 110273 "isa_tms320.tcc"
 >
 OpMPYI3_ADDI3_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 110262 "isa_tms320.tcc"
+#line 110278 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 110266 "isa_tms320.tcc"
+#line 110282 "isa_tms320.tcc"
 >::OpMPYI3_ADDI3_ext(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 110270 "isa_tms320.tcc"
+#line 110286 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 110274 "isa_tms320.tcc"
+#line 110290 "isa_tms320.tcc"
 >(code, addr, "MPYI3_ADDI3_ext")
 {
 	p = ((code >> 24) & 0x3);
@@ -110285,34 +110301,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 110289 "isa_tms320.tcc"
+#line 110305 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 110292 "isa_tms320.tcc"
+#line 110308 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 110296 "isa_tms320.tcc"
+#line 110312 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 110299 "isa_tms320.tcc"
+#line 110315 "isa_tms320.tcc"
 >
 OpMPYI3_SUBI3<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 110304 "isa_tms320.tcc"
+#line 110320 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 110308 "isa_tms320.tcc"
+#line 110324 "isa_tms320.tcc"
 >::OpMPYI3_SUBI3(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 110312 "isa_tms320.tcc"
+#line 110328 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 110316 "isa_tms320.tcc"
+#line 110332 "isa_tms320.tcc"
 >(code, addr, "MPYI3_SUBI3")
 {
 	p = ((code >> 24) & 0x3);
@@ -110329,34 +110345,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 110333 "isa_tms320.tcc"
+#line 110349 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 110336 "isa_tms320.tcc"
+#line 110352 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 110340 "isa_tms320.tcc"
+#line 110356 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 110343 "isa_tms320.tcc"
+#line 110359 "isa_tms320.tcc"
 >
 OpMPYI3_SUBI3_ext<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 110348 "isa_tms320.tcc"
+#line 110364 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 110352 "isa_tms320.tcc"
+#line 110368 "isa_tms320.tcc"
 >::OpMPYI3_SUBI3_ext(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 110356 "isa_tms320.tcc"
+#line 110372 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 110360 "isa_tms320.tcc"
+#line 110376 "isa_tms320.tcc"
 >(code, addr, "MPYI3_SUBI3_ext")
 {
 	p = ((code >> 24) & 0x3);
@@ -110371,26 +110387,26 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 110375 "isa_tms320.tcc"
+#line 110391 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 110378 "isa_tms320.tcc"
+#line 110394 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 110382 "isa_tms320.tcc"
+#line 110398 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 110385 "isa_tms320.tcc"
+#line 110401 "isa_tms320.tcc"
 >
 DecodeMapPage<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 110390 "isa_tms320.tcc"
+#line 110406 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 110394 "isa_tms320.tcc"
+#line 110410 "isa_tms320.tcc"
 >::DecodeMapPage(typename CONFIG::address_t key)
 {
 	this->key = key;
@@ -110401,26 +110417,26 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 110405 "isa_tms320.tcc"
+#line 110421 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 110408 "isa_tms320.tcc"
+#line 110424 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 110412 "isa_tms320.tcc"
+#line 110428 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 110415 "isa_tms320.tcc"
+#line 110431 "isa_tms320.tcc"
 >
 DecodeMapPage<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 110420 "isa_tms320.tcc"
+#line 110436 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 110424 "isa_tms320.tcc"
+#line 110440 "isa_tms320.tcc"
 >::~DecodeMapPage()
 {
 	unsigned int idx;
@@ -110431,34 +110447,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 110435 "isa_tms320.tcc"
+#line 110451 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 110438 "isa_tms320.tcc"
+#line 110454 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 110442 "isa_tms320.tcc"
+#line 110458 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 110445 "isa_tms320.tcc"
+#line 110461 "isa_tms320.tcc"
 >
 DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 110450 "isa_tms320.tcc"
+#line 110466 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 110454 "isa_tms320.tcc"
+#line 110470 "isa_tms320.tcc"
 >::DecodeTableEntry(CodeType opcode, CodeType opcode_mask, Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 110458 "isa_tms320.tcc"
+#line 110474 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 110462 "isa_tms320.tcc"
+#line 110478 "isa_tms320.tcc"
 > *(*decode)(CodeType, typename CONFIG::address_t))
 {
 	this->opcode = opcode;
@@ -110469,26 +110485,26 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 110473 "isa_tms320.tcc"
+#line 110489 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 110476 "isa_tms320.tcc"
+#line 110492 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 110480 "isa_tms320.tcc"
+#line 110496 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 110483 "isa_tms320.tcc"
+#line 110499 "isa_tms320.tcc"
 >
 Decoder<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 110488 "isa_tms320.tcc"
+#line 110504 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 110492 "isa_tms320.tcc"
+#line 110508 "isa_tms320.tcc"
 >::Decoder()
 {
 	little_endian = true;
@@ -110497,5536 +110513,5536 @@ DEBUG
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 110501 "isa_tms320.tcc"
+#line 110517 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 110505 "isa_tms320.tcc"
+#line 110521 "isa_tms320.tcc"
 	>(0x8c00e0e0UL, 0xfc00e0e0UL, DecodeOpMPYI3_SUBI3_ext<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 110509 "isa_tms320.tcc"
+#line 110525 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 110513 "isa_tms320.tcc"
+#line 110529 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 110518 "isa_tms320.tcc"
+#line 110534 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 110522 "isa_tms320.tcc"
+#line 110538 "isa_tms320.tcc"
 	>(0x8c000000UL, 0xfc000000UL, DecodeOpMPYI3_SUBI3<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 110526 "isa_tms320.tcc"
+#line 110542 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 110530 "isa_tms320.tcc"
+#line 110546 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 110535 "isa_tms320.tcc"
+#line 110551 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 110539 "isa_tms320.tcc"
+#line 110555 "isa_tms320.tcc"
 	>(0x8800e0e0UL, 0xfc00e0e0UL, DecodeOpMPYI3_ADDI3_ext<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 110543 "isa_tms320.tcc"
+#line 110559 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 110547 "isa_tms320.tcc"
+#line 110563 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 110552 "isa_tms320.tcc"
+#line 110568 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 110556 "isa_tms320.tcc"
+#line 110572 "isa_tms320.tcc"
 	>(0x88000000UL, 0xfc000000UL, DecodeOpMPYI3_ADDI3<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 110560 "isa_tms320.tcc"
+#line 110576 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 110564 "isa_tms320.tcc"
+#line 110580 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 110569 "isa_tms320.tcc"
+#line 110585 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 110573 "isa_tms320.tcc"
+#line 110589 "isa_tms320.tcc"
 	>(0x8400e0e0UL, 0xfc00e0e0UL, DecodeOpMPYF3_SUBF3_ext<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 110577 "isa_tms320.tcc"
+#line 110593 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 110581 "isa_tms320.tcc"
+#line 110597 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 110586 "isa_tms320.tcc"
+#line 110602 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 110590 "isa_tms320.tcc"
+#line 110606 "isa_tms320.tcc"
 	>(0x84000000UL, 0xfc000000UL, DecodeOpMPYF3_SUBF3<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 110594 "isa_tms320.tcc"
+#line 110610 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 110598 "isa_tms320.tcc"
+#line 110614 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 110603 "isa_tms320.tcc"
+#line 110619 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 110607 "isa_tms320.tcc"
+#line 110623 "isa_tms320.tcc"
 	>(0x8000e0e0UL, 0xfc00e0e0UL, DecodeOpMPYF3_ADDF3_ext<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 110611 "isa_tms320.tcc"
+#line 110627 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 110615 "isa_tms320.tcc"
+#line 110631 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 110620 "isa_tms320.tcc"
+#line 110636 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 110624 "isa_tms320.tcc"
+#line 110640 "isa_tms320.tcc"
 	>(0x80000000UL, 0xfc000000UL, DecodeOpMPYF3_ADDF3<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 110628 "isa_tms320.tcc"
+#line 110644 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 110632 "isa_tms320.tcc"
+#line 110648 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 110637 "isa_tms320.tcc"
+#line 110653 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 110641 "isa_tms320.tcc"
+#line 110657 "isa_tms320.tcc"
 	>(0xc60000e0UL, 0xfe0700e0UL, DecodeOpLDI_LDI_ext<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 110645 "isa_tms320.tcc"
+#line 110661 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 110649 "isa_tms320.tcc"
+#line 110665 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 110654 "isa_tms320.tcc"
+#line 110670 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 110658 "isa_tms320.tcc"
+#line 110674 "isa_tms320.tcc"
 	>(0xc6000000UL, 0xfe070000UL, DecodeOpLDI_LDI<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 110662 "isa_tms320.tcc"
+#line 110678 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 110666 "isa_tms320.tcc"
+#line 110682 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 110671 "isa_tms320.tcc"
+#line 110687 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 110675 "isa_tms320.tcc"
+#line 110691 "isa_tms320.tcc"
 	>(0xc40000e0UL, 0xfe0700e0UL, DecodeOpLDF_LDF_ext<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 110679 "isa_tms320.tcc"
+#line 110695 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 110683 "isa_tms320.tcc"
+#line 110699 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 110688 "isa_tms320.tcc"
+#line 110704 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 110692 "isa_tms320.tcc"
+#line 110708 "isa_tms320.tcc"
 	>(0xc4000000UL, 0xfe070000UL, DecodeOpLDF_LDF<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 110696 "isa_tms320.tcc"
+#line 110712 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 110700 "isa_tms320.tcc"
+#line 110716 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 110705 "isa_tms320.tcc"
+#line 110721 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 110709 "isa_tms320.tcc"
+#line 110725 "isa_tms320.tcc"
 	>(0xee0000e0UL, 0xfe0000e0UL, DecodeOpXOR3_STI_ext<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 110713 "isa_tms320.tcc"
+#line 110729 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 110717 "isa_tms320.tcc"
+#line 110733 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 110722 "isa_tms320.tcc"
+#line 110738 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 110726 "isa_tms320.tcc"
+#line 110742 "isa_tms320.tcc"
 	>(0xee000000UL, 0xfe000000UL, DecodeOpXOR3_STI<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 110730 "isa_tms320.tcc"
+#line 110746 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 110734 "isa_tms320.tcc"
+#line 110750 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 110739 "isa_tms320.tcc"
+#line 110755 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 110743 "isa_tms320.tcc"
+#line 110759 "isa_tms320.tcc"
 	>(0xec0000e0UL, 0xfe0000e0UL, DecodeOpSUBI3_STI_ext<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 110747 "isa_tms320.tcc"
+#line 110763 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 110751 "isa_tms320.tcc"
+#line 110767 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 110756 "isa_tms320.tcc"
+#line 110772 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 110760 "isa_tms320.tcc"
+#line 110776 "isa_tms320.tcc"
 	>(0xec000000UL, 0xfe000000UL, DecodeOpSUBI3_STI<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 110764 "isa_tms320.tcc"
+#line 110780 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 110768 "isa_tms320.tcc"
+#line 110784 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 110773 "isa_tms320.tcc"
+#line 110789 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 110777 "isa_tms320.tcc"
+#line 110793 "isa_tms320.tcc"
 	>(0xea0000e0UL, 0xfe0000e0UL, DecodeOpSUBF3_STF_ext<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 110781 "isa_tms320.tcc"
+#line 110797 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 110785 "isa_tms320.tcc"
+#line 110801 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 110790 "isa_tms320.tcc"
+#line 110806 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 110794 "isa_tms320.tcc"
+#line 110810 "isa_tms320.tcc"
 	>(0xea000000UL, 0xfe000000UL, DecodeOpSUBF3_STF<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 110798 "isa_tms320.tcc"
+#line 110814 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 110802 "isa_tms320.tcc"
+#line 110818 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 110807 "isa_tms320.tcc"
+#line 110823 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 110811 "isa_tms320.tcc"
+#line 110827 "isa_tms320.tcc"
 	>(0xc20000e0UL, 0xfe3800e0UL, DecodeOpSTI_STI_ext<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 110815 "isa_tms320.tcc"
+#line 110831 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 110819 "isa_tms320.tcc"
+#line 110835 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 110824 "isa_tms320.tcc"
+#line 110840 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 110828 "isa_tms320.tcc"
+#line 110844 "isa_tms320.tcc"
 	>(0xc2000000UL, 0xfe380000UL, DecodeOpSTI_STI<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 110832 "isa_tms320.tcc"
+#line 110848 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 110836 "isa_tms320.tcc"
+#line 110852 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 110841 "isa_tms320.tcc"
+#line 110857 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 110845 "isa_tms320.tcc"
+#line 110861 "isa_tms320.tcc"
 	>(0xc00000e0UL, 0xfe3800e0UL, DecodeOpSTF_STF_ext<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 110849 "isa_tms320.tcc"
+#line 110865 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 110853 "isa_tms320.tcc"
+#line 110869 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 110858 "isa_tms320.tcc"
+#line 110874 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 110862 "isa_tms320.tcc"
+#line 110878 "isa_tms320.tcc"
 	>(0xc0000000UL, 0xfe380000UL, DecodeOpSTF_STF<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 110866 "isa_tms320.tcc"
+#line 110882 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 110870 "isa_tms320.tcc"
+#line 110886 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 110875 "isa_tms320.tcc"
+#line 110891 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 110879 "isa_tms320.tcc"
+#line 110895 "isa_tms320.tcc"
 	>(0xe80000e0UL, 0xfe0000e0UL, DecodeOpOR3_STI_ext<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 110883 "isa_tms320.tcc"
+#line 110899 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 110887 "isa_tms320.tcc"
+#line 110903 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 110892 "isa_tms320.tcc"
+#line 110908 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 110896 "isa_tms320.tcc"
+#line 110912 "isa_tms320.tcc"
 	>(0xe8000000UL, 0xfe000000UL, DecodeOpOR3_STI<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 110900 "isa_tms320.tcc"
+#line 110916 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 110904 "isa_tms320.tcc"
+#line 110920 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 110909 "isa_tms320.tcc"
+#line 110925 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 110913 "isa_tms320.tcc"
+#line 110929 "isa_tms320.tcc"
 	>(0xe60000e0UL, 0xfe3800e0UL, DecodeOpNOT_STI_ext<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 110917 "isa_tms320.tcc"
+#line 110933 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 110921 "isa_tms320.tcc"
+#line 110937 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 110926 "isa_tms320.tcc"
+#line 110942 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 110930 "isa_tms320.tcc"
+#line 110946 "isa_tms320.tcc"
 	>(0xe6000000UL, 0xfe380000UL, DecodeOpNOT_STI<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 110934 "isa_tms320.tcc"
+#line 110950 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 110938 "isa_tms320.tcc"
+#line 110954 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 110943 "isa_tms320.tcc"
+#line 110959 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 110947 "isa_tms320.tcc"
+#line 110963 "isa_tms320.tcc"
 	>(0xe40000e0UL, 0xfe3800e0UL, DecodeOpNEGI_STI_ext<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 110951 "isa_tms320.tcc"
+#line 110967 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 110955 "isa_tms320.tcc"
+#line 110971 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 110960 "isa_tms320.tcc"
+#line 110976 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 110964 "isa_tms320.tcc"
+#line 110980 "isa_tms320.tcc"
 	>(0xe4000000UL, 0xfe380000UL, DecodeOpNEGI_STI<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 110968 "isa_tms320.tcc"
+#line 110984 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 110972 "isa_tms320.tcc"
+#line 110988 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 110977 "isa_tms320.tcc"
+#line 110993 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 110981 "isa_tms320.tcc"
+#line 110997 "isa_tms320.tcc"
 	>(0xe20000e0UL, 0xfe3800e0UL, DecodeOpNEGF_STF_ext<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 110985 "isa_tms320.tcc"
+#line 111001 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 110989 "isa_tms320.tcc"
+#line 111005 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 110994 "isa_tms320.tcc"
+#line 111010 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 110998 "isa_tms320.tcc"
+#line 111014 "isa_tms320.tcc"
 	>(0xe2000000UL, 0xfe380000UL, DecodeOpNEGF_STF<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111002 "isa_tms320.tcc"
+#line 111018 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111006 "isa_tms320.tcc"
+#line 111022 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111011 "isa_tms320.tcc"
+#line 111027 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111015 "isa_tms320.tcc"
+#line 111031 "isa_tms320.tcc"
 	>(0xe00000e0UL, 0xfe0000e0UL, DecodeOpMPYI3_STI_ext<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111019 "isa_tms320.tcc"
+#line 111035 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111023 "isa_tms320.tcc"
+#line 111039 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111028 "isa_tms320.tcc"
+#line 111044 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111032 "isa_tms320.tcc"
+#line 111048 "isa_tms320.tcc"
 	>(0xe0000000UL, 0xfe000000UL, DecodeOpMPYI3_STI<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111036 "isa_tms320.tcc"
+#line 111052 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111040 "isa_tms320.tcc"
+#line 111056 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111045 "isa_tms320.tcc"
+#line 111061 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111049 "isa_tms320.tcc"
+#line 111065 "isa_tms320.tcc"
 	>(0xde0000e0UL, 0xfe0000e0UL, DecodeOpMPYF3_STF_ext<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111053 "isa_tms320.tcc"
+#line 111069 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111057 "isa_tms320.tcc"
+#line 111073 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111062 "isa_tms320.tcc"
+#line 111078 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111066 "isa_tms320.tcc"
+#line 111082 "isa_tms320.tcc"
 	>(0xde000000UL, 0xfe000000UL, DecodeOpMPYF3_STF<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111070 "isa_tms320.tcc"
+#line 111086 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111074 "isa_tms320.tcc"
+#line 111090 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111079 "isa_tms320.tcc"
+#line 111095 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111083 "isa_tms320.tcc"
+#line 111099 "isa_tms320.tcc"
 	>(0xdc0000e0UL, 0xfe0000e0UL, DecodeOpLSH3_STI_ext<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111087 "isa_tms320.tcc"
+#line 111103 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111091 "isa_tms320.tcc"
+#line 111107 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111096 "isa_tms320.tcc"
+#line 111112 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111100 "isa_tms320.tcc"
+#line 111116 "isa_tms320.tcc"
 	>(0xdc000000UL, 0xfe000000UL, DecodeOpLSH3_STI<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111104 "isa_tms320.tcc"
+#line 111120 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111108 "isa_tms320.tcc"
+#line 111124 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111113 "isa_tms320.tcc"
+#line 111129 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111117 "isa_tms320.tcc"
+#line 111133 "isa_tms320.tcc"
 	>(0xda0000e0UL, 0xfe3800e0UL, DecodeOpLDI_STI_ext<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111121 "isa_tms320.tcc"
+#line 111137 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111125 "isa_tms320.tcc"
+#line 111141 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111130 "isa_tms320.tcc"
+#line 111146 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111134 "isa_tms320.tcc"
+#line 111150 "isa_tms320.tcc"
 	>(0xda000000UL, 0xfe380000UL, DecodeOpLDI_STI<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111138 "isa_tms320.tcc"
+#line 111154 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111142 "isa_tms320.tcc"
+#line 111158 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111147 "isa_tms320.tcc"
+#line 111163 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111151 "isa_tms320.tcc"
+#line 111167 "isa_tms320.tcc"
 	>(0xd80000e0UL, 0xfe3800e0UL, DecodeOpLDF_STF_ext<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111155 "isa_tms320.tcc"
+#line 111171 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111159 "isa_tms320.tcc"
+#line 111175 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111164 "isa_tms320.tcc"
+#line 111180 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111168 "isa_tms320.tcc"
+#line 111184 "isa_tms320.tcc"
 	>(0xd8000000UL, 0xfe380000UL, DecodeOpLDF_STF<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111172 "isa_tms320.tcc"
+#line 111188 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111176 "isa_tms320.tcc"
+#line 111192 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111181 "isa_tms320.tcc"
+#line 111197 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111185 "isa_tms320.tcc"
+#line 111201 "isa_tms320.tcc"
 	>(0xd60000e0UL, 0xfe3800e0UL, DecodeOpFLOAT_STF_ext<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111189 "isa_tms320.tcc"
+#line 111205 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111193 "isa_tms320.tcc"
+#line 111209 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111198 "isa_tms320.tcc"
+#line 111214 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111202 "isa_tms320.tcc"
+#line 111218 "isa_tms320.tcc"
 	>(0xd6000000UL, 0xfe380000UL, DecodeOpFLOAT_STF<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111206 "isa_tms320.tcc"
+#line 111222 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111210 "isa_tms320.tcc"
+#line 111226 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111215 "isa_tms320.tcc"
+#line 111231 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111219 "isa_tms320.tcc"
+#line 111235 "isa_tms320.tcc"
 	>(0xd40000e0UL, 0xfe3800e0UL, DecodeOpFIX_STI_ext<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111223 "isa_tms320.tcc"
+#line 111239 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111227 "isa_tms320.tcc"
+#line 111243 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111232 "isa_tms320.tcc"
+#line 111248 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111236 "isa_tms320.tcc"
+#line 111252 "isa_tms320.tcc"
 	>(0xd4000000UL, 0xfe380000UL, DecodeOpFIX_STI<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111240 "isa_tms320.tcc"
+#line 111256 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111244 "isa_tms320.tcc"
+#line 111260 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111249 "isa_tms320.tcc"
+#line 111265 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111253 "isa_tms320.tcc"
+#line 111269 "isa_tms320.tcc"
 	>(0xd20000e0UL, 0xfe0000e0UL, DecodeOpASH3_STI_ext<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111257 "isa_tms320.tcc"
+#line 111273 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111261 "isa_tms320.tcc"
+#line 111277 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111266 "isa_tms320.tcc"
+#line 111282 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111270 "isa_tms320.tcc"
+#line 111286 "isa_tms320.tcc"
 	>(0xd2000000UL, 0xfe000000UL, DecodeOpASH3_STI<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111274 "isa_tms320.tcc"
+#line 111290 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111278 "isa_tms320.tcc"
+#line 111294 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111283 "isa_tms320.tcc"
+#line 111299 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111287 "isa_tms320.tcc"
+#line 111303 "isa_tms320.tcc"
 	>(0xd00000e0UL, 0xfe0000e0UL, DecodeOpAND3_STI_ext<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111291 "isa_tms320.tcc"
+#line 111307 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111295 "isa_tms320.tcc"
+#line 111311 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111300 "isa_tms320.tcc"
+#line 111316 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111304 "isa_tms320.tcc"
+#line 111320 "isa_tms320.tcc"
 	>(0xd0000000UL, 0xfe000000UL, DecodeOpAND3_STI<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111308 "isa_tms320.tcc"
+#line 111324 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111312 "isa_tms320.tcc"
+#line 111328 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111317 "isa_tms320.tcc"
+#line 111333 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111321 "isa_tms320.tcc"
+#line 111337 "isa_tms320.tcc"
 	>(0xce0000e0UL, 0xfe0000e0UL, DecodeOpADDI3_STI_ext<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111325 "isa_tms320.tcc"
+#line 111341 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111329 "isa_tms320.tcc"
+#line 111345 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111334 "isa_tms320.tcc"
+#line 111350 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111338 "isa_tms320.tcc"
+#line 111354 "isa_tms320.tcc"
 	>(0xce000000UL, 0xfe000000UL, DecodeOpADDI3_STI<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111342 "isa_tms320.tcc"
+#line 111358 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111346 "isa_tms320.tcc"
+#line 111362 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111351 "isa_tms320.tcc"
+#line 111367 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111355 "isa_tms320.tcc"
+#line 111371 "isa_tms320.tcc"
 	>(0xcc0000e0UL, 0xfe0000e0UL, DecodeOpADDF3_STF_ext<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111359 "isa_tms320.tcc"
+#line 111375 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111363 "isa_tms320.tcc"
+#line 111379 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111368 "isa_tms320.tcc"
+#line 111384 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111372 "isa_tms320.tcc"
+#line 111388 "isa_tms320.tcc"
 	>(0xcc000000UL, 0xfe000000UL, DecodeOpADDF3_STF<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111376 "isa_tms320.tcc"
+#line 111392 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111380 "isa_tms320.tcc"
+#line 111396 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111385 "isa_tms320.tcc"
+#line 111401 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111389 "isa_tms320.tcc"
+#line 111405 "isa_tms320.tcc"
 	>(0xca0000e0UL, 0xfe3800e0UL, DecodeOpABSI_STI_ext<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111393 "isa_tms320.tcc"
+#line 111409 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111397 "isa_tms320.tcc"
+#line 111413 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111402 "isa_tms320.tcc"
+#line 111418 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111406 "isa_tms320.tcc"
+#line 111422 "isa_tms320.tcc"
 	>(0xca000000UL, 0xfe380000UL, DecodeOpABSI_STI<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111410 "isa_tms320.tcc"
+#line 111426 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111414 "isa_tms320.tcc"
+#line 111430 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111419 "isa_tms320.tcc"
+#line 111435 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111423 "isa_tms320.tcc"
+#line 111439 "isa_tms320.tcc"
 	>(0xc80000e0UL, 0xfe3800e0UL, DecodeOpABSF_STF_ext<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111427 "isa_tms320.tcc"
+#line 111443 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111431 "isa_tms320.tcc"
+#line 111447 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111436 "isa_tms320.tcc"
+#line 111452 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111440 "isa_tms320.tcc"
+#line 111456 "isa_tms320.tcc"
 	>(0xc8000000UL, 0xfe380000UL, DecodeOpABSF_STF<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111444 "isa_tms320.tcc"
+#line 111460 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111448 "isa_tms320.tcc"
+#line 111464 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111453 "isa_tms320.tcc"
+#line 111469 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111457 "isa_tms320.tcc"
+#line 111473 "isa_tms320.tcc"
 	>(0x15c00000UL, 0xffe00000UL, DecodeOpSTII_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111461 "isa_tms320.tcc"
+#line 111477 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111465 "isa_tms320.tcc"
+#line 111481 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111470 "isa_tms320.tcc"
+#line 111486 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111474 "isa_tms320.tcc"
+#line 111490 "isa_tms320.tcc"
 	>(0x15a00000UL, 0xffe00000UL, DecodeOpSTII_dir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111478 "isa_tms320.tcc"
+#line 111494 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111482 "isa_tms320.tcc"
+#line 111498 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111487 "isa_tms320.tcc"
+#line 111503 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111491 "isa_tms320.tcc"
+#line 111507 "isa_tms320.tcc"
 	>(0x14c00000UL, 0xffe00000UL, DecodeOpSTFI_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111495 "isa_tms320.tcc"
+#line 111511 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111499 "isa_tms320.tcc"
+#line 111515 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111504 "isa_tms320.tcc"
+#line 111520 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111508 "isa_tms320.tcc"
+#line 111524 "isa_tms320.tcc"
 	>(0x14a00000UL, 0xffe00000UL, DecodeOpSTFI_dir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111512 "isa_tms320.tcc"
+#line 111528 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111516 "isa_tms320.tcc"
+#line 111532 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111521 "isa_tms320.tcc"
+#line 111537 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111525 "isa_tms320.tcc"
+#line 111541 "isa_tms320.tcc"
 	>(0x16000000UL, 0xffffffffUL, DecodeOpSIGI<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111529 "isa_tms320.tcc"
+#line 111545 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111533 "isa_tms320.tcc"
+#line 111549 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111538 "isa_tms320.tcc"
+#line 111554 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111542 "isa_tms320.tcc"
+#line 111558 "isa_tms320.tcc"
 	>(0x8c00000UL, 0xffe00000UL, DecodeOpLDII_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111546 "isa_tms320.tcc"
+#line 111562 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111550 "isa_tms320.tcc"
+#line 111566 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111555 "isa_tms320.tcc"
+#line 111571 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111559 "isa_tms320.tcc"
+#line 111575 "isa_tms320.tcc"
 	>(0x8a00000UL, 0xffe00000UL, DecodeOpLDII_dir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111563 "isa_tms320.tcc"
+#line 111579 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111567 "isa_tms320.tcc"
+#line 111583 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111572 "isa_tms320.tcc"
+#line 111588 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111576 "isa_tms320.tcc"
+#line 111592 "isa_tms320.tcc"
 	>(0x7c00000UL, 0xffe00000UL, DecodeOpLDFI_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111580 "isa_tms320.tcc"
+#line 111596 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111584 "isa_tms320.tcc"
+#line 111600 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111589 "isa_tms320.tcc"
+#line 111605 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111593 "isa_tms320.tcc"
+#line 111609 "isa_tms320.tcc"
 	>(0x7a00000UL, 0xffe00000UL, DecodeOpLDFI_dir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111597 "isa_tms320.tcc"
+#line 111613 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111601 "isa_tms320.tcc"
+#line 111617 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111606 "isa_tms320.tcc"
+#line 111622 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111610 "isa_tms320.tcc"
+#line 111626 "isa_tms320.tcc"
 	>(0x10800000UL, 0xffffffffUL, DecodeOpMAXSPEED<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111614 "isa_tms320.tcc"
+#line 111630 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111618 "isa_tms320.tcc"
+#line 111634 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111623 "isa_tms320.tcc"
+#line 111639 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111627 "isa_tms320.tcc"
+#line 111643 "isa_tms320.tcc"
 	>(0x10800001UL, 0xffffffffUL, DecodeOpLOPOWER<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111631 "isa_tms320.tcc"
+#line 111647 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111635 "isa_tms320.tcc"
+#line 111651 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111640 "isa_tms320.tcc"
+#line 111656 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111644 "isa_tms320.tcc"
+#line 111660 "isa_tms320.tcc"
 	>(0x6000001UL, 0xffffffffUL, DecodeOpIDLE2<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111648 "isa_tms320.tcc"
+#line 111664 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111652 "isa_tms320.tcc"
+#line 111668 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111657 "isa_tms320.tcc"
+#line 111673 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111661 "isa_tms320.tcc"
+#line 111677 "isa_tms320.tcc"
 	>(0x74000020UL, 0xffe0ffe0UL, DecodeOpTRAPcond<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111665 "isa_tms320.tcc"
+#line 111681 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111669 "isa_tms320.tcc"
+#line 111685 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111674 "isa_tms320.tcc"
+#line 111690 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111678 "isa_tms320.tcc"
+#line 111694 "isa_tms320.tcc"
 	>(0x66000000UL, 0xffffffffUL, DecodeOpSWI<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111682 "isa_tms320.tcc"
+#line 111698 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111686 "isa_tms320.tcc"
+#line 111702 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111691 "isa_tms320.tcc"
+#line 111707 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111695 "isa_tms320.tcc"
+#line 111711 "isa_tms320.tcc"
 	>(0x13fb0000UL, 0xffff0000UL, DecodeOpRPTS_imm<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111699 "isa_tms320.tcc"
+#line 111715 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111703 "isa_tms320.tcc"
+#line 111719 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111708 "isa_tms320.tcc"
+#line 111724 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111712 "isa_tms320.tcc"
+#line 111728 "isa_tms320.tcc"
 	>(0x13db0000UL, 0xffff0000UL, DecodeOpRPTS_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111716 "isa_tms320.tcc"
+#line 111732 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111720 "isa_tms320.tcc"
+#line 111736 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111725 "isa_tms320.tcc"
+#line 111741 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111729 "isa_tms320.tcc"
+#line 111745 "isa_tms320.tcc"
 	>(0x13bb0000UL, 0xffff0000UL, DecodeOpRPTS_dir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111733 "isa_tms320.tcc"
+#line 111749 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111737 "isa_tms320.tcc"
+#line 111753 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111742 "isa_tms320.tcc"
+#line 111758 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111746 "isa_tms320.tcc"
+#line 111762 "isa_tms320.tcc"
 	>(0x139b0000UL, 0xffffffe0UL, DecodeOpRPTS_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111750 "isa_tms320.tcc"
+#line 111766 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111754 "isa_tms320.tcc"
+#line 111770 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111759 "isa_tms320.tcc"
+#line 111775 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111763 "isa_tms320.tcc"
+#line 111779 "isa_tms320.tcc"
 	>(0x64000000UL, 0xff000000UL, DecodeOpRPTB<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111767 "isa_tms320.tcc"
+#line 111783 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111771 "isa_tms320.tcc"
+#line 111787 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111776 "isa_tms320.tcc"
+#line 111792 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111780 "isa_tms320.tcc"
+#line 111796 "isa_tms320.tcc"
 	>(0x78800000UL, 0xffe0ffffUL, DecodeOpRETScond<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111784 "isa_tms320.tcc"
+#line 111800 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111788 "isa_tms320.tcc"
+#line 111804 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111793 "isa_tms320.tcc"
+#line 111809 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111797 "isa_tms320.tcc"
+#line 111813 "isa_tms320.tcc"
 	>(0x78000000UL, 0xffe0ffffUL, DecodeOpRETIcond<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111801 "isa_tms320.tcc"
+#line 111817 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111805 "isa_tms320.tcc"
+#line 111821 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111810 "isa_tms320.tcc"
+#line 111826 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111814 "isa_tms320.tcc"
+#line 111830 "isa_tms320.tcc"
 	>(0xcc00000UL, 0xffff0000UL, DecodeOpNOP_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111818 "isa_tms320.tcc"
+#line 111834 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111822 "isa_tms320.tcc"
+#line 111838 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111827 "isa_tms320.tcc"
+#line 111843 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111831 "isa_tms320.tcc"
+#line 111847 "isa_tms320.tcc"
 	>(0xc800000UL, 0xffffffe0UL, DecodeOpNOP_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111835 "isa_tms320.tcc"
+#line 111851 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111839 "isa_tms320.tcc"
+#line 111855 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111844 "isa_tms320.tcc"
+#line 111860 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111848 "isa_tms320.tcc"
+#line 111864 "isa_tms320.tcc"
 	>(0x6000000UL, 0xffffffffUL, DecodeOpIDLE<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111852 "isa_tms320.tcc"
+#line 111868 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111856 "isa_tms320.tcc"
+#line 111872 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111861 "isa_tms320.tcc"
+#line 111877 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111865 "isa_tms320.tcc"
+#line 111881 "isa_tms320.tcc"
 	>(0x1b400000UL, 0xffff0000UL, DecodeOpIACK_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111869 "isa_tms320.tcc"
+#line 111885 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111873 "isa_tms320.tcc"
+#line 111889 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111878 "isa_tms320.tcc"
+#line 111894 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111882 "isa_tms320.tcc"
+#line 111898 "isa_tms320.tcc"
 	>(0x1b200000UL, 0xffff0000UL, DecodeOpIACK_dir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111886 "isa_tms320.tcc"
+#line 111902 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111890 "isa_tms320.tcc"
+#line 111906 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111895 "isa_tms320.tcc"
+#line 111911 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111899 "isa_tms320.tcc"
+#line 111915 "isa_tms320.tcc"
 	>(0x6e200000UL, 0xfe200000UL, DecodeOpDBcondD_disp<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111903 "isa_tms320.tcc"
+#line 111919 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111907 "isa_tms320.tcc"
+#line 111923 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111912 "isa_tms320.tcc"
+#line 111928 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111916 "isa_tms320.tcc"
+#line 111932 "isa_tms320.tcc"
 	>(0x6c200000UL, 0xfe20ffe0UL, DecodeOpDBcondD_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111920 "isa_tms320.tcc"
+#line 111936 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111924 "isa_tms320.tcc"
+#line 111940 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111929 "isa_tms320.tcc"
+#line 111945 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111933 "isa_tms320.tcc"
+#line 111949 "isa_tms320.tcc"
 	>(0x6e000000UL, 0xfe200000UL, DecodeOpDBcond_disp<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111937 "isa_tms320.tcc"
+#line 111953 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111941 "isa_tms320.tcc"
+#line 111957 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111946 "isa_tms320.tcc"
+#line 111962 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111950 "isa_tms320.tcc"
+#line 111966 "isa_tms320.tcc"
 	>(0x6c000000UL, 0xfe20ffe0UL, DecodeOpDBcond_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111954 "isa_tms320.tcc"
+#line 111970 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111958 "isa_tms320.tcc"
+#line 111974 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111963 "isa_tms320.tcc"
+#line 111979 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111967 "isa_tms320.tcc"
+#line 111983 "isa_tms320.tcc"
 	>(0x72000000UL, 0xffe00000UL, DecodeOpCALLcond_disp<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111971 "isa_tms320.tcc"
+#line 111987 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111975 "isa_tms320.tcc"
+#line 111991 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111980 "isa_tms320.tcc"
+#line 111996 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111984 "isa_tms320.tcc"
+#line 112000 "isa_tms320.tcc"
 	>(0x70000000UL, 0xffe0ffe0UL, DecodeOpCALLcond_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111988 "isa_tms320.tcc"
+#line 112004 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 111992 "isa_tms320.tcc"
+#line 112008 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 111997 "isa_tms320.tcc"
+#line 112013 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112001 "isa_tms320.tcc"
+#line 112017 "isa_tms320.tcc"
 	>(0x62000000UL, 0xff000000UL, DecodeOpCALL<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112005 "isa_tms320.tcc"
+#line 112021 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112009 "isa_tms320.tcc"
+#line 112025 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112014 "isa_tms320.tcc"
+#line 112030 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112018 "isa_tms320.tcc"
+#line 112034 "isa_tms320.tcc"
 	>(0x61000000UL, 0xff000000UL, DecodeOpBRD<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112022 "isa_tms320.tcc"
+#line 112038 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112026 "isa_tms320.tcc"
+#line 112042 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112031 "isa_tms320.tcc"
+#line 112047 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112035 "isa_tms320.tcc"
+#line 112051 "isa_tms320.tcc"
 	>(0x60000000UL, 0xff000000UL, DecodeOpBR<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112039 "isa_tms320.tcc"
+#line 112055 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112043 "isa_tms320.tcc"
+#line 112059 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112048 "isa_tms320.tcc"
+#line 112064 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112052 "isa_tms320.tcc"
+#line 112068 "isa_tms320.tcc"
 	>(0x6a200000UL, 0xffe00000UL, DecodeOpBcondD_disp<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112056 "isa_tms320.tcc"
+#line 112072 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112060 "isa_tms320.tcc"
+#line 112076 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112065 "isa_tms320.tcc"
+#line 112081 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112069 "isa_tms320.tcc"
+#line 112085 "isa_tms320.tcc"
 	>(0x68200000UL, 0xffe0ffe0UL, DecodeOpBcondD_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112073 "isa_tms320.tcc"
+#line 112089 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112077 "isa_tms320.tcc"
+#line 112093 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112082 "isa_tms320.tcc"
+#line 112098 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112086 "isa_tms320.tcc"
+#line 112102 "isa_tms320.tcc"
 	>(0x6a000000UL, 0xffe00000UL, DecodeOpBcond_disp<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112090 "isa_tms320.tcc"
+#line 112106 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112094 "isa_tms320.tcc"
+#line 112110 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112099 "isa_tms320.tcc"
+#line 112115 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112103 "isa_tms320.tcc"
+#line 112119 "isa_tms320.tcc"
 	>(0x68000000UL, 0xffe0ffe0UL, DecodeOpBcond_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112107 "isa_tms320.tcc"
+#line 112123 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112111 "isa_tms320.tcc"
+#line 112127 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112116 "isa_tms320.tcc"
+#line 112132 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112120 "isa_tms320.tcc"
+#line 112136 "isa_tms320.tcc"
 	>(0x28600000UL, 0xffe00000UL, DecodeOpXOR3_indir_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112124 "isa_tms320.tcc"
+#line 112140 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112128 "isa_tms320.tcc"
+#line 112144 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112133 "isa_tms320.tcc"
+#line 112149 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112137 "isa_tms320.tcc"
+#line 112153 "isa_tms320.tcc"
 	>(0x28400000UL, 0xffe0e000UL, DecodeOpXOR3_reg_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112141 "isa_tms320.tcc"
+#line 112157 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112145 "isa_tms320.tcc"
+#line 112161 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112150 "isa_tms320.tcc"
+#line 112166 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112154 "isa_tms320.tcc"
+#line 112170 "isa_tms320.tcc"
 	>(0x28200000UL, 0xffe000e0UL, DecodeOpXOR3_indir_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112158 "isa_tms320.tcc"
+#line 112174 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112162 "isa_tms320.tcc"
+#line 112178 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112167 "isa_tms320.tcc"
+#line 112183 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112171 "isa_tms320.tcc"
+#line 112187 "isa_tms320.tcc"
 	>(0x28000000UL, 0xffe0e0e0UL, DecodeOpXOR3_reg_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112175 "isa_tms320.tcc"
+#line 112191 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112179 "isa_tms320.tcc"
+#line 112195 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112184 "isa_tms320.tcc"
+#line 112200 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112188 "isa_tms320.tcc"
+#line 112204 "isa_tms320.tcc"
 	>(0x27e00000UL, 0xffff0000UL, DecodeOpTSTB3_indir_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112192 "isa_tms320.tcc"
+#line 112208 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112196 "isa_tms320.tcc"
+#line 112212 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112201 "isa_tms320.tcc"
+#line 112217 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112205 "isa_tms320.tcc"
+#line 112221 "isa_tms320.tcc"
 	>(0x27c00000UL, 0xffffe000UL, DecodeOpTSTB3_reg_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112209 "isa_tms320.tcc"
+#line 112225 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112213 "isa_tms320.tcc"
+#line 112229 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112218 "isa_tms320.tcc"
+#line 112234 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112222 "isa_tms320.tcc"
+#line 112238 "isa_tms320.tcc"
 	>(0x27a00000UL, 0xffff00e0UL, DecodeOpTSTB3_indir_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112226 "isa_tms320.tcc"
+#line 112242 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112230 "isa_tms320.tcc"
+#line 112246 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112235 "isa_tms320.tcc"
+#line 112251 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112239 "isa_tms320.tcc"
+#line 112255 "isa_tms320.tcc"
 	>(0x27800000UL, 0xffffe0e0UL, DecodeOpTSTB3_reg_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112243 "isa_tms320.tcc"
+#line 112259 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112247 "isa_tms320.tcc"
+#line 112263 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112252 "isa_tms320.tcc"
+#line 112268 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112256 "isa_tms320.tcc"
+#line 112272 "isa_tms320.tcc"
 	>(0x27600000UL, 0xffe00000UL, DecodeOpSUBI3_indir_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112260 "isa_tms320.tcc"
+#line 112276 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112264 "isa_tms320.tcc"
+#line 112280 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112269 "isa_tms320.tcc"
+#line 112285 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112273 "isa_tms320.tcc"
+#line 112289 "isa_tms320.tcc"
 	>(0x27400000UL, 0xffe0e000UL, DecodeOpSUBI3_reg_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112277 "isa_tms320.tcc"
+#line 112293 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112281 "isa_tms320.tcc"
+#line 112297 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112286 "isa_tms320.tcc"
+#line 112302 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112290 "isa_tms320.tcc"
+#line 112306 "isa_tms320.tcc"
 	>(0x27200000UL, 0xffe000e0UL, DecodeOpSUBI3_indir_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112294 "isa_tms320.tcc"
+#line 112310 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112298 "isa_tms320.tcc"
+#line 112314 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112303 "isa_tms320.tcc"
+#line 112319 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112307 "isa_tms320.tcc"
+#line 112323 "isa_tms320.tcc"
 	>(0x27000000UL, 0xffe0e0e0UL, DecodeOpSUBI3_reg_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112311 "isa_tms320.tcc"
+#line 112327 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112315 "isa_tms320.tcc"
+#line 112331 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112320 "isa_tms320.tcc"
+#line 112336 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112324 "isa_tms320.tcc"
+#line 112340 "isa_tms320.tcc"
 	>(0x26e00000UL, 0xfff80000UL, DecodeOpSUBF3_indir_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112328 "isa_tms320.tcc"
+#line 112344 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112332 "isa_tms320.tcc"
+#line 112348 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112337 "isa_tms320.tcc"
+#line 112353 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112341 "isa_tms320.tcc"
+#line 112357 "isa_tms320.tcc"
 	>(0x26c00000UL, 0xfff8f800UL, DecodeOpSUBF3_reg_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112345 "isa_tms320.tcc"
+#line 112361 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112349 "isa_tms320.tcc"
+#line 112365 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112354 "isa_tms320.tcc"
+#line 112370 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112358 "isa_tms320.tcc"
+#line 112374 "isa_tms320.tcc"
 	>(0x26a00000UL, 0xfff800f8UL, DecodeOpSUBF3_indir_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112362 "isa_tms320.tcc"
+#line 112378 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112366 "isa_tms320.tcc"
+#line 112382 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112371 "isa_tms320.tcc"
+#line 112387 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112375 "isa_tms320.tcc"
+#line 112391 "isa_tms320.tcc"
 	>(0x26800000UL, 0xfff8f8f8UL, DecodeOpSUBF3_reg_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112379 "isa_tms320.tcc"
+#line 112395 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112383 "isa_tms320.tcc"
+#line 112399 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112388 "isa_tms320.tcc"
+#line 112404 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112392 "isa_tms320.tcc"
+#line 112408 "isa_tms320.tcc"
 	>(0x26600000UL, 0xffe00000UL, DecodeOpSUBB3_indir_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112396 "isa_tms320.tcc"
+#line 112412 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112400 "isa_tms320.tcc"
+#line 112416 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112405 "isa_tms320.tcc"
+#line 112421 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112409 "isa_tms320.tcc"
+#line 112425 "isa_tms320.tcc"
 	>(0x26400000UL, 0xffe0e000UL, DecodeOpSUBB3_reg_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112413 "isa_tms320.tcc"
+#line 112429 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112417 "isa_tms320.tcc"
+#line 112433 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112422 "isa_tms320.tcc"
+#line 112438 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112426 "isa_tms320.tcc"
+#line 112442 "isa_tms320.tcc"
 	>(0x26200000UL, 0xffe000e0UL, DecodeOpSUBB3_indir_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112430 "isa_tms320.tcc"
+#line 112446 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112434 "isa_tms320.tcc"
+#line 112450 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112439 "isa_tms320.tcc"
+#line 112455 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112443 "isa_tms320.tcc"
+#line 112459 "isa_tms320.tcc"
 	>(0x26000000UL, 0xffe0e0e0UL, DecodeOpSUBB3_reg_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112447 "isa_tms320.tcc"
+#line 112463 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112451 "isa_tms320.tcc"
+#line 112467 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112456 "isa_tms320.tcc"
+#line 112472 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112460 "isa_tms320.tcc"
+#line 112476 "isa_tms320.tcc"
 	>(0x25e00000UL, 0xffe00000UL, DecodeOpOR3_indir_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112464 "isa_tms320.tcc"
+#line 112480 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112468 "isa_tms320.tcc"
+#line 112484 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112473 "isa_tms320.tcc"
+#line 112489 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112477 "isa_tms320.tcc"
+#line 112493 "isa_tms320.tcc"
 	>(0x25c00000UL, 0xffe0e000UL, DecodeOpOR3_reg_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112481 "isa_tms320.tcc"
+#line 112497 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112485 "isa_tms320.tcc"
+#line 112501 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112490 "isa_tms320.tcc"
+#line 112506 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112494 "isa_tms320.tcc"
+#line 112510 "isa_tms320.tcc"
 	>(0x25a00000UL, 0xffe000e0UL, DecodeOpOR3_indir_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112498 "isa_tms320.tcc"
+#line 112514 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112502 "isa_tms320.tcc"
+#line 112518 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112507 "isa_tms320.tcc"
+#line 112523 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112511 "isa_tms320.tcc"
+#line 112527 "isa_tms320.tcc"
 	>(0x25800000UL, 0xffe0e0e0UL, DecodeOpOR3_reg_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112515 "isa_tms320.tcc"
+#line 112531 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112519 "isa_tms320.tcc"
+#line 112535 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112524 "isa_tms320.tcc"
+#line 112540 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112528 "isa_tms320.tcc"
+#line 112544 "isa_tms320.tcc"
 	>(0x25600000UL, 0xffe00000UL, DecodeOpMPYI3_indir_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112532 "isa_tms320.tcc"
+#line 112548 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112536 "isa_tms320.tcc"
+#line 112552 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112541 "isa_tms320.tcc"
+#line 112557 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112545 "isa_tms320.tcc"
+#line 112561 "isa_tms320.tcc"
 	>(0x25400000UL, 0xffe0e000UL, DecodeOpMPYI3_reg_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112549 "isa_tms320.tcc"
+#line 112565 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112553 "isa_tms320.tcc"
+#line 112569 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112558 "isa_tms320.tcc"
+#line 112574 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112562 "isa_tms320.tcc"
+#line 112578 "isa_tms320.tcc"
 	>(0x25200000UL, 0xffe000e0UL, DecodeOpMPYI3_indir_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112566 "isa_tms320.tcc"
+#line 112582 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112570 "isa_tms320.tcc"
+#line 112586 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112575 "isa_tms320.tcc"
+#line 112591 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112579 "isa_tms320.tcc"
+#line 112595 "isa_tms320.tcc"
 	>(0x25000000UL, 0xffe0e0e0UL, DecodeOpMPYI3_reg_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112583 "isa_tms320.tcc"
+#line 112599 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112587 "isa_tms320.tcc"
+#line 112603 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112592 "isa_tms320.tcc"
+#line 112608 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112596 "isa_tms320.tcc"
+#line 112612 "isa_tms320.tcc"
 	>(0x24e00000UL, 0xfff80000UL, DecodeOpMPYF3_indir_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112600 "isa_tms320.tcc"
+#line 112616 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112604 "isa_tms320.tcc"
+#line 112620 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112609 "isa_tms320.tcc"
+#line 112625 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112613 "isa_tms320.tcc"
+#line 112629 "isa_tms320.tcc"
 	>(0x24c00000UL, 0xfff8f800UL, DecodeOpMPYF3_reg_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112617 "isa_tms320.tcc"
+#line 112633 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112621 "isa_tms320.tcc"
+#line 112637 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112626 "isa_tms320.tcc"
+#line 112642 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112630 "isa_tms320.tcc"
+#line 112646 "isa_tms320.tcc"
 	>(0x24a00000UL, 0xfff800f8UL, DecodeOpMPYF3_indir_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112634 "isa_tms320.tcc"
+#line 112650 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112638 "isa_tms320.tcc"
+#line 112654 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112643 "isa_tms320.tcc"
+#line 112659 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112647 "isa_tms320.tcc"
+#line 112663 "isa_tms320.tcc"
 	>(0x24800000UL, 0xfff8f8f8UL, DecodeOpMPYF3_reg_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112651 "isa_tms320.tcc"
+#line 112667 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112655 "isa_tms320.tcc"
+#line 112671 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112660 "isa_tms320.tcc"
+#line 112676 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112664 "isa_tms320.tcc"
+#line 112680 "isa_tms320.tcc"
 	>(0x24600000UL, 0xffe00000UL, DecodeOpLSH3_indir_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112668 "isa_tms320.tcc"
+#line 112684 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112672 "isa_tms320.tcc"
+#line 112688 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112677 "isa_tms320.tcc"
+#line 112693 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112681 "isa_tms320.tcc"
+#line 112697 "isa_tms320.tcc"
 	>(0x24400000UL, 0xffe0e000UL, DecodeOpLSH3_reg_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112685 "isa_tms320.tcc"
+#line 112701 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112689 "isa_tms320.tcc"
+#line 112705 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112694 "isa_tms320.tcc"
+#line 112710 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112698 "isa_tms320.tcc"
+#line 112714 "isa_tms320.tcc"
 	>(0x24200000UL, 0xffe000e0UL, DecodeOpLSH3_indir_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112702 "isa_tms320.tcc"
+#line 112718 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112706 "isa_tms320.tcc"
+#line 112722 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112711 "isa_tms320.tcc"
+#line 112727 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112715 "isa_tms320.tcc"
+#line 112731 "isa_tms320.tcc"
 	>(0x24000000UL, 0xffe0e0e0UL, DecodeOpLSH3_reg_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112719 "isa_tms320.tcc"
+#line 112735 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112723 "isa_tms320.tcc"
+#line 112739 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112728 "isa_tms320.tcc"
+#line 112744 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112732 "isa_tms320.tcc"
+#line 112748 "isa_tms320.tcc"
 	>(0x23e00000UL, 0xffff0000UL, DecodeOpCMPI3_indir_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112736 "isa_tms320.tcc"
+#line 112752 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112740 "isa_tms320.tcc"
+#line 112756 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112745 "isa_tms320.tcc"
+#line 112761 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112749 "isa_tms320.tcc"
+#line 112765 "isa_tms320.tcc"
 	>(0x23c00000UL, 0xffffe000UL, DecodeOpCMPI3_reg_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112753 "isa_tms320.tcc"
+#line 112769 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112757 "isa_tms320.tcc"
+#line 112773 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112762 "isa_tms320.tcc"
+#line 112778 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112766 "isa_tms320.tcc"
+#line 112782 "isa_tms320.tcc"
 	>(0x23a00000UL, 0xffff00e0UL, DecodeOpCMPI3_indir_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112770 "isa_tms320.tcc"
+#line 112786 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112774 "isa_tms320.tcc"
+#line 112790 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112779 "isa_tms320.tcc"
+#line 112795 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112783 "isa_tms320.tcc"
+#line 112799 "isa_tms320.tcc"
 	>(0x23800000UL, 0xffffe0e0UL, DecodeOpCMPI3_reg_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112787 "isa_tms320.tcc"
+#line 112803 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112791 "isa_tms320.tcc"
+#line 112807 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112796 "isa_tms320.tcc"
+#line 112812 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112800 "isa_tms320.tcc"
+#line 112816 "isa_tms320.tcc"
 	>(0x23600000UL, 0xffff0000UL, DecodeOpCMPF3_indir_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112804 "isa_tms320.tcc"
+#line 112820 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112808 "isa_tms320.tcc"
+#line 112824 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112813 "isa_tms320.tcc"
+#line 112829 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112817 "isa_tms320.tcc"
+#line 112833 "isa_tms320.tcc"
 	>(0x23400000UL, 0xfffff800UL, DecodeOpCMPF3_reg_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112821 "isa_tms320.tcc"
+#line 112837 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112825 "isa_tms320.tcc"
+#line 112841 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112830 "isa_tms320.tcc"
+#line 112846 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112834 "isa_tms320.tcc"
+#line 112850 "isa_tms320.tcc"
 	>(0x23200000UL, 0xffff00f8UL, DecodeOpCMPF3_indir_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112838 "isa_tms320.tcc"
+#line 112854 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112842 "isa_tms320.tcc"
+#line 112858 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112847 "isa_tms320.tcc"
+#line 112863 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112851 "isa_tms320.tcc"
+#line 112867 "isa_tms320.tcc"
 	>(0x23000000UL, 0xfffff8f8UL, DecodeOpCMPF3_reg_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112855 "isa_tms320.tcc"
+#line 112871 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112859 "isa_tms320.tcc"
+#line 112875 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112864 "isa_tms320.tcc"
+#line 112880 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112868 "isa_tms320.tcc"
+#line 112884 "isa_tms320.tcc"
 	>(0x22e00000UL, 0xffe00000UL, DecodeOpASH3_indir_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112872 "isa_tms320.tcc"
+#line 112888 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112876 "isa_tms320.tcc"
+#line 112892 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112881 "isa_tms320.tcc"
+#line 112897 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112885 "isa_tms320.tcc"
+#line 112901 "isa_tms320.tcc"
 	>(0x22c00000UL, 0xffe0e000UL, DecodeOpASH3_reg_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112889 "isa_tms320.tcc"
+#line 112905 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112893 "isa_tms320.tcc"
+#line 112909 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112898 "isa_tms320.tcc"
+#line 112914 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112902 "isa_tms320.tcc"
+#line 112918 "isa_tms320.tcc"
 	>(0x22a00000UL, 0xffe000e0UL, DecodeOpASH3_indir_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112906 "isa_tms320.tcc"
+#line 112922 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112910 "isa_tms320.tcc"
+#line 112926 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112915 "isa_tms320.tcc"
+#line 112931 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112919 "isa_tms320.tcc"
+#line 112935 "isa_tms320.tcc"
 	>(0x22800000UL, 0xffe0e0e0UL, DecodeOpASH3_reg_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112923 "isa_tms320.tcc"
+#line 112939 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112927 "isa_tms320.tcc"
+#line 112943 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112932 "isa_tms320.tcc"
+#line 112948 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112936 "isa_tms320.tcc"
+#line 112952 "isa_tms320.tcc"
 	>(0x22600000UL, 0xffe00000UL, DecodeOpANDN3_indir_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112940 "isa_tms320.tcc"
+#line 112956 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112944 "isa_tms320.tcc"
+#line 112960 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112949 "isa_tms320.tcc"
+#line 112965 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112953 "isa_tms320.tcc"
+#line 112969 "isa_tms320.tcc"
 	>(0x22400000UL, 0xffe0e000UL, DecodeOpANDN3_reg_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112957 "isa_tms320.tcc"
+#line 112973 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112961 "isa_tms320.tcc"
+#line 112977 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112966 "isa_tms320.tcc"
+#line 112982 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112970 "isa_tms320.tcc"
+#line 112986 "isa_tms320.tcc"
 	>(0x22200000UL, 0xffe000e0UL, DecodeOpANDN3_indir_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112974 "isa_tms320.tcc"
+#line 112990 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112978 "isa_tms320.tcc"
+#line 112994 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112983 "isa_tms320.tcc"
+#line 112999 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112987 "isa_tms320.tcc"
+#line 113003 "isa_tms320.tcc"
 	>(0x22000000UL, 0xffe0e0e0UL, DecodeOpANDN3_reg_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 112991 "isa_tms320.tcc"
+#line 113007 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 112995 "isa_tms320.tcc"
+#line 113011 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113000 "isa_tms320.tcc"
+#line 113016 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113004 "isa_tms320.tcc"
+#line 113020 "isa_tms320.tcc"
 	>(0x21e00000UL, 0xffe00000UL, DecodeOpAND3_indir_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113008 "isa_tms320.tcc"
+#line 113024 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113012 "isa_tms320.tcc"
+#line 113028 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113017 "isa_tms320.tcc"
+#line 113033 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113021 "isa_tms320.tcc"
+#line 113037 "isa_tms320.tcc"
 	>(0x21c00000UL, 0xffe0e000UL, DecodeOpAND3_reg_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113025 "isa_tms320.tcc"
+#line 113041 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113029 "isa_tms320.tcc"
+#line 113045 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113034 "isa_tms320.tcc"
+#line 113050 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113038 "isa_tms320.tcc"
+#line 113054 "isa_tms320.tcc"
 	>(0x21a00000UL, 0xffe000e0UL, DecodeOpAND3_indir_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113042 "isa_tms320.tcc"
+#line 113058 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113046 "isa_tms320.tcc"
+#line 113062 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113051 "isa_tms320.tcc"
+#line 113067 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113055 "isa_tms320.tcc"
+#line 113071 "isa_tms320.tcc"
 	>(0x21800000UL, 0xffe0e0e0UL, DecodeOpAND3_reg_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113059 "isa_tms320.tcc"
+#line 113075 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113063 "isa_tms320.tcc"
+#line 113079 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113068 "isa_tms320.tcc"
+#line 113084 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113072 "isa_tms320.tcc"
+#line 113088 "isa_tms320.tcc"
 	>(0x21600000UL, 0xffe00000UL, DecodeOpADDI3_indir_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113076 "isa_tms320.tcc"
+#line 113092 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113080 "isa_tms320.tcc"
+#line 113096 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113085 "isa_tms320.tcc"
+#line 113101 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113089 "isa_tms320.tcc"
+#line 113105 "isa_tms320.tcc"
 	>(0x21400000UL, 0xffe0e000UL, DecodeOpADDI3_reg_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113093 "isa_tms320.tcc"
+#line 113109 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113097 "isa_tms320.tcc"
+#line 113113 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113102 "isa_tms320.tcc"
+#line 113118 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113106 "isa_tms320.tcc"
+#line 113122 "isa_tms320.tcc"
 	>(0x21200000UL, 0xffe000e0UL, DecodeOpADDI3_indir_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113110 "isa_tms320.tcc"
+#line 113126 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113114 "isa_tms320.tcc"
+#line 113130 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113119 "isa_tms320.tcc"
+#line 113135 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113123 "isa_tms320.tcc"
+#line 113139 "isa_tms320.tcc"
 	>(0x21000000UL, 0xffe0e0e0UL, DecodeOpADDI3_reg_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113127 "isa_tms320.tcc"
+#line 113143 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113131 "isa_tms320.tcc"
+#line 113147 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113136 "isa_tms320.tcc"
+#line 113152 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113140 "isa_tms320.tcc"
+#line 113156 "isa_tms320.tcc"
 	>(0x20e00000UL, 0xfff80000UL, DecodeOpADDF3_indir_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113144 "isa_tms320.tcc"
+#line 113160 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113148 "isa_tms320.tcc"
+#line 113164 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113153 "isa_tms320.tcc"
+#line 113169 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113157 "isa_tms320.tcc"
+#line 113173 "isa_tms320.tcc"
 	>(0x20c00000UL, 0xfff8f800UL, DecodeOpADDF3_reg_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113161 "isa_tms320.tcc"
+#line 113177 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113165 "isa_tms320.tcc"
+#line 113181 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113170 "isa_tms320.tcc"
+#line 113186 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113174 "isa_tms320.tcc"
+#line 113190 "isa_tms320.tcc"
 	>(0x20a00000UL, 0xfff800f8UL, DecodeOpADDF3_indir_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113178 "isa_tms320.tcc"
+#line 113194 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113182 "isa_tms320.tcc"
+#line 113198 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113187 "isa_tms320.tcc"
+#line 113203 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113191 "isa_tms320.tcc"
+#line 113207 "isa_tms320.tcc"
 	>(0x20800000UL, 0xfff8f8f8UL, DecodeOpADDF3_reg_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113195 "isa_tms320.tcc"
+#line 113211 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113199 "isa_tms320.tcc"
+#line 113215 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113204 "isa_tms320.tcc"
+#line 113220 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113208 "isa_tms320.tcc"
+#line 113224 "isa_tms320.tcc"
 	>(0x20600000UL, 0xffe00000UL, DecodeOpADDC3_indir_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113212 "isa_tms320.tcc"
+#line 113228 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113216 "isa_tms320.tcc"
+#line 113232 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113221 "isa_tms320.tcc"
+#line 113237 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113225 "isa_tms320.tcc"
+#line 113241 "isa_tms320.tcc"
 	>(0x20400000UL, 0xffe0e000UL, DecodeOpADDC3_reg_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113229 "isa_tms320.tcc"
+#line 113245 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113233 "isa_tms320.tcc"
+#line 113249 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113238 "isa_tms320.tcc"
+#line 113254 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113242 "isa_tms320.tcc"
+#line 113258 "isa_tms320.tcc"
 	>(0x20200000UL, 0xffe000e0UL, DecodeOpADDC3_indir_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113246 "isa_tms320.tcc"
+#line 113262 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113250 "isa_tms320.tcc"
+#line 113266 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113255 "isa_tms320.tcc"
+#line 113271 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113259 "isa_tms320.tcc"
+#line 113275 "isa_tms320.tcc"
 	>(0x20000000UL, 0xffe0e0e0UL, DecodeOpADDC3_reg_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113263 "isa_tms320.tcc"
+#line 113279 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113267 "isa_tms320.tcc"
+#line 113283 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113272 "isa_tms320.tcc"
+#line 113288 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113276 "isa_tms320.tcc"
+#line 113292 "isa_tms320.tcc"
 	>(0x1ae00000UL, 0xffe00000UL, DecodeOpXOR_imm<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113280 "isa_tms320.tcc"
+#line 113296 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113284 "isa_tms320.tcc"
+#line 113300 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113289 "isa_tms320.tcc"
+#line 113305 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113293 "isa_tms320.tcc"
+#line 113309 "isa_tms320.tcc"
 	>(0x1ac00000UL, 0xffe00000UL, DecodeOpXOR_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113297 "isa_tms320.tcc"
+#line 113313 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113301 "isa_tms320.tcc"
+#line 113317 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113306 "isa_tms320.tcc"
+#line 113322 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113310 "isa_tms320.tcc"
+#line 113326 "isa_tms320.tcc"
 	>(0x1aa00000UL, 0xffe00000UL, DecodeOpXOR_dir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113314 "isa_tms320.tcc"
+#line 113330 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113318 "isa_tms320.tcc"
+#line 113334 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113323 "isa_tms320.tcc"
+#line 113339 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113327 "isa_tms320.tcc"
+#line 113343 "isa_tms320.tcc"
 	>(0x1a800000UL, 0xffe0ffe0UL, DecodeOpXOR_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113331 "isa_tms320.tcc"
+#line 113347 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113335 "isa_tms320.tcc"
+#line 113351 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113340 "isa_tms320.tcc"
+#line 113356 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113344 "isa_tms320.tcc"
+#line 113360 "isa_tms320.tcc"
 	>(0x1a600000UL, 0xffe00000UL, DecodeOpTSTB_imm<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113348 "isa_tms320.tcc"
+#line 113364 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113352 "isa_tms320.tcc"
+#line 113368 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113357 "isa_tms320.tcc"
+#line 113373 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113361 "isa_tms320.tcc"
+#line 113377 "isa_tms320.tcc"
 	>(0x1a400000UL, 0xffe00000UL, DecodeOpTSTB_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113365 "isa_tms320.tcc"
+#line 113381 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113369 "isa_tms320.tcc"
+#line 113385 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113374 "isa_tms320.tcc"
+#line 113390 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113378 "isa_tms320.tcc"
+#line 113394 "isa_tms320.tcc"
 	>(0x1a200000UL, 0xffe00000UL, DecodeOpTSTB_dir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113382 "isa_tms320.tcc"
+#line 113398 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113386 "isa_tms320.tcc"
+#line 113402 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113391 "isa_tms320.tcc"
+#line 113407 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113395 "isa_tms320.tcc"
+#line 113411 "isa_tms320.tcc"
 	>(0x1a000000UL, 0xffe0ffe0UL, DecodeOpTSTB_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113399 "isa_tms320.tcc"
+#line 113415 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113403 "isa_tms320.tcc"
+#line 113419 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113408 "isa_tms320.tcc"
+#line 113424 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113412 "isa_tms320.tcc"
+#line 113428 "isa_tms320.tcc"
 	>(0x19e00000UL, 0xffe00000UL, DecodeOpSUBRI_imm<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113416 "isa_tms320.tcc"
+#line 113432 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113420 "isa_tms320.tcc"
+#line 113436 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113425 "isa_tms320.tcc"
+#line 113441 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113429 "isa_tms320.tcc"
+#line 113445 "isa_tms320.tcc"
 	>(0x19c00000UL, 0xffe00000UL, DecodeOpSUBRI_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113433 "isa_tms320.tcc"
+#line 113449 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113437 "isa_tms320.tcc"
+#line 113453 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113442 "isa_tms320.tcc"
+#line 113458 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113446 "isa_tms320.tcc"
+#line 113462 "isa_tms320.tcc"
 	>(0x19a00000UL, 0xffe00000UL, DecodeOpSUBRI_dir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113450 "isa_tms320.tcc"
+#line 113466 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113454 "isa_tms320.tcc"
+#line 113470 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113459 "isa_tms320.tcc"
+#line 113475 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113463 "isa_tms320.tcc"
+#line 113479 "isa_tms320.tcc"
 	>(0x19800000UL, 0xffe0ffe0UL, DecodeOpSUBRI_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113467 "isa_tms320.tcc"
+#line 113483 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113471 "isa_tms320.tcc"
+#line 113487 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113476 "isa_tms320.tcc"
+#line 113492 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113480 "isa_tms320.tcc"
+#line 113496 "isa_tms320.tcc"
 	>(0x19600000UL, 0xfff80000UL, DecodeOpSUBRF_imm<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113484 "isa_tms320.tcc"
+#line 113500 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113488 "isa_tms320.tcc"
+#line 113504 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113493 "isa_tms320.tcc"
+#line 113509 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113497 "isa_tms320.tcc"
+#line 113513 "isa_tms320.tcc"
 	>(0x19400000UL, 0xfff80000UL, DecodeOpSUBRF_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113501 "isa_tms320.tcc"
+#line 113517 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113505 "isa_tms320.tcc"
+#line 113521 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113510 "isa_tms320.tcc"
+#line 113526 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113514 "isa_tms320.tcc"
+#line 113530 "isa_tms320.tcc"
 	>(0x19200000UL, 0xfff80000UL, DecodeOpSUBRF_dir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113518 "isa_tms320.tcc"
+#line 113534 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113522 "isa_tms320.tcc"
+#line 113538 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113527 "isa_tms320.tcc"
+#line 113543 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113531 "isa_tms320.tcc"
+#line 113547 "isa_tms320.tcc"
 	>(0x19000000UL, 0xfff8fff8UL, DecodeOpSUBRF_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113535 "isa_tms320.tcc"
+#line 113551 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113539 "isa_tms320.tcc"
+#line 113555 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113544 "isa_tms320.tcc"
+#line 113560 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113548 "isa_tms320.tcc"
+#line 113564 "isa_tms320.tcc"
 	>(0x18e00000UL, 0xffe00000UL, DecodeOpSUBRB_imm<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113552 "isa_tms320.tcc"
+#line 113568 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113556 "isa_tms320.tcc"
+#line 113572 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113561 "isa_tms320.tcc"
+#line 113577 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113565 "isa_tms320.tcc"
+#line 113581 "isa_tms320.tcc"
 	>(0x18c00000UL, 0xffe00000UL, DecodeOpSUBRB_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113569 "isa_tms320.tcc"
+#line 113585 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113573 "isa_tms320.tcc"
+#line 113589 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113578 "isa_tms320.tcc"
+#line 113594 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113582 "isa_tms320.tcc"
+#line 113598 "isa_tms320.tcc"
 	>(0x18a00000UL, 0xffe00000UL, DecodeOpSUBRB_dir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113586 "isa_tms320.tcc"
+#line 113602 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113590 "isa_tms320.tcc"
+#line 113606 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113595 "isa_tms320.tcc"
+#line 113611 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113599 "isa_tms320.tcc"
+#line 113615 "isa_tms320.tcc"
 	>(0x18800000UL, 0xffe0ffe0UL, DecodeOpSUBRB_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113603 "isa_tms320.tcc"
+#line 113619 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113607 "isa_tms320.tcc"
+#line 113623 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113612 "isa_tms320.tcc"
+#line 113628 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113616 "isa_tms320.tcc"
+#line 113632 "isa_tms320.tcc"
 	>(0x18600000UL, 0xffe00000UL, DecodeOpSUBI_imm<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113620 "isa_tms320.tcc"
+#line 113636 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113624 "isa_tms320.tcc"
+#line 113640 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113629 "isa_tms320.tcc"
+#line 113645 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113633 "isa_tms320.tcc"
+#line 113649 "isa_tms320.tcc"
 	>(0x18400000UL, 0xffe00000UL, DecodeOpSUBI_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113637 "isa_tms320.tcc"
+#line 113653 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113641 "isa_tms320.tcc"
+#line 113657 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113646 "isa_tms320.tcc"
+#line 113662 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113650 "isa_tms320.tcc"
+#line 113666 "isa_tms320.tcc"
 	>(0x18200000UL, 0xffe00000UL, DecodeOpSUBI_dir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113654 "isa_tms320.tcc"
+#line 113670 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113658 "isa_tms320.tcc"
+#line 113674 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113663 "isa_tms320.tcc"
+#line 113679 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113667 "isa_tms320.tcc"
+#line 113683 "isa_tms320.tcc"
 	>(0x18000000UL, 0xffe0ffe0UL, DecodeOpSUBI_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113671 "isa_tms320.tcc"
+#line 113687 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113675 "isa_tms320.tcc"
+#line 113691 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113680 "isa_tms320.tcc"
+#line 113696 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113684 "isa_tms320.tcc"
+#line 113700 "isa_tms320.tcc"
 	>(0x17e00000UL, 0xfff80000UL, DecodeOpSUBF_imm<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113688 "isa_tms320.tcc"
+#line 113704 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113692 "isa_tms320.tcc"
+#line 113708 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113697 "isa_tms320.tcc"
+#line 113713 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113701 "isa_tms320.tcc"
+#line 113717 "isa_tms320.tcc"
 	>(0x17c00000UL, 0xfff80000UL, DecodeOpSUBF_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113705 "isa_tms320.tcc"
+#line 113721 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113709 "isa_tms320.tcc"
+#line 113725 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113714 "isa_tms320.tcc"
+#line 113730 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113718 "isa_tms320.tcc"
+#line 113734 "isa_tms320.tcc"
 	>(0x17a00000UL, 0xfff80000UL, DecodeOpSUBF_dir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113722 "isa_tms320.tcc"
+#line 113738 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113726 "isa_tms320.tcc"
+#line 113742 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113731 "isa_tms320.tcc"
+#line 113747 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113735 "isa_tms320.tcc"
+#line 113751 "isa_tms320.tcc"
 	>(0x17800000UL, 0xfff8fff8UL, DecodeOpSUBF_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113739 "isa_tms320.tcc"
+#line 113755 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113743 "isa_tms320.tcc"
+#line 113759 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113748 "isa_tms320.tcc"
+#line 113764 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113752 "isa_tms320.tcc"
+#line 113768 "isa_tms320.tcc"
 	>(0x17600000UL, 0xffe00000UL, DecodeOpSUBC_imm<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113756 "isa_tms320.tcc"
+#line 113772 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113760 "isa_tms320.tcc"
+#line 113776 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113765 "isa_tms320.tcc"
+#line 113781 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113769 "isa_tms320.tcc"
+#line 113785 "isa_tms320.tcc"
 	>(0x17400000UL, 0xffe00000UL, DecodeOpSUBC_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113773 "isa_tms320.tcc"
+#line 113789 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113777 "isa_tms320.tcc"
+#line 113793 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113782 "isa_tms320.tcc"
+#line 113798 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113786 "isa_tms320.tcc"
+#line 113802 "isa_tms320.tcc"
 	>(0x17200000UL, 0xffe00000UL, DecodeOpSUBC_dir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113790 "isa_tms320.tcc"
+#line 113806 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113794 "isa_tms320.tcc"
+#line 113810 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113799 "isa_tms320.tcc"
+#line 113815 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113803 "isa_tms320.tcc"
+#line 113819 "isa_tms320.tcc"
 	>(0x17000000UL, 0xffe0ffe0UL, DecodeOpSUBC_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113807 "isa_tms320.tcc"
+#line 113823 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113811 "isa_tms320.tcc"
+#line 113827 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113816 "isa_tms320.tcc"
+#line 113832 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113820 "isa_tms320.tcc"
+#line 113836 "isa_tms320.tcc"
 	>(0x16e00000UL, 0xffe00000UL, DecodeOpSUBB_imm<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113824 "isa_tms320.tcc"
+#line 113840 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113828 "isa_tms320.tcc"
+#line 113844 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113833 "isa_tms320.tcc"
+#line 113849 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113837 "isa_tms320.tcc"
+#line 113853 "isa_tms320.tcc"
 	>(0x16c00000UL, 0xffe00000UL, DecodeOpSUBB_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113841 "isa_tms320.tcc"
+#line 113857 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113845 "isa_tms320.tcc"
+#line 113861 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113850 "isa_tms320.tcc"
+#line 113866 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113854 "isa_tms320.tcc"
+#line 113870 "isa_tms320.tcc"
 	>(0x16a00000UL, 0xffe00000UL, DecodeOpSUBB_dir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113858 "isa_tms320.tcc"
+#line 113874 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113862 "isa_tms320.tcc"
+#line 113878 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113867 "isa_tms320.tcc"
+#line 113883 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113871 "isa_tms320.tcc"
+#line 113887 "isa_tms320.tcc"
 	>(0x16800000UL, 0xffe0ffe0UL, DecodeOpSUBB_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113875 "isa_tms320.tcc"
+#line 113891 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113879 "isa_tms320.tcc"
+#line 113895 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113884 "isa_tms320.tcc"
+#line 113900 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113888 "isa_tms320.tcc"
+#line 113904 "isa_tms320.tcc"
 	>(0x1360ffffUL, 0xffe0ffffUL, DecodeOpRORC<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113892 "isa_tms320.tcc"
+#line 113908 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113896 "isa_tms320.tcc"
+#line 113912 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113901 "isa_tms320.tcc"
+#line 113917 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113905 "isa_tms320.tcc"
+#line 113921 "isa_tms320.tcc"
 	>(0x12e0ffffUL, 0xffe0ffffUL, DecodeOpROR<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113909 "isa_tms320.tcc"
+#line 113925 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113913 "isa_tms320.tcc"
+#line 113929 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113918 "isa_tms320.tcc"
+#line 113934 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113922 "isa_tms320.tcc"
+#line 113938 "isa_tms320.tcc"
 	>(0x12600001UL, 0xffe0ffffUL, DecodeOpROLC<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113926 "isa_tms320.tcc"
+#line 113942 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113930 "isa_tms320.tcc"
+#line 113946 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113935 "isa_tms320.tcc"
+#line 113951 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113939 "isa_tms320.tcc"
+#line 113955 "isa_tms320.tcc"
 	>(0x11e00001UL, 0xffe0ffffUL, DecodeOpROL<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113943 "isa_tms320.tcc"
+#line 113959 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113947 "isa_tms320.tcc"
+#line 113963 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113952 "isa_tms320.tcc"
+#line 113968 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113956 "isa_tms320.tcc"
+#line 113972 "isa_tms320.tcc"
 	>(0x11600000UL, 0xfff80000UL, DecodeOpRND_imm<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113960 "isa_tms320.tcc"
+#line 113976 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113964 "isa_tms320.tcc"
+#line 113980 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113969 "isa_tms320.tcc"
+#line 113985 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113973 "isa_tms320.tcc"
+#line 113989 "isa_tms320.tcc"
 	>(0x11400000UL, 0xfff80000UL, DecodeOpRND_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113977 "isa_tms320.tcc"
+#line 113993 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113981 "isa_tms320.tcc"
+#line 113997 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113986 "isa_tms320.tcc"
+#line 114002 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113990 "isa_tms320.tcc"
+#line 114006 "isa_tms320.tcc"
 	>(0x11200000UL, 0xfff80000UL, DecodeOpRND_dir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 113994 "isa_tms320.tcc"
+#line 114010 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 113998 "isa_tms320.tcc"
+#line 114014 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114003 "isa_tms320.tcc"
+#line 114019 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114007 "isa_tms320.tcc"
+#line 114023 "isa_tms320.tcc"
 	>(0x11000000UL, 0xfff8fff8UL, DecodeOpRND_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114011 "isa_tms320.tcc"
+#line 114027 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114015 "isa_tms320.tcc"
+#line 114031 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114020 "isa_tms320.tcc"
+#line 114036 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114024 "isa_tms320.tcc"
+#line 114040 "isa_tms320.tcc"
 	>(0x10600000UL, 0xffe00000UL, DecodeOpOR_imm<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114028 "isa_tms320.tcc"
+#line 114044 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114032 "isa_tms320.tcc"
+#line 114048 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114037 "isa_tms320.tcc"
+#line 114053 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114041 "isa_tms320.tcc"
+#line 114057 "isa_tms320.tcc"
 	>(0x10400000UL, 0xffe00000UL, DecodeOpOR_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114045 "isa_tms320.tcc"
+#line 114061 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114049 "isa_tms320.tcc"
+#line 114065 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114054 "isa_tms320.tcc"
+#line 114070 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114058 "isa_tms320.tcc"
+#line 114074 "isa_tms320.tcc"
 	>(0x10200000UL, 0xffe00000UL, DecodeOpOR_dir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114062 "isa_tms320.tcc"
+#line 114078 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114066 "isa_tms320.tcc"
+#line 114082 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114071 "isa_tms320.tcc"
+#line 114087 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114075 "isa_tms320.tcc"
+#line 114091 "isa_tms320.tcc"
 	>(0x10000000UL, 0xffe0ffe0UL, DecodeOpOR_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114079 "isa_tms320.tcc"
+#line 114095 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114083 "isa_tms320.tcc"
+#line 114099 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114088 "isa_tms320.tcc"
+#line 114104 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114092 "isa_tms320.tcc"
+#line 114108 "isa_tms320.tcc"
 	>(0xde00000UL, 0xffe00000UL, DecodeOpNOT_imm<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114096 "isa_tms320.tcc"
+#line 114112 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114100 "isa_tms320.tcc"
+#line 114116 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114105 "isa_tms320.tcc"
+#line 114121 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114109 "isa_tms320.tcc"
+#line 114125 "isa_tms320.tcc"
 	>(0xdc00000UL, 0xffe00000UL, DecodeOpNOT_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114113 "isa_tms320.tcc"
+#line 114129 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114117 "isa_tms320.tcc"
+#line 114133 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114122 "isa_tms320.tcc"
+#line 114138 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114126 "isa_tms320.tcc"
+#line 114142 "isa_tms320.tcc"
 	>(0xda00000UL, 0xffe00000UL, DecodeOpNOT_dir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114130 "isa_tms320.tcc"
+#line 114146 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114134 "isa_tms320.tcc"
+#line 114150 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114139 "isa_tms320.tcc"
+#line 114155 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114143 "isa_tms320.tcc"
+#line 114159 "isa_tms320.tcc"
 	>(0xd800000UL, 0xffe0ffe0UL, DecodeOpNOT_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114147 "isa_tms320.tcc"
+#line 114163 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114151 "isa_tms320.tcc"
+#line 114167 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114156 "isa_tms320.tcc"
+#line 114172 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114160 "isa_tms320.tcc"
+#line 114176 "isa_tms320.tcc"
 	>(0xd600000UL, 0xfff80000UL, DecodeOpNORM_imm<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114164 "isa_tms320.tcc"
+#line 114180 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114168 "isa_tms320.tcc"
+#line 114184 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114173 "isa_tms320.tcc"
+#line 114189 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114177 "isa_tms320.tcc"
+#line 114193 "isa_tms320.tcc"
 	>(0xd400000UL, 0xfff80000UL, DecodeOpNORM_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114181 "isa_tms320.tcc"
+#line 114197 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114185 "isa_tms320.tcc"
+#line 114201 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114190 "isa_tms320.tcc"
+#line 114206 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114194 "isa_tms320.tcc"
+#line 114210 "isa_tms320.tcc"
 	>(0xd200000UL, 0xfff80000UL, DecodeOpNORM_dir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114198 "isa_tms320.tcc"
+#line 114214 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114202 "isa_tms320.tcc"
+#line 114218 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114207 "isa_tms320.tcc"
+#line 114223 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114211 "isa_tms320.tcc"
+#line 114227 "isa_tms320.tcc"
 	>(0xd000000UL, 0xfff8fff8UL, DecodeOpNORM_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114215 "isa_tms320.tcc"
+#line 114231 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114219 "isa_tms320.tcc"
+#line 114235 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114224 "isa_tms320.tcc"
+#line 114240 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114228 "isa_tms320.tcc"
+#line 114244 "isa_tms320.tcc"
 	>(0xc600000UL, 0xffe00000UL, DecodeOpNEGI_imm<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114232 "isa_tms320.tcc"
+#line 114248 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114236 "isa_tms320.tcc"
+#line 114252 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114241 "isa_tms320.tcc"
+#line 114257 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114245 "isa_tms320.tcc"
+#line 114261 "isa_tms320.tcc"
 	>(0xc400000UL, 0xffe00000UL, DecodeOpNEGI_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114249 "isa_tms320.tcc"
+#line 114265 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114253 "isa_tms320.tcc"
+#line 114269 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114258 "isa_tms320.tcc"
+#line 114274 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114262 "isa_tms320.tcc"
+#line 114278 "isa_tms320.tcc"
 	>(0xc200000UL, 0xffe00000UL, DecodeOpNEGI_dir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114266 "isa_tms320.tcc"
+#line 114282 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114270 "isa_tms320.tcc"
+#line 114286 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114275 "isa_tms320.tcc"
+#line 114291 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114279 "isa_tms320.tcc"
+#line 114295 "isa_tms320.tcc"
 	>(0xc000000UL, 0xffe0ffe0UL, DecodeOpNEGI_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114283 "isa_tms320.tcc"
+#line 114299 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114287 "isa_tms320.tcc"
+#line 114303 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114292 "isa_tms320.tcc"
+#line 114308 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114296 "isa_tms320.tcc"
+#line 114312 "isa_tms320.tcc"
 	>(0xbe00000UL, 0xfff80000UL, DecodeOpNEGF_imm<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114300 "isa_tms320.tcc"
+#line 114316 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114304 "isa_tms320.tcc"
+#line 114320 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114309 "isa_tms320.tcc"
+#line 114325 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114313 "isa_tms320.tcc"
+#line 114329 "isa_tms320.tcc"
 	>(0xbc00000UL, 0xfff80000UL, DecodeOpNEGF_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114317 "isa_tms320.tcc"
+#line 114333 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114321 "isa_tms320.tcc"
+#line 114337 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114326 "isa_tms320.tcc"
+#line 114342 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114330 "isa_tms320.tcc"
+#line 114346 "isa_tms320.tcc"
 	>(0xba00000UL, 0xfff80000UL, DecodeOpNEGF_dir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114334 "isa_tms320.tcc"
+#line 114350 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114338 "isa_tms320.tcc"
+#line 114354 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114343 "isa_tms320.tcc"
+#line 114359 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114347 "isa_tms320.tcc"
+#line 114363 "isa_tms320.tcc"
 	>(0xb800000UL, 0xfff8fff8UL, DecodeOpNEGF_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114351 "isa_tms320.tcc"
+#line 114367 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114355 "isa_tms320.tcc"
+#line 114371 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114360 "isa_tms320.tcc"
+#line 114376 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114364 "isa_tms320.tcc"
+#line 114380 "isa_tms320.tcc"
 	>(0xb600000UL, 0xffe00000UL, DecodeOpNEGB_imm<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114368 "isa_tms320.tcc"
+#line 114384 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114372 "isa_tms320.tcc"
+#line 114388 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114377 "isa_tms320.tcc"
+#line 114393 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114381 "isa_tms320.tcc"
+#line 114397 "isa_tms320.tcc"
 	>(0xb400000UL, 0xffe00000UL, DecodeOpNEGB_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114385 "isa_tms320.tcc"
+#line 114401 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114389 "isa_tms320.tcc"
+#line 114405 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114394 "isa_tms320.tcc"
+#line 114410 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114398 "isa_tms320.tcc"
+#line 114414 "isa_tms320.tcc"
 	>(0xb200000UL, 0xffe00000UL, DecodeOpNEGB_dir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114402 "isa_tms320.tcc"
+#line 114418 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114406 "isa_tms320.tcc"
+#line 114422 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114411 "isa_tms320.tcc"
+#line 114427 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114415 "isa_tms320.tcc"
+#line 114431 "isa_tms320.tcc"
 	>(0xb000000UL, 0xffe0ffe0UL, DecodeOpNEGB_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114419 "isa_tms320.tcc"
+#line 114435 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114423 "isa_tms320.tcc"
+#line 114439 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114428 "isa_tms320.tcc"
+#line 114444 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114432 "isa_tms320.tcc"
+#line 114448 "isa_tms320.tcc"
 	>(0xae00000UL, 0xffe00000UL, DecodeOpMPYI_imm<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114436 "isa_tms320.tcc"
+#line 114452 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114440 "isa_tms320.tcc"
+#line 114456 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114445 "isa_tms320.tcc"
+#line 114461 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114449 "isa_tms320.tcc"
+#line 114465 "isa_tms320.tcc"
 	>(0xac00000UL, 0xffe00000UL, DecodeOpMPYI_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114453 "isa_tms320.tcc"
+#line 114469 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114457 "isa_tms320.tcc"
+#line 114473 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114462 "isa_tms320.tcc"
+#line 114478 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114466 "isa_tms320.tcc"
+#line 114482 "isa_tms320.tcc"
 	>(0xaa00000UL, 0xffe00000UL, DecodeOpMPYI_dir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114470 "isa_tms320.tcc"
+#line 114486 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114474 "isa_tms320.tcc"
+#line 114490 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114479 "isa_tms320.tcc"
+#line 114495 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114483 "isa_tms320.tcc"
+#line 114499 "isa_tms320.tcc"
 	>(0xa800000UL, 0xffe0ffe0UL, DecodeOpMPYI_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114487 "isa_tms320.tcc"
+#line 114503 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114491 "isa_tms320.tcc"
+#line 114507 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114496 "isa_tms320.tcc"
+#line 114512 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114500 "isa_tms320.tcc"
+#line 114516 "isa_tms320.tcc"
 	>(0xa600000UL, 0xfff80000UL, DecodeOpMPYF_imm<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114504 "isa_tms320.tcc"
+#line 114520 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114508 "isa_tms320.tcc"
+#line 114524 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114513 "isa_tms320.tcc"
+#line 114529 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114517 "isa_tms320.tcc"
+#line 114533 "isa_tms320.tcc"
 	>(0xa400000UL, 0xfff80000UL, DecodeOpMPYF_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114521 "isa_tms320.tcc"
+#line 114537 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114525 "isa_tms320.tcc"
+#line 114541 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114530 "isa_tms320.tcc"
+#line 114546 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114534 "isa_tms320.tcc"
+#line 114550 "isa_tms320.tcc"
 	>(0xa200000UL, 0xfff80000UL, DecodeOpMPYF_dir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114538 "isa_tms320.tcc"
+#line 114554 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114542 "isa_tms320.tcc"
+#line 114558 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114547 "isa_tms320.tcc"
+#line 114563 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114551 "isa_tms320.tcc"
+#line 114567 "isa_tms320.tcc"
 	>(0xa000000UL, 0xfff8fff8UL, DecodeOpMPYF_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114555 "isa_tms320.tcc"
+#line 114571 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114559 "isa_tms320.tcc"
+#line 114575 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114564 "isa_tms320.tcc"
+#line 114580 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114568 "isa_tms320.tcc"
+#line 114584 "isa_tms320.tcc"
 	>(0x9e00000UL, 0xffe00000UL, DecodeOpLSH_imm<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114572 "isa_tms320.tcc"
+#line 114588 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114576 "isa_tms320.tcc"
+#line 114592 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114581 "isa_tms320.tcc"
+#line 114597 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114585 "isa_tms320.tcc"
+#line 114601 "isa_tms320.tcc"
 	>(0x9c00000UL, 0xffe00000UL, DecodeOpLSH_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114589 "isa_tms320.tcc"
+#line 114605 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114593 "isa_tms320.tcc"
+#line 114609 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114598 "isa_tms320.tcc"
+#line 114614 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114602 "isa_tms320.tcc"
+#line 114618 "isa_tms320.tcc"
 	>(0x9a00000UL, 0xffe00000UL, DecodeOpLSH_dir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114606 "isa_tms320.tcc"
+#line 114622 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114610 "isa_tms320.tcc"
+#line 114626 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114615 "isa_tms320.tcc"
+#line 114631 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114619 "isa_tms320.tcc"
+#line 114635 "isa_tms320.tcc"
 	>(0x9800000UL, 0xffe0ffe0UL, DecodeOpLSH_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114623 "isa_tms320.tcc"
+#line 114639 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114627 "isa_tms320.tcc"
+#line 114643 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114632 "isa_tms320.tcc"
+#line 114648 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114636 "isa_tms320.tcc"
+#line 114652 "isa_tms320.tcc"
 	>(0x5e00000UL, 0xfff80000UL, DecodeOpFLOAT_imm<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114640 "isa_tms320.tcc"
+#line 114656 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114644 "isa_tms320.tcc"
+#line 114660 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114649 "isa_tms320.tcc"
+#line 114665 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114653 "isa_tms320.tcc"
+#line 114669 "isa_tms320.tcc"
 	>(0x5c00000UL, 0xfff80000UL, DecodeOpFLOAT_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114657 "isa_tms320.tcc"
+#line 114673 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114661 "isa_tms320.tcc"
+#line 114677 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114666 "isa_tms320.tcc"
+#line 114682 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114670 "isa_tms320.tcc"
+#line 114686 "isa_tms320.tcc"
 	>(0x5a00000UL, 0xfff80000UL, DecodeOpFLOAT_dir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114674 "isa_tms320.tcc"
+#line 114690 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114678 "isa_tms320.tcc"
+#line 114694 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114683 "isa_tms320.tcc"
+#line 114699 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114687 "isa_tms320.tcc"
+#line 114703 "isa_tms320.tcc"
 	>(0x5800000UL, 0xfff8fff8UL, DecodeOpFLOAT_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114691 "isa_tms320.tcc"
+#line 114707 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114695 "isa_tms320.tcc"
+#line 114711 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114700 "isa_tms320.tcc"
+#line 114716 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114704 "isa_tms320.tcc"
+#line 114720 "isa_tms320.tcc"
 	>(0x5600000UL, 0xffe00000UL, DecodeOpFIX_imm<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114708 "isa_tms320.tcc"
+#line 114724 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114712 "isa_tms320.tcc"
+#line 114728 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114717 "isa_tms320.tcc"
+#line 114733 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114721 "isa_tms320.tcc"
+#line 114737 "isa_tms320.tcc"
 	>(0x5400000UL, 0xffe00000UL, DecodeOpFIX_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114725 "isa_tms320.tcc"
+#line 114741 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114729 "isa_tms320.tcc"
+#line 114745 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114734 "isa_tms320.tcc"
+#line 114750 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114738 "isa_tms320.tcc"
+#line 114754 "isa_tms320.tcc"
 	>(0x5200000UL, 0xffe00000UL, DecodeOpFIX_dir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114742 "isa_tms320.tcc"
+#line 114758 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114746 "isa_tms320.tcc"
+#line 114762 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114751 "isa_tms320.tcc"
+#line 114767 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114755 "isa_tms320.tcc"
+#line 114771 "isa_tms320.tcc"
 	>(0x5000000UL, 0xffe0fff8UL, DecodeOpFIX_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114759 "isa_tms320.tcc"
+#line 114775 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114763 "isa_tms320.tcc"
+#line 114779 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114768 "isa_tms320.tcc"
+#line 114784 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114772 "isa_tms320.tcc"
+#line 114788 "isa_tms320.tcc"
 	>(0x4e00000UL, 0xffe00000UL, DecodeOpCMPI_imm<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114776 "isa_tms320.tcc"
+#line 114792 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114780 "isa_tms320.tcc"
+#line 114796 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114785 "isa_tms320.tcc"
+#line 114801 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114789 "isa_tms320.tcc"
+#line 114805 "isa_tms320.tcc"
 	>(0x4c00000UL, 0xffe00000UL, DecodeOpCMPI_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114793 "isa_tms320.tcc"
+#line 114809 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114797 "isa_tms320.tcc"
+#line 114813 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114802 "isa_tms320.tcc"
+#line 114818 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114806 "isa_tms320.tcc"
+#line 114822 "isa_tms320.tcc"
 	>(0x4a00000UL, 0xffe00000UL, DecodeOpCMPI_dir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114810 "isa_tms320.tcc"
+#line 114826 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114814 "isa_tms320.tcc"
+#line 114830 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114819 "isa_tms320.tcc"
+#line 114835 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114823 "isa_tms320.tcc"
+#line 114839 "isa_tms320.tcc"
 	>(0x4800000UL, 0xffe0ffe0UL, DecodeOpCMPI_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114827 "isa_tms320.tcc"
+#line 114843 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114831 "isa_tms320.tcc"
+#line 114847 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114836 "isa_tms320.tcc"
+#line 114852 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114840 "isa_tms320.tcc"
+#line 114856 "isa_tms320.tcc"
 	>(0x4600000UL, 0xfff80000UL, DecodeOpCMPF_imm<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114844 "isa_tms320.tcc"
+#line 114860 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114848 "isa_tms320.tcc"
+#line 114864 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114853 "isa_tms320.tcc"
+#line 114869 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114857 "isa_tms320.tcc"
+#line 114873 "isa_tms320.tcc"
 	>(0x4400000UL, 0xfff80000UL, DecodeOpCMPF_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114861 "isa_tms320.tcc"
+#line 114877 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114865 "isa_tms320.tcc"
+#line 114881 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114870 "isa_tms320.tcc"
+#line 114886 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114874 "isa_tms320.tcc"
+#line 114890 "isa_tms320.tcc"
 	>(0x4200000UL, 0xfff80000UL, DecodeOpCMPF_dir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114878 "isa_tms320.tcc"
+#line 114894 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114882 "isa_tms320.tcc"
+#line 114898 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114887 "isa_tms320.tcc"
+#line 114903 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114891 "isa_tms320.tcc"
+#line 114907 "isa_tms320.tcc"
 	>(0x4000000UL, 0xfff8fff8UL, DecodeOpCMPF_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114895 "isa_tms320.tcc"
+#line 114911 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114899 "isa_tms320.tcc"
+#line 114915 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114904 "isa_tms320.tcc"
+#line 114920 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114908 "isa_tms320.tcc"
+#line 114924 "isa_tms320.tcc"
 	>(0x3e00000UL, 0xffe00000UL, DecodeOpASH_imm<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114912 "isa_tms320.tcc"
+#line 114928 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114916 "isa_tms320.tcc"
+#line 114932 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114921 "isa_tms320.tcc"
+#line 114937 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114925 "isa_tms320.tcc"
+#line 114941 "isa_tms320.tcc"
 	>(0x3c00000UL, 0xffe00000UL, DecodeOpASH_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114929 "isa_tms320.tcc"
+#line 114945 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114933 "isa_tms320.tcc"
+#line 114949 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114938 "isa_tms320.tcc"
+#line 114954 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114942 "isa_tms320.tcc"
+#line 114958 "isa_tms320.tcc"
 	>(0x3a00000UL, 0xffe00000UL, DecodeOpASH_dir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114946 "isa_tms320.tcc"
+#line 114962 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114950 "isa_tms320.tcc"
+#line 114966 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114955 "isa_tms320.tcc"
+#line 114971 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114959 "isa_tms320.tcc"
+#line 114975 "isa_tms320.tcc"
 	>(0x3800000UL, 0xffe0ffe0UL, DecodeOpASH_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114963 "isa_tms320.tcc"
+#line 114979 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114967 "isa_tms320.tcc"
+#line 114983 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114972 "isa_tms320.tcc"
+#line 114988 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114976 "isa_tms320.tcc"
+#line 114992 "isa_tms320.tcc"
 	>(0x3600000UL, 0xffe00000UL, DecodeOpANDN_imm<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114980 "isa_tms320.tcc"
+#line 114996 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114984 "isa_tms320.tcc"
+#line 115000 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114989 "isa_tms320.tcc"
+#line 115005 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 114993 "isa_tms320.tcc"
+#line 115009 "isa_tms320.tcc"
 	>(0x3400000UL, 0xffe00000UL, DecodeOpANDN_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 114997 "isa_tms320.tcc"
+#line 115013 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115001 "isa_tms320.tcc"
+#line 115017 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115006 "isa_tms320.tcc"
+#line 115022 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115010 "isa_tms320.tcc"
+#line 115026 "isa_tms320.tcc"
 	>(0x3200000UL, 0xffe00000UL, DecodeOpANDN_dir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115014 "isa_tms320.tcc"
+#line 115030 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115018 "isa_tms320.tcc"
+#line 115034 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115023 "isa_tms320.tcc"
+#line 115039 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115027 "isa_tms320.tcc"
+#line 115043 "isa_tms320.tcc"
 	>(0x3000000UL, 0xffe0ffe0UL, DecodeOpANDN_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115031 "isa_tms320.tcc"
+#line 115047 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115035 "isa_tms320.tcc"
+#line 115051 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115040 "isa_tms320.tcc"
+#line 115056 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115044 "isa_tms320.tcc"
+#line 115060 "isa_tms320.tcc"
 	>(0x2e00000UL, 0xffe00000UL, DecodeOpAND_imm<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115048 "isa_tms320.tcc"
+#line 115064 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115052 "isa_tms320.tcc"
+#line 115068 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115057 "isa_tms320.tcc"
+#line 115073 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115061 "isa_tms320.tcc"
+#line 115077 "isa_tms320.tcc"
 	>(0x2c00000UL, 0xffe00000UL, DecodeOpAND_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115065 "isa_tms320.tcc"
+#line 115081 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115069 "isa_tms320.tcc"
+#line 115085 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115074 "isa_tms320.tcc"
+#line 115090 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115078 "isa_tms320.tcc"
+#line 115094 "isa_tms320.tcc"
 	>(0x2a00000UL, 0xffe00000UL, DecodeOpAND_dir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115082 "isa_tms320.tcc"
+#line 115098 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115086 "isa_tms320.tcc"
+#line 115102 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115091 "isa_tms320.tcc"
+#line 115107 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115095 "isa_tms320.tcc"
+#line 115111 "isa_tms320.tcc"
 	>(0x2800000UL, 0xffe0ffe0UL, DecodeOpAND_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115099 "isa_tms320.tcc"
+#line 115115 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115103 "isa_tms320.tcc"
+#line 115119 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115108 "isa_tms320.tcc"
+#line 115124 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115112 "isa_tms320.tcc"
+#line 115128 "isa_tms320.tcc"
 	>(0x2600000UL, 0xffe00000UL, DecodeOpADDI_imm<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115116 "isa_tms320.tcc"
+#line 115132 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115120 "isa_tms320.tcc"
+#line 115136 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115125 "isa_tms320.tcc"
+#line 115141 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115129 "isa_tms320.tcc"
+#line 115145 "isa_tms320.tcc"
 	>(0x2400000UL, 0xffe00000UL, DecodeOpADDI_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115133 "isa_tms320.tcc"
+#line 115149 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115137 "isa_tms320.tcc"
+#line 115153 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115142 "isa_tms320.tcc"
+#line 115158 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115146 "isa_tms320.tcc"
+#line 115162 "isa_tms320.tcc"
 	>(0x2200000UL, 0xffe00000UL, DecodeOpADDI_dir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115150 "isa_tms320.tcc"
+#line 115166 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115154 "isa_tms320.tcc"
+#line 115170 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115159 "isa_tms320.tcc"
+#line 115175 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115163 "isa_tms320.tcc"
+#line 115179 "isa_tms320.tcc"
 	>(0x2000000UL, 0xffe0ffe0UL, DecodeOpADDI_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115167 "isa_tms320.tcc"
+#line 115183 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115171 "isa_tms320.tcc"
+#line 115187 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115176 "isa_tms320.tcc"
+#line 115192 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115180 "isa_tms320.tcc"
+#line 115196 "isa_tms320.tcc"
 	>(0x1e00000UL, 0xfff80000UL, DecodeOpADDF_imm<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115184 "isa_tms320.tcc"
+#line 115200 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115188 "isa_tms320.tcc"
+#line 115204 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115193 "isa_tms320.tcc"
+#line 115209 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115197 "isa_tms320.tcc"
+#line 115213 "isa_tms320.tcc"
 	>(0x1c00000UL, 0xfff80000UL, DecodeOpADDF_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115201 "isa_tms320.tcc"
+#line 115217 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115205 "isa_tms320.tcc"
+#line 115221 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115210 "isa_tms320.tcc"
+#line 115226 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115214 "isa_tms320.tcc"
+#line 115230 "isa_tms320.tcc"
 	>(0x1a00000UL, 0xfff80000UL, DecodeOpADDF_dir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115218 "isa_tms320.tcc"
+#line 115234 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115222 "isa_tms320.tcc"
+#line 115238 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115227 "isa_tms320.tcc"
+#line 115243 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115231 "isa_tms320.tcc"
+#line 115247 "isa_tms320.tcc"
 	>(0x1800000UL, 0xfff8fff8UL, DecodeOpADDF_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115235 "isa_tms320.tcc"
+#line 115251 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115239 "isa_tms320.tcc"
+#line 115255 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115244 "isa_tms320.tcc"
+#line 115260 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115248 "isa_tms320.tcc"
+#line 115264 "isa_tms320.tcc"
 	>(0x1600000UL, 0xffe00000UL, DecodeOpADDC_imm<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115252 "isa_tms320.tcc"
+#line 115268 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115256 "isa_tms320.tcc"
+#line 115272 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115261 "isa_tms320.tcc"
+#line 115277 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115265 "isa_tms320.tcc"
+#line 115281 "isa_tms320.tcc"
 	>(0x1400000UL, 0xffe00000UL, DecodeOpADDC_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115269 "isa_tms320.tcc"
+#line 115285 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115273 "isa_tms320.tcc"
+#line 115289 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115278 "isa_tms320.tcc"
+#line 115294 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115282 "isa_tms320.tcc"
+#line 115298 "isa_tms320.tcc"
 	>(0x1200000UL, 0xffe00000UL, DecodeOpADDC_dir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115286 "isa_tms320.tcc"
+#line 115302 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115290 "isa_tms320.tcc"
+#line 115306 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115295 "isa_tms320.tcc"
+#line 115311 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115299 "isa_tms320.tcc"
+#line 115315 "isa_tms320.tcc"
 	>(0x1000000UL, 0xffe0ffe0UL, DecodeOpADDC_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115303 "isa_tms320.tcc"
+#line 115319 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115307 "isa_tms320.tcc"
+#line 115323 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115312 "isa_tms320.tcc"
+#line 115328 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115316 "isa_tms320.tcc"
+#line 115332 "isa_tms320.tcc"
 	>(0xe00000UL, 0xffe00000UL, DecodeOpABSI_imm<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115320 "isa_tms320.tcc"
+#line 115336 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115324 "isa_tms320.tcc"
+#line 115340 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115329 "isa_tms320.tcc"
+#line 115345 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115333 "isa_tms320.tcc"
+#line 115349 "isa_tms320.tcc"
 	>(0xc00000UL, 0xffe00000UL, DecodeOpABSI_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115337 "isa_tms320.tcc"
+#line 115353 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115341 "isa_tms320.tcc"
+#line 115357 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115346 "isa_tms320.tcc"
+#line 115362 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115350 "isa_tms320.tcc"
+#line 115366 "isa_tms320.tcc"
 	>(0xa00000UL, 0xffe00000UL, DecodeOpABSI_dir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115354 "isa_tms320.tcc"
+#line 115370 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115358 "isa_tms320.tcc"
+#line 115374 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115363 "isa_tms320.tcc"
+#line 115379 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115367 "isa_tms320.tcc"
+#line 115383 "isa_tms320.tcc"
 	>(0x800000UL, 0xffe0ffe0UL, DecodeOpABSI_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115371 "isa_tms320.tcc"
+#line 115387 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115375 "isa_tms320.tcc"
+#line 115391 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115380 "isa_tms320.tcc"
+#line 115396 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115384 "isa_tms320.tcc"
+#line 115400 "isa_tms320.tcc"
 	>(0x600000UL, 0xfff80000UL, DecodeOpABSF_imm<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115388 "isa_tms320.tcc"
+#line 115404 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115392 "isa_tms320.tcc"
+#line 115408 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115397 "isa_tms320.tcc"
+#line 115413 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115401 "isa_tms320.tcc"
+#line 115417 "isa_tms320.tcc"
 	>(0x400000UL, 0xfff80000UL, DecodeOpABSF_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115405 "isa_tms320.tcc"
+#line 115421 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115409 "isa_tms320.tcc"
+#line 115425 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115414 "isa_tms320.tcc"
+#line 115430 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115418 "isa_tms320.tcc"
+#line 115434 "isa_tms320.tcc"
 	>(0x200000UL, 0xfff80000UL, DecodeOpABSF_dir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115422 "isa_tms320.tcc"
+#line 115438 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115426 "isa_tms320.tcc"
+#line 115442 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115431 "isa_tms320.tcc"
+#line 115447 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115435 "isa_tms320.tcc"
+#line 115451 "isa_tms320.tcc"
 	>(0x0UL, 0xfff8fff8UL, DecodeOpABSF_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115439 "isa_tms320.tcc"
+#line 115455 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115443 "isa_tms320.tcc"
+#line 115459 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115448 "isa_tms320.tcc"
+#line 115464 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115452 "isa_tms320.tcc"
+#line 115468 "isa_tms320.tcc"
 	>(0x15400000UL, 0xffe00000UL, DecodeOpSTI_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115456 "isa_tms320.tcc"
+#line 115472 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115460 "isa_tms320.tcc"
+#line 115476 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115465 "isa_tms320.tcc"
+#line 115481 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115469 "isa_tms320.tcc"
+#line 115485 "isa_tms320.tcc"
 	>(0x15200000UL, 0xffe00000UL, DecodeOpSTI_dir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115473 "isa_tms320.tcc"
+#line 115489 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115477 "isa_tms320.tcc"
+#line 115493 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115482 "isa_tms320.tcc"
+#line 115498 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115486 "isa_tms320.tcc"
+#line 115502 "isa_tms320.tcc"
 	>(0x14400000UL, 0xfff80000UL, DecodeOpSTF_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115490 "isa_tms320.tcc"
+#line 115506 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115494 "isa_tms320.tcc"
+#line 115510 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115499 "isa_tms320.tcc"
+#line 115515 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115503 "isa_tms320.tcc"
+#line 115519 "isa_tms320.tcc"
 	>(0x14200000UL, 0xffe00000UL, DecodeOpSTF_dir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115507 "isa_tms320.tcc"
+#line 115523 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115511 "isa_tms320.tcc"
+#line 115527 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115516 "isa_tms320.tcc"
+#line 115532 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115520 "isa_tms320.tcc"
+#line 115536 "isa_tms320.tcc"
 	>(0xfa00000UL, 0xfff8ffffUL, DecodeOpPUSHF<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115524 "isa_tms320.tcc"
+#line 115540 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115528 "isa_tms320.tcc"
+#line 115544 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115533 "isa_tms320.tcc"
+#line 115549 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115537 "isa_tms320.tcc"
+#line 115553 "isa_tms320.tcc"
 	>(0xf200000UL, 0xffe0ffffUL, DecodeOpPUSH<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115541 "isa_tms320.tcc"
+#line 115557 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115545 "isa_tms320.tcc"
+#line 115561 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115550 "isa_tms320.tcc"
+#line 115566 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115554 "isa_tms320.tcc"
+#line 115570 "isa_tms320.tcc"
 	>(0xea00000UL, 0xfff8ffffUL, DecodeOpPOPF<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115558 "isa_tms320.tcc"
+#line 115574 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115562 "isa_tms320.tcc"
+#line 115578 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115567 "isa_tms320.tcc"
+#line 115583 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115571 "isa_tms320.tcc"
+#line 115587 "isa_tms320.tcc"
 	>(0xe200000UL, 0xffe0ffffUL, DecodeOpPOP<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115575 "isa_tms320.tcc"
+#line 115591 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115579 "isa_tms320.tcc"
+#line 115595 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115584 "isa_tms320.tcc"
+#line 115600 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115588 "isa_tms320.tcc"
+#line 115604 "isa_tms320.tcc"
 	>(0x8700000UL, 0xffffff00UL, DecodeOpLDP<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115592 "isa_tms320.tcc"
+#line 115608 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115596 "isa_tms320.tcc"
+#line 115612 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115601 "isa_tms320.tcc"
+#line 115617 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115605 "isa_tms320.tcc"
+#line 115621 "isa_tms320.tcc"
 	>(0x9600000UL, 0xfff8f000UL, DecodeOpLDM_imm<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115609 "isa_tms320.tcc"
+#line 115625 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115613 "isa_tms320.tcc"
+#line 115629 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115618 "isa_tms320.tcc"
+#line 115634 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115622 "isa_tms320.tcc"
+#line 115638 "isa_tms320.tcc"
 	>(0x9400000UL, 0xfff80000UL, DecodeOpLDM_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115626 "isa_tms320.tcc"
+#line 115642 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115630 "isa_tms320.tcc"
+#line 115646 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115635 "isa_tms320.tcc"
+#line 115651 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115639 "isa_tms320.tcc"
+#line 115655 "isa_tms320.tcc"
 	>(0x9200000UL, 0xfff80000UL, DecodeOpLDM_dir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115643 "isa_tms320.tcc"
+#line 115659 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115647 "isa_tms320.tcc"
+#line 115663 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115652 "isa_tms320.tcc"
+#line 115668 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115656 "isa_tms320.tcc"
+#line 115672 "isa_tms320.tcc"
 	>(0x9000000UL, 0xfff8ffe0UL, DecodeOpLDM_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115660 "isa_tms320.tcc"
+#line 115676 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115664 "isa_tms320.tcc"
+#line 115680 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115669 "isa_tms320.tcc"
+#line 115685 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115673 "isa_tms320.tcc"
+#line 115689 "isa_tms320.tcc"
 	>(0x50600000UL, 0xf0600000UL, DecodeOpLDIcond_imm<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115677 "isa_tms320.tcc"
+#line 115693 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115681 "isa_tms320.tcc"
+#line 115697 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115686 "isa_tms320.tcc"
+#line 115702 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115690 "isa_tms320.tcc"
+#line 115706 "isa_tms320.tcc"
 	>(0x50400000UL, 0xf0600000UL, DecodeOpLDIcond_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115694 "isa_tms320.tcc"
+#line 115710 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115698 "isa_tms320.tcc"
+#line 115714 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115703 "isa_tms320.tcc"
+#line 115719 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115707 "isa_tms320.tcc"
+#line 115723 "isa_tms320.tcc"
 	>(0x50200000UL, 0xf0600000UL, DecodeOpLDIcond_dir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115711 "isa_tms320.tcc"
+#line 115727 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115715 "isa_tms320.tcc"
+#line 115731 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115720 "isa_tms320.tcc"
+#line 115736 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115724 "isa_tms320.tcc"
+#line 115740 "isa_tms320.tcc"
 	>(0x50000000UL, 0xf060ffe0UL, DecodeOpLDIcond_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115728 "isa_tms320.tcc"
+#line 115744 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115732 "isa_tms320.tcc"
+#line 115748 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115737 "isa_tms320.tcc"
+#line 115753 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115741 "isa_tms320.tcc"
+#line 115757 "isa_tms320.tcc"
 	>(0x8600000UL, 0xffe00000UL, DecodeOpLDI_imm<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115745 "isa_tms320.tcc"
+#line 115761 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115749 "isa_tms320.tcc"
+#line 115765 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115754 "isa_tms320.tcc"
+#line 115770 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115758 "isa_tms320.tcc"
+#line 115774 "isa_tms320.tcc"
 	>(0x8400000UL, 0xffe00000UL, DecodeOpLDI_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115762 "isa_tms320.tcc"
+#line 115778 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115766 "isa_tms320.tcc"
+#line 115782 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115771 "isa_tms320.tcc"
+#line 115787 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115775 "isa_tms320.tcc"
+#line 115791 "isa_tms320.tcc"
 	>(0x8200000UL, 0xffe00000UL, DecodeOpLDI_dir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115779 "isa_tms320.tcc"
+#line 115795 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115783 "isa_tms320.tcc"
+#line 115799 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115788 "isa_tms320.tcc"
+#line 115804 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115792 "isa_tms320.tcc"
+#line 115808 "isa_tms320.tcc"
 	>(0x8000000UL, 0xffe0ffe0UL, DecodeOpLDI_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115796 "isa_tms320.tcc"
+#line 115812 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115800 "isa_tms320.tcc"
+#line 115816 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115805 "isa_tms320.tcc"
+#line 115821 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115809 "isa_tms320.tcc"
+#line 115825 "isa_tms320.tcc"
 	>(0x40600000UL, 0xf0780000UL, DecodeOpLDFcond_imm<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115813 "isa_tms320.tcc"
+#line 115829 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115817 "isa_tms320.tcc"
+#line 115833 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115822 "isa_tms320.tcc"
+#line 115838 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115826 "isa_tms320.tcc"
+#line 115842 "isa_tms320.tcc"
 	>(0x40400000UL, 0xf0780000UL, DecodeOpLDFcond_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115830 "isa_tms320.tcc"
+#line 115846 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115834 "isa_tms320.tcc"
+#line 115850 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115839 "isa_tms320.tcc"
+#line 115855 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115843 "isa_tms320.tcc"
+#line 115859 "isa_tms320.tcc"
 	>(0x40200000UL, 0xf0780000UL, DecodeOpLDFcond_dir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115847 "isa_tms320.tcc"
+#line 115863 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115851 "isa_tms320.tcc"
+#line 115867 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115856 "isa_tms320.tcc"
+#line 115872 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115860 "isa_tms320.tcc"
+#line 115876 "isa_tms320.tcc"
 	>(0x40000000UL, 0xf078ffe0UL, DecodeOpLDFcond_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115864 "isa_tms320.tcc"
+#line 115880 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115868 "isa_tms320.tcc"
+#line 115884 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115873 "isa_tms320.tcc"
+#line 115889 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115877 "isa_tms320.tcc"
+#line 115893 "isa_tms320.tcc"
 	>(0x7600000UL, 0xfff80000UL, DecodeOpLDF_imm<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115881 "isa_tms320.tcc"
+#line 115897 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115885 "isa_tms320.tcc"
+#line 115901 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115890 "isa_tms320.tcc"
+#line 115906 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115894 "isa_tms320.tcc"
+#line 115910 "isa_tms320.tcc"
 	>(0x7400000UL, 0xfff80000UL, DecodeOpLDF_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115898 "isa_tms320.tcc"
+#line 115914 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115902 "isa_tms320.tcc"
+#line 115918 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115907 "isa_tms320.tcc"
+#line 115923 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115911 "isa_tms320.tcc"
+#line 115927 "isa_tms320.tcc"
 	>(0x7200000UL, 0xfff80000UL, DecodeOpLDF_dir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115915 "isa_tms320.tcc"
+#line 115931 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115919 "isa_tms320.tcc"
+#line 115935 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115924 "isa_tms320.tcc"
+#line 115940 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115928 "isa_tms320.tcc"
+#line 115944 "isa_tms320.tcc"
 	>(0x7000000UL, 0xfff8ffe0UL, DecodeOpLDF_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115932 "isa_tms320.tcc"
+#line 115948 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115936 "isa_tms320.tcc"
+#line 115952 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115941 "isa_tms320.tcc"
+#line 115957 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115945 "isa_tms320.tcc"
+#line 115961 "isa_tms320.tcc"
 	>(0x6e00000UL, 0xfff80000UL, DecodeOpLDE_imm<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115949 "isa_tms320.tcc"
+#line 115965 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115953 "isa_tms320.tcc"
+#line 115969 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115958 "isa_tms320.tcc"
+#line 115974 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115962 "isa_tms320.tcc"
+#line 115978 "isa_tms320.tcc"
 	>(0x6c00000UL, 0xfff80000UL, DecodeOpLDE_indir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115966 "isa_tms320.tcc"
+#line 115982 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115970 "isa_tms320.tcc"
+#line 115986 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115975 "isa_tms320.tcc"
+#line 115991 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115979 "isa_tms320.tcc"
+#line 115995 "isa_tms320.tcc"
 	>(0x6a00000UL, 0xfff80000UL, DecodeOpLDE_dir<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115983 "isa_tms320.tcc"
+#line 115999 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115987 "isa_tms320.tcc"
+#line 116003 "isa_tms320.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 115992 "isa_tms320.tcc"
+#line 116008 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 115996 "isa_tms320.tcc"
+#line 116012 "isa_tms320.tcc"
 	>(0x6800000UL, 0xfff8ffe0UL, DecodeOpLDE_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 116000 "isa_tms320.tcc"
+#line 116016 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 116004 "isa_tms320.tcc"
+#line 116020 "isa_tms320.tcc"
 	>));
 }
 
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 116011 "isa_tms320.tcc"
+#line 116027 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 116014 "isa_tms320.tcc"
+#line 116030 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 116018 "isa_tms320.tcc"
+#line 116034 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 116021 "isa_tms320.tcc"
+#line 116037 "isa_tms320.tcc"
 >
 Decoder<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 116026 "isa_tms320.tcc"
+#line 116042 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 116030 "isa_tms320.tcc"
+#line 116046 "isa_tms320.tcc"
 >::~Decoder()
 {
 	InvalidateDecodingCache();
@@ -116035,26 +116051,26 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 116039 "isa_tms320.tcc"
+#line 116055 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 116042 "isa_tms320.tcc"
+#line 116058 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 116046 "isa_tms320.tcc"
+#line 116062 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 116049 "isa_tms320.tcc"
+#line 116065 "isa_tms320.tcc"
 >
 void Decoder<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 116054 "isa_tms320.tcc"
+#line 116070 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 116058 "isa_tms320.tcc"
+#line 116074 "isa_tms320.tcc"
 >::Fetch(void *, typename CONFIG::address_t, uint32_t)
 {
 	assert( ! "Calling unimplemented virtual method Fetch" );
@@ -116063,44 +116079,44 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 116067 "isa_tms320.tcc"
+#line 116083 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 116070 "isa_tms320.tcc"
+#line 116086 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 116074 "isa_tms320.tcc"
+#line 116090 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 116077 "isa_tms320.tcc"
+#line 116093 "isa_tms320.tcc"
 >
 Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 116082 "isa_tms320.tcc"
+#line 116098 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 116086 "isa_tms320.tcc"
+#line 116102 "isa_tms320.tcc"
 > *Decoder<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 116090 "isa_tms320.tcc"
+#line 116106 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 116094 "isa_tms320.tcc"
+#line 116110 "isa_tms320.tcc"
 >::NCDecode(typename CONFIG::address_t addr)
 {
 	Operation<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 116100 "isa_tms320.tcc"
+#line 116116 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 116104 "isa_tms320.tcc"
+#line 116120 "isa_tms320.tcc"
 	> *operation;
 	CodeType code;
 	Fetch(&code, addr, sizeof(code));
@@ -116125,11 +116141,11 @@ DEBUG
 	operation = new Operation<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 116129 "isa_tms320.tcc"
+#line 116145 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 116133 "isa_tms320.tcc"
+#line 116149 "isa_tms320.tcc"
 	>(code, addr, "???");
 	return operation;
 }
@@ -116137,44 +116153,44 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 116141 "isa_tms320.tcc"
+#line 116157 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 116144 "isa_tms320.tcc"
+#line 116160 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 116148 "isa_tms320.tcc"
+#line 116164 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 116151 "isa_tms320.tcc"
+#line 116167 "isa_tms320.tcc"
 >
 Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 116156 "isa_tms320.tcc"
+#line 116172 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 116160 "isa_tms320.tcc"
+#line 116176 "isa_tms320.tcc"
 > *Decoder<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 116164 "isa_tms320.tcc"
+#line 116180 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 116168 "isa_tms320.tcc"
+#line 116184 "isa_tms320.tcc"
 >::NCDecode(typename CONFIG::address_t addr, CodeType code)
 {
 	Operation<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 116174 "isa_tms320.tcc"
+#line 116190 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 116178 "isa_tms320.tcc"
+#line 116194 "isa_tms320.tcc"
 	> *operation;
 	unsigned int count = decode_table.size();
 	unsigned int idx;
@@ -116189,11 +116205,11 @@ DEBUG
 	operation = new Operation<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 116193 "isa_tms320.tcc"
+#line 116209 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 116197 "isa_tms320.tcc"
+#line 116213 "isa_tms320.tcc"
 	>(code, addr, "???");
 	return operation;
 }
@@ -116201,26 +116217,26 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 116205 "isa_tms320.tcc"
+#line 116221 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 116208 "isa_tms320.tcc"
+#line 116224 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 116212 "isa_tms320.tcc"
+#line 116228 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 116215 "isa_tms320.tcc"
+#line 116231 "isa_tms320.tcc"
 >
 void Decoder<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 116220 "isa_tms320.tcc"
+#line 116236 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 116224 "isa_tms320.tcc"
+#line 116240 "isa_tms320.tcc"
 >::InvalidateDecodingCache()
 {
 	uint32_t index;
@@ -116230,11 +116246,11 @@ DEBUG
 		DecodeMapPage<
 #line 45 "isa/tms320.isa"
 		CONFIG
-#line 116234 "isa_tms320.tcc"
+#line 116250 "isa_tms320.tcc"
 		,
 #line 45 "isa/tms320.isa"
 		DEBUG
-#line 116238 "isa_tms320.tcc"
+#line 116254 "isa_tms320.tcc"
 		> *page, *next_page;
 		page = decode_hash_table[index];
 		if(page)
@@ -116253,26 +116269,26 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 116257 "isa_tms320.tcc"
+#line 116273 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 116260 "isa_tms320.tcc"
+#line 116276 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 116264 "isa_tms320.tcc"
+#line 116280 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 116267 "isa_tms320.tcc"
+#line 116283 "isa_tms320.tcc"
 >
 void Decoder<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 116272 "isa_tms320.tcc"
+#line 116288 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 116276 "isa_tms320.tcc"
+#line 116292 "isa_tms320.tcc"
 >::InvalidateDecodingCacheEntry(typename CONFIG::address_t addr)
 {
 	typename CONFIG::address_t page_key = addr / 4 / NUM_OPERATIONS_PER_PAGE;
@@ -116281,11 +116297,11 @@ DEBUG
 	DecodeMapPage<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 116285 "isa_tms320.tcc"
+#line 116301 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 116289 "isa_tms320.tcc"
+#line 116305 "isa_tms320.tcc"
 	> *prev, *cur;
 	cur = decode_hash_table[index];
 	if(cur)
@@ -116318,34 +116334,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 116322 "isa_tms320.tcc"
+#line 116338 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 116325 "isa_tms320.tcc"
+#line 116341 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 116329 "isa_tms320.tcc"
+#line 116345 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 116332 "isa_tms320.tcc"
+#line 116348 "isa_tms320.tcc"
 >
 inline DecodeMapPage<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 116337 "isa_tms320.tcc"
+#line 116353 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 116341 "isa_tms320.tcc"
+#line 116357 "isa_tms320.tcc"
 > *Decoder<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 116345 "isa_tms320.tcc"
+#line 116361 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 116349 "isa_tms320.tcc"
+#line 116365 "isa_tms320.tcc"
 >::FindPage(typename CONFIG::address_t page_key)
 {
 	if(mru_page && mru_page->key == page_key) return mru_page;
@@ -116353,11 +116369,11 @@ DEBUG
 	DecodeMapPage<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 116357 "isa_tms320.tcc"
+#line 116373 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 116361 "isa_tms320.tcc"
+#line 116377 "isa_tms320.tcc"
 	> *prev, *cur;
 	cur = decode_hash_table[index];
 	if(cur)
@@ -116391,54 +116407,54 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 116395 "isa_tms320.tcc"
+#line 116411 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 116398 "isa_tms320.tcc"
+#line 116414 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 116402 "isa_tms320.tcc"
+#line 116418 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 116405 "isa_tms320.tcc"
+#line 116421 "isa_tms320.tcc"
 >
 Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 116410 "isa_tms320.tcc"
+#line 116426 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 116414 "isa_tms320.tcc"
+#line 116430 "isa_tms320.tcc"
 > *Decoder<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 116418 "isa_tms320.tcc"
+#line 116434 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 116422 "isa_tms320.tcc"
+#line 116438 "isa_tms320.tcc"
 >::Decode(typename CONFIG::address_t addr)
 {
 	Operation<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 116428 "isa_tms320.tcc"
+#line 116444 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 116432 "isa_tms320.tcc"
+#line 116448 "isa_tms320.tcc"
 	> *operation;
 	typename CONFIG::address_t page_key = addr / 4 / NUM_OPERATIONS_PER_PAGE;
 	DecodeMapPage<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 116438 "isa_tms320.tcc"
+#line 116454 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 116442 "isa_tms320.tcc"
+#line 116458 "isa_tms320.tcc"
 	> *page;
 	page = FindPage(page_key);
 	if(!page)
@@ -116446,11 +116462,11 @@ DEBUG
 		page = new DecodeMapPage<
 #line 45 "isa/tms320.isa"
 		CONFIG
-#line 116450 "isa_tms320.tcc"
+#line 116466 "isa_tms320.tcc"
 		,
 #line 45 "isa/tms320.isa"
 		DEBUG
-#line 116454 "isa_tms320.tcc"
+#line 116470 "isa_tms320.tcc"
 		>(page_key);
 		uint32_t index = page_key % NUM_DECODE_HASH_TABLE_ENTRIES; // hash the key
 		page->next = decode_hash_table[index];
@@ -116470,54 +116486,54 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 116474 "isa_tms320.tcc"
+#line 116490 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 116477 "isa_tms320.tcc"
+#line 116493 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 116481 "isa_tms320.tcc"
+#line 116497 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 116484 "isa_tms320.tcc"
+#line 116500 "isa_tms320.tcc"
 >
 Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 116489 "isa_tms320.tcc"
+#line 116505 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 116493 "isa_tms320.tcc"
+#line 116509 "isa_tms320.tcc"
 > *Decoder<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 116497 "isa_tms320.tcc"
+#line 116513 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 116501 "isa_tms320.tcc"
+#line 116517 "isa_tms320.tcc"
 >::Decode(typename CONFIG::address_t addr, CodeType insn)
 {
 	Operation<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 116507 "isa_tms320.tcc"
+#line 116523 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 116511 "isa_tms320.tcc"
+#line 116527 "isa_tms320.tcc"
 	> *operation;
 	typename CONFIG::address_t page_key = addr / 4 / NUM_OPERATIONS_PER_PAGE;
 	DecodeMapPage<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 116517 "isa_tms320.tcc"
+#line 116533 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 116521 "isa_tms320.tcc"
+#line 116537 "isa_tms320.tcc"
 	> *page;
 	page = FindPage(page_key);
 	if(!page)
@@ -116525,11 +116541,11 @@ DEBUG
 		page = new DecodeMapPage<
 #line 45 "isa/tms320.isa"
 		CONFIG
-#line 116529 "isa_tms320.tcc"
+#line 116545 "isa_tms320.tcc"
 		,
 #line 45 "isa/tms320.isa"
 		DEBUG
-#line 116533 "isa_tms320.tcc"
+#line 116549 "isa_tms320.tcc"
 		> (page_key);
 		uint32_t index = page_key % NUM_DECODE_HASH_TABLE_ENTRIES; // hash the key
 		page->next = decode_hash_table[index];
@@ -116551,26 +116567,26 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 116555 "isa_tms320.tcc"
+#line 116571 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 116558 "isa_tms320.tcc"
+#line 116574 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 116562 "isa_tms320.tcc"
+#line 116578 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 116565 "isa_tms320.tcc"
+#line 116581 "isa_tms320.tcc"
 >
 void Decoder<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 116570 "isa_tms320.tcc"
+#line 116586 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 116574 "isa_tms320.tcc"
+#line 116590 "isa_tms320.tcc"
 >::SetLittleEndian()
 {
 	little_endian = true;
@@ -116579,26 +116595,26 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 116583 "isa_tms320.tcc"
+#line 116599 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 116586 "isa_tms320.tcc"
+#line 116602 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 116590 "isa_tms320.tcc"
+#line 116606 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 116593 "isa_tms320.tcc"
+#line 116609 "isa_tms320.tcc"
 >
 void Decoder<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 116598 "isa_tms320.tcc"
+#line 116614 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 116602 "isa_tms320.tcc"
+#line 116618 "isa_tms320.tcc"
 >::SetBigEndian()
 {
 	little_endian = false;

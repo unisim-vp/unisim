@@ -62,6 +62,10 @@ class TMS320VC33_Config :
 	public TMS320Base {
 public:
 	static const Model MODEL = TMS320VC33;
+
+	static const bool ENABLE_INSN_CACHE = true;
+	static const uint32_t INSN_CACHE_SIZE = 64;    // 64 32-bit instructions
+	static const uint32_t INSN_CACHE_ASSOCIATIVITY = 2; // 2-way set associative
 };
 
 } // end of namespace tms320
