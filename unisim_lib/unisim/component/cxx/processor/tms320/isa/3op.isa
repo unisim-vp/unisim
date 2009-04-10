@@ -119,10 +119,10 @@ ADDC3_reg_reg.execute = {
 	}
 
 	// Read 1st source operand
-	uint32_t src1_value = cpu.GetIntReg(src1);
+	uint32_t src1_value = cpu.GetReg(src1);
 
 	// Read 2nd source operand
-	uint32_t src2_value = cpu.GetIntReg(src2);
+	uint32_t src2_value = cpu.GetReg(src2);
 
 	// Read carry in
 	uint8_t carry_in = cpu.GetST_C();
@@ -139,7 +139,7 @@ ADDC3_reg_reg.execute = {
 		Add32(result, carry_out, overflow, src1_value, src2_value, carry_in);
 
 	// Write back result
-	cpu.SetIntReg(dst, result);
+	cpu.SetReg(dst, result);
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -176,7 +176,7 @@ ADDC3_indir_reg.execute = {
 	uint32_t src1_value = cpu.IntLoad(ea);
 
 	// Read 2nd source operand
-	uint32_t src2_value = cpu.GetIntReg(src2);
+	uint32_t src2_value = cpu.GetReg(src2);
 
 	// Read carry in
 	uint8_t carry_in = cpu.GetST_C();
@@ -193,7 +193,7 @@ ADDC3_indir_reg.execute = {
 		Add32(result, carry_out, overflow, src1_value, src2_value, carry_in);
 
 	// Write back result
-	cpu.SetIntReg(dst, result);
+	cpu.SetReg(dst, result);
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -217,7 +217,7 @@ ADDC3_reg_indir.execute = {
 	}
 
 	// Read 1st source operand
-	uint32_t src1_value = cpu.GetIntReg(src1);
+	uint32_t src1_value = cpu.GetReg(src1);
 
 	// Check that indirect addressing mode is valid and compute the effective address of the 2nd source operand
 	typename CONFIG::address_t ea;        // The effective address
@@ -247,7 +247,7 @@ ADDC3_reg_indir.execute = {
 		Add32(result, carry_out, overflow, src1_value, src2_value, carry_in);
 
 	// Write back result
-	cpu.SetIntReg(dst, result);
+	cpu.SetReg(dst, result);
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -330,7 +330,7 @@ ADDC3_indir_indir.execute = {
 	}
 
 	// Write back result
-	cpu.SetIntReg(dst, result);
+	cpu.SetReg(dst, result);
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -492,10 +492,10 @@ ADDI3_reg_reg.execute = {
 	}
 
 	// Read 1st source operand
-	uint32_t src1_value = cpu.GetIntReg(src1);
+	uint32_t src1_value = cpu.GetReg(src1);
 
 	// Read 2nd source operand
-	uint32_t src2_value = cpu.GetIntReg(src2);
+	uint32_t src2_value = cpu.GetReg(src2);
 
 	// Compute the result
 	uint32_t result;      // the 32-bit result
@@ -509,7 +509,7 @@ ADDI3_reg_reg.execute = {
 		Add32(result, carry_out, overflow, src1_value, src2_value, 0);
 
 	// Write back result
-	cpu.SetIntReg(dst, result);
+	cpu.SetReg(dst, result);
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -546,7 +546,7 @@ ADDI3_indir_reg.execute = {
 	uint32_t src1_value = cpu.IntLoad(ea);
 
 	// Read 2nd source operand
-	uint32_t src2_value = cpu.GetIntReg(src2);
+	uint32_t src2_value = cpu.GetReg(src2);
 
 	// Compute the result
 	uint32_t result;      // the 32-bit result
@@ -560,7 +560,7 @@ ADDI3_indir_reg.execute = {
 		Add32(result, carry_out, overflow, src1_value, src2_value, 0);
 
 	// Write back result
-	cpu.SetIntReg(dst, result);
+	cpu.SetReg(dst, result);
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -584,7 +584,7 @@ ADDI3_reg_indir.execute = {
 	}
 
 	// Read 1st source operand
-	uint32_t src1_value = cpu.GetIntReg(src1);
+	uint32_t src1_value = cpu.GetReg(src1);
 
 	// Check that indirect addressing mode is valid and compute the effective address of the 2nd source operand
 	typename CONFIG::address_t ea;        // The effective address
@@ -611,7 +611,7 @@ ADDI3_reg_indir.execute = {
 		Add32(result, carry_out, overflow, src1_value, src2_value, 0);
 
 	// Write back result
-	cpu.SetIntReg(dst, result);
+	cpu.SetReg(dst, result);
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -691,7 +691,7 @@ ADDI3_indir_indir.execute = {
 	}
 
 	// Write back result
-	cpu.SetIntReg(dst, result);
+	cpu.SetReg(dst, result);
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -777,16 +777,16 @@ AND3_reg_reg.execute = {
 	}
 
 	// Read 1st source operand
-	uint32_t src1_value = cpu.GetIntReg(src1);
+	uint32_t src1_value = cpu.GetReg(src1);
 
 	// Read 2nd source operand
-	uint32_t src2_value = cpu.GetIntReg(src2);
+	uint32_t src2_value = cpu.GetReg(src2);
 
 	// Compute the result
 	uint32_t result = src1_value & src2_value;
 
 	// Write back result
-	cpu.SetIntReg(dst, result);
+	cpu.SetReg(dst, result);
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -822,13 +822,13 @@ AND3_indir_reg.execute = {
 	uint32_t src1_value = cpu.IntLoad(ea);
 
 	// Read 2nd source operand
-	uint32_t src2_value = cpu.GetIntReg(src2);
+	uint32_t src2_value = cpu.GetReg(src2);
 
 	// Compute the result
 	uint32_t result = src1_value & src2_value;
 
 	// Write back result
-	cpu.SetIntReg(dst, result);
+	cpu.SetReg(dst, result);
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -850,7 +850,7 @@ AND3_reg_indir.execute = {
 	}
 
 	// Read 1st source operand
-	uint32_t src1_value = cpu.GetIntReg(src1);
+	uint32_t src1_value = cpu.GetReg(src1);
 
 	// Check that indirect addressing mode is valid and compute the effective address of the 2nd source operand
 	typename CONFIG::address_t ea;        // The effective address
@@ -869,7 +869,7 @@ AND3_reg_indir.execute = {
 	uint32_t result = src1_value & src2_value;
 
 	// Write back result
-	cpu.SetIntReg(dst, result);
+	cpu.SetReg(dst, result);
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -939,7 +939,7 @@ AND3_indir_indir.execute = {
 	}
 
 	// Write back result
-	cpu.SetIntReg(dst, result);
+	cpu.SetReg(dst, result);
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -1019,16 +1019,16 @@ ANDN3_reg_reg.execute = {
 	}
 
 	// Read 1st source operand
-	uint32_t src1_value = cpu.GetIntReg(src1);
+	uint32_t src1_value = cpu.GetReg(src1);
 
 	// Read 2nd source operand
-	uint32_t src2_value = cpu.GetIntReg(src2);
+	uint32_t src2_value = cpu.GetReg(src2);
 
 	// Compute the result
 	uint32_t result = src1_value & ~src2_value;
 
 	// Write back result
-	cpu.SetIntReg(dst, result);
+	cpu.SetReg(dst, result);
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -1064,13 +1064,13 @@ ANDN3_indir_reg.execute = {
 	uint32_t src1_value = cpu.IntLoad(ea);
 
 	// Read 2nd source operand
-	uint32_t src2_value = cpu.GetIntReg(src2);
+	uint32_t src2_value = cpu.GetReg(src2);
 
 	// Compute the result
 	uint32_t result = src1_value & ~src2_value;
 
 	// Write back result
-	cpu.SetIntReg(dst, result);
+	cpu.SetReg(dst, result);
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -1092,7 +1092,7 @@ ANDN3_reg_indir.execute = {
 	}
 
 	// Read 1st source operand
-	uint32_t src1_value = cpu.GetIntReg(src1);
+	uint32_t src1_value = cpu.GetReg(src1);
 
 	// Check that indirect addressing mode is valid and compute the effective address of the 2nd source operand
 	typename CONFIG::address_t ea;        // The effective address
@@ -1111,7 +1111,7 @@ ANDN3_reg_indir.execute = {
 	uint32_t result = src1_value & ~src2_value;
 
 	// Write back result
-	cpu.SetIntReg(dst, result);
+	cpu.SetReg(dst, result);
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -1181,7 +1181,7 @@ ANDN3_indir_indir.execute = {
 	}
 
 	// Write back result
-	cpu.SetIntReg(dst, result);
+	cpu.SetReg(dst, result);
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -1264,10 +1264,10 @@ ASH3_reg_reg.execute = {
 	}
 
 	// Read 1st source operand
-	uint32_t src1_value = cpu.GetIntReg(src1);
+	uint32_t src1_value = cpu.GetReg(src1);
 
 	// Read 2nd source operand
-	uint32_t src2_value = cpu.GetIntReg(src2);
+	uint32_t src2_value = cpu.GetReg(src2);
 
 	// Sign extend the 7 LSB of the 2nd source operand value to get the shift count
 	int32_t count = SignExtend(src2_value, 7);
@@ -1308,7 +1308,7 @@ ASH3_reg_reg.execute = {
 	}
 
 	// Write back result
-	cpu.SetIntReg(dst, result);
+	cpu.SetReg(dst, result);
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -1344,7 +1344,7 @@ ASH3_indir_reg.execute = {
 	uint32_t src1_value = cpu.IntLoad(ea);
 
 	// Read 2nd source operand
-	uint32_t src2_value = cpu.GetIntReg(src2);
+	uint32_t src2_value = cpu.GetReg(src2);
 
 	// Sign extend the 7 LSB of the 2nd source operand value to get the shift count
 	int32_t count = SignExtend(src2_value, 7);
@@ -1385,7 +1385,7 @@ ASH3_indir_reg.execute = {
 	}
 
 	// Write back result
-	cpu.SetIntReg(dst, result);
+	cpu.SetReg(dst, result);
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -1408,7 +1408,7 @@ ASH3_reg_indir.execute = {
 	}
 
 	// Read 1st source operand
-	uint32_t src1_value = cpu.GetIntReg(src1);
+	uint32_t src1_value = cpu.GetReg(src1);
 
 	// Check that indirect addressing mode is valid and compute the effective address of the 2nd source operand
 	typename CONFIG::address_t ea;        // The effective address
@@ -1462,7 +1462,7 @@ ASH3_reg_indir.execute = {
 	}
 
 	// Write back result
-	cpu.SetIntReg(dst, result);
+	cpu.SetReg(dst, result);
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -1568,7 +1568,7 @@ ASH3_indir_indir.execute = {
 	}
 
 	// Write back result
-	cpu.SetIntReg(dst, result);
+	cpu.SetReg(dst, result);
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -1721,10 +1721,10 @@ CMPI3_reg_reg.execute = {
 	}
 
 	// Read 1st source operand
-	uint32_t src1_value = cpu.GetIntReg(src1);
+	uint32_t src1_value = cpu.GetReg(src1);
 
 	// Read 2nd source operand
-	uint32_t src2_value = cpu.GetIntReg(src2);
+	uint32_t src2_value = cpu.GetReg(src2);
 
 	// Compute the result
 	uint32_t result;      // the 32-bit result
@@ -1764,7 +1764,7 @@ CMPI3_indir_reg.execute = {
 	uint32_t src1_value = cpu.IntLoad(ea);
 
 	// Read 2nd source operand
-	uint32_t src2_value = cpu.GetIntReg(src2);
+	uint32_t src2_value = cpu.GetReg(src2);
 
 	// Compute the result
 	uint32_t result;      // the 32-bit result
@@ -1791,7 +1791,7 @@ CMPI3_reg_indir.execute = {
 	}
 
 	// Read 1st source operand
-	uint32_t src1_value = cpu.GetIntReg(src1);
+	uint32_t src1_value = cpu.GetReg(src1);
 
 	// Check that indirect addressing mode is valid and compute the effective address of the 2nd source operand
 	typename CONFIG::address_t ea;        // The effective address
@@ -1955,10 +1955,10 @@ LSH3_reg_reg.execute = {
 	}
 
 	// Read 1st source operand
-	uint32_t src1_value = cpu.GetIntReg(src1);
+	uint32_t src1_value = cpu.GetReg(src1);
 
 	// Read 2nd source operand
-	uint32_t src2_value = cpu.GetIntReg(src2);
+	uint32_t src2_value = cpu.GetReg(src2);
 
 	// Sign extend the 7 LSB of the 2nd source operand value to get the shift count
 	int32_t count = SignExtend(src2_value, 7);
@@ -1999,7 +1999,7 @@ LSH3_reg_reg.execute = {
 	}
 
 	// Write back result
-	cpu.SetIntReg(dst, result);
+	cpu.SetReg(dst, result);
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -2035,7 +2035,7 @@ LSH3_indir_reg.execute = {
 	uint32_t src1_value = cpu.IntLoad(ea);
 
 	// Read 2nd source operand
-	uint32_t src2_value = cpu.GetIntReg(src2);
+	uint32_t src2_value = cpu.GetReg(src2);
 
 	// Sign extend the 7 LSB of the 2nd source operand value to get the shift count
 	int32_t count = SignExtend(src2_value, 7);
@@ -2076,7 +2076,7 @@ LSH3_indir_reg.execute = {
 	}
 
 	// Write back result
-	cpu.SetIntReg(dst, result);
+	cpu.SetReg(dst, result);
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -2099,7 +2099,7 @@ LSH3_reg_indir.execute = {
 	}
 
 	// Read 1st source operand
-	uint32_t src1_value = cpu.GetIntReg(src1);
+	uint32_t src1_value = cpu.GetReg(src1);
 
 	// Check that indirect addressing mode is valid and compute the effective address of the 2nd source operand
 	typename CONFIG::address_t ea;        // The effective address
@@ -2153,7 +2153,7 @@ LSH3_reg_indir.execute = {
 	}
 
 	// Write back result
-	cpu.SetIntReg(dst, result);
+	cpu.SetReg(dst, result);
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -2259,7 +2259,7 @@ LSH3_indir_indir.execute = {
 	}
 
 	// Write back result
-	cpu.SetIntReg(dst, result);
+	cpu.SetReg(dst, result);
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -2420,10 +2420,10 @@ MPYI3_reg_reg.execute = {
 	}
 
 	// Read 1st source operand and sign extend value from 24 bits to 64 bits
-	int64_t src1_value = SignExtend((uint64_t)(cpu.GetIntReg(src1) & 0xffffff), 24);
+	int64_t src1_value = SignExtend((uint64_t)(cpu.GetReg(src1) & 0xffffff), 24);
 
 	// Read 2nd source operand and sign extend value from 24 bits to 64 bits
-	int64_t src2_value = SignExtend((uint64_t)(cpu.GetIntReg(src2) & 0xffffff), 24);
+	int64_t src2_value = SignExtend((uint64_t)(cpu.GetReg(src2) & 0xffffff), 24);
 
 	// Compute the 32-bit result and overflow
 	int64_t result64 = src1_value * src2_value; // Only 48 bits are useful
@@ -2440,7 +2440,7 @@ MPYI3_reg_reg.execute = {
 		result = lo32;                                     // No saturation
 
 	// Write back result
-	cpu.SetIntReg(dst, result);
+	cpu.SetReg(dst, result);
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -2477,7 +2477,7 @@ MPYI3_indir_reg.execute = {
 	int64_t src1_value = SignExtend((uint64_t)(cpu.IntLoad(ea) & 0xffffff), 24);
 
 	// Read 2nd source operand and sign extend value from 24 bits to 64 bits
-	int64_t src2_value = SignExtend((uint64_t)(cpu.GetIntReg(src2) & 0xffffff), 24);
+	int64_t src2_value = SignExtend((uint64_t)(cpu.GetReg(src2) & 0xffffff), 24);
 
 	// Compute the 32-bit result and overflow
 	int64_t result64 = src1_value * src2_value; // Only 48 bits are useful
@@ -2494,7 +2494,7 @@ MPYI3_indir_reg.execute = {
 		result = lo32;                                     // No saturation
 
 	// Write back result
-	cpu.SetIntReg(dst, result);
+	cpu.SetReg(dst, result);
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -2518,7 +2518,7 @@ MPYI3_reg_indir.execute = {
 	}
 
 	// Read 1st source operand and sign extend value from 24 bits to 64 bits
-	int64_t src1_value = SignExtend((uint64_t)(cpu.GetIntReg(src1) & 0xffffff), 24);
+	int64_t src1_value = SignExtend((uint64_t)(cpu.GetReg(src1) & 0xffffff), 24);
 
 	// Check that indirect addressing mode is valid and compute the effective address of the 2nd source operand
 	typename CONFIG::address_t ea;        // The effective address
@@ -2548,7 +2548,7 @@ MPYI3_reg_indir.execute = {
 		result = lo32;                                     // No saturation
 
 	// Write back result
-	cpu.SetIntReg(dst, result);
+	cpu.SetReg(dst, result);
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -2631,7 +2631,7 @@ MPYI3_indir_indir.execute = {
 	}
 
 	// Write back result
-	cpu.SetIntReg(dst, result);
+	cpu.SetReg(dst, result);
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -2716,16 +2716,16 @@ OR3_reg_reg.execute = {
 	}
 
 	// Read 1st source operand
-	uint32_t src1_value = cpu.GetIntReg(src1);
+	uint32_t src1_value = cpu.GetReg(src1);
 
 	// Read 2nd source operand
-	uint32_t src2_value = cpu.GetIntReg(src2);
+	uint32_t src2_value = cpu.GetReg(src2);
 
 	// Compute the result
 	uint32_t result = src1_value | src2_value;
 
 	// Write back result
-	cpu.SetIntReg(dst, result);
+	cpu.SetReg(dst, result);
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -2761,13 +2761,13 @@ OR3_indir_reg.execute = {
 	uint32_t src1_value = cpu.IntLoad(ea);
 
 	// Read 2nd source operand
-	uint32_t src2_value = cpu.GetIntReg(src2);
+	uint32_t src2_value = cpu.GetReg(src2);
 
 	// Compute the result
 	uint32_t result = src1_value | src2_value;
 
 	// Write back result
-	cpu.SetIntReg(dst, result);
+	cpu.SetReg(dst, result);
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -2789,7 +2789,7 @@ OR3_reg_indir.execute = {
 	}
 
 	// Read 1st source operand
-	uint32_t src1_value = cpu.GetIntReg(src1);
+	uint32_t src1_value = cpu.GetReg(src1);
 
 	// Check that indirect addressing mode is valid and compute the effective address of the 2nd source operand
 	typename CONFIG::address_t ea;        // The effective address
@@ -2808,7 +2808,7 @@ OR3_reg_indir.execute = {
 	uint32_t result = src1_value | src2_value;
 
 	// Write back result
-	cpu.SetIntReg(dst, result);
+	cpu.SetReg(dst, result);
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -2878,7 +2878,7 @@ OR3_indir_indir.execute = {
 	}
 
 	// Write back result
-	cpu.SetIntReg(dst, result);
+	cpu.SetReg(dst, result);
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -2961,10 +2961,10 @@ SUBB3_reg_reg.execute = {
 	}
 
 	// Read 1st source operand
-	uint32_t src1_value = cpu.GetIntReg(src1);
+	uint32_t src1_value = cpu.GetReg(src1);
 
 	// Read 2nd source operand
-	uint32_t src2_value = cpu.GetIntReg(src2);
+	uint32_t src2_value = cpu.GetReg(src2);
 
 	// Read borrow in
 	uint8_t borrow_in = cpu.GetST_C();
@@ -2981,7 +2981,7 @@ SUBB3_reg_reg.execute = {
 		Sub32(result, borrow_out, overflow, src1_value, src2_value, borrow_in);
 
 	// Write back result
-	cpu.SetIntReg(dst, result);
+	cpu.SetReg(dst, result);
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -3018,7 +3018,7 @@ SUBB3_indir_reg.execute = {
 	uint32_t src1_value = cpu.IntLoad(ea);
 
 	// Read 2nd source operand
-	uint32_t src2_value = cpu.GetIntReg(src2);
+	uint32_t src2_value = cpu.GetReg(src2);
 
 	// Read borrow in
 	uint8_t borrow_in = cpu.GetST_C();
@@ -3035,7 +3035,7 @@ SUBB3_indir_reg.execute = {
 		Sub32(result, borrow_out, overflow, src1_value, src2_value, borrow_in);
 
 	// Write back result
-	cpu.SetIntReg(dst, result);
+	cpu.SetReg(dst, result);
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -3059,7 +3059,7 @@ SUBB3_reg_indir.execute = {
 	}
 
 	// Read 1st source operand
-	uint32_t src1_value = cpu.GetIntReg(src1);
+	uint32_t src1_value = cpu.GetReg(src1);
 
 	// Check that indirect addressing mode is valid and compute the effective address of the 2nd source operand
 	typename CONFIG::address_t ea;        // The effective address
@@ -3089,7 +3089,7 @@ SUBB3_reg_indir.execute = {
 		Sub32(result, borrow_out, overflow, src1_value, src2_value, borrow_in);
 
 	// Write back result
-	cpu.SetIntReg(dst, result);
+	cpu.SetReg(dst, result);
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -3172,7 +3172,7 @@ SUBB3_indir_indir.execute = {
 	}
 
 	// Write back result
-	cpu.SetIntReg(dst, result);
+	cpu.SetReg(dst, result);
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -3334,10 +3334,10 @@ SUBI3_reg_reg.execute = {
 	}
 
 	// Read 1st source operand
-	uint32_t src1_value = cpu.GetIntReg(src1);
+	uint32_t src1_value = cpu.GetReg(src1);
 
 	// Read 2nd source operand
-	uint32_t src2_value = cpu.GetIntReg(src2);
+	uint32_t src2_value = cpu.GetReg(src2);
 
 	// Compute the result
 	uint32_t result;      // the 32-bit result
@@ -3351,7 +3351,7 @@ SUBI3_reg_reg.execute = {
 		Sub32(result, borrow_out, overflow, src1_value, src2_value, 0);
 
 	// Write back result
-	cpu.SetIntReg(dst, result);
+	cpu.SetReg(dst, result);
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -3388,7 +3388,7 @@ SUBI3_indir_reg.execute = {
 	uint32_t src1_value = cpu.IntLoad(ea);
 
 	// Read 2nd source operand
-	uint32_t src2_value = cpu.GetIntReg(src2);
+	uint32_t src2_value = cpu.GetReg(src2);
 
 	// Compute the result
 	uint32_t result;      // the 32-bit result
@@ -3402,7 +3402,7 @@ SUBI3_indir_reg.execute = {
 		Sub32(result, borrow_out, overflow, src1_value, src2_value, 0);
 
 	// Write back result
-	cpu.SetIntReg(dst, result);
+	cpu.SetReg(dst, result);
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -3426,7 +3426,7 @@ SUBI3_reg_indir.execute = {
 	}
 
 	// Read 1st source operand
-	uint32_t src1_value = cpu.GetIntReg(src1);
+	uint32_t src1_value = cpu.GetReg(src1);
 
 	// Check that indirect addressing mode is valid and compute the effective address of the 2nd source operand
 	typename CONFIG::address_t ea;        // The effective address
@@ -3453,7 +3453,7 @@ SUBI3_reg_indir.execute = {
 		Sub32(result, borrow_out, overflow, src1_value, src2_value, 0);
 
 	// Write back result
-	cpu.SetIntReg(dst, result);
+	cpu.SetReg(dst, result);
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -3533,7 +3533,7 @@ SUBI3_indir_indir.execute = {
 	}
 
 	// Write back result
-	cpu.SetIntReg(dst, result);
+	cpu.SetReg(dst, result);
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -3614,10 +3614,10 @@ TSTB3_reg_reg.execute = {
 	}
 
 	// Read 1st source operand
-	uint32_t src1_value = cpu.GetIntReg(src1);
+	uint32_t src1_value = cpu.GetReg(src1);
 
 	// Read 2nd source operand
-	uint32_t src2_value = cpu.GetIntReg(src2);
+	uint32_t src2_value = cpu.GetReg(src2);
 
 	// Compute the result
 	uint32_t result = src1_value & src2_value;
@@ -3652,7 +3652,7 @@ TSTB3_indir_reg.execute = {
 	uint32_t src1_value = cpu.IntLoad(ea);
 
 	// Read 2nd source operand
-	uint32_t src2_value = cpu.GetIntReg(src2);
+	uint32_t src2_value = cpu.GetReg(src2);
 
 	// Compute the result
 	uint32_t result = src1_value & src2_value;
@@ -3673,7 +3673,7 @@ TSTB3_reg_indir.execute = {
 	}
 
 	// Read 1st source operand
-	uint32_t src1_value = cpu.GetIntReg(src1);
+	uint32_t src1_value = cpu.GetReg(src1);
 
 	// Check that indirect addressing mode is valid and compute the effective address of the 2nd source operand
 	typename CONFIG::address_t ea;        // The effective address
@@ -3825,16 +3825,16 @@ XOR3_reg_reg.execute = {
 	}
 
 	// Read 1st source operand
-	uint32_t src1_value = cpu.GetIntReg(src1);
+	uint32_t src1_value = cpu.GetReg(src1);
 
 	// Read 2nd source operand
-	uint32_t src2_value = cpu.GetIntReg(src2);
+	uint32_t src2_value = cpu.GetReg(src2);
 
 	// Compute the result
 	uint32_t result = src1_value ^ src2_value;
 
 	// Write back result
-	cpu.SetIntReg(dst, result);
+	cpu.SetReg(dst, result);
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -3870,13 +3870,13 @@ XOR3_indir_reg.execute = {
 	uint32_t src1_value = cpu.IntLoad(ea);
 
 	// Read 2nd source operand
-	uint32_t src2_value = cpu.GetIntReg(src2);
+	uint32_t src2_value = cpu.GetReg(src2);
 
 	// Compute the result
 	uint32_t result = src1_value ^ src2_value;
 
 	// Write back result
-	cpu.SetIntReg(dst, result);
+	cpu.SetReg(dst, result);
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -3898,7 +3898,7 @@ XOR3_reg_indir.execute = {
 	}
 
 	// Read 1st source operand
-	uint32_t src1_value = cpu.GetIntReg(src1);
+	uint32_t src1_value = cpu.GetReg(src1);
 
 	// Check that indirect addressing mode is valid and compute the effective address of the 2nd source operand
 	typename CONFIG::address_t ea;        // The effective address
@@ -3917,7 +3917,7 @@ XOR3_reg_indir.execute = {
 	uint32_t result = src1_value ^ src2_value;
 
 	// Write back result
-	cpu.SetIntReg(dst, result);
+	cpu.SetReg(dst, result);
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -3987,7 +3987,7 @@ XOR3_indir_indir.execute = {
 	}
 
 	// Write back result
-	cpu.SetIntReg(dst, result);
+	cpu.SetReg(dst, result);
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))

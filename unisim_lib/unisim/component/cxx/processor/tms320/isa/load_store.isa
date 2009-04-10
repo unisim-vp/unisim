@@ -275,10 +275,10 @@ LDI_reg.execute = {
 	}
 
 	// Read the source operand
-	uint32_t result = cpu.GetIntReg(src);
+	uint32_t result = cpu.GetReg(src);
 
 	// Write back result in destination operand
-	cpu.SetIntReg(dst, result);
+	cpu.SetReg(dst, result);
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -317,7 +317,7 @@ LDI_dir.execute = {
 	uint32_t result = ea;
 
 	// Write back result
-	cpu.SetIntReg(dst, result);
+	cpu.SetReg(dst, result);
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -364,7 +364,7 @@ LDI_indir.execute = {
 	uint32_t result = cpu.IntLoad(ea);
 
 	// Write back result
-	cpu.SetIntReg(dst, result);
+	cpu.SetReg(dst, result);
 
 	if(update_ar)
 	{
@@ -405,7 +405,7 @@ LDI_imm.execute = {
 	uint32_t result = imm; // imm has already been sign extended by the decoder
 
 	// Write back result in destination operand
-	cpu.SetIntReg(dst, result);
+	cpu.SetReg(dst, result);
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -450,10 +450,10 @@ LDIcond_reg.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	// Read the source operand
-	uint32_t result = cpu.GetIntReg(src);
+	uint32_t result = cpu.GetReg(src);
 
 	// Write back result in destination operand
-	cpu.SetIntReg(dst, result);
+	cpu.SetReg(dst, result);
 }
 
 op LDIcond_dir  (0b0101[4]:cond[5]:0b01[2]:dst[5]:direct[16])
@@ -485,7 +485,7 @@ LDIcond_dir.execute = {
 	uint32_t result = ea;
 
 	// Write back result
-	cpu.SetIntReg(dst, result);
+	cpu.SetReg(dst, result);
 }
 
 op LDIcond_indir(0b0101[4]:cond[5]:0b10[2]:dst[5]:mod[5]:ar[3]:disp[8])
@@ -526,7 +526,7 @@ LDIcond_indir.execute = {
 	uint32_t result = cpu.IntLoad(ea);
 
 	// Write back result
-	cpu.SetIntReg(dst, result);
+	cpu.SetReg(dst, result);
 
 	if(update_ar)
 	{
@@ -561,7 +561,7 @@ LDIcond_imm.execute = {
 	uint32_t result = imm; // imm has already been sign extended by the decoder
 
 	// Write back result in destination operand
-	cpu.SetIntReg(dst, result);
+	cpu.SetReg(dst, result);
 }
 
 /* end of LDIcond (load integer conditionally)
@@ -691,7 +691,7 @@ POP.execute = {
 	sp = sp - 1;
 
 	// Write back the result
-	cpu.SetIntReg(dst, result);
+	cpu.SetReg(dst, result);
 
 	// Update SP
 	cpu.SetSP(sp);
@@ -763,7 +763,7 @@ PUSH.execute = {
 	}
 
 	// Read the source operand
-	uint32_t src_value = cpu.GetIntReg(src);
+	uint32_t src_value = cpu.GetReg(src);
 
 	// Read SP and compute its new value
 	typename CONFIG::address_t sp = cpu.GetSP() + 1;
@@ -862,7 +862,7 @@ STI_dir.execute = {
 	}
 
 	// Read the source operand
-	uint32_t result = cpu.GetIntReg(src);
+	uint32_t result = cpu.GetReg(src);
 
 	// Compute the effective address
 	typename CONFIG::address_t ea = cpu.ComputeDirEA(direct);
@@ -891,7 +891,7 @@ STI_indir.execute = {
 	}
 
 	// Read the source operand
-	uint32_t result = cpu.GetIntReg(src);
+	uint32_t result = cpu.GetReg(src);
 
 	// Check that indirect addressing mode is valid and compute the effective address
 	typename CONFIG::address_t ea;        // The effective address

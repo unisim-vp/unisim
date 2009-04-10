@@ -165,7 +165,7 @@ ABSI_STI.execute = {
 	}
 
 	// Read the 'src3' register operand
-	uint32_t src3_value = cpu.GetIntReg(src3);
+	uint32_t src3_value = cpu.GetReg(src3);
 
 	// Check that indirect addressing mode is valid and compute the effective address of 'dst2' operand
 	typename CONFIG::address_t d2_ea;        // The effective address
@@ -200,7 +200,7 @@ ABSI_STI.execute = {
 	cpu.IntStore(d2_ea, src3_value);
 
 	// Write back result of ABSI in register 'dst1'
-	cpu.SetIntReg(dst1, result);
+	cpu.SetReg(dst1, result);
 
 	// Note: ...if the src3 and src4 fields use the same auxiliary register,
 	// both addresses are correctly generated, but only the value created by
@@ -239,10 +239,10 @@ ABSI_STI_ext.execute = {
 	}
 
 	// Read the 'src2' register operand
-	uint32_t src2_value = cpu.GetIntReg(src2);
+	uint32_t src2_value = cpu.GetReg(src2);
 
 	// Read the 'src3' register operand
-	uint32_t src3_value = cpu.GetIntReg(src3);
+	uint32_t src3_value = cpu.GetReg(src3);
 
 	// Check that indirect addressing mode is valid and compute the effective address of 'dst2' operand
 	typename CONFIG::address_t d2_ea;        // The effective address
@@ -274,7 +274,7 @@ ABSI_STI_ext.execute = {
 	cpu.IntStore(d2_ea, src3_value);
 
 	// Write back result of ABSI in register 'dst1'
-	cpu.SetIntReg(dst1, result);
+	cpu.SetReg(dst1, result);
 
 	if(d2_update_ar)
 	{
@@ -391,7 +391,7 @@ ADDI3_STI_ext.disasm = {
 //    reg(src3) -> indir(dst2)
 ADDI3_STI.execute = {
 	// Read 'src1' operand
-	uint32_t src1_value = cpu.GetIntReg(src1);
+	uint32_t src1_value = cpu.GetReg(src1);
 
 	// Check that indirect addressing mode is valid and compute the effective address of the 'src2' operand
 	typename CONFIG::address_t s2_ea;        // The effective address
@@ -407,7 +407,7 @@ ADDI3_STI.execute = {
 	uint32_t src2_value = cpu.IntLoad(s2_ea);
 
 	// Read the 'src3' register operand
-	uint32_t src3_value = cpu.GetIntReg(src3);
+	uint32_t src3_value = cpu.GetReg(src3);
 
 	// Check that indirect addressing mode is valid and compute the effective address of 'dst2' operand
 	typename CONFIG::address_t d2_ea;        // The effective address
@@ -434,7 +434,7 @@ ADDI3_STI.execute = {
 	cpu.IntStore(d2_ea, src3_value);
 
 	// Write back result
-	cpu.SetIntReg(dst1, result);
+	cpu.SetReg(dst1, result);
 
 	// Note: ...if the src3 and src4 fields use the same auxiliary register,
 	// both addresses are correctly generated, but only the value created by
@@ -474,13 +474,13 @@ ADDI3_STI_ext.execute = {
 	}
 
 	// Read 'src1' operand
-	uint32_t src1_value = cpu.GetIntReg(src1);
+	uint32_t src1_value = cpu.GetReg(src1);
 
 	// Read the 'src2' register operand
-	uint32_t src2_value = cpu.GetIntReg(src2);
+	uint32_t src2_value = cpu.GetReg(src2);
 
 	// Read the 'src3' register operand
-	uint32_t src3_value = cpu.GetIntReg(src3);
+	uint32_t src3_value = cpu.GetReg(src3);
 
 	// Check that indirect addressing mode is valid and compute the effective address of 'dst2' operand
 	typename CONFIG::address_t d2_ea;        // The effective address
@@ -507,7 +507,7 @@ ADDI3_STI_ext.execute = {
 	cpu.IntStore(d2_ea, src3_value);
 
 	// Write back result
-	cpu.SetIntReg(dst1, result);
+	cpu.SetReg(dst1, result);
 
 	// Note: ...if the src3 and src4 fields use the same auxiliary register,
 	// both addresses are correctly generated, but only the value created by
@@ -577,7 +577,7 @@ AND3_STI_ext.disasm = {
 //    reg(src3) -> indir(dst2)
 AND3_STI.execute = {
 	// Read 'src1' operand
-	uint32_t src1_value = cpu.GetIntReg(src1);
+	uint32_t src1_value = cpu.GetReg(src1);
 
 	// Check that indirect addressing mode is valid and compute the effective address of the 'src2' operand
 	typename CONFIG::address_t s2_ea;        // The effective address
@@ -593,7 +593,7 @@ AND3_STI.execute = {
 	uint32_t src2_value = cpu.IntLoad(s2_ea);
 
 	// Read the 'src3' register operand
-	uint32_t src3_value = cpu.GetIntReg(src3);
+	uint32_t src3_value = cpu.GetReg(src3);
 
 	// Check that indirect addressing mode is valid and compute the effective address of 'dst2' operand
 	typename CONFIG::address_t d2_ea;        // The effective address
@@ -612,7 +612,7 @@ AND3_STI.execute = {
 	cpu.IntStore(d2_ea, src3_value);
 
 	// Write back result
-	cpu.SetIntReg(dst1, result);
+	cpu.SetReg(dst1, result);
 
 	// Note: ...if the src3 and src4 fields use the same auxiliary register,
 	// both addresses are correctly generated, but only the value created by
@@ -649,13 +649,13 @@ AND3_STI_ext.execute = {
 	}
 
 	// Read the 'src1' register operand
-	uint32_t src1_value = cpu.GetIntReg(src1);
+	uint32_t src1_value = cpu.GetReg(src1);
 
 	// Read the 'src2' register operand
-	uint32_t src2_value = cpu.GetIntReg(src2);
+	uint32_t src2_value = cpu.GetReg(src2);
 
 	// Read the 'src3' register operand
-	uint32_t src3_value = cpu.GetIntReg(src3);
+	uint32_t src3_value = cpu.GetReg(src3);
 
 	// Check that indirect addressing mode is valid and compute the effective address of 'dst2' operand
 	typename CONFIG::address_t d2_ea;        // The effective address
@@ -674,7 +674,7 @@ AND3_STI_ext.execute = {
 	cpu.IntStore(d2_ea, src3_value);
 
 	// Write back result
-	cpu.SetIntReg(dst1, result);
+	cpu.SetReg(dst1, result);
 
 	if(d2_update_ar)
 	{
@@ -751,10 +751,10 @@ ASH3_STI.execute = {
 	uint32_t src2_value = cpu.IntLoad(s2_ea);
 
 	// Read the 'src3' register operand
-	uint32_t src3_value = cpu.GetIntReg(src3);
+	uint32_t src3_value = cpu.GetReg(src3);
 
 	// Read the 'count' register operand and sign extend the 7 LSB to get the shift count
-	int32_t count_value = SignExtend(cpu.GetIntReg(count), 7);
+	int32_t count_value = SignExtend(cpu.GetReg(count), 7);
 
 	// Check that indirect addressing mode is valid and compute the effective address of 'dst2' operand
 	typename CONFIG::address_t d2_ea;        // The effective address
@@ -805,7 +805,7 @@ ASH3_STI.execute = {
 	cpu.IntStore(d2_ea, src3_value);
 
 	// Write back result
-	cpu.SetIntReg(dst1, result);
+	cpu.SetReg(dst1, result);
 
 	// Note: ...if the src3 and src4 fields use the same auxiliary register,
 	// both addresses are correctly generated, but only the value created by
@@ -843,13 +843,13 @@ ASH3_STI_ext.execute = {
 	}
 
 	// Read the 'src2' register operand
-	uint32_t src2_value = cpu.GetIntReg(src2);
+	uint32_t src2_value = cpu.GetReg(src2);
 
 	// Read the 'src3' register operand
-	uint32_t src3_value = cpu.GetIntReg(src3);
+	uint32_t src3_value = cpu.GetReg(src3);
 
 	// Read the 'count' register operand and sign extend the 7 LSB to get the shift count
-	int32_t count_value = SignExtend(cpu.GetIntReg(count), 7);
+	int32_t count_value = SignExtend(cpu.GetReg(count), 7);
 
 	// Check that indirect addressing mode is valid and compute the effective address of 'dst2' operand
 	typename CONFIG::address_t d2_ea;        // The effective address
@@ -900,7 +900,7 @@ ASH3_STI_ext.execute = {
 	cpu.IntStore(d2_ea, src3_value);
 
 	// Write back result
-	cpu.SetIntReg(dst1, result);
+	cpu.SetReg(dst1, result);
 
 	if(d2_update_ar)
 	{
@@ -1128,7 +1128,7 @@ LDI_STI.execute = {
 	}
 
 	// Read 'src3' register operand
-	uint32_t src3_value = cpu.GetIntReg(src3);
+	uint32_t src3_value = cpu.GetReg(src3);
 
 	// Load 'src2' value from memory
 	uint32_t src2_value = cpu.IntLoad(s2_ea);
@@ -1137,7 +1137,7 @@ LDI_STI.execute = {
 	cpu.IntStore(d2_ea, src3_value);
 
 	// Write back result
-	cpu.SetIntReg(dst1, src2_value);
+	cpu.SetReg(dst1, src2_value);
 
 	if(d2_update_ar)
 	{
@@ -1174,16 +1174,16 @@ LDI_STI_ext.execute = {
 	}
 
 	// Read 'src2' register operand
-	uint32_t src2_value = cpu.GetIntReg(src2);
+	uint32_t src2_value = cpu.GetReg(src2);
 
 	// Read 'src3' register operand
-	uint32_t src3_value = cpu.GetIntReg(src3);
+	uint32_t src3_value = cpu.GetReg(src3);
 
 	// Store 'src3' value into memory
 	cpu.IntStore(d2_ea, src3_value);
 
 	// Write back result
-	cpu.SetIntReg(dst1, src2_value);
+	cpu.SetReg(dst1, src2_value);
 
 	if(d2_update_ar)
 	{
@@ -1252,10 +1252,10 @@ LSH3_STI.execute = {
 	uint32_t src2_value = cpu.IntLoad(s2_ea);
 
 	// Read the 'src3' register operand
-	uint32_t src3_value = cpu.GetIntReg(src3);
+	uint32_t src3_value = cpu.GetReg(src3);
 
 	// Read the 'count' register operand and sign extend the 7 LSB to get the shift count
-	int32_t count_value = SignExtend(cpu.GetIntReg(count), 7);
+	int32_t count_value = SignExtend(cpu.GetReg(count), 7);
 
 	// Check that indirect addressing mode is valid and compute the effective address of 'dst2' operand
 	typename CONFIG::address_t d2_ea;        // The effective address
@@ -1306,7 +1306,7 @@ LSH3_STI.execute = {
 	cpu.IntStore(d2_ea, src3_value);
 
 	// Write back result
-	cpu.SetIntReg(dst1, result);
+	cpu.SetReg(dst1, result);
 
 	// Note: ...if the src3 and src4 fields use the same auxiliary register,
 	// both addresses are correctly generated, but only the value created by
@@ -1344,13 +1344,13 @@ LSH3_STI_ext.execute = {
 	}
 
 	// Read the 'src2' register operand
-	uint32_t src2_value = cpu.GetIntReg(src2);
+	uint32_t src2_value = cpu.GetReg(src2);
 
 	// Read the 'src3' register operand
-	uint32_t src3_value = cpu.GetIntReg(src3);
+	uint32_t src3_value = cpu.GetReg(src3);
 
 	// Read the 'count' register operand and sign extend the 7 LSB to get the shift count
-	int32_t count_value = SignExtend(cpu.GetIntReg(count), 7);
+	int32_t count_value = SignExtend(cpu.GetReg(count), 7);
 
 	// Check that indirect addressing mode is valid and compute the effective address of 'dst2' operand
 	typename CONFIG::address_t d2_ea;        // The effective address
@@ -1401,7 +1401,7 @@ LSH3_STI_ext.execute = {
 	cpu.IntStore(d2_ea, src3_value);
 
 	// Write back result
-	cpu.SetIntReg(dst1, result);
+	cpu.SetReg(dst1, result);
 
 	if(d2_update_ar)
 	{
@@ -1515,7 +1515,7 @@ MPYI3_STI_ext.disasm = {
 //    reg(src3) -> indir(dst2)
 MPYI3_STI.execute = {
 	// Read 'src1' operand and sign extend value from 24 bits to 64 bits
-	int64_t src1_value = SignExtend((uint64_t)(cpu.GetIntReg(src1) & 0xffffff), 24);
+	int64_t src1_value = SignExtend((uint64_t)(cpu.GetReg(src1) & 0xffffff), 24);
 
 	// Check that indirect addressing mode is valid and compute the effective address of the 'src2' operand
 	typename CONFIG::address_t s2_ea;        // The effective address
@@ -1531,7 +1531,7 @@ MPYI3_STI.execute = {
 	int64_t src2_value = SignExtend((uint64_t)(cpu.IntLoad(s2_ea) & 0xffffff), 24);
 
 	// Read the 'src3' register operand
-	uint32_t src3_value = cpu.GetIntReg(src3);
+	uint32_t src3_value = cpu.GetReg(src3);
 
 	// Check that indirect addressing mode is valid and compute the effective address of 'dst2' operand
 	typename CONFIG::address_t d2_ea;        // The effective address
@@ -1561,7 +1561,7 @@ MPYI3_STI.execute = {
 	cpu.IntStore(d2_ea, src3_value);
 
 	// Write back result
-	cpu.SetIntReg(dst1, result);
+	cpu.SetReg(dst1, result);
 
 	// Note: ...if the src3 and src4 fields use the same auxiliary register,
 	// both addresses are correctly generated, but only the value created by
@@ -1600,13 +1600,13 @@ MPYI3_STI_ext.execute = {
 	}
 
 	// Read 'src1' operand and sign extend value from 24 bits to 64 bits
-	int64_t src1_value = SignExtend((uint64_t)(cpu.GetIntReg(src1) & 0xffffff), 24);
+	int64_t src1_value = SignExtend((uint64_t)(cpu.GetReg(src1) & 0xffffff), 24);
 
 	// Read 'src2' operand and sign extend value from 24 bits to 64 bits
-	int64_t src2_value = SignExtend((uint64_t)(cpu.GetIntReg(src2) & 0xffffff), 24);
+	int64_t src2_value = SignExtend((uint64_t)(cpu.GetReg(src2) & 0xffffff), 24);
 
 	// Read the 'src3' register operand
-	uint32_t src3_value = cpu.GetIntReg(src3);
+	uint32_t src3_value = cpu.GetReg(src3);
 
 	// Check that indirect addressing mode is valid and compute the effective address of 'dst2' operand
 	typename CONFIG::address_t d2_ea;        // The effective address
@@ -1636,7 +1636,7 @@ MPYI3_STI_ext.execute = {
 	cpu.IntStore(d2_ea, src3_value);
 
 	// Write back result
-	cpu.SetIntReg(dst1, result);
+	cpu.SetReg(dst1, result);
 
 	// Note: ...if the src3 and src4 fields use the same auxiliary register,
 	// both addresses are correctly generated, but only the value created by
@@ -1761,7 +1761,7 @@ NEGI_STI.execute = {
 	}
 
 	// Read the 'src3' register operand
-	uint32_t src3_value = cpu.GetIntReg(src3);
+	uint32_t src3_value = cpu.GetReg(src3);
 
 	// Check that indirect addressing mode is valid and compute the effective address of 'dst2' operand
 	typename CONFIG::address_t d2_ea;        // The effective address
@@ -1791,7 +1791,7 @@ NEGI_STI.execute = {
 	cpu.IntStore(d2_ea, src3_value);
 
 	// Write back result of NEGI in register 'dst1'
-	cpu.SetIntReg(dst1, result);
+	cpu.SetReg(dst1, result);
 
 	// Note: ...if the src3 and src4 fields use the same auxiliary register,
 	// both addresses are correctly generated, but only the value created by
@@ -1830,10 +1830,10 @@ NEGI_STI_ext.execute = {
 	}
 
 	// Read the 'src2' register operand
-	uint32_t src2_value = cpu.GetIntReg(src2);
+	uint32_t src2_value = cpu.GetReg(src2);
 
 	// Read the 'src3' register operand
-	uint32_t src3_value = cpu.GetIntReg(src3);
+	uint32_t src3_value = cpu.GetReg(src3);
 
 	// Check that indirect addressing mode is valid and compute the effective address of 'dst2' operand
 	typename CONFIG::address_t d2_ea;        // The effective address
@@ -1860,7 +1860,7 @@ NEGI_STI_ext.execute = {
 	cpu.IntStore(d2_ea, src3_value);
 
 	// Write back result of NEGI in register 'dst1'
-	cpu.SetIntReg(dst1, result);
+	cpu.SetReg(dst1, result);
 
 	if(d2_update_ar)
 	{
@@ -1933,7 +1933,7 @@ NOT_STI.execute = {
 	}
 
 	// Read the 'src3' register operand
-	uint32_t src3_value = cpu.GetIntReg(src3);
+	uint32_t src3_value = cpu.GetReg(src3);
 
 	// Check that indirect addressing mode is valid and compute the effective address of 'dst2' operand
 	typename CONFIG::address_t d2_ea;        // The effective address
@@ -1955,7 +1955,7 @@ NOT_STI.execute = {
 	cpu.IntStore(d2_ea, src3_value);
 
 	// Write back result of NOT in register 'dst1'
-	cpu.SetIntReg(dst1, result);
+	cpu.SetReg(dst1, result);
 
 	// Note: ...if the src3 and src4 fields use the same auxiliary register,
 	// both addresses are correctly generated, but only the value created by
@@ -1992,10 +1992,10 @@ NOT_STI_ext.execute = {
 	}
 
 	// Read the 'src2' register operand
-	uint32_t src2_value = cpu.GetIntReg(src2);
+	uint32_t src2_value = cpu.GetReg(src2);
 
 	// Read the 'src3' register operand
-	uint32_t src3_value = cpu.GetIntReg(src3);
+	uint32_t src3_value = cpu.GetReg(src3);
 
 	// Check that indirect addressing mode is valid and compute the effective address of 'dst2' operand
 	typename CONFIG::address_t d2_ea;        // The effective address
@@ -2014,7 +2014,7 @@ NOT_STI_ext.execute = {
 	cpu.IntStore(d2_ea, src3_value);
 
 	// Write back result of NOT in register 'dst1'
-	cpu.SetIntReg(dst1, result);
+	cpu.SetReg(dst1, result);
 
 	if(d2_update_ar)
 	{
@@ -2077,7 +2077,7 @@ OR3_STI_ext.disasm = {
 //    reg(src3) -> indir(dst2)
 OR3_STI.execute = {
 	// Read 'src1' operand
-	uint32_t src1_value = cpu.GetIntReg(src1);
+	uint32_t src1_value = cpu.GetReg(src1);
 
 	// Check that indirect addressing mode is valid and compute the effective address of the 'src2' operand
 	typename CONFIG::address_t s2_ea;        // The effective address
@@ -2093,7 +2093,7 @@ OR3_STI.execute = {
 	uint32_t src2_value = cpu.IntLoad(s2_ea);
 
 	// Read the 'src3' register operand
-	uint32_t src3_value = cpu.GetIntReg(src3);
+	uint32_t src3_value = cpu.GetReg(src3);
 
 	// Check that indirect addressing mode is valid and compute the effective address of 'dst2' operand
 	typename CONFIG::address_t d2_ea;        // The effective address
@@ -2112,7 +2112,7 @@ OR3_STI.execute = {
 	cpu.IntStore(d2_ea, src3_value);
 
 	// Write back result
-	cpu.SetIntReg(dst1, result);
+	cpu.SetReg(dst1, result);
 
 	// Note: ...if the src3 and src4 fields use the same auxiliary register,
 	// both addresses are correctly generated, but only the value created by
@@ -2149,13 +2149,13 @@ OR3_STI_ext.execute = {
 	}
 
 	// Read the 'src1' register operand
-	uint32_t src1_value = cpu.GetIntReg(src1);
+	uint32_t src1_value = cpu.GetReg(src1);
 
 	// Read the 'src2' register operand
-	uint32_t src2_value = cpu.GetIntReg(src2);
+	uint32_t src2_value = cpu.GetReg(src2);
 
 	// Read the 'src3' register operand
-	uint32_t src3_value = cpu.GetIntReg(src3);
+	uint32_t src3_value = cpu.GetReg(src3);
 
 	// Check that indirect addressing mode is valid and compute the effective address of 'dst2' operand
 	typename CONFIG::address_t d2_ea;        // The effective address
@@ -2174,7 +2174,7 @@ OR3_STI_ext.execute = {
 	cpu.IntStore(d2_ea, src3_value);
 
 	// Write back result
-	cpu.SetIntReg(dst1, result);
+	cpu.SetReg(dst1, result);
 
 	if(d2_update_ar)
 	{
@@ -2283,10 +2283,10 @@ STI_STI_ext.disasm = {
 //    reg(src1) -> indir(dst1)
 STI_STI.execute = {
 	// Read the 'src1' operand
-	uint32_t src1_value = cpu.GetIntReg(src1);
+	uint32_t src1_value = cpu.GetReg(src1);
 
 	// Read the 'src2' operand
-	uint32_t src2_value = cpu.GetIntReg(src2);
+	uint32_t src2_value = cpu.GetReg(src2);
 
 	// Check that indirect addressing mode is valid and compute the effective address of operand 'dst1'
 	typename CONFIG::address_t d1_ea;        // The effective address
@@ -2344,10 +2344,10 @@ STI_STI_ext.execute = {
 	}
 
 	// Read the 'src1' operand
-	uint32_t src1_value = cpu.GetIntReg(src1);
+	uint32_t src1_value = cpu.GetReg(src1);
 
 	// Read the 'src2' operand
-	uint32_t src2_value = cpu.GetIntReg(src2);
+	uint32_t src2_value = cpu.GetReg(src2);
 
 	// Check that indirect addressing mode is valid and compute the effective address of operand 'dst1'
 	typename CONFIG::address_t d1_ea;        // The effective address
@@ -2363,7 +2363,7 @@ STI_STI_ext.execute = {
 	cpu.IntStore(d1_ea, src1_value);
 
 	// Write back 'src2' into 'dst2' register
-	cpu.SetIntReg(dst2, src2_value);
+	cpu.SetReg(dst2, src2_value);
 
 	if(d1_update_ar)
 	{
@@ -2469,7 +2469,7 @@ SUBI3_STI_ext.disasm = {
 //    reg(src3) -> indir(dst2)
 SUBI3_STI.execute = {
 	// Read 'src1' operand
-	uint32_t src1_value = cpu.GetIntReg(src1);
+	uint32_t src1_value = cpu.GetReg(src1);
 
 	// Check that indirect addressing mode is valid and compute the effective address of the 'src2' operand
 	typename CONFIG::address_t s2_ea;        // The effective address
@@ -2485,7 +2485,7 @@ SUBI3_STI.execute = {
 	uint32_t src2_value = cpu.IntLoad(s2_ea);
 
 	// Read the 'src3' register operand
-	uint32_t src3_value = cpu.GetIntReg(src3);
+	uint32_t src3_value = cpu.GetReg(src3);
 
 	// Check that indirect addressing mode is valid and compute the effective address of 'dst2' operand
 	typename CONFIG::address_t d2_ea;        // The effective address
@@ -2512,7 +2512,7 @@ SUBI3_STI.execute = {
 	cpu.IntStore(d2_ea, src3_value);
 
 	// Write back result
-	cpu.SetIntReg(dst1, result);
+	cpu.SetReg(dst1, result);
 
 	// Note: ...if the src3 and src4 fields use the same auxiliary register,
 	// both addresses are correctly generated, but only the value created by
@@ -2551,13 +2551,13 @@ SUBI3_STI_ext.execute = {
 	}
 
 	// Read 'src1' operand
-	uint32_t src1_value = cpu.GetIntReg(src1);
+	uint32_t src1_value = cpu.GetReg(src1);
 
 	// Read the 'src2' register operand
-	uint32_t src2_value = cpu.GetIntReg(src2);
+	uint32_t src2_value = cpu.GetReg(src2);
 
 	// Read the 'src3' register operand
-	uint32_t src3_value = cpu.GetIntReg(src3);
+	uint32_t src3_value = cpu.GetReg(src3);
 
 	// Check that indirect addressing mode is valid and compute the effective address of 'dst2' operand
 	typename CONFIG::address_t d2_ea;        // The effective address
@@ -2584,7 +2584,7 @@ SUBI3_STI_ext.execute = {
 	cpu.IntStore(d2_ea, src3_value);
 
 	// Write back result
-	cpu.SetIntReg(dst1, result);
+	cpu.SetReg(dst1, result);
 
 	// Note: ...if the src3 and src4 fields use the same auxiliary register,
 	// both addresses are correctly generated, but only the value created by
@@ -2653,7 +2653,7 @@ XOR3_STI_ext.disasm = {
 //    reg(src3) -> indir(dst2)
 XOR3_STI.execute = {
 	// Read 'src1' operand
-	uint32_t src1_value = cpu.GetIntReg(src1);
+	uint32_t src1_value = cpu.GetReg(src1);
 
 	// Check that indirect addressing mode is valid and compute the effective address of the 'src2' operand
 	typename CONFIG::address_t s2_ea;        // The effective address
@@ -2669,7 +2669,7 @@ XOR3_STI.execute = {
 	uint32_t src2_value = cpu.IntLoad(s2_ea);
 
 	// Read the 'src3' register operand
-	uint32_t src3_value = cpu.GetIntReg(src3);
+	uint32_t src3_value = cpu.GetReg(src3);
 
 	// Check that indirect addressing mode is valid and compute the effective address of 'dst2' operand
 	typename CONFIG::address_t d2_ea;        // The effective address
@@ -2688,7 +2688,7 @@ XOR3_STI.execute = {
 	cpu.IntStore(d2_ea, src3_value);
 
 	// Write back result
-	cpu.SetIntReg(dst1, result);
+	cpu.SetReg(dst1, result);
 
 	// Note: ...if the src3 and src4 fields use the same auxiliary register,
 	// both addresses are correctly generated, but only the value created by
@@ -2725,13 +2725,13 @@ XOR3_STI_ext.execute = {
 	}
 
 	// Read the 'src1' register operand
-	uint32_t src1_value = cpu.GetIntReg(src1);
+	uint32_t src1_value = cpu.GetReg(src1);
 
 	// Read the 'src2' register operand
-	uint32_t src2_value = cpu.GetIntReg(src2);
+	uint32_t src2_value = cpu.GetReg(src2);
 
 	// Read the 'src3' register operand
-	uint32_t src3_value = cpu.GetIntReg(src3);
+	uint32_t src3_value = cpu.GetReg(src3);
 
 	// Check that indirect addressing mode is valid and compute the effective address of 'dst2' operand
 	typename CONFIG::address_t d2_ea;        // The effective address
@@ -2750,7 +2750,7 @@ XOR3_STI_ext.execute = {
 	cpu.IntStore(d2_ea, src3_value);
 
 	// Write back result
-	cpu.SetIntReg(dst1, result);
+	cpu.SetReg(dst1, result);
 
 	if(d2_update_ar)
 	{
@@ -2882,12 +2882,12 @@ LDI_LDI.execute = {
 	uint32_t src2_value = cpu.IntLoad(s2_ea);
 
 	// Write back register operand 'dst2'
-	cpu.SetIntReg(dst2, src2_value);
+	cpu.SetReg(dst2, src2_value);
 
 	// Write back register operand 'dst1'
 	if(dst1 != dst2)
 	{
-		cpu.SetIntReg(dst1, src1_value);
+		cpu.SetReg(dst1, src1_value);
 	}
 
 	if(s1_update_ar)
@@ -2924,19 +2924,19 @@ LDI_LDI_ext.execute = {
 	uint32_t src1_value = cpu.IntLoad(s1_ea);
 
 	// Read the 'src2' register operand value
-	uint32_t src2_value = cpu.GetIntReg(src2);
+	uint32_t src2_value = cpu.GetReg(src2);
 
 	// Note: The assembler issues a warning
 	// if the LDIs load the same register.
 	// The result is that of LDI src2, dst2 (pp 13-129).
 
 	// Write back register operand 'dst2'
-	cpu.SetIntReg(dst2, src2_value);
+	cpu.SetReg(dst2, src2_value);
 
 	// Write back register operand 'dst1'
 	if(dst1 != dst2)
 	{
-		cpu.SetIntReg(dst1, src1_value);
+		cpu.SetReg(dst1, src1_value);
 	}
 
 	if(s1_update_ar)
@@ -3294,10 +3294,10 @@ MPYI3_ADDI3_ext.disasm = {
 //    srcD + srcC -> dst2
 MPYI3_ADDI3.execute = {
 	// Read 'src1' register operand
-	uint32_t src1_value = cpu.GetIntReg(src1);
+	uint32_t src1_value = cpu.GetReg(src1);
 
 	// Read 'src2' register operand
-	uint32_t src2_value = cpu.GetIntReg(src2);
+	uint32_t src2_value = cpu.GetReg(src2);
 
 	// Check that indirect addressing mode is valid and compute the effective address of 'src3' operand
 	typename CONFIG::address_t s3_ea;        // The effective address
@@ -3391,11 +3391,11 @@ MPYI3_ADDI3.execute = {
 
 	// Write back 'dst1' register operand
 	unsigned int dst1 = d1;
-	cpu.SetIntReg(dst1, mpyi3_result);
+	cpu.SetReg(dst1, mpyi3_result);
 
 	// Write back 'dst2' register operand
 	unsigned int dst2 = d2 + 2;
-	cpu.SetIntReg(2 + dst2, addi3_result);
+	cpu.SetReg(2 + dst2, addi3_result);
 
 	// Note: ...if the src3 and src4 fields use the same auxiliary register,
 	// both addresses are correctly generated, but only the value created by
@@ -3434,16 +3434,16 @@ MPYI3_ADDI3_ext.execute = {
 	}
 
 	// Read 'src1' register operand
-	uint32_t src1_value = cpu.GetIntReg(src1);
+	uint32_t src1_value = cpu.GetReg(src1);
 
 	// Read 'src2' register operand
-	uint32_t src2_value = cpu.GetIntReg(src2);
+	uint32_t src2_value = cpu.GetReg(src2);
 
 	// Read 'src3' register operand
-	uint32_t src3_value = cpu.GetIntReg(src3);
+	uint32_t src3_value = cpu.GetReg(src3);
 
 	// Read 'src4' register operand
-	uint32_t src4_value = cpu.GetIntReg(src4);
+	uint32_t src4_value = cpu.GetReg(src4);
 
 	// Map 'src1', 'src2', 'src3', and 'src4' to 'srcA', 'srcB', 'srcC', and 'srcD'
 	// depending on the parallel addressing mode used
@@ -3511,11 +3511,11 @@ MPYI3_ADDI3_ext.execute = {
 
 	// Write back 'dst1' register operand
 	unsigned int dst1 = d1;
-	cpu.SetIntReg(dst1, mpyi3_result);
+	cpu.SetReg(dst1, mpyi3_result);
 
 	// Write back 'dst2' register operand
 	unsigned int dst2 = d2 + 2;
-	cpu.SetIntReg(2 + dst2, addi3_result);
+	cpu.SetReg(2 + dst2, addi3_result);
 
 	// Generate flags (into ST)
 	cpu.GenFlags(
@@ -3641,10 +3641,10 @@ MPYI3_SUBI3_ext.disasm = {
 //    srcD + srcC -> dst2
 MPYI3_SUBI3.execute = {
 	// Read 'src1' register operand
-	uint32_t src1_value = cpu.GetIntReg(src1);
+	uint32_t src1_value = cpu.GetReg(src1);
 
 	// Read 'src2' register operand
-	uint32_t src2_value = cpu.GetIntReg(src2);
+	uint32_t src2_value = cpu.GetReg(src2);
 
 	// Check that indirect addressing mode is valid and compute the effective address of 'src3' operand
 	typename CONFIG::address_t s3_ea;        // The effective address
@@ -3738,11 +3738,11 @@ MPYI3_SUBI3.execute = {
 
 	// Write back 'dst1' register operand
 	unsigned int dst1 = d1;
-	cpu.SetIntReg(dst1, mpyi3_result);
+	cpu.SetReg(dst1, mpyi3_result);
 
 	// Write back 'dst2' register operand
 	unsigned int dst2 = d2 + 2;
-	cpu.SetIntReg(2 + dst2, subi3_result);
+	cpu.SetReg(2 + dst2, subi3_result);
 
 	// Note: ...if the src3 and src4 fields use the same auxiliary register,
 	// both addresses are correctly generated, but only the value created by
@@ -3783,16 +3783,16 @@ MPYI3_SUBI3_ext.execute = {
 	}
 
 	// Read 'src1' register operand
-	uint32_t src1_value = cpu.GetIntReg(src1);
+	uint32_t src1_value = cpu.GetReg(src1);
 
 	// Read 'src2' register operand
-	uint32_t src2_value = cpu.GetIntReg(src2);
+	uint32_t src2_value = cpu.GetReg(src2);
 
 	// Read 'src3' register operand
-	uint32_t src3_value = cpu.GetIntReg(src3);
+	uint32_t src3_value = cpu.GetReg(src3);
 
 	// Read 'src4' register operand
-	uint32_t src4_value = cpu.GetIntReg(src4);
+	uint32_t src4_value = cpu.GetReg(src4);
 
 	// Map 'src1', 'src2', 'src3', and 'src4' to 'srcA', 'srcB', 'srcC', and 'srcD'
 	// depending on the parallel addressing mode used
@@ -3860,11 +3860,11 @@ MPYI3_SUBI3_ext.execute = {
 
 	// Write back 'dst1' register operand
 	unsigned int dst1 = d1;
-	cpu.SetIntReg(dst1, mpyi3_result);
+	cpu.SetReg(dst1, mpyi3_result);
 
 	// Write back 'dst2' register operand
 	unsigned int dst2 = d2 + 2;
-	cpu.SetIntReg(2 + dst2, subi3_result);
+	cpu.SetReg(2 + dst2, subi3_result);
 
 	// FIXME: Don't known how to generate the underflow flag
 

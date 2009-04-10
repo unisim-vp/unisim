@@ -124,6 +124,7 @@ static const uint32_t ADDRESS_MASK = 0xffffff; // 24-bit mask
 
 typedef struct
 {
+	uint32_t lo_write_mask; // write mask for the 32 LSBs
 	uint32_t lo; // 32 LSB
 	uint8_t hi;  // 8 MSB
 } reg_t;
@@ -347,23 +348,37 @@ public:
 	//= Interrupts handling                                   START =
 	//===============================================================
 
-	// Hardware interrupts either internal or external (INT0-3)
-	static const unsigned int IRQ_INT0 = 0;
-	static const unsigned int IRQ_INT1 = 1;
-	static const unsigned int IRQ_INT2 = 2;
-	static const unsigned int IRQ_INT3 = 3;
-	static const unsigned int IRQ_XINT0 = 4;
-	static const unsigned int IRQ_RINT0 = 5;
-	//static const unsigned int IRQ_XINT1 = 6;
-	//static const unsigned int IRQ_RINT1 = 7;
-	static const unsigned int IRQ_TINT0 = 8;
-	static const unsigned int IRQ_TINT1 = 9;
-	static const unsigned int IRQ_DINT = 10;
+	// Interrupt flag bitfields offsets
+	static const unsigned int IF_INT0 = 0;
+	static const unsigned int IF_INT1 = 1;
+	static const unsigned int IF_INT2 = 2;
+	static const unsigned int IF_INT3 = 3;
+	static const unsigned int IF_XINT0 = 4;
+	static const unsigned int IF_RINT0 = 5;
+	//static const unsigned int IF_XINT1 = 6;
+	//static const unsigned int IF_RINT1 = 7;
+	static const unsigned int IF_TINT0 = 8;
+	static const unsigned int IF_TINT1 = 9;
+	static const unsigned int IF_DINT = 10;
 
-	static const uint32_t IRQ_MASK =
-		(1 << IRQ_INT0) | (1 << IRQ_INT1) | (1 << IRQ_INT2) | (1 << IRQ_INT3) |
-		(1 << IRQ_XINT0) | (1 << IRQ_RINT0) | //(1 << IRQ_XINT1) | (1 << IRQ_RINT1) |
-		(1 << IRQ_TINT0) | (1 << IRQ_TINT1) | (1 << IRQ_DINT);
+	// Interrupt flag bitfields masks
+	static const unsigned int M_IF_INT0 = 1 << IF_INT0;
+	static const unsigned int M_IF_INT1 = 1 << IF_INT1;
+	static const unsigned int M_IF_INT2 = 1 << IF_INT2;
+	static const unsigned int M_IF_INT3 = 1 << IF_INT3;
+	static const unsigned int M_IF_XINT0 = 1 << IF_XINT0;
+	static const unsigned int M_IF_RINT0 = 1 << IF_RINT0;
+	//static const unsigned int M_IF_XINT1 = 1 << IF_XINT1;
+	//static const unsigned int M_IF_RINT1 = 1 << IF_RINT1;
+	static const unsigned int M_IF_TINT0 = 1 << IF_TINT0;
+	static const unsigned int M_IF_TINT1 = 1 << IF_TINT1;
+	static const unsigned int M_IF_DINT = 1 << IF_DINT;
+
+	// Interrupt flag write mask
+	static const uint32_t IF_WRITE_MASK =
+		M_IF_INT0 | M_IF_INT1 | M_IF_INT2 | M_IF_INT3 |
+		M_IF_XINT0 | M_IF_RINT0 | //M_IF_XINT1 | M_IF_RINT1 |
+		M_IF_TINT0 | M_IF_TINT1 | M_IF_DINT;
 
 	/** Set IRQ level
 	    @param n IRQ number (0 <= n <= 12)
@@ -371,9 +386,66 @@ public:
 	*/
 	inline void SetIRQLevel(unsigned int n, bool level)
 	{
-		uint32_t mask = (1 << n) & IRQ_MASK;
+		uint32_t mask = (1 << n) & IF_WRITE_MASK;
 		regs[REG_IF].lo = (regs[REG_IF].lo & ~mask) | mask;
 	}
+
+	// CPU/DMA Interrupt Enable (IE) register bitfields offsets
+	static const unsigned int IE_EINT0_CPU = 0;
+	static const unsigned int IE_EINT1_CPU = 1;
+	static const unsigned int IE_EINT2_CPU = 2;
+	static const unsigned int IE_EINT3_CPU = 3;
+	static const unsigned int IE_EXINT0_CPU = 4;
+	static const unsigned int IE_ERINT0_CPU = 5;
+	static const unsigned int IE_EXINT1_CPU = 6;
+	static const unsigned int IE_ERINT1_CPU = 7;
+	static const unsigned int IE_ETINT0_CPU = 8;
+	static const unsigned int IE_ETINT1_CPU = 9;
+	static const unsigned int IE_EDINT_CPU = 10;
+	static const unsigned int IE_EINT0_DMA = 16;
+	static const unsigned int IE_EINT1_DMA = 17;
+	static const unsigned int IE_EINT2_DMA = 18;
+	static const unsigned int IE_EINT3_DMA = 19;
+	static const unsigned int IE_EXINT0_DMA = 20;
+	static const unsigned int IE_ERINT0_DMA = 21;
+	static const unsigned int IE_EXINT1_DMA = 22;
+	static const unsigned int IE_ERINT1_DMA = 23;
+	static const unsigned int IE_ETINT0_DMA = 24;
+	static const unsigned int IE_ETINT1_DMA = 25;
+	static const unsigned int IE_EDINT_DMA = 26;
+
+	// CPU/DMA Interrupt Enable (IE) register bitfields masks
+	static const uint32_t M_IE_EINT0_CPU = 1 << IE_EINT0_CPU;
+	static const uint32_t M_IE_EINT1_CPU = 1 << IE_EINT1_CPU;
+	static const uint32_t M_IE_EINT2_CPU = 1 << IE_EINT2_CPU;
+	static const uint32_t M_IE_EINT3_CPU = 1 << IE_EINT3_CPU;
+	static const uint32_t M_IE_EXINT0_CPU = 1 << IE_EXINT0_CPU;
+	static const uint32_t M_IE_ERINT0_CPU = 1 << IE_ERINT0_CPU;
+	static const uint32_t M_IE_EXINT1_CPU = 1 << IE_EXINT1_CPU;
+	static const uint32_t M_IE_ERINT1_CPU = 1 << IE_ERINT1_CPU;
+	static const uint32_t M_IE_ETINT0_CPU = 1 << IE_ETINT0_CPU;
+	static const uint32_t M_IE_ETINT1_CPU = 1 << IE_ETINT1_CPU;
+	static const uint32_t M_IE_EDINT_CPU = 1 << IE_EDINT_CPU;
+	static const uint32_t M_IE_EINT0_DMA = 1 << IE_EINT0_DMA;
+	static const uint32_t M_IE_EINT1_DMA = 1 << IE_EINT1_DMA;
+	static const uint32_t M_IE_EINT2_DMA = 1 << IE_EINT2_DMA;
+	static const uint32_t M_IE_EINT3_DMA = 1 << IE_EINT3_DMA;
+	static const uint32_t M_IE_EXINT0_DMA = 1 << IE_EXINT0_DMA;
+	static const uint32_t M_IE_ERINT0_DMA = 1 << IE_ERINT0_DMA;
+	static const uint32_t M_IE_EXINT1_DMA = 1 << IE_EXINT1_DMA;
+	static const uint32_t M_IE_ERINT1_DMA = 1 << IE_ERINT1_DMA;
+	static const uint32_t M_IE_ETINT0_DMA = 1 << IE_ETINT0_DMA;
+	static const uint32_t M_IE_ETINT1_DMA = 1 << IE_ETINT1_DMA;
+	static const uint32_t M_IE_EDINT_DMA = 1 << IE_EDINT_DMA;
+
+	// CPU/DMA Interrupt Enable (IE) register write mask
+	static const uint32_t IE_WRITE_MASK =
+		M_IE_EINT0_CPU | M_IE_EINT1_CPU | M_IE_EINT2_CPU | M_IE_EINT3_CPU |
+		M_IE_EXINT0_CPU | M_IE_ERINT0_CPU | M_IE_EXINT1_CPU | M_IE_ERINT1_CPU |
+		M_IE_ETINT0_CPU | M_IE_ETINT1_CPU | M_IE_EDINT_CPU | M_IE_EINT0_DMA |
+		M_IE_EINT1_DMA | M_IE_EINT2_DMA | M_IE_EINT3_DMA | M_IE_EXINT0_DMA |
+		M_IE_ERINT0_DMA | M_IE_EXINT1_DMA | M_IE_ERINT1_DMA | M_IE_ETINT0_DMA |
+		M_IE_ETINT1_DMA | M_IE_EDINT_DMA;
 
     //===============================================================
 	//= Interrupts handling                                    STOP =
@@ -489,6 +561,29 @@ private:
 		(1 << COND_LE) | (1 << COND_GT) | (1 << COND_GE) | (1 << COND_NV) |
 		(1 << COND_V) | (1 << COND_NUF) | (1 << COND_UF) | (1 << COND_NLV) |
 		(1 << COND_LV) | (1 << COND_NLUF) | (1 << COND_LUF) | (1 << COND_ZUF);
+
+	static const uint32_t ST_WRITE_MASK =
+		M_ST_C | M_ST_V | M_ST_Z | M_ST_N | M_ST_UF | M_ST_LV | M_ST_LUF |
+		M_ST_OVM | M_ST_RM | M_ST_CF | M_ST_CE | M_ST_CC | M_ST_GIE;
+
+	// I/O flag register bitfields offsets
+	static const unsigned int IOF_IOXF0 = 1;
+	static const unsigned int IOF_OUTXF0 = 2;
+	static const unsigned int IOF_INXF0 = 3;
+	static const unsigned int IOF_IOXF1 = 5;
+	static const unsigned int IOF_OUTXF1 = 6;
+	static const unsigned int IOF_INXF1 = 7;
+
+	// I/O flag register bitfields mask
+	static const unsigned int M_IOF_IOXF0 = 1 << IOF_IOXF0;
+	static const unsigned int M_IOF_OUTXF0 = 1 << IOF_OUTXF0;
+	static const unsigned int M_IOF_INXF0 = 1 << IOF_INXF0;
+	static const unsigned int M_IOF_IOXF1 = 1 << IOF_IOXF1;
+	static const unsigned int M_IOF_OUTXF1 = 1 << IOF_OUTXF1;
+	static const unsigned int M_IOF_INXF1 = 1 << IOF_INXF1;
+
+	static const uint32_t IOF_WRITE_MASK =
+		M_IOF_IOXF0 | M_IOF_OUTXF0 | M_IOF_IOXF1 | M_IOF_OUTXF1;
 
 	// Branch handling
 	unsigned int delay_before_branching; // Delay before branching
@@ -688,7 +783,7 @@ public:
 	    @param reg_num the register number (0 <= reg_num <= 27)
 	    @return the 32-bit value stored into the register
 	*/
-	inline uint32_t GetIntReg(unsigned int reg_num) const
+	inline uint32_t GetReg(unsigned int reg_num) const
 	{
 		return regs[reg_num].lo;
 	}
@@ -697,9 +792,9 @@ public:
 	    @param reg_num the register number (0 <= reg_num <= 27)
 	    @param value the 32-bit value to write into the register
 	*/
-	inline void SetIntReg(unsigned int reg_num, uint32_t value)
+	inline void SetReg(unsigned int reg_num, uint32_t value)
 	{
-		regs[reg_num].lo = value;
+		regs[reg_num].lo = value & regs[reg_num].lo_write_mask;
 	}
 
 	/** Set ARn[23-0] to a new value

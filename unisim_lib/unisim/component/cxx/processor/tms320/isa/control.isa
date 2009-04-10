@@ -66,7 +66,7 @@ Bcond_reg.disasm = {
 	
 	if(!cond_name || !reg_name) return false;
 	os << "B" << cond_name << " " << reg_name;
-	os << " <" << cpu.GetFunctionFriendlyName(cpu.GetIntReg(reg)) << ">";
+	os << " <" << cpu.GetFunctionFriendlyName(cpu.GetReg(reg)) << ">";
 	return true;
 }
 
@@ -81,7 +81,7 @@ Bcond_reg.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	// Read the source operand
-	typename CONFIG::address_t target_addr = cpu.GetIntReg(reg);
+	typename CONFIG::address_t target_addr = cpu.GetReg(reg);
 
 	// Branch to the target address
 	cpu.Branch(target_addr);
@@ -134,7 +134,7 @@ BcondD_reg.disasm = {
 	
 	if(!cond_name || !reg_name) return false;
 	os << "B" << cond_name << "D " << reg_name;
-	os << " <" << cpu.GetFunctionFriendlyName(cpu.GetIntReg(reg)) << ">";
+	os << " <" << cpu.GetFunctionFriendlyName(cpu.GetReg(reg)) << ">";
 	return true;
 }
 
@@ -149,7 +149,7 @@ BcondD_reg.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	// Read the source operand
-	typename CONFIG::address_t target_addr = cpu.GetIntReg(reg);
+	typename CONFIG::address_t target_addr = cpu.GetReg(reg);
 
 	// Branch to the target address with a delay of 3 instructions
 	cpu.Branch(target_addr, 3);
@@ -286,7 +286,7 @@ CALLcond_reg.disasm = {
 	
 	if(!cond_name || !reg_name) return false;
 	os << "CALL" << cond_name << " " << reg_name;
-	os << " <" << cpu.GetFunctionFriendlyName(cpu.GetIntReg(reg)) << ">";
+	os << " <" << cpu.GetFunctionFriendlyName(cpu.GetReg(reg)) << ">";
 	return true;
 }
 
@@ -301,7 +301,7 @@ CALLcond_reg.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	// Read the source operand
-	typename CONFIG::address_t target_addr = cpu.GetIntReg(reg);
+	typename CONFIG::address_t target_addr = cpu.GetReg(reg);
 
 	// Read SP and compute its new value
 	typename CONFIG::address_t sp = cpu.GetSP() + 1;
@@ -375,7 +375,7 @@ DBcond_reg.disasm = {
 
 	if(!cond_name || !reg_name) return false;
 	os << "DB" << cond_name << " AR" << ar << ", " << reg_name;
-	os << " <" << cpu.GetFunctionFriendlyName(cpu.GetIntReg(reg)) << ">";
+	os << " <" << cpu.GetFunctionFriendlyName(cpu.GetReg(reg)) << ">";
 	return true;
 }
 
@@ -390,7 +390,7 @@ DBcond_reg.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	// Read ARn
-	int32_t ar_value = cpu.GetIntReg(ar);
+	int32_t ar_value = cpu.GetReg(ar);
 
 	// Compute new value for ARn
 	ar_value = ar_value - 1;
@@ -402,7 +402,7 @@ DBcond_reg.execute = {
 	if(ar_value < 0) return;
 
 	// Read the source operand
-	typename CONFIG::address_t target_addr = cpu.GetIntReg(reg);
+	typename CONFIG::address_t target_addr = cpu.GetReg(reg);
 
 	// Branch to the target address
 	cpu.Branch(target_addr);
@@ -430,7 +430,7 @@ DBcond_disp.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	// Read ARn
-	int32_t ar_value = cpu.GetIntReg(ar);
+	int32_t ar_value = cpu.GetReg(ar);
 
 	// Compute new value for ARn
 	ar_value = ar_value - 1;
@@ -467,7 +467,7 @@ DBcondD_reg.disasm = {
 
 	if(!cond_name || !reg_name) return false;
 	os << "DB" << cond_name << "D AR" << ar << ", " << reg_name;
-	os << " <" << cpu.GetFunctionFriendlyName(cpu.GetIntReg(reg)) << ">";
+	os << " <" << cpu.GetFunctionFriendlyName(cpu.GetReg(reg)) << ">";
 	return true;
 }
 
@@ -482,7 +482,7 @@ DBcondD_reg.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	// Read ARn
-	int32_t ar_value = cpu.GetIntReg(ar);
+	int32_t ar_value = cpu.GetReg(ar);
 
 	// Compute new value for ARn
 	ar_value = ar_value - 1;
@@ -494,7 +494,7 @@ DBcondD_reg.execute = {
 	if(ar_value < 0) return;
 
 	// Read the source operand
-	typename CONFIG::address_t target_addr = cpu.GetIntReg(reg);
+	typename CONFIG::address_t target_addr = cpu.GetReg(reg);
 
 	// Branch to the target address with a delay of 3 instructions
 	cpu.Branch(target_addr, 3);
@@ -522,7 +522,7 @@ DBcondD_disp.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	// Read ARn
-	int32_t ar_value = cpu.GetIntReg(ar);
+	int32_t ar_value = cpu.GetReg(ar);
 
 	// Compute new value for ARn
 	ar_value = ar_value - 1;
@@ -790,7 +790,7 @@ RPTS_reg.execute = {
 	}
 
 	// Read the source operand
-	typename CONFIG::address_t src_value = cpu.GetIntReg(src);
+	typename CONFIG::address_t src_value = cpu.GetReg(src);
 
 	// Read the next PC
 	typename CONFIG::address_t next_pc = cpu.GetNPC();

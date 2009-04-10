@@ -117,6 +117,35 @@ CPU(const char *name,
 	stat_insn_cache_hits("insn-cache-hits", this, insn_cache_hits),
 	stat_insn_cache_misses("insn-cache-misses", this, insn_cache_misses)
 {
+	regs[REG_R0].lo_write_mask = 0xffffffff;
+	regs[REG_R1].lo_write_mask = 0xffffffff;
+	regs[REG_R2].lo_write_mask = 0xffffffff;
+	regs[REG_R3].lo_write_mask = 0xffffffff;
+	regs[REG_R4].lo_write_mask = 0xffffffff;
+	regs[REG_R5].lo_write_mask = 0xffffffff;
+	regs[REG_R6].lo_write_mask = 0xffffffff;
+	regs[REG_R7].lo_write_mask = 0xffffffff;
+	regs[REG_AR0].lo_write_mask = 0xffffffff;
+	regs[REG_AR1].lo_write_mask = 0xffffffff;
+	regs[REG_AR2].lo_write_mask = 0xffffffff;
+	regs[REG_AR3].lo_write_mask = 0xffffffff;
+	regs[REG_AR4].lo_write_mask = 0xffffffff;
+	regs[REG_AR5].lo_write_mask = 0xffffffff;
+	regs[REG_AR6].lo_write_mask = 0xffffffff;
+	regs[REG_AR7].lo_write_mask = 0xffffffff;
+	regs[REG_DP].lo_write_mask = 0xffffffff;
+	regs[REG_IR0].lo_write_mask = 0xffffffff;
+	regs[REG_IR1].lo_write_mask = 0xffffffff;
+	regs[REG_BK].lo_write_mask = 0xffffffff;
+	regs[REG_SP].lo_write_mask = 0xffffffff;
+	regs[REG_ST].lo_write_mask = ST_WRITE_MASK;
+	regs[REG_IE].lo_write_mask = IE_WRITE_MASK;
+	regs[REG_IF].lo_write_mask = IF_WRITE_MASK;
+	regs[REG_IOF].lo_write_mask = IOF_WRITE_MASK;
+	regs[REG_RS].lo_write_mask = 0xffffffff;
+	regs[REG_RE].lo_write_mask = 0xffffffff;
+	regs[REG_RC].lo_write_mask = 0xffffffff;
+
 	registers_registry["PC"] = new unisim::util::debug::SimpleRegister<uint32_t>("PC", &reg_pc);
 
 	unsigned int i;
@@ -268,7 +297,14 @@ Reset()
 {
 	reg_pc = 0;
 	reg_npc = 0;
-	memset(regs, 0, sizeof(regs));
+
+	unsigned int reg_num;
+	for(reg_num = 0; reg_num < sizeof(regs) / sizeof(regs[0]); reg_num++)
+	{
+		regs[reg_num].lo = 0;
+		regs[reg_num].hi = 0;
+	}
+
 	reset = true;
 }
 
@@ -1117,7 +1153,7 @@ StepInstruction()
 		else
 		{
 			// Check if there are some enabled pending IRQs
-			if(unlikely((GetIF() & GetIE() & IRQ_MASK) && !GetST_GIE()))
+			if(unlikely(GetIF() & GetIE() && !GetST_GIE()))
 			{
 				unsigned int irq_num;
 
