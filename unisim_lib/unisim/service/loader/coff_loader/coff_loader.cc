@@ -41,6 +41,7 @@ namespace loader {
 namespace coff_loader {
 
 template class CoffLoader<uint32_t>;
+template class CoffLoader<uint64_t>;
 
 } // end of namespace coff_loader
 } // end of namespace loader

@@ -1157,6 +1157,22 @@ StepInstruction()
 			{
 				unsigned int irq_num;
 
+				// Check whether processor is idle
+				if(idle)
+				{
+					// Check whether processor is idle (low power version)
+					if(idle >= 2)
+					{
+						// Check whether one of the INT0-3 external signals is assert
+						if(GetIF() & (M_IF_INT0 | M_IF_INT1 | M_IF_INT2 | M_IF_INT3))
+							idle = 0;
+					}
+					else
+					{
+						idle = 0;
+					}
+				}
+
 				// Select an IRQ according priority (from the higher to the lower)
 				if(unlikely(!BitScanForward(irq_num, GetIF())))
 				{
@@ -1192,6 +1208,9 @@ StepInstruction()
 			}
 			else
 			{
+				// Check whether processor is in idle mode
+				if(unlikely(idle)) return; // Note: PC is not incremented
+
 				// Check whether the processor is running in repeat mode (RPTB or RPTS)
 				if(unlikely(GetST_RM()))
 				{
@@ -1347,11 +1366,11 @@ template<class CONFIG, bool DEBUG>
 inline
 void
 CPU<CONFIG, DEBUG> ::
-IntStore(address_t ea, uint32_t value)
+IntStore(address_t ea, uint32_t value, bool interlocked)
 {
 	value = Host2LittleEndian(value);
 
-	if(unlikely(!PrWrite(ea, &value, sizeof(value))))
+	if(unlikely(!PrWrite(ea, &value, sizeof(value), interlocked)))
 	{
 		throw BadMemoryAccessException<CONFIG, DEBUG>(ea);
 	}
@@ -1367,11 +1386,11 @@ template<class CONFIG, bool DEBUG>
 inline
 uint32_t
 CPU<CONFIG, DEBUG> ::
-IntLoad(address_t ea)
+IntLoad(address_t ea, bool interlocked)
 {
 	uint32_t value;
 
-	if(unlikely(!PrRead(ea, &value, sizeof(value))))
+	if(unlikely(!PrRead(ea, &value, sizeof(value), interlocked)))
 	{
 		throw BadMemoryAccessException<CONFIG, DEBUG>(ea);
 	}
@@ -1483,6 +1502,13 @@ Fetch(address_t addr)
 	}
 
 	return LittleEndian2Host(insn);
+}
+
+template<class CONFIG, bool DEBUG>
+void
+CPU<CONFIG, DEBUG> ::
+SignalInterlock()
+{
 }
 
 template<class CONFIG, bool DEBUG>

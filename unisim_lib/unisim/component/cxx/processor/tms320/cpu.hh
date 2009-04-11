@@ -468,8 +468,8 @@ public:
 	//= Interface with the outside world                      START =
 	//===============================================================
 
-	virtual bool PrWrite(address_t addr, const void *buffer, uint32_t size) = 0;
-	virtual bool PrRead(address_t addr, void *buffer, uint32_t size) = 0;
+	virtual bool PrWrite(address_t addr, const void *buffer, uint32_t size, bool interlocked = false) = 0;
+	virtual bool PrRead(address_t addr, void *buffer, uint32_t size, bool interlocked = false) = 0;
 
     //===============================================================
 	//= Interface with the outside world                       STOP =
@@ -596,6 +596,9 @@ private:
 	// External signals
 	bool reset;                             // RESET: 1=reset, 0=normal operation
 	bool mcbl_mp;                           // MCBL/MP#: 0=microprocessor mode, 1=microcomputer mode
+
+	// Idle handling
+	unsigned int idle;                      // 0=normal operation, 1=idle, 2=idle2, otherwise undefined behavior
 
 	// Registers
 	uint32_t reg_ir;     // Instruction Register
@@ -919,14 +922,16 @@ public:
 	/** Store a 32-bit integer into memory
 	    @param ea the effective word address
 		@param value the 32-bit integer value to store into memory
+		@param interlocked whether the store is interlocked
 	*/
-	inline void IntStore(address_t ea, uint32_t value) INLINE;
+	inline void IntStore(address_t ea, uint32_t value, bool interlocked = false) INLINE;
 
 	/** Load a 32-bit integer from memory
 	    @param ea the effective word address
+		@param interlocked whether the load is interlocked
 		@return the 32-bit integer value read from memory
 	*/
-	inline uint32_t IntLoad(address_t ea) INLINE;
+	inline uint32_t IntLoad(address_t ea, bool interlocked = false) INLINE;
 
 	/** Load a 32-bit instruction word from memory
 	    @param ea the effective word address
@@ -938,6 +943,19 @@ public:
 	    @param cond 5-bit encoding of condition
 		@return whether the condition is met
 	*/
+
+	/** Signal an interlock
+	*/
+	void SignalInterlock();
+
+	/** Enter in idle mode
+		@param level idle level (0, 1, or >= 2)
+	*/
+	inline void Idle(unsigned int level)
+	{
+		idle = level;
+	}
+
 	inline bool CheckCondition(unsigned int cond) const INLINE;
 
 	/** Get ST[C]

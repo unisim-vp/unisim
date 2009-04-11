@@ -286,7 +286,7 @@ LDI_reg.execute = {
 		// Generate flags (into ST)
 		cpu.GenFlags(
 			result,
-			M_ST_UF | M_ST_V,  // reset mask
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
 			M_ST_N | M_ST_Z    // or mask
 		);
 	}
@@ -325,7 +325,7 @@ LDI_dir.execute = {
 		// Generate flags (into ST)
 		cpu.GenFlags(
 			result,
-			M_ST_UF | M_ST_V,  // reset mask
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
 			M_ST_N | M_ST_Z    // or mask
 		);
 	}
@@ -378,7 +378,7 @@ LDI_indir.execute = {
 		// Generate flags (into ST)
 		cpu.GenFlags(
 			result,
-			M_ST_UF | M_ST_V,  // reset mask
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
 			M_ST_N | M_ST_Z    // or mask
 		);
 	}
@@ -413,7 +413,7 @@ LDI_imm.execute = {
 		// Generate flags (into ST)
 		cpu.GenFlags(
 			result,
-			M_ST_UF | M_ST_V,  // reset mask
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
 			M_ST_N | M_ST_Z    // or mask
 		);
 	}
@@ -702,7 +702,7 @@ POP.execute = {
 		// Generate flags (into ST)
 		cpu.GenFlags(
 			result,
-			M_ST_UF | M_ST_V,  // reset mask
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
 			M_ST_N | M_ST_Z    // or mask
 		);
 	}

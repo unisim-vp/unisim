@@ -52,7 +52,18 @@ IDLE2.disasm = {
 }
 
 IDLE2.execute = {
-	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+	// Check whether the instruction does not break some rules (pg 7-6 and 7-9)
+	// Note: this instruction can't be one of the three instructions after a delayed branch
+	if(unlikely(cpu.HasPendingBranch()))
+	{
+		throw MisplacedOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Set ST[GIE]
+	cpu.SetST_GIE();
+
+	// Enter idle mode 2
+	cpu.Idle(2);
 }
 
 /* end of IDLE2 (low-power idle)

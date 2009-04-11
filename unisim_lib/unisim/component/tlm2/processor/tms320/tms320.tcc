@@ -444,7 +444,8 @@ bool
 TMS320<CONFIG, DEBUG> :: 
 PrRead(address_t addr, 
 	void *buffer, 
-	uint32_t size) {
+	uint32_t size,
+	bool interlocked) {
 	if(DEBUG && verbose_tlm_commands)
 		logger << DebugInfo << LOCATION
 			<< "Performing PrRead"
@@ -489,7 +490,8 @@ bool
 TMS320<CONFIG, DEBUG> :: 
 PrWrite(address_t addr, 
 	const void *buffer, 
-	uint32_t size) {
+	uint32_t size,
+	bool interlocked) {
 		if(DEBUG && verbose_tlm_commands)
 			logger << DebugInfo << LOCATION
 				<< "Performing PrWrite"

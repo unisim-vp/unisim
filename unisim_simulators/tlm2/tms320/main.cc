@@ -39,19 +39,15 @@
 #include <stdexcept>
 
 #include "unisim/kernel/service/service.hh"
-
 #include "unisim/component/cxx/processor/tms320/config.hh"
 #include "unisim/component/tlm2/processor/tms320/tms320.hh"
 #include "unisim/component/tlm2/memory/ram/memory.hh"
-
 #include "unisim/service/time/sc_time/time.hh"
 #include "unisim/service/time/host_time/time.hh"
 #include "unisim/service/debug/gdb_server/gdb_server.hh"
 #include "unisim/service/debug/inline_debugger/inline_debugger.hh"
 #include "unisim/service/debug/symbol_table/symbol_table.hh"
 #include "unisim/service/loader/coff_loader/coff_loader.hh"
-#include "unisim/service/loader/coff_loader/coff_loader.tcc"
-
 #include "unisim/service/debug/symbol_table/symbol_table.hh"
 
 #ifdef WIN32
@@ -80,21 +76,10 @@ typedef unisim::service::debug::inline_debugger::InlineDebugger<uint64_t> INLINE
 typedef unisim::service::time::sc_time::ScTime SC_TIME;
 typedef  unisim::service::time::host_time::HostTime HOST_TIME;
 
-// bool debug_enabled;
-// 
-// void EnableDebug() {
-// 	debug_enabled = true;
-// }
-// 
-// void DisableDebug() {
-// 	debug_enabled = false;
-// }
-
 void SigIntHandler(int signum) {
 	cerr << "Interrupted by Ctrl-C or SIGINT signal" << endl;
 	sc_stop();
 }
-
 
 using namespace std;
 using unisim::kernel::service::ServiceManager;
@@ -212,18 +197,10 @@ int sc_main(int argc, char *argv[]) {
 
 	filename = argv[optind];
 
-	// // Logger
-	// LoggerServer *logger = 0;
-	// if(use_logger)
-	// 	logger = new LoggerServer("logger");
-	
 	// Time
 	SC_TIME *time = new SC_TIME("time");
 	HOST_TIME *host_time = new HOST_TIME("host-time");
 	
-	// if(use_logger)
-	// 	logger->time_import >> time->time_export;
-
 	LOADER *loader = 0;
 	SYMBOL_TABLE *symbol_table = 0;
 	MEMORY *memory = new MEMORY("memory");
@@ -267,9 +244,9 @@ int sc_main(int argc, char *argv[]) {
 			symbol_table->symbol_table_lookup_export;
 	}
 	
-//#ifdef DEBUG_SERVICE
+#ifdef DEBUG_SERVICE
 	ServiceManager::Dump(cerr);
-//#endif
+#endif
 
 	if(get_variables)
 	{
@@ -294,11 +271,6 @@ int sc_main(int argc, char *argv[]) {
 			*var = gdb_xml;
 		}
 	}
-	{
-//		cerr << "filename = " << filename << endl;
-		// VariableBase *var = ServiceManager::GetParameter("elf32-loader.filename");
-		// *var = filename;
-	}
 	
 	if(ServiceManager::Setup())
 	{
@@ -306,7 +278,6 @@ int sc_main(int argc, char *argv[]) {
 
 		double time_start = host_time->GetTime();
 
-//		EnableDebug();
 		void (*prev_sig_int_handler)(int);
 
 		if(!use_inline_debugger)

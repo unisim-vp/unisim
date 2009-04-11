@@ -69,11 +69,72 @@ op LDII_dir  (0b000[3]:0b010001[6]:0b01[2]:dst[5]:direct[16])
 op LDII_indir(0b000[3]:0b010001[6]:0b10[2]:dst[5]:mod[5]:ar[3]:disp[8])
 
 LDII_dir.execute = {
-	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+	// Check whether the destination register number is valid
+	if(unlikely(!cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Compute the effective address
+	typename CONFIG::address_t ea = cpu.ComputeDirEA(direct);
+
+	// Load the word from memory
+	uint32_t result = cpu.IntLoad(ea, true /* interlocked */);
+
+	// Write back result
+	cpu.SetReg(dst, result);
+
+	// Check whether destination operand is an extended precision register
+	if(cpu.IsExtReg(dst))
+	{
+		// Generate flags (into ST)
+		cpu.GenFlags(
+			result,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+			M_ST_N | M_ST_Z  // or mask
+		);
+	}
 }
 
 LDII_indir.execute = {
-	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+	// Check whether the destination register number is valid
+	if(unlikely(!cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Check that indirect addressing mode is valid and compute the effective address
+	typename CONFIG::address_t ea;        // The effective address
+	bool update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(ea, update_ar, output_ar, mod, ar, disp)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Load the word from memory
+	uint32_t result = cpu.IntLoad(ea, true /* interlocked */);
+
+	// Write back result
+	cpu.SetReg(dst, result);
+
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar, output_ar);
+	}
+
+	// Check whether destination operand is an extended precision register
+	if(cpu.IsExtReg(dst))
+	{
+		// Generate flags (into ST)
+		cpu.GenFlags(
+			result,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+			M_ST_N | M_ST_Z  // or mask
+		);
+	}
 }
 
 /* end of LDII (load integer, interlocked)
@@ -121,11 +182,50 @@ op STII_dir  (0b000[3]:0b101011[6]:0b01[2]:src[5]:direct[16])
 op STII_indir(0b000[3]:0b101011[6]:0b10[2]:src[5]:mod[5]:ar[3]:disp[8])
 
 STII_dir.execute = {
-	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+	// Check whether the source register number is valid
+	if(unlikely(!cpu.HasReg(src)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read the source operand
+	uint32_t result = cpu.GetReg(src);
+
+	// Compute the effective address
+	typename CONFIG::address_t ea = cpu.ComputeDirEA(direct);
+
+	// Store the word into memory
+	cpu.IntStore(ea, result, true /* interlocked */);
 }
 
 STII_indir.execute = {
-	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+	// Check whether the source register number is valid
+	if(unlikely(!cpu.HasReg(src)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read the source operand
+	uint32_t result = cpu.GetReg(src);
+
+	// Check that indirect addressing mode is valid and compute the effective address
+	typename CONFIG::address_t ea;        // The effective address
+	bool update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(ea, update_ar, output_ar, mod, ar, disp)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Store the word into memory
+	cpu.IntStore(ea, result, true /* interlocked */);
+
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar, output_ar);
+	}
 }
 
 /* end of STII (store integer, interflocked)
