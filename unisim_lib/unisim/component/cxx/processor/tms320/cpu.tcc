@@ -1124,7 +1124,7 @@ StepInstruction()
 		{
 			typename DebugControl<uint64_t>::DebugCommand dbg_cmd;
 
-			dbg_cmd = debug_control_import->FetchDebugCommand(4 * reg_pc);
+			dbg_cmd = debug_control_import->FetchDebugCommand(4 * GetPC23_0());
 	
 			if(dbg_cmd == DebugControl<uint64_t>::DBG_STEP) break;
 			if(dbg_cmd == DebugControl<uint64_t>::DBG_KILL) Stop(0);
@@ -1139,13 +1139,13 @@ StepInstruction()
 			address_t reset_interrupt_handler_addr = IntLoad(0);
 
 			// Branch to the reset interrupt handler
-			reg_pc = reset_interrupt_handler_addr;
+			SetPC(reset_interrupt_handler_addr);
 
 			// Fetch first instruction of the interrupt handler
-			reg_ir = Fetch(reg_pc & ADDRESS_MASK);
+			SetIR(Fetch(GetPC23_0()));
 
 			// Compute the address of the next instruction, i.e. PC + 1
-			reg_npc = reg_pc + 1;
+			SetNPC(GetPC() + 1);
 
 			// Reset finished
 			reset = false;
@@ -1167,7 +1167,7 @@ StepInstruction()
 				typename CONFIG::address_t sp = GetSP() + 1;
 
 				// Store the PC at SP + 1
-				IntStore(sp & ADDRESS_MASK, reg_pc);
+				IntStore(GetSP23_0(), GetPC());
 
 				// Update SP
 				SetSP(sp);
@@ -1176,7 +1176,7 @@ StepInstruction()
 				address_t interrupt_handler_addr = IntLoad(irq_num + 1);
 
 				// Branch to interrupt handler
-				reg_pc = interrupt_handler_addr;
+				SetPC(interrupt_handler_addr);
 
 				// Reset ST[GIE] to disable further IRQs until reactivated by software
 				ResetST_GIE();
@@ -1185,10 +1185,10 @@ StepInstruction()
 				SetIRQLevel(irq_num, false);
 
 				// Fetch first instruction of the interrupt handler
-				reg_ir = Fetch(reg_pc & ADDRESS_MASK);
+				SetIR(Fetch(GetPC23_0()));
 
 				// Compute the address of the next instruction, i.e. PC + 1
-				reg_npc = reg_pc + 1;
+				SetNPC(GetPC() + 1);
 			}
 			else
 			{
@@ -1196,80 +1196,81 @@ StepInstruction()
 				if(unlikely(GetST_RM()))
 				{
 					// Check whether this is a repeat single (RPTS)
-					if(repeat_single)
+					if(GetS())
 					{
 						// Check whether instruction to repeat has already been fetched from memory to IR
 						if(unlikely(first_time_through_repeat_single))
 						{
 							// Fetch the instruction from memory into IR
-							reg_ir = Fetch(reg_pc & ADDRESS_MASK);
+							SetIR(Fetch(GetPC23_0()));
 							first_time_through_repeat_single = false;
 						}
 
 						// Decrement RC
-						regs[REG_RC].lo = regs[REG_RC].lo - 1;
+						SetRC(GetRC() - 1);
 
 						// Check if RC is < 0
-						if((int32_t) regs[REG_RC].lo < 0)
+						if((int32_t) GetRC() < 0)
 						{
 							// Disable the repeat mode by resetting ST[RM] bit
 							ResetST_RM();
-							repeat_single = false;
+							ResetS();
 							// Compute the address of the next instruction, i.e. PC + 1
-							reg_npc = reg_pc + 1;
+							SetNPC(GetPC() + 1);
 						}
 						else
 						{
 							// Compute the address of the next instruction, i.e. PC so that current instruction in IR will be repeated again
-							reg_npc = reg_pc;
+							SetNPC(GetPC());
 						}
 					}
 					else
 					{
 						// Fetch the instruction from memory into IR
-						reg_ir = Fetch(reg_pc & ADDRESS_MASK);
+						SetIR(Fetch(GetPC23_0()));
 
 						// Check whether the end of the block to repeat has been reached
-						if(reg_pc == regs[REG_RE].lo)
+						if(GetPC() == GetRE())
 						{
 							// Decrement RC
-							regs[REG_RC].lo = regs[REG_RC].lo - 1;
+							SetRC(GetRC() - 1);
 
 							// Check if RC is >= 0
-							if((int32_t) regs[REG_RC].lo >= 0)
+							if((int32_t) GetRC() >= 0)
 							{
 								// Compute the address the next instruction, i.e. the start of the block to repeat
-								reg_npc = regs[REG_RS].lo;
+								SetNPC(GetRS());
 							}
 							else
 							{
 								// Disable the repeat mode by resetting ST[RM] bit
 								ResetST_RM();
-								repeat_single = false;
+								ResetS();
 								// Compute the address of the next instruction, i.e. PC + 1
-								reg_npc = reg_pc + 1;
+								SetNPC(GetPC() + 1);
 							}
 						}
 						else
 						{
 							// Compute the address of the next instruction, i.e. PC + 1
-							reg_npc = reg_pc + 1;
+							SetNPC(GetPC() + 1);
 						}
 					}
 				}
 				else
 				{
 					// Fetch the instruction from memory into IR
-					reg_ir = Fetch(reg_pc & ADDRESS_MASK);
+					SetIR(Fetch(GetPC23_0()));
 
 					// Compute the address of the next instruction, i.e. PC + 1
-					reg_npc = reg_pc + 1;
+					SetNPC(GetPC() + 1);
 				}
 			}
 		}
 
 		// Decode the instruction
-		typename isa::tms320::Operation<CONFIG, DEBUG> *operation = decoder.Decode(4 * reg_pc, reg_ir);
+		// Note: GenISSLib generated decoder handle byte address not word address
+		typename isa::tms320::Operation<CONFIG, DEBUG> *operation = decoder.Decode(4 * GetPC23_0(), GetIR());
 
 		// Execute the instruction
 		operation->execute(*this);
@@ -1280,12 +1281,12 @@ StepInstruction()
 			// Decrement the delay and branch once it has reached zero
 			if(--delay_before_branching == 0)
 			{
-				reg_npc = branch_addr;
+				SetNPC(branch_addr);
 			}
 		}
 
 		/* go to the next instruction */
-		reg_pc = reg_npc;
+		SetPC(GetNPC());
 
 		/* update the instruction counter */
 		instruction_counter++;
@@ -1294,33 +1295,13 @@ StepInstruction()
 		{
 			if(unlikely(memory_access_reporting_import != 0))
 			{
-				memory_access_reporting_import->ReportFinishedInstruction(4 * reg_pc);
+				memory_access_reporting_import->ReportFinishedInstruction(4 * GetPC23_0());
 			}
 		}
 	}
-	catch(BogusOpcodeException<CONFIG, DEBUG>& exc)
+	catch(Exception& exc)
 	{
-		logger << DebugError << exc.what() << EndDebugError;
-		Stop(-1);
-	}
-	catch(UnimplementedOpcodeException<CONFIG, DEBUG>& exc)
-	{
-		logger << DebugError << exc.what() << EndDebugError;
-		Stop(-1);
-	}
-	catch(UnknownOpcodeException<CONFIG, DEBUG>& exc)
-	{
-		logger << DebugError << exc.what() << EndDebugError;
-		Stop(-1);
-	}
-	catch(BadMemoryAccessException<CONFIG, DEBUG>& exc)
-	{
-		logger << DebugError << exc.what() << EndDebugError;
-		Stop(-1);
-	}
-	catch(Exception& e)
-	{
-		logger << DebugError << "uncaught exception :" << e.what() << EndDebugError;
+		logger << DebugError << "Unpredictable behavior: " << exc.what() << EndDebugError;
 		Stop(-1);
 	}
 

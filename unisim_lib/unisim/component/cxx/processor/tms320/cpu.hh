@@ -654,6 +654,22 @@ public:
 		return regs[REG_AR0 + reg_num].lo & ADDRESS_MASK;
 	}
 
+	/** Get IR (instruction register)
+	    @return 32-bit value of IR
+	*/
+	inline uint32_t GetIR() const
+	{
+		return reg_ir;
+	}
+
+	/** Set IR (instruction register)
+	    @param value 32-bit value to write into IR
+	*/
+	inline void SetIR(uint32_t value)
+	{
+		reg_ir = value;
+	}
+
 	/** Get SP (stack pointer)
 	    @return 32-bit value of SP
 	*/
@@ -1008,6 +1024,14 @@ public:
 	*/
 	inline void SetST_CE() { SetST(GetST() | (1 << ST_CE)); }
 
+	/** Get repeat-single bit
+		@return whether an RPTS instruction is being executed
+	*/
+	inline bool GetS() const
+	{
+		return repeat_single;
+	}
+
 	/** Set repeat-single bit
 	*/
 	inline void SetS()
@@ -1023,14 +1047,6 @@ public:
 		repeat_single = false;
 	}
 
-	/** Set RC
-	    @param value the value to write
-	*/
-	inline void SetRC(uint32_t value)
-	{
-		regs[REG_RC].lo = value;
-	}
-
 	/** Set RE
 	    @param value the value to write
 	*/
@@ -1039,6 +1055,11 @@ public:
 		regs[REG_RE].lo = value;
 	}
 
+	/** Get RE
+	    @return 32-bit value of RE
+	*/
+	inline uint32_t GetRE() const { return regs[REG_RE].lo; }
+
 	/** Set RS
 	    @param value the value to write
 	*/
@@ -1046,6 +1067,24 @@ public:
 	{
 		regs[REG_RS].lo = value;
 	}
+
+	/** Get RS
+	    @return 32-bit value of RS
+	*/
+	inline uint32_t GetRS() const { return regs[REG_RS].lo; }
+
+	/** Set RC
+	    @param value the value to write
+	*/
+	inline void SetRC(uint32_t value)
+	{
+		regs[REG_RC].lo = value;
+	}
+
+	/** Get RC
+	    @return 32-bit value of RC
+	*/
+	inline uint32_t GetRC() const { return regs[REG_RC].lo; }
 
 	/** Generate the condition flags in register ST
 	    @param result the value of the integer result
@@ -1056,6 +1095,10 @@ public:
 	*/
 	inline void GenFlags(uint32_t result, uint32_t reset_mask, uint32_t or_mask, uint32_t carry_out = 0, uint32_t overflow = 0) INLINE;
 
+	inline bool HasPendingBranch() const
+	{
+		return delay_before_branching != 0;
+	}
 protected:
 	bool verbose_all;
 	bool verbose_setup;

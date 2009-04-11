@@ -77,6 +77,14 @@ Bcond_reg.execute = {
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 
+	// Check whether the instruction does not break some rules (pg 7-6 and 7-9)
+	// Rule 1: this instruction can't be the last instruction in the block
+	// Note: this instruction can't be one of the three instructions after a delayed branch
+	if(unlikely(cpu.HasPendingBranch() || (cpu.GetST_RM() && cpu.GetRE() == cpu.GetPC())))
+	{
+		throw MisplacedOpcodeException<CONFIG, DEBUG>(this);
+	}
+
 	// Check the condition
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -103,6 +111,14 @@ Bcond_disp.execute = {
 	if(unlikely(!cpu.HasCondition(cond)))
 	{
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Check whether the instruction does not break some rules (pg 7-6 and 7-9)
+	// Rule 1: this instruction can't be the last instruction in the block
+	// Note: this instruction can't be one of the three instructions after a delayed branch
+	if(unlikely(cpu.HasPendingBranch() || (cpu.GetST_RM() && cpu.GetRE() == cpu.GetPC())))
+	{
+		throw MisplacedOpcodeException<CONFIG, DEBUG>(this);
 	}
 
 	// Check the condition
@@ -145,6 +161,15 @@ BcondD_reg.execute = {
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 
+	// Check whether the instruction does not break some rules (pg 7-6 and 7-9)
+	// Rule 1: this instruction can't be the last instruction in the block
+	// Rule 2: this instruction can't be one of the last 4 instructions in the block
+	// Note: this instruction can't be one of the three instructions after a delayed branch
+	if(unlikely(cpu.HasPendingBranch() || (cpu.GetST_RM() && (cpu.GetPC() >= (cpu.GetRE() - 3) && (cpu.GetPC() <= cpu.GetRE())))))
+	{
+		throw MisplacedOpcodeException<CONFIG, DEBUG>(this);
+	}
+
 	// Check the condition
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -171,6 +196,15 @@ BcondD_disp.execute = {
 	if(unlikely(!cpu.HasCondition(cond)))
 	{
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Check whether the instruction does not break some rules (pg 7-6 and 7-9)
+	// Rule 1: this instruction can't be the last instruction in the block
+	// Rule 2: this instruction can't be one of the last 4 instructions in the block
+	// Note: this instruction can't be one of the three instructions after a delayed branch
+	if(unlikely(cpu.HasPendingBranch() || (cpu.GetST_RM() && (cpu.GetPC() >= (cpu.GetRE() - 3) && (cpu.GetPC() <= cpu.GetRE())))))
+	{
+		throw MisplacedOpcodeException<CONFIG, DEBUG>(this);
 	}
 
 	// Check the condition
@@ -203,6 +237,14 @@ BR.disasm = {
 }
 
 BR.execute = {
+	// Check whether the instruction does not break some rules (pg 7-6 and 7-9)
+	// Rule 1: this instruction can't be the last instruction in the block
+	// Note: this instruction can't be one of the three instructions after a delayed branch
+	if(unlikely(cpu.HasPendingBranch() || (cpu.GetST_RM() && cpu.GetRE() == cpu.GetPC())))
+	{
+		throw MisplacedOpcodeException<CONFIG, DEBUG>(this);
+	}
+
 	// Compute the branch target address
 	typename CONFIG::address_t target_addr = src;
 
@@ -227,6 +269,15 @@ BRD.disasm = {
 }
 
 BRD.execute = {
+	// Check whether the instruction does not break some rules (pg 7-6 and 7-9)
+	// Rule 1: this instruction can't be the last instruction in the block
+	// Rule 2: this instruction can't be one of the last 4 instructions in the block
+	// Note: this instruction can't be one of the three instructions after a delayed branch
+	if(unlikely(cpu.HasPendingBranch() || (cpu.GetST_RM() && (cpu.GetPC() >= (cpu.GetRE() - 3) && (cpu.GetPC() <= cpu.GetRE())))))
+	{
+		throw MisplacedOpcodeException<CONFIG, DEBUG>(this);
+	}
+
 	// Compute the branch target address
 	typename CONFIG::address_t target_addr = src;
 
@@ -251,6 +302,14 @@ CALL.disasm = {
 }
 
 CALL.execute = {
+	// Check whether the instruction does not break some rules (pg 7-6 and 7-9)
+	// Rule 1: this instruction can't be the last instruction in the block
+	// Note: this instruction can't be one of the three instructions after a delayed branch
+	if(unlikely(cpu.HasPendingBranch() || (cpu.GetST_RM() && cpu.GetRE() == cpu.GetPC())))
+	{
+		throw MisplacedOpcodeException<CONFIG, DEBUG>(this);
+	}
+
 	// Read SP and compute its new value
 	typename CONFIG::address_t sp = cpu.GetSP() + 1;
 
@@ -297,6 +356,14 @@ CALLcond_reg.execute = {
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 
+	// Check whether the instruction does not break some rules (pg 7-6 and 7-9)
+	// Rule 1: this instruction can't be the last instruction in the block
+	// Note: this instruction can't be one of the three instructions after a delayed branch
+	if(unlikely(cpu.HasPendingBranch() || (cpu.GetST_RM() && cpu.GetRE() == cpu.GetPC())))
+	{
+		throw MisplacedOpcodeException<CONFIG, DEBUG>(this);
+	}
+
 	// Check the condition
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -335,6 +402,14 @@ CALLcond_disp.execute = {
 	if(unlikely(!cpu.HasCondition(cond)))
 	{
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Check whether the instruction does not break some rules (pg 7-6 and 7-9)
+	// Rule 1: this instruction can't be the last instruction in the block
+	// Note: this instruction can't be one of the three instructions after a delayed branch
+	if(unlikely(cpu.HasPendingBranch() || (cpu.GetST_RM() && cpu.GetRE() == cpu.GetPC())))
+	{
+		throw MisplacedOpcodeException<CONFIG, DEBUG>(this);
 	}
 
 	// Check the condition
@@ -386,6 +461,14 @@ DBcond_reg.execute = {
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 
+	// Check whether the instruction does not break some rules (pg 7-6 and 7-9)
+	// Rule 1: this instruction can't be the last instruction in the block
+	// Note: this instruction can't be one of the three instructions after a delayed branch
+	if(unlikely(cpu.HasPendingBranch() || (cpu.GetST_RM() && cpu.GetRE() == cpu.GetPC())))
+	{
+		throw MisplacedOpcodeException<CONFIG, DEBUG>(this);
+	}
+
 	// Check the condition
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -424,6 +507,14 @@ DBcond_disp.execute = {
 	if(unlikely(!cpu.HasCondition(cond)))
 	{
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Check whether the instruction does not break some rules (pg 7-6 and 7-9)
+	// Rule 1: this instruction can't be the last instruction in the block
+	// Note: this instruction can't be one of the three instructions after a delayed branch
+	if(unlikely(cpu.HasPendingBranch() || (cpu.GetST_RM() && cpu.GetRE() == cpu.GetPC())))
+	{
+		throw MisplacedOpcodeException<CONFIG, DEBUG>(this);
 	}
 
 	// Check the condition
@@ -478,6 +569,15 @@ DBcondD_reg.execute = {
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 
+	// Check whether the instruction does not break some rules (pg 7-6 and 7-9)
+	// Rule 1: this instruction can't be the last instruction in the block
+	// Rule 2: this instruction can't be one of the last 4 instructions in the block
+	// Note: this instruction can't be one of the three instructions after a delayed branch
+	if(unlikely(cpu.HasPendingBranch() || (cpu.GetST_RM() && (cpu.GetPC() >= (cpu.GetRE() - 3) && (cpu.GetPC() <= cpu.GetRE())))))
+	{
+		throw MisplacedOpcodeException<CONFIG, DEBUG>(this);
+	}
+
 	// Check the condition
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -516,6 +616,15 @@ DBcondD_disp.execute = {
 	if(unlikely(!cpu.HasCondition(cond)))
 	{
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Check whether the instruction does not break some rules (pg 7-6 and 7-9)
+	// Rule 1: this instruction can't be the last instruction in the block
+	// Rule 2: this instruction can't be one of the last 4 instructions in the block
+	// Note: this instruction can't be one of the three instructions after a delayed branch
+	if(unlikely(cpu.HasPendingBranch() || (cpu.GetST_RM() && (cpu.GetPC() >= (cpu.GetRE() - 3) && (cpu.GetPC() <= cpu.GetRE())))))
+	{
+		throw MisplacedOpcodeException<CONFIG, DEBUG>(this);
 	}
 
 	// Check the condition
@@ -592,6 +701,14 @@ IDLE.disasm = {
 
 IDLE.execute = {
 	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+
+	// Check wether the instruction does not break some rules (pg 7-6 and 7-9)
+	// Rule 1: this instruction can't be the last instruction in the block
+	// Note: this instruction can't be one of the three instructions after a delayed branch
+	if(unlikely(cpu.HasPendingBranch() || (cpu.GetST_RM() && cpu.GetRE() == cpu.GetPC())))
+	{
+		throw MisplacedOpcodeException<CONFIG, DEBUG>(this);
+	}
 }
 
 /* end of IDLE (idle until interrupt)
@@ -664,6 +781,14 @@ RETIcond.execute = {
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 
+	// Check wether the instruction does not break some rules (pg 7-6 and 7-9)
+	// Rule 1: this instruction can't be the last instruction in the block
+	// Note: this instruction can't be one of the three instructions after a delayed branch
+	if(unlikely(cpu.HasPendingBranch() || (cpu.GetST_RM() && cpu.GetRE() == cpu.GetPC())))
+	{
+		throw MisplacedOpcodeException<CONFIG, DEBUG>(this);
+	}
+
 	// Check the condition
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -712,6 +837,14 @@ RETScond.execute = {
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 
+	// Check wether the instruction does not break some rules (pg 7-6 and 7-9)
+	// Rule 1: this instruction can't be the last instruction in the block
+	// Note: this instruction can't be one of the three instructions after a delayed branch
+	if(unlikely(cpu.HasPendingBranch() || (cpu.GetST_RM() && cpu.GetRE() == cpu.GetPC())))
+	{
+		throw MisplacedOpcodeException<CONFIG, DEBUG>(this);
+	}
+
 	// Check the condition
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -748,6 +881,14 @@ RPTB.disasm = {
 }
 
 RPTB.execute = {
+	// Check wether the instruction does not break some rules (pg 7-6 and 7-9)
+	// Rule 1: this instruction can't be the last instruction in the block
+	// Note: this instruction can't be one of the three instructions after a delayed branch
+	if(unlikely(cpu.HasPendingBranch() || (cpu.GetST_RM() && cpu.GetRE() == cpu.GetPC())))
+	{
+		throw MisplacedOpcodeException<CONFIG, DEBUG>(this);
+	}
+
 	// Read the next PC
 	typename CONFIG::address_t next_pc = cpu.GetNPC();
 
@@ -789,6 +930,14 @@ RPTS_reg.execute = {
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 
+	// Check wether the instruction does not break some rules (pg 7-6 and 7-9)
+	// Rule 1: this instruction can't be the last instruction in the block
+	// Note: this instruction can't be one of the three instructions after a delayed branch
+	if(unlikely(cpu.HasPendingBranch() || (cpu.GetST_RM() && cpu.GetRE() == cpu.GetPC())))
+	{
+		throw MisplacedOpcodeException<CONFIG, DEBUG>(this);
+	}
+
 	// Read the source operand
 	typename CONFIG::address_t src_value = cpu.GetReg(src);
 
@@ -817,6 +966,14 @@ RPTS_dir.disasm = {
 }
 
 RPTS_dir.execute = {
+	// Check wether the instruction does not break some rules (pg 7-6 and 7-9)
+	// Rule 1: this instruction can't be the last instruction in the block
+	// Note: this instruction can't be one of the three instructions after a delayed branch
+	if(unlikely(cpu.HasPendingBranch() || (cpu.GetST_RM() && cpu.GetRE() == cpu.GetPC())))
+	{
+		throw MisplacedOpcodeException<CONFIG, DEBUG>(this);
+	}
+
 	// Compute the effective address of the source operand
 	typename CONFIG::address_t ea = cpu.ComputeDirEA(direct);
 
@@ -860,6 +1017,14 @@ RPTS_indir.execute = {
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 
+	// Check wether the instruction does not break some rules (pg 7-6 and 7-9)
+	// Rule 1: this instruction can't be the last instruction in the block
+	// Note: this instruction can't be one of the three instructions after a delayed branch
+	if(unlikely(cpu.HasPendingBranch() || (cpu.GetST_RM() && cpu.GetRE() == cpu.GetPC())))
+	{
+		throw MisplacedOpcodeException<CONFIG, DEBUG>(this);
+	}
+
 	// Load the source operand value from memory
 	typename CONFIG::address_t src_value = cpu.IntLoad(ea);
 
@@ -888,6 +1053,14 @@ RPTS_imm.disasm = {
 }
 
 RPTS_imm.execute = {
+	// Check wether the instruction does not break some rules (pg 7-6 and 7-9)
+	// Rule 1: this instruction can't be the last instruction in the block
+	// Note: this instruction can't be one of the three instructions after a delayed branch
+	if(unlikely(cpu.HasPendingBranch() || (cpu.GetST_RM() && cpu.GetRE() == cpu.GetPC())))
+	{
+		throw MisplacedOpcodeException<CONFIG, DEBUG>(this);
+	}
+
 	// Compute the result
 	uint32_t src_value = imm; // imm has already been sign extended by the decoder
 
@@ -950,6 +1123,14 @@ TRAPcond.execute = {
 	if(unlikely(!cpu.HasCondition(cond)))
 	{
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Check wether the instruction does not break some rules (pg 7-6 and 7-9)
+	// Rule 1: this instruction can't be the last instruction in the block
+	// Note: this instruction can't be one of the three instructions after a delayed branch
+	if(unlikely(cpu.HasPendingBranch() || (cpu.GetST_RM() && cpu.GetRE() == cpu.GetPC())))
+	{
+		throw MisplacedOpcodeException<CONFIG, DEBUG>(this);
 	}
 
 	// Check the condition

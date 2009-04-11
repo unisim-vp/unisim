@@ -97,6 +97,19 @@ private:
 };
 
 template <class CONFIG, bool DEBUG>
+class MisplacedOpcodeException : public Exception
+{
+public:
+	MisplacedOpcodeException(isa::tms320::Operation<CONFIG, DEBUG> *operation = 0);
+	virtual const char * what () const throw ();
+	virtual ~MisplacedOpcodeException() throw();
+	isa::tms320::Operation<CONFIG, DEBUG> *GetOperation() const;
+private:
+	isa::tms320::Operation<CONFIG, DEBUG> *operation;
+	string what_str;
+};
+
+template <class CONFIG, bool DEBUG>
 class BadMemoryAccessException : public Exception
 {
 public:

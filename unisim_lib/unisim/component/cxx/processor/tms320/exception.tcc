@@ -152,6 +152,36 @@ isa::tms320::Operation<CONFIG, DEBUG> *BogusOpcodeException<CONFIG, DEBUG>::GetO
 }
 
 template<class CONFIG, bool DEBUG>
+MisplacedOpcodeException<CONFIG, DEBUG>::MisplacedOpcodeException(isa::tms320::Operation<CONFIG, DEBUG> *_operation)
+	: operation(_operation)
+{
+	stringstream sstr;
+	sstr << "Misplaced opcode";
+	if(operation)
+	{
+		sstr << " 0x" << hex << operation->GetEncoding() << " (\"" << operation->GetName() << "\") at 0x" << (operation->GetAddr() / 4);
+	}
+	what_str = sstr.str();
+}
+
+template<class CONFIG, bool DEBUG>
+MisplacedOpcodeException<CONFIG, DEBUG>::~MisplacedOpcodeException() throw ()
+{
+}
+
+template<class CONFIG, bool DEBUG>
+const char * MisplacedOpcodeException<CONFIG, DEBUG>::what () const throw ()
+{
+	return what_str.c_str();
+}
+
+template<class CONFIG, bool DEBUG>
+isa::tms320::Operation<CONFIG, DEBUG> *MisplacedOpcodeException<CONFIG, DEBUG>::GetOperation() const
+{
+	return operation;
+}
+
+template<class CONFIG, bool DEBUG>
 BadMemoryAccessException<CONFIG, DEBUG>::BadMemoryAccessException(typename CONFIG::address_t _addr)
 	: addr(_addr)
 {
