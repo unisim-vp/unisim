@@ -151,11 +151,13 @@ param_verbose_non_blocking("verbose_non_blocking", this, verbose_non_blocking, "
 verbose_blocking(false),
 param_verbose_blocking("verbose_blocking", this, verbose_blocking, "Display blocking transactions handling") 
 {
+	char const * const mapping_desc =
+		"Defined a mapping of the router with format \"[range_start]\",\"[range_end]\",\"[outport_index]\" where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively";
 	/* instantiate the mapping parameters */
 	for(unsigned int i = 0; i < MAX_NUM_MAPPINGS; i++) {
 		std::stringstream buf;
 		buf << "mapping_" << i;
-		param_mapping[i] = new unisim::kernel::service::Parameter<Mapping>(buf.str().c_str(), this, mapping[i], "Define the mapping of the router");
+		param_mapping[i] = new unisim::kernel::service::Parameter<Mapping>(buf.str().c_str(), this, mapping[i], mapping_desc);
 	}
 	/* register target multi socket callbacks */
  	targ_socket.register_nb_transport_fw(    this, &Router<CONFIG>::T_nb_transport_fw_cb);
