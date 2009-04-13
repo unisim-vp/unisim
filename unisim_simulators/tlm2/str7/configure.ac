@@ -76,7 +76,6 @@ case $host in
 		;;
 esac
 
-UNISIM_RELEASE
 UNISIM_CHECK_ZLIB
 UNISIM_CHECK_LIBXML2
 UNISIM_CHECK_SYSTEMC
@@ -107,6 +106,7 @@ UNISIM_LINK(unisim_component_cxx_memory_ram)
 
 UNISIM_LINK(unisim_component_tlm2_processor_arm)
 UNISIM_LINK(unisim_component_tlm2_memory_ram)
+UNISIM_LINK(unisim_component_tlm2_interconnect_generic_router)
 
 UNISIM_LIBTOOL
 
