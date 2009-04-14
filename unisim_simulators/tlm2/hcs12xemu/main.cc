@@ -474,14 +474,14 @@ int sc_main(int argc, char *argv[])
 
 	int_gen->interrupt_request(s12xint->interrupt_request);
 
-	mmc->local_socket(internal_router->targ_socket);
-	mmc->external_socket(external_router->targ_socket);
+	mmc->local_socket((*internal_router->targ_socket[0]));
+	mmc->external_socket((*external_router->targ_socket[0]));
 
 	// This order is mandatory (see the memoryMapping)
-	internal_router->init_socket(s12xint->slave_socket);
-	internal_router->init_socket(internal_memory->slave_sock); // to connect to the MMC
+	(*internal_router->init_socket[0])(s12xint->slave_socket);
+	(*internal_router->init_socket[1])(internal_memory->slave_sock); // to connect to the MMC
 
-	external_router->init_socket(external_memory->slave_sock);
+	(*external_router->init_socket[0])(external_memory->slave_sock);
 
 	//=========================================================================
 	//===                        Clients/Services connection                ===

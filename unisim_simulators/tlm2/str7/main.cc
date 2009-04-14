@@ -61,16 +61,6 @@
 
 #endif
 
-#ifdef STR7_DEBUG 
-	typedef unisim::component::cxx::processor::arm::ARM7TDMI_DebugConfig CPU_CONFIG;
-#elif STR7_DEBUG_INLINE
-	typedef unisim::component::cxx::processor::arm::ARM7TDMI_DebugConfig CPU_CONFIG;
-#elif STR7_VERBOSE
-	typedef unisim::component::cxx::processor::arm::ARM7TDMI_DebugConfig CPU_CONFIG;
-#else
-	typedef unisim::component::cxx::processor::arm::ARM7TDMI_Config CPU_CONFIG;
-#endif
-	
 //static const bool DEBUG_INFORMATION = true;
 
 bool debug_enabled;
@@ -88,7 +78,6 @@ void SigIntHandler(int signum) {
 	sc_stop();
 }
 
-
 using namespace std;
 #ifdef STR7_DEBUG
 using unisim::service::debug::gdb_server::GDBServer;
@@ -99,9 +88,22 @@ using unisim::service::debug::inline_debugger::InlineDebugger;
 
 using unisim::service::debug::symbol_table::SymbolTable;
 
+#ifdef STR7_DEBUG 
+	typedef unisim::component::cxx::processor::arm::ARM7TDMI_DebugConfig CPU_CONFIG;
+	typedef unisim::component::tlm2::interconnect::generic_router::Router<unisim::component::tlm2::interconnect::generic_router::DebugConfig> ROUTER;
+#elif STR7_DEBUG_INLINE
+	typedef unisim::component::cxx::processor::arm::ARM7TDMI_DebugConfig CPU_CONFIG;
+	typedef unisim::component::tlm2::interconnect::generic_router::Router<unisim::component::tlm2::interconnect::generic_router::DebugConfig> ROUTER;
+#elif STR7_VERBOSE
+	typedef unisim::component::cxx::processor::arm::ARM7TDMI_DebugConfig CPU_CONFIG;
+	typedef unisim::component::tlm2::interconnect::generic_router::Router<unisim::component::tlm2::interconnect::generic_router::DebugConfig> ROUTER;
+#else
+	typedef unisim::component::cxx::processor::arm::ARM7TDMI_Config CPU_CONFIG;
+	typedef unisim::component::tlm2::interconnect::generic_router::Router<> ROUTER;
+#endif
+	
 typedef unisim::service::loader::elf_loader::ElfLoaderImpl<uint64_t, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym> ElfLoader;
 typedef unisim::component::tlm2::memory::ram::Memory<32, 1024 * 1024, true> MEMORY;
-typedef unisim::component::tlm2::interconnect::generic_router::Router<> ROUTER;
 
 using unisim::service::time::sc_time::ScTime;
 using unisim::service::time::host_time::HostTime;
@@ -259,8 +261,8 @@ int sc_main(int argc, char *argv[]) {
 
 	// Connect the CPU to the memory
 	// cpu->master_socket(memory->slave_sock);
-	cpu->master_socket(router->targ_socket);
-	router->init_socket(memory->slave_sock);
+	(*router->init_socket[0])(memory->slave_sock);
+	cpu->master_socket(*router->targ_socket[0]);
 	cpu->memory_import >> memory->memory_export;
 
 	// Connect everything

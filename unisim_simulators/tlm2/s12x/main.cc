@@ -504,16 +504,16 @@ int sc_main(int argc, char *argv[])
 	rtbStub->master_sock(atd->anx_socket);
 	rtbStub->slave_sock(pwm->master_sock);
 
-	mmc->local_socket(internal_router->targ_socket);
-	mmc->external_socket(external_router->targ_socket);
+	mmc->local_socket((*internal_router->targ_socket[0]));
+	mmc->external_socket((*external_router->targ_socket[0]));
 
 	// This order is mandatory (see the memoryMapping)
-	internal_router->init_socket(atd->slave_socket);
-	internal_router->init_socket(s12xint->slave_socket);
-	internal_router->init_socket(pwm->slave_socket);
-	internal_router->init_socket(internal_memory->slave_sock); // to connect to the MMC
+	(*internal_router->init_socket[0])(atd->slave_socket);
+	(*internal_router->init_socket[1])(s12xint->slave_socket);
+	(*internal_router->init_socket[2])(pwm->slave_socket);
+	(*internal_router->init_socket[3])(internal_memory->slave_sock); // to connect to the MMC
 
-	external_router->init_socket(external_memory->slave_sock);
+	(*external_router->init_socket[0])(external_memory->slave_sock);
 
 	//=========================================================================
 	//===                        Clients/Services connection                ===
