@@ -81,7 +81,19 @@ const uint32_t STYP_DATA = 0x0040;   // Section that contains initialized data
 const uint32_t STYP_BSS = 0x0080;    // Section that contains uninitialized data
 const uint32_t STYP_ALIGN = 0x0700;  // Section that is aligned on a page boundary
 
-// TI's COFF file header
+// TI's COFF v0 file header
+typedef struct PACKED
+{
+	uint16_t f_magic;     // magic number
+	uint16_t f_nscns;     // number of sections
+	uint32_t f_timdat;    // time and date stamp
+	uint32_t f_symptr;    // file ptr to symtab
+	uint32_t f_nsyms;     // number of symtab entries
+	uint16_t f_opthdr;    // size of optional header
+	uint16_t f_flags;     // flags
+} filehdr_v0;
+
+// TI's COFF V1/V2 file header
 typedef struct PACKED
 {
 	uint16_t f_magic;     // magic number
@@ -92,6 +104,12 @@ typedef struct PACKED
 	uint16_t f_opthdr;    // size of optional header
 	uint16_t f_flags;     // flags
 	uint16_t f_target_id; // COFF-TI specific: TI target magic number that can execute the file
+} filehdr_v12;
+
+typedef union PACKED
+{
+	filehdr_v0 v0;       // V0
+	filehdr_v12 v12;     // V1 or V2
 } filehdr;
 
 // TI's COFF Optional file header
@@ -276,38 +294,37 @@ bool File<MEMORY_ADDR>::ParseFileHeader(const void *raw_data)
 {
 	const filehdr *hdr = (const filehdr *) raw_data;
 
-	assert(magic == unisim::util::endian::Target2Host(header_endianness, hdr->f_magic));
+	assert(magic == unisim::util::endian::Target2Host(header_endianness, hdr->v0.f_magic));
 	
+	num_sections = unisim::util::endian::Target2Host(header_endianness, hdr->v0.f_nscns);
+	section_table = new SectionTable<MEMORY_ADDR>(num_sections);
+	time_date = unisim::util::endian::Target2Host(header_endianness, hdr->v0.f_timdat);
+	aout_hdr_size = unisim::util::endian::Target2Host(header_endianness, hdr->v0.f_opthdr);
+	symbol_table_file_ptr = unisim::util::endian::Target2Host(header_endianness, hdr->v0.f_symptr);
+	num_symbols = unisim::util::endian::Target2Host(header_endianness, hdr->v0.f_nsyms);
+	flags = unisim::util::endian::Target2Host(header_endianness, hdr->v0.f_flags);
+
 	switch(ti_coff_version)
 	{
 		case 0:
-		case 1:
-			section_header_size = sizeof(scnhdr_v01);
-			break;
-		case 2:
-			section_header_size = sizeof(scnhdr_v2);
-			break;
-	}
-
-	num_sections = unisim::util::endian::Target2Host(header_endianness, hdr->f_nscns);
-	section_table = new SectionTable<MEMORY_ADDR>(num_sections);
-	time_date = unisim::util::endian::Target2Host(header_endianness, hdr->f_timdat);
-	aout_hdr_size = unisim::util::endian::Target2Host(header_endianness, hdr->f_opthdr);
-	symbol_table_file_ptr = unisim::util::endian::Target2Host(header_endianness, hdr->f_symptr);
-	num_symbols = unisim::util::endian::Target2Host(header_endianness, hdr->f_nsyms);
-	flags = unisim::util::endian::Target2Host(header_endianness, hdr->f_flags);
-	target_id = unisim::util::endian::Target2Host(header_endianness, hdr->f_target_id);
-
-	switch(target_id)
-	{
-		case TARGET_ID_TMS320_C1X_C2X_C5X:
-		case TARGET_ID_TMS320_C3X_C4X:
-		case TARGET_ID_C80:
-		case TARGET_ID_TMS320_C54X:
-		case TARGET_ID_TMS320_C6X:
-		case TARGET_ID_TMS320_C28X:
+			target_id = 0;
 			return true;
+		case 1:
+		case 2:
+			target_id = unisim::util::endian::Target2Host(header_endianness, hdr->v12.f_target_id);
+
+			switch(target_id)
+			{
+				case TARGET_ID_TMS320_C1X_C2X_C5X:
+				case TARGET_ID_TMS320_C3X_C4X:
+				case TARGET_ID_C80:
+				case TARGET_ID_TMS320_C54X:
+				case TARGET_ID_TMS320_C6X:
+				case TARGET_ID_TMS320_C28X:
+					return true;
+			}
 	}
+
 	return false;
 }
 
@@ -388,7 +405,15 @@ bool File<MEMORY_ADDR>::IsExecutable() const
 template <class MEMORY_ADDR>
 unsigned int File<MEMORY_ADDR>::GetFileHeaderSize() const
 {
-	return sizeof(filehdr);
+	switch(ti_coff_version)
+	{
+		case 0:
+			return sizeof(filehdr_v0);
+		case 1:
+		case 2:
+			return  sizeof(filehdr_v12);
+	}
+	return 0;
 }
 
 template <class MEMORY_ADDR>
@@ -463,13 +488,13 @@ template <class MEMORY_ADDR>
 void File<MEMORY_ADDR>::DumpFileHeader(ostream& os) const
 {
 	os << " --- File Header ---";
-	os << endl << "magic number: 0x" << hex << magic << dec << " / TI COFF v" << ti_coff_version << " (" << (header_endianness == E_LITTLE_ENDIAN ? "little-endian" : "big-endian") << " headers)";
-	os << endl << "number of sections: " << num_sections;
-	os << endl << "time and date: " << time_date;
-	os << endl << "symbol table file pointer: " << symbol_table_file_ptr;
-	os << endl << "number of symbols: " << num_symbols;
-	os << endl << "flags: " << flags;
-	os << endl << "target id: " << target_id;
+	os << endl << "Magic number: 0x" << hex << magic << dec << " / TI COFF v" << ti_coff_version << " (" << (header_endianness == E_LITTLE_ENDIAN ? "little-endian" : "big-endian") << " headers)";
+	os << endl << "Number of sections: " << num_sections;
+	os << endl << "Time and date: " << time_date;
+	os << endl << "Symbol table file pointer: " << symbol_table_file_ptr;
+	os << endl << "Number of symbols: " << num_symbols;
+	os << endl << "Flags: 0x" << hex << flags << dec;
+	if(ti_coff_version > 0) os << endl << "Target id: " << target_id;
 	os << endl;
 }
 
@@ -477,12 +502,12 @@ template <class MEMORY_ADDR>
 void File<MEMORY_ADDR>::DumpAoutHeader(ostream& os) const
 {
 	os << " --- Optional Header ---";
-	os << endl << "entry point: 0x" << hex << entry_point << dec;
-	os << endl << "text base: 0x" << hex << text_base << dec;
-	os << endl << "data base: 0x" << hex << data_base << dec;
-	os << endl << "text size: " << text_size << " 32-bit words";
-	os << endl << "data size: " << data_size << " 32-bit words";
-	os << endl << "bss size: " << bss_size << " 32-bit words";
+	os << endl << "Entry point: 0x" << hex << entry_point << dec;
+	os << endl << "Text base: 0x" << hex << text_base << dec;
+	os << endl << "Data base: 0x" << hex << data_base << dec;
+	os << endl << "Text size: " << text_size << " 32-bit words";
+	os << endl << "Data size: " << data_size << " 32-bit words";
+	os << endl << "Bss size: " << bss_size << " 32-bit words";
 	os << endl;
 }
 
@@ -593,7 +618,7 @@ void Section<MEMORY_ADDR>::DumpHeader(ostream& os) const
 	os << endl << "File pointer to line number: " << lineno_file_ptr;
 	os << endl << "Number of relocation entries: " << num_reloc_entries;
 	os << endl << "Number of line number entries: " << num_lineno_entries;
-	os << endl << "Flags: " << flags;
+	os << endl << "Flags: 0x" << hex << flags << dec;
 	os << endl << "Memory page number: " << page;
 	os << endl;
 }

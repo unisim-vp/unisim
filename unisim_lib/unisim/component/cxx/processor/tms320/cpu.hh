@@ -615,22 +615,32 @@ private:
 	Statistic<uint64_t> stat_insn_cache_hits;
 	Statistic<uint64_t> stat_insn_cache_misses;
 
+	static const uint32_t INSN_CACHE_SIZE = CONFIG::INSN_CACHE_SIZE;
 	static const uint32_t INSN_CACHE_ASSOCIATIVITY = (CONFIG::INSN_CACHE_ASSOCIATIVITY > 2) ? 2 : CONFIG::INSN_CACHE_ASSOCIATIVITY;
-	static const uint32_t NUM_INSN_CACHE_SETS = CONFIG::INSN_CACHE_SIZE / CONFIG::INSN_CACHE_ASSOCIATIVITY;
+	static const uint32_t INSN_CACHE_BLOCKS_PER_LINE = CONFIG::INSN_CACHE_BLOCKS_PER_LINE;
+	static const uint32_t INSN_CACHE_SET_SIZE = INSN_CACHE_ASSOCIATIVITY * INSN_CACHE_BLOCKS_PER_LINE;
+	static const uint32_t NUM_INSN_CACHE_SETS = INSN_CACHE_SIZE / INSN_CACHE_SET_SIZE;
 
 	class InsnCacheBlock
 	{
 	public:
 		bool valid;
-		address_t addr;
 		uint32_t insn;
+	};
+
+	class InsnCacheLine
+	{
+	public:
+		bool valid;
+		address_t base_addr;
+		InsnCacheBlock blocks[INSN_CACHE_BLOCKS_PER_LINE];
 	};
 
 	class InsnCacheSet
 	{
 	public:
 		uint32_t mru_way;
-		InsnCacheBlock blocks[CONFIG::INSN_CACHE_ASSOCIATIVITY];
+		InsnCacheLine lines[INSN_CACHE_ASSOCIATIVITY];
 	};
 
 	InsnCacheSet insn_cache[NUM_INSN_CACHE_SETS];
@@ -938,6 +948,10 @@ public:
 		@return the 32-bit instruction word read from memory
 	*/
 	inline uint32_t Fetch(address_t pc) INLINE;
+
+	/** Invalidate the instruction cache
+	*/
+	inline void InvalidateInsnCache();
 
 	/** Check a condition
 	    @param cond 5-bit encoding of condition

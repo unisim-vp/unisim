@@ -47091,8 +47091,8 @@ cpu
 		// Compute the effective address
 		typename CONFIG::address_t ea = cpu.ComputeDirEA(direct);
 
-		// Compute the result
-		uint32_t result = ea;
+		// Load the word from memory
+		uint32_t result = cpu.IntLoad(ea);
 
 		// Write back result
 		cpu.SetReg(dst, result);
@@ -47721,8 +47721,8 @@ cpu
 		// Compute the effective address
 		typename CONFIG::address_t ea = cpu.ComputeDirEA(direct);
 
-		// Compute the result
-		uint32_t result = ea;
+		// Load the word from memory
+		uint32_t result = cpu.IntLoad(ea);
 
 		// Write back result
 		cpu.SetReg(dst, result);

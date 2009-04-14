@@ -1135,6 +1135,9 @@ StepInstruction()
 	{
 		if(unlikely(reset))
 		{
+			// Invalidate the instruction cache
+			InvalidateInsnCache();
+
 			// Load the reset interrupt handler address
 			address_t reset_interrupt_handler_addr = IntLoad(0);
 
@@ -1406,6 +1409,37 @@ IntLoad(address_t ea, bool interlocked)
 
 template<class CONFIG, bool DEBUG>
 inline
+void
+CPU<CONFIG, DEBUG> ::
+InvalidateInsnCache()
+{
+	InsnCacheSet *insn_cache_set;
+	uint32_t insn_cache_index;
+
+	for(insn_cache_index = 0; insn_cache_index < NUM_INSN_CACHE_SETS; insn_cache_index++)
+	{
+		uint32_t insn_cache_way;
+
+		insn_cache_set = &insn_cache[insn_cache_index];
+		insn_cache_set->mru_way = 0;
+
+		for(insn_cache_way = 0; insn_cache_way < INSN_CACHE_ASSOCIATIVITY; insn_cache_way++)
+		{
+			InsnCacheLine *insn_cache_line = &insn_cache_set->lines[insn_cache_way];
+			insn_cache_line->valid = false;
+
+			uint32_t insn_cache_sector;
+			for(insn_cache_sector = 0; insn_cache_sector < INSN_CACHE_BLOCKS_PER_LINE; insn_cache_sector++)
+			{
+				InsnCacheBlock *insn_cache_block = &insn_cache_line->blocks[insn_cache_sector];
+				insn_cache_block->valid = false;
+			}
+		}
+	}
+}
+
+template<class CONFIG, bool DEBUG>
+inline
 uint32_t
 CPU<CONFIG, DEBUG> ::
 Fetch(address_t addr)
@@ -1418,24 +1452,16 @@ Fetch(address_t addr)
 
 	uint32_t insn;
 	InsnCacheSet *insn_cache_set;
+	uint32_t insn_cache_way;
+	InsnCacheLine *insn_cache_line;
+	uint32_t insn_cache_line_base_addr;
+	uint32_t insn_cache_sector;
+	bool insn_cache_line_hit = false;
 
 	// Check wether instruction cache is being cleared
 	if(unlikely(CONFIG::ENABLE_INSN_CACHE && GetST_CC()))
 	{
-		uint32_t insn_cache_index;
-		for(insn_cache_index = 0; insn_cache_index < NUM_INSN_CACHE_SETS; insn_cache_index++)
-		{
-			uint32_t insn_cache_way;
-
-			insn_cache_set = &insn_cache[insn_cache_index];
-			insn_cache_set->mru_way = 0;
-
-			for(insn_cache_way = 0; insn_cache_way < INSN_CACHE_ASSOCIATIVITY; insn_cache_way++)
-			{
-				InsnCacheBlock *insn_cache_block = &insn_cache_set->blocks[insn_cache_way];
-				insn_cache_block->valid = false;
-			}
-		}
+		InvalidateInsnCache();
 		ResetST_CC();
 	}
 
@@ -1443,19 +1469,29 @@ Fetch(address_t addr)
 	if(likely(CONFIG::ENABLE_INSN_CACHE && GetST_CE()))
 	{
 		uint32_t insn_cache_index;
-		insn_cache_index = addr % NUM_INSN_CACHE_SETS;
+
+		// Decode the address
+//		insn_cache_index = addr % NUM_INSN_CACHE_SETS;
+		insn_cache_line_base_addr = addr & ~(INSN_CACHE_BLOCKS_PER_LINE - 1);
+		insn_cache_sector = addr & (INSN_CACHE_BLOCKS_PER_LINE - 1);
+		insn_cache_index = (addr / INSN_CACHE_BLOCKS_PER_LINE) % NUM_INSN_CACHE_SETS;
 		insn_cache_set = &insn_cache[insn_cache_index];
 
 		// Associative search
-		uint32_t insn_cache_way;
 		unsigned i;
 
 		// the most recently used way is the first that is checked
 		for(insn_cache_way = insn_cache_set->mru_way, i = 0; i < INSN_CACHE_ASSOCIATIVITY; insn_cache_way = insn_cache_way ^ 1, i++)
 		{
-			InsnCacheBlock *insn_cache_block = &insn_cache_set->blocks[insn_cache_way];
-			if(insn_cache_block->valid && insn_cache_block->addr == addr)
+			insn_cache_line = &insn_cache_set->lines[insn_cache_way];
+			
+			if(insn_cache_line->valid && insn_cache_line->base_addr == insn_cache_line_base_addr)
 			{
+				// Line hit
+				insn_cache_line_hit = true;
+				InsnCacheBlock *insn_cache_block = &insn_cache_line->blocks[insn_cache_sector];
+				if(!insn_cache_block->valid) break;
+
 				// Hit
 				insn_cache_hits++;
 
@@ -1484,14 +1520,29 @@ Fetch(address_t addr)
 		// Instruction cache miss
 		insn_cache_misses++;
 
-		// Choose a way
-		uint32_t insn_cache_way = (INSN_CACHE_ASSOCIATIVITY > 1) ? insn_cache_set->mru_way ^ 1 : 0;
-			
-		InsnCacheBlock *insn_cache_block = &insn_cache_set->blocks[insn_cache_way];
+		if(!insn_cache_line_hit)
+		{
+			// Choose a way
+			insn_cache_way = (INSN_CACHE_ASSOCIATIVITY > 1) ? insn_cache_set->mru_way ^ 1 : 0;
+				
+			// Invalidate all blocks in the line
+			insn_cache_line = &insn_cache_set->lines[insn_cache_way];
 
-		// Refill instruction cache
+			uint32_t i;
+			for(i = 0; i < INSN_CACHE_BLOCKS_PER_LINE; i++)
+			{
+				InsnCacheBlock *insn_cache_block = &insn_cache_line->blocks[i];
+				insn_cache_block->valid = false;
+			}
+
+			// Allocate line
+			insn_cache_line->valid = true;
+			insn_cache_line->base_addr = insn_cache_line_base_addr;
+		}
+
+		// Fill block
+		InsnCacheBlock *insn_cache_block = &insn_cache_line->blocks[insn_cache_sector];
 		insn_cache_block->valid = true;
-		insn_cache_block->addr = addr;
 		insn_cache_block->insn = insn;
 
 		// Update the replacement policy
