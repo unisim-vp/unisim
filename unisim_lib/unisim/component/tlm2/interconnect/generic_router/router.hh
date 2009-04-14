@@ -37,8 +37,8 @@
 
 #include <systemc.h>
 #include <tlm.h>
-#include <tlm_utils/multi_passthrough_initiator_socket.h>
-#include <tlm_utils/multi_passthrough_target_socket.h>
+#include <tlm_utils/simple_initiator_socket.h>
+#include <tlm_utils/passthrough_target_socket.h>
 #include <inttypes.h>
 #include <queue>
 #include <vector>
@@ -112,6 +112,8 @@ class Router :
 	public sc_module {
 private:
 	typedef unisim::kernel::service::Object Object;
+	static const unsigned int MAX_INPUT_SOCKETS = CONFIG::MAX_INPUT_SOCKETS;
+	static const unsigned int MAX_OUTPUT_SOCKETS = CONFIG::MAX_OUTPUT_SOCKETS;
 	static const unsigned int MAX_NUM_MAPPINGS = CONFIG::MAX_NUM_MAPPINGS; 
 	static const unsigned int BUSWIDTH = CONFIG::BUSWIDTH;
 	typedef typename CONFIG::TYPES TYPES;
@@ -123,9 +125,11 @@ public:
 	~Router();
 
 	/** Router initiator port sockets */
-	tlm_utils::multi_passthrough_initiator_socket<Router, BUSWIDTH, TYPES> init_socket;
+	tlm_utils::simple_initiator_socket_tagged<Router, BUSWIDTH, TYPES> *init_socket[MAX_OUTPUT_SOCKETS];
+	// TODO: remove ==> tlm_utils::multi_passthrough_initiator_socket<Router, BUSWIDTH, TYPES> init_socket;
 	/** Router target port sockets */
-	tlm_utils::multi_passthrough_target_socket<Router, BUSWIDTH, TYPES> targ_socket;
+	tlm_utils::passthrough_target_socket_tagged<Router, BUSWIDTH, TYPES> *targ_socket[MAX_INPUT_SOCKETS];
+	// TODO: remove ==> tlm_utils::multi_passthrough_target_socket<Router, BUSWIDTH, TYPES> targ_socket;
 	
 	/** Object setup method
 	 * This method is required by the inherited Object class.
@@ -282,6 +286,10 @@ private:
 	sc_core::sc_time cycle_time;
 	double cycle_time_double;
 	unisim::kernel::service::Parameter<double> param_cycle_time_double;
+	unsigned int num_input_sockets;
+	unisim::kernel::service::Parameter<unsigned int> param_num_input_sockets;
+	unsigned int num_output_sockets;
+	unisim::kernel::service::Parameter<unsigned int> param_num_output_sockets;
 	Mapping mapping[MAX_NUM_MAPPINGS];
 	unisim::kernel::service::Parameter<Mapping> *param_mapping[MAX_NUM_MAPPINGS];
 	unsigned int port_buffer_size;
@@ -297,13 +305,13 @@ private:
 
 	unisim::kernel::logger::Logger logger;
 	bool verbose_all;
-	unisim::kernel::service::Parameter<bool> param_verbose_all;
+	unisim::kernel::service::Parameter<bool> *param_verbose_all;
 	bool verbose_setup;
-	unisim::kernel::service::Parameter<bool> param_verbose_setup;
+	unisim::kernel::service::Parameter<bool> *param_verbose_setup;
 	bool verbose_non_blocking;
-	unisim::kernel::service::Parameter<bool> param_verbose_non_blocking;
+	unisim::kernel::service::Parameter<bool> *param_verbose_non_blocking;
 	bool verbose_blocking;
-	unisim::kernel::service::Parameter<bool> param_verbose_blocking;
+	unisim::kernel::service::Parameter<bool> *param_verbose_blocking;
 
 	/*************************************************************************
 	 * Logger and verbose parameters                                     END *
