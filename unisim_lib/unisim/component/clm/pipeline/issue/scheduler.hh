@@ -56,6 +56,8 @@ namespace clm {
 namespace pipeline {
 namespace issue {
 
+inline uint64_t max(uint64_t a, uint64_t b) { return a > b ? a : b; }
+
 using unisim::component::clm::interfaces::InstructionPtr;
 
 using unisim::component::clm::processor::ooosim::nConditionRegisters;
