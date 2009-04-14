@@ -121,8 +121,9 @@ public:
 	virtual MEMORY_ADDR GetPhysicalAddress() const;
 	virtual MEMORY_ADDR GetSize() const;
 	virtual long GetContentFilePtr() const;
-	virtual bool IsLoadable() const;
 	virtual void DumpHeader(ostream& os) const;
+	virtual typename unisim::service::loader::coff_loader::Section<MEMORY_ADDR>::Type GetType() const;
+	virtual bool LoadSpecificContent(OutputInterface<MEMORY_ADDR> *output, const void *content, uint32_t size) const;
 private:
 	endian_type header_endianness;
 	unsigned int ti_coff_version;

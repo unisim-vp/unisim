@@ -600,9 +600,16 @@ long Section<MEMORY_ADDR>::GetContentFilePtr() const
 }
 
 template <class MEMORY_ADDR>
-bool Section<MEMORY_ADDR>::IsLoadable() const
+typename unisim::service::loader::coff_loader::Section<MEMORY_ADDR>::Type Section<MEMORY_ADDR>::GetType() const
 {
-	return flags & (STYP_DATA | STYP_TEXT);
+	if((flags & (STYP_DATA | STYP_TEXT)))
+	{
+		if((flags & STYP_COPY) && name == string(".cinit"))
+			return unisim::service::loader::coff_loader::Section<MEMORY_ADDR>::ST_SPECIFIC_CONTENT;
+		else
+			return unisim::service::loader::coff_loader::Section<MEMORY_ADDR>::ST_LOADABLE_RAWDATA;
+	}
+	return unisim::service::loader::coff_loader::Section<MEMORY_ADDR>::ST_NOT_LOADABLE;
 }
 
 template <class MEMORY_ADDR>
@@ -621,6 +628,46 @@ void Section<MEMORY_ADDR>::DumpHeader(ostream& os) const
 	os << endl << "Flags: 0x" << hex << flags << dec;
 	os << endl << "Memory page number: " << page;
 	os << endl;
+}
+
+template <class MEMORY_ADDR>
+bool Section<MEMORY_ADDR>::LoadSpecificContent(OutputInterface<MEMORY_ADDR> *output, const void *content, uint32_t size) const
+{
+	if((flags & STYP_COPY) && name == string(".cinit"))
+	{
+		uint32_t *record = (uint32_t *) content;
+		uint32_t nrecords = size;
+		uint32_t nwords;
+		uint32_t addr;
+		uint32_t value;
+		int state = 0;
+
+		while(nrecords > 0)
+		{
+			switch(state)
+			{
+				case 0:
+					nwords = unisim::util::endian::Target2Host(header_endianness, *record++);
+					nrecords--;
+					state = 1;
+					break;
+				case 1:
+					addr = *record++;
+					nrecords--;
+					state = 2;
+					break;
+				case 2:
+					value = unisim::util::endian::Target2Host(header_endianness, *record++);
+					nrecords--;
+					if(!output->Write(addr, &value, 1)) return false;
+					if(--nwords == 0) state = 0;
+					break;
+			}
+		}
+		return true;
+	}
+
+	return false;
 }
 
 } // end of namespace ti

@@ -107,6 +107,19 @@ MEMORY_ADDR CoffLoader<MEMORY_ADDR>::GetStackBase() const
 }
 
 template <class MEMORY_ADDR>
+bool CoffLoader<MEMORY_ADDR>::Write(MEMORY_ADDR addr, const void *content, uint32_t size)
+{
+	if(!memory_import->WriteMemory(addr * memory_atom_size, content, size * memory_atom_size))
+	{
+		cerr << Object::GetName() << ": Can't write into memory (@0x" << hex << addr << " - @0x" << (addr +  size - 1) << dec << ")" << endl;
+		return false;
+	}
+
+	cerr << Object::GetName() << ": write into memory (@0x" << hex << addr << " - @0x" << (addr +  size - 1) << dec << ")" << endl;
+	return true;
+}
+
+template <class MEMORY_ADDR>
 bool CoffLoader<MEMORY_ADDR>::Setup()
 {
 	if(symbol_table_build_import) symbol_table_build_import->Reset();
@@ -229,7 +242,7 @@ bool CoffLoader<MEMORY_ADDR>::Setup()
 
 	unsigned int num_sections = file->GetNumSections();
 	unsigned int shdr_size = file->GetSectionHeaderSize();
-	unsigned int memory_atom_size = file->GetMemoryAtomSize();
+	memory_atom_size = file->GetMemoryAtomSize();
 	unsigned int section_num;
 
 	for(section_num = 0; section_num < num_sections; section_num++)
@@ -262,38 +275,44 @@ bool CoffLoader<MEMORY_ADDR>::Setup()
 			section->DumpHeader(cerr);
 		}
 
-		if(section->IsLoadable())
+		typename Section<MEMORY_ADDR>::Type section_type = section->GetType();
+		const char *section_name = section->GetName();
+		MEMORY_ADDR section_addr = section->GetPhysicalAddress();
+		MEMORY_ADDR section_size = section->GetSize();
+		long section_content_file_ptr = section->GetContentFilePtr();
+
+		if(section_size > 0 && section_content_file_ptr && section_type != Section<MEMORY_ADDR>::ST_NOT_LOADABLE)
 		{
-			const char *section_name = section->GetName();
-			MEMORY_ADDR section_addr = section->GetPhysicalAddress();
-			MEMORY_ADDR section_size = section->GetSize();
-			long section_content_file_ptr = section->GetContentFilePtr();
+			cerr << Object::GetName() << ": Loading section " << section_name << endl;
 
-			cerr << Object::GetName() << ": Loading section " << section_name << " at 0x" << hex << section_addr << dec << " (" << (section_size * memory_atom_size) << " bytes) " << endl;
+			void *section_content = calloc(section_size, memory_atom_size);
 
-			if(section_size > 0)
+			if(is.seekg(section_content_file_ptr, ios::beg).fail() || is.read((char *) section_content, section_size * memory_atom_size).fail())
 			{
-				void *section_content = calloc(section_size, memory_atom_size);
-
-				if(is.seekg(section_content_file_ptr, ios::beg).fail() || is.read((char *) section_content, section_size * memory_atom_size).fail())
+				cerr << Object::GetName() << ": WARNING! Can't load section " << section_name << endl;
+				success = false;
+			}
+			else
+			{
+				switch(section_type)
 				{
-					cerr << Object::GetName() << ": WARNING! Can't load section " << section_name << endl;
-					success = false;
+					case Section<MEMORY_ADDR>::ST_LOADABLE_RAWDATA:
+						if(!Write(section_addr, section_content, section_size))
+						{
+							cerr << Object::GetName() << ": Can't write raw data of section " << section_name << " into memory" << endl;
+							success = false;
+						}
+						break;
+					case Section<MEMORY_ADDR>::ST_SPECIFIC_CONTENT:
+						if(!section->LoadSpecificContent(this, section_content, section_size))
+						{
+							cerr << Object::GetName() << ": Can't load specific content of section " << section_name << endl;
+							success = false;
+						}
+						break;
 				}
-				else
-				{
-					if(!memory_import->WriteMemory(section_addr * memory_atom_size, section_content, section_size * memory_atom_size))
-					{
-						cerr << Object::GetName() << ": Can't write into memory (@0x" << hex << section_addr << " - @0x" << (section_addr +  section_size - 1) << dec << ")" << endl;
-						success = false;
-					}
-					else 
-					{
-						cerr << Object::GetName() << ": write into memory (@0x" << hex << section_addr << " - @0x" << (section_addr +  section_size - 1) << dec << ")" << endl;
-					}
 
-					free(section_content);
-				}
+				free(section_content);
 			}
 		}
 	}

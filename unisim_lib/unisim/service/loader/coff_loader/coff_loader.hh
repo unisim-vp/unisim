@@ -113,16 +113,25 @@ private:
 };
 
 template <class MEMORY_ADDR>
+class OutputInterface
+{
+public:
+	virtual bool Write(MEMORY_ADDR addr, const void *content, uint32_t size) = 0;
+};
+
+template <class MEMORY_ADDR>
 class Section
 {
 public:
+	typedef enum { ST_LOADABLE_RAWDATA, ST_SPECIFIC_CONTENT, ST_NOT_LOADABLE } Type;
 	virtual const char *GetName() const = 0;
 	virtual MEMORY_ADDR GetVirtualAddress() const = 0;
 	virtual MEMORY_ADDR GetPhysicalAddress() const = 0;
 	virtual MEMORY_ADDR GetSize() const = 0;
 	virtual long GetContentFilePtr() const = 0;
 	virtual void DumpHeader(ostream& os) const = 0;
-	virtual bool IsLoadable() const = 0;
+	virtual Type GetType() const = 0;
+	virtual bool LoadSpecificContent(OutputInterface<MEMORY_ADDR> *output, const void *content, uint32_t size) const = 0;
 };
 
 template <class MEMORY_ADDR>
@@ -156,7 +165,8 @@ template <class MEMORY_ADDR>
 class CoffLoader :
 	public Client<Memory<MEMORY_ADDR> >,
 	public Service<Loader<MEMORY_ADDR> >,
-	public Client<SymbolTableBuild<MEMORY_ADDR> >
+	public Client<SymbolTableBuild<MEMORY_ADDR> >,
+	public OutputInterface<MEMORY_ADDR>
 {
 public:
 	ServiceImport<Memory<MEMORY_ADDR> > memory_import;
@@ -174,6 +184,8 @@ public:
 	virtual MEMORY_ADDR GetTopAddr() const;
 	virtual MEMORY_ADDR GetStackBase() const;
 
+	virtual bool Write(MEMORY_ADDR addr, const void *content, uint32_t size);
+
 private:
 	// Run-time parameters
 	string filename;
@@ -189,6 +201,9 @@ private:
 
 	// File handler registry
 	FileHandlerRegistry<MEMORY_ADDR> file_handler_registry;
+
+	// Memory atom size of file being loaded
+	unsigned int memory_atom_size;
 };
 
 } // end of namespace coff_loader
