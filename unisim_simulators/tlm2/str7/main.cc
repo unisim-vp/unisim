@@ -43,6 +43,7 @@
 #include "unisim/component/tlm2/processor/arm/arm.hh"
 #include "unisim/component/tlm2/memory/ram/memory.hh"
 #include "unisim/component/tlm2/interconnect/generic_router/router.hh"
+#include "unisim/component/tlm2/interconnect/generic_router/router.tcc"
 
 #include "unisim/service/time/sc_time/time.hh"
 #include "unisim/service/time/host_time/time.hh"
@@ -81,29 +82,40 @@ void SigIntHandler(int signum) {
 using namespace std;
 #ifdef STR7_DEBUG
 using unisim::service::debug::gdb_server::GDBServer;
+#define STR7_VERBOSE
 #endif
 #ifdef STR7_DEBUG_INLINE
 using unisim::service::debug::inline_debugger::InlineDebugger;
+#define STR7_VERBOSE
 #endif
 
 using unisim::service::debug::symbol_table::SymbolTable;
 
-#ifdef STR7_DEBUG 
-	typedef unisim::component::cxx::processor::arm::ARM7TDMI_DebugConfig CPU_CONFIG;
-	typedef unisim::component::tlm2::interconnect::generic_router::Router<unisim::component::tlm2::interconnect::generic_router::DebugConfig> ROUTER;
-#elif STR7_DEBUG_INLINE
-	typedef unisim::component::cxx::processor::arm::ARM7TDMI_DebugConfig CPU_CONFIG;
-	typedef unisim::component::tlm2::interconnect::generic_router::Router<unisim::component::tlm2::interconnect::generic_router::DebugConfig> ROUTER;
-#elif STR7_VERBOSE
-	typedef unisim::component::cxx::processor::arm::ARM7TDMI_DebugConfig CPU_CONFIG;
-	typedef unisim::component::tlm2::interconnect::generic_router::Router<unisim::component::tlm2::interconnect::generic_router::DebugConfig> ROUTER;
+class RouterConfig {
+public:
+	static const unsigned int INPUT_SOCKETS = 1;
+	static const unsigned int OUTPUT_SOCKETS = 1;
+	static const unsigned int MAX_NUM_MAPPINGS = 256;
+	static const unsigned int BUSWIDTH = 32;
+	typedef tlm::tlm_base_protocol_types TYPES;
+#ifdef STR7_VERBOSE
+	static const bool VERBOSE = true;
 #else
-	typedef unisim::component::cxx::processor::arm::ARM7TDMI_Config CPU_CONFIG;
-	typedef unisim::component::tlm2::interconnect::generic_router::Router<> ROUTER;
+	static const bool VERBOSE = false;
 #endif
-	
-typedef unisim::service::loader::elf_loader::ElfLoaderImpl<uint64_t, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym> ElfLoader;
+};
+typedef unisim::component::tlm2::interconnect::generic_router::Router<RouterConfig> ROUTER;
+
+#ifdef STR7_VERBOSE
+typedef unisim::component::cxx::processor::arm::ARM7TDMI_DebugConfig CPU_CONFIG;
+#else
+typedef unisim::component::cxx::processor::arm::ARM7TDMI_Config CPU_CONFIG;
+#endif
+typedef unisim::component::tlm2::processor::arm::ARM<CPU_CONFIG, true> CPU;
+
 typedef unisim::component::tlm2::memory::ram::Memory<32, 1024 * 1024, true> MEMORY;
+
+typedef unisim::service::loader::elf_loader::ElfLoaderImpl<uint64_t, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym> ElfLoader;
 
 using unisim::service::time::sc_time::ScTime;
 using unisim::service::time::host_time::HostTime;
@@ -242,8 +254,7 @@ int sc_main(int argc, char *argv[]) {
 	ElfLoader *elf_loader = 0;
 	MEMORY *memory = new MEMORY("memory");
 	ROUTER *router = new ROUTER("router");
-	unisim::component::tlm2::processor::arm::ARM<CPU_CONFIG, true> *cpu =
-		new unisim::component::tlm2::processor::arm::ARM<CPU_CONFIG, true>("cpu"); 
+	CPU *cpu = new CPU("cpu");
 
 	// Instanciate an ELF32 loader
 	elf_loader = new ElfLoader("elf-loader");
@@ -261,8 +272,8 @@ int sc_main(int argc, char *argv[]) {
 
 	// Connect the CPU to the memory
 	// cpu->master_socket(memory->slave_sock);
-	(*router->init_socket[0])(memory->slave_sock);
-	cpu->master_socket(*router->targ_socket[0]);
+	router->init_socket[0](memory->slave_sock);
+	cpu->master_socket(router->targ_socket[0]);
 	cpu->memory_import >> memory->memory_export;
 
 	// Connect everything

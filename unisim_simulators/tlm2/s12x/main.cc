@@ -54,6 +54,7 @@
 
 #include <unisim/component/tlm2/memory/ram/memory.hh>
 #include <unisim/component/tlm2/interconnect/generic_router/router.hh>
+#include <unisim/component/tlm2/interconnect/generic_router/router.tcc>
 
 #include <unisim/util/garbage_collector/garbage_collector.hh>
 #include <unisim/service/time/sc_time/time.hh>
@@ -114,7 +115,29 @@ typedef unisim::component::cxx::processor::hcs12x::service_address_t SERVICE_ADD
 typedef unisim::component::tlm2::memory::ram::Memory<> MEMORY;
 
 typedef unisim::component::tlm2::processor::hcs12x::HCS12X CPU;
-typedef unisim::component::tlm2::interconnect::generic_router::Router<> ROUTER;
+
+class InternalRouterConfig {
+public:
+	static const unsigned int INPUT_SOCKETS = 1;
+	static const unsigned int OUTPUT_SOCKETS = 4;
+	static const unsigned int MAX_NUM_MAPPINGS = 256;
+	static const unsigned int BUSWIDTH = 32;
+	typedef tlm::tlm_base_protocol_types TYPES;
+	static const bool VERBOSE = false;
+};
+typedef unisim::component::tlm2::interconnect::generic_router::Router<InternalRouterConfig> INTERNAL_ROUTER;
+
+class ExternalRouterConfig {
+public:
+	static const unsigned int INPUT_SOCKETS = 1;
+	static const unsigned int OUTPUT_SOCKETS = 1;
+	static const unsigned int MAX_NUM_MAPPINGS = 256;
+	static const unsigned int BUSWIDTH = 32;
+	typedef tlm::tlm_base_protocol_types TYPES;
+	static const bool VERBOSE = false;
+};
+typedef unisim::component::tlm2::interconnect::generic_router::Router<ExternalRouterConfig> EXTERNAL_ROUTER;
+
 typedef unisim::component::tlm2::processor::hcs12x::S12XMMC MMC;
 
 typedef unisim::component::tlm2::processor::hcs12x::PWM<8> PWM;
@@ -329,8 +352,8 @@ int sc_main(int argc, char *argv[])
 	PWM *pwm = new PWM("PWM");
 
 	//  - tlm2 router
-	ROUTER	*external_router = new ROUTER("external_router");
-	ROUTER	*internal_router = new ROUTER("internal_router");
+	EXTERNAL_ROUTER	*external_router = new EXTERNAL_ROUTER("external_router");
+	INTERNAL_ROUTER	*internal_router = new INTERNAL_ROUTER("internal_router");
 
 	//  - Memories
 	MEMORY *internal_memory = new MEMORY("internal-memory");
@@ -504,16 +527,16 @@ int sc_main(int argc, char *argv[])
 	rtbStub->master_sock(atd->anx_socket);
 	rtbStub->slave_sock(pwm->master_sock);
 
-	mmc->local_socket((*internal_router->targ_socket[0]));
-	mmc->external_socket((*external_router->targ_socket[0]));
+	mmc->local_socket(internal_router->targ_socket[0]);
+	mmc->external_socket(external_router->targ_socket[0]);
 
 	// This order is mandatory (see the memoryMapping)
-	(*internal_router->init_socket[0])(atd->slave_socket);
-	(*internal_router->init_socket[1])(s12xint->slave_socket);
-	(*internal_router->init_socket[2])(pwm->slave_socket);
-	(*internal_router->init_socket[3])(internal_memory->slave_sock); // to connect to the MMC
+	internal_router->init_socket[0](atd->slave_socket);
+	internal_router->init_socket[1](s12xint->slave_socket);
+	internal_router->init_socket[2](pwm->slave_socket);
+	internal_router->init_socket[3](internal_memory->slave_sock); // to connect to the MMC
 
-	(*external_router->init_socket[0])(external_memory->slave_sock);
+	external_router->init_socket[0](external_memory->slave_sock);
 
 	//=========================================================================
 	//===                        Clients/Services connection                ===
