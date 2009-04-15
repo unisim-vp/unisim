@@ -34,11 +34,15 @@
  
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
 #include <signal.h>
+#include <iostream>
 
 namespace unisim {
 namespace service {
 namespace debug {
 namespace inline_debugger {
+
+using std::cerr;
+using std::endl;
 
 bool InlineDebuggerBase::trap = false;
 int InlineDebuggerBase::alive_instances = 0;

@@ -78,10 +78,7 @@ using unisim::kernel::service::Object;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::Parameter;
 
-using std::list;
 using std::string;
-using std::cerr;
-using std::endl;
 
 typedef enum
 {
@@ -173,6 +170,7 @@ private:
 	bool IsDumpCommand(const char *cmd);
 	bool IsHelpCommand(const char *cmd);
 	bool IsResetCommand(const char *cmd);
+	bool IsMonitorCommand(const char *cmd);
 
 	void Help();
 	void Disasm(ADDRESS addr, int count);
@@ -186,6 +184,8 @@ private:
 	void DumpBreakpoints();
 	void DumpWatchpoints();
 	void DumpMemory(ADDRESS addr);
+	void DumpVariables();
+	void DumpVariable(const char *name);
 
 	static InlineDebugger<ADDRESS> *debugger;
 };

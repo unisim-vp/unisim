@@ -56,11 +56,11 @@ AC_PROG_LN_S
 AC_LANG([C++])
 
 ###### CHECK FOR STANDARD C HEADERS ###########################################
-AC_CHECK_HEADERS([inttypes.h],,\
+AC_CHECK_HEADERS([inttypes.h stdio.h stdlib.h],,\
                   AC_MSG_ERROR([Some standard headers are missing.]))
 
 ###### CHECK FOR STANDARD C++ HEADERS #########################################
-AC_CHECK_HEADERS([string iostream],,\
+AC_CHECK_HEADERS([string iostream list],,\
                   AC_MSG_ERROR([Some standard headers are missing.]))
 
 ###### CHECK FOR TARGET SPECIFIC HEADERS ######################

@@ -38,6 +38,7 @@
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
+#include <list>
 
 #if defined(HAVE_CONFIG_H)
 #include "config.h"
@@ -54,11 +55,16 @@ namespace service {
 namespace debug {
 namespace inline_debugger {
 
+using std::list;
 using std::cin;
 using std::cout;
+using std::cerr;
+using std::endl;
 using std::hex;
 using std::dec;
 using std::streamsize;
+using unisim::kernel::service::ServiceManager;
+using unisim::kernel::service::VariableBase;
 
 template <class ADDRESS>
 InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent) :
@@ -342,6 +348,13 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 					return DebugControl<ADDRESS>::DBG_RESET;
 				}
 
+				if(IsMonitorCommand(parm[0]))
+				{
+					recognized = true;
+					DumpVariables();
+					break;
+				}
+
 				break;
 			case 2:
 				if(IsDisasmCommand(parm[0]) && ParseAddr(parm[1], disasm_addr))
@@ -395,6 +408,14 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 					SetBreakpoint(cont_addr);
 					return DebugControl<ADDRESS>::DBG_STEP;
 				}
+				
+				if(IsMonitorCommand(parm[0]))
+				{
+					recognized = true;
+					DumpVariable(parm[1]);
+					break;
+				}
+
 				break;
 				
 			case 3:
@@ -433,6 +454,9 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 		if(!recognized)
 		{
 			cout << "Unrecognized command.  Try \"help\"." << endl;
+			for (unsigned int i = 0; i < nparms; i++)
+				cout << parm[i] << " ";
+			cout << endl;
 		}
 		
 		strcpy(last_line, line);
@@ -468,6 +492,10 @@ void InlineDebugger<ADDRESS>::Help()
 	cout << "--------------------------------------------------------------------------------" << endl;
 	cout << "<register name>" << endl;
 	cout << "    display the register value" << endl << endl;
+	cout << "--------------------------------------------------------------------------------" << endl;
+	cout << "<m | monitor> [<variable name>]" << endl;
+	cout << "    display the given simulator variable (displays all variable names if none is" << endl;
+	cout << "    given)" << endl;
 	cout << "========================= BREAKPOINTS/WATCHPOINTS ==============================" << endl;
 	cout << "<b | break> [<symbol | *address>]" << endl;
 	cout << "    set a breakpoint at 'symbol' or 'address'. If 'symbol' or 'address' are not" << endl;
@@ -744,6 +772,36 @@ void InlineDebugger<ADDRESS>::DumpMemory(ADDRESS addr)
 }
 
 template <class ADDRESS>
+void InlineDebugger<ADDRESS>::DumpVariables()
+{
+	list<VariableBase *> lst;
+	list<VariableBase *>::iterator iter;
+
+	cout << "VARIABLE LIST:" << endl;
+
+	ServiceManager::GetVariables(lst);
+	for (iter = lst.begin(); iter != lst.end(); iter++)
+	{
+		cout << "\t" << (*iter)->GetName() << endl;
+	}
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::DumpVariable(const char *name)
+{
+	VariableBase *variable = ServiceManager::GetVariable(name);
+
+	if (variable == &unisim::kernel::service::ServiceManager::void_variable)
+	{
+		cout << "Unknow variable (" << name << ")" << endl;
+	}
+	else
+	{
+		cout << name << " = " << ((string) *variable) << endl;
+	}
+}
+
+template <class ADDRESS>
 bool InlineDebugger<ADDRESS>::ParseAddrRange(const char *s, ADDRESS& addr, unsigned int& size)
 {
 	char fmt1[16];
@@ -925,6 +983,12 @@ template <class ADDRESS>
 bool InlineDebugger<ADDRESS>::IsResetCommand(const char *cmd)
 {
 	return strcmp(cmd, "r") == 0 || strcmp(cmd, "run") == 0;
+}
+
+template <class ADDRESS>
+bool InlineDebugger<ADDRESS>::IsMonitorCommand(const char *cmd)
+{
+	return strcmp(cmd, "m") == 0 || strcmp(cmd, "monitor") == 0;
 }
 
 } // end of namespace inline_debugger
