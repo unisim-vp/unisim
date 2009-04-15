@@ -750,25 +750,25 @@ inline unsigned int CeilLog2(uint64_t v)
 
 inline int8_t SignExtend(uint8_t v, unsigned int n)
 {
-	unsigned int m = 8 * (sizeof(v) - n);
+	unsigned int m = (8 * sizeof(v)) - n;
 	return (int8_t) (v << m) >> m; 
 }
 
 inline int16_t SignExtend(uint16_t v, unsigned int n)
 {
-	unsigned int m = 8 * (sizeof(v) - n);
+	unsigned int m = (8 * sizeof(v)) - n;
 	return (int16_t) (v << m) >> m; 
 }
 
 inline int32_t SignExtend(uint32_t v, unsigned int n)
 {
-	unsigned int m = 8 * (sizeof(v) - n);
+	unsigned int m = (8 * sizeof(v)) - n;
 	return (int32_t) (v << m) >> m; 
 }
 
 inline int64_t SignExtend(uint64_t v, unsigned int n)
 {
-	unsigned int m = 8 * (sizeof(v) - n);
+	unsigned int m = (8 * sizeof(v)) - n;
 	return (int64_t) (v << m) >> m; 
 }
 
