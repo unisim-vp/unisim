@@ -906,7 +906,7 @@ RPTB.execute = {
 	cpu.ResetS();
 
 	// Load RE with source operand value
-	cpu.SetRC(src);
+	cpu.SetRE(src);
 }
 
 /* end of RPTB (repeat block of instructions)

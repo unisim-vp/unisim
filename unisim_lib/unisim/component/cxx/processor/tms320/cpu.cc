@@ -86,6 +86,49 @@ int ExtendedPrecisionRegisterDebugInterface::GetSize() const
 }
 
 
+
+
+RegisterBitFieldDebugInterface::RegisterBitFieldDebugInterface(const char *_name, uint32_t *_reg, unsigned int _bit_offset, unsigned int _bit_size)
+	: name(_name)
+	, reg(_reg)
+	, bit_offset(_bit_offset)
+	, bit_size(_bit_size > 32 ? 32 : _bit_size)
+{
+}
+
+RegisterBitFieldDebugInterface::~RegisterBitFieldDebugInterface()
+{
+}
+
+const char *RegisterBitFieldDebugInterface::GetName() const
+{
+	return name.c_str();
+}
+
+void RegisterBitFieldDebugInterface::GetValue(void *buffer) const
+{
+	uint32_t value = (*reg >> bit_offset) & ((1 << bit_size) - 1);
+
+	if(bit_size <= 8) *(uint8_t *) buffer = value; else
+	if(bit_size <= 16) *(uint16_t *) buffer = value; else *(uint32_t *) buffer = value;
+}
+
+void RegisterBitFieldDebugInterface::SetValue(const void *buffer)
+{
+	uint32_t value;
+
+	if(bit_size <= 8) value = *(uint8_t *) buffer; else
+	if(bit_size <= 16) value = *(uint16_t *) buffer; else value = *(uint32_t *) buffer;
+
+	*reg = (*reg & ~(((1 << bit_size) - 1) << bit_offset)) | (value << bit_offset);
+}
+
+int RegisterBitFieldDebugInterface::GetSize() const
+{
+	return (bit_size + 7) / 8;
+}
+
+
 } // end of namespace tms320
 } // end of namespace processor
 } // end of namespace cxx

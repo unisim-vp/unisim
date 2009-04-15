@@ -143,6 +143,22 @@ private:
 	reg_t *reg;
 };
 
+class RegisterBitFieldDebugInterface : public unisim::util::debug::Register
+{
+public:
+	RegisterBitFieldDebugInterface(const char *name, uint32_t *reg, unsigned int bit_offset, unsigned int bit_size = 1);
+	virtual ~RegisterBitFieldDebugInterface();
+	virtual const char *GetName() const;
+	virtual void GetValue(void *buffer) const;
+	virtual void SetValue(const void *buffer);
+	virtual int GetSize() const;
+private:
+	string name;
+	uint32_t *reg;
+	unsigned int bit_offset;
+	unsigned int bit_size;
+};
+
 template<class CONFIG, bool DEBUG = false>
 class CPU :
 	public Client<DebugControl<uint64_t> >,

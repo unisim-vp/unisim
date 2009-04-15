@@ -728,7 +728,41 @@ POPF.disasm = {
 }
 
 POPF.execute = {
-	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+	//throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+
+	// FIXME: this is an integer POP, not a floating point POP
+
+	// Check whether the destination register is valid
+	if(unlikely(!cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read SP
+	typename CONFIG::address_t sp = cpu.GetSP();
+
+	// Read the word at SP from memory
+	uint32_t result = cpu.IntLoad(sp & ADDRESS_MASK);
+
+	// Compute the new value of SP
+	sp = sp - 1;
+
+	// Write back the result
+	cpu.SetReg(dst, result);
+
+	// Update SP
+	cpu.SetSP(sp);
+
+	// Check whether destination operand is an extended precision register
+	if(cpu.IsExtReg(dst))
+	{
+		// Generate flags (into ST)
+		cpu.GenFlags(
+			result,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+			M_ST_N | M_ST_Z    // or mask
+		);
+	}
 }
 
 /* end of POPF (pop floating-point value from stack)
@@ -795,7 +829,27 @@ PUSHF.disasm = {
 }
 
 PUSHF.execute = {
-	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+//	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+
+	// FIXME: This is an integer PUSH, not an floating point PUSH
+
+	// Check whether the source register number is valid
+	if(unlikely(!cpu.HasReg(src)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read the source operand
+	uint32_t src_value = cpu.GetReg(src);
+
+	// Read SP and compute its new value
+	typename CONFIG::address_t sp = cpu.GetSP() + 1;
+
+	// Store the source operand at SP + 1
+	cpu.IntStore(sp & ADDRESS_MASK, src_value);
+
+	// Update SP
+	cpu.SetSP(sp);
 }
 
 /* end of PUSHF (push floating-point value on stack)

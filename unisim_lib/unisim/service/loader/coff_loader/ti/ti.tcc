@@ -657,9 +657,9 @@ bool Section<MEMORY_ADDR>::LoadSpecificContent(OutputInterface<MEMORY_ADDR> *out
 					state = 2;
 					break;
 				case 2:
-					value = unisim::util::endian::Target2Host(header_endianness, *record++);
+					value = *record++;
+					if(!output->Write(addr++, &value, 1)) return false;
 					nrecords--;
-					if(!output->Write(addr, &value, 1)) return false;
 					if(--nwords == 0) state = 0;
 					break;
 			}

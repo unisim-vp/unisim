@@ -168,7 +168,22 @@ CPU(const char *name,
 	registers_registry["IR1"] = new unisim::util::debug::SimpleRegister<uint32_t>("IR1", &regs[REG_IR1].lo);
 	registers_registry["BK"] = new unisim::util::debug::SimpleRegister<uint32_t>("BK", &regs[REG_BK].lo);
 	registers_registry["SP"] = new unisim::util::debug::SimpleRegister<uint32_t>("SP", &regs[REG_SP].lo);
+
 	registers_registry["ST"] = new unisim::util::debug::SimpleRegister<uint32_t>("ST", &regs[REG_ST].lo);
+	registers_registry["ST:C"] = new RegisterBitFieldDebugInterface("ST:C", &regs[REG_ST].lo, ST_C);
+	registers_registry["ST:V"] = new RegisterBitFieldDebugInterface("ST:V", &regs[REG_ST].lo, ST_V);
+	registers_registry["ST:Z"] = new RegisterBitFieldDebugInterface("ST:Z", &regs[REG_ST].lo, ST_Z);
+	registers_registry["ST:N"] = new RegisterBitFieldDebugInterface("ST:N", &regs[REG_ST].lo, ST_N);
+	registers_registry["ST:UF"] = new RegisterBitFieldDebugInterface("ST:UF", &regs[REG_ST].lo, ST_UF);
+	registers_registry["ST:LV"] = new RegisterBitFieldDebugInterface("ST:LV", &regs[REG_ST].lo, ST_LV);
+	registers_registry["ST:LUF"] = new RegisterBitFieldDebugInterface("ST:LUF", &regs[REG_ST].lo, ST_LUF);
+	registers_registry["ST:OVM"] = new RegisterBitFieldDebugInterface("ST:OVM", &regs[REG_ST].lo, ST_OVM);
+	registers_registry["ST:RM"] = new RegisterBitFieldDebugInterface("ST:RM", &regs[REG_ST].lo, ST_RM);
+	registers_registry["ST:CF"] = new RegisterBitFieldDebugInterface("ST:CF", &regs[REG_ST].lo, ST_CF);
+	registers_registry["ST:CE"] = new RegisterBitFieldDebugInterface("ST:CE", &regs[REG_ST].lo, ST_CE);
+	registers_registry["ST:CC"] = new RegisterBitFieldDebugInterface("ST:CC", &regs[REG_ST].lo, ST_CC);
+	registers_registry["ST:GIE"] = new RegisterBitFieldDebugInterface("ST:GIE", &regs[REG_ST].lo, ST_GIE);
+
 	registers_registry["IE"] = new unisim::util::debug::SimpleRegister<uint32_t>("IE", &regs[REG_IE].lo);
 	registers_registry["IF"] = new unisim::util::debug::SimpleRegister<uint32_t>("IF", &regs[REG_IF].lo);
 	registers_registry["IOF"] = new unisim::util::debug::SimpleRegister<uint32_t>("IOF", &regs[REG_IOF].lo);
@@ -1297,6 +1312,11 @@ StepInstruction()
 		// Execute the instruction
 		operation->execute(*this);
 
+
+// 		stringstream sstr;
+// 		operation->disasm(*this, sstr);
+// 		cerr << "EXECUTE: " << sstr.str() << endl;
+
 		// Check whether a branch is pending
 		if(unlikely(delay_before_branching))
 		{
@@ -1578,8 +1598,8 @@ CheckCondition(unsigned int cond) const
 			return st & M_ST_C;
 		case COND_LS: // C OR Z
 			return ((st >> ST_C) | (st >> ST_Z)) & 1;
-		case COND_HI: // ~C OR ~Z <==> ~(C AND Z)
-			return (~((st >> ST_C) & (st >> ST_Z)) & 1);
+		case COND_HI: // ~C AND ~Z <==> ~(C OR Z)
+			return (~((st >> ST_C) | (st >> ST_Z)) & 1);
 		case COND_HS: // ~C
 			return !(st & M_ST_C);
 		case COND_EQ: // Z
