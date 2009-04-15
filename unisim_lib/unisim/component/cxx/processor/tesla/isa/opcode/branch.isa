@@ -156,6 +156,15 @@ br.execute = {
 	}
 }
 
+br.init = {
+	typedef Operation<CONFIG> inherited;
+	inherited::allow_segment = true;
+	inherited::op_type[OpDest] = DT_NONE;
+	inherited::op_type[OpSrc1] = DT_NONE;
+	inherited::op_type[OpSrc2] = DT_NONE;
+	inherited::op_type[OpSrc3] = DT_NONE;
+}
+
 
 op join( \
 	/*subop*/?[3]:/*?*/?[1]:?[26]:/*marker*/?[2]: \
@@ -172,6 +181,15 @@ join.disasm = {
 join.execute = {
 	assert((target_addr & 3) == 0);	// 64-bit-aligned targets
 	cpu->Meet(target_addr);
+}
+
+join.init = {
+	typedef Operation<CONFIG> inherited;
+	inherited::allow_segment = true;
+	inherited::op_type[OpDest] = DT_NONE;
+	inherited::op_type[OpSrc1] = DT_NONE;
+	inherited::op_type[OpSrc2] = DT_NONE;
+	inherited::op_type[OpSrc3] = DT_NONE;
 }
 
 op fence( \
@@ -191,6 +209,15 @@ fence.execute = {
 	cpu->Fence();
 }
 
+fence.init = {
+	typedef Operation<CONFIG> inherited;
+	inherited::allow_segment = true;
+	inherited::op_type[OpDest] = DT_NONE;
+	inherited::op_type[OpSrc1] = DT_NONE;
+	inherited::op_type[OpSrc2] = DT_NONE;
+	inherited::op_type[OpSrc3] = DT_NONE;
+}
+
 op ret( \
 	/*subop*/?[3]:/*?*/?[1]:?[26]:/*marker*/?[2]: \
 	0x3[4]:/*target_addr*/0[19]:/*dest*/0[7]:/*flow*/1[1]:/*IWidth*/1[1] \
@@ -205,3 +232,12 @@ ret.execute = {
 	// TODO
 	cpu->Kill(insn->Mask());
 }
+ret.init = {
+	typedef Operation<CONFIG> inherited;
+	inherited::allow_segment = true;
+	inherited::op_type[OpDest] = DT_NONE;
+	inherited::op_type[OpSrc1] = DT_NONE;
+	inherited::op_type[OpSrc2] = DT_NONE;
+	inherited::op_type[OpSrc3] = DT_NONE;
+}
+

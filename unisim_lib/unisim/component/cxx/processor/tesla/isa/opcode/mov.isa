@@ -100,21 +100,11 @@ mov_reg_full_noimm.disasm = {
 
 mov_reg_full_noimm.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
-//	cpu.ExecMarker(marker);
 	// dest = a
 	// TODO: Read 2 regs if 64-bit
 	assert(!f64);
-	reg_t a = insn->ReadSrc1(0);
-	reg_t output = ConvertIntInt(a, cvt_round, cvt_type, data_32, AbsSat(abs_sat));
-
-//	if(!ignore_output)
-//		cpu.WriteOutput(output, dest, pred_cond, pred_reg);
-	insn->WriteDest(output);
-//	insn->SetPredFP32(output);	// TODO: check type?
-	insn->SetPredI32(output);	// TODO: check type?
-	
-//	if(set_pred)
-//		cpu.WritePred(set_pred_reg, pred_cond, pred_reg, ComputePredFP32(output));	// TODO: FP32 or...?
+	reg_t & a = insn->GetSrc1();
+	insn->GetDest() = ConvertIntInt(a, cvt_round, cvt_type, data_32, AbsSat(abs_sat));
 }
 
 mov_reg_full_imm.init = {
@@ -145,12 +135,11 @@ mov_reg_full_imm.execute = {
 	// dest = a
 	// TODO: Read 2 regs if 64-bit
 	assert(!f64);
-	reg_t a = insn->ReadSrc2(0);
+	reg_t a = insn->GetSrc2();
 	reg_t output = a;
 
 	insn->WriteDest(output, 0);
-	//insn->SetPredFP32(output);
-	insn->SetPredI32(output);	// TODO: check type?
+	//insn->SetPredI32(output);	// TODO: check type?
 }
 
 mov_reg_half.init = {
@@ -180,11 +169,10 @@ mov_reg_half.execute = {
 	// dest = a
 	// TODO: Read 2 regs if 64-bit
 	assert(!f64);
-	reg_t a = insn->ReadSrc1(0);
-	reg_t output = a;
-
-	insn->WriteDest(output, 0);
-	insn->SetPredI32(output);	// TODO: check type?
+	//insn->GetDest() = insn->GetSrc1();
+	// Actually a nop.
+	
+	//insn->SetPredI32(output);	// TODO: check type?
 }
 
 
@@ -244,14 +232,15 @@ stsh_full.disasm = {
 stsh_full.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 	// dest = a
-	//reg_t a = cpu->GetGPR(src3);
-	reg_t a = insn->ReadSrc3(0);
-
-	reg_t output = a;
+	reg_t & output = insn->GetSrc3();
 
 	cpu->ScatterShared(output, dest, addr_lo, addr_hi, 1, insn->Mask(), MvSizeToSMType(m_size));
-	insn->SetPredI32(output);
+	//insn->SetPredI32(output);
 }
+
+stsh_full.write = {
+}
+
 
 // TODO: stsh_half/imm
 
@@ -299,19 +288,16 @@ ldc_full.disasm = {
 	DisasmConstant(src2, addr_lo, addr_hi, 1, const_seg, SMType(mem_type), buffer, addr_incr);
 }
 
+ldc_full.read = {
+	typedef Instruction<CONFIG> Insn;
+	cpu->GatherConstant(insn->Temp(Insn::TempDest), src2, addr_lo, addr_hi, 1, const_seg, insn->Mask(), SMType(mem_type));
+}
 
 ldc_full.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 	assert(!addr_incr);
-	//reg_t a = insn->ReadSrc1();
-	reg_t a;
-	cpu->GatherConstant(a, src2, addr_lo, addr_hi, 1, const_seg, insn->Mask(), SMType(mem_type));
-	//reg_t output = ConvertIntInt(a, cvt_round, cvt_type, data_32, AbsSat(abs_sat));
-	reg_t output = a;
-
-	insn->WriteDest(output);
 	
-	insn->SetPredI32(output);	// TODO: check type?
+//	insn->SetPredI32(insn->Temp(0));	// TODO: check type?
 }
 
 
@@ -358,22 +344,21 @@ stg_full.disasm = {
 	buffer << "r" << dest;
 }
 
-stg_full.execute = {
-	typedef VectorRegister<CONFIG> reg_t;
-//	cpu.ExecMarker(marker);
-	// dest = a
-	reg_t a = cpu->GetGPR(dest);
-
-	reg_t output = a;
-
-//	if(!ignore_output)
-	cpu->ScatterGlobal(output, src1, addr_lo, addr_hi, addr_imm, segment, insn->Mask(), DataType(m_size));
-//	if(set_pred)
-//		cpu.WritePred(set_pred_reg, pred_cond, pred_reg, ComputePredFP32(output));	// TODO: FP32 or...?
-//	insn->WriteDest(output);
-	insn->SetPredI32(output);
+stg_full.read = {
+	insn->ReadBlock(dest, DataType(m_size));
 }
 
+stg_full.execute = {
+	typedef VectorRegister<CONFIG> reg_t;
+	typedef Instruction<CONFIG> Insn;
+
+	reg_t & output = insn->Temp(Insn::TempSrc1);
+	cpu->ScatterGlobal(output, src1, addr_lo, addr_hi, addr_imm, segment, insn->Mask(), DataType(m_size));
+//	insn->SetPredI32(output);
+}
+
+stg_full.write = {
+}
 
 op ldg_full( \
 	/*subop*/4[3]:/*?*/0[1]:/*cvt_round_half*/0[1]:/*?*/0[3]: m_size[3]:/*?*/0[1]:/*?*/0[3]:/*cvt_type*/0[3]\
@@ -411,16 +396,16 @@ ldg_full.disasm = {
 	DisasmGlobal(src1, addr_lo, addr_hi, addr_imm, segment, m_size, buffer);
 }
 
+ldg_full.read = {
+}
+
 ldg_full.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 
-	reg_t output;
-
-	cpu->GatherGlobal(output, src1, addr_lo, addr_hi, addr_imm, segment, insn->Mask(), DataType(m_size));
-	insn->WriteDest(output);
-	insn->SetPredI32(output);
+	cpu->GatherGlobal(insn->Temp(0), src1, addr_lo, addr_hi, addr_imm, segment, insn->Mask(), DataType(m_size));
+//	insn->WriteDest(output);
+//	insn->SetPredI32(output);
 }
-
 
 op stl_full( \
 	/*subop*/3[3]:/*?*/0[1]:/*cvt_round_half*/0[1]:/*?*/0[3]: m_size[3]:/*?*/0[1]:/*?*/0[3]:/*cvt_type*/0[3]\
@@ -460,15 +445,20 @@ stl_full.disasm = {
 	buffer << "r" << dest;
 }
 
+stl_full.read = {
+	insn->ReadBlock(dest, DataType(m_size));
+}
+
 stl_full.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 	assert(!addr_incr);
 	// dest = a
-	reg_t a = cpu->GetGPR(dest);
 
-	reg_t output = a;
-	cpu->ScatterLocal(output, src1, addr_lo, addr_hi, /*addr_imm*/true, segment, insn->Mask(), DataType(m_size));
-	insn->SetPredI32(output);
+	cpu->ScatterLocal(insn->Temp(0), src1, addr_lo, addr_hi, /*addr_imm*/true, segment, insn->Mask(), DataType(m_size));
+	//insn->SetPredI32(output);
+}
+
+stl_full.write = {
 }
 
 op ldl_full( \
@@ -507,16 +497,18 @@ ldl_full.disasm = {
 	DisasmLocal(src1, addr_lo, addr_hi, /*addr_imm*/true, segment, m_size, buffer, addr_incr);
 }
 
+ldl_full.read = {
+}
+
 ldl_full.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 	assert(!addr_incr);
 
-	reg_t output;
-
-	cpu->GatherLocal(output, src1, addr_lo, addr_hi, /*addr_imm*/true, segment, insn->Mask(), DataType(m_size));
-	insn->WriteDest(output);
-	insn->SetPredI32(output);
+	cpu->GatherLocal(insn->GetDest(), src1, addr_lo, addr_hi, /*addr_imm*/true, segment, insn->Mask(), DataType(m_size));
+	//insn->SetPredI32(output);
 }
+
+
 
 // op mov_reg_xxx( \
 // 	/*subop*/0[3]:/*?*/0[1]:/*cvt_round_half*/0[1]:data_32[1]:const_seg[4]:/*src1_sh*/?[1]:abs_sat[2]:cvt_round[2]:cvt_type[3]:\
@@ -577,12 +569,18 @@ ldam_full.disasm = {
 
 ldam_full.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
-	reg_t a = insn->ReadSrc1();
-	reg_t output = ShiftLeft(a, src2, 1);
-	cpu->GetAddr(dest).Write(VectorAddress<CONFIG>(output), insn->Mask());
+	reg_t & a = insn->GetSrc1();
+	insn->GetDest() = ShiftLeft(a, src2, 1);
+}
+
+ldam_full.write = {
+	cpu->GetAddr(dest).Write(VectorAddress<CONFIG>(insn->GetDest()), insn->Mask());
 	if(cpu->trace_reg) {
 		cpu->DumpAddr(dest, cerr);
 	}
+}
+
+ldam_full.writePred = {
 }
 
 op ldaa_full_normal( \
@@ -625,16 +623,25 @@ ldaa_full.disasm = {
 	DisasmAddress(src, addr_lo, addr_hi, 1, 0, buffer);
 }
 
+ldaa_full.read = {
+}
+
 ldaa_full.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 	typedef VectorAddress<CONFIG> VecAddr;	
 
 //	assert(data_32);
 
-	VecAddr output = cpu->EffectiveAddress(src, addr_lo, addr_hi, 1, 0);
-	cpu->GetAddr(dest).Write(output, insn->Mask());
+	insn->GetDest() = reg_t(cpu->EffectiveAddress(src, addr_lo, addr_hi, 1, 0));
+}
+
+ldaa_full.write = {
+	cpu->GetAddr(dest).Write(VectorAddress<CONFIG>(insn->GetDest()), insn->Mask());
 	if(cpu->trace_reg) {
 		cpu->DumpAddr(dest, cerr);
 	}
+}
+
+ldaa_full.writePred = {
 }
 

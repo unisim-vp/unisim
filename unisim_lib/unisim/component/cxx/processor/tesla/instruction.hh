@@ -32,8 +32,8 @@
  * Authors: Sylvain Collange (sylvain.collange@univ-perp.fr)
  */
  
-#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_INSTRUCTION_HH__
-#define __UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_INSTRUCTION_HH__
+#ifndef UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_INSTRUCTION_HH
+#define UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_INSTRUCTION_HH
 
 #include <unisim/component/cxx/processor/tesla/tesla_opcode.hh>
 #include <unisim/component/cxx/processor/tesla/tesla_src1.hh>
@@ -69,26 +69,66 @@ enum Operand
 	OpSrc3
 };
 
+// Instruction:
+// Instruction as passed from a pipeline stage to the next.
+// Dynamic, allocated during decode stage, discarded on retirement.
+// Multiple Instructions in flight for the same Operation are possible.
 template <class CONFIG>
 class Instruction
 {
 public:
+	// External interface: with CPU
+	// Loosely matches pipeline stages
+	void Read();
+	void Execute();
+	void Write();
+	void Disasm(std::ostream & os) const;
+
+	// Interface with Operation*
+	VectorRegister<CONFIG> const & Temp(unsigned int i) const;
+	VectorRegister<CONFIG> & Temp(unsigned int i);
+	// Temp(0) = src1 and dest
+	// Temp(1) = src1.hi and dest.hi (64-bit)
+	// Temp(2) = src2  or src1.hilo (128-bit)
+	// Temp(3) = src2.hi (64-bit) or src1.hihi (128-bit)
+	// Temp(4) = src3
+	// Temp(5) = src3.hi (64-bit)
+	enum {
+		TempCount = 6,
+		TempSrc1 = 0,
+		TempSrc2 = 2,
+		TempSrc3 = 4,
+		TempDest = 0
+	};
+	
+	VectorRegister<CONFIG> & GetSrc1();
+	VectorRegister<CONFIG> & GetSrc2();
+	VectorRegister<CONFIG> & GetSrc3();
+	VectorRegister<CONFIG> & GetDest();
+	VectorFlags<CONFIG> & Flags();
+
+	void WriteDest();
+	void SetPredI32();
+	void SetPredI16();
+	void SetPredF32();
+	
+	void ReadBlock(int reg, DataType dt);
+
+	void ReadSrc1(int offset = 0);
+	void ReadSrc2(int offset = 0);
+	void ReadSrc3(int offset = 0);
+
+	// Deprecated interface
 	typedef typename isa::opcode::Operation<CONFIG> OpCode;
 	typedef isa::dest::Operation<CONFIG> OpDest;
 	typedef isa::src1::Operation<CONFIG> OpSrc1;
 	typedef isa::src2::Operation<CONFIG> OpSrc2;
 	typedef isa::src3::Operation<CONFIG> OpSrc3;
 	typedef isa::control::Operation<CONFIG> OpControl;
-
 	void SetOperation(OpCode *operation);
 	OpCode * GetOperation() { return operation; }
 
-	void Execute();
-	void Disasm(std::ostream & os) const;
-	VectorRegister<CONFIG> ReadSrc1(int offset = 0) const;
-	VectorRegister<CONFIG> ReadSrc2(int offset = 0) const;
-	VectorRegister<CONFIG> ReadSrc3(int offset = 0) const;
-	void WriteDest(VectorRegister<CONFIG> const & value, int offset = 0) const;
+	void WriteDest(VectorRegister<CONFIG> const & value, int offset = 0);
 	void SetPredFP32(VectorRegister<CONFIG> const & value) const;
 	void SetPredI32(VectorRegister<CONFIG> const & value, VectorFlags<CONFIG> flags) const;
 	void SetPredI32(VectorRegister<CONFIG> const & value) const;
@@ -123,18 +163,12 @@ private:
 	typename CONFIG::address_t addr;
 	typename CONFIG::insn_t iw;
 	mutable OpCode * operation;
-	mutable OpSrc1 * src1;
-	mutable OpSrc2 * src2;
-	mutable OpSrc3 * src3;
-	mutable OpDest * dest;
-	mutable OpControl * control;
 	
 	static isa::opcode::Decoder<CONFIG> op_decoder;
-	static isa::src1::Decoder<CONFIG> src1_decoder;
-	static isa::src2::Decoder<CONFIG> src2_decoder;
-	static isa::src3::Decoder<CONFIG> src3_decoder;
-	static isa::dest::Decoder<CONFIG> dest_decoder;
-	static isa::control::Decoder<CONFIG> control_decoder;
+
+	VectorRegister<CONFIG> temp[TempCount];
+	VectorFlags<CONFIG> flags;
+	// mask?
 };
 
 #if 0

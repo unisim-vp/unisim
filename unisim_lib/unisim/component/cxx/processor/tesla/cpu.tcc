@@ -114,7 +114,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent, int coreid) :
 	param_trace_mask("trace-mask", this, trace_mask),
 	param_trace_reg("trace-reg", this, trace_reg),
 	param_trace_reg_float("trace-reg-float", this, trace_reg_float),
-	param_trace_loadstore("trace-loadstor", this, trace_loadstore),
+	param_trace_loadstore("trace-loadstore", this, trace_loadstore),
 	param_trace_branch("trace-branch", this, trace_branch),
 	param_trace_sync("trace-sync", this, trace_sync),
 	stat_instruction_counter("instruction-counter", this, instruction_counter),
@@ -274,11 +274,13 @@ void CPU<CONFIG>::StepWarp(uint32_t warpid)
 {
 	current_warpid = warpid;
 	
+	// Fetch
 	address_t fetchaddr = GetPC();
 	typename CONFIG::insn_t iw;
 	if(!ReadMemory(fetchaddr, &iw, sizeof(typename CONFIG::insn_t))) {
 		throw MemoryAccessException<CONFIG>();
 	}
+	// Decode
 	Instruction<CONFIG> insn(this, fetchaddr, iw);
 
 	if(trace_insn)
@@ -300,7 +302,10 @@ void CPU<CONFIG>::StepWarp(uint32_t warpid)
 		SetNPC(fetchaddr + 4);
 	}
 	
-	insn.Execute();
+	insn.Read();	// Read operands
+	insn.Execute(); // Execute
+	insn.Write();	// Writeback
+	
 	// Join or take other branch?
 	CheckJoin();
 

@@ -32,19 +32,17 @@
  * Authors: Sylvain Collange (sylvain.collange@univ-perp.fr)
  */
 
-namespace unisim::component::cxx::processor::tesla::isa::control
-little_endian
-address {typename CONFIG::address_t}
-template <{class} {CONFIG}>
+#ifndef UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_OPERATION_TCC
+#define UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_OPERATION_TCC
 
-decl {
-#include <unisim/component/cxx/processor/tesla/cpu.hh>
-#include <unisim/component/cxx/processor/tesla/exec.hh>
-#include <unisim/component/cxx/processor/tesla/disasm.hh>
-#include <unisim/component/cxx/processor/tesla/flags.hh>
-//#include <unisim/component/cxx/processor/tesla/operation.hh>
+#include <unisim/component/cxx/processor/tesla/operation.hh>
+#include <unisim/component/cxx/processor/tesla/tesla_opcode.hh>
+#include <unisim/component/cxx/processor/tesla/tesla_dest.hh>
+#include <unisim/component/cxx/processor/tesla/tesla_src1.hh>
+#include <unisim/component/cxx/processor/tesla/tesla_src2.hh>
+#include <unisim/component/cxx/processor/tesla/tesla_src3.hh>
+#include <unisim/component/cxx/processor/tesla/tesla_control.hh>
 
-using namespace unisim::component::cxx::processor::tesla;
 
 namespace unisim {
 namespace component {
@@ -52,64 +50,42 @@ namespace cxx {
 namespace processor {
 namespace tesla {
 
-template<class CONFIG>
-class CPU;
+template <class CONFIG>
+isa::src1::Decoder<CONFIG> Operation<CONFIG>::src1_decoder;
 
-template<class CONFIG>
-class Instruction;
+template <class CONFIG>
+isa::src2::Decoder<CONFIG> Operation<CONFIG>::src2_decoder;
 
-} // end of namespace tesla 
+template <class CONFIG>
+isa::src3::Decoder<CONFIG> Operation<CONFIG>::src3_decoder;
+
+template <class CONFIG>
+isa::dest::Decoder<CONFIG> Operation<CONFIG>::dest_decoder;
+
+template <class CONFIG>
+isa::control::Decoder<CONFIG> Operation<CONFIG>::control_decoder;
+
+template <class CONFIG>
+Operation<CONFIG>::Operation(typename CONFIG::address_t addr, typename CONFIG::insn_t iw) :
+	addr(addr), iw(iw)
+{
+	src1 = src1_decoder.Decode(addr, iw);
+	src2 = src2_decoder.Decode(addr, iw);
+	src3 = src3_decoder.Decode(addr, iw);
+	dest = dest_decoder.Decode(addr, iw);
+	control = control_decoder.Decode(addr, iw);
+}
+
+template <class CONFIG>
+Operation<CONFIG>::~Operation()
+{
+}
+
+
+} // end of namespace tesla
 } // end of namespace processor
 } // end of namespace cxx
 } // end of namespace component
 } // end of namespace unisim
 
-}
-
-impl {
-#include <unisim/component/cxx/processor/tesla/instruction.hh>
-}
-
-var is_long : { bool }
-var is_end : { bool }
-var is_join : { bool }
-var is_flow : { bool }
-
-constructor action init() {
-}
-
-action {void} disasm({ostream&} {os}) {
-	if(is_end) {
-		os << ".end";
-	}
-	else if(is_join) {
-		os << ".join";
-	}
-	if(!is_long) {
-		os << ".half";
-	}
-}
-
-// template
-op long_instruction(?[30]:marker[2]:\
-	?[30]:flow[1]:/*long*/1[1])
-
-long_instruction.init = {
-	typedef Operation<CONFIG> inherited;
-	inherited::is_long = true;
-	inherited::is_end = (marker == 1);
-	inherited::is_join = (marker == 2);
-	inherited::is_flow = flow;
-}
-
-op short_instruction(?[32]:\
-	?[30]:flow[1]:/*long*/0[1])
-
-short_instruction.init = {
-	typedef Operation<CONFIG> inherited;
-	inherited::is_long = false;
-	inherited::is_end = false;
-	inherited::is_join = false;
-	inherited::is_flow = flow;
-}
-
+#endif

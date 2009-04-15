@@ -121,6 +121,17 @@ VectorFlags<CONFIG> ComputePredI32(VectorRegister<CONFIG> const & output, Vector
 	return flags;
 }
 
+template<class CONFIG>
+VectorFlags<CONFIG> ComputePredI16(VectorRegister<CONFIG> const & output, VectorFlags<CONFIG> flags)
+{
+	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i)
+	{
+		flags.SetZero(((output[i] & 0xffff) == 0), i);
+		flags.SetSign((int16_t(output[i]) < 0), i);
+	}
+	return flags;
+}
+
 
 template<class CONFIG>
 VectorFlags<CONFIG> ComputePredSetI(VectorRegister<CONFIG> & output,

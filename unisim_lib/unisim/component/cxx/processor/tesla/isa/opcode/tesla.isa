@@ -38,12 +38,17 @@ little_endian
 address {typename CONFIG::address_t}
 template <{class} {CONFIG}>
 
+// Hugly hack
+inheritance {public} {unisim::component::cxx::processor::tesla::Operation<CONFIG>} = {_addr, _code}
+
+
 decl {
 //#include <unisim/component/cxx/processor/tesla/cpu.hh>
 #include <unisim/component/cxx/processor/tesla/exec.hh>
 #include <unisim/component/cxx/processor/tesla/disasm.hh>
 #include <unisim/component/cxx/processor/tesla/flags.hh>
 //#include <unisim/component/cxx/processor/tesla/instruction.hh>
+#include <unisim/component/cxx/processor/tesla/operation.hh>
 
 namespace unisim {
 namespace component {
@@ -65,7 +70,6 @@ class Instruction;
 
 
 using namespace unisim::component::cxx::processor::tesla;
-//using unisim::component::cxx::processor::tesla::Instruction;
 
 
 template <class T, size_t SIZE>
@@ -93,13 +97,48 @@ impl {
 #include <unisim/component/cxx/processor/tesla/instruction.hh>
 #include <unisim/component/cxx/processor/tesla/exec.tcc>
 #include <unisim/component/cxx/processor/tesla/flags.tcc>
+#include <unisim/component/cxx/processor/tesla/operation.tcc>
 
 using namespace unisim::component::cxx::processor::tesla;
 
 }
 
-action {void} execute({CPU<CONFIG> *} {cpu}, {Instruction<CONFIG> const *} {insn}) {
+action {void} read({CPU<CONFIG> *} {cpu}, {Instruction<CONFIG> *} {insn}) {
+	typedef Operation<CONFIG> inherited;
+	if(inherited::op_type[OpSrc1] != DT_NONE) {
+		insn->ReadSrc1();
+	}
+	if(inherited::op_type[OpSrc2] != DT_NONE) {
+		insn->ReadSrc2();
+	}
+	if(inherited::op_type[OpSrc3] != DT_NONE) {
+		insn->ReadSrc3();
+	}
+}
+
+action {void} execute({CPU<CONFIG> *} {cpu}, {Instruction<CONFIG> *} {insn}) {
 	throw IllegalInstructionException<CONFIG>();
+}
+
+action {void} write({CPU<CONFIG> *} {cpu}, {Instruction<CONFIG> *} {insn}) {
+	typedef Operation<CONFIG> inherited;
+	if(inherited::op_type[OpDest] != DT_NONE) {
+		//insn->WriteDest();
+		this->dest->write(cpu, insn, insn->Mask(), 0);
+	}
+}
+
+action {void} writePred({CPU<CONFIG> *} {cpu}, {Instruction<CONFIG> *} {insn}) {
+	typedef Operation<CONFIG> inherited;
+	if(inherited::op_type[OpDest] == DT_U32) {
+		insn->SetPredI32();
+	}
+	else if(inherited::op_type[OpDest] == DT_U16) {
+		insn->SetPredI16();
+	}
+	else if(inherited::op_type[OpDest] == DT_F32) {
+		insn->SetPredF32();
+	}
 }
 
 action {void} disasm({CPU<CONFIG> *} {cpu}, {Instruction<CONFIG> const *} {insn}, {ostream&} {buffer}) {

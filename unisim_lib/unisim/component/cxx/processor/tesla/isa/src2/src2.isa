@@ -37,15 +37,44 @@ little_endian
 address {typename CONFIG::address_t}
 template <{class} {CONFIG}>
 
-{
+decl {
 #include <unisim/component/cxx/processor/tesla/cpu.hh>
+#include <unisim/component/cxx/processor/tesla/exec.hh>
+#include <unisim/component/cxx/processor/tesla/disasm.hh>
+#include <unisim/component/cxx/processor/tesla/flags.hh>
+//#include <unisim/component/cxx/processor/tesla/operation.hh>
 #include <iomanip>
+
+using namespace unisim::component::cxx::processor::tesla;
+
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace processor {
+namespace tesla {
+
+template<class CONFIG>
+class CPU;
+
+template<class CONFIG>
+class Instruction;
+
+} // end of namespace tesla 
+} // end of namespace processor
+} // end of namespace cxx
+} // end of namespace component
+} // end of namespace unisim
+
+}
+
+impl {
+#include <unisim/component/cxx/processor/tesla/instruction.hh>
 }
 
 constructor action initialize() {
 }
 
-action {VectorRegister<CONFIG>} read({CPU<CONFIG> *} {cpu}, {int} {offset}, {Instruction<CONFIG> const *} {insn}) {
+action {void} read({CPU<CONFIG> *} {cpu}, {int} {offset}, {Instruction<CONFIG> *} {insn}) {
 	throw IllegalInstructionException<CONFIG>();
 }
 
@@ -81,15 +110,16 @@ op alu_half_reg(?[32]:\
 group alu_reg(alu_full_normal_reg, alu_full_end_reg, alu_full_join_reg, alu_half_reg)
 
 alu_reg.read = {
+	typedef Instruction<CONFIG> Insn;
 	RegType rt = insn->OperandRegType(OpSrc2);
 	if(rt == RT_U32) {
-		return cpu->GetGPR(src2 + offset);
+		insn->Temp(Insn::TempSrc2 + offset) = cpu->GetGPR(src2 + offset);
 	}
 	else {
 		assert(!offset);	// No use for offset
 		uint32_t rnum = src2 >> 1;
 		uint32_t hilo = (src2 & 1);
-		return cpu->GetGPR(rnum).Split(hilo);
+		insn->Temp(Insn::TempSrc2) = cpu->GetGPR(rnum).Split(hilo);
 	}
 }
 
@@ -138,9 +168,10 @@ op alu_half_const(?[32]:\
 group alu_const(alu_full_normal_const, alu_full_end_const, alu_full_join_const)
 
 alu_const.read = {
+	typedef Instruction<CONFIG> Insn;
 	// TODO: segment?
 	// But not for some (all?) FPU ops
-	return cpu->ReadConstant(src2 * insn->OperandSize(OpSrc2) + offset * 4, constseg);
+	insn->Temp(Insn::TempSrc2) = cpu->ReadConstant(src2 * insn->OperandSize(OpSrc2) + offset * 4, constseg);
 }
 
 alu_const.disasm = {
@@ -149,8 +180,9 @@ alu_const.disasm = {
 }
 
 alu_half_const.read = {
+	typedef Instruction<CONFIG> Insn;
 	// Default segment = 0??
-	return cpu->ReadConstant(src2 * insn->OperandSize(OpSrc2) + offset * 4, 0);
+	insn->Temp(Insn::TempSrc2) = cpu->ReadConstant(src2 * insn->OperandSize(OpSrc2) + offset * 4, 0);
 }
 
 alu_half_const.disasm = {
@@ -163,7 +195,8 @@ op alu_imm(/*subop*/?[3]:/*?*/?[1]:imm_hi[26]:/*marker*/3[2]:\
 	/*dest*/?[7]:/*flow*/0[1]:/*long*/1[1])
 
 alu_imm.read = {
-	return VectorRegister<CONFIG>((imm_hi << 6) | src2);
+	typedef Instruction<CONFIG> Insn;
+	insn->Temp(Insn::TempSrc2) = VectorRegister<CONFIG>((imm_hi << 6) | src2);
 }
 
 alu_imm.disasm = {

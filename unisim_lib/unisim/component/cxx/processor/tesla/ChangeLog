@@ -1,0 +1,6 @@
+* Handling of 16-bit condition codes
+* Various bug fixes
+* Improved instruction decoder
+
+Version 0.1, 09 april 2009
+* Initial release

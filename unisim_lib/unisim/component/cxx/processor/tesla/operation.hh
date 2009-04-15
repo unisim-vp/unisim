@@ -31,20 +31,17 @@
  *
  * Authors: Sylvain Collange (sylvain.collange@univ-perp.fr)
  */
+ 
+#ifndef UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_OPERATION_HH
+#define UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_OPERATION_HH
 
-namespace unisim::component::cxx::processor::tesla::isa::control
-little_endian
-address {typename CONFIG::address_t}
-template <{class} {CONFIG}>
+//#include <unisim/component/cxx/processor/tesla/tesla_opcode.hh>
+#include <unisim/component/cxx/processor/tesla/tesla_src1.hh>
+#include <unisim/component/cxx/processor/tesla/tesla_src2.hh>
+#include <unisim/component/cxx/processor/tesla/tesla_src3.hh>
+#include <unisim/component/cxx/processor/tesla/tesla_dest.hh>
+#include <unisim/component/cxx/processor/tesla/tesla_control.hh>
 
-decl {
-#include <unisim/component/cxx/processor/tesla/cpu.hh>
-#include <unisim/component/cxx/processor/tesla/exec.hh>
-#include <unisim/component/cxx/processor/tesla/disasm.hh>
-#include <unisim/component/cxx/processor/tesla/flags.hh>
-//#include <unisim/component/cxx/processor/tesla/operation.hh>
-
-using namespace unisim::component::cxx::processor::tesla;
 
 namespace unisim {
 namespace component {
@@ -52,64 +49,44 @@ namespace cxx {
 namespace processor {
 namespace tesla {
 
+// Operation: base of all opcodes
+// Only one instance of Operation per machine instruction in memory
+// Unmutable
+// Controls subfields decoding
 template<class CONFIG>
-class CPU;
+struct Operation
+{
+	Operation(typename CONFIG::address_t addr, typename CONFIG::insn_t iw);
+	~Operation();
+	
+	typedef typename isa::opcode::Operation<CONFIG> OpCode;
+	typedef isa::dest::Operation<CONFIG> OpDest;
+	typedef isa::src1::Operation<CONFIG> OpSrc1;
+	typedef isa::src2::Operation<CONFIG> OpSrc2;
+	typedef isa::src3::Operation<CONFIG> OpSrc3;
+	typedef isa::control::Operation<CONFIG> OpControl;
 
-template<class CONFIG>
-class Instruction;
+	OpSrc1 * src1;
+	OpSrc2 * src2;
+	OpSrc3 * src3;
+	OpDest * dest;
+	OpControl * control;
 
-} // end of namespace tesla 
+private:
+	typename CONFIG::address_t addr;
+	typename CONFIG::insn_t iw;
+	
+	static isa::src1::Decoder<CONFIG> src1_decoder;
+	static isa::src2::Decoder<CONFIG> src2_decoder;
+	static isa::src3::Decoder<CONFIG> src3_decoder;
+	static isa::dest::Decoder<CONFIG> dest_decoder;
+	static isa::control::Decoder<CONFIG> control_decoder;
+};
+
+} // end of namespace tesla
 } // end of namespace processor
 } // end of namespace cxx
 } // end of namespace component
 } // end of namespace unisim
 
-}
-
-impl {
-#include <unisim/component/cxx/processor/tesla/instruction.hh>
-}
-
-var is_long : { bool }
-var is_end : { bool }
-var is_join : { bool }
-var is_flow : { bool }
-
-constructor action init() {
-}
-
-action {void} disasm({ostream&} {os}) {
-	if(is_end) {
-		os << ".end";
-	}
-	else if(is_join) {
-		os << ".join";
-	}
-	if(!is_long) {
-		os << ".half";
-	}
-}
-
-// template
-op long_instruction(?[30]:marker[2]:\
-	?[30]:flow[1]:/*long*/1[1])
-
-long_instruction.init = {
-	typedef Operation<CONFIG> inherited;
-	inherited::is_long = true;
-	inherited::is_end = (marker == 1);
-	inherited::is_join = (marker == 2);
-	inherited::is_flow = flow;
-}
-
-op short_instruction(?[32]:\
-	?[30]:flow[1]:/*long*/0[1])
-
-short_instruction.init = {
-	typedef Operation<CONFIG> inherited;
-	inherited::is_long = false;
-	inherited::is_end = false;
-	inherited::is_join = false;
-	inherited::is_flow = flow;
-}
-
+#endif

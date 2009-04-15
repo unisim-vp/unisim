@@ -95,15 +95,12 @@ iadd_full.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 
 	// dest = a + c
-	reg_t a = insn->ReadSrc1();
-	reg_t c = insn->ReadSrc3();
+	reg_t & a = insn->GetSrc1();
+	reg_t & c = insn->GetSrc3();
 	
-	VectorFlags<CONFIG> flags;
+	insn->GetDest() = IAdd(a, c, insn->Flags(), sat, /*src1_neg*/0, src3_neg, m32);
 	
-	reg_t output = IAdd(a, c, flags, sat, /*src1_neg*/0, src3_neg, m32);
-	
-	insn->WriteDest(output);
-	insn->SetPredI32(output, flags);
+	//insn->SetPredI32(output, flags);
 }
 
 op iadd_half( \
@@ -150,15 +147,12 @@ iadd_halfimm.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 
 	// dest = a + c
-	reg_t a = insn->ReadSrc1();
-	reg_t c = insn->ReadSrc2();
+	reg_t & a = insn->GetSrc1();
+	reg_t & c = insn->GetSrc2();
 	
 	VectorFlags<CONFIG> flags;
 	
-	reg_t output = IAdd(a, c, flags, false, false, src3_neg, m32);
-	
-	insn->WriteDest(output);
-	insn->SetPredI32(output, flags);
+	insn->GetDest() = IAdd(a, c, insn->Flags(), false, false, src3_neg, m32);
 }
 
 op isubr_full_normal( \
@@ -214,15 +208,12 @@ isubr_full.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 
 	// dest = a + c
-	reg_t a = insn->ReadSrc1();
-	reg_t c = insn->ReadSrc3();
+	reg_t & a = insn->GetSrc1();
+	reg_t & c = insn->GetSrc3();
 	
 	VectorFlags<CONFIG> flags;
 	
-	reg_t output = IAdd(a, c, flags, sat, true, false, m32);
-	
-	insn->WriteDest(output);
-	insn->SetPredI32(output, flags);
+	insn->GetDest() = IAdd(a, c, flags, sat, true, false, m32);
 }
 
 op isubr_half( \
@@ -269,15 +260,15 @@ isubr_halfimm.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 
 	// dest = a + c
-	reg_t a = insn->ReadSrc1();
-	reg_t c = insn->ReadSrc2();
+	reg_t a = insn->GetSrc1();
+	reg_t c = insn->GetSrc2();
 	
 	VectorFlags<CONFIG> flags;
 	
 	reg_t output = IAdd(a, c, flags, false, true, false, m32);
 	
 	insn->WriteDest(output);
-	insn->SetPredI32(output, flags);
+	//insn->SetPredI32(output, flags);
 }
 
 
@@ -418,16 +409,16 @@ imad_full.execute = {
 		assert(false);
 	}
 	// dest = a * b + c
-	reg_t a = insn->ReadSrc1();
-	reg_t b = insn->ReadSrc2();
-	reg_t c = insn->ReadSrc3();	// Always 32-bit
+	reg_t a = insn->GetSrc1();
+	reg_t b = insn->GetSrc2();
+	reg_t c = insn->GetSrc3();	// Always 32-bit
 	
 	VectorFlags<CONFIG> flags;
 	
 	reg_t output = Mad24(a, b, c, flags, sat, src1_neg, src3_neg, rt, issigned, hi);
 	
 	insn->WriteDest(output);
-	insn->SetPredI32(output, flags);
+	//insn->SetPredI32(output, flags);
 }
 
 op imac_imm( \
@@ -543,8 +534,8 @@ imac_imm.execute = {
 	}
 
 	// dest = a * b + c
-	reg_t a = insn->ReadSrc1();
-	reg_t b = insn->ReadSrc2();
+	reg_t a = insn->GetSrc1();
+	reg_t b = insn->GetSrc2();
 	reg_t c = cpu->GetGPR(dest);
 	
 	VectorFlags<CONFIG> flags;
@@ -552,7 +543,7 @@ imac_imm.execute = {
 	reg_t output = Mad24(a, b, c, flags, sat, /*src1_neg*/0, src3_neg, rt, issigned, hi);
 	
 	insn->WriteDest(output);
-	insn->SetPredI32(output, flags);
+	//insn->SetPredI32(output, flags);
 }
 
 
@@ -631,15 +622,15 @@ imul24.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 
 	// dest = a * b
-	reg_t a = insn->ReadSrc1();
-	reg_t b = insn->ReadSrc2();
+	reg_t a = insn->GetSrc1();
+	reg_t b = insn->GetSrc2();
 	
 	VectorFlags<CONFIG> flags;
 	
 	reg_t output = Mul24(a, b, sat, src1_neg, src2_neg, m32, issigned, hi);
 	
 	insn->WriteDest(output);
-	insn->SetPredI32(output, flags);
+	//insn->SetPredI32(output, flags);
 }
 
 imul24_halfimm.init = {
@@ -674,15 +665,15 @@ imul24_halfimm.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 
 	// dest = a * b
-	reg_t a = insn->ReadSrc1();
-	reg_t b = insn->ReadSrc2();
+	reg_t a = insn->GetSrc1();
+	reg_t b = insn->GetSrc2();
 	
 	VectorFlags<CONFIG> flags;
 	
 	reg_t output = Mul24(a, b, 0, 0, 0, m32, issigned, 0);
 	
 	insn->WriteDest(output);
-	insn->SetPredI32(output, flags);
+	//insn->SetPredI32(output, flags);
 }
 
 
@@ -746,11 +737,11 @@ icvt_full_noimm.execute = {
 	// TODO: Read 2 regs if 64-bit
 	assert(!f64);
 //	assert(!sign);	// TODO
-	reg_t a = insn->ReadSrc1();
+	reg_t a = insn->GetSrc1();
 	reg_t output = ConvertIntInt(a, cvt_round, cvt_type, data_32, AbsSat(abs_sat));
 
 	insn->WriteDest(output);
-	insn->SetPredI32(output);	// TODO: check type?
+	//insn->SetPredI32(output);	// TODO: check type?
 	// (16-bit, etc.)
 }
 
@@ -815,11 +806,11 @@ icvtn_full_noimm.execute = {
 	assert(!f64);
 //	assert(!sign);
 	// ignore sign. TODO: check??
-	reg_t a = insn->ReadSrc1();
+	reg_t a = insn->GetSrc1();
 	reg_t output = ConvertIntInt(a, cvt_round, cvt_type, data_32, AbsSat(abs_sat), true);
 
 	insn->WriteDest(output);
-	insn->SetPredI32(output);	// TODO: check type?
+	//insn->SetPredI32(output);	// TODO: check type?
 	// (16-bit, etc.)
 }
 
@@ -878,13 +869,13 @@ shl_full.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 	
 	// dest = a << c
-	reg_t a = insn->ReadSrc1();
-	reg_t c = insn->ReadSrc2();
+	reg_t a = insn->GetSrc1();
+	reg_t c = insn->GetSrc2();
 	
 	reg_t output = ShiftLeft(a, c, u32, issigned);
 	
 	insn->WriteDest(output);
-	insn->SetPredI32(output);
+	//insn->SetPredI32(output);
 }
 
 shl_full_imm2.init = {
@@ -916,13 +907,13 @@ shl_full_imm2.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 	
 	// dest = a << c
-	reg_t a = insn->ReadSrc1();
+	reg_t a = insn->GetSrc1();
 	//reg_t c = reg_t(src2);
 	
 	reg_t output = ShiftLeft(a, src2, u32);
 	
 	insn->WriteDest(output);
-	insn->SetPredI32(output);
+	//insn->SetPredI32(output);
 }
 
 op shr_full( \
@@ -969,13 +960,13 @@ shr_full.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 	
 	// dest = a << c
-	reg_t a = insn->ReadSrc1();
-	reg_t c = insn->ReadSrc2();
+	reg_t a = insn->GetSrc1();
+	reg_t c = insn->GetSrc2();
 	
 	reg_t output = ShiftRight(a, c, u32, issigned);
 	
 	insn->WriteDest(output);
-	insn->SetPredI32(output);
+	//insn->SetPredI32(output);
 }
 
 shr_full_imm2.init = {
@@ -1007,13 +998,13 @@ shr_full_imm2.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 	
 	// dest = a << c
-	reg_t a = insn->ReadSrc1();
+	reg_t a = insn->GetSrc1();
 	//reg_t c = reg_t(src2);
 	
 	reg_t output = ShiftRight(a, src2, u32, issigned);
 	
 	insn->WriteDest(output);
-	insn->SetPredI32(output);
+	//insn->SetPredI32(output);
 }
 
 
@@ -1057,11 +1048,11 @@ and_full.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 	
 	// dest = (neg?)a & (neg?)b
-	reg_t a = insn->ReadSrc1();
+	reg_t a = insn->GetSrc1();
 	if(src1_not) {
 		a = BinNeg(a);
 	}
-	reg_t b = insn->ReadSrc2();
+	reg_t b = insn->GetSrc2();
 	if(src2_not) {
 		b = BinNeg(b);
 	}
@@ -1069,7 +1060,7 @@ and_full.execute = {
 	reg_t output = BinAnd(a, b);
 	
 	insn->WriteDest(output);
-	insn->SetPredI32(output);
+	//insn->SetPredI32(output);
 }
 
 op or_full( \
@@ -1108,11 +1099,11 @@ or_full.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 	
 	// dest = (neg?)a & (neg?)b
-	reg_t a = insn->ReadSrc1();
+	reg_t a = insn->GetSrc1();
 	if(src1_not) {
 		a = BinNeg(a);
 	}
-	reg_t b = insn->ReadSrc2();
+	reg_t b = insn->GetSrc2();
 	if(src2_not) {
 		b = BinNeg(b);
 	}
@@ -1120,7 +1111,7 @@ or_full.execute = {
 	reg_t output = BinOr(a, b);
 	
 	insn->WriteDest(output);
-	insn->SetPredI32(output);
+	//insn->SetPredI32(output);
 }
 
 op xor_full( \
@@ -1161,11 +1152,11 @@ xor_full.execute = {
 	//assert(u32);
 
 	// dest = (neg?)a & (neg?)b
-	reg_t a = insn->ReadSrc1();
+	reg_t a = insn->GetSrc1();
 	if(src1_not) {
 		a = BinNeg(a);
 	}
-	reg_t b = insn->ReadSrc2();
+	reg_t b = insn->GetSrc2();
 	if(src2_not) {
 		b = BinNeg(b);
 	}
@@ -1173,7 +1164,7 @@ xor_full.execute = {
 	reg_t output = BinXor(a, b);
 	
 	insn->WriteDest(output);
-	insn->SetPredI32(output);
+	//insn->SetPredI32(output);
 }
 
 
@@ -1214,8 +1205,8 @@ set_full.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 	
 	// dest = cond(a, b)
-	reg_t a = insn->ReadSrc1();
-	reg_t b = insn->ReadSrc2();
+	reg_t a = insn->GetSrc1();
+	reg_t b = insn->GetSrc2();
 	
 	reg_t output;
 	VectorFlags<CONFIG> vf;
@@ -1279,13 +1270,13 @@ min.execute = {
 	 assert(w32);	// TODO
 
 	// dest = cond(a, b)
-	reg_t a = insn->ReadSrc1();
-	reg_t b = insn->ReadSrc2();
+	reg_t a = insn->GetSrc1();
+	reg_t b = insn->GetSrc2();
 	
 	reg_t output = Min(a, b, w32, sign);
 	
 	insn->WriteDest(output);
-	insn->SetPredI32(output);
+	//insn->SetPredI32(output);
 }
 
 

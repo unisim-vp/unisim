@@ -32,8 +32,8 @@
  * Authors: Sylvain Collange (sylvain.collange@univ-perp.fr)
  */
 
-#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_INSTRUCTION_TCC__
-#define __UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_INSTRUCTION_TCC__
+#ifndef UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_INSTRUCTION_TCC
+#define UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_INSTRUCTION_TCC
 
 #include <unisim/component/cxx/processor/tesla/instruction.hh>
 #include <unisim/component/cxx/processor/tesla/tesla_opcode.tcc>
@@ -54,25 +54,13 @@ namespace tesla {
 template <class CONFIG>
 isa::opcode::Decoder<CONFIG> Instruction<CONFIG>::op_decoder;
 
-template <class CONFIG>
-isa::src1::Decoder<CONFIG> Instruction<CONFIG>::src1_decoder;
-
-template <class CONFIG>
-isa::src2::Decoder<CONFIG> Instruction<CONFIG>::src2_decoder;
-
-template <class CONFIG>
-isa::src3::Decoder<CONFIG> Instruction<CONFIG>::src3_decoder;
-
-template <class CONFIG>
-isa::dest::Decoder<CONFIG> Instruction<CONFIG>::dest_decoder;
-
-template <class CONFIG>
-isa::control::Decoder<CONFIG> Instruction<CONFIG>::control_decoder;
 
 template <class CONFIG>
 Instruction<CONFIG>::Instruction(CPU<CONFIG> * cpu, typename CONFIG::address_t addr, typename CONFIG::insn_t iw) :
-	cpu(cpu), addr(addr), iw(iw), operation(0), src1(0), src2(0), src3(0), dest(0), control(0)
+	cpu(cpu), addr(addr), iw(iw)
 {
+	operation = op_decoder.Decode(addr, iw);
+	flags.Reset();
 }
 
 template <class CONFIG>
@@ -81,88 +69,180 @@ Instruction<CONFIG>::~Instruction()
 }
 
 template <class CONFIG>
+void Instruction<CONFIG>::Read()
+{
+	operation->read(cpu, this);
+}
+
+template <class CONFIG>
 void Instruction<CONFIG>::Execute()
 {
-	if(operation == 0) {
-		operation = op_decoder.Decode(addr, iw);
-	}
 	operation->execute(cpu, this);
-	if(control->is_join) {
+	if(operation->control->is_join) {
 		cpu->Join();
 	}
-	if(control->is_end) {
+	if(operation->control->is_end) {
 		cpu->End();
 	}
 }
 
 template <class CONFIG>
+void Instruction<CONFIG>::Write()
+{
+	operation->write(cpu, this);
+	operation->writePred(cpu, this);
+}
+
+template <class CONFIG>
 void Instruction<CONFIG>::Disasm(std::ostream & os) const
 {
-	if(dest == 0) {
-		dest = dest_decoder.Decode(addr, iw);
-	}
-	dest->disasmPred(cpu, this, os);
+	operation->dest->disasmPred(cpu, this, os);
 
-	if(operation == 0) {
-		operation = op_decoder.Decode(addr, iw);
-	}
 	operation->disasm(cpu, this, os);
 }
 
+
 template <class CONFIG>
-VectorRegister<CONFIG> Instruction<CONFIG>::ReadSrc1(int offset) const
+VectorRegister<CONFIG> const & Instruction<CONFIG>::Temp(unsigned int i) const
 {
-	if(src1 == 0) {
-		src1 = src1_decoder.Decode(addr, iw);
-	}
-	return src1->read(cpu, offset, this);
+	assert(i < TempCount);
+	return temp[i];
 }
 
 template <class CONFIG>
-VectorRegister<CONFIG> Instruction<CONFIG>::ReadSrc2(int offset) const
+VectorRegister<CONFIG> & Instruction<CONFIG>::Temp(unsigned int i)
 {
-	if(src2 == 0) {
-		src2 = src2_decoder.Decode(addr, iw);
-	}
-	return src2->read(cpu, offset, this);
+	assert(i < TempCount);
+	return temp[i];
 }
 
 template <class CONFIG>
-VectorRegister<CONFIG> Instruction<CONFIG>::ReadSrc3(int offset) const
+VectorRegister<CONFIG> & Instruction<CONFIG>::GetSrc1()
 {
-	if(src3 == 0) {
-		src3 = src3_decoder.Decode(addr, iw);
-	}
-	return src3->read(cpu, offset, this);
+	return temp[TempSrc1];
 }
 
 template <class CONFIG>
-void Instruction<CONFIG>::WriteDest(VectorRegister<CONFIG> const & value, int offset) const
+VectorRegister<CONFIG> & Instruction<CONFIG>::GetSrc2()
 {
-	if(dest == 0) {
-		dest = dest_decoder.Decode(addr, iw);
+	return temp[TempSrc2];
+}
+
+template <class CONFIG>
+VectorRegister<CONFIG> & Instruction<CONFIG>::GetSrc3()
+{
+	return temp[TempSrc3];
+}
+
+template <class CONFIG>
+VectorRegister<CONFIG> & Instruction<CONFIG>::GetDest()
+{
+	return temp[TempDest];
+}
+
+template <class CONFIG>
+VectorFlags<CONFIG> & Instruction<CONFIG>::Flags()
+{
+	return flags;
+}
+
+template <class CONFIG>
+void Instruction<CONFIG>::SetPredI32()
+{
+	VectorFlags<CONFIG> myflags = ComputePredI32(temp[TempDest], flags);
+	operation->dest->writePred(cpu, myflags, Mask());
+}
+
+template <class CONFIG>
+void Instruction<CONFIG>::SetPredI16()
+{
+	VectorFlags<CONFIG> myflags = ComputePredI16(temp[TempDest], flags);
+	operation->dest->writePred(cpu, myflags, Mask());
+}
+
+template <class CONFIG>
+void Instruction<CONFIG>::SetPredF32()
+{
+	VectorFlags<CONFIG> myflags = ComputePredFP32(temp[TempDest]);
+	operation->dest->writePred(cpu, myflags, Mask());
+}
+
+
+template <class CONFIG>
+void Instruction<CONFIG>::ReadBlock(int dest, DataType dt)
+{
+	switch(dt)
+	{
+	case DT_U8:
+	case DT_S8:
+	case DT_U16:
+	case DT_S16:
+	case DT_U32:
+	case DT_S32:
+	case DT_F32:
+		Temp(0) = cpu->GetGPR(dest);
+		break;
+	case DT_U64:
+		Temp(0) = cpu->GetGPR(dest);
+		Temp(1) = cpu->GetGPR(dest + 1);
+		break;
+	case DT_U128:
+		Temp(0) = cpu->GetGPR(dest);
+		Temp(1) = cpu->GetGPR(dest + 1);
+		Temp(2) = cpu->GetGPR(dest + 2);
+		Temp(3) = cpu->GetGPR(dest + 3);
+		break;
+	default:
+		assert(false);
 	}
-	dest->write(cpu, this, value, Mask(), offset);
+}
+
+
+template <class CONFIG>
+void Instruction<CONFIG>::ReadSrc1(int offset)
+{
+	operation->src1->read(cpu, offset, this);
+}
+
+template <class CONFIG>
+void Instruction<CONFIG>::ReadSrc2(int offset)
+{
+	operation->src2->read(cpu, offset, this);
+}
+
+template <class CONFIG>
+void Instruction<CONFIG>::ReadSrc3(int offset)
+{
+	operation->src3->read(cpu, offset, this);
+}
+
+template <class CONFIG>
+void Instruction<CONFIG>::WriteDest()
+{
+	operation->dest->write(cpu, this, Mask(), 0);
+}
+
+
+template <class CONFIG>
+void Instruction<CONFIG>::WriteDest(VectorRegister<CONFIG> const & value, int offset)
+{
+	// Temp
+	Temp(TempDest + offset) = value;
+	//operation->dest->write(cpu, this, Mask(), offset);
 }
 
 template <class CONFIG>
 void Instruction<CONFIG>::SetPredFP32(VectorRegister<CONFIG> const & value) const
 {
 	VectorFlags<CONFIG> flags = ComputePredFP32(value);
-	if(dest == 0) {
-		dest = dest_decoder.Decode(addr, iw);
-	}
-	dest->writePred(cpu, flags, Mask());
+	operation->dest->writePred(cpu, flags, Mask());
 }
 
 template <class CONFIG>
 void Instruction<CONFIG>::SetPredI32(VectorRegister<CONFIG> const & value, VectorFlags<CONFIG> flags) const
 {
 	VectorFlags<CONFIG> myflags = ComputePredI32(value, flags);
-	if(dest == 0) {
-		dest = dest_decoder.Decode(addr, iw);
-	}
-	dest->writePred(cpu, myflags, Mask());
+	operation->dest->writePred(cpu, myflags, Mask());
 }
 
 template <class CONFIG>
@@ -174,86 +254,59 @@ void Instruction<CONFIG>::SetPredI32(VectorRegister<CONFIG> const & value) const
 template <class CONFIG>
 void Instruction<CONFIG>::SetPred(VectorFlags<CONFIG> flags) const
 {
-	if(dest == 0) {
-		dest = dest_decoder.Decode(addr, iw);
-	}
-	dest->writePred(cpu, flags, Mask());
+	operation->dest->writePred(cpu, flags, Mask());
 }
 
 template <class CONFIG>
 bitset<CONFIG::WARP_SIZE> Instruction<CONFIG>::Mask() const
 {
-	if(dest == 0) {
-		dest = dest_decoder.Decode(addr, iw);
-	}
 	// mask = current warp mask & predicate mask
 	bitset<CONFIG::WARP_SIZE> mask = cpu->CurrentWarp().mask;
-	mask &= dest->predMask(cpu);
+	mask &= operation->dest->predMask(cpu);
 	return mask;
 }
 
 template <class CONFIG>
 void Instruction<CONFIG>::DisasmSrc1(std::ostream & os) const
 {
-	if(src1 == 0) {
-		src1 = src1_decoder.Decode(addr, iw);
-	}
-	src1->disasm(cpu, this, os);
+	operation->src1->disasm(cpu, this, os);
 }
 
 template <class CONFIG>
 void Instruction<CONFIG>::DisasmSrc2(std::ostream & os) const
 {
-	if(src2 == 0) {
-		src2 = src2_decoder.Decode(addr, iw);
-	}
-	src2->disasm(cpu, this, os);
+	operation->src2->disasm(cpu, this, os);
 }
 
 template <class CONFIG>
 void Instruction<CONFIG>::DisasmSrc3(std::ostream & os) const
 {
-	if(src3 == 0) {
-		src3 = src3_decoder.Decode(addr, iw);
-	}
-	src3->disasm(cpu, this, os);
+	operation->src3->disasm(cpu, this, os);
 }
 
 
 template <class CONFIG>
 void Instruction<CONFIG>::DisasmDest(std::ostream & os) const
 {
-	if(dest == 0) {
-		dest = dest_decoder.Decode(addr, iw);
-	}
-	dest->disasm(cpu, this, os);
+	operation->dest->disasm(cpu, this, os);
 }
 
 template <class CONFIG>
 void Instruction<CONFIG>::DisasmControl(std::ostream & os) const
 {
-	if(control == 0) {
-		control = control_decoder.Decode(addr, iw);
-	}
-	control->disasm(os);
+	operation->control->disasm(os);
 }
 
 template <class CONFIG>
 bool Instruction<CONFIG>::IsLong() const
 {
-	if(control == 0) {
-		control = control_decoder.Decode(addr, iw);
-	}
-	return control->is_long;
+	return operation->control->is_long;
 }
 
 template <class CONFIG>
 bool Instruction<CONFIG>::IsEnd() const
 {
-	if(control == 0) {
-		control = control_decoder.Decode(addr, iw);
-	}
-	return control->is_end;
+	return operation->control->is_end;
 }
 
 template <class CONFIG>
@@ -267,6 +320,7 @@ RegType Instruction<CONFIG>::OperandRegType(Operand op) const
 		return RT_U16;
 	case DT_U32:
 	case DT_S32:
+	case DT_F32:
 		return RT_U32;
 	default:
 		assert(false);
@@ -288,6 +342,7 @@ SMType Instruction<CONFIG>::OperandSMType(Operand op) const
 		return SM_S16;
 	case DT_U32:
 	case DT_S32:
+	case DT_F32:
 		return SM_U32;
 	default:
 		assert(false);
@@ -308,6 +363,7 @@ size_t Instruction<CONFIG>::OperandSize(Operand op) const
 		return 2;
 	case DT_U32:
 	case DT_S32:
+	case DT_F32:
 		return 4;
 	case DT_U64:
 		return 8;
@@ -324,9 +380,6 @@ DataType Instruction<CONFIG>::OperandDataType(Operand op) const
 {
 	// NOT actual type, can be overriden by operand
 	// TODO: fix with override
-	if(operation == 0) {
-		operation = op_decoder.Decode(addr, iw);
-	}
 	return operation->op_type[op];
 }
 
@@ -340,18 +393,12 @@ Domain Instruction<CONFIG>::OperandDomain(Operand op) const
 template <class CONFIG>
 bool Instruction<CONFIG>::AllowSegment() const
 {
-	if(operation == 0) {
-		operation = op_decoder.Decode(addr, iw);
-	}
 	return operation->allow_segment;
 }
 
 template <class CONFIG>
 bool Instruction<CONFIG>::ForceReg(Operand op) const
 {
-	if(operation == 0) {
-		operation = op_decoder.Decode(addr, iw);
-	}
 	return operation->force_reg[op];
 }
 

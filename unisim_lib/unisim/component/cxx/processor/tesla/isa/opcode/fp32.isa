@@ -65,6 +65,14 @@ group fsmad_full(fsmad_full_noconst_normal, fsmad_full_noconst_end, fsmad_full_n
 
 // Sat?
 
+fsmad_full.init = {
+	typedef Operation<CONFIG> inherited;
+	inherited::allow_segment = true;
+	inherited::op_type[OpDest] = DT_F32;
+	inherited::op_type[OpSrc1] = DT_F32;
+	inherited::op_type[OpSrc2] = DT_F32;
+	inherited::op_type[OpSrc3] = DT_F32;
+}
 
 fsmad_full.disasm = {
 	buffer << "mad";
@@ -89,14 +97,14 @@ fsmad_full.disasm = {
 fsmad_full.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 	// dest = a * b + c
-	reg_t a = insn->ReadSrc1();
-	reg_t b = insn->ReadSrc2();
-	reg_t c = insn->ReadSrc3();
+	reg_t & a = insn->GetSrc1();
+	reg_t & b = insn->GetSrc2();
+	reg_t & c = insn->GetSrc3();
 	
 	reg_t output = FSMad(a, b, c, src1_neg, 0, src3_neg, rounding_mode);
 	
 	insn->WriteDest(output);
-	insn->SetPredFP32(output);
+	//insn->SetPredFP32(output);
 }
 
 op fsmad_full_const3_normal( \
@@ -161,14 +169,14 @@ fsmad_full_const.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 //	cpu.ExecMarker(marker);
 	// dest = a * b + c
-	reg_t a = insn->ReadSrc1();
-	reg_t b = insn->ReadSrc2();
-	reg_t c = insn->ReadSrc3();
+	reg_t & a = insn->GetSrc1();
+	reg_t & b = insn->GetSrc2();
+	reg_t & c = insn->GetSrc3();
 	
 	reg_t output = FSMad(a, b, c, src1_neg, 0, src3_neg, RM_RN);
 	
 	insn->WriteDest(output);
-	insn->SetPredFP32(output);
+	//insn->SetPredFP32(output);
 }
 
 
@@ -188,6 +196,15 @@ op fsmad_half(\
 // TODO: fsmad_half
 
 group fsmac(fsmac_imm)
+
+fsmac.init = {
+	typedef Operation<CONFIG> inherited;
+	inherited::allow_segment = true;
+	inherited::op_type[OpDest] = DT_F32;
+	inherited::op_type[OpSrc1] = DT_F32;
+	inherited::op_type[OpSrc2] = DT_F32;
+	inherited::op_type[OpSrc3] = DT_NONE;
+}
 
 fsmac.disasm = {
 	if(src3_neg) {		// ??
@@ -211,13 +228,13 @@ fsmac.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 	// dest += a * b
 	// b immediate
-	reg_t a = insn->ReadSrc1();
-	reg_t b = insn->ReadSrc2();
+	reg_t a = insn->GetSrc1();
+	reg_t b = insn->GetSrc2();
 	reg_t c = cpu->GetGPR(dest);
 
 	reg_t output = FSMad(a, b, c, /*src1_neg*/0, 0, src3_neg, RM_RN);
 	insn->WriteDest(output);
-	insn->SetPredFP32(output);
+	//insn->SetPredFP32(output);
 }
 
 
@@ -243,6 +260,15 @@ op fsadd_full_join( \
 
 group fsadd_full(fsadd_full_normal, fsadd_full_end, fsadd_full_join)
 
+fsadd_full.init = {
+	typedef Operation<CONFIG> inherited;
+	inherited::allow_segment = true;
+	inherited::op_type[OpDest] = DT_F32;
+	inherited::op_type[OpSrc1] = DT_F32;
+	inherited::op_type[OpSrc2] = DT_NONE;
+	inherited::op_type[OpSrc3] = DT_F32;
+}
+
 fsadd_full.disasm = {
 //	cpu.DisasmPred(pred_cond, pred_reg, buffer);
 
@@ -267,13 +293,13 @@ fsadd_full.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 
 	// dest = a + c
-	reg_t a = insn->ReadSrc1();
-	reg_t c = insn->ReadSrc3();
+	reg_t & a = insn->GetSrc1();
+	reg_t & c = insn->GetSrc3();
 	
 	reg_t output = FSAdd(a, c, src1_neg, src3_neg, rounding_mode);
 	
 	insn->WriteDest(output);
-	insn->SetPredFP32(output);
+	//insn->SetPredFP32(output);
 }
 
 op fsadd_imm( \
@@ -289,6 +315,15 @@ op fsadd_half( \
 )
 
 group fsadd_halfimm(fsadd_imm, fsadd_half)
+
+fsadd_halfimm.init = {
+	typedef Operation<CONFIG> inherited;
+	inherited::allow_segment = true;
+	inherited::op_type[OpDest] = DT_F32;
+	inherited::op_type[OpSrc1] = DT_F32;
+	inherited::op_type[OpSrc2] = DT_F32;
+	inherited::op_type[OpSrc3] = DT_NONE;
+}
 
 fsadd_halfimm.disasm = {
 //	cpu.DisasmPred(pred_cond, pred_reg, buffer);
@@ -312,13 +347,13 @@ fsadd_halfimm.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 
 	// dest = a + b
-	reg_t a = insn->ReadSrc1();
-	reg_t b = insn->ReadSrc2();
+	reg_t & a = insn->GetSrc1();
+	reg_t & b = insn->GetSrc2();
 	
 	reg_t output = FSAdd(a, b, src1_neg, src2_neg, RM_RN);
 	
 	insn->WriteDest(output);
-	insn->SetPredFP32(output);
+	//insn->SetPredFP32(output);
 }
 
 
@@ -379,6 +414,15 @@ group fsmul_full(fsmul_full_noconst_normal, fsmul_full_noconst_end, fsmul_full_n
 group fsmul_full_const(fsmul_full_const_normal, fsmul_full_const_end, fsmul_full_const_join)
 group fsmul_halfimm(fsmul_imm, fsmul_half)
 
+fsmul_full.init = {
+	typedef Operation<CONFIG> inherited;
+	inherited::allow_segment = true;
+	inherited::op_type[OpDest] = DT_F32;
+	inherited::op_type[OpSrc1] = DT_F32;
+	inherited::op_type[OpSrc2] = DT_F32;
+	inherited::op_type[OpSrc3] = DT_NONE;
+}
+
 fsmul_full.disasm = {
 
 	buffer << "mul";
@@ -402,15 +446,24 @@ fsmul_full.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 
 	// dest = a * b
-	reg_t a = insn->ReadSrc1();
-	reg_t b = insn->ReadSrc2();
+	reg_t & a = insn->GetSrc1();
+	reg_t & b = insn->GetSrc2();
 
 	// src3_neg applies to Src2 here
 	// (not very useful to have -a * -b btw)
 	reg_t output = FSMul(a, b, src1_neg, src3_neg, rounding_mode);
 	
 	insn->WriteDest(output);
-	insn->SetPredFP32(output);
+	//insn->SetPredFP32(output);
+}
+
+fsmul_full_const.init = {
+	typedef Operation<CONFIG> inherited;
+	inherited::allow_segment = true;
+	inherited::op_type[OpDest] = DT_F32;
+	inherited::op_type[OpSrc1] = DT_F32;
+	inherited::op_type[OpSrc2] = DT_F32;
+	inherited::op_type[OpSrc3] = DT_NONE;
 }
 
 fsmul_full_const.disasm = {
@@ -433,17 +486,26 @@ fsmul_full_const.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 
 	// dest = a * b
-	reg_t a = insn->ReadSrc1();
-	reg_t b = insn->ReadSrc2();
+	reg_t & a = insn->GetSrc1();
+	reg_t & b = insn->GetSrc2();
 
 	// src3_neg applies to Src2 here
 	// (not very useful to have -a * -b btw)
 	reg_t output = FSMul(a, b, src1_neg, src3_neg, RM_RN);
 	
 	insn->WriteDest(output);
-	insn->SetPredFP32(output);
+	//insn->SetPredFP32(output);
 }
 
+
+fsmul_halfimm.init = {
+	typedef Operation<CONFIG> inherited;
+	inherited::allow_segment = true;
+	inherited::op_type[OpDest] = DT_F32;
+	inherited::op_type[OpSrc1] = DT_F32;
+	inherited::op_type[OpSrc2] = DT_F32;
+	inherited::op_type[OpSrc3] = DT_NONE;
+}
 
 fsmul_halfimm.disasm = {
 
@@ -467,15 +529,15 @@ fsmul_halfimm.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 
 	// dest = a * b
-	reg_t a = insn->ReadSrc1();
-	reg_t b = insn->ReadSrc2();
+	reg_t & a = insn->GetSrc1();
+	reg_t & b = insn->GetSrc2();
 
 	// src3_neg applies to Src2 here
 	// (not very useful to have -a * -b btw)
 	reg_t output = FSMul(a, b, src1_neg, src3_neg, RM_RN);
 	
 	insn->WriteDest(output);
-	insn->SetPredFP32(output);
+	//insn->SetPredFP32(output);
 }
 
 
@@ -495,8 +557,8 @@ fsset.init = {
 	DataType dt = RegTypeToDataType(RegType(m32));
 	inherited::allow_segment = false;
 	inherited::op_type[OpDest] = dt;
-	inherited::op_type[OpSrc1] = DT_U32;
-	inherited::op_type[OpSrc2] = DT_U32;
+	inherited::op_type[OpSrc1] = DT_F32;
+	inherited::op_type[OpSrc2] = DT_F32;
 	inherited::op_type[OpSrc3] = DT_NONE;
 }
 
@@ -530,8 +592,8 @@ fsset.execute = {
 	//assert(!src1_neg);
 
 	// dest = a * b
-	reg_t a = insn->ReadSrc1();
-	reg_t b = insn->ReadSrc2();
+	reg_t & a = insn->GetSrc1();
+	reg_t & b = insn->GetSrc2();
 	reg_t output;
 	VectorFlags<CONFIG> vf;
 
@@ -560,7 +622,7 @@ fcvti_full.init = {
 	typedef Operation<CONFIG> inherited;
 	DataType dt = RegTypeToDataType(RegType(data_32));
 	inherited::allow_segment = false;
-	inherited::op_type[OpDest] = dt;
+	inherited::op_type[OpDest] = DT_F32; //dt;
 	inherited::op_type[OpSrc1] = CvtTypeToDataType(ConvType(cvt_type));	// Or always 32??
 	inherited::op_type[OpSrc2] = DT_NONE;
 	inherited::op_type[OpSrc3] = DT_NONE;
@@ -589,11 +651,11 @@ fcvti_full.execute = {
 	// dest = a
 	// TODO: Read 2 regs if 64-bit
 	assert(!f64);
-	reg_t a = insn->ReadSrc1();
+	reg_t & a = insn->GetSrc1();
 	reg_t output = ConvertFloatInt(a, cvt_round, cvt_type, data_32);
 
 	insn->WriteDest(output);
-	insn->SetPredFP32(output);
+	//insn->SetPredFP32(output);
 }
 
 
@@ -612,8 +674,8 @@ op fmov_full( \
 
 fmov_full.init = {
 	typedef Operation<CONFIG> inherited;
-	inherited::op_type[OpDest] = DT_U32;
-	inherited::op_type[OpSrc1] = DT_U32;
+	inherited::op_type[OpDest] = DT_F32;
+	inherited::op_type[OpSrc1] = DT_F32;
 	inherited::op_type[OpSrc2] = DT_NONE;
 	inherited::op_type[OpSrc3] = DT_NONE;
 }
@@ -634,11 +696,11 @@ fmov_full.disasm = {
 fmov_full.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 	assert(!f64);
-	reg_t a = insn->ReadSrc1();
+	reg_t & a = insn->GetSrc1();
 	reg_t output = FSMov(a, src1_neg);
 
 	insn->WriteDest(output);
-	insn->SetPredFP32(output);
+	//insn->SetPredFP32(output);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -660,7 +722,7 @@ group rr_ex2(rr_ex2_full)
 rr_ex2.init = {
 	typedef Operation<CONFIG> inherited;
 	inherited::op_type[OpDest] = DT_U32;
-	inherited::op_type[OpSrc1] = DT_U32;
+	inherited::op_type[OpSrc1] = DT_F32;
 	inherited::op_type[OpSrc2] = DT_NONE;
 	inherited::op_type[OpSrc3] = DT_NONE;
 }
@@ -680,7 +742,7 @@ rr_ex2.disasm = {
 
 rr_ex2.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
-	reg_t a = insn->ReadSrc1();
+	reg_t & a = insn->GetSrc1();
 	reg_t output = RRExp2(a);
 
 	insn->WriteDest(output);
@@ -703,7 +765,7 @@ group rr_trig(rr_trig_full_normal)
 rr_trig.init = {
 	typedef Operation<CONFIG> inherited;
 	inherited::op_type[OpDest] = DT_U32;
-	inherited::op_type[OpSrc1] = DT_U32;
+	inherited::op_type[OpSrc1] = DT_F32;
 	inherited::op_type[OpSrc2] = DT_NONE;
 	inherited::op_type[OpSrc3] = DT_NONE;
 }
@@ -723,7 +785,7 @@ rr_trig.disasm = {
 
 rr_trig.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
-	reg_t a = insn->ReadSrc1();
+	reg_t & a = insn->GetSrc1();
 	reg_t output = RRTrig(a);
 
 	insn->WriteDest(output);
@@ -750,8 +812,8 @@ group rcp(rcp_full_normal, rcp_half)
 
 rcp.init = {
 	typedef Operation<CONFIG> inherited;
-	inherited::op_type[OpDest] = DT_U32;
-	inherited::op_type[OpSrc1] = DT_U32;
+	inherited::op_type[OpDest] = DT_F32;
+	inherited::op_type[OpSrc1] = DT_F32;
 	inherited::op_type[OpSrc2] = DT_NONE;
 	inherited::op_type[OpSrc3] = DT_NONE;
 }
@@ -771,11 +833,11 @@ rcp.disasm = {
 
 rcp.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
-	reg_t a = insn->ReadSrc1();
+	reg_t & a = insn->GetSrc1();
 	reg_t output = Rcp(a);
 
 	insn->WriteDest(output);
-	insn->SetPredFP32(output);
+	//insn->SetPredFP32(output);
 }
 
 ////// RSQ
@@ -795,8 +857,8 @@ group rsq(rsq_full_normal)
 
 rsq.init = {
 	typedef Operation<CONFIG> inherited;
-	inherited::op_type[OpDest] = DT_U32;
-	inherited::op_type[OpSrc1] = DT_U32;
+	inherited::op_type[OpDest] = DT_F32;
+	inherited::op_type[OpSrc1] = DT_F32;
 	inherited::op_type[OpSrc2] = DT_NONE;
 	inherited::op_type[OpSrc3] = DT_NONE;
 }
@@ -816,11 +878,11 @@ rsq.disasm = {
 
 rsq.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
-	reg_t a = insn->ReadSrc1();
+	reg_t & a = insn->GetSrc1();
 	reg_t output = Rsq(a);
 
 	insn->WriteDest(output);
-	insn->SetPredFP32(output);
+	//insn->SetPredFP32(output);
 }
 
 ////// LG2
@@ -840,8 +902,8 @@ group lg2(lg2_full_normal)
 
 lg2.init = {
 	typedef Operation<CONFIG> inherited;
-	inherited::op_type[OpDest] = DT_U32;
-	inherited::op_type[OpSrc1] = DT_U32;
+	inherited::op_type[OpDest] = DT_F32;
+	inherited::op_type[OpSrc1] = DT_F32;
 	inherited::op_type[OpSrc2] = DT_NONE;
 	inherited::op_type[OpSrc3] = DT_NONE;
 }
@@ -861,11 +923,11 @@ lg2.disasm = {
 
 lg2.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
-	reg_t a = insn->ReadSrc1();
+	reg_t a = insn->GetSrc1();
 	reg_t output = Log2(a);
 
 	insn->WriteDest(output);
-	insn->SetPredFP32(output);
+	//insn->SetPredFP32(output);
 }
 
 ////// SIN
@@ -885,7 +947,7 @@ group sin(sin_full_normal)
 
 sin.init = {
 	typedef Operation<CONFIG> inherited;
-	inherited::op_type[OpDest] = DT_U32;
+	inherited::op_type[OpDest] = DT_F32;
 	inherited::op_type[OpSrc1] = DT_U32;
 	inherited::op_type[OpSrc2] = DT_NONE;
 	inherited::op_type[OpSrc3] = DT_NONE;
@@ -906,11 +968,11 @@ sin.disasm = {
 
 sin.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
-	reg_t a = insn->ReadSrc1();
+	reg_t & a = insn->GetSrc1();
 	reg_t output = Sin(a);
 
 	insn->WriteDest(output);
-	insn->SetPredFP32(output);
+	//insn->SetPredFP32(output);
 }
 
 ////// COS
@@ -930,7 +992,7 @@ group cos(cos_full_normal)
 
 cos.init = {
 	typedef Operation<CONFIG> inherited;
-	inherited::op_type[OpDest] = DT_U32;
+	inherited::op_type[OpDest] = DT_F32;
 	inherited::op_type[OpSrc1] = DT_U32;
 	inherited::op_type[OpSrc2] = DT_NONE;
 	inherited::op_type[OpSrc3] = DT_NONE;
@@ -951,11 +1013,11 @@ cos.disasm = {
 
 cos.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
-	reg_t a = insn->ReadSrc1();
+	reg_t & a = insn->GetSrc1();
 	reg_t output = Cos(a);
 
 	insn->WriteDest(output);
-	insn->SetPredFP32(output);
+	//insn->SetPredFP32(output);
 }
 
 ////// EX2
@@ -975,7 +1037,7 @@ group ex2(ex2_full_normal)
 
 ex2.init = {
 	typedef Operation<CONFIG> inherited;
-	inherited::op_type[OpDest] = DT_U32;
+	inherited::op_type[OpDest] = DT_F32;
 	inherited::op_type[OpSrc1] = DT_U32;
 	inherited::op_type[OpSrc2] = DT_NONE;
 	inherited::op_type[OpSrc3] = DT_NONE;
@@ -996,11 +1058,11 @@ ex2.disasm = {
 
 ex2.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
-	reg_t a = insn->ReadSrc1();
+	reg_t & a = insn->GetSrc1();
 	reg_t output = Exp2(a);
 
 	insn->WriteDest(output);
-	insn->SetPredFP32(output);
+	//insn->SetPredFP32(output);
 }
 
 
@@ -1048,13 +1110,13 @@ fsmax.disasm = {
 fsmax.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 
-	reg_t a = insn->ReadSrc1();
-	reg_t b = insn->ReadSrc2();
+	reg_t & a = insn->GetSrc1();
+	reg_t & b = insn->GetSrc2();
 	
 	reg_t output = FSMax(a, b);
 	
 	insn->WriteDest(output);
-	insn->SetPredFP32(output);
+	//insn->SetPredFP32(output);
 }
 
 

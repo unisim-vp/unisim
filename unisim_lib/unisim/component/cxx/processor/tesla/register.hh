@@ -59,7 +59,8 @@ enum DataType
 	DT_U128 = 5,
 	DT_U32 = 6,
 	DT_S32 = 7,
-	DT_NONE,	// Not in Tesla ISA
+	DT_F32,		// Not in Tesla ISA
+	DT_NONE,	//
 	DT_UNKNOWN	//
 };
 
@@ -115,7 +116,8 @@ inline DataType CvtTypeToDataType(ConvType ct);
 inline size_t DataTypeSize(DataType dt);
 inline DataType SMTypeToDataType(SMType st);
 
-
+template <class CONFIG>
+struct VectorAddress;
 
 // Inherit from valarray<CONFIG::reg_t>??
 template <class CONFIG>
@@ -125,6 +127,7 @@ struct VectorRegister
 	typedef typename CONFIG::reg_t reg_t;
 	VectorRegister();
 	VectorRegister(uint32_t val);
+	VectorRegister(VectorAddress<CONFIG> const & addr);
 	void NegateFP32();
 	void Write(VectorRegister<CONFIG> const & vec, std::bitset<CONFIG::WARP_SIZE> mask);
 	void Write16(VectorRegister<CONFIG> const & vec, std::bitset<CONFIG::WARP_SIZE> mask, int hi);

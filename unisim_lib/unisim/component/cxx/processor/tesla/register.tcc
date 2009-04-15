@@ -140,6 +140,7 @@ inline size_t DataTypeSize(DataType dt)
 		return 2;
 	case DT_U32:
 	case DT_S32:
+	case DT_F32:
 		return 4;
 	case DT_U64:
 		return 8;
@@ -187,6 +188,15 @@ VectorRegister<CONFIG>::VectorRegister(uint32_t val)
 //	{
 //		WriteLane(val, i);
 //	}
+}
+
+template <class CONFIG>
+VectorRegister<CONFIG>::VectorRegister(VectorAddress<CONFIG> const & addr)
+{
+	for(unsigned int i = 0; i != WARP_SIZE; ++i)
+	{
+		WriteLane(addr[i], i);
+	}
 }
 
 template <class CONFIG>

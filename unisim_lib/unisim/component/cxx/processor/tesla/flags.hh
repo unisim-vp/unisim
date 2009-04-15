@@ -136,6 +136,9 @@ template<class CONFIG>
 VectorFlags<CONFIG> ComputePredI32(VectorRegister<CONFIG> const & output, VectorFlags<CONFIG> flags);
 
 template<class CONFIG>
+VectorFlags<CONFIG> ComputePredI16(VectorRegister<CONFIG> const & output, VectorFlags<CONFIG> flags);
+
+template<class CONFIG>
 VectorFlags<CONFIG> ComputePredSetI(VectorRegister<CONFIG> & output,
 	VectorRegister<CONFIG> const & a,
 	VectorRegister<CONFIG> const & b,
