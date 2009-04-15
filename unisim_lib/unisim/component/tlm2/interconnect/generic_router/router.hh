@@ -112,12 +112,30 @@ class Router :
 	public sc_module {
 private:
 	typedef unisim::kernel::service::Object Object;
-	static const unsigned int MAX_INPUT_SOCKETS = CONFIG::MAX_INPUT_SOCKETS;
-	static const unsigned int MAX_OUTPUT_SOCKETS = CONFIG::MAX_OUTPUT_SOCKETS;
+	static const unsigned int INPUT_SOCKETS = CONFIG::INPUT_SOCKETS;
+	static const unsigned int OUTPUT_SOCKETS = CONFIG::OUTPUT_SOCKETS;
 	static const unsigned int MAX_NUM_MAPPINGS = CONFIG::MAX_NUM_MAPPINGS; 
 	static const unsigned int BUSWIDTH = CONFIG::BUSWIDTH;
 	typedef typename CONFIG::TYPES TYPES;
-	static const bool DEBUG = CONFIG::DEBUG;
+	static const bool VERBOSE = CONFIG::VERBOSE;
+
+	class InitSocket : 
+		public tlm_utils::simple_initiator_socket_tagged<Router, BUSWIDTH, TYPES> {
+	public:
+		InitSocket() :
+			tlm_utils::simple_initiator_socket_tagged<Router, BUSWIDTH, TYPES>("init_socket")
+		{
+		}
+	};
+
+	class TargSocket :
+		public tlm_utils::passthrough_target_socket_tagged<Router, BUSWIDTH, TYPES> {
+	public:
+		TargSocket() :
+			tlm_utils::passthrough_target_socket_tagged<Router, BUSWIDTH, TYPES>("targ_socket")
+		{
+		}
+	};
 
 public:
 	SC_HAS_PROCESS(Router);
@@ -125,10 +143,12 @@ public:
 	~Router();
 
 	/** Router initiator port sockets */
-	tlm_utils::simple_initiator_socket_tagged<Router, BUSWIDTH, TYPES> *init_socket[MAX_OUTPUT_SOCKETS];
+	InitSocket init_socket[OUTPUT_SOCKETS];
+	// tlm_utils::simple_initiator_socket_tagged<Router, BUSWIDTH, TYPES> init_socket[OUTPUT_SOCKETS];
 	// TODO: remove ==> tlm_utils::multi_passthrough_initiator_socket<Router, BUSWIDTH, TYPES> init_socket;
 	/** Router target port sockets */
-	tlm_utils::passthrough_target_socket_tagged<Router, BUSWIDTH, TYPES> *targ_socket[MAX_INPUT_SOCKETS];
+	TargSocket targ_socket[INPUT_SOCKETS];
+	// tlm_utils::passthrough_target_socket_tagged<Router, BUSWIDTH, TYPES> targ_socket[INPUT_SOCKETS];
 	// TODO: remove ==> tlm_utils::multi_passthrough_target_socket<Router, BUSWIDTH, TYPES> targ_socket;
 	
 	/** Object setup method
@@ -286,10 +306,10 @@ private:
 	sc_core::sc_time cycle_time;
 	double cycle_time_double;
 	unisim::kernel::service::Parameter<double> param_cycle_time_double;
-	unsigned int num_input_sockets;
-	unisim::kernel::service::Parameter<unsigned int> param_num_input_sockets;
-	unsigned int num_output_sockets;
-	unisim::kernel::service::Parameter<unsigned int> param_num_output_sockets;
+//	unsigned int num_input_sockets;
+//	unisim::kernel::service::Parameter<unsigned int> param_num_input_sockets;
+//	unsigned int num_output_sockets;
+//	unisim::kernel::service::Parameter<unsigned int> param_num_output_sockets;
 	Mapping mapping[MAX_NUM_MAPPINGS];
 	unisim::kernel::service::Parameter<Mapping> *param_mapping[MAX_NUM_MAPPINGS];
 	unsigned int port_buffer_size;

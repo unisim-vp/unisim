@@ -39,5 +39,5 @@ template
 class unisim::component::tlm2::interconnect::generic_router::Router<>;
 
 template
-class unisim::component::tlm2::interconnect::generic_router::Router<unisim::component::tlm2::interconnect::generic_router::DebugConfig>;
+class unisim::component::tlm2::interconnect::generic_router::Router<unisim::component::tlm2::interconnect::generic_router::VerboseConfig>;
 

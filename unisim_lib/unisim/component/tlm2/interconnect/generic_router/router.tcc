@@ -139,10 +139,6 @@ m_rsp_dispatcher(),
 cycle_time(SC_ZERO_TIME),
 cycle_time_double(0.0),
 param_cycle_time_double("cycle_time", this, cycle_time_double, "Time to process a request/response by the router in SC_PS)"),
-num_input_sockets(0),
-param_num_input_sockets("num_input_sockets", this, num_input_sockets, "Defines the number of input sockets used (must be bigger than 0)"),
-num_output_sockets(0),
-param_num_output_sockets("num_output_sockets", this, num_output_sockets, "Defines the number of output sockets used (must be bigger than 0)"),
 port_buffer_size(0),
 param_port_buffer_size("port_buffer_size", this, port_buffer_size, "Defines the size of the buffer for incomming requests in each of the input ports (0 = infinite)"),
 logger(*this),
@@ -151,7 +147,7 @@ verbose_setup(false),
 verbose_non_blocking(false),
 verbose_blocking(false)
 {
-	if (DEBUG)
+	if (VERBOSE)
 	{
 		param_verbose_all = new unisim::kernel::service::Parameter<bool>("verbose_all", this, verbose_all, "Activate all the verbose options");
 		param_verbose_setup = new unisim::kernel::service::Parameter<bool>("verbose_setup", this, verbose_setup, "Display Object setup information");
@@ -169,17 +165,25 @@ verbose_blocking(false)
 		param_mapping[i] = new unisim::kernel::service::Parameter<Mapping>(buf.str().c_str(), this, mapping[i], mapping_desc);
 	}
 
-	/* create target sockets and register socket callbacks */
-	for (unsigned int i = 0; i < MAX_INPUT_SOCKETS; i++)
+	/* register target sockets callbacks */
+	for (unsigned int i = 0; i < INPUT_SOCKETS; i++)
 	{
-		std::stringstream buf;
-		buf << "targ_socket[" << i << "]";
-		targ_socket[i] = new tlm_utils::passthrough_target_socket_tagged<Router, BUSWIDTH, TYPES>(buf.str().c_str());
-		targ_socket[i]->register_nb_transport_fw(	this, &Router<CONFIG>::T_nb_transport_fw_cb, i);
-		targ_socket[i]->register_b_transport(		this, &Router<CONFIG>::T_b_transport_cb, i);
-		targ_socket[i]->register_transport_dbg(		this, &Router<CONFIG>::T_transport_dbg_cb, i);
-		targ_socket[i]->register_get_direct_mem_ptr(this, &Router<CONFIG>::T_get_direct_mem_ptr_cb, i);
+		targ_socket[i].register_nb_transport_fw(	this, &Router<CONFIG>::T_nb_transport_fw_cb, i);
+		targ_socket[i].register_b_transport(		this, &Router<CONFIG>::T_b_transport_cb, i);
+		targ_socket[i].register_transport_dbg(		this, &Router<CONFIG>::T_transport_dbg_cb, i);
+		targ_socket[i].register_get_direct_mem_ptr(this, &Router<CONFIG>::T_get_direct_mem_ptr_cb, i);
 	}
+//	/* create target sockets and register socket callbacks */
+//	for (unsigned int i = 0; i < MAX_INPUT_SOCKETS; i++)
+//	{
+//		std::stringstream buf;
+//		buf << "targ_socket[" << i << "]";
+//		targ_socket[i] = new tlm_utils::passthrough_target_socket_tagged<Router, BUSWIDTH, TYPES>(buf.str().c_str());
+//		targ_socket[i]->register_nb_transport_fw(	this, &Router<CONFIG>::T_nb_transport_fw_cb, i);
+//		targ_socket[i]->register_b_transport(		this, &Router<CONFIG>::T_b_transport_cb, i);
+//		targ_socket[i]->register_transport_dbg(		this, &Router<CONFIG>::T_transport_dbg_cb, i);
+//		targ_socket[i]->register_get_direct_mem_ptr(this, &Router<CONFIG>::T_get_direct_mem_ptr_cb, i);
+//	}
 
 	// TODO: remove ==>	/* register target multi socket callbacks */
  	// TODO: remove ==>	targ_socket.register_nb_transport_fw(    this, &Router<CONFIG>::T_nb_transport_fw_cb);
@@ -187,15 +191,21 @@ verbose_blocking(false)
  	// TODO: remove ==>	targ_socket.register_transport_dbg(      this, &Router<CONFIG>::T_transport_dbg_cb);
  	// TODO: remove ==>	targ_socket.register_get_direct_mem_ptr( this, &Router<CONFIG>::T_get_direct_mem_ptr_cb);
 
-	/* create initiator sockets and register socket callbacks */
-	for (unsigned int i = 0; i < MAX_OUTPUT_SOCKETS; i++)
+	/* register initiator sockets callbacks */
+	for (unsigned int i = 0; i < OUTPUT_SOCKETS; i++)
 	{
-		std::stringstream buf;
-		buf << "init_socket[" << i << "]";
-		init_socket[i] = new tlm_utils::simple_initiator_socket_tagged<Router, BUSWIDTH, TYPES>(buf.str().c_str());
-		init_socket[i]->register_nb_transport_bw(			this, &Router<CONFIG>::I_nb_transport_bw_cb, i);
-		init_socket[i]->register_invalidate_direct_mem_ptr(	this, &Router<CONFIG>::I_invalidate_direct_mem_ptr_cb, i);
+		init_socket[i].register_nb_transport_bw(			this, &Router<CONFIG>::I_nb_transport_bw_cb, i);
+		init_socket[i].register_invalidate_direct_mem_ptr(	this, &Router<CONFIG>::I_invalidate_direct_mem_ptr_cb, i);
 	}
+//	/* create initiator sockets and register socket callbacks */
+//	for (unsigned int i = 0; i < MAX_OUTPUT_SOCKETS; i++)
+//	{
+//		std::stringstream buf;
+//		buf << "init_socket[" << i << "]";
+//		init_socket[i] = new tlm_utils::simple_initiator_socket_tagged<Router, BUSWIDTH, TYPES>(buf.str().c_str());
+//		init_socket[i]->register_nb_transport_bw(			this, &Router<CONFIG>::I_nb_transport_bw_cb, i);
+//		init_socket[i]->register_invalidate_direct_mem_ptr(	this, &Router<CONFIG>::I_invalidate_direct_mem_ptr_cb, i);
+//	}
 
 	// TODO: remove ==>	/* register initiator socket callbacks */
 	// TODO: remove ==>	init_socket.register_nb_transport_bw(           this, &Router<CONFIG>::I_nb_transport_bw_cb);
@@ -232,28 +242,30 @@ Router<CONFIG>::
 Setup()
 {
 	const unsigned int num_mappings = CONFIG::MAX_NUM_MAPPINGS;
-	const unsigned int max_input_sockets = CONFIG::MAX_INPUT_SOCKETS;
-	const unsigned int max_output_sockets = CONFIG::MAX_OUTPUT_SOCKETS;
-
-	if (num_input_sockets == 0 || num_input_sockets > max_input_sockets)
-	{
-		logger << DebugError << "PARAMETER ERROR: the num_input_sockets parameter must be bigger than 0 and smaller than " << (max_input_sockets + 1) << endl
-			<< LOCATION << EndDebug;
-		return false;
-	}
-
-	for (unsigned int i = num_input_sockets; i < max_input_sockets; i++)
-		delete targ_socket[i];
-
-	if (num_output_sockets == 0 || num_output_sockets > max_output_sockets)
-	{
-		logger << DebugError << "PARAMETER ERROR: the num_output_sockets parameter must be bigger than 0 and smaller than" << (max_output_sockets + 1) << endl
-			<< LOCATION << EndDebug;
-		return false;
-	}
-
-	for (unsigned int i = num_output_sockets; i < max_output_sockets; i++)
-		delete init_socket[i];
+//	const unsigned int INPUT_SOCKETS = CONFIG::INPUT_SOCKETS;
+//	const unsigned int OUTPUT_SOCKETS = CONFIG::OUTPUT_SOCKETS;
+//	const unsigned int nput_sockets = CONFIG::MAX_INPUT_SOCKETS;
+//	const unsigned int max_output_sockets = CONFIG::MAX_OUTPUT_SOCKETS;
+//
+//	if (num_input_sockets == 0 || num_input_sockets > max_input_sockets)
+//	{
+//		logger << DebugError << "PARAMETER ERROR: the num_input_sockets parameter must be bigger than 0 and smaller than " << (max_input_sockets + 1) << endl
+//			<< LOCATION << EndDebug;
+//		return false;
+//	}
+//
+//	for (unsigned int i = num_input_sockets; i < max_input_sockets; i++)
+//		delete targ_socket[i];
+//
+//	if (num_output_sockets == 0 || num_output_sockets > max_output_sockets)
+//	{
+//		logger << DebugError << "PARAMETER ERROR: the num_output_sockets parameter must be bigger than 0 and smaller than" << (max_output_sockets + 1) << endl
+//			<< LOCATION << EndDebug;
+//		return false;
+//	}
+//
+//	for (unsigned int i = num_output_sockets; i < max_output_sockets; i++)
+//		delete init_socket[i];
 
 	if (cycle_time_double == 0.0) 
 	{
@@ -277,7 +289,7 @@ Setup()
 	}
 	for (unsigned int i = 0; i < num_mappings; i++) 
 	{
-		if (mapping[i].used && mapping[i].output_port >= num_output_sockets) 
+		if (mapping[i].used && mapping[i].output_port >= OUTPUT_SOCKETS) 
 		{
 			logger << DebugWarning << "PARAMETER ERROR: mapping has a bigger output_port than available ports" << endl
 				<< LOCATION << endl;
@@ -289,7 +301,7 @@ Setup()
 		}
 	}
 
-	for (unsigned int i = 0; i < num_output_sockets; i++) 
+	for (unsigned int i = 0; i < OUTPUT_SOCKETS; i++) 
 	{
 		RouterDispatcher<Router<CONFIG>, CONFIG> *dispatcher;
 		std::stringstream sstr;
@@ -298,7 +310,7 @@ Setup()
 		m_req_dispatcher.push_back(dispatcher);
 	}
 
-	for (unsigned int i = 0; i < num_input_sockets; i++) 
+	for (unsigned int i = 0; i < INPUT_SOCKETS; i++) 
 	{
 		RouterDispatcher<Router<CONFIG>, CONFIG> *dispatcher;
 		std::stringstream sstr;
@@ -308,9 +320,9 @@ Setup()
 	}
 
 	/* initialize ready queues */
-	for (unsigned int i = 0; i < num_input_sockets; i++)
+	for (unsigned int i = 0; i < INPUT_SOCKETS; i++)
 		m_targ_req_ready.push_back(SC_ZERO_TIME);
-	for (unsigned int i = 0; i < num_output_sockets; i++)
+	for (unsigned int i = 0; i < OUTPUT_SOCKETS; i++)
 		m_init_rsp_ready.push_back(SC_ZERO_TIME);
 	
 	/* display the configuration of the router */
@@ -328,8 +340,8 @@ Setup()
 			}
 		}
 		logger << endl;
-		logger << "Number of incomming ports = " << num_input_sockets << endl;
-		logger << "Number of outgoing ports = " << num_output_sockets << endl;
+		logger << "Number of incomming ports = " << INPUT_SOCKETS << endl;
+		logger << "Number of outgoing ports = " << OUTPUT_SOCKETS << endl;
 		logger << EndDebug;
 	}
 
@@ -486,7 +498,7 @@ T_nb_transport_fw_cb(int id, transaction_type &trans, phase_type &phase, sc_core
 			unsigned int init_id;
 			if (!ApplyMap(trans, init_id)) {
 				logger << DebugError << "When handling received transaction mapping output port is bigger or equal than number of output ports ("
-					<< init_id << ">=" << num_output_sockets << ")" << endl
+					<< init_id << ">=" << OUTPUT_SOCKETS << ")" << endl
 					<< TIME(time) << endl
 					<< PHASE(phase) << endl
 					<< LOCATION << endl;
@@ -562,11 +574,11 @@ T_b_transport_cb(int id, transaction_type &trans, sc_core::sc_time &time)
 		return;
 	}
 	/* check that output port is within bounds??? */
-	if(mapping[port].output_port >= num_output_sockets) {
+	if(mapping[port].output_port >= OUTPUT_SOCKETS) {
 		logger << DebugError << "When handling received transaction" << endl;
 		TRANS(logger, trans);
 		logger << endl << "mapping output port is bigger or equal than number of output ports ("
-			<< mapping[port].output_port << ">=" << num_output_sockets << ")"
+			<< mapping[port].output_port << ">=" << OUTPUT_SOCKETS << ")"
 			<< EndDebug;
 		return;
 	}
@@ -579,7 +591,7 @@ T_b_transport_cb(int id, transaction_type &trans, sc_core::sc_time &time)
 		TRANS(logger, trans);
 		logger << EndDebug;
 	}
-	(*init_socket[port])->b_transport(trans, time);
+	init_socket[port]->b_transport(trans, time);
 	if (VerboseBlocking()) 
 	{
 		logger << DebugInfo << "Forwarding transaction reply to port " << id << endl
@@ -627,7 +639,7 @@ T_transport_dbg_cb(int id, transaction_type &trans)
 		trans.set_data_ptr(trans_buffer + buffer_index);
 		trans.set_data_length(buffer_size);
 		trans.set_address(buffer_addr);
-		counter += (*init_socket[mapping[*it].output_port])->transport_dbg(trans);
+		counter += init_socket[mapping[*it].output_port]->transport_dbg(trans);
 		if (trans.is_read())
 			m_req_dispatcher[mapping[*it].output_port]->ReadTransportDbg(id, trans);
 		else
@@ -672,7 +684,7 @@ ReadTransportDbg(unsigned int id, transaction_type &trans) {
 		trans.set_data_ptr(trans_buffer + buffer_index);
 		trans.set_data_length(buffer_size);
 		trans.set_address(buffer_addr);
-		counter += (*init_socket[mapping[*it].output_port])->transport_dbg(trans);
+		counter += init_socket[mapping[*it].output_port]->transport_dbg(trans);
 		m_req_dispatcher[mapping[*it].output_port]->ReadTransportDbg(id, trans);	
 	}
 	return counter;
@@ -711,7 +723,7 @@ WriteTransportDbg(unsigned int id, transaction_type &trans) {
 		trans.set_data_ptr(trans_buffer + buffer_index);
 		trans.set_data_length(buffer_size);
 		trans.set_address(buffer_addr);
-		counter += (*init_socket[mapping[*it].output_port])->transport_dbg(trans);
+		counter += init_socket[mapping[*it].output_port]->transport_dbg(trans);
 		m_req_dispatcher[mapping[*it].output_port]->WriteTransportDbg(id, trans);	
 	}
 	return counter;
@@ -749,7 +761,7 @@ SendReq(unsigned int id, transaction_type &trans) {
 		logger << EndDebug;
 	}
 	
-	switch((*init_socket[id])->nb_transport_fw(trans, phase, time)) {
+	switch(init_socket[id]->nb_transport_fw(trans, phase, time)) {
 		case tlm::TLM_ACCEPTED:
 			/* the request has been accepted */
 			if (VerboseNonBlocking()) {
@@ -844,7 +856,7 @@ SendReq(unsigned int id, transaction_type &trans) {
 
 						/* immediately send an END_REQ through the init_port */
 						phase = tlm::END_REQ;
-						if((*init_socket[id])->nb_transport_fw(trans, phase, time) != tlm::TLM_COMPLETED) {
+						if(init_socket[id]->nb_transport_fw(trans, phase, time) != tlm::TLM_COMPLETED) {
 							logger << DebugError << "When sending END_REQ did not receive TLM_COMPLETED from init_socket[" << id << "]" << endl
 								<< LOCATION << endl
 								<< TIME(time) << endl;
@@ -939,7 +951,7 @@ SendRsp(unsigned int id, transaction_type &trans) {
 		logger << EndDebug;
 	}
 	
-	switch((*targ_socket[id])->nb_transport_bw(trans, phase, time)) {
+	switch(targ_socket[id]->nb_transport_bw(trans, phase, time)) {
 		case tlm::TLM_ACCEPTED:
 			/* the response has been accepted */
 			if (VerboseNonBlocking()) {
@@ -1110,7 +1122,7 @@ template<class CONFIG>
 inline bool 
 Router<CONFIG>::
 VerboseSetup() {
-	if(DEBUG && (verbose_all || verbose_setup)) 
+	if(VERBOSE && (verbose_all || verbose_setup)) 
 		return true;
 	return false;
 }
@@ -1119,7 +1131,7 @@ template<class CONFIG>
 inline bool
 Router<CONFIG>::
 VerboseNonBlocking() {
-	if(DEBUG && (verbose_all || verbose_non_blocking))
+	if(VERBOSE && (verbose_all || verbose_non_blocking))
 		return true;
 	return false;
 }
@@ -1128,7 +1140,7 @@ template<class CONFIG>
 inline bool
 Router<CONFIG>::
 VerboseBlocking() {
-	if(DEBUG && (verbose_all || verbose_blocking))
+	if(VERBOSE && (verbose_all || verbose_blocking))
 		return true;
 	return false;
 }

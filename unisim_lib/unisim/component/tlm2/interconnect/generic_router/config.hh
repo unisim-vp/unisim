@@ -45,22 +45,22 @@ namespace generic_router {
 
 class Config {
 public:
-	static const unsigned int MAX_INPUT_SOCKETS = 256;
-	static const unsigned int MAX_OUTPUT_SOCKETS = 256;
+	static const unsigned int INPUT_SOCKETS = 1;
+	static const unsigned int OUTPUT_SOCKETS = 1;
 	static const unsigned int MAX_NUM_MAPPINGS = 256;
 	static const unsigned int BUSWIDTH = 32;
 	typedef tlm::tlm_base_protocol_types TYPES;
-	static const bool DEBUG = false;
+	static const bool VERBOSE = false;
 };
 
-class DebugConfig {
+class VerboseConfig {
 public:
-	static const unsigned int MAX_INPUT_SOCKETS = 256;
-	static const unsigned int MAX_OUTPUT_SOCKETS = 256;
+	static const unsigned int INPUT_SOCKETS = 1;
+	static const unsigned int OUTPUT_SOCKETS = 1;
 	static const unsigned int MAX_NUM_MAPPINGS = 256;
 	static const unsigned int BUSWIDTH = 32;
 	typedef tlm::tlm_base_protocol_types TYPES;
-	static const bool DEBUG = true;
+	static const bool VERBOSE = true;
 };
 
 } // end of namespace generic_router
