@@ -50,7 +50,7 @@ char const * FatFormat::GetCubin(char const * gpuname)
 {
 	assert(fcb->cubin[0].cubin != 0 && fcb->cubin[0].gpuProfileName != 0);
 	cerr << "Fat: using cubin profile " << fcb->cubin[0].gpuProfileName << endl;
-	cout << fcb->cubin[0].cubin << endl;
+	cerr << fcb->cubin[0].cubin << endl;
 	return fcb->cubin[0].cubin;
 }
 

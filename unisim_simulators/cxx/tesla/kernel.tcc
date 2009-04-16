@@ -50,6 +50,12 @@
 #include "exception.hh"
 #include "cuda.h"
 
+template<class CONFIG>
+bool Kernel<CONFIG>::trace_loading = false;
+
+template<class CONFIG>
+bool Kernel<CONFIG>::trace_parsing = true;
+
 using namespace std;
 template<class CONFIG>
 Kernel<CONFIG>::Kernel(Module<CONFIG> * module, std::istream & is) :
@@ -66,7 +72,8 @@ Kernel<CONFIG>::Kernel(Module<CONFIG> * module, std::istream & is) :
 	gridx(1),
 	gridy(1)
 {
-	cerr << " Kernel segment\n";
+	if(trace_parsing)
+		cerr << " Kernel segment\n";
 	typedef string::iterator it_t;
 	while(true)
 	{
@@ -91,12 +98,14 @@ Kernel<CONFIG>::Kernel(Module<CONFIG> * module, std::istream & is) :
 				{
 					if(cmd == "bincode")
 					{
-						cerr << "  bincode {...}\n";
+						if(trace_parsing)
+							cerr << "  bincode {...}\n";
 						ParseBinCode(bincode, is);
 					}
 					else if(cmd == "const")
 					{
-						cerr << "  const {...}\n";
+						if(trace_parsing)
+							cerr << "  const {...}\n";
 						const_segs.push_back(MemSegment<CONFIG>(is, SegmentConst));
 					}
 					else
@@ -151,7 +160,8 @@ void Kernel<CONFIG>::Load(Service<unisim::service::interfaces::Memory<typename C
 	// (Re-)load module-level constants
 	module->Load(mem, allocator);
 
-	cerr << "Loading " << CodeSize() << "B code @" << std::hex << CONFIG::CODE_START + offset << std::endl;
+	if(trace_loading)
+		cerr << "Loading " << CodeSize() << "B code @" << std::hex << CONFIG::CODE_START + offset << std::endl;
 	if(!mem.WriteMemory(CONFIG::CODE_START + offset, &bincode[0], CodeSize())) {
 		cerr << "Kernel::Load : Cannot write memory??\n";
 		throw CudaException(CUDA_ERROR_OUT_OF_MEMORY);	// Generic memory error
@@ -342,15 +352,18 @@ void Kernel<CONFIG>::InitShared(Service<unisim::service::interfaces::Memory<type
 	header[6] = bidx;	// bidx
 	header[7] = bidy;	// bidy
 
-	cerr << "Init block " << index << " (" << bidx << ", " << bidy << ") / ("
-	<< gridx << ", " << gridy << ") shared memory\n";
+	if(trace_loading)
+		cerr << "Init block " << index << " (" << bidx << ", " << bidy << ") / ("
+			<< gridx << ", " << gridy << ") shared memory\n";
 	typename CONFIG::address_t shared_base = CONFIG::SHARED_START + index * SharedTotal();
 
 	if(!mem.WriteMemory(shared_base, header, 16)) {
 		throw CudaException(CUDA_ERROR_OUT_OF_MEMORY);
 	}
 	
-	cerr << "Loading " << param_size << "B parameters @" << hex << shared_base + 16 << dec << endl;
+	if(trace_loading)
+		cerr << "Loading " << param_size << "B parameters @"
+			<< hex << shared_base + 16 << dec << endl;
 	// Parameters
 	if(!mem.WriteMemory(shared_base + 16, &parameters[0], param_size)) {
 		throw CudaException(CUDA_ERROR_OUT_OF_MEMORY);

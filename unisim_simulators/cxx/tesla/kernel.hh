@@ -92,6 +92,8 @@ struct Kernel : CUfunc_st
 	
 	int BlocksPerCore() const;	// Max blocks that can run on a SM of target architecture
 	
+	static bool trace_loading;
+	static bool trace_parsing;
 private:
 	void SetAttribute(std::string const & name, std::string const & value);
 

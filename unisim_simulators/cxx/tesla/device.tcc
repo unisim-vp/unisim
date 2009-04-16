@@ -40,6 +40,7 @@
 #include "device.hh"
 #include <string>
 #include <ostream>
+#include "kernel.hh"
 
 using std::string;
 using std::endl;
@@ -120,6 +121,19 @@ Device<CONFIG>::Device() :
 	env = getenv("TRACE_SYNC");
 	if(env != 0)
 		cpu["trace-sync"] = ParseBool(env);
+
+	env = getenv("TRACE_RESET");
+	if(env != 0)
+		cpu["trace-reset"] = ParseBool(env);
+
+	env = getenv("TRACE_KERNEL_PARSING");
+	if(env != 0)
+		Kernel<CONFIG>::trace_parsing = ParseBool(env);
+
+	env = getenv("TRACE_KERNEL_LOADING");
+	if(env != 0)
+		Kernel<CONFIG>::trace_loading = ParseBool(env);
+
 }
 
 template<class CONFIG>

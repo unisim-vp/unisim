@@ -100,7 +100,10 @@ Driver
 
 The following NVidia CUDA SDK samples were tested to run on Barra and pass the
 built-in regression tests:
+* alignedTypes
 * bitonic
+* binomialOptions
+* convolutionSeparable
 * deviceQuery
 * dwtHaar1D
 * fastWalshTransform
