@@ -77,7 +77,7 @@ impl {
 //constructor action initialize() {
 //}
 
-action {void} read({CPU<CONFIG> *} {cpu}, {int} {offset}, {Instruction<CONFIG> *} {insn}) {
+action {void} read({CPU<CONFIG> *} {cpu}, {Instruction<CONFIG> *} {insn}) {
 	throw IllegalInstructionException<CONFIG>();
 }
 
@@ -123,31 +123,12 @@ group alu_reg(alu_full_normal_reg, alu_full_end_reg, alu_full_join_reg, alu_imm_
 
 alu_reg.read = {
 	typedef Instruction<CONFIG> Insn;
-	RegType rt = insn->OperandRegType(OpSrc1);
-	// TODO: introduce RT_U64 and forget about offsets!
-	if(rt == RT_U32) {
-		//return cpu->GetGPR(src1 + offset);
-		insn->Temp(Insn::TempSrc1 + offset) = cpu->GetGPR(src1 + offset);
-	}
-	else {
-		assert(!offset);	// No use for offset
-		uint32_t rnum = (src1 >> 1);
-		uint32_t hilo = (src1 & 1);
-		//return cpu->GetGPR(rnum).Split(hilo);
-		insn->Temp(Insn::TempSrc1 + offset) = cpu->GetGPR(rnum).Split(hilo);
-	}
+	insn->ReadReg(src1, Insn::TempSrc1, insn->OperandRegType(OpSrc1));
 }
 
 alu_reg.disasm = {
 	RegType rt = insn->OperandRegType(OpSrc1);
-	if(rt == RT_U32) {
-		os << "r" << src1;
-	}
-	else {
-		uint32_t rnum = src1 >> 1;
-		uint32_t hilo = (src1 & 1);
-		os << "r" << rnum << (hilo ? ".hi" : ".lo");
-	}
+	DisasmReg(src1, rt, os);
 }
 
 
@@ -182,7 +163,6 @@ group alu_full_shared(alu_full_normal_shared, alu_full_end_shared, alu_full_join
 
 alu_full_shared.read = {
 	typedef Instruction<CONFIG> Insn;
-	assert(offset == 0);
 	VectorRegister<CONFIG> & vr = insn->Temp(Insn::TempSrc1);
 	// always immediate
 	cpu->GatherShared(vr, src1, addr_lo, addr_hi, 1, insn->Mask(), SMType(smtype));

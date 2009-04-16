@@ -275,7 +275,7 @@ public:
 	{
 		// wid unique across blocks
 		void Reset(unsigned int wid, unsigned int bid, unsigned int gpr_num, unsigned int sm_size,
-			bitset<WARP_SIZE> init_mask, address_t sm_base);
+			bitset<WARP_SIZE> init_mask, address_t sm_base, CPU<CONFIG> * cpu);
 	
 		uint32_t GetGPRAddress(uint32_t reg) const;
 		address_t GetSMAddress(uint32_t sm = 0) const;
@@ -308,6 +308,7 @@ public:
 		uint32_t blockid;
 		
 		uint32_t id;	// for debugging purposes only
+		//CPU<CONFIG> * cpu;
 	};
 
 	
@@ -372,19 +373,19 @@ public:
 	// Only for <= 32-bit accesses
 	VecAddr LocalAddress(VecAddr const & addr, unsigned int segment);
 	
-	void ScatterGlobal(VecReg output, uint32_t dest, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, std::bitset<CONFIG::WARP_SIZE> mask, DataType dt);
-	void GatherGlobal(VecReg & output, uint32_t src, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, std::bitset<CONFIG::WARP_SIZE> mask, DataType dt);
-	void ScatterLocal(VecReg output, uint32_t dest, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, std::bitset<CONFIG::WARP_SIZE> mask, DataType dt);
-	void GatherLocal(VecReg & output, uint32_t src, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, std::bitset<CONFIG::WARP_SIZE> mask, DataType dt);
+	void ScatterGlobal(VecReg const output[], uint32_t dest, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, std::bitset<CONFIG::WARP_SIZE> mask, DataType dt);
+	void GatherGlobal(VecReg output[], uint32_t src, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, std::bitset<CONFIG::WARP_SIZE> mask, DataType dt);
+	void ScatterLocal(VecReg const output[], uint32_t dest, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, std::bitset<CONFIG::WARP_SIZE> mask, DataType dt);
+	void GatherLocal(VecReg output[], uint32_t src, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, std::bitset<CONFIG::WARP_SIZE> mask, DataType dt);
 	void ScatterShared(VecReg const & output, uint32_t dest, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, std::bitset<CONFIG::WARP_SIZE> mask, SMType type);
 
 	void GatherShared(VecAddr const & addr, VecReg & data, std::bitset<CONFIG::WARP_SIZE> mask, SMType t = SM_U32);	// addr in bytes
 	void GatherShared(VecReg & output, uint32_t src, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, std::bitset<CONFIG::WARP_SIZE> mask, SMType type);
 	void GatherConstant(VecReg & output, uint32_t src, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, std::bitset<CONFIG::WARP_SIZE> mask, SMType type);
 
-	void Gather(VecAddr const & addr, VecReg & data,
+	void Gather(VecAddr const & addr, VecReg data[],
 		std::bitset<CONFIG::WARP_SIZE> mask, DataType dt);
-	void Scatter(VecAddr const & addr, VecReg const & data,
+	void Scatter(VecAddr const & addr, VecReg const data[],
 		std::bitset<CONFIG::WARP_SIZE> mask, DataType dt);
 
 	// High-level memory access
@@ -462,6 +463,7 @@ private:
 	Parameter<bool> param_trace_loadstore;
 	Parameter<bool> param_trace_branch;
 	Parameter<bool> param_trace_sync;
+	Parameter<bool> param_trace_reset;
 	
 
 	//=====================================================================
@@ -492,6 +494,7 @@ public:
 	bool trace_loadstore;
 	bool trace_branch;
 	bool trace_sync;
+	bool trace_reset;
 
 	Logger trace_logger;
 

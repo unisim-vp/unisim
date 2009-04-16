@@ -46,6 +46,8 @@ namespace tesla {
 struct BuiltFloatTraits : unisim::util::simfloat::Numerics::Double::BuiltDoubleTraits<23, 8> {
 };
 
+struct SoftHalfIEEE;
+
 struct SoftFloatIEEE : unisim::util::simfloat::Numerics::Double::TBuiltDouble<BuiltFloatTraits>
 {
 private:
@@ -58,6 +60,9 @@ public:
 	  {  return (SoftFloatIEEE&) inherited::operator=(sfSource); }
 	SoftFloatIEEE& assign(const SoftFloatIEEE& sfSource)
 	  {  return (SoftFloatIEEE&) inherited::operator=(sfSource); }
+
+	SoftFloatIEEE& assign(const SoftHalfIEEE& sfHalf, inherited::StatusAndControlFlags & flags);
+	 
 	uint32_t queryValue() const
 	  {  uint32_t uResult; fillChunk(&uResult, true /* little endian */); return uResult; }
 	  
@@ -65,13 +70,26 @@ public:
 
 };
 
-struct HostFloatIEEE
+struct BuiltHalfTraits : unisim::util::simfloat::Numerics::Double::BuiltDoubleTraits<10, 5> {
+};
+
+struct SoftHalfIEEE : unisim::util::simfloat::Numerics::Double::TBuiltDouble<BuiltHalfTraits>
 {
 private:
-
+	typedef unisim::util::simfloat::Numerics::Double::TBuiltDouble<BuiltHalfTraits> inherited;
 public:
-	// TODO: rounding mode etc.
+	SoftHalfIEEE() : inherited() {}
+	SoftHalfIEEE(const uint16_t& uFloat) { setChunk((void *) &uFloat, true /* little endian */); }
+
+	SoftHalfIEEE& operator=(const SoftHalfIEEE& sfSource)
+	  {  return (SoftHalfIEEE&) inherited::operator=(sfSource); }
+	SoftHalfIEEE& assign(const SoftHalfIEEE& sfSource)
+	  {  return (SoftHalfIEEE&) inherited::operator=(sfSource); }
+	SoftHalfIEEE& assign(const SoftFloatIEEE& sfFloat, inherited::StatusAndControlFlags & flags);
+	uint32_t queryValue() const
+	  {  uint32_t uResult; fillChunk(&uResult, true /* little endian */); return uResult; }
 };
+
 
 // Denormal As Zero + Flush To Zero : no denormals
 template<class BaseFloat>
@@ -88,6 +106,10 @@ public:
 	  {  return (thisType&) BaseFloat::operator=(sfSource); }
 	thisType& assign(const thisType& sfSource)
 	  {  return (thisType&) BaseFloat::operator=(sfSource); }
+	thisType& assign(const SoftHalfIEEE& sfHalf, Flags & flags)
+	  {  return (thisType&) BaseFloat::assign(sfHalf, flags); }
+	thisType& assign(const SoftFloatIEEE& sfFloat, Flags & flags);
+
 	uint32_t queryValue() const
 	  {  uint32_t uResult; BaseFloat::fillChunk(&uResult, true /* little endian */); return uResult; }
 
@@ -125,6 +147,33 @@ public:
 	
 };
 
+#if 0
+template<class BaseFloat>
+struct HalfDAZFTZ : BaseFloat
+{
+private:
+	typedef HalfDAZFTZ<BaseFloat> thisType;
+	typedef typename BaseFloat::StatusAndControlFlags Flags;
+public:
+	HalfDAZFTZ() : BaseFloat() {}
+	HalfDAZFTZ(const uint32_t& uFloat) { BaseFloat::setChunk((void *) &uFloat, true /* little endian */); }
+
+	thisType& operator=(const thisType& sfSource)
+	  {  return (thisType&) BaseFloat::operator=(sfSource); }
+	thisType& assign(const thisType& sfSource)
+	  {  return (thisType&) BaseFloat::operator=(sfSource); }
+	thisType& assign(const SoftFloatIEEE& sfFloat, inherited::StatusAndControlFlags & flags);
+
+	uint32_t queryValue() const
+	  {  uint32_t uResult; BaseFloat::fillChunk(&uResult, true /* little endian */); return uResult; }
+
+	void setZeroPreserveSign() { BaseFloat::querySBasicExponent() = 0U; BaseFloat::querySMantissa() = 0U; }
+	void flushDenormals() {
+		if(BaseFloat::isDenormalized()) { setZeroPreserveSign(); }
+	}	
+};
+
+#endif
 
 // G80-GT200 MAD : multiplication in round toward zero, then addition in current rounding mode
 // MAD is *not* a FMA

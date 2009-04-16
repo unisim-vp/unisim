@@ -1,3 +1,6 @@
+* Tracing of reset, kernel parsing and loading can be disabled
+* 64-bit and 128-bit memory access
+* Float to float conversions (FP16<->FP32, round/truncate...)
 * Handling of 16-bit condition codes
 * Various bug fixes
 * Improved instruction decoder

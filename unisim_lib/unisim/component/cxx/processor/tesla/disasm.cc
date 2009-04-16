@@ -49,6 +49,26 @@ using namespace std;
 //=                Disassembly helper functions                       =
 //=====================================================================
 
+void DisasmReg(uint32_t reg, RegType rt, ostream & os)
+{
+	switch(rt)
+	{
+	case RT_U16:
+		{
+		uint32_t rnum = reg >> 1;
+		uint32_t hilo = (reg & 1);
+		os << "r" << rnum << (hilo ? ".hi" : ".lo");
+		}
+		break;
+	case RT_U32:
+		os << "r" << reg;
+		break;
+	case RT_U64:
+		os << "r" << reg + 1 << ":r" << reg;
+		break;
+	}
+}
+
 void DisasmPred(uint32_t pred_cond, uint32_t pred_reg, ostream & buffer)
 {
 	if(pred_cond != CD_TR)
@@ -81,6 +101,7 @@ void DisasmMarker(uint32_t marker, ostream & buffer)
 	}
 }
 
+#if 0
 void DisasmSetPred(uint32_t set_pred_reg, uint32_t set_pred, ostream & buffer)
 {
 	if(set_pred)
@@ -98,6 +119,7 @@ void DisasmDest(uint32_t dest, uint32_t ignore_output, ostream & buffer)
 		buffer << "_";
 	}
 }
+#endif
 
 void DisasmSrc(uint32_t reg, uint32_t cm, uint32_t sh, uint32_t neg, ostream & buffer)
 {
@@ -153,14 +175,28 @@ void DisasmConvert(uint32_t cvt_round, uint32_t cvt_type, bool sign,
 		<< AbsSatString(AbsSat(abssat));
 }
 
-/*void DisasmConvertFP32(uint32_t cvt_round, uint32_t cvt_type, bool sign,
-	uint32_t data_32, uint32_t abssat, ostream & buffer)
+void DisasmConvertFP32(bool dest_32, ConvType srct, RoundingMode cvt_round,
+	bool cvt_int, AbsSat as, ostream & buffer)
 {
-	DisasmSignWidth(sign, data_32, buffer);
-	buffer << ConvTypeString(ConvType(cvt_type))
-		<< RoundingModeString(RoundingMode(cvt_round))
-		<< AbsSatString(AbsSat(abssat));
-}*/
+	if(dest_32) {
+		buffer << ".f32";
+	}
+	else {
+		buffer << ".f16";
+	}
+	if(srct == CT_U32) {
+		buffer << ".f32";
+	}
+	else {
+		assert(srct == CT_U16);
+		buffer << ".f16";
+	}
+	buffer << RoundingModeString(RoundingMode(cvt_round));
+	if(cvt_int) {
+		buffer << "i";
+	}
+	buffer << AbsSatString(as);
+}
 
 void DisasmDataType(uint32_t dt, ostream & buffer)
 {

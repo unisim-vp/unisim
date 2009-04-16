@@ -117,6 +117,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent, int coreid) :
 	param_trace_loadstore("trace-loadstore", this, trace_loadstore),
 	param_trace_branch("trace-branch", this, trace_branch),
 	param_trace_sync("trace-sync", this, trace_sync),
+	param_trace_reset("trace-reset", this, trace_reset),
 	stat_instruction_counter("instruction-counter", this, instruction_counter),
 	stat_cpu_cycle("cpu-cycle", this, cpu_cycle),
 	stat_bus_cycle("bus-cycle", this, bus_cycle),
@@ -127,6 +128,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent, int coreid) :
 	trace_loadstore(CONFIG::TRACE_LOADSTORE),
 	trace_branch(CONFIG::TRACE_BRANCH),
 	trace_sync(CONFIG::TRACE_SYNC),
+	trace_reset(CONFIG::TRACE_RESET),
 	trace_logger(*this)
 {
 //	Object::SetupDependsOn(logger_import);
@@ -225,10 +227,12 @@ void CPU<CONFIG>::Reset(unsigned int threadsperblock, unsigned int numblocks, un
 
 	address_t sm_base = CONFIG::SHARED_START + coreid * CONFIG::SHARED_SIZE;
 
-	cerr << dec;
-	cerr << "Core " << coreid << ": reset: " << threadsperblock << " threads (" << warpsperblock << "warps) * " << numblocks << " blocks\n";
-	cerr << " total " << total_warps << " warps.\n";
-	cerr << " " << gprs_per_warp << " GPRs/warp, " << sm_size << "B SM/warp\n";
+	if(trace_reset) {
+		cerr << dec;
+		cerr << "Core " << coreid << ": reset: " << threadsperblock << " threads (" << warpsperblock << "warps) * " << numblocks << " blocks\n";
+		cerr << " total " << total_warps << " warps.\n";
+		cerr << " " << gprs_per_warp << " GPRs/warp, " << sm_size << "B SM/warp\n";
+	}
 
 	for(unsigned int b = 0; b != numblocks; ++b)
 	{
@@ -246,7 +250,7 @@ void CPU<CONFIG>::Reset(unsigned int threadsperblock, unsigned int numblocks, un
 				mask.set();
 			}
 			unsigned int wid = b * warpsperblock + w;
-			GetWarp(wid).Reset(wid, b, gprs_per_warp, sm_size, mask, sm_base);
+			GetWarp(wid).Reset(wid, b, gprs_per_warp, sm_size, mask, sm_base, this);
 		}
 	}
 	instruction_counter = 0;
@@ -353,7 +357,8 @@ void CPU<CONFIG>::Run()
 	{
 	}
 	
-	cerr << "All warps finished\n";
+	if(trace_reset)
+		cerr << "All warps finished\n";
 	//DumpRegisters(0, cerr);
 }
 
@@ -858,7 +863,7 @@ void CPU<CONFIG>::Kill(std::bitset<CONFIG::WARP_SIZE> mask)
 
 template <class CONFIG>
 void CPU<CONFIG>::Warp::Reset(unsigned int wid, unsigned int bid, unsigned int gpr_num, unsigned int sm_size,
-	bitset<WARP_SIZE> init_mask, address_t sm_base)
+	bitset<WARP_SIZE> init_mask, address_t sm_base, CPU<CONFIG> * cpu)
 {
 	pc = CONFIG::CODE_START;
 	npc = 0;
@@ -882,9 +887,11 @@ void CPU<CONFIG>::Warp::Reset(unsigned int wid, unsigned int bid, unsigned int g
 	}
 	
 	state = Active;
-	cerr << " Warp " << id << " (" << bid << ", " << wid << "): reset\n";
-	cerr << "  " << gpr_window_size << " GPRs from " << gpr_window_base << "\n";
-	cerr << "  " << sm_size << "B shared mem from " << std::hex << sm_window_base << std::dec << "\n";
+	if(cpu->trace_reset) {
+		cerr << " Warp " << id << " (" << bid << ", " << wid << "): reset\n";
+		cerr << "  " << gpr_window_size << " GPRs from " << gpr_window_base << "\n";
+		cerr << "  " << sm_size << "B shared mem from " << std::hex << sm_window_base << std::dec << "\n";
+	}
 }
 
 template <class CONFIG>

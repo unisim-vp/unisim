@@ -55,6 +55,7 @@ public:
 //	static const uint32_t MEMORY_PAGE_SIZE = 4096;
 	
 	typedef FloatDAZFTZ<SoftFloatIEEE> float_t;
+	typedef FloatDAZFTZ<SoftHalfIEEE> half_t;
 
 	/* A Memory Page Table Entry */
 	class PTE
@@ -103,6 +104,7 @@ public:
 	static int const SHADER_CLOCK_KHZ = 1350000;
 	static int const CORE_COUNT = 1;
 
+	// Default values, can be overriden at run-time
 	static bool const TRACE_INSN = false;
 	static bool const TRACE_MASK = false;
 	static bool const TRACE_REG = false;
@@ -110,6 +112,7 @@ public:
 	static bool const TRACE_LOADSTORE = false;
 	static bool const TRACE_BRANCH = false;
 	static bool const TRACE_SYNC = false;
+	static bool const TRACE_RESET = false;
 
 };
 

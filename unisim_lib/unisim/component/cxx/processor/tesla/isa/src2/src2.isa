@@ -74,7 +74,7 @@ impl {
 constructor action initialize() {
 }
 
-action {void} read({CPU<CONFIG> *} {cpu}, {int} {offset}, {Instruction<CONFIG> *} {insn}) {
+action {void} read({CPU<CONFIG> *} {cpu}, {Instruction<CONFIG> *} {insn}) {
 	throw IllegalInstructionException<CONFIG>();
 }
 
@@ -111,28 +111,12 @@ group alu_reg(alu_full_normal_reg, alu_full_end_reg, alu_full_join_reg, alu_half
 
 alu_reg.read = {
 	typedef Instruction<CONFIG> Insn;
-	RegType rt = insn->OperandRegType(OpSrc2);
-	if(rt == RT_U32) {
-		insn->Temp(Insn::TempSrc2 + offset) = cpu->GetGPR(src2 + offset);
-	}
-	else {
-		assert(!offset);	// No use for offset
-		uint32_t rnum = src2 >> 1;
-		uint32_t hilo = (src2 & 1);
-		insn->Temp(Insn::TempSrc2) = cpu->GetGPR(rnum).Split(hilo);
-	}
+	insn->ReadReg(src2, Insn::TempSrc2, insn->OperandRegType(OpSrc2));
 }
 
 alu_reg.disasm = {
 	RegType rt = insn->OperandRegType(OpSrc2);
-	if(rt == RT_U32) {
-		os << "r" << src2;
-	}
-	else {
-		uint32_t rnum = src2 >> 1;
-		uint32_t hilo = (src2 & 1);
-		os << "r" << rnum << (hilo ? ".hi" : ".lo");
-	}
+	DisasmReg(src2, rt, os);
 }
 
 
@@ -171,7 +155,7 @@ alu_const.read = {
 	typedef Instruction<CONFIG> Insn;
 	// TODO: segment?
 	// But not for some (all?) FPU ops
-	insn->Temp(Insn::TempSrc2) = cpu->ReadConstant(src2 * insn->OperandSize(OpSrc2) + offset * 4, constseg);
+	insn->Temp(Insn::TempSrc2) = cpu->ReadConstant(src2 * insn->OperandSize(OpSrc2), constseg);
 }
 
 alu_const.disasm = {
@@ -182,7 +166,7 @@ alu_const.disasm = {
 alu_half_const.read = {
 	typedef Instruction<CONFIG> Insn;
 	// Default segment = 0??
-	insn->Temp(Insn::TempSrc2) = cpu->ReadConstant(src2 * insn->OperandSize(OpSrc2) + offset * 4, 0);
+	insn->Temp(Insn::TempSrc2) = cpu->ReadConstant(src2 * insn->OperandSize(OpSrc2), 0);
 }
 
 alu_half_const.disasm = {

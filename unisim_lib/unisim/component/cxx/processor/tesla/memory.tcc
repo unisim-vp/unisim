@@ -110,8 +110,6 @@ void CPU<CONFIG>::GatherShared(VectorRegister<CONFIG> & output, uint32_t src, ui
 	else if(type == SM_U32) shift = 2;
 	VecAddr offset = EffectiveAddress(src, addr_lo, addr_hi, addr_imm, shift);
 
-//	if(trace_loadstore)
-//		cerr << " GatherShared, EA = " << offset << endl;
 	GatherShared(offset, output, mask, type);
 }
 
@@ -174,12 +172,10 @@ void CPU<CONFIG>::ReadShared(typename CONFIG::address_t addr, VectorRegister<CON
 	switch(t)
 	{
 	case SM_U32:
-		//Gather32(addr, data, mask, 4, CurrentWarp().GetSMAddress());
 		Broadcast32(addr, data, 4, CurrentWarp().GetSMAddress());
 		break;
 	case SM_U16:
 	case SM_S16:
-		//Gather16(addr, data, mask, 1, CurrentWarp().GetSMAddress());
 		Broadcast16(addr, data, 2, CurrentWarp().GetSMAddress());
 		break;
 	case SM_U8:
@@ -191,7 +187,9 @@ void CPU<CONFIG>::ReadShared(typename CONFIG::address_t addr, VectorRegister<CON
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::GatherConstant(VecReg & output, uint32_t src, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, std::bitset<CONFIG::WARP_SIZE> mask, SMType type)
+void CPU<CONFIG>::GatherConstant(VecReg & output, uint32_t src, uint32_t addr_lo,
+	uint32_t addr_hi, uint32_t addr_imm, uint32_t segment,
+	std::bitset<CONFIG::WARP_SIZE> mask, SMType type)
 {
 	uint32_t shift = 0;
 	if(type == SM_U16 || type == SM_S16) shift = 1;
@@ -402,22 +400,34 @@ void CPU<CONFIG>::Write8(address_t addr, uint32_t data,
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Gather(VecAddr const & addr, VecReg & data,
+void CPU<CONFIG>::Gather(VecAddr const & addr, VecReg data[],
 	std::bitset<CONFIG::WARP_SIZE> mask, DataType dt)
 {
 	switch(dt)
 	{
 	case DT_U32:
 	case DT_S32:
-		Gather32(addr, data, mask, 1, 0);
+		Gather32(addr, data[0], mask, 1, 0);
 		break;
 	case DT_U16:
 	case DT_S16:
-		Gather16(addr, data, mask, 1, 0);
+		Gather16(addr, data[0], mask, 1, 0);
 		break;
 	case DT_U8:
 	case DT_S8:
-		Gather8(addr, data, mask, 1, 0);
+		Gather8(addr, data[0], mask, 1, 0);
+		break;
+	case DT_U64:
+		// Burst access? Or actual Gather64?
+		// From little-endian mem to little-endian regs
+		Gather32(addr, data[0], mask, 1, 0);
+		Gather32(addr, data[1], mask, 1, 4);
+		break;
+	case DT_U128:
+		Gather32(addr, data[0], mask, 1, 0);
+		Gather32(addr, data[1], mask, 1, 4);
+		Gather32(addr, data[2], mask, 1, 8);
+		Gather32(addr, data[3], mask, 1, 12);
 		break;
 	default:
 		assert(false);
@@ -425,22 +435,32 @@ void CPU<CONFIG>::Gather(VecAddr const & addr, VecReg & data,
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Scatter(VecAddr const & addr, VecReg const & data,
+void CPU<CONFIG>::Scatter(VecAddr const & addr, VecReg const data[],
 	std::bitset<CONFIG::WARP_SIZE> mask, DataType dt)
 {
 	switch(dt)
 	{
 	case DT_U32:
 	case DT_S32:
-		Scatter32(addr, data, mask, 1, 0);
+		Scatter32(addr, data[0], mask, 1, 0);
 		break;
 	case DT_U16:
 	case DT_S16:
-		Scatter16(addr, data, mask, 1, 0);
+		Scatter16(addr, data[0], mask, 1, 0);
 		break;
 	case DT_U8:
 	case DT_S8:
-		Scatter8(addr, data, mask, 1, 0);
+		Scatter8(addr, data[0], mask, 1, 0);
+		break;
+	case DT_U64:
+		Scatter32(addr, data[0], mask, 1, 0);
+		Scatter32(addr, data[1], mask, 1, 4);
+		break;
+	case DT_U128:
+		Scatter32(addr, data[0], mask, 1, 0);
+		Scatter32(addr, data[1], mask, 1, 4);
+		Scatter32(addr, data[2], mask, 1, 8);
+		Scatter32(addr, data[3], mask, 1, 12);
 		break;
 	default:
 		assert(false);
@@ -448,7 +468,7 @@ void CPU<CONFIG>::Scatter(VecAddr const & addr, VecReg const & data,
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::ScatterGlobal(VecReg output, uint32_t dest, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, std::bitset<CONFIG::WARP_SIZE> mask, DataType dt)
+void CPU<CONFIG>::ScatterGlobal(VecReg const output[], uint32_t dest, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, std::bitset<CONFIG::WARP_SIZE> mask, DataType dt)
 {
 	unsigned int shift = 0;
 	if(dt == DT_U16 || dt == DT_S16) shift = 1;	// 16-bit
@@ -465,7 +485,7 @@ void CPU<CONFIG>::ScatterGlobal(VecReg output, uint32_t dest, uint32_t addr_lo, 
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::GatherGlobal(VecReg & output, uint32_t src, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, std::bitset<CONFIG::WARP_SIZE> mask, DataType dt)
+void CPU<CONFIG>::GatherGlobal(VecReg output[], uint32_t src, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, std::bitset<CONFIG::WARP_SIZE> mask, DataType dt)
 {
 	unsigned int shift = 0;
 	if(dt == DT_U16 || dt == DT_S16) shift = 1;	// 16-bit
@@ -482,7 +502,7 @@ void CPU<CONFIG>::GatherGlobal(VecReg & output, uint32_t src, uint32_t addr_lo, 
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::ScatterLocal(VecReg output, uint32_t dest, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, std::bitset<CONFIG::WARP_SIZE> mask, DataType dt)
+void CPU<CONFIG>::ScatterLocal(VecReg const output[], uint32_t dest, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, std::bitset<CONFIG::WARP_SIZE> mask, DataType dt)
 {
 	// Local memory always byte-indexed
 	unsigned int shift = 0;
@@ -500,7 +520,7 @@ void CPU<CONFIG>::ScatterLocal(VecReg output, uint32_t dest, uint32_t addr_lo, u
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::GatherLocal(VecReg & output, uint32_t src, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, std::bitset<CONFIG::WARP_SIZE> mask, DataType dt)
+void CPU<CONFIG>::GatherLocal(VecReg output[], uint32_t src, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, std::bitset<CONFIG::WARP_SIZE> mask, DataType dt)
 {
 	// Local memory always byte-indexed
 	unsigned int shift = 0;

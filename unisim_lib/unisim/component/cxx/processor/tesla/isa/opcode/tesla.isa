@@ -104,15 +104,14 @@ using namespace unisim::component::cxx::processor::tesla;
 }
 
 action {void} read({CPU<CONFIG> *} {cpu}, {Instruction<CONFIG> *} {insn}) {
-	typedef Operation<CONFIG> inherited;
-	if(inherited::op_type[OpSrc1] != DT_NONE) {
-		insn->ReadSrc1();
+	if(this->op_type[OpSrc1] != DT_NONE) {
+		this->src1->read(cpu, insn);
 	}
-	if(inherited::op_type[OpSrc2] != DT_NONE) {
-		insn->ReadSrc2();
+	if(this->op_type[OpSrc2] != DT_NONE) {
+		this->src2->read(cpu, insn);
 	}
-	if(inherited::op_type[OpSrc3] != DT_NONE) {
-		insn->ReadSrc3();
+	if(this->op_type[OpSrc3] != DT_NONE) {
+		this->src3->read(cpu, insn);
 	}
 }
 
@@ -121,22 +120,19 @@ action {void} execute({CPU<CONFIG> *} {cpu}, {Instruction<CONFIG> *} {insn}) {
 }
 
 action {void} write({CPU<CONFIG> *} {cpu}, {Instruction<CONFIG> *} {insn}) {
-	typedef Operation<CONFIG> inherited;
-	if(inherited::op_type[OpDest] != DT_NONE) {
-		//insn->WriteDest();
-		this->dest->write(cpu, insn, insn->Mask(), 0);
+	if(this->op_type[OpDest] != DT_NONE) {
+		this->dest->write(cpu, insn, insn->Mask());
 	}
 }
 
 action {void} writePred({CPU<CONFIG> *} {cpu}, {Instruction<CONFIG> *} {insn}) {
-	typedef Operation<CONFIG> inherited;
-	if(inherited::op_type[OpDest] == DT_U32) {
+	if(this->op_type[OpDest] == DT_U32) {
 		insn->SetPredI32();
 	}
-	else if(inherited::op_type[OpDest] == DT_U16) {
+	else if(this->op_type[OpDest] == DT_U16) {
 		insn->SetPredI16();
 	}
-	else if(inherited::op_type[OpDest] == DT_F32) {
+	else if(this->op_type[OpDest] == DT_F32) {
 		insn->SetPredF32();
 	}
 }
@@ -150,20 +146,18 @@ var allow_segment : { bool }
 var force_reg : { SimpleArray<bool, 4> }
 
 constructor action init() {
-	typedef Operation<CONFIG> inherited;
-	inherited::allow_segment = true;		// Actually always true (?)
-	inherited::op_type[OpDest] = DT_U32;
-	inherited::op_type[OpSrc1] = DT_U32;
-	inherited::op_type[OpSrc2] = DT_U32;
-	inherited::op_type[OpSrc3] = DT_U32;
+	this->allow_segment = true;		// Actually always true (?)
+	this->op_type[OpDest] = DT_U32;
+	this->op_type[OpSrc1] = DT_U32;
+	this->op_type[OpSrc2] = DT_U32;
+	this->op_type[OpSrc3] = DT_U32;
 }
 
 constructor action init_force_reg() {
-	typedef Operation<CONFIG> inherited;
-	inherited::force_reg[OpDest] = false;
-	inherited::force_reg[OpSrc1] = false;
-	inherited::force_reg[OpSrc2] = false;
-	inherited::force_reg[OpSrc3] = false;
+	this->force_reg[OpDest] = false;
+	this->force_reg[OpSrc1] = false;
+	this->force_reg[OpSrc2] = false;
+	this->force_reg[OpSrc3] = false;
 }
 
 include "isa/opcode/fp32.isa"

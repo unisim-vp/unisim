@@ -138,7 +138,7 @@ mov_reg_full_imm.execute = {
 	reg_t a = insn->GetSrc2();
 	reg_t output = a;
 
-	insn->WriteDest(output, 0);
+	insn->SetDest(output);
 	//insn->SetPredI32(output);	// TODO: check type?
 }
 
@@ -334,13 +334,9 @@ stg_full.disasm = {
 	insn->DisasmControl(buffer);
 
 	DisasmDataType(m_size, buffer);
-//	cpu.DisasmMarker(marker, buffer);
 	buffer << " ";
-//	cpu.DisasmSetPred(set_pred_reg, set_pred, buffer);
 	DisasmGlobal(src1, addr_lo, addr_hi, addr_imm, segment, m_size, buffer);
 	buffer << ", ";
-//	cpu.DisasmSrc(src1, 0, 0, 0, buffer);
-//	insn->DisasmSrc1(buffer);	// TODO: force reg?
 	buffer << "r" << dest;
 }
 
@@ -352,9 +348,7 @@ stg_full.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 	typedef Instruction<CONFIG> Insn;
 
-	reg_t & output = insn->Temp(Insn::TempSrc1);
-	cpu->ScatterGlobal(output, src1, addr_lo, addr_hi, addr_imm, segment, insn->Mask(), DataType(m_size));
-//	insn->SetPredI32(output);
+	cpu->ScatterGlobal(&insn->Temp(0), src1, addr_lo, addr_hi, addr_imm, segment, insn->Mask(), DataType(m_size));
 }
 
 stg_full.write = {
@@ -364,7 +358,7 @@ op ldg_full( \
 	/*subop*/4[3]:/*?*/0[1]:/*cvt_round_half*/0[1]:/*?*/0[3]: m_size[3]:/*?*/0[1]:/*?*/0[3]:/*cvt_type*/0[3]\
 	:/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output*/?[1]:addr_hi[1]:/*marker*/?[2]: \
 	0xd[4]:addr_lo[2]:addr_imm[1]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:segment[7]:\
-	src1[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1]\
+	src1[7]:dest[7]:/*flow*/0[1]:/*IWidth*/1[1]\
 )
 
 //  mov dest, g[src1]
@@ -391,7 +385,8 @@ ldg_full.disasm = {
 
 	DisasmDataType(m_size, buffer);
 	buffer << " ";
-	insn->DisasmDest(buffer);
+	//insn->DisasmDest(buffer);
+	buffer << "r" << dest;
 	buffer << ", ";
 	DisasmGlobal(src1, addr_lo, addr_hi, addr_imm, segment, m_size, buffer);
 }
@@ -402,9 +397,11 @@ ldg_full.read = {
 ldg_full.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 
-	cpu->GatherGlobal(insn->Temp(0), src1, addr_lo, addr_hi, addr_imm, segment, insn->Mask(), DataType(m_size));
-//	insn->WriteDest(output);
-//	insn->SetPredI32(output);
+	cpu->GatherGlobal(&insn->Temp(0), src1, addr_lo, addr_hi, addr_imm, segment, insn->Mask(), DataType(m_size));
+}
+
+ldg_full.write = {
+	insn->WriteBlock(dest, DataType(m_size));
 }
 
 op stl_full( \
@@ -454,8 +451,7 @@ stl_full.execute = {
 	assert(!addr_incr);
 	// dest = a
 
-	cpu->ScatterLocal(insn->Temp(0), src1, addr_lo, addr_hi, /*addr_imm*/true, segment, insn->Mask(), DataType(m_size));
-	//insn->SetPredI32(output);
+	cpu->ScatterLocal(&insn->Temp(0), src1, addr_lo, addr_hi, /*addr_imm*/true, segment, insn->Mask(), DataType(m_size));
 }
 
 stl_full.write = {
@@ -465,7 +461,7 @@ op ldl_full( \
 	/*subop*/2[3]:/*?*/0[1]:/*cvt_round_half*/0[1]:/*?*/0[3]: m_size[3]:/*?*/0[1]:/*?*/0[3]:/*cvt_type*/0[3]\
 	:/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output*/?[1]:addr_hi[1]:/*marker*/?[2]: \
 	0xd[4]:addr_lo[2]:addr_incr[1]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:segment[7]:\
-	src1[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1]\
+	src1[7]:dest[7]:/*flow*/0[1]:/*IWidth*/1[1]\
 )
 
 //  mov dest, g[src1]
@@ -492,7 +488,8 @@ ldl_full.disasm = {
 
 	DisasmDataType(m_size, buffer);
 	buffer << " ";
-	insn->DisasmDest(buffer);
+	//insn->DisasmDest(buffer);
+	buffer << "r" << dest;
 	buffer << ", ";
 	DisasmLocal(src1, addr_lo, addr_hi, /*addr_imm*/true, segment, m_size, buffer, addr_incr);
 }
@@ -504,8 +501,11 @@ ldl_full.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 	assert(!addr_incr);
 
-	cpu->GatherLocal(insn->GetDest(), src1, addr_lo, addr_hi, /*addr_imm*/true, segment, insn->Mask(), DataType(m_size));
-	//insn->SetPredI32(output);
+	cpu->GatherLocal(&insn->Temp(0), src1, addr_lo, addr_hi, /*addr_imm*/true, segment, insn->Mask(), DataType(m_size));
+}
+
+ldl_full.write = {
+	insn->WriteBlock(dest, DataType(m_size));
 }
 
 
@@ -628,10 +628,6 @@ ldaa_full.read = {
 
 ldaa_full.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
-	typedef VectorAddress<CONFIG> VecAddr;	
-
-//	assert(data_32);
-
 	insn->GetDest() = reg_t(cpu->EffectiveAddress(src, addr_lo, addr_hi, 1, 0));
 }
 
@@ -645,3 +641,38 @@ ldaa_full.write = {
 ldaa_full.writePred = {
 }
 
+
+op sta_full_normal( \
+	/*subop*/2[3]:/*?*/0[1]:/*cvt_round_half*/0[1]:/*data_32?*/0[1]:/*const_seg*/?[4]:/*src1_sh*/?[1]:/*abs_sat*/?[2]:/*cvt_round*/?[2]:/*cvt_type*/?[3]:\
+	/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output*/?[1]:addr_hi[1]:/*marker*/0[2]: \
+	0x0[4]:addr_lo[2]:/*addr_imm??*/0[1]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:/*src*/0[14]:dest[7]:/*flow*/0[1]:/*IWidth*/1[1]\
+)
+
+group sta(sta_full_normal)
+
+sta.init = {
+	typedef Operation<CONFIG> inherited;
+	inherited::allow_segment = false;
+	inherited::op_type[OpDest] = DT_U32;
+	inherited::op_type[OpSrc1] = DT_NONE;
+	inherited::op_type[OpSrc2] = DT_NONE;
+	inherited::op_type[OpSrc3] = DT_NONE;
+}
+
+sta.disasm = {
+	buffer << "sta";
+	insn->DisasmControl(buffer);
+	
+	buffer << " ";
+	insn->DisasmDest(buffer);
+	buffer << ", ";
+	buffer << "a" << ((addr_hi << 2) | addr_lo);
+}
+
+sta.read = {
+	typedef VectorRegister<CONFIG> reg_t;
+	insn->GetDest() = reg_t(cpu->GetAddr((addr_hi << 2) | addr_lo));
+}
+
+sta.execute = {
+}

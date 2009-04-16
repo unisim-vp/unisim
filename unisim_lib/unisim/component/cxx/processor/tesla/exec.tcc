@@ -604,7 +604,7 @@ void I32Negate(VectorRegister<CONFIG> & a)
 }
 
 template <class CONFIG>
-VectorRegister<CONFIG> ConvertIntInt(VectorRegister<CONFIG> & a, uint32_t cvt_round, uint32_t cvt_type, bool b32, AbsSat abssat, bool neg)
+VectorRegister<CONFIG> ConvertIntInt(VectorRegister<CONFIG> const & a, uint32_t cvt_round, uint32_t cvt_type, bool b32, AbsSat abssat, bool neg)
 {
 	// cvt_type = *SOURCE* type
 	// b32 = *DEST* type
@@ -662,7 +662,7 @@ VectorRegister<CONFIG> ConvertIntInt(VectorRegister<CONFIG> & a, uint32_t cvt_ro
 
 // Int to float
 template<class CONFIG>
-VectorRegister<CONFIG> ConvertFloatInt(VectorRegister<CONFIG> & a, uint32_t rounding_mode, uint32_t cvt_type, bool b32)
+VectorRegister<CONFIG> ConvertFloatInt(VectorRegister<CONFIG> const & a, uint32_t rounding_mode, uint32_t cvt_type, bool b32)
 {
 	typedef typename CONFIG::float_t float_t;
 	typedef typename float_t::StatusAndControlFlags FPFlags;
@@ -725,6 +725,67 @@ VectorRegister<CONFIG> ConvertFloatInt(VectorRegister<CONFIG> & a, uint32_t roun
 	return rv;
 }
 
+template<class CONFIG>
+void ConvertFloatFloat(VectorRegister<CONFIG> & a, bool dest_32, ConvType srctype,
+	RoundingMode cvt_round, bool cvt_int, AbsSat abssat)
+{
+	typedef typename CONFIG::float_t float_t;
+	typedef typename CONFIG::half_t half_t;	
+	typedef typename float_t::StatusAndControlFlags FPFlags;
+
+	assert(abssat == AS_NONE);	// Not implemented TODO
+
+	FPFlags flags;
+	switch(cvt_round)
+	{
+	case RM_RN:
+		flags.setNearestRound();
+		break;
+	case RM_RZ:
+		flags.setZeroRound();
+		break;
+	case RM_RD:
+		flags.setLowestRound();
+		break;
+	case RM_RU:
+		flags.setHighestRound();
+		break;
+	}
+
+	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i)
+	{
+		float_t f;
+		if(srctype == CT_U32) {
+			f = a.ReadSimfloat(i);
+		}
+		else {
+			// Upconvert to Binary32
+			half_t h = half_t(a[i]);
+			f.assign(h, flags);	// lossless
+		}
+		
+		if(cvt_int && f.queryExponent() < 24)
+		{
+			// If f >= 2^24, it is already an integer (or an inf/NaN).
+			// First convert to int32_t, then convert back to float
+			typename float_t::IntConversion conv;
+			f.retrieveInteger(conv, flags);	// Rounded
+			f.setInteger(conv, flags);	// Exact op, no rounding
+		}
+		
+		if(dest_32) {
+			a.WriteSimfloat(f, i);
+		}
+		else {
+			// Downconvert to Binary16
+			half_t h;
+			h.assign(f, flags);	// According to rounding mode
+								// BUG when rounding from fp16 to fp16, number representable in
+								// float but not half and round toward zero?
+		}
+		
+	}
+}
 
 template<class CONFIG>
 VectorRegister<CONFIG> BinNeg(VectorRegister<CONFIG> const & a)
@@ -805,7 +866,30 @@ template<class CONFIG>
 VectorRegister<CONFIG> Max(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
 	unsigned int m32, unsigned int issigned)
 {
-	assert(false);
+	VectorRegister<CONFIG> rv;
+	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i)
+	{
+		if(issigned) {
+			int32_t sa = a[i];
+			int32_t sb = b[i];
+			if(!m32) {
+				sa = (sa << 16) >> 16;	// sign-extension
+				sb = (sb << 16) >> 16;
+			}
+			rv[i] = std::max(sa, sb);
+		}
+		else
+		{
+			uint32_t sa = a[i];
+			uint32_t sb = b[i];
+			if(!m32) {
+				sa = sa & 0x0000ffff;
+				sb = sb & 0x0000ffff;
+			}
+			rv[i] = std::max(sa, sb);
+		}
+	}
+	return rv;
 }
 
 template<class CONFIG>

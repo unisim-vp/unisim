@@ -103,7 +103,7 @@ fsmad_full.execute = {
 	
 	reg_t output = FSMad(a, b, c, src1_neg, 0, src3_neg, rounding_mode);
 	
-	insn->WriteDest(output);
+	insn->SetDest(output);
 	//insn->SetPredFP32(output);
 }
 
@@ -175,7 +175,7 @@ fsmad_full_const.execute = {
 	
 	reg_t output = FSMad(a, b, c, src1_neg, 0, src3_neg, RM_RN);
 	
-	insn->WriteDest(output);
+	insn->SetDest(output);
 	//insn->SetPredFP32(output);
 }
 
@@ -228,12 +228,12 @@ fsmac.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 	// dest += a * b
 	// b immediate
-	reg_t a = insn->GetSrc1();
-	reg_t b = insn->GetSrc2();
-	reg_t c = cpu->GetGPR(dest);
+	reg_t & a = insn->GetSrc1();
+	reg_t & b = insn->GetSrc2();
+	reg_t & c = cpu->GetGPR(dest);
 
 	reg_t output = FSMad(a, b, c, /*src1_neg*/0, 0, src3_neg, RM_RN);
-	insn->WriteDest(output);
+	insn->SetDest(output);
 	//insn->SetPredFP32(output);
 }
 
@@ -298,7 +298,7 @@ fsadd_full.execute = {
 	
 	reg_t output = FSAdd(a, c, src1_neg, src3_neg, rounding_mode);
 	
-	insn->WriteDest(output);
+	insn->SetDest(output);
 	//insn->SetPredFP32(output);
 }
 
@@ -352,7 +352,7 @@ fsadd_halfimm.execute = {
 	
 	reg_t output = FSAdd(a, b, src1_neg, src2_neg, RM_RN);
 	
-	insn->WriteDest(output);
+	insn->SetDest(output);
 	//insn->SetPredFP32(output);
 }
 
@@ -453,7 +453,7 @@ fsmul_full.execute = {
 	// (not very useful to have -a * -b btw)
 	reg_t output = FSMul(a, b, src1_neg, src3_neg, rounding_mode);
 	
-	insn->WriteDest(output);
+	insn->SetDest(output);
 	//insn->SetPredFP32(output);
 }
 
@@ -493,7 +493,7 @@ fsmul_full_const.execute = {
 	// (not very useful to have -a * -b btw)
 	reg_t output = FSMul(a, b, src1_neg, src3_neg, RM_RN);
 	
-	insn->WriteDest(output);
+	insn->SetDest(output);
 	//insn->SetPredFP32(output);
 }
 
@@ -536,7 +536,7 @@ fsmul_halfimm.execute = {
 	// (not very useful to have -a * -b btw)
 	reg_t output = FSMul(a, b, src1_neg, src3_neg, RM_RN);
 	
-	insn->WriteDest(output);
+	insn->SetDest(output);
 	//insn->SetPredFP32(output);
 }
 
@@ -599,7 +599,7 @@ fsset.execute = {
 
 	vf = ComputePredSetFP32(output, a, b, SetCond(setcond), src1_abs);
 	
-	insn->WriteDest(output);
+	insn->SetDest(output);
 	insn->SetPred(vf);
 }
 
@@ -613,14 +613,14 @@ op fcvti_full_normal( \
 )
 
 
-
+// TODO: end join
 group fcvti_full(fcvti_full_normal)
 
 // No immediate : dest = conv(src1)
 
 fcvti_full.init = {
 	typedef Operation<CONFIG> inherited;
-	DataType dt = RegTypeToDataType(RegType(data_32));
+	//DataType dt = RegTypeToDataType(RegType(data_32));
 	inherited::allow_segment = false;
 	inherited::op_type[OpDest] = DT_F32; //dt;
 	inherited::op_type[OpSrc1] = CvtTypeToDataType(ConvType(cvt_type));	// Or always 32??
@@ -654,9 +654,63 @@ fcvti_full.execute = {
 	reg_t & a = insn->GetSrc1();
 	reg_t output = ConvertFloatInt(a, cvt_round, cvt_type, data_32);
 
-	insn->WriteDest(output);
+	insn->SetDest(output);
 	//insn->SetPredFP32(output);
 }
+
+// Float to float
+op fcvtf_full_normal( \
+	/*subop*/6[3]:/*?*/0[1]:cvt_int[1]:dest_32[1]:/*const_seg*/?[4]:/*src1_sh*/?[1]:abs_sat[2]:cvt_round[2]:cvt_type[3]:\
+	/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output*/?[1]:/*addr_hi*/?[1]:/*marker*/0[2]: \
+	0xa[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:f64[1]:/*?*/0[6]:\
+	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1]\
+)
+
+
+
+group fcvtf_full(fcvtf_full_normal)
+
+// TODO: end join
+
+// No immediate : dest = conv(src1)
+
+fcvtf_full.init = {
+	typedef Operation<CONFIG> inherited;
+	DataType dt = RegTypeToDataType(RegType(dest_32));
+	inherited::allow_segment = false;
+	inherited::op_type[OpDest] = (dt == DT_U32 ? DT_F32 : DT_U16);
+	assert(cvt_type == CT_U32 || cvt_type == CT_U16);
+	inherited::op_type[OpSrc1] = (
+		(cvt_type == CT_U32) ?
+			DT_F32 :
+			DT_U16);
+	inherited::op_type[OpSrc2] = DT_NONE;
+	inherited::op_type[OpSrc3] = DT_NONE;
+}
+
+fcvtf_full.disasm = {
+	buffer << "cvt";
+	insn->DisasmControl(buffer);
+
+	DisasmConvertFP32(dest_32, ConvType(cvt_type), RoundingMode(cvt_round), cvt_int,
+		AbsSat(abs_sat), buffer);
+	buffer << " ";
+	insn->DisasmDest(buffer);
+
+	buffer << ", ";
+	insn->DisasmSrc1(buffer);
+}
+
+fcvtf_full.execute = {
+	typedef VectorRegister<CONFIG> reg_t;
+	// dest = a
+	// TODO: Read 2 regs if 64-bit
+	assert(!f64);
+	reg_t & a = insn->GetSrc1();
+	ConvertFloatFloat(a, dest_32, ConvType(cvt_type), RoundingMode(cvt_round), cvt_int,
+		AbsSat(abs_sat));
+}
+
 
 
 // "delta" in decuda and nouveau??
@@ -699,7 +753,7 @@ fmov_full.execute = {
 	reg_t & a = insn->GetSrc1();
 	reg_t output = FSMov(a, src1_neg);
 
-	insn->WriteDest(output);
+	insn->SetDest(output);
 	//insn->SetPredFP32(output);
 }
 
@@ -713,7 +767,7 @@ op rr_ex2_full( \
 )
 
 // TODO end, join...
-// Forbit imm
+// Forbid imm
 
 group rr_ex2(rr_ex2_full)
 
@@ -745,13 +799,13 @@ rr_ex2.execute = {
 	reg_t & a = insn->GetSrc1();
 	reg_t output = RRExp2(a);
 
-	insn->WriteDest(output);
+	insn->SetDest(output);
 	insn->SetPredI32(output);	// ?
 }
 
 
 op rr_trig_full_normal( \
-	/*subop*/6[3]:/*?*/0[1]:/*?*/0[1]:/*src1_neg*/0[1]:/*const_seg*/?[4]:?[1]:0[7]:?[12]:/*marker*/0[2]: \
+	/*subop*/6[3]:/*?*/0[1]:/*?*/0[1]:/*src1_neg*/0[1]:/*const_seg*/?[4]:?[1]:0[7]:?[12]:/*marker*/?[2]: \
 	0xb[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:/*f64*/0[1]:/*?*/0[6]:\
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1]\
 )
@@ -788,12 +842,12 @@ rr_trig.execute = {
 	reg_t & a = insn->GetSrc1();
 	reg_t output = RRTrig(a);
 
-	insn->WriteDest(output);
+	insn->SetDest(output);
 	insn->SetPredI32(output);	// ?
 }
 
 op rcp_full_normal( \
-	/*subop*/0[3]:/*?*/0[1]:/*?*/0[1]:/*src1_neg*/0[1]:/*const_seg*/?[4]:?[1]:?[7]:?[12]:/*marker*/0[2]: \
+	/*subop*/0[3]:/*?*/0[1]:/*?*/0[1]:/*src1_neg*/0[1]:/*const_seg*/?[4]:?[1]:?[7]:?[12]:/*marker*/?[2]: \
 	0x9[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:/*f64*/0[1]:/*?*/0[6]:\
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1]\
 )
@@ -836,14 +890,14 @@ rcp.execute = {
 	reg_t & a = insn->GetSrc1();
 	reg_t output = Rcp(a);
 
-	insn->WriteDest(output);
+	insn->SetDest(output);
 	//insn->SetPredFP32(output);
 }
 
 ////// RSQ
 
 op rsq_full_normal( \
-	/*subop*/2[3]:/*?*/0[1]:/*?*/0[1]:/*src1_neg*/0[1]:/*const_seg*/?[4]:?[1]:?[7]:?[12]:/*marker*/0[2]: \
+	/*subop*/2[3]:/*?*/0[1]:/*?*/0[1]:/*src1_neg*/0[1]:/*const_seg*/?[4]:?[1]:?[7]:?[12]:/*marker*/?[2]: \
 	0x9[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:/*f64*/0[1]:/*?*/0[6]:\
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1]\
 )
@@ -881,14 +935,14 @@ rsq.execute = {
 	reg_t & a = insn->GetSrc1();
 	reg_t output = Rsq(a);
 
-	insn->WriteDest(output);
+	insn->SetDest(output);
 	//insn->SetPredFP32(output);
 }
 
 ////// LG2
 
 op lg2_full_normal( \
-	/*subop*/3[3]:/*?*/0[1]:/*?*/0[1]:/*src1_neg*/0[1]:/*const_seg*/?[4]:?[1]:?[7]:?[12]:/*marker*/0[2]: \
+	/*subop*/3[3]:/*?*/0[1]:/*?*/0[1]:/*src1_neg*/0[1]:/*const_seg*/?[4]:?[1]:?[7]:?[12]:/*marker*/?[2]: \
 	0x9[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:/*f64*/0[1]:/*?*/0[6]:\
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1]\
 )
@@ -923,17 +977,17 @@ lg2.disasm = {
 
 lg2.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
-	reg_t a = insn->GetSrc1();
+	reg_t & a = insn->GetSrc1();
 	reg_t output = Log2(a);
 
-	insn->WriteDest(output);
+	insn->SetDest(output);
 	//insn->SetPredFP32(output);
 }
 
 ////// SIN
 
 op sin_full_normal( \
-	/*subop*/4[3]:/*?*/0[1]:/*?*/0[1]:/*src1_neg*/0[1]:/*const_seg*/?[4]:?[1]:?[7]:?[12]:/*marker*/0[2]: \
+	/*subop*/4[3]:/*?*/0[1]:/*?*/0[1]:/*src1_neg*/0[1]:/*const_seg*/?[4]:?[1]:?[7]:?[12]:/*marker*/?[2]: \
 	0x9[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:/*f64*/0[1]:/*?*/0[6]:\
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1]\
 )
@@ -971,14 +1025,14 @@ sin.execute = {
 	reg_t & a = insn->GetSrc1();
 	reg_t output = Sin(a);
 
-	insn->WriteDest(output);
+	insn->SetDest(output);
 	//insn->SetPredFP32(output);
 }
 
 ////// COS
 
 op cos_full_normal( \
-	/*subop*/5[3]:/*?*/0[1]:/*?*/0[1]:/*src1_neg*/0[1]:/*const_seg*/?[4]:?[1]:?[7]:?[12]:/*marker*/0[2]: \
+	/*subop*/5[3]:/*?*/0[1]:/*?*/0[1]:/*src1_neg*/0[1]:/*const_seg*/?[4]:?[1]:?[7]:?[12]:/*marker*/?[2]: \
 	0x9[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:/*f64*/0[1]:/*?*/0[6]:\
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1]\
 )
@@ -1016,14 +1070,14 @@ cos.execute = {
 	reg_t & a = insn->GetSrc1();
 	reg_t output = Cos(a);
 
-	insn->WriteDest(output);
+	insn->SetDest(output);
 	//insn->SetPredFP32(output);
 }
 
 ////// EX2
 
 op ex2_full_normal( \
-	/*subop*/6[3]:/*?*/0[1]:/*?*/0[1]:/*src1_neg*/0[1]:/*const_seg*/?[4]:?[1]:?[7]:?[12]:/*marker*/0[2]: \
+	/*subop*/6[3]:/*?*/0[1]:/*?*/0[1]:/*src1_neg*/0[1]:/*const_seg*/?[4]:?[1]:?[7]:?[12]:/*marker*/?[2]: \
 	0x9[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:/*f64*/0[1]:/*?*/0[6]:\
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1]\
 )
@@ -1061,7 +1115,7 @@ ex2.execute = {
 	reg_t & a = insn->GetSrc1();
 	reg_t output = Exp2(a);
 
-	insn->WriteDest(output);
+	insn->SetDest(output);
 	//insn->SetPredFP32(output);
 }
 
@@ -1115,7 +1169,7 @@ fsmax.execute = {
 	
 	reg_t output = FSMax(a, b);
 	
-	insn->WriteDest(output);
+	insn->SetDest(output);
 	//insn->SetPredFP32(output);
 }
 

@@ -73,7 +73,7 @@ impl {
 constructor action initialize() {
 }
 
-action {void} read({CPU<CONFIG> *} {cpu}, {int} {offset}, {Instruction<CONFIG> *} {insn}) {
+action {void} read({CPU<CONFIG> *} {cpu}, {Instruction<CONFIG> *} {insn}) {
 	throw IllegalInstructionException<CONFIG>();
 }
 
@@ -108,27 +108,12 @@ group alu_reg(alu_full_normal_reg, alu_full_end_reg, alu_full_join_reg)
 alu_reg.read = {
 	typedef Instruction<CONFIG> Insn;
 	RegType rt = insn->OperandRegType(OpSrc3);
-	if(rt == RT_U32) {
-		insn->Temp(Insn::TempSrc3) = cpu->GetGPR(src3 + offset);
-	}
-	else {
-		assert(!offset);	// No use for offset
-		uint32_t rnum = src3 >> 1;
-		uint32_t hilo = (src3 & 1);
-		insn->Temp(Insn::TempSrc3) = cpu->GetGPR(rnum).Split(hilo);
-	}
+	insn->ReadReg(src3, Insn::TempSrc3, rt);
 }
 
 alu_reg.disasm = {
 	RegType rt = insn->OperandRegType(OpSrc3);
-	if(rt == RT_U32) {
-		os << "r" << src3;
-	}
-	else {
-		uint32_t rnum = src3 >> 1;
-		uint32_t hilo = (src3 & 1);
-		os << "r" << rnum << (hilo ? ".hi" : ".lo");
-	}
+	DisasmReg(src3, rt, os);
 }
 
 // Constant memory
@@ -157,35 +142,20 @@ alu_const.read = {
 	typedef Instruction<CONFIG> Insn;
 	if(insn->ForceReg(OpSrc3)) {
 		RegType rt = insn->OperandRegType(OpSrc3);
-		if(rt == RT_U32) {
-			insn->Temp(Insn::TempSrc3) = cpu->GetGPR(src3 + offset);
-		}
-		else {
-			assert(!offset);	// No use for offset
-			uint32_t rnum = src3 >> 1;
-			uint32_t hilo = (src3 & 1);
-			insn->Temp(Insn::TempSrc3) = cpu->GetGPR(rnum).Split(hilo);
-		}
+		insn->ReadReg(src3, Insn::TempSrc3, rt);
 	}
 	else if(insn->AllowSegment()) {
-		insn->Temp(Insn::TempSrc3) = cpu->ReadConstant(src3 * insn->OperandSize(OpSrc3) + offset * 4, segment);
+		insn->Temp(Insn::TempSrc3) = cpu->ReadConstant(src3 * insn->OperandSize(OpSrc3), segment);
 	}
 	else {
-		insn->Temp(Insn::TempSrc3) = cpu->ReadConstant(src3 * insn->OperandSize(OpSrc3) + offset * 4, 0);
+		insn->Temp(Insn::TempSrc3) = cpu->ReadConstant(src3 * insn->OperandSize(OpSrc3), 0);
 	}
 }
 
 alu_const.disasm = {
 	if(insn->ForceReg(OpSrc3)) {
 		RegType rt = insn->OperandRegType(OpSrc3);
-		if(rt == RT_U32) {
-			os << "r" << src3;
-		}
-		else {
-			uint32_t rnum = src3 >> 1;
-			uint32_t hilo = (src3 & 1);
-			os << "r" << rnum << (hilo ? ".hi" : ".lo");
-		}
+		DisasmReg(src3, rt, os);
 	}
 	else if(insn->AllowSegment()) {
 		DisasmConstant(src3, 0, 0, 1, segment, insn->OperandSMType(OpSrc3), os);

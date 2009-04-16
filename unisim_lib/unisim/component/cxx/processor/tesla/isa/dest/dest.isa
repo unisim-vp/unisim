@@ -78,7 +78,7 @@ constructor action initialize() {
 }
 
 action {void} write({CPU<CONFIG> *} {cpu}, {Instruction<CONFIG> *} {insn}, \
-	{bitset<CONFIG::WARP_SIZE>} {mask}, {int} {offset}) \
+	{bitset<CONFIG::WARP_SIZE>} {mask}) \
 {
 	throw IllegalInstructionException<CONFIG>();
 }
@@ -138,7 +138,6 @@ alu_full.predMask = {
 
 alu_full.write = {
 	typedef Instruction<CONFIG> Insn;
-	VectorRegister<CONFIG> const & value = insn->Temp(Insn::TempDest + offset);
 	RegType rt = insn->OperandRegType(OpDest);
 	if(output_reg)
 	{
@@ -150,20 +149,7 @@ alu_full.write = {
 	}
 	else
 	{
-		if(rt == RT_U32) {
-			cpu->GetGPR(dest + offset).Write(value, mask);
-			if(cpu->trace_reg) {
-				cpu->DumpGPR(dest + offset, cerr);
-			}
-		}
-		else {
-			uint32_t rnum = (dest >> 1);
-			uint32_t hilo = (dest & 1);
-			cpu->GetGPR(rnum).Write16(value, mask, hilo);
-			if(cpu->trace_reg) {
-				cpu->DumpGPR(rnum, cerr);
-			}
-		}
+		insn->WriteReg(dest, Insn::TempDest, rt, mask);
 	}
 }
 
@@ -200,14 +186,7 @@ alu_full.disasm = {
 	}
 	else
 	{
-		if(rt == RT_U32) {
-			os << "r" << dest;
-		}
-		else {
-			uint32_t rnum = dest >> 1;
-			uint32_t hilo = (dest & 1);
-			os << "r" << rnum << (hilo ? ".hi" : ".lo");
-		}
+		DisasmReg(dest, rt, os);
 	}
 }
 
@@ -239,21 +218,7 @@ alu_halfimm.predMask = {
 alu_halfimm.write = {
 	typedef Instruction<CONFIG> Insn;
 	RegType rt = insn->OperandRegType(OpDest);
-	VectorRegister<CONFIG> const & value = insn->Temp(Insn::TempDest + offset);
-	if(rt == RT_U32) {
-		cpu->GetGPR(dest + offset).Write(value, mask);
-		if(cpu->trace_reg) {
-			cpu->DumpGPR(dest + offset, cerr);
-		}
-	}
-	else {
-		uint32_t rnum = (dest >> 1);
-		uint32_t hilo = (dest & 1);
-		cpu->GetGPR(rnum).Write16(value, mask, hilo);
-		if(cpu->trace_reg) {
-			cpu->DumpGPR(rnum, cerr);
-		}
-	}
+	insn->WriteReg(dest, Insn::TempDest, rt, mask);
 }
 
 alu_halfimm.writePred = {
@@ -261,14 +226,7 @@ alu_halfimm.writePred = {
 
 alu_halfimm.disasm = {
 	RegType rt = insn->OperandRegType(OpDest);
-	if(rt == RT_U32) {
-		os << "r" << dest;
-	}
-	else {
-		uint32_t rnum = dest >> 1;
-		uint32_t hilo = (dest & 1);
-		os << "r" << rnum << (hilo ? ".hi" : ".lo");
-	}
+	DisasmReg(dest, rt, os);
 }
 
 alu_halfimm.disasmPred = {

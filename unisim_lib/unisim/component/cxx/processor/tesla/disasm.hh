@@ -52,17 +52,19 @@ using std::ostream;
 //=====================================================================
 //=                Disassembly helper functions                       =
 //=====================================================================
+void DisasmReg(uint32_t reg, RegType rt, ostream & os);
 void DisasmPred(uint32_t pred_cond, uint32_t pred_reg, ostream & buffer);
 void DisasmRounding(uint32_t rounding_mode, ostream & buffer);
 void DisasmMarker(uint32_t marker, ostream & buffer);
-void DisasmSetPred(uint32_t set_pred_reg, uint32_t set_pred, ostream & buffer);
-void DisasmDest(uint32_t dest, uint32_t set_output, ostream & buffer);
+//void DisasmSetPred(uint32_t set_pred_reg, uint32_t set_pred, ostream & buffer);
+//void DisasmDest(uint32_t dest, uint32_t set_output, ostream & buffer);
 void DisasmSrc(uint32_t reg, uint32_t cm, uint32_t sh, uint32_t neg, ostream & buffer);
 //void DisasmSrc(uint32_t reg, uint32_t cm, uint32_t sh, uint32_t neg, uint32_t addr_lo,
 //	uint32_t addr_hi, uint32_t addr_imm, ostream & buffer);
 void DisasmImm(uint32_t imm_hi, uint32_t imm_lo, ostream & buffer);
 void DisasmConvert(uint32_t cvt_round, uint32_t cvt_type, bool sign, uint32_t data_32, uint32_t abssat, ostream & buffer);
-//void DisasmConvertFP32(uint32_t cvt_round, uint32_t cvt_type, bool sign, uint32_t data_32, uint32_t abssat, ostream & buffer);
+void DisasmConvertFP32(bool dest_32, ConvType srct, RoundingMode cvt_round,
+	bool cvt_int, AbsSat as, ostream & buffer);
 void DisasmDataType(uint32_t dt, ostream & buffer);
 std::string DataTypeString(DataType d);
 std::string RoundingModeString(RoundingMode r);

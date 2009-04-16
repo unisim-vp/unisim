@@ -168,6 +168,7 @@ void Instruction<CONFIG>::SetPredF32()
 }
 
 
+// For load/store instructions, no subword access
 template <class CONFIG>
 void Instruction<CONFIG>::ReadBlock(int dest, DataType dt)
 {
@@ -183,10 +184,13 @@ void Instruction<CONFIG>::ReadBlock(int dest, DataType dt)
 		Temp(0) = cpu->GetGPR(dest);
 		break;
 	case DT_U64:
+		// Needs to be aligned
+		assert(dest % 2 == 0);
 		Temp(0) = cpu->GetGPR(dest);
 		Temp(1) = cpu->GetGPR(dest + 1);
 		break;
 	case DT_U128:
+		assert(dest % 4 == 0);
 		Temp(0) = cpu->GetGPR(dest);
 		Temp(1) = cpu->GetGPR(dest + 1);
 		Temp(2) = cpu->GetGPR(dest + 2);
@@ -197,38 +201,145 @@ void Instruction<CONFIG>::ReadBlock(int dest, DataType dt)
 	}
 }
 
-
 template <class CONFIG>
-void Instruction<CONFIG>::ReadSrc1(int offset)
+void Instruction<CONFIG>::WriteBlock(int reg, DataType dt)
 {
-	operation->src1->read(cpu, offset, this);
+	bitset<CONFIG::WARP_SIZE> mask = Mask();
+	switch(dt)
+	{
+	case DT_U8:
+	case DT_S8:
+	case DT_U16:
+	case DT_S16:
+	case DT_U32:
+	case DT_S32:
+	case DT_F32:
+		// Overwrite whole register
+		cpu->GetGPR(reg).Write(Temp(0), mask);
+		if(cpu->trace_reg) {
+			cpu->DumpGPR(reg, cerr);
+		}
+		break;
+	case DT_U64:
+		// Needs to be aligned
+		assert(reg % 2 == 0);
+		cpu->GetGPR(reg).Write(Temp(0), mask);
+		cpu->GetGPR(reg + 1).Write(Temp(1), mask);
+		if(cpu->trace_reg) {
+			cpu->DumpGPR(reg, cerr);
+			cpu->DumpGPR(reg + 1, cerr);
+		}
+		break;
+	case DT_U128:
+		assert(reg % 4 == 0);
+		cpu->GetGPR(reg).Write(Temp(0), mask);
+		cpu->GetGPR(reg + 1).Write(Temp(1), mask);
+		cpu->GetGPR(reg + 2).Write(Temp(2), mask);
+		cpu->GetGPR(reg + 3).Write(Temp(3), mask);
+		if(cpu->trace_reg) {
+			cpu->DumpGPR(reg, cerr);
+			cpu->DumpGPR(reg + 1, cerr);
+			cpu->DumpGPR(reg + 2, cerr);
+			cpu->DumpGPR(reg + 3, cerr);
+		}
+		break;
+	default:
+		assert(false);
+	}
+}
+
+
+// For GP instructions, loads from 16 to 64-bit regs
+template <class CONFIG>
+void Instruction<CONFIG>::ReadReg(int reg, int tempbase, RegType rt)
+{
+	switch(rt)
+	{
+	case RT_U16:
+		{
+		uint32_t rnum = (reg >> 1);
+		uint32_t hilo = (reg & 1);
+		Temp(tempbase) = cpu->GetGPR(rnum).Split(hilo);
+		}
+		break;
+	case RT_U32:
+		Temp(tempbase) = cpu->GetGPR(reg);
+		break;
+	case RT_U64:
+		// Needs to be aligned
+		assert(reg % 2 == 0);
+		Temp(tempbase) = cpu->GetGPR(reg);
+		Temp(tempbase + 1) = cpu->GetGPR(reg + 1);
+		break;
+	default:
+		assert(false);
+	}
 }
 
 template <class CONFIG>
-void Instruction<CONFIG>::ReadSrc2(int offset)
+void Instruction<CONFIG>::WriteReg(int reg, int tempbase, RegType rt,
+	bitset<CONFIG::WARP_SIZE> mask)
 {
-	operation->src2->read(cpu, offset, this);
+		switch(rt)
+		{
+		case RT_U16:
+			{
+			uint32_t rnum = (reg >> 1);
+			uint32_t hilo = (reg & 1);
+			cpu->GetGPR(rnum).Write16(Temp(tempbase), mask, hilo);
+			if(cpu->trace_reg) {
+				cpu->DumpGPR(rnum, cerr);
+			}
+			}
+			break;
+		case RT_U32:
+			cpu->GetGPR(reg).Write(Temp(tempbase), mask);
+			if(cpu->trace_reg) {
+				cpu->DumpGPR(reg, cerr);
+			}
+			break;
+		case RT_U64:
+			assert(reg % 2 == 0);
+			cpu->GetGPR(reg).Write(Temp(tempbase), mask);
+			cpu->GetGPR(reg + 1).Write(Temp(tempbase), mask);
+			if(cpu->trace_reg) {
+				cpu->DumpGPR(reg, cerr);
+				cpu->DumpGPR(reg + 1, cerr);
+			}
+			break;
+		}
+
 }
 
 template <class CONFIG>
-void Instruction<CONFIG>::ReadSrc3(int offset)
+void Instruction<CONFIG>::ReadSrc1()
 {
-	operation->src3->read(cpu, offset, this);
+	operation->src1->read(cpu, this);
+}
+
+template <class CONFIG>
+void Instruction<CONFIG>::ReadSrc2()
+{
+	operation->src2->read(cpu, this);
+}
+
+template <class CONFIG>
+void Instruction<CONFIG>::ReadSrc3()
+{
+	operation->src3->read(cpu, this);
 }
 
 template <class CONFIG>
 void Instruction<CONFIG>::WriteDest()
 {
-	operation->dest->write(cpu, this, Mask(), 0);
+	operation->dest->write(cpu, this, Mask());
 }
 
 
 template <class CONFIG>
-void Instruction<CONFIG>::WriteDest(VectorRegister<CONFIG> const & value, int offset)
+void Instruction<CONFIG>::SetDest(VectorRegister<CONFIG> const & value)
 {
-	// Temp
-	Temp(TempDest + offset) = value;
-	//operation->dest->write(cpu, this, Mask(), offset);
+	Temp(TempDest) = value;
 }
 
 template <class CONFIG>
@@ -315,6 +426,8 @@ RegType Instruction<CONFIG>::OperandRegType(Operand op) const
 	DataType dt = OperandDataType(op);
 	switch(dt)
 	{
+	case DT_U8:
+	case DT_S8:
 	case DT_U16:
 	case DT_S16:
 		return RT_U16;
@@ -322,6 +435,8 @@ RegType Instruction<CONFIG>::OperandRegType(Operand op) const
 	case DT_S32:
 	case DT_F32:
 		return RT_U32;
+	case DT_U64:
+		return RT_U64;
 	default:
 		assert(false);
 	}

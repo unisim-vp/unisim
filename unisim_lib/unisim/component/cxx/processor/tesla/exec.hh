@@ -129,10 +129,15 @@ template<class CONFIG>
 void I32Negate(VectorRegister<CONFIG> & a);
 #endif
 template<class CONFIG>
-VectorRegister<CONFIG> ConvertIntInt(VectorRegister<CONFIG> & a, uint32_t cvt_round, uint32_t cvt_type, bool b32, AbsSat abssat, bool neg = false);
+VectorRegister<CONFIG> ConvertIntInt(VectorRegister<CONFIG> const & a, uint32_t cvt_round, uint32_t cvt_type, bool b32, AbsSat abssat, bool neg = false);
 
 template<class CONFIG>
-VectorRegister<CONFIG> ConvertFloatInt(VectorRegister<CONFIG> & a, uint32_t cvt_round, uint32_t cvt_type, bool b32);
+VectorRegister<CONFIG> ConvertFloatInt(VectorRegister<CONFIG> const & a, uint32_t cvt_round, uint32_t cvt_type, bool b32);
+
+// In-place
+template<class CONFIG>
+void ConvertFloatFloat(VectorRegister<CONFIG> & a, bool dest_32, ConvType srctype,
+	RoundingMode cvt_round, bool cvt_int, AbsSat abssat);
 
 template<class CONFIG>
 VectorRegister<CONFIG> ShiftLeft(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,

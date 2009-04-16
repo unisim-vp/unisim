@@ -113,10 +113,14 @@ public:
 	void SetPredF32();
 	
 	void ReadBlock(int reg, DataType dt);
+	void WriteBlock(int reg, DataType dt);
+	void ReadReg(int reg, int tempbase, RegType rt);
+	void WriteReg(int reg, int tempbase, RegType rt,
+		std::bitset<CONFIG::WARP_SIZE> mask);
 
-	void ReadSrc1(int offset = 0);
-	void ReadSrc2(int offset = 0);
-	void ReadSrc3(int offset = 0);
+	void ReadSrc1();
+	void ReadSrc2();
+	void ReadSrc3();
 
 	// Deprecated interface
 	typedef typename isa::opcode::Operation<CONFIG> OpCode;
@@ -128,7 +132,7 @@ public:
 	void SetOperation(OpCode *operation);
 	OpCode * GetOperation() { return operation; }
 
-	void WriteDest(VectorRegister<CONFIG> const & value, int offset = 0);
+	void SetDest(VectorRegister<CONFIG> const & value);
 	void SetPredFP32(VectorRegister<CONFIG> const & value) const;
 	void SetPredI32(VectorRegister<CONFIG> const & value, VectorFlags<CONFIG> flags) const;
 	void SetPredI32(VectorRegister<CONFIG> const & value) const;

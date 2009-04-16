@@ -45,6 +45,20 @@ namespace cxx {
 namespace processor {
 namespace tesla {
 
+
+inline SoftFloatIEEE& SoftFloatIEEE::assign(const SoftHalfIEEE& sfHalf,
+	inherited::StatusAndControlFlags & flags)
+{
+	// Always exact, should not require/update flags
+	FloatConversion fcConversion;
+	fcConversion.setSizeMantissa(10).setSizeExponent(5);
+	fcConversion.setNegative(sfHalf.isNegative());
+	fcConversion.exponent()[0] = sfHalf.queryBasicExponent()[0];
+	fcConversion.mantissa()[0] = sfHalf.queryMantissa()[0];
+	inherited source(fcConversion, flags);
+	return (SoftFloatIEEE&) inherited::operator=(source);
+}
+
 inline SoftFloatIEEE& SoftFloatIEEE::saturate()
 {
 	if(isNegative()) {
@@ -54,6 +68,29 @@ inline SoftFloatIEEE& SoftFloatIEEE::saturate()
 		setOne();
 	}
 	return *this;
+}
+
+SoftHalfIEEE& SoftHalfIEEE::assign(const SoftFloatIEEE& sfFloat,
+	inherited::StatusAndControlFlags & flags)
+{
+	FloatConversion fcConversion;
+	fcConversion.setSizeMantissa(23).setSizeExponent(8);
+	fcConversion.setNegative(sfFloat.isNegative());
+	fcConversion.exponent()[0] = sfFloat.queryBasicExponent()[0];
+	fcConversion.mantissa()[0] = sfFloat.queryMantissa()[0];
+	inherited source(fcConversion, flags);
+	return (SoftHalfIEEE&) inherited::operator=(source);
+
+}
+
+template<class BaseFloat>
+FloatDAZFTZ<BaseFloat>&
+FloatDAZFTZ<BaseFloat>::assign(const SoftFloatIEEE& sfFloat,
+	FloatDAZFTZ<BaseFloat>::Flags & flags)
+{
+	BaseFloat::assign(sfFloat, flags);
+	flushDenormals();
+	return *this; 
 }
 
 template<class BaseFloat>
@@ -106,7 +143,6 @@ FloatMAD<BaseFloat>::teslaMADAssign(const FloatMAD<BaseFloat>& bdMult,
 	BaseFloat::multAssign(bdMult, typename BaseFloat::StatusAndControlFlags().setZeroRound());
 	return BaseFloat::addAssign(bdAdd, scfFlags);
 }
-
 
 
 } // end of namespace tesla

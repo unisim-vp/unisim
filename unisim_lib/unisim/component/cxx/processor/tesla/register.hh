@@ -97,7 +97,8 @@ enum SMType
 enum RegType
 {
 	RT_U16 = 0,
-	RT_U32 = 1
+	RT_U32 = 1,
+	RT_U64,		// 2 regs, Not in ISA
 };
 
 enum AbsSat
