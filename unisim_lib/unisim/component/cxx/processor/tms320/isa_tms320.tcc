@@ -97396,7 +97396,7 @@ cpu
 
 		// Write back 'dst2' register operand
 		unsigned int dst2 = d2 + 2;
-		cpu.SetReg(2 + dst2, addi3_result);
+		cpu.SetReg(dst2, addi3_result);
 
 		// Note: ...if the src3 and src4 fields use the same auxiliary register,
 		// both addresses are correctly generated, but only the value created by
@@ -97683,7 +97683,7 @@ cpu
 
 		// Write back 'dst2' register operand
 		unsigned int dst2 = d2 + 2;
-		cpu.SetReg(2 + dst2, addi3_result);
+		cpu.SetReg(dst2, addi3_result);
 
 		// Generate flags (into ST)
 		cpu.GenFlags(
@@ -97974,7 +97974,7 @@ cpu
 
 		// Write back 'dst2' register operand
 		unsigned int dst2 = d2 + 2;
-		cpu.SetReg(2 + dst2, subi3_result);
+		cpu.SetReg(dst2, subi3_result);
 
 		// Note: ...if the src3 and src4 fields use the same auxiliary register,
 		// both addresses are correctly generated, but only the value created by
@@ -98263,7 +98263,7 @@ cpu
 
 		// Write back 'dst2' register operand
 		unsigned int dst2 = d2 + 2;
-		cpu.SetReg(2 + dst2, subi3_result);
+		cpu.SetReg(dst2, subi3_result);
 
 		// FIXME: Don't known how to generate the underflow flag
 
