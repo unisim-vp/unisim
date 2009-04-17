@@ -49,7 +49,7 @@ namespace tesla {
 inline SoftFloatIEEE& SoftFloatIEEE::assign(const SoftHalfIEEE& sfHalf,
 	inherited::StatusAndControlFlags & flags)
 {
-	// Always exact, should not require/update flags
+	// Always exact
 	FloatConversion fcConversion;
 	fcConversion.setSizeMantissa(10).setSizeExponent(5);
 	fcConversion.setNegative(sfHalf.isNegative());
@@ -66,6 +66,14 @@ inline SoftFloatIEEE& SoftFloatIEEE::saturate()
 	}
 	else if(hasPositiveOrNullExponent()) {	// >= 1
 		setOne();
+	}
+	return *this;
+}
+
+inline SoftFloatIEEE& SoftFloatIEEE::signedSaturate()
+{
+	if(hasPositiveOrNullExponent()) {	// >= 1.0?
+		setOnePreserveSign();
 	}
 	return *this;
 }

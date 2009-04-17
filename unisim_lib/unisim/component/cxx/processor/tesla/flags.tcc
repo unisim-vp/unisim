@@ -165,8 +165,8 @@ VectorFlags<CONFIG> ComputePredSetI(VectorRegister<CONFIG> & output,
 		uint8_t cond = 0;
 		if(b32) {
 			if(a[i] == b[i]) cond |= 1;
-			if(is_signed && (int32_t(a[i]) < int32_t(b[i]))
-				|| !is_signed && (a[i] < b[i])) {
+			if((is_signed && (int32_t(a[i]) < int32_t(b[i])))
+				|| (!is_signed && (a[i] < b[i]))) {
 				cond |= 2;
 			}
 		}
@@ -174,8 +174,8 @@ VectorFlags<CONFIG> ComputePredSetI(VectorRegister<CONFIG> & output,
 			uint16_t sa = a[i];// & 0x0000ffff;
 			uint16_t sb = b[i];// & 0x0000ffff;
 			if(sa == sb) cond |= 1;
-			if(is_signed && (int16_t(sa) < int16_t(sb))
-				|| !is_signed && (sa < sb)) {
+			if((is_signed && (int16_t(sa) < int16_t(sb)))
+				|| (!is_signed && (sa < sb))) {
 				cond |= 2;
 			}
 		}

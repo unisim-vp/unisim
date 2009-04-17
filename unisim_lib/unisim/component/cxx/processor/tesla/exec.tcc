@@ -39,6 +39,7 @@
 #include <unisim/util/arithmetic/arithmetic.hh>
 
 #include <cmath>
+#include <cfloat>
 
 namespace unisim {
 namespace component {
@@ -612,7 +613,7 @@ VectorRegister<CONFIG> ConvertIntInt(VectorRegister<CONFIG> const & a, uint32_t 
 
 	// Unless abs, dest>source means no-op
 	if(!neg && (cvt_type == CT_NONE
-		|| (cvt_type == CT_U32 || cvt_type == CT_S32) && b32))
+		|| ((cvt_type == CT_U32 || cvt_type == CT_S32) && b32)))
 	{
 		// No-op
 		return a;
@@ -733,8 +734,6 @@ void ConvertFloatFloat(VectorRegister<CONFIG> & a, bool dest_32, ConvType srctyp
 	typedef typename CONFIG::half_t half_t;	
 	typedef typename float_t::StatusAndControlFlags FPFlags;
 
-	assert(abssat == AS_NONE);	// Not implemented TODO
-
 	FPFlags flags;
 	switch(cvt_round)
 	{
@@ -763,6 +762,24 @@ void ConvertFloatFloat(VectorRegister<CONFIG> & a, bool dest_32, ConvType srctyp
 			half_t h = half_t(a[i]);
 			f.assign(h, flags);	// lossless
 		}
+		
+		switch(abssat)
+		{
+		case AS_ABS:
+			f.setPositive();
+			break;
+		case AS_SAT:
+			// Unsigned saturation
+			f.saturate();
+			break;
+		case AS_SSAT:
+			// Signed saturation
+			f.signedSaturate();
+			break;
+		case AS_NONE:
+			break;
+		}
+		
 		
 		if(cvt_int && f.queryExponent() < 24)
 		{
@@ -1047,7 +1064,13 @@ VectorRegister<CONFIG> Exp2(VectorRegister<CONFIG> const & a)
 	{
 		uint32_t ia = a[i];
 		double r = FXToFP(ia);
-		rv.WriteFloat(exp2(r), i);
+		r = exp2(r);
+		// Flush denormals to zero
+		if(r < ldexp(1.0, FLT_MIN_EXP)) {	// r > 0
+			r = 0;
+		}
+		rv.WriteFloat(float(r), i);
+		
 	}
 	return rv;
 }
@@ -1061,7 +1084,12 @@ VectorRegister<CONFIG> Sin(VectorRegister<CONFIG> const & a)
 	{
 		uint32_t ia = a[i];
 		double r = FXToFP(ia);
-		rv.WriteFloat(sin(r * .5 * M_PI), i);
+		r = sin(r * .5 * M_PI);
+		// Flush denormals to zero
+		if(r < ldexp(1.0, FLT_MIN_EXP)) {	// r > 0
+			r = 0;
+		}
+		rv.WriteFloat(r, i);
 		// In double precision
 		// (until sinpif and cospif functions are available...)
 	}
@@ -1077,7 +1105,11 @@ VectorRegister<CONFIG> Cos(VectorRegister<CONFIG> const & a)
 	{
 		uint32_t ia = a[i];
 		double r = FXToFP(ia);
-		rv.WriteFloat(cos(r * .5 * M_PI), i);
+		r = cos(r * .5 * M_PI);
+		if(r < ldexp(1.0, FLT_MIN_EXP)) {	// r > 0
+			r = 0;
+		}		
+		rv.WriteFloat(r, i);
 	}
 	return rv;
 }

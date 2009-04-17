@@ -67,6 +67,11 @@ public:
 	  {  uint32_t uResult; fillChunk(&uResult, true /* little endian */); return uResult; }
 	  
 	inline SoftFloatIEEE& saturate();
+	inline SoftFloatIEEE& signedSaturate();
+	void setOnePreserveSign() {
+		inherited::querySBasicExponent() = inherited::getZeroExponent();
+		inherited::querySMantissa() = 0U;
+	}
 
 };
 

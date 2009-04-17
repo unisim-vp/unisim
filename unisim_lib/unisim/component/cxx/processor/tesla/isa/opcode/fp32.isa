@@ -242,25 +242,52 @@ fsmac.execute = {
 // full: dest = src1 + src3
 // half: dest = src1 + src2
 
-op fsadd_full_normal( \
+op fsadd_full_noconst_normal( \
 	/*subop*/0[3]:/*?*/0[1]:src3_neg[1]:src1_neg[1]:0[2]:rounding_mode[2]:?[20]:/*marker*/0[2]: \
-	0xb[4]:?[26]:0[1]:/*IWidth*/1[1]\
+	0xb[4]:/*addr*/?[3]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:?[21]:0[1]:/*IWidth*/1[1]\
 )
 
-op fsadd_full_end( \
+op fsadd_full_noconst_end( \
 	/*subop*/0[3]:/*?*/0[1]:src3_neg[1]:src1_neg[1]:0[2]:rounding_mode[2]:?[20]:/*marker*/1[2]: \
-	0xb[4]:?[26]:0[1]:/*IWidth*/1[1]\
+	0xb[4]:/*addr*/?[3]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:?[21]:0[1]:/*IWidth*/1[1]\
 )
 
-op fsadd_full_join( \
+op fsadd_full_noconst_join( \
 	/*subop*/0[3]:/*?*/0[1]:src3_neg[1]:src1_neg[1]:0[2]:rounding_mode[2]:?[20]:/*marker*/2[2]: \
-	0xb[4]:?[26]:0[1]:/*IWidth*/1[1]\
+	0xb[4]:/*addr*/?[3]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:?[21]:0[1]:/*IWidth*/1[1]\
+)
+
+op fsadd_full_const_normal( \
+	/*subop*/0[3]:/*?*/0[1]:src3_neg[1]:src1_neg[1]:/*cs*/?[4]:?[20]:/*marker*/0[2]: \
+	0xb[4]:/*addr*/?[3]:/*src3_cm*/1[1]:/*src2_cm*/0[1]:?[21]:0[1]:/*IWidth*/1[1]\
+)
+
+op fsadd_full_const_end( \
+	/*subop*/0[3]:/*?*/0[1]:src3_neg[1]:src1_neg[1]:/*cs*/?[4]:?[20]:/*marker*/1[2]: \
+	0xb[4]:/*addr*/?[3]:/*src3_cm*/1[1]:/*src2_cm*/0[1]:?[21]:0[1]:/*IWidth*/1[1]\
+)
+
+op fsadd_full_const_join( \
+	/*subop*/0[3]:/*?*/0[1]:src3_neg[1]:src1_neg[1]:/*cs*/?[4]:?[20]:/*marker*/2[2]: \
+	0xb[4]:/*addr*/?[3]:/*src3_cm*/1[1]:/*src2_cm*/0[1]:?[21]:0[1]:/*IWidth*/1[1]\
 )
 
 
-group fsadd_full(fsadd_full_normal, fsadd_full_end, fsadd_full_join)
+group fsadd_full(fsadd_full_noconst_normal, fsadd_full_noconst_end, fsadd_full_noconst_join)
+
+group fsadd_full_const(fsadd_full_const_normal, fsadd_full_const_end, fsadd_full_const_join)
+
 
 fsadd_full.init = {
+	typedef Operation<CONFIG> inherited;
+	inherited::allow_segment = true;
+	inherited::op_type[OpDest] = DT_F32;
+	inherited::op_type[OpSrc1] = DT_F32;
+	inherited::op_type[OpSrc2] = DT_NONE;
+	inherited::op_type[OpSrc3] = DT_F32;
+}
+
+fsadd_full_const.init = {
 	typedef Operation<CONFIG> inherited;
 	inherited::allow_segment = true;
 	inherited::op_type[OpDest] = DT_F32;
@@ -289,6 +316,23 @@ fsadd_full.disasm = {
 	insn->DisasmSrc3(buffer);
 }
 
+fsadd_full_const.disasm = {
+	buffer << "add";
+	insn->DisasmControl(buffer);
+	buffer << ".f32";
+	
+	buffer << " ";
+	insn->DisasmDest(buffer);
+
+	buffer << ", ";
+	DisasmSign(src1_neg, buffer);
+	insn->DisasmSrc1(buffer);
+	
+	buffer << ", ";
+	DisasmSign(src3_neg, buffer);
+	insn->DisasmSrc3(buffer);
+}
+
 fsadd_full.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 
@@ -299,8 +343,20 @@ fsadd_full.execute = {
 	reg_t output = FSAdd(a, c, src1_neg, src3_neg, rounding_mode);
 	
 	insn->SetDest(output);
-	//insn->SetPredFP32(output);
 }
+
+fsadd_full_const.execute = {
+	typedef VectorRegister<CONFIG> reg_t;
+
+	// dest = a + c
+	reg_t & a = insn->GetSrc1();
+	reg_t & c = insn->GetSrc3();
+	
+	reg_t output = FSAdd(a, c, src1_neg, src3_neg, RM_RN);
+	
+	insn->SetDest(output);
+}
+
 
 op fsadd_imm( \
 	/*subop*/0[3]:/*?*/0[1]:/*imm_hi*/?[26]:/*marker*/3[2]: \
@@ -381,19 +437,19 @@ op fsmul_full_noconst_join( \
 )
 
 op fsmul_full_const_normal( \
-	/*subop*/0[3]:/*?*/0[1]:src3_neg[1]:src1_neg[1]:0[2]:rounding_mode[2]:/*src1_sh*/?[1]:/*src3*/?[7]\
+	/*subop*/0[3]:/*?*/0[1]:src3_neg[1]:src1_neg[1]:/*cs*/?[4]:/*src1_sh*/?[1]:/*src3*/?[7]\
 	:/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output_reg*/?[1]:/*addr_hi*/?[1]:/*marker*/0[2]: \
 	0xc[4]:/*addr*/?[3]:/*src3_cm*/0[1]:/*src2_cm*/1[1]:?[21]:0[1]:/*IWidth*/1[1]\
 )
 
 op fsmul_full_const_end( \
-	/*subop*/0[3]:/*?*/0[1]:src3_neg[1]:src1_neg[1]:0[2]:rounding_mode[2]:/*src1_sh*/?[1]:/*src3*/?[7]\
+	/*subop*/0[3]:/*?*/0[1]:src3_neg[1]:src1_neg[1]:/*cs*/?[4]:/*src1_sh*/?[1]:/*src3*/?[7]\
 	:/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output_reg*/?[1]:/*addr_hi*/?[1]:/*marker*/1[2]: \
 	0xc[4]:/*addr*/?[3]:/*src3_cm*/0[1]:/*src2_cm*/1[1]:?[21]:0[1]:/*IWidth*/1[1]\
 )
 
 op fsmul_full_const_join( \
-	/*subop*/0[3]:/*?*/0[1]:src3_neg[1]:src1_neg[1]:0[2]:rounding_mode[2]:/*src1_sh*/?[1]:/*src3*/?[7]\
+	/*subop*/0[3]:/*?*/0[1]:src3_neg[1]:src1_neg[1]:/*cs*/?[4]:/*src1_sh*/?[1]:/*src3*/?[7]\
 	:/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output_reg*/?[1]:/*addr_hi*/?[1]:/*marker*/2[2]: \
 	0xc[4]:/*addr*/?[3]:/*src3_cm*/0[1]:/*src2_cm*/1[1]:?[21]:0[1]:/*IWidth*/1[1]\
 )
