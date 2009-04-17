@@ -147,9 +147,9 @@ void HCS12X ::Wait() {
  * Wait for not masked interrupts or non-masquable interrupts
  */
 
-//	wait(bus_cycle_time*3);
+	wait(bus_cycle_time);
 
-	wait(irq_event);
+//	wait(irq_event);
 }
 
 address_t HCS12X ::GetIntVector(uint8_t &ipl)

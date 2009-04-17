@@ -135,23 +135,20 @@ void S12XMMC::b_transport( tlm::tlm_generic_payload& trans, sc_time& delay ) {
 // Start => Workaround code for unimplemented controller
 		find = true;
 		if (logicalAddress <= REG_HIGH_OFFSET) {
+
 			find = false;
 			for (int i=0; (i<DEVICE_MAP_SIZE) && !find; i++) {
 				find = ((deviceMap[i].start_address <= logicalAddress) && (logicalAddress <= deviceMap[i].end_address));
 			}
 
-				if (!find) {
-					if (CONFIG::DEBUG_ENABLE && trap_reporting_import) {
-						trap_reporting_import->ReportTrap();
-					}
-
-					cerr << "WARNING: S12XMMC => Device at 0x" << std::hex << logicalAddress << " Not present in the emulated platform." << std::dec << std::endl;
+			if (!find) {
+/*
+				if (CONFIG::DEBUG_ENABLE && trap_reporting_import) {
+					trap_reporting_import->ReportTrap();
 				}
-				/*
-				else {
-					cout << "*************  S12XMMC => Write Register at 0x" << std::hex << logicalAddress << std::dec << endl;
-				}
-				*/
+*/
+				cerr << "WARNING: S12XMMC => Device at 0x" << std::hex << logicalAddress << " Not present in the emulated platform." << std::dec << std::endl;
+			}
 
 		}
 
