@@ -2771,11 +2771,11 @@ XOR3_STI_ext.execute = {
 
 /**********************************************************
  * LDF || LDF (load floating-point value)
- * op LDF_LDF(0b11[2]:0b00010[5]:dst1[3]:dst2[3]:0b000[3]:src1[8]:src2[8])
+ * op LDF_LDF(0b11[2]:0b00010[5]:dst2[3]:dst1[3]:0b000[3]:src1[8]:src2[8])
  */
 
-op LDF_LDF    (0b11[2]:0b00010[5]:dst1[3]:dst2[3]:0b000[3]:s1_mod[5]:s1_ar[3]:s2_mod[5]:s2_ar[3])
-op LDF_LDF_ext(0b11[2]:0b00010[5]:dst1[3]:dst2[3]:0b000[3]:s1_mod[5]:s1_ar[3]:0b111[3]:src2[5])
+op LDF_LDF    (0b11[2]:0b00010[5]:dst2[3]:dst1[3]:0b000[3]:s1_mod[5]:s1_ar[3]:s2_mod[5]:s2_ar[3])
+op LDF_LDF_ext(0b11[2]:0b00010[5]:dst2[3]:dst1[3]:0b000[3]:s1_mod[5]:s1_ar[3]:0b111[3]:src2[5])
 
 LDF_LDF.disasm = {
 	const char *dst1_name = REG_NAME[dst1];
@@ -2819,11 +2819,11 @@ LDF_LDF_ext.execute = {
 
 /**********************************************************
  * LDI || LDI (load integer)
- * op LDI_LDI(0b11[2]:0b00011[5]:dst1[3]:dst2[3]:0b000[3]:src1[8]:src2[8])
+ * op LDI_LDI(0b11[2]:0b00011[5]:dst2[3]:dst1[3]:0b000[3]:src1[8]:src2[8])
  */
 
-op LDI_LDI    (0b11[2]:0b00011[5]:dst1[3]:dst2[3]:0b000[3]:s1_mod[5]:s1_ar[3]:s2_mod[5]:s2_ar[3])
-op LDI_LDI_ext(0b11[2]:0b00011[5]:dst1[3]:dst2[3]:0b000[3]:s1_mod[5]:s1_ar[3]:0b111[3]:src2[5])
+op LDI_LDI    (0b11[2]:0b00011[5]:dst2[3]:dst1[3]:0b000[3]:s1_mod[5]:s1_ar[3]:s2_mod[5]:s2_ar[3])
+op LDI_LDI_ext(0b11[2]:0b00011[5]:dst2[3]:dst1[3]:0b000[3]:s1_mod[5]:s1_ar[3]:0b111[3]:src2[5])
 
 LDI_LDI.disasm = {
 	const char *dst1_name = REG_NAME[dst1];
