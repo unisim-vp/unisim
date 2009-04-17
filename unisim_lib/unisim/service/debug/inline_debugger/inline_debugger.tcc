@@ -448,6 +448,14 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 					}
 					break;
 				}
+				
+				if(IsMonitorCommand(parm[0]))
+				{
+					recognized = true;
+					DumpVariable(parm[1], parm[2]);
+					break;
+				}
+
 				break;
 		} // end of switch
 
@@ -787,18 +795,127 @@ void InlineDebugger<ADDRESS>::DumpVariables()
 }
 
 template <class ADDRESS>
-void InlineDebugger<ADDRESS>::DumpVariable(const char *name)
+void InlineDebugger<ADDRESS>::DumpVariable(const char *name, const char *format)
 {
 	VariableBase *variable = ServiceManager::GetVariable(name);
+	bool recognized_format = false;
 
 	if (variable == &unisim::kernel::service::ServiceManager::void_variable)
 	{
 		cout << "Unknow variable (" << name << ")" << endl;
+		return;
 	}
-	else
+
+	cout << name << " = ";
+	if (strcmp(format, "string") == 0)
 	{
-		cout << name << " = " << ((string) *variable) << endl;
+		cout << ((string) *variable);
+		recognized_format = true;
 	}
+	else if (strcmp(format, "b") == 0)
+	{
+		cout << ((bool) *variable);
+		recognized_format = true;
+	}
+	else if (strcmp(format, "c") == 0)
+	{
+		cout << ((char) *variable);
+		recognized_format = true;
+	}
+	else if (strcmp(format, "s") == 0)
+	{
+		cout << ((short) *variable);
+		recognized_format = true;
+	}
+	else if (strcmp(format, "hs") == 0)
+	{
+		cout << hex << "0x" << ((short) *variable) << dec;
+		recognized_format = true;
+	}
+	else if (strcmp(format, "us") == 0)
+	{
+		cout << ((unsigned short) *variable);
+		recognized_format = true;
+	}
+	else if (strcmp(format, "hus") == 0)
+	{
+		cout << hex << "0x" << ((unsigned short) *variable) << dec;
+		recognized_format = true;
+	}
+	else if (strcmp(format, "i") == 0)
+	{
+		cout << ((int) *variable);
+		recognized_format = true;
+	}
+	else if (strcmp(format, "hi") == 0)
+	{
+		cout << hex << "0x" << ((int) *variable) << dec;
+		recognized_format = true;
+	}
+	else if (strcmp(format, "ui") == 0)
+	{
+		cout << ((unsigned int) *variable);
+		recognized_format = true;
+	}
+	else if (strcmp(format, "hui") == 0)
+	{
+		cout << hex << "0x" << ((unsigned int) *variable) << dec;
+		recognized_format = true;
+	}
+	else if (strcmp(format, "l") == 0)
+	{
+		cout << ((long) *variable);
+		recognized_format = true;
+	}
+	else if (strcmp(format, "hl") == 0)
+	{
+		cout << hex << "0x" << ((long) *variable) << dec;
+		recognized_format = true;
+	}
+	else if (strcmp(format, "ul") == 0)
+	{
+		cout << ((unsigned long) *variable);
+		recognized_format = true;
+	}
+	else if (strcmp(format, "hul") == 0)
+	{
+		cout << hex << "0x" << ((unsigned long) *variable) << dec;
+		recognized_format = true;
+	}
+	else if (strcmp(format, "ll") == 0)
+	{
+		cout << ((long long) *variable);
+		recognized_format = true;
+	}
+	else if (strcmp(format, "hll") == 0)
+	{
+		cout << hex << "0x" << ((long long) *variable) << dec;
+		recognized_format = true;
+	}
+	else if (strcmp(format, "ull") == 0)
+	{
+		cout << ((unsigned long long) *variable);
+		recognized_format = true;
+	}
+	else if (strcmp(format, "hull") == 0)
+	{
+		cout << hex << "0x" << ((unsigned long long) *variable) << dec;
+		recognized_format = true;
+	}
+	else if (strcmp(format, "f") == 0)
+	{
+		cout << ((float) *variable);
+		recognized_format = true;
+	}
+	else if (strcmp(format, "d") == 0)
+	{
+		cout << ((double) *variable);
+		recognized_format = true;
+	}
+
+	if (!recognized_format)
+		cout << "Unrecognized monitor format conversion \"" << format << "\"";
+	cout << endl;
 }
 
 template <class ADDRESS>

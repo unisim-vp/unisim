@@ -185,7 +185,7 @@ private:
 	void DumpWatchpoints();
 	void DumpMemory(ADDRESS addr);
 	void DumpVariables();
-	void DumpVariable(const char *name);
+	void DumpVariable(const char *name, const char *format = "string");
 
 	static InlineDebugger<ADDRESS> *debugger;
 };

@@ -195,7 +195,7 @@ template <class TYPE> Variable<TYPE>::operator bool () const { return (*storage)
 template <class TYPE> Variable<TYPE>::operator long long () const { return (long long) *storage; }
 template <class TYPE> Variable<TYPE>::operator unsigned long long () const { return (unsigned long long) *storage; }
 template <class TYPE> Variable<TYPE>::operator double () const { return (double) *storage; }
-template <class TYPE> Variable<TYPE>::operator string () const { stringstream sstr; sstr << "0x" << hex << *storage; return sstr.str(); }
+template <class TYPE> Variable<TYPE>::operator string () const { stringstream sstr; sstr << "0x" << hex << (unsigned long long) *storage; return sstr.str(); }
 
 template <class TYPE> VariableBase& Variable<TYPE>::operator = (bool value) { *storage = value ? 1 : 0; return *this; }
 template <class TYPE> VariableBase& Variable<TYPE>::operator = (long long value) { *storage = value;	return *this; }

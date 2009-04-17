@@ -192,6 +192,13 @@ ADDC3_indir_reg.execute = {
 	else
 		Add32(result, carry_out, overflow, src1_value, src2_value, carry_in);
 
+	// Check whether an auxiliary register is updated for 1st source operand
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar1, output_ar);
+	}
+
 	// Write back result
 	cpu.SetReg(dst, result);
 
@@ -245,6 +252,13 @@ ADDC3_reg_indir.execute = {
 		SignedSatAdd32(result, carry_out, overflow, src1_value, src2_value, carry_in);
 	else
 		Add32(result, carry_out, overflow, src1_value, src2_value, carry_in);
+
+	// Check whether an auxiliary register is updated for 1st source operand
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar2, output_ar);
+	}
 
 	// Write back result
 	cpu.SetReg(dst, result);
@@ -559,6 +573,13 @@ ADDI3_indir_reg.execute = {
 	else
 		Add32(result, carry_out, overflow, src1_value, src2_value, 0);
 
+	// Check whether an auxiliary register is updated for 1st source operand
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar1, output_ar);
+	}
+
 	// Write back result
 	cpu.SetReg(dst, result);
 
@@ -609,6 +630,13 @@ ADDI3_reg_indir.execute = {
 		SignedSatAdd32(result, carry_out, overflow, src1_value, src2_value, 0);
 	else
 		Add32(result, carry_out, overflow, src1_value, src2_value, 0);
+
+	// Check whether an auxiliary register is updated for 1st source operand
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar2, output_ar);
+	}
 
 	// Write back result
 	cpu.SetReg(dst, result);
@@ -827,6 +855,13 @@ AND3_indir_reg.execute = {
 	// Compute the result
 	uint32_t result = src1_value & src2_value;
 
+	// Check whether an auxiliary register is updated for 1st source operand
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar1, output_ar);
+	}
+
 	// Write back result
 	cpu.SetReg(dst, result);
 
@@ -867,6 +902,13 @@ AND3_reg_indir.execute = {
 
 	// Compute the result
 	uint32_t result = src1_value & src2_value;
+
+	// Check whether an auxiliary register is updated for 1st source operand
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar2, output_ar);
+	}
 
 	// Write back result
 	cpu.SetReg(dst, result);
@@ -1069,6 +1111,13 @@ ANDN3_indir_reg.execute = {
 	// Compute the result
 	uint32_t result = src1_value & ~src2_value;
 
+	// Check whether an auxiliary register is updated for 1st source operand
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar1, output_ar);
+	}
+
 	// Write back result
 	cpu.SetReg(dst, result);
 
@@ -1109,6 +1158,13 @@ ANDN3_reg_indir.execute = {
 
 	// Compute the result
 	uint32_t result = src1_value & ~src2_value;
+
+	// Check whether an auxiliary register is updated for 1st source operand
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar2, output_ar);
+	}
 
 	// Write back result
 	cpu.SetReg(dst, result);
@@ -1384,6 +1440,13 @@ ASH3_indir_reg.execute = {
 		}
 	}
 
+	// Check whether an auxiliary register is updated for 1st source operand
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar1, output_ar);
+	}
+
 	// Write back result
 	cpu.SetReg(dst, result);
 
@@ -1459,6 +1522,13 @@ ASH3_reg_indir.execute = {
 		{
 			result = ShiftArithmeticRight(src1_value, count, carry_out);
 		}
+	}
+
+	// Check whether an auxiliary register is updated for 1st source operand
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar2, output_ar);
 	}
 
 	// Write back result
@@ -1773,6 +1843,13 @@ CMPI3_indir_reg.execute = {
 
 	Sub32(result, borrow_out, overflow, src1_value, src2_value, 0);
 
+	// Check whether an auxiliary register is updated for 1st source operand
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar1, output_ar);
+	}
+
 	// Generate flags (into ST)
 	cpu.GenFlags(
 		result,
@@ -1812,6 +1889,13 @@ CMPI3_reg_indir.execute = {
 	uint8_t overflow;     // the overflow (0 or 1)
 
 	Sub32(result, borrow_out, overflow, src1_value, src2_value, 0);
+
+	// Check whether an auxiliary register is updated for 1st source operand
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar2, output_ar);
+	}
 
 	// Generate flags (into ST)
 	cpu.GenFlags(
@@ -2075,6 +2159,13 @@ LSH3_indir_reg.execute = {
 		}
 	}
 
+	// Check whether an auxiliary register is updated for 1st source operand
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar1, output_ar);
+	}
+
 	// Write back result
 	cpu.SetReg(dst, result);
 
@@ -2150,6 +2241,13 @@ LSH3_reg_indir.execute = {
 		{
 			result = ShiftRight(src1_value, count, carry_out);
 		}
+	}
+
+	// Check whether an auxiliary register is updated for 1st source operand
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar2, output_ar);
 	}
 
 	// Write back result
@@ -2493,6 +2591,13 @@ MPYI3_indir_reg.execute = {
 	else
 		result = lo32;                                     // No saturation
 
+	// Check whether an auxiliary register is updated for 1st source operand
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar1, output_ar);
+	}
+
 	// Write back result
 	cpu.SetReg(dst, result);
 
@@ -2546,6 +2651,13 @@ MPYI3_reg_indir.execute = {
 		result = (result64 < 0) ? 0x80000000 : 0x7fffffff; // Saturate the result
 	else
 		result = lo32;                                     // No saturation
+
+	// Check whether an auxiliary register is updated for 1st source operand
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar2, output_ar);
+	}
 
 	// Write back result
 	cpu.SetReg(dst, result);
@@ -2766,6 +2878,13 @@ OR3_indir_reg.execute = {
 	// Compute the result
 	uint32_t result = src1_value | src2_value;
 
+	// Check whether an auxiliary register is updated for 1st source operand
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar1, output_ar);
+	}
+
 	// Write back result
 	cpu.SetReg(dst, result);
 
@@ -2806,6 +2925,13 @@ OR3_reg_indir.execute = {
 
 	// Compute the result
 	uint32_t result = src1_value | src2_value;
+
+	// Check whether an auxiliary register is updated for 1st source operand
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar2, output_ar);
+	}
 
 	// Write back result
 	cpu.SetReg(dst, result);
@@ -3034,6 +3160,13 @@ SUBB3_indir_reg.execute = {
 	else
 		Sub32(result, borrow_out, overflow, src1_value, src2_value, borrow_in);
 
+	// Check whether an auxiliary register is updated for 1st source operand
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar1, output_ar);
+	}
+
 	// Write back result
 	cpu.SetReg(dst, result);
 
@@ -3087,6 +3220,13 @@ SUBB3_reg_indir.execute = {
 		SignedSatSub32(result, borrow_out, overflow, src1_value, src2_value, borrow_in);
 	else
 		Sub32(result, borrow_out, overflow, src1_value, src2_value, borrow_in);
+
+	// Check whether an auxiliary register is updated for 1st source operand
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar2, output_ar);
+	}
 
 	// Write back result
 	cpu.SetReg(dst, result);
@@ -3401,6 +3541,13 @@ SUBI3_indir_reg.execute = {
 	else
 		Sub32(result, borrow_out, overflow, src1_value, src2_value, 0);
 
+	// Check whether an auxiliary register is updated for 1st source operand
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar1, output_ar);
+	}
+
 	// Write back result
 	cpu.SetReg(dst, result);
 
@@ -3451,6 +3598,13 @@ SUBI3_reg_indir.execute = {
 		SignedSatSub32(result, borrow_out, overflow, src1_value, src2_value, 0);
 	else
 		Sub32(result, borrow_out, overflow, src1_value, src2_value, 0);
+
+	// Check whether an auxiliary register is updated for 1st source operand
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar2, output_ar);
+	}
 
 	// Write back result
 	cpu.SetReg(dst, result);
@@ -3657,6 +3811,13 @@ TSTB3_indir_reg.execute = {
 	// Compute the result
 	uint32_t result = src1_value & src2_value;
 
+	// Check whether an auxiliary register is updated for 1st source operand
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar1, output_ar);
+	}
+
 	// Generate flags (into ST)
 	cpu.GenFlags(
 		result,
@@ -3687,6 +3848,13 @@ TSTB3_reg_indir.execute = {
 
 	// Read 2nd source operand from memory
 	uint32_t src2_value = cpu.IntLoad(ea);
+
+	// Check whether an auxiliary register is updated for 1st source operand
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar2, output_ar);
+	}
 
 	// Compute the result
 	uint32_t result = src1_value & src2_value;
@@ -3875,6 +4043,13 @@ XOR3_indir_reg.execute = {
 	// Compute the result
 	uint32_t result = src1_value ^ src2_value;
 
+	// Check whether an auxiliary register is updated for 1st source operand
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar1, output_ar);
+	}
+
 	// Write back result
 	cpu.SetReg(dst, result);
 
@@ -3915,6 +4090,13 @@ XOR3_reg_indir.execute = {
 
 	// Compute the result
 	uint32_t result = src1_value ^ src2_value;
+
+	// Check whether an auxiliary register is updated for 1st source operand
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar2, output_ar);
+	}
 
 	// Write back result
 	cpu.SetReg(dst, result);
