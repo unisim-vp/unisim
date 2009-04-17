@@ -751,7 +751,7 @@ class TBuiltDouble : protected Details::DTDoubleElement::Access, protected TypeT
    bool hasPositiveOrNullExponent() const { return biExponent >= TypeTraits::getZeroExponent(biExponent); }
    bool hasNullExponent() const { return biExponent == TypeTraits::getZeroExponent(biExponent); }
    bool hasNegativeExponent() const { return biExponent < TypeTraits::getZeroExponent(biExponent); }
-   bool hasNegativeOrNullExponent() const { return biExponent < TypeTraits::getZeroExponent(biExponent); }
+   bool hasNegativeOrNullExponent() const { return biExponent <= TypeTraits::getZeroExponent(biExponent); }
    
    typename TypeTraits::Exponent queryExponent() const
       {  typename TypeTraits::Exponent biResult = TypeTraits::getZeroExponent(biExponent);
