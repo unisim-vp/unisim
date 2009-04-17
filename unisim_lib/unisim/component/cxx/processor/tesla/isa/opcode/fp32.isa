@@ -659,42 +659,48 @@ fsset.execute = {
 	insn->SetPred(vf);
 }
 
+//--------------------------------------------------------------------
 
-// Int to float
+// float to int
 op fcvti_full_normal( \
-	/*subop*/2[3]:/*?*/0[1]:sign[1]:data_32[1]:/*const_seg*/?[4]:/*src1_sh*/?[1]:/*abs_sat*/0[2]:cvt_round[2]:cvt_type[3]:\
-	/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output*/?[1]:/*addr_hi*/?[1]:/*marker*/0[2]: \
+	/*subop*/4[3]:/*?*/0[1]:issigned[1]:dest_32[1]:/*const_seg*/?[4]:/*src1_sh*/?[1]:/*abs_sat*/0[2]:cvt_round[2]:cvt_type[3]:\
+	/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output*/?[1]:/*addr_hi*/?[1]:/*marker*/?[2]: \
 	0xa[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:f64[1]:/*?*/0[6]:\
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1]\
 )
 
-
-// TODO: end join
 group fcvti_full(fcvti_full_normal)
-
-// No immediate : dest = conv(src1)
 
 fcvti_full.init = {
 	typedef Operation<CONFIG> inherited;
-	//DataType dt = RegTypeToDataType(RegType(data_32));
+	DataType dt = RegTypeToDataType(RegType(dest_32));
 	inherited::allow_segment = false;
-	inherited::op_type[OpDest] = DT_F32; //dt;
-	inherited::op_type[OpSrc1] = CvtTypeToDataType(ConvType(cvt_type));	// Or always 32??
+	inherited::op_type[OpDest] = dt;
+	assert(cvt_type == CT_U32 || cvt_type == CT_U16);
+	inherited::op_type[OpSrc1] = (
+		(cvt_type == CT_U32) ?
+			DT_F32 :
+			DT_U16);
 	inherited::op_type[OpSrc2] = DT_NONE;
 	inherited::op_type[OpSrc3] = DT_NONE;
 }
 
 fcvti_full.disasm = {
-	// data_32 = 0 -> mov.b16
-	// data_32 = 1 -> mov.b32
-	// cvt_round = 1 -> default, round down?
-	// cvt_type = 7 -> default, no conv
-	// pred_cond = 15 -> default, true
 	buffer << "cvt";
 	insn->DisasmControl(buffer);
-	buffer << ".f32";
 
-	DisasmConvert(cvt_round, cvt_type, sign, data_32, AS_NONE, buffer);
+	DisasmSignWidth(issigned, dest_32, buffer);
+
+	if(cvt_type == CT_U32) {
+		buffer << ".f32";
+	}
+	else {
+		assert(cvt_type == CT_U16);
+		buffer << ".f16";
+	}
+	DisasmRounding(cvt_round, buffer);
+	buffer << "i";
+	
 	buffer << " ";
 	insn->DisasmDest(buffer);
 
@@ -705,19 +711,17 @@ fcvti_full.disasm = {
 fcvti_full.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 	// dest = a
-	// TODO: Read 2 regs if 64-bit
 	assert(!f64);
 	reg_t & a = insn->GetSrc1();
-	reg_t output = ConvertFloatInt(a, cvt_round, cvt_type, data_32);
-
-	insn->SetDest(output);
-	//insn->SetPredFP32(output);
+	ConvertIntFloat(a, issigned, dest_32, ConvType(cvt_type), RoundingMode(cvt_round));
 }
+
+
 
 // Float to float
 op fcvtf_full_normal( \
 	/*subop*/6[3]:/*?*/0[1]:cvt_int[1]:dest_32[1]:/*const_seg*/?[4]:/*src1_sh*/?[1]:abs_sat[2]:cvt_round[2]:cvt_type[3]:\
-	/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output*/?[1]:/*addr_hi*/?[1]:/*marker*/0[2]: \
+	/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output*/?[1]:/*addr_hi*/?[1]:/*marker*/?[2]: \
 	0xa[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:f64[1]:/*?*/0[6]:\
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1]\
 )

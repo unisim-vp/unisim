@@ -198,38 +198,6 @@ VectorRegister<CONFIG> FSMov(VectorRegister<CONFIG> & a, bool neg)
 	return rv;
 }
 
-#if 0
-
-template<class CONFIG>
-VectorRegister<CONFIG> I32Mad24(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
-                     VectorRegister<CONFIG> const & c, uint32_t sat, uint32_t ra, uint32_t rb,
-                     uint32_t rc)
-{
-	throw "Not implemented!";
-}
-
-template<class CONFIG>
-VectorRegister<CONFIG> I16Mad24Lo(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
-                     VectorRegister<CONFIG> const & c, uint32_t sat, uint32_t ra, uint32_t rb,
-                     uint32_t rc)
-{
-	throw "Not implemented!";
-}
-
-template<class CONFIG>
-VectorRegister<CONFIG> I32Mul24(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
-                     uint32_t sat, uint32_t ra, uint32_t rb)
-{
-	throw "Not implemented!";
-}
-
-template<class CONFIG>
-VectorRegister<CONFIG> I16Mul(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
-                     uint32_t sat, uint32_t ra, uint32_t rb)
-{
-	throw "Not implemented!";
-}
-#endif
 
 // Does NOT update zero and sign flag
 template<class CONFIG>
@@ -432,41 +400,6 @@ VectorRegister<CONFIG> Mad24(VectorRegister<CONFIG> const & a,
 	// need to keep all 48 bits of the intermediate result (FMA-like)?
 	rv = Mul24(a, b, sat, src1_neg, false, m24, issigned, hi);
 	rv = IAdd(rv, c, flags, sat, false, src3_neg, true);
-#if 0
-	// unsigned, ignore neg...?
-	assert(!src1_neg);
-	assert(!src3_neg);
-	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i)
-	{
-		if(issigned) {
-		}
-		else {
-			uint32_t sa = a[i];
-			uint32_t sb = b[i];
-			if(m24) {
-				sa = (sa & 0x00ffffff);	// 24x24 mul
-				sb = (sb & 0x00ffffff);
-			}
-			else {
-				sa = (sa & 0x0000ffff);	// 16x16 mul
-				sb = (sb & 0x0000ffff);
-			}
-			uint32_t sc = c[i];
-			uint32_t r;
-
-			uint8_t carry_out, overflow;
-	//		cerr << "mac " << sa << " * " << sb << " + " << sc << std::endl;
-			r = sa * sb;
-			Add32(r, carry_out, overflow, r, sc, 0);
-		
-		}
-		// TODO: CHECK which op updates flags...
-		flags.SetOvf(int(overflow), i);
-		flags.SetCarry(int(carry_out), i);
-
-		rv[i] = r;
-	}
-#endif
 	return rv;
 	
 }
@@ -597,12 +530,6 @@ VectorRegister<CONFIG> ShiftRight(VectorRegister<CONFIG> const & a, uint32_t sb,
 	return rv;
 }
 
-
-template <class CONFIG>
-void I32Negate(VectorRegister<CONFIG> & a)
-{
-	throw "Not implemented!";
-}
 
 template <class CONFIG>
 VectorRegister<CONFIG> ConvertIntInt(VectorRegister<CONFIG> const & a, uint32_t cvt_round, uint32_t cvt_type, bool b32, AbsSat abssat, bool neg)
@@ -801,6 +728,60 @@ void ConvertFloatFloat(VectorRegister<CONFIG> & a, bool dest_32, ConvType srctyp
 								// float but not half and round toward zero?
 		}
 		
+	}
+}
+
+// float to int
+template<class CONFIG>
+void ConvertIntFloat(VectorRegister<CONFIG> & a, bool issigned, bool dest_32, ConvType srctype,
+	RoundingMode cvt_round)
+{
+	typedef typename CONFIG::float_t float_t;
+	typedef typename CONFIG::half_t half_t;	
+	typedef typename float_t::StatusAndControlFlags FPFlags;
+	FPFlags flags;
+	switch(cvt_round)
+	{
+	case RM_RN:
+		flags.setNearestRound();
+		break;
+	case RM_RZ:
+		flags.setZeroRound();
+		break;
+	case RM_RD:
+		flags.setLowestRound();
+		break;
+	case RM_RU:
+		flags.setHighestRound();
+		break;
+	}
+
+	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i)
+	{
+		float_t f;
+		if(srctype == CT_U32) {
+			f = a.ReadSimfloat(i);
+		}
+		else {
+			// Upconvert to Binary32
+			half_t h = half_t(a[i]);
+			f.assign(h, flags);	// lossless
+		}
+
+		typename float_t::IntConversion conv;
+		if(issigned) {
+			conv.setSigned();
+		}
+		else {
+			conv.setUnsigned();
+		}
+		f.retrieveInteger(conv, flags);	// Rounded
+		if(dest_32) {
+			a[i] = conv.sresult();
+		}
+		else {
+			assert(false);	// TODO: implement... one day
+		}
 	}
 }
 

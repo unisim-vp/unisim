@@ -108,26 +108,6 @@ VectorFlags<CONFIG> ComputePredSetFP32(VectorRegister<CONFIG> & output,
 	bool is_signed,
 	bool b32);
 
-#if 0
-template<class CONFIG>
-VectorRegister<CONFIG> I32Mad24(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
-	                 VectorRegister<CONFIG> const & c, uint32_t sat = 0, uint32_t ra = 0,
-	                 uint32_t rb = 0, uint32_t rc = 0);
-template<class CONFIG>
-VectorRegister<CONFIG> I16Mad24Lo(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
-	                 VectorRegister<CONFIG> const & c, uint32_t sat = 0, uint32_t ra = 0,
-	                 uint32_t rb = 0, uint32_t rc = 0);
-template<class CONFIG>
-VectorRegister<CONFIG> I32Mul24(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
-	                 uint32_t sat = 0, uint32_t ra = 0, uint32_t rb = 0);
-template<class CONFIG>
-VectorRegister<CONFIG> I16Mul(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
-	                 uint32_t sat = 0, uint32_t ra = 0, uint32_t rb = 0);
-
-
-template<class CONFIG>
-void I32Negate(VectorRegister<CONFIG> & a);
-#endif
 template<class CONFIG>
 VectorRegister<CONFIG> ConvertIntInt(VectorRegister<CONFIG> const & a, uint32_t cvt_round, uint32_t cvt_type, bool b32, AbsSat abssat, bool neg = false);
 
@@ -138,6 +118,11 @@ VectorRegister<CONFIG> ConvertFloatInt(VectorRegister<CONFIG> const & a, uint32_
 template<class CONFIG>
 void ConvertFloatFloat(VectorRegister<CONFIG> & a, bool dest_32, ConvType srctype,
 	RoundingMode cvt_round, bool cvt_int, AbsSat abssat);
+
+// In-place
+template<class CONFIG>
+void ConvertIntFloat(VectorRegister<CONFIG> & a, bool issigned, bool dest_32, ConvType srctype,
+	RoundingMode cvt_round);
 
 template<class CONFIG>
 VectorRegister<CONFIG> ShiftLeft(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
