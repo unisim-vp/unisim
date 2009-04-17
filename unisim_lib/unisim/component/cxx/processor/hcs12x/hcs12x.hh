@@ -77,7 +77,7 @@ public:
 	void SetLittleEndian();
 	void SetBigEndian();
 private:
-	bool little_endian;
+	bool is_little_endian;
 	std::vector<DecodeTableEntry > decode_table;
 	DecodeMapPage *mru_page;
 	DecodeMapPage *decode_hash_table[NUM_DECODE_HASH_TABLE_ENTRIES];

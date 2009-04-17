@@ -464,6 +464,8 @@ public:
 	inline void MonitorStore(address_t ea, uint32_t size);
 	inline void MonitorLoad(address_t ea, uint32_t size);
 
+	inline void ReportTrap();
+
 	//=====================================================================
 	//=             memory interface methods                              =
 	//=====================================================================
@@ -603,6 +605,12 @@ inline void CPU::MonitorStore(address_t ea, uint32_t size)
 	}
 }
 
+inline void CPU::ReportTrap() {
+	if (CONFIG::DEBUG_ENABLE && trap_reporting_import) {
+		trap_reporting_import->ReportTrap();
+	}
+
+}
 
 inline uint8_t CPU::memRead8(address_t logicalAddress, ADDRESS::MODE type, bool isGlobal) {
 

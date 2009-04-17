@@ -355,7 +355,7 @@ leay.disasm = {
 leay.execute = {
 
     address_t	addr = xb->getEAddr(cpu);
-    
+   
 	cpu->setRegY(addr);
 	
 }

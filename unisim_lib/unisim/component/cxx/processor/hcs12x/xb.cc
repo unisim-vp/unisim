@@ -1455,8 +1455,8 @@ DecodeTableEntry::DecodeTableEntry(CodeType const& opcode, CodeType const& opcod
 }
 
 Decoder::Decoder()
+: is_little_endian( false )
 {
-	little_endian = false;
 	decode_table.push_back(DecodeTableEntry(CodeType( (uint8_t*)( "\xe7" ), 1 ), CodeType( (uint8_t*)( "\xe7" ), 1 ), DecodeOpXb_accD_offset_idx_ind));
 	decode_table.push_back(DecodeTableEntry(CodeType( (uint8_t*)( "\xe4" ), 1 ), CodeType( (uint8_t*)( "\xe4" ), 1 ), DecodeOpXb_acc_offset));
 	decode_table.push_back(DecodeTableEntry(CodeType( (uint8_t*)( "\xe3" ), 1 ), CodeType( (uint8_t*)( "\xe7" ), 1 ), DecodeOpXb_16bit_cst_z1_s1));
@@ -1489,12 +1489,12 @@ Operation *Decoder::NCDecode(uint16_t addr, CodeType const& code)
 
 void Decoder::SetLittleEndian()
 {
-	little_endian = true;
+	is_little_endian = true;
 }
 
 void Decoder::SetBigEndian()
 {
-	little_endian = false;
+	is_little_endian = false;
 }
 
 } } } } } }

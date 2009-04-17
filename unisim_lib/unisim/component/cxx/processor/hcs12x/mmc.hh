@@ -238,36 +238,34 @@ private:
 
 inline physical_address_t MMC::getPhysicalAddress(address_t logicalAddress, ADDRESS::MODE type, bool isGlobal, bool debugload, uint8_t debug_page) {
 
-	uint8_t gShift;
+	static const uint8_t gShift = 16;	// CPU12 address size is 16-bits
 
-	physical_address_t address = logicalAddress;
+	address_t cpu_address =  logicalAddress;
+	physical_address_t address = cpu_address;
 
 	if (type == ADDRESS::DIRECT) {
-		address = getDirectAddress((uint8_t) logicalAddress);
-		gShift = sizeof(address_t) * 8;
+		cpu_address = getDirectAddress((uint8_t) logicalAddress);
 	}
 
 	if (isGlobal) {
-		address = ((physical_address_t) (getGpage() & 0x7F) << gShift) | address;
+		address = ((physical_address_t) (getGpage() & 0x7F) << gShift) | cpu_address;
 		return address;
 	}
 
-	if (type == ADDRESS::EXTENDED) {
-		if (logicalAddress <= REG_HIGH_OFFSET) { // Access to registers
-			address = logicalAddress;
-		}
+	if (cpu_address <= REG_HIGH_OFFSET) { // Access to registers
+		address = cpu_address;
+	}
 
-		if ((logicalAddress >= EEPROM_LOW_OFFSET) && (logicalAddress <= EEPROM_HIGH_OFFSET)) { // Access to EEPROM
-			address = getEepromAddress(logicalAddress, debugload, debug_page);
-		}
+	if ((cpu_address >= EEPROM_LOW_OFFSET) && (cpu_address <= EEPROM_HIGH_OFFSET)) { // Access to EEPROM
+		address = getEepromAddress(cpu_address, debugload, debug_page);
+	}
 
-		if ((logicalAddress >= RAM_LOW_OFFSET) && (logicalAddress <= RAM_HIGH_OFFSET)) { // Access to RAM
-			address = getRamAddress(logicalAddress, debugload, debug_page);
-		}
+	if ((cpu_address >= RAM_LOW_OFFSET) && (cpu_address <= RAM_HIGH_OFFSET)) { // Access to RAM
+		address = getRamAddress(cpu_address, debugload, debug_page);
+	}
 
-		if (logicalAddress >= FLASH_LOW_OFFSET) { // Access to Flash
-			address = getFlashAddress(logicalAddress, debugload, debug_page);
-		}
+	if (cpu_address >= FLASH_LOW_OFFSET) { // Access to Flash
+		address = getFlashAddress(cpu_address, debugload, debug_page);
 	}
 
 	return address;
@@ -387,6 +385,7 @@ inline uint8_t MMC::getRpage () { return rpage; }
 inline physical_address_t MMC::getRamAddress(address_t logicalAddress, bool debugload, uint8_t debug_page) {
 
 	uint8_t _rpage;
+	physical_address_t shifted_gpage = (getGpage() & 0xE0) << (RAM_ADDRESS_SIZE + 8); // only three bits are needed
 
 	if (debugload && (debug_page != 0x00)) _rpage = debug_page; else  _rpage = getRpage();
 
@@ -395,7 +394,8 @@ inline physical_address_t MMC::getRamAddress(address_t logicalAddress, bool debu
 	}
 
 	if (isPaged(logicalAddress, _rpage, debugload)) {
-		return RAM_PHYSICAL_ADDRESS_FIXED_BITS | ((physical_address_t) _rpage << RAM_ADDRESS_SIZE) | ((address_t) RAM_CPU_ADDRESS_BITS & logicalAddress);
+//		return RAM_PHYSICAL_ADDRESS_FIXED_BITS | ((physical_address_t) _rpage << RAM_ADDRESS_SIZE) | ((address_t) RAM_CPU_ADDRESS_BITS & logicalAddress);
+		return shifted_gpage | ((physical_address_t) _rpage << RAM_ADDRESS_SIZE) | ((address_t) RAM_CPU_ADDRESS_BITS & logicalAddress);
 	} else {
 		if ((logicalAddress > 0x0FFF) && (logicalAddress < 0x2000)) {
 			if (_rpage == 0xFE) return (logicalAddress - 0x1000) + 0x2000;
@@ -410,6 +410,7 @@ inline uint8_t MMC::getEpage () { return epage; }
 inline physical_address_t MMC::getEepromAddress(address_t logicalAddress, bool debugload, uint8_t debug_page) {
 
 	uint8_t _epage;
+	physical_address_t shifted_gpage = (getGpage() & 0xF8) << (EEPROM_ADDRESS_SIZE + 8); // only five bits are needed
 
 	if (debugload && (debug_page != 0x00)) _epage = debug_page; else _epage = getEpage();
 
@@ -418,7 +419,8 @@ inline physical_address_t MMC::getEepromAddress(address_t logicalAddress, bool d
 	}
 
 	if (isPaged(logicalAddress, _epage, debugload)) {
-		return EEPROM_PHYSICAL_ADDRESS_FIXED_BITS | ((physical_address_t) _epage << EEPROM_ADDRESS_SIZE) | ((address_t) EEPROM_CPU_ADDRESS_BITS & logicalAddress);
+//		return EEPROM_PHYSICAL_ADDRESS_FIXED_BITS | ((physical_address_t) _epage << EEPROM_ADDRESS_SIZE) | ((address_t) EEPROM_CPU_ADDRESS_BITS & logicalAddress);
+		return shifted_gpage | ((physical_address_t) _epage << EEPROM_ADDRESS_SIZE) | ((address_t) EEPROM_CPU_ADDRESS_BITS & logicalAddress);
 	} else {
 		if ((logicalAddress > 0x07FF) && (logicalAddress < 0x0C00) && (epage == 0xFF))
 			return (logicalAddress -0x0800) + 0x0C00;
@@ -435,11 +437,13 @@ inline physical_address_t MMC::getFlashAddress(address_t logicalAddress, bool de
 	static const uint8_t ROMHM_MASK = 0x02;
 
 	uint8_t _ppage;
+	physical_address_t shifted_gpage = (getGpage() & 0x80) << (FLASH_ADDRESS_SIZE + 8); // only one bit is needed
 
 	if (debugload && (debug_page != 0x00)) _ppage = debug_page; else _ppage = getPpage();
 
 	if (isPaged(logicalAddress, _ppage, debugload)) {
-		return FLASH_PHYSICAL_ADDRESS_FIXED_BITS | ((physical_address_t) _ppage << FLASH_ADDRESS_SIZE) | ((address_t) FLASH_CPU_ADDRESS_BITS & logicalAddress);
+//		return FLASH_PHYSICAL_ADDRESS_FIXED_BITS | ((physical_address_t) _ppage << FLASH_ADDRESS_SIZE) | ((address_t) FLASH_CPU_ADDRESS_BITS & logicalAddress);
+		return shifted_gpage | ((physical_address_t) _ppage << FLASH_ADDRESS_SIZE) | ((address_t) FLASH_CPU_ADDRESS_BITS & logicalAddress);
 	} else {
 		if ((logicalAddress > 0x7FFF) && (logicalAddress < 0xC000)) {
 			if (_ppage == 0xFD) return (logicalAddress - 0x8000) + 0x4000;
