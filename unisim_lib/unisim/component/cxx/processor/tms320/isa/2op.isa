@@ -95,7 +95,7 @@ ABSF_reg.disasm = {
 ABSF_dir.disasm = {
 	const char *dst_name = REG_NAME[dst];
 
-	if (dst_name != NULL)
+	if(!dst_name)
 		return false;
 	
 	os << "ABSF @0x" << hex << cpu.DisasmDir(Operation<CONFIG, DEBUG>::GetAddr() / 4, direct) << dec << ", " << dst_name;
@@ -167,7 +167,7 @@ ABSI_reg.disasm = {
 ABSI_dir.disasm = {
 	const char *dst_name = REG_NAME[dst];
 
-	if (dst_name != NULL)
+	if(!dst_name)
 		return false;
 	
 	os << "ABSI " << hex << cpu.DisasmDir(Operation<CONFIG, DEBUG>::GetAddr() / 4, direct) << dec << ", " << dst_name;
@@ -414,7 +414,7 @@ ADDC_reg.disasm = {
 ADDC_dir.disasm = {
 	const char *dst_name = REG_NAME[dst];
 
-	if (dst_name != NULL)
+	if(!dst_name)
 		return false;
 	
 	os << "ADDC " << hex << cpu.DisasmDir(Operation<CONFIG, DEBUG>::GetAddr() / 4, direct) << dec << ", " << dst_name;
@@ -663,7 +663,7 @@ ADDF_reg.disasm = {
 ADDF_dir.disasm = {
 	const char *dst_name = REG_NAME[dst];
 
-	if (dst_name != NULL)
+	if(!dst_name)
 		return false;
 	
 	os << "ADDF " << hex << cpu.DisasmDir(Operation<CONFIG, DEBUG>::GetAddr() / 4, direct) << dec << ", " << dst_name;
@@ -735,7 +735,7 @@ ADDI_reg.disasm = {
 ADDI_dir.disasm = {
 	const char *dst_name = REG_NAME[dst];
 
-	if (dst_name != NULL)
+	if(!dst_name)
 		return false;
 	
 	os << "ADDI " << hex << cpu.DisasmDir(Operation<CONFIG, DEBUG>::GetAddr() / 4, direct) << dec << ", " << dst_name;
@@ -972,7 +972,7 @@ AND_reg.disasm = {
 AND_dir.disasm = {
 	const char *dst_name = REG_NAME[dst];
 
-	if (dst_name != NULL)
+	if(!dst_name)
 		return false;
 	
 	os << "AND " << hex << cpu.DisasmDir(Operation<CONFIG, DEBUG>::GetAddr() / 4, direct) << dec << ", " << dst_name;
@@ -1169,7 +1169,7 @@ ANDN_reg.disasm = {
 ANDN_dir.disasm = {
 	const char *dst_name = REG_NAME[dst];
 
-	if (dst_name != NULL)
+	if(!dst_name)
 		return false;
 	
 	os << "ANDN " << hex << cpu.DisasmDir(Operation<CONFIG, DEBUG>::GetAddr() / 4, direct) << dec << ", " << dst_name;
@@ -1366,7 +1366,7 @@ ASH_reg.disasm = {
 ASH_dir.disasm = {
 	const char *dst_name = REG_NAME[dst];
 
-	if (dst_name != NULL)
+	if(!dst_name)
 		return false;
 	
 	os << "ASH " << hex << cpu.DisasmDir(Operation<CONFIG, DEBUG>::GetAddr() / 4, direct) << dec << ", " << dst_name;
@@ -1700,7 +1700,7 @@ CMPF_reg.disasm = {
 CMPF_dir.disasm = {
 	const char *dst_name = REG_NAME[dst];
 
-	if (dst_name != NULL)
+	if(!dst_name)
 		return false;
 	
 	os << "CMPF " << hex << cpu.DisasmDir(Operation<CONFIG, DEBUG>::GetAddr() / 4, direct) << dec << ", " << dst_name;
@@ -1772,7 +1772,7 @@ CMPI_reg.disasm = {
 CMPI_dir.disasm = {
 	const char *dst_name = REG_NAME[dst];
 
-	if (dst_name != NULL)
+	if(!dst_name)
 		return false;
 	
 	os << "CMPI " << hex << cpu.DisasmDir(Operation<CONFIG, DEBUG>::GetAddr() / 4, direct) << dec << ", " << dst_name;
@@ -1965,7 +1965,7 @@ FIX_reg.disasm = {
 FIX_dir.disasm = {
 	const char *dst_name = REG_NAME[dst];
 
-	if (dst_name != NULL)
+	if(!dst_name)
 		return false;
 	
 	os << "FIX " << hex << cpu.DisasmDir(Operation<CONFIG, DEBUG>::GetAddr() / 4, direct) << dec << ", " << dst_name;
@@ -2037,7 +2037,7 @@ FLOAT_reg.disasm = {
 FLOAT_dir.disasm = {
 	const char *dst_name = REG_NAME[dst];
 
-	if (dst_name != NULL)
+	if(!dst_name)
 		return false;
 	
 	os << "FLOAT " << hex << cpu.DisasmDir(Operation<CONFIG, DEBUG>::GetAddr() / 4, direct) << dec << ", " << dst_name;
@@ -2109,7 +2109,7 @@ LSH_reg.disasm = {
 LSH_dir.disasm = {
 	const char *dst_name = REG_NAME[dst];
 
-	if (dst_name != NULL)
+	if(!dst_name)
 		return false;
 	
 	os << "LSH " << hex << cpu.DisasmDir(Operation<CONFIG, DEBUG>::GetAddr() / 4, direct) << dec << ", " << dst_name;
@@ -2443,7 +2443,7 @@ MPYF_reg.disasm = {
 MPYF_dir.disasm = {
 	const char *dst_name = REG_NAME[dst];
 
-	if (dst_name != NULL)
+	if(!dst_name)
 		return false;
 	
 	os << "MPYF " << hex << cpu.DisasmDir(Operation<CONFIG, DEBUG>::GetAddr() / 4, direct) << dec << ", " << dst_name;
@@ -2515,7 +2515,7 @@ MPYI_reg.disasm = {
 MPYI_dir.disasm = {
 	const char *dst_name = REG_NAME[dst];
 
-	if (dst_name != NULL)
+	if(!dst_name)
 		return false;
 	
 	os << "MPYI " << hex << cpu.DisasmDir(Operation<CONFIG, DEBUG>::GetAddr() / 4, direct) << dec << ", " << dst_name;
@@ -2765,7 +2765,7 @@ NEGB_reg.disasm = {
 NEGB_dir.disasm = {
 	const char *dst_name = REG_NAME[dst];
 
-	if (dst_name != NULL)
+	if(!dst_name)
 		return false;
 	
 	os << "NEGB " << hex << cpu.DisasmDir(Operation<CONFIG, DEBUG>::GetAddr() / 4, direct) << dec << ", " << dst_name;
@@ -3001,7 +3001,7 @@ NEGF_reg.disasm = {
 NEGF_dir.disasm = {
 	const char *dst_name = REG_NAME[dst];
 
-	if (dst_name != NULL)
+	if(!dst_name)
 		return false;
 	
 	os << "NEGF " << hex << cpu.DisasmDir(Operation<CONFIG, DEBUG>::GetAddr() / 4, direct) << dec << ", " << dst_name;
@@ -3073,7 +3073,7 @@ NEGI_reg.disasm = {
 NEGI_dir.disasm = {
 	const char *dst_name = REG_NAME[dst];
 
-	if (dst_name != NULL)
+	if(!dst_name)
 		return false;
 	
 	os << "NEGI " << hex << cpu.DisasmDir(Operation<CONFIG, DEBUG>::GetAddr() / 4, direct) << dec << ", " << dst_name;
@@ -3300,7 +3300,7 @@ NORM_reg.disasm = {
 NORM_dir.disasm = {
 	const char *dst_name = REG_NAME[dst];
 
-	if (dst_name != NULL)
+	if(!dst_name)
 		return false;
 	
 	os << "NORM " << hex << cpu.DisasmDir(Operation<CONFIG, DEBUG>::GetAddr() / 4, direct) << dec << ", " << dst_name;
@@ -3372,7 +3372,7 @@ NOT_reg.disasm = {
 NOT_dir.disasm = {
 	const char *dst_name = REG_NAME[dst];
 
-	if (dst_name != NULL)
+	if(!dst_name)
 		return false;
 	
 	os << "NOT " << hex << cpu.DisasmDir(Operation<CONFIG, DEBUG>::GetAddr() / 4, direct) << dec << ", " << dst_name;
@@ -3559,7 +3559,7 @@ OR_reg.disasm = {
 OR_dir.disasm = {
 	const char *dst_name = REG_NAME[dst];
 
-	if (dst_name != NULL)
+	if(!dst_name)
 		return false;
 	
 	os << "OR " << hex << cpu.DisasmDir(Operation<CONFIG, DEBUG>::GetAddr() / 4, direct) << dec << ", " << dst_name;
@@ -3755,7 +3755,7 @@ RND_reg.disasm = {
 RND_dir.disasm = {
 	const char *dst_name = REG_NAME[dst];
 
-	if (dst_name != NULL)
+	if(!dst_name)
 		return false;
 	
 	os << "RND " << hex << cpu.DisasmDir(Operation<CONFIG, DEBUG>::GetAddr() / 4, direct) << dec << ", " << dst_name;
@@ -4033,7 +4033,7 @@ SUBB_reg.disasm = {
 SUBB_dir.disasm = {
 	const char *dst_name = REG_NAME[dst];
 
-	if (dst_name != NULL)
+	if(!dst_name)
 		return false;
 	
 	os << "SUBB " << hex << cpu.DisasmDir(Operation<CONFIG, DEBUG>::GetAddr() / 4, direct) << dec << ", " << dst_name;
@@ -4282,7 +4282,7 @@ SUBC_reg.disasm = {
 SUBC_dir.disasm = {
 	const char *dst_name = REG_NAME[dst];
 
-	if (dst_name != NULL)
+	if(!dst_name)
 		return false;
 	
 	os << "SUBC " << hex << cpu.DisasmDir(Operation<CONFIG, DEBUG>::GetAddr() / 4, direct) << dec << ", " << dst_name;
@@ -4438,7 +4438,7 @@ SUBF_reg.disasm = {
 SUBF_dir.disasm = {
 	const char *dst_name = REG_NAME[dst];
 
-	if (dst_name != NULL)
+	if(!dst_name)
 		return false;
 	
 	os << "SUBF " << hex << cpu.DisasmDir(Operation<CONFIG, DEBUG>::GetAddr() / 4, direct) << dec << ", " << dst_name;
@@ -4510,7 +4510,7 @@ SUBI_reg.disasm = {
 SUBI_dir.disasm = {
 	const char *dst_name = REG_NAME[dst];
 
-	if (dst_name != NULL)
+	if(!dst_name)
 		return false;
 	
 	os << "SUBI " << hex << cpu.DisasmDir(Operation<CONFIG, DEBUG>::GetAddr() / 4, direct) << dec << ", " << dst_name;
@@ -4747,7 +4747,7 @@ SUBRB_reg.disasm = {
 SUBRB_dir.disasm = {
 	const char *dst_name = REG_NAME[dst];
 
-	if (dst_name != NULL)
+	if(!dst_name)
 		return false;
 	
 	os << "SUBRB " << hex << cpu.DisasmDir(Operation<CONFIG, DEBUG>::GetAddr() / 4, direct) << dec << ", " << dst_name;
@@ -4996,7 +4996,7 @@ SUBRF_reg.disasm = {
 SUBRF_dir.disasm = {
 	const char *dst_name = REG_NAME[dst];
 
-	if (dst_name != NULL)
+	if(!dst_name)
 		return false;
 	
 	os << "SUBRF " << hex << cpu.DisasmDir(Operation<CONFIG, DEBUG>::GetAddr() / 4, direct) << dec << ", " << dst_name;
@@ -5068,7 +5068,7 @@ SUBRI_reg.disasm = {
 SUBRI_dir.disasm = {
 	const char *dst_name = REG_NAME[dst];
 
-	if (dst_name != NULL)
+	if(!dst_name)
 		return false;
 	
 	os << "SUBRI " << hex << cpu.DisasmDir(Operation<CONFIG, DEBUG>::GetAddr() / 4, direct) << dec << ", " << dst_name;
@@ -5299,7 +5299,7 @@ TSTB_reg.disasm = {
 TSTB_dir.disasm = {
 	const char *dst_name = REG_NAME[dst];
 
-	if (dst_name != NULL)
+	if(!dst_name)
 		return false;
 	
 	os << "TSTB " << hex << cpu.DisasmDir(Operation<CONFIG, DEBUG>::GetAddr() / 4, direct) << dec << ", " << dst_name;
@@ -5467,7 +5467,7 @@ XOR_reg.disasm = {
 XOR_dir.disasm = {
 	const char *dst_name = REG_NAME[dst];
 
-	if (dst_name != NULL)
+	if(!dst_name)
 		return false;
 	
 	os << "XOR " << hex << cpu.DisasmDir(Operation<CONFIG, DEBUG>::GetAddr() / 4, direct) << dec << ", " << dst_name;

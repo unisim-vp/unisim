@@ -457,6 +457,10 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 				}
 
 				break;
+
+			case EOF:
+				recognized = true;
+				break;
 		} // end of switch
 
 		if(!recognized)

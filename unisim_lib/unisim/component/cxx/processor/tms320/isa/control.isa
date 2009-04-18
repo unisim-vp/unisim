@@ -473,7 +473,7 @@ DBcond_reg.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	// Read ARn
-	int32_t ar_value = cpu.GetReg(ar);
+	int32_t ar_value = SignExtend(cpu.GetAR23_0(ar), 24);
 
 	// Compute new value for ARn
 	ar_value = ar_value - 1;
@@ -521,7 +521,7 @@ DBcond_disp.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	// Read ARn
-	int32_t ar_value = cpu.GetReg(ar);
+	int32_t ar_value = SignExtend(cpu.GetAR23_0(ar), 24);
 
 	// Compute new value for ARn
 	ar_value = ar_value - 1;
@@ -582,7 +582,7 @@ DBcondD_reg.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	// Read ARn
-	int32_t ar_value = cpu.GetReg(ar);
+	int32_t ar_value = SignExtend(cpu.GetAR23_0(ar), 24);
 
 	// Compute new value for ARn
 	ar_value = ar_value - 1;
@@ -631,7 +631,7 @@ DBcondD_disp.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	// Read ARn
-	int32_t ar_value = cpu.GetReg(ar);
+	int32_t ar_value = SignExtend(cpu.GetAR23_0(ar), 24);
 
 	// Compute new value for ARn
 	ar_value = ar_value - 1;
