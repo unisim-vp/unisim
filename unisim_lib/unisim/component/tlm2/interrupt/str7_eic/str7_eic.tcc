@@ -32,16 +32,8 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
-#ifndef __UNISIM_COMPONENT_TLM2_INTERRUPT_STR7_EIC_STR7_EIC_HH__
-#define __UNISIM_COMPONENT_TLM2_INTERRUPT_STR7_EIC_STR7_EIC_HH__
-
-#include <systemc.h>
-#include <tlm.h>
-#include <inttypes.h.>
-
-#include "unisim/kernel/service/service.hh"
-#include "unisim/kernel/logger/logger.hh"
-#include "unisim/component/tlm2/interrupt/types.hh"
+#ifndef __UNISIM_COMPONENT_TLM2_INTERRUPT_STR7_EIC_STR7_EIC_TCC__
+#define __UNISIM_COMPONENT_TLM2_INTERRUPT_STR7_EIC_STR7_EIC_TCC__
 
 namespace unisim {
 namespace component {
@@ -49,27 +41,60 @@ namespace tlm2 {
 namespace interrupt {
 namespace str7_eic {
 
-using unisim::component::tlm2::interrupt::InterruptProtocolTypes;
-using unisim::component::tlm2::interrupt::TLMInterruptPayload;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::Object;
-using unisim::kernel::logger::Logger;
-
-template <typename MODULE>
-class IRQTargetSocket :
-	public tlm_utils::passthrough_target_socket_tagged<MODULE, 1, InterruptProtocolTypes>
+template <unsigned int BUS_WIDTH, bool VERBOSE>
+STR7_EIC<BUS_WIDTH, VERBOSE> ::
+STR7_EIC(const sc_module_name& name, Object* parent) :
+		Object(name, parent),
+		sc_module(name),
+		out_irq("out_irq"),
+		out_fiq("out_fiq"),
+		in_mem("in_mem"),
+		icr(0),
+		cicr(0),
+		cipr(0),
+		ivr(0),
+		fir(0),
+		ier0(0),
+		ipr0(0),
+		base_address(0),
+		param_base_address("base-address", this, base_address),
+		logger(*this),
+		verbose_all(false),
+		verbose_setup(false),
+		verbose_run(false)
 {
-public:
-	IRQTargetSocket() : passthrough_target_socket_tagged("in_irq");
-};
+	if (VERBOSE)
+	{
+		param_verbose_all = new unisim::kernel::service::Parameter<bool>("verbose-all", this, verbose_all);
+		param_verbose_setup = new unisim::kernel::service::Parameter<bool>("verbose-setup", this, verbose_setup);
+		param_verbose_run = new unisim::kernel::service::Parameter<bool>("verbose-run", this, verbose_run);
+	}
 
-template <typename MODULE>
-class FIQTargetSocket :
-	public tlm_utils::passthrough_target_socket_tagged<MODULE, 1, InterruptProtocolTypes>
-{
-public:
-	FIQTargetSocket() : passthrough_target_socket_tagged("in_fiq");
-};
+	/* bind the in_mem socket to the methods implementations provided by the module */
+	in_mem.bind(*this);
+	/* register the in_irq sockets to the methods implementations provided by the module */
+	for (unsigned int i = 0; i < NUM_IRQ; i++)
+	{
+		in_irq[i].register_nb_transport_fw(this, &THIS_MODULE::InIRQNb, i);
+		in_irq[i].register_b_transport(this, &THIS_MODULE::InIRQB, i);
+		in_irq[i].register_transport_dbg(this, &THIS_MODULE::InIRQDbg, i);
+		in_irq[i].register_get_direct_mem_ptr(this, &THIS_MODULE::InIRQDmi, i);
+	}
+	/* register the in_fiq sockets to the methods implementations provided by the module */
+	for (unsigned int i = 0; i < NUM_FIQ; i++)
+	{
+		in_fiq[i].register_nb_transport_fw(this, &THIS_MODULE::InFIQNb, i);
+		in_fiq[i].register_b_transport(this, &THIS_MODULE::InFIQB, i);
+		in_fiq[i].register_transport_dbg(this, &THIS_MODULE::InFIQDbg, i);
+		in_fiq[i].register_get_direct_mem_ptr(this, &THIS_MODULE::InFIQDmi, i);
+	}
+	/* register the out_irq socket to the methods implementation provided by the module */
+	out_irq.register_nb_transport_bw(this, &THIS_MODULE::OutIRQNb);
+	out_irq.register_invalidate_direct_mem_ptr(this, &THIS_MODULE::OutIRQDMI);
+	/* register the out_fiq socket to the methods implementation provided by the module */
+	out_fiq.register_nb_transport_bw(this, &THIS_MODULE::OutFIQNb);
+	out_fiq.register_invalidate_direct_mem_ptr(this, &THIS_MODULE::OutFIQDMI);
+}
 
 template <unsigned int BUS_WIDTH = 32,
 		  bool VERBOSE = false>
@@ -77,16 +102,13 @@ class STR7_EIC :
 	public Object,
 	public sc_module
 {
-private:
-	typedef STR7_EIC<BUS_WIDTH, VERBOSE> THIS_MODULE;
-	const unsigned int NUM_IRQ = 32;
-	const unsigned int NUM_FIQ = 2;
-
 public:
+	typedef STR7_EIC<BUS_WIDTH, VERBOSE> THIS_MODULE;
+
 	/* input socket for incomming IRQs */
-	IRQTargetSocket<THIS_MODULE> in_irq[NUM_IRQ];
+	IRQTargetSocket<THIS_MODULE> in_irq[32];
 	/* input socket for incomming FIQs */
-	FIQTargetSocket<THIS_MODULE> in_fiq[NUM_FIQ];
+	FIQTargetSocket<THIS_MODULE> in_fiq[2];
 	/* output socket for outgoing IRQ */
 	tlm_utils::simple_initiator_socket<THIS_MODULE, 1, InterruptProtocolTypes> out_irq;
 	/* output socket for outgoing FIQ */
@@ -187,4 +209,5 @@ private:
 } // end of namespace unisim
 
 #endif // __UNISIM_COMPONENT_TLM2_INTERRUPT_STR7_EIC_STR7_EIC_HH__
+
 
