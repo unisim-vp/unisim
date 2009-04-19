@@ -519,6 +519,17 @@ LDIcond_indir.execute = {
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 
+	// Note: Auxiliary Register Arithmetic
+	// The test condition does not affect
+	// the auxiliary register arithmetic.
+	// (AR modification always occurs.) (pg 13-126)
+
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar, output_ar);
+	}
+
 	// Check the condition
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -527,12 +538,6 @@ LDIcond_indir.execute = {
 
 	// Write back result
 	cpu.SetReg(dst, result);
-
-	if(update_ar)
-	{
-		// Write back ARn
-		cpu.SetAR23_0(ar, output_ar);
-	}
 }
 
 op LDIcond_imm  (0b0101[4]:cond[5]:0b11[2]:dst[5]:sext<32> imm[16])

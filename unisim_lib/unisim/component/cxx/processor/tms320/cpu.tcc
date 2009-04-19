@@ -1170,8 +1170,19 @@ StepInstruction()
 		}
 		else
 		{
-			// Check if there are some enabled pending IRQs
-			if(unlikely(GetIF() & GetIE() && !GetST_GIE()))
+			// Note:
+			// Delayed branches disable interrupts until the completion of the three instructions
+			// that follow the delayed branch, regardless if the branch is or is not performed. (pg 13-82)
+
+			// Note:
+			// The RPTS instruction cannot be interrupted because instruction fetches are
+			// halted. (pg 13-212)
+
+			// Check if:
+			//   - there are some enabled pending IRQs
+			//   - there is no pending branch
+			//   - there is no running RPTS instruction
+			if(unlikely(GetIF() & GetIE() && !GetST_GIE()) && !delay_before_branching && (!GetST_RM() || !GetS()))
 			{
 				unsigned int irq_num;
 
