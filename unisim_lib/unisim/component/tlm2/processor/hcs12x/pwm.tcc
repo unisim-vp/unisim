@@ -66,7 +66,7 @@ PWM<PWM_SIZE>::PWM(const sc_module_name& name, Object *parent) :
 		channel_number =  PWM_SIZE-i-1;
 #endif
 
-		channel[channel_number] = new Channel_t("jhdsq", this, channel_number, &pwmcnt16_register[i], &pwmper16_register[i], &pwmdty16_register_value[i]);
+		channel[channel_number] = new Channel_t("channel", this, channel_number, &pwmcnt16_register[i], &pwmper16_register[i], &pwmdty16_register_value[i]);
 
 	}
 

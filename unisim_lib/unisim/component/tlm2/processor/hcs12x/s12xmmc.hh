@@ -111,11 +111,11 @@ private:
 	address_t MMC_REGS_ADDRESSES[MMC_SIZE];
 
 	// TODO: complete by integrating the routing functionality to the MMC
-	static const uint8_t DEVICE_MAP_SIZE = 3;
+	static const uint8_t DEVICE_MAP_SIZE = 4;
 	struct {
 		address_t	start_address;
 		address_t	end_address;
-	} deviceMap[3];
+	} deviceMap[DEVICE_MAP_SIZE];
 
 }; /* end class S12XMMC */
 
