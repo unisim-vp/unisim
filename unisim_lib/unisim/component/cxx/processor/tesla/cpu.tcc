@@ -32,9 +32,11 @@
  * Authors: Sylvain Collange (sylvain.collange@univ-perp.fr)
  */
 
-#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_CPU_TCC__
-#define __UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_CPU_TCC__
+#ifndef UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_CPU_TCC
+#define UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_CPU_TCC
 
+#include <unisim/component/cxx/processor/tesla/cpu.hh>
+#include <unisim/component/cxx/processor/tesla/warp.tcc>
 #include <unisim/component/cxx/processor/tesla/exception.tcc>
 #include <unisim/component/cxx/processor/tesla/register.tcc>
 #include <unisim/component/cxx/processor/tesla/instruction.tcc>
@@ -43,6 +45,7 @@
 #include <unisim/component/cxx/processor/tesla/simfloat.tcc>
 #include <unisim/component/cxx/processor/tesla/memory.tcc>
 #include <unisim/component/cxx/processor/tesla/maskstack.tcc>
+#include <unisim/component/cxx/processor/tesla/implicit_flow.tcc>
 
 //#include <unisim/component/cxx/cache/cache.tcc>
 //#include <unisim/component/cxx/tlb/tlb.tcc>
@@ -192,7 +195,7 @@ void CPU<CONFIG>::Reset()
 	for(unsigned int i = 0; i != MAX_WARPS; ++i)
 	{
 		warps[i].id = i;
-		warps[i].state = Warp::Finished;
+		warps[i].state = Warp<CONFIG>::Finished;
 	}
 	num_warps = 0;
 //	effective_address = 0;
@@ -263,10 +266,10 @@ bool CPU<CONFIG>::Step()
 
 	bool all_finished = true;
 	for(unsigned int i = 0; i != num_warps; ++i) {
-		if(GetWarp(i).state == Warp::Active) {
+		if(GetWarp(i).state == Warp<CONFIG>::Active) {
 			StepWarp(i);
 		}
-		if(GetWarp(i).state != Warp::Finished) {
+		if(GetWarp(i).state != Warp<CONFIG>::Finished) {
 			all_finished = false;
 		}
 	}
@@ -313,34 +316,13 @@ void CPU<CONFIG>::StepWarp(uint32_t warpid)
 	// Join or take other branch?
 	CheckJoin();
 
-	if(trace_mask) {
-		cerr << " " << GetCurrentMask() << endl;
-	}
-	
 	SetPC(GetNPC());
 }
 
 template <class CONFIG>
 void CPU<CONFIG>::CheckJoin()
 {
-	if(InConditional())
-	{
-		if(GetNPC() == GetJoin())
-		{
-			// Joined
-			// Restore last mask and join
-			GetCurrentMask() = PopMask();
-			PopJoin();
-		}
-		else if(GetNPC() > GetJoin())
-		{
-			// Jumped over join point
-			// Go back following the other branch
-			std::swap(GetJoin(), GetNPC());
-			// Invert condition
-			GetCurrentMask() = ~GetCurrentMask() & GetNextMask();
-		}
-	}
+	CurrentWarp().flow.CheckJoin();
 }
 
 template <class CONFIG>
@@ -476,7 +458,7 @@ string CPU<CONFIG>::Disasm(address_t addr, address_t& next_addr)
 template <class CONFIG>
 void CPU<CONFIG>::DumpRegisters(int warpid, ostream & os) const
 {
-	Warp const & warp = GetWarp(warpid);
+	Warp<CONFIG> const & warp = GetWarp(warpid);
 	os << "Warp " << warpid << endl;
 	for(unsigned int i = 0; i != warp.gpr_window_size; ++i)
 	{
@@ -508,7 +490,7 @@ void CPU<CONFIG>::DumpGPR(int reg, ostream & os) const
 template <class CONFIG>
 void CPU<CONFIG>::DumpFlags(int warpid, int reg, ostream & os) const
 {
-	Warp const & warp = GetWarp(warpid);
+	Warp<CONFIG> const & warp = GetWarp(warpid);
 	os << " p" << reg << " = " << warp.pred_flags[reg] << endl;
 }
 
@@ -626,92 +608,24 @@ VectorAddress<CONFIG> CPU<CONFIG>::GetAddr(unsigned int reg) const
 	return CurrentWarp().addr[reg - 1];
 }
 
+#if 0
 template <class CONFIG>
 std::bitset<CONFIG::WARP_SIZE> & CPU<CONFIG>::GetCurrentMask()
 {
-	return CurrentWarp().mask;
+	return CurrentWarp().flow.GetCurrentMask();
 }
+#endif
 
 template <class CONFIG>
 std::bitset<CONFIG::WARP_SIZE> CPU<CONFIG>::GetCurrentMask() const
 {
-	return CurrentWarp().mask;
+	return CurrentWarp().flow.GetCurrentMask();
 }
 
-template <class CONFIG>
-std::bitset<CONFIG::WARP_SIZE> CPU<CONFIG>::PopMask()
+template<class CONFIG>
+void CPU<CONFIG>::Branch(address_t target_addr, std::bitset<CONFIG::WARP_SIZE> mask)
 {
-	std::bitset<CONFIG::WARP_SIZE> msk = CurrentWarp().mask_stack.top();
-	CurrentWarp().mask_stack.pop();
-	return msk;
-}
-
-template <class CONFIG>
-std::bitset<CONFIG::WARP_SIZE> CPU<CONFIG>::GetNextMask()
-{
-	return CurrentWarp().mask_stack.top();
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::PushMask(std::bitset<CONFIG::WARP_SIZE> mask)
-{
-	CurrentWarp().mask_stack.push(mask);
-}
-
-template <class CONFIG>
-typename CONFIG::address_t CPU<CONFIG>::PopJoin()
-{
-	address_t addr = CurrentWarp().join_stack.top();
-	CurrentWarp().join_stack.pop();
-	return addr;
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::PushJoin(typename CONFIG::address_t addr)
-{
-	// TODO: raise exn if ovf
-	assert(CurrentWarp().join_stack.size() < BRANCH_STACK_DEPTH);
-	CurrentWarp().join_stack.push(addr);
-}
-
-template <class CONFIG>
-typename CONFIG::address_t CPU<CONFIG>::GetJoin() const
-{
-	return CurrentWarp().join_stack.top();
-}
-
-template <class CONFIG>
-typename CONFIG::address_t & CPU<CONFIG>::GetJoin()
-{
-	return CurrentWarp().join_stack.top();
-}
-
-template <class CONFIG>
-bool CPU<CONFIG>::InConditional() const
-{
-	return !CurrentWarp().join_stack.empty();
-}
-
-template <class CONFIG>
-typename CONFIG::address_t CPU<CONFIG>::GetLoop() const
-{
-	if(CurrentWarp().loop_stack.empty()) {
-		return 0;
-	}
-	return CurrentWarp().loop_stack.top();
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::PushLoop(address_t addr)
-{
-	CurrentWarp().loop_stack.push(addr);
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::PopLoop()
-{
-	assert(!CurrentWarp().loop_stack.empty());
-	CurrentWarp().loop_stack.pop();
+	CurrentWarp().flow.Branch(target_addr, mask);
 }
 
 template <class CONFIG>
@@ -732,26 +646,26 @@ VectorRegister<CONFIG> CPU<CONFIG>::GetGPR(unsigned int wid, unsigned int reg) c
 
 
 template <class CONFIG>
-typename CPU<CONFIG>::Warp & CPU<CONFIG>::CurrentWarp()
+Warp<CONFIG> & CPU<CONFIG>::CurrentWarp()
 {
 	return warps[current_warpid];
 }
 
 template <class CONFIG>
-typename CPU<CONFIG>::Warp const & CPU<CONFIG>::CurrentWarp() const
+Warp<CONFIG> const & CPU<CONFIG>::CurrentWarp() const
 {
 	return warps[current_warpid];
 }
 
 template <class CONFIG>
-typename CPU<CONFIG>::Warp & CPU<CONFIG>::GetWarp(unsigned int wid)
+Warp<CONFIG> & CPU<CONFIG>::GetWarp(unsigned int wid)
 {
 	assert(wid < MAX_WARPS);
 	return warps[wid];
 }
 
 template <class CONFIG>
-typename CPU<CONFIG>::Warp const & CPU<CONFIG>::GetWarp(unsigned int wid) const
+Warp<CONFIG> const & CPU<CONFIG>::GetWarp(unsigned int wid) const
 {
 	assert(wid < MAX_WARPS);
 	return warps[wid];
@@ -760,29 +674,29 @@ typename CPU<CONFIG>::Warp const & CPU<CONFIG>::GetWarp(unsigned int wid) const
 template <class CONFIG>
 void CPU<CONFIG>::Meet(CPU<CONFIG>::address_t addr)
 {
-	// TODO
+	CurrentWarp().flow.Meet(addr);
 }
 
 template <class CONFIG>
 void CPU<CONFIG>::Join()
 {
-	// TODO
+	CurrentWarp().flow.Join();
 }
 
 template <class CONFIG>
 void CPU<CONFIG>::End()
 {
 	// Make sure stacks are now empty
-	assert(CurrentWarp().mask_stack.empty());
-	assert(CurrentWarp().join_stack.empty());
-	assert(CurrentWarp().loop_stack.empty());
-	CurrentWarp().state = Warp::Finished;
+	//assert(CurrentWarp().mask_stack.empty());
+	//assert(CurrentWarp().join_stack.empty());
+	//assert(CurrentWarp().loop_stack.empty());
+	CurrentWarp().state = Warp<CONFIG>::Finished;
 }
 
 template <class CONFIG>
 void CPU<CONFIG>::Fence()
 {
-	CurrentWarp().state = Warp::WaitingFence;
+	CurrentWarp().state = Warp<CONFIG>::WaitingFence;
 	
 	CheckFenceCompleted();
 }
@@ -798,7 +712,7 @@ void CPU<CONFIG>::CheckFenceCompleted()
 		if(trace_sync) {
 			cerr << "  Warp " << i << ", block " << warps[i].blockid << endl;
 		}
-		if(warps[i].state != Warp::WaitingFence) {
+		if(warps[i].state != Warp<CONFIG>::WaitingFence) {
 			synchronized[warps[i].blockid] = false;
 			if(trace_sync) {
 				cerr << "   Not synchronized\n";
@@ -813,7 +727,7 @@ void CPU<CONFIG>::CheckFenceCompleted()
 	for(unsigned int i = 0; i != num_warps; ++i)
 	{
 		if(synchronized[warps[i].blockid]) {
-			warps[i].state = Warp::Active;
+			warps[i].state = Warp<CONFIG>::Active;
 			if(trace_sync) {
 				cerr << "  Warp " << i << ", block " << warps[i].blockid << endl;
 				cerr << "   Activated\n";
@@ -825,100 +739,9 @@ void CPU<CONFIG>::CheckFenceCompleted()
 template <class CONFIG>
 void CPU<CONFIG>::Kill(std::bitset<CONFIG::WARP_SIZE> mask)
 {
-	// mask : threads to kill
-	// GetCurrentMask() & ~mask : threads alive
-	Warp & warp = CurrentWarp();
-	std::bitset<CONFIG::WARP_SIZE> alive = warp.mask & ~mask;
-	if(trace_branch) {
-		cerr << " Kill, mask=" << mask << endl;
-	}
-	if(alive.none())
-	{
-		// Pop everything.
-		while(!warp.mask_stack.empty()) warp.mask_stack.pop();
-		while(!warp.join_stack.empty()) warp.join_stack.pop();
-		while(!warp.loop_stack.empty()) warp.loop_stack.pop();
-		warp.state = Warp::Finished;
-		if(trace_branch) {
-			cerr << "  Warp killed" << endl;
-		}
-	}
-	else if(!mask.none())
-	{
-		// Remove masked threads from whole stack
-		warp.mask_stack.dig(mask, 0);
-		warp.mask = alive;
-		if(trace_branch) {
-			cerr << "  Inactive threads killed. Mask="
-				<< GetCurrentMask() << endl;
-		}
-	}
-	else if(trace_branch) {
-		cerr << "  No thread killed. Mask="
-			<< GetCurrentMask() << endl;
-	}
+	CurrentWarp().flow.Kill(mask);
 }
 
-//////////////////////////////////////////////////////////////////////
-
-template <class CONFIG>
-void CPU<CONFIG>::Warp::Reset(unsigned int wid, unsigned int bid, unsigned int gpr_num, unsigned int sm_size,
-	bitset<WARP_SIZE> init_mask, address_t sm_base, CPU<CONFIG> * cpu)
-{
-	pc = CONFIG::CODE_START;
-	npc = 0;
-	
-	blockid = bid;
-	
-	gpr_window_size = gpr_num;
-	gpr_window_base = gpr_num * wid;
-	
-	sm_window_size = sm_size;
-	sm_window_base = sm_base + sm_size * bid;
-	
-	mask = init_mask;
-	
-	for(unsigned int i = 0; i != MAX_PRED_REGS; ++i) {
-		pred_flags[i].Reset();
-	}
-	
-	for(unsigned int i = 0; i != MAX_ADDR_REGS; ++i) {
-		addr[i].Reset();
-	}
-	
-	state = Active;
-	if(cpu->trace_reset) {
-		cerr << " Warp " << id << " (" << bid << ", " << wid << "): reset\n";
-		cerr << "  " << gpr_window_size << " GPRs from " << gpr_window_base << "\n";
-		cerr << "  " << sm_size << "B shared mem from " << std::hex << sm_window_base << std::dec << "\n";
-	}
-}
-
-template <class CONFIG>
-uint32_t CPU<CONFIG>::Warp::GetGPRAddress(uint32_t reg) const
-{
-	// 32-bit access
-	// No special register here
-	if(reg >= gpr_window_size) {
-		std::cerr << "Warp " << id << ": accessing r" << reg << " on a " << gpr_window_size << " reg window\n";
-	}
-	assert(reg < gpr_window_size);
-	return gpr_window_base + reg;
-}
-
-template <class CONFIG>
-typename CPU<CONFIG>::address_t CPU<CONFIG>::Warp::GetSMAddress(uint32_t sm) const
-{
-	assert(sm < sm_window_size);
-	return sm_window_base + sm;
-}
-
-
-
-//////////////////////////////////////////////////////////////////////
-
-
-//////////////////////////////////////////////////////////////////////
 } // end of namespace tesla
 } // end of namespace processor
 } // end of namespace cxx

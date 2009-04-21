@@ -36,6 +36,7 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_SIMFLOAT_HH__
 
 #include <unisim/util/simfloat/floating.hh>
+#include <unisim/util/simfloat/host_floating.hh>
 
 namespace unisim {
 namespace component {
@@ -152,33 +153,6 @@ public:
 	
 };
 
-#if 0
-template<class BaseFloat>
-struct HalfDAZFTZ : BaseFloat
-{
-private:
-	typedef HalfDAZFTZ<BaseFloat> thisType;
-	typedef typename BaseFloat::StatusAndControlFlags Flags;
-public:
-	HalfDAZFTZ() : BaseFloat() {}
-	HalfDAZFTZ(const uint32_t& uFloat) { BaseFloat::setChunk((void *) &uFloat, true /* little endian */); }
-
-	thisType& operator=(const thisType& sfSource)
-	  {  return (thisType&) BaseFloat::operator=(sfSource); }
-	thisType& assign(const thisType& sfSource)
-	  {  return (thisType&) BaseFloat::operator=(sfSource); }
-	thisType& assign(const SoftFloatIEEE& sfFloat, inherited::StatusAndControlFlags & flags);
-
-	uint32_t queryValue() const
-	  {  uint32_t uResult; BaseFloat::fillChunk(&uResult, true /* little endian */); return uResult; }
-
-	void setZeroPreserveSign() { BaseFloat::querySBasicExponent() = 0U; BaseFloat::querySMantissa() = 0U; }
-	void flushDenormals() {
-		if(BaseFloat::isDenormalized()) { setZeroPreserveSign(); }
-	}	
-};
-
-#endif
 
 // G80-GT200 MAD : multiplication in round toward zero, then addition in current rounding mode
 // MAD is *not* a FMA

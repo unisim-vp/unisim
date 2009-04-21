@@ -32,8 +32,8 @@
  * Authors: Sylvain Collange (sylvain.collange@univ-perp.fr)
  */
  
-#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_CPU_HH__
-#define __UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_CPU_HH__
+#ifndef UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_CPU_HH
+#define UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_CPU_HH
 
 #include <stdlib.h>
 #include <unisim/service/interfaces/memory.hh>
@@ -60,8 +60,10 @@
 #include <stack>
 #include <bitset>
 #include <unisim/component/cxx/processor/tesla/register.hh>
+#include <unisim/component/cxx/processor/tesla/warp.hh>
 #include <unisim/component/cxx/processor/tesla/flags.hh>
 #include <unisim/component/cxx/processor/tesla/maskstack.hh>
+#include <unisim/component/cxx/processor/tesla/implicit_flow.hh>
 
 
 namespace unisim {
@@ -271,46 +273,6 @@ public:
 
 	
 	
-	struct Warp
-	{
-		// wid unique across blocks
-		void Reset(unsigned int wid, unsigned int bid, unsigned int gpr_num, unsigned int sm_size,
-			bitset<WARP_SIZE> init_mask, address_t sm_base, CPU<CONFIG> * cpu);
-	
-		uint32_t GetGPRAddress(uint32_t reg) const;
-		address_t GetSMAddress(uint32_t sm = 0) const;
-		
-		address_t pc;
-		address_t npc;
-
-		VectorFlags<CONFIG> pred_flags[MAX_PRED_REGS];
-		VectorAddress<CONFIG> addr[MAX_ADDR_REGS];
-		
-		uint32_t gpr_window_base;
-		uint32_t gpr_window_size;
-		uint32_t sm_window_base;
-		uint32_t sm_window_size;
-		
-		bitset<WARP_SIZE> mask;
-		
-		std::stack<address_t> join_stack;
-		//std::stack<bitset<WARP_SIZE> > mask_stack;
-		MaskStack<WARP_SIZE, CONFIG::BRANCH_STACK_DEPTH> mask_stack;
-		std::stack<address_t> loop_stack;
-
-		enum WarpState {
-			Active,
-			WaitingFence,
-			Finished
-		};
-		
-		WarpState state;
-		uint32_t blockid;
-		
-		uint32_t id;	// for debugging purposes only
-		//CPU<CONFIG> * cpu;
-	};
-
 	
 
 	//=====================================================================
@@ -347,22 +309,10 @@ public:
 	VecAddr & GetAddr(unsigned int reg);
 	VecAddr GetAddr(unsigned int reg) const;
 	
-	std::bitset<CONFIG::WARP_SIZE> & GetCurrentMask();
+//	std::bitset<CONFIG::WARP_SIZE> & GetCurrentMask();
 	std::bitset<CONFIG::WARP_SIZE> GetCurrentMask() const;
-	
-	std::bitset<CONFIG::WARP_SIZE> PopMask();
-	void PushMask(std::bitset<CONFIG::WARP_SIZE> mask);
-	std::bitset<CONFIG::WARP_SIZE> GetNextMask();
 
-	address_t PopJoin();
-	void PushJoin(address_t addr);
-	address_t GetJoin() const;
-	address_t & GetJoin();
-	bool InConditional() const;
-	
-	address_t GetLoop() const;
-	void PushLoop(address_t addr);
-	void PopLoop();
+	void Branch(address_t target, std::bitset<CONFIG::WARP_SIZE> mask);
 
 	void StepWarp(uint32_t warpid);
 	void CheckJoin();
@@ -416,11 +366,11 @@ public:
 	VecAddr EffectiveAddress(uint32_t reg, uint32_t addr_lo, uint32_t addr_hi,
 		uint32_t addr_imm, uint32_t shift);
 	
-	Warp & CurrentWarp();
-	Warp const & CurrentWarp() const;
+	Warp<CONFIG> & CurrentWarp();
+	Warp<CONFIG> const & CurrentWarp() const;
 	
-	Warp & GetWarp(unsigned int wid);
-	Warp const & GetWarp(unsigned int wid) const;
+	Warp<CONFIG> & GetWarp(unsigned int wid);
+	Warp<CONFIG> const & GetWarp(unsigned int wid) const;
 private:
 	//=====================================================================
 	//=                           G80 registers                           =
@@ -428,7 +378,7 @@ private:
 	
 	int coreid;
 
-	Warp warps[MAX_WARPS];
+	Warp<CONFIG> warps[MAX_WARPS];
 	uint32_t current_warpid;
 	
 	VecReg gpr[MAX_VGPR];

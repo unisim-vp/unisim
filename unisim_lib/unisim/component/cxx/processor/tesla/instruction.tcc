@@ -372,7 +372,7 @@ template <class CONFIG>
 bitset<CONFIG::WARP_SIZE> Instruction<CONFIG>::Mask() const
 {
 	// mask = current warp mask & predicate mask
-	bitset<CONFIG::WARP_SIZE> mask = cpu->CurrentWarp().mask;
+	bitset<CONFIG::WARP_SIZE> mask = cpu->GetCurrentMask();
 	mask &= operation->dest->predMask(cpu);
 	return mask;
 }
