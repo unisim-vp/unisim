@@ -115,13 +115,13 @@ public:
 	/* END: callback methods for the in_fiq sockets */
 
 	/* START: callback methods for the out_irq sockets */
-	tlm::tlm_sync_enum OutIRQNb(int index, TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t);
-	void OutIRQDMI(int index, sc_dt::uint64 start_range, sc_dt::uint64 end_range);
+	tlm::tlm_sync_enum OutIRQNb(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t);
+	void OutIRQDMI(sc_dt::uint64 start_range, sc_dt::uint64 end_range);
 	/* END: callback methods for the out_irq sockets */
 	
 	/* START: callback methods for the out_fiq sockets */
-	tlm::tlm_sync_enum OutFIQNb(int index, TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t);
-	void OutFIQDMI(int index, sc_dt::uint64 start_range, sc_dt::uint64 end_range);
+	tlm::tlm_sync_enum OutFIQNb(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t);
+	void OutFIQDMI(sc_dt::uint64 start_range, sc_dt::uint64 end_range);
 	/* END: callback methods for the out_fiq sockets */
 
 	/* START: methods implementing the "in_mem" socket */
@@ -132,6 +132,18 @@ public:
 	/* END: methods implementing the "in_mem" socket */
 
 private:
+	/** Process an incomming IRQ signal change.
+	 * @param index		the port that received the changed IRQ
+	 * @param level		interrupt level: true = interruption; false = no interruption
+	 */
+	void IRQ(unsigned int index, bool level = true);
+
+	/** Process an incomming FIQ signal change.
+	 * @param index		the port that received the change FIQ
+	 * @param level		interrupt level: true = interruption; false = no interruption
+	 */
+	void FIQ(unsigned int index, bool level = true);
+
 	/* interrupt controller registers */
 	uint32_t icr;
 	uint32_t cicr;
@@ -163,11 +175,60 @@ private:
 	uint32_t SIV(unsigned int index);
 	uint32_t SIPL(unsigned int index);
 
-	/* module parameters */
+	/** Read register method and update interrupt controller state as necessary.
+	 * @param addr		the register address
+	 * @return 			the contents of the register
+	 */
+	uint32_t ReadRegister(uint32_t addr);
+	/** Write register method and update interrupt controller state as necessary.
+	 * @param addr		the register address
+	 * @param value		the data to write into the register
+	 */
+	void WriteRegister(uint32_t addr, uint32_t value);
+
+	/* interrupt signals status */
+	uint32_t irq_status;
+	uint32_t fiq_status;
+	struct irq_fifo_t {
+		unsigned int index;
+		bool level;
+	};
+	tlm_utils::peq_with_get<irq_fifo_t> irq_fifo;
+	tlm_utils::peq_with_get<irq_fifo_t> fiq_fifo;
+	void IRQFifoHandler();
+	void FIQFifoHandler();
+
+	/* START: FSM states */
+	enum fsm_state_t {READY, WAIT};
+	fsm_state_t fsm_state;
+	void FSMReady();
+	void FSMWait();
+	bool IsFSMReady();
+	bool IsFSMWait();
+	void FSMUpdate();
+	/* END: FSM states */
+
+	/* START: stack entries */
+	uint32_t new_irq;
+	struct stack_entry_t {
+		uint32_t cicr;
+		uint32_t cipr;
+	};
+	stack_entry_t stack[15];
+	unsigned int stack_depth;
+	void Push(uint32_t cicr, uint32_t cipr);
+	bool Pop(uint32_t& cicr, uint32_t& cipr);
+	/* END: stack entries */
+
+	/* the interrupt payload fabric */
+	PayloadFabric<TLMInterruptPayload> irqPayloadFabric;
+
+	/* START: module parameters */
 	uint64_t base_address;
 	unisim::kernel::service::Parameter<uint64_t> param_base_address;
+	/* END: module parameters */
 
-	/* logger methods */
+	/* START: logger and logger methods and verbose parameters/methods */
 	unisim::kernel::logger::Logger logger;
 	bool verbose_all;
 	unisim::kernel::service::Parameter<bool> *param_verbose_all;
@@ -178,6 +239,7 @@ private:
 	inline bool VerboseAll();
 	inline bool VerboseSetup();
 	inline bool VerboseRun();
+	/* END: logger and logger methods and verbose parameters/methods */
 };
 
 } // end of namespace str7_eic
