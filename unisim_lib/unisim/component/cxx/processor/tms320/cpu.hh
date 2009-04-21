@@ -45,6 +45,7 @@
 #include "unisim/service/interfaces/memory_injection.hh"
 #include "unisim/service/interfaces/registers.hh"
 #include "unisim/service/interfaces/symbol_table_lookup.hh"
+#include "unisim/service/interfaces/os.hh"
 #include "unisim/component/cxx/processor/tms320/isa_tms320.hh"
 #include "unisim/util/endian/endian.hh"
 #include <stdexcept>
@@ -85,8 +86,10 @@ using unisim::service::interfaces::MemoryAccessReporting;
 using unisim::service::interfaces::MemoryAccessReportingControl;
 using unisim::service::interfaces::Disassembly;
 using unisim::service::interfaces::Memory;
+using unisim::service::interfaces::MemoryInjection;
 using unisim::service::interfaces::Registers;
 using unisim::service::interfaces::SymbolTableLookup;
+using unisim::service::interfaces::OS;
 using unisim::util::debug::Register;
 using std::string;
 
@@ -163,11 +166,13 @@ template<class CONFIG, bool DEBUG = false>
 class CPU :
 	public Client<DebugControl<uint64_t> >,
 	public Client<MemoryAccessReporting<uint64_t> >,
+	public Service<MemoryInjection<uint64_t> >,
 	public Service<MemoryAccessReportingControl>,
 	public Service<Disassembly<uint64_t> >,
 	public Service<Registers>,
 	public Service<Memory<uint64_t> >,
-	public Client<Memory<uint64_t> >
+	public Client<Memory<uint64_t> >,
+	public Client<OS>
 {
 private:
 	typedef typename CONFIG::address_t address_t;
@@ -194,12 +199,14 @@ public:
 	ServiceExport<Disassembly<uint64_t> > disasm_export;
 	ServiceExport<Registers> registers_export;
 	ServiceExport<Memory<uint64_t> > memory_export;
+	ServiceExport<MemoryInjection<uint64_t> > memory_injection_export;
 	ServiceExport<MemoryAccessReportingControl> memory_access_reporting_control_export;
 	
 	ServiceImport<DebugControl<uint64_t> > debug_control_import;
 	ServiceImport<MemoryAccessReporting<uint64_t> > memory_access_reporting_import;
 	ServiceImport<SymbolTableLookup<uint64_t> > symbol_table_lookup_import;
 	ServiceImport<Memory<uint64_t> > memory_import; // TODO: check for removal
+	ServiceImport<OS> os_import;
 	
 	//===============================================================
 	//= Public service imports/exports                         STOP =
@@ -242,6 +249,8 @@ public:
 	virtual void Reset();
 	virtual bool ReadMemory(uint64_t addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(uint64_t addr, const void *buffer, uint32_t size);
+	virtual bool InjectReadMemory(uint64_t addr, void *buffer, uint32_t size);
+	virtual bool InjectWriteMemory(uint64_t addr, const void *buffer, uint32_t size);
 
     //===============================================================
 	//= Memory interface methods                               STOP =
@@ -509,8 +518,8 @@ private:
 	//= Verbose variables, parameters, and methods            START =
 	//===============================================================
 
-	uint64_t instruction_counter;                              //!< Number of executed instructions
-	uint64_t max_inst;                                         //!< Maximum number of instructions to execute
+	uint64_t instruction_counter;                         //!< Number of executed instructions
+	uint64_t max_inst;                                    //!< Maximum number of instructions to execute
 	Parameter<uint64_t> param_max_inst;                   //!< linked to member max_inst
 	Statistic<uint64_t> stat_instruction_counter;
 
@@ -977,6 +986,11 @@ public:
 	/** Signal an interlock
 	*/
 	void SignalInterlock();
+
+	/** Performs an emulator interrupt
+	    @return Whether SWI is implemented or not
+	*/
+	bool SWI();
 
 	/** Enter in idle mode
 		@param level idle level (0, 1, or >= 2)

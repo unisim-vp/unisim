@@ -117,6 +117,7 @@ class OutputInterface
 {
 public:
 	virtual bool Write(MEMORY_ADDR addr, const void *content, uint32_t size) = 0;
+	virtual void AddSymbol(const char *name, MEMORY_ADDR addr, MEMORY_ADDR size, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) = 0;
 };
 
 template <class MEMORY_ADDR>
@@ -185,6 +186,7 @@ public:
 	virtual MEMORY_ADDR GetStackBase() const;
 
 	virtual bool Write(MEMORY_ADDR addr, const void *content, uint32_t size);
+	virtual void AddSymbol(const char *name, MEMORY_ADDR addr, MEMORY_ADDR size, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type);
 
 private:
 	// Run-time parameters

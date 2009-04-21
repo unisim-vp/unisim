@@ -120,6 +120,15 @@ bool CoffLoader<MEMORY_ADDR>::Write(MEMORY_ADDR addr, const void *content, uint3
 }
 
 template <class MEMORY_ADDR>
+void CoffLoader<MEMORY_ADDR>::AddSymbol(const char *name, MEMORY_ADDR addr, MEMORY_ADDR size, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type)
+{
+	if(symbol_table_build_import)
+	{
+		symbol_table_build_import->AddSymbol(name, addr, size, type);
+	}
+}
+
+template <class MEMORY_ADDR>
 bool CoffLoader<MEMORY_ADDR>::Setup()
 {
 	if(symbol_table_build_import) symbol_table_build_import->Reset();

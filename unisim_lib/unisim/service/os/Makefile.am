@@ -9,6 +9,11 @@ SUBDIRS += linux_os
 INCLUDE_SUBDIRS += linux_os
 endif
 
+if COND_ti_c_io
+SUBDIRS += ti_c_io
+INCLUDE_SUBDIRS += ti_c_io
+endif
+
 dist_share_DATA = COPYING
 
 uninstall-hook:

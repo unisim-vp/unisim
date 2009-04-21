@@ -92,7 +92,9 @@ CPU(const char *name,
 	Service<Disassembly<uint64_t> >(name, parent),
 	Service<Registers>(name, parent),
 	Service<Memory<uint64_t> >(name, parent),
+	Service<MemoryInjection<uint64_t> >(name, parent),
 	Client<Memory<uint64_t> >(name, parent),
+	Client<OS>(name, parent),
 	disasm_export("disasm_export", this),
 	registers_export("registers_export", this),
 	memory_access_reporting_control_export(
@@ -103,6 +105,8 @@ CPU(const char *name,
 	memory_access_reporting_import("memory_access_reporting_import", this),
 	symbol_table_lookup_import("symbol_table_lookup_import", this),
 	memory_import("memory_import", this),
+	memory_injection_export("memory_injection_export", this),
+	os_import("os-import", this),
 	requires_memory_access_reporting(true),
 	requires_finished_instruction_reporting(true),
 	logger(*this),
@@ -337,6 +341,44 @@ CPU<CONFIG, DEBUG> ::
 WriteMemory(uint64_t addr, const void *buffer, uint32_t size)
 {
 	return memory_import ? memory_import->WriteMemory(addr, buffer, size) : false;
+}
+
+template<class CONFIG, bool DEBUG>
+bool
+CPU<CONFIG, DEBUG> ::
+InjectReadMemory(uint64_t addr, void *buffer, uint32_t size)
+{
+	if(unlikely(!PrRead(addr, buffer, size, false)))
+	{
+		throw BadMemoryAccessException<CONFIG, DEBUG>(addr / 4);
+	}
+
+	// Memory access reporting
+	if(unlikely(requires_memory_access_reporting && memory_access_reporting_import))
+	{
+		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<uint64_t>::MAT_READ, MemoryAccessReporting<uint64_t>::MT_DATA, addr, 4);
+	}
+
+	return true;
+}
+
+template<class CONFIG, bool DEBUG>
+bool
+CPU<CONFIG, DEBUG> ::
+InjectWriteMemory(uint64_t addr, const void *buffer, uint32_t size)
+{
+	if(unlikely(!PrWrite(addr, buffer, size, false)))
+	{
+		throw BadMemoryAccessException<CONFIG, DEBUG>(addr / 4);
+	}
+
+	// Memory access reporting
+	if(unlikely(requires_memory_access_reporting && memory_access_reporting_import))
+	{
+		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<uint64_t>::MAT_WRITE, MemoryAccessReporting<uint64_t>::MT_DATA, addr, 4);
+	}
+
+	return true;
 }
 
 //===============================================================
@@ -1192,12 +1234,16 @@ StepInstruction()
 					// Check whether processor is idle (low power version)
 					if(idle >= 2)
 					{
-						// Check whether one of the INT0-3 external signals is assert
+						// Check whether one of the INT0-3 external signals is asserted
 						if(GetIF() & (M_IF_INT0 | M_IF_INT1 | M_IF_INT2 | M_IF_INT3))
+						{
+							// wake-up CPU
 							idle = 0;
+						}
 					}
 					else
 					{
+						// wake-up CPU
 						idle = 0;
 					}
 				}
@@ -1402,9 +1448,11 @@ void
 CPU<CONFIG, DEBUG> ::
 IntStore(address_t ea, uint32_t value, bool interlocked)
 {
+	uint64_t addr = 4 * ea; // convert word effective address to a byte address
+
 	value = Host2LittleEndian(value);
 
-	if(unlikely(!PrWrite(ea, &value, sizeof(value), interlocked)))
+	if(unlikely(!PrWrite(addr, &value, sizeof(value), interlocked)))
 	{
 		throw BadMemoryAccessException<CONFIG, DEBUG>(ea);
 	}
@@ -1412,7 +1460,7 @@ IntStore(address_t ea, uint32_t value, bool interlocked)
 	// Memory access reporting
 	if(unlikely(requires_memory_access_reporting && memory_access_reporting_import))
 	{
-		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<uint64_t>::MAT_WRITE, MemoryAccessReporting<uint64_t>::MT_DATA, 4 * ea, 4);
+		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<uint64_t>::MAT_WRITE, MemoryAccessReporting<uint64_t>::MT_DATA, addr, 4);
 	}
 }
 
@@ -1423,8 +1471,9 @@ CPU<CONFIG, DEBUG> ::
 IntLoad(address_t ea, bool interlocked)
 {
 	uint32_t value;
+	uint64_t addr = 4 * ea; // convert word effective address to a byte address
 
-	if(unlikely(!PrRead(ea, &value, sizeof(value), interlocked)))
+	if(unlikely(!PrRead(addr, &value, sizeof(value), interlocked)))
 	{
 		throw BadMemoryAccessException<CONFIG, DEBUG>(ea);
 	}
@@ -1432,7 +1481,7 @@ IntLoad(address_t ea, bool interlocked)
 	// Memory access reporting
 	if(unlikely(requires_memory_access_reporting && memory_access_reporting_import))
 	{
-		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<uint64_t>::MAT_READ, MemoryAccessReporting<uint64_t>::MT_DATA, 4 * ea, 4);
+		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<uint64_t>::MAT_READ, MemoryAccessReporting<uint64_t>::MT_DATA, addr, 4);
 	}
 
 	return LittleEndian2Host(value);
@@ -1541,7 +1590,7 @@ Fetch(address_t addr)
 	}
 
 	// Fetch instruction from memory
-	if(unlikely(!PrRead(addr, &insn, sizeof(insn))))
+	if(unlikely(!PrRead(4 * addr, &insn, sizeof(insn))))
 	{
 		throw BadMemoryAccessException<CONFIG, DEBUG>(addr);
 	}
@@ -1591,6 +1640,16 @@ void
 CPU<CONFIG, DEBUG> ::
 SignalInterlock()
 {
+}
+
+template<class CONFIG, bool DEBUG>
+bool
+CPU<CONFIG, DEBUG> ::
+SWI()
+{
+	if(!os_import) return false;
+	os_import->ExecuteSystemCall();
+	return true;
 }
 
 template<class CONFIG, bool DEBUG>

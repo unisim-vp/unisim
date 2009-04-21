@@ -49,6 +49,7 @@
 #include "unisim/service/debug/symbol_table/symbol_table.hh"
 #include "unisim/service/loader/coff_loader/coff_loader.hh"
 #include "unisim/service/debug/symbol_table/symbol_table.hh"
+#include "unisim/service/os/ti_c_io/ti_c_io.hh"
 
 #ifdef WIN32
 
@@ -74,7 +75,8 @@ typedef unisim::component::tlm2::memory::ram::Memory<> MEMORY;
 typedef unisim::service::debug::gdb_server::GDBServer<uint64_t> GDB_SERVER;
 typedef unisim::service::debug::inline_debugger::InlineDebugger<uint64_t> INLINE_DEBUGGER;
 typedef unisim::service::time::sc_time::ScTime SC_TIME;
-typedef  unisim::service::time::host_time::HostTime HOST_TIME;
+typedef unisim::service::time::host_time::HostTime HOST_TIME;
+typedef unisim::service::os::ti_c_io::TI_C_IO<uint64_t> TI_C_IO;
 
 void SigIntHandler(int signum) {
 	cerr << "Interrupted by Ctrl-C or SIGINT signal" << endl;
@@ -203,6 +205,7 @@ int sc_main(int argc, char *argv[]) {
 	
 	LOADER *loader = 0;
 	SYMBOL_TABLE *symbol_table = 0;
+	TI_C_IO *ti_c_io = 0;
 	MEMORY *memory = new MEMORY("memory");
 	GDB_SERVER *gdb_server = (use_gdb_server || get_config) ? new GDB_SERVER("gdb-server") : 0;
 	INLINE_DEBUGGER *inline_debugger = (use_inline_debugger || get_config) ? new INLINE_DEBUGGER("inline-debugger") : 0;
@@ -211,12 +214,16 @@ int sc_main(int argc, char *argv[]) {
 	// Instanciate an COFF loader
 	loader = new LOADER("loader");
 	
-	// Instanciate a symbol table to be filled-in by the ELF32 loader
+	// Instanciate a symbol table to be filled-in by the COFF loader
 	symbol_table = new SYMBOL_TABLE("symbol_table");
+
+	ti_c_io = new TI_C_IO("ti-c-io");
 
 	// Connect the CPU to the memory
 	cpu->master_socket(memory->slave_sock);
 	cpu->memory_import >> memory->memory_export;
+	cpu->os_import >> ti_c_io->os_export;
+	ti_c_io->memory_injection_import >> cpu->memory_injection_export;
 
 	if(use_inline_debugger) {
 		cpu->debug_control_import >> inline_debugger->debug_control_export;
@@ -327,6 +334,7 @@ int sc_main(int argc, char *argv[]) {
 	if(inline_debugger) delete inline_debugger;
 	if(cpu) delete cpu;
 	if(time) delete time;
+	if(ti_c_io) delete ti_c_io;
 
 #ifdef WIN32
 	// releases the winsock2 resources

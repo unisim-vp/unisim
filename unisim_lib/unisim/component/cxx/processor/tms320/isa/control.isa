@@ -1101,7 +1101,10 @@ SWI.disasm = {
 }
 
 SWI.execute = {
-	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+	if(unlikely(!cpu.SWI()))
+	{
+		throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+	}
 }
 
 

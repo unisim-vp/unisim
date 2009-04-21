@@ -465,7 +465,7 @@ PrRead(address_t addr,
 	// 2 - create the transaction
 	transaction_type *trans;
 	trans = payload_fabric.allocate();
-	trans->set_address(4 * addr); // convert the word address into a byte address
+	trans->set_address(addr);
 	trans->set_data_length(size);
 	trans->set_data_ptr((unsigned char *) buffer);
 	trans->set_read();
@@ -511,7 +511,7 @@ PrWrite(address_t addr,
 	// 2 - create the transaction
 	transaction_type *trans;
 	trans = payload_fabric.allocate();
-	trans->set_address(4 * addr); // convert the word address into a byte address
+	trans->set_address(addr);
 	trans->set_data_length(size);
 	trans->set_data_ptr((unsigned char *)buffer);
 	trans->set_write();
