@@ -188,6 +188,7 @@ bgnd.disasm = {
 
 bgnd.execute = {
 	// TODO
+	cpu->BGND();
 }
 
 /* ********** Interrupt instructions ******** */

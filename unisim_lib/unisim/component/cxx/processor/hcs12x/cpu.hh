@@ -297,6 +297,14 @@ public:
 	 */
 	virtual void Wait() = 0;
 
+	/**
+	 * TODO: BGND Enter Background Debug Mode
+	 */
+	virtual void BGND() {
+		ReportTrap();
+		std::cerr << " last PC 0x" << std::hex << getLastPC() << std::dec << std::endl;
+	}
+
 	/*
 	 * The CPU issues a signal that tells the interrupt module to drive
 	 * the vector address of the highest priority pending exception onto the system address bus
