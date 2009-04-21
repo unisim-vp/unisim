@@ -64,6 +64,7 @@
 #include <unisim/component/cxx/processor/tesla/flags.hh>
 #include <unisim/component/cxx/processor/tesla/maskstack.hh>
 #include <unisim/component/cxx/processor/tesla/implicit_flow.hh>
+#include <unisim/component/cxx/processor/tesla/tesla_flow.hh>
 
 
 namespace unisim {
@@ -282,7 +283,7 @@ public:
 
 	// Control flow
 	void Meet(address_t addr);
-	void Join();
+	bool Join();
 	void End();
 	void Fence();
 	void Kill(std::bitset<CONFIG::WARP_SIZE> mask);

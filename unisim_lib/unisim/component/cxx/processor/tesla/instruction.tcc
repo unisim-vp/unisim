@@ -71,15 +71,26 @@ Instruction<CONFIG>::~Instruction()
 template <class CONFIG>
 void Instruction<CONFIG>::Read()
 {
-	operation->read(cpu, this);
+	// mask = current warp mask & predicate mask
+	mask = cpu->GetCurrentMask();
+	mask &= operation->dest->predMask(cpu);
+
+	if(operation->control->is_join && !cpu->Join())
+	{
+		// Do not execute if Join returns "not synched"
+		mask = 0;
+	}
+	else if(mask != 0)
+	{
+		operation->read(cpu, this);
+	}
 }
 
 template <class CONFIG>
 void Instruction<CONFIG>::Execute()
 {
-	operation->execute(cpu, this);
-	if(operation->control->is_join) {
-		cpu->Join();
+	if(mask != 0) {
+		operation->execute(cpu, this);
 	}
 	if(operation->control->is_end) {
 		cpu->End();
@@ -371,9 +382,6 @@ void Instruction<CONFIG>::SetPred(VectorFlags<CONFIG> flags) const
 template <class CONFIG>
 bitset<CONFIG::WARP_SIZE> Instruction<CONFIG>::Mask() const
 {
-	// mask = current warp mask & predicate mask
-	bitset<CONFIG::WARP_SIZE> mask = cpu->GetCurrentMask();
-	mask &= operation->dest->predMask(cpu);
 	return mask;
 }
 

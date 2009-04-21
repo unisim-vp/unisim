@@ -36,7 +36,7 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_SIMFLOAT_HH__
 
 #include <unisim/util/simfloat/floating.hh>
-#include <unisim/util/simfloat/host_floating.hh>
+//#include <unisim/util/simfloat/host_floating.hh>
 
 namespace unisim {
 namespace component {

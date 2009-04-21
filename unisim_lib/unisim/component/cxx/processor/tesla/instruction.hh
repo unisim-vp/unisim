@@ -172,7 +172,7 @@ private:
 
 	VectorRegister<CONFIG> temp[TempCount];
 	VectorFlags<CONFIG> flags;
-	// mask?
+	std::bitset<CONFIG::WARP_SIZE> mask;
 };
 
 #if 0

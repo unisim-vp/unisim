@@ -32,10 +32,9 @@
  * Authors: Sylvain Collange (sylvain.collange@univ-perp.fr)
  */
  
-#ifndef UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_IMPLICIT_FLOW_HH
-#define UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_IMPLICIT_FLOW_HH
+#ifndef UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_TESLA_FLOW_HH
+#define UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_TESLA_FLOW_HH
 
-//#include <unisim/component/cxx/processor/tesla/cpu.hh>
 
 namespace unisim {
 namespace component {
@@ -43,17 +42,43 @@ namespace cxx {
 namespace processor {
 namespace tesla {
 
+// From US Patent 7353369 B1
+
+
 template<class CONFIG> struct CPU;
 
 template<class CONFIG> struct Warp;
 
-
 template<class CONFIG>
-struct ImplicitFlow
+struct TeslaFlow
 {
+	enum StackTokenType
+	{
+		ID_SYNC = 0,
+		ID_DIVERGE = 1,
+		ID_CALL,
+		ID_BREAK,
+		//ID_BOTTOM	// Not in patent
+	};
+
+	// Store addresses relative to code segment base
+	struct StackToken
+	{
+		StackToken() {}
+		StackToken(std::bitset<CONFIG::WARP_SIZE> mask, StackTokenType id,
+			typename CONFIG::address_t address) :
+			mask(mask), id(id), address(address) {}
+
+		std::bitset<CONFIG::WARP_SIZE> mask;
+		StackTokenType id;
+		typename CONFIG::address_t address;
+	};
+
+	typedef std::stack<StackToken> stack_t;
 	typedef typename CONFIG::address_t address_t;
+	typedef bitset<CONFIG::WARP_SIZE> mask_t;
 	
-	ImplicitFlow(Warp<CONFIG> & warp);
+	TeslaFlow(Warp<CONFIG> & warp);
 	
 	void Reset(CPU<CONFIG> * cpu, std::bitset<CONFIG::WARP_SIZE> mask);
 	void Branch(address_t target, std::bitset<CONFIG::WARP_SIZE> mask);
@@ -66,31 +91,12 @@ struct ImplicitFlow
 	
 	
 private:
-	address_t GetLoop() const;
-	void PushLoop(address_t addr);
-	void PopLoop();
-	std::bitset<CONFIG::WARP_SIZE> PopMask();
-	void PushMask(std::bitset<CONFIG::WARP_SIZE> mask);
-	std::bitset<CONFIG::WARP_SIZE> GetNextMask();
-	address_t GetPC() const;
-	address_t GetNPC() const;
-	bool InConditional() const;
-	void PushJoin(address_t addr);
-	address_t PopJoin();
-	address_t GetJoin() const;
-
-
 	CPU<CONFIG> * cpu;
 	Warp<CONFIG> & warp;
 
-	bitset<CONFIG::WARP_SIZE> current_mask;
+	mask_t current_mask;
 	
-	std::stack<address_t> join_stack;
-	//std::stack<bitset<WARP_SIZE> > mask_stack;
-	MaskStack<CONFIG::WARP_SIZE, CONFIG::BRANCH_STACK_DEPTH> mask_stack;
-	std::stack<address_t> loop_stack;
-	
-
+	stack_t stack;
 };
 
 } // end of namespace tesla

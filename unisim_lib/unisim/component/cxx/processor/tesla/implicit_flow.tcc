@@ -173,8 +173,9 @@ void ImplicitFlow<CONFIG>::Meet(address_t addr)
 }
 
 template<class CONFIG>
-void ImplicitFlow<CONFIG>::Join()
+bool ImplicitFlow<CONFIG>::Join()
 {
+	return true;
 }
 
 template<class CONFIG>

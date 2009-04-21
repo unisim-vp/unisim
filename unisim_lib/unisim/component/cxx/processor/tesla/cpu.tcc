@@ -46,6 +46,7 @@
 #include <unisim/component/cxx/processor/tesla/memory.tcc>
 #include <unisim/component/cxx/processor/tesla/maskstack.tcc>
 #include <unisim/component/cxx/processor/tesla/implicit_flow.tcc>
+#include <unisim/component/cxx/processor/tesla/tesla_flow.tcc>
 
 //#include <unisim/component/cxx/cache/cache.tcc>
 //#include <unisim/component/cxx/tlb/tlb.tcc>
@@ -678,9 +679,9 @@ void CPU<CONFIG>::Meet(CPU<CONFIG>::address_t addr)
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Join()
+bool CPU<CONFIG>::Join()
 {
-	CurrentWarp().flow.Join();
+	return CurrentWarp().flow.Join();
 }
 
 template <class CONFIG>
