@@ -858,30 +858,38 @@ loop.execute = {
 	
 	switch (b765) {
 		case 0x00: /*DBEQ*/{
-			uint16_t val; 
+			
 			if (b210 < 0x4) {
+				uint8_t val; 
 				val = cpu->eblb->getter<uint8_t>(b210);
 				val = val - 1;
 				cpu->eblb->setter<uint8_t>(b210, val);
+				isBranch = (val == 0);
 			} else {
+				uint16_t val; 
 				val = cpu->eblb->getter<uint16_t>(b210);
 				val = val - 1;
 				cpu->eblb->setter<uint16_t>(b210, val);
+				isBranch = (val == 0);
 			}
-			isBranch = (val == 0);
+			
 		} break;
 		case 0x01: /*DBNE*/{
-			uint16_t val; 
+			
 			if (b210 < 0x4) {
+				uint8_t val; 
 				val = cpu->eblb->getter<uint8_t>(b210);
 				val = val - 1;
 				cpu->eblb->setter<uint8_t>(b210, val);
+				isBranch = (val != 0);
 			} else {
+				uint16_t val; 
 				val = cpu->eblb->getter<uint16_t>(b210);
 				val = val - 1;
 				cpu->eblb->setter<uint16_t>(b210, val);
+				isBranch = (val != 0);
 			}
-			isBranch = (val != 0);
+			
 			
 		} break;
 		case 0x02: /*TBEQ*/{
@@ -891,31 +899,39 @@ loop.execute = {
 			isBranch = (cpu->eblb->getter<uint8_t>(b210) != 0);
 		} break;
 		case 0x04: /*IBEQ*/{
-			uint16_t val; 
+			
 			if (b210 < 0x4) {
+				uint8_t val; 
 				val = cpu->eblb->getter<uint8_t>(b210);
 				val = val + 1;
 				cpu->eblb->setter<uint8_t>(b210, val);
+				isBranch = (val == 0);
 			} else {
+				uint16_t val; 
 				val = cpu->eblb->getter<uint16_t>(b210);
 				val = val + 1;
 				cpu->eblb->setter<uint16_t>(b210, val);
+				isBranch = (val == 0);
 			}
-			isBranch = (val == 0);
+			
 
 		} break;
 		case 0x05: /*IBNE*/{
-			uint16_t val; 
+			 
 			if (b210 < 0x4) {
+				uint8_t val;
 				val = cpu->eblb->getter<uint8_t>(b210);
 				val = val + 1;
 				cpu->eblb->setter<uint8_t>(b210, val);
+				isBranch = (val != 0);
 			} else {
+				uint16_t val;
 				val = cpu->eblb->getter<uint16_t>(b210);
 				val = val + 1;
 				cpu->eblb->setter<uint16_t>(b210, val);
+				isBranch = (val != 0);
 			}
-			isBranch = (val != 0);
+			
 
 		} break;
 		default: /*???*/;
@@ -923,8 +939,6 @@ loop.execute = {
 		
 	if (isBranch) {
 		cpu->setRegPC(branchAddr);
-
-	 	// TODO: Refill the instruction queue with three program words from the new address
 	}
 	
 }
