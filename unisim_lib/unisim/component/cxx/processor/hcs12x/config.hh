@@ -70,14 +70,14 @@ struct CONFIG {
 	static const bool DEBUG_EXCEPTION_ENABLE		= false;
 	static const bool REGISTERS_INFO				= false;
 
-	static const bool HAS_RESET						= false;
-	static const bool HAS_NON_MASKABLE_XIRQ_INTERRUPT	= false;
-	static const bool HAS_NON_MASKABLE_ACCESS_ERROR_INTERRUPT = false;
-	static const bool HAS_MASKABLE_IBIT_INTERRUPT	= false;
-	static const bool HAS_NONMASKABLE_SWI_INTERRUPT	= false;
-	static const bool HAS_TRAP_INTERRUPT			= false;
-	static const bool HAS_SYSCALL_INTERRUPT			= false;
-	static const bool HAS_SPURIOUS_INTERRUPT		= false;
+	static const bool HAS_RESET						= true;
+	static const bool HAS_NON_MASKABLE_XIRQ_INTERRUPT	= true;
+	static const bool HAS_NON_MASKABLE_ACCESS_ERROR_INTERRUPT = true;
+	static const bool HAS_MASKABLE_IBIT_INTERRUPT	= true;
+	static const bool HAS_NONMASKABLE_SWI_INTERRUPT	= true;
+	static const bool HAS_TRAP_INTERRUPT			= true;
+	static const bool HAS_SYSCALL_INTERRUPT			= true;
+	static const bool HAS_SPURIOUS_INTERRUPT		= true;
 
 	//===========================================================
 	//=            PWM external configuration and constants     =
