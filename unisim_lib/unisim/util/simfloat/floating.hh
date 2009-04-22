@@ -111,7 +111,7 @@ class Access : public Integer::Details::Access {
      public:
       StatusAndControlFlags()
          :  fAvoidInfty(false), fKeepNaNSign(false), fProduceDivNaNPositive(false),
-            fRoundToEven(false), fPositiveZeroMAdd(false), fUpApproximateInfty(false),
+            fRoundToEven(true), fPositiveZeroMAdd(false), fUpApproximateInfty(false),
             fUpApproximateInversionForNear(false), fChooseNaNAddBeforeMult(false),
             fConvertNaNNegative(false), fRefuseMinusZero(false), cContext(CMinDown),
             fInverseContext(false), rmRound(RMNearest), fKeepSignalingConversion(false),
