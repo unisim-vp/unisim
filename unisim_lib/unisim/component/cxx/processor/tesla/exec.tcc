@@ -623,24 +623,30 @@ VectorRegister<CONFIG> ConvertFloatInt(VectorRegister<CONFIG> const & a, uint32_
 		switch(cvt_type)
 		{
 		case CT_U32:
+			conv.setSize(32);
 			conv.setUnsigned();
 			conv.assign(a[i]);
 			break;
 		case CT_U16:
+			conv.setSize(16);
 			conv.setUnsigned();
 			conv.assign(a[i] & 0xffff);
 			break;
 		case CT_U8:
+			conv.setSize(8);
 			conv.setUnsigned();
 			conv.assign(a[i] & 0xff);
 			break;
 		case CT_S32:
+			conv.setSize(32);
 			conv.assign(int32_t(a[i]));
 			break;
 		case CT_S16:
+			conv.setSize(16);
 			conv.assign(int16_t(a[i] & 0xffff));
 			break;
 		case CT_S8:
+			conv.setSize(8);
 			conv.assign(int8_t(a[i] & 0xff));
 			break;
 		default:
@@ -777,7 +783,7 @@ void ConvertIntFloat(VectorRegister<CONFIG> & a, bool issigned, bool dest_32, Co
 		}
 		f.retrieveInteger(conv, flags);	// Rounded
 		if(dest_32) {
-			a[i] = conv.sresult();
+			a[i] = conv.queryValue();
 		}
 		else {
 			assert(false);	// TODO: implement... one day

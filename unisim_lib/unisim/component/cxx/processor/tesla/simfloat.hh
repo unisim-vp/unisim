@@ -30,13 +30,13 @@
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Sylvain Collange (sylvain.collange@univ-perp.fr)
+ *          Franck Vedrine (Franck.Vedrine@cea.fr)
  */
  
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_SIMFLOAT_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_SIMFLOAT_HH__
 
 #include <unisim/util/simfloat/floating.hh>
-//#include <unisim/util/simfloat/host_floating.hh>
 
 namespace unisim {
 namespace component {
@@ -44,7 +44,116 @@ namespace cxx {
 namespace processor {
 namespace tesla {
 
+class IntConversion {
+  public:
+   typedef unisim::util::simfloat::Numerics::Integer::TBigCellInt<unisim::util::simfloat::Numerics::Integer::Details::TCellIntegerTraits<64> > BigInt;
+
+  private:
+   BigInt biResult;
+   int uSize;
+   bool fUnsigned;
+   bool fNegative;
+
+  public:
+   IntConversion() : uSize(32), fUnsigned(true), fNegative(false) {}
+   IntConversion(const IntConversion& source)
+      :  biResult(source.biResult), uSize(source.uSize), fUnsigned(source.fUnsigned), fNegative(source.fNegative) {}
+
+   IntConversion& setSigned() { fUnsigned = false; return *this; }
+   IntConversion& setUnsigned() { fUnsigned = true; return *this; }
+   IntConversion& assignSigned(const BigInt& biResultSource)
+      {  assert(!fUnsigned);
+         biResult = biResultSource;
+         if (biResult.cbitArray(uSize-1)) {
+            fNegative = true;
+            biResult.neg().inc();
+         }
+         else
+            fNegative = false;
+         return *this;
+      }
+   IntConversion& assignUnsigned(const BigInt& biResultSource)
+      {  assert(fUnsigned);
+         biResult = biResultSource;
+         fNegative = false;
+         return *this;
+      }
+   IntConversion& assign(int uValue)
+      {  assert(!fUnsigned);
+         biResult = ((fNegative = (uValue < 0)) != false)
+            ? (unsigned int) uValue : (unsigned int) -uValue;
+         return *this;
+      }
+   IntConversion& assign(unsigned int uValue)
+      {  assert(fUnsigned); biResult = uValue; return *this; }
+
+   int querySize() const { return uSize; }
+   void setSize(int uBitSize) { assert(uBitSize <= 64); uSize = uBitSize; }
+   int queryMaxDigits() const { return fUnsigned ? uSize : (uSize-1); }
+   bool isUnsigned() const { return fUnsigned; }
+   bool isSigned() const   { return !fUnsigned; }
+   BigInt queryInt() const
+      {  assert(!fUnsigned);
+         BigInt biReturn = biResult;
+         if (fNegative)
+            biReturn.neg().inc();
+         return biReturn;
+      }
+   const BigInt& queryUnsignedInt() const { assert(fUnsigned); return biResult; }
+   unsigned int queryValue() const { return biResult.queryValue(); }
+   void opposite() { assert(!fUnsigned); fNegative = !fNegative; }
+   bool isPositive() const { return fUnsigned || !fNegative; }
+   bool isNegative() const { return !fUnsigned && fNegative; }
+   bool isDifferentZero() const { return !biResult.isZero(); }
+   int log_base_2() const { return biResult.log_base_2(); }
+   bool hasZero(int uDigits) const { return biResult.hasZero(uDigits); }
+   bool cbitArray(int uLocalIndex) const { return biResult.cbitArray(uLocalIndex); }
+   IntConversion& operator>>=(int uShift)
+      {  assert(isPositive()); biResult >>= uShift; return *this; }
+   IntConversion& operator<<=(int uShift)
+      {  /*assert(isPositive()); Required by TBuiltDouble::setInteger*/ biResult <<= uShift; return *this; }
+   IntConversion& operator&=(const IntConversion& icSource)
+      {  assert(isPositive() && icSource.isPositive());
+         biResult &= icSource.biResult;
+         return *this;
+      }
+   IntConversion& neg() { if (!fUnsigned) fNegative = !fNegative; biResult.neg(); return *this; }
+   IntConversion& inc() { biResult.inc(); return *this; }
+
+   IntConversion& operator=(const IntConversion& icSource)
+      {  biResult = icSource.biResult;
+         fUnsigned = icSource.fUnsigned;
+         fNegative = icSource.fNegative;
+         return *this;
+      }
+   typedef BigInt::BitArray BitArray;
+   BitArray bitArray(int uIndex) { assert(isPositive()); return biResult.bitArray(uIndex); }
+   void setBitArray(int uIndex, bool fValue)
+      {  assert(isPositive()); biResult.setBitArray(uIndex, fValue); }
+   void setTrueBitArray(int uIndex)
+      {  assert(isPositive()); biResult.setTrueBitArray(uIndex); }
+   void setFalseBitArray(int uIndex)
+      {  assert(isPositive()); biResult.setFalseBitArray(uIndex); }
+
+   void setMin()
+      {  biResult.clear();
+         if (!fUnsigned)
+            biResult.setTrueBitArray(uSize-1);
+      }
+   void setMax()
+      {  biResult.clear(); 
+         if (fUnsigned)
+            biResult.neg();
+         else
+            biResult.neg(uSize-1);
+      }
+   unsigned int& operator[](int uIndex) { return biResult[uIndex]; }
+   unsigned int operator[](int uIndex) const { return biResult[uIndex]; }
+};
+   
 struct BuiltFloatTraits : unisim::util::simfloat::Numerics::Double::BuiltDoubleTraits<23, 8> {
+   typedef tesla::IntConversion IntConversion;
+   typedef TFloatConversion<52,11> FloatConversion;
 };
 
 struct SoftHalfIEEE;
@@ -57,6 +166,18 @@ public:
 	SoftFloatIEEE() : inherited() {}
 	SoftFloatIEEE(const uint32_t& uFloat) { setChunk((void *) &uFloat, true /* little endian */); }
 
+   void setInteger(unsigned int value, StatusAndControlFlags& scfFlags)
+      {  IntConversion icConversion;
+         icConversion.setSize(32);
+         icConversion.setUnsigned();
+         icConversion.assignUnsigned(value);
+         inherited::setInteger(icConversion, scfFlags);
+      }
+
+   void setInteger(IntConversion const & icConversion, StatusAndControlFlags& scfFlags)
+      {
+         inherited::setInteger(icConversion, scfFlags);
+      }
 	SoftFloatIEEE& operator=(const SoftFloatIEEE& sfSource)
 	  {  return (SoftFloatIEEE&) inherited::operator=(sfSource); }
 	SoftFloatIEEE& assign(const SoftFloatIEEE& sfSource)
