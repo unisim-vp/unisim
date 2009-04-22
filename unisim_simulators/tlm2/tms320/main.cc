@@ -60,8 +60,10 @@
 
 #ifdef TMS320_DEBUG
 const bool CPU_DEBUG = true;
+const bool MEMORY_DEBUG = true;
 #else
 const bool CPU_DEBUG = false;
+const bool MEMORY_DEBUG = false;
 #endif
 
 // Front Side Bus template parameters
@@ -71,7 +73,7 @@ typedef unisim::component::cxx::processor::tms320::TMS320VC33_Config CPU_CONFIG;
 typedef unisim::component::tlm2::processor::tms320::TMS320<CPU_CONFIG, CPU_DEBUG> CPU;
 typedef unisim::service::loader::coff_loader::CoffLoader<uint64_t> LOADER;
 typedef unisim::service::debug::symbol_table::SymbolTable<uint64_t> SYMBOL_TABLE;
-typedef unisim::component::tlm2::memory::ram::Memory<> MEMORY;
+typedef unisim::component::tlm2::memory::ram::Memory<32, 1024 * 1024, MEMORY_DEBUG> MEMORY;
 typedef unisim::service::debug::gdb_server::GDBServer<uint64_t> GDB_SERVER;
 typedef unisim::service::debug::inline_debugger::InlineDebugger<uint64_t> INLINE_DEBUGGER;
 typedef unisim::service::time::sc_time::ScTime SC_TIME;
@@ -101,7 +103,8 @@ void help(char *prog_name) {
 	cerr << "            configures the simulator with the given xml configuration file" << endl << endl;
 	cerr << " --get-config <xml file>" << endl;
 	cerr << " -g <xml file>" << endl;
-	cerr << "            get the simulator default configuration xml file (you can use it to create your own configuration)" << endl << endl;
+	cerr << "            get the simulator default configuration xml file (you can use it to create your own configuration)" << endl;
+	cerr << "            This option can be combined with -c to get a new configuration file with existing variables from another file" << endl;
 	cerr << " --logger" << endl;
 	cerr << " -l" << endl;
 	cerr << "            activate the logger" << endl << endl;
@@ -255,19 +258,23 @@ int sc_main(int argc, char *argv[]) {
 	ServiceManager::Dump(cerr);
 #endif
 
-	if(get_variables)
+	if (set_config)
 	{
-		cerr << "getting variables" << endl;
-		ServiceManager::XmlfyVariables(get_variables_name);
+		ServiceManager::LoadXmlParameters(set_config_name);
+		cerr << "Parameters set using file \"" << set_config_name << "\"" << endl;
 	}
-	if(get_config)
+	if (get_config)
+	{
 		ServiceManager::XmlfyParameters(get_config_name);
-	if(!set_config) {
-		if(!get_config || !get_variables) help(argv[0]);
+		cerr << "Parameters saved on file \"" << get_config_name << "\"" << endl;
+		return 0;
+	}
+	if (!set_config)
+	{
+		if (!get_config) help(argv[0]);
 		return 0;
 	}
 
-	ServiceManager::LoadXmlParameters(set_config_name);
 	if(use_gdb_server) {
 		cerr << "gdb_server_port = " << gdb_server_port << endl;
 		VariableBase *var =	ServiceManager::GetParameter("gdb-server.tcp-port");
@@ -320,6 +327,12 @@ int sc_main(int argc, char *argv[]) {
 		cerr << "Insn cache hits: " << (uint64_t) *stat_insn_cache_hits << endl;
 		cerr << "Insn cache misses: " << (uint64_t) *stat_insn_cache_misses << endl;
 		cerr << "Insn cache miss rate: " << ((double) *stat_insn_cache_misses / (double) ((uint64_t) *stat_insn_cache_hits + (uint64_t) *stat_insn_cache_misses)) << endl;
+		
+		if(get_variables)
+		{
+			cerr << "getting variables" << endl;
+			ServiceManager::XmlfyVariables(get_variables_name);
+		}
 	}
 	else
 	{
