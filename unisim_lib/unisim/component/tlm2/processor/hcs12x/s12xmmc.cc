@@ -78,12 +78,12 @@ S12XMMC::S12XMMC(const sc_module_name& name, Object *parent) :
 
 	deviceMap[1].start_address = 0x0120;
 	deviceMap[1].end_address = 0x012F;
-
+/*
 	deviceMap[2].start_address = 0x02C0;
 	deviceMap[2].end_address = 0x02DF;
-
-	deviceMap[3].start_address = 0x0300;
-	deviceMap[3].end_address = 0x0327;
+*/
+	deviceMap[2].start_address = 0x0300;
+	deviceMap[2].end_address = 0x0327;
 
 /*
 	SC_HAS_PROCESS(S12XMMC);
