@@ -64,10 +64,16 @@ XmlfyVariables(const char *filename) {
 			<< filename << ")" << endl;
 		return false;
 	}
-	int rc = xmlTextWriterSetIndent(writer, 2);
+	int rc = xmlTextWriterSetIndent(writer, 1);
 	if(rc < 0) {
 		cerr << "Warning(ServiceManager::XmlfyVariables): "
 			<< "could not set indentation" << endl;
+	} else {
+		rc = xmlTextWriterSetIndentString(writer, (xmlChar*)"\t");
+		if (rc < 0) {
+			cerr << "Warning(ServiceManager::XmlfyVariables): "
+				<< "could not set indentation string" << endl;
+		}
 	}
 	rc = xmlTextWriterStartDocument(writer, NULL,
 			XML_ENCODING, NULL);
@@ -263,11 +269,18 @@ XmlfyParameters(const char *filename) {
 			<< filename << ")" << endl;
 		return false;
 	}
-	int rc = xmlTextWriterSetIndent(writer, 2);
+	int rc = xmlTextWriterSetIndent(writer, 1);
 	if(rc < 0) {
 		cerr << "Warning(ServiceManager::XmlfyParameters): "
 			<< "could not set indentation" << endl;
+	} else {
+		rc = xmlTextWriterSetIndentString(writer, (xmlChar*)"\t");
+		if (rc < 0) {
+			cerr << "Warning(ServiceManager::XmlfyParameters): "
+				<< "could not set indentation string" << endl;
+		}
 	}
+
 	rc = xmlTextWriterStartDocument(writer, NULL,
 			XML_ENCODING, NULL);
 	if(rc < 0) {
