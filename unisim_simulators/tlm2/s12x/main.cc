@@ -119,7 +119,7 @@ typedef unisim::component::tlm2::processor::hcs12x::HCS12X CPU;
 class InternalRouterConfig {
 public:
 	static const unsigned int INPUT_SOCKETS = 1;
-	static const unsigned int OUTPUT_SOCKETS = 5;
+	static const unsigned int OUTPUT_SOCKETS = 4;
 	static const unsigned int MAX_NUM_MAPPINGS = 256;
 	static const unsigned int BUSWIDTH = 32;
 	typedef tlm::tlm_base_protocol_types TYPES;
@@ -142,7 +142,7 @@ typedef unisim::component::tlm2::processor::hcs12x::S12XMMC MMC;
 
 typedef unisim::component::tlm2::processor::hcs12x::PWM<8> PWM;
 typedef unisim::component::tlm2::processor::hcs12x::ATD10B<16> ATD1;
-typedef unisim::component::tlm2::processor::hcs12x::ATD10B<8> ATD0;
+//typedef unisim::component::tlm2::processor::hcs12x::ATD10B<8> ATD0;
 
 using unisim::component::cxx::processor::hcs12x::ADDRESS;
 using namespace std;
@@ -350,7 +350,7 @@ int sc_main(int argc, char *argv[])
 	MMC *mmc = 	new MMC("mmc");
 
 	ATD1 *atd1 = new ATD1("ATD1");
-	ATD0 *atd0 = new ATD0("ATD0");
+//	ATD0 *atd0 = new ATD0("ATD0");
 
 	PWM *pwm = new PWM("PWM");
 
@@ -427,9 +427,11 @@ int sc_main(int argc, char *argv[])
 	(*atd1)["base-address"] = 0x0080;
 	(*atd1)["interrupt-offset"] = 0xD0;
 
+/*
 	(*atd0)["bus-cycle-time"] = fsb_cycle_time;
 	(*atd0)["base-address"] = 0x02C0;
 	(*atd0)["interrupt-offset"] = 0xD2;
+*/
 
 	//  -External Router
 	unisim::kernel::service::VariableBase *var = ServiceManager::GetParameter("external_router.cycle_time");
@@ -450,15 +452,15 @@ int sc_main(int argc, char *argv[])
 
 	var1 = ServiceManager::GetParameter("internal_router.mapping_1");
 	*var1 = "range_start=\"0x000120\" range_end=\"0x00012F\" output_port=\"1\""; // S12XINT
-
+/*
 	var1 = ServiceManager::GetParameter("internal_router.mapping_2");
 	*var1 = "range_start=\"0x0002C0\" range_end=\"0x0002DF\" output_port=\"2\""; // ATD10B8C
+*/
+	var1 = ServiceManager::GetParameter("internal_router.mapping_2");
+	*var1 = "range_start=\"0x000300\" range_end=\"0x000327\" output_port=\"2\""; // PWM - 37 bytes
 
 	var1 = ServiceManager::GetParameter("internal_router.mapping_3");
-	*var1 = "range_start=\"0x000300\" range_end=\"0x000327\" output_port=\"3\""; // PWM - 37 bytes
-
-	var1 = ServiceManager::GetParameter("internal_router.mapping_4");
-	*var1 = "range_start=\"0x000800\" range_end=\"0xFFFF\" output_port=\"4\""; // 64KByte - RAM-EEPROM-FLASH
+	*var1 = "range_start=\"0x000800\" range_end=\"0xFFFF\" output_port=\"3\""; // 64KByte - RAM-EEPROM-FLASH
 
 	var1 = ServiceManager::GetParameter("internal_router.verbose_all");
  	*var1 = false;
@@ -534,10 +536,10 @@ int sc_main(int argc, char *argv[])
 	int_gen->interrupt_request(s12xint->interrupt_request);
 	pwm->interrupt_request(s12xint->interrupt_request);
 	atd1->interrupt_request(s12xint->interrupt_request);
-	atd0->interrupt_request(s12xint->interrupt_request);
+//	atd0->interrupt_request(s12xint->interrupt_request);
 
 	rtbStub->atd1_master_sock(atd1->anx_socket);
-	rtbStub->atd0_master_sock(atd0->anx_socket);
+//	rtbStub->atd0_master_sock(atd0->anx_socket);
 	rtbStub->slave_sock(pwm->master_sock);
 
 	mmc->local_socket(internal_router->targ_socket[0]);
@@ -546,9 +548,9 @@ int sc_main(int argc, char *argv[])
 	// This order is mandatory (see the memoryMapping)
 	internal_router->init_socket[0](atd1->slave_socket);
 	internal_router->init_socket[1](s12xint->slave_socket);
-	internal_router->init_socket[2](atd0->slave_socket);
-	internal_router->init_socket[3](pwm->slave_socket);
-	internal_router->init_socket[4](internal_memory->slave_sock); // to connect to the MMC
+//	internal_router->init_socket[2](atd0->slave_socket);
+	internal_router->init_socket[2](pwm->slave_socket);
+	internal_router->init_socket[3](internal_memory->slave_sock); // to connect to the MMC
 
 	external_router->init_socket[0](external_memory->slave_sock);
 
@@ -691,7 +693,7 @@ int sc_main(int argc, char *argv[])
 	if (rtbStub) { delete rtbStub; rtbStub = NULL; }
 
 	if (atd1) { delete atd1; atd1 = NULL; }
-	if (atd0) { delete atd0; atd0 = NULL; }
+//	if (atd0) { delete atd0; atd0 = NULL; }
 	if (s12xint) { delete s12xint; s12xint = NULL; }
 	if (mmc) { delete mmc; mmc = NULL; }
 	if(external_memory) { delete external_memory; external_memory = NULL; }

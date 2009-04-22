@@ -56,7 +56,7 @@ using unisim::component::tlm2::processor::hcs12x::UNISIM_ATD_ProtocolTypes;
 using unisim::kernel::tlm2::PayloadFabric;
 
 #define ATD1_SIZE	16
-#define ATD0_SIZE	8
+//#define ATD0_SIZE	8
 #define PWM_SIZE	8
 
 
@@ -68,18 +68,18 @@ static const unsigned int RTB2UNISIM_BUS_WIDTH = 32; // in bits (unused in this 
 class RTBStub :
 	public sc_module,
 	virtual public tlm_fw_transport_if<UNISIM_PWM_ProtocolTypes<PWM_SIZE> >,
-	virtual public tlm_bw_transport_if<UNISIM_ATD_ProtocolTypes<ATD1_SIZE> >,
-	virtual public tlm_bw_transport_if<UNISIM_ATD_ProtocolTypes<ATD0_SIZE> >
+//	virtual public tlm_bw_transport_if<UNISIM_ATD_ProtocolTypes<ATD0_SIZE> >,
+	virtual public tlm_bw_transport_if<UNISIM_ATD_ProtocolTypes<ATD1_SIZE> >
 {
 public:
 	tlm_initiator_socket<RTB2UNISIM_BUS_WIDTH, UNISIM_ATD_ProtocolTypes<ATD1_SIZE> > atd1_master_sock;
-	tlm_initiator_socket<RTB2UNISIM_BUS_WIDTH, UNISIM_ATD_ProtocolTypes<ATD0_SIZE> > atd0_master_sock;
+//	tlm_initiator_socket<RTB2UNISIM_BUS_WIDTH, UNISIM_ATD_ProtocolTypes<ATD0_SIZE> > atd0_master_sock;
 
 	tlm_target_socket<UNISIM2RTB_BUS_WIDTH, UNISIM_PWM_ProtocolTypes<PWM_SIZE> > slave_sock;
 	tlm_quantumkeeper quantumkeeper;
 	peq_with_get<PWM_Payload<PWM_SIZE> > input_payload_queue;
 	PayloadFabric<ATD_Payload<ATD1_SIZE> > atd1_payload_fabric;
-	PayloadFabric<ATD_Payload<ATD0_SIZE> > atd0_payload_fabric;
+//	PayloadFabric<ATD_Payload<ATD0_SIZE> > atd0_payload_fabric;
 
 	clock_t	bus_cycle_time;
 	sc_time		cycle_time;
@@ -87,13 +87,13 @@ public:
 	RTBStub(const sc_module_name& name, clock_t	bus_cycle_time) :
 		sc_module(name),
 		atd1_master_sock("atd1_master_sock"),
-		atd0_master_sock("atd0_master_sock"),
+//		atd0_master_sock("atd0_master_sock"),
 		slave_sock("slave_sock"),
 		input_payload_queue("input_payload_queue"),
 		cycle_time(bus_cycle_time, SC_NS)
 	{
 		atd1_master_sock(*this);
-		atd0_master_sock(*this);
+//		atd0_master_sock(*this);
 		slave_sock(*this);
 
 		SC_HAS_PROCESS(RTBStub);
@@ -142,7 +142,7 @@ public:
 		}
 		return TLM_ACCEPTED;
 	}
-
+/*
 	virtual tlm_sync_enum nb_transport_bw( ATD_Payload<ATD0_SIZE>& payload, tlm_phase& phase, sc_core::sc_time& t)
 	{
 		if(phase == BEGIN_RESP)
@@ -152,7 +152,7 @@ public:
 		}
 		return TLM_ACCEPTED;
 	}
-
+*/
 	virtual void invalidate_direct_mem_ptr( sc_dt::uint64 start_range, sc_dt::uint64 end_range)
 	{
 	}
@@ -208,7 +208,7 @@ public:
 				break;
 		}
 	}
-
+/*
 	void Output_ATD0(double anValue[ATD0_SIZE])
 	{
 		tlm_phase phase = BEGIN_REQ;
@@ -241,7 +241,7 @@ public:
 				break;
 		}
 	}
-
+*/
 	void Process()
 	{
 		unsigned int num_cycles;
@@ -259,23 +259,23 @@ public:
 		while(1)
 		{
 			double atd1_anValue[ATD1_SIZE];
-			double atd0_anValue[ATD0_SIZE];
+//			double atd0_anValue[ATD0_SIZE];
 			bool pwmValue[PWM_SIZE];
 
 			for (int i=0; i<ATD1_SIZE; i++) {
 				atd1_anValue[i] = 5.0 * ((double) rand() / (double) RAND_MAX); // Compute a random value: 0 Volts <= anValue[i] < 5 Volts
 			}
-
+/*
 			for (int i=0; i<ATD0_SIZE; i++) {
 				atd0_anValue[i] = 5.0 * ((double) rand() / (double) RAND_MAX); // Compute a random value: 0 Volts <= anValue[i] < 5 Volts
 			}
-
+*/
 			cout << "RTb_STUB " << std::endl;
 
 			quantumkeeper.inc(delay);
 
 			Output_ATD1(atd1_anValue);
-			Output_ATD0(atd0_anValue);
+//			Output_ATD0(atd0_anValue);
 
 			Input(pwmValue);
 
