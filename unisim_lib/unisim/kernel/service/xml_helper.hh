@@ -50,11 +50,12 @@ public:
 	
 	bool XmlfyParameters(const char *filename);
 	bool LoadXmlParameters(const char *filename);
-	bool XmlfyVariables(const char *filename);
-	bool LoadXmlVariables(const char *filename,
-			bool params = true,
-			bool regs = true,
-			bool stats = true);
+	bool XmlfyRegisters(const char *filename);
+	bool LoadXmlRegisters(const char *filename);
+	bool XmlfyStatistics(const char *filename);
+	bool LoadXmlStatistics(const char *filename);
+	bool XmlfyVariables(const char *filename, VariableBase::Type type = VariableBase::VAR_VOID);
+	bool LoadXmlVariables(const char *filename, VariableBase::Type type = VariableBase::VAR_VOID);
 	
 private:
 	static const char *XML_ENCODING; 
@@ -65,7 +66,7 @@ private:
 	ServiceManager *manager;
 	
 	bool ProcessXmlVariableNode(xmlTextReaderPtr reader,
-			bool params, bool regs, bool stats);
+			VariableBase::Type type = VariableBase::VAR_VOID);
 	
 	class CurVariable {
 	public:

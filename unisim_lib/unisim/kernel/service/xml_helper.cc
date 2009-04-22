@@ -54,7 +54,7 @@ XMLHelper::
 
 bool
 XMLHelper::
-XmlfyVariables(const char *filename) {
+XmlfyVariables(const char *filename, VariableBase::Type type) {
 	xmlTextWriterPtr writer;
 
 	writer = xmlNewTextWriterFilename(filename, 0);
@@ -89,47 +89,16 @@ XmlfyVariables(const char *filename) {
 		return false;
 	}
 
-	
-	list<VariableBase *> param_list;
-	list<VariableBase *>::iterator param_iter;
-	ServiceManager::GetParameters(param_list);
-	for(param_iter = param_list.begin();
-			param_iter != param_list.end();
-			param_iter++) {
-		rc = XmlfyVariable(writer, *param_iter);
+	list<VariableBase *> var_list;
+	list<VariableBase *>::iterator var_iter;
+	ServiceManager::GetVariables(var_list, type);
+	for(var_iter = var_list.begin();
+			var_iter != var_list.end();
+			var_iter++) {
+		rc = XmlfyVariable(writer, *var_iter);
 		if(rc < 0) {
 			cerr << "Error(ServiceManager::XmlfyVariables): "
-				<< "error writing parameter variable"
-				<< endl;
-			return false;
-		}
-	}
-
-	list<VariableBase *> reg_list;
-	list<VariableBase *>::iterator reg_iter;
-	ServiceManager::GetRegisters(reg_list);
-	for(reg_iter = reg_list.begin();
-			reg_iter != reg_list.end();
-			reg_iter) {
-		rc = XmlfyVariable(writer, *reg_iter);
-		if(rc < 0) {
-			cerr << "Error(ServiceManager::XmlfyVariables): "
-				<< "error writing register variable"
-				<< endl;
-			return false;
-		}
-	}
-
-	list<VariableBase *> stat_list;
-	list<VariableBase *>::iterator stat_iter;
-	ServiceManager::GetStatistics(stat_list);
-	for(stat_iter = stat_list.begin();
-			stat_iter != stat_list.end();
-			stat_iter) {
-		rc = XmlfyVariable(writer, *stat_iter);
-		if(rc < 0) {
-			cerr << "Error(ServiceManager::XmlfyVariables): "
-				<< "error writing statistic variable"
+				<< "error writing variable"
 				<< endl;
 			return false;
 		}
@@ -260,78 +229,13 @@ XmlfyVariable(xmlTextWriterPtr writer,
 bool 
 XMLHelper::
 XmlfyParameters(const char *filename) {
-	xmlTextWriterPtr writer;
-
-	writer = xmlNewTextWriterFilename(filename, 0);
-	if(writer == NULL) {
-		cerr << "Error(ServiceManager::XmlfyParameters): "
-			<< "could not open output file (" 
-			<< filename << ")" << endl;
-		return false;
-	}
-	int rc = xmlTextWriterSetIndent(writer, 1);
-	if(rc < 0) {
-		cerr << "Warning(ServiceManager::XmlfyParameters): "
-			<< "could not set indentation" << endl;
-	} else {
-		rc = xmlTextWriterSetIndentString(writer, (xmlChar*)"\t");
-		if (rc < 0) {
-			cerr << "Warning(ServiceManager::XmlfyParameters): "
-				<< "could not set indentation string" << endl;
-		}
-	}
-
-	rc = xmlTextWriterStartDocument(writer, NULL,
-			XML_ENCODING, NULL);
-	if(rc < 0) {
-		cerr << "Error(ServiceManager::XmlfyParameters): "
-			<< "error starting the xml document" << endl;
-		return false;
-	}
-	rc = xmlTextWriterStartElement(writer, BAD_CAST "VARIABLES");
-	if(rc < 0) {
-		cerr << "Error(ServiceManager::XmlfyParameters): "
-			<< "error starting the xml document" << endl;
-		return false;
-	}
-
-	
-	list<VariableBase *> param_list;
-	list<VariableBase *>::iterator param_iter;
-	ServiceManager::GetParameters(param_list);
-	for(param_iter = param_list.begin();
-			param_iter != param_list.end();
-			param_iter++) {
-		rc = XmlfyVariable(writer, *param_iter);
-		if(rc < 0) {
-			cerr << "Error(ServiceManager::XmlfyParameters): "
-				<< "error writing parameter variable"
-				<< endl;
-			return false;
-		}
-	}
-	
-	rc = xmlTextWriterEndElement(writer);
-	if(rc < 0) {
-		cerr << "Error(ServiceManager::XmlfyParameters): "
-			<< "could not close the root element" << endl;
-		return false;
-	}
-	rc = xmlTextWriterEndDocument(writer);
-	if(rc < 0) {
-		cerr << "Warning(ServiceManager::XmlfyParameters): "
-			<< "could not correctly close the XMLWriter"
-			<< endl;
-	}
-	xmlFreeTextWriter(writer);
-
-	return true;
+	XmlfyVariables(filename, VariableBase::VAR_PARAMETER);
 }
 
 bool
 XMLHelper::
-LoadXmlVariables(const char *filename, bool params,
-		bool regs, bool stats) {
+LoadXmlVariables(const char *filename, VariableBase::Type type)
+{
 	xmlTextReaderPtr reader;
 	int ret;
 
@@ -347,7 +251,7 @@ LoadXmlVariables(const char *filename, bool params,
 		cur_var = NULL;
 		ret = xmlTextReaderRead(reader);
 		while (ret == 1) {
-			if(ProcessXmlVariableNode(reader, params, regs, stats))
+			if(ProcessXmlVariableNode(reader, type))
 				ret = xmlTextReaderRead(reader);
 			else
 				return false;
@@ -365,7 +269,7 @@ LoadXmlVariables(const char *filename, bool params,
 
 bool 
 XMLHelper::
-ProcessXmlVariableNode(xmlTextReaderPtr reader, bool params, bool regs, bool stats) { 
+ProcessXmlVariableNode(xmlTextReaderPtr reader, VariableBase::Type type) { 
 	const xmlChar *name, *value;
 
 	name = xmlTextReaderConstName(reader);
@@ -391,9 +295,10 @@ ProcessXmlVariableNode(xmlTextReaderPtr reader, bool params, bool regs, bool sta
 			cerr << "    value = " << cur_var->value.str() << endl;
 			// cerr << "    description = " << cur_var->description.str() << endl;
 			bool modify = 
-				(params && cur_var->type.str().compare("parameter") == 0) ||
-				(regs && cur_var->type.str().compare("register") == 0) ||
-				(stats && cur_var->type.str().compare("statistic") == 0);
+				(type == VariableBase::VAR_VOID) ||
+				(type == VariableBase::VAR_PARAMETER && cur_var->type.str().compare("parameter") == 0) ||
+				(type == VariableBase::VAR_REGISTER && cur_var->type.str().compare("register") == 0) ||
+				(type == VariableBase::VAR_STATISTIC && cur_var->type.str().compare("statistic") == 0);
 			if(modify) {
 				VariableBase *variable = ServiceManager::GetParameter(cur_var->name.str().c_str());
 				if(variable == NULL) {
@@ -493,8 +398,23 @@ ProcessXmlVariableNode(xmlTextReaderPtr reader, bool params, bool regs, bool sta
 
 bool 
 XMLHelper::
-LoadXmlParameters(const char *filename) {
-	LoadXmlVariables(filename, true, false, false);
+LoadXmlParameters(const char *filename)
+{
+	return LoadXmlVariables(filename, VariableBase::VAR_PARAMETER);
+}
+
+bool
+XMLHelper::
+LoadXmlRegisters(const char *filename) 
+{
+	return LoadXmlVariables(filename, VariableBase::VAR_REGISTER);
+}
+
+bool
+XMLHelper::
+LoadXmlStatistics(const char *filename)
+{
+	return LoadXmlVariables(filename, VariableBase::VAR_STATISTIC);
 }
 
 } // end of namespace service

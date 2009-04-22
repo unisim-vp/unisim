@@ -63,7 +63,7 @@ Memory(const sc_module_name& name, Object *parent) :
 	verbose(false),
 	cycle_time(0),
 	cycle_sctime(),
-	param_cycle_time("cycle-time", this, cycle_time),
+	param_cycle_time("cycle-time", this, cycle_time, "memory cycle time in picoseconds"),
 	param_verbose("verbose", this, verbose),
 	logger(*this)
 {
