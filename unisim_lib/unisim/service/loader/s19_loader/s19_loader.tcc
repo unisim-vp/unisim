@@ -48,10 +48,8 @@ template <class MEMORY_ADDR>
 S19_Loader<MEMORY_ADDR>::S19_Loader(char const *name, Object *parent) :
 	Object(name,parent),
 	Client<Memory<MEMORY_ADDR> >(name, parent),
-//	Client<SymbolTableBuild<MEMORY_ADDR> >(name, parent),
 	Service<Loader<MEMORY_ADDR> >(name, parent),
 	memory_import("memory-import", this),
-//	symbol_table_build_import("symbol-table-build-import", this),
 	loader_export("loader-export", this),
 	filename(),
 	entry_point(0),

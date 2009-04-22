@@ -166,6 +166,7 @@ template<class CONFIG, bool DEBUG = false>
 class CPU :
 	public Client<DebugControl<uint64_t> >,
 	public Client<MemoryAccessReporting<uint64_t> >,
+	public Client<SymbolTableLookup<uint64_t> >,
 	public Service<MemoryInjection<uint64_t> >,
 	public Service<MemoryAccessReportingControl>,
 	public Service<Disassembly<uint64_t> >,

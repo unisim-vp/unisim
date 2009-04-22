@@ -46,16 +46,14 @@ PMACLinuxKernelLoader::PMACLinuxKernelLoader(const char *name, Object *parent) :
 	memory_import("memory-import", this),
 	registers_import("registers-import", this),
 	pmac_bootx("pmac-bootx", this),
-	elf32_loader("elf32-loader", this),
-	symbol_table("symbol-table", this)
+	elf32_loader("elf32-loader", this)
 {
 	pmac_bootx.loader_import >> elf32_loader.loader_export;
 	pmac_bootx.memory_import >> memory_import;
 	pmac_bootx.registers_import >> registers_import;
 	elf32_loader.memory_import >> memory_import;
-	elf32_loader.symbol_table_build_import >> symbol_table.symbol_table_build_export;
 	loader_export >> pmac_bootx.loader_export;
-	symbol_table_lookup_export >> symbol_table.symbol_table_lookup_export;
+	symbol_table_lookup_export >> elf32_loader.symbol_table_lookup_export;
 }
 
 PMACLinuxKernelLoader::~PMACLinuxKernelLoader()

@@ -37,7 +37,6 @@
 
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/loader.hh>
-#include <unisim/service/interfaces/symbol_table_build.hh>
 
 #include <unisim/util/endian/endian.hh>
 #include <unisim/kernel/service/service.hh>
@@ -70,8 +69,6 @@ using unisim::kernel::service::Object;
 using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::Parameter;
-using unisim::util::debug::Symbol;
-using unisim::service::interfaces::SymbolTableBuild;
 using unisim::service::interfaces::Loader;
 
 #define S_RECORD_SIZE			515		// s2_record_size = 2+2+255*2 +1 ("+1" is for \0 char)
@@ -81,7 +78,6 @@ using unisim::service::interfaces::Loader;
 template <class MEMORY_ADDR>	
 class S19_Loader :
 	public Client<Memory<MEMORY_ADDR> >,
-//	public Client<SymbolTableBuild<MEMORY_ADDR> >, 
 	public Service<Loader<MEMORY_ADDR> >
 {
 public:
@@ -103,7 +99,6 @@ public:
 	enum {S0='0', S1='1', S2='2', S3='3', S5='5', S7='7', S8='8', S9='9'};
 
 	ServiceImport<Memory<MEMORY_ADDR> > memory_import;
-//	ServiceImport<SymbolTableBuild<MEMORY_ADDR> > symbol_table_build_import;
 	ServiceExport<Loader<MEMORY_ADDR> > loader_export;
 
 	virtual void OnDisconnect();

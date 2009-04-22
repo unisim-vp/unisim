@@ -71,13 +71,17 @@ public:
 	virtual bool ParseAoutHeader(const void *header);
 	virtual bool ParseSectionHeader(unsigned int section_num, const void *section_headers);
 
+	virtual unisim::util::endian::endian_type GetFileEndian() const;
 	virtual unsigned int GetMemoryAtomSize() const;
+	virtual void GetBasicTypeSizes(MEMORY_ADDR basic_type_sizes[NUM_BASIC_TYPES]) const;
 	virtual const char *GetArchitectureName() const;
 	virtual bool IsExecutable() const;
 	virtual unsigned int GetFileHeaderSize() const;
 	virtual unsigned int GetAoutHeaderSize() const;
 	virtual unsigned int GetSectionHeaderSize() const;
 	virtual unsigned int GetNumSections() const;
+	virtual long GetSymbolTableFilePtr() const;
+	virtual unsigned long GetNumSymbols() const;
 	virtual MEMORY_ADDR GetEntryPoint() const;
 	virtual MEMORY_ADDR GetTextBase() const;
 	virtual MEMORY_ADDR GetDataBase() const;

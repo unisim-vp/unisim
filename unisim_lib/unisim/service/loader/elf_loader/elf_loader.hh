@@ -37,12 +37,13 @@
 
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/loader.hh>
-#include <unisim/service/interfaces/symbol_table_build.hh>
+#include <unisim/service/interfaces/symbol_table_lookup.hh>
 
 #include <unisim/service/loader/elf_loader/elf32.h>
 #include <unisim/service/loader/elf_loader/elf64.h>
 
 #include <unisim/util/endian/endian.hh>
+#include <unisim/util/debug/symbol_table.hh>
 #include <unisim/kernel/service/service.hh>
 
 #include <iosfwd>
@@ -62,18 +63,19 @@ using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::Parameter;
 using unisim::util::debug::Symbol;
-using unisim::service::interfaces::SymbolTableBuild;
+using unisim::util::debug::SymbolTable;
+using unisim::service::interfaces::SymbolTableLookup;
 using unisim::service::interfaces::Loader;
 
 template <class MEMORY_ADDR, unsigned int ElfClass, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
 class ElfLoaderImpl :
 	public Client<Memory<MEMORY_ADDR> >,
 	public Service<Loader<MEMORY_ADDR> >,
-	public Client<SymbolTableBuild<MEMORY_ADDR> >
+	public Service<SymbolTableLookup<MEMORY_ADDR> >
 {
 public:
 	ServiceImport<Memory<MEMORY_ADDR> > memory_import;
-	ServiceImport<SymbolTableBuild<MEMORY_ADDR> > symbol_table_build_import;
+	ServiceExport<SymbolTableLookup<MEMORY_ADDR> > symbol_table_lookup_export;
 	ServiceExport<Loader<MEMORY_ADDR> > loader_export;
 
 	ElfLoaderImpl(const char *name, Object *parent = 0);
@@ -87,6 +89,12 @@ public:
 	virtual MEMORY_ADDR GetTopAddr() const;
 	virtual MEMORY_ADDR GetStackBase() const;
 
+	virtual const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbol(const char *name, MEMORY_ADDR addr, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
+	virtual const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByAddr(MEMORY_ADDR addr) const;
+	virtual const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByName(const char *name) const;
+	virtual const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByName(const char *name, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
+	virtual const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByAddr(MEMORY_ADDR addr, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
+
 private:
 	string filename;
 	MEMORY_ADDR entry_point;
@@ -94,6 +102,7 @@ private:
 	MEMORY_ADDR base_addr;
 	bool force_use_virtual_address;
 	bool dump_headers;
+	SymbolTable<MEMORY_ADDR> symbol_table;
 	Parameter<string> param_filename;
 	Parameter<MEMORY_ADDR> param_base_addr;
 	Parameter<bool> param_force_use_virtual_address;

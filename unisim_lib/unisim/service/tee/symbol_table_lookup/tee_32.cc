@@ -29,57 +29,23 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr),
+ * 		Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
- 
-#ifndef __UNISIM_UTIL_DEBUG_SYMBOL_HH__
-#define __UNISIM_UTIL_DEBUG_SYMBOL_HH__
 
-#include <string>
+#include <inttypes.h>
+#include "unisim/service/tee/symbol_table_lookup/tee.hh"
+#include "unisim/service/tee/symbol_table_lookup/tee.tcc"
 
 namespace unisim {
-namespace util {
-namespace debug {
+namespace service {
+namespace tee {
+namespace symbol_table_lookup {
 
-using std::string;
+template
+class Tee<uint32_t>;
 
-template <class T>
-class Symbol
-{
-public:
-	enum Type
-	{
-		SYM_NOTYPE = 0,
-		SYM_OBJECT = 1,
-		SYM_FUNC = 2,
-		SYM_SECTION = 3,
-		SYM_FILE = 4,
-		SYM_COMMON = 5,
-		SYM_TLS = 6,
-		SYM_NUM = 7,
-		SYM_LOOS = 8,
-		SYM_HIOS = 9,
-		SYM_LOPROC = 10,
-		SYM_HIPROC = 11
-	};
-
-	Symbol(const char *name, T addr, T size, typename unisim::util::debug::Symbol<T>::Type type, T memory_atom_size);
-
-	const char *GetName() const;
-	T GetAddress() const;
-	T GetSize() const;
-	typename unisim::util::debug::Symbol<T>::Type GetType() const;
-	string GetFriendlyName(T addr) const;
-private:
-	string name;
-	T addr;
-	T size;
-	typename unisim::util::debug::Symbol<T>::Type type;
-	T memory_atom_size;
-};
-
-} // end of namespace debug
-} // end of namespace util
+} // end of namespace symbol_table_lookup
+} // end of namespace tee
+} // end of namespace service
 } // end of namespace unisim
-
-#endif

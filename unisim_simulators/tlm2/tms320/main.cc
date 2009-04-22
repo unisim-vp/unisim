@@ -46,9 +46,7 @@
 #include "unisim/service/time/host_time/time.hh"
 #include "unisim/service/debug/gdb_server/gdb_server.hh"
 #include "unisim/service/debug/inline_debugger/inline_debugger.hh"
-#include "unisim/service/debug/symbol_table/symbol_table.hh"
 #include "unisim/service/loader/coff_loader/coff_loader.hh"
-#include "unisim/service/debug/symbol_table/symbol_table.hh"
 #include "unisim/service/os/ti_c_io/ti_c_io.hh"
 
 #ifdef WIN32
@@ -72,7 +70,6 @@ const uint32_t FSB_NUM_PROCS = 1;
 typedef unisim::component::cxx::processor::tms320::TMS320VC33_Config CPU_CONFIG;
 typedef unisim::component::tlm2::processor::tms320::TMS320<CPU_CONFIG, CPU_DEBUG> CPU;
 typedef unisim::service::loader::coff_loader::CoffLoader<uint64_t> LOADER;
-typedef unisim::service::debug::symbol_table::SymbolTable<uint64_t> SYMBOL_TABLE;
 typedef unisim::component::tlm2::memory::ram::Memory<32, 1024 * 1024, MEMORY_DEBUG> MEMORY;
 typedef unisim::service::debug::gdb_server::GDBServer<uint64_t> GDB_SERVER;
 typedef unisim::service::debug::inline_debugger::InlineDebugger<uint64_t> INLINE_DEBUGGER;
@@ -207,7 +204,6 @@ int sc_main(int argc, char *argv[]) {
 	HOST_TIME *host_time = new HOST_TIME("host-time");
 	
 	LOADER *loader = 0;
-	SYMBOL_TABLE *symbol_table = 0;
 	TI_C_IO *ti_c_io = 0;
 	MEMORY *memory = new MEMORY("memory");
 	GDB_SERVER *gdb_server = (use_gdb_server || get_config) ? new GDB_SERVER("gdb-server") : 0;
@@ -217,16 +213,15 @@ int sc_main(int argc, char *argv[]) {
 	// Instanciate an COFF loader
 	loader = new LOADER("loader");
 	
-	// Instanciate a symbol table to be filled-in by the COFF loader
-	symbol_table = new SYMBOL_TABLE("symbol_table");
-
 	ti_c_io = new TI_C_IO("ti-c-io");
 
 	// Connect the CPU to the memory
 	cpu->master_socket(memory->slave_sock);
 	cpu->memory_import >> memory->memory_export;
 	cpu->os_import >> ti_c_io->os_export;
+	ti_c_io->memory_import >> cpu->memory_export;
 	ti_c_io->memory_injection_import >> cpu->memory_injection_export;
+	ti_c_io->symbol_table_lookup_import >> loader->symbol_table_lookup_export;
 
 	if(use_inline_debugger) {
 		cpu->debug_control_import >> inline_debugger->debug_control_export;
@@ -245,13 +240,12 @@ int sc_main(int argc, char *argv[]) {
 
 	// Connect everything
 	loader->memory_import >> memory->memory_export;
-	loader->symbol_table_build_import >> symbol_table->symbol_table_build_export;
 
-	cpu->symbol_table_lookup_import >> symbol_table->symbol_table_lookup_export;
+	cpu->symbol_table_lookup_import >> loader->symbol_table_lookup_export;
 
 	if(use_inline_debugger) {
 		inline_debugger->symbol_table_lookup_import >> 
-			symbol_table->symbol_table_lookup_export;
+			loader->symbol_table_lookup_export;
 	}
 	
 #ifdef DEBUG_SERVICE
@@ -341,7 +335,6 @@ int sc_main(int argc, char *argv[]) {
 
 
 	if(loader) delete loader;
-	if(symbol_table) delete symbol_table;
 	if(memory) delete memory;
 	if(gdb_server) delete gdb_server;
 	if(inline_debugger) delete inline_debugger;

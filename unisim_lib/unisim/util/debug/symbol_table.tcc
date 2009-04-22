@@ -32,71 +32,24 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#ifndef __UNISIM_SERVICE_DEBUG_SYMBOL_TABLE_TCC__
-#define __UNISIM_SERVICE_DEBUG_SYMBOL_TABLE_TCC__
+#ifndef __UNISIM_UTIL_DEBUG_SYMBOL_TABLE_TCC__
+#define __UNISIM_UTIL_DEBUG_SYMBOL_TABLE_TCC__
 
 #include <iostream>
 #include <sstream>
+#include <string.h>
 
 namespace unisim {
-namespace service {
+namespace util {
 namespace debug {
-namespace symbol_table {
+
+using std::endl;
+using std::hex;
+using std::dec;
+using std::stringstream;
 
 template <class T>
-Symbol<T>::Symbol(const char *_name, T _addr, T _size, typename unisim::util::debug::Symbol<T>::Type _type) :
-	name(_name),
-	addr(_addr),
-	size(_size),
-	type(_type)
-{
-}
-
-template <class T>
-const char *Symbol<T>::GetName() const
-{
-	return name.c_str();
-}
-
-template <class T>
-T Symbol<T>::GetAddress() const
-{
-	return addr;
-}
-
-template <class T>
-T Symbol<T>::GetSize() const
-{
-	return size;
-}
-
-template <class T>
-typename unisim::util::debug::Symbol<T>::Type Symbol<T>::GetType() const
-{
-	return type;
-}
-
-template <class T>
-string Symbol<T>::GetFriendlyName(T addr) const
-{
-	stringstream sstr;
-	
-	sstr << name;
-	if(type == unisim::util::debug::Symbol<T>::SYM_FUNC)
-		sstr << "()";
-	if(addr != this->addr && (addr - this->addr) <= size)
-		sstr << "+0x" << std::hex << addr - this->addr << std::dec;
-	
-	return sstr.str();
-}
-
-template <class T>
-SymbolTable<T>::SymbolTable(const char *name, Object *parent) :
-	Object(name, parent),
-	Service<SymbolTableLookup<T> >(name, parent),
-	Service<SymbolTableBuild<T> >(name, parent),
-	symbol_table_lookup_export("symbol-table-lookup-export", this),
-	symbol_table_build_export("symbol-table-build-export", this)
+SymbolTable<T>::SymbolTable()
 {
 }
 
@@ -194,9 +147,9 @@ const typename unisim::util::debug::Symbol<T> *SymbolTable<T>::FindSymbolByAddr(
 }
 
 template <class T>
-void SymbolTable<T>::AddSymbol(const char *name, T addr, T size, typename unisim::util::debug::Symbol<T>::Type type)
+void SymbolTable<T>::AddSymbol(const char *name, T addr, T size, typename unisim::util::debug::Symbol<T>::Type type, T memory_atom_size)
 {
-	Symbol<T> *symbol = new Symbol<T>(name, addr, size, type);
+	Symbol<T> *symbol = new Symbol<T>(name, addr, size, type, memory_atom_size);
 	symbol_registries[type].push_back(symbol);
 }
 
@@ -215,14 +168,54 @@ template <class T>
 void SymbolTable<T>::Dump(ostream& os, typename unisim::util::debug::Symbol<T>::Type type) const
 {
 	typename list<Symbol<T> *>::const_iterator symbol_iter;
+	const char *type_name;
+
+	switch(type)
+	{
+		case unisim::util::debug::Symbol<T>::SYM_NOTYPE:
+			type_name = "no type";
+			break;
+		case unisim::util::debug::Symbol<T>::SYM_OBJECT:
+			type_name = "object";
+			break;
+		case unisim::util::debug::Symbol<T>::SYM_FUNC:
+			type_name = "function";
+			break;
+		case unisim::util::debug::Symbol<T>::SYM_SECTION:
+			type_name = "section";
+			break;
+		case unisim::util::debug::Symbol<T>::SYM_FILE:
+			type_name = "file";
+			break;
+		case unisim::util::debug::Symbol<T>::SYM_COMMON:
+			type_name = "common";
+			break;
+		case unisim::util::debug::Symbol<T>::SYM_TLS:
+			type_name = "tls";
+			break;
+		case unisim::util::debug::Symbol<T>::SYM_NUM:
+			type_name = "num";
+			break;
+		case unisim::util::debug::Symbol<T>::SYM_LOOS:
+			type_name = "loos";
+			break;
+		case unisim::util::debug::Symbol<T>::SYM_HIOS:
+			type_name = "hios";
+			break;
+		case unisim::util::debug::Symbol<T>::SYM_LOPROC:
+			type_name = "loproc";
+			break;
+		case unisim::util::debug::Symbol<T>::SYM_HIPROC:
+			type_name = "hiproc";
+			break;
+	}
 
 	for(symbol_iter = symbol_registries[type].begin(); symbol_iter != symbol_registries[type].end(); symbol_iter++)
 	{
-		os << std::hex << (*symbol_iter)->GetAddress() << std::dec << ": " << (*symbol_iter)->GetName() << " (" << (*symbol_iter)->GetSize() << " bytes)" << endl;
+		os << type_name << ":" << std::hex << (*symbol_iter)->GetAddress() << std::dec << ": " << (*symbol_iter)->GetName() << " (" << (*symbol_iter)->GetSize() << " bytes)" << endl;
 	}
 }
 
-} // end of namespace symbol_table
 } // end of namespace debug
 } // end of namespace service
 } // end of namespace unisim

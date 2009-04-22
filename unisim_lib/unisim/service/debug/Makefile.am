@@ -13,11 +13,6 @@ SUBDIRS += gdb_server
 INCLUDE_SUBDIRS += gdb_server
 endif
 
-if COND_symbol_table
-SUBDIRS += symbol_table
-INCLUDE_SUBDIRS += symbol_table
-endif
-
 dist_share_DATA = COPYING
 
 uninstall-hook:

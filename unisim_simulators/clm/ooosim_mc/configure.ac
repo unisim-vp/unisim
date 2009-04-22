@@ -110,7 +110,6 @@ UNISIM_LINK(unisim_service_debug_gdb_server)
 UNISIM_LINK(unisim_service_debug_inline_debugger)
 UNISIM_LINK(unisim_service_os_linux_os)
 UNISIM_LINK(unisim_service_loader_elf_loader)
-UNISIM_LINK(unisim_service_debug_symbol_table)
 UNISIM_LINK(unisim_service_loader_linux_loader)
 UNISIM_LINK(unisim_service_logger)
 

@@ -100,7 +100,6 @@ UNISIM_LINK(unisim_service_time_host_time)
 UNISIM_LINK(unisim_service_debug_gdb_server)
 UNISIM_LINK(unisim_service_debug_inline_debugger)
 UNISIM_LINK(unisim_service_loader_coff_loader)
-UNISIM_LINK(unisim_service_debug_symbol_table)
 UNISIM_LINK(unisim_service_os_ti_c_io)
 
 UNISIM_LINK(unisim_component_cxx_processor_tms320)

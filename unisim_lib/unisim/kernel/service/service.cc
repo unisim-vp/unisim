@@ -890,7 +890,7 @@ bool ServiceManager::Setup()
 			{
 				add_edge(peer_object->GetID(), (*object_iter).second->GetID(), dependency_graph);
 //				cerr << peer_object->GetID() << ":" << peer_object->GetName() << "->" 
-//					<< (*object_iter).second->GetName() << ":" << (*object_iter).second->GetName() << endl;
+//					<< (*object_iter).second->GetID() << ":" << (*object_iter).second->GetName() << endl;
 			}
 		}
 

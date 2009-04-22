@@ -29,8 +29,8 @@
 #  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
 #  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
-# Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
-#          Gilles Mouchard (gilles.mouchard@cea.fr)
+# Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+#          Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
 #
 
 AC_INIT([UNISIM Tee Service Library], [1.0])
@@ -45,6 +45,7 @@ AC_PROG_INSTALL
 AC_CONFIG_FILES([Makefile])
 
 UNISIM_CONFIG_SUBDIR(unisim-service-tee-memory_access_reporting, memory_access_reporting)
+UNISIM_CONFIG_SUBDIR(unisim-service-tee-symbol_table_lookup, symbol_table_lookup)
 
 # launch the generation of makefiles
 #   this must be the last command of configure.ac

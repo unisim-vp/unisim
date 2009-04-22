@@ -52,11 +52,8 @@
 #include "unisim/service/time/host_time/time.hh"
 #include "unisim/service/debug/gdb_server/gdb_server.hh"
 #include "unisim/service/debug/inline_debugger/inline_debugger.hh"
-#include "unisim/service/debug/symbol_table/symbol_table.hh"
 #include "unisim/service/loader/elf_loader/elf_loader.hh"
 #include "unisim/service/logger/logger_server.hh"
-
-#include "unisim/service/debug/symbol_table/symbol_table.hh"
 
 #ifdef WIN32
 
@@ -96,7 +93,6 @@ using unisim::util::endian::E_BIG_ENDIAN;
 using unisim::util::garbage_collector::GarbageCollector;
 using unisim::service::debug::gdb_server::GDBServer;
 using unisim::service::debug::inline_debugger::InlineDebugger;
-using unisim::service::debug::symbol_table::SymbolTable;
 using unisim::service::loader::elf_loader::Elf32Loader;
 using unisim::service::logger::LoggerServer;
 using unisim::service::time::sc_time::ScTime;
@@ -257,7 +253,6 @@ int main(int argc, char *argv[], char **envp) {
 		logger->time_import >> time->time_export;
 
 	Elf32Loader *elf32_loader = 0;
-	SymbolTable<CPU_ADDRESS_TYPE> *symbol_table = 0;
 	unisim::component::tlm::memory::ram::Memory<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE> *memory = 
 		new unisim::component::tlm::memory::ram::Memory<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE>("memory");
 	GDBServer<CPU_ADDRESS_TYPE> *gdb_server = 
@@ -282,8 +277,6 @@ int main(int argc, char *argv[], char **envp) {
 	// Instanciate an ELF32 loader
 	elf32_loader = new Elf32Loader("elf32-loader");
 	
-	// Instanciate a symbol table to be filled-in by the ELF32 loader
-	symbol_table = new SymbolTable<CPU_ADDRESS_TYPE>("symbol_table");
 
 	
 
@@ -326,14 +319,13 @@ int main(int argc, char *argv[], char **envp) {
 
 	// Connect everything
 	elf32_loader->memory_import >> memory->memory_export;
-	elf32_loader->symbol_table_build_import >> symbol_table->symbol_table_build_export;
 
-	cpu->symbol_table_lookup_import >> symbol_table->symbol_table_lookup_export;
+	cpu->symbol_table_lookup_import >> elf32_loader->symbol_table_lookup_export;
 	bridge->memory_import >> memory->memory_export;
 
 	if(use_inline_debugger) {
 		inline_debugger->symbol_table_lookup_import >> 
-			symbol_table->symbol_table_lookup_export;
+			elf32_loader->symbol_table_lookup_export;
 	}
 	
 	/* set the default names for the different message spies */
@@ -422,7 +414,6 @@ int main(int argc, char *argv[], char **envp) {
 
 
 	if(elf32_loader) delete elf32_loader;
-	if(symbol_table) delete symbol_table;
 	if(memory) delete memory;
 	if(gdb_server) delete gdb_server;
 	if(inline_debugger) delete inline_debugger;

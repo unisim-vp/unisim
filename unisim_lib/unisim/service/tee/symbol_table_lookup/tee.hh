@@ -29,57 +29,51 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr),
+ *          Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
- 
-#ifndef __UNISIM_SERVICE_LOADER_PMAC_LINUX_KERNEL_LOADER_PMAC_LINUX_KERNEL_LOADER_HH__
-#define __UNISIM_SERVICE_LOADER_PMAC_LINUX_KERNEL_LOADER_PMAC_LINUX_KERNEL_LOADER_HH__
 
-#include <unisim/service/loader/pmac_bootx/pmac_bootx.hh>
-#include <unisim/service/loader/elf_loader/elf_loader.hh>
+#ifndef __UNISIM_SERVICE_TEE_SYMBOL_TABLE_LOOKUP_TEE_HH__
+#define __UNISIM_SERVICE_TEE_SYMBOL_TABLE_LOOKUP_TEE_HH__
 
-#include <unisim/service/interfaces/loader.hh>
-#include <unisim/service/interfaces/symbol_table_lookup.hh>
-#include <unisim/service/interfaces/memory.hh>
-#include <unisim/service/interfaces/registers.hh>
-
-#include <unisim/kernel/service/service.hh>
+#include <inttypes.h>
+#include "unisim/kernel/service/service.hh"
+#include "unisim/service/interfaces/symbol_table_lookup.hh"
 
 namespace unisim {
 namespace service {
-namespace loader {
-namespace pmac_linux_kernel_loader {
-	
-using unisim::service::loader::elf_loader::Elf32Loader;
-using unisim::service::loader::pmac_bootx::PMACBootX;
-using unisim::kernel::service::Object;
-using unisim::kernel::service::ServiceImport;
-using unisim::kernel::service::ServiceExport;
+namespace tee {
+namespace symbol_table_lookup {
 
-using unisim::service::interfaces::Loader;
-using unisim::service::interfaces::Memory;
-using unisim::service::interfaces::Registers;
+using unisim::kernel::service::Object;
+using unisim::kernel::service::Service;
+using unisim::kernel::service::Client;
+using unisim::kernel::service::ServiceExport;
+using unisim::kernel::service::ServiceImport;
 using unisim::service::interfaces::SymbolTableLookup;
 
-class PMACLinuxKernelLoader : public Object
+template <class ADDRESS, unsigned int MAX_IMPORTS = 16>
+class Tee :
+	public Client<SymbolTableLookup<ADDRESS> >,
+	public Service<SymbolTableLookup<ADDRESS> >
 {
 public:
-	ServiceExport<Loader<uint32_t> > loader_export;
-	ServiceExport<SymbolTableLookup<uint32_t> > symbol_table_lookup_export;
-
-	ServiceImport<Memory<uint32_t> > memory_import;
-	ServiceImport<Registers> registers_import;
+	ServiceExport<SymbolTableLookup<ADDRESS> > in;
+	ServiceImport<SymbolTableLookup<ADDRESS> > *out[MAX_IMPORTS];
 	
-	PMACLinuxKernelLoader(const char *name, Object *parent = 0);
-	virtual ~PMACLinuxKernelLoader();
-private:
-	PMACBootX pmac_bootx;
-	Elf32Loader elf32_loader;
+	Tee(const char *name, Object *parent = 0);
+	virtual ~Tee();
+
+	virtual const typename unisim::util::debug::Symbol<ADDRESS> *FindSymbol(const char *name, ADDRESS addr, typename unisim::util::debug::Symbol<ADDRESS>::Type type) const;
+	virtual const typename unisim::util::debug::Symbol<ADDRESS> *FindSymbolByAddr(ADDRESS addr) const;
+	virtual const typename unisim::util::debug::Symbol<ADDRESS> *FindSymbolByName(const char *name) const;
+	virtual const typename unisim::util::debug::Symbol<ADDRESS> *FindSymbolByName(const char *name, typename unisim::util::debug::Symbol<ADDRESS>::Type type) const;
+	virtual const typename unisim::util::debug::Symbol<ADDRESS> *FindSymbolByAddr(ADDRESS addr, typename unisim::util::debug::Symbol<ADDRESS>::Type type) const;
 };
 
-} // end of namespace pmac_linux_kernel_loader
-} // end of namespace loader
+} // end of namespace symbol_table_lookup
+} // end of namespace tee
 } // end of namespace service
 } // end of namespace unisim
 
-#endif
+#endif // __UNISIM_SERVICE_TEE_SYMBOL_TABLE_LOOKUP_TEE_HH__

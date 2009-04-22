@@ -53,6 +53,7 @@
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger.hh"
 #include "unisim/service/interfaces/os.hh"
+#include "unisim/service/interfaces/memory.hh"
 #include "unisim/service/interfaces/memory_injection.hh"
 #include "unisim/service/interfaces/symbol_table_lookup.hh"
 
@@ -80,18 +81,21 @@ using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::logger::Logger;
+using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::MemoryInjection;
 using unisim::service::interfaces::SymbolTableLookup;
 
 template <class MEMORY_ADDR>
 class TI_C_IO :
 	public Service<unisim::service::interfaces::OS>,
+	public Client<Memory<MEMORY_ADDR> >,
 	public Client<MemoryInjection<MEMORY_ADDR> >,
 	public Client<SymbolTableLookup<MEMORY_ADDR> >
 {
 public:
 	ServiceExport<unisim::service::interfaces::OS> os_export;
 
+	ServiceImport<Memory<MEMORY_ADDR> > memory_import;
 	ServiceImport<MemoryInjection<MEMORY_ADDR> > memory_injection_import;
 	ServiceImport<SymbolTableLookup<MEMORY_ADDR> > symbol_table_lookup_import; 
 
@@ -145,12 +149,15 @@ private:
 	// the kernel logger
 	unisim::kernel::logger::Logger logger;
 
-	MEMORY_ADDR ciobuf_addr;   // _CIOBUF_ I/O buffer address
+	MEMORY_ADDR c_io_buffer_addr;   // _CIOBUF_ I/O buffer address
 	uint32_t max_buffer_byte_length;
 	uint8_t *buffer;
 
 	// TODO: remove these two parameters once we have symbol table support
-	Parameter<MEMORY_ADDR> param_ciobuf_addr; 
+	//Parameter<MEMORY_ADDR> param_ciobuf_addr; 
+
+	const char *C_IO_BUFFER_SYMBOL_NAME;
+	const char *C_IO_BREAKPOINT_SYMBOL_NAME;
 
 	bool verbose;
 	Parameter<bool> param_verbose;

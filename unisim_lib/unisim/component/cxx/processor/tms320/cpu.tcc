@@ -88,6 +88,7 @@ CPU(const char *name,
 	Object(name, parent),
 	Client<DebugControl<uint64_t> >(name, parent),
 	Client<MemoryAccessReporting<uint64_t> >(name, parent),
+	Client<SymbolTableLookup<uint64_t> >(name, parent),
 	Service<MemoryAccessReportingControl> (name, parent),
 	Service<Disassembly<uint64_t> >(name, parent),
 	Service<Registers>(name, parent),
@@ -617,10 +618,9 @@ CPU<CONFIG, DEBUG> ::
 GetObjectFriendlyName(address_t addr)
 {
 	stringstream sstr;
-	
-	const Symbol<uint64_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(addr, Symbol<uint64_t>::SYM_OBJECT) : 0;
+	const Symbol<uint64_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(4 * addr, Symbol<uint64_t>::SYM_OBJECT) : 0;
 	if(symbol)
-		sstr << symbol->GetFriendlyName(addr);
+		sstr << symbol->GetFriendlyName(4 * addr);
 	else
 		sstr << "@0x" << std::hex << addr << std::dec;
 
@@ -634,9 +634,9 @@ GetFunctionFriendlyName(address_t addr)
 {
 	stringstream sstr;
 	
-	const Symbol<uint64_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(addr, Symbol<uint64_t>::SYM_FUNC) : 0;
+	const Symbol<uint64_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(4 * addr, Symbol<uint64_t>::SYM_FUNC) : 0;
 	if(symbol)
-		sstr << symbol->GetFriendlyName(addr);
+		sstr << symbol->GetFriendlyName(4 * addr);
 	else
 		sstr << "@0x" << std::hex << addr << std::dec;
 

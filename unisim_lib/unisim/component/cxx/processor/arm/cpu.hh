@@ -67,7 +67,6 @@
 #include "unisim/service/interfaces/debug_control.hh"
 #include "unisim/service/interfaces/disassembly.hh"
 #include "unisim/service/interfaces/memory_access_reporting.hh"
-#include "unisim/service/interfaces/symbol_table_build.hh"
 #include "unisim/service/interfaces/symbol_table_lookup.hh"
 #include "unisim/service/interfaces/memory.hh"
 #include "unisim/service/interfaces/memory_injection.hh"

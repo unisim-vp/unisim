@@ -60,7 +60,7 @@ AC_CHECK_HEADERS([inttypes.h string.h],,\
                   AC_MSG_ERROR([Some standard headers are missing.]))
 
 ###### CHECK FOR STANDARD C++ HEADERS #########################################
-AC_CHECK_HEADERS([list iostream],,\
+AC_CHECK_HEADERS([list iostream iosfwd string sstream],,\
                   AC_MSG_ERROR([Some standard headers are missing.]))
 
 ###### CHECK FOR TARGET SPECIFIC HEADERS ######################

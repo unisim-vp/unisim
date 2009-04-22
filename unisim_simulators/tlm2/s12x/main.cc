@@ -38,7 +38,6 @@
 #include <unisim/service/loader/elf_loader/elf_loader.hh>
 #include <unisim/service/loader/elf_loader/elf_loader.tcc>
 #include <unisim/service/loader/s19_loader/s19_loader.hh>
-#include <unisim/service/debug/symbol_table/symbol_table.hh>
 #include <iostream>
 #include <getopt.h>
 #include <unisim/kernel/service/service.hh>
@@ -155,7 +154,6 @@ typedef unisim::service::loader::elf_loader::ElfLoaderImpl<uint64_t, ELFCLASS32,
 using unisim::component::tlm2::processor::hcs12x::INT_GEN;
 using unisim::component::tlm2::processor::hcs12x::XINT;
 using unisim::service::loader::s19_loader::S19_Loader;
-using unisim::service::debug::symbol_table::SymbolTable;
 using unisim::service::debug::gdb_server::GDBServer;
 using unisim::service::debug::inline_debugger::InlineDebugger;
 using unisim::service::logger::LoggerServer;
@@ -393,8 +391,6 @@ int sc_main(int argc, char *argv[])
 	}
 
 
-	//  - Symbol table
-	SymbolTable<SERVICE_ADDRESS_TYPE> *symbol_table = new SymbolTable<SERVICE_ADDRESS_TYPE>("symbol-table");
 	//  - GDB server
 	GDBServer<SERVICE_ADDRESS_TYPE> *gdb_server = use_gdb_server ? new GDBServer<SERVICE_ADDRESS_TYPE>("gdb-server") : 0;
 	//  - Inline debugger
@@ -592,18 +588,15 @@ int sc_main(int argc, char *argv[])
 
 	if (isS19) {
 		((S19_Loader<SERVICE_ADDRESS_TYPE> *) loaderS19)->memory_import >> mmc->memory_export;
-
-		if (symbol_filename != NULL) {
-			((Elf32Loader *) loaderELF)->symbol_table_build_import >> symbol_table->symbol_table_build_export;
-		}
 	} else {
 		((Elf32Loader *) loaderELF)->memory_import >> mmc->memory_export;
-		((Elf32Loader *) loaderELF)->symbol_table_build_import >> symbol_table->symbol_table_build_export;
 	}
 
 	if(inline_debugger)
 	{
-		inline_debugger->symbol_table_lookup_import >> symbol_table->symbol_table_lookup_export;
+		if (symbol_filename != NULL) {
+			inline_debugger->symbol_table_lookup_import >> ((Elf32Loader *) loaderELF)->symbol_table_lookup_export;
+		}
 	}
 
 	/* logger connections */
@@ -706,7 +699,6 @@ int sc_main(int argc, char *argv[])
 
 	if(gdb_server) { delete gdb_server; gdb_server = NULL; }
 	if(inline_debugger) { delete inline_debugger; inline_debugger = NULL; }
-	if (symbol_table) { delete symbol_table; symbol_table = NULL; }
 
 	if (host_time) { delete host_time; host_time = NULL; }
 	if(time) { delete time; time = NULL; }

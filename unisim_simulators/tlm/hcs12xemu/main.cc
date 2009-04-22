@@ -37,7 +37,6 @@
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
 #include <unisim/service/loader/elf_loader/elf_loader.hh>
 #include <unisim/service/loader/s19_loader/s19_loader.hh>
-#include <unisim/service/debug/symbol_table/symbol_table.hh>
 #include <iostream>
 #include <getopt.h>
 #include <unisim/kernel/service/service.hh>
@@ -107,7 +106,6 @@ using unisim::util::garbage_collector::GarbageCollector;
 
 using unisim::service::loader::elf_loader::Elf32Loader;
 using unisim::service::loader::s19_loader::S19_Loader;
-using unisim::service::debug::symbol_table::SymbolTable;
 using unisim::service::debug::gdb_server::GDBServer;
 using unisim::service::debug::inline_debugger::InlineDebugger;
 using unisim::service::logger::LoggerServer;
@@ -376,8 +374,6 @@ int sc_main(int argc, char *argv[])
 	}
 	
 		
-	//  - Symbol table
-	SymbolTable<CPU_ADDRESS_TYPE> *symbol_table = new SymbolTable<CPU_ADDRESS_TYPE>("symbol-table");
 	//  - GDB server
 	GDBServer<CPU_ADDRESS_TYPE> *gdb_server = use_gdb_server ? new GDBServer<CPU_ADDRESS_TYPE>("gdb-server") : 0;
 	//  - Inline debugger
@@ -513,19 +509,20 @@ int sc_main(int argc, char *argv[])
 
 	if (isS19) {
 		((S19_Loader<physical_address_t> *) loader)->memory_import >> memory->memory_export;
-		((S19_Loader<physical_address_t> *) loader)->symbol_table_build_import >> symbol_table->symbol_table_build_export;
 	} else {
 		((Elf32Loader *) loader)->memory_import >> memory->memory_export;
-		((Elf32Loader *) loader)->symbol_table_build_import >> symbol_table->symbol_table_build_export;
 	}
 	
-//	cpu->symbol_table_lookup_import >> symbol_table->symbol_table_lookup_export;
 	bus->memory_import >> fsb_to_mem_bridge->memory_export;
 	fsb_to_mem_bridge->memory_import >> memory->memory_export;
 
 	if(inline_debugger)
 	{
-		inline_debugger->symbol_table_lookup_import >> symbol_table->symbol_table_lookup_export;
+		if (isS19) {
+			inline_debugger->symbol_table_lookup_import >> ((S19_Loader<physical_address_t> *) loader)->symbol_table_lookup_export;
+		} else {
+			inline_debugger->symbol_table_lookup_import >> ((Elf32Loader *) loader)->symbol_table_lookup_export;
+		}
 	}
 	
 	/* logger connections */

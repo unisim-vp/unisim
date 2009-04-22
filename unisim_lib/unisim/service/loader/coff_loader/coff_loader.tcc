@@ -37,14 +37,9 @@
 
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <stdlib.h>
 #include <unisim/util/endian/endian.hh>
-
-#if defined(__GNUC__) && (__GNUC__ >= 3)
-#define PACKED __attribute__ ((packed))
-#else
-#define PACKED
-#endif
 
 #include <unisim/service/loader/coff_loader/ti/ti.hh>
 #include <unisim/service/loader/coff_loader/ti/ti.tcc>
@@ -54,14 +49,16 @@ namespace service {
 namespace loader {
 namespace coff_loader {
 
+using std::stringstream;
+
 template <class MEMORY_ADDR>
 CoffLoader<MEMORY_ADDR>::CoffLoader(const char *name, Object *parent)
 	: Object(name, parent)
 	, Client<Memory<MEMORY_ADDR> >(name, parent)
-	, Client<SymbolTableBuild<MEMORY_ADDR> >(name, parent)
+	, Service<SymbolTableLookup<MEMORY_ADDR> >(name, parent)
 	, Service<Loader<MEMORY_ADDR> >(name, parent)
 	, memory_import("memory-import", this)
-	, symbol_table_build_import("symbol-table-build-import", this)
+	, symbol_table_lookup_export("symbol-table-lookup-export", this)
 	, loader_export("loader-export", this)
 	, filename()
 	, entry_point(0)
@@ -73,7 +70,6 @@ CoffLoader<MEMORY_ADDR>::CoffLoader(const char *name, Object *parent)
 	, param_dump_headers("dump-headers", this, dump_headers)
 {
 	Object::SetupDependsOn(memory_import);
-	Object::SetupDependsOn(symbol_table_build_import);
 
 	unisim::service::loader::coff_loader::ti::FileHandler<MEMORY_ADDR>::Register(&file_handler_registry);
 }
@@ -120,19 +116,8 @@ bool CoffLoader<MEMORY_ADDR>::Write(MEMORY_ADDR addr, const void *content, uint3
 }
 
 template <class MEMORY_ADDR>
-void CoffLoader<MEMORY_ADDR>::AddSymbol(const char *name, MEMORY_ADDR addr, MEMORY_ADDR size, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type)
-{
-	if(symbol_table_build_import)
-	{
-		symbol_table_build_import->AddSymbol(name, addr, size, type);
-	}
-}
-
-template <class MEMORY_ADDR>
 bool CoffLoader<MEMORY_ADDR>::Setup()
 {
-	if(symbol_table_build_import) symbol_table_build_import->Reset();
-
 	bool success = true;
 
 	if(filename.empty()) return true;
@@ -197,6 +182,9 @@ bool CoffLoader<MEMORY_ADDR>::Setup()
 		delete file;
 		return false;
 	}
+
+	file_endianness = file->GetFileEndian();
+	file->GetBasicTypeSizes(basic_type_sizes);
 
 	if(dump_headers)
 	{
@@ -296,7 +284,7 @@ bool CoffLoader<MEMORY_ADDR>::Setup()
 
 			void *section_content = calloc(section_size, memory_atom_size);
 
-			if(is.seekg(section_content_file_ptr, ios::beg).fail() || is.read((char *) section_content, section_size * memory_atom_size).fail())
+			if(!section_content || is.seekg(section_content_file_ptr, ios::beg).fail() || is.read((char *) section_content, section_size * memory_atom_size).fail())
 			{
 				cerr << Object::GetName() << ": WARNING! Can't load section " << section_name << endl;
 				success = false;
@@ -321,11 +309,63 @@ bool CoffLoader<MEMORY_ADDR>::Setup()
 						break;
 				}
 
-				free(section_content);
+				if(section_content) free(section_content);
 			}
 		}
 	}
 
+	long symtab_file_ptr = file->GetSymbolTableFilePtr();
+	unsigned long num_symbols = file->GetNumSymbols();
+	if(symtab_file_ptr && num_symbols)
+	{
+		cerr << Object::GetName() << ": Loading symbol table" << endl;
+
+		unsigned long symtab_size = num_symbols * sizeof(syment);
+
+		void *symtab_content = calloc(symtab_size, 1);
+
+		if(!symtab_content || is.seekg(symtab_file_ptr, ios::beg).fail() || is.read((char *) symtab_content, symtab_size).fail())
+		{
+			cerr << Object::GetName() << ": WARNING! Can't load symbol table" << endl;
+			success = false;
+		}
+		else
+		{
+			cerr << Object::GetName() << ": Loading string table" << endl;
+			uint32_t string_table_size;
+
+			if(is.read((char *) &string_table_size, sizeof(string_table_size)).fail())
+			{
+				cerr << Object::GetName() << ": WARNING! Can't load string table" << endl;
+				success = false;
+			}
+			else
+			{
+				string_table_size = unisim::util::endian::Target2Host(file_endianness, string_table_size);
+				void *string_table = calloc(string_table_size, 1);
+
+				*(uint32_t *) string_table = 0;
+				if(!string_table || is.read((char *) string_table + 4, string_table_size - 4).fail())
+				{
+					cerr << Object::GetName() << ": WARNING! Can't load string table" << endl;
+					success = false;
+				}
+				else
+				{
+					// Parse the symbol table
+					if(!ParseSymbolTable((syment *) symtab_content, num_symbols, (const char *) string_table, string_table_size))
+					{
+						cerr << Object::GetName() << ": WARNING! symbol table is broken" << endl;
+						success = false;
+					}
+				}
+				if(string_table) free(string_table);
+			}
+		}
+
+		if(symtab_content) free(symtab_content);
+	}
+	
 	delete file;
 	return success;
 }
@@ -334,6 +374,394 @@ template <class MEMORY_ADDR>
 void CoffLoader<MEMORY_ADDR>::Reset()
 {
 	if(memory_import) memory_import->Reset();
+}
+
+template <class MEMORY_ADDR>
+const char *CoffLoader<MEMORY_ADDR>::GetStorageClassName(uint8_t sclass) const
+{
+	switch(sclass)
+	{
+		case C_NULL: return "C_NULL";
+		case C_AUTO: return "C_AUTO";
+		case C_EXT: return "C_EXT";
+		case C_STAT: return "C_STAT";
+		case C_REG: return "C_REG";
+		case C_EXTDEF: return "C_EXTDEF";
+		case C_LABEL: return "C_LABEL";
+		case C_ULABEL: return "C_ULABEL";
+		case C_MOS: return "C_MOS";
+		case C_ARG: return "C_ARG";
+		case C_STRTAG: return "C_STRTAG";
+		case C_MOU: return "C_MOU";
+		case C_UNTAG: return "C_UNTAG";
+		case C_TPDEF: return "C_TPDEF";
+		case C_USTATIC: return "C_USTATIC";
+		case C_ENTAG: return "C_ENTAG";
+		case C_MOE: return "C_MOE";
+		case C_REGPARM: return "C_REGPARM";
+		case C_FIELD: return "C_FIELD";
+		case C_AUTOARG: return "C_AUTOARG";
+		case C_LASTENT: return "C_LASTENT";
+		case C_BLOCK: return "C_BLOCK";
+		case C_FCN: return "C_FCN";
+		case C_EOS: return "C_EOS";
+		case C_FILE: return "C_FILE";
+		case C_LINE: return "C_LINE";
+		case C_ALIAS: return "C_ALIAS";
+		case C_HIDDEN: return "C_HIDDEN";
+		case C_EFCN: return "C_EFCN";
+	}
+	return "?";
+}
+
+template <class MEMORY_ADDR>
+const char *CoffLoader<MEMORY_ADDR>::GetStorageClassFriendlyName(uint8_t sclass) const
+{
+	switch(sclass)
+	{
+		case C_NULL: return "no storage class";
+		case C_AUTO: return "automatic variable";
+		case C_EXT: return "external symbol";
+		case C_STAT: return "static";
+		case C_REG: return "register variable";
+		case C_EXTDEF: return "external definition";
+		case C_LABEL: return "label";
+		case C_ULABEL: return "undefined label";
+		case C_MOS: return "member of structure";
+		case C_ARG: return "function argument";
+		case C_STRTAG: return "structure tag";
+		case C_MOU: return "member of union";
+		case C_UNTAG: return "union tag";
+		case C_TPDEF: return "type definition";
+		case C_USTATIC: return "undefined static";
+		case C_ENTAG: return "enumeration tag";
+		case C_MOE: return "member of enumeration";
+		case C_REGPARM: return "register parameter";
+		case C_FIELD: return "bit field";
+		case C_AUTOARG: return "auto argument";
+		case C_LASTENT: return "dummy entry (end of block)";
+		case C_BLOCK: return "beginning or end of a block: \".bb\" or \".eb\"";
+		case C_FCN: return "beginning or end of a function: \".bf\" or \".ef\"";
+		case C_EOS: return "end of structure";
+		case C_FILE: return "file name";
+		case C_LINE: return "line # reformatted as symbol table entry";
+		case C_ALIAS: return "duplicate tag";
+		case C_HIDDEN: return "ext symbol in dmert public lib";
+		case C_EFCN: return "physical end of function";
+	}
+	return "?";
+}
+
+template <class MEMORY_ADDR>
+const char *CoffLoader<MEMORY_ADDR>::GetBasicTypeName(uint16_t basic_type) const
+{
+	switch(basic_type)
+	{
+		case T_NULL: return "T_NULL";
+		case T_VOID: return "T_VOID";
+		case T_CHAR: return "T_CHAR";
+		case T_SHORT: return "T_SHORT";
+		case T_INT: return "T_INT";
+		case T_LONG: return "T_LONG";
+		case T_FLOAT: return "T_FLOAT";
+		case T_DOUBLE: return "T_DOUBLE";
+		case T_STRUCT: return "T_STRUCT";
+		case T_UNION: return "T_UNION";
+		case T_ENUM: return "T_ENUM";
+		case T_MOE: return "T_NOE";
+		case T_UCHAR: return "T_UCHAR";
+		case T_USHORT: return "T_USHORT";
+		case T_UINT: return "T_UINT";
+		case T_ULONG: return "T_ULONG";
+	}
+	return "?";
+}
+
+template <class MEMORY_ADDR>
+const char *CoffLoader<MEMORY_ADDR>::GetBasicTypeFriendlyName(uint16_t basic_type) const
+{
+	switch(basic_type)
+	{
+		case T_VOID: return "void";
+		case T_CHAR: return "char";
+		case T_SHORT: return "short";
+		case T_INT: return "int";
+		case T_LONG: return "long";
+		case T_FLOAT: return "float";
+		case T_DOUBLE: return "double";
+		case T_STRUCT: return "struct";
+		case T_UNION: return "union";
+		case T_ENUM: return "enum";
+		case T_MOE: return "enum member";
+		case T_UCHAR: return "unsigned char";
+		case T_USHORT: return "unsigned short";
+		case T_UINT: return "unsigned int";
+		case T_ULONG: return "unsigned long";
+	}
+	return "?";
+}
+
+template <class MEMORY_ADDR>
+const char *CoffLoader<MEMORY_ADDR>::GetDerivedTypeName(uint16_t derived_type) const
+{
+	switch(derived_type)
+	{
+		case DT_NON: return "DT_NON";
+		case DT_PTR: return "DT_PTR";
+		case DT_FCN: return "DT_FCN";
+		case DT_ARY: return "DT_ARY";
+	}
+	return "?";
+}
+
+template <class MEMORY_ADDR>
+const char *CoffLoader<MEMORY_ADDR>::GetDerivedTypeFriendlyName(uint16_t derived_type) const
+{
+	switch(derived_type)
+	{
+		case DT_PTR: return "*";
+		case DT_FCN: return "()";
+		case DT_ARY: return "[]";
+	}
+	return "?";
+}
+
+template <class MEMORY_ADDR>
+string CoffLoader<MEMORY_ADDR>::GetTypeName(uint16_t type) const
+{
+	stringstream sstr;
+
+	uint16_t ty = type;
+
+	uint16_t basic_type = ty & ((1 << N_BTSZ) - 1);
+	ty >>= N_BTSZ;
+
+	sstr << GetBasicTypeName(basic_type);
+
+	unsigned int i;
+	for(i = 0; i < 6; i++, ty >>= N_DTSZ)
+	{
+		uint16_t derived_type = ty & ((1 << N_DTSZ) - 1);
+		//if(derived_type == DT_NON) break;
+		sstr << " " << GetDerivedTypeName(derived_type);
+	}
+
+	sstr << " => ";
+	for(ty = type >> N_BTSZ, i = 0; i < 6; i++, ty >>= N_DTSZ)
+	{
+		uint16_t derived_type = ty & ((1 << N_DTSZ) - 1);
+		//if(derived_type == DT_NON) break;
+		sstr << GetDerivedTypeFriendlyName(derived_type);
+	}
+
+	sstr << " " << GetBasicTypeFriendlyName(basic_type);
+
+	return sstr.str();
+}
+
+template <class MEMORY_ADDR>
+bool CoffLoader<MEMORY_ADDR>::ParseSymbolTable(syment *symtab, unsigned long nsyms, const char *strtab, uint32_t strtab_size)
+{
+	unsigned long i;
+	int numaux = 0;
+	char name_buf[E_SYMNMLEN + 1];
+	syment *coff_sym;
+	const char *sym_name = 0;
+
+	for(i = 0; i < nsyms; i++)
+	{
+		if(dump_headers)
+		{
+			cerr << "[" << i << "] ";
+		}
+
+		if(numaux)
+		{
+			uint8_t sclass = coff_sym->e_sclass;
+			uint16_t basic_type = coff_sym->e_type & ((1 << N_BTSZ) - 1);
+			uint16_t derived_type1 = (coff_sym->e_type >> N_BTSZ) & ((1 << N_DTSZ) - 1);
+
+			if((sclass == C_EXT || sclass == C_STAT) && derived_type1 == DT_FCN && basic_type != T_MOE)
+			{
+				fcn_auxent *fcn_aux = (fcn_auxent *) &symtab[i];
+
+				fcn_aux->x_tagndx = unisim::util::endian::Target2Host(file_endianness, fcn_aux->x_tagndx);
+				fcn_aux->x_fsize = unisim::util::endian::Target2Host(file_endianness, fcn_aux->x_fsize);
+				fcn_aux->x_lnnoptr = unisim::util::endian::Target2Host(file_endianness, fcn_aux->x_lnnoptr);
+				fcn_aux->x_endndx = unisim::util::endian::Target2Host(file_endianness, fcn_aux->x_endndx);
+
+				if(dump_headers)
+				{
+					cerr << "FCNAUX: ";
+					cerr << "size=" << fcn_aux->x_fsize << ",linenoptr=" << fcn_aux->x_lnnoptr << ", nextentry_index=" << fcn_aux->x_endndx << endl;
+				}
+
+				symbol_table.AddSymbol(sym_name, coff_sym->e_value * memory_atom_size, fcn_aux->x_fsize * memory_atom_size, unisim::util::debug::Symbol<MEMORY_ADDR>::SYM_FUNC);
+			}
+			else if(sclass == C_STAT && derived_type1 == DT_NON && basic_type == T_NULL)
+			{
+				scn_auxent *scn_aux = (scn_auxent *) &symtab[i];
+
+				scn_aux->x_scnlen = unisim::util::endian::Target2Host(file_endianness, scn_aux->x_scnlen);
+				scn_aux->x_nreloc = unisim::util::endian::Target2Host(file_endianness, scn_aux->x_nreloc);
+				scn_aux->x_nlnno = unisim::util::endian::Target2Host(file_endianness, scn_aux->x_nlnno);
+
+				if(dump_headers)
+				{
+					cerr << "SCNAUX: ";
+					cerr << "length=" << scn_aux->x_scnlen << endl;
+				}
+
+				symbol_table.AddSymbol(sym_name, coff_sym->e_value * memory_atom_size, scn_aux->x_scnlen * memory_atom_size, unisim::util::debug::Symbol<MEMORY_ADDR>::SYM_SECTION);
+			}
+			else if(sclass == C_FILE && derived_type1 == DT_NON && basic_type == T_NULL)
+			{
+				file_auxent *file_aux = (file_auxent *) &symtab[i];
+
+				const char *filename;
+				char filename_buf[E_FILNMLEN + 1];
+
+				if(file_aux->x.x.x_zeroes == 0)
+				{
+					// file name is in string table
+					file_aux->x.x.x_offset = unisim::util::endian::Target2Host(file_endianness, file_aux->x.x.x_offset);
+					uint32_t strtab_ofs = file_aux->x.x.x_offset;
+					filename = strtab + strtab_ofs;
+				}
+				else
+				{
+					memcpy(filename_buf, file_aux->x.x_fname, E_FILNMLEN);
+					filename_buf[E_FILNMLEN] = 0;
+					filename = filename_buf;
+				}
+
+				if(dump_headers)
+				{
+					cerr << "FILAUX: ";
+					cerr << "filename=" << filename << endl;
+				}
+
+				symbol_table.AddSymbol(filename, coff_sym->e_value * memory_atom_size, 0, unisim::util::debug::Symbol<MEMORY_ADDR>::SYM_FILE);
+			}
+			else if((sclass == C_EXT || sclass == C_STAT) && derived_type1 == DT_ARY)
+			{
+				ary_auxent *ary_aux = (ary_auxent *) &symtab[i];
+
+				ary_aux->x_tagndx = unisim::util::endian::Target2Host(file_endianness, ary_aux->x_tagndx);
+				ary_aux->x_lnno = unisim::util::endian::Target2Host(file_endianness, ary_aux->x_lnno);
+				ary_aux->x_arylen = unisim::util::endian::Target2Host(file_endianness, ary_aux->x_arylen);
+
+				unsigned int i;
+				for(i = 0; i < E_DIMNUM; i++)
+				{
+					ary_aux->x_dim[i] = unisim::util::endian::Target2Host(file_endianness, ary_aux->x_dim[i]);
+				}
+
+				if(dump_headers)
+				{
+					cerr << "ARYAUX: ";
+					cerr << "length=" << ary_aux->x_arylen << ", dim1=" << ary_aux->x_dim[0] << endl;
+				}
+
+				symbol_table.AddSymbol(sym_name, coff_sym->e_value * memory_atom_size, basic_type_sizes[basic_type] * ary_aux->x_arylen * memory_atom_size, unisim::util::debug::Symbol<MEMORY_ADDR>::SYM_OBJECT);
+			}
+			else
+			{
+				if(dump_headers)
+				{
+					cerr << "AUX: <?>" << endl;
+				}
+			}
+
+			numaux--;
+		}
+		else
+		{
+			coff_sym = &symtab[i];
+
+			if(coff_sym->e.e.e_zeroes == 0)
+			{
+				// name is in string table
+				coff_sym->e.e.e_offset = unisim::util::endian::Target2Host(file_endianness, coff_sym->e.e.e_offset);
+				uint32_t strtab_ofs = coff_sym->e.e.e_offset;
+				sym_name = strtab + strtab_ofs;
+			}
+			else
+			{
+				memcpy(name_buf, coff_sym->e.e_name, E_SYMNMLEN);
+				name_buf[E_SYMNMLEN] = 0;
+				sym_name = name_buf;
+			}
+
+			coff_sym->e_value = unisim::util::endian::Target2Host(file_endianness, coff_sym->e_value);
+			coff_sym->e_scnum = unisim::util::endian::Target2Host(file_endianness, coff_sym->e_scnum);
+			coff_sym->e_sclass = unisim::util::endian::Target2Host(file_endianness, coff_sym->e_sclass);
+			coff_sym->e_type = unisim::util::endian::Target2Host(file_endianness, coff_sym->e_type);
+			coff_sym->e_numaux = unisim::util::endian::Target2Host(file_endianness, coff_sym->e_numaux);
+
+			uint8_t sclass = coff_sym->e_sclass;
+			uint16_t type = coff_sym->e_type;
+			uint16_t basic_type = type & ((1 << N_BTSZ) - 1);
+			uint16_t derived_type1 = (type >> N_BTSZ) & ((1 << N_DTSZ) - 1);
+			numaux = coff_sym->e_numaux;
+
+			if(dump_headers)
+			{
+				cerr << "SYMBOL: ";
+				cerr << "name=\"" << sym_name << "\", value=0x" << hex << coff_sym->e_value << dec;
+				cerr << ", storage class=" << GetStorageClassName(sclass) << " (" << GetStorageClassFriendlyName(sclass) << ")";
+				cerr << ", type=" << GetTypeName(type);
+
+				if(coff_sym->e_numaux)
+				{
+					cerr << ", " << (unsigned int) coff_sym->e_numaux << " aux entries follow";
+				}
+
+				cerr << endl;
+			}
+
+			if(sclass == C_EXT && derived_type1 == DT_NON)
+			{
+				symbol_table.AddSymbol(sym_name, coff_sym->e_value * memory_atom_size, basic_type_sizes[basic_type] * memory_atom_size, unisim::util::debug::Symbol<MEMORY_ADDR>::SYM_OBJECT);
+			}
+			else if(sclass == C_FILE && !numaux)
+			{
+				symbol_table.AddSymbol(sym_name, 0, 0, unisim::util::debug::Symbol<MEMORY_ADDR>::SYM_FILE);
+			}
+		}
+	}
+
+	return true;
+}
+
+template <class MEMORY_ADDR>
+const typename unisim::util::debug::Symbol<MEMORY_ADDR> *CoffLoader<MEMORY_ADDR>::FindSymbol(const char *name, MEMORY_ADDR addr, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const
+{
+	return symbol_table.FindSymbol(name, addr, type);
+}
+
+template <class MEMORY_ADDR>
+const typename unisim::util::debug::Symbol<MEMORY_ADDR> *CoffLoader<MEMORY_ADDR>::FindSymbolByAddr(MEMORY_ADDR addr) const
+{
+	return symbol_table.FindSymbolByAddr(addr);
+}
+
+template <class MEMORY_ADDR>
+const typename unisim::util::debug::Symbol<MEMORY_ADDR> *CoffLoader<MEMORY_ADDR>::FindSymbolByName(const char *name) const
+{
+	return symbol_table.FindSymbolByName(name);
+}
+
+template <class MEMORY_ADDR>
+const typename unisim::util::debug::Symbol<MEMORY_ADDR> *CoffLoader<MEMORY_ADDR>::FindSymbolByName(const char *name, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const
+{
+	return symbol_table.FindSymbolByName(name, type);
+}
+
+template <class MEMORY_ADDR>
+const typename unisim::util::debug::Symbol<MEMORY_ADDR> *CoffLoader<MEMORY_ADDR>::FindSymbolByAddr(MEMORY_ADDR addr, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const
+{
+	return symbol_table.FindSymbolByAddr(addr, type);
 }
 
 template <class MEMORY_ADDR>
@@ -428,6 +856,7 @@ void FileHandlerRegistry<MEMORY_ADDR>::Reset()
 		if(file_handler) delete file_handler;
 	}
 }
+
 
 } // end of namespace coff_loader
 } // end of namespace loader

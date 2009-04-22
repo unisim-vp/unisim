@@ -350,9 +350,36 @@ bool File<MEMORY_ADDR>::ParseSectionHeader(unsigned int section_num, const void 
 }
 
 template <class MEMORY_ADDR>
+unisim::util::endian::endian_type File<MEMORY_ADDR>::GetFileEndian() const
+{
+	return header_endianness;
+}
+
+template <class MEMORY_ADDR>
 unsigned int File<MEMORY_ADDR>::GetMemoryAtomSize() const
 {
 	return 4;
+}
+
+template <class MEMORY_ADDR>
+void File<MEMORY_ADDR>::GetBasicTypeSizes(MEMORY_ADDR basic_type_sizes[NUM_BASIC_TYPES]) const
+{
+	basic_type_sizes[T_NULL] = 0;
+	basic_type_sizes[T_VOID] = 0;
+	basic_type_sizes[T_CHAR] = 1;
+	basic_type_sizes[T_SHORT] = 1;
+	basic_type_sizes[T_INT] = 1;
+	basic_type_sizes[T_LONG] = 1;
+	basic_type_sizes[T_FLOAT] = 1;
+	basic_type_sizes[T_DOUBLE] = 1;
+	basic_type_sizes[T_STRUCT] = 1;
+	basic_type_sizes[T_UNION] = 1;
+	basic_type_sizes[T_ENUM] = 1;
+	basic_type_sizes[T_MOE] = 1;
+	basic_type_sizes[T_UCHAR] = 1;
+	basic_type_sizes[T_USHORT] = 1;
+	basic_type_sizes[T_UINT] = 1;
+	basic_type_sizes[T_ULONG] = 1;
 }
 
 template <class MEMORY_ADDR>
@@ -440,6 +467,18 @@ template <class MEMORY_ADDR>
 unsigned int File<MEMORY_ADDR>::GetNumSections() const
 {
 	return num_sections;
+}
+
+template <class MEMORY_ADDR>
+long File<MEMORY_ADDR>::GetSymbolTableFilePtr() const
+{
+	return symbol_table_file_ptr;
+}
+
+template <class MEMORY_ADDR>
+unsigned long File<MEMORY_ADDR>::GetNumSymbols() const
+{
+	return num_symbols;
 }
 
 template <class MEMORY_ADDR>

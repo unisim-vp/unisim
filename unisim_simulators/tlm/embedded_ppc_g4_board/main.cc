@@ -60,13 +60,13 @@
 #include "unisim/component/tlm/debug/transaction_spy.hh"
 #include "unisim/service/debug/gdb_server/gdb_server.hh"
 #include "unisim/service/debug/inline_debugger/inline_debugger.hh"
-#include "unisim/service/debug/symbol_table/symbol_table.hh"
 #include "unisim/service/loader/elf_loader/elf_loader.hh"
 #include "unisim/service/power/cache_power_estimator.hh"
 #include "unisim/service/time/sc_time/time.hh"
 #include "unisim/service/time/host_time/time.hh"
 #include "unisim/service/logger/logger_server.hh"
 #include "unisim/service/tee/memory_access_reporting/tee.hh"
+#include "unisim/service/tee/symbol_table_lookup/tee.hh"
 #include "unisim/util/garbage_collector/garbage_collector.hh"
 
 #ifdef WIN32
@@ -525,9 +525,8 @@ int sc_main(int argc, char *argv[])
 	unisim::service::time::sc_time::ScTime *time = new unisim::service::time::sc_time::ScTime("time");
 	//  - Host Time
 	unisim::service::time::host_time::HostTime *host_time = new unisim::service::time::host_time::HostTime("host-time");
-	//  - Symbol Table
-	unisim::service::debug::symbol_table::SymbolTable<CPU_ADDRESS_TYPE> *symbol_table = 
-		new unisim::service::debug::symbol_table::SymbolTable<CPU_ADDRESS_TYPE>("symbol-table");
+	//  - Tee Symbol Table Lookup
+	unisim::service::tee::symbol_table_lookup::Tee<CPU_ADDRESS_TYPE> *tee_symbol_table_lookup = new unisim::service::tee::symbol_table_lookup::Tee<CPU_ADDRESS_TYPE>("tee-symbol-table-lookup");
 	//  - Tee Memory Access Reporting
 	unisim::service::tee::memory_access_reporting::Tee<PCI_ADDRESS_TYPE> * tee_memory_access_reporting = 
 		(use_gdb_server || use_inline_debugger) ?
@@ -964,9 +963,9 @@ int sc_main(int argc, char *argv[])
     for(unsigned int i = 0; i < elf32_loader.size(); i++) 
     {
 	    elf32_loader[i]->memory_import >> mpc107->memory_export;
-	    elf32_loader[i]->symbol_table_build_import >> symbol_table->symbol_table_build_export;
+		*tee_symbol_table_lookup->out[i] >> elf32_loader[i]->symbol_table_lookup_export;
     }
-    cpu->symbol_table_lookup_import >> symbol_table->symbol_table_lookup_export;
+    cpu->symbol_table_lookup_import >> tee_symbol_table_lookup->in;
 	bus->memory_import >> mpc107->memory_export;
 	mpc107->ram_import >> memory->memory_export;
 	mpc107->rom_import >> flash->memory_export;
@@ -987,7 +986,7 @@ int sc_main(int argc, char *argv[])
 		pci_stub->memory_access_reporting_control_import >>
 			cpu->memory_access_reporting_control_export;
 	}
-	pci_stub->symbol_table_lookup_import >> symbol_table->symbol_table_lookup_export;
+	pci_stub->symbol_table_lookup_import >> elf32_loader[0]->symbol_table_lookup_export;
 	pci_stub->synchronizable_import >> cpu->synchronizable_export;
 	pci_stub->memory_import >> cpu->memory_export;
 	pci_stub->registers_import >> cpu->registers_export;
@@ -995,7 +994,7 @@ int sc_main(int argc, char *argv[])
 
 	if(inline_debugger)
 	{
-		inline_debugger->symbol_table_lookup_import >> symbol_table->symbol_table_lookup_export;
+		inline_debugger->symbol_table_lookup_import >> tee_symbol_table_lookup->in;
 	}
 	
 	/* logger connections */
@@ -1150,6 +1149,8 @@ int sc_main(int argc, char *argv[])
 	if(dtlb_power_estimator) delete dtlb_power_estimator;
 	if(time) delete time;
 	if(logger) delete logger;
+	if(tee_memory_access_reporting) delete tee_memory_access_reporting;
+	if(tee_symbol_table_lookup) delete tee_symbol_table_lookup;
 	if(flash) delete flash;
 	if(erom) delete erom;
 	if(mpc107) delete mpc107;

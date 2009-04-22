@@ -31,28 +31,17 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
- 
-#ifndef __UNISIM_SERVICE_INTERFACES_SYMBOL_TABLE_BUILD_HH__
-#define __UNISIM_SERVICE_INTERFACES_SYMBOL_TABLE_BUILD_HH__
 
-#include <unisim/util/debug/symbol.hh>
-#include <iosfwd>
+#include <unisim/util/debug/symbol_table.hh>
+#include <unisim/util/debug/symbol_table.tcc>
+#include <inttypes.h>
 
 namespace unisim {
-namespace service {
-namespace interfaces {
+namespace util {
+namespace debug {
 
-template <class T>
-class SymbolTableBuild
-{
-public:
-	virtual void Reset() = 0;
-	virtual void AddSymbol(const char *name, T addr, T size, typename unisim::util::debug::Symbol<T>::Type type) = 0;
-	virtual void Dump(std::ostream& os) const = 0;
-};
+template class SymbolTable<uint32_t>;
 
-} // end of namespace interfaces
-} // end of namespace service
+} // end of namespace debug
+} // end of namespace util
 } // end of namespace unisim
-
-#endif

@@ -36,7 +36,6 @@
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
 #include <unisim/service/loader/elf_loader/elf_loader.hh>
-#include <unisim/service/debug/symbol_table/symbol_table.hh>
 #include <unisim/service/loader/linux_loader/linux_loader.hh>
 #include "unisim/service/os/linux_os/linux_os.hh"
 #include <iostream>
@@ -95,7 +94,6 @@ using namespace std;
 using unisim::util::endian::E_BIG_ENDIAN;
 using unisim::service::loader::elf_loader::Elf32Loader;
 using unisim::service::loader::linux_loader::LinuxLoader;
-using unisim::service::debug::symbol_table::SymbolTable;
 using unisim::service::os::linux_os::LinuxOS;
 using unisim::service::debug::gdb_server::GDBServer;
 using unisim::service::debug::inline_debugger::InlineDebugger;
@@ -338,8 +336,6 @@ int sc_main(int argc, char *argv[])
 	Elf32Loader *elf32_loader = new Elf32Loader("elf32-loader");
 	//  - Linux loader
 	LinuxLoader<FSB_ADDRESS_TYPE> *linux_loader = new LinuxLoader<FSB_ADDRESS_TYPE>("linux-loader");
-	//  - Symbol table
-	SymbolTable<CPU_ADDRESS_TYPE> *symbol_table = new SymbolTable<CPU_ADDRESS_TYPE>("symbol-table");
 	//  - Linux OS
 	LinuxOS<CPU_ADDRESS_TYPE, CPU_REG_TYPE> *linux_os = new LinuxOS<CPU_ADDRESS_TYPE, CPU_REG_TYPE>("linux_os");
 	//  - GDB server
@@ -600,7 +596,6 @@ int sc_main(int argc, char *argv[])
 	}
 
 	elf32_loader->memory_import >> memory->memory_export;
-	elf32_loader->symbol_table_build_import >> symbol_table->symbol_table_build_export;
 	linux_loader->memory_import >> memory->memory_export;
 	linux_loader->loader_import >> elf32_loader->loader_export;
 	cpu->linux_os_import >> linux_os->linux_os_export;
@@ -609,13 +604,13 @@ int sc_main(int argc, char *argv[])
 	linux_os->memory_injection_import >> cpu->memory_injection_export;
 	linux_os->registers_import >> cpu->registers_export;
 	linux_os->loader_import >> linux_loader->loader_export;
-	cpu->symbol_table_lookup_import >> symbol_table->symbol_table_lookup_export;
+	cpu->symbol_table_lookup_import >> elf32_loader->symbol_table_lookup_export;
 	bus->memory_import >> fsb_to_mem_bridge->memory_export;
 	fsb_to_mem_bridge->memory_import >> memory->memory_export;
 
 	if(inline_debugger)
 	{
-		inline_debugger->symbol_table_lookup_import >> symbol_table->symbol_table_lookup_export;
+		inline_debugger->symbol_table_lookup_import >> elf32_loader->symbol_table_lookup_export;
 	}
 	
 	/* logger connections */

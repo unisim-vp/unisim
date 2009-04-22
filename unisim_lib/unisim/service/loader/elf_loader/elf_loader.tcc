@@ -49,10 +49,10 @@ template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_P
 ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::ElfLoaderImpl(const char *name, Object *parent) :
 	Object(name, parent),
 	Client<Memory<MEMORY_ADDR> >(name, parent),
-	Client<SymbolTableBuild<MEMORY_ADDR> >(name, parent),
+	Service<SymbolTableLookup<MEMORY_ADDR> >(name, parent),
 	Service<Loader<MEMORY_ADDR> >(name, parent),
 	memory_import("memory-import", this),
-	symbol_table_build_import("symbol-table-build-import", this),
+	symbol_table_lookup_export("symbol-table-lookup-export", this),
 	loader_export("loader-export", this),
 	filename(),
 	entry_point(0),
@@ -66,7 +66,6 @@ ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::El
 	param_dump_headers("dump-headers", this, dump_headers)
 {
 	Object::SetupDependsOn(memory_import);
-	Object::SetupDependsOn(symbol_table_build_import);
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
@@ -100,7 +99,7 @@ MEMORY_ADDR ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
 bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::Setup()
 {
-	if(symbol_table_build_import) symbol_table_build_import->Reset();
+	symbol_table.Reset();
 
 	Elf_Ehdr *hdr = 0;
 	Elf_Phdr *phdr = 0;
@@ -273,51 +272,48 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 	
 	cerr << Object::GetName() << ": program entry point at 0x" << hex << entry_point << dec << endl;
 	
-	if(symbol_table_build_import)
+	if(shdr_table && sh_string_table)
 	{
-		if(shdr_table && sh_string_table)
+		for(i = 0, shdr = shdr_table; i < hdr->e_shnum; shdr = GetNextSectionHeader(hdr, shdr),i++)
 		{
-			for(i = 0, shdr = shdr_table; i < hdr->e_shnum; shdr = GetNextSectionHeader(hdr, shdr),i++)
+			//DumpSectionHeader(shdr, sh_string_table, cerr);
+
+			section_type = GetSectionType(shdr);
+			section_size = GetSectionSize(shdr);
+			section_vaddr = GetSectionAddr(shdr);
+			section_flags = GetSectionFlags(shdr);
+			section_name = GetSectionName(shdr, sh_string_table);
+
+			if(!(section_flags & SHF_ALLOC))
 			{
-				//DumpSectionHeader(shdr, sh_string_table, cerr);
-
-				section_type = GetSectionType(shdr);
-				section_size = GetSectionSize(shdr);
-				section_vaddr = GetSectionAddr(shdr);
-				section_flags = GetSectionFlags(shdr);
-				section_name = GetSectionName(shdr, sh_string_table);
-
-				if(!(section_flags & SHF_ALLOC))
+				if(section_type == SHT_SYMTAB)
 				{
-					if(section_type == SHT_SYMTAB)
+					Elf_Shdr *sh_strtab;
+					section = malloc(section_size);
+					if(!LoadSection(hdr, shdr, section, is))
 					{
-						Elf_Shdr *sh_strtab;
-						section = malloc(section_size);
-						if(!LoadSection(hdr, shdr, section, is))
+						cerr << Object::GetName() << ": WARNING! Can't load section " << GetSectionName(shdr, sh_string_table) << endl;
+					}
+					else
+					{
+						int strtab_size;
+						char *string_table;
+						cerr << Object::GetName() << ": Loading section " << GetSectionName(shdr, sh_string_table) << " (" << section_size << " bytes)" << endl;
+						sh_strtab = (Elf_Shdr *)((char *) shdr_table + shdr->sh_link * hdr->e_shentsize);
+						strtab_size = GetSectionSize(sh_strtab);
+						string_table = (char *) malloc(strtab_size);
+						if(!LoadSection(hdr, sh_strtab, string_table, is))
 						{
-							cerr << Object::GetName() << ": WARNING! Can't load section " << GetSectionName(shdr, sh_string_table) << endl;
+							cerr << Object::GetName() << ": WARNING! Can't load section " << GetSectionName(sh_strtab, sh_string_table) << endl;
 						}
 						else
 						{
-							int strtab_size;
-							char *string_table;
-							cerr << Object::GetName() << ": Loading section " << GetSectionName(shdr, sh_string_table) << " (" << section_size << " bytes)" << endl;
-							sh_strtab = (Elf_Shdr *)((char *) shdr_table + shdr->sh_link * hdr->e_shentsize);
-							strtab_size = GetSectionSize(sh_strtab);
-							string_table = (char *) malloc(strtab_size);
-							if(!LoadSection(hdr, sh_strtab, string_table, is))
-							{
-								cerr << Object::GetName() << ": WARNING! Can't load section " << GetSectionName(sh_strtab, sh_string_table) << endl;
-							}
-							else
-							{
-								cerr << Object::GetName() << ": Building symbol table from section " << GetSectionName(sh_strtab, sh_string_table) << endl;
-								BuildSymbolTable(shdr, section, string_table);
-							}
-							free(string_table);
+							cerr << Object::GetName() << ": Building symbol table from section " << GetSectionName(sh_strtab, sh_string_table) << endl;
+							BuildSymbolTable(shdr, section, string_table);
 						}
-						free(section);
+						free(string_table);
 					}
+					free(section);
 				}
 			}
 		}
@@ -338,6 +334,37 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 /*	ClientIndependentSetup();
 	ClientDependentSetup();*/
 }
+
+template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+const typename unisim::util::debug::Symbol<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::FindSymbol(const char *name, MEMORY_ADDR addr, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const
+{
+	return symbol_table.FindSymbol(name, addr, type);
+}
+
+template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+const typename unisim::util::debug::Symbol<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::FindSymbolByAddr(MEMORY_ADDR addr) const
+{
+	return symbol_table.FindSymbolByAddr(addr);
+}
+
+template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+const typename unisim::util::debug::Symbol<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::FindSymbolByName(const char *name) const
+{
+	return symbol_table.FindSymbolByName(name);
+}
+
+template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+const typename unisim::util::debug::Symbol<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::FindSymbolByName(const char *name, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const
+{
+	return symbol_table.FindSymbolByName(name, type);
+}
+
+template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+const typename unisim::util::debug::Symbol<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::FindSymbolByAddr(MEMORY_ADDR addr, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const
+{
+	return symbol_table.FindSymbolByAddr(addr, type);
+}
+
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
 void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::SwapElfHeader(Elf_Ehdr *hdr)
@@ -957,39 +984,36 @@ const char *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
 void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::BuildSymbolTable(const Elf_Shdr *shdr, const void *content, const char *string_table)
 {
-	if(symbol_table_build_import)
-	{
-		int nsymbols = shdr->sh_size / sizeof(Elf_Sym);
-		int i;
-		Elf_Sym *sym;
-	
-		for(sym = (Elf_Sym *) content, i = 0; i < nsymbols; sym++, i++)
-		{
-			typename Symbol<MEMORY_ADDR>::Type type;
-	
-			switch(ELF32_ST_TYPE(sym->st_info))
-			{
-				case STT_NOTYPE: type = Symbol<MEMORY_ADDR>::SYM_NOTYPE; break;
-				case STT_OBJECT: type = Symbol<MEMORY_ADDR>::SYM_OBJECT; break;
-				case STT_FUNC: type = Symbol<MEMORY_ADDR>::SYM_FUNC; break;
-				case STT_SECTION: type = Symbol<MEMORY_ADDR>::SYM_SECTION; break;
-				case STT_FILE: type = Symbol<MEMORY_ADDR>::SYM_FILE; break;
-				case STT_COMMON: type = Symbol<MEMORY_ADDR>::SYM_COMMON; break;
-				case STT_TLS: type = Symbol<MEMORY_ADDR>::SYM_TLS; break;
-				case STT_NUM: type = Symbol<MEMORY_ADDR>::SYM_NUM; break;
-				case STT_LOOS: type = Symbol<MEMORY_ADDR>::SYM_LOOS; break;
-				case STT_HIOS: type = Symbol<MEMORY_ADDR>::SYM_HIOS; break;
-				case STT_LOPROC: type = Symbol<MEMORY_ADDR>::SYM_LOPROC; break;
-				case STT_HIPROC: type = Symbol<MEMORY_ADDR>::SYM_HIPROC; break;
-				default: type = Symbol<MEMORY_ADDR>::SYM_NOTYPE;
-			}
-	
-			string symbol_name(string_table + sym->st_name);
+	int nsymbols = shdr->sh_size / sizeof(Elf_Sym);
+	int i;
+	Elf_Sym *sym;
 
-			symbol_table_build_import->AddSymbol(symbol_name.c_str(), (MEMORY_ADDR) sym->st_value, (MEMORY_ADDR) sym->st_size, type);
+	for(sym = (Elf_Sym *) content, i = 0; i < nsymbols; sym++, i++)
+	{
+		typename Symbol<MEMORY_ADDR>::Type type;
+
+		switch(ELF32_ST_TYPE(sym->st_info))
+		{
+			case STT_NOTYPE: type = Symbol<MEMORY_ADDR>::SYM_NOTYPE; break;
+			case STT_OBJECT: type = Symbol<MEMORY_ADDR>::SYM_OBJECT; break;
+			case STT_FUNC: type = Symbol<MEMORY_ADDR>::SYM_FUNC; break;
+			case STT_SECTION: type = Symbol<MEMORY_ADDR>::SYM_SECTION; break;
+			case STT_FILE: type = Symbol<MEMORY_ADDR>::SYM_FILE; break;
+			case STT_COMMON: type = Symbol<MEMORY_ADDR>::SYM_COMMON; break;
+			case STT_TLS: type = Symbol<MEMORY_ADDR>::SYM_TLS; break;
+			case STT_NUM: type = Symbol<MEMORY_ADDR>::SYM_NUM; break;
+			case STT_LOOS: type = Symbol<MEMORY_ADDR>::SYM_LOOS; break;
+			case STT_HIOS: type = Symbol<MEMORY_ADDR>::SYM_HIOS; break;
+			case STT_LOPROC: type = Symbol<MEMORY_ADDR>::SYM_LOPROC; break;
+			case STT_HIPROC: type = Symbol<MEMORY_ADDR>::SYM_HIPROC; break;
+			default: type = Symbol<MEMORY_ADDR>::SYM_NOTYPE;
 		}
-		//symbol_table->Dump(cerr);
+
+		string symbol_name(string_table + sym->st_name);
+
+		symbol_table.AddSymbol(symbol_name.c_str(), (MEMORY_ADDR) sym->st_value, (MEMORY_ADDR) sym->st_size, type);
 	}
+	//symbol_table.Dump(cerr);
 }
 
 } // end of namespace elf_loader

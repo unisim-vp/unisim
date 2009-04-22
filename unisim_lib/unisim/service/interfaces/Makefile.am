@@ -9,7 +9,6 @@ include_HEADERS = \
 	memory.hh \
 	memory_injection.hh \
 	registers.hh \
-	symbol_table_build.hh \
 	synchronizable.hh \
 	video.hh \
 	cpu_linux_os.hh \

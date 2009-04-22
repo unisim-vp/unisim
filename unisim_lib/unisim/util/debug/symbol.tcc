@@ -32,54 +32,72 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#ifndef __UNISIM_UTIL_DEBUG_SYMBOL_HH__
-#define __UNISIM_UTIL_DEBUG_SYMBOL_HH__
+#ifndef __UNISIM_UTIL_DEBUG_SYMBOL_TCC__
+#define __UNISIM_UTIL_DEBUG_SYMBOL_TCC__
 
-#include <string>
+#include <iostream>
+#include <sstream>
+#include <string.h>
 
 namespace unisim {
 namespace util {
 namespace debug {
 
-using std::string;
+using std::endl;
+using std::hex;
+using std::dec;
+using std::stringstream;
 
 template <class T>
-class Symbol
+Symbol<T>::Symbol(const char *_name, T _addr, T _size, typename unisim::util::debug::Symbol<T>::Type _type, T _memory_atom_size) :
+	name(_name),
+	addr(_addr),
+	size(_size),
+	type(_type),
+	memory_atom_size(_memory_atom_size)
 {
-public:
-	enum Type
-	{
-		SYM_NOTYPE = 0,
-		SYM_OBJECT = 1,
-		SYM_FUNC = 2,
-		SYM_SECTION = 3,
-		SYM_FILE = 4,
-		SYM_COMMON = 5,
-		SYM_TLS = 6,
-		SYM_NUM = 7,
-		SYM_LOOS = 8,
-		SYM_HIOS = 9,
-		SYM_LOPROC = 10,
-		SYM_HIPROC = 11
-	};
+}
 
-	Symbol(const char *name, T addr, T size, typename unisim::util::debug::Symbol<T>::Type type, T memory_atom_size);
+template <class T>
+const char *Symbol<T>::GetName() const
+{
+	return name.c_str();
+}
 
-	const char *GetName() const;
-	T GetAddress() const;
-	T GetSize() const;
-	typename unisim::util::debug::Symbol<T>::Type GetType() const;
-	string GetFriendlyName(T addr) const;
-private:
-	string name;
-	T addr;
-	T size;
-	typename unisim::util::debug::Symbol<T>::Type type;
-	T memory_atom_size;
-};
+template <class T>
+T Symbol<T>::GetAddress() const
+{
+	return addr;
+}
+
+template <class T>
+T Symbol<T>::GetSize() const
+{
+	return size;
+}
+
+template <class T>
+typename unisim::util::debug::Symbol<T>::Type Symbol<T>::GetType() const
+{
+	return type;
+}
+
+template <class T>
+string Symbol<T>::GetFriendlyName(T addr) const
+{
+	stringstream sstr;
+	
+	sstr << name;
+	if(type == unisim::util::debug::Symbol<T>::SYM_FUNC)
+		sstr << "()";
+	if(addr != this->addr && (addr - this->addr) <= size)
+		sstr << "+0x" << std::hex << (addr - this->addr) / memory_atom_size << std::dec;
+	
+	return sstr.str();
+}
 
 } // end of namespace debug
-} // end of namespace util
+} // end of namespace service
 } // end of namespace unisim
 
 #endif

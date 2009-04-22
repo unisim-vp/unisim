@@ -85,24 +85,30 @@ using unisim::kernel::logger::EndDebugInfo;
 using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 using unisim::service::interfaces::MemoryInjection;
+using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::SymbolTableLookup;
 
 template <class MEMORY_ADDR>
 TI_C_IO<MEMORY_ADDR>::TI_C_IO(const char *name, Object *parent) :
 	Object(name, parent),
 	Service<unisim::service::interfaces::OS>(name, parent),
+	Client<Memory<MEMORY_ADDR> >(name, parent),
 	Client<MemoryInjection<MEMORY_ADDR> >(name, parent),
 	Client<SymbolTableLookup<MEMORY_ADDR> >(name, parent),
 	os_export("os-export", this),
+	memory_import("memory-import", this),
 	memory_injection_import("memory-injection-import", this),
 	symbol_table_lookup_import("symbol-table-lookup-import", this),
 	logger(*this),
-	param_ciobuf_addr("ciobuf-addr", this, ciobuf_addr),
 	max_buffer_byte_length(0),
 	buffer(0),
 	verbose(false),
-	param_verbose("verbose", this, verbose)
+	param_verbose("verbose", this, verbose),
+	C_IO_BREAKPOINT_SYMBOL_NAME("C$$IO$$"),
+	C_IO_BUFFER_SYMBOL_NAME("__CIOBUF_")
 {
+	Object::SetupDependsOn(memory_import);
+	Object::SetupDependsOn(symbol_table_lookup_import);
 }
 
 template <class MEMORY_ADDR>
@@ -122,6 +128,38 @@ bool TI_C_IO<MEMORY_ADDR>::Setup()
 	if(!memory_injection_import)
 	{
 		logger << DebugError << "Memory injection import is not connected" << EndDebugError;
+		return false;
+	}
+
+	if(!symbol_table_lookup_import)
+	{
+		logger << DebugError << "Symbol table lookup import is not connected" << EndDebugError;
+		return false;
+	}
+
+	const unisim::util::debug::Symbol<MEMORY_ADDR> *c_io_buffer_symbol = symbol_table_lookup_import->FindSymbolByName(C_IO_BUFFER_SYMBOL_NAME);
+
+	if(!c_io_buffer_symbol)
+	{
+		logger << DebugError << "Undefined symbol " << C_IO_BUFFER_SYMBOL_NAME << EndDebugError;
+		return false;
+	}
+
+	const unisim::util::debug::Symbol<MEMORY_ADDR> *c_io_breakpoint_symbol = symbol_table_lookup_import->FindSymbolByName(C_IO_BREAKPOINT_SYMBOL_NAME);
+
+	if(!c_io_breakpoint_symbol)
+	{
+		logger << DebugError << "Undefined symbol " << C_IO_BREAKPOINT_SYMBOL_NAME << EndDebugError;
+		return false;
+	}
+
+	c_io_buffer_addr = c_io_buffer_symbol->GetAddress();
+	MEMORY_ADDR c_io_breakpoint_addr = c_io_breakpoint_symbol->GetAddress();
+
+	uint8_t swi[4] = { 0x00, 0x00, 0x00, 0x66 };
+	if(!memory_import->WriteMemory(c_io_breakpoint_addr, swi, sizeof(swi)))
+	{
+		logger << DebugError << "Cannot install breakpoint at 0x" << hex << c_io_breakpoint_addr << dec << EndDebugError;
 		return false;
 	}
 
@@ -149,7 +187,7 @@ void TI_C_IO<MEMORY_ADDR>::ExecuteSystemCall()
 {
 	uint32_t i;
 	InputMsg input_msg;
-	MEMORY_ADDR addr = 4 * ciobuf_addr;
+	MEMORY_ADDR addr = c_io_buffer_addr;
 
 	if(!memory_injection_import->InjectReadMemory(addr, &input_msg, sizeof(input_msg))) return;
 
@@ -296,7 +334,7 @@ void TI_C_IO<MEMORY_ADDR>::ExecuteSystemCall()
 		logger << endl << EndDebugInfo;
 	}
 
-	addr = 4 * ciobuf_addr;
+	addr = c_io_buffer_addr;
 
 	if(!memory_injection_import->InjectWriteMemory(addr, &output_msg, sizeof(output_msg))) return;
 

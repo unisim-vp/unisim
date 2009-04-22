@@ -49,11 +49,8 @@
 #include "unisim/service/time/host_time/time.hh"
 #include "unisim/service/debug/gdb_server/gdb_server.hh"
 #include "unisim/service/debug/inline_debugger/inline_debugger.hh"
-#include "unisim/service/debug/symbol_table/symbol_table.hh"
 #include "unisim/service/loader/elf_loader/elf_loader.hh"
 #include "unisim/service/loader/elf_loader/elf_loader.tcc"
-
-#include "unisim/service/debug/symbol_table/symbol_table.hh"
 
 #ifdef WIN32
 
@@ -88,8 +85,6 @@ using unisim::service::debug::gdb_server::GDBServer;
 using unisim::service::debug::inline_debugger::InlineDebugger;
 #define STR7_VERBOSE
 #endif
-
-using unisim::service::debug::symbol_table::SymbolTable;
 
 class RouterConfig {
 public:
@@ -267,8 +262,6 @@ int sc_main(int argc, char *argv[]) {
 	InlineDebugger<uint64_t> *inline_debugger = 
 		new InlineDebugger<uint64_t>("inline-debugger");
 #endif // STR7_DEBUG_INLINE
-	// Instanciate a symbol table to be filled-in by the ELF32 loader
-	SymbolTable<uint64_t> *symbol_table = new SymbolTable<uint64_t>("symbol_table");
 
 	// Connect the CPU to the memory
 	// cpu->master_socket(memory->slave_sock);
@@ -278,9 +271,8 @@ int sc_main(int argc, char *argv[]) {
 
 	// Connect everything
 	elf_loader->memory_import >> memory->memory_export;
-	elf_loader->symbol_table_build_import >> symbol_table->symbol_table_build_export;
 
-	cpu->symbol_table_lookup_import >> symbol_table->symbol_table_lookup_export;
+	cpu->symbol_table_lookup_import >> elf_loader->symbol_table_lookup_export;
 
 #ifdef STR7_DEBUG
 	cpu->debug_control_import >> gdb_server->debug_control_export;
@@ -297,7 +289,7 @@ int sc_main(int argc, char *argv[]) {
 	inline_debugger->memory_import >> cpu->memory_export;
 	inline_debugger->registers_import >> cpu->registers_export;
 	inline_debugger->symbol_table_lookup_import >> 
-		symbol_table->symbol_table_lookup_export;
+		elf_loader->symbol_table_lookup_export;
 #endif // STR7_DEBUG_INLINE
 
 #ifdef DEBUG_SERVICE
@@ -380,7 +372,6 @@ int sc_main(int argc, char *argv[]) {
 
 
 	if(elf_loader) delete elf_loader;
-	if(symbol_table) delete symbol_table;
 	if(time) delete time;
 
 	if(memory) delete memory;

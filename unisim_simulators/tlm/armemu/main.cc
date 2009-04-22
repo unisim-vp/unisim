@@ -52,13 +52,11 @@
 #include "unisim/service/time/host_time/time.hh"
 #include "unisim/service/debug/gdb_server/gdb_server.hh"
 #include "unisim/service/debug/inline_debugger/inline_debugger.hh"
-#include "unisim/service/debug/symbol_table/symbol_table.hh"
 #include "unisim/service/loader/elf_loader/elf_loader.hh"
 #include "unisim/service/loader/linux_loader/linux_loader.hh"
 #include "unisim/service/os/linux_os/linux_os.hh"
 #include "unisim/service/logger/logger_server.hh"
 
-#include "unisim/service/debug/symbol_table/symbol_table.hh"
 
 #ifdef ARMEMU_DEBUG
 	#ifdef ARMEMU_NOCACHE
@@ -110,7 +108,6 @@ using unisim::util::endian::E_BIG_ENDIAN;
 using unisim::util::garbage_collector::GarbageCollector;
 using unisim::service::debug::gdb_server::GDBServer;
 using unisim::service::debug::inline_debugger::InlineDebugger;
-using unisim::service::debug::symbol_table::SymbolTable;
 using unisim::service::loader::linux_loader::LinuxLoader;
 typedef unisim::service::loader::elf_loader::ElfLoaderImpl<uint64_t, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym> Elf32Loader;
 // using unisim::service::loader::elf_loader::Elf32Loader;
@@ -280,7 +277,6 @@ int main(int argc, char *argv[], char **envp) {
 	Elf32Loader *elf32_loader = 0;
 	LinuxLoader<FSB_ADDRESS_TYPE> *linux_loader = 0;
 	LinuxOS<CPU_ADDRESS_TYPE, CPU_REG_TYPE> *linux_os = 0;
-	SymbolTable<uint64_t> *symbol_table = 0;
 	unisim::component::tlm::memory::ram::Memory<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE> *memory = 
 		new unisim::component::tlm::memory::ram::Memory<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE>("memory");
 	GDBServer<CPU_ADDRESS_TYPE> *gdb_server = 
@@ -311,9 +307,6 @@ int main(int argc, char *argv[], char **envp) {
 	// Instanciate the Linux syscall translator
 	linux_os = new LinuxOS<CPU_ADDRESS_TYPE, CPU_REG_TYPE>("linux-os");
 	
-	// Instanciate a symbol table to be filled-in by the ELF32 loader
-	symbol_table = new SymbolTable<uint64_t>("symbol_table");
-
 	// if the following line ("cpu-frequency") is commented, the cpu will use the power estimators to find max cpu frequency
 	(*cpu)["cpu-cycle-time"] = cpu_cycle_time;
 //	(*cpu)["cpu-frequency"] = cpu_clock_multiplier * fsb_frequency; // Mhz
@@ -458,7 +451,6 @@ int main(int argc, char *argv[], char **envp) {
 
 	// Connect everything
 	elf32_loader->memory_import >> memory->memory_export;
-	elf32_loader->symbol_table_build_import >> symbol_table->symbol_table_build_export;
 	linux_loader->memory_import >> memory->memory_export;
 	linux_loader->loader_import >> elf32_loader->loader_export;
 	cpu->linux_os_import >> linux_os->linux_os_export;
@@ -474,7 +466,7 @@ int main(int argc, char *argv[], char **envp) {
 //	linux_os->memory_import >> cpu->memory_export;
 //	arm_linux_os->cpu_arm_linux_os_import >> cpu->cpu_arm_linux_os_export;
 
-	cpu->symbol_table_lookup_import >> symbol_table->symbol_table_lookup_export;
+	cpu->symbol_table_lookup_import >> elf32_loader->symbol_table_lookup_export;
 	bridge->memory_import >> memory->memory_export;
 
 	/* WARNING!!!! the bus request ports are not connected !!!!! */
@@ -483,7 +475,7 @@ int main(int argc, char *argv[], char **envp) {
 	if(use_inline_debugger)
 	{
 		inline_debugger->symbol_table_lookup_import >> 
-			symbol_table->symbol_table_lookup_export;
+			elf32_loader->symbol_table_lookup_export;
 	}
 	
 #ifdef DEBUG_SERVICE
@@ -583,7 +575,6 @@ int main(int argc, char *argv[], char **envp) {
 	if(elf32_loader) delete elf32_loader;
 	if(linux_loader) delete linux_loader;
 	if(linux_os) delete linux_os;
-	if(symbol_table) delete symbol_table;
 	if(memory) delete memory;
 	if(gdb_server) delete gdb_server;
 	if(inline_debugger) delete inline_debugger;
