@@ -297,14 +297,6 @@ public:
 	 */
 	virtual void Wait() = 0;
 
-	/**
-	 * TODO: BGND Enter Background Debug Mode
-	 */
-	virtual void BGND() {
-		ReportTrap();
-		std::cerr << " last PC 0x" << std::hex << getLastPC() << std::dec << std::endl;
-	}
-
 	/*
 	 * The CPU issues a signal that tells the interrupt module to drive
 	 * the vector address of the highest priority pending exception onto the system address bus
@@ -615,6 +607,7 @@ inline void CPU::MonitorStore(address_t ea, uint32_t size)
 
 inline void CPU::ReportTrap() {
 	if (CONFIG::DEBUG_ENABLE && trap_reporting_import) {
+		std::cerr << "*** CPU12 ReprotTrap *** 0x" << std::hex << getLastPC() << std::dec << std::endl;
 		trap_reporting_import->ReportTrap();
 	}
 
@@ -624,6 +617,8 @@ inline uint8_t CPU::memRead8(address_t logicalAddress, ADDRESS::MODE type, bool 
 
 	uint8_t data;
 	MMC_DATA mmc_data;
+
+	if (logicalAddress == 0x21F4) ReportTrap();
 
 	mmc_data.type = type;
 	mmc_data.isGlobal = isGlobal;
@@ -641,6 +636,8 @@ inline uint16_t CPU::memRead16(address_t logicalAddress, ADDRESS::MODE type, boo
 
 	uint16_t data;
 	MMC_DATA mmc_data;
+
+	if (logicalAddress == 0x21F4) ReportTrap();
 
 	mmc_data.type = type;
 	mmc_data.isGlobal = isGlobal;
@@ -660,6 +657,8 @@ inline void CPU::memWrite8(address_t logicalAddress,uint8_t val, ADDRESS::MODE t
 
 	MMC_DATA mmc_data;
 
+	if (logicalAddress == 0x21F4) ReportTrap();
+
 	mmc_data.type = type;
 	mmc_data.isGlobal = isGlobal;
 	mmc_data.buffer = &val;
@@ -676,6 +675,8 @@ inline void CPU::memWrite16(address_t logicalAddress,uint16_t val, ADDRESS::MODE
 	MMC_DATA mmc_data;
 
 	val = Host2BigEndian(val);
+
+	if (logicalAddress == 0x21F4) ReportTrap();
 
 	mmc_data.type = type;
 	mmc_data.isGlobal = isGlobal;
