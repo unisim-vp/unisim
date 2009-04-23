@@ -73,7 +73,6 @@ using std::endl;
 using std::hex;
 using std::dec;
 
-using unisim::util::debug::SimpleRegister;
 using unisim::util::debug::Symbol;
 using namespace unisim::kernel::logger;
 
@@ -122,34 +121,10 @@ CPU(const char *name,
 	stat_insn_cache_hits("insn-cache-hits", this, insn_cache_hits),
 	stat_insn_cache_misses("insn-cache-misses", this, insn_cache_misses)
 {
-	regs[REG_R0].lo_write_mask = 0xffffffff;
-	regs[REG_R1].lo_write_mask = 0xffffffff;
-	regs[REG_R2].lo_write_mask = 0xffffffff;
-	regs[REG_R3].lo_write_mask = 0xffffffff;
-	regs[REG_R4].lo_write_mask = 0xffffffff;
-	regs[REG_R5].lo_write_mask = 0xffffffff;
-	regs[REG_R6].lo_write_mask = 0xffffffff;
-	regs[REG_R7].lo_write_mask = 0xffffffff;
-	regs[REG_AR0].lo_write_mask = 0xffffffff;
-	regs[REG_AR1].lo_write_mask = 0xffffffff;
-	regs[REG_AR2].lo_write_mask = 0xffffffff;
-	regs[REG_AR3].lo_write_mask = 0xffffffff;
-	regs[REG_AR4].lo_write_mask = 0xffffffff;
-	regs[REG_AR5].lo_write_mask = 0xffffffff;
-	regs[REG_AR6].lo_write_mask = 0xffffffff;
-	regs[REG_AR7].lo_write_mask = 0xffffffff;
-	regs[REG_DP].lo_write_mask = 0xffffffff;
-	regs[REG_IR0].lo_write_mask = 0xffffffff;
-	regs[REG_IR1].lo_write_mask = 0xffffffff;
-	regs[REG_BK].lo_write_mask = 0xffffffff;
-	regs[REG_SP].lo_write_mask = 0xffffffff;
-	regs[REG_ST].lo_write_mask = ST_WRITE_MASK;
-	regs[REG_IE].lo_write_mask = IE_WRITE_MASK;
-	regs[REG_IF].lo_write_mask = IF_WRITE_MASK;
-	regs[REG_IOF].lo_write_mask = IOF_WRITE_MASK;
-	regs[REG_RS].lo_write_mask = 0xffffffff;
-	regs[REG_RE].lo_write_mask = 0xffffffff;
-	regs[REG_RC].lo_write_mask = 0xffffffff;
+	regs[REG_ST].SetLoWriteMask(ST_WRITE_MASK);
+	regs[REG_IE].SetLoWriteMask(IE_WRITE_MASK);
+	regs[REG_IF].SetLoWriteMask(IF_WRITE_MASK);
+	regs[REG_IOF].SetLoWriteMask(IOF_WRITE_MASK);
 
 	registers_registry["PC"] = new unisim::util::debug::SimpleRegister<uint32_t>("PC", &reg_pc);
 
@@ -158,43 +133,43 @@ CPU(const char *name,
 	{
 		stringstream sstr;
 		sstr << "R" << i;
-		registers_registry[sstr.str().c_str()] = new ExtendedPrecisionRegisterDebugInterface(sstr.str().c_str(), &regs[REG_R0 + i]);
+		registers_registry[sstr.str().c_str()] = new RegisterDebugInterface(sstr.str().c_str(), &regs[REG_R0 + i], true /* extended precision */);
 	}
 
 	for(i = 0; i < 8; i++)
 	{
 		stringstream sstr;
 		sstr << "AR" << i;
-		registers_registry[sstr.str().c_str()] = new unisim::util::debug::SimpleRegister<uint32_t>(sstr.str().c_str(), &regs[REG_AR0 + i].lo);
+		registers_registry[sstr.str().c_str()] = new RegisterDebugInterface(sstr.str().c_str(), &regs[REG_AR0 + i]);
 	}
 
-	registers_registry["DP"] = new unisim::util::debug::SimpleRegister<uint32_t>("DP", &regs[REG_DP].lo);
-	registers_registry["IR0"] = new unisim::util::debug::SimpleRegister<uint32_t>("IR0", &regs[REG_IR0].lo);
-	registers_registry["IR1"] = new unisim::util::debug::SimpleRegister<uint32_t>("IR1", &regs[REG_IR1].lo);
-	registers_registry["BK"] = new unisim::util::debug::SimpleRegister<uint32_t>("BK", &regs[REG_BK].lo);
-	registers_registry["SP"] = new unisim::util::debug::SimpleRegister<uint32_t>("SP", &regs[REG_SP].lo);
+	registers_registry["DP"] = new RegisterDebugInterface("DP", &regs[REG_DP]);
+	registers_registry["IR0"] = new RegisterDebugInterface("IR0", &regs[REG_IR0]);
+	registers_registry["IR1"] = new RegisterDebugInterface("IR1", &regs[REG_IR1]);
+	registers_registry["BK"] = new RegisterDebugInterface("BK", &regs[REG_BK]);
+	registers_registry["SP"] = new RegisterDebugInterface("SP", &regs[REG_SP]);
 
-	registers_registry["ST"] = new unisim::util::debug::SimpleRegister<uint32_t>("ST", &regs[REG_ST].lo);
-	registers_registry["ST:C"] = new RegisterBitFieldDebugInterface("ST:C", &regs[REG_ST].lo, ST_C);
-	registers_registry["ST:V"] = new RegisterBitFieldDebugInterface("ST:V", &regs[REG_ST].lo, ST_V);
-	registers_registry["ST:Z"] = new RegisterBitFieldDebugInterface("ST:Z", &regs[REG_ST].lo, ST_Z);
-	registers_registry["ST:N"] = new RegisterBitFieldDebugInterface("ST:N", &regs[REG_ST].lo, ST_N);
-	registers_registry["ST:UF"] = new RegisterBitFieldDebugInterface("ST:UF", &regs[REG_ST].lo, ST_UF);
-	registers_registry["ST:LV"] = new RegisterBitFieldDebugInterface("ST:LV", &regs[REG_ST].lo, ST_LV);
-	registers_registry["ST:LUF"] = new RegisterBitFieldDebugInterface("ST:LUF", &regs[REG_ST].lo, ST_LUF);
-	registers_registry["ST:OVM"] = new RegisterBitFieldDebugInterface("ST:OVM", &regs[REG_ST].lo, ST_OVM);
-	registers_registry["ST:RM"] = new RegisterBitFieldDebugInterface("ST:RM", &regs[REG_ST].lo, ST_RM);
-	registers_registry["ST:CF"] = new RegisterBitFieldDebugInterface("ST:CF", &regs[REG_ST].lo, ST_CF);
-	registers_registry["ST:CE"] = new RegisterBitFieldDebugInterface("ST:CE", &regs[REG_ST].lo, ST_CE);
-	registers_registry["ST:CC"] = new RegisterBitFieldDebugInterface("ST:CC", &regs[REG_ST].lo, ST_CC);
-	registers_registry["ST:GIE"] = new RegisterBitFieldDebugInterface("ST:GIE", &regs[REG_ST].lo, ST_GIE);
+	registers_registry["ST"] = new RegisterDebugInterface("ST", &regs[REG_ST]);
+	registers_registry["ST:C"] = new RegisterBitFieldDebugInterface("ST:C", &regs[REG_ST], ST_C);
+	registers_registry["ST:V"] = new RegisterBitFieldDebugInterface("ST:V", &regs[REG_ST], ST_V);
+	registers_registry["ST:Z"] = new RegisterBitFieldDebugInterface("ST:Z", &regs[REG_ST], ST_Z);
+	registers_registry["ST:N"] = new RegisterBitFieldDebugInterface("ST:N", &regs[REG_ST], ST_N);
+	registers_registry["ST:UF"] = new RegisterBitFieldDebugInterface("ST:UF", &regs[REG_ST], ST_UF);
+	registers_registry["ST:LV"] = new RegisterBitFieldDebugInterface("ST:LV", &regs[REG_ST], ST_LV);
+	registers_registry["ST:LUF"] = new RegisterBitFieldDebugInterface("ST:LUF", &regs[REG_ST], ST_LUF);
+	registers_registry["ST:OVM"] = new RegisterBitFieldDebugInterface("ST:OVM", &regs[REG_ST], ST_OVM);
+	registers_registry["ST:RM"] = new RegisterBitFieldDebugInterface("ST:RM", &regs[REG_ST], ST_RM);
+	registers_registry["ST:CF"] = new RegisterBitFieldDebugInterface("ST:CF", &regs[REG_ST], ST_CF);
+	registers_registry["ST:CE"] = new RegisterBitFieldDebugInterface("ST:CE", &regs[REG_ST], ST_CE);
+	registers_registry["ST:CC"] = new RegisterBitFieldDebugInterface("ST:CC", &regs[REG_ST], ST_CC);
+	registers_registry["ST:GIE"] = new RegisterBitFieldDebugInterface("ST:GIE", &regs[REG_ST], ST_GIE);
 
-	registers_registry["IE"] = new unisim::util::debug::SimpleRegister<uint32_t>("IE", &regs[REG_IE].lo);
-	registers_registry["IF"] = new unisim::util::debug::SimpleRegister<uint32_t>("IF", &regs[REG_IF].lo);
-	registers_registry["IOF"] = new unisim::util::debug::SimpleRegister<uint32_t>("IOF", &regs[REG_IOF].lo);
-	registers_registry["RS"] = new unisim::util::debug::SimpleRegister<uint32_t>("RS", &regs[REG_RS].lo);
-	registers_registry["RE"] = new unisim::util::debug::SimpleRegister<uint32_t>("RE", &regs[REG_RE].lo);
-	registers_registry["RC"] = new unisim::util::debug::SimpleRegister<uint32_t>("RC", &regs[REG_RC].lo);
+	registers_registry["IE"] = new RegisterDebugInterface("IE", &regs[REG_IE]);
+	registers_registry["IF"] = new RegisterDebugInterface("IF", &regs[REG_IF]);
+	registers_registry["IOF"] = new RegisterDebugInterface("IOF", &regs[REG_IOF]);
+	registers_registry["RS"] = new RegisterDebugInterface("RS", &regs[REG_RS]);
+	registers_registry["RE"] = new RegisterDebugInterface("RE", &regs[REG_RE]);
+	registers_registry["RC"] = new RegisterDebugInterface("RC", &regs[REG_RC]);
 
 }
 
@@ -321,8 +296,8 @@ Reset()
 	unsigned int reg_num;
 	for(reg_num = 0; reg_num < sizeof(regs) / sizeof(regs[0]); reg_num++)
 	{
-		regs[reg_num].lo = 0;
-		regs[reg_num].hi = 0;
+		regs[reg_num].SetLo(0);
+		regs[reg_num].SetHi(0);
 	}
 
 	reset = true;
@@ -397,7 +372,7 @@ InjectWriteMemory(uint64_t addr, const void *buffer, uint32_t size)
  * @return        A pointer to the RegisterInterface corresponding to name.
  */
 template<class CONFIG, bool DEBUG>
-Register *
+unisim::util::debug::Register *
 CPU<CONFIG, DEBUG> ::
 GetRegister(const char *name)
 {

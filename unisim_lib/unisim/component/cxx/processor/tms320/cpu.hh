@@ -90,7 +90,6 @@ using unisim::service::interfaces::MemoryInjection;
 using unisim::service::interfaces::Registers;
 using unisim::service::interfaces::SymbolTableLookup;
 using unisim::service::interfaces::OS;
-using unisim::util::debug::Register;
 using std::string;
 
 // Status register bitfields offsets
@@ -125,31 +124,62 @@ static const unsigned int M_ST_GIE = 1 << ST_GIE;
 
 static const uint32_t ADDRESS_MASK = 0xffffff; // 24-bit mask
 
-typedef struct
+class Register
 {
+public:
+	Register();
+
+	inline void SetLo(uint32_t value) INLINE;
+	inline uint32_t GetLo() const INLINE;
+	inline void SetHi(uint8_t value) INLINE;
+	inline uint8_t GetHi() const INLINE;
+
+	void SetLoWriteMask(uint32_t lo_write_mask);
+private:
 	uint32_t lo_write_mask; // write mask for the 32 LSBs
 	uint32_t lo; // 32 LSB
 	uint8_t hi;  // 8 MSB
-} reg_t;
+};
 
-class ExtendedPrecisionRegisterDebugInterface : public unisim::util::debug::Register
+inline void Register::SetLo(uint32_t value)
+{
+	lo = value & lo_write_mask;
+}
+
+inline uint32_t Register::GetLo() const
+{
+	return lo;
+}
+
+inline void Register::SetHi(uint8_t value)
+{
+	hi = value;
+}
+
+inline uint8_t Register::GetHi() const
+{
+	return hi;
+}
+
+class RegisterDebugInterface : public unisim::util::debug::Register
 {
 public:
-	ExtendedPrecisionRegisterDebugInterface(const char *name, reg_t *reg);
-	virtual ~ExtendedPrecisionRegisterDebugInterface();
+	RegisterDebugInterface(const char *name, unisim::component::cxx::processor::tms320::Register *reg, bool extended_precision = false);
+	virtual ~RegisterDebugInterface();
 	virtual const char *GetName() const;
 	virtual void GetValue(void *buffer) const;
 	virtual void SetValue(const void *buffer);
 	virtual int GetSize() const;
 private:
 	string name;
-	reg_t *reg;
+	bool extended_precision;
+	unisim::component::cxx::processor::tms320::Register *reg;
 };
 
 class RegisterBitFieldDebugInterface : public unisim::util::debug::Register
 {
 public:
-	RegisterBitFieldDebugInterface(const char *name, uint32_t *reg, unsigned int bit_offset, unsigned int bit_size = 1);
+	RegisterBitFieldDebugInterface(const char *name, unisim::component::cxx::processor::tms320::Register *reg, unsigned int bit_offset, unsigned int bit_size = 1);
 	virtual ~RegisterBitFieldDebugInterface();
 	virtual const char *GetName() const;
 	virtual void GetValue(void *buffer) const;
@@ -157,7 +187,7 @@ public:
 	virtual int GetSize() const;
 private:
 	string name;
-	uint32_t *reg;
+	unisim::component::cxx::processor::tms320::Register *reg;
 	unsigned int bit_offset;
 	unsigned int bit_size;
 };
@@ -267,7 +297,7 @@ public:
 	 * @param  name   The name of the requested register.
 	 * @return        A pointer to the RegisterInterface corresponding to name.
 	 */
-	virtual Register *GetRegister(const char *name);
+	virtual unisim::util::debug::Register *GetRegister(const char *name);
 
     //===============================================================
 	//= CPURegistersInterface interface methods                STOP =
@@ -413,7 +443,7 @@ public:
 	inline void SetIRQLevel(unsigned int n, bool level)
 	{
 		uint32_t mask = (1 << n) & IF_WRITE_MASK;
-		regs[REG_IF].lo = (regs[REG_IF].lo & ~mask) | mask;
+		regs[REG_IF].SetLo((regs[REG_IF].GetLo() & ~mask) | mask);
 	}
 
 	// CPU/DMA Interrupt Enable (IE) register bitfields offsets
@@ -503,7 +533,7 @@ public:
 
 private:
 	/** The registers interface for debugging purpose */
-	std::map<std::string, Register *> registers_registry;
+	std::map<std::string, unisim::util::debug::Register *> registers_registry;
 	/** indicates if the memory accesses require to be reported */
 	bool requires_memory_access_reporting;
 	/** indicates if the finished instructions require to be reported */
@@ -630,7 +660,7 @@ private:
 	uint32_t reg_ir;     // Instruction Register
 	address_t reg_pc;    // Program counter
 	address_t reg_npc;   // Next program counter (invisible for the programmer)
-	reg_t regs[32];
+	Register regs[32];
 
 	//===============================================================
 	//= Instruction cache                                     START =
@@ -681,7 +711,7 @@ public:
 	*/
 	inline uint32_t GetAR(unsigned int reg_num) const
 	{
-		return regs[REG_AR0 + reg_num].lo;
+		return regs[REG_AR0 + reg_num].GetLo();
 	}
 
 	/** Get ARn[23-0]
@@ -690,7 +720,7 @@ public:
 	*/
 	inline uint32_t GetAR23_0(unsigned int reg_num) const
 	{
-		return regs[REG_AR0 + reg_num].lo & ADDRESS_MASK;
+		return regs[REG_AR0 + reg_num].GetLo() & ADDRESS_MASK;
 	}
 
 	/** Get IR (instruction register)
@@ -714,7 +744,7 @@ public:
 	*/
 	inline uint32_t GetSP() const
 	{
-		return regs[REG_SP].lo;
+		return regs[REG_SP].GetLo();
 	}
 
 	/** Get SP[23-0]
@@ -722,7 +752,7 @@ public:
 	*/
 	inline uint32_t GetSP23_0() const
 	{
-		return regs[REG_SP].lo & ADDRESS_MASK;
+		return regs[REG_SP].GetLo() & ADDRESS_MASK;
 	}
 
 	/** Get ST
@@ -730,7 +760,7 @@ public:
 	*/
 	inline uint32_t GetST() const
 	{
-		return regs[REG_ST].lo;
+		return regs[REG_ST].GetLo();
 	}
 
 	/** Get register IF
@@ -738,7 +768,7 @@ public:
 	*/
 	inline uint32_t GetIF() const
 	{
-		return regs[REG_IF].lo;
+		return regs[REG_IF].GetLo();
 	}
 
 	/** Get register IE
@@ -746,7 +776,7 @@ public:
 	*/
 	inline uint32_t GetIE() const
 	{
-		return regs[REG_IE].lo;
+		return regs[REG_IE].GetLo();
 	}
 
 	/** Get DP (data-page pointer)
@@ -754,7 +784,7 @@ public:
 	*/
 	inline uint32_t GetDP() const
 	{
-		return regs[REG_DP].lo;
+		return regs[REG_DP].GetLo();
 	}
 
 	/** Get DP[7-0]
@@ -762,7 +792,7 @@ public:
 	*/
 	inline uint32_t GetDP8_0() const
 	{
-		return regs[REG_DP].lo & 0xff;
+		return regs[REG_DP].GetLo() & 0xff;
 	}
 
 	/** Set DP (data-page pointer)
@@ -770,7 +800,7 @@ public:
 	*/
 	inline void SetDP(uint32_t value)
 	{
-		regs[REG_DP].lo = value;
+		regs[REG_DP].SetLo(value);
 	}
 
 	/** Set DP[7-0]
@@ -778,7 +808,7 @@ public:
 	*/
 	inline void SetDP7_0(uint32_t value)
 	{
-		regs[REG_DP].lo = (regs[REG_DP].lo & ~0xff) | (value & 0xff);
+		regs[REG_DP].SetLo((regs[REG_DP].GetLo() & ~0xff) | (value & 0xff));
 	}
 
 	/** Set ST
@@ -786,7 +816,7 @@ public:
 	*/
 	inline void SetST(uint32_t value)
 	{
-		regs[REG_ST].lo = value;
+		regs[REG_ST].SetLo(value);
 	}
 
 	/** Check wether a register exists
@@ -829,9 +859,18 @@ public:
 	    @param reg_num the register number (0 <= reg_num <= 7)
 	    @return the 40-bit value stored into the extended precision register
 	*/
-	inline void GetExtReg(unsigned int reg_num, reg_t& value) const
+	inline Register& GetExtReg(unsigned int reg_num)
 	{
-		value = regs[REG_R0 + reg_num];
+		return regs[REG_R0 + reg_num];
+	}
+
+	/** Get 40-bit extended precision register value.
+	    @param reg_num the register number (0 <= reg_num <= 7)
+	    @return the 40-bit value stored into the extended precision register
+	*/
+	inline const Register& GetExtRegConst(unsigned int reg_num) const
+	{
+		return regs[REG_R0 + reg_num];
 	}
 
 	/** Get 32-bit integer register value.
@@ -840,7 +879,7 @@ public:
 	*/
 	inline uint32_t GetReg(unsigned int reg_num) const
 	{
-		return regs[reg_num].lo;
+		return regs[reg_num].GetLo();
 	}
 
 	/** Set 32-bit integer register value.
@@ -849,7 +888,7 @@ public:
 	*/
 	inline void SetReg(unsigned int reg_num, uint32_t value)
 	{
-		regs[reg_num].lo = value & regs[reg_num].lo_write_mask;
+		regs[reg_num].SetLo(value);
 	}
 
 	/** Set ARn[23-0] to a new value
@@ -858,7 +897,7 @@ public:
 	*/
 	inline void SetAR23_0(unsigned int reg_num, uint32_t value)
 	{
-		regs[REG_AR0 + reg_num].lo = (regs[REG_AR0 + reg_num].lo & ~ADDRESS_MASK) | value;
+		regs[REG_AR0 + reg_num].SetLo((regs[REG_AR0 + reg_num].GetLo() & ~ADDRESS_MASK) | value);
 	}
 
 	/** Set ARn to a new value
@@ -867,7 +906,7 @@ public:
 	*/
 	inline void SetAR(unsigned int reg_num, uint32_t value)
 	{
-		regs[REG_AR0 + reg_num].lo = value;
+		regs[REG_AR0 + reg_num].SetLo(value);
 	}
 
 	/** Set SP
@@ -875,7 +914,7 @@ public:
 	*/
 	inline void SetSP(uint32_t value)
 	{
-		regs[REG_SP].lo = value;
+		regs[REG_SP].SetLo(value);
 	}
 
 	/** Set SP[23-0]
@@ -883,16 +922,7 @@ public:
 	*/
 	inline void SetSP23_0(uint32_t value)
 	{
-		regs[REG_SP].lo = (regs[REG_SP].lo & ~ADDRESS_MASK) | value;
-	}
-
-	/** Set 40-bit extended precision register value.
-	    @param reg_num the register number (0 <= reg_num <= 7)
-	    @param value the 40-bit value to write into the register
-	*/
-	inline void SetExtReg(unsigned int reg_num, const reg_t& value)
-	{
-		regs[REG_R0 + reg_num] = value;
+		regs[REG_SP].SetLo((regs[REG_SP].GetLo() & ~ADDRESS_MASK) | value);
 	}
 
 	/** Get PC
@@ -933,27 +963,27 @@ public:
 	/** Get BK value
 	    @return the value of register BK
 	*/
-	inline uint32_t GetBK() const { return regs[REG_BK].lo; }
+	inline uint32_t GetBK() const { return regs[REG_BK].GetLo(); }
 
 	/** Get IR0
 	    @return 32-bit value of IR0
 	*/
-	inline uint32_t GetIR0() const { return regs[REG_IR0].lo; }
+	inline uint32_t GetIR0() const { return regs[REG_IR0].GetLo(); }
 
 	/** Get IR0[23-0]
 	    @return bits 23-0 of IR0
 	*/
-	inline uint32_t GetIR0_23_0() const { return regs[REG_IR0].lo & ADDRESS_MASK; }
+	inline uint32_t GetIR0_23_0() const { return regs[REG_IR0].GetLo() & ADDRESS_MASK; }
 
 	/** Get IR1
 	    @return 32-bit value of IR0
 	*/
-	inline uint32_t GetIR1() const { return regs[REG_IR0].lo; }
+	inline uint32_t GetIR1() const { return regs[REG_IR0].GetLo(); }
 
 	/** Get IR1[23-0]
 	    @return bits 23-0 of IR1
 	*/
-	inline uint32_t GetIR1_23_0() const { return regs[REG_IR1].lo & ADDRESS_MASK; }
+	inline uint32_t GetIR1_23_0() const { return regs[REG_IR1].GetLo() & ADDRESS_MASK; }
 
 	/** Store a 32-bit integer into memory
 	    @param ea the effective word address
@@ -1115,39 +1145,39 @@ public:
 	*/
 	inline void SetRE(uint32_t value)
 	{
-		regs[REG_RE].lo = value;
+		regs[REG_RE].SetLo(value);
 	}
 
 	/** Get RE
 	    @return 32-bit value of RE
 	*/
-	inline uint32_t GetRE() const { return regs[REG_RE].lo; }
+	inline uint32_t GetRE() const { return regs[REG_RE].GetLo(); }
 
 	/** Set RS
 	    @param value the value to write
 	*/
 	inline void SetRS(uint32_t value)
 	{
-		regs[REG_RS].lo = value;
+		regs[REG_RS].SetLo(value);
 	}
 
 	/** Get RS
 	    @return 32-bit value of RS
 	*/
-	inline uint32_t GetRS() const { return regs[REG_RS].lo; }
+	inline uint32_t GetRS() const { return regs[REG_RS].GetLo(); }
 
 	/** Set RC
 	    @param value the value to write
 	*/
 	inline void SetRC(uint32_t value)
 	{
-		regs[REG_RC].lo = value;
+		regs[REG_RC].SetLo(value);
 	}
 
 	/** Get RC
 	    @return 32-bit value of RC
 	*/
-	inline uint32_t GetRC() const { return regs[REG_RC].lo; }
+	inline uint32_t GetRC() const { return regs[REG_RC].GetLo(); }
 
 	/** Generate the condition flags in register ST
 	    @param result the value of the integer result

@@ -41,54 +41,87 @@ namespace cxx {
 namespace processor {
 namespace tms320 {
 
-ExtendedPrecisionRegisterDebugInterface::ExtendedPrecisionRegisterDebugInterface(const char *_name, reg_t *_reg)
+Register::Register()
+	: lo_write_mask(0xffffffff)
+	, lo(0)
+	, hi(0)
+{
+}
+
+void Register::SetLoWriteMask(uint32_t _lo_write_mask)
+{
+	lo_write_mask = _lo_write_mask;
+}
+
+RegisterDebugInterface::RegisterDebugInterface(const char *_name, unisim::component::cxx::processor::tms320::Register *_reg, bool _extended_precision)
 	: name(_name)
 	, reg(_reg)
+	, extended_precision(_extended_precision)
 {
 }
 
-ExtendedPrecisionRegisterDebugInterface::~ExtendedPrecisionRegisterDebugInterface()
+RegisterDebugInterface::~RegisterDebugInterface()
 {
 }
 
-const char *ExtendedPrecisionRegisterDebugInterface::GetName() const
+const char *RegisterDebugInterface::GetName() const
 {
 	return name.c_str();
 }
 
-void ExtendedPrecisionRegisterDebugInterface::GetValue(void *buffer) const
+void RegisterDebugInterface::GetValue(void *buffer) const
 {
-	// Packing the structure into the buffer
+	uint32_t lo = reg->GetLo();
+
+	if(extended_precision)
+	{
+		// Packing lo and hi into the buffer
+		uint8_t hi = reg->GetHi();
 #if BYTE_ORDER == LITTLE_ENDIAN
-	memcpy(buffer, &reg->lo, sizeof(reg->lo));
-	memcpy((char *) buffer + sizeof(reg->lo), &reg->hi, sizeof(reg->hi));
+		memcpy(buffer, &lo, sizeof(lo));
+		memcpy((char *) buffer + sizeof(lo), &hi, sizeof(hi));
 #else
-	memcpy(buffer, &reg->hi, sizeof(reg->hi));
-	memcpy((char *) buffer + sizeof(reg->hi), &reg->lo, sizeof(reg->lo));
+		memcpy(buffer, &hi, sizeof(hi));
+		memcpy((char *) buffer + sizeof(hi), &lo, sizeof(lo));
 #endif
+	}
+	else
+	{
+		memcpy(buffer, &lo, sizeof(lo));
+	}
 }
 
-void ExtendedPrecisionRegisterDebugInterface::SetValue(const void *buffer)
+void RegisterDebugInterface::SetValue(const void *buffer)
 {
-	// Unpacking the buffer into the structure
+	uint32_t lo;
+
+	if(extended_precision)
+	{
+		uint8_t hi;
+		// Unpacking the buffer into lo and hi
 #if BYTE_ORDER == LITTLE_ENDIAN
-	memcpy(&reg->lo, buffer, sizeof(reg->lo));
-	memcpy(&reg->hi, (char *) buffer + sizeof(reg->lo), sizeof(reg->hi));
+		memcpy(&lo, buffer, sizeof(lo));
+		memcpy(&hi, (char *) buffer + sizeof(lo), sizeof(hi));
 #else
-	memcpy(&reg->hi, buffer, sizeof(reg->hi));
-	memcpy(&req->lo, (char *) buffer + sizeof(reg->hi), sizeof(reg->lo));
+		memcpy(&hi, buffer, sizeof(hi));
+		memcpy(&lo, (char *) buffer + sizeof(hi), sizeof(lo));
 #endif
+		reg->SetHi(hi);
+	}
+	else
+	{
+		memcpy(&lo, buffer, sizeof(lo));
+	}
+
+	reg->SetLo(lo);
 }
 
-int ExtendedPrecisionRegisterDebugInterface::GetSize() const
+int RegisterDebugInterface::GetSize() const
 {
-	return sizeof(reg->lo) + sizeof(reg->hi);
+	return extended_precision ? sizeof(uint32_t) + sizeof(uint8_t) : sizeof(uint32_t);
 }
 
-
-
-
-RegisterBitFieldDebugInterface::RegisterBitFieldDebugInterface(const char *_name, uint32_t *_reg, unsigned int _bit_offset, unsigned int _bit_size)
+RegisterBitFieldDebugInterface::RegisterBitFieldDebugInterface(const char *_name, unisim::component::cxx::processor::tms320::Register *_reg, unsigned int _bit_offset, unsigned int _bit_size)
 	: name(_name)
 	, reg(_reg)
 	, bit_offset(_bit_offset)
@@ -107,7 +140,8 @@ const char *RegisterBitFieldDebugInterface::GetName() const
 
 void RegisterBitFieldDebugInterface::GetValue(void *buffer) const
 {
-	uint32_t value = (*reg >> bit_offset) & ((1 << bit_size) - 1);
+	uint32_t lo = reg->GetLo();
+	uint32_t value = (lo >> bit_offset) & ((1 << bit_size) - 1);
 
 	if(bit_size <= 8) *(uint8_t *) buffer = value; else
 	if(bit_size <= 16) *(uint16_t *) buffer = value; else *(uint32_t *) buffer = value;
@@ -120,7 +154,7 @@ void RegisterBitFieldDebugInterface::SetValue(const void *buffer)
 	if(bit_size <= 8) value = *(uint8_t *) buffer; else
 	if(bit_size <= 16) value = *(uint16_t *) buffer; else value = *(uint32_t *) buffer;
 
-	*reg = (*reg & ~(((1 << bit_size) - 1) << bit_offset)) | (value << bit_offset);
+	reg->SetLo((reg->GetLo() & ~(((1 << bit_size) - 1) << bit_offset)) | (value << bit_offset));
 }
 
 int RegisterBitFieldDebugInterface::GetSize() const
