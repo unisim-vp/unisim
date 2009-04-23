@@ -101429,7 +101429,7 @@ DEBUG
 >(code, addr, "FLOAT_reg")
 {
 	dst = ((code >> 16) & 0x7);
-	src = ((code >> 0) & 0x7);
+	src = ((code >> 0) & 0x1f);
 }
 
 template <
@@ -115239,7 +115239,7 @@ DEBUG
 #line 45 "isa/tms320.isa"
 	DEBUG
 #line 115242 "isa_tms320.tcc"
-	>(0x5800000UL, 0xfff8fff8UL, DecodeOpFLOAT_reg<
+	>(0x5800000UL, 0xfff8ffe0UL, DecodeOpFLOAT_reg<
 #line 45 "isa/tms320.isa"
 	CONFIG
 #line 115246 "isa_tms320.tcc"

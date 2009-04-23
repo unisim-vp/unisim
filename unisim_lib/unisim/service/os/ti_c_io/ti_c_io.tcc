@@ -47,6 +47,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
+#include <string.h>
 
 #ifdef WIN32
 #include <windows.h>
@@ -181,6 +182,24 @@ void TI_C_IO<MEMORY_ADDR>::GrowBuffer(uint32_t byte_length)
 	max_buffer_byte_length = byte_length;
 }
 
+template <class MEMORY_ADDR>
+const char *TI_C_IO<MEMORY_ADDR>::GetCommandFriendlyName(uint32_t command)
+{
+	switch(command)
+	{
+		case C_IO_CMD_OPEN: return "open";
+		case C_IO_CMD_CLOSE: return "close";
+		case C_IO_CMD_READ: return "read";
+		case C_IO_CMD_WRITE: return "write";
+		case C_IO_CMD_LSEEK: return "lseek";
+		case C_IO_CMD_UNLINK: return "unlink";
+		case C_IO_CMD_GETENV: return "getenv";
+		case C_IO_CMD_RENAME: return "rename";
+		case C_IO_CMD_GETTIME: return "gettime";
+		case C_IO_CMD_GETCLOCK: return "getclock";
+	}
+	return "?";
+}
 
 template <class MEMORY_ADDR>
 void TI_C_IO<MEMORY_ADDR>::ExecuteSystemCall()
@@ -210,7 +229,7 @@ void TI_C_IO<MEMORY_ADDR>::ExecuteSystemCall()
 
 	if(verbose)
 	{
-		logger << DebugInfo << "input msg:" << endl << "  - length=" << input_msg.length << endl << "  - command=0x" << hex << input_msg.command << dec << endl;
+		logger << DebugInfo << "input msg:" << endl << "  - length=" << input_msg.length << endl << "  - command=0x" << hex << input_msg.command << dec << " (" << GetCommandFriendlyName(input_msg.command) << ")" << endl;
 
 		for(i = 0; i < 4; i++)
 		{
@@ -347,6 +366,17 @@ void TI_C_IO<MEMORY_ADDR>::ExecuteSystemCall()
 }
 
 template <class MEMORY_ADDR>
+int TI_C_IO<MEMORY_ADDR>::TranslateFileDescriptor(int16_t fno)
+{
+	// Return an error if file descriptor does not exist
+	map<int16_t, int>::iterator iter = target_to_host_fildes.find(fno);
+	if(iter == target_to_host_fildes.end()) return -1;
+
+	// Translate the C I/O file descriptor to an host file descriptor
+	return (*iter).second;
+}
+
+template <class MEMORY_ADDR>
 int16_t TI_C_IO<MEMORY_ADDR>::c_io_open(const char *path, uint16_t c_io_flags, int16_t fno)
 {
 	if(verbose)
@@ -369,7 +399,7 @@ int16_t TI_C_IO<MEMORY_ADDR>::c_io_open(const char *path, uint16_t c_io_flags, i
 	if(iter != target_to_host_fildes.end()) return -1;
 
 	int fd;      // the host file descriptor
-	int flags;   // the host flags
+	int flags = 0;   // the host flags
 
 	// Translate C I/O flags to host flags
 	if(c_io_flags & C_IO_O_RDONLY) flags |= O_RDONLY;
@@ -394,7 +424,15 @@ int16_t TI_C_IO<MEMORY_ADDR>::c_io_open(const char *path, uint16_t c_io_flags, i
 	}
 
 	// if an error occurs, report an error
-	if(fd == -1) return -1;
+	if(fd == -1)
+	{
+		if(verbose)
+		{
+			logger << DebugInfo << "'open' reports an error (" << strerror(errno) << ")" << EndDebugInfo;
+		}
+
+		return -1;
+	}
 
 	// else keep relation between the C I/O file descriptor or the host file descriptor
 	target_to_host_fildes.insert(std::pair<int16_t, int>(fno, fd));
@@ -433,7 +471,14 @@ int16_t TI_C_IO<MEMORY_ADDR>::c_io_close(int16_t fno)
 	// Do not close host stdin, stdout or stderr
 	if(fd == 0 || fd == 1 || fd == 2) return 0;
 
-	return close(fd);
+	int ret = close(fd);
+
+	if(verbose && ret == -1)
+	{
+		logger << DebugInfo << "'close' reports an error (" << strerror(errno) << ")" << EndDebugInfo;
+	}
+
+	return ret;
 }
 
 template <class MEMORY_ADDR>
@@ -446,14 +491,25 @@ int16_t TI_C_IO<MEMORY_ADDR>::c_io_read(int16_t fno, char *buf, uint16_t count)
 		logger << DebugInfo << "read:" << endl << "  - fno=" << fno << endl << "  - count=" << count << EndDebugInfo;
 	}
 
+	// Translate TI C I/O file descriptor file descriptor to an host file descriptor
+	fd = TranslateFileDescriptor(fno);
+
 	// Return an error if file descriptor does not exist
-	map<int16_t, int>::iterator iter = target_to_host_fildes.find(fno);
-	if(iter == target_to_host_fildes.end()) return -1;
+	if(fd == -1) return -1;
 
-	// Translate the C I/O file descriptor to an host file descriptor
-	fd = (*iter).second;
+	if(verbose)
+	{
+		logger << DebugInfo << "file descriptor translation: fno=" << fno << " => fd=" << fd << EndDebugInfo;
+	}
 
-	return read(fd, buf, count);
+	ssize_t ret = read(fd, buf, count);
+
+	if(verbose && ret == -1)
+	{
+		logger << DebugInfo << "'read' reports an error (" << strerror(errno) << ")" << EndDebugInfo;
+	}
+
+	return ret;
 }
 
 template <class MEMORY_ADDR>
@@ -466,14 +522,20 @@ int16_t TI_C_IO<MEMORY_ADDR>::c_io_write(int16_t fno, const char *buf, uint16_t 
 		logger << DebugInfo << "write:" << endl << "  - fno=" << fno << endl << "  - count=" << count << EndDebugInfo;
 	}
 
+	// Translate TI C I/O file descriptor file descriptor to an host file descriptor
+	fd = TranslateFileDescriptor(fno);
+
 	// Return an error if file descriptor does not exist
-	map<int16_t, int>::iterator iter = target_to_host_fildes.find(fno);
-	if(iter == target_to_host_fildes.end()) return -1;
+	if(fd == -1) return -1;
 
-	// Translate the C I/O file descriptor to an host file descriptor
-	fd = (*iter).second;
+	ssize_t ret = write(fd, buf, count);
 
-	return write(fd, buf, count);
+	if(verbose && ret == -1)
+	{
+		logger << DebugInfo << "'write' reports an error (" << strerror(errno) << ")" << EndDebugInfo;
+	}
+
+	return ret;
 }
 
 template <class MEMORY_ADDR>
@@ -486,12 +548,11 @@ int16_t TI_C_IO<MEMORY_ADDR>::c_io_lseek(int16_t fno, int32_t offset, int16_t or
 		logger << DebugInfo << "lseek:" << endl << "  - fno=" << fno << endl << "  - offset=" << offset << endl << "  - origin=" << origin << EndDebugInfo;
 	}
 
-	// Return an error if file descriptor does not exist
-	map<int16_t, int>::iterator iter = target_to_host_fildes.find(fno);
-	if(iter == target_to_host_fildes.end()) return -1;
+	// Translate TI C I/O file descriptor file descriptor to an host file descriptor
+	fd = TranslateFileDescriptor(fno);
 
-	// Translate the C I/O file descriptor to an host file descriptor
-	fd = (*iter).second;
+	// Return an error if file descriptor does not exist
+	if(fd == -1) return -1;
 
 	int whence;
 
@@ -508,7 +569,14 @@ int16_t TI_C_IO<MEMORY_ADDR>::c_io_lseek(int16_t fno, int32_t offset, int16_t or
 			break;
 	}
 
-	return lseek(fd, offset, whence);
+	off_t ret = lseek(fd, offset, whence);
+
+	if(verbose && ret == -1)
+	{
+		logger << DebugInfo << "'lseek' reports an error (" << strerror(errno) << ")" << EndDebugInfo;
+	}
+
+	return ret;
 }
 
 template <class MEMORY_ADDR>
@@ -519,7 +587,14 @@ int16_t TI_C_IO<MEMORY_ADDR>::c_io_unlink(const char *path)
 		logger << DebugInfo << "unlink:" << endl << "  - path=\"" << path << "\"" << EndDebugInfo;
 	}
 
-	return unlink(path);
+	int ret = unlink(path);
+
+	if(verbose && ret == -1)
+	{
+		logger << DebugInfo << "'unlink' reports an error (" << strerror(errno) << ")" << EndDebugInfo;
+	}
+
+	return ret;
 }
 
 template <class MEMORY_ADDR>
@@ -530,7 +605,15 @@ const char *TI_C_IO<MEMORY_ADDR>::c_io_getenv(const char *name)
 		logger << DebugInfo << "getenv:" << endl << "  - name=\"" << name << "\"" << EndDebugInfo;
 	}
 
-	return getenv(name);
+	const char *ret = getenv(name);
+
+	if(verbose && !ret)
+	{
+		logger << DebugInfo << "'gentenv' reports an error (no match)" << EndDebugInfo;
+	}
+
+	return ret;
+
 }
 
 template <class MEMORY_ADDR>
@@ -541,7 +624,14 @@ int16_t TI_C_IO<MEMORY_ADDR>::c_io_rename(const char *oldpath, const char *newpa
 		logger << DebugInfo << "rename:" << endl << "  - oldpath=\"" << oldpath << "\"" << endl << "  - newpath=\"" << newpath << "\"" << EndDebugInfo;
 	}
 
-	return rename(oldpath, newpath);
+	int ret = rename(oldpath, newpath);
+
+	if(verbose && ret == -1)
+	{
+		logger << DebugInfo << "'rename' reports an error (" << strerror(errno) << ")" << EndDebugInfo;
+	}
+
+	return ret;
 }
 
 template <class MEMORY_ADDR>
@@ -552,7 +642,14 @@ uint32_t TI_C_IO<MEMORY_ADDR>::c_io_gettime()
 		logger << DebugInfo << "getime" << EndDebugInfo;
 	}
 
-	return time(0);
+	time_t ret = time(0);
+
+	if(verbose && ret == -1)
+	{
+		logger << DebugInfo << "'time' reports an error (" << strerror(errno) << ")" << EndDebugInfo;
+	}
+
+	return ret;
 }
 
 template <class MEMORY_ADDR>
@@ -563,7 +660,14 @@ uint32_t TI_C_IO<MEMORY_ADDR>::c_io_getclock()
 		logger << DebugInfo << "getclock" << EndDebugInfo;
 	}
 
-	return clock();
+	clock_t ret = clock();
+
+	if(verbose && ret == -1)
+	{
+		logger << DebugInfo << "'clock' reports an error (processor time used is not available or its value cannot be represented)" << EndDebugInfo;
+	}
+
+	return ret;
 }
 
 } // end of namespace ti_c_io

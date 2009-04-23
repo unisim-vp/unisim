@@ -163,6 +163,8 @@ private:
 	Parameter<bool> param_verbose;
 
 	void GrowBuffer(uint32_t byte_length);
+	const char *GetCommandFriendlyName(uint32_t command);
+	int TranslateFileDescriptor(int16_t fno);
 
 	int16_t c_io_open(const char *path, uint16_t c_io_flags, int16_t fno);
 	int16_t c_io_close(int16_t fno);
