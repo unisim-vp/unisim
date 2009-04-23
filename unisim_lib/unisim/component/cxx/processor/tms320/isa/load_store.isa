@@ -733,41 +733,31 @@ POPF.disasm = {
 }
 
 POPF.execute = {
-	//throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
-
-	// FIXME: this is an integer POP, not a floating point POP
-
-	// Check whether the destination register is valid
-	if(unlikely(!cpu.HasReg(dst)))
-	{
-		throw BogusOpcodeException<CONFIG, DEBUG>(this);
-	}
-
 	// Read SP
 	typename CONFIG::address_t sp = cpu.GetSP();
 
 	// Read the word at SP from memory
 	uint32_t result = cpu.IntLoad(sp & ADDRESS_MASK);
+	uint8_t hi = result >> 24;
+	uint32_t lo = result << 8;
 
 	// Compute the new value of SP
 	sp = sp - 1;
 
 	// Write back the result
-	cpu.SetReg(dst, result);
+	Register& reg = cpu.GetExtReg(dst);
+	reg.SetLo(lo);
+	reg.SetHi(hi);
 
 	// Update SP
 	cpu.SetSP(sp);
 
-	// Check whether destination operand is an extended precision register
-	if(cpu.IsExtReg(dst))
-	{
-		// Generate flags (into ST)
-		cpu.GenFlags(
-			result,
-			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-			M_ST_N | M_ST_Z    // or mask
-		);
-	}
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		reg,
+		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+		M_ST_N | M_ST_Z    // or mask
+	);
 }
 
 /* end of POPF (pop floating-point value from stack)
@@ -834,17 +824,11 @@ PUSHF.disasm = {
 }
 
 PUSHF.execute = {
-	// Check whether the source register number is valid
-	if(unlikely(!cpu.IsExtReg(src)))
-	{
-		throw BogusOpcodeException<CONFIG, DEBUG>(this);
-	}
-
 	// Read the source operand
 	const Register& src_value = cpu.GetExtRegConst(src);
 
 	// compute the result
-	uint32_t result = (src_value.GetHi() << 24) + (src_value.GetLo() >> 8);
+	uint32_t result = ((uint32_t)src_value.GetHi() << 24) + (src_value.GetLo() >> 8);
 
 	// Read SP and compute its new value
 	typename CONFIG::address_t sp = cpu.GetSP() + 1;
