@@ -2067,7 +2067,58 @@ FLOAT_imm.disasm = {
 }
 
 FLOAT_reg.execute = {
-	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+	// Check that source and destination registers are valid
+	if(unlikely(!cpu.HasReg(src) || !cpu.IsExtReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read source operand
+	uint32_t src_value = cpu.GetReg(src);
+
+	Register result;
+	result.SetLo(src_value);
+	result.SetHi(30);
+	unsigned int count_nsb = 0; // counter of non significative bits
+	bool neg = false;
+	if (result.GetLo())
+	{
+		if (result.GetLo() >= (uint32_t)0x80000000)
+		{
+			neg = true;
+			count_nsb = unisim::util::arithmetic::CountLeadingZeros(~result.GetLo()) - 1;
+		}
+		else
+		{
+			count_nsb = unisim::util::arithmetic::CountLeadingZeros(result.GetLo()) - 1;
+		}
+		result.SetLo(result.GetLo() << (count_nsb + 1));
+		result.SetHi(30 - count_nsb);
+		if (neg)
+		{
+			result.SetLo(result.GetLo() | (uint32_t)0x80000000);
+		}
+		else
+		{
+			result.SetLo(result.GetLo() & ~(uint32_t)0x80000000);
+		}
+	}
+	else
+	{
+		result.SetHi((uint8_t)0x080);
+	}
+	
+	// Write back result
+	Register& dst_reg = cpu.GetExtReg(dst);
+	dst_reg.SetHi(result.GetHi());
+	dst_reg.SetLo(result.GetLo());
+
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		result,
+		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+		M_ST_N | M_ST_Z // or mask
+	);
 }
 
 FLOAT_dir.execute = {

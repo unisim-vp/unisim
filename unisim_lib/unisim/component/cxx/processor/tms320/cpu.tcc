@@ -1720,6 +1720,45 @@ GenFlags(uint32_t result, uint32_t reset_mask, uint32_t or_mask, uint32_t carry_
 	SetST(st);
 }
 
+template<class CONFIG, bool DEBUG>
+inline
+void
+CPU<CONFIG, DEBUG> ::
+GenFlags(const Register& result, uint32_t reset_mask, uint32_t or_mask, uint32_t carry_out, uint32_t overflow)
+{
+	// Read ST
+	uint32_t st = GetST();
+
+	// Apply a reset mask
+	st = st & ~reset_mask;
+
+	// LV
+	if(or_mask & M_ST_LV) st |= (overflow << ST_LV);
+
+	// N
+	if(or_mask & M_ST_N)
+	{
+		uint32_t is_negative = ((int32_t) result.GetLo() < 0);
+		st |= (is_negative << ST_N);
+	}
+
+	// Z
+	if(or_mask & M_ST_Z)
+	{
+		uint32_t is_zero = (result.GetLo() == 0) && ((int8_t)result.GetHi() == -128);
+		st |= (is_zero << ST_Z);
+	}
+
+	// C
+	if(or_mask & M_ST_C) st |= (carry_out << ST_C);
+
+	// V
+	if(or_mask & M_ST_V) st |= (overflow << ST_V);
+
+	// Write back ST
+	SetST(st);
+}
+
 //===============================================================
 //= Verbose variables, parameters, and methods             STOP =
 //===============================================================

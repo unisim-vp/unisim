@@ -834,24 +834,23 @@ PUSHF.disasm = {
 }
 
 PUSHF.execute = {
-//	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
-
-	// FIXME: This is an integer PUSH, not an floating point PUSH
-
 	// Check whether the source register number is valid
-	if(unlikely(!cpu.HasReg(src)))
+	if(unlikely(!cpu.IsExtReg(src)))
 	{
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 
 	// Read the source operand
-	uint32_t src_value = cpu.GetReg(src);
+	const Register& src_value = cpu.GetExtRegConst(src);
+
+	// compute the result
+	uint32_t result = (src_value.GetHi() << 24) + (src_value.GetLo() >> 8);
 
 	// Read SP and compute its new value
 	typename CONFIG::address_t sp = cpu.GetSP() + 1;
 
-	// Store the source operand at SP + 1
-	cpu.IntStore(sp & ADDRESS_MASK, src_value);
+	// Store the result at SP + 1
+	cpu.IntStore(sp & ADDRESS_MASK, result);
 
 	// Update SP
 	cpu.SetSP(sp);
