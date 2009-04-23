@@ -596,7 +596,7 @@ bool CoffLoader<MEMORY_ADDR>::ParseSymbolTable(syment *symtab, unsigned long nsy
 					cerr << "size=" << fcn_aux->x_fsize << ",linenoptr=" << fcn_aux->x_lnnoptr << ", nextentry_index=" << fcn_aux->x_endndx << endl;
 				}
 
-				symbol_table.AddSymbol(sym_name, coff_sym->e_value * memory_atom_size, fcn_aux->x_fsize * memory_atom_size, unisim::util::debug::Symbol<MEMORY_ADDR>::SYM_FUNC);
+				symbol_table.AddSymbol(sym_name, coff_sym->e_value * memory_atom_size, fcn_aux->x_fsize * memory_atom_size, unisim::util::debug::Symbol<MEMORY_ADDR>::SYM_FUNC, memory_atom_size);
 			}
 			else if(sclass == C_STAT && derived_type1 == DT_NON && basic_type == T_NULL)
 			{
@@ -612,7 +612,7 @@ bool CoffLoader<MEMORY_ADDR>::ParseSymbolTable(syment *symtab, unsigned long nsy
 					cerr << "length=" << scn_aux->x_scnlen << endl;
 				}
 
-				symbol_table.AddSymbol(sym_name, coff_sym->e_value * memory_atom_size, scn_aux->x_scnlen * memory_atom_size, unisim::util::debug::Symbol<MEMORY_ADDR>::SYM_SECTION);
+				symbol_table.AddSymbol(sym_name, coff_sym->e_value * memory_atom_size, scn_aux->x_scnlen * memory_atom_size, unisim::util::debug::Symbol<MEMORY_ADDR>::SYM_SECTION, memory_atom_size);
 			}
 			else if(sclass == C_FILE && derived_type1 == DT_NON && basic_type == T_NULL)
 			{
@@ -641,7 +641,7 @@ bool CoffLoader<MEMORY_ADDR>::ParseSymbolTable(syment *symtab, unsigned long nsy
 					cerr << "filename=" << filename << endl;
 				}
 
-				symbol_table.AddSymbol(filename, coff_sym->e_value * memory_atom_size, 0, unisim::util::debug::Symbol<MEMORY_ADDR>::SYM_FILE);
+				symbol_table.AddSymbol(filename, coff_sym->e_value * memory_atom_size, 0, unisim::util::debug::Symbol<MEMORY_ADDR>::SYM_FILE, memory_atom_size);
 			}
 			else if((sclass == C_EXT || sclass == C_STAT) && derived_type1 == DT_ARY)
 			{
@@ -663,7 +663,7 @@ bool CoffLoader<MEMORY_ADDR>::ParseSymbolTable(syment *symtab, unsigned long nsy
 					cerr << "length=" << ary_aux->x_arylen << ", dim1=" << ary_aux->x_dim[0] << endl;
 				}
 
-				symbol_table.AddSymbol(sym_name, coff_sym->e_value * memory_atom_size, basic_type_sizes[basic_type] * ary_aux->x_arylen * memory_atom_size, unisim::util::debug::Symbol<MEMORY_ADDR>::SYM_OBJECT);
+				symbol_table.AddSymbol(sym_name, coff_sym->e_value * memory_atom_size, basic_type_sizes[basic_type] * ary_aux->x_arylen * memory_atom_size, unisim::util::debug::Symbol<MEMORY_ADDR>::SYM_OBJECT, memory_atom_size);
 			}
 			else
 			{
@@ -722,11 +722,11 @@ bool CoffLoader<MEMORY_ADDR>::ParseSymbolTable(syment *symtab, unsigned long nsy
 
 			if(sclass == C_EXT && derived_type1 == DT_NON)
 			{
-				symbol_table.AddSymbol(sym_name, coff_sym->e_value * memory_atom_size, basic_type_sizes[basic_type] * memory_atom_size, unisim::util::debug::Symbol<MEMORY_ADDR>::SYM_OBJECT);
+				symbol_table.AddSymbol(sym_name, coff_sym->e_value * memory_atom_size, basic_type_sizes[basic_type] * memory_atom_size, unisim::util::debug::Symbol<MEMORY_ADDR>::SYM_OBJECT, memory_atom_size);
 			}
 			else if(sclass == C_FILE && !numaux)
 			{
-				symbol_table.AddSymbol(sym_name, 0, 0, unisim::util::debug::Symbol<MEMORY_ADDR>::SYM_FILE);
+				symbol_table.AddSymbol(sym_name, 0, 0, unisim::util::debug::Symbol<MEMORY_ADDR>::SYM_FILE, memory_atom_size);
 			}
 		}
 	}
