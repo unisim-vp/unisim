@@ -30,26 +30,48 @@
 #  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 # Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
-#          Gilles Mouchard (gilles.mouchard@cea.fr)
-#          Reda   Nouacer (reda.nouacer@cea.fr)
 #
 
-AC_INIT([UNISIM TLM2 Interrupt Controller Component Library], [1.0])
+AC_INIT([UNISIM TLM2 STR7 EIC Interrupt Controller Component], [1.0])
 AC_CONFIG_AUX_DIR(config)
+AC_CONFIG_HEADERS([config.h])
+AC_CANONICAL_BUILD
+AC_CANONICAL_HOST
+AC_CANONICAL_TARGET
 
 AM_INIT_AUTOMAKE
 
+AC_PATH_PROGS(SH, sh)
+AC_PROG_CXX
 AC_PROG_INSTALL
+AC_LIBTOOL_WIN32_DLL # must be *before* AC_PROG_LIBTOOL
+AC_PROG_LIBTOOL
+AC_ENABLE_STATIC
+AC_ENABLE_SHARED
+AC_PROG_LN_S
+
+AC_LANG([C++])
+
+###### CHECK FOR C HEADERS ####################################################
+AC_CHECK_HEADERS([inttypes.h],,\
+    AC_MSG_ERROR([Some standard C headers are missing.]))
+
+###### CHECK FOR C++ HEADERS ##################################################
+AC_CHECK_HEADERS([string],,\
+    AC_MSG_ERROR([Some standard C++ headers are missing.]))
+
+UNISIM_CHECK_SYSTEMC
+UNISIM_CHECK_TLM20
+UNISIM_RELEASE
+
+UNISIM_LIBTOOL
 
 # files to generate
 #   this should include all the makefiles to generate
 AC_CONFIG_FILES([Makefile])
 
-UNISIM_CONFIG_SUBDIR(unisim-component-tlm2-interrupt-str7-xti, str7_xti)
-UNISIM_CONFIG_SUBDIR(unisim-component-tlm2-interrupt-str7-eic, str7_eic)
-
-
 # launch the generation of makefiles
 #   this must be the last command of configure.ac
 AC_OUTPUT
+
 

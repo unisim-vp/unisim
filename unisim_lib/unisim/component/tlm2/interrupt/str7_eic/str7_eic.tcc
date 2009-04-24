@@ -42,13 +42,21 @@
 										( (X) == tlm::BEGIN_RESP ? 	"BEGIN_RESP" : \
 										( (X) == tlm::END_RESP   ?  "END_RESP" : \
 										  							"UNINITIALIZED_PHASE"))))
-#define TRANS(X)	" - trans.level = " << (X).level;
+#define TRANS(X)	" - trans.level = " << (X).level
 
 namespace unisim {
 namespace component {
 namespace tlm2 {
 namespace interrupt {
 namespace str7_eic {
+
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebug;
+using unisim::kernel::logger::EndDebugInfo;
+using unisim::kernel::logger::EndDebugWarning;
+using unisim::kernel::logger::EndDebugError;
 
 template <unsigned int BUS_WIDTH, bool VERBOSE>
 STR7_EIC<BUS_WIDTH, VERBOSE> ::
@@ -118,7 +126,7 @@ STR7_EIC(const sc_module_name& name, Object* parent) :
 
 template <unsigned int BUS_WIDTH, bool VERBOSE>
 STR7_EIC<BUS_WIDTH, VERBOSE> ::
-~STR7_XTI()
+~STR7_EIC()
 {
 	if (param_verbose_all) delete param_verbose_all;
 	if (param_verbose_setup) delete param_verbose_setup;
@@ -572,7 +580,7 @@ FSMUpdate()
 		case tlm::TLM_ACCEPTED:
 		case tlm::TLM_UPDATED:
 			/* nothing else to do, wait for the response (which does nothing) */
-			break
+			break;
 		case tlm::TLM_COMPLETED:
 			/* release the transaction */
 			trans->release();
@@ -590,8 +598,10 @@ STR7_EIC<BUS_WIDTH, VERBOSE> ::
 ReadRegister(uint32_t const addr)
 {
 	uint32_t index = addr;
+	unsigned int sir_index = 0;
+
 	if (addr >= 0x60 && addr <= 0xdc) index = 0x60;
-	switch (addr)
+	switch (index)
 	{
 		case 0x0: // ICR always reads 0
 			return 0;
@@ -605,7 +615,7 @@ ReadRegister(uint32_t const addr)
 		case 0x18: // IVR
 			if (IsFSMWait())
 			{
-				Push(CICR, CIPR);
+				Push(CICR(), CIPR());
 				cicr = new_irq;
 				cipr = SIPL(new_irq);
 			}
@@ -618,12 +628,12 @@ ReadRegister(uint32_t const addr)
 		case 0x20: // IER0
 			return IER0();
 			break;
-		case 0x40: // IPR
-			return IPR();
+		case 0x40: // IPR0
+			return IPR0();
 			break;
 		case 0x60: // SIR
-			unsigned int i = (addr - 0x60) / 4;
-			return SIR(i);
+			sir_index = (addr - 0x60) / 4;
+			return SIR(sir_index);
 			break;
 		default:
 			return 0;
@@ -686,7 +696,7 @@ WriteRegister(uint32_t addr, uint32_t value)
 			{
 				for (unsigned int i = 0; i < NUM_IRQ; i++)
 				{
-					if (value & ((uint32_t)0x01 << i)) && (IPR0() & ((uint32_t)0x01 << i))
+					if ((value & ((uint32_t)0x01 << i)) && (IPR0() & ((uint32_t)0x01 << i)))
 					{
 						if (!has_irq)
 						{

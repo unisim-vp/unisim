@@ -11,10 +11,10 @@ SUBDIRS += str7_xti
 INCLUDE_SUBDIRS += str7_xti
 endif
 
-# if COND_str7_eic
-# SUBDIRS += str7_eic
-# INCLUDE_SUBDIRS += str7_eic
-# endif
+if COND_str7_eic
+SUBDIRS += str7_eic
+INCLUDE_SUBDIRS += str7_eic
+endif
 
 dist_share_DATA = COPYING
 

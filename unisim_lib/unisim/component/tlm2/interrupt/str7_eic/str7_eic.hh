@@ -37,7 +37,10 @@
 
 #include <systemc.h>
 #include <tlm.h>
-#include <inttypes.h.>
+#include <tlm_utils/passthrough_target_socket.h>
+#include <tlm_utils/simple_initiator_socket.h>
+#include <tlm_utils/peq_with_get.h>
+#include <inttypes.h>
 
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger.hh"
@@ -54,13 +57,15 @@ using unisim::component::tlm2::interrupt::TLMInterruptPayload;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::Object;
 using unisim::kernel::logger::Logger;
+using unisim::kernel::tlm2::PayloadFabric;
 
 template <typename MODULE>
 class IRQTargetSocket :
 	public tlm_utils::passthrough_target_socket_tagged<MODULE, 1, InterruptProtocolTypes>
 {
 public:
-	IRQTargetSocket() : passthrough_target_socket_tagged("in_irq");
+	IRQTargetSocket() : 
+		tlm_utils::passthrough_target_socket_tagged<MODULE, 1, InterruptProtocolTypes>("in_irq") {}
 };
 
 template <typename MODULE>
@@ -68,19 +73,22 @@ class FIQTargetSocket :
 	public tlm_utils::passthrough_target_socket_tagged<MODULE, 1, InterruptProtocolTypes>
 {
 public:
-	FIQTargetSocket() : passthrough_target_socket_tagged("in_fiq");
+	FIQTargetSocket() : 
+		tlm_utils::passthrough_target_socket_tagged<MODULE, 1, InterruptProtocolTypes>("in_fiq") {}
 };
+	
+static const unsigned int NUM_IRQ = 32;
+static const unsigned int NUM_FIQ = 2;
 
 template <unsigned int BUS_WIDTH = 32,
 		  bool VERBOSE = false>
 class STR7_EIC :
 	public Object,
-	public sc_module
+	public sc_module,
+	public tlm::tlm_fw_transport_if<>
 {
 private:
 	typedef STR7_EIC<BUS_WIDTH, VERBOSE> THIS_MODULE;
-	const unsigned int NUM_IRQ = 32;
-	const unsigned int NUM_FIQ = 2;
 
 public:
 	/* input socket for incomming IRQs */
@@ -95,8 +103,8 @@ public:
 	/* input socket for memory transactions */
 	tlm::tlm_target_socket<BUS_WIDTH> in_mem;
 
-	STR7_ECI(const sc_module_name& name, Object* parent = 0);
-	virtual ~STR7_XTI();
+	STR7_EIC(const sc_module_name& name, Object* parent = 0);
+	virtual ~STR7_EIC();
 
 	virtual bool Setup();
 
@@ -138,11 +146,31 @@ private:
 	 */
 	void IRQ(unsigned int index, bool level = true);
 
+	/** Puts an incomming IRQ into the fifo queue to be handled when time has come to do it.
+	 * @param index		the port that received the changed IRQ
+	 * @param level		interrupt level
+	 * @param t			the time that the interrupt is received
+	 */
+	void IRQ(unsigned int index, bool level, sc_core::sc_time& t);
+
+	/** Handle the incomming irqs at the right time */
+	void IRQFifoHandler();
+
 	/** Process an incomming FIQ signal change.
 	 * @param index		the port that received the change FIQ
 	 * @param level		interrupt level: true = interruption; false = no interruption
 	 */
 	void FIQ(unsigned int index, bool level = true);
+
+	/** Puts an incomming FIQ into the fifo queue to be handled when time has come to do it.
+	 * @param index		the port that received the changed FIQ
+	 * @param level		interrupt level
+	 * @param t			the time that the interrupt is received
+	 */
+	void FIQ(unsigned int index, bool level, sc_core::sc_time& t);
+
+	/** Handle the incomming fiqs at the right time */
+	void FIQFifoHandler();
 
 	/* interrupt controller registers */
 	uint32_t icr;
@@ -195,9 +223,7 @@ private:
 	};
 	tlm_utils::peq_with_get<irq_fifo_t> irq_fifo;
 	tlm_utils::peq_with_get<irq_fifo_t> fiq_fifo;
-	void IRQFifoHandler();
-	void FIQFifoHandler();
-
+	
 	/* START: FSM states */
 	enum fsm_state_t {READY, WAIT};
 	fsm_state_t fsm_state;
