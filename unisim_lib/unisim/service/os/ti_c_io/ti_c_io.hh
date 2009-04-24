@@ -153,14 +153,21 @@ private:
 	uint32_t max_buffer_byte_length;
 	uint8_t *buffer;
 
-	// TODO: remove these two parameters once we have symbol table support
-	//Parameter<MEMORY_ADDR> param_ciobuf_addr; 
+	bool enable;
+	Parameter<bool> param_enable; 
 
-	const char *C_IO_BUFFER_SYMBOL_NAME;
-	const char *C_IO_BREAKPOINT_SYMBOL_NAME;
+	string c_io_buffer_symbol_name;
+	string c_io_breakpoint_symbol_name;
 
-	bool verbose;
-	Parameter<bool> param_verbose;
+	Parameter<string> param_c_io_buffer_symbol_name;
+	Parameter<string> param_c_io_breakpoint_symbol_name;
+
+	bool verbose_all;
+	bool verbose_io;
+	bool verbose_setup;
+	Parameter<bool> param_verbose_all;
+	Parameter<bool> param_verbose_io;
+	Parameter<bool> param_verbose_setup;
 
 	void GrowBuffer(uint32_t byte_length);
 	const char *GetCommandFriendlyName(uint32_t command);

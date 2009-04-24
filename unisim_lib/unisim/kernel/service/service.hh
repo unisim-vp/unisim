@@ -173,8 +173,17 @@ public:
 	static void Dump(ostream& os);
 	static void DumpVariables(ostream& os, VariableBase::Type filter_type = VariableBase::VAR_VOID);
 	static void DumpStatistics(ostream& os);
+	static void DumpParameters(ostream& os);
+	static void DumpRegisters(ostream& os);
+
 	static bool XmlfyParameters(const char *filename);
+	static bool XmlfyStatistics(const char *filename);
+	static bool XmlfyRegisters(const char *filename);
+
 	static bool LoadXmlParameters(const char *filename);
+	static bool LoadXmlStatistics(const char *filename);
+	static bool LoadXmlRegisters(const char *filename);
+
 	static bool XmlfyVariables(const char *filename);
 	static bool LoadXmlVariables(const char *filename);
 
@@ -193,6 +202,9 @@ public:
 	static void GetStatistics(list<VariableBase *>& lst);
 
 	static VariableBase void_variable;
+
+	static void GetRootObjects(list<Object *>& lst);
+
 private:
 	friend class Object;
 	friend class VariableBase;
@@ -210,6 +222,7 @@ private:
 	static map<const char *, ServiceImportBase *, ltstr> imports;
 	static map<const char *, ServiceExportBase *, ltstr> exports;
 	static map<const char *, VariableBase *, ltstr> variables;
+
 //
 //	static void ProcessXmlVariableNode(xmlTextReaderPtr reader);
 };
@@ -360,13 +373,15 @@ public:
 	void Remove(ServiceExportBase& srv_export);
 	void Add(Object& object);
 	void Remove(Object& object);
+	void Add(VariableBase& var);
+	void Remove(VariableBase& var);
 	const list<ServiceImportBase *>& GetServiceImports() const;
 	const list<ServiceExportBase *>& GetServiceExports() const;
 	const list<Object *>& GetLeafs() const;
+	const list<VariableBase *>& GetVariables() const;
 	Object *GetParent() const;
 	void Disconnect();
 	VariableBase& operator [] (const char *name);
-	VariableBase *GetParam(const char *name);
 	list<ServiceImportBase *>& GetSetupDependencies();
 	void SetupDependsOn(ServiceImportBase& srv_import);
 	unsigned int GetID() const;
@@ -375,6 +390,7 @@ private:
 	static unsigned int next_id;
 	string object_name;
 	Object *parent;
+	list<VariableBase *> variables;
 	list<ServiceImportBase *> srv_imports;
 	list<ServiceExportBase *> srv_exports;
 	list<Object *> leaf_objects;

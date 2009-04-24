@@ -34,6 +34,8 @@
 
 #include <unisim/component/cxx/processor/tms320/cpu.hh>
 #include <unisim/util/endian/endian.hh>
+#include <iostream>
+#include <sstream>
 
 namespace unisim {
 namespace component {
@@ -52,6 +54,20 @@ void Register::SetLoWriteMask(uint32_t _lo_write_mask)
 {
 	lo_write_mask = _lo_write_mask;
 }
+
+std::ostream& operator << (std::ostream& os, const Register& reg)
+{
+	std::stringstream sstr;
+
+	sstr << "0x" << std::hex;
+	sstr.fill('0');
+	sstr.width(2);
+	sstr << (unsigned int) reg.hi;
+	sstr.width(8);
+	sstr << reg.lo;
+	return os << sstr.str();
+}
+
 
 RegisterDebugInterface::RegisterDebugInterface(const char *_name, unisim::component::cxx::processor::tms320::Register *_reg, bool _extended_precision)
 	: name(_name)

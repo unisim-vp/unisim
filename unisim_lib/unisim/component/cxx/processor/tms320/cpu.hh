@@ -49,6 +49,7 @@
 #include "unisim/component/cxx/processor/tms320/isa_tms320.hh"
 #include "unisim/util/endian/endian.hh"
 #include <stdexcept>
+#include <iosfwd>
 
 #include <string>
 #include <map>
@@ -133,6 +134,7 @@ public:
 	inline uint32_t GetLo() const INLINE;
 	inline void SetHi(uint8_t value) INLINE;
 	inline uint8_t GetHi() const INLINE;
+	friend std::ostream& operator << (std::ostream& os, const Register& reg);
 
 	void SetLoWriteMask(uint32_t lo_write_mask);
 private:

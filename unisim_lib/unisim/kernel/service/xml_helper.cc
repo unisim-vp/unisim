@@ -226,12 +226,6 @@ XmlfyVariable(xmlTextWriterPtr writer,
 	return 0;
 }
 
-bool 
-XMLHelper::
-XmlfyParameters(const char *filename) {
-	XmlfyVariables(filename, VariableBase::VAR_PARAMETER);
-}
-
 bool
 XMLHelper::
 LoadXmlVariables(const char *filename, VariableBase::Type type)
@@ -394,27 +388,6 @@ ProcessXmlVariableNode(xmlTextReaderPtr reader, VariableBase::Type type) {
 	}
 	
 	return true;
-}
-
-bool 
-XMLHelper::
-LoadXmlParameters(const char *filename)
-{
-	return LoadXmlVariables(filename, VariableBase::VAR_PARAMETER);
-}
-
-bool
-XMLHelper::
-LoadXmlRegisters(const char *filename) 
-{
-	return LoadXmlVariables(filename, VariableBase::VAR_REGISTER);
-}
-
-bool
-XMLHelper::
-LoadXmlStatistics(const char *filename)
-{
-	return LoadXmlVariables(filename, VariableBase::VAR_STATISTIC);
 }
 
 } // end of namespace service

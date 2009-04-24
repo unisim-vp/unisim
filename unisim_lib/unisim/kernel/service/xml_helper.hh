@@ -48,12 +48,6 @@ public:
 	XMLHelper();
 	~XMLHelper();
 	
-	bool XmlfyParameters(const char *filename);
-	bool LoadXmlParameters(const char *filename);
-	bool XmlfyRegisters(const char *filename);
-	bool LoadXmlRegisters(const char *filename);
-	bool XmlfyStatistics(const char *filename);
-	bool LoadXmlStatistics(const char *filename);
 	bool XmlfyVariables(const char *filename, VariableBase::Type type = VariableBase::VAR_VOID);
 	bool LoadXmlVariables(const char *filename, VariableBase::Type type = VariableBase::VAR_VOID);
 	

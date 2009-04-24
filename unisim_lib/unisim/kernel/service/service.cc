@@ -47,6 +47,7 @@
 #include <boost/graph/graphviz.hpp>
 
 #include "unisim/kernel/service/xml_helper.hh"
+#include "unisim/kernel/logger/logger_server.hh"
 
 namespace unisim {
 namespace kernel {
@@ -70,6 +71,7 @@ VariableBase::VariableBase(const char *_name, Object *_owner, Type _type, const 
 	type(_type),
 	enumerated_values()
 {
+	_owner->Add(*this);
 	ServiceManager::Register(this);
 }
 
@@ -80,7 +82,8 @@ VariableBase::VariableBase() :
 
 VariableBase::~VariableBase()
 {
-	if(owner) ServiceManager::Unregister(this);
+	if(owner) owner->Remove(*this);
+	ServiceManager::Unregister(this);
 }
 
 const char *VariableBase::GetName() const
@@ -510,6 +513,30 @@ void Object::Remove(ServiceImportBase& srv_import)
 	}
 }
 
+void Object::Add(VariableBase& var)
+{
+	variables.push_back(&var);
+}
+
+void Object::Remove(VariableBase& var)
+{
+	list<VariableBase *>::iterator var_iter;
+
+	for(var_iter = variables.begin(); var_iter != variables.end(); var_iter++)
+	{
+		if(*var_iter == &var)
+		{
+			variables.erase(var_iter);
+			return;
+		}
+	}
+}
+
+const list<VariableBase *>& Object::GetVariables() const
+{
+	return variables;
+}
+
 const list<Object *>& Object::GetLeafs() const
 {
 	return leaf_objects;
@@ -812,6 +839,16 @@ void ServiceManager::DumpStatistics(ostream &os)
 	DumpVariables(os, VariableBase::VAR_STATISTIC);
 }
 
+void ServiceManager::DumpParameters(ostream &os)
+{
+	DumpVariables(os, VariableBase::VAR_PARAMETER);
+}
+
+void ServiceManager::DumpRegisters(ostream &os)
+{
+	DumpVariables(os, VariableBase::VAR_REGISTER);
+}
+
 bool ServiceManager::XmlfyVariables(const char *filename) {
 	XMLHelper xml_helper;
 	
@@ -827,13 +864,37 @@ bool ServiceManager::LoadXmlVariables(const char *filename) {
 bool ServiceManager::XmlfyParameters(const char *filename) {
 	XMLHelper xml_helper;
 	
-	return xml_helper.XmlfyParameters(filename);
+	return xml_helper.XmlfyVariables(filename, VariableBase::VAR_PARAMETER);
 }
 
 bool ServiceManager::LoadXmlParameters(const char *filename) {
 	XMLHelper xml_helper;
 	
-	return xml_helper.LoadXmlParameters(filename);
+	return xml_helper.LoadXmlVariables(filename, VariableBase::VAR_PARAMETER);
+}
+
+bool ServiceManager::XmlfyStatistics(const char *filename) {
+	XMLHelper xml_helper;
+	
+	return xml_helper.XmlfyVariables(filename, VariableBase::VAR_STATISTIC);
+}
+
+bool ServiceManager::LoadXmlStatistics(const char *filename) {
+	XMLHelper xml_helper;
+	
+	return xml_helper.LoadXmlVariables(filename, VariableBase::VAR_STATISTIC);
+}
+
+bool ServiceManager::XmlfyRegisters(const char *filename) {
+	XMLHelper xml_helper;
+	
+	return xml_helper.XmlfyVariables(filename, VariableBase::VAR_REGISTER);
+}
+
+bool ServiceManager::LoadXmlRegisters(const char *filename) {
+	XMLHelper xml_helper;
+	
+	return xml_helper.LoadXmlVariables(filename, VariableBase::VAR_REGISTER);
 }
 
 struct MyVertexProperty
@@ -863,14 +924,11 @@ bool ServiceManager::Setup()
 {
 	map<const char *, Object *, ltstr>::iterator object_iter;
 	DependencyGraph dependency_graph(objects.size());
-	Object *logger_obj = 0;
 	
 	for(object_iter = objects.begin(); object_iter != objects.end(); object_iter++)
 	{
 //		cerr << "Object: " << (*object_iter).second->GetName() << endl;
 		dependency_graph[(*object_iter).second->GetID()].obj = (*object_iter).second;
-		if(strcmp((*object_iter).second->GetName(), unisim::kernel::logger::LoggerServer::GetObjectName()) == 0)
-			logger_obj = (*object_iter).second;
 	}
 
 
@@ -878,10 +936,6 @@ bool ServiceManager::Setup()
 	{
 		list<ServiceImportBase *>& setup_dependencies = (*object_iter).second->GetSetupDependencies();
 		list<ServiceImportBase *>::iterator import_iter;
-
-		if(logger_obj && (*object_iter).second != logger_obj) {
-			add_edge(logger_obj->GetID(), (*object_iter).second->GetID(), dependency_graph);
-		}
 
 		for(import_iter = setup_dependencies.begin(); import_iter != setup_dependencies.end(); import_iter++)
 		{
@@ -912,6 +966,8 @@ bool ServiceManager::Setup()
 	typedef list<Vertex> SetupOrder;
 	SetupOrder setup_order;
 	topological_sort(dependency_graph, std::front_inserter(setup_order));
+
+	unisim::kernel::logger::LoggerServer::GetInstance()->Setup();
 
 	list<Vertex>::iterator vertex_iter;
 	for(vertex_iter = setup_order.begin(); vertex_iter != setup_order.end(); vertex_iter++)
@@ -992,6 +1048,23 @@ void ServiceManager::GetRegisters(list<VariableBase *>& lst)
 void ServiceManager::GetStatistics(list<VariableBase *>& lst)
 {
 	GetVariables(lst, VariableBase::VAR_STATISTIC);
+}
+
+void ServiceManager::GetRootObjects(list<Object *>& lst)
+{
+	map<const char *, Object *, ltstr>::iterator object_iter;
+
+	for(object_iter = objects.begin(); object_iter != objects.end(); object_iter++)
+	{
+		if((*object_iter).second)
+		{
+			if(!(*object_iter).second->GetParent())
+			{
+				cerr << "root: " << (*object_iter).second->GetName() << endl;
+				lst.push_back((*object_iter).second);
+			}
+		}
+	}
 }
 
 
