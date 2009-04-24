@@ -79,6 +79,7 @@ public:
 	
 static const unsigned int NUM_IRQ = 32;
 static const unsigned int NUM_FIQ = 2;
+static const unsigned int STACK_DEPTH = 15;
 
 template <unsigned int BUS_WIDTH = 32,
 		  bool VERBOSE = false>
@@ -225,12 +226,19 @@ private:
 	tlm_utils::peq_with_get<irq_fifo_t> fiq_fifo;
 	
 	/* START: FSM states */
+	/** The possible FSM states */
 	enum fsm_state_t {READY, WAIT};
+	/** The current FSM state */
 	fsm_state_t fsm_state;
+	/** Set FSM to READY state */
 	void FSMReady();
+	/** Set FSM to WAIT state */
 	void FSMWait();
+	/** Is the FSM at the READY state? */
 	bool IsFSMReady();
+	/** Is the FSM at the WAIT state? */
 	bool IsFSMWait();
+	/** Update the FSM */
 	void FSMUpdate();
 	/* END: FSM states */
 
@@ -240,10 +248,12 @@ private:
 		uint32_t cicr;
 		uint32_t cipr;
 	};
-	stack_entry_t stack[15];
+	stack_entry_t stack[STACK_DEPTH];
 	unsigned int stack_depth;
-	void Push(uint32_t cicr, uint32_t cipr);
-	bool Pop(uint32_t& cicr, uint32_t& cipr);
+	/** Pushes the CICR and the CIPR into the stack */
+	void Push();
+	/** Pops the top of the stack from the stack */
+	void Pop();
 	/* END: stack entries */
 
 	/* the interrupt payload fabric */

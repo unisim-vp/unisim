@@ -44,6 +44,14 @@
 										  							"UNINITIALIZED_PHASE"))))
 #define TRANS(X)	" - trans.level = " << (X).level
 
+#if defined(__GNUC__) && ((__GNUC__ >= 2 && __GNUC_MINOR__ >= 96) || __GNUC__ >= 3)
+#define likely(x)       __builtin_expect((x),1)
+#define unlikely(x)     __builtin_expect((x),0)
+#else
+#define likely(x) (x)
+#define unlikely(x) (x)
+#endif
+
 namespace unisim {
 namespace component {
 namespace tlm2 {
@@ -508,6 +516,42 @@ FIQ(unsigned int index, bool level)
 	FSMUpdate();
 }
 
+/** Set FSM to READY state */
+template <unsigned int BUS_WIDTH, bool VERBOSE>
+void 
+STR7_EIC<BUS_WIDTH, VERBOSE> ::
+FSMReady()
+{
+	fsm_state = READY;
+}
+
+/** Set FSM to WAIT state */
+template <unsigned int BUS_WIDTH, bool VERBOSE>
+void 
+STR7_EIC<BUS_WIDTH, VERBOSE> ::
+FSMWait()
+{
+	fsm_state = WAIT;
+}
+
+/** Is the FSM at the READY state? */
+template <unsigned int BUS_WIDTH, bool VERBOSE>
+bool 
+STR7_EIC<BUS_WIDTH, VERBOSE> ::
+IsFSMReady()
+{
+	return fsm_state == READY;
+}
+
+/** Is the FSM at the WAIT state? */
+template <unsigned int BUS_WIDTH, bool VERBOSE>
+bool 
+STR7_EIC<BUS_WIDTH, VERBOSE> ::
+IsFSMWait()
+{
+	return fsm_state == WAIT;
+}
+
 /** Update the FSM. */
 template <unsigned int BUS_WIDTH, bool VERBOSE>
 void
@@ -588,6 +632,48 @@ FSMUpdate()
 	}
 }
 
+/** Pushes the CICR and the CIPR into the stack */
+template <unsigned int BUS_WIDTH, bool VERBOSE>
+void 
+STR7_EIC<BUS_WIDTH, VERBOSE> ::
+Push()
+{
+	if (likely(stack_depth < STACK_DEPTH))
+	{
+		stack[stack_depth].cicr = CICR();
+		stack[stack_depth].cipr = CIPR();
+		stack_depth++;
+	}
+	else
+	{
+		logger << DebugError << "Stack overflow" << endl
+			<< LOCATION << EndDebugError;
+		sc_stop();
+		wait();
+	}
+}
+
+/** Pops the top of the stack from the stack */
+template <unsigned int BUS_WIDTH, bool VERBOSE>
+void 
+STR7_EIC<BUS_WIDTH, VERBOSE> ::
+Pop()
+{
+	if (likely(stack_depth != 0))
+	{
+		stack_depth--;
+		cicr = stack[stack_depth].cicr;
+		cipr = stack[stack_depth].cipr;
+	}
+	else
+	{
+		logger << DebugError << "Stack underflow" << endl
+			<< LOCATION << EndDebugError;
+		sc_stop();
+		wait();
+	}
+}
+
 /** Read register method and update interrupt controller state as necessary.
  * @param addr		the register address
  * @return 			the contents of the register
@@ -615,7 +701,7 @@ ReadRegister(uint32_t const addr)
 		case 0x18: // IVR
 			if (IsFSMWait())
 			{
-				Push(CICR(), CIPR());
+				Push();
 				cicr = new_irq;
 				cipr = SIPL(new_irq);
 			}
@@ -711,7 +797,7 @@ WriteRegister(uint32_t addr, uint32_t value)
 			{
 				if (irq == CICR())
 				{
-					Pop(cicr, cipr);
+					Pop();
 				}
 			}
 			FSMUpdate();
