@@ -43,7 +43,8 @@
 #include "unisim/component/tlm2/processor/arm/arm.hh"
 #include "unisim/component/tlm2/memory/ram/memory.hh"
 #include "unisim/component/tlm2/interconnect/generic_router/router.hh"
-#include "unisim/component/tlm2/interconnect/generic_router/router.tcc"
+#include "router_config.hh"
+#include "unisim/component/tlm2/interrupt/str7_eic/str7_eic.hh"
 
 #include "unisim/service/time/sc_time/time.hh"
 #include "unisim/service/time/host_time/time.hh"
@@ -86,29 +87,22 @@ using unisim::service::debug::inline_debugger::InlineDebugger;
 #define STR7_VERBOSE
 #endif
 
-class RouterConfig {
-public:
-	static const unsigned int INPUT_SOCKETS = 1;
-	static const unsigned int OUTPUT_SOCKETS = 1;
-	static const unsigned int MAX_NUM_MAPPINGS = 256;
-	static const unsigned int BUSWIDTH = 32;
-	typedef tlm::tlm_base_protocol_types TYPES;
-#ifdef STR7_VERBOSE
-	static const bool VERBOSE = true;
-#else
-	static const bool VERBOSE = false;
-#endif
-};
-typedef unisim::component::tlm2::interconnect::generic_router::Router<RouterConfig> ROUTER;
 
 #ifdef STR7_VERBOSE
 typedef unisim::component::cxx::processor::arm::ARM7TDMI_DebugConfig CPU_CONFIG;
+typedef unisim::component::tlm2::memory::ram::Memory<32, 1024 * 1024, true> MEMORY;
+typedef unisim::component::tlm2::memory::ram::Memory<32, 1024 * 1024, true> FLASH;
+typedef unisim::component::tlm2::interrupt::str7_eic::STR7_EIC<32, true> EIC;
+typedef unisim::component::tlm2::interconnect::generic_router::Router<RouterConfigVerbose> ROUTER;
 #else
 typedef unisim::component::cxx::processor::arm::ARM7TDMI_Config CPU_CONFIG;
+typedef unisim::component::tlm2::memory::ram::Memory<32, 1024 * 1024, false> MEMORY;
+typedef unisim::component::tlm2::memory::ram::Memory<32, 1024 * 1024, false> FLASH;
+typedef unisim::component::tlm2::interrupt::str7_eic::STR7_EIC<32, false> EIC;
+typedef unisim::component::tlm2::interconnect::generic_router::Router<RouterConfig> ROUTER;
 #endif
 typedef unisim::component::tlm2::processor::arm::ARM<CPU_CONFIG, true> CPU;
 
-typedef unisim::component::tlm2::memory::ram::Memory<32, 1024 * 1024, true> MEMORY;
 
 typedef unisim::service::loader::elf_loader::ElfLoaderImpl<uint64_t, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym> ElfLoader;
 
@@ -132,15 +126,6 @@ void help(char *prog_name) {
 	cerr << " --get-config <xml file>" << endl;
 	cerr << " -g <xml file>" << endl;
 	cerr << "            get the simulator default configuration xml file (you can use it to create your own configuration)" << endl << endl;
-//	cerr << " --xml-gdb <file>" << endl;
-//	cerr << " -x <file>" << endl;
-//	cerr << "            processor xml description file for gdb" << endl << endl;
-//	cerr << " --gdb-server <port_number>" << endl;
-//	cerr << " -d <port_number>" << endl;
-//	cerr << "            activate the gdb server and use the given port" << endl << endl;
-//	cerr << " --inline-debugger" << endl;
-//	cerr << " -i" << endl;
-//	cerr << "            activate the inline debugger (only active if logger option used)" << endl << endl;
 }
 
 // Front Side Bus template parameters
@@ -168,30 +153,18 @@ int sc_main(int argc, char *argv[]) {
 		{"get-variables", required_argument, 0, 'v'},
 		{"get-config", required_argument, 0, 'g'},
 		{"config", required_argument, 0, 'c'},
-//		{"logger", no_argument, 0, 'l'},
-//		{"xml-gdb", required_argument, 0, 'x'},
-//		{"gdb-server", required_argument, 0, 'd'},
-//		{"inline-debugger", no_argument, 0, 'i'},
 		{0, 0, 0, 0}
 	};
 
 	char const *set_config_name = "default_parameters.xml";
 	char const *get_config_name = "default_parameters.xml";
 	char const *get_variables_name = "default_variables.xml";
-//	char *filename = 0;
 	bool get_variables = false;
 	bool get_config = false;
 	bool set_config = false;
-//	bool use_logger = false;
-//	bool use_gdb_server = false;
-//	char *gdb_xml = 0;
-//	int gdb_server_port = 0;
-//	bool use_inline_debugger = false;
-	
 
 	// Parse the command line arguments
 	int c;
-//	while((c = getopt_long (argc, argv, "hv:g:c:ld:x:i", long_options, 0)) != -1) {
 	while((c = getopt_long (argc, argv, "hv:g:c:", long_options, 0)) != -1) {
 		switch(c) {
 		case 'h':
@@ -206,23 +179,10 @@ int sc_main(int argc, char *argv[]) {
 			get_config_name = optarg;
 			get_config = true;
 			break;
-//		case 'x':
-//			gdb_xml = optarg;
-//			break;
 		case 'c':
 			set_config_name = optarg;
 			set_config = true;
 			break;
-//		case 'l':
-//			use_logger = true;
-//			break;
-//		case 'd':
-//			gdb_server_port = atoi(optarg);
-//			use_gdb_server = true;
-//			break;
-//		case 'i':
-//			use_inline_debugger = true;
-//			break;
 		}
 	}
 
@@ -232,24 +192,16 @@ int sc_main(int argc, char *argv[]) {
 		return 0;
 	}
 
-//	filename = argv[optind];
-
-	// // Logger
-	// LoggerServer *logger = 0;
-	// if(use_logger)
-	// 	logger = new LoggerServer("logger");
-	
 	// Time
 	ScTime *time = new ScTime("time");
 	HostTime *host_time = new HostTime("host-time");
 	
-	// if(use_logger)
-	// 	logger->time_import >> time->time_export;
-
 	ElfLoader *elf_loader = 0;
 	MEMORY *memory = new MEMORY("memory");
 	ROUTER *router = new ROUTER("router");
 	CPU *cpu = new CPU("cpu");
+	FLASH *flash = new FLASH("flash");
+	EIC *eic = new EIC("eic");
 
 	// Instanciate an ELF32 loader
 	elf_loader = new ElfLoader("elf-loader");
@@ -264,9 +216,10 @@ int sc_main(int argc, char *argv[]) {
 #endif // STR7_DEBUG_INLINE
 
 	// Connect the CPU to the memory
-	// cpu->master_socket(memory->slave_sock);
-	router->init_socket[0](memory->slave_sock);
 	cpu->master_socket(router->targ_socket[0]);
+	router->init_socket[0](memory->slave_sock);
+	router->init_socket[1](flash->slave_sock);
+	router->init_socket[2](eic->in_mem);
 	cpu->memory_import >> memory->memory_export;
 
 	// Connect everything
@@ -308,18 +261,6 @@ int sc_main(int argc, char *argv[]) {
 		if(!get_config) help(argv[0]);
 		return 0;
 	}
-
-/*	if(use_gdb_server) {
-		cerr << "gdb_server_port = " << gdb_server_port << endl;
-		VariableBase *var =	ServiceManager::GetParameter("gdb-server.tcp-port");
-		*var = gdb_server_port;
-		if(gdb_xml != 0) {
-			cerr << "gdb_xml = " << gdb_xml << endl;
-			var = ServiceManager::GetParameter("gdb-server.architecture-description-filename");
-			*var = gdb_xml;
-		}
-	}
-*/
 
 	if(ServiceManager::Setup())
 	{
