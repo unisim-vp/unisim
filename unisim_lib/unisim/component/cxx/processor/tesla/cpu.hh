@@ -65,6 +65,7 @@
 #include <unisim/component/cxx/processor/tesla/maskstack.hh>
 #include <unisim/component/cxx/processor/tesla/implicit_flow.hh>
 #include <unisim/component/cxx/processor/tesla/tesla_flow.hh>
+#include <unisim/component/cxx/processor/tesla/hostfloat/hostfloat.hh>
 
 
 namespace unisim {

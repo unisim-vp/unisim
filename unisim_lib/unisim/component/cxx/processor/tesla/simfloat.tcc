@@ -78,6 +78,46 @@ inline SoftFloatIEEE& SoftFloatIEEE::signedSaturate()
 	return *this;
 }
 
+inline void SoftFloatIEEE::retrieveInteger(uint32_t& result, StatusAndControlFlags& flags) const
+{
+	flags.clear();
+	IntConversion ic;
+	ic.setSize(32);
+	ic.setUnsigned();
+	inherited::retrieveInteger(ic, flags);
+	result = ic.queryValue();
+}
+
+inline void SoftFloatIEEE::retrieveInteger(int32_t& result, StatusAndControlFlags& flags) const
+{
+	flags.clear();
+	IntConversion ic;
+	ic.setSize(32);
+	ic.setSigned();
+	inherited::retrieveInteger(ic, flags);
+	result = ic.queryValue();
+}
+
+inline void SoftFloatIEEE::retrieveInteger(uint16_t& result, StatusAndControlFlags& flags) const
+{
+	flags.clear();
+	IntConversion ic;
+	ic.setSize(16);
+	ic.setUnsigned();
+	inherited::retrieveInteger(ic, flags);
+	result = ic.queryValue();
+}
+
+inline void SoftFloatIEEE::retrieveInteger(int16_t& result, StatusAndControlFlags& flags) const
+{
+	flags.clear();
+	IntConversion ic;
+	ic.setSize(16);
+	ic.setSigned();
+	inherited::retrieveInteger(ic, flags);
+	result = ic.queryValue();
+}
+
 SoftHalfIEEE& SoftHalfIEEE::assign(const SoftFloatIEEE& sfFloat,
 	inherited::StatusAndControlFlags & flags)
 {

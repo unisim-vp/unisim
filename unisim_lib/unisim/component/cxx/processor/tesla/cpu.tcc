@@ -47,6 +47,7 @@
 #include <unisim/component/cxx/processor/tesla/maskstack.tcc>
 #include <unisim/component/cxx/processor/tesla/implicit_flow.tcc>
 #include <unisim/component/cxx/processor/tesla/tesla_flow.tcc>
+#include <unisim/component/cxx/processor/tesla/hostfloat/hostfloat.tcc>
 
 //#include <unisim/component/cxx/cache/cache.tcc>
 //#include <unisim/component/cxx/tlb/tlb.tcc>

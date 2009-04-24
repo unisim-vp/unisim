@@ -150,8 +150,14 @@ class IntConversion {
    unsigned int& operator[](int uIndex) { return biResult[uIndex]; }
    unsigned int operator[](int uIndex) const { return biResult[uIndex]; }
 };
-   
+
+class FloatFlags : public unisim::util::simfloat::Numerics::Double::Details::DTDoubleElement::Access::StatusAndControlFlags {
+  public:
+   FloatFlags() { setRoundToEven(); /*clearKeepSignalingConversion();*/ }
+};
+
 struct BuiltFloatTraits : unisim::util::simfloat::Numerics::Double::BuiltDoubleTraits<23, 8> {
+   typedef FloatFlags StatusAndControlFlags;
    typedef tesla::IntConversion IntConversion;
    typedef TFloatConversion<52,11> FloatConversion;
 };
@@ -163,21 +169,42 @@ struct SoftFloatIEEE : unisim::util::simfloat::Numerics::Double::TBuiltDouble<Bu
 private:
 	typedef unisim::util::simfloat::Numerics::Double::TBuiltDouble<BuiltFloatTraits> inherited;
 public:
+	typedef FloatFlags StatusAndControlFlags;
 	SoftFloatIEEE() : inherited() {}
 	SoftFloatIEEE(const uint32_t& uFloat) { setChunk((void *) &uFloat, true /* little endian */); }
 
-   void setInteger(unsigned int value, StatusAndControlFlags& scfFlags)
-      {  IntConversion icConversion;
-         icConversion.setSize(32);
-         icConversion.setUnsigned();
-         icConversion.assignUnsigned(value);
-         inherited::setInteger(icConversion, scfFlags);
-      }
+	void setInteger(uint32_t value, StatusAndControlFlags& scfFlags)
+	{
+		scfFlags.clear();
+		IntConversion icConversion;
+		icConversion.setSize(32);
+		icConversion.setUnsigned();
+		icConversion.assignUnsigned(value);
+		inherited::setInteger(icConversion, scfFlags);
+	}
 
-   void setInteger(IntConversion const & icConversion, StatusAndControlFlags& scfFlags)
-      {
-         inherited::setInteger(icConversion, scfFlags);
-      }
+	void setInteger(int32_t value, StatusAndControlFlags& scfFlags)
+	{
+		scfFlags.clear();
+		IntConversion icConversion;
+		icConversion.setSize(32);
+		icConversion.setSigned();
+		icConversion.assignSigned(value);
+		inherited::setInteger(icConversion, scfFlags);
+	}
+
+
+	void setInteger(IntConversion const & icConversion, StatusAndControlFlags& scfFlags)
+	{
+		scfFlags.clear();
+		inherited::setInteger(icConversion, scfFlags);
+	}
+
+	void retrieveInteger(uint32_t& result, StatusAndControlFlags& flags) const;
+	void retrieveInteger(int32_t& result, StatusAndControlFlags& flags) const;
+	void retrieveInteger(uint16_t& result, StatusAndControlFlags& flags) const;
+	void retrieveInteger(int16_t& result, StatusAndControlFlags& flags) const;
+
 	SoftFloatIEEE& operator=(const SoftFloatIEEE& sfSource)
 	  {  return (SoftFloatIEEE&) inherited::operator=(sfSource); }
 	SoftFloatIEEE& assign(const SoftFloatIEEE& sfSource)
@@ -194,10 +221,24 @@ public:
 		inherited::querySBasicExponent() = inherited::getZeroExponent();
 		inherited::querySMantissa() = 0U;
 	}
+	
+	SoftFloatIEEE& roundToInt(StatusAndControlFlags & flags) {
+		if(queryExponent() < UBitSizeMantissa + 1) {
+			IntConversion conv;
+			conv.setSize(UBitSizeMantissa + 1);
+			inherited::retrieveInteger(conv, flags);	// Rounded
+			inherited::setInteger(conv, flags);	// Exact op, no rounding
+		}
+		// otherwise, it is already an integer (or an inf/NaN).
+		return *this;
+	}
 
 };
 
 struct BuiltHalfTraits : unisim::util::simfloat::Numerics::Double::BuiltDoubleTraits<10, 5> {
+   typedef FloatFlags StatusAndControlFlags;
+   typedef tesla::IntConversion IntConversion;
+   typedef TFloatConversion<52,11> FloatConversion;
 };
 
 struct SoftHalfIEEE : unisim::util::simfloat::Numerics::Double::TBuiltDouble<BuiltHalfTraits>
@@ -205,6 +246,7 @@ struct SoftHalfIEEE : unisim::util::simfloat::Numerics::Double::TBuiltDouble<Bui
 private:
 	typedef unisim::util::simfloat::Numerics::Double::TBuiltDouble<BuiltHalfTraits> inherited;
 public:
+	typedef FloatFlags StatusAndControlFlags;
 	SoftHalfIEEE() : inherited() {}
 	SoftHalfIEEE(const uint16_t& uFloat) { setChunk((void *) &uFloat, true /* little endian */); }
 

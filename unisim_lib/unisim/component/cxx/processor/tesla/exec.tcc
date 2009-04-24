@@ -37,6 +37,7 @@
 
 #include <unisim/component/cxx/processor/tesla/exec.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
+#include <unisim/component/cxx/processor/tesla/simfloat.hh>
 
 #include <cmath>
 #include <cfloat>
@@ -88,7 +89,9 @@ VectorRegister<CONFIG> FSMad(VectorRegister<CONFIG> const & a,
 		}
 		
 		// G80-GT200: first mul always rounded to zero
-		sa.multAssign(sb, FPFlags().setZeroRound());
+		FPFlags tempflags;
+		tempflags.setZeroRound();	// cannot use return value from setZeroRound(): wrong type!
+		sa.multAssign(sb, tempflags);
 		float_t r = sa.plusAssign(sc, flags);
 		
 		if(sat) {
@@ -163,6 +166,7 @@ VectorRegister<CONFIG> FSAdd(VectorRegister<CONFIG> const & a,
 		FPFlags flags;
 		if(rounding_mode == RM_RN) {
 			flags.setNearestRound();
+			flags.setRoundToEven();
 		}
 		else if(rounding_mode == RM_RZ) {
 			flags.setZeroRound();
@@ -619,41 +623,48 @@ VectorRegister<CONFIG> ConvertFloatInt(VectorRegister<CONFIG> const & a, uint32_
 	VectorRegister<CONFIG> rv;
 	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i)
 	{
-		typename float_t::IntConversion conv;
+		float_t r;
 		switch(cvt_type)
 		{
 		case CT_U32:
-			conv.setSize(32);
-			conv.setUnsigned();
-			conv.assign(a[i]);
+		{
+			uint32_t ra = a[i];
+			r.setInteger(ra, flags);
 			break;
+		}
 		case CT_U16:
-			conv.setSize(16);
-			conv.setUnsigned();
-			conv.assign(a[i] & 0xffff);
+		{
+			uint16_t ra = a[i] & 0xffff;
+			r.setInteger(ra, flags);
 			break;
+		}
 		case CT_U8:
-			conv.setSize(8);
-			conv.setUnsigned();
-			conv.assign(a[i] & 0xff);
+		{
+			uint8_t ra = a[i] & 0xff;
+			r.setInteger(ra, flags);
 			break;
+		}
 		case CT_S32:
-			conv.setSize(32);
-			conv.assign(int32_t(a[i]));
+		{
+			int32_t ra = a[i];
+			r.setInteger(ra, flags);
 			break;
+		}
 		case CT_S16:
-			conv.setSize(16);
-			conv.assign(int16_t(a[i] & 0xffff));
+		{
+			int16_t ra = a[i] & 0xffff;
+			r.setInteger(ra, flags);
 			break;
+		}
 		case CT_S8:
-			conv.setSize(8);
-			conv.assign(int8_t(a[i] & 0xff));
+		{
+			int8_t ra = a[i] & 0xff;
+			r.setInteger(ra, flags);
 			break;
+		}
 		default:
 			assert(false);
 		}
-		float_t r;
-		r.setInteger(conv, flags);
 		rv.WriteSimfloat(r, i);
 	}
 	return rv;
@@ -672,6 +683,7 @@ void ConvertFloatFloat(VectorRegister<CONFIG> & a, bool dest_32, ConvType srctyp
 	{
 	case RM_RN:
 		flags.setNearestRound();
+		//flags.setRoundToEven();
 		break;
 	case RM_RZ:
 		flags.setZeroRound();
@@ -692,8 +704,9 @@ void ConvertFloatFloat(VectorRegister<CONFIG> & a, bool dest_32, ConvType srctyp
 		}
 		else {
 			// Upconvert to Binary32
-			half_t h = half_t(a[i]);
-			f.assign(h, flags);	// lossless
+			//half_t h = half_t(a[i]);
+			//f.assign(h, flags);	// lossless
+			assert(false);	// TODO
 		}
 		
 		switch(abssat)
@@ -714,13 +727,9 @@ void ConvertFloatFloat(VectorRegister<CONFIG> & a, bool dest_32, ConvType srctyp
 		}
 		
 		
-		if(cvt_int && f.queryExponent() < 24)
+		if(cvt_int /*&& f.queryExponent() < 24*/)
 		{
-			// If f >= 2^24, it is already an integer (or an inf/NaN).
-			// First convert to int32_t, then convert back to float
-			typename float_t::IntConversion conv;
-			f.retrieveInteger(conv, flags);	// Rounded
-			f.setInteger(conv, flags);	// Exact op, no rounding
+			f.roundToInt(flags);
 		}
 		
 		if(dest_32) {
@@ -728,10 +737,11 @@ void ConvertFloatFloat(VectorRegister<CONFIG> & a, bool dest_32, ConvType srctyp
 		}
 		else {
 			// Downconvert to Binary16
-			half_t h;
-			h.assign(f, flags);	// According to rounding mode
-								// BUG when rounding from fp16 to fp16, number representable in
+			//half_t h;
+			//h.assign(f, flags);	// According to rounding mode
+								// BUG when rounding from fp32 to fp16, number representable in
 								// float but not half and round toward zero?
+			assert(false);
 		}
 		
 	}
@@ -770,20 +780,26 @@ void ConvertIntFloat(VectorRegister<CONFIG> & a, bool issigned, bool dest_32, Co
 		}
 		else {
 			// Upconvert to Binary32
-			half_t h = half_t(a[i]);
-			f.assign(h, flags);	// lossless
+			//half_t h = half_t(a[i]);
+			//f.assign(h, flags);	// lossless
+			assert(false);
 		}
 
-		typename float_t::IntConversion conv;
+		//typename float_t::IntConversion conv;
+		uint32_t result;
 		if(issigned) {
-			conv.setSigned();
+			//conv.setSigned();
+			int32_t t;
+			f.retrieveInteger(t, flags);
+			result = t;
 		}
 		else {
-			conv.setUnsigned();
+			//conv.setUnsigned();
+			f.retrieveInteger(result, flags);
 		}
-		f.retrieveInteger(conv, flags);	// Rounded
+		//f.retrieveInteger(conv, flags);	// Rounded
 		if(dest_32) {
-			a[i] = conv.queryValue();
+			a[i] = result;//conv.queryValue();
 		}
 		else {
 			assert(false);	// TODO: implement... one day
@@ -953,7 +969,7 @@ VectorFlags<CONFIG> ComputePredSetFP32(VectorRegister<CONFIG> & output,
 template<class CONFIG>
 inline uint8_t Compare(typename CONFIG::float_t a, typename CONFIG::float_t b)
 {
-	switch(a.compareValue(b))
+	switch(a.compare(b))
 	{
 	case CONFIG::float_t::CRNaN:
 		return 3;
