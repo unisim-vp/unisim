@@ -174,7 +174,7 @@ public:
 	void SetLittleEndian();
 	void SetBigEndian();
 private:
-	bool is_little_endian;
+	bool little_endian;
 	std::vector<DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
@@ -266,33 +266,33 @@ public:
 	inline CodeType GetEncoding() const { return encoding; }
 	inline const char *GetName() const { return name; }
 	virtual
-#line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
+#line 40 "/Users/gracia/Developer/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 	bool
 #line 272 "isa_tms320.hh"
 	disasm(
-#line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
+#line 40 "/Users/gracia/Developer/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 	CPU<CONFIG, DEBUG> &
 #line 276 "isa_tms320.hh"
-#line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
+#line 40 "/Users/gracia/Developer/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 	cpu
 #line 279 "isa_tms320.hh"
 	,
-#line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
+#line 40 "/Users/gracia/Developer/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 	std::ostream &
 #line 283 "isa_tms320.hh"
-#line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
+#line 40 "/Users/gracia/Developer/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 	os
 #line 286 "isa_tms320.hh"
 	);
 	virtual
-#line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
+#line 36 "/Users/gracia/Developer/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 	void
 #line 291 "isa_tms320.hh"
 	execute(
-#line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
+#line 36 "/Users/gracia/Developer/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 	CPU<CONFIG, DEBUG> &
 #line 295 "isa_tms320.hh"
-#line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
+#line 36 "/Users/gracia/Developer/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 	cpu
 #line 298 "isa_tms320.hh"
 	);

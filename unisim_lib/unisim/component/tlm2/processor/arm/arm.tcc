@@ -116,6 +116,8 @@ ARM(const sc_module_name& name, Object *parent) :
 	sc_module(name),
 	CPU<CONFIG>(name, this, parent),
 	master_socket("master_socket"),
+	in_irq("in_irq"),
+	in_fiq("in_fiq"),
 	cpu_cycle_time(),
 	bus_cycle_time(),
 	cpu_time(),
@@ -150,6 +152,16 @@ ARM(const sc_module_name& name, Object *parent) :
 {
 	master_socket.bind(*this);
 	
+	in_irq.register_nb_transport_fw(this, &THIS_MODULE::IrqNbTransportFw);
+	in_irq.register_b_transport(this, &THIS_MODULE::IrqBTransport);
+	in_irq.register_transport_dbg(this, &THIS_MODULE::IrqTransportDbg);
+	in_irq.register_get_direct_mem_ptr(this, &THIS_MODULE::IrqGetDirectMemPtr);
+
+	in_fiq.register_nb_transport_fw(this, &THIS_MODULE::FiqNbTransportFw);
+	in_fiq.register_b_transport(this, &THIS_MODULE::FiqBTransport);
+	in_fiq.register_transport_dbg(this, &THIS_MODULE::FiqTransportDbg);
+	in_fiq.register_get_direct_mem_ptr(this, &THIS_MODULE::FiqGetDirectMemPtr);
+
 	SC_THREAD(Run);
 }
 
@@ -430,6 +442,126 @@ void
 ARM<CONFIG, BLOCKING> ::
 invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range) {
 	// nothing to do, we are not using dmi
+}
+	
+/**
+ * Implementation to handle incomming non blocking irq requests (received through the in_irq socket).
+ *
+ * @param trans      the incomming irq transaction
+ * @param phase      the tlm_phase_type of the transaction, only BEGIN_REQ is accepted for interruptions
+ * @param time       the time shift from the current time, at which the transaction is being send
+ * @return           the return status of the incomming transaction
+ */
+template <class CONFIG, bool BLOCKING>
+tlm::tlm_sync_enum
+ARM<CONFIG, BLOCKING> ::
+IrqNbTransportFw(TLMInterruptPayload& trans, phase_type &phase, sc_core::sc_time &time)
+{
+	/* TODO */
+	return tlm::TLM_COMPLETED;
+}
+
+/**
+ * Implementation to handle incomming blocking irq requests (received through the in_irq socket).
+ *
+ * @param trans      the incomming irq transaction
+ * @param time       the time shift from the current time, at which the transaction is being send
+ */
+template <class CONFIG, bool BLOCKING>
+void 
+ARM<CONFIG, BLOCKING> ::
+IrqBTransport(TLMInterruptPayload& trans, sc_core::sc_time &time)
+{
+	/* TODO */
+}
+
+/**
+ * Implementation to handle incomming debugging requests through the in_irq socket.
+ * Note that this interface should never be called, because the interrupts are not addressable.
+ *
+ * @param trans      the incomming irq debugging transaction
+ * @return           (not applicable) the number of bytes read/written
+ */
+template <class CONFIG, bool BLOCKING>
+unsigned int 
+ARM<CONFIG, BLOCKING> ::
+IrqTransportDbg(TLMInterruptPayload& trans)
+{
+	return 0;
+}
+
+/**
+ * Implementation of the handle of tlm_dmi requests received through the in_irq socket.
+ * Note that this interface should never be called, because the interrupts are not addressable.
+ * @param trans       the incomming irq tlm_dmi transaction
+ * @return            true on success, false otherwise (always false in the interrupts case)
+ */
+template <class CONFIG, bool BLOCKING>
+bool 
+ARM<CONFIG, BLOCKING> ::
+IrqGetDirectMemPtr(TLMInterruptPayload& trans, tlm::tlm_dmi& dmi)
+{
+	return false;
+}
+
+/**
+ * Implementation to handle incomming non blocking fiq requests (received through the in_fiq socket).
+ *
+ * @param trans      the incomming fiq transaction
+ * @param phase      the tlm_phase_type of the transaction, only BEGIN_REQ is accepted for interruptions
+ * @param time       the time shift from the current time, at which the transaction is being send
+ * @return           the return status of the incomming transaction
+ */
+template <class CONFIG, bool BLOCKING>
+tlm::tlm_sync_enum
+ARM<CONFIG, BLOCKING> ::
+FiqNbTransportFw(TLMInterruptPayload& trans, phase_type &phase, sc_core::sc_time &time)
+{
+	/* TODO */
+	return tlm::TLM_COMPLETED;
+}
+
+/**
+ * Implementation to handle incomming blocking fiq requests (received through the in_fiq socket).
+ *
+ * @param trans      the incomming fiq transaction
+ * @param time       the time shift from the current time, at which the transaction is being send
+ */
+template <class CONFIG, bool BLOCKING>
+void 
+ARM<CONFIG, BLOCKING> ::
+FiqBTransport(TLMInterruptPayload& trans, sc_core::sc_time &time)
+{
+	/* TODO */
+}
+
+/**
+ * Implementation to handle incomming debugging requests through the in_fiq socket.
+ * Note that this interface should never be called, because the interrupts are not addressable.
+ *
+ * @param trans      the incomming fiq debugging transaction
+ * @return           (not applicable) the number of bytes read/written
+ */
+template <class CONFIG, bool BLOCKING>
+unsigned int 
+ARM<CONFIG, BLOCKING> ::
+FiqTransportDbg(TLMInterruptPayload& trans)
+{
+	return 0;
+}
+
+/**
+ * Implementation of the handle of tlm_dmi requests received through the in_fiq socket.
+ * Note that this interface should never be called, because the interrupts are not addressable.
+ * @param trans       the incomming fiq tlm_dmi transaction
+ * @return            true on success, false otherwise (always false in the interrupts case)
+ */
+template <class CONFIG, bool BLOCKING>
+bool 
+ARM<CONFIG, BLOCKING> ::
+FiqGetDirectMemPtr(TLMInterruptPayload& trans, tlm::tlm_dmi& dmi)
+{
+	return false;
 }
 
 /**

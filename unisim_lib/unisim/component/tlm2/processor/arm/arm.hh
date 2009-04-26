@@ -37,10 +37,12 @@
 
 #include <systemc.h>
 #include <tlm.h>
+#include <tlm_utils/passthrough_target_socket.h>
 #include "unisim/component/cxx/processor/arm/cpu.hh"
 #include "unisim/component/cxx/processor/arm/cache_interface.hh"
 #include "unisim/kernel/tlm2/tlm.hh"
 #include "unisim/kernel/logger/logger.hh"
+#include "unisim/component/tlm2/interrupt/types.hh"
 #include <inttypes.h>
 #include <string>
 
@@ -51,6 +53,8 @@ namespace processor {
 namespace arm {
 
 using unisim::component::cxx::processor::arm::CPU;
+using unisim::component::tlm2::interrupt::InterruptProtocolTypes;
+using unisim::component::tlm2::interrupt::TLMInterruptPayload;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Client;
@@ -74,13 +78,16 @@ public:
 	
 	typedef typename CONFIG::address_t address_t;
 	typedef CPU<CONFIG> inherited;
+	typedef ARM<CONFIG, BLOCKING> THIS_MODULE;
 
 	/*****************************************************************************************************
 	 * Port to the bus and its virtual methods to handle incomming calls.                          START *
 	 *****************************************************************************************************/
+
 	// Master port to the bus port
 	tlm::tlm_initiator_socket<CONFIG::FSB_BURST_SIZE> master_socket;
 	
+private:
 	// virtual method implementation to handle backward path of transactions sent through the master_port
 	virtual sync_enum_type nb_transport_bw(transaction_type &trans, phase_type &phase, sc_core::sc_time &time);
 	// virtual method implementation to handle backward path of the dmi mechanism
@@ -89,7 +96,36 @@ public:
 	/*****************************************************************************************************
 	 * Port to the bus and its virtual methods to handle incomming calls.                            END *
 	 *****************************************************************************************************/
-	
+
+	/*****************************************************************************************************
+	 * Incomming ports for the incomming interrupts                                                START *
+	 *****************************************************************************************************/
+
+public:
+	// incomming port for the irq interrupts
+	tlm_utils::passthrough_target_socket<THIS_MODULE, 1, InterruptProtocolTypes> in_irq;
+
+private:
+	sync_enum_type IrqNbTransportFw(TLMInterruptPayload& trans, phase_type &phase, sc_core::sc_time &time);
+	void IrqBTransport(TLMInterruptPayload& trans, sc_core::sc_time &time);
+	unsigned int IrqTransportDbg(TLMInterruptPayload& trans);
+	bool IrqGetDirectMemPtr(TLMInterruptPayload& trans, tlm::tlm_dmi& dmi);
+
+public:
+	// incomming port for the fiq interrupts
+	tlm_utils::passthrough_target_socket<THIS_MODULE, 1, InterruptProtocolTypes> in_fiq;
+
+private:
+	sync_enum_type FiqNbTransportFw(TLMInterruptPayload& trans, phase_type &phase, sc_core::sc_time &time);
+	void FiqBTransport(TLMInterruptPayload& trans, sc_core::sc_time &time);
+	unsigned int FiqTransportDbg(TLMInterruptPayload& trans);
+	bool FiqGetDirectMemPtr(TLMInterruptPayload& trans, tlm::tlm_dmi& dmi);
+
+	/*****************************************************************************************************
+	 * Incomming ports for the incomming interrupts                                                  END *
+	 *****************************************************************************************************/
+
+public:
 	SC_HAS_PROCESS(ARM);
 	ARM(const sc_module_name& name, Object *parent = 0);
 	virtual ~ARM();
