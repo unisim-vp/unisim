@@ -68,6 +68,7 @@ VariableBase::VariableBase(const char *_name, Object *_owner, Type _type, const 
 	name(_owner ? _owner->GetName() + string(".") + string(_name) : _name), 
 	description(_description ? _description : ""),
 	owner(_owner),
+	container(0),
 	type(_type),
 	enumerated_values()
 {
@@ -75,8 +76,19 @@ VariableBase::VariableBase(const char *_name, Object *_owner, Type _type, const 
 	ServiceManager::Register(this);
 }
 
+VariableBase::VariableBase(const char *_name, VariableBase *_container, Type _type, const char *_description) :
+	name(_container ? _container->GetName() + string(".") + string(_name) : _name), 
+	description(_description ? _description : ""),
+	owner(0),
+	container(_container),
+	type(_type),
+	enumerated_values()
+{
+	ServiceManager::Register(this);
+}
+
 VariableBase::VariableBase() :
-	name(), owner(0), description(), type(VAR_VOID)
+	name(), owner(0), container(0), description(), type(VAR_VOID)
 {
 }
 
@@ -84,6 +96,16 @@ VariableBase::~VariableBase()
 {
 	if(owner) owner->Remove(*this);
 	ServiceManager::Unregister(this);
+}
+
+Object *VariableBase::GetOwner() const
+{
+	return owner;
+}
+
+VariableBase *VariableBase::GetObject() const
+{
+	return container;
 }
 
 const char *VariableBase::GetName() const
@@ -513,6 +535,25 @@ void Object::Remove(ServiceImportBase& srv_import)
 	}
 }
 
+void Object::Add(Object& object)
+{
+	leaf_objects.push_back(&object);
+}
+
+void Object::Remove(Object& object)
+{
+	list<Object *>::iterator object_iter;
+
+	for(object_iter = leaf_objects.begin(); object_iter != leaf_objects.end(); object_iter++)
+	{
+		if(*object_iter == &object)
+		{
+			leaf_objects.erase(object_iter);
+			return;
+		}
+	}
+}
+
 void Object::Add(VariableBase& var)
 {
 	variables.push_back(&var);
@@ -540,25 +581,6 @@ const list<VariableBase *>& Object::GetVariables() const
 const list<Object *>& Object::GetLeafs() const
 {
 	return leaf_objects;
-}
-
-void Object::Add(Object& object)
-{
-	leaf_objects.push_back(&object);
-}
-
-void Object::Remove(Object& object)
-{
-	list<Object *>::iterator object_iter;
-
-	for(object_iter = leaf_objects.begin(); object_iter != leaf_objects.end(); object_iter++)
-	{
-		if(*object_iter == &object)
-		{
-			leaf_objects.erase(object_iter);
-			return;
-		}
-	}
 }
 
 void Object::Disconnect()

@@ -321,7 +321,7 @@ AC_DEFUN([UNISIM_CHECK_SYSTEMC], [
 #####################################################
 AC_DEFUN([UNISIM_CHECK_TLM20], [
 	# Check if TLM2.0 path has been overloaded
-	AC_ARG_WITH(systemc,
+	AC_ARG_WITH(tlm20,
 	AS_HELP_STRING([--with-tlm20=<path>], [TLM2.0 library to use (will be completed with /include/tlm)]))
 	if test "x$with_tlm20" != "x"; then
 		AC_MSG_NOTICE([using TLM2.0 at $with_tlm20])

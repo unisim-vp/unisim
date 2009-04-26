@@ -63,6 +63,7 @@ using std::vector;
 
 class EmptyClientInterface {};
 class Object;
+class Object;
 class VariableBase;
 template <class TYPE> class Variable;
 template <class TYPE> class VariableArray;
@@ -103,8 +104,11 @@ public:
 
 	VariableBase();
 	VariableBase(const char *name, Object *owner, Type type, const char *description);
+	VariableBase(const char *name, VariableBase *container, Type type, const char *description);
 	virtual ~VariableBase();
 
+	Object *GetOwner() const;
+	VariableBase *GetObject() const;
 	const char *GetName() const;
 	const char *GetDescription() const;
 	Type GetType() const;
@@ -148,6 +152,7 @@ public:
 private:
 	string name;
 	Object *owner;
+	VariableBase *container;
 	string description;
 	vector<string> enumerated_values;
 	Type type;
