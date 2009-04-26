@@ -45,6 +45,7 @@
 #include "unisim/component/tlm2/interconnect/generic_router/router.hh"
 #include "router_config.hh"
 #include "unisim/component/tlm2/interrupt/str7_eic/str7_eic.hh"
+#include "unisim/component/tlm2/interrupt/master_stub.hh"
 
 #include "unisim/service/time/sc_time/time.hh"
 #include "unisim/service/time/host_time/time.hh"
@@ -102,6 +103,8 @@ typedef unisim::component::tlm2::interrupt::str7_eic::STR7_EIC<32, false> EIC;
 typedef unisim::component::tlm2::interconnect::generic_router::Router<RouterConfig> ROUTER;
 #endif
 typedef unisim::component::tlm2::processor::arm::ARM<CPU_CONFIG, true> CPU;
+typedef unisim::component::tlm2::interrupt::InterruptMasterStub IRQMSTUB;
+typedef unisim::component::tlm2::interrupt::InterruptMasterStub FIQMSTUB;
 
 
 typedef unisim::service::loader::elf_loader::ElfLoaderImpl<uint64_t, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym> ElfLoader;
@@ -202,6 +205,22 @@ int sc_main(int argc, char *argv[]) {
 	CPU *cpu = new CPU("cpu");
 	FLASH *flash = new FLASH("flash");
 	EIC *eic = new EIC("eic");
+	IRQMSTUB *irqmstub[32];
+	FIQMSTUB *fiqmstub[2];
+
+	for (unsigned int i = 0; i < 32; i++)
+	{
+		stringstream str;
+		str << "irq_master_stub[" << i << "]";
+		irqmstub[i] = new IRQMSTUB(str.str().c_str());
+	}
+
+	for (unsigned int i = 0; i < 2; i++)
+	{
+		stringstream str;
+		str << "fiq_master_stub[" << i << "]";
+		fiqmstub[i] = new FIQMSTUB(str.str().c_str());
+	}
 
 	// Instanciate an ELF32 loader
 	elf_loader = new ElfLoader("elf-loader");
@@ -220,6 +239,14 @@ int sc_main(int argc, char *argv[]) {
 	router->init_socket[0](memory->slave_sock);
 	router->init_socket[1](flash->slave_sock);
 	router->init_socket[2](eic->in_mem);
+
+	eic->out_irq(cpu->in_irq);
+	eic->out_fiq(cpu->in_fiq);
+	for (unsigned int i = 0; i < 32; i++)
+		irqmstub[i]->out_interrupt(eic->in_irq[i]);
+	for (unsigned int i = 0; i < 2; i++)
+		fiqmstub[i]->out_interrupt(eic->in_fiq[i]);
+
 	cpu->memory_import >> memory->memory_export;
 
 	// Connect everything

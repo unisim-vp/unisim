@@ -107,6 +107,7 @@ UNISIM_LINK(unisim_component_cxx_memory_ram)
 UNISIM_LINK(unisim_component_tlm2_processor_arm)
 UNISIM_LINK(unisim_component_tlm2_memory_ram)
 UNISIM_LINK(unisim_component_tlm2_interconnect_generic_router)
+UNISIM_LINK(unisim_component_tlm2_interrupt)
 UNISIM_LINK(unisim_component_tlm2_interrupt_str7_eic)
 
 UNISIM_LIBTOOL
