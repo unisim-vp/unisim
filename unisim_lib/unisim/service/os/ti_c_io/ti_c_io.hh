@@ -52,10 +52,11 @@
 #endif
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger.hh"
-#include "unisim/service/interfaces/os.hh"
+#include "unisim/service/interfaces/ti_c_io.hh"
 #include "unisim/service/interfaces/memory.hh"
 #include "unisim/service/interfaces/memory_injection.hh"
 #include "unisim/service/interfaces/symbol_table_lookup.hh"
+#include "unisim/service/interfaces/registers.hh"
 
 #if defined(__GNUC__) && (__GNUC__ >= 3)
 #define PACKED __attribute__ ((packed))
@@ -84,19 +85,22 @@ using unisim::kernel::logger::Logger;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::MemoryInjection;
 using unisim::service::interfaces::SymbolTableLookup;
+using unisim::service::interfaces::Registers;
 
 template <class MEMORY_ADDR>
 class TI_C_IO :
-	public Service<unisim::service::interfaces::OS>,
+	public Service<unisim::service::interfaces::TI_C_IO>,
 	public Client<Memory<MEMORY_ADDR> >,
 	public Client<MemoryInjection<MEMORY_ADDR> >,
-	public Client<SymbolTableLookup<MEMORY_ADDR> >
+	public Client<SymbolTableLookup<MEMORY_ADDR> >,
+	public Client<Registers>
 {
 public:
-	ServiceExport<unisim::service::interfaces::OS> os_export;
+	ServiceExport<unisim::service::interfaces::TI_C_IO> ti_c_io_export;
 
 	ServiceImport<Memory<MEMORY_ADDR> > memory_import;
 	ServiceImport<MemoryInjection<MEMORY_ADDR> > memory_injection_import;
+	ServiceImport<Registers> registers_import;
 	ServiceImport<SymbolTableLookup<MEMORY_ADDR> > symbol_table_lookup_import; 
 
     TI_C_IO(const char *name, Object *parent = 0);
@@ -105,7 +109,7 @@ public:
     virtual void OnDisconnect();
 	virtual bool Setup();
 
-    virtual void ExecuteSystemCall();
+    virtual unisim::service::interfaces::TI_C_IO::Status HandleEmulatorInterrupt();
 private:
 	// TI's C I/O commands
 	static const uint8_t C_IO_CMD_OPEN = 0xf0;
@@ -131,13 +135,15 @@ private:
 	static const int16_t C_IO_SEEK_CUR = 0x0001;
 	static const int16_t C_IO_SEEK_END = 0x0002;
 
+	static const unsigned int NUM_PARMS = 4;
+
 	map<int16_t, int> target_to_host_fildes;
 
 	typedef struct PACKED
 	{
 		uint32_t length;   // length of data in bytes after the parameters
 		uint32_t command;
-		uint16_t parm[4];
+		uint16_t parm[NUM_PARMS];
 	} InputMsg;
 
 	typedef struct PACKED
@@ -150,17 +156,26 @@ private:
 	unisim::kernel::logger::Logger logger;
 
 	MEMORY_ADDR c_io_buffer_addr;   // _CIOBUF_ I/O buffer address
+	MEMORY_ADDR c_exit_breakpoint_addr;   // C$$EXIT buffer address
 	uint32_t max_buffer_byte_length;
 	uint8_t *buffer;
 
 	bool enable;
 	Parameter<bool> param_enable; 
 
+	unisim::util::debug::Register *reg_pc;
+
+	bool warning_as_error;
+	string pc_register_name;
 	string c_io_buffer_symbol_name;
 	string c_io_breakpoint_symbol_name;
+	string c_exit_breakpoint_symbol_name;
 
+	Parameter<bool> param_warning_as_error;
+	Parameter<string> param_pc_register_name;
 	Parameter<string> param_c_io_buffer_symbol_name;
 	Parameter<string> param_c_io_breakpoint_symbol_name;
+	Parameter<string> param_c_exit_breakpoint_symbol_name;
 
 	bool verbose_all;
 	bool verbose_io;

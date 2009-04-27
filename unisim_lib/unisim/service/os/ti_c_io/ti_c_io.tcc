@@ -92,13 +92,15 @@ using unisim::service::interfaces::SymbolTableLookup;
 template <class MEMORY_ADDR>
 TI_C_IO<MEMORY_ADDR>::TI_C_IO(const char *name, Object *parent) :
 	Object(name, parent),
-	Service<unisim::service::interfaces::OS>(name, parent),
+	Service<unisim::service::interfaces::TI_C_IO>(name, parent),
 	Client<Memory<MEMORY_ADDR> >(name, parent),
 	Client<MemoryInjection<MEMORY_ADDR> >(name, parent),
+	Client<Registers>(name, parent),
 	Client<SymbolTableLookup<MEMORY_ADDR> >(name, parent),
-	os_export("os-export", this),
+	ti_c_io_export("ti-c-io-export", this),
 	memory_import("memory-import", this),
 	memory_injection_import("memory-injection-import", this),
+	registers_import("registers-import", this),
 	symbol_table_lookup_import("symbol-table-lookup-import", this),
 	logger(*this),
 	max_buffer_byte_length(0),
@@ -107,14 +109,21 @@ TI_C_IO<MEMORY_ADDR>::TI_C_IO(const char *name, Object *parent) :
 	verbose_io(false),
 	verbose_setup(false),
 	enable(false),
+	warning_as_error(false),
+	reg_pc(0),
+	pc_register_name("PC"),
 	c_io_breakpoint_symbol_name("C$$IO$$"),
 	c_io_buffer_symbol_name("__CIOBUF_"),
+	c_exit_breakpoint_symbol_name("C$$EXIT"),
 	param_verbose_all("verbose-all", this, verbose_all, "globally enable/disable verbosity"),
 	param_verbose_io("verbose-io", this, verbose_io, "enable/disable verbosity while I/Os"),
 	param_verbose_setup("verbose-setup", this, verbose_setup, "enable/disable verbosity while setup"),
 	param_enable("enable", this, enable, "enable/disable TI C I/O support"),
+	param_warning_as_error("warning-as-error", this, warning_as_error, "Whether Warnings are considered as error or not"),
+	param_pc_register_name("pc-register-name", this, pc_register_name, "Name of the CPU program counter register"),
 	param_c_io_breakpoint_symbol_name("c-io-breakpoint-symbol-name", this, c_io_breakpoint_symbol_name, "C I/O breakpoint symbol name"),
-	param_c_io_buffer_symbol_name("c-io-buffer-symbol-name", this, c_io_buffer_symbol_name, "C I/O buffer symbol name")
+	param_c_io_buffer_symbol_name("c-io-buffer-symbol-name", this, c_io_buffer_symbol_name, "C I/O buffer symbol name"),
+	param_c_exit_breakpoint_symbol_name("c-exit-breakpoint-symbol-name", this, c_exit_breakpoint_symbol_name, "C EXIT breakpoint symbol name")
 {
 	Object::SetupDependsOn(memory_import);
 	Object::SetupDependsOn(symbol_table_lookup_import);
@@ -147,10 +156,32 @@ bool TI_C_IO<MEMORY_ADDR>::Setup()
 			return false;
 		}
 
+		if(!registers_import)
+		{
+			logger << DebugError << registers_import.GetName() << " is not connected" << EndDebugError;
+			return false;
+		}
+
 		if(!symbol_table_lookup_import)
 		{
 			logger << DebugError << symbol_table_lookup_import.GetName() << " is not connected" << EndDebugError;
 			return false;
+		}
+
+		reg_pc = registers_import->GetRegister(pc_register_name.c_str());
+
+		if(!reg_pc)
+		{
+			logger << DebugWarning << "Undefined register " << pc_register_name << ". Disabling TI C I/O support" << EndDebugWarning;
+			enable = false;
+			return true;
+		}
+
+		if(reg_pc->GetSize() != 4)
+		{
+			logger << DebugWarning << "Register " << pc_register_name << " is not a 32-bit register. Disabling TI C I/O support" << EndDebugWarning;
+			enable = false;
+			return true;
 		}
 
 		const unisim::util::debug::Symbol<MEMORY_ADDR> *c_io_buffer_symbol = symbol_table_lookup_import->FindSymbolByName(c_io_buffer_symbol_name.c_str());
@@ -159,39 +190,61 @@ bool TI_C_IO<MEMORY_ADDR>::Setup()
 		{
 			logger << DebugWarning << "Undefined symbol " << c_io_buffer_symbol_name << ". Disabling TI C I/O support" << EndDebugWarning;
 			enable = false;
+			return true;
 		}
-		else
+
+		const unisim::util::debug::Symbol<MEMORY_ADDR> *c_io_breakpoint_symbol = symbol_table_lookup_import->FindSymbolByName(c_io_breakpoint_symbol_name.c_str());
+
+		if(!c_io_breakpoint_symbol)
 		{
-			const unisim::util::debug::Symbol<MEMORY_ADDR> *c_io_breakpoint_symbol = symbol_table_lookup_import->FindSymbolByName(c_io_breakpoint_symbol_name.c_str());
+			logger << DebugWarning << "Undefined symbol " << c_io_breakpoint_symbol_name << ". Disabling TI C I/O support" << EndDebugWarning;
+			enable = false;
+			return true;
+		}
 
-			if(!c_io_breakpoint_symbol)
-			{
-				logger << DebugWarning << "Undefined symbol " << c_io_breakpoint_symbol_name << ". Disabling TI C I/O support" << EndDebugWarning;
-				enable = false;
-			}
-			else
-			{
-				c_io_buffer_addr = c_io_buffer_symbol->GetAddress();
+		const unisim::util::debug::Symbol<MEMORY_ADDR> *c_exit_breakpoint_symbol = symbol_table_lookup_import->FindSymbolByName(c_exit_breakpoint_symbol_name.c_str());
 
-				if(verbose_setup || verbose_all)
-				{
-					logger << DebugInfo << "Using " << c_io_buffer_symbol->GetName() << " at 0x" << hex << c_io_buffer_addr << dec << " as I/O buffer" << EndDebugInfo;
-				}
+		if(!c_exit_breakpoint_symbol)
+		{
+			logger << DebugWarning << "Undefined symbol " << c_exit_breakpoint_symbol_name << ". Disabling TI C I/O support" << EndDebugWarning;
+			enable = false;
+			return true;
+		}
 
-				MEMORY_ADDR c_io_breakpoint_addr = c_io_breakpoint_symbol->GetAddress();
+		c_io_buffer_addr = c_io_buffer_symbol->GetAddress();
 
-				if(verbose_setup || verbose_all)
-				{
-					logger << DebugInfo << "Installing emulator breakpoint (SWI) at 0x" << hex << c_io_breakpoint_addr << dec << " (symbol " << c_io_breakpoint_symbol->GetName() << ")" << EndDebugInfo;
-				}
+		if(verbose_setup || verbose_all)
+		{
+			logger << DebugInfo << "Using " << c_io_buffer_symbol->GetName() << " at 0x" << hex << c_io_buffer_addr << dec << " as I/O buffer" << EndDebugInfo;
+		}
 
-				uint8_t swi[4] = { 0x00, 0x00, 0x00, 0x66 };
-				if(!memory_import->WriteMemory(c_io_breakpoint_addr, swi, sizeof(swi)))
-				{
-					logger << DebugError << "Cannot install breakpoint at 0x" << hex << c_io_breakpoint_addr << dec << ". Disabling TI C I/O support" << EndDebugError;
-					enable = false;
-				}
-			}
+		MEMORY_ADDR c_io_breakpoint_addr = c_io_breakpoint_symbol->GetAddress();
+		c_exit_breakpoint_addr = c_exit_breakpoint_symbol->GetAddress();
+
+		uint8_t swi[4] = { 0x00, 0x00, 0x00, 0x66 };
+
+		if(verbose_setup || verbose_all)
+		{
+			logger << DebugInfo << "Installing emulator breakpoint (SWI) for I/O at 0x" << hex << c_io_breakpoint_addr << dec << " (symbol " << c_io_breakpoint_symbol->GetName() << ")" << EndDebugInfo;
+		}
+
+		if(!memory_import->WriteMemory(c_io_breakpoint_addr, swi, sizeof(swi)))
+		{
+			logger << DebugError << "Cannot install breakpoint at 0x" << hex << c_io_breakpoint_addr << dec << ". Disabling TI C I/O support" << EndDebugError;
+			enable = false;
+			return true;
+		}
+
+		if(verbose_setup || verbose_all)
+		{
+			logger << DebugInfo << "Installing emulator breakpoint (SWI) for EXIT at 0x" << hex << c_exit_breakpoint_addr << dec << " (symbol " << c_exit_breakpoint_symbol->GetName() << ")" << EndDebugInfo;
+		}
+
+		if(!memory_import->WriteMemory(c_exit_breakpoint_addr, swi, sizeof(swi)))
+		{
+			logger << DebugError << "Cannot install breakpoint at 0x" << hex << c_exit_breakpoint_addr << dec << ". Disabling TI C I/O support" << EndDebugError;
+			enable = false;
+			return true;
 		}
 	}
 	else
@@ -240,20 +293,25 @@ const char *TI_C_IO<MEMORY_ADDR>::GetCommandFriendlyName(uint32_t command)
 }
 
 template <class MEMORY_ADDR>
-void TI_C_IO<MEMORY_ADDR>::ExecuteSystemCall()
+unisim::service::interfaces::TI_C_IO::Status TI_C_IO<MEMORY_ADDR>::HandleEmulatorInterrupt()
 {
-	if(!enable) return;
+	if(!enable) return unisim::service::interfaces::TI_C_IO::ERROR;
 
 	uint32_t i;
 	InputMsg input_msg;
 	MEMORY_ADDR addr = c_io_buffer_addr;
 
-	if(!memory_injection_import->InjectReadMemory(addr, &input_msg, sizeof(input_msg))) return;
+	uint32_t pc;
+	reg_pc->GetValue(&pc);
+
+	if((4 * pc) == c_exit_breakpoint_addr) return unisim::service::interfaces::TI_C_IO::EXIT;
+
+	if(!memory_injection_import->InjectReadMemory(addr, &input_msg, sizeof(input_msg))) return unisim::service::interfaces::TI_C_IO::ERROR;
 
 	// Adapt input message to host endianness
 	input_msg.length = unisim::util::endian::LittleEndian2Host(input_msg.length);
 	input_msg.command = unisim::util::endian::LittleEndian2Host(input_msg.command);
-	for(i = 0; i < 4; i++)
+	for(i = 0; i < NUM_PARMS; i++)
 	{
 		input_msg.parm[i] = unisim::util::endian::LittleEndian2Host(input_msg.parm[i]);
 	}
@@ -264,14 +322,14 @@ void TI_C_IO<MEMORY_ADDR>::ExecuteSystemCall()
 	{
 		addr += sizeof(input_msg);
 
-		if(!memory_injection_import->InjectReadMemory(addr, buffer, input_msg.length)) return;
+		if(!memory_injection_import->InjectReadMemory(addr, buffer, input_msg.length)) return unisim::service::interfaces::TI_C_IO::ERROR;
 	}
 
 	if((verbose_io || verbose_all))
 	{
 		logger << DebugInfo << "input msg:" << endl << "  - length=" << input_msg.length << endl << "  - command=0x" << hex << input_msg.command << dec << " (" << GetCommandFriendlyName(input_msg.command) << ")" << endl;
 
-		for(i = 0; i < 4; i++)
+		for(i = 0; i < NUM_PARMS; i++)
 		{
 			logger << "  - parm[" << i << "]=0x" << hex << input_msg.parm[i] << dec << endl;
 		}
@@ -362,7 +420,7 @@ void TI_C_IO<MEMORY_ADDR>::ExecuteSystemCall()
 
 	// Adapt output message to target endianness
 	output_msg.length = unisim::util::endian::Host2LittleEndian(output_msg.length);
-	for(i = 0; i < 4; i++)
+	for(i = 0; i < NUM_PARMS; i++)
 	{
 		output_msg.parm[i] = unisim::util::endian::Host2LittleEndian(output_msg.parm[i]);
 	}
@@ -370,7 +428,7 @@ void TI_C_IO<MEMORY_ADDR>::ExecuteSystemCall()
 	if((verbose_io || verbose_all))
 	{
 		logger << DebugInfo << "output msg:" << endl << "  - length=" << output_msg.length << endl;
-		for(i = 0; i < 4; i++)
+		for(i = 0; i < NUM_PARMS; i++)
 		{
 			logger << "  - parm[" << i << "]=0x" << hex << output_msg.parm[i] << dec << endl;
 		}
@@ -395,14 +453,16 @@ void TI_C_IO<MEMORY_ADDR>::ExecuteSystemCall()
 
 	addr = c_io_buffer_addr;
 
-	if(!memory_injection_import->InjectWriteMemory(addr, &output_msg, sizeof(output_msg))) return;
+	if(!memory_injection_import->InjectWriteMemory(addr, &output_msg, sizeof(output_msg))) return unisim::service::interfaces::TI_C_IO::ERROR;
 
 	if(output_msg.length)
 	{
 		addr += sizeof(output_msg);
 
-		if(!memory_injection_import->InjectWriteMemory(addr, buffer, output_msg.length)) return;
+		if(!memory_injection_import->InjectWriteMemory(addr, buffer, output_msg.length)) return unisim::service::interfaces::TI_C_IO::ERROR;
 	}
+
+	return unisim::service::interfaces::TI_C_IO::OK;
 }
 
 template <class MEMORY_ADDR>

@@ -218,14 +218,16 @@ int sc_main(int argc, char *argv[]) {
 	// Connect the CPU to the memory
 	cpu->master_socket(memory->slave_sock);
 	cpu->memory_import >> memory->memory_export;
-	cpu->os_import >> ti_c_io->os_export;
+	cpu->ti_c_io_import >> ti_c_io->ti_c_io_export;
 	ti_c_io->memory_import >> cpu->memory_export;
 	ti_c_io->memory_injection_import >> cpu->memory_injection_export;
+	ti_c_io->registers_import >> cpu->registers_export;
 	ti_c_io->symbol_table_lookup_import >> loader->symbol_table_lookup_export;
 
 	if(use_inline_debugger) {
 		cpu->debug_control_import >> inline_debugger->debug_control_export;
 		cpu->memory_access_reporting_import >> inline_debugger->memory_access_reporting_export;
+		cpu->trap_reporting_import >> inline_debugger->trap_reporting_export;
 		inline_debugger->disasm_import >> cpu->disasm_export;
 		inline_debugger->memory_import >> cpu->memory_export;
 		inline_debugger->registers_import >> cpu->registers_export;
@@ -233,6 +235,7 @@ int sc_main(int argc, char *argv[]) {
 		// Connect gdb-server to CPU
 		cpu->debug_control_import >> gdb_server->debug_control_export;
 		cpu->memory_access_reporting_import >> gdb_server->memory_access_reporting_export;
+		cpu->trap_reporting_import >> gdb_server->trap_reporting_export;
 		gdb_server->memory_import >> cpu->memory_export;
 		gdb_server->registers_import >> cpu->registers_export;
 		gdb_server->memory_access_reporting_control_import >> cpu->memory_access_reporting_control_export;

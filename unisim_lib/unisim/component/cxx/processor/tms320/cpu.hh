@@ -43,9 +43,10 @@
 #include "unisim/service/interfaces/memory_access_reporting.hh"
 #include "unisim/service/interfaces/memory.hh"
 #include "unisim/service/interfaces/memory_injection.hh"
+#include "unisim/service/interfaces/trap_reporting.hh"
 #include "unisim/service/interfaces/registers.hh"
 #include "unisim/service/interfaces/symbol_table_lookup.hh"
-#include "unisim/service/interfaces/os.hh"
+#include "unisim/service/interfaces/ti_c_io.hh"
 #include "unisim/component/cxx/processor/tms320/isa_tms320.hh"
 #include "unisim/util/endian/endian.hh"
 #include <stdexcept>
@@ -85,12 +86,13 @@ using unisim::kernel::service::Statistic;
 using unisim::service::interfaces::DebugControl;
 using unisim::service::interfaces::MemoryAccessReporting;
 using unisim::service::interfaces::MemoryAccessReportingControl;
+using unisim::service::interfaces::TrapReporting;
 using unisim::service::interfaces::Disassembly;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::MemoryInjection;
 using unisim::service::interfaces::Registers;
 using unisim::service::interfaces::SymbolTableLookup;
-using unisim::service::interfaces::OS;
+using unisim::service::interfaces::TI_C_IO;
 using std::string;
 
 // Status register bitfields offsets
@@ -198,6 +200,7 @@ template<class CONFIG, bool DEBUG = false>
 class CPU :
 	public Client<DebugControl<uint64_t> >,
 	public Client<MemoryAccessReporting<uint64_t> >,
+	public Client<TrapReporting>,
 	public Client<SymbolTableLookup<uint64_t> >,
 	public Service<MemoryInjection<uint64_t> >,
 	public Service<MemoryAccessReportingControl>,
@@ -205,9 +208,9 @@ class CPU :
 	public Service<Registers>,
 	public Service<Memory<uint64_t> >,
 	public Client<Memory<uint64_t> >,
-	public Client<OS>
+	public Client<TI_C_IO>
 {
-private:
+protected:
 	typedef typename CONFIG::address_t address_t;
 	
 	// the kernel logger
@@ -237,9 +240,10 @@ public:
 	
 	ServiceImport<DebugControl<uint64_t> > debug_control_import;
 	ServiceImport<MemoryAccessReporting<uint64_t> > memory_access_reporting_import;
+	ServiceImport<TrapReporting> trap_reporting_import;
 	ServiceImport<SymbolTableLookup<uint64_t> > symbol_table_lookup_import;
 	ServiceImport<Memory<uint64_t> > memory_import; // TODO: check for removal
-	ServiceImport<OS> os_import;
+	ServiceImport<TI_C_IO> ti_c_io_import;
 	
 	//===============================================================
 	//= Public service imports/exports                         STOP =
@@ -552,8 +556,10 @@ private:
 	//===============================================================
 
 	uint64_t instruction_counter;                         //!< Number of executed instructions
+	uint64_t trap_on_instruction_counter;
 	uint64_t max_inst;                                    //!< Maximum number of instructions to execute
 	Parameter<uint64_t> param_max_inst;                   //!< linked to member max_inst
+	Parameter<uint64_t> param_trap_on_instruction_counter;
 	Statistic<uint64_t> stat_instruction_counter;
 
 	//===============================================================

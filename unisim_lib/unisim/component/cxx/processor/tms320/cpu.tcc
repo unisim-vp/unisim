@@ -87,6 +87,7 @@ CPU(const char *name,
 	Object(name, parent),
 	Client<DebugControl<uint64_t> >(name, parent),
 	Client<MemoryAccessReporting<uint64_t> >(name, parent),
+	Client<TrapReporting>(name, parent),
 	Client<SymbolTableLookup<uint64_t> >(name, parent),
 	Service<MemoryAccessReportingControl> (name, parent),
 	Service<Disassembly<uint64_t> >(name, parent),
@@ -94,7 +95,7 @@ CPU(const char *name,
 	Service<Memory<uint64_t> >(name, parent),
 	Service<MemoryInjection<uint64_t> >(name, parent),
 	Client<Memory<uint64_t> >(name, parent),
-	Client<OS>(name, parent),
+	Client<TI_C_IO>(name, parent),
 	disasm_export("disasm_export", this),
 	registers_export("registers_export", this),
 	memory_access_reporting_control_export(
@@ -103,10 +104,11 @@ CPU(const char *name,
 	memory_export("memory_export", this),
 	debug_control_import("debug_control_import", this),
 	memory_access_reporting_import("memory_access_reporting_import", this),
+	trap_reporting_import("trap-reporting-import", this),
 	symbol_table_lookup_import("symbol_table_lookup_import", this),
 	memory_import("memory_import", this),
 	memory_injection_export("memory_injection_export", this),
-	os_import("os-import", this),
+	ti_c_io_import("ti-c-io-import", this),
 	requires_memory_access_reporting(true),
 	requires_finished_instruction_reporting(true),
 	logger(*this),
@@ -115,7 +117,9 @@ CPU(const char *name,
 	verbose_setup(false),
 	param_verbose_setup("verbose-setup", this, verbose_setup),
 	instruction_counter(0),
+	trap_on_instruction_counter(0xffffffffffffffffULL),
 	stat_instruction_counter("instruction-counter", this, instruction_counter),
+	param_trap_on_instruction_counter("trap-on-instruction-counter", this, trap_on_instruction_counter),
 	max_inst(0xffffffffffffffffULL),
 	param_max_inst("max-inst", this, max_inst),
 	stat_insn_cache_hits("insn-cache-hits", this, insn_cache_hits),
@@ -1365,6 +1369,11 @@ StepInstruction()
 		/* update the instruction counter */
 		instruction_counter++;
 
+		if(unlikely(trap_reporting_import && instruction_counter == trap_on_instruction_counter))
+		{
+			trap_reporting_import->ReportTrap();
+		}
+
 		if(unlikely(requires_finished_instruction_reporting))
 		{
 			if(unlikely(memory_access_reporting_import != 0))
@@ -1622,8 +1631,19 @@ bool
 CPU<CONFIG, DEBUG> ::
 SWI()
 {
-	if(!os_import) return false;
-	os_import->ExecuteSystemCall();
+	if(!ti_c_io_import) return false;
+	TI_C_IO::Status status = ti_c_io_import->HandleEmulatorInterrupt();
+
+	switch(status)
+	{
+		case TI_C_IO::ERROR:
+			return false;
+		case TI_C_IO::EXIT:
+			logger << DebugInfo << "Program exited normally" << EndDebugInfo;
+			Stop(0);
+		case TI_C_IO::OK:
+			return true;
+	}
 	return true;
 }
 
