@@ -114,7 +114,7 @@ public:
 	void SetLittleEndian();
 	void SetBigEndian();
 private:
-	bool little_endian;
+	bool is_little_endian;
 	std::vector<DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG

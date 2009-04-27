@@ -81164,2787 +81164,2786 @@ Decoder<
 CONFIG
 #line 81166 "isa_arm32.tcc"
 >::Decoder()
+: is_little_endian( false ), mru_page( 0 )
 {
-	little_endian = false;
-	mru_page = 0;
 	memset(decode_hash_table, 0, sizeof(decode_hash_table));
 	if(
 #line 45 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/misc_arithmetic.isa"
 	CONFIG::HAS_INSN_ARITH_CLZ
-#line 81175 "isa_arm32.tcc"
+#line 81174 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81179 "isa_arm32.tcc"
+#line 81178 "isa_arm32.tcc"
 	>(0x1600010UL, 0xff000f0UL, DecodeOpClz<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81183 "isa_arm32.tcc"
+#line 81182 "isa_arm32.tcc"
 	>));
 	if(
 #line 117 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/coprocessor_v5e.isa"
 	CONFIG::HAS_COPROCESSOR_V5E
-#line 81188 "isa_arm32.tcc"
+#line 81187 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81192 "isa_arm32.tcc"
+#line 81191 "isa_arm32.tcc"
 	>(0xec500000UL, 0xfff00000UL, DecodeOpMrrc_1110<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81196 "isa_arm32.tcc"
+#line 81195 "isa_arm32.tcc"
 	>));
 	if(
 #line 115 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/coprocessor_v5e.isa"
 	CONFIG::HAS_COPROCESSOR_V5E
-#line 81201 "isa_arm32.tcc"
+#line 81200 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81205 "isa_arm32.tcc"
+#line 81204 "isa_arm32.tcc"
 	>(0xcc500000UL, 0xeff00000UL, DecodeOpMrrc_110x<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81209 "isa_arm32.tcc"
+#line 81208 "isa_arm32.tcc"
 	>));
 	if(
 #line 113 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/coprocessor_v5e.isa"
 	CONFIG::HAS_COPROCESSOR_V5E
-#line 81214 "isa_arm32.tcc"
+#line 81213 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81218 "isa_arm32.tcc"
+#line 81217 "isa_arm32.tcc"
 	>(0x8c500000UL, 0xcff00000UL, DecodeOpMrrc_10xx<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81222 "isa_arm32.tcc"
+#line 81221 "isa_arm32.tcc"
 	>));
 	if(
 #line 111 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/coprocessor_v5e.isa"
 	CONFIG::HAS_COPROCESSOR_V5E
-#line 81227 "isa_arm32.tcc"
+#line 81226 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81231 "isa_arm32.tcc"
+#line 81230 "isa_arm32.tcc"
 	>(0xc500000UL, 0x8ff00000UL, DecodeOpMrrc_0xxx<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81235 "isa_arm32.tcc"
+#line 81234 "isa_arm32.tcc"
 	>));
 	if(
 #line 51 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/coprocessor_v5e.isa"
 	CONFIG::HAS_COPROCESSOR_V5E
-#line 81240 "isa_arm32.tcc"
+#line 81239 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81244 "isa_arm32.tcc"
+#line 81243 "isa_arm32.tcc"
 	>(0xec400000UL, 0xfff00000UL, DecodeOpMcrr_1110<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81248 "isa_arm32.tcc"
+#line 81247 "isa_arm32.tcc"
 	>));
 	if(
 #line 49 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/coprocessor_v5e.isa"
 	CONFIG::HAS_COPROCESSOR_V5E
-#line 81253 "isa_arm32.tcc"
+#line 81252 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81257 "isa_arm32.tcc"
+#line 81256 "isa_arm32.tcc"
 	>(0xcc400000UL, 0xeff00000UL, DecodeOpMcrr_110x<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81261 "isa_arm32.tcc"
+#line 81260 "isa_arm32.tcc"
 	>));
 	if(
 #line 47 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/coprocessor_v5e.isa"
 	CONFIG::HAS_COPROCESSOR_V5E
-#line 81266 "isa_arm32.tcc"
+#line 81265 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81270 "isa_arm32.tcc"
+#line 81269 "isa_arm32.tcc"
 	>(0x8c400000UL, 0xcff00000UL, DecodeOpMcrr_10xx<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81274 "isa_arm32.tcc"
+#line 81273 "isa_arm32.tcc"
 	>));
 	if(
 #line 45 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/coprocessor_v5e.isa"
 	CONFIG::HAS_COPROCESSOR_V5E
-#line 81279 "isa_arm32.tcc"
+#line 81278 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81283 "isa_arm32.tcc"
+#line 81282 "isa_arm32.tcc"
 	>(0xc400000UL, 0x8ff00000UL, DecodeOpMcrr_0xxx<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81287 "isa_arm32.tcc"
+#line 81286 "isa_arm32.tcc"
 	>));
 	if(
 #line 932 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/coprocessor.isa"
 	CONFIG::HAS_INSN_COPROCESSOR_ALTER_STORES
-#line 81292 "isa_arm32.tcc"
+#line 81291 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81296 "isa_arm32.tcc"
+#line 81295 "isa_arm32.tcc"
 	>(0xfc000000UL, 0xff300000UL, DecodeOpStc2_unindexed<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81300 "isa_arm32.tcc"
+#line 81299 "isa_arm32.tcc"
 	>));
 	if(
 #line 930 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/coprocessor.isa"
 	CONFIG::HAS_INSN_COPROCESSOR_ALTER_STORES
-#line 81305 "isa_arm32.tcc"
+#line 81304 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81309 "isa_arm32.tcc"
+#line 81308 "isa_arm32.tcc"
 	>(0xfc200000UL, 0xff300000UL, DecodeOpStc2_post<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81313 "isa_arm32.tcc"
+#line 81312 "isa_arm32.tcc"
 	>));
 	if(
 #line 928 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/coprocessor.isa"
 	CONFIG::HAS_INSN_COPROCESSOR_ALTER_STORES
-#line 81318 "isa_arm32.tcc"
+#line 81317 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81322 "isa_arm32.tcc"
+#line 81321 "isa_arm32.tcc"
 	>(0xfd200000UL, 0xff300000UL, DecodeOpStc2_pre<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81326 "isa_arm32.tcc"
+#line 81325 "isa_arm32.tcc"
 	>));
 	if(
 #line 926 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/coprocessor.isa"
 	CONFIG::HAS_INSN_COPROCESSOR_ALTER_STORES
-#line 81331 "isa_arm32.tcc"
+#line 81330 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81335 "isa_arm32.tcc"
+#line 81334 "isa_arm32.tcc"
 	>(0xfd000000UL, 0xff300000UL, DecodeOpStc2_offset<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81339 "isa_arm32.tcc"
+#line 81338 "isa_arm32.tcc"
 	>));
 	if(
 #line 899 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/coprocessor.isa"
 	CONFIG::HAS_INSN_COPROCESSOR_ALTER_MOVES
-#line 81344 "isa_arm32.tcc"
+#line 81343 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81348 "isa_arm32.tcc"
+#line 81347 "isa_arm32.tcc"
 	>(0xfe100010UL, 0xff100010UL, DecodeOpMrc2<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81352 "isa_arm32.tcc"
+#line 81351 "isa_arm32.tcc"
 	>));
 	if(
 #line 872 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/coprocessor.isa"
 	CONFIG::HAS_INSN_COPROCESSOR_ALTER_MOVES
-#line 81357 "isa_arm32.tcc"
+#line 81356 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81361 "isa_arm32.tcc"
+#line 81360 "isa_arm32.tcc"
 	>(0xfe000010UL, 0xff100010UL, DecodeOpMcr2<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81365 "isa_arm32.tcc"
+#line 81364 "isa_arm32.tcc"
 	>));
 	if(
 #line 764 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/coprocessor.isa"
 	CONFIG::HAS_INSN_COPROCESSOR_ALTER_LOADS
-#line 81370 "isa_arm32.tcc"
+#line 81369 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81374 "isa_arm32.tcc"
+#line 81373 "isa_arm32.tcc"
 	>(0xfc100000UL, 0xff300000UL, DecodeOpLdc2_unindexed<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81378 "isa_arm32.tcc"
+#line 81377 "isa_arm32.tcc"
 	>));
 	if(
 #line 762 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/coprocessor.isa"
 	CONFIG::HAS_INSN_COPROCESSOR_ALTER_LOADS
-#line 81383 "isa_arm32.tcc"
+#line 81382 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81387 "isa_arm32.tcc"
+#line 81386 "isa_arm32.tcc"
 	>(0xfc300000UL, 0xff300000UL, DecodeOpLdc2_post<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81391 "isa_arm32.tcc"
+#line 81390 "isa_arm32.tcc"
 	>));
 	if(
 #line 760 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/coprocessor.isa"
 	CONFIG::HAS_INSN_COPROCESSOR_ALTER_LOADS
-#line 81396 "isa_arm32.tcc"
+#line 81395 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81400 "isa_arm32.tcc"
+#line 81399 "isa_arm32.tcc"
 	>(0xfd300000UL, 0xff300000UL, DecodeOpLdc2_pre<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81404 "isa_arm32.tcc"
+#line 81403 "isa_arm32.tcc"
 	>));
 	if(
 #line 758 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/coprocessor.isa"
 	CONFIG::HAS_INSN_COPROCESSOR_ALTER_LOADS
-#line 81409 "isa_arm32.tcc"
+#line 81408 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81413 "isa_arm32.tcc"
+#line 81412 "isa_arm32.tcc"
 	>(0xfd100000UL, 0xff300000UL, DecodeOpLdc2_offset<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81417 "isa_arm32.tcc"
+#line 81416 "isa_arm32.tcc"
 	>));
 	if(
 #line 731 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/coprocessor.isa"
 	CONFIG::HAS_INSN_COPROCESSOR_ALTER_OPS
-#line 81422 "isa_arm32.tcc"
+#line 81421 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81426 "isa_arm32.tcc"
+#line 81425 "isa_arm32.tcc"
 	>(0xfe000000UL, 0xff000010UL, DecodeOpCdp2<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81430 "isa_arm32.tcc"
+#line 81429 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81435 "isa_arm32.tcc"
+#line 81434 "isa_arm32.tcc"
 	>(0xec800000UL, 0xffb00000UL, DecodeOpStc_unindexed_1110<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81439 "isa_arm32.tcc"
+#line 81438 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81444 "isa_arm32.tcc"
+#line 81443 "isa_arm32.tcc"
 	>(0xcc800000UL, 0xefb00000UL, DecodeOpStc_unindexed_110x<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81448 "isa_arm32.tcc"
+#line 81447 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81453 "isa_arm32.tcc"
+#line 81452 "isa_arm32.tcc"
 	>(0x8c800000UL, 0xcfb00000UL, DecodeOpStc_unindexed_10xx<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81457 "isa_arm32.tcc"
+#line 81456 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81462 "isa_arm32.tcc"
+#line 81461 "isa_arm32.tcc"
 	>(0xc800000UL, 0x8fb00000UL, DecodeOpStc_unindexed_0xxx<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81466 "isa_arm32.tcc"
+#line 81465 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81471 "isa_arm32.tcc"
+#line 81470 "isa_arm32.tcc"
 	>(0xec200000UL, 0xff300000UL, DecodeOpStc_post_1110<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81475 "isa_arm32.tcc"
+#line 81474 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81480 "isa_arm32.tcc"
+#line 81479 "isa_arm32.tcc"
 	>(0xcc200000UL, 0xef300000UL, DecodeOpStc_post_110x<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81484 "isa_arm32.tcc"
+#line 81483 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81489 "isa_arm32.tcc"
+#line 81488 "isa_arm32.tcc"
 	>(0x8c200000UL, 0xcf300000UL, DecodeOpStc_post_10xx<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81493 "isa_arm32.tcc"
+#line 81492 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81498 "isa_arm32.tcc"
+#line 81497 "isa_arm32.tcc"
 	>(0xc200000UL, 0x8f300000UL, DecodeOpStc_post_0xxx<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81502 "isa_arm32.tcc"
+#line 81501 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81507 "isa_arm32.tcc"
+#line 81506 "isa_arm32.tcc"
 	>(0xed200000UL, 0xff300000UL, DecodeOpStc_pre_1110<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81511 "isa_arm32.tcc"
+#line 81510 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81516 "isa_arm32.tcc"
+#line 81515 "isa_arm32.tcc"
 	>(0xcd200000UL, 0xef300000UL, DecodeOpStc_pre_110x<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81520 "isa_arm32.tcc"
+#line 81519 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81525 "isa_arm32.tcc"
+#line 81524 "isa_arm32.tcc"
 	>(0x8d200000UL, 0xcf300000UL, DecodeOpStc_pre_10xx<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81529 "isa_arm32.tcc"
+#line 81528 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81534 "isa_arm32.tcc"
+#line 81533 "isa_arm32.tcc"
 	>(0xd200000UL, 0x8f300000UL, DecodeOpStc_pre_0xxx<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81538 "isa_arm32.tcc"
+#line 81537 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81543 "isa_arm32.tcc"
+#line 81542 "isa_arm32.tcc"
 	>(0xed000000UL, 0xff300000UL, DecodeOpStc_offset_1110<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81547 "isa_arm32.tcc"
+#line 81546 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81552 "isa_arm32.tcc"
+#line 81551 "isa_arm32.tcc"
 	>(0xcd000000UL, 0xef300000UL, DecodeOpStc_offset_110x<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81556 "isa_arm32.tcc"
+#line 81555 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81561 "isa_arm32.tcc"
+#line 81560 "isa_arm32.tcc"
 	>(0x8d000000UL, 0xcf300000UL, DecodeOpStc_offset_10xx<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81565 "isa_arm32.tcc"
+#line 81564 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81570 "isa_arm32.tcc"
+#line 81569 "isa_arm32.tcc"
 	>(0xd000000UL, 0x8f300000UL, DecodeOpStc_offset_0xxx<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81574 "isa_arm32.tcc"
+#line 81573 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81579 "isa_arm32.tcc"
+#line 81578 "isa_arm32.tcc"
 	>(0xee100010UL, 0xff100010UL, DecodeOpMrc_1110<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81583 "isa_arm32.tcc"
+#line 81582 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81588 "isa_arm32.tcc"
+#line 81587 "isa_arm32.tcc"
 	>(0xce100010UL, 0xef100010UL, DecodeOpMrc_110x<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81592 "isa_arm32.tcc"
+#line 81591 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81597 "isa_arm32.tcc"
+#line 81596 "isa_arm32.tcc"
 	>(0x8e100010UL, 0xcf100010UL, DecodeOpMrc_10xx<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81601 "isa_arm32.tcc"
+#line 81600 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81606 "isa_arm32.tcc"
+#line 81605 "isa_arm32.tcc"
 	>(0xe100010UL, 0x8f100010UL, DecodeOpMrc_0xxx<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81610 "isa_arm32.tcc"
+#line 81609 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81615 "isa_arm32.tcc"
+#line 81614 "isa_arm32.tcc"
 	>(0xee000010UL, 0xff100010UL, DecodeOpMcr_1110<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81619 "isa_arm32.tcc"
+#line 81618 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81624 "isa_arm32.tcc"
+#line 81623 "isa_arm32.tcc"
 	>(0xce000010UL, 0xef100010UL, DecodeOpMcr_110x<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81628 "isa_arm32.tcc"
+#line 81627 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81633 "isa_arm32.tcc"
+#line 81632 "isa_arm32.tcc"
 	>(0x8e000010UL, 0xcf100010UL, DecodeOpMcr_10xx<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81637 "isa_arm32.tcc"
+#line 81636 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81642 "isa_arm32.tcc"
+#line 81641 "isa_arm32.tcc"
 	>(0xe000010UL, 0x8f100010UL, DecodeOpMcr_0xxx<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81646 "isa_arm32.tcc"
+#line 81645 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81651 "isa_arm32.tcc"
+#line 81650 "isa_arm32.tcc"
 	>(0xec900000UL, 0xffb00000UL, DecodeOpLdc_unindexed_1110<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81655 "isa_arm32.tcc"
+#line 81654 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81660 "isa_arm32.tcc"
+#line 81659 "isa_arm32.tcc"
 	>(0xcc900000UL, 0xefb00000UL, DecodeOpLdc_unindexed_110x<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81664 "isa_arm32.tcc"
+#line 81663 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81669 "isa_arm32.tcc"
+#line 81668 "isa_arm32.tcc"
 	>(0x8c900000UL, 0xcfb00000UL, DecodeOpLdc_unindexed_10xx<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81673 "isa_arm32.tcc"
+#line 81672 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81678 "isa_arm32.tcc"
+#line 81677 "isa_arm32.tcc"
 	>(0xc900000UL, 0x8fb00000UL, DecodeOpLdc_unindexed_0xxx<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81682 "isa_arm32.tcc"
+#line 81681 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81687 "isa_arm32.tcc"
+#line 81686 "isa_arm32.tcc"
 	>(0xec300000UL, 0xff300000UL, DecodeOpLdc_post_1110<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81691 "isa_arm32.tcc"
+#line 81690 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81696 "isa_arm32.tcc"
+#line 81695 "isa_arm32.tcc"
 	>(0xcc300000UL, 0xef300000UL, DecodeOpLdc_post_110x<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81700 "isa_arm32.tcc"
+#line 81699 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81705 "isa_arm32.tcc"
+#line 81704 "isa_arm32.tcc"
 	>(0x8c300000UL, 0xcf300000UL, DecodeOpLdc_post_10xx<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81709 "isa_arm32.tcc"
+#line 81708 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81714 "isa_arm32.tcc"
+#line 81713 "isa_arm32.tcc"
 	>(0xc300000UL, 0x8f300000UL, DecodeOpLdc_post_0xxx<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81718 "isa_arm32.tcc"
+#line 81717 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81723 "isa_arm32.tcc"
+#line 81722 "isa_arm32.tcc"
 	>(0xed300000UL, 0xff300000UL, DecodeOpLdc_pre_1110<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81727 "isa_arm32.tcc"
+#line 81726 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81732 "isa_arm32.tcc"
+#line 81731 "isa_arm32.tcc"
 	>(0xcd300000UL, 0xef300000UL, DecodeOpLdc_pre_110x<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81736 "isa_arm32.tcc"
+#line 81735 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81741 "isa_arm32.tcc"
+#line 81740 "isa_arm32.tcc"
 	>(0x8d300000UL, 0xcf300000UL, DecodeOpLdc_pre_10xx<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81745 "isa_arm32.tcc"
+#line 81744 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81750 "isa_arm32.tcc"
+#line 81749 "isa_arm32.tcc"
 	>(0xd300000UL, 0x8f300000UL, DecodeOpLdc_pre_0xxx<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81754 "isa_arm32.tcc"
+#line 81753 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81759 "isa_arm32.tcc"
+#line 81758 "isa_arm32.tcc"
 	>(0xed100000UL, 0xff300000UL, DecodeOpLdc_offset_1110<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81763 "isa_arm32.tcc"
+#line 81762 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81768 "isa_arm32.tcc"
+#line 81767 "isa_arm32.tcc"
 	>(0xcd100000UL, 0xef300000UL, DecodeOpLdc_offset_110x<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81772 "isa_arm32.tcc"
+#line 81771 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81777 "isa_arm32.tcc"
+#line 81776 "isa_arm32.tcc"
 	>(0x8d100000UL, 0xcf300000UL, DecodeOpLdc_offset_10xx<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81781 "isa_arm32.tcc"
+#line 81780 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81786 "isa_arm32.tcc"
+#line 81785 "isa_arm32.tcc"
 	>(0xd100000UL, 0x8f300000UL, DecodeOpLdc_offset_0xxx<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81790 "isa_arm32.tcc"
+#line 81789 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81795 "isa_arm32.tcc"
+#line 81794 "isa_arm32.tcc"
 	>(0xee000000UL, 0xff000010UL, DecodeOpCdp_1110<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81799 "isa_arm32.tcc"
+#line 81798 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81804 "isa_arm32.tcc"
+#line 81803 "isa_arm32.tcc"
 	>(0xce000000UL, 0xef000010UL, DecodeOpCdp_110x<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81808 "isa_arm32.tcc"
+#line 81807 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81813 "isa_arm32.tcc"
+#line 81812 "isa_arm32.tcc"
 	>(0x8e000000UL, 0xcf000010UL, DecodeOpCdp_10xx<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81817 "isa_arm32.tcc"
+#line 81816 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81822 "isa_arm32.tcc"
+#line 81821 "isa_arm32.tcc"
 	>(0xe000000UL, 0x8f000010UL, DecodeOpCdp_0xxx<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81826 "isa_arm32.tcc"
+#line 81825 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81831 "isa_arm32.tcc"
+#line 81830 "isa_arm32.tcc"
 	>(0xe1200070UL, 0xfff000f0UL, DecodeOpBkpt<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81835 "isa_arm32.tcc"
+#line 81834 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81840 "isa_arm32.tcc"
+#line 81839 "isa_arm32.tcc"
 	>(0xf000000UL, 0xf000000UL, DecodeOpSwi<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81844 "isa_arm32.tcc"
+#line 81843 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81849 "isa_arm32.tcc"
+#line 81848 "isa_arm32.tcc"
 	>(0x1400090UL, 0xff00ff0UL, DecodeOpSwpb<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81853 "isa_arm32.tcc"
+#line 81852 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81858 "isa_arm32.tcc"
+#line 81857 "isa_arm32.tcc"
 	>(0x1000090UL, 0xff00ff0UL, DecodeOpSwp<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81862 "isa_arm32.tcc"
+#line 81861 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81867 "isa_arm32.tcc"
+#line 81866 "isa_arm32.tcc"
 	>(0x9400000UL, 0xff00000UL, DecodeOpStm_2_db<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81871 "isa_arm32.tcc"
+#line 81870 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81876 "isa_arm32.tcc"
+#line 81875 "isa_arm32.tcc"
 	>(0x8400000UL, 0xff00000UL, DecodeOpStm_2_da<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81880 "isa_arm32.tcc"
+#line 81879 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81885 "isa_arm32.tcc"
+#line 81884 "isa_arm32.tcc"
 	>(0x9c00000UL, 0xff00000UL, DecodeOpStm_2_ib<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81889 "isa_arm32.tcc"
+#line 81888 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81894 "isa_arm32.tcc"
+#line 81893 "isa_arm32.tcc"
 	>(0x8c00000UL, 0xff00000UL, DecodeOpStm_2_ia<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81898 "isa_arm32.tcc"
+#line 81897 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81903 "isa_arm32.tcc"
+#line 81902 "isa_arm32.tcc"
 	>(0x9000000UL, 0xfd00000UL, DecodeOpStm_1_db<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81907 "isa_arm32.tcc"
+#line 81906 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81912 "isa_arm32.tcc"
+#line 81911 "isa_arm32.tcc"
 	>(0x8000000UL, 0xfd00000UL, DecodeOpStm_1_da<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81916 "isa_arm32.tcc"
+#line 81915 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81921 "isa_arm32.tcc"
+#line 81920 "isa_arm32.tcc"
 	>(0x9800000UL, 0xfd00000UL, DecodeOpStm_1_ib<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81925 "isa_arm32.tcc"
+#line 81924 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81930 "isa_arm32.tcc"
+#line 81929 "isa_arm32.tcc"
 	>(0x8800000UL, 0xfd00000UL, DecodeOpStm_1_ia<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81934 "isa_arm32.tcc"
+#line 81933 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81939 "isa_arm32.tcc"
+#line 81938 "isa_arm32.tcc"
 	>(0x9508000UL, 0xfd08000UL, DecodeOpLdm_3_db<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81943 "isa_arm32.tcc"
+#line 81942 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81948 "isa_arm32.tcc"
+#line 81947 "isa_arm32.tcc"
 	>(0x8508000UL, 0xfd08000UL, DecodeOpLdm_3_da<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81952 "isa_arm32.tcc"
+#line 81951 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81957 "isa_arm32.tcc"
+#line 81956 "isa_arm32.tcc"
 	>(0x9d08000UL, 0xfd08000UL, DecodeOpLdm_3_ib<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81961 "isa_arm32.tcc"
+#line 81960 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81966 "isa_arm32.tcc"
+#line 81965 "isa_arm32.tcc"
 	>(0x8d08000UL, 0xfd08000UL, DecodeOpLdm_3_ia<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81970 "isa_arm32.tcc"
+#line 81969 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81975 "isa_arm32.tcc"
+#line 81974 "isa_arm32.tcc"
 	>(0x9500000UL, 0xff08000UL, DecodeOpLdm_2_db<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81979 "isa_arm32.tcc"
+#line 81978 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81984 "isa_arm32.tcc"
+#line 81983 "isa_arm32.tcc"
 	>(0x8500000UL, 0xff08000UL, DecodeOpLdm_2_da<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81988 "isa_arm32.tcc"
+#line 81987 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81993 "isa_arm32.tcc"
+#line 81992 "isa_arm32.tcc"
 	>(0x9d00000UL, 0xff08000UL, DecodeOpLdm_2_ib<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 81997 "isa_arm32.tcc"
+#line 81996 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82002 "isa_arm32.tcc"
+#line 82001 "isa_arm32.tcc"
 	>(0x8d00000UL, 0xff08000UL, DecodeOpLdm_2_ia<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82006 "isa_arm32.tcc"
+#line 82005 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82011 "isa_arm32.tcc"
+#line 82010 "isa_arm32.tcc"
 	>(0x9100000UL, 0xfd00000UL, DecodeOpLdm_1_db<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82015 "isa_arm32.tcc"
+#line 82014 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82020 "isa_arm32.tcc"
+#line 82019 "isa_arm32.tcc"
 	>(0x8100000UL, 0xfd00000UL, DecodeOpLdm_1_da<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82024 "isa_arm32.tcc"
+#line 82023 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82029 "isa_arm32.tcc"
+#line 82028 "isa_arm32.tcc"
 	>(0x9900000UL, 0xfd00000UL, DecodeOpLdm_1_ib<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82033 "isa_arm32.tcc"
+#line 82032 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82038 "isa_arm32.tcc"
+#line 82037 "isa_arm32.tcc"
 	>(0x8900000UL, 0xfd00000UL, DecodeOpLdm_1_ia<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82042 "isa_arm32.tcc"
+#line 82041 "isa_arm32.tcc"
 	>));
 	if(
 #line 273 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/load_store_v5e.isa"
 	CONFIG::HAS_LOAD_STORE_V5E
-#line 82047 "isa_arm32.tcc"
+#line 82046 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82051 "isa_arm32.tcc"
+#line 82050 "isa_arm32.tcc"
 	>(0x12000f0UL, 0xf7000f0UL, DecodeOpStrd_reg_pre<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82055 "isa_arm32.tcc"
+#line 82054 "isa_arm32.tcc"
 	>));
 	if(
 #line 271 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/load_store_v5e.isa"
 	CONFIG::HAS_LOAD_STORE_V5E
-#line 82060 "isa_arm32.tcc"
+#line 82059 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82064 "isa_arm32.tcc"
+#line 82063 "isa_arm32.tcc"
 	>(0x10000f0UL, 0xf7000f0UL, DecodeOpStrd_reg_offset<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82068 "isa_arm32.tcc"
+#line 82067 "isa_arm32.tcc"
 	>));
 	if(
 #line 269 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/load_store_v5e.isa"
 	CONFIG::HAS_LOAD_STORE_V5E
-#line 82073 "isa_arm32.tcc"
+#line 82072 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82077 "isa_arm32.tcc"
+#line 82076 "isa_arm32.tcc"
 	>(0xf0UL, 0xf7000f0UL, DecodeOpStrd_reg_post<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82081 "isa_arm32.tcc"
+#line 82080 "isa_arm32.tcc"
 	>));
 	if(
 #line 267 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/load_store_v5e.isa"
 	CONFIG::HAS_LOAD_STORE_V5E
-#line 82086 "isa_arm32.tcc"
+#line 82085 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82090 "isa_arm32.tcc"
+#line 82089 "isa_arm32.tcc"
 	>(0x16000f0UL, 0xf7000f0UL, DecodeOpStrd_imm_pre<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82094 "isa_arm32.tcc"
+#line 82093 "isa_arm32.tcc"
 	>));
 	if(
 #line 265 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/load_store_v5e.isa"
 	CONFIG::HAS_LOAD_STORE_V5E
-#line 82099 "isa_arm32.tcc"
+#line 82098 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82103 "isa_arm32.tcc"
+#line 82102 "isa_arm32.tcc"
 	>(0x14000f0UL, 0xf7000f0UL, DecodeOpStrd_imm_offset<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82107 "isa_arm32.tcc"
+#line 82106 "isa_arm32.tcc"
 	>));
 	if(
 #line 263 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/load_store_v5e.isa"
 	CONFIG::HAS_LOAD_STORE_V5E
-#line 82112 "isa_arm32.tcc"
+#line 82111 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82116 "isa_arm32.tcc"
+#line 82115 "isa_arm32.tcc"
 	>(0x4000f0UL, 0xf7000f0UL, DecodeOpStrd_imm_post<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82120 "isa_arm32.tcc"
+#line 82119 "isa_arm32.tcc"
 	>));
 	if(
 #line 56 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/load_store_v5e.isa"
 	CONFIG::HAS_LOAD_STORE_V5E
-#line 82125 "isa_arm32.tcc"
+#line 82124 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82129 "isa_arm32.tcc"
+#line 82128 "isa_arm32.tcc"
 	>(0x12000d0UL, 0xf7000f0UL, DecodeOpLdrd_reg_pre<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82133 "isa_arm32.tcc"
+#line 82132 "isa_arm32.tcc"
 	>));
 	if(
 #line 54 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/load_store_v5e.isa"
 	CONFIG::HAS_LOAD_STORE_V5E
-#line 82138 "isa_arm32.tcc"
+#line 82137 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82142 "isa_arm32.tcc"
+#line 82141 "isa_arm32.tcc"
 	>(0x10000d0UL, 0xf7000f0UL, DecodeOpLdrd_reg_offset<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82146 "isa_arm32.tcc"
+#line 82145 "isa_arm32.tcc"
 	>));
 	if(
 #line 52 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/load_store_v5e.isa"
 	CONFIG::HAS_LOAD_STORE_V5E
-#line 82151 "isa_arm32.tcc"
+#line 82150 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82155 "isa_arm32.tcc"
+#line 82154 "isa_arm32.tcc"
 	>(0xd0UL, 0xf7000f0UL, DecodeOpLdrd_reg_post<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82159 "isa_arm32.tcc"
+#line 82158 "isa_arm32.tcc"
 	>));
 	if(
 #line 50 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/load_store_v5e.isa"
 	CONFIG::HAS_LOAD_STORE_V5E
-#line 82164 "isa_arm32.tcc"
+#line 82163 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82168 "isa_arm32.tcc"
+#line 82167 "isa_arm32.tcc"
 	>(0x16000d0UL, 0xf7000f0UL, DecodeOpLdrd_imm_pre<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82172 "isa_arm32.tcc"
+#line 82171 "isa_arm32.tcc"
 	>));
 	if(
 #line 48 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/load_store_v5e.isa"
 	CONFIG::HAS_LOAD_STORE_V5E
-#line 82177 "isa_arm32.tcc"
+#line 82176 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82181 "isa_arm32.tcc"
+#line 82180 "isa_arm32.tcc"
 	>(0x14000d0UL, 0xf7000f0UL, DecodeOpLdrd_imm_offset<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82185 "isa_arm32.tcc"
+#line 82184 "isa_arm32.tcc"
 	>));
 	if(
 #line 46 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/load_store_v5e.isa"
 	CONFIG::HAS_LOAD_STORE_V5E
-#line 82190 "isa_arm32.tcc"
+#line 82189 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82194 "isa_arm32.tcc"
+#line 82193 "isa_arm32.tcc"
 	>(0x4000d0UL, 0xf7000f0UL, DecodeOpLdrd_imm_post<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82198 "isa_arm32.tcc"
+#line 82197 "isa_arm32.tcc"
 	>));
 	if(
 #line 553 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/load_store_v4.isa"
 	CONFIG::HAS_LOAD_STORE_V4
-#line 82203 "isa_arm32.tcc"
+#line 82202 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82207 "isa_arm32.tcc"
+#line 82206 "isa_arm32.tcc"
 	>(0x12000b0UL, 0xf7000f0UL, DecodeOpStrh_reg_pre<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82211 "isa_arm32.tcc"
+#line 82210 "isa_arm32.tcc"
 	>));
 	if(
 #line 551 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/load_store_v4.isa"
 	CONFIG::HAS_LOAD_STORE_V4
-#line 82216 "isa_arm32.tcc"
+#line 82215 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82220 "isa_arm32.tcc"
+#line 82219 "isa_arm32.tcc"
 	>(0x10000b0UL, 0xf7000f0UL, DecodeOpStrh_reg_offset<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82224 "isa_arm32.tcc"
+#line 82223 "isa_arm32.tcc"
 	>));
 	if(
 #line 549 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/load_store_v4.isa"
 	CONFIG::HAS_LOAD_STORE_V4
-#line 82229 "isa_arm32.tcc"
+#line 82228 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82233 "isa_arm32.tcc"
+#line 82232 "isa_arm32.tcc"
 	>(0xb0UL, 0xf7000f0UL, DecodeOpStrh_reg_post<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82237 "isa_arm32.tcc"
+#line 82236 "isa_arm32.tcc"
 	>));
 	if(
 #line 547 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/load_store_v4.isa"
 	CONFIG::HAS_LOAD_STORE_V4
-#line 82242 "isa_arm32.tcc"
+#line 82241 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82246 "isa_arm32.tcc"
+#line 82245 "isa_arm32.tcc"
 	>(0x16000b0UL, 0xf7000f0UL, DecodeOpStrh_imm_pre<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82250 "isa_arm32.tcc"
+#line 82249 "isa_arm32.tcc"
 	>));
 	if(
 #line 545 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/load_store_v4.isa"
 	CONFIG::HAS_LOAD_STORE_V4
-#line 82255 "isa_arm32.tcc"
+#line 82254 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82259 "isa_arm32.tcc"
+#line 82258 "isa_arm32.tcc"
 	>(0x14000b0UL, 0xf7000f0UL, DecodeOpStrh_imm_offset<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82263 "isa_arm32.tcc"
+#line 82262 "isa_arm32.tcc"
 	>));
 	if(
 #line 543 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/load_store_v4.isa"
 	CONFIG::HAS_LOAD_STORE_V4
-#line 82268 "isa_arm32.tcc"
+#line 82267 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82272 "isa_arm32.tcc"
+#line 82271 "isa_arm32.tcc"
 	>(0x4000b0UL, 0xf7000f0UL, DecodeOpStrh_imm_post<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82276 "isa_arm32.tcc"
+#line 82275 "isa_arm32.tcc"
 	>));
 	if(
 #line 393 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/load_store_v4.isa"
 	CONFIG::HAS_LOAD_STORE_V4
-#line 82281 "isa_arm32.tcc"
+#line 82280 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82285 "isa_arm32.tcc"
+#line 82284 "isa_arm32.tcc"
 	>(0x13000d0UL, 0xf7000f0UL, DecodeOpLdrsb_reg_pre<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82289 "isa_arm32.tcc"
+#line 82288 "isa_arm32.tcc"
 	>));
 	if(
 #line 391 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/load_store_v4.isa"
 	CONFIG::HAS_LOAD_STORE_V4
-#line 82294 "isa_arm32.tcc"
+#line 82293 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82298 "isa_arm32.tcc"
+#line 82297 "isa_arm32.tcc"
 	>(0x11000d0UL, 0xf7000f0UL, DecodeOpLdrsb_reg_offset<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82302 "isa_arm32.tcc"
+#line 82301 "isa_arm32.tcc"
 	>));
 	if(
 #line 389 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/load_store_v4.isa"
 	CONFIG::HAS_LOAD_STORE_V4
-#line 82307 "isa_arm32.tcc"
+#line 82306 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82311 "isa_arm32.tcc"
+#line 82310 "isa_arm32.tcc"
 	>(0x1000d0UL, 0xf7000f0UL, DecodeOpLdrsb_reg_post<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82315 "isa_arm32.tcc"
+#line 82314 "isa_arm32.tcc"
 	>));
 	if(
 #line 387 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/load_store_v4.isa"
 	CONFIG::HAS_LOAD_STORE_V4
-#line 82320 "isa_arm32.tcc"
+#line 82319 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82324 "isa_arm32.tcc"
+#line 82323 "isa_arm32.tcc"
 	>(0x17000d0UL, 0xf7000f0UL, DecodeOpLdrsb_imm_pre<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82328 "isa_arm32.tcc"
+#line 82327 "isa_arm32.tcc"
 	>));
 	if(
 #line 385 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/load_store_v4.isa"
 	CONFIG::HAS_LOAD_STORE_V4
-#line 82333 "isa_arm32.tcc"
+#line 82332 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82337 "isa_arm32.tcc"
+#line 82336 "isa_arm32.tcc"
 	>(0x15000d0UL, 0xf7000f0UL, DecodeOpLdrsb_imm_offset<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82341 "isa_arm32.tcc"
+#line 82340 "isa_arm32.tcc"
 	>));
 	if(
 #line 383 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/load_store_v4.isa"
 	CONFIG::HAS_LOAD_STORE_V4
-#line 82346 "isa_arm32.tcc"
+#line 82345 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82350 "isa_arm32.tcc"
+#line 82349 "isa_arm32.tcc"
 	>(0x5000d0UL, 0xf7000f0UL, DecodeOpLdrsb_imm_post<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82354 "isa_arm32.tcc"
+#line 82353 "isa_arm32.tcc"
 	>));
 	if(
 #line 226 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/load_store_v4.isa"
 	CONFIG::HAS_LOAD_STORE_V4
-#line 82359 "isa_arm32.tcc"
+#line 82358 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82363 "isa_arm32.tcc"
+#line 82362 "isa_arm32.tcc"
 	>(0x13000f0UL, 0xf7000f0UL, DecodeOpLdrsh_reg_pre<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82367 "isa_arm32.tcc"
+#line 82366 "isa_arm32.tcc"
 	>));
 	if(
 #line 224 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/load_store_v4.isa"
 	CONFIG::HAS_LOAD_STORE_V4
-#line 82372 "isa_arm32.tcc"
+#line 82371 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82376 "isa_arm32.tcc"
+#line 82375 "isa_arm32.tcc"
 	>(0x11000f0UL, 0xf7000f0UL, DecodeOpLdrsh_reg_offset<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82380 "isa_arm32.tcc"
+#line 82379 "isa_arm32.tcc"
 	>));
 	if(
 #line 222 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/load_store_v4.isa"
 	CONFIG::HAS_LOAD_STORE_V4
-#line 82385 "isa_arm32.tcc"
+#line 82384 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82389 "isa_arm32.tcc"
+#line 82388 "isa_arm32.tcc"
 	>(0x1000f0UL, 0xf7000f0UL, DecodeOpLdrsh_reg_post<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82393 "isa_arm32.tcc"
+#line 82392 "isa_arm32.tcc"
 	>));
 	if(
 #line 220 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/load_store_v4.isa"
 	CONFIG::HAS_LOAD_STORE_V4
-#line 82398 "isa_arm32.tcc"
+#line 82397 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82402 "isa_arm32.tcc"
+#line 82401 "isa_arm32.tcc"
 	>(0x17000f0UL, 0xf7000f0UL, DecodeOpLdrsh_imm_pre<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82406 "isa_arm32.tcc"
+#line 82405 "isa_arm32.tcc"
 	>));
 	if(
 #line 218 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/load_store_v4.isa"
 	CONFIG::HAS_LOAD_STORE_V4
-#line 82411 "isa_arm32.tcc"
+#line 82410 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82415 "isa_arm32.tcc"
+#line 82414 "isa_arm32.tcc"
 	>(0x15000f0UL, 0xf7000f0UL, DecodeOpLdrsh_imm_offset<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82419 "isa_arm32.tcc"
+#line 82418 "isa_arm32.tcc"
 	>));
 	if(
 #line 216 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/load_store_v4.isa"
 	CONFIG::HAS_LOAD_STORE_V4
-#line 82424 "isa_arm32.tcc"
+#line 82423 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82428 "isa_arm32.tcc"
+#line 82427 "isa_arm32.tcc"
 	>(0x5000f0UL, 0xf7000f0UL, DecodeOpLdrsh_imm_post<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82432 "isa_arm32.tcc"
+#line 82431 "isa_arm32.tcc"
 	>));
 	if(
 #line 60 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/load_store_v4.isa"
 	CONFIG::HAS_LOAD_STORE_V4
-#line 82437 "isa_arm32.tcc"
+#line 82436 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82441 "isa_arm32.tcc"
+#line 82440 "isa_arm32.tcc"
 	>(0x13000b0UL, 0xf7000f0UL, DecodeOpLdrh_reg_pre<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82445 "isa_arm32.tcc"
+#line 82444 "isa_arm32.tcc"
 	>));
 	if(
 #line 58 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/load_store_v4.isa"
 	CONFIG::HAS_LOAD_STORE_V4
-#line 82450 "isa_arm32.tcc"
+#line 82449 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82454 "isa_arm32.tcc"
+#line 82453 "isa_arm32.tcc"
 	>(0x11000b0UL, 0xf7000f0UL, DecodeOpLdrh_reg_offset<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82458 "isa_arm32.tcc"
+#line 82457 "isa_arm32.tcc"
 	>));
 	if(
 #line 56 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/load_store_v4.isa"
 	CONFIG::HAS_LOAD_STORE_V4
-#line 82463 "isa_arm32.tcc"
+#line 82462 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82467 "isa_arm32.tcc"
+#line 82466 "isa_arm32.tcc"
 	>(0x1000b0UL, 0xf7000f0UL, DecodeOpLdrh_reg_post<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82471 "isa_arm32.tcc"
+#line 82470 "isa_arm32.tcc"
 	>));
 	if(
 #line 54 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/load_store_v4.isa"
 	CONFIG::HAS_LOAD_STORE_V4
-#line 82476 "isa_arm32.tcc"
+#line 82475 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82480 "isa_arm32.tcc"
+#line 82479 "isa_arm32.tcc"
 	>(0x17000b0UL, 0xf7000f0UL, DecodeOpLdrh_imm_pre<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82484 "isa_arm32.tcc"
+#line 82483 "isa_arm32.tcc"
 	>));
 	if(
 #line 52 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/load_store_v4.isa"
 	CONFIG::HAS_LOAD_STORE_V4
-#line 82489 "isa_arm32.tcc"
+#line 82488 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82493 "isa_arm32.tcc"
+#line 82492 "isa_arm32.tcc"
 	>(0x15000b0UL, 0xf7000f0UL, DecodeOpLdrh_imm_offset<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82497 "isa_arm32.tcc"
+#line 82496 "isa_arm32.tcc"
 	>));
 	if(
 #line 50 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/load_store_v4.isa"
 	CONFIG::HAS_LOAD_STORE_V4
-#line 82502 "isa_arm32.tcc"
+#line 82501 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82506 "isa_arm32.tcc"
+#line 82505 "isa_arm32.tcc"
 	>(0x5000b0UL, 0xf7000f0UL, DecodeOpLdrh_imm_post<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82510 "isa_arm32.tcc"
+#line 82509 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82515 "isa_arm32.tcc"
+#line 82514 "isa_arm32.tcc"
 	>(0x6600000UL, 0xf700010UL, DecodeOpStrbt_reg<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82519 "isa_arm32.tcc"
+#line 82518 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82524 "isa_arm32.tcc"
+#line 82523 "isa_arm32.tcc"
 	>(0x4600000UL, 0xf700000UL, DecodeOpStrbt_imm<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82528 "isa_arm32.tcc"
+#line 82527 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82533 "isa_arm32.tcc"
+#line 82532 "isa_arm32.tcc"
 	>(0x6200000UL, 0xf700010UL, DecodeOpStrt_reg<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82537 "isa_arm32.tcc"
+#line 82536 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82542 "isa_arm32.tcc"
+#line 82541 "isa_arm32.tcc"
 	>(0x4200000UL, 0xf700000UL, DecodeOpStrt_imm<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82546 "isa_arm32.tcc"
+#line 82545 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82551 "isa_arm32.tcc"
+#line 82550 "isa_arm32.tcc"
 	>(0x7600000UL, 0xf700010UL, DecodeOpStrb_reg_pre<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82555 "isa_arm32.tcc"
+#line 82554 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82560 "isa_arm32.tcc"
+#line 82559 "isa_arm32.tcc"
 	>(0x7400000UL, 0xf700010UL, DecodeOpStrb_reg_offset<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82564 "isa_arm32.tcc"
+#line 82563 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82569 "isa_arm32.tcc"
+#line 82568 "isa_arm32.tcc"
 	>(0x6400000UL, 0xf700010UL, DecodeOpStrb_reg_post<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82573 "isa_arm32.tcc"
+#line 82572 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82578 "isa_arm32.tcc"
+#line 82577 "isa_arm32.tcc"
 	>(0x5600000UL, 0xf700000UL, DecodeOpStrb_imm_pre<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82582 "isa_arm32.tcc"
+#line 82581 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82587 "isa_arm32.tcc"
+#line 82586 "isa_arm32.tcc"
 	>(0x5400000UL, 0xf700000UL, DecodeOpStrb_imm_offset<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82591 "isa_arm32.tcc"
+#line 82590 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82596 "isa_arm32.tcc"
+#line 82595 "isa_arm32.tcc"
 	>(0x4400000UL, 0xf700000UL, DecodeOpStrb_imm_post<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82600 "isa_arm32.tcc"
+#line 82599 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82605 "isa_arm32.tcc"
+#line 82604 "isa_arm32.tcc"
 	>(0x7200000UL, 0xf700010UL, DecodeOpStr_reg_pre<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82609 "isa_arm32.tcc"
+#line 82608 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82614 "isa_arm32.tcc"
+#line 82613 "isa_arm32.tcc"
 	>(0x7000000UL, 0xf700010UL, DecodeOpStr_reg_offset<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82618 "isa_arm32.tcc"
+#line 82617 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82623 "isa_arm32.tcc"
+#line 82622 "isa_arm32.tcc"
 	>(0x6000000UL, 0xf700010UL, DecodeOpStr_reg_post<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82627 "isa_arm32.tcc"
+#line 82626 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82632 "isa_arm32.tcc"
+#line 82631 "isa_arm32.tcc"
 	>(0x5200000UL, 0xf700000UL, DecodeOpStr_imm_pre<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82636 "isa_arm32.tcc"
+#line 82635 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82641 "isa_arm32.tcc"
+#line 82640 "isa_arm32.tcc"
 	>(0x5000000UL, 0xf700000UL, DecodeOpStr_imm_offset<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82645 "isa_arm32.tcc"
+#line 82644 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82650 "isa_arm32.tcc"
+#line 82649 "isa_arm32.tcc"
 	>(0x4000000UL, 0xf700000UL, DecodeOpStr_imm_post<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82654 "isa_arm32.tcc"
+#line 82653 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82659 "isa_arm32.tcc"
+#line 82658 "isa_arm32.tcc"
 	>(0x6700000UL, 0xf700010UL, DecodeOpLdrbt_reg<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82663 "isa_arm32.tcc"
+#line 82662 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82668 "isa_arm32.tcc"
+#line 82667 "isa_arm32.tcc"
 	>(0x4700000UL, 0xf700000UL, DecodeOpLdrbt_imm<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82672 "isa_arm32.tcc"
+#line 82671 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82677 "isa_arm32.tcc"
+#line 82676 "isa_arm32.tcc"
 	>(0x6300000UL, 0xf700010UL, DecodeOpLdrt_reg<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82681 "isa_arm32.tcc"
+#line 82680 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82686 "isa_arm32.tcc"
+#line 82685 "isa_arm32.tcc"
 	>(0x4300000UL, 0xf700000UL, DecodeOpLdrt_imm<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82690 "isa_arm32.tcc"
+#line 82689 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82695 "isa_arm32.tcc"
+#line 82694 "isa_arm32.tcc"
 	>(0x770f000UL, 0xf70f010UL, DecodeOpLdrb_rd15_reg_pre<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82699 "isa_arm32.tcc"
+#line 82698 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82704 "isa_arm32.tcc"
+#line 82703 "isa_arm32.tcc"
 	>(0x750f000UL, 0xf70f010UL, DecodeOpLdrb_rd15_reg_offset<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82708 "isa_arm32.tcc"
+#line 82707 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82713 "isa_arm32.tcc"
+#line 82712 "isa_arm32.tcc"
 	>(0x650f000UL, 0xf70f010UL, DecodeOpLdrb_rd15_reg_post<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82717 "isa_arm32.tcc"
+#line 82716 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82722 "isa_arm32.tcc"
+#line 82721 "isa_arm32.tcc"
 	>(0x570f000UL, 0xf70f000UL, DecodeOpLdrb_rd15_imm_pre<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82726 "isa_arm32.tcc"
+#line 82725 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82731 "isa_arm32.tcc"
+#line 82730 "isa_arm32.tcc"
 	>(0x550f000UL, 0xf70f000UL, DecodeOpLdrb_rd15_imm_offset<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82735 "isa_arm32.tcc"
+#line 82734 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82740 "isa_arm32.tcc"
+#line 82739 "isa_arm32.tcc"
 	>(0x450f000UL, 0xf70f000UL, DecodeOpLdrb_rd15_imm_post<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82744 "isa_arm32.tcc"
+#line 82743 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82749 "isa_arm32.tcc"
+#line 82748 "isa_arm32.tcc"
 	>(0x7700000UL, 0xf700010UL, DecodeOpLdrb_reg_pre<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82753 "isa_arm32.tcc"
+#line 82752 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82758 "isa_arm32.tcc"
+#line 82757 "isa_arm32.tcc"
 	>(0x7500000UL, 0xf700010UL, DecodeOpLdrb_reg_offset<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82762 "isa_arm32.tcc"
+#line 82761 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82767 "isa_arm32.tcc"
+#line 82766 "isa_arm32.tcc"
 	>(0x6500000UL, 0xf700010UL, DecodeOpLdrb_reg_post<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82771 "isa_arm32.tcc"
+#line 82770 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82776 "isa_arm32.tcc"
+#line 82775 "isa_arm32.tcc"
 	>(0x5700000UL, 0xf700000UL, DecodeOpLdrb_imm_pre<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82780 "isa_arm32.tcc"
+#line 82779 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82785 "isa_arm32.tcc"
+#line 82784 "isa_arm32.tcc"
 	>(0x5500000UL, 0xf700000UL, DecodeOpLdrb_imm_offset<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82789 "isa_arm32.tcc"
+#line 82788 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82794 "isa_arm32.tcc"
+#line 82793 "isa_arm32.tcc"
 	>(0x4500000UL, 0xf700000UL, DecodeOpLdrb_imm_post<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82798 "isa_arm32.tcc"
+#line 82797 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82803 "isa_arm32.tcc"
+#line 82802 "isa_arm32.tcc"
 	>(0x7300000UL, 0xf700010UL, DecodeOpLdr_reg_pre<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82807 "isa_arm32.tcc"
+#line 82806 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82812 "isa_arm32.tcc"
+#line 82811 "isa_arm32.tcc"
 	>(0x7100000UL, 0xf700010UL, DecodeOpLdr_reg_offset<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82816 "isa_arm32.tcc"
+#line 82815 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82821 "isa_arm32.tcc"
+#line 82820 "isa_arm32.tcc"
 	>(0x6100000UL, 0xf700010UL, DecodeOpLdr_reg_post<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82825 "isa_arm32.tcc"
+#line 82824 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82830 "isa_arm32.tcc"
+#line 82829 "isa_arm32.tcc"
 	>(0x5300000UL, 0xf700000UL, DecodeOpLdr_imm_pre<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82834 "isa_arm32.tcc"
+#line 82833 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82839 "isa_arm32.tcc"
+#line 82838 "isa_arm32.tcc"
 	>(0x5100000UL, 0xf700000UL, DecodeOpLdr_imm_offset<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82843 "isa_arm32.tcc"
+#line 82842 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82848 "isa_arm32.tcc"
+#line 82847 "isa_arm32.tcc"
 	>(0x4100000UL, 0xf700000UL, DecodeOpLdr_imm_post<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82852 "isa_arm32.tcc"
+#line 82851 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82857 "isa_arm32.tcc"
+#line 82856 "isa_arm32.tcc"
 	>(0x120f000UL, 0xfb0fff0UL, DecodeOpMsr_reg<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82861 "isa_arm32.tcc"
+#line 82860 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82866 "isa_arm32.tcc"
+#line 82865 "isa_arm32.tcc"
 	>(0x320f000UL, 0xfb0f000UL, DecodeOpMsr_imm<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82870 "isa_arm32.tcc"
+#line 82869 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82875 "isa_arm32.tcc"
+#line 82874 "isa_arm32.tcc"
 	>(0x10f0000UL, 0xfbf0fffUL, DecodeOpMrs<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82879 "isa_arm32.tcc"
+#line 82878 "isa_arm32.tcc"
 	>));
 	if(
 #line 348 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/multiply_v5e.isa"
 	CONFIG::HAS_INSN_ARITH_MULT_SMULWY
-#line 82884 "isa_arm32.tcc"
+#line 82883 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82888 "isa_arm32.tcc"
+#line 82887 "isa_arm32.tcc"
 	>(0x12000a0UL, 0xff000b0UL, DecodeOpSmulwy<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82892 "isa_arm32.tcc"
+#line 82891 "isa_arm32.tcc"
 	>));
 	if(
 #line 281 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/multiply_v5e.isa"
 	CONFIG::HAS_INSN_ARITH_MULT_SMULXY
-#line 82897 "isa_arm32.tcc"
+#line 82896 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82901 "isa_arm32.tcc"
+#line 82900 "isa_arm32.tcc"
 	>(0x1600080UL, 0xff00090UL, DecodeOpSmulxy<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82905 "isa_arm32.tcc"
+#line 82904 "isa_arm32.tcc"
 	>));
 	if(
 #line 206 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/multiply_v5e.isa"
 	CONFIG::HAS_INSN_ARITH_MULT_SMLAWY
-#line 82910 "isa_arm32.tcc"
+#line 82909 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82914 "isa_arm32.tcc"
+#line 82913 "isa_arm32.tcc"
 	>(0x1200080UL, 0xff000b0UL, DecodeOpSmlawy<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82918 "isa_arm32.tcc"
+#line 82917 "isa_arm32.tcc"
 	>));
 	if(
 #line 129 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/multiply_v5e.isa"
 	CONFIG::HAS_INSN_ARITH_MULT_SMLALXY
-#line 82923 "isa_arm32.tcc"
+#line 82922 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82927 "isa_arm32.tcc"
+#line 82926 "isa_arm32.tcc"
 	>(0x1400080UL, 0xff00090UL, DecodeOpSmlalxy<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82931 "isa_arm32.tcc"
+#line 82930 "isa_arm32.tcc"
 	>));
 	if(
 #line 54 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/multiply_v5e.isa"
 	CONFIG::HAS_INSN_ARITH_MULT_SMLAXY
-#line 82936 "isa_arm32.tcc"
+#line 82935 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82940 "isa_arm32.tcc"
+#line 82939 "isa_arm32.tcc"
 	>(0x1000080UL, 0xff00090UL, DecodeOpSmlaxy<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82944 "isa_arm32.tcc"
+#line 82943 "isa_arm32.tcc"
 	>));
 	if(
 #line 291 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/multiply.isa"
 	CONFIG::HAS_INSN_ARITH_MULT_UMULL
-#line 82949 "isa_arm32.tcc"
+#line 82948 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82953 "isa_arm32.tcc"
+#line 82952 "isa_arm32.tcc"
 	>(0x800090UL, 0xfe000f0UL, DecodeOpUmull<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82957 "isa_arm32.tcc"
+#line 82956 "isa_arm32.tcc"
 	>));
 	if(
 #line 239 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/multiply.isa"
 	CONFIG::HAS_INSN_ARITH_MULT_UMLAL
-#line 82962 "isa_arm32.tcc"
+#line 82961 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82966 "isa_arm32.tcc"
+#line 82965 "isa_arm32.tcc"
 	>(0xa00090UL, 0xfe000f0UL, DecodeOpUmlal<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82970 "isa_arm32.tcc"
+#line 82969 "isa_arm32.tcc"
 	>));
 	if(
 #line 190 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/multiply.isa"
 	CONFIG::HAS_INSN_ARITH_MULT_SMULL
-#line 82975 "isa_arm32.tcc"
+#line 82974 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82979 "isa_arm32.tcc"
+#line 82978 "isa_arm32.tcc"
 	>(0xc00090UL, 0xfe000f0UL, DecodeOpSmull<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82983 "isa_arm32.tcc"
+#line 82982 "isa_arm32.tcc"
 	>));
 	if(
 #line 138 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/multiply.isa"
 	CONFIG::HAS_INSN_ARITH_MULT_SMLAL
-#line 82988 "isa_arm32.tcc"
+#line 82987 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82992 "isa_arm32.tcc"
+#line 82991 "isa_arm32.tcc"
 	>(0xe00090UL, 0xfe000f0UL, DecodeOpSmlal<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 82996 "isa_arm32.tcc"
+#line 82995 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83001 "isa_arm32.tcc"
+#line 83000 "isa_arm32.tcc"
 	>(0x90UL, 0xfe000f0UL, DecodeOpMul<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83005 "isa_arm32.tcc"
+#line 83004 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83010 "isa_arm32.tcc"
+#line 83009 "isa_arm32.tcc"
 	>(0x200090UL, 0xfe000f0UL, DecodeOpMla<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83014 "isa_arm32.tcc"
+#line 83013 "isa_arm32.tcc"
 	>));
 	if(
 #line 165 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/data_processing_v5e.isa"
 	CONFIG::HAS_INSN_ARITH_QDSUB
-#line 83019 "isa_arm32.tcc"
+#line 83018 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83023 "isa_arm32.tcc"
+#line 83022 "isa_arm32.tcc"
 	>(0x1600050UL, 0xff000f0UL, DecodeOpQdsub<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83027 "isa_arm32.tcc"
+#line 83026 "isa_arm32.tcc"
 	>));
 	if(
 #line 127 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/data_processing_v5e.isa"
 	CONFIG::HAS_INSN_ARITH_QDADD
-#line 83032 "isa_arm32.tcc"
+#line 83031 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83036 "isa_arm32.tcc"
+#line 83035 "isa_arm32.tcc"
 	>(0x1400050UL, 0xff000f0UL, DecodeOpQdadd<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83040 "isa_arm32.tcc"
+#line 83039 "isa_arm32.tcc"
 	>));
 	if(
 #line 90 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/data_processing_v5e.isa"
 	CONFIG::HAS_INSN_ARITH_QSUB
-#line 83045 "isa_arm32.tcc"
+#line 83044 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83049 "isa_arm32.tcc"
+#line 83048 "isa_arm32.tcc"
 	>(0x1200050UL, 0xff000f0UL, DecodeOpQsub<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83053 "isa_arm32.tcc"
+#line 83052 "isa_arm32.tcc"
 	>));
 	if(
 #line 53 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/data_processing_v5e.isa"
 	CONFIG::HAS_INSN_ARITH_QADD
-#line 83058 "isa_arm32.tcc"
+#line 83057 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83062 "isa_arm32.tcc"
+#line 83061 "isa_arm32.tcc"
 	>(0x1000050UL, 0xff000f0UL, DecodeOpQadd<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83066 "isa_arm32.tcc"
+#line 83065 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83071 "isa_arm32.tcc"
+#line 83070 "isa_arm32.tcc"
 	>(0x1f00010UL, 0xff00090UL, DecodeOpMvns_reg_shift<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83075 "isa_arm32.tcc"
+#line 83074 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83080 "isa_arm32.tcc"
+#line 83079 "isa_arm32.tcc"
 	>(0x1f00000UL, 0xff00010UL, DecodeOpMvns_imm_shift<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83084 "isa_arm32.tcc"
+#line 83083 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83089 "isa_arm32.tcc"
+#line 83088 "isa_arm32.tcc"
 	>(0x3f00000UL, 0xff00000UL, DecodeOpMvns_32imm<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83093 "isa_arm32.tcc"
+#line 83092 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83098 "isa_arm32.tcc"
+#line 83097 "isa_arm32.tcc"
 	>(0x1e00010UL, 0xff00090UL, DecodeOpMvn_reg_shift<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83102 "isa_arm32.tcc"
+#line 83101 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83107 "isa_arm32.tcc"
+#line 83106 "isa_arm32.tcc"
 	>(0x1e00000UL, 0xff00010UL, DecodeOpMvn_imm_shift<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83111 "isa_arm32.tcc"
+#line 83110 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83116 "isa_arm32.tcc"
+#line 83115 "isa_arm32.tcc"
 	>(0x3e00000UL, 0xff00000UL, DecodeOpMvn_32imm<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83120 "isa_arm32.tcc"
+#line 83119 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83125 "isa_arm32.tcc"
+#line 83124 "isa_arm32.tcc"
 	>(0x1d00010UL, 0xff00090UL, DecodeOpBics_reg_shift<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83129 "isa_arm32.tcc"
+#line 83128 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83134 "isa_arm32.tcc"
+#line 83133 "isa_arm32.tcc"
 	>(0x1d00000UL, 0xff00010UL, DecodeOpBics_imm_shift<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83138 "isa_arm32.tcc"
+#line 83137 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83143 "isa_arm32.tcc"
+#line 83142 "isa_arm32.tcc"
 	>(0x3d00000UL, 0xff00000UL, DecodeOpBics_32imm<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83147 "isa_arm32.tcc"
+#line 83146 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83152 "isa_arm32.tcc"
+#line 83151 "isa_arm32.tcc"
 	>(0x1c00010UL, 0xff00090UL, DecodeOpBic_reg_shift<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83156 "isa_arm32.tcc"
+#line 83155 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83161 "isa_arm32.tcc"
+#line 83160 "isa_arm32.tcc"
 	>(0x1c00000UL, 0xff00010UL, DecodeOpBic_imm_shift<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83165 "isa_arm32.tcc"
+#line 83164 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83170 "isa_arm32.tcc"
+#line 83169 "isa_arm32.tcc"
 	>(0x3c00000UL, 0xff00000UL, DecodeOpBic_32imm<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83174 "isa_arm32.tcc"
+#line 83173 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83179 "isa_arm32.tcc"
+#line 83178 "isa_arm32.tcc"
 	>(0x1b00010UL, 0xff00090UL, DecodeOpMovs_reg_shift<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83183 "isa_arm32.tcc"
+#line 83182 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83188 "isa_arm32.tcc"
+#line 83187 "isa_arm32.tcc"
 	>(0x1b00000UL, 0xff00010UL, DecodeOpMovs_imm_shift<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83192 "isa_arm32.tcc"
+#line 83191 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83197 "isa_arm32.tcc"
+#line 83196 "isa_arm32.tcc"
 	>(0x3b00000UL, 0xff00000UL, DecodeOpMovs_32imm<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83201 "isa_arm32.tcc"
+#line 83200 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83206 "isa_arm32.tcc"
+#line 83205 "isa_arm32.tcc"
 	>(0x1a00010UL, 0xff00090UL, DecodeOpMov_reg_shift<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83210 "isa_arm32.tcc"
+#line 83209 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83215 "isa_arm32.tcc"
+#line 83214 "isa_arm32.tcc"
 	>(0x1a00000UL, 0xff00010UL, DecodeOpMov_imm_shift<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83219 "isa_arm32.tcc"
+#line 83218 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83224 "isa_arm32.tcc"
+#line 83223 "isa_arm32.tcc"
 	>(0x3a00000UL, 0xff00000UL, DecodeOpMov_32imm<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83228 "isa_arm32.tcc"
+#line 83227 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83233 "isa_arm32.tcc"
+#line 83232 "isa_arm32.tcc"
 	>(0x1900010UL, 0xff00090UL, DecodeOpOrrs_reg_shift<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83237 "isa_arm32.tcc"
+#line 83236 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83242 "isa_arm32.tcc"
+#line 83241 "isa_arm32.tcc"
 	>(0x1900000UL, 0xff00010UL, DecodeOpOrrs_imm_shift<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83246 "isa_arm32.tcc"
+#line 83245 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83251 "isa_arm32.tcc"
+#line 83250 "isa_arm32.tcc"
 	>(0x3900000UL, 0xff00000UL, DecodeOpOrrs_32imm<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83255 "isa_arm32.tcc"
+#line 83254 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83260 "isa_arm32.tcc"
+#line 83259 "isa_arm32.tcc"
 	>(0x1800010UL, 0xff00090UL, DecodeOpOrr_reg_shift<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83264 "isa_arm32.tcc"
+#line 83263 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83269 "isa_arm32.tcc"
+#line 83268 "isa_arm32.tcc"
 	>(0x1800000UL, 0xff00010UL, DecodeOpOrr_imm_shift<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83273 "isa_arm32.tcc"
+#line 83272 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83278 "isa_arm32.tcc"
+#line 83277 "isa_arm32.tcc"
 	>(0x3800000UL, 0xff00000UL, DecodeOpOrr_32imm<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83282 "isa_arm32.tcc"
+#line 83281 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83287 "isa_arm32.tcc"
+#line 83286 "isa_arm32.tcc"
 	>(0x1700010UL, 0xff00090UL, DecodeOpCmn_reg_shift<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83291 "isa_arm32.tcc"
+#line 83290 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83296 "isa_arm32.tcc"
+#line 83295 "isa_arm32.tcc"
 	>(0x1700000UL, 0xff00010UL, DecodeOpCmn_imm_shift<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83300 "isa_arm32.tcc"
+#line 83299 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83305 "isa_arm32.tcc"
+#line 83304 "isa_arm32.tcc"
 	>(0x3700000UL, 0xff00000UL, DecodeOpCmn_32imm<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83309 "isa_arm32.tcc"
+#line 83308 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83314 "isa_arm32.tcc"
+#line 83313 "isa_arm32.tcc"
 	>(0x1500010UL, 0xff00090UL, DecodeOpCmp_reg_shift<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83318 "isa_arm32.tcc"
+#line 83317 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83323 "isa_arm32.tcc"
+#line 83322 "isa_arm32.tcc"
 	>(0x1500000UL, 0xff00010UL, DecodeOpCmp_imm_shift<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83327 "isa_arm32.tcc"
+#line 83326 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83332 "isa_arm32.tcc"
+#line 83331 "isa_arm32.tcc"
 	>(0x3500000UL, 0xff00000UL, DecodeOpCmp_32imm<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83336 "isa_arm32.tcc"
+#line 83335 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83341 "isa_arm32.tcc"
+#line 83340 "isa_arm32.tcc"
 	>(0x1300010UL, 0xff00090UL, DecodeOpTeq_reg_shift<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83345 "isa_arm32.tcc"
+#line 83344 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83350 "isa_arm32.tcc"
+#line 83349 "isa_arm32.tcc"
 	>(0x1300000UL, 0xff00010UL, DecodeOpTeq_imm_shift<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83354 "isa_arm32.tcc"
+#line 83353 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83359 "isa_arm32.tcc"
+#line 83358 "isa_arm32.tcc"
 	>(0x3300000UL, 0xff00000UL, DecodeOpTeq_32imm<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83363 "isa_arm32.tcc"
+#line 83362 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83368 "isa_arm32.tcc"
+#line 83367 "isa_arm32.tcc"
 	>(0x1100010UL, 0xff00090UL, DecodeOpTst_reg_shift<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83372 "isa_arm32.tcc"
+#line 83371 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83377 "isa_arm32.tcc"
+#line 83376 "isa_arm32.tcc"
 	>(0x1100000UL, 0xff00010UL, DecodeOpTst_imm_shift<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83381 "isa_arm32.tcc"
+#line 83380 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83386 "isa_arm32.tcc"
+#line 83385 "isa_arm32.tcc"
 	>(0x3100000UL, 0xff00000UL, DecodeOpTst_32imm<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83390 "isa_arm32.tcc"
+#line 83389 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83395 "isa_arm32.tcc"
+#line 83394 "isa_arm32.tcc"
 	>(0xf00010UL, 0xff00090UL, DecodeOpRscs_reg_shift<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83399 "isa_arm32.tcc"
+#line 83398 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83404 "isa_arm32.tcc"
+#line 83403 "isa_arm32.tcc"
 	>(0xf00000UL, 0xff00010UL, DecodeOpRscs_imm_shift<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83408 "isa_arm32.tcc"
+#line 83407 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83413 "isa_arm32.tcc"
+#line 83412 "isa_arm32.tcc"
 	>(0x2f00000UL, 0xff00000UL, DecodeOpRscs_32imm<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83417 "isa_arm32.tcc"
+#line 83416 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83422 "isa_arm32.tcc"
+#line 83421 "isa_arm32.tcc"
 	>(0xe00010UL, 0xff00090UL, DecodeOpRsc_reg_shift<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83426 "isa_arm32.tcc"
+#line 83425 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83431 "isa_arm32.tcc"
+#line 83430 "isa_arm32.tcc"
 	>(0xe00000UL, 0xff00010UL, DecodeOpRsc_imm_shift<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83435 "isa_arm32.tcc"
+#line 83434 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83440 "isa_arm32.tcc"
+#line 83439 "isa_arm32.tcc"
 	>(0x2e00000UL, 0xff00000UL, DecodeOpRsc_32imm<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83444 "isa_arm32.tcc"
+#line 83443 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83449 "isa_arm32.tcc"
+#line 83448 "isa_arm32.tcc"
 	>(0xd00010UL, 0xff00090UL, DecodeOpSbcs_reg_shift<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83453 "isa_arm32.tcc"
+#line 83452 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83458 "isa_arm32.tcc"
+#line 83457 "isa_arm32.tcc"
 	>(0xd00000UL, 0xff00010UL, DecodeOpSbcs_imm_shift<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83462 "isa_arm32.tcc"
+#line 83461 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83467 "isa_arm32.tcc"
+#line 83466 "isa_arm32.tcc"
 	>(0x2d00000UL, 0xff00000UL, DecodeOpSbcs_32imm<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83471 "isa_arm32.tcc"
+#line 83470 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83476 "isa_arm32.tcc"
+#line 83475 "isa_arm32.tcc"
 	>(0xc00010UL, 0xff00090UL, DecodeOpSbc_reg_shift<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83480 "isa_arm32.tcc"
+#line 83479 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83485 "isa_arm32.tcc"
+#line 83484 "isa_arm32.tcc"
 	>(0xc00000UL, 0xff00010UL, DecodeOpSbc_imm_shift<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83489 "isa_arm32.tcc"
+#line 83488 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83494 "isa_arm32.tcc"
+#line 83493 "isa_arm32.tcc"
 	>(0x2c00000UL, 0xff00000UL, DecodeOpSbc_32imm<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83498 "isa_arm32.tcc"
+#line 83497 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83503 "isa_arm32.tcc"
+#line 83502 "isa_arm32.tcc"
 	>(0xb00010UL, 0xff00090UL, DecodeOpAdcs_reg_shift<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83507 "isa_arm32.tcc"
+#line 83506 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83512 "isa_arm32.tcc"
+#line 83511 "isa_arm32.tcc"
 	>(0xb00000UL, 0xff00010UL, DecodeOpAdcs_imm_shift<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83516 "isa_arm32.tcc"
+#line 83515 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83521 "isa_arm32.tcc"
+#line 83520 "isa_arm32.tcc"
 	>(0x2b00000UL, 0xff00000UL, DecodeOpAdcs_32imm<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83525 "isa_arm32.tcc"
+#line 83524 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83530 "isa_arm32.tcc"
+#line 83529 "isa_arm32.tcc"
 	>(0xa00010UL, 0xff00090UL, DecodeOpAdc_reg_shift<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83534 "isa_arm32.tcc"
+#line 83533 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83539 "isa_arm32.tcc"
+#line 83538 "isa_arm32.tcc"
 	>(0xa00000UL, 0xff00010UL, DecodeOpAdc_imm_shift<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83543 "isa_arm32.tcc"
+#line 83542 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83548 "isa_arm32.tcc"
+#line 83547 "isa_arm32.tcc"
 	>(0x2a00000UL, 0xff00000UL, DecodeOpAdc_32imm<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83552 "isa_arm32.tcc"
+#line 83551 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83557 "isa_arm32.tcc"
+#line 83556 "isa_arm32.tcc"
 	>(0x900010UL, 0xff00090UL, DecodeOpAdds_reg_shift<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83561 "isa_arm32.tcc"
+#line 83560 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83566 "isa_arm32.tcc"
+#line 83565 "isa_arm32.tcc"
 	>(0x900000UL, 0xff00010UL, DecodeOpAdds_imm_shift<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83570 "isa_arm32.tcc"
+#line 83569 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83575 "isa_arm32.tcc"
+#line 83574 "isa_arm32.tcc"
 	>(0x2900000UL, 0xff00000UL, DecodeOpAdds_32imm<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83579 "isa_arm32.tcc"
+#line 83578 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83584 "isa_arm32.tcc"
+#line 83583 "isa_arm32.tcc"
 	>(0x800010UL, 0xff00090UL, DecodeOpAdd_reg_shift<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83588 "isa_arm32.tcc"
+#line 83587 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83593 "isa_arm32.tcc"
+#line 83592 "isa_arm32.tcc"
 	>(0x800000UL, 0xff00010UL, DecodeOpAdd_imm_shift<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83597 "isa_arm32.tcc"
+#line 83596 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83602 "isa_arm32.tcc"
+#line 83601 "isa_arm32.tcc"
 	>(0x2800000UL, 0xff00000UL, DecodeOpAdd_32imm<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83606 "isa_arm32.tcc"
+#line 83605 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83611 "isa_arm32.tcc"
+#line 83610 "isa_arm32.tcc"
 	>(0x700010UL, 0xff00090UL, DecodeOpRsbs_reg_shift<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83615 "isa_arm32.tcc"
+#line 83614 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83620 "isa_arm32.tcc"
+#line 83619 "isa_arm32.tcc"
 	>(0x700000UL, 0xff00010UL, DecodeOpRsbs_imm_shift<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83624 "isa_arm32.tcc"
+#line 83623 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83629 "isa_arm32.tcc"
+#line 83628 "isa_arm32.tcc"
 	>(0x2700000UL, 0xff00000UL, DecodeOpRsbs_32imm<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83633 "isa_arm32.tcc"
+#line 83632 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83638 "isa_arm32.tcc"
+#line 83637 "isa_arm32.tcc"
 	>(0x600010UL, 0xff00090UL, DecodeOpRsb_reg_shift<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83642 "isa_arm32.tcc"
+#line 83641 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83647 "isa_arm32.tcc"
+#line 83646 "isa_arm32.tcc"
 	>(0x600000UL, 0xff00010UL, DecodeOpRsb_imm_shift<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83651 "isa_arm32.tcc"
+#line 83650 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83656 "isa_arm32.tcc"
+#line 83655 "isa_arm32.tcc"
 	>(0x2600000UL, 0xff00000UL, DecodeOpRsb_32imm<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83660 "isa_arm32.tcc"
+#line 83659 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83665 "isa_arm32.tcc"
+#line 83664 "isa_arm32.tcc"
 	>(0x500010UL, 0xff00090UL, DecodeOpSubs_reg_shift<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83669 "isa_arm32.tcc"
+#line 83668 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83674 "isa_arm32.tcc"
+#line 83673 "isa_arm32.tcc"
 	>(0x500000UL, 0xff00010UL, DecodeOpSubs_imm_shift<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83678 "isa_arm32.tcc"
+#line 83677 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83683 "isa_arm32.tcc"
+#line 83682 "isa_arm32.tcc"
 	>(0x2500000UL, 0xff00000UL, DecodeOpSubs_32imm<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83687 "isa_arm32.tcc"
+#line 83686 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83692 "isa_arm32.tcc"
+#line 83691 "isa_arm32.tcc"
 	>(0x400010UL, 0xff00090UL, DecodeOpSub_reg_shift<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83696 "isa_arm32.tcc"
+#line 83695 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83701 "isa_arm32.tcc"
+#line 83700 "isa_arm32.tcc"
 	>(0x400000UL, 0xff00010UL, DecodeOpSub_imm_shift<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83705 "isa_arm32.tcc"
+#line 83704 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83710 "isa_arm32.tcc"
+#line 83709 "isa_arm32.tcc"
 	>(0x2400000UL, 0xff00000UL, DecodeOpSub_32imm<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83714 "isa_arm32.tcc"
+#line 83713 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83719 "isa_arm32.tcc"
+#line 83718 "isa_arm32.tcc"
 	>(0x300010UL, 0xff00090UL, DecodeOpEors_reg_shift<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83723 "isa_arm32.tcc"
+#line 83722 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83728 "isa_arm32.tcc"
+#line 83727 "isa_arm32.tcc"
 	>(0x300000UL, 0xff00010UL, DecodeOpEors_imm_shift<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83732 "isa_arm32.tcc"
+#line 83731 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83737 "isa_arm32.tcc"
+#line 83736 "isa_arm32.tcc"
 	>(0x2300000UL, 0xff00000UL, DecodeOpEors_32imm<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83741 "isa_arm32.tcc"
+#line 83740 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83746 "isa_arm32.tcc"
+#line 83745 "isa_arm32.tcc"
 	>(0x200010UL, 0xff00090UL, DecodeOpEor_reg_shift<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83750 "isa_arm32.tcc"
+#line 83749 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83755 "isa_arm32.tcc"
+#line 83754 "isa_arm32.tcc"
 	>(0x200000UL, 0xff00010UL, DecodeOpEor_imm_shift<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83759 "isa_arm32.tcc"
+#line 83758 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83764 "isa_arm32.tcc"
+#line 83763 "isa_arm32.tcc"
 	>(0x2200000UL, 0xff00000UL, DecodeOpEor_32imm<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83768 "isa_arm32.tcc"
+#line 83767 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83773 "isa_arm32.tcc"
+#line 83772 "isa_arm32.tcc"
 	>(0x100010UL, 0xff00090UL, DecodeOpAnds_reg_shift<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83777 "isa_arm32.tcc"
+#line 83776 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83782 "isa_arm32.tcc"
+#line 83781 "isa_arm32.tcc"
 	>(0x100000UL, 0xff00010UL, DecodeOpAnds_imm_shift<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83786 "isa_arm32.tcc"
+#line 83785 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83791 "isa_arm32.tcc"
+#line 83790 "isa_arm32.tcc"
 	>(0x2100000UL, 0xff00000UL, DecodeOpAnds_32imm<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83795 "isa_arm32.tcc"
+#line 83794 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83800 "isa_arm32.tcc"
+#line 83799 "isa_arm32.tcc"
 	>(0x10UL, 0xff00090UL, DecodeOpAnd_reg_shift<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83804 "isa_arm32.tcc"
+#line 83803 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83809 "isa_arm32.tcc"
+#line 83808 "isa_arm32.tcc"
 	>(0x0UL, 0xff00010UL, DecodeOpAnd_imm_shift<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83813 "isa_arm32.tcc"
+#line 83812 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83818 "isa_arm32.tcc"
+#line 83817 "isa_arm32.tcc"
 	>(0x2000000UL, 0xff00000UL, DecodeOpAnd_32imm<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83822 "isa_arm32.tcc"
+#line 83821 "isa_arm32.tcc"
 	>));
 	if(
 #line 259 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/branch.isa"
 	CONFIG::HAS_INSN_BLX
-#line 83827 "isa_arm32.tcc"
+#line 83826 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83831 "isa_arm32.tcc"
+#line 83830 "isa_arm32.tcc"
 	>(0x1200030UL, 0xff000f0UL, DecodeOpBlx_2<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83835 "isa_arm32.tcc"
+#line 83834 "isa_arm32.tcc"
 	>));
 	if(
 #line 227 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/branch.isa"
 	CONFIG::HAS_INSN_BLX
-#line 83840 "isa_arm32.tcc"
+#line 83839 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83844 "isa_arm32.tcc"
+#line 83843 "isa_arm32.tcc"
 	>(0xfa000000UL, 0xfe000000UL, DecodeOpBlx_1<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83848 "isa_arm32.tcc"
+#line 83847 "isa_arm32.tcc"
 	>));
 	if(
 #line 180 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/branch.isa"
 	CONFIG::HAS_INSN_BX
-#line 83853 "isa_arm32.tcc"
+#line 83852 "isa_arm32.tcc"
 	) decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83857 "isa_arm32.tcc"
+#line 83856 "isa_arm32.tcc"
 	>(0x1200010UL, 0xff000f0UL, DecodeOpBx<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83861 "isa_arm32.tcc"
+#line 83860 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83866 "isa_arm32.tcc"
+#line 83865 "isa_arm32.tcc"
 	>(0xeb000000UL, 0xff000000UL, DecodeOpBl_1110<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83870 "isa_arm32.tcc"
+#line 83869 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83875 "isa_arm32.tcc"
+#line 83874 "isa_arm32.tcc"
 	>(0xcb000000UL, 0xef000000UL, DecodeOpBl_110x<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83879 "isa_arm32.tcc"
+#line 83878 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83884 "isa_arm32.tcc"
+#line 83883 "isa_arm32.tcc"
 	>(0x8b000000UL, 0xcf000000UL, DecodeOpBl_10xx<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83888 "isa_arm32.tcc"
+#line 83887 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83893 "isa_arm32.tcc"
+#line 83892 "isa_arm32.tcc"
 	>(0xb000000UL, 0x8f000000UL, DecodeOpBl_0xxx<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83897 "isa_arm32.tcc"
+#line 83896 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83902 "isa_arm32.tcc"
+#line 83901 "isa_arm32.tcc"
 	>(0xea000000UL, 0xff000000UL, DecodeOpB_1110<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83906 "isa_arm32.tcc"
+#line 83905 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83911 "isa_arm32.tcc"
+#line 83910 "isa_arm32.tcc"
 	>(0xca000000UL, 0xef000000UL, DecodeOpB_110x<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83915 "isa_arm32.tcc"
+#line 83914 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83920 "isa_arm32.tcc"
+#line 83919 "isa_arm32.tcc"
 	>(0x8a000000UL, 0xcf000000UL, DecodeOpB_10xx<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83924 "isa_arm32.tcc"
+#line 83923 "isa_arm32.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83929 "isa_arm32.tcc"
+#line 83928 "isa_arm32.tcc"
 	>(0xa000000UL, 0x8f000000UL, DecodeOpB_0xxx<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83933 "isa_arm32.tcc"
+#line 83932 "isa_arm32.tcc"
 	>));
 }
 
 template <
 #line 44 "isa/arm32/arm32.isa"
 class
-#line 83940 "isa_arm32.tcc"
+#line 83939 "isa_arm32.tcc"
 #line 44 "isa/arm32/arm32.isa"
 CONFIG
-#line 83943 "isa_arm32.tcc"
+#line 83942 "isa_arm32.tcc"
 >
 Decoder<
 #line 44 "isa/arm32/arm32.isa"
 CONFIG
-#line 83948 "isa_arm32.tcc"
+#line 83947 "isa_arm32.tcc"
 >::~Decoder()
 {
 	InvalidateDecodingCache();
@@ -83953,15 +83952,15 @@ CONFIG
 template <
 #line 44 "isa/arm32/arm32.isa"
 class
-#line 83957 "isa_arm32.tcc"
+#line 83956 "isa_arm32.tcc"
 #line 44 "isa/arm32/arm32.isa"
 CONFIG
-#line 83960 "isa_arm32.tcc"
+#line 83959 "isa_arm32.tcc"
 >
 void Decoder<
 #line 44 "isa/arm32/arm32.isa"
 CONFIG
-#line 83965 "isa_arm32.tcc"
+#line 83964 "isa_arm32.tcc"
 >::Fetch(void *, typename CONFIG::address_t, uint32_t)
 {
 	assert( ! "Calling unimplemented virtual method Fetch" );
@@ -83970,32 +83969,32 @@ CONFIG
 template <
 #line 44 "isa/arm32/arm32.isa"
 class
-#line 83974 "isa_arm32.tcc"
+#line 83973 "isa_arm32.tcc"
 #line 44 "isa/arm32/arm32.isa"
 CONFIG
-#line 83977 "isa_arm32.tcc"
+#line 83976 "isa_arm32.tcc"
 >
 Operation<
 #line 44 "isa/arm32/arm32.isa"
 CONFIG
-#line 83982 "isa_arm32.tcc"
+#line 83981 "isa_arm32.tcc"
 > *Decoder<
 #line 44 "isa/arm32/arm32.isa"
 CONFIG
-#line 83986 "isa_arm32.tcc"
+#line 83985 "isa_arm32.tcc"
 >::NCDecode(typename CONFIG::address_t addr)
 {
 	Operation<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 83992 "isa_arm32.tcc"
+#line 83991 "isa_arm32.tcc"
 	> *operation;
 	CodeType code;
 	Fetch(&code, addr, sizeof(code));
 #if BYTE_ORDER == LITTLE_ENDIAN
-	if(!little_endian)
+	if(!is_little_endian)
 #else
-	if(little_endian)
+	if(is_little_endian)
 #endif
 	{
 		code = ((code & 0xff000000UL) >> 24) | ((code & 0x00ff0000UL) >> 8) | ((code & 0x0000ff00UL) << 8) | ((code & 0x000000ffUL) << 24);
@@ -84032,7 +84031,7 @@ CONFIG
 	operation = new Operation<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 84036 "isa_arm32.tcc"
+#line 84035 "isa_arm32.tcc"
 	>(code, addr, "???");
 	operation->initialize_dependency_write_reglist();
 	operation->initialize_dependency_write_rdlo();
@@ -84059,25 +84058,25 @@ CONFIG
 template <
 #line 44 "isa/arm32/arm32.isa"
 class
-#line 84063 "isa_arm32.tcc"
+#line 84062 "isa_arm32.tcc"
 #line 44 "isa/arm32/arm32.isa"
 CONFIG
-#line 84066 "isa_arm32.tcc"
+#line 84065 "isa_arm32.tcc"
 >
 Operation<
 #line 44 "isa/arm32/arm32.isa"
 CONFIG
-#line 84071 "isa_arm32.tcc"
+#line 84070 "isa_arm32.tcc"
 > *Decoder<
 #line 44 "isa/arm32/arm32.isa"
 CONFIG
-#line 84075 "isa_arm32.tcc"
+#line 84074 "isa_arm32.tcc"
 >::NCDecode(typename CONFIG::address_t addr, CodeType code)
 {
 	Operation<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 84081 "isa_arm32.tcc"
+#line 84080 "isa_arm32.tcc"
 	> *operation;
 	unsigned int count = decode_table.size();
 	unsigned int idx;
@@ -84111,7 +84110,7 @@ CONFIG
 	operation = new Operation<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 84115 "isa_arm32.tcc"
+#line 84114 "isa_arm32.tcc"
 	>(code, addr, "???");
 	operation->initialize_dependency_write_reglist();
 	operation->initialize_dependency_write_rdlo();
@@ -84138,15 +84137,15 @@ CONFIG
 template <
 #line 44 "isa/arm32/arm32.isa"
 class
-#line 84142 "isa_arm32.tcc"
+#line 84141 "isa_arm32.tcc"
 #line 44 "isa/arm32/arm32.isa"
 CONFIG
-#line 84145 "isa_arm32.tcc"
+#line 84144 "isa_arm32.tcc"
 >
 void Decoder<
 #line 44 "isa/arm32/arm32.isa"
 CONFIG
-#line 84150 "isa_arm32.tcc"
+#line 84149 "isa_arm32.tcc"
 >::InvalidateDecodingCache()
 {
 	uint32_t index;
@@ -84156,7 +84155,7 @@ CONFIG
 		DecodeMapPage<
 #line 44 "isa/arm32/arm32.isa"
 		CONFIG
-#line 84160 "isa_arm32.tcc"
+#line 84159 "isa_arm32.tcc"
 		> *page, *next_page;
 		page = decode_hash_table[index];
 		if(page)
@@ -84175,15 +84174,15 @@ CONFIG
 template <
 #line 44 "isa/arm32/arm32.isa"
 class
-#line 84179 "isa_arm32.tcc"
+#line 84178 "isa_arm32.tcc"
 #line 44 "isa/arm32/arm32.isa"
 CONFIG
-#line 84182 "isa_arm32.tcc"
+#line 84181 "isa_arm32.tcc"
 >
 void Decoder<
 #line 44 "isa/arm32/arm32.isa"
 CONFIG
-#line 84187 "isa_arm32.tcc"
+#line 84186 "isa_arm32.tcc"
 >::InvalidateDecodingCacheEntry(typename CONFIG::address_t addr)
 {
 	typename CONFIG::address_t page_key = addr / 4 / NUM_OPERATIONS_PER_PAGE;
@@ -84192,7 +84191,7 @@ CONFIG
 	DecodeMapPage<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 84196 "isa_arm32.tcc"
+#line 84195 "isa_arm32.tcc"
 	> *prev, *cur;
 	cur = decode_hash_table[index];
 	if(cur)
@@ -84225,19 +84224,19 @@ CONFIG
 template <
 #line 44 "isa/arm32/arm32.isa"
 class
-#line 84229 "isa_arm32.tcc"
+#line 84228 "isa_arm32.tcc"
 #line 44 "isa/arm32/arm32.isa"
 CONFIG
-#line 84232 "isa_arm32.tcc"
+#line 84231 "isa_arm32.tcc"
 >
 inline DecodeMapPage<
 #line 44 "isa/arm32/arm32.isa"
 CONFIG
-#line 84237 "isa_arm32.tcc"
+#line 84236 "isa_arm32.tcc"
 > *Decoder<
 #line 44 "isa/arm32/arm32.isa"
 CONFIG
-#line 84241 "isa_arm32.tcc"
+#line 84240 "isa_arm32.tcc"
 >::FindPage(typename CONFIG::address_t page_key)
 {
 	if(mru_page && mru_page->key == page_key) return mru_page;
@@ -84245,7 +84244,7 @@ CONFIG
 	DecodeMapPage<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 84249 "isa_arm32.tcc"
+#line 84248 "isa_arm32.tcc"
 	> *prev, *cur;
 	cur = decode_hash_table[index];
 	if(cur)
@@ -84279,31 +84278,31 @@ CONFIG
 template <
 #line 44 "isa/arm32/arm32.isa"
 class
-#line 84283 "isa_arm32.tcc"
+#line 84282 "isa_arm32.tcc"
 #line 44 "isa/arm32/arm32.isa"
 CONFIG
-#line 84286 "isa_arm32.tcc"
+#line 84285 "isa_arm32.tcc"
 >
 Operation<
 #line 44 "isa/arm32/arm32.isa"
 CONFIG
-#line 84291 "isa_arm32.tcc"
+#line 84290 "isa_arm32.tcc"
 > *Decoder<
 #line 44 "isa/arm32/arm32.isa"
 CONFIG
-#line 84295 "isa_arm32.tcc"
+#line 84294 "isa_arm32.tcc"
 >::Decode(typename CONFIG::address_t addr)
 {
 	Operation<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 84301 "isa_arm32.tcc"
+#line 84300 "isa_arm32.tcc"
 	> *operation;
 	typename CONFIG::address_t page_key = addr / 4 / NUM_OPERATIONS_PER_PAGE;
 	DecodeMapPage<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 84307 "isa_arm32.tcc"
+#line 84306 "isa_arm32.tcc"
 	> *page;
 	page = FindPage(page_key);
 	if(!page)
@@ -84311,7 +84310,7 @@ CONFIG
 		page = new DecodeMapPage<
 #line 44 "isa/arm32/arm32.isa"
 		CONFIG
-#line 84315 "isa_arm32.tcc"
+#line 84314 "isa_arm32.tcc"
 		>(page_key);
 		uint32_t index = page_key % NUM_DECODE_HASH_TABLE_ENTRIES; // hash the key
 		page->next = decode_hash_table[index];
@@ -84331,31 +84330,31 @@ CONFIG
 template <
 #line 44 "isa/arm32/arm32.isa"
 class
-#line 84335 "isa_arm32.tcc"
+#line 84334 "isa_arm32.tcc"
 #line 44 "isa/arm32/arm32.isa"
 CONFIG
-#line 84338 "isa_arm32.tcc"
+#line 84337 "isa_arm32.tcc"
 >
 Operation<
 #line 44 "isa/arm32/arm32.isa"
 CONFIG
-#line 84343 "isa_arm32.tcc"
+#line 84342 "isa_arm32.tcc"
 > *Decoder<
 #line 44 "isa/arm32/arm32.isa"
 CONFIG
-#line 84347 "isa_arm32.tcc"
+#line 84346 "isa_arm32.tcc"
 >::Decode(typename CONFIG::address_t addr, CodeType insn)
 {
 	Operation<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 84353 "isa_arm32.tcc"
+#line 84352 "isa_arm32.tcc"
 	> *operation;
 	typename CONFIG::address_t page_key = addr / 4 / NUM_OPERATIONS_PER_PAGE;
 	DecodeMapPage<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 84359 "isa_arm32.tcc"
+#line 84358 "isa_arm32.tcc"
 	> *page;
 	page = FindPage(page_key);
 	if(!page)
@@ -84363,7 +84362,7 @@ CONFIG
 		page = new DecodeMapPage<
 #line 44 "isa/arm32/arm32.isa"
 		CONFIG
-#line 84367 "isa_arm32.tcc"
+#line 84366 "isa_arm32.tcc"
 		> (page_key);
 		uint32_t index = page_key % NUM_DECODE_HASH_TABLE_ENTRIES; // hash the key
 		page->next = decode_hash_table[index];
@@ -84385,35 +84384,35 @@ CONFIG
 template <
 #line 44 "isa/arm32/arm32.isa"
 class
-#line 84389 "isa_arm32.tcc"
+#line 84388 "isa_arm32.tcc"
 #line 44 "isa/arm32/arm32.isa"
 CONFIG
-#line 84392 "isa_arm32.tcc"
+#line 84391 "isa_arm32.tcc"
 >
 void Decoder<
 #line 44 "isa/arm32/arm32.isa"
 CONFIG
-#line 84397 "isa_arm32.tcc"
+#line 84396 "isa_arm32.tcc"
 >::SetLittleEndian()
 {
-	little_endian = true;
+	is_little_endian = true;
 }
 
 template <
 #line 44 "isa/arm32/arm32.isa"
 class
-#line 84406 "isa_arm32.tcc"
+#line 84405 "isa_arm32.tcc"
 #line 44 "isa/arm32/arm32.isa"
 CONFIG
-#line 84409 "isa_arm32.tcc"
+#line 84408 "isa_arm32.tcc"
 >
 void Decoder<
 #line 44 "isa/arm32/arm32.isa"
 CONFIG
-#line 84414 "isa_arm32.tcc"
+#line 84413 "isa_arm32.tcc"
 >::SetBigEndian()
 {
-	little_endian = false;
+	is_little_endian = false;
 }
 
 } } } } } } }

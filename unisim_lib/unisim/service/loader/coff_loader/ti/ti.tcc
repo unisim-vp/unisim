@@ -245,6 +245,20 @@ unisim::service::loader::coff_loader::File<MEMORY_ADDR> *FileHandler<MEMORY_ADDR
 template <class MEMORY_ADDR>
 File<MEMORY_ADDR>::File(uint16_t _magic)
 	: magic(_magic)
+	, num_sections(0)
+	, aout_hdr_size(0)
+	, time_date(0)
+	, symbol_table_file_ptr(0)
+	, num_symbols(0)
+	, flags(0)
+	, target_id(0)
+	, entry_point(0)
+	, text_base(0)
+	, data_base(0)
+	, text_size(0)
+	, data_size(0)
+	, bss_size(0)
+	, section_table(0)
 {
 	switch(magic)
 	{

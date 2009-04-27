@@ -15468,609 +15468,608 @@ Decoder<
 CONFIG
 #line 15470 "isa_thumb.tcc"
 >::Decoder()
+: is_little_endian( false ), mru_page( 0 )
 {
-	little_endian = false;
-	mru_page = 0;
 	memset(decode_hash_table, 0, sizeof(decode_hash_table));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15479 "isa_thumb.tcc"
+#line 15478 "isa_thumb.tcc"
 	>(0xdf00U, 0xff00U, DecodeOpSwi<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15483 "isa_thumb.tcc"
+#line 15482 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15488 "isa_thumb.tcc"
+#line 15487 "isa_thumb.tcc"
 	>(0xbe00U, 0xff00U, DecodeOpBkpt<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15492 "isa_thumb.tcc"
+#line 15491 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15497 "isa_thumb.tcc"
+#line 15496 "isa_thumb.tcc"
 	>(0xc000U, 0xf800U, DecodeOpStmia<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15501 "isa_thumb.tcc"
+#line 15500 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15506 "isa_thumb.tcc"
+#line 15505 "isa_thumb.tcc"
 	>(0xb400U, 0xfe00U, DecodeOpPush<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15510 "isa_thumb.tcc"
+#line 15509 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15515 "isa_thumb.tcc"
+#line 15514 "isa_thumb.tcc"
 	>(0xbc00U, 0xfe00U, DecodeOpPop<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15519 "isa_thumb.tcc"
+#line 15518 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15524 "isa_thumb.tcc"
+#line 15523 "isa_thumb.tcc"
 	>(0xc800U, 0xf800U, DecodeOpLdmia<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15528 "isa_thumb.tcc"
+#line 15527 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15533 "isa_thumb.tcc"
+#line 15532 "isa_thumb.tcc"
 	>(0x5200U, 0xfe00U, DecodeOpStrh_2<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15537 "isa_thumb.tcc"
+#line 15536 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15542 "isa_thumb.tcc"
+#line 15541 "isa_thumb.tcc"
 	>(0x8000U, 0xf800U, DecodeOpStrh_1<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15546 "isa_thumb.tcc"
+#line 15545 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15551 "isa_thumb.tcc"
+#line 15550 "isa_thumb.tcc"
 	>(0x5400U, 0xfe00U, DecodeOpStrb_2<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15555 "isa_thumb.tcc"
+#line 15554 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15560 "isa_thumb.tcc"
+#line 15559 "isa_thumb.tcc"
 	>(0x7000U, 0xf800U, DecodeOpStrb_1<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15564 "isa_thumb.tcc"
+#line 15563 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15569 "isa_thumb.tcc"
+#line 15568 "isa_thumb.tcc"
 	>(0x9000U, 0xf800U, DecodeOpStr_3<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15573 "isa_thumb.tcc"
+#line 15572 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15578 "isa_thumb.tcc"
+#line 15577 "isa_thumb.tcc"
 	>(0x5000U, 0xfe00U, DecodeOpStr_2<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15582 "isa_thumb.tcc"
+#line 15581 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15587 "isa_thumb.tcc"
+#line 15586 "isa_thumb.tcc"
 	>(0x6000U, 0xf800U, DecodeOpStr_1<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15591 "isa_thumb.tcc"
+#line 15590 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15596 "isa_thumb.tcc"
+#line 15595 "isa_thumb.tcc"
 	>(0x5e00U, 0xfe00U, DecodeOpLdrsh<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15600 "isa_thumb.tcc"
+#line 15599 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15605 "isa_thumb.tcc"
+#line 15604 "isa_thumb.tcc"
 	>(0x5600U, 0xfe00U, DecodeOpLdrsb<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15609 "isa_thumb.tcc"
+#line 15608 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15614 "isa_thumb.tcc"
+#line 15613 "isa_thumb.tcc"
 	>(0x5a00U, 0xfe00U, DecodeOpLdrh_2<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15618 "isa_thumb.tcc"
+#line 15617 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15623 "isa_thumb.tcc"
+#line 15622 "isa_thumb.tcc"
 	>(0x8800U, 0xf800U, DecodeOpLdrh_1<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15627 "isa_thumb.tcc"
+#line 15626 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15632 "isa_thumb.tcc"
+#line 15631 "isa_thumb.tcc"
 	>(0x5c00U, 0xfe00U, DecodeOpLdrb_2<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15636 "isa_thumb.tcc"
+#line 15635 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15641 "isa_thumb.tcc"
+#line 15640 "isa_thumb.tcc"
 	>(0x7800U, 0xf800U, DecodeOpLdrb_1<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15645 "isa_thumb.tcc"
+#line 15644 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15650 "isa_thumb.tcc"
+#line 15649 "isa_thumb.tcc"
 	>(0x9800U, 0xf800U, DecodeOpLdr_4<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15654 "isa_thumb.tcc"
+#line 15653 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15659 "isa_thumb.tcc"
+#line 15658 "isa_thumb.tcc"
 	>(0x4800U, 0xf800U, DecodeOpLdr_3<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15663 "isa_thumb.tcc"
+#line 15662 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15668 "isa_thumb.tcc"
+#line 15667 "isa_thumb.tcc"
 	>(0x5800U, 0xfe00U, DecodeOpLdr_2<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15672 "isa_thumb.tcc"
+#line 15671 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15677 "isa_thumb.tcc"
+#line 15676 "isa_thumb.tcc"
 	>(0x6800U, 0xf800U, DecodeOpLdr_1<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15681 "isa_thumb.tcc"
+#line 15680 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15686 "isa_thumb.tcc"
+#line 15685 "isa_thumb.tcc"
 	>(0x4200U, 0xffc0U, DecodeOpTst<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15690 "isa_thumb.tcc"
+#line 15689 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15695 "isa_thumb.tcc"
+#line 15694 "isa_thumb.tcc"
 	>(0xb080U, 0xff80U, DecodeOpSub_4<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15699 "isa_thumb.tcc"
+#line 15698 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15704 "isa_thumb.tcc"
+#line 15703 "isa_thumb.tcc"
 	>(0x1a00U, 0xfe00U, DecodeOpSub_3<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15708 "isa_thumb.tcc"
+#line 15707 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15713 "isa_thumb.tcc"
+#line 15712 "isa_thumb.tcc"
 	>(0x3800U, 0xf800U, DecodeOpSub_2<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15717 "isa_thumb.tcc"
+#line 15716 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15722 "isa_thumb.tcc"
+#line 15721 "isa_thumb.tcc"
 	>(0x1e00U, 0xfe00U, DecodeOpSub_1<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15726 "isa_thumb.tcc"
+#line 15725 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15731 "isa_thumb.tcc"
+#line 15730 "isa_thumb.tcc"
 	>(0x4180U, 0xffc0U, DecodeOpSbc<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15735 "isa_thumb.tcc"
+#line 15734 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15740 "isa_thumb.tcc"
+#line 15739 "isa_thumb.tcc"
 	>(0x41c0U, 0xffc0U, DecodeOpRor<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15744 "isa_thumb.tcc"
+#line 15743 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15749 "isa_thumb.tcc"
+#line 15748 "isa_thumb.tcc"
 	>(0x4300U, 0xffc0U, DecodeOpOrr<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15753 "isa_thumb.tcc"
+#line 15752 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15758 "isa_thumb.tcc"
+#line 15757 "isa_thumb.tcc"
 	>(0x4240U, 0xffc0U, DecodeOpNeg<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15762 "isa_thumb.tcc"
+#line 15761 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15767 "isa_thumb.tcc"
+#line 15766 "isa_thumb.tcc"
 	>(0x43c0U, 0xffc0U, DecodeOpMvn<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15771 "isa_thumb.tcc"
+#line 15770 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15776 "isa_thumb.tcc"
+#line 15775 "isa_thumb.tcc"
 	>(0x4340U, 0xffc0U, DecodeOpMul<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15780 "isa_thumb.tcc"
+#line 15779 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15785 "isa_thumb.tcc"
+#line 15784 "isa_thumb.tcc"
 	>(0x4600U, 0xff00U, DecodeOpMov_3<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15789 "isa_thumb.tcc"
+#line 15788 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15794 "isa_thumb.tcc"
+#line 15793 "isa_thumb.tcc"
 	>(0x2000U, 0xf800U, DecodeOpMov_1<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15798 "isa_thumb.tcc"
+#line 15797 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15803 "isa_thumb.tcc"
+#line 15802 "isa_thumb.tcc"
 	>(0x40c0U, 0xffc0U, DecodeOpLsr_2<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15807 "isa_thumb.tcc"
+#line 15806 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15812 "isa_thumb.tcc"
+#line 15811 "isa_thumb.tcc"
 	>(0x800U, 0xf800U, DecodeOpLsr_1<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15816 "isa_thumb.tcc"
+#line 15815 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15821 "isa_thumb.tcc"
+#line 15820 "isa_thumb.tcc"
 	>(0x4080U, 0xffc0U, DecodeOpLsl_2<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15825 "isa_thumb.tcc"
+#line 15824 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15830 "isa_thumb.tcc"
+#line 15829 "isa_thumb.tcc"
 	>(0x0U, 0xf800U, DecodeOpLsl_1<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15834 "isa_thumb.tcc"
+#line 15833 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15839 "isa_thumb.tcc"
+#line 15838 "isa_thumb.tcc"
 	>(0x4040U, 0xffc0U, DecodeOpEor<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15843 "isa_thumb.tcc"
+#line 15842 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15848 "isa_thumb.tcc"
+#line 15847 "isa_thumb.tcc"
 	>(0x4500U, 0xff00U, DecodeOpCmp_3<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15852 "isa_thumb.tcc"
+#line 15851 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15857 "isa_thumb.tcc"
+#line 15856 "isa_thumb.tcc"
 	>(0x4280U, 0xffc0U, DecodeOpCmp_2<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15861 "isa_thumb.tcc"
+#line 15860 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15866 "isa_thumb.tcc"
+#line 15865 "isa_thumb.tcc"
 	>(0x2800U, 0xf800U, DecodeOpCmp_1<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15870 "isa_thumb.tcc"
+#line 15869 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15875 "isa_thumb.tcc"
+#line 15874 "isa_thumb.tcc"
 	>(0x42c0U, 0xffc0U, DecodeOpCmn<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15879 "isa_thumb.tcc"
+#line 15878 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15884 "isa_thumb.tcc"
+#line 15883 "isa_thumb.tcc"
 	>(0x4380U, 0xffc0U, DecodeOpBic<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15888 "isa_thumb.tcc"
+#line 15887 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15893 "isa_thumb.tcc"
+#line 15892 "isa_thumb.tcc"
 	>(0x4100U, 0xffc0U, DecodeOpAsr_2<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15897 "isa_thumb.tcc"
+#line 15896 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15902 "isa_thumb.tcc"
+#line 15901 "isa_thumb.tcc"
 	>(0x1000U, 0xf800U, DecodeOpAsr_1<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15906 "isa_thumb.tcc"
+#line 15905 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15911 "isa_thumb.tcc"
+#line 15910 "isa_thumb.tcc"
 	>(0x4000U, 0xffc0U, DecodeOpAnd<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15915 "isa_thumb.tcc"
+#line 15914 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15920 "isa_thumb.tcc"
+#line 15919 "isa_thumb.tcc"
 	>(0xb000U, 0xff80U, DecodeOpAdd_7<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15924 "isa_thumb.tcc"
+#line 15923 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15929 "isa_thumb.tcc"
+#line 15928 "isa_thumb.tcc"
 	>(0xa800U, 0xf800U, DecodeOpAdd_6<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15933 "isa_thumb.tcc"
+#line 15932 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15938 "isa_thumb.tcc"
+#line 15937 "isa_thumb.tcc"
 	>(0xa000U, 0xf800U, DecodeOpAdd_5<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15942 "isa_thumb.tcc"
+#line 15941 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15947 "isa_thumb.tcc"
+#line 15946 "isa_thumb.tcc"
 	>(0x4400U, 0xff00U, DecodeOpAdd_4<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15951 "isa_thumb.tcc"
+#line 15950 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15956 "isa_thumb.tcc"
+#line 15955 "isa_thumb.tcc"
 	>(0x1800U, 0xfe00U, DecodeOpAdd_3<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15960 "isa_thumb.tcc"
+#line 15959 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15965 "isa_thumb.tcc"
+#line 15964 "isa_thumb.tcc"
 	>(0x3000U, 0xf800U, DecodeOpAdd_2<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15969 "isa_thumb.tcc"
+#line 15968 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15974 "isa_thumb.tcc"
+#line 15973 "isa_thumb.tcc"
 	>(0x1c00U, 0xfe00U, DecodeOpAdd_1<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15978 "isa_thumb.tcc"
+#line 15977 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15983 "isa_thumb.tcc"
+#line 15982 "isa_thumb.tcc"
 	>(0x4140U, 0xffc0U, DecodeOpAdc<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15987 "isa_thumb.tcc"
+#line 15986 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15992 "isa_thumb.tcc"
+#line 15991 "isa_thumb.tcc"
 	>(0x4780U, 0xff80U, DecodeOpBlx_2<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15996 "isa_thumb.tcc"
+#line 15995 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 16001 "isa_thumb.tcc"
+#line 16000 "isa_thumb.tcc"
 	>(0xe800U, 0xf800U, DecodeOpBlx_1<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 16005 "isa_thumb.tcc"
+#line 16004 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 16010 "isa_thumb.tcc"
+#line 16009 "isa_thumb.tcc"
 	>(0x4700U, 0xff80U, DecodeOpBx<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 16014 "isa_thumb.tcc"
+#line 16013 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 16019 "isa_thumb.tcc"
+#line 16018 "isa_thumb.tcc"
 	>(0xf000U, 0xf000U, DecodeOpBl<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 16023 "isa_thumb.tcc"
+#line 16022 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 16028 "isa_thumb.tcc"
+#line 16027 "isa_thumb.tcc"
 	>(0xe000U, 0xf800U, DecodeOpB_2<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 16032 "isa_thumb.tcc"
+#line 16031 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 16037 "isa_thumb.tcc"
+#line 16036 "isa_thumb.tcc"
 	>(0xdc00U, 0xfe00U, DecodeOpB_1_110x<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 16041 "isa_thumb.tcc"
+#line 16040 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 16046 "isa_thumb.tcc"
+#line 16045 "isa_thumb.tcc"
 	>(0xd800U, 0xfc00U, DecodeOpB_1_10xx<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 16050 "isa_thumb.tcc"
+#line 16049 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 16055 "isa_thumb.tcc"
+#line 16054 "isa_thumb.tcc"
 	>(0xd000U, 0xf800U, DecodeOpB_1_0xxx<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 16059 "isa_thumb.tcc"
+#line 16058 "isa_thumb.tcc"
 	>));
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 16066 "isa_thumb.tcc"
+#line 16065 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 16069 "isa_thumb.tcc"
+#line 16068 "isa_thumb.tcc"
 >
 Decoder<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 16074 "isa_thumb.tcc"
+#line 16073 "isa_thumb.tcc"
 >::~Decoder()
 {
 	InvalidateDecodingCache();
@@ -16079,15 +16078,15 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 16083 "isa_thumb.tcc"
+#line 16082 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 16086 "isa_thumb.tcc"
+#line 16085 "isa_thumb.tcc"
 >
 void Decoder<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 16091 "isa_thumb.tcc"
+#line 16090 "isa_thumb.tcc"
 >::Fetch(void *, typename CONFIG::address_t, uint32_t)
 {
 	assert( ! "Calling unimplemented virtual method Fetch" );
@@ -16096,32 +16095,32 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 16100 "isa_thumb.tcc"
+#line 16099 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 16103 "isa_thumb.tcc"
+#line 16102 "isa_thumb.tcc"
 >
 Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 16108 "isa_thumb.tcc"
+#line 16107 "isa_thumb.tcc"
 > *Decoder<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 16112 "isa_thumb.tcc"
+#line 16111 "isa_thumb.tcc"
 >::NCDecode(typename CONFIG::address_t addr)
 {
 	Operation<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 16118 "isa_thumb.tcc"
+#line 16117 "isa_thumb.tcc"
 	> *operation;
 	CodeType code;
 	Fetch(&code, addr, sizeof(code));
 #if BYTE_ORDER == LITTLE_ENDIAN
-	if(!little_endian)
+	if(!is_little_endian)
 #else
-	if(little_endian)
+	if(is_little_endian)
 #endif
 	{
 		code = ((code & 0xff00U) >> 8) | ((code & 0x00ffU) << 8);
@@ -16150,7 +16149,7 @@ CONFIG
 	operation = new Operation<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 16154 "isa_thumb.tcc"
+#line 16153 "isa_thumb.tcc"
 	>(code, addr, "???");
 	operation->initialize_rd_index();
 	operation->initialize_rn_index();
@@ -16169,25 +16168,25 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 16173 "isa_thumb.tcc"
+#line 16172 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 16176 "isa_thumb.tcc"
+#line 16175 "isa_thumb.tcc"
 >
 Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 16181 "isa_thumb.tcc"
+#line 16180 "isa_thumb.tcc"
 > *Decoder<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 16185 "isa_thumb.tcc"
+#line 16184 "isa_thumb.tcc"
 >::NCDecode(typename CONFIG::address_t addr, CodeType code)
 {
 	Operation<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 16191 "isa_thumb.tcc"
+#line 16190 "isa_thumb.tcc"
 	> *operation;
 	unsigned int count = decode_table.size();
 	unsigned int idx;
@@ -16213,7 +16212,7 @@ CONFIG
 	operation = new Operation<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 16217 "isa_thumb.tcc"
+#line 16216 "isa_thumb.tcc"
 	>(code, addr, "???");
 	operation->initialize_rd_index();
 	operation->initialize_rn_index();
@@ -16232,15 +16231,15 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 16236 "isa_thumb.tcc"
+#line 16235 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 16239 "isa_thumb.tcc"
+#line 16238 "isa_thumb.tcc"
 >
 void Decoder<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 16244 "isa_thumb.tcc"
+#line 16243 "isa_thumb.tcc"
 >::InvalidateDecodingCache()
 {
 	uint32_t index;
@@ -16250,7 +16249,7 @@ CONFIG
 		DecodeMapPage<
 #line 44 "isa/thumb/thumb.isa"
 		CONFIG
-#line 16254 "isa_thumb.tcc"
+#line 16253 "isa_thumb.tcc"
 		> *page, *next_page;
 		page = decode_hash_table[index];
 		if(page)
@@ -16269,15 +16268,15 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 16273 "isa_thumb.tcc"
+#line 16272 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 16276 "isa_thumb.tcc"
+#line 16275 "isa_thumb.tcc"
 >
 void Decoder<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 16281 "isa_thumb.tcc"
+#line 16280 "isa_thumb.tcc"
 >::InvalidateDecodingCacheEntry(typename CONFIG::address_t addr)
 {
 	typename CONFIG::address_t page_key = addr / 2 / NUM_OPERATIONS_PER_PAGE;
@@ -16286,7 +16285,7 @@ CONFIG
 	DecodeMapPage<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 16290 "isa_thumb.tcc"
+#line 16289 "isa_thumb.tcc"
 	> *prev, *cur;
 	cur = decode_hash_table[index];
 	if(cur)
@@ -16319,19 +16318,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 16323 "isa_thumb.tcc"
+#line 16322 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 16326 "isa_thumb.tcc"
+#line 16325 "isa_thumb.tcc"
 >
 inline DecodeMapPage<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 16331 "isa_thumb.tcc"
+#line 16330 "isa_thumb.tcc"
 > *Decoder<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 16335 "isa_thumb.tcc"
+#line 16334 "isa_thumb.tcc"
 >::FindPage(typename CONFIG::address_t page_key)
 {
 	if(mru_page && mru_page->key == page_key) return mru_page;
@@ -16339,7 +16338,7 @@ CONFIG
 	DecodeMapPage<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 16343 "isa_thumb.tcc"
+#line 16342 "isa_thumb.tcc"
 	> *prev, *cur;
 	cur = decode_hash_table[index];
 	if(cur)
@@ -16373,31 +16372,31 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 16377 "isa_thumb.tcc"
+#line 16376 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 16380 "isa_thumb.tcc"
+#line 16379 "isa_thumb.tcc"
 >
 Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 16385 "isa_thumb.tcc"
+#line 16384 "isa_thumb.tcc"
 > *Decoder<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 16389 "isa_thumb.tcc"
+#line 16388 "isa_thumb.tcc"
 >::Decode(typename CONFIG::address_t addr)
 {
 	Operation<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 16395 "isa_thumb.tcc"
+#line 16394 "isa_thumb.tcc"
 	> *operation;
 	typename CONFIG::address_t page_key = addr / 2 / NUM_OPERATIONS_PER_PAGE;
 	DecodeMapPage<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 16401 "isa_thumb.tcc"
+#line 16400 "isa_thumb.tcc"
 	> *page;
 	page = FindPage(page_key);
 	if(!page)
@@ -16405,7 +16404,7 @@ CONFIG
 		page = new DecodeMapPage<
 #line 44 "isa/thumb/thumb.isa"
 		CONFIG
-#line 16409 "isa_thumb.tcc"
+#line 16408 "isa_thumb.tcc"
 		>(page_key);
 		uint32_t index = page_key % NUM_DECODE_HASH_TABLE_ENTRIES; // hash the key
 		page->next = decode_hash_table[index];
@@ -16425,31 +16424,31 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 16429 "isa_thumb.tcc"
+#line 16428 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 16432 "isa_thumb.tcc"
+#line 16431 "isa_thumb.tcc"
 >
 Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 16437 "isa_thumb.tcc"
+#line 16436 "isa_thumb.tcc"
 > *Decoder<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 16441 "isa_thumb.tcc"
+#line 16440 "isa_thumb.tcc"
 >::Decode(typename CONFIG::address_t addr, CodeType insn)
 {
 	Operation<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 16447 "isa_thumb.tcc"
+#line 16446 "isa_thumb.tcc"
 	> *operation;
 	typename CONFIG::address_t page_key = addr / 2 / NUM_OPERATIONS_PER_PAGE;
 	DecodeMapPage<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 16453 "isa_thumb.tcc"
+#line 16452 "isa_thumb.tcc"
 	> *page;
 	page = FindPage(page_key);
 	if(!page)
@@ -16457,7 +16456,7 @@ CONFIG
 		page = new DecodeMapPage<
 #line 44 "isa/thumb/thumb.isa"
 		CONFIG
-#line 16461 "isa_thumb.tcc"
+#line 16460 "isa_thumb.tcc"
 		> (page_key);
 		uint32_t index = page_key % NUM_DECODE_HASH_TABLE_ENTRIES; // hash the key
 		page->next = decode_hash_table[index];
@@ -16479,35 +16478,35 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 16483 "isa_thumb.tcc"
+#line 16482 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 16486 "isa_thumb.tcc"
+#line 16485 "isa_thumb.tcc"
 >
 void Decoder<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 16491 "isa_thumb.tcc"
+#line 16490 "isa_thumb.tcc"
 >::SetLittleEndian()
 {
-	little_endian = true;
+	is_little_endian = true;
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 16500 "isa_thumb.tcc"
+#line 16499 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 16503 "isa_thumb.tcc"
+#line 16502 "isa_thumb.tcc"
 >
 void Decoder<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 16508 "isa_thumb.tcc"
+#line 16507 "isa_thumb.tcc"
 >::SetBigEndian()
 {
-	little_endian = false;
+	is_little_endian = false;
 }
 
 } } } } } } }

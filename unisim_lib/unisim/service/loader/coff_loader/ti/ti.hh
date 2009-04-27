@@ -95,8 +95,6 @@ private:
 	uint16_t magic;
 	endian_type header_endianness;
 	unsigned int ti_coff_version;
-	unsigned int file_header_size;
-	unsigned int section_header_size;
 	unsigned int num_sections;
 	unsigned int aout_hdr_size;
 	uint32_t time_date;

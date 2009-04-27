@@ -659,7 +659,6 @@ private:
 
 	// External signals
 	bool reset;                             // RESET: 1=reset, 0=normal operation
-	bool mcbl_mp;                           // MCBL/MP#: 0=microprocessor mode, 1=microcomputer mode
 
 	// Idle handling
 	unsigned int idle;                      // 0=normal operation, 1=idle, 2=idle2, otherwise undefined behavior

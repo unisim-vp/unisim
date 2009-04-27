@@ -118,12 +118,23 @@ CPU(const char *name,
 	param_verbose_setup("verbose-setup", this, verbose_setup),
 	instruction_counter(0),
 	trap_on_instruction_counter(0xffffffffffffffffULL),
+	insn_cache_hits(0),
+	insn_cache_misses(0),
 	stat_instruction_counter("instruction-counter", this, instruction_counter),
 	param_trap_on_instruction_counter("trap-on-instruction-counter", this, trap_on_instruction_counter),
 	max_inst(0xffffffffffffffffULL),
 	param_max_inst("max-inst", this, max_inst),
 	stat_insn_cache_hits("insn-cache-hits", this, insn_cache_hits),
-	stat_insn_cache_misses("insn-cache-misses", this, insn_cache_misses)
+	stat_insn_cache_misses("insn-cache-misses", this, insn_cache_misses),
+	delay_before_branching(0),
+	branch_addr(0),
+	repeat_single(false),
+	first_time_through_repeat_single(false),
+	reset(false),
+	idle(0),
+	reg_ir(0),
+	reg_pc(0),
+	reg_npc(0)
 {
 	regs[REG_ST].SetLoWriteMask(ST_WRITE_MASK);
 	regs[REG_IE].SetLoWriteMask(IE_WRITE_MASK);

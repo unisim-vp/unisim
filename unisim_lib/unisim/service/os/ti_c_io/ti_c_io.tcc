@@ -265,10 +265,17 @@ bool TI_C_IO<MEMORY_ADDR>::Setup()
 template <class MEMORY_ADDR>
 void TI_C_IO<MEMORY_ADDR>::GrowBuffer(uint32_t byte_length)
 {
-	if(buffer && byte_length > max_buffer_byte_length)
-		buffer = (uint8_t *) realloc(buffer, byte_length);
+	if(buffer)
+	{
+		if(byte_length > max_buffer_byte_length)
+		{
+			buffer = (uint8_t *) realloc(buffer, byte_length);
+		}
+	}
 	else
+	{
 		buffer = (uint8_t *) calloc(byte_length, 1);
+	}
 
 	max_buffer_byte_length = byte_length;
 }
@@ -496,7 +503,15 @@ int16_t TI_C_IO<MEMORY_ADDR>::c_io_open(const char *path, uint16_t c_io_flags, i
 
 	// Return an error if file description is already opened
 	map<int16_t, int>::iterator iter = target_to_host_fildes.find(fno);
-	if(iter != target_to_host_fildes.end()) return -1;
+	if(iter != target_to_host_fildes.end())
+	{
+		if((verbose_io || verbose_all))
+		{
+			logger << DebugInfo << "File descriptor " << fno << " is already opened" << EndDebugInfo;
+		}
+		//return -1;
+		return (*iter).second;
+	}
 
 	int fd;      // the host file descriptor
 	int flags = 0;   // the host flags
