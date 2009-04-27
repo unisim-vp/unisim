@@ -42,6 +42,8 @@
 #include <unisim/component/cxx/processor/tesla/hostfloat/c99_rounding.hh>
 #elif defined(_MSC_VER) || defined(__BORLANDC__)
 #include <unisim/component/cxx/processor/tesla/hostfloat/msvc_rounding.hh>
+#else
+#error "Unsupported platform. Please update hostfloat/rounding.hh."
 #endif
 
 

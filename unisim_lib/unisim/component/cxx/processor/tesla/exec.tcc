@@ -1053,6 +1053,8 @@ VectorRegister<CONFIG> RRTrig(VectorRegister<CONFIG> const & a)
 	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i)
 	{
 		float f = a.ReadFloat(i) * float(M_2_PI);	// Convert 2/pi to float first
+		// Only keep fractional part??
+		//f = f - floorf(f);
 		rv[i] = FPToFX(f);
 	}
 	return rv;
@@ -1089,7 +1091,7 @@ VectorRegister<CONFIG> Sin(VectorRegister<CONFIG> const & a)
 		double r = FXToFP(ia);
 		r = sin(r * .5 * M_PI);
 		// Flush denormals to zero
-		if(r < ldexp(1.0, FLT_MIN_EXP)) {	// r > 0
+		if(r > -ldexp(1.0, FLT_MIN_EXP) && r < ldexp(1.0, FLT_MIN_EXP)) {
 			r = 0;
 		}
 		rv.WriteFloat(r, i);
@@ -1109,7 +1111,7 @@ VectorRegister<CONFIG> Cos(VectorRegister<CONFIG> const & a)
 		uint32_t ia = a[i];
 		double r = FXToFP(ia);
 		r = cos(r * .5 * M_PI);
-		if(r < ldexp(1.0, FLT_MIN_EXP)) {	// r > 0
+		if(r > -ldexp(1.0, FLT_MIN_EXP) && r < ldexp(1.0, FLT_MIN_EXP)) {
 			r = 0;
 		}		
 		rv.WriteFloat(r, i);
@@ -1134,7 +1136,7 @@ inline double FXToFP(uint32_t f)
 {
 	float r;
 	if(f & 0x40000000) {	// ovf
-		r = INFINITY;	// Compatibility??
+		r = (f & 0x80000000) ? -INFINITY : INFINITY;	// Compatibility??
 	}
 	else if(f & 0x80000000) {
 		r = -ldexp(double(f & ~0x80000000), -23);
