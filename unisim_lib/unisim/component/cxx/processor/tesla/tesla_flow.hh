@@ -71,6 +71,7 @@ struct TeslaFlow
 
 		std::bitset<CONFIG::WARP_SIZE> mask;
 		StackTokenType id;
+		// *Absolute* address (NV patent uses addresses relative to base)
 		typename CONFIG::address_t address;
 	};
 
@@ -95,6 +96,7 @@ private:
 	Warp<CONFIG> & warp;
 
 	mask_t current_mask;
+	mask_t initial_mask;
 	
 	stack_t stack;
 };

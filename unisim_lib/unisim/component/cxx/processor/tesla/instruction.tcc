@@ -89,9 +89,10 @@ void Instruction<CONFIG>::Read()
 template <class CONFIG>
 void Instruction<CONFIG>::Execute()
 {
-	if(mask != 0) {
-		operation->execute(cpu, this);
-	}
+	//if(mask != 0) {
+	// Execute even when mask = 0 ! Esp. branches, sync...
+	operation->execute(cpu, this);
+	//}
 	if(operation->control->is_end) {
 		cpu->End();
 	}

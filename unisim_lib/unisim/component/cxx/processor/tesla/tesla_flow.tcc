@@ -54,7 +54,7 @@ template<class CONFIG>
 void TeslaFlow<CONFIG>::Reset(CPU<CONFIG> * cpu, std::bitset<CONFIG::WARP_SIZE> mask)
 {
 	this->cpu = cpu;
-	current_mask = mask;
+	current_mask = initial_mask = mask;
 	stack = stack_t();
 	//stack.push(StackToken(mask, ID_BOTTOM, 0));
 }
@@ -119,14 +119,19 @@ void TeslaFlow<CONFIG>::Branch(address_t target_addr, std::bitset<CONFIG::WARP_S
 template<class CONFIG>
 void TeslaFlow<CONFIG>::Meet(address_t addr)
 {
+	// Addr relative address
 	// SYNC instruction
-	stack.push(StackToken(current_mask, ID_SYNC, addr));	// Does addr mean anything here??
+	stack.push(StackToken(current_mask, ID_SYNC, addr + CONFIG::CODE_START));	// Does addr mean anything here??
 }
 
 template<class CONFIG>
 bool TeslaFlow<CONFIG>::Join()
 {
-	assert(!stack.empty());
+	if(stack.empty()) {
+		// implicit SYNC token at the bottom of stack?
+		current_mask = initial_mask;
+		return true;
+	}
 	StackToken token = stack.top();
 	stack.pop();
 	
@@ -134,7 +139,7 @@ bool TeslaFlow<CONFIG>::Join()
 	if(token.id != ID_SYNC)
 	{
 		// Re-branch to address in token
-		warp.npc = token.address + CONFIG::CODE_START;
+		warp.npc = token.address;
 		
 		// Do NOT execute current instruction
 		return false;
