@@ -4377,7 +4377,11 @@ SUBC_reg.execute = {
 
 	// Compute the result
 	int32_t substract_result = dst_value - src_value;
-	uint32_t result = (substract_result << 1) | ((substract_result >= 0) ? 1 : 0);
+	uint32_t result;
+	if (substract_result >= 0)
+		result = (substract_result << 1) | 1;
+	else
+		result = dst_value << 1;
 
 	// Write back result
 	cpu.SetReg(dst, result);
@@ -4401,7 +4405,11 @@ SUBC_dir.execute = {
 
 	// Compute the result
 	int32_t substract_result = dst_value - src_value;
-	uint32_t result = (substract_result << 1) | ((substract_result >= 0) ? 1 : 0);
+	uint32_t result;
+	if (substract_result >= 0)
+		result = (substract_result << 1) | 1;
+	else
+		result = dst_value << 1;
 
 	// Write back result
 	cpu.SetReg(dst, result);
@@ -4432,8 +4440,12 @@ SUBC_indir.execute = {
 
 	// Compute the result
 	int32_t substract_result = dst_value - src_value;
-	uint32_t result = (substract_result << 1) | ((substract_result >= 0) ? 1 : 0);
-
+	uint32_t result;
+	if (substract_result >= 0)
+		result = (substract_result << 1) | 1;
+	else
+		result = dst_value << 1;
+	
 	// Write back result
 	cpu.SetReg(dst, result);
 
@@ -4456,8 +4468,12 @@ SUBC_imm.execute = {
 
 	// Compute the result
 	int32_t substract_result = dst_value - imm;
-	uint32_t result = (substract_result << 1) | ((substract_result >= 0) ? 1 : 0);
-
+	uint32_t result;
+	if (substract_result >= 0)
+		result = (substract_result << 1) | 1;
+	else
+		result = dst_value << 1;
+	
 	// Write back result
 	cpu.SetReg(dst, result);
 }
