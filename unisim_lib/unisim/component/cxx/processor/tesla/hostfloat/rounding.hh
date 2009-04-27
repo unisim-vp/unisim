@@ -38,7 +38,7 @@
 #include <unisim/component/cxx/processor/tesla/register.hh>
 
 // Select appropriate platform-specific rounding control wrapper
-#if defined(__LINUX__) || defined(__USE_ISOC99) || defined(__MSL__) || defined(__MWERKS__) || defined(__ICC)
+#if defined(__LINUX__) || defined(__APPLE_CC__) || defined(MINGW) || defined(__USE_ISOC99) || defined(__MSL__) || defined(__MWERKS__) || defined(__ICC)
 #include <unisim/component/cxx/processor/tesla/hostfloat/c99_rounding.hh>
 #elif defined(_MSC_VER) || defined(__BORLANDC__)
 #include <unisim/component/cxx/processor/tesla/hostfloat/msvc_rounding.hh>

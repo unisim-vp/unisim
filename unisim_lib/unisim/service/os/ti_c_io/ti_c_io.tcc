@@ -157,26 +157,41 @@ bool TI_C_IO<MEMORY_ADDR>::Setup()
 
 		if(!c_io_buffer_symbol)
 		{
-			logger << DebugError << "Undefined symbol " << c_io_buffer_symbol_name << EndDebugError;
-			return false;
+			logger << DebugWarning << "Undefined symbol " << c_io_buffer_symbol_name << ". Disabling TI C I/O support" << EndDebugWarning;
+			enable = false;
 		}
-
-		const unisim::util::debug::Symbol<MEMORY_ADDR> *c_io_breakpoint_symbol = symbol_table_lookup_import->FindSymbolByName(c_io_breakpoint_symbol_name.c_str());
-
-		if(!c_io_breakpoint_symbol)
+		else
 		{
-			logger << DebugError << "Undefined symbol " << c_io_breakpoint_symbol_name << EndDebugError;
-			return false;
-		}
+			const unisim::util::debug::Symbol<MEMORY_ADDR> *c_io_breakpoint_symbol = symbol_table_lookup_import->FindSymbolByName(c_io_breakpoint_symbol_name.c_str());
 
-		c_io_buffer_addr = c_io_buffer_symbol->GetAddress();
-		MEMORY_ADDR c_io_breakpoint_addr = c_io_breakpoint_symbol->GetAddress();
+			if(!c_io_breakpoint_symbol)
+			{
+				logger << DebugWarning << "Undefined symbol " << c_io_breakpoint_symbol_name << ". Disabling TI C I/O support" << EndDebugWarning;
+				enable = false;
+			}
+			else
+			{
+				c_io_buffer_addr = c_io_buffer_symbol->GetAddress();
 
-		uint8_t swi[4] = { 0x00, 0x00, 0x00, 0x66 };
-		if(!memory_import->WriteMemory(c_io_breakpoint_addr, swi, sizeof(swi)))
-		{
-			logger << DebugError << "Cannot install breakpoint at 0x" << hex << c_io_breakpoint_addr << dec << EndDebugError;
-			return false;
+				if(verbose_setup || verbose_all)
+				{
+					logger << DebugInfo << "Using " << c_io_buffer_symbol->GetName() << " at 0x" << hex << c_io_buffer_addr << dec << " as I/O buffer" << EndDebugInfo;
+				}
+
+				MEMORY_ADDR c_io_breakpoint_addr = c_io_breakpoint_symbol->GetAddress();
+
+				if(verbose_setup || verbose_all)
+				{
+					logger << DebugInfo << "Installing emulator breakpoint (SWI) at 0x" << hex << c_io_breakpoint_addr << dec << " (symbol " << c_io_breakpoint_symbol->GetName() << ")" << EndDebugInfo;
+				}
+
+				uint8_t swi[4] = { 0x00, 0x00, 0x00, 0x66 };
+				if(!memory_import->WriteMemory(c_io_breakpoint_addr, swi, sizeof(swi)))
+				{
+					logger << DebugError << "Cannot install breakpoint at 0x" << hex << c_io_breakpoint_addr << dec << ". Disabling TI C I/O support" << EndDebugError;
+					enable = false;
+				}
+			}
 		}
 	}
 	else
