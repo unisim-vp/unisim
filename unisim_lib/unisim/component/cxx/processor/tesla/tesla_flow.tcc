@@ -72,7 +72,7 @@ void TeslaFlow<CONFIG>::Branch(address_t target_addr, std::bitset<CONFIG::WARP_S
 	
 	typename CONFIG::address_t abs_target = target_addr + CONFIG::CODE_START;
 	if(cpu->trace_branch) {
-		cerr << " Branch mask = " << mask << endl;
+		cerr << "  Branch mask = " << mask << endl;
 	}
 	
 	assert((mask & ~(current_mask)).none());	// No zombies allowed
@@ -106,13 +106,14 @@ void TeslaFlow<CONFIG>::Branch(address_t target_addr, std::bitset<CONFIG::WARP_S
 			cerr << " Conditional non-coherent jump from "
 				<< adjpc << " to " << target_addr << endl;
 			cerr << dec;
+			cerr << " Push DIVERGE." << endl;
 		}
+		warp.npc = abs_target;
+		current_mask = mask;
+
 		if(cpu->trace_branch) {
 			cerr << "  New mask = " << GetCurrentMask() << endl;
 		}
-
-		warp.npc = abs_target;
-		current_mask = mask;
 	}
 }
 
@@ -122,27 +123,46 @@ void TeslaFlow<CONFIG>::Meet(address_t addr)
 	// Addr relative address
 	// SYNC instruction
 	stack.push(StackToken(current_mask, ID_SYNC, addr + CONFIG::CODE_START));	// Does addr mean anything here??
+	if(cpu->trace_branch) {
+		cerr << " Push SYNC." << endl;
+		cerr << "  Mask = " << GetCurrentMask() << endl;
+	}
 }
 
 template<class CONFIG>
 bool TeslaFlow<CONFIG>::Join()
 {
 	if(stack.empty()) {
+		if(cpu->trace_branch) {
+			cerr << " Reached bottom of stack, restoring initial mask." << endl;
+		}
 		// implicit SYNC token at the bottom of stack?
 		current_mask = initial_mask;
+		if(cpu->trace_branch) {
+			cerr << "  New mask = " << GetCurrentMask() << endl;
+		}
 		return true;
 	}
 	StackToken token = stack.top();
 	stack.pop();
 	
 	current_mask = token.mask;
+	if(cpu->trace_branch) {
+		cerr << "  New mask = " << GetCurrentMask() << endl;
+	}
 	if(token.id != ID_SYNC)
 	{
+		if(cpu->trace_branch) {
+			cerr << " Pop. Not a SYNC token. Go back." << endl;
+		}
 		// Re-branch to address in token
 		warp.npc = token.address;
 		
 		// Do NOT execute current instruction
 		return false;
+	}
+	else if(cpu->trace_branch) {
+		cerr << " Pop. SYNC token." << endl;
 	}
 	return true;
 }
@@ -162,6 +182,9 @@ void TeslaFlow<CONFIG>::Kill(std::bitset<CONFIG::WARP_SIZE> mask)
 template <class CONFIG>
 void TeslaFlow<CONFIG>::CheckJoin()
 {
+	if(cpu->trace_mask) {
+		cerr << " " << GetCurrentMask() << endl;
+	}
 }
 
 template <class CONFIG>

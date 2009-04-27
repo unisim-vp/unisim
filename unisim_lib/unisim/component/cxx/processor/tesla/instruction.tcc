@@ -72,15 +72,23 @@ template <class CONFIG>
 void Instruction<CONFIG>::Read()
 {
 	// mask = current warp mask & predicate mask
+
 	mask = cpu->GetCurrentMask();
 	mask &= operation->dest->predMask(cpu);
 
-	if(operation->control->is_join && !cpu->Join())
+	if(operation->control->is_join)
 	{
-		// Do not execute if Join returns "not synched"
-		mask = 0;
+		if(cpu->Join()) {
+			// Mask may be altered by Join
+			mask = cpu->GetCurrentMask();
+		}
+		else {
+			// Do not execute if Join returns "not synched"
+			mask = 0;
+		}
 	}
-	else if(mask != 0)
+	
+	if(mask != 0)
 	{
 		operation->read(cpu, this);
 	}
