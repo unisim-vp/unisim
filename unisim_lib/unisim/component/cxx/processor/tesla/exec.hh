@@ -197,10 +197,13 @@ inline uint32_t FPToFX(float f);
 inline double FXToFP(uint32_t f);
 
 template<class CONFIG>
-VectorRegister<CONFIG> FSMin(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b);
+VectorRegister<CONFIG> FSMin(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b, AbsSat abs_sat);
 
 template<class CONFIG>
-VectorRegister<CONFIG> FSMax(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b);
+VectorRegister<CONFIG> FSMax(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b, AbsSat abs_sat);
+
+template<class CONFIG>
+void AbsSaturate(typename CONFIG::float_t & f, AbsSat abssat);
 
 } // end of namespace tesla
 } // end of namespace processor

@@ -66,7 +66,7 @@ bitset<CONFIG::WARP_SIZE> IsPredSet(uint32_t cond, VectorFlags<CONFIG> flags)
 }
 
 template <class CONFIG>
-VectorFlags<CONFIG> ComputePredFP32(VectorRegister<CONFIG> const & output)
+VectorFlags<CONFIG> ComputePredFP32(VectorRegister<CONFIG> const & output, std::bitset<CONFIG::WARP_SIZE> mask)
 {
 	// As tested on G80 and G86:
 	//  +normal-> 0
@@ -85,26 +85,28 @@ VectorFlags<CONFIG> ComputePredFP32(VectorRegister<CONFIG> const & output)
 	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i)
 	{
 		// TODO: use softfloats
-		float f = output.ReadFloat(i);
-		switch(fpclassify(f))
-		{
-		case FP_NORMAL:
-			break;
-		case FP_ZERO:
-			flags.v[i] = 1;
-			break;
-		case FP_INFINITE:
-			if(f < 0) {
-				flags.v[i] = 2;
+		if(mask[i]) {
+			float f = output.ReadFloat(i);
+			switch(fpclassify(f))
+			{
+			case FP_NORMAL:
+				break;
+			case FP_ZERO:
+				flags.v[i] = 1;
+				break;
+			case FP_INFINITE:
+				if(f < 0) {
+					flags.v[i] = 2;
+				}
+				break;
+			case FP_NAN:
+				flags.v[i] = 3;
+				break;
+			case FP_SUBNORMAL:
+				flags.v[i] = 1;
+				cerr << "Warning: unexpected FP32 subnormal: " << f << endl;
+				break;
 			}
-			break;
-		case FP_NAN:
-			flags.v[i] = 3;
-			break;
-		case FP_SUBNORMAL:
-			flags.v[i] = 1;
-			cerr << "Warning: unexpected FP32 subnormal!\n";
-			break;
 		}
 	}
 	return flags;

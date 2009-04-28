@@ -1,3 +1,4 @@
+* New control flow instructions: breakaddr, break
 * Rewritten floating-point implementation, more accurate and faster
 * Rewritten branching algorithm, closer to NVIDIA implementation
 * Tracing of reset, kernel parsing and loading can be disabled

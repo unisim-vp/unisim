@@ -709,22 +709,7 @@ void ConvertFloatFloat(VectorRegister<CONFIG> & a, bool dest_32, ConvType srctyp
 			assert(false);	// TODO
 		}
 		
-		switch(abssat)
-		{
-		case AS_ABS:
-			f.setPositive();
-			break;
-		case AS_SAT:
-			// Unsigned saturation
-			f.saturate();
-			break;
-		case AS_SSAT:
-			// Signed saturation
-			f.signedSaturate();
-			break;
-		case AS_NONE:
-			break;
-		}
+		AbsSaturate<CONFIG>(f, abssat);
 		
 		
 		if(cvt_int /*&& f.queryExponent() < 24*/)
@@ -744,6 +729,27 @@ void ConvertFloatFloat(VectorRegister<CONFIG> & a, bool dest_32, ConvType srctyp
 			assert(false);
 		}
 		
+	}
+}
+
+template<class CONFIG>
+void AbsSaturate(typename CONFIG::float_t & f, AbsSat abssat)
+{
+	switch(abssat)
+	{
+	case AS_ABS:
+		f.setPositive();
+		break;
+	case AS_SAT:
+		// Unsigned saturation
+		f.saturate();
+		break;
+	case AS_SSAT:
+		// Signed saturation
+		f.signedSaturate();
+		break;
+	case AS_NONE:
+		break;
 	}
 }
 
@@ -922,23 +928,32 @@ VectorFlags<CONFIG> ComputePredSetFP32(VectorRegister<CONFIG> & output,
 	// TODO: check it only outputs boolean values
 	// input:
 	// SZ
-	// 00  01  10
-	// +1  0   -1
-/*	uint8 truth_table[8][3] = 
-		{ 0, 0, 0 },	// FL
-		{ 0, 0, 1 },	// LT
-		{ 0, 1, 0 },	// EQ
-		{ 0, 1, 1 },	// LE
-		{ 1, 0, 0 },	// GT
-		{ 1, 0, 1 },	// NE
-		{ },	// GE
-		{ },	// TR*/
+	// 00  01  10  11
+	// +1  0   -1  NaN
+	static bool const truth_table[16][4] = {
+		{ 0, 0, 0, 0 },	// FL
+		{ 0, 0, 1, 0 },	// LT
+		{ 0, 1, 0, 0 },	// EQ
+		{ 0, 1, 1, 0 },	// LE
+		{ 1, 0, 0, 0 },	// GT
+		{ 1, 0, 1, 0 },	// NE
+		{ 1, 1, 0, 0 },	// GE
+		{ 1, 1, 1, 0 },	// NUM
+		{ 0, 0, 0, 1 }, // NAN
+		{ 0, 0, 1, 1 }, // LTU
+		{ 0, 1, 0, 1 }, // EQU
+		{ 0, 1, 1, 1 }, // LEU
+		{ 1, 0, 0, 1 }, // GTU
+		{ 1, 0, 1, 1 }, // NEU
+		{ 1, 1, 0, 1 }, // GEU
+		{ 1, 1, 1, 1 }  // TRU
+	};
 	
-	bitset<3> lut = bitset<3>(sc);
-
 	VectorFlags<CONFIG> flags;
 	
 	flags.Reset();
+	
+	assert(sc < 16);
 	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i)
 	{
 		typename CONFIG::float_t fa = a.ReadSimfloat(i);
@@ -946,22 +961,15 @@ VectorFlags<CONFIG> ComputePredSetFP32(VectorRegister<CONFIG> & output,
 			fa.setPositive();
 		}
 		uint8_t cond = Compare<CONFIG>(fa, b.ReadSimfloat(i));
-		
-		//cerr << "  cond[" << i << "] = " << uint32_t(cond) << endl;
-		if(cond == 3) {
-			// ??
-			flags.SetZero(true, i);
-			flags.SetSign(true, i);
-		}
-		else {
-			assert(cond <= 2);
-			bool r = lut[2 - cond];	// addressed from the left
-			output[i] = -r;	// G80Spec -> extend
-		
-			// TODO: CHECK is this correct (=ComputePredI32)?
-			flags.SetZero(output[i] == 0, i);
-			flags.SetSign(output[i] < 0, i);
-		}
+		// cond in [0,4[
+		assert(cond < 4);
+
+		bool r = truth_table[sc][cond];
+		output[i] = -r;	// G80Spec -> extend
+	
+		// TODO: CHECK is this correct (=ComputePredI32)?
+		flags.SetZero(output[i] == 0, i);
+		flags.SetSign(output[i] < 0, i);
 	}
 	return flags;
 }
@@ -1149,7 +1157,8 @@ inline double FXToFP(uint32_t f)
 
 // IEEE-754:2008-compliant min and max
 template<class CONFIG>
-VectorRegister<CONFIG> FSMin(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b)
+VectorRegister<CONFIG> FSMin(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
+	AbsSat abs_sat)
 {
 	typedef typename CONFIG::float_t float_t;
 	typedef typename float_t::StatusAndControlFlags FPFlags;
@@ -1158,6 +1167,7 @@ VectorRegister<CONFIG> FSMin(VectorRegister<CONFIG> const & a, VectorRegister<CO
 	{
 		float_t sa = a.ReadSimfloat(i);
 		float_t sb = b.ReadSimfloat(i);
+		AbsSaturate<CONFIG>(sa, abs_sat);	// Only applies to 1st operand (?)
 		float_t r;
 		if(sb < sa || sa.isNaN()) {
 			r = sb;
@@ -1170,7 +1180,8 @@ VectorRegister<CONFIG> FSMin(VectorRegister<CONFIG> const & a, VectorRegister<CO
 }
 
 template<class CONFIG>
-VectorRegister<CONFIG> FSMax(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b)
+VectorRegister<CONFIG> FSMax(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
+	AbsSat abs_sat)
 {
 	typedef typename CONFIG::float_t float_t;
 	typedef typename float_t::StatusAndControlFlags FPFlags;
@@ -1179,6 +1190,7 @@ VectorRegister<CONFIG> FSMax(VectorRegister<CONFIG> const & a, VectorRegister<CO
 	{
 		float_t sa = a.ReadSimfloat(i);
 		float_t sb = b.ReadSimfloat(i);
+		AbsSaturate<CONFIG>(sa, abs_sat);	// Only applies to 1st operand (?)
 		float_t r;
 		if(sb > sa || sa.isNaN()) {
 			r = sb;

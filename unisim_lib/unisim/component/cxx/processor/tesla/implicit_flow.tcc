@@ -173,6 +173,12 @@ void ImplicitFlow<CONFIG>::Meet(address_t addr)
 }
 
 template<class CONFIG>
+void ImplicitFlow<CONFIG>::PreBreak(address_t addr)
+{
+}
+
+
+template<class CONFIG>
 bool ImplicitFlow<CONFIG>::Join()
 {
 	return true;
@@ -181,6 +187,21 @@ bool ImplicitFlow<CONFIG>::Join()
 template<class CONFIG>
 void ImplicitFlow<CONFIG>::End()
 {
+}
+
+template<class CONFIG>
+void ImplicitFlow<CONFIG>::Return(std::bitset<CONFIG::WARP_SIZE> mask)
+{
+	if(cpu->trace_branch) {
+		cerr << " Return not implemented. Killing thread instead." << endl;
+	}
+	Kill(mask);
+}
+
+template<class CONFIG>
+void ImplicitFlow<CONFIG>::Break(std::bitset<CONFIG::WARP_SIZE> mask)
+{
+	assert(false);
 }
 
 template<class CONFIG>

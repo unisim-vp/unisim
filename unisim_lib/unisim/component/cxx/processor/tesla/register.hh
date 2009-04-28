@@ -169,7 +169,7 @@ struct VectorAddress
 	
 	VectorAddress<CONFIG> & operator+=(VectorAddress<CONFIG> const & other);
 	
-	void Increment(DataType dt, std::bitset<CONFIG::WARP_SIZE> mask);
+	void Increment(DataType dt, size_t imm, std::bitset<CONFIG::WARP_SIZE> mask);
 	
 	address_t v[WARP_SIZE];
 };

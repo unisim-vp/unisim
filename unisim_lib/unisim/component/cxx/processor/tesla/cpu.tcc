@@ -680,6 +680,12 @@ void CPU<CONFIG>::Meet(CPU<CONFIG>::address_t addr)
 }
 
 template <class CONFIG>
+void CPU<CONFIG>::PreBreak(CPU<CONFIG>::address_t addr)
+{
+	CurrentWarp().flow.PreBreak(addr);
+}
+
+template <class CONFIG>
 bool CPU<CONFIG>::Join()
 {
 	return CurrentWarp().flow.Join();
@@ -743,6 +749,19 @@ void CPU<CONFIG>::Kill(std::bitset<CONFIG::WARP_SIZE> mask)
 {
 	CurrentWarp().flow.Kill(mask);
 }
+
+template <class CONFIG>
+void CPU<CONFIG>::Return(std::bitset<CONFIG::WARP_SIZE> mask)
+{
+	CurrentWarp().flow.Return(mask);
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::Break(std::bitset<CONFIG::WARP_SIZE> mask)
+{
+	CurrentWarp().flow.Break(mask);
+}
+
 
 } // end of namespace tesla
 } // end of namespace processor

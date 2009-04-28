@@ -170,9 +170,7 @@ alu_full_shared.read = {
 	// TODO: Argh, this should be done on writeback stage!
 	if(addr_incr) {
 		// side effect: increment ai
-		// This is broken anyway... Need to increment by addr_imm, not sizeof(T)!
-		cpu->GetAddr((addr_hi << 2) | addr_lo).Increment(SMTypeToDataType(SMType(smtype)), insn->Mask());
-		std::cerr << "Warning: likely broken post-increment. Please complain.\n";
+		cpu->GetAddr((addr_hi << 2) | addr_lo).Increment(SMTypeToDataType(SMType(smtype)), src1, insn->Mask());
 	}
 }
 
@@ -190,8 +188,7 @@ alu_immhalf_shared.read = {
 	cpu->GatherShared(vr, src1, addr_lo, 0, 1, insn->Mask(), SMType(smtype));
 	if(addr_incr) {
 		// side effect: increment ai
-		cpu->GetAddr(addr_lo).Increment(SMTypeToDataType(SMType(smtype)), insn->Mask());
-		std::cerr << "Warning: likely broken post-increment. Please complain.\n";
+		cpu->GetAddr(addr_lo).Increment(SMTypeToDataType(SMType(smtype)), src1, insn->Mask());
 	}
 }
 

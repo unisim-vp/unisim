@@ -92,6 +92,29 @@ join.init = {
 	inherited::op_type[OpSrc3] = DT_NONE;
 }
 
+op prebreak( \
+	/*subop*/?[3]:/*?*/?[1]:?[26]:/*marker*/?[2]: \
+	0x4[4]:target_addr[19]:/*dest*/0[7]:/*flow*/1[1]:/*IWidth*/1[1] \
+)
+
+prebreak.disasm = {
+	buffer << "breakaddr ";
+	buffer << "0x" << std::setfill('0') << std::setw(6) << std::hex << target_addr << std::dec;
+}
+
+prebreak.execute = {
+	cpu->PreBreak(target_addr);	// Never predicated
+}
+
+prebreak.init = {
+	typedef Operation<CONFIG> inherited;
+	inherited::allow_segment = true;
+	inherited::op_type[OpDest] = DT_NONE;
+	inherited::op_type[OpSrc1] = DT_NONE;
+	inherited::op_type[OpSrc2] = DT_NONE;
+	inherited::op_type[OpSrc3] = DT_NONE;
+}
+
 op fence( \
 	/*?*/0[32]: \
 	0x8[4]:ope[3]:bar[4]:arg[12]:/*dest*/0[7]:/*flow*/1[1]:/*IWidth*/1[1] \
@@ -129,10 +152,32 @@ ret.disasm = {
 }
 
 ret.execute = {
-	// TODO
-	cpu->Kill(insn->Mask());
+	cpu->Return(insn->Mask());
 }
 ret.init = {
+	typedef Operation<CONFIG> inherited;
+	inherited::allow_segment = true;
+	inherited::op_type[OpDest] = DT_NONE;
+	inherited::op_type[OpSrc1] = DT_NONE;
+	inherited::op_type[OpSrc2] = DT_NONE;
+	inherited::op_type[OpSrc3] = DT_NONE;
+}
+
+op break( \
+	/*subop*/?[3]:/*?*/?[1]:?[26]:/*marker*/?[2]: \
+	0x5[4]:/*target_addr*/0[19]:/*dest*/0[7]:/*flow*/1[1]:/*IWidth*/1[1] \
+)
+
+
+break.disasm = {
+	buffer << "break";
+}
+
+break.execute = {
+	cpu->Break(insn->Mask());
+}
+
+break.init = {
 	typedef Operation<CONFIG> inherited;
 	inherited::allow_segment = true;
 	inherited::op_type[OpDest] = DT_NONE;

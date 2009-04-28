@@ -86,9 +86,12 @@ struct TeslaFlow
 	void Meet(address_t addr);
 	bool Join();
 	void End();
+	void Return(std::bitset<CONFIG::WARP_SIZE> mask);
 	void Kill(std::bitset<CONFIG::WARP_SIZE> mask);
 	void CheckJoin();
 	std::bitset<CONFIG::WARP_SIZE> GetCurrentMask() const;
+	void PreBreak(address_t addr);
+	void Break(std::bitset<CONFIG::WARP_SIZE> mask);
 	
 	
 private:

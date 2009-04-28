@@ -365,10 +365,9 @@ void VectorAddress<CONFIG>::Reset()
 }
 
 template <class CONFIG>
-void VectorAddress<CONFIG>::Increment(DataType dt, std::bitset<CONFIG::WARP_SIZE> mask)
+void VectorAddress<CONFIG>::Increment(DataType dt, size_t imm, std::bitset<CONFIG::WARP_SIZE> mask)
 {
-	assert(false);	// this is just wrong
-	size_t inc = DataTypeSize(dt);
+	size_t inc = DataTypeSize(dt) * imm;
 	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i) {
 		if(mask[i])
 			v[i] += inc;

@@ -130,6 +130,16 @@ void TeslaFlow<CONFIG>::Meet(address_t addr)
 }
 
 template<class CONFIG>
+void TeslaFlow<CONFIG>::PreBreak(address_t addr)
+{
+	stack.push(StackToken(current_mask, ID_BREAK, addr + CONFIG::CODE_START));
+	if(cpu->trace_branch) {
+		cerr << " Push BREAK." << endl;
+		cerr << "  Mask = " << GetCurrentMask() << endl;
+	}
+}
+
+template<class CONFIG>
 bool TeslaFlow<CONFIG>::Join()
 {
 	if(stack.empty()) {
@@ -173,10 +183,74 @@ void TeslaFlow<CONFIG>::End()
 }
 
 template<class CONFIG>
+void TeslaFlow<CONFIG>::Return(std::bitset<CONFIG::WARP_SIZE> mask)
+{
+	// mask : threads to return
+	if(stack.empty()) {
+		if(cpu->trace_branch) {
+			cerr << " Reached bottom of stack, killing thread." << endl;
+		}
+		current_mask = GetCurrentMask() & ~mask;
+		initial_mask = current_mask;
+	}
+	else
+	{
+		if(cpu->trace_branch) {
+			cerr << " Pop." << endl;
+		}
+		StackToken token = stack.top();
+		assert(token.id = ID_CALL);
+		stack.pop();
+		current_mask = token.mask;
+		warp.npc = token.address;	// always go back?
+		// what if some threads are still enabled?
+		// Patent: "no thread diverge when a call/return branch is encountered"
+	}
+	if(cpu->trace_branch) {
+		cerr << "  New mask = " << GetCurrentMask() << endl;
+	}
+}
+
+template<class CONFIG>
+void TeslaFlow<CONFIG>::Break(std::bitset<CONFIG::WARP_SIZE> mask)
+{
+	if(stack.empty()) {
+		if(cpu->trace_branch) {
+			cerr << " Reached bottom of stack, killing threads." << endl;
+		}
+		current_mask = GetCurrentMask() & ~mask;
+		initial_mask = current_mask;
+	}
+	else if(mask == GetCurrentMask())
+	{
+		// All threads take a break
+		if(cpu->trace_branch) {
+			cerr << " Coherent break." << endl;
+			cerr << " Pop." << endl;
+		}
+		StackToken token = stack.top();
+		assert(token.id = ID_BREAK);
+		stack.pop();
+		current_mask = token.mask;
+		warp.npc = token.address;	// always go back?
+		// what if some threads are still enabled?
+		// handled by software?
+		// Patent: ???
+	}
+	else
+	{
+		// Just disable breaking threads
+		current_mask = GetCurrentMask() & ~mask;
+	}
+	if(cpu->trace_branch) {
+		cerr << "  New mask = " << GetCurrentMask() << endl;
+	}
+}
+
+template<class CONFIG>
 void TeslaFlow<CONFIG>::Kill(std::bitset<CONFIG::WARP_SIZE> mask)
 {
-	// mask : threads to kill
-	// GetCurrentMask() & ~mask : threads alive
+	assert(false);
 }
 
 template <class CONFIG>

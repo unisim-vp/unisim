@@ -93,9 +93,17 @@ string SetCondString(SetCond c)
 		"gt",
 		"ne",
 		"ge",
-		"tr",	// 7
+		"num",	// = tr for ints?
+		"nan",	// = flu?
+		"ltu",
+		"equ",
+		"leu",
+		"gtu",
+		"neu",
+		"geu",
+		"tru",	// true
 	};
-	assert(c >= 0 && c < 8);
+	assert(c >= 0 && c < 16);
 	return string(sc_desc[c]);
 }
 

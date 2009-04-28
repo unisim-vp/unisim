@@ -284,10 +284,13 @@ public:
 
 	// Control flow
 	void Meet(address_t addr);
+	void PreBreak(address_t addr);
 	bool Join();
 	void End();
 	void Fence();
 	void Kill(std::bitset<CONFIG::WARP_SIZE> mask);
+	void Return(std::bitset<CONFIG::WARP_SIZE> mask);
+	void Break(std::bitset<CONFIG::WARP_SIZE> mask);
 
 
 //	void ExecMarker(uint32_t marker);
