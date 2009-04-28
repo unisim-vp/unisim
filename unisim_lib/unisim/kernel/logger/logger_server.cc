@@ -195,19 +195,19 @@ DebugInfo(const unisim::kernel::service::Object &obj, const char *buffer) {
 	if(opt_std_out) {
 		if(opt_std_out_color) {
 			std::cout << "\033[36m";
- 			std::cout << obj.GetName() << ":" << endl << buffer << endl;
+ 			std::cout << obj.GetName() << ": " << buffer << endl;
 			std::cout << "\033[0m";
 		} else {
-			std::cout << "DebugInfo(" << obj.GetName() << "):" << endl << buffer << endl;
+			std::cout << obj.GetName() << ":" << buffer << endl;
 		}
 	}
 	if(opt_std_err) {
 		if(opt_std_err_color) {
 			std::cerr << "\033[36m";
- 			std::cerr << obj.GetName() << ":" << endl << buffer << endl;
+ 			std::cerr << obj.GetName() << ": " << buffer << endl;
 			std::cerr << "\033[0m";
 		} else {
-			std::cerr << "DebugInfo(" << obj.GetName() << "):" << endl << buffer << endl;
+			std::cerr << obj.GetName() << ": " << buffer << endl;
 		}
 	}
 	if(opt_xml_file) {
@@ -221,19 +221,19 @@ DebugWarning(const unisim::kernel::service::Object &obj, const char *buffer) {
 	if(opt_std_out) {
 		if(opt_std_out_color) {
 			std::cout << "\033[33m";
-			std::cout << obj.GetName() << ":" << endl << buffer << endl;
+			std::cout << obj.GetName() << ": WARNING! " << buffer << endl;
 			std::cout << "\033[0m";
 		} else {
-			std::cout << "DebugWarning(" << obj.GetName() << "): " << endl << buffer << endl;
+			std::cout << obj.GetName() << ": WARNING! " << buffer << endl;
 		}
 	}
 	if(opt_std_err) {
 		if(opt_std_err_color) {
 			std::cerr << "\033[33";
-			std::cerr << obj.GetName() << ":" << endl << buffer << endl;
+			std::cerr << obj.GetName() << ": WARNING! " << buffer << endl;
 			std::cerr << "\033[0m";
 		} else {
-			std::cerr << "DebugWarning(" << obj.GetName() << "):" << endl << buffer << endl;
+			std::cerr << obj.GetName() << ": WARNING! " << buffer << endl;
 		}
 	}
 	if(opt_xml_file) {
@@ -247,19 +247,19 @@ DebugError(const unisim::kernel::service::Object &obj, const char *buffer) {
 	if(opt_std_out) {
 		if(opt_std_out_color) {
 			std::cout << "\033[31m";
-			std::cout << obj.GetName() << ":" << endl << buffer << endl;
+			std::cout << obj.GetName() << " : ERROR! " << buffer << endl;
 			std::cout << "\033[0m";
 		} else {
-			std::cout << "DebugError(" << obj.GetName() << "): " << endl << buffer << endl;
+			std::cout << obj.GetName() << ": ERROR! " << buffer << endl;
 		}
 	}
 	if(opt_std_err) {
 		if(opt_std_err_color) {
 			std::cerr << "\033[31m";
-			std::cerr << obj.GetName() << ":" << endl << buffer << endl;
+			std::cerr << obj.GetName() << ": ERROR! " << buffer << endl;
 			std::cerr << "\033[0m";
 		} else {
-			std::cerr << "DebugError(" << obj.GetName() << "): " << endl << buffer << endl;
+			std::cerr << obj.GetName() << ": ERROR! " << buffer << endl;
 		}
 	}
 	if(opt_xml_file) {

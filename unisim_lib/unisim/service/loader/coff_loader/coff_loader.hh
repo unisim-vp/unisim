@@ -41,6 +41,7 @@
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/debug/symbol_table.hh>
 #include <unisim/kernel/service/service.hh>
+#include "unisim/kernel/logger/logger.hh"
 
 #include <iosfwd>
 #include <inttypes.h>
@@ -341,6 +342,8 @@ private:
 	Parameter<string> param_filename;
 	Parameter<MEMORY_ADDR> param_base_addr;
 	Parameter<bool> param_dump_headers;
+
+	unisim::kernel::logger::Logger logger;
 
 	// File handler registry
 	FileHandlerRegistry<MEMORY_ADDR> file_handler_registry;

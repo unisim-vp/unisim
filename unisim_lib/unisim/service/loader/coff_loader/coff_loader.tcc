@@ -50,6 +50,7 @@ namespace loader {
 namespace coff_loader {
 
 using std::stringstream;
+using namespace unisim::kernel::logger;
 
 template <class MEMORY_ADDR>
 CoffLoader<MEMORY_ADDR>::CoffLoader(const char *name, Object *parent)
@@ -65,6 +66,7 @@ CoffLoader<MEMORY_ADDR>::CoffLoader(const char *name, Object *parent)
 	, base_addr(0)
 	, top_addr(0)
 	, dump_headers(false)
+	, logger(*this)
 	, param_filename("filename", this, filename)
 	, param_base_addr("base-addr", this, base_addr)
 	, param_dump_headers("dump-headers", this, dump_headers)
@@ -107,11 +109,11 @@ bool CoffLoader<MEMORY_ADDR>::Write(MEMORY_ADDR addr, const void *content, uint3
 {
 	if(!memory_import->WriteMemory(addr * memory_atom_size, content, size * memory_atom_size))
 	{
-		cerr << Object::GetName() << ": Can't write into memory (@0x" << hex << addr << " - @0x" << (addr +  size - 1) << dec << ")" << endl;
+		logger << DebugError << "Can't write into memory (@0x" << hex << addr << " - @0x" << (addr +  size - 1) << dec << ")" << EndDebugError;
 		return false;
 	}
 
-	cerr << Object::GetName() << ": write into memory (@0x" << hex << addr << " - @0x" << (addr +  size - 1) << dec << ")" << endl;
+	logger << DebugInfo << "Write into memory (@0x" << hex << addr << " - @0x" << (addr +  size - 1) << dec << ")" << EndDebugInfo;
 	return true;
 }
 
@@ -125,11 +127,11 @@ bool CoffLoader<MEMORY_ADDR>::Setup()
 	ifstream is(filename.c_str(), ifstream::in | ifstream::binary);
 	if(is.fail())
 	{
-		cerr << Object::GetName() << ": ERROR! Can't open executable \"" << filename << "\"" << endl;
+		logger << DebugError << "Can't open executable \"" << filename << "\"" << EndDebugError;
 		return false;
 	}
 	
-	cerr << Object::GetName() << ": Opening \"" << filename << "\"" << endl;
+	logger << DebugInfo << "Opening \"" << filename << "\"" << EndDebugInfo;
 
 	if(is.seekg(0, ios::beg).fail())
 	{
@@ -141,7 +143,7 @@ bool CoffLoader<MEMORY_ADDR>::Setup()
 
 	if(is.read((char *) &magic, sizeof(magic)).fail())
 	{
-		cerr << Object::GetName() << ": ERROR! Could not read file header or \"" << filename << "\" is not a COFF file." << endl;
+		logger << DebugError << "Could not read file header or \"" << filename << "\" is not a COFF file." << EndDebugError;
 		return false;
 	}
 
@@ -149,9 +151,11 @@ bool CoffLoader<MEMORY_ADDR>::Setup()
 
 	if(!file_handler)
 	{
-		cerr << Object::GetName() << ": ERROR! Can't handle format of \"" << filename << "\"." << endl;
-		cerr << "Supported formats are:" << endl;
-		file_handler_registry.DumpFileHandlers(cerr);
+		logger << DebugError << "Can't handle format of \"" << filename << "\"." << EndDebugError;
+		logger << DebugInfo << "Supported formats are:" << endl;
+		stringstream sstr;
+		file_handler_registry.DumpFileHandlers(sstr);
+		logger << sstr.str() << EndDebugInfo;
 		return false;
 	}
 
@@ -159,7 +163,7 @@ bool CoffLoader<MEMORY_ADDR>::Setup()
 
 	if(!file)
 	{
-		cerr << Object::GetName() << ": INTERNAL ERROR! " << file_handler->What() << " can't handle format of \"" << filename << "\"" << endl;
+		logger << DebugError<< file_handler->What() << " can't handle format of \"" << filename << "\"" << EndDebugError;
 		return false;
 	}
 
@@ -171,14 +175,14 @@ bool CoffLoader<MEMORY_ADDR>::Setup()
 	*(uint16_t *) hdr = magic;
 	if(is.read(hdr + sizeof(magic), file_hdr_size - sizeof(magic)).fail())
 	{
-		cerr << Object::GetName() << ": ERROR! Could not read file header or \"" << filename << "\" is not a COFF file." << endl;
+		logger << DebugError << "Could not read file header or \"" << filename << "\" is not a COFF file." << EndDebugError;
 		delete file;
 		return false;
 	}
 
 	if(!file->ParseFileHeader(hdr))
 	{
-		cerr << Object::GetName() << ": ERROR! File header is not supported or \"" << filename << "\" is not a COFF file." << endl;
+		logger << DebugError << "File header is not supported or \"" << filename << "\" is not a COFF file." << EndDebugError;
 		delete file;
 		return false;
 	}
@@ -188,19 +192,21 @@ bool CoffLoader<MEMORY_ADDR>::Setup()
 
 	if(dump_headers)
 	{
-		file->DumpFileHeader(cerr);
+		stringstream sstr;
+		file->DumpFileHeader(sstr);
+		logger << DebugInfo << sstr.str() << EndDebugInfo;
 	}
 
-	cerr << Object::GetName() << ": File \"" << filename << "\" is for " << file->GetArchitectureName() << endl;
+	logger << DebugInfo << "File \"" << filename << "\" is for " << file->GetArchitectureName() << EndDebugInfo;
 
 	if(!file->IsExecutable())
 	{
-		cerr << Object::GetName() << ": ERROR! File \"" << filename << "\" is not an executable COFF file." << endl;
+		logger << DebugError << "File \"" << filename << "\" is not an executable COFF file." << EndDebugError;
 		delete file;
 		return false;
 	}
 
-	cerr << Object::GetName() << ": File \"" << filename << "\" is executable" << endl;
+	logger << DebugInfo << "File \"" << filename << "\" is executable" << EndDebugInfo;
 
 	unsigned int aout_hdr_size = file->GetAoutHeaderSize();
 
@@ -210,31 +216,33 @@ bool CoffLoader<MEMORY_ADDR>::Setup()
 
 		if(is.read(aout_hdr, aout_hdr_size).fail())
 		{
-			cerr << Object::GetName() << ": ERROR! Could not read optional header." << endl;
+			logger << DebugError << "Could not read optional header." << EndDebugInfo;
 			delete file;
 			return false;
 		}
 
 		if(!file->ParseAoutHeader(aout_hdr))
 		{
-			cerr << Object::GetName() << ": ERROR! optional header is invalid or unsupported." << endl;
+			logger << DebugError << "optional header is invalid or unsupported." << EndDebugError;
 			delete file;
 			return false;
 		}
 
 		entry_point = file->GetEntryPoint();
 
-		cerr << Object::GetName() << ": program entry point at 0x" << hex << entry_point << dec << endl;
+		logger << DebugInfo << "Program entry point at 0x" << hex << entry_point << dec << EndDebugInfo;
 
 		if(dump_headers)
 		{
-			file->DumpAoutHeader(cerr);
+			stringstream sstr;
+			file->DumpAoutHeader(sstr);
+			logger << DebugInfo << sstr.str() << EndDebugInfo;
 		}
 	}
 	else
 	{
-		cerr << Object::GetName() << ": WARNING! File \"" << filename << "\" has no optional header." << endl;
-		cerr << Object::GetName() << ": program entry point is unknown" << endl;
+		logger << DebugWarning << "File \"" << filename << "\" has no optional header." << EndDebugWarning;
+		logger << DebugWarning << "Program entry point is unknown" << EndDebugWarning;
 	}
 
 	unsigned int num_sections = file->GetNumSections();
@@ -248,14 +256,14 @@ bool CoffLoader<MEMORY_ADDR>::Setup()
 
 		if(is.read(shdr, shdr_size).fail())
 		{
-			cerr << Object::GetName() << ": ERROR! Can't read section headers" << endl;
+			logger << DebugError << "Can't read section headers" << EndDebugError;
 			delete file;
 			return false;
 		}
 		
 		if(!file->ParseSectionHeader(section_num, shdr))
 		{
-			cerr << Object::GetName() << ": ERROR! section header #" << section_num << " is invalid or unsupported" << endl;
+			logger << DebugError << "Section header #" << section_num << " is invalid or unsupported" << EndDebugError;
 			delete file;
 			return false;
 		}
@@ -269,7 +277,9 @@ bool CoffLoader<MEMORY_ADDR>::Setup()
 
 		if(dump_headers)
 		{
-			section->DumpHeader(cerr);
+			stringstream sstr;
+			section->DumpHeader(sstr);
+			logger << DebugInfo << sstr.str() << EndDebugInfo;
 		}
 
 		typename Section<MEMORY_ADDR>::Type section_type = section->GetType();
@@ -280,13 +290,13 @@ bool CoffLoader<MEMORY_ADDR>::Setup()
 
 		if(section_size > 0 && section_content_file_ptr && section_type != Section<MEMORY_ADDR>::ST_NOT_LOADABLE)
 		{
-			cerr << Object::GetName() << ": Loading section " << section_name << endl;
+			logger << DebugInfo << "Loading section " << section_name << EndDebugInfo;
 
 			void *section_content = calloc(section_size, memory_atom_size);
 
 			if(!section_content || is.seekg(section_content_file_ptr, ios::beg).fail() || is.read((char *) section_content, section_size * memory_atom_size).fail())
 			{
-				cerr << Object::GetName() << ": WARNING! Can't load section " << section_name << endl;
+				logger << DebugError << "Can't load section " << section_name << EndDebugError;
 				success = false;
 			}
 			else
@@ -296,14 +306,14 @@ bool CoffLoader<MEMORY_ADDR>::Setup()
 					case Section<MEMORY_ADDR>::ST_LOADABLE_RAWDATA:
 						if(!Write(section_addr, section_content, section_size))
 						{
-							cerr << Object::GetName() << ": Can't write raw data of section " << section_name << " into memory" << endl;
+							logger << DebugError << "Can't write raw data of section " << section_name << " into memory" << EndDebugError;
 							success = false;
 						}
 						break;
 					case Section<MEMORY_ADDR>::ST_SPECIFIC_CONTENT:
 						if(!section->LoadSpecificContent(this, section_content, section_size))
 						{
-							cerr << Object::GetName() << ": Can't load specific content of section " << section_name << endl;
+							logger << DebugError << "Can't load specific content of section " << section_name << EndDebugError;
 							success = false;
 						}
 						break;
@@ -318,7 +328,7 @@ bool CoffLoader<MEMORY_ADDR>::Setup()
 	unsigned long num_symbols = file->GetNumSymbols();
 	if(symtab_file_ptr && num_symbols)
 	{
-		cerr << Object::GetName() << ": Loading symbol table" << endl;
+		logger << DebugInfo << "Loading symbol table" << EndDebugInfo;
 
 		unsigned long symtab_size = num_symbols * sizeof(syment);
 
@@ -326,17 +336,17 @@ bool CoffLoader<MEMORY_ADDR>::Setup()
 
 		if(!symtab_content || is.seekg(symtab_file_ptr, ios::beg).fail() || is.read((char *) symtab_content, symtab_size).fail())
 		{
-			cerr << Object::GetName() << ": WARNING! Can't load symbol table" << endl;
+			logger << DebugError << "Can't load symbol table" << EndDebugError;
 			success = false;
 		}
 		else
 		{
-			cerr << Object::GetName() << ": Loading string table" << endl;
+			logger << DebugInfo << "Loading string table" << EndDebugInfo;
 			uint32_t string_table_size;
 
 			if(is.read((char *) &string_table_size, sizeof(string_table_size)).fail())
 			{
-				cerr << Object::GetName() << ": WARNING! Can't load string table" << endl;
+				logger << DebugError << "Can't load string table" << EndDebugError;
 				success = false;
 			}
 			else
@@ -347,7 +357,7 @@ bool CoffLoader<MEMORY_ADDR>::Setup()
 				*(uint32_t *) string_table = 0;
 				if(!string_table || is.read((char *) string_table + 4, string_table_size - 4).fail())
 				{
-					cerr << Object::GetName() << ": WARNING! Can't load string table" << endl;
+					logger << DebugError << "Can't load string table" << EndDebugError;
 					success = false;
 				}
 				else
@@ -355,7 +365,7 @@ bool CoffLoader<MEMORY_ADDR>::Setup()
 					// Parse the symbol table
 					if(!ParseSymbolTable((syment *) symtab_content, num_symbols, (const char *) string_table, string_table_size))
 					{
-						cerr << Object::GetName() << ": WARNING! symbol table is broken" << endl;
+						logger << DebugError << "Symbol table is broken" << EndDebugError;
 						success = false;
 					}
 				}
@@ -572,7 +582,7 @@ bool CoffLoader<MEMORY_ADDR>::ParseSymbolTable(syment *symtab, unsigned long nsy
 	{
 		if(dump_headers)
 		{
-			cerr << "[" << i << "] ";
+			logger << DebugInfo << "[" << i << "] ";
 		}
 
 		if(numaux)
@@ -592,8 +602,8 @@ bool CoffLoader<MEMORY_ADDR>::ParseSymbolTable(syment *symtab, unsigned long nsy
 
 				if(dump_headers)
 				{
-					cerr << "FCNAUX: ";
-					cerr << "size=" << fcn_aux->x_fsize << ",linenoptr=" << fcn_aux->x_lnnoptr << ", nextentry_index=" << fcn_aux->x_endndx << endl;
+					logger << "FCNAUX: ";
+					logger << "size=" << fcn_aux->x_fsize << ",linenoptr=" << fcn_aux->x_lnnoptr << ", nextentry_index=" << fcn_aux->x_endndx;
 				}
 
 				symbol_table.AddSymbol(sym_name, coff_sym->e_value * memory_atom_size, fcn_aux->x_fsize * memory_atom_size, unisim::util::debug::Symbol<MEMORY_ADDR>::SYM_FUNC, memory_atom_size);
@@ -608,8 +618,8 @@ bool CoffLoader<MEMORY_ADDR>::ParseSymbolTable(syment *symtab, unsigned long nsy
 
 				if(dump_headers)
 				{
-					cerr << "SCNAUX: ";
-					cerr << "length=" << scn_aux->x_scnlen << endl;
+					logger << "SCNAUX: ";
+					logger << "length=" << scn_aux->x_scnlen;
 				}
 
 				symbol_table.AddSymbol(sym_name, coff_sym->e_value * memory_atom_size, scn_aux->x_scnlen * memory_atom_size, unisim::util::debug::Symbol<MEMORY_ADDR>::SYM_SECTION, memory_atom_size);
@@ -637,8 +647,8 @@ bool CoffLoader<MEMORY_ADDR>::ParseSymbolTable(syment *symtab, unsigned long nsy
 
 				if(dump_headers)
 				{
-					cerr << "FILAUX: ";
-					cerr << "filename=" << filename << endl;
+					logger << "FILAUX: ";
+					logger << "filename=" << filename;
 				}
 
 				symbol_table.AddSymbol(filename, coff_sym->e_value * memory_atom_size, 0, unisim::util::debug::Symbol<MEMORY_ADDR>::SYM_FILE, memory_atom_size);
@@ -659,8 +669,8 @@ bool CoffLoader<MEMORY_ADDR>::ParseSymbolTable(syment *symtab, unsigned long nsy
 
 				if(dump_headers)
 				{
-					cerr << "ARYAUX: ";
-					cerr << "length=" << ary_aux->x_arylen << ", dim1=" << ary_aux->x_dim[0] << endl;
+					logger << "ARYAUX: ";
+					logger << "length=" << ary_aux->x_arylen << ", dim1=" << ary_aux->x_dim[0];
 				}
 
 				symbol_table.AddSymbol(sym_name, coff_sym->e_value * memory_atom_size, basic_type_sizes[basic_type] * ary_aux->x_arylen * memory_atom_size, unisim::util::debug::Symbol<MEMORY_ADDR>::SYM_OBJECT, memory_atom_size);
@@ -669,7 +679,7 @@ bool CoffLoader<MEMORY_ADDR>::ParseSymbolTable(syment *symtab, unsigned long nsy
 			{
 				if(dump_headers)
 				{
-					cerr << "AUX: <?>" << endl;
+					logger << "AUX: <?>";
 				}
 			}
 
@@ -707,17 +717,15 @@ bool CoffLoader<MEMORY_ADDR>::ParseSymbolTable(syment *symtab, unsigned long nsy
 
 			if(dump_headers)
 			{
-				cerr << "SYMBOL: ";
-				cerr << "name=\"" << sym_name << "\", value=0x" << hex << coff_sym->e_value << dec;
-				cerr << ", storage class=" << GetStorageClassName(sclass) << " (" << GetStorageClassFriendlyName(sclass) << ")";
-				cerr << ", type=" << GetTypeName(type);
+				logger << "SYMBOL: ";
+				logger << "name=\"" << sym_name << "\", value=0x" << hex << coff_sym->e_value << dec;
+				logger << ", storage class=" << GetStorageClassName(sclass) << " (" << GetStorageClassFriendlyName(sclass) << ")";
+				logger << ", type=" << GetTypeName(type);
 
 				if(coff_sym->e_numaux)
 				{
-					cerr << ", " << (unsigned int) coff_sym->e_numaux << " aux entries follow";
+					logger << ", " << (unsigned int) coff_sym->e_numaux << " aux entries follow";
 				}
-
-				cerr << endl;
 			}
 
 			if(sclass == C_EXT && derived_type1 == DT_NON)
@@ -728,6 +736,11 @@ bool CoffLoader<MEMORY_ADDR>::ParseSymbolTable(syment *symtab, unsigned long nsy
 			{
 				symbol_table.AddSymbol(sym_name, 0, 0, unisim::util::debug::Symbol<MEMORY_ADDR>::SYM_FILE, memory_atom_size);
 			}
+		}
+
+		if(dump_headers)
+		{
+			logger << EndDebugInfo;
 		}
 	}
 

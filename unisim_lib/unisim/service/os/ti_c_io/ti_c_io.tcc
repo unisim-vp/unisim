@@ -153,18 +153,21 @@ bool TI_C_IO<MEMORY_ADDR>::Setup()
 		if(!memory_injection_import)
 		{
 			logger << DebugError << memory_injection_import.GetName() << " is not connected" << EndDebugError;
+			enable = false;
 			return false;
 		}
 
 		if(!registers_import)
 		{
 			logger << DebugError << registers_import.GetName() << " is not connected" << EndDebugError;
+			enable = false;
 			return false;
 		}
 
 		if(!symbol_table_lookup_import)
 		{
 			logger << DebugError << symbol_table_lookup_import.GetName() << " is not connected" << EndDebugError;
+			enable = false;
 			return false;
 		}
 
@@ -174,14 +177,14 @@ bool TI_C_IO<MEMORY_ADDR>::Setup()
 		{
 			logger << DebugWarning << "Undefined register " << pc_register_name << ". Disabling TI C I/O support" << EndDebugWarning;
 			enable = false;
-			return true;
+			return !warning_as_error;
 		}
 
 		if(reg_pc->GetSize() != 4)
 		{
 			logger << DebugWarning << "Register " << pc_register_name << " is not a 32-bit register. Disabling TI C I/O support" << EndDebugWarning;
 			enable = false;
-			return true;
+			return !warning_as_error;
 		}
 
 		const unisim::util::debug::Symbol<MEMORY_ADDR> *c_io_buffer_symbol = symbol_table_lookup_import->FindSymbolByName(c_io_buffer_symbol_name.c_str());
@@ -190,7 +193,7 @@ bool TI_C_IO<MEMORY_ADDR>::Setup()
 		{
 			logger << DebugWarning << "Undefined symbol " << c_io_buffer_symbol_name << ". Disabling TI C I/O support" << EndDebugWarning;
 			enable = false;
-			return true;
+			return !warning_as_error;
 		}
 
 		const unisim::util::debug::Symbol<MEMORY_ADDR> *c_io_breakpoint_symbol = symbol_table_lookup_import->FindSymbolByName(c_io_breakpoint_symbol_name.c_str());
@@ -199,7 +202,7 @@ bool TI_C_IO<MEMORY_ADDR>::Setup()
 		{
 			logger << DebugWarning << "Undefined symbol " << c_io_breakpoint_symbol_name << ". Disabling TI C I/O support" << EndDebugWarning;
 			enable = false;
-			return true;
+			return !warning_as_error;
 		}
 
 		const unisim::util::debug::Symbol<MEMORY_ADDR> *c_exit_breakpoint_symbol = symbol_table_lookup_import->FindSymbolByName(c_exit_breakpoint_symbol_name.c_str());
@@ -208,7 +211,7 @@ bool TI_C_IO<MEMORY_ADDR>::Setup()
 		{
 			logger << DebugWarning << "Undefined symbol " << c_exit_breakpoint_symbol_name << ". Disabling TI C I/O support" << EndDebugWarning;
 			enable = false;
-			return true;
+			return !warning_as_error;
 		}
 
 		c_io_buffer_addr = c_io_buffer_symbol->GetAddress();
@@ -230,9 +233,9 @@ bool TI_C_IO<MEMORY_ADDR>::Setup()
 
 		if(!memory_import->WriteMemory(c_io_breakpoint_addr, swi, sizeof(swi)))
 		{
-			logger << DebugError << "Cannot install breakpoint at 0x" << hex << c_io_breakpoint_addr << dec << ". Disabling TI C I/O support" << EndDebugError;
+			logger << DebugWarning << "Cannot install breakpoint at 0x" << hex << c_io_breakpoint_addr << dec << ". Disabling TI C I/O support" << EndDebugWarning;
 			enable = false;
-			return true;
+			return !warning_as_error;
 		}
 
 		if(verbose_setup || verbose_all)
@@ -242,9 +245,9 @@ bool TI_C_IO<MEMORY_ADDR>::Setup()
 
 		if(!memory_import->WriteMemory(c_exit_breakpoint_addr, swi, sizeof(swi)))
 		{
-			logger << DebugError << "Cannot install breakpoint at 0x" << hex << c_exit_breakpoint_addr << dec << ". Disabling TI C I/O support" << EndDebugError;
+			logger << DebugWarning << "Cannot install breakpoint at 0x" << hex << c_exit_breakpoint_addr << dec << ". Disabling TI C I/O support" << EndDebugWarning;
 			enable = false;
-			return true;
+			return !warning_as_error;
 		}
 	}
 	else
