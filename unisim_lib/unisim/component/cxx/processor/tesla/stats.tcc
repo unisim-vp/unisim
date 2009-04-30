@@ -48,13 +48,17 @@ namespace tesla {
 using namespace std;
 
 // Format:
-// address,name,count,scalarcount
+// address,name,count,scalarcount,integer,fp,flow,memory
 template<class CONFIG>
 void OperationStats<CONFIG>::DumpCSV(std::ostream & os) const
 {
 	os << "\"" << name << "\","
 	   << count << ","
-	   << scalarcount
+	   << scalarcount << ","
+	   << integer << ","
+	   << fp << ","
+	   << flow << ","
+	   << memory
 	   << endl;
 }
 

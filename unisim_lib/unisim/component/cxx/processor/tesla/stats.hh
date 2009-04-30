@@ -51,20 +51,29 @@ private:
 	std::string name;
 	unsigned int count;
 	unsigned int scalarcount;
-	
+	bool integer;
+	bool fp;
+	bool flow;
+	bool memory;
 	
 public:
 	OperationStats() :
-		count(0), scalarcount(0) {}
+		count(0), scalarcount(0), integer(false), fp(false), flow(false), memory(false) {}
 
 	void SetName(char const * insnname) {
 		name = std::string(insnname);
 	}
+	
+	void SetInteger() { integer = true;	}
+	void SetFP() { fp = true; }
+	void SetFlow() { flow = true; }
+	void SetMemory() { memory = true; }
 
 	void Execute(std::bitset<CONFIG::WARP_SIZE> mask) {
 		count++;
 		scalarcount += mask.count();
 	}
+	
 	//void Gather(VectorAddress<CONFIG> const & addr, std::bitset<CONFIG::WARP_SIZE> mask);
 	//void BranchUniTaken(std::bitset<CONFIG::WARP_SIZE> mask);
 

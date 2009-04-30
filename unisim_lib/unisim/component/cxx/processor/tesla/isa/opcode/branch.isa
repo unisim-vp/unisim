@@ -63,6 +63,7 @@ br.init = {
 	inherited::op_type[OpSrc1] = DT_NONE;
 	inherited::op_type[OpSrc2] = DT_NONE;
 	inherited::op_type[OpSrc3] = DT_NONE;
+	this->stats->SetFlow();
 }
 
 
