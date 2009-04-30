@@ -48,6 +48,7 @@
 #include "unisim/kernel/logger/logger.hh"
 #include "unisim/component/tlm2/interconnect/generic_router/config.hh"
 #include "unisim/component/tlm2/interconnect/generic_router/router_dispatcher.hh"
+#include "unisim/service/interfaces/memory.hh"
 
 namespace unisim {
 namespace component {
@@ -61,12 +62,14 @@ public:
 	uint64_t range_start;
 	uint64_t range_end;
 	unsigned int output_port;
+	uint64_t translation;
 
 	Mapping() {
 		used = false;
 		range_start = 0;
 		range_end = 0;
 		output_port = 0;
+		translation = 0;
 	}
 };
 
@@ -108,7 +111,8 @@ private:
 
 template<class CONFIG = unisim::component::tlm2::interconnect::generic_router::Config>
 class Router :
-	public unisim::kernel::service::Object,
+	public unisim::kernel::service::Service<unisim::service::interfaces::Memory<uint64_t> >,
+	public unisim::kernel::service::Client<unisim::service::interfaces::Memory<uint64_t> >,
 	public sc_module {
 private:
 	typedef unisim::kernel::service::Object Object;
@@ -150,7 +154,13 @@ public:
 	TargSocket targ_socket[INPUT_SOCKETS];
 	// tlm_utils::passthrough_target_socket_tagged<Router, BUSWIDTH, TYPES> targ_socket[INPUT_SOCKETS];
 	// TODO: remove ==> tlm_utils::multi_passthrough_target_socket<Router, BUSWIDTH, TYPES> targ_socket;
-	
+
+	/** Incomming memory interface for incomming debugging/loading requests 
+	 * One single memory interface for incomming requests is enough, as there is no concurrency */
+	unisim::kernel::service::ServiceExport<unisim::service::interfaces::Memory<uint64_t> > memory_export;
+	/** Outgoing memory interfaces (one per output port) for outgoing debugging/loading requests */
+	unisim::kernel::service::ServiceImport<unisim::service::interfaces::Memory<uint64_t> > *memory_import[OUTPUT_SOCKETS];
+
 	/** Object setup method
 	 * This method is required by the inherited Object class.
 	 *
@@ -233,20 +243,39 @@ private:
 	 */
 	sc_time Sync(const sc_time &time);
 
+	/**
+	 * Apply mapping function over an address range
+	 *
+	 * @param addr		the base address
+	 * @param size		the size of the range (positive)
+	 * @param applied_mapping	the applied mapping index
+	 * @return			true if a map was found, false otherwise
+	 */
+	bool ApplyMap(uint64_t addr, uint32_t size, unsigned int &applied_mapping) const;
+	
 	/** 
 	 * Apply mapping function over the given transaction
 	 *
-	 * @param  trans  the transaction to apply the mapping over
-	 * @param  port   the port that maps that transaction
+	 * @param trans		the transaction to apply the mapping over
+	 * @param applied_mapping	the applied mapping index
 	 * @return        true if a map was found, false otherwise
 	 */
-	bool ApplyMap(const transaction_type &trans, unsigned int &port) const;
+	bool ApplyMap(const transaction_type &trans, unsigned int &applied_mapping) const;
+
+	/**
+	 * Apply mapping function over an address range and return the mapping division
+	 *
+	 * @param addr		the base address
+	 * @param size		the size of the range (positive)
+	 * @param mappings	the mapping indexes that should be applied
+	 */
+	void ApplyMap(uint64_t addr, uint32_t size, std::vector<unsigned int> &mappings) const;
 
 	/**
 	 * Apply mapping function over a given transaction and return the mapping division
 	 *
-	 * @param trans   the transaction to apply the mapping over
-	 * @param ports   the ports that map the transaction
+	 * @param trans		the transaction to apply the mapping over
+	 * @param mappings	the mapping indexes that should be applied
 	 */
 	void ApplyMap(const transaction_type &trans, std::vector<unsigned int> &mappings) const;
 
@@ -300,6 +329,39 @@ private:
 	 *************************************************************************/
 
 	/*************************************************************************
+	 * Memory interface methods                                        START *
+	 *************************************************************************/
+	
+	/**
+	 * Reset memory state (do nothing in our case).
+	 */
+	virtual void Reset() {}
+
+	/**
+	 * Memory interface method to handle read requests.
+	 *
+	 * @param addr		the address to read
+	 * @param buffer	the buffer to fill
+	 * @param size		the amount of data to read
+	 * @return			true if succeded, false otherwise
+	 */
+	virtual bool ReadMemory(uint64_t addr, void *buffer, uint32_t size);
+
+	/**
+	 * Memory interface method to handle write requests.
+	 *
+	 * @param addr		the address to write
+	 * @param buffer 	the buffer to fill the memory with
+	 * @param size		the amount of data to write
+	 * @return 			true if succeded, false otherwise
+	 */
+	virtual bool WriteMemory(uint64_t addr, const void *buffer, uint32_t size);
+
+	/*************************************************************************
+	 * Memory interface methods                                          END *
+	 *************************************************************************/
+	
+	/*************************************************************************
 	 * Parameters                                                      START *
 	 *************************************************************************/
 
@@ -328,10 +390,12 @@ private:
 	unisim::kernel::service::Parameter<bool> *param_verbose_all;
 	bool verbose_setup;
 	unisim::kernel::service::Parameter<bool> *param_verbose_setup;
-	bool verbose_non_blocking;
-	unisim::kernel::service::Parameter<bool> *param_verbose_non_blocking;
-	bool verbose_blocking;
-	unisim::kernel::service::Parameter<bool> *param_verbose_blocking;
+	bool verbose_tlm;
+	unisim::kernel::service::Parameter<bool> *param_verbose_tlm;
+	bool verbose_tlm_debug;
+	unisim::kernel::service::Parameter<bool> *param_verbose_tlm_debug;
+	bool verbose_memory_interface;
+	unisim::kernel::service::Parameter<bool> *param_verbose_memory_interface;
 
 	/*************************************************************************
 	 * Logger and verbose parameters                                     END *
@@ -341,9 +405,11 @@ private:
 	 * Verbose methods                                                 START *
 	 *************************************************************************/
 
+	inline void SetVerboseAll();
 	inline bool VerboseSetup();
-	inline bool VerboseNonBlocking();
-	inline bool VerboseBlocking();
+	inline bool VerboseTLM();
+	inline bool VerboseTLMDebug();
+	inline bool VerboseMemoryInterface();
 
 	/*************************************************************************
 	 * Verbose methods                                                   END *

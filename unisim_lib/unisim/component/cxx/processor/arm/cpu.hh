@@ -188,8 +188,7 @@ class CPU :
 	public Service<MemoryAccessReportingControl>,
 	public Service<Disassembly<uint64_t> >,
     public Service<Registers>,
-	public Service<Memory<uint64_t> >,
-	public Client<Memory<uint64_t> >
+	public Service<Memory<uint64_t> > 
 	
 #endif // SOCLIB
 
@@ -240,7 +239,6 @@ public:
 	ServiceImport<DebugControl<uint64_t> > debug_control_import;
 	ServiceImport<MemoryAccessReporting<uint64_t> > memory_access_reporting_import;
 	ServiceImport<SymbolTableLookup<uint64_t> > symbol_table_lookup_import;
-	ServiceImport<Memory<uint64_t> > memory_import;
 	ServiceImport<LinuxOS> linux_os_import;
 
 	// the kernel logger
@@ -381,14 +379,18 @@ public:
 	virtual void RequiresFinishedInstructionReporting(bool report) ;
 
 	//=====================================================================
-	//=             memory interface methods                              =
+	//=             non intrusive memory methods                          =
 	//=====================================================================
-	virtual void Reset();
+
 	virtual bool ReadMemory(uint64_t addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(uint64_t addr, const void *buffer, uint32_t size);
+	virtual bool ExternalReadMemory(uint64_t addr, void *buffer, uint32_t size);
+	virtual bool ExternalWriteMemory(uint64_t addr, const void *buffer, uint32_t size);
+	virtual bool CoprocessorReadMemory(uint64_t addr, void *buffer, uint32_t size);
+	virtual bool CoprocessorWriteMemory(uint64_t addr, const void *buffer, uint32_t size);
 
 	//=====================================================================
-	//=             CPURegistersInterface interface methods                              =
+	//=             CPURegistersInterface interface methods               =
 	//=====================================================================
 
 	/**

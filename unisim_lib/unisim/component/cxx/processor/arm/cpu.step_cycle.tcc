@@ -62,7 +62,9 @@ using unisim::util::debug::Symbol;
 using unisim::util::endian::E_BIG_ENDIAN;
 using unisim::util::endian::E_LITTLE_ENDIAN;
 using unisim::util::endian::BigEndian2Host;
+using unisim::util::endian::LittleEndian2Host;
 using unisim::util::endian::Host2BigEndian;
+using unisim::util::endian::Host2LittleEndian;
 using unisim::util::arithmetic::RotateRight;
 
 using std::cout;

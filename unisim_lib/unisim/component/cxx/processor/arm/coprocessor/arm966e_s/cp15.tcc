@@ -36,12 +36,7 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_COPROCESSOR_ARM966E_S_CP15_TCC__
 
 #include "unisim/util/endian/endian.hh"
-
-#ifdef SOCLIB
-
 #include <iostream>
-
-#endif // SOCLIB
 
 namespace unisim {
 namespace component {
@@ -51,18 +46,22 @@ namespace arm {
 namespace coprocessor {
 namespace arm966e_s {
 
-#ifdef SOCLIB
-
 using std::cerr;
 using std::endl;
 using std::hex;
 using std::dec;
 
-#else // SOCLIB
+#ifndef SOCLIB
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugError;
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::EndDebugInfo;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::EndDebugWarning;
+using unisim::kernel::logger::EndDebug;
+#endif
 
-#define LOCATION File << __FILE__ << Function << __FUNCTION__ << Line << __LINE__
-
-#endif // SOCLIB
+#define LOCATION __FUNCTION__ << ":" << __FILE__ << ":" << ":" << __LINE__
 
 #if (defined(__GNUC__) && (__GNUC__ >= 3))
 #define INLINE inline __attribute__((always_inline))
@@ -71,23 +70,6 @@ using std::dec;
 #endif
 
 using unisim::util::endian::E_BIG_ENDIAN;
-
-#ifndef SOCLIB
-
-using unisim::service::interfaces::DebugInfo;
-using unisim::service::interfaces::DebugWarning;
-using unisim::service::interfaces::DebugError;
-using unisim::service::interfaces::EndDebugInfo;
-using unisim::service::interfaces::EndDebugWarning;
-using unisim::service::interfaces::EndDebugError;
-using unisim::service::interfaces::File;
-using unisim::service::interfaces::Function;
-using unisim::service::interfaces::Line;
-using unisim::service::interfaces::Endl;
-using unisim::service::interfaces::Hex;
-using unisim::service::interfaces::Dec;
-
-#endif // SOCLIB
 
 #ifdef SOCLIB
 
@@ -127,16 +109,10 @@ CP15(const char *name,
 		CacheInterface<address_t> *_memory_interface,
 		Object *parent) :
 	Object(name, parent),
-	CPInterface<CONFIG::DEBUG_ENABLE>(name, _cp_id, _cpu, parent),
-	Client<Memory<uint64_t> >(name, parent),
-	Service<Memory<uint64_t> >(name, parent),
+	CPInterface<CONFIG::DEBUG_ENABLE>(_cp_id, _cpu),
 	dtcm(_dtcm),
 	itcm(_itcm),
 	memory_interface(_memory_interface),
-	dtcm_memory_import("dtcm_memory_import", this),
-	itcm_memory_import("itcm_memory_import", this),
-	memory_import("memory_import", this),
-	memory_export("memory_export", this),
 	silicon_revision_number(0),
 	param_silicon_revision_number("silicon-revision-number", this, silicon_revision_number),
 	verbose_all(false),
@@ -152,8 +128,9 @@ CP15(const char *name,
 	verbose_debug_read(false),
 	param_verbose_debug_read("verbose-debug-read", this, verbose_debug_read),
 	verbose_debug_write(false),
-	param_verbose_debug_write("verbose-debug-write", this, verbose_debug_write) {
-	Object::SetupDependsOn(inherited::logger_import);
+	param_verbose_debug_write("verbose-debug-write", this, verbose_debug_write),
+	logger(*this)
+{
 }
 
 template<class CONFIG>
@@ -171,10 +148,9 @@ Setup() {
 	}
 	// check parameters
 	if(silicon_revision_number > (uint32_t)0x0fff) {
-		if(inherited::logger_import)
-			(*inherited::logger_import) << DebugError << LOCATION
-				<< "Revision number should be smaller or equal than 0x0fff"
-				<< Endl << EndDebugError;
+		logger << DebugError << LOCATION
+			<< "Revision number should be smaller or equal than 0x0fff"
+			<< EndDebugError;
 		return false;
 	}
 	
@@ -346,16 +322,15 @@ ReadRegister(uint8_t opcode1,
 			
 #else // SOCLIB
 		
-		if(inherited::logger_import)
-			(*inherited::logger_import) << DebugWarning << LOCATION
-				<< "Trying to read an inexistent register in :" << Endl
-				<< Hex
-				<< " - opcode1 = 0x" << opcode1
-				<< " - opcode2 = 0x" << opcode2
-				<< Dec
-				<< " - crn = " << crn
-				<< " - crm = " << crm
-				<< Endl << EndDebugWarning;
+		logger << DebugWarning << LOCATION
+			<< "Trying to read an inexistent register in :" << endl
+			<< hex
+			<< " - opcode1 = 0x" << opcode1
+			<< " - opcode2 = 0x" << opcode2
+			<< dec
+			<< " - crn = " << crn
+			<< " - crm = " << crm
+			<< EndDebugWarning;
 		
 #endif // SOCLIB
 		
@@ -371,9 +346,9 @@ ReadRegister(uint8_t opcode1,
 			
 #else // SOCLIB
 			
-			(*inherited::logger_import) << DebugInfo << LOCATION
+			logger << DebugInfo << LOCATION
 				<< "Reading '" << name << "' register (value = 0x"
-				<< Hex << reg << Dec << ")" << Endl
+				<< hex << reg << dec << ")" << endl
 				<< EndDebugInfo;
 			
 #endif // SOCLIB
@@ -417,15 +392,14 @@ Operation(uint8_t opcode1,
 	
 #else // SOCLIB
 		
-	if(inherited::logger_import)
-		(*inherited::logger_import) << DebugError << LOCATION
-			<< "Operations not supported on this coprocessor: "
-			<< " - opcode1 = 0x" << Hex << opcode1 << Endl
-			<< " - opcode2 = 0x" << opcode2 << Dec << Endl
-			<< " - crd = " << crd << Endl
-			<< " - crn = " << crn << Endl
-			<< " - crm = " << crm << Endl
-			<< EndDebugError;
+	logger << DebugError << LOCATION
+		<< "Operations not supported on this coprocessor: "
+		<< " - opcode1 = 0x" << hex << opcode1 << endl
+		<< " - opcode2 = 0x" << opcode2 << dec << endl
+		<< " - crd = " << crd << endl
+		<< " - crn = " << crn << endl
+		<< " - crm = " << crm 
+		<< EndDebugError;
 	
 #endif // SOCLIB
 	
@@ -448,12 +422,11 @@ Load(uint8_t crd,
 
 #else // SOCLIB
 	
-	if(inherited::logger_import)
-		(*inherited::logger_import) << DebugError << LOCATION
-			<< "Loads not supported on this coprocessor: "
-			<< " - crd = " << crd << Endl
-			<< " - address = 0x" << Hex << address << Dec << Endl
-			<< EndDebugError;
+	logger << DebugError << LOCATION
+		<< "Loads not supported on this coprocessor: "
+		<< " - crd = " << crd << endl
+		<< " - address = 0x" << hex << address << dec 
+		<< EndDebugError;
 	
 #endif // SOCLIB
 	
@@ -476,12 +449,11 @@ Store(uint8_t crd,
 	
 #else // SOCLIB
 	
-	if(inherited::logger_import)
-		(*inherited::logger_import) << DebugError << LOCATION
-			<< "Stores not supported on this coprocessor: "
-			<< " - crd = " << crd << Endl
-			<< " - address = 0x" << Hex << address << Dec << Endl
-			<< EndDebugError;
+	logger << DebugError << LOCATION
+		<< "Stores not supported on this coprocessor: "
+		<< " - crd = " << crd << endl
+		<< " - address = 0x" << hex << address << dec 
+		<< EndDebugError;
 	
 #endif // SOCLIB
 	
@@ -529,12 +501,11 @@ PrInvalidateBlock(uint32_t set, uint32_t way) {
 	
 #else // SOCLIB
 	
-	if(inherited::logger_import)
-		(*inherited::logger_import) << DebugError << LOCATION
-			<< "Method (PrInvalidateBlock) not supported on this coprocessor: "
-			<< " - set = " << set << Endl
-			<< " - way = " << way << Endl
-			<< EndDebugError;
+	logger << DebugError << LOCATION
+		<< "Method (PrInvalidateBlock) not supported on this coprocessor: "
+		<< " - set = " << set << endl
+		<< " - way = " << way 
+		<< EndDebugError;
 
 #endif // SOCLIB
 	
@@ -556,12 +527,11 @@ PrFlushBlock(uint32_t set, uint32_t way) {
 
 #else // SOCLIB
 	
-	if(inherited::logger_import)
-		(*inherited::logger_import) << DebugError << LOCATION
-			<< "Method (PrFlushBlock) not supported on this coprocessor: "
-			<< " - set = " << set << Endl
-			<< " - way = " << way << Endl
-			<< EndDebugError;
+	logger << DebugError << LOCATION
+		<< "Method (PrFlushBlock) not supported on this coprocessor: "
+		<< " - set = " << set << endl
+		<< " - way = " << way 
+		<< EndDebugError;
 	
 #endif // SOCLIB
 	
@@ -583,12 +553,11 @@ PrCleanBlock(uint32_t set, uint32_t way){
 	
 #else // SOCLIB
 
-	if(inherited::logger_import)
-		(*inherited::logger_import) << DebugError << LOCATION
-			<< "Method (PrCleanBlock) not supported on this coprocessor: "
-			<< " - set = " << set << Endl
-			<< " - way = " << way << Endl
-			<< EndDebugError;
+	logger << DebugError << LOCATION
+		<< "Method (PrCleanBlock) not supported on this coprocessor: "
+		<< " - set = " << set << endl
+		<< " - way = " << way 
+		<< EndDebugError;
 	
 #endif // SOCLIB
 	
@@ -608,10 +577,9 @@ PrReset(){
 
 #else // SOCLIB
 	
-	if(inherited::logger_import)
-		(*inherited::logger_import) << DebugError << LOCATION
-			<< "Method (PrReset) not supported on this coprocessor" << Endl
-			<< EndDebugError;
+	logger << DebugError << LOCATION
+		<< "Method (PrReset) not supported on this coprocessor" 
+		<< EndDebugError;
 	
 #endif // SOCLIB
 	
@@ -631,11 +599,10 @@ PrInvalidate() {
 	
 #else // SOCLIB
 	
-	if(inherited::logger_import)
-		(*inherited::logger_import) << DebugError << LOCATION
-			<< "Method (PrInvalidate) not supported on this coprocessor" << Endl
-			<< EndDebugError;
-	
+	logger << DebugError << LOCATION
+		<< "Method (PrInvalidate) not supported on this coprocessor" 
+		<< EndDebugError;
+
 #endif // SOCLIB
 	
 	inherited::cpu->CoprocessorStop(inherited::cp_id, -1);
@@ -655,11 +622,10 @@ PrInvalidateSet(uint32_t set){
 	
 #else // SOCLIB
 	
-	if(inherited::logger_import)
-		(*inherited::logger_import) << DebugError << LOCATION
-			<< "Method (PrInvalidateSet) not supported on this coprocessor: "
-			<< Endl << " - set = " << set << Endl
-			<< EndDebugError;
+	logger << DebugError << LOCATION
+		<< "Method (PrInvalidateSet) not supported on this coprocessor: "
+		<< endl << " - set = " << set 
+		<< EndDebugError;
 	
 #endif // SOCLIB
 	
@@ -680,11 +646,10 @@ PrInvalidateBlock(address_t addr) {
 	
 #else // SOCLIB
 	
-	if(inherited::logger_import)
-		(*inherited::logger_import) << DebugError << LOCATION
-			<< "Method (PrInvalidateBlock) not supported on this coprocessor: "
-			<< Endl << " - addr = 0x" << Hex << addr << Dec << Endl
-			<< EndDebugError;
+	logger << DebugError << LOCATION
+		<< "Method (PrInvalidateBlock) not supported on this coprocessor: "
+		<< endl << " - addr = 0x" << hex << addr << dec 
+		<< EndDebugError;
 	
 #endif
 	
@@ -705,11 +670,10 @@ PrFlushBlock(address_t addr) {
 	
 #else // SOCLIB
 	
-	if(inherited::logger_import)
-		(*inherited::logger_import) << DebugError << LOCATION
-			<< "Method (PrFlushBlock) not supported on this coprocessor: "
-			<< Endl << " - addr = 0x" << Hex << addr << Dec << Endl
-			<< EndDebugError;
+	logger << DebugError << LOCATION
+		<< "Method (PrFlushBlock) not supported on this coprocessor: "
+		<< endl << " - addr = 0x" << hex << addr << dec 
+		<< EndDebugError;
 	
 #endif // SOCLIB
 	
@@ -731,11 +695,10 @@ PrCleanBlock(address_t addr) {
 	
 #else // SOCLIB
 	
-	if(inherited::logger_import)
-		(*inherited::logger_import) << DebugError << LOCATION
-			<< "Method (PrFlushBlock) not supported on this coprocessor: "
-			<< Endl << " - addr = 0x" << Hex << addr << Dec << Endl
-			<< EndDebugError;
+	logger << DebugError << LOCATION
+		<< "Method (PrFlushBlock) not supported on this coprocessor: "
+		<< endl << " - addr = 0x" << hex << addr << dec 
+		<< EndDebugError;
 	
 #endif // SOCLIB
 	
@@ -756,11 +719,10 @@ PrZeroBlock(address_t addr) {
 	
 #else // SOCLIB
 	
-	if(inherited::logger_import)
-		(*inherited::logger_import) << DebugError << LOCATION
-			<< "Method (PrZeroBlock) not supported on this coprocessor: "
-			<< Endl << " - addr = 0x" << Hex << addr << Dec << Endl
-			<< EndDebugError;
+	logger << DebugError << LOCATION
+		<< "Method (PrZeroBlock) not supported on this coprocessor: "
+		<< endl << " - addr = 0x" << hex << addr << dec 
+		<< EndDebugError;
 	
 #endif // SOCLIB
 	
@@ -792,14 +754,14 @@ PrWrite(address_t addr, const uint8_t *buffer, uint32_t size) {
 
 #else // SOCLIB
 		
-		(*inherited::logger_import) << DebugInfo << LOCATION
-			<< "Write received:" << Endl
-			<< " - address = 0x" << Hex << addr << Dec << Endl
-			<< " - size = " << size << Endl
-			<< " - data =" << Hex;
+		logger << DebugInfo << LOCATION
+			<< "Write received:" << endl
+			<< " - address = 0x" << hex << addr << dec << endl
+			<< " - size = " << size << endl
+			<< " - data =" << hex;
 		for(unsigned int i = 0; i < size; i++)
-			(*inherited::logger_import) << " " << (unsigned int)buffer[i];
-		(*inherited::logger_import) << Dec << Endl;
+			logger << " " << (unsigned int)buffer[i];
+		logger << dec << endl;
 		
 #endif // SOCLIB
 		
@@ -817,8 +779,8 @@ PrWrite(address_t addr, const uint8_t *buffer, uint32_t size) {
 				
 #else // SOCLIB
 				
-				(*inherited::logger_import)
-						<< " - sending to ITCM" << Endl
+					logger
+						<< " - sending to ITCM" 
 						<< EndDebugInfo;
 				
 #endif // SOCLIB
@@ -833,8 +795,8 @@ PrWrite(address_t addr, const uint8_t *buffer, uint32_t size) {
 					
 #else // SOCLIB
 						
-					(*inherited::logger_import)
-						<< " - sending to main memory (ITCM disabled)" << Endl
+					logger
+						<< " - sending to main memory (ITCM disabled)" 
 						<< EndDebugInfo;
 				
 #endif // SOCLIB
@@ -852,8 +814,8 @@ PrWrite(address_t addr, const uint8_t *buffer, uint32_t size) {
 				
 #else // SOCLIB
 				
-					(*inherited::logger_import)
-						<< " - sending to DTCM" << Endl
+					logger
+						<< " - sending to DTCM" 
 						<< EndDebugInfo;
 					
 #endif
@@ -867,8 +829,8 @@ PrWrite(address_t addr, const uint8_t *buffer, uint32_t size) {
 				
 #else // SOCLIB
 				
-					(*inherited::logger_import)
-						<< " - sending to main memory (DTCM disabled)" << Endl
+					logger
+						<< " - sending to main memory (DTCM disabled)" << endl
 						<< EndDebugInfo;
 					
 #endif // SOCLIB
@@ -885,8 +847,8 @@ PrWrite(address_t addr, const uint8_t *buffer, uint32_t size) {
 		
 #else // SOCLIB
 		
-			(*inherited::logger_import)
-				<< " - sending to main memory" << Endl
+			logger
+				<< " - sending to main memory" << endl
 				<< EndDebugInfo;
 
 #endif // SOCLIB
@@ -916,10 +878,10 @@ PrRead(address_t addr, uint8_t *buffer, uint32_t size) {
 
 #else // SOCLIB
 		
-		(*inherited::logger_import) << DebugInfo << LOCATION
-			<< "Read received:" << Endl
-			<< " - address = 0x" << Hex << addr << Dec << Endl
-			<< " - size = " << size << Endl;
+		logger << DebugInfo << LOCATION
+			<< "Read received:" << endl
+			<< " - address = 0x" << hex << addr << dec << endl
+			<< " - size = " << size << endl;
 		
 #endif
 	}
@@ -936,8 +898,8 @@ PrRead(address_t addr, uint8_t *buffer, uint32_t size) {
 				
 #else // SOCLIB
 				
-					(*inherited::logger_import)
-						<< " - sending to ITCM" << Endl
+					logger
+						<< " - sending to ITCM" 
 						<< EndDebugInfo;
 					
 #endif // SOCLIB
@@ -952,8 +914,8 @@ PrRead(address_t addr, uint8_t *buffer, uint32_t size) {
 				
 #else // SOCLIB
 				
-					(*inherited::logger_import)
-						<< " - sending to main memory (ITCM disabled)" << Endl
+					logger
+						<< " - sending to main memory (ITCM disabled)" 
 						<< EndDebugInfo;
 					
 #endif // SOCLIB
@@ -970,8 +932,8 @@ PrRead(address_t addr, uint8_t *buffer, uint32_t size) {
 				
 #else // SOCLIB
 				
-					(*inherited::logger_import)
-						<< " - sending to DTCM" << Endl
+					logger
+						<< " - sending to DTCM" 
 						<< EndDebugInfo;
 					
 #endif // SOCLIB
@@ -986,8 +948,8 @@ PrRead(address_t addr, uint8_t *buffer, uint32_t size) {
 				
 #else // SOCLIB
 				
-					(*inherited::logger_import)
-						<< " - sending to main memory (DTCM disabled)" << Endl
+					logger
+						<< " - sending to main memory (DTCM disabled)" 
 						<< EndDebugInfo;
 					
 #endif // SOCLIB
@@ -1004,8 +966,8 @@ PrRead(address_t addr, uint8_t *buffer, uint32_t size) {
 		
 #else // SOCLIB
 		
-			(*inherited::logger_import)
-				<< " - sending to main memory" << Endl
+			logger
+				<< " - sending to main memory" 
 				<< EndDebugInfo;
 			
 #endif // SOCLIB
@@ -1029,15 +991,15 @@ PrRead(address_t addr, uint8_t *buffer, uint32_t size) {
 		
 #else // SOCLIB
 		
-		(*inherited::logger_import) << DebugInfo << LOCATION
-			<< "Read done:" << Endl
-			<< " - address = 0x" << Hex << addr << Dec << Endl
-			<< " - size = " << size << Endl
-			<< " - data =" << Hex;
+		logger << DebugInfo << LOCATION
+			<< "Read done:" << endl
+			<< " - address = 0x" << hex << addr << dec << endl
+			<< " - size = " << size << endl
+			<< " - data =" << hex;
 		for(unsigned int i = 0; i < size; i++) {
-			(*inherited::logger_import) << " " << (unsigned int)buffer[i];
+			logger << " " << (unsigned int)buffer[i];
 		}
-		(*inherited::logger_import) << Endl
+		logger
 			<< EndDebugInfo;
 		
 #endif // SOCLIB
@@ -1067,108 +1029,56 @@ ReadMemory(uint64_t addr, void *buffer, uint32_t size) {
 	 * If it is not a TCM access then send it to the memory interface
 	 */
 	if(VerboseDebugRead()) {
-		(*inherited::logger_import) << DebugInfo << LOCATION
-			<< "Read received:" << Endl
-			<< " - address = 0x" << Hex << addr << Dec << Endl
-			<< " - size = " << size << Endl;
+		logger << DebugInfo << LOCATION
+			<< "Read received:" << endl
+			<< " - address = 0x" << hex << addr << dec << endl
+			<< " - size = " << size << endl;
 	}
 	if(IsTCMAddress(addr)) {
 		/* it is a TCM address */
 		if(IsITCMAddress(addr)) {
 			/* it is a ITCM address, check that the ITCM is enabled */
 			if(ITCMEnabled()) {
-				if(itcm_memory_import) {
-					if(VerboseDebugRead())
-						(*inherited::logger_import)
-							<< " - sending to ITCM" << Endl
-							<< EndDebugInfo;
-					success = itcm_memory_import->ReadMemory(addr, buffer, size);
-				} else {
-					if(VerboseDebugRead())
-						(*inherited::logger_import)
-							<< " - could not send it because itcm_memory_import not connected"
-							<< Endl << EndDebugInfo;
-					return false;
-				}
+				success = itcm->ReadMemory(addr, buffer, size);
 			} else {
-				if(memory_import) {
-					if(VerboseDebugRead())
-						(*inherited::logger_import)
-							<< " - sending to main memory (ITCM disabled)" << Endl
-							<< EndDebugInfo;
-					success = memory_import->ReadMemory(addr, buffer, size);
-				} else {
-					if(VerboseDebugRead())
-						(*inherited::logger_import)
-							<< " - could not send it because memory_import not connected"
-							<< Endl << EndDebugInfo;
-					return false;
-				}
+				if(VerboseDebugRead())
+					logger
+						<< " - could not send it because memory_import not connected"
+						<< EndDebugInfo;
+				return false;
 			}
 		} else {
 			/* it is a DTCM address, check that the DTCM is enabled */
 			if(DTCMEnabled()) {
-				if(dtcm_memory_import) {
-					if(VerboseDebugRead())
-						(*inherited::logger_import)
-							<< " - sending to DTCM" << Endl
-							<< EndDebugInfo;
-					success = dtcm_memory_import->ReadMemory(addr, buffer, size);
-				} else {
-					if(VerboseDebugRead())
-						(*inherited::logger_import)
-							<< " - could not send it because dtcm_memory_import not connected"
-							<< Endl << EndDebugInfo;
-					return false;
-				}
+				success = dtcm->ReadMemory(addr, buffer, size);
 			} else {
-				if(memory_import) {
-					if(VerboseDebugRead())
-						(*inherited::logger_import)
-							<< " - sending to main memory (DTCM disabled)" << Endl
-							<< EndDebugInfo;
-					success = memory_import->ReadMemory(addr, buffer, size);
-				} else {
-					if(VerboseDebugRead())
-						(*inherited::logger_import)
-							<< " - could not send it because memory_import not connected"
-							<< Endl << EndDebugInfo;
-					return false;
-				}
+				if(VerboseDebugRead())
+					logger
+						<< " - could not send it because memory_import not connected"
+						<< EndDebugInfo;
+				return false;
 			}
 		}
 	} else {
-		if(memory_import) {
-			if(VerboseDebugRead())
-				(*inherited::logger_import)
-					<< " - sending to main memory" << Endl
-					<< EndDebugInfo;
-			success = memory_import->ReadMemory(addr, buffer, size);
-		} else {
-			if(VerboseDebugRead())
-				(*inherited::logger_import)
-					<< " - could not send it because memory_import not connected"
-					<< Endl << EndDebugInfo;
-			return false;
-		}
+		success = inherited::cpu->CoprocessorReadMemory(addr, buffer, size);
 	}
 	if(VerboseDebugRead()) {
 		if(success) {
-			(*inherited::logger_import) << DebugInfo << LOCATION
-				<< "Read done:" << Endl
-				<< " - address = 0x" << Hex << addr << Dec << Endl
-				<< " - size = " << size << Endl
-				<< " - data =" << Hex;
+			logger << DebugInfo << LOCATION
+				<< "Read done:" << endl
+				<< " - address = 0x" << hex << addr << dec << endl
+				<< " - size = " << size << endl
+				<< " - data =" << hex;
 			for(unsigned int i = 0; i < size; i++) {
-				(*inherited::logger_import) << " " << (unsigned int)((uint8_t *)buffer)[i];
+				logger << " " << (unsigned int)((uint8_t *)buffer)[i];
 			}
-			(*inherited::logger_import) << Dec << Endl
+			logger << dec
 				<< EndDebugInfo;
 		} else {
-			(*inherited::logger_import) << DebugInfo << LOCATION
-				<< "Read failed:" << Endl
-				<< " - address = 0x" << Hex << addr << Dec << Endl
-				<< " - size = " << size << Endl
+			logger << DebugInfo << LOCATION
+				<< "Read failed:" << endl
+				<< " - address = 0x" << hex << addr << dec << endl
+				<< " - size = " << size
 				<< EndDebugInfo;
 		}
 	}
@@ -1187,106 +1097,54 @@ WriteMemory(uint64_t addr, const void *buffer, uint32_t size) {
 	 * If it is not a TCM access then send it to the memory interface
 	 */
 	if(VerboseDebugWrite()) {
-		(*inherited::logger_import) << DebugInfo << LOCATION
-			<< "Write received:" << Endl
-			<< " - address = 0x" << Hex << addr << Dec << Endl
-			<< " - size = " << size << Endl
-			<< " - data =" << Hex;
+		logger << DebugInfo << LOCATION
+			<< "Write received:" << endl
+			<< " - address = 0x" << hex << addr << dec << endl
+			<< " - size = " << size << endl
+			<< " - data =" << hex;
 			for(unsigned int i = 0; i < size; i++) {
-				(*inherited::logger_import) << " " << (unsigned int)((uint8_t *)buffer)[i];
+				logger << " " << (unsigned int)((uint8_t *)buffer)[i];
 			}
-			(*inherited::logger_import) << Dec << Endl;
+			logger << dec << endl;
 	}
 	if(IsTCMAddress(addr)) {
 		/* it is a TCM address */
 		if(IsITCMAddress(addr)) {
 			/* it is a ITCM address, check that the ITCM is enabled */
 			if(ITCMEnabled()) {
-				if(itcm_memory_import) {
-					if(VerboseDebugWrite())
-						(*inherited::logger_import)
-							<< " - sending to ITCM" << Endl
-							<< EndDebugInfo;
-					success = itcm_memory_import->WriteMemory(addr, buffer, size);
-				} else {
-					if(VerboseDebugWrite())
-						(*inherited::logger_import)
-							<< " - could not send it because itcm_memory_import not connected"
-							<< Endl << EndDebugInfo;
-					return false;
-				}
+				success = itcm->WriteMemory(addr, buffer, size);
 			} else {
-				if(memory_import) {
-					if(VerboseDebugWrite())
-						(*inherited::logger_import)
-							<< " - sending to main memory (ITCM disabled)" << Endl
-							<< EndDebugInfo;
-					success = memory_import->WriteMemory(addr, buffer, size);
-				} else {
-					if(VerboseDebugWrite())
-						(*inherited::logger_import)
-							<< " - could not send it because memory_import not connected"
-							<< Endl << EndDebugInfo;
-					return false;
-				}
+				if(VerboseDebugWrite())
+					logger
+						<< " - could not send it because memory_import not connected"
+						<< EndDebugInfo;
+				return false;
 			}
 		} else {
 			/* it is a DTCM address, check that the DTCM is enabled */
 			if(DTCMEnabled()) {
-				if(dtcm_memory_import) {
-					if(VerboseDebugWrite())
-						(*inherited::logger_import)
-							<< " - sending to DTCM" << Endl
-							<< EndDebugInfo;
-					success = dtcm_memory_import->WriteMemory(addr, buffer, size);
-				} else {
-					if(VerboseDebugWrite())
-						(*inherited::logger_import)
-							<< " - could not send it because dtcm_memory_import not connected"
-							<< Endl << EndDebugInfo;
-					return false;
-				}
+				success = dtcm->WriteMemory(addr, buffer, size);
 			} else {
-				if(memory_import) {
-					if(VerboseDebugWrite())
-						(*inherited::logger_import)
-							<< " - sending to main memory (DTCM disabled)" << Endl
-							<< EndDebugInfo;
-					success = memory_import->WriteMemory(addr, buffer, size);
-				} else {
-					if(VerboseDebugWrite())
-						(*inherited::logger_import)
-							<< " - could not send it because memory_import not connected"
-							<< Endl << EndDebugInfo;
-					return false;
-				}
+				if(VerboseDebugWrite())
+					logger
+						<< " - could not send it because memory_import not connected"
+						<< EndDebugInfo;
+				return false;
 			}
 		}
 	} else {
-		if(memory_import) {
-			if(VerboseDebugWrite())
-				(*inherited::logger_import)
-					<< " - sending to main memory" << Endl
-					<< EndDebugInfo;
-			success = memory_import->WriteMemory(addr, buffer, size);
-		} else {
-			if(VerboseDebugWrite())
-				(*inherited::logger_import)
-					<< " - could not send it because memory_import not connected"
-					<< Endl << EndDebugInfo;
-			return false;
-		}
+		success = inherited::cpu->CoprocessorWriteMemory(addr, buffer, size);
 	}
 	if(VerboseDebugWrite() && !success) {
-		(*inherited::logger_import) << DebugInfo << LOCATION
-			<< "Write failed:" << Endl
-			<< " - address = 0x" << Hex << addr << Dec << Endl
-			<< " - size = " << size << Endl
-			<< " - data =" << Hex;
+		logger << DebugInfo << LOCATION
+			<< "Write failed:" << endl
+			<< " - address = 0x" << hex << addr << dec << endl
+			<< " - size = " << size << endl
+			<< " - data =" << hex;
 		for(unsigned int i = 0; i < size; i++) {
-			(*inherited::logger_import) << " " << (unsigned int)((uint8_t *)buffer)[i];
+			logger << " " << (unsigned int)((uint8_t *)buffer)[i];
 		}
-		(*inherited::logger_import) << Endl
+		logger 
 			<< EndDebugInfo;
 	}
 	return success;
@@ -1430,14 +1288,12 @@ WriteControlReg(reg_t value) {
 			
 #else // SOCLIB
 			
-		if(inherited::logger_import) {
-			(*inherited::logger_import) << DebugError << LOCATION
-				<< "Trying to set to one reserved bits in the 'Control' register"
-				<< " that should be zero, resetting them:" << Endl
-				<< " - original value = 0x" << Hex << orig_value << Dec << Endl
-				<< " - modified value = 0x" << Hex << final_value << Dec << Endl
-				<< EndDebugError;
-		}
+		logger << DebugError << LOCATION
+			<< "Trying to set to one reserved bits in the 'Control' register"
+			<< " that should be zero, resetting them:" << endl
+			<< " - original value = 0x" << hex << orig_value << dec << endl
+			<< " - modified value = 0x" << hex << final_value << dec 
+			<< EndDebugError;
 
 #endif // SOCLIB
 		
@@ -1457,14 +1313,12 @@ WriteControlReg(reg_t value) {
 		
 #else // SOCLIB
 		
-		if(inherited::logger_import) {
-			(*inherited::logger_import) << DebugError << LOCATION
-				<< "Trying to set to zero reserved bits in the 'Control' register"
-				<< " that should be one, resetting them:" << Endl
-				<< " - original value = 0x" << Hex << orig_value << Dec << Endl
-				<< " - modified value = 0x" << Hex << final_value << Dec << Endl
-				<< EndDebugError;
-		}
+		logger << DebugError << LOCATION
+			<< "Trying to set to zero reserved bits in the 'Control' register"
+			<< " that should be one, resetting them:" << endl
+			<< " - original value = 0x" << hex << orig_value << dec << endl
+			<< " - modified value = 0x" << hex << final_value << dec 
+			<< EndDebugError;
 		
 #endif // SOCLIB
 		
@@ -1502,24 +1356,24 @@ WriteControlReg(reg_t value) {
 
 #else // SOCLIB
 			
-		(*inherited::logger_import) << DebugInfo << LOCATION
-			<< "Writing 0x" << Hex << final_value << Dec << " into the"
-			<< " 'Control' register:" << Endl
+		logger << DebugInfo << LOCATION
+			<< "Writing 0x" << hex << final_value << dec << " into the"
+			<< " 'Control' register:" << endl
 			<< " - configure disable loading bit = "
-			<< ((final_value >> 15) & 1) << Endl
+			<< ((final_value >> 15) & 1) << endl
 			<< " - alternate vector select = "
-			<< ((final_value >> 13) & 1) << Endl
+			<< ((final_value >> 13) & 1) << endl
 			<< " - instruction TCM enable = "
-			<< ((final_value >> 12) & 1) << Endl
+			<< ((final_value >> 12) & 1) << endl
 			<< " - endianness = "
 			<< ((final_value >> 7) & 1) 
-			<< "(" << endian << ")" << Endl
+			<< "(" << endian << ")" << endl
 			<< " - BIU write buffer enable = "
-			<< ((final_value >> 3) & 1) << Endl
+			<< ((final_value >> 3) & 1) << endl
 			<< " - data TCM enable = "
-			<< ((final_value >> 2) & 1) << Endl
+			<< ((final_value >> 2) & 1) << endl
 			<< " - alignment fault check enable = "
-			<< ((final_value >> 1) & 1) << Endl
+			<< ((final_value >> 1) & 1) 
 			<< EndDebugInfo;
 		
 #endif // SOCLIB
@@ -1643,7 +1497,7 @@ VerboseAll() {
 	
 #else // SOCLIB
 	
-	return CONFIG::DEBUG_ENABLE && verbose_all && inherited::logger_import;
+	return CONFIG::DEBUG_ENABLE && verbose_all;
 	
 #endif // SOCLIB
 	
@@ -1661,7 +1515,7 @@ VerboseReadReg() {
 	
 #else // SOCLIB
 	
-	return CONFIG::DEBUG_ENABLE && verbose_read_reg && inherited::logger_import;
+	return CONFIG::DEBUG_ENABLE && verbose_read_reg;
 	
 #endif // SOCLIB
 	
@@ -1679,7 +1533,7 @@ VerboseWriteReg() {
 	
 #else // SOCLIB
 	
-	return CONFIG::DEBUG_ENABLE && verbose_write_reg && inherited::logger_import;
+	return CONFIG::DEBUG_ENABLE && verbose_write_reg;
 	
 #endif // SOCLIB
 	
@@ -1697,7 +1551,7 @@ VerbosePrRead() {
 	
 #else // SOCLIB
 	
-	return CONFIG::DEBUG_ENABLE && verbose_pr_read && inherited::logger_import;
+	return CONFIG::DEBUG_ENABLE && verbose_pr_read;
 	
 #endif // SOCLIB
 	
@@ -1715,7 +1569,7 @@ VerbosePrWrite() {
 	
 #else // SOCLIB
 	
-	return CONFIG::DEBUG_ENABLE && verbose_pr_write && inherited::logger_import;
+	return CONFIG::DEBUG_ENABLE && verbose_pr_write;
 	
 #endif // SOCLIB
 	
@@ -1733,7 +1587,7 @@ VerboseDebugRead() {
 	
 #else // SOCLIB
 	
-	return CONFIG::DEBUG_ENABLE && verbose_debug_read && inherited::logger_import;
+	return CONFIG::DEBUG_ENABLE && verbose_debug_read;
 	
 #endif // SOCLIB
 	
@@ -1751,7 +1605,7 @@ VerboseDebugWrite() {
 	
 #else // SOCLIB
 	
-	return CONFIG::DEBUG_ENABLE && verbose_debug_write && inherited::logger_import;
+	return CONFIG::DEBUG_ENABLE && verbose_debug_write;
 	
 #endif // SOCLIB
 }

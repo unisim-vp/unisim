@@ -166,6 +166,11 @@ public:
 	// end of TODO
 
 private:
+	/* non intrusive memory methods that the inherited cpu uses and that should
+	 * be redefined to access the tlm2 debug interface */
+	virtual bool ExternalReadMemory(uint64_t addr, void *buffer, uint32_t size);
+	virtual bool ExternalWriteMemory(uint64_t addr, const void *buffer, uint32_t size);
+	
 	/** Event used to signalize the end of a read transaction.
 	 * Method PrRead waits for this event once the read transaction has been sent, and the 
 	 *   nb_transport_bw notifies on it when the read transaction is finished. */

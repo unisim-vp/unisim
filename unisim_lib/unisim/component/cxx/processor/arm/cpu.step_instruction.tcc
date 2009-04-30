@@ -62,7 +62,11 @@ using unisim::util::debug::Symbol;
 using unisim::util::endian::E_BIG_ENDIAN;
 using unisim::util::endian::E_LITTLE_ENDIAN;
 using unisim::util::endian::BigEndian2Host;
+using unisim::util::endian::LittleEndian2Host;
 using unisim::util::endian::Host2BigEndian;
+using unisim::util::endian::Host2LittleEndian;
+using unisim::util::endian::Target2Host;
+using unisim::util::endian::Host2Target;
 using unisim::util::arithmetic::RotateRight;
 
 using std::cout;
@@ -180,9 +184,8 @@ StepInstruction() {
 						(typename CONFIG::address_t)0x1F) >> 1];
 						*/
 
-			/* arm instructions are big endian, so convert the instruction to 
-			 *   host format */
-			insn = BigEndian2Host(insn);
+			/* convert the instruction to host endianness */
+			insn = Target2Host(GetEndianness(), insn);
 			
 			/* Decode current PC */
 			if(CONFIG::DEBUG_ENABLE && verbose_step)
@@ -230,9 +233,8 @@ StepInstruction() {
 				(typename CONFIG::address_t)0x1F) >> 2];
 				*/
 
-			/* arm instructions are big endian, so convert the instruction to 
-			 *   host format */
-			insn = BigEndian2Host(insn);
+			/* convert the instruction to host endianness */
+			insn = Target2Host(GetEndianness(), insn);
 			
 			/* Decode current PC */
 			if(CONFIG::DEBUG_ENABLE && verbose_step)

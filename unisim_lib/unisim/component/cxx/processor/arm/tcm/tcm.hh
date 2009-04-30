@@ -40,8 +40,7 @@
 #ifndef SOCLIB
 
 #include "unisim/kernel/service/service.hh"
-#include "unisim/service/interfaces/logger.hh"
-#include "unisim/service/interfaces/memory.hh"
+#include "unisim/kernel/logger/logger.hh"
 
 #endif // SOCLIB
 
@@ -55,13 +54,7 @@ namespace tcm {
 #ifndef SOCLIB
 
 using unisim::kernel::service::Object;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::Client;
 using unisim::kernel::service::Parameter;
-using unisim::kernel::service::ServiceImport;
-using unisim::kernel::service::ServiceExport;
-using unisim::service::interfaces::Memory;
-using unisim::service::interfaces::Logger;
 
 
 #endif // SOCLIB
@@ -75,8 +68,7 @@ class TCM {
 	
 template<class CONFIG, bool DATA_TCM>
 class TCM :
-	public Service<Memory<typename CONFIG::address_t> >,
-	public Client<Logger> {
+	public Object {
 		
 #endif // SOCLIB
 		
@@ -84,13 +76,6 @@ private:
 	typedef typename CONFIG::address_t address_t;
 	
 public:
-	
-#ifndef SOCLIB
-	
-	ServiceExport<Memory<uint64_t> > memory_export;
-	ServiceImport<Logger> logger_import;
-	
-#endif // SOCLIB
 	
 #ifdef SOCLIB
 	
@@ -117,8 +102,7 @@ public:
 	
 #ifndef SOCLIB
 	
-	// Memory Interface (debugg dervice)
-	virtual void Reset();
+	// Non intrusive memory accesses
 	virtual bool ReadMemory(address_t addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(address_t addr, const void *buffer, uint32_t size);
 	
@@ -145,7 +129,8 @@ private:
 	Parameter<bool> param_verbose_pr_write;
 	Parameter<bool> param_verbose_debug_read;
 	Parameter<bool> param_verbose_debug_write;
-	
+
+	unisim::kernel::logger::Logger logger;
 #endif // SOCLIB
 	
 	// verbose methods

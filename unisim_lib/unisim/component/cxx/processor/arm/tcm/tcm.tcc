@@ -35,12 +35,7 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_TCM_TCM_TCC__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_TCM_TCM_TCC__
 
-#ifdef SOCLIB
-
 #include <iostream>
-
-#endif // SOCLIB
-
 #include <stdlib.h>
 
 namespace unisim {
@@ -50,29 +45,25 @@ namespace processor {
 namespace arm {
 namespace tcm {
 
-#ifdef SOCLIB
-
-using std::cerr;
 using std::endl;
 using std::hex;
 using std::dec;
 
+#ifdef SOCLIB
+
+using std::cerr;
+
 #else // SOCLIB
 
-using unisim::service::interfaces::DebugInfo;
-using unisim::service::interfaces::DebugWarning;
-using unisim::service::interfaces::DebugError;
-using unisim::service::interfaces::EndDebugInfo;
-using unisim::service::interfaces::EndDebugWarning;
-using unisim::service::interfaces::EndDebugError;
-using unisim::service::interfaces::File;
-using unisim::service::interfaces::Function;
-using unisim::service::interfaces::Line;
-using unisim::service::interfaces::Endl;
-using unisim::service::interfaces::Hex;
-using unisim::service::interfaces::Dec;
+#define LOCATION __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__
 
-#define LOCATION File << __FILE__ << Function << __FUNCTION__ << Line << __LINE__
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugError;
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::EndDebugInfo;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::EndDebugWarning;
+using unisim::kernel::logger::EndDebug;
 
 #endif // SOCLIB
 
@@ -103,10 +94,7 @@ TCM<CONFIG, DATA_TCM> ::
 TCM(const char *name,
 		Object *parent) :
 	Object(name, parent),
-	Service<Memory<typename CONFIG::address_t> >(name, parent),
-	Client<Logger>(name, parent),
-	memory_export("memory_import", this),
-	logger_import("logger_import", this),
+	logger(*this),
 	param_verbose_all("verbose-all", this, verbose_all),
 	verbose_all(false),
 	param_verbose_pr_read("verbose-pr-read", this, verbose_pr_read),
@@ -119,7 +107,6 @@ TCM(const char *name,
 	verbose_debug_write(false) {
 	/* initialize the memory to 0 */
 	memset(data, 0, SIZE);
-	Object::SetupDependsOn(logger_import);
 }
 
 #endif // SOCLIB
@@ -170,14 +157,13 @@ PrWrite(address_t addr, const uint8_t *buffer, uint32_t size) {
 			
 #else // SOCLIB
 		
-		if(logger_import)
-			(*logger_import) << DebugError << LOCATION
-				<< "Out of bonds read:" << Endl
-				<< " - address = 0x" << Hex << addr << Dec << Endl
-				<< " - aligned_address = 0x" << Hex << aligned_address << Dec << Endl
-				<< " - size = " << size << Endl
-				<< " - mem_size = " << BYTE_SIZE << Endl
-				<< EndDebugError;
+		logger << DebugError << LOCATION
+			<< "Out of bonds read:" << endl
+			<< " - address = 0x" << hex << addr << dec << endl
+			<< " - aligned_address = 0x" << hex << aligned_address << dec << endl
+			<< " - size = " << size << endl
+			<< " - mem_size = " << BYTE_SIZE 
+			<< EndDebugError;
 		
 #endif
 		
@@ -201,15 +187,15 @@ PrWrite(address_t addr, const uint8_t *buffer, uint32_t size) {
 
 #else // SOCLIB
 		
-		(*logger_import) << DebugInfo << LOCATION
-			<< "Writing:" << Endl
-			<< " - address = 0x" << Hex << addr << Dec << Endl
-			<< " - aligned_address = 0x" << Hex << aligned_address << Dec << Endl
-			<< " - size = " << size << Endl
-			<< " - data =" << Hex;
+		logger << DebugInfo << LOCATION
+			<< "Writing:" << endl
+			<< " - address = 0x" << hex << addr << dec << endl
+			<< " - aligned_address = 0x" << hex << aligned_address << dec << endl
+			<< " - size = " << size << endl
+			<< " - data =" << hex;
 		for(unsigned int i = 0; i < size; i++)
-			(*logger_import) << " " << ((unsigned int)buffer[i]);
-		(*logger_import) << Dec << Endl << EndDebugInfo;
+			logger << " " << ((unsigned int)buffer[i]);
+		logger << dec << EndDebugInfo;
 		
 #endif // SOCLIB
 	}
@@ -240,14 +226,13 @@ PrRead(address_t addr, uint8_t *buffer, uint32_t size) {
 			
 #else // SOCLIB
 			
-		if(logger_import)
-			(*logger_import) << DebugError << LOCATION
-				<< "Out of bonds read:" << Endl
-				<< " - address = 0x" << Hex << addr << Dec << Endl
-				<< " - aligned_address = 0x" << Hex << aligned_address << Dec << Endl
-				<< " - size = " << size << Endl
-				<< " - mem_size = " << BYTE_SIZE << Endl
-				<< EndDebugError;
+		logger << DebugError << LOCATION
+			<< "Out of bonds read:" << endl
+			<< " - address = 0x" << hex << addr << dec << endl
+			<< " - aligned_address = 0x" << hex << aligned_address << dec << endl
+			<< " - size = " << size << endl
+			<< " - mem_size = " << BYTE_SIZE 
+			<< EndDebugError;
 
 #endif // SOCLIB
 		
@@ -272,15 +257,15 @@ PrRead(address_t addr, uint8_t *buffer, uint32_t size) {
 			
 #else // SOCLIB
 			
-		(*logger_import) << DebugInfo << LOCATION
-			<< "Reading:" << Endl
-			<< " - address = 0x" << Hex << addr << Dec << Endl
-			<< " - aligned_address = 0x" << Hex << aligned_address << Dec << Endl
-			<< " - size = " << size << Endl
-			<< " - read data =" << Hex;
+		logger << DebugInfo << LOCATION
+			<< "Reading:" << endl
+			<< " - address = 0x" << hex << addr << dec << endl
+			<< " - aligned_address = 0x" << hex << aligned_address << dec << endl
+			<< " - size = " << size << endl
+			<< " - read data =" << hex;
 		for(unsigned int i = 0; i < size; i++)
-			(*logger_import) << " " << ((unsigned int)buffer[i]);
-		(*logger_import) << Dec << Endl << EndDebugInfo;
+			logger << " " << ((unsigned int)buffer[i]);
+		logger << dec << EndDebugInfo;
 
 #endif // SOCLIB
 		
@@ -288,14 +273,6 @@ PrRead(address_t addr, uint8_t *buffer, uint32_t size) {
 }
 
 #ifndef SOCLIB
-
-// Memory Interface (debugg dervice)
-template<class CONFIG, bool DATA_TCM>
-void
-TCM<CONFIG, DATA_TCM> ::
-Reset() {
-	
-}
 
 template<class CONFIG, bool DATA_TCM>
 bool
@@ -313,15 +290,15 @@ ReadMemory(address_t addr, void *buffer, uint32_t size) {
 		memcpy(buffer, &data[aligned_address], size);
 
 	if(VerboseDebugRead()) {
-		(*logger_import) << DebugInfo << LOCATION
-			<< "Reading (debug):" << Endl
-			<< " - address = 0x" << Hex << addr << Dec << Endl
-			<< " - aligned_address = 0x" << Hex << aligned_address << Dec << Endl
-			<< " - size = " << size << Endl
-			<< " - data =" << Hex;
+		logger << DebugInfo << LOCATION
+			<< "Reading (debug):" << endl
+			<< " - address = 0x" << hex << addr << dec << endl
+			<< " - aligned_address = 0x" << hex << aligned_address << dec << endl
+			<< " - size = " << size << endl
+			<< " - data =" << hex;
 		for(unsigned int i = 0; i < size; i++)
-			(*logger_import) << " " << ((uint8_t *)buffer)[i];
-		(*logger_import) << Dec << Endl << EndDebugInfo;
+			logger << " " << ((uint8_t *)buffer)[i];
+		logger << dec << EndDebugInfo;
 	}
 	return true;
 }
@@ -336,15 +313,15 @@ WriteMemory(address_t addr, const void *buffer, uint32_t size) {
 	aligned_address = addr & (BYTE_SIZE - 1);
 
 	if(VerboseDebugWrite()) {
-		(*logger_import) << DebugInfo << LOCATION
-			<< "Writing (debug):" << Endl
-			<< " - address = 0x" << Hex << addr << Dec << Endl
-			<< " - aligned_address = 0x" << Hex << aligned_address << Dec << Endl
-			<< " - size = " << size << Endl
-			<< " - data =" << Hex;
+		logger << DebugInfo << LOCATION
+			<< "Writing (debug):" << endl
+			<< " - address = 0x" << hex << addr << dec << endl
+			<< " - aligned_address = 0x" << hex << aligned_address << dec << endl
+			<< " - size = " << size << endl
+			<< " - data =" << hex;
 		for(unsigned int i = 0; i < size; i++)
-			(*logger_import) << " " << ((uint8_t *)buffer)[i];
-		(*logger_import) << Dec << Endl << EndDebugInfo;
+			logger << " " << ((uint8_t *)buffer)[i];
+		logger << dec << EndDebugInfo;
 	}
 	
 	if(aligned_address + size > BYTE_SIZE) {
@@ -373,7 +350,7 @@ VerbosePrWrite() {
 	
 #else // SOCLIB
 	
-	return CONFIG::DEBUG_ENABLE && logger_import && verbose_pr_write;
+	return CONFIG::DEBUG_ENABLE && verbose_pr_write;
 
 #endif // SOCLIB
 	
@@ -393,7 +370,7 @@ VerbosePrRead() {
 	
 #else // SOCLIB
 	
-	return CONFIG::DEBUG_ENABLE && logger_import && verbose_pr_read;
+	return CONFIG::DEBUG_ENABLE && verbose_pr_read;
 	
 #endif // SOCLIB
 	
@@ -414,7 +391,7 @@ VerboseDebugWrite() {
 	
 #else // SOCLIB
 	
-	return CONFIG::DEBUG_ENABLE && logger_import && verbose_debug_write;
+	return CONFIG::DEBUG_ENABLE && verbose_debug_write;
 	
 #endif // SOCLIB
 	
@@ -432,7 +409,7 @@ VerboseDebugRead() {
 	
 #else // SOCLIB
 	
-	return CONFIG::DEBUG_ENABLE && logger_import && verbose_debug_read;
+	return CONFIG::DEBUG_ENABLE && verbose_debug_read;
 	
 #endif // SOCLIB
 	
@@ -458,7 +435,6 @@ template<class CONFIG>
 DTCM<CONFIG> ::
 DTCM(const char *name,
 		Object *parent) :
-	Object(name, parent),
 	TCM<CONFIG, true>(name, parent) {
 }
 
@@ -466,7 +442,6 @@ template<class CONFIG>
 ITCM<CONFIG> ::
 ITCM(const char *name,
 		Object *parent) :
-	Object(name, parent),
 	TCM<CONFIG, false>(name, parent) {
 }
 

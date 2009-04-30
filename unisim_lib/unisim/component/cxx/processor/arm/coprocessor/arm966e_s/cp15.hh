@@ -58,11 +58,6 @@ namespace arm966e_s {
 
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Parameter;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::ServiceImport;
-using unisim::kernel::service::ServiceExport;
-using unisim::service::interfaces::Memory;
 
 #endif // SOCLIB
 
@@ -81,10 +76,9 @@ class CP15 :
 
 template<class CONFIG>
 class CP15 : 
+	public Object,
 	public CacheInterface<typename CONFIG::address_t>,
-	public CPInterface<CONFIG::DEBUG_ENABLE>,
-	public Service<Memory<uint64_t> >,
-	public Client<Memory<uint64_t> > {
+	public CPInterface<CONFIG::DEBUG_ENABLE> {
 
 #endif // SOCLIB
 	
@@ -94,15 +88,6 @@ private:
 	typedef typename CONFIG::address_t address_t;
 	
 public:
-	
-#ifndef SOCLIB
-	
-	ServiceImport<Memory<uint64_t> > itcm_memory_import;
-	ServiceImport<Memory<uint64_t> > dtcm_memory_import;
-	ServiceImport<Memory<uint64_t> > memory_import;
-	ServiceExport<Memory<uint64_t> > memory_export;
-
-#endif // SOCLIB
 	
 #ifdef SOCLIB
 
@@ -208,8 +193,7 @@ public:
     
 #ifndef SOCLIB
 	
-	// CP15 -> Memory Interface (debug device)
-//	virtual void Reset();
+	// CP15 -> Memory Interface (for debugging purposes/non-intrusive accesses)
 	virtual bool ReadMemory(uint64_t addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(uint64_t addr, const void *buffer, uint32_t size);
 	
@@ -270,7 +254,9 @@ private:
 	Parameter<bool> param_verbose_pr_write;
 	Parameter<bool> param_verbose_debug_read;
 	Parameter<bool> param_verbose_debug_write;
-	
+
+	unisim::kernel::logger::Logger logger;
+
 #endif // SOCLIB
 	
 	// verbose methods

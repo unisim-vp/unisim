@@ -53,7 +53,6 @@ using unisim::kernel::tlm2::PayloadFabric;
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::Parameter;
-using unisim::kernel::service::ServiceImport;
 using unisim::kernel::logger::Logger;
 
 const unsigned int DEFAULT_BUSWIDTH = 32; // 32-bit bus

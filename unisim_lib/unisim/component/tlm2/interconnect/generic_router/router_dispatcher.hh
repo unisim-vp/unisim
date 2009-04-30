@@ -66,9 +66,10 @@ private:
 
 public:
 	SC_HAS_PROCESS(RouterDispatcher);
-	RouterDispatcher(const sc_module_name &name, unsigned int id, const sc_core::sc_time &cycle_time, OWNER *owner, cb_t cb);
+	RouterDispatcher(const sc_module_name &name, unsigned int id, OWNER *owner, cb_t cb);
 	~RouterDispatcher();
 
+	void SetCycleTime(const sc_core::sc_time &cycle_time);
 	void Push(transaction_type &trans, const sc_core::sc_time &time);
 	void Completed(const sc_core::sc_time &time);
 	inline unsigned int ReadTransportDbg(unsigned int input_port, transaction_type &trans) const;

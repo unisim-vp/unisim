@@ -565,6 +565,75 @@ FiqGetDirectMemPtr(TLMInterruptPayload& trans, tlm::tlm_dmi& dmi)
 }
 
 /**
+ * Virtual method implementation to handle non intrusive reads performed by the inherited
+ * cpu to perform external memory accesses.
+ * It uses the TLM2 debugging interface to request the data.
+ *
+ * @param addr		the read base address
+ * @param buffer 	the buffer to copy the data to the read
+ * @param size		the size of the read
+ */
+
+template<class CONFIG, bool BLOCKING>
+bool 
+ARM<CONFIG, BLOCKING> ::
+ExternalReadMemory(uint64_t addr, void *buffer, uint32_t size)
+{
+	transaction_type *trans;
+	unsigned int read_size;
+
+	if(CONFIG::DEBUG_ENABLE && verbose_tlm_commands) logger << DebugInfo << LOCATION
+			<< "Performing ExternalReadMemory"
+			<< EndDebugInfo;
+	trans = payload_fabric.allocate();
+	trans->set_address(addr);
+	trans->set_data_length(size);
+	trans->set_data_ptr((uint8_t *)buffer);
+	trans->set_read();
+
+	read_size = master_socket->transport_dbg(*trans);
+
+	if (trans->is_response_ok() && read_size == size)
+		return true;
+
+	return false;
+}
+
+/**
+ * Virtual method implementation to handle non intrusive writes performed by the inherited
+ * cpu to perform external memory accesses.
+ * It uses the TLM2 debugging interface to request the data.
+ *
+ * @param addr		the write base address
+ * @param buffer	the buffer to write into the external memory
+ * @param size		the size of the write
+ */
+template<class CONFIG, bool BLOCKING>
+bool 
+ARM<CONFIG, BLOCKING> ::
+ExternalWriteMemory(uint64_t addr, const void *buffer, uint32_t size)
+{
+	transaction_type *trans;
+	unsigned int write_size;
+
+	if(CONFIG::DEBUG_ENABLE && verbose_tlm_commands) logger << DebugInfo << LOCATION
+			<< "Performing ExternalReadMemory"
+			<< EndDebugInfo;
+	trans = payload_fabric.allocate();
+	trans->set_address(addr);
+	trans->set_data_length(size);
+	trans->set_data_ptr((uint8_t *)buffer);
+	trans->set_write();
+
+	write_size = master_socket->transport_dbg(*trans);
+
+	if (trans->is_response_ok() && write_size == size)
+		return true;
+
+	return false;
+}
+
+/**
  * Virtual method implementation to handle memory read operations performed by 
  * the ARM processor implementation.
  * If working with a blocking (BLOCKING = TRUE) version of the ARM processor 

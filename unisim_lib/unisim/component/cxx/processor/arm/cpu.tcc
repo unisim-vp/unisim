@@ -70,6 +70,8 @@ using unisim::util::endian::E_BIG_ENDIAN;
 using unisim::util::endian::E_LITTLE_ENDIAN;
 using unisim::util::endian::BigEndian2Host;
 using unisim::util::endian::Host2BigEndian;
+using unisim::util::endian::Target2Host;
+using unisim::util::endian::Host2Target;
 using unisim::util::arithmetic::RotateRight;
 using std::cout;
 using std::cerr;
@@ -82,7 +84,7 @@ using std::ostringstream;
 
 using unisim::util::debug::SimpleRegister;
 using unisim::util::debug::Symbol;
-using namespace unisim::kernel::logger;
+using unisim::kernel::logger::EndDebug;
 
 #endif // SOCLIB
 
@@ -229,7 +231,6 @@ CPU(const char *name,
 	Service<Registers>(name, parent),
 	Service<MemoryInjection<uint64_t> >(name, parent),
 	Service<Memory<uint64_t> >(name, parent),
-	Client<Memory<uint64_t> >(name, parent),
 	disasm_export("disasm_export", this),
 	registers_export("registers_export", this),
 	memory_injection_export("memory_injection_export", this),
@@ -241,7 +242,6 @@ CPU(const char *name,
 	debug_control_import("debug_control_import", this),
 	memory_access_reporting_import("memory_access_reporting_import", this),
 	symbol_table_lookup_import("symbol_table_lookup_import", this),
-	memory_import("memory_import", this),
 	linux_os_import("linux_os_import", this),
 	logger(*this),
 //	logger_import("logger_import", this),
@@ -391,12 +391,6 @@ Setup() {
 			logger << "ON";
 		else
 			logger << "OFF";
-		logger << endl;
-		logger << " - memory = ";
-		if (memory_import)
-			logger << "ON";
-		else
-			logger << "OFF";
 		logger << EndDebugInfo;
 	}
 	
@@ -475,10 +469,10 @@ Setup() {
 			<< "Initializing debugging registers"
 			<< EndDebug;
 
-	for(int i = 0; i < 13; i++) {
+	for(int i = 0; i < 16; i++) {
 		stringstream str;
 	    str << "r" << i;
-	    registers_registry[str.str()] = 
+	    registers_registry[str.str().c_str()] = 
 	    	new SimpleRegister<reg_t>(str.str().c_str(), &gpr[i]);
 	}
 	registers_registry["sp"] = new SimpleRegister<reg_t>("sp", &gpr[13]);
@@ -598,29 +592,69 @@ RequiresFinishedInstructionReporting(bool report) {
 #ifndef SOCLIB
 
 //=====================================================================
-//=             memory interface methods                        START =
+//=         non intrusive memory methods                        START =
 //=====================================================================
-template<class CONFIG>
-void 
-CPU<CONFIG> :: Reset() {	
-}
 
 template<class CONFIG>
 bool 
 CPU<CONFIG> :: 
-ReadMemory(uint64_t addr, void *buffer, uint32_t size) {
-	if(memory_import) 
-		return memory_import->ReadMemory(addr, buffer, size);
-	return false;
+ReadMemory(uint64_t addr, void *buffer, uint32_t size) 
+{
+//	if(memory_import) 
+//		return memory_import->ReadMemory(addr, buffer, size);
+	if (CONFIG::MODEL == ARM966E_S)
+	{
+		return cp15_966es->ReadMemory(addr, buffer, size);
+	}
+	return ExternalReadMemory(addr, buffer, size);
 }
 
 template<class CONFIG>
 bool 
 CPU<CONFIG> ::
 WriteMemory(uint64_t addr, 
+		const void *buffer, uint32_t size) 
+{
+//	if(memory_import)
+//		return memory_import->WriteMemory(addr, buffer, size);
+	if (CONFIG::MODEL == ARM966E_S)
+	{
+		return cp15_966es->WriteMemory(addr, buffer, size);
+	}
+	return ExternalWriteMemory(addr, buffer, size);
+}
+
+template<class CONFIG>
+bool
+CPU<CONFIG> ::
+CoprocessorReadMemory(uint64_t addr,
+		void *buffer, uint32_t size)
+{
+	return ExternalReadMemory(addr, buffer, size);
+}
+
+template<class CONFIG>
+bool
+CPU<CONFIG> ::
+CoprocessorWriteMemory(uint64_t addr,
+		const void *buffer, uint32_t size)
+{
+	return ExternalWriteMemory(addr, buffer, size);
+}
+
+template<class CONFIG>
+bool
+CPU<CONFIG> ::
+ExternalReadMemory(uint64_t addr,
+		void *buffer, uint32_t size) {
+	return false;
+}
+
+template<class CONFIG>
+bool
+CPU<CONFIG> ::
+ExternalWriteMemory(uint64_t addr,
 		const void *buffer, uint32_t size) {
-	if(memory_import)
-		return memory_import->WriteMemory(addr, buffer, size);
 	return false;
 }
 
@@ -667,24 +701,26 @@ Disasm(uint64_t addr, uint64_t &next_addr) {
 	thumb_insn_t tinsn;
 
 	stringstream buffer;
-	if(!memory_import) {
-		buffer << "no memory_import";
-		return buffer.str(); 
-	}
 	if(GetCPSR_T()) {
-		if(!memory_import->ReadMemory(addr, &tinsn, 2)) {
-			buffer << "error with memory_import";
+		if(!ReadMemory(addr, &tinsn, 2)) {
+			buffer << "Could not read from memory";
 			return buffer.str();
 		}
-		tinsn = BigEndian2Host(tinsn);
+		if (GetEndianness() == E_BIG_ENDIAN)
+			tinsn = BigEndian2Host(tinsn);
+		else
+			tinsn = LittleEndian2Host(tinsn);
 		top = thumb_decoder.Decode(addr, tinsn);
 		top->disasm(*this, buffer);
 	} else {
-		if(!memory_import->ReadMemory(addr, &insn, 4)) {
-			buffer << "error with memory_import";
+		if(!ReadMemory(addr, &insn, 4)) {
+			buffer << "Could not read from memory";
 			return buffer.str();
 		}
-		insn = BigEndian2Host(insn);
+		if (GetEndianness() == E_BIG_ENDIAN)
+			insn = BigEndian2Host(insn);
+		else
+			insn = LittleEndian2Host(insn);
 		op = arm32_decoder.Decode(addr, insn);
 		op->disasm(*this, buffer);
 	}
@@ -4131,38 +4167,31 @@ CPU<CONFIG> ::
 CreateMemorySystem() {
 	
 #ifndef SOCLIB
-	
-	if(CONFIG::MODEL == ARM966E_S) {
-		memory_export >> cp15_966es->memory_export;
-		cp15_966es->memory_import >> memory_import;
-		cp15_966es->itcm_memory_import >> itcm->memory_export;
-		cp15_966es->dtcm_memory_import >> dtcm->memory_export;
-		return;
-	}
+	/* TODO: remake all the memory system for the different components without using the memory_interface */	
 	if(CONFIG::HAS_CACHE_L2) {
 		cerr << "Configuring cache level 2" << endl;
 		cache_l2 = new Cache<typename CONFIG::cache_l2_t>("cache_l2", memory_interface, this);
-		cache_l2->memory_import >> memory_import;
+		// cache_l2->memory_import >> memory_import;
 		if(CONFIG::HAS_INSN_CACHE_L1) {
 			cerr << "Configuring instruction cache level 1" << endl;
 			cache_il1 = new Cache<typename CONFIG::insn_cache_l1_t>("cache_il1", cache_l2, this);
-			cache_il1->memory_import >> cache_l2->memory_export;
+			// cache_il1->memory_import >> cache_l2->memory_export;
 			if(CONFIG::HAS_DATA_CACHE_L1) {
 				cerr << "Configuring data cache level 1" << endl;
 				cache_l1 = new Cache<typename CONFIG::cache_l1_t>("cache_dl1", cache_l2, this);
-				cache_l1->memory_import >> cache_l2->memory_export;
-				memory_export >> cache_l1->memory_export;
+			//	cache_l1->memory_import >> cache_l2->memory_export;
+			//			memory_export >> cache_l1->memory_export;
 			} else {
 				cerr << "No data data cache level 1" << endl;
 				cache_l1 = cache_l2;
-				memory_export >> cache_l2->memory_export;
+			//	memory_export >> cache_l2->memory_export;
 			}
 		} else {
 			if(CONFIG::HAS_DATA_CACHE_L1) {
 				cerr << "Configuring unisified cache level 1" << endl;
 				cache_l1 = new Cache<typename CONFIG::cache_l1_t>("cache_l1", cache_l2, this);
-				cache_l1->memory_import >> cache_l2->memory_export;
-				memory_export >> cache_l1->memory_export;
+			//	cache_l1->memory_import >> cache_l2->memory_export;
+			//	memory_export >> cache_l1->memory_export;
 			}
 		}
 	} else {
@@ -4172,15 +4201,15 @@ CreateMemorySystem() {
 			if(CONFIG::HAS_DATA_CACHE_L1) {
 				cerr << "Configuring data cache level 1" << endl;
 				cache_l1 = new Cache<typename CONFIG::cache_l1_t>("cache_dl1", memory_interface, this);
-				cache_l1->memory_import >> memory_import;
-				memory_export >> cache_l1->memory_export;
+				// cache_l1->memory_import >> memory_import;
+			//	memory_export >> cache_l1->memory_export;
 			}
 		} else {
 			if(CONFIG::HAS_DATA_CACHE_L1) {
 				cerr << "Configuring unified cache level 1" << endl;
 				cache_l1 = new Cache<typename CONFIG::cache_l1_t>("cache_dl1", memory_interface, this);
-				cache_l1->memory_import >> memory_import;
-				memory_export >> cache_l1->memory_export;
+				// cache_l1->memory_import >> memory_import;
+			//	memory_export >> cache_l1->memory_export;
 			} else {
 				cerr << "No caches present in this system" << endl;
 				//			cache_l1 = memory_interface;
@@ -4287,7 +4316,7 @@ PerformWriteAccess(MemoryOp<CONFIG> *memop) {
 		break;
 	case 2:
 		val16 = (uint16_t)memop->GetWriteValue();
-		val16 = Host2BigEndian(val16);
+		val16 = Host2Target(GetEndianness(), val16);
 
 		address = address ^ munged_address_mask16;
 
@@ -4302,7 +4331,7 @@ PerformWriteAccess(MemoryOp<CONFIG> *memop) {
 		break;
 	case 4:
 		val32 = memop->GetWriteValue();
-		val32 = Host2BigEndian(val32);
+		val32 = Host2Target(GetEndianness(), val32);
 
 		if(CONFIG::MODEL == ARM966E_S) {
 			cp15_966es->PrWrite(address, (uint8_t *)&val32, 4);
@@ -4359,7 +4388,7 @@ PerformReadAccess(MemoryOp<CONFIG> *memop) {
 				memory_interface->PrRead(read_address, (uint8_t *)&val16, 2);
 		}
 		
-		val16 = BigEndian2Host(val16);
+		val16 = Target2Host(GetEndianness(), val16);
 		
 		if(memop->IsSigned()) {
 			value = (typename CONFIG::sreg_t)(int16_t)val16;
@@ -4376,7 +4405,7 @@ PerformReadAccess(MemoryOp<CONFIG> *memop) {
 				memory_interface->PrRead(read_address, (uint8_t *)&val32, 4);
 		}
 		
-		val32 = BigEndian2Host(val32);
+		val32 = Target2Host(GetEndianness(), val32);
 		
 		switch(address & 0x03) {
 		case 0x00:
@@ -4422,8 +4451,8 @@ PerformReadToPCAccess(MemoryOp<CONFIG> *memop) {
 		} else
 			memory_interface->PrRead(read_address, (uint8_t *)&value, 4);
 	}
-	
-	value = BigEndian2Host(value);
+
+	value = Target2Host(GetEndianness(), value);
 	
 	switch(address & 0x03) {
 	case 0x00:
@@ -4468,7 +4497,7 @@ PerformReadToPCUpdateTAccess(MemoryOp<CONFIG> *memop) {
 			memory_interface->PrRead(read_address, (uint8_t *)&value, 4);
 	}
 	
-	value = BigEndian2Host(value);
+	value = Target2Host(GetEndianness(), value);
 	
 	switch(address & 0x03) {
 	case 0x00:

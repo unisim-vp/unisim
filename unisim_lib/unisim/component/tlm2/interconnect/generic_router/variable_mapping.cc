@@ -50,9 +50,10 @@ template <> Variable<unisim::component::tlm2::interconnect::generic_router::Mapp
 template <> Variable<unisim::component::tlm2::interconnect::generic_router::Mapping>::operator double () const { return 0; }
 template <> Variable<unisim::component::tlm2::interconnect::generic_router::Mapping>::operator string () const { 
 	std::stringstream buf;
-	buf << "<unisim::component::tlm2::interconnect::generic_router::mapping range_start=\"0x" << std::hex << storage->range_start << std::dec
+	buf << "range_start=\"0x" << std::hex << storage->range_start << std::dec
 		<< "\" range_end=\"0x" << std::hex << storage->range_end << std::dec
-		<< "\" output_port=\"" << storage->output_port << "\"/>";
+		<< "\" output_port=\"" << storage->output_port 
+		<< "\" translation=\"" << std::hex << storage->translation << std::dec << "\"";
 	return buf.str();
 }
 
@@ -64,6 +65,7 @@ template <> VariableBase& Variable<unisim::component::tlm2::interconnect::generi
 	uint64_t range_start;
 	uint64_t range_end;
 	unsigned int output_port;
+	uint64_t translation = 0;
 
 	std::stringstream buf(value);
 	std::string str(buf.str());
@@ -91,19 +93,38 @@ template <> VariableBase& Variable<unisim::component::tlm2::interconnect::generi
 	pos = str.find('"');
 	str = str.substr(pos + 1);
 	pos = str.find('"');
+	str_rest = str.substr(pos + 1);
 	str = str.substr(0, pos);
 	stringstream output_port_str;
 	output_port_str << str;
 	output_port_str >> output_port;
+	str = str_rest;
+	pos = str.find('"');
+	if (pos != string::npos)
+	{
+		// translation available
+		stringstream translation_str;
+		str = str.substr(pos + 1);
+		pos = str.find('"');
+		str = str.substr(0, pos);
+		stringstream translation_st;
+		translation_str << str;
+		translation_str >> std::hex >> translation >> std::dec;
+	}
+	else
+	{
+		translation = range_start;
+	}
 	storage->used = true;
 	storage->range_start = range_start;
 	storage->range_end = range_end;
 	storage->output_port = output_port;
+	storage->translation = translation;
 	return *this;
 }
 
 template <> const char *Variable<unisim::component::tlm2::interconnect::generic_router::Mapping>::GetDataTypeName() const {
-	return "unisim::component::tlm2::bus::simple_router::Mapping";
+	return "unisim::component::tlm2::interconnect::generic_router::Mapping";
 }
 
 template class Variable<unisim::component::tlm2::interconnect::generic_router::Mapping>;

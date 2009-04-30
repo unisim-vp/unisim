@@ -45,10 +45,9 @@ namespace generic_router {
 
 template<typename OWNER, class CONFIG>
 RouterDispatcher<OWNER, CONFIG>::
-RouterDispatcher(const sc_module_name &name, unsigned int id, const sc_core::sc_time &cycle_time, OWNER *owner, cb_t cb) :
-sc_module(name),
+RouterDispatcher(const sc_module_name &name, unsigned int id, OWNER *owner, cb_t cb) :
 m_id(id),
-m_cycle_time(cycle_time),
+m_cycle_time(SC_ZERO_TIME),
 m_queue(),
 // m_queue(this, &RouterDispatcher<OWNER, CONFIG>::QueueCB),
 m_owner(owner),
@@ -65,7 +64,15 @@ RouterDispatcher<OWNER, CONFIG>::
 
 template<typename OWNER, class CONFIG>
 void
-RouterDispatcher<OWNER, CONFIG>::
+RouterDispatcher<OWNER, CONFIG> ::
+SetCycleTime(const sc_core::sc_time &cycle_time)
+{
+	m_cycle_time = cycle_time;
+}
+
+template<typename OWNER, class CONFIG>
+void
+RouterDispatcher<OWNER, CONFIG> ::
 Push(transaction_type &trans, const sc_core::sc_time &time) 
 {
 	trans.acquire();
