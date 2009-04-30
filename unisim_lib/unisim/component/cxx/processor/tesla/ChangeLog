@@ -1,3 +1,4 @@
+* Statistics exported in .csv format
 * New control flow instructions: breakaddr, break
 * Rewritten floating-point implementation, more accurate and faster
 * Rewritten branching algorithm, closer to NVIDIA implementation

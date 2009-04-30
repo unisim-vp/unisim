@@ -48,6 +48,7 @@
 #include <unisim/component/cxx/processor/tesla/implicit_flow.tcc>
 #include <unisim/component/cxx/processor/tesla/tesla_flow.tcc>
 #include <unisim/component/cxx/processor/tesla/hostfloat/hostfloat.tcc>
+#include <unisim/component/cxx/processor/tesla/stats.tcc>
 
 //#include <unisim/component/cxx/cache/cache.tcc>
 //#include <unisim/component/cxx/tlb/tlb.tcc>
@@ -67,6 +68,9 @@ namespace tesla {
 using namespace std;
 
 #define VERBOSE
+
+template <class CONFIG>
+typename CONFIG::stats_t CPU<CONFIG>::stats;
 
 template <class CONFIG>
 CPU<CONFIG>::CPU(const char *name, Object *parent, int coreid) :
@@ -259,6 +263,30 @@ void CPU<CONFIG>::Reset(unsigned int threadsperblock, unsigned int numblocks, un
 		}
 	}
 	instruction_counter = 0;
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::InitStats(unsigned int code_size)
+{
+	typename CONFIG::address_t pc = CONFIG::CODE_START;
+	while(pc < CONFIG::CODE_START + code_size)
+	{
+		ostringstream sstr;
+
+		insn_t insn;
+		if(!memory_import->ReadMemory(pc, &insn, 8)) assert(false);
+
+		Instruction<CONFIG> instruction(this, pc, insn);
+		instruction.Disasm(sstr);
+		stats[pc - CONFIG::CODE_START].SetName(sstr.str().c_str());
+
+		if(instruction.IsLong()) {
+			pc = pc + 8;
+		}
+		else {
+			pc = pc + 4;
+		}
+	}
 }
 
 template <class CONFIG>

@@ -32,17 +32,11 @@
  * Authors: Sylvain Collange (sylvain.collange@univ-perp.fr)
  */
 
-#ifndef UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_OPERATION_TCC
-#define UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_OPERATION_TCC
+#ifndef UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_STATS_TCC
+#define UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_STATS_TCC
 
-#include <unisim/component/cxx/processor/tesla/operation.hh>
-#include <unisim/component/cxx/processor/tesla/tesla_opcode.hh>
-#include <unisim/component/cxx/processor/tesla/tesla_dest.hh>
-#include <unisim/component/cxx/processor/tesla/tesla_src1.hh>
-#include <unisim/component/cxx/processor/tesla/tesla_src2.hh>
-#include <unisim/component/cxx/processor/tesla/tesla_src3.hh>
-#include <unisim/component/cxx/processor/tesla/tesla_control.hh>
-
+#include <unisim/component/cxx/processor/tesla/stats.hh>
+#include <iomanip>
 
 namespace unisim {
 namespace component {
@@ -50,41 +44,29 @@ namespace cxx {
 namespace processor {
 namespace tesla {
 
-template <class CONFIG>
-isa::src1::Decoder<CONFIG> Operation<CONFIG>::src1_decoder;
 
-template <class CONFIG>
-isa::src2::Decoder<CONFIG> Operation<CONFIG>::src2_decoder;
+using namespace std;
 
-template <class CONFIG>
-isa::src3::Decoder<CONFIG> Operation<CONFIG>::src3_decoder;
-
-template <class CONFIG>
-isa::dest::Decoder<CONFIG> Operation<CONFIG>::dest_decoder;
-
-template <class CONFIG>
-isa::control::Decoder<CONFIG> Operation<CONFIG>::control_decoder;
-
-template <class CONFIG>
-Operation<CONFIG>::Operation(typename CONFIG::address_t addr, typename CONFIG::insn_t iw) :
-	stats(0), addr(addr), iw(iw)
+// Format:
+// address,name,count,scalarcount
+template<class CONFIG>
+void OperationStats<CONFIG>::DumpCSV(std::ostream & os) const
 {
-	src1 = src1_decoder.Decode(addr, iw);
-	src2 = src2_decoder.Decode(addr, iw);
-	src3 = src3_decoder.Decode(addr, iw);
-	dest = dest_decoder.Decode(addr, iw);
-	control = control_decoder.Decode(addr, iw);
-
-	stats = &CPU<CONFIG>::stats[addr - CONFIG::CODE_START];
-	//std::ostringstream oss;
-	//dest->disasmPred(cpu, this, oss);
-	//disasm(oss);
-	//operation->stats->SetName(oss.str().c_str());
+	os << "\"" << name << "\","
+	   << count << ","
+	   << scalarcount
+	   << endl;
 }
 
-template <class CONFIG>
-Operation<CONFIG>::~Operation()
+template<class CONFIG>
+void Stats<CONFIG>::DumpCSV(std::ostream & os) const
 {
+	typedef typename stats_map::const_iterator it_t;
+	for(it_t it = stats.begin(); it != stats.end(); ++it)
+	{
+		os << it->first << ",";
+		it->second.DumpCSV(os);
+	}
 }
 
 

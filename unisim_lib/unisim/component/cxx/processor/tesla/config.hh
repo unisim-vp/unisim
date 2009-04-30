@@ -37,6 +37,7 @@
 
 #include <unisim/component/cxx/processor/tesla/simfloat.hh>
 #include <unisim/component/cxx/processor/tesla/hostfloat/hostfloat.hh>
+#include <unisim/component/cxx/processor/tesla/stats.hh>
 
 namespace unisim {
 namespace component {
@@ -60,7 +61,10 @@ public:
 //	typedef FloatDAZFTZ<SoftFloatIEEE> float_t;
 	typedef hostfloat::TeslaBinary32 float_t;
 	typedef FloatDAZFTZ<SoftHalfIEEE> half_t;
-
+	
+	typedef Stats<BaseConfig> stats_t;
+	typedef OperationStats<BaseConfig> operationstats_t;
+	
 	/* A Memory Page Table Entry */
 	class PTE
 	{

@@ -100,6 +100,7 @@ void Instruction<CONFIG>::Execute()
 	//if(mask != 0) {
 	// Execute even when mask = 0 ! Esp. branches, sync...
 	operation->execute(cpu, this);
+	operation->stats->Execute(Mask());
 	//}
 	if(operation->control->is_end) {
 		cpu->End();

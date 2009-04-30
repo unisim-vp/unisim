@@ -187,7 +187,7 @@ public:
 	virtual void Synchronize();
 	virtual void Reset();
 	void Reset(unsigned int threadsperblock, unsigned int numblocks, unsigned int regnum, unsigned int smsize);
-
+	void InitStats(unsigned int code_size);
 
 //	virtual void BusRead(physical_address_t physical_addr, void *buffer, uint32_t size, WIMG wimg = CONFIG::WIMG_DEFAULT, bool rwitm = false);
 //	virtual void BusWrite(physical_address_t physical_addr, const void *buffer, uint32_t size, WIMG wimg = CONFIG::WIMG_DEFAULT);
@@ -453,6 +453,7 @@ public:
 
 	Logger trace_logger;
 
+	static typename CONFIG::stats_t stats;
 };
 
 } // end of namespace tesla

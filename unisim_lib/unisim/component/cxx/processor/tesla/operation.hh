@@ -58,6 +58,9 @@ struct Operation
 {
 	Operation(typename CONFIG::address_t addr, typename CONFIG::insn_t iw);
 	~Operation();
+
+	virtual void disasm(CPU<CONFIG> * cpu, Instruction<CONFIG> const * insn,
+		ostream& buffer) = 0;
 	
 	typedef typename isa::opcode::Operation<CONFIG> OpCode;
 	typedef isa::dest::Operation<CONFIG> OpDest;
@@ -71,6 +74,8 @@ struct Operation
 	OpSrc3 * src3;
 	OpDest * dest;
 	OpControl * control;
+	
+	typename CONFIG::operationstats_t * stats;
 
 private:
 	typename CONFIG::address_t addr;
