@@ -91,6 +91,7 @@ join.init = {
 	inherited::op_type[OpSrc1] = DT_NONE;
 	inherited::op_type[OpSrc2] = DT_NONE;
 	inherited::op_type[OpSrc3] = DT_NONE;
+	this->stats->SetFlow();
 }
 
 op prebreak( \
@@ -114,6 +115,7 @@ prebreak.init = {
 	inherited::op_type[OpSrc1] = DT_NONE;
 	inherited::op_type[OpSrc2] = DT_NONE;
 	inherited::op_type[OpSrc3] = DT_NONE;
+	this->stats->SetFlow();
 }
 
 op fence( \
@@ -140,6 +142,7 @@ fence.init = {
 	inherited::op_type[OpSrc1] = DT_NONE;
 	inherited::op_type[OpSrc2] = DT_NONE;
 	inherited::op_type[OpSrc3] = DT_NONE;
+	this->stats->SetFlow();
 }
 
 op ret( \
@@ -162,6 +165,7 @@ ret.init = {
 	inherited::op_type[OpSrc1] = DT_NONE;
 	inherited::op_type[OpSrc2] = DT_NONE;
 	inherited::op_type[OpSrc3] = DT_NONE;
+	this->stats->SetFlow();
 }
 
 op break( \
@@ -185,5 +189,6 @@ break.init = {
 	inherited::op_type[OpSrc1] = DT_NONE;
 	inherited::op_type[OpSrc2] = DT_NONE;
 	inherited::op_type[OpSrc3] = DT_NONE;
+	this->stats->SetFlow();
 }
 

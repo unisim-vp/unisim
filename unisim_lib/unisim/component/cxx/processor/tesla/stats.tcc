@@ -65,6 +65,16 @@ void OperationStats<CONFIG>::DumpCSV(std::ostream & os) const
 template<class CONFIG>
 void Stats<CONFIG>::DumpCSV(std::ostream & os) const
 {
+	os << "\"Address\","
+	   << "\"Name\","
+	   << "\"Executed\","
+	   << "\"Exec. scalar\","
+	   << "\"Integer\","
+	   << "\"FP32\","
+	   << "\"Flow\","
+	   << "\"Memory\""
+	   << endl;
+
 	typedef typename stats_map::const_iterator it_t;
 	for(it_t it = stats.begin(); it != stats.end(); ++it)
 	{

@@ -67,7 +67,9 @@ public:
 	void SetInteger() { integer = true;	}
 	void SetFP() { fp = true; }
 	void SetFlow() { flow = true; }
-	void SetMemory() { memory = true; }
+	void SetMov() { integer = true;	}
+	void SetGather() { memory = true;	}
+	void SetScatter() { memory = true;	}
 
 	void Execute(std::bitset<CONFIG::WARP_SIZE> mask) {
 		count++;

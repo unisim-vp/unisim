@@ -71,6 +71,7 @@ mov_reg_full_noimm.init = {
 	inherited::op_type[OpSrc1] = dt;
 	inherited::op_type[OpSrc2] = DT_NONE;
 	inherited::op_type[OpSrc3] = DT_NONE;
+	this->stats->SetMov();
 }
 
 
@@ -150,6 +151,7 @@ mov_reg_half.init = {
 	inherited::op_type[OpSrc1] = dt;
 	inherited::op_type[OpSrc2] = DT_NONE;
 	inherited::op_type[OpSrc3] = DT_NONE;
+	this->stats->SetMov();
 }
 
 mov_reg_half.disasm = {
@@ -194,6 +196,7 @@ stsh_full.init = {
 	inherited::op_type[OpSrc1] = DT_NONE;
 	inherited::op_type[OpSrc2] = DT_NONE;
 	inherited::op_type[OpSrc3] = dt;
+	this->stats->SetMov();
 }
 
 stsh_full.disasm = {
@@ -272,6 +275,7 @@ ldc_full.init = {
 	inherited::op_type[OpSrc1] = DT_NONE;
 	inherited::op_type[OpSrc2] = SMTypeToDataType(SMType(mem_type));
 	inherited::op_type[OpSrc3] = DT_NONE;
+	this->stats->SetMov();
 }
 
 
@@ -319,6 +323,7 @@ stg_full.init = {
 	inherited::op_type[OpSrc1] = DataType(m_size);
 	inherited::op_type[OpSrc2] = DT_NONE;
 	inherited::op_type[OpSrc3] = DT_NONE;
+	this->stats->SetScatter();
 }
 
 stg_full.disasm = {
@@ -369,6 +374,7 @@ ldg_full.init = {
 	inherited::op_type[OpSrc1] = DataType(m_size);
 	inherited::op_type[OpSrc2] = DT_NONE;
 	inherited::op_type[OpSrc3] = DT_NONE;
+	this->stats->SetGather();
 }
 
 ldg_full.disasm = {
@@ -421,6 +427,7 @@ stl_full.init = {
 	inherited::op_type[OpSrc1] = DataType(m_size);
 	inherited::op_type[OpSrc2] = DT_NONE;
 	inherited::op_type[OpSrc3] = DT_NONE;
+	this->stats->SetScatter();
 }
 
 stl_full.disasm = {
@@ -472,6 +479,7 @@ ldl_full.init = {
 	inherited::op_type[OpSrc1] = DataType(m_size);
 	inherited::op_type[OpSrc2] = DT_NONE;
 	inherited::op_type[OpSrc3] = DT_NONE;
+	this->stats->SetGather();
 }
 
 ldl_full.disasm = {
@@ -552,6 +560,7 @@ ldam_full.init = {
 	inherited::op_type[OpSrc1] = DT_U32;//dt;
 	inherited::op_type[OpSrc2] = DT_NONE;
 	inherited::op_type[OpSrc3] = DT_NONE;
+	this->stats->SetMov();
 }
 
 ldam_full.disasm = {
@@ -612,6 +621,7 @@ ldaa_full.init = {
 	inherited::op_type[OpSrc1] = DT_U32;
 	inherited::op_type[OpSrc2] = DT_NONE;
 	inherited::op_type[OpSrc3] = DT_NONE;
+	this->stats->SetMov();
 }
 
 ldaa_full.disasm = {
@@ -657,6 +667,7 @@ sta.init = {
 	inherited::op_type[OpSrc1] = DT_NONE;
 	inherited::op_type[OpSrc2] = DT_NONE;
 	inherited::op_type[OpSrc3] = DT_NONE;
+	this->stats->SetMov();
 }
 
 sta.disasm = {
