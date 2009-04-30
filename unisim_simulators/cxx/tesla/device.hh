@@ -98,6 +98,8 @@ struct Device: CUdevice_st, Object
 	Allocator<CONFIG> & GlobalAllocator();
 	
 	void LoadSegment(MemSegment<CONFIG> & seg);
+	
+	void ExportStats(typename CONFIG::stats_t const & stats, char const * filename);
 
 private:
 	void Load(Kernel<CONFIG> & kernel);
@@ -108,6 +110,8 @@ private:
 	CPU<CONFIG> cpu;
 	unisim::component::cxx::memory::ram::Memory<typename CONFIG::address_t> memory;
 	Allocator<CONFIG> global_allocator;
+	
+	bool export_stats;
 };
 
 

@@ -41,6 +41,7 @@
 #include <string>
 #include <ostream>
 #include "kernel.hh"
+#include <unisim/component/cxx/processor/tesla/stats.tcc>
 
 using std::string;
 using std::endl;
@@ -86,7 +87,8 @@ Device<CONFIG>::Device() :
 	Object("device_0"),
 	cpu("gpu_core_0", this),
 	memory("memory", this),
-	global_allocator(CONFIG::GLOBAL_START, CONFIG::GLOBAL_SIZE)
+	global_allocator(CONFIG::GLOBAL_START, CONFIG::GLOBAL_SIZE),
+	export_stats(false)
 {
 	cpu.memory_import >> memory.memory_export;
 	memory.Setup();
@@ -134,6 +136,10 @@ Device<CONFIG>::Device() :
 	if(env != 0)
 		Kernel<CONFIG>::trace_loading = ParseBool(env);
 
+	env = getenv("EXPORT_STATS");
+	if(env != 0)
+		export_stats = ParseBool(env);
+
 }
 
 template<class CONFIG>
@@ -164,6 +170,9 @@ void Device<CONFIG>::Run(Kernel<CONFIG> & kernel, int width, int height)
 	kernel.SetGridShape(width, height);
 	
 	int blockspercore = kernel.BlocksPerCore();
+	if(export_stats) {
+		cpu.InitStats(kernel.CodeSize());
+	}
 	
 	// TODO: multiple cores
 	// Blocks are scheduled sequentially on available resources
@@ -187,6 +196,17 @@ void Device<CONFIG>::Run(Kernel<CONFIG> & kernel, int width, int height)
 		}
 		cpu.Run();
 	}
+	
+	if(export_stats) {
+		ExportStats(cpu.stats, (kernel.Name() + ".csv").c_str());
+	}
+}
+
+template<class CONFIG>
+void Device<CONFIG>::ExportStats(typename CONFIG::stats_t const & stats, char const * filename)
+{
+	ofstream ofs(filename);
+	stats.DumpCSV(ofs);
 }
 
 template<class CONFIG>

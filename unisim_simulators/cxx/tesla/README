@@ -104,6 +104,7 @@ built-in regression tests:
 * bitonic
 * binomialOptions
 * convolutionSeparable
+* cppIntegration
 * deviceQuery
 * dwtHaar1D
 * fastWalshTransform
