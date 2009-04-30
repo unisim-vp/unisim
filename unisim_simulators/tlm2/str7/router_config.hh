@@ -41,7 +41,7 @@ class RouterConfig {
 public:
 	static const unsigned int INPUT_SOCKETS = 1;
 	static const unsigned int OUTPUT_SOCKETS = 3;
-	static const unsigned int MAX_NUM_MAPPINGS = 3;
+	static const unsigned int MAX_NUM_MAPPINGS = 4;
 	static const unsigned int BUSWIDTH = 32;
 	typedef tlm::tlm_base_protocol_types TYPES;
 	static const bool VERBOSE = false;
@@ -51,7 +51,7 @@ class RouterConfigVerbose {
 public:
 	static const unsigned int INPUT_SOCKETS = 1;
 	static const unsigned int OUTPUT_SOCKETS = 3;
-	static const unsigned int MAX_NUM_MAPPINGS = 3;
+	static const unsigned int MAX_NUM_MAPPINGS = 4;
 	static const unsigned int BUSWIDTH = 32;
 	typedef tlm::tlm_base_protocol_types TYPES;
 	static const bool VERBOSE = true;

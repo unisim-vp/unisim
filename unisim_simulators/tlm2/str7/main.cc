@@ -247,10 +247,11 @@ int sc_main(int argc, char *argv[]) {
 	for (unsigned int i = 0; i < 2; i++)
 		fiqmstub[i]->out_interrupt(eic->in_fiq[i]);
 
-	cpu->memory_import >> memory->memory_export;
-
 	// Connect everything
-	elf_loader->memory_import >> memory->memory_export;
+	elf_loader->memory_import >> router->memory_export;
+	(*router->memory_import[0]) >> memory->memory_export;
+	(*router->memory_import[1]) >> flash->memory_export;
+	// TODO: missing a connection with the eic
 
 	cpu->symbol_table_lookup_import >> elf_loader->symbol_table_lookup_export;
 

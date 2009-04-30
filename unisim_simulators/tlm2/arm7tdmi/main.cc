@@ -247,7 +247,6 @@ int sc_main(int argc, char *argv[]) {
 	
 	// Connect the CPU to the memory
 	cpu->master_socket(memory->slave_sock);
-	cpu->memory_import >> memory->memory_export;
 
 	if(use_inline_debugger) {
 		cerr << "Using inline debugger" << endl;
