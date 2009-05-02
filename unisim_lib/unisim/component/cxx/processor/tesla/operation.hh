@@ -49,6 +49,44 @@ namespace cxx {
 namespace processor {
 namespace tesla {
 
+// Location of operands
+enum Domain
+{
+	DomainNone,	// no operand
+	DomainGPR,
+	DomainAR,	// address register
+	DomainPred,	// pred/flag register
+	DomainConst,
+	DomainShared,
+	DomainGlobal,	// or local
+};
+
+enum Operand
+{
+	OpDest,
+	OpSrc1,
+	OpSrc2,
+	OpSrc3
+};
+
+
+template <class T, size_t SIZE>
+struct SimpleArray
+{
+	T dt[SIZE];
+	
+	T & operator[] (size_t i) {
+		assert(i < SIZE);
+		return dt[i];
+	}
+	T operator[] (size_t i) const {
+		assert(i < SIZE);
+		return dt[i];
+	}
+};
+
+typedef SimpleArray<DataType, 4> DataTypeArray;
+
 // Operation: base of all opcodes
 // Only one instance of Operation per machine instruction in memory
 // Unmutable
@@ -61,21 +99,23 @@ struct Operation
 
 	virtual void disasm(CPU<CONFIG> * cpu, Instruction<CONFIG> const * insn,
 		ostream& buffer) = 0;
+	void initStats();
 	
 	typedef typename isa::opcode::Operation<CONFIG> OpCode;
-	typedef isa::dest::Operation<CONFIG> OpDest;
-	typedef isa::src1::Operation<CONFIG> OpSrc1;
-	typedef isa::src2::Operation<CONFIG> OpSrc2;
-	typedef isa::src3::Operation<CONFIG> OpSrc3;
-	typedef isa::control::Operation<CONFIG> OpControl;
+	typedef isa::dest::Operation<CONFIG> OperDest;
+	typedef isa::src1::Operation<CONFIG> OperSrc1;
+	typedef isa::src2::Operation<CONFIG> OperSrc2;
+	typedef isa::src3::Operation<CONFIG> OperSrc3;
+	typedef isa::control::Operation<CONFIG> OperControl;
 
-	OpSrc1 * src1;
-	OpSrc2 * src2;
-	OpSrc3 * src3;
-	OpDest * dest;
-	OpControl * control;
+	OperSrc1 * src1;
+	OperSrc2 * src2;
+	OperSrc3 * src3;
+	OperDest * dest;
+	OperControl * control;
 	
 	typename CONFIG::operationstats_t * stats;
+	DataTypeArray op_type;
 
 private:
 	typename CONFIG::address_t addr;

@@ -70,6 +70,7 @@ iadd_full.init = {
 	inherited::op_type[OpSrc2] = DT_NONE;
 	inherited::op_type[OpSrc3] = dt;
 	this->stats->SetInteger();
+	this->initStats();
 }
 
 iadd_full.disasm = {
@@ -127,6 +128,7 @@ iadd_halfimm.init = {
 	inherited::op_type[OpSrc2] = dt;
 	inherited::op_type[OpSrc3] = DT_NONE;
 	this->stats->SetInteger();
+	this->initStats();
 }
 
 iadd_halfimm.disasm = {
@@ -186,6 +188,7 @@ isubr_full.init = {
 	inherited::op_type[OpSrc2] = DT_NONE;
 	inherited::op_type[OpSrc3] = dt;
 	this->stats->SetInteger();
+	this->initStats();
 }
 
 isubr_full.disasm = {
@@ -242,6 +245,7 @@ isubr_halfimm.init = {
 	inherited::op_type[OpSrc2] = dt;
 	inherited::op_type[OpSrc3] = DT_NONE;
 	this->stats->SetInteger();
+	this->initStats();
 }
 
 isubr_halfimm.disasm = {
@@ -328,6 +332,7 @@ imad_full.init = {
 	inherited::op_type[OpSrc2] = dt;
 	inherited::op_type[OpSrc3] = DT_U32;	// always 32-bit
 	this->stats->SetInteger();
+	this->initStats();
 }
 
 imad_full.init_force_reg = {
@@ -461,6 +466,7 @@ imac_imm.init = {
 	inherited::op_type[OpSrc2] = dt;
 	inherited::op_type[OpSrc3] = DT_NONE;
 	this->stats->SetInteger();
+	this->initStats();
 }
 
 imac_imm.disasm = {
@@ -599,6 +605,7 @@ imul24.init = {
 	inherited::op_type[OpSrc2] = dt;
 	inherited::op_type[OpSrc3] = DT_NONE;
 	this->stats->SetInteger();
+	this->initStats();
 }
 
 imul24.disasm = {
@@ -650,6 +657,7 @@ imul24_halfimm.init = {
 	inherited::op_type[OpSrc2] = dt;
 	inherited::op_type[OpSrc3] = DT_NONE;
 	this->stats->SetInteger();
+	this->initStats();
 }
 
 imul24_halfimm.disasm = {
@@ -723,6 +731,7 @@ icvt_full_noimm.init = {
 	inherited::op_type[OpSrc2] = DT_NONE;
 	inherited::op_type[OpSrc3] = DT_NONE;
 	this->stats->SetInteger();
+	this->initStats();
 }
 
 icvt_full_noimm.disasm = {
@@ -793,6 +802,7 @@ icvtn_full_noimm.init = {
 	inherited::op_type[OpSrc2] = DT_NONE;
 	inherited::op_type[OpSrc3] = DT_NONE;
 	this->stats->SetInteger();
+	this->initStats();
 }
 
 icvtn_full_noimm.disasm = {
@@ -854,6 +864,7 @@ icvtf_full.init = {
 	inherited::op_type[OpSrc2] = DT_NONE;
 	inherited::op_type[OpSrc3] = DT_NONE;
 	this->stats->SetInteger();
+	this->initStats();
 }
 
 icvtf_full.disasm = {
@@ -924,6 +935,7 @@ shl_full.init = {
 	inherited::op_type[OpSrc2] = dt;
 	inherited::op_type[OpSrc3] = DT_NONE;
 	this->stats->SetInteger();
+	this->initStats();
 }
 
 shl_full.disasm = {
@@ -963,6 +975,7 @@ shl_full_imm2.init = {
 	inherited::op_type[OpSrc2] = DT_NONE;
 	inherited::op_type[OpSrc3] = DT_NONE;
 	this->stats->SetInteger();
+	this->initStats();
 }
 
 shl_full_imm2.disasm = {
@@ -1020,6 +1033,7 @@ shr_full.init = {
 	inherited::op_type[OpSrc2] = dt;
 	inherited::op_type[OpSrc3] = DT_NONE;
 	this->stats->SetInteger();
+	this->initStats();
 }
 
 shr_full.disasm = {
@@ -1059,6 +1073,7 @@ shr_full_imm2.init = {
 	inherited::op_type[OpSrc2] = DT_NONE;
 	inherited::op_type[OpSrc3] = DT_NONE;
 	this->stats->SetInteger();
+	this->initStats();
 }
 
 shr_full_imm2.disasm = {
@@ -1110,6 +1125,7 @@ and_full.init = {
 	inherited::op_type[OpSrc2] = dt;
 	inherited::op_type[OpSrc3] = DT_NONE;
 	this->stats->SetInteger();
+	this->initStats();
 }
 
 and_full.disasm = {
@@ -1163,6 +1179,7 @@ or_full.init = {
 	inherited::op_type[OpSrc2] = dt;
 	inherited::op_type[OpSrc3] = DT_NONE;
 	this->stats->SetInteger();
+	this->initStats();
 }
 
 or_full.disasm = {
@@ -1216,6 +1233,7 @@ xor_full.init = {
 	inherited::op_type[OpSrc2] = dt;
 	inherited::op_type[OpSrc3] = DT_NONE;
 	this->stats->SetInteger();
+	this->initStats();
 }
 
 xor_full.disasm = {
@@ -1272,6 +1290,7 @@ set_full.init = {
 	inherited::op_type[OpSrc2] = dt;
 	inherited::op_type[OpSrc3] = DT_NONE;
 	this->stats->SetInteger();
+	this->initStats();
 }
 
 set_full.disasm = {
@@ -1339,6 +1358,7 @@ min.init = {
 	inherited::op_type[OpSrc2] = dt;
 	inherited::op_type[OpSrc3] = DT_NONE;
 	this->stats->SetInteger();
+	this->initStats();
 }
 
 min.disasm = {
@@ -1403,6 +1423,7 @@ max.init = {
 	inherited::op_type[OpSrc2] = dt;
 	inherited::op_type[OpSrc3] = DT_NONE;
 	this->stats->SetInteger();
+	this->initStats();
 }
 
 max.disasm = {
@@ -1463,6 +1484,7 @@ nop_full.init = {
 	inherited::op_type[OpSrc2] = DT_NONE;
 	inherited::op_type[OpSrc3] = DT_NONE;
 	this->stats->SetInteger();
+	this->initStats();
 }
 
 nop_full.disasm = {

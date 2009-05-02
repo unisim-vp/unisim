@@ -81,6 +81,8 @@ action {void} disasm({CPU<CONFIG> *} {cpu}, {Instruction<CONFIG> const *} {insn}
 	os << "???";
 }
 
+action {void} classify({typename CONFIG::operationstats_t &} {stats}) {
+}
 
 // Reg
 
@@ -114,6 +116,10 @@ alu_reg.read = {
 alu_reg.disasm = {
 	RegType rt = insn->OperandRegType(OpSrc3);
 	DisasmReg(src3, rt, os);
+}
+
+alu_reg.classify = {
+	stats.SetInput3Reg(src3);
 }
 
 // Constant memory
@@ -165,4 +171,7 @@ alu_const.disasm = {
 	}
 }
 
+alu_const.classify = {
+	stats.SetInputConst();
+}
 

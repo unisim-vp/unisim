@@ -49,26 +49,6 @@ namespace cxx {
 namespace processor {
 namespace tesla {
 
-// Location of operands
-enum Domain
-{
-	DomainNone,	// no operand
-	DomainGPR,
-	DomainAR,	// address register
-	DomainPred,	// pred/flag register
-	DomainConst,
-	DomainShared,
-	DomainGlobal,	// or local
-};
-
-enum Operand
-{
-	OpDest,
-	OpSrc1,
-	OpSrc2,
-	OpSrc3
-};
-
 // Instruction:
 // Instruction as passed from a pipeline stage to the next.
 // Dynamic, allocated during decode stage, discarded on retirement.

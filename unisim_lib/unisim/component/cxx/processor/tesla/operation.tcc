@@ -76,6 +76,7 @@ Operation<CONFIG>::Operation(typename CONFIG::address_t addr, typename CONFIG::i
 	control = control_decoder.Decode(addr, iw);
 
 	stats = &CPU<CONFIG>::stats[addr - CONFIG::CODE_START];
+	stats->ResetStatic();
 	//std::ostringstream oss;
 	//dest->disasmPred(cpu, this, oss);
 	//disasm(oss);
@@ -87,6 +88,22 @@ Operation<CONFIG>::~Operation()
 {
 }
 
+template <class CONFIG>
+void Operation<CONFIG>::initStats()
+{
+	if(op_type[OpDest] != DT_NONE) {
+		dest->classify(*stats);
+	}
+	if(op_type[OpSrc1] != DT_NONE) {
+		src1->classify(*stats);
+	}
+	if(op_type[OpSrc2] != DT_NONE) {
+		src2->classify(*stats);
+	}
+	if(op_type[OpSrc3] != DT_NONE) {
+		src3->classify(*stats);
+	}
+}
 
 } // end of namespace tesla
 } // end of namespace processor

@@ -73,6 +73,7 @@ fsmad_full.init = {
 	inherited::op_type[OpSrc2] = DT_F32;
 	inherited::op_type[OpSrc3] = DT_F32;
 	this->stats->SetFP();
+	this->initStats();
 }
 
 fsmad_full.disasm = {
@@ -156,6 +157,7 @@ fsmad_full_const.init = {
 	inherited::op_type[OpSrc2] = DT_F32;
 	inherited::op_type[OpSrc3] = DT_F32;
 	this->stats->SetFP();
+	this->initStats();
 }
 
 fsmad_full_const.disasm = {
@@ -216,6 +218,7 @@ fsmac.init = {
 	inherited::op_type[OpSrc2] = DT_F32;
 	inherited::op_type[OpSrc3] = DT_NONE;
 	this->stats->SetFP();
+	this->initStats();
 }
 
 fsmac.disasm = {
@@ -297,6 +300,7 @@ fsadd_full.init = {
 	inherited::op_type[OpSrc2] = DT_NONE;
 	inherited::op_type[OpSrc3] = DT_F32;
 	this->stats->SetFP();
+	this->initStats();
 }
 
 fsadd_full_const.init = {
@@ -307,6 +311,7 @@ fsadd_full_const.init = {
 	inherited::op_type[OpSrc2] = DT_NONE;
 	inherited::op_type[OpSrc3] = DT_F32;
 	this->stats->SetFP();
+	this->initStats();
 }
 
 fsadd_full.disasm = {
@@ -393,6 +398,7 @@ fsadd_halfimm.init = {
 	inherited::op_type[OpSrc2] = DT_F32;
 	inherited::op_type[OpSrc3] = DT_NONE;
 	this->stats->SetFP();
+	this->initStats();
 }
 
 fsadd_halfimm.disasm = {
@@ -492,6 +498,7 @@ fsmul_full.init = {
 	inherited::op_type[OpSrc2] = DT_F32;
 	inherited::op_type[OpSrc3] = DT_NONE;
 	this->stats->SetFP();
+	this->initStats();
 }
 
 fsmul_full.disasm = {
@@ -536,6 +543,7 @@ fsmul_full_const.init = {
 	inherited::op_type[OpSrc2] = DT_F32;
 	inherited::op_type[OpSrc3] = DT_NONE;
 	this->stats->SetFP();
+	this->initStats();
 }
 
 fsmul_full_const.disasm = {
@@ -578,6 +586,7 @@ fsmul_halfimm.init = {
 	inherited::op_type[OpSrc2] = DT_F32;
 	inherited::op_type[OpSrc3] = DT_NONE;
 	this->stats->SetFP();
+	this->initStats();
 }
 
 fsmul_halfimm.disasm = {
@@ -634,6 +643,7 @@ fsset.init = {
 	inherited::op_type[OpSrc2] = DT_F32;
 	inherited::op_type[OpSrc3] = DT_NONE;
 	this->stats->SetFP();
+	this->initStats();
 }
 
 fsset.disasm = {
@@ -701,6 +711,8 @@ fcvti_full.init = {
 			DT_U16);
 	inherited::op_type[OpSrc2] = DT_NONE;
 	inherited::op_type[OpSrc3] = DT_NONE;
+	this->stats->SetFP();
+	this->initStats();
 }
 
 fcvti_full.disasm = {
@@ -765,6 +777,7 @@ fcvtf_full.init = {
 	inherited::op_type[OpSrc2] = DT_NONE;
 	inherited::op_type[OpSrc3] = DT_NONE;
 	this->stats->SetFP();
+	this->initStats();
 }
 
 fcvtf_full.disasm = {
@@ -812,6 +825,7 @@ fmov_full.init = {
 	inherited::op_type[OpSrc2] = DT_NONE;
 	inherited::op_type[OpSrc3] = DT_NONE;
 	this->stats->SetFP();
+	this->initStats();
 }
 
 fmov_full.disasm = {
@@ -860,6 +874,7 @@ rr_ex2.init = {
 	inherited::op_type[OpSrc2] = DT_NONE;
 	inherited::op_type[OpSrc3] = DT_NONE;
 	this->stats->SetFP();
+	this->initStats();
 }
 
 rr_ex2.disasm = {
@@ -904,6 +919,7 @@ rr_trig.init = {
 	inherited::op_type[OpSrc2] = DT_NONE;
 	inherited::op_type[OpSrc3] = DT_NONE;
 	this->stats->SetFP();
+	this->initStats();
 }
 
 rr_trig.disasm = {
@@ -953,6 +969,7 @@ rcp.init = {
 	inherited::op_type[OpSrc2] = DT_NONE;
 	inherited::op_type[OpSrc3] = DT_NONE;
 	this->stats->SetFP();
+	this->initStats();
 }
 
 rcp.disasm = {
@@ -999,6 +1016,7 @@ rsq.init = {
 	inherited::op_type[OpSrc2] = DT_NONE;
 	inherited::op_type[OpSrc3] = DT_NONE;
 	this->stats->SetFP();
+	this->initStats();
 }
 
 rsq.disasm = {
@@ -1045,6 +1063,7 @@ lg2.init = {
 	inherited::op_type[OpSrc2] = DT_NONE;
 	inherited::op_type[OpSrc3] = DT_NONE;
 	this->stats->SetFP();
+	this->initStats();
 }
 
 lg2.disasm = {
@@ -1091,6 +1110,7 @@ sin.init = {
 	inherited::op_type[OpSrc2] = DT_NONE;
 	inherited::op_type[OpSrc3] = DT_NONE;
 	this->stats->SetFP();
+	this->initStats();
 }
 
 sin.disasm = {
@@ -1137,6 +1157,7 @@ cos.init = {
 	inherited::op_type[OpSrc2] = DT_NONE;
 	inherited::op_type[OpSrc3] = DT_NONE;
 	this->stats->SetFP();
+	this->initStats();
 }
 
 cos.disasm = {
@@ -1183,6 +1204,7 @@ ex2.init = {
 	inherited::op_type[OpSrc2] = DT_NONE;
 	inherited::op_type[OpSrc3] = DT_NONE;
 	this->stats->SetFP();
+	this->initStats();
 }
 
 ex2.disasm = {
@@ -1269,6 +1291,7 @@ fsmax_full.init = {
 	inherited::op_type[OpSrc2] = DT_F32;
 	inherited::op_type[OpSrc3] = DT_NONE;
 	this->stats->SetFP();
+	this->initStats();
 }
 
 fsmax_imm.disasm = {
@@ -1305,5 +1328,7 @@ fsmax_imm.init = {
 	inherited::op_type[OpSrc1] = DT_F32;
 	inherited::op_type[OpSrc2] = DT_F32;
 	inherited::op_type[OpSrc3] = DT_NONE;
+	this->stats->SetFP();
+	this->initStats();
 }
 

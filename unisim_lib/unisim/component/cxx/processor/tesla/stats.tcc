@@ -52,13 +52,24 @@ using namespace std;
 template<class CONFIG>
 void OperationStats<CONFIG>::DumpCSV(std::ostream & os) const
 {
+	bool outputregs = (outputreg != -1);
+	int inputregs = 0;
+	// Count unique registers only
+	if(input1reg != -1) { ++inputregs; }
+	if(input2reg != -1 && input2reg != input1reg) { ++inputregs; }
+	if(input3reg != -1 && input3reg != input2reg && input3reg != input2reg) { ++inputregs; }
+	
 	os << "\"" << name << "\","
 	   << count << ","
 	   << scalarcount << ","
 	   << integer << ","
 	   << fp << ","
 	   << flow << ","
-	   << memory
+	   << memory << ","
+	   << shared << ","
+	   << constant << ","
+	   << inputregs << ","
+	   << outputregs
 	   << endl;
 }
 
@@ -72,7 +83,11 @@ void Stats<CONFIG>::DumpCSV(std::ostream & os) const
 	   << "\"Integer\","
 	   << "\"FP32\","
 	   << "\"Flow\","
-	   << "\"Memory\""
+	   << "\"Memory\","
+	   << "\"Shared\","
+	   << "\"Constant\","
+	   << "\"Input regs\","
+	   << "\"Output regs\""
 	   << endl;
 
 	typedef typename stats_map::const_iterator it_t;

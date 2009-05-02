@@ -85,6 +85,9 @@ action {void} disasm({CPU<CONFIG> *} {cpu}, {Instruction<CONFIG> const *} {insn}
 	os << "???";
 }
 
+action {void} classify({typename CONFIG::operationstats_t &} {stats}) {
+}
+
 // template
 // op alu_full_normal(/*subop*/?[3]:/*?*/?[1]:/*src3_neg*/?[1]:/*src1_neg*/[1]:0[1]:/*src2_imm*/?[1]:*rounding_mode*/?[2]:src1_sh[1]:/*src3*/[7]\
 //	:/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/[1]:/*set_pred_reg*/[2]:/*ignore_output*/[1]:/*addr_hi*/[1]:/*marker*/0[2]:\
@@ -131,6 +134,9 @@ alu_reg.disasm = {
 	DisasmReg(src1, rt, os);
 }
 
+alu_reg.classify = {
+	stats.SetInput1Reg(src1);
+}
 
 // Shared
 
@@ -178,6 +184,9 @@ alu_full_shared.disasm = {
 	DisasmShared(src1, addr_lo, addr_hi, 1, SMType(smtype), os, addr_incr);
 }
 
+alu_full_shared.classify = {
+	stats.SetInputShared();
+}
 
 
 group alu_immhalf_shared(alu_imm_shared, alu_half_shared)
@@ -196,4 +205,7 @@ alu_immhalf_shared.disasm = {
 	DisasmShared(src1, addr_lo, 0, 1, SMType(smtype), os, addr_incr);
 }
 
+alu_immhalf_shared.classify = {
+	stats.SetInputShared();
+}
 

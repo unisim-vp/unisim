@@ -82,6 +82,9 @@ action {void} disasm({CPU<CONFIG> *} {cpu}, {Instruction<CONFIG> const *} {insn}
 	os << "???";
 }
 
+action {void} classify({typename CONFIG::operationstats_t &} {stats}) {
+}
+
 // FIXME: src2 on 6 bits only??
 
 // Reg
@@ -117,6 +120,10 @@ alu_reg.read = {
 alu_reg.disasm = {
 	RegType rt = insn->OperandRegType(OpSrc2);
 	DisasmReg(src2, rt, os);
+}
+
+alu_reg.classify = {
+	stats.SetInput2Reg(src2);
 }
 
 
@@ -163,6 +170,10 @@ alu_const.disasm = {
 	os << "c" << constseg << "[" << src2 * insn->OperandSize(OpSrc2) << "]";
 }
 
+alu_const.classify = {
+	stats.SetInputConst();
+}
+
 alu_half_const.read = {
 	typedef Instruction<CONFIG> Insn;
 	// Default segment = 0??
@@ -171,6 +182,10 @@ alu_half_const.read = {
 
 alu_half_const.disasm = {
 	os << "c" << 0 << "[" << src2 * insn->OperandSize(OpSrc2) << "]";
+}
+
+alu_half_const.classify = {
+	stats.SetInputConst();
 }
 
 

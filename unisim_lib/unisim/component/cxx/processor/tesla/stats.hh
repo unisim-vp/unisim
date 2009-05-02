@@ -55,10 +55,18 @@ private:
 	bool fp;
 	bool flow;
 	bool memory;
+	bool shared;
+	bool constant;
+	int16_t outputreg;
+	int16_t input1reg;
+	int16_t input2reg;
+	int16_t input3reg;
 	
 public:
 	OperationStats() :
-		count(0), scalarcount(0), integer(false), fp(false), flow(false), memory(false) {}
+		count(0), scalarcount(0), integer(false), fp(false), flow(false), memory(false),
+		shared(false), constant(false), outputreg(-1), input1reg(-1),
+		input2reg(-1), input3reg(-1) {}
 
 	void SetName(char const * insnname) {
 		name = std::string(insnname);
@@ -70,9 +78,26 @@ public:
 	void SetMov() { integer = true;	}
 	void SetGather() { memory = true;	}
 	void SetScatter() { memory = true;	}
+	void SetInputConst() { constant = true; }
+	void SetInputShared() { shared = true; }
+	void SetOutputShared() { shared = true; }
+	void SetOutputReg(int16_t reg) { outputreg = reg; }
+	void SetInput1Reg(int16_t reg) { input1reg = reg; }
+	void SetInput2Reg(int16_t reg) { input2reg = reg; }
+	void SetInput3Reg(int16_t reg) { input3reg = reg; }
+	
+	void ResetStatic() {
+		integer = false; fp = false; flow = false;
+		memory = false; shared = false; constant = false;
+		outputreg = -1; input1reg = -1; input2reg = -1; input3reg = -1;
+	}
+	
+	void ResetDynamic() {
+		count = 0; scalarcount = 0;
+	}
 
 	void Execute(std::bitset<CONFIG::WARP_SIZE> mask) {
-		count++;
+		++count;
 		scalarcount += mask.count();
 	}
 	

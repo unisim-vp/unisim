@@ -278,6 +278,7 @@ void CPU<CONFIG>::InitStats(unsigned int code_size)
 
 		Instruction<CONFIG> instruction(this, pc, insn);
 		instruction.Disasm(sstr);
+		stats[pc - CONFIG::CODE_START].ResetDynamic();
 		stats[pc - CONFIG::CODE_START].SetName(sstr.str().c_str());
 
 		if(instruction.IsLong()) {
