@@ -340,6 +340,7 @@ fsadd_halfimm.disasm = {
 //	cpu.DisasmPred(pred_cond, pred_reg, buffer);
 
 	buffer << "add";
+	insn->DisasmControl(buffer);
 	buffer << ".f32";
 	
 	buffer << " ";
