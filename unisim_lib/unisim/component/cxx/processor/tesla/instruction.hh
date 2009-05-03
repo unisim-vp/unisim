@@ -110,7 +110,7 @@ public:
 	typedef isa::src3::Operation<CONFIG> OpSrc3;
 	typedef isa::control::Operation<CONFIG> OpControl;
 	void SetOperation(OpCode *operation);
-	OpCode * GetOperation() { return operation; }
+	OpCode * GetOperation() const { return operation; }
 
 	void SetDest(VectorRegister<CONFIG> const & value);
 	void SetPredFP32(VectorRegister<CONFIG> const & value) const;
@@ -146,7 +146,7 @@ private:
 	CPU<CONFIG> * cpu;
 	typename CONFIG::address_t addr;
 	typename CONFIG::insn_t iw;
-	mutable OpCode * operation;
+	OpCode * operation;
 	
 	static isa::opcode::Decoder<CONFIG> op_decoder;
 

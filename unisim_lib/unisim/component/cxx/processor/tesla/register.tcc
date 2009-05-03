@@ -171,23 +171,16 @@ inline DataType SMTypeToDataType(SMType st)
 
 
 template <class CONFIG>
-void VectorRegister<CONFIG>::NegateFP32()
+VectorRegister<CONFIG>::VectorRegister() :
+	scalar(false), strided(false)
 {
 }
 
 template <class CONFIG>
-VectorRegister<CONFIG>::VectorRegister()
-{
-}
-
-template <class CONFIG>
-VectorRegister<CONFIG>::VectorRegister(uint32_t val)
+VectorRegister<CONFIG>::VectorRegister(uint32_t val) :
+	scalar(true), strided(true)
 {
 	std::fill(v, v + WARP_SIZE, val);
-//	for(unsigned int i = 0; i != WARP_SIZE; ++i)
-//	{
-//		WriteLane(val, i);
-//	}
 }
 
 template <class CONFIG>
@@ -197,6 +190,8 @@ VectorRegister<CONFIG>::VectorRegister(VectorAddress<CONFIG> const & addr)
 	{
 		WriteLane(addr[i], i);
 	}
+	scalar = addr.IsScalar();
+	strided = addr.IsStrided();
 }
 
 template <class CONFIG>
@@ -207,6 +202,14 @@ void VectorRegister<CONFIG>::Write(VectorRegister<CONFIG> const & vec, bitset<CO
 		if(mask[i]) {
 			WriteLane(vec[i], i);
 		}
+	}
+	if(mask == ~bitset<CONFIG::WARP_SIZE>(0)) {
+		scalar = vec.IsScalar();
+		strided = vec.IsStrided();
+	}
+	else if(mask != 0) {
+		scalar = false;
+		strided = false;
 	}
 }
 
@@ -313,6 +316,34 @@ void VectorRegister<CONFIG>::DumpFloat(std::ostream & os)
 	}
 	os << ReadFloat(CONFIG::WARP_SIZE-1);
 	os << ")";
+}
+
+template <class CONFIG>
+bool VectorRegister<CONFIG>::CheckScalar() const
+{
+	assert(CONFIG::WARP_SIZE >= 1);
+	uint32_t ref = v[0];
+	for(int i = 1; i != CONFIG::WARP_SIZE; ++i) {
+		if(ref != v[i]) {
+			return false;
+		}
+	}
+	return true;
+}
+
+template <class CONFIG>
+bool VectorRegister<CONFIG>::CheckStrided() const
+{
+	assert(CONFIG::WARP_SIZE >= 2);
+	uint32_t base = v[0];
+	int stride = v[1] - base;
+	for(int i = 2; i != CONFIG::WARP_SIZE; ++i)
+	{
+		if(v[i] != base + i * stride) {
+			return false;
+		}
+	}
+	return true;
 }
 
 template <class CONFIG>

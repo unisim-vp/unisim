@@ -65,17 +65,6 @@ group fsmad_full(fsmad_full_noconst_normal, fsmad_full_noconst_end, fsmad_full_n
 
 // Sat?
 
-fsmad_full.init = {
-	typedef Operation<CONFIG> inherited;
-	inherited::allow_segment = true;
-	inherited::op_type[OpDest] = DT_F32;
-	inherited::op_type[OpSrc1] = DT_F32;
-	inherited::op_type[OpSrc2] = DT_F32;
-	inherited::op_type[OpSrc3] = DT_F32;
-	this->stats->SetFP();
-	this->initStats();
-}
-
 fsmad_full.disasm = {
 	buffer << "mad";
 	insn->DisasmControl(buffer);
@@ -149,17 +138,6 @@ group fsmad_full_const(fsmad_full_const3_normal, fsmad_full_const3_end, fsmad_fu
 	fsmad_full_const2_normal, fsmad_full_const2_end, fsmad_full_const2_join)
 
 
-fsmad_full_const.init = {
-	typedef Operation<CONFIG> inherited;
-	inherited::allow_segment = true;
-	inherited::op_type[OpDest] = DT_F32;
-	inherited::op_type[OpSrc1] = DT_F32;
-	inherited::op_type[OpSrc2] = DT_F32;
-	inherited::op_type[OpSrc3] = DT_F32;
-	this->stats->SetFP();
-	this->initStats();
-}
-
 fsmad_full_const.disasm = {
 	buffer << "mad";
 	insn->DisasmControl(buffer);
@@ -209,17 +187,6 @@ op fsmad_half(\
 // TODO: fsmad_half
 
 group fsmac(fsmac_imm)
-
-fsmac.init = {
-	typedef Operation<CONFIG> inherited;
-	inherited::allow_segment = true;
-	inherited::op_type[OpDest] = DT_F32;
-	inherited::op_type[OpSrc1] = DT_F32;
-	inherited::op_type[OpSrc2] = DT_F32;
-	inherited::op_type[OpSrc3] = DT_NONE;
-	this->stats->SetFP();
-	this->initStats();
-}
 
 fsmac.disasm = {
 	if(src3_neg) {		// ??
@@ -291,28 +258,6 @@ group fsadd_full(fsadd_full_noconst_normal, fsadd_full_noconst_end, fsadd_full_n
 
 group fsadd_full_const(fsadd_full_const_normal, fsadd_full_const_end, fsadd_full_const_join)
 
-
-fsadd_full.init = {
-	typedef Operation<CONFIG> inherited;
-	inherited::allow_segment = true;
-	inherited::op_type[OpDest] = DT_F32;
-	inherited::op_type[OpSrc1] = DT_F32;
-	inherited::op_type[OpSrc2] = DT_NONE;
-	inherited::op_type[OpSrc3] = DT_F32;
-	this->stats->SetFP();
-	this->initStats();
-}
-
-fsadd_full_const.init = {
-	typedef Operation<CONFIG> inherited;
-	inherited::allow_segment = true;
-	inherited::op_type[OpDest] = DT_F32;
-	inherited::op_type[OpSrc1] = DT_F32;
-	inherited::op_type[OpSrc2] = DT_NONE;
-	inherited::op_type[OpSrc3] = DT_F32;
-	this->stats->SetFP();
-	this->initStats();
-}
 
 fsadd_full.disasm = {
 //	cpu.DisasmPred(pred_cond, pred_reg, buffer);
@@ -390,16 +335,6 @@ op fsadd_half( \
 
 group fsadd_halfimm(fsadd_imm, fsadd_half)
 
-fsadd_halfimm.init = {
-	typedef Operation<CONFIG> inherited;
-	inherited::allow_segment = true;
-	inherited::op_type[OpDest] = DT_F32;
-	inherited::op_type[OpSrc1] = DT_F32;
-	inherited::op_type[OpSrc2] = DT_F32;
-	inherited::op_type[OpSrc3] = DT_NONE;
-	this->stats->SetFP();
-	this->initStats();
-}
 
 fsadd_halfimm.disasm = {
 //	cpu.DisasmPred(pred_cond, pred_reg, buffer);
@@ -490,17 +425,6 @@ group fsmul_full(fsmul_full_noconst_normal, fsmul_full_noconst_end, fsmul_full_n
 group fsmul_full_const(fsmul_full_const_normal, fsmul_full_const_end, fsmul_full_const_join)
 group fsmul_halfimm(fsmul_imm, fsmul_half)
 
-fsmul_full.init = {
-	typedef Operation<CONFIG> inherited;
-	inherited::allow_segment = true;
-	inherited::op_type[OpDest] = DT_F32;
-	inherited::op_type[OpSrc1] = DT_F32;
-	inherited::op_type[OpSrc2] = DT_F32;
-	inherited::op_type[OpSrc3] = DT_NONE;
-	this->stats->SetFP();
-	this->initStats();
-}
-
 fsmul_full.disasm = {
 
 	buffer << "mul";
@@ -535,17 +459,6 @@ fsmul_full.execute = {
 	//insn->SetPredFP32(output);
 }
 
-fsmul_full_const.init = {
-	typedef Operation<CONFIG> inherited;
-	inherited::allow_segment = true;
-	inherited::op_type[OpDest] = DT_F32;
-	inherited::op_type[OpSrc1] = DT_F32;
-	inherited::op_type[OpSrc2] = DT_F32;
-	inherited::op_type[OpSrc3] = DT_NONE;
-	this->stats->SetFP();
-	this->initStats();
-}
-
 fsmul_full_const.disasm = {
 	buffer << "mul";
 	insn->DisasmControl(buffer);
@@ -577,17 +490,6 @@ fsmul_full_const.execute = {
 	//insn->SetPredFP32(output);
 }
 
-
-fsmul_halfimm.init = {
-	typedef Operation<CONFIG> inherited;
-	inherited::allow_segment = true;
-	inherited::op_type[OpDest] = DT_F32;
-	inherited::op_type[OpSrc1] = DT_F32;
-	inherited::op_type[OpSrc2] = DT_F32;
-	inherited::op_type[OpSrc3] = DT_NONE;
-	this->stats->SetFP();
-	this->initStats();
-}
 
 fsmul_halfimm.disasm = {
 
@@ -642,8 +544,10 @@ fsset.init = {
 	inherited::op_type[OpSrc1] = DT_F32;
 	inherited::op_type[OpSrc2] = DT_F32;
 	inherited::op_type[OpSrc3] = DT_NONE;
+}
+
+fsset.classify = {
 	this->stats->SetFP();
-	this->initStats();
 }
 
 fsset.disasm = {
@@ -711,8 +615,10 @@ fcvti_full.init = {
 			DT_U16);
 	inherited::op_type[OpSrc2] = DT_NONE;
 	inherited::op_type[OpSrc3] = DT_NONE;
+}
+
+fcvti_full.classify = {
 	this->stats->SetFP();
-	this->initStats();
 }
 
 fcvti_full.disasm = {
@@ -751,16 +657,28 @@ fcvti_full.execute = {
 // Float to float
 op fcvtf_full_normal( \
 	/*subop*/6[3]:/*?*/0[1]:cvt_int[1]:dest_32[1]:/*const_seg*/?[4]:/*src1_sh*/?[1]:abs_sat[2]:cvt_round[2]:cvt_type[3]:\
-	/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output*/?[1]:/*addr_hi*/?[1]:/*marker*/?[2]: \
+	/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output*/?[1]:/*addr_hi*/?[1]:/*marker*/0[2]: \
+	0xa[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:f64[1]:/*?*/0[6]:\
+	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1]\
+)
+
+op fcvtf_full_end( \
+	/*subop*/6[3]:/*?*/0[1]:cvt_int[1]:dest_32[1]:/*const_seg*/?[4]:/*src1_sh*/?[1]:abs_sat[2]:cvt_round[2]:cvt_type[3]:\
+	/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output*/?[1]:/*addr_hi*/?[1]:/*marker*/1[2]: \
+	0xa[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:f64[1]:/*?*/0[6]:\
+	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1]\
+)
+
+op fcvtf_full_join( \
+	/*subop*/6[3]:/*?*/0[1]:cvt_int[1]:dest_32[1]:/*const_seg*/?[4]:/*src1_sh*/?[1]:abs_sat[2]:cvt_round[2]:cvt_type[3]:\
+	/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output*/?[1]:/*addr_hi*/?[1]:/*marker*/2[2]: \
 	0xa[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:f64[1]:/*?*/0[6]:\
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1]\
 )
 
 
 
-group fcvtf_full(fcvtf_full_normal)
-
-// TODO: end join
+group fcvtf_full(fcvtf_full_normal, fcvtf_full_end, fcvtf_full_join)
 
 // No immediate : dest = conv(src1)
 
@@ -776,8 +694,10 @@ fcvtf_full.init = {
 			DT_U16);
 	inherited::op_type[OpSrc2] = DT_NONE;
 	inherited::op_type[OpSrc3] = DT_NONE;
+}
+
+fcvtf_full.classify = {
 	this->stats->SetFP();
-	this->initStats();
 }
 
 fcvtf_full.disasm = {
@@ -816,17 +736,9 @@ op fmov_full( \
 
 //group fmov_full(fmov_full_normal)
 
-// No immediate : dest = conv(src1)
+group fmov(fmov_full)
 
-fmov_full.init = {
-	typedef Operation<CONFIG> inherited;
-	inherited::op_type[OpDest] = DT_F32;
-	inherited::op_type[OpSrc1] = DT_F32;
-	inherited::op_type[OpSrc2] = DT_NONE;
-	inherited::op_type[OpSrc3] = DT_NONE;
-	this->stats->SetFP();
-	this->initStats();
-}
+// No immediate : dest = conv(src1)
 
 fmov_full.disasm = {
 	buffer << "mov";
@@ -867,16 +779,6 @@ group rr_ex2(rr_ex2_full)
 
 // No immediate : dest = conv(src1)
 
-rr_ex2.init = {
-	typedef Operation<CONFIG> inherited;
-	inherited::op_type[OpDest] = DT_U32;
-	inherited::op_type[OpSrc1] = DT_F32;
-	inherited::op_type[OpSrc2] = DT_NONE;
-	inherited::op_type[OpSrc3] = DT_NONE;
-	this->stats->SetFP();
-	this->initStats();
-}
-
 rr_ex2.disasm = {
 	buffer << "rr.ex2";
 	insn->DisasmControl(buffer);
@@ -911,16 +813,6 @@ op rr_trig_full_normal( \
 group rr_trig(rr_trig_full_normal)
 
 // No immediate : dest = conv(src1)
-
-rr_trig.init = {
-	typedef Operation<CONFIG> inherited;
-	inherited::op_type[OpDest] = DT_U32;
-	inherited::op_type[OpSrc1] = DT_F32;
-	inherited::op_type[OpSrc2] = DT_NONE;
-	inherited::op_type[OpSrc3] = DT_NONE;
-	this->stats->SetFP();
-	this->initStats();
-}
 
 rr_trig.disasm = {
 	buffer << "rr.sin";
@@ -962,16 +854,6 @@ group rcp(rcp_full_normal, rcp_half)
 
 // No immediate : dest = conv(src1)
 
-rcp.init = {
-	typedef Operation<CONFIG> inherited;
-	inherited::op_type[OpDest] = DT_F32;
-	inherited::op_type[OpSrc1] = DT_F32;
-	inherited::op_type[OpSrc2] = DT_NONE;
-	inherited::op_type[OpSrc3] = DT_NONE;
-	this->stats->SetFP();
-	this->initStats();
-}
-
 rcp.disasm = {
 	buffer << "rcp";
 	insn->DisasmControl(buffer);
@@ -1008,16 +890,6 @@ op rsq_full_normal( \
 group rsq(rsq_full_normal)
 
 // No immediate : dest = conv(src1)
-
-rsq.init = {
-	typedef Operation<CONFIG> inherited;
-	inherited::op_type[OpDest] = DT_F32;
-	inherited::op_type[OpSrc1] = DT_F32;
-	inherited::op_type[OpSrc2] = DT_NONE;
-	inherited::op_type[OpSrc3] = DT_NONE;
-	this->stats->SetFP();
-	this->initStats();
-}
 
 rsq.disasm = {
 	buffer << "rsqrt";
@@ -1056,16 +928,6 @@ group lg2(lg2_full_normal)
 
 // No immediate : dest = conv(src1)
 
-lg2.init = {
-	typedef Operation<CONFIG> inherited;
-	inherited::op_type[OpDest] = DT_F32;
-	inherited::op_type[OpSrc1] = DT_F32;
-	inherited::op_type[OpSrc2] = DT_NONE;
-	inherited::op_type[OpSrc3] = DT_NONE;
-	this->stats->SetFP();
-	this->initStats();
-}
-
 lg2.disasm = {
 	buffer << "lg2";
 	insn->DisasmControl(buffer);
@@ -1102,16 +964,6 @@ op sin_full_normal( \
 group sin(sin_full_normal)
 
 // No immediate : dest = conv(src1)
-
-sin.init = {
-	typedef Operation<CONFIG> inherited;
-	inherited::op_type[OpDest] = DT_F32;
-	inherited::op_type[OpSrc1] = DT_U32;
-	inherited::op_type[OpSrc2] = DT_NONE;
-	inherited::op_type[OpSrc3] = DT_NONE;
-	this->stats->SetFP();
-	this->initStats();
-}
 
 sin.disasm = {
 	buffer << "sin";
@@ -1150,16 +1002,6 @@ group cos(cos_full_normal)
 
 // No immediate : dest = conv(src1)
 
-cos.init = {
-	typedef Operation<CONFIG> inherited;
-	inherited::op_type[OpDest] = DT_F32;
-	inherited::op_type[OpSrc1] = DT_U32;
-	inherited::op_type[OpSrc2] = DT_NONE;
-	inherited::op_type[OpSrc3] = DT_NONE;
-	this->stats->SetFP();
-	this->initStats();
-}
-
 cos.disasm = {
 	buffer << "cos";
 	insn->DisasmControl(buffer);
@@ -1196,16 +1038,6 @@ op ex2_full_normal( \
 group ex2(ex2_full_normal)
 
 // No immediate : dest = conv(src1)
-
-ex2.init = {
-	typedef Operation<CONFIG> inherited;
-	inherited::op_type[OpDest] = DT_F32;
-	inherited::op_type[OpSrc1] = DT_U32;
-	inherited::op_type[OpSrc2] = DT_NONE;
-	inherited::op_type[OpSrc3] = DT_NONE;
-	this->stats->SetFP();
-	this->initStats();
-}
 
 ex2.disasm = {
 	buffer << "ex2";
@@ -1283,17 +1115,6 @@ fsmax_full.execute = {
 	//insn->SetPredFP32(output);
 }
 
-fsmax_full.init = {
-	typedef Operation<CONFIG> inherited;
-	inherited::allow_segment = true;
-	inherited::op_type[OpDest] = DT_F32;
-	inherited::op_type[OpSrc1] = DT_F32;
-	inherited::op_type[OpSrc2] = DT_F32;
-	inherited::op_type[OpSrc3] = DT_NONE;
-	this->stats->SetFP();
-	this->initStats();
-}
-
 fsmax_imm.disasm = {
 	buffer << "max";
 	insn->DisasmControl(buffer);
@@ -1321,14 +1142,100 @@ fsmax_imm.execute = {
 	//insn->SetPredFP32(output);
 }
 
-fsmax_imm.init = {
+// Input operands 1, 2, 3 and output operand of type DT_F32
+group fp32d123(fsmad_full, fsmad_full_const)
+
+fp32d123.init = {
+	typedef Operation<CONFIG> inherited;
+	inherited::allow_segment = true;
+	inherited::op_type[OpDest] = DT_F32;
+	inherited::op_type[OpSrc1] = DT_F32;
+	inherited::op_type[OpSrc2] = DT_F32;
+	inherited::op_type[OpSrc3] = DT_F32;
+}
+
+fp32d123.classify = {
+	this->stats->SetFP();
+}
+
+// Input operands 1, 2 and output operand of type DT_F32
+group fp32d12(fsmac, fsadd_halfimm, fsmul_full, fsmul_halfimm, \
+	fsmul_full_const, fsmax_full, fsmax_imm)
+
+fp32d12.init = {
 	typedef Operation<CONFIG> inherited;
 	inherited::allow_segment = true;
 	inherited::op_type[OpDest] = DT_F32;
 	inherited::op_type[OpSrc1] = DT_F32;
 	inherited::op_type[OpSrc2] = DT_F32;
 	inherited::op_type[OpSrc3] = DT_NONE;
+}
+
+fp32d12.classify = {
 	this->stats->SetFP();
-	this->initStats();
+}
+
+// Input operands 1, 3 and output operand of type DT_F32
+group fp32d13(fsadd_full, fsadd_full_const)
+
+fp32d13.init = {
+	typedef Operation<CONFIG> inherited;
+	inherited::allow_segment = true;
+	inherited::op_type[OpDest] = DT_F32;
+	inherited::op_type[OpSrc1] = DT_F32;
+	inherited::op_type[OpSrc2] = DT_NONE;
+	inherited::op_type[OpSrc3] = DT_F32;
+}
+
+fp32d13.classify = {
+	this->stats->SetFP();
+}
+
+// Input operand 1 and output operand of type DT_F32
+group fp32d1(fmov, rcp, rsq, lg2)
+
+fp32d1.init = {
+	typedef Operation<CONFIG> inherited;
+	inherited::allow_segment = true;
+	inherited::op_type[OpDest] = DT_F32;
+	inherited::op_type[OpSrc1] = DT_F32;
+	inherited::op_type[OpSrc2] = DT_NONE;
+	inherited::op_type[OpSrc3] = DT_NONE;
+}
+
+fp32d1.classify = {
+	this->stats->SetFP();
+}
+
+// Input operand 1: DT_U32 and output operand: DT_F32
+group fp32dint1(ex2, sin, cos)
+
+fp32dint1.init = {
+	typedef Operation<CONFIG> inherited;
+	inherited::allow_segment = true;
+	inherited::op_type[OpDest] = DT_F32;
+	inherited::op_type[OpSrc1] = DT_U32;
+	inherited::op_type[OpSrc2] = DT_NONE;
+	inherited::op_type[OpSrc3] = DT_NONE;
+}
+
+fp32dint1.classify = {
+	this->stats->SetFP();
+}
+
+// Input operand 1: DT_F32 and output operand : DT_U32
+group intdfp321(rr_ex2, rr_trig)
+
+intdfp321.init = {
+	typedef Operation<CONFIG> inherited;
+	inherited::allow_segment = true;
+	inherited::op_type[OpDest] = DT_U32;
+	inherited::op_type[OpSrc1] = DT_F32;
+	inherited::op_type[OpSrc2] = DT_NONE;
+	inherited::op_type[OpSrc3] = DT_NONE;
+}
+
+intdfp321.classify = {
+	this->stats->SetFP();
 }
 

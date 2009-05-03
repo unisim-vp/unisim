@@ -76,7 +76,7 @@ Operation<CONFIG>::Operation(typename CONFIG::address_t addr, typename CONFIG::i
 	control = control_decoder.Decode(addr, iw);
 
 	stats = &CPU<CONFIG>::stats[addr - CONFIG::CODE_START];
-	stats->ResetStatic();
+	//stats->ResetStatic();
 	//std::ostringstream oss;
 	//dest->disasmPred(cpu, this, oss);
 	//disasm(oss);
@@ -91,6 +91,8 @@ Operation<CONFIG>::~Operation()
 template <class CONFIG>
 void Operation<CONFIG>::initStats()
 {
+	assert(stats != 0);
+	classify();
 	if(op_type[OpDest] != DT_NONE) {
 		dest->classify(*stats);
 	}

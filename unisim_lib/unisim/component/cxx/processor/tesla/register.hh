@@ -129,7 +129,6 @@ struct VectorRegister
 	VectorRegister();
 	VectorRegister(uint32_t val);
 	VectorRegister(VectorAddress<CONFIG> const & addr);
-	void NegateFP32();
 	void Write(VectorRegister<CONFIG> const & vec, std::bitset<CONFIG::WARP_SIZE> mask);
 	void Write16(VectorRegister<CONFIG> const & vec, std::bitset<CONFIG::WARP_SIZE> mask, int hi);
 	
@@ -145,7 +144,15 @@ struct VectorRegister
 	uint32_t operator[] (unsigned int lane) const;
 	uint32_t & operator[] (unsigned int lane);
 
+	bool CheckScalar() const;
+	bool CheckStrided() const;
+
 	reg_t v[WARP_SIZE];
+	bool scalar;
+	bool strided;
+	
+	bool IsScalar() const { return scalar; }
+	bool IsStrided() const { return strided; }
 };
 
 template <class CONFIG>
@@ -172,6 +179,12 @@ struct VectorAddress
 	void Increment(DataType dt, size_t imm, std::bitset<CONFIG::WARP_SIZE> mask);
 	
 	address_t v[WARP_SIZE];
+	bool scalar;
+	bool strided;
+	bool lowstrided;
+
+	bool IsScalar() const { return scalar; }
+	bool IsStrided() const { return strided; }
 };
 
 template<class CONFIG>

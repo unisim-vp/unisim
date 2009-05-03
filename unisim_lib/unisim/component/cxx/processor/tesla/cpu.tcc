@@ -268,6 +268,7 @@ void CPU<CONFIG>::Reset(unsigned int threadsperblock, unsigned int numblocks, un
 template <class CONFIG>
 void CPU<CONFIG>::InitStats(unsigned int code_size)
 {
+	stats.Reset();
 	typename CONFIG::address_t pc = CONFIG::CODE_START;
 	while(pc < CONFIG::CODE_START + code_size)
 	{
@@ -277,15 +278,18 @@ void CPU<CONFIG>::InitStats(unsigned int code_size)
 		if(!memory_import->ReadMemory(pc, &insn, 8)) assert(false);
 
 		Instruction<CONFIG> instruction(this, pc, insn);
+		typename CONFIG::operationstats_t * opstats = &stats[pc - CONFIG::CODE_START];
+		instruction.GetOperation()->stats = opstats;	// Needed if operation didn't change
 		instruction.Disasm(sstr);
-		stats[pc - CONFIG::CODE_START].ResetDynamic();
-		stats[pc - CONFIG::CODE_START].SetName(sstr.str().c_str());
+		//stats[pc - CONFIG::CODE_START].ResetDynamic();
+		opstats->SetName(sstr.str().c_str());
+		instruction.GetOperation()->initStats();
 
 		if(instruction.IsLong()) {
-			pc = pc + 8;
+			pc += 8;
 		}
 		else {
-			pc = pc + 4;
+			pc += 4;
 		}
 	}
 }

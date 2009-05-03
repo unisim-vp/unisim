@@ -56,16 +56,6 @@ br.execute = {
 	cpu->Branch(target_addr, insn->Mask());
 }
 
-br.init = {
-	typedef Operation<CONFIG> inherited;
-	inherited::allow_segment = true;
-	inherited::op_type[OpDest] = DT_NONE;
-	inherited::op_type[OpSrc1] = DT_NONE;
-	inherited::op_type[OpSrc2] = DT_NONE;
-	inherited::op_type[OpSrc3] = DT_NONE;
-	this->stats->SetFlow();
-}
-
 
 op join( \
 	/*subop*/?[3]:/*?*/?[1]:?[26]:/*marker*/?[2]: \
@@ -84,15 +74,6 @@ join.execute = {
 	cpu->Meet(target_addr);
 }
 
-join.init = {
-	typedef Operation<CONFIG> inherited;
-	inherited::allow_segment = true;
-	inherited::op_type[OpDest] = DT_NONE;
-	inherited::op_type[OpSrc1] = DT_NONE;
-	inherited::op_type[OpSrc2] = DT_NONE;
-	inherited::op_type[OpSrc3] = DT_NONE;
-	this->stats->SetFlow();
-}
 
 op prebreak( \
 	/*subop*/?[3]:/*?*/?[1]:?[26]:/*marker*/?[2]: \
@@ -106,16 +87,6 @@ prebreak.disasm = {
 
 prebreak.execute = {
 	cpu->PreBreak(target_addr);	// Never predicated
-}
-
-prebreak.init = {
-	typedef Operation<CONFIG> inherited;
-	inherited::allow_segment = true;
-	inherited::op_type[OpDest] = DT_NONE;
-	inherited::op_type[OpSrc1] = DT_NONE;
-	inherited::op_type[OpSrc2] = DT_NONE;
-	inherited::op_type[OpSrc3] = DT_NONE;
-	this->stats->SetFlow();
 }
 
 op fence( \
@@ -135,15 +106,6 @@ fence.execute = {
 	cpu->Fence();
 }
 
-fence.init = {
-	typedef Operation<CONFIG> inherited;
-	inherited::allow_segment = true;
-	inherited::op_type[OpDest] = DT_NONE;
-	inherited::op_type[OpSrc1] = DT_NONE;
-	inherited::op_type[OpSrc2] = DT_NONE;
-	inherited::op_type[OpSrc3] = DT_NONE;
-	this->stats->SetFlow();
-}
 
 op ret( \
 	/*subop*/?[3]:/*?*/?[1]:?[26]:/*marker*/?[2]: \
@@ -157,15 +119,6 @@ ret.disasm = {
 
 ret.execute = {
 	cpu->Return(insn->Mask());
-}
-ret.init = {
-	typedef Operation<CONFIG> inherited;
-	inherited::allow_segment = true;
-	inherited::op_type[OpDest] = DT_NONE;
-	inherited::op_type[OpSrc1] = DT_NONE;
-	inherited::op_type[OpSrc2] = DT_NONE;
-	inherited::op_type[OpSrc3] = DT_NONE;
-	this->stats->SetFlow();
 }
 
 op break( \
@@ -182,13 +135,18 @@ break.execute = {
 	cpu->Break(insn->Mask());
 }
 
-break.init = {
+group flow(br, join, prebreak, fence, ret, break)
+
+flow.init = {
 	typedef Operation<CONFIG> inherited;
 	inherited::allow_segment = true;
 	inherited::op_type[OpDest] = DT_NONE;
 	inherited::op_type[OpSrc1] = DT_NONE;
 	inherited::op_type[OpSrc2] = DT_NONE;
 	inherited::op_type[OpSrc3] = DT_NONE;
+}
+
+flow.classify = {
 	this->stats->SetFlow();
 }
 

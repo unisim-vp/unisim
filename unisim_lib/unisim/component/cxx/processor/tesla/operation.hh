@@ -99,6 +99,7 @@ struct Operation
 
 	virtual void disasm(CPU<CONFIG> * cpu, Instruction<CONFIG> const * insn,
 		ostream& buffer) = 0;
+	virtual void classify() = 0;
 	void initStats();
 	
 	typedef typename isa::opcode::Operation<CONFIG> OpCode;

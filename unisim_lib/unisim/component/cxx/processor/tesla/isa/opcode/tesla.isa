@@ -146,12 +146,13 @@ var allow_segment : { bool }
 var force_reg : { SimpleArray<bool, 4> }
 
 constructor action init() {
+	assert(false);
 	this->allow_segment = true;		// Actually always true (?)
 	this->op_type[OpDest] = DT_U32;
 	this->op_type[OpSrc1] = DT_U32;
 	this->op_type[OpSrc2] = DT_U32;
 	this->op_type[OpSrc3] = DT_U32;
-	this->initStats();
+	//this->initStats();
 }
 
 constructor action init_force_reg() {
@@ -161,21 +162,8 @@ constructor action init_force_reg() {
 	this->force_reg[OpSrc3] = false;
 }
 
-/*constructor action init_stats() {
-	// Executed before init???
-	if(this->op_type[OpDest] != DT_NONE) {
-		this->dest->classify(*this->stats);
-	}
-	if(this->op_type[OpSrc1] != DT_NONE) {
-		this->src1->classify(*this->stats);
-	}
-	if(this->op_type[OpSrc2] != DT_NONE) {
-		this->src2->classify(*this->stats);
-	}
-	if(this->op_type[OpSrc3] != DT_NONE) {
-		this->src3->classify(*this->stats);
-	}
-}*/
+action classify() {
+}
 
 include "isa/opcode/fp32.isa"
 include "isa/opcode/integer.isa"
