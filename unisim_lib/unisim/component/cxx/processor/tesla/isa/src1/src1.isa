@@ -58,6 +58,9 @@ class CPU;
 template<class CONFIG>
 class Instruction;
 
+template<class CONFIG>
+class Operation;
+
 } // end of namespace tesla 
 } // end of namespace processor
 } // end of namespace cxx
@@ -85,7 +88,8 @@ action {void} disasm({CPU<CONFIG> *} {cpu}, {Instruction<CONFIG> const *} {insn}
 	os << "???";
 }
 
-action {void} classify({typename CONFIG::operationstats_t &} {stats}) {
+action {void} classify({typename CONFIG::operationstats_t &} {stats}, \
+	{DataType} {dt}) {
 }
 
 // template
@@ -135,7 +139,7 @@ alu_reg.disasm = {
 }
 
 alu_reg.classify = {
-	stats.SetInput1Reg(src1);
+	stats.SetRegNum(src1, dt, OpSrc1);
 }
 
 // Shared

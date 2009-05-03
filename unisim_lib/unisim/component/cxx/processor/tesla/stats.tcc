@@ -36,6 +36,7 @@
 #define UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_STATS_TCC
 
 #include <unisim/component/cxx/processor/tesla/stats.hh>
+#include <unisim/component/cxx/processor/tesla/register.hh>
 #include <iomanip>
 
 namespace unisim {
@@ -47,17 +48,67 @@ namespace tesla {
 
 using namespace std;
 
+template<class CONFIG>
+void OperationStats<CONFIG>::SetRegNum(int16_t reg, DataType dt, Operand n)
+{
+	switch(dt) {
+	case DT_U32:
+	case DT_S32:
+	case DT_F32:
+		regnum[n] = reg;
+		break;
+	case DT_U16:
+	case DT_S16:
+		regnum[n] = reg / 2;
+		break;
+	default:
+		regnum[n] = reg;	// TODO: count multiple registers for DT_U64/DT_U128
+		break;
+	}
+}
+
+template<class CONFIG>
+void OperationStats<CONFIG>::RegRead(VectorRegister<CONFIG> const * regs, DataType dt)
+{
+	if(CONFIG::STAT_SCALAR_REG) {
+		if(regs[0].CheckScalar()) {
+			++scalarRegInputs;
+		}
+	}
+	if(CONFIG::STAT_STRIDED_REG) {
+		if(regs[0].CheckStrided()) {
+			++stridedRegInputs;
+		}
+	}
+}
+
+template<class CONFIG>
+void OperationStats<CONFIG>::RegWrite(VectorRegister<CONFIG> const * regs, DataType dt)
+{
+	if(CONFIG::STAT_SCALAR_REG) {
+		if(regs[0].CheckScalar()) {
+			++scalarRegOutputs;
+		}
+	}
+	if(CONFIG::STAT_STRIDED_REG) {
+		if(regs[0].CheckStrided()) {
+			++stridedRegOutputs;
+		}
+	}
+}
+
 // Format:
 // address,name,count,scalarcount,integer,fp,flow,memory
 template<class CONFIG>
 void OperationStats<CONFIG>::DumpCSV(std::ostream & os) const
 {
-	bool outputregs = (outputreg != -1);
+	bool outputregs = (regnum[OpDest] != -1);
 	int inputregs = 0;
 	// Count unique registers only
-	if(input1reg != -1) { ++inputregs; }
-	if(input2reg != -1 && input2reg != input1reg) { ++inputregs; }
-	if(input3reg != -1 && input3reg != input2reg && input3reg != input2reg) { ++inputregs; }
+	if(regnum[OpSrc1] != -1) { ++inputregs; }
+	if(regnum[OpSrc2] != -1 && regnum[OpSrc2] != regnum[OpSrc1]) { ++inputregs; }
+	if(regnum[OpSrc3] != -1 && regnum[OpSrc3] != regnum[OpSrc2]
+		&& regnum[OpSrc3] != regnum[OpSrc2]) { ++inputregs; }
 	
 	os << "\"" << name << "\","
 	   << count << ","
@@ -69,8 +120,16 @@ void OperationStats<CONFIG>::DumpCSV(std::ostream & os) const
 	   << shared << ","
 	   << constant << ","
 	   << inputregs << ","
-	   << outputregs
-	   << endl;
+	   << outputregs;
+	if(CONFIG::STAT_SCALAR_REG) {
+		os << "," << scalarRegInputs
+		   << "," << scalarRegOutputs;
+	}
+	if(CONFIG::STAT_STRIDED_REG) {
+		os << "," << stridedRegInputs
+		   << "," << stridedRegOutputs;
+	}
+	os << endl;
 }
 
 template<class CONFIG>
@@ -87,8 +146,16 @@ void Stats<CONFIG>::DumpCSV(std::ostream & os) const
 	   << "\"Shared\","
 	   << "\"Constant\","
 	   << "\"Input regs\","
-	   << "\"Output regs\""
-	   << endl;
+	   << "\"Output regs\"";
+	if(CONFIG::STAT_SCALAR_REG) {
+		os << ",\"Scalar inputs\""
+		   << ",\"Scalar outputs\"";
+	}
+	if(CONFIG::STAT_STRIDED_REG) {
+		os << ",\"Strided inputs\""
+		   << ",\"Strided outputs\"";
+	}
+	os << endl;
 
 	typedef typename stats_map::const_iterator it_t;
 	for(it_t it = stats.begin(); it != stats.end(); ++it)
@@ -97,7 +164,6 @@ void Stats<CONFIG>::DumpCSV(std::ostream & os) const
 		it->second.DumpCSV(os);
 	}
 }
-
 
 } // end of namespace tesla
 } // end of namespace processor

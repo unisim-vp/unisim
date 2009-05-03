@@ -323,7 +323,7 @@ bool VectorRegister<CONFIG>::CheckScalar() const
 {
 	assert(CONFIG::WARP_SIZE >= 1);
 	uint32_t ref = v[0];
-	for(int i = 1; i != CONFIG::WARP_SIZE; ++i) {
+	for(unsigned int i = 1; i != CONFIG::WARP_SIZE; ++i) {
 		if(ref != v[i]) {
 			return false;
 		}
@@ -337,7 +337,7 @@ bool VectorRegister<CONFIG>::CheckStrided() const
 	assert(CONFIG::WARP_SIZE >= 2);
 	uint32_t base = v[0];
 	int stride = v[1] - base;
-	for(int i = 2; i != CONFIG::WARP_SIZE; ++i)
+	for(unsigned int i = 2; i != CONFIG::WARP_SIZE; ++i)
 	{
 		if(v[i] != base + i * stride) {
 			return false;

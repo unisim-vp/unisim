@@ -94,16 +94,16 @@ void Operation<CONFIG>::initStats()
 	assert(stats != 0);
 	classify();
 	if(op_type[OpDest] != DT_NONE) {
-		dest->classify(*stats);
+		dest->classify(*stats, op_type[OpDest]);
 	}
 	if(op_type[OpSrc1] != DT_NONE) {
-		src1->classify(*stats);
+		src1->classify(*stats, op_type[OpSrc1]);
 	}
 	if(op_type[OpSrc2] != DT_NONE) {
-		src2->classify(*stats);
+		src2->classify(*stats, op_type[OpSrc2]);
 	}
 	if(op_type[OpSrc3] != DT_NONE) {
-		src3->classify(*stats);
+		src3->classify(*stats, op_type[OpSrc3]);
 	}
 }
 

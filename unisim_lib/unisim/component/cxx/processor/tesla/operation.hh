@@ -85,7 +85,7 @@ struct SimpleArray
 	}
 };
 
-typedef SimpleArray<DataType, 4> DataTypeArray;
+//typedef SimpleArray<DataType, 4> DataTypeArray;
 
 // Operation: base of all opcodes
 // Only one instance of Operation per machine instruction in memory
@@ -102,7 +102,7 @@ struct Operation
 	virtual void classify() = 0;
 	void initStats();
 	
-	typedef typename isa::opcode::Operation<CONFIG> OpCode;
+	//typedef typename isa::opcode::Operation<CONFIG> OpCode;
 	typedef isa::dest::Operation<CONFIG> OperDest;
 	typedef isa::src1::Operation<CONFIG> OperSrc1;
 	typedef isa::src2::Operation<CONFIG> OperSrc2;
@@ -116,7 +116,7 @@ struct Operation
 	OperControl * control;
 	
 	typename CONFIG::operationstats_t * stats;
-	DataTypeArray op_type;
+	DataType op_type[4];
 
 private:
 	typename CONFIG::address_t addr;

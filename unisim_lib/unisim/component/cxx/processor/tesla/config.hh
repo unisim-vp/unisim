@@ -124,6 +124,8 @@ public:
 	static bool const TRACE_SYNC = false;
 	static bool const TRACE_RESET = false;
 
+	static bool const STAT_SCALAR_REG = false;
+	static bool const STAT_STRIDED_REG = false;
 };
 
 

@@ -82,7 +82,8 @@ action {void} disasm({CPU<CONFIG> *} {cpu}, {Instruction<CONFIG> const *} {insn}
 	os << "???";
 }
 
-action {void} classify({typename CONFIG::operationstats_t &} {stats}) {
+action {void} classify({typename CONFIG::operationstats_t &} {stats}, \
+	{DataType} {dt}) {
 }
 
 // FIXME: src2 on 6 bits only??
@@ -123,7 +124,7 @@ alu_reg.disasm = {
 }
 
 alu_reg.classify = {
-	stats.SetInput2Reg(src2);
+	stats.SetRegNum(src2, dt, OpSrc2);
 }
 
 

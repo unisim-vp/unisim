@@ -36,7 +36,9 @@
 #define UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_STATS_HH
 
 #include <string>
-//#include <unisim/component/cxx/processor/tesla/operation.hh>
+#include <algorithm>
+#include <unisim/component/cxx/processor/tesla/operation.hh>
+#include <unisim/component/cxx/processor/tesla/register.hh>
 
 namespace unisim {
 namespace component {
@@ -57,16 +59,19 @@ private:
 	bool memory;
 	bool shared;
 	bool constant;
-	int16_t outputreg;
-	int16_t input1reg;
-	int16_t input2reg;
-	int16_t input3reg;
+	int16_t regnum[4];
+	unsigned int scalarRegInputs;
+	unsigned int stridedRegInputs;
+	unsigned int scalarRegOutputs;
+	unsigned int stridedRegOutputs;
 	
 public:
 	OperationStats() :
 		count(0), scalarcount(0), integer(false), fp(false), flow(false), memory(false),
-		shared(false), constant(false), outputreg(-1), input1reg(-1),
-		input2reg(-1), input3reg(-1) {}
+		shared(false), constant(false), scalarRegInputs(0), stridedRegInputs(0),
+		scalarRegOutputs(0), stridedRegOutputs(0) {
+		std::fill(regnum, regnum + 4, -1);
+	}
 
 	void SetName(char const * insnname) {
 		name = std::string(insnname);
@@ -81,21 +86,11 @@ public:
 	void SetInputConst() { constant = true; }
 	void SetInputShared() { shared = true; }
 	void SetOutputShared() { shared = true; }
-	void SetOutputReg(int16_t reg) { outputreg = reg; }
-	void SetInput1Reg(int16_t reg) { input1reg = reg; }
-	void SetInput2Reg(int16_t reg) { input2reg = reg; }
-	void SetInput3Reg(int16_t reg) { input3reg = reg; }
-	
-	void ResetStatic() {
-		integer = false; fp = false; flow = false;
-		memory = false; shared = false; constant = false;
-		outputreg = -1; input1reg = -1; input2reg = -1; input3reg = -1;
-	}
-	
-	void ResetDynamic() {
-		count = 0; scalarcount = 0;
-	}
 
+	void SetRegNum(int16_t reg, DataType dt, Operand n);
+	
+	void RegRead(VectorRegister<CONFIG> const * regs, DataType dt);
+	void RegWrite(VectorRegister<CONFIG> const * regs, DataType dt);
 	void Execute(std::bitset<CONFIG::WARP_SIZE> mask) {
 		++count;
 		scalarcount += mask.count();

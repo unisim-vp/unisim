@@ -103,7 +103,8 @@ action {void} disasmPred({CPU<CONFIG> *} {cpu}, {Instruction<CONFIG> const *} {i
 	os << "???";
 }
 
-action {void} classify({typename CONFIG::operationstats_t &} {stats}) {
+action {void} classify({typename CONFIG::operationstats_t &} {stats}, \
+	{DataType} {dt}) {
 }
 
 // Should have two formats
@@ -203,7 +204,7 @@ alu_full.disasmPred = {
 
 alu_full.classify = {
 	if(!output_reg) {
-		stats.SetOutputReg(dest);	// Count GPRs only
+		stats.SetRegNum(dest, dt, OpDest);	// Count GPRs only
 	}
 }
 
@@ -241,7 +242,7 @@ alu_halfimm.disasmPred = {
 }
 
 alu_halfimm.classify = {
-	stats.SetOutputReg(dest);
+	stats.SetRegNum(dest, dt, OpDest);
 }
 
 

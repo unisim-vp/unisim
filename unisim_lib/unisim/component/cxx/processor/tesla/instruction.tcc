@@ -220,6 +220,7 @@ void Instruction<CONFIG>::ReadBlock(int dest, DataType dt)
 	default:
 		assert(false);
 	}
+	operation->stats->RegRead(&Temp(0), dt);
 }
 
 template <class CONFIG>
@@ -267,6 +268,7 @@ void Instruction<CONFIG>::WriteBlock(int reg, DataType dt)
 	default:
 		assert(false);
 	}
+	operation->stats->RegWrite(&Temp(0), dt);
 }
 
 
@@ -295,41 +297,42 @@ void Instruction<CONFIG>::ReadReg(int reg, int tempbase, RegType rt)
 	default:
 		assert(false);
 	}
+	operation->stats->RegRead(&Temp(tempbase), RegTypeToDataType(rt));
 }
 
 template <class CONFIG>
 void Instruction<CONFIG>::WriteReg(int reg, int tempbase, RegType rt,
 	bitset<CONFIG::WARP_SIZE> mask)
 {
-		switch(rt)
+	switch(rt)
+	{
+	case RT_U16:
 		{
-		case RT_U16:
-			{
-			uint32_t rnum = (reg >> 1);
-			uint32_t hilo = (reg & 1);
-			cpu->GetGPR(rnum).Write16(Temp(tempbase), mask, hilo);
-			if(cpu->trace_reg) {
-				cpu->DumpGPR(rnum, cerr);
-			}
-			}
-			break;
-		case RT_U32:
-			cpu->GetGPR(reg).Write(Temp(tempbase), mask);
-			if(cpu->trace_reg) {
-				cpu->DumpGPR(reg, cerr);
-			}
-			break;
-		case RT_U64:
-			assert(reg % 2 == 0);
-			cpu->GetGPR(reg).Write(Temp(tempbase), mask);
-			cpu->GetGPR(reg + 1).Write(Temp(tempbase), mask);
-			if(cpu->trace_reg) {
-				cpu->DumpGPR(reg, cerr);
-				cpu->DumpGPR(reg + 1, cerr);
-			}
-			break;
+		uint32_t rnum = (reg >> 1);
+		uint32_t hilo = (reg & 1);
+		cpu->GetGPR(rnum).Write16(Temp(tempbase), mask, hilo);
+		if(cpu->trace_reg) {
+			cpu->DumpGPR(rnum, cerr);
 		}
-
+		}
+		break;
+	case RT_U32:
+		cpu->GetGPR(reg).Write(Temp(tempbase), mask);
+		if(cpu->trace_reg) {
+			cpu->DumpGPR(reg, cerr);
+		}
+		break;
+	case RT_U64:
+		assert(reg % 2 == 0);
+		cpu->GetGPR(reg).Write(Temp(tempbase), mask);
+		cpu->GetGPR(reg + 1).Write(Temp(tempbase), mask);
+		if(cpu->trace_reg) {
+			cpu->DumpGPR(reg, cerr);
+			cpu->DumpGPR(reg + 1, cerr);
+		}
+		break;
+	}
+	operation->stats->RegWrite(&Temp(tempbase), RegTypeToDataType(rt));
 }
 
 template <class CONFIG>
