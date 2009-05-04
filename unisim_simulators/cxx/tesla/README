@@ -9,7 +9,7 @@ ultimate goal is to provide a 100% bit-accurate simulation, offering
 bug-for-bug compatibility with NVidia G80-based GPUs. It works directly with
 CUDA executables; no source modification nor recompilation is required. 
 
-Barra is primarily intended as a tool for research on computer architecture,
+Barra is primarily intended as a tool for research in computer architecture,
 although it can also be used to debug, profile and optimize CUDA programs at
 the lowest level.
 
