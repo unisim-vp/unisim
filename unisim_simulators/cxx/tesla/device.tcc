@@ -40,6 +40,7 @@
 #include "device.hh"
 #include <string>
 #include <ostream>
+#include <vector>
 #include "kernel.hh"
 #include <unisim/component/cxx/processor/tesla/stats.tcc>
 
@@ -241,9 +242,16 @@ void Device<CONFIG>::CopyDtoH(void * dest, typename CONFIG::address_t src, size_
 }
 
 template<class CONFIG>
-void Device<CONFIG>::CopyDtoD(void * dest, typename CONFIG::address_t src, size_t size)
+void Device<CONFIG>::CopyDtoD(typename CONFIG::address_t dest, typename CONFIG::address_t src, size_t size)
 {
-	// TODO
+	cerr << "Device copy " << size << "B from @" << hex << src << " to @" << dest << dec << endl;
+	std::vector<uint8_t> buffer(size);
+	if(!memory.ReadMemory(src, &buffer[0], size)) {
+		throw CudaException(CUDA_ERROR_INVALID_VALUE);
+	}
+	if(!memory.WriteMemory(dest, &buffer[0], size)) {
+		throw CudaException(CUDA_ERROR_INVALID_VALUE);
+	}
 }
 
 template<class CONFIG>

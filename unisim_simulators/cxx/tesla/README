@@ -1,6 +1,8 @@
 Barra - NVidia G80 functional simulator
- Version 0.1
- 04/2009
+ http://gpgpu.univ-perp.fr/index.php/Barra
+ Version 0.2
+ 05/2009
+
 
 Barra simulates CUDA programs at the assembly language level (Tesla ISA). Its
 ultimate goal is to provide a 100% bit-accurate simulation, offering
@@ -11,17 +13,15 @@ Barra is primarily intended as a tool for research on computer architecture,
 although it can also be used to debug, profile and optimize CUDA programs at
 the lowest level.
 
-Publication:
-Sylvain Collange, David Defour, David Parello.
-Barra, a Modular Functional GPU Simulator for GPGPU.
-Technical Report hal-00359342, Université de Perpignan, 2009.
-http://hal.archives-ouvertes.fr/hal-00359342
+  Download
+  
+Links to binaries are at http://gpgpu.univ-perp.fr/index.php/Barra.
 
-Download:
 Barra source code can be accessed through the Unisim subversion repository at
 http://unisim.org/site/download/start#subversion_repository
 
-Supported platforms:
+  Supported platforms
+
 Barra was tested on GNU/Linux i386 and x86_64. It should be easily portable to
 Win32 with Cygwin and Mac OS X, but this has not been tested so far.
 
@@ -71,124 +71,12 @@ We then temporarily override the default library search path:
 Finally, we can launch our executable:
 > ./matrixMul
 
-Barra currently outputs lots of debug information (CUDA function calls,
-cubin data, disassembly, memory allocation, thread scheduling...) during
-program execution. 
+By default, Barra outputs some debug information (CUDA function calls,
+cubin data, disassembly, memory allocation...) during program execution.
+More data can be output by setting specific environment variables.
 
-We are working on a script that will automate these manipulations.
-
-
-  What Is Supported?
-
-Simulator
-* Most integer arithmetic, floating-point arithmetic, logical instructions.
-* Memory scatter/gather instructions from/to global and local memory up to
-  32-bit.
-* Basic control flow instructions.
-* Reciprocal, reciprocal square root and transcendental instructions (not
-  bit-accurate).
-* Synchronization barrier instruction.
-
-Driver
-* Most of the CUDA Driver API.
-* CUDA runtime API, through NVidia-provided libcudart.so/cudart.dll.
-* Support for cubin files and Fat Executables (through CUDA Runtime).
-* Host <-> Device linear memory copy.
-
-
-  What Runs On Barra?
-
-The following NVidia CUDA SDK samples were tested to run on Barra and pass the
-built-in regression tests:
-* alignedTypes
-* bitonic
-* binomialOptions
-* convolutionSeparable
-* cppIntegration
-* deviceQuery
-* dwtHaar1D
-* fastWalshTransform
-* histogram64
-* histogram256
-* matrixMul
-* matrixMulDrv
-* MersenneTwister
-* MonteCarlo
-* quasirandomGenerator
-* reduction
-* scan
-* scanLargeArray
-* simpleTemplates
-* transpose
-
-Note: for some samples, the size of the dataset was reduced to keep simulation
-time reasonable (as with device emulation mode).
-
-
-  What Is NOT Currently Supported? (Aka TODO List)
-
-Simulator
-* Some conversion and comparison instructions.
-* 64-bit and 128-bit memory access.
-* Exotic control flow instructions: break, continue.
-* Atomic instructions.
-* Warp vote instructions.
-* Double precision instructions.
-* Texture sampling.
-* Multiple Streaming Multiprocessors (after adding TLM timing, see below).
-* Bit-accurate transcendentals.
-* Run-time checks. As Barra is primarily designed to run valid CUDA benchmarks,
-  few safety checks are performed on instruction validity, memory addresses...
-  Running an invalid or buggy CUDA program is likely to result in a
-  segmentation fault.
-
-Driver
-* Asynchronous execution.
-* Textures.
-* Arrays.
-* Events.
-* Multiple contexts.
-* Multiple devices.
-
-  How Fast (Or How Slow) Is It?
-
-Depending on the simulated code, Barra performs from 10 times slower to 10
-times faster than source-level emulation in debug mode (nvcc --deviceemu),
-which is itself several orders of magnitude slower than execution on a
-high-end GPU. 
-
-  What We Plan To Do Next
-
-* Instrumentation to gather statistics about the CUDA code.
-* Transaction-Level Modeling of the G80 memory architecture to provide a
-  realistic timing model.
-* (Close to) cycle-accurate modeling of Streaming Multiprocessors.
-* Modeling of power consumption.
-* Simulation speed optimization.
-
-
-  Hacking, debugging
-
-As a computer architecture research tool, Barra is designed to be modified
-to suit the user's needs (e.g. gathering statistics on instructions, generating
-traces...)
-
-Some support is already present to generate traces. It is intended to be used
-for manual debugging and trace format may change without notice.
-Several environment variables control the level of verbosity of traces. 
-
-* TRACE_INSN outputs to stderr each instruction executed along with the warp
-  number and program counter.
-  All subsequent trace types are designed to be used with TRACE_INSN.
-* TRACE_MASK outputs the current predication mask of the warp after (not during)
-  each instruction.
-* TRACE_REG outputs the destination register of each instruction executed,
-  in hex.
-* TRACE_REG_FLOAT. Same as TRACE_REG, but as floating-point. Requires TRACE_REG.
-* TRACE_LOADSTORE. *Very* verbose. Traces every load and store from/to any memory
-  type.
-* TRACE_BRANCH controls the output of the SIMD branching algorithms.
-* TRACE_SYNC outputs which warps are waiting at synchronization barriers.
+For more information, please refer to the project page:
+http://gpgpu.univ-perp.fr/index.php/Barra
 
 
   Feedback
@@ -202,6 +90,13 @@ Bug reports and comments are welcome.
 * Marc Daumas (marc.daumas @ univ-perp.fr)
 * David Defour (david.defour @ univ-perp.fr)
 * David Parello (david.parello @ univ-perp.fr)
+
+  Publication
+  
+Sylvain Collange, David Defour, David Parello.
+Barra, a Modular Functional GPU Simulator for GPGPU.
+Technical Report hal-00359342, Université de Perpignan, 2009.
+http://hal.archives-ouvertes.fr/hal-00359342
 
 
   Special Thanks

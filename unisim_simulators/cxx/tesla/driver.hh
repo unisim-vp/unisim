@@ -82,7 +82,7 @@ public:
 	
 	void CopyHtoD(typename CONFIG::address_t dest, void const * src, size_t size);
 	void CopyDtoH(void * dest, typename CONFIG::address_t src, size_t size);
-	void CopyDtoD(void * dest, typename CONFIG::address_t src, size_t size);
+	void CopyDtoD(typename CONFIG::address_t dest, typename CONFIG::address_t src, size_t size);
 	
 	void Memset(typename CONFIG::address_t dest, uint32_t val, size_t n);
 	void Memset(typename CONFIG::address_t dest, uint16_t val, size_t n);

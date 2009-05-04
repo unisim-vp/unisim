@@ -416,8 +416,15 @@ CUresult  CUDAAPI cuMemcpyDtoH (void *dstHost, CUdeviceptr srcDevice, unsigned i
 // device <-> device memory
 CUresult  CUDAAPI cuMemcpyDtoD (CUdeviceptr dstDevice, CUdeviceptr srcDevice, unsigned int ByteCount )
 {
-  cerr << "function not implemented !!!" << endl;
-  assert(false);
+	if(verbose) cerr << "cuMemcpyDtoD(" << dstDevice << ", " << srcDevice << ", " << ByteCount << ")" << endl;
+	try
+	{
+		driver.CopyDtoD(dstDevice, srcDevice, ByteCount);
+		return CUDA_SUCCESS;
+	}
+	catch(CudaException e) {
+		return e.code;
+	}
 }
 
 

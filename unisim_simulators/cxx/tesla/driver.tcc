@@ -207,7 +207,7 @@ void Driver<CONFIG>::CopyDtoH(void * dest, typename CONFIG::address_t src, size_
 }
 
 template<class CONFIG>
-void Driver<CONFIG>::CopyDtoD(void * dest, typename CONFIG::address_t src, size_t size)
+void Driver<CONFIG>::CopyDtoD(typename CONFIG::address_t dest, typename CONFIG::address_t src, size_t size)
 {
 	int dev = current_context->GetDevice();
 	device[dev].CopyDtoD(dest, src, size);
