@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<library xmlns="http://www.unisim.org" name="stl_sstream">
+	<configures>
+		<configure>
+			AC_CHECK_HEADERS([sstream],,\
+			AC_MSG_ERROR([The 'sstream' header is missing.]))
+		</configure>
+	</configures>
+</library>
+

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<library xmlns="http://www.unisim.org" name="stl_fstream">
+	<configures>
+		<configure>
+			AC_CHECK_HEADERS([fstream],,\
+			AC_MSG_ERROR([The 'fstream' header is missing.]))
+		</configure>
+	</configures>
+</library>
+

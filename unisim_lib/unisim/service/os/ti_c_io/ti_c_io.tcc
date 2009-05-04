@@ -512,8 +512,7 @@ int16_t TI_C_IO<MEMORY_ADDR>::c_io_open(const char *path, uint16_t c_io_flags, i
 		{
 			logger << DebugInfo << "File descriptor " << fno << " is already opened" << EndDebugInfo;
 		}
-		//return -1;
-		return (*iter).second;
+		return -1;
 	}
 
 	int fd;      // the host file descriptor
@@ -621,6 +620,12 @@ int16_t TI_C_IO<MEMORY_ADDR>::c_io_read(int16_t fno, char *buf, uint16_t count)
 	}
 
 	ssize_t ret = read(fd, buf, count);
+
+	if((verbose_io || verbose_all) && ret == 0)
+	{
+		off_t ofs = lseek(fd, 0, SEEK_CUR);
+		logger << DebugInfo << "End-of-File (EOF) at file offset " << ofs << EndDebugInfo;
+	}
 
 	if((verbose_io || verbose_all) && ret == -1)
 	{

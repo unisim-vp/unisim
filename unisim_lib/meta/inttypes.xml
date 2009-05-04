@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<library xmlns="http://www.unisim.org" name="inttypes">
+	<configures>
+		<configure>
+			AC_CHECK_HEADERS([inttypes.h],,\
+			AC_MSG_ERROR([The 'inttypes.h' header is missing.]))
+		</configure>
+	</configures>
+</library>
+
+

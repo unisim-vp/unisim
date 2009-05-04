@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<library xmlns="http://www.unisim.org" name="stl_iostream">
+	<configures>	
+		<configure>
+			AC_CHECK_HEADERS([iostream],,\
+			AC_MSG_ERROR([The 'iostream' header is missing.]))
+		</configure>
+	</configures>
+</library>

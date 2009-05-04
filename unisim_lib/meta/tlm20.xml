@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<library xmlns="http://www.unisim.org" name="tlm20">
+	<configures>
+		<configure>UNISIM_CHECK_TLM20</configure>
+	</configures>
+	<m4s>
+		<m4>m4/tlm20.m4</m4>
+	</m4s>
+	<libs>
+		<lib>systemc</lib>
+		<lib>boost_function</lib>
+		<lib>boost_mem_fn</lib>
+	</libs>
+</library>
+
+

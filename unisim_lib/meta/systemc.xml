@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<library xmlns="http://www.unisim.org" name="systemc">
+	<configures>
+		<configure>UNISIM_CHECK_SYSTEMC</configure>
+	</configures>
+	<m4s>
+		<m4>m4/systemc.m4</m4>
+	</m4s>
+</library>
+

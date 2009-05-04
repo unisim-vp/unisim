@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<library xmlns="http://www.unisim.org" name="libxml2">
+	<configures>
+		<configure>UNISIM_CHECK_LIBXML2</configure>
+	</configures>
+	<m4s>
+		<m4>m4/libxml2.m4</m4>
+	</m4s>
+	<libs>
+		<lib>zlib</lib>
+	</libs>
+</library>
+
