@@ -272,9 +272,12 @@ private:
 	unisim::kernel::service::Parameter<bool> *param_verbose_setup;
 	bool verbose_run;
 	unisim::kernel::service::Parameter<bool> *param_verbose_run;
+	bool verbose_tlm;
+	unisim::kernel::service::Parameter<bool> *param_verbose_tlm;
 	inline bool VerboseAll();
 	inline bool VerboseSetup();
 	inline bool VerboseRun();
+	inline bool VerboseTLM();
 	/* END: logger and logger methods and verbose parameters/methods */
 };
 

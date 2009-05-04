@@ -42,7 +42,60 @@
 										( (X) == tlm::BEGIN_RESP ? 	"BEGIN_RESP" : \
 										( (X) == tlm::END_RESP   ?  "END_RESP" : \
 										  							"UNINITIALIZED_PHASE"))))
-#define TRANS(X)	" - trans.level = " << (X).level
+#define ITRANS(X)	" - trans.level = " << (X).level
+#define TRANS(L,X) \
+{ \
+	(L) << " - trans = " << &(X) << endl \
+		<< "   - " << ((X).is_read()?"read":"write") << endl \
+		<< "   - address = 0x" << hex << (X).get_address() << dec << endl \
+		<< "   - data_length = " << (X).get_data_length(); \
+	if((X).is_write()) { \
+		(L) << endl; \
+		(L) << "   - data ="; \
+		for(unsigned int _trans_i = 0; _trans_i < (X).get_data_length(); _trans_i++) { \
+			(L) << " " << hex << (unsigned int)((X).get_data_ptr()[_trans_i]) << dec; \
+		} \
+	} \
+}
+
+#define ETRANS(L,X) \
+{ \
+	(L) << " - trans = " << &(X) << endl \
+		<< "   - " << ((X).is_read()?"read":"write") << endl \
+		<< "   - address = 0x" << hex << (X).get_address() << dec << endl \
+		<< "   - data_length = " << (X).get_data_length() << endl \
+	    << "   - response_status = "; \
+	switch((X).get_response_status()) { \
+	case tlm::TLM_OK_RESPONSE: \
+		(L) << "TLM_OK_RESPONSE"; \
+		break; \
+	case tlm::TLM_INCOMPLETE_RESPONSE: \
+		(L) << "TLM_INCOMPLETE_RESPONSE"; \
+		break; \
+	case tlm::TLM_GENERIC_ERROR_RESPONSE: \
+		(L) << "TLM_GENERIC_ERROR_RESPONSE"; \
+		break; \
+	case tlm::TLM_ADDRESS_ERROR_RESPONSE: \
+		(L) << "TLM_ADDRESS_ERROR_RESPONSE"; \
+		break; \
+	case tlm::TLM_COMMAND_ERROR_RESPONSE: \
+		(L) << "TLM_COMMAND_ERROR_RESPONSE"; \
+		break; \
+	case tlm::TLM_BURST_ERROR_RESPONSE: \
+		(L) << "TLM_BURST_ERROR_RESPONSE"; \
+		break; \
+	case tlm::TLM_BYTE_ENABLE_ERROR_RESPONSE: \
+		(L) << "TLM_BYTE_ENABLE_ERROR_RESPONSE"; \
+		break; \
+	} \
+	if((X).get_response_status() == tlm::TLM_OK_RESPONSE) { \
+		(L) << endl; \
+		(L) << "   - data ="; \
+		for(unsigned int _trans_i = 0; _trans_i < (X).get_data_length(); _trans_i++) { \
+			(L) << " " << hex << (unsigned int)((X).get_data_ptr()[_trans_i]) << dec; \
+		} \
+	} \
+}
 
 #if defined(__GNUC__) && ((__GNUC__ >= 2 && __GNUC_MINOR__ >= 96) || __GNUC__ >= 3)
 #define likely(x)       __builtin_expect((x),1)
@@ -92,7 +145,8 @@ STR7_EIC(const sc_module_name& name, Object* parent) :
 		logger(*this),
 		verbose_all(false),
 		verbose_setup(false),
-		verbose_run(false)
+		verbose_run(false),
+		verbose_tlm(false)
 {
 	SC_HAS_PROCESS(STR7_EIC);
 
@@ -101,9 +155,10 @@ STR7_EIC(const sc_module_name& name, Object* parent) :
 
 	if (VERBOSE)
 	{
-		param_verbose_all = new unisim::kernel::service::Parameter<bool>("verbose-all", this, verbose_all);
-		param_verbose_setup = new unisim::kernel::service::Parameter<bool>("verbose-setup", this, verbose_setup);
+		param_verbose_all = new unisim::kernel::service::Parameter<bool>("verbose-all", this, verbose_all, "Enable all the verbose options");
+		param_verbose_setup = new unisim::kernel::service::Parameter<bool>("verbose-setup", this, verbose_setup, "Display module setup");
 		param_verbose_run = new unisim::kernel::service::Parameter<bool>("verbose-run", this, verbose_run);
+		param_verbose_tlm = new unisim::kernel::service::Parameter<bool>("verbose-tlm", this, verbose_tlm, "Display TLM2.0 transaction management");
 	}
 	
 	/* bind the in_mem socket to the methods implementations provided by the module */
@@ -157,6 +212,7 @@ Setup()
 		if (VerboseAll()) logger << " - verbose-all activated" << endl;
 		if (VerboseSetup()) logger << " - verbose-setup activated" << endl;
 		if (VerboseRun()) logger << " - verbose-run activated" << endl;
+		if (VerboseTLM()) logger << " - verbose-tlm activated" << endl;
 
 		logger << " - base address = 0x" << hex << base_address << dec;
 		logger << EndDebugInfo;
@@ -180,7 +236,7 @@ InIRQNb(int index, TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::s
 		default:
 			logger << DebugWarning << "Received unexpected transaction phase on in_irq[" << index << "]:" << endl
 				<< LOCATION << endl
-				<< TRANS(trans) << endl
+				<< ITRANS(trans) << endl
 				<< PHASE(phase) << endl
 				<< TIME(t)
 				<< EndDebugWarning;
@@ -233,7 +289,7 @@ InFIQNb(int index, TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::s
 		default:
 			logger << DebugWarning << "Received unexpected transaction phase on in_fiq[" << index << "]:" << endl
 				<< LOCATION << endl
-				<< TRANS(trans) << endl
+				<< ITRANS(trans) << endl
 				<< PHASE(phase) << endl
 				<< TIME(t)
 				<< EndDebugWarning;
@@ -291,7 +347,7 @@ OutIRQNb(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
 			/* unexpected phase received */
 			logger << DebugError << "Unexpected phase received on out_irq:" << endl
 				<< LOCATION << endl
-				<< TRANS(trans) << endl
+				<< ITRANS(trans) << endl
 				<< PHASE(phase) << endl
 				<< TIME(t) << EndDebugError;
 			sc_stop();
@@ -301,7 +357,7 @@ OutIRQNb(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
 	// this code should never be executed
 	logger << DebugError << "This code should never be executed" << endl
 		<< LOCATION << endl
-		<< TRANS(trans) << endl
+		<< ITRANS(trans) << endl
 		<< PHASE(phase) << endl
 		<< TIME(t) << EndDebugError;
 	sc_stop();
@@ -339,7 +395,7 @@ OutFIQNb(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
 			/* unexpected phase received */
 			logger << DebugError << "Unexpected phase received on out_fiq:" << endl
 				<< LOCATION << endl
-				<< TRANS(trans) << endl
+				<< ITRANS(trans) << endl
 				<< PHASE(phase) << endl
 				<< TIME(t) << EndDebugError;
 			sc_stop();
@@ -349,7 +405,7 @@ OutFIQNb(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
 	// this code should never be executed
 	logger << DebugError << "This code should never be executed" << endl
 		<< LOCATION << endl
-		<< TRANS(trans) << endl
+		<< ITRANS(trans) << endl
 		<< PHASE(phase) << endl
 		<< TIME(t) << EndDebugError;
 	sc_stop();
@@ -374,7 +430,49 @@ void
 STR7_EIC<BUS_WIDTH, VERBOSE> ::
 b_transport(tlm::tlm_generic_payload& trans, sc_core::sc_time& t)
 {
-	/* TODO */
+	if (VerboseTLM())
+	{
+		logger << DebugInfo << "Received memory b_transport transaction:" << endl;
+		TRANS(logger, trans);
+		logger << endl << TIME(t) << EndDebug;
+	}
+	unsigned char *data = trans.get_data_ptr();
+	unsigned int size = trans.get_data_length();
+	uint64_t addr = trans.get_address();
+
+	if (trans.is_read())
+	{
+		trans.set_response_status(tlm::TLM_OK_RESPONSE);
+		if (size != 4)
+		{
+			memset(data, 0, size);
+		}
+		else
+		{
+			addr = addr - base_address;
+			*(uint32_t *)data = ReadRegister(addr);
+		}
+		
+		if (VerboseTLM()) 
+		{
+			logger << DebugInfo << "Replying received memory b_transport transaction:" << endl;
+			ETRANS(logger, trans);
+			logger << endl << TIME(t) << EndDebug;
+		}
+		return;
+	}
+	else 
+	{
+		if (trans.is_write())
+		{
+			trans.set_response_status(tlm::TLM_OK_RESPONSE);
+			if (size != 4)
+				return;
+			addr = addr - base_address;
+			WriteRegister(addr, *(uint32_t *)data);
+			return;
+		}
+	}
 }
 
 template <unsigned int BUS_WIDTH, bool VERBOSE>
@@ -382,6 +480,14 @@ tlm::tlm_sync_enum
 STR7_EIC<BUS_WIDTH, VERBOSE> ::
 nb_transport_fw(tlm::tlm_generic_payload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
 {
+	if (VerboseTLM())
+	{
+		logger << DebugInfo << "Received memory nb_transport_fw transaction:" << endl;
+		TRANS(logger, trans);
+		logger << endl
+			<< PHASE(phase) << endl
+			<< TIME(t) << EndDebug;
+	}
 	/* TODO */
 	return tlm::TLM_COMPLETED;
 }
@@ -689,8 +795,8 @@ ReadRegister(uint32_t const addr)
 	if (addr >= 0x60 && addr <= 0xdc) index = 0x60;
 	switch (index)
 	{
-		case 0x0: // ICR always reads 0
-			return 0;
+		case 0x0: // ICR 
+			return ICR();
 			break;
 		case 0x04: // CICR
 			return CICR();
@@ -746,6 +852,13 @@ WriteRegister(uint32_t addr, uint32_t value)
 	{
 		case 0x0: // ICR
 			icr = value & 0x3;
+			if (VerboseRun())
+			{
+				logger << DebugInfo
+					<< "Writing ICR with value 0x" << hex << value << dec
+					<< ", ICR new value is 0x" << hex << ICR() << dec
+					<< EndDebugInfo;
+			}
 			FSMUpdate();
 			break;
 		case 0x04: // CICR
@@ -981,6 +1094,14 @@ STR7_EIC<BUS_WIDTH, VERBOSE> ::
 VerboseRun()
 {
 	return VERBOSE && verbose_run;
+}
+
+template <unsigned int BUS_WIDTH, bool VERBOSE>
+bool
+STR7_EIC<BUS_WIDTH, VERBOSE> ::
+VerboseTLM()
+{
+	return VERBOSE && verbose_tlm;
 }
 
 /* END: verbose methods */
