@@ -71,13 +71,19 @@ template<class CONFIG>
 void OperationStats<CONFIG>::RegRead(VectorRegister<CONFIG> const * regs, DataType dt)
 {
 	if(CONFIG::STAT_SCALAR_REG) {
-		if(regs[0].CheckScalar()) {
-			++scalarRegInputs;
+		if(dt == DT_U16 || dt == DT_S16) {
+			scalarRegInputs += regs[0].CheckScalar16(false);
+		}
+		else if(dt == DT_U32 || dt == DT_S32 || dt == DT_F32) {
+			scalarRegInputs += regs[0].CheckScalar();
 		}
 	}
 	if(CONFIG::STAT_STRIDED_REG) {
-		if(regs[0].CheckStrided()) {
-			++stridedRegInputs;
+		if(dt == DT_U16 || dt == DT_S16) {
+			stridedRegInputs += regs[0].CheckStrided16(false);
+		}
+		else if(dt == DT_U32 || dt == DT_S32 || dt == DT_F32) {
+			stridedRegInputs += regs[0].CheckStrided();
 		}
 	}
 }
@@ -86,13 +92,19 @@ template<class CONFIG>
 void OperationStats<CONFIG>::RegWrite(VectorRegister<CONFIG> const * regs, DataType dt)
 {
 	if(CONFIG::STAT_SCALAR_REG) {
-		if(regs[0].CheckScalar()) {
-			++scalarRegOutputs;
+		if(dt == DT_U16 || dt == DT_S16) {
+			scalarRegOutputs += regs[0].CheckScalar16(false);
+		}
+		else if(dt == DT_U32 || dt == DT_S32 || dt == DT_F32) {
+			scalarRegOutputs += regs[0].CheckScalar();
 		}
 	}
 	if(CONFIG::STAT_STRIDED_REG) {
-		if(regs[0].CheckStrided()) {
-			++stridedRegOutputs;
+		if(dt == DT_U16 || dt == DT_S16) {
+			stridedRegOutputs += regs[0].CheckStrided16(false);
+		}
+		else if(dt == DT_U32 || dt == DT_S32 || dt == DT_F32) {
+			stridedRegOutputs += regs[0].CheckStrided();
 		}
 	}
 }

@@ -1,13 +1,22 @@
-* Statistics exported in .csv format
+Version 0.2
+* Statistics collection infrastructure
 * New control flow instructions: breakaddr, break
 * Rewritten floating-point implementation, more accurate and faster
 * Rewritten branching algorithm, closer to NVIDIA implementation
-* Tracing of reset, kernel parsing and loading can be disabled
+* Traces of reset, kernel parsing and loading can be disabled
 * 64-bit and 128-bit memory access
-* (Float to float conversions (FP16<->FP32, round/truncate...))
+* Float to float conversions (round/truncate...)
 * Handling of 16-bit condition codes
 * Various bug fixes
 * Improved instruction decoder
 
 Version 0.1, 09 april 2009
 * Initial release
+* Support of most integer arithmetic, floating-point arithmetic, logical instructions
+* Memory scatter/gather instructions from/to global and local memory up to
+  32-bit
+* Basic control flow instructions
+* Reciprocal, reciprocal square root and transcendental instructions (not
+  bit-accurate)
+* Synchronization barrier instruction
+

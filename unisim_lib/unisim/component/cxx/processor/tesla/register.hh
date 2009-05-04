@@ -143,9 +143,13 @@ struct VectorRegister
 	
 	uint32_t operator[] (unsigned int lane) const;
 	uint32_t & operator[] (unsigned int lane);
+	
+	uint16_t Read16(unsigned int lane, bool hi) const;
 
 	bool CheckScalar() const;
 	bool CheckStrided() const;
+	bool CheckScalar16(bool hi) const;
+	bool CheckStrided16(bool hi) const;
 
 	reg_t v[WARP_SIZE];
 	bool scalar;

@@ -307,6 +307,17 @@ uint32_t & VectorRegister<CONFIG>::operator[] (unsigned int lane)
 }
 
 template <class CONFIG>
+uint16_t VectorRegister<CONFIG>::Read16(unsigned int lane, bool hi) const
+{
+	if(hi) {
+		return v[lane] >> 16;
+	}
+	else {
+		return v[lane] & 0xffff;
+	}
+}
+
+template <class CONFIG>
 void VectorRegister<CONFIG>::DumpFloat(std::ostream & os)
 {
 	os << "(";
@@ -332,14 +343,42 @@ bool VectorRegister<CONFIG>::CheckScalar() const
 }
 
 template <class CONFIG>
+bool VectorRegister<CONFIG>::CheckScalar16(bool hi) const
+{
+	assert(CONFIG::WARP_SIZE >= 1);
+	uint16_t ref = Read16(0, hi);
+	for(unsigned int i = 1; i != CONFIG::WARP_SIZE; ++i) {
+		if(ref != Read16(i, hi)) {
+			return false;
+		}
+	}
+	return true;
+}
+
+template <class CONFIG>
 bool VectorRegister<CONFIG>::CheckStrided() const
 {
 	assert(CONFIG::WARP_SIZE >= 2);
 	uint32_t base = v[0];
-	int stride = v[1] - base;
+	int32_t stride = v[1] - base;
 	for(unsigned int i = 2; i != CONFIG::WARP_SIZE; ++i)
 	{
 		if(v[i] != base + i * stride) {
+			return false;
+		}
+	}
+	return true;
+}
+
+template <class CONFIG>
+bool VectorRegister<CONFIG>::CheckStrided16(bool hi) const
+{
+	assert(CONFIG::WARP_SIZE >= 2);
+	uint16_t base = Read16(0, hi);
+	int16_t stride = Read16(1, hi) - base;
+	for(unsigned int i = 2; i != CONFIG::WARP_SIZE; ++i)
+	{
+		if(Read16(i, hi) != base + i * stride) {
 			return false;
 		}
 	}
