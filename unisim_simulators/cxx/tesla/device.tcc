@@ -170,9 +170,7 @@ void Device<CONFIG>::Run(Kernel<CONFIG> & kernel, int width, int height)
 	kernel.SetGridShape(width, height);
 	
 	int blockspercore = kernel.BlocksPerCore();
-	if(export_stats) {
-		cpu.InitStats(kernel.CodeSize());
-	}
+	cpu.InitStats(kernel.CodeSize());	// Even if not exporting
 	
 	// TODO: multiple cores
 	// Blocks are scheduled sequentially on available resources
