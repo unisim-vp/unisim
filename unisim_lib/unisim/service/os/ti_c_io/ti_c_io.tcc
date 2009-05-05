@@ -56,7 +56,6 @@
 #endif
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger.hh"
-#include "unisim/service/interfaces/os.hh"
 #include "unisim/service/interfaces/memory_injection.hh"
 #include "unisim/util/endian/endian.hh"
 

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<service xmlns="http://www.unisim.org" name="unisim::service::os::ti_c_io::TI_C_IO">
+	<sockets>
+		<socket name="ti_c_io_export" direction="int" socket_nature="service"/>
+		<socket name="memory_import" direction="out" socket_nature="service"/>
+		<socket name="memory_injection_import" direction="out" socket_nature="service"/>
+		<socket name="registers_import" direction="out" socket_nature="service"/>
+		<socket name="symbol_table_lookup_import" direction="out" socket_nature="service"/>
+	</sockets>
+	<parameters>
+		<parameter name="MEMORY_ADDR" order="1"/>
+	</parameters>
+	<sources>
+		<source source_nature="interface" visibility="public">unisim/service/os/ti_c_io/ti_c_io.hh</source>
+		<source source_nature="template" visibility="public">unisim/service/os/ti_c_io/ti_c_io.tcc</source>
+	</sources>
+	<deps>
+		<dep>stl_map</dep>
+		<dep>sys_types_h</dep>
+		<dep>sys_stat_h</dep>
+		<dep>fcntl_h</dep>
+		<dep>errno_h</dep>
+		<dep>stl_fstream</dep>
+		<dep>stl_sstream</dep>
+		<dep>unistd_h</dep>
+		<dep>sys_types_h</dep>
+		<dep>stdlib_h</dep>
+		<dep>stdio_h</dep>
+		<dep>time_h</dep>
+		<dep>string_h<dep>
+		<dep>unisim::kernel::service</dep>
+		<dep>unisim::kernel::logger</dep>
+		<dep>unisim::service::interfaces::ti_c_io</dep>
+		<dep>unisim::service::interfaces::memory</dep>
+		<dep>unisim::service::interfaces::memory_injection</dep>
+		<dep>unisim::service::interfaces::symbol_table_lookup</dep>
+		<dep>unisim::service::interfaces::registers</dep>
+		<dep>unisim::util::endian</dep>
+</deps>
+</service>
