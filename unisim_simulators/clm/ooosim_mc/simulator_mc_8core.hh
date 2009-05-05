@@ -173,7 +173,7 @@
 // Includes for services
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
-#include <unisim/service/loader/elf_loader/elf_loader.hh>
+#include <unisim/service/loader/elf_loader/elf32_loader.hh>
 
 #include <unisim/service/loader/linux_loader/linux_loader.hh>
 #include "unisim/service/os/linux_os/linux_os.hh"

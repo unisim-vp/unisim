@@ -32,52 +32,19 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#ifndef __UNISIM_SERVICE_LOADER_PMAC_LINUX_KERNEL_LOADER_PMAC_LINUX_KERNEL_LOADER_HH__
-#define __UNISIM_SERVICE_LOADER_PMAC_LINUX_KERNEL_LOADER_PMAC_LINUX_KERNEL_LOADER_HH__
+#ifndef __UNISIM_SERVICE_LOADER_ELF_LOADER_ELF32_LOADER_HH__
+#define __UNISIM_SERVICE_LOADER_ELF_LOADER_ELF32_LOADER_HH__
 
-#include <unisim/service/loader/pmac_bootx/pmac_bootx.hh>
-#include <unisim/service/loader/elf_loader/elf32_loader.hh>
-
-#include <unisim/service/interfaces/loader.hh>
-#include <unisim/service/interfaces/symbol_table_lookup.hh>
-#include <unisim/service/interfaces/memory.hh>
-#include <unisim/service/interfaces/registers.hh>
-
-#include <unisim/kernel/service/service.hh>
+#include <unisim/service/loader/elf_loader/elf_loader.hh>
 
 namespace unisim {
 namespace service {
 namespace loader {
-namespace pmac_linux_kernel_loader {
-	
-using unisim::service::loader::elf_loader::Elf32Loader;
-using unisim::service::loader::pmac_bootx::PMACBootX;
-using unisim::kernel::service::Object;
-using unisim::kernel::service::ServiceImport;
-using unisim::kernel::service::ServiceExport;
+namespace elf_loader {
 
-using unisim::service::interfaces::Loader;
-using unisim::service::interfaces::Memory;
-using unisim::service::interfaces::Registers;
-using unisim::service::interfaces::SymbolTableLookup;
+typedef ElfLoaderImpl<uint32_t, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym> Elf32Loader;
 
-class PMACLinuxKernelLoader : public Object
-{
-public:
-	ServiceExport<Loader<uint32_t> > loader_export;
-	ServiceExport<SymbolTableLookup<uint32_t> > symbol_table_lookup_export;
-
-	ServiceImport<Memory<uint32_t> > memory_import;
-	ServiceImport<Registers> registers_import;
-	
-	PMACLinuxKernelLoader(const char *name, Object *parent = 0);
-	virtual ~PMACLinuxKernelLoader();
-private:
-	PMACBootX pmac_bootx;
-	Elf32Loader elf32_loader;
-};
-
-} // end of namespace pmac_linux_kernel_loader
+} // end of namespace elf_loader
 } // end of namespace loader
 } // end of namespace service
 } // end of namespace unisim

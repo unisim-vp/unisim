@@ -60,7 +60,7 @@
 #include "unisim/component/tlm/debug/transaction_spy.hh"
 #include "unisim/service/debug/gdb_server/gdb_server.hh"
 #include "unisim/service/debug/inline_debugger/inline_debugger.hh"
-#include "unisim/service/loader/elf_loader/elf_loader.hh"
+#include "unisim/service/loader/elf_loader/elf32_loader.hh"
 #include "unisim/service/power/cache_power_estimator.hh"
 #include "unisim/service/time/sc_time/time.hh"
 #include "unisim/service/time/host_time/time.hh"

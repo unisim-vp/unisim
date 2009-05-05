@@ -137,9 +137,6 @@ private:
 	void BuildSymbolTable(const Elf_Shdr *shdr, const void *content, const char *string_table);
 };
 
-typedef ElfLoaderImpl<uint32_t, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym> Elf32Loader;
-typedef ElfLoaderImpl<uint64_t, ELFCLASS64, Elf64_Ehdr, Elf64_Phdr, Elf64_Shdr, Elf64_Sym> Elf64Loader;
-
 } // end of namespace elf_loader
 } // end of namespace loader
 } // end of namespace service

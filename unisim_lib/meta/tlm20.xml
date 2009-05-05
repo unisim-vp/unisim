@@ -6,11 +6,11 @@
 	<m4s>
 		<m4>m4/tlm20.m4</m4>
 	</m4s>
-	<libs>
-		<lib>systemc</lib>
-		<lib>boost_function</lib>
-		<lib>boost_mem_fn</lib>
-	</libs>
+	<deps>
+		<dep>systemc</dep>
+		<dep>boost_function</dep>
+		<dep>boost_mem_fn</dep>
+	</deps>
 </library>
 
 

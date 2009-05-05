@@ -6,8 +6,8 @@
 	<m4s>
 		<m4>m4/libxml2.m4</m4>
 	</m4s>
-	<libs>
-		<lib>zlib</lib>
-	</libs>
+	<deps>
+		<dep>zlib</dep>
+	</deps>
 </library>
 
