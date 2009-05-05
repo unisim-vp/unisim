@@ -437,17 +437,21 @@ inline physical_address_t MMC::getFlashAddress(address_t logicalAddress, bool de
 	uint8_t _ppage;
 	physical_address_t shifted_gpage = (getGpage() & 0x80) << (FLASH_ADDRESS_SIZE + 8); // only one bit is needed
 
-	if (debugload && (debug_page != 0x00)) _ppage = debug_page; else _ppage = getPpage();
-/*
-	// if ((ROMHM == 1) && logical_address in [0x4000-0x8000]) then  External Access window [0x14_4000, 0x14_8000]
-	if ((logicalAddress > 0x3FFF) && (logicalAddress < 0x8000)) {
-		if ((getMmcctl1() & ROMHM_MASK) != 0) { // 0x4000-0x7FFF is mapped to 0x14_4000-0x14_7FFF (external access)
-			return (physical_address_t) (0x14 << 16) | logicalAddress;
-		} else { // 0x4000-0x7FFF is mapped to 0x7F_4000-0x7F_7FFF (page = 0xFD)
-			_ppage = 0xFD;
+	if (debugload && (debug_page != 0x00)) {
+		_ppage = debug_page;
+	} else {
+		// if ((ROMHM == 1) && logical_address in [0x4000-0x8000]) then  External Access window [0x14_4000, 0x14_8000]
+		if ((logicalAddress > 0x3FFF) && (logicalAddress < 0x8000)) {
+			if ((getMmcctl1() & ROMHM_MASK) != 0) { // 0x4000-0x7FFF is mapped to 0x14_4000-0x14_7FFF (external access)
+				return (physical_address_t) (0x14 << 16) | logicalAddress;
+			} else { // 0x4000-0x7FFF is mapped to 0x7F_4000-0x7F_7FFF (page = 0xFD)
+				_ppage = 0xFD;
+			}
+		} else {
+			_ppage = getPpage();
 		}
 	}
-*/
+
 	if (isPaged(logicalAddress, _ppage, debugload)) {
 		return shifted_gpage | ((physical_address_t) _ppage << FLASH_ADDRESS_SIZE) | ((address_t) FLASH_CPU_ADDRESS_BITS & logicalAddress);
 	} else {

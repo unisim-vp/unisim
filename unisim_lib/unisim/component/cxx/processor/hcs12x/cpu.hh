@@ -617,8 +617,6 @@ inline uint8_t CPU::memRead8(address_t logicalAddress, ADDRESS::MODE type, bool 
 	uint8_t data;
 	MMC_DATA mmc_data;
 
-	if (logicalAddress == 0x21F4) ReportTrap();
-
 	mmc_data.type = type;
 	mmc_data.isGlobal = isGlobal;
 	mmc_data.buffer = &data;
@@ -635,8 +633,6 @@ inline uint16_t CPU::memRead16(address_t logicalAddress, ADDRESS::MODE type, boo
 
 	uint16_t data;
 	MMC_DATA mmc_data;
-
-	if (logicalAddress == 0x21F4) ReportTrap();
 
 	mmc_data.type = type;
 	mmc_data.isGlobal = isGlobal;
@@ -656,8 +652,6 @@ inline void CPU::memWrite8(address_t logicalAddress,uint8_t val, ADDRESS::MODE t
 
 	MMC_DATA mmc_data;
 
-	if (logicalAddress == 0x21F4) ReportTrap();
-
 	mmc_data.type = type;
 	mmc_data.isGlobal = isGlobal;
 	mmc_data.buffer = &val;
@@ -673,9 +667,11 @@ inline void CPU::memWrite16(address_t logicalAddress,uint16_t val, ADDRESS::MODE
 
 	MMC_DATA mmc_data;
 
+	if (logicalAddress == 0x2217) {
+		std::cerr << "***** CPU **** Try to write => 0x" << std::hex << logicalAddress << std::dec << std::endl;
+		ReportTrap();
+	}
 	val = Host2BigEndian(val);
-
-	if (logicalAddress == 0x21F4) ReportTrap();
 
 	mmc_data.type = type;
 	mmc_data.isGlobal = isGlobal;
