@@ -747,10 +747,19 @@ bool ATD10B<ATD_SIZE>::Setup() {
 		return false;
 	}
 
+	if (bus_cycle_time_int < 250) // 250ns => 4 MHz
+	{
+		cerr << "ATD10B: Incorrect Bus Clock Value.\n";
 
+		return false;
+	}
+
+	bus_cycle_time = sc_time((double)bus_cycle_time_int, SC_NS);
+
+	// the index 'i' model BusClock in MHz
 	for (int i=0; i<32; i++) {
-		busClockRange[i].minBusClock = i+1;
-		busClockRange[i].maxBusClock = (i+1)*4;
+		busClockRange[i].minBusClock = 1000/(i+1); // busClock is modeled in NS
+		busClockRange[i].maxBusClock = 1000/((i+1)*4);
 	}
 
 	Reset();
