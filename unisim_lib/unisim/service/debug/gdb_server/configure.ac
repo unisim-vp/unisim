@@ -65,15 +65,7 @@ AC_CHECK_HEADERS([string vector iostream list],,\
 
 ###### CHECK FOR TARGET SPECIFIC HEADERS ######################
 
-case $host in
-	*linux*)   # linux host
-		AC_CHECK_HEADERS([fcntl.h sys/times.h sys/socket.h netinet/in.h arpa/inet.h netinet/tcp.h netdb.h],, AC_MSG_ERROR([Some standard headers are missing.]))
-		;;
-	*mingw32*)  # win32 host
-		UNISIM_CHECK_WINSOCK2
-		;;
-esac
-
+UNISIM_CHECK_BSD_SOCKETS
 UNISIM_LIBTOOL
 
 # files to generate

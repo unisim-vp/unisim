@@ -1,35 +1,45 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<service xmlns="http://www.unisim.org" name="unisim::service::debug::inline_debugger::InlineDebugger">
+<service xmlns="http://www.unisim.org" name="unisim::service::debug::gdb_server::GDBServer">
 	<sockets>
 		<socket name="debug_control_export" direction="in" nature="service"/>
 		<socket name="memory_access_reporting_export" direction="in" nature="service"/>
 		<socket name="trap_reporting_export" direction="in" nature="service"/>
-		<socket name="disasm_import" direction="out" nature="service"/>
 		<socket name="memory_import" direction="out" nature="service"/>
 		<socket name="memory_access_reporting_control_import" direction="out" nature="service"/>
 		<socket name="registers_import" direction="out" nature="service"/>
-		<socket name="symbol_table_lookup_import" direction="out" nature="service"/>
+		<socket name="logger_import" direction="out" nature="service"/>
 	</sockets>
 	<parameters>
 		<parameter name="ADDRESS" order="1"/>
 	</parameters>
 	<dependencies>
 		<sources>
-			<source>unisim/service/debug/inline_debugger/inline_debugger.hh</source>
-			<source nature="template">unisim/service/debug/inline_debugger/inline_debugger.tcc</source>
+			<source nature="interface">unisim/service/debug/gdb_server/gdb_server.hh</source>
+			<source nature="template">unisim/service/debug/gdb_server/gdb_server.tcc</source>
+			<source nature="implementation">unisim/service/debug/gdb_server/gdb_server.cc</source>
 		</sources>
 		<libs>
-			<lib>libedit</lib>
+			<lib>stl_string</lib>
 			<lib>inttypes_h</lib>
-			<lib>unisim::service::interfaces::memory_access_reporting</lib>
+			<lib>stl_vector</lib>
+			<lib>errno_h</lib>
+			<lib>fcntl_h</lib>
+			<lib>stl_iostream</lib>
+			<lib>stl_list</lib>
+			<lib>stdlib_h</lib>
+			<lib>string_h</lib>
+			<lib>sys_times_h</lib>
+			<lib>sys_types_h</lib>
+			<lib>unistd_h</lib>
+			<lib>bsd_sockets</lib>
+			<lib>unisim::kernel::service</lib>
 			<lib>unisim::service::interfaces::debug_control</lib>
-			<lib>unisim::service::interfaces::disassembly</lib>
-			<lib>unisim::service::interfaces::symbol_table_lookup</lib>
-			<lib>unisim::service::interfaces::registers</lib>
+			<lib>unisim::service::interfaces::logger</lib>
+			<lib>unisim::service::interfaces::memory_access_reporting</lib>
 			<lib>unisim::service::interfaces::memory</lib>
+			<lib>unisim::service::interfaces::registers</lib>
 			<lib>unisim::service::interfaces::trap_reporting</lib>
 			<lib>unisim::util::debug</lib>
-			<lib>unisim::kernel::service</lib>
 			<lib>unisim::util::endian</lib>
 		</libs>
 	</dependencies>

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<library xmlns="http://www.unisim.org" name="inttypes">
+<library xmlns="http://www.unisim.org" name="inttypes_h">
 	<configures>
 		<configure>
 			AC_CHECK_HEADERS([inttypes.h],,\

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<library xmlns="http://www.unisim.org" name="fcntl_h">
+	<configures>
+		<configure>
+			AC_CHECK_HEADERS([fcntl.h],,\
+			AC_MSG_ERROR([The 'fcntl.h' header is missing.]))
+		</configure>
+	</configures>
+</library>
