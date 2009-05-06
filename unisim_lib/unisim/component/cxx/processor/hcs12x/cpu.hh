@@ -667,10 +667,6 @@ inline void CPU::memWrite16(address_t logicalAddress,uint16_t val, ADDRESS::MODE
 
 	MMC_DATA mmc_data;
 
-	if (logicalAddress == 0x2217) {
-		std::cerr << "***** CPU **** Try to write => 0x" << std::hex << logicalAddress << std::dec << std::endl;
-		ReportTrap();
-	}
 	val = Host2BigEndian(val);
 
 	mmc_data.type = type;
