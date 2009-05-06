@@ -33,7 +33,7 @@
  */
  
 // DEC EXT
-op dec_ext(0x73[8]:opr16a[8])
+op dec_ext(0x73[8]:><:opr16a[16])
 
 dec_ext.getCycles = { return 4; }
 
@@ -320,7 +320,7 @@ dey.execute = {
 /* ********* Increment Instructions ****** */
 
 // INC EXT
-op inc_ext(0x72[8]:opr16a[8])
+op inc_ext(0x72[8]:><:opr16a[16])
 
 inc_ext.getCycles = { return 4; }
 

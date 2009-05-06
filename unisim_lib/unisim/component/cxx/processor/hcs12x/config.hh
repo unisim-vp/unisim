@@ -79,6 +79,8 @@ struct CONFIG {
 	static const bool HAS_SYSCALL_INTERRUPT			= true;
 	static const bool HAS_SPURIOUS_INTERRUPT		= true;
 
+	static const clock_t MINIMAL_BUS_CLOCK_TIME		= 250000;	// Time unit is PS.  250000 PS => 4 MHz
+
 	//===========================================================
 	//=            PWM external configuration and constants     =
 	//===========================================================

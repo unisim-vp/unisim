@@ -50914,9 +50914,10 @@ OpDaa::OpDaa(CodeType const& code, uint16_t addr) : Operation(code, addr, "daa")
 OpDec_ext::OpDec_ext(CodeType const& code, uint16_t addr) : Operation(code, addr, "dec_ext")
 {
 	CodeType _code_( code );
+	_code_.pop( 1 );
 	{
 		uint16_t _subword_ = (uint16_t( _code_.str[0] ) << 8) | (uint16_t( _code_.str[1] ) << 0);
-		opr16a = ((_subword_ >> 0) & 0xffULL);
+		opr16a = ((_subword_ >> 0) & 0xffffULL);
 	}
 	_code_.pop( 2 );
 	this->encoding.size -= _code_.size;
@@ -51007,9 +51008,10 @@ OpDey::OpDey(CodeType const& code, uint16_t addr) : Operation(code, addr, "dey")
 OpInc_ext::OpInc_ext(CodeType const& code, uint16_t addr) : Operation(code, addr, "inc_ext")
 {
 	CodeType _code_( code );
+	_code_.pop( 1 );
 	{
 		uint16_t _subword_ = (uint16_t( _code_.str[0] ) << 8) | (uint16_t( _code_.str[1] ) << 0);
-		opr16a = ((_subword_ >> 0) & 0xffULL);
+		opr16a = ((_subword_ >> 0) & 0xffffULL);
 	}
 	_code_.pop( 2 );
 	this->encoding.size -= _code_.size;
@@ -52829,7 +52831,7 @@ OpSbr::OpSbr(CodeType const& code, uint16_t addr) : Operation(code, addr, "sbr")
 ,branch(
 #line 44 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 false )
-#line 52833 "hcs12x.cc"
+#line 52835 "hcs12x.cc"
 {
 	CodeType _code_( code );
 	{
@@ -52845,7 +52847,7 @@ OpLbr::OpLbr(CodeType const& code, uint16_t addr) : Operation(code, addr, "lbr")
 ,branch(
 #line 146 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 false )
-#line 52849 "hcs12x.cc"
+#line 52851 "hcs12x.cc"
 {
 	CodeType _code_( code );
 	{
@@ -53046,7 +53048,7 @@ OpLoop::OpLoop(CodeType const& code, uint16_t addr) : Operation(code, addr, "loo
 ,isBranch(
 #line 821 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 false )
-#line 53050 "hcs12x.cc"
+#line 53052 "hcs12x.cc"
 {
 	CodeType _code_( code );
 	{
@@ -53237,7 +53239,7 @@ OpStop::OpStop(CodeType const& code, uint16_t addr) : Operation(code, addr, "sto
 ,stopDisabled(
 #line 55 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
 false )
-#line 53241 "hcs12x.cc"
+#line 53243 "hcs12x.cc"
 {
 	CodeType _code_( code );
 	_code_.pop( 2 );
@@ -53262,7 +53264,7 @@ OpRti::OpRti(CodeType const& code, uint16_t addr) : Operation(code, addr, "rti")
 ,isPending(
 #line 199 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
 false )
-#line 53266 "hcs12x.cc"
+#line 53268 "hcs12x.cc"
 {
 	CodeType _code_( code );
 	_code_.pop( 1 );
