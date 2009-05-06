@@ -50,6 +50,8 @@
 #include <unisim/component/tlm2/processor/hcs12x/s12xmmc.hh>
 #include <unisim/component/tlm2/processor/hcs12x/atd10b.hh>
 #include <unisim/component/tlm2/processor/hcs12x/pwm.hh>
+#include <unisim/component/tlm2/processor/hcs12x/crg.hh>
+#include <unisim/component/tlm2/processor/hcs12x/ect.hh>
 
 #include <unisim/component/tlm2/memory/ram/memory.hh>
 #include <unisim/component/tlm2/interconnect/generic_router/router.hh>
@@ -118,7 +120,7 @@ typedef unisim::component::tlm2::processor::hcs12x::HCS12X CPU;
 class InternalRouterConfig {
 public:
 	static const unsigned int INPUT_SOCKETS = 1;
-	static const unsigned int OUTPUT_SOCKETS = 5;
+	static const unsigned int OUTPUT_SOCKETS = 7;
 	static const unsigned int MAX_NUM_MAPPINGS = 256;
 	static const unsigned int BUSWIDTH = 32;
 	typedef tlm::tlm_base_protocol_types TYPES;
@@ -153,6 +155,8 @@ typedef unisim::service::loader::elf_loader::ElfLoaderImpl<uint64_t, ELFCLASS32,
 
 using unisim::component::tlm2::processor::hcs12x::INT_GEN;
 using unisim::component::tlm2::processor::hcs12x::XINT;
+using unisim::component::tlm2::processor::hcs12x::CRG;
+using unisim::component::tlm2::processor::hcs12x::ECT;
 using unisim::service::loader::s19_loader::S19_Loader;
 using unisim::service::debug::gdb_server::GDBServer;
 using unisim::service::debug::inline_debugger::InlineDebugger;
@@ -347,6 +351,9 @@ int sc_main(int argc, char *argv[])
 
 	MMC *mmc = 	new MMC("mmc");
 
+	CRG  *crg = new CRG("CRG");
+	ECT  *ect = new ECT("ECT");
+
 	ATD1 *atd1 = new ATD1("ATD1");
 	ATD0 *atd0 = new ATD0("ATD0");
 
@@ -416,6 +423,20 @@ int sc_main(int argc, char *argv[])
 		(*cpu)["max-inst"] = maxinst;
 	}
 
+	/**
+	 * TODO:
+	 *  - One of the output of the CRG is the BusClock (hereafter fsb_cycle_time).
+	 *  - In fact I have to connect all the others component to the CRG::BusClock output.
+	 *  - If (PLLSEL == 1) the BusClock = PLLCLK / 2;
+	 *  - PLLCLK = 2 * OSCCLK * (SYNR + 1) / (REFDV + 1)
+	 */
+	(*crg)["base-address"] = 0x0034;
+	(*crg)["oscillator-clock"] = fsb_cycle_time;
+	(*crg)["pll-clock"] = fsb_cycle_time * 2;
+
+	(*ect)["bus-cycle-time"] = fsb_cycle_time;
+	(*ect)["base-address"] = 0x0040;
+
 	(*pwm)["bus-cycle-time"] = fsb_cycle_time;
 	(*pwm)["base-address"] = 0x0300;
 
@@ -444,19 +465,25 @@ int sc_main(int argc, char *argv[])
 	*var1 = fsb_cycle_time;
 
 	var1 = ServiceManager::GetParameter("internal_router.mapping_0");
-	*var1 = "range_start=\"0x000080\" range_end=\"0x0000AF\" output_port=\"0\""; // ATD10B16C
+	*var1 = "range_start=\"0x000034\" range_end=\"0x00003F\" output_port=\"0\""; // CRG
 
 	var1 = ServiceManager::GetParameter("internal_router.mapping_1");
-	*var1 = "range_start=\"0x000120\" range_end=\"0x00012F\" output_port=\"1\""; // S12XINT
+	*var1 = "range_start=\"0x000040\" range_end=\"0x00007F\" output_port=\"1\""; // ECT
 
 	var1 = ServiceManager::GetParameter("internal_router.mapping_2");
-	*var1 = "range_start=\"0x0002C0\" range_end=\"0x0002DF\" output_port=\"2\""; // ATD10B8C
+	*var1 = "range_start=\"0x000080\" range_end=\"0x0000AF\" output_port=\"2\""; // ATD10B16C
 
 	var1 = ServiceManager::GetParameter("internal_router.mapping_3");
-	*var1 = "range_start=\"0x000300\" range_end=\"0x000327\" output_port=\"3\""; // PWM - 37 bytes
+	*var1 = "range_start=\"0x000120\" range_end=\"0x00012F\" output_port=\"3\""; // S12XINT
 
 	var1 = ServiceManager::GetParameter("internal_router.mapping_4");
-	*var1 = "range_start=\"0x000800\" range_end=\"0xFFFF\" output_port=\"4\""; // 64KByte - RAM-EEPROM-FLASH
+	*var1 = "range_start=\"0x0002C0\" range_end=\"0x0002DF\" output_port=\"4\""; // ATD10B8C
+
+	var1 = ServiceManager::GetParameter("internal_router.mapping_5");
+	*var1 = "range_start=\"0x000300\" range_end=\"0x000327\" output_port=\"5\""; // PWM - 37 bytes
+
+	var1 = ServiceManager::GetParameter("internal_router.mapping_6");
+	*var1 = "range_start=\"0x000800\" range_end=\"0xFFFF\" output_port=\"6\""; // 64KByte - RAM-EEPROM-FLASH
 
 	var1 = ServiceManager::GetParameter("internal_router.verbose_all");
  	*var1 = false;
@@ -542,11 +569,13 @@ int sc_main(int argc, char *argv[])
 	mmc->external_socket(external_router->targ_socket[0]);
 
 	// This order is mandatory (see the memoryMapping)
-	internal_router->init_socket[0](atd1->slave_socket);
-	internal_router->init_socket[1](s12xint->slave_socket);
-	internal_router->init_socket[2](atd0->slave_socket);
-	internal_router->init_socket[3](pwm->slave_socket);
-	internal_router->init_socket[4](internal_memory->slave_sock); // to connect to the MMC
+	internal_router->init_socket[0](crg->slave_socket);
+	internal_router->init_socket[1](ect->slave_socket);
+	internal_router->init_socket[2](atd1->slave_socket);
+	internal_router->init_socket[3](s12xint->slave_socket);
+	internal_router->init_socket[4](atd0->slave_socket);
+	internal_router->init_socket[5](pwm->slave_socket);
+	internal_router->init_socket[6](internal_memory->slave_sock); // to connect to the MMC
 
 	external_router->init_socket[0](external_memory->slave_sock);
 
@@ -685,6 +714,8 @@ int sc_main(int argc, char *argv[])
 	if (int_gen) { delete int_gen; int_gen = NULL; }
 	if (rtbStub) { delete rtbStub; rtbStub = NULL; }
 
+	if (crg) { delete crg; crg = NULL; }
+	if (ect) { delete ect; ect = NULL; }
 	if (atd1) { delete atd1; atd1 = NULL; }
 	if (atd0) { delete atd0; atd0 = NULL; }
 	if (s12xint) { delete s12xint; s12xint = NULL; }
