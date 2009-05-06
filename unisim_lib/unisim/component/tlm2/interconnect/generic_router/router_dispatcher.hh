@@ -57,7 +57,7 @@ private:
 	static const unsigned int MAX_NUM_MAPPINGS = CONFIG::MAX_NUM_MAPPINGS; 
 	static const unsigned int BUSWIDTH = CONFIG::BUSWIDTH;
 	typedef typename CONFIG::TYPES TYPES;
-	static const bool DEBUG = CONFIG::DEBUG;
+	static const bool VERBOSE = CONFIG::VERBOSE;
 	typedef typename TYPES::tlm_payload_type transaction_type;
 	typedef typename TYPES::tlm_phase_type   phase_type;
 	typedef tlm::tlm_sync_enum               sync_enum_type;
