@@ -1439,6 +1439,24 @@ VerboseSetup()
 
 template<class CONFIG, bool DEBUG>
 inline
+bool
+CPU<CONFIG, DEBUG> ::
+PrWrite(address_t addr, const void *buffer, uint32_t size, bool interlocked)
+{
+	return memory_import ? memory_import->WriteMemory(addr, buffer, size) : false;
+}
+
+template<class CONFIG, bool DEBUG>
+inline
+bool
+CPU<CONFIG, DEBUG> ::
+PrRead(address_t addr, void *buffer, uint32_t size, bool interlocked)
+{
+	return memory_import ? memory_import->ReadMemory(addr, buffer, size) : false;
+}
+
+template<class CONFIG, bool DEBUG>
+inline
 void
 CPU<CONFIG, DEBUG> ::
 IntStore(address_t ea, uint32_t value, bool interlocked)

@@ -1,5 +1,5 @@
 #
-#  Copyright (c) 2007,
+#  Copyright (c) 2009,
 #  Commissariat a l'Energie Atomique (CEA)
 #  All rights reserved.
 #
@@ -31,31 +31,81 @@
 #
 # Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
 #          Gilles Mouchard (gilles.mouchard@cea.fr)
-#          Reda   NOUACER  (reda.nouacer@cea.fr)
 #
 
-AC_INIT([UNISIM CXX Simulator Library], [1.0])
+AC_INIT([UNISIM TMS320C3X C++ simulator], [1.0],
+	[Daniel Gracia Perez <daniel.gracia-perez@cea.fr>, Gilles Mouchard <gilles.mouchard@cea.fr>],
+	[tms320c3x])
 AC_CONFIG_AUX_DIR(config)
+AC_CONFIG_HEADERS([config.h])
 AC_CANONICAL_BUILD
 AC_CANONICAL_HOST
 AC_CANONICAL_TARGET
-
+    
 AM_INIT_AUTOMAKE
 
+AC_PATH_PROGS(SH, sh)
+AC_PROG_CXX
 AC_PROG_INSTALL
+AC_PROG_LIBTOOL
+AC_PROG_LN_S
+
+AC_LANG([C++])
+
+UNISIM_STATIC
+
+###### CHECK FOR STANDARD C HEADERS ###########################################
+AC_CHECK_HEADERS([string.h stdio.h stdlib.h inttypes.h stdarg.h],,\
+                  AC_MSG_ERROR([Some standard headers are missing.]))
+
+###### CHECK FOR TARGET SPECIFIC HEADERS/LIBRARIES ######################
+
+
+
+case $host in
+	*linux*)   # linux host
+		UNISIM_CHECK_CURSES
+		UNISIM_CHECK_LIBEDIT
+		;;
+	*darwin*)   # darwin host
+		UNISIM_CHECK_CURSES
+		UNISIM_CHECK_LIBEDIT
+		;;
+	*mingw32*)  # win32 host
+		UNISIM_CHECK_WINSOCK2
+		;;
+esac
+
+UNISIM_RELEASE
+UNISIM_CHECK_ZLIB
+UNISIM_CHECK_LIBXML2
+
+UNISIM_CHECK_UNISIM_LIB
+UNISIM_CHECK_CXXABI
+
+UNISIM_LINK(unisim_kernel_logger)
+UNISIM_LINK(unisim_kernel_service)
+UNISIM_LINK(unisim_kernel_debug)
+
+UNISIM_LINK(unisim_util_xml)
+UNISIM_LINK(unisim_util_debug)
+UNISIM_LINK(unisim_util_endian)
+
+UNISIM_LINK(unisim_service_time_host_time)
+UNISIM_LINK(unisim_service_debug_gdb_server)
+UNISIM_LINK(unisim_service_debug_inline_debugger)
+UNISIM_LINK(unisim_service_loader_coff_loader)
+UNISIM_LINK(unisim_service_os_ti_c_io)
+
+UNISIM_LINK(unisim_component_cxx_processor_tms320)
+UNISIM_LINK(unisim_component_cxx_memory_ram)
+
+UNISIM_LIBTOOL
 
 # files to generate
 #   this should include all the makefiles to generate
 AC_CONFIG_FILES([Makefile])
 
-###### CHECK FOR HOST ######################
-
-# Note: ppcemu and armemu only support linux, macosx/darwin, and windows/mingw.
-
-UNISIM_CONFIG_SUBDIR(simulator-cxx-tms320c3x, tms320c3x, *linux*, *macosx*, *darwin*, *mingw*)
-UNISIM_CONFIG_SUBDIR(simulator-cxx-tesla, tesla, *linux*, *macosx*, *darwin*, *mingw*)
-
 # launch the generation of makefiles
 #   this must be the last command of configure.ac
 AC_OUTPUT
-

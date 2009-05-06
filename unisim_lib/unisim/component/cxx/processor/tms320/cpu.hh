@@ -530,8 +530,8 @@ public:
 	//= Interface with the outside world                      START =
 	//===============================================================
 
-	virtual bool PrWrite(address_t addr, const void *buffer, uint32_t size, bool interlocked = false) = 0;
-	virtual bool PrRead(address_t addr, void *buffer, uint32_t size, bool interlocked = false) = 0;
+	virtual bool PrWrite(address_t addr, const void *buffer, uint32_t size, bool interlocked = false);
+	virtual bool PrRead(address_t addr, void *buffer, uint32_t size, bool interlocked = false);
 
     //===============================================================
 	//= Interface with the outside world                       STOP =
