@@ -127,6 +127,9 @@ namespace generic_router {
 
 using namespace unisim::kernel::logger;
 
+template <class CONFIG> const unsigned int unisim::component::tlm2::interconnect::generic_router::Router<CONFIG>::INPUT_SOCKETS;
+template <class CONFIG> const unsigned int unisim::component::tlm2::interconnect::generic_router::Router<CONFIG>::OUTPUT_SOCKETS;
+
 template<class CONFIG>
 Router<CONFIG>::
 Router(const sc_module_name &name, Object *parent) :

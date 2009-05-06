@@ -17,7 +17,16 @@ ooosim_mc_64core_SOURCES = main_mc_64core.cc ooosim_mc_cpu_emulator.cc simulator
 
 ooosim_mc_128core_SOURCES = main_mc_128core.cc ooosim_mc_cpu_emulator.cc simulator_mc_128core.hh
 
-#include_HEADERS = simulator.hh
+include_HEADERS = \
+simulator.hh \
+simulator_mc_128core.hh \
+simulator_mc_16core.hh \
+simulator_mc_2core.hh \
+simulator_mc_32core.hh \
+simulator_mc_4core.hh \
+simulator_mc_64core.hh \
+simulator_mc_8core.hh
+
 #noinst_HEADERS = simulator.hh
 
 if COND_release

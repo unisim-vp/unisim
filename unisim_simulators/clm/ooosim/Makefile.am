@@ -26,7 +26,28 @@ ooosim_1core_SOURCES = ooosim_cpu_emulator.cc main_1core.cc simulator.hh
 
 #ooosim_128core_SOURCES = ooosim_cpu_emulator.cc cpu_simulator.cc main_128core.cc simulator_128core.hh
 
-#include_HEADERS = simulator.hh
+include_HEADERS = \
+parameters_common.hh \
+parameters_d16.hh \
+parameters_d1.hh \
+parameters_d2.hh \
+parameters_d32.hh \
+parameters_d4.hh \
+parameters_d64.hh \
+parameters_d8.hh \
+parameters_dg_mcores.hh \
+parameters_mcores.hh \
+simulator_128core.hh \
+simulator_16core.hh \
+simulator_1core.hh \
+simulator_2core.hh \
+simulator_32core.hh \
+simulator_4core.hh \
+simulator_64core.hh \
+simulator_8core.hh \
+simulator.hh \
+simulator_ideal.hh
+
 #noinst_HEADERS  = simulator.hh
 
 #ooosim_ideal_SOURCES = ooosim_cpu_emulator.cc ooosim_ideal.cc simulator_ideal.hh

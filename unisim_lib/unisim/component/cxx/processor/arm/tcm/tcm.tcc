@@ -73,6 +73,8 @@ using unisim::kernel::logger::EndDebug;
 #define INLINE inline
 #endif
 
+template <class CONFIG, bool DATA_TCM> const uint32_t TCM<CONFIG, DATA_TCM>::BYTE_SIZE;
+
 #ifdef SOCLIB
 
 template<class CONFIG, bool DATA_TCM>
