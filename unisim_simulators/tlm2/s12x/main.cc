@@ -370,7 +370,7 @@ int sc_main(int argc, char *argv[])
 	// - Interrupt controller
 	XINT *s12xint = new XINT("s12xint");
 
-	INT_GEN *int_gen = new INT_GEN("INT_GEN");
+//	INT_GEN *int_gen = new INT_GEN("INT_GEN");
 
 	RTBStub *rtbStub = new RTBStub("RTB_STUB", fsb_cycle_time);
 
@@ -556,7 +556,7 @@ int sc_main(int argc, char *argv[])
 	s12xint->toCPU_Initiator(interruptReq);
 	cpu->interruptRequest(interruptReq);
 
-	int_gen->interrupt_request(s12xint->interrupt_request);
+//	int_gen->interrupt_request(s12xint->interrupt_request);
 	pwm->interrupt_request(s12xint->interrupt_request);
 	atd1->interrupt_request(s12xint->interrupt_request);
 	atd0->interrupt_request(s12xint->interrupt_request);
@@ -711,7 +711,7 @@ int sc_main(int argc, char *argv[])
 	if(loaderS19) { delete loaderS19; loaderS19 = NULL; }
 	if(loaderELF) { delete loaderELF; loaderELF = NULL; }
 
-	if (int_gen) { delete int_gen; int_gen = NULL; }
+//	if (int_gen) { delete int_gen; int_gen = NULL; }
 	if (rtbStub) { delete rtbStub; rtbStub = NULL; }
 
 	if (crg) { delete crg; crg = NULL; }
