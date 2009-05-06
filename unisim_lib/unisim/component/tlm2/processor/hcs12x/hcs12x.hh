@@ -78,7 +78,6 @@ class HCS12X :
 	public CPU {
 public:
 	typedef CPU inherited;
-    static const uint32_t FSB_WIDTH = 32;
 
 	// Initiator socket
 	tlm_utils::simple_initiator_socket<HCS12X> socket;

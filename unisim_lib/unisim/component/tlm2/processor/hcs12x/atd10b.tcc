@@ -33,6 +33,7 @@
  */
 
 #include <unisim/component/tlm2/processor/hcs12x/atd10b.hh>
+#include <unisim/component/cxx/processor/hcs12x/config.hh>
 
 namespace unisim {
 namespace component {
@@ -40,6 +41,7 @@ namespace tlm2 {
 namespace processor {
 namespace hcs12x {
 
+using unisim::component::cxx::processor::hcs12x::CONFIG;
 
 template <uint8_t ATD_SIZE>
 ATD10B<ATD_SIZE>::ATD10B(const sc_module_name& name, Object *parent) :
@@ -55,7 +57,7 @@ ATD10B<ATD_SIZE>::ATD10B(const sc_module_name& name, Object *parent) :
 	param_baseAddress("base-address", this, baseAddress),
 	interruptOffset(0xD0), // ATD1 - ATDCTL2 (ASCIE)
 	param_interruptOffset("interrupt-offset", this, interruptOffset),
-	bus_cycle_time_int(250), // 250ns => 4 MHz
+	bus_cycle_time_int(0),
 	param_bus_cycle_time_int("bus-cycle-time", this, bus_cycle_time_int),
 	vrl(0),
 	vrh(5.12),
@@ -747,19 +749,19 @@ bool ATD10B<ATD_SIZE>::Setup() {
 		return false;
 	}
 
-	if (bus_cycle_time_int < 250) // 250ns => 4 MHz
+	if (bus_cycle_time_int < CONFIG::MINIMAL_BUS_CLOCK_TIME)
 	{
 		cerr << "ATD10B: Incorrect Bus Clock Value.\n";
 
 		return false;
 	}
 
-	bus_cycle_time = sc_time((double)bus_cycle_time_int, SC_NS);
+	bus_cycle_time = sc_time((double)bus_cycle_time_int, SC_PS);
 
 	// the index 'i' model BusClock in MHz
 	for (int i=0; i<32; i++) {
-		busClockRange[i].minBusClock = 1000/(i+1); // busClock is modeled in NS
-		busClockRange[i].maxBusClock = 1000/((i+1)*4);
+		busClockRange[i].minBusClock = 1e6/(i+1); // busClock is modeled in PS
+		busClockRange[i].maxBusClock = 1e6/((i+1)*4);
 	}
 
 	Reset();

@@ -272,9 +272,7 @@ Setup() {
 
 	tlm2_btrans_time = sc_time((double)0, SC_PS);
 
-	// ***
 	for (int i=0; i<32; i++) opCyclesArray[i] = cpu_cycle_time * i;
-	// ****
 
 	nice_time = sc_time((double)nice_time_int, SC_PS);
 	if( inherited::verbose_setup && inherited::logger_import) {
