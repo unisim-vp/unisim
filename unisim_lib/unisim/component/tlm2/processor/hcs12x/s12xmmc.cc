@@ -151,11 +151,15 @@ void S12XMMC::b_transport( tlm::tlm_generic_payload& trans, sc_time& delay ) {
 
 			if (!find) {
 
-				if (CONFIG::DEBUG_ENABLE && trap_reporting_import) {
-					trap_reporting_import->ReportTrap();
+				if (CONFIG::DEBUG_ENABLE) {
+/*
+					if (trap_reporting_import) {
+						trap_reporting_import->ReportTrap();
+					}
+*/
+					cerr << "WARNING: S12XMMC => Device at 0x" << std::hex << logicalAddress << " Not present in the emulated platform." << std::dec << std::endl;
 				}
 
-				cerr << "WARNING: S12XMMC => Device at 0x" << std::hex << logicalAddress << " Not present in the emulated platform." << std::dec << std::endl;
 			}
 
 		}

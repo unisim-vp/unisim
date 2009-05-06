@@ -219,6 +219,7 @@ tlm_sync_enum PWM<PWM_SIZE>::nb_transport_bw(PWM_Payload<PWM_SIZE>& payload, tlm
 	{
 		case BEGIN_REQ:
 			cout << sc_time_stamp() << ":" << name() << ": received an unexpected phase BEGIN_REQ" << endl;
+
 			sc_stop();
 			wait(); // leave control to the SystemC kernel
 			break;
@@ -277,7 +278,9 @@ void PWM<PWM_SIZE>::refreshOutput(bool pwmValue[PWM_SIZE])
 
 	sc_time local_time = sc_time_stamp();
 
-//	cout << sc_time_stamp() << ":" << name() << "(PWMx) : send " << payload->serialize() << endl;
+	if (CONFIG::DEBUG_ENABLE) {
+		cout << sc_time_stamp() << ":" << name() << "(PWMx) : send " << payload->serialize() << endl;
+	}
 
 	tlm_sync_enum ret = master_sock->nb_transport_fw(*payload, phase, local_time);
 
@@ -632,7 +635,9 @@ bool PWM<PWM_SIZE>::Setup() {
 
 	if (bus_cycle_time_int < CONFIG::MINIMAL_BUS_CLOCK_TIME)
 	{
-		cerr << "PWM: Incorrect Bus Clock Value.\n";
+		if (CONFIG::DEBUG_ENABLE) {
+			cerr << "PWM: Wrong Bus Clock Value.\n";
+		}
 
 		return false;
 	}

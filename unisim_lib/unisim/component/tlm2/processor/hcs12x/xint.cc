@@ -98,28 +98,34 @@ tlm_sync_enum XINT::nb_transport_fw(XINT_Payload& payload, tlm_phase& phase, sc_
 			phase = END_REQ; // update the phase
 
 			interrupt_flags[payload.interrupt_offset/2] = true;
-			cout << "XINT: Receive INT " << payload.interrupt_offset/2 << std::endl;
+			if (CONFIG::DEBUG_ENABLE) {
+				cerr << "XINT: Receive INT " << payload.interrupt_offset/2 << std::endl;
+			}
 
 			interrupt_request_event.notify();
 
 			return TLM_UPDATED;
 		case END_REQ:
 			cout << sc_time_stamp() << ":" << name() << ": received an unexpected phase END_REQ" << endl;
+
 			sc_stop();
 			wait(); // leave control to the SystemC kernel
 			break;
 		case BEGIN_RESP:
 			cout << sc_time_stamp() << ":" << name() << ": received an unexpected phase BEGIN_RESP" << endl;
+
 			sc_stop();
 			wait(); // leave control to the SystemC kernel
 			break;
 		case END_RESP:
 			cout << sc_time_stamp() << ":" << name() << ": received an unexpected phase END_RESP" << endl;
+
 			sc_stop();
 			wait(); // leave control to the SystemC kernel
 			break;
 		default:
 			cout << sc_time_stamp() << ":" << name() << ": received an unexpected phase" << endl;
+
 			sc_stop();
 			wait(); // leave control to the SystemC kernel
 			break;

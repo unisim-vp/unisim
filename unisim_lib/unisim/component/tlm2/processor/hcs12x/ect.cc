@@ -97,15 +97,36 @@ void ECT::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 void ECT::read(uint8_t offset, uint8_t &value) {
 
 	switch (offset) {
-	default: ;
+		case TIOS: value = tios_register; break;
+		case TSCR1: value = tscr1_register; break;
+		case TIE: value = tie_register; break;
+		case TSCR2: value = tscr2_register; break;
+		case TFLG1: value = tflg1_register; break;
+
+		default: std::cerr << "Warning: ETC => Read Request not supported for register 0x" << std::hex << offset << std::dec << std::endl;
 	}
 }
 
-void ECT::write(uint8_t offset, uint8_t val) {
+void ECT::write(uint8_t offset, uint8_t value) {
 
 	switch (offset) {
-	default: ;
+		case TIOS: tios_register = value; break;
+		case TSCR1: {
+
+		} break;
+		case TIE: {
+
+		} break;
+		case TSCR2: {
+
+		} break;
+		case TFLG1: {
+
+		} break;
+
+		default: std::cerr << "Warning: ETC => Write Request not supported for register 0x" << std::hex << offset << std::dec << std::endl;
 	}
+
 }
 
 //=====================================================================
@@ -125,6 +146,13 @@ void ECT::OnDisconnect() {
 }
 
 void ECT::Reset() {
+
+	write(TIOS, 0);
+	write(TSCR1, 0);
+	write(TIE, 0);
+	write(TSCR2, 0);
+	write(TFLG1, 0);
+
 }
 
 

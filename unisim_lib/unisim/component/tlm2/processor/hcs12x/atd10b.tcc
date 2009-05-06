@@ -170,6 +170,9 @@ tlm_sync_enum ATD10B<ATD_SIZE>::nb_transport_fw(ATD_Payload<ATD_SIZE>& payload, 
 template <uint8_t ATD_SIZE>
 void ATD10B<ATD_SIZE>::Input(ATD_Payload<ATD_SIZE>& payload, double anValue[ATD_SIZE])
 {
+	if (CONFIG::DEBUG_ENABLE) {
+		cout << sc_time_stamp() << ":" << name() << "ATD10B" << ATD_SIZE << "C : receive " << payload.serialize() << endl;
+	}
 
 	if ((atdctl2_register & 0x80) != 0) // is ATD power ON (enabled)
 	{
@@ -180,7 +183,7 @@ void ATD10B<ATD_SIZE>::Input(ATD_Payload<ATD_SIZE>& payload, double anValue[ATD_
 		scan_event.notify();
 
 	} else {
-		cerr << "Warning: ATD10B16C ==> The ATD is OFF. You have to set ATDCTL2::ADPU bit before.\n";
+		cerr << "Warning: ATD10B" << ATD_SIZE << "C => The ATD is OFF. You have to set ATDCTL2::ADPU bit before.\n";
 	}
 
 	payload.release();
@@ -250,7 +253,10 @@ void ATD10B<ATD_SIZE>::RunScanMode()
 		// - check ATDCTL0::wrap bits to identify the channel to wrap around
 		uint8_t wrapArroundChannel = atdctl0_register & 0x0F;
 		if (wrapArroundChannel == 0) {
-			cerr << "Warning: ATD10B => WrapArroundChannel=0 is a reserved value. The wrap channel is assumed " << ATD_SIZE-1 << ".\n";
+			if (CONFIG::DEBUG_ENABLE) {
+				cerr << "Warning: ATD10B" << ATD_SIZE << "C => WrapArroundChannel=0 is a reserved value. The wrap channel is assumed " << ATD_SIZE-1 << ".\n";
+			}
+
 			wrapArroundChannel = ATD_SIZE-1;
 		}
 
@@ -262,7 +268,10 @@ void ATD10B<ATD_SIZE>::RunScanMode()
 		}
 
 		if (sequenceLength > ATD_SIZE) {
-			cerr << "Warning: ATD10B => sequence length is higher than the ATD size.\n";
+			if (CONFIG::DEBUG_ENABLE) {
+				cerr << "Warning: ATD10B" << ATD_SIZE << "C => sequence length is higher than the ATD size.\n";
+			}
+
 			sequenceLength = ATD_SIZE;
 		}
 
@@ -302,10 +311,13 @@ void ATD10B<ATD_SIZE>::RunScanMode()
 				// is Special Channel Select enabled ?
 				if ((atdtest1_register & scMask) != 0) {
 					switch (currentChannel) {
-					case 4: anSignal = vrh; break;
-					case 5: anSignal = vrl; break;
-					case 6: anSignal = (vrh + vrl)/2; break;
-					default: cerr << "Warning: ATD10B => Reserved value of CD/CC/CB/CA.\n";
+						case 4: anSignal = vrh; break;
+						case 5: anSignal = vrl; break;
+						case 6: anSignal = (vrh + vrl)/2; break;
+						default:
+							if (CONFIG::DEBUG_ENABLE) {
+								cerr << "Warning: ATD10B" << ATD_SIZE << "C => Reserved value of CD/CC/CB/CA.\n";
+							}
 					}
 				} else {
 					anSignal = analog_signal[currentChannel];
@@ -463,7 +475,10 @@ void ATD10B<ATD_SIZE>::setATDClock() {
 	uint8_t prsValue = atdctl4_register & prsMask;
 	if ((bus_cycle_time_int < busClockRange[prsValue].minBusClock) ||
 			(bus_cycle_time_int > busClockRange[prsValue].maxBusClock)) {
-		cerr << "ATD10B: unallowed prescaler value.\n";
+
+		if (CONFIG::DEBUG_ENABLE) {
+			cerr << "ATD10B" << ATD_SIZE << "C: unallowed prescaler value.\n";
+		}
 	}
 
 	atd_clock = bus_cycle_time / prsValue;
@@ -629,7 +644,9 @@ void ATD10B<ATD_SIZE>::read(uint8_t offset, void *buffer) {
 				atdstat0_register = atdstat0_register & 0x7F;
 			}
 		} else {
-			cerr << "ERROR: ATD10B => Wrong offset.\n";
+			if (CONFIG::DEBUG_ENABLE) {
+				cerr << "Warning: ATD10B" << ATD_SIZE << "C => Wrong offset.\n";
+			}
 		}
 	}
 
@@ -650,7 +667,9 @@ void ATD10B<ATD_SIZE>::write(uint8_t offset, const void *buffer) {
 		case ATDCTL2: {
 			atdctl2_register = (*((uint8_t *) buffer) & 0xFE) | (atdctl2_register & 0x01);
 			if ((atdctl2_register & 0x04) != 0) {
-				cerr << "Warning: ATD10B => Trigger mode not support Yet. \n";
+				if (CONFIG::DEBUG_ENABLE) {
+					cerr << "Warning: ATD10B" << ATD_SIZE << "C => Trigger mode not support Yet. \n";
+				}
 			}
 			abortConversion();
 		} break;
@@ -686,7 +705,10 @@ void ATD10B<ATD_SIZE>::write(uint8_t offset, const void *buffer) {
 		case UNIMPL0007: break;
 		case ATDTEST0:
 			// atdtest0_register = *((uint8_t *) buffer);
-			cerr << "Warning: ATD10B => Not implemented yet. Write to ATDTEST0 in special modes can alter functionality.\n";
+			if (CONFIG::DEBUG_ENABLE) {
+				cerr << "Warning: ATD10B" << ATD_SIZE << "C => Not implemented yet. Write to ATDTEST0 in special modes can alter functionality.\n";
+			}
+
 			break;
 		case ATDTEST1: {
 			const uint8_t scMask = 0x01;
@@ -745,13 +767,18 @@ template <uint8_t ATD_SIZE>
 bool ATD10B<ATD_SIZE>::Setup() {
 
 	if (vrh <= vrl) {
-		cerr << "ATD10B: Incorrect Values of Vrl and Vrh.\n";
+		if (CONFIG::DEBUG_ENABLE) {
+			cerr << "ATD10B" << ATD_SIZE << "C: Wrong Values of Vrl and Vrh.\n";
+		}
+
 		return false;
 	}
 
 	if (bus_cycle_time_int < CONFIG::MINIMAL_BUS_CLOCK_TIME)
 	{
-		cerr << "ATD10B: Incorrect Bus Clock Value.\n";
+		if (CONFIG::DEBUG_ENABLE) {
+			cerr << "ATD10B" << ATD_SIZE << "C: Wrong Bus Clock Value.\n";
+		}
 
 		return false;
 	}
