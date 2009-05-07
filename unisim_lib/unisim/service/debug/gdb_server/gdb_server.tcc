@@ -74,16 +74,12 @@ using std::hex;
 using std::dec;
 using std::list;
 //using unisim::service::interfaces::operator<<;
-using unisim::service::interfaces::Logger;
-using unisim::service::interfaces::Hex;
-using unisim::service::interfaces::Dec;
-using unisim::service::interfaces::Endl;
-using unisim::service::interfaces::DebugInfo;
-using unisim::service::interfaces::DebugWarning;
-using unisim::service::interfaces::DebugError;
-using unisim::service::interfaces::EndDebugInfo;
-using unisim::service::interfaces::EndDebugWarning;
-using unisim::service::interfaces::EndDebugError;
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugInfo;
+using unisim::kernel::logger::EndDebugWarning;
+using unisim::kernel::logger::EndDebugError;
 
 template <class ADDRESS>
 GDBServer<ADDRESS>::GDBServer(const char *_name, Object *_parent) :
@@ -94,14 +90,12 @@ GDBServer<ADDRESS>::GDBServer(const char *_name, Object *_parent) :
 	Client<MemoryAccessReportingControl>(_name, _parent),
 	Client<Memory<ADDRESS> >(_name, _parent),
 	Client<Registers>(_name, _parent),
-	Client<Logger>(_name, _parent),
 	debug_control_export("debug-control-export", this),
 	memory_access_reporting_export("memory-access-reporting-export", this),
 	trap_reporting_export("trap-reporting-export", this),
 	memory_access_reporting_control_import("memory_access_reporting_control_import", this),
 	memory_import("memory-import", this),
 	registers_import("cpu-registers-import", this),
-	logger_import("logger-import", this),
 	tcp_port(12345),
 	architecture_description_filename(),
 	sock(-1),
@@ -119,6 +113,7 @@ GDBServer<ADDRESS>::GDBServer(const char *_name, Object *_parent) :
 	input_buffer_size(0),
 	input_buffer_index(0),
 	output_buffer_size(0),
+	logger(*this),
 	param_tcp_port("tcp-port", this, tcp_port),
 	param_architecture_description_filename("architecture-description-filename", this, architecture_description_filename)
 {
@@ -274,24 +269,14 @@ bool GDBServer<ADDRESS>::Setup()
 						if(!reg)
 						{
 							cpu_has_reg = false;
-							if(logger_import)
-							{
-								(*logger_import) << DebugWarning;
-								(*logger_import) << "CPU does not support register " << reg_name << Endl;
-								(*logger_import) << EndDebugWarning;
-							}
+							logger << DebugWarning << "CPU does not support register " << reg_name << EndDebugWarning;
 						}
 						else
 						{
 							if(reg->GetSize() != reg_size)
 							{
 								cpu_has_right_reg_size = false;
-								if(logger_import)
-								{
-									(*logger_import) << DebugWarning;
-									(*logger_import) << ": register size (" << 8 * reg_size << " bits) doesn't match with size (" << 8 * reg->GetSize() << " bits) reported by CPU" << Endl;
-									(*logger_import) << EndDebugWarning;
-								}
+								logger << DebugWarning << ": register size (" << 8 * reg_size << " bits) doesn't match with size (" << 8 * reg->GetSize() << " bits) reported by CPU" << EndDebugWarning;
 							}
 						}
 
@@ -390,12 +375,7 @@ bool GDBServer<ADDRESS>::Setup()
 	
 	if(server_sock < 0)
 	{
-		if(logger_import)
-		{
-			(*logger_import) << DebugError;
-			(*logger_import) << "socket failed" << Endl;
-			(*logger_import) << EndDebugError;
-		}
+		logger << DebugError << "socket failed" << EndDebugError;
 		return false;
 	}
 	
@@ -405,12 +385,7 @@ bool GDBServer<ADDRESS>::Setup()
 	addr.sin_addr.s_addr = INADDR_ANY;
 	if(bind(server_sock, (struct sockaddr *) &addr, sizeof(addr)) < 0)
 	{
-		if(logger_import)
-		{
-			(*logger_import) << DebugError;
-			(*logger_import) << "bind failed" << Endl;
-			(*logger_import) << EndDebugError;
-		}
+		logger << DebugError << "bind failed" << EndDebugError;
 #ifdef WIN32
 		closesocket(server_sock);
 #else
@@ -421,12 +396,7 @@ bool GDBServer<ADDRESS>::Setup()
 
 	if(listen(server_sock, 1))
 	{
-		if(logger_import)
-		{
-			(*logger_import) << DebugError;
-			(*logger_import) << "listen failed" << Endl;
-			(*logger_import) << EndDebugError;
-		}
+		logger << DebugError << "listen failed" << EndDebugError;
 #ifdef WIN32
 		closesocket(server_sock);
 #else
@@ -441,23 +411,13 @@ bool GDBServer<ADDRESS>::Setup()
 		socklen_t addr_len;
 #endif
 
-	if(logger_import)
-	{
-		(*logger_import) << DebugInfo;
-		(*logger_import) << "Listening on TCP port " << tcp_port << Endl;
-		(*logger_import) << EndDebugInfo;
-	}
+	logger << DebugInfo << "Listening on TCP port " << tcp_port << EndDebugInfo;
 	addr_len = sizeof(addr);
 	sock = accept(server_sock, (struct sockaddr *) &addr, &addr_len);
 	
 	if(sock < 0)
 	{
-		if(logger_import)
-		{
-			(*logger_import) << DebugError;
-			(*logger_import) << "accept failed" << Endl;
-			(*logger_import) << EndDebugError;
-		}
+		logger << DebugError << "accept failed" << EndDebugError;
 #ifdef WIN32
 		closesocket(server_sock);
 #else
@@ -466,23 +426,13 @@ bool GDBServer<ADDRESS>::Setup()
 		return false;
 	}
 	
-	if(logger_import)
-	{
-		(*logger_import) << DebugInfo;
-		(*logger_import) << "Connection with GDB client established" << Endl;
-		(*logger_import) << EndDebugInfo;
-	}
+	logger << DebugInfo << "Connection with GDB client established" << EndDebugInfo;
 
     /* set short latency */
     int opt = 1;
     if(setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (char *) &opt, sizeof(opt)) < 0)
 	{
-		if(logger_import)
-		{
-			(*logger_import) << DebugWarning;
-			(*logger_import) << "setsockopt failed requesting short latency" << Endl;
-			(*logger_import) << EndDebugWarning;
-		}
+		logger << DebugWarning << "setsockopt failed requesting short latency" << EndDebugWarning;
 	}
 
 
@@ -490,12 +440,7 @@ bool GDBServer<ADDRESS>::Setup()
 	u_long NonBlock = 1;
 	if(ioctlsocket(sock, FIONBIO, &NonBlock) != 0)
 	{
-		if(logger_import)
-		{
-			(*logger_import) << DebugError;
-			(*logger_import) << "ioctlsocket failed" << Endl;
-			(*logger_import) << EndDebugError;
-		}
+		logger << DebugError << "ioctlsocket failed" << EndDebugError;
 #ifdef WIN32
 		closesocket(server_sock);
 		closesocket(sock);
@@ -511,12 +456,7 @@ bool GDBServer<ADDRESS>::Setup()
 	
 	if(socket_flag < 0)
 	{
-		if(logger_import)
-		{
-			(*logger_import) << DebugError;
-			(*logger_import) << "fcntl failed" << Endl;
-			(*logger_import) << EndDebugError;
-		}
+		logger << DebugError << "fcntl failed" << EndDebugError;
 #ifdef WIN32
 		closesocket(server_sock);
 		closesocket(sock);
@@ -531,12 +471,7 @@ bool GDBServer<ADDRESS>::Setup()
 	/* Ask for non-blocking reads on socket */
 	if(fcntl(sock, F_SETFL, socket_flag | O_NONBLOCK) < 0)
 	{
-		if(logger_import)
-		{
-			(*logger_import) << DebugError;
-			(*logger_import) << "fcntl failed" << Endl;
-			(*logger_import) << EndDebugError;
-		}
+		logger << DebugError << "fcntl failed" << EndDebugError;
 #ifdef WIN32
 		closesocket(server_sock);
 		closesocket(sock);
@@ -725,12 +660,7 @@ typename DebugControl<ADDRESS>::DebugCommand GDBServer<ADDRESS>::FetchDebugComma
 					gdb_pc->SetValue(&addr);
 				else
 				{
-					if(logger_import)
-					{
-						(*logger_import) << DebugWarning;
-						(*logger_import) << "CPU has no program counter" << Endl;
-						(*logger_import) << EndDebugWarning;
-					}
+					logger << DebugWarning << "CPU has no program counter" << EndDebugWarning;
 				}
 				running_mode = GDBSERVER_MODE_STEP;
 				synched = false;
@@ -747,9 +677,7 @@ typename DebugControl<ADDRESS>::DebugCommand GDBServer<ADDRESS>::FetchDebugComma
 					gdb_pc->SetValue(&addr);
 				else
 				{
-					(*logger_import) << DebugWarning;
-					(*logger_import) << "CPU has no program counter" << Endl;
-					(*logger_import) << EndDebugWarning;
+					logger << DebugWarning << "CPU has no program counter" << EndDebugWarning;
 				}
 				running_mode = GDBSERVER_MODE_CONTINUE;
 				return DebugControl<ADDRESS>::DBG_STEP;
@@ -893,12 +821,7 @@ typename DebugControl<ADDRESS>::DebugCommand GDBServer<ADDRESS>::FetchDebugComma
 				}
 				else
 				{
-					if(logger_import)
-					{
-						(*logger_import) << DebugWarning;
-						(*logger_import) << "Received an unknown GDB remote protocol packet" << Endl;
-						(*logger_import) << EndDebugWarning;
-					}
+					logger << DebugWarning << "Received an unknown GDB remote protocol packet" << EndDebugWarning;
 					PutPacket("");
 				}
 		} // end of switch
@@ -942,12 +865,7 @@ bool GDBServer<ADDRESS>::GetChar(char& c, bool blocking)
 					}
 				}
 			
-				if(logger_import)
-				{
-					(*logger_import) << DebugError;
-					(*logger_import) << "can't read from socket" << Endl;
-					(*logger_import) << EndDebugError;
-				}
+				logger << DebugError << "can't read from socket" << EndDebugError;
 				return false;
 			}
 			input_buffer_index = 0;
@@ -978,12 +896,7 @@ bool GDBServer<ADDRESS>::FlushOutput()
 			if(r <= 0)
 #endif
 			{
-				if(logger_import)
-				{
-					(*logger_import) << DebugError;
-					(*logger_import) << "can't write into socket" << Endl;
-					(*logger_import) << EndDebugError;
-				}
+				logger << DebugError << "can't write into socket" << EndDebugError;
 				return false;
 			}
 
@@ -1052,12 +965,7 @@ bool GDBServer<ADDRESS>::GetPacket(string& s, bool blocking)
 			if(!GetChar(c, true)) break;
 			received_checksum += HexChar2Nibble(c);
 			
-			if(logger_import)
-			{
-				(*logger_import) << DebugInfo;
-				(*logger_import) << "receiving $" << s << "#" << Nibble2HexChar((received_checksum >> 4) & 0xf) << Nibble2HexChar(received_checksum & 0xf) << Endl;
-				(*logger_import) << EndDebugInfo;
-			}
+			logger << DebugInfo << "receiving $" << s << "#" << Nibble2HexChar((received_checksum >> 4) & 0xf) << Nibble2HexChar(received_checksum & 0xf) << EndDebugInfo;
 			if(checksum != received_checksum)
 			{
 				if(!PutChar('-')) return false;
@@ -1107,12 +1015,7 @@ bool GDBServer<ADDRESS>::PutPacket(const string& s)
 		if(!PutChar('#')) return false;
 		if(!PutChar(Nibble2HexChar(checksum >> 4))) return false;
 		if(!PutChar(Nibble2HexChar(checksum & 0xf))) return false;
-		if(logger_import)
-		{
-			(*logger_import) << DebugInfo;
-			(*logger_import) << "sending $" << s << "#" << Nibble2HexChar(checksum >> 4) << Nibble2HexChar(checksum & 0xf) << Endl;
-			(*logger_import) << EndDebugInfo;
-		}
+		logger << DebugInfo << "sending $" << s << "#" << Nibble2HexChar(checksum >> 4) << Nibble2HexChar(checksum & 0xf) << EndDebugInfo;
 		if(!FlushOutput()) return false;
 	} while(GetChar(c, true) && c != '+');
 	return true;
@@ -1213,11 +1116,9 @@ bool GDBServer<ADDRESS>::ReadMemory(ADDRESS addr, uint32_t size)
 		} while(++addr, --size);
 	}
 
-	if(read_error && logger_import)
+	if(read_error)
 	{
-		(*logger_import) << DebugWarning;
-		(*logger_import) << memory_import.GetName() << "->ReadMemory has reported an error" << Endl;
-		(*logger_import) << EndDebugWarning;
+		logger << DebugWarning << memory_import.GetName() << "->ReadMemory has reported an error" << EndDebugWarning;
 	}
 
 	return PutPacket(packet);
@@ -1248,11 +1149,9 @@ bool GDBServer<ADDRESS>::WriteMemory(ADDRESS addr, const string& hex, uint32_t s
 		} while(pos += 2, ++addr, (--size) && ((len -= 2) >= 0));
 	}
 
-	if(write_error && logger_import)
+	if(write_error)
 	{
-		(*logger_import) << DebugWarning;
-		(*logger_import) << memory_import.GetName() << "->WriteMemory has reported an error" << Endl;
-		(*logger_import) << EndDebugWarning;
+		logger << DebugWarning << memory_import.GetName() << "->WriteMemory has reported an error" << EndDebugWarning;
 	}
 
 	return true;

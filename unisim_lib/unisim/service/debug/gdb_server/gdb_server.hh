@@ -39,11 +39,11 @@
 #include <unisim/service/interfaces/memory_access_reporting.hh>
 #include <unisim/service/interfaces/debug_control.hh>
 #include <unisim/service/interfaces/registers.hh>
-#include <unisim/service/interfaces/logger.hh>
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/trap_reporting.hh>
 
 #include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/logger/logger.hh>
 
 #include <unisim/util/debug/breakpoint_registry.hh>
 #include <unisim/util/debug/watchpoint_registry.hh>
@@ -67,7 +67,6 @@ using unisim::service::interfaces::MemoryAccessReporting;
 using unisim::service::interfaces::MemoryAccessReportingControl;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Registers;
-using unisim::service::interfaces::Logger;
 using unisim::service::interfaces::TrapReporting;
 
 using unisim::util::debug::BreakpointRegistry;
@@ -136,8 +135,7 @@ class GDBServer :
 	public Service<TrapReporting>,
 	public Client<MemoryAccessReportingControl>,
 	public Client<Memory<ADDRESS> >,
-	public Client<Registers>,
-	public Client<Logger>
+	public Client<Registers>
 {
 public:
 	ServiceExport<DebugControl<ADDRESS> > debug_control_export;
@@ -147,7 +145,6 @@ public:
 	ServiceImport<MemoryAccessReportingControl> memory_access_reporting_control_import;
 	ServiceImport<Memory<ADDRESS> > memory_import;
 	ServiceImport<Registers> registers_import;
-	ServiceImport<Logger> logger_import;
 
 	
 	GDBServer(const char *name, Object *parent = 0);
@@ -181,6 +178,8 @@ private:
 	bool SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, uint32_t size);
 	bool RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr, uint32_t size);
 	
+	unisim::kernel::logger::Logger logger;
+
 	int tcp_port;
 	string architecture_description_filename;
 	
