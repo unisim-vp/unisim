@@ -1174,7 +1174,11 @@ StepInstruction()
 			dbg_cmd = debug_control_import->FetchDebugCommand(4 * GetPC23_0());
 	
 			if(dbg_cmd == DebugControl<uint64_t>::DBG_STEP) break;
-			if(dbg_cmd == DebugControl<uint64_t>::DBG_KILL) Stop(0);
+			if(dbg_cmd == DebugControl<uint64_t>::DBG_KILL)
+			{
+				Stop(0);
+				return;
+			}
 		} while(1);
 	}
 
