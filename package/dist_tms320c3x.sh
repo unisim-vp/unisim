@@ -199,6 +199,7 @@ fi
 if [ "${has_to_build_configure}" = "yes" ]; then
 	echo "Generating configure.ac"
 	echo "AC_INIT([UNISIM TMS320C3X C++ simulator], [0.1], [Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Perez <daniel.gracia-perez@cea.fr>], [tms320c3x])" > "${DEST_DIR}/configure.ac"
+	echo "AC_CONFIG_MACRO_DIR([m4])" >> "${CONFIGURE_AC}"
 	echo "AC_CONFIG_AUX_DIR(config)" >> "${CONFIGURE_AC}"
 	echo "AC_CONFIG_HEADERS([config.h])" >> "${CONFIGURE_AC}"
 	echo "AC_CANONICAL_BUILD" >> "${CONFIGURE_AC}"
@@ -220,12 +221,13 @@ if [ "${has_to_build_configure}" = "yes" ]; then
 	echo "AC_OUTPUT" >> "${CONFIGURE_AC}"
 
 	echo "Generating Makefile.am"
-	echo "INCLUDES=-I\$(top_srcdir) -I\$(top_builddir)" > "${MAKEFILE_AM}"
+	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${MAKEFILE_AM}"
+	echo "INCLUDES=-I\$(top_srcdir) -I\$(top_builddir)" >> "${MAKEFILE_AM}"
 	echo "bin_PROGRAMS = tms320c3x" >> "${MAKEFILE_AM}"
 	echo "tms320c3x_SOURCES = ${UNISIM_LIB_SOURCE_FILES} ${UNISIM_SIMULATORS_SOURCE_FILES}" >> "${MAKEFILE_AM}"
 	echo "noinst_HEADERS= ${UNISIM_LIB_HEADER_FILES} ${UNISIM_LIB_TEMPLATE_FILES} ${UNISIM_SIMULATORS_HEADER_FILES} ${UNISIM_SIMULATORS_TEMPLATE_FILES}" >> "${MAKEFILE_AM}"
 	echo "Building configure"
-	${SHELL} -c "cd ${DEST_DIR} && aclocal -Im4 && autoconf --force && autoheader && automake -a"
+	${SHELL} -c "cd ${DEST_DIR} && aclocal -I m4 && autoconf --force && autoheader && automake -a"
 fi
 
 echo "Distribution is up-to-date"
