@@ -46,6 +46,7 @@
 #include <tlm_utils/peq_with_get.h>
 #include "tlm_utils/simple_target_socket.h"
 
+#include "unisim/service/interfaces/trap_reporting.hh"
 #include "unisim/kernel/service/service.hh"
 #include "unisim/service/interfaces/memory.hh"
 #include "unisim/kernel/tlm2/tlm.hh"
@@ -70,6 +71,7 @@ using unisim::kernel::service::Client;
 using unisim::kernel::service::Service;
 using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::ServiceImport;
+using unisim::service::interfaces::TrapReporting;
 using unisim::kernel::service::Parameter;
 
 using unisim::service::interfaces::Memory;
@@ -88,7 +90,9 @@ class PWM :
 	virtual public tlm_bw_transport_if<UNISIM_PWM_ProtocolTypes<PWM_SIZE> >,
 	virtual public tlm_bw_transport_if<XINT_REQ_ProtocolTypes>,
 	public Service<Memory<service_address_t> >,
-	public Client<Memory<service_address_t> >
+	public Client<Memory<service_address_t> >,
+	public Client<TrapReporting >
+
 {
 public:
 
@@ -115,6 +119,8 @@ public:
 
 	ServiceExport<Memory<service_address_t> > memory_export;
 	ServiceImport<Memory<service_address_t> > memory_import;
+
+	ServiceImport<TrapReporting > trap_reporting_import;
 
     PWM(const sc_module_name& name, Object *parent = 0);
     ~PWM();

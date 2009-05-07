@@ -47,12 +47,17 @@ template <uint8_t PWM_SIZE>
 PWM<PWM_SIZE>::PWM(const sc_module_name& name, Object *parent) :
 	Object(name, parent),
 	sc_module(name),
-	master_sock("master_socket"),
-	slave_socket("slave_socket"),
 	Service<Memory<service_address_t> >(name, parent),
 	Client<Memory<service_address_t> >(name, parent),
+	Client<TrapReporting>(name, parent),
+
+	master_sock("master_socket"),
+	slave_socket("slave_socket"),
+
 	memory_export("memory_export", this),
 	memory_import("memory_import", this),
+	trap_reporting_import("trap_reproting_import", this),
+
 	baseAddress(0x0300), // MC9S12XDP512V2 - PWM baseAddress
 	param_baseAddress("base-address", this, baseAddress),
 	interruptOffset(0x8C),
@@ -279,8 +284,14 @@ void PWM<PWM_SIZE>::refreshOutput(bool pwmValue[PWM_SIZE])
 	sc_time local_time = sc_time_stamp();
 
 	if (CONFIG::DEBUG_ENABLE) {
-		cout << sc_time_stamp() << ":" << name() << "(PWMx) : send " << payload->serialize() << endl;
+		/*
+		if (trap_reporting_import) {
+			trap_reporting_import->ReportTrap();
+		}
+		*/
+		cout << sc_time_stamp() << ":" << name() << ":: send " << payload->serialize() << endl;
 	}
+
 
 	tlm_sync_enum ret = master_sock->nb_transport_fw(*payload, phase, local_time);
 
@@ -400,10 +411,10 @@ void PWM<PWM_SIZE>::write(uint8_t offset, uint8_t val) {
 
 			for (uint8_t index=0; index<PWM_SIZE; index++) {
 				isEnable = ((pwme_register & mask) != 0);
-				if ((val & mask) && !isEnable) {
+				if (((val & mask) != 0) && !isEnable) {
 					channel[index]->wakeup();
 				}
-				if (!(val & mask) && isEnable) {
+				if (((val & mask) == 0) && isEnable) {
 					channel[index]->disable();
 				}
 				mask = mask << 1;
@@ -418,7 +429,7 @@ void PWM<PWM_SIZE>::write(uint8_t offset, uint8_t val) {
 			pwmpol_register = val;
 
 			for (uint8_t i=0; i<PWM_SIZE; i++) {
-				channel[i]->setOutput(pwmpol_register & mask);
+				channel[i]->setOutput((pwmpol_register & mask) != 0);
 				mask = mask << 1;
 			}
 		}
@@ -440,11 +451,11 @@ void PWM<PWM_SIZE>::write(uint8_t offset, uint8_t val) {
 			uint8_t pwmeRegs = pwme_register;
 			uint8_t pwmeMask = 0x01;
 
-			uint8_t newValue = val & 0x0C; // bit 0 and 1 can't be written
+			uint8_t newValue = val & 0xFC; // bit 0 and 1 can't be written
 			for (int i=0; i<4; i++) {
-				if (conDelta & conDeltaMask) // control bit has to be changed ?
+				if ((conDelta & conDeltaMask) != 0) // control bit has to be changed ?
 				{
-					if (!((pwmeRegs & pwmeMask) || (pwmeRegs & (pwmeMask << 1)))) // are channels disabled ?
+					if (!(((pwmeRegs & pwmeMask) != 0) || ((pwmeRegs & (pwmeMask << 1)) != 0))) // are channels disabled ?
 					{
 						newValue = ~(oldValue & conDeltaMask) | newValue;
 					}
@@ -554,7 +565,7 @@ void PWM<PWM_SIZE>::write(uint8_t offset, uint8_t val) {
 				channel[offset-PWMDTY0]->setPWMDTYBuffer(val);
 
 				pwmeMask = pwmeMask << (offset - PWMDTY0);
-				if (!(pwme_register & pwmeMask)) {
+				if ((pwme_register & pwmeMask) == 0) {
 					channel[offset-PWMDTY0]->setPWMDTYValue(val);
 				}
 
@@ -636,7 +647,7 @@ bool PWM<PWM_SIZE>::Setup() {
 	if (bus_cycle_time_int < CONFIG::MINIMAL_BUS_CLOCK_TIME)
 	{
 		if (CONFIG::DEBUG_ENABLE) {
-			cerr << "PWM: Wrong Bus Clock Value.\n";
+			cerr << "Warning: " << name() << ": Wrong Bus Clock Value.\n";
 		}
 
 		return false;
@@ -751,7 +762,7 @@ void PWM<PWM_SIZE>::Channel_t::Run() {
 		 * - Take in account the channel state (Enable or Disable)
 		 * - Is Channel concatenated ?
 		 */
-		while (((ctl_register & conMask) && (channel_number % 2 == 0)) || (!isEnable))
+		while ((((ctl_register & conMask) != 0) && (channel_number % 2 == 0)) || (!isEnable))
 		{
 			wait(wakeup_event);
 
@@ -765,14 +776,14 @@ void PWM<PWM_SIZE>::Channel_t::Run() {
 	 	 *     channel 2, 3, 6, 7 then clock B or SB
 		 */
 		if ((pwmParent->pwmclk_register & channelMask)  != 0) {
-			if (channel_number & bit2Mask) {
+			if ((channel_number & bit2Mask) != 0) {
 				clk = pwmParent->getClockB();
 			} else {
 				clk = pwmParent->getClockA();
 			}
 
 		} else {
-			if (channel_number & bit2Mask) {
+			if ((channel_number & bit2Mask) != 0) {
 				clk = pwmParent->getClockSB();
 			} else {
 				clk = pwmParent->getClockSA();
@@ -780,7 +791,7 @@ void PWM<PWM_SIZE>::Channel_t::Run() {
 
 		}
 
-		if ((ctl_register & conMask) && (channel_number % 2 != 0)) { // 16-bit mode
+		if (((ctl_register & conMask) != 0) && (channel_number % 2 != 0)) { // 16-bit mode
 			checkChangeStateAndWait<uint16_t>(clk);
 		} else { // 8-bit mode
 			checkChangeStateAndWait<uint8_t>(clk);
@@ -797,7 +808,7 @@ template <class T> void PWM<PWM_SIZE>::Channel_t::checkChangeStateAndWait(const 
 
 	T dty = *((T *) pwmdty_register_value_ptr);
 	T period = *((T *) pwmper_register_value_ptr);
-	T cnt = *((T *) pwmcnt_register_ptr);
+//	T cnt = *((T *) pwmcnt_register_ptr);
 	bool isPolarityHigh = ((pwmParent->pwmpol_register & channelMask) != 0);
 
 	// PWM Boundary Cases
@@ -832,6 +843,10 @@ template <class T> void PWM<PWM_SIZE>::Channel_t::checkChangeStateAndWait(const 
 	toPeriod = period - dty;
 
 	*((T *) pwmcnt_register_ptr) = dty;
+
+	if (CONFIG::DEBUG_ENABLE) {
+		std::cerr << "Info: " << name() << ": DTY => " << sc_time(dty, SC_NS) << "  Period => " << sc_time(period, SC_NS) << "  count => " << sc_time(*((T *) pwmcnt_register_ptr), SC_NS) << std::endl;
+	}
 
 	wait(dty*clk);
 

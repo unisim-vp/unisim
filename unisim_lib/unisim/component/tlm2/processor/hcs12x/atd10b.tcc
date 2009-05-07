@@ -47,12 +47,17 @@ template <uint8_t ATD_SIZE>
 ATD10B<ATD_SIZE>::ATD10B(const sc_module_name& name, Object *parent) :
 	Object(name, parent),
 	sc_module(name),
-	anx_socket("anx_socket"),
-	slave_socket("slave_socket"),
 	Service<Memory<service_address_t> >(name, parent),
 	Client<Memory<service_address_t> >(name, parent),
+	Client<TrapReporting>(name, parent),
+
+	anx_socket("anx_socket"),
+	slave_socket("slave_socket"),
+
 	memory_export("memory_export", this),
 	memory_import("memory_import", this),
+	trap_reporting_import("trap_reproting_import", this),
+
 	baseAddress(0x0080), // MC9S12XDP512V2 - ATD baseAddress
 	param_baseAddress("base-address", this, baseAddress),
 	interruptOffset(0xD0), // ATD1 - ATDCTL2 (ASCIE)
@@ -171,7 +176,12 @@ template <uint8_t ATD_SIZE>
 void ATD10B<ATD_SIZE>::Input(ATD_Payload<ATD_SIZE>& payload, double anValue[ATD_SIZE])
 {
 	if (CONFIG::DEBUG_ENABLE) {
-		cout << sc_time_stamp() << ":" << name() << "ATD10B" << ATD_SIZE << "C : receive " << payload.serialize() << endl;
+/*
+		if (trap_reporting_import) {
+			trap_reporting_import->ReportTrap();
+		}
+		*/
+		cout << sc_time_stamp() << ":" << name() << " : receive " << payload.serialize() << endl;
 	}
 
 	if ((atdctl2_register & 0x80) != 0) // is ATD power ON (enabled)
@@ -183,7 +193,7 @@ void ATD10B<ATD_SIZE>::Input(ATD_Payload<ATD_SIZE>& payload, double anValue[ATD_
 		scan_event.notify();
 
 	} else {
-		cerr << "Warning: ATD10B" << ATD_SIZE << "C => The ATD is OFF. You have to set ATDCTL2::ADPU bit before.\n";
+		cerr << "Warning: " << name() << " => The ATD is OFF. You have to set ATDCTL2::ADPU bit before.\n";
 	}
 
 	payload.release();
@@ -254,7 +264,7 @@ void ATD10B<ATD_SIZE>::RunScanMode()
 		uint8_t wrapArroundChannel = atdctl0_register & 0x0F;
 		if (wrapArroundChannel == 0) {
 			if (CONFIG::DEBUG_ENABLE) {
-				cerr << "Warning: ATD10B" << ATD_SIZE << "C => WrapArroundChannel=0 is a reserved value. The wrap channel is assumed " << ATD_SIZE-1 << ".\n";
+				cerr << "Warning: " << name() << " => WrapArroundChannel=0 is a reserved value. The wrap channel is assumed " << ATD_SIZE-1 << ".\n";
 			}
 
 			wrapArroundChannel = ATD_SIZE-1;
@@ -262,19 +272,10 @@ void ATD10B<ATD_SIZE>::RunScanMode()
 
 		uint8_t sequenceLength = 1;
 		// - check ATDCTL3 to determine the sequence length and storage mode of the result
-		sequenceLength = atdctl3_register & 0x78; // get S8C S4C S2C S1C
+		sequenceLength = (atdctl3_register & 0x78) >> 3; // get S8C S4C S2C S1C
 		if (sequenceLength == 0) {
 			sequenceLength = 16;
 		}
-
-		if (sequenceLength > ATD_SIZE) {
-			if (CONFIG::DEBUG_ENABLE) {
-				cerr << "Warning: ATD10B" << ATD_SIZE << "C => sequence length is higher than the ATD size.\n";
-			}
-
-			sequenceLength = ATD_SIZE;
-		}
-
 
 		uint8_t currentChannel = atdctl5_register & 0x0F; // get CD/CC/CB/CA;
 		conversionStop = false;
@@ -298,7 +299,7 @@ void ATD10B<ATD_SIZE>::RunScanMode()
 			while ((sequenceIndex < sequenceLength) /* && !abortSequence */ ) {
 
 				// set the conversion counter ATDSTAT0::CC (result register which will receive the current conversion)
-				atdstat0_register = (atdstat0_register & 0xF0) | resultIndex;
+				atdstat0_register = (atdstat0_register & 0xF0) | (resultIndex & 0x0F);
 
 				/**
 				 * - scan current channel,
@@ -316,7 +317,7 @@ void ATD10B<ATD_SIZE>::RunScanMode()
 						case 6: anSignal = (vrh + vrl)/2; break;
 						default:
 							if (CONFIG::DEBUG_ENABLE) {
-								cerr << "Warning: ATD10B" << ATD_SIZE << "C => Reserved value of CD/CC/CB/CA.\n";
+								cerr << "Warning: " << name() << " => Reserved value of CD/CC/CB/CA.\n";
 							}
 					}
 				} else {
@@ -477,7 +478,7 @@ void ATD10B<ATD_SIZE>::setATDClock() {
 			(bus_cycle_time_int > busClockRange[prsValue].maxBusClock)) {
 
 		if (CONFIG::DEBUG_ENABLE) {
-			cerr << "ATD10B" << ATD_SIZE << "C: unallowed prescaler value.\n";
+			cerr << "Warning : " << name() << ": unallowed prescaler value" << std::endl;
 		}
 	}
 
@@ -585,7 +586,7 @@ void ATD10B<ATD_SIZE>::read(uint8_t offset, void *buffer) {
 		case ATDDIEN1: *((uint8_t *) buffer) = atddien1_register; break;
 		case PORTAD0: {
 			bool isETRIGE = ((atdctl2_register & 0x04) != 0);
-			bool isETRIGCHx = atdctl1_register & 0x0F;
+			int isETRIGCHx = atdctl1_register & 0x0F;
 			bool isETRIGSEL = ((atdctl1_register & 0x80) != 0);
 
 			portad0_register = 0;
@@ -606,7 +607,7 @@ void ATD10B<ATD_SIZE>::read(uint8_t offset, void *buffer) {
 		} break;
 		case PORTAD1: {
 			bool isETRIGE = ((atdctl2_register & 0x04) != 0);
-			bool isETRIGCHx = atdctl1_register & 0x0F;
+			int isETRIGCHx = atdctl1_register & 0x0F;
 			bool isETRIGSEL = ((atdctl1_register & 0x80) != 0);
 
 			portad1_register = 0;
@@ -645,7 +646,7 @@ void ATD10B<ATD_SIZE>::read(uint8_t offset, void *buffer) {
 			}
 		} else {
 			if (CONFIG::DEBUG_ENABLE) {
-				cerr << "Warning: ATD10B" << ATD_SIZE << "C => Wrong offset.\n";
+				cerr << "Warning: " << name() << " => Wrong offset.\n";
 			}
 		}
 	}
@@ -668,7 +669,7 @@ void ATD10B<ATD_SIZE>::write(uint8_t offset, const void *buffer) {
 			atdctl2_register = (*((uint8_t *) buffer) & 0xFE) | (atdctl2_register & 0x01);
 			if ((atdctl2_register & 0x04) != 0) {
 				if (CONFIG::DEBUG_ENABLE) {
-					cerr << "Warning: ATD10B" << ATD_SIZE << "C => Trigger mode not support Yet. \n";
+					cerr << "Warning: " << name() << " => Trigger mode not support Yet. \n";
 				}
 			}
 			abortConversion();
@@ -706,7 +707,7 @@ void ATD10B<ATD_SIZE>::write(uint8_t offset, const void *buffer) {
 		case ATDTEST0:
 			// atdtest0_register = *((uint8_t *) buffer);
 			if (CONFIG::DEBUG_ENABLE) {
-				cerr << "Warning: ATD10B" << ATD_SIZE << "C => Not implemented yet. Write to ATDTEST0 in special modes can alter functionality.\n";
+				cerr << "Warning: " << name() << " => Not implemented yet. Write to ATDTEST0 in special modes can alter functionality.\n";
 			}
 
 			break;
@@ -768,7 +769,7 @@ bool ATD10B<ATD_SIZE>::Setup() {
 
 	if (vrh <= vrl) {
 		if (CONFIG::DEBUG_ENABLE) {
-			cerr << "ATD10B" << ATD_SIZE << "C: Wrong Values of Vrl and Vrh.\n";
+			cerr << "Warning: " << name() << " : Wrong Values of Vrl and Vrh.\n";
 		}
 
 		return false;
@@ -777,7 +778,7 @@ bool ATD10B<ATD_SIZE>::Setup() {
 	if (bus_cycle_time_int < CONFIG::MINIMAL_BUS_CLOCK_TIME)
 	{
 		if (CONFIG::DEBUG_ENABLE) {
-			cerr << "ATD10B" << ATD_SIZE << "C: Wrong Bus Clock Value.\n";
+			cerr << "Warning: " << name() << ": Wrong Bus Clock Value.\n";
 		}
 
 		return false;
@@ -787,8 +788,8 @@ bool ATD10B<ATD_SIZE>::Setup() {
 
 	// the index 'i' model BusClock in MHz
 	for (int i=0; i<32; i++) {
-		busClockRange[i].minBusClock = 1e6/(i+1); // busClock is modeled in PS
-		busClockRange[i].maxBusClock = 1e6/((i+1)*4);
+		busClockRange[i].maxBusClock = 1e6/(i+1); // busClock is modeled in PS
+		busClockRange[i].minBusClock = 1e6/((i+1)*4);
 	}
 
 	Reset();
