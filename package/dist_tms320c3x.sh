@@ -86,7 +86,16 @@ unisim/component/cxx/processor/tms320/config.hh \
 unisim/component/cxx/processor/tms320/cpu.hh \
 unisim/component/cxx/processor/tms320/isa_tms320.hh \
 unisim/component/cxx/processor/tms320/exception.hh \
-unisim/component/cxx/memory/ram/memory.hh" \
+unisim/component/cxx/memory/ram/memory.hh \
+unisim/component/cxx/processor/tms320/isa/2op.isa \
+unisim/component/cxx/processor/tms320/isa/3op.isa \
+unisim/component/cxx/processor/tms320/isa/actions_dec.isa \
+unisim/component/cxx/processor/tms320/isa/control.isa \
+unisim/component/cxx/processor/tms320/isa/interlock.isa \
+unisim/component/cxx/processor/tms320/isa/load_store.isa \
+unisim/component/cxx/processor/tms320/isa/parallel.isa \
+unisim/component/cxx/processor/tms320/isa/power.isa \
+unisim/component/cxx/processor/tms320/isa/tms320.isa"
 
 
 UNISIM_LIB_TEMPLATE_FILES="\
@@ -117,61 +126,106 @@ m4/with_boost.m4"
 UNISIM_SIMULATORS_SOURCE_FILES=main.cc
 UNISIM_SIMULATORS_HEADER_FILES=
 UNISIM_SIMULATORS_TEMPLATE_FILES=
+UNISIM_SIMULATORS_DATA_FILES="COPYING INSTALL NEWS README AUTHORS ChangeLog"
+
+has_to_build_configure=no
 
 UNISIM_LIB_FILES="${UNISIM_LIB_SOURCE_FILES} ${UNISIM_LIB_HEADER_FILES} ${UNISIM_LIB_TEMPLATE_FILES}"
 
 for file in ${UNISIM_LIB_FILES}; do
 	mkdir -p "${DEST_DIR}/`dirname ${file}`"
-	cp -f "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/${file}"
+	has_to_copy=no
+	if [ -e "${DEST_DIR}/${file}" ]; then
+		if [ "${UNISIM_LIB_DIR}/${file}" -nt "${DEST_DIR}/${file}" ]; then
+			has_to_copy=yes
+		fi
+	else
+		has_to_copy=yes
+	fi
+	if [ "${has_to_copy}" = "yes" ]; then
+		echo "Copying ${file}"
+		cp -f "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/${file}"
+	fi
 done
 
-UNISIM_SIMULATORS_FILES="${UNISIM_SIMULATORS_SOURCE_FILES} ${UNISIM_SIMULATORS_HEADER_FILES} ${UNISIM_SIMULATORS_TEMPLATE_FILES}"
+UNISIM_SIMULATORS_FILES="${UNISIM_SIMULATORS_SOURCE_FILES} ${UNISIM_SIMULATORS_HEADER_FILES} ${UNISIM_SIMULATORS_TEMPLATE_FILES} ${UNISIM_SIMULATORS_DATA_FILES}"
 
 for file in ${UNISIM_SIMULATORS_FILES}; do
-	cp -f "${UNISIM_SIMULATORS_DIR}/${file}" "${DEST_DIR}/${file}"
+	has_to_copy=no
+	if [ -e "${DEST_DIR}/${file}" ]; then
+		if [ "${UNISIM_SIMULATORS_DIR}/${file}" -nt "${DEST_DIR}/${file}" ]; then
+			has_to_copy=yes
+		fi
+	else
+		has_to_copy=yes
+	fi
+	if [ "${has_to_copy}" = "yes" ]; then
+		echo "Copying ${file}"
+		cp -f "${UNISIM_SIMULATORS_DIR}/${file}" "${DEST_DIR}/${file}"
+		has_to_build_configure=yes
+	fi
 done
 
 mkdir -p ${DEST_DIR}/config
 mkdir -p ${DEST_DIR}/m4
 
 for file in ${UNISIM_LIB_M4_FILES}; do
-	cp -f "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/m4/`basename ${file}`"
+	has_to_copy=no
+	if [ -e "${DEST_DIR}/m4/`basename ${file}`" ]; then
+		if [ "${UNISIM_LIB_DIR}/${file}" -nt  "${DEST_DIR}/m4/`basename ${file}`" ]; then
+			has_to_copy=yes
+		fi
+	else
+		has_to_copy=yes
+	fi
+	if [ "${has_to_copy}" = "yes" ]; then
+		echo "Copying `basename ${file}`"
+		cp -f "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/m4/`basename ${file}`"
+	fi
 done
-
-cp -f "${UNISIM_SIMULATORS_DIR}/COPYING" "${DEST_DIR}/."
-cp -f "${UNISIM_SIMULATORS_DIR}/INSTALL" "${DEST_DIR}/."
-cp -f "${UNISIM_SIMULATORS_DIR}/NEWS" "${DEST_DIR}/."
-cp -f "${UNISIM_SIMULATORS_DIR}/README" "${DEST_DIR}/."
-cp -f "${UNISIM_SIMULATORS_DIR}/AUTHORS" "${DEST_DIR}/."
-cp -f "${UNISIM_SIMULATORS_DIR}/ChangeLog" "${DEST_DIR}/."
 
 CONFIGURE_AC="${DEST_DIR}/configure.ac"
 MAKEFILE_AM="${DEST_DIR}/Makefile.am"
 
-echo "AC_INIT([UNISIM TMS320C3X C++ simulator], [0.1], [Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Perez <daniel.gracia-perez@cea.fr>], [tms320c3x])" > "${DEST_DIR}/configure.ac"
-echo "AC_CONFIG_AUX_DIR(config)" >> "${CONFIGURE_AC}"
-echo "AC_CONFIG_HEADERS([config.h])" >> "${CONFIGURE_AC}"
-echo "AC_CANONICAL_BUILD" >> "${CONFIGURE_AC}"
-echo "AC_CANONICAL_HOST" >> "${CONFIGURE_AC}"
-echo "AC_CANONICAL_TARGET" >> "${CONFIGURE_AC}"
-echo "AM_INIT_AUTOMAKE" >> "${CONFIGURE_AC}"
-echo "AC_PATH_PROGS(SH, sh)" >> "${CONFIGURE_AC}"
-echo "AC_PROG_CXX" >> "${CONFIGURE_AC}"
-echo "AC_PROG_INSTALL" >> "${CONFIGURE_AC}"
-echo "AC_PROG_LN_S" >> "${CONFIGURE_AC}"
-echo "AC_LANG([C++])" >> "${CONFIGURE_AC}"
-echo "UNISIM_CHECK_CURSES" >> "${CONFIGURE_AC}"
-echo "UNISIM_CHECK_LIBEDIT" >> "${CONFIGURE_AC}"
-echo "UNISIM_CHECK_BSD_SOCKETS" >> "${CONFIGURE_AC}"
-echo "UNISIM_CHECK_ZLIB" >> "${CONFIGURE_AC}"
-echo "UNISIM_CHECK_LIBXML2" >> "${CONFIGURE_AC}"
-echo "UNISIM_CHECK_CXXABI" >> "${CONFIGURE_AC}"
-echo "AC_CONFIG_FILES([Makefile])" >> "${CONFIGURE_AC}"
-echo "AC_OUTPUT" >> "${CONFIGURE_AC}"
 
-echo "INCLUDES=-I\$(top_srcdir) -I\$(top_builddir)" > "${MAKEFILE_AM}"
-echo "bin_PROGRAMS = tms320c3x" >> "${MAKEFILE_AM}"
-echo "tms320c3x_SOURCES = ${UNISIM_LIB_SOURCE_FILES} ${UNISIM_SIMULATORS_SOURCE_FILES}" >> "${MAKEFILE_AM}"
-echo "noinst_HEADERS= ${UNISIM_LIB_HEADER_FILES} ${UNISIM_LIB_TEMPLATE_FILES} ${UNISIM_SIMULATORS_HEADER_FILES} ${UNISIM_SIMULATORS_TEMPLATE_FILES}" >> "${MAKEFILE_AM}"
+if [ ! -e "${CONFIGURE_AC}" ]; then
+	has_to_build_configure=yes
+fi
 
-${SHELL} -c "cd ${DEST_DIR} && aclocal -Im4 && autoconf --force && autoheader && automake -a"
+if [ ! -e "${MAKEFILE_AM}" ]; then
+	has_to_build_configure=yes
+fi
+
+if [ "${has_to_build_configure}" = "yes" ]; then
+	echo "Generating configure.ac"
+	echo "AC_INIT([UNISIM TMS320C3X C++ simulator], [0.1], [Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Perez <daniel.gracia-perez@cea.fr>], [tms320c3x])" > "${DEST_DIR}/configure.ac"
+	echo "AC_CONFIG_AUX_DIR(config)" >> "${CONFIGURE_AC}"
+	echo "AC_CONFIG_HEADERS([config.h])" >> "${CONFIGURE_AC}"
+	echo "AC_CANONICAL_BUILD" >> "${CONFIGURE_AC}"
+	echo "AC_CANONICAL_HOST" >> "${CONFIGURE_AC}"
+	echo "AC_CANONICAL_TARGET" >> "${CONFIGURE_AC}"
+	echo "AM_INIT_AUTOMAKE" >> "${CONFIGURE_AC}"
+	echo "AC_PATH_PROGS(SH, sh)" >> "${CONFIGURE_AC}"
+	echo "AC_PROG_CXX" >> "${CONFIGURE_AC}"
+	echo "AC_PROG_INSTALL" >> "${CONFIGURE_AC}"
+	echo "AC_PROG_LN_S" >> "${CONFIGURE_AC}"
+	echo "AC_LANG([C++])" >> "${CONFIGURE_AC}"
+	echo "UNISIM_CHECK_CURSES" >> "${CONFIGURE_AC}"
+	echo "UNISIM_CHECK_LIBEDIT" >> "${CONFIGURE_AC}"
+	echo "UNISIM_CHECK_BSD_SOCKETS" >> "${CONFIGURE_AC}"
+	echo "UNISIM_CHECK_ZLIB" >> "${CONFIGURE_AC}"
+	echo "UNISIM_CHECK_LIBXML2" >> "${CONFIGURE_AC}"
+	echo "UNISIM_CHECK_CXXABI" >> "${CONFIGURE_AC}"
+	echo "AC_CONFIG_FILES([Makefile])" >> "${CONFIGURE_AC}"
+	echo "AC_OUTPUT" >> "${CONFIGURE_AC}"
+
+	echo "Generating Makefile.am"
+	echo "INCLUDES=-I\$(top_srcdir) -I\$(top_builddir)" > "${MAKEFILE_AM}"
+	echo "bin_PROGRAMS = tms320c3x" >> "${MAKEFILE_AM}"
+	echo "tms320c3x_SOURCES = ${UNISIM_LIB_SOURCE_FILES} ${UNISIM_SIMULATORS_SOURCE_FILES}" >> "${MAKEFILE_AM}"
+	echo "noinst_HEADERS= ${UNISIM_LIB_HEADER_FILES} ${UNISIM_LIB_TEMPLATE_FILES} ${UNISIM_SIMULATORS_HEADER_FILES} ${UNISIM_SIMULATORS_TEMPLATE_FILES}" >> "${MAKEFILE_AM}"
+	echo "Building configure"
+	${SHELL} -c "cd ${DEST_DIR} && aclocal -Im4 && autoconf --force && autoheader && automake -a"
+fi
+
+echo "Distribution is up-to-date"
