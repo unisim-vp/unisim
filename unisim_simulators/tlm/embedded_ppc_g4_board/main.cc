@@ -1015,7 +1015,7 @@ int sc_main(int argc, char *argv[])
 		mpc107->epic_logger_import >> *logger->logger_export[logger_index++];
 		mpc107->atu_logger_import >> *logger->logger_export[logger_index++];
 		flash->logger_import >> *logger->logger_export[logger_index++];
-		if(gdb_server) gdb_server->logger_import >> *logger->logger_export[logger_index++];
+		// if(gdb_server) gdb_server->logger_import >> *logger->logger_export[logger_index++];
 		for(unsigned int i = 0; i < MAX_BUS_TRANSACTION_SPY; i++)
 			if(bus_msg_spy[i] != NULL)
 				bus_msg_spy[i]->logger_import >> *logger->logger_export[logger_index++];

@@ -989,7 +989,7 @@ public:
 		//		bus->logger_import >> *logger->logger_export[logger_index++];
 		//		fsb_to_mem_bridge->logger_import >> *logger->logger_export[logger_index++];
 		//		memory->logger_import >> *logger->logger_export[logger_index++];
-		if(gdb_server) gdb_server->logger_import >> *logger->logger_export[logger_index++];
+		// if(gdb_server) gdb_server->logger_import >> *logger->logger_export[logger_index++];
 		// linux_os->logger_import >> *logger->logger_export[logger_index++];
 		/*
 		for(unsigned int i = 0; i < MAX_BUS_TRANSACTION_SPY; i++)

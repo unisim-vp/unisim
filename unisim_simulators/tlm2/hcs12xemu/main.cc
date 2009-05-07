@@ -551,7 +551,7 @@ int sc_main(int argc, char *argv[])
 		logger->time_import >> time->time_export;
 		cpu->logger_import >> *logger->logger_export[logger_index++];
 
-		if(gdb_server) gdb_server->logger_import >> *logger->logger_export[logger_index++];
+		// if(gdb_server) gdb_server->logger_import >> *logger->logger_export[logger_index++];
 	}
 
 #ifdef DEBUG_SERVICE
