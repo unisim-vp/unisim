@@ -106,14 +106,22 @@ RiscGenerator::finalize() {
   // Process the opcodes needed by the decoder
   for( Vect_t<Operation_t>::const_iterator op = isa().m_operations.begin(); op < isa().m_operations.end(); ++ op ) {
     unsigned int size = 0;
-    for( Vect_t<BitField_t>::const_iterator bf = (**op).m_bitfields.begin(); bf < (**op).m_bitfields.end(); ++ bf )
+    for( Vect_t<BitField_t>::const_iterator bf = (**op).m_bitfields.begin(); bf < (**op).m_bitfields.end(); ++ bf ) {
+      if ((**bf).minsize() != (**bf).maxsize()) {
+        (**op).m_fileloc.err( "error: variable length subdecoder (operation `%s`, %u bits).",
+                              (**op).m_symbol.str(), size );
+        throw GenerationError;
+      }
       size += (**bf).m_size;
+    }
     if( size > 64 ) {
-      (**op).m_fileloc.err( "error: can't process opcode wider than 64 bits (operation `%s`, %u bits).", (**op).m_symbol.str(), size );
+      (**op).m_fileloc.err( "error: can't process encodings wider than 64 bits (operation `%s`, %u bits).",
+                            (**op).m_symbol.str(), size );
       throw GenerationError;
     }
     if( size % 8 ) {
-      (**op).m_fileloc.err( "warning: operation `%s` has un aligned opcode (%d).", (**op).m_symbol.str(), size );
+      (**op).m_fileloc.err( "warning: operation `%s` has un aligned encodings (%d).",
+                            (**op).m_symbol.str(), size );
     }
     if( size > insn_bitsize ) insn_bitsize = size;
     unsigned int shift = size;
