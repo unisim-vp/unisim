@@ -180,24 +180,29 @@ operator<<( std::ostream& _sink, CiscGenerator::OpCode_t const& _oc ) {
 struct BFWordIterator {
   Vect_t<BitField_t>::const_iterator m_left, m_right, m_end;
   unsigned int                       m_count, m_minsize, m_maxsize;
-  bool                               m_rewind, m_has_operand;
+  bool                               m_rewind, m_has_operand, m_has_subop;
   
   BFWordIterator( Vect_t<BitField_t> const& _bitfields )
     : m_right( _bitfields.begin() - 1 ), m_end( _bitfields.end() ),
       m_count( 0 ), m_minsize( 0 ), m_maxsize( 0 ), m_rewind( false ),
-      m_has_operand( false )
+      m_has_operand( false ), m_has_subop( false )
   {}
   
   bool
   next() {
     m_left = m_right + 1;
     if( m_left >= m_end ) return false;
-    m_count = 0; m_minsize = 0; m_maxsize = 0; m_has_operand = false;
+    m_count = 0; m_minsize = 0; m_maxsize = 0;
+    m_has_operand = false; m_has_subop = false;
     for( m_right = m_left; (m_right < m_end) and ((**m_right).type() != BitField_t::Separator); ++m_right ) {
       m_count += 1;
       m_minsize += (**m_right).minsize();
       m_maxsize += (**m_right).maxsize();
-      if ((**m_right).type() == BitField_t::Operand) m_has_operand = true;
+      switch ((**m_right).type()) {
+      case BitField_t::Operand: m_has_operand = true; break;
+      case BitField_t::SubOp:   m_has_subop = true; break;
+      default: break;
+      }
     }
     if( (m_right < m_end) and ((**m_right).type() == BitField_t::Separator) ) {
       SeparatorBitField_t const& sepbf = dynamic_cast<SeparatorBitField_t const&>( **m_right );
@@ -229,17 +234,14 @@ CiscGenerator::finalize() {
         (**op).m_fileloc.err( "unaligned word separator (%dth field) in operation `%s`.", count+1, (**op).m_symbol.str() );
         throw GenerationError;
       }
-      bool subop = false;
-      for( Vect_t<BitField_t>::const_iterator bf = bfword.m_left; bf < bfword.m_right; ++ bf )
-        if( (**bf).type() == BitField_t::SubOp ) subop = true;
-      if( subop and bfword.m_count > 1 ) {
-        (**op).m_fileloc.err( "subdecoder fields must be surrounded by word separator (operation `%s`).", (**op).m_symbol.str() );
-        throw GenerationError;
-      }
-      if( not subop and (bfword.m_maxsize & (bfword.m_maxsize - 1)) ) {
+      if (bfword.m_has_subop) {
+        if (bfword.m_count > 1) {
+          (**op).m_fileloc.err( "subdecoder fields must be surrounded by word separator (operation `%s`).",
+                                (**op).m_symbol.str() );
+          throw GenerationError;
+        }
+      } else { // no SubOp
         assert( bfword.m_maxsize == bfword.m_minsize );
-        (**op).m_fileloc.err( "subword size must be a power of two (operation `%s`).", (**op).m_symbol.str() );
-        throw GenerationError;
       }
     }
     m_opcodes[*op].size( prefixsize / 8 );
@@ -437,8 +439,8 @@ void
 CiscGenerator::insn_decode_impl( Product_t& _product, Operation_t const& _op, char const* _codename, char const* _addrname ) const
 {
   _product.code( "CodeType _code_( %s );\n", _codename );
-  for( BFWordIterator bfword( _op.m_bitfields ); bfword.next(); ) {
-    if( (**bfword.m_left).type() == BitField_t::SubOp ) {
+  for (BFWordIterator bfword( _op.m_bitfields ); bfword.next();) {
+    if (bfword.m_has_subop) {
       SubOpBitField_t const& sobf = dynamic_cast<SubOpBitField_t const&>( **bfword.m_left );
       SDInstance_t const* sdinstance = sobf.m_sdinstance;
       SDClass_t const* sdclass = sdinstance->m_sdclass;
@@ -455,7 +457,7 @@ CiscGenerator::insn_decode_impl( Product_t& _product, Operation_t const& _op, ch
     unsigned int bytesize = bfword.m_maxsize / 8;
     
     if (bfword.m_has_operand) {
-      ConstStr_t subwordtype = Str::fmt( "uint%d_t", bfword.m_maxsize );
+      ConstStr_t subwordtype = Str::fmt( "uint%d_t", least_ctype_size( bfword.m_maxsize ) );
       _product.code( "{\n" );
       _product.code( "%s _subword_ = ", subwordtype.str() );
       char const* sep = "";
@@ -526,8 +528,8 @@ void
 CiscGenerator::insn_destructor_decl( Product_t& _product, Operation_t const& _op ) const {
   bool subops = false;
   
-  for( BFWordIterator bfword( _op.m_bitfields ); bfword.next(); ) {
-    if( (**bfword.m_left).type() == BitField_t::SubOp ) { subops = true; break; }
+  for (BFWordIterator bfword( _op.m_bitfields ); bfword.next();) {
+    if (bfword.m_has_subop) { subops = true; break; }
   }
   
   if( not subops ) return;
@@ -538,8 +540,8 @@ void
 CiscGenerator::insn_destructor_impl( Product_t& _product, Operation_t const& _op ) const {
   std::vector<ConstStr_t> subops;
   
-  for( BFWordIterator bfword( _op.m_bitfields ); bfword.next(); ) {
-    if( (**bfword.m_left).type() != BitField_t::SubOp ) continue;
+  for (BFWordIterator bfword( _op.m_bitfields ); bfword.next();) {
+    if (not bfword.m_has_subop) continue;
     SubOpBitField_t const& sobf = dynamic_cast<SubOpBitField_t const&>( **bfword.m_left );
     subops.push_back( sobf.m_symbol );
   }
