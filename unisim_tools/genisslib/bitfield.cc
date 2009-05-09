@@ -21,7 +21,6 @@
 #include <subdecoder.hh>
 #include <scanner.hh>
 #include <parser.hh>
-#include <cmath>
 #include <cassert>
 
 using namespace std;
@@ -84,12 +83,12 @@ OperandBitField_t::fills( ostream& _sink ) const {
   _sink << Str::fmt( "%s[%u]", m_symbol.str(), m_size );
 }
 
-/** Return the size (in bytes) of the smallest containing word
-    @return the smallest power of two, greater than the bitfield size (in bytes);
+/** Return the size (in bits) of the target word encoded by this field.
+    @return the size (in bits) of the target word encoded by this field.
 */
 int
-OperandBitField_t::wordsize() const {
-  return (1 << std::max( 0, int( ceil( log2( std::max( m_size, m_size_modifier ) / 8 ) ) ) ) );
+OperandBitField_t::dstsize() const {
+  return std::max( m_size, m_size_modifier );
 }
 
 /** Create an unused bitfield object
@@ -177,13 +176,12 @@ SpOperandBitField_t::SpOperandBitField_t( SpOperandBitField_t const& _src )
     m_size_modifier( _src.m_size_modifier ), m_sext( _src.m_sext ), m_value( _src.m_value )
 {}
 
-/**
- *  Return the size (in bytes) of the smallest containing word.
- *  @return the smallest power of two, greater than the bitfield size (in bytes);
- */
+/** Return the size (in bits) of the target word encoded by this field.
+    @return the size (in bits) of the target word encoded by this field.
+*/
 int
-SpOperandBitField_t::wordsize() const {
-  return (1 << std::max( 0, int( ceil( log2( std::max( m_size, m_size_modifier ) / 8 ) ) ) ) );
+SpOperandBitField_t::dstsize() const {
+  return std::max( m_size, m_size_modifier );
 }
 
 /**

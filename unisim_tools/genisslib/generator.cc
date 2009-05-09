@@ -30,7 +30,6 @@
 #include <vect.hh>
 #include <main.hh>
 #include <iostream>
-#include <cmath>
 using namespace std;
 
 Generator::Generator()
@@ -40,7 +39,7 @@ Generator::Generator()
 Generator&
 Generator::init( Isa& _isa ) {
   m_isa = &_isa;
-  m_minwordsize = (1 << std::max( 0, int( ceil( log2( Opts::shared().minwordsize / 8 ) ) ) ) );
+  m_minwordsize = least_ctype_size( Opts::shared().minwordsize );
   return *this;
 }
 
@@ -376,13 +375,14 @@ Generator::isa_operations_decl( Product_t& _product ) const {
       BitField_t::Type_t bftype = (**bf).type();
       if( bftype == BitField_t::Operand ) {
         OperandBitField_t const& opbf = dynamic_cast<OperandBitField_t const&>( **bf );
-        _product.code( "%sint%d_t %s;\n", (opbf.m_sext ? "" : "u"), 8*std::max( m_minwordsize, opbf.wordsize() ), opbf.m_symbol.str() );
+        int dstsize = std::max( m_minwordsize, least_ctype_size( opbf.dstsize() ) );
+        _product.code( "%sint%d_t %s;\n", (opbf.m_sext ? "" : "u"), dstsize, opbf.m_symbol.str() );
       } else if( bftype == BitField_t::SpecializedOperand ) {
         SpOperandBitField_t const& sopbf = dynamic_cast<SpOperandBitField_t const&>( **bf );
         ConstStr_t constval = sopbf.constval();
+        int dstsize = std::max( m_minwordsize, least_ctype_size( sopbf.dstsize() ) );
         _product.code( "static %sint%d_t const %s = %s;\n",
-                       (sopbf.m_sext ? "" : "u"), 8*std::max( m_minwordsize, sopbf.wordsize() ),
-                       sopbf.m_symbol.str(), sopbf.constval().str() );
+                       (sopbf.m_sext ? "" : "u"), dstsize, sopbf.m_symbol.str(), sopbf.constval().str() );
       } else if( bftype == BitField_t::SubOp ) {
         SubOpBitField_t const& sobf = dynamic_cast<SubOpBitField_t const&>( **bf );
         SDInstance_t const* sdinstance = sobf.m_sdinstance;
@@ -988,3 +988,12 @@ Generator::decoder_impl( Product_t& _product ) const {
   _product.code( " is_little_endian = false;\n" );
   _product.code( "}\n\n" );
 }
+
+int
+Generator::least_ctype_size( int bits ) {
+  if (bits > 64) throw GenerationError;
+  int size = 8;
+  while (size < bits) size *= 2;
+  return size;
+}
+

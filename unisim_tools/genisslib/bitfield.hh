@@ -91,7 +91,7 @@ struct OperandBitField_t : public BitField_t {
   OperandBitField_t( unsigned int _size, ConstStr_t _symbol, int _shift, unsigned int _size_modifier, bool _sext );
   OperandBitField_t( OperandBitField_t const& _src );
 
-  int                   wordsize() const;
+  int                   dstsize() const;
   
   Type_t                type() const { return Operand; };
   OperandBitField_t*    clone() const { return new OperandBitField_t( *this ); }
@@ -185,7 +185,7 @@ struct SpOperandBitField_t : public BitField_t {
   SpOperandBitField_t( OperandBitField_t const& _src, unsigned int _value );
   SpOperandBitField_t( SpOperandBitField_t const& _src );
 
-  int                   wordsize() const;
+  int                   dstsize() const;
   ConstStr_t            constval() const;
   
   Type_t                type() const { return SpecializedOperand; };

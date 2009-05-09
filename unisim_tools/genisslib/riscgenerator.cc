@@ -23,7 +23,6 @@
 #include <subdecoder.hh>
 #include <sourcecode.hh>
 #include <strtools.hh>
-#include <cmath>
 #include <iostream>
 #include <product.hh>
 #include <cassert>
@@ -209,15 +208,15 @@ RiscGenerator::finalize() {
 void
 RiscGenerator::bitsize( unsigned int _bitsize ) {
   m_insn_bitsize = _bitsize;
-  int longness = std::max( 0, int( ceil( log2( m_insn_bitsize / 8 ) ) ) );
-  m_insn_bytesize = 1 << longness;
-  m_insn_misalign = 8 * m_insn_bytesize - m_insn_bitsize;
-  m_insn_ctype = Str::fmt( "uint%d_t", 8*m_insn_bytesize );
-  if( longness == 0 )      m_insn_cpostfix = "U";
-  else if( longness == 1 ) m_insn_cpostfix = "U";
-  else if( longness == 2 ) m_insn_cpostfix = "UL";
-  else if( longness == 3 ) m_insn_cpostfix = "ULL";
-  else                     m_insn_cpostfix = "";
+  int cbitsize = least_ctype_size( _bitsize );
+  m_insn_bytesize = cbitsize / 8;
+  m_insn_misalign = cbitsize - m_insn_bitsize;
+  m_insn_ctype = Str::fmt( "uint%d_t", cbitsize );
+  if     (cbitsize == 8)  m_insn_cpostfix = "U";
+  else if(cbitsize == 16) m_insn_cpostfix = "U";
+  else if(cbitsize == 32) m_insn_cpostfix = "UL";
+  else if(cbitsize == 64) m_insn_cpostfix = "ULL";
+  else                    m_insn_cpostfix = "";
 }
 
 void
@@ -250,10 +249,10 @@ RiscGenerator::insn_decode_impl( Product_t& _product, Operation_t const& _op, ch
       _product.code( "%s = ", opbf.m_symbol.str() );
       
       if( opbf.m_sext ) {
-        int sizeofop = std::max( opbf.wordsize(), m_minwordsize );
-        int sext_shift = 8*sizeofop - opbf.m_size;
+        int sizeofop = std::max( opbf.dstsize(), m_minwordsize );
+        int sext_shift = sizeofop - opbf.m_size;
         _product.code( "(((((int%d_t)(%s >> %u)) & 0x%llx) << %u) >> %u)",
-                       8*sizeofop, _codename, shift, opbf.mask(), sext_shift, sext_shift );
+                       sizeofop, _codename, shift, opbf.mask(), sext_shift, sext_shift );
       } else {
         // FIXME: a cast from the instruction type to the operand type
         // may be wiser...

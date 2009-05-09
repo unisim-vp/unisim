@@ -30,14 +30,13 @@
 #include <subdecoder.hh>
 #include <conststr.hh>
 #include <iostream>
-#include <cmath>
 #include <cassert>
 #include <limits>
 
 using namespace std;
 
 /**
- *  @brief  Default constructor, create a RiscGenerator.
+ *  @brief  Default constructor, create a CiscGenerator.
  */
 CiscGenerator::CiscGenerator()
   : m_insn_min_bitsize( 0 ), m_insn_max_bitsize( 0 ), m_insn_max_bytesize( 0 )
@@ -181,22 +180,24 @@ operator<<( std::ostream& _sink, CiscGenerator::OpCode_t const& _oc ) {
 struct BFWordIterator {
   Vect_t<BitField_t>::const_iterator m_left, m_right, m_end;
   unsigned int                       m_count, m_minsize, m_maxsize;
-  bool m_rewind;
+  bool                               m_rewind, m_has_operand;
   
   BFWordIterator( Vect_t<BitField_t> const& _bitfields )
     : m_right( _bitfields.begin() - 1 ), m_end( _bitfields.end() ),
-      m_count( 0 ), m_minsize( 0 ), m_maxsize( 0 ), m_rewind( false )
+      m_count( 0 ), m_minsize( 0 ), m_maxsize( 0 ), m_rewind( false ),
+      m_has_operand( false )
   {}
   
   bool
   next() {
     m_left = m_right + 1;
     if( m_left >= m_end ) return false;
-    m_count = 0; m_minsize = 0; m_maxsize = 0;
+    m_count = 0; m_minsize = 0; m_maxsize = 0; m_has_operand = false;
     for( m_right = m_left; (m_right < m_end) and ((**m_right).type() != BitField_t::Separator); ++m_right ) {
       m_count += 1;
       m_minsize += (**m_right).minsize();
       m_maxsize += (**m_right).maxsize();
+      if ((**m_right).type() == BitField_t::Operand) m_has_operand = true;
     }
     if( (m_right < m_end) and ((**m_right).type() == BitField_t::Separator) ) {
       SeparatorBitField_t const& sepbf = dynamic_cast<SeparatorBitField_t const&>( **m_right );
@@ -451,14 +452,11 @@ CiscGenerator::insn_decode_impl( Product_t& _product, Operation_t const& _op, ch
         _product.code( "_code_.pop( %s->GetEncoding().size );\n", sobf.m_symbol.str() );
       continue;
     }
-    bool used = false;
-    for( Vect_t<BitField_t>::const_iterator bf = bfword.m_left; bf < bfword.m_right; ++ bf )
-      if( (**bf).type() == BitField_t::Operand ) { used = true; break; }
-    
-    if( used ) _product.code( "{\n" );
     unsigned int bytesize = bfword.m_maxsize / 8;
-    ConstStr_t subwordtype = Str::fmt( "uint%d_t", bfword.m_maxsize );
-    if( used ) {
+    
+    if (bfword.m_has_operand) {
+      ConstStr_t subwordtype = Str::fmt( "uint%d_t", bfword.m_maxsize );
+      _product.code( "{\n" );
       _product.code( "%s _subword_ = ", subwordtype.str() );
       char const* sep = "";
       for( unsigned int byteidx = 0; byteidx < bytesize; ++byteidx, sep = " | " ) {
@@ -466,35 +464,37 @@ CiscGenerator::insn_decode_impl( Product_t& _product, Operation_t const& _op, ch
         _product.code( "%s(%s( _code_.str[%u] ) << %u)", sep, subwordtype.str(), byteidx, shift );
       }
       _product.code( ";\n" );
-    }
-    unsigned int shift = bfword.m_maxsize;
-    for( Vect_t<BitField_t>::const_iterator bf = bfword.m_left; bf < bfword.m_right; ++ bf ) {
-      shift -= (**bf).m_size;
-      if( (**bf).type() == BitField_t::Operand ) {
-        OperandBitField_t const& opbf = dynamic_cast<OperandBitField_t const&>( **bf );
-        _product.code( "%s = ", opbf.m_symbol.str() );
-      
-        if( opbf.m_sext ) {
-          int sizeofop = std::max( opbf.wordsize(), m_minwordsize );
-          int sext_shift = 8*sizeofop - opbf.m_size;
-          _product.code( "(((int%d_t((_subword_ >> %u) & 0x%llxLL)) << %u) >> %u)",
-                         8*sizeofop, shift, opbf.mask(), sext_shift, sext_shift );
-        } else {
-          // FIXME: a cast from the instruction type to the operand type
-          // may be wiser...
-          _product.code( "((_subword_ >> %u) & 0x%llxULL)", shift, opbf.mask() );
+      unsigned int shift = bfword.m_maxsize;
+      for( Vect_t<BitField_t>::const_iterator bf = bfword.m_left; bf < bfword.m_right; ++ bf ) {
+        shift -= (**bf).m_size;
+        if( (**bf).type() == BitField_t::Operand ) {
+          OperandBitField_t const& opbf = dynamic_cast<OperandBitField_t const&>( **bf );
+          _product.code( "%s = ", opbf.m_symbol.str() );
+          
+          if( opbf.m_sext ) {
+            int sizeofop = std::max( opbf.dstsize(), m_minwordsize );
+            int sext_shift = sizeofop - opbf.m_size;
+            _product.code( "(((int%d_t((_subword_ >> %u) & 0x%llxLL)) << %u) >> %u)",
+                           sizeofop, shift, opbf.mask(), sext_shift, sext_shift );
+          } else {
+            // FIXME: a cast from the instruction type to the operand type
+            // may be wiser...
+            _product.code( "((_subword_ >> %u) & 0x%llxULL)", shift, opbf.mask() );
+          }
+          if( opbf.m_shift > 0 )
+            _product.code( " >> %u", +opbf.m_shift );
+          if( opbf.m_shift < 0 )
+            _product.code( " << %u", -opbf.m_shift );
+          _product.code( ";\n" );
         }
-        if( opbf.m_shift > 0 )
-          _product.code( " >> %u", +opbf.m_shift );
-        if( opbf.m_shift < 0 )
-          _product.code( " << %u", -opbf.m_shift );
-        _product.code( ";\n" );
       }
+      _product.code( "}\n" );
     }
-    if( used )_product.code( "}\n" );
+    
     if( not bfword.m_rewind )
       _product.code( "_code_.pop( %u );\n", bytesize );
   }
+  
   _product.code( "this->encoding.size -= _code_.size;\n" );
 }
 

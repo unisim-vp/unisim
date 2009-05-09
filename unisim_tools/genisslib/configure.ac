@@ -57,7 +57,7 @@ AC_PROG_LN_S
 AC_LANG([C++])
 
 ###### CHECK FOR STANDARD C/C++ HEADERS ###########################################
-AC_CHECK_HEADERS([limits map memory vector iosfwd iostream fstream ostream cstdio cstdlib cassert cctype cerrno cmath cstdarg cstring inttypes.h unistd.h],,\
+AC_CHECK_HEADERS([limits map memory vector iosfwd iostream fstream ostream cstdio cstdlib cassert cctype cerrno cstdarg cstring inttypes.h unistd.h],,\
                   AC_MSG_ERROR([Some standard headers are missing.]))
 
 ### GenISSLib process extensions support ###
