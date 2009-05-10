@@ -142,7 +142,7 @@ RiscGenerator::finalize() {
   // Left padding variable length operations (big-endian)
   if (not isa().m_little_endian) {
     for (OpCodes_t::iterator itr = m_opcodes.begin(); itr != m_opcodes.end(); ++itr) {
-      unsigned int leftpad = m_insn_ctypesize - itr->second.m_size;
+      unsigned int leftpad = m_insn_maxsize - itr->second.m_size;
       if (leftpad == 0) continue;
       itr->second.m_mask <<= leftpad;
       itr->second.m_bits <<= leftpad;
@@ -244,7 +244,7 @@ RiscGenerator::codetype_decl( Product_t& _product ) const {
 void
 RiscGenerator::insn_decode_impl( Product_t& _product, Operation_t const& _op, char const* _codename, char const* _addrname ) const
 {
-  unsigned int shift = isa().m_little_endian ? opcode( &_op ).m_size : m_insn_ctypesize;
+  unsigned int shift = isa().m_little_endian ? opcode( &_op ).m_size : m_insn_maxsize;
   for( Vect_t<BitField_t>::const_iterator bf = _op.m_bitfields.begin(); bf < _op.m_bitfields.end(); ++ bf ) {
     shift -= (**bf).m_size;
     if( (**bf).type() == BitField_t::SubOp ) {
