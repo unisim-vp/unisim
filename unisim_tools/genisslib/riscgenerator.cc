@@ -138,6 +138,17 @@ RiscGenerator::finalize() {
   }
   
   bitsize( insn_minsize, insn_maxsize );
+  
+  // Left padding variable length operations (big-endian)
+  if (not isa().m_little_endian) {
+    for (OpCodes_t::iterator itr = m_opcodes.begin(); itr != m_opcodes.end(); ++itr) {
+      unsigned int leftpad = m_insn_ctypesize - itr->second.m_size;
+      if (leftpad == 0) continue;
+      itr->second.m_mask <<= leftpad;
+      itr->second.m_bits <<= leftpad;
+    }
+  }
+  
   if (insn_minsize != insn_maxsize)
     cerr << "Instruction Size: [" << insn_minsize << ":" << insn_maxsize << "]" << endl;
   else
@@ -168,10 +179,6 @@ RiscGenerator::finalize() {
         cerr << "operation `" << (**op1).m_symbol << "' is a specialization of operation `" << (**op2).m_symbol << "'" << endl;
         break;
       }
-    }
-    if( opcode1.m_size != m_insn_maxsize ) {
-      (**op1).m_fileloc.err( "warning: operation `%s' is %u-bit long instead of %u-bit",
-                             (**op1).m_symbol.str(), opcode( *op1 ).m_size, m_insn_maxsize );
     }
   }
   
@@ -237,7 +244,7 @@ RiscGenerator::codetype_decl( Product_t& _product ) const {
 void
 RiscGenerator::insn_decode_impl( Product_t& _product, Operation_t const& _op, char const* _codename, char const* _addrname ) const
 {
-  unsigned int shift = opcode( &_op ).m_size;
+  unsigned int shift = isa().m_little_endian ? opcode( &_op ).m_size : m_insn_ctypesize;
   for( Vect_t<BitField_t>::const_iterator bf = _op.m_bitfields.begin(); bf < _op.m_bitfields.end(); ++ bf ) {
     shift -= (**bf).m_size;
     if( (**bf).type() == BitField_t::SubOp ) {
