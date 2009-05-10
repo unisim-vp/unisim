@@ -94,20 +94,25 @@ RiscGenerator::OpCode_t::unsetupper() {
  *  @brief  Default constructor, create a RiscGenerator.
  */
 RiscGenerator::RiscGenerator()
-  : m_insn_bitsize( 0 ), m_insn_bytesize( 0 ), m_insn_misalign( 0 )
+  : m_insn_maxsize( 0 ), m_insn_minsize( 0 ), m_insn_ctypesize( 0 )
 {};
 
 /** Process the isa structure and computes RISC specific data 
 */
 void
 RiscGenerator::finalize() {
-  unsigned int insn_bitsize = 0;
+  Vect_t<Operation_t> const& operations = isa().m_operations;
+  
   // Process the opcodes needed by the decoder
-  for( Vect_t<Operation_t>::const_iterator op = isa().m_operations.begin(); op < isa().m_operations.end(); ++ op ) {
+  unsigned int insn_maxsize = 0, insn_minsize = 64;
+  for( Vect_t<Operation_t>::const_iterator op = operations.begin(); op < operations.end(); ++ op ) {
     unsigned int size = 0;
-    for( Vect_t<BitField_t>::const_iterator bf = (**op).m_bitfields.begin(); bf < (**op).m_bitfields.end(); ++ bf ) {
+    Vect_t<BitField_t> const& bitfields = (**op).m_bitfields;
+    
+    for( Vect_t<BitField_t>::const_iterator bf = bitfields.begin(); bf < bitfields.end(); ++ bf ) {
       if ((**bf).minsize() != (**bf).maxsize()) {
-        (**op).m_fileloc.err( "error: variable length subdecoder (operation `%s`, %u bits).",
+        (**op).m_fileloc.err( "error: not (yet?) supported variable length field\n"
+                              "error: in operation `%s` at %u bits",
                               (**op).m_symbol.str(), size );
         throw GenerationError;
       }
@@ -118,14 +123,12 @@ RiscGenerator::finalize() {
                             (**op).m_symbol.str(), size );
       throw GenerationError;
     }
-    if( size % 8 ) {
-      (**op).m_fileloc.err( "warning: operation `%s` has un aligned encodings (%d).",
-                            (**op).m_symbol.str(), size );
-    }
-    if( size > insn_bitsize ) insn_bitsize = size;
+    
+    if( insn_maxsize < size ) insn_maxsize = size;
+    if( insn_minsize > size ) insn_minsize = size;
     unsigned int shift = size;
     uint64_t mask = 0, bits = 0;
-    for( Vect_t<BitField_t>::const_iterator bf = (**op).m_bitfields.begin(); bf < (**op).m_bitfields.end(); ++ bf ) {
+    for( Vect_t<BitField_t>::const_iterator bf = bitfields.begin(); bf < bitfields.end(); ++ bf ) {
       shift -= (**bf).m_size;
       if( not (**bf).hasopcode() ) continue;
       bits |= (**bf).bits() << shift;
@@ -134,15 +137,19 @@ RiscGenerator::finalize() {
     m_opcodes[*op] = OpCode_t( size, mask, bits );
   }
   
-  bitsize( insn_bitsize );
-
+  bitsize( insn_minsize, insn_maxsize );
+  if (insn_minsize != insn_maxsize)
+    cerr << "Instruction Size: [" << insn_minsize << ":" << insn_maxsize << "]" << endl;
+  else
+    cerr << "Instruction Size: " << insn_maxsize << endl;
+  
   /* Generating the topological graph of operations, checking for
    * conflicts (overlapping encodings), and checking for operations
    * with weird size.
    */
-  for( Vect_t<Operation_t>::const_iterator op1 = isa().m_operations.begin(); op1 < isa().m_operations.end(); ++op1 ) {
+  for( Vect_t<Operation_t>::const_iterator op1 = operations.begin(); op1 < operations.end(); ++op1 ) {
     OpCode_t& opcode1 = opcode( *op1 );
-    for( Vect_t<Operation_t>::const_iterator op2 = isa().m_operations.begin(); op2 < op1; ++ op2 ) {
+    for( Vect_t<Operation_t>::const_iterator op2 = operations.begin(); op2 < op1; ++ op2 ) {
       OpCode_t& opcode2 = opcode( *op2 );
 
       switch( opcode1.locate( opcode2 ) ) {
@@ -162,15 +169,16 @@ RiscGenerator::finalize() {
         break;
       }
     }
-    if( opcode1.m_size != m_insn_bitsize ) {
+    if( opcode1.m_size != m_insn_maxsize ) {
       (**op1).m_fileloc.err( "warning: operation `%s' is %u-bit long instead of %u-bit",
-                             (**op1).m_symbol.str(), opcode( *op1 ).m_size, m_insn_bitsize );
+                             (**op1).m_symbol.str(), opcode( *op1 ).m_size, m_insn_maxsize );
     }
   }
+  
   // Topological sort to fix potential precedence problems
   {
     intptr_t opcount = isa().m_operations.size();
-    Vect_t<Operation_t> operations( opcount );
+    Vect_t<Operation_t> noperations( opcount );
     intptr_t
       sopidx = opcount, // operation source table index
       dopidx = opcount, // operation destination table index
@@ -189,34 +197,36 @@ RiscGenerator::finalize() {
         continue;
       }
       inf_loop_tracker = opcount;
-      operations[--dopidx] = op;
+      noperations[--dopidx] = op;
       isa().m_operations[sopidx] = 0;
       oc.unsetupper();
     }
-    isa().m_operations = operations;
+    isa().m_operations = noperations;
   }
 }
 
 /**
- *  @brief  Sets the %RiscGenerator instruction bit size to the specified bit size.
- *  @param  _bitsize  Bit size of %RiscGenerator instructions.
+ *  @brief  Setup the %RiscGenerator instruction sizes in bits
+ *  @param  minsize  The minimum size of %RiscGenerator instructions (in bits).
+ *  @param  maxsize  The maximum size of %RiscGenerator instructions (in bits).
  *
- *  This function will sets the %RiscGenerator instruction bit size to
- *  the specified bit size.  Byte size, misalign, postfix and ctype
- *  are updated accordingly.
+ *  This function will setup the %RiscGenerator instruction sizes in
+ *  bits. Byte size, misalign, postfix and ctype are updated
+ *  accordingly.
  */
 void
-RiscGenerator::bitsize( unsigned int _bitsize ) {
-  m_insn_bitsize = _bitsize;
-  int cbitsize = least_ctype_size( _bitsize );
-  m_insn_bytesize = cbitsize / 8;
-  m_insn_misalign = cbitsize - m_insn_bitsize;
-  m_insn_ctype = Str::fmt( "uint%d_t", cbitsize );
-  if     (cbitsize == 8)  m_insn_cpostfix = "U";
-  else if(cbitsize == 16) m_insn_cpostfix = "U";
-  else if(cbitsize == 32) m_insn_cpostfix = "UL";
-  else if(cbitsize == 64) m_insn_cpostfix = "ULL";
-  else                    m_insn_cpostfix = "";
+RiscGenerator::bitsize( unsigned int minsize, unsigned int maxsize ) {
+  m_insn_minsize = minsize;
+  m_insn_maxsize = maxsize;
+  m_insn_ctypesize = least_ctype_size( maxsize );
+  m_insn_ctype = Str::fmt( "uint%d_t", m_insn_ctypesize );
+  switch( m_insn_ctypesize ) {
+  case 8:  m_insn_cpostfix = "U"; break;
+  case 16: m_insn_cpostfix = "U"; break;
+  case 32: m_insn_cpostfix = "UL"; break;
+  case 64: m_insn_cpostfix = "ULL"; break;
+  default: m_insn_cpostfix = "";
+  }
 }
 
 void
@@ -292,19 +302,21 @@ RiscGenerator::insn_fetch_impl( Product_t& _product, char const* _codename ) con
   _product.code( " %s = ", _codename );
   
   char const* sep = "";
-  for( int byteindex = m_insn_bytesize; (--byteindex) >= 0; ) {
+  unsigned int insn_bytesize = m_insn_maxsize / 8;
+  for( int byteindex = insn_bytesize; (--byteindex) >= 0; ) {
     _product.code( "%s((%s & 0x", sep, _codename );
     sep = " | ";
-    for( int byteindex1 = m_insn_bytesize; (--byteindex1) >= 0; )
+    for( int byteindex1 = insn_bytesize; (--byteindex1) >= 0; )
       _product.code( byteindex1 == byteindex ? "ff" : "00" );
-    int byteshift = 8*(m_insn_bytesize - 2*byteindex - 1);
+    int byteshift = 8*(insn_bytesize - 2*byteindex - 1);
     if( byteshift > 0 ) _product.code( "%s) << %d)", m_insn_cpostfix.str(), +byteshift );
     else                _product.code( "%s) >> %d)", m_insn_cpostfix.str(), -byteshift );
   }
   _product.code( ";\n" );
   
-  if( m_insn_misalign )
-    _product.code( " %s = %s >> %u;\n", _codename, _codename, m_insn_misalign );
+  unsigned int insn_misalign = m_insn_ctypesize - m_insn_maxsize;
+  if( insn_misalign )
+    _product.code( " %s = %s >> %u;\n", _codename, _codename, insn_misalign );
   
   _product.code( "}\n" );
 }
@@ -316,7 +328,9 @@ RiscGenerator::insn_fetch_protoargs( Product_t& _product ) const {
 
 ConstStr_t
 RiscGenerator::insn_id_expr( char const* _addrname ) const {
-  return Str::fmt( "%s / %d", _addrname, m_insn_bytesize );
+  if (m_insn_maxsize != m_insn_minsize)
+    return _addrname;
+  return Str::fmt( "%s / %d", _addrname, (m_insn_maxsize / 8) );
 }
 
 void
@@ -331,7 +345,7 @@ RiscGenerator::insn_unchanged_expr( Product_t& _product, char const* _old, char 
 
 void
 RiscGenerator::subdecoder_bounds( Product_t& _product ) const {
-  _product.code( "[%d:%d]", m_insn_bitsize, m_insn_bitsize );
+  _product.code( "[%d:%d]", m_insn_minsize, m_insn_maxsize );
 }
 
 RiscGenerator::OpCode_t const&
@@ -346,4 +360,21 @@ RiscGenerator::opcode( Operation_t const* _op ) {
   OpCodes_t::iterator res = m_opcodes.find( _op );
   assert( res != m_opcodes.end() );
   return res->second;
+}
+
+void
+RiscGenerator::op_getlen_decl( Product_t& _product ) const {
+  if (m_insn_minsize == m_insn_maxsize) {
+    _product.code( "inline unsigned int GetLength() const { return %d; }\n", m_insn_maxsize );
+  } else {
+    _product.code( "virtual unsigned int GetLength() const { return 0; };\n" );
+  }
+}
+
+void
+RiscGenerator::insn_getlen_decl( Product_t& _product, Operation_t const& _op ) const {
+  if (m_insn_minsize == m_insn_maxsize)
+    return;
+  unsigned int size = opcode( &_op ).m_size;
+  _product.code( "unsigned int GetLength() const { return %d; }\n", size );
 }

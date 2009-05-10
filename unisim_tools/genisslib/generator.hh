@@ -23,7 +23,7 @@
 
 struct Generator {
   Isa*                                m_isa;
-  int                                 m_minwordsize;
+  unsigned int                        m_minwordsize;
   
   enum Exception_t { GenerationError };
   Generator();
@@ -66,7 +66,10 @@ struct Generator {
   virtual void                        subdecoder_bounds( Product_t& _product ) const = 0;
   virtual void                        insn_destructor_decl( Product_t& _product, Operation_t const& _op ) const = 0;
   virtual void                        insn_destructor_impl( Product_t& _product, Operation_t const& _op ) const = 0;
-  static int                          least_ctype_size( int bits );
+  virtual void                        op_getlen_decl( Product_t& _product ) const = 0;
+  virtual void                        insn_getlen_decl( Product_t& _product, Operation_t const& _op ) const = 0;
+  
+  static unsigned int                 least_ctype_size( unsigned int bits );
 };
 
 #endif // __GENERATOR_HH__

@@ -45,9 +45,9 @@ struct RiscGenerator : public Generator {
   typedef std::map<Operation_t const*,OpCode_t> OpCodes_t;
   
   OpCodes_t                     m_opcodes;
-  unsigned int                  m_insn_bitsize;
-  unsigned int                  m_insn_bytesize;
-  unsigned int                  m_insn_misalign; // 8 * m_bytesize - m_bitsize
+  unsigned int                  m_insn_maxsize;
+  unsigned int                  m_insn_minsize;
+  unsigned int                  m_insn_ctypesize;
   ConstStr_t                    m_insn_ctype;
   ConstStr_t                    m_insn_cpostfix;
   
@@ -55,7 +55,7 @@ struct RiscGenerator : public Generator {
   ~RiscGenerator() {};
   
   /* Risc specific Utilities */
-  void                          bitsize( unsigned int _bitsize );
+  void                          bitsize( unsigned int minsize, unsigned int maxsize );
   OpCode_t const&               opcode( Operation_t const* _op ) const;
   OpCode_t&                     opcode( Operation_t const* _op );
   
@@ -78,6 +78,8 @@ struct RiscGenerator : public Generator {
   void                          subdecoder_bounds( Product_t& _product ) const;
   void                          insn_destructor_decl( Product_t& _product, Operation_t const& _op ) const {};
   void                          insn_destructor_impl( Product_t& _product, Operation_t const& _op ) const {};
+  void                          op_getlen_decl( Product_t& _product ) const;
+  void                          insn_getlen_decl( Product_t& _product, Operation_t const& _op ) const;
 };
 
 #endif // __RISCGENERATOR_HH__

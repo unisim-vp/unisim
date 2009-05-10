@@ -82,6 +82,9 @@ struct CiscGenerator : public Generator {
 
   void                          insn_destructor_decl( Product_t& _product, Operation_t const& _op ) const;
   void                          insn_destructor_impl( Product_t& _product, Operation_t const& _op ) const;
+
+  void                          op_getlen_decl( Product_t& _product ) const;
+  void                          insn_getlen_decl( Product_t& _product, Operation_t const& _op ) const { return; }
 };
 
 #endif // __CISCGENERATOR_HH__

@@ -558,5 +558,9 @@ CiscGenerator::insn_destructor_impl( Product_t& _product, Operation_t const& _op
     _product.code( "delete %s;\n", name->str() );
   }
   _product.code( "}\n\n" );
-  
+}
+
+void
+CiscGenerator::op_getlen_decl( Product_t& _product ) const {
+  _product.code( "inline unsigned int GetLength() const { return this->code.size; }\n" );
 }

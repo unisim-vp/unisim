@@ -310,6 +310,7 @@ Generator::operation_decl( Product_t& _product ) const {
   _product.code( " virtual ~Operation();\n" );
   _product.code( " inline %s GetAddr() const { return addr; }\n", isa().m_addrtype.str() );
   _product.code( " inline %s GetEncoding() const { return encoding; }\n", codetype_constref().str() );
+  op_getlen_decl( _product );
   _product.code( " inline const char *GetName() const { return name; }\n" );
   
   for( Vect_t<Variable_t>::const_iterator var = isa().m_vars.begin(); var < isa().m_vars.end(); ++ var ) {
@@ -370,7 +371,8 @@ Generator::isa_operations_decl( Product_t& _product ) const {
     _product.code( " Op%s(%s code, %s addr);\n", Str::capitalize( (**op).m_symbol ).str(),
                    codetype_constref().str(), isa().m_addrtype.str() );
     insn_destructor_decl( _product, **op );
-      
+    insn_getlen_decl( _product, **op );
+    
     for( Vect_t<BitField_t>::const_iterator bf = (**op).m_bitfields.begin(); bf < (**op).m_bitfields.end(); ++ bf ) {
       BitField_t::Type_t bftype = (**bf).type();
       if( bftype == BitField_t::Operand ) {
@@ -989,10 +991,10 @@ Generator::decoder_impl( Product_t& _product ) const {
   _product.code( "}\n\n" );
 }
 
-int
-Generator::least_ctype_size( int bits ) {
+unsigned int
+Generator::least_ctype_size( unsigned int bits ) {
   if (bits > 64) throw GenerationError;
-  int size = 8;
+  unsigned int size = 8;
   while (size < bits) size *= 2;
   return size;
 }

@@ -86,7 +86,7 @@ OperandBitField_t::fills( ostream& _sink ) const {
 /** Return the size (in bits) of the target word encoded by this field.
     @return the size (in bits) of the target word encoded by this field.
 */
-int
+unsigned int
 OperandBitField_t::dstsize() const {
   return std::max( m_size, m_size_modifier );
 }
@@ -179,7 +179,7 @@ SpOperandBitField_t::SpOperandBitField_t( SpOperandBitField_t const& _src )
 /** Return the size (in bits) of the target word encoded by this field.
     @return the size (in bits) of the target word encoded by this field.
 */
-int
+unsigned int
 SpOperandBitField_t::dstsize() const {
   return std::max( m_size, m_size_modifier );
 }
