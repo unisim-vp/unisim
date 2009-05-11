@@ -283,8 +283,6 @@ parse_binary_number( char const* binstr, int length, unsigned int *value ) {
 
 Scanner::Token_t Scanner::s_tokens[] = {
   {"action", TOK_ACTION},
-  {"address", TOK_ADDRESS},
-  {"big_endian", TOK_BIG_ENDIAN},
   {"const", TOK_CONST},
   {"constructor", TOK_CONSTRUCTOR},
   {"decl", TOK_DECL},
@@ -294,10 +292,10 @@ Scanner::Token_t Scanner::s_tokens[] = {
   {"impl", TOK_IMPL},
   {"include", TOK_INCLUDE},
   {"inheritance", TOK_INHERITANCE},
-  {"little_endian", TOK_LITTLE_ENDIAN},
   {"namespace", TOK_NAMESPACE},
   {"op", TOK_OP},
   {"rewind", TOK_REWIND},
+  {"set", TOK_SET},
   {"sext", TOK_SEXT},
   {"shl", TOK_SHL},
   {"shr", TOK_SHR},

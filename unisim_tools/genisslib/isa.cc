@@ -115,9 +115,6 @@ Isa::remove( ActionProto_t const* _ap ) {
 */
 void
 Isa::expand( ostream& _sink ) const {
-  // dumping endianness
-  _sink << (m_little_endian ? "little_endian" : "big_endian") << '\n';
-  
   // dumping namespace
   if( not m_namespace.empty() ) {
     _sink << "namespace ";
@@ -126,9 +123,6 @@ Isa::expand( ostream& _sink ) const {
       _sink << sep << (*piece);
     _sink << '\n';
   }
-  
-  // dumping address type
-  _sink << "address {" << m_addrtype << "}\n";
   
   // dumping template parameters
   if( not m_tparams.empty() ) {
@@ -139,6 +133,10 @@ Isa::expand( ostream& _sink ) const {
     _sink << ">\n";
   }
   _sink << '\n';
+  
+  // dumping global parameters
+  _sink << "set endianness " << (m_little_endian ? "little" : "big") << "\n";
+  _sink << "set addressclass {" << m_addrtype << "}\n";
   
   for( Vect_t<SourceCode_t>::const_iterator srccode = m_decl_srccodes.begin(); srccode < m_decl_srccodes.end(); ++ srccode )
     _sink << "decl " << *(*srccode) << "\n\n";
@@ -256,23 +254,44 @@ Isa::specialize() {
 }
 
 void
-Isa::setparam( ConstStr_t _param ) {
-  static ConstStr_t       risc( "risc",       Scanner::symbols );
-  static ConstStr_t       cisc( "cisc",       Scanner::symbols );
-  static ConstStr_t       vliw( "vliw",       Scanner::symbols );
-  static ConstStr_t        sub( "sub",        Scanner::symbols );
-  static ConstStr_t withsource( "withsource", Scanner::symbols );
+Isa::setparam( ConstStr_t key, ConstStr_t value ) {
+  static ConstStr_t   codetype( "codetype",     Scanner::symbols );
+  static ConstStr_t     scalar( "scalar",       Scanner::symbols );
+  static ConstStr_t     buffer( "buffer",       Scanner::symbols );
+  static ConstStr_t subdecoder( "subdecoder_p", Scanner::symbols );
+  static ConstStr_t withsource( "withsource_p", Scanner::symbols );
+  static ConstStr_t     istrue( "true",         Scanner::symbols );
+  static ConstStr_t    isfalse( "false",        Scanner::symbols );
+  static ConstStr_t endianness( "endianness",   Scanner::symbols );
+  static ConstStr_t      isbig( "big",          Scanner::symbols );
+  static ConstStr_t   islittle( "little",       Scanner::symbols );
   
-  if(        _param == risc ) {
-    m_decoder = RiscDecoder;
-  } else if( _param == cisc ) {
-    m_decoder = CiscDecoder;
-  } else if( _param == vliw ) {
-    m_decoder = VliwDecoder;
-  } else if( _param == sub ) {
-    m_is_subdecoder = true;
-  } else if( _param == withsource ) {
-    m_withsource = true;
+  if        (key == codetype) {
+    if      (value == scalar) m_decoder = RiscDecoder;
+    else if (value == buffer) m_decoder = CiscDecoder;
+  } else if (key == subdecoder) {
+    if      (value == istrue)  m_is_subdecoder = true;
+    else if (value == isfalse) m_is_subdecoder = false;
+  } else if (key == withsource) {
+    if      (value == istrue)  m_withsource = true;
+    else if (value == isfalse) m_withsource = false;
+  } else if (key == endianness) {
+    if      (value == isbig)    m_little_endian = false;
+    else if (value == islittle) m_little_endian = true;
+  }
+}
+
+void
+Isa::setparam( ConstStr_t key, SourceCode_t* value ) {
+  static ConstStr_t  addressclass( "addressclass",  Scanner::symbols );
+  static ConstStr_t codetypeclass( "codetypeclass", Scanner::symbols );
+  
+  if        (key == addressclass) {
+    m_addrtype = value->m_content;
+    delete value;
+  } else if (key == codetypeclass) {
+    //m_codetype = value->m_content;
+    delete value;
   }
 }
 

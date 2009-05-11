@@ -112,8 +112,6 @@ extend_oplist( Vect_t<Operation_t>* _oplist, ConstStr_t _symbol ) {
  * keywords
  */
 %token TOK_ACTION
-%token TOK_ADDRESS
-%token TOK_BIG_ENDIAN
 %token TOK_CONST
 %token TOK_CONSTRUCTOR
 %token TOK_DECL
@@ -123,10 +121,10 @@ extend_oplist( Vect_t<Operation_t>* _oplist, ConstStr_t _symbol ) {
 %token TOK_IMPL
 %token TOK_INCLUDE
 %token TOK_INHERITANCE
-%token TOK_LITTLE_ENDIAN
 %token TOK_NAMESPACE
 %token TOK_OP
 %token TOK_REWIND
+%token TOK_SET
 %token TOK_SEXT
 %token TOK_SHL
 %token TOK_SHR
@@ -149,7 +147,6 @@ extend_oplist( Vect_t<Operation_t>* _oplist, ConstStr_t _symbol ) {
 %type<persistent_string> TOK_IDENT
 %type<uinteger> TOK_INTEGER
 %type<volatile_string> TOK_STRING
-%type<sourcecode> address_declaration
 %type<sourcecode> sourcecode_decl_declaration
 %type<sourcecode> sourcecode_impl_declaration
 %type<operation> operation_declaration
@@ -265,28 +262,15 @@ subdecoder_class:
 }
 ;
 
-decoder_parameterization: TOK_DECODER '(' decoder_param_list ')' {};
+global_ident_parameter: TOK_SET TOK_IDENT TOK_IDENT
+{
+  Scanner::isa().setparam( ConstStr_t( $2, Scanner::symbols ), ConstStr_t( $3, Scanner::symbols ) );
+}
 
-decoder_param_list:
-  | TOK_IDENT
+global_sourcecode_parameter: TOK_SET TOK_IDENT TOK_SOURCE_CODE
 {
-  Scanner::isa().setparam( ConstStr_t( $1, Scanner::symbols ) );
+  Scanner::isa().setparam( ConstStr_t( $2, Scanner::symbols ), $3 );
 }
-  | decoder_param_list ',' TOK_IDENT
-{
-  Scanner::isa().setparam( ConstStr_t( $3, Scanner::symbols ) );
-}
-;
-
-endian: TOK_LITTLE_ENDIAN
-{
-  Scanner::isa().m_little_endian = true;
-}
-       | TOK_BIG_ENDIAN
-{
-  Scanner::isa().m_little_endian = false;
-}
-;
 
 template_declaration: TOK_TEMPLATE '<' param_list '>'
 {
@@ -296,8 +280,8 @@ template_declaration: TOK_TEMPLATE '<' param_list '>'
 
 declaration:
              TOK_ENDL {}
-           | decoder_parameterization TOK_ENDL
-           | endian TOK_ENDL
+           | global_ident_parameter TOK_ENDL
+           | global_sourcecode_parameter TOK_ENDL
            | subdecoder_class TOK_ENDL
            | subdecoder_instance TOK_ENDL
            | operation_declaration TOK_ENDL
@@ -341,11 +325,6 @@ declaration:
   | namespace_declaration
 {
 }
-  | address_declaration
-{
-  Scanner::isa().m_addrtype = $1->m_content;
-  delete $1;
-}
   | template_declaration
 {
   if( not Scanner::isa().m_tparams.empty() ) {
@@ -370,12 +349,6 @@ namespace_declaration: TOK_NAMESPACE namespace_list
   }
   
   delete nmspc;
-}
-;
-
-address_declaration: TOK_ADDRESS TOK_SOURCE_CODE
-{
-  $$ = $2;
 }
 ;
 

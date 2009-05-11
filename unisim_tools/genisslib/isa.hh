@@ -63,7 +63,8 @@ struct Isa {
   void                          deps( std::ostream& _sink, char const* _prefix ) const;
   bool                          sanity_checks() const;
   void                          specialize();
-  void                          setparam( ConstStr_t _param );
+  void                          setparam( ConstStr_t key, ConstStr_t value );
+  void                          setparam( ConstStr_t key, SourceCode_t* value );
 };
 
 #endif // __ISA_HH__
