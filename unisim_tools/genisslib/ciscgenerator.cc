@@ -420,17 +420,6 @@ CiscGenerator::insn_mask_code( Product_t& _product, Operation_t const& _op ) con
 }
 
 void
-CiscGenerator::insn_fetch_impl( Product_t& _product, char const* _codename ) const {
-  _product.code( "CodeType %s;\n", _codename );
-  _product.code( "Fetch( %s, addr );\n", _codename, _codename );
-}
-
-void
-CiscGenerator::insn_fetch_protoargs( Product_t& _product ) const {
-  _product.code( "( CodeType&, %s )", isa().m_addrtype.str() );
-}
-
-void
 CiscGenerator::insn_match_ifexpr( Product_t& _product, char const* _code, char const* _mask, char const* _bits ) const {
   _product.code( "if( %s.match( %s, %s) )\n", _code, _bits, _mask );
 }

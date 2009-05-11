@@ -295,44 +295,6 @@ RiscGenerator::insn_mask_code( Product_t& _product, Operation_t const& _op ) con
   _product.code( "0x%llx%s", opcode( &_op ).m_mask, m_insn_cpostfix.str() );
 }
 
-void
-RiscGenerator::insn_fetch_impl( Product_t& _product, char const* _codename ) const {
-  _product.code( "CodeType %s;\n", _codename );
-  _product.code( "Fetch(&%s, addr, sizeof(%s));\n", _codename, _codename );
-  _product.code( "#if BYTE_ORDER == LITTLE_ENDIAN\n" );
-  _product.code( "if(!is_little_endian)\n" );
-  _product.code( "#else\n" );
-  _product.code( "if(is_little_endian)\n" );
-  _product.code( "#endif\n" );
-  _product.code( "{\n" );
-  
-  _product.code( " %s = ", _codename );
-  
-  char const* sep = "";
-  unsigned int insn_bytesize = m_insn_maxsize / 8;
-  for( int byteindex = insn_bytesize; (--byteindex) >= 0; ) {
-    _product.code( "%s((%s & 0x", sep, _codename );
-    sep = " | ";
-    for( int byteindex1 = insn_bytesize; (--byteindex1) >= 0; )
-      _product.code( byteindex1 == byteindex ? "ff" : "00" );
-    int byteshift = 8*(insn_bytesize - 2*byteindex - 1);
-    if( byteshift > 0 ) _product.code( "%s) << %d)", m_insn_cpostfix.str(), +byteshift );
-    else                _product.code( "%s) >> %d)", m_insn_cpostfix.str(), -byteshift );
-  }
-  _product.code( ";\n" );
-  
-  unsigned int insn_misalign = m_insn_ctypesize - m_insn_maxsize;
-  if( insn_misalign )
-    _product.code( " %s = %s >> %u;\n", _codename, _codename, insn_misalign );
-  
-  _product.code( "}\n" );
-}
-
-void
-RiscGenerator::insn_fetch_protoargs( Product_t& _product ) const {
-  _product.code( "(void *, %s, uint32_t)", isa().m_addrtype.str() );
-}
-
 ConstStr_t
 RiscGenerator::insn_id_expr( char const* _addrname ) const {
   if (m_insn_maxsize != m_insn_minsize)

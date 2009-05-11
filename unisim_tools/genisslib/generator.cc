@@ -248,9 +248,6 @@ Generator::decoder_decl( Product_t& _product ) const {
     _product.code( " std::vector<DecodeTableEntry" );
     _product.template_abbrev( isa().m_tparams );
     _product.code( " > const& GetDecodeTable() const { return decode_table; };\n" );
-    _product.code( " virtual void Fetch" );
-    insn_fetch_protoargs( _product );
-    _product.code( " ;\n" );
     _product.code( " void InvalidateDecodingCacheEntry(%s addr);\n", isa().m_addrtype.str() );
     _product.code( " void InvalidateDecodingCache();\n\n" );
   }
@@ -688,93 +685,68 @@ Generator::decoder_impl( Product_t& _product ) const {
   }
   _product.code( "}\n\n" );
   
-  if( not isa().m_is_subdecoder ) {
-    _product.template_signature( isa().m_tparams );
-    _product.code( "void Decoder" );
-    _product.template_abbrev( isa().m_tparams );
-    _product.code( "::Fetch");
-    insn_fetch_protoargs( _product );
-    _product.code( "\n" );
-    _product.code( "{\n" );
-    _product.code( " assert( ! \"Calling unimplemented virtual method Fetch\" ); \n" );
-    _product.code( "}\n\n" );
-  }
-  
-  for( int withcode = 0; withcode < 2; ++withcode ) {
-    /*** NCDecode( Address_t addr[, CodeType_t code] ) ***/
-    if( isa().m_is_subdecoder and not withcode ) continue;
-    _product.template_signature( isa().m_tparams );
-    _product.code( "Operation" );
-    _product.template_abbrev( isa().m_tparams );
-    _product.code( " *Decoder" );
-    _product.template_abbrev( isa().m_tparams );
-    _product.code( "::NCDecode(%s addr", isa().m_addrtype.str() );
-    if( withcode ) _product.code( ", %s code", codetype_constref().str() );
-    _product.code( ")\n" );
-    _product.code( "{\n" );
-    _product.code( " Operation" );
-    _product.template_abbrev( isa().m_tparams );
-    _product.code( " *operation;\n" );
-//     _product.code( " " );
-//     if( not isa().m_tparams.empty() ) _product.code( "typename " );
-//     _product.code( "vector<DecodeTableEntry" );
-//     _product.template_abbrev( isa().m_tparams );
-//     _product.code( " >::iterator iter;\n" );
-  
-    if( not withcode ) insn_fetch_impl( _product, "code" );
+  /*** NCDecode( Address_t addr, CodeType_t code ) ***/
+  _product.template_signature( isa().m_tparams );
+  _product.code( "Operation" );
+  _product.template_abbrev( isa().m_tparams );
+  _product.code( " *Decoder" );
+  _product.template_abbrev( isa().m_tparams );
+  _product.code( "::NCDecode(%s addr, %s code)\n", isa().m_addrtype.str(), codetype_constref().str() );
+  _product.code( "{\n" );
+  _product.code( " Operation" );
+  _product.template_abbrev( isa().m_tparams );
+  _product.code( " *operation;\n" );
+  _product.code( " unsigned int count = decode_table.size();\n" );
+  _product.code( " unsigned int idx;\n" );
+  _product.code( " for(idx = 0; idx < count; idx++)\n" );
+  _product.code( " {\n" );
+  insn_match_ifexpr( _product, "code", "decode_table[idx].opcode_mask", "decode_table[idx].opcode" );
+  _product.code( "  {\n" );
+  _product.code( "   operation = decode_table[idx].decode(code, addr);\n" );
 
-    _product.code( " unsigned int count = decode_table.size();\n" );
-    _product.code( " unsigned int idx;\n" );
-    _product.code( " for(idx = 0; idx < count; idx++)\n" );
-    _product.code( " {\n" );
-    insn_match_ifexpr( _product, "code", "decode_table[idx].opcode_mask", "decode_table[idx].opcode" );
-    _product.code( "  {\n" );
-    _product.code( "   operation = decode_table[idx].decode(code, addr);\n" );
-
-    for( intptr_t idx = isa().m_actionprotos.size();  (--idx) >= 0; ) {
-      switch( isa().m_actionprotos[idx]->m_type ) {
-      case ActionProto_t::Constructor:
-        _product.code( "   operation->%s();\n", isa().m_actionprotos[idx]->m_symbol.str() );
-        break;
+  for( intptr_t idx = isa().m_actionprotos.size();  (--idx) >= 0; ) {
+    switch( isa().m_actionprotos[idx]->m_type ) {
+    case ActionProto_t::Constructor:
+      _product.code( "   operation->%s();\n", isa().m_actionprotos[idx]->m_symbol.str() );
+      break;
         
-      case ActionProto_t::Static:
-        _product.code( "   " );
-        if( isa().m_actionprotos[idx]->m_returns )
-          _product.code( "operation->%s_result = ", isa().m_actionprotos[idx]->m_symbol.str() );
-        _product.code( "operation->%s();\n", isa().m_actionprotos[idx]->m_symbol.str() );
-        break;
+    case ActionProto_t::Static:
+      _product.code( "   " );
+      if( isa().m_actionprotos[idx]->m_returns )
+        _product.code( "operation->%s_result = ", isa().m_actionprotos[idx]->m_symbol.str() );
+      _product.code( "operation->%s();\n", isa().m_actionprotos[idx]->m_symbol.str() );
+      break;
         
-      default: break;
-      }
+    default: break;
     }
-    
-    _product.code( "   return operation;\n" );
-    _product.code( "  }\n" );
-    _product.code( " }\n" );
-  
-    _product.code( " operation = new Operation" );
-    _product.template_abbrev( isa().m_tparams );
-    _product.code( "(code, addr, \"???\");\n" );
-    
-    
-    for( intptr_t idx = isa().m_actionprotos.size();  (--idx) >= 0; ) {
-      switch( isa().m_actionprotos[idx]->m_type ) {
-      case ActionProto_t::Constructor:
-        _product.code( " operation->%s();\n", isa().m_actionprotos[idx]->m_symbol.str() );
-        break;
-      case ActionProto_t::Static:
-        _product.code( " " );
-        if( isa().m_actionprotos[idx]->m_returns )
-          _product.code( "operation->%s_result = ", isa().m_actionprotos[idx]->m_symbol.str() );
-        _product.code( "operation->%s();\n", isa().m_actionprotos[idx]->m_symbol.str() );
-        break;
-      default: break;
-      }
-    }
-    
-    _product.code( " return operation;\n" );
-    _product.code( "}\n\n" );
   }
+    
+  _product.code( "   return operation;\n" );
+  _product.code( "  }\n" );
+  _product.code( " }\n" );
+  
+  _product.code( " operation = new Operation" );
+  _product.template_abbrev( isa().m_tparams );
+  _product.code( "(code, addr, \"???\");\n" );
+    
+    
+  for( intptr_t idx = isa().m_actionprotos.size();  (--idx) >= 0; ) {
+    switch( isa().m_actionprotos[idx]->m_type ) {
+    case ActionProto_t::Constructor:
+      _product.code( " operation->%s();\n", isa().m_actionprotos[idx]->m_symbol.str() );
+      break;
+    case ActionProto_t::Static:
+      _product.code( " " );
+      if( isa().m_actionprotos[idx]->m_returns )
+        _product.code( "operation->%s_result = ", isa().m_actionprotos[idx]->m_symbol.str() );
+      _product.code( "operation->%s();\n", isa().m_actionprotos[idx]->m_symbol.str() );
+      break;
+    default: break;
+    }
+  }
+    
+  _product.code( " return operation;\n" );
+  _product.code( "}\n\n" );
   
   if( not isa().m_is_subdecoder ) {
     /*** InvalidateDecodingCache() ***/
@@ -887,45 +859,6 @@ Generator::decoder_impl( Product_t& _product ) const {
     _product.code( "  }\n" );
     _product.code( " }\n" );
     _product.code( " return 0;\n" );
-    _product.code( "}\n\n" );
-
-    /*** Decode( Address_t addr ) ***/
-    _product.template_signature( isa().m_tparams );
-    _product.code( "Operation" );
-    _product.template_abbrev( isa().m_tparams );
-    _product.code( " *Decoder" );
-    _product.template_abbrev( isa().m_tparams );
-    _product.code( "::Decode(%s addr)\n", isa().m_addrtype.str() );
-    _product.code( "{\n" );
-    _product.code( " Operation" );
-    _product.template_abbrev( isa().m_tparams );
-    _product.code( " *operation;\n" );
-    _product.code( " %s page_key = %s / NUM_OPERATIONS_PER_PAGE;\n", isa().m_addrtype.str(), instid.str() );
-    _product.code( " DecodeMapPage" );
-    _product.template_abbrev( isa().m_tparams );
-    _product.code( " *page;\n" );
-    _product.code( " page = FindPage(page_key);\n" );
-    _product.code( " if(!page)\n" );
-    _product.code( " {\n" );
-    // _product.code( "   fprintf(stderr, \"page miss at 0x%%08x\\n\", addr);\n" );
-    _product.code( "  page = new DecodeMapPage" );
-    _product.template_abbrev( isa().m_tparams );
-    _product.code( "(page_key);\n" );
-    _product.code( "  uint32_t index = page_key %% NUM_DECODE_HASH_TABLE_ENTRIES; // hash the key\n" );
-    _product.code( "  page->next = decode_hash_table[index];\n" );
-    _product.code( "  decode_hash_table[index] = page;\n" );
-    _product.code( "  mru_page = page;\n" );
-    _product.code( " }\n" );
-    _product.code( " operation = page->operation[(%s) & (NUM_OPERATIONS_PER_PAGE - 1)];\n", instid.str() );
-    _product.code( " if(operation)\n" );
-    _product.code( " {\n" );
-    // _product.code( "  fprintf(stderr, \"hit at 0x%%08x\\n\", addr);\n" );
-    _product.code( "  return operation;\n" );
-    _product.code( " }\n" );
-    // _product.code( " fprintf(stderr, \"miss at 0x%%08x\\n\", addr);\n" );
-    _product.code( " operation = NCDecode(addr);\n" );
-    _product.code( " page->operation[(%s) & (NUM_OPERATIONS_PER_PAGE - 1)] = operation;\n", instid.str() );
-    _product.code( " return operation;\n" );
     _product.code( "}\n\n" );
 
     /*** Decode( Address_t addr, CodeType_t const& insn ) ***/

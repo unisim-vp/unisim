@@ -70,8 +70,6 @@ struct CiscGenerator : public Generator {
   ConstStr_t                    codetype_constref() const { return "CodeType const&"; }
   void                          insn_bits_code( Product_t& _product, Operation_t const& _op ) const;
   void                          insn_mask_code( Product_t& _product, Operation_t const& _op ) const;
-  void                          insn_fetch_impl( Product_t& _product, char const* _codename ) const;
-  void                          insn_fetch_protoargs( Product_t& _product ) const;
   ConstStr_t                    insn_id_expr( char const* _addrname ) const { return _addrname; }
   void                          insn_match_ifexpr( Product_t& _product, char const* _code, char const* _mask, char const* _bits ) const;
   void                          insn_unchanged_expr( Product_t& _product, char const* _old, char const* _new ) const;

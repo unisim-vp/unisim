@@ -54,8 +54,6 @@ struct Generator {
   virtual ConstStr_t                  codetype_constref() const = 0;
   virtual void                        insn_bits_code( Product_t& _product, Operation_t const& _op ) const = 0;
   virtual void                        insn_mask_code( Product_t& _product, Operation_t const& _op ) const = 0;
-  virtual void                        insn_fetch_impl( Product_t& _product, char const* _codename ) const = 0;
-  virtual void                        insn_fetch_protoargs( Product_t& _product ) const = 0;
   virtual ConstStr_t                  insn_id_expr( char const* _addrname ) const = 0;
   virtual void                        insn_match_ifexpr( Product_t& _product, char const* _code, char const* _mask, char const* _bits ) const = 0;
   virtual void                        insn_unchanged_expr( Product_t& _product, char const* _old, char const* _new ) const = 0;
