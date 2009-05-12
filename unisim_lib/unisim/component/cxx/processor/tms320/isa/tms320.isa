@@ -40,10 +40,9 @@
 **********************************************/
 
 namespace unisim::component::cxx::processor::tms320::isa::tms320
-little_endian
-address {typename CONFIG::address_t}
+set endianness little
+set addressclass {typename CONFIG::address_t}
 template <{class} {CONFIG}, {bool} {DEBUG}>
-decoder( risc )
 
 decl {
 #include <iosfwd>

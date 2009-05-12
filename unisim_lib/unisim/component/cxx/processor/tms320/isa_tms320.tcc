@@ -1,6 +1,6 @@
 #include "isa_tms320.hh"
 #include <cassert>
-#line 71 "isa/tms320.isa"
+#line 70 "isa/tms320.isa"
 
 /* code to be included at the beginning of the implementation of the library */
 #include <iostream>
@@ -116652,7 +116652,7 @@ bool
 DEBUG
 #line 116654 "isa_tms320.tcc"
 >
-void Decoder<
+Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
 #line 116659 "isa_tms320.tcc"
@@ -116660,126 +116660,24 @@ CONFIG
 #line 45 "isa/tms320.isa"
 DEBUG
 #line 116663 "isa_tms320.tcc"
->::Fetch(void *, typename CONFIG::address_t, uint32_t)
-{
-	assert( ! "Calling unimplemented virtual method Fetch" );
-}
-
-template <
-#line 45 "isa/tms320.isa"
-class
-#line 116672 "isa_tms320.tcc"
-#line 45 "isa/tms320.isa"
-CONFIG
-#line 116675 "isa_tms320.tcc"
-,
-#line 45 "isa/tms320.isa"
-bool
-#line 116679 "isa_tms320.tcc"
-#line 45 "isa/tms320.isa"
-DEBUG
-#line 116682 "isa_tms320.tcc"
->
-Operation<
-#line 45 "isa/tms320.isa"
-CONFIG
-#line 116687 "isa_tms320.tcc"
-,
-#line 45 "isa/tms320.isa"
-DEBUG
-#line 116691 "isa_tms320.tcc"
 > *Decoder<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 116695 "isa_tms320.tcc"
+#line 116667 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 116699 "isa_tms320.tcc"
->::NCDecode(typename CONFIG::address_t addr)
-{
-	Operation<
-#line 45 "isa/tms320.isa"
-	CONFIG
-#line 116705 "isa_tms320.tcc"
-	,
-#line 45 "isa/tms320.isa"
-	DEBUG
-#line 116709 "isa_tms320.tcc"
-	> *operation;
-	CodeType code;
-	Fetch(&code, addr, sizeof(code));
-#if BYTE_ORDER == LITTLE_ENDIAN
-	if(!is_little_endian)
-#else
-	if(is_little_endian)
-#endif
-	{
-		code = ((code & 0xff000000UL) >> 24) | ((code & 0x00ff0000UL) >> 8) | ((code & 0x0000ff00UL) << 8) | ((code & 0x000000ffUL) << 24);
-	}
-	unsigned int count = decode_table.size();
-	unsigned int idx;
-	for(idx = 0; idx < count; idx++)
-	{
-		if((code & decode_table[idx].opcode_mask) == decode_table[idx].opcode)
-		{
-			operation = decode_table[idx].decode(code, addr);
-			return operation;
-		}
-	}
-	operation = new Operation<
-#line 45 "isa/tms320.isa"
-	CONFIG
-#line 116734 "isa_tms320.tcc"
-	,
-#line 45 "isa/tms320.isa"
-	DEBUG
-#line 116738 "isa_tms320.tcc"
-	>(code, addr, "???");
-	return operation;
-}
-
-template <
-#line 45 "isa/tms320.isa"
-class
-#line 116746 "isa_tms320.tcc"
-#line 45 "isa/tms320.isa"
-CONFIG
-#line 116749 "isa_tms320.tcc"
-,
-#line 45 "isa/tms320.isa"
-bool
-#line 116753 "isa_tms320.tcc"
-#line 45 "isa/tms320.isa"
-DEBUG
-#line 116756 "isa_tms320.tcc"
->
-Operation<
-#line 45 "isa/tms320.isa"
-CONFIG
-#line 116761 "isa_tms320.tcc"
-,
-#line 45 "isa/tms320.isa"
-DEBUG
-#line 116765 "isa_tms320.tcc"
-> *Decoder<
-#line 45 "isa/tms320.isa"
-CONFIG
-#line 116769 "isa_tms320.tcc"
-,
-#line 45 "isa/tms320.isa"
-DEBUG
-#line 116773 "isa_tms320.tcc"
+#line 116671 "isa_tms320.tcc"
 >::NCDecode(typename CONFIG::address_t addr, CodeType code)
 {
 	Operation<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 116779 "isa_tms320.tcc"
+#line 116677 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 116783 "isa_tms320.tcc"
+#line 116681 "isa_tms320.tcc"
 	> *operation;
 	unsigned int count = decode_table.size();
 	unsigned int idx;
@@ -116794,11 +116692,11 @@ DEBUG
 	operation = new Operation<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 116798 "isa_tms320.tcc"
+#line 116696 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 116802 "isa_tms320.tcc"
+#line 116700 "isa_tms320.tcc"
 	>(code, addr, "???");
 	return operation;
 }
@@ -116806,26 +116704,26 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 116810 "isa_tms320.tcc"
+#line 116708 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 116813 "isa_tms320.tcc"
+#line 116711 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 116817 "isa_tms320.tcc"
+#line 116715 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 116820 "isa_tms320.tcc"
+#line 116718 "isa_tms320.tcc"
 >
 void Decoder<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 116825 "isa_tms320.tcc"
+#line 116723 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 116829 "isa_tms320.tcc"
+#line 116727 "isa_tms320.tcc"
 >::InvalidateDecodingCache()
 {
 	uint32_t index;
@@ -116835,11 +116733,11 @@ DEBUG
 		DecodeMapPage<
 #line 45 "isa/tms320.isa"
 		CONFIG
-#line 116839 "isa_tms320.tcc"
+#line 116737 "isa_tms320.tcc"
 		,
 #line 45 "isa/tms320.isa"
 		DEBUG
-#line 116843 "isa_tms320.tcc"
+#line 116741 "isa_tms320.tcc"
 		> *page, *next_page;
 		page = decode_hash_table[index];
 		if(page)
@@ -116858,26 +116756,26 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 116862 "isa_tms320.tcc"
+#line 116760 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 116865 "isa_tms320.tcc"
+#line 116763 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 116869 "isa_tms320.tcc"
+#line 116767 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 116872 "isa_tms320.tcc"
+#line 116770 "isa_tms320.tcc"
 >
 void Decoder<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 116877 "isa_tms320.tcc"
+#line 116775 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 116881 "isa_tms320.tcc"
+#line 116779 "isa_tms320.tcc"
 >::InvalidateDecodingCacheEntry(typename CONFIG::address_t addr)
 {
 	typename CONFIG::address_t page_key = addr / 4 / NUM_OPERATIONS_PER_PAGE;
@@ -116886,11 +116784,11 @@ DEBUG
 	DecodeMapPage<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 116890 "isa_tms320.tcc"
+#line 116788 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 116894 "isa_tms320.tcc"
+#line 116792 "isa_tms320.tcc"
 	> *prev, *cur;
 	cur = decode_hash_table[index];
 	if(cur)
@@ -116923,34 +116821,34 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 116927 "isa_tms320.tcc"
+#line 116825 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 116930 "isa_tms320.tcc"
+#line 116828 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 116934 "isa_tms320.tcc"
+#line 116832 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 116937 "isa_tms320.tcc"
+#line 116835 "isa_tms320.tcc"
 >
 inline DecodeMapPage<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 116942 "isa_tms320.tcc"
+#line 116840 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 116946 "isa_tms320.tcc"
+#line 116844 "isa_tms320.tcc"
 > *Decoder<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 116950 "isa_tms320.tcc"
+#line 116848 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 116954 "isa_tms320.tcc"
+#line 116852 "isa_tms320.tcc"
 >::FindPage(typename CONFIG::address_t page_key)
 {
 	if(mru_page && mru_page->key == page_key) return mru_page;
@@ -116958,11 +116856,11 @@ DEBUG
 	DecodeMapPage<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 116962 "isa_tms320.tcc"
+#line 116860 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 116966 "isa_tms320.tcc"
+#line 116864 "isa_tms320.tcc"
 	> *prev, *cur;
 	cur = decode_hash_table[index];
 	if(cur)
@@ -116996,133 +116894,54 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 117000 "isa_tms320.tcc"
+#line 116898 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 117003 "isa_tms320.tcc"
+#line 116901 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 117007 "isa_tms320.tcc"
+#line 116905 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 117010 "isa_tms320.tcc"
+#line 116908 "isa_tms320.tcc"
 >
 Operation<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 117015 "isa_tms320.tcc"
+#line 116913 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 117019 "isa_tms320.tcc"
+#line 116917 "isa_tms320.tcc"
 > *Decoder<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 117023 "isa_tms320.tcc"
+#line 116921 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 117027 "isa_tms320.tcc"
->::Decode(typename CONFIG::address_t addr)
-{
-	Operation<
-#line 45 "isa/tms320.isa"
-	CONFIG
-#line 117033 "isa_tms320.tcc"
-	,
-#line 45 "isa/tms320.isa"
-	DEBUG
-#line 117037 "isa_tms320.tcc"
-	> *operation;
-	typename CONFIG::address_t page_key = addr / 4 / NUM_OPERATIONS_PER_PAGE;
-	DecodeMapPage<
-#line 45 "isa/tms320.isa"
-	CONFIG
-#line 117043 "isa_tms320.tcc"
-	,
-#line 45 "isa/tms320.isa"
-	DEBUG
-#line 117047 "isa_tms320.tcc"
-	> *page;
-	page = FindPage(page_key);
-	if(!page)
-	{
-		page = new DecodeMapPage<
-#line 45 "isa/tms320.isa"
-		CONFIG
-#line 117055 "isa_tms320.tcc"
-		,
-#line 45 "isa/tms320.isa"
-		DEBUG
-#line 117059 "isa_tms320.tcc"
-		>(page_key);
-		uint32_t index = page_key % NUM_DECODE_HASH_TABLE_ENTRIES; // hash the key
-		page->next = decode_hash_table[index];
-		decode_hash_table[index] = page;
-		mru_page = page;
-	}
-	operation = page->operation[(addr / 4) & (NUM_OPERATIONS_PER_PAGE - 1)];
-	if(operation)
-	{
-		return operation;
-	}
-	operation = NCDecode(addr);
-	page->operation[(addr / 4) & (NUM_OPERATIONS_PER_PAGE - 1)] = operation;
-	return operation;
-}
-
-template <
-#line 45 "isa/tms320.isa"
-class
-#line 117079 "isa_tms320.tcc"
-#line 45 "isa/tms320.isa"
-CONFIG
-#line 117082 "isa_tms320.tcc"
-,
-#line 45 "isa/tms320.isa"
-bool
-#line 117086 "isa_tms320.tcc"
-#line 45 "isa/tms320.isa"
-DEBUG
-#line 117089 "isa_tms320.tcc"
->
-Operation<
-#line 45 "isa/tms320.isa"
-CONFIG
-#line 117094 "isa_tms320.tcc"
-,
-#line 45 "isa/tms320.isa"
-DEBUG
-#line 117098 "isa_tms320.tcc"
-> *Decoder<
-#line 45 "isa/tms320.isa"
-CONFIG
-#line 117102 "isa_tms320.tcc"
-,
-#line 45 "isa/tms320.isa"
-DEBUG
-#line 117106 "isa_tms320.tcc"
+#line 116925 "isa_tms320.tcc"
 >::Decode(typename CONFIG::address_t addr, CodeType insn)
 {
 	Operation<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 117112 "isa_tms320.tcc"
+#line 116931 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 117116 "isa_tms320.tcc"
+#line 116935 "isa_tms320.tcc"
 	> *operation;
 	typename CONFIG::address_t page_key = addr / 4 / NUM_OPERATIONS_PER_PAGE;
 	DecodeMapPage<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 117122 "isa_tms320.tcc"
+#line 116941 "isa_tms320.tcc"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 117126 "isa_tms320.tcc"
+#line 116945 "isa_tms320.tcc"
 	> *page;
 	page = FindPage(page_key);
 	if(!page)
@@ -117130,11 +116949,11 @@ DEBUG
 		page = new DecodeMapPage<
 #line 45 "isa/tms320.isa"
 		CONFIG
-#line 117134 "isa_tms320.tcc"
+#line 116953 "isa_tms320.tcc"
 		,
 #line 45 "isa/tms320.isa"
 		DEBUG
-#line 117138 "isa_tms320.tcc"
+#line 116957 "isa_tms320.tcc"
 		> (page_key);
 		uint32_t index = page_key % NUM_DECODE_HASH_TABLE_ENTRIES; // hash the key
 		page->next = decode_hash_table[index];
@@ -117156,26 +116975,26 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 117160 "isa_tms320.tcc"
+#line 116979 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 117163 "isa_tms320.tcc"
+#line 116982 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 117167 "isa_tms320.tcc"
+#line 116986 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 117170 "isa_tms320.tcc"
+#line 116989 "isa_tms320.tcc"
 >
 void Decoder<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 117175 "isa_tms320.tcc"
+#line 116994 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 117179 "isa_tms320.tcc"
+#line 116998 "isa_tms320.tcc"
 >::SetLittleEndian()
 {
 	is_little_endian = true;
@@ -117184,26 +117003,26 @@ DEBUG
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 117188 "isa_tms320.tcc"
+#line 117007 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 117191 "isa_tms320.tcc"
+#line 117010 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 117195 "isa_tms320.tcc"
+#line 117014 "isa_tms320.tcc"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 117198 "isa_tms320.tcc"
+#line 117017 "isa_tms320.tcc"
 >
 void Decoder<
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 117203 "isa_tms320.tcc"
+#line 117022 "isa_tms320.tcc"
 ,
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 117207 "isa_tms320.tcc"
+#line 117026 "isa_tms320.tcc"
 >::SetBigEndian()
 {
 	is_little_endian = false;

@@ -148,8 +148,8 @@ public:
 #line 45 "isa/tms320.isa"
 	DEBUG
 #line 151 "isa_tms320.hh"
-	> *Decode(typename CONFIG::address_t addr);
-	Operation<
+	> *Decode(typename CONFIG::address_t addr, CodeType insn);
+	std::vector<DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
 #line 156 "isa_tms320.hh"
@@ -157,17 +157,7 @@ public:
 #line 45 "isa/tms320.isa"
 	DEBUG
 #line 160 "isa_tms320.hh"
-	> *Decode(typename CONFIG::address_t addr, CodeType insn);
-	std::vector<DecodeTableEntry<
-#line 45 "isa/tms320.isa"
-	CONFIG
-#line 165 "isa_tms320.hh"
-	,
-#line 45 "isa/tms320.isa"
-	DEBUG
-#line 169 "isa_tms320.hh"
 	> > const& GetDecodeTable() const { return decode_table; };
-	virtual void Fetch(void *, typename CONFIG::address_t, uint32_t) ;
 	void InvalidateDecodingCacheEntry(typename CONFIG::address_t addr);
 	void InvalidateDecodingCache();
 
@@ -178,38 +168,38 @@ private:
 	std::vector<DecodeTableEntry<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 182 "isa_tms320.hh"
+#line 172 "isa_tms320.hh"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 186 "isa_tms320.hh"
+#line 176 "isa_tms320.hh"
 	> > decode_table;
 	DecodeMapPage<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 191 "isa_tms320.hh"
+#line 181 "isa_tms320.hh"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 195 "isa_tms320.hh"
+#line 185 "isa_tms320.hh"
 	> *mru_page;
 	DecodeMapPage<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 200 "isa_tms320.hh"
+#line 190 "isa_tms320.hh"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 204 "isa_tms320.hh"
+#line 194 "isa_tms320.hh"
 	> *decode_hash_table[NUM_DECODE_HASH_TABLE_ENTRIES];
 	DecodeMapPage<
 #line 45 "isa/tms320.isa"
 	CONFIG
-#line 209 "isa_tms320.hh"
+#line 199 "isa_tms320.hh"
 	,
 #line 45 "isa/tms320.isa"
 	DEBUG
-#line 213 "isa_tms320.hh"
+#line 203 "isa_tms320.hh"
 	> *FindPage(typename CONFIG::address_t page_key)
 #if defined(__GNUC__) && (__GNUC__ >= 3 && (__GNUC__ != 3 || __GNUC_MINOR__ != 4 || __GNUC_PATCHLEVEL__ != 6))
 	__attribute__((always_inline))
@@ -218,7 +208,7 @@ private:
 };
 
 } } } } } } }
-#line 48 "isa/tms320.isa"
+#line 47 "isa/tms320.isa"
 
 #include <iosfwd>
 
@@ -240,22 +230,22 @@ namespace unisim {
 	} // end of namespace component
 } // end of namespace unisim
 
-#line 244 "isa_tms320.hh"
+#line 234 "isa_tms320.hh"
 namespace unisim { namespace component { namespace cxx { namespace processor { namespace tms320 { namespace isa { namespace tms320 {
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 249 "isa_tms320.hh"
+#line 239 "isa_tms320.hh"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 252 "isa_tms320.hh"
+#line 242 "isa_tms320.hh"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 256 "isa_tms320.hh"
+#line 246 "isa_tms320.hh"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 259 "isa_tms320.hh"
+#line 249 "isa_tms320.hh"
 >
 class Operation
 {
@@ -264,37 +254,38 @@ public:
 	virtual ~Operation();
 	inline typename CONFIG::address_t GetAddr() const { return addr; }
 	inline CodeType GetEncoding() const { return encoding; }
+	inline unsigned int GetLength() const { return 32; }
 	inline const char *GetName() const { return name; }
 	virtual
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 	bool
-#line 272 "isa_tms320.hh"
+#line 263 "isa_tms320.hh"
 	disasm(
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 	CPU<CONFIG, DEBUG> &
-#line 276 "isa_tms320.hh"
+#line 267 "isa_tms320.hh"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 	cpu
-#line 279 "isa_tms320.hh"
+#line 270 "isa_tms320.hh"
 	,
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 	std::ostream &
-#line 283 "isa_tms320.hh"
+#line 274 "isa_tms320.hh"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 	os
-#line 286 "isa_tms320.hh"
+#line 277 "isa_tms320.hh"
 	);
 	virtual
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 	void
-#line 291 "isa_tms320.hh"
+#line 282 "isa_tms320.hh"
 	execute(
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 	CPU<CONFIG, DEBUG> &
-#line 295 "isa_tms320.hh"
+#line 286 "isa_tms320.hh"
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 	cpu
-#line 298 "isa_tms320.hh"
+#line 289 "isa_tms320.hh"
 	);
 protected:
 	CodeType encoding;

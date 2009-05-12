@@ -141743,144 +141743,20 @@ public:
 				CONFIG
 #line 141745 "powerpc.tcc"
 				>
-				void Decoder<
+				Operation<
 #line 38 "ppc.isa"
 				CONFIG
 #line 141750 "powerpc.tcc"
-				>::Fetch(void *, typename CONFIG::address_t, uint32_t)
-				{
-					assert( ! "Calling unimplemented virtual method Fetch" );
-				}
-
-				template <
-#line 38 "ppc.isa"
-				class
-#line 141759 "powerpc.tcc"
-#line 38 "ppc.isa"
-				CONFIG
-#line 141762 "powerpc.tcc"
-				>
-				Operation<
-#line 38 "ppc.isa"
-				CONFIG
-#line 141767 "powerpc.tcc"
 				> *Decoder<
 #line 38 "ppc.isa"
 				CONFIG
-#line 141771 "powerpc.tcc"
-				>::NCDecode(typename CONFIG::address_t addr)
-				{
-					Operation<
-#line 38 "ppc.isa"
-					CONFIG
-#line 141777 "powerpc.tcc"
-					> *operation;
-					CodeType code;
-					Fetch(&code, addr, sizeof(code));
-#if BYTE_ORDER == LITTLE_ENDIAN
-					if(!is_little_endian)
-#else
-					if(is_little_endian)
-#endif
-					{
-						code = ((code & 0xff000000UL) >> 24) | ((code & 0x00ff0000UL) >> 8) | ((code & 0x0000ff00UL) << 8) | ((code & 0x000000ffUL) << 24);
-					}
-					unsigned int count = decode_table.size();
-					unsigned int idx;
-					for(idx = 0; idx < count; idx++)
-					{
-						if((code & decode_table[idx].opcode_mask) == decode_table[idx].opcode)
-						{
-							operation = decode_table[idx].decode(code, addr);
-							operation->initialize_operands();
-							operation->initialize_latencies();
-							operation->initialize_function();
-							operation->initialize_write_fpscr();
-							operation->initialize_read_xer();
-							operation->initialize_write_xer();
-							operation->initialize_write_crbd();
-							operation->initialize_write_cr();
-							operation->initialize_read_crbb();
-							operation->initialize_read_crba();
-							operation->initialize_read_cr();
-							operation->initialize_write_ctr();
-							operation->initialize_write_lr();
-							operation->initialize_write_ear();
-							operation->initialize_write_ra();
-							operation->initialize_write_rd();
-							operation->initialize_write_fd();
-							operation->initialize_read_ctr();
-							operation->initialize_read_lr();
-							operation->initialize_read_fs();
-							operation->initialize_read_fc();
-							operation->initialize_read_fb();
-							operation->initialize_read_fa();
-							operation->initialize_read_rs();
-							operation->initialize_read_rb();
-							operation->initialize_read_ra();
-							operation->initialize_serialization();
-							operation->initialize_unit();
-							return operation;
-						}
-					}
-					operation = new Operation<
-#line 38 "ppc.isa"
-					CONFIG
-#line 141830 "powerpc.tcc"
-					>(code, addr, "???");
-					operation->initialize_operands();
-					operation->initialize_latencies();
-					operation->initialize_function();
-					operation->initialize_write_fpscr();
-					operation->initialize_read_xer();
-					operation->initialize_write_xer();
-					operation->initialize_write_crbd();
-					operation->initialize_write_cr();
-					operation->initialize_read_crbb();
-					operation->initialize_read_crba();
-					operation->initialize_read_cr();
-					operation->initialize_write_ctr();
-					operation->initialize_write_lr();
-					operation->initialize_write_ear();
-					operation->initialize_write_ra();
-					operation->initialize_write_rd();
-					operation->initialize_write_fd();
-					operation->initialize_read_ctr();
-					operation->initialize_read_lr();
-					operation->initialize_read_fs();
-					operation->initialize_read_fc();
-					operation->initialize_read_fb();
-					operation->initialize_read_fa();
-					operation->initialize_read_rs();
-					operation->initialize_read_rb();
-					operation->initialize_read_ra();
-					operation->initialize_serialization();
-					operation->initialize_unit();
-					return operation;
-				}
-
-				template <
-#line 38 "ppc.isa"
-				class
-#line 141866 "powerpc.tcc"
-#line 38 "ppc.isa"
-				CONFIG
-#line 141869 "powerpc.tcc"
-				>
-				Operation<
-#line 38 "ppc.isa"
-				CONFIG
-#line 141874 "powerpc.tcc"
-				> *Decoder<
-#line 38 "ppc.isa"
-				CONFIG
-#line 141878 "powerpc.tcc"
+#line 141754 "powerpc.tcc"
 				>::NCDecode(typename CONFIG::address_t addr, CodeType code)
 				{
 					Operation<
 #line 38 "ppc.isa"
 					CONFIG
-#line 141884 "powerpc.tcc"
+#line 141760 "powerpc.tcc"
 					> *operation;
 					unsigned int count = decode_table.size();
 					unsigned int idx;
@@ -141923,7 +141799,7 @@ public:
 					operation = new Operation<
 #line 38 "ppc.isa"
 					CONFIG
-#line 141927 "powerpc.tcc"
+#line 141803 "powerpc.tcc"
 					>(code, addr, "???");
 					operation->initialize_operands();
 					operation->initialize_latencies();
@@ -141959,15 +141835,15 @@ public:
 				template <
 #line 38 "ppc.isa"
 				class
-#line 141963 "powerpc.tcc"
+#line 141839 "powerpc.tcc"
 #line 38 "ppc.isa"
 				CONFIG
-#line 141966 "powerpc.tcc"
+#line 141842 "powerpc.tcc"
 				>
 				void Decoder<
 #line 38 "ppc.isa"
 				CONFIG
-#line 141971 "powerpc.tcc"
+#line 141847 "powerpc.tcc"
 				>::InvalidateDecodingCache()
 				{
 					uint32_t index;
@@ -141977,7 +141853,7 @@ public:
 						DecodeMapPage<
 #line 38 "ppc.isa"
 						CONFIG
-#line 141981 "powerpc.tcc"
+#line 141857 "powerpc.tcc"
 						> *page, *next_page;
 						page = decode_hash_table[index];
 						if(page)
@@ -141996,15 +141872,15 @@ public:
 				template <
 #line 38 "ppc.isa"
 				class
-#line 142000 "powerpc.tcc"
+#line 141876 "powerpc.tcc"
 #line 38 "ppc.isa"
 				CONFIG
-#line 142003 "powerpc.tcc"
+#line 141879 "powerpc.tcc"
 				>
 				void Decoder<
 #line 38 "ppc.isa"
 				CONFIG
-#line 142008 "powerpc.tcc"
+#line 141884 "powerpc.tcc"
 				>::InvalidateDecodingCacheEntry(typename CONFIG::address_t addr)
 				{
 					typename CONFIG::address_t page_key = addr / 4 / NUM_OPERATIONS_PER_PAGE;
@@ -142013,7 +141889,7 @@ public:
 					DecodeMapPage<
 #line 38 "ppc.isa"
 					CONFIG
-#line 142017 "powerpc.tcc"
+#line 141893 "powerpc.tcc"
 					> *prev, *cur;
 					cur = decode_hash_table[index];
 					if(cur)
@@ -142046,19 +141922,19 @@ public:
 				template <
 #line 38 "ppc.isa"
 				class
-#line 142050 "powerpc.tcc"
+#line 141926 "powerpc.tcc"
 #line 38 "ppc.isa"
 				CONFIG
-#line 142053 "powerpc.tcc"
+#line 141929 "powerpc.tcc"
 				>
 				inline DecodeMapPage<
 #line 38 "ppc.isa"
 				CONFIG
-#line 142058 "powerpc.tcc"
+#line 141934 "powerpc.tcc"
 				> *Decoder<
 #line 38 "ppc.isa"
 				CONFIG
-#line 142062 "powerpc.tcc"
+#line 141938 "powerpc.tcc"
 				>::FindPage(typename CONFIG::address_t page_key)
 				{
 					if(mru_page && mru_page->key == page_key) return mru_page;
@@ -142066,7 +141942,7 @@ public:
 					DecodeMapPage<
 #line 38 "ppc.isa"
 					CONFIG
-#line 142070 "powerpc.tcc"
+#line 141946 "powerpc.tcc"
 					> *prev, *cur;
 					cur = decode_hash_table[index];
 					if(cur)
@@ -142100,83 +141976,31 @@ public:
 				template <
 #line 38 "ppc.isa"
 				class
-#line 142104 "powerpc.tcc"
+#line 141980 "powerpc.tcc"
 #line 38 "ppc.isa"
 				CONFIG
-#line 142107 "powerpc.tcc"
+#line 141983 "powerpc.tcc"
 				>
 				Operation<
 #line 38 "ppc.isa"
 				CONFIG
-#line 142112 "powerpc.tcc"
+#line 141988 "powerpc.tcc"
 				> *Decoder<
 #line 38 "ppc.isa"
 				CONFIG
-#line 142116 "powerpc.tcc"
-				>::Decode(typename CONFIG::address_t addr)
-				{
-					Operation<
-#line 38 "ppc.isa"
-					CONFIG
-#line 142122 "powerpc.tcc"
-					> *operation;
-					typename CONFIG::address_t page_key = addr / 4 / NUM_OPERATIONS_PER_PAGE;
-					DecodeMapPage<
-#line 38 "ppc.isa"
-					CONFIG
-#line 142128 "powerpc.tcc"
-					> *page;
-					page = FindPage(page_key);
-					if(!page)
-					{
-						page = new DecodeMapPage<
-#line 38 "ppc.isa"
-						CONFIG
-#line 142136 "powerpc.tcc"
-						>(page_key);
-						uint32_t index = page_key % NUM_DECODE_HASH_TABLE_ENTRIES; // hash the key
-						page->next = decode_hash_table[index];
-						decode_hash_table[index] = page;
-						mru_page = page;
-					}
-					operation = page->operation[(addr / 4) & (NUM_OPERATIONS_PER_PAGE - 1)];
-					if(operation)
-					{
-						return operation;
-					}
-					operation = NCDecode(addr);
-					page->operation[(addr / 4) & (NUM_OPERATIONS_PER_PAGE - 1)] = operation;
-					return operation;
-				}
-
-				template <
-#line 38 "ppc.isa"
-				class
-#line 142156 "powerpc.tcc"
-#line 38 "ppc.isa"
-				CONFIG
-#line 142159 "powerpc.tcc"
-				>
-				Operation<
-#line 38 "ppc.isa"
-				CONFIG
-#line 142164 "powerpc.tcc"
-				> *Decoder<
-#line 38 "ppc.isa"
-				CONFIG
-#line 142168 "powerpc.tcc"
+#line 141992 "powerpc.tcc"
 				>::Decode(typename CONFIG::address_t addr, CodeType insn)
 				{
 					Operation<
 #line 38 "ppc.isa"
 					CONFIG
-#line 142174 "powerpc.tcc"
+#line 141998 "powerpc.tcc"
 					> *operation;
 					typename CONFIG::address_t page_key = addr / 4 / NUM_OPERATIONS_PER_PAGE;
 					DecodeMapPage<
 #line 38 "ppc.isa"
 					CONFIG
-#line 142180 "powerpc.tcc"
+#line 142004 "powerpc.tcc"
 					> *page;
 					page = FindPage(page_key);
 					if(!page)
@@ -142184,7 +142008,7 @@ public:
 						page = new DecodeMapPage<
 #line 38 "ppc.isa"
 						CONFIG
-#line 142188 "powerpc.tcc"
+#line 142012 "powerpc.tcc"
 						> (page_key);
 						uint32_t index = page_key % NUM_DECODE_HASH_TABLE_ENTRIES; // hash the key
 						page->next = decode_hash_table[index];
@@ -142206,15 +142030,15 @@ public:
 				template <
 #line 38 "ppc.isa"
 				class
-#line 142210 "powerpc.tcc"
+#line 142034 "powerpc.tcc"
 #line 38 "ppc.isa"
 				CONFIG
-#line 142213 "powerpc.tcc"
+#line 142037 "powerpc.tcc"
 				>
 				void Decoder<
 #line 38 "ppc.isa"
 				CONFIG
-#line 142218 "powerpc.tcc"
+#line 142042 "powerpc.tcc"
 				>::SetLittleEndian()
 				{
 					is_little_endian = true;
@@ -142223,15 +142047,15 @@ public:
 				template <
 #line 38 "ppc.isa"
 				class
-#line 142227 "powerpc.tcc"
+#line 142051 "powerpc.tcc"
 #line 38 "ppc.isa"
 				CONFIG
-#line 142230 "powerpc.tcc"
+#line 142054 "powerpc.tcc"
 				>
 				void Decoder<
 #line 38 "ppc.isa"
 				CONFIG
-#line 142235 "powerpc.tcc"
+#line 142059 "powerpc.tcc"
 				>::SetBigEndian()
 				{
 					is_little_endian = false;

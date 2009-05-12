@@ -105,59 +105,60 @@ public:
 	virtual ~Operation();
 	inline uint16_t GetAddr() const { return addr; }
 	inline CodeType const& GetEncoding() const { return encoding; }
+	inline unsigned int GetLength() const { return this->encoding.size; }
 	inline const char *GetName() const { return name; }
 	virtual
 #line 84 "hcs12x.isa"
 	uint8_t
-#line 113 "hcs12x.hh"
+#line 114 "hcs12x.hh"
 	getCycles( );
 	virtual
 #line 79 "hcs12x.isa"
 	void
-#line 118 "hcs12x.hh"
+#line 119 "hcs12x.hh"
 	post_execute(
 #line 79 "hcs12x.isa"
 	ostream&
-#line 122 "hcs12x.hh"
+#line 123 "hcs12x.hh"
 #line 79 "hcs12x.isa"
 	sink
-#line 125 "hcs12x.hh"
+#line 126 "hcs12x.hh"
 	);
 	virtual
 #line 75 "hcs12x.isa"
 	void
-#line 130 "hcs12x.hh"
+#line 131 "hcs12x.hh"
 	pre_execute(
 #line 75 "hcs12x.isa"
 	ostream&
-#line 134 "hcs12x.hh"
+#line 135 "hcs12x.hh"
 #line 75 "hcs12x.isa"
 	sink
-#line 137 "hcs12x.hh"
+#line 138 "hcs12x.hh"
 	);
 	virtual
 #line 69 "hcs12x.isa"
 	string
-#line 142 "hcs12x.hh"
+#line 143 "hcs12x.hh"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 146 "hcs12x.hh"
+#line 147 "hcs12x.hh"
 #line 69 "hcs12x.isa"
 	sink
-#line 149 "hcs12x.hh"
+#line 150 "hcs12x.hh"
 	);
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 154 "hcs12x.hh"
+#line 155 "hcs12x.hh"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 158 "hcs12x.hh"
+#line 159 "hcs12x.hh"
 #line 63 "hcs12x.isa"
 	cpu
-#line 161 "hcs12x.hh"
+#line 162 "hcs12x.hh"
 	);
 protected:
 	CodeType encoding;

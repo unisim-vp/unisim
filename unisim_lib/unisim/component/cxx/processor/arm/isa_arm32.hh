@@ -263,51 +263,52 @@ public:
 	virtual ~Operation();
 	inline typename CONFIG::address_t GetAddr() const { return addr; }
 	inline CodeType GetEncoding() const { return encoding; }
+	inline unsigned int GetLength() const { return 32; }
 	inline const char *GetName() const { return name; }
 #line 35 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/constructors_dec.isa"
 	unsigned int cond_init;
-#line 270 "isa_arm32.hh"
+#line 271 "isa_arm32.hh"
 #line 37 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/constructors_dec.isa"
 	unsigned int rn_init;
-#line 273 "isa_arm32.hh"
+#line 274 "isa_arm32.hh"
 #line 38 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/constructors_dec.isa"
 	unsigned int rm_init;
-#line 276 "isa_arm32.hh"
+#line 277 "isa_arm32.hh"
 #line 39 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/constructors_dec.isa"
 	unsigned int rd_init;
-#line 279 "isa_arm32.hh"
+#line 280 "isa_arm32.hh"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/constructors_dec.isa"
 	unsigned int rs_init;
-#line 282 "isa_arm32.hh"
+#line 283 "isa_arm32.hh"
 #line 41 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/constructors_dec.isa"
 	unsigned int rdhi_init;
-#line 285 "isa_arm32.hh"
+#line 286 "isa_arm32.hh"
 #line 42 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/constructors_dec.isa"
 	unsigned int rdlo_init;
-#line 288 "isa_arm32.hh"
+#line 289 "isa_arm32.hh"
 #line 43 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/constructors_dec.isa"
 	unsigned int rdp1_init;
-#line 291 "isa_arm32.hh"
+#line 292 "isa_arm32.hh"
 #line 77 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/dependency.isa"
 	unsigned int noperands;
-#line 294 "isa_arm32.hh"
+#line 295 "isa_arm32.hh"
 #line 78 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/dependency.isa"
 	operands_t operands;
-#line 297 "isa_arm32.hh"
+#line 298 "isa_arm32.hh"
 #line 79 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/dependency.isa"
 	unit_type_t unit;
-#line 300 "isa_arm32.hh"
+#line 301 "isa_arm32.hh"
 	virtual
 #line 53 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/profiling.isa"
 	void
-#line 304 "isa_arm32.hh"
+#line 305 "isa_arm32.hh"
 	profile(
 #line 53 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/profiling.isa"
 	map<uint64_t, uint32_t> &
-#line 308 "isa_arm32.hh"
+#line 309 "isa_arm32.hh"
 #line 53 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/profiling.isa"
 	prof
-#line 311 "isa_arm32.hh"
+#line 312 "isa_arm32.hh"
 	);
 	virtual void initialize_dependency_write_reglist( );
 	virtual void initialize_dependency_write_rdlo( );
@@ -323,33 +324,33 @@ public:
 	virtual
 #line 39 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/actions_dec.isa"
 	void
-#line 327 "isa_arm32.hh"
+#line 328 "isa_arm32.hh"
 	disasm(
 #line 39 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/actions_dec.isa"
 	CPU<CONFIG> &
-#line 331 "isa_arm32.hh"
+#line 332 "isa_arm32.hh"
 #line 39 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/actions_dec.isa"
 	cpu
-#line 334 "isa_arm32.hh"
+#line 335 "isa_arm32.hh"
 	,
 #line 39 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/actions_dec.isa"
 	stringstream &
-#line 338 "isa_arm32.hh"
+#line 339 "isa_arm32.hh"
 #line 39 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/actions_dec.isa"
 	buffer
-#line 341 "isa_arm32.hh"
+#line 342 "isa_arm32.hh"
 	);
 	virtual
 #line 35 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/actions_dec.isa"
 	void
-#line 346 "isa_arm32.hh"
+#line 347 "isa_arm32.hh"
 	execute(
 #line 35 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/actions_dec.isa"
 	CPU<CONFIG> &
-#line 350 "isa_arm32.hh"
+#line 351 "isa_arm32.hh"
 #line 35 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/actions_dec.isa"
 	cpu
-#line 353 "isa_arm32.hh"
+#line 354 "isa_arm32.hh"
 	);
 	virtual void initialize_rdp1_init( );
 	virtual void initialize_rdlo_init( );
