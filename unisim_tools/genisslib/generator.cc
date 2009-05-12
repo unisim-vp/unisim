@@ -241,9 +241,6 @@ Generator::decoder_decl( Product_t& _product ) const {
   if( not isa().m_is_subdecoder ) {
     _product.code( " Operation" );
     _product.template_abbrev( isa().m_tparams );
-    _product.code( " *Decode(%s addr);\n", isa().m_addrtype.str() );
-    _product.code( " Operation" );
-    _product.template_abbrev( isa().m_tparams );
     _product.code( " *Decode(%s addr, %s insn);\n", isa().m_addrtype.str(), codetype_constref().str() );
     _product.code( " std::vector<DecodeTableEntry" );
     _product.template_abbrev( isa().m_tparams );
