@@ -106,7 +106,7 @@ op alu_full_join_reg(/*subop*/?[3]:/*?*/?[1]:/*src3_neg*/?[1]:/*src1_neg*/?[1]:0
 	/*dest*/?[7]:/*flow*/0[1]:/*long*/1[1])
 
 
-op alu_half_reg(?[32]:\
+op alu_half_reg(\
 	/*op*/?[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src1_sh*/?[1]:/*src2_cm*/0[1]:/*src2_neg*/?[1]:src2[6]:/*src1_n*/?[7]:\
 	/*dest*/?[7]:/*flow*/0[1]:/*long*/0[1])
 
@@ -145,7 +145,7 @@ op alu_full_join_const(/*subop*/?[3]:/*?*/?[1]:/*src3_neg*/?[1]:/*src1_neg*/?[1]
 	/*op*/?[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/1[1]:src2[7]:/*src1*/?[7]:\
 	/*dest*/?[7]:/*flow*/0[1]:/*long*/1[1])
 
-op alu_half_const(?[32]:\
+op alu_half_const(\
 	/*op*/?[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src1_sh*/?[1]:/*src2_cm*/1[1]:/*src2_neg*/?[1]:src2[6]:/*src1_n*/?[7]:\
 	/*dest*/?[7]:/*flow*/0[1]:/*long*/0[1])
 

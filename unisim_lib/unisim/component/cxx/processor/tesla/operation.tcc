@@ -69,11 +69,12 @@ template <class CONFIG>
 Operation<CONFIG>::Operation(typename CONFIG::address_t addr, typename CONFIG::insn_t iw) :
 	stats(0), addr(addr), iw(iw)
 {
-	src1 = src1_decoder.Decode(addr, iw);
-	src2 = src2_decoder.Decode(addr, iw);
-	src3 = src3_decoder.Decode(addr, iw);
-	dest = dest_decoder.Decode(addr, iw);
-	control = control_decoder.Decode(addr, iw);
+	// Don't cache subfields. Scope is controlled by Operation.
+	src1 = src1_decoder.NCDecode(addr, iw);
+	src2 = src2_decoder.NCDecode(addr, iw);
+	src3 = src3_decoder.NCDecode(addr, iw);
+	dest = dest_decoder.NCDecode(addr, iw);
+	control = control_decoder.NCDecode(addr, iw);
 
 	stats = &CPU<CONFIG>::stats[addr - CONFIG::CODE_START];
 	//stats->ResetStatic();
@@ -86,6 +87,11 @@ Operation<CONFIG>::Operation(typename CONFIG::address_t addr, typename CONFIG::i
 template <class CONFIG>
 Operation<CONFIG>::~Operation()
 {
+	delete src1;
+	delete src2;
+	delete src3;
+	delete dest;
+	delete control;
 }
 
 template <class CONFIG>

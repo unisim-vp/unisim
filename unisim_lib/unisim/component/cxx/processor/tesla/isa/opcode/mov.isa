@@ -58,7 +58,6 @@ op mov_reg_full_imm( \
 )
 
 op mov_reg_half( \
-	?[32]: \
 	0x1[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src1_sm*/?[1]:/*src2_cm*/0[1]:f64[1]:/*imm_lo*/?[6]:\
 	data_32[1]:/*src1*/?[6]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/0[1]\
 )

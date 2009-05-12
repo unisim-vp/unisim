@@ -94,7 +94,6 @@ iadd_full.execute = {
 }
 
 op iadd_half( \
-	?[32]: \
 	0x2[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src1_sh*/?[1]:/*src2_cm*/?[1]:src3_neg[1]:/*imm_lo*/?[6]:\
 	w32[1]:/*src1*/?[6]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/0[1] \
 )
@@ -188,7 +187,6 @@ isubr_full.execute = {
 }
 
 op isubr_half( \
-	?[32]: \
 	0x3[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src1_sh*/?[1]:/*src2_cm*/?[1]:/*addc*/0[1]:/*imm_lo*/?[6]:\
 	w32[1]:/*src1*/?[6]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/0[1] \
 )
@@ -541,7 +539,6 @@ op imul24_full_join( \
 )
 
 op imul24_half( \
-	?[32]: \
 	0x4[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src1_sm*/?[1]:/*src2_cm*/?[1]:w32[1]:/*src2*/?[6]:\
 	issigned[1]:/*src1*/?[6]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/0[1] \
 )

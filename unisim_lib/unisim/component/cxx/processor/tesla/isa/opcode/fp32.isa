@@ -179,7 +179,6 @@ op fsmac_imm(\
 )
 
 op fsmad_half(\
-	?[32]: \
 	0xe[4]:/*addr_reg*/?[3]:/*src1_sh*/?[1]:/*src2_cm*/?[1]:/*src2_neg*/0[1]:/*src1_neg*/?[1]:/*src2*/?[5]:src3_neg[1]:/*src1*/?[6]: \
 	/*dest*/?[7]:/*flow*/0[1]:/*long*/0[1] \
 )
@@ -328,7 +327,6 @@ op fsadd_imm( \
 )
 
 op fsadd_half( \
-	/*hi*/?[32]: \
 	0xb[4]:/*addr_reg*/?[3]:/*src1_sh*/?[1]:/*src2_cm*/?[1]:src2_neg[1]:/*src2*/?[6]:src1_neg[1]:/*src1*/?[6]: \
 	/*dest*/?[7]:/*flow*/0[1]:/*long*/0[1] \
 )
@@ -417,7 +415,6 @@ op fsmul_imm( \
 )
 
 op fsmul_half( \
-	?[32]: \
 	0xc[4]:/*addr_reg*/?[3]:/*src1_sh*/?[1]:/*src2_cm*/?[1]:src3_neg[1]:/*src2*/?[6]:src1_neg[1]:/*src1*/?[6]: \
 	/*dest*/?[7]:/*flow*/0[1]:/*long*/0[1] \
 )
@@ -846,7 +843,6 @@ op rcp_full_normal( \
 // TODO end, join, imm...
 
 op rcp_half( \
-	?[32]: \
 	0x9[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:/*f64*/0[1]:/*?*/0[6]:\
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/0[1]\
 )

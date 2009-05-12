@@ -33,6 +33,7 @@
  */
  
 namespace unisim::component::cxx::processor::tesla::isa::opcode
+set codetype scalar
 set endianness little
 
 set addressclass {typename CONFIG::address_t}
