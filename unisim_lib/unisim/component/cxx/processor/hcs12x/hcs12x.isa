@@ -35,14 +35,18 @@
 
 namespace unisim::component::cxx::processor::hcs12x
 
-big_endian	/* instruction endian */
+/* instruction endian */
+// big_endian	
+set endianness big
 
-decoder( cisc )
+// decoder( cisc )
+set codetype buffer
 
 include "xb_sub.isa"
 subdecoder unisim::component::cxx::processor::hcs12x::XB XB
 
-address {uint16_t}
+// address {uint16_t}
+set addressclass {uint16_t}
 
 decl {
 #include <unisim/component/cxx/processor/hcs12x/mmc.hh>

@@ -35,10 +35,15 @@
 
 namespace unisim::component::cxx::processor::hcs12x::XB
 
-big_endian
-decoder( cisc, sub )
+// decoder( cisc, sub )
+set codetype buffer
+set subdecoder_p true
 
-address {uint16_t}
+// address {uint16_t}
+set addressclass {uint16_t}
+
+// big_endian
+set endianness big
 
 decl {
 
