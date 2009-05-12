@@ -67,10 +67,8 @@ public:
 
 	Operation*NCDecode(uint16_t addr);
 	Operation *NCDecode(uint16_t addr, CodeType const& code);
-	Operation *Decode(uint16_t addr);
 	Operation *Decode(uint16_t addr, CodeType const& insn);
 	std::vector<DecodeTableEntry > const& GetDecodeTable() const { return decode_table; };
-	virtual void Fetch( CodeType&, uint16_t ) ;
 	void InvalidateDecodingCacheEntry(uint16_t addr);
 	void InvalidateDecodingCache();
 
@@ -89,14 +87,14 @@ private:
 };
 
 } } } } }
-#line 47 "hcs12x.isa"
+#line 51 "hcs12x.isa"
 
 #include <unisim/component/cxx/processor/hcs12x/mmc.hh>
 #include <unisim/component/cxx/processor/hcs12x/cpu.hh>
 #include <unisim/component/cxx/processor/hcs12x/concatenated_register.hh>
 #include <iostream>
 #include <iosfwd>
-#line 100 "hcs12x.hh"
+#line 98 "hcs12x.hh"
 namespace unisim { namespace component { namespace cxx { namespace processor { namespace hcs12x {
 class Operation
 {
@@ -108,57 +106,57 @@ public:
 	inline unsigned int GetLength() const { return this->encoding.size; }
 	inline const char *GetName() const { return name; }
 	virtual
-#line 84 "hcs12x.isa"
+#line 88 "hcs12x.isa"
 	uint8_t
-#line 114 "hcs12x.hh"
+#line 112 "hcs12x.hh"
 	getCycles( );
 	virtual
-#line 79 "hcs12x.isa"
+#line 83 "hcs12x.isa"
 	void
-#line 119 "hcs12x.hh"
+#line 117 "hcs12x.hh"
 	post_execute(
-#line 79 "hcs12x.isa"
+#line 83 "hcs12x.isa"
 	ostream&
-#line 123 "hcs12x.hh"
-#line 79 "hcs12x.isa"
+#line 121 "hcs12x.hh"
+#line 83 "hcs12x.isa"
 	sink
-#line 126 "hcs12x.hh"
+#line 124 "hcs12x.hh"
 	);
 	virtual
-#line 75 "hcs12x.isa"
+#line 79 "hcs12x.isa"
 	void
-#line 131 "hcs12x.hh"
+#line 129 "hcs12x.hh"
 	pre_execute(
-#line 75 "hcs12x.isa"
+#line 79 "hcs12x.isa"
 	ostream&
-#line 135 "hcs12x.hh"
-#line 75 "hcs12x.isa"
+#line 133 "hcs12x.hh"
+#line 79 "hcs12x.isa"
 	sink
-#line 138 "hcs12x.hh"
+#line 136 "hcs12x.hh"
 	);
 	virtual
-#line 69 "hcs12x.isa"
+#line 73 "hcs12x.isa"
 	string
-#line 143 "hcs12x.hh"
+#line 141 "hcs12x.hh"
 	disasm(
-#line 69 "hcs12x.isa"
+#line 73 "hcs12x.isa"
 	ostream&
-#line 147 "hcs12x.hh"
-#line 69 "hcs12x.isa"
+#line 145 "hcs12x.hh"
+#line 73 "hcs12x.isa"
 	sink
-#line 150 "hcs12x.hh"
+#line 148 "hcs12x.hh"
 	);
 	virtual
-#line 63 "hcs12x.isa"
+#line 67 "hcs12x.isa"
 	void
-#line 155 "hcs12x.hh"
+#line 153 "hcs12x.hh"
 	execute(
-#line 63 "hcs12x.isa"
+#line 67 "hcs12x.isa"
 	CPU *
-#line 159 "hcs12x.hh"
-#line 63 "hcs12x.isa"
+#line 157 "hcs12x.hh"
+#line 67 "hcs12x.isa"
 	cpu
-#line 162 "hcs12x.hh"
+#line 160 "hcs12x.hh"
 	);
 protected:
 	CodeType encoding;

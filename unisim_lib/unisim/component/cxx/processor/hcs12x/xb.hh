@@ -68,7 +68,7 @@ Operation *sub_decode(uint16_t addr, CodeType const& code) {
 	return decoder.NCDecode( addr, code );
 }
 } } } } } }
-#line 43 "xb.isa"
+#line 48 "xb.isa"
 
 
 #include <iosfwd>
@@ -109,71 +109,72 @@ public:
 	virtual ~Operation();
 	inline uint16_t GetAddr() const { return addr; }
 	inline CodeType const& GetEncoding() const { return encoding; }
+	inline unsigned int GetLength() const { return this->encoding.size; }
 	inline const char *GetName() const { return name; }
 	virtual
-#line 131 "xb.isa"
+#line 136 "xb.isa"
 	void
-#line 117 "xb.hh"
+#line 118 "xb.hh"
 	post_execute(
-#line 131 "xb.isa"
+#line 136 "xb.isa"
 	ostream&
-#line 121 "xb.hh"
-#line 131 "xb.isa"
+#line 122 "xb.hh"
+#line 136 "xb.isa"
 	sink
-#line 124 "xb.hh"
+#line 125 "xb.hh"
 	);
 	virtual
-#line 95 "xb.isa"
+#line 100 "xb.isa"
 	void
-#line 129 "xb.hh"
+#line 130 "xb.hh"
 	pre_execute(
-#line 95 "xb.isa"
+#line 100 "xb.isa"
 	ostream&
-#line 133 "xb.hh"
-#line 95 "xb.isa"
+#line 134 "xb.hh"
+#line 100 "xb.isa"
 	sink
-#line 136 "xb.hh"
+#line 137 "xb.hh"
 	);
 	virtual
-#line 92 "xb.isa"
+#line 97 "xb.isa"
 	void
-#line 141 "xb.hh"
+#line 142 "xb.hh"
 	getRegsLabel(
-#line 92 "xb.isa"
+#line 97 "xb.isa"
 	vector<string>
-#line 145 "xb.hh"
-#line 92 "xb.isa"
+#line 146 "xb.hh"
+#line 97 "xb.isa"
 	&vect
-#line 148 "xb.hh"
+#line 149 "xb.hh"
 	);
 	virtual
-#line 90 "xb.isa"
+#line 95 "xb.isa"
 	uint16_t
-#line 153 "xb.hh"
+#line 154 "xb.hh"
 	getEAddr(
-#line 90 "xb.isa"
+#line 95 "xb.isa"
 	CPU *
-#line 157 "xb.hh"
-#line 90 "xb.isa"
+#line 158 "xb.hh"
+#line 95 "xb.isa"
 	cpu
-#line 160 "xb.hh"
+#line 161 "xb.hh"
 	);
 	virtual
-#line 86 "xb.isa"
+#line 91 "xb.isa"
 	void
-#line 165 "xb.hh"
+#line 166 "xb.hh"
 	disasm(
-#line 86 "xb.isa"
+#line 91 "xb.isa"
 	ostream&
-#line 169 "xb.hh"
-#line 86 "xb.isa"
+#line 170 "xb.hh"
+#line 91 "xb.isa"
 	sink
-#line 172 "xb.hh"
+#line 173 "xb.hh"
 	);
 	virtual
-#line 81 "xb.isa"
+#line 86 "xb.isa"
 	uint8_t
-#line 177 "xb.hh"
+#line 178 "xb.hh"
 	getXbMode( );
 protected:
 	CodeType encoding;
