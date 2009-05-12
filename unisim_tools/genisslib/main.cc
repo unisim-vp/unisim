@@ -46,7 +46,7 @@ using namespace std;
 
 Opts::Opts()
   : outputprefix( DEFAULT_OUTPUT ), expandname( 0 ), inputname( 0 ), depfilename( 0 ),
-    minwordsize( -1 ), sourcelines( true ), specialization( true )
+    minwordsize( 32 ), sourcelines( true ), specialization( true )
     
 { s_shared = this; }
 

@@ -31,7 +31,7 @@ struct Opts {
   char const*      expandname;
   char const*      inputname;
   char const*      depfilename;
-  int              minwordsize;
+  unsigned int     minwordsize;
   bool             sourcelines;
   bool             specialization;
 

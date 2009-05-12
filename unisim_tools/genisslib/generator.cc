@@ -33,7 +33,7 @@
 using namespace std;
 
 Generator::Generator()
-  : m_isa( 0 ), m_minwordsize( 0 )
+  : m_isa( 0 ), m_minwordsize( 32 )
 {}
 
 Generator&
