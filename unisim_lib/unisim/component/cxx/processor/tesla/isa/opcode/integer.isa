@@ -1215,9 +1215,9 @@ set_full.execute = {
 	insn->SetPred(vf);
 }
 
-group set(set_full)
+group set_(set_full)
 
-set.classify = {
+set_.classify = {
 	this->stats->SetInteger();
 }
 

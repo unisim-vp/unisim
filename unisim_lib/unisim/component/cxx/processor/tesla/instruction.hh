@@ -49,6 +49,23 @@ namespace cxx {
 namespace processor {
 namespace tesla {
 
+template<class CONFIG>
+struct OpCodeDecoder : isa::opcode::Decoder<CONFIG>
+{
+private:
+	CPU<CONFIG> & cpu;
+public:
+	OpCodeDecoder(CPU<CONFIG> & cpu) :
+		cpu(cpu) {}
+	virtual void Fetch(isa::opcode::CodeType& ct, typename CONFIG::address_t addr) {
+		typename CONFIG::insn_t iw;
+		cpu.Fetch(iw, addr);
+		ct = CodeType(&iw, sizeof(typename CONFIG::insn_t));
+	}
+};
+
+
+
 // Instruction:
 // Instruction as passed from a pipeline stage to the next.
 // Dynamic, allocated during decode stage, discarded on retirement.

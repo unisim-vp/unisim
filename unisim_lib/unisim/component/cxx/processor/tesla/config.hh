@@ -75,8 +75,8 @@ public:
 		uint32_t pp;                            /*< 2-bit page protection field */
 	};
 
-//	typedef ImplicitFlow<BaseConfig> control_flow_t;
-	typedef TeslaFlow<BaseConfig> control_flow_t;
+	typedef ImplicitFlow<BaseConfig> control_flow_t;
+//	typedef TeslaFlow<BaseConfig> control_flow_t;
 
 	static uint32_t const WARP_SIZE = 32;
 	static uint32_t const MAX_WARPS_PER_BLOCK = 16;

@@ -69,7 +69,6 @@ enum Operand
 	OpSrc3
 };
 
-
 template <class T, size_t SIZE>
 struct SimpleArray
 {

@@ -439,7 +439,7 @@ protected:
 	uint64_t bus_cycle;      //!< Number of front side bus cycles
 	uint64_t cpu_cycle;      //!< Number of cpu cycles
 
-//	void Fetch();
+	void Fetch(typename CONFIG::insn_t & insn, typename CONFIG::address_t addr);
 	
 public:
 	bool trace_insn;

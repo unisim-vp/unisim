@@ -1,4 +1,4 @@
-Version 0.2
+Version 0.2, 04 May 2009
 * Statistics collection infrastructure
 * New control flow instructions: breakaddr, break
 * Rewritten floating-point implementation, more accurate and faster
@@ -10,7 +10,7 @@ Version 0.2
 * Various bug fixes
 * Improved instruction decoder
 
-Version 0.1, 09 april 2009
+Version 0.1, 09 April 2009
 * Initial release
 * Support of most integer arithmetic, floating-point arithmetic, logical instructions
 * Memory scatter/gather instructions from/to global and local memory up to

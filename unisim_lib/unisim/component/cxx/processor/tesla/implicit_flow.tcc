@@ -170,11 +170,13 @@ void ImplicitFlow<CONFIG>::Branch(address_t target_addr, std::bitset<CONFIG::WAR
 template<class CONFIG>
 void ImplicitFlow<CONFIG>::Meet(address_t addr)
 {
+	cpu->stats[GetPC() - CONFIG::CODE_START].Unexecute();
 }
 
 template<class CONFIG>
 void ImplicitFlow<CONFIG>::PreBreak(address_t addr)
 {
+	cpu->stats[GetPC() - CONFIG::CODE_START].Unexecute();
 }
 
 
@@ -243,24 +245,26 @@ void ImplicitFlow<CONFIG>::Kill(std::bitset<CONFIG::WARP_SIZE> mask)
 template <class CONFIG>
 void ImplicitFlow<CONFIG>::CheckJoin()
 {
-	if(InConditional())
+	// TODO: if jumping outside the current loop, pop loop
+	// Merge paths
+	for(;InConditional() && GetNPC() == GetJoin();
+	    cpu->stats[GetPC() - CONFIG::CODE_START].Execute(0))
 	{
-		if(GetNPC() == GetJoin())
-		{
-			// Joined
-			// Restore last mask and join
-			current_mask = PopMask();
-			PopJoin();
-		}
-		else if(GetNPC() > GetJoin())
-		{
-			// Jumped over join point
-			// Go back following the other branch
-			std::swap(join_stack.top(), warp.npc);
-			// Invert condition
-			current_mask = ~GetCurrentMask() & GetNextMask();
-		}
+		// Joined
+		// Restore last mask and join
+		current_mask = PopMask();
+		PopJoin();
 	}
+	
+	if(InConditional() && GetNPC() > GetJoin())
+	{
+		// Jumped over join point
+		// Go back following the other branch
+		std::swap(join_stack.top(), warp.npc);
+		// Invert condition
+		current_mask = ~GetCurrentMask() & GetNextMask();
+	}
+
 	if(cpu->trace_mask) {
 		cerr << " " << GetCurrentMask() << endl;
 	}

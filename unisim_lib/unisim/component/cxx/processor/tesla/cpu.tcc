@@ -560,30 +560,15 @@ endian_type CPU<CONFIG>::GetEndianess()
 }
 
 #endif
-#if 0
 
 template <class CONFIG>
-void CPU<CONFIG>::Fetch()
+void CPU<CONFIG>::Fetch(typename CONFIG::insn_t & insn, typename CONFIG::address_t addr)
 {
-	// Stall if IQ is full
-	if(iq.Full()) return;
-	// Send a request to IMMU
-	uint32_t size_to_block_boundary = CONFIG::IL1_CONFIG::CACHE_BLOCK_SIZE - (cia & (CONFIG::IL1_CONFIG::CACHE_BLOCK_SIZE - 1));
-	uint32_t fetch_width = Max(iq.Size(), FETCH_WIDTH);
-	uint32_t fetch_size = Max(fetch_width * sizeof(uint32_t), size_to_block_boundary);
-	uint8_t prefetch_buffer[fetch_size];
-	uint32_t read_size = 0; //ReadInsnMemory(cia, prefetch_buffer, sizeof(prefetch_buffer) > size_to_block_boundary ? size_to_block_boundary : sizeof(prefetch_buffer));
-	uint32_t offset;
-	for(offset = 0; offset < read_size; offset += sizeof(uint32_t), cia += sizeof(uint32_t))
-	{
-		uint32_t insn = prefetch_buffer[offset];
-		Operation<CONFIG> *operation = Decoder<CONFIG>::Decode(cia, insn);
-		Instruction<CONFIG> *instruction = iw.Allocate();
-		instruction->SetOperation(operation);
-		iq.Push(instruction);
+	typename CONFIG::insn_t iw;
+	if(!ReadMemory(addr, &insn, sizeof(typename CONFIG::insn_t))) {
+		throw MemoryAccessException<CONFIG>();
 	}
 }
-#endif
 
 
 //=====================================================================

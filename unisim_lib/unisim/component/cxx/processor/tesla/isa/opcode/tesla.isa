@@ -33,9 +33,9 @@
  */
  
 namespace unisim::component::cxx::processor::tesla::isa::opcode
-little_endian
+set endianness little
 
-address {typename CONFIG::address_t}
+set addressclass {typename CONFIG::address_t}
 template <{class} {CONFIG}>
 
 // Hugly hack

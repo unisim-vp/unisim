@@ -95,6 +95,9 @@ public:
 		++count;
 		scalarcount += mask.count();
 	}
+	void Unexecute() {
+		--count;
+	}
 	
 	//void Gather(VectorAddress<CONFIG> const & addr, std::bitset<CONFIG::WARP_SIZE> mask);
 	//void BranchUniTaken(std::bitset<CONFIG::WARP_SIZE> mask);
