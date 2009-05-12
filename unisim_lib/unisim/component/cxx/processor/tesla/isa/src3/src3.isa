@@ -141,7 +141,7 @@ op alu_full_join_const(/*subop*/?[3]:/*?*/?[1]:/*src3_neg*/?[1]:/*src1_neg*/?[1]
 	/*dest*/?[7]:/*flow*/0[1]:/*long*/1[1])
 
 
-// TODO: half ops
+// TODO: half ops?
 
 group alu_const(alu_full_normal_const, alu_full_end_const, alu_full_join_const)
 

@@ -121,7 +121,7 @@ op alu_imm_reg(/*subop*/?[3]:/*?*/?[1]:/*imm*/?[26]:/*marker*/3[2]:\
 	/*op*/?[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src1_sh*/0[1]:/*src2_cm*/?[1]:/*src2_neg*/?[1]:/*src2*/?[6]:/*src1_neg*/?[1]:src1[6]:\
 	/*dest*/?[7]:/*flow*/0[1]:/*long*/1[1])
 
-op alu_half_reg(?[32]:\
+op alu_half_reg(\
 	/*op*/?[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src1_sh*/0[1]:/*src2_cm*/?[1]:/*src2_neg*/?[1]:/*src2*/?[6]:/*src1_neg*/?[1]:src1[6]:\
 	/*dest*/?[7]:/*flow*/0[1]:/*long*/0[1])
 
@@ -163,7 +163,7 @@ op alu_imm_shared(/*subop*/?[3]:/*?*/?[1]:/*imm*/?[26]:/*marker*/3[2]:\
 	/*op*/?[4]:addr_lo[2]:addr_incr[1]:/*src1_sh*/1[1]:/*src2_cm*/?[1]:/*src2_neg*/?[1]:/*src2*/?[6]:/*src1_neg*/?[1]:smtype[2]:src1[4]:\
 	/*dest*/?[7]:/*flow*/0[1]:/*long*/1[1])
 
-op alu_half_shared(?[32]:\
+op alu_half_shared(\
 	/*op*/?[4]:addr_lo[2]:addr_incr[1]:/*src1_sh*/1[1]:/*src2_cm*/?[1]:/*src2_neg*/?[1]:/*src2*/?[6]:/*src1_neg*/?[1]:smtype[2]:src1[4]:\
 	/*dest*/?[7]:/*flow*/0[1]:/*long*/0[1])
 
