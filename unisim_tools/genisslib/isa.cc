@@ -282,8 +282,8 @@ Isa::setparam( ConstStr_t key, ConstStr_t value ) {
     if      (value == isbig)    m_little_endian = false;
     else if (value == islittle) m_little_endian = true;
   } else if (key == bforder) {
-    if      (key == isnormal)  m_rev_bforder = false;
-    else if (key == isreverse) m_rev_bforder = true;
+    if      (value == isnormal)  m_rev_bforder = false;
+    else if (value == isreverse) m_rev_bforder = true;
   }
 }
 
