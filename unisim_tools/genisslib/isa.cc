@@ -41,7 +41,7 @@ using namespace std;
  */
 Isa::Isa()
   : m_decoder( RiscDecoder ), m_is_subdecoder( false ), m_withsource( false ),
-    m_little_endian( 0 )
+    m_little_endian( false ), m_rev_bforder( false )
 {}
 
 /** Destructor for isa instance
@@ -255,16 +255,19 @@ Isa::specialize() {
 
 void
 Isa::setparam( ConstStr_t key, ConstStr_t value ) {
-  static ConstStr_t   codetype( "codetype",     Scanner::symbols );
-  static ConstStr_t     scalar( "scalar",       Scanner::symbols );
-  static ConstStr_t     buffer( "buffer",       Scanner::symbols );
-  static ConstStr_t subdecoder( "subdecoder_p", Scanner::symbols );
-  static ConstStr_t withsource( "withsource_p", Scanner::symbols );
-  static ConstStr_t     istrue( "true",         Scanner::symbols );
-  static ConstStr_t    isfalse( "false",        Scanner::symbols );
-  static ConstStr_t endianness( "endianness",   Scanner::symbols );
-  static ConstStr_t      isbig( "big",          Scanner::symbols );
-  static ConstStr_t   islittle( "little",       Scanner::symbols );
+  static ConstStr_t   codetype( "codetype",        Scanner::symbols );
+  static ConstStr_t     scalar( "scalar",          Scanner::symbols );
+  static ConstStr_t     buffer( "buffer",          Scanner::symbols );
+  static ConstStr_t subdecoder( "subdecoder_p",    Scanner::symbols );
+  static ConstStr_t withsource( "withsource_p",    Scanner::symbols );
+  static ConstStr_t     istrue( "true",            Scanner::symbols );
+  static ConstStr_t    isfalse( "false",           Scanner::symbols );
+  static ConstStr_t endianness( "endianness",      Scanner::symbols );
+  static ConstStr_t      isbig( "big",             Scanner::symbols );
+  static ConstStr_t   islittle( "little",          Scanner::symbols );
+  static ConstStr_t    bforder( "bitfield_order",  Scanner::symbols );
+  static ConstStr_t   isnormal( "normal",          Scanner::symbols );
+  static ConstStr_t  isreverse( "reverse",         Scanner::symbols );
   
   if        (key == codetype) {
     if      (value == scalar) m_decoder = RiscDecoder;
@@ -278,6 +281,9 @@ Isa::setparam( ConstStr_t key, ConstStr_t value ) {
   } else if (key == endianness) {
     if      (value == isbig)    m_little_endian = false;
     else if (value == islittle) m_little_endian = true;
+  } else if (key == bforder) {
+    if      (key == isnormal)  m_rev_bforder = false;
+    else if (key == isreverse) m_rev_bforder = true;
   }
 }
 

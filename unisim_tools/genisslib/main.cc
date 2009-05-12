@@ -188,8 +188,6 @@ GIL_MAIN (int argc, char** argv, char** envp) {
       isa.deps( depfile, gil.outputprefix );
     }
     
-    Product_t product( gil.outputprefix, gil.sourcelines );
-    
     if( not isa.sanity_checks() ) throw CLI::Exit_t( 1 );
 
     // Specialization
@@ -198,6 +196,8 @@ GIL_MAIN (int argc, char** argv, char** envp) {
     auto_ptr<Generator> generator = isa.generator();
     
     generator->init( isa );
+    
+    Product_t product( gil.outputprefix, gil.sourcelines );
     
     try {
       // Back-end specific preprocess
