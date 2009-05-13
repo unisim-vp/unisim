@@ -24,6 +24,11 @@ SUBDIRS += interrupt
 INCLUDE_SUBDIRS += interrupt
 endif
 
+if COND_timer
+SUBDIRS += timer
+INCLUDE_SUBDIRS += timer
+endif
+
 dist_share_DATA = COPYING
 
 uninstall-hook:
