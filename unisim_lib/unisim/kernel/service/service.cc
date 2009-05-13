@@ -35,11 +35,8 @@
  
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger_server.hh"
-#include <iostream>
-#include <sstream>
 #include <fstream>
 #include <stdlib.h>
-#include <string.h>
 
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/topological_sort.hpp>
@@ -47,7 +44,6 @@
 #include <boost/graph/graphviz.hpp>
 
 #include "unisim/kernel/service/xml_helper.hh"
-#include "unisim/kernel/logger/logger_server.hh"
 
 namespace unisim {
 namespace kernel {

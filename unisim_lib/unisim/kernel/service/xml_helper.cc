@@ -32,7 +32,7 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
-#include <unisim/kernel/service/xml_helper.hh>
+#include "unisim/kernel/service/xml_helper.hh"
 #include <libxml/encoding.h>
 #include <libxml/xmlwriter.h>
 #include <map>
