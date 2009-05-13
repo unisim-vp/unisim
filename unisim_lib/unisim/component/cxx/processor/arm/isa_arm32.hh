@@ -96,18 +96,12 @@ public:
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
 #line 99 "isa_arm32.hh"
-	> *Decode(typename CONFIG::address_t addr);
-	Operation<
-#line 44 "isa/arm32/arm32.isa"
-	CONFIG
-#line 104 "isa_arm32.hh"
 	> *Decode(typename CONFIG::address_t addr, CodeType insn);
 	std::vector<DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 109 "isa_arm32.hh"
+#line 104 "isa_arm32.hh"
 	> > const& GetDecodeTable() const { return decode_table; };
-	virtual void Fetch(void *, typename CONFIG::address_t, uint32_t) ;
 	void InvalidateDecodingCacheEntry(typename CONFIG::address_t addr);
 	void InvalidateDecodingCache();
 
@@ -118,22 +112,22 @@ private:
 	std::vector<DecodeTableEntry<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 122 "isa_arm32.hh"
+#line 116 "isa_arm32.hh"
 	> > decode_table;
 	DecodeMapPage<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 127 "isa_arm32.hh"
+#line 121 "isa_arm32.hh"
 	> *mru_page;
 	DecodeMapPage<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 132 "isa_arm32.hh"
+#line 126 "isa_arm32.hh"
 	> *decode_hash_table[NUM_DECODE_HASH_TABLE_ENTRIES];
 	DecodeMapPage<
 #line 44 "isa/arm32/arm32.isa"
 	CONFIG
-#line 137 "isa_arm32.hh"
+#line 131 "isa_arm32.hh"
 	> *FindPage(typename CONFIG::address_t page_key)
 #if defined(__GNUC__) && (__GNUC__ >= 3 && (__GNUC__ != 3 || __GNUC_MINOR__ != 4 || __GNUC_PATCHLEVEL__ != 6))
 	__attribute__((always_inline))
@@ -170,24 +164,24 @@ namespace unisim {
 	} // end of namespace component
 } // end of namespace unisim
 
-#line 174 "isa_arm32.hh"
-#line 41 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/data_processing_v5e.isa"
+#line 168 "isa_arm32.hh"
+#line 41 "/Users/gracia/Developer/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/data_processing_v5e.isa"
 
 #include "unisim/util/arithmetic/arithmetic.hh"
 
 using unisim::util::arithmetic::SignedSatAdd32;
 using unisim::util::arithmetic::SignedSatSub32;
 
-#line 182 "isa_arm32.hh"
-#line 41 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/load_store_base.isa"
+#line 176 "isa_arm32.hh"
+#line 41 "/Users/gracia/Developer/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/load_store_base.isa"
 
 #include <iostream>
-#line 186 "isa_arm32.hh"
-#line 41 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/load_store_v4.isa"
+#line 180 "isa_arm32.hh"
+#line 41 "/Users/gracia/Developer/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/load_store_v4.isa"
 
 #include <iostream>
-#line 190 "isa_arm32.hh"
-#line 35 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/dependency.isa"
+#line 184 "isa_arm32.hh"
+#line 35 "/Users/gracia/Developer/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/dependency.isa"
 
 
 namespace unisim {
@@ -228,8 +222,8 @@ namespace unisim {
 	} // end of namespace component
 } // end of namespace unisim
 
-#line 232 "isa_arm32.hh"
-#line 35 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/profiling.isa"
+#line 226 "isa_arm32.hh"
+#line 35 "/Users/gracia/Developer/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/profiling.isa"
 
 #include <map>
 
@@ -246,15 +240,15 @@ namespace unisim {
 		} // end of namespace cxx
 	} // end of namespace component
 } // end of namespace unisim
-#line 250 "isa_arm32.hh"
+#line 244 "isa_arm32.hh"
 namespace unisim { namespace component { namespace cxx { namespace processor { namespace arm { namespace isa { namespace arm32 {
 template <
 #line 44 "isa/arm32/arm32.isa"
 class
-#line 255 "isa_arm32.hh"
+#line 249 "isa_arm32.hh"
 #line 44 "isa/arm32/arm32.isa"
 CONFIG
-#line 258 "isa_arm32.hh"
+#line 252 "isa_arm32.hh"
 >
 class Operation
 {
@@ -265,50 +259,50 @@ public:
 	inline CodeType GetEncoding() const { return encoding; }
 	inline unsigned int GetLength() const { return 32; }
 	inline const char *GetName() const { return name; }
-#line 35 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/constructors_dec.isa"
+#line 35 "/Users/gracia/Developer/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/constructors_dec.isa"
 	unsigned int cond_init;
-#line 271 "isa_arm32.hh"
-#line 37 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/constructors_dec.isa"
+#line 265 "isa_arm32.hh"
+#line 37 "/Users/gracia/Developer/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/constructors_dec.isa"
 	unsigned int rn_init;
-#line 274 "isa_arm32.hh"
-#line 38 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/constructors_dec.isa"
+#line 268 "isa_arm32.hh"
+#line 38 "/Users/gracia/Developer/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/constructors_dec.isa"
 	unsigned int rm_init;
-#line 277 "isa_arm32.hh"
-#line 39 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/constructors_dec.isa"
+#line 271 "isa_arm32.hh"
+#line 39 "/Users/gracia/Developer/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/constructors_dec.isa"
 	unsigned int rd_init;
-#line 280 "isa_arm32.hh"
-#line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/constructors_dec.isa"
+#line 274 "isa_arm32.hh"
+#line 40 "/Users/gracia/Developer/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/constructors_dec.isa"
 	unsigned int rs_init;
-#line 283 "isa_arm32.hh"
-#line 41 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/constructors_dec.isa"
+#line 277 "isa_arm32.hh"
+#line 41 "/Users/gracia/Developer/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/constructors_dec.isa"
 	unsigned int rdhi_init;
-#line 286 "isa_arm32.hh"
-#line 42 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/constructors_dec.isa"
+#line 280 "isa_arm32.hh"
+#line 42 "/Users/gracia/Developer/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/constructors_dec.isa"
 	unsigned int rdlo_init;
-#line 289 "isa_arm32.hh"
-#line 43 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/constructors_dec.isa"
+#line 283 "isa_arm32.hh"
+#line 43 "/Users/gracia/Developer/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/constructors_dec.isa"
 	unsigned int rdp1_init;
-#line 292 "isa_arm32.hh"
-#line 77 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/dependency.isa"
+#line 286 "isa_arm32.hh"
+#line 77 "/Users/gracia/Developer/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/dependency.isa"
 	unsigned int noperands;
-#line 295 "isa_arm32.hh"
-#line 78 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/dependency.isa"
+#line 289 "isa_arm32.hh"
+#line 78 "/Users/gracia/Developer/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/dependency.isa"
 	operands_t operands;
-#line 298 "isa_arm32.hh"
-#line 79 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/dependency.isa"
+#line 292 "isa_arm32.hh"
+#line 79 "/Users/gracia/Developer/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/dependency.isa"
 	unit_type_t unit;
-#line 301 "isa_arm32.hh"
+#line 295 "isa_arm32.hh"
 	virtual
-#line 53 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/profiling.isa"
+#line 53 "/Users/gracia/Developer/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/profiling.isa"
 	void
-#line 305 "isa_arm32.hh"
+#line 299 "isa_arm32.hh"
 	profile(
-#line 53 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/profiling.isa"
+#line 53 "/Users/gracia/Developer/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/profiling.isa"
 	map<uint64_t, uint32_t> &
-#line 309 "isa_arm32.hh"
-#line 53 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/profiling.isa"
+#line 303 "isa_arm32.hh"
+#line 53 "/Users/gracia/Developer/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/profiling.isa"
 	prof
-#line 312 "isa_arm32.hh"
+#line 306 "isa_arm32.hh"
 	);
 	virtual void initialize_dependency_write_reglist( );
 	virtual void initialize_dependency_write_rdlo( );
@@ -322,35 +316,35 @@ public:
 	virtual void initialize_dependency_read_rn( );
 	virtual void initialize_dependency_read_rm( );
 	virtual
-#line 39 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/actions_dec.isa"
+#line 39 "/Users/gracia/Developer/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/actions_dec.isa"
 	void
-#line 328 "isa_arm32.hh"
+#line 322 "isa_arm32.hh"
 	disasm(
-#line 39 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/actions_dec.isa"
+#line 39 "/Users/gracia/Developer/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/actions_dec.isa"
 	CPU<CONFIG> &
-#line 332 "isa_arm32.hh"
-#line 39 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/actions_dec.isa"
+#line 326 "isa_arm32.hh"
+#line 39 "/Users/gracia/Developer/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/actions_dec.isa"
 	cpu
-#line 335 "isa_arm32.hh"
+#line 329 "isa_arm32.hh"
 	,
-#line 39 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/actions_dec.isa"
+#line 39 "/Users/gracia/Developer/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/actions_dec.isa"
 	stringstream &
-#line 339 "isa_arm32.hh"
-#line 39 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/actions_dec.isa"
+#line 333 "isa_arm32.hh"
+#line 39 "/Users/gracia/Developer/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/actions_dec.isa"
 	buffer
-#line 342 "isa_arm32.hh"
+#line 336 "isa_arm32.hh"
 	);
 	virtual
-#line 35 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/actions_dec.isa"
+#line 35 "/Users/gracia/Developer/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/actions_dec.isa"
 	void
-#line 347 "isa_arm32.hh"
+#line 341 "isa_arm32.hh"
 	execute(
-#line 35 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/actions_dec.isa"
+#line 35 "/Users/gracia/Developer/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/actions_dec.isa"
 	CPU<CONFIG> &
-#line 351 "isa_arm32.hh"
-#line 35 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/actions_dec.isa"
+#line 345 "isa_arm32.hh"
+#line 35 "/Users/gracia/Developer/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/arm32/actions_dec.isa"
 	cpu
-#line 354 "isa_arm32.hh"
+#line 348 "isa_arm32.hh"
 	);
 	virtual void initialize_rdp1_init( );
 	virtual void initialize_rdlo_init( );

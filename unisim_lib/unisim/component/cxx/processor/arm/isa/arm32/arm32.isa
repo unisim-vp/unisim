@@ -39,8 +39,8 @@
 **********************************************/
 
 namespace unisim::component::cxx::processor::arm::isa::arm32
-big_endian
-address {typename CONFIG::address_t}
+set endianness big
+set addressclass {typename CONFIG::address_t}
 template <{class} {CONFIG}>
 
 decl {
