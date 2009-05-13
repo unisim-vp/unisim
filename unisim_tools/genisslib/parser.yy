@@ -16,7 +16,7 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-#include <yystype.hh>
+#include <parser.hh>
 #include <vect.hh>
 #include <isa.hh>
 #include <sourcecode.hh>

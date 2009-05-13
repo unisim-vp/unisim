@@ -17,7 +17,6 @@
  *                                                                         *
  ***************************************************************************/
 
-#include <yystype.hh>
 #include <parser.hh>
 #include <scanner.hh>
 #include <strtools.hh>

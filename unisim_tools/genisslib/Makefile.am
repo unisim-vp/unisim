@@ -14,7 +14,6 @@ noinst_HEADERS = \
 	fwd.hh \
 	parser.hh \
 	sourcecode.hh \
-	yystype.hh \
 	cli.hh \
 	isa.hh \
 	product.hh \
