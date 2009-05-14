@@ -99,6 +99,7 @@ VectorRegister<CONFIG> FSMad(VectorRegister<CONFIG> const & a,
 		}
 		rv[i] = r.queryValue();
 	}
+	rv.SetScalar(a.IsScalar() && b.IsScalar() && c.IsScalar());
 	return rv;
 }
 
@@ -140,6 +141,7 @@ VectorRegister<CONFIG> FSMul(VectorRegister<CONFIG> const & a,
 		}
 		rv[i] = r.queryValue();
 	}
+	rv.SetScalar(a.IsScalar() && b.IsScalar());
 	return rv;
 }
 
@@ -182,6 +184,7 @@ VectorRegister<CONFIG> FSAdd(VectorRegister<CONFIG> const & a,
 		}
 		rv[i] = r.queryValue();
 	}
+	rv.SetScalar(a.IsScalar() && b.IsScalar());
 	return rv;
 }
 
@@ -199,6 +202,7 @@ VectorRegister<CONFIG> FSMov(VectorRegister<CONFIG> & a, bool neg)
 		}
 		rv.WriteSimfloat(sa, i);
 	}
+	rv.SetScalar(a.IsScalar());
 	return rv;
 }
 
@@ -273,6 +277,8 @@ VectorRegister<CONFIG> IAdd32(VectorRegister<CONFIG> const & a,
 		}
 		rv[i] = r;
 	}
+	rv.SetScalar(a.IsScalar() && b.IsScalar());
+	rv.SetStrided(!sat && a.IsStrided() && b.IsStrided());
 	return rv;
 }
 
@@ -333,6 +339,8 @@ VectorRegister<CONFIG> IAdd16(VectorRegister<CONFIG> const & a,
 		}
 		rv[i] = r;
 	}
+	rv.SetScalar16(false, a.IsScalar() && b.IsScalar());
+	rv.SetStrided16(false, !sat && a.IsStrided() && b.IsStrided());
 	return rv;
 }
 
@@ -382,6 +390,7 @@ VectorRegister<CONFIG> Mul24(VectorRegister<CONFIG> const & a,
 
 		rv[i] = r;
 	}
+	rv.SetScalar(a.IsScalar() && b.IsScalar());
 	return rv;
 }
 
@@ -435,6 +444,8 @@ VectorRegister<CONFIG> ShiftLeft(VectorRegister<CONFIG> const & a, VectorRegiste
 			r &= 0x0000ffff;
 		rv[i] = r;
 	}
+	rv.SetScalar(a.IsScalar() && b.IsScalar());
+	rv.SetStrided(a.IsStrided() && b.IsScalar());
 	return rv;
 }
 
@@ -458,6 +469,8 @@ VectorRegister<CONFIG> ShiftLeft(VectorRegister<CONFIG> const & a, uint32_t sb, 
 			r &= 0x0000ffff;
 		rv[i] = r;
 	}
+	rv.SetScalar(a.IsScalar());
+	rv.SetStrided(a.IsStrided());
 	return rv;
 }
 
@@ -496,6 +509,8 @@ VectorRegister<CONFIG> ShiftRight(VectorRegister<CONFIG> const & a, VectorRegist
 			rv[i] = a[i] >> sb;
 		}
 	}
+	rv.SetScalar(a.IsScalar() && b.IsScalar());
+	rv.SetStrided(a.IsStrided() && b.IsScalar());
 	return rv;
 }
 
@@ -531,6 +546,8 @@ VectorRegister<CONFIG> ShiftRight(VectorRegister<CONFIG> const & a, uint32_t sb,
 			rv[i] = a[i] >> sb;
 		}
 	}
+	rv.SetScalar(a.IsScalar());
+	rv.SetStrided(a.IsStrided());
 	return rv;
 }
 
@@ -588,6 +605,30 @@ VectorRegister<CONFIG> ConvertIntInt(VectorRegister<CONFIG> const & a, uint32_t 
 			r = -int32_t(r);
 		}
 		rv[i] = r;
+	}
+	bool scalar, strided;
+	switch(cvt_type) {
+	case CT_U16:
+	case CT_S16:
+		scalar = a.IsScalar16(false);
+		strided = a.IsStrided16(false);
+		break;
+	case CT_U32:
+	case CT_S32:
+		scalar = a.IsScalar();
+		strided = a.IsStrided();
+		break;
+	default:
+		scalar = false;
+		strided = false;
+	}
+	if(b32) {
+		rv.SetScalar(scalar);
+		rv.SetStrided(strided);
+	}
+	else {
+		rv.SetScalar16(false, scalar);
+		rv.SetStrided16(false, strided);
 	}
 	return rv;
 }
@@ -667,6 +708,7 @@ VectorRegister<CONFIG> ConvertFloatInt(VectorRegister<CONFIG> const & a, uint32_
 		}
 		rv.WriteSimfloat(r, i);
 	}
+	rv.SetScalar(a.IsScalar());
 	return rv;
 }
 
@@ -730,6 +772,7 @@ void ConvertFloatFloat(VectorRegister<CONFIG> & a, bool dest_32, ConvType srctyp
 		}
 		
 	}
+	a.SetStrided(false);
 }
 
 template<class CONFIG>
@@ -811,6 +854,7 @@ void ConvertIntFloat(VectorRegister<CONFIG> & a, bool issigned, bool dest_32, Co
 			assert(false);	// TODO: implement... one day
 		}
 	}
+	a.SetStrided(false);
 }
 
 template<class CONFIG>
@@ -821,6 +865,7 @@ VectorRegister<CONFIG> BinNeg(VectorRegister<CONFIG> const & a)
 	{
 		rv[i] = ~a[i];
 	}
+	rv.SetScalar(a.IsScalar());
 	return rv;
 }
 
@@ -832,6 +877,7 @@ VectorRegister<CONFIG> BinAnd(VectorRegister<CONFIG> const & a, VectorRegister<C
 	{
 		rv[i] = a[i] & b[i];
 	}
+	rv.SetScalar(a.IsScalar());
 	return rv;
 }
 
@@ -843,6 +889,7 @@ VectorRegister<CONFIG> BinOr(VectorRegister<CONFIG> const & a, VectorRegister<CO
 	{
 		rv[i] = a[i] | b[i];
 	}
+	rv.SetScalar(a.IsScalar());
 	return rv;
 }
 
@@ -854,6 +901,7 @@ VectorRegister<CONFIG> BinXor(VectorRegister<CONFIG> const & a, VectorRegister<C
 	{
 		rv[i] = a[i] ^ b[i];
 	}
+	rv.SetScalar(a.IsScalar());
 	return rv;
 }
 
@@ -885,6 +933,7 @@ VectorRegister<CONFIG> Min(VectorRegister<CONFIG> const & a, VectorRegister<CONF
 			rv[i] = std::min(sa, sb);
 		}
 	}
+	rv.SetScalar(a.IsScalar() && b.IsScalar());
 	return rv;
 }
 
@@ -915,6 +964,7 @@ VectorRegister<CONFIG> Max(VectorRegister<CONFIG> const & a, VectorRegister<CONF
 			rv[i] = std::max(sa, sb);
 		}
 	}
+	rv.SetScalar(a.IsScalar() && b.IsScalar());
 	return rv;
 }
 
@@ -1008,6 +1058,7 @@ VectorRegister<CONFIG> Rcp(VectorRegister<CONFIG> const & a)
 		float r = 1.f / a.ReadFloat(i);
 		rv.WriteFloat(r, i);
 	}
+	rv.SetScalar(a.IsScalar());
 	return rv;
 }
 
@@ -1021,6 +1072,7 @@ VectorRegister<CONFIG> Rsq(VectorRegister<CONFIG> const & a)
 		float r = float(1. / sqrt(double(a.ReadFloat(i))));
 		rv.WriteFloat(r, i);
 	}
+	rv.SetScalar(a.IsScalar());
 	return rv;
 }
 
@@ -1033,6 +1085,7 @@ VectorRegister<CONFIG> Log2(VectorRegister<CONFIG> const & a)
 		float r = log2(a.ReadFloat(i));
 		rv.WriteFloat(r, i);
 	}
+	rv.SetScalar(a.IsScalar());
 	return rv;
 }
 
@@ -1046,6 +1099,7 @@ VectorRegister<CONFIG> RRExp2(VectorRegister<CONFIG> const & a)
 		float f = a.ReadFloat(i);
 		rv[i] = FPToFX(f);
 	}
+	rv.SetScalar(a.IsScalar());
 	return rv;
 }
 
@@ -1065,6 +1119,7 @@ VectorRegister<CONFIG> RRTrig(VectorRegister<CONFIG> const & a)
 		//f = f - floorf(f);
 		rv[i] = FPToFX(f);
 	}
+	rv.SetScalar(a.IsScalar());
 	return rv;
 }
 
@@ -1085,6 +1140,7 @@ VectorRegister<CONFIG> Exp2(VectorRegister<CONFIG> const & a)
 		rv.WriteFloat(float(r), i);
 		
 	}
+	rv.SetScalar(a.IsScalar());
 	return rv;
 }
 
@@ -1106,6 +1162,7 @@ VectorRegister<CONFIG> Sin(VectorRegister<CONFIG> const & a)
 		// In double precision
 		// (until sinpif and cospif functions are available...)
 	}
+	rv.SetScalar(a.IsScalar());
 	return rv;
 }
 
@@ -1124,6 +1181,7 @@ VectorRegister<CONFIG> Cos(VectorRegister<CONFIG> const & a)
 		}		
 		rv.WriteFloat(r, i);
 	}
+	rv.SetScalar(a.IsScalar());
 	return rv;
 }
 
@@ -1176,6 +1234,7 @@ VectorRegister<CONFIG> FSMin(VectorRegister<CONFIG> const & a, VectorRegister<CO
 		}
 		rv.WriteSimfloat(r, i);
 	}
+	rv.SetScalar(a.IsScalar() && b.IsScalar());
 	return rv;
 }
 
@@ -1199,6 +1258,7 @@ VectorRegister<CONFIG> FSMax(VectorRegister<CONFIG> const & a, VectorRegister<CO
 		}
 		rv.WriteSimfloat(r, i);
 	}
+	rv.SetScalar(a.IsScalar() && b.IsScalar());
 	return rv;
 }
 

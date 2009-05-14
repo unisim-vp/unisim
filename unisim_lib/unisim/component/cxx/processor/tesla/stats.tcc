@@ -73,17 +73,21 @@ void OperationStats<CONFIG>::RegRead(VectorRegister<CONFIG> const * regs, DataTy
 	if(CONFIG::STAT_SCALAR_REG) {
 		if(dt == DT_U16 || dt == DT_S16) {
 			scalarRegInputs += regs[0].CheckScalar16(false);
+			scalarRegInputsCaught += regs[0].IsScalar16(false);
 		}
 		else if(dt == DT_U32 || dt == DT_S32 || dt == DT_F32) {
 			scalarRegInputs += regs[0].CheckScalar();
+			scalarRegInputsCaught += regs[0].IsScalar();
 		}
 	}
 	if(CONFIG::STAT_STRIDED_REG) {
 		if(dt == DT_U16 || dt == DT_S16) {
 			stridedRegInputs += regs[0].CheckStrided16(false);
+			stridedRegInputsCaught += regs[0].IsStrided16(false);
 		}
 		else if(dt == DT_U32 || dt == DT_S32 || dt == DT_F32) {
 			stridedRegInputs += regs[0].CheckStrided();
+			stridedRegInputsCaught += regs[0].IsStrided();
 		}
 	}
 }
@@ -94,17 +98,21 @@ void OperationStats<CONFIG>::RegWrite(VectorRegister<CONFIG> const * regs, DataT
 	if(CONFIG::STAT_SCALAR_REG) {
 		if(dt == DT_U16 || dt == DT_S16) {
 			scalarRegOutputs += regs[0].CheckScalar16(false);
+			scalarRegOutputsCaught += regs[0].IsScalar16(false);
 		}
 		else if(dt == DT_U32 || dt == DT_S32 || dt == DT_F32) {
 			scalarRegOutputs += regs[0].CheckScalar();
+			scalarRegOutputsCaught += regs[0].IsScalar();
 		}
 	}
 	if(CONFIG::STAT_STRIDED_REG) {
 		if(dt == DT_U16 || dt == DT_S16) {
 			stridedRegOutputs += regs[0].CheckStrided16(false);
+			stridedRegOutputsCaught += regs[0].IsStrided16(false);
 		}
 		else if(dt == DT_U32 || dt == DT_S32 || dt == DT_F32) {
 			stridedRegOutputs += regs[0].CheckStrided();
+			stridedRegOutputsCaught += regs[0].IsStrided();
 		}
 	}
 }
@@ -136,10 +144,14 @@ void OperationStats<CONFIG>::DumpCSV(std::ostream & os) const
 	if(CONFIG::STAT_SCALAR_REG) {
 		os << "," << scalarRegInputs
 		   << "," << scalarRegOutputs;
+		os << "," << scalarRegInputsCaught
+		   << "," << scalarRegOutputsCaught;
 	}
 	if(CONFIG::STAT_STRIDED_REG) {
 		os << "," << stridedRegInputs
 		   << "," << stridedRegOutputs;
+		os << "," << stridedRegInputsCaught
+		   << "," << stridedRegOutputsCaught;
 	}
 	os << endl;
 }
@@ -162,10 +174,14 @@ void Stats<CONFIG>::DumpCSV(std::ostream & os) const
 	if(CONFIG::STAT_SCALAR_REG) {
 		os << ",\"Scalar inputs\""
 		   << ",\"Scalar outputs\"";
+		os << ",\"Scalar inputs caught\""
+		   << ",\"Scalar outputs caught\"";
 	}
 	if(CONFIG::STAT_STRIDED_REG) {
 		os << ",\"Strided inputs\""
 		   << ",\"Strided outputs\"";
+		os << ",\"Strided inputs caught\""
+		   << ",\"Strided outputs caught\"";
 	}
 	os << endl;
 

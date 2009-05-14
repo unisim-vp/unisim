@@ -64,12 +64,21 @@ private:
 	unsigned int stridedRegInputs;
 	unsigned int scalarRegOutputs;
 	unsigned int stridedRegOutputs;
+
+	unsigned int scalarRegInputsCaught;
+	unsigned int stridedRegInputsCaught;
+	unsigned int scalarRegOutputsCaught;
+	unsigned int stridedRegOutputsCaught;
 	
 public:
 	OperationStats() :
 		count(0), scalarcount(0), integer(false), fp(false), flow(false), memory(false),
-		shared(false), constant(false), scalarRegInputs(0), stridedRegInputs(0),
-		scalarRegOutputs(0), stridedRegOutputs(0) {
+		shared(false), constant(false),
+		scalarRegInputs(0), stridedRegInputs(0),
+		scalarRegOutputs(0), stridedRegOutputs(0),
+		scalarRegInputsCaught(0), stridedRegInputsCaught(0),
+		scalarRegOutputsCaught(0), stridedRegOutputsCaught(0)
+	{
 		std::fill(regnum, regnum + 4, -1);
 	}
 

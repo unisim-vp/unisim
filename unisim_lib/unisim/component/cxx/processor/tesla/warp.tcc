@@ -78,6 +78,10 @@ void Warp<CONFIG>::Reset(unsigned int wid, unsigned int bid, unsigned int gpr_nu
 		addr[i].Reset();
 	}
 	
+	cpu->GetGPR(wid, 0).SetStrided();
+	cpu->GetGPR(wid, 0).SetStrided16(false);
+	cpu->GetGPR(wid, 0).SetStrided16(true);
+	
 	state = Active;
 	if(cpu->trace_reset) {
 		cerr << " Warp " << id << " (" << bid << ", " << wid << "): reset\n";

@@ -111,6 +111,9 @@ void CPU<CONFIG>::GatherShared(VectorRegister<CONFIG> & output, uint32_t src, ui
 	VecAddr offset = EffectiveAddress(src, addr_lo, addr_hi, addr_imm, shift);
 
 	GatherShared(offset, output, mask, type);
+	if(((addr_hi << 2) | addr_lo) == 0) {
+		output.SetScalar();
+	}
 }
 
 // For current block

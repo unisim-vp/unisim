@@ -154,9 +154,26 @@ struct VectorRegister
 	reg_t v[WARP_SIZE];
 	bool scalar;
 	bool strided;
+	bool scalar16[2];
+	bool strided16[2];
 	
 	bool IsScalar() const { return scalar; }
 	bool IsStrided() const { return strided; }
+	bool IsScalar16(bool hi) const { return scalar16[hi]; }
+	bool IsStrided16(bool hi) const { return strided16[hi]; }
+
+	void SetScalar(bool s = true) {
+		if(CONFIG::STAT_SCALAR_REG) {
+			scalar = s;
+			if(s) {
+				scalar16[0] = scalar16[1] = true;
+				strided = strided16[0] = strided16[1] = true;
+			}
+		}
+	}
+	void SetStrided(bool s = true) { if(CONFIG::STAT_STRIDED_REG) strided = s; }
+	void SetScalar16(bool hi, bool s = true) { if(CONFIG::STAT_SCALAR_REG) scalar16[hi] = s; }
+	void SetStrided16(bool hi, bool s = true) { if(CONFIG::STAT_STRIDED_REG) strided16[hi] = s; }
 };
 
 template <class CONFIG>
@@ -189,6 +206,8 @@ struct VectorAddress
 
 	bool IsScalar() const { return scalar; }
 	bool IsStrided() const { return strided; }
+	void SetScalar(bool s = true) { if(CONFIG::STAT_SCALAR_REG) scalar = s; }
+	void SetStrided(bool s = true) { if(CONFIG::STAT_STRIDED_REG) strided = s; }
 };
 
 template<class CONFIG>

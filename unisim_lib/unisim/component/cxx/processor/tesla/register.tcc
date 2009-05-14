@@ -174,12 +174,16 @@ template <class CONFIG>
 VectorRegister<CONFIG>::VectorRegister() :
 	scalar(false), strided(false)
 {
+	scalar16[0] = scalar16[1] = false;
+	strided16[0] = strided16[1] = false;
 }
 
 template <class CONFIG>
 VectorRegister<CONFIG>::VectorRegister(uint32_t val) :
 	scalar(true), strided(true)
 {
+	scalar16[0] = scalar16[1] = true;
+	strided16[0] = strided16[1] = true;
 	std::fill(v, v + WARP_SIZE, val);
 }
 
@@ -192,6 +196,8 @@ VectorRegister<CONFIG>::VectorRegister(VectorAddress<CONFIG> const & addr)
 	}
 	scalar = addr.IsScalar();
 	strided = addr.IsStrided();
+	scalar16[0] = scalar16[1] = scalar;
+	strided16[0] = strided16[1] = false;
 }
 
 template <class CONFIG>
@@ -289,6 +295,8 @@ VectorRegister<CONFIG> VectorRegister<CONFIG>::Split(int hilo) const
 			vr[i] = (v[i] & 0x0000ffff);
 		}
 	}
+	vr.scalar = vr.scalar16[0] = scalar16[hilo];
+	vr.strided = vr.strided16[0] = strided16[hilo];
 	return vr;
 }
 
