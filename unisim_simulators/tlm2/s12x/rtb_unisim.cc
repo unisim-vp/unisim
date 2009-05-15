@@ -43,11 +43,16 @@
 #include <inttypes.h>
 #include <queue>
 
+#include <unisim/component/cxx/processor/hcs12x/config.hh>
+
 #include <unisim/component/tlm2/processor/hcs12x/tlm_types.hh>
 
 using namespace std;
 using namespace tlm;
 using namespace tlm_utils;
+
+using unisim::component::cxx::processor::hcs12x::CONFIG;
+
 using unisim::component::tlm2::processor::hcs12x::PWM_Payload;
 using unisim::component::tlm2::processor::hcs12x::ATD_Payload;
 using unisim::component::tlm2::processor::hcs12x::UNISIM_PWM_ProtocolTypes;
@@ -169,6 +174,11 @@ public:
 			payload = input_payload_queue.get_next_transaction();
 		} while(!payload);
 
+		if (CONFIG::DEBUG_ENABLE) {
+
+			cout << sc_time_stamp() << ":" << name() << "::PWM:: Receive " << payload->serialize() << endl;
+		}
+
 		for (int i=0; i<PWM_SIZE; i++) {
 			pwmValue[i] = payload->pwmChannel[i];
 		}
@@ -178,11 +188,17 @@ public:
 
 	void Output_ATD1(double anValue[ATD1_SIZE])
 	{
+
 		tlm_phase phase = BEGIN_REQ;
 		ATD_Payload<ATD1_SIZE> *payload = atd1_payload_fabric.allocate();
 
 		for (int i=0; i<ATD1_SIZE; i++) {
 			payload->anPort[i] = anValue[i];
+		}
+
+		if (CONFIG::DEBUG_ENABLE) {
+
+			cout << sc_time_stamp() << ":" << name() << "::ATD1::send " << payload->serialize() << endl;
 		}
 
 		sc_time local_time = quantumkeeper.get_local_time();
@@ -216,6 +232,11 @@ public:
 
 		for (int i=0; i<ATD0_SIZE; i++) {
 			payload->anPort[i] = anValue[i];
+		}
+
+		if (CONFIG::DEBUG_ENABLE) {
+
+			cout << sc_time_stamp() << ":" << name() << "::ATD0::send " << payload->serialize() << endl;
 		}
 
 		sc_time local_time = quantumkeeper.get_local_time();
@@ -253,7 +274,7 @@ public:
 
 		cin >> num_cycles;
 */
-		num_cycles = 2;
+		num_cycles = 1;
 		sc_time delay(num_cycles * cycle_time);
 
 		while(1)

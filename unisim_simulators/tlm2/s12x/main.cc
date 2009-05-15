@@ -263,7 +263,7 @@ int sc_main(int argc, char *argv[])
 	char *symbol_filename = NULL;
 
 //	double cpu_frequency = 40.0; // in Mhz
-	double cpu_frequency = 2.0; // in Mhz
+	double cpu_frequency = 4.0; // in Mhz
 
 	uint8_t cpu_clock_multiplier = 1;
 	uint8_t xgate_clock_multiplier = 2;
@@ -594,6 +594,10 @@ int sc_main(int argc, char *argv[])
 		cpu->memory_access_reporting_import >> inline_debugger->memory_access_reporting_export;
 		cpu->trap_reporting_import >> inline_debugger->trap_reporting_export;
 
+		pwm->trap_reporting_import >> inline_debugger->trap_reporting_export;
+		atd0->trap_reporting_import >> inline_debugger->trap_reporting_export;
+		atd1->trap_reporting_import >> inline_debugger->trap_reporting_export;
+
 		mmc->trap_reporting_import >> inline_debugger->trap_reporting_export;
 
 		inline_debugger->disasm_import >> cpu->disasm_export;
@@ -607,6 +611,10 @@ int sc_main(int argc, char *argv[])
 		cpu->debug_control_import >> gdb_server->debug_control_export;
 		cpu->memory_access_reporting_import >> gdb_server->memory_access_reporting_export;
 		cpu->trap_reporting_import >> gdb_server->trap_reporting_export;
+
+		pwm->trap_reporting_import >> gdb_server->trap_reporting_export;
+		atd0->trap_reporting_import >> gdb_server->trap_reporting_export;
+		atd1->trap_reporting_import >> gdb_server->trap_reporting_export;
 
 		mmc->trap_reporting_import >> gdb_server->trap_reporting_export;
 
@@ -716,6 +724,7 @@ int sc_main(int argc, char *argv[])
 
 	if (crg) { delete crg; crg = NULL; }
 	if (ect) { delete ect; ect = NULL; }
+	if (pwm) { delete pwm; pwm = NULL; }
 	if (atd1) { delete atd1; atd1 = NULL; }
 	if (atd0) { delete atd0; atd0 = NULL; }
 	if (s12xint) { delete s12xint; s12xint = NULL; }
