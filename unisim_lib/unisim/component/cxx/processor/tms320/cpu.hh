@@ -49,6 +49,7 @@
 #include "unisim/service/interfaces/ti_c_io.hh"
 #include "unisim/component/cxx/processor/tms320/isa_tms320.hh"
 #include "unisim/util/endian/endian.hh"
+#include "unisim/util/arithmetic/arithmetic.hh"
 #include <stdexcept>
 #include <iosfwd>
 
@@ -136,6 +137,10 @@ public:
 	inline uint32_t GetLo() const INLINE;
 	inline void SetHi(uint8_t value) INLINE;
 	inline uint8_t GetHi() const INLINE;
+	inline void SetFromSinglePresicionFPFormat(uint32_t value) INLINE;
+	inline void SetFromShortFPFormat(uint16_t value) INLINE;
+	inline void Float(uint32_t value) INLINE;
+	inline uint32_t Fix(bool& overflow) INLINE;
 	friend std::ostream& operator << (std::ostream& os, const Register& reg);
 
 	void SetLoWriteMask(uint32_t lo_write_mask);
@@ -163,6 +168,100 @@ inline void Register::SetHi(uint8_t value)
 inline uint8_t Register::GetHi() const
 {
 	return hi;
+}
+
+inline void Register::SetFromShortFPFormat(uint16_t value)
+{
+	lo = value & (uint32_t)0x00000fff;
+	lo = lo << 20;
+	hi = (uint8_t)(((int16_t)value >> 12) & (uint16_t)0x00ff);
+}
+
+inline void Register::SetFromSinglePresicionFPFormat(uint32_t value)
+{
+	lo = value & (uint32_t)0x00ffffff;
+	lo = lo << 8;
+	hi = (uint8_t)((value >> 24) & (uint32_t)0x00ff);
+}
+
+inline void Register::Float(uint32_t value)
+{
+	lo = value;
+	hi = 30;
+	unsigned int count_nsb = 0; // counter of non significative bits
+	bool neg = false;
+	if (lo)
+	{
+		if (lo >= (uint32_t)0x80000000)
+		{
+			neg = true;
+			count_nsb = unisim::util::arithmetic::CountLeadingZeros(~lo) - 1;
+		}
+		else
+		{
+			count_nsb = unisim::util::arithmetic::CountLeadingZeros(lo) - 1;
+		}
+		lo = lo << (count_nsb + 1);
+		hi = 30 - count_nsb;
+		if (neg)
+		{
+			lo = lo | (uint32_t)0x80000000;
+		}
+		else
+		{
+			lo = lo & ~(uint32_t)0x80000000;
+		}
+	}
+	else
+	{
+		hi = (uint8_t)0x080;
+	}
+	
+}
+
+inline uint32_t Register::Fix(bool& overflow)
+{
+	overflow = false;
+
+	// check for special cases of exponent to signal an overflow
+	if ((int8_t)hi > 30)
+	{
+		overflow = true;
+		// check if the sign is positive or negative
+		// if positive return the biggest positive number
+		// if negative return the biggest negative number
+		if (lo & (uint32_t)0x80000000) // the sign is negative
+		{
+			return (uint32_t)0x80000000;
+		}
+		else // the sign is positve
+		{
+			return ~(uint32_t)0x80000000;
+		}
+	}
+
+	// comput the shift value
+	uint32_t shift = 31 - (int8_t)hi;
+	// to avoid circular shift trunk it to 32
+	if (shift > 32) shift = 32;
+	
+	// get the mantissa in a 64 bit format 
+	// we need that because the mantissa once the sign is implied makes 33 bits
+	uint64_t val;
+	if (lo & (uint32_t)0x80000000)
+	{
+		val = (int64_t)-1;
+		val = val & (lo & ~(uint32_t)0x80000000);
+	}
+	else
+	{
+		val = lo;
+		val += (uint32_t)0x80000000;
+	}
+	
+	// perform the shift on the mantissa and return the lowest 32 bits
+	val = (int64_t)val >> shift;
+	return (uint32_t)val;
 }
 
 class RegisterDebugInterface : public unisim::util::debug::Register

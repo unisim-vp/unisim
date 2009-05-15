@@ -1995,19 +1995,140 @@ FIX_imm.disasm = {
 }
 
 FIX_reg.execute = {
-	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+	// Check that destination register is valid
+	if(unlikely(!cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read source operand
+	Register &src_reg = cpu.GetExtReg(src);
+
+	// Perform computation
+	bool overflow;
+	uint32_t result = src_reg.Fix(overflow);
+
+	// Set destination register
+	cpu.SetReg(dst, result);
+
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		result,
+		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+		M_ST_LV | M_ST_N | M_ST_Z | M_ST_V, // or mask
+		0, // carry
+		overflow
+	);
 }
 
 FIX_dir.execute = {
-	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+	// Check that destination register is valid
+	if(unlikely(!cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Compute the source operand effective address
+	typename CONFIG::address_t ea = cpu.ComputeDirEA(direct);
+
+	// Read the source operand from memory
+	uint32_t src_value = cpu.IntLoad(ea);
+
+	// Convert value into a float
+	Register tmp_reg;
+	tmp_reg.SetFromSinglePresicionFPFormat(src_value);
+
+	// Perform computation
+	bool overflow;
+	uint32_t result = tmp_reg.Fix(overflow);
+
+	// Set destination register
+	cpu.SetReg(dst, result);
+
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		result,
+		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+		M_ST_LV | M_ST_N | M_ST_Z | M_ST_V, // or mask
+		0, // carry
+		overflow
+	);
 }
 
 FIX_indir.execute = {
-	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+	// Check that destination register is valid
+	if(unlikely(!cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Check that indirect addressing mode is valid and compute the effective address of the source operand
+	typename CONFIG::address_t ea;        // The effective address
+	bool update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(ea, update_ar, output_ar, mod, ar, disp)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read the source operand from memory
+	uint32_t src_value = cpu.IntLoad(ea);
+
+	// Convert value into a float
+	Register tmp_reg;
+	tmp_reg.SetFromSinglePresicionFPFormat(src_value);
+
+	// Perform computation
+	bool overflow;
+	uint32_t result = tmp_reg.Fix(overflow);
+
+	// Set destination register
+	cpu.SetReg(dst, result);
+
+	// Update AR if necessary
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar, output_ar);
+	}
+
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		result,
+		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+		M_ST_LV | M_ST_N | M_ST_Z | M_ST_V, // or mask
+		0, // carry
+		overflow
+	);
 }
 
 FIX_imm.execute = {
-	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+	// Check that destination register is valid
+	if(unlikely(!cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Convert immediate into a float
+	Register tmp_reg;
+	tmp_reg.SetFromShortFPFormat(imm);
+
+	// Perform computation
+	bool overflow;
+	uint32_t result = tmp_reg.Fix(overflow);
+
+	// Set destination register
+	cpu.SetReg(dst, result);
+
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		result,
+		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+		M_ST_LV | M_ST_N | M_ST_Z | M_ST_V, // or mask
+		0, // carry
+		overflow
+	);
 }
 
 /* end of FIX (convert floating-point value to integer)
@@ -2021,7 +2142,7 @@ FIX_imm.execute = {
 op FLOAT_reg  (0b000[3]:0b001011[6]:0b00[2]:0b00[2]:dst[3]:0[11]:src[5])
 op FLOAT_dir  (0b000[3]:0b001011[6]:0b01[2]:0b00[2]:dst[3]:direct[16])
 op FLOAT_indir(0b000[3]:0b001011[6]:0b10[2]:0b00[2]:dst[3]:mod[5]:ar[3]:disp[8])
-op FLOAT_imm  (0b000[3]:0b001011[6]:0b11[2]:0b00[2]:dst[3]:imm[16])
+op FLOAT_imm  (0b000[3]:0b001011[6]:0b11[2]:0b00[2]:dst[3]:sext<32> imm[16])
 
 FLOAT_reg.disasm = {
 	const char *dst_name = REG_NAME[dst];
@@ -2076,61 +2197,103 @@ FLOAT_reg.execute = {
 	// Read source operand
 	uint32_t src_value = cpu.GetReg(src);
 
-	Register result;
-	result.SetLo(src_value);
-	result.SetHi(30);
-	unsigned int count_nsb = 0; // counter of non significative bits
-	bool neg = false;
-	if (result.GetLo())
-	{
-		if (result.GetLo() >= (uint32_t)0x80000000)
-		{
-			neg = true;
-			count_nsb = unisim::util::arithmetic::CountLeadingZeros(~result.GetLo()) - 1;
-		}
-		else
-		{
-			count_nsb = unisim::util::arithmetic::CountLeadingZeros(result.GetLo()) - 1;
-		}
-		result.SetLo(result.GetLo() << (count_nsb + 1));
-		result.SetHi(30 - count_nsb);
-		if (neg)
-		{
-			result.SetLo(result.GetLo() | (uint32_t)0x80000000);
-		}
-		else
-		{
-			result.SetLo(result.GetLo() & ~(uint32_t)0x80000000);
-		}
-	}
-	else
-	{
-		result.SetHi((uint8_t)0x080);
-	}
-	
-	// Write back result
+	// Read destination operand
 	Register& dst_reg = cpu.GetExtReg(dst);
-	dst_reg.SetHi(result.GetHi());
-	dst_reg.SetLo(result.GetLo());
+	// Perform the conversion
+	dst_reg.Float(src_value);
 
 	// Generate flags (into ST)
 	cpu.GenFlags(
-		result,
+		dst_reg,
 		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
 		M_ST_N | M_ST_Z // or mask
 	);
 }
 
 FLOAT_dir.execute = {
-	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+	// Check whether the source and destination registers are valid
+	if(unlikely(!cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Compute the source operand effective address
+	typename CONFIG::address_t ea = cpu.ComputeDirEA(direct);
+
+	// Read the source operand from memory
+	uint32_t src_value = cpu.IntLoad(ea);
+
+	// Read destination operand
+	Register& dst_reg = cpu.GetExtReg(dst);
+	// Perform the conversion
+	dst_reg.Float(src_value);
+
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		dst_reg,
+		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+		M_ST_N | M_ST_Z // or mask
+	);
 }
 
 FLOAT_indir.execute = {
-	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+	// Check that destination register is valid
+	if(unlikely(!cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Check that indirect addressing mode is valid and compute the effective address of the source operand
+	typename CONFIG::address_t ea;        // The effective address
+	bool update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(ea, update_ar, output_ar, mod, ar, disp)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read the source operand from memory
+	uint32_t src_value = cpu.IntLoad(ea);
+
+	// Read destination operand
+	Register& dst_reg = cpu.GetExtReg(dst);
+	// Perform the conversion
+	dst_reg.Float((uint32_t)src_value);
+
+	// Update AR if necessary
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar, output_ar);
+	}
+
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		dst_reg,
+		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+		M_ST_N | M_ST_Z // or mask
+	);
 }
 
 FLOAT_imm.execute = {
-	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+	// Check that source and destination registers are valid
+	if(unlikely(!cpu.IsExtReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read destination operand
+	Register& dst_reg = cpu.GetExtReg(dst);
+	// Perform the conversion
+	dst_reg.Float((uint32_t)imm);
+
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		dst_reg,
+		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+		M_ST_N | M_ST_Z // or mask
+	);
 }
 
 /* end of FLOAT (convert integer to floating-point value)
@@ -2327,6 +2490,8 @@ LSH_dir.execute = {
 }
 
 LSH_indir.execute = {
+	// TODO: check if AR needs to be updated
+	
 	// Check whether the source and destination registers are valid
 	if(unlikely(!cpu.HasReg(dst)))
 	{
