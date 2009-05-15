@@ -125,7 +125,9 @@ public:
     PWM(const sc_module_name& name, Object *parent = 0);
     ~PWM();
 
-    void Run();
+//    void Run();
+
+    void refresh_channel(uint8_t channel_number);
 
     void	start();
     bool	pwm7in_ChangeStatus(bool pwm7in_status);
@@ -172,9 +174,10 @@ public:
 private:
 
 	tlm_quantumkeeper quantumkeeper;
+	PayloadFabric<PWM_Payload<PWM_SIZE> > payload_fabric;
+
 	PayloadFabric<XINT_Payload> xint_payload_fabric;
 
-	PayloadFabric<PWM_Payload<PWM_SIZE> > payload_fabric;
 
 	clock_t	bus_cycle_time_int;
 	Parameter<clock_t>	param_bus_cycle_time_int;
@@ -186,7 +189,7 @@ private:
 	uint8_t interruptOffset;
 	Parameter<uint8_t> param_interruptOffset;
 
-	sc_event refresh_channel_event;
+//	sc_event refresh_channel_event;
 
 	sc_time clockVector[8];
 	sc_time clockA, clockB, clockSA, clockSB;

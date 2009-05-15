@@ -95,72 +95,74 @@ class ATD10B :
 {
 public:
 
+	//=========================================================
+	//=                REGISTERS OFFSETS                      =
+	//=========================================================
 
-		//=========================================================
-		//=                REGISTERS OFFSETS                      =
-		//=========================================================
+	enum REGS_OFFSETS {ATDCTL0, ATDCTL1, ATDCTL2, ATDCTL3, ATDCTL4, ATDCTL5,
+		ATDSTAT0, UNIMPL0007, ATDTEST0, ATDTEST1, ATDSTAT2, ATDSTAT1,
+		ATDDIEN0, ATDDIEN1, PORTAD0, PORTAD1, ATDDR0H};
 
-		enum REGS_OFFSETS {ATDCTL0, ATDCTL1, ATDCTL2, ATDCTL3, ATDCTL4, ATDCTL5,
-			ATDSTAT0, UNIMPL0007, ATDTEST0, ATDTEST1, ATDSTAT2, ATDSTAT1,
-			ATDDIEN0, ATDDIEN1, PORTAD0, PORTAD1, ATDDR0H};
+	tlm_target_socket<CONFIG::EXTERNAL2UNISIM_BUS_WIDTH, UNISIM_ATD_ProtocolTypes<ATD_SIZE> > anx_socket;
 
-		tlm_target_socket<CONFIG::EXTERNAL2UNISIM_BUS_WIDTH, UNISIM_ATD_ProtocolTypes<ATD_SIZE> > anx_socket;
+	tlm_initiator_socket<CONFIG::EXTERNAL2UNISIM_BUS_WIDTH, XINT_REQ_ProtocolTypes> interrupt_request;
 
-		tlm_initiator_socket<CONFIG::EXTERNAL2UNISIM_BUS_WIDTH, XINT_REQ_ProtocolTypes> interrupt_request;
+	// interface with bus
+	tlm_utils::simple_target_socket<ATD10B> slave_socket;
 
-		// interface with bus
-		tlm_utils::simple_target_socket<ATD10B> slave_socket;
+	ServiceExport<Memory<service_address_t> > memory_export;
+	ServiceImport<Memory<service_address_t> > memory_import;
 
-		ServiceExport<Memory<service_address_t> > memory_export;
-		ServiceImport<Memory<service_address_t> > memory_import;
+	ServiceImport<TrapReporting > trap_reporting_import;
 
-		ServiceImport<TrapReporting > trap_reporting_import;
+	ATD10B(const sc_module_name& name, Object *parent=0);
+	~ATD10B();
 
-		ATD10B(const sc_module_name& name, Object *parent=0);
-		~ATD10B();
+	void Process();
+	void RunScanMode();
+	void RunTriggerMode();
 
-		void RunScanMode();
-		void RunTriggerMode();
+	//================================================================
+	//=                    tlm2 Interface                            =
+	//================================================================
+	virtual void invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range);
+	virtual unsigned int transport_dbg(ATD_Payload<ATD_SIZE>& payload);
+	virtual tlm_sync_enum nb_transport_fw(ATD_Payload<ATD_SIZE>& payload, tlm_phase& phase, sc_core::sc_time& t);
 
-	    //================================================================
-	    //=                    tlm2 Interface                            =
-	    //================================================================
-	    virtual void invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range);
-		virtual unsigned int transport_dbg(ATD_Payload<ATD_SIZE>& payload);
-		virtual tlm_sync_enum nb_transport_fw(ATD_Payload<ATD_SIZE>& payload, tlm_phase& phase, sc_core::sc_time& t);
+	virtual void b_transport(ATD_Payload<ATD_SIZE>& payload, sc_core::sc_time& t);
+	virtual bool get_direct_mem_ptr(ATD_Payload<ATD_SIZE>& payload, tlm_dmi&  dmi_data);
 
-		virtual void b_transport(ATD_Payload<ATD_SIZE>& payload, sc_core::sc_time& t);
-		virtual bool get_direct_mem_ptr(ATD_Payload<ATD_SIZE>& payload, tlm_dmi&  dmi_data);
+	virtual tlm_sync_enum nb_transport_bw( XINT_Payload& payload, tlm_phase& phase, sc_core::sc_time& t);
 
-		virtual tlm_sync_enum nb_transport_bw( XINT_Payload& payload, tlm_phase& phase, sc_core::sc_time& t);
+	void read_write( tlm::tlm_generic_payload& trans, sc_time& delay );
 
-		void read_write( tlm::tlm_generic_payload& trans, sc_time& delay );
+	//=====================================================================
+	//=                  Client/Service setup methods                     =
+	//=====================================================================
 
-		//=====================================================================
-		//=                  Client/Service setup methods                     =
-		//=====================================================================
+	virtual bool Setup();
+	virtual void OnDisconnect();
+	virtual void Reset();
 
-		virtual bool Setup();
-		virtual void OnDisconnect();
-		virtual void Reset();
+	//=====================================================================
+	//=             memory interface methods                              =
+	//=====================================================================
 
-		//=====================================================================
-		//=             memory interface methods                              =
-		//=====================================================================
+	virtual bool ReadMemory(service_address_t addr, void *buffer, uint32_t size);
+	virtual bool WriteMemory(service_address_t addr, const void *buffer, uint32_t size);
 
-		virtual bool ReadMemory(service_address_t addr, void *buffer, uint32_t size);
-		virtual bool WriteMemory(service_address_t addr, const void *buffer, uint32_t size);
-
-		//=====================================================================
-		//=             registers setters and getters                         =
-		//=====================================================================
-	    void read(uint8_t offset, void *buffer);
-	    void write(uint8_t offset, const void *buffer);
+	//=====================================================================
+	//=             registers setters and getters                         =
+	//=====================================================================
+	void read(uint8_t offset, void *buffer);
+	void write(uint8_t offset, const void *buffer);
 
 protected:
 
 private:
 	tlm_quantumkeeper quantumkeeper;
+	peq_with_get<ATD_Payload<ATD_SIZE> > input_payload_queue;
+
 	PayloadFabric<XINT_Payload> xint_payload_fabric;
 
 	PayloadFabric<ATD_Payload<ATD_SIZE> > payload_fabric;
@@ -202,8 +204,9 @@ private:
 
 	bool conversionStop;
 	bool abortSequence;
+	uint8_t resultIndex;
 
-	void Input(ATD_Payload<ATD_SIZE>& payload, double anValue[ATD_SIZE]);
+	void Input(double anValue[ATD_SIZE]);
 	void abortConversion();
 	void abortAndStartNewConversion();
 	void sequenceComplete();

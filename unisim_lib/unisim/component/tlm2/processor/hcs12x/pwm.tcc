@@ -85,10 +85,10 @@ PWM<PWM_SIZE>::PWM(const sc_module_name& name, Object *parent) :
 	interrupt_request(*this);
 	slave_socket.register_b_transport(this, &PWM::read_write);
 
-	SC_HAS_PROCESS(PWM);
-
-	SC_THREAD(Run);
-	sensitive << refresh_channel_event;
+//	SC_HAS_PROCESS(PWM);
+//
+//	SC_THREAD(Run);
+//	sensitive << refresh_channel_event;
 
 }
 
@@ -100,14 +100,14 @@ PWM<PWM_SIZE>::~PWM() {
 template <uint8_t PWM_SIZE>
 void PWM<PWM_SIZE>::start() {
 	for (int i=0; i<PWM_SIZE; i++) {
-		channel[i]->wakeup();
+	//	channel[i]->wakeup();
 	}
 }
 
 /**
- * This function is called when PWN7IN (when channel[7].mode == INPUT) input pin is asserted
+ * This function is called when PWM7IN (when channel[7].mode == INPUT) input pin is asserted
  *
- * remark: PWN7IN is channel[7]
+ * remark: PWM7IN is channel[7]
  */
 template <uint8_t PWM_SIZE>
 bool PWM<PWM_SIZE>::pwm7in_ChangeStatus(bool pwm7in_status) {
@@ -251,25 +251,47 @@ tlm_sync_enum PWM<PWM_SIZE>::nb_transport_bw(PWM_Payload<PWM_SIZE>& payload, tlm
 	return TLM_ACCEPTED;
 }
 
+
+//template <uint8_t PWM_SIZE>
+//void PWM<PWM_SIZE>::Run() {
+//
+//	while (true) {
+//		/**
+//		 * setup a PWM_Payload to refresh output
+//		 */
+//		bool pwmChannelOutput[PWM_SIZE];
+//
+//		wait();
+//
+//		for (int i=0; i < PWM_SIZE; i++) {
+//			pwmChannelOutput[i] = channel[i]->getOutput();
+//		}
+//
+//		quantumkeeper.inc(bus_cycle_time); // TODO: has to take in account the DTY and PERIOD and not the bus_cycle_time
+//		if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
+//
+//		refreshOutput(pwmChannelOutput);
+//
+//	}
+//}
+
+
 template <uint8_t PWM_SIZE>
-void PWM<PWM_SIZE>::Run() {
+void PWM<PWM_SIZE>::refresh_channel(uint8_t channel_number) {
 
-	while (true) {
-		/**
-		 * setup a PWM_Payload to refresh output
-		 */
-		bool pwmChannelOutput[PWM_SIZE];
+	bool pwmChannelOutput[PWM_SIZE];
 
-		wait();
-
-		for (int i=0; i < PWM_SIZE; i++) {
-			pwmChannelOutput[i] = channel[i]->getOutput();
-		}
-
-		refreshOutput(pwmChannelOutput);
-
+	for (int i=0; i < PWM_SIZE; i++) {
+		pwmChannelOutput[i] = channel[i]->getOutput();
 	}
+
+	quantumkeeper.inc(bus_cycle_time); // TODO: has to take in account the DTY and PERIOD and not the bus_cycle_time
+	if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
+
+	refreshOutput(pwmChannelOutput);
+
 }
+
 
 template <uint8_t PWM_SIZE>
 void PWM<PWM_SIZE>::refreshOutput(bool pwmValue[PWM_SIZE])
@@ -281,15 +303,15 @@ void PWM<PWM_SIZE>::refreshOutput(bool pwmValue[PWM_SIZE])
 		payload->pwmChannel[i] = pwmValue[i];
 	}
 
-	sc_time local_time = sc_time_stamp();
+	sc_time local_time = quantumkeeper.get_local_time();
 
 	if (CONFIG::DEBUG_ENABLE) {
-		/*
-		if (trap_reporting_import) {
-			trap_reporting_import->ReportTrap();
-		}
-		*/
-		cout << sc_time_stamp() << ":" << name() << ":: send " << payload->serialize() << endl;
+
+//		if (trap_reporting_import) {
+//			trap_reporting_import->ReportTrap();
+//		}
+
+		cout << name() << ":: send " << payload->serialize() << " - " << sc_time_stamp() << endl;
 	}
 
 
@@ -299,22 +321,20 @@ void PWM<PWM_SIZE>::refreshOutput(bool pwmValue[PWM_SIZE])
 	{
 		case TLM_ACCEPTED:
 			// neither payload, nor phase and local_time have been modified by the callee
+			quantumkeeper.sync(); // synchronize to leave control to the callee
 			break;
 		case TLM_UPDATED:
 			// the callee may have modified 'payload', 'phase' and 'local_time'
+			quantumkeeper.set(local_time); // increase the time
+			if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
+
 			break;
 		case TLM_COMPLETED:
 			// the callee may have modified 'payload', and 'local_time' ('phase' can be ignored)
+			quantumkeeper.set(local_time); // increase the time
+			if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
 			break;
 	}
-
-	/*
-	 * Because we are using a non-blocking prototol,
-	 * the payload is released by the slave/receiver.
-	 * Hence do not call payload release method
-	 * <!-- payload->release(); -->
-	 */
-
 
 }
 
@@ -739,7 +759,7 @@ void PWM<PWM_SIZE>::Channel_t::Run() {
 
 	sc_time clk;
 
-	uint8_t bit2Mask = 0x02;
+	uint8_t bit1Mask = 0x02;
 
 
 	uint8_t ctl_register;
@@ -749,7 +769,7 @@ void PWM<PWM_SIZE>::Channel_t::Run() {
 	 * bit7: CON67, bit6: CON45, bit5: CON23, bit4: CON01
 	 * when
 	 *  - CONxy=1 then channel x high order and channel y low order
-	 *  - only channel y registers and output are used to control the behavior of the concatenated channel
+	 *  - only channel Y registers and output are used to control the behavior of the concatenated channel
 	 */
 
 	bool isEnable = false;
@@ -776,14 +796,14 @@ void PWM<PWM_SIZE>::Channel_t::Run() {
 	 	 *     channel 2, 3, 6, 7 then clock B or SB
 		 */
 		if ((pwmParent->pwmclk_register & channelMask)  != 0) {
-			if ((channel_number & bit2Mask) != 0) {
+			if ((channel_number & bit1Mask) != 0) {
 				clk = pwmParent->getClockB();
 			} else {
 				clk = pwmParent->getClockA();
 			}
 
 		} else {
-			if ((channel_number & bit2Mask) != 0) {
+			if ((channel_number & bit1Mask) != 0) {
 				clk = pwmParent->getClockSB();
 			} else {
 				clk = pwmParent->getClockSA();
@@ -811,31 +831,50 @@ template <class T> void PWM<PWM_SIZE>::Channel_t::checkChangeStateAndWait(const 
 //	T cnt = *((T *) pwmcnt_register_ptr);
 	bool isPolarityHigh = ((pwmParent->pwmpol_register & channelMask) != 0);
 
-	// PWM Boundary Cases
-	if (((dty == 0x00) && (period > 0x00) && !isPolarityHigh) ||
-			((period == 0x00) && isPolarityHigh) ||
-			((dty >= period) && isPolarityHigh))
-	{
-		output = true;
-	} else if (((dty == 0x00) && (period > 0x00) && isPolarityHigh) ||
-			((period == 0x00) && !isPolarityHigh) ||
-			((dty >= period) && !isPolarityHigh))
-	{
-		output = false;
-	} else if (isPolarityHigh) {
-		output = true;
-	} else {
-		output = false;
+	if (CONFIG::DEBUG_ENABLE) {
+		std::cout << "Info: " << name() << ": DTY => " << sc_time(dty, SC_NS) << "  Period => " << sc_time(period, SC_NS) << "  count => " << sc_time(*((T *) pwmcnt_register_ptr), SC_NS) << std::endl;
 	}
 
-	pwmParent->refresh_channel_event.notify();
+
+	// Handle PWM Boundary Cases
 
 	if (period == 0x00) 	// Counter = 0x00 and does not count
 	{
 		setPwmcnt_register(0);
+		if (isPolarityHigh) {
+				output = true;
+		} else {
+				output = false;
+		}
+//		pwmParent->refresh_channel_event.notify();
+		pwmParent->refresh_channel(channel_number);
+
 		wait(wakeup_event);
 		return;
 	}
+
+	if (((dty == 0x00) && (period > 0x00) && !isPolarityHigh) ||
+			((dty >= period) && isPolarityHigh))
+	{
+		output = true;
+//		pwmParent->refresh_channel_event.notify();
+		pwmParent->refresh_channel(channel_number);
+
+		wait(wakeup_event);
+		return;
+
+	} else if (((dty == 0x00) && (period > 0x00) && isPolarityHigh) ||
+			((dty >= period) && !isPolarityHigh))
+	{
+		output = false;
+//		pwmParent->refresh_channel_event.notify();
+		pwmParent->refresh_channel(channel_number);
+
+		wait(wakeup_event);
+		return;
+	}
+
+	// Handle PWM Normal Cases
 
 	// Check alignment and compute the current period
 	isCenterAligned = ((pwmParent->pwmcae_register & channelMask) != 0);  // is Center Aligned ?
@@ -844,14 +883,11 @@ template <class T> void PWM<PWM_SIZE>::Channel_t::checkChangeStateAndWait(const 
 
 	*((T *) pwmcnt_register_ptr) = dty;
 
-	if (CONFIG::DEBUG_ENABLE) {
-		std::cerr << "Info: " << name() << ": DTY => " << sc_time(dty, SC_NS) << "  Period => " << sc_time(period, SC_NS) << "  count => " << sc_time(*((T *) pwmcnt_register_ptr), SC_NS) << std::endl;
-	}
-
 	wait(dty*clk);
 
-	output = ~output;
-	pwmParent->refresh_channel_event.notify();
+	output = !output;
+//	pwmParent->refresh_channel_event.notify();
+	pwmParent->refresh_channel(channel_number);
 
 	if (*((T *) pwmcnt_register_ptr) == dty) // The counter can be reset by software during wait
 	{
@@ -869,8 +905,9 @@ template <class T> void PWM<PWM_SIZE>::Channel_t::checkChangeStateAndWait(const 
 				wait(toPeriod*clk);
 			}
 
-			output = ~output;
-			pwmParent->refresh_channel_event.notify();
+			output = !output;
+//			pwmParent->refresh_channel_event.notify();
+			pwmParent->refresh_channel(channel_number);
 
 			if (isCenterAligned) {
 

@@ -54,6 +54,8 @@ ATD10B<ATD_SIZE>::ATD10B(const sc_module_name& name, Object *parent) :
 	anx_socket("anx_socket"),
 	slave_socket("slave_socket"),
 
+	input_payload_queue("input_payload_queue"),
+
 	memory_export("memory_export", this),
 	memory_import("memory_import", this),
 	trap_reporting_import("trap_reproting_import", this),
@@ -75,7 +77,8 @@ ATD10B<ATD_SIZE>::ATD10B(const sc_module_name& name, Object *parent) :
 	hasExternalTrigger(false),
 	param_hasExternalTrigger("Has-External-Trigger", this, hasExternalTrigger),
 	conversionStop(false),
-	abortSequence(false)
+	abortSequence(false),
+	resultIndex(0)
 
 {
 
@@ -85,8 +88,7 @@ ATD10B<ATD_SIZE>::ATD10B(const sc_module_name& name, Object *parent) :
 
 	SC_HAS_PROCESS(ATD10B);
 
-	SC_THREAD(RunScanMode);
-	sensitive << scan_event;
+	SC_THREAD(Process);
 
 	// TODO: Scan External Trigger Channels. I think to use ANx Channels !!!
 	SC_THREAD(RunTriggerMode);
@@ -116,7 +118,7 @@ unsigned int ATD10B<ATD_SIZE>::transport_dbg(ATD_Payload<ATD_SIZE>& payload)
 
 template <uint8_t ATD_SIZE>
 void ATD10B<ATD_SIZE>::b_transport(ATD_Payload<ATD_SIZE>& payload, sc_core::sc_time& t) {
-
+	input_payload_queue.notify(payload, t);
 }
 
 template <uint8_t ATD_SIZE>
@@ -138,8 +140,7 @@ tlm_sync_enum ATD10B<ATD_SIZE>::nb_transport_fw(ATD_Payload<ATD_SIZE>& payload, 
 		case BEGIN_REQ:
 			// accepts analog signals modeled by payload
 			phase = END_REQ; // update the phase
-
-			Input(payload, analog_signal);
+			input_payload_queue.notify(payload, t); // queue the payload and the associative time
 
 			return TLM_UPDATED;
 		case END_REQ:
@@ -167,36 +168,62 @@ tlm_sync_enum ATD10B<ATD_SIZE>::nb_transport_fw(ATD_Payload<ATD_SIZE>& payload, 
 	return TLM_ACCEPTED;
 }
 
+template <uint8_t ATD_SIZE>
+void ATD10B<ATD_SIZE>::Process()
+{
+	while(1)
+	{
+		Input(analog_signal);
+
+		// TODO: see in details how to use quantumkeeper in the case of ATD
+
+		quantumkeeper.inc(bus_cycle_time); // Processing the input takes one cycle
+		if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
+
+	}
+}
+
 /**
  * Store external analog signals as capacitor charge
  *  1/ Is Multi-Channel or Single-Channel scan
  *  2/ The analog input multiplexer connects one of the external analog input channels to the sample and hold machine
  */
+
 template <uint8_t ATD_SIZE>
-void ATD10B<ATD_SIZE>::Input(ATD_Payload<ATD_SIZE>& payload, double anValue[ATD_SIZE])
+void ATD10B<ATD_SIZE>::Input(double anValue[ATD_SIZE])
 {
+	ATD_Payload<ATD_SIZE> *payload;
+
+	do
+	{
+		quantumkeeper.sync();
+		wait(input_payload_queue.get_event());
+
+		payload = input_payload_queue.get_next_transaction();
+	} while(!payload);
+
 	if (CONFIG::DEBUG_ENABLE) {
 /*
 		if (trap_reporting_import) {
 			trap_reporting_import->ReportTrap();
 		}
 		*/
-		cout << sc_time_stamp() << ":" << name() << " : receive " << payload.serialize() << endl;
+		cout << name() << ":: receive " << payload->serialize() << " - " << sc_time_stamp() << endl;
 	}
 
 	if ((atdctl2_register & 0x80) != 0) // is ATD power ON (enabled)
 	{
 		for (int i=0; i<ATD_SIZE; i++) {
-			anValue[i] = payload.anPort[i];
+			anValue[i] = payload->anPort[i];
 		}
 
-		scan_event.notify();
+		RunScanMode();
 
 	} else {
 		cerr << "Warning: " << name() << " => The ATD is OFF. You have to set ATDCTL2::ADPU bit before.\n";
 	}
 
-	payload.release();
+	payload->release();
 
 }
 
@@ -253,127 +280,119 @@ void ATD10B<ATD_SIZE>::RunTriggerMode() {
 template <uint8_t ATD_SIZE>
 void ATD10B<ATD_SIZE>::RunScanMode()
 {
-	uint8_t resultIndex = 0;
 
-	while(1)
+	// - check ATDCTL0::wrap bits to identify the channel to wrap around
+	uint8_t wrapArroundChannel = atdctl0_register & 0x0F;
+	if (wrapArroundChannel == 0) {
+		if (CONFIG::DEBUG_ENABLE) {
+			cerr << "Warning: " << name() << " => WrapArroundChannel=0 is a reserved value. The wrap channel is assumed " << ATD_SIZE-1 << ".\n";
+		}
+
+		wrapArroundChannel = ATD_SIZE-1;
+	}
+
+	uint8_t sequenceLength = 1;
+	// - check ATDCTL3 to determine the sequence length and storage mode of the result
+	sequenceLength = (atdctl3_register & 0x78) >> 3; // get S8C S4C S2C S1C
+	if (sequenceLength == 0) {
+		sequenceLength = 16;
+	}
+
+	uint8_t currentChannel = atdctl5_register & 0x0F; // get CD/CC/CB/CA;
+	conversionStop = false;
+
+	do
 	{
 
-		wait();
-
-		// - check ATDCTL0::wrap bits to identify the channel to wrap around
-		uint8_t wrapArroundChannel = atdctl0_register & 0x0F;
-		if (wrapArroundChannel == 0) {
-			if (CONFIG::DEBUG_ENABLE) {
-				cerr << "Warning: " << name() << " => WrapArroundChannel=0 is a reserved value. The wrap channel is assumed " << ATD_SIZE-1 << ".\n";
-			}
-
-			wrapArroundChannel = ATD_SIZE-1;
+		/**
+		 *  check is FIFO mode
+		 *  if (fifo == 0) reset the result index at the start of a sequence
+		 *  else the result index will wrap when it rich the last result register
+		 */
+		if ((atdctl3_register & 0x04) == 0) {
+			resultIndex = 0;
 		}
 
-		uint8_t sequenceLength = 1;
-		// - check ATDCTL3 to determine the sequence length and storage mode of the result
-		sequenceLength = (atdctl3_register & 0x78) >> 3; // get S8C S4C S2C S1C
-		if (sequenceLength == 0) {
-			sequenceLength = 16;
-		}
+		// Store the result of conversion
+		uint8_t sequenceIndex = 0;
+		abortSequence = false;
 
-		uint8_t currentChannel = atdctl5_register & 0x0F; // get CD/CC/CB/CA;
-		conversionStop = false;
+		while ((sequenceIndex < sequenceLength) /* && !abortSequence */ ) {
 
-		do
-		{
+			// set the conversion counter ATDSTAT0::CC (result register which will receive the current conversion)
+			atdstat0_register = (atdstat0_register & 0xF0) | (resultIndex & 0x0F);
 
 			/**
-			 *  check is FIFO mode
-			 *  if (fifo == 0) reset the result index at the start of a sequence
-			 *  else the result index will wrap when it rich the last result register
+			 * - scan current channel,
+			 * - Find referential potential,
+			 * - check sign and justification,
+			 * - and store in atddrhl_register[i] register
 			 */
-			if ((atdctl3_register & 0x04) == 0) {
-				resultIndex = 0;
+			double anSignal;
+			const uint8_t scMask = 0x01;
+			// is Special Channel Select enabled ?
+			if ((atdtest1_register & scMask) != 0) {
+				switch (currentChannel) {
+					case 4: anSignal = vrh; break;
+					case 5: anSignal = vrl; break;
+					case 6: anSignal = (vrh + vrl)/2; break;
+					default:
+						if (CONFIG::DEBUG_ENABLE) {
+							cerr << "Warning: " << name() << " => Reserved value of CD/CC/CB/CA.\n";
+						}
+				}
+			} else {
+				anSignal = analog_signal[currentChannel];
+			}
+			uint16_t digitalToken = getDigitalToken(anSignal);
+
+			uint16_t atdstat21 = ((uint16_t) atdstat2_register << 8) | atdstat1_register;
+			uint16_t ccfMask = 0x01;
+			// is Result registers out of sync ?
+			if ((atdstat21  & (ccfMask << resultIndex)) != 0) {
+
+				// Set the ATDSTAT0::FIFOR FIFO Over Run Flag
+				atdstat0_register = atdstat0_register | 0x10;
 			}
 
-			// Store the result of conversion
-			uint8_t sequenceIndex = 0;
-			abortSequence = false;
+			atddrhl_register[resultIndex] = digitalToken;
+			// set the ATDSTAT1 & ATDSTAT2 CCFx flags
+			if (resultIndex < 8) {
+				atdstat1_register = atdstat1_register | (0x01 < resultIndex);
+			} else {
+				atdstat2_register = atdstat2_register | (0x01 < (resultIndex-8));
+			}
 
-			while ((sequenceIndex < sequenceLength) /* && !abortSequence */ ) {
-
-				// set the conversion counter ATDSTAT0::CC (result register which will receive the current conversion)
-				atdstat0_register = (atdstat0_register & 0xF0) | (resultIndex & 0x0F);
-
+			// - if Multi-channel then select next channel else keep the same channel
+			if ((atdctl5_register & 0x10) != 0) {
 				/**
-				 * - scan current channel,
-				 * - Find referential potential,
-				 * - check sign and justification,
-				 * - and store in atddrhl_register[i] register
+				 * - identify nextChannel
+				 * - take in account the wrap channel
 				 */
-				double anSignal;
-				const uint8_t scMask = 0x01;
-				// is Special Channel Select enabled ?
-				if ((atdtest1_register & scMask) != 0) {
-					switch (currentChannel) {
-						case 4: anSignal = vrh; break;
-						case 5: anSignal = vrl; break;
-						case 6: anSignal = (vrh + vrl)/2; break;
-						default:
-							if (CONFIG::DEBUG_ENABLE) {
-								cerr << "Warning: " << name() << " => Reserved value of CD/CC/CB/CA.\n";
-							}
-					}
+				if (currentChannel == wrapArroundChannel) {
+					currentChannel = 0;
 				} else {
-					anSignal = analog_signal[currentChannel];
+					currentChannel = (currentChannel+1) % ATD_SIZE;
 				}
-				uint16_t digitalToken = getDigitalToken(anSignal);
-
-				uint16_t atdstat21 = ((uint16_t) atdstat2_register << 8) | atdstat1_register;
-				uint16_t ccfMask = 0x01;
-				// is Result registers out of sync ?
-				if ((atdstat21  & (ccfMask << resultIndex)) != 0) {
-
-					// Set the ATDSTAT0::FIFOR FIFO Over Run Flag
-					atdstat0_register = atdstat0_register | 0x10;
-				}
-
-				atddrhl_register[resultIndex] = digitalToken;
-				// set the ATDSTAT1 & ATDSTAT2 CCFx flags
-				if (resultIndex < 8) {
-					atdstat1_register = atdstat1_register | (0x01 < resultIndex);
-				} else {
-					atdstat2_register = atdstat2_register | (0x01 < (resultIndex-8));
-				}
-
-				// - if Multi-channel then select next channel else keep the same channel
-				if ((atdctl5_register & 0x10) != 0) {
-					/**
-					 * - identify nextChannel
-					 * - take in account the wrap channel
-					 */
-					if (currentChannel == wrapArroundChannel) {
-						currentChannel = 0;
-					} else {
-						currentChannel = (currentChannel+1) % ATD_SIZE;
-					}
-				}
-
-				resultIndex = (resultIndex + 1) % ATD_SIZE;
-				sequenceIndex++;
 			}
 
-			wait((first_phase_clock + second_phase_clock) * sequenceLength);
+			resultIndex = (resultIndex + 1) % ATD_SIZE;
+			sequenceIndex++;
+		}
 
-			// The abordSequence flag can be set during the wait state by writing to any control register
-			if (!abortSequence) {
-				sequenceComplete();
-			}
+		wait((first_phase_clock + second_phase_clock) * sequenceLength);
 
-			/* **
-			 *  - The conversionStop flag can be set during the wait state by writing to any control register [1-4]
-			 *  - writing to control register 5 abort only the current sequence scan but restart a new one
-			 */
-			// identify scan mode SingleConversion/ContinuousConversion
-		} while ((((atdctl5_register & 0x20) != 0) && ((atdctl2_register & 0x04) == 0)) && !conversionStop);
+		// The abordSequence flag can be set during the wait state by writing to any control register
+		if (!abortSequence) {
+			sequenceComplete();
+		}
 
-	}
+		/* **
+		 *  - The conversionStop flag can be set during the wait state by writing to any control register [1-4]
+		 *  - writing to control register 5 abort only the current sequence scan but restart a new one
+		 */
+		// identify scan mode SingleConversion/ContinuousConversion
+	} while ((((atdctl5_register & 0x20) != 0) && ((atdctl2_register & 0x04) == 0)) && !conversionStop);
 
 }
 
