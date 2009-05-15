@@ -95,7 +95,7 @@ public:
 		atd0_master_sock("atd0_master_sock"),
 		slave_sock("slave_sock"),
 		input_payload_queue("input_payload_queue"),
-		cycle_time(bus_cycle_time, SC_NS)
+		cycle_time(bus_cycle_time, SC_PS)
 	{
 		atd1_master_sock(*this);
 		atd0_master_sock(*this);
