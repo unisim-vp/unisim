@@ -67,6 +67,9 @@ PWM<PWM_SIZE>::PWM(const sc_module_name& name, Object *parent) :
 
 {
 	uint8_t channel_number;
+
+	char channelName[20];
+
 	for (int i=0; i<PWM_SIZE; i++) {
 #if BYTE_ORDER == BIG_ENDIAN
 		channel_number = i;
@@ -74,7 +77,9 @@ PWM<PWM_SIZE>::PWM(const sc_module_name& name, Object *parent) :
 		channel_number =  PWM_SIZE-i-1;
 #endif
 
-		channel[channel_number] = new Channel_t("channel", this, channel_number, &pwmcnt16_register[i], &pwmper16_register[i], &pwmdty16_register_value[i]);
+		sprintf (channelName, "channel_%d", channel_number);
+
+		channel[channel_number] = new Channel_t(channelName, this, channel_number, &pwmcnt16_register[i], &pwmper16_register[i], &pwmdty16_register_value[i]);
 
 	}
 
@@ -84,11 +89,6 @@ PWM<PWM_SIZE>::PWM(const sc_module_name& name, Object *parent) :
 	master_sock(*this);
 	interrupt_request(*this);
 	slave_socket.register_b_transport(this, &PWM::read_write);
-
-//	SC_HAS_PROCESS(PWM);
-//
-//	SC_THREAD(Run);
-//	sensitive << refresh_channel_event;
 
 }
 
@@ -100,7 +100,7 @@ PWM<PWM_SIZE>::~PWM() {
 template <uint8_t PWM_SIZE>
 void PWM<PWM_SIZE>::start() {
 	for (int i=0; i<PWM_SIZE; i++) {
-	//	channel[i]->wakeup();
+		channel[i]->wakeup();
 	}
 }
 
@@ -252,30 +252,6 @@ tlm_sync_enum PWM<PWM_SIZE>::nb_transport_bw(PWM_Payload<PWM_SIZE>& payload, tlm
 }
 
 
-//template <uint8_t PWM_SIZE>
-//void PWM<PWM_SIZE>::Run() {
-//
-//	while (true) {
-//		/**
-//		 * setup a PWM_Payload to refresh output
-//		 */
-//		bool pwmChannelOutput[PWM_SIZE];
-//
-//		wait();
-//
-//		for (int i=0; i < PWM_SIZE; i++) {
-//			pwmChannelOutput[i] = channel[i]->getOutput();
-//		}
-//
-//		quantumkeeper.inc(bus_cycle_time); // TODO: has to take in account the DTY and PERIOD and not the bus_cycle_time
-//		if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
-//
-//		refreshOutput(pwmChannelOutput);
-//
-//	}
-//}
-
-
 template <uint8_t PWM_SIZE>
 void PWM<PWM_SIZE>::refresh_channel(uint8_t channel_number) {
 
@@ -284,9 +260,6 @@ void PWM<PWM_SIZE>::refresh_channel(uint8_t channel_number) {
 	for (int i=0; i < PWM_SIZE; i++) {
 		pwmChannelOutput[i] = channel[i]->getOutput();
 	}
-
-	quantumkeeper.inc(bus_cycle_time); // TODO: has to take in account the DTY and PERIOD and not the bus_cycle_time
-	if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
 
 	refreshOutput(pwmChannelOutput);
 
@@ -302,6 +275,9 @@ void PWM<PWM_SIZE>::refreshOutput(bool pwmValue[PWM_SIZE])
 	for (int i=0; i<PWM_SIZE; i++) {
 		payload->pwmChannel[i] = pwmValue[i];
 	}
+
+	quantumkeeper.inc(bus_cycle_time); // TODO: has to take in account the DTY and PERIOD and not the bus_cycle_time
+	if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
 
 	sc_time local_time = quantumkeeper.get_local_time();
 
@@ -831,11 +807,6 @@ template <class T> void PWM<PWM_SIZE>::Channel_t::checkChangeStateAndWait(const 
 //	T cnt = *((T *) pwmcnt_register_ptr);
 	bool isPolarityHigh = ((pwmParent->pwmpol_register & channelMask) != 0);
 
-	if (CONFIG::DEBUG_ENABLE) {
-		std::cout << "Info: " << name() << ": DTY => " << sc_time(dty, SC_NS) << "  Period => " << sc_time(period, SC_NS) << "  count => " << sc_time(*((T *) pwmcnt_register_ptr), SC_NS) << std::endl;
-	}
-
-
 	// Handle PWM Boundary Cases
 
 	if (period == 0x00) 	// Counter = 0x00 and does not count
@@ -846,7 +817,7 @@ template <class T> void PWM<PWM_SIZE>::Channel_t::checkChangeStateAndWait(const 
 		} else {
 				output = false;
 		}
-//		pwmParent->refresh_channel_event.notify();
+
 		pwmParent->refresh_channel(channel_number);
 
 		wait(wakeup_event);
@@ -857,7 +828,7 @@ template <class T> void PWM<PWM_SIZE>::Channel_t::checkChangeStateAndWait(const 
 			((dty >= period) && isPolarityHigh))
 	{
 		output = true;
-//		pwmParent->refresh_channel_event.notify();
+
 		pwmParent->refresh_channel(channel_number);
 
 		wait(wakeup_event);
@@ -867,7 +838,7 @@ template <class T> void PWM<PWM_SIZE>::Channel_t::checkChangeStateAndWait(const 
 			((dty >= period) && !isPolarityHigh))
 	{
 		output = false;
-//		pwmParent->refresh_channel_event.notify();
+
 		pwmParent->refresh_channel(channel_number);
 
 		wait(wakeup_event);
@@ -886,7 +857,7 @@ template <class T> void PWM<PWM_SIZE>::Channel_t::checkChangeStateAndWait(const 
 	wait(dty*clk);
 
 	output = !output;
-//	pwmParent->refresh_channel_event.notify();
+
 	pwmParent->refresh_channel(channel_number);
 
 	if (*((T *) pwmcnt_register_ptr) == dty) // The counter can be reset by software during wait
@@ -906,7 +877,7 @@ template <class T> void PWM<PWM_SIZE>::Channel_t::checkChangeStateAndWait(const 
 			}
 
 			output = !output;
-//			pwmParent->refresh_channel_event.notify();
+
 			pwmParent->refresh_channel(channel_number);
 
 			if (isCenterAligned) {

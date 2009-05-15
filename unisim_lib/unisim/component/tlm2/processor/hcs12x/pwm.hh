@@ -125,7 +125,6 @@ public:
     PWM(const sc_module_name& name, Object *parent = 0);
     ~PWM();
 
-//    void Run();
 
     void refresh_channel(uint8_t channel_number);
 
@@ -188,8 +187,6 @@ private:
 
 	uint8_t interruptOffset;
 	Parameter<uint8_t> param_interruptOffset;
-
-//	sc_event refresh_channel_event;
 
 	sc_time clockVector[8];
 	sc_time clockA, clockB, clockSA, clockSB;
