@@ -117,6 +117,48 @@ void OperationStats<CONFIG>::RegWrite(VectorRegister<CONFIG> const * regs, DataT
 	}
 }
 
+#if defined(__GNUC__) && defined(__i386__)
+inline uint64_t rdtsc()
+{
+	uint64_t clk;
+	__asm__ volatile ("rdtsc" : "=A" (clk));
+	return clk;
+}
+#elif defined(__GNUC__) && defined(__x86_64__)
+
+inline uint64_t rdtsc()
+{
+	uint32_t hi, lo;
+	__asm__ volatile ("rdtsc" : "=a"(lo), "=d"(hi));
+	return lo | ((uint64_t)hi << 32);
+}
+
+#else
+#warning "No TSC on this platform"
+inline uint64_t rdtsc()
+{
+	return 0ULL;
+}
+#endif
+
+
+template<class CONFIG>
+void OperationStats<CONFIG>::Begin()
+{
+	if(CONFIG::STAT_SIMTIME) {
+		timestamp = rdtsc();
+	}
+}
+
+template<class CONFIG>
+void OperationStats<CONFIG>::End()
+{
+	if(CONFIG::STAT_SIMTIME) {
+		time_spent += rdtsc() - timestamp;
+	}
+}
+
+
 // Format:
 // address,name,count,scalarcount,integer,fp,flow,memory
 template<class CONFIG>
@@ -153,6 +195,9 @@ void OperationStats<CONFIG>::DumpCSV(std::ostream & os) const
 		os << "," << stridedRegInputsCaught
 		   << "," << stridedRegOutputsCaught;
 	}
+	if(CONFIG::STAT_SIMTIME) {
+		os << "," << time_spent;
+	}
 	os << endl;
 }
 
@@ -183,6 +228,9 @@ void Stats<CONFIG>::DumpCSV(std::ostream & os) const
 		os << ",\"Strided inputs caught\""
 		   << ",\"Strided outputs caught\"";
 	}
+	if(CONFIG::STAT_SIMTIME) {
+		os << ",\"Simulation time\"";
+	}
 	os << endl;
 
 	typedef typename stats_map::const_iterator it_t;
@@ -192,6 +240,7 @@ void Stats<CONFIG>::DumpCSV(std::ostream & os) const
 		it->second.DumpCSV(os);
 	}
 }
+
 
 } // end of namespace tesla
 } // end of namespace processor

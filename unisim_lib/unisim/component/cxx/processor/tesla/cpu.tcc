@@ -322,6 +322,8 @@ void CPU<CONFIG>::StepWarp(uint32_t warpid)
 	if(!ReadMemory(fetchaddr, &iw, sizeof(typename CONFIG::insn_t))) {
 		throw MemoryAccessException<CONFIG>();
 	}
+
+	stats[fetchaddr - CONFIG::CODE_START].Begin();
 	// Decode
 	Instruction<CONFIG> insn(this, fetchaddr, iw);
 
@@ -350,6 +352,7 @@ void CPU<CONFIG>::StepWarp(uint32_t warpid)
 	
 	// Join or take other branch?
 	CheckJoin();
+	stats[fetchaddr - CONFIG::CODE_START].End();
 
 	SetPC(GetNPC());
 }
@@ -564,7 +567,6 @@ endian_type CPU<CONFIG>::GetEndianess()
 template <class CONFIG>
 void CPU<CONFIG>::Fetch(typename CONFIG::insn_t & insn, typename CONFIG::address_t addr)
 {
-	typename CONFIG::insn_t iw;
 	if(!ReadMemory(addr, &insn, sizeof(typename CONFIG::insn_t))) {
 		throw MemoryAccessException<CONFIG>();
 	}

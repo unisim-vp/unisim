@@ -70,6 +70,9 @@ private:
 	unsigned int scalarRegOutputsCaught;
 	unsigned int stridedRegOutputsCaught;
 	
+	uint64_t time_spent;
+	uint64_t timestamp;
+	
 public:
 	OperationStats() :
 		count(0), scalarcount(0), integer(false), fp(false), flow(false), memory(false),
@@ -77,7 +80,8 @@ public:
 		scalarRegInputs(0), stridedRegInputs(0),
 		scalarRegOutputs(0), stridedRegOutputs(0),
 		scalarRegInputsCaught(0), stridedRegInputsCaught(0),
-		scalarRegOutputsCaught(0), stridedRegOutputsCaught(0)
+		scalarRegOutputsCaught(0), stridedRegOutputsCaught(0),
+		time_spent(0)
 	{
 		std::fill(regnum, regnum + 4, -1);
 	}
@@ -107,6 +111,9 @@ public:
 	void Unexecute() {
 		--count;
 	}
+	
+	void Begin();
+	void End();
 	
 	//void Gather(VectorAddress<CONFIG> const & addr, std::bitset<CONFIG::WARP_SIZE> mask);
 	//void BranchUniTaken(std::bitset<CONFIG::WARP_SIZE> mask);

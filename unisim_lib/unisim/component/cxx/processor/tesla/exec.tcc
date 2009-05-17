@@ -62,43 +62,52 @@ VectorRegister<CONFIG> FSMad(VectorRegister<CONFIG> const & a,
 	typedef typename CONFIG::float_t float_t;
 	typedef typename float_t::StatusAndControlFlags FPFlags;
 	VecReg rv;
+
+	// G80-GT200: first mul always rounded to zero
+	FPFlags tempflags;
+	tempflags.setZeroRound();	// cannot use return value from setZeroRound(): wrong type!
 	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i)
 	{
 		float_t sa = a.ReadSimfloat(i);
 		float_t sb = b.ReadSimfloat(i);
-		float_t sc = c.ReadSimfloat(i);
 		if(neg_a) {
 			sa.opposite();
 		}
 		if(neg_b) {
 			sb.opposite();
 		}
+		
+		
+		float_t r = sa.multAssign(sb, tempflags);
+		rv.WriteSimfloat(r, i);
+	}
+	
+	FPFlags flags;
+	if(rounding_mode == RM_RN) {
+		flags.setNearestRound();
+	}
+	else if(rounding_mode == RM_RZ) {
+		flags.setZeroRound();
+	}
+	else {
+		assert(false);
+	}
+	
+	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i)
+	{
+		float_t sa = rv.ReadSimfloat(i);
+		float_t sc = c.ReadSimfloat(i);
 		if(neg_c) {
 			sc.opposite();
 		}
 		
-		FPFlags flags;
-		if(rounding_mode == RM_RN) {
-			flags.setNearestRound();
-		}
-		else if(rounding_mode == RM_RZ) {
-			flags.setZeroRound();
-		}
-		else {
-			assert(false);
-		}
-		
-		// G80-GT200: first mul always rounded to zero
-		FPFlags tempflags;
-		tempflags.setZeroRound();	// cannot use return value from setZeroRound(): wrong type!
-		sa.multAssign(sb, tempflags);
 		float_t r = sa.plusAssign(sc, flags);
-		
 		if(sat) {
 			r.saturate();
 		}
-		rv[i] = r.queryValue();
+		rv.WriteSimfloat(r, i);
 	}
+	
 	rv.SetScalar(a.IsScalar() && b.IsScalar() && c.IsScalar());
 	return rv;
 }
@@ -1132,7 +1141,7 @@ VectorRegister<CONFIG> Exp2(VectorRegister<CONFIG> const & a)
 	{
 		uint32_t ia = a[i];
 		double r = FXToFP(ia);
-		r = exp2(r);
+		r = exp2(float(r));
 		// Flush denormals to zero
 		if(r < ldexp(1.0, FLT_MIN_EXP)) {	// r > 0
 			r = 0;
