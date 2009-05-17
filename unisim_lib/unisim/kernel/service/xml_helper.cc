@@ -82,25 +82,45 @@ XmlfyVariables(const char *filename, VariableBase::Type type) {
 			<< "error starting the xml document" << endl;
 		return false;
 	}
-	rc = xmlTextWriterStartElement(writer, BAD_CAST "VARIABLES");
+	// rc = xmlTextWriterStartElement(writer, BAD_CAST "VARIABLES");
+	rc = xmlTextWriterStartElement(writer, BAD_CAST "variables");
 	if(rc < 0) {
 		cerr << "Error(ServiceManager::XmlfyVariables): "
 			<< "error starting the xml document" << endl;
 		return false;
 	}
 
-	list<VariableBase *> var_list;
-	list<VariableBase *>::iterator var_iter;
-	ServiceManager::GetVariables(var_list, type);
-	for(var_iter = var_list.begin();
-			var_iter != var_list.end();
-			var_iter++) {
-		rc = XmlfyVariable(writer, *var_iter);
-		if(rc < 0) {
-			cerr << "Error(ServiceManager::XmlfyVariables): "
-				<< "error writing variable"
-				<< endl;
-			return false;
+//	list<VariableBase *> var_list;
+//	list<VariableBase *>::iterator var_iter;
+//	ServiceManager::GetVariables(var_list, type);
+//	for(var_iter = var_list.begin();
+//			var_iter != var_list.end();
+//			var_iter++) {
+//		rc = XmlfyVariable(writer, *var_iter);
+//		if(rc < 0) {
+//			cerr << "Error(ServiceManager::XmlfyVariables): "
+//				<< "error writing variable"
+//				<< endl;
+//			return false;
+//		}
+//	}
+	list<Object *> obj_list;
+	list<Object *>::iterator obj_iter;
+	ServiceManager::GetRootObjects(obj_list);
+	for (obj_iter = obj_list.begin();
+			obj_iter != obj_list.end();
+			obj_iter++)
+	{
+		if (HasVariable(*obj_iter, type))
+		{
+			rc = XmlfyVariables(writer, *obj_iter, type);
+			if (rc < 0)
+			{
+				cerr << "Error(ServiceManage::XmlfyVariables): "
+					<< "error writing root object"
+					<< endl;
+				return false;
+			}
 		}
 	}
 
@@ -121,14 +141,112 @@ XmlfyVariables(const char *filename, VariableBase::Type type) {
 	return true;
 }
 
+bool
+XMLHelper::
+HasVariable(const Object *obj,
+		VariableBase::Type type)
+{
+	list<VariableBase *> var_list;
+	list<VariableBase *>::iterator var_iter;
+	var_list = obj->GetVariables();
+	for(var_iter = var_list.begin();
+			var_iter != var_list.end();
+			var_iter++) {
+		if (type == VariableBase::VAR_VOID ||
+				type == (*var_iter)->GetType())
+			return true;
+	}
+	
+	list<Object *> obj_list;
+	list<Object *>::iterator obj_iter;
+	obj_list = obj->GetLeafs();
+	for (obj_iter = obj_list.begin();
+			obj_iter != obj_list.end();
+			obj_iter++)
+	{
+		if (HasVariable(*obj_iter, type))
+			return true;
+	}
+	
+	return false;
+}
+
+int
+XMLHelper::
+XmlfyVariables(xmlTextWriterPtr writer,
+		const Object *obj,
+		VariableBase::Type type)
+{
+	int rc;
+
+	// initiate object
+	rc = xmlTextWriterStartElement(writer, BAD_CAST "object");
+	if (rc < 0) return rc;
+
+	// write object name
+	rc = xmlTextWriterWriteAttribute(writer, BAD_CAST "name", xmlCharStrdup(obj->GetName()));
+	if (rc < 0) return rc;
+
+	// dump inner objects
+	list<Object *> obj_list;
+	list<Object *>::iterator obj_iter;
+	obj_list = obj->GetLeafs();
+	for (obj_iter = obj_list.begin();
+			obj_iter != obj_list.end();
+			obj_iter++)
+	{
+		if (HasVariable(*obj_iter, type))
+		{
+			rc = XmlfyVariables(writer, *obj_iter, type);
+			if (rc < 0)
+			{
+				cerr << "Error(ServiceManage::XmlfyVariables): "
+					<< "error writing object"
+					<< endl;
+				return rc;
+			}
+		}
+	}
+
+	// dump object variables
+	list<VariableBase *> var_list;
+	list<VariableBase *>::iterator var_iter;
+	var_list = obj->GetVariables();
+	for(var_iter = var_list.begin();
+			var_iter != var_list.end();
+			var_iter++) {
+		if (type == VariableBase::VAR_VOID ||
+				type == (*var_iter)->GetType())
+		{
+			rc = XmlfyVariable(writer, *var_iter);
+			if(rc < 0) {
+				cerr << "Error(ServiceManager::XmlfyVariables): "
+					<< "error writing variable"
+					<< endl;
+				return rc;
+			}
+		}
+	}
+	
+	rc = xmlTextWriterEndElement(writer);
+	if (rc < 0) return rc;
+
+	return 0;
+}
+
 int
 XMLHelper::
 XmlfyVariable(xmlTextWriterPtr writer, 
-		VariableBase *var) {
+		const VariableBase *var) 
+{
 	int rc;
 
 	rc = xmlTextWriterStartElement(writer, BAD_CAST "variable");
 	if(rc < 0) return rc;
+
+	// write variable name
+	rc = xmlTextWriterWriteAttribute(writer, BAD_CAST "name", xmlCharStrdup(var->GetName()));
+	if (rc < 0) return rc;
 
 	// writing the variable type
 	rc = xmlTextWriterStartElement(writer, BAD_CAST "type");
@@ -148,13 +266,13 @@ XmlfyVariable(xmlTextWriterPtr writer,
 	rc = xmlTextWriterEndElement(writer);
 	if(rc < 0) return rc;
 
-	// writing the variable name
-	rc = xmlTextWriterStartElement(writer, BAD_CAST "name");
-	if(rc < 0) return rc;
-	rc = xmlTextWriterWriteFormatString(writer, "%s", var->GetName());
-	if(rc < 0) return rc;
-	rc = xmlTextWriterEndElement(writer);
-	if(rc < 0) return rc;
+//	// writing the variable name
+//	rc = xmlTextWriterStartElement(writer, BAD_CAST "name");
+//	if(rc < 0) return rc;
+//	rc = xmlTextWriterWriteFormatString(writer, "%s", var->GetName());
+//	if(rc < 0) return rc;
+//	rc = xmlTextWriterEndElement(writer);
+//	if(rc < 0) return rc;
 
 	// writing the variable data type
 	rc = xmlTextWriterStartElement(writer, BAD_CAST "data_type");
@@ -164,18 +282,18 @@ XmlfyVariable(xmlTextWriterPtr writer,
 	rc = xmlTextWriterEndElement(writer);
 	if(rc < 0) return rc;
 
-	// writing the variable default value
-	rc = xmlTextWriterStartElement(writer, BAD_CAST "default_value");
-	if(rc < 0) return rc;
-	if(string("double").compare(var->GetDataTypeName()) == 0 ||
-		string("float").compare(var->GetDataTypeName()) == 0) {
-		rc = xmlTextWriterWriteFormatString(writer, "%e", (double) *var);
-	} else {
-		rc = xmlTextWriterWriteFormatString(writer, "%s", ((string) *var).c_str());
-	}
-	if(rc < 0) return rc;
-	rc = xmlTextWriterEndElement(writer);
-	if(rc < 0) return rc;
+//	// writing the variable default value
+//	rc = xmlTextWriterStartElement(writer, BAD_CAST "default_value");
+//	if(rc < 0) return rc;
+//	if(string("double").compare(var->GetDataTypeName()) == 0 ||
+//		string("float").compare(var->GetDataTypeName()) == 0) {
+//		rc = xmlTextWriterWriteFormatString(writer, "%e", (double) *var);
+//	} else {
+//		rc = xmlTextWriterWriteFormatString(writer, "%s", ((string) *var).c_str());
+//	}
+//	if(rc < 0) return rc;
+//	rc = xmlTextWriterEndElement(writer);
+//	if(rc < 0) return rc;
 
 	// writing the variable value
 	rc = xmlTextWriterStartElement(writer, BAD_CAST "value");
@@ -223,7 +341,7 @@ XmlfyVariable(xmlTextWriterPtr writer,
 	rc = xmlTextWriterEndElement(writer);
 	if(rc < 0) return rc;
 
-	return 0;
+	return 1;
 }
 
 bool
@@ -263,30 +381,70 @@ LoadXmlVariables(const char *filename, VariableBase::Type type)
 
 bool 
 XMLHelper::
-ProcessXmlVariableNode(xmlTextReaderPtr reader, VariableBase::Type type) { 
-	const xmlChar *name, *value;
+ProcessXmlVariableNode(xmlTextReaderPtr reader, VariableBase::Type type) 
+{ 
+	const xmlChar* name = 0;
+	const xmlChar* value = 0;
+	const xmlChar* name_attr = 0;
 
 	name = xmlTextReaderConstName(reader);
-	if (name == NULL) {
+	if (name == NULL) 
+	{
 		cerr << "Could not read Xml variable node" << endl;
 		return false;
 	}
 
-	if(xmlStrEqual(name, xmlCharStrdup("VARIABLES"))) {
-		if(xmlTextReaderNodeType(reader) == 1)
-			cerr << "VARIABLES" << endl;
+	// TODO: this code should be removed, the root tag should be in lower letters, not capital
+	if (xmlStrEqual(name, xmlCharStrdup("VARIABLES"))) 
+	{
+//		if (xmlTextReaderNodeType(reader) == 1)
+//			cerr << "VARIABLES" << endl;
+		return true;
+	}
+	// End of TODO
+	
+	if (xmlStrEqual(name, xmlCharStrdup("variables")))
+	{
+//		if (xmlTextReaderNodeType(reader) == 1)
+//			cerr << "variables" << endl;
+		return true;
+	}
+
+	if (xmlStrEqual(name, xmlCharStrdup("object")))
+	{
+		if (xmlTextReaderNodeType(reader) == 1)
+		{
+			name_attr = xmlTextReaderGetAttribute(reader, xmlCharStrdup("name"));
+			if (name_attr == 0)
+			{
+				cerr << "Error: could not get object name" << endl;
+				return false;
+			}
+//			cerr << "  object " << name_attr << endl;
+		}
 		return true;
 	}
 	
 	if(xmlStrEqual(name, xmlCharStrdup("variable"))) {
 		if(xmlTextReaderNodeType(reader) == 1) {
+			name_attr = xmlTextReaderGetAttribute(reader, xmlCharStrdup("name"));
+// TODO: uncomment this code as the name of the variable should be an attribute
+//			if (name_attr == 0)
+//			{
+//				cerr << "Error: could not get variable name" << endl;
+//				return false;
+//			}
+// end of TODO:
 			cur_var = new CurVariable();
+			// TODO: remove the following if, as the name must be an attribute of the variable
+			if (name_attr != 0)
+				cur_var->name << name_attr;
 		}
 		if(xmlTextReaderNodeType(reader) == 15) {
-			cerr << "  variable" << endl;
-			cerr << "    type = " << cur_var->type.str() << endl;
-			cerr << "    name = " << cur_var->name.str() << endl;
-			cerr << "    value = " << cur_var->value.str() << endl;
+//			cerr << "    variable" << endl;
+//			cerr << "      type = " << cur_var->type.str() << endl;
+//			cerr << "      name = " << cur_var->name.str() << endl;
+//			cerr << "      value = " << cur_var->value.str() << endl;
 			// cerr << "    description = " << cur_var->description.str() << endl;
 			bool modify = 
 				(type == VariableBase::VAR_VOID) ||
@@ -296,12 +454,12 @@ ProcessXmlVariableNode(xmlTextReaderPtr reader, VariableBase::Type type) {
 			if(modify) {
 				VariableBase *variable = ServiceManager::GetParameter(cur_var->name.str().c_str());
 				if(variable == NULL) {
-					cerr << "  !! could not get variable '" << cur_var->name.str() << "'" << endl;
+					cerr << "    !! could not get variable '" << cur_var->name.str() << "'" << endl;
 					return false;
 				}
-				cerr << "updating(" << (string)*variable << " -> ";
+//				cerr << "updating(" << (string)*variable << " -> ";
 				*variable = cur_var->value.str().c_str();
-				cerr << (string)*variable << ")" << endl;
+//				cerr << (string)*variable << ")" << endl;
 				
 			}
 			delete cur_var;
@@ -319,6 +477,7 @@ ProcessXmlVariableNode(xmlTextReaderPtr reader, VariableBase::Type type) {
 		return true;
 	}
 
+	// TODO: this code should be removed because name is now an attribute
 	if(xmlStrEqual(name, xmlCharStrdup("name"))) {
 		if(xmlTextReaderNodeType(reader) == 1) {
 			cur_status = NAME;
@@ -328,11 +487,14 @@ ProcessXmlVariableNode(xmlTextReaderPtr reader, VariableBase::Type type) {
 		}
 		return true;
 	}
+	// end of TODO
 	
+	// TODO: this code should be removed because default_value has dissappeared
 	if(xmlStrEqual(name, xmlCharStrdup("default_value"))) {
 		// nothing to do
 		return true;
 	}
+	// end of TODO
 
 	if(xmlStrEqual(name, xmlCharStrdup("value"))) {
 		if(xmlTextReaderNodeType(reader) == 1) {
@@ -371,9 +533,11 @@ ProcessXmlVariableNode(xmlTextReaderPtr reader, VariableBase::Type type) {
 		case TYPE:
 			cur_var->type << value;
 			break;
+		// TODO: this code should be removed because name now is an attribute
 		case NAME:
 			cur_var->name << value;
 			break;
+		// end of TODO
 		case VALUE:
 			cur_var->value << value;
 			break;

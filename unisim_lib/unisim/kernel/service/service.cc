@@ -1078,7 +1078,7 @@ void ServiceManager::GetRootObjects(list<Object *>& lst)
 		{
 			if(!(*object_iter).second->GetParent())
 			{
-				cerr << "root: " << (*object_iter).second->GetName() << endl;
+				// cerr << "root: " << (*object_iter).second->GetName() << endl;
 				lst.push_back((*object_iter).second);
 			}
 		}

@@ -54,8 +54,15 @@ public:
 private:
 	static const char *XML_ENCODING; 
 
+	bool HasVariable(const Object *obj,
+			VariableBase::Type type = VariableBase::VAR_VOID);
+
+	int XmlfyVariables(xmlTextWriterPtr writer,
+			const Object *obj,
+			VariableBase::Type type = VariableBase::VAR_VOID);
+	
 	int XmlfyVariable(xmlTextWriterPtr writer, 
-			VariableBase *var);
+			const VariableBase *var);
 	
 	ServiceManager *manager;
 	
