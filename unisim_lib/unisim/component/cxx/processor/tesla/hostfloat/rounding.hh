@@ -62,8 +62,9 @@ struct TRounding
 	typedef unisim::component::cxx::processor::tesla::RoundingMode RoundingMode;
 
 	TRounding(RoundingMode newrm) {
-		savedrm = Control::GetRoundingMode();
-		if(savedrm == newrm) {
+		//savedrm = Control::GetRoundingMode();
+		//if(savedrm == newrm) {
+		if(newrm == RM_RN) {
 			restore = false;
 		}
 		else {
@@ -74,12 +75,13 @@ struct TRounding
 
 	~TRounding() {
 		if(restore) {
-			Control::SetRoundingMode(savedrm);
+			//Control::SetRoundingMode(savedrm);
+			Control::SetRoundingMode(RM_RN);
 		}
 	}
 
 private:
-	RoundingMode savedrm;
+	//RoundingMode savedrm;
 	bool restore;
 
 };
