@@ -46,8 +46,11 @@ namespace hcs12x {
 XINT::XINT(const sc_module_name& name, Object *parent) :
 	sc_module(name),
 	interrupt_request("interrupt_request"),
+	input_payload_queue("input_payload_queue"),
 	isHardwareInterrupt(false)
 {
+
+	zeroTime = sc_time((double)0, SC_PS);
 
 	reset();
 
@@ -58,7 +61,6 @@ XINT::XINT(const sc_module_name& name, Object *parent) :
 	SC_HAS_PROCESS(XINT);
 
 	SC_THREAD(Run);
-	interrupt_request_event;
 
 	for (int i=0; i<XINT_SIZE; i++) {
 		interrupt_flags[i] = false;
@@ -82,7 +84,7 @@ unsigned int XINT::transport_dbg(XINT_Payload& payload)
 }
 
 void XINT::b_transport(XINT_Payload& payload, sc_core::sc_time& t) {
-
+	input_payload_queue.notify(payload, t);
 }
 
 bool XINT::get_direct_mem_ptr(XINT_Payload& payload, tlm_dmi&  dmi_data) {
@@ -97,12 +99,7 @@ tlm_sync_enum XINT::nb_transport_fw(XINT_Payload& payload, tlm_phase& phase, sc_
 			// accepts an interrupt request modeled by payload
 			phase = END_REQ; // update the phase
 
-			interrupt_flags[payload.interrupt_offset/2] = true;
-			if (CONFIG::DEBUG_ENABLE) {
-				cerr << "XINT: Receive INT " << payload.interrupt_offset/2 << std::endl;
-			}
-
-			interrupt_request_event.notify();
+			input_payload_queue.notify(payload, t); // queue the payload and the associative time
 
 			return TLM_UPDATED;
 		case END_REQ:
@@ -139,9 +136,6 @@ tlm_sync_enum XINT::nb_transport_fw(XINT_Payload& payload, tlm_phase& phase, sc_
  */
 void XINT::getVectorAddress( tlm::tlm_generic_payload& trans, sc_time& delay )
 {
-
-	// The CPU has taken in account the external interrupt request => disactivate the interrupt request
-	toCPU_Initiator = false;
 
 	INT_TRANS_T *buffer = (INT_TRANS_T *) trans.get_data_ptr();
 
@@ -208,6 +202,10 @@ void XINT::getVectorAddress( tlm::tlm_generic_payload& trans, sc_time& delay )
 	buffer->ipl = newIPL;
 	buffer->vectorAddress = vectorAddress;
 
+	if (CONFIG::DEBUG_ENABLE) {
+		cout << "XINT::  Vector Address 0x" << std::hex << vectorAddress << std::dec << endl;
+	}
+
 	isHardwareInterrupt = false;
 	trans.set_response_status( tlm::TLM_OK_RESPONSE );
 
@@ -215,25 +213,47 @@ void XINT::getVectorAddress( tlm::tlm_generic_payload& trans, sc_time& delay )
 
 void XINT::Run()
 {
+	XINT_Payload *payload;
+
 	// This thread is waked-up by any not CPU interrupt
 
 	while (true) {
-		wait();
 
-		/*
-		 *  Check which interrupt if (reset) setIVBR(0xFF)
-		 */
+		wait(input_payload_queue.get_event());
 
-		if (interrupt_flags[XINT::INT_CLK_MONITOR_RESET_OFFSET/2] ||
-				interrupt_flags[XINT::INT_COP_WATCHDOG_RESET_OFFSET/2] ||
-				interrupt_flags[XINT::INT_ILLEGAL_ACCESS_RESET_OFFSET/2] ||
-				interrupt_flags[XINT::INT_SYS_RESET_OFFSET/2] )
+		do
 		{
-			setIVBR(0xFF);
-		}
+
+			payload = input_payload_queue.get_next_transaction();
+			if (payload) {
+				interrupt_flags[payload->interrupt_offset/2] = true;
+				if (CONFIG::DEBUG_ENABLE) {
+					cout << "XINT: Receive INT " << payload->interrupt_offset/2 << std::endl;
+				}
+
+			}
+
+		} while(payload);
+
+		payload = NULL;
 
 		isHardwareInterrupt = true;
-		toCPU_Initiator = true;
+
+		// Rise interrupt
+
+		tlm::tlm_generic_payload* trans = payloadFabric.allocate();
+
+		trans->set_command( tlm::TLM_WRITE_COMMAND );
+		trans->set_response_status( tlm::TLM_INCOMPLETE_RESPONSE );
+
+		toCPU_Initiator->b_transport( *trans, zeroTime );
+
+		if (trans->is_response_error() )
+			SC_REPORT_ERROR("XINT : ", " interrupt notification failed.");
+
+
+		trans->release();
+
 	}
 
 }

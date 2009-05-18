@@ -92,8 +92,7 @@ HCS12X(const sc_module_name& name, Object *parent) :
 
 	SC_HAS_PROCESS(HCS12X);
 
-	SC_THREAD(AsyncIntThread);
-	sensitive << interruptRequest;
+	interrupt_request.register_b_transport(this, &HCS12X::AsyncIntThread);
 
 	SC_THREAD(Run);
 
@@ -450,18 +449,19 @@ void HCS12X::BusRead(address_t addr, void *buffer, uint32_t size)
 	trans->release();
 }
 
-void HCS12X::AsyncIntThread()
+void HCS12X::AsyncIntThread(tlm::tlm_generic_payload& trans, sc_time& delay)
 {
 	// The XINT wake-up the CPU to handle asynchronous interrupt
 
-	while (true) {
-		wait();
+	irq_event.notify();
 
-		irq_event.notify();
+	ReqAsynchronousInterrupt();
 
-		ReqAsynchronousInterrupt();
+	trans.set_response_status( tlm::TLM_OK_RESPONSE );
+
+	if (CONFIG::DEBUG_ENABLE) {
+		cout << "HCS12X:: Has receive an interrupt notification." << endl;
 	}
-
 }
 
 } // end of namespace hcs12x

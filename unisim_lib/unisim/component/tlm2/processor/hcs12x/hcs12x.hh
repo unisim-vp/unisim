@@ -83,7 +83,7 @@ public:
 	tlm_utils::simple_initiator_socket<HCS12X> socket;
 
 	// wake-up request from XINT
-	sc_in<bool> interruptRequest;
+	tlm_utils::simple_target_socket<HCS12X> interrupt_request;
 
 	// Initiator
 	tlm_utils::simple_initiator_socket<HCS12X> toXINT;
@@ -107,6 +107,21 @@ public:
 	 */
 	virtual void Wait();
 
+	virtual bool Setup();
+
+	void BusSynchronize();
+
+	void Run();
+
+	virtual void Reset();
+
+	virtual void BusWrite(address_t addr, const void *buffer, uint32_t size);
+	virtual void BusRead(address_t addr, void *buffer, uint32_t size);
+
+	//================================================================
+    //=                    tlm2 Interface                            =
+    //================================================================
+
 	/* TODO:
 	 * The CPU issues a signal that tells the interrupt module to drive
 	 * the vector address of the highest priority pending exception onto the system address bus
@@ -119,18 +134,7 @@ public:
 	 */
 	virtual address_t GetIntVector(uint8_t &ipl);
 
-	virtual bool Setup();
-
-	void BusSynchronize();
-
-	void Run();
-
-	virtual void Reset();
-
-	virtual void BusWrite(address_t addr, const void *buffer, uint32_t size);
-	virtual void BusRead(address_t addr, void *buffer, uint32_t size);
-
-	void AsyncIntThread();
+	void AsyncIntThread(tlm::tlm_generic_payload& trans, sc_time& delay);
 
 private:
 	void Synchronize();

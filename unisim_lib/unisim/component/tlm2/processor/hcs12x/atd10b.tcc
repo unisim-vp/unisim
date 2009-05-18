@@ -173,6 +173,9 @@ void ATD10B<ATD_SIZE>::Process()
 {
 	while(1)
 	{
+		quantumkeeper.sync();
+		wait(input_payload_queue.get_event());
+
 		Input(analog_signal);
 
 		// TODO: see in details how to use quantumkeeper in the case of ATD
@@ -192,15 +195,26 @@ void ATD10B<ATD_SIZE>::Process()
 template <uint8_t ATD_SIZE>
 void ATD10B<ATD_SIZE>::Input(double anValue[ATD_SIZE])
 {
-	ATD_Payload<ATD_SIZE> *payload;
+	ATD_Payload<ATD_SIZE> *last_payload = NULL;
+	ATD_Payload<ATD_SIZE> *payload = NULL;
 
 	do
 	{
-		quantumkeeper.sync();
-		wait(input_payload_queue.get_event());
-
+		last_payload = payload;
 		payload = input_payload_queue.get_next_transaction();
-	} while(!payload);
+
+		if (CONFIG::DEBUG_ENABLE && payload) {
+	/*
+			if (trap_reporting_import) {
+				trap_reporting_import->ReportTrap();
+			}
+			*/
+			cout << name() << ":: Receive " << payload->serialize() << " - " << sc_time_stamp() << endl;
+		}
+
+	} while(payload);
+
+	payload = last_payload;
 
 	if (CONFIG::DEBUG_ENABLE) {
 /*
@@ -208,7 +222,7 @@ void ATD10B<ATD_SIZE>::Input(double anValue[ATD_SIZE])
 			trap_reporting_import->ReportTrap();
 		}
 		*/
-		cout << name() << ":: receive " << payload->serialize() << " - " << sc_time_stamp() << endl;
+		cout << name() << ":: Last Receive " << payload->serialize() << " - " << sc_time_stamp() << endl;
 	}
 
 	if ((atdctl2_register & 0x80) != 0) // is ATD power ON (enabled)
@@ -222,8 +236,6 @@ void ATD10B<ATD_SIZE>::Input(double anValue[ATD_SIZE])
 	} else {
 		cerr << "Warning: " << name() << " => The ATD is OFF. You have to set ATDCTL2::ADPU bit before.\n";
 	}
-
-	payload->release();
 
 }
 
@@ -446,7 +458,7 @@ void ATD10B<ATD_SIZE>::assertInterrupt() {
 template <uint8_t ATD_SIZE>
 void ATD10B<ATD_SIZE>::sequenceComplete() {
 
-	conversionStop = true;
+//	conversionStop = true;
 
 	// Set the SCF (Sequence Complete Flag)
 	atdstat0_register = atdstat0_register | 0x80;
@@ -458,9 +470,12 @@ void ATD10B<ATD_SIZE>::sequenceComplete() {
 	/**
 	 *  if ATDCTL2::ASCIE bit is set then assert ATD_SequenceComplete_Interrupt
 	 */
-	if ((atdctl2_register & 0x02) != 0) {
-		assertInterrupt();
-	}
+//	if ((atdctl2_register & 0x02) != 0) {
+//		assertInterrupt();
+//	}
+
+	assertInterrupt();
+
 }
 
 template <uint8_t ATD_SIZE>

@@ -244,7 +244,7 @@ public:
 
 
 	// to connect to CPU
-	sc_out<bool> toCPU_Initiator;
+	tlm_utils::simple_initiator_socket<XINT> toCPU_Initiator;
 
 	// from CPU
 	tlm_utils::simple_target_socket<XINT> fromCPU_Target;
@@ -296,9 +296,15 @@ private:
 	static const uint8_t XINT_SIZE		= 128; // Number of recognized/handled interrupts
 	static const uint8_t CFDATA_SIZE	= 8;
 
+	PayloadFabric<tlm::tlm_generic_payload> payloadFabric;
+
 	bool	interrupt_flags[XINT_SIZE];
 
-	sc_event interrupt_request_event;
+	sc_time zeroTime;
+
+	peq_with_get<XINT_Payload> input_payload_queue;
+
+//	sc_event interrupt_request_event;
 
 	void write(address_t address, uint8_t value);
 	void read(address_t address, uint8_t &value);
