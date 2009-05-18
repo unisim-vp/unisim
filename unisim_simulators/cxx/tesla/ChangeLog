@@ -1,11 +1,11 @@
 See unisim_lib/unisim/component/cxx/processor/tesla/ChangeLog for the simulator changelog.
 
-Version 0.2
+Version 0.2, 04 May 2009
 * Device <-> Device linear memory copy
 * Support for exporting statistics in CSV format
 * Traces of reset, kernel parsing and loading can be disabled
 
-Version 0.1, 09 april 2009
+Version 0.1, 09 April 2009
 * Initial release
 * Support of most of the CUDA Driver API
 * CUDA runtime API, through NVidia-provided libcudart.so/cudart.dll

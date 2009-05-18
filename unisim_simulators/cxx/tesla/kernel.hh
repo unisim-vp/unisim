@@ -44,6 +44,7 @@
 #include <map>
 #include <unisim/kernel/service/service.hh>
 #include <unisim/service/interfaces/memory.hh>
+#include <unisim/component/cxx/processor/tesla/stats.hh>
 
 using unisim::kernel::service::Service;
 //using unisim::service::interfaces::Memory;
@@ -91,6 +92,8 @@ struct Kernel : CUfunc_st
 		int bidx = 0, int bidy = 0) const;
 	
 	int BlocksPerCore() const;	// Max blocks that can run on a SM of target architecture
+	
+	Stats<CONFIG> stats;
 	
 	static bool trace_loading;
 	static bool trace_parsing;

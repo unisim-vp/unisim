@@ -112,6 +112,7 @@ private:
 	Allocator<CONFIG> global_allocator;
 	
 	bool export_stats;
+	std::string stats_prefix;
 };
 
 

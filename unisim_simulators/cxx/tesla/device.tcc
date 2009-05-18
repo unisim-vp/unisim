@@ -141,6 +141,10 @@ Device<CONFIG>::Device() :
 	if(env != 0)
 		export_stats = ParseBool(env);
 
+	env = getenv("EXPORT_STATS_PREFIX");
+	if(env != 0)
+		stats_prefix = env;
+
 }
 
 template<class CONFIG>
@@ -165,6 +169,7 @@ void Device<CONFIG>::DumpCode(Kernel<CONFIG> & kernel, std::ostream & os)
 template<class CONFIG>
 void Device<CONFIG>::Run(Kernel<CONFIG> & kernel, int width, int height)
 {
+	cpu.stats = &kernel.stats;
 	DumpCode(kernel, cerr);
 
 	Load(kernel);
@@ -197,14 +202,14 @@ void Device<CONFIG>::Run(Kernel<CONFIG> & kernel, int width, int height)
 	}
 	
 	if(export_stats) {
-		ExportStats(cpu.stats, (kernel.Name() + ".csv").c_str());
+		ExportStats(kernel.stats, (kernel.Name() + ".csv").c_str());
 	}
 }
 
 template<class CONFIG>
 void Device<CONFIG>::ExportStats(typename CONFIG::stats_t const & stats, char const * filename)
 {
-	ofstream ofs(filename);
+	ofstream ofs((stats_prefix + string(filename)).c_str());
 	stats.DumpCSV(ofs);
 }
 
@@ -321,6 +326,7 @@ void Device<CONFIG>::SetThreadIDs(Kernel<CONFIG> const & kernel, int bnum)
 			}
 		}
 	}
+
 }
 
 template<class CONFIG>
