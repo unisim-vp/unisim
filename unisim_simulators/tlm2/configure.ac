@@ -48,7 +48,6 @@ AC_CONFIG_FILES([Makefile])
 
 ###### CHECK FOR HOST ######################
 
-UNISIM_CONFIG_SUBDIR(simulator-tlm2-hcs12xemu, hcs12xemu)
 UNISIM_CONFIG_SUBDIR(simulator-tlm2-s12x, s12x)
 UNISIM_CONFIG_SUBDIR(simulator-tlm2-arm7tdmi, arm7tdmi)
 UNISIM_CONFIG_SUBDIR(simulator-tlm2-arm966e_s, arm966e_s)
