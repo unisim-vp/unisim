@@ -48,6 +48,8 @@ op fsmad_full_noconst_normal( \
 	0xe[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:?[21]:0[1]:/*IWidth*/1[1]\
 )
 
+//specialize fsmad_full_noconst_normal(src3_neg=0, src1_neg=0, rounding_mode=0)
+
 op fsmad_full_noconst_end( \
 	/*subop*/0[3]:/*?*/0[1]:src3_neg[1]:src1_neg[1]:0[2]:rounding_mode[2]:/*src1_sh*/?[1]:/*src3*/?[7]\
 	:/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output_reg*/?[1]:/*addr_hi*/?[1]:/*marker*/1[2]: \
@@ -92,10 +94,7 @@ fsmad_full.execute = {
 	reg_t & b = insn->GetSrc2();
 	reg_t & c = insn->GetSrc3();
 	
-	reg_t output = FSMad(a, b, c, src1_neg, 0, src3_neg, rounding_mode);
-	
-	insn->SetDest(output);
-	//insn->SetPredFP32(output);
+	CONFIG::vfp32::Mad(a, b, c, src1_neg, 0, src3_neg, rounding_mode);
 }
 
 op fsmad_full_const3_normal( \
@@ -103,6 +102,8 @@ op fsmad_full_const3_normal( \
 	:/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output_reg*/?[1]:/*addr_hi*/?[1]:/*marker*/0[2]: \
 	0xe[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/1[1]:/*src2_cm*/?[1]:?[21]:0[1]:/*IWidth*/1[1]\
 )
+
+//specialize fsmad_full_const3_normal(src3_neg=0, src1_neg=0)
 
 op fsmad_full_const3_end( \
 	/*subop*/0[3]:/*?*/0[1]:src3_neg[1]:src1_neg[1]:/*const_seg*/?[4]:/*src1_sh*/?[1]:/*src3*/?[7]\
@@ -164,11 +165,7 @@ fsmad_full_const.execute = {
 	reg_t & a = insn->GetSrc1();
 	reg_t & b = insn->GetSrc2();
 	reg_t & c = insn->GetSrc3();
-	
-	reg_t output = FSMad(a, b, c, src1_neg, 0, src3_neg, RM_RN);
-	
-	insn->SetDest(output);
-	//insn->SetPredFP32(output);
+	CONFIG::vfp32::Mad(a, b, c, src1_neg, 0, src3_neg, RM_RN);
 }
 
 
@@ -211,11 +208,9 @@ fsmac.execute = {
 	// b immediate
 	reg_t & a = insn->GetSrc1();
 	reg_t & b = insn->GetSrc2();
-	reg_t & c = cpu->GetGPR(dest);
+	reg_t & c = cpu->GetGPR(dest);	// TODO: count as input operand!
 
-	reg_t output = FSMad(a, b, c, /*src1_neg*/0, 0, src3_neg, RM_RN);
-	insn->SetDest(output);
-	//insn->SetPredFP32(output);
+	CONFIG::vfp32::Mad(a, b, c, /*src1_neg*/0, 0, src3_neg, RM_RN);
 }
 
 // Single-precision FP Add
@@ -226,6 +221,8 @@ op fsadd_full_noconst_normal( \
 	/*subop*/0[3]:/*?*/0[1]:src3_neg[1]:src1_neg[1]:0[2]:rounding_mode[2]:?[20]:/*marker*/0[2]: \
 	0xb[4]:/*addr*/?[3]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:?[21]:0[1]:/*IWidth*/1[1]\
 )
+
+//specialize fsadd_full_noconst_normal(src3_neg=0, src1_neg=0, rounding_mode=0)
 
 op fsadd_full_noconst_end( \
 	/*subop*/0[3]:/*?*/0[1]:src3_neg[1]:src1_neg[1]:0[2]:rounding_mode[2]:?[20]:/*marker*/1[2]: \
@@ -302,9 +299,7 @@ fsadd_full.execute = {
 	reg_t & a = insn->GetSrc1();
 	reg_t & c = insn->GetSrc3();
 	
-	reg_t output = FSAdd(a, c, src1_neg, src3_neg, rounding_mode);
-	
-	insn->SetDest(output);
+	CONFIG::vfp32::Add(a, c, src1_neg, src3_neg, rounding_mode);
 }
 
 fsadd_full_const.execute = {
@@ -314,9 +309,7 @@ fsadd_full_const.execute = {
 	reg_t & a = insn->GetSrc1();
 	reg_t & c = insn->GetSrc3();
 	
-	reg_t output = FSAdd(a, c, src1_neg, src3_neg, RM_RN);
-	
-	insn->SetDest(output);
+	CONFIG::vfp32::Add(a, c, src1_neg, src3_neg, RM_RN);
 }
 
 
@@ -360,10 +353,7 @@ fsadd_halfimm.execute = {
 	reg_t & a = insn->GetSrc1();
 	reg_t & b = insn->GetSrc2();
 	
-	reg_t output = FSAdd(a, b, src1_neg, src2_neg, RM_RN);
-	
-	insn->SetDest(output);
-	//insn->SetPredFP32(output);
+	CONFIG::vfp32::Add(a, b, src1_neg, src2_neg, RM_RN);
 }
 
 
@@ -377,6 +367,8 @@ op fsmul_full_noconst_normal( \
 	:/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output_reg*/?[1]:/*addr_hi*/?[1]:/*marker*/0[2]: \
 	0xc[4]:/*addr*/?[3]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:?[21]:0[1]:/*IWidth*/1[1]\
 )
+
+//specialize fsmul_full_noconst_normal(src3_neg=0, src1_neg=0, rounding_mode=0)
 
 op fsmul_full_noconst_end( \
 	/*subop*/0[3]:/*?*/0[1]:src3_neg[1]:src1_neg[1]:0[2]:rounding_mode[2]:/*src1_sh*/?[1]:/*src3*/?[7]\
@@ -451,10 +443,7 @@ fsmul_full.execute = {
 
 	// src3_neg applies to Src2 here
 	// (not very useful to have -a * -b btw)
-	reg_t output = FSMul(a, b, src1_neg, src3_neg, rounding_mode);
-	
-	insn->SetDest(output);
-	//insn->SetPredFP32(output);
+	CONFIG::vfp32::Mul(a, b, src1_neg, src3_neg, rounding_mode);
 }
 
 fsmul_full_const.disasm = {
@@ -482,10 +471,7 @@ fsmul_full_const.execute = {
 
 	// src3_neg applies to Src2 here
 	// (not very useful to have -a * -b btw)
-	reg_t output = FSMul(a, b, src1_neg, src3_neg, RM_RN);
-	
-	insn->SetDest(output);
-	//insn->SetPredFP32(output);
+	CONFIG::vfp32::Mul(a, b, src1_neg, src3_neg, RM_RN);
 }
 
 
@@ -516,10 +502,7 @@ fsmul_halfimm.execute = {
 
 	// src3_neg applies to Src2 here
 	// (not very useful to have -a * -b btw)
-	reg_t output = FSMul(a, b, src1_neg, src3_neg, RM_RN);
-	
-	insn->SetDest(output);
-	//insn->SetPredFP32(output);
+	CONFIG::vfp32::Mul(a, b, src1_neg, src3_neg, RM_RN);
 }
 
 
@@ -531,6 +514,8 @@ op fsset_full( \
 	:/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output_reg*/?[1]:/*addr_hi*/?[1]:/*marker*/?[2]: \
 	0xb[4]:?[26]:0[1]:/*IWidth*/1[1]\
 )
+
+//specialize fsset_full(src3_neg=0, m32=0, src1_abs=0)
 
 group fsset(fsset_full)
 
@@ -583,7 +568,7 @@ fsset.execute = {
 	reg_t output;
 	VectorFlags<CONFIG> vf;
 
-	vf = ComputePredSetFP32(output, a, b, SetCond(setcond), src1_abs);
+	vf = CONFIG::vfp32::ComputePredSetFP32(output, a, b, SetCond(setcond), src1_abs);
 	
 	insn->SetDest(output);
 	insn->SetPred(vf);
@@ -598,6 +583,8 @@ op fcvti_full_normal( \
 	0xa[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:f64[1]:/*?*/0[6]:\
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1]\
 )
+
+//specialize fcvti_full_normal(issigned=1, dest_32=1, cvt_round=3, cvt_type=5)
 
 group fcvti_full(fcvti_full_normal)
 
@@ -647,7 +634,7 @@ fcvti_full.execute = {
 	// dest = a
 	assert(!f64);
 	reg_t & a = insn->GetSrc1();
-	ConvertIntFloat(a, issigned, dest_32, ConvType(cvt_type), RoundingMode(cvt_round));
+	CONFIG::vfp32::ConvertF2I(a, issigned, dest_32, ConvType(cvt_type), RoundingMode(cvt_round));
 }
 
 
@@ -717,7 +704,7 @@ fcvtf_full.execute = {
 	// TODO: Read 2 regs if 64-bit
 	assert(!f64);
 	reg_t & a = insn->GetSrc1();
-	ConvertFloatFloat(a, dest_32, ConvType(cvt_type), RoundingMode(cvt_round), cvt_int,
+	CONFIG::vfp32::ConvertF2F(a, dest_32, ConvType(cvt_type), RoundingMode(cvt_round), cvt_int,
 		AbsSat(abs_sat));
 }
 
@@ -731,6 +718,8 @@ op fmov_full( \
 	0xa[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:f64[1]:/*?*/0[6]:\
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1]\
 )
+
+//specialize fmov_full(src1_neg=1, f64=0)
 
 //group fmov_full(fmov_full_normal)
 
@@ -755,7 +744,7 @@ fmov_full.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 	assert(!f64);
 	reg_t & a = insn->GetSrc1();
-	reg_t output = FSMov(a, src1_neg);
+	reg_t output = CONFIG::vfp32::Mov(a, src1_neg);
 
 	insn->SetDest(output);
 	//insn->SetPredFP32(output);
@@ -793,7 +782,7 @@ rr_ex2.disasm = {
 rr_ex2.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 	reg_t & a = insn->GetSrc1();
-	reg_t output = RRExp2(a);
+	reg_t output = CONFIG::vfp32::RRExp2(a);
 
 	insn->SetDest(output);
 	insn->SetPredI32(output);	// ?
@@ -828,7 +817,7 @@ rr_trig.disasm = {
 rr_trig.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 	reg_t & a = insn->GetSrc1();
-	reg_t output = RRTrig(a);
+	reg_t output = CONFIG::vfp32::RRTrig(a);
 
 	insn->SetDest(output);
 	insn->SetPredI32(output);	// ?
@@ -867,7 +856,7 @@ rcp.disasm = {
 rcp.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 	reg_t & a = insn->GetSrc1();
-	reg_t output = Rcp(a);
+	reg_t output = CONFIG::vfp32::Rcp(a);
 
 	insn->SetDest(output);
 	//insn->SetPredFP32(output);
@@ -904,7 +893,7 @@ rsq.disasm = {
 rsq.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 	reg_t & a = insn->GetSrc1();
-	reg_t output = Rsq(a);
+	reg_t output = CONFIG::vfp32::Rsq(a);
 
 	insn->SetDest(output);
 	//insn->SetPredFP32(output);
@@ -941,7 +930,7 @@ lg2.disasm = {
 lg2.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 	reg_t & a = insn->GetSrc1();
-	reg_t output = Log2(a);
+	reg_t output = CONFIG::vfp32::Log2(a);
 
 	insn->SetDest(output);
 	//insn->SetPredFP32(output);
@@ -978,7 +967,7 @@ sin.disasm = {
 sin.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 	reg_t & a = insn->GetSrc1();
-	reg_t output = Sin(a);
+	reg_t output = CONFIG::vfp32::Sin(a);
 
 	insn->SetDest(output);
 	//insn->SetPredFP32(output);
@@ -1015,7 +1004,7 @@ cos.disasm = {
 cos.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 	reg_t & a = insn->GetSrc1();
-	reg_t output = Cos(a);
+	reg_t output = CONFIG::vfp32::Cos(a);
 
 	insn->SetDest(output);
 	//insn->SetPredFP32(output);
@@ -1052,7 +1041,7 @@ ex2.disasm = {
 ex2.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 	reg_t & a = insn->GetSrc1();
-	reg_t output = Exp2(a);
+	reg_t output = CONFIG::vfp32::Exp2(a);
 
 	insn->SetDest(output);
 	//insn->SetPredFP32(output);
@@ -1065,6 +1054,8 @@ op fsmax_full_normal( \
 	/*subop*/4[3]:/*?*/0[1]:/*src3_neg*/0[1]:/*src1_neg*/0[1]:/*const seg*/?[4]:/*src1_sh*/?[1]:abs_sat[2]:?[17]:/*marker*/0[2]: \
 	0xb[4]:?[26]:0[1]:/*IWidth*/1[1]\
 )
+
+//specialize fsmax_full_normal(abs_sat=0)
 
 op fsmax_full_end( \
 	/*subop*/4[3]:/*?*/0[1]:/*src3_neg*/0[1]:/*src1_neg*/0[1]:/*const seg*/?[4]:/*src1_sh*/?[1]:abs_sat[2]:?[17]:/*marker*/1[2]: \
@@ -1106,7 +1097,7 @@ fsmax_full.execute = {
 	reg_t & a = insn->GetSrc1();
 	reg_t & b = insn->GetSrc2();
 	
-	reg_t output = FSMax(a, b, AbsSat(abs_sat));
+	reg_t output = CONFIG::vfp32::Max(a, b, AbsSat(abs_sat));
 	
 	insn->SetDest(output);
 	//insn->SetPredFP32(output);
@@ -1133,7 +1124,7 @@ fsmax_imm.execute = {
 	reg_t & a = insn->GetSrc1();
 	reg_t & b = insn->GetSrc2();
 	
-	reg_t output = FSMax(a, b, AS_NONE);
+	reg_t output = CONFIG::vfp32::Max(a, b, AS_NONE);
 	
 	insn->SetDest(output);
 	//insn->SetPredFP32(output);

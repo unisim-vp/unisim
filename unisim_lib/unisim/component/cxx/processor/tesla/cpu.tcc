@@ -49,6 +49,7 @@
 #include <unisim/component/cxx/processor/tesla/tesla_flow.tcc>
 #include <unisim/component/cxx/processor/tesla/hostfloat/hostfloat.tcc>
 #include <unisim/component/cxx/processor/tesla/stats.tcc>
+#include <unisim/component/cxx/processor/tesla/vectorfp32.tcc>
 
 //#include <unisim/component/cxx/cache/cache.tcc>
 //#include <unisim/component/cxx/tlb/tlb.tcc>
@@ -70,7 +71,7 @@ using namespace std;
 #define VERBOSE
 
 template <class CONFIG>
-typename CONFIG::stats_t CPU<CONFIG>::stats;
+typename CONFIG::stats_t * CPU<CONFIG>::stats = 0;
 
 template <class CONFIG>
 CPU<CONFIG>::CPU(const char *name, Object *parent, int coreid) :
@@ -268,7 +269,7 @@ void CPU<CONFIG>::Reset(unsigned int threadsperblock, unsigned int numblocks, un
 template <class CONFIG>
 void CPU<CONFIG>::InitStats(unsigned int code_size)
 {
-	stats.Reset();
+	//stats->Reset();
 	typename CONFIG::address_t pc = CONFIG::CODE_START;
 	while(pc < CONFIG::CODE_START + code_size)
 	{
@@ -278,7 +279,7 @@ void CPU<CONFIG>::InitStats(unsigned int code_size)
 		if(!memory_import->ReadMemory(pc, &insn, 8)) assert(false);
 
 		Instruction<CONFIG> instruction(this, pc, insn);
-		typename CONFIG::operationstats_t * opstats = &stats[pc - CONFIG::CODE_START];
+		typename CONFIG::operationstats_t * opstats = &(*stats)[pc - CONFIG::CODE_START];
 		instruction.GetOperation()->stats = opstats;	// Needed if operation didn't change
 		instruction.Disasm(sstr);
 		//stats[pc - CONFIG::CODE_START].ResetDynamic();
@@ -323,7 +324,7 @@ void CPU<CONFIG>::StepWarp(uint32_t warpid)
 		throw MemoryAccessException<CONFIG>();
 	}
 
-	stats[fetchaddr - CONFIG::CODE_START].Begin();
+	(*stats)[fetchaddr - CONFIG::CODE_START].Begin();
 	// Decode
 	Instruction<CONFIG> insn(this, fetchaddr, iw);
 
@@ -352,7 +353,7 @@ void CPU<CONFIG>::StepWarp(uint32_t warpid)
 	
 	// Join or take other branch?
 	CheckJoin();
-	stats[fetchaddr - CONFIG::CODE_START].End();
+	(*stats)[fetchaddr - CONFIG::CODE_START].End();
 
 	SetPC(GetNPC());
 }
@@ -373,6 +374,16 @@ void CPU<CONFIG>::OnBusCycle()
 template <class CONFIG>
 void CPU<CONFIG>::Run()
 {
+	for(int wid = 0; wid != num_warps; ++wid) {
+		VectorRegister<CONFIG> & r0 = GetGPR(wid, 0);
+		r0.SetScalar(r0.CheckScalar());
+		r0.SetScalar16(false, r0.CheckScalar16(false));
+		r0.SetScalar16(true, r0.CheckScalar16(true));
+		r0.SetStrided(r0.CheckStrided());
+		r0.SetStrided16(false, r0.CheckStrided16(false));
+		r0.SetStrided16(true, r0.CheckStrided16(true));
+	}
+
 	while(!Step() && instruction_counter < max_inst)
 	{
 	}

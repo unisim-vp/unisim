@@ -103,7 +103,8 @@ public:
 	void SetRegNum(int16_t reg, DataType dt, Operand n);
 	
 	void RegRead(VectorRegister<CONFIG> const * regs, DataType dt);
-	void RegWrite(VectorRegister<CONFIG> const * regs, DataType dt);
+	void RegWrite(VectorRegister<CONFIG> const * regs, DataType dt,
+		std::bitset<CONFIG::WARP_SIZE> mask);
 	void Execute(std::bitset<CONFIG::WARP_SIZE> mask) {
 		++count;
 		scalarcount += mask.count();

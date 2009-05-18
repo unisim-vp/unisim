@@ -268,7 +268,9 @@ void Instruction<CONFIG>::WriteBlock(int reg, DataType dt)
 	default:
 		assert(false);
 	}
-	operation->stats->RegWrite(&Temp(0), dt);
+	operation->stats->RegWrite(&Temp(0), dt, mask);
+	// Assumes contiguous register storage...
+	//operation->stats->RegWrite(&cpu->GetGPR(reg), dt);
 }
 
 
@@ -332,7 +334,7 @@ void Instruction<CONFIG>::WriteReg(int reg, int tempbase, RegType rt,
 		}
 		break;
 	}
-	operation->stats->RegWrite(&Temp(tempbase), RegTypeToDataType(rt));
+	operation->stats->RegWrite(&Temp(tempbase), RegTypeToDataType(rt), mask);
 }
 
 template <class CONFIG>

@@ -93,26 +93,35 @@ void OperationStats<CONFIG>::RegRead(VectorRegister<CONFIG> const * regs, DataTy
 }
 
 template<class CONFIG>
-void OperationStats<CONFIG>::RegWrite(VectorRegister<CONFIG> const * regs, DataType dt)
+void OperationStats<CONFIG>::RegWrite(VectorRegister<CONFIG> const * regs, DataType dt,
+		std::bitset<CONFIG::WARP_SIZE> mask)
 {
 	if(CONFIG::STAT_SCALAR_REG) {
 		if(dt == DT_U16 || dt == DT_S16) {
-			scalarRegOutputs += regs[0].CheckScalar16(false);
-			scalarRegOutputsCaught += regs[0].IsScalar16(false);
+			if(mask == ~std::bitset<CONFIG::WARP_SIZE>(0)) {
+				scalarRegOutputs += regs[0].CheckScalar16(false);
+				scalarRegOutputsCaught += regs[0].IsScalar16(false);
+			}
 		}
 		else if(dt == DT_U32 || dt == DT_S32 || dt == DT_F32) {
-			scalarRegOutputs += regs[0].CheckScalar();
-			scalarRegOutputsCaught += regs[0].IsScalar();
+			if(mask == ~std::bitset<CONFIG::WARP_SIZE>(0)) {
+				scalarRegOutputs += regs[0].CheckScalar();
+				scalarRegOutputsCaught += regs[0].IsScalar();
+			}
 		}
 	}
 	if(CONFIG::STAT_STRIDED_REG) {
 		if(dt == DT_U16 || dt == DT_S16) {
-			stridedRegOutputs += regs[0].CheckStrided16(false);
-			stridedRegOutputsCaught += regs[0].IsStrided16(false);
+			if(mask == ~std::bitset<CONFIG::WARP_SIZE>(0)) {
+				stridedRegOutputs += regs[0].CheckStrided16(false);
+				stridedRegOutputsCaught += regs[0].IsStrided16(false);
+			}
 		}
 		else if(dt == DT_U32 || dt == DT_S32 || dt == DT_F32) {
-			stridedRegOutputs += regs[0].CheckStrided();
-			stridedRegOutputsCaught += regs[0].IsStrided();
+			if(mask == ~std::bitset<CONFIG::WARP_SIZE>(0)) {
+				stridedRegOutputs += regs[0].CheckStrided();
+				stridedRegOutputsCaught += regs[0].IsStrided();
+			}
 		}
 	}
 }

@@ -31,14 +31,12 @@
  *
  * Authors: Sylvain Collange (sylvain.collange@univ-perp.fr)
  */
+ 
+#ifndef UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_VECTORFP32SSE_HH
+#define UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_VECTORFP32SSE_HH
 
-#ifndef UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_WARP_TCC
-#define UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_WARP_TCC
+#include <unisim/component/cxx/processor/tesla/register.hh>
 
-#include <cassert>
-
-#include <unisim/component/cxx/processor/tesla/warp.hh>
-#include <unisim/component/cxx/processor/tesla/cpu.hh>
 
 namespace unisim {
 namespace component {
@@ -46,73 +44,32 @@ namespace cxx {
 namespace processor {
 namespace tesla {
 
-
-template <class CONFIG>
-Warp<CONFIG>::Warp() :
-	flow(*this)
+template<class CONFIG>
+struct VectorFP32SSE : VectorFP32Base<CONFIG>
 {
-}
+	static void Init();
+	static VectorRegister<CONFIG> & Mad(VectorRegister<CONFIG> & a,
+		VectorRegister<CONFIG> const & b,
+		VectorRegister<CONFIG> const & c,
+		uint32_t nega, uint32_t negb, uint32_t negc,
+		uint32_t rounding_mode, uint32_t sat = 0);
 
-template <class CONFIG>
-void Warp<CONFIG>::Reset(unsigned int wid, unsigned int bid, unsigned int gpr_num, unsigned int sm_size,
-	std::bitset<CONFIG::WARP_SIZE> init_mask, address_t sm_base, CPU<CONFIG> * cpu)
-{
-	pc = CONFIG::CODE_START;
-	npc = 0;
-	
-	blockid = bid;
-	
-	gpr_window_size = gpr_num;
-	gpr_window_base = gpr_num * wid;
-	
-	sm_window_size = sm_size;
-	sm_window_base = sm_base + sm_size * bid;
-	
-	flow.Reset(cpu, init_mask);
-	
-	for(unsigned int i = 0; i != CONFIG::MAX_PRED_REGS; ++i) {
-		pred_flags[i].Reset();
-	}
-	
-	for(unsigned int i = 0; i != CONFIG::MAX_ADDR_REGS; ++i) {
-		addr[i].Reset();
-	}
-	
-	
-	state = Active;
-	if(cpu->trace_reset) {
-		cerr << " Warp " << id << " (" << bid << ", " << wid << "): reset\n";
-		cerr << "  " << gpr_window_size << " GPRs from " << gpr_window_base << "\n";
-		cerr << "  " << sm_size << "B shared mem from " << std::hex << sm_window_base << std::dec << "\n";
-	}
-}
+	static VectorRegister<CONFIG> & Mul(VectorRegister<CONFIG> & a, VectorRegister<CONFIG> const & b,
+		uint32_t nega, uint32_t negb,
+		uint32_t rounding_mode, uint32_t sat = 0);
+	static VectorRegister<CONFIG> & Add(VectorRegister<CONFIG> & a, VectorRegister<CONFIG> const & b,
+		uint32_t nega, uint32_t negb,
+		uint32_t rounding_mode, uint32_t sat = 0);
 
-template <class CONFIG>
-uint32_t Warp<CONFIG>::GetGPRAddress(uint32_t reg) const
-{
-	// 32-bit access
-	// No special register here
-	if(reg >= gpr_window_size) {
-		std::cerr << "Warp " << id << ": accessing r" << reg << " on a " << gpr_window_size << " reg window\n";
-	}
-	assert(reg < gpr_window_size);
-	return gpr_window_base + reg;
-}
+private:
+	static unsigned int const WARP_BLOCKS = CONFIG::WARP_SIZE / 4;
 
-template <class CONFIG>
-typename CONFIG::address_t Warp<CONFIG>::GetSMAddress(uint32_t sm) const
-{
-	assert(sm < sm_window_size);
-	return sm_window_base + sm;
-}
-
-
+};
 
 } // end of namespace tesla
 } // end of namespace processor
 } // end of namespace cxx
 } // end of namespace component
 } // end of namespace unisim
-
 
 #endif

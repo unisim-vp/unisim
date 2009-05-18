@@ -93,6 +93,9 @@ iadd_full.execute = {
 	//insn->SetPredI32(output, flags);
 }
 
+//specialize iadd_full_normal(sat=0, w32=1, src3_neg=0)
+
+
 op iadd_half( \
 	0x2[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src1_sh*/?[1]:/*src2_cm*/?[1]:src3_neg[1]:/*imm_lo*/?[6]:\
 	w32[1]:/*src1*/?[6]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/0[1] \
@@ -106,6 +109,7 @@ op iadd_imm( \
 
 group iadd_halfimm(iadd_half, iadd_imm)
 
+//specialize iadd_half(w32=1, src3_neg=0)
 
 iadd_halfimm.disasm = {
 	buffer << "add";
@@ -256,6 +260,7 @@ op imad_full_join( \
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1] \
 )
 
+//specialize imad_full_normal(subop=0, src1_neg=0, src3_neg=0)
 
 group imad_full(imad_full_normal, imad_full_end, imad_full_join)
 
@@ -526,6 +531,9 @@ op imul24_full_normal( \
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1] \
 )
 
+//specialize imul24_full_normal(sat=0, src1_neg=0, src2_neg=0, w32=1, issigned=1, hi=0)
+//specialize imul24_full_normal(sat=0, src1_neg=0, src2_neg=0, w32=1, issigned=0, hi=0)
+
 op imul24_full_end( \
 	/*subop*/0[3]:/*?*/0[1]:sat[1]:src1_neg[1]:/*const_seg*/?[4]:/*src1_sh*/?[1]:/*?*/0[4]:w32[1]:issigned[1]:hi[1]:?[12]:/*marker*/1[2]: \
 	0x4[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:src2_neg[1]:/*src2*/?[6]:\
@@ -542,6 +550,9 @@ op imul24_half( \
 	0x4[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src1_sm*/?[1]:/*src2_cm*/?[1]:w32[1]:/*src2*/?[6]:\
 	issigned[1]:/*src1*/?[6]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/0[1] \
 )
+
+//specialize imul24_half(w32=1, issigned=1)
+
 
 op imul24_imm( \
 	/*subop*/0[3]:/*?*/0[1]:/*imm_hi*/?[26]:/*marker*/3[2]: \
@@ -662,6 +673,9 @@ op icvt_full_normal( \
 	0xa[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:f64[1]:/*?*/0[6]:\
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1]\
 )
+
+// cvt.u32.u16.rn
+//specialize icvt_full_normal(sign=1, data_32=1, abs_sat=0, cvt_round=0, cvt_type=0,f64=0)
 
 op icvt_full_end( \
 	/*subop*/0[3]:/*?*/0[1]:sign[1]:data_32[1]:/*const_seg*/?[4]:/*src1_sh*/?[1]:abs_sat[2]:cvt_round[2]:cvt_type[3]:\
@@ -798,21 +812,23 @@ icvtn_full_noimm.execute = {
 //--------------------------------------------------------------------
 
 // Int to float
-op icvtf_full_normal( \
+op i2f_full_normal( \
 	/*subop*/2[3]:/*?*/0[1]:sign[1]:data_32[1]:/*const_seg*/?[4]:/*src1_sh*/?[1]:/*abs_sat*/0[2]:cvt_round[2]:cvt_type[3]:\
 	/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output*/?[1]:/*addr_hi*/?[1]:/*marker*/0[2]: \
 	0xa[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:f64[1]:/*?*/0[6]:\
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1]\
 )
 
-op icvtf_full_end( \
+//specialize icvtf_full_normal(sign=1, data_32=1, cvt_round=0, cvt_type=7,f64=0)
+
+op i2f_full_end( \
 	/*subop*/2[3]:/*?*/0[1]:sign[1]:data_32[1]:/*const_seg*/?[4]:/*src1_sh*/?[1]:/*abs_sat*/0[2]:cvt_round[2]:cvt_type[3]:\
 	/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output*/?[1]:/*addr_hi*/?[1]:/*marker*/1[2]: \
 	0xa[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:f64[1]:/*?*/0[6]:\
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1]\
 )
 
-op icvtf_full_join( \
+op i2f_full_join( \
 	/*subop*/2[3]:/*?*/0[1]:sign[1]:data_32[1]:/*const_seg*/?[4]:/*src1_sh*/?[1]:/*abs_sat*/0[2]:cvt_round[2]:cvt_type[3]:\
 	/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output*/?[1]:/*addr_hi*/?[1]:/*marker*/2[2]: \
 	0xa[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:f64[1]:/*?*/0[6]:\
@@ -820,11 +836,11 @@ op icvtf_full_join( \
 )
 
 
-group icvtf_full(icvtf_full_normal, icvtf_full_end, icvtf_full_join)
+group i2f_full(i2f_full_normal, i2f_full_end, i2f_full_join)
 
 // No immediate : dest = conv(src1)
 
-icvtf_full.init = {
+i2f_full.init = {
 	typedef Operation<CONFIG> inherited;
 	//DataType dt = RegTypeToDataType(RegType(data_32));
 	inherited::allow_segment = false;
@@ -834,7 +850,7 @@ icvtf_full.init = {
 	inherited::op_type[OpSrc3] = DT_NONE;
 }
 
-icvtf_full.disasm = {
+i2f_full.disasm = {
 	// data_32 = 0 -> mov.b16
 	// data_32 = 1 -> mov.b32
 	// cvt_round = 1 -> default, round down?
@@ -852,20 +868,20 @@ icvtf_full.disasm = {
 	insn->DisasmSrc1(buffer);
 }
 
-icvtf_full.execute = {
+i2f_full.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 	// dest = a
 	// TODO: Read 2 regs if 64-bit
 	assert(!f64);
 	reg_t & a = insn->GetSrc1();
-	reg_t output = ConvertFloatInt(a, cvt_round, cvt_type, data_32);
+	reg_t output = CONFIG::vfp32::ConvertI2F(a, cvt_round, cvt_type, data_32);
 
 	insn->SetDest(output);
 	//insn->SetPredFP32(output);
 }
 
 
-group icvt(icvt_full_noimm, icvtf_full)
+group icvt(icvt_full_noimm, i2f_full)
 
 icvt.classify = {
 	this->stats->SetInteger();
@@ -885,12 +901,14 @@ op shl_full( \
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1] \
 )
 
+
 op shl_full_imm2( \
 	/*subop*/6[3]:/*?*/0[1]:issigned[1]:w32[1]:?[5]:/*imm*/1[1]:?[18]:/*marker*/?[2]: \
 	0x3[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:/*src3_neg*/?[1]:src2[6]:\
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1] \
 )
 
+//specialize shl_full_imm2(issigned=0, w32=1)
 
 // TODO: end, join
 
@@ -968,6 +986,7 @@ op shr_full_imm2( \
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1] \
 )
 
+//specialize shr_full_imm2(issigned=0, w32=1)
 
 // TODO: end, join?
 
@@ -1045,6 +1064,8 @@ op and_full( \
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1] \
 )
 
+//specialize and_full(w32=1, src1_not=0, src2_not=0)
+
 and_full.disasm = {
 	buffer << "and";
 	insn->DisasmControl(buffer);
@@ -1087,6 +1108,8 @@ op or_full( \
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1] \
 )
 
+//specialize or_full(w32=1, src1_not=0, src2_not=0)
+
 or_full.disasm = {
 	buffer << "or";
 	insn->DisasmControl(buffer);
@@ -1128,6 +1151,8 @@ op xor_full( \
 	0xd[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:/*src3_neg*/?[1]:/*src2*/?[6]:\
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1] \
 )
+
+//specialize xor_full(w32=1, src1_not=0, src2_not=0)
 
 xor_full.disasm = {
 	buffer << "xor";
@@ -1179,6 +1204,9 @@ op set_full( \
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1] \
 )
 
+//specialize set_full(sign=1, w32=1, abs_sat=0)
+//specialize set_full(sign=0, w32=1, abs_sat=0)
+
 set_full.disasm = {
 	buffer << "set.";
 	buffer << SetCondString(SetCond(cond));
@@ -1224,6 +1252,8 @@ op min_full_normal( \
 	0x3[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:/*src2*/?[7]:\
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1] \
 )
+
+//specialize min_full_normal(sign=1, w32=1)
 
 op min_full_end( \
 	/*subop*/5[3]:/*?*/0[1]:sign[1]:w32[1]:?[24]:/*marker*/1[2]: \
@@ -1278,6 +1308,8 @@ op max_full_normal( \
 	0x3[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:/*src2*/?[7]:\
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1] \
 )
+
+//specialize max_full_normal(sign=1, w32=1)
 
 op max_full_end( \
 	/*subop*/4[3]:/*?*/0[1]:sign[1]:w32[1]:?[24]:/*marker*/1[2]: \

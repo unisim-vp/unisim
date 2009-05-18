@@ -171,19 +171,25 @@ inline DataType SMTypeToDataType(SMType st)
 
 
 template <class CONFIG>
-VectorRegister<CONFIG>::VectorRegister() :
-	scalar(false), strided(false)
+VectorRegister<CONFIG>::VectorRegister()
 {
-	scalar16[0] = scalar16[1] = false;
-	strided16[0] = strided16[1] = false;
+	SetScalar(false);
+	SetStrided(false);
+	SetScalar16(0, false);
+	SetScalar16(1, false);
+	SetStrided16(0, false);
+	SetStrided16(1, false);
 }
 
 template <class CONFIG>
-VectorRegister<CONFIG>::VectorRegister(uint32_t val) :
-	scalar(true), strided(true)
+VectorRegister<CONFIG>::VectorRegister(uint32_t val)
 {
-	scalar16[0] = scalar16[1] = true;
-	strided16[0] = strided16[1] = true;
+	SetScalar(true);
+	//SetStrided(true);
+	//SetScalar16(0, true);
+	//SetScalar16(1, true);
+	//SetStrided16(0, true);
+	//SetStrided16(1, true);
 	std::fill(v, v + WARP_SIZE, val);
 }
 
@@ -194,10 +200,12 @@ VectorRegister<CONFIG>::VectorRegister(VectorAddress<CONFIG> const & addr)
 	{
 		WriteLane(addr[i], i);
 	}
-	scalar = addr.IsScalar();
-	strided = addr.IsStrided();
-	scalar16[0] = scalar16[1] = scalar;
-	strided16[0] = strided16[1] = false;
+	SetScalar(addr.IsScalar());
+	SetStrided(addr.IsStrided());
+	SetScalar16(0, addr.IsScalar());
+	SetScalar16(1, addr.IsScalar());
+	SetStrided16(0, false);
+	SetStrided16(1, false);
 }
 
 template <class CONFIG>
@@ -210,12 +218,21 @@ void VectorRegister<CONFIG>::Write(VectorRegister<CONFIG> const & vec, bitset<CO
 		}
 	}
 	if(mask == ~bitset<CONFIG::WARP_SIZE>(0)) {
-		scalar = vec.IsScalar();
-		strided = vec.IsStrided();
+		SetScalar(vec.IsScalar());
+		SetStrided(vec.IsStrided());
+		SetScalar16(false, vec.IsScalar16(false));
+		SetStrided16(false, vec.IsStrided16(false));
+		SetScalar16(true, vec.IsScalar16(true));
+		SetStrided16(true, vec.IsStrided16(true));
 	}
 	else if(mask != 0) {
-		scalar = false;
-		strided = false;
+		SetScalar(false);
+		SetStrided(false);
+		SetScalar16(false, false);
+		SetStrided16(false, false);
+		SetScalar16(true, false);
+		SetStrided16(true, false);
+		
 	}
 }
 
@@ -233,6 +250,16 @@ void VectorRegister<CONFIG>::Write16(VectorRegister<CONFIG> const & vec,
 				v[i] = (v[i] & 0xffff0000) | (vec[i] & 0x0000ffff);
 			}
 		}
+	}
+	SetScalar(false);
+	SetStrided(false);
+	if(mask == ~bitset<CONFIG::WARP_SIZE>(0)) {
+		SetScalar16(hi, vec.IsScalar16(false));
+		SetStrided16(hi, vec.IsStrided16(false));
+	}
+	else if(mask != 0) {
+		SetScalar16(hi, false);
+		SetStrided16(hi, false);
 	}
 }
 
@@ -295,8 +322,10 @@ VectorRegister<CONFIG> VectorRegister<CONFIG>::Split(int hilo) const
 			vr[i] = (v[i] & 0x0000ffff);
 		}
 	}
-	vr.scalar = vr.scalar16[0] = scalar16[hilo];
-	vr.strided = vr.strided16[0] = strided16[hilo];
+	vr.SetScalar(scalar16[hilo]);
+	vr.SetScalar16(0, scalar16[hilo]);
+	vr.SetStrided(strided16[hilo]);
+	vr.SetStrided16(0, strided16[hilo]);
 	return vr;
 }
 
@@ -411,12 +440,16 @@ std::ostream & operator << (std::ostream & os, VectorRegister<CONFIG> const & r)
 template <class CONFIG>
 VectorAddress<CONFIG>::VectorAddress()
 {
+	SetScalar(false);
+	SetStrided(false);
 }
 
 template <class CONFIG>
 VectorAddress<CONFIG>::VectorAddress(VectorAddress<CONFIG>::address_t addr)
 {
 	std::fill(v, v + WARP_SIZE, addr);
+	SetScalar(true);
+	SetStrided(true);
 }
 
 template <class CONFIG>
@@ -425,6 +458,8 @@ VectorAddress<CONFIG>::VectorAddress(VectorRegister<CONFIG> const & vr)
 	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i) {
 		v[i] = vr[i];
 	}
+	SetScalar(vr.IsScalar());
+	SetStrided(vr.IsStrided());
 }
 
 template <class CONFIG>
@@ -440,6 +475,8 @@ template <class CONFIG>
 void VectorAddress<CONFIG>::Reset()
 {
 	std::fill(v, v + WARP_SIZE, 0);
+	SetScalar(false);
+	SetStrided(false);
 }
 
 template <class CONFIG>

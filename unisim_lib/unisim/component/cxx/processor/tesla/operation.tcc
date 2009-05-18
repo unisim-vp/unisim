@@ -76,7 +76,7 @@ Operation<CONFIG>::Operation(typename CONFIG::address_t addr, typename CONFIG::i
 	dest = dest_decoder.NCDecode(addr, iw);
 	control = control_decoder.NCDecode(addr, iw);
 
-	stats = &CPU<CONFIG>::stats[addr - CONFIG::CODE_START];
+	stats = &(*CPU<CONFIG>::stats)[addr - CONFIG::CODE_START];
 	//stats->ResetStatic();
 	//std::ostringstream oss;
 	//dest->disasmPred(cpu, this, oss);

@@ -38,6 +38,7 @@
 #include <unisim/component/cxx/processor/tesla/simfloat.hh>
 #include <unisim/component/cxx/processor/tesla/hostfloat/hostfloat.hh>
 #include <unisim/component/cxx/processor/tesla/stats.hh>
+#include <unisim/component/cxx/processor/tesla/vectorfp32.hh>
 
 namespace unisim {
 namespace component {
@@ -61,6 +62,8 @@ public:
 //	typedef FloatDAZFTZ<SoftFloatIEEE> float_t;
 	typedef hostfloat::TeslaBinary32 float_t;
 	typedef FloatDAZFTZ<SoftHalfIEEE> half_t;
+	
+	typedef VectorFP32<BaseConfig> vfp32;
 	
 	typedef Stats<BaseConfig> stats_t;
 	typedef OperationStats<BaseConfig> operationstats_t;
@@ -126,7 +129,7 @@ public:
 
 	static bool const STAT_SCALAR_REG = false;
 	static bool const STAT_STRIDED_REG = false;
-	static bool const STAT_SIMTIME = true;
+	static bool const STAT_SIMTIME = false;
 };
 
 

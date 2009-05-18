@@ -1,3 +1,5 @@
+* Uses SSE (packed) on platforms that supports it
+
 Version 0.2, 04 May 2009
 * Statistics collection infrastructure
 * New control flow instructions: breakaddr, break

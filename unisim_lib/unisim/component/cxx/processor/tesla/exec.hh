@@ -32,8 +32,8 @@
  * Authors: Sylvain Collange (sylvain.collange@univ-perp.fr)
  */
  
-#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_EXEC_HH__
-#define __UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_EXEC_HH__
+#ifndef UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_EXEC_HH
+#define UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_EXEC_HH
 
 #include <unisim/component/cxx/processor/tesla/register.hh>
 
@@ -43,23 +43,6 @@ namespace component {
 namespace cxx {
 namespace processor {
 namespace tesla {
-
-template<class CONFIG>
-VectorRegister<CONFIG> FSMad(VectorRegister<CONFIG> const & a,
-	VectorRegister<CONFIG> const & b,
-	VectorRegister<CONFIG> const & c,
-	uint32_t nega, uint32_t negb, uint32_t negc,
-	uint32_t rounding_mode, uint32_t sat = 0);
-template<class CONFIG>
-VectorRegister<CONFIG> FSMul(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
-	uint32_t nega, uint32_t negb,
-	uint32_t rounding_mode, uint32_t sat = 0);
-template<class CONFIG>
-VectorRegister<CONFIG> FSAdd(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
-	uint32_t nega, uint32_t negb,
-	uint32_t rounding_mode, uint32_t sat = 0);
-template<class CONFIG>
-VectorRegister<CONFIG> FSMov(VectorRegister<CONFIG> & a, bool do_neg);
 
 template<class CONFIG>
 VectorRegister<CONFIG> IAdd(VectorRegister<CONFIG> const & a,
@@ -101,28 +84,7 @@ VectorRegister<CONFIG> Mad24(VectorRegister<CONFIG> const & a,
 
 
 template<class CONFIG>
-VectorFlags<CONFIG> ComputePredSetFP32(VectorRegister<CONFIG> & output,
-	VectorRegister<CONFIG> const & a,
-	VectorRegister<CONFIG> const & b,
-	SetCond sc,
-	bool is_signed,
-	bool b32);
-
-template<class CONFIG>
 VectorRegister<CONFIG> ConvertIntInt(VectorRegister<CONFIG> const & a, uint32_t cvt_round, uint32_t cvt_type, bool b32, AbsSat abssat, bool neg = false);
-
-template<class CONFIG>
-VectorRegister<CONFIG> ConvertFloatInt(VectorRegister<CONFIG> const & a, uint32_t cvt_round, uint32_t cvt_type, bool b32);
-
-// In-place
-template<class CONFIG>
-void ConvertFloatFloat(VectorRegister<CONFIG> & a, bool dest_32, ConvType srctype,
-	RoundingMode cvt_round, bool cvt_int, AbsSat abssat);
-
-// In-place
-template<class CONFIG>
-void ConvertIntFloat(VectorRegister<CONFIG> & a, bool issigned, bool dest_32, ConvType srctype,
-	RoundingMode cvt_round);
 
 template<class CONFIG>
 VectorRegister<CONFIG> ShiftLeft(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
@@ -159,51 +121,6 @@ template<class CONFIG>
 VectorRegister<CONFIG> Max(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
 	unsigned int m32, unsigned int issigned);
 
-template<class CONFIG>
-inline uint8_t Compare(typename CONFIG::float_t a, typename CONFIG::float_t b);
-
-template<class CONFIG>
-VectorFlags<CONFIG> ComputePredSetFP32(VectorRegister<CONFIG> & output,
-	VectorRegister<CONFIG> const & a,
-	VectorRegister<CONFIG> const & b,
-	SetCond sc,
-	bool a_abs);
-
-template<class CONFIG>
-VectorRegister<CONFIG> Rcp(VectorRegister<CONFIG> const & a);
-
-template<class CONFIG>
-VectorRegister<CONFIG> Rsq(VectorRegister<CONFIG> const & a);
-
-template<class CONFIG>
-VectorRegister<CONFIG> Log2(VectorRegister<CONFIG> const & a);
-
-template<class CONFIG>
-VectorRegister<CONFIG> RRExp2(VectorRegister<CONFIG> const & a);
-
-template<class CONFIG>
-VectorRegister<CONFIG> RRTrig(VectorRegister<CONFIG> const & a);
-
-template<class CONFIG>
-VectorRegister<CONFIG> Exp2(VectorRegister<CONFIG> const & a);
-
-template<class CONFIG>
-VectorRegister<CONFIG> Sin(VectorRegister<CONFIG> const & a);
-
-template<class CONFIG>
-VectorRegister<CONFIG> Cos(VectorRegister<CONFIG> const & a);
-
-inline uint32_t FPToFX(float f);
-inline double FXToFP(uint32_t f);
-
-template<class CONFIG>
-VectorRegister<CONFIG> FSMin(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b, AbsSat abs_sat);
-
-template<class CONFIG>
-VectorRegister<CONFIG> FSMax(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b, AbsSat abs_sat);
-
-template<class CONFIG>
-void AbsSaturate(typename CONFIG::float_t & f, AbsSat abssat);
 
 } // end of namespace tesla
 } // end of namespace processor
