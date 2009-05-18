@@ -165,24 +165,30 @@ public:
 	// Implementation
 	void Input(bool pwmValue[PWM_SIZE])
 	{
-		PWM_Payload<PWM_SIZE> *payload;
+		PWM_Payload<PWM_SIZE> *last_payload = NULL;
+		PWM_Payload<PWM_SIZE> *payload = NULL;
+
 		do
 		{
-			quantumkeeper.sync();
-			wait(input_payload_queue.get_event());
-
+			last_payload = payload;
 			payload = input_payload_queue.get_next_transaction();
-		} while(!payload);
+
+			if (CONFIG::DEBUG_ENABLE && payload) {
+
+				cout << sc_time_stamp() << ":" << name() << "::PWM:: Receive " << payload->serialize() << endl;
+			}
+		} while(payload);
+
+		payload = last_payload;
 
 		if (CONFIG::DEBUG_ENABLE) {
 
-			cout << sc_time_stamp() << ":" << name() << "::PWM:: Receive " << payload->serialize() << endl;
+			cout << sc_time_stamp() << ":" << name() << "::PWM:: Last Receive " << payload->serialize() << endl;
 		}
 
 		for (int i=0; i<PWM_SIZE; i++) {
 			pwmValue[i] = payload->pwmChannel[i];
 		}
-		payload->release();
 
 	}
 
@@ -277,6 +283,7 @@ public:
 		num_cycles = 1;
 		sc_time delay(num_cycles * cycle_time);
 
+
 		while(1)
 		{
 			double atd1_anValue[ATD1_SIZE];
@@ -297,6 +304,9 @@ public:
 
 			Output_ATD1(atd1_anValue);
 			Output_ATD0(atd0_anValue);
+
+			quantumkeeper.sync();
+			wait(input_payload_queue.get_event());
 
 			Input(pwmValue);
 

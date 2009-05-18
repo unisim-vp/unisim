@@ -552,9 +552,7 @@ int sc_main(int argc, char *argv[])
 	cpu->socket(mmc->cpu_socket);
 	cpu->toXINT(s12xint->fromCPU_Target);
 
-	sc_signal<bool>  interruptReq;
-	s12xint->toCPU_Initiator(interruptReq);
-	cpu->interruptRequest(interruptReq);
+	s12xint->toCPU_Initiator(cpu->interrupt_request);
 
 //	int_gen->interrupt_request(s12xint->interrupt_request);
 	pwm->interrupt_request(s12xint->interrupt_request);
