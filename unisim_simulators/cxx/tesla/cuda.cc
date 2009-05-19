@@ -288,8 +288,19 @@ CUresult  CUDAAPI cuModuleGetGlobal(CUdeviceptr *dptr, unsigned int *bytes, CUmo
 
 CUresult  CUDAAPI cuModuleGetTexRef(CUtexref *pTexRef, CUmodule hmod, const char *name)
 {
-  cerr << "function not implemented !!!" << endl;
-  assert(false);
+	if(verbose) cerr << "cuModuleGetTexRef(..." << hmod << ", " << name << ")" << endl;
+	CHECK_PTR(hmod);
+	Module<MyConfig>* mod = static_cast<Module<MyConfig>*>(hmod);
+	try {
+		Sampler<MyConfig> & smp = mod->GetSampler(name);
+		if(pTexRef != 0) {
+			*pTexRef = &smp;
+		}
+		return CUDA_SUCCESS;
+	}
+	catch(CudaException e) {
+		return e.code;
+	}
 }
 
 
@@ -739,37 +750,74 @@ CUresult  CUDAAPI cuTexRefSetArray( CUtexref hTexRef, CUarray hArray, unsigned i
 //        #define CU_TRSA_OVERRIDE_FORMAT 0x01
 CUresult  CUDAAPI cuTexRefSetAddress( unsigned int *ByteOffset, CUtexref hTexRef, CUdeviceptr dptr, unsigned int bytes )
 {
-  cerr << "function not implemented !!!" << endl;
-  assert(false);
+	if(verbose) cerr << "cuTexRefSetAddress(...," << hTexRef << ", " << dptr << ", " << bytes << ")" << endl;
+	Sampler<MyConfig> * sampler = static_cast<Sampler<MyConfig> *>(hTexRef);
+	try {
+		unsigned int offset = sampler->SetAddress(dptr, bytes);
+		if(ByteOffset != 0)
+			*ByteOffset = offset;
+		return CUDA_SUCCESS;
+	}
+	catch(CudaException e) {
+		return e.code;
+	}
 }
 
 
 CUresult  CUDAAPI cuTexRefSetFormat( CUtexref hTexRef, CUarray_format fmt, int NumPackedComponents )
 {
-  cerr << "function not implemented !!!" << endl;
-  assert(false);
+	if(verbose) cerr << "cuTexRefSetFormat(...," << hTexRef << ", " << fmt << ", " << NumPackedComponents << ")" << endl;
+	Sampler<MyConfig> * sampler = static_cast<Sampler<MyConfig> *>(hTexRef);
+	try {
+		sampler->SetFormat(fmt, NumPackedComponents);
+		return CUDA_SUCCESS;
+	}
+	catch(CudaException e) {
+		return e.code;
+	}
 }
 
 
 
 CUresult  CUDAAPI cuTexRefSetAddressMode( CUtexref hTexRef, int dim, CUaddress_mode am )
 {
-  cerr << "function not implemented !!!" << endl;
-  assert(false);
+	if(verbose) cerr << "cuTexRefSetAddressMode(...," << hTexRef << ", " << dim << ", " << am << ")" << endl;
+	Sampler<MyConfig> * sampler = static_cast<Sampler<MyConfig> *>(hTexRef);
+	try {
+		sampler->SetAddressMode(dim, am);
+		return CUDA_SUCCESS;
+	}
+	catch(CudaException e) {
+		return e.code;
+	}
 }
 
 
 CUresult  CUDAAPI cuTexRefSetFilterMode( CUtexref hTexRef, CUfilter_mode fm )
 {
-  cerr << "function not implemented !!!" << endl;
-  assert(false);
+	if(verbose) cerr << "cuTexRefSetFilterMode(...," << hTexRef << ", " << fm << endl;
+	Sampler<MyConfig> * sampler = static_cast<Sampler<MyConfig> *>(hTexRef);
+	try {
+		sampler->SetFilterMode(fm);
+		return CUDA_SUCCESS;
+	}
+	catch(CudaException e) {
+		return e.code;
+	}
 }
 
 
 CUresult  CUDAAPI cuTexRefSetFlags( CUtexref hTexRef, unsigned int Flags )
 {
-  cerr << "function not implemented !!!" << endl;
-  assert(false);
+	if(verbose) cerr << "cuTexRefSetFlags(...," << hTexRef << ", " << Flags << endl;
+	Sampler<MyConfig> * sampler = static_cast<Sampler<MyConfig> *>(hTexRef);
+	try {
+		sampler->SetFlags(Flags);
+		return CUDA_SUCCESS;
+	}
+	catch(CudaException e) {
+		return e.code;
+	}
 }
 
 

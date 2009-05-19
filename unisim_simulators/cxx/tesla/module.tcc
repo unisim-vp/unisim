@@ -306,6 +306,132 @@ SegmentType MemSegment<CONFIG>::Type() const
 
 //////////////////////////////////////////////////////////////////////
 
+template<class CONFIG>
+Sampler<CONFIG>::Sampler(std::istream & is)
+{
+	typedef string::iterator it_t;
+	while(true)
+	{
+		if(!is) {
+			throw ParsingException("Unexpected EOF");
+		}
+		string line;
+		getline(is, line);
+		if(Strip(line) != "")
+		{
+			it_t closebrace = find(line.begin(), line.end(), '}');
+			it_t openbrace = find(line.begin(), line.end(), '{');
+			it_t equalpos = find(line.begin(), line.end(), '=');
+			if(openbrace != line.end())
+			{
+				string cmd = Strip(string(line.begin(), openbrace));
+				if(closebrace != line.end())
+				{
+					throw ParsingException("Unsupported in-line field");
+				}
+				else
+				{
+					throw ParsingException("Unknown field : ", cmd);
+				}
+			}
+			else if(equalpos != line.end())
+			{
+				string valname = Strip(string(line.begin(), equalpos));
+				string valvalue = Strip(string(++equalpos, line.end()));
+				SetAttribute(valname, valvalue);
+			}
+			else if(closebrace != line.end())
+			{
+				break;
+			}
+			// Else, just ignore
+		}
+	}
+}
+
+template<class CONFIG>
+void Sampler<CONFIG>::SetAttribute(std::string const & attrname, std::string const & value)
+{
+	cerr << "  " << attrname << " = " << value << endl;
+	if(attrname == "name")
+	{
+		name = value;
+	}
+	else if(attrname == "texunit")
+	{
+		texunit = atoi(value.c_str());
+	}
+	else
+	{
+		throw ParsingException("Unknown attribute : ", attrname);
+	}
+}
+
+template<class CONFIG>
+Sampler<CONFIG>::Sampler() :
+	texunit(-1),
+	address(0),
+	bytes(0),
+	format(CU_AD_FORMAT_UNSIGNED_INT32),
+	num_packed_components(1),
+	filter_mode(CU_TR_FILTER_MODE_POINT),
+	flags(0)
+{
+	for(int d = 0; d != 3; ++d) {
+		address_mode[d] = CU_TR_ADDRESS_MODE_WRAP;
+	}
+}
+
+template<class CONFIG>
+std::string const & Sampler<CONFIG>::Name() const
+{
+	return name;
+}
+
+template<class CONFIG>
+int Sampler<CONFIG>::TexUnit() const
+{
+	return texunit;
+}
+
+template<class CONFIG>
+unsigned int Sampler<CONFIG>::SetAddress(typename CONFIG::address_t addr, unsigned int bytes)
+{
+	address = addr;
+	this->bytes = bytes;
+}
+
+template<class CONFIG>
+void Sampler<CONFIG>::SetFormat(CUarray_format fmt, int NumPackedComponents)
+{
+	format = fmt;
+	num_packed_components = NumPackedComponents;
+}
+
+template<class CONFIG>
+void Sampler<CONFIG>::SetAddressMode(int dim, CUaddress_mode am)
+{
+	if(dim < 0 || dim > 2) {
+		throw CudaException(CUDA_ERROR_INVALID_VALUE);
+	}
+	address_mode[dim] = am;
+}
+
+template<class CONFIG>
+void Sampler<CONFIG>::SetFilterMode(CUfilter_mode fm)
+{
+	filter_mode = fm;
+}
+
+template<class CONFIG>
+void Sampler<CONFIG>::SetFlags(unsigned int Flags)
+{
+	flags = Flags;
+}
+
+
+//////////////////////////////////////////////////////////////////////
+
 
 template<class CONFIG>
 Module<CONFIG>::Module(char const * fname)
@@ -341,6 +467,16 @@ MemSegment<CONFIG> & Module<CONFIG>::GetGlobal(char const * name)
 {
 	typename SegMap::iterator it = global_segments.find(string(name));
 	if(it == global_segments.end()) {
+		throw CudaException(CUDA_ERROR_NOT_FOUND);
+	}
+	return it->second;
+}
+
+template<class CONFIG>
+Sampler<CONFIG> & Module<CONFIG>::GetSampler(char const * name)
+{
+	typename SamplerMap::iterator it = samplers.find(string(name));
+	if(it == samplers.end()) {
 		throw CudaException(CUDA_ERROR_NOT_FOUND);
 	}
 	return it->second;
@@ -399,10 +535,13 @@ void Module<CONFIG>::LoadCubin(istream & is)
 						}
 						global_segments[cs.Name()] = cs;
 					}
-					else if(cmd == "samplers")
+					else if(cmd == "sampler")
 					{
-						// ignore for now
-						cerr << "Warning: skipping section: samplers\n";
+						Sampler<CONFIG> s(is);
+						if(s.Name().empty()) {
+							throw ParsingException("Unnamed sampler field");
+						}
+						samplers[s.Name()] = s;
 					}
 					else if(cmd == "reloc")
 					{

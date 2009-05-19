@@ -1,5 +1,7 @@
 See unisim_lib/unisim/component/cxx/processor/tesla/ChangeLog for the simulator changelog.
 
+* Stats are preserved across kernel calls
+
 Version 0.2, 04 May 2009
 * Device <-> Device linear memory copy
 * Support for exporting statistics in CSV format
