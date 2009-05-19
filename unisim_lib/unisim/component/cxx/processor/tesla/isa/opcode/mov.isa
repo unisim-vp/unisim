@@ -715,4 +715,10 @@ sta.execute = {
 	// Nothing to do
 }
 
+op tex_full( \
+	/*subop*/0[3]:/*?*/0[1]:/*cvt_round_half*/0[1]:/*?*/0[3]:?[3]:/*?*/0[1]:/*?*/0[3]:?[1]:bf2[2]\
+	:/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output*/?[1]:unknown[1]:/*marker*/?[2]:\
+	0xf[4]:cube[1]:bf1[2]:ope[3]:?[6]:\
+	src1[7]:dest[7]:/*flow*/0[1]:/*IWidth*/1[1]\
+)
 
