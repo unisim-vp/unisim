@@ -715,10 +715,61 @@ sta.execute = {
 	// Nothing to do
 }
 
-op tex_full( \
-	/*subop*/0[3]:/*?*/0[1]:/*cvt_round_half*/0[1]:/*?*/0[3]:?[3]:/*?*/0[1]:/*?*/0[3]:?[1]:bf2[2]\
+op tex1d_s32_full( \
+	/*subop*/0[3]:/*?*/0[1]:/*cvt_round_half*/0[1]:/*?*/0[3]:?[3]:/*?*/0[1]:/*?*/0[3]:?[1]:bf_lo[2]\
 	:/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output*/?[1]:unknown[1]:/*marker*/?[2]:\
-	0xf[4]:cube[1]:bf1[2]:ope[3]:?[6]:\
-	src1[7]:dest[7]:/*flow*/0[1]:/*IWidth*/1[1]\
+	0xf[4]:cube[1]:bf_hi[2]:/*ope*/4[3]:sampler2[6]:?[1]:\
+	sampler[6]:dest[7]:/*flow*/0[1]:/*IWidth*/1[1]\
 )
 
+// TODO: end, join, half...
+
+tex1d_s32_full.init = {
+	typedef Operation<CONFIG> inherited;
+	inherited::allow_segment = false;
+	inherited::op_type[OpDest] = DT_NONE;
+	inherited::op_type[OpSrc1] = DT_NONE;
+	inherited::op_type[OpSrc2] = DT_NONE;
+	inherited::op_type[OpSrc3] = DT_NONE;
+}
+
+tex1d_s32_full.disasm = {
+	unsigned int bitfield = (bf_hi << 2) | bf_lo;
+	buffer << "tex.1d.s32";
+	buffer << " ";
+	buffer << "{";
+	// From decuda
+	int j = 0;
+	for(int i = 0; i != 4; ++i)
+	{
+		if(bitfield & (1 << i)) {
+			buffer << "r" << dest + j;
+			++j;
+		}
+		else {
+			buffer << "_";
+		}
+		
+		if(i != 3)
+			buffer << ",";
+	}
+	buffer << "}, ";
+	buffer << "tex" << sampler;
+	buffer << ", ";
+	buffer << "{r" << dest << "}";
+}
+
+tex1d_s32_full.read = {
+	insn->ReadBlock(dest, DT_U32);
+}
+
+tex1d_s32_full.execute = {
+}
+
+tex1d_s32_full.write = {
+}
+
+group tex(tex1d_s32_full)
+
+tex.classify = {
+}
