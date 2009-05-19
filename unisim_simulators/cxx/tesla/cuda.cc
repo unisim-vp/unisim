@@ -932,8 +932,16 @@ CUresult CUDAAPI cuParamSetv(CUfunction hfunc, int offset, void * ptr, unsigned 
 
 CUresult CUDAAPI cuParamSetTexRef(CUfunction hfunc, int texunit, CUtexref hTexRef)
 {
-  cerr << "function not implemented !!!" << endl;
-  assert(false);
+	if(verbose) cerr << "cuParamSetTexRef(" << hfunc << ", " << texunit << ", " << hTexRef << ")" << endl;
+	if(texunit != CU_PARAM_TR_DEFAULT) return CUDA_ERROR_INVALID_VALUE;
+	Kernel<MyConfig> * kernel = static_cast<Kernel<MyConfig> *>(hfunc);
+	try {
+		kernel->SetTexRef(static_cast<Sampler<MyConfig> *>(hTexRef));
+		return CUDA_SUCCESS;
+	}
+	catch(CudaException e) {
+		return e.code;
+	}
 }
 
 
