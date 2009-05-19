@@ -374,7 +374,7 @@ void CPU<CONFIG>::OnBusCycle()
 template <class CONFIG>
 void CPU<CONFIG>::Run()
 {
-	for(int wid = 0; wid != num_warps; ++wid) {
+	for(unsigned int wid = 0; wid != num_warps; ++wid) {
 		VectorRegister<CONFIG> & r0 = GetGPR(wid, 0);
 		r0.SetScalar(r0.CheckScalar());
 		r0.SetScalar16(false, r0.CheckScalar16(false));

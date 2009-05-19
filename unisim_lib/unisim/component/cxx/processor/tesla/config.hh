@@ -92,6 +92,7 @@ public:
 	static uint32_t const CALL_STACK_DEPTH = 17;	// 17 = Smallest random-looking value
 	static uint32_t const MAX_ADDR_REGS = 4;
 	static uint32_t const MAX_PRED_REGS = 4;
+	static uint32_t const MAX_SAMPLERS = 16;
 
 	// Memory layout
 	static address_t const CODE_START = 0x10000000;
