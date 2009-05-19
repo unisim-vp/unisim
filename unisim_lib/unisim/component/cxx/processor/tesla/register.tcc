@@ -67,11 +67,12 @@ inline RegType CvtTypeToRT(ConvType ct)
 	switch(ct) {
 	case CT_U16:
 	case CT_S16:
-	case CT_U8:	// hack!
+	case CT_U8:
 	case CT_S8:
 		return RT_U16;
 	case CT_U32:
 	case CT_S32:
+	case CT_U32U8:
 	case CT_NONE:
 		return RT_U32;
 	default:
@@ -116,6 +117,8 @@ inline DataType CvtTypeToDataType(ConvType ct)
 		return DT_S16;
 	case CT_U8:
 		return DT_U8;
+	case CT_U32U8:
+		return DT_U32;	// As far as registers are concerned...
 	case CT_S8:
 		return DT_S8;
 	case CT_U32:

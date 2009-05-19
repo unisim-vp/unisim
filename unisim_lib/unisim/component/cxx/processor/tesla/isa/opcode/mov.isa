@@ -716,9 +716,9 @@ sta.execute = {
 }
 
 op tex1d_s32_full( \
-	/*subop*/0[3]:/*?*/0[1]:/*cvt_round_half*/0[1]:/*?*/0[3]:?[3]:/*?*/0[1]:/*?*/0[3]:?[1]:bf_lo[2]\
+	/*subop*/0[3]:/*?*/0[1]:/*cvt_round_half*/0[1]:/*?*/0[3]:?[3]:/*?*/0[1]:/*?*/0[3]:?[1]:bf_hi[2]\
 	:/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output*/?[1]:unknown[1]:/*marker*/?[2]:\
-	0xf[4]:cube[1]:bf_hi[2]:/*ope*/4[3]:sampler2[6]:?[1]:\
+	0xf[4]:cube[1]:bf_lo[2]:/*ope*/4[3]:sampler2[6]:?[1]:\
 	sampler[6]:dest[7]:/*flow*/0[1]:/*IWidth*/1[1]\
 )
 

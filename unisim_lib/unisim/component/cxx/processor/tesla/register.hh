@@ -69,6 +69,7 @@ enum ConvType
 	CT_U16 = 0,
 	CT_U32 = 1,
 	CT_U8 = 2,
+	CT_U32U8 = 3,	// 8 lower bits of a 32-bit reg
 	
 	CT_S16 = 4,
 	CT_S32 = 5,

@@ -237,7 +237,7 @@ std::string ConvTypeString(ConvType t)
 		".u16",	// 0
 		".u32",
 		".u8",
-		".??",
+		".u8",	// from 32-bit reg
 		".s16",
 		".s32",
 		".s8",

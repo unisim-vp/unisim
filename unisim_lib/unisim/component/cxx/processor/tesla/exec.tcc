@@ -425,6 +425,7 @@ VectorRegister<CONFIG> ConvertIntInt(VectorRegister<CONFIG> const & a, uint32_t 
 		switch(cvt_type)
 		{
 		case CT_U8:
+		case CT_U32U8:
 			// Should not be necessary, just 0-extend (default action)
 			r = a[i] & 0x000000ff;
 			assert(!neg);
