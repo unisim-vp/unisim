@@ -437,6 +437,9 @@ int sc_main(int argc, char *argv[])
 	(*ect)["bus-cycle-time"] = fsb_cycle_time;
 	(*ect)["base-address"] = 0x0040;
 
+	(*ect)["interrupt-offset-channel0"] = 0xEE; // (MC9S12XDP512) ECT channels interrupt are from 0xEE down to 0xE0
+	(*ect)["interrupt-offset-overflow"] = 0xDE;
+
 	(*pwm)["bus-cycle-time"] = fsb_cycle_time;
 	(*pwm)["base-address"] = 0x0300;
 
@@ -555,6 +558,7 @@ int sc_main(int argc, char *argv[])
 	s12xint->toCPU_Initiator(cpu->interrupt_request);
 
 //	int_gen->interrupt_request(s12xint->interrupt_request);
+	ect->interrupt_request(s12xint->interrupt_request);
 	pwm->interrupt_request(s12xint->interrupt_request);
 	atd1->interrupt_request(s12xint->interrupt_request);
 	atd0->interrupt_request(s12xint->interrupt_request);

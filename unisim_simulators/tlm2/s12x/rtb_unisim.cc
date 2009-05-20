@@ -173,10 +173,9 @@ public:
 			last_payload = payload;
 			payload = input_payload_queue.get_next_transaction();
 
-			if (CONFIG::DEBUG_ENABLE && payload) {
-
-				cout << sc_time_stamp() << ":" << name() << "::PWM:: Receive " << payload->serialize() << endl;
-			}
+//			if (CONFIG::DEBUG_ENABLE && payload) {
+//				cout << sc_time_stamp() << ":" << name() << "::PWM:: Receive " << payload->serialize() << endl;
+//			}
 		} while(payload);
 
 		payload = last_payload;
@@ -203,7 +202,6 @@ public:
 		}
 
 		if (CONFIG::DEBUG_ENABLE) {
-
 			cout << sc_time_stamp() << ":" << name() << "::ATD1::send " << payload->serialize() << endl;
 		}
 
@@ -241,7 +239,6 @@ public:
 		}
 
 		if (CONFIG::DEBUG_ENABLE) {
-
 			cout << sc_time_stamp() << ":" << name() << "::ATD0::send " << payload->serialize() << endl;
 		}
 
@@ -297,8 +294,6 @@ public:
 			for (int i=0; i<ATD0_SIZE; i++) {
 				atd0_anValue[i] = 5.0 * ((double) rand() / (double) RAND_MAX); // Compute a random value: 0 Volts <= anValue[i] < 5 Volts
 			}
-
-			cout << "RTb_STUB " << std::endl;
 
 			quantumkeeper.inc(delay);
 
