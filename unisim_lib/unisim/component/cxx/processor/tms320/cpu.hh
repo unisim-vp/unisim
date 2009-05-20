@@ -148,6 +148,13 @@ public:
 	inline void Add(const Register& reg, uint32_t imm, bool& overflow, bool& underflow) INLINE;
 	inline void Add(uint32_t imm, const Register& reg, bool& overflow, bool& underflow) INLINE;
 	inline void Add(uint32_t imm_a, uint32_t imm_b, bool& overflow, bool& underflow) INLINE;
+	inline void Sub(const Register& reg, bool& overflow, bool& underflow) INLINE;
+	inline void Sub(uint16_t imm, bool& overflow, bool& underflow) INLINE;
+	inline void Sub(uint32_t imm, bool& overflow, bool& underflow) INLINE;
+	inline void Sub(const Register& reg_a, const Register& reg_b, bool& overflow, bool& underflow) INLINE;
+	inline void Sub(const Register& reg, uint32_t imm, bool& overflow, bool& underflow) INLINE;
+	inline void Sub(uint32_t imm, const Register& reg, bool& overflow, bool& underflow) INLINE;
+	inline void Sub(uint32_t imm_a, uint32_t imm_b, bool& overflow, bool& underflow) INLINE;
 	friend std::ostream& operator << (std::ostream& os, const Register& reg);
 
 	void SetLoWriteMask(uint32_t lo_write_mask);
@@ -157,6 +164,8 @@ private:
 	uint8_t hi;  // 8 MSB
 
 	inline void Add(uint8_t hi_a, uint32_t lo_a, uint8_t hi_b, uint32_t lo_b, bool& overflow, bool& underflow) INLINE;
+	inline void Sub(uint8_t hi_a, uint32_t lo_a, uint8_t hi_b, uint32_t lo_b, bool& overflow, bool& underflow) INLINE;
+	inline void AddSub(bool add, uint8_t hi_a, uint32_t lo_a, uint8_t hi_b, uint32_t lo_b, bool& overflow, bool& underflow) INLINE;
 };
 
 inline void Register::SetLo(uint32_t value)
@@ -343,7 +352,90 @@ inline void Register::Add(uint32_t imm_a, uint32_t imm_b, bool& overflow, bool& 
 	this->Add(hi_a, lo_a, hi_b, lo_b, overflow, underflow);
 }
 
+inline void Register::Sub(const Register& reg, bool& overflow, bool& underflow) 
+{
+	this->Sub(this->hi, this->lo, reg.hi, reg.lo, overflow, underflow);
+}
+
+inline void Register::Sub(uint16_t imm, bool& overflow, bool& underflow)
+{
+	uint8_t hi_b;
+	uint32_t lo_b;
+
+	hi_b = (uint8_t)(((int16_t)imm >> 12) & (uint16_t)0xff);
+	lo_b = imm & (uint16_t)0x0fff;
+	lo_b = lo_b << 20;
+
+	this->Sub(this->hi, this->lo, hi_b, lo_b, overflow, underflow);
+}
+
+inline void Register::Sub(uint32_t imm, bool& overflow, bool& underflow)
+{
+	uint8_t hi_b;
+	uint32_t lo_b;
+
+	hi_b = imm >> 24;
+	lo_b = imm & (uint32_t)0x00ffffff;
+	lo_b = lo_b << 8;
+
+	this->Sub(this->hi, this->lo, hi_b, lo_b, overflow, underflow);
+}
+
+inline void Register::Sub(const Register& reg_a, const Register& reg_b, bool& overflow, bool& underflow)
+{
+	this->Sub(reg_a.hi, reg_a.lo, reg_b.hi, reg_b.lo, overflow, underflow);
+}
+
+inline void Register::Sub(const Register& reg, uint32_t imm, bool& overflow, bool& underflow)
+{
+	uint8_t hi_b;
+	uint32_t lo_b;
+
+	hi_b = imm >> 24;
+	lo_b = imm & (uint32_t)0x00ffffff;
+	lo_b = lo_b << 8;
+
+	this->Sub(reg.hi, reg.lo, hi_b, lo_b, overflow, underflow);
+}
+
+inline void Register::Sub(uint32_t imm, const Register& reg, bool& overflow, bool& underflow)
+{
+	uint8_t hi_a;
+	uint32_t lo_a;
+
+	this->Sub(hi_a, lo_a, reg.hi, reg.lo, overflow, underflow);
+}
+
+inline void Register::Sub(uint32_t imm_a, uint32_t imm_b, bool& overflow, bool& underflow)
+{
+	uint8_t hi_a;
+	uint32_t lo_a;
+
+	hi_a = imm_a >> 24;
+	lo_a = imm_a & (uint32_t)0x00ffffff;
+	lo_a = lo_a << 8;
+	
+	uint8_t hi_b;
+	uint32_t lo_b;
+
+	hi_b = imm_b >> 24;
+	lo_b = imm_b & (uint32_t)0x00ffffff;
+	lo_b = lo_b << 8;
+
+	this->Sub(hi_a, lo_a, hi_b, lo_b, overflow, underflow);
+}
+
 inline void Register::Add(uint8_t hi_a, uint32_t lo_a, uint8_t hi_b, uint32_t lo_b, bool& overflow, bool& underflow)
+{
+	AddSub(true, hi_a, lo_a, hi_b, lo_b, overflow, underflow);
+}
+
+inline void Register::Sub(uint8_t hi_a, uint32_t lo_a, uint8_t hi_b, uint32_t lo_b, bool& overflow, bool& underflow)
+{
+	AddSub(false, hi_a, lo_a, hi_b, lo_b, overflow, underflow);
+}
+
+inline void Register::AddSub(bool is_add, uint8_t hi_a, uint32_t lo_a, uint8_t hi_b, uint32_t lo_b, bool& overflow, bool& underflow)
 {
 	int64_t ext_lo_a = 0;
 	int64_t ext_lo_b = 0;
@@ -396,7 +488,9 @@ inline void Register::Add(uint8_t hi_a, uint32_t lo_a, uint8_t hi_b, uint32_t lo
 	}
 
 	// add the mantissas
-	int64_t ext_lo_c = ext_lo_a + ext_lo_b;
+	int64_t ext_lo_c = ext_lo_a;
+	if (is_add) ext_lo_c += ext_lo_b;
+	else ext_lo_c -= ext_lo_b;
 
 	// check for special cases of the result mantissa
 	// 1 - check mantissa is 0
