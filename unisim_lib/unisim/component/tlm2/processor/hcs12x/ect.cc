@@ -52,11 +52,18 @@ ECT::ECT(const sc_module_name& name, Object *parent) :
 	memory_import("memory_import", this),
 	baseAddress(0x0040), // MC9S12XDP512V2 - ECT baseAddress
 	param_baseAddress("base-address", this, baseAddress),
+
+	interrupt_offset_channel0(0xEE),
+	param_interrupt_offset_channel0("interrupt-offset-channel0", this, interrupt_offset_channel0),
+	interrupt_offset_overflow(0xDE),
+	param_interrupt_offset_overflow("interrupt-offset-overflow", this, interrupt_offset_overflow),
+
 	bus_cycle_time_int(0),
 	param_bus_cycle_time_int("bus-cycle-time", this, bus_cycle_time_int)
 
 {
 
+	interrupt_request(*this);
 	slave_socket.register_b_transport(this, &ECT::read_write);
 
 	SC_HAS_PROCESS(ECT);
@@ -73,9 +80,64 @@ void ECT::Run() {
 
 	while (true) {
 
-		wait();
+		wait(sc_time(1, SC_MS));
+		for (int index=0; index < 8; index++) {
+			assertInterrupt(interrupt_offset_channel0 - index*2);
+		}
+
 	}
 }
+
+void ECT::assertInterrupt(uint8_t interrupt_offset) {
+	// assert ATD_SequenceComplete_Interrupt
+
+	tlm_phase phase = BEGIN_REQ;
+	XINT_Payload *payload = xint_payload_fabric.allocate();
+
+	payload->interrupt_offset = interrupt_offset;
+
+	sc_time local_time = quantumkeeper.get_local_time();
+
+	tlm_sync_enum ret = interrupt_request->nb_transport_fw(*payload, phase, local_time);
+
+	switch(ret)
+	{
+		case TLM_ACCEPTED:
+			// neither payload, nor phase and local_time have been modified by the callee
+			quantumkeeper.sync(); // synchronize to leave control to the callee
+			break;
+		case TLM_UPDATED:
+			// the callee may have modified 'payload', 'phase' and 'local_time'
+			quantumkeeper.set(local_time); // increase the time
+			if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
+
+			break;
+		case TLM_COMPLETED:
+			// the callee may have modified 'payload', and 'local_time' ('phase' can be ignored)
+			quantumkeeper.set(local_time); // increase the time
+			if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
+			break;
+	}
+
+}
+
+// Master methods
+void ECT::invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
+{
+	// Leave this empty as it is designed for memory mapped buses
+}
+
+// Master methods
+tlm_sync_enum ECT::nb_transport_bw( XINT_Payload& payload, tlm_phase& phase, sc_core::sc_time& t)
+{
+	if(phase == BEGIN_RESP)
+	{
+		payload.release();
+		return TLM_COMPLETED;
+	}
+	return TLM_ACCEPTED;
+}
+
 
 void ECT::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 {

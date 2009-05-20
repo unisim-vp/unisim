@@ -168,24 +168,25 @@ void XINT::getVectorAddress( tlm::tlm_generic_payload& trans, sc_time& delay )
 		interrupt_flags[XINT::INT_XIRQ_OFFSET/2] = false;
 	}
 	else {
-		int selectedInterrupt = 0;
+		uint8_t selectedInterrupt = 0;
+		uint8_t visbleFlags = cfaddr/2;
 		for (int index=0; index < CFDATA_SIZE; index++) { // Check only the selected interrupts
-			if (interrupt_flags[cfaddr+index]) {
+			if (interrupt_flags[visbleFlags+index]) {
 				uint8_t dataPriority = int_cfdata[index] && 0x07;
 
 				// if 7-bit=0 then cpu else xgate
 				if ((int_cfdata[index] & 0x80) == 0)
 				{
-					if (dataPriority > newIPL) {
+					if (dataPriority >= newIPL) {  // priority of maskable interrupts is from high offset to low
 						newIPL = dataPriority;
-						selectedInterrupt = cfaddr+index;
+						selectedInterrupt = visbleFlags+index;
 					}
 				}
 				else ;
 
 			}
 		}
-		vectorAddress = ((address_t) getIVBR() << 8) + selectedInterrupt;
+		vectorAddress = ((address_t) getIVBR() << 8) + selectedInterrupt * 2;
 		interrupt_flags[selectedInterrupt] = false;
 	}
 
@@ -215,20 +216,38 @@ void XINT::Run()
 {
 	XINT_Payload *payload;
 
+	bool hasVisibleInterrupt;
+
 	// This thread is waked-up by any not CPU interrupt
 
 	while (true) {
 
 		wait(input_payload_queue.get_event());
 
+		hasVisibleInterrupt = false;
+
 		do
 		{
 
 			payload = input_payload_queue.get_next_transaction();
 			if (payload) {
-				interrupt_flags[payload->interrupt_offset/2] = true;
+
 				if (CONFIG::DEBUG_ENABLE) {
-					cout << "XINT: Receive INT " << payload->interrupt_offset/2 << std::endl;
+					cout << "XINT: Receive INT-Offset " << payload->interrupt_offset/2 << std::endl;
+				}
+
+				uint8_t interrupt_id = payload->interrupt_offset/2;
+				uint8_t visibleInterruptsBase = getINT_CFADDR()/2;
+
+				if ((interrupt_id == XINT::INT_CLK_MONITOR_RESET_OFFSET/2) ||
+					(interrupt_id == XINT::INT_COP_WATCHDOG_RESET_OFFSET/2) ||
+					(interrupt_id == XINT::INT_ILLEGAL_ACCESS_RESET_OFFSET/2) ||
+					(interrupt_id == XINT::INT_SYS_RESET_OFFSET/2) ||
+					(interrupt_id == XINT::INT_XIRQ_OFFSET/2) ||
+					((interrupt_id >= visibleInterruptsBase) && (interrupt_id < visibleInterruptsBase + 8))) {
+
+					interrupt_flags[interrupt_id] = true;
+					hasVisibleInterrupt = true;
 				}
 
 			}
@@ -237,23 +256,24 @@ void XINT::Run()
 
 		payload = NULL;
 
-		isHardwareInterrupt = true;
+		if (hasVisibleInterrupt) {
+			isHardwareInterrupt = true;
 
-		// Rise interrupt
+			// Rise interrupt
 
-		tlm::tlm_generic_payload* trans = payloadFabric.allocate();
+			tlm::tlm_generic_payload* trans = payloadFabric.allocate();
 
-		trans->set_command( tlm::TLM_WRITE_COMMAND );
-		trans->set_response_status( tlm::TLM_INCOMPLETE_RESPONSE );
+			trans->set_command( tlm::TLM_WRITE_COMMAND );
+			trans->set_response_status( tlm::TLM_INCOMPLETE_RESPONSE );
 
-		toCPU_Initiator->b_transport( *trans, zeroTime );
+			toCPU_Initiator->b_transport( *trans, zeroTime );
 
-		if (trans->is_response_error() )
-			SC_REPORT_ERROR("XINT : ", " interrupt notification failed.");
+			if (trans->is_response_error() )
+				SC_REPORT_ERROR("XINT : ", " interrupt notification failed.");
 
 
-		trans->release();
-
+			trans->release();
+		}
 	}
 
 }

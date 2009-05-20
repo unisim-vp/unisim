@@ -282,11 +282,6 @@ void PWM<PWM_SIZE>::refreshOutput(bool pwmValue[PWM_SIZE])
 	sc_time local_time = quantumkeeper.get_local_time();
 
 	if (CONFIG::DEBUG_ENABLE) {
-
-//		if (trap_reporting_import) {
-//			trap_reporting_import->ReportTrap();
-//		}
-
 		cout << name() << ":: send " << payload->serialize() << " - " << sc_time_stamp() << endl;
 	}
 

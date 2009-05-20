@@ -146,9 +146,7 @@ void HCS12X ::Wait() {
  * Wait for not masked interrupts or non-masquable interrupts
  */
 
-	wait(bus_cycle_time);
-
-//	wait(irq_event);
+	wait(irq_event);
 }
 
 address_t HCS12X ::GetIntVector(uint8_t &ipl)
@@ -375,10 +373,10 @@ Run() {
 
 	while(1) {
 
-		if(cpu_time >= next_nice_time) {
-			next_nice_time = cpu_time + nice_time;
-			Synchronize();
-		}
+//		if(cpu_time >= next_nice_time) {
+//			next_nice_time = cpu_time + nice_time;
+//			Synchronize();
+//		}
 
 		if( verbose_tlm_run_thread && inherited::logger_import)
 			(*inherited::logger_import) << DebugInfo << LOCATION
@@ -394,6 +392,13 @@ Run() {
 				<< "Finished executing step"
 				<< Endl << EndDebugInfo;
 		cpu_time += time_per_instruction;
+
+		if (CONFIG::TIMING_ENABLE) {
+			wait(time_per_instruction);
+		} else {
+			wait(SC_ZERO_TIME);
+		}
+
 	}
 }
 

@@ -204,11 +204,6 @@ void ATD10B<ATD_SIZE>::Input(double anValue[ATD_SIZE])
 		payload = input_payload_queue.get_next_transaction();
 
 		if (CONFIG::DEBUG_ENABLE && payload) {
-	/*
-			if (trap_reporting_import) {
-				trap_reporting_import->ReportTrap();
-			}
-			*/
 			cout << name() << ":: Receive " << payload->serialize() << " - " << sc_time_stamp() << endl;
 		}
 
@@ -217,11 +212,6 @@ void ATD10B<ATD_SIZE>::Input(double anValue[ATD_SIZE])
 	payload = last_payload;
 
 	if (CONFIG::DEBUG_ENABLE) {
-/*
-		if (trap_reporting_import) {
-			trap_reporting_import->ReportTrap();
-		}
-		*/
 		cout << name() << ":: Last Receive " << payload->serialize() << " - " << sc_time_stamp() << endl;
 	}
 
@@ -423,7 +413,7 @@ tlm_sync_enum ATD10B<ATD_SIZE>::nb_transport_bw( XINT_Payload& payload, tlm_phas
 
 template <uint8_t ATD_SIZE>
 void ATD10B<ATD_SIZE>::assertInterrupt() {
-	// assert ATD_SequenceComplete_Interrupt (Offset 0xD0)
+	// assert ATD_SequenceComplete_Interrupt
 
 	tlm_phase phase = BEGIN_REQ;
 	XINT_Payload *payload = xint_payload_fabric.allocate();
@@ -470,11 +460,9 @@ void ATD10B<ATD_SIZE>::sequenceComplete() {
 	/**
 	 *  if ATDCTL2::ASCIE bit is set then assert ATD_SequenceComplete_Interrupt
 	 */
-//	if ((atdctl2_register & 0x02) != 0) {
-//		assertInterrupt();
-//	}
-
-	assertInterrupt();
+	if ((atdctl2_register & 0x02) != 0) {
+		assertInterrupt();
+	}
 
 }
 
