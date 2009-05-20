@@ -1776,7 +1776,7 @@ template<class CONFIG, bool DEBUG>
 inline
 void
 CPU<CONFIG, DEBUG> ::
-GenFlags(const Register& result, uint32_t reset_mask, uint32_t or_mask, uint32_t carry_out, uint32_t overflow)
+GenFlags(const Register& result, uint32_t reset_mask, uint32_t or_mask, uint32_t carry_out, uint32_t overflow, uint32_t underflow)
 {
 	// Read ST
 	uint32_t st = GetST();
@@ -1784,8 +1784,14 @@ GenFlags(const Register& result, uint32_t reset_mask, uint32_t or_mask, uint32_t
 	// Apply a reset mask
 	st = st & ~reset_mask;
 
+	// LUF
+	if (or_mask & M_ST_LUF) st |= (underflow << ST_LUF);
+
 	// LV
-	if(or_mask & M_ST_LV) st |= (overflow << ST_LV);
+	if (or_mask & M_ST_LV) st |= (overflow << ST_LV);
+
+	// UF
+	if (or_mask & M_ST_UF) st |= (underflow << ST_UF);
 
 	// N
 	if(or_mask & M_ST_N)

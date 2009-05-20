@@ -693,19 +693,119 @@ ADDF_imm.disasm = {
 }
 
 ADDF_reg.execute = {
-	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+	// no need to check the operands, they must be valid
+	
+	// get source register
+	Register& src_reg = cpu.GetExtReg(src);
+
+	// get destination register
+	Register& dst_reg = cpu.GetExtReg(dst);
+
+	// compute
+	bool underflow;
+	bool overflow;
+	dst_reg.Add(src_reg, overflow, underflow);
+
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		dst_reg,
+		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+		M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
+		0,
+		overflow,
+		underflow
+	);
 }
 
 ADDF_dir.execute = {
-	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+	// no need to check the operands, they must be valid
+	
+	// get destination register
+	Register& dst_reg = cpu.GetExtReg(dst);
+	
+	// Compute the source operand effective address
+	typename CONFIG::address_t ea = cpu.ComputeDirEA(direct);
+
+	// Read the source operand from memory
+	uint32_t src_value = cpu.IntLoad(ea);
+
+	// compute
+	bool underflow;
+	bool overflow;
+	dst_reg.Add(src_value, overflow, underflow);
+
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		dst_reg,
+		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+		M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
+		0,
+		overflow,
+		underflow
+	);
 }
 
 ADDF_indir.execute = {
-	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+	// no need to check the operands, they must be valid
+	
+	// get destination register
+	Register& dst_reg = cpu.GetExtReg(dst);
+
+	// Check that indirect addressing mode is valid and compute the effective address of the source operand
+	typename CONFIG::address_t ea;        // The effective address
+	bool update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(ea, update_ar, output_ar, mod, ar, disp)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read the source operand from memory
+	uint32_t src_value = cpu.IntLoad(ea);
+
+	// compute
+	bool underflow;
+	bool overflow;
+	dst_reg.Add(src_value, overflow, underflow);
+
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar, output_ar);
+	}
+	
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		dst_reg,
+		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+		M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
+		0,
+		overflow,
+		underflow
+	);
 }
 
 ADDF_imm.execute = {
-	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+	// no need to check the operands, they must be valid
+	
+	// get destination register
+	Register& dst_reg = cpu.GetExtReg(dst);
+
+	// compute
+	bool underflow;
+	bool overflow;
+	dst_reg.Add((uint16_t)imm, overflow, underflow);
+
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		dst_reg,
+		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+		M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
+		0,
+		overflow,
+		underflow
+	);
 }
 
 /* end of ADDF (add floating-point values)

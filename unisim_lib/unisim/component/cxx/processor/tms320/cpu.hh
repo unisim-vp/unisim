@@ -141,6 +141,13 @@ public:
 	inline void SetFromShortFPFormat(uint16_t value) INLINE;
 	inline void Float(uint32_t value) INLINE;
 	inline uint32_t Fix(bool& overflow) INLINE;
+	inline void Add(const Register& reg, bool& overflow, bool& underflow) INLINE;
+	inline void Add(uint16_t imm, bool& overflow, bool& underflow) INLINE;
+	inline void Add(uint32_t imm, bool& overflow, bool& underflow) INLINE;
+	inline void Add(const Register& reg_a, const Register& reg_b, bool& overflow, bool& underflow) INLINE;
+	inline void Add(const Register& reg, uint32_t imm, bool& overflow, bool& underflow) INLINE;
+	inline void Add(uint32_t imm, const Register& reg, bool& overflow, bool& underflow) INLINE;
+	inline void Add(uint32_t imm_a, uint32_t imm_b, bool& overflow, bool& underflow) INLINE;
 	friend std::ostream& operator << (std::ostream& os, const Register& reg);
 
 	void SetLoWriteMask(uint32_t lo_write_mask);
@@ -148,6 +155,8 @@ private:
 	uint32_t lo_write_mask; // write mask for the 32 LSBs
 	uint32_t lo; // 32 LSB
 	uint8_t hi;  // 8 MSB
+
+	inline void Add(uint8_t hi_a, uint32_t lo_a, uint8_t hi_b, uint32_t lo_b, bool& overflow, bool& underflow) INLINE;
 };
 
 inline void Register::SetLo(uint32_t value)
@@ -262,6 +271,235 @@ inline uint32_t Register::Fix(bool& overflow)
 	// perform the shift on the mantissa and return the lowest 32 bits
 	val = (int64_t)val >> shift;
 	return (uint32_t)val;
+}
+
+inline void Register::Add(const Register& reg, bool& overflow, bool& underflow) 
+{
+	this->Add(this->hi, this->lo, reg.hi, reg.lo, overflow, underflow);
+}
+
+inline void Register::Add(uint16_t imm, bool& overflow, bool& underflow)
+{
+	uint8_t hi_b;
+	uint32_t lo_b;
+
+	hi_b = (uint8_t)(((int16_t)imm >> 12) & (uint16_t)0xff);
+	lo_b = imm & (uint16_t)0x0fff;
+	lo_b = lo_b << 20;
+
+	this->Add(this->hi, this->lo, hi_b, lo_b, overflow, underflow);
+}
+
+inline void Register::Add(uint32_t imm, bool& overflow, bool& underflow)
+{
+	uint8_t hi_b;
+	uint32_t lo_b;
+
+	hi_b = imm >> 24;
+	lo_b = imm & (uint32_t)0x00ffffff;
+	lo_b = lo_b << 8;
+
+	this->Add(this->hi, this->lo, hi_b, lo_b, overflow, underflow);
+}
+
+inline void Register::Add(const Register& reg_a, const Register& reg_b, bool& overflow, bool& underflow)
+{
+	this->Add(reg_a.hi, reg_a.lo, reg_b.hi, reg_b.lo, overflow, underflow);
+}
+
+inline void Register::Add(const Register& reg, uint32_t imm, bool& overflow, bool& underflow)
+{
+	uint8_t hi_b;
+	uint32_t lo_b;
+
+	hi_b = imm >> 24;
+	lo_b = imm & (uint32_t)0x00ffffff;
+	lo_b = lo_b << 8;
+
+	this->Add(reg.hi, reg.lo, hi_b, lo_b, overflow, underflow);
+}
+
+inline void Register::Add(uint32_t imm, const Register& reg, bool& overflow, bool& underflow)
+{
+	this->Add(reg, imm, overflow, underflow);
+}
+
+inline void Register::Add(uint32_t imm_a, uint32_t imm_b, bool& overflow, bool& underflow)
+{
+	uint8_t hi_a;
+	uint32_t lo_a;
+
+	hi_a = imm_a >> 24;
+	lo_a = imm_a & (uint32_t)0x00ffffff;
+	lo_a = lo_a << 8;
+	
+	uint8_t hi_b;
+	uint32_t lo_b;
+
+	hi_b = imm_b >> 24;
+	lo_b = imm_b & (uint32_t)0x00ffffff;
+	lo_b = lo_b << 8;
+
+	this->Add(hi_a, lo_a, hi_b, lo_b, overflow, underflow);
+}
+
+inline void Register::Add(uint8_t hi_a, uint32_t lo_a, uint8_t hi_b, uint32_t lo_b, bool& overflow, bool& underflow)
+{
+	int64_t ext_lo_a = 0;
+	int64_t ext_lo_b = 0;
+	overflow = false;
+	underflow = false;
+
+	// convert mantissas to their full representation (33-bit)
+	if (lo_a & (uint32_t)0x80000000)
+	{
+		ext_lo_a = ~ext_lo_a;
+		ext_lo_a = ext_lo_a & (uint64_t)(lo_a & ~(uint32_t)0x80000000);
+	}
+	else
+		ext_lo_a = ext_lo_a & (uint64_t)(lo_a | (uint32_t)0x80000000);
+
+	if (lo_b & (uint32_t)0x80000000)
+	{
+		ext_lo_b = ~ext_lo_b;
+		ext_lo_b = ext_lo_b & (uint64_t)(lo_a & ~(uint32_t)0x80000000);
+	}
+	else
+		ext_lo_b = ext_lo_b & (uint64_t)(lo_b | (uint32_t)0x80000000);
+		
+	// result takes the biggest exponent
+	// and compute the difference of the exponent to align mantissas
+	uint32_t diff_exp;
+	if ((int8_t)hi_a <= (int8_t)hi_b)
+	{
+		this->hi = hi_b;
+		diff_exp = (int8_t)hi_b - (int8_t)hi_a;
+		if (diff_exp >= 64)
+		{
+			if (ext_lo_a < 0) ext_lo_a = -1;
+			else ext_lo_a = 0;
+		}
+		else
+			ext_lo_a = ext_lo_a >> diff_exp;
+	}
+	else
+	{
+		this->hi = hi_a;
+		diff_exp = (int8_t)hi_a - (int8_t)hi_b;
+		if (diff_exp >= 64)
+		{
+			if (ext_lo_b < 0) ext_lo_b = -1;
+			else ext_lo_b = 0;
+		}
+		else
+			ext_lo_b = ext_lo_b >> diff_exp;
+	}
+
+	// add the mantissas
+	int64_t ext_lo_c = ext_lo_a + ext_lo_b;
+
+	// check for special cases of the result mantissa
+	// 1 - check mantissa is 0
+	if (ext_lo_c == 0)
+	{
+		this->hi = (uint8_t)0xff;
+	}
+	else
+	{
+	// 2 - check for overflow
+		if (ext_lo_c > 0 && (ext_lo_c >> 32) != 0)
+		{
+			// the mantissa is possitive, check how many bits we have to shift it
+			//   to be an signed 33bits number
+			ext_lo_c = ext_lo_c >> 1;
+			if ((int32_t)this->hi + 1 > 127) 
+			{
+				overflow = true;
+				this->hi = (uint8_t)0x7f;
+			}
+			else
+				this->hi = this->hi + 1;
+		}
+		else
+		{
+			if (ext_lo_c < 0 && ~(ext_lo_c >> 32) != 1)
+			{
+				// the mantissa is negative, check how many bits we have to shift it
+				//   to be a signed 33bits number
+				ext_lo_c = (uint64_t)ext_lo_c >> 1;
+				if ((int32_t)this->hi + 1 > 127) 
+				{
+					overflow = true;
+					this->hi = (uint8_t)0x7f;
+				}
+				else
+					this->hi = this->hi + 1;
+			}
+			else
+			{
+	// 3 - check if the result needs to be normalized
+				if (ext_lo_c > 0 && (ext_lo_c & (uint64_t)0x80000000) == 0)
+				{
+					uint32_t count = unisim::util::arithmetic::CountLeadingZeros((uint64_t)ext_lo_c);
+					count = count - 32;
+					ext_lo_c = ext_lo_c << count;
+					if ((int32_t)this->hi - count < -128)
+					{
+						underflow = true;
+						this->hi = (uint8_t)0xff;
+					}
+					else
+						this->hi = this->hi - count;
+				}
+				else
+				{
+					if (ext_lo_c < 0 && (ext_lo_c & (uint64_t)0x80000000 != 0))
+					{
+						uint32_t count = unisim::util::arithmetic::CountLeadingZeros(~(uint64_t)ext_lo_c);
+						count = count - 32;
+						ext_lo_c = ext_lo_c << count;
+						if ((int32_t)this->hi - count < -128)
+						{
+							underflow = true;
+							this->hi = (uint8_t)0xff;
+						}
+						else
+							this->hi = this->hi - count;
+					}
+				}
+			}
+		}
+	}
+
+	// check for special cases of the result exponent
+	// 1 - exponent overflow
+	if (overflow)
+	{
+		if (ext_lo_c > 0)
+		{
+			ext_lo_c = (uint64_t)0xffffffff;
+		}
+		else // ext_lo_c < 0
+		{
+			ext_lo_c = ~(uint64_t)0xffffffff;
+		}
+	}
+	else
+	{
+	// 2 - exponent underflow
+		if (underflow)
+		{
+			ext_lo_c = 0;
+		}
+		else
+		{
+	// 3 - exponent in range
+			// nothing to do
+		}
+	}
+
+	// set the mantissa into the register
+	this->lo = (uint32_t)((ext_lo_c & ~(uint64_t)0x80000000) | ((ext_lo_c >> 1) & (uint64_t)0x80000000));
 }
 
 class RegisterDebugInterface : public unisim::util::debug::Register
@@ -1304,7 +1542,7 @@ public:
 		@param carry_out the carry out (0 or 1) generated by the arithmetic operation (default is 0)
 		@param overflow the overflow (0 or 1) generated by the arithmetic operation (default is 0)
 	*/
-	inline void GenFlags(const Register& result, uint32_t reset_mask, uint32_t or_mask, uint32_t carry_out = 0, uint32_t overflow = 0) INLINE;
+	inline void GenFlags(const Register& result, uint32_t reset_mask, uint32_t or_mask, uint32_t carry_out = 0, uint32_t overflow = 0, uint32_t underflow = 0) INLINE;
 
 	inline bool HasPendingBranch() const
 	{
