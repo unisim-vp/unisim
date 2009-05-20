@@ -324,6 +324,10 @@ uint8_t CPU::Step()
 
 		if(HasAsynchronousInterrupt())
 		{
+			if (CONFIG::DEBUG_ENABLE) {
+				cout << "CPU: I Have detected Asynchronous Exception !" << std::endl;
+			}
+
 			throw AsynchronousException();
 		}
 
@@ -941,7 +945,8 @@ void CPU::VerboseDumpRegsEnd() {
 inline INLINE
 void CPU::RegistersInfo() {
 
-	if (CONFIG::REGISTERS_INFO) {
+	if (CONFIG::REGISTERS_INFO && CONFIG::DEBUG_ENABLE) {
+		cout << "CPU:: Registers Info " << std::endl;
 		cout << std::hex << "CCR=0x" << ccr->getCCR() << "  PC=0x" << getRegPC() << "  SP=0x" << getRegSP() << "\n";
 		cout << "D  =0x" << getRegD() << "  X =0x" << getRegX() << "  Y =0x" << getRegY() << std::dec << "\n";
 	}
