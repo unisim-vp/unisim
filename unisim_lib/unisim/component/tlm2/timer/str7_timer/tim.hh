@@ -65,17 +65,28 @@ private:
 	typedef TIM<BUSWIDTH, VERBOSE> THIS_MODULE;
 
 public:
-	/* output timer interrupt socket */
+	/* output timer global interrupt socket */
 	tlm_utils::simple_initiator_socket<THIS_MODULE, 1, InterruptProtocolTypes> timeri_irq;
-	/* output compare A (OCMPA) interrupt socket */
-	tlm_utils::simple_initiator_socket<THIS_MODULE, 1, InterruptProtocolTypes> ocmpa_irq;
-	/* output compare B (OCMPB) interrupt socket */
-	tlm_utils::simple_initiator_socket<THIS_MODULE, 1, InterruptProtocolTypes> ocmpb_irq;
+	/* output timer overflow interrupt socket */
+	tlm_utils::simple_initiator_socket<THIS_MODULE, 1, InterruptProtocolTypes> toi_irq;
+	/* output timer input capture A interrupt socket */
+	tlm_utils::simple_initiator_socket<THIS_MODULE, 1, InterruptProtocolTypes> icia_irq;
+	/* output timer input capture B interrupt socket */
+	tlm_utils::simple_initiator_socket<THIS_MODULE, 1, InterruptProtocolTypes> icib_irq;
+	/* output timer output compare A interrupt socket */
+	tlm_utils::simple_initiator_socket<THIS_MODULE, 1, InterruptProtocolTypes> ocia_irq;
+	/* output timer output compare B interrupt socket */
+	tlm_utils::simple_initiator_socket<THIS_MODULE, 1, InterruptProtocolTypes> ocib_irq;
+
+	/* output compare A (OCMPA) edge socket */
+	tlm_utils::simple_initiator_socket<THIS_MODULE, 1, InterruptProtocolTypes> ocmpa_edge;
+	/* output compare B (OCMPB) edge socket */
+	tlm_utils::simple_initiator_socket<THIS_MODULE, 1, InterruptProtocolTypes> ocmpb_edge;
 	
-	/* input capture A (ICAPA) interrupt socket */
-	tlm_utils::passthrough_target_socket<THIS_MODULE, 1, InterruptProtocolTypes> icapa_irq;
-	/* input capture B (ICAPB) interrupt socket */
-	tlm_utils::passthrough_target_socket<THIS_MODULE, 1, InterruptProtocolTypes> icapb_irq;
+	/* input capture A (ICAPA) edge socket */
+	tlm_utils::passthrough_target_socket<THIS_MODULE, 1, InterruptProtocolTypes> icapa_edge;
+	/* input capture B (ICAPB) edge socket */
+	tlm_utils::passthrough_target_socket<THIS_MODULE, 1, InterruptProtocolTypes> icapb_edge;
 
 	/* input memory socket */
 	tlm::tlm_target_socket<BUSWIDTH> in_mem;
@@ -90,34 +101,59 @@ public:
 	bool Setup();
 
 private:
-	/* START: output timer interrupt socket methods */
+	/* START: output timer global interrupt socket methods */
 	tlm::tlm_sync_enum 	TimeriNbTransportBw(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t);
 	void 				TimeriInvalidateDirectMemPtr(sc_dt::uint64 start_range, sc_dt::uint64 end_range);
 	/* END: output timer interrupt socket methods */
 
-	/* START: output compare A (OCMPA) interrupt socket methods */
+	/* START: output timer overflow interrupt (TOI) socket methods */
+	tlm::tlm_sync_enum 	TOINbTransportBw(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t);
+	void 				TOIInvalidateDirectMemPtr(sc_dt::uint64 start_range, sc_dt::uint64 end_range);
+	/* END: output timer overflow interrupt (TOI) socket methods */
+
+	/* START: output timer input capture A interrupt (ICIA) socket methods */
+	tlm::tlm_sync_enum 	ICIANbTransportBw(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t);
+	void 				ICIAInvalidateDirectMemPtr(sc_dt::uint64 start_range, sc_dt::uint64 end_range);
+	/* END: output timer input capture A interrupt (ICIA) socket methods */
+
+	/* START: output timer input capture B interrupt (ICIB) socket methods */
+	tlm::tlm_sync_enum 	ICIBNbTransportBw(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t);
+	void 				ICIBInvalidateDirectMemPtr(sc_dt::uint64 start_range, sc_dt::uint64 end_range);
+	/* END: output timer input capture B interrupt (ICIB) socket methods */
+
+	/* START: output timer output compare A interrupt (OCIA) socket methods */
+	tlm::tlm_sync_enum 	OCIANbTransportBw(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t);
+	void 				OCIAInvalidateDirectMemPtr(sc_dt::uint64 start_range, sc_dt::uint64 end_range);
+	/* END: output timer output compare A interrupt (OCIA) socket methods */
+
+	/* START: output timer output compare B interrupt (OCIB) socket methods */
+	tlm::tlm_sync_enum 	OCIBNbTransportBw(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t);
+	void 				OCIBInvalidateDirectMemPtr(sc_dt::uint64 start_range, sc_dt::uint64 end_range);
+	/* END: output timer output compare B interrupt (OCIB) socket methods */
+
+	/* START: output compare A (OCMPA) edge socket methods */
 	tlm::tlm_sync_enum 	OCMPANbTransportBw(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t);
 	void 				OCMPAInvalidateDirectMemPtr(sc_dt::uint64 start_range, sc_dt::uint64 end_range);
-	/* END: output compare A (OCMPA) interrupt socket methods */
+	/* END: output compare A (OCMPA) edge socket methods */
 
-	/* START: output compare A (OCMPB) interrupt socket methods */
+	/* START: output compare A (OCMPB) edge socket methods */
 	tlm::tlm_sync_enum 	OCMPBNbTransportBw(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t);
 	void 				OCMPBInvalidateDirectMemPtr(sc_dt::uint64 start_range, sc_dt::uint64 end_range);
-	/* END: output compare A (OCMPB) interrupt socket methods */
+	/* END: output compare A (OCMPB) edge socket methods */
 
-	/* START: input capture A (ICAPA) interrupt socket methods */
+	/* START: input capture A (ICAPA) edge socket methods */
 	tlm::tlm_sync_enum	ICAPANbTransportFw(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t);
 	void				ICAPABTransport(TLMInterruptPayload& trans, sc_core::sc_time& t);
 	bool				ICAPAGetDirectMemPtr(TLMInterruptPayload& trans, tlm::tlm_dmi& dmi_data);
 	unsigned int		ICAPATransportDbg(TLMInterruptPayload& trans);
-	/* END: input capture A (ICAPA) interrupt socket methods */
+	/* END: input capture A (ICAPA) edge socket methods */
 	
-	/* START: input capture A (ICAPA) interrupt socket methods */
+	/* START: input capture A (ICAPA) edge socket methods */
 	tlm::tlm_sync_enum	ICAPBNbTransportFw(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t);
 	void				ICAPBBTransport(TLMInterruptPayload& trans, sc_core::sc_time& t);
 	bool				ICAPBGetDirectMemPtr(TLMInterruptPayload& trans, tlm::tlm_dmi& dmi_data);
 	unsigned int		ICAPBTransportDbg(TLMInterruptPayload& trans);
-	/* END: input capture A (ICAPA) interrupt socket methods */
+	/* END: input capture A (ICAPA) edge socket methods */
 	
 	/* START: input memory socket methods */
 	virtual tlm::tlm_sync_enum	nb_transport_fw(tlm::tlm_generic_payload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t);

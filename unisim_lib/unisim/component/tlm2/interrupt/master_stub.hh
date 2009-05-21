@@ -40,7 +40,6 @@
 #include <tlm_utils/simple_initiator_socket.h>
 
 #include "unisim/kernel/service/service.hh"
-#include "unisim/kernel/logger/logger.hh"
 #include "unisim/component/tlm2/interrupt/types.hh"
 
 namespace unisim {

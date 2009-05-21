@@ -129,10 +129,15 @@ TIM(const sc_module_name &name, Object *parent) :
 	Object(name, parent),
 	sc_module(name),
 	timeri_irq("timeri_irq"),
-	ocmpa_irq("ocmpa_irq"),
-	ocmpb_irq("ocmpb_irq"),
-	icapa_irq("icapa_irq"),
-	icapb_irq("icapb_irq"),
+	toi_irq("toi_irq"),
+	icia_irq("icia_irq"),
+	icib_irq("icib_irq"),
+	ocia_irq("ocia_irq"),
+	ocib_irq("ocib_irq"),
+	ocmpa_edge("ocmpa_edge"),
+	ocmpb_edge("ocmpb_edge"),
+	icapa_edge("icapa_edge"),
+	icapb_edge("icapb_edge"),
 	in_mem("in_mem"),
 	icar(0),
 	icbr(0),
@@ -179,18 +184,28 @@ TIM(const sc_module_name &name, Object *parent) :
 	/* register the callbacks */
 	timeri_irq.register_nb_transport_bw(this, &THIS_MODULE::TimeriNbTransportBw);
 	timeri_irq.register_invalidate_direct_mem_ptr(this, &THIS_MODULE::TimeriInvalidateDirectMemPtr);
-	ocmpa_irq.register_nb_transport_bw(this, &THIS_MODULE::OCMPANbTransportBw);
-	ocmpa_irq.register_invalidate_direct_mem_ptr(this, &THIS_MODULE::OCMPAInvalidateDirectMemPtr);
-	ocmpb_irq.register_nb_transport_bw(this, &THIS_MODULE::OCMPBNbTransportBw);
-	ocmpb_irq.register_invalidate_direct_mem_ptr(this, &THIS_MODULE::OCMPBInvalidateDirectMemPtr);
-	icapa_irq.register_nb_transport_fw(this, &THIS_MODULE::ICAPANbTransportFw);
-	icapa_irq.register_b_transport(this, &THIS_MODULE::ICAPABTransport);
-	icapa_irq.register_get_direct_mem_ptr(this, &THIS_MODULE::ICAPAGetDirectMemPtr);
-	icapa_irq.register_transport_dbg(this, &THIS_MODULE::ICAPATransportDbg);
-	icapb_irq.register_nb_transport_fw(this, &THIS_MODULE::ICAPBNbTransportFw);
-	icapb_irq.register_b_transport(this, &THIS_MODULE::ICAPBBTransport);
-	icapb_irq.register_get_direct_mem_ptr(this, &THIS_MODULE::ICAPBGetDirectMemPtr);
-	icapb_irq.register_transport_dbg(this, &THIS_MODULE::ICAPBTransportDbg);
+	toi_irq.register_nb_transport_bw(this, &THIS_MODULE::TOINbTransportBw);
+	toi_irq.register_invalidate_direct_mem_ptr(this, &THIS_MODULE::TOIInvalidateDirectMemPtr);
+	icia_irq.register_nb_transport_bw(this, &THIS_MODULE::ICIANbTransportBw);
+	icia_irq.register_invalidate_direct_mem_ptr(this, &THIS_MODULE::ICIAInvalidateDirectMemPtr);
+	icib_irq.register_nb_transport_bw(this, &THIS_MODULE::ICIBNbTransportBw);
+	icib_irq.register_invalidate_direct_mem_ptr(this, &THIS_MODULE::ICIBInvalidateDirectMemPtr);
+	ocia_irq.register_nb_transport_bw(this, &THIS_MODULE::OCIANbTransportBw);
+	ocia_irq.register_invalidate_direct_mem_ptr(this, &THIS_MODULE::OCIAInvalidateDirectMemPtr);
+	ocib_irq.register_nb_transport_bw(this, &THIS_MODULE::OCIBNbTransportBw);
+	ocib_irq.register_invalidate_direct_mem_ptr(this, &THIS_MODULE::OCIBInvalidateDirectMemPtr);
+	ocmpa_edge.register_nb_transport_bw(this, &THIS_MODULE::OCMPANbTransportBw);
+	ocmpa_edge.register_invalidate_direct_mem_ptr(this, &THIS_MODULE::OCMPAInvalidateDirectMemPtr);
+	ocmpb_edge.register_nb_transport_bw(this, &THIS_MODULE::OCMPBNbTransportBw);
+	ocmpb_edge.register_invalidate_direct_mem_ptr(this, &THIS_MODULE::OCMPBInvalidateDirectMemPtr);
+	icapa_edge.register_nb_transport_fw(this, &THIS_MODULE::ICAPANbTransportFw);
+	icapa_edge.register_b_transport(this, &THIS_MODULE::ICAPABTransport);
+	icapa_edge.register_get_direct_mem_ptr(this, &THIS_MODULE::ICAPAGetDirectMemPtr);
+	icapa_edge.register_transport_dbg(this, &THIS_MODULE::ICAPATransportDbg);
+	icapb_edge.register_nb_transport_fw(this, &THIS_MODULE::ICAPBNbTransportFw);
+	icapb_edge.register_b_transport(this, &THIS_MODULE::ICAPBBTransport);
+	icapb_edge.register_get_direct_mem_ptr(this, &THIS_MODULE::ICAPBGetDirectMemPtr);
+	icapb_edge.register_transport_dbg(this, &THIS_MODULE::ICAPBTransportDbg);
 	in_mem.bind(*this);
 }
 
@@ -267,7 +282,7 @@ Setup()
 	return true;
 }
 
-/* START: output timer interrupt socket methods */
+/* START: output timer global interrupt socket methods */
 template<unsigned int BUSWIDTH, bool VERBOSE>
 tlm::tlm_sync_enum
 TIM<BUSWIDTH, VERBOSE> ::
@@ -308,9 +323,224 @@ TimeriInvalidateDirectMemPtr(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
 	/* not supported */
 }
 
-/* END: output timer interrupt socket methods */
+/* END: output timer global interrupt socket methods */
 
-/* START: output compare A (OCMPA) interrupt socket methods */
+/* START: output timer overflow interrupt (TOI) socket methods */
+template<unsigned int BUSWIDTH, bool VERBOSE>
+tlm::tlm_sync_enum
+TIM<BUSWIDTH, VERBOSE> ::
+TOINbTransportBw(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
+{
+	switch (phase)
+	{
+		case tlm::END_REQ:
+			// nothing to do just complete the transaction
+			if (VerboseTLM())
+			{
+				logger << DebugInfo << "Received transaction on toi_irq in nb_transport_bw, "
+					<< "completing the transaction" << endl
+					<< ITRANS(trans) << endl
+					<< PHASE(phase) << endl
+					<< TIME(t) << EndDebug;
+			}
+			break;
+		case tlm::BEGIN_REQ:
+		case tlm::BEGIN_RESP:
+		case tlm::END_RESP:
+			logger << DebugWarning << "Received unexpected transaction phase on toi_irq" << endl
+				<< LOCATION << endl
+				<< ITRANS(trans) << endl
+				<< PHASE(phase) << endl
+				<< TIME(t)
+				<< EndDebugWarning;
+			break;
+	}
+	return tlm::TLM_COMPLETED;
+}
+
+template<unsigned int BUSWIDTH, bool VERBOSE>
+void
+TIM<BUSWIDTH, VERBOSE> ::
+TOIInvalidateDirectMemPtr(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
+{
+	/* not supported */
+}
+
+/* END: output timer overflow interrupt (TOI) socket methods */
+
+/* START: output input capture A interrupt (ICIA) socket methods */
+template<unsigned int BUSWIDTH, bool VERBOSE>
+tlm::tlm_sync_enum
+TIM<BUSWIDTH, VERBOSE> ::
+ICIANbTransportBw(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
+{
+	switch (phase)
+	{
+		case tlm::END_REQ:
+			// nothing to do just complete the transaction
+			if (VerboseTLM())
+			{
+				logger << DebugInfo << "Received transaction on icia_irq in nb_transport_bw, "
+					<< "completing the transaction" << endl
+					<< ITRANS(trans) << endl
+					<< PHASE(phase) << endl
+					<< TIME(t) << EndDebug;
+			}
+			break;
+		case tlm::BEGIN_REQ:
+		case tlm::BEGIN_RESP:
+		case tlm::END_RESP:
+			logger << DebugWarning << "Received unexpected transaction phase on icia_irq" << endl
+				<< LOCATION << endl
+				<< ITRANS(trans) << endl
+				<< PHASE(phase) << endl
+				<< TIME(t)
+				<< EndDebugWarning;
+			break;
+	}
+	return tlm::TLM_COMPLETED;
+}
+
+template<unsigned int BUSWIDTH, bool VERBOSE>
+void
+TIM<BUSWIDTH, VERBOSE> ::
+ICIAInvalidateDirectMemPtr(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
+{
+	/* not supported */
+}
+
+/* END: output input capture A interrupt (ICIA) socket methods */
+
+/* START: output input capture B interrupt (ICIB) socket methods */
+template<unsigned int BUSWIDTH, bool VERBOSE>
+tlm::tlm_sync_enum
+TIM<BUSWIDTH, VERBOSE> ::
+ICIBNbTransportBw(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
+{
+	switch (phase)
+	{
+		case tlm::END_REQ:
+			// nothing to do just complete the transaction
+			if (VerboseTLM())
+			{
+				logger << DebugInfo << "Received transaction on icib_irq in nb_transport_bw, "
+					<< "completing the transaction" << endl
+					<< ITRANS(trans) << endl
+					<< PHASE(phase) << endl
+					<< TIME(t) << EndDebug;
+			}
+			break;
+		case tlm::BEGIN_REQ:
+		case tlm::BEGIN_RESP:
+		case tlm::END_RESP:
+			logger << DebugWarning << "Received unexpected transaction phase on icib_irq" << endl
+				<< LOCATION << endl
+				<< ITRANS(trans) << endl
+				<< PHASE(phase) << endl
+				<< TIME(t)
+				<< EndDebugWarning;
+			break;
+	}
+	return tlm::TLM_COMPLETED;
+}
+
+template<unsigned int BUSWIDTH, bool VERBOSE>
+void
+TIM<BUSWIDTH, VERBOSE> ::
+ICIBInvalidateDirectMemPtr(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
+{
+	/* not supported */
+}
+
+/* END: output input capture B interrupt (ICIB) socket methods */
+
+/* START: output output compare A interrupt (OCIA) socket methods */
+template<unsigned int BUSWIDTH, bool VERBOSE>
+tlm::tlm_sync_enum
+TIM<BUSWIDTH, VERBOSE> ::
+OCIANbTransportBw(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
+{
+	switch (phase)
+	{
+		case tlm::END_REQ:
+			// nothing to do just complete the transaction
+			if (VerboseTLM())
+			{
+				logger << DebugInfo << "Received transaction on ocia_irq in nb_transport_bw, "
+					<< "completing the transaction" << endl
+					<< ITRANS(trans) << endl
+					<< PHASE(phase) << endl
+					<< TIME(t) << EndDebug;
+			}
+			break;
+		case tlm::BEGIN_REQ:
+		case tlm::BEGIN_RESP:
+		case tlm::END_RESP:
+			logger << DebugWarning << "Received unexpected transaction phase on ocia_irq" << endl
+				<< LOCATION << endl
+				<< ITRANS(trans) << endl
+				<< PHASE(phase) << endl
+				<< TIME(t)
+				<< EndDebugWarning;
+			break;
+	}
+	return tlm::TLM_COMPLETED;
+}
+
+template<unsigned int BUSWIDTH, bool VERBOSE>
+void
+TIM<BUSWIDTH, VERBOSE> ::
+OCIAInvalidateDirectMemPtr(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
+{
+	/* not supported */
+}
+
+/* END: output output compare A interrupt (OCIA) socket methods */
+
+/* START: output output compare B interrupt (OCIB) socket methods */
+template<unsigned int BUSWIDTH, bool VERBOSE>
+tlm::tlm_sync_enum
+TIM<BUSWIDTH, VERBOSE> ::
+OCIBNbTransportBw(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
+{
+	switch (phase)
+	{
+		case tlm::END_REQ:
+			// nothing to do just complete the transaction
+			if (VerboseTLM())
+			{
+				logger << DebugInfo << "Received transaction on ocib_irq in nb_transport_bw, "
+					<< "completing the transaction" << endl
+					<< ITRANS(trans) << endl
+					<< PHASE(phase) << endl
+					<< TIME(t) << EndDebug;
+			}
+			break;
+		case tlm::BEGIN_REQ:
+		case tlm::BEGIN_RESP:
+		case tlm::END_RESP:
+			logger << DebugWarning << "Received unexpected transaction phase on ocib_irq" << endl
+				<< LOCATION << endl
+				<< ITRANS(trans) << endl
+				<< PHASE(phase) << endl
+				<< TIME(t)
+				<< EndDebugWarning;
+			break;
+	}
+	return tlm::TLM_COMPLETED;
+}
+
+template<unsigned int BUSWIDTH, bool VERBOSE>
+void
+TIM<BUSWIDTH, VERBOSE> ::
+OCIBInvalidateDirectMemPtr(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
+{
+	/* not supported */
+}
+
+/* END: output output compare B interrupt (OCIB) socket methods */
+
+/* START: output compare A (OCMPA) edge socket methods */
 
 template<unsigned int BUSWIDTH, bool VERBOSE>
 tlm::tlm_sync_enum
@@ -323,7 +553,7 @@ OCMPANbTransportBw(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::s
 			// nothing to do just complete the transaction
 			if (VerboseTLM())
 			{
-				logger << DebugInfo << "Received transaction on ocmpa_irq in nb_transport_bw, "
+				logger << DebugInfo << "Received transaction on ocmpa_edge in nb_transport_bw, "
 					<< "completing the transaction" << endl
 					<< ITRANS(trans) << endl
 					<< PHASE(phase) << endl
@@ -333,7 +563,7 @@ OCMPANbTransportBw(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::s
 		case tlm::BEGIN_REQ:
 		case tlm::BEGIN_RESP:
 		case tlm::END_RESP:
-			logger << DebugWarning << "Received unexpected transaction phase on ocmpa_irq" << endl
+			logger << DebugWarning << "Received unexpected transaction phase on ocmpa_edge" << endl
 				<< LOCATION << endl
 				<< ITRANS(trans) << endl
 				<< PHASE(phase) << endl
@@ -352,9 +582,9 @@ OCMPAInvalidateDirectMemPtr(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
 	/* not supported */
 }
 
-/* END: output compare A (OCMPA) interrupt socket methods */
+/* END: output compare A (OCMPA) edge socket methods */
 
-/* START: output compare A (OCMPB) interrupt socket methods */
+/* START: output compare A (OCMPB) edge socket methods */
 
 template<unsigned int BUSWIDTH, bool VERBOSE>
 tlm::tlm_sync_enum
@@ -367,7 +597,7 @@ OCMPBNbTransportBw(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::s
 			// nothing to do just complete the transaction
 			if (VerboseTLM())
 			{
-				logger << DebugInfo << "Received transaction on ocmpb_irq in nb_transport_bw, "
+				logger << DebugInfo << "Received transaction on ocmpb_edge in nb_transport_bw, "
 					<< "completing the transaction" << endl
 					<< ITRANS(trans) << endl
 					<< PHASE(phase) << endl
@@ -377,7 +607,7 @@ OCMPBNbTransportBw(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::s
 		case tlm::BEGIN_REQ:
 		case tlm::BEGIN_RESP:
 		case tlm::END_RESP:
-			logger << DebugWarning << "Received unexpected transaction phase on ocmpb_irq" << endl
+			logger << DebugWarning << "Received unexpected transaction phase on ocmpb_edge" << endl
 				<< LOCATION << endl
 				<< ITRANS(trans) << endl
 				<< PHASE(phase) << endl
@@ -396,9 +626,9 @@ OCMPBInvalidateDirectMemPtr(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
 	/* not supported */
 }
 
-/* END: output compare A (OCMPB) interrupt socket methods */
+/* END: output compare A (OCMPB) edge socket methods */
 
-/* START: input capture A (ICAPA) interrupt socket methods */
+/* START: input capture A (ICAPA) edge socket methods */
 
 template<unsigned int BUSWIDTH, bool VERBOSE>
 tlm::tlm_sync_enum
@@ -430,7 +660,7 @@ ICAPANbTransportFw(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::s
 			break;
 		case tlm::END_REQ:
 		case tlm::BEGIN_RESP:
-			logger << DebugError << "Received unexpected phase on icapa_irq nb_transport_fw handler" << endl
+			logger << DebugError << "Received unexpected phase on icapa_edge nb_transport_fw handler" << endl
 				<< LOCATION << endl
 				<< ITRANS(trans) << endl
 				<< PHASE(phase) << endl
@@ -469,9 +699,9 @@ ICAPATransportDbg(TLMInterruptPayload& trans)
 	return 0;
 }
 
-/* END: input capture A (ICAPA) interrupt socket methods */
+/* END: input capture A (ICAPA) edge socket methods */
 
-/* START: input capture B (ICAPB) interrupt socket methods */
+/* START: input capture B (ICAPB) edge socket methods */
 
 template<unsigned int BUSWIDTH, bool VERBOSE>
 tlm::tlm_sync_enum
@@ -503,7 +733,7 @@ ICAPBNbTransportFw(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::s
 			break;
 		case tlm::END_REQ:
 		case tlm::BEGIN_RESP:
-			logger << DebugError << "Received unexpected phase on icapb_irq nb_transport_fw handler" << endl
+			logger << DebugError << "Received unexpected phase on icapb_edge nb_transport_fw handler" << endl
 				<< LOCATION << endl
 				<< ITRANS(trans) << endl
 				<< PHASE(phase) << endl
@@ -542,7 +772,7 @@ ICAPBTransportDbg(TLMInterruptPayload& trans)
 	return 0;
 }
 
-/* END: input capture B (ICAPB) interrupt socket methods */
+/* END: input capture B (ICAPB) edge socket methods */
 	
 /* START: input memory socket methods */
 
