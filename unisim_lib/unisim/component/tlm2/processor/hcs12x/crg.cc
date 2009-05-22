@@ -52,18 +52,25 @@ CRG::CRG(const sc_module_name& name, Object *parent) :
 	memory_import("memory_import", this),
 	baseAddress(0x0034), // MC9S12XDP512V2 - CRG baseAddress
 	param_baseAddress("base-address", this, baseAddress),
+
+	interrupt_offset_rti(0xF0),
+	param_interrupt_offset_rti("param-interrupt-offset-rti", this, interrupt_offset_rti),
+	interrupt_offset_pll_lock(0xC6),
+	param_interrupt_offset_pll_lock("interrupt-offset-pll-lock", this, interrupt_offset_pll_lock),
+	interrupt_offset_self_clock_mode(0xC4),
+	param_interrupt_offset_self_clock_mode("interrupt-offset-self-clock-mode", this, interrupt_offset_self_clock_mode),
+
 	oscillator_clock_int(0),
-	param_oscillator_clock_int("oscillator-clock", this, oscillator_clock_int),
-	pll_clock_int(0),
-	param_pll_clock_int("pll-clock", this, pll_clock_int)
+	param_oscillator_clock_int("oscillator-clock", this, oscillator_clock_int)
 
 {
 
+	interrupt_request(*this);
 	slave_socket.register_b_transport(this, &CRG::read_write);
 
 	SC_HAS_PROCESS(CRG);
 
-	SC_THREAD(Run);
+	SC_THREAD(RunRTI);
 
 }
 
@@ -71,13 +78,86 @@ CRG::~CRG() {
 
 }
 
-void CRG::Run() {
+void CRG::RunRTI() {
+	/**
+	 * - CRG generates a real-time interrupt when the selected interrupt time period elapses
+	 * - RTI interrupts are locally disabled by setting the RTIE bit to 0
+	 * - The RTIF is set to 1 when a timeout occurs, and is cleared to 0 by writing 1 to RTIF
+	 */
+
+	sc_time delay;
 
 	while (true) {
+		while ((crgint_register & 0x80) == 0) {
+			wait(rti_enable_event);
+		}
 
-		wait();
+		if ((clksel_register & 0x80) != 0) {
+			delay = rti_fdr * pll_clock;
+		} else {
+			delay = rti_fdr * oscillator_clock;
+		}
+
+		wait(delay);
+
+		crgflg_register = crgflg_register | 0x80;
+		assertInterrupt(interrupt_offset_rti);
 	}
 }
+
+void CRG::assertInterrupt(uint8_t interrupt_offset) {
+
+	if ((interrupt_offset == interrupt_offset_rti) && ((crgint_register & 0x80) == 0)) return;
+	if ((interrupt_offset == interrupt_offset_pll_lock) && ((crgint_register & 0x10) == 0)) return;
+	if ((interrupt_offset == interrupt_offset_self_clock_mode) && ((crgint_register & 0x02) == 0)) return;
+
+	tlm_phase phase = BEGIN_REQ;
+	XINT_Payload *payload = xint_payload_fabric.allocate();
+
+	payload->interrupt_offset = interrupt_offset;
+
+	sc_time local_time = quantumkeeper.get_local_time();
+
+	tlm_sync_enum ret = interrupt_request->nb_transport_fw(*payload, phase, local_time);
+
+	switch(ret)
+	{
+		case TLM_ACCEPTED:
+			// neither payload, nor phase and local_time have been modified by the callee
+			quantumkeeper.sync(); // synchronize to leave control to the callee
+			break;
+		case TLM_UPDATED:
+			// the callee may have modified 'payload', 'phase' and 'local_time'
+			quantumkeeper.set(local_time); // increase the time
+			if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
+
+			break;
+		case TLM_COMPLETED:
+			// the callee may have modified 'payload', and 'local_time' ('phase' can be ignored)
+			quantumkeeper.set(local_time); // increase the time
+			if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
+			break;
+	}
+
+}
+
+// Master methods
+void CRG::invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
+{
+	// Leave this empty as it is designed for memory mapped buses
+}
+
+// Master methods
+tlm_sync_enum CRG::nb_transport_bw( XINT_Payload& payload, tlm_phase& phase, sc_core::sc_time& t)
+{
+	if(phase == BEGIN_RESP)
+	{
+		payload.release();
+		return TLM_COMPLETED;
+	}
+	return TLM_ACCEPTED;
+}
+
 
 void CRG::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 {
@@ -99,15 +179,175 @@ void CRG::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 void CRG::read(uint8_t offset, uint8_t &value) {
 
 	switch (offset) {
-	default: ;
+		case SYNR: value = synr_register & 0x3F; break;
+		case REFDV: value = refdv_register & 0x3F; break;
+		case CTFLG: value = 0; break;
+		case CRGFLG: value = crgflg_register; break;
+		case CRGINT: value = crgint_register & 0xD2; break;
+		case CLKSEL: value = clksel_register & 0xCB; break;
+		case PLLCTL: value = pllctl_register; break;
+		case RTICTL: value = rtictl_register; break;
+		case COPCTL: value = copctl_register & 0xC7; break;
+		case FORBYP: value = 0; break;
+		case CTCTL: value = 0; break;
+		case ARMCOP: value = 0; break;
+		default: ;
 	}
 }
 
-void CRG::write(uint8_t offset, uint8_t val) {
+void CRG::write(uint8_t offset, uint8_t value) {
 
 	switch (offset) {
-	default: ;
+		case SYNR: {
+			if ((clksel_register & 0x80) != 0) return; // if (PLLSEL == 1) then return;
+
+			synr_register = value & 0x3F;
+			compute_pll_clock();
+			crgflg_register = crgflg_register | 0x0C; // set Lock and track bits
+		} break;
+		case REFDV: {
+			if ((clksel_register & 0x80) != 0) return; // if (PLLSEL == 1) then return;
+
+			refdv_register = value & 0x3F;
+			compute_pll_clock();
+			crgflg_register = crgflg_register | 0x1C;
+			assertInterrupt(interrupt_offset_pll_lock);
+		} break;
+		case CTFLG: {
+			// This register is reserved for factory testing
+			return;
+		} break;
+		case CRGFLG: {
+			/**
+			 * TODO:
+			 *  RTIF: set at the end of RTI period
+			 *  PORF: set when a power on occurs
+			 *  LVRF: set if low voltage reset
+			 *  LOCKIF: is set when Lock status bit change
+			 *  SCMIF: is set when SCM status bit change
+			 */
+
+			if ((value & 0x80) != 0) crgflg_register = crgflg_register & 0x7F;
+			if ((value & 0x40) != 0) crgflg_register = crgflg_register & 0xBF;
+			if ((value & 0x20) != 0) crgflg_register = crgflg_register & 0xDF;
+			if ((value & 0x10) != 0) crgflg_register = crgflg_register & 0xEF;
+			if ((value & 0x02) != 0) crgflg_register = crgflg_register & 0xFD;
+
+		} break;
+		case CRGINT: {
+			uint8_t val = value & 0xD2;
+
+			uint8_t old_ilaf_bit = crgint_register & 0x40;
+			crgint_register = val & 0x92;
+			if ((val & 0x40) == 0) crgint_register = crgint_register | old_ilaf_bit;
+
+			if ((val & 0x80) != 0) rti_enable_event.notify();
+
+		} break;
+		case CLKSEL: {
+			clksel_register = value;
+			compute_bus_clock();
+		} break;
+		case PLLCTL: {
+			uint8_t cme_bit = pllctl_register & 0x80;
+			uint8_t pllon_bit = pllctl_register & 0x40;
+
+			// check CRGFLG::SCM bit
+			if ((crgflg_register & 0x01) != 0) value = (value & 0x7F) | cme_bit;
+
+			// check CLKSEL::PLLSEL
+			if ((clksel_register & 0x80) != 0) value = (value & 0xBF) | pllon_bit;
+
+			pllctl_register = value;
+
+		} break;
+		case RTICTL: {
+			rtictl_register = value;
+			initialize_rti_counter();
+
+		} break;
+		case COPCTL: {
+			// RSBCK: Anytime in special modes; write to "1" but not to "0" in all other modes
+			if ((value & 0x40) == 0) value = value | (copctl_register & 0x40);
+
+			copctl_register = value & 0xE7;
+			if ((value & 0x07) != 0) select_cop_timeout();
+
+		} break;
+		case FORBYP: /* reserved */ break;
+		case CTCTL: /* reserved */ break;
+		case ARMCOP: {
+			uint8_t old_value = armcop_register;
+			armcop_register = value;
+
+			if ((copctl_register & 0x07) != 0) {
+				if ((value != 0x55) && (value != 0xAA)) {
+					cop_reset();
+				} else if ((old_value == 0x55) && (value == 0xAA)) {
+					restart_cop_timeout();
+				}
+			}
+
+		} break;
+		default: ;
 	}
+}
+
+sc_time CRG::compute_pll_clock() {
+
+	pll_clock = 2 * oscillator_clock * (synr_register + 1) / (refdv_register +1) ;
+
+	return pll_clock;
+}
+
+sc_time CRG::compute_bus_clock() {
+	if ((clksel_register & 0x80) != 0) {
+		bus_clock = pll_clock / 2;
+	} else {
+		bus_clock = oscillator_clock / 2;
+	}
+
+	return bus_clock;
+}
+
+void CRG::initialize_rti_counter() {
+	bool rtdec = ((rtictl_register & 0x80) != 0);
+	uint8_t rtr30 = rtictl_register & 0x0F;
+	uint8_t rtr64 = (rtictl_register & 0x70) >> 4;
+
+	// RTI Frequency Divide Rate
+	rti_fdr = 0;
+	if (rtdec) {
+		rti_fdr = (rtr30 + 1) * std::pow((double)10, 3);
+		switch (rtr64) {
+			case 1: rti_fdr = rti_fdr * 2; break;
+			case 2: rti_fdr = rti_fdr * 5; break;
+			case 3: rti_fdr = rti_fdr * 10; break;
+			case 4: rti_fdr = rti_fdr * 20; break;
+			case 5: rti_fdr = rti_fdr * 50; break;
+			case 6: rti_fdr = rti_fdr * 100; break;
+			case 7: rti_fdr = rti_fdr * 200; break;
+		}
+	} else {
+		if (rtr64 != 0) {
+			rti_fdr = (rtr30+1) * std::pow((double)2, 10+rtr64-1);
+		} else {
+			// disable RTI
+		}
+	}
+
+}
+
+void CRG::select_cop_timeout() {
+
+}
+
+void CRG::cop_reset() {
+	// TODO:
+}
+
+void CRG::restart_cop_timeout() {
+	// TODO
 }
 
 //=====================================================================
@@ -120,15 +360,13 @@ bool CRG::Setup() {
 	 * TODO:
 	 *  - One of the output of the CRG is the BusClock (hereafter fsb_cycle_time).
 	 *  - In fact I have to connect all the others component to the CRG::BusClock output.
-	 *  - If (PLLSEL == 1) the BusClock = PLLCLK / 2;
-	 *  - PLLCLK = 2 * OSCCLK * (SYNR + 1) / (REFDV + 1)
 	 */
-
-	pll_clock = sc_time((double) pll_clock_int, SC_PS);
 
 	oscillator_clock = sc_time((double) oscillator_clock_int, SC_PS);
 
 	Reset();
+
+	compute_pll_clock();
 
 	return true;
 }
@@ -137,6 +375,20 @@ void CRG::OnDisconnect() {
 }
 
 void CRG::Reset() {
+
+	write(SYNR, 0x00);
+	write(REFDV, 0x00);
+	write(CTFLG, 0x00);
+	write(CRGFLG, 0x00);
+	write(CRGINT, 0x00);
+	write(CLKSEL, 0x00);
+	write(PLLCTL, 0xF1);
+	write(RTICTL, 0x00);
+	write(COPCTL, 0x00);
+	write(FORBYP, 0x00);
+	write(CTCTL, 0x00);
+	write(ARMCOP, 0x00);
+
 }
 
 
@@ -146,12 +398,14 @@ void CRG::Reset() {
 
 bool CRG::ReadMemory(service_address_t addr, void *buffer, uint32_t size) {
 
-	return false;
+	read(addr-baseAddress, *(uint8_t *) buffer);
+	return true;
 }
 
 bool CRG::WriteMemory(service_address_t addr, const void *buffer, uint32_t size) {
 
-	return false;
+	write(addr-baseAddress, *(uint8_t *) buffer);
+	return true;
 }
 
 

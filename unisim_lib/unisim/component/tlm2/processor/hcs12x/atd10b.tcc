@@ -448,7 +448,7 @@ void ATD10B<ATD_SIZE>::assertInterrupt() {
 template <uint8_t ATD_SIZE>
 void ATD10B<ATD_SIZE>::sequenceComplete() {
 
-//	conversionStop = true;
+	conversionStop = true;
 
 	// Set the SCF (Sequence Complete Flag)
 	atdstat0_register = atdstat0_register | 0x80;

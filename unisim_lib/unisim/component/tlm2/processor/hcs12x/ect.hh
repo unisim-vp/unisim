@@ -103,11 +103,6 @@ public:
 	//=                REGISTERS OFFSETS                      =
 	//=========================================================
 
-	static const address_t	TIOS	= 0x0000;
-	static const address_t	TSCR1	= 0x0006;
-	static const address_t	TIE		= 0x000C;
-	static const address_t	TSCR2	= 0x000D;
-	static const address_t	TFLG1	= 0x000E;
 
 	//=========================================================
 	//=                MODULE INTERFACE                       =
@@ -182,11 +177,7 @@ private:
 	//=            REGISTER SET    =
 	//==============================
 
-	uint8_t tios_register;
-	uint8_t tscr1_register;
-	uint8_t tie_register;
-	uint8_t tscr2_register;
-	uint8_t tflg1_register;
+
 
 }; /* end class ECT */
 

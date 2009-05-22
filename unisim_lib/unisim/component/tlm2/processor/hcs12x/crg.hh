@@ -58,6 +58,8 @@
 #include <unisim/component/cxx/processor/hcs12x/config.hh>
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
 
+#include <unisim/component/tlm2/processor/hcs12x/tlm_types.hh>
+
 namespace unisim {
 namespace component {
 namespace tlm2 {
@@ -89,14 +91,23 @@ using unisim::kernel::tlm2::PayloadFabric;
 
 class CRG :
 	public sc_module,
+	virtual public tlm_bw_transport_if<XINT_REQ_ProtocolTypes>,
 	public Client<TrapReporting >,
 	public Service<Memory<service_address_t> >,
 	public Client<Memory<service_address_t> >
 
 {
 public:
+	//=========================================================
+	//=                REGISTERS OFFSETS                      =
+	//=========================================================
+
+	enum REGS_OFFSETS {SYNR, REFDV, CTFLG, CRGFLG, CRGINT, CLKSEL, PLLCTL, RTICTL,
+					COPCTL, FORBYP, CTCTL, ARMCOP};
 
 	ServiceImport<TrapReporting > trap_reporting_import;
+
+	tlm_initiator_socket<CONFIG::EXTERNAL2UNISIM_BUS_WIDTH, XINT_REQ_ProtocolTypes> interrupt_request;
 
 	tlm_utils::simple_target_socket<CRG> slave_socket;
 
@@ -106,11 +117,15 @@ public:
 	CRG(const sc_module_name& name, Object *parent = 0);
 	virtual ~CRG();
 
-	void Run();
+	void RunRTI();
+
+	void assertInterrupt(uint8_t interrupt_offset);
 
     //================================================================
     //=                    tlm2 Interface                            =
     //================================================================
+	virtual void invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range);
+	virtual tlm_sync_enum nb_transport_bw( XINT_Payload& payload, tlm_phase& phase, sc_core::sc_time& t);
 
     virtual void read_write( tlm::tlm_generic_payload& trans, sc_time& delay );
 
@@ -140,17 +155,48 @@ public:
 protected:
 
 private:
+	tlm_quantumkeeper quantumkeeper;
+	PayloadFabric<XINT_Payload> xint_payload_fabric;
 
 	clock_t	oscillator_clock_int;	// The time unit is PS
 	Parameter<clock_t>	param_oscillator_clock_int;
 	sc_time		oscillator_clock;
 
-	clock_t	pll_clock_int;	// The time unit is PS
-	Parameter<clock_t>	param_pll_clock_int;
 	sc_time		pll_clock;
+	sc_time		bus_clock;
+
+	sc_event rti_enable_event;
 
 	address_t	baseAddress;
 	Parameter<address_t>   param_baseAddress;
+
+	uint8_t interrupt_offset_rti;
+	Parameter<uint8_t> param_interrupt_offset_rti;
+
+	uint8_t interrupt_offset_pll_lock;
+	Parameter<uint8_t> param_interrupt_offset_pll_lock;
+
+	uint8_t interrupt_offset_self_clock_mode;
+	Parameter<uint8_t> param_interrupt_offset_self_clock_mode;
+
+	// RTI Frequency Divide Rate
+	double rti_fdr;
+
+	sc_time compute_pll_clock();
+	sc_time compute_bus_clock();
+	void initialize_rti_counter();
+
+	void select_cop_timeout();
+	void cop_reset();
+	void restart_cop_timeout();
+
+	// =============================================
+	// =            Registers                      =
+	// =============================================
+
+	uint8_t synr_register, refdv_register, ctflg_register, crgflg_register, crgint_register,
+			clksel_register, pllctl_register, rtictl_register, copctl_register, forbyp_register,
+			ctctl_register, armcop_register;
 
 }; /* end class CRG */
 

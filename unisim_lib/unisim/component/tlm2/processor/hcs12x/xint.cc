@@ -141,8 +141,6 @@ void XINT::getVectorAddress( tlm::tlm_generic_payload& trans, sc_time& delay )
 
 	uint8_t newIPL = 0;
 	address_t vectorAddress = 0;
-	uint8_t cfaddr = getINT_CFADDR();
-
 
 	/*
 	 * Check if it is reset
@@ -169,9 +167,10 @@ void XINT::getVectorAddress( tlm::tlm_generic_payload& trans, sc_time& delay )
 	}
 	else {
 		uint8_t selectedInterrupt = 0;
-		uint8_t visbleFlags = cfaddr/2;
+		uint8_t visibleFlags = getINT_CFADDR()/2;
+
 		for (int index=0; index < CFDATA_SIZE; index++) { // Check only the selected interrupts
-			if (interrupt_flags[visbleFlags+index]) {
+			if (interrupt_flags[visibleFlags+index]) {
 				uint8_t dataPriority = int_cfdata[index] && 0x07;
 
 				// if 7-bit=0 then cpu else xgate
@@ -179,14 +178,16 @@ void XINT::getVectorAddress( tlm::tlm_generic_payload& trans, sc_time& delay )
 				{
 					if (dataPriority >= newIPL) {  // priority of maskable interrupts is from high offset to low
 						newIPL = dataPriority;
-						selectedInterrupt = visbleFlags+index;
+						selectedInterrupt = visibleFlags+index;
 					}
 				}
 				else ;
 
 			}
 		}
-		vectorAddress = ((address_t) getIVBR() << 8) + selectedInterrupt * 2;
+
+
+		vectorAddress = (getIVBR() << 8) + selectedInterrupt * 2;
 		interrupt_flags[selectedInterrupt] = false;
 	}
 
@@ -195,7 +196,7 @@ void XINT::getVectorAddress( tlm::tlm_generic_payload& trans, sc_time& delay )
 			vectorAddress = get_Spurious_Vector();
 			newIPL = 0x7;
 		} else {
-			vectorAddress = (address_t) getIVBR() << 8 ;
+			vectorAddress = getIVBR() << 8 ;
 		}
 	}
 
@@ -236,17 +237,18 @@ void XINT::Run()
 					cout << "XINT: Receive INT-Offset " << payload->interrupt_offset/2 << std::endl;
 				}
 
-				uint8_t interrupt_id = payload->interrupt_offset/2;
-				uint8_t visibleInterruptsBase = getINT_CFADDR()/2;
+				if ((payload->interrupt_offset == XINT::INT_CLK_MONITOR_RESET_OFFSET) ||
+					(payload->interrupt_offset == XINT::INT_COP_WATCHDOG_RESET_OFFSET) ||
+					(payload->interrupt_offset == XINT::INT_ILLEGAL_ACCESS_RESET_OFFSET) ||
+					(payload->interrupt_offset == XINT::INT_SYS_RESET_OFFSET) ||
+					(payload->interrupt_offset == XINT::INT_XIRQ_OFFSET) ||
+					((payload->interrupt_offset >= getINT_CFADDR()) && (payload->interrupt_offset < (getINT_CFADDR() + 16)))) {
 
-				if ((interrupt_id == XINT::INT_CLK_MONITOR_RESET_OFFSET/2) ||
-					(interrupt_id == XINT::INT_COP_WATCHDOG_RESET_OFFSET/2) ||
-					(interrupt_id == XINT::INT_ILLEGAL_ACCESS_RESET_OFFSET/2) ||
-					(interrupt_id == XINT::INT_SYS_RESET_OFFSET/2) ||
-					(interrupt_id == XINT::INT_XIRQ_OFFSET/2) ||
-					((interrupt_id >= visibleInterruptsBase) && (interrupt_id < visibleInterruptsBase + 8))) {
+					if (CONFIG::DEBUG_ENABLE) {
+						cout << "XINT: Receive Visible INT-Offset " << payload->interrupt_offset/2 << std::endl;
+					}
 
-					interrupt_flags[interrupt_id] = true;
+					interrupt_flags[payload->interrupt_offset/2] = true;
 					hasVisibleInterrupt = true;
 				}
 

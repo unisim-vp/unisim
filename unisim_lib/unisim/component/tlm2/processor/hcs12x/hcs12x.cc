@@ -373,10 +373,10 @@ Run() {
 
 	while(1) {
 
-//		if(cpu_time >= next_nice_time) {
-//			next_nice_time = cpu_time + nice_time;
-//			Synchronize();
-//		}
+		if(cpu_time >= next_nice_time) {
+			next_nice_time = cpu_time + nice_time;
+			Synchronize();
+		}
 
 		if( verbose_tlm_run_thread && inherited::logger_import)
 			(*inherited::logger_import) << DebugInfo << LOCATION
@@ -385,12 +385,12 @@ Run() {
 
 		opCycles = inherited::Step();
 
-		time_per_instruction = opCyclesArray[opCycles];
-
 		if( verbose_tlm_run_thread && inherited::logger_import)
 			(*inherited::logger_import) << DebugInfo << LOCATION
 				<< "Finished executing step"
 				<< Endl << EndDebugInfo;
+
+		time_per_instruction = opCyclesArray[opCycles];
 		cpu_time += time_per_instruction;
 
 		if (CONFIG::TIMING_ENABLE) {
