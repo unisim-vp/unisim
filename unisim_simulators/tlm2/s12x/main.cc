@@ -431,8 +431,11 @@ int sc_main(int argc, char *argv[])
 	 *  - PLLCLK = 2 * OSCCLK * (SYNR + 1) / (REFDV + 1)
 	 */
 	(*crg)["base-address"] = 0x0034;
-	(*crg)["oscillator-clock"] = fsb_cycle_time;
-	(*crg)["pll-clock"] = fsb_cycle_time * 2;
+	(*crg)["oscillator-clock"] = fsb_cycle_time / 2;
+
+	(*crg)["param-interrupt-offset-rti"] = 0xF0;
+	(*crg)["interrupt-offset-pll-lock"] = 0xC6;
+	(*crg)["interrupt-offset-self-clock-mode"] = 0xC4;
 
 	(*ect)["bus-cycle-time"] = fsb_cycle_time;
 	(*ect)["base-address"] = 0x0040;
@@ -477,13 +480,16 @@ int sc_main(int argc, char *argv[])
 	*var1 = "range_start=\"0x000080\" range_end=\"0x0000AF\" output_port=\"2\""; // ATD10B16C
 
 	var1 = ServiceManager::GetParameter("internal_router.mapping_3");
-	*var1 = "range_start=\"0x000120\" range_end=\"0x00012F\" output_port=\"3\""; // S12XINT
+//	*var1 = "range_start=\"0x000120\" range_end=\"0x00012F\" output_port=\"3\""; // S12XINT
+	*var1 = "range_start=\"0x000120\" range_end=\"0x000130\" output_port=\"3\""; // S12XINT
 
 	var1 = ServiceManager::GetParameter("internal_router.mapping_4");
-	*var1 = "range_start=\"0x0002C0\" range_end=\"0x0002DF\" output_port=\"4\""; // ATD10B8C
+//	*var1 = "range_start=\"0x0002C0\" range_end=\"0x0002DF\" output_port=\"4\""; // ATD10B8C
+	*var1 = "range_start=\"0x0002C0\" range_end=\"0x0002E0\" output_port=\"4\""; // ATD10B8C
 
 	var1 = ServiceManager::GetParameter("internal_router.mapping_5");
-	*var1 = "range_start=\"0x000300\" range_end=\"0x000327\" output_port=\"5\""; // PWM - 37 bytes
+//	*var1 = "range_start=\"0x000300\" range_end=\"0x000327\" output_port=\"5\""; // PWM - 37 bytes
+	*var1 = "range_start=\"0x000300\" range_end=\"0x000328\" output_port=\"5\""; // PWM - 37 bytes
 
 	var1 = ServiceManager::GetParameter("internal_router.mapping_6");
 	*var1 = "range_start=\"0x000800\" range_end=\"0xFFFF\" output_port=\"6\""; // 64KByte - RAM-EEPROM-FLASH
@@ -558,6 +564,7 @@ int sc_main(int argc, char *argv[])
 	s12xint->toCPU_Initiator(cpu->interrupt_request);
 
 //	int_gen->interrupt_request(s12xint->interrupt_request);
+	crg->interrupt_request(s12xint->interrupt_request);
 	ect->interrupt_request(s12xint->interrupt_request);
 	pwm->interrupt_request(s12xint->interrupt_request);
 	atd1->interrupt_request(s12xint->interrupt_request);

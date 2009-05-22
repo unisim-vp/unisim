@@ -277,7 +277,7 @@ public:
 
 		cin >> num_cycles;
 */
-		num_cycles = 1;
+		num_cycles = 10;
 		sc_time delay(num_cycles * cycle_time);
 
 
