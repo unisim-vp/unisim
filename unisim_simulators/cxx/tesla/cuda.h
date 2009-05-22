@@ -1,5 +1,5 @@
 /*
- * Copyright 1993-2008 NVIDIA Corporation.  All rights reserved.
+ * Copyright 1993-2009 NVIDIA Corporation.  All rights reserved.
  *
  * NOTICE TO USER:   
  *
@@ -33,33 +33,42 @@
  * the above Disclaimer and U.S. Government End Users Notice.
  */
 
-// ----------------------------------------------------------------------------
-// 
-// Main public header file for the CompUte Device Api
-//
-// ----------------------------------------------------------------------------
-
 #ifndef __cuda_cuda_h__
 #define __cuda_cuda_h__
 
+#include <stdlib.h>
 
-/* CUDA API version number */
-#define CUDA_VERSION 2000 /* 2.0 */
+/**
+ * \file
+ * \name Data types used by CUDA driver
+ * \author NVIDIA Corporation
+ * \brief Data types used by CUDA driver
+ */
 
+/**
+ * \defgroup CUDA_TYPES Data types used by CUDA driver
+ * \ingroup CUDA_DRIVER
+ * @{
+ */
+
+/**
+ * CUDA API version number
+ */
+#define CUDA_VERSION 2020 /* 2.2 */
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-    typedef unsigned int CUdeviceptr; 
+    typedef unsigned int CUdeviceptr;       ///< CUDA device pointer
 
-    typedef int CUdevice;
-    typedef struct CUctx_st *CUcontext;
-    typedef struct CUmod_st *CUmodule;
-    typedef struct CUfunc_st *CUfunction;
-    typedef struct CUarray_st *CUarray;
-    typedef struct CUtexref_st *CUtexref;
-    typedef struct CUevent_st *CUevent;
-    typedef struct CUstream_st *CUstream;
+    typedef int CUdevice;                   ///< CUDA device
+    typedef struct CUctx_st *CUcontext;     ///< CUDA context
+    typedef struct CUmod_st *CUmodule;      ///< CUDA module
+    typedef struct CUfunc_st *CUfunction;   ///< CUDA function
+    typedef struct CUarray_st *CUarray;     ///< CUDA array
+    typedef struct CUtexref_st *CUtexref;   ///< CUDA texture reference
+    typedef struct CUevent_st *CUevent;     ///< CUDA event
+    typedef struct CUstream_st *CUstream;   ///< CUDA stream
 
 /************************************
  **
@@ -67,99 +76,260 @@ extern "C" {
  **
  ***********************************/
 
-//
-// context creation flags
-//
+/**
+ * Context creation flags
+ */
 typedef enum CUctx_flags_enum {
-    CU_CTX_SCHED_AUTO  = 0,
-    CU_CTX_SCHED_SPIN  = 1,
-    CU_CTX_SCHED_YIELD = 2,
+    CU_CTX_SCHED_AUTO  = 0,     ///< Automatic scheduling
+    CU_CTX_SCHED_SPIN  = 1,     ///< Set spin as default scheduling
+    CU_CTX_SCHED_YIELD = 2,     ///< Set yield as default scheduling
     CU_CTX_SCHED_MASK  = 0x3,
-    CU_CTX_FLAGS_MASK  = CU_CTX_SCHED_MASK
+    CU_CTX_BLOCKING_SYNC = 4,   ///< Use blocking synchronization
+    CU_CTX_MAP_HOST = 8,        ///< Support mapped pinned allocations
+    CU_CTX_FLAGS_MASK  = 0xf,
 } CUctx_flags;
 
-//
-// array formats
-//
+/**
+ * Event creation flags
+ */
+typedef enum CUevent_flags_enum {
+    CU_EVENT_DEFAULT       = 0, ///< Default event flag
+    CU_EVENT_BLOCKING_SYNC = 1, ///< Event uses blocking synchronization
+} CUevent_flags;
+
+/**
+ * Array formats
+ */
 typedef enum CUarray_format_enum {
-    CU_AD_FORMAT_UNSIGNED_INT8  = 0x01,
-    CU_AD_FORMAT_UNSIGNED_INT16 = 0x02,
-    CU_AD_FORMAT_UNSIGNED_INT32 = 0x03,
-    CU_AD_FORMAT_SIGNED_INT8    = 0x08,
-    CU_AD_FORMAT_SIGNED_INT16   = 0x09,
-    CU_AD_FORMAT_SIGNED_INT32   = 0x0a,
-    CU_AD_FORMAT_HALF           = 0x10,
-    CU_AD_FORMAT_FLOAT          = 0x20
+    CU_AD_FORMAT_UNSIGNED_INT8  = 0x01, ///< Unsigned 8-bit integers
+    CU_AD_FORMAT_UNSIGNED_INT16 = 0x02, ///< Unsigned 16-bit integers
+    CU_AD_FORMAT_UNSIGNED_INT32 = 0x03, ///< Unsigned 32-bit integers
+    CU_AD_FORMAT_SIGNED_INT8    = 0x08, ///< Signed 8-bit integers
+    CU_AD_FORMAT_SIGNED_INT16   = 0x09, ///< Signed 16-bit integers
+    CU_AD_FORMAT_SIGNED_INT32   = 0x0a, ///< Signed 32-bit integers
+    CU_AD_FORMAT_HALF           = 0x10, ///< 16-bit floating point
+    CU_AD_FORMAT_FLOAT          = 0x20  ///< 32-bit floating point
 } CUarray_format;
 
-//
-// Texture reference addressing modes
-//
+/**
+ * Texture reference addressing modes
+ */
 typedef enum CUaddress_mode_enum {
-    CU_TR_ADDRESS_MODE_WRAP = 0,
-    CU_TR_ADDRESS_MODE_CLAMP = 1,
-    CU_TR_ADDRESS_MODE_MIRROR = 2,
+    CU_TR_ADDRESS_MODE_WRAP = 0,    ///< Wrapping address mode
+    CU_TR_ADDRESS_MODE_CLAMP = 1,   ///< Clamp to edge address mode
+    CU_TR_ADDRESS_MODE_MIRROR = 2,  ///< Mirror address mode
 } CUaddress_mode;
 
-//
-// Texture reference filtering modes
-//
+/**
+ * Texture reference filtering modes
+ */
 typedef enum CUfilter_mode_enum {
-    CU_TR_FILTER_MODE_POINT = 0,
-    CU_TR_FILTER_MODE_LINEAR = 1
+    CU_TR_FILTER_MODE_POINT = 0,    ///< Point filter mode
+    CU_TR_FILTER_MODE_LINEAR = 1    ///< Linear filter mode
 } CUfilter_mode;
 
-//
-// Device properties
-//
+/**
+ * Device properties
+ */
 typedef enum CUdevice_attribute_enum {
-    CU_DEVICE_ATTRIBUTE_MAX_THREADS_PER_BLOCK = 1,
-    CU_DEVICE_ATTRIBUTE_MAX_BLOCK_DIM_X = 2,
-    CU_DEVICE_ATTRIBUTE_MAX_BLOCK_DIM_Y = 3,
-    CU_DEVICE_ATTRIBUTE_MAX_BLOCK_DIM_Z = 4,
-    CU_DEVICE_ATTRIBUTE_MAX_GRID_DIM_X = 5,
-    CU_DEVICE_ATTRIBUTE_MAX_GRID_DIM_Y = 6,
-    CU_DEVICE_ATTRIBUTE_MAX_GRID_DIM_Z = 7,
-    CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK = 8,
-    CU_DEVICE_ATTRIBUTE_SHARED_MEMORY_PER_BLOCK = 8,      // Deprecated, use CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK
-    CU_DEVICE_ATTRIBUTE_TOTAL_CONSTANT_MEMORY = 9,
-    CU_DEVICE_ATTRIBUTE_WARP_SIZE = 10,
-    CU_DEVICE_ATTRIBUTE_MAX_PITCH = 11,
-    CU_DEVICE_ATTRIBUTE_MAX_REGISTERS_PER_BLOCK = 12,
-    CU_DEVICE_ATTRIBUTE_REGISTERS_PER_BLOCK = 12,         // Deprecated, use CU_DEVICE_ATTRIBUTE_MAX_REGISTERS_PER_BLOCK
-    CU_DEVICE_ATTRIBUTE_CLOCK_RATE = 13,
-    CU_DEVICE_ATTRIBUTE_TEXTURE_ALIGNMENT = 14,
+    CU_DEVICE_ATTRIBUTE_MAX_THREADS_PER_BLOCK = 1,  ///< Maximum number of threads per block
+    CU_DEVICE_ATTRIBUTE_MAX_BLOCK_DIM_X = 2,        ///< Maximum block dimension X
+    CU_DEVICE_ATTRIBUTE_MAX_BLOCK_DIM_Y = 3,        ///< Maximum block dimension Y
+    CU_DEVICE_ATTRIBUTE_MAX_BLOCK_DIM_Z = 4,        ///< Maximum block dimension Z
+    CU_DEVICE_ATTRIBUTE_MAX_GRID_DIM_X = 5,         ///< Maximum grid dimension X
+    CU_DEVICE_ATTRIBUTE_MAX_GRID_DIM_Y = 6,         ///< Maximum grid dimension Y
+    CU_DEVICE_ATTRIBUTE_MAX_GRID_DIM_Z = 7,         ///< Maximum grid dimension Z
+    CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK = 8,    ///< Maximum shared memory available per block in bytes
+    CU_DEVICE_ATTRIBUTE_SHARED_MEMORY_PER_BLOCK = 8,    ///< Deprecated, use CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK
+    CU_DEVICE_ATTRIBUTE_TOTAL_CONSTANT_MEMORY = 9,  ///< Memory available on device for __constant__ variables in a CUDA C kernel in bytes
+    CU_DEVICE_ATTRIBUTE_WARP_SIZE = 10,             ///< Warp size in threads
+    CU_DEVICE_ATTRIBUTE_MAX_PITCH = 11,             ///< Maximum pitch in bytes allowed by memory copies
+    CU_DEVICE_ATTRIBUTE_MAX_REGISTERS_PER_BLOCK = 12,   ///< Maximum number of 32-bit registers available per block
+    CU_DEVICE_ATTRIBUTE_REGISTERS_PER_BLOCK = 12,   ///< Deprecated, use CU_DEVICE_ATTRIBUTE_MAX_REGISTERS_PER_BLOCK
+    CU_DEVICE_ATTRIBUTE_CLOCK_RATE = 13,            ///< Peak clock frequency in kilohertz
+    CU_DEVICE_ATTRIBUTE_TEXTURE_ALIGNMENT = 14,     ///< Alignment requirement for textures
 
-    CU_DEVICE_ATTRIBUTE_GPU_OVERLAP = 15,
-    CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT = 16,
-    CU_DEVICE_ATTRIBUTE_KERNEL_EXEC_TIMEOUT = 17
+    CU_DEVICE_ATTRIBUTE_GPU_OVERLAP = 15,           ///< Device can possibly copy memory and execute a kernel concurrently
+    CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT = 16,  ///< Number of multiprocessors on device
+    CU_DEVICE_ATTRIBUTE_KERNEL_EXEC_TIMEOUT = 17,   ///< Specifies whether there is a run time limit on kernels
+    CU_DEVICE_ATTRIBUTE_INTEGRATED = 18,            ///< Device is integrated with host memory
+    CU_DEVICE_ATTRIBUTE_CAN_MAP_HOST_MEMORY = 19,   ///< Device can map host memory into CUDA address space
+    CU_DEVICE_ATTRIBUTE_COMPUTE_MODE = 20           ///< Compute mode (See ::CUcomputemode for details)
 } CUdevice_attribute;
 
-//
-// Legacy device properties
-//
+/**
+ * Legacy device properties
+ */
 typedef struct CUdevprop_st {
-    int maxThreadsPerBlock;
-    int maxThreadsDim[3];
-    int maxGridSize[3]; 
-    int sharedMemPerBlock;
-    int totalConstantMemory;
-    int SIMDWidth;
-    int memPitch;
-    int regsPerBlock;
-    int clockRate;
-    int textureAlign;
+    int maxThreadsPerBlock;     ///< Maximum number of threads per block
+    int maxThreadsDim[3];       ///< Maximum size of each dimension of a block
+    int maxGridSize[3];         ///< Maximum size of each dimension of a grid
+    int sharedMemPerBlock;      ///< Shared memory available per block in bytes
+    int totalConstantMemory;    ///< Constant memory available on device in bytes
+    int SIMDWidth;              ///< Warp size in threads
+    int memPitch;               ///< Maximum pitch in bytes allowed by memory copies
+    int regsPerBlock;           ///< 32-bit registers available per block
+    int clockRate;              ///< Clock frequency in kilohertz
+    int textureAlign;           ///< Alignment requirement for textures
 } CUdevprop;
 
-//
-// Memory types
-//
+/**
+ * Function properties
+ */
+typedef enum CUfunction_attribute_enum {
+    /**
+     * The number of threads beyond which a launch of the function would fail.
+     * This number depends on both the function and the device on which the
+     * function is currently loaded.
+     */
+    CU_FUNC_ATTRIBUTE_MAX_THREADS_PER_BLOCK = 0,
+
+    /**
+     * The size in bytes of statically-allocated shared memory required by
+     * this function. This does not include dynamically-allocated shared
+     * memory requested by the user at runtime.
+     */
+    CU_FUNC_ATTRIBUTE_SHARED_SIZE_BYTES = 1,
+
+    /**
+     * The size in bytes of user-allocated constant memory required by this
+     * function.
+     */
+    CU_FUNC_ATTRIBUTE_CONST_SIZE_BYTES = 2,
+
+    /**
+     * The size in bytes of thread local memory used by this function.
+     */
+    CU_FUNC_ATTRIBUTE_LOCAL_SIZE_BYTES = 3,
+
+    /**
+     * The number of registers used by each thread of this function.
+     */
+    CU_FUNC_ATTRIBUTE_NUM_REGS = 4,
+
+    CU_FUNC_ATTRIBUTE_MAX
+} CUfunction_attribute;
+
+/**
+ * Memory types
+ */
 typedef enum CUmemorytype_enum {
-    CU_MEMORYTYPE_HOST = 0x01,
-    CU_MEMORYTYPE_DEVICE = 0x02,
-    CU_MEMORYTYPE_ARRAY = 0x03
+    CU_MEMORYTYPE_HOST = 0x01,      ///< Host memory
+    CU_MEMORYTYPE_DEVICE = 0x02,    ///< Device memory
+    CU_MEMORYTYPE_ARRAY = 0x03      ///< Array memory
 } CUmemorytype;
 
+/**
+ * Compute Modes
+ */
+typedef enum CUcomputemode_enum {
+    CU_COMPUTEMODE_DEFAULT    = 0,     ///< Default compute mode (Multiple contexts allowed per device)
+    CU_COMPUTEMODE_EXCLUSIVE  = 1,     ///< Compute-exclusive mode (Only one context can be present on this device at a time)
+    CU_COMPUTEMODE_PROHIBITED = 2      ///< Compute-prohibited mode (No contexts can be created on this device at this time)
+} CUcomputemode;
+
+/**
+ * Online compiler options
+ */
+typedef enum CUjit_option_enum
+{
+    /**
+     * Max number of registers that a thread may use.
+     */
+    CU_JIT_MAX_REGISTERS            = 0,
+
+    /**
+     * IN: Specifies minimum number of threads per block to target compilation
+     * for\n
+     * OUT: Returns the number of threads the compiler actually targeted.
+     * This restricts the resource utilization fo the compiler (e.g. max
+     * registers) such that a block with the given number of threads should be
+     * able to launch based on register limitations. Note, this option does not
+     * currently take into account any other resource limitations, such as
+     * shared memory utilization.
+     */
+    CU_JIT_THREADS_PER_BLOCK,
+
+    /**
+     * Returns a float value in the option of the wall clock time, in
+     * milliseconds, spent creating the cubin
+     */
+    CU_JIT_WALL_TIME,
+
+    /**
+     * Pointer to a buffer in which to print any log messsages from PTXAS
+     * that are informational in nature
+     */
+    CU_JIT_INFO_LOG_BUFFER,
+
+    /**
+     * IN: Log buffer size in bytes.  Log messages will be capped at this size
+     * (including null terminator)\n
+     * OUT: Amount of log buffer filled with messages
+     */
+    CU_JIT_INFO_LOG_BUFFER_SIZE_BYTES,
+
+    /**
+     * Pointer to a buffer in which to print any log messages from PTXAS that
+     * reflect errors
+     */
+    CU_JIT_ERROR_LOG_BUFFER,
+
+    /**
+     * IN: Log buffer size in bytes.  Log messages will be capped at this size
+     * (including null terminator)\n
+     * OUT: Amount of log buffer filled with messages
+     */
+    CU_JIT_ERROR_LOG_BUFFER_SIZE_BYTES,
+
+    /**
+     * Level of optimizations to apply to generated code (0 - 4), with 4
+     * being the default and highest level of optimizations.
+     */
+    CU_JIT_OPTIMIZATION_LEVEL,
+
+    /**
+     * No option value required. Determines the target based on the current
+     * attached context (default)
+     */
+    CU_JIT_TARGET_FROM_CUCONTEXT,
+
+    /**
+     * Target is chosen based on supplied CUjit_target_enum.
+     */
+    CU_JIT_TARGET,
+
+    /**
+     * Specifies choice of fallback strategy if matching cubin is not found.
+     * Choice is based on supplied CUjit_fallback_enum.
+     */
+    CU_JIT_FALLBACK_STRATEGY
+    
+} CUjit_option;
+
+/**
+ * Online compilation targets
+ */
+typedef enum CUjit_target_enum
+{
+    CU_TARGET_COMPUTE_10            = 0,    ///< Compute device class 1.0
+    CU_TARGET_COMPUTE_11,                   ///< Compute device class 1.1
+    CU_TARGET_COMPUTE_12,                   ///< Compute device class 1.2
+    CU_TARGET_COMPUTE_13                    ///< Compute device class 1.3
+} CUjit_target;
+
+/**
+ * Cubin matching fallback strategies
+ */
+typedef enum CUjit_fallback_enum
+{
+    /** Prefer to compile ptx */
+    CU_PREFER_PTX                   = 0,
+
+    /** Prefer to fall back to compatible binary code */
+    CU_PREFER_BINARY
+
+} CUjit_fallback;
 
 /************************************
  **
@@ -167,44 +337,184 @@ typedef enum CUmemorytype_enum {
  **
  ***********************************/
 
+/**
+ * Error codes
+ */
 typedef enum cudaError_enum {
 
-    CUDA_SUCCESS                    = 0,
-    CUDA_ERROR_INVALID_VALUE        = 1,
-    CUDA_ERROR_OUT_OF_MEMORY        = 2,
-    CUDA_ERROR_NOT_INITIALIZED      = 3,
-    CUDA_ERROR_DEINITIALIZED        = 4,
+    CUDA_SUCCESS                    = 0,        ///< No errors
+    CUDA_ERROR_INVALID_VALUE        = 1,        ///< Invalid value
+    CUDA_ERROR_OUT_OF_MEMORY        = 2,        ///< Out of memory
+    CUDA_ERROR_NOT_INITIALIZED      = 3,        ///< Driver not initialized
+    CUDA_ERROR_DEINITIALIZED        = 4,        ///< Driver deinitialized
 
-    CUDA_ERROR_NO_DEVICE            = 100,
-    CUDA_ERROR_INVALID_DEVICE       = 101,
+    CUDA_ERROR_NO_DEVICE            = 100,      ///< No CUDA-capable device available
+    CUDA_ERROR_INVALID_DEVICE       = 101,      ///< Invalid device
 
-    CUDA_ERROR_INVALID_IMAGE        = 200,
-    CUDA_ERROR_INVALID_CONTEXT      = 201,
-    CUDA_ERROR_CONTEXT_ALREADY_CURRENT = 202,
-    CUDA_ERROR_MAP_FAILED           = 205,
-    CUDA_ERROR_UNMAP_FAILED         = 206,
-    CUDA_ERROR_ARRAY_IS_MAPPED      = 207,
-    CUDA_ERROR_ALREADY_MAPPED       = 208,
-    CUDA_ERROR_NO_BINARY_FOR_GPU    = 209,
-    CUDA_ERROR_ALREADY_ACQUIRED     = 210,
-    CUDA_ERROR_NOT_MAPPED           = 211,
+    CUDA_ERROR_INVALID_IMAGE        = 200,      ///< Invalid kernel image
+    CUDA_ERROR_INVALID_CONTEXT      = 201,      ///< Invalid context
+    CUDA_ERROR_CONTEXT_ALREADY_CURRENT = 202,   ///< Context already current
+    CUDA_ERROR_MAP_FAILED           = 205,      ///< Map failed
+    CUDA_ERROR_UNMAP_FAILED         = 206,      ///< Unmap failed
+    CUDA_ERROR_ARRAY_IS_MAPPED      = 207,      ///< Array is mapped
+    CUDA_ERROR_ALREADY_MAPPED       = 208,      ///< Already mapped
+    CUDA_ERROR_NO_BINARY_FOR_GPU    = 209,      ///< No binary for GPU
+    CUDA_ERROR_ALREADY_ACQUIRED     = 210,      ///< Already acquired
+    CUDA_ERROR_NOT_MAPPED           = 211,      ///< Not mapped
 
-    CUDA_ERROR_INVALID_SOURCE       = 300,
-    CUDA_ERROR_FILE_NOT_FOUND       = 301,
+    CUDA_ERROR_INVALID_SOURCE       = 300,      ///< Invalid source
+    CUDA_ERROR_FILE_NOT_FOUND       = 301,      ///< File not found
 
-    CUDA_ERROR_INVALID_HANDLE       = 400,
+    CUDA_ERROR_INVALID_HANDLE       = 400,      ///< Invalid handle
 
-    CUDA_ERROR_NOT_FOUND            = 500,
+    CUDA_ERROR_NOT_FOUND            = 500,      ///< Not found
 
-    CUDA_ERROR_NOT_READY            = 600,
+    CUDA_ERROR_NOT_READY            = 600,      ///< CUDA not ready
 
-    CUDA_ERROR_LAUNCH_FAILED        = 700,
-    CUDA_ERROR_LAUNCH_OUT_OF_RESOURCES = 701,
-    CUDA_ERROR_LAUNCH_TIMEOUT       = 702,
-    CUDA_ERROR_LAUNCH_INCOMPATIBLE_TEXTURING = 703,
+    CUDA_ERROR_LAUNCH_FAILED        = 700,      ///< Launch failed
+    CUDA_ERROR_LAUNCH_OUT_OF_RESOURCES = 701,   ///< Launch exceeded resources
+    CUDA_ERROR_LAUNCH_TIMEOUT       = 702,      ///< Launch exceeded timeout
+    CUDA_ERROR_LAUNCH_INCOMPATIBLE_TEXTURING = 703, ///< Launch with incompatible texturing
 
-    CUDA_ERROR_UNKNOWN              = 999
+    CUDA_ERROR_UNKNOWN              = 999       ///< Unknown error
 } CUresult;
+
+/**
+ * If set, host memory is portable between CUDA contexts.
+ * Flag for ::cuMemHostAlloc()
+ */
+#define CU_MEMHOSTALLOC_PORTABLE        0x01
+
+/**
+ * If set, host memory is mapped into CUDA address space and
+ * ::cuMemHostGetDevicePointer() may be called on the host pointer.
+ * Flag for ::cuMemHostAlloc()
+ */
+#define CU_MEMHOSTALLOC_DEVICEMAP       0x02
+
+/**
+ * If set, host memory is allocated as write-combined - fast to write,
+ * faster to DMA, slow to read except via SSE4 streaming load instruction
+ * (MOVNTDQA).
+ * Flag for ::cuMemHostAlloc()
+ */
+#define CU_MEMHOSTALLOC_WRITECOMBINED   0x04
+
+/**
+ * 2D memory copy parameters
+ */
+typedef struct CUDA_MEMCPY2D_st {
+
+    unsigned int srcXInBytes,   ///< Source X in bytes
+                 srcY;          ///< Source Y
+    CUmemorytype srcMemoryType; ///< Source memory type (host, device, array)
+        const void *srcHost;    ///< Source host pointer
+        CUdeviceptr srcDevice;  ///< Source device pointer
+        CUarray srcArray;       ///< Source array reference
+        unsigned int srcPitch;  ///< Source pitch (ignored when src is array)
+
+    unsigned int dstXInBytes,   ///< Destination X in bytes
+                 dstY;          ///< Destination Y
+    CUmemorytype dstMemoryType; ///< Destination memory type (host, device, array)
+        void *dstHost;          ///< Destination host pointer
+        CUdeviceptr dstDevice;  ///< Destination device pointer
+        CUarray dstArray;       ///< Destination array reference
+        unsigned int dstPitch;  ///< Destination pitch (ignored when dst is array)
+
+    unsigned int WidthInBytes;  ///< Width of 2D memory copy in bytes
+    unsigned int Height;        ///< Height of 2D memory copy
+} CUDA_MEMCPY2D;
+
+/**
+ * 3D memory copy parameters
+ */
+typedef struct CUDA_MEMCPY3D_st {
+
+    unsigned int srcXInBytes,   ///< Source X in bytes
+                 srcY,          ///< Source Y
+                 srcZ;          ///< Source Z
+    unsigned int srcLOD;        ///< Source LOD
+    CUmemorytype srcMemoryType; ///< Source memory type (host, device, array)
+        const void *srcHost;    ///< Source host pointer
+        CUdeviceptr srcDevice;  ///< Source device pointer
+        CUarray srcArray;       ///< Source array reference
+        void *reserved0;        ///< Must be NULL
+        unsigned int srcPitch;  ///< Source pitch (ignored when src is array)
+        unsigned int srcHeight; ///< Source height (ignored when src is array; may be 0 if Depth==1)
+
+    unsigned int dstXInBytes,   ///< Destination X in bytes
+                 dstY,          ///< Destination Y
+                 dstZ;          ///< Destination Z
+    unsigned int dstLOD;        ///< Destination LOD
+    CUmemorytype dstMemoryType; ///< Destination memory type (host, device, array)
+        void *dstHost;          ///< Destination host pointer
+        CUdeviceptr dstDevice;  ///< Destination device pointer
+        CUarray dstArray;       ///< Destination array reference
+        void *reserved1;        ///< Must be NULL
+        unsigned int dstPitch;  ///< Destination pitch (ignored when dst is array)
+        unsigned int dstHeight; ///< Destination height (ignored when dst is array; may be 0 if Depth==1)
+
+    unsigned int WidthInBytes;  ///< Width of 3D memory copy in bytes
+    unsigned int Height;        ///< Height of 3D memory copy
+    unsigned int Depth;         ///< Depth of 3D memory copy
+} CUDA_MEMCPY3D;
+
+/**
+ * Array descriptor
+ */
+typedef struct
+{
+    unsigned int Width;         ///< Width of array
+    unsigned int Height;        ///< Height of array
+    
+    CUarray_format Format;      ///< Array format
+
+    unsigned int NumChannels;   ///< Channels per array element
+} CUDA_ARRAY_DESCRIPTOR;
+
+/**
+ * 3D array descriptor
+ */
+typedef struct
+{
+    unsigned int Width;         ///< Width of 3D array
+    unsigned int Height;        ///< Height of 3D array
+    unsigned int Depth;         ///< Depth of 3D array
+
+    CUarray_format Format;      ///< Array format
+    
+    unsigned int NumChannels;   ///< Channels per array element
+
+    unsigned int Flags;         ///< Flags
+} CUDA_ARRAY3D_DESCRIPTOR;
+
+/**
+ * Override the texref format with a format inferred from the array.
+ * Flag for ::cuTexRefSetArray()
+ */
+#define CU_TRSA_OVERRIDE_FORMAT 0x01
+
+/**
+ * Read the texture as integers rather than promoting the values to floats
+ * in the range [0,1].
+ * Flag for ::cuTexRefSetFlags()
+ */
+#define CU_TRSF_READ_AS_INTEGER         0x01
+
+/**
+ * Use normalized texture coordinates in the range [0,1) instead of [0,dim).
+ * Flag for ::cuTexRefSetFlags()
+ */
+#define CU_TRSF_NORMALIZED_COORDINATES  0x02
+
+/**
+ * For texture references loaded into the module, use default texunit from
+ * texture reference.
+ */
+#define CU_PARAM_TR_DEFAULT -1
+
+/** @} */
+/** @} */ /* END CUDA_TYPES */
 
 #ifdef _WIN32
 #define CUDAAPI __stdcall
@@ -216,6 +526,11 @@ typedef enum cudaError_enum {
      ** Initialization
      *********************************/
     CUresult  CUDAAPI cuInit(unsigned int Flags);
+
+    /*********************************
+     ** Driver Version Query
+     *********************************/
+    CUresult  CUDAAPI cuDriverGetVersion(int *driverVersion);
 
     /************************************
      **
@@ -255,12 +570,13 @@ typedef enum cudaError_enum {
     
     CUresult  CUDAAPI cuModuleLoad(CUmodule *module, const char *fname);
     CUresult  CUDAAPI cuModuleLoadData(CUmodule *module, const void *image);
+    CUresult  CUDAAPI cuModuleLoadDataEx(CUmodule *module, const void *image, unsigned int numOptions, CUjit_option *options, void **optionValues);
     CUresult  CUDAAPI cuModuleLoadFatBinary(CUmodule *module, const void *fatCubin);
     CUresult  CUDAAPI cuModuleUnload(CUmodule hmod);
     CUresult  CUDAAPI cuModuleGetFunction(CUfunction *hfunc, CUmodule hmod, const char *name);
     CUresult  CUDAAPI cuModuleGetGlobal(CUdeviceptr *dptr, unsigned int *bytes, CUmodule hmod, const char *name);
     CUresult  CUDAAPI cuModuleGetTexRef(CUtexref *pTexRef, CUmodule hmod, const char *name);
-
+    
     /************************************
      **
      **    Memory management
@@ -283,6 +599,10 @@ typedef enum cudaError_enum {
 
     CUresult CUDAAPI cuMemAllocHost(void **pp, unsigned int bytesize);
     CUresult CUDAAPI cuMemFreeHost(void *p);
+
+    CUresult CUDAAPI cuMemHostAlloc(void **pp, size_t bytesize, unsigned int Flags );
+ 
+    CUresult CUDAAPI cuMemHostGetDevicePointer( CUdeviceptr *pdptr, void *p, unsigned int Flags );
 
     /************************************
      **
@@ -314,56 +634,11 @@ typedef enum cudaError_enum {
 
     // 2D memcpy
 
-        typedef struct CUDA_MEMCPY2D_st {
-
-            unsigned int srcXInBytes, srcY;
-            CUmemorytype srcMemoryType;
-                const void *srcHost;
-                CUdeviceptr srcDevice;
-                CUarray srcArray;
-                unsigned int srcPitch; // ignored when src is array
-
-            unsigned int dstXInBytes, dstY;
-            CUmemorytype dstMemoryType;
-                void *dstHost;
-                CUdeviceptr dstDevice;
-                CUarray dstArray;
-                unsigned int dstPitch; // ignored when dst is array
-
-            unsigned int WidthInBytes;
-            unsigned int Height;
-        } CUDA_MEMCPY2D;
         CUresult  CUDAAPI cuMemcpy2D( const CUDA_MEMCPY2D *pCopy );
         CUresult  CUDAAPI cuMemcpy2DUnaligned( const CUDA_MEMCPY2D *pCopy );
 
     // 3D memcpy
 
-        typedef struct CUDA_MEMCPY3D_st {
-
-            unsigned int srcXInBytes, srcY, srcZ;
-            unsigned int srcLOD;
-            CUmemorytype srcMemoryType;
-                const void *srcHost;
-                CUdeviceptr srcDevice;
-                CUarray srcArray;
-                void *reserved0;        // must be NULL
-                unsigned int srcPitch;  // ignored when src is array
-                unsigned int srcHeight; // ignored when src is array; may be 0 if Depth==1
-
-            unsigned int dstXInBytes, dstY, dstZ;
-            unsigned int dstLOD;
-            CUmemorytype dstMemoryType;
-                void *dstHost;
-                CUdeviceptr dstDevice;
-                CUarray dstArray;
-                void *reserved1;        // must be NULL
-                unsigned int dstPitch;  // ignored when dst is array
-                unsigned int dstHeight; // ignored when dst is array; may be 0 if Depth==1
-
-            unsigned int WidthInBytes;
-            unsigned int Height;
-            unsigned int Depth;
-        } CUDA_MEMCPY3D;
         CUresult  CUDAAPI cuMemcpy3D( const CUDA_MEMCPY3D *pCopy );
 
     /************************************
@@ -418,6 +693,7 @@ typedef enum cudaError_enum {
 
     CUresult CUDAAPI cuFuncSetBlockShape (CUfunction hfunc, int x, int y, int z);
     CUresult CUDAAPI cuFuncSetSharedSize (CUfunction hfunc, unsigned int bytes);
+    CUresult CUDAAPI cuFuncGetAttribute (int *pi, CUfunction_attribute attrib, CUfunction hfunc);
 
     /************************************
      **
@@ -425,50 +701,13 @@ typedef enum cudaError_enum {
      **
      ***********************************/
    
-    typedef struct
-    {
-        //
-        // dimensions
-        //            
-            unsigned int Width;
-            unsigned int Height;
-            
-        //
-        // format
-        //
-            CUarray_format Format;
-        
-            // channels per array element
-            unsigned int NumChannels;
-    } CUDA_ARRAY_DESCRIPTOR;
-
     CUresult  CUDAAPI cuArrayCreate( CUarray *pHandle, const CUDA_ARRAY_DESCRIPTOR *pAllocateArray );
     CUresult  CUDAAPI cuArrayGetDescriptor( CUDA_ARRAY_DESCRIPTOR *pArrayDescriptor, CUarray hArray );
     CUresult  CUDAAPI cuArrayDestroy( CUarray hArray );
 
-    typedef struct
-    {
-        //
-        // dimensions
-        //
-            unsigned int Width;
-            unsigned int Height;
-            unsigned int Depth;
-        //
-        // format
-        //
-            CUarray_format Format;
-        
-            // channels per array element
-            unsigned int NumChannels;
-        //
-        // flags
-        //
-            unsigned int Flags;
-
-    } CUDA_ARRAY3D_DESCRIPTOR;
     CUresult  CUDAAPI cuArray3DCreate( CUarray *pHandle, const CUDA_ARRAY3D_DESCRIPTOR *pAllocateArray );
     CUresult  CUDAAPI cuArray3DGetDescriptor( CUDA_ARRAY3D_DESCRIPTOR *pArrayDescriptor, CUarray hArray );
+
 
     /************************************
      **
@@ -479,20 +718,12 @@ typedef enum cudaError_enum {
     CUresult  CUDAAPI cuTexRefDestroy( CUtexref hTexRef );
     
     CUresult  CUDAAPI cuTexRefSetArray( CUtexref hTexRef, CUarray hArray, unsigned int Flags );
-        // override the texref format with a format inferred from the array
-        #define CU_TRSA_OVERRIDE_FORMAT 0x01
     CUresult  CUDAAPI cuTexRefSetAddress( unsigned int *ByteOffset, CUtexref hTexRef, CUdeviceptr dptr, unsigned int bytes );
+    CUresult CUDAAPI  cuTexRefSetAddress2D( CUtexref hTexRef, const CUDA_ARRAY_DESCRIPTOR *desc, CUdeviceptr dptr, unsigned int Pitch);
     CUresult  CUDAAPI cuTexRefSetFormat( CUtexref hTexRef, CUarray_format fmt, int NumPackedComponents );
-    
     CUresult  CUDAAPI cuTexRefSetAddressMode( CUtexref hTexRef, int dim, CUaddress_mode am );
     CUresult  CUDAAPI cuTexRefSetFilterMode( CUtexref hTexRef, CUfilter_mode fm );
     CUresult  CUDAAPI cuTexRefSetFlags( CUtexref hTexRef, unsigned int Flags );
-        // read the texture as integers rather than promoting the values
-        // to floats in the range [0,1]
-        #define CU_TRSF_READ_AS_INTEGER         0x01
-
-        // use normalized texture coordinates in the range [0,1) instead of [0,dim)
-        #define CU_TRSF_NORMALIZED_COORDINATES  0x02
 
     CUresult  CUDAAPI cuTexRefGetAddress( CUdeviceptr *pdptr, CUtexref hTexRef );
     CUresult  CUDAAPI cuTexRefGetArray( CUarray *phArray, CUtexref hTexRef );
@@ -512,9 +743,6 @@ typedef enum cudaError_enum {
     CUresult  CUDAAPI cuParamSetf    (CUfunction hfunc, int offset, float value);
     CUresult  CUDAAPI cuParamSetv    (CUfunction hfunc, int offset, void * ptr, unsigned int numbytes);
     CUresult  CUDAAPI cuParamSetTexRef(CUfunction hfunc, int texunit, CUtexref hTexRef);
-        // for texture references loaded into the module,
-        // use default texunit from texture reference
-        #define CU_PARAM_TR_DEFAULT -1
 
     /************************************
      **

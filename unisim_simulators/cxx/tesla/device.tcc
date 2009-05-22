@@ -421,6 +421,12 @@ int Device<CONFIG>::Attribute(int attrib)
     	return CONFIG::CORE_COUNT;
 	case CU_DEVICE_ATTRIBUTE_KERNEL_EXEC_TIMEOUT:
 		return 0;  // No timeout
+    case CU_DEVICE_ATTRIBUTE_INTEGRATED:
+    	return 0;
+    case CU_DEVICE_ATTRIBUTE_CAN_MAP_HOST_MEMORY:
+    	return 0;
+    case CU_DEVICE_ATTRIBUTE_COMPUTE_MODE:
+    	return CU_COMPUTEMODE_DEFAULT;
 	case 0x20080403:
 		//return 1;    // Happy birthday!
 	default:
