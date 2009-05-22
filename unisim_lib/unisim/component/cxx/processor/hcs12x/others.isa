@@ -92,12 +92,11 @@ stop.execute = {
 		 cpu->memWrite16(cpu->getRegSP(), cpu->getRegX());
 		 
 		 cpu->setRegSP(cpu->getRegSP()-2);
-		 cpu->memWrite8(cpu->getRegSP(), cpu->getRegB());
-		 cpu->memWrite8(cpu->getRegSP()+1, cpu->getRegA());
+		cpu->memWrite16(cpu->getRegSP(), cpu->getRegD());
 		 
 		 cpu->setRegSP(cpu->getRegSP()-2);
 		 cpu->memWrite16(cpu->getRegSP(), cpu->ccr->getCCR());
-		 
+
 		 /* TODO: 
 		  * Stop All Clocks and puts the device in standby mode.
 		  * Asserting the RESET, XIRQ, or IRQ signals ends standby mode. 
@@ -105,6 +104,36 @@ stop.execute = {
 		 
 	 	 cpu->Sleep();
 	 	 
+ 	 	/*
+		 * (M(SP) : M(SP+1)) => CCRH : CCRL; (SP) + 0x0002 => SP
+		 * (M(SP) : M(SP+1)) => B : A; (SP) + 0x0002 => SP
+		 * (M(SP) : M(SP+1)) => XH : XL; (SP) + 0x0004 => SP
+		 * (M(SP) : M(SP+1)) => PCH : PCL; (SP) – 0x0002 => SP
+		 * (M(SP) : M(SP+1)) => YH : YL; (SP) + 0x0004 => SP
+		 * */
+		 
+		address_t addr = cpu->getRegSP();
+		
+		/* Leave bit X unchanged.
+		 * X bit can be set only by a reset or by recognition of an (!XIRQ) interrupt
+		 */ 	 
+		cpu->ccr->setCCR(cpu->memRead16(addr));
+	
+		addr = addr + 2;
+		cpu->setRegD(cpu->memRead16(addr));
+	
+		addr = addr + 2;
+		cpu->setRegX(cpu->memRead16(addr));
+	
+		addr = addr + 2;
+		cpu->setRegY(cpu->memRead16(addr));
+	
+		addr = addr + 2;
+		cpu->setRegPC(cpu->memRead16(addr));
+	
+		addr = addr + 2;
+		cpu->setRegSP(addr);
+
 	 	 /* TODO:
 	 	  * If XIRQ is asserted while the X mask bit = 0 (XIRQ interrupts enabled), 
 	 	  * execution resumes with a vector fetch for the XIRQ interrupt. 
@@ -112,6 +141,9 @@ stop.execute = {
 	 	  * a 2-cycle recovery sequence is used to adjust the instruction queue and the stack pointer, 
 	 	  * and execution continues with the next instruction after STOP.
 	 	  */
+	 	  
+	 	  
+	 	  
 	}
 }
 

@@ -306,10 +306,8 @@ uint8_t CPU::Step()
 		}
 
 		op->execute(this);
-		if (CONFIG::TIMING_ENABLE)
-		{
-			opCycles = op->getCycles();
-		}
+
+		opCycles = op->getCycles();
 
 		VerboseDumpRegsEnd();
 
@@ -546,7 +544,9 @@ void CPU::AckIbitInterrupt()
 
 void CPU::ReqIbitInterrupt()
 {
-	if (ccr->getI() == 0) maskableIbit_interrupt = true;
+	uint8_t iBit = ccr->getI();
+
+	if (iBit == 0) maskableIbit_interrupt = true;
 }
 
 // Unimplemented opcode trap
