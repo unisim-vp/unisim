@@ -426,7 +426,7 @@ int Device<CONFIG>::Attribute(int attrib)
     case CU_DEVICE_ATTRIBUTE_CAN_MAP_HOST_MEMORY:
     	return 0;
     case CU_DEVICE_ATTRIBUTE_COMPUTE_MODE:
-    	return CU_COMPUTEMODE_DEFAULT;
+    	return 0;  // CU_COMPUTEMODE_DEFAULT
 	case 0x20080403:
 		//return 1;    // Happy birthday!
 	default:
