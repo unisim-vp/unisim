@@ -39,6 +39,7 @@
 #include <unisim/component/cxx/processor/tesla/warp.tcc>
 #include <unisim/component/cxx/processor/tesla/exception.tcc>
 #include <unisim/component/cxx/processor/tesla/register.tcc>
+#include <unisim/component/cxx/processor/tesla/strided_register.tcc>
 #include <unisim/component/cxx/processor/tesla/instruction.tcc>
 #include <unisim/component/cxx/processor/tesla/flags.tcc>
 #include <unisim/component/cxx/processor/tesla/exec.tcc>

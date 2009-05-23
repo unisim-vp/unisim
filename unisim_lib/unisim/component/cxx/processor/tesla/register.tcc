@@ -32,8 +32,8 @@
  * Authors: Sylvain Collange (sylvain.collange@univ-perp.fr)
  */
  
-#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_REGISTER_TCC__
-#define __UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_REGISTER_TCC__
+#ifndef UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_REGISTER_TCC
+#define UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_REGISTER_TCC
 
 #include <unisim/component/cxx/processor/tesla/register.hh>
 #include <cassert>
@@ -47,172 +47,34 @@ namespace tesla {
 
 
 
-inline SMType MvSizeToSMType(uint32_t mv_size)
-{
-	switch(mv_size) {
-	case 0:
-		return SM_U16;
-	case 1:
-		return SM_U32;
-	case 2:
-		return SM_U8;
-	default:
-		assert(false);
-		throw "";
-	}
-}
-
-inline RegType CvtTypeToRT(ConvType ct)
-{
-	switch(ct) {
-	case CT_U16:
-	case CT_S16:
-	case CT_U8:
-	case CT_S8:
-		return RT_U16;
-	case CT_U32:
-	case CT_S32:
-	case CT_U32U8:
-	case CT_NONE:
-		return RT_U32;
-	default:
-		assert(false);
-		throw "";
-	}
-}
-
-inline DataType RegTypeToDataType(RegType rt)
-{
-	switch(rt) {
-	case RT_U16:
-		return DT_U16;
-	case RT_U32:
-		return DT_U32;
-	default:
-		assert(false);
-	}
-}
-
-inline DataType MvSizeToDataType(uint32_t mv_size)
-{
-	switch(mv_size) {
-	case 0:
-		return DT_U16;
-	case 1:
-		return DT_U32;
-	case 2:
-		return DT_U8;
-	default:
-		assert(false);
-		throw "";
-	}
-}
-
-inline DataType CvtTypeToDataType(ConvType ct)
-{
-	switch(ct) {
-	case CT_U16:
-		return DT_U16;
-	case CT_S16:
-		return DT_S16;
-	case CT_U8:
-		return DT_U8;
-	case CT_U32U8:
-		return DT_U32;	// As far as registers are concerned...
-	case CT_S8:
-		return DT_S8;
-	case CT_U32:
-	case CT_NONE:
-		return DT_U32;
-	case CT_S32:
-		return DT_S32;
-	default:
-		assert(false);
-		throw "";
-	}
-}
-
-inline size_t DataTypeSize(DataType dt)
-{
-	switch(dt) {
-	case DT_U8:
-	case DT_S8:
-		return 1;
-	case DT_U16:
-	case DT_S16:
-		return 2;
-	case DT_U32:
-	case DT_S32:
-	case DT_F32:
-		return 4;
-	case DT_U64:
-		return 8;
-	case DT_U128:
-		return 16;
-	default:
-		assert(false);
-		throw "";
-	}
-}
-
-inline DataType SMTypeToDataType(SMType st)
-{
-	switch(st) {
-	case SM_U8:
-		return DT_U8;
-	case SM_U16:
-		return DT_U16;
-	case SM_S16:
-		return DT_S16;
-	case SM_U32:
-		return DT_U32;
-	default:
-		assert(false);
-		throw "";
-	}
-}
-
-
 template <class CONFIG>
-VectorRegister<CONFIG>::VectorRegister()
+BaseVectorRegister<CONFIG>::BaseVectorRegister()
 {
-	SetScalar(false);
-	SetStrided(false);
-	SetScalar16(0, false);
-	SetScalar16(1, false);
-	SetStrided16(0, false);
-	SetStrided16(1, false);
 }
 
 template <class CONFIG>
-VectorRegister<CONFIG>::VectorRegister(uint32_t val)
+BaseVectorRegister<CONFIG>::BaseVectorRegister(uint32_t val)
 {
-	SetScalar(true);
-	//SetStrided(true);
-	//SetScalar16(0, true);
-	//SetScalar16(1, true);
-	//SetStrided16(0, true);
-	//SetStrided16(1, true);
 	std::fill(v, v + WARP_SIZE, val);
 }
 
 template <class CONFIG>
-VectorRegister<CONFIG>::VectorRegister(VectorAddress<CONFIG> const & addr)
+BaseVectorRegister<CONFIG>::BaseVectorRegister(BaseVectorRegister<CONFIG> const & other)
+{
+	std::copy(other.v, other.v + WARP_SIZE, v);
+}
+
+template <class CONFIG>
+BaseVectorRegister<CONFIG>::BaseVectorRegister(BaseVectorAddress<CONFIG> const & addr)
 {
 	for(unsigned int i = 0; i != WARP_SIZE; ++i)
 	{
 		WriteLane(addr[i], i);
 	}
-	SetScalar(addr.IsScalar());
-	SetStrided(addr.IsStrided());
-	SetScalar16(0, addr.IsScalar());
-	SetScalar16(1, addr.IsScalar());
-	SetStrided16(0, false);
-	SetStrided16(1, false);
 }
 
 template <class CONFIG>
-void VectorRegister<CONFIG>::Write(VectorRegister<CONFIG> const & vec, bitset<CONFIG::WARP_SIZE> mask)
+void BaseVectorRegister<CONFIG>::Write(BaseVectorRegister<CONFIG> const & vec, bitset<CONFIG::WARP_SIZE> mask)
 {
 	for(unsigned int i = 0; i != WARP_SIZE; ++i)
 	{
@@ -220,27 +82,10 @@ void VectorRegister<CONFIG>::Write(VectorRegister<CONFIG> const & vec, bitset<CO
 			WriteLane(vec[i], i);
 		}
 	}
-	if(mask == ~bitset<CONFIG::WARP_SIZE>(0)) {
-		SetScalar(vec.IsScalar());
-		SetStrided(vec.IsStrided());
-		SetScalar16(false, vec.IsScalar16(false));
-		SetStrided16(false, vec.IsStrided16(false));
-		SetScalar16(true, vec.IsScalar16(true));
-		SetStrided16(true, vec.IsStrided16(true));
-	}
-	else if(mask != 0) {
-		SetScalar(false);
-		SetStrided(false);
-		SetScalar16(false, false);
-		SetStrided16(false, false);
-		SetScalar16(true, false);
-		SetStrided16(true, false);
-		
-	}
 }
 
 template <class CONFIG>
-void VectorRegister<CONFIG>::Write16(VectorRegister<CONFIG> const & vec,
+void BaseVectorRegister<CONFIG>::Write16(BaseVectorRegister<CONFIG> const & vec,
 	bitset<CONFIG::WARP_SIZE> mask, int hi)
 {
 	for(unsigned int i = 0; i != WARP_SIZE; ++i)
@@ -254,34 +99,24 @@ void VectorRegister<CONFIG>::Write16(VectorRegister<CONFIG> const & vec,
 			}
 		}
 	}
-	SetScalar(false);
-	SetStrided(false);
-	if(mask == ~bitset<CONFIG::WARP_SIZE>(0)) {
-		SetScalar16(hi, vec.IsScalar16(false));
-		SetStrided16(hi, vec.IsStrided16(false));
-	}
-	else if(mask != 0) {
-		SetScalar16(hi, false);
-		SetStrided16(hi, false);
-	}
 }
 
 template <class CONFIG>
-void VectorRegister<CONFIG>::WriteLane(uint32_t val, unsigned int lane)
+void BaseVectorRegister<CONFIG>::WriteLane(uint32_t val, unsigned int lane)
 {
 	assert(lane >= 0 && lane < WARP_SIZE);
 	v[lane] = val;
 }
 
 template <class CONFIG>
-uint32_t VectorRegister<CONFIG>::ReadLane(unsigned int lane) const
+uint32_t BaseVectorRegister<CONFIG>::ReadLane(unsigned int lane) const
 {
 	assert(lane >= 0 && lane < WARP_SIZE);
 	return v[lane];
 }
 
 template <class CONFIG>
-void VectorRegister<CONFIG>::WriteFloat(float val, unsigned int lane)
+void BaseVectorRegister<CONFIG>::WriteFloat(float val, unsigned int lane)
 {
 	// TODO: endianness
 	union { float f; uint32_t u; } caster;
@@ -290,7 +125,7 @@ void VectorRegister<CONFIG>::WriteFloat(float val, unsigned int lane)
 }
 
 template <class CONFIG>
-float VectorRegister<CONFIG>::ReadFloat(unsigned int lane) const
+float BaseVectorRegister<CONFIG>::ReadFloat(unsigned int lane) const
 {
 	// TODO: endianness
 	union { float f; uint32_t u; } caster;
@@ -299,21 +134,21 @@ float VectorRegister<CONFIG>::ReadFloat(unsigned int lane) const
 }
 
 template <class CONFIG>
-void VectorRegister<CONFIG>::WriteSimfloat(typename CONFIG::float_t val, unsigned int lane)
+void BaseVectorRegister<CONFIG>::WriteSimfloat(typename CONFIG::float_t val, unsigned int lane)
 {
 	WriteLane(val.queryValue(), lane);
 }
 
 template <class CONFIG>
-typename CONFIG::float_t VectorRegister<CONFIG>::ReadSimfloat(unsigned int lane) const
+typename CONFIG::float_t BaseVectorRegister<CONFIG>::ReadSimfloat(unsigned int lane) const
 {
 	return typename CONFIG::float_t(ReadLane(lane));
 }
 
 template <class CONFIG>
-VectorRegister<CONFIG> VectorRegister<CONFIG>::Split(int hilo) const
+BaseVectorRegister<CONFIG> BaseVectorRegister<CONFIG>::Split(int hilo) const
 {
-	VectorRegister<CONFIG> vr;
+	BaseVectorRegister<CONFIG> vr;
 	for(unsigned int i = 0; i != WARP_SIZE; ++i)
 	{
 		if(hilo) {
@@ -325,29 +160,25 @@ VectorRegister<CONFIG> VectorRegister<CONFIG>::Split(int hilo) const
 			vr[i] = (v[i] & 0x0000ffff);
 		}
 	}
-	vr.SetScalar(scalar16[hilo]);
-	vr.SetScalar16(0, scalar16[hilo]);
-	vr.SetStrided(strided16[hilo]);
-	vr.SetStrided16(0, strided16[hilo]);
 	return vr;
 }
 
 template <class CONFIG>
-uint32_t VectorRegister<CONFIG>::operator[] (unsigned int lane) const
+uint32_t BaseVectorRegister<CONFIG>::operator[] (unsigned int lane) const
 {
 	assert(lane >= 0 && lane < WARP_SIZE);
 	return v[lane];
 }
 
 template <class CONFIG>
-uint32_t & VectorRegister<CONFIG>::operator[] (unsigned int lane)
+uint32_t & BaseVectorRegister<CONFIG>::operator[] (unsigned int lane)
 {
 	assert(lane >= 0 && lane < WARP_SIZE);
 	return v[lane];
 }
 
 template <class CONFIG>
-uint16_t VectorRegister<CONFIG>::Read16(unsigned int lane, bool hi) const
+uint16_t BaseVectorRegister<CONFIG>::Read16(unsigned int lane, bool hi) const
 {
 	if(hi) {
 		return v[lane] >> 16;
@@ -358,7 +189,7 @@ uint16_t VectorRegister<CONFIG>::Read16(unsigned int lane, bool hi) const
 }
 
 template <class CONFIG>
-void VectorRegister<CONFIG>::DumpFloat(std::ostream & os)
+void BaseVectorRegister<CONFIG>::DumpFloat(std::ostream & os)
 {
 	os << "(";
 	for(unsigned int i = 0; i != CONFIG::WARP_SIZE-1; ++i)
@@ -370,7 +201,7 @@ void VectorRegister<CONFIG>::DumpFloat(std::ostream & os)
 }
 
 template <class CONFIG>
-bool VectorRegister<CONFIG>::CheckScalar() const
+bool BaseVectorRegister<CONFIG>::CheckScalar() const
 {
 	assert(CONFIG::WARP_SIZE >= 1);
 	uint32_t ref = v[0];
@@ -383,7 +214,7 @@ bool VectorRegister<CONFIG>::CheckScalar() const
 }
 
 template <class CONFIG>
-bool VectorRegister<CONFIG>::CheckScalar16(bool hi) const
+bool BaseVectorRegister<CONFIG>::CheckScalar16(bool hi) const
 {
 	assert(CONFIG::WARP_SIZE >= 1);
 	uint16_t ref = Read16(0, hi);
@@ -396,7 +227,7 @@ bool VectorRegister<CONFIG>::CheckScalar16(bool hi) const
 }
 
 template <class CONFIG>
-bool VectorRegister<CONFIG>::CheckStrided() const
+bool BaseVectorRegister<CONFIG>::CheckStrided() const
 {
 	assert(CONFIG::WARP_SIZE >= 2);
 	uint32_t base = v[0];
@@ -411,7 +242,7 @@ bool VectorRegister<CONFIG>::CheckStrided() const
 }
 
 template <class CONFIG>
-bool VectorRegister<CONFIG>::CheckStrided16(bool hi) const
+bool BaseVectorRegister<CONFIG>::CheckStrided16(bool hi) const
 {
 	assert(CONFIG::WARP_SIZE >= 2);
 	uint16_t base = Read16(0, hi);
@@ -426,7 +257,7 @@ bool VectorRegister<CONFIG>::CheckStrided16(bool hi) const
 }
 
 template <class CONFIG>
-std::ostream & operator << (std::ostream & os, VectorRegister<CONFIG> const & r)
+std::ostream & operator << (std::ostream & os, BaseVectorRegister<CONFIG> const & r)
 {
 	os << "(";
 	os << std::hex;
@@ -441,32 +272,32 @@ std::ostream & operator << (std::ostream & os, VectorRegister<CONFIG> const & r)
 }
 
 template <class CONFIG>
-VectorAddress<CONFIG>::VectorAddress()
+BaseVectorAddress<CONFIG>::BaseVectorAddress()
 {
-	SetScalar(false);
-	SetStrided(false);
 }
 
 template <class CONFIG>
-VectorAddress<CONFIG>::VectorAddress(VectorAddress<CONFIG>::address_t addr)
+BaseVectorAddress<CONFIG>::BaseVectorAddress(BaseVectorAddress<CONFIG>::address_t addr)
 {
 	std::fill(v, v + WARP_SIZE, addr);
-	SetScalar(true);
-	SetStrided(true);
 }
 
 template <class CONFIG>
-VectorAddress<CONFIG>::VectorAddress(VectorRegister<CONFIG> const & vr)
+BaseVectorAddress<CONFIG>::BaseVectorAddress(BaseVectorAddress<CONFIG> const & other)
+{
+	std::copy(other.v, other.v + WARP_SIZE, v);
+}
+
+template <class CONFIG>
+BaseVectorAddress<CONFIG>::BaseVectorAddress(BaseVectorRegister<CONFIG> const & vr)
 {
 	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i) {
 		v[i] = vr[i];
 	}
-	SetScalar(vr.IsScalar());
-	SetStrided(vr.IsStrided());
 }
 
 template <class CONFIG>
-void VectorAddress<CONFIG>::Write(VectorAddress<CONFIG> const & vec, std::bitset<CONFIG::WARP_SIZE> mask)
+void BaseVectorAddress<CONFIG>::Write(BaseVectorAddress<CONFIG> const & vec, std::bitset<CONFIG::WARP_SIZE> mask)
 {
 	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i) {
 		if(mask[i])
@@ -475,15 +306,13 @@ void VectorAddress<CONFIG>::Write(VectorAddress<CONFIG> const & vec, std::bitset
 }
 
 template <class CONFIG>
-void VectorAddress<CONFIG>::Reset()
+void BaseVectorAddress<CONFIG>::Reset()
 {
 	std::fill(v, v + WARP_SIZE, 0);
-	SetScalar(false);
-	SetStrided(false);
 }
 
 template <class CONFIG>
-void VectorAddress<CONFIG>::Increment(DataType dt, size_t imm, std::bitset<CONFIG::WARP_SIZE> mask)
+void BaseVectorAddress<CONFIG>::Increment(DataType dt, size_t imm, std::bitset<CONFIG::WARP_SIZE> mask)
 {
 	size_t inc = DataTypeSize(dt) * imm;
 	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i) {
@@ -493,21 +322,21 @@ void VectorAddress<CONFIG>::Increment(DataType dt, size_t imm, std::bitset<CONFI
 }
 
 template <class CONFIG>
-typename VectorAddress<CONFIG>::address_t VectorAddress<CONFIG>::operator[] (unsigned int lane) const
+typename BaseVectorAddress<CONFIG>::address_t BaseVectorAddress<CONFIG>::operator[] (unsigned int lane) const
 {
 	assert(lane < WARP_SIZE);
 	return v[lane];
 }
 
 template <class CONFIG>
-typename VectorAddress<CONFIG>::address_t & VectorAddress<CONFIG>::operator[] (unsigned int lane)
+typename BaseVectorAddress<CONFIG>::address_t & BaseVectorAddress<CONFIG>::operator[] (unsigned int lane)
 {
 	assert(lane < WARP_SIZE);
 	return v[lane];
 }
 
 template <class CONFIG>
-VectorAddress<CONFIG> & VectorAddress<CONFIG>::operator+=(VectorAddress<CONFIG> const & other)
+BaseVectorAddress<CONFIG> & BaseVectorAddress<CONFIG>::operator+=(BaseVectorAddress<CONFIG> const & other)
 {
 	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i) {
 		v[i] += other[i];
@@ -516,9 +345,9 @@ VectorAddress<CONFIG> & VectorAddress<CONFIG>::operator+=(VectorAddress<CONFIG> 
 }
 
 template<class CONFIG>
-VectorAddress<CONFIG> operator+(VectorAddress<CONFIG> const & a, VectorAddress<CONFIG> const & b)
+BaseVectorAddress<CONFIG> operator+(BaseVectorAddress<CONFIG> const & a, BaseVectorAddress<CONFIG> const & b)
 {
-	VectorAddress<CONFIG> dest;
+	BaseVectorAddress<CONFIG> dest;
 	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i) {
 		dest[i] = a[i] + b[i];
 	}
@@ -526,9 +355,9 @@ VectorAddress<CONFIG> operator+(VectorAddress<CONFIG> const & a, VectorAddress<C
 }
 
 template<class CONFIG>
-VectorAddress<CONFIG> operator*(unsigned int factor, VectorAddress<CONFIG> const & addr)
+BaseVectorAddress<CONFIG> operator*(unsigned int factor, BaseVectorAddress<CONFIG> const & addr)
 {
-	VectorAddress<CONFIG> dest;
+	BaseVectorAddress<CONFIG> dest;
 	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i) {
 		dest[i] = factor * addr[i];
 	}
@@ -536,7 +365,7 @@ VectorAddress<CONFIG> operator*(unsigned int factor, VectorAddress<CONFIG> const
 }
 
 template <class CONFIG>
-std::ostream & operator << (std::ostream & os, VectorAddress<CONFIG> const & r)
+std::ostream & operator << (std::ostream & os, BaseVectorAddress<CONFIG> const & r)
 {
 	os << "(";
 	os << std::hex;

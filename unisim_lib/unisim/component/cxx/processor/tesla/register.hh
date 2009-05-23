@@ -32,11 +32,15 @@
  * Authors: Sylvain Collange (sylvain.collange@univ-perp.fr)
  */
  
-#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_REGISTER_HH__
-#define __UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_REGISTER_HH__
+#ifndef UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_REGISTER_HH
+#define UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_REGISTER_HH
 
 #include <bitset>
 #include <iosfwd>
+
+#include <unisim/component/cxx/processor/tesla/forward.hh>
+#include <unisim/component/cxx/processor/tesla/enums.hh>
+#include <unisim/component/cxx/processor/tesla/strided_register.hh>
 
 namespace unisim {
 namespace component {
@@ -44,94 +48,21 @@ namespace cxx {
 namespace processor {
 namespace tesla {
 
-//=====================================================================
-//=                               Enums                               =
-//=====================================================================
-
-
-enum DataType
-{
-	DT_U8 = 0,
-	DT_S8 = 1,
-	DT_U16 = 2,
-	DT_S16 = 3,
-	DT_U64 = 4,
-	DT_U128 = 5,
-	DT_U32 = 6,
-	DT_S32 = 7,
-	DT_F32,		// Not in Tesla ISA
-	DT_NONE,	//
-	DT_UNKNOWN	//
-};
-
-enum ConvType
-{
-	CT_U16 = 0,
-	CT_U32 = 1,
-	CT_U8 = 2,
-	CT_U32U8 = 3,	// 8 lower bits of a 32-bit reg
-	
-	CT_S16 = 4,
-	CT_S32 = 5,
-	CT_S8 = 6,
-	CT_NONE = 7	// Not in Decuda
-};
-
-enum RoundingMode
-{
-	RM_RN = 0,
-	RM_RD = 1,
-	RM_RU = 2,
-	RM_RZ = 3
-};
-
-enum SMType
-{
-	SM_U8 = 0,
-	SM_U16 = 1,
-	SM_S16 = 2,
-	SM_U32 = 3
-};
-
-// Does not match any ISA field
-// ... except b32.
-enum RegType
-{
-	RT_U16 = 0,
-	RT_U32 = 1,
-	RT_U64,		// 2 regs, Not in ISA
-};
-
-enum AbsSat
-{
-	AS_NONE = 0,
-	AS_SAT = 1,
-	AS_ABS = 2,
-	AS_SSAT = 3
-};
-
-inline SMType MvSizeToSMType(uint32_t mv_size);
-inline RegType CvtTypeToRT(ConvType ct);
-inline DataType RegTypeToDataType(RegType rt);
-inline DataType MvSizeToDataType(uint32_t mv_size);
-inline DataType CvtTypeToDataType(ConvType ct);
-inline size_t DataTypeSize(DataType dt);
-inline DataType SMTypeToDataType(SMType st);
-
 template <class CONFIG>
-struct VectorAddress;
+struct BaseVectorAddress;
 
 // Inherit from valarray<CONFIG::reg_t>??
 template <class CONFIG>
-struct VectorRegister
+struct BaseVectorRegister
 {
 	static unsigned int const WARP_SIZE = CONFIG::WARP_SIZE;
 	typedef typename CONFIG::reg_t reg_t;
-	VectorRegister();
-	VectorRegister(uint32_t val);
-	VectorRegister(VectorAddress<CONFIG> const & addr);
-	void Write(VectorRegister<CONFIG> const & vec, std::bitset<CONFIG::WARP_SIZE> mask);
-	void Write16(VectorRegister<CONFIG> const & vec, std::bitset<CONFIG::WARP_SIZE> mask, int hi);
+	BaseVectorRegister();
+	BaseVectorRegister(uint32_t val);
+	BaseVectorRegister(BaseVectorRegister<CONFIG> const & other);
+	BaseVectorRegister(BaseVectorAddress<CONFIG> const & addr);
+	void Write(BaseVectorRegister<CONFIG> const & vec, std::bitset<CONFIG::WARP_SIZE> mask);
+	void Write16(BaseVectorRegister<CONFIG> const & vec, std::bitset<CONFIG::WARP_SIZE> mask, int hi);
 	
 	void WriteLane(uint32_t val, unsigned int lane);
 	uint32_t ReadLane(unsigned int lane) const;
@@ -139,7 +70,7 @@ struct VectorRegister
 	float ReadFloat(unsigned int lane) const;
 	void WriteSimfloat(typename CONFIG::float_t val, unsigned int lane);
 	typename CONFIG::float_t ReadSimfloat(unsigned int lane) const;
-	VectorRegister<CONFIG> Split(int hilo) const;
+	BaseVectorRegister<CONFIG> Split(int hilo) const;
 	void DumpFloat(std::ostream & os);
 	
 	uint32_t operator[] (unsigned int lane) const;
@@ -158,67 +89,118 @@ struct VectorRegister
 	bool scalar16[2];
 	bool strided16[2];
 	
-	bool IsScalar() const { return scalar; }
-	bool IsStrided() const { return strided; }
-	bool IsScalar16(bool hi) const { return scalar16[hi]; }
-	bool IsStrided16(bool hi) const { return strided16[hi]; }
+	bool IsScalar() const { return false; }
+	bool IsStrided() const { return false; }
+	bool IsScalar16(bool hi) const { return false; }
+	bool IsStrided16(bool hi) const { return false; }
 
-	void SetScalar(bool s = true) {
-		if(CONFIG::STAT_SCALAR_REG) {
-			scalar = s;
-			if(s) {
-				scalar16[0] = scalar16[1] = true;
-				strided = strided16[0] = strided16[1] = true;
-			}
-		}
-	}
-	void SetStrided(bool s = true) { if(CONFIG::STAT_STRIDED_REG) strided = s; }
-	void SetScalar16(bool hi, bool s = true) { if(CONFIG::STAT_SCALAR_REG) scalar16[hi] = s; }
-	void SetStrided16(bool hi, bool s = true) { if(CONFIG::STAT_STRIDED_REG) strided16[hi] = s; }
+	void SetScalar(bool s = true) {	}
+	void SetStrided(bool s = true) { }
+	void SetScalar16(bool hi, bool s = true) { }
+	void SetStrided16(bool hi, bool s = true) { }
 };
 
 template <class CONFIG>
-std::ostream & operator << (std::ostream & os, VectorRegister<CONFIG> const & r);
+std::ostream & operator << (std::ostream & os, BaseVectorRegister<CONFIG> const & r);
 
 template <class CONFIG>
-struct VectorAddress
+struct BaseVectorAddress
 {
 	static unsigned int const WARP_SIZE = CONFIG::WARP_SIZE;
 	typedef typename CONFIG::address_t address_t;
 	
-	VectorAddress();
-	VectorAddress(address_t addr);
-	VectorAddress(VectorRegister<CONFIG> const & vr);
+	BaseVectorAddress();
+	BaseVectorAddress(address_t addr);
+	BaseVectorAddress(BaseVectorAddress<CONFIG> const & other);
+	BaseVectorAddress(BaseVectorRegister<CONFIG> const & vr);
 
-	void Write(VectorAddress<CONFIG> const & vec, std::bitset<CONFIG::WARP_SIZE> mask);
+	void Write(BaseVectorAddress<CONFIG> const & vec, std::bitset<CONFIG::WARP_SIZE> mask);
 	
 	void Reset();
 	address_t operator[] (unsigned int lane) const;
 	address_t & operator[] (unsigned int lane);
 	
-	VectorAddress<CONFIG> & operator+=(VectorAddress<CONFIG> const & other);
+	BaseVectorAddress<CONFIG> & operator+=(BaseVectorAddress<CONFIG> const & other);
 	
 	void Increment(DataType dt, size_t imm, std::bitset<CONFIG::WARP_SIZE> mask);
 	
 	address_t v[WARP_SIZE];
-	bool scalar;
-	bool strided;
-	bool lowstrided;
-
-	bool IsScalar() const { return scalar; }
-	bool IsStrided() const { return strided; }
-	void SetScalar(bool s = true) { if(CONFIG::STAT_SCALAR_REG) scalar = s; }
-	void SetStrided(bool s = true) { if(CONFIG::STAT_STRIDED_REG) strided = s; }
+	bool IsScalar() const { return false; }
+	bool IsStrided() const { return false; }
+	void SetScalar(bool s = true) { }
+	void SetStrided(bool s = true) { }
 };
 
 template<class CONFIG>
-VectorAddress<CONFIG> operator+(VectorAddress<CONFIG> const & a, VectorAddress<CONFIG> const & b);
+BaseVectorAddress<CONFIG> operator+(BaseVectorAddress<CONFIG> const & a, BaseVectorAddress<CONFIG> const & b);
 
 template<class CONFIG>
-VectorAddress<CONFIG> operator*(unsigned int factor, VectorAddress<CONFIG> const & addr);
+BaseVectorAddress<CONFIG> operator*(unsigned int factor, BaseVectorAddress<CONFIG> const & addr);
 
 template <class CONFIG>
-std::ostream & operator << (std::ostream & os, VectorAddress<CONFIG> const & r);
+std::ostream & operator << (std::ostream & os, BaseVectorAddress<CONFIG> const & r);
+
+
+template <bool SEL_A, class A, class B>
+struct SelectType
+{
+};
+
+template <class A, class B>
+struct SelectType<false, A, B>
+{
+	typedef B t;
+};
+
+template <class A, class B>
+struct SelectType<true, A, B>
+{
+	typedef A t;
+};
+
+template <class CONFIG>
+struct VectorRegister :
+	SelectType<CONFIG::STAT_SCALAR_REG | CONFIG::STAT_STRIDED_REG,
+	           StridedTagVectorRegister<CONFIG, BaseVectorRegister<CONFIG> >,
+	           BaseVectorRegister<CONFIG> >::t
+{
+	typedef typename SelectType<CONFIG::STAT_SCALAR_REG | CONFIG::STAT_STRIDED_REG,
+	           StridedTagVectorRegister<CONFIG, BaseVectorRegister<CONFIG> >,
+	           BaseVectorRegister<CONFIG> >::t Base;
+	VectorRegister() : Base() {}
+	VectorRegister(Base const & other) : Base(other) {}
+	VectorRegister(uint32_t val) : Base(val) {}
+	VectorRegister(VectorRegister<CONFIG> const & other) : Base(other) {}
+	VectorRegister(VectorAddress<CONFIG> const & addr) : Base(addr) {}
+};
+
+template <class CONFIG>
+struct VectorAddress :
+	SelectType<CONFIG::STAT_SCALAR_REG | CONFIG::STAT_STRIDED_REG,
+	           StridedTagVectorAddress<CONFIG, BaseVectorAddress<CONFIG> >,
+	           BaseVectorAddress<CONFIG> >::t
+{
+	typedef typename SelectType<CONFIG::STAT_SCALAR_REG | CONFIG::STAT_STRIDED_REG,
+	           StridedTagVectorAddress<CONFIG, BaseVectorAddress<CONFIG> >,
+	           BaseVectorAddress<CONFIG> >::t Base;
+	VectorAddress() : Base() {}
+	VectorAddress(Base const & other) : Base(other) {}
+	VectorAddress(typename CONFIG::address_t addr) : Base(addr) {}
+	VectorAddress(VectorAddress<CONFIG> const & other) : Base(other) {}
+	VectorAddress(VectorRegister<CONFIG> const & vr) : Base(vr) {}
+};
+
+template<class CONFIG>
+VectorAddress<CONFIG> operator+(VectorAddress<CONFIG> const & a, VectorAddress<CONFIG> const & b)
+{
+	return VectorAddress<CONFIG>(operator+((typename VectorAddress<CONFIG>::Base)(a), (typename VectorAddress<CONFIG>::Base)(b)));
+}
+
+template<class CONFIG>
+VectorAddress<CONFIG> operator*(unsigned int factor, VectorAddress<CONFIG> const & addr)
+{
+	return VectorAddress<CONFIG>(operator*(factor, (typename VectorAddress<CONFIG>::Base)(addr)));
+}
 
 } // end of namespace tesla
 } // end of namespace processor
