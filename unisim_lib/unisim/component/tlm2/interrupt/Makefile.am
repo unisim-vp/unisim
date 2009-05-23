@@ -3,9 +3,9 @@ includedir = $(prefix)/include/unisim/component/tlm2/interrupt
 sharedir = $(prefix)/share/unisim_lib/unisim/component/tlm2/interrupt
 lib_LTLIBRARIES = libunisim_component_tlm2_interrupt.la
 libunisim_component_tlm2_interrupt_la_SOURCES = \
-	master_stub.cc
+	master_stub.cc slave_stub.cc
 
-include_HEADERS = types.hh master_stub.hh
+include_HEADERS = types.hh master_stub.hh slave_stub.hh
 
 SUBDIRS=
 INCLUDE_SUBDIRS=

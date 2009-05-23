@@ -31,9 +31,65 @@
  *
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
- 
-#include "unisim/component/tlm2/timer/str7_timer/tim.hh"
-#include "unisim/component/tlm2/timer/str7_timer/tim.tcc"
 
-template 
-class unisim::component::tlm2::timer::str7_timer::TIM<32, false>;
+#include "unisim/component/tlm2/interrupt/slave_stub.hh"
+
+using unisim::component::tlm2::interrupt::InterruptSlaveStub;
+
+InterruptSlaveStub ::
+InterruptSlaveStub(const sc_module_name& name, Object *parent) :
+	Object(name, parent),
+	sc_module(name),
+	in_interrupt("in_interrupt")
+{
+	SC_HAS_PROCESS(InterruptSlaveStub);
+
+	in_interrupt.register_nb_transport_fw(this, &InterruptSlaveStub::InInterruptNb);
+	in_interrupt.register_b_transport(this, &InterruptSlaveStub::InInterruptB);
+	in_interrupt.register_transport_dbg(this, &InterruptSlaveStub::InInterruptDbg);
+	in_interrupt.register_get_direct_mem_ptr(this, &InterruptSlaveStub::InInterruptDmi);
+}
+
+InterruptSlaveStub ::
+~InterruptSlaveStub()
+{
+}
+
+bool
+InterruptSlaveStub ::
+Setup()
+{
+	return true;
+}
+
+tlm::tlm_sync_enum
+InterruptSlaveStub ::
+InInterruptNb(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
+{
+	// nothing to do, we are a stub
+	return tlm::TLM_COMPLETED;
+}
+
+void 
+InterruptSlaveStub ::
+InInterruptB(TLMInterruptPayload& trans, sc_core::sc_time& t)
+{
+	// nothing to do, we are a stub
+}
+
+unsigned int
+InterruptSlaveStub ::
+InInterruptDbg(TLMInterruptPayload& trans)
+{
+	// nothing to do, we are a stub
+	return 0;
+}
+
+bool
+InterruptSlaveStub ::
+InInterruptDmi(TLMInterruptPayload& trans, tlm::tlm_dmi& dmi)
+{
+	// nothing to do, we are a stub
+	return false;
+}
+

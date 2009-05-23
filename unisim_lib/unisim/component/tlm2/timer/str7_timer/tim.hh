@@ -48,7 +48,7 @@ namespace unisim {
 namespace component {
 namespace tlm2 {
 namespace timer {
-namespace str7_tim {
+namespace str7_timer {
 
 using unisim::component::tlm2::interrupt::InterruptProtocolTypes;
 using unisim::component::tlm2::interrupt::TLMInterruptPayload;
@@ -270,7 +270,7 @@ private:
 };
 
 
-} // end of namespace str7_tim
+} // end of namespace str7_timer
 } // end of namespace timer
 } // end of namespace tlm2
 } // end of namespace component

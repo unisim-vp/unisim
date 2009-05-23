@@ -111,7 +111,7 @@ namespace unisim {
 namespace component {
 namespace tlm2 {
 namespace timer {
-namespace str7_tim {
+namespace str7_timer {
 
 using unisim::kernel::logger::DebugError;
 using unisim::kernel::logger::DebugWarning;
@@ -979,7 +979,42 @@ ProcessICAPB(bool level)
 {
 }
 
-} // end of namespace str7_tim
+/* START: verbose methods */
+
+template<unsigned int BUSWIDTH, bool VERBOSE>
+bool 
+TIM<BUSWIDTH, VERBOSE> ::
+VerboseAll()
+{
+	return VERBOSE && verbose_all;
+}
+
+template<unsigned int BUSWIDTH, bool VERBOSE>
+bool 
+TIM<BUSWIDTH, VERBOSE> ::
+VerboseSetup()
+{
+	return VERBOSE && verbose_setup;
+}
+template<unsigned int BUSWIDTH, bool VERBOSE>
+bool 
+TIM<BUSWIDTH, VERBOSE> ::
+VerboseRun()
+{
+	return VERBOSE && verbose_run;
+}
+
+template<unsigned int BUSWIDTH, bool VERBOSE>
+bool 
+TIM<BUSWIDTH, VERBOSE> ::
+VerboseTLM()
+{
+	return VERBOSE && verbose_tlm;
+}
+
+/* END: verbose methods */
+
+} // end of namespace str7_timer
 } // end of namespace timer
 } // end of namespace tlm2
 } // end of namespace component
