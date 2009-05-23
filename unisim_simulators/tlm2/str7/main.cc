@@ -45,7 +45,9 @@
 #include "unisim/component/tlm2/interconnect/generic_router/router.hh"
 #include "router_config.hh"
 #include "unisim/component/tlm2/interrupt/str7_eic/str7_eic.hh"
+#include "unisim/component/tlm2/timer/str7_timer/tim.hh"
 #include "unisim/component/tlm2/interrupt/master_stub.hh"
+#include "unisim/component/tlm2/interrupt/slave_stub.hh"
 
 #include "unisim/service/time/sc_time/time.hh"
 #include "unisim/service/time/host_time/time.hh"
@@ -94,17 +96,20 @@ typedef unisim::component::cxx::processor::arm::ARM7TDMI_DebugConfig CPU_CONFIG;
 typedef unisim::component::tlm2::memory::ram::Memory<32, 1024 * 1024, true> MEMORY;
 typedef unisim::component::tlm2::memory::ram::Memory<32, 1024 * 1024, true> FLASH;
 typedef unisim::component::tlm2::interrupt::str7_eic::STR7_EIC<32, true> EIC;
+typedef unisim::component::tlm2::timer::str7_timer::TIM<32, true> TIM;
 typedef unisim::component::tlm2::interconnect::generic_router::Router<RouterConfigVerbose> ROUTER;
 #else
 typedef unisim::component::cxx::processor::arm::ARM7TDMI_Config CPU_CONFIG;
 typedef unisim::component::tlm2::memory::ram::Memory<32, 1024 * 1024, false> MEMORY;
 typedef unisim::component::tlm2::memory::ram::Memory<32, 1024 * 1024, false> FLASH;
 typedef unisim::component::tlm2::interrupt::str7_eic::STR7_EIC<32, false> EIC;
+typedef unisim::component::tlm2::timer::str7_timer::TIM<32, false> TIM;
 typedef unisim::component::tlm2::interconnect::generic_router::Router<RouterConfig> ROUTER;
 #endif
 typedef unisim::component::tlm2::processor::arm::ARM<CPU_CONFIG, true> CPU;
 typedef unisim::component::tlm2::interrupt::InterruptMasterStub IRQMSTUB;
 typedef unisim::component::tlm2::interrupt::InterruptMasterStub FIQMSTUB;
+typedef unisim::component::tlm2::interrupt::InterruptSlaveStub IRQSSTUB;
 
 
 typedef unisim::service::loader::elf_loader::ElfLoaderImpl<uint64_t, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym> ElfLoader;
@@ -205,6 +210,13 @@ int sc_main(int argc, char *argv[]) {
 	CPU *cpu = new CPU("cpu");
 	FLASH *flash = new FLASH("flash");
 	EIC *eic = new EIC("eic");
+	TIM *timer0 = new TIM("timer0");
+	IRQSSTUB *icia_irqsstub = new IRQSSTUB("icia_irqsstub");
+	IRQSSTUB *icib_irqsstub = new IRQSSTUB("icib_irqsstub");
+	IRQMSTUB *icapa_edgemstub = new IRQMSTUB("icapa_edgemstub");
+	IRQMSTUB *icapb_edgemstub = new IRQMSTUB("icapb_edgemstub");
+	IRQSSTUB *ocmpa_edgesstub = new IRQSSTUB("ocmpa_edgesstub");
+	IRQSSTUB *ocmpb_edgesstub = new IRQSSTUB("ocmpb_edgesstub");
 	IRQMSTUB *irqmstub[32];
 	FIQMSTUB *fiqmstub[2];
 
@@ -239,19 +251,32 @@ int sc_main(int argc, char *argv[]) {
 	router->init_socket[0](memory->slave_sock);
 	router->init_socket[1](flash->slave_sock);
 	router->init_socket[2](eic->in_mem);
+	router->init_socket[3](timer0->in_mem);
 
 	eic->out_irq(cpu->in_irq);
 	eic->out_fiq(cpu->in_fiq);
-	for (unsigned int i = 0; i < 32; i++)
+	timer0->timeri_irq(eic->in_irq[0]);
+	for (unsigned int i = 1; i < 29; i++)
 		irqmstub[i]->out_interrupt(eic->in_irq[i]);
+	timer0->toi_irq(eic->in_irq[29]);
+	timer0->ocia_irq(eic->in_irq[30]);
+	timer0->ocib_irq(eic->in_irq[31]);
+	timer0->icia_irq(icia_irqsstub->in_interrupt);
+	timer0->icib_irq(icib_irqsstub->in_interrupt);
+	// TODO: timer0 timeri_irq should also be connected to eic->in_fiq[0]
 	for (unsigned int i = 0; i < 2; i++)
 		fiqmstub[i]->out_interrupt(eic->in_fiq[i]);
+	icapa_edgemstub->out_interrupt(timer0->icapa_edge);
+	icapb_edgemstub->out_interrupt(timer0->icapb_edge);
+	timer0->ocmpa_edge(ocmpa_edgesstub->in_interrupt);
+	timer0->ocmpb_edge(ocmpb_edgesstub->in_interrupt);
 
 	// Connect everything
 	elf_loader->memory_import >> router->memory_export;
 	(*router->memory_import[0]) >> memory->memory_export;
 	(*router->memory_import[1]) >> flash->memory_export;
 	// TODO: missing a connection with the eic
+	// TODO: missing a connection with the timer0
 
 	cpu->symbol_table_lookup_import >> elf_loader->symbol_table_lookup_export;
 
@@ -340,13 +365,26 @@ int sc_main(int argc, char *argv[]) {
 	}
 
 
-	if(elf_loader) delete elf_loader;
-	if(time) delete time;
+	if (elf_loader) delete elf_loader;
+	if (time) delete time;
 
-	if(memory) delete memory;
-	if(cpu) delete cpu;
-	if(router) delete router;
-	
+	if (memory) delete memory;
+	if (cpu) delete cpu;
+	if (router) delete router;
+	if (flash) delete flash;
+	if (eic) delete eic;
+	if (timer0) delete timer0;
+	if (icia_irqsstub) delete icia_irqsstub;
+	if (icib_irqsstub) delete icib_irqsstub;
+	if (icapa_edgemstub) delete icapa_edgemstub;
+	if (icapb_edgemstub) delete icapb_edgemstub;
+	if (ocmpa_edgesstub) delete ocmpa_edgesstub;
+	if (ocmpb_edgesstub) delete ocmpb_edgesstub;
+	for (int i = 0; i < 32; i++)
+		if (irqmstub[i]) delete irqmstub[i];
+	for (int i = 0; i < 2; i++)
+		if (irqmstub[i]) delete fiqmstub[i];
+
 #ifdef STR7_DEBUG
 	if(gdb_server) delete gdb_server;
 #endif // STR7_DEBUG
