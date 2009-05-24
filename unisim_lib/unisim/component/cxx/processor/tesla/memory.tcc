@@ -108,11 +108,15 @@ void CPU<CONFIG>::GatherShared(VectorRegister<CONFIG> & output, uint32_t src, ui
 	uint32_t shift = 0;
 	if(type == SM_U16 || type == SM_S16) shift = 1;
 	else if(type == SM_U32) shift = 2;
-	VecAddr offset = EffectiveAddress(src, addr_lo, addr_hi, addr_imm, shift);
 
-	GatherShared(offset, output, mask, type);
-	if(((addr_hi << 2) | addr_lo) == 0) {
+	if(((addr_hi << 2) | addr_lo) == 0 && addr_imm) {
+		address_t addr = src;
+		ReadShared(addr, output, type);
 		output.SetScalar();
+	}
+	else {
+		VecAddr offset = EffectiveAddress(src, addr_lo, addr_hi, addr_imm, shift);
+		GatherShared(offset, output, mask, type);
 	}
 }
 
