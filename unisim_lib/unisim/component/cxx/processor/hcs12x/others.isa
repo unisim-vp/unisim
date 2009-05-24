@@ -104,36 +104,6 @@ stop.execute = {
 		 
 	 	 cpu->Sleep();
 	 	 
- 	 	/*
-		 * (M(SP) : M(SP+1)) => CCRH : CCRL; (SP) + 0x0002 => SP
-		 * (M(SP) : M(SP+1)) => B : A; (SP) + 0x0002 => SP
-		 * (M(SP) : M(SP+1)) => XH : XL; (SP) + 0x0004 => SP
-		 * (M(SP) : M(SP+1)) => PCH : PCL; (SP) – 0x0002 => SP
-		 * (M(SP) : M(SP+1)) => YH : YL; (SP) + 0x0004 => SP
-		 * */
-		 
-		address_t addr = cpu->getRegSP();
-		
-		/* Leave bit X unchanged.
-		 * X bit can be set only by a reset or by recognition of an (!XIRQ) interrupt
-		 */ 	 
-		cpu->ccr->setCCR(cpu->memRead16(addr));
-	
-		addr = addr + 2;
-		cpu->setRegD(cpu->memRead16(addr));
-	
-		addr = addr + 2;
-		cpu->setRegX(cpu->memRead16(addr));
-	
-		addr = addr + 2;
-		cpu->setRegY(cpu->memRead16(addr));
-	
-		addr = addr + 2;
-		cpu->setRegPC(cpu->memRead16(addr));
-	
-		addr = addr + 2;
-		cpu->setRegSP(addr);
-
 	 	 /* TODO:
 	 	  * If XIRQ is asserted while the X mask bit = 0 (XIRQ interrupts enabled), 
 	 	  * execution resumes with a vector fetch for the XIRQ interrupt. 

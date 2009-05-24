@@ -801,14 +801,8 @@ rts.disasm = {
 }
 
 rts.execute = {
-	uint8_t hByte, lByte;
-	physical_address_t addr;
 
-	addr = cpu->getRegSP(); 
-	hByte = cpu->memRead8(addr);
-	addr = cpu->getRegSP()+1; 
-	lByte = cpu->memRead8(addr);
-	cpu->setRegPC(((uint16_t) hByte << 8) | (0x00FF & lByte));
+	cpu->setRegPC(cpu->memRead16(cpu->getRegSP())); 
 	 
 	cpu->setRegSP(cpu->getRegSP() + 2);
 }
