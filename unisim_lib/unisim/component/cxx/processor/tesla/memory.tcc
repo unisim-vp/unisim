@@ -518,12 +518,20 @@ void CPU<CONFIG>::ScatterLocal(VecReg const output[], uint32_t dest, uint32_t ad
 	else if(dt == DT_U64) shift = 3;
 	else if(dt == DT_U128) shift = 4;*/
 	
-	// [seg][$a#addr_reg + dest]
-	VecAddr offset = EffectiveAddress(dest, addr_lo, addr_hi, addr_imm, shift);
+	assert(dt != DT_U64 && dt != DT_U128);
+	unsigned int addr = (addr_hi << 2) | addr_lo;
+	if(addr == 0 && addr_imm && dt == DT_U32) {
+		assert(segment == 0);
+		StoreLocal32(output[0], dest);
+	}
+	else {
+		// [seg][$a#addr_reg + dest]
+		VecAddr offset = EffectiveAddress(dest, addr_lo, addr_hi, addr_imm, shift);
 
-	offset = LocalAddress(offset, segment);
+		offset = LocalAddress(offset, segment);
 
-	Scatter(offset, output, mask, dt);
+		Scatter(offset, output, mask, dt);
+	}
 }
 
 template <class CONFIG>
@@ -536,14 +544,43 @@ void CPU<CONFIG>::GatherLocal(VecReg output[], uint32_t src, uint32_t addr_lo, u
 	else if(dt == DT_U64) shift = 3;
 	else if(dt == DT_U128) shift = 4;*/
 	
-	// [seg][$a#addr_reg + dest]
-	VecAddr offset = EffectiveAddress(src, addr_lo, addr_hi, addr_imm, shift);
+	assert(dt != DT_U64 && dt != DT_U128);
+	unsigned int addr = (addr_hi << 2) | addr_lo;
+	if(addr == 0 && addr_imm && dt == DT_U32) {
+		assert(segment == 0);
+		LoadLocal32(output[0], src);
+	}
+	else {
+		// [seg][$a#addr_reg + dest]
+		VecAddr offset = EffectiveAddress(src, addr_lo, addr_hi, addr_imm, shift);
 	
-	offset = LocalAddress(offset, segment);
+		offset = LocalAddress(offset, segment);
 
-	Gather(offset, output, mask, dt);
+		Gather(offset, output, mask, dt);
+	}
 }
 
+template <class CONFIG>
+void CPU<CONFIG>::LoadLocal32(VecReg & output, address_t addr)
+{
+	unsigned int chunk_size = CONFIG::CORE_COUNT * num_warps * WARP_SIZE * 4;
+	address_t chunk_offset_base = (coreid * num_warps + current_warpid) * WARP_SIZE * 4 + CONFIG::LOCAL_START;
+	addr = chunk_offset_base + addr * chunk_size;
+	if(!ReadMemory(addr, &output.v[0], CONFIG::WARP_SIZE * 4)) {
+		throw MemoryAccessException<CONFIG>();
+	}	
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::StoreLocal32(VecReg const & output, address_t addr)
+{
+	unsigned int chunk_size = CONFIG::CORE_COUNT * num_warps * WARP_SIZE * 4;
+	address_t chunk_offset_base = (coreid * num_warps + current_warpid) * WARP_SIZE * 4 + CONFIG::LOCAL_START;
+	addr = chunk_offset_base + addr * chunk_size;
+	if(!WriteMemory(addr, &output.v[0], CONFIG::WARP_SIZE * 4)) {
+		throw MemoryAccessException<CONFIG>();
+	}
+}
 
 } // end of namespace tesla
 } // end of namespace processor

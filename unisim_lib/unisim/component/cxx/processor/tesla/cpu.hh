@@ -348,6 +348,8 @@ public:
 	VecReg ReadConstant(VecReg const & addr, uint32_t seg = 0);	// addr in bytes
 	VecReg ReadConstant(unsigned int addr, uint32_t seg = 0);
 
+	void LoadLocal32(VecReg & output, address_t addr);
+	void StoreLocal32(VecReg const & output, address_t addr);
 
 
 	// Low-level memory access
