@@ -78,17 +78,17 @@ S12XMMC::S12XMMC(const sc_module_name& name, Object *parent) :
 	deviceMap[1].start_address = 0x0040;  // ECT
 	deviceMap[1].end_address = 0x007F;
 
-	deviceMap[2].start_address = 0x0080;  // ATD1
-	deviceMap[2].end_address = 0x00AF;
+//	deviceMap[2].start_address = 0x0080;  // ATD1
+//	deviceMap[2].end_address = 0x00AF;
 
-	deviceMap[3].start_address = 0x0120;  // XINT
-	deviceMap[3].end_address = 0x012F;
+	deviceMap[2].start_address = 0x0120;  // XINT
+	deviceMap[2].end_address = 0x012F;
 
-	deviceMap[4].start_address = 0x02C0;  // ATD0
-	deviceMap[4].end_address = 0x02DF;
+	deviceMap[3].start_address = 0x02C0;  // ATD0
+	deviceMap[3].end_address = 0x02DF;
 
-	deviceMap[5].start_address = 0x0300;  // PWM
-	deviceMap[5].end_address = 0x0327;
+	deviceMap[4].start_address = 0x0300;  // PWM
+	deviceMap[4].end_address = 0x0327;
 
 /*
 	SC_HAS_PROCESS(S12XMMC);

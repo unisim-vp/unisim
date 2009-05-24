@@ -162,14 +162,14 @@ void ECT::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 void ECT::read(uint8_t offset, uint8_t &value) {
 
 	switch (offset) {
-		default: std::cerr << "Warning: ETC => Read Request not supported for register 0x" << std::hex << offset << std::dec << std::endl;
+		default: std::cerr << "Warning: ETC => Read Request not supported for register " << sc_time(offset, SC_NS) << std::endl;
 	}
 }
 
 void ECT::write(uint8_t offset, uint8_t value) {
 
 	switch (offset) {
-		default: std::cerr << "Warning: ETC => Write Request not supported for register 0x" << std::hex << offset << std::dec << std::endl;
+		default: std::cerr << "Warning: ETC => Write Request not supported for register 0x" << sc_time(offset, SC_NS) << std::endl;
 	}
 
 }

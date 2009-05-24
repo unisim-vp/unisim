@@ -635,15 +635,6 @@ sc_time PWM<PWM_SIZE>::getClockSB() {
 template <uint8_t PWM_SIZE>
 bool PWM<PWM_SIZE>::Setup() {
 
-	if (bus_cycle_time_int < CONFIG::MINIMAL_BUS_CLOCK_TIME)
-	{
-		if (CONFIG::DEBUG_ENABLE) {
-			cerr << "Warning: " << name() << ": Wrong Bus Clock Value.\n";
-		}
-
-		return false;
-	}
-
 	bus_cycle_time = sc_time((double)bus_cycle_time_int, SC_PS);
 
 	for (int i=0; i < 8; i++) {

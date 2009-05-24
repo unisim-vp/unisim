@@ -107,7 +107,6 @@ void CRG::RunRTI() {
 
 void CRG::assertInterrupt(uint8_t interrupt_offset) {
 
-	if ((interrupt_offset == interrupt_offset_rti) && ((crgint_register & 0x80) == 0)) return;
 	if ((interrupt_offset == interrupt_offset_pll_lock) && ((crgint_register & 0x10) == 0)) return;
 	if ((interrupt_offset == interrupt_offset_self_clock_mode) && ((crgint_register & 0x02) == 0)) return;
 
