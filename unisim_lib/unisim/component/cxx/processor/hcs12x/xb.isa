@@ -195,14 +195,18 @@ xb_5bit_cst.getRegsLabel = {
 	vect.push_back(regLabel);
 }
 
-// TODO: 20080417 - a revoir 
-op xb_9_cst_z0 (0b111[3]:rr[2]:0b00[2]:s[1]:> <:sext<8> n8[8])
+op xb_9_cst_z0 (0b111[3]:rr[2]:0b00[2]:s[1]:> <:n8[8])
 
 xb_9_cst_z0.getXbMode = { return XbModes::IDX1; }
 
 xb_9_cst_z0.getEAddr = {
 
-	address_t addr = (int16_t) cpu->xb_getAddrRegValue(rr) + n8;
+	address_t addr;
+	if (s==0) {
+		addr = (int16_t) cpu->xb_getAddrRegValue(rr) + ((uint8_t) n8);
+	} else {
+		addr = (int16_t) cpu->xb_getAddrRegValue(rr) + (((uint8_t) n8) - 256);
+	}
 
 	return addr;
 
@@ -211,7 +215,12 @@ xb_9_cst_z0.getEAddr = {
 xb_9_cst_z0.disasm = {
 
 	string regLabel = CPU::xb_getAddrRegLabel(rr);
-	sink << std::dec << n8 << "," << regLabel;
+	if (s==0) {
+		sink << std::dec << ((uint8_t) n8) << "," << regLabel;
+	} else {
+		sink << std::dec << (((uint8_t) n8)-256) << "," << regLabel;
+	}
+
 }
 
 xb_9_cst_z0.getRegsLabel = {
@@ -220,13 +229,13 @@ xb_9_cst_z0.getRegsLabel = {
 	vect.push_back(regLabel);
 }
 
-op xb_16bit_cst_z1_s0 (0b111[3]:rr[2]:0b010[3]:> <:sext<16> n16[16])
+op xb_16bit_cst_z1_s0 (0b111[3]:rr[2]:0b010[3]:> <:n16[16])
 
 xb_16bit_cst_z1_s0.getXbMode = { return XbModes::IDX2; }
 
 xb_16bit_cst_z1_s0.getEAddr = {
 
-	physical_address_t addr = cpu->xb_getAddrRegValue(rr) + n16;
+	physical_address_t addr = cpu->xb_getAddrRegValue(rr) + ((uint16_t) n16);
 
 	// Constant offset 16-bit signed
    	return addr;
@@ -236,7 +245,7 @@ xb_16bit_cst_z1_s0.disasm = {
 
 	// constant offset 16-bit signed
 	string regLabel = CPU::xb_getAddrRegLabel(rr);
-	sink << std::dec << n16 << "," << regLabel;
+	sink << std::dec << ((uint16_t) n16) << "," << regLabel;
 }
 
 xb_16bit_cst_z1_s0.getRegsLabel = {

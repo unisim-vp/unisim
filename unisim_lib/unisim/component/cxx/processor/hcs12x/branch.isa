@@ -801,8 +801,14 @@ rts.disasm = {
 }
 
 rts.execute = {
+	uint8_t hByte, lByte;
+	physical_address_t addr;
 
-	cpu->setRegPC(cpu->memRead16(cpu->getRegSP())); 
+	addr = cpu->getRegSP(); 
+	hByte = cpu->memRead8(addr);
+	addr = cpu->getRegSP()+1; 
+	lByte = cpu->memRead8(addr);
+	cpu->setRegPC(((uint16_t) hByte << 8) | (0x00FF & lByte));
 	 
 	cpu->setRegSP(cpu->getRegSP() + 2);
 }
@@ -810,7 +816,7 @@ rts.execute = {
 
 /* ************ Loop Primitive ********* */
 
-op loop(0x04[8]:b765[3]:b4[1]:b3[1]:b210[3]:> <:sext<8> rel9[8])
+op loop(0x04[8]:b765[3]:b4[1]:b3[1]:b210[3]:> <:rel9[8])
 
 loop.var isBranch : { bool } = { false }
 
@@ -838,7 +844,11 @@ Bits 7 and 6 would be 0:0 for DBNE.
 		default: mnem = "?";
 	}
 	
-	sink << mnem << " " << EBLB::getRegName(b210) << " , " << std::dec << rel9;
+	if (b4 == 0) {
+			sink << mnem << " " << EBLB::getRegName(b210) << " , " << std::dec << (uint8_t) rel9;
+	} else {
+		sink << mnem << " " << EBLB::getRegName(b210) << " , " << std::dec << (((uint8_t) rel9) - 256);
+	}
 	
 	return mnem;
 }
@@ -848,7 +858,11 @@ loop.execute = {
 	
 	isBranch = false;
 
-	branchAddr = cpu->getRegPC() + rel9;
+	if (b4 == 0) {
+		branchAddr = cpu->getRegPC() + ((uint8_t) rel9);
+	} else {
+		branchAddr = cpu->getRegPC() + (((uint8_t) rel9) - 256);
+	}
 	
 	switch (b765) {
 		case 0x00: /*DBEQ*/{
