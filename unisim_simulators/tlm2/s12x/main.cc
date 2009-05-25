@@ -427,13 +427,13 @@ int sc_main(int argc, char *argv[])
 	 * TODO:
 	 *  - One of the output of the CRG is the BusClock (hereafter fsb_cycle_time).
 	 *  - In fact I have to connect all the others component to the CRG::BusClock output.
-	 *  - If (PLLSEL == 1) the BusClock = PLLCLK / 2;
+	 *  - If (PLLSEL == 1) the BusClock = PLLCLK / 2; else BusClock = OSCCLK / 2;
 	 *  - PLLCLK = 2 * OSCCLK * (SYNR + 1) / (REFDV + 1)
 	 */
 	(*crg)["base-address"] = 0x0034;
 	(*crg)["oscillator-clock"] = fsb_cycle_time / 2;
 
-	(*crg)["param-interrupt-offset-rti"] = 0xF0;
+	(*crg)["interrupt-offset-rti"] = 0xF0;
 	(*crg)["interrupt-offset-pll-lock"] = 0xC6;
 	(*crg)["interrupt-offset-self-clock-mode"] = 0xC4;
 
