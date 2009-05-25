@@ -181,7 +181,6 @@ public:
 		payload = last_payload;
 
 		if (CONFIG::DEBUG_ENABLE) {
-
 			cout << sc_time_stamp() << ":" << name() << "::PWM:: Last Receive " << payload->serialize() << endl;
 		}
 
@@ -238,9 +237,9 @@ public:
 			payload->anPort[i] = anValue[i];
 		}
 
-		if (CONFIG::DEBUG_ENABLE) {
-			cout << sc_time_stamp() << ":" << name() << "::ATD0::send " << payload->serialize() << endl;
-		}
+//		if (CONFIG::DEBUG_ENABLE) {
+//			cout << sc_time_stamp() << ":" << name() << "::ATD0::send " << payload->serialize() << endl;
+//		}
 
 		sc_time local_time = quantumkeeper.get_local_time();
 
