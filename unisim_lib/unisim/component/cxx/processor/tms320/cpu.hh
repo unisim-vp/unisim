@@ -155,6 +155,13 @@ public:
 	inline void Sub(const Register& reg, uint32_t imm, bool& overflow, bool& underflow) INLINE;
 	inline void Sub(uint32_t imm, const Register& reg, bool& overflow, bool& underflow) INLINE;
 	inline void Sub(uint32_t imm_a, uint32_t imm_b, bool& overflow, bool& underflow) INLINE;
+	inline void Mpy(const Register& reg, bool& overflow, bool& underflow) INLINE;
+	inline void Mpy(uint16_t imm, bool& overflow, bool& underflow) INLINE;
+	inline void Mpy(uint32_t imm, bool& overflow, bool& underflow) INLINE;
+	inline void Mpy(const Register& reg_a, const Register& reg_b, bool& overflow, bool& underflow) INLINE;
+	inline void Mpy(const Register& reg, uint32_t imm, bool& overflow, bool& underflow) INLINE;
+	inline void Mpy(uint32_t imm, const Register& reg, bool& overflow, bool& underflow) INLINE;
+	inline void Mpy(uint32_t imm_a, uint32_t imm_b, bool& overflow, bool& underflow) INLINE;
 	friend std::ostream& operator << (std::ostream& os, const Register& reg);
 
 	void SetLoWriteMask(uint32_t lo_write_mask);
@@ -166,6 +173,7 @@ private:
 	inline void Add(uint8_t hi_a, uint32_t lo_a, uint8_t hi_b, uint32_t lo_b, bool& overflow, bool& underflow) INLINE;
 	inline void Sub(uint8_t hi_a, uint32_t lo_a, uint8_t hi_b, uint32_t lo_b, bool& overflow, bool& underflow) INLINE;
 	inline void AddSub(bool add, uint8_t hi_a, uint32_t lo_a, uint8_t hi_b, uint32_t lo_b, bool& overflow, bool& underflow) INLINE;
+	inline void Mpy(uint8_t hi_a, uint32_t lo_a, uint8_t hi_b, uint32_t lo_b, bool& overflow, bool& underflow) INLINE;
 };
 
 inline void Register::SetLo(uint32_t value)
@@ -594,6 +602,170 @@ inline void Register::AddSub(bool is_add, uint8_t hi_a, uint32_t lo_a, uint8_t h
 
 	// set the mantissa into the register
 	this->lo = (uint32_t)((ext_lo_c & ~(uint64_t)0x80000000) | ((ext_lo_c >> 1) & (uint64_t)0x80000000));
+}
+
+inline void Register::Mpy(const Register& reg, bool& overflow, bool& underflow)
+{
+	this->Mpy(this->hi, this->lo, reg.GetHi(), reg.GetLo(), overflow, underflow);
+}
+
+inline void Register::Mpy(uint16_t imm, bool& overflow, bool& underflow)
+{
+	uint8_t hi_b;
+	uint32_t lo_b;
+
+	hi_b = (uint8_t)(((int16_t)imm >> 12) & (uint16_t)0xff);
+	lo_b = imm & (uint16_t)0x0fff;
+	lo_b = lo_b << 20;
+
+	this->Mpy(this->hi, this->lo, hi_b, lo_b, overflow, underflow);
+}
+
+inline void Register::Mpy(uint32_t imm, bool& overflow, bool& underflow)
+{
+	uint8_t hi_b;
+	uint32_t lo_b;
+
+	hi_b = imm >> 24;
+	lo_b = imm & (uint32_t)0x00ffffff;
+	lo_b = lo_b << 8;
+
+	this->Mpy(this->hi, this->lo, hi_b, lo_b, overflow, underflow);
+}
+
+inline void Register::Mpy(const Register& reg_a, const Register& reg_b, bool& overflow, bool& underflow)
+{
+	this->Mpy(reg_a.hi, reg_a.lo, reg_b.hi, reg_b.lo, overflow, underflow);
+}
+
+inline void Register::Mpy(const Register& reg, uint32_t imm, bool& overflow, bool& underflow)
+{
+	uint8_t hi_b;
+	uint32_t lo_b;
+
+	hi_b = imm >> 24;
+	lo_b = imm & (uint32_t)0x00ffffff;
+	lo_b = lo_b << 8;
+
+	this->Mpy(reg.hi, reg.lo, hi_b, lo_b, overflow, underflow);
+}
+
+inline void Register::Mpy(uint32_t imm, const Register& reg, bool& overflow, bool& underflow)
+{
+	this->Mpy(reg, imm, overflow, underflow);
+}
+
+inline void Register::Mpy(uint32_t imm_a, uint32_t imm_b, bool& overflow, bool& underflow)
+{
+	uint8_t hi_a;
+	uint32_t lo_a;
+
+	hi_a = imm_a >> 24;
+	lo_a = imm_a & (uint32_t)0x00ffffff;
+	lo_a = lo_a << 8;
+	
+	uint8_t hi_b;
+	uint32_t lo_b;
+
+	hi_b = imm_b >> 24;
+	lo_b = imm_b & (uint32_t)0x00ffffff;
+	lo_b = lo_b << 8;
+
+	this->Mpy(hi_a, lo_a, hi_b, lo_b, overflow, underflow);
+}
+
+inline void Register::Mpy(uint8_t hi_a, uint32_t lo_a, uint8_t hi_b, uint32_t lo_b, bool& overflow, bool& underflow)
+{
+	int64_t ext_lo_a;
+	int64_t ext_lo_b;
+	overflow = false;
+	underflow = false;
+
+	// convert mantissas to their full representation (33-bit)
+	if (lo_a & (uint32_t)0x80000000)
+	{
+		ext_lo_a = ~ext_lo_a;
+		ext_lo_a = ext_lo_a & (uint64_t)(lo_a & ~(uint32_t)0x80000000);
+	}
+	else
+		ext_lo_a = ext_lo_a & (uint64_t)(lo_a | (uint32_t)0x80000000);
+
+	if (lo_b & (uint32_t)0x80000000)
+	{
+		ext_lo_b = ~ext_lo_b;
+		ext_lo_b = ext_lo_b & (uint64_t)(lo_a & ~(uint32_t)0x80000000);
+	}
+	else
+		ext_lo_b = ext_lo_b & (uint64_t)(lo_b | (uint32_t)0x80000000);
+
+	// convert the mantissas to their 25-bit representation
+	ext_lo_a = ext_lo_a >> 8;
+	ext_lo_b = ext_lo_b >> 8;
+
+	// compute the result exponent
+	int32_t exp_c = (int32_t)((int8_t)hi_a) + (int32_t)((int8_t)hi_b);
+	
+	// multiply the mantissas
+	int64_t ext_lo_c = ext_lo_a * ext_lo_b;
+
+	// test for special cases of the mantissa
+	// 1 - shift by one or two the result
+	int64_t tmp = ext_lo_c;
+	unsigned int shift = 0;
+	tmp = tmp >> 46;
+	if (ext_lo_c < 0) tmp = ~tmp;
+	if (tmp != 1) 
+	{
+		tmp = tmp >> 1;
+		shift += 1;
+	}
+	if (tmp != 1) 
+	{
+		tmp = tmp >> 1;
+		shift += 1;
+	}
+	ext_lo_c = ext_lo_c >> shift;
+	exp_c += shift;
+	// 2 - dispose of extra bits
+	ext_lo_c = ext_lo_c >> 15;
+	// 3 - check that the result is not 0
+	if (ext_lo_c == 0)
+		exp_c = -128;
+
+	// test for special cases of the result exponent
+	// 1 - exponent overflow
+	if (exp_c > 127)
+	{
+		overflow = true;
+		exp_c = 127;
+		if (ext_lo_c > 0)
+		{
+			ext_lo_c = (uint64_t)0xffffffff;
+		}
+		else // ext_lo_c < 0
+		{
+			ext_lo_c = ~(uint64_t)0xffffffff;
+		}
+	}
+	else
+	{
+	// 2 - exponent underflow
+		if (exp_c < -128)
+		{
+			underflow = true;
+			exp_c = -128;
+			ext_lo_c = 0;
+		}
+		else
+		{
+	// 3 - exponent in range
+			// nothing to do
+		}
+	}
+
+	// set the mantissa and exponent into the register
+	this->lo = (uint32_t)((ext_lo_c & ~(uint64_t)0x80000000) | ((ext_lo_c >> 1) & (uint64_t)0x80000000));
+	this->hi = (uint8_t)((int8_t)exp_c);
 }
 
 class RegisterDebugInterface : public unisim::util::debug::Register
