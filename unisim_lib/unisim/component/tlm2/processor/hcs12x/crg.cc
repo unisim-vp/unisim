@@ -54,7 +54,7 @@ CRG::CRG(const sc_module_name& name, Object *parent) :
 	param_baseAddress("base-address", this, baseAddress),
 
 	interrupt_offset_rti(0xF0),
-	param_interrupt_offset_rti("param-interrupt-offset-rti", this, interrupt_offset_rti),
+	param_interrupt_offset_rti("interrupt-offset-rti", this, interrupt_offset_rti),
 	interrupt_offset_pll_lock(0xC6),
 	param_interrupt_offset_pll_lock("interrupt-offset-pll-lock", this, interrupt_offset_pll_lock),
 	interrupt_offset_self_clock_mode(0xC4),
