@@ -220,12 +220,16 @@ int sc_main(int argc, char *argv[]) {
 	IRQMSTUB *irqmstub[32];
 	FIQMSTUB *fiqmstub[2];
 
-	for (unsigned int i = 0; i < 32; i++)
+	for (unsigned int i = 0; i < 1; i ++)
+		irqmstub[i] = 0;
+	for (unsigned int i = 1; i < 29; i++)
 	{
 		stringstream str;
 		str << "irq_master_stub[" << i << "]";
 		irqmstub[i] = new IRQMSTUB(str.str().c_str());
 	}
+	for (unsigned int i = 29; i < 32; i++)
+		irqmstub[i] = 0;
 
 	for (unsigned int i = 0; i < 2; i++)
 	{
