@@ -234,7 +234,7 @@ void XINT::Run()
 			if (payload) {
 
 				if (CONFIG::DEBUG_ENABLE) {
-					cout << "XINT: Receive INT-Offset " << payload->interrupt_offset/2 << std::endl;
+					cout << "*************  XINT: Receive INT-ID (offset/2) " << std::hex << payload->interrupt_offset/2 << std::dec << std::endl;
 				}
 
 				if ((payload->interrupt_offset == XINT::INT_CLK_MONITOR_RESET_OFFSET) ||
@@ -245,7 +245,7 @@ void XINT::Run()
 					((payload->interrupt_offset >= getINT_CFADDR()) && (payload->interrupt_offset < (getINT_CFADDR() + 16)))) {
 
 					if (CONFIG::DEBUG_ENABLE) {
-						cout << "XINT: Receive Visible INT-Offset " << payload->interrupt_offset/2 << std::endl;
+						cout << "*************  XINT: Receive Visible INT-ID (offset/2) " << std::hex << payload->interrupt_offset/2 << std::dec << std::endl;
 					}
 
 					interrupt_flags[payload->interrupt_offset/2] = true;

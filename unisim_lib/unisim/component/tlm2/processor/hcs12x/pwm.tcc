@@ -281,9 +281,9 @@ void PWM<PWM_SIZE>::refreshOutput(bool pwmValue[PWM_SIZE])
 
 	sc_time local_time = quantumkeeper.get_local_time();
 
-	if (CONFIG::DEBUG_ENABLE) {
-		cout << name() << ":: send " << payload->serialize() << " - " << sc_time_stamp() << endl;
-	}
+//	if (CONFIG::DEBUG_ENABLE) {
+//		cout << name() << ":: send " << payload->serialize() << " - " << sc_time_stamp() << endl;
+//	}
 
 
 	tlm_sync_enum ret = master_sock->nb_transport_fw(*payload, phase, local_time);
