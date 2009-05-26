@@ -83,6 +83,12 @@ template <class CONFIG, class Base>
 StridedTagVectorRegister<CONFIG, Base>::StridedTagVectorRegister(Base const & other) :
 	Base(other)
 {
+	SetScalar(false);
+	SetStrided(false);
+	SetScalar16(0, false);
+	SetScalar16(1, false);
+	SetStrided16(0, false);
+	SetStrided16(1, false);
 }
 
 
@@ -170,6 +176,8 @@ template <class CONFIG, class Base>
 StridedTagVectorAddress<CONFIG, Base>::StridedTagVectorAddress(Base const & other) :
 	Base(other)
 {
+	SetScalar(false);
+	SetStrided(false);
 }
 
 template <class CONFIG, class Base>

@@ -87,8 +87,8 @@ struct VectorFP32Base
 		SetCond sc,
 		bool a_abs);
 
-	static VectorRegister<CONFIG> Rcp(VectorRegister<CONFIG> const & a);
-	static VectorRegister<CONFIG> Rsq(VectorRegister<CONFIG> const & a);
+	static VectorRegister<CONFIG> & Rcp(VectorRegister<CONFIG> & a);
+	static VectorRegister<CONFIG> & Rsq(VectorRegister<CONFIG> & a);
 	static VectorRegister<CONFIG> Log2(VectorRegister<CONFIG> const & a);
 	static VectorRegister<CONFIG> RRExp2(VectorRegister<CONFIG> const & a);
 	static VectorRegister<CONFIG> RRTrig(VectorRegister<CONFIG> const & a);

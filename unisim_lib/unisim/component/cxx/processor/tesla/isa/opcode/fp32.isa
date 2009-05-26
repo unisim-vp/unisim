@@ -854,12 +854,7 @@ rcp.disasm = {
 }
 
 rcp.execute = {
-	typedef VectorRegister<CONFIG> reg_t;
-	reg_t & a = insn->GetSrc1();
-	reg_t output = CONFIG::vfp32::Rcp(a);
-
-	insn->SetDest(output);
-	//insn->SetPredFP32(output);
+	CONFIG::vfp32::Rcp(insn->GetSrc1());
 }
 
 ////// RSQ
@@ -891,12 +886,7 @@ rsq.disasm = {
 }
 
 rsq.execute = {
-	typedef VectorRegister<CONFIG> reg_t;
-	reg_t & a = insn->GetSrc1();
-	reg_t output = CONFIG::vfp32::Rsq(a);
-
-	insn->SetDest(output);
-	//insn->SetPredFP32(output);
+	CONFIG::vfp32::Rsq(insn->GetSrc1());
 }
 
 ////// LG2

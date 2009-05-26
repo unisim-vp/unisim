@@ -61,6 +61,9 @@ struct VectorFP32SSE : VectorFP32Base<CONFIG>
 		uint32_t nega, uint32_t negb,
 		uint32_t rounding_mode, uint32_t sat = 0);
 
+	static VectorRegister<CONFIG> & Rcp(VectorRegister<CONFIG> & a);
+	static VectorRegister<CONFIG> & Rsq(VectorRegister<CONFIG> & a);
+
 private:
 	static unsigned int const WARP_BLOCKS = CONFIG::WARP_SIZE / 4;
 

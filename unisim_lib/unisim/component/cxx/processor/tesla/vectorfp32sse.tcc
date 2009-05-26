@@ -73,12 +73,30 @@ void VectorFP32SSE<CONFIG>::Init()
 	//MM_SET_DAZ_MODE(MM_DAZ_ON);
 }
 
-inline __m128 saturate(__m128 x)
+inline __m128 Saturate(__m128 x)
 {
 	_mm_max_ps(x, (__m128)_mm_setzero_si128());
 	_mm_min_ps(x, _mm_set1_ps(1.0f));
 	return x;
 }
+
+inline void SetDAZFTZ()
+{
+	_MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
+	MM_SET_DAZ_MODE(MM_DAZ_ON);
+}
+
+inline void ClearDAZFTZ()
+{
+	_MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_OFF);
+	MM_SET_DAZ_MODE(MM_DAZ_OFF);
+}
+
+struct NoDenorm
+{
+	NoDenorm() { SetDAZFTZ(); }
+	~NoDenorm() { ClearDAZFTZ(); }
+};
 
 template <class CONFIG>
 VectorRegister<CONFIG> & VectorFP32SSE<CONFIG>::Mad(VectorRegister<CONFIG> & a,
@@ -91,8 +109,7 @@ VectorRegister<CONFIG> & VectorFP32SSE<CONFIG>::Mad(VectorRegister<CONFIG> & a,
 	assert(!neg_b);
 	typedef VectorRegister<CONFIG> VecReg;
 
-	_MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
-	MM_SET_DAZ_MODE(MM_DAZ_ON);
+	NoDenorm nd;
 
 	// G80-GT200: first mul always rounded to zero
 	_MM_SET_ROUNDING_MODE(_MM_ROUND_TOWARD_ZERO);
@@ -133,7 +150,7 @@ VectorRegister<CONFIG> & VectorFP32SSE<CONFIG>::Mad(VectorRegister<CONFIG> & a,
 		
 		__m128 r = _mm_add_ps(sa, sc);
 		if(sat) {
-			r = saturate(r);
+			r = Saturate(r);
 		}
 		_mm_storeu_ps((float*)a.v + i, r);
 	}
@@ -142,9 +159,8 @@ VectorRegister<CONFIG> & VectorFP32SSE<CONFIG>::Mad(VectorRegister<CONFIG> & a,
 		// Restore RM
 		_MM_SET_ROUNDING_MODE(_MM_ROUND_NEAREST);
 	}
-	_MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_OFF);
-	MM_SET_DAZ_MODE(MM_DAZ_OFF);
-	
+
+	a.SetStrided(false);
 	a.SetScalar(a.IsScalar() && b.IsScalar() && c.IsScalar());
 	return a;
 }
@@ -157,8 +173,7 @@ VectorRegister<CONFIG> & VectorFP32SSE<CONFIG>::Mul(VectorRegister<CONFIG> & a,
 {
 	assert(CONFIG::WARP_SIZE % 4 == 0);
 
-	_MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
-	MM_SET_DAZ_MODE(MM_DAZ_ON);
+	NoDenorm nd;
 	
 	__m128 sign_mask = (__m128)_mm_set1_epi32(0x80000000);
 
@@ -182,7 +197,7 @@ VectorRegister<CONFIG> & VectorFP32SSE<CONFIG>::Mul(VectorRegister<CONFIG> & a,
 		}
 		__m128 r = _mm_mul_ps(sa, sb);
 		if(sat) {
-			r = saturate(r);
+			r = Saturate(r);
 		}
 		_mm_storeu_ps((float*)a.v + i, r);
 	}
@@ -190,8 +205,7 @@ VectorRegister<CONFIG> & VectorFP32SSE<CONFIG>::Mul(VectorRegister<CONFIG> & a,
 		// Restore RM
 		_MM_SET_ROUNDING_MODE(_MM_ROUND_NEAREST);
 	}
-	_MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_OFF);
-	MM_SET_DAZ_MODE(MM_DAZ_OFF);
+	a.SetStrided(false);
 	a.SetScalar(a.IsScalar() && b.IsScalar());
 	return a;
 }
@@ -202,8 +216,7 @@ VectorRegister<CONFIG> & VectorFP32SSE<CONFIG>::Add(VectorRegister<CONFIG> & a,
 	uint32_t neg_a, uint32_t neg_b,
 	uint32_t rounding_mode, uint32_t sat)
 {
-	_MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
-	MM_SET_DAZ_MODE(MM_DAZ_ON);
+	NoDenorm nd;
 
 	__m128 sign_mask = (__m128)_mm_set1_epi32(0x80000000);
 	if(rounding_mode == RM_RZ) {
@@ -225,7 +238,7 @@ VectorRegister<CONFIG> & VectorFP32SSE<CONFIG>::Add(VectorRegister<CONFIG> & a,
 		}
 		__m128 r = _mm_add_ps(sa, sb);
 		if(sat) {
-			r = saturate(r);
+			r = Saturate(r);
 		}
 		_mm_storeu_ps((float*)a.v + i, r);
 	}
@@ -233,11 +246,51 @@ VectorRegister<CONFIG> & VectorFP32SSE<CONFIG>::Add(VectorRegister<CONFIG> & a,
 		// Restore RM
 		_MM_SET_ROUNDING_MODE(_MM_ROUND_NEAREST);
 	}
-	_MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_OFF);
-	MM_SET_DAZ_MODE(MM_DAZ_OFF);
+	a.SetStrided(false);
 	a.SetScalar(a.IsScalar() && b.IsScalar());
 	return a;
 }
+
+template<class CONFIG>
+VectorRegister<CONFIG> & VectorFP32SSE<CONFIG>::Rcp(VectorRegister<CONFIG> & a)
+{
+	NoDenorm nd;
+	// Do NOT use the SSE reciprocal estimate, it's way too unprecise
+	__m128 one = _mm_set1_ps(1.0f);
+	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; i += 4)
+	{
+		__m128 sa = _mm_loadu_ps((float*)a.v + i);
+
+		__m128 r = _mm_div_ps(one, sa);
+		_mm_storeu_ps((float*)a.v + i, r);
+	}
+	if(!a.IsScalar()) a.SetStrided(false);
+	return a;
+}
+
+template<class CONFIG>
+VectorRegister<CONFIG> & VectorFP32SSE<CONFIG>::Rsq(VectorRegister<CONFIG> & a)
+{
+	NoDenorm nd;
+	__m128 half = _mm_set1_ps(0.5f);
+	__m128 three = _mm_set1_ps(3.0f);
+	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; i += 4)
+	{
+		__m128 sa = _mm_loadu_ps((float*)a.v + i);
+
+		__m128 x = _mm_rsqrt_ps(sa);
+		// Newton-raphson iteration
+		// x = .5x * (3 - a * x^2)
+		__m128 e = _mm_mul_ps(sa, _mm_mul_ps(x, x));
+		__m128 x2 = _mm_mul_ps(_mm_mul_ps(x, half), _mm_sub_ps(three, e));
+		__m128 isnan = _mm_cmpunord_ps(x2, x2);
+		x2 = _mm_or_ps(_mm_and_ps(x, isnan), _mm_andnot_ps(isnan, x2));
+		_mm_storeu_ps((float*)a.v + i, x2);
+	}
+	if(!a.IsScalar()) a.SetStrided(false);
+	return a;
+}
+
 
 } // end of namespace tesla
 } // end of namespace processor

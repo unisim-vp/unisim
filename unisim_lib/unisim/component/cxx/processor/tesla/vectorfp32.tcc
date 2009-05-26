@@ -113,6 +113,7 @@ VectorRegister<CONFIG> & VectorFP32Base<CONFIG>::Mad(VectorRegister<CONFIG> & a,
 		a.WriteSimfloat(r, i);
 	}
 	
+	a.SetStrided(false);
 	a.SetScalar(a.IsScalar() && b.IsScalar() && c.IsScalar());
 	return a;
 }
@@ -154,6 +155,7 @@ VectorRegister<CONFIG> & VectorFP32Base<CONFIG>::Mul(VectorRegister<CONFIG> & a,
 		}
 		a.WriteSimfloat(r, i);
 	}
+	a.SetStrided(false);
 	a.SetScalar(a.IsScalar() && b.IsScalar());
 	return a;
 }
@@ -198,6 +200,7 @@ VectorRegister<CONFIG> & VectorFP32Base<CONFIG>::Add(VectorRegister<CONFIG> & a,
 		a.WriteSimfloat(r, i);
 	}
 	a.SetScalar(a.IsScalar() && b.IsScalar());
+	a.SetStrided(false);
 	return a;
 }
 
@@ -525,30 +528,33 @@ inline uint8_t VectorFP32Base<CONFIG>::Compare(typename CONFIG::float_t a, typen
 // TODO: Rewrite from scratch using softfloats and detailed models
 
 template<class CONFIG>
-VectorRegister<CONFIG> VectorFP32Base<CONFIG>::Rcp(VectorRegister<CONFIG> const & a)
+VectorRegister<CONFIG> & VectorFP32Base<CONFIG>::Rcp(VectorRegister<CONFIG> & a)
 {
-	VectorRegister<CONFIG> rv;
 	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i)
 	{
 		float r = 1.f / a.ReadFloat(i);
-		rv.WriteFloat(r, i);
+		if(r > -ldexp(1.0, FLT_MIN_EXP) && r < ldexp(1.0, FLT_MIN_EXP)) {
+			r = 0;
+		}
+		a.WriteFloat(r, i);
 	}
-	rv.SetScalar(a.IsScalar());
-	return rv;
+	a.SetStrided(false);
+	a.SetScalar(a.IsScalar());
+	return a;
 }
 
 template<class CONFIG>
-VectorRegister<CONFIG> VectorFP32Base<CONFIG>::Rsq(VectorRegister<CONFIG> const & a)
+VectorRegister<CONFIG> & VectorFP32Base<CONFIG>::Rsq(VectorRegister<CONFIG> & a)
 {
-	VectorRegister<CONFIG> rv;
 	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i)
 	{
 		// Intermediate comp. in double
 		float r = float(1. / sqrt(double(a.ReadFloat(i))));
-		rv.WriteFloat(r, i);
+		a.WriteFloat(r, i);
 	}
-	rv.SetScalar(a.IsScalar());
-	return rv;
+	a.SetStrided(false);
+	a.SetScalar(a.IsScalar());
+	return a;
 }
 
 template<class CONFIG>
@@ -609,7 +615,7 @@ VectorRegister<CONFIG> VectorFP32Base<CONFIG>::Exp2(VectorRegister<CONFIG> const
 		double r = FXToFP(ia);
 		r = exp2(float(r));
 		// Flush denormals to zero
-		if(r < ldexp(1.0, FLT_MIN_EXP)) {	// r > 0
+		if(r < ldexp(1.0, FLT_MIN_EXP)) {	// r >= 0
 			r = 0;
 		}
 		rv.WriteFloat(float(r), i);

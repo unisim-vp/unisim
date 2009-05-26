@@ -32,8 +32,8 @@
  * Authors: Sylvain Collange (sylvain.collange@univ-perp.fr)
  */
 
-#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_CONFIG_HH__
-#define __UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_CONFIG_HH__
+#ifndef UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_CONFIG_HH
+#define UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_CONFIG_HH
 
 #include <unisim/component/cxx/processor/tesla/simfloat.hh>
 #include <unisim/component/cxx/processor/tesla/hostfloat/hostfloat.hh>
