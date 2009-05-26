@@ -78,17 +78,17 @@ S12XMMC::S12XMMC(const sc_module_name& name, Object *parent) :
 	deviceMap[1].start_address = 0x0040;  // ECT
 	deviceMap[1].end_address = 0x007F;
 
-//	deviceMap[2].start_address = 0x0080;  // ATD1
-//	deviceMap[2].end_address = 0x00AF;
+	deviceMap[2].start_address = 0x0080;  // ATD1
+	deviceMap[2].end_address = 0x00AF;
 
-	deviceMap[2].start_address = 0x0120;  // XINT
-	deviceMap[2].end_address = 0x012F;
+	deviceMap[3].start_address = 0x0120;  // XINT
+	deviceMap[3].end_address = 0x012F;
 
-	deviceMap[3].start_address = 0x02C0;  // ATD0
-	deviceMap[3].end_address = 0x02DF;
+	deviceMap[4].start_address = 0x02C0;  // ATD0
+	deviceMap[4].end_address = 0x02DF;
 
-	deviceMap[4].start_address = 0x0300;  // PWM
-	deviceMap[4].end_address = 0x0327;
+	deviceMap[5].start_address = 0x0300;  // PWM
+	deviceMap[5].end_address = 0x0327;
 
 /*
 	SC_HAS_PROCESS(S12XMMC);
@@ -184,7 +184,7 @@ void S12XMMC::b_transport( tlm::tlm_generic_payload& trans, sc_time& delay ) {
 				mmc_trans->set_command( tlm::TLM_WRITE_COMMAND );
 			}
 
-			if (isPaged(logicalAddress, 0x00, false)) {
+			if (isPaged(logicalAddress, 0x00, false) || buffer->isGlobal) {
 				physical_address_t addr = inherited::getPhysicalAddress((address_t) logicalAddress, buffer->type, buffer->isGlobal);
 				mmc_trans->set_address( addr & 0x7FFFFF);
 				external_socket->b_transport( *mmc_trans, tlm2_btrans_time );

@@ -111,7 +111,7 @@ private:
 	address_t MMC_REGS_ADDRESSES[MMC_SIZE];
 
 	// TODO: complete by integrating the routing functionality to the MMC
-	static const uint8_t DEVICE_MAP_SIZE = 5;
+	static const uint8_t DEVICE_MAP_SIZE = 6;
 	struct {
 		address_t	start_address;
 		address_t	end_address;

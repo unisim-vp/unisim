@@ -233,9 +233,9 @@ void XINT::Run()
 			payload = input_payload_queue.get_next_transaction();
 			if (payload) {
 
-				if (CONFIG::DEBUG_ENABLE) {
-					cout << "*************  XINT: Receive INT-ID (offset/2) " << std::hex << payload->interrupt_offset/2 << std::dec << std::endl;
-				}
+//				if (CONFIG::DEBUG_ENABLE) {
+//					cout << "*************  XINT: Receive INT-ID (offset/2) " << std::hex << payload->interrupt_offset/2 << std::dec << std::endl;
+//				}
 
 				if ((payload->interrupt_offset == XINT::INT_CLK_MONITOR_RESET_OFFSET) ||
 					(payload->interrupt_offset == XINT::INT_COP_WATCHDOG_RESET_OFFSET) ||

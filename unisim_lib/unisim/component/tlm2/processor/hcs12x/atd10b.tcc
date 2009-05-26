@@ -211,9 +211,9 @@ void ATD10B<ATD_SIZE>::Input(double anValue[ATD_SIZE])
 
 	payload = last_payload;
 
-	if (CONFIG::DEBUG_ENABLE) {
-		cout << name() << ":: Last Receive " << payload->serialize() << " - " << sc_time_stamp() << endl;
-	}
+//	if (CONFIG::DEBUG_ENABLE) {
+//		cout << name() << ":: Last Receive " << payload->serialize() << " - " << sc_time_stamp() << endl;
+//	}
 
 	if ((atdctl2_register & 0x80) != 0) // is ATD power ON (enabled)
 	{
