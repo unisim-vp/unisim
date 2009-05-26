@@ -12,7 +12,7 @@ fi
 
 HERE=`pwd`
 DEST_DIR=$1
-UNISIM_TOOLS_DIR=$2/genisslib
+UNISIM_TOOLS_DIR=$2
 UNISIM_LIB_DIR=$3
 UNISIM_SIMULATORS_DIR=$4/cxx/tms320c3x
 
@@ -72,8 +72,8 @@ errtools.cc"
 UNISIM_TOOLS_GENISSLIB_DATA_FILES="COPYING INSTALL NEWS README AUTHORS ChangeLog"
 
 UNISIM_TOOLS_GENISSLIB_M4_FILES="\
-../m4/lexer.m4 \
-../m4/parser_gen.m4"
+m4/lexer.m4 \
+m4/parser_gen.m4"
 
 UNISIM_LIB_TMS320C3X_SOURCE_FILES="\
 unisim/kernel/service/service.cc \
@@ -155,7 +155,6 @@ unisim/service/os/ti_c_io/ti_c_io.hh \
 unisim/service/time/host_time/time.hh \
 unisim/component/cxx/processor/tms320/config.hh \
 unisim/component/cxx/processor/tms320/cpu.hh \
-unisim/component/cxx/processor/tms320/isa_tms320.hh \
 unisim/component/cxx/processor/tms320/exception.hh \
 unisim/component/cxx/memory/ram/memory.hh"
 
@@ -172,7 +171,6 @@ unisim/service/debug/gdb_server/gdb_server.tcc \
 unisim/service/os/ti_c_io/ti_c_io.tcc \
 unisim/component/cxx/processor/tms320/cpu.tcc \
 unisim/component/cxx/processor/tms320/exception.tcc \
-unisim/component/cxx/processor/tms320/isa_tms320.tcc \
 unisim/component/cxx/memory/ram/memory.tcc"
 
 UNISIM_LIB_TMS320C3X_M4_FILES="\
@@ -203,15 +201,15 @@ for file in ${UNISIM_TOOLS_GENISSLIB_FILES}; do
 	mkdir -p "${DEST_DIR}/`dirname ${file}`"
 	has_to_copy=no
 	if [ -e "${DEST_DIR}/genisslib/${file}" ]; then
-		if [ "${UNISIM_TOOLS_DIR}/${file}" -nt "${DEST_DIR}/genisslib/${file}" ]; then
+		if [ "${UNISIM_TOOLS_DIR}/genisslib/${file}" -nt "${DEST_DIR}/genisslib/${file}" ]; then
 			has_to_copy=yes
 		fi
 	else
 		has_to_copy=yes
 	fi
 	if [ "${has_to_copy}" = "yes" ]; then
-		echo "${UNISIM_TOOLS_DIR}/${file} ==> ${DEST_DIR}/genisslib/${file}"
-		cp -f "${UNISIM_TOOLS_DIR}/${file}" "${DEST_DIR}/genisslib/${file}"
+		echo "${UNISIM_TOOLS_DIR}/genisslib/${file} ==> ${DEST_DIR}/genisslib/${file}"
+		cp -f "${UNISIM_TOOLS_DIR}/genisslib/${file}" "${DEST_DIR}/genisslib/${file}" || exit
 	fi
 done
 
@@ -229,7 +227,7 @@ for file in ${UNISIM_LIB_TMS320C3X_FILES}; do
 	fi
 	if [ "${has_to_copy}" = "yes" ]; then
 		echo "${UNISIM_LIB_DIR}/${file} ==> ${DEST_DIR}/tms320c3x/${file}"
-		cp -f "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/tms320c3x/${file}"
+		cp -f "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/tms320c3x/${file}" || exit
 	fi
 done
 
@@ -246,7 +244,7 @@ for file in ${UNISIM_SIMULATORS_TMS320C3X_FILES}; do
 	fi
 	if [ "${has_to_copy}" = "yes" ]; then
 		echo "${UNISIM_SIMULATORS_DIR}/${file} ==> ${DEST_DIR}/tms320c3x/${file}"
-		cp -f "${UNISIM_SIMULATORS_DIR}/${file}" "${DEST_DIR}/tms320c3x/${file}"
+		cp -f "${UNISIM_SIMULATORS_DIR}/${file}" "${DEST_DIR}/tms320c3x/${file}" || exit
 	fi
 done
 
@@ -261,7 +259,7 @@ for file in ${UNISIM_SIMULATORS_TMS320C3X_DATA_FILES}; do
 	fi
 	if [ "${has_to_copy}" = "yes" ]; then
 		echo "${UNISIM_SIMULATORS_DIR}/${file} ==> ${DEST_DIR}/${file}"
-		cp -f "${UNISIM_SIMULATORS_DIR}/${file}" "${DEST_DIR}/${file}"
+		cp -f "${UNISIM_SIMULATORS_DIR}/${file}" "${DEST_DIR}/${file}" || exit
 	fi
 done
 
@@ -274,32 +272,32 @@ mkdir -p ${DEST_DIR}/genisslib/m4
 
 for file in ${UNISIM_TOOLS_GENISSLIB_M4_FILES}; do
 	has_to_copy=no
-	if [ -e "${DEST_DIR}/genisslib/m4/`basename ${file}`" ]; then
-		if [ "${UNISIM_TOOLS_DIR}/${file}" -nt  "${DEST_DIR}/genisslib/m4/`basename ${file}`" ]; then
+	if [ -e "${DEST_DIR}/genisslib/${file}" ]; then
+		if [ "${UNISIM_TOOLS_DIR}/${file}" -nt  "${DEST_DIR}/genisslib/${file}" ]; then
 			has_to_copy=yes
 		fi
 	else
 		has_to_copy=yes
 	fi
 	if [ "${has_to_copy}" = "yes" ]; then
-		echo "${UNISIM_TOOLS_DIR}/${file} ==> ${DEST_DIR}/genisslib/m4/`basename ${file}`"
-		cp -f "${UNISIM_TOOLS_DIR}/${file}" "${DEST_DIR}/genisslib/m4/`basename ${file}`"
+		echo "${UNISIM_TOOLS_DIR}/${file} ==> ${DEST_DIR}/genisslib/${file}"
+		cp -f "${UNISIM_TOOLS_DIR}/${file}" "${DEST_DIR}/genisslib/${file}" || exit
 		has_to_build_genisslib_configure=yes
 	fi
 done
 
 for file in ${UNISIM_LIB_TMS320C3X_M4_FILES}; do
 	has_to_copy=no
-	if [ -e "${DEST_DIR}/tms320c3x/m4/`basename ${file}`" ]; then
-		if [ "${UNISIM_LIB_DIR}/${file}" -nt  "${DEST_DIR}/tms320c3x/m4/`basename ${file}`" ]; then
+	if [ -e "${DEST_DIR}/tms320c3x/${file}" ]; then
+		if [ "${UNISIM_LIB_DIR}/${file}" -nt  "${DEST_DIR}/tms320c3x/${file}" ]; then
 			has_to_copy=yes
 		fi
 	else
 		has_to_copy=yes
 	fi
 	if [ "${has_to_copy}" = "yes" ]; then
-		echo "${UNISIM_LIB_DIR}/${file} ==> ${DEST_DIR}/tms320c3x/m4/`basename ${file}`"
-		cp -f "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/tms320c3x/m4/`basename ${file}`"
+		echo "${UNISIM_LIB_DIR}/${file} ==> ${DEST_DIR}/tms320c3x/${file}"
+		cp -f "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/tms320c3x/${file}" || exit
 		has_to_build_tms320c3x_configure=yes
 	fi
 done
@@ -408,6 +406,7 @@ if [ "${has_to_build_genisslib_configure}" = "yes" ]; then
 	echo "bin_PROGRAMS = genisslib" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "genisslib_SOURCES = ${UNISIM_TOOLS_GENISSLIB_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "noinst_HEADERS= ${UNISIM_TOOLS_GENISSLIB_HEADER_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
+	echo "EXTRA_DIST = ${UNISIM_TOOLS_GENISSLIB_M4_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 
 	echo "Building GENISSLIB configure"
 	${SHELL} -c "cd ${DEST_DIR}/genisslib && aclocal -I m4 && autoconf --force && autoheader && automake -a"
@@ -459,7 +458,8 @@ if [ "${has_to_build_tms320c3x_configure}" = "yes" ]; then
 	echo "tms320c3x_INCLUDES=-I\$(top_srcdir) -I\$(top_builddir)" >> "${TMS320C3X_MAKEFILE_AM}"
 	echo "bin_PROGRAMS = tms320c3x" >> "${TMS320C3X_MAKEFILE_AM}"
 	echo "tms320c3x_SOURCES = ${UNISIM_LIB_TMS320C3X_SOURCE_FILES} ${UNISIM_SIMULATORS_TMS320C3X_SOURCE_FILES}" >> "${TMS320C3X_MAKEFILE_AM}"
-	echo "noinst_HEADERS= ${UNISIM_TOOLS_TMS320C3X_HEADER_FILES} ${UNISIM_LIB_TMS320C3X_HEADER_FILES} ${UNISIM_LIB_TMS320C3X_TEMPLATE_FILES} ${UNISIM_SIMULATORS_TMS320C3X_HEADER_FILES} ${UNISIM_SIMULATORS_TMS320C3X_TEMPLATE_FILES}" >> "${TMS320C3X_MAKEFILE_AM}"
+	echo "noinst_HEADERS = ${UNISIM_TOOLS_TMS320C3X_HEADER_FILES} ${UNISIM_LIB_TMS320C3X_HEADER_FILES} ${UNISIM_LIB_TMS320C3X_TEMPLATE_FILES} ${UNISIM_SIMULATORS_TMS320C3X_HEADER_FILES} ${UNISIM_SIMULATORS_TMS320C3X_TEMPLATE_FILES}" >> "${TMS320C3X_MAKEFILE_AM}"
+	echo "EXTRA_DIST = ${UNISIM_LIB_TMS320C3X_M4_FILES}" >> "${TMS320C3X_MAKEFILE_AM}"
 	echo "BUILT_SOURCES=\$(top_srcdir)/unisim/component/cxx/processor/tms320/isa_tms320.hh \$(top_srcdir)/unisim/component/cxx/processor/tms320/isa_tms320.tcc" >> "${TMS320C3X_MAKEFILE_AM}"
 	echo "CLEANFILES=\$(top_srcdir)/unisim/component/cxx/processor/tms320/isa_tms320.hh \$(top_srcdir)/unisim/component/cxx/processor/tms320/isa_tms320.tcc" >> "${TMS320C3X_MAKEFILE_AM}"
 	echo "\$(top_srcdir)/unisim/component/cxx/processor/tms320/isa_tms320.tcc: \$(top_srcdir)/unisim/component/cxx/processor/tms320/isa_tms320.hh" >> "${TMS320C3X_MAKEFILE_AM}"

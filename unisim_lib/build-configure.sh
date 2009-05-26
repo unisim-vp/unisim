@@ -45,10 +45,14 @@ do
 			has_to_build="true"
 		fi
 	fi
-	if test ! -e config/ltmain.sh;
+	has_ac_prog_libtool=`grep AC_PROG_LIBTOOL configure.ac`
+	if test "x$has_ac_prog_libtool" != "x";
 	then
-		is_libtool_missing="true"
-		has_to_build="true"
+		if test ! -e config/ltmain.sh;
+		then
+			is_libtool_missing="true"
+			has_to_build="true"
+		fi
 	fi
 	if test "x$1" == "x--force";
 	then 
@@ -76,13 +80,9 @@ do
 		then
 			message_to_display=$message_to_display" (Makefile.in missing)"
 		fi
-		has_ac_prog_libtool=`grep AC_PROG_LIBTOOL configure.ac`
-		if test "x$has_ac_prog_libtool" != "x";
+		if test "x$is_libtool_missing" != "x"
 		then
-			if test "x$is_libtool_missing" != "x"
-			then
-				message_to_display=$message_to_display" (config/ltmain.sh missing)"
-			fi
+			message_to_display=$message_to_display" (config/ltmain.sh missing)"
 		fi
 		echo "$message_to_display"
 		if test "x$has_ac_prog_libtool" != "x";
