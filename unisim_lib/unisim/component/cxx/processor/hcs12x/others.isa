@@ -190,6 +190,7 @@ bgnd.disasm = {
 
 bgnd.execute = {
 	// TODO
+	cpu->ReportTrap();
 }
 
 /* ********** Interrupt instructions ******** */

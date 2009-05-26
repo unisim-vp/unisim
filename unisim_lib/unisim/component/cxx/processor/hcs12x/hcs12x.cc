@@ -24085,7 +24085,7 @@ class OpRti : public Operation
 {
 public:
 	OpRti(CodeType const& code, uint16_t addr);
-#line 201 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
+#line 202 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
 	bool  isPending;
 #line 24091 "hcs12x.cc"
 	virtual
@@ -24436,7 +24436,7 @@ uint8_t
 #line 24437 "hcs12x.cc"
 OpTrap::getCycles()
 {
-#line 282 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
+#line 283 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
 	{ return 10; }
 #line 24442 "hcs12x.cc"
 }
@@ -24452,7 +24452,7 @@ sink
 #line 24453 "hcs12x.cc"
 )
 {
-#line 284 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
+#line 285 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
 	{
 		string mnem = "TRAP";
 
@@ -24473,7 +24473,7 @@ cpu
 #line 24474 "hcs12x.cc"
 )
 {
-#line 291 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
+#line 292 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
 	{
 
 		if (((trapnum >= 0x30) && (trapnum <= 0x39)) || ((trapnum >= 0x40) && (trapnum <= 0xFF))) {
@@ -50186,8 +50186,9 @@ cpu
 #line 191 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
 	{
 		// TODO
+		cpu->ReportTrap();
 	}
-#line 50191 "hcs12x.cc"
+#line 50192 "hcs12x.cc"
 }
 
 static Operation *DecodeOpBgnd(CodeType const& code, uint16_t addr)
@@ -50199,48 +50200,48 @@ static Operation *DecodeOpBgnd(CodeType const& code, uint16_t addr)
 // RTI: Return from interrupt
 #line 88 "hcs12x.isa"
 uint8_t
-#line 50203 "hcs12x.cc"
+#line 50204 "hcs12x.cc"
 OpRti::getCycles()
 {
-#line 203 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
+#line 204 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
 	{ if (isPending) return 10; else return 8; }
-#line 50208 "hcs12x.cc"
+#line 50209 "hcs12x.cc"
 }
 #line 73 "hcs12x.isa"
 string
-#line 50212 "hcs12x.cc"
+#line 50213 "hcs12x.cc"
 OpRti::disasm(
 #line 73 "hcs12x.isa"
 ostream&
-#line 50216 "hcs12x.cc"
+#line 50217 "hcs12x.cc"
 #line 73 "hcs12x.isa"
 sink
-#line 50219 "hcs12x.cc"
+#line 50220 "hcs12x.cc"
 )
 {
-#line 205 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
+#line 206 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
 	{
 		string mnem = "RTI";
 
 		sink << mnem;
 		return mnem;
 	}
-#line 50229 "hcs12x.cc"
+#line 50230 "hcs12x.cc"
 }
 // TODO: check if there is interrupt pending and set "isPending"
 #line 67 "hcs12x.isa"
 void
-#line 50234 "hcs12x.cc"
+#line 50235 "hcs12x.cc"
 OpRti::execute(
 #line 67 "hcs12x.isa"
 CPU *
-#line 50238 "hcs12x.cc"
+#line 50239 "hcs12x.cc"
 #line 67 "hcs12x.isa"
 cpu
-#line 50241 "hcs12x.cc"
+#line 50242 "hcs12x.cc"
 )
 {
-#line 214 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
+#line 215 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
 	{
 
 		/*
@@ -50274,7 +50275,7 @@ cpu
 		addr = addr + 2;
 		cpu->setRegSP(addr);
 	}
-#line 50278 "hcs12x.cc"
+#line 50279 "hcs12x.cc"
 }
 
 static Operation *DecodeOpRti(CodeType const& code, uint16_t addr)
@@ -50285,47 +50286,47 @@ static Operation *DecodeOpRti(CodeType const& code, uint16_t addr)
 // SWI: Software Interrupt
 #line 88 "hcs12x.isa"
 uint8_t
-#line 50289 "hcs12x.cc"
+#line 50290 "hcs12x.cc"
 OpSwi::getCycles()
 {
-#line 252 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
+#line 253 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
 	{ return 9; }
-#line 50294 "hcs12x.cc"
+#line 50295 "hcs12x.cc"
 }
 #line 73 "hcs12x.isa"
 string
-#line 50298 "hcs12x.cc"
+#line 50299 "hcs12x.cc"
 OpSwi::disasm(
 #line 73 "hcs12x.isa"
 ostream&
-#line 50302 "hcs12x.cc"
+#line 50303 "hcs12x.cc"
 #line 73 "hcs12x.isa"
 sink
-#line 50305 "hcs12x.cc"
+#line 50306 "hcs12x.cc"
 )
 {
-#line 254 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
+#line 255 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
 	{
 		string mnem = "SWI";
 
 		sink << mnem;
 		return mnem;
 	}
-#line 50315 "hcs12x.cc"
+#line 50316 "hcs12x.cc"
 }
 #line 67 "hcs12x.isa"
 void
-#line 50319 "hcs12x.cc"
+#line 50320 "hcs12x.cc"
 OpSwi::execute(
 #line 67 "hcs12x.isa"
 CPU *
-#line 50323 "hcs12x.cc"
+#line 50324 "hcs12x.cc"
 #line 67 "hcs12x.isa"
 cpu
-#line 50326 "hcs12x.cc"
+#line 50327 "hcs12x.cc"
 )
 {
-#line 261 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
+#line 262 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
 	{
 		/* (SP) – 0x0002 => SP; RTNH : RTNL => (M(SP) : M(SP+1))
 		* (SP) – 0x0002 => SP; YH : YL => (M(SP) : M(SP+1))
@@ -50341,7 +50342,7 @@ cpu
 
 		throw NonMaskableSWIInterrupt();
 	}
-#line 50345 "hcs12x.cc"
+#line 50346 "hcs12x.cc"
 }
 
 static Operation *DecodeOpSwi(CodeType const& code, uint16_t addr)
@@ -50353,47 +50354,47 @@ static Operation *DecodeOpSwi(CodeType const& code, uint16_t addr)
 // System call interrupt vector is 0xFF12:0xFF13
 #line 88 "hcs12x.isa"
 uint8_t
-#line 50357 "hcs12x.cc"
+#line 50358 "hcs12x.cc"
 OpSys::getCycles()
 {
-#line 346 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
+#line 347 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
 	{ return 10; }
-#line 50362 "hcs12x.cc"
+#line 50363 "hcs12x.cc"
 }
 #line 73 "hcs12x.isa"
 string
-#line 50366 "hcs12x.cc"
+#line 50367 "hcs12x.cc"
 OpSys::disasm(
 #line 73 "hcs12x.isa"
 ostream&
-#line 50370 "hcs12x.cc"
+#line 50371 "hcs12x.cc"
 #line 73 "hcs12x.isa"
 sink
-#line 50373 "hcs12x.cc"
+#line 50374 "hcs12x.cc"
 )
 {
-#line 348 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
+#line 349 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
 	{
 		string mnem = "SYS";
 
 		sink << mnem;
 		return mnem;
 	}
-#line 50383 "hcs12x.cc"
+#line 50384 "hcs12x.cc"
 }
 #line 67 "hcs12x.isa"
 void
-#line 50387 "hcs12x.cc"
+#line 50388 "hcs12x.cc"
 OpSys::execute(
 #line 67 "hcs12x.isa"
 CPU *
-#line 50391 "hcs12x.cc"
+#line 50392 "hcs12x.cc"
 #line 67 "hcs12x.isa"
 cpu
-#line 50394 "hcs12x.cc"
+#line 50395 "hcs12x.cc"
 )
 {
-#line 355 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
+#line 356 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
 	{
 
 		/*
@@ -50412,7 +50413,7 @@ cpu
 		throw SysCallInterrupt();
 
 	}
-#line 50416 "hcs12x.cc"
+#line 50417 "hcs12x.cc"
 }
 
 static Operation *DecodeOpSys(CodeType const& code, uint16_t addr)
@@ -53747,7 +53748,7 @@ OpSbr::OpSbr(CodeType const& code, uint16_t addr) : Operation(code, addr, "sbr")
 ,branch(
 #line 44 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 false )
-#line 53751 "hcs12x.cc"
+#line 53752 "hcs12x.cc"
 {
 	CodeType _code_( code );
 	{
@@ -53763,7 +53764,7 @@ OpLbr::OpLbr(CodeType const& code, uint16_t addr) : Operation(code, addr, "lbr")
 ,branch(
 #line 146 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 false )
-#line 53767 "hcs12x.cc"
+#line 53768 "hcs12x.cc"
 {
 	CodeType _code_( code );
 	{
@@ -53964,7 +53965,7 @@ OpLoop::OpLoop(CodeType const& code, uint16_t addr) : Operation(code, addr, "loo
 ,isBranch(
 #line 821 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 false )
-#line 53968 "hcs12x.cc"
+#line 53969 "hcs12x.cc"
 {
 	CodeType _code_( code );
 	{
@@ -54155,7 +54156,7 @@ OpStop::OpStop(CodeType const& code, uint16_t addr) : Operation(code, addr, "sto
 ,stopDisabled(
 #line 55 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
 false )
-#line 54159 "hcs12x.cc"
+#line 54160 "hcs12x.cc"
 {
 	CodeType _code_( code );
 	_code_.pop( 2 );
@@ -54178,9 +54179,9 @@ OpBgnd::OpBgnd(CodeType const& code, uint16_t addr) : Operation(code, addr, "bgn
 
 OpRti::OpRti(CodeType const& code, uint16_t addr) : Operation(code, addr, "rti")
 ,isPending(
-#line 201 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
+#line 202 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
 false )
-#line 54184 "hcs12x.cc"
+#line 54185 "hcs12x.cc"
 {
 	CodeType _code_( code );
 	_code_.pop( 1 );

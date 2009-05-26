@@ -324,6 +324,7 @@ uint8_t CPU::Step()
 		{
 			if (CONFIG::DEBUG_ENABLE) {
 				cout << "CPU: I Have detected Asynchronous Exception !" << std::endl;
+				ReportTrap();
 			}
 
 			throw AsynchronousException();

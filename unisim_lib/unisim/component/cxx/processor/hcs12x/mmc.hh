@@ -385,7 +385,7 @@ inline uint8_t MMC::getRpage () { return rpage; }
 inline physical_address_t MMC::getRamAddress(address_t logicalAddress, bool debugload, uint8_t debug_page) {
 
 	uint8_t _rpage;
-	physical_address_t shifted_gpage = (getGpage() & 0xE0) << (RAM_ADDRESS_SIZE + 8); // only three bits are needed
+	physical_address_t shifted_gpage = 0x0 << (RAM_ADDRESS_SIZE + 8); // 000 RPAGE CPUAddr
 
 	if (debugload && (debug_page != 0x00)) _rpage = debug_page; else  _rpage = getRpage();
 
@@ -409,7 +409,7 @@ inline uint8_t MMC::getEpage () { return epage; }
 inline physical_address_t MMC::getEepromAddress(address_t logicalAddress, bool debugload, uint8_t debug_page) {
 
 	uint8_t _epage;
-	physical_address_t shifted_gpage = (getGpage() & 0xF8) << (EEPROM_ADDRESS_SIZE + 8); // only five bits are needed
+	physical_address_t shifted_gpage = 0x4 << (EEPROM_ADDRESS_SIZE + 8); // 00100 RPAGE CPUAddr
 
 	if (debugload && (debug_page != 0x00)) _epage = debug_page; else _epage = getEpage();
 
@@ -435,7 +435,7 @@ inline physical_address_t MMC::getFlashAddress(address_t logicalAddress, bool de
 	static const uint8_t ROMHM_MASK = 0x02;
 
 	uint8_t _ppage;
-	physical_address_t shifted_gpage = (getGpage() & 0x80) << (FLASH_ADDRESS_SIZE + 8); // only one bit is needed
+	physical_address_t shifted_gpage = 0x1 << (FLASH_ADDRESS_SIZE + 8); // 1 PPAGE CPUAddr
 
 	if (debugload && (debug_page != 0x00)) {
 		_ppage = debug_page;

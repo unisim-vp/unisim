@@ -606,7 +606,7 @@ inline void CPU::MonitorStore(address_t ea, uint32_t size)
 
 inline void CPU::ReportTrap() {
 	if (CONFIG::DEBUG_ENABLE && trap_reporting_import) {
-		std::cerr << "*** CPU12 ReprotTrap *** 0x" << std::hex << getLastPC() << std::dec << std::endl;
+		std::cout << "*** CPU12 ReprotTrap *** 0x" << std::hex << getLastPC() << std::dec << std::endl;
 		trap_reporting_import->ReportTrap();
 	}
 

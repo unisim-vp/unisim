@@ -298,6 +298,7 @@ xb_auto.getEAddr = {
 	}
 
 	cpu->xb_setAddrRegValue(rr,regNewVal);	
+
 	if (p == 0) {
 		// Auto pre-
 		return regNewVal;
@@ -305,6 +306,7 @@ xb_auto.getEAddr = {
 		// Auto post-
 		return regOldVal;
 	}
+	
 }
 
 xb_auto.disasm = {
