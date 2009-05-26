@@ -68,35 +68,3 @@ AC_ARG_ENABLE($1,
 		AC_CONFIG_SUBDIRS([$2])
 	fi
 ])
-
-## UNISIM_CHECK_LEXER_GENERATOR
-## Checks if a lexer generator is installed
-## Does not take parameters
-#####################################################
-AC_DEFUN([UNISIM_CHECK_LEXER_GENERATOR], [
-	AC_PROG_LEX
-
-	AC_CHECK_PROG(lexer_generator_installed, $LEX, yes, no)
-	if test "x$lexer_generator_installed" != "xyes"; then
-		AC_MSG_ERROR([No lexer generator found. Please install a lexer generator (either flex or lex).])
-	fi
-
-	if test "$LEX" != flex; then
-		LEX="$SHELL $missing_dir/missing flex"
-		AC_SUBST([LEX_OUTPUT_ROOT], [lex.yy])
-		AC_SUBST([LEXLIB], [''])
-	fi
-])
-
-## UNISIM_CHECK_PARSER_GENERATOR
-## Checks if a parser generator is installed
-## Does not take parameters
-#####################################################
-AC_DEFUN([UNISIM_CHECK_PARSER_GENERATOR], [
-	AC_PROG_YACC
-
-	AC_CHECK_PROG(parser_generator_installed, $YACC, yes, no)
-	if test "x$parser_generator_installed" != "xyes"; then
-		AC_MSG_ERROR([No parser generator found. Please install a parser generator (either bison, byacc or yacc).])
-	fi
-])

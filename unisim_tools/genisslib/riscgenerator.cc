@@ -107,7 +107,7 @@ RiscGenerator::finalize() {
       Vect_t<BitField_t>& bitfields = (**op).m_bitfields;
       Vect_t<BitField_t> nbitfields;
     
-      for( Vect_t<BitField_t>::const_reverse_iterator bf = bitfields.rbegin(); bf < bitfields.rend(); ++ bf ) {
+      for( Vect_t<BitField_t>::const_reverse_iterator bf = bitfields.rbegin(); bf.base() < bitfields.rend().base(); ++ bf ) {
         nbitfields.push_back( *bf );
       }
       
