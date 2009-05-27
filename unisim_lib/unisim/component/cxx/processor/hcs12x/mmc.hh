@@ -101,6 +101,33 @@ public:
 	static const address_t FLASH_LOW_OFFSET	= 0x4000;
 	static const address_t FLASH_HIGH_OFFSET=0xFFFF;
 
+	static const physical_address_t GLOBAL_REG_LOW_OFFSET				= 0x000000;	// GPAGE_CPUAddress
+	static const physical_address_t GLOBAL_REG_HIGH_OFFSET				= 0x000FFF;	// GPAGE_CPUAddress ($00_0800 to $00_0FFF is unused !)
+
+	static const physical_address_t GLOBAL_RAM_LOW_OFFSET				= 0x000800;	// GPAGE_CPUAddress
+	static const physical_address_t GLOBAL_RAM_HIGH_OFFSET				= 0x0FFFFF;	// GPAGE_CPUAddress
+	static const physical_address_t GLOBAL_RAM_PAGED_LOW_OFFSET			= 0x001000;	// GPAGE_CPUAddress
+	static const physical_address_t GLOBAL_RAM_PAGED_HIGH_OFFSET		= 0x0FDFFF;	// GPAGE_CPUAddress
+	static const physical_address_t GLOBAL_RAM_UNPAGED_LOW_OFFSET		= 0x0FE000;	// GPAGE_CPUAddress
+	static const physical_address_t GLOBAL_RAM_UNPAGED_HIGH_OFFSET		= 0x0FFFFF;	// GPAGE_CPUAddress
+
+	static const physical_address_t GLOBAL_EEPROM_LOW_OFFSET			= 0x100000;	// GPAGE_CPUAddress
+	static const physical_address_t GLOBAL_EEPROM_HIGH_OFFSET			= 0x13FFFF;	// GPAGE_CPUAddress
+	static const physical_address_t GLOBAL_EEPROM_PAGED_LOW_OFFSET		= 0x100000;	// GPAGE_CPUAddress
+	static const physical_address_t GLOBAL_EEPROM_PAGED_HIGH_OFFSET		= 0x13FBFF;	// GPAGE_CPUAddress
+	static const physical_address_t GLOBAL_EEPROM_UNPAGED_LOW_OFFSET	= 0x13FC00;	// GPAGE_CPUAddress
+	static const physical_address_t GLOBAL_EEPROM_UNPAGED_HIGH_OFFSET	= 0x13FFFF;	// GPAGE_CPUAddress
+
+	static const physical_address_t GLOBAL_EXTERNAL_LOW_OFFSET			= 0x140000;	// GPAGE_CPUAddress
+	static const physical_address_t GLOBAL_EXTERNAL_HIGH_OFFSET			= 0x3FFFFF;	// GPAGE_CPUAddress
+
+	static const physical_address_t GLOBAL_FLASH_LOW_OFFSET				= 0x400000;	// GPAGE_CPUAddress
+	static const physical_address_t GLOBAL_FLASH_HIGH_OFFSET			= 0x7FFFFF;	// GPAGE_CPUAddress
+	static const physical_address_t GLOBAL_FLASH_PAGED_LOW_OFFSET		= 0x400000;	// GPAGE_CPUAddress
+	static const physical_address_t GLOBAL_FLASH_PAGED_HIGH_OFFSET		= 0x7F3FFF;	// GPAGE_CPUAddress
+	static const physical_address_t GLOBAL_FLASH_UNPAGED_LOW_OFFSET		= 0x7F4000;	// GPAGE_CPUAddress
+	static const physical_address_t GLOBAL_FLASH_UNPAGED_HIGH_OFFSET	= 0x7FFFFF;	// GPAGE_CPUAddress
+
 	static const address_t MMCCTL0_REG_ADDRESS	= 0x000A;
 	static const address_t MMC_MODE_REG_ADDRESS	= 0x000B;
 	static const address_t GPAGE_REG_ADDRESS	= 0x0010;
@@ -161,7 +188,7 @@ public:
     MMC(const char *name, Object *parent = 0);
 
     inline physical_address_t getPhysicalAddress(address_t logicalAddress, ADDRESS::MODE type, bool isGlobal, bool debugload = false, uint8_t debug_page = 0xFF);
-	inline bool isPaged(address_t addr, page_t page, bool debugload);
+	inline bool isPaged(address_t addr, page_t page, bool isGlobal, bool debugload);
 
 	//=====================================================================
 	//=                  Client/Service setup methods                     =
@@ -199,9 +226,9 @@ public:
     inline uint8_t getRamshu ();
 
     inline physical_address_t getDirectAddress(uint8_t lowByte);
-    inline physical_address_t getRamAddress(address_t logicalAddress, bool debugload, uint8_t debug_page);
-    inline physical_address_t getEepromAddress(address_t logicalAddress, bool debugload, uint8_t debug_page);
-    inline physical_address_t getFlashAddress(address_t logicalAddress, bool debugload, uint8_t debug_page);
+    inline physical_address_t getRamAddress(address_t logicalAddress, bool isGlobal, bool debugload, uint8_t debug_page);
+    inline physical_address_t getEepromAddress(address_t logicalAddress, bool isGlobal, bool debugload, uint8_t debug_page);
+    inline physical_address_t getFlashAddress(address_t logicalAddress, bool isGlobal, bool debugload, uint8_t debug_page);
 
     inline uint8_t read(address_t address);
     inline void write(address_t address, uint8_t val);
@@ -236,6 +263,70 @@ private:
 
 };
 
+
+inline bool MMC::isPaged(address_t addr, page_t page, bool isGlobal, bool debugload) {
+
+	if (isGlobal) {
+
+		physical_address_t global_address = (getGpage() << 16) | addr;
+
+		// Global PAGED RAM
+		if ((global_address >= GLOBAL_RAM_PAGED_LOW_OFFSET) && (global_address <= GLOBAL_RAM_PAGED_HIGH_OFFSET)) {
+			return true;
+		}
+
+		// Global PAGED EEPROM
+		if ((global_address >= GLOBAL_EEPROM_PAGED_LOW_OFFSET) && (global_address <= GLOBAL_EEPROM_PAGED_HIGH_OFFSET)) {
+			return true;
+		}
+
+		// Global EXTERNAL SPACE
+		if ((global_address >= GLOBAL_EXTERNAL_LOW_OFFSET) && (global_address <= GLOBAL_EXTERNAL_HIGH_OFFSET)) {
+			return true;
+		}
+
+		// Global PAGED FLASH
+		if ((global_address >= GLOBAL_FLASH_PAGED_LOW_OFFSET) && (global_address <= GLOBAL_FLASH_PAGED_HIGH_OFFSET)) {
+			return true;
+		}
+
+	} else {
+
+		// EEPROM window
+		if ((addr > 0x07FF) && (addr < 0x0C00)) {
+			if (!debugload) {
+				page = getEpage();
+			}
+			if (page != 0xFF) {
+				return true;
+			}
+		}
+
+		// RAM window
+		if ((addr > 0x0FFF) && (addr < 0x2000)) {
+			if (!debugload) {
+				page = getRpage();
+			}
+			if ((page != 0xFE) && (page != 0xFF)) {
+				return true;
+			}
+		}
+
+		// FLASH window
+		if ((addr > 0x7FFF) && (addr < 0xC000)) {
+			if (!debugload) {
+				page = getPpage();
+			}
+			if ((page != 0xFD) && (page != 0xFF)) {
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
+
 inline physical_address_t MMC::getPhysicalAddress(address_t logicalAddress, ADDRESS::MODE type, bool isGlobal, bool debugload, uint8_t debug_page) {
 
 	static const uint8_t gShift = 16;	// CPU12 address size is 16-bits
@@ -247,25 +338,49 @@ inline physical_address_t MMC::getPhysicalAddress(address_t logicalAddress, ADDR
 		cpu_address = getDirectAddress((uint8_t) logicalAddress);
 	}
 
-	if (isGlobal) {
-		address = ((physical_address_t) (getGpage() & 0x7F) << gShift) | cpu_address;
-		return address;
-	}
-
-	if (cpu_address <= REG_HIGH_OFFSET) { // Access to registers
+	if (cpu_address <= GLOBAL_REG_HIGH_OFFSET) { // Access to registers
 		address = cpu_address;
 	}
 
-	if ((cpu_address >= EEPROM_LOW_OFFSET) && (cpu_address <= EEPROM_HIGH_OFFSET)) { // Access to EEPROM
-		address = getEepromAddress(cpu_address, debugload, debug_page);
-	}
+	if (isGlobal) {
 
-	if ((cpu_address >= RAM_LOW_OFFSET) && (cpu_address <= RAM_HIGH_OFFSET)) { // Access to RAM
-		address = getRamAddress(cpu_address, debugload, debug_page);
-	}
+		address = ((physical_address_t) (getGpage() & 0x7F) << gShift) | cpu_address;
 
-	if (cpu_address >= FLASH_LOW_OFFSET) { // Access to Flash
-		address = getFlashAddress(cpu_address, debugload, debug_page);
+		// Global PAGED RAM
+		if ((address >= GLOBAL_RAM_LOW_OFFSET) && (address <= GLOBAL_RAM_HIGH_OFFSET)) {
+			if (!((address >= GLOBAL_RAM_PAGED_LOW_OFFSET) && (address <= GLOBAL_RAM_PAGED_HIGH_OFFSET))) {
+				address = RAM_LOW_OFFSET + (address - GLOBAL_RAM_UNPAGED_LOW_OFFSET);
+			}
+		}
+
+		// Global PAGED EEPROM
+		if ((address >= GLOBAL_EEPROM_LOW_OFFSET) && (address <= GLOBAL_EEPROM_HIGH_OFFSET)) {
+			if (!((address >= GLOBAL_EEPROM_PAGED_LOW_OFFSET) && (address <= GLOBAL_EEPROM_PAGED_HIGH_OFFSET))) {
+				address = EEPROM_LOW_OFFSET + (address - GLOBAL_EEPROM_UNPAGED_LOW_OFFSET);
+			}
+		}
+
+		// Global PAGED FLASH
+		if ((address >= GLOBAL_FLASH_LOW_OFFSET) && (address <= GLOBAL_FLASH_HIGH_OFFSET)) {
+			if (!((address >= GLOBAL_FLASH_PAGED_LOW_OFFSET) && (address <= GLOBAL_FLASH_PAGED_HIGH_OFFSET))) {
+				address = FLASH_LOW_OFFSET + (address - GLOBAL_FLASH_UNPAGED_LOW_OFFSET);
+			}
+		}
+
+	} else {
+
+		if ((cpu_address >= EEPROM_LOW_OFFSET) && (cpu_address <= EEPROM_HIGH_OFFSET)) { // Access to EEPROM
+			address = getEepromAddress(cpu_address, false, debugload, debug_page);
+		}
+
+		if ((cpu_address >= RAM_LOW_OFFSET) && (cpu_address <= RAM_HIGH_OFFSET)) { // Access to RAM
+			address = getRamAddress(cpu_address, false, debugload, debug_page);
+		}
+
+		if (cpu_address >= FLASH_LOW_OFFSET) { // Access to Flash
+			address = getFlashAddress(cpu_address, false, debugload, debug_page);
+		}
+
 	}
 
 	return address;
@@ -315,41 +430,6 @@ inline void MMC::write(address_t address, uint8_t val)
 }
 
 
-inline bool MMC::isPaged(address_t addr, page_t page, bool debugload) {
-
-	// EEPROM window
-	if ((addr > 0x07FF) && (addr < 0x0C00)) {
-		if (!debugload) {
-			page = getEpage();
-		}
-		if (page != 0xFF) {
-			return true;
-		}
-	}
-
-	// RAM window
-	if ((addr > 0x0FFF) && (addr < 0x2000)) {
-		if (!debugload) {
-			page = getRpage();
-		}
-		if ((page != 0xFE) && (page != 0xFF)) {
-			return true;
-		}
-	}
-
-	// FLASH window
-	if ((addr > 0x7FFF) && (addr < 0xC000)) {
-		if (!debugload) {
-			page = getPpage();
-		}
-		if ((page != 0xFD) && (page != 0xFF)) {
-			return true;
-		}
-	}
-
-	return false;
-}
-
 inline uint8_t MMC::getMmcctl0 () { return mmcctl0; }
 
 inline uint8_t MMC::getMode () { return mode; }
@@ -382,7 +462,7 @@ inline physical_address_t MMC::getDirectAddress(uint8_t lowByte) {
 }
 
 inline uint8_t MMC::getRpage () { return rpage; }
-inline physical_address_t MMC::getRamAddress(address_t logicalAddress, bool debugload, uint8_t debug_page) {
+inline physical_address_t MMC::getRamAddress(address_t logicalAddress, bool isGlobal, bool debugload, uint8_t debug_page) {
 
 	uint8_t _rpage;
 	physical_address_t shifted_gpage = 0x0 << (RAM_ADDRESS_SIZE + 8); // 000 RPAGE CPUAddr
@@ -393,7 +473,7 @@ inline physical_address_t MMC::getRamAddress(address_t logicalAddress, bool debu
 		throw NonMaskableAccessErrorInterrupt(NonMaskableAccessErrorInterrupt::INVALIDE_RPAGE);
 	}
 
-	if (isPaged(logicalAddress, _rpage, debugload)) {
+	if (isPaged(logicalAddress, _rpage, isGlobal, debugload)) {
 		return shifted_gpage | ((physical_address_t) _rpage << RAM_ADDRESS_SIZE) | ((address_t) RAM_CPU_ADDRESS_BITS & logicalAddress);
 	} else {
 		if ((logicalAddress > 0x0FFF) && (logicalAddress < 0x2000)) {
@@ -406,7 +486,7 @@ inline physical_address_t MMC::getRamAddress(address_t logicalAddress, bool debu
 }
 
 inline uint8_t MMC::getEpage () { return epage; }
-inline physical_address_t MMC::getEepromAddress(address_t logicalAddress, bool debugload, uint8_t debug_page) {
+inline physical_address_t MMC::getEepromAddress(address_t logicalAddress, bool isGlobal, bool debugload, uint8_t debug_page) {
 
 	uint8_t _epage;
 	physical_address_t shifted_gpage = 0x4 << (EEPROM_ADDRESS_SIZE + 8); // 00100 RPAGE CPUAddr
@@ -417,7 +497,7 @@ inline physical_address_t MMC::getEepromAddress(address_t logicalAddress, bool d
 		throw NonMaskableAccessErrorInterrupt(NonMaskableAccessErrorInterrupt::INVALIDE_EPAGE);
 	}
 
-	if (isPaged(logicalAddress, _epage, debugload)) {
+	if (isPaged(logicalAddress, _epage, isGlobal, debugload)) {
 		return shifted_gpage | ((physical_address_t) _epage << EEPROM_ADDRESS_SIZE) | ((address_t) EEPROM_CPU_ADDRESS_BITS & logicalAddress);
 	} else {
 		if ((logicalAddress > 0x07FF) && (logicalAddress < 0x0C00) && (epage == 0xFF))
@@ -430,7 +510,7 @@ inline physical_address_t MMC::getEepromAddress(address_t logicalAddress, bool d
 inline uint8_t MMC::getPpage () { return ppage; }
 inline void MMC::setPpage(uint8_t page) { ppage = page; }
 
-inline physical_address_t MMC::getFlashAddress(address_t logicalAddress, bool debugload, uint8_t debug_page) {
+inline physical_address_t MMC::getFlashAddress(address_t logicalAddress, bool isGlobal, bool debugload, uint8_t debug_page) {
 
 	static const uint8_t ROMHM_MASK = 0x02;
 
@@ -452,7 +532,7 @@ inline physical_address_t MMC::getFlashAddress(address_t logicalAddress, bool de
 		}
 	}
 
-	if (isPaged(logicalAddress, _ppage, debugload)) {
+	if (isPaged(logicalAddress, _ppage, isGlobal, debugload)) {
 		return shifted_gpage | ((physical_address_t) _ppage << FLASH_ADDRESS_SIZE) | ((address_t) FLASH_CPU_ADDRESS_BITS & logicalAddress);
 	} else {
 		if ((logicalAddress > 0x7FFF) && (logicalAddress < 0xC000)) {

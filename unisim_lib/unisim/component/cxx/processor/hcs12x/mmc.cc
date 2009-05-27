@@ -114,6 +114,7 @@ void MMC::SplitPagedAddress(physical_address_t paged_addr, page_t &page, address
 
 }
 
+// TODO: review this methods for dump and disassemble commands
 bool MMC::ReadMemory(service_address_t paged_addr, void *buffer, uint32_t size) {
 
 	page_t page;
@@ -125,7 +126,7 @@ bool MMC::ReadMemory(service_address_t paged_addr, void *buffer, uint32_t size) 
 	SplitPagedAddress(paged_addr, page, cpu_address);
 	addr = getPhysicalAddress(cpu_address, ADDRESS::EXTENDED, false, true, page);
 
-	if (isPaged(cpu_address, page, true)) {
+	if (isPaged(cpu_address, page, false, true)) {
 		if (external_memory_import) {
 			return external_memory_import->ReadMemory(addr, (uint8_t *) buffer, size);
 		}
@@ -138,6 +139,7 @@ bool MMC::ReadMemory(service_address_t paged_addr, void *buffer, uint32_t size) 
 	return false;
 }
 
+// TODO: review this methods for dump and disassemble commands
 bool MMC::WriteMemory(service_address_t paged_addr, const void *buffer, uint32_t size) {
 
 	page_t page;
@@ -149,7 +151,7 @@ bool MMC::WriteMemory(service_address_t paged_addr, const void *buffer, uint32_t
 	SplitPagedAddress(paged_addr, page, cpu_address);
 	addr = getPhysicalAddress(cpu_address, ADDRESS::EXTENDED, false, true, page);
 
-	if (isPaged(cpu_address, page, true)) {
+	if (isPaged(cpu_address, page, false, true)) {
 		if (external_memory_import) {
 			return external_memory_import->WriteMemory(addr, (uint8_t *) buffer, size);
 		}

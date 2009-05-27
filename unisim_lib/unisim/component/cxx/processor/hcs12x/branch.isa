@@ -133,9 +133,7 @@ sbr.execute = {
 	}
 	
 	if (branch) {
-		cpu->setRegPC((int16_t) cpu->getRegPC() + rel8);
-		
-	 	// TODO: Refill the instruction queue with three program words from the new address
+		cpu->setRegPC(cpu->getRegPC() + rel8);
 	}
 }
 
@@ -230,9 +228,7 @@ lbr.execute = {
 	}
 	
 	if (branch) {
-		cpu->setRegPC((int16_t) cpu->getRegPC() + rel16);
-		
-	 	// TODO: Refill the instruction queue with three program words from the new address		
+		cpu->setRegPC(cpu->getRegPC() + rel16);
 	}
 }
 
@@ -300,9 +296,7 @@ br_clr_set_ext.execute = {
 	}
 	
 	if ((opr16aVal & msk8) == 0) {
-		cpu->setRegPC((int16_t) cpu->getRegPC() + rel8);
-		
-	 	// TODO: Refill the instruction queue with three program words from the new address		
+		cpu->setRegPC(cpu->getRegPC() + rel8);
 	}
 }
 
@@ -347,9 +341,7 @@ br_clr_set_idx.execute = {
 	}
 	
 	if ((xbVal & msk8) == 0) {
-		cpu->setRegPC((int16_t) cpu->getRegPC() + rel8);
-		
-	 	// TODO: Refill the instruction queue with three program words from the new address		
+		cpu->setRegPC(cpu->getRegPC() + rel8);
 	}
 }
 
@@ -376,17 +368,11 @@ bsr.execute = {
 	 */
 	physical_address_t addr;	
 	
-	cpu->setRegSP(cpu->getRegSP()-2);
+	addr = cpu->getRegSP() - 2;	
+	cpu->setRegSP(addr);
+	cpu->memWrite16(addr, cpu->getRegPC());
 	
-	addr = cpu->getRegSP();	
-	cpu->memWrite8(addr, (uint8_t) (cpu->getRegPC() >> 8));
-	
-	addr = cpu->getRegSP()+1;	
-	cpu->memWrite8(addr, (uint8_t) (cpu->getRegPC() & 0x00FF));
-	
-	cpu->setRegPC((int16_t) cpu->getRegPC() + rel8);
-	
- 	// TODO: Refill the instruction queue with three program words from the new address	
+	cpu->setRegPC(cpu->getRegPC() + rel8);
 }
 
 // CALL: Call subroutine in Expanded Memory
@@ -410,29 +396,23 @@ call_ext.execute = {
 	 * (PPAGE) => M[SP]
 	 * page => PPAGE
 	 * Subroutine address => PC
-	 * TODO: Refill the instruction queue with three program words from the new address (PPAGE:PC)
 	 */
 	physical_address_t addr;
 	page_t old_ppage;
 		 
-	cpu->setRegSP(cpu->getRegSP()-2);
-	
-	addr = cpu->getRegSP();
-	cpu->memWrite8(addr, (uint8_t) (cpu->getRegPC() >> 8));
+	addr = cpu->getRegSP() - 2;
+	cpu->setRegSP(addr);
+	cpu->memWrite16(addr, cpu->getRegPC());
 
-	addr = cpu->getRegSP()+1;
-	cpu->memWrite8(addr, (uint8_t) (cpu->getRegPC() & 0x00FF));
+	addr = cpu->getRegSP() - 1;
+	cpu->setRegSP(addr);
 
-	cpu->setRegSP(cpu->getRegSP()-1);
-	
-	addr = cpu->getRegSP();
 	old_ppage = cpu->memRead8(MMC::PPAGE_REG_ADDRESS);
 	cpu->memWrite8(addr, old_ppage);
 
 	cpu->memWrite8(MMC::PPAGE_REG_ADDRESS, page);
 	cpu->setRegPC(opr16a);
 
-	// TODO: Refill the instruction queue with three program words from the new address (PPAGE:PC)
 }
 
 // I have to decode indexed-indirect addressing here, 
@@ -459,7 +439,6 @@ call_16offset_idx_ind.execute = {
 	 * (PPAGE) => M[SP]
 	 * page => PPAGE
 	 * Subroutine address => PC
- 	 * TODO: Refill the instruction queue with three program words from the new address (PPAGE:PC)
 	 */
 
 	physical_address_t addr;
@@ -470,23 +449,19 @@ call_16offset_idx_ind.execute = {
 	address_t subAddr = cpu->memRead16(idxAddr);
 	uint8_t   ppageVal = cpu->memRead16(idxAddr+2);
 		 
-	cpu->setRegSP(cpu->getRegSP()-2);
+	addr = cpu->getRegSP() - 2;
+	cpu->setRegSP(addr);
+	cpu->memWrite16(addr, cpu->getRegPC());
 	
-	addr = cpu->getRegSP();
-	cpu->memWrite8(addr, (uint8_t) (cpu->getRegPC() >> 8));
+	addr = cpu->getRegSP() - 1;
+	cpu->setRegSP(addr);
 	
-	addr = cpu->getRegSP()+1;
-	cpu->memWrite8(addr, (uint8_t) (cpu->getRegPC() & 0x00FF));
-	
-	cpu->setRegSP(cpu->getRegSP()-1);
-	addr = cpu->getRegSP();
 	old_ppage = cpu->memRead8(MMC::PPAGE_REG_ADDRESS);
 	cpu->memWrite8(addr, old_ppage);
 
 	cpu->memWrite8(MMC::PPAGE_REG_ADDRESS, ppageVal);
 	cpu->setRegPC(subAddr);
 
-	// TODO: Refill the instruction queue with three program words from the new address (PPAGE:PC)
 }
 
 op call_accD_offset_idx_ind(0x4B[8]:> <:0b111[3]:rr[2]:0b111[3])
@@ -509,7 +484,6 @@ call_accD_offset_idx_ind.execute = {
 	 * (PPAGE) => M[SP]
 	 * page => PPAGE
 	 * Subroutine address => PC
- 	 * TODO: Refill the instruction queue with three program words from the new address (PPAGE:PC)
 	 */
 
 	physical_address_t addr;
@@ -520,21 +494,19 @@ call_accD_offset_idx_ind.execute = {
 	address_t subAddr = cpu->memRead16(idxAddr);
 	uint8_t   ppageVal = cpu->memRead16(idxAddr+2);
 		 
-	cpu->setRegSP(cpu->getRegSP()-2);
-	addr = cpu->getRegSP();
-	cpu->memWrite8(addr, (uint8_t) (cpu->getRegPC() >> 8));
-	addr = cpu->getRegSP()+1;
-	cpu->memWrite8(addr, (uint8_t) (cpu->getRegPC() & 0x00FF));
+	addr = cpu->getRegSP() - 2;
+	cpu->setRegSP(addr);
 	
-	cpu->setRegSP(cpu->getRegSP()-1);
-	addr = cpu->getRegSP();
+	cpu->memWrite16(addr, cpu->getRegPC());
+	
+	addr = cpu->getRegSP() - 1;
+	cpu->setRegSP(addr);
+
 	old_ppage = cpu->memRead8(MMC::PPAGE_REG_ADDRESS);
 	cpu->memWrite8(addr, old_ppage);
 
 	cpu->memWrite8(MMC::PPAGE_REG_ADDRESS, ppageVal);
 	cpu->setRegPC(subAddr);
-
-	// TODO: Refill the instruction queue with three program words from the new address (PPAGE:PC)
 }
 
 op call_idx(0x4B[8]:> <:*xb[XB]:> <:page[8])
@@ -572,28 +544,25 @@ call_idx.execute = {
 	 * (PPAGE) => M[SP]
 	 * page => PPAGE
 	 * Subroutine address => PC
- 	 * TODO: Refill the instruction queue with three program words from the new address (PPAGE:PC)
 	 */
 	physical_address_t addr;
 	page_t old_ppage;
 
 	physical_address_t callAddr = xb->getEAddr(cpu);  
 			 
-	cpu->setRegSP(cpu->getRegSP()-2);
-	addr = cpu->getRegSP();
-	cpu->memWrite8(addr, (uint8_t) (cpu->getRegPC() >> 8));
-	addr = cpu->getRegSP()+1;
-	cpu->memWrite8(addr, (uint8_t) (cpu->getRegPC() & 0x00FF));
+	addr = cpu->getRegSP() - 2;
+	cpu->setRegSP(addr);
 	
-	cpu->setRegSP(cpu->getRegSP()-1);
-	addr = cpu->getRegSP();
+	cpu->memWrite16(addr, cpu->getRegPC());
+	
+	addr = cpu->getRegSP() - 1;
+	cpu->setRegSP(addr);
+
 	old_ppage = cpu->memRead8(MMC::PPAGE_REG_ADDRESS);
 	cpu->memWrite8(addr, old_ppage);
 
 	cpu->memWrite8(MMC::PPAGE_REG_ADDRESS, page);
 	cpu->setRegPC(callAddr);
-
-	// TODO: Refill the instruction queue with three program words from the new address (PPAGE:PC)
 }
 
 // JMP: JUMP
@@ -611,8 +580,6 @@ jmp_ext.disasm = {
 
 jmp_ext.execute = {
 	cpu->setRegPC(opr16a);
-	
- 	// TODO: Refill the instruction queue with three program words from the new address
 }
 
 op jmp_idx(0x05[8]:> <:*xb[XB])
@@ -642,8 +609,6 @@ jmp_idx.disasm = {
 
 jmp_idx.execute = {
 	cpu->setRegPC(xb->getEAddr(cpu));
-
- 	// TODO: Refill the instruction queue with three program words from the new address
 }
 
 // JSR: Jump to subroutine
@@ -668,17 +633,14 @@ jsr_dir.execute = {
 	address_t addr;
 	page_t direct_reg;
 		 
-	cpu->setRegSP(cpu->getRegSP()-2);
-	addr = cpu->getRegSP();	
-	cpu->memWrite8(addr, (uint8_t) (cpu->getRegPC() >> 8));
-	addr = cpu->getRegSP()+1;	
-	cpu->memWrite8(addr, (uint8_t) (cpu->getRegPC() & 0x00FF));
+	addr = cpu->getRegSP() - 2;	
+	cpu->setRegSP(addr);
+	
+	cpu->memWrite16(addr, cpu->getRegPC());
 	
 	direct_reg = cpu->memRead8(MMC::DIRECT_REG_ADDRESS);
 	addr = ((uint16_t) direct_reg << 8) | opr8a;
 	cpu->setRegPC(addr);
-
- 	// TODO: Refill the instruction queue with three program words from the new address
 }
 
 op jsr_ext(0x16[8]:> <:opr16a[16])
@@ -696,15 +658,13 @@ jsr_ext.disasm = {
 jsr_ext.execute = {
 	physical_address_t addr;
 
-	cpu->setRegSP(cpu->getRegSP()-2);
-	addr = cpu->getRegSP();	
-	cpu->memWrite8(addr, (uint8_t) (cpu->getRegPC() >> 8));
-	addr = cpu->getRegSP()+1;
-	cpu->memWrite8(addr, (uint8_t) (cpu->getRegPC() & 0x00FF));
+	addr = cpu->getRegSP() - 2;	
+	cpu->setRegSP(addr);
+	
+	cpu->memWrite16(addr, cpu->getRegPC());
 	
 	cpu->setRegPC(opr16a);
 
- 	// TODO: Refill the instruction queue with three program words from the new address
 }
 
 op jsr_idx(0x15[8]:> <:*xb[XB])
@@ -736,15 +696,13 @@ jsr_idx.execute = {
 	physical_address_t addr;
 	physical_address_t jsrAddr = xb->getEAddr(cpu); 	
 	
-	cpu->setRegSP(cpu->getRegSP()-2);
-	addr = cpu->getRegSP();
-	cpu->memWrite8(addr, (uint8_t) (cpu->getRegPC() >> 8));
-	addr = cpu->getRegSP()+1;
-	cpu->memWrite8(addr, (uint8_t) (cpu->getRegPC() & 0x00FF));
+	addr = cpu->getRegSP() - 2;
+	cpu->setRegSP(addr);
+	
+	cpu->memWrite16(addr, cpu->getRegPC());
 	
 	cpu->setRegPC(jsrAddr);
 
- 	// TODO: Refill the instruction queue with three program words from the new address
 }
 
 // RTC: Return from call
@@ -766,7 +724,6 @@ rtc.execute = {
 	 * (SP)+1 => SP
 	 * (M[SP]):(M[SP+1]) => PCh:PCl
 	 * (SP)+2 => SP
- 	 * TODO: Refill the instruction queue with three program words from the new address (PPAGE:PC)	 
 	 */
 
 	 uint8_t hByte, lByte;
@@ -774,17 +731,13 @@ rtc.execute = {
 	 
 	 addr = cpu->getRegSP();
 	 cpu->memWrite8(MMC::PPAGE_REG_ADDRESS, cpu->memRead8(addr));
-	 cpu->setRegSP(cpu->getRegSP() + 1);
+	 cpu->setRegSP(addr + 1);
 	 
 	 addr = cpu->getRegSP();
-	 hByte = cpu->memRead8(addr);
-	 addr = cpu->getRegSP()+1;
-	 lByte = cpu->memRead8(addr);
-	 cpu->setRegPC(((uint16_t) hByte << 8) | (0x00FF & lByte));
+
+	 cpu->setRegPC(cpu->memRead16(addr));
 	 
-	 cpu->setRegSP(cpu->getRegSP() + 2);
-	 
- 	 // TODO: Refill the instruction queue with three program words from the new address (PPAGE:PC)	 
+	 cpu->setRegSP(addr + 2);
 }
 
 // RTS: Return from subroutine
@@ -801,16 +754,13 @@ rts.disasm = {
 }
 
 rts.execute = {
-	uint8_t hByte, lByte;
-	physical_address_t addr;
 
 	addr = cpu->getRegSP(); 
-	hByte = cpu->memRead8(addr);
-	addr = cpu->getRegSP()+1; 
-	lByte = cpu->memRead8(addr);
-	cpu->setRegPC(((uint16_t) hByte << 8) | (0x00FF & lByte));
+
+	cpu->setRegPC(cpu->memRead16(addr));
+
+	cpu->setRegSP(addr + 2);
 	 
-	cpu->setRegSP(cpu->getRegSP() + 2);
 }
 
 
@@ -901,10 +851,20 @@ loop.execute = {
 			
 		} break;
 		case 0x02: /*TBEQ*/{
-			isBranch = (cpu->eblb->getter<uint8_t>(b210) == 0);
+			if (b210 < 0x4) {
+				isBranch = (cpu->eblb->getter<uint8_t>(b210) == 0);
+			} else {
+				isBranch = (cpu->eblb->getter<uint16_t>(b210) == 0);
+			}
+			
 		} break;
 		case 0x03: /*TBNE*/{
-			isBranch = (cpu->eblb->getter<uint8_t>(b210) != 0);
+			if (b210 < 0x4) {
+				isBranch = (cpu->eblb->getter<uint8_t>(b210) != 0);
+			} else {
+				isBranch = (cpu->eblb->getter<uint16_t>(b210) != 0);
+			}
+
 		} break;
 		case 0x04: /*IBEQ*/{
 			
