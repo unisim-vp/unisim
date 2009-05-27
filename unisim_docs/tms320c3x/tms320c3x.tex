@@ -1,0 +1,492 @@
+\section{User guide}
+
+\subsection{Invoking the simulator}
+
+The general command line format for invoking the simulator is the following:
+
+\begin{verbatim}
+tms320c3x [<options>] <binary to simulate>
+\end{verbatim}
+
+\noindent The binary to simulate must be a TI's COFF v0, v1 or v2 file. See~\ref{tms320c3x_cross_compiler} to generate such files.
+\newline\\
+\noindent The command line options of the simulator are:
+
+\begin{itemize}
+\item \texttt{--help} or \texttt{-h}: print integrated help message on the screen.
+\item \texttt{--get-variables <XML file>} or \texttt{-v <XML file>}: Get the simulation variables (parameters, statistics, \ldots) into a XML file
+\item \texttt{--config <XML file>} or \texttt{-c <XML file>}: configures the simulator with the given xml configuration file.
+\item \texttt{--get-config <XML file>} or \texttt{-g <XML file>}: Get the simulator default configuration XML file (you can use it to create your own configuration). This option can be combined with option \texttt{-c} to get a new configuration file with existing variables from another file.
+\item \texttt{--logger} or \texttt{-l}: Enable the logger.
+\item \texttt{--xml-gdb <file>} or \texttt{-x <file>}: processor XML description file for GDB server.
+\item \texttt{--gdb-server <port\_number>} or \texttt{-d <port\_number>}: Enable the GDB server and use the given TCP/IP port for communicating with a GDB client.
+\item \texttt{--inline-debugger} or \texttt{-i}: Enable the inline debugger (only active if logger option used).
+\end{itemize}
+
+\subsection{The Texas Instrument cross-compiler for TMS320C3X}
+\label{tms320c3x_cross_compiler}
+
+To compile programs for the TMS320C3X simulator, you can use the free evaluation cross-compiler for TMS320C3X running on a Windows host (SPRC147, TMS320C3x DSK Software) available at \url{http://focus.ti.com/docs/toolsw/folders/print/tmdsdsk33.html}.
+This cross-compiler also runs under other x86 operating systems such as Linux or MacOSX using Wine, a Windows emulator (\url{http://www.winehq.org/}).
+
+The cross-compiler tool chain (\texttt{CL30.EXE, LNK30.EXE, ASM30.EXE, MK30.EXE, AR30.EXE, \ldots}) should be in your \texttt{PATH}, for instance:
+\begin{verbatim}
+set PATH=C:\TI\TIC3X4X\BIN;%PATH%
+\end{verbatim}
+
+The shell variable \texttt{C\_DIR} points to the location where cross-compiler should search for the standard C headers and libraries, for instance:
+\begin{verbatim}
+set C_DIR=C:\TI\TIC3X4X\INCLUDE;C:\TI\TIC3X4X\LIB
+\end{verbatim}
+
+Be aware that any call to the C standard library requires linking the program with \texttt{RTS30.LIB}.
+Moreover, any call to I/O functions (open, close, read, write, printf, \ldots) requires TI C I/O support enabled in the TMS320C3X simulator.
+
+\subsection{Simulator configuration}
+
+\noindent The simulator stores its configuration (a set of parameters) in a XML configuration file. 
+\newline\\
+\noindent The simulator can provide the user with a default XML configuration file with option \texttt{-g}:
+
+\begin{verbatim}
+$ tms320c3x -g default_sim_config.xml
+\end{verbatim}
+
+\noindent The simulator can loads a XML configuration file with option \texttt{-c}:
+
+\begin{verbatim}
+$ tms320c3x -c sim_config.xml
+\end{verbatim}
+
+\noindent The available parameters are summarized in table below:
+
+\begin{center}
+	\begin{tabular}{|p{7.5cm}|p{7.5cm}|}
+	\hline
+	\multicolumn{2}{|c|}{\textbf{\large CPU run-time parameters}}\\
+	\hline
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.max-inst}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{64-bit unsigned integer}}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{$2^{64} - 1$}}\\
+	\multicolumn{2}{|l|}{}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Maximum number of instructions to execute before stopping simulation.}\\
+	\hline
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.trap-on-instruction-counter}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{64-bit unsigned integer}}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{$2^{64} - 1$}}\\
+	\multicolumn{2}{|l|}{}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Number of instructions to execute before leaving control to the debugger.}\\
+	\hline
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.verbose-all}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
+	\multicolumn{2}{|l|}{}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Globally enable/disable verbosity of CPU.}\\
+	\hline
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.verbose-setup}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
+	\multicolumn{2}{|l|}{}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/disable verbosity of CPU while setup.}\\
+	\hline
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.verbose-all}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
+	\multicolumn{2}{|l|}{}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Globally enable/disable verbosity of CPU.}\\
+	\hline
+	\end{tabular}
+\end{center}
+
+\newpage
+\begin{center}
+	\begin{tabular}{|p{7.5cm}|p{7.5cm}|}
+	\hline
+	\multicolumn{2}{|c|}{\textbf{\large Service GDB Server run-time parameters}}\\
+	\hline
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{gdb-server.tcp-port}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{integer}}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{12345}}\\
+	\multicolumn{2}{|l|}{}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline TCP/IP port to listen waiting for a GDB client connection.}\\
+	\hline
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{gdb-server.architecture-}\newline$\hookrightarrow$\texttt{description-filename}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{empty string}}\\
+	\multicolumn{2}{|l|}{}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Filename of an XML description of the connected processor.}\\
+	\hline
+	\hline
+	\multicolumn{2}{|c|}{\textbf{\large Inline Debugger run-time parameters}}\\
+	\hline
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{inline-debugger.memory-atom-size}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{unsigned integer}}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{1}}\\
+	\multicolumn{2}{|l|}{}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Size of the smallest addressable element in memory.}\\
+	\hline
+	\multicolumn{2}{|c|}{\textbf{\large Kernel Service Logger run-time parameters}}\\
+	\hline
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{kernel\_logger.std\_err}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
+	\multicolumn{2}{|l|}{}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline If true, show logger output through the standard error output.}\\
+	\hline
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{kernel\_logger.std\_out}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
+	\multicolumn{2}{|l|}{}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline If true, show logger output through the standard output.}\\
+	\hline
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{kernel\_logger.std\_err\_color}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
+	\multicolumn{2}{|l|}{}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline If true, colorize logger output through the standard error output (only works if std\_err is active).}\\
+	\hline
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{kernel\_logger.std\_out\_color}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
+	\multicolumn{2}{|l|}{}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline If true, colorize logger output through the standard output (only works if std\_out is active).}\\
+	\hline
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{kernel\_logger.file}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
+	\multicolumn{2}{|l|}{}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline If true, keep logger output in a file.}\\
+	\hline
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{kernel\_logger.filename}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{empty string}}\\
+	\multicolumn{2}{|l|}{}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Filename to keep logger output (the option \texttt{file} must be activated).}\\
+	\hline
+	\end{tabular}
+\end{center}
+
+\newpage
+\begin{center}
+	\begin{tabular}{|p{7.5cm}|p{7.5cm}|}
+	\hline
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{kernel\_logger.xml\_file}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
+	\multicolumn{2}{|l|}{}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline If true, keep logger output in a file XML formatted.}\\
+	\hline
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{kernel\_logger.xml\_filename}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{empty string}}\\
+	\multicolumn{2}{|l|}{}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Filename to keep logger XML output (the option \texttt{xml\_file} must be activated).}\\
+	\hline
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{kernel\_logger.xml\_file\_gzipped}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
+	\multicolumn{2}{|l|}{}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline If the \texttt{xml\_file} option is active, the output file will be compressed (a .gz extension will be automatically added to the \texttt{xml\_filename} option.}\\
+	\hline
+	\multicolumn{2}{|c|}{\textbf{\large Service COFF Loader run-time parameters}}\\
+	\hline
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{loader.filename}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{empty string}}\\
+	\multicolumn{2}{|l|}{}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The COFF file name to load into memory.}\\
+	\hline
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{loader.dump-headers}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{empty string}}\\
+	\multicolumn{2}{|l|}{}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline If true this parameter makes the COFF loader print the file headers on the screen (file header, section headers, symbol table \ldots) while loading the program.}\\
+	\hline
+	\multicolumn{2}{|c|}{\textbf{\large Memory run-time parameters}}\\
+	\hline
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{memory.org}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{64-bit unsigned integer}}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{0}}\\
+	\multicolumn{2}{|l|}{}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Starting address of memory (typically 0).}\\
+	\hline
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{memory.bytesize}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{64-bit unsigned integer}}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{0}}\\
+	\multicolumn{2}{|l|}{}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Size in bytes (8-bit) of memory.}\\
+	\hline
+	\end{tabular}
+\end{center}
+
+\newpage
+\begin{center}
+	\begin{tabular}{|p{7.5cm}|p{7.5cm}|}
+	\hline
+	\multicolumn{2}{|c|}{\textbf{\large Service TI C I/O run-time parameters}}\\
+	\hline
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{ti\_c\_io.enable}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
+	\multicolumn{2}{|l|}{}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/Disable TI C I/O support.}\\
+	\hline
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{ti-c-io.warning-as-error}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
+	\multicolumn{2}{|l|}{}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Whether Warnings are considered as error or not.}\\
+	\hline
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{ti-c-io.pc-register-name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{"PC"}}\\
+	\multicolumn{2}{|l|}{}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Name of the CPU program counter register.}\\
+	\hline
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{ti-c-io.c-io-buffer-symbol-name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{"\_\_CIOBUF\_"}}\\
+	\multicolumn{2}{|l|}{}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline C I/O buffer symbol name.}\\
+	\hline
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{ti-c-io.c-io-breakpoint-}\newline$\hookrightarrow$\texttt{symbol-name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{"C\$\$IO\$\$"}}\\
+	\multicolumn{2}{|l|}{}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline C I/O breakpoint symbol name.}\\
+	\hline
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{ti-c-io.c-exit-breakpoint-}\newline$\hookrightarrow$\texttt{symbol-name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{"C\$\$EXIT"}}\\
+	\multicolumn{2}{|l|}{}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline C EXIT breakpoint symbol name.}\\
+	\hline
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{ti-c-io.verbose-all}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
+	\multicolumn{2}{|l|}{}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Globally enable/disable verbosity of TI C I/O service.}\\
+	\hline
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{ti-c-io.verbose-io}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
+	\multicolumn{2}{|l|}{}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/disable verbosity of TI C I/O service while I/Os.}\\
+	\hline
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{ti-c-io.verbose-setup}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
+	\multicolumn{2}{|l|}{}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/disable verbosity of TI C I/O service while setup.}\\
+	\hline
+	\end{tabular}
+\end{center}
+
+\subsection{Status of implementation}
+
+Current implementation of the simulator completely decodes the TMS320C3X instruction set.
+All registers are present but no on-chip devices are implemented.
+The simulator is supposed to have a complete support for:
+\begin{itemize}
+\item integer instructions (2-ops, 3-ops, parallel ops, load/store)
+\item control instructions (branches, delayed branches, RPTS, RPTB)
+\item power instructions
+\item instructions \texttt{FLOAT}, \texttt{PUSHF}, and \texttt{POPF}
+\item interrupt handling
+\end{itemize}
+
+The simulator does not implement or partially implement:
+\begin{itemize}
+\item floating point instructions
+\item interlocked instructions
+\end{itemize}
+
+The indirect addressing with circular modify and the indirect addressing with bit-reversed modify modes are fully implemented but untested.
+The current status of the simulator should allow to run any integer benchmark.
+
+\section{Developer guide}
+
+This part is not yet available.
+
+\subsection{Overview}
+
+\subsection{TMS320C3X instruction set simulator}
+
+\subsection{COFF loader service}
+
+\subsection{TI C I/O service}
+
+\subsection{Instruction level Debugging services}
+
+\subsubsection{Inline debugger}
+
+\subsubsection{GDB server}
+
+\section{Validation guide}
+
+\subsection{Integer benchmarks}
+
+\subsubsection{Fibonacci}
+
+This benchmarks recursively (and quite inefficiently) computes the Fibonacci numbers:
+
+\indent $F_1=1$
+\newline
+\indent $F_2=1$
+\newline
+\indent $F_n = F_{n - 2} + F_{n - 1}$ where $n > 2$
+\newline
+
+This benchmark requires TI C I/O service enabled to run in the TMS320C3X simulator.
+A precompiled binary (\texttt{fibo.bin}) is provided together with a GNU Make compatible \texttt{Makefile}.
+A simulation configuration (\texttt{sim\_config.xml}) for this simulator is also provided, so that simulator can run the benchmark:
+
+\begin{verbatim}
+$ tms320c3x -c sim_config.xml
+\end{verbatim}
+
+\noindent The expected ouput on the screen of the benchmarks is:
+
+\begin{verbatim}
+Fibo(1)=1 (0x1)
+Fibo(2)=1 (0x1)
+Fibo(3)=2 (0x2)
+Fibo(4)=3 (0x3)
+Fibo(5)=5 (0x5)
+Fibo(6)=8 (0x8)
+Fibo(7)=13 (0xd)
+Fibo(8)=21 (0x15)
+Fibo(9)=34 (0x22)
+Fibo(10)=55 (0x37)
+Fibo(11)=89 (0x59)
+Fibo(12)=144 (0x90)
+Fibo(13)=233 (0xe9)
+Fibo(14)=377 (0x179)
+Fibo(15)=610 (0x262)
+Fibo(16)=987 (0x3db)
+Fibo(17)=1597 (0x63d)
+Fibo(18)=2584 (0xa18)
+Fibo(19)=4181 (0x1055)
+Fibo(20)=6765 (0x1a6d)
+Fibo(21)=10946 (0x2ac2)
+Fibo(22)=17711 (0x452f)
+Fibo(23)=28657 (0x6ff1)
+Fibo(24)=46368 (0xb520)
+Fibo(25)=75025 (0x12511)
+Fibo(26)=121393 (0x1da31)
+Fibo(27)=196418 (0x2ff42)
+Fibo(28)=317811 (0x4d973)
+Fibo(29)=514229 (0x7d8b5)
+Fibo(30)=832040 (0xcb228)
+Fibo(31)=1346269 (0x148add)
+Fibo(32)=2178309 (0x213d05)
+Fibo(33)=3524578 (0x35c7e2)
+Fibo(34)=5702887 (0x5704e7)
+\end{verbatim}
+
+\subsubsection{Quick sort}
+
+This benchmark sorts 65536 integer numbers using the quick sort recursive algorithm.
+The input data set is in file \texttt{random.txt} that contains random generated integer numbers.
+The output data set after the benchmark run is in file \texttt{sort.sim.txt}.
+
+This benchmark requires TI C I/O service enabled to run in the TMS320C3X simulator.
+A precompiled binary (\texttt{quicksort.bin}) is provided together with a GNU Make compatible \texttt{Makefile}.
+A simulation configuration (\texttt{sim\_config.xml}) for this simulator is also provided, so that simulator can run the benchmark:
+
+\begin{verbatim}
+ $ tms320c3x -c sim_config.xml
+\end{verbatim}
+
+\noindent The expected ouput data set is in file \texttt{sort.linux.txt}.
+
+\subsubsection{CRC32 (check sum)}
+
+This benchmark is based on CRC32 benchmark from MiBench Version 1.0 (\url{http://www.eecs.umich.edu/mibench}).
+It performs a 32-bit Cyclic Redundancy Check (CRC) on a file. CRC checks are often used to detect errors in data transmission.
+The benchmark reads file \texttt{large.pcm} and print the check sum on the screen
+
+This benchmark requires TI C I/O service enabled to run in the TMS320C3X simulator.
+A precompiled binary is provided together with a GNU Make compatible Makefile.
+A simulation configuration (\texttt{sim\_config.xml}) for this simulator is also provided, so that simulator can run the benchmark:
+
+\begin{verbatim}
+$ tms320c3x -c sim_config.xml
+\end{verbatim}
+
+\noindent The expected ouput on the screen of the benchmarks is in file ref.txt:
+
+\begin{verbatim}
+32 BIT ANSI X3.66 CRC checksum:
+Opening input file "large.pcm"
+Total number of bytes read: 26611200
+CRC32: dc8b7c2a
+\end{verbatim}
+
+\subsubsection{Rijndael (encryption/decryption)}
+
+This benchmark is based on Rijndael benchmark from MiBench Version 1.0 (\url{http://www.eecs.umich.edu/mibench}).
+Rijndael was selected as the National Institute of Standards and Technologies Advanced Encryption Standard (AES).
+It is a block cipher with the option of 128-, 192-, and 256-bit keys and blocks.
+
+In this benchmark, encryption is followed by decryption so that input data set and output data set should be identical.
+The benchmark uses this hexadecimal encryption key:
+\begin{verbatim}
+1234567890abcdeffedcba09876543211234567890abcdeffedcba0987654321
+\end{verbatim}
+The benchmark reads file \texttt{input\_small.asc}, and encrypt it into file \texttt{output\_small.enc}.
+It decrypts \texttt{output\_small.enc} into file \texttt{dec\_output\_small.enc}.
+
+This benchmark requires TI C I/O service enabled to run in the TMS320C3X simulator.
+A precompiled binary (\texttt{rijndael.bin}) is provided together with a GNU Make compatible Makefile.
+A simulation configuration (\texttt{sim\_config.xml}) for this simulator is also provided, so that simulator can run the benchmark:
+
+\begin{verbatim}
+$ tms320c3x -c sim_config.xml
+\end{verbatim}
+
+It is expected that files \texttt{input\_small.asc} and \texttt{dec\_output\_small.enc} be identical after the benchmark run.
+
+\subsubsection{Sha (encryption/decryption)}
+
+This benchmark is based on SHA benchmark from MiBench Version 1.0 (\url{http://www.eecs.umich.edu/mibench}).
+SHA is the secure hash algorithm that produces a 160-bit message digest for a given input. It is often
+used in the secure exchange of cryptographic keys and for generating digital signatures. It is also used in the
+well-known MD4 and MD5 hashing functions.
+
+The benchmark has its input data set embedded its C source code.
+
+A precompiled binary (\texttt{sha.bin}) is provided together with a GNU Make compatible Makefile.
+A simulation configuration (\texttt{sim\_config.xml}) for this simulator is also provided, so that simulator can run the benchmark:
+
+\begin{verbatim}
+$ tms320c3x -c sim_config.xml
+\end{verbatim}
+
+\subsubsection{ADPCM (sound encoding/decoding)}
+
+This benchmark is based on ADPCM benchmark from MiBench Version 1.0 (\url{http://www.eecs.umich.edu/mibench}).
+It performs ADPCM encoding/decoding. Adaptive Differential Pulse Code Modulation (ADPCM) is a variation
+of the well-known standard Pulse Code Modulation (PCM). A common implementation takes 16-bit linear
+PCM samples and converts them to 4-bit samples, yielding a compression rate of 4:1. The input data are
+small and large speech samples.
+The ADPCM coder benchmark reads file \texttt{large.pcm} and writes the compressed data in file \texttt{output\_large.sim.adpcm}.
+The ADPCM decoder benchmark reads file \texttt{large.adpcm} and writes the uncompressed data in file \texttt{output\_large.sim.pcm}.
+
+This benchmark requires TI C I/O service enabled to run in the TMS320C3X simulator.
+Precompiled binaries (\texttt{coder.bin} and \texttt{decoder.bin}) are provided together with a GNU Make compatible Makefile.
+Simulation configurations (\texttt{coder\_sim\_config.xml} and \texttt{decoder\_sim\_config.xml})) for this simulator are also provided, so that simulator can run the benchmarks:
+
+\begin{verbatim}
+$ tms320c3x -c coder_sim_config.xml
+$ tms320c3x -c decoder_sim_config.xml
+\end{verbatim}
+
+The expected ouput data set of the ADPCM coder benchmark is in file \texttt{output\_large.linux.adpcm}.
+The expected ouput data set of the ADPCM decoder benchmark is in file \texttt{output\_large.linux.pcm}.
+
+\subsubsection{DCT/Quantization (image processing)}
+
+This benchmark is based on XVID video codec (\url{http://www.xvid.org}).
+The benchmarks has the following steps that are the base of the JPEG lossy image compression standard:
+\begin{enumerate}
+\item Load a Windows 24-bit RGB Bitmap from a .bmp file;
+\item Convert from RGB to YUV 4:4:4 for each 8x8 pixel blocks;
+\item Compute a DCT on each 8x8 pixel blocks;
+\item Quantize each 8x8 pixels blocks;
+\item Dequantize each 8x8 pixels blocks;
+\item Compute an iDCT on each 8x8 pixel blocks;
+\item Convert from YUV 4:4:4 to RGB each 8x8 pixel blocks
+\item Save the resulting Windows 24-bit RGB bitmap into a .bmp file
+\end{enumerate}
+
+The benchmark reads the input image from file \texttt{image.bmp} and the quantization matrix from file \texttt{quant\_mat.txt}.
+It save the resulting image in file \texttt{output\_image.sim.bmp}
+
+This benchmark requires TI C I/O service enabled to run in the TMS320C3X simulator.
+A precompiled binary (\texttt{dct\_quant.bin}) is provided together with a GNU Make compatible Makefile.
+A simulation configuration (\texttt{sim\_config.xml}) for this simulator is also provided, so that simulator can run the benchmark:
+
+\begin{verbatim}
+$ tms320c3x -c sim_config.xml
+\end{verbatim}
+
+The expected ouput image is in file \texttt{output\_image.linux.bmp}.
+
+\subsection{Floating point benchmarks}
+
+This part is not yet available.
+
+\subsection{Instruction level unit test}
+
+This part is not yet available.

@@ -412,6 +412,55 @@ The service library currently contains the following services:
 	\end{tabular}
 \end{center}
 
+\newpage
+\begin{center}
+	\begin{tabular}{|p{7.5cm}|p{7.5cm}|}
+		\hline
+		\multicolumn{2}{|l|}{\textbf{\Large Service COFF Loader}}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Class Name:} \newline \texttt{unisim::service::loader::coff\_loader}\newline$\hookrightarrow$\texttt{::CoffLoader}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Header:} \newline \texttt{sample/sample/sample}\newline$\hookrightarrow$\texttt{/sample.hh}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The COFF loader service allows to load a COFF binary program into a memory and fill a symbol table. The loader also provides information about the loaded ﬁle such as the code and data locations (base address and size). The COFF loader loads the program during setup.}\\
+		\hline
+		\hline
+		\multicolumn{2}{|c|}{\textbf{\large Template Parameters}}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{MEMORY\_ADDR}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{class}}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{none}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline This is the C++ type of a memory address (e.g. \texttt{uint32\_t} or \texttt{uint64\_t}).}\\
+		\hline
+		\hline
+		\multicolumn{2}{|c|}{\textbf{\large Run-Time Parameters}}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{filename}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} empty string}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The COFF file name to load into the connected memory.}\\
+		\hline
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{dump-headers}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{boolean}}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} false}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline If true this parameter makes the COFF loader print the file headers on the screen (file header, section headers, symbol table \ldots) while loading the program.}\\
+		\hline
+		\hline
+		\multicolumn{2}{|c|}{\textbf{\large Service Exports}}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{sample}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{sample} \newline$\hookrightarrow$\texttt{sample}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Sample.}\\
+		\hline
+		\hline
+		\multicolumn{2}{|c|}{\textbf{\large Service Imports}}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{sample} \newline \textbf{Mandatory connected:} yes/no} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{sample::sample::sample} \newline$\hookrightarrow$\texttt{::sample}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Sample.}\\
+		\hline
+	\end{tabular}
+\end{center}
+
 \subsection{Operating System Application Binary Interface (OS ABI)}
 
 \newpage
@@ -421,6 +470,49 @@ The service library currently contains the following services:
 		\multicolumn{2}{|l|}{\textbf{\Large Service Linux System Call Translator: LinuxOS}}\\
 		\hline
 		\multicolumn{1}{|p{7.5cm}}{\textbf{Class Name:} \newline \texttt{sample::sample::sample}\newline$\hookrightarrow$\texttt{::sample}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Header:} \newline \texttt{sample/sample/sample}\newline$\hookrightarrow$\texttt{/sample.hh}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Sample.}\\
+		\hline
+		\hline
+		\multicolumn{2}{|c|}{\textbf{\large Template Parameters}}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{sample}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{sample}}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{sample}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Sample.}\\
+		\hline
+		\hline
+		\multicolumn{2}{|c|}{\textbf{\large Run-Time Parameters}}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{sample}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{sample}}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{sample}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Sample.}\\
+		\hline
+		\hline
+		\multicolumn{2}{|c|}{\textbf{\large Service Exports}}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{sample}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{sample} \newline$\hookrightarrow$\texttt{sample}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Sample.}\\
+		\hline
+		\hline
+		\multicolumn{2}{|c|}{\textbf{\large Service Imports}}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{sample} \newline \textbf{Mandatory connected:} yes/no} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{sample::sample::sample} \newline$\hookrightarrow$\texttt{::sample}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Sample.}\\
+		\hline
+	\end{tabular}
+\end{center}
+
+\newpage
+\begin{center}
+	\begin{tabular}{|p{7.5cm}|p{7.5cm}|}
+		\hline
+		\multicolumn{2}{|l|}{\textbf{\Large Service TI C I/O}}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Class Name:} \newline \texttt{unisim::service::os::ti\_c\_io}\newline$\hookrightarrow$\texttt{::TI\_C\_IO}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Header:} \newline \texttt{sample/sample/sample}\newline$\hookrightarrow$\texttt{/sample.hh}}\\
 		\multicolumn{2}{|l|}{}\\
 		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Sample.}\\
 		\hline
