@@ -180,9 +180,9 @@ public:
 
 		payload = last_payload;
 
-//		if (CONFIG::DEBUG_ENABLE) {
-//			cout << sc_time_stamp() << ":" << name() << "::PWM:: Last Receive " << payload->serialize() << endl;
-//		}
+		if (CONFIG::DEBUG_ENABLE) {
+			cout << sc_time_stamp() << ":" << name() << "::PWM:: Last Receive " << payload->serialize() << endl;
+		}
 
 		for (int i=0; i<PWM_SIZE; i++) {
 			pwmValue[i] = payload->pwmChannel[i];
