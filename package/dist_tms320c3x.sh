@@ -75,6 +75,26 @@ UNISIM_TOOLS_GENISSLIB_M4_FILES="\
 m4/lexer.m4 \
 m4/parser_gen.m4"
 
+GENISSLIB_EXTERNAL_HEADERS="\
+cassert \
+cctype \
+cerrno \
+cstdarg \
+cstdio \
+cstdlib \
+cstring \
+dlfcn.h \
+fstream \
+inttypes.h \
+iosfwd \
+iostream \
+limits \
+map \
+memory \
+ostream \
+unistd.h \
+vector"
+
 UNISIM_LIB_TMS320C3X_SOURCE_FILES="\
 unisim/kernel/service/service.cc \
 unisim/kernel/service/xml_helper.cc \
@@ -182,6 +202,36 @@ m4/bsd_sockets.m4 \
 m4/curses.m4 \
 m4/libedit.m4 \
 m4/with_boost.m4"
+
+TMS320C3X_EXTERNAL_HEADERS="\
+assert.h \
+endian.h \
+errno.h \
+fcntl.h \
+fstream \
+getopt.h \
+inttypes.h \
+iosfwd \                                                                                                                                                        
+iostream \
+list \
+map \
+ostream \
+queue \
+signal.h \
+sstream \
+stdarg.h \
+stdexcept \
+stdio.h \
+stdlib.h \
+string \
+string.h \
+sys/stat.h \
+sys/times.h \
+sys/types.h \
+time.h \
+unistd.h \
+vector \
+"
 
 UNISIM_SIMULATORS_TMS320C3X_SOURCE_FILES=main.cc
 UNISIM_SIMULATORS_TMS320C3X_HEADER_FILES=
@@ -304,6 +354,9 @@ done
 
 # Top level
 
+echo "This package contains GenISSLib, an instruction set simulator generator, and a TMS320C3X instruction set simulator." > "${DEST_DIR}/README"
+echo "See INSTALL for installation instructions." >> "${DEST_DIR}/README"
+
 echo "INSTALLATION" > "${DEST_DIR}/INSTALL"
 echo "------------" >> "${DEST_DIR}/INSTALL"
 echo "" >> "${DEST_DIR}/INSTALL"
@@ -325,7 +378,6 @@ echo "" >> "${DEST_DIR}/INSTALL"
 echo "Installing (optional):" >> "${DEST_DIR}/INSTALL"
 echo "  $ make install" >> "${DEST_DIR}/INSTALL"
 echo "" >> "${DEST_DIR}/INSTALL"
-echo "More information can be found in subdirectory docs" >> "${DEST_DIR}/INSTALL"
 
 CONFIGURE_AC="${DEST_DIR}/configure.ac"
 MAKEFILE_AM="${DEST_DIR}/Makefile.am"
@@ -359,7 +411,7 @@ if [ "${has_to_build_configure}" = "yes" ]; then
 	echo "SUBDIRS=genisslib tms320c3x" > "${MAKEFILE_AM}"
 
 	echo "Building configure"
-	${SHELL} -c "cd ${DEST_DIR} && aclocal && autoconf --force && automake -a"
+	${SHELL} -c "cd ${DEST_DIR} && aclocal && autoconf --force && automake -ac"
 fi
 
 # GENISSLIB
@@ -391,6 +443,7 @@ if [ "${has_to_build_genisslib_configure}" = "yes" ]; then
 	echo "AC_PROG_INSTALL" >> "${GENISSLIB_CONFIGURE_AC}"
 	echo "AC_PROG_LN_S" >> "${GENISSLIB_CONFIGURE_AC}"
 	echo "AC_LANG([C++])" >> "${GENISSLIB_CONFIGURE_AC}"
+	echo "AC_CHECK_HEADERS([${GENISSLIB_EXTERNAL_HEADERS}],, AC_MSG_ERROR([Some external headers are missing.]))" >> "${GENISSLIB_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_LEXER_GENERATOR" >> "${GENISSLIB_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_PARSER_GENERATOR" >> "${GENISSLIB_CONFIGURE_AC}"
 	echo "AC_CONFIG_FILES([Makefile])" >> "${GENISSLIB_CONFIGURE_AC}"
@@ -409,7 +462,7 @@ if [ "${has_to_build_genisslib_configure}" = "yes" ]; then
 	echo "EXTRA_DIST = ${UNISIM_TOOLS_GENISSLIB_M4_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 
 	echo "Building GENISSLIB configure"
-	${SHELL} -c "cd ${DEST_DIR}/genisslib && aclocal -I m4 && autoconf --force && autoheader && automake -a"
+	${SHELL} -c "cd ${DEST_DIR}/genisslib && aclocal -I m4 && autoconf --force && autoheader && automake -ac"
 fi
 
 
@@ -442,6 +495,7 @@ if [ "${has_to_build_tms320c3x_configure}" = "yes" ]; then
 	echo "AC_PROG_INSTALL" >> "${TMS320C3X_CONFIGURE_AC}"
 	echo "AC_PROG_LN_S" >> "${TMS320C3X_CONFIGURE_AC}"
 	echo "AC_LANG([C++])" >> "${TMS320C3X_CONFIGURE_AC}"
+	echo "AC_CHECK_HEADERS([${TMS320C3X_EXTERNAL_HEADERS}],, AC_MSG_ERROR([Some external headers are missing.]))" >> "${TMS320C3X_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_CURSES" >> "${TMS320C3X_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_LIBEDIT" >> "${TMS320C3X_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_BSD_SOCKETS" >> "${TMS320C3X_CONFIGURE_AC}"
@@ -467,7 +521,7 @@ if [ "${has_to_build_tms320c3x_configure}" = "yes" ]; then
 	printf "\t" >> "${TMS320C3X_MAKEFILE_AM}"
 	echo "cd \$(top_srcdir)/unisim/component/cxx/processor/tms320; \$(GENISSLIB_PATH) -o isa_tms320 -w 32 -I isa isa/tms320.isa" >> "${TMS320C3X_MAKEFILE_AM}"
 	echo "Building TMS320C3X configure"
-	${SHELL} -c "cd ${DEST_DIR}/tms320c3x && aclocal -I m4 && autoconf --force && autoheader && automake -a"
+	${SHELL} -c "cd ${DEST_DIR}/tms320c3x && aclocal -I m4 && autoconf --force && autoheader && automake -ac"
 fi
 
 echo "Distribution is up-to-date"
