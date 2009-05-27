@@ -184,13 +184,14 @@ void S12XMMC::b_transport( tlm::tlm_generic_payload& trans, sc_time& delay ) {
 				mmc_trans->set_command( tlm::TLM_WRITE_COMMAND );
 			}
 
-			if (isPaged(logicalAddress, 0x00, false) || buffer->isGlobal) {
-				physical_address_t addr = inherited::getPhysicalAddress((address_t) logicalAddress, buffer->type, buffer->isGlobal);
+			physical_address_t addr = inherited::getPhysicalAddress((address_t) logicalAddress, buffer->type, buffer->isGlobal);
+
+			if (isPaged(logicalAddress, 0x00, buffer->isGlobal, false)) {
 				mmc_trans->set_address( addr & 0x7FFFFF);
 				external_socket->b_transport( *mmc_trans, tlm2_btrans_time );
 			} else {
 
-				mmc_trans->set_address( logicalAddress & 0xFFFF);
+				mmc_trans->set_address( addr & 0xFFFF);
 				local_socket->b_transport( *mmc_trans, tlm2_btrans_time );
 
 			}
