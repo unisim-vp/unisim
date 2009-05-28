@@ -179,6 +179,9 @@ private:
 	uint8_t interrupt_offset_self_clock_mode;
 	Parameter<uint8_t> param_interrupt_offset_self_clock_mode;
 
+	bool	debug_enabled;
+	Parameter<bool>	param_debug_enabled;
+
 	// RTI Frequency Divide Rate
 	double rti_fdr;
 

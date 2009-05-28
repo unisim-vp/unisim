@@ -189,6 +189,9 @@ private:
 	Parameter <double> param_vrl;
 	Parameter <double> param_vrh;
 
+	bool	debug_enabled;
+	Parameter<bool>	param_debug_enabled;
+
 	/**
 	 * Vih and Vil are logical levels
 	 *  - Vih minimum voltage to model logical "1" the default is 3.25 V (min)

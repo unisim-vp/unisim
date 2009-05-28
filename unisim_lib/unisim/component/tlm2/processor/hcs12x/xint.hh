@@ -48,9 +48,11 @@
 #include "tlm_utils/simple_initiator_socket.h"
 #include "tlm_utils/simple_target_socket.h"
 #include "tlm_utils/multi_passthrough_target_socket.h"
+
 #include <unisim/component/cxx/processor/hcs12x/config.hh>
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
 #include <unisim/kernel/service/service.hh>
+#include "unisim/service/interfaces/memory.hh"
 
 #include <unisim/component/tlm2/processor/hcs12x/tlm_types.hh>
 
@@ -65,8 +67,16 @@ using namespace tlm;
 using namespace tlm_utils;
 
 using unisim::component::cxx::processor::hcs12x::address_t;
+using unisim::component::cxx::processor::hcs12x::service_address_t;
 using unisim::component::cxx::processor::hcs12x::CONFIG;
 using unisim::kernel::service::Object;
+using unisim::kernel::service::Parameter;
+using unisim::kernel::service::Client;
+using unisim::kernel::service::Service;
+using unisim::kernel::service::ServiceExport;
+using unisim::kernel::service::ServiceImport;
+
+using unisim::service::interfaces::Memory;
 
 using unisim::component::tlm2::processor::hcs12x::XINT_REQ_ProtocolTypes;
 using unisim::component::tlm2::processor::hcs12x::XINT_Payload;
@@ -169,6 +179,8 @@ private:
 
 class XINT :
 	public sc_module,
+	public Service<Memory<service_address_t> >,
+	public Client<Memory<service_address_t> >,
 	virtual public tlm_fw_transport_if<XINT_REQ_ProtocolTypes >
 
 {
@@ -252,16 +264,20 @@ public:
 	// interface with bus
 	tlm_utils::simple_target_socket<XINT> slave_socket;
 
+	ServiceExport<Memory<service_address_t> > memory_export;
+	ServiceImport<Memory<service_address_t> > memory_import;
+
 
 	XINT(const sc_module_name& name, Object *parent = 0);
 	virtual ~XINT();
-
-	void reset();
 
 	void Run(); // Priority Decoder and Interrupt selection
 
 	virtual void getVectorAddress( tlm::tlm_generic_payload& trans, sc_time& delay );
 
+	virtual void Reset();
+	virtual bool ReadMemory(service_address_t addr, void *buffer, uint32_t size);
+	virtual bool WriteMemory(service_address_t addr, const void *buffer, uint32_t size);
 
     //================================================================
     //=                    tlm2 Interface                            =
@@ -315,6 +331,10 @@ private:
 	uint8_t	int_cfdata[CFDATA_SIZE];
 
 	bool isHardwareInterrupt;
+
+	bool	debug_enabled;
+	Parameter<bool>	param_debug_enabled;
+
 
 public:
 

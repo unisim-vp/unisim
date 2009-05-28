@@ -464,7 +464,7 @@ void HCS12X::AsyncIntThread(tlm::tlm_generic_payload& trans, sc_time& delay)
 
 	trans.set_response_status( tlm::TLM_OK_RESPONSE );
 
-	if (CONFIG::DEBUG_ENABLE) {
+	if (debug_enabled) {
 		cout << "HCS12X:: Has receive an interrupt notification." << endl;
 	}
 }

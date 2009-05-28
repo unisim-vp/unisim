@@ -173,6 +173,9 @@ private:
 	uint8_t interrupt_offset_overflow;
 	Parameter<uint8_t> param_interrupt_offset_overflow;
 
+	bool	debug_enabled;
+	Parameter<bool>	param_debug_enabled;
+
 	//==============================
 	//=            REGISTER SET    =
 	//==============================

@@ -151,7 +151,7 @@ void S12XMMC::b_transport( tlm::tlm_generic_payload& trans, sc_time& delay ) {
 
 			if (!find) {
 
-				if (CONFIG::DEBUG_ENABLE) {
+				if (debug_enabled) {
 /*
 					if (trap_reporting_import) {
 						trap_reporting_import->ReportTrap();

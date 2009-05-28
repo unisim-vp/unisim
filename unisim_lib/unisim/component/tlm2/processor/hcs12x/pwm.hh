@@ -188,6 +188,9 @@ private:
 	uint8_t interruptOffset;
 	Parameter<uint8_t> param_interruptOffset;
 
+	bool	debug_enabled;
+	Parameter<bool>	param_debug_enabled;
+
 	sc_time clockVector[8];
 	sc_time clockA, clockB, clockSA, clockSB;
 

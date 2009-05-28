@@ -45,14 +45,22 @@ namespace hcs12x {
 
 XINT::XINT(const sc_module_name& name, Object *parent) :
 	sc_module(name),
+	Object(name, parent),
+	Service<Memory<service_address_t> >(name, parent),
+	Client<Memory<service_address_t> >(name, parent),
+	memory_export("memory_export", this),
+	memory_import("memory_import", this),
+
 	interrupt_request("interrupt_request"),
 	input_payload_queue("input_payload_queue"),
+	debug_enabled(false),
+	param_debug_enabled("debug-enabled", this, debug_enabled),
 	isHardwareInterrupt(false)
 {
 
 	zeroTime = sc_time((double)0, SC_PS);
 
-	reset();
+	Reset();
 
 	interrupt_request(*this);
 	fromCPU_Target.register_b_transport(this, &XINT::getVectorAddress);
@@ -204,7 +212,7 @@ void XINT::getVectorAddress( tlm::tlm_generic_payload& trans, sc_time& delay )
 	buffer->ipl = newIPL;
 	buffer->vectorAddress = vectorAddress;
 
-	if (CONFIG::DEBUG_ENABLE) {
+	if (debug_enabled) {
 		cout << "XINT::  Vector Address 0x" << std::hex << vectorAddress << std::dec << endl;
 	}
 
@@ -233,7 +241,7 @@ void XINT::Run()
 			payload = input_payload_queue.get_next_transaction();
 			if (payload) {
 
-//				if (CONFIG::DEBUG_ENABLE) {
+//				if (debug_enable) {
 //					cout << "*************  XINT: Receive INT-ID (offset/2) " << std::hex << payload->interrupt_offset/2 << std::dec << std::endl;
 //				}
 
@@ -244,7 +252,7 @@ void XINT::Run()
 					(payload->interrupt_offset == XINT::INT_XIRQ_OFFSET) ||
 					((payload->interrupt_offset >= getINT_CFADDR()) && (payload->interrupt_offset < (getINT_CFADDR() + 16)))) {
 
-					if (CONFIG::DEBUG_ENABLE) {
+					if (debug_enabled) {
 						cout << "*************  XINT: Receive Visible INT-ID (offset/2) " << std::hex << payload->interrupt_offset/2 << std::dec << std::endl;
 					}
 
@@ -281,7 +289,7 @@ void XINT::Run()
 }
 
 
-void XINT::reset() {
+void XINT::Reset() {
 
 	write(IVBR_ADDRESS, IVBR_RESET_VALUE);
 	write(INT_XGPRIO, INT_XGPRIO_RESET_VALUE);
@@ -435,6 +443,24 @@ void XINT::write_INT_CFDATA(uint8_t index, uint8_t value)
 
 	int_cfdata[index] = value;
 }
+
+
+//=====================================================================
+//=             memory interface methods                              =
+//=====================================================================
+
+bool XINT::ReadMemory(service_address_t addr, void *buffer, uint32_t size) {
+
+	read(addr, *(uint8_t *) buffer);
+	return true;
+}
+
+bool XINT::WriteMemory(service_address_t addr, const void *buffer, uint32_t size) {
+
+	write(addr, *(uint8_t *) buffer);
+	return true;
+}
+
 
 } // end of namespace hcs12x
 } // end of namespace processor

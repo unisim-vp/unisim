@@ -52,6 +52,8 @@ CRG::CRG(const sc_module_name& name, Object *parent) :
 	memory_import("memory_import", this),
 	baseAddress(0x0034), // MC9S12XDP512V2 - CRG baseAddress
 	param_baseAddress("base-address", this, baseAddress),
+	debug_enabled(false),
+	param_debug_enabled("debug-enabled", this, debug_enabled),
 
 	interrupt_offset_rti(0xF0),
 	param_interrupt_offset_rti("interrupt-offset-rti", this, interrupt_offset_rti),

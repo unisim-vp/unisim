@@ -58,6 +58,9 @@ PWM<PWM_SIZE>::PWM(const sc_module_name& name, Object *parent) :
 	memory_import("memory_import", this),
 	trap_reporting_import("trap_reproting_import", this),
 
+	debug_enabled(false),
+	param_debug_enabled("debug-enabled", this, debug_enabled),
+
 	baseAddress(0x0300), // MC9S12XDP512V2 - PWM baseAddress
 	param_baseAddress("base-address", this, baseAddress),
 	interruptOffset(0x8C),
@@ -281,7 +284,7 @@ void PWM<PWM_SIZE>::refreshOutput(bool pwmValue[PWM_SIZE])
 
 	sc_time local_time = quantumkeeper.get_local_time();
 
-//	if (CONFIG::DEBUG_ENABLE) {
+//	if (debug_enabled) {
 //		cout << name() << ":: send " << payload->serialize() << " - " << sc_time_stamp() << endl;
 //	}
 

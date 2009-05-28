@@ -66,6 +66,9 @@ ATD10B<ATD_SIZE>::ATD10B(const sc_module_name& name, Object *parent) :
 	param_interruptOffset("interrupt-offset", this, interruptOffset),
 	bus_cycle_time_int(0),
 	param_bus_cycle_time_int("bus-cycle-time", this, bus_cycle_time_int),
+	debug_enabled(false),
+	param_debug_enabled("debug-enabled", this, debug_enabled),
+	
 	vrl(0),
 	vrh(5.12),
 	param_vrl("vrl", this, vrl),
@@ -203,7 +206,7 @@ void ATD10B<ATD_SIZE>::Input(double anValue[ATD_SIZE])
 		last_payload = payload;
 		payload = input_payload_queue.get_next_transaction();
 
-//		if (CONFIG::DEBUG_ENABLE && payload) {
+//		if (debug_enabled && payload) {
 //			cout << name() << ":: Receive " << payload->serialize() << " - " << sc_time_stamp() << endl;
 //		}
 
@@ -211,7 +214,7 @@ void ATD10B<ATD_SIZE>::Input(double anValue[ATD_SIZE])
 
 	payload = last_payload;
 
-	if (CONFIG::DEBUG_ENABLE) {
+	if (debug_enabled) {
 		cout << name() << ":: Last Receive " << payload->serialize() << " - " << sc_time_stamp() << endl;
 	}
 
@@ -286,7 +289,7 @@ void ATD10B<ATD_SIZE>::RunScanMode()
 	// - check ATDCTL0::wrap bits to identify the channel to wrap around
 	uint8_t wrapArroundChannel = atdctl0_register & 0x0F;
 	if (wrapArroundChannel == 0) {
-		if (CONFIG::DEBUG_ENABLE) {
+		if (debug_enabled) {
 			cerr << "Warning: " << name() << " => WrapArroundChannel=0 is a reserved value. The wrap channel is assumed " << ATD_SIZE-1 << ".\n";
 		}
 
@@ -339,7 +342,7 @@ void ATD10B<ATD_SIZE>::RunScanMode()
 					case 5: anSignal = vrl; break;
 					case 6: anSignal = (vrh + vrl)/2; break;
 					default:
-						if (CONFIG::DEBUG_ENABLE) {
+						if (debug_enabled) {
 							cerr << "Warning: " << name() << " => Reserved value of CD/CC/CB/CA.\n";
 						}
 				}
@@ -499,7 +502,7 @@ void ATD10B<ATD_SIZE>::setATDClock() {
 	if ((bus_cycle_time_int < busClockRange[prsValue].minBusClock) ||
 			(bus_cycle_time_int > busClockRange[prsValue].maxBusClock)) {
 
-		if (CONFIG::DEBUG_ENABLE) {
+		if (debug_enabled) {
 			cerr << "Warning : " << name() << ": unallowed prescaler value" << std::endl;
 		}
 	}
@@ -667,7 +670,7 @@ void ATD10B<ATD_SIZE>::read(uint8_t offset, void *buffer) {
 				atdstat0_register = atdstat0_register & 0x7F;
 			}
 		} else {
-			if (CONFIG::DEBUG_ENABLE) {
+			if (debug_enabled) {
 				cerr << "Warning: " << name() << " => Wrong offset.\n";
 			}
 		}
@@ -690,7 +693,7 @@ void ATD10B<ATD_SIZE>::write(uint8_t offset, const void *buffer) {
 		case ATDCTL2: {
 			atdctl2_register = (*((uint8_t *) buffer) & 0xFE) | (atdctl2_register & 0x01);
 			if ((atdctl2_register & 0x04) != 0) {
-				if (CONFIG::DEBUG_ENABLE) {
+				if (debug_enabled) {
 					cerr << "Warning: " << name() << " => Trigger mode not support Yet. \n";
 				}
 			}
@@ -728,7 +731,7 @@ void ATD10B<ATD_SIZE>::write(uint8_t offset, const void *buffer) {
 		case UNIMPL0007: break;
 		case ATDTEST0:
 			// atdtest0_register = *((uint8_t *) buffer);
-			if (CONFIG::DEBUG_ENABLE) {
+			if (debug_enabled) {
 				cerr << "Warning: " << name() << " => Not implemented yet. Write to ATDTEST0 in special modes can alter functionality.\n";
 			}
 
@@ -790,7 +793,7 @@ template <uint8_t ATD_SIZE>
 bool ATD10B<ATD_SIZE>::Setup() {
 
 	if (vrh <= vrl) {
-		if (CONFIG::DEBUG_ENABLE) {
+		if (debug_enabled) {
 			cerr << "Warning: " << name() << " : Wrong Values of Vrl and Vrh.\n";
 		}
 

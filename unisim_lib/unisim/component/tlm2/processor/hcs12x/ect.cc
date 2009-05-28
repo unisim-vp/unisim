@@ -52,6 +52,8 @@ ECT::ECT(const sc_module_name& name, Object *parent) :
 	memory_import("memory_import", this),
 	baseAddress(0x0040), // MC9S12XDP512V2 - ECT baseAddress
 	param_baseAddress("base-address", this, baseAddress),
+	debug_enabled(false),
+	param_debug_enabled("debug-enabled", this, debug_enabled),
 
 	interrupt_offset_channel0(0xEE),
 	param_interrupt_offset_channel0("interrupt-offset-channel0", this, interrupt_offset_channel0),
