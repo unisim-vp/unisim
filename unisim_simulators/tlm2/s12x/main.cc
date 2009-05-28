@@ -66,11 +66,11 @@
 #include <unisim/kernel/service/service.hh>
 #include <unisim/service/interfaces/loader.hh>
 
+#include "rtb_unisim.hh"
+
 #include <stdexcept>
 
 #include <signal.h>
-
-#include "rtb_unisim.cc"
 
 #ifdef WIN32
 

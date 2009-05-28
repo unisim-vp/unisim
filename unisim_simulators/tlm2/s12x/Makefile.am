@@ -2,6 +2,7 @@ sharedir = $(prefix)/share/unisim_simulators/tlm2/s12x
 INCLUDES=-I$(top_srcdir)/../../.. -I$(top_builddir)/../../..
 bin_PROGRAMS = s12xemu
 s12xemu_SOURCES = main.cc rtb_unisim.cc
+include_HEADERS = rtb_unisim.hh
 
 dist_share_DATA = COPYING
 
