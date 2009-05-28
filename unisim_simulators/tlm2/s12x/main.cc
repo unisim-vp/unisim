@@ -82,7 +82,7 @@
 
 //static const bool DEBUG_INFORMATION = false;
 
-bool debug_enabled;
+bool debug_enabled = false;
 
 void EnableDebug()
 {
@@ -416,6 +416,7 @@ int sc_main(int argc, char *argv[])
 
 	//  - 68HCS12X processor
 	// if the following line ("cpu-cycle-time") is commented, the cpu will use the power estimators to find min cpu cycle time
+	(*cpu)["debug-enabled"] = debug_enabled;
 	(*cpu)["cpu-cycle-time"] = cpu_cycle_time;
 	(*cpu)["bus-cycle-time"] = fsb_cycle_time;
 	if(maxinst)
@@ -432,6 +433,7 @@ int sc_main(int argc, char *argv[])
 	 */
 	(*crg)["base-address"] = 0x0034;
 	(*crg)["oscillator-clock"] = fsb_cycle_time / 2;
+	(*crg)["debug-enabled"] = debug_enabled;
 
 	(*crg)["interrupt-offset-rti"] = 0xF0;
 	(*crg)["interrupt-offset-pll-lock"] = 0xC6;
@@ -439,22 +441,24 @@ int sc_main(int argc, char *argv[])
 
 	(*ect)["bus-cycle-time"] = fsb_cycle_time;
 	(*ect)["base-address"] = 0x0040;
+	(*ect)["debug-enabled"] = debug_enabled;
 
 	(*ect)["interrupt-offset-channel0"] = 0xEE; // (MC9S12XDP512) ECT channels interrupt are from 0xEE down to 0xE0
 	(*ect)["interrupt-offset-overflow"] = 0xDE;
 
 	(*pwm)["bus-cycle-time"] = fsb_cycle_time;
 	(*pwm)["base-address"] = 0x0300;
+	(*pwm)["debug-enabled"] = debug_enabled;
 
 	(*atd1)["bus-cycle-time"] = fsb_cycle_time;
 	(*atd1)["base-address"] = 0x0080;
 	(*atd1)["interrupt-offset"] = 0xD0;
-
+	(*atd1)["debug-enabled"] = debug_enabled;
 
 	(*atd0)["bus-cycle-time"] = fsb_cycle_time;
 	(*atd0)["base-address"] = 0x02C0;
 	(*atd0)["interrupt-offset"] = 0xD2;
-
+	(*atd0)["debug-enabled"] = debug_enabled;
 
 	//  -External Router
 	unisim::kernel::service::VariableBase *var = ServiceManager::GetParameter("external_router.cycle_time");
@@ -501,6 +505,7 @@ int sc_main(int argc, char *argv[])
 
 	// MMC parameter
 	(*mmc)["address-encoding"] = address_encoding;
+	(*mmc)["debug-enabled"] = debug_enabled;
 
 	//  - External Memory
 	(*external_memory)["cycle-time"] = mem_cycle_time;
