@@ -63,12 +63,10 @@ CoffLoader<MEMORY_ADDR>::CoffLoader(const char *name, Object *parent)
 	, loader_export("loader-export", this)
 	, filename()
 	, entry_point(0)
-	, base_addr(0)
 	, top_addr(0)
 	, dump_headers(false)
 	, logger(*this)
 	, param_filename("filename", this, filename)
-	, param_base_addr("base-addr", this, base_addr)
 	, param_dump_headers("dump-headers", this, dump_headers)
 {
 	Object::SetupDependsOn(memory_import);

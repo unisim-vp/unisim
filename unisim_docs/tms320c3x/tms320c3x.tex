@@ -1,5 +1,23 @@
 \section{User guide}
 
+\subsection{Simulator features}
+
+The TMS320C3X is a 32-bit floating-point DSP from Texas Instrument.
+The UNISIM TMS320C3X simulator features:
+\begin{itemize}
+\item Simulation of the TMS320C3X Instruction set
+\item A simulation speed average around 10 MIPS and up to 28 MIPS on a 2.4 Ghz Core2 Duo machine under Linux
+\item Support for instruction cache
+\item Support for TI COFF v0, v1, and v2
+\item Built-in debugger (Inline Debugger)
+\item Support for GDB serial remote protocol (GDB server)
+\item Support for TI C I/O
+\end{itemize}
+
+\subsection{Compiling the simulator}
+
+Up-to-date instructions for compiling the simulator are available in file \texttt{INSTALL}.
+
 \subsection{Invoking the simulator}
 
 The general command line format for invoking the simulator is the following:
@@ -58,6 +76,7 @@ $ tms320c3x -g default_sim_config.xml
 $ tms320c3x -c sim_config.xml
 \end{verbatim}
 
+\newpage
 \noindent The available parameters are summarized in table below:
 
 \begin{center}
@@ -90,12 +109,6 @@ $ tms320c3x -c sim_config.xml
 	\multicolumn{2}{|l|}{}\\
 	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Globally enable/disable verbosity of CPU.}\\
 	\hline
-	\end{tabular}
-\end{center}
-
-\newpage
-\begin{center}
-	\begin{tabular}{|p{7.5cm}|p{7.5cm}|}
 	\hline
 	\multicolumn{2}{|c|}{\textbf{\large Service GDB Server run-time parameters}}\\
 	\hline
@@ -109,6 +122,12 @@ $ tms320c3x -c sim_config.xml
 	\multicolumn{2}{|l|}{}\\
 	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Filename of an XML description of the connected processor.}\\
 	\hline
+	\end{tabular}
+\end{center}
+
+\newpage
+\begin{center}
+	\begin{tabular}{|p{7.5cm}|p{7.5cm}|}
 	\hline
 	\multicolumn{2}{|c|}{\textbf{\large Inline Debugger run-time parameters}}\\
 	\hline

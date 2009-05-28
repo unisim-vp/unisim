@@ -2,10 +2,10 @@
 function Usage
 {
 	echo "Usage:"
-	echo "  $0 <destination directory> <unisim_tools directory> <unisim_lib directory> <unisim_simulators directory>"
+	echo "  $0 <destination directory> <unisim_tools directory> <unisim_lib directory> <unisim_simulators directory> <unisim_docs directory>"
 }
 
-if test "x$1" = x || test "x$2" = x || test "x$3" = x || test "x$4" = x; then
+if test "x$1" = x || test "x$2" = x || test "x$3" = x || test "x$4" = x || test "x$5" = x; then
 	Usage
 	exit
 fi
@@ -15,6 +15,7 @@ DEST_DIR=$1
 UNISIM_TOOLS_DIR=$2
 UNISIM_LIB_DIR=$3
 UNISIM_SIMULATORS_DIR=$4/cxx/tms320c3x
+UNISIM_DOCS_DIR=$5
 
 UNISIM_TOOLS_GENISSLIB_HEADER_FILES="\
 action.hh \
@@ -238,6 +239,8 @@ UNISIM_SIMULATORS_TMS320C3X_HEADER_FILES=
 UNISIM_SIMULATORS_TMS320C3X_TEMPLATE_FILES=
 UNISIM_SIMULATORS_TMS320C3X_DATA_FILES="COPYING INSTALL NEWS README AUTHORS ChangeLog"
 
+UNISIM_DOCS_FILES="genisslib_manual.pdf tms320c3x_manual.pdf"
+
 has_to_build_configure=no
 has_to_build_genisslib_configure=no
 has_to_build_tms320c3x_configure=no
@@ -313,6 +316,22 @@ for file in ${UNISIM_SIMULATORS_TMS320C3X_DATA_FILES}; do
 	fi
 done
 
+for file in ${UNISIM_DOCS_FILES}; do
+	mkdir -p "${DEST_DIR}/`dirname ${file}`"
+	has_to_copy=no
+	if [ -e "${DEST_DIR}/${file}" ]; then
+		if [ "${UNISIM_DOCS_DIR}/${file}" -nt "${DEST_DIR}/${file}" ]; then
+			has_to_copy=yes
+		fi
+	else
+		has_to_copy=yes
+	fi
+	if [ "${has_to_copy}" = "yes" ]; then
+		echo "${UNISIM_DOCS_DIR}/${file} ==> ${DEST_DIR}/${file}"
+		cp -f "${UNISIM_DOCS_DIR}/${file}" "${DEST_DIR}/${file}" || exit
+	fi
+done
+
 
 mkdir -p ${DEST_DIR}/config
 mkdir -p ${DEST_DIR}/tms320c3x/config
@@ -356,6 +375,7 @@ done
 
 echo "This package contains GenISSLib, an instruction set simulator generator, and a TMS320C3X instruction set simulator." > "${DEST_DIR}/README"
 echo "See INSTALL for installation instructions." >> "${DEST_DIR}/README"
+echo "See tms320c3x_manual.pdf and genisslib_manual.pdf for a printable documentation of these tools." >> "${DEST_DIR}/README"
 
 echo "INSTALLATION" > "${DEST_DIR}/INSTALL"
 echo "------------" >> "${DEST_DIR}/INSTALL"
@@ -459,7 +479,7 @@ if [ "${has_to_build_genisslib_configure}" = "yes" ]; then
 	echo "bin_PROGRAMS = genisslib" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "genisslib_SOURCES = ${UNISIM_TOOLS_GENISSLIB_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "noinst_HEADERS= ${UNISIM_TOOLS_GENISSLIB_HEADER_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
-	echo "EXTRA_DIST = ${UNISIM_TOOLS_GENISSLIB_M4_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
+	echo "EXTRA_DIST = ${UNISIM_TOOLS_GENISSLIB_M4_FILES} ${UNISIM_DOCS_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 
 	echo "Building GENISSLIB configure"
 	${SHELL} -c "cd ${DEST_DIR}/genisslib && aclocal -I m4 && autoconf --force && autoheader && automake -ac"

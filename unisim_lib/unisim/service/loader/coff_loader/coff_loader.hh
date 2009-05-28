@@ -334,13 +334,11 @@ private:
 	string filename;
 	MEMORY_ADDR entry_point;
 	MEMORY_ADDR top_addr;
-	MEMORY_ADDR base_addr;
 	unisim::util::endian::endian_type file_endianness;
 	bool dump_headers;
 
 	// Run-time parameters (accessors)
 	Parameter<string> param_filename;
-	Parameter<MEMORY_ADDR> param_base_addr;
 	Parameter<bool> param_dump_headers;
 
 	unisim::kernel::logger::Logger logger;
