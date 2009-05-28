@@ -14,7 +14,7 @@ HERE=`pwd`
 DEST_DIR=$1
 UNISIM_TOOLS_DIR=$2
 UNISIM_LIB_DIR=$3
-UNISIM_SIMULATORS_DIR=$4/cxx/hcs12x
+UNISIM_SIMULATORS_DIR=$4/tlm2/s12x
 
 UNISIM_TOOLS_GENISSLIB_HEADER_FILES="\
 action.hh \
@@ -111,16 +111,19 @@ unisim/util/debug/watchpoint_registry_64.cc \
 unisim/util/debug/breakpoint_registry_32.cc \
 unisim/util/debug/breakpoint_registry_64.cc \
 unisim/util/endian/endian.cc \
-unisim/service/loader/coff_loader/coff_loader.cc \
 unisim/service/debug/inline_debugger/inline_debugger.cc \
 unisim/service/debug/inline_debugger/inline_debugger_32.cc \
 unisim/service/debug/inline_debugger/inline_debugger_64.cc \
 unisim/service/debug/gdb_server/gdb_server_32.cc \
 unisim/service/debug/gdb_server/gdb_server_64.cc \
 unisim/service/debug/gdb_server/gdb_server.cc \
-unisim/service/os/ti_c_io/ti_c_io_32.cc \
-unisim/service/os/ti_c_io/ti_c_io_64.cc \
+unisim/service/logger/logger_server.cc \
+unisim/service/logger/logger.cc \
+unisim/service/loader/elf_loader/elf32_loader.cc \
+unisim/service/loader/elf_loader/elf64_loader.cc \
+unisim/service/loader/s19_loader/s19_loader.cc \
 unisim/service/time/host_time/time.cc \
+unisim/service/time/sc_time/time.cc \
 unisim/component/cxx/processor/hcs12x/ccr.cc \
 unisim/component/cxx/processor/hcs12x/cpu.cc \
 unisim/component/cxx/processor/hcs12x/exception.cc \
@@ -133,6 +136,9 @@ unisim/component/tlm2/processor/hcs12x/atd10b.cc \
 unisim/component/tlm2/processor/hcs12x/crg.cc \
 unisim/component/tlm2/processor/hcs12x/ect.cc \
 unisim/component/tlm2/processor/hcs12x/tlm_types.cc \
+unisim/component/tlm2/interconnect/generic_router/router.cc \
+unisim/component/tlm2/interconnect/generic_router/variable_mapping.cc \
+unisim/component/tlm2/memory/ram/memory.cc \
 unisim/component/cxx/memory/ram/memory_32.cc \
 unisim/component/cxx/memory/ram/memory_64.cc"
 
@@ -151,18 +157,19 @@ unisim/component/cxx/processor/hcs12x/move.isa \
 unisim/component/cxx/processor/hcs12x/multiplication_division.isa \
 unisim/component/cxx/processor/hcs12x/others.isa \
 unisim/component/cxx/processor/hcs12x/stacking.isa \
-unisim/component/cxx/processor/hcs12x/transfer_exchange.isa \
-unisim/component/cxx/processor/hcs12x/xb.isa \
-unisim/component/cxx/processor/hcs12x/xb_sub.isa"
+unisim/component/cxx/processor/hcs12x/transfer_exchange.isa"
+
+UNISIM_LIB_XB_ISA_FILES="\
+unisim/component/cxx/processor/hcs12x/xb.isa"
 
 
-UNISIM_LIB_HCS12X_HEADER_FILES="${UNISIM_LIB_HCS12X_ISA_FILES} \
+UNISIM_LIB_HCS12X_HEADER_FILES="${UNISIM_LIB_HCS12X_ISA_FILES} ${UNISIM_LIB_XB_ISA_FILES} \
 unisim/kernel/service/service.hh \
 unisim/kernel/service/xml_helper.hh \
 unisim/kernel/logger/logger.hh \
 unisim/kernel/logger/logger_server.hh \
 unisim/kernel/debug/debug.hh \
-unisim/util/xml/xml.hh \
+unisim/util/arithmetic/arithmetic.hh \
 unisim/util/debug/breakpoint.hh \
 unisim/util/debug/register.hh \
 unisim/util/debug/symbol.hh \
@@ -172,8 +179,9 @@ unisim/util/debug/watchpoint.hh \
 unisim/util/debug/breakpoint_registry.hh \
 unisim/util/debug/symbol_table.hh \
 unisim/util/endian/endian.hh \
-unisim/util/arithmetic/arithmetic.hh \
+unisim/util/garbage_collector/garbage_collector.hh \
 unisim/util/hash_table/hash_table.hh \
+unisim/util/xml/xml.hh \
 unisim/service/interfaces/debug_control.hh \
 unisim/service/interfaces/memory_access_reporting.hh \
 unisim/service/interfaces/ti_c_io.hh \
@@ -185,12 +193,16 @@ unisim/service/interfaces/time.hh \
 unisim/service/interfaces/memory_injection.hh \
 unisim/service/interfaces/registers.hh \
 unisim/service/interfaces/trap_reporting.hh \
-unisim/service/loader/coff_loader/coff_loader.hh \
-unisim/service/loader/coff_loader/ti/ti.hh \
 unisim/service/debug/inline_debugger/inline_debugger.hh \
 unisim/service/debug/gdb_server/gdb_server.hh \
-unisim/service/os/ti_c_io/ti_c_io.hh \
+unisim/service/logger/logger_server.hh \
+unisim/service/logger/logger.hh \
+unisim/service/logger/logger_server_interface.hh \
+unisim/service/loader/elf_loader/elf_loader.hh \
+unisim/service/loader/s19_loader/s19_loader.hh \
 unisim/service/time/host_time/time.hh \
+unisim/service/time/sc_time/time.hh \
+unisim/component/cxx/memory/ram/memory.hh \
 unisim/component/cxx/processor/hcs12x/cpu.hh \
 unisim/component/cxx/processor/hcs12x/mmc.hh \
 unisim/component/cxx/processor/hcs12x/ccr.hh \
@@ -198,6 +210,10 @@ unisim/component/cxx/processor/hcs12x/exception.hh \
 unisim/component/cxx/processor/hcs12x/types.hh \
 unisim/component/cxx/processor/hcs12x/concatenated_register.hh \
 unisim/component/cxx/processor/hcs12x/config.hh \
+unisim/component/tlm2/memory/ram/memory.hh \
+unisim/component/tlm2/interconnect/generic_router/config.hh \
+unisim/component/tlm2/interconnect/generic_router/router.hh \
+unisim/component/tlm2/interconnect/generic_router/router_dispatcher.hh \
 unisim/component/tlm2/processor/hcs12x/hcs12x.hh \
 unisim/component/tlm2/processor/hcs12x/xint.hh \
 unisim/component/tlm2/processor/hcs12x/tlm_types.hh \
@@ -206,20 +222,21 @@ unisim/component/tlm2/processor/hcs12x/pwm.hh \
 unisim/component/tlm2/processor/hcs12x/atd10b.hh \
 unisim/component/tlm2/processor/hcs12x/crg.hh \
 unisim/component/tlm2/processor/hcs12x/ect.hh \
-unisim/component/cxx/memory/ram/memory.hh"
-
+"
 
 UNISIM_LIB_HCS12X_TEMPLATE_FILES="\
 unisim/util/debug/breakpoint_registry.tcc \
 unisim/util/debug/watchpoint_registry.tcc \
 unisim/util/debug/symbol_table.tcc \
 unisim/util/debug/symbol.tcc \
-unisim/service/loader/coff_loader/coff_loader.tcc \
-unisim/service/loader/coff_loader/ti/ti.tcc \
 unisim/service/debug/inline_debugger/inline_debugger.tcc \
 unisim/service/debug/gdb_server/gdb_server.tcc \
-unisim/service/os/ti_c_io/ti_c_io.tcc \
+unisim/service/loader/elf_loader/elf_loader.tcc \
+unisim/service/loader/s19_loader/s19_loader.tcc \
+unisim/component/tlm2/interconnect/generic_router/router.tcc \
+unisim/component/tlm2/interconnect/generic_router/router_dispatcher.tcc \
 unisim/component/cxx/memory/ram/memory.tcc \
+unisim/component/tlm2/memory/ram/memory.tcc \
 unisim/component/tlm2/processor/hcs12x/pwm.tcc \
 unisim/component/tlm2/processor/hcs12x/atd10b.tcc"
 
@@ -231,6 +248,8 @@ m4/boost_graph.m4 \
 m4/bsd_sockets.m4 \
 m4/curses.m4 \
 m4/libedit.m4 \
+m4/systemc.m4 \
+m4/tlm20.m4 \
 m4/with_boost.m4"
 
 HCS12X_EXTERNAL_HEADERS="\
@@ -263,8 +282,14 @@ unistd.h \
 vector \
 "
 
-UNISIM_SIMULATORS_HCS12X_SOURCE_FILES=main.cc
-UNISIM_SIMULATORS_HCS12X_HEADER_FILES=
+UNISIM_SIMULATORS_HCS12X_SOURCE_FILES="\
+main.cc \
+rtb_unisim.cc \
+"
+UNISIM_SIMULATORS_HCS12X_HEADER_FILES="\
+rtb_unisim.hh \
+"
+
 UNISIM_SIMULATORS_HCS12X_TEMPLATE_FILES=
 UNISIM_SIMULATORS_HCS12X_DATA_FILES="COPYING INSTALL NEWS README AUTHORS ChangeLog"
 
@@ -519,12 +544,13 @@ if [ "${has_to_build_hcs12x_configure}" = "yes" ]; then
 	echo "AC_CANONICAL_BUILD" >> "${HCS12X_CONFIGURE_AC}"
 	echo "AC_CANONICAL_HOST" >> "${HCS12X_CONFIGURE_AC}"
 	echo "AC_CANONICAL_TARGET" >> "${HCS12X_CONFIGURE_AC}"
-	echo "AM_INIT_AUTOMAKE" >> "${HCS12X_CONFIGURE_AC}"
+	echo "AM_INIT_AUTOMAKE([subdir-objects])" >> "${HCS12X_CONFIGURE_AC}"
 	echo "AC_PATH_PROGS(SH, sh)" >> "${HCS12X_CONFIGURE_AC}"
 	echo "AC_PROG_CXX" >> "${HCS12X_CONFIGURE_AC}"
 	echo "AC_PROG_INSTALL" >> "${HCS12X_CONFIGURE_AC}"
 	echo "AC_PROG_LN_S" >> "${HCS12X_CONFIGURE_AC}"
 	echo "AC_LANG([C++])" >> "${HCS12X_CONFIGURE_AC}"
+	echo "AM_PROG_CC_C_O" >> "${HCS12X_CONFIGURE_AC}"
 	echo "AC_CHECK_HEADERS([${HCS12X_EXTERNAL_HEADERS}],, AC_MSG_ERROR([Some external headers are missing.]))" >> "${HCS12X_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_CURSES" >> "${HCS12X_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_LIBEDIT" >> "${HCS12X_CONFIGURE_AC}"
@@ -532,6 +558,8 @@ if [ "${has_to_build_hcs12x_configure}" = "yes" ]; then
 	echo "UNISIM_CHECK_ZLIB" >> "${HCS12X_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_LIBXML2" >> "${HCS12X_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_CXXABI" >> "${HCS12X_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_SYSTEMC" >> "${HCS12X_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_TLM20" >> "${HCS12X_CONFIGURE_AC}"
 	echo "GENISSLIB_PATH=\`pwd\`/../genisslib/genisslib" >> "${HCS12X_CONFIGURE_AC}"
 	echo "AC_SUBST(GENISSLIB_PATH)" >> "${HCS12X_CONFIGURE_AC}"
 	echo "AC_CONFIG_FILES([Makefile])" >> "${HCS12X_CONFIGURE_AC}"
@@ -541,16 +569,22 @@ if [ "${has_to_build_hcs12x_configure}" = "yes" ]; then
 	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${HCS12X_MAKEFILE_AM}"
 	echo "HCS12X_INCLUDES=-I\$(top_srcdir) -I\$(top_builddir)" >> "${HCS12X_MAKEFILE_AM}"
 	echo "bin_PROGRAMS = hcs12x" >> "${HCS12X_MAKEFILE_AM}"
-	echo "HCS12X_SOURCES = ${UNISIM_LIB_HCS12X_SOURCE_FILES} ${UNISIM_SIMULATORS_HCS12X_SOURCE_FILES}" >> "${HCS12X_MAKEFILE_AM}"
+	echo "hcs12x_SOURCES = ${UNISIM_LIB_HCS12X_SOURCE_FILES} ${UNISIM_SIMULATORS_HCS12X_SOURCE_FILES} unisim/component/cxx/processor/hcs12x/xb.cc unisim/component/cxx/processor/hcs12x/hcs12x.cc" >> "${HCS12X_MAKEFILE_AM}"
+#	echo "hcs12x_SOURCES = ${UNISIM_LIB_HCS12X_SOURCE_FILES} ${UNISIM_SIMULATORS_HCS12X_SOURCE_FILES}" >> "${HCS12X_MAKEFILE_AM}"
 	echo "noinst_HEADERS = ${UNISIM_TOOLS_HCS12X_HEADER_FILES} ${UNISIM_LIB_HCS12X_HEADER_FILES} ${UNISIM_LIB_HCS12X_TEMPLATE_FILES} ${UNISIM_SIMULATORS_HCS12X_HEADER_FILES} ${UNISIM_SIMULATORS_HCS12X_TEMPLATE_FILES}" >> "${HCS12X_MAKEFILE_AM}"
 	echo "EXTRA_DIST = ${UNISIM_LIB_HCS12X_M4_FILES}" >> "${HCS12X_MAKEFILE_AM}"
 
-	echo "BUILT_SOURCES=\$(top_srcdir)/unisim/component/cxx/processor/hcs12x/hcs12x.hh \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/hcs12x.cc" >> "${hcs12x_MAKEFILE_AM}"
-	echo "CLEANFILES=\$(top_srcdir)/unisim/component/cxx/processor/hcs12x/hcs12x.hh \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/hcs12x.cc" >> "${hcs12x_MAKEFILE_AM}"
-	echo "\$(top_srcdir)/unisim/component/cxx/processor/hcs12x/hcs12x.cc: \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/hcs12x.hh" >> "${hcs12x_MAKEFILE_AM}"
-	echo "\$(top_srcdir)/unisim/component/cxx/processor/hcs12x/hcs12x.hh: ${UNISIM_LIB_HCS12X_ISA_FILES}" >> "${HCS12X_MAKEFILE_AM}"
+	echo "BUILT_SOURCES=\$(top_srcdir)/unisim/component/cxx/processor/hcs12x/hcs12x.hh \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/hcs12x.cc \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/xb.hh \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/xb.cc \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/xb_sub.isa" >> "${HCS12X_MAKEFILE_AM}"
+	echo "CLEANFILES=\$(top_srcdir)/unisim/component/cxx/processor/hcs12x/hcs12x.hh \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/hcs12x.cc \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/xb.hh \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/xb.cc \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/xb_sub.isa" >> "${HCS12X_MAKEFILE_AM}"
+	echo "\$(top_srcdir)/unisim/component/cxx/processor/hcs12x/xb.cc: \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/xb.hh" >> "${HCS12X_MAKEFILE_AM}"
+	echo "\$(top_srcdir)/unisim/component/cxx/processor/hcs12x/xb_sub.isa: \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/xb.hh" >> "${HCS12X_MAKEFILE_AM}"
+	echo "\$(top_srcdir)/unisim/component/cxx/processor/hcs12x/xb.hh: \${UNISIM_LIB_XB_ISA_FILES}" >> "${HCS12X_MAKEFILE_AM}"
 	printf "\t" >> "${HCS12X_MAKEFILE_AM}"
-	echo "cd \$(top_srcdir)/unisim/component/cxx/processor/hcs12x; \$(GENISSLIB_PATH) -o isa_hcs12x -w 32 -I . hcs12x.isa" >> "${HCS12X_MAKEFILE_AM}"
+	echo "cd \$(top_srcdir)/unisim/component/cxx/processor/hcs12x; \$(GENISSLIB_PATH) -o xb -w 32 -I . xb.isa" >> "${HCS12X_MAKEFILE_AM}"
+	echo "\$(top_srcdir)/unisim/component/cxx/processor/hcs12x/hcs12x.cc: \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/hcs12x.hh" >> "${HCS12X_MAKEFILE_AM}"
+	echo "\$(top_srcdir)/unisim/component/cxx/processor/hcs12x/hcs12x.hh: \${UNISIM_LIB_HCS12X_ISA_FILES} \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/xb_sub.isa" >> "${HCS12X_MAKEFILE_AM}"
+	printf "\t" >> "${HCS12X_MAKEFILE_AM}"
+	echo "cd \$(top_srcdir)/unisim/component/cxx/processor/hcs12x; \$(GENISSLIB_PATH) -o hcs12x -w 32 -I . hcs12x.isa" >> "${HCS12X_MAKEFILE_AM}"
 
 	echo "Building hcs12x configure"
 	${SHELL} -c "cd ${DEST_DIR}/hcs12x && aclocal -I m4 && autoconf --force && autoheader && automake -ac"
