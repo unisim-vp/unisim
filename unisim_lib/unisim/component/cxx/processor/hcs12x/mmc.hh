@@ -233,6 +233,10 @@ public:
     inline uint8_t read(address_t address);
     inline void write(address_t address, uint8_t val);
 
+protected:
+	bool	debug_enabled;
+	Parameter<bool>	param_debug_enabled;
+
 private:
 	//=============================================
 	//=            MMC REGISTERS                  =

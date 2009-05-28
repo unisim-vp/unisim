@@ -97,6 +97,8 @@ CPU::CPU(const char *name, Object *parent):
 	verbose_step(false),
 	verbose_dump_regs_start(false),
 	verbose_dump_regs_end(false),
+	debug_enabled(false),
+	param_debug_enabled("debug-enabled", this, debug_enabled),
 	instruction_counter(0),
 	max_inst((uint64_t) -1),
 	param_max_inst("max-inst",this,max_inst),
@@ -192,7 +194,7 @@ uint8_t CPU::Step()
 
 		VerboseDumpRegsStart();
 
-		if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
+		if(debug_enabled && verbose_step && logger_import)
 			(*logger_import) << DebugInfo << LOCATION
 				<< "Starting step at PC = 0x"
 				<< Hex << current_pc << Dec
@@ -202,7 +204,7 @@ uint8_t CPU::Step()
 			DebugControl<service_address_t>::DebugCommand dbg_cmd;
 
 			do {
-				if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
+				if(debug_enabled && verbose_step && logger_import)
 					(*logger_import) << DebugInfo << LOCATION
 						<< "Fetching debug command (PC = 0x"
 						<< Hex << current_pc << Dec << ")"
@@ -211,7 +213,7 @@ uint8_t CPU::Step()
 				dbg_cmd = debug_control_import->FetchDebugCommand(current_pc);
 
 				if(dbg_cmd == DebugControl<service_address_t>::DBG_STEP) {
-					if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
+					if(debug_enabled && verbose_step && logger_import)
 						(*logger_import) << DebugInfo << LOCATION
 							<< "Received debug DBG_STEP command (PC = 0x"
 							<< Hex << current_pc << Dec << ")"
@@ -219,7 +221,7 @@ uint8_t CPU::Step()
 					break;
 				}
 				if(dbg_cmd == DebugControl<service_address_t>::DBG_SYNC) {
-					if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
+					if(debug_enabled && verbose_step && logger_import)
 						(*logger_import) << DebugInfo << LOCATION
 							<< "Received debug DBG_SYNC command (PC = 0x"
 							<< Hex << current_pc << Dec << ")"
@@ -229,7 +231,7 @@ uint8_t CPU::Step()
 				}
 
 				if(dbg_cmd == DebugControl<service_address_t>::DBG_KILL) {
-					if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
+					if(debug_enabled && verbose_step && logger_import)
 						(*logger_import) << DebugInfo << LOCATION
 							<< "Received debug DBG_KILL command (PC = 0x"
 							<< Hex << current_pc << Dec << ")"
@@ -237,7 +239,7 @@ uint8_t CPU::Step()
 					Stop(0);
 				}
 				if(dbg_cmd == DebugControl<service_address_t>::DBG_RESET) {
-					if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
+					if(debug_enabled && verbose_step && logger_import)
 						(*logger_import) << DebugInfo << LOCATION
 							<< "Received debug DBG_RESET command (PC = 0x"
 							<< Hex << current_pc << Dec << ")"
@@ -248,7 +250,7 @@ uint8_t CPU::Step()
 
 		if(requires_memory_access_reporting) {
 			if(memory_access_reporting_import) {
-				if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
+				if(debug_enabled && verbose_step && logger_import)
 					(*logger_import) << DebugInfo << LOCATION
 						<< "Reporting memory acces for fetch at address 0x"
 						<< Hex << current_pc << Dec
@@ -259,7 +261,7 @@ uint8_t CPU::Step()
 		}
 
 
-		if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
+		if(debug_enabled && verbose_step && logger_import)
 		{
 			(*logger_import) << DebugInfo << LOCATION
 				<< "Fetching (reading) instruction at address 0x"
@@ -271,7 +273,7 @@ uint8_t CPU::Step()
 		CodeType 	insn( buffer, MAX_INS_SIZE);
 
 		/* Decode current PC */
-		if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
+		if(debug_enabled && verbose_step && logger_import)
 		{
 			stringstream ctstr;
 			ctstr << insn;
@@ -322,7 +324,7 @@ uint8_t CPU::Step()
 
 		if(HasAsynchronousInterrupt())
 		{
-			if (CONFIG::DEBUG_ENABLE) {
+			if (debug_enabled) {
 				cout << "CPU: I Have detected Asynchronous Exception !" << std::endl;
 				ReportTrap();
 			}
@@ -817,30 +819,30 @@ void EBLB::exchange(uint8_t rrSrc, uint8_t rrDst) {
 bool CPU::Setup()
 {
 	/* check verbose settings */
-	if(CONFIG::DEBUG_ENABLE && verbose_all) {
+	if(debug_enabled && verbose_all) {
 		verbose_setup = true;
 		verbose_step = true;
 		verbose_dump_regs_start = true;
 		verbose_dump_regs_end = true;
 	}
-	if(CONFIG::DEBUG_ENABLE && verbose_all && logger_import) {
+	if(debug_enabled && verbose_all && logger_import) {
 		(*logger_import) << DebugInfo << LOCATION
 			<< "verbose-all = true"
 			<< Endl << EndDebugInfo;
 	} else {
-		if(CONFIG::DEBUG_ENABLE && verbose_setup && logger_import)
+		if(debug_enabled && verbose_setup && logger_import)
 			(*logger_import) << DebugInfo << LOCATION
 				<< "verbose-setup = true"
 				<< Endl << EndDebugInfo;
-		if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
+		if(debug_enabled && verbose_step && logger_import)
 			(*logger_import) << DebugInfo << LOCATION
 				<< "verbose-step = true"
 				<< Endl << EndDebugInfo;
-		if(CONFIG::DEBUG_ENABLE && verbose_dump_regs_start && logger_import)
+		if(debug_enabled && verbose_dump_regs_start && logger_import)
 			(*logger_import) << DebugInfo << LOCATION
 				<< "verbose-dump-regs-end = true"
 				<< Endl << EndDebugInfo;
-		if(CONFIG::DEBUG_ENABLE && verbose_dump_regs_end && logger_import)
+		if(debug_enabled && verbose_dump_regs_end && logger_import)
 			(*logger_import) << DebugInfo << LOCATION
 				<< "verbose-dump-regs-start = true"
 				<< Endl << EndDebugInfo;
@@ -899,12 +901,12 @@ void CPU::RequiresFinishedInstructionReporting(bool report)
 
 inline INLINE
 bool CPU::VerboseSetup() {
-	return CONFIG::DEBUG_ENABLE && verbose_setup && logger_import;
+	return debug_enabled && verbose_setup && logger_import;
 }
 
 inline INLINE
 bool CPU::VerboseStep() {
-	return CONFIG::DEBUG_ENABLE && verbose_step && logger_import;
+	return debug_enabled && verbose_step && logger_import;
 }
 
 inline INLINE
@@ -925,7 +927,7 @@ void CPU::VerboseDumpRegs() {
 
 inline INLINE
 void CPU::VerboseDumpRegsStart() {
-	if(CONFIG::DEBUG_ENABLE && verbose_dump_regs_start && logger_import) {
+	if(debug_enabled && verbose_dump_regs_start && logger_import) {
 		(*logger_import) << DebugInfo << LOCATION
 			<< "Register dump before starting instruction execution: " << Endl;
 		VerboseDumpRegs();
@@ -935,7 +937,7 @@ void CPU::VerboseDumpRegsStart() {
 
 inline INLINE
 void CPU::VerboseDumpRegsEnd() {
-	if(CONFIG::DEBUG_ENABLE && verbose_dump_regs_end && logger_import) {
+	if(debug_enabled && verbose_dump_regs_end && logger_import) {
 		(*logger_import) << DebugInfo << LOCATION
 			<< "Register dump at the end of instruction execution: " << Endl;
 		VerboseDumpRegs();
@@ -946,7 +948,7 @@ void CPU::VerboseDumpRegsEnd() {
 inline INLINE
 void CPU::RegistersInfo() {
 
-	if (CONFIG::REGISTERS_INFO && CONFIG::DEBUG_ENABLE) {
+	if (CONFIG::REGISTERS_INFO && debug_enabled) {
 		cout << "CPU:: Registers Info " << std::endl;
 		cout << std::hex << "CCR=0x" << ccr->getCCR() << "  PC=0x" << getRegPC() << "  SP=0x" << getRegSP() << "\n";
 		cout << "D  =0x" << getRegD() << "  X =0x" << getRegX() << "  Y =0x" << getRegY() << std::dec << "\n";

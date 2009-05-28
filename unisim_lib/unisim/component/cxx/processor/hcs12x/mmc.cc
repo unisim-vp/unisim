@@ -54,6 +54,8 @@ MMC::MMC(const char *name, Object *parent):
 	param_address_encoding("address-encoding",this,address_encoding),
 	mode_int(MMC_MODE_RESET),
 	mmcctl1_int(MMCCTL1_RESET),
+	debug_enabled(false),
+	param_debug_enabled("debug-enabled", this, debug_enabled),
 	param_mode("mode", this, mode_int),
 	param_mmcctl1("mmcctl1", this, mmcctl1_int)
 

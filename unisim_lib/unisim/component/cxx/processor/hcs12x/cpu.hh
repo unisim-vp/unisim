@@ -509,7 +509,7 @@ public:
 	//=====================================================================
 
     inline uint64_t GetInstructionCounter() const { return instruction_counter; }
-	inline bool IsVerboseException() const { return logger_import && CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_EXCEPTION_ENABLE && (verbose_all || verbose_exception); }
+	inline bool IsVerboseException() const { return logger_import && debug_enabled && CONFIG::DEBUG_EXCEPTION_ENABLE && (verbose_all || verbose_exception); }
 
 	address_t getLastPC() {return lastPC; }
 
@@ -549,6 +549,10 @@ protected:
 	bool requires_memory_access_reporting;
 	/** indicates if the finished instructions require to be reported */
 	bool requires_finished_instruction_reporting;
+
+	bool	debug_enabled;
+	Parameter<bool>	param_debug_enabled;
+
 
 private:
 	uint8_t		regA, regB;
@@ -605,7 +609,7 @@ inline void CPU::MonitorStore(address_t ea, uint32_t size)
 }
 
 inline void CPU::ReportTrap() {
-	if (CONFIG::DEBUG_ENABLE && trap_reporting_import) {
+	if (debug_enabled && trap_reporting_import) {
 		std::cout << "*** CPU12 ReprotTrap *** 0x" << std::hex << getLastPC() << std::dec << std::endl;
 		trap_reporting_import->ReportTrap();
 	}
