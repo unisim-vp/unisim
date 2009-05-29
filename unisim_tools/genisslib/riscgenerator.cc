@@ -128,11 +128,13 @@ RiscGenerator::finalize() {
     
     if( insn_maxsize < size ) insn_maxsize = size;
     if( insn_minsize > size ) insn_minsize = size;
-    unsigned int shift = size;
+    unsigned int nshift = isa().m_little_endian ? 0 : size;
     uint64_t mask = 0, bits = 0;
     for( Vect_t<BitField_t>::const_iterator bf = bitfields.begin(); bf < bitfields.end(); ++ bf ) {
-      shift -= (**bf).m_size;
-      if( not (**bf).hasopcode() ) continue;
+      unsigned int shift;
+      if (isa().m_little_endian) { shift = nshift; nshift += (**bf).m_size; }
+      else                       { nshift -= (**bf).m_size; shift = nshift; }
+      if (not (**bf).hasopcode()) continue;
       bits |= (**bf).bits() << shift;
       mask |= (**bf).mask() << shift;
     }
@@ -246,11 +248,13 @@ RiscGenerator::codetype_decl( Product_t& _product ) const {
 void
 RiscGenerator::insn_decode_impl( Product_t& _product, Operation_t const& _op, char const* _codename, char const* _addrname ) const
 {
-  unsigned int shift = isa().m_little_endian ? opcode( &_op ).m_size : m_insn_maxsize;
+  unsigned int nshift = isa().m_little_endian ? 0 : m_insn_maxsize;
   for( Vect_t<BitField_t>::const_iterator bf = _op.m_bitfields.begin(); bf < _op.m_bitfields.end(); ++ bf ) {
-    shift -= (**bf).m_size;
+    unsigned int shift;
+    if (isa().m_little_endian) { shift = nshift; nshift += (**bf).m_size; }
+    else                       { nshift -= (**bf).m_size; shift = nshift; }
+    
     if( (**bf).type() == BitField_t::SubOp ) {
-      
       SubOpBitField_t const& sobf = dynamic_cast<SubOpBitField_t const&>( **bf );
       SDInstance_t const* sdinstance = sobf.m_sdinstance;
       SDClass_t const* sdclass = sdinstance->m_sdclass;

@@ -72,7 +72,7 @@ Generator::reorder() {
         if ((fend - fbeg) < 2) continue;
         uintptr_t lo = fbeg, hi = fend - 1;
         
-        for (hi -= 1; lo < hi; lo ++, hi-- ) {
+        for ( ; lo < hi; lo ++, hi-- ) {
           std::swap( bitfields[lo], bitfields[hi] );
         }
       }
