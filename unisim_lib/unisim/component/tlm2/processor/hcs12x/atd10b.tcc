@@ -206,9 +206,9 @@ void ATD10B<ATD_SIZE>::Input(double anValue[ATD_SIZE])
 		last_payload = payload;
 		payload = input_payload_queue.get_next_transaction();
 
-//		if (debug_enabled && payload) {
-//			cout << name() << ":: Receive " << payload->serialize() << " - " << sc_time_stamp() << endl;
-//		}
+		if (debug_enabled && payload) {
+			cout << name() << ":: Receive " << payload->serialize() << " - " << sc_time_stamp() << endl;
+		}
 
 	} while(payload);
 
