@@ -1,5 +1,5 @@
 #
-#  Copyright (c) 2007,
+#  Copyright (c) 2009,
 #  Commissariat a l'Energie Atomique (CEA)
 #  All rights reserved.
 #
@@ -29,10 +29,11 @@
 #  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
 #  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
-# Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+# Authors: Khaled Rahmouni (khaled.rahmouni@fr.schneider-electric.com)
+#          Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
 #
 
-AC_INIT([UNISIM TLM2 Component Library], [1.0])
+AC_INIT([UNISIM TLM Communication Component Library], [1.0])
 AC_CONFIG_AUX_DIR(config)
 
 AM_INIT_AUTOMAKE
@@ -43,12 +44,8 @@ AC_PROG_INSTALL
 #   this should include all the makefiles to generate
 AC_CONFIG_FILES([Makefile])
 
-UNISIM_CONFIG_SUBDIR(unisim-component-tlm2-memory, memory)
-UNISIM_CONFIG_SUBDIR(unisim-component-tlm2-interconnect, interconnect)
-UNISIM_CONFIG_SUBDIR(unisim-component-tlm2-processor, processor)
-UNISIM_CONFIG_SUBDIR(unisim-component-tlm2-interrupt, interrupt)
-UNISIM_CONFIG_SUBDIR(unisim-component-tlm2-timer, timer)
-UNISIM_CONFIG_SUBDIR(unisim-component-tlm2-com, com)
+UNISIM_CONFIG_SUBDIR(unisim-component-tlm2-com-str7-spi, str7_spi)
+
 # launch the generation of makefiles
 #   this must be the last command of configure.ac
 AC_OUTPUT
