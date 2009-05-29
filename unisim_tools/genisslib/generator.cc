@@ -43,6 +43,45 @@ Generator::init( Isa& _isa ) {
   return *this;
 }
 
+Generator&
+Generator::reorder() {
+  // change bitfield ordering
+  bool rev_forder = isa().m_rev_forder;
+  
+  if (isa().m_rev_worder) {
+    for( Vect_t<Operation_t>::iterator op = isa().m_operations.begin(); op < isa().m_operations.end(); ++ op ) {
+      Vect_t<BitField_t>& bitfields = (**op).m_bitfields;
+      uintptr_t lo = 0, hi = bitfields.size();
+      if (hi == 0) continue;
+      
+      for (hi -= 1; lo < hi; lo ++, hi-- ) {
+        std::swap( bitfields[lo], bitfields[hi] );
+      }
+    }
+    // this operation has invert fields order
+    rev_forder = not rev_forder;
+  }
+  
+  if (rev_forder) {
+    for( Vect_t<Operation_t>::iterator op = isa().m_operations.begin(); op < isa().m_operations.end(); ++ op ) {
+      Vect_t<BitField_t>& bitfields = (**op).m_bitfields;
+      
+      uintptr_t fbeg = 0, fend = 0, fmax = bitfields.size();
+      for ( ; fbeg < fmax; fbeg = fend = fend + 1) {
+        while ((fend < fmax) and (bitfields[fend]->type() != BitField_t::Separator)) fend += 1;
+        if ((fend - fbeg) < 2) continue;
+        uintptr_t lo = fbeg, hi = fend - 1;
+        
+        for (hi -= 1; lo < hi; lo ++, hi-- ) {
+          std::swap( bitfields[lo], bitfields[hi] );
+        }
+      }
+    }
+  }
+  
+  return *this;
+}
+
 /** Generates one C source file and one C header
     @param output a C string containing the name of the output filenames without the file name extension
     @param word_size define the minimum word size to hold the operand bit field,

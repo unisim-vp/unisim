@@ -41,7 +41,7 @@ using namespace std;
  */
 Isa::Isa()
   : m_decoder( RiscDecoder ), m_is_subdecoder( false ), m_withsource( false ),
-    m_little_endian( false ), m_rev_bforder( false )
+    m_little_endian( false ), m_rev_forder( false ), m_rev_worder( false )
 {}
 
 /** Destructor for isa instance
@@ -265,7 +265,8 @@ Isa::setparam( ConstStr_t key, ConstStr_t value ) {
   static ConstStr_t endianness( "endianness",      Scanner::symbols );
   static ConstStr_t      isbig( "big",             Scanner::symbols );
   static ConstStr_t   islittle( "little",          Scanner::symbols );
-  static ConstStr_t    bforder( "bitfield_order",  Scanner::symbols );
+  static ConstStr_t     forder( "fields_order",    Scanner::symbols );
+  static ConstStr_t     worder( "words_order",     Scanner::symbols );
   static ConstStr_t   isnormal( "normal",          Scanner::symbols );
   static ConstStr_t  isreverse( "reverse",         Scanner::symbols );
   
@@ -281,9 +282,12 @@ Isa::setparam( ConstStr_t key, ConstStr_t value ) {
   } else if (key == endianness) {
     if      (value == isbig)    m_little_endian = false;
     else if (value == islittle) m_little_endian = true;
-  } else if (key == bforder) {
-    if      (value == isnormal)  m_rev_bforder = false;
-    else if (value == isreverse) m_rev_bforder = true;
+  } else if (key == forder) {
+    if      (value == isnormal)  m_rev_forder = false;
+    else if (value == isreverse) m_rev_forder = true;
+  } else if (key == worder) {
+    if      (value == isnormal)  m_rev_worder = false;
+    else if (value == isreverse) m_rev_worder = false;
   }
 }
 

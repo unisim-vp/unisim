@@ -31,7 +31,8 @@ struct Isa {
   bool                          m_is_subdecoder;   /**< Subdecoder or full decoder */
   bool                          m_withsource;      /**< Action source code accessible or not */
   bool                          m_little_endian;   /**< Endianness of isa (false: big endian, true: little endian) */
-  bool                          m_rev_bforder;     /**< bitfield ordering (false: msb to lsb, true: lsb to msb)*/
+  bool                          m_rev_forder;      /**< reverse bitfields ordering (false: respect endianness)*/
+  bool                          m_rev_worder;      /**< reverse words ordering (false: respect endianness)*/
   std::vector<ConstStr_t>       m_namespace;       /**< Encapsulating namespace of the iss */
   Vect_t<CodePair_t>            m_tparams;         /**< Template parameters of the iss */
   Vect_t<Variable_t>            m_vars;            /**< Global variables used by the iss */

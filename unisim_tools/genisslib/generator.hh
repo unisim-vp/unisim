@@ -30,6 +30,7 @@ struct Generator {
   virtual ~Generator() {};
   
   Generator&                          init( Isa& _isa );
+  Generator&                          reorder();
 
   virtual void                        finalize() = 0;
 

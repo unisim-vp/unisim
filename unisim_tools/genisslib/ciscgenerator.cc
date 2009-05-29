@@ -219,27 +219,7 @@ struct BFWordIterator {
 */
 void
 CiscGenerator::finalize() {
-  // change bitfield ordering (if needed)
-  if (isa().m_rev_bforder) {
-    for (Vect_t<Operation_t>::iterator op = isa().m_operations.begin(); op < isa().m_operations.end(); ++ op) {
-      Vect_t<BitField_t>& bitfields = (**op).m_bitfields;
-      Vect_t<BitField_t> nbitfields;
-      Vect_t<BitField_t> bitfields_buf;
-      for (Vect_t<BitField_t>::iterator bf = bitfields.begin(); ; ++ bf) {
-        if ((bf < bitfields.end()) and ((**bf).type() != BitField_t::Separator)) {
-          bitfields_buf.push_back( *bf );
-          continue;
-        }
-        for (Vect_t<BitField_t>::reverse_iterator rbf = bitfields_buf.rbegin(); rbf != bitfields_buf.rend(); ++ rbf) {
-          nbitfields.push_back( *rbf );
-        }
-        if (bf >= bitfields.end())
-          break;
-        nbitfields.push_back( *bf );
-      }
-      (**op).m_bitfields = nbitfields;
-    }
-  }
+  this->reorder();
   
   // Process the opcodes needed by the decoder
   unsigned int insn_max_bitsize = 0;

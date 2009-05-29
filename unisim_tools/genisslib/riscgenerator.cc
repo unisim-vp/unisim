@@ -101,19 +101,7 @@ RiscGenerator::RiscGenerator()
 */
 void
 RiscGenerator::finalize() {
-  // change bitfield ordering (if needed)
-  if (isa().m_rev_bforder) {
-    for( Vect_t<Operation_t>::iterator op = isa().m_operations.begin(); op < isa().m_operations.end(); ++ op ) {
-      Vect_t<BitField_t>& bitfields = (**op).m_bitfields;
-      Vect_t<BitField_t> nbitfields;
-    
-      for( Vect_t<BitField_t>::const_reverse_iterator bf = bitfields.rbegin(); bf.base() < bitfields.rend().base(); ++ bf ) {
-        nbitfields.push_back( *bf );
-      }
-      
-      (**op).m_bitfields = nbitfields;
-    }
-  }
+  this->reorder();
   
   Vect_t<Operation_t> const& operations = isa().m_operations;
   
