@@ -83,7 +83,6 @@ cstdarg \
 cstdio \
 cstdlib \
 cstring \
-dlfcn.h \
 fstream \
 inttypes.h \
 iosfwd \
