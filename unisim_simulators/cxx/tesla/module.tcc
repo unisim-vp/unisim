@@ -429,6 +429,21 @@ void Sampler<CONFIG>::SetFlags(unsigned int Flags)
 	flags = Flags;
 }
 
+template<class CONFIG>
+void Sampler<CONFIG>::Load(CPU<CONFIG> & cpu)
+{
+	unisim::component::cxx::processor::tesla::Sampler<CONFIG> & smp = cpu.GetSampler(texunit);
+	smp.baseAddress = address;
+	smp.ndims = 1;	// ? TODO
+	smp.numPackedComponents = num_packed_components;
+	for(int i = 0; i != 3; ++i) {
+		smp.size[i] = 0;	// ? TODO
+		smp.addressMode[i] = unisim::component::cxx::processor::tesla::AddressMode(address_mode[i]);
+	}
+	smp.filterMode = unisim::component::cxx::processor::tesla::FilterMode(filter_mode);
+	smp.flags = flags;
+}
+
 
 //////////////////////////////////////////////////////////////////////
 

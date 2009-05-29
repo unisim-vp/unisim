@@ -312,8 +312,15 @@ CUresult  CUDAAPI cuModuleGetTexRef(CUtexref *pTexRef, CUmodule hmod, const char
 
 CUresult CUDAAPI cuMemGetInfo(unsigned int *free, unsigned int *total)
 {
-  cerr << "function not implemented !!!" << endl;
-  assert(false);
+	if(verbose) cerr << "cuMemGetInfo(...)" << endl;
+	try
+	{
+		driver.CurrentDevice().MemGetInfo(free, total);
+		return CUDA_SUCCESS;
+	}
+	catch(CudaException e) {
+		return e.code;
+	}
 }
 
 

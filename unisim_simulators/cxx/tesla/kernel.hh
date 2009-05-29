@@ -47,6 +47,8 @@
 #include <unisim/component/cxx/processor/tesla/stats.hh>
 
 using unisim::kernel::service::Service;
+using unisim::component::cxx::processor::tesla::CPU;
+using unisim::component::cxx::processor::tesla::Stats;
 //using unisim::service::interfaces::Memory;
 // Conflicts with ram::Memory, do NOT use in headers
 
@@ -89,7 +91,8 @@ struct Kernel : CUfunc_st
 	void ParamSetv(int offset, void * data, int size);
 	void ParamSetSize(int size);
 	void SetSharedSize(int size);
-	void SetTexRef(Sampler<CONFIG> * sampler);
+	void SetTexRef(::Sampler<CONFIG> * sampler);
+	void LoadSamplers(CPU<CONFIG> & cpu);
 	
 	uint32_t SharedTotal() const;
 	void InitShared(Service<unisim::service::interfaces::Memory<typename CONFIG::address_t> > & mem, int index = 0,
@@ -120,7 +123,7 @@ private:
 	
 	int blockx, blocky, blockz;
 	int gridx, gridy;
-	Sampler<CONFIG> * samplers[CONFIG::MAX_SAMPLERS];
+	::Sampler<CONFIG> * samplers[CONFIG::MAX_SAMPLERS];
 };
 
 

@@ -72,7 +72,7 @@ Kernel<CONFIG>::Kernel(Module<CONFIG> * module, std::istream & is) :
 	gridx(1),
 	gridy(1)
 {
-	std::fill(samplers, samplers + CONFIG::MAX_SAMPLERS, (Sampler<CONFIG>*)0);
+	std::fill(samplers, samplers + CONFIG::MAX_SAMPLERS, (::Sampler<CONFIG>*)0);
 	if(trace_parsing)
 		cerr << " Kernel segment\n";
 	typedef string::iterator it_t;
@@ -335,6 +335,17 @@ void Kernel<CONFIG>::SetTexRef(Sampler<CONFIG> * sampler)
 {
 	assert(sampler->TexUnit() < CONFIG::MAX_SAMPLERS);
 	samplers[sampler->TexUnit()] = sampler;
+}
+
+template<class CONFIG>
+void Kernel<CONFIG>::LoadSamplers(CPU<CONFIG> & cpu)
+{
+	for(int i = 0; i != CONFIG::MAX_SAMPLERS; ++i)
+	{
+		if(samplers[i] != 0) {
+			samplers[i]->Load(cpu);
+		}
+	}
 }
 
 template<class CONFIG>

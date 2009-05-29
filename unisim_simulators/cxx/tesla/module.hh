@@ -108,6 +108,7 @@ struct Sampler : CUtexref_st
 	void SetAddressMode(int dim, CUaddress_mode am);
 	void SetFilterMode(CUfilter_mode fm);
 	void SetFlags(unsigned int Flags);
+	void Load(CPU<CONFIG> & cpu);
 	
 private:
 	void SetAttribute(std::string const & name, std::string const & value);
@@ -130,7 +131,7 @@ struct Module : CUmod_st
 	
 	Kernel<CONFIG> & GetKernel(char const * name);
 	MemSegment<CONFIG> & GetGlobal(char const * name);
-	Sampler<CONFIG> & GetSampler(char const * name);
+	::Sampler<CONFIG> & GetSampler(char const * name);
 	void Load(Service<unisim::service::interfaces::Memory<typename CONFIG::address_t> > & mem,
 		Allocator<CONFIG> & allocator);
 
@@ -148,7 +149,7 @@ private:
 	typedef std::map<std::string, MemSegment<CONFIG> > SegMap;
 	SegMap global_segments;
 
-	typedef std::map<std::string, Sampler<CONFIG> > SamplerMap;
+	typedef std::map<std::string, ::Sampler<CONFIG> > SamplerMap;
 	SamplerMap samplers;
 
 //	std::list<CUfunction> functions;

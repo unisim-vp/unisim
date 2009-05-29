@@ -62,6 +62,8 @@ struct Allocator
 	
 	typename CONFIG::address_t Alloc(size_t size);
 	void Free(typename CONFIG::address_t addr);
+	
+	void GetInfo(unsigned int & free, unsigned int & total);
 
 private:
 	typename CONFIG::address_t base;
@@ -100,6 +102,8 @@ struct Device: CUdevice_st, Object
 	void LoadSegment(MemSegment<CONFIG> & seg);
 	
 	void ExportStats(typename CONFIG::stats_t const & stats, char const * filename);
+	
+	void MemGetInfo(unsigned int * free, unsigned int * total);
 
 private:
 	void Load(Kernel<CONFIG> & kernel);

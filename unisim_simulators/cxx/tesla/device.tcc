@@ -74,6 +74,13 @@ void Allocator<CONFIG>::Free(typename CONFIG::address_t addr)
 {
 }
 
+template<class CONFIG>
+void Allocator<CONFIG>::GetInfo(unsigned int & free, unsigned int & total)
+{
+	total = max_size;
+	free = max_size - (limit - base);
+}
+
 bool ParseBool(char const * str)
 {
 	if(str == 0 || strcmp(str, "0") == 0
@@ -173,6 +180,7 @@ void Device<CONFIG>::Run(Kernel<CONFIG> & kernel, int width, int height)
 	DumpCode(kernel, cerr);
 
 	Load(kernel);
+	kernel.LoadSamplers(cpu);
 	kernel.SetGridShape(width, height);
 	
 	int blockspercore = kernel.BlocksPerCore();
@@ -444,6 +452,12 @@ template<class CONFIG>
 void Device<CONFIG>::LoadSegment(MemSegment<CONFIG> & seg)
 {
 	seg.Load(memory, global_allocator);
+}
+
+template<class CONFIG>
+void Device<CONFIG>::MemGetInfo(unsigned int * free, unsigned int * total)
+{
+	global_allocator.GetInfo(*free, *total);
 }
 
 #endif
