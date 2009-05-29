@@ -1210,13 +1210,13 @@ bid_full.disasm = {
 	buffer << " ";
 	insn->DisasmDest(buffer);
 
-	buffer << ", ";
-	DisasmNot(src1_not, buffer);
-	insn->DisasmSrc1(buffer);
-	
 	//buffer << ", ";
-	//DisasmNot(src2_not, buffer);
-	//insn->DisasmSrc2(buffer);
+	//DisasmNot(src1_not, buffer);
+	//insn->DisasmSrc1(buffer);
+	
+	buffer << ", ";
+	DisasmNot(src2_not, buffer);
+	insn->DisasmSrc2(buffer);
 }
 
 bid_full.execute = {
@@ -1225,19 +1225,29 @@ bid_full.execute = {
 	//assert(w32);
 
 	// dest = (neg?)a & (neg?)b
-	reg_t & a = insn->GetSrc1();
-	if(src1_not) {
-		a = BinNeg(a);
-	}
-	//reg_t & b = insn->GetSrc2();
-	//if(src2_not) {
-	//	b = BinNeg(b);
+	//reg_t & a = insn->GetSrc1();
+	//if(src1_not) {
+	//	a = BinNeg(a);
 	//}
+	reg_t & b = insn->GetSrc2();
+	if(src2_not) {
+		b = BinNeg(b);
+	}
 	
-	reg_t output = a;
+	reg_t output = b;
 	
 	insn->SetDest(output);
 	//insn->SetPredI32(output);
+}
+
+bid_full.init = {
+	typedef Operation<CONFIG> inherited;
+	DataType dt = RegTypeToDataType(RegType(w32));
+	inherited::allow_segment = true;
+	inherited::op_type[OpDest] = dt;
+	inherited::op_type[OpSrc1] = DT_NONE;
+	inherited::op_type[OpSrc2] = dt;
+	inherited::op_type[OpSrc3] = DT_NONE;
 }
 
 
@@ -1478,7 +1488,7 @@ intd13.init = {
 }
 
 // Input operand 1 and output operand of type w32
-group intd1(shr_full_imm2, shl_full_imm2, bid_full)
+group intd1(shr_full_imm2, shl_full_imm2)
 
 intd1.init = {
 	typedef Operation<CONFIG> inherited;

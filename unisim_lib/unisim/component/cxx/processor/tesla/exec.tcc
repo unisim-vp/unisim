@@ -502,7 +502,7 @@ VectorRegister<CONFIG> BinAnd(VectorRegister<CONFIG> const & a, VectorRegister<C
 	{
 		rv[i] = a[i] & b[i];
 	}
-	rv.SetScalar(a.IsScalar());
+	rv.SetScalar(a.IsScalar() && b.IsScalar());
 	return rv;
 }
 
@@ -514,7 +514,7 @@ VectorRegister<CONFIG> BinOr(VectorRegister<CONFIG> const & a, VectorRegister<CO
 	{
 		rv[i] = a[i] | b[i];
 	}
-	rv.SetScalar(a.IsScalar());
+	rv.SetScalar(a.IsScalar() && b.IsScalar());
 	return rv;
 }
 
@@ -526,7 +526,7 @@ VectorRegister<CONFIG> BinXor(VectorRegister<CONFIG> const & a, VectorRegister<C
 	{
 		rv[i] = a[i] ^ b[i];
 	}
-	rv.SetScalar(a.IsScalar());
+	rv.SetScalar(a.IsScalar() && b.IsScalar());
 	return rv;
 }
 
