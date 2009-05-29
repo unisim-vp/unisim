@@ -582,6 +582,16 @@ void CPU<CONFIG>::StoreLocal32(VecReg const & output, address_t addr)
 	}
 }
 
+template <class CONFIG>
+void CPU<CONFIG>::Sample1DS32(unsigned int sampler,
+	VectorRegister<CONFIG> dest[],
+	VectorRegister<CONFIG> const src[],
+	uint32_t destBitfield)
+{
+	assert(sampler < CONFIG::MAX_SAMPLERS);
+	samplers[sampler].Sample1DS32(dest, src, destBitfield);
+}
+
 } // end of namespace tesla
 } // end of namespace processor
 } // end of namespace cxx

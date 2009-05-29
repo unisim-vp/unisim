@@ -63,6 +63,9 @@ void DisasmSrc(uint32_t reg, uint32_t cm, uint32_t sh, uint32_t neg, ostream & b
 //	uint32_t addr_hi, uint32_t addr_imm, ostream & buffer);
 void DisasmImm(uint32_t imm_hi, uint32_t imm_lo, ostream & buffer);
 void DisasmConvert(uint32_t cvt_round, uint32_t cvt_type, bool sign, uint32_t data_32, uint32_t abssat, ostream & buffer);
+void DisasmConvertSharedConst(RoundingMode cvt_round, SMType srctype, bool sign,
+	bool dest32, AbsSat abssat, ostream & buffer);
+
 void DisasmConvertFP32(bool dest_32, ConvType srct, RoundingMode cvt_round,
 	bool cvt_int, AbsSat as, ostream & buffer);
 void DisasmDataType(uint32_t dt, ostream & buffer);

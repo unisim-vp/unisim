@@ -66,6 +66,7 @@
 #include <unisim/component/cxx/processor/tesla/implicit_flow.hh>
 #include <unisim/component/cxx/processor/tesla/tesla_flow.hh>
 #include <unisim/component/cxx/processor/tesla/hostfloat/hostfloat.hh>
+#include <unisim/component/cxx/processor/tesla/sampler.hh>
 
 
 namespace unisim {
@@ -137,8 +138,8 @@ public:
 	static uint32_t const MAX_BLOCKS = CONFIG::MAX_BLOCKS;
 	static uint32_t const MAX_THREADS = MAX_WARPS * WARP_SIZE;
 	static uint32_t const SHARED_MEM_SIZE = CONFIG::SHARED_SIZE;
-	static uint32_t const BRANCH_STACK_DEPTH = CONFIG::BRANCH_STACK_DEPTH;
-	static uint32_t const CALL_STACK_DEPTH = CONFIG::CALL_STACK_DEPTH;
+//	static uint32_t const BRANCH_STACK_DEPTH = CONFIG::BRANCH_STACK_DEPTH;
+//	static uint32_t const CALL_STACK_DEPTH = CONFIG::CALL_STACK_DEPTH;
 	static uint32_t const MAX_ADDR_REGS = CONFIG::MAX_ADDR_REGS;
 	static uint32_t const MAX_PRED_REGS = CONFIG::MAX_PRED_REGS;
 
@@ -318,6 +319,7 @@ public:
 	std::bitset<CONFIG::WARP_SIZE> GetCurrentMask() const;
 
 	void Branch(address_t target, std::bitset<CONFIG::WARP_SIZE> mask);
+	void Call(address_t target);
 
 	void StepWarp(uint32_t warpid);
 	void CheckJoin();
@@ -373,11 +375,18 @@ public:
 	VecAddr EffectiveAddress(uint32_t reg, uint32_t addr_lo, uint32_t addr_hi,
 		uint32_t addr_imm, uint32_t shift);
 	
+	void Sample1DS32(unsigned int sampler,
+		VectorRegister<CONFIG> dest[],
+		VectorRegister<CONFIG> const src[],
+		uint32_t destBitfield);
+	
 	Warp<CONFIG> & CurrentWarp();
 	Warp<CONFIG> const & CurrentWarp() const;
 	
 	Warp<CONFIG> & GetWarp(unsigned int wid);
 	Warp<CONFIG> const & GetWarp(unsigned int wid) const;
+
+	Sampler<CONFIG> & GetSampler(unsigned int s);
 private:
 	//=====================================================================
 	//=                           G80 registers                           =
@@ -389,6 +398,7 @@ private:
 	uint32_t current_warpid;
 	
 	VecReg gpr[MAX_VGPR];
+	Sampler<CONFIG> samplers[CONFIG::MAX_SAMPLERS];
 	
 	VecReg zero_reg;
 	

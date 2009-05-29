@@ -111,7 +111,7 @@ inline DataType MvSizeToDataType(uint32_t mv_size);
 inline DataType CvtTypeToDataType(ConvType ct);
 inline size_t DataTypeSize(DataType dt);
 inline DataType SMTypeToDataType(SMType st);
-
+inline ConvType SMTypeToConvType(SMType st);
 
 
 inline SMType MvSizeToSMType(uint32_t mv_size)
@@ -125,7 +125,6 @@ inline SMType MvSizeToSMType(uint32_t mv_size)
 		return SM_U8;
 	default:
 		assert(false);
-		throw "";
 	}
 }
 
@@ -144,7 +143,6 @@ inline RegType CvtTypeToRT(ConvType ct)
 		return RT_U32;
 	default:
 		assert(false);
-		throw "";
 	}
 }
 
@@ -171,7 +169,6 @@ inline DataType MvSizeToDataType(uint32_t mv_size)
 		return DT_U8;
 	default:
 		assert(false);
-		throw "";
 	}
 }
 
@@ -195,7 +192,6 @@ inline DataType CvtTypeToDataType(ConvType ct)
 		return DT_S32;
 	default:
 		assert(false);
-		throw "";
 	}
 }
 
@@ -218,7 +214,6 @@ inline size_t DataTypeSize(DataType dt)
 		return 16;
 	default:
 		assert(false);
-		throw "";
 	}
 }
 
@@ -235,11 +230,24 @@ inline DataType SMTypeToDataType(SMType st)
 		return DT_U32;
 	default:
 		assert(false);
-		throw "";
 	}
 }
 
-
+inline ConvType SMTypeToConvType(SMType st)
+{
+	switch(st) {
+	case SM_U8:
+		return CT_U8;
+	case SM_U16:
+		return CT_U16;
+	case SM_S16:
+		return CT_S16;
+	case SM_U32:
+		return CT_U32;
+	default:
+		assert(false);
+	}
+}
 
 } // end of namespace tesla
 } // end of namespace processor

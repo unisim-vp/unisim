@@ -1,3 +1,5 @@
+* Various instructions: call, not, cvt.i*.abs
+* 1D textures from linear memory with integer addresses
 * Uses SSE (packed) on platforms that supports it
 
 Version 0.2, 04 May 2009

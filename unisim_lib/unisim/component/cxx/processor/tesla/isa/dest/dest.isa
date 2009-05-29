@@ -44,8 +44,6 @@ decl {
 #include <unisim/component/cxx/processor/tesla/flags.hh>
 //#include <unisim/component/cxx/processor/tesla/operation.hh>
 
-using namespace unisim::component::cxx::processor::tesla;
-
 namespace unisim {
 namespace component {
 namespace cxx {
@@ -57,6 +55,12 @@ class CPU;
 
 template<class CONFIG>
 class Instruction;
+
+namespace isa {
+namespace dest {
+using namespace unisim::component::cxx::processor::tesla;
+}
+}
 
 } // end of namespace tesla 
 } // end of namespace processor
@@ -211,12 +215,12 @@ alu_full.classify = {
 op alu_imm( \
 	/*subop*/?[3]:?[1]:?[26]:/*marker*/3[2]: \
 	/*op*/?[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:/*src2*/?[7]:/*src1*/?[7]: \
-	dest[7]:/*flow*/0[1]:/*long*/1[1] \
+	?[1]:dest[6]:/*flow*/0[1]:/*long*/1[1] \
 )
 
 op alu_half(\
 	/*op*/?[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:/*src2*/?[7]:/*src1*/?[7]: \
-	dest[7]:/*flow*/0[1]:/*long*/0[1])
+	?[1]:dest[6]:/*flow*/0[1]:/*long*/0[1])
 
 group alu_halfimm(alu_imm, alu_half)
 

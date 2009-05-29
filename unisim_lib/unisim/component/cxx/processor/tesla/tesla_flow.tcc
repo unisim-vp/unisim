@@ -115,6 +115,7 @@ void TeslaFlow<CONFIG>::Branch(address_t target_addr, std::bitset<CONFIG::WARP_S
 			cerr << "  New mask = " << GetCurrentMask() << endl;
 		}
 	}
+	assert(stack.size() < CONFIG::STACK_DEPTH);
 }
 
 template<class CONFIG>
@@ -127,6 +128,7 @@ void TeslaFlow<CONFIG>::Meet(address_t addr)
 		cerr << " Push SYNC." << endl;
 		cerr << "  Mask = " << GetCurrentMask() << endl;
 	}
+	assert(stack.size() < CONFIG::STACK_DEPTH);
 }
 
 template<class CONFIG>
@@ -137,6 +139,7 @@ void TeslaFlow<CONFIG>::PreBreak(address_t addr)
 		cerr << " Push BREAK." << endl;
 		cerr << "  Mask = " << GetCurrentMask() << endl;
 	}
+	assert(stack.size() < CONFIG::STACK_DEPTH);
 }
 
 template<class CONFIG>
@@ -251,6 +254,14 @@ template<class CONFIG>
 void TeslaFlow<CONFIG>::Kill(std::bitset<CONFIG::WARP_SIZE> mask)
 {
 	assert(false);
+}
+
+template<class CONFIG>
+void TeslaFlow<CONFIG>::Call(address_t target_addr)
+{
+	stack.push(StackToken(current_mask, ID_CALL, warp.npc));
+	warp.npc = target_addr + CONFIG::CODE_START;
+	assert(stack.size() < CONFIG::STACK_DEPTH);
 }
 
 template <class CONFIG>

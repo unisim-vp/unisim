@@ -45,7 +45,6 @@ decl {
 //#include <unisim/component/cxx/processor/tesla/operation.hh>
 #include <iomanip>
 
-using namespace unisim::component::cxx::processor::tesla;
 
 namespace unisim {
 namespace component {
@@ -58,6 +57,12 @@ class CPU;
 
 template<class CONFIG>
 class Instruction;
+
+namespace isa {
+namespace src2 {
+using namespace unisim::component::cxx::processor::tesla;
+}
+}
 
 } // end of namespace tesla 
 } // end of namespace processor

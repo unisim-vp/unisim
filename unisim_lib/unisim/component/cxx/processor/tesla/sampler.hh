@@ -32,10 +32,10 @@
  * Authors: Sylvain Collange (sylvain.collange@univ-perp.fr)
  */
  
-#ifndef UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_IMPLICIT_FLOW_HH
-#define UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_IMPLICIT_FLOW_HH
+#ifndef UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_SAMPLER_HH
+#define UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_SAMPLER_HH
 
-//#include <unisim/component/cxx/processor/tesla/cpu.hh>
+#include <unisim/component/cxx/processor/tesla/register.hh>
 
 namespace unisim {
 namespace component {
@@ -43,57 +43,64 @@ namespace cxx {
 namespace processor {
 namespace tesla {
 
-template<class CONFIG> struct CPU;
+enum ArrayFormat
+{
+    AF_U8  = 0x01,
+    AF_U16 = 0x02,
+    AF_U32 = 0x03,
+    AF_S8 = 0x08,
+    AF_S16 = 0x09,
+    AF_S32 = 0x0a,
+    AF_F16 = 0x10,
+    AF_F32 = 0x20
+};
 
-template<class CONFIG> struct Warp;
+enum AddressMode
+{
+    AM_WRAP = 0,
+    AM_CLAMP = 1,
+    AM_MIRROR = 2
+};
 
+enum FilterMode
+{
+    FM_POINT = 0,
+    FM_LINEAR = 1
+};
+
+enum TextureFlags
+{
+	TF_READ_AS_INTEGER = 0x01,
+	TF_NORMALIZED_COORDINATES = 0x02
+};
+
+inline int ArrayFormatSize(ArrayFormat af);
 
 template<class CONFIG>
-struct ImplicitFlow
+struct Sampler
 {
-	typedef typename CONFIG::address_t address_t;
-	
-	ImplicitFlow(Warp<CONFIG> & warp);
-	
-	void Reset(CPU<CONFIG> * cpu, std::bitset<CONFIG::WARP_SIZE> mask);
-	void Branch(address_t target, std::bitset<CONFIG::WARP_SIZE> mask);
-	void Meet(address_t addr);
-	bool Join();
-	void End();
-	void Return(std::bitset<CONFIG::WARP_SIZE> mask);
-	void Kill(std::bitset<CONFIG::WARP_SIZE> mask);
-	void CheckJoin();
-	std::bitset<CONFIG::WARP_SIZE> GetCurrentMask() const;
-	void PreBreak(address_t addr);
-	void Break(std::bitset<CONFIG::WARP_SIZE> mask);
-	void Call(address_t addr);
-	
-private:
-	address_t GetLoop() const;
-	void PushLoop(address_t addr);
-	void PopLoop();
-	std::bitset<CONFIG::WARP_SIZE> PopMask();
-	void PushMask(std::bitset<CONFIG::WARP_SIZE> mask);
-	std::bitset<CONFIG::WARP_SIZE> GetNextMask();
-	address_t GetPC() const;
-	address_t GetNPC() const;
-	bool InConditional() const;
-	void PushJoin(address_t addr);
-	address_t PopJoin();
-	address_t GetJoin() const;
+	void Sample1DS32(VectorRegister<CONFIG> dest[],
+		VectorRegister<CONFIG> const src[],
+		uint32_t destBitfield);
 
+	void Reset(CPU<CONFIG> * cpu);
 
+	typename CONFIG::address_t baseAddress;
+	int ndims;
+	int numPackedComponents;
+	uint32_t size[3];
+	ArrayFormat format;
+	AddressMode addressMode[3];
+	FilterMode filterMode;
+	uint32_t flags;
+	
 	CPU<CONFIG> * cpu;
-	Warp<CONFIG> & warp;
 
-	bitset<CONFIG::WARP_SIZE> current_mask;
-	
-	std::stack<address_t> join_stack;
-	//std::stack<bitset<WARP_SIZE> > mask_stack;
-	MaskStack<CONFIG::WARP_SIZE, CONFIG::BRANCH_STACK_DEPTH> mask_stack;
-	std::stack<address_t> loop_stack;
-	
-
+private:
+	void Fetch8(VectorRegister<CONFIG> dest[],
+		VectorAddress<CONFIG> const & addr,
+		uint32_t destBitfield);
+	uint32_t Unpack(uint32_t rawval);
 };
 
 } // end of namespace tesla

@@ -51,6 +51,7 @@
 #include <unisim/component/cxx/processor/tesla/hostfloat/hostfloat.tcc>
 #include <unisim/component/cxx/processor/tesla/stats.tcc>
 #include <unisim/component/cxx/processor/tesla/vectorfp32.tcc>
+#include <unisim/component/cxx/processor/tesla/sampler.tcc>
 
 //#include <unisim/component/cxx/cache/cache.tcc>
 //#include <unisim/component/cxx/tlb/tlb.tcc>
@@ -206,7 +207,11 @@ void CPU<CONFIG>::Reset()
 		warps[i].state = Warp<CONFIG>::Finished;
 	}
 	num_warps = 0;
-//	effective_address = 0;
+	
+	for(unsigned int i = 0; i != CONFIG::MAX_SAMPLERS; ++i)
+	{
+		samplers[i].Reset(this);
+	}
 }
 
 template <class CONFIG>
@@ -706,6 +711,13 @@ Warp<CONFIG> const & CPU<CONFIG>::GetWarp(unsigned int wid) const
 }
 
 template <class CONFIG>
+Sampler<CONFIG> & CPU<CONFIG>::GetSampler(unsigned int s)
+{
+	assert(s < CONFIG::MAX_SAMPLERS);
+	return samplers[s];
+}
+
+template <class CONFIG>
 void CPU<CONFIG>::Meet(CPU<CONFIG>::address_t addr)
 {
 	CurrentWarp().flow.Meet(addr);
@@ -794,6 +806,11 @@ void CPU<CONFIG>::Break(std::bitset<CONFIG::WARP_SIZE> mask)
 	CurrentWarp().flow.Break(mask);
 }
 
+template <class CONFIG>
+void CPU<CONFIG>::Call(address_t target)
+{
+	CurrentWarp().flow.Call(target);
+}
 
 } // end of namespace tesla
 } // end of namespace processor

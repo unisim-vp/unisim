@@ -44,8 +44,6 @@ decl {
 #include <unisim/component/cxx/processor/tesla/flags.hh>
 //#include <unisim/component/cxx/processor/tesla/operation.hh>
 
-using namespace unisim::component::cxx::processor::tesla;
-
 namespace unisim {
 namespace component {
 namespace cxx {
@@ -60,6 +58,12 @@ class Instruction;
 
 template<class CONFIG>
 class Operation;
+
+namespace isa {
+namespace src1 {
+using namespace unisim::component::cxx::processor::tesla;
+}
+}
 
 } // end of namespace tesla 
 } // end of namespace processor

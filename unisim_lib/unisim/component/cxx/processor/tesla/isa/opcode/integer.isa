@@ -394,8 +394,10 @@ imad_full.execute = {
 op imac_imm( \
 	/*subop*/subop[3]:/*?*/0[1]:/*imm_hi*/?[26]:/*marker*/3[2]: \
 	0x6[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:src3_neg[1]:/*imm_lo*/?[6]:\
-	/*src1*/?[7]:dest[7]:/*flow*/0[1]:/*IWidth*/1[1] \
+	/*src1*/?[7]:/*??*/full[1]:dest[6]:/*flow*/0[1]:/*IWidth*/1[1] \
 )
+
+// TODO: Full = 16 * 24 -> 32??
 
 imac_imm.init = {
 	typedef Operation<CONFIG> inherited;
@@ -421,7 +423,7 @@ imac_imm.init = {
 		dt = DT_UNKNOWN;
 	}
 	inherited::allow_segment = false;
-	inherited::op_type[OpDest] = DT_U32;
+	inherited::op_type[OpDest] = DT_U32;	// ???
 	inherited::op_type[OpSrc1] = dt;
 	inherited::op_type[OpSrc2] = dt;
 	inherited::op_type[OpSrc3] = DT_NONE;
@@ -548,7 +550,7 @@ op imul24_full_join( \
 
 op imul24_half( \
 	0x4[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src1_sm*/?[1]:/*src2_cm*/?[1]:w32[1]:/*src2*/?[6]:\
-	issigned[1]:/*src1*/?[6]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/0[1] \
+	issigned[1]:/*src1*/?[6]:/*?*/0[1]:/*dest*/?[6]:/*flow*/0[1]:/*IWidth*/0[1] \
 )
 
 //specialize imul24_half(w32=1, issigned=1)
@@ -557,9 +559,10 @@ op imul24_half( \
 op imul24_imm( \
 	/*subop*/0[3]:/*?*/0[1]:/*imm_hi*/?[26]:/*marker*/3[2]: \
 	0x4[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src1_sm*/?[1]:/*src2_cm*/?[1]:w32[1]:/*src2*/?[6]:\
-	issigned[1]:/*src1*/?[6]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1] \
+	issigned[1]:/*src1*/?[6]:/*?*/full[1]:/*dest*/?[6]:/*flow*/0[1]:/*IWidth*/1[1] \
 )
 
+// TODO: Full = 16 * 24 -> 32??
 
 group imul24(imul24_full_normal, imul24_full_end, imul24_full_join)
 
@@ -571,6 +574,7 @@ imul24.init = {
 	DataType dt = RegTypeToDataType(RegType(w32));
 	inherited::allow_segment = true;
 	inherited::op_type[OpDest] = DT_U32;
+//	inherited::op_type[OpDest] = dt;	// ???
 	inherited::op_type[OpSrc1] = dt;
 	inherited::op_type[OpSrc2] = dt;
 	inherited::op_type[OpSrc3] = DT_NONE;
@@ -1191,7 +1195,53 @@ xor_full.execute = {
 	//insn->SetPredI32(output);
 }
 
-group bool(and_full, or_full, xor_full)
+op bid_full( \
+	/*subop*/0[3]:/*?*/0[1]:?[1]:w32[1]:0[2]:?[3]:/*imm*/0[1]:0[2]:src2_not[1]:src1_not[1]:/*lop*/3[2]:?[12]:/*marker*/?[2]: \
+	0xd[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:/*src3_neg*/?[1]:/*src2*/?[6]:\
+	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1] \
+)
+
+//specialize xor_full(w32=1, src1_not=0, src2_not=0)
+
+bid_full.disasm = {
+	buffer << "mov";
+	insn->DisasmControl(buffer);
+
+	buffer << " ";
+	insn->DisasmDest(buffer);
+
+	buffer << ", ";
+	DisasmNot(src1_not, buffer);
+	insn->DisasmSrc1(buffer);
+	
+	//buffer << ", ";
+	//DisasmNot(src2_not, buffer);
+	//insn->DisasmSrc2(buffer);
+}
+
+bid_full.execute = {
+	typedef VectorRegister<CONFIG> reg_t;
+	
+	//assert(w32);
+
+	// dest = (neg?)a & (neg?)b
+	reg_t & a = insn->GetSrc1();
+	if(src1_not) {
+		a = BinNeg(a);
+	}
+	//reg_t & b = insn->GetSrc2();
+	//if(src2_not) {
+	//	b = BinNeg(b);
+	//}
+	
+	reg_t output = a;
+	
+	insn->SetDest(output);
+	//insn->SetPredI32(output);
+}
+
+
+group bool(and_full, or_full, xor_full, bid_full)
 
 bool.classify = {
 	this->stats->SetInteger();
@@ -1428,7 +1478,7 @@ intd13.init = {
 }
 
 // Input operand 1 and output operand of type w32
-group intd1(shr_full_imm2, shl_full_imm2)
+group intd1(shr_full_imm2, shl_full_imm2, bid_full)
 
 intd1.init = {
 	typedef Operation<CONFIG> inherited;

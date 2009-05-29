@@ -46,10 +46,24 @@ op mov_reg_full_normal( \
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1]\
 )
 
+op mov_reg_full_end( \
+	/*subop*/0[3]:/*?*/0[1]:sign[1]:data_32[1]:/*const_seg*/?[4]:/*src1_sh*/?[1]:abs_sat[2]:cvt_round[2]:cvt_type[3]:\
+	/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output*/?[1]:/*addr_hi*/?[1]:/*marker*/1[2]: \
+	0x1[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:f64[1]:/*?*/0[6]:\
+	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1]\
+)
+
+op mov_reg_full_join( \
+	/*subop*/0[3]:/*?*/0[1]:sign[1]:data_32[1]:/*const_seg*/?[4]:/*src1_sh*/?[1]:abs_sat[2]:cvt_round[2]:cvt_type[3]:\
+	/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output*/?[1]:/*addr_hi*/?[1]:/*marker*/2[2]: \
+	0x1[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:f64[1]:/*?*/0[6]:\
+	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1]\
+)
+
 //specialize mov_reg_full_normal(sign=0, data_32=1, abs_sat=0, cvt_round=1, cvt_type=7, f64=0)
 
 
-group mov_reg_full_noimm(mov_reg_full_normal)
+group mov_reg_full_noimm(mov_reg_full_normal, mov_reg_full_end, mov_reg_full_join)
 
 // No immediate : dest = conv(src1)
 // If immediate : dest = src2
@@ -293,8 +307,10 @@ ldc_full.disasm = {
 	buffer << "mov";
 	insn->DisasmControl(buffer);
 
-	DisasmSignWidth(false, data_32, buffer);
-	//DisasmConvert(cvt_round, cvt_type, sign, data_32, abs_sat, buffer);	// Convert allowed??
+	//DisasmSignWidth(false, data_32, buffer);
+	//buffer << SMTypeString(SMType(mem_type));
+	DisasmConvertSharedConst(RoundingMode(cvt_round),
+		SMType(mem_type), sign, data_32, AbsSat(abs_sat), buffer);	// Convert allowed??	
 	buffer << " ";
 	insn->DisasmDest(buffer);
 
@@ -304,14 +320,16 @@ ldc_full.disasm = {
 
 ldc_full.read = {
 	typedef Instruction<CONFIG> Insn;
-	cpu->GatherConstant(insn->Temp(Insn::TempDest), src2, addr_lo, addr_hi, 1, const_seg, insn->Mask(), SMType(mem_type));
+	cpu->GatherConstant(insn->Temp(Insn::TempSrc1), src2, addr_lo, addr_hi, 1, const_seg, insn->Mask(), SMType(mem_type));
 }
 
 ldc_full.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 	assert(!addr_incr);
 	
-//	insn->SetPredI32(insn->Temp(0));	// TODO: check type?
+	reg_t & a = insn->GetSrc1();
+	insn->SetDest(ConvertIntInt(a, cvt_round, SMTypeToConvType(SMType(mem_type)),
+		data_32, AbsSat(abs_sat)));
 }
 
 

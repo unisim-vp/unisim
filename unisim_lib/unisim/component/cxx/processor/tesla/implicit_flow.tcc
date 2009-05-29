@@ -359,6 +359,12 @@ typename CONFIG::address_t ImplicitFlow<CONFIG>::PopJoin()
 	return addr;
 }
 
+template<class CONFIG>
+void ImplicitFlow<CONFIG>::Call(address_t target_addr)
+{
+	assert(false);	// TODO
+}
+
 } // end of namespace tesla
 } // end of namespace processor
 } // end of namespace cxx

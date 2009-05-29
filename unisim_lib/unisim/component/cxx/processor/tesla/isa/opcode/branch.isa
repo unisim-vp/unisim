@@ -135,7 +135,22 @@ break.execute = {
 	cpu->Break(insn->Mask());
 }
 
-group flow(br, join, prebreak, fence, ret, break)
+op call( \
+	/*subop*/?[3]:/*?*/?[1]:?[26]:/*marker*/?[2]: \
+	0x2[4]:target_addr[19]:/*dest*/0[7]:/*flow*/1[1]:/*IWidth*/1[1] \
+)
+
+call.disasm = {
+	buffer << "call ";
+	buffer << "0x" << std::setfill('0') << std::setw(6) << std::hex << target_addr << std::dec;
+}
+
+call.execute = {
+	cpu->Call(target_addr);
+}
+
+
+group flow(br, join, prebreak, fence, ret, break, call)
 
 flow.init = {
 	typedef Operation<CONFIG> inherited;

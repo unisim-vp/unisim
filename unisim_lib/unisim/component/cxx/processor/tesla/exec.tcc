@@ -402,7 +402,7 @@ VectorRegister<CONFIG> ConvertIntInt(VectorRegister<CONFIG> const & a, uint32_t 
 {
 	// cvt_type = *SOURCE* type
 	// b32 = *DEST* type
-	assert(abssat == AS_NONE);	// TODO: sat, abs, ssat
+	assert(abssat == AS_NONE || abssat == AS_ABS);	// TODO: sat, abs, ssat
 
 	// Unless abs, dest>source means no-op
 	if(!neg && (cvt_type == CT_NONE
@@ -449,6 +449,9 @@ VectorRegister<CONFIG> ConvertIntInt(VectorRegister<CONFIG> const & a, uint32_t 
 		}
 		if(neg) {
 			r = -int32_t(r);
+		}
+		if(abssat == AS_ABS) {
+			r = abs(int32_t(r));
 		}
 		rv[i] = r;
 	}

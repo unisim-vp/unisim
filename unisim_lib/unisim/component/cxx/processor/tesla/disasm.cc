@@ -175,6 +175,15 @@ void DisasmConvert(uint32_t cvt_round, uint32_t cvt_type, bool sign,
 		<< AbsSatString(AbsSat(abssat));
 }
 
+void DisasmConvertSharedConst(RoundingMode cvt_round, SMType srctype, bool sign,
+	bool dest32, AbsSat abssat, ostream & buffer)
+{
+	DisasmSignWidth(sign, dest32, buffer);
+	buffer << SMTypeString(srctype)
+		<< RoundingModeString(cvt_round)
+		<< AbsSatString(abssat);
+}
+
 void DisasmConvertFP32(bool dest_32, ConvType srct, RoundingMode cvt_round,
 	bool cvt_int, AbsSat as, ostream & buffer)
 {

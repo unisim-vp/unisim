@@ -92,7 +92,8 @@ struct TeslaFlow
 	std::bitset<CONFIG::WARP_SIZE> GetCurrentMask() const;
 	void PreBreak(address_t addr);
 	void Break(std::bitset<CONFIG::WARP_SIZE> mask);
-	
+	void Call(address_t addr);
+
 	
 private:
 	CPU<CONFIG> * cpu;

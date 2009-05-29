@@ -63,6 +63,12 @@ class CPU;
 template<class CONFIG>
 class Instruction;
 
+namespace isa {
+namespace opcode {
+using namespace unisim::component::cxx::processor::tesla;
+}
+}
+
 } // end of namespace tesla 
 } // end of namespace processor
 } // end of namespace cxx
@@ -70,7 +76,6 @@ class Instruction;
 } // end of namespace unisim
 
 
-using namespace unisim::component::cxx::processor::tesla;
 
 /*
 template <class T, size_t SIZE>
@@ -147,7 +152,7 @@ var allow_segment : { bool }
 var force_reg : { SimpleArray<bool, 4> }
 
 constructor action init() {
-	assert(false);
+//	assert(false);
 	this->allow_segment = true;		// Actually always true (?)
 	this->op_type[OpDest] = DT_U32;
 	this->op_type[OpSrc1] = DT_U32;
