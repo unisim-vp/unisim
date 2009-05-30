@@ -126,7 +126,8 @@ using unisim::util::endian::LittleEndian2Host;
 template<unsigned int BUSWIDTH, bool VERBOSE>
 TIM<BUSWIDTH, VERBOSE> ::
 TIM(const sc_module_name &name, Object *parent) :
-	Object(name, parent),
+	unisim::kernel::service::Object(name, parent),
+	Client<TrapReporting>(name, parent),
 	sc_module(name),
 	timeri_irq("timeri_irq"),
 	toi_irq("toi_irq"),
@@ -139,6 +140,7 @@ TIM(const sc_module_name &name, Object *parent) :
 	icapa_edge("icapa_edge"),
 	icapb_edge("icapb_edge"),
 	in_mem("in_mem"),
+	trap_reporting_import("trap_reporting_import", this),
 	icar(0),
 	icbr(0),
 	ocar((uint16_t)0x8000),
@@ -172,6 +174,9 @@ TIM(const sc_module_name &name, Object *parent) :
 	SC_THREAD(MemFifoHandler);
 	SC_THREAD(IcapaFifoHandler);
 	SC_THREAD(IcapbFifoHandler);
+	SC_THREAD(TimerOverflowHandler);
+	SC_THREAD(OutputCompareAHandler);
+	SC_THREAD(OutputCompareBHandler);
 
 	if (VERBOSE)
 	{
@@ -343,6 +348,7 @@ TOINbTransportBw(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_
 					<< PHASE(phase) << endl
 					<< TIME(t) << EndDebug;
 			}
+			trans.release();
 			break;
 		case tlm::BEGIN_REQ:
 		case tlm::BEGIN_RESP:
@@ -781,6 +787,16 @@ tlm::tlm_sync_enum
 TIM<BUSWIDTH, VERBOSE> ::
 nb_transport_fw(tlm::tlm_generic_payload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
 {
+	if (VerboseTLM())
+	{
+		logger << DebugInfo
+			<< "Received memory transaction:" << endl;
+		TRANS(logger, trans);
+		logger << endl
+			<< PHASE(phase) << endl
+			<< TIME(t)
+			<< EndDebugInfo;
+	}
 	switch(phase)
 	{
 		case tlm::BEGIN_REQ:
@@ -818,6 +834,15 @@ void
 TIM<BUSWIDTH, VERBOSE> ::
 b_transport(tlm::tlm_generic_payload& trans, sc_core::sc_time& t)
 {
+	if (VerboseTLM())
+	{
+		logger << DebugInfo
+			<< "Received blocking memory transaction:" << endl;
+		TRANS(logger, trans);
+		logger << endl
+			<< TIME(t)
+			<< EndDebugInfo;
+	}
 	/* wait for the given time before performing the operation */
 	wait(t);
 	/* set t to the time it takes to perform the operation */
@@ -956,6 +981,67 @@ tlm::tlm_response_status
 TIM<BUSWIDTH, VERBOSE> ::
 ReadRegister(uint64_t addr, uint16_t &value)
 {
+	uint64_t reg_index = addr - base_address;
+	bool done = false;
+	char const * name;
+	switch (reg_index)
+	{
+		case 0x0: // TIMn_ICAR
+			done = true;
+			value = ICAR();
+			name = "ICAR";
+			break;
+		case 0x4: // TIMn_ICBR
+			done = true;
+			value = ICBR();
+			name = "ICBR";
+			break;
+		case 0x8: // TIMn_OCAR
+			done = true;
+			value = OCAR();
+			name = "OCAR";
+			break;
+		case 0xc: // TIMn_OCBR
+			done = true;
+			value = OCBR();
+			name = "OCBR";
+			break;
+		case 0x10: // TIMn_CNTR
+			break;
+		case 0x14: // TIMn_CR1
+			done = true;
+			value = CR1();
+			name = "CR1";
+			break;
+		case 0x18: // TIMn_CR2
+			done = true;
+			value = CR2();
+			name = "CR2";
+			break;
+		case 0x1c: // TIMn_SR
+			done = true;
+			value = SR();
+			name = "SR";
+			break;
+		default:
+			logger << DebugWarning 
+				<< "Trying to read from an unknown address (0x" << hex << addr << dec << ")"
+				<< EndDebugWarning;
+			break;
+	}
+	if (!done)
+		logger << DebugWarning
+			<< "TODO: read not handled for address 0x" << hex << addr << dec
+			<< " (register index = 0x" << hex << reg_index << dec << ")" << endl
+			<< LOCATION
+			<< EndDebugWarning;
+	else
+	{
+		if (VerboseRun())
+			logger << DebugInfo
+				<< "Reading register " << name << " with value 0x" << hex << value << dec
+				<< EndDebugInfo;
+	}
 }
 
 template<unsigned int BUSWIDTH, bool VERBOSE>
@@ -963,7 +1049,458 @@ tlm::tlm_response_status
 TIM<BUSWIDTH, VERBOSE> ::
 WriteRegister(uint64_t addr, uint16_t value)
 {
+	uint64_t reg_index = addr - base_address;
+	bool done = false;
+	switch (reg_index)
+	{
+		case 0x0: // TIMn_ICAR
+			break;
+		case 0x4: // TIMn_ICBR
+			break;
+		case 0x8: // TIMn_OCAR
+			done = true;
+			ocar = value;
+			if (VerboseRun())
+			{
+				logger << DebugInfo
+					<< "Setting OCAR to 0x" << hex << OCAR() << dec
+					<< EndDebugInfo;
+			}
+			break;
+		case 0xc: // TIMn_OCBR
+			done = true;
+			ocbr = value;
+			if (VerboseRun())
+			{
+				logger << DebugInfo
+					<< "Setting OCBR to 0x" << hex << OCBR() << dec
+					<< EndDebugInfo;
+			}
+			break;
+		case 0x10: // TIMn_CNTR
+			break;
+		case 0x14: // TIMn_CR1
+			done = true;
+			cr1 = value & ~(uint16_t)0x30;
+			if (VerboseRun())
+			{
+				logger << DebugInfo
+					<< "Setting CR1 to 0x" << hex << CR1() << dec << endl
+					<< " - EN    " << EN() << endl
+					<< " - PWMI  " << PWMI() << endl
+					<< " - FOLVB " << FOLVB() << endl
+					<< " - FOLVA " << FOLVA() << endl
+					<< " - OLVLB " << OLVLB() << endl
+					<< " - OLVLA " << OLVLA() << endl
+					<< " - OCBE  " << OCBE() << endl
+					<< " - OCAE  " << OCAE() << endl
+					<< " - OPM   " << OPM() << endl
+					<< " - PWM   " << PWM() << endl
+					<< " - IEDGB " << IEDGB() << endl
+					<< " - IEDGA " << IEDGA() << endl
+					<< " - EXEDG " << EXEDG() << endl
+					<< " - ECKEN " << ECKEN();
+				logger << EndDebugInfo;
+			}
+			// check if the timer has been activated or desactivated
+			if (EN())
+			{
+				// activated
+				// compute when the next signal should be generated
+				uint32_t rem = (uint32_t)0x10000 - CNTR();
+				cntr_update_time = sc_time_stamp();
+				// check which clock (internal or external) is being used
+				if (ECKEN())
+				{
+					// external clock
+					sc_core::sc_time t = extclk_cycle_time * rem;
+					if (VerboseRun())
+						logger << DebugInfo
+							<< "Notifying timer count in " << t << " (using external clock)"
+							<< EndDebugInfo;
+					to_event.notify(t);
+				}
+				else
+				{
+					// internal clock
+					// set a notification for when the timer gets to 0
+					sc_core::sc_time t = pclk2_cycle_time * (uint32_t)(CC() + 1) * rem;
+					if (VerboseRun())
+						logger << DebugInfo
+							<< "Notifying timer count in " << t
+							<< EndDebugInfo;
+					to_event.notify(t);
+					// set a notification for when the timer gets to OCAR
+					if (CNTR() > OCAR())
+						rem = (uint32_t)0x10000 + OCAR() - CNTR();
+					else
+						rem = CNTR() - OCAR();
+					t = pclk2_cycle_time * (uint32_t)(CC() + 1) * rem;
+					logger << DebugInfo
+						<< "Notifying output compare A in " << t
+						<< EndDebugInfo;
+					oca_event.notify(t);
+					// set a notification for when the timer gets to OCAB
+					if (CNTR() > OCBR())
+						rem = (uint32_t)0x10000 + OCBR() - CNTR();
+					else
+						rem = CNTR() - OCBR();
+					t = pclk2_cycle_time * (uint32_t)(CC() + 1) * rem;
+					logger << DebugInfo
+						<< "Notifying output compare B in " << t
+						<< EndDebugInfo;
+					ocb_event.notify(t);
+				}
+			}
+			else
+			{
+				// desactivated
+				// the counter should be set to the correct value depending on when the 
+				//   desactivation command has arrived
+				// to do it simple we just set the counter to the reset value
+				cntr = (uint16_t)0xfffc;
+			}
+			break;
+		case 0x18: // TIMn_CR2
+			done = true;
+			cr2 = value & ~(uint16_t)0x0700;
+			if (VerboseRun())
+			{
+				logger << DebugInfo
+					<< "Setting CR2 to 0x" << hex << CR2() << dec << endl
+					<< " - ICAIE " << ICAIE() << endl
+					<< " - OCAIE " << OCAIE() << endl
+					<< " - TOIE  " << TOIE() << endl
+					<< " - ICBIE " << ICBIE() << endl
+					<< " - OCBIE " << OCBIE() << endl
+					<< " - CC    " << CC() << " (0x" << hex << CC() << dec << ")";
+				logger << EndDebugInfo;
+			}
+			SendInputCaptureAInterrupt();
+			SendOutputCompareAInterrupt();
+			SendTimerOverflowInterrupt();
+			SendInputCaptureBInterrupt();
+			SendOutputCompareBInterrupt();
+			break;
+		case 0x1c: // TIMn_SR
+			done = true;
+			sr = sr & (value & ~(uint16_t)0x07ff);
+			if (VerboseRun())
+			{
+				logger << DebugInfo
+					<< "Resetting SR to 0x" << hex << SR() << " (write value = 0x" << value << ")" << dec << endl
+					<< " - ICFA " << ICFA() << endl
+					<< " - OCFA " << OCFA() << endl
+					<< " - TOF  " << TOF() << endl
+					<< " - ICFB " << ICFB() << endl
+					<< " - OCFB " << OCFB()
+					<< EndDebugInfo;
+			}
+			break;
+		default:
+			logger << DebugWarning 
+				<< "Trying to write into an unknown address (0x" << hex << addr << dec << ") with value"
+				<< " 0x" << hex << value << dec
+				<< EndDebugWarning;
+			break;
+	}
+	if (!done)
+		logger << DebugWarning
+			<< "TODO: write not handled for address 0x" << hex << addr << dec
+			<< " (register index = 0x" << hex << reg_index << dec << ")" << endl
+			<< LOCATION
+			<< EndDebugWarning;
+	trap_reporting_import->ReportTrap();
 }
+
+/* START: interrupt transaction generation methods */
+
+template<unsigned int BUSWIDTH, bool VERBOSE>
+void 
+TIM<BUSWIDTH, VERBOSE> ::
+SendInputCaptureAInterrupt()
+{
+	bool level = ICFA() && ICAIE();
+	TLMInterruptPayload *trans = irqPayloadFabric.allocate();
+	trans->level = level;
+	tlm::tlm_phase phase = tlm::BEGIN_REQ;
+	sc_core::sc_time t = SC_ZERO_TIME;
+	switch (icia_irq->nb_transport_fw(*trans, phase, t))
+	{
+		case tlm::TLM_ACCEPTED:
+		case tlm::TLM_UPDATED:
+			/* nothing else to do wait for the response (which does nothing) */
+			break;
+		case tlm::TLM_COMPLETED:
+			/* release the transaction */
+			trans->release();
+			break;
+	}
+
+	// update the global timer interrupt signal
+	SendGlobalTimerInterrupt();
+}
+
+template<unsigned int BUSWIDTH, bool VERBOSE>
+void 
+TIM<BUSWIDTH, VERBOSE> ::
+SendOutputCompareAInterrupt()
+{
+	bool level = OCFA() && OCAIE();
+	TLMInterruptPayload *trans = irqPayloadFabric.allocate();
+	trans->level = level;
+	tlm::tlm_phase phase = tlm::BEGIN_REQ;
+	sc_core::sc_time t = SC_ZERO_TIME;
+	switch (ocia_irq->nb_transport_fw(*trans, phase, t))
+	{
+		case tlm::TLM_ACCEPTED:
+		case tlm::TLM_UPDATED:
+			/* nothing else to do wait for the response (which does nothing) */
+			break;
+		case tlm::TLM_COMPLETED:
+			/* release the transaction */
+			trans->release();
+			break;
+	}
+
+	// update the global timer interrupt signal
+	SendGlobalTimerInterrupt();
+}
+
+template<unsigned int BUSWIDTH, bool VERBOSE>
+void 
+TIM<BUSWIDTH, VERBOSE> ::
+SendTimerOverflowInterrupt()
+{
+	bool level = TOF() && TOIE();
+	TLMInterruptPayload *trans = irqPayloadFabric.allocate();
+	trans->level = level;
+	tlm::tlm_phase phase = tlm::BEGIN_REQ;
+	sc_core::sc_time t = SC_ZERO_TIME;
+	switch (toi_irq->nb_transport_fw(*trans, phase, t))
+	{
+		case tlm::TLM_ACCEPTED:
+		case tlm::TLM_UPDATED:
+			/* nothing else to do wait for the response (which does nothing) */
+			break;
+		case tlm::TLM_COMPLETED:
+			/* release the transaction */
+			trans->release();
+			break;
+	}
+
+	// update the global timer interrupt signal
+	SendGlobalTimerInterrupt();
+}
+
+template<unsigned int BUSWIDTH, bool VERBOSE>
+void 
+TIM<BUSWIDTH, VERBOSE> ::
+SendInputCaptureBInterrupt()
+{
+	bool level = ICFB() && ICBIE();
+	TLMInterruptPayload *trans = irqPayloadFabric.allocate();
+	trans->level = level;
+	tlm::tlm_phase phase = tlm::BEGIN_REQ;
+	sc_core::sc_time t = SC_ZERO_TIME;
+	switch (icib_irq->nb_transport_fw(*trans, phase, t))
+	{
+		case tlm::TLM_ACCEPTED:
+		case tlm::TLM_UPDATED:
+			/* nothing else to do wait for the response (which does nothing) */
+			break;
+		case tlm::TLM_COMPLETED:
+			/* release the transaction */
+			trans->release();
+			break;
+	}
+
+	// update the global timer interrupt signal
+	SendGlobalTimerInterrupt();
+}
+
+template<unsigned int BUSWIDTH, bool VERBOSE>
+void 
+TIM<BUSWIDTH, VERBOSE> ::
+SendOutputCompareBInterrupt()
+{
+	bool level = OCFB() && OCBIE();
+	TLMInterruptPayload *trans = irqPayloadFabric.allocate();
+	trans->level = level;
+	tlm::tlm_phase phase = tlm::BEGIN_REQ;
+	sc_core::sc_time t = SC_ZERO_TIME;
+	switch (ocib_irq->nb_transport_fw(*trans, phase, t))
+	{
+		case tlm::TLM_ACCEPTED:
+		case tlm::TLM_UPDATED:
+			/* nothing else to do wait for the response (which does nothing) */
+			break;
+		case tlm::TLM_COMPLETED:
+			/* release the transaction */
+			trans->release();
+			break;
+	}
+
+	// update the global timer interrupt signal
+	SendGlobalTimerInterrupt();
+}
+
+template<unsigned int BUSWIDTH, bool VERBOSE>
+void 
+TIM<BUSWIDTH, VERBOSE> ::
+SendGlobalTimerInterrupt()
+{
+	bool level = (TOF() && TOIE()) ||
+		(ICFA() && ICAIE()) ||
+		(ICFB() && ICBIE()) ||
+		(OCFA() && OCAIE()) ||
+		(OCFB() && OCBIE());
+	TLMInterruptPayload *trans = irqPayloadFabric.allocate();
+	trans->level = level;
+	tlm::tlm_phase phase = tlm::BEGIN_REQ;
+	sc_core::sc_time t = SC_ZERO_TIME;
+	switch (timeri_irq->nb_transport_fw(*trans, phase, t))
+	{
+		case tlm::TLM_ACCEPTED:
+		case tlm::TLM_UPDATED:
+			/* nothing else to do wait for the response (which does nothing) */
+			break;
+		case tlm::TLM_COMPLETED:
+			/* release the transaction */
+			trans->release();
+			break;
+	}
+
+}
+
+/* END: interrupt transaction generation methods */
+
+/* START: event handlers */
+
+template<unsigned int BUSWIDTH, bool VERBOSE>
+void 
+TIM<BUSWIDTH, VERBOSE> ::
+TimerOverflowHandler()
+{
+	while(1)
+	{
+		wait(to_event);
+		// check if timer count is enabled, otherwise it is just an spurious event that can be ignored
+		if (!EN()) continue;
+		// set the counter to 0
+		cntr = 0;
+		cntr_update_time = sc_time_stamp();
+		// set the TOF bit if not already set, if it was not already send an interrupt may need to be generated
+		if (!TOF())
+		{
+			if (VerboseRun())
+				logger << DebugInfo << "Detected timer overflow at " << sc_time_stamp() << ", setting TOF";
+			sr = sr | (uint16_t)0x2000;
+			// check if an interrupt should be generated
+			if (TOIE())
+			{
+				if (VerboseRun())
+					logger << DebugInfo << " and sending interrupt";
+				SendTimerOverflowInterrupt();
+			}
+			if (VerboseRun())
+				logger << EndDebugInfo;
+		}
+		// notify the timer overflow event for the next overflow
+		uint32_t rem = (uint32_t)0x10000;
+		// check which clock (internal or external) is being used
+		if (ECKEN())
+		{
+			// external clock
+			sc_core::sc_time t = extclk_cycle_time * rem;
+			to_event.notify(t);
+		}
+		else
+		{
+			// internal clock
+			sc_core::sc_time t = pclk2_cycle_time * (uint32_t)(CC() + 1) * rem;
+			to_event.notify(t);
+		}
+		trap_reporting_import->ReportTrap();
+	}
+}
+
+template<unsigned int BUSWIDTH, bool VERBOSE>
+void
+TIM<BUSWIDTH, VERBOSE> ::
+OutputCompareAHandler()
+{
+	while(1)
+	{
+		wait(oca_event);
+		// check if timer count is enabled, otherwise it is just a spurious event that can be ignored
+		if (!EN()) continue;
+		// update the counter to OCAR
+		cntr = OCAR();
+		cntr_update_time = sc_time_stamp();
+		// set the OCFA bit if not already set, if it was not already send an interrupt may need to be generated
+		if (!OCFA())
+		{
+			if (VerboseRun())
+				logger << DebugInfo << "Detected output compare A at " << sc_time_stamp() << ", setting OCFA";
+			sr = sr | (uint16_t)0x4000;
+			// check if an interrupt should be generated
+			if (OCAIE())
+			{
+				if (VerboseRun())
+					logger << " and sending interrupt";
+				SendOutputCompareAInterrupt();
+			}
+			if (VerboseRun())
+				logger << EndDebugInfo;
+		}
+		// notify the output compare for the next count
+		uint32_t rem = (uint32_t)0x10000;
+		sc_core::sc_time t = pclk2_cycle_time * (uint32_t)(CC() + 1) * rem;
+		oca_event.notify(t);
+		trap_reporting_import->ReportTrap();
+	}
+}
+
+template<unsigned int BUSWIDTH, bool VERBOSE>
+void
+TIM<BUSWIDTH, VERBOSE> ::
+OutputCompareBHandler()
+{
+	while(1)
+	{
+		wait(ocb_event);
+		// check if timer count is enabled, otherwise it is just a spurious event that can be ignored
+		if (!EN()) continue;
+		// update the counter to OCBR
+		cntr = OCBR();
+		cntr_update_time = sc_time_stamp();
+		// set the OCFB bit if not already set, if it was not already send an interrupt may need to be generated
+		if (!OCFB())
+		{
+			if (VerboseRun())
+				logger << DebugInfo << "Detected output compare B at " << sc_time_stamp() << ", setting OCFB";
+			sr = sr | (uint16_t)0x0800;
+			// check if an interrupt should be generated
+			if (OCBIE())
+			{
+				if (VerboseRun())
+					logger << " and sending interrupt";
+				SendOutputCompareBInterrupt();
+			}
+			if (VerboseRun())
+				logger << EndDebugInfo;
+		}
+		// notify the output compare for the next count
+		uint32_t rem = (uint32_t)0x10000;
+		sc_core::sc_time t = pclk2_cycle_time * (uint32_t)(CC() + 1) * rem;
+		ocb_event.notify(t);
+		trap_reporting_import->ReportTrap();
+	}
+}
+
+
+/* END: event handler */
 
 template<unsigned int BUSWIDTH, bool VERBOSE>
 void

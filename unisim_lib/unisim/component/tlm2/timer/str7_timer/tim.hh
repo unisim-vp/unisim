@@ -30,6 +30,10 @@
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ *
+ * TODO:
+ * - Add support for PWM (Pulse Width Modulation)
+ * - Add support for output compare A and B
  */
  
 #ifndef __UNISIM_COMPONENT_TLM2_TIMER_STR7_TIM_HH__
@@ -43,6 +47,7 @@
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger.hh"
 #include "unisim/component/tlm2/interrupt/types.hh"
+#include "unisim/service/interfaces/trap_reporting.hh"
 
 namespace unisim {
 namespace component {
@@ -53,13 +58,16 @@ namespace str7_timer {
 using unisim::component::tlm2::interrupt::InterruptProtocolTypes;
 using unisim::component::tlm2::interrupt::TLMInterruptPayload;
 using unisim::kernel::service::Object;
+using unisim::kernel::service::Client;
+using unisim::kernel::service::ServiceImport;
+using unisim::service::interfaces::TrapReporting;
 using unisim::kernel::tlm2::PayloadFabric;
 
 template<unsigned int BUSWIDTH = 32, bool VERBOSE = false>
 class TIM :
-	public Object,
 	public sc_module,
-	public tlm::tlm_fw_transport_if<>
+	public tlm::tlm_fw_transport_if<>,
+	public Client<TrapReporting>
 {
 private:
 	typedef TIM<BUSWIDTH, VERBOSE> THIS_MODULE;
@@ -90,6 +98,9 @@ public:
 
 	/* input memory socket */
 	tlm::tlm_target_socket<BUSWIDTH> in_mem;
+
+	/* trap reporting import */
+	ServiceImport<TrapReporting> trap_reporting_import;
 
 	/* constructor */
 	TIM(const sc_module_name &name, Object *parent = 0);
@@ -197,10 +208,11 @@ private:
 	inline bool ECKEN() const { return (CR1() & ((uint16_t)1)) != 0; }
 	inline bool ICAIE() const { return (CR2() & ((uint16_t)1 << 15)) != 0; }
 	inline bool OCAIE() const { return (CR2() & ((uint16_t)1 << 14)) != 0; }
-	inline bool TOE() const { return (CR2() & ((uint16_t)1 << 13)) != 0; }
+	inline bool TOIE() const { return (CR2() & ((uint16_t)1 << 13)) != 0; }
 	inline bool ICBIE() const { return (CR2() & ((uint16_t)1 << 12)) != 0; }
 	inline bool OCBIE() const { return (CR2() & ((uint16_t)1 << 11)) != 0; }
 	inline bool CC(unsigned int index) { if (index > 7) return false; return (CR2() & ((uint16_t)1 << index)) != 0; }
+	inline unsigned int CC() { return CR2() & (uint16_t)0x0ff; }
 	inline bool ICFA() const { return (SR() & ((uint16_t)1 << 15)) != 0; }
 	inline bool OCFA() const { return (SR() & ((uint16_t)1 << 14)) != 0; }
 	inline bool TOF() const { return (SR() & ((uint16_t)1 << 13)) != 0; }
@@ -237,6 +249,28 @@ private:
 	tlm_utils::peq_with_get<irq_fifo_t> icapb_fifo;
 	void IcapbFifoHandler();
 
+	/* START: interrupt transaction generation methods */
+	void SendInputCaptureAInterrupt();
+	void SendOutputCompareAInterrupt();
+	void SendTimerOverflowInterrupt();
+	void SendInputCaptureBInterrupt();
+	void SendOutputCompareBInterrupt();
+	void SendGlobalTimerInterrupt();
+	/* END: interrupt transaction generation methods */
+
+	/* START: timer overflow variables and handler method */
+	sc_core::sc_event to_event;
+	sc_core::sc_time cntr_update_time;
+	void TimerOverflowHandler();
+	/* END: timer overflow variables and handler method*/
+
+	/* START: output compare variables and handler method */
+	sc_core::sc_event oca_event;
+	sc_core::sc_event ocb_event;
+	void OutputCompareAHandler();
+	void OutputCompareBHandler();
+	/* END: output compare variables and handler method */
+	
 	/* START: module parameters */
 	uint64_t base_address;
 	unisim::kernel::service::Parameter<uint64_t> param_base_address;
