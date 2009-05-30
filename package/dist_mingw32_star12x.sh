@@ -260,7 +260,6 @@ m4/with_boost.m4"
 
 HCS12X_EXTERNAL_HEADERS="\
 assert.h \
-endian.h \
 errno.h \
 fcntl.h \
 fstream \
@@ -281,7 +280,6 @@ stdlib.h \
 string \
 string.h \
 sys/stat.h \
-sys/times.h \
 sys/types.h \
 time.h \
 unistd.h \
