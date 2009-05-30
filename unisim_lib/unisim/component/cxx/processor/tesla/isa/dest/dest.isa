@@ -34,6 +34,7 @@
 
 namespace unisim::component::cxx::processor::tesla::isa::dest
 set endianness little
+set fields_order reverse
 set addressclass {typename CONFIG::address_t}
 template <{class} {CONFIG}>
 

@@ -108,7 +108,7 @@ void Sampler<CONFIG>::Fetch8(VectorRegister<CONFIG> dest[],
 	int elSize = 1 * numPackedComponents;
 	
 	
-	for(int l = 0; l != CONFIG::WARP_SIZE; ++l)
+	for(unsigned int l = 0; l != CONFIG::WARP_SIZE; ++l)
 	{
 		if(!cpu->ReadMemory(addr[l], buffer, elSize))
 			assert(false);
