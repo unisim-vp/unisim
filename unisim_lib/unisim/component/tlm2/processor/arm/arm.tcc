@@ -472,6 +472,9 @@ void
 ARM<CONFIG, BLOCKING> ::
 IrqBTransport(TLMInterruptPayload& trans, sc_core::sc_time &time)
 {
+	logger << DebugWarning << "Received an IRQ"
+		<< EndDebugWarning;
+	inherited::trap_reporting_import->ReportTrap();
 	/* TODO */
 }
 
@@ -501,6 +504,9 @@ bool
 ARM<CONFIG, BLOCKING> ::
 IrqGetDirectMemPtr(TLMInterruptPayload& trans, tlm::tlm_dmi& dmi)
 {
+	logger << DebugWarning << "Received an FIQ"
+		<< EndDebugWarning;
+	inherited::trap_reporting_import->ReportTrap();
 	return false;
 }
 

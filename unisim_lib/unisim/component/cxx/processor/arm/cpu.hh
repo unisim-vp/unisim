@@ -71,6 +71,7 @@
 #include "unisim/service/interfaces/memory.hh"
 #include "unisim/service/interfaces/memory_injection.hh"
 #include "unisim/service/interfaces/registers.hh"
+#include "unisim/service/interfaces/trap_reporting.hh"
 #include "unisim/util/debug/register.hh"
 #include "unisim/util/arithmetic/arithmetic.hh"
 #include "unisim/component/cxx/processor/arm/memory_op.hh"
@@ -151,6 +152,7 @@ using unisim::service::interfaces::SymbolTableLookup;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::MemoryInjection;
 using unisim::service::interfaces::Registers;
+using unisim::service::interfaces::TrapReporting;
 //using unisim::service::interfaces::StatisticReporting;
 //using unisim::service::interfaces::StatisticReportingControl;
 //using unisim::service::interfaces::operator<<;
@@ -185,6 +187,7 @@ class CPU :
     public Service<MemoryInjection<uint64_t> >,
 	public Client<DebugControl<uint64_t> >,
 	public Client<MemoryAccessReporting<uint64_t> >,
+	public Client<TrapReporting>,
 	public Service<MemoryAccessReportingControl>,
 	public Service<Disassembly<uint64_t> >,
     public Service<Registers>,
@@ -240,6 +243,7 @@ public:
 	ServiceImport<MemoryAccessReporting<uint64_t> > memory_access_reporting_import;
 	ServiceImport<SymbolTableLookup<uint64_t> > symbol_table_lookup_import;
 	ServiceImport<LinuxOS> linux_os_import;
+	ServiceImport<TrapReporting> trap_reporting_import;
 
 	// the kernel logger
 	unisim::kernel::logger::Logger logger;
