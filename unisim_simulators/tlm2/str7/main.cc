@@ -295,6 +295,8 @@ int sc_main(int argc, char *argv[]) {
 #ifdef STR7_DEBUG_INLINE
 	cpu->debug_control_import >> inline_debugger->debug_control_export;
 	cpu->memory_access_reporting_import >> inline_debugger->memory_access_reporting_export;
+	cpu->trap_reporting_import >> inline_debugger->trap_reporting_export;
+	timer0->trap_reporting_import >> inline_debugger->trap_reporting_export;
 	inline_debugger->disasm_import >> cpu->disasm_export;
 	inline_debugger->memory_import >> cpu->memory_export;
 	inline_debugger->registers_import >> cpu->registers_export;
