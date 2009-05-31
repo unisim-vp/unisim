@@ -76,6 +76,7 @@ template<class CONFIG>
 struct Device: CUdevice_st, Object
 {
 	Device();
+	~Device();
 
 	void DumpCode(Kernel<CONFIG> & kernel, std::ostream & os);
 	void Run(Kernel<CONFIG> & kernel, int width = 1, int height = 1);
@@ -108,12 +109,14 @@ struct Device: CUdevice_st, Object
 private:
 	void Load(Kernel<CONFIG> & kernel);
 	void Reset();
-	void SetThreadIDs(Kernel<CONFIG> const & kernel, int bnum);
+	void SetThreadIDs(Kernel<CONFIG> const & kernel, int bnum, int core);
 	uint32_t BuildTID(int x, int y, int z);
+	void SetVariableBool(char const * env, char const * varname);
 
-	CPU<CONFIG> cpu;
+	std::vector<CPU<CONFIG> *> cores;
 	unisim::component::cxx::memory::ram::Memory<typename CONFIG::address_t> memory;
 	Allocator<CONFIG> global_allocator;
+	unsigned int core_count;
 	
 	bool export_stats;
 	std::string stats_prefix;

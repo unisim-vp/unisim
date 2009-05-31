@@ -96,7 +96,7 @@ struct Kernel : CUfunc_st
 	
 	uint32_t SharedTotal() const;
 	void InitShared(Service<unisim::service::interfaces::Memory<typename CONFIG::address_t> > & mem, int index = 0,
-		int bidx = 0, int bidy = 0) const;
+		int bidx = 0, int bidy = 0, int core = 0) const;
 	
 	int BlocksPerCore() const;	// Max blocks that can run on a SM of target architecture
 	

@@ -91,50 +91,66 @@ bool ParseBool(char const * str)
 }
 
 template<class CONFIG>
+void Device<CONFIG>::SetVariableBool(char const * envName, char const * varName)
+{
+	char const * env;
+	env = getenv(envName);
+	if(env != 0) {
+		bool b = ParseBool(env);
+		for(int i = 0; i != core_count; ++i)
+		{
+			(*cores[i])[varName] = b;
+		}
+	}
+}
+
+template<class CONFIG>
 Device<CONFIG>::Device() :
 	Object("device_0"),
-	cpu("gpu_core_0", this),
 	memory("memory", this),
 	global_allocator(CONFIG::GLOBAL_START, CONFIG::GLOBAL_SIZE),
+	core_count(CONFIG::CORE_COUNT),
 	export_stats(false)
 {
-	cpu.memory_import >> memory.memory_export;
-	memory.Setup();
-	cpu.Setup();
 
 	// Parse environment variables and set GPU parameters accordingly
 	char const * env;
-	env = getenv("TRACE_INSN");
+	env = getenv("CORE_COUNT");
 	if(env != 0)
-		cpu["trace-insn"] = ParseBool(env);
+		core_count = atoi(env);
+	
+	// Initialize cores
+	cores.resize(core_count);
+	for(int i = 0; i != core_count; ++i)
+	{
+		std::ostringstream name;
+		name << "gpu_core_" << i;
+		cores[i] = new CPU<CONFIG>(name.str().c_str(), this, i);
+		cores[i]->memory_import >> memory.memory_export;
+	}
+	
+	memory.Setup();
+	for(int i = 0; i != core_count; ++i)
+	{
+		cores[i]->Setup();
+	}
+	
+	env = getenv("EXPORT_STATS");
+	if(env != 0)
+		export_stats = ParseBool(env);
 
-	env = getenv("TRACE_MASK");
+	env = getenv("EXPORT_STATS_PREFIX");
 	if(env != 0)
-		cpu["trace-mask"] = ParseBool(env);
+		stats_prefix = env;
 
-	env = getenv("TRACE_REG");
-	if(env != 0)
-		cpu["trace-reg"] = ParseBool(env);
-
-	env = getenv("TRACE_REG_FLOAT");
-	if(env != 0)
-		cpu["trace-reg-float"] = ParseBool(env);
-
-	env = getenv("TRACE_LOADSTORE");
-	if(env != 0)
-		cpu["trace-loadstore"] = ParseBool(env);
-
-	env = getenv("TRACE_BRANCH");
-	if(env != 0)
-		cpu["trace-branch"] = ParseBool(env);
-
-	env = getenv("TRACE_SYNC");
-	if(env != 0)
-		cpu["trace-sync"] = ParseBool(env);
-
-	env = getenv("TRACE_RESET");
-	if(env != 0)
-		cpu["trace-reset"] = ParseBool(env);
+	SetVariableBool("TRACE_INSN", "trace-insn");
+	SetVariableBool("TRACE_MASK", "trace-mask");
+	SetVariableBool("TRACE_REG", "trace-reg");
+	SetVariableBool("TRACE_REG_FLOAT", "trace-reg-float");
+	SetVariableBool("TRACE_LOADSTORE", "trace-loadstore");
+	SetVariableBool("TRACE_BRANCH", "trace-branch");
+	SetVariableBool("TRACE_SYNC", "trace-sync");
+	SetVariableBool("TRACE_RESET", "trace-reset");
 
 	env = getenv("TRACE_KERNEL_PARSING");
 	if(env != 0)
@@ -144,14 +160,16 @@ Device<CONFIG>::Device() :
 	if(env != 0)
 		Kernel<CONFIG>::trace_loading = ParseBool(env);
 
-	env = getenv("EXPORT_STATS");
-	if(env != 0)
-		export_stats = ParseBool(env);
 
-	env = getenv("EXPORT_STATS_PREFIX");
-	if(env != 0)
-		stats_prefix = env;
+}
 
+template<class CONFIG>
+Device<CONFIG>::~Device()
+{
+	for(int i = 0; i != core_count; ++i)
+	{
+		delete cores[i];
+	}
 }
 
 template<class CONFIG>
@@ -168,7 +186,7 @@ void Device<CONFIG>::DumpCode(Kernel<CONFIG> & kernel, std::ostream & os)
 	os << "Dumping code @" << std::hex << pc << endl;
 	while(pc < CONFIG::CODE_START + kernel.CodeSize())
 	{
-		string s = cpu.Disasm(pc, pc);
+		string s = cores[0]->Disasm(pc, pc);
 		os << s << endl;
 	}
 }
@@ -176,40 +194,74 @@ void Device<CONFIG>::DumpCode(Kernel<CONFIG> & kernel, std::ostream & os)
 template<class CONFIG>
 void Device<CONFIG>::Run(Kernel<CONFIG> & kernel, int width, int height)
 {
-	cpu.stats = &kernel.stats;
+	std::vector<Stats<CONFIG> > temp_stats(core_count);
 	DumpCode(kernel, cerr);
-
 	Load(kernel);
-	kernel.LoadSamplers(cpu);
+	for(int i = 0; i != core_count; ++i) {
+		cores[i]->stats = &temp_stats[i];
+		cores[i]->InitStats(kernel.CodeSize());	// Even if not exporting
+	}
+
+	for(int i = 0; i != core_count; ++i) {
+		kernel.LoadSamplers(*cores[i]);
+	}
 	kernel.SetGridShape(width, height);
 	
-	int blockspercore = kernel.BlocksPerCore();
-	cpu.InitStats(kernel.CodeSize());	// Even if not exporting
+	int blocksPerCore = kernel.BlocksPerCore();
+	int blocksPerGPU = blocksPerCore * core_count;
+
 	
-	// TODO: multiple cores
 	// Blocks are scheduled sequentially on available resources
 	int bidy = 0;
 	int bidx = 0;
-	for(int i = 0; i < height * width; i += blockspercore)
+	for(int i = 0; i < height * width; i += blocksPerGPU)
 	{
-		int blocks = std::min(blockspercore, height * width - i);
-		cpu.Reset(kernel.ThreadsPerBlock(), blocks, kernel.GPRs(), kernel.SharedTotal());
-
-		for(int j = 0; j < blocks; ++j)
+		int myCoreCount = core_count;
+		for(int c = 0; c != core_count; ++c)
 		{
-			kernel.InitShared(memory, j, bidx, bidy);
-			SetThreadIDs(kernel, j);
+			int firstBlock = i + c * blocksPerCore;
+			int blocks = std::min(blocksPerCore, height * width - firstBlock);
+			
+			if(blocks > 0)
+			{
+				cores[c]->Reset(kernel.ThreadsPerBlock(), blocks, kernel.GPRs(), kernel.SharedTotal());
 
-			++bidx;
-			if(bidx == width) {
-				bidx = 0;
-				++bidy;
+				for(int j = 0; j < blocks; ++j)
+				{
+					kernel.InitShared(memory, j, bidx, bidy, c);
+					SetThreadIDs(kernel, j, c);
+
+					++bidx;
+					if(bidx == width) {
+						bidx = 0;
+						++bidy;
+					}
+				}
+			}
+			else
+			{
+				myCoreCount = c;
+				break;
 			}
 		}
-		cpu.Run();
+		
+		// TODO: run in separate threads (parallel loop)
+		for(int c = 0; c != myCoreCount; ++c)
+		{
+			cores[c]->Run();
+		}
 	}
 	
+	for(int i = 0; i != core_count; ++i) {
+		cores[i]->stats = 0;
+	}
+	
+	// Merge stats
 	if(export_stats) {
+		for(int c = 0; c != core_count; ++c)
+		{
+			kernel.stats.Merge(temp_stats[c]);
+		}
 		ExportStats(kernel.stats, (kernel.Name() + ".csv").c_str());
 	}
 }
@@ -310,11 +362,11 @@ void Device<CONFIG>::Reset()
 }
 
 template<class CONFIG>
-void Device<CONFIG>::SetThreadIDs(Kernel<CONFIG> const & kernel, int bnum)
+void Device<CONFIG>::SetThreadIDs(Kernel<CONFIG> const & kernel, int bnum, int core)
 {
 	// Set register 0 of each thread
 	
-	// TODO: multiple cores
+	// TODO: multiple core_count
 	int warpsperblock = kernel.WarpsPerBlock();
 	int blockstart = bnum * warpsperblock;
 	//cerr << "Warpsperblocks = " << warpsperblock << ", blockstart = " << blockstart << endl;
@@ -330,7 +382,7 @@ void Device<CONFIG>::SetThreadIDs(Kernel<CONFIG> const & kernel, int bnum)
 				
 				//cerr << "Setting r0 of warp " << warpid << endl;
 				uint32_t reg = BuildTID(x, y, z);
-				cpu.GetGPR(warpid, 0).WriteLane(reg, lane);	// TID on r0
+				cores[core]->GetGPR(warpid, 0).WriteLane(reg, lane);	// TID on r0
 			}
 		}
 	}
@@ -426,7 +478,7 @@ int Device<CONFIG>::Attribute(int attrib)
 	case CU_DEVICE_ATTRIBUTE_GPU_OVERLAP:
 		return 0;
     case CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT:
-    	return CONFIG::CORE_COUNT;
+    	return core_count;
 	case CU_DEVICE_ATTRIBUTE_KERNEL_EXEC_TIMEOUT:
 		return 0;  // No timeout
     case CU_DEVICE_ATTRIBUTE_INTEGRATED:

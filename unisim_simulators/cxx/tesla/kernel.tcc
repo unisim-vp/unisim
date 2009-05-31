@@ -357,9 +357,8 @@ uint32_t Kernel<CONFIG>::SharedTotal() const
 
 template<class CONFIG>
 void Kernel<CONFIG>::InitShared(Service<unisim::service::interfaces::Memory<typename CONFIG::address_t> > & mem, int index,
-	int bidx, int bidy) const
+	int bidx, int bidy, int core) const
 {
-	// TODO: multiple cores
 	// Header
 	uint16_t header[8];	// 10?
 	header[0] = 0;	// flags? gridid?
@@ -374,7 +373,9 @@ void Kernel<CONFIG>::InitShared(Service<unisim::service::interfaces::Memory<type
 	if(trace_loading)
 		cerr << "Init block " << index << " (" << bidx << ", " << bidy << ") / ("
 			<< gridx << ", " << gridy << ") shared memory\n";
-	typename CONFIG::address_t shared_base = CONFIG::SHARED_START + index * SharedTotal();
+	typename CONFIG::address_t shared_base = CONFIG::SHARED_START
+		+ core * CONFIG::SHARED_SIZE
+		+ index * SharedTotal();
 
 	if(!mem.WriteMemory(shared_base, header, 16)) {
 		throw CudaException(CUDA_ERROR_OUT_OF_MEMORY);
