@@ -70,11 +70,6 @@ namespace tesla {
 
 using namespace std;
 
-#define VERBOSE
-
-template <class CONFIG>
-typename CONFIG::stats_t * CPU<CONFIG>::stats = 0;
-
 template <class CONFIG>
 CPU<CONFIG>::CPU(const char *name, Object *parent, int coreid) :
 	Object(name, parent),
@@ -141,7 +136,8 @@ CPU<CONFIG>::CPU(const char *name, Object *parent, int coreid) :
 	trace_branch(CONFIG::TRACE_BRANCH),
 	trace_sync(CONFIG::TRACE_SYNC),
 	trace_reset(CONFIG::TRACE_RESET),
-	trace_logger(*this)
+	trace_logger(*this),
+	stats(0)
 {
 //	Object::SetupDependsOn(logger_import);
 
@@ -275,22 +271,14 @@ void CPU<CONFIG>::Reset(unsigned int threadsperblock, unsigned int numblocks, un
 template <class CONFIG>
 void CPU<CONFIG>::InitStats(unsigned int code_size)
 {
-	//stats->Reset();
 	typename CONFIG::address_t pc = CONFIG::CODE_START;
 	while(pc < CONFIG::CODE_START + code_size)
 	{
-		ostringstream sstr;
-
 		insn_t insn;
 		if(!memory_import->ReadMemory(pc, &insn, 8)) assert(false);
 
 		Instruction<CONFIG> instruction(this, pc, insn);
-		typename CONFIG::operationstats_t * opstats = &(*stats)[pc - CONFIG::CODE_START];
-		instruction.GetOperation()->stats = opstats;	// Needed if operation didn't change
-		instruction.Disasm(sstr);
-		//stats[pc - CONFIG::CODE_START].ResetDynamic();
-		opstats->SetName(sstr.str().c_str());
-		instruction.GetOperation()->initStats();
+		instruction.InitStats();
 
 		if(instruction.IsLong()) {
 			pc += 8;
@@ -330,9 +318,9 @@ void CPU<CONFIG>::StepWarp(uint32_t warpid)
 		throw MemoryAccessException<CONFIG>();
 	}
 
-	(*stats)[fetchaddr - CONFIG::CODE_START].Begin();
 	// Decode
 	Instruction<CONFIG> insn(this, fetchaddr, iw);
+	insn.Stats()->Begin();
 
 	if(trace_insn)
 	{
@@ -359,7 +347,7 @@ void CPU<CONFIG>::StepWarp(uint32_t warpid)
 	
 	// Join or take other branch?
 	CheckJoin();
-	(*stats)[fetchaddr - CONFIG::CODE_START].End();
+	insn.Stats()->End();
 
 	SetPC(GetNPC());
 }

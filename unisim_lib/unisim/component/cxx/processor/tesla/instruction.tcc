@@ -57,10 +57,13 @@ isa::opcode::Decoder<CONFIG> Instruction<CONFIG>::op_decoder;
 
 template <class CONFIG>
 Instruction<CONFIG>::Instruction(CPU<CONFIG> * cpu, typename CONFIG::address_t addr, typename CONFIG::insn_t iw) :
-	cpu(cpu), addr(addr), iw(iw)
+	cpu(cpu), addr(addr), iw(iw), stats(0)
 {
 	operation = op_decoder.Decode(addr, iw);
 	flags.Reset();
+	if(cpu->stats != 0) {
+		stats = &(*cpu->stats)[addr - CONFIG::CODE_START];
+	}
 }
 
 template <class CONFIG>
@@ -100,7 +103,7 @@ void Instruction<CONFIG>::Execute()
 	//if(mask != 0) {
 	// Execute even when mask = 0 ! Esp. branches, sync...
 	operation->execute(cpu, this);
-	operation->stats->Execute(Mask());
+	stats->Execute(Mask());
 	//}
 	if(operation->control->is_end) {
 		cpu->End();
@@ -220,7 +223,7 @@ void Instruction<CONFIG>::ReadBlock(int dest, DataType dt)
 	default:
 		assert(false);
 	}
-	operation->stats->RegRead(&Temp(0), dt);
+	stats->RegRead(&Temp(0), dt);
 }
 
 template <class CONFIG>
@@ -268,9 +271,7 @@ void Instruction<CONFIG>::WriteBlock(int reg, DataType dt)
 	default:
 		assert(false);
 	}
-	operation->stats->RegWrite(&Temp(0), dt, mask);
-	// Assumes contiguous register storage...
-	//operation->stats->RegWrite(&cpu->GetGPR(reg), dt);
+	stats->RegWrite(&Temp(0), dt, mask);
 }
 
 
@@ -299,7 +300,7 @@ void Instruction<CONFIG>::ReadReg(int reg, int tempbase, RegType rt)
 	default:
 		assert(false);
 	}
-	operation->stats->RegRead(&Temp(tempbase), RegTypeToDataType(rt));
+	stats->RegRead(&Temp(tempbase), RegTypeToDataType(rt));
 }
 
 template <class CONFIG>
@@ -334,7 +335,7 @@ void Instruction<CONFIG>::WriteReg(int reg, int tempbase, RegType rt,
 		}
 		break;
 	}
-	operation->stats->RegWrite(&Temp(tempbase), RegTypeToDataType(rt), mask);
+	stats->RegWrite(&Temp(tempbase), RegTypeToDataType(rt), mask);
 }
 
 template <class CONFIG>
@@ -552,6 +553,21 @@ VectorAddress<CONFIG> Instruction<CONFIG>::EffectiveAddress(Operand op) const
 {
 	assert(false);
 	throw "";
+}
+
+template <class CONFIG>
+typename CONFIG::operationstats_t * Instruction<CONFIG>::Stats()
+{
+	return stats;
+}
+
+template <class CONFIG>
+void Instruction<CONFIG>::InitStats()
+{
+	ostringstream sstr;
+	Disasm(sstr);
+	stats->SetName(sstr.str().c_str());
+	GetOperation()->initStats(stats);
 }
 
 } // end of namespace tesla

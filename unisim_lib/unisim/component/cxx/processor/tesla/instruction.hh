@@ -158,6 +158,8 @@ public:
 	bool ForceReg(Operand op) const;
 	size_t NumGPRsIn() const;
 	VectorAddress<CONFIG> EffectiveAddress(Operand op) const;
+	typename CONFIG::operationstats_t * Stats();
+	void InitStats();
 	
 private:
 	CPU<CONFIG> * cpu;
@@ -170,6 +172,7 @@ private:
 	VectorRegister<CONFIG> temp[TempCount];
 	VectorFlags<CONFIG> flags;
 	std::bitset<CONFIG::WARP_SIZE> mask;
+	typename CONFIG::operationstats_t * stats;
 };
 
 #if 0

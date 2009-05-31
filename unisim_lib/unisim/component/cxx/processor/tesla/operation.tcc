@@ -67,7 +67,7 @@ isa::control::Decoder<CONFIG> Operation<CONFIG>::control_decoder;
 
 template <class CONFIG>
 Operation<CONFIG>::Operation(typename CONFIG::address_t addr, typename CONFIG::insn_t iw) :
-	stats(0), addr(addr), iw(iw)
+	addr(addr), iw(iw)
 {
 	// Don't cache subfields. Scope is controlled by Operation.
 	src1 = src1_decoder.NCDecode(addr, iw);
@@ -75,13 +75,6 @@ Operation<CONFIG>::Operation(typename CONFIG::address_t addr, typename CONFIG::i
 	src3 = src3_decoder.NCDecode(addr, iw);
 	dest = dest_decoder.NCDecode(addr, iw);
 	control = control_decoder.NCDecode(addr, iw);
-
-	stats = &(*CPU<CONFIG>::stats)[addr - CONFIG::CODE_START];
-	//stats->ResetStatic();
-	//std::ostringstream oss;
-	//dest->disasmPred(cpu, this, oss);
-	//disasm(oss);
-	//operation->stats->SetName(oss.str().c_str());
 }
 
 template <class CONFIG>
@@ -95,10 +88,9 @@ Operation<CONFIG>::~Operation()
 }
 
 template <class CONFIG>
-void Operation<CONFIG>::initStats()
+void Operation<CONFIG>::initStats(typename CONFIG::operationstats_t * stats)
 {
-	assert(stats != 0);
-	classify();
+	classify(stats);
 	if(op_type[OpDest] != DT_NONE) {
 		dest->classify(*stats, op_type[OpDest]);
 	}

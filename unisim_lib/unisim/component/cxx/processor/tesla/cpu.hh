@@ -465,7 +465,7 @@ public:
 
 	Logger trace_logger;
 
-	static typename CONFIG::stats_t* stats;
+	typename CONFIG::stats_t* stats;
 };
 
 } // end of namespace tesla

@@ -77,26 +77,6 @@ using namespace unisim::component::cxx::processor::tesla;
 } // end of namespace unisim
 
 
-
-/*
-template <class T, size_t SIZE>
-struct SimpleArray
-{
-	T dt[SIZE];
-	
-	T & operator[] (size_t i) {
-		assert(i < SIZE);
-		return dt[i];
-	}
-	T operator[] (size_t i) const {
-		assert(i < SIZE);
-		return dt[i];
-	}
-};
-
-typedef SimpleArray<DataType, 4> DataTypeArray;
-*/
-
 }
 
 
@@ -159,7 +139,6 @@ constructor action init() {
 	this->op_type[OpSrc1] = DT_U32;
 	this->op_type[OpSrc2] = DT_U32;
 	this->op_type[OpSrc3] = DT_U32;
-	//this->initStats();
 }
 
 constructor action init_force_reg() {
@@ -169,7 +148,7 @@ constructor action init_force_reg() {
 	this->force_reg[OpSrc3] = false;
 }
 
-action classify() {
+action classify({typename CONFIG::operationstats_t *} {stats}) {
 }
 
 include "isa/opcode/fp32.isa"

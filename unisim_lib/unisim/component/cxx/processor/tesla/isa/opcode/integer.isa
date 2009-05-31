@@ -89,8 +89,6 @@ iadd_full.execute = {
 	reg_t & c = insn->GetSrc3();
 	
 	insn->GetDest() = IAdd(a, c, insn->Flags(), sat, /*src1_neg*/0, src3_neg, w32);
-	
-	//insn->SetPredI32(output, flags);
 }
 
 //specialize iadd_full_normal(sat=0, w32=1, src3_neg=0)
@@ -237,7 +235,7 @@ isubr_halfimm.execute = {
 group iaddsub(iadd_full, iadd_halfimm, isubr_full, isubr_halfimm)
 
 iaddsub.classify = {
-	this->stats->SetInteger();
+	stats->SetInteger();
 }
 
 
@@ -522,7 +520,7 @@ imac_imm.execute = {
 group imad(imad_full, imac_imm)
 
 imad.classify = {
-	this->stats->SetInteger();
+	stats->SetInteger();
 }
 
 //--------------------------------------------------------------------
@@ -666,7 +664,7 @@ imul24_halfimm.execute = {
 group imul(imul24, imul24_halfimm)
 
 imul.classify = {
-	this->stats->SetInteger();
+	stats->SetInteger();
 }
 
 //--------------------------------------------------------------------
@@ -888,7 +886,7 @@ i2f_full.execute = {
 group icvt(i2i_full_noimm, i2f_full)
 
 icvt.classify = {
-	this->stats->SetInteger();
+	stats->SetInteger();
 }
 
 
@@ -1054,7 +1052,7 @@ shr_full_imm2.execute = {
 group shift(shl_full, shl_full_imm2, shr_full, shr_full_imm2)
 
 shift.classify = {
-	this->stats->SetInteger();
+	stats->SetInteger();
 }
 
 //--------------------------------------------------------------------
@@ -1254,7 +1252,7 @@ bid_full.init = {
 group bool(and_full, or_full, xor_full, bid_full)
 
 bool.classify = {
-	this->stats->SetInteger();
+	stats->SetInteger();
 }
 
 //--------------------------------------------------------------------
@@ -1303,7 +1301,7 @@ set_full.execute = {
 group set_(set_full)
 
 set_.classify = {
-	this->stats->SetInteger();
+	stats->SetInteger();
 }
 
 //--------------------------------------------------------------------
@@ -1421,7 +1419,7 @@ max.execute = {
 group minmax(min, max)
 
 minmax.classify = {
-	this->stats->SetInteger();
+	stats->SetInteger();
 }
 
 //--------------------------------------------------------------------

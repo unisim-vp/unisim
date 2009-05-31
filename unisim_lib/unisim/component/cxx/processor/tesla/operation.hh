@@ -98,8 +98,8 @@ struct Operation
 
 	virtual void disasm(CPU<CONFIG> * cpu, Instruction<CONFIG> const * insn,
 		ostream& buffer) = 0;
-	virtual void classify() = 0;
-	void initStats();
+	virtual void classify(typename CONFIG::operationstats_t * stats) = 0;
+	void initStats(typename CONFIG::operationstats_t * stats);
 	
 	//typedef typename isa::opcode::Operation<CONFIG> OpCode;
 	typedef isa::dest::Operation<CONFIG> OperDest;
@@ -114,7 +114,6 @@ struct Operation
 	OperDest * dest;
 	OperControl * control;
 	
-	typename CONFIG::operationstats_t * stats;
 	DataType op_type[4];
 
 private:

@@ -49,6 +49,35 @@ namespace tesla {
 using namespace std;
 
 template<class CONFIG>
+void OperationStats<CONFIG>::Merge(OperationStats<CONFIG> const & other)
+{
+	name = other.name;
+	integer = other.integer;
+	fp = other.fp;
+	flow = other.flow;
+	memory = other.memory;
+	shared = other.shared;
+	constant = other.constant;
+	for(int i = 0; i != 4; ++i)
+		regnum[i] = other.regnum[i];
+	
+	
+	count += other.count;
+	scalarcount += other.scalarcount;
+	scalarRegInputs += other.scalarRegInputs;
+	stridedRegInputs += other.stridedRegInputs;
+	scalarRegOutputs += other.scalarRegOutputs;
+	stridedRegOutputs += other.stridedRegOutputs;
+
+	scalarRegInputsCaught += other.scalarRegInputsCaught;
+	stridedRegInputsCaught += other.stridedRegInputsCaught;
+	scalarRegOutputsCaught += other.scalarRegOutputsCaught;
+	stridedRegOutputsCaught += other.stridedRegOutputsCaught;
+	
+	time_spent += other.time_spent;
+}
+
+template<class CONFIG>
 void OperationStats<CONFIG>::SetRegNum(int16_t reg, DataType dt, Operand n)
 {
 	switch(dt) {
@@ -250,6 +279,17 @@ void Stats<CONFIG>::DumpCSV(std::ostream & os) const
 	}
 }
 
+template<class CONFIG>
+void Stats<CONFIG>::Merge(Stats<CONFIG> const & other)
+{
+	typedef typename stats_map::const_iterator it_t;
+	for(it_t it = other.stats.begin();
+		it != other.stats.end();
+		++it)
+	{
+		stats[it->first].Merge(it->second);
+	}
+}
 
 } // end of namespace tesla
 } // end of namespace processor

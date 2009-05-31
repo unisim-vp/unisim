@@ -85,6 +85,8 @@ public:
 	{
 		std::fill(regnum, regnum + 4, -1);
 	}
+	
+	void Merge(OperationStats<CONFIG> const & other);
 
 	void SetName(char const * insnname) {
 		name = std::string(insnname);
@@ -138,6 +140,7 @@ public:
 	void Reset() {
 		stats.clear();
 	}
+	void Merge(Stats<CONFIG> const & other);
 };
 
 } // end of namespace tesla
