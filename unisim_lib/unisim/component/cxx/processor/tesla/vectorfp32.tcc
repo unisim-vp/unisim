@@ -669,7 +669,7 @@ VectorRegister<CONFIG> VectorFP32Base<CONFIG>::Cos(VectorRegister<CONFIG> const 
 template<class CONFIG>
 uint32_t VectorFP32Base<CONFIG>::FPToFX(float f)
 {
-	uint32_t r = uint32_t(fabs(ldexp(f, 23)));
+	uint32_t r = uint32_t(lrint(fabs(ldexp(f, 23))));
 	if(!(fabs(f) < float(1 << 23))) {
 		r |= 0x40000000;
 	}
