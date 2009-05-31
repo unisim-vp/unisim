@@ -43,11 +43,14 @@
 #include <vector>
 #include "kernel.hh"
 #include <unisim/component/cxx/processor/tesla/stats.tcc>
+#include <boost/thread.hpp>
 
 using std::string;
 using std::endl;
 using std::hex;
 using std::dec;
+using boost::thread;
+using boost::thread_group;
 
 template<class CONFIG>
 Allocator<CONFIG>::Allocator(typename CONFIG::address_t base, size_t size) :
@@ -192,6 +195,15 @@ void Device<CONFIG>::DumpCode(Kernel<CONFIG> & kernel, std::ostream & os)
 }
 
 template<class CONFIG>
+struct Runner
+{
+	CPU<CONFIG> * cpu;
+	
+	Runner(CPU<CONFIG> * cpu) : cpu(cpu) {}
+	void operator() () { cpu->Run(); }
+};
+
+template<class CONFIG>
 void Device<CONFIG>::Run(Kernel<CONFIG> & kernel, int width, int height)
 {
 	std::vector<Stats<CONFIG> > temp_stats(core_count);
@@ -210,6 +222,7 @@ void Device<CONFIG>::Run(Kernel<CONFIG> & kernel, int width, int height)
 	int blocksPerCore = kernel.BlocksPerCore();
 	int blocksPerGPU = blocksPerCore * core_count;
 
+	thread_group GPUThreads;
 	
 	// Blocks are scheduled sequentially on available resources
 	int bidy = 0;
@@ -243,13 +256,13 @@ void Device<CONFIG>::Run(Kernel<CONFIG> & kernel, int width, int height)
 				myCoreCount = c;
 				break;
 			}
+			
+			// Start execution
+			GPUThreads.create_thread(Runner<CONFIG>(cores[c]));
 		}
 		
-		// TODO: run in separate threads (parallel loop)
-		for(int c = 0; c != myCoreCount; ++c)
-		{
-			cores[c]->Run();
-		}
+		// Force synchronization (CUDA's scheduler does so...)
+		GPUThreads.join_all();
 	}
 	
 	for(int i = 0; i != core_count; ++i) {
