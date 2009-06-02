@@ -53,10 +53,10 @@ using boost::thread;
 using boost::thread_group;
 
 template<class CONFIG>
-Allocator<CONFIG>::Allocator(typename CONFIG::address_t base, size_t size) :
-	base(base), limit(base), max_size(size)
+Allocator<CONFIG>::Allocator(unisim::component::cxx::memory::ram::Memory<typename CONFIG::address_t> & memory,
+	typename CONFIG::address_t base, size_t size) :
+	memory(memory), base(base), limit(base), max_size(size)
 {
-	limit = base;
 }
 
 
@@ -69,6 +69,9 @@ typename CONFIG::address_t Allocator<CONFIG>::Alloc(size_t size)
 	}
 	typename CONFIG::address_t addr = limit;
 	limit += size;
+
+	// Force memory allocation
+	Prealloc(addr, size);
 	return addr;
 }
 
@@ -83,6 +86,19 @@ void Allocator<CONFIG>::GetInfo(unsigned int & free, unsigned int & total)
 	total = max_size;
 	free = max_size - (limit - base);
 }
+
+template<class CONFIG>
+void Allocator<CONFIG>::Prealloc(typename CONFIG::address_t addr, size_t size)
+{
+	typename CONFIG::address_t blockStart, blockEnd;
+	typename CONFIG::address_t endAddr = addr + size;
+	while(addr < endAddr) {
+		memory.GetDirectAccess(addr, blockStart, blockEnd);
+		addr = blockEnd + 1;
+	}
+}
+
+
 
 bool ParseBool(char const * str)
 {
@@ -111,7 +127,7 @@ template<class CONFIG>
 Device<CONFIG>::Device() :
 	Object("device_0"),
 	memory("memory", this),
-	global_allocator(CONFIG::GLOBAL_START, CONFIG::GLOBAL_SIZE),
+	global_allocator(memory, CONFIG::GLOBAL_START, CONFIG::GLOBAL_SIZE),
 	core_count(CONFIG::CORE_COUNT),
 	export_stats(false)
 {
@@ -209,6 +225,15 @@ void Device<CONFIG>::Run(Kernel<CONFIG> & kernel, int width, int height)
 	std::vector<Stats<CONFIG> > temp_stats(core_count);
 	DumpCode(kernel, cerr);
 	Load(kernel);
+	
+	// Alloc shared memory
+	global_allocator.Prealloc(CONFIG::SHARED_START, CONFIG::SHARED_SIZE * core_count);
+	
+	// Alloc local memory
+	global_allocator.Prealloc(CONFIG::LOCAL_START,
+		core_count * kernel.ThreadsPerBlock() * kernel.BlocksPerCore()
+		 * core_count * kernel.LocalTotal());
+	
 	for(int i = 0; i != core_count; ++i) {
 		cores[i]->stats = &temp_stats[i];
 		cores[i]->InitStats(kernel.CodeSize());	// Even if not exporting

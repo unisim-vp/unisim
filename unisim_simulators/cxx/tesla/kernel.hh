@@ -95,6 +95,7 @@ struct Kernel : CUfunc_st
 	void LoadSamplers(CPU<CONFIG> & cpu);
 	
 	uint32_t SharedTotal() const;
+	uint32_t LocalTotal() const;
 	void InitShared(Service<unisim::service::interfaces::Memory<typename CONFIG::address_t> > & mem, int index = 0,
 		int bidx = 0, int bidy = 0, int core = 0) const;
 	

@@ -160,7 +160,7 @@ void Kernel<CONFIG>::Load(Service<unisim::service::interfaces::Memory<typename C
 {
 	// (Re-)load module-level constants
 	module->Load(mem, allocator);
-
+	
 	if(trace_loading)
 		cerr << "Loading " << CodeSize() << "B code @" << std::hex << CONFIG::CODE_START + offset << std::endl;
 	if(!mem.WriteMemory(CONFIG::CODE_START + offset, &bincode[0], CodeSize())) {
@@ -351,9 +351,17 @@ void Kernel<CONFIG>::LoadSamplers(CPU<CONFIG> & cpu)
 template<class CONFIG>
 uint32_t Kernel<CONFIG>::SharedTotal() const
 {
-	// Align to DWORD boundary
-	return (16 + param_size + smem + dyn_smem + 3) & (~3);
+	// Align to 256-byte boundary
+	//return (16 + param_size + smem + dyn_smem + 3) & (~3);
+	return (16 + param_size + smem + dyn_smem + 255) & (~255);
 }
+
+template<class CONFIG>
+uint32_t Kernel<CONFIG>::LocalTotal() const
+{
+	return lmem;
+}
+
 
 template<class CONFIG>
 void Kernel<CONFIG>::InitShared(Service<unisim::service::interfaces::Memory<typename CONFIG::address_t> > & mem, int index,

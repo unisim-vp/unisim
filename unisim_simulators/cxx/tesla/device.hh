@@ -58,14 +58,18 @@ using unisim::kernel::service::Object;
 template<class CONFIG>
 struct Allocator
 {
-	Allocator(typename CONFIG::address_t base, size_t max_size);
+	Allocator(unisim::component::cxx::memory::ram::Memory<typename CONFIG::address_t> & memory, 
+		typename CONFIG::address_t base, size_t max_size);
 	
 	typename CONFIG::address_t Alloc(size_t size);
 	void Free(typename CONFIG::address_t addr);
 	
 	void GetInfo(unsigned int & free, unsigned int & total);
+	void Prealloc(typename CONFIG::address_t addr, size_t size);
 
 private:
+	
+	unisim::component::cxx::memory::ram::Memory<typename CONFIG::address_t> & memory;
 	typename CONFIG::address_t base;
 	typename CONFIG::address_t limit;
 	size_t max_size;
