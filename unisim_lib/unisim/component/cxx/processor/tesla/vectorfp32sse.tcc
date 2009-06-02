@@ -291,7 +291,6 @@ VectorRegister<CONFIG> & VectorFP32SSE<CONFIG>::Rsq(VectorRegister<CONFIG> & a)
 	return a;
 }
 
-
 } // end of namespace tesla
 } // end of namespace processor
 } // end of namespace cxx

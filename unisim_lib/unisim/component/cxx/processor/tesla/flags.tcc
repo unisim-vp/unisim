@@ -65,53 +65,6 @@ bitset<CONFIG::WARP_SIZE> IsPredSet(uint32_t cond, VectorFlags<CONFIG> flags)
 	return bs;
 }
 
-template <class CONFIG>
-VectorFlags<CONFIG> ComputePredFP32(VectorRegister<CONFIG> const & output, std::bitset<CONFIG::WARP_SIZE> mask)
-{
-	// As tested on G80 and G86:
-	//  +normal-> 0
-	//  -normal-> 0
-	//  +zero  -> 1
-	//  -zero  -> 1
-	//  -inf   -> 2
-	//  +inf   -> 0	(sic!)
-	//  NaN    -> 3
-	// ZF = (Zero | NaN)
-	// SF = ((Neg & Inf) | NaN)
-	// Does NOT match g80_spec, p. 348.
-	// Hardware bug???
-	VectorFlags<CONFIG> flags;
-	flags.Reset();
-	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i)
-	{
-		// TODO: use softfloats
-		if(mask[i]) {
-			float f = output.ReadFloat(i);
-			switch(fpclassify(f))
-			{
-			case FP_NORMAL:
-				break;
-			case FP_ZERO:
-				flags.v[i] = 1;
-				break;
-			case FP_INFINITE:
-				if(f < 0) {
-					flags.v[i] = 2;
-				}
-				break;
-			case FP_NAN:
-				flags.v[i] = 3;
-				break;
-			case FP_SUBNORMAL:
-				flags.v[i] = 1;
-				cerr << "Warning: unexpected FP32 subnormal: " << f << endl;
-				break;
-			}
-		}
-	}
-	return flags;
-}
-
 template<class CONFIG>
 VectorFlags<CONFIG> ComputePredI32(VectorRegister<CONFIG> const & output, VectorFlags<CONFIG> flags)
 {

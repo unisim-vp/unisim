@@ -63,7 +63,6 @@ struct VectorFP32SSE : VectorFP32Base<CONFIG>
 
 	static VectorRegister<CONFIG> & Rcp(VectorRegister<CONFIG> & a);
 	static VectorRegister<CONFIG> & Rsq(VectorRegister<CONFIG> & a);
-
 private:
 	static unsigned int const WARP_BLOCKS = CONFIG::WARP_SIZE / 4;
 

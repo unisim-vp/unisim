@@ -130,9 +130,6 @@ template<class CONFIG>
 bitset<CONFIG::WARP_SIZE> IsPredSet(uint32_t cond, VectorFlags<CONFIG> vf);
 
 template<class CONFIG>
-VectorFlags<CONFIG> ComputePredFP32(VectorRegister<CONFIG> const & output, std::bitset<CONFIG::WARP_SIZE> mask);
-
-template<class CONFIG>
 VectorFlags<CONFIG> ComputePredI32(VectorRegister<CONFIG> const & output, VectorFlags<CONFIG> flags);
 
 template<class CONFIG>

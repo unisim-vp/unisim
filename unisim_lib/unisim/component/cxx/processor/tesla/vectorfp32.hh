@@ -87,6 +87,10 @@ struct VectorFP32Base
 		SetCond sc,
 		bool a_abs);
 
+	static VectorFlags<CONFIG> ComputePredFP32(VectorRegister<CONFIG> const & output,
+		std::bitset<CONFIG::WARP_SIZE> mask);
+
+
 	static VectorRegister<CONFIG> & Rcp(VectorRegister<CONFIG> & a);
 	static VectorRegister<CONFIG> & Rsq(VectorRegister<CONFIG> & a);
 	static VectorRegister<CONFIG> Log2(VectorRegister<CONFIG> const & a);

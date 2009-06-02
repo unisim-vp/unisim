@@ -502,6 +502,47 @@ VectorFlags<CONFIG> VectorFP32Base<CONFIG>::ComputePredSetFP32(VectorRegister<CO
 	return flags;
 }
 
+template <class CONFIG>
+VectorFlags<CONFIG> VectorFP32Base<CONFIG>::ComputePredFP32(VectorRegister<CONFIG> const & output, std::bitset<CONFIG::WARP_SIZE> mask)
+{
+	// As tested on G80 and G86:
+	//  +normal-> 0
+	//  -normal-> 2
+	//  +zero  -> 1
+	//  -zero  -> 1
+	//  -inf   -> 2
+	//  +inf   -> 0
+	//  NaN    -> 3
+	// ZF = (Zero | NaN)
+	// SF = (Neg | NaN)
+	// Matches g80_spec, p. 348.
+	VectorFlags<CONFIG> flags;
+	flags.Reset();
+	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i)
+	{
+		// TODO: use softfloats
+		// Just ignore flags
+		float f = output.ReadFloat(i);
+		uint8_t fl = 0;
+		if(f > 0) {	// strictly positive, not NaN
+			fl = 0;
+		}
+		if(f == 0) {
+			fl = 1;
+		}
+		else if(f < 0) {
+			fl = 2;
+		}
+		else {
+			fl = 3;	// NaN
+		}
+		flags.v[i] = fl;
+	}
+	return flags;
+}
+
+
+
 template<class CONFIG>
 inline uint8_t VectorFP32Base<CONFIG>::Compare(typename CONFIG::float_t a, typename CONFIG::float_t b)
 {
@@ -669,7 +710,7 @@ VectorRegister<CONFIG> VectorFP32Base<CONFIG>::Cos(VectorRegister<CONFIG> const 
 template<class CONFIG>
 uint32_t VectorFP32Base<CONFIG>::FPToFX(float f)
 {
-	uint32_t r = uint32_t(lrint(fabs(ldexp(f, 23))));
+	uint32_t r = uint32_t(lrint(fabs(ldexp(f, 23))));	// Round to nearest
 	if(!(fabs(f) < float(1 << 23))) {
 		r |= 0x40000000;
 	}

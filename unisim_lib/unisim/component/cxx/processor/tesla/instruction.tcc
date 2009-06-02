@@ -187,7 +187,7 @@ void Instruction<CONFIG>::SetPredI16()
 template <class CONFIG>
 void Instruction<CONFIG>::SetPredF32()
 {
-	VectorFlags<CONFIG> myflags = ComputePredFP32(temp[TempDest], Mask());
+	VectorFlags<CONFIG> myflags = CONFIG::vfp32::ComputePredFP32(temp[TempDest], Mask());
 	operation->dest->writePred(cpu, myflags, Mask());
 }
 
@@ -372,7 +372,7 @@ void Instruction<CONFIG>::SetDest(VectorRegister<CONFIG> const & value)
 template <class CONFIG>
 void Instruction<CONFIG>::SetPredFP32(VectorRegister<CONFIG> const & value) const
 {
-	VectorFlags<CONFIG> flags = ComputePredFP32(value, Mask());
+	VectorFlags<CONFIG> flags = CONFIG::vfp::ComputePredFP32(value, Mask());
 	operation->dest->writePred(cpu, flags, Mask());
 }
 
