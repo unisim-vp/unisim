@@ -41,7 +41,7 @@ using namespace std;
  */
 Isa::Isa()
   : m_decoder( RiscDecoder ), m_is_subdecoder( false ), m_withsource( false ),
-    m_little_endian( false ), m_rev_forder( false ), m_rev_worder( false )
+    m_little_endian( false ), m_asc_forder( false ), m_asc_worder( false )
 {}
 
 /** Destructor for isa instance
@@ -267,8 +267,8 @@ Isa::setparam( ConstStr_t key, ConstStr_t value ) {
   static ConstStr_t   islittle( "little",          Scanner::symbols );
   static ConstStr_t     forder( "fields_order",    Scanner::symbols );
   static ConstStr_t     worder( "words_order",     Scanner::symbols );
-  static ConstStr_t   isnormal( "normal",          Scanner::symbols );
-  static ConstStr_t  isreverse( "reverse",         Scanner::symbols );
+  static ConstStr_t     isdesc( "descending",      Scanner::symbols );
+  static ConstStr_t      isasc( "ascending",       Scanner::symbols );
   
   if        (key == codetype) {
     if      (value == scalar) m_decoder = RiscDecoder;
@@ -283,11 +283,11 @@ Isa::setparam( ConstStr_t key, ConstStr_t value ) {
     if      (value == isbig)    m_little_endian = false;
     else if (value == islittle) m_little_endian = true;
   } else if (key == forder) {
-    if      (value == isnormal)  m_rev_forder = false;
-    else if (value == isreverse) m_rev_forder = true;
+    if      (value == isdesc) m_asc_forder = false;
+    else if (value == isasc)  m_asc_forder = true;
   } else if (key == worder) {
-    if      (value == isnormal)  m_rev_worder = false;
-    else if (value == isreverse) m_rev_worder = false;
+    if      (value == isdesc) m_asc_worder = false;
+    else if (value == isasc)  m_asc_worder = false;
   }
 }
 

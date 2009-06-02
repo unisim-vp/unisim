@@ -46,9 +46,10 @@ Generator::init( Isa& _isa ) {
 Generator&
 Generator::reorder() {
   // change bitfield ordering
-  bool rev_forder = isa().m_rev_forder;
+  bool rev_forder = isa().m_asc_worder xor isa().m_little_endian;
+  bool rev_worder = isa().m_asc_forder xor isa().m_little_endian;
   
-  if (isa().m_rev_worder) {
+  if (rev_worder) {
     for( Vect_t<Operation_t>::iterator op = isa().m_operations.begin(); op < isa().m_operations.end(); ++ op ) {
       Vect_t<BitField_t>& bitfields = (**op).m_bitfields;
       uintptr_t lo = 0, hi = bitfields.size();
