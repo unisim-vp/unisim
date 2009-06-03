@@ -161,8 +161,8 @@ namespace unisim {
                         MaskW[BSPIn_CLK] = 0x00FF;
 
 
-                        SC_HAS_PROCESS(STR7_SPI);
-                        SC_THREAD(SPIHANDLER);
+                  //      SC_HAS_PROCESS(STR7_SPI);
+                    //    SC_THREAD(SPIHANDLER);
 
 
                         if (VERBOSE) {
@@ -465,7 +465,7 @@ namespace unisim {
                             case BSPIn_TX:
                                 if ((Registers[BSPIn_CSR2] & 0x0040) == 0x0040) // transmit FIFO empty enable
                                 {
-                                    irq_payload->level = false;
+                                   //irq_payload->level = false;
                                     //    irq->b_transport(*irq_payload, delay);
                                 }
                                 if ((Registers[BSPIn_CSR1] & 0x0001) && (tx_fifo.size() < tx_fifo_size)) {
@@ -602,7 +602,7 @@ namespace unisim {
                         while (1) {
 
                             cout << "+ toto " << sc_time_stamp() << endl;
-                            wait(PERIODE_2000HZ, SC_NS);
+                         //   wait(PERIODE_2000HZ, SC_NS);
                             cout << "  - toto " << sc_time_stamp() << endl;
 
 

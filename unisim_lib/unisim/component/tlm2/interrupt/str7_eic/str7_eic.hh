@@ -45,6 +45,7 @@
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger.hh"
 #include "unisim/component/tlm2/interrupt/types.hh"
+#include "unisim/service/interfaces/trap_reporting.hh"
 
 namespace unisim {
 namespace component {
@@ -56,6 +57,9 @@ using unisim::component::tlm2::interrupt::InterruptProtocolTypes;
 using unisim::component::tlm2::interrupt::TLMInterruptPayload;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::Object;
+using unisim::kernel::service::Client;
+using unisim::kernel::service::ServiceImport;
+using unisim::service::interfaces::TrapReporting;
 using unisim::kernel::logger::Logger;
 using unisim::kernel::tlm2::PayloadFabric;
 
@@ -84,7 +88,7 @@ static const unsigned int STACK_DEPTH = 15;
 template <unsigned int BUS_WIDTH = 32,
 		  bool VERBOSE = false>
 class STR7_EIC :
-	public Object,
+	public Client<TrapReporting>,
 	public sc_module,
 	public tlm::tlm_fw_transport_if<>
 {
@@ -104,10 +108,15 @@ public:
 	/* input socket for memory transactions */
 	tlm::tlm_target_socket<BUS_WIDTH> in_mem;
 
+	/* trap reporting service import */
+	ServiceImport<TrapReporting> trap_reporting_import;
+	
 	STR7_EIC(const sc_module_name& name, Object* parent = 0);
 	virtual ~STR7_EIC();
 
 	virtual bool Setup();
+
+private:
 
 	/* START: callback methods for the in_irq sockets */
 	tlm::tlm_sync_enum InIRQNb(int index, TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t);
@@ -140,13 +149,6 @@ public:
 	virtual unsigned int transport_dbg(tlm::tlm_generic_payload& trans);
 	/* END: methods implementing the "in_mem" socket */
 
-private:
-	/** Process an incomming IRQ signal change.
-	 * @param index		the port that received the changed IRQ
-	 * @param level		interrupt level: true = interruption; false = no interruption
-	 */
-	void IRQ(unsigned int index, bool level = true);
-
 	/** Puts an incomming IRQ into the fifo queue to be handled when time has come to do it.
 	 * @param index		the port that received the changed IRQ
 	 * @param level		interrupt level
@@ -156,12 +158,6 @@ private:
 
 	/** Handle the incomming irqs at the right time */
 	void IRQFifoHandler();
-
-	/** Process an incomming FIQ signal change.
-	 * @param index		the port that received the change FIQ
-	 * @param level		interrupt level: true = interruption; false = no interruption
-	 */
-	void FIQ(unsigned int index, bool level = true);
 
 	/** Puts an incomming FIQ into the fifo queue to be handled when time has come to do it.
 	 * @param index		the port that received the changed FIQ

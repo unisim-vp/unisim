@@ -123,10 +123,12 @@ template <unsigned int BUS_WIDTH, bool VERBOSE>
 STR7_EIC<BUS_WIDTH, VERBOSE> ::
 STR7_EIC(const sc_module_name& name, Object* parent) :
 		Object(name, parent),
+		Client<TrapReporting>(name, parent),
 		sc_module(name),
 		out_irq("out_irq"),
 		out_fiq("out_fiq"),
 		in_mem("in_mem"),
+		trap_reporting_import("trap_reporting_import", this),
 		icr(0),
 		cicr(0),
 		cipr(0),
@@ -526,6 +528,14 @@ IRQ(unsigned int index, bool level, sc_core::sc_time& t)
 	entry->index = index;
 	entry->level = level;
 	irq_fifo.notify(*entry, t);
+
+	if (VerboseRun())
+	{
+		logger << DebugInfo << "Received interrupt (level = " << level << ") on IRQ port " << index << " at " << t
+			<< EndDebugInfo;
+	}
+	if (trap_reporting_import)
+		trap_reporting_import->ReportTrap();
 }
 
 /** Handle the incomming irqs at the right time */
@@ -543,10 +553,37 @@ IRQFifoHandler()
 		entry = irq_fifo.get_next_transaction();
 		if (entry != 0)
 		{
-			unsigned int index = entry->index;
-			bool level = entry->level;
-			delete entry;
-			IRQ(index, level);
+			while (entry != 0)
+			{
+				unsigned int index = entry->index;
+				bool level = entry->level;
+				delete entry;
+				if (VerboseRun())
+					logger << DebugInfo
+						<< "Processing IRQ interrupt received on port " << index << " with level = " << level << " at " << sc_time_stamp()
+						<< endl
+						<< " - prev irq_status = 0x" << hex << irq_status << dec << endl;
+				if (trap_reporting_import)
+					trap_reporting_import->ReportTrap();
+				if (level)
+					irq_status |= ((uint32_t)1 << index);
+				else
+					irq_status &= ~((uint32_t)1 << index);
+				if (VerboseRun())
+					logger << " - new irq_status = 0x" << hex << irq_status << dec
+						<< EndDebugInfo;
+				entry = irq_fifo.get_next_transaction();
+			}
+			FSMUpdate();
+		}
+		else
+		{
+			logger << DebugWarning << "IRQ fifo handler woken up with any available transaction" << endl
+				<< TIME(SC_ZERO_TIME) << endl
+				<< LOCATION
+				<< EndDebugWarning;
+			if (trap_reporting_import)
+				trap_reporting_import->ReportTrap();
 		}
 	}
 }
@@ -565,6 +602,14 @@ FIQ(unsigned int index, bool level, sc_core::sc_time& t)
 	entry->index = index;
 	entry->level = level;
 	fiq_fifo.notify(*entry, t);
+	
+	if (VerboseRun())
+	{
+		logger << DebugInfo << "Received interrupt (level = " << level << ") on IRQ port " << index << " at " << t
+			<< EndDebugInfo;
+	}
+	if (trap_reporting_import)
+		trap_reporting_import->ReportTrap();
 }
 
 /** Handle the incomming fiqs at the right time */
@@ -582,44 +627,35 @@ FIQFifoHandler()
 		entry = fiq_fifo.get_next_transaction();
 		if (entry != 0)
 		{
-			unsigned int index = entry->index;
-			bool level = entry->level;
-			delete entry;
-			FIQ(index, level);
+			while (entry != 0)
+			{
+				unsigned int index = entry->index;
+				bool level = entry->level;
+				delete entry;
+				if (VerboseRun())
+					logger << DebugInfo
+						<< "Processing FIQ interrupt received on port " << index << " with level = " << level << " at " << sc_time_stamp()
+						<< EndDebugInfo;
+				if (trap_reporting_import)
+					trap_reporting_import->ReportTrap();
+				if (level)
+					fiq_status |= ((uint32_t)1 << index);
+				else
+					fiq_status &= ~((uint32_t)1 << index);
+				entry = fiq_fifo.get_next_transaction();
+			}
+			FSMUpdate();
+		}
+		else
+		{
+			logger << DebugWarning << "FIQ fifo handler woken up with an available transaction" << endl
+				<< TIME(SC_ZERO_TIME) << endl
+				<< LOCATION
+				<< EndDebugWarning;
+			if (trap_reporting_import)
+				trap_reporting_import->ReportTrap();
 		}
 	}
-}
-
-/** Process an incomming IRQ signal change.
- * @param index		the port that received the changed IRQ
- * @param level		interrupt level: true = interruption; false = no interruption
- */
-template <unsigned int BUS_WIDTH, bool VERBOSE>
-void
-STR7_EIC<BUS_WIDTH, VERBOSE> ::
-IRQ(unsigned int index, bool level)
-{
-	if (level)
-		irq_status |= ((uint32_t)1 << index);
-	else
-		irq_status &= ~((uint32_t)1 << index);
-	FSMUpdate();
-}
-
-/** Process an incomming FIQ signal change.
- * @param index		the port that received the change FIQ
- * @param level		interrupt level: true = interruption; false = no interruption
- */
-template <unsigned int BUS_WIDTH, bool VERBOSE>
-void
-STR7_EIC<BUS_WIDTH, VERBOSE> ::
-FIQ(unsigned int index, bool level)
-{
-	if (level)
-		fiq_status |= ((uint32_t)1 << index);
-	else
-		fiq_status &= ~((uint32_t)1 << index);
-	FSMUpdate();
 }
 
 /** Set FSM to READY state */
@@ -684,6 +720,22 @@ FSMUpdate()
 				}
 			}
 		}
+		if (VerboseRun())
+		{
+			logger << DebugInfo << "Found pending interrupts (IPR0 = 0x" << hex << ipr0 << dec
+				<< ")";
+			if (has_irq)
+			{
+				logger << ", and determined that irq at index " << index 
+					<< " has the highest priority (SIPL[" << index << "] = " << SIPL(index) << ", CIPR = " << CIPR() << ")";
+			}
+			else
+			{
+				logger << ", but determined that none should be served because all has a priority lower that the current one (CIPR = "
+					<< CIPR() << ")";
+			}
+			logger << EndDebugInfo;
+		}
 	}
 
 	if (has_irq) 
@@ -704,6 +756,13 @@ FSMUpdate()
 	trans->level = has_irq;
 	tlm::tlm_phase phase = tlm::BEGIN_REQ;
 	sc_core::sc_time t = SC_ZERO_TIME;
+	if (VerboseTLM())
+	{
+		logger << DebugInfo << "Sending transaction through port out_irq:" << endl
+			<< ITRANS(*trans) << endl
+			<< PHASE(phase) << endl
+			<< TIME(t) << EndDebugInfo;
+	}
 	switch (out_irq->nb_transport_fw(*trans, phase, t))
 	{
 		case tlm::TLM_ACCEPTED:

@@ -31,8 +31,8 @@ endif
 
 if COND_com
 # uncomment following lines to activate the com
-# SUBDIRS += com
-# INCLUDE_SUBDIRS += com
+SUBDIRS += com
+INCLUDE_SUBDIRS += com
 endif
 
 dist_share_DATA = COPYING

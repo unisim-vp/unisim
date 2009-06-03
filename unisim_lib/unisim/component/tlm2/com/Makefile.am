@@ -9,6 +9,16 @@ SUBDIRS += str7_spi
 INCLUDE_SUBDIRS += str7_spi
 endif
 
+if COND_str7_uart
+SUBDIRS += str7_uart
+INCLUDE_SUBDIRS += str7_uart
+endif
+
+if COND_str7_i2c
+SUBDIRS += str7_i2c
+INCLUDE_SUBDIRS += str7_i2c
+endif
+
 dist_share_DATA = COPYING
 
 uninstall-hook:

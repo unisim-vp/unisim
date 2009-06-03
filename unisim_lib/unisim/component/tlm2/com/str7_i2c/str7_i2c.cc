@@ -32,8 +32,8 @@
  * Authors: khaled Rahmouni
  */
 
-#include "unisim/component/tlm2/com/str7_spi/str7_spi.hh"
-#include "unisim/component/tlm2/com/str7_spi/str7_spi.tcc"
+#include "unisim/component/tlm2/com/str7_i2c/str7_i2c.hh"
+#include "unisim/component/tlm2/com/str7_i2c/str7_i2c.tcc"
 
 namespace unisim {
 namespace component {
@@ -41,12 +41,13 @@ namespace tlm2 {
 namespace com {
 namespace str7_spi {
 
-template
-class STR7_SPI<32, true>;
 
+template
+class STR7_SPI<32, false>;
 
 } // end of namespace str7_spi
 } // end of namespace com
 } // end of namespace tlm2
 } // end of namespace component
 } // end of namespace unisim
+

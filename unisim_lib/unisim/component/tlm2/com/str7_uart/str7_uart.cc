@@ -32,8 +32,8 @@
  * Authors: khaled Rahmouni
  */
 
-#include "unisim/component/tlm2/com/str7_spi/str7_spi.hh"
-#include "unisim/component/tlm2/com/str7_spi/str7_spi.tcc"
+#include "unisim/component/tlm2/com/str7_uart/str7_uart.hh"
+#include "unisim/component/tlm2/com/str7_uart/str7_uart.tcc"
 
 namespace unisim {
 namespace component {
