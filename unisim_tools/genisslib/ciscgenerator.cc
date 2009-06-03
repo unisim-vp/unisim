@@ -397,7 +397,7 @@ CiscGenerator::codetype_impl( Product_t& _product ) const {
   _product.code( " char const* sep = \"\";\n" );
   _product.code( " for( unsigned int idx = 0; idx < _ct.size; ++idx, sep = \" \" ) {\n" );
   _product.code( "  uint32_t byte = _ct.str[idx];\n" );
-  _product.code( "  _sink << sep << xrepr[byte/16] << xrepr[byte%16];\n" );
+  _product.code( "  _sink << sep << xrepr[byte/16] << xrepr[byte%%16];\n" );
   _product.code( " }\n" );
   _product.code( " return _sink;\n" );
   _product.code( "}\n" );
