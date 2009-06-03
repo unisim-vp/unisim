@@ -33,7 +33,7 @@
 #          Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
 #
 
-AC_INIT([UNISIM Service OS TI's C I/O], [1.0],
+AC_INIT([UNISIM Service OS TI s C I/O], [1.0],
 	[Gilles Mouchard <gilles.mouchard@cea.fr>],
 	[UnisimServiceOSTICIO])
 AC_CONFIG_AUX_DIR(config)
