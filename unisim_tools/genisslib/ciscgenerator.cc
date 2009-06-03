@@ -254,10 +254,12 @@ CiscGenerator::finalize() {
     for( BFWordIterator bfword( (**op).m_bitfields ); bfword.next(); ) {
       if( bfword.m_minsize != bfword.m_maxsize ) break;
       int bytesize = bfword.m_maxsize / 8;
-      unsigned int shift = bfword.m_maxsize;
+      unsigned int nshift = isa().m_little_endian ? 0 : bfword.m_maxsize;
       uint64_t mask = 0, bits = 0;
       for( Vect_t<BitField_t>::const_iterator bf = bfword.m_left; bf < bfword.m_right; ++ bf ) {
-        shift -= (**bf).m_size;
+        unsigned int shift;
+        if (isa().m_little_endian) { shift = nshift; nshift += (**bf).m_size; }
+        else                       { nshift -= (**bf).m_size; shift = nshift; }
         if( not (**bf).hasopcode() ) continue;
         mask |= (**bf).mask() << shift;
         bits |= (**bf).bits() << shift;
@@ -457,9 +459,11 @@ CiscGenerator::insn_decode_impl( Product_t& _product, Operation_t const& _op, ch
         _product.code( "%s(%s( _code_.str[%u] ) << %u)", sep, subwordtype.str(), byteidx, shift );
       }
       _product.code( ";\n" );
-      unsigned int shift = bfword.m_maxsize;
+      unsigned int nshift = isa().m_little_endian ? 0 : bfword.m_maxsize;
       for( Vect_t<BitField_t>::const_iterator bf = bfword.m_left; bf < bfword.m_right; ++ bf ) {
-        shift -= (**bf).m_size;
+        unsigned int shift;
+        if (isa().m_little_endian) { shift = nshift; nshift += (**bf).m_size; }
+        else                       { nshift -= (**bf).m_size; shift = nshift; }
         if( (**bf).type() == BitField_t::Operand ) {
           OperandBitField_t const& opbf = dynamic_cast<OperandBitField_t const&>( **bf );
           _product.code( "%s = ", opbf.m_symbol.str() );

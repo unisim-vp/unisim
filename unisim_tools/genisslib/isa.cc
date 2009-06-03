@@ -287,7 +287,7 @@ Isa::setparam( ConstStr_t key, ConstStr_t value ) {
     else if (value == isasc)  m_asc_forder = true;
   } else if (key == worder) {
     if      (value == isdesc) m_asc_worder = false;
-    else if (value == isasc)  m_asc_worder = false;
+    else if (value == isasc)  m_asc_worder = true;
   }
 }
 

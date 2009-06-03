@@ -46,8 +46,8 @@ Generator::init( Isa& _isa ) {
 Generator&
 Generator::reorder() {
   // change bitfield ordering
-  bool rev_forder = isa().m_asc_worder xor isa().m_little_endian;
-  bool rev_worder = isa().m_asc_forder xor isa().m_little_endian;
+  bool rev_worder = isa().m_asc_worder xor isa().m_little_endian;
+  bool rev_forder = isa().m_asc_forder xor isa().m_little_endian;
   
   if (rev_worder) {
     for( Vect_t<Operation_t>::iterator op = isa().m_operations.begin(); op < isa().m_operations.end(); ++ op ) {
