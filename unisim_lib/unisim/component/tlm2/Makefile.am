@@ -35,6 +35,11 @@ SUBDIRS += com
 INCLUDE_SUBDIRS += com
 endif
 
+if COND_signal_converter
+SUBDIRS += signal_converter
+INCLUDE_SUBDIRS += signal_converter
+endif
+
 dist_share_DATA = COPYING
 
 uninstall-hook:

@@ -49,6 +49,7 @@ UNISIM_CONFIG_SUBDIR(unisim-component-tlm2-processor, processor)
 UNISIM_CONFIG_SUBDIR(unisim-component-tlm2-interrupt, interrupt)
 UNISIM_CONFIG_SUBDIR(unisim-component-tlm2-timer, timer)
 UNISIM_CONFIG_SUBDIR(unisim-component-tlm2-com, com)
+UNISIM_CONFIG_SUBDIR(unisim-component-tlm2-signal-converter, signal_converter)
 # launch the generation of makefiles
 #   this must be the last command of configure.ac
 AC_OUTPUT

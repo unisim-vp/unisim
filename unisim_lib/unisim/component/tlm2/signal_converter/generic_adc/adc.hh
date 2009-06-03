@@ -3,16 +3,16 @@
 
 //Authors:Khaled Rahmouni
 
-#ifndef __UNISIM_COMPONENT_TLM2_COM_ARGA_ARGA_HH__
-#define __UNISIM_COMPONENT_TLM2_COM_ARGA_ARGA_HH__
+#ifndef __UNISIM_COMPONENT_TLM2_SIGNAL_CONVERTER_GENERIC_ADC_ADC_HH__
+#define __UNISIM_COMPONENT_TLM2_SIGNAL_CONVERTER_GENERIC_ADC_ADC_HH__
 
 #include <systemc>
 #include <tlm.h>
 #include <tlm_utils/simple_initiator_socket.h>
 #include <tlm_utils/simple_target_socket.h>
 #include "unisim/component/tlm2/interrupt/types.hh"
-#include "unisim/component/tlm2/com/arga/CONFIG_GENERATOR.hh"
-#include "unisim/component/tlm2/com/arga/CONFIG_ARGA_SPI.hh" 
+#include "unisim/component/tlm2/signal_converter/generic_adc/config_generator.hh"
+#include "unisim/component/tlm2/signal_converter/generic_adc/config_spi.hh" 
 
 
 
@@ -73,4 +73,4 @@ TLMInterruptPayload* data_ready_signal;
 };
 
 
-#endif // __UNISIM_COMPONENT_TLM2_COM_ARGA_ARGA_HH__
+#endif // __UNISIM_COMPONENT_TLM2_SIGNAL_CONVERTER_GENERIC_ADC_ADC_HH__

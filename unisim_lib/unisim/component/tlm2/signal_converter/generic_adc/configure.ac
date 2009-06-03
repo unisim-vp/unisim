@@ -33,7 +33,7 @@
 #          Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
 #
 
-AC_INIT([UNISIM TLM2 Arga Communication Component], [1.0])
+AC_INIT([UNISIM TLM2 Generic ADC Signal Converter Component], [1.0])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_HEADERS([config.h])
 AC_CANONICAL_BUILD

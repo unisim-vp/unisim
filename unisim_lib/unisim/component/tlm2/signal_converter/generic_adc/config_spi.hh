@@ -7,8 +7,8 @@
   Version : June 18, 2008
 
  *****************************************************************************/
-#ifndef __UNISIM_COMPONENT_TLM2_COM_ARGA_CONFIG_ARGA_SPI_HH__
-#define __UNISIM_COMPONENT_TLM2_COM_ARGA_CONFIG_ARGA_SPI_HH__
+#ifndef __UNISIM_COMPONENT_TLM2_SIGNAL_CONVERTER_GENERIC_ADC_CONFIG_SPI_HH__
+#define __UNISIM_COMPONENT_TLM2_SIGNAL_CONVERTER_GENERIC_ADC_CONFIG_SPI_HH__
 
 
 // Operations possibles                                   

@@ -2,7 +2,7 @@
 
 //Authours: Khaled Rahmouni
 
-#include "unisim/component/tlm2/com/arga/arga.hh"
+#include "unisim/component/tlm2/signal_converter/generic_adc/adc.hh"
 
 using namespace sc_core;
 using namespace sc_dt;
