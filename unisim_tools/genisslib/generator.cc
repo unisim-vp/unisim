@@ -30,55 +30,103 @@
 #include <vect.hh>
 #include <main.hh>
 #include <iostream>
+#include <limits>
+
 using namespace std;
 
 Generator::Generator()
   : m_isa( 0 ), m_minwordsize( 32 ), m_insn_maxsize( 0 ), m_insn_minsize( 0 )
 {}
 
+struct OpProperties {
+  unsigned int m_minsize, m_maxsize;
+
+  OpProperties( Operation_t const& op )
+    : m_minsize( 0 ), m_maxsize( 0 )
+  {
+    Vect_t<BitField_t> const& bitfields = op.m_bitfields;
+    
+    unsigned int minsize = 0, maxsize = 0, lastminsize = 0, lastmaxsize = 0;
+
+    for (Vect_t<BitField_t>::const_iterator bf = bitfields.begin(); bf < bitfields.end(); ++ bf) {
+      BitField_t const& bitfield = **bf;
+      if (bitfield.type() == BitField_t::Separator) {
+        SeparatorBitField_t const& sepbf = dynamic_cast<SeparatorBitField_t const&>( bitfield );
+        if (not sepbf.m_rewind) {
+          lastminsize = minsize;
+          lastmaxsize = maxsize;
+          continue;
+        }
+        if (m_minsize < minsize) m_minsize = minsize;
+        if (m_maxsize < maxsize) m_maxsize = maxsize;
+        minsize = lastminsize;
+        maxsize = lastmaxsize;
+      }
+      minsize += bitfield.minsize();
+      maxsize += bitfield.maxsize();
+    }
+    if (m_minsize < minsize) m_minsize = minsize;
+    if (m_maxsize < maxsize) m_maxsize = maxsize;
+  }
+};
+
 Generator&
 Generator::init( Isa& _isa ) {
   m_isa = &_isa;
   m_minwordsize = least_ctype_size( Opts::shared().minwordsize );
-  return *this;
-}
-
-Generator&
-Generator::reorder() {
-  // change bitfield ordering
-  bool rev_worder = isa().m_asc_worder xor isa().m_little_endian;
-  bool rev_forder = isa().m_asc_forder xor isa().m_little_endian;
   
-  if (rev_worder) {
-    for( Vect_t<Operation_t>::iterator op = isa().m_operations.begin(); op < isa().m_operations.end(); ++ op ) {
-      Vect_t<BitField_t>& bitfields = (**op).m_bitfields;
-      uintptr_t lo = 0, hi = bitfields.size();
-      if (hi == 0) continue;
-      
-      for (hi -= 1; lo < hi; lo ++, hi-- ) {
-        std::swap( bitfields[lo], bitfields[hi] );
-      }
-    }
-    // this operation has invert fields order
-    rev_forder = not rev_forder;
-  }
+  { // change bitfield ordering
+    bool rev_forder = isa().m_asc_forder xor isa().m_little_endian;
   
-  if (rev_forder) {
-    for( Vect_t<Operation_t>::iterator op = isa().m_operations.begin(); op < isa().m_operations.end(); ++ op ) {
-      Vect_t<BitField_t>& bitfields = (**op).m_bitfields;
+    if (isa().m_asc_worder xor isa().m_little_endian) {
+      for( Vect_t<Operation_t>::iterator op = isa().m_operations.begin(); op < isa().m_operations.end(); ++ op ) {
+        Vect_t<BitField_t>& bitfields = (**op).m_bitfields;
+        uintptr_t lo = 0, hi = bitfields.size();
+        if (hi == 0) continue;
       
-      uintptr_t fbeg = 0, fend = 0, fmax = bitfields.size();
-      for ( ; fbeg < fmax; fbeg = fend = fend + 1) {
-        while ((fend < fmax) and (bitfields[fend]->type() != BitField_t::Separator)) fend += 1;
-        if ((fend - fbeg) < 2) continue;
-        uintptr_t lo = fbeg, hi = fend - 1;
-        
-        for ( ; lo < hi; lo ++, hi-- ) {
+        for (hi -= 1; lo < hi; lo ++, hi-- ) {
           std::swap( bitfields[lo], bitfields[hi] );
+        }
+      }
+      // this operation has invert fields order
+      rev_forder = not rev_forder;
+    }
+  
+    if (rev_forder) {
+      for( Vect_t<Operation_t>::iterator op = isa().m_operations.begin(); op < isa().m_operations.end(); ++ op ) {
+        Vect_t<BitField_t>& bitfields = (**op).m_bitfields;
+      
+        uintptr_t fbeg = 0, fend = 0, fmax = bitfields.size();
+        for ( ; fbeg < fmax; fbeg = fend = fend + 1) {
+          while ((fend < fmax) and (bitfields[fend]->type() != BitField_t::Separator)) fend += 1;
+          if ((fend - fbeg) < 2) continue;
+          uintptr_t lo = fbeg, hi = fend - 1;
+        
+          for ( ; lo < hi; lo ++, hi-- ) {
+            std::swap( bitfields[lo], bitfields[hi] );
+          }
         }
       }
     }
   }
+  
+  // Compute min/max sizes
+  m_insn_maxsize = 0;
+  m_insn_minsize = std::numeric_limits<unsigned int>::max();
+
+  for( Vect_t<Operation_t>::const_iterator op = isa().m_operations.begin(); op < isa().m_operations.end(); ++ op ) {
+    OpProperties opprops( **op );
+    if( m_insn_maxsize < opprops.m_maxsize  ) m_insn_maxsize = opprops.m_maxsize;
+    if( m_insn_minsize > opprops.m_minsize  ) m_insn_minsize = opprops.m_minsize;
+  }
+
+  std::cerr << "Instruction Size: ";
+  if (m_insn_minsize != m_insn_maxsize)
+    std::cerr << "[" << m_insn_minsize << ":" << m_insn_maxsize << "]";
+  else
+    std::cerr << m_insn_maxsize;
+  std::cerr << std::endl;
+  
   
   return *this;
 }
@@ -91,7 +139,7 @@ Generator::reorder() {
 */
 void
 Generator::iss( Product_t& _product ) const {
-  cerr << "Instruction Set Encoding: " << (isa().m_little_endian ? "little-endian" : "big-endian") << "\n";
+  std::cerr << "Instruction Set Encoding: " << (isa().m_little_endian ? "little-endian" : "big-endian") << "\n";
   
   /*******************/
   /*** Header file ***/

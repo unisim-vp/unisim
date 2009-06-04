@@ -53,7 +53,6 @@ struct RiscGenerator : public Generator {
   ~RiscGenerator() {};
   
   /* Risc specific Utilities */
-  void                          bitsize( unsigned int minsize, unsigned int maxsize );
   OpCode_t const&               opcode( Operation_t const* _op ) const;
   OpCode_t&                     opcode( Operation_t const* _op );
   

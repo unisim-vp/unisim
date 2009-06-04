@@ -123,21 +123,6 @@ CiscGenerator::OpCode_t::unsetupper() {
   m_upper = 0;
 }
   
-/**
- *  @brief  Sets the %CiscGenerator instruction bit size to the specified bit size.
- *  @param  _bitsize  Bit size of %CiscGenerator instructions.
- *
- *  This function will sets the %CiscGenerator instruction bit size to
- *  the specified bit size.  Byte size, misalign, postfix and ctype
- *  are updated accordingly.
- */
-void
-CiscGenerator::bitsize( unsigned int _min_bitsize, unsigned int _max_bitsize ) {
-  m_insn_minsize = _min_bitsize;
-  m_insn_maxsize = _max_bitsize;
-  m_insn_bytesize = _max_bitsize / 8;
-}
-
 /**  @brief matches (or not) OpCode bytes according to the OpCode instance
  *   @param _oc the opcode which bytes are to be matched by the OpCode instance
  *   @return true on successful match
@@ -219,36 +204,41 @@ struct BFWordIterator {
 */
 void
 CiscGenerator::finalize() {
-  this->reorder();
+  // Finalize size information
+  m_insn_bytesize = m_insn_maxsize / 8;
   
   // Process the opcodes needed by the decoder
-  unsigned int insn_max_bitsize = 0;
-  unsigned int insn_min_bitsize = std::numeric_limits<unsigned int>::max();
-  
   for( Vect_t<Operation_t>::const_iterator op = isa().m_operations.begin(); op < isa().m_operations.end(); ++ op ) {
-    unsigned int count = 0, minsize = 0, maxsize = 0, prefixsize = 0;
-    for( BFWordIterator bfword( (**op).m_bitfields ); bfword.next(); ) {
-      count   += bfword.m_count;
-      minsize += bfword.m_minsize;
-      maxsize += bfword.m_maxsize;
-      if( minsize == maxsize ) prefixsize = maxsize;
-      if( (minsize % 8) != 0 or (maxsize % 8) != 0 ) {
-        (**op).m_fileloc.err( "unaligned word separator (%dth field) in operation `%s`.", count+1, (**op).m_symbol.str() );
-        throw GenerationError;
-      }
-      if (bfword.m_has_subop) {
-        if (bfword.m_count > 1) {
-          (**op).m_fileloc.err( "subdecoder fields must be surrounded by word separator (operation `%s`).",
-                                (**op).m_symbol.str() );
+    { // Sanity checks
+      unsigned int count = 0;
+      for( BFWordIterator bfword( (**op).m_bitfields ); bfword.next(); ) {
+        count   += bfword.m_count;
+        if( (bfword.m_minsize % 8) != 0 or (bfword.m_maxsize % 8) != 0 ) {
+          (**op).m_fileloc.err( "unaligned word separator (%dth field) in operation `%s`.", count+1, (**op).m_symbol.str() );
           throw GenerationError;
         }
-      } else { // no SubOp
-        assert( bfword.m_maxsize == bfword.m_minsize );
+        if (bfword.m_has_subop) {
+          if (bfword.m_count > 1) {
+            (**op).m_fileloc.err( "subdecoder fields must be surrounded by word separator (operation `%s`).",
+                                  (**op).m_symbol.str() );
+            throw GenerationError;
+          }
+        } else { // no SubOp
+          assert( bfword.m_maxsize == bfword.m_minsize );
+        }
       }
     }
+    
+    // compute prefix size
+    unsigned int prefixsize = 0;
+    for( BFWordIterator bfword( (**op).m_bitfields ); bfword.next(); ) {
+      if (bfword.m_minsize != bfword.m_maxsize) break;
+      prefixsize += bfword.m_maxsize;
+      if (bfword.m_rewind) break;
+    }
     m_opcodes[*op].size( prefixsize / 8 );
-    if( maxsize > insn_max_bitsize ) insn_max_bitsize = maxsize;
-    if( minsize < insn_min_bitsize ) insn_min_bitsize = minsize;
+    
+    // compute opcode
     OpCode_t& oc = opcode( *op );
     int byteoffset = 0;
     for( BFWordIterator bfword( (**op).m_bitfields ); bfword.next(); ) {
@@ -280,13 +270,10 @@ CiscGenerator::finalize() {
         }
       }
       byteoffset += bytesize;
+      if (bfword.m_rewind) break;
     }
     oc.optimize();
-    //    cout << (**op).m_symbol << ": " << oc << endl;
   }
-  
-  bitsize( insn_min_bitsize, insn_max_bitsize );
-  cerr << "Instruction Size: [" << insn_min_bitsize << ":" << insn_max_bitsize << "]" << endl;
   
   /* Generating the topological graph of operations, and checking for
    * conflicts (overlapping encodings) 

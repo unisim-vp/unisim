@@ -26,6 +26,7 @@
 #include <iostream>
 #include <product.hh>
 #include <cassert>
+#include <limits>
 
 using namespace std;
 
@@ -101,62 +102,48 @@ RiscGenerator::RiscGenerator()
 */
 void
 RiscGenerator::finalize() {
-  this->reorder();
+  // Finalize size information
+  if( m_insn_maxsize > 64 ) {
+    std::cerr << "error: can't process encodings wider than 64 bits (" << m_insn_maxsize << " bits).";
+    throw GenerationError;
+  }
+  
+  m_insn_ctypesize = least_ctype_size( m_insn_maxsize );
+  m_insn_ctype = Str::fmt( "uint%d_t", m_insn_ctypesize );
+  switch( m_insn_ctypesize ) {
+  case 8:  m_insn_cpostfix = "U"; break;
+  case 16: m_insn_cpostfix = "U"; break;
+  case 32: m_insn_cpostfix = "UL"; break;
+  case 64: m_insn_cpostfix = "ULL"; break;
+  default: m_insn_cpostfix = "";
+  }
   
   Vect_t<Operation_t> const& operations = isa().m_operations;
   
   // Process the opcodes needed by the decoder
-  unsigned int insn_maxsize = 0, insn_minsize = 64;
   for( Vect_t<Operation_t>::const_iterator op = operations.begin(); op < operations.end(); ++ op ) {
-    unsigned int size = 0;
     Vect_t<BitField_t> const& bitfields = (**op).m_bitfields;
-    
-    for( Vect_t<BitField_t>::const_iterator bf = bitfields.begin(); bf < bitfields.end(); ++ bf ) {
-      if ((**bf).minsize() != (**bf).maxsize()) {
-        (**op).m_fileloc.err( "error: not (yet?) supported variable length field\n"
-                              "error: in operation `%s` at %u bits",
-                              (**op).m_symbol.str(), size );
-        throw GenerationError;
-      }
-      size += (**bf).m_size;
-    }
-    if( size > 64 ) {
-      (**op).m_fileloc.err( "error: can't process encodings wider than 64 bits (operation `%s`, %u bits).",
-                            (**op).m_symbol.str(), size );
-      throw GenerationError;
-    }
-    
-    if( insn_maxsize < size ) insn_maxsize = size;
-    if( insn_minsize > size ) insn_minsize = size;
-    unsigned int nshift = isa().m_little_endian ? 0 : size;
+    unsigned int nshift = isa().m_little_endian ? 0 : m_insn_maxsize;
+    unsigned int insn_size = 0;
     uint64_t mask = 0, bits = 0;
+    
     for( Vect_t<BitField_t>::const_iterator bf = bitfields.begin(); bf < bitfields.end(); ++ bf ) {
       unsigned int shift;
       if (isa().m_little_endian) { shift = nshift; nshift += (**bf).m_size; }
       else                       { nshift -= (**bf).m_size; shift = nshift; }
+      
+      if ((**bf).minsize() != (**bf).maxsize()) {
+        (**op).m_fileloc.err( "error: not (yet?) supported variable length field\n"
+                              "error: in operation `%s` at %u bits", (**op).m_symbol.str(), shift );
+        throw GenerationError;
+      }
+      insn_size += (**bf).m_size;
       if (not (**bf).hasopcode()) continue;
       bits |= (**bf).bits() << shift;
       mask |= (**bf).mask() << shift;
     }
-    m_opcodes[*op] = OpCode_t( size, mask, bits );
+    m_opcodes[*op] = OpCode_t( insn_size, mask, bits );
   }
-  
-  bitsize( insn_minsize, insn_maxsize );
-  
-  // Left padding variable length operations (big-endian)
-  if (not isa().m_little_endian) {
-    for (OpCodes_t::iterator itr = m_opcodes.begin(); itr != m_opcodes.end(); ++itr) {
-      unsigned int leftpad = m_insn_maxsize - itr->second.m_size;
-      if (leftpad == 0) continue;
-      itr->second.m_mask <<= leftpad;
-      itr->second.m_bits <<= leftpad;
-    }
-  }
-  
-  if (insn_minsize != insn_maxsize)
-    cerr << "Instruction Size: [" << insn_minsize << ":" << insn_maxsize << "]" << endl;
-  else
-    cerr << "Instruction Size: " << insn_maxsize << endl;
   
   /* Generating the topological graph of operations, checking for
    * conflicts (overlapping encodings), and checking for operations
@@ -213,30 +200,6 @@ RiscGenerator::finalize() {
       oc.unsetupper();
     }
     isa().m_operations = noperations;
-  }
-}
-
-/**
- *  @brief  Setup the %RiscGenerator instruction sizes in bits
- *  @param  minsize  The minimum size of %RiscGenerator instructions (in bits).
- *  @param  maxsize  The maximum size of %RiscGenerator instructions (in bits).
- *
- *  This function will setup the %RiscGenerator instruction sizes in
- *  bits. Byte size, misalign, postfix and ctype are updated
- *  accordingly.
- */
-void
-RiscGenerator::bitsize( unsigned int minsize, unsigned int maxsize ) {
-  m_insn_minsize = minsize;
-  m_insn_maxsize = maxsize;
-  m_insn_ctypesize = least_ctype_size( maxsize );
-  m_insn_ctype = Str::fmt( "uint%d_t", m_insn_ctypesize );
-  switch( m_insn_ctypesize ) {
-  case 8:  m_insn_cpostfix = "U"; break;
-  case 16: m_insn_cpostfix = "U"; break;
-  case 32: m_insn_cpostfix = "UL"; break;
-  case 64: m_insn_cpostfix = "ULL"; break;
-  default: m_insn_cpostfix = "";
   }
 }
 

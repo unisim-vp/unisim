@@ -59,7 +59,6 @@ struct CiscGenerator : public Generator {
   /* Cisc specific instructions */
   OpCode_t const&               opcode( Operation_t const* _op ) const;
   OpCode_t&                     opcode( Operation_t const* _op );
-  void                          bitsize( unsigned int _min_bitsize, unsigned int _max_bitsize );
   
   void                          finalize();
   void                          codetype_decl( Product_t& _product ) const;

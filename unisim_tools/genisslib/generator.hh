@@ -33,8 +33,6 @@ struct Generator {
   virtual ~Generator() {};
   
   Generator&                          init( Isa& _isa );
-  Generator&                          reorder();
-
   virtual void                        finalize() = 0;
 
   void                                iss( Product_t& _product ) const;
