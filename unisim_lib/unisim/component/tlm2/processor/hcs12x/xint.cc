@@ -58,21 +58,18 @@ XINT::XINT(const sc_module_name& name, Object *parent) :
 	isHardwareInterrupt(false)
 {
 
-	zeroTime = sc_time((double)0, SC_PS);
-
-	Reset();
-
 	interrupt_request(*this);
 	fromCPU_Target.register_b_transport(this, &XINT::getVectorAddress);
 	slave_socket.register_b_transport(this, &XINT::read_write);
+
+	zeroTime = sc_time((double)0, SC_PS);
+
+	Reset();
 
 	SC_HAS_PROCESS(XINT);
 
 	SC_THREAD(Run);
 
-	for (int i=0; i<XINT_SIZE; i++) {
-		interrupt_flags[i] = false;
-	}
 }
 
 XINT::~XINT() {
@@ -212,9 +209,9 @@ void XINT::getVectorAddress( tlm::tlm_generic_payload& trans, sc_time& delay )
 	buffer->ipl = newIPL;
 	buffer->vectorAddress = vectorAddress;
 
-	if (debug_enabled) {
-		cout << "XINT::  Vector Address 0x" << std::hex << vectorAddress << std::dec << endl;
-	}
+//	if (debug_enabled) {
+//		cout << "XINT::  Vector Address 0x" << std::hex << vectorAddress << std::dec << endl;
+//	}
 
 	isHardwareInterrupt = false;
 	trans.set_response_status( tlm::TLM_OK_RESPONSE );
@@ -302,6 +299,11 @@ void XINT::Reset() {
 	write(INT_CFDATA5, INT_CFDATA5_RESET_VALUE);
 	write(INT_CFDATA6, INT_CFDATA6_RESET_VALUE);
 	write(INT_CFDATA7, INT_CFDATA7_RESET_VALUE);
+
+	for (int i=0; i<XINT_SIZE; i++) {
+		interrupt_flags[i] = false;
+	}
+
 }
 
 void XINT::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )

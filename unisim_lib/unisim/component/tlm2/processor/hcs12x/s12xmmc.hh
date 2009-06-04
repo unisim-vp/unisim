@@ -96,8 +96,6 @@ public:
 	S12XMMC(const sc_module_name& name, Object *parent = 0);
 	virtual ~S12XMMC();
 
-	void reset();
-
 	void Run();
 
 	virtual void b_transport( tlm::tlm_generic_payload& trans, sc_time& delay );

@@ -70,6 +70,8 @@ CRG::CRG(const sc_module_name& name, Object *parent) :
 	interrupt_request(*this);
 	slave_socket.register_b_transport(this, &CRG::read_write);
 
+	Reset();
+
 	SC_HAS_PROCESS(CRG);
 
 	SC_THREAD(RunRTI);
@@ -364,8 +366,6 @@ bool CRG::Setup() {
 	 */
 
 	oscillator_clock = sc_time((double) oscillator_clock_int, SC_PS);
-
-	Reset();
 
 	compute_pll_clock();
 

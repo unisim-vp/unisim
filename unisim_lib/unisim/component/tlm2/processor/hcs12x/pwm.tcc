@@ -93,6 +93,8 @@ PWM<PWM_SIZE>::PWM(const sc_module_name& name, Object *parent) :
 	interrupt_request(*this);
 	slave_socket.register_b_transport(this, &PWM::read_write);
 
+	Reset();
+
 }
 
 template <uint8_t PWM_SIZE>
@@ -643,8 +645,6 @@ bool PWM<PWM_SIZE>::Setup() {
 	for (int i=0; i < 8; i++) {
 		clockVector[i] = bus_cycle_time/(1 << i);
 	}
-
-	Reset();
 
 	return true;
 }

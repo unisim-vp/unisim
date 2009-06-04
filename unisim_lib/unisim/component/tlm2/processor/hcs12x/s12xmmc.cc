@@ -53,8 +53,6 @@ S12XMMC::S12XMMC(const sc_module_name& name, Object *parent) :
 
 {
 
-	reset();
-
 	cpu_socket.register_b_transport(this, &S12XMMC::b_transport);
 
 	tlm2_btrans_time = sc_time((double)0, SC_PS);
@@ -100,10 +98,6 @@ S12XMMC::S12XMMC(const sc_module_name& name, Object *parent) :
 
 S12XMMC::~S12XMMC() {
 
-}
-
-void S12XMMC::reset() {
-	inherited::Reset();
 }
 
 void S12XMMC::Run() {
