@@ -466,7 +466,6 @@ Object::Object(const char *_name, Object *_parent) :
 
 Object::~Object()
 {
-	Disconnect();
 	if(parent) parent->Remove(*this);
 	ServiceManager::Unregister(this);
 }
@@ -583,6 +582,9 @@ void Object::Disconnect()
 
 	for(import_iter = srv_imports.begin(); import_iter != srv_imports.end(); import_iter++)
 	{
+#ifdef DEBUG_SERVICE
+		cerr << (*import_iter)->GetName() << "->DisconnectService()" << endl;
+#endif
 		(*import_iter)->DisconnectService();
 	}
 
@@ -590,6 +592,9 @@ void Object::Disconnect()
 
 	for(export_iter = srv_exports.begin(); export_iter != srv_exports.end(); export_iter++)
 	{
+#ifdef DEBUG_SERVICE
+		cerr << (*export_iter)->GetName() << "->DisconnectClient()" << endl;
+#endif
 		(*export_iter)->DisconnectClient();
 	}
 }

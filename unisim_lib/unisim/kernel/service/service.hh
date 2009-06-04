@@ -492,6 +492,7 @@ class ServiceImport : public ServiceImportBase
 public:
 	ServiceImport(const char *name, Client<SERVICE_IF> *client);
 	ServiceImport(const char *name, Object *owner);
+	virtual ~ServiceImport();
 
  	inline operator SERVICE_IF * () const
 #if defined(__GNUC__) && (__GNUC__ >= 3)
@@ -566,6 +567,12 @@ ServiceImport<SERVICE_IF>::ServiceImport(const char *_name, Object *_owner) :
 	actual_imports(),
 	client(0)
 {
+}
+
+template <class SERVICE_IF>
+ServiceImport<SERVICE_IF>::~ServiceImport()
+{
+	ServiceImport<SERVICE_IF>::DisconnectService();
 }
 
 template <class SERVICE_IF>
@@ -701,7 +708,6 @@ void ServiceImport<SERVICE_IF>::UnresolveService()
 #ifdef DEBUG_SERVICE
 			cerr << GetName() << ": Unresolving service " << service->GetName() << endl;
 #endif
-			service = 0;
 		}
 	}
 	else
@@ -713,6 +719,7 @@ void ServiceImport<SERVICE_IF>::UnresolveService()
 			(*import_iter)->UnresolveService();
 		}
 	}
+	service = 0;
 }
 
 template <class SERVICE_IF>
@@ -802,6 +809,7 @@ class ServiceExport : public ServiceExportBase
 public:
 	ServiceExport(const char *name, Service<SERVICE_IF> *service);
 	ServiceExport(const char *name, Object *owner);
+	virtual ~ServiceExport();
 
 	inline bool IsConnected() const
 #if defined(__GNUC__) && (__GNUC__ >= 3)
@@ -866,6 +874,12 @@ ServiceExport<SERVICE_IF>::ServiceExport(const char *_name, Object *_owner) :
 	srv_imports(),
 	client(0)
 {
+}
+
+template <class SERVICE_IF>
+ServiceExport<SERVICE_IF>::~ServiceExport()
+{
+	ServiceExport<SERVICE_IF>::DisconnectClient();
 }
 
 template <class SERVICE_IF>
@@ -1039,6 +1053,7 @@ void ServiceExport<SERVICE_IF>::UnresolveClient()
 
 	if(actual_export)
 	{
+		client = 0;
 		return actual_export->UnresolveClient();
 	}
 
