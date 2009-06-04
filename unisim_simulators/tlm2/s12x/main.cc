@@ -153,7 +153,6 @@ using unisim::util::garbage_collector::GarbageCollector;
 
 typedef unisim::service::loader::elf_loader::ElfLoaderImpl<uint64_t, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym> Elf32Loader;
 
-using unisim::component::tlm2::processor::hcs12x::INT_GEN;
 using unisim::component::tlm2::processor::hcs12x::XINT;
 using unisim::component::tlm2::processor::hcs12x::CRG;
 using unisim::component::tlm2::processor::hcs12x::ECT;
@@ -370,8 +369,6 @@ int sc_main(int argc, char *argv[])
 	// - Interrupt controller
 	XINT *s12xint = new XINT("s12xint");
 
-//	INT_GEN *int_gen = new INT_GEN("INT_GEN");
-
 	RTBStub *rtbStub = new RTBStub("RTB_STUB", fsb_cycle_time);
 
 	//=========================================================================
@@ -416,7 +413,8 @@ int sc_main(int argc, char *argv[])
 
 	//  - 68HCS12X processor
 	// if the following line ("cpu-cycle-time") is commented, the cpu will use the power estimators to find min cpu cycle time
-	(*cpu)["debug-enabled"] = debug_enabled;
+//	(*cpu)["debug-enabled"] = debug_enabled;
+	(*cpu)["debug-enabled"] = true;
 	(*cpu)["cpu-cycle-time"] = cpu_cycle_time;
 	(*cpu)["bus-cycle-time"] = fsb_cycle_time;
 	if(maxinst)
@@ -459,6 +457,9 @@ int sc_main(int argc, char *argv[])
 	(*atd0)["base-address"] = 0x02C0;
 	(*atd0)["interrupt-offset"] = 0xD2;
 	(*atd0)["debug-enabled"] = debug_enabled;
+
+//	(*s12xint)["debug-enabled"] = debug_enabled;
+	(*s12xint)["debug-enabled"] = true;
 
 	//  -External Router
 	unisim::kernel::service::VariableBase *var = ServiceManager::GetParameter("external_router.cycle_time");
@@ -570,7 +571,6 @@ int sc_main(int argc, char *argv[])
 
 	s12xint->toCPU_Initiator(cpu->interrupt_request);
 
-//	int_gen->interrupt_request(s12xint->interrupt_request);
 	crg->interrupt_request(s12xint->interrupt_request);
 	ect->interrupt_request(s12xint->interrupt_request);
 	pwm->interrupt_request(s12xint->interrupt_request);
@@ -735,7 +735,6 @@ int sc_main(int argc, char *argv[])
 	if(loaderS19) { delete loaderS19; loaderS19 = NULL; }
 	if(loaderELF) { delete loaderELF; loaderELF = NULL; }
 
-//	if (int_gen) { delete int_gen; int_gen = NULL; }
 	if (rtbStub) { delete rtbStub; rtbStub = NULL; }
 
 	if (crg) { delete crg; crg = NULL; }
