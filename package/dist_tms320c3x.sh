@@ -375,6 +375,7 @@ done
 
 echo "This package contains GenISSLib, an instruction set simulator generator, and a TMS320C3X instruction set simulator." > "${DEST_DIR}/README"
 echo "See INSTALL for installation instructions." >> "${DEST_DIR}/README"
+echo "See COPYING for licensing." >> "${DEST_DIR}/README"
 echo "See tms320c3x_manual.pdf and genisslib_manual.pdf for a printable documentation of these tools." >> "${DEST_DIR}/README"
 
 echo "INSTALLATION" > "${DEST_DIR}/INSTALL"
@@ -429,6 +430,7 @@ if [ "${has_to_build_configure}" = "yes" ]; then
 
 	echo "Generating Makefile.am"
 	echo "SUBDIRS=genisslib tms320c3x" > "${MAKEFILE_AM}"
+	echo "EXTRA_DIST = ${UNISIM_DOCS_FILES}" >> "${MAKEFILE_AM}"
 
 	echo "Building configure"
 	${SHELL} -c "cd ${DEST_DIR} && aclocal && autoconf --force && automake -ac"
@@ -479,7 +481,7 @@ if [ "${has_to_build_genisslib_configure}" = "yes" ]; then
 	echo "bin_PROGRAMS = genisslib" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "genisslib_SOURCES = ${UNISIM_TOOLS_GENISSLIB_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "noinst_HEADERS= ${UNISIM_TOOLS_GENISSLIB_HEADER_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
-	echo "EXTRA_DIST = ${UNISIM_TOOLS_GENISSLIB_M4_FILES} ${UNISIM_DOCS_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
+	echo "EXTRA_DIST = ${UNISIM_TOOLS_GENISSLIB_M4_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 
 	echo "Building GENISSLIB configure"
 	${SHELL} -c "cd ${DEST_DIR}/genisslib && aclocal -I m4 && autoconf --force && autoheader && automake -ac"

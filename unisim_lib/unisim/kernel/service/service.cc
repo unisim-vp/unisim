@@ -453,15 +453,12 @@ template class VariableArray<string>;
 //=                                 Object                                    =
 //=============================================================================
 
-unsigned int Object::next_id = 0;
-
 Object::Object(const char *_name, Object *_parent) :
 	object_name(_parent ? (string(_parent->GetName()) + "." + _name) : _name),
 	parent(_parent),
 	srv_imports(),
 	srv_exports(),
-	leaf_objects(),
-	id(next_id++)
+	leaf_objects()
 {
 	if(_parent) _parent->Add(*this);
 	ServiceManager::Register(this);
@@ -469,6 +466,7 @@ Object::Object(const char *_name, Object *_parent) :
 
 Object::~Object()
 {
+	Disconnect();
 	if(parent) parent->Remove(*this);
 	ServiceManager::Unregister(this);
 }
@@ -594,8 +592,6 @@ void Object::Disconnect()
 	{
 		(*export_iter)->DisconnectClient();
 	}
-	//cerr << "After Disconnecting " << GetName() << endl;
-	//ServiceManager::Dump(cerr);
 }
 
 bool Object::Setup()
@@ -623,11 +619,6 @@ void Object::SetupDependsOn(ServiceImportBase& srv_import)
 list<ServiceImportBase *>& Object::GetSetupDependencies()
 {
 	return setup_dependencies;
-}
-
-unsigned int Object::GetID() const
-{
-	return id;
 }
 
 //=============================================================================
@@ -941,14 +932,17 @@ protected:
 bool ServiceManager::Setup()
 {
 	map<const char *, Object *, ltstr>::iterator object_iter;
+	map<Object *, unsigned int> id_lookup;
 	DependencyGraph dependency_graph(objects.size());
 	
-	for(object_iter = objects.begin(); object_iter != objects.end(); object_iter++)
+	unsigned int id = 0;
+
+	for(object_iter = objects.begin(); object_iter != objects.end(); object_iter++, id++)
 	{
 //		cerr << "Object: " << (*object_iter).second->GetName() << endl;
-		dependency_graph[(*object_iter).second->GetID()].obj = (*object_iter).second;
+		dependency_graph[id].obj = (*object_iter).second;
+		id_lookup[(*object_iter).second] = id;
 	}
-
 
 	for(object_iter = objects.begin(); object_iter != objects.end(); object_iter++)
 	{
@@ -960,7 +954,7 @@ bool ServiceManager::Setup()
 			Object *peer_object = (*import_iter)->GetService();
 			if(peer_object)
 			{
-				add_edge(peer_object->GetID(), (*object_iter).second->GetID(), dependency_graph);
+				add_edge(id_lookup[peer_object], id_lookup[(*object_iter).second], dependency_graph);
 //				cerr << peer_object->GetID() << ":" << peer_object->GetName() << "->" 
 //					<< (*object_iter).second->GetID() << ":" << (*object_iter).second->GetName() << endl;
 			}

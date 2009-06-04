@@ -389,10 +389,7 @@ public:
 	VariableBase& operator [] (const char *name);
 	list<ServiceImportBase *>& GetSetupDependencies();
 	void SetupDependsOn(ServiceImportBase& srv_import);
-	unsigned int GetID() const;
 private:
-	unsigned int id;
-	static unsigned int next_id;
 	string object_name;
 	Object *parent;
 	list<VariableBase *> variables;
