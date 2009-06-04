@@ -1012,9 +1012,9 @@ cpu
 
 		address_t addr;
 		if (s==0) {
-			addr = (int16_t) cpu->xb_getAddrRegValue(rr) + ((uint8_t) n8);
+			addr = (int16_t) cpu->xb_getAddrRegValue(rr) + n8;
 			} else {
-			addr = (int16_t) cpu->xb_getAddrRegValue(rr) + (((uint8_t) n8) - 256);
+			addr = (int16_t) cpu->xb_getAddrRegValue(rr) + (n8 - 256);
 		}
 
 		return addr;
@@ -1039,9 +1039,9 @@ sink
 
 		string regLabel = CPU::xb_getAddrRegLabel(rr);
 		if (s==0) {
-			sink << std::dec << ((uint8_t) n8) << "," << regLabel;
+			sink << std::dec << n8 << "," << regLabel;
 			} else {
-			sink << std::dec << (((uint8_t) n8)-256) << "," << regLabel;
+			sink << std::dec << (n8 - 256) << "," << regLabel;
 		}
 
 	}

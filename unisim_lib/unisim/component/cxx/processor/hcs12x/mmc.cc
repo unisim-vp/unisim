@@ -85,6 +85,7 @@ void MMC::Reset() {
 }
 
 bool MMC::Setup() {
+
 	return true;
 }
 

@@ -281,8 +281,6 @@ public:
 	virtual void Stop(int ret);
 	virtual void Sync();
 
-	virtual void Reset();
-
 	/* TODO:
 	 * Stop All Clocks and puts the device in standby mode.
 	 * Asserting the RESET, XIRQ, or IRQ signals ends standby mode.
@@ -452,6 +450,7 @@ public:
 
 	virtual bool Setup();
 	virtual void OnDisconnect();
+	virtual void Reset();
 
 	//=====================================================================
 	//=             memory access reporting control interface methods     =

@@ -102,22 +102,21 @@ CPU::CPU(const char *name, Object *parent):
 	instruction_counter(0),
 	max_inst((uint64_t) -1),
 	param_max_inst("max-inst",this,max_inst),
-	queueFirst(-1), queueNElement(0), queueCurrentAddress(0xFFFE)
+	queueFirst(-1), queueNElement(0), queueCurrentAddress(0xFFFE),
+	bus_cycle(0),
+	cpu_cycle(0),
+	asynchronous_interrupt(false),
+	maskableIbit_interrupt(false),
+	nonMaskableXIRQ_interrupt(false),
+	reset(false)
 
 {
     ccr = new CCR_t();
 
     eblb = new EBLB(this);
 
-	//TODO
-	bus_cycle = 0;
-	cpu_cycle = 0;
-	instruction_counter = 0;
+	this->Reset();
 
-	asynchronous_interrupt = false;
-	maskableIbit_interrupt = false;
-	nonMaskableXIRQ_interrupt = false;
-	reset = false;
 }
 
 CPU::~CPU()
@@ -444,8 +443,11 @@ void CPU::PrepareInterrupt() {
 // AsynchronousException
 void CPU::HandleException(const AsynchronousException& exc)
 {
+
 	uint8_t newIPL = ccr->getIPL();
 	address_t asyncVector = GetIntVector(newIPL);
+
+	asynchronous_interrupt = false;
 
 	if (CONFIG::HAS_RESET && HasReset())
 		HandleResetException(asyncVector);
@@ -462,8 +464,6 @@ void CPU::HandleException(const AsynchronousException& exc)
 
 void CPU::AckAsynchronousInterrupt()
 {
-	asynchronous_interrupt = false;
-
 	if (CONFIG::HAS_RESET)  asynchronous_interrupt |= reset;
 	if (CONFIG::HAS_NON_MASKABLE_XIRQ_INTERRUPT)  asynchronous_interrupt |= nonMaskableXIRQ_interrupt;
 	if (CONFIG::HAS_MASKABLE_IBIT_INTERRUPT) asynchronous_interrupt |= maskableIbit_interrupt;
@@ -479,11 +479,13 @@ void CPU::ReqAsynchronousInterrupt()
 void CPU::HandleResetException(address_t resetVector)
 {
 
+	AckReset();
+
 	this->Reset();
 	// clear U-bit for CPU12XV2
 	ccr->clrIPL();
 	SetEntryPoint(memRead16(resetVector));
-	AckReset();
+
 }
 
 void CPU::AckReset()
@@ -500,6 +502,8 @@ void CPU::ReqReset()
 // NonMaskable XIRQ (X bit) interrupts
 void CPU::HandleNonMaskableXIRQException(address_t xirqVector, uint8_t newIPL)
 {
+	AckXIRQInterrupt();
+
 	PrepareInterrupt();
 
 	ccr->setI();
@@ -508,7 +512,7 @@ void CPU::HandleNonMaskableXIRQException(address_t xirqVector, uint8_t newIPL)
 	ccr->setX();
 
 	SetEntryPoint(memRead16(xirqVector));
-	AckXIRQInterrupt();
+
 }
 
 void CPU::AckXIRQInterrupt()
@@ -525,6 +529,7 @@ void CPU::ReqXIRQInterrupt()
 // Maskable (I bit) interrupt
 void CPU::HandleMaskableIbitException(address_t ibitVector, uint8_t newIPL)
 {
+	AckIbitInterrupt();
 
 	if (newIPL > ccr->getIPL()) {
 		PrepareInterrupt();
@@ -536,7 +541,6 @@ void CPU::HandleMaskableIbitException(address_t ibitVector, uint8_t newIPL)
 		SetEntryPoint(memRead16(ibitVector));
 	}
 
-	AckIbitInterrupt();
 }
 
 void CPU::AckIbitInterrupt()
