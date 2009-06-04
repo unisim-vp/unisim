@@ -1243,7 +1243,6 @@ int sc_main(int argc, char *argv[])
 	if(mpc107) delete mpc107;
 	if(pci_bus) delete pci_bus;
 	if(heathrow) delete heathrow;
-	ServiceManager::Dump(cerr);
 
 #ifdef WIN32
 	// releases the winsock2 resources
