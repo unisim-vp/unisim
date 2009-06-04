@@ -45,8 +45,6 @@ struct RiscGenerator : public Generator {
   typedef std::map<Operation_t const*,OpCode_t> OpCodes_t;
   
   OpCodes_t                     m_opcodes;
-  unsigned int                  m_insn_maxsize;
-  unsigned int                  m_insn_minsize;
   unsigned int                  m_insn_ctypesize;
   ConstStr_t                    m_insn_ctype;
   ConstStr_t                    m_insn_cpostfix;

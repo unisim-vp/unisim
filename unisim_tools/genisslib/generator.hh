@@ -22,10 +22,13 @@
 #include <conststr.hh>
 
 struct Generator {
+  enum Exception_t { GenerationError };
+  
   Isa*                                m_isa;
   unsigned int                        m_minwordsize;
+  unsigned int                        m_insn_maxsize;
+  unsigned int                        m_insn_minsize;
   
-  enum Exception_t { GenerationError };
   Generator();
   virtual ~Generator() {};
   

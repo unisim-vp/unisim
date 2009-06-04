@@ -94,7 +94,7 @@ RiscGenerator::OpCode_t::unsetupper() {
  *  @brief  Default constructor, create a RiscGenerator.
  */
 RiscGenerator::RiscGenerator()
-  : m_insn_maxsize( 0 ), m_insn_minsize( 0 ), m_insn_ctypesize( 0 )
+  : m_insn_ctypesize( 0 )
 {};
 
 /** Process the isa structure and computes RISC specific data 

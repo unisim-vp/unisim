@@ -25,10 +25,7 @@
 #include <iosfwd>
 
 struct CiscGenerator : public Generator {
-  unsigned int                  m_insn_min_bitsize;
-  unsigned int                  m_insn_max_bitsize;
-  unsigned int                  m_insn_max_bytesize;
-  
+  /* The opcode structure used to work on operation structures*/
   struct OpCode_t {
     unsigned int                m_size;
     uint8_t*                    m_mask;
@@ -52,7 +49,9 @@ struct CiscGenerator : public Generator {
     friend std::ostream&        operator << ( std::ostream& _sink, OpCode_t const& _oc );
   };
   typedef std::map<Operation_t const*,OpCode_t> OpCodes_t;
+
   OpCodes_t                     m_opcodes;
+  unsigned int                  m_insn_bytesize;
   
   CiscGenerator();
   ~CiscGenerator() {};

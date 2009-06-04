@@ -39,7 +39,7 @@ using namespace std;
  *  @brief  Default constructor, create a CiscGenerator.
  */
 CiscGenerator::CiscGenerator()
-  : m_insn_min_bitsize( 0 ), m_insn_max_bitsize( 0 ), m_insn_max_bytesize( 0 )
+  : m_insn_bytesize( 0 )
 {};
 
 /** Set the size of the OpCode and allocates mask and bits buffers
@@ -133,9 +133,9 @@ CiscGenerator::OpCode_t::unsetupper() {
  */
 void
 CiscGenerator::bitsize( unsigned int _min_bitsize, unsigned int _max_bitsize ) {
-  m_insn_min_bitsize = _min_bitsize;
-  m_insn_max_bitsize = _max_bitsize;
-  m_insn_max_bytesize = _max_bitsize / 8;
+  m_insn_minsize = _min_bitsize;
+  m_insn_maxsize = _max_bitsize;
+  m_insn_bytesize = _max_bitsize / 8;
 }
 
 /**  @brief matches (or not) OpCode bytes according to the OpCode instance
@@ -360,7 +360,7 @@ CiscGenerator::additional_impl_includes( Product_t& _product ) const {
 void
 CiscGenerator::codetype_decl( Product_t& _product ) const {
   _product.code( "struct CodeType {\n" );
-  _product.code( " static const unsigned int maxsize = %d;\n", m_insn_max_bytesize );
+  _product.code( " static const unsigned int maxsize = %d;\n", m_insn_bytesize );
   _product.code( " unsigned int              size;\n" );
   _product.code( " uint8_t                   str[maxsize];\n" );
   _product.code( " enum Exception_t { NotEnoughBytes };\n" );
@@ -502,7 +502,7 @@ CiscGenerator::insn_unchanged_expr( Product_t& _product, char const* _ref, char 
 
 void
 CiscGenerator::subdecoder_bounds( Product_t& _product ) const {
-  _product.code( "[%d:%d]", m_insn_min_bitsize, m_insn_max_bitsize );
+  _product.code( "[%d:%d]", m_insn_minsize, m_insn_maxsize );
 }
 
 CiscGenerator::OpCode_t const&
