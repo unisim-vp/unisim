@@ -35,6 +35,9 @@
 #ifndef __UNISIM_UTIL_HASH_TABLE_HASH_TABLE_HH__
 #define __UNISIM_UTIL_HASH_TABLE_HASH_TABLE_HH__
 
+#include <string.h>
+#include <map>
+
 namespace unisim {
 namespace util {
 namespace hash_table {
@@ -86,6 +89,7 @@ __attribute__((always_inline))
 
 	void Reset();
 
+	operator std::map<KEY, ELEMENT *>() const;
 private:
 	ELEMENT *mru_element;
 	ELEMENT *hash_table[NUM_HASH_TABLE_ENTRIES];
@@ -207,6 +211,29 @@ inline ELEMENT *HashTable<KEY, ELEMENT>::Find(KEY key)
 		}
 	}
 	return 0;
+}
+
+template <class KEY, class ELEMENT>
+HashTable<KEY, ELEMENT>::operator std::map<KEY, ELEMENT *>() const
+{
+	std::map<KEY, ELEMENT *> map;
+	KEY index;
+	for(index = 0; index < NUM_HASH_TABLE_ENTRIES; index++)
+	{
+		ELEMENT *element;
+		
+		element = hash_table[index];
+		if(element)
+		{
+			do
+			{
+				KEY key = element->key;
+				map.insert(std::pair<KEY, ELEMENT *>(key, element));
+				element = element->next;
+			} while(element);
+		}
+	}
+	return map;
 }
 
 } // end of namespace hash_table

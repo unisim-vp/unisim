@@ -45,6 +45,7 @@
 
 #include <unisim/util/debug/breakpoint_registry.hh>
 #include <unisim/util/debug/watchpoint_registry.hh>
+#include <unisim/util/debug/profile.hh>
 
 #include <unisim/kernel/service/service.hh>
 
@@ -143,6 +144,9 @@ private:
 
 	BreakpointRegistry<ADDRESS> breakpoint_registry;
 	WatchpointRegistry<ADDRESS> watchpoint_registry;
+	unisim::util::debug::Profile<ADDRESS> program_profile;
+	unisim::util::debug::Profile<ADDRESS> data_read_profile;
+	unisim::util::debug::Profile<ADDRESS> data_write_profile;
 	InlineDebuggerRunningMode running_mode;
 
 	ADDRESS disasm_addr;
@@ -171,6 +175,7 @@ private:
 	bool IsHelpCommand(const char *cmd);
 	bool IsResetCommand(const char *cmd);
 	bool IsMonitorCommand(const char *cmd);
+	bool IsProfileCommand(const char *cmd);
 
 	void Help();
 	void Disasm(ADDRESS addr, int count);
@@ -186,6 +191,8 @@ private:
 	void DumpMemory(ADDRESS addr);
 	void DumpVariables();
 	void DumpVariable(const char *name, const char *format = "string");
+	void DumpProgramProfile();
+	void DumpDataProfile(bool write);
 
 	static InlineDebugger<ADDRESS> *debugger;
 };

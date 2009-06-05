@@ -168,6 +168,17 @@ template <class ADDRESS>
 void InlineDebugger<ADDRESS>::ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size)
 {
 	if(watchpoint_registry.HasWatchpoint(mat, mt, addr, size)) trap = true;
+	if(mt == MemoryAccessReporting<ADDRESS>::MT_DATA)
+	{
+		if(mat == MemoryAccessReporting<ADDRESS>::MAT_WRITE)
+		{
+			data_write_profile.Accumulate(addr, 1);
+		}
+		else
+		{
+			data_read_profile.Accumulate(addr, 1);
+		}
+	}
 }
 
 template <class ADDRESS>
@@ -194,6 +205,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 
 	if(!trap && (running_mode == INLINE_DEBUGGER_MODE_CONTINUE || running_mode == INLINE_DEBUGGER_MODE_CONTINUE_UNTIL))
 	{
+		program_profile.Accumulate(cia, 1);
 		return DebugControl<ADDRESS>::DBG_STEP;
 	}
 	
@@ -205,6 +217,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 	if(running_mode == INLINE_DEBUGGER_MODE_RESET)
 	{
 		running_mode = INLINE_DEBUGGER_MODE_CONTINUE;
+		program_profile.Accumulate(cia, 1);
 		return DebugControl<ADDRESS>::DBG_STEP;
 	}
 
@@ -280,6 +293,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 				{
 					running_mode = INLINE_DEBUGGER_MODE_STEP;
 					strcpy(last_line, line);
+					program_profile.Accumulate(cia, 1);
 					return DebugControl<ADDRESS>::DBG_STEP;
 				}
 
@@ -297,6 +311,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 						running_mode = INLINE_DEBUGGER_MODE_CONTINUE_UNTIL;
 						SetBreakpoint(cont_addr);
 					}
+					program_profile.Accumulate(cia, 1);
 					return DebugControl<ADDRESS>::DBG_STEP;
 				}
 
@@ -304,6 +319,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 				{
 					running_mode = INLINE_DEBUGGER_MODE_CONTINUE;
 					strcpy(last_line, line);
+					program_profile.Accumulate(cia, 1);
 					return DebugControl<ADDRESS>::DBG_STEP;
 				}
 
@@ -352,6 +368,15 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 				{
 					recognized = true;
 					DumpVariables();
+					break;
+				}
+
+				if(IsProfileCommand(parm[0]))
+				{
+					recognized = true;
+					DumpProgramProfile();
+					DumpDataProfile(false /* read */);
+					DumpDataProfile(true /* write */);
 					break;
 				}
 
@@ -406,6 +431,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 					running_mode = INLINE_DEBUGGER_MODE_CONTINUE_UNTIL;
 					strcpy(last_line, line);
 					SetBreakpoint(cont_addr);
+					program_profile.Accumulate(cia, 1);
 					return DebugControl<ADDRESS>::DBG_STEP;
 				}
 				
@@ -416,6 +442,22 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 					break;
 				}
 
+				if(IsProfileCommand(parm[0]))
+				{
+					if(strcmp(parm[1], "program") == 0)
+					{
+						recognized = true;
+						DumpProgramProfile();
+						break;
+					}
+					else if(strcmp(parm[1], "data") == 0)
+					{
+						recognized = true;
+						DumpDataProfile(false /* read */);
+						DumpDataProfile(true /* write */);
+						break;
+					}
+				}
 				break;
 				
 			case 3:
@@ -456,6 +498,24 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 					break;
 				}
 
+				if(IsProfileCommand(parm[0]))
+				{
+					if(strcmp(parm[1], "data") == 0)
+					{
+						if(strcmp(parm[2], "read") == 0)
+						{
+							recognized = true;
+							DumpDataProfile(false /* read */);
+							break;
+						}
+						else if(strcmp(parm[2], "write") == 0)
+						{
+							recognized = true;
+							DumpDataProfile(true /* write */);
+							break;
+						}
+					}
+				}
 				break;
 
 			case EOF:
@@ -508,6 +568,13 @@ void InlineDebugger<ADDRESS>::Help()
 	cout << "<m | monitor> [<variable name>]" << endl;
 	cout << "    display the given simulator variable (displays all variable names if none is" << endl;
 	cout << "    given)" << endl;
+	cout << "--------------------------------------------------------------------------------" << endl;
+	cout << "<p | prof | profile>" << endl;
+	cout << "<p | prof | profile> program" << endl;
+	cout << "<p | prof | profile> data" << endl;
+	cout << "<p | prof | profile> data read" << endl;
+	cout << "<p | prof | profile> data write" << endl;
+	cout << "    display the program/data profile" << endl;
 	cout << "========================= BREAKPOINTS/WATCHPOINTS ==============================" << endl;
 	cout << "<b | break> [<symbol | *address>]" << endl;
 	cout << "    set a breakpoint at 'symbol' or 'address'. If 'symbol' or 'address' are not" << endl;
@@ -923,6 +990,86 @@ void InlineDebugger<ADDRESS>::DumpVariable(const char *name, const char *format)
 }
 
 template <class ADDRESS>
+void InlineDebugger<ADDRESS>::DumpProgramProfile()
+{
+	cout << "Program profile:" << endl;
+
+	typename std::map<ADDRESS, uint64_t> map = program_profile;
+	typename std::map<ADDRESS, uint64_t>::const_iterator iter;
+
+	for(iter = map.begin(); iter != map.end(); iter++)
+	{
+		ADDRESS addr = (*iter).first;
+		const Symbol<ADDRESS> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(addr) : 0;
+		ADDRESS next_addr;
+
+		string s = disasm_import->Disasm(addr, next_addr);
+
+		cout << "0x" << hex;
+		cout.fill('0');
+		cout.width(8);
+		cout << (addr / memory_atom_size) << dec;
+
+		if(symbol)
+		{
+			if(symbol)
+			{
+				cout << " <";
+				cout << symbol->GetFriendlyName(addr);
+				cout << ">";
+			}
+		}
+		else
+		{
+			cout << " <?>";
+		}
+
+		cout.fill(' ');
+		cout.width(0);
+		cout << ":" << (*iter).second << " times:" << s << endl;
+	}
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::DumpDataProfile(bool write)
+{
+	cout << "Data " << (write ? "write" : "read") << " profile:" << endl;
+	typename std::map<ADDRESS, uint64_t> map = write ? data_write_profile : data_read_profile;
+	typename std::map<ADDRESS, uint64_t>::const_iterator iter;
+
+	for(iter = map.begin(); iter != map.end(); iter++)
+	{
+		ADDRESS addr = (*iter).first;
+		const Symbol<ADDRESS> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(addr) : 0;
+		ADDRESS next_addr;
+
+		cout << "0x" << hex;
+		cout.fill('0');
+		cout.width(8);
+		cout << (addr / memory_atom_size) << dec;
+
+		if(symbol)
+		{
+			if(symbol)
+			{
+				cout << " <";
+				cout << symbol->GetFriendlyName(addr);
+				cout << ">";
+			}
+		}
+		else
+		{
+			cout << " <?>";
+		}
+
+		cout.fill(' ');
+		cout.width(0);
+		cout << ":" << (*iter).second << " times" << endl;
+	}
+}
+
+
+template <class ADDRESS>
 bool InlineDebugger<ADDRESS>::ParseAddrRange(const char *s, ADDRESS& addr, unsigned int& size)
 {
 	char fmt1[16];
@@ -1110,6 +1257,12 @@ template <class ADDRESS>
 bool InlineDebugger<ADDRESS>::IsMonitorCommand(const char *cmd)
 {
 	return strcmp(cmd, "m") == 0 || strcmp(cmd, "monitor") == 0;
+}
+
+template <class ADDRESS>
+bool InlineDebugger<ADDRESS>::IsProfileCommand(const char *cmd)
+{
+	return strcmp(cmd, "p") == 0 || strcmp(cmd, "prof") == 0 || strcmp(cmd, "profile") == 0;
 }
 
 } // end of namespace inline_debugger
