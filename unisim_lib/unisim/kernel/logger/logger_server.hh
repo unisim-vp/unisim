@@ -35,6 +35,8 @@
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger.hh"
 #include <string>
+#include <fstream>
+#include <vector>
 
 #ifndef __UNISIM_KERNEL_LOGGER_LOGGER_SERVER_HH__
 #define __UNISIM_KERNEL_LOGGER_LOGGER_SERVER_HH__
@@ -79,12 +81,13 @@ public:
 	 *
 	 * @return a pointer to the unique logger server of the system
 	 */
-	static LoggerServer *GetInstance();
+	static LoggerServer *GetInstanceWithoutCountingReference();
+	static LoggerServer *GetInstance(const unisim::kernel::service::Object &obj);
 
 	/** Free the handle to the unique logger server of the system
 	 * This method should be called by the different loggers when being destroyed.
 	 */
-	static void RemoveInstance();
+	static void RemoveInstance(const unisim::kernel::service::Object &obj);
 
 	/** Obtain the unique logger server object name
 	 *
@@ -130,6 +133,10 @@ private:
 	 */
 	static unsigned long long int singleton_refs;
 
+	/** Pointer to the objects that demanded an instance of the logger
+	 */
+	static std::vector<const unisim::kernel::service::Object *> *obj_refs;
+
 	/** The unique logger server name
 	 */
 	static const char *name;
@@ -147,6 +154,10 @@ private:
 	 * @param buffer the message buffer
 	 */
 	void XmlDebug(const char *type, const unisim::kernel::service::Object &obj, const char *buffer);
+
+	/** Text file handler
+	 */
+	std::ofstream text_file;
 
 	/***************************************************************************
 	 * Parameters                                                        START *

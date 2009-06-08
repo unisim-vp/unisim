@@ -38,10 +38,11 @@
 #include <systemc.h>
 #include <tlm.h>
 #include <tlm_utils/passthrough_target_socket.h>
+#include <tlm_utils/peq_with_get.h>
 #include "unisim/component/cxx/processor/arm/cpu.hh"
 #include "unisim/component/cxx/processor/arm/cache_interface.hh"
 #include "unisim/kernel/tlm2/tlm.hh"
-#include "unisim/kernel/logger/logger.hh"
+// #include "unisim/kernel/logger/logger.hh"
 #include "unisim/component/tlm2/interrupt/types.hh"
 #include <inttypes.h>
 #include <string>
@@ -125,6 +126,23 @@ private:
 	 * Incomming ports for the incomming interrupts                                                  END *
 	 *****************************************************************************************************/
 
+	/*****************************************************************************************************
+	 * Interrupt queue and handler                                                                 START *
+	 *****************************************************************************************************/
+	
+	typedef struct
+	{
+		bool fiq;
+		bool level;
+	} interrupt_t;
+	std::queue<interrupt_t *> free_interrupt_queue;
+	tlm_utils::peq_with_get<interrupt_t> interrupt_queue;
+	/** Thread too handle incomming interrupts */
+	void InterruptHandler();
+
+	/*****************************************************************************************************
+	 * Interrupt queue and handler                                                                   END *
+	 *****************************************************************************************************/
 public:
 	SC_HAS_PROCESS(ARM);
 	ARM(const sc_module_name& name, Object *parent = 0);
@@ -203,32 +221,36 @@ private:
 	Parameter<uint64_t> param_bus_cycle_time;
 	
 	/*************************************************************************
-	 * Logger and verbose parameters/methods                           START *
+	 * Logger, verbose and trap parameters/methods/ports               START *
 	 *************************************************************************/
 
-	unisim::kernel::logger::Logger logger;
+	//unisim::kernel::logger::Logger logger;
 	bool verbose_all;
 	unisim::kernel::service::Parameter<bool> param_verbose_all;
 	bool verbose_setup;
 	unisim::kernel::service::Parameter<bool> param_verbose_setup;
-	bool verbose_non_blocking;
-	unisim::kernel::service::Parameter<bool> param_verbose_non_blocking;
-	bool verbose_blocking;
-	unisim::kernel::service::Parameter<bool> param_verbose_blocking;
 	inline bool VerboseSetup();
-	inline bool VerboseNonBlocking();
-	inline bool VerboseBlocking();
-
+	/* TODO: remove this verbose commands */
+	bool verbose_tlm;
+	unisim::kernel::service::Parameter<bool> param_verbose_tlm;
+	inline bool VerboseTLM();
 
 	bool verbose_tlm_bus_synchronize;
-	Parameter<bool> param_verbose_tlm_bus_synchronize;
+	unisim::kernel::service::Parameter<bool> param_verbose_tlm_bus_synchronize;
 	bool verbose_tlm_run_thread;
-	Parameter<bool> param_verbose_tlm_run_thread;
+	unisim::kernel::service::Parameter<bool> param_verbose_tlm_run_thread;
 	bool verbose_tlm_commands;
-	Parameter<bool> param_verbose_tlm_commands;
-	
+	unisim::kernel::service::Parameter<bool> param_verbose_tlm_commands;
+	/* End of TODO */
+	bool verbose_tlm_irq;
+	unisim::kernel::service::Parameter<bool> param_verbose_tlm_irq;
+	inline bool VerboseTLMIrq();
+	bool trap_on_verbose_tlm_irq;
+	unisim::kernel::service::Parameter<bool> param_trap_on_verbose_tlm_irq;
+	inline void TrapOnVerboseTLMIrq();
+
 	/*************************************************************************
-	 * Logger and verbose parameters/methods                             END *
+	 * Logger, verbose and trap parameters/methods/ports                 END *
 	 *************************************************************************/
 };
 

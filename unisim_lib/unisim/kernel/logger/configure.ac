@@ -56,7 +56,7 @@ AC_PROG_LN_S
 AC_LANG([C++])
 
 ###### CHECK FOR STANDARD C++ HEADERS #########################################
-AC_CHECK_HEADERS([sstream string iostream],,\
+AC_CHECK_HEADERS([sstream string iostream fstream vector],,\
                   AC_MSG_ERROR([Some standard headers are missing.]))
 
 ###### CHECK FOR BOOST ########################################################

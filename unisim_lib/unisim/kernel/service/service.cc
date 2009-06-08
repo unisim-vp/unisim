@@ -984,8 +984,8 @@ bool ServiceManager::Setup()
 	SetupOrder setup_order;
 	topological_sort(dependency_graph, std::front_inserter(setup_order));
 
-	unisim::kernel::logger::LoggerServer::GetInstance()->Setup();
-
+	unisim::kernel::logger::LoggerServer::GetInstanceWithoutCountingReference()->Setup();
+	
 	list<Vertex>::iterator vertex_iter;
 	for(vertex_iter = setup_order.begin(); vertex_iter != setup_order.end(); vertex_iter++)
 	{

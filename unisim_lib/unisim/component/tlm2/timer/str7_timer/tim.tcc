@@ -168,7 +168,11 @@ TIM(const sc_module_name &name, Object *parent) :
 	verbose_all(false),
 	verbose_setup(false),
 	verbose_run(false),
-	verbose_tlm(false)
+	trap_on_verbose_run(false),
+	verbose_tlm(false),
+	trap_on_verbose_tlm(false),
+	trap_on_warning(false),
+	param_trap_on_warning("trap-on-warning", this, trap_on_warning, "Send a trap when displaying a warning message")
 {
 	SC_HAS_PROCESS(TIM);
 	SC_THREAD(MemFifoHandler);
@@ -184,6 +188,8 @@ TIM(const sc_module_name &name, Object *parent) :
 		param_verbose_setup = new unisim::kernel::service::Parameter<bool>("verbose-setup", this, verbose_setup, "Display module setup verbose information");
 		param_verbose_run = new unisim::kernel::service::Parameter<bool>("verbose-run", this, verbose_run, "Display module run verbose information");
 		param_verbose_tlm = new unisim::kernel::service::Parameter<bool>("verbose-tlm", this, verbose_tlm, "Display module tlm verbose information");
+		param_trap_on_verbose_run = new unisim::kernel::service::Parameter<bool>("trap-on-verbose-run", this, trap_on_verbose_run, "Send a trap when displaying run verbose information (requires verbose-run to be also activated)");
+		param_trap_on_verbose_tlm = new unisim::kernel::service::Parameter<bool>("trap-on-verbose-tlm", this, trap_on_verbose_tlm, "Send a trap when displaying tlm verbose information (requires verbose-tlm to be also activated)");
 	}
 
 	/* register the callbacks */
@@ -219,9 +225,11 @@ TIM<BUSWIDTH, VERBOSE> ::
 ~TIM()
 {
 	if (param_verbose_all) delete param_verbose_all;
-	if (param_verbose_run) delete param_verbose_run;
 	if (param_verbose_setup) delete param_verbose_setup;
+	if (param_verbose_run) delete param_verbose_run;
+	if (param_trap_on_verbose_run) delete param_trap_on_verbose_run;
 	if (param_verbose_tlm) delete param_verbose_tlm;
+	if (param_trap_on_verbose_tlm) delete param_trap_on_verbose_tlm;
 }
 
 template<unsigned int BUSWIDTH, bool VERBOSE>
@@ -256,18 +264,30 @@ Setup()
 
 	extclk_cycle_time = sc_time(extclk_cycle_time_double, SC_PS);
 
-	if (VerboseSetup())
+	if (verbose_setup)
 	{
 		logger << DebugInfo << "Verbose options:" << endl
 			<< " - verbose-setup activated" << endl
 			<< " - verbose-run ";
-		if (VerboseRun())
+		if (verbose_run)
 			logger << "activated";
 		else
 			logger << "deactivated";
 		logger << endl
 			<< " - verbose-tlm ";
-		if (VerboseTLM())
+		if (verbose_tlm)
+			logger << "activated";
+		else
+			logger << "deactivated";
+		logger << endl
+			<< " - trap-on-verbose-run ";
+		if (trap_on_verbose_run)
+			logger << "activated";
+		else
+			logger << "deactivated";
+		logger << endl
+			<< " - trap-on-verbose-tlm ";
+		if (trap_on_verbose_tlm)
 			logger << "activated";
 		else
 			logger << "deactivated";
@@ -315,6 +335,7 @@ TimeriNbTransportBw(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::
 				<< PHASE(phase) << endl
 				<< TIME(t)
 				<< EndDebugWarning;
+			TrapOnWarning();
 			break;
 	}
 	return tlm::TLM_COMPLETED;
@@ -359,6 +380,7 @@ TOINbTransportBw(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_
 				<< PHASE(phase) << endl
 				<< TIME(t)
 				<< EndDebugWarning;
+			TrapOnWarning();
 			break;
 	}
 	return tlm::TLM_COMPLETED;
@@ -402,6 +424,7 @@ ICIANbTransportBw(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc
 				<< PHASE(phase) << endl
 				<< TIME(t)
 				<< EndDebugWarning;
+			TrapOnWarning();
 			break;
 	}
 	return tlm::TLM_COMPLETED;
@@ -445,6 +468,7 @@ ICIBNbTransportBw(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc
 				<< PHASE(phase) << endl
 				<< TIME(t)
 				<< EndDebugWarning;
+			TrapOnWarning();
 			break;
 	}
 	return tlm::TLM_COMPLETED;
@@ -488,6 +512,7 @@ OCIANbTransportBw(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc
 				<< PHASE(phase) << endl
 				<< TIME(t)
 				<< EndDebugWarning;
+			TrapOnWarning();
 			break;
 	}
 	return tlm::TLM_COMPLETED;
@@ -531,6 +556,7 @@ OCIBNbTransportBw(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc
 				<< PHASE(phase) << endl
 				<< TIME(t)
 				<< EndDebugWarning;
+			TrapOnWarning();
 			break;
 	}
 	return tlm::TLM_COMPLETED;
@@ -575,6 +601,7 @@ OCMPANbTransportBw(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::s
 				<< PHASE(phase) << endl
 				<< TIME(t)
 				<< EndDebugWarning;
+			TrapOnWarning();
 			break;
 	}
 	return tlm::TLM_COMPLETED;
@@ -619,6 +646,7 @@ OCMPBNbTransportBw(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::s
 				<< PHASE(phase) << endl
 				<< TIME(t)
 				<< EndDebugWarning;
+			TrapOnWarning();
 			break;
 	}
 	return tlm::TLM_COMPLETED;
@@ -1027,14 +1055,18 @@ ReadRegister(uint64_t addr, uint16_t &value)
 			logger << DebugWarning 
 				<< "Trying to read from an unknown address (0x" << hex << addr << dec << ")"
 				<< EndDebugWarning;
+			TrapOnWarning();
 			break;
 	}
 	if (!done)
+	{
 		logger << DebugWarning
 			<< "TODO: read not handled for address 0x" << hex << addr << dec
 			<< " (register index = 0x" << hex << reg_index << dec << ")" << endl
 			<< LOCATION
 			<< EndDebugWarning;
+		TrapOnWarning();
+	}
 	else
 	{
 		if (VerboseRun())
@@ -1202,15 +1234,18 @@ WriteRegister(uint64_t addr, uint16_t value)
 				<< "Trying to write into an unknown address (0x" << hex << addr << dec << ") with value"
 				<< " 0x" << hex << value << dec
 				<< EndDebugWarning;
+			TrapOnWarning();
 			break;
 	}
 	if (!done)
+	{
 		logger << DebugWarning
 			<< "TODO: write not handled for address 0x" << hex << addr << dec
 			<< " (register index = 0x" << hex << reg_index << dec << ")" << endl
 			<< LOCATION
 			<< EndDebugWarning;
-	trap_reporting_import->ReportTrap();
+		TrapOnWarning();
+	}
 }
 
 /* START: interrupt transaction generation methods */
@@ -1421,7 +1456,6 @@ TimerOverflowHandler()
 			sc_core::sc_time t = pclk2_cycle_time * (uint32_t)(CC() + 1) * rem;
 			to_event.notify(t);
 		}
-		trap_reporting_import->ReportTrap();
 	}
 }
 
@@ -1458,7 +1492,6 @@ OutputCompareAHandler()
 		uint32_t rem = (uint32_t)0x10000;
 		sc_core::sc_time t = pclk2_cycle_time * (uint32_t)(CC() + 1) * rem;
 		oca_event.notify(t);
-		trap_reporting_import->ReportTrap();
 	}
 }
 
@@ -1495,7 +1528,6 @@ OutputCompareBHandler()
 		uint32_t rem = (uint32_t)0x10000;
 		sc_core::sc_time t = pclk2_cycle_time * (uint32_t)(CC() + 1) * rem;
 		ocb_event.notify(t);
-		trap_reporting_import->ReportTrap();
 	}
 }
 
@@ -1538,7 +1570,13 @@ bool
 TIM<BUSWIDTH, VERBOSE> ::
 VerboseRun()
 {
-	return VERBOSE && verbose_run;
+	if (VERBOSE && verbose_run)
+	{
+		if (trap_on_verbose_run && trap_reporting_import)
+			trap_reporting_import->ReportTrap();
+		return true;
+	}
+	return false;
 }
 
 template<unsigned int BUSWIDTH, bool VERBOSE>
@@ -1546,7 +1584,21 @@ bool
 TIM<BUSWIDTH, VERBOSE> ::
 VerboseTLM()
 {
-	return VERBOSE && verbose_tlm;
+	if (VERBOSE && verbose_tlm)
+	{
+		if (trap_on_verbose_tlm && trap_reporting_import)
+			trap_reporting_import->ReportTrap();
+		return true;
+	}
+	return false;
+}
+
+template<unsigned int BUSWIDTH, bool VERBOSE>
+void
+TIM<BUSWIDTH, VERBOSE> ::
+TrapOnWarning()
+{
+	if (trap_on_warning) trap_reporting_import->ReportTrap();
 }
 
 /* END: verbose methods */

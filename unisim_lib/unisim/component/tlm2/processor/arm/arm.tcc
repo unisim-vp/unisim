@@ -38,10 +38,10 @@
 #include <systemc.h>
 #include <tlm.h>
 #include "unisim/kernel/tlm2/tlm.hh"
-#include "unisim/service/interfaces/logger.hh"
+#include "unisim/kernel/logger/logger.hh"
 
 #define LOCATION 	" - location = " << __FUNCTION__ << ":unisim_lib/unisim/component/tlm2/processor/arm/arm.tcc:" << __LINE__
-#define TIME(X) 	" - time = " << sc_time_stamp() + (X)
+#define TIME(X) 	" - time = " << sc_time_stamp() + (X) << " (current time = " << sc_time_stamp() << ")"
 #define PHASE(X) 	" - phase = " << 	( (X) == tlm::BEGIN_REQ  ? 	"BEGIN_REQ" : \
 										( (X) == tlm::END_REQ    ? 	"END_REQ" : \
 										( (X) == tlm::BEGIN_RESP ? 	"BEGIN_RESP" : \
@@ -101,6 +101,8 @@
 	} \
 }
 
+#define ITRANS(X)	" - trans.level = " << (X).level
+
 namespace unisim {
 namespace component {
 namespace tlm2 {
@@ -118,6 +120,8 @@ ARM(const sc_module_name& name, Object *parent) :
 	master_socket("master_socket"),
 	in_irq("in_irq"),
 	in_fiq("in_fiq"),
+	free_interrupt_queue(),
+	interrupt_queue("interrupt_queue"),
 	cpu_cycle_time(),
 	bus_cycle_time(),
 	cpu_time(),
@@ -134,21 +138,23 @@ ARM(const sc_module_name& name, Object *parent) :
 	param_ipc("ipc", this, ipc),
 	param_cpu_cycle_time("cpu-cycle-time", this, cpu_cycle_time_int),
 	param_bus_cycle_time("bus-cycle-time", this, bus_cycle_time_int),
-	logger(*this),
+//	inherited::logger(*this),
 	verbose_all(false),
 	param_verbose_all("verbose_all", this, verbose_all, "Activate all the verbose options"),
 	verbose_setup(false),
 	param_verbose_setup("verbose_setup", this, verbose_setup, "Display object setup information"),
-	verbose_non_blocking(false),
-	param_verbose_non_blocking("verbose_non_blocking", this, verbose_non_blocking, "Display non_blocking transaction handling"),
-	verbose_blocking(false),
-	param_verbose_blocking("verbose_blocking", this, verbose_blocking, "Display blocking transaction handling"),
+	verbose_tlm(false),
+	param_verbose_tlm("verbose_tlm", this, verbose_tlm, "Display TLM information"),
 	verbose_tlm_bus_synchronize(false),
 	param_verbose_tlm_bus_synchronize("verbose_tlm_bus_synchronize", this, verbose_tlm_bus_synchronize, "Display bus synchronization handling"),
 	verbose_tlm_run_thread(false),
 	param_verbose_tlm_run_thread("verbose_tlm_run_thread", this, verbose_tlm_run_thread, "Display main thread execution information"),
 	verbose_tlm_commands(false),
-	param_verbose_tlm_commands("verbose_tlm_commands", this, verbose_tlm_commands, "Display commands handling")
+	param_verbose_tlm_commands("verbose_tlm_commands", this, verbose_tlm_commands, "Display commands handling"),
+	verbose_tlm_irq(false),
+	param_verbose_tlm_irq("verbose_tlm_irq", this, verbose_tlm_irq, "Display TLM irq information"),
+	trap_on_verbose_tlm_irq(false),
+	param_trap_on_verbose_tlm_irq("trap_on_verbose_tlm_irq", this, trap_on_verbose_tlm_irq, "Send a trap when displaying TLM irq information")
 {
 	master_socket.bind(*this);
 	
@@ -163,6 +169,7 @@ ARM(const sc_module_name& name, Object *parent) :
 	in_fiq.register_get_direct_mem_ptr(this, &THIS_MODULE::FiqGetDirectMemPtr);
 
 	SC_THREAD(Run);
+	SC_THREAD(InterruptHandler);
 }
 
 template<class CONFIG, bool BLOCKING>
@@ -181,9 +188,14 @@ bool
 ARM<CONFIG, BLOCKING> :: 
 Setup() 
 {
+
+	cerr << "debug_enable = " << CONFIG::DEBUG_ENABLE << endl;
+	cerr << "verbose_all = " << inherited::verbose_all << endl;
+	cerr << "verbose_setup = " << inherited::verbose_setup << endl;
+	cerr << "verbose_tlm_irq = " << verbose_tlm_irq << endl;
 	if (!inherited::Setup()) 
 	{
-		logger << DebugError << LOCATION
+		inherited::logger << DebugError << LOCATION
 			<< "Error while trying to set up the ARM cpu"
 			<< EndDebugError;
 		return false;
@@ -192,7 +204,7 @@ Setup()
 	/* TODO: remove once the non-blocking version has been implemented */
 	if (!BLOCKING)
 	{
-		logger << DebugError << LOCATION 
+		inherited::logger << DebugError << LOCATION 
 		    << "Non-blocking mode not still implemented"
 			<< EndDebugError;
 		return false;
@@ -204,15 +216,14 @@ Setup()
 		verbose_tlm_run_thread = true;
 		verbose_tlm_commands = true;
 		verbose_setup = true;
-		verbose_blocking = true;
-		verbose_non_blocking = true;
+		verbose_tlm = true;
 	} else {
 		if(CONFIG::DEBUG_ENABLE && verbose_tlm_bus_synchronize)
-			logger << DebugInfo << LOCATION
+			inherited::logger << DebugInfo << LOCATION
 				<< "verbose-tlm-bus-synchronize = true"
 				<< EndDebugInfo;		
 		if(CONFIG::DEBUG_ENABLE && verbose_tlm_run_thread)
-			logger << DebugInfo << LOCATION
+			inherited::logger << DebugInfo << LOCATION
 				<< "verbose-tlm-run-thread = true"
 				<< EndDebugInfo;		
 	}
@@ -221,7 +232,7 @@ Setup()
 	bus_cycle_time = sc_time((double)bus_cycle_time_int, SC_PS);
 	nice_time = sc_time((double)nice_time_int, SC_PS);
 	if(CONFIG::DEBUG_ENABLE && inherited::verbose_setup) {
-		logger << DebugInfo << LOCATION
+		inherited::logger << DebugInfo << LOCATION
 			<< "Setting CPU cycle time to " 
 			<< cpu_cycle_time.to_string() << endl
 			<< "Setting Bus cycle time to " 
@@ -299,14 +310,14 @@ Run()
 	while (1)
 	{
 		if (CONFIG::DEBUG_ENABLE && verbose_tlm_run_thread)
-			logger << DebugInfo << LOCATION
+			inherited::logger << DebugInfo << LOCATION
 				<< "Executing step"
 				<< EndDebugInfo;
 		CPU<CONFIG>::StepInstruction();
 		cpu_time += time_per_instruction;
 		quantum_time += time_per_instruction;
 		if (CONFIG::DEBUG_ENABLE && verbose_tlm_run_thread)
-			logger << DebugInfo << LOCATION
+			inherited::logger << DebugInfo << LOCATION
 				<< "Finished executing step"
 				<< EndDebugInfo;
 		if (quantum_time > nice_time)
@@ -344,13 +355,13 @@ nb_transport_bw (transaction_type &trans, phase_type &phase, sc_core::sc_time &t
 
 	if (trans.get_command() == tlm::TLM_IGNORE_COMMAND) 
 	{
-		logger << DebugWarning << "Received nb_transport_bw on master socket" 
+		inherited::logger << DebugWarning << "Received nb_transport_bw on master socket" 
 			<< ", with an ignore, which the cpu doesn't know how to handle" 
 			<< endl
 			<< TIME(time) << endl
 			<< PHASE(phase) << endl;
-		TRANS(logger, trans);
-		logger << EndDebug;
+		TRANS(inherited::logger, trans);
+		inherited::logger << EndDebug;
 		return ret;
 	}
 
@@ -361,13 +372,13 @@ nb_transport_bw (transaction_type &trans, phase_type &phase, sc_core::sc_time &t
 			/* The cpu should not receive the BEGIN_REQ (as it is the cpu which 
 			 * generates cpu requests), neither END_RESP (as it is the cpu which
 			 * ends responses) */
-			logger << DebugError << "Received nb_transport_bw on master_socket" 
+			inherited::logger << DebugError << "Received nb_transport_bw on master_socket" 
 				<< ", with unexpected phase" << endl
 				<< LOCATION << endl
 				<< TIME(time) << endl
 				<< PHASE(phase) << endl;
-			TRANS(logger, trans);
-			logger << EndDebug;
+			TRANS(inherited::logger, trans);
+			inherited::logger << EndDebug;
 			sc_stop();
 			wait();
 			break;
@@ -396,12 +407,12 @@ nb_transport_bw (transaction_type &trans, phase_type &phase, sc_core::sc_time &t
 			trans.acquire();
 			if (trans.is_write())
 			{
-				logger << DebugError << "Received nb_transport_bw on BEGIN_RESP phase, with unexpected write transaction" << endl
+				inherited::logger << DebugError << "Received nb_transport_bw on BEGIN_RESP phase, with unexpected write transaction" << endl
 					<< LOCATION << endl
 					<< TIME(time) << endl 
 					<< PHASE(phase) << endl;
-				TRANS(logger, trans);
-				logger << EndDebug;
+				TRANS(inherited::logger, trans);
+				inherited::logger << EndDebug;
 				sc_stop();
 				wait();
 				break;
@@ -416,12 +427,12 @@ nb_transport_bw (transaction_type &trans, phase_type &phase, sc_core::sc_time &t
 	}
 
 	/* this code should never be executed, if you are here something is wrong above :( */
-	logger << DebugError << "Reached end of nb_transport_bw, THIS SHOULD NEVER HAPPEN" << endl
+	inherited::logger << DebugError << "Reached end of nb_transport_bw, THIS SHOULD NEVER HAPPEN" << endl
 		<< LOCATION << endl
 		<< TIME(time) << endl
 		<< PHASE(phase) << endl;
-	TRANS(logger, trans);
-	logger << EndDebug;
+	TRANS(inherited::logger, trans);
+	inherited::logger << EndDebug;
 	sc_stop();
 	wait();
 	// useless return to avoid compiler warnings/errors
@@ -457,7 +468,46 @@ tlm::tlm_sync_enum
 ARM<CONFIG, BLOCKING> ::
 IrqNbTransportFw(TLMInterruptPayload& trans, phase_type &phase, sc_core::sc_time &time)
 {
-	/* TODO */
+	switch(phase)
+	{
+		case tlm::BEGIN_REQ:
+			if (VerboseTLMIrq())
+			{
+				inherited::logger << DebugInfo << "Received transaction on in_irq non-blocking interface:" << endl
+				<< ITRANS(trans) << endl
+				<< PHASE(phase) << endl
+				<< TIME(time)
+				<< EndDebugInfo;
+			}
+			if (trans.level)
+			{
+				// a irq interrupt has to be handled
+				interrupt_t *interrupt;
+				if (free_interrupt_queue.empty())
+				{
+					interrupt = new interrupt_t();
+				}
+				else
+				{
+					interrupt = free_interrupt_queue.front();
+					free_interrupt_queue.pop();
+				}
+				interrupt->level = true;
+				interrupt->fiq = false;
+				interrupt_queue.notify(*interrupt, time);
+			}
+			break;
+		case tlm::END_REQ:
+		case tlm::BEGIN_RESP:
+		case tlm::END_RESP:
+			inherited::logger << DebugWarning << "Received unexpected phase on in_irq non-blocking interface:" << endl
+				<< ITRANS(trans) << endl
+				<< PHASE(phase) << endl
+				<< TIME(time)
+				<< EndDebugWarning;
+			break;
+	}
+	TrapOnVerboseTLMIrq();
 	return tlm::TLM_COMPLETED;
 }
 
@@ -472,10 +522,31 @@ void
 ARM<CONFIG, BLOCKING> ::
 IrqBTransport(TLMInterruptPayload& trans, sc_core::sc_time &time)
 {
-	logger << DebugWarning << "Received an IRQ"
-		<< EndDebugWarning;
-	inherited::trap_reporting_import->ReportTrap();
-	/* TODO */
+	if (VerboseTLMIrq())
+	{
+		inherited::logger << DebugInfo << "Received transaction on in_irq blocking interface:" << endl
+			<< ITRANS(trans) << endl
+			<< TIME(time)
+			<< EndDebugWarning;
+	}
+	if (trans.level)
+	{
+		// a irq interrupt has to be handled
+		interrupt_t *interrupt;
+		if (free_interrupt_queue.empty())
+		{
+			interrupt = new interrupt_t();
+		}
+		else
+		{
+			interrupt = free_interrupt_queue.front();
+			free_interrupt_queue.pop();
+		}
+		interrupt->level = true;
+		interrupt->fiq = false;
+		interrupt_queue.notify(*interrupt, time);
+	}
+	TrapOnVerboseTLMIrq();
 }
 
 /**
@@ -504,9 +575,9 @@ bool
 ARM<CONFIG, BLOCKING> ::
 IrqGetDirectMemPtr(TLMInterruptPayload& trans, tlm::tlm_dmi& dmi)
 {
-	logger << DebugWarning << "Received an FIQ"
+	inherited::logger << DebugWarning << "Received an FIQ"
 		<< EndDebugWarning;
-	inherited::trap_reporting_import->ReportTrap();
+	TrapOnVerboseTLMIrq();
 	return false;
 }
 
@@ -523,7 +594,45 @@ tlm::tlm_sync_enum
 ARM<CONFIG, BLOCKING> ::
 FiqNbTransportFw(TLMInterruptPayload& trans, phase_type &phase, sc_core::sc_time &time)
 {
-	/* TODO */
+	switch(phase)
+	{
+		case tlm::BEGIN_REQ:
+			if (VerboseTLMIrq())
+			{
+				inherited::logger << DebugInfo << "Received transaction on in_fiq non-blocking interface:" << endl
+				<< ITRANS(trans) << endl
+				<< PHASE(phase) << endl
+				<< TIME(time)
+				<< EndDebugInfo;
+			}
+			if (trans.level)
+			{
+				// a fiq interrupt has to be handled
+				interrupt_t *interrupt;
+				if (free_interrupt_queue.empty())
+				{
+					interrupt = new interrupt_t();
+				}
+				else
+				{
+					interrupt = free_interrupt_queue.front();
+					free_interrupt_queue.pop();
+				}
+				interrupt->level = true;
+				interrupt->fiq = true;
+				interrupt_queue.notify(*interrupt, time);
+			}
+			break;
+		case tlm::END_REQ:
+		case tlm::BEGIN_RESP:
+		case tlm::END_RESP:
+			inherited::logger << DebugWarning << "Received unexpected phase on in_fiq non-blocking interface:" << endl
+				<< ITRANS(trans) << endl
+				<< PHASE(phase) << endl
+				<< TIME(time)
+				<< EndDebugWarning;
+			break;
+	}
 	return tlm::TLM_COMPLETED;
 }
 
@@ -538,7 +647,31 @@ void
 ARM<CONFIG, BLOCKING> ::
 FiqBTransport(TLMInterruptPayload& trans, sc_core::sc_time &time)
 {
-	/* TODO */
+	if (VerboseTLMIrq())
+	{
+		inherited::logger << DebugInfo << "Received transaction on in_fiq blocking interface:" << endl
+			<< ITRANS(trans) << endl
+			<< TIME(time)
+			<< EndDebugWarning;
+	}
+	if (trans.level)
+	{
+		// a fiq interrupt has to be handled
+		interrupt_t *interrupt;
+		if (free_interrupt_queue.empty())
+		{
+			interrupt = new interrupt_t();
+		}
+		else
+		{
+			interrupt = free_interrupt_queue.front();
+			free_interrupt_queue.pop();
+		}
+		interrupt->level = true;
+		interrupt->fiq = true;
+		interrupt_queue.notify(*interrupt, time);
+	}
+	TrapOnVerboseTLMIrq();
 }
 
 /**
@@ -571,6 +704,41 @@ FiqGetDirectMemPtr(TLMInterruptPayload& trans, tlm::tlm_dmi& dmi)
 }
 
 /**
+ * Thread to handle incomming interruptions (irq and fiq) at the right time.
+ */
+template <class CONFIG, bool BLOCKING>
+void
+ARM<CONFIG, BLOCKING> ::
+InterruptHandler()
+{
+	sc_event &ev = interrupt_queue.get_event();
+	while(1)
+	{
+		wait(ev);
+		bool irq = false;
+		bool fiq = false;
+		for (interrupt_t *interrupt = interrupt_queue.get_next_transaction();
+				interrupt != 0;
+				interrupt = interrupt_queue.get_next_transaction())
+		{
+			if (interrupt->fiq)
+				fiq = true;
+			else
+				irq = true;
+			delete interrupt;
+		}
+		if (VerboseTLMIrq())
+			inherited::logger << DebugInfo << "Handling interrupt:" << endl
+				<< " - type = " << (irq?"irq":"") << ((irq && fiq)?" & ":"") << (fiq?"fiq":"") << endl
+				<< TIME(SC_ZERO_TIME)
+				<< EndDebugInfo;
+		TrapOnVerboseTLMIrq();
+		if (irq) inherited::SetPendingException(inherited::IRQ_EXCEPTION);
+		if (fiq) inherited::SetPendingException(inherited::FIQ_EXCEPTION);
+	}
+}
+
+/**
  * Virtual method implementation to handle non intrusive reads performed by the inherited
  * cpu to perform external memory accesses.
  * It uses the TLM2 debugging interface to request the data.
@@ -588,7 +756,7 @@ ExternalReadMemory(uint64_t addr, void *buffer, uint32_t size)
 	transaction_type *trans;
 	unsigned int read_size;
 
-	if(CONFIG::DEBUG_ENABLE && verbose_tlm_commands) logger << DebugInfo << LOCATION
+	if(CONFIG::DEBUG_ENABLE && verbose_tlm_commands) inherited::logger << DebugInfo << LOCATION
 			<< "Performing ExternalReadMemory"
 			<< EndDebugInfo;
 	trans = payload_fabric.allocate();
@@ -600,8 +768,12 @@ ExternalReadMemory(uint64_t addr, void *buffer, uint32_t size)
 	read_size = master_socket->transport_dbg(*trans);
 
 	if (trans->is_response_ok() && read_size == size)
+	{
+		trans->release();
 		return true;
+	}
 
+	trans->release();
 	return false;
 }
 
@@ -622,7 +794,7 @@ ExternalWriteMemory(uint64_t addr, const void *buffer, uint32_t size)
 	transaction_type *trans;
 	unsigned int write_size;
 
-	if(CONFIG::DEBUG_ENABLE && verbose_tlm_commands) logger << DebugInfo << LOCATION
+	if(CONFIG::DEBUG_ENABLE && verbose_tlm_commands) inherited::logger << DebugInfo << LOCATION
 			<< "Performing ExternalReadMemory"
 			<< EndDebugInfo;
 	trans = payload_fabric.allocate();
@@ -634,8 +806,12 @@ ExternalWriteMemory(uint64_t addr, const void *buffer, uint32_t size)
 	write_size = master_socket->transport_dbg(*trans);
 
 	if (trans->is_response_ok() && write_size == size)
+	{
+		trans->release();
 		return true;
+	}
 
+	trans->release();
 	return false;
 }
 
@@ -659,7 +835,7 @@ PrRead(address_t addr,
 	uint8_t *buffer, 
 	uint32_t size) {
 	if(CONFIG::DEBUG_ENABLE && verbose_tlm_commands)
-		logger << DebugInfo << LOCATION
+		inherited::logger << DebugInfo << LOCATION
 			<< "Performing PrRead"
 			<< EndDebugInfo;
 		
@@ -714,18 +890,18 @@ PrRead(address_t addr,
 		case tlm::TLM_ACCEPTED:
 			if (CONFIG::DEBUG_ENABLE)
 			{
-				logger << DebugInfo << "Read transaction accepted, waiting for the response" << endl
+				inherited::logger << DebugInfo << "Read transaction accepted, waiting for the response" << endl
 					<< TIME(time) << endl;
-				TRANS(logger, *trans);
-				logger << EndDebugInfo;
+				TRANS(inherited::logger, *trans);
+				inherited::logger << EndDebugInfo;
 			}
 			wait(end_read_rsp_event);
 			if (CONFIG::DEBUG_ENABLE)
 			{			
-				logger << DebugInfo << "Read transaction finished" << endl
+				inherited::logger << DebugInfo << "Read transaction finished" << endl
 					<< TIME(time) << endl;
-				ETRANS(logger, *trans);
-				logger << EndDebugInfo;
+				ETRANS(inherited::logger, *trans);
+				inherited::logger << EndDebugInfo;
 			}
 			break;
 		case tlm::TLM_UPDATED:
@@ -733,25 +909,25 @@ PrRead(address_t addr,
 			case tlm::BEGIN_REQ:
 			case tlm::END_RESP:
 			case tlm::BEGIN_RESP:
-				logger << DebugError << "Received TLM_UPDATED with unexpected phase" << endl
+				inherited::logger << DebugError << "Received TLM_UPDATED with unexpected phase" << endl
 					<< LOCATION << endl
 					<< TIME(time) << endl
 					<< PHASE(phase) << endl;
-				TRANS(logger, *trans);
-				logger << EndDebug;
+				TRANS(inherited::logger, *trans);
+				inherited::logger << EndDebug;
 				sc_stop();
 				wait();
 				break;
 			case tlm::END_REQ:
 				if (CONFIG::DEBUG_ENABLE) {
-					logger << DebugInfo << "Received TLM_UPDATED with END_REQ, waiting for the response event" << endl
+					inherited::logger << DebugInfo << "Received TLM_UPDATED with END_REQ, waiting for the response event" << endl
 						<< TIME(time) << endl;
-					TRANS(logger, *trans);
-					logger << EndDebug;
+					TRANS(inherited::logger, *trans);
+					inherited::logger << EndDebug;
 				}
 				wait(end_read_rsp_event);
 				if (CONFIG::DEBUG_ENABLE) {
-					logger << DebugInfo << "end response event received" << endl
+					inherited::logger << DebugInfo << "end response event received" << endl
 						<< TIME(time) << EndDebug;
 				}
 				break;
@@ -761,10 +937,10 @@ PrRead(address_t addr,
 			break;
 	}
 	if (CONFIG::DEBUG_ENABLE) {
-		logger << DebugInfo << "Transaction answer received" << endl
+		inherited::logger << DebugInfo << "Transaction answer received" << endl
 			<< " - time = " << sc_time_stamp() + time << endl;
-		ETRANS(logger, *trans);
-		logger << EndDebug;
+		ETRANS(inherited::logger, *trans);
+		inherited::logger << EndDebug;
 	}
 
 	wait(time);
@@ -780,7 +956,7 @@ PrWrite(address_t addr,
 	const uint8_t *buffer, 
 	uint32_t size) {
 		if(CONFIG::DEBUG_ENABLE && verbose_tlm_commands)
-			logger << DebugInfo << LOCATION
+			inherited::logger << DebugInfo << LOCATION
 				<< "Performing PrWrite"
 				<< EndDebugInfo;
 
@@ -823,8 +999,8 @@ template<class CONFIG, bool BLOCKING>
 void 
 ARM<CONFIG, BLOCKING>::
 SetLock(uint32_t lock, uint32_t set) {
-//	if(inherited::logger_import) 
-//		logger << DebugError << LOCATION
+//	if(inherited::inherited::logger_import) 
+//		inherited::logger << DebugError << LOCATION
 //			<< "Unsupported command SetLock"
 //			<< EndDebugError;
 //	sc_stop();
@@ -835,8 +1011,8 @@ template<class CONFIG, bool BLOCKING>
 void 
 ARM<CONFIG, BLOCKING>::
 PrInvalidateBlock(uint32_t set, uint32_t way) {
-//	if(inherited::logger_import) 
-//		logger << DebugError << LOCATION
+//	if(inherited::inherited::logger_import) 
+//		inherited::logger << DebugError << LOCATION
 //			<< "Unsupported command PrInvalidateBlock"
 //			<< EndDebugError;
 //	sc_stop();
@@ -847,8 +1023,8 @@ template<class CONFIG, bool BLOCKING>
 void 
 ARM<CONFIG, BLOCKING>::
 PrFlushBlock(uint32_t set, uint32_t way) {
-//	if(inherited::logger_import) 
-//		logger << DebugError << LOCATION
+//	if(inherited::inherited::logger_import) 
+//		inherited::logger << DebugError << LOCATION
 //			<< "Unsupported command PrFlushBlock"
 //			<< EndDebugError;
 //	sc_stop();
@@ -858,8 +1034,8 @@ PrFlushBlock(uint32_t set, uint32_t way) {
 template<class CONFIG, bool BLOCKING>
 void ARM<CONFIG, BLOCKING>::
 PrCleanBlock(uint32_t set, uint32_t way) {
-//	if(inherited::logger_import) 
-//		logger << DebugError << LOCATION
+//	if(inherited::inherited::logger_import) 
+//		inherited::logger << DebugError << LOCATION
 //			<< "Unsupported command PrCleanBlock"
 //			<< EndDebugError;
 //	sc_stop();
@@ -870,8 +1046,8 @@ template<class CONFIG, bool BLOCKING>
 uint32_t 
 ARM<CONFIG, BLOCKING>::
 GetCacheSize() {
-//	if(inherited::logger_import) 
-//		logger << DebugError << LOCATION
+//	if(inherited::inherited::logger_import) 
+//		inherited::logger << DebugError << LOCATION
 //			<< "Unsupported command GetCacheSize"
 //			<< EndDebugError;
 //	sc_stop();
@@ -884,8 +1060,8 @@ template<class CONFIG, bool BLOCKING>
 uint32_t 
 ARM<CONFIG, BLOCKING>::
 GetCacheAssociativity() {
-//	if(inherited::logger_import) 
-//		logger << DebugError << LOCATION
+//	if(inherited::inherited::logger_import) 
+//		inherited::logger << DebugError << LOCATION
 //			<< "Unsupported command GetCacheAssociativity"
 //			<< EndDebugError;
 //	sc_stop();
@@ -898,8 +1074,8 @@ template<class CONFIG, bool BLOCKING>
 uint32_t 
 ARM<CONFIG, BLOCKING>::
 GetCacheBlockSize() {
-//	if(inherited::logger_import) 
-//		logger << DebugError << LOCATION
+//	if(inherited::inherited::logger_import) 
+//		inherited::logger << DebugError << LOCATION
 //			<< "Unsupported command GetCacheBlockSize"
 //			<< EndDebugError;
 //	sc_stop();
@@ -912,8 +1088,8 @@ template<class CONFIG, bool BLOCKING>
 void 
 ARM<CONFIG, BLOCKING>::
 Enable() {
-//	if(inherited::logger_import) 
-//		logger << DebugError << LOCATION
+//	if(inherited::inherited::logger_import) 
+//		inherited::logger << DebugError << LOCATION
 //			<< "Unsupported command Enable"
 //			<< EndDebugError;
 //	sc_stop();
@@ -924,8 +1100,8 @@ template<class CONFIG, bool BLOCKING>
 void 
 ARM<CONFIG, BLOCKING>::
 Disable() {
-//	if(inherited::logger_import) 
-//		logger << DebugError << LOCATION
+//	if(inherited::inherited::logger_import) 
+//		inherited::logger << DebugError << LOCATION
 //			<< "Unsupported command Disable"
 //			<< EndDebugError;
 //	sc_stop();
@@ -936,8 +1112,8 @@ template<class CONFIG, bool BLOCKING>
 bool
 ARM<CONFIG, BLOCKING>::
 IsEnabled() {
-//	if(inherited::logger_import) 
-//		logger << DebugError << LOCATION
+//	if(inherited::inherited::logger_import) 
+//		inherited::logger << DebugError << LOCATION
 //			<< "Unsupported command IsEnabled"
 //			<< EndDebugError;
 //	sc_stop();
@@ -950,8 +1126,8 @@ template<class CONFIG, bool BLOCKING>
 void 
 ARM<CONFIG, BLOCKING>::
 PrReset() {
-//	if(inherited::logger_import) 
-//		logger << DebugError << LOCATION
+//	if(inherited::inherited::logger_import) 
+//		inherited::logger << DebugError << LOCATION
 //			<< "Unsupported command PrReset"
 //			<< EndDebugError;
 //	sc_stop();
@@ -962,8 +1138,8 @@ template<class CONFIG, bool BLOCKING>
 void 
 ARM<CONFIG, BLOCKING>::
 PrInvalidate() {
-//	if(inherited::logger_import) 
-//		logger << DebugError << LOCATION
+//	if(inherited::inherited::logger_import) 
+//		inherited::logger << DebugError << LOCATION
 //			<< "Unsupported command PrInvalidate"
 //			<< EndDebugError;
 //	sc_stop();
@@ -974,8 +1150,8 @@ template<class CONFIG, bool BLOCKING>
 void 
 ARM<CONFIG, BLOCKING>::
 PrInvalidateSet(uint32_t set) {
-//	if(inherited::logger_import) 
-//		logger << DebugError << LOCATION
+//	if(inherited::inherited::logger_import) 
+//		inherited::logger << DebugError << LOCATION
 //			<< "Unsupported command PrInvalideSet"
 //			<< EndDebugError;
 //	sc_stop();
@@ -986,8 +1162,8 @@ template<class CONFIG, bool BLOCKING>
 void 
 ARM<CONFIG, BLOCKING>::
 PrInvalidateBlock(address_t addr) {
-//	if(inherited::logger_import) 
-//		logger << DebugError << LOCATION
+//	if(inherited::inherited::logger_import) 
+//		inherited::logger << DebugError << LOCATION
 //			<< "Unsupported command PrInvalidateBlock"
 //			<< EndDebugError;
 //	sc_stop();
@@ -998,8 +1174,8 @@ template<class CONFIG, bool BLOCKING>
 void 
 ARM<CONFIG, BLOCKING>::
 PrFlushBlock(address_t addr) {
-//	if(inherited::logger_import) 
-//		logger << DebugError << LOCATION
+//	if(inherited::inherited::logger_import) 
+//		inherited::logger << DebugError << LOCATION
 //			<< "Unsupported command PrFlushBlock"
 //			<< EndDebugError;
 //	sc_stop();
@@ -1010,8 +1186,8 @@ template<class CONFIG, bool BLOCKING>
 void 
 ARM<CONFIG, BLOCKING>::
 PrCleanBlock(address_t addr) {
-//	if(inherited::logger_import) 
-//		logger << DebugError << LOCATION
+//	if(inherited::inherited::logger_import) 
+//		inherited::logger << DebugError << LOCATION
 //			<< "Unsupported command PrCleanBlock"
 //			<< EndDebugError;
 //	sc_stop();
@@ -1022,8 +1198,8 @@ template<class CONFIG, bool BLOCKING>
 void 
 ARM<CONFIG, BLOCKING>::
 PrZeroBlock(address_t addr) {
-//	if(inherited::logger_import) 
-//		logger << DebugError << LOCATION
+//	if(inherited::inherited::logger_import) 
+//		inherited::logger << DebugError << LOCATION
 //			<< "Unsupported command PrZeroBlock"
 //			<< EndDebugError;
 //	sc_stop();
@@ -1034,6 +1210,46 @@ PrZeroBlock(address_t addr) {
  * TODO: Methods to be removed                                              STOP *
  *********************************************************************************/
 
+/*************************************************************************
+ * Logger, verbose and trap parameters/methods/ports               START *
+ *************************************************************************/
+
+template<class CONFIG, bool BLOCKING>
+bool 
+ARM<CONFIG, BLOCKING>::
+VerboseSetup()
+{
+	return CONFIG::DEBUG_ENABLE && verbose_setup;
+}
+
+template<class CONFIG, bool BLOCKING>
+bool 
+ARM<CONFIG, BLOCKING>::
+VerboseTLM()
+{
+	return CONFIG::DEBUG_ENABLE && verbose_tlm;
+}
+
+template<class CONFIG, bool BLOCKING>
+bool 
+ARM<CONFIG, BLOCKING>::
+VerboseTLMIrq()
+{
+	return CONFIG::DEBUG_ENABLE && verbose_tlm_irq;
+}
+
+template<class CONFIG, bool BLOCKING>
+void
+ARM<CONFIG, BLOCKING>::
+TrapOnVerboseTLMIrq()
+{
+	if (CONFIG::DEBUG_ENABLE && trap_on_verbose_tlm_irq && inherited::trap_reporting_import)
+		inherited::trap_reporting_import->ReportTrap();
+}
+
+/*************************************************************************
+ * Logger, verbose and trap parameters/methods/ports                 END *
+ *************************************************************************/
 } // end of namespace arm
 } // end of namespace processor
 } // end of namespace tlm2

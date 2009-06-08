@@ -229,7 +229,12 @@ int sc_main(int argc, char *argv[]) {
 		irqmstub[i] = new IRQMSTUB(str.str().c_str());
 	}
 	for (unsigned int i = 29; i < 32; i++)
+	{
 		irqmstub[i] = 0;
+//		stringstream str;
+//		irqmstub[i] = new IRQMSTUB(str.str().c_str());
+//		delete irqmstub[i];
+	}
 
 	for (unsigned int i = 0; i < 2; i++)
 	{
@@ -297,6 +302,7 @@ int sc_main(int argc, char *argv[]) {
 	cpu->memory_access_reporting_import >> inline_debugger->memory_access_reporting_export;
 	cpu->trap_reporting_import >> inline_debugger->trap_reporting_export;
 	timer0->trap_reporting_import >> inline_debugger->trap_reporting_export;
+	eic->trap_reporting_import >> inline_debugger->trap_reporting_export;
 	inline_debugger->disasm_import >> cpu->disasm_export;
 	inline_debugger->memory_import >> cpu->memory_export;
 	inline_debugger->registers_import >> cpu->registers_export;

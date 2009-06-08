@@ -84,7 +84,7 @@ using std::ostringstream;
 
 using unisim::util::debug::SimpleRegister;
 using unisim::util::debug::Symbol;
-using unisim::kernel::logger::EndDebug;
+using namespace unisim::kernel::logger;
 
 #endif // SOCLIB
 

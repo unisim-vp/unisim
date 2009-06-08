@@ -96,18 +96,12 @@ public:
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
 #line 99 "isa_thumb.hh"
-	> *Decode(typename CONFIG::address_t addr);
-	Operation<
-#line 44 "isa/thumb/thumb.isa"
-	CONFIG
-#line 104 "isa_thumb.hh"
 	> *Decode(typename CONFIG::address_t addr, CodeType insn);
 	std::vector<DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 109 "isa_thumb.hh"
+#line 104 "isa_thumb.hh"
 	> > const& GetDecodeTable() const { return decode_table; };
-	virtual void Fetch(void *, typename CONFIG::address_t, uint32_t) ;
 	void InvalidateDecodingCacheEntry(typename CONFIG::address_t addr);
 	void InvalidateDecodingCache();
 
@@ -118,22 +112,22 @@ private:
 	std::vector<DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 122 "isa_thumb.hh"
+#line 116 "isa_thumb.hh"
 	> > decode_table;
 	DecodeMapPage<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 127 "isa_thumb.hh"
+#line 121 "isa_thumb.hh"
 	> *mru_page;
 	DecodeMapPage<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 132 "isa_thumb.hh"
+#line 126 "isa_thumb.hh"
 	> *decode_hash_table[NUM_DECODE_HASH_TABLE_ENTRIES];
 	DecodeMapPage<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 137 "isa_thumb.hh"
+#line 131 "isa_thumb.hh"
 	> *FindPage(typename CONFIG::address_t page_key)
 #if defined(__GNUC__) && (__GNUC__ >= 3 && (__GNUC__ != 3 || __GNUC_MINOR__ != 4 || __GNUC_PATCHLEVEL__ != 6))
 	__attribute__((always_inline))
@@ -170,8 +164,8 @@ namespace unisim {
 	} // end of namespace component
 } // end of namespace unisim
 
-#line 174 "isa_thumb.hh"
-#line 35 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/profiling.isa"
+#line 168 "isa_thumb.hh"
+#line 35 "/Users/gracia/Developer/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/profiling.isa"
 
 #include <map>
 
@@ -188,15 +182,15 @@ namespace unisim {
 		} // end of namespace cxx
 	} // end of namespace component
 } // end of namespace unisim
-#line 192 "isa_thumb.hh"
+#line 186 "isa_thumb.hh"
 namespace unisim { namespace component { namespace cxx { namespace processor { namespace arm { namespace isa { namespace thumb {
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 197 "isa_thumb.hh"
+#line 191 "isa_thumb.hh"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 200 "isa_thumb.hh"
+#line 194 "isa_thumb.hh"
 >
 class Operation
 {
@@ -207,81 +201,81 @@ public:
 	inline CodeType GetEncoding() const { return encoding; }
 	inline unsigned int GetLength() const { return 16; }
 	inline const char *GetName() const { return name; }
-#line 35 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/constructors_dec.isa"
+#line 35 "/Users/gracia/Developer/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/constructors_dec.isa"
 	unsigned int cond_init;
-#line 213 "isa_thumb.hh"
-#line 41 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/constructors_dec.isa"
+#line 207 "isa_thumb.hh"
+#line 41 "/Users/gracia/Developer/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/constructors_dec.isa"
 	unsigned int rn_init;
-#line 216 "isa_thumb.hh"
-#line 42 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/constructors_dec.isa"
+#line 210 "isa_thumb.hh"
+#line 42 "/Users/gracia/Developer/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/constructors_dec.isa"
 	unsigned int rm_init;
-#line 219 "isa_thumb.hh"
-#line 43 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/constructors_dec.isa"
+#line 213 "isa_thumb.hh"
+#line 43 "/Users/gracia/Developer/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/constructors_dec.isa"
 	unsigned int rd_init;
-#line 222 "isa_thumb.hh"
-#line 44 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/constructors_dec.isa"
+#line 216 "isa_thumb.hh"
+#line 44 "/Users/gracia/Developer/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/constructors_dec.isa"
 	unsigned int rs_init;
-#line 225 "isa_thumb.hh"
-#line 45 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/constructors_dec.isa"
+#line 219 "isa_thumb.hh"
+#line 45 "/Users/gracia/Developer/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/constructors_dec.isa"
 	unsigned int rdhi_init;
-#line 228 "isa_thumb.hh"
-#line 46 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/constructors_dec.isa"
+#line 222 "isa_thumb.hh"
+#line 46 "/Users/gracia/Developer/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/constructors_dec.isa"
 	unsigned int rdlo_init;
-#line 231 "isa_thumb.hh"
-#line 47 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/constructors_dec.isa"
+#line 225 "isa_thumb.hh"
+#line 47 "/Users/gracia/Developer/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/constructors_dec.isa"
 	unsigned int rdp1_init;
-#line 234 "isa_thumb.hh"
-#line 77 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/constructors_dec.isa"
+#line 228 "isa_thumb.hh"
+#line 77 "/Users/gracia/Developer/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/constructors_dec.isa"
 	unsigned int rm_index;
-#line 237 "isa_thumb.hh"
-#line 78 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/constructors_dec.isa"
+#line 231 "isa_thumb.hh"
+#line 78 "/Users/gracia/Developer/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/constructors_dec.isa"
 	unsigned int rn_index;
-#line 240 "isa_thumb.hh"
-#line 79 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/constructors_dec.isa"
+#line 234 "isa_thumb.hh"
+#line 79 "/Users/gracia/Developer/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/constructors_dec.isa"
 	unsigned int rd_index;
-#line 243 "isa_thumb.hh"
+#line 237 "isa_thumb.hh"
 	virtual
-#line 53 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/profiling.isa"
+#line 53 "/Users/gracia/Developer/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/profiling.isa"
 	void
-#line 247 "isa_thumb.hh"
+#line 241 "isa_thumb.hh"
 	profile(
-#line 53 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/profiling.isa"
+#line 53 "/Users/gracia/Developer/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/profiling.isa"
 	map<uint64_t, uint32_t> &
-#line 251 "isa_thumb.hh"
-#line 53 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/profiling.isa"
+#line 245 "isa_thumb.hh"
+#line 53 "/Users/gracia/Developer/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/profiling.isa"
 	prof
-#line 254 "isa_thumb.hh"
+#line 248 "isa_thumb.hh"
 	);
 	virtual
-#line 39 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
+#line 39 "/Users/gracia/Developer/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 259 "isa_thumb.hh"
+#line 253 "isa_thumb.hh"
 	disasm(
-#line 39 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
+#line 39 "/Users/gracia/Developer/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 263 "isa_thumb.hh"
-#line 39 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
+#line 257 "isa_thumb.hh"
+#line 39 "/Users/gracia/Developer/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 266 "isa_thumb.hh"
+#line 260 "isa_thumb.hh"
 	,
-#line 39 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
+#line 39 "/Users/gracia/Developer/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 270 "isa_thumb.hh"
-#line 39 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
+#line 264 "isa_thumb.hh"
+#line 39 "/Users/gracia/Developer/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 273 "isa_thumb.hh"
+#line 267 "isa_thumb.hh"
 	);
 	virtual
-#line 35 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
+#line 35 "/Users/gracia/Developer/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 278 "isa_thumb.hh"
+#line 272 "isa_thumb.hh"
 	execute(
-#line 35 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
+#line 35 "/Users/gracia/Developer/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 282 "isa_thumb.hh"
-#line 35 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
+#line 276 "isa_thumb.hh"
+#line 35 "/Users/gracia/Developer/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 285 "isa_thumb.hh"
+#line 279 "isa_thumb.hh"
 	);
 	virtual void initialize_rd_index( );
 	virtual void initialize_rn_index( );

@@ -40,11 +40,11 @@ namespace kernel {
 namespace logger {
 
 Logger::Logger(const unisim::kernel::service::Object &_obj) : obj(_obj), buffer(), mode(NO_MODE) {
-	server = LoggerServer::GetInstance();
+	server = LoggerServer::GetInstance(obj);
 }
 
 Logger::~Logger() {
-	LoggerServer::RemoveInstance();
+	LoggerServer::RemoveInstance(obj);
 }
 
 Logger& operator <<(Logger& logger, std::ostream& (*f)(std::ostream &)) {

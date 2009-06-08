@@ -48,6 +48,15 @@
 #define INLINE
 #endif
 
+#if defined(__GNUC__) && ((__GNUC__ >= 2 && __GNUC_MINOR__ >= 96) || __GNUC__ >= 3)
+#define likely(x)       __builtin_expect((x),1)
+#define unlikely(x)     __builtin_expect((x),0)
+#else
+#define likely(x) (x)
+#define unlikely(x) (x)
+#endif
+
+
 namespace unisim {
 namespace component {
 namespace cxx {
@@ -75,6 +84,8 @@ using std::endl;
 using std::hex;
 using std::dec;
 using std::ostringstream;
+
+using namespace unisim::kernel::logger;
 
 template<class CONFIG>
 void
@@ -265,6 +276,14 @@ StepInstruction() {
 		VerboseDumpRegsEnd();
 
 		instruction_counter++;
+
+		if (unlikely(HasPendingException()))
+		{
+			cerr << "Handling interruption" << endl;
+			logger << DebugInfo << "Handling interruption" << EndDebugInfo;
+			if (HasPendingException(IRQ_EXCEPTION)) { ClearPendingException(IRQ_EXCEPTION); throw IRQException<CONFIG>();}
+			if (HasPendingException(FIQ_EXCEPTION)) { ClearPendingException(FIQ_EXCEPTION); throw FIQException<CONFIG>();}
+		}
 	} 
 	catch(ResetException<CONFIG> &exc) {
 		logger << DebugError 
@@ -304,6 +323,7 @@ StepInstruction() {
 		logger << DebugError 
 			<< "Received processor IRQ exception :" << exc.what() 
 			<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << EndDebugError;
+		trap_reporting_import->ReportTrap();
 		PerformIRQException();
 	}
 	catch(FIQException<CONFIG> &exc) {
@@ -333,6 +353,9 @@ StepInstruction() {
 #undef LOCATION
 
 #undef INLINE
+
+#undef likely
+#undef unlikely
 
 #endif // SOCLIB
 

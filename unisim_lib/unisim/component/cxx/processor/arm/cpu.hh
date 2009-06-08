@@ -973,6 +973,63 @@ public:
     inline address_t GetIRQExceptionAddr() GCC_INLINE;
     inline address_t GetFIQExceptionAddr() GCC_INLINE;
 
+	uint32_t has_pending_exception;
+	enum {IRQ_IRQ = 1,
+		FIQ_IRQ = 2};
+	enum exception_mask_t {
+		NONE = 0,
+		RESET_EXCEPTION = 1,
+		UNDEFINED_INSTRUCTION_EXCEPTION = 2,
+		SOFTWARE_INTERRUPT_EXCEPTION = 4,
+		PREFETCH_ABORT_EXCEPTION = 8,
+		DATA_ABORT_EXCEPTION = 16,
+		IRQ_EXCEPTION = 32,
+		FIQ_EXCEPTION = 64
+	};
+#ifdef SOCLIB
+	/** Handles possible exceptions
+	 * This method checks if there is any pending exception and handles it.
+	 * Returns true if the pipeline needs to be flushed.
+	 * 
+	 * @return true if the pipeline needs to be flushed.
+	 */
+	inline bool HandleExceptions() GCC_INLINE;
+#endif
+	/** Sets the given exception in the pending status
+	 *
+	 * @param exception the exception to set
+	 */
+	inline void SetPendingException(exception_mask_t exception) GCC_INLINE
+	{
+		has_pending_exception |= exception;
+	}
+	/** Clear the given exception from the pending status
+	 *
+	 * @param exception the exception to be cleared
+	 */
+	inline void ClearPendingException(exception_mask_t exception) GCC_INLINE
+	{
+		has_pending_exception &= ~(uint32_t)exception;
+	}
+	/** Returns true if an exception is pending
+	 *
+	 * @return true if an exception is pending
+	 */
+	inline bool HasPendingException() GCC_INLINE
+	{
+		return has_pending_exception != 0;
+	}
+	/** Returns true if the given exception is pending
+	 *
+	 * @param exception the exception to check
+	 *
+	 * @return true if the given exception is pending
+	 */
+	inline bool HasPendingException(exception_mask_t exception) GCC_INLINE
+	{
+		return has_pending_exception & exception;
+	}
+
     /**************************************************************/
     /* Exception methods            END                           */
     /**************************************************************/
@@ -1036,26 +1093,6 @@ public:
 
 private:
 
-#ifdef SOCLIB
-	uint32_t exception;
-	enum {IRQ_IRQ = 1,
-		FIQ_IRQ = 2};
-	enum {RESET_EXCEPTION = 1,
-		UNDEFINED_INSTRUCTION_EXCEPTION = 2,
-		SOFTWARE_INTERRUPT_EXCEPTION = 4,
-		PREFETCH_ABORT_EXCEPTION = 8,
-		DATA_ABORT_EXCEPTION = 16,
-		IRQ_EXCEPTION = 32,
-		FIQ_EXCEPTION = 64};
-	/** Handles possible exceptions
-	 * This method checks if there is any pending exception and handles it.
-	 * Returns true if the pipeline needs to be flushed.
-	 * 
-	 * @return true if the pipeline needs to be flushed.
-	 */
-	inline bool HandleExceptions() GCC_INLINE;
-
-#endif
 	typename isa::arm32::Decoder<CONFIG> arm32_decoder;
 	typename isa::thumb::Decoder<CONFIG> thumb_decoder;
 

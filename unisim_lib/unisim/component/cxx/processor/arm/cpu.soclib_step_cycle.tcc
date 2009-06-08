@@ -108,7 +108,7 @@ Reset() {
 	}
 	fake_fps = 0;
 	SetCPSR_Mode(SYSTEM_MODE);
-	exception = 0;
+	has_pending_exception = 0;
 	// set initial pc
 	/* Depending on the configuration being used set the initial pc */
 	if(CONFIG::MODEL == ARM966E_S) {
@@ -283,39 +283,39 @@ StepExecute() {
 #ifdef SOCLIB_DEBUG
 			cerr << "**** Received a RESET exception ****" << endl;
 #endif
-			exception |= RESET_EXCEPTION;
+			has_pending_exception |= RESET_EXCEPTION;
 		} catch(UndefinedInstructionException<CONFIG> &exc) {
 #ifdef SOCLIB_DEBUG
 			cerr << "**** Received an UndefinedInstruction exception ****" << endl;
 #endif
-			exception |= UNDEFINED_INSTRUCTION_EXCEPTION;
+			has_pending_exception |= UNDEFINED_INSTRUCTION_EXCEPTION;
 		} catch(SoftwareInterruptException<CONFIG> &exc) {
 #ifdef SOCLIB_DEBUG
 			cerr << "**** Received a SoftwareInterrupt(SWI) exception ****" << endl;
 #endif
-			exception |= SOFTWARE_INTERRUPT_EXCEPTION;
+			has_pending_exception |= SOFTWARE_INTERRUPT_EXCEPTION;
 		} catch(PrefetchAbortException<CONFIG> &exc) {
 #ifdef SOCLIB_DEBUG
 			cerr << "**** Received a PrefetchAbort exception ****" << endl;
 #endif
-			exception |= PREFETCH_ABORT_EXCEPTION;
+			has_pending_exception |= PREFETCH_ABORT_EXCEPTION;
 		} catch(DataAbortException<CONFIG> &exc) {
 #ifdef SOCLIB_DEBUG
 			cerr << "**** Received a DataAbort exception ****" << endl;
 #endif
-			exception |= DATA_ABORT_EXCEPTION;
+			has_pending_exception |= DATA_ABORT_EXCEPTION;
 		} catch(IRQException<CONFIG> &exc) {
 #ifdef SOCLIB_DEBUG
 			cerr << "**** Received an IRQ exception ****" << endl;
 			cerr << "     This could not have been received here (maybe an error?)" << endl;
 #endif
-			exception |= IRQ_EXCEPTION;
+			has_pending_exception |= IRQ_EXCEPTION;
 		} catch(FIQException<CONFIG> &exc) {
 #ifdef SOCLIB_DEBUG
 			cerr << "**** Received a FIQ exception ****" << endl;
 			cerr << "     This could not have been received here (maybe an error?)" << endl;
 #endif
-			exception |= FIQ_EXCEPTION;
+			has_pending_exception |= FIQ_EXCEPTION;
 		} catch(Exception &exc) {
 #ifdef SOCLIB_DEBUG
 			cerr << "**** Received an unhandled processor exception ****" << endl;
@@ -414,7 +414,7 @@ template<class CONFIG>
 bool
 CPU<CONFIG> ::
 HandleExceptions() {
-	if(exception) {
+	if(has_pending_exception) {
 		// limitation:
 		// we can raise an exception if the following conditions are true:
 		// - there is no instruction in the executeQueue
@@ -440,25 +440,25 @@ HandleExceptions() {
 		// - 6 : Undefined instruction / SWI
 
 		// 1 : checking Reset exception
-		if(exception & RESET_EXCEPTION) {
+		if(has_pending_exception & RESET_EXCEPTION) {
 			uint32_t mask = RESET_EXCEPTION;
 			mask = ~mask;
-			exception &= mask;
+			has_pending_exception &= mask;
 			PerformResetException();
 			return true;
 		}
 
 		// 2 : checking Data abort exception
-		if(exception & DATA_ABORT_EXCEPTION) {
+		if(has_pending_exception & DATA_ABORT_EXCEPTION) {
 			uint32_t mask = DATA_ABORT_EXCEPTION;
 			mask = ~mask;
-			exception &= mask;
+			has_pending_exception &= mask;
 			PerformDataAbortException();
 			return true;
 		}
 
 		// 3 : checking FIQ exception
-		if(exception & FIQ_EXCEPTION) {
+		if(has_pending_exception & FIQ_EXCEPTION) {
 			if(GetCPSR_F()) {
 				// FIQ interruptions are disabled
 				// do nothing
@@ -466,14 +466,14 @@ HandleExceptions() {
 			} else {
 				uint32_t mask = FIQ_EXCEPTION;
 				mask = ~mask;
-				exception &= mask;
+				has_pending_exception &= mask;
 				PerformFIQException();
 				return true;
 			}
 		}
 
 		// 4 : checking IRQ exception
-		if(exception & IRQ_EXCEPTION) {
+		if(has_pending_exception & IRQ_EXCEPTION) {
 			if(GetCPSR_I()) {
 				// IRQ interruptions are disabled
 				// do nothing
@@ -481,34 +481,34 @@ HandleExceptions() {
 			} else {
 				uint32_t mask = IRQ_EXCEPTION;
 				mask = ~mask;
-				exception &= mask;
+				has_pending_exception &= mask;
 				PerformIRQException();
 				return true;
 			}
 		}
 		
 		// 5 : checking Prefetch abort
-		if(exception & PREFETCH_ABORT_EXCEPTION) {
+		if(has_pending_exception & PREFETCH_ABORT_EXCEPTION) {
 			uint32_t mask = PREFETCH_ABORT_EXCEPTION;
 			mask = ~mask;
-			exception &= mask;
+			has_pending_exception &= mask;
 			PerformPrefetchAbortException();
 			return true;
 		}
 
 		// 6 : checking Undefined instruction / SWI
-		if(exception & UNDEFINED_INSTRUCTION_EXCEPTION) {
+		if(has_pending_exception & UNDEFINED_INSTRUCTION_EXCEPTION) {
 			uint32_t mask = UNDEFINED_INSTRUCTION_EXCEPTION;
 			mask = ~mask;
-			exception &= mask;
+			has_pending_exception &= mask;
 			PerformUndefInsnException();
 			return true;
 		}
 
-		if(exception & SOFTWARE_INTERRUPT_EXCEPTION) {
+		if(has_pending_exception & SOFTWARE_INTERRUPT_EXCEPTION) {
 			uint32_t mask = SOFTWARE_INTERRUPT_EXCEPTION;
 			mask = ~mask;
-			exception &= mask;
+			has_pending_exception &= mask;
 			PerformSWIException();
 			return true;
 		}
@@ -1500,13 +1500,13 @@ SetIrq(uint32_t irq) {
 #if SOCLIB_DEBUG
 			cerr << "+++ Received IRQ #" << IRQ_IRQ << endl;
 #endif // SOCLIB_DEBUG
-			exception |= IRQ_EXCEPTION;
+			has_pending_exception |= IRQ_EXCEPTION;
 		}
 		if (irq & FIQ_IRQ) {
 #if SOCLIB_DEBUG
 			cerr << "+++ Received IRQ #" << FIQ_IRQ << endl;
 #endif // SOCLIB_DEBUG
-			exception |= FIQ_EXCEPTION;
+			has_pending_exception |= FIQ_EXCEPTION;
 }
 		if (irq & !(IRQ_IRQ | FIQ_IRQ)) {
 			cerr << "WARNING(" << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << "): "

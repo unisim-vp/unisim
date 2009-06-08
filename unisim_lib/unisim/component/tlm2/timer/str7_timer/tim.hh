@@ -286,7 +286,7 @@ private:
 	unisim::kernel::service::Parameter<bool> param_inverse_icapb;
 	/* END: module parameters */
 
-	/* START: logger and logger methods and verbose parameters/methods */
+	/* START: logger and logger methods and verbose/trap parameters/methods */
 	unisim::kernel::logger::Logger logger;
 	bool verbose_all;
 	unisim::kernel::service::Parameter<bool> *param_verbose_all;
@@ -297,9 +297,16 @@ private:
 	bool verbose_run;
 	unisim::kernel::service::Parameter<bool> *param_verbose_run;
 	bool VerboseRun();
+	bool trap_on_verbose_run;
+	unisim::kernel::service::Parameter<bool> *param_trap_on_verbose_run;
 	bool verbose_tlm;
 	unisim::kernel::service::Parameter<bool> *param_verbose_tlm;
 	bool VerboseTLM();
+	bool trap_on_verbose_tlm;
+	unisim::kernel::service::Parameter<bool> *param_trap_on_verbose_tlm;
+	bool trap_on_warning;
+	unisim::kernel::service::Parameter<bool> param_trap_on_warning;
+	void TrapOnWarning();
 	/* END: logger and logger methods and verbose parameters/methods */
 };
 
