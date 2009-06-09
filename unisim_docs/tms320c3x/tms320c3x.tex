@@ -387,7 +387,7 @@ A simulation configuration (\texttt{sim\_config.xml}) for this simulator is also
  $ tms320c3x -c sim_config.xml
 \end{verbatim}
 
-\noindent The expected ouput data set is in file \texttt{sort.linux.txt}.
+\noindent The expected ouput data set is in file \texttt{sort.ref.txt}.
 
 \subsubsection{CRC32 (check sum)}
 
@@ -423,8 +423,8 @@ The benchmark uses this hexadecimal encryption key:
 \begin{verbatim}
 1234567890abcdeffedcba09876543211234567890abcdeffedcba0987654321
 \end{verbatim}
-The benchmark reads file \texttt{input\_small.asc}, and encrypt it into file \texttt{output\_small.enc}.
-It decrypts \texttt{output\_small.enc} into file \texttt{dec\_output\_small.enc}.
+The benchmark reads file \texttt{input\_large.asc}, and encrypt it into file \texttt{output\_large.sim.enc}.
+It decrypts \texttt{output\_large.sim.enc} into file \texttt{output\_large.sim.dec}.
 
 This benchmark requires TI C I/O service enabled to run in the TMS320C3X simulator.
 A precompiled binary (\texttt{rijndael.bin}) is provided together with a GNU Make compatible Makefile.
@@ -434,7 +434,7 @@ A simulation configuration (\texttt{sim\_config.xml}) for this simulator is also
 $ tms320c3x -c sim_config.xml
 \end{verbatim}
 
-It is expected that files \texttt{input\_small.asc} and \texttt{dec\_output\_small.enc} be identical after the benchmark run.
+It is expected that files \texttt{input\_large.asc} and \texttt{output\_large.sim.dec} be identical after the benchmark run.
 
 \subsubsection{Sha (encryption/decryption)}
 
@@ -443,7 +443,7 @@ SHA is the secure hash algorithm that produces a 160-bit message digest for a gi
 used in the secure exchange of cryptographic keys and for generating digital signatures. It is also used in the
 well-known MD4 and MD5 hashing functions.
 
-The benchmark has its input data set embedded its C source code.
+The benchmark its input data set from file \texttt{input\_large.asc} and prints the SHA digest on the screen.
 
 A precompiled binary (\texttt{sha.bin}) is provided together with a GNU Make compatible Makefile.
 A simulation configuration (\texttt{sim\_config.xml}) for this simulator is also provided, so that simulator can run the benchmark:
@@ -471,8 +471,8 @@ $ tms320c3x -c coder_sim_config.xml
 $ tms320c3x -c decoder_sim_config.xml
 \end{verbatim}
 
-The expected ouput data set of the ADPCM coder benchmark is in file \texttt{output\_large.linux.adpcm}.
-The expected ouput data set of the ADPCM decoder benchmark is in file \texttt{output\_large.linux.pcm}.
+The expected ouput data set of the ADPCM coder benchmark is in file \texttt{output\_large.ref.adpcm}.
+The expected ouput data set of the ADPCM decoder benchmark is in file \texttt{output\_large.ref.pcm}.
 
 \subsubsection{DCT/Quantization (image processing)}
 
@@ -500,7 +500,7 @@ A simulation configuration (\texttt{sim\_config.xml}) for this simulator is also
 $ tms320c3x -c sim_config.xml
 \end{verbatim}
 
-The expected ouput image is in file \texttt{output\_image.linux.bmp}.
+The expected ouput image is in file \texttt{output\_image.ref.bmp}.
 
 \subsection{Floating point benchmarks}
 
