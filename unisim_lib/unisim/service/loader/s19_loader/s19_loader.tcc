@@ -107,7 +107,7 @@ bool S19_Loader<MEMORY_ADDR>::Setup() {
 	unsigned int    status;             /* general status variable */
 	int             n, j;               /* temp registers */
 	FILE            *bootptr;           /* pointer to bootstrap file */
-	bool			success;
+	bool			success = true;
 
 //	if(symbol_table_build_import) symbol_table_build_import->Reset();
 	
@@ -127,12 +127,17 @@ bool S19_Loader<MEMORY_ADDR>::Setup() {
 	while (!feof(bootptr))  {
 		linenum++;
 		fgets(srec, S_RECORD_SIZE, bootptr);
-		success = ProcessRecord(linenum,srec);
+		success = success && ProcessRecord(linenum,srec);
 	}
 
 	fclose(bootptr);
 
-	cerr << Object::GetName() << ": File \"" << filename << "\" successfully Loaded." << endl;
+	cerr << Object::GetName() << ": File \"" << filename;
+	if (success) {
+		cerr << "\" Load success." << endl;
+	} else {
+		cerr << "\" Load fail!" << endl;
+	}
 
 	return success;
 }
