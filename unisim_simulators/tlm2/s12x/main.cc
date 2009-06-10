@@ -60,7 +60,6 @@
 #include <unisim/util/garbage_collector/garbage_collector.hh>
 #include <unisim/service/time/sc_time/time.hh>
 #include <unisim/service/time/host_time/time.hh>
-#include <unisim/service/logger/logger_server.hh>
 #include <unisim/service/loader/s19_loader/s19_loader.hh>
 
 #include <unisim/kernel/service/service.hh>
@@ -79,8 +78,6 @@
 
 #endif
 
-
-//static const bool DEBUG_INFORMATION = false;
 
 bool debug_enabled = false;
 
@@ -159,7 +156,6 @@ using unisim::component::tlm2::processor::hcs12x::ECT;
 using unisim::service::loader::s19_loader::S19_Loader;
 using unisim::service::debug::gdb_server::GDBServer;
 using unisim::service::debug::inline_debugger::InlineDebugger;
-using unisim::service::logger::LoggerServer;
 using unisim::kernel::service::Service;
 using unisim::service::interfaces::Loader;
 
@@ -179,24 +175,6 @@ void help(char *prog_name)
 	cerr << "--gdb-server-arch-file <arch file>" << endl;
 	cerr << "-a  <arch file>" << endl;
 	cerr << "            uses <arch file> as architecture description file for GDB server" << endl << endl;
-	cerr << "-i <count>" << endl;
-	cerr << "--max:inst <count>" << endl;
-	cerr << "            execute <count> instructions then exit" << endl << endl;
-	cerr << "-p" << endl;
-	cerr << "--power" << endl;
-	cerr << "            estimate power consumption of caches and TLBs" << endl << endl;
-	cerr << "-l <file>" << endl;
-	cerr << "--logger:file <file>" << endl;
-	cerr << "            store log file in <file>" << endl << endl;
-	cerr << "-z" << endl;
-	cerr << "--logger:zip" << endl;
-	cerr << "            zip log file" << endl << endl;
-	cerr << "-e" << endl;
-	cerr << "--logger:error" << endl;
-	cerr << "            pipe the log into the standard error" << endl << endl;
-	cerr << "-o" << endl;
-	cerr << "--logger:out" << endl;
-	cerr << "            pipe the log into the standard output" << endl << endl;
 	cerr << "-c <mode>" << endl;
 	cerr << "--compiler-memory-modele <mode>" << endl;
 	cerr << "            indicate the memory map modele to use for interpreting addresses" << endl;
@@ -209,6 +187,13 @@ void help(char *prog_name)
 	cerr << "-f" << endl;
 	cerr << "--force-use-virtual-address" << endl;
 	cerr << "            force the ELF Loader to use segment virtual address instead of segment physical address" << endl << endl;
+	cerr << " --parameters-filename <xml file>" << endl;
+	cerr << " -p <xml file>" << endl;
+	cerr << "            configures the simulator with the given xml configuration file" << endl << endl;
+	cerr << " --extract-parameters-filename <xml file>" << endl;
+	cerr << " -x <xml file>" << endl;
+	cerr << "            get the simulator default configuration xml file (you can use it to create your own configuration)" << endl;
+	cerr << "            This option can be combined with -p to get a new configuration file with existing variables from another file" << endl;
 	cerr << "--help" << endl;
 	cerr << "-h" << endl;
 	cerr << "            displays this help" << endl;
@@ -234,15 +219,11 @@ int sc_main(int argc, char *argv[])
 	{"gdb-server", required_argument, 0, 'g'},
 	{"gdb-server-arch-file", required_argument, 0, 'a'},
 	{"help", no_argument, 0, 'h'},
-	{"max:inst", required_argument, 0, 'i'},
-	{"logger:file", required_argument, 0, 'l'},
-	{"logger:zip", no_argument, 0, 'z'},
-	{"logger:error", no_argument, 0, 'e'},
-	{"logger:out", no_argument, 0, 'o'},
-	{"logger:message_spy", no_argument, 0, 'm'},
 	{"compiler-memory-modele", required_argument, 0, 'c'},
 	{"symbol-filename", required_argument, 0, 's'},
 	{"force-use-virtual-address", no_argument, 0, 'f'},
+	{"parameters-filename", required_argument, 0, 'p'},
+	{"extract-parameters-filename", required_argument, 0, 'x'},
 	{0, 0, 0, 0}
 	};
 
@@ -251,13 +232,10 @@ int sc_main(int argc, char *argv[])
 	bool use_inline_debugger = false;
 	int gdb_server_tcp_port = 0;
 	const char *gdb_server_arch_filename = "gdb_hcs12x.xml";
-	uint64_t maxinst = 0; // maximum number of instruction to simulate
-	char *logger_filename = 0;
-	bool logger_zip = false;
-	bool logger_error = false;
-	bool logger_out = false;
-	bool logger_on = false;
-	bool logger_messages = false;
+	string parameter_filename = "default_config.xml";
+	char* extracted_parameter_file = NULL;
+	bool get_parameter = false;
+	bool set_parameter = false;
 
 	char *symbol_filename = NULL;
 
@@ -275,7 +253,7 @@ int sc_main(int argc, char *argv[])
 	ADDRESS::ENCODING address_encoding = ADDRESS::BANKED;
 
 	// Parse the command line arguments
-	while((c = getopt_long (argc, argv, "cs:dg:a:hi:l:zeomf", long_options, 0)) != -1)
+	while((c = getopt_long (argc, argv, "x:p:cs:dg:a:hf", long_options, 0)) != -1)
 	{
 		switch(c)
 		{
@@ -292,24 +270,6 @@ int sc_main(int argc, char *argv[])
 			case 'h':
 				help(argv[0]);
 				return 0;
-			case 'i':
-				maxinst = strtoull(optarg, 0, 0);
-				break;
-			case 'l':
-				logger_filename = optarg;
-				break;
-			case 'z':
-				logger_zip = true;
-				break;
-			case 'e':
-				logger_error = true;
-				break;
-			case 'o':
-				logger_out = true;
-				break;
-			case 'm':
-				logger_messages = true;
-				break;
 			case 'c':
 				address_encoding = (ADDRESS::ENCODING) atoi(optarg);
 				break;
@@ -319,9 +279,16 @@ int sc_main(int argc, char *argv[])
 			case 'f':
 				force_use_virtual_address = true;
 				break;
+			case 'p':
+				parameter_filename = optarg;
+				set_parameter = true;
+				break;
+			case 'x':
+				extracted_parameter_file = optarg;
+				get_parameter = true;
+				break;
 		}
 	}
-	logger_on = logger_error || logger_out || (logger_filename != 0);
 
 	if(optind >= argc)
 	{
@@ -350,13 +317,13 @@ int sc_main(int argc, char *argv[])
 
 	MMC *mmc = 	new MMC("mmc");
 
-	CRG  *crg = new CRG("CRG");
-	ECT  *ect = new ECT("ECT");
+	CRG  *crg = new CRG("crg");
+	ECT  *ect = new ECT("ect");
 
-	ATD1 *atd1 = new ATD1("ATD1");
-	ATD0 *atd0 = new ATD0("ATD0");
+	ATD1 *atd1 = new ATD1("atd1");
+	ATD0 *atd0 = new ATD0("atd0");
 
-	PWM *pwm = new PWM("PWM");
+	PWM *pwm = new PWM("pwm");
 
 	//  - tlm2 router
 	EXTERNAL_ROUTER	*external_router = new EXTERNAL_ROUTER("external_router");
@@ -369,7 +336,7 @@ int sc_main(int argc, char *argv[])
 	// - Interrupt controller
 	XINT *s12xint = new XINT("s12xint");
 
-	RTBStub *rtbStub = new RTBStub("RTB_STUB", fsb_cycle_time);
+	RTBStub *rtbStub = new RTBStub("rtbStub", fsb_cycle_time);
 
 	//=========================================================================
 	//===                         Service instantiations                    ===
@@ -403,122 +370,12 @@ int sc_main(int argc, char *argv[])
 	unisim::service::time::sc_time::ScTime *time = new unisim::service::time::sc_time::ScTime("time");
 	//  - Host Time
 	unisim::service::time::host_time::HostTime *host_time = new unisim::service::time::host_time::HostTime("host-time");
-	//  - Logger
-	LoggerServer *logger = logger_on ? new LoggerServer("logger") : 0;
 
 	//=========================================================================
 	//===                     Component run-time configuration              ===
 	//=========================================================================
 
 
-	//  - 68HCS12X processor
-	// if the following line ("cpu-cycle-time") is commented, the cpu will use the power estimators to find min cpu cycle time
-//	(*cpu)["debug-enabled"] = debug_enabled;
-	(*cpu)["debug-enabled"] = true;
-	(*cpu)["cpu-cycle-time"] = cpu_cycle_time;
-	(*cpu)["bus-cycle-time"] = fsb_cycle_time;
-	if(maxinst)
-	{
-		(*cpu)["max-inst"] = maxinst;
-	}
-
-	/**
-	 * TODO:
-	 *  - One of the output of the CRG is the BusClock (hereafter fsb_cycle_time).
-	 *  - In fact I have to connect all the others component to the CRG::BusClock output.
-	 *  - If (PLLSEL == 1) the BusClock = PLLCLK / 2; else BusClock = OSCCLK / 2;
-	 *  - PLLCLK = 2 * OSCCLK * (SYNR + 1) / (REFDV + 1)
-	 */
-	(*crg)["base-address"] = 0x0034;
-	(*crg)["oscillator-clock"] = fsb_cycle_time / 2;
-	(*crg)["debug-enabled"] = debug_enabled;
-
-	(*crg)["interrupt-offset-rti"] = 0xF0;
-	(*crg)["interrupt-offset-pll-lock"] = 0xC6;
-	(*crg)["interrupt-offset-self-clock-mode"] = 0xC4;
-
-	(*ect)["bus-cycle-time"] = fsb_cycle_time;
-	(*ect)["base-address"] = 0x0040;
-	(*ect)["debug-enabled"] = debug_enabled;
-
-	(*ect)["interrupt-offset-channel0"] = 0xEE; // (MC9S12XDP512) ECT channels interrupt are from 0xEE down to 0xE0
-	(*ect)["interrupt-offset-overflow"] = 0xDE;
-
-	(*pwm)["bus-cycle-time"] = fsb_cycle_time;
-	(*pwm)["base-address"] = 0x0300;
-	(*pwm)["debug-enabled"] = debug_enabled;
-
-	(*atd1)["bus-cycle-time"] = fsb_cycle_time;
-	(*atd1)["base-address"] = 0x0080;
-	(*atd1)["interrupt-offset"] = 0xD0;
-	(*atd1)["debug-enabled"] = debug_enabled;
-
-	(*atd0)["bus-cycle-time"] = fsb_cycle_time;
-	(*atd0)["base-address"] = 0x02C0;
-	(*atd0)["interrupt-offset"] = 0xD2;
-	(*atd0)["debug-enabled"] = debug_enabled;
-
-//	(*s12xint)["debug-enabled"] = debug_enabled;
-	(*s12xint)["debug-enabled"] = true;
-
-	//  -External Router
-	unisim::kernel::service::VariableBase *var = ServiceManager::GetParameter("external_router.cycle_time");
-	*var = fsb_cycle_time;
-
-	var = ServiceManager::GetParameter("external_router.mapping_0");
-	*var = "range_start=\"0x000800\" range_end=\"0x7FFFFF\" output_port=\"0\""; // 8MByte - RAM-EEPROM-FLASH
-
-	var = ServiceManager::GetParameter("external_router.verbose_all");
- 	*var = false;
-
-	//  -Internal Router
-	unisim::kernel::service::VariableBase *var1 = ServiceManager::GetParameter("internal_router.cycle_time");
-	*var1 = fsb_cycle_time;
-
-	var1 = ServiceManager::GetParameter("internal_router.mapping_0");
-//	*var1 = "range_start=\"0x000034\" range_end=\"0x00003F\" output_port=\"0\""; // CRG
-	*var1 = "range_start=\"0x000034\" range_end=\"0x000040\" output_port=\"0\""; // CRG
-
-	var1 = ServiceManager::GetParameter("internal_router.mapping_1");
-	*var1 = "range_start=\"0x000040\" range_end=\"0x00007F\" output_port=\"1\""; // ECT
-
-	var1 = ServiceManager::GetParameter("internal_router.mapping_2");
-//	*var1 = "range_start=\"0x000080\" range_end=\"0x0000AF\" output_port=\"2\""; // ATD10B16C
-	*var1 = "range_start=\"0x000080\" range_end=\"0x0000B0\" output_port=\"2\""; // ATD10B16C
-
-	var1 = ServiceManager::GetParameter("internal_router.mapping_3");
-//	*var1 = "range_start=\"0x000120\" range_end=\"0x00012F\" output_port=\"3\""; // S12XINT
-	*var1 = "range_start=\"0x000120\" range_end=\"0x000130\" output_port=\"3\""; // S12XINT
-
-	var1 = ServiceManager::GetParameter("internal_router.mapping_4");
-//	*var1 = "range_start=\"0x0002C0\" range_end=\"0x0002DF\" output_port=\"4\""; // ATD10B8C
-	*var1 = "range_start=\"0x0002C0\" range_end=\"0x0002E0\" output_port=\"4\""; // ATD10B8C
-
-	var1 = ServiceManager::GetParameter("internal_router.mapping_5");
-//	*var1 = "range_start=\"0x000300\" range_end=\"0x000327\" output_port=\"5\""; // PWM - 37 bytes
-	*var1 = "range_start=\"0x000300\" range_end=\"0x000328\" output_port=\"5\""; // PWM - 37 bytes
-
-	var1 = ServiceManager::GetParameter("internal_router.mapping_6");
-	*var1 = "range_start=\"0x000800\" range_end=\"0xFFFF\" output_port=\"6\""; // 64KByte - RAM-EEPROM-FLASH
-
-	var1 = ServiceManager::GetParameter("internal_router.verbose_all");
- 	*var1 = false;
-
-	// MMC parameter
-	(*mmc)["address-encoding"] = address_encoding;
-	(*mmc)["debug-enabled"] = debug_enabled;
-
-	//  - External Memory
-	(*external_memory)["cycle-time"] = mem_cycle_time;
-	(*external_memory)["org"] = 0x00000000UL;
-	(*external_memory)["bytesize"] = (uint32_t) 0x800000; // memory size is 8Mo
-	(*external_memory)["verbose"] = false;
-
-	//  - Internal Memory
-	(*internal_memory)["cycle-time"] = mem_cycle_time;
-	(*internal_memory)["org"] = 0x00000000UL;
-	(*internal_memory)["bytesize"] = (uint32_t)0x10000; // memory size is 64KByte
-	(*internal_memory)["verbose"] = false;
 
 	//=========================================================================
 	//===                      Service run-time configuration               ===
@@ -545,26 +402,17 @@ int sc_main(int argc, char *argv[])
 	}
 
 
-	//  - Loggers
-	if(logger_on)
-	{
-		if(logger_filename)
-		{
-			(*logger)["filename"] = logger_filename;
-			(*logger)["zip"] = logger_zip;
-		}
-		(*logger)["std_out"] = logger_out;
-		(*logger)["std_err"] = logger_error;
-		(*logger)["show-file"] = true;
-		(*logger)["show-function"] = true;
-		(*logger)["show-line"] = true;
-		(*logger)["show-time"] = true;
-	}
-
-
 	//=========================================================================
 	//===                        Components connection                      ===
 	//=========================================================================
+
+	/*
+	 * TODO:
+	 *  - One of the output of the CRG is the BusClock (hereafter fsb_cycle_time).
+	 *  - In fact I have to connect all the others component to the CRG::BusClock output.
+	 *  - If (PLLSEL == 1) the BusClock = PLLCLK / 2; else BusClock = OSCCLK / 2;
+	 *  - PLLCLK = 2 * OSCCLK * (SYNR + 1) / (REFDV + 1)
+	 */
 
 	cpu->socket(mmc->cpu_socket);
 	cpu->toXINT(s12xint->fromCPU_Target);
@@ -652,18 +500,25 @@ int sc_main(int argc, char *argv[])
 		}
 	}
 
-	/* logger connections */
-	if(logger_on) {
-		unsigned int logger_index = 0;
-		logger->time_import >> time->time_export;
-		cpu->logger_import >> *logger->logger_export[logger_index++];
-
-		// if(gdb_server) gdb_server->logger_import >> *logger->logger_export[logger_index++];
-	}
 
 #ifdef DEBUG_SERVICE
 	ServiceManager::Dump(cerr);
 #endif
+
+	if (set_parameter)
+	{
+		ServiceManager::LoadXmlParameters(parameter_filename.c_str());
+		cerr << "Parameters set using file \"" << parameter_filename << "\"" << endl;
+	}
+
+	if (get_parameter)
+	{
+		ServiceManager::XmlfyParameters(extracted_parameter_file);
+		cerr << "Parameters saved on file \"" << extracted_parameter_file << "\"" << endl;
+
+		goto STOP_MAIN;
+//		return 0;
+	}
 
 	if(ServiceManager::Setup())
 	{
@@ -732,6 +587,7 @@ int sc_main(int argc, char *argv[])
 		cerr << "Can't start simulation because of previous errors" << endl;
 	}
 
+STOP_MAIN:
 	if(loaderS19) { delete loaderS19; loaderS19 = NULL; }
 	if(loaderELF) { delete loaderELF; loaderELF = NULL; }
 
@@ -749,8 +605,6 @@ int sc_main(int argc, char *argv[])
 	if(external_router) { delete external_router; external_router = NULL; }
 	if(internal_router) { delete internal_router; internal_router = NULL; }
 	if(cpu) { delete cpu; cpu = NULL; }
-
-	if(logger) { delete logger; logger = NULL; }
 
 	if(gdb_server) { delete gdb_server; gdb_server = NULL; }
 	if(inline_debugger) { delete inline_debugger; inline_debugger = NULL; }

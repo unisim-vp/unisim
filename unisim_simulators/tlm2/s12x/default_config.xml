@@ -1,0 +1,430 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<variables>
+	<object name="cpu">
+		<variable name="cpu.debug-enabled">
+			<type>parameter</type>
+			<data_type>bool</data_type>
+			<value>true</value>
+			<description></description>
+		</variable>
+		<variable name="cpu.max-inst">
+			<type>parameter</type>
+			<data_type>unsigned long long</data_type>
+			<value>0xffffffffffffffff</value>
+			<description></description>
+		</variable>
+		<variable name="cpu.nice-time">
+			<type>parameter</type>
+			<data_type>unsigned long long</data_type>
+			<value>0xffffffffff</value>
+			<description></description>
+		</variable>
+		<variable name="cpu.cpu-cycle-time">
+			<type>parameter</type>
+			<data_type>unsigned long long</data_type>
+			<value>25000</value>
+			<description></description>
+		</variable>
+		<variable name="cpu.bus-cycle-time">
+			<type>parameter</type>
+			<data_type>unsigned long long</data_type>
+			<value>25000</value>
+			<description></description>
+		</variable>
+		<variable name="cpu.verbose-tlm-bus-synchronize">
+			<type>parameter</type>
+			<data_type>bool</data_type>
+			<value>false</value>
+			<description></description>
+		</variable>
+		<variable name="cpu.verbose-tlm-run-thread">
+			<type>parameter</type>
+			<data_type>bool</data_type>
+			<value>false</value>
+			<description></description>
+		</variable>
+		<variable name="cpu.verbose-tlm-commands">
+			<type>parameter</type>
+			<data_type>bool</data_type>
+			<value>false</value>
+			<description></description>
+		</variable>
+	</object>
+	<object name="mmc">
+		<variable name="mmc.debug-enabled">
+			<type>parameter</type>
+			<data_type>bool</data_type>
+			<value>false</value>
+			<description></description>
+		</variable>
+		<variable name="mmc.mode">
+			<type>parameter</type>
+			<data_type>unsigned char</data_type>
+			<value>0x80</value>
+			<description></description>
+		</variable>
+		<variable name="mmc.mmcctl1">
+			<type>parameter</type>
+			<data_type>unsigned char</data_type>
+			<value>0x5</value>
+			<description></description>
+		</variable>
+		<variable name="mmc.address-encoding">
+			<type>parameter</type>
+			<data_type>unsigned char</data_type>
+			<value>0x0</value>
+			<description></description>
+		</variable>
+	</object>
+	<object name="s12xint">
+		<variable name="s12xint.debug-enabled">
+			<type>parameter</type>
+			<data_type>bool</data_type>
+			<value>true</value>
+			<description></description>
+		</variable>
+	</object>
+	<object name="pwm">
+		<variable name="pwm.bus-cycle-time">
+			<type>parameter</type>
+			<data_type>long</data_type>
+			<value>25000</value>
+			<description></description>
+		</variable>
+		<variable name="pwm.base-address">
+			<type>parameter</type>
+			<data_type>unsigned short</data_type>
+			<value>0x300</value>
+			<description></description>
+		</variable>
+		<variable name="pwm.interrupt-offset">
+			<type>parameter</type>
+			<data_type>unsigned char</data_type>
+			<value>0x8c</value>
+			<description></description>
+		</variable>
+		<variable name="pwm.debug-enabled">
+			<type>parameter</type>
+			<data_type>bool</data_type>
+			<value>false</value>
+			<description></description>
+		</variable>
+	</object>
+	<object name="atd0">
+		<variable name="atd0.bus-cycle-time">
+			<type>parameter</type>
+			<data_type>long</data_type>
+			<value>25000</value>
+			<description></description>
+		</variable>
+		<variable name="atd0.base-address">
+			<type>parameter</type>
+			<data_type>unsigned short</data_type>
+			<value>0x2c0</value>
+			<description></description>
+		</variable>
+		<variable name="atd0.interrupt-offset">
+			<type>parameter</type>
+			<data_type>unsigned char</data_type>
+			<value>0xd2</value>
+			<description></description>
+		</variable>
+		<variable name="atd0.vrl">
+			<type>parameter</type>
+			<data_type>double</data_type>
+			<value>0.000000e+00</value>
+			<description></description>
+		</variable>
+		<variable name="atd0.vrh">
+			<type>parameter</type>
+			<data_type>double</data_type>
+			<value>5.120000e+00</value>
+			<description></description>
+		</variable>
+		<variable name="atd0.debug-enabled">
+			<type>parameter</type>
+			<data_type>bool</data_type>
+			<value>false</value>
+			<description></description>
+		</variable>
+		<variable name="atd0.vih">
+			<type>parameter</type>
+			<data_type>double</data_type>
+			<value>3.250000e+00</value>
+			<description></description>
+		</variable>
+		<variable name="atd0.vil">
+			<type>parameter</type>
+			<data_type>double</data_type>
+			<value>1.750000e+00</value>
+			<description></description>
+		</variable>
+		<variable name="atd0.Has-External-Trigger">
+			<type>parameter</type>
+			<data_type>bool</data_type>
+			<value>false</value>
+			<description></description>
+		</variable>
+	</object>
+	<object name="atd1">
+		<variable name="atd1.bus-cycle-time">
+			<type>parameter</type>
+			<data_type>long</data_type>
+			<value>25000</value>
+			<description></description>
+		</variable>
+		<variable name="atd1.base-address">
+			<type>parameter</type>
+			<data_type>unsigned short</data_type>
+			<value>0x80</value>
+			<description></description>
+		</variable>
+		<variable name="atd1.interrupt-offset">
+			<type>parameter</type>
+			<data_type>unsigned char</data_type>
+			<value>0xd0</value>
+			<description></description>
+		</variable>
+		<variable name="atd1.vrl">
+			<type>parameter</type>
+			<data_type>double</data_type>
+			<value>0.000000e+00</value>
+			<description></description>
+		</variable>
+		<variable name="atd1.vrh">
+			<type>parameter</type>
+			<data_type>double</data_type>
+			<value>5.120000e+00</value>
+			<description></description>
+		</variable>
+		<variable name="atd1.debug-enabled">
+			<type>parameter</type>
+			<data_type>bool</data_type>
+			<value>false</value>
+			<description></description>
+		</variable>
+		<variable name="atd1.vih">
+			<type>parameter</type>
+			<data_type>double</data_type>
+			<value>3.250000e+00</value>
+			<description></description>
+		</variable>
+		<variable name="atd1.vil">
+			<type>parameter</type>
+			<data_type>double</data_type>
+			<value>1.750000e+00</value>
+			<description></description>
+		</variable>
+		<variable name="atd1.Has-External-Trigger">
+			<type>parameter</type>
+			<data_type>bool</data_type>
+			<value>false</value>
+			<description></description>
+		</variable>
+	</object>
+	<object name="crg">
+		<variable name="crg.oscillator-clock">
+			<type>parameter</type>
+			<data_type>long</data_type>
+			<value>0x30d4</value>
+			<description></description>
+		</variable>
+		<variable name="crg.base-address">
+			<type>parameter</type>
+			<data_type>unsigned short</data_type>
+			<value>0x34</value>
+			<description></description>
+		</variable>
+		<variable name="crg.interrupt-offset-rti">
+			<type>parameter</type>
+			<data_type>unsigned char</data_type>
+			<value>0xf0</value>
+			<description></description>
+		</variable>
+		<variable name="crg.interrupt-offset-pll-lock">
+			<type>parameter</type>
+			<data_type>unsigned char</data_type>
+			<value>0xc6</value>
+			<description></description>
+		</variable>
+		<variable name="crg.interrupt-offset-self-clock-mode">
+			<type>parameter</type>
+			<data_type>unsigned char</data_type>
+			<value>0xc4</value>
+			<description></description>
+		</variable>
+		<variable name="crg.debug-enabled">
+			<type>parameter</type>
+			<data_type>bool</data_type>
+			<value>false</value>
+			<description></description>
+		</variable>
+	</object>
+	<object name="ect">
+		<variable name="ect.bus-cycle-time">
+			<type>parameter</type>
+			<data_type>long</data_type>
+			<value>25000</value>
+			<description></description>
+		</variable>
+		<variable name="ect.base-address">
+			<type>parameter</type>
+			<data_type>unsigned short</data_type>
+			<value>0x40</value>
+			<description></description>
+		</variable>
+		<variable name="ect.interrupt-offset-channel0">
+			<type>parameter</type>
+			<data_type>unsigned char</data_type>
+			<value>0xee</value>
+			<description></description>
+		</variable>
+		<variable name="ect.interrupt-offset-overflow">
+			<type>parameter</type>
+			<data_type>unsigned char</data_type>
+			<value>0xde</value>
+			<description></description>
+		</variable>
+		<variable name="ect.debug-enabled">
+			<type>parameter</type>
+			<data_type>bool</data_type>
+			<value>false</value>
+			<description></description>
+		</variable>
+	</object>
+	<object name="external-memory">
+		<variable name="external-memory.org">
+			<type>parameter</type>
+			<data_type>unsigned long long</data_type>
+			<value>0x0</value>
+			<description></description>
+		</variable>
+		<variable name="external-memory.bytesize">
+			<type>parameter</type>
+			<data_type>unsigned int</data_type>
+			<value>0x800000</value>
+			<description></description>
+		</variable>
+		<variable name="external-memory.cycle-time">
+			<type>parameter</type>
+			<data_type>unsigned int</data_type>
+			<value>25000</value>
+			<description>memory cycle time in picoseconds</description>
+		</variable>
+		<variable name="external-memory.verbose">
+			<type>parameter</type>
+			<data_type>bool</data_type>
+			<value>false</value>
+			<description></description>
+		</variable>
+	</object>
+	<object name="external_router">
+		<variable name="external_router.cycle_time">
+			<type>parameter</type>
+			<data_type>double</data_type>
+			<value>2.500000e+04</value>
+			<description>Time to process a request/response by the router in SC_PS)</description>
+		</variable>
+		<variable name="external_router.port_buffer_size">
+			<type>parameter</type>
+			<data_type>unsigned int</data_type>
+			<value>0x0</value>
+			<description>Defines the size of the buffer for incomming requests in each of the input ports (0 = infinite)</description>
+		</variable>
+		<variable name="external_router.mapping_0">
+			<type>parameter</type>
+			<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+			<value>range_start=&quot;0x0800&quot; range_end=&quot;0x7fffff&quot; output_port=&quot;0&quot; translation=&quot;800&quot;</value>
+			<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+		</variable>
+	</object>
+	<object name="internal-memory">
+		<variable name="internal-memory.org">
+			<type>parameter</type>
+			<data_type>unsigned long long</data_type>
+			<value>0x0</value>
+			<description></description>
+		</variable>
+		<variable name="internal-memory.bytesize">
+			<type>parameter</type>
+			<data_type>unsigned int</data_type>
+			<value>0x10000</value>
+			<description></description>
+		</variable>
+		<variable name="internal-memory.cycle-time">
+			<type>parameter</type>
+			<data_type>unsigned int</data_type>
+			<value>25000</value>
+			<description>memory cycle time in picoseconds</description>
+		</variable>
+		<variable name="internal-memory.verbose">
+			<type>parameter</type>
+			<data_type>bool</data_type>
+			<value>false</value>
+			<description></description>
+		</variable>
+	</object>
+	<object name="internal_router">
+		<variable name="internal_router.cycle_time">
+			<type>parameter</type>
+			<data_type>double</data_type>
+			<value>2.500000e+04</value>
+			<description>Time to process a request/response by the router in SC_PS)</description>
+		</variable>
+		<variable name="internal_router.port_buffer_size">
+			<type>parameter</type>
+			<data_type>unsigned int</data_type>
+			<value>0x0</value>
+			<description>Defines the size of the buffer for incomming requests in each of the input ports (0 = infinite)</description>
+		</variable>
+		<variable name="internal_router.mapping_0">
+			<type>parameter</type>
+			<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+			<value>range_start=&quot;0x34&quot; range_end=&quot;0x40&quot; output_port=&quot;0&quot; translation=&quot;34&quot;</value>
+			<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+		</variable>
+
+		<variable name="internal_router.mapping_1">
+			<type>parameter</type>
+			<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+			<value>range_start=&quot;0x40&quot; range_end=&quot;0x7f&quot; output_port=&quot;1&quot; translation=&quot;40&quot;</value>
+			<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+		</variable>
+
+		<variable name="internal_router.mapping_2">
+			<type>parameter</type>
+			<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+			<value>range_start=&quot;0x80&quot; range_end=&quot;0xb0&quot; output_port=&quot;2&quot; translation=&quot;80&quot;</value>
+			<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+		</variable>
+
+		<variable name="internal_router.mapping_3">
+			<type>parameter</type>
+			<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+			<value>range_start=&quot;0x120&quot; range_end=&quot;0x130&quot; output_port=&quot;3&quot; translation=&quot;120&quot;</value>
+			<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+		</variable>
+
+		<variable name="internal_router.mapping_4">
+			<type>parameter</type>
+			<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+			<value>range_start=&quot;0x2c0&quot; range_end=&quot;0x2e0&quot; output_port=&quot;4&quot; translation=&quot;2c0&quot;</value>
+			<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+		</variable>
+
+		<variable name="internal_router.mapping_5">
+			<type>parameter</type>
+			<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+			<value>range_start=&quot;0x300&quot; range_end=&quot;0x328&quot; output_port=&quot;5&quot; translation=&quot;300&quot;</value>
+			<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+		</variable>
+
+		<variable name="internal_router.mapping_6">
+			<type>parameter</type>
+			<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+			<value>range_start=&quot;0x800&quot; range_end=&quot;0xffff&quot; output_port=&quot;6&quot; translation=&quot;800&quot;</value>
+			<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+		</variable>
+
+	</object>
+</variables>
