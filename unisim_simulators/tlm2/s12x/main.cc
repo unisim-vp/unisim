@@ -393,6 +393,7 @@ int sc_main(int argc, char *argv[])
 		(*loaderS19)["filename"] = filename;
 		if (symbol_filename != NULL) {
 			(*loaderELF)["filename"] = symbol_filename;
+			(*loaderELF)["force-use-virtual-address"] = force_use_virtual_address;
 		}
 	}
 	else
