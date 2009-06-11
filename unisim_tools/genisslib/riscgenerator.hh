@@ -25,6 +25,7 @@
 
 struct RiscGenerator : public Generator {
   struct OpCode_t {
+    bool                        m_vlen;
     unsigned int                m_size;
     uint64_t                    m_mask;
     uint64_t                    m_bits;
@@ -33,8 +34,8 @@ struct RiscGenerator : public Generator {
     intptr_t                    m_lowercount;
     
     OpCode_t() : m_size( 0 ), m_mask( 0 ), m_bits( 0 ), m_upper( 0 ), m_lowercount( 0 ) {}
-    OpCode_t( unsigned int _size, uint64_t _mask, uint64_t _bits )
-      : m_size( _size ), m_mask( _mask ), m_bits( _bits ), m_upper( 0 ), m_lowercount( 0 ) {}
+    OpCode_t( bool vlen, unsigned int size, uint64_t mask, uint64_t bits )
+      : m_vlen( vlen ), m_size( size ), m_mask( mask ), m_bits( bits ), m_upper( 0 ), m_lowercount( 0 ) {}
     
     // Topology methods
     enum Location_t { Outside, Overlaps, Inside, Contains, Equal };

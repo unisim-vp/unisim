@@ -98,6 +98,30 @@ RiscGenerator::RiscGenerator()
   : m_insn_ctypesize( 0 )
 {};
 
+struct FieldRange {
+  bool         m_little_endian;
+  unsigned int m_pos, m_size;
+  
+  unsigned int pos() { return m_pos; }
+  
+  FieldRange( bool little_endian, unsigned int maxsize )
+    : m_little_endian( little_endian ), m_pos( little_endian ? 0 : maxsize ), m_size( 0 )
+  {}
+  
+  void
+  next( BitField_t const& field ) {
+    if (m_little_endian) m_pos += m_size;
+    else                 m_pos -= field.m_size;
+    m_size = field.m_size;
+  }
+  
+  unsigned int
+  insn_size( unsigned int maxsize ) {
+    if (m_little_endian) return m_pos + m_size;
+    else                 return maxsize - m_pos;
+  }
+};
+
 /** Process the isa structure and computes RISC specific data 
 */
 void
@@ -123,26 +147,39 @@ RiscGenerator::finalize() {
   // Process the opcodes needed by the decoder
   for( Vect_t<Operation_t>::const_iterator op = operations.begin(); op < operations.end(); ++ op ) {
     Vect_t<BitField_t> const& bitfields = (**op).m_bitfields;
-    unsigned int nshift = isa().m_little_endian ? 0 : m_insn_maxsize;
+    
+    FieldRange fieldrange( isa().m_little_endian, m_insn_maxsize );
+    FieldRange lastfieldrange( fieldrange );
+    
+    bool vlen = false, outprefix = false;
     unsigned int insn_size = 0;
     uint64_t mask = 0, bits = 0;
     
     for( Vect_t<BitField_t>::const_iterator bf = bitfields.begin(); bf < bitfields.end(); ++ bf ) {
-      unsigned int shift;
-      if (isa().m_little_endian) { shift = nshift; nshift += (**bf).m_size; }
-      else                       { nshift -= (**bf).m_size; shift = nshift; }
+      fieldrange.next( **bf );
+      
+      if ((**bf).type() == BitField_t::Separator) {
+        SeparatorBitField_t const& sepbf = dynamic_cast<SeparatorBitField_t const&>( **bf );
+        if (sepbf.m_rewind) {
+          fieldrange = lastfieldrange;
+        } else {
+          lastfieldrange = fieldrange;
+        }
+        outprefix = true;
+      }
       
       if ((**bf).minsize() != (**bf).maxsize()) {
-        (**op).m_fileloc.err( "error: not (yet?) supported variable length field\n"
-                              "error: in operation `%s` at %u bits", (**op).m_symbol.str(), shift );
-        throw GenerationError;
+        vlen = true;
+        outprefix = true;
       }
-      insn_size += (**bf).m_size;
-      if (not (**bf).hasopcode()) continue;
-      bits |= (**bf).bits() << shift;
-      mask |= (**bf).mask() << shift;
+      
+      insn_size = std::max( insn_size, fieldrange.insn_size( m_insn_maxsize ) );
+      
+      if (outprefix or not (**bf).hasopcode()) continue;
+      bits |= (**bf).bits() << fieldrange.pos();
+      mask |= (**bf).mask() << fieldrange.pos();
     }
-    m_opcodes[*op] = OpCode_t( insn_size, mask, bits );
+    m_opcodes[*op] = OpCode_t( vlen, insn_size, mask, bits );
   }
   
   /* Generating the topological graph of operations, checking for
@@ -211,25 +248,47 @@ RiscGenerator::codetype_decl( Product_t& _product ) const {
 void
 RiscGenerator::insn_decode_impl( Product_t& _product, Operation_t const& _op, char const* _codename, char const* _addrname ) const
 {
-  unsigned int nshift = isa().m_little_endian ? 0 : m_insn_maxsize;
+  FieldRange fieldrange( isa().m_little_endian, m_insn_maxsize );
+  FieldRange lastfieldrange( fieldrange );
+  OpCode_t const& oc = opcode( &_op );
+  
+  if (oc.m_vlen) {
+    _product.code( "this->gil_length = %u;\n", oc.m_size );
+  }
+  
   for( Vect_t<BitField_t>::const_iterator bf = _op.m_bitfields.begin(); bf < _op.m_bitfields.end(); ++ bf ) {
-    unsigned int shift;
-    if (isa().m_little_endian) { shift = nshift; nshift += (**bf).m_size; }
-    else                       { nshift -= (**bf).m_size; shift = nshift; }
+    fieldrange.next( **bf );
     
-    if( (**bf).type() == BitField_t::SubOp ) {
+    if ((**bf).type() == BitField_t::Separator) {
+      SeparatorBitField_t const& sepbf = dynamic_cast<SeparatorBitField_t const&>( **bf );
+      if (sepbf.m_rewind) {
+        fieldrange = lastfieldrange;
+      } else {
+        lastfieldrange = fieldrange;
+      }
+    }
+    
+    else if ((**bf).type() == BitField_t::SubOp) {
       SubOpBitField_t const& sobf = dynamic_cast<SubOpBitField_t const&>( **bf );
       SDInstance_t const* sdinstance = sobf.m_sdinstance;
       SDClass_t const* sdclass = sdinstance->m_sdclass;
       SourceCode_t const* tpscheme =  sdinstance->m_template_scheme;
       
       _product.code( "%s = %s::sub_decode", sobf.m_symbol.str(), sdclass->qd_namespace().str() );
-      if( tpscheme )
+      if (tpscheme)
         _product.usercode( tpscheme->m_fileloc, "< %s >", tpscheme->m_content.str() );
-      _product.code( "( %s, ((%s >> %u) & 0x%llx) );\n", _addrname, _codename, shift, sobf.mask() );
+      _product.code( "( %s, ((%s >> %u) & 0x%llx) );\n",
+                     _addrname, _codename, fieldrange.pos(), sobf.mask() );
+
+      if (sdclass->m_minsize != sdclass->m_maxsize) {
+        _product.code( "{\nunsigned int shortening = %u - %s->GetLength();\n",
+                       sdclass->m_maxsize, sobf.m_symbol.str() );
+        _product.code( "this->gil_length -= shortening;\n" );
+        _product.code( "%s %s= shortening;\n}\n", _codename, (isa().m_little_endian ? "<<" : ">>") );
+      }
     }
     
-    else if( (**bf).type() == BitField_t::Operand ) {
+    else if ((**bf).type() == BitField_t::Operand) {
       
       OperandBitField_t const& opbf = dynamic_cast<OperandBitField_t const&>( **bf );
       _product.code( "%s = ", opbf.m_symbol.str() );
@@ -238,11 +297,12 @@ RiscGenerator::insn_decode_impl( Product_t& _product, Operation_t const& _op, ch
         int sizeofop = std::max( opbf.dstsize(), m_minwordsize );
         int sext_shift = sizeofop - opbf.m_size;
         _product.code( "(((((int%d_t)(%s >> %u)) & 0x%llx) << %u) >> %u)",
-                       sizeofop, _codename, shift, opbf.mask(), sext_shift, sext_shift );
+                       sizeofop, _codename, fieldrange.pos(),
+                       opbf.mask(), sext_shift, sext_shift );
       } else {
         // FIXME: a cast from the instruction type to the operand type
         // may be wiser...
-        _product.code( "((%s >> %u) & 0x%llx)", _codename, shift, opbf.mask() );
+        _product.code( "((%s >> %u) & 0x%llx)", _codename, fieldrange.pos(), opbf.mask() );
       }
     
       if( opbf.m_shift > 0 )
@@ -313,6 +373,14 @@ void
 RiscGenerator::insn_getlen_decl( Product_t& _product, Operation_t const& _op ) const {
   if (m_insn_minsize == m_insn_maxsize)
     return;
-  unsigned int size = opcode( &_op ).m_size;
-  _product.code( "unsigned int GetLength() const { return %d; }\n", size );
+  
+  OpCode_t const& oc = opcode( &_op );
+  
+  if (oc.m_vlen) {
+    _product.code( "unsigned int gil_length;\n" );
+    _product.code( "unsigned int GetLength() const { return this->gil_length; }\n" );
+  } else {
+    unsigned int size = oc.m_size;
+    _product.code( "unsigned int GetLength() const { return %d; }\n", size );
+  }
 }
