@@ -270,25 +270,42 @@ Isa::setparam( ConstStr_t key, ConstStr_t value ) {
   static ConstStr_t     isdesc( "descending",      Scanner::symbols );
   static ConstStr_t      isasc( "ascending",       Scanner::symbols );
   
-  if        (key == codetype) {
+  if      (key == codetype) {
     if      (value == scalar) m_decoder = RiscDecoder;
     else if (value == buffer) m_decoder = CiscDecoder;
-  } else if (key == subdecoder) {
+    else throw UnknownIdent( value );
+  }
+  
+  else if (key == subdecoder) {
     if      (value == istrue)  m_is_subdecoder = true;
     else if (value == isfalse) m_is_subdecoder = false;
-  } else if (key == withsource) {
+  }
+  
+  else if (key == withsource) {
     if      (value == istrue)  m_withsource = true;
     else if (value == isfalse) m_withsource = false;
-  } else if (key == endianness) {
+    else throw UnknownIdent( value );
+  }
+  
+  else if (key == endianness) {
     if      (value == isbig)    m_little_endian = false;
     else if (value == islittle) m_little_endian = true;
-  } else if (key == forder) {
+    else throw UnknownIdent( value );
+  }
+  
+  else if (key == forder) {
     if      (value == isdesc) m_asc_forder = false;
     else if (value == isasc)  m_asc_forder = true;
-  } else if (key == worder) {
+    else throw UnknownIdent( value );
+  }
+  
+  else if (key == worder) {
     if      (value == isdesc) m_asc_worder = false;
     else if (value == isasc)  m_asc_worder = true;
+    else throw UnknownIdent( value );
   }
+  
+  else throw UnknownIdent( key );
 }
 
 void
@@ -303,6 +320,8 @@ Isa::setparam( ConstStr_t key, SourceCode_t* value ) {
     //m_codetype = value->m_content;
     delete value;
   }
+  
+  else throw UnknownIdent( key );
 }
 
 SDClass_t const*

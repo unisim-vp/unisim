@@ -264,12 +264,27 @@ subdecoder_class:
 
 global_ident_parameter: TOK_SET TOK_IDENT TOK_IDENT
 {
-  Scanner::isa().setparam( ConstStr_t( $2, Scanner::symbols ), ConstStr_t( $3, Scanner::symbols ) );
+  ConstStr_t key( $2, Scanner::symbols );
+  ConstStr_t val( $3, Scanner::symbols );
+  
+  try {
+    Scanner::isa().setparam( key, val );
+  } catch( Isa::UnknownIdent ui ) {
+    Scanner::fileloc.err( "error: unknown or illegal ident `%s'.", ui.m_ident.str() );
+    YYABORT;
+  }
 }
 
 global_sourcecode_parameter: TOK_SET TOK_IDENT TOK_SOURCE_CODE
 {
-  Scanner::isa().setparam( ConstStr_t( $2, Scanner::symbols ), $3 );
+  ConstStr_t key( $2, Scanner::symbols );
+  SourceCode_t* val = $3;
+  try {
+    Scanner::isa().setparam( key, val );
+  } catch( Isa::UnknownIdent ui ) {
+    Scanner::fileloc.err( "error: unknown or illegal ident `%s'.", ui.m_ident.str() );
+    YYABORT;
+  }
 }
 
 template_declaration: TOK_TEMPLATE '<' param_list '>'

@@ -65,6 +65,12 @@ struct Isa {
   void                          deps( std::ostream& _sink, char const* _prefix ) const;
   bool                          sanity_checks() const;
   void                          specialize();
+  
+  struct UnknownIdent {
+    ConstStr_t m_ident;
+    UnknownIdent( ConstStr_t ident ) : m_ident( ident ) {}
+  };
+  
   void                          setparam( ConstStr_t key, ConstStr_t value );
   void                          setparam( ConstStr_t key, SourceCode_t* value );
 };
