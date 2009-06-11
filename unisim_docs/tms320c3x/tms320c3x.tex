@@ -14,6 +14,35 @@ The UNISIM TMS320C3X simulator features:
 \item Support for TI C I/O
 \end{itemize}
 
+\subsection{Status of implementation}
+
+The UNISIM TMS320C3X has been developped using the following documentation:
+\begin{itemize}
+\item TMS320C3x User’s Guide (SPRU031F, 2558539-9761 revision L, March 2004)
+\item TMS320C3x/C4x Assembly Language Tools User’s Guide (SPRU035D, June 1998)
+\item TMS320C3x/C4x Optimizing C Compiler User’s Guide (SPRU034H, June 1998)
+\end{itemize}
+
+Current implementation of the simulator completely decodes the TMS320C3X instruction set.
+All registers are present but no on-chip devices are implemented.
+The simulator is supposed to have a complete support for:
+\begin{itemize}
+\item integer instructions (2-ops, 3-ops, parallel ops, load/store)
+\item control instructions (branches, delayed branches, RPTS, RPTB)
+\item power instructions
+\item instructions \texttt{FLOAT}, \texttt{PUSHF}, and \texttt{POPF}
+\item interrupt handling
+\end{itemize}
+
+The simulator does not implement or partially implement:
+\begin{itemize}
+\item floating point instructions
+\item interlocked instructions
+\end{itemize}
+
+The indirect addressing with circular modify and the indirect addressing with bit-reversed modify modes are fully implemented but untested.
+The current status of the simulator should allow to run any integer benchmark.
+
 \subsection{Compiling the simulator}
 
 Up-to-date instructions for compiling the simulator are available in file \texttt{INSTALL}.
@@ -33,7 +62,7 @@ tms320c3x [<options>] <binary to simulate>
 \begin{itemize}
 \item \texttt{--help} or \texttt{-h}: print integrated help message on the screen.
 \item \texttt{--get-variables <XML file>} or \texttt{-v <XML file>}: Get the simulation variables (parameters, statistics, \ldots) into a XML file
-\item \texttt{--config <XML file>} or \texttt{-c <XML file>}: configures the simulator with the given xml configuration file.
+\item \texttt{--config <XML file>} or \texttt{-c <XML file>}: configures the simulator with the given XML configuration file.
 \item \texttt{--get-config <XML file>} or \texttt{-g <XML file>}: Get the simulator default configuration XML file (you can use it to create your own configuration). This option can be combined with option \texttt{-c} to get a new configuration file with existing variables from another file.
 \item \texttt{--logger} or \texttt{-l}: Enable the logger.
 \item \texttt{--xml-gdb <file>} or \texttt{-x <file>}: processor XML description file for GDB server.
@@ -61,6 +90,7 @@ Be aware that any call to the C standard library requires linking the program wi
 Moreover, any call to I/O functions (open, close, read, write, printf, \ldots) requires TI C I/O support enabled in the TMS320C3X simulator.
 
 \subsection{Simulator configuration}
+\label{tms320c3x_configuration}
 
 \noindent The simulator stores its configuration (a set of parameters) in a XML configuration file. 
 \newline\\
@@ -271,39 +301,134 @@ $ tms320c3x -c sim_config.xml
 	\end{tabular}
 \end{center}
 
-\subsection{Status of implementation}
-
-Current implementation of the simulator completely decodes the TMS320C3X instruction set.
-All registers are present but no on-chip devices are implemented.
-The simulator is supposed to have a complete support for:
-\begin{itemize}
-\item integer instructions (2-ops, 3-ops, parallel ops, load/store)
-\item control instructions (branches, delayed branches, RPTS, RPTB)
-\item power instructions
-\item instructions \texttt{FLOAT}, \texttt{PUSHF}, and \texttt{POPF}
-\item interrupt handling
-\end{itemize}
-
-The simulator does not implement or partially implement:
-\begin{itemize}
-\item floating point instructions
-\item interlocked instructions
-\end{itemize}
-
-The indirect addressing with circular modify and the indirect addressing with bit-reversed modify modes are fully implemented but untested.
-The current status of the simulator should allow to run any integer benchmark.
-
 \section{Developer guide}
 
-This part is not yet available.
+This part is still under construction.
 
 \subsection{Overview}
 
+The TMS320C3X simulator is the combination of several software components:
+\begin{itemize}
+\item A service infrastructure in \texttt{unisim/kernel/service}
+\item A built-in logger in \texttt{unisim/kernel/logger}
+\item Several small utility classes in \texttt{unisim/util}
+\item A TMS320C3X instruction set simulator in \texttt{unisim/component/cxx/processor/tms320}
+\item Service interface definitions in \texttt{unisim/service/interfaces}
+\item A COFF loader service in \texttt{unisim/service/loader/coff\_loader}
+\item A TI C I/O service in \texttt{unisim/service/os/ti\_c\_io}
+\item An inline debugger service in \texttt{unisim/service/debug/inline\_debugger}
+\item A GDB server service in \texttt{unisim/service/debug/gdb\_server}
+\end{itemize}
+
+\subsection{Service infrastructure}
+
+\subsection{Built-in Logger}
+
+UNISIM provides you a centralized log system to debug modules and simulators. It should be used to show all debug messages, instead of using the traditional C++ stream output mechanism (\texttt{cerr} and \texttt{cout}). However, as you will see below the UNISIM log system works much like the C++ stream output mechanism.
+
+It provides the following advantages:
+\begin{itemize}
+\item Categorization: messages can be categorized on information, warning and error messages
+\item Atomic messages: messages will not be mixed (something which happens when programming concurrent/parallel systems like UNISIM/SystemC)
+\item Multiple outputs: your messages can be written simultaneously to different outputs, for example:
+	\begin{itemize}
+	\item console (error output or standard output)
+	\item raw file
+	\item XML formatted file
+	\item ...
+	\end{itemize}
+\item Simple configuration: the log system configuration is integrated to the UNISIM parameter mechanism provided by UNISIM service, see~\ref{tms320c3x_configuration}.
+\end{itemize}
+
+To use the UNISIM logger you need to include “unisim/kernel/logger/logger.hh” and declare that you are using the unisim::kernel::logger namespace:
+
+\begin{verbatim}
+#include "unisim/kernel/logger/logger.hh"
+ 
+using namespace unisim::kernel::logger;
+\end{verbatim}
+
+The logger can only be used by UNISIM Objects, that is, classes that inherit from \newline
+\texttt{unisim::kernel::service::Object}. So if you want to use the UNISIM log system your class must inherit from a UNISIM Object.
+
+\begin{verbatim}
+class MyObject : public Object {
+    ...
+};
+\end{verbatim}
+
+You will need to create a member variable of the \texttt{unisim::kernel::logger::Logger} type. And at the construction of your object use its default constructor \newline
+\texttt{Logger(const unisim::kernel::service::Object \&obj)}. For example:
+
+\begin{verbatim}
+#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/logger/logger.hh"
+ 
+using unisim::kernel::service::Object;
+using namespace unisim::kernel::logger;
+ 
+class MyObject : public Object {
+private:
+    Logger logger;
+ 
+public:
+    MyObject(const char *name, const Object *parent = 0) : 
+            Object(name, parent),
+            logger(*this) {
+        ...
+    }
+};
+\end{verbatim}
+
+Once you have initialized your member logger variable you can start using it in your class methods. Basically it works like an standard C++ output stream, with the << operator. However, it requires that you indicate when a message starts and ends, and its category (information, warning or error) with the following keywords:
+\begin{itemize}
+\item DebugInfo and EndDebugInfo to start and end an information message
+\item DebugWarning and EndDebugWarning to start and end a warning message
+\item DebugError and EndDebugError to start and end an error message
+\end{itemize}
+
+You can use the keyword EndDebug instead of EndDebugInfo, EndDebugWarning or EndDebugWarning to indicate that a message ends. The log system will automatically decide which kind of message are you ending. Between the start and the end of a message you can use the logger as a normal C++ output stream. Some of examples of its use:
+\begin{verbatim}
+/* displaying an information message */
+logger << DebugInfo << "This is an information message" << EndDebugInfo;
+ 
+/* displaying an information message using   */
+/* the EndDebug keyword to close the message */
+logger << DebugInfo << "This is an information message" << EndDebug;
+ 
+/* displaying a warning message written in multiple steps */
+logger << DebugWarning << "This is the start of a warning message" << endl;
+logger << "This is the end of the warning message." << EndDebug;
+ 
+/* displaying an error message using variables */
+unsigned int error = 25;
+logger << DebugError << "This is an error message using variable \"error\" with value "
+       << error << EndDebug;
+\end{verbatim}
+
+\subsection{Utility classes}
+
 \subsection{TMS320C3X instruction set simulator}
+
+The instruction set simulator source code is located in directory: \newline \texttt{unisim/component/cxx/processor/tms320}.\newline
+The UNISIM TMS320C3X instruction set simulator uses an instruction set simulator generator, GenISSLib.
+GenISSLib uses an instruction set description (\texttt{.isa} files) located in sub-directory \texttt{isa} of the instruction simulator source code directory.
+
 
 \subsection{COFF loader service}
 
+This service provides UNISIM TMS320C3X simulator with a support for TI COFF v0, v1, and v2 binary files (see TMS320C3x/C4x Assembly Language Tools User’s Guide, Appendix A). The COFF loader service loads the programs into memory while setup (simulator initialization). The loader can interprete \texttt{.cinit} section if option \texttt{-cr} of TI C cross-compiler has been used while building the target program (see TMS320C3x/C4x Optimizing C Compiler User’s Guide, section 4.8.1: Autoinitialization of variables and constants).
+To configure the COFF loader service see section~\ref{tms320c3x_configuration}.
+The source code of COFF loader service is located in directory \texttt{unisim/service/loader/coff\_loader}.
+
 \subsection{TI C I/O service}
+
+This service provides target programs with a support for low level I/O (open, read, write, close, \ldots) on the host machine.
+The TI Run-time support libraries (\texttt{RTS*.lib}) implements a software stack for standard C I/Os (see TMS320C3x/C4x Optimizing C Compiler User’s Guide (SPRU034H, June 1998), Appendix B).
+A development board debugger captures target program I/Os at \texttt{C\$\$IO\$\$}. The Run-time support library puts the I/Os in a communication buffer (\texttt{\_\_CIOBUF\_}) that the development board debugger translates to host I/Os. The debugger also captures target program termination at \texttt{C\$\$EXIT}.
+The UNISIM TI C I/O service captures and translates target program I/Os and termination in same manner as a development board built-in debugger.
+To configure the TI C I/O service see section~\ref{tms320c3x_configuration}.
+The source code of COFF loader service is located in directory \texttt{unisim/service/os/ti\_c\_io}.
 
 \subsection{Instruction level Debugging services}
 
