@@ -313,6 +313,7 @@ The TMS320C3X simulator is the combination of several software components:
 \item A built-in logger in \texttt{unisim/kernel/logger}
 \item Several small utility classes in \texttt{unisim/util}
 \item A TMS320C3X instruction set simulator in \texttt{unisim/component/cxx/processor/tms320}
+\item A memory in \texttt{unisim/component/cxx/memory/ram}
 \item Service interface definitions in \texttt{unisim/service/interfaces}
 \item A COFF loader service in \texttt{unisim/service/loader/coff\_loader}
 \item A TI C I/O service in \texttt{unisim/service/os/ti\_c\_io}
@@ -321,6 +322,28 @@ The TMS320C3X simulator is the combination of several software components:
 \end{itemize}
 
 \subsection{Service infrastructure}
+
+Designing a new emulator, and particularly for a research purpose, means implementing an instruction set emulator but also involves several software components not directly related to pure instruction set execution.
+The most obvious needed software components are memories, debuggers, loaders, but components such as chipsets and peripherals are still mandatory to enable running real unmodified applications.
+Abstracting the underlying host hardware is also something useful to emulators.
+Making all these components running together requires programming interfaces as much standard as possible.
+
+Usually the programmer faces to the problems of sharing source codes among several emulators, reusing existing source codes, and building a fully functional emulator from all these heterogeneous pieces of source codes.
+Most of the time, the software components are strongly dependent for each other: components are statically linked together through explicit function calls and adhoc interfaces.
+Replacing these adhoc interfaces with C++ pure interfaces (C++ classes with only unimplemented virtual methods, see your C++ manual for more details) and linking the components through pointers is a step toward avoiding such strong dependencies between the components. But still finding a standard manner to initialize those pointers is necessary. This can be done either by directly writting in those pointers or calling special functions to do the job.
+
+Another problem with heterogeneous software components is the manner to instantiate and parameterize those components in a standard way, so that it is easier for the component's user to use a new component.
+Usually, parameterizing a component means passing arguments to an initialization function or a class constructor. It implies that the programmers agree on using only one of these two solutions or both.
+Still the programmers must know the setup order of these components: it is an error prone process because determining a correct order from the components documentation will likely fail the first times.
+
+In this section, we present the standard way to share, reuse, link, parameterize and setup the software components within the TMS320C3X simulator.
+C++ object oriented programming and pure C++ interfaces enable sharing and reuse.
+In few words, some special pointers (classes \texttt{ServiceImport} and \texttt{ServiceExport}) linking the software components (classes \texttt{Service} and \texttt{Client}) together with some base software component classes have been introduced, thus enabling easier component composition and connection.
+The parameterization have been standardized (class \texttt{Parameter}) and the framework (class \texttt{ServiceManager}) uses the call graph to provide the user with an automatic setup order.
+
+Each software component of the UNISIM TMS320C3X simulator is a client and/or a service. The term \texttt{Client} refers to an object that calls methods of a  \texttt{service} through a \texttt{ServiceImport}. The term \texttt{service} refers to an object that exposes its interface to client through a \texttt{ServiceExport}. \texttt{ServiceImport} acts as gate for a client to call remote methods of a service. \texttt{ServiceExport} is a mean for a service to export its interface, so that a client \texttt{ServiceImport} can be bound to it.
+
+
 
 \subsection{Built-in Logger}
 

@@ -111,6 +111,8 @@ unisim/util/debug/watchpoint_registry_32.cc \
 unisim/util/debug/watchpoint_registry_64.cc \
 unisim/util/debug/breakpoint_registry_32.cc \
 unisim/util/debug/breakpoint_registry_64.cc \
+unisim/util/debug/profile_32.cc \
+unisim/util/debug/profile_64.cc \
 unisim/util/endian/endian.cc \
 unisim/service/loader/coff_loader/coff_loader.cc \
 unisim/service/debug/inline_debugger/inline_debugger.cc \
@@ -154,6 +156,7 @@ unisim/util/debug/watchpoint_registry.hh \
 unisim/util/debug/watchpoint.hh \
 unisim/util/debug/breakpoint_registry.hh \
 unisim/util/debug/symbol_table.hh \
+unisim/util/debug/profile.hh \
 unisim/util/endian/endian.hh \
 unisim/util/arithmetic/arithmetic.hh \
 unisim/util/hash_table/hash_table.hh \
@@ -185,6 +188,7 @@ unisim/util/debug/breakpoint_registry.tcc \
 unisim/util/debug/watchpoint_registry.tcc \
 unisim/util/debug/symbol_table.tcc \
 unisim/util/debug/symbol.tcc \
+unisim/util/debug/profile.tcc \
 unisim/service/loader/coff_loader/coff_loader.tcc \
 unisim/service/loader/coff_loader/ti/ti.tcc \
 unisim/service/debug/inline_debugger/inline_debugger.tcc \
