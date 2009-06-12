@@ -89,8 +89,6 @@ ATD10B<ATD_SIZE>::ATD10B(const sc_module_name& name, Object *parent) :
 	interrupt_request(*this);
 	slave_socket.register_b_transport(this, &ATD10B::read_write);
 
-	Reset();
-
 	SC_HAS_PROCESS(ATD10B);
 
 	SC_THREAD(Process);
@@ -809,6 +807,8 @@ bool ATD10B<ATD_SIZE>::Setup() {
 		busClockRange[i].maxBusClock = 1e6/(i+1); // busClock is modeled in PS
 		busClockRange[i].minBusClock = 1e6/((i+1)*4);
 	}
+
+	Reset();
 
 	return true;
 }

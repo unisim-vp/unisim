@@ -93,8 +93,6 @@ PWM<PWM_SIZE>::PWM(const sc_module_name& name, Object *parent) :
 	interrupt_request(*this);
 	slave_socket.register_b_transport(this, &PWM::read_write);
 
-	Reset();
-
 }
 
 template <uint8_t PWM_SIZE>
@@ -646,6 +644,8 @@ bool PWM<PWM_SIZE>::Setup() {
 		clockVector[i] = bus_cycle_time/(1 << i);
 	}
 
+	Reset();
+	
 	return true;
 }
 
@@ -656,43 +656,22 @@ void PWM<PWM_SIZE>::OnDisconnect() {
 template <uint8_t PWM_SIZE>
 void PWM<PWM_SIZE>::Reset() {
 
-	write(PWME, 0);
-	write(PWMPOL, 0);
-	write(PWMCLK, 0);
-	write(PWMPRCLK, 0);
-	write(PWMCAE, 0);
-	write(PWMCTL, 0);
-	write(PWMSCLA, 0);
-	write(PWMSCLB, 0);
+	pwme_register =  0;
+	pwmpol_register = 0;
+	pwmclk_register = 0;
+	pwmprclk_register = 0;
+	pwmcae_register = 0;
+	pwmctl_register = 0;
+	pwmscla_register = 0;
+	pwmsclb_register = 0;
 
-	write(PWMCNT0, 0);
-	write(PWMCNT1, 0);
-	write(PWMCNT2, 0);
-	write(PWMCNT3, 0);
-	write(PWMCNT4, 0);
-	write(PWMCNT5, 0);
-	write(PWMCNT6, 0);
-	write(PWMCNT7, 0);
+	for (int i=0; i < PWM_SIZE; i++) {
+		pwmcnt16_register[i] = 0;
+		pwmper16_register[i] = 0;
+		pwmdty16_register_value[i] = 0;
+	}
 
-	write(PWMPER0, 0);
-	write(PWMPER1, 0);
-	write(PWMPER2, 0);
-	write(PWMPER3, 0);
-	write(PWMPER4, 0);
-	write(PWMPER5, 0);
-	write(PWMPER6, 0);
-	write(PWMPER7, 0);
-
-	write(PWMDTY0, 0);
-	write(PWMDTY1, 0);
-	write(PWMDTY2, 0);
-	write(PWMDTY3, 0);
-	write(PWMDTY4, 0);
-	write(PWMDTY5, 0);
-	write(PWMDTY6, 0);
-	write(PWMDTY7, 0);
-
-	write(PWMSDN, 0);
+	pwmsdn_register = 0;
 
 }
 

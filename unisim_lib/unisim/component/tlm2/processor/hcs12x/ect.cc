@@ -68,8 +68,6 @@ ECT::ECT(const sc_module_name& name, Object *parent) :
 	interrupt_request(*this);
 	slave_socket.register_b_transport(this, &ECT::read_write);
 
-	Reset();
-
 	SC_HAS_PROCESS(ECT);
 
 	SC_THREAD(Run);
@@ -185,6 +183,8 @@ void ECT::write(uint8_t offset, uint8_t value) {
 bool ECT::Setup() {
 
 	bus_cycle_time = sc_time((double) bus_cycle_time_int, SC_PS);
+
+	Reset();
 
 	return true;
 }

@@ -70,8 +70,6 @@ CRG::CRG(const sc_module_name& name, Object *parent) :
 	interrupt_request(*this);
 	slave_socket.register_b_transport(this, &CRG::read_write);
 
-	Reset();
-
 	SC_HAS_PROCESS(CRG);
 
 	SC_THREAD(RunRTI);
@@ -367,6 +365,8 @@ bool CRG::Setup() {
 
 	oscillator_clock = sc_time((double) oscillator_clock_int, SC_PS);
 
+	Reset();
+
 	compute_pll_clock();
 
 	return true;
@@ -377,18 +377,18 @@ void CRG::OnDisconnect() {
 
 void CRG::Reset() {
 
-	write(SYNR, 0x00);
-	write(REFDV, 0x00);
-	write(CTFLG, 0x00);
-	write(CRGFLG, 0x00);
-	write(CRGINT, 0x00);
-	write(CLKSEL, 0x00);
-	write(PLLCTL, 0xF1);
-	write(RTICTL, 0x00);
-	write(COPCTL, 0x00);
-	write(FORBYP, 0x00);
-	write(CTCTL, 0x00);
-	write(ARMCOP, 0x00);
+	synr_register =  0x00;
+	refdv_register = 0x00;
+	ctflg_register = 0x00;
+	crgflg_register = 0x00;
+	crgint_register = 0x00;
+	clksel_register = 0x00;
+	pllctl_register = 0xF1;
+	rtictl_register = 0x00;
+	copctl_register = 0x00;
+	forbyp_register =  0x00;
+	ctctl_register = 0x00;
+	armcop_register = 0x00;
 
 }
 
