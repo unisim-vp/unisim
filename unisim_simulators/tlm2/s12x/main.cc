@@ -253,7 +253,7 @@ int sc_main(int argc, char *argv[])
 	ADDRESS::ENCODING address_encoding = ADDRESS::BANKED;
 
 	// Parse the command line arguments
-	while((c = getopt_long (argc, argv, "x:p:cs:dg:a:hf", long_options, 0)) != -1)
+	while((c = getopt_long (argc, argv, "x:p:c:s:dg:a:hf", long_options, 0)) != -1)
 	{
 		switch(c)
 		{
@@ -297,9 +297,6 @@ int sc_main(int argc, char *argv[])
 	}
 
 	char *filename = argv[optind];
-	int sim_argc = argc - optind;
-	char **sim_argv = argv + optind;
-	char **sim_envp = environ;
 
 	// If no filename has been specified then display the help
 	if(filename == NULL)
