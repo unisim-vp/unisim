@@ -301,6 +301,58 @@ $ tms320c3x -c sim_config.xml
 	\end{tabular}
 \end{center}
 
+\subsection{Debugging the target program}
+
+Command line option \texttt{-i} enables the inline debugger. The inline debugger has support for controling the program execution, inspecting the program and its data, and putting breakpoints and watchpoints. The user can interact with the debugger using the following commands:
+\begin{itemize}
+\item Execution commands:
+	\begin{itemize}
+	\item \texttt{<c | cont | continue> [<symbol | *address>]}: \newline
+	continue to execute instructions until program reaches a breakpoint, a watchpoint, 'symbol' or 'address'
+	\item \texttt{<s | si | step | stepi>}: \newline
+	execute one instruction
+	\item \texttt{<n | ni | next | nexti>}: \newline
+	continue to execute instructions until the processor reaches next contiguous instruction, a breakpoint or a watchpoint
+	\item \texttt{<r | run>}: \newline
+	restart the simulation from the beginning (not yet supported)
+	\end{itemize}
+\item Inspection commands:
+	\begin{itemize}
+	\item \texttt{<dis | disasm | disassemble> [<symbol | *address>]}: \newline
+	continue to disassemble starting from 'symbol', 'address', or after the previous disassembly
+	\item \texttt{<d | dump> [<symbol | *address>]}: \newline
+	dump memory starting from 'symbol', 'address', or after the previous dump
+	\item \texttt{<register name>}: \newline
+	display the register value
+	\item \texttt{<m | monitor> [<variable name>]}: \newline
+	display the given simulator variable (displays all variable names if none is given)
+	\item \texttt{<p | prof | profile>} \newline
+	\texttt{<p | prof | profile> program} \newline
+	\texttt{<p | prof | profile> data} \newline
+	\texttt{<p | prof | profile> data read} \newline
+	\texttt{<p | prof | profile> data write}: \newline
+	display the program/data profile
+	\end{itemize}
+\item Breakpoints/Watchpoints commands:
+	\begin{itemize}
+	\item \texttt{<b | break> [<symbol | *address>]}: \newline
+	set a breakpoint at 'symbol' or 'address'. If 'symbol' or 'address' are not specified, display the breakpoint list
+	\item \texttt{<w | watch> [<symbol | *address[:<size>]>] [<read | write>]}: \newline
+	set a watchpoint at 'symbol' or 'address'. When using 'continue' and 'next' commands, the debugger will spy CPU loads and store. The debugger will return to command line prompt once a load, or a store will access to 'symbol' or 'address'.
+	\item \texttt{<del | delete> <symbol | *address>}: \newline
+	delete the breakpoint at 'symbol' or 'address'
+	\item \texttt{<delw | delwatch> <symbol | *address> [<read | write>] [<size>]}: \newline
+	delete the watchpoint at 'symbol' or 'address'
+	\end{itemize}
+\item Miscellaneous commands:
+	\begin{itemize}
+	\item \texttt{<h | ? | help>}: \newline
+	display the help
+	\item \texttt{<quit | q>}: \newline
+	quit the built-in debugger
+	\end{itemize}
+\end{itemize}
+
 \section{Developer guide}
 
 This part is still under construction.
@@ -430,6 +482,35 @@ logger << DebugError << "This is an error message using variable \"error\" with 
 \end{verbatim}
 
 \subsection{Utility classes}
+
+The utility classes source code is in \texttt{unisim/util}. They implements:
+\begin{itemize}
+\item Fast integer arithmetic computations (assembly on i386 machines):
+	\begin{itemize}
+	\item Full Adders (8, 16, 32, and 64 bits)
+	\item Full Substractors (8, 16, 32, and 64 bits)
+	\item Full Adders with signed saturation (8, 16, 32, and 64 bits)
+	\item Full Substractors with signed saturation (8, 16, 32, and 64 bits)
+	\item Specific Adders (e.g. reversed carry propagation adder)
+	\item Rotates (left, right, through an additional virtual bit, with bit in, with bit out)
+	\item Logical Shifts (left, right, through an additional virtual bit, with bit in, with bit out)
+	\item Arithmetic Shifts (left, right, an additional virtual bit, with, with bit in, with bit out)
+	\item Bit Scanning (from left to right, and from right to left)
+	\item Base 2 Logarithm
+	\item 2's complement sign Extension
+	\end{itemize}
+\item Debugging support
+	\begin{itemize}
+	\item Symbol management (symbol table)
+	\item Profile to keep software activity during a run (e.g. in inline debugger service)
+	\item Breakpoint/Watchpoint registry
+	\item Register debugging support
+	\item Network stub for implementing a fake device, remotely control the simulator, and cosimulate with another external simulation environment
+	\end{itemize}
+\item Endianness support for fast endian conversion (assembly on i386 machines)
+\item Hash table for fast table lookup (e.g. for memory)
+\item bare XML support (e.g. for GDB server service)
+\end{itemize}
 
 \subsection{TMS320C3X instruction set simulator}
 
