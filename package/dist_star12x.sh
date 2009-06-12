@@ -101,6 +101,8 @@ unisim/kernel/logger/logger.cc \
 unisim/kernel/logger/logger_server.cc \
 unisim/kernel/debug/debug.cc \
 unisim/util/xml/xml.cc \
+unisim/util/debug/profile_32.cc \
+unisim/util/debug/profile_64.cc \
 unisim/util/debug/symbol_32.cc \
 unisim/util/debug/symbol_64.cc \
 unisim/util/debug/symbol_table_32.cc \
@@ -171,6 +173,7 @@ unisim/kernel/debug/debug.hh \
 unisim/kernel/tlm2/tlm.hh \
 unisim/util/arithmetic/arithmetic.hh \
 unisim/util/debug/breakpoint.hh \
+unisim/util/debug/profile.hh \
 unisim/util/debug/register.hh \
 unisim/util/debug/symbol.hh \
 unisim/util/debug/simple_register.hh \
@@ -232,6 +235,7 @@ unisim/component/tlm2/processor/hcs12x/ect.hh \
 
 UNISIM_LIB_HCS12X_TEMPLATE_FILES="\
 unisim/util/debug/breakpoint_registry.tcc \
+unisim/util/debug/profile.tcc \
 unisim/util/debug/watchpoint_registry.tcc \
 unisim/util/debug/symbol_table.tcc \
 unisim/util/debug/symbol.tcc \
