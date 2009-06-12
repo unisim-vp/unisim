@@ -187,7 +187,7 @@ private:
 	int16_t c_io_close(int16_t fno);
 	int16_t c_io_read(int16_t fno, char *buf, uint16_t count);
 	int16_t c_io_write(int16_t fno, const char *buf, uint16_t count);
-	int16_t c_io_lseek(int16_t fno, int32_t offset, int16_t origin);
+	int32_t c_io_lseek(int16_t fno, int32_t offset, int16_t origin);
 	int16_t c_io_unlink(const char *path);
 	const char *c_io_getenv(const char *name);
 	int16_t c_io_rename(const char *oldpath, const char *newpath);

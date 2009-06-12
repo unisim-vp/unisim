@@ -382,7 +382,11 @@ unisim::service::interfaces::TI_C_IO::Status TI_C_IO<MEMORY_ADDR>::HandleEmulato
 			output_msg.parm[0] = c_io_write(input_msg.parm[0], (const char *) buffer, input_msg.parm[1]);
 			break;
 		case C_IO_CMD_LSEEK:
-			output_msg.parm[0] = c_io_lseek(input_msg.parm[0], (int32_t) input_msg.parm[1] | ((int32_t) input_msg.parm[2] << 16), input_msg.parm[2]);
+			{
+				uint32_t fpos = c_io_lseek(input_msg.parm[0], (int32_t) input_msg.parm[1] | ((int32_t) input_msg.parm[2] << 16), input_msg.parm[3]);
+				output_msg.parm[0] = fpos & 0xffff;
+				output_msg.parm[1] = (fpos >> 16) & 0xffff;
+			}
 			break;
 		case C_IO_CMD_UNLINK:
 			output_msg.parm[0] = c_io_unlink((const char *) buffer);
@@ -661,7 +665,7 @@ int16_t TI_C_IO<MEMORY_ADDR>::c_io_write(int16_t fno, const char *buf, uint16_t 
 }
 
 template <class MEMORY_ADDR>
-int16_t TI_C_IO<MEMORY_ADDR>::c_io_lseek(int16_t fno, int32_t offset, int16_t origin)
+int32_t TI_C_IO<MEMORY_ADDR>::c_io_lseek(int16_t fno, int32_t offset, int16_t origin)
 {
 	int fd;      // the host file descriptor
 
