@@ -115,8 +115,6 @@ CPU::CPU(const char *name, Object *parent):
 
     eblb = new EBLB(this);
 
-	this->Reset();
-
 }
 
 CPU::~CPU()
@@ -154,6 +152,17 @@ void CPU::SetEntryPoint(address_t cpu_address)
 
 void CPU::Reset()
 {
+	regA = 0;
+	regB = 0;
+	regX = 0;
+	regY = 0;
+	regSP = 0;
+	regPC = 0;
+	regTMP[0] = 0;
+	regTMP[1] = 0;
+	regTMP[2] = 0;
+	lastPC = 0;
+
 	ccr->reset();
 	for (char i=0; i < QUEUE_SIZE; i++) queueBuffer[i] = 0;
 }

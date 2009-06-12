@@ -67,20 +67,21 @@ MMC::MMC(const char *name, Object *parent):
 void MMC::Reset() {
 
 	directSet = false;
-	write(MMCCTL0_REG_ADDRESS, MMCCTL0_RESET);
-	write(MMC_MODE_REG_ADDRESS, mode_int);
-	write(GPAGE_REG_ADDRESS, GLOBAL_RESET_PAGE);
-	write(DIRECT_REG_ADDRESS, DIRECT_RESET_PAGE);
-	write(MMCCTL1_REG_ADDRESS, mmcctl1_int);
 
-	write(RPAGE_REG_ADDRESS, RAM_RESET_PAGE);
-	write(EPAGE_REG_ADDRESS, EEPROM_RESET_PAGE);
-	write(PPAGE_REG_ADDRESS, FLASH_RESET_PAGE);
+	mmcctl0 = MMCCTL0_RESET;
+	mode = mode_int;
+	gpage = GLOBAL_RESET_PAGE;
+	direct = DIRECT_RESET_PAGE;
+	mmcctl1 = mmcctl1_int;
 
-	write(RAMWPC_REG_ADDRESS, RAMWPC_RESET);
-	write(RAMXGU_REG_ADDRESS, RAMXGU_RESET);
-	write(RAMSHL_REG_ADDRESS, RAMSHL_RESET);
-	write(RAMSHU_REG_ADDRESS, RAMSHU_RESET);
+	rpage = RAM_RESET_PAGE;
+	epage = EEPROM_RESET_PAGE;
+	ppage = FLASH_RESET_PAGE;
+
+	ramwpc = RAMWPC_RESET;
+	ramxgu = RAMXGU_RESET;
+	ramshl = RAMSHL_RESET;
+	ramshu = RAMSHU_RESET;
 
 }
 
