@@ -395,6 +395,9 @@ Generator::operation_decl( Product_t& _product ) const {
   op_getlen_decl( _product );
   _product.code( " inline const char *GetName() const { return name; }\n" );
   
+  _product.code( " static unsigned int const minsize = %d;\n", m_insn_minsize );
+  _product.code( " static unsigned int const maxsize = %d;\n", m_insn_maxsize );
+  
   for( Vect_t<Variable_t>::const_iterator var = isa().m_vars.begin(); var < isa().m_vars.end(); ++ var ) {
     _product.usercode( (**var).m_ctype->m_fileloc, " %s %s;", (**var).m_ctype->m_content.str(), (**var).m_symbol.str() );
   }
