@@ -98,30 +98,6 @@ RiscGenerator::RiscGenerator()
   : m_insn_ctypesize( 0 )
 {};
 
-struct FieldRange {
-  bool         m_little_endian;
-  unsigned int m_pos, m_size;
-  
-  unsigned int pos() { return m_pos; }
-  
-  FieldRange( bool little_endian, unsigned int maxsize )
-    : m_little_endian( little_endian ), m_pos( little_endian ? 0 : maxsize ), m_size( 0 )
-  {}
-  
-  void
-  next( BitField_t const& field ) {
-    if (m_little_endian) m_pos += m_size;
-    else                 m_pos -= field.m_size;
-    m_size = field.m_size;
-  }
-  
-  unsigned int
-  insn_size( unsigned int maxsize ) {
-    if (m_little_endian) return m_pos + m_size;
-    else                 return maxsize - m_pos;
-  }
-};
-
 /** Process the isa structure and computes RISC specific data 
 */
 void
@@ -148,36 +124,21 @@ RiscGenerator::finalize() {
   for( Vect_t<Operation_t>::const_iterator op = operations.begin(); op < operations.end(); ++ op ) {
     Vect_t<BitField_t> const& bitfields = (**op).m_bitfields;
     
-    FieldRange fieldrange( isa().m_little_endian, m_insn_maxsize );
-    FieldRange lastfieldrange( fieldrange );
-    
     bool vlen = false, outprefix = false;
     unsigned int insn_size = 0;
     uint64_t mask = 0, bits = 0;
     
-    for( Vect_t<BitField_t>::const_iterator bf = bitfields.begin(); bf < bitfields.end(); ++ bf ) {
-      fieldrange.next( **bf );
-      
-      if ((**bf).type() == BitField_t::Separator) {
-        SeparatorBitField_t const& sepbf = dynamic_cast<SeparatorBitField_t const&>( **bf );
-        if (sepbf.m_rewind) {
-          fieldrange = lastfieldrange;
-        } else {
-          lastfieldrange = fieldrange;
-        }
-        outprefix = true;
-      }
-      
-      if ((**bf).minsize() != (**bf).maxsize()) {
+    for (FieldIterator fi( isa().m_little_endian, bitfields, m_insn_maxsize ); fi.next(); ) { 
+      if (fi.item().minsize() != fi.item().maxsize()) {
         vlen = true;
         outprefix = true;
       }
       
-      insn_size = std::max( insn_size, fieldrange.insn_size( m_insn_maxsize ) );
+      insn_size = std::max( insn_size, fi.insn_size() );
       
-      if (outprefix or not (**bf).hasopcode()) continue;
-      bits |= (**bf).bits() << fieldrange.pos();
-      mask |= (**bf).mask() << fieldrange.pos();
+      if (outprefix or not fi.item().hasopcode()) continue;
+      bits |= fi.item().bits() << fi.pos();
+      mask |= fi.item().mask() << fi.pos();
     }
     m_opcodes[*op] = OpCode_t( vlen, insn_size, mask, bits );
   }
@@ -248,28 +209,15 @@ RiscGenerator::codetype_decl( Product_t& _product ) const {
 void
 RiscGenerator::insn_decode_impl( Product_t& _product, Operation_t const& _op, char const* _codename, char const* _addrname ) const
 {
-  FieldRange fieldrange( isa().m_little_endian, m_insn_maxsize );
-  FieldRange lastfieldrange( fieldrange );
   OpCode_t const& oc = opcode( &_op );
   
   if (oc.m_vlen) {
     _product.code( "this->gil_length = %u;\n", oc.m_size );
   }
   
-  for( Vect_t<BitField_t>::const_iterator bf = _op.m_bitfields.begin(); bf < _op.m_bitfields.end(); ++ bf ) {
-    fieldrange.next( **bf );
-    
-    if ((**bf).type() == BitField_t::Separator) {
-      SeparatorBitField_t const& sepbf = dynamic_cast<SeparatorBitField_t const&>( **bf );
-      if (sepbf.m_rewind) {
-        fieldrange = lastfieldrange;
-      } else {
-        lastfieldrange = fieldrange;
-      }
-    }
-    
-    else if ((**bf).type() == BitField_t::SubOp) {
-      SubOpBitField_t const& sobf = dynamic_cast<SubOpBitField_t const&>( **bf );
+  for (FieldIterator fi( isa().m_little_endian, _op.m_bitfields, m_insn_maxsize ); fi.next(); ) {
+    if (fi.item().type() == BitField_t::SubOp) {
+      SubOpBitField_t const& sobf = dynamic_cast<SubOpBitField_t const&>( fi.item() );
       SDInstance_t const* sdinstance = sobf.m_sdinstance;
       SDClass_t const* sdclass = sdinstance->m_sdclass;
       SourceCode_t const* tpscheme =  sdinstance->m_template_scheme;
@@ -278,7 +226,7 @@ RiscGenerator::insn_decode_impl( Product_t& _product, Operation_t const& _op, ch
       if (tpscheme)
         _product.usercode( tpscheme->m_fileloc, "< %s >", tpscheme->m_content.str() );
       _product.code( "( %s, ((%s >> %u) & 0x%llx) );\n",
-                     _addrname, _codename, fieldrange.pos(), sobf.mask() );
+                     _addrname, _codename, fi.pos(), sobf.mask() );
 
       if (sdclass->m_minsize != sdclass->m_maxsize) {
         _product.code( "{\nunsigned int shortening = %u - %s->GetLength();\n",
@@ -288,21 +236,20 @@ RiscGenerator::insn_decode_impl( Product_t& _product, Operation_t const& _op, ch
       }
     }
     
-    else if ((**bf).type() == BitField_t::Operand) {
-      
-      OperandBitField_t const& opbf = dynamic_cast<OperandBitField_t const&>( **bf );
+    else if (fi.item().type() == BitField_t::Operand) {
+      OperandBitField_t const& opbf = dynamic_cast<OperandBitField_t const&>( fi.item() );
       _product.code( "%s = ", opbf.m_symbol.str() );
       
       if( opbf.m_sext ) {
         int sizeofop = std::max( opbf.dstsize(), m_minwordsize );
         int sext_shift = sizeofop - opbf.m_size;
         _product.code( "(((((int%d_t)(%s >> %u)) & 0x%llx) << %u) >> %u)",
-                       sizeofop, _codename, fieldrange.pos(),
+                       sizeofop, _codename, fi.pos(),
                        opbf.mask(), sext_shift, sext_shift );
       } else {
         // FIXME: a cast from the instruction type to the operand type
         // may be wiser...
-        _product.code( "((%s >> %u) & 0x%llx)", _codename, fieldrange.pos(), opbf.mask() );
+        _product.code( "((%s >> %u) & 0x%llx)", _codename, fi.pos(), opbf.mask() );
       }
     
       if( opbf.m_shift > 0 )

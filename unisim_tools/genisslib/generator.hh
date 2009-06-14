@@ -70,6 +70,22 @@ struct Generator {
   virtual void                        insn_getlen_decl( Product_t& _product, Operation_t const& _op ) const = 0;
   
   static unsigned int                 least_ctype_size( unsigned int bits );
+
+};
+
+struct FieldIterator {
+  Vect_t<BitField_t> const& m_bitfields;
+  unsigned int              m_idx;
+  unsigned int              m_ref;
+  unsigned int              m_pos, m_size;
+  unsigned int              m_chkpt_pos, m_chkpt_size;
+  
+  FieldIterator( bool little_endian, Vect_t<BitField_t> const& bitfields, unsigned int maxsize );
+  
+  unsigned int      pos() { return m_pos; }
+  unsigned int      insn_size() { return (m_ref == 0) ? m_pos + m_size : m_ref - m_pos; }
+  BitField_t const& item();
+  bool              next();
 };
 
 #endif // __GENERATOR_HH__

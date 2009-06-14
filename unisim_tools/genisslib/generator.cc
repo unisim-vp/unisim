@@ -1020,3 +1020,28 @@ Generator::least_ctype_size( unsigned int bits ) {
   return size;
 }
 
+FieldIterator::FieldIterator( bool little_endian, Vect_t<BitField_t> const& bitfields, unsigned int maxsize )
+  : m_bitfields( bitfields ), m_idx( (unsigned int)(-1) ),
+    m_ref( little_endian ? 0 : maxsize ),
+    m_pos( m_ref ), m_size( 0 ),
+    m_chkpt_pos( m_pos ), m_chkpt_size( m_size )
+{}
+  
+BitField_t const& FieldIterator::item() { return *(m_bitfields[m_idx]); }
+
+bool
+FieldIterator::next() {
+  if ((m_idx+1) >= m_bitfields.size()) return false;
+  m_idx += 1;
+  BitField_t const& field = *(m_bitfields[m_idx]);
+  if (m_ref == 0) m_pos += m_size;
+  else            m_pos -= field.m_size;
+  m_size = field.m_size;
+  if (field.type() == BitField_t::Separator) {
+    SeparatorBitField_t const& sepbf = dynamic_cast<SeparatorBitField_t const&>( field );
+    if (sepbf.m_rewind) { m_pos = m_chkpt_pos; m_size = m_chkpt_size; }
+    else                { m_chkpt_pos = m_pos; m_chkpt_size = m_size; }
+  }
+  
+  return true;
+}

@@ -31,6 +31,7 @@
 #include <conststr.hh>
 #include <iostream>
 #include <cassert>
+#include <cstring>
 #include <limits>
 
 using namespace std;
@@ -50,6 +51,7 @@ CiscGenerator::OpCode_t::size( unsigned int _size ) {
   m_size = _size;
   m_mask = new uint8_t[_size*2];
   m_bits = &m_mask[_size];
+  memset( m_mask, 0, _size*2 );
 }
 
 /** Optimize the size of OpCode object: right zero-mask bytes are stripped. */
@@ -209,68 +211,34 @@ CiscGenerator::finalize() {
   
   // Process the opcodes needed by the decoder
   for( Vect_t<Operation_t>::const_iterator op = isa().m_operations.begin(); op < isa().m_operations.end(); ++ op ) {
-    { // Sanity checks
-      unsigned int count = 0;
-      for( BFWordIterator bfword( (**op).m_bitfields ); bfword.next(); ) {
-        count   += bfword.m_count;
-        if( (bfword.m_minsize % 8) != 0 or (bfword.m_maxsize % 8) != 0 ) {
-          (**op).m_fileloc.err( "unaligned word separator (%dth field) in operation `%s`.", count+1, (**op).m_symbol.str() );
-          throw GenerationError;
-        }
-        if (bfword.m_has_subop) {
-          if (bfword.m_count > 1) {
-            (**op).m_fileloc.err( "subdecoder fields must be surrounded by word separator (operation `%s`).",
-                                  (**op).m_symbol.str() );
-            throw GenerationError;
-          }
-        } else { // no SubOp
-          assert( bfword.m_maxsize == bfword.m_minsize );
-        }
-      }
-    }
-    
     // compute prefix size
     unsigned int prefixsize = 0;
-    for( BFWordIterator bfword( (**op).m_bitfields ); bfword.next(); ) {
-      if (bfword.m_minsize != bfword.m_maxsize) break;
-      prefixsize += bfword.m_maxsize;
-      if (bfword.m_rewind) break;
+    for (FieldIterator fi( isa().m_little_endian, (**op).m_bitfields, m_insn_maxsize ); fi.next(); ) {
+      if (fi.item().minsize() != fi.item().maxsize()) break;
+      if (prefixsize < fi.insn_size()) prefixsize = fi.insn_size();
     }
     m_opcodes[*op].size( prefixsize / 8 );
     
     // compute opcode
     OpCode_t& oc = opcode( *op );
-    int byteoffset = 0;
-    for( BFWordIterator bfword( (**op).m_bitfields ); bfword.next(); ) {
-      if( bfword.m_minsize != bfword.m_maxsize ) break;
-      int bytesize = bfword.m_maxsize / 8;
-      unsigned int nshift = isa().m_little_endian ? 0 : bfword.m_maxsize;
-      uint64_t mask = 0, bits = 0;
-      for( Vect_t<BitField_t>::const_iterator bf = bfword.m_left; bf < bfword.m_right; ++ bf ) {
-        unsigned int shift;
-        if (isa().m_little_endian) { shift = nshift; nshift += (**bf).m_size; }
-        else                       { nshift -= (**bf).m_size; shift = nshift; }
-        if( not (**bf).hasopcode() ) continue;
-        mask |= (**bf).mask() << shift;
-        bits |= (**bf).bits() << shift;
+    for (FieldIterator fi( isa().m_little_endian, (**op).m_bitfields, m_insn_maxsize ); fi.next(); ) {
+      if (fi.item().minsize() != fi.item().maxsize()) break;
+      if (not fi.item().hasopcode()) continue;
+      uint64_t mask = fi.item().mask(), bits = fi.item().bits();
+      bool little_endian = isa().m_little_endian;
+      unsigned int pos = little_endian ? fi.pos() : fi.insn_size();
+      while (mask) {
+        unsigned int shift = little_endian ? (pos % 8) : (-pos % 8);
+        unsigned int offset = little_endian ? (pos / 8) : ((pos-1) / 8);
+        uint8_t partial_mask = mask << shift;
+        uint8_t partial_bits = bits << shift;
+        oc.m_mask[offset] |= partial_mask;
+        oc.m_bits[offset] = (oc.m_bits[offset] & ~partial_mask) | (partial_bits & partial_mask);
+        shift = 8 - shift;
+        mask >>= shift;
+        bits >>= shift;
+        pos = little_endian ? pos + shift : pos - shift;
       }
-      if( isa().m_little_endian ) {
-        for( int byte = 0; byte < bytesize; ++ byte ) {
-          oc.m_mask[byteoffset+byte] = mask & 0xff;
-          oc.m_bits[byteoffset+byte] = bits & 0xff;
-          mask = mask >> 8;
-          bits = bits >> 8;
-        }
-      } else {
-        for( int byte = bytesize; (--byte) >= 0; ) {
-          oc.m_mask[byteoffset+byte] = mask & 0xff;
-          oc.m_bits[byteoffset+byte] = bits & 0xff;
-          mask = mask >> 8;
-          bits = bits >> 8;
-        }
-      }
-      byteoffset += bytesize;
-      if (bfword.m_rewind) break;
     }
     oc.optimize();
   }
@@ -509,9 +477,10 @@ CiscGenerator::opcode( Operation_t const* _op ) {
 void
 CiscGenerator::insn_destructor_decl( Product_t& _product, Operation_t const& _op ) const {
   bool subops = false;
+  Vect_t<BitField_t> const& bfs = _op.m_bitfields;
   
-  for (BFWordIterator bfword( _op.m_bitfields ); bfword.next();) {
-    if (bfword.m_has_subop) { subops = true; break; }
+  for( Vect_t<BitField_t>::const_iterator bf = bfs.begin(); bf < bfs.end(); ++bf ) {
+    if ((**bf).type() == BitField_t::SubOp) { subops = true; break; }
   }
   
   if( not subops ) return;
@@ -521,10 +490,11 @@ CiscGenerator::insn_destructor_decl( Product_t& _product, Operation_t const& _op
 void
 CiscGenerator::insn_destructor_impl( Product_t& _product, Operation_t const& _op ) const {
   std::vector<ConstStr_t> subops;
+  Vect_t<BitField_t> const& bfs = _op.m_bitfields;
   
-  for (BFWordIterator bfword( _op.m_bitfields ); bfword.next();) {
-    if (not bfword.m_has_subop) continue;
-    SubOpBitField_t const& sobf = dynamic_cast<SubOpBitField_t const&>( **bfword.m_left );
+  for( Vect_t<BitField_t>::const_iterator bf = bfs.begin(); bf < bfs.end(); ++bf ) {
+    if ((**bf).type() != BitField_t::SubOp) continue;
+    SubOpBitField_t const& sobf = dynamic_cast<SubOpBitField_t const&>( **bf );
     subops.push_back( sobf.m_symbol );
   }
   
