@@ -1213,20 +1213,37 @@ WriteRegister(uint64_t addr, uint16_t value)
 			SendTimerOverflowInterrupt();
 			SendInputCaptureBInterrupt();
 			SendOutputCompareBInterrupt();
+			SendGlobalTimerInterrupt();
 			break;
 		case 0x1c: // TIMn_SR
-			done = true;
-			sr = sr & (value & ~(uint16_t)0x07ff);
-			if (VerboseRun())
 			{
-				logger << DebugInfo
-					<< "Resetting SR to 0x" << hex << SR() << " (write value = 0x" << value << ")" << dec << endl
-					<< " - ICFA " << ICFA() << endl
-					<< " - OCFA " << OCFA() << endl
-					<< " - TOF  " << TOF() << endl
-					<< " - ICFB " << ICFB() << endl
-					<< " - OCFB " << OCFB()
-					<< EndDebugInfo;
+				uint32_t old_sr = SR();
+				bool old_icfa = ICFA();
+				bool old_ocfa = OCFA();
+				bool old_tof = TOF();
+				bool old_icfb = ICFB();
+				bool old_ocfb = OCFB();
+				sr = SR() & (value & ~(uint16_t)0x07ff);
+				done = true;
+				if (VerboseRun())
+				{
+					logger << DebugInfo
+						<< "Resetting SR to 0x" << hex << SR() << " (from 0x" << old_sr << " with write value = 0x" << value << ")" << dec << endl
+						<< " - ICFA " << ICFA() << endl
+						<< " - OCFA " << OCFA() << endl
+						<< " - TOF  " << TOF() << endl
+						<< " - ICFB " << ICFB() << endl
+						<< " - OCFB " << OCFB()
+						<< EndDebugInfo;
+				}
+				// for the modified bits send the new interrupt signal
+				bool global = false;
+				if (old_icfa != ICFA()) { SendInputCaptureAInterrupt(); global = true; }
+				if (old_ocfa != OCFA()) { SendOutputCompareAInterrupt(); global = true; }
+				if (old_tof != TOF()) { SendTimerOverflowInterrupt(); global = true; }
+				if (old_icfb != ICFB()) { SendInputCaptureBInterrupt(); global = true; }
+				if (old_ocfb != OCFB()) { SendOutputCompareBInterrupt(); global = true; }
+				if (global) SendGlobalTimerInterrupt();
 			}
 			break;
 		default:
@@ -1271,9 +1288,6 @@ SendInputCaptureAInterrupt()
 			trans->release();
 			break;
 	}
-
-	// update the global timer interrupt signal
-	SendGlobalTimerInterrupt();
 }
 
 template<unsigned int BUSWIDTH, bool VERBOSE>
@@ -1297,9 +1311,6 @@ SendOutputCompareAInterrupt()
 			trans->release();
 			break;
 	}
-
-	// update the global timer interrupt signal
-	SendGlobalTimerInterrupt();
 }
 
 template<unsigned int BUSWIDTH, bool VERBOSE>
@@ -1323,9 +1334,6 @@ SendTimerOverflowInterrupt()
 			trans->release();
 			break;
 	}
-
-	// update the global timer interrupt signal
-	SendGlobalTimerInterrupt();
 }
 
 template<unsigned int BUSWIDTH, bool VERBOSE>
@@ -1349,9 +1357,6 @@ SendInputCaptureBInterrupt()
 			trans->release();
 			break;
 	}
-
-	// update the global timer interrupt signal
-	SendGlobalTimerInterrupt();
 }
 
 template<unsigned int BUSWIDTH, bool VERBOSE>
@@ -1375,9 +1380,6 @@ SendOutputCompareBInterrupt()
 			trans->release();
 			break;
 	}
-
-	// update the global timer interrupt signal
-	SendGlobalTimerInterrupt();
 }
 
 template<unsigned int BUSWIDTH, bool VERBOSE>
@@ -1437,6 +1439,7 @@ TimerOverflowHandler()
 				if (VerboseRun())
 					logger << DebugInfo << " and sending interrupt";
 				SendTimerOverflowInterrupt();
+				SendGlobalTimerInterrupt();
 			}
 			if (VerboseRun())
 				logger << EndDebugInfo;
@@ -1484,6 +1487,7 @@ OutputCompareAHandler()
 				if (VerboseRun())
 					logger << " and sending interrupt";
 				SendOutputCompareAInterrupt();
+				SendGlobalTimerInterrupt();
 			}
 			if (VerboseRun())
 				logger << EndDebugInfo;
@@ -1520,6 +1524,7 @@ OutputCompareBHandler()
 				if (VerboseRun())
 					logger << " and sending interrupt";
 				SendOutputCompareBInterrupt();
+				SendGlobalTimerInterrupt();
 			}
 			if (VerboseRun())
 				logger << EndDebugInfo;
