@@ -508,7 +508,55 @@ unsigned int
 STR7_EIC<BUS_WIDTH, VERBOSE> ::
 transport_dbg(tlm::tlm_generic_payload& trans)
 {
-	/* This method should never be used */
+	unsigned char *data = trans.get_data_ptr();
+	unsigned int size = trans.get_data_length();
+	uint64_t addr = trans.get_address();
+
+	if (trans.is_read())
+	{
+		trans.set_response_status(tlm::TLM_OK_RESPONSE);
+		if (size == 0) return size;
+		unsigned int read_size = 0;
+		do
+		{
+			uint64_t offset = ((addr + read_size) % 4);
+			uint64_t base = (addr + read_size) - offset;
+			uint32_t reg = 0;
+			reg = ReadRegister(base - base_address, false);
+			cerr << hex << reg << dec;
+			reg = reg >> ((offset) * 8);
+			reg = reg & (uint64_t)0x00ff;
+			unsigned char t = reg;
+			cerr << " " << hex << (unsigned int)t << " (0x" << base << ")" << dec << endl;
+			data[read_size] = t;
+			read_size++;
+		} while (read_size != size);
+	
+		for (unsigned int i = 0; i < size; i++)
+			cerr << hex << (unsigned int)(data[i]) << dec << " ";
+		cerr << endl;
+		return size;
+	}
+	else if (trans.is_write())
+	{
+		trans.set_response_status(tlm::TLM_OK_RESPONSE);
+		if (size == 0) return size;
+		unsigned int write_size = 0;
+		do
+		{
+			uint64_t offset = (addr + write_size) % 4;
+			uint64_t base = addr - offset;
+			uint32_t reg = 0;
+			reg = ReadRegister(base - base_address, false);
+			reg = reg & ~((uint32_t)0xff << (offset * 8));
+			reg = reg + ((uint32_t)(data[write_size]) << (offset * 8));
+			WriteRegister(base - base_address, reg, false);
+			write_size++;
+		} while (write_size != size);
+
+		return size;
+	}
+	
 	return 0;
 }
 
@@ -553,6 +601,7 @@ IRQFifoHandler()
 		entry = irq_fifo.get_next_transaction();
 		if (entry != 0)
 		{
+			uint32_t old_irq_status = irq_status;
 			while (entry != 0)
 			{
 				unsigned int index = entry->index;
@@ -574,7 +623,14 @@ IRQFifoHandler()
 						<< EndDebugInfo;
 				entry = irq_fifo.get_next_transaction();
 			}
-			FSMUpdate();
+			// we need to update the FSM only if the status has really changed, 
+			//   and even then only if the changes were to set one of the interrupts
+			if (old_irq_status != irq_status)
+			{
+				uint32_t modified_irq_status = old_irq_status ^ irq_status;
+				if (modified_irq_status & irq_status)
+					FSMUpdate();
+			}
 		}
 		else
 		{
@@ -727,28 +783,32 @@ FSMUpdate()
 			if (has_irq)
 			{
 				logger << ", and determined that irq at index " << index 
-					<< " has the highest priority (SIPL[" << index << "] = " << SIPL(index) << ", CIPR = " << CIPR() << ")";
+					<< " has the highest priority (SIPL[" << index << "] = " << SIPL(index) << ", SIV[" << index << "] = 0x" << hex << SIV(index) << dec << ", CIPR = " << CIPR() << ")";
 			}
 			else
 			{
 				logger << ", but determined that none should be served because all has a priority lower that the current one (CIPR = "
 					<< CIPR() << ")";
 			}
-			logger << EndDebugInfo;
 		}
-	}
+	
+		if (has_irq) 
+		{
+			/* update the IVR registers */
+			ivr &= (uint32_t)0xFFFF0000;
+			ivr |= SIV(index);
+			if (VerboseRun())
+				logger << ", setting IVR to 0x" << hex << ivr << dec << EndDebugInfo;
 
-	if (has_irq) 
-	{
-		/* update the IVR registers */
-		ivr &= (uint32_t)0xFFFF0000;
-		ivr |= SIV(index);
+			/* change the FSM state when an irq is detected */
+			FSMWait();
 
-		/* change the FSM state when an irq is detected */
-		FSMWait();
-
-		/* the interrupt is signaled only if global irqs (IRQ_EN) are activated */
-		has_irq = IRQ_EN();
+			/* the interrupt is signaled only if global irqs (IRQ_EN) are activated */
+			has_irq = IRQ_EN();
+		}
+		else
+			if (VerboseRun())
+				logger << EndDebugInfo;
 	}
 
 	/* send the interrupt level through the out_irq port */
@@ -846,7 +906,7 @@ Pop()
 template <unsigned int BUS_WIDTH, bool VERBOSE>
 uint32_t 
 STR7_EIC<BUS_WIDTH, VERBOSE> ::
-ReadRegister(uint32_t const addr)
+ReadRegister(uint32_t const addr, bool update)
 {
 	uint32_t index = addr;
 	unsigned int sir_index = 0;
@@ -864,13 +924,16 @@ ReadRegister(uint32_t const addr)
 			return CIPR();
 			break;
 		case 0x18: // IVR
-			if (IsFSMWait())
+			if (update)
 			{
-				Push();
-				cicr = new_irq;
-				cipr = SIPL(new_irq);
+				if (IsFSMWait())
+				{
+					Push();
+					cicr = new_irq;
+					cipr = SIPL(new_irq);
+				}	
+				FSMReady();
 			}
-			FSMReady();
 			return IVR();
 			break;
 		case 0x1c: // FIR
@@ -900,31 +963,40 @@ ReadRegister(uint32_t const addr)
 template <unsigned int BUS_WIDTH, bool VERBOSE>
 void 
 STR7_EIC<BUS_WIDTH, VERBOSE> ::
-WriteRegister(uint32_t addr, uint32_t value)
+WriteRegister(uint32_t addr, uint32_t value, bool update)
 {
 	unsigned int irq;
 	unsigned int has_irq = false;
 
 	uint32_t index = addr;
+	uint32_t sir_index = 0;
 	if (addr >= 0x60 && addr <= 0xdc) index = 0x60;
-	switch (addr)
+	switch (index)
 	{
 		case 0x0: // ICR
 			icr = value & 0x3;
-			if (VerboseRun())
+			if (update)
 			{
-				logger << DebugInfo
-					<< "Writing ICR with value 0x" << hex << value << dec
-					<< ", ICR new value is 0x" << hex << ICR() << dec
-					<< EndDebugInfo;
+				if (VerboseRun())
+				{
+					logger << DebugInfo
+						<< "Writing ICR with value 0x" << hex << value << dec
+						<< ", ICR new value is 0x" << hex << ICR() << dec
+						<< EndDebugInfo;
+				}
+				FSMUpdate();
 			}
-			FSMUpdate();
 			break;
 		case 0x04: // CICR
 			/* can not be modified, ignore write */
 			break;
 		case 0x08: // CIPR
-			if ((value & 0x0f) > CIPR())
+			if (update)
+			{
+				if ((value & 0x0f) > CIPR())
+					cipr = (value & 0x0f);
+			}
+			else
 				cipr = (value & 0x0f);
 			break;
 		case 0x18: // IVR
@@ -943,13 +1015,17 @@ WriteRegister(uint32_t addr, uint32_t value)
 					if (value & (0x01 << (i + 2)) && FIP() & (0x01 << i))
 						fir = fir & ~((uint32_t)0x01 << (i + 2));
 				}
-				FSMUpdate();
+				if (update)
+					FSMUpdate();
 			}
 			break;
 		case 0x20: // IER0
 			ier0 = value;
 			break;
 		case 0x40: // IPR0
+			if (VerboseRun())
+				logger << DebugInfo << "Writing IPR0 with value 0x" << hex << value << dec
+					<< " (old IPR0 = 0x" << hex << IPR0() << dec << ", ";
 			if (value)
 			{
 				for (unsigned int i = 0; i < NUM_IRQ; i++)
@@ -965,16 +1041,32 @@ WriteRegister(uint32_t addr, uint32_t value)
 					}
 				}
 			}
-			if (has_irq)
+			if (VerboseRun())
+				logger << "new IPR0 = 0X" << hex << IPR0() << dec << ")" << EndDebugInfo;
+			if (update)
 			{
-				if (irq == CICR())
+				if (has_irq)
 				{
-					Pop();
+					if (irq == CICR())
+					{
+						if (VerboseRun())
+							logger << DebugInfo << "Popping stack (CICR = 0x" << hex << CICR() << dec << ")" 
+								<< EndDebugInfo;
+						Pop();
+					}
+					else
+					{
+						if (VerboseRun())
+							logger << DebugInfo << "Could not pop the stack because the removed irq (" << irq << ") is different than the CICR (" << CICR() << ")"
+								<< EndDebugInfo;
+					}
 				}
+				FSMUpdate();
 			}
-			FSMUpdate();
 			break;
 		case 0x60: // SIR
+			sir_index = (addr - 0x60) / 4;
+			sir[sir_index] = value & (uint32_t)0xffff000f;
 			break;
 		default:
 			break;
