@@ -202,14 +202,17 @@ private:
 
 	/** Read register method and update interrupt controller state as necessary.
 	 * @param addr		the register address
+	 * @param update	read the register and perform the reading side effects
+	 *
 	 * @return 			the contents of the register
 	 */
-	uint32_t ReadRegister(uint32_t addr);
+	uint32_t ReadRegister(uint32_t addr, bool update = true);
 	/** Write register method and update interrupt controller state as necessary.
 	 * @param addr		the register address
 	 * @param value		the data to write into the register
+	 * @param update	read the register and perform the writing side effects
 	 */
-	void WriteRegister(uint32_t addr, uint32_t value);
+	void WriteRegister(uint32_t addr, uint32_t value, bool update = true);
 
 	/* interrupt signals status */
 	uint32_t irq_status;
