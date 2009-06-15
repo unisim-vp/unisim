@@ -203,14 +203,14 @@ void CRG::write(uint8_t offset, uint8_t value) {
 			if ((clksel_register & 0x80) != 0) return; // if (PLLSEL == 1) then return;
 
 			synr_register = value & 0x3F;
-			compute_pll_clock();
+			compute_clock();
 			crgflg_register = crgflg_register | 0x0C; // set Lock and track bits
 		} break;
 		case REFDV: {
 			if ((clksel_register & 0x80) != 0) return; // if (PLLSEL == 1) then return;
 
 			refdv_register = value & 0x3F;
-			compute_pll_clock();
+			compute_clock();
 			crgflg_register = crgflg_register | 0x1C;
 			assertInterrupt(interrupt_offset_pll_lock);
 		} break;
@@ -247,7 +247,7 @@ void CRG::write(uint8_t offset, uint8_t value) {
 		} break;
 		case CLKSEL: {
 			clksel_register = value;
-			compute_bus_clock();
+			compute_clock();
 		} break;
 		case PLLCTL: {
 			uint8_t cme_bit = pllctl_register & 0x80;
@@ -294,21 +294,16 @@ void CRG::write(uint8_t offset, uint8_t value) {
 	}
 }
 
-sc_time CRG::compute_pll_clock() {
+void CRG::compute_clock() {
 
 	pll_clock = 2 * oscillator_clock * (synr_register + 1) / (refdv_register +1) ;
 
-	return pll_clock;
-}
-
-sc_time CRG::compute_bus_clock() {
 	if ((clksel_register & 0x80) != 0) {
 		bus_clock = pll_clock / 2;
 	} else {
 		bus_clock = oscillator_clock / 2;
 	}
 
-	return bus_clock;
 }
 
 void CRG::initialize_rti_counter() {
@@ -367,7 +362,7 @@ bool CRG::Setup() {
 
 	Reset();
 
-	compute_pll_clock();
+	compute_clock();
 
 	return true;
 }

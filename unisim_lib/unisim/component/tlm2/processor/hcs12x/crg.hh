@@ -185,8 +185,7 @@ private:
 	// RTI Frequency Divide Rate
 	double rti_fdr;
 
-	sc_time compute_pll_clock();
-	sc_time compute_bus_clock();
+	void compute_clock();
 	void initialize_rti_counter();
 
 	void select_cop_timeout();
