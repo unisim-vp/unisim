@@ -4,7 +4,7 @@
 		<variable name="cpu.debug-enabled">
 			<type>parameter</type>
 			<data_type>bool</data_type>
-			<value>true</value>
+			<value>false</value>
 			<description></description>
 		</variable>
 		<variable name="cpu.max-inst">
@@ -80,7 +80,7 @@
 		<variable name="s12xint.debug-enabled">
 			<type>parameter</type>
 			<data_type>bool</data_type>
-			<value>true</value>
+			<value>false</value>
 			<description></description>
 		</variable>
 	</object>

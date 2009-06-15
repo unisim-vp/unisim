@@ -126,7 +126,7 @@ void RTBStub::Input(bool pwmValue[PWM_SIZE])
 
 	payload = last_payload;
 
-	cout << sc_time_stamp() << ":" << name() << "::PWM:: Last Receive " << payload->serialize() << endl;
+//	cout << sc_time_stamp() << ":" << name() << "::PWM:: Last Receive " << payload->serialize() << endl;
 
 	for (int i=0; i<PWM_SIZE; i++) {
 		pwmValue[i] = payload->pwmChannel[i];
@@ -179,7 +179,7 @@ void RTBStub::Output_ATD0(double anValue[ATD0_SIZE])
 		payload->anPort[i] = anValue[i];
 	}
 
-	cout << sc_time_stamp() << ":" << name() << "::ATD0::send " << payload->serialize() << endl;
+//	cout << sc_time_stamp() << ":" << name() << "::ATD0::send " << payload->serialize() << endl;
 
 	sc_time local_time = quantumkeeper.get_local_time();
 
