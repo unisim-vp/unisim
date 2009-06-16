@@ -418,7 +418,7 @@ The service library currently contains the following services:
 		\hline
 		\multicolumn{2}{|l|}{\textbf{\Large Service COFF Loader}}\\
 		\hline
-		\multicolumn{1}{|p{7.5cm}}{\textbf{Class Name:} \newline \texttt{unisim::service::loader::coff\_loader}\newline$\hookrightarrow$\texttt{::CoffLoader}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Header:} \newline \texttt{sample/sample/sample}\newline$\hookrightarrow$\texttt{/sample.hh}}\\
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Class Name:} \newline \texttt{unisim::service::loader::coff\_loader}\newline$\hookrightarrow$\texttt{::CoffLoader}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Header:} \newline \texttt{unisim/service/loader/coff\_loader}\newline$\hookrightarrow$\texttt{/coff\_loader.hh}}\\
 		\multicolumn{2}{|l|}{}\\
 		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The COFF loader service allows to load a COFF binary program into a memory and fill a symbol table. The loader also provides information about the loaded ﬁle such as the code and data locations (base address and size). The COFF loader loads the program during setup.}\\
 		\hline
@@ -447,16 +447,20 @@ The service library currently contains the following services:
 		\hline
 		\multicolumn{2}{|c|}{\textbf{\large Service Exports}}\\
 		\hline
-		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{sample}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{sample} \newline$\hookrightarrow$\texttt{sample}}\\
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{logger\_export}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces::} \newline$\hookrightarrow$\texttt{Loader<MEMORY\_ADDR>}}\\
 		\multicolumn{2}{|l|}{}\\
-		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Sample.}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The COFF loader provides information about the code and data location through this export.}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{symbol\_table\_lookup\_export}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces::} \newline$\hookrightarrow$\texttt{SymbolTableLookup<MEMORY\_ADDR>}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The COFF loader provides symbol lookup through this export.}\\
 		\hline
 		\hline
 		\multicolumn{2}{|c|}{\textbf{\large Service Imports}}\\
 		\hline
-		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{sample} \newline \textbf{Mandatory connected:} yes/no} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{sample::sample::sample} \newline$\hookrightarrow$\texttt{::sample}}\\
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{memory\_import} \newline \textbf{Mandatory connected:} no} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces::} \newline$\hookrightarrow$\texttt{Memory<uint32\_t>}}\\
 		\multicolumn{2}{|l|}{}\\
-		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Sample.}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The COFF loader accesses to the memory through this import.}\\
 		\hline
 	\end{tabular}
 \end{center}
@@ -512,39 +516,107 @@ The service library currently contains the following services:
 		\hline
 		\multicolumn{2}{|l|}{\textbf{\Large Service TI C I/O}}\\
 		\hline
-		\multicolumn{1}{|p{7.5cm}}{\textbf{Class Name:} \newline \texttt{unisim::service::os::ti\_c\_io}\newline$\hookrightarrow$\texttt{::TI\_C\_IO}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Header:} \newline \texttt{sample/sample/sample}\newline$\hookrightarrow$\texttt{/sample.hh}}\\
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Class Name:} \newline \texttt{unisim::service::os::ti\_c\_io}\newline$\hookrightarrow$\texttt{::TI\_C\_IO}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Header:} \newline \texttt{unisim/service/os/ti\_c\_io}\newline$\hookrightarrow$\texttt{/ti\_c\_io.hh}}\\
 		\multicolumn{2}{|l|}{}\\
-		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Sample.}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The TI C I/O service provides target programs with a support for low level I/O (open, read, write, close, \ldots) on the host machine.}\\
 		\hline
 		\hline
 		\multicolumn{2}{|c|}{\textbf{\large Template Parameters}}\\
 		\hline
-		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{sample}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{sample}}\\
-		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{sample}}\\
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{MEMORY\_ADDR}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{class}}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{none}}\\
 		\multicolumn{2}{|l|}{}\\
-		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Sample.}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline This is the C++ type of a memory address (e.g. uint32\_t or uint64\_t).}\\
 		\hline
 		\hline
 		\multicolumn{2}{|c|}{\textbf{\large Run-Time Parameters}}\\
 		\hline
-		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{sample}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{sample}}\\
-		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{sample}}\\
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{ti\_c\_io.enable}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
 		\multicolumn{2}{|l|}{}\\
-		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Sample.}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/Disable TI C I/O support.}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{ti-c-io.warning-as-error}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Whether Warnings are considered as error or not.}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{ti-c-io.pc-register-name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{"PC"}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Name of the CPU program counter register.}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{ti-c-io.c-io-buffer-symbol-name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{"\_\_CIOBUF\_"}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline C I/O buffer symbol name.}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{ti-c-io.c-io-breakpoint-}\newline$\hookrightarrow$\texttt{symbol-name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{"C\$\$IO\$\$"}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline C I/O breakpoint symbol name. The TI C I/O service installs an SWI instruction at this point to capture target program I/O.}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{ti-c-io.c-exit-breakpoint-}\newline$\hookrightarrow$\texttt{symbol-name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{"C\$\$EXIT"}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline C EXIT breakpoint symbol name. The TI C I/O service installs an SWI instruction at this point to capture target program exit.}\\
+		\hline
+	\end{tabular}
+\end{center}
+
+\newpage
+\begin{center}
+	\begin{tabular}{|p{7.5cm}|p{7.5cm}|}
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{ti-c-io.verbose-all}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Globally enable/disable verbosity of TI C I/O service.}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{ti-c-io.verbose-io}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/disable verbosity of TI C I/O service while I/Os.}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{ti-c-io.verbose-setup}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/disable verbosity of TI C I/O service while setup.}\\
 		\hline
 		\hline
 		\multicolumn{2}{|c|}{\textbf{\large Service Exports}}\\
 		\hline
-		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{sample}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{sample} \newline$\hookrightarrow$\texttt{sample}}\\
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{ti\_c\_io\_export}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::interfaces::} \newline$\hookrightarrow$\texttt{TI\_C\_IO<MEMORY\_ADDR>}}\\
 		\multicolumn{2}{|l|}{}\\
-		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Sample.}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The TI C I/O provides target to host I/O translation through this service export.}\\
 		\hline
 		\hline
 		\multicolumn{2}{|c|}{\textbf{\large Service Imports}}\\
 		\hline
-		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{sample} \newline \textbf{Mandatory connected:} yes/no} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{sample::sample::sample} \newline$\hookrightarrow$\texttt{::sample}}\\
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{memory\_import}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces::} \newline$\hookrightarrow$\texttt{Memory<MEMORY\_ADDR>}}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Mandatory connected:} no}\\
 		\multicolumn{2}{|l|}{}\\
-		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Sample.}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The TI C I/O service accesses to the memory while setup through this import. While setup it installs a two SWI instructions to capture both target I/O and program exit.}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{memory\_injection\_import}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces::} \newline$\hookrightarrow$\texttt{MemoryInjection<MEMORY\_ADDR>}}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Mandatory connected:} no}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The TI C I/O service accesses to the memory while simulation through this import. It accesses to the I/O buffer in the target program memory and then interprete the content of this buffer to translate target program I/Os to host I/Os.}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{registers\_import} \newline \textbf{Mandatory connected:} yes} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces} \newline$\hookrightarrow$\texttt{::Registers}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline This service import should be connected to a CPU module. The TI C I/O service calls method \texttt{GetRegister} through this service import to get an interface to the CPU registers. The TI C I/O service uses methods \texttt{GetName}, \texttt{GetValue}, \texttt{GetSize} and \texttt{SetValue} of that interface to access to CPU registers. This import is mainly used to get the current PC, so that the TI C I/O service can distinguish target program I/Os from target program exit.}\\
+		\hline
+	\end{tabular}
+\end{center}
+
+\newpage
+\begin{center}
+	\begin{tabular}{|p{7.5cm}|p{7.5cm}|}
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{symbol\_table\_lookup\_import} \newline \textbf{Mandatory connected:} yes} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces} \newline$\hookrightarrow$\texttt{::SymbolTableLookup<MEMORY\_ADDR>}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The TI C I/O service uses this service import get the address of the breakpoints and I/O buffer from their symbol name.}\\
 		\hline
 	\end{tabular}
 \end{center}
@@ -559,7 +631,7 @@ The service library currently contains the following services:
 		\hline
 		\multicolumn{1}{|p{7.5cm}}{\textbf{Class Name:} \newline \texttt{unisim::service::debug}\newline$\hookrightarrow$\texttt{::inline\_debugger::InlineDebugger}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Header:} \newline \texttt{unisim/service/debug}\newline$\hookrightarrow$\texttt{/inline\_debugger/inline\_debugger.hh}}\\
 		\multicolumn{2}{|l|}{}\\
-		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The inline debugger service provides the user with a simple text-based interface to interactively debug a target application running on a CPU module. The debug is at the instruction level. The inline debugger may be connected to a CPU module and (optionally) to a symbol table.}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The inline debugger service provides the user with a simple text-based interface to interactively debug a target application running on a CPU module. The debug is at the instruction level. The inline debugger may be connected to a CPU module.}\\
 		\hline
 		\hline
 		\multicolumn{2}{|c|}{\textbf{\large Template Parameters}}\\
@@ -568,6 +640,14 @@ The service library currently contains the following services:
 		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} none}\\
 		\multicolumn{2}{|l|}{}\\
 		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline This is the C++ type of a memory address (e.g. uint32\_t or uint64\_t).}\\
+		\hline
+		\hline
+		\multicolumn{2}{|c|}{\textbf{\large Run-time parameters}}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{inline-debugger.memory-atom-size}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{unsigned integer}}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{1}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Size of the smallest addressable element in memory.}\\
 		\hline
 		\hline
 		\multicolumn{2}{|c|}{\textbf{\large Service Exports}}\\
@@ -583,35 +663,6 @@ The service library currently contains the following services:
 		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{trap\_reporting\_export}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces} \newline$\hookrightarrow$\texttt{::TrapReporting}}\\
 		\multicolumn{2}{|l|}{}\\
 		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline This service export should be connected to a CPU module. A CPU module calls method \texttt{ReportTrap} through its service import. This allows the debugger to break execution on the simulated CPU once a trap condition is detected by the CPU module.}\\
-		\hline
-	\end{tabular}
-\end{center}
-
-\newpage
-\begin{center}
-	\begin{tabular}{|p{7.5cm}|p{7.5cm}|}
-		\hline
-		\multicolumn{2}{|c|}{\textbf{\large Service Imports}}\\
-		\hline
-		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{disasm\_import} \newline \textbf{Mandatory connected:} yes} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces} \newline$\hookrightarrow$\texttt{::Disassembly<ADDRESS>}}\\
-		\multicolumn{2}{|l|}{}\\
-		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline This service import should be connected to a CPU module. The CPU module should implements method \texttt{Disassemble} which provides the debugger with disassembling of the instructions.}\\
-		\hline
-		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{memory\_import} \newline \textbf{Mandatory connected:} yes} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces} \newline$\hookrightarrow$\texttt{::Memory<ADDRESS>}}\\
-		\multicolumn{2}{|l|}{}\\
-		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline This service import should be connected to a CPU or a memory module. The debugger uses this service import to access to memory using methods \texttt{ReadMemory} and \texttt{WriteMemory}.}\\
-		\hline
-		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{memory\_access\_reporting\newline$\hookrightarrow$\_control\_import} \newline \textbf{Mandatory connected:} no} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces} \newline$\hookrightarrow$\texttt{::MemoryAccessReportingControl}}\\
-		\multicolumn{2}{|l|}{}\\
-		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline This service import should be connected to a CPU module. The debugger calls methods \texttt{RequiresMemoryAccessReporting} and \texttt{RequiresFinishedInstructionReporting} through this service import to enable/disable memory access reporting from the CPU module.}\\
-		\hline
-		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{registers\_import} \newline \textbf{Mandatory connected:} yes} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces} \newline$\hookrightarrow$\texttt{::Registers}}\\
-		\multicolumn{2}{|l|}{}\\
-		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline This service import should be connected to a CPU module. The debugger calls method \texttt{GetRegister} through this service import to get an interface to the CPU registers. The debugger uses methods \texttt{GetName}, \texttt{GetValue}, \texttt{GetSize} and \texttt{SetValue} of that interface to access to CPU registers.}\\
-		\hline
-		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{symbol\_table\_lookup\_import} \newline \textbf{Mandatory connected:} no} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces} \newline$\hookrightarrow$\texttt{::SymbolTableLookup}}\\
-		\multicolumn{2}{|l|}{}\\
-		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline This service import should be connected to a symbol table. The debugger calls method \texttt{FindSymbol}, \texttt{FindSymbolByAddr}, \texttt{FindSymbolByName} through this service import to translate address to symbol and vice-versa.}\\
 		\hline
 	\end{tabular}
 \end{center}

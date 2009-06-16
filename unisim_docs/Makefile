@@ -103,8 +103,14 @@ ARM966E_S_GENERATED_LATEX=$(patsubst %.cpp,%.tex,$(ARM966E_S_CPP_SOURCES))
 
 # tms320c3x
 TMS320C3X_LATEX_SOURCES=tms320c3x/tms320c3x.tex
-TMS320C3X_CPP_SOURCES=
-TMS320C3X_FIGURES=
+TMS320C3X_CPP_SOURCES=\
+tms320c3x/service_instanciation.cpp \
+tms320c3x/service_connection.cpp \
+tms320c3x/simple_service.cpp \
+tms320c3x/simple_client.cpp \
+tms320c3x/run_time_parameter.cpp
+
+TMS320C3X_FIGURES=tms320c3x/fig_tms320c3x.pdf tms320c3x/fig_object_hierarchy.pdf
 
 TMS320C3X_GENERATED_LATEX=$(patsubst %.cpp,%.tex,$(TMS320C3X_CPP_SOURCES))
 
