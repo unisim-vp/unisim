@@ -210,14 +210,87 @@ void Device<CONFIG>::DumpCode(Kernel<CONFIG> & kernel, std::ostream & os)
 	}
 }
 
+inline uint32_t BuildTID(int x, int y, int z)
+{
+	// TODO: check it matches actual hardware
+	// TODO: and use config
+	return (z << 26) | (y << 16) | x;
+}
+
+template<class CONFIG>
+void SetThreadIDs(Kernel<CONFIG> const & kernel, int bnum, CPU<CONFIG> * cpu)
+{
+	// Set register 0 of each thread
+	int warpsperblock = kernel.WarpsPerBlock();
+	int blockstart = bnum * warpsperblock;
+	//cerr << "Warpsperblocks = " << warpsperblock << ", blockstart = " << blockstart << endl;
+	for(int z = 0; z != kernel.BlockZ(); ++z)
+	{
+		for(int y = 0; y != kernel.BlockY(); ++y)
+		{
+			for(int x = 0; x != kernel.BlockX(); ++x)
+			{
+				int tid = ((z * kernel.BlockY()) + y) * kernel.BlockX() + x;
+				int warpid = blockstart + tid / CONFIG::WARP_SIZE;
+				int lane = tid % CONFIG::WARP_SIZE;
+				
+				//cerr << "Setting r0 of warp " << warpid << endl;
+				uint32_t reg = BuildTID(x, y, z);
+				cpu->GetGPR(warpid, 0).WriteLane(reg, lane);	// TID on r0
+			}
+		}
+	}
+
+}
+
 template<class CONFIG>
 struct Runner
 {
 	CPU<CONFIG> * cpu;
+	int width, height;
+	int c;
+	Kernel<CONFIG> & kernel;
+	unisim::component::cxx::memory::ram::Memory<typename CONFIG::address_t> & memory;
+	unsigned int core_count;
 	
-	Runner(CPU<CONFIG> * cpu) : cpu(cpu) {}
-	void operator() () { cpu->Run(); }
+	Runner(CPU<CONFIG> * cpu, Kernel<CONFIG> & kernel,
+		unisim::component::cxx::memory::ram::Memory<typename CONFIG::address_t> & memory,
+		int width, int height, int core_count, int c) :
+		cpu(cpu), width(width), height(height), c(c), kernel(kernel),
+		memory(memory), core_count(core_count) {}
+	void operator() ();
 };
+
+template<class CONFIG>
+void Runner<CONFIG>::operator() ()
+{
+	int blocksPerCore = kernel.BlocksPerCore();
+	int blocksPerGPU = blocksPerCore * core_count;
+	
+	// Simple round-robin scheduling policy
+	for(int i = c * blocksPerCore; i < height * width; i += blocksPerGPU)
+	{
+		int blocks = std::min(blocksPerCore, height * width - i);
+		
+		if(blocks > 0)
+		{
+			cpu->Reset(kernel.ThreadsPerBlock(), blocks, kernel.GPRs(), kernel.SharedTotal());
+
+			for(int j = 0; j < blocks; ++j)
+			{
+				int bidx = (i+j) % width;
+				int bidy = (i+j) / width;
+				kernel.InitShared(memory, j, bidx, bidy, c);
+				SetThreadIDs(kernel, j, cpu);
+			}
+
+			// Start execution
+			cpu->Run();
+		}
+		
+		// TODO: Sync
+	}
+}
 
 template<class CONFIG>
 void Device<CONFIG>::Run(Kernel<CONFIG> & kernel, int width, int height)
@@ -244,51 +317,19 @@ void Device<CONFIG>::Run(Kernel<CONFIG> & kernel, int width, int height)
 	}
 	kernel.SetGridShape(width, height);
 	
-	int blocksPerCore = kernel.BlocksPerCore();
-	int blocksPerGPU = blocksPerCore * core_count;
-
 	thread_group GPUThreads;
 	
-	// Blocks are scheduled sequentially on available resources
-	int bidy = 0;
-	int bidx = 0;
-	for(int i = 0; i < height * width; i += blocksPerGPU)
+	for(int c = 1; c < core_count; ++c)
 	{
-		int myCoreCount = core_count;
-		for(int c = 0; c != core_count; ++c)
-		{
-			int firstBlock = i + c * blocksPerCore;
-			int blocks = std::min(blocksPerCore, height * width - firstBlock);
-			
-			if(blocks > 0)
-			{
-				cores[c]->Reset(kernel.ThreadsPerBlock(), blocks, kernel.GPRs(), kernel.SharedTotal());
-
-				for(int j = 0; j < blocks; ++j)
-				{
-					kernel.InitShared(memory, j, bidx, bidy, c);
-					SetThreadIDs(kernel, j, c);
-
-					++bidx;
-					if(bidx == width) {
-						bidx = 0;
-						++bidy;
-					}
-				}
-			}
-			else
-			{
-				myCoreCount = c;
-				break;
-			}
-			
-			// Start execution
-			GPUThreads.create_thread(Runner<CONFIG>(cores[c]));
-		}
-		
-		// Force synchronization (CUDA's scheduler does so...)
-		GPUThreads.join_all();
+		GPUThreads.create_thread(Runner<CONFIG>(cores[c], kernel, memory, width, height,
+			core_count, c));
 	}
+	
+	// Run first block on current thread
+	Runner<CONFIG>(cores[0], kernel, memory, width, height,
+			core_count, 0)();
+	
+	GPUThreads.join_all();
 	
 	for(int i = 0; i != core_count; ++i) {
 		cores[i]->stats = 0;
@@ -397,42 +438,6 @@ void Device<CONFIG>::Memset(typename CONFIG::address_t dest, uint8_t val, size_t
 template<class CONFIG>
 void Device<CONFIG>::Reset()
 {
-}
-
-template<class CONFIG>
-void Device<CONFIG>::SetThreadIDs(Kernel<CONFIG> const & kernel, int bnum, int core)
-{
-	// Set register 0 of each thread
-	
-	// TODO: multiple core_count
-	int warpsperblock = kernel.WarpsPerBlock();
-	int blockstart = bnum * warpsperblock;
-	//cerr << "Warpsperblocks = " << warpsperblock << ", blockstart = " << blockstart << endl;
-	for(int z = 0; z != kernel.BlockZ(); ++z)
-	{
-		for(int y = 0; y != kernel.BlockY(); ++y)
-		{
-			for(int x = 0; x != kernel.BlockX(); ++x)
-			{
-				int tid = ((z * kernel.BlockY()) + y) * kernel.BlockX() + x;
-				int warpid = blockstart + tid / CONFIG::WARP_SIZE;
-				int lane = tid % CONFIG::WARP_SIZE;
-				
-				//cerr << "Setting r0 of warp " << warpid << endl;
-				uint32_t reg = BuildTID(x, y, z);
-				cores[core]->GetGPR(warpid, 0).WriteLane(reg, lane);	// TID on r0
-			}
-		}
-	}
-
-}
-
-template<class CONFIG>
-uint32_t Device<CONFIG>::BuildTID(int x, int y, int z)
-{
-	// TODO: check it matches with actual hardware
-	// TODO: and use config
-	return (z << 26) | (y << 16) | x;
 }
 
 template<class CONFIG>

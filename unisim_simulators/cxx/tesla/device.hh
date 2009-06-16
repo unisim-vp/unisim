@@ -113,8 +113,8 @@ struct Device: CUdevice_st, Object
 private:
 	void Load(Kernel<CONFIG> & kernel);
 	void Reset();
-	void SetThreadIDs(Kernel<CONFIG> const & kernel, int bnum, int core);
-	uint32_t BuildTID(int x, int y, int z);
+	//void SetThreadIDs(Kernel<CONFIG> const & kernel, int bnum, int core);
+	//uint32_t BuildTID(int x, int y, int z);
 	void SetVariableBool(char const * env, char const * varname);
 
 	std::vector<CPU<CONFIG> *> cores;

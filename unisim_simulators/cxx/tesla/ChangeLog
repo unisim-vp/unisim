@@ -1,5 +1,6 @@
 See unisim_lib/unisim/component/cxx/processor/tesla/ChangeLog for the simulator changelog.
 
+Version 0.3, 16 June 2009
 * Multiple GPU cores and multithreaded simulation supported
 * Stats are preserved across kernel calls
 
