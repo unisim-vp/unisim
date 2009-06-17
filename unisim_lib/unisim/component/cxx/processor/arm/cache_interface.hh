@@ -43,7 +43,6 @@
 
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger.hh"
-#include "unisim/service/interfaces/logger.hh"
 #include "unisim/service/interfaces/memory.hh"
 
 #endif // SOCLIB

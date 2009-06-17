@@ -671,16 +671,16 @@ ldm_3_ia.execute = {
 		mask = mask << 1;
 	}
   
+	/* update rn */
+	if(w)
+		cpu.SetGPR(rn, rn_new_val);
+
 	cpu.MoveSPSRtoCPSR();
 
 	cpu.Read32toPC(cur_address);
 
 	/* TODO:
 	 * cur_address should be checked to be the same as end_address + 4 */
-  
-	/* update rn */
-	if(w)
-		cpu.SetGPR(rn, rn_new_val);
 }
 
 ldm_3_ib.execute = {
@@ -711,16 +711,16 @@ ldm_3_ib.execute = {
 		mask = mask << 1;
 	}
 
+	/* update rn */
+	if(w)
+		cpu.SetGPR(rn, rn_new_val);
+
 	cpu.MoveSPSRtoCPSR();
 
 	cpu.Read32toPC(cur_address);
 
 	/* TODO:
 	 * cur_address should be checked to be the same as end_address + 4 */
-
-	/* update rn */
-	if(w)
-		cpu.SetGPR(rn, rn_new_val);
 }
 
 ldm_3_da.execute = {
@@ -750,6 +750,10 @@ ldm_3_da.execute = {
 		}
 		mask = mask << 1;
 	}
+  
+	/* update rn */
+	if(w)
+		cpu.SetGPR(rn, rn_new_val);
 
 	cpu.MoveSPSRtoCPSR();
 
@@ -757,10 +761,6 @@ ldm_3_da.execute = {
 
 	/* TODO:
 	 * cur_address should be checked to be the same as end_address + 4 */
-  
-	/* update rn */
-	if(w)
-		cpu.SetGPR(rn, rn_new_val);
 }
 
 ldm_3_db.execute = {
@@ -790,6 +790,10 @@ ldm_3_db.execute = {
 		}
 		mask = mask << 1;
 	}
+  
+	/* update rn */
+	if(w)
+		cpu.SetGPR(rn, rn_new_val);
 
 	cpu.MoveSPSRtoCPSR();
 
@@ -797,10 +801,6 @@ ldm_3_db.execute = {
 
 	/* TODO:
 	 * cur_address should be checked to be the same as end_address + 4 */
-  
-	/* update rn */
-	if(w)
-		cpu.SetGPR(rn, rn_new_val);
 }
 
 // ldm_3.nextpc = {

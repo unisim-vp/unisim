@@ -38,9 +38,9 @@
 
 #ifndef SOCLIB
 
-#define LOCATION Function << __FUNCTION__ \
-                        << File <<  __FILE__ \
-                        << Line << __LINE__
+#define LOCATION __FUNCTION__ \
+					<< ":" <<  __FILE__ \
+					<< ":" << __LINE__
 
 #if (defined(__GNUC__) && (__GNUC__ >= 3))
 #define INLINE __attribute__((always_inline))
@@ -54,9 +54,6 @@ namespace cxx {
 namespace processor {
 namespace arm {
 
-using unisim::service::interfaces::Function;
-using unisim::service::interfaces::File;
-using unisim::service::interfaces::Line;
 using unisim::util::debug::SimpleRegister;
 using unisim::util::debug::Symbol;
 using unisim::util::endian::E_BIG_ENDIAN;

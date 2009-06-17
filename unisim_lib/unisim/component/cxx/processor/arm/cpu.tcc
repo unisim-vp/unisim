@@ -1834,7 +1834,7 @@ SetGPRMapping(uint32_t src_mode, uint32_t tar_mode) {
   //    * - interrupt:      0-12 (R0-R12), 22-23 (R13-R14), 15 (PC)
   //    * - fast interrupt: 0-7 (R0-R7),   24-30 (R8-R14),  15 (PC)
   //    */
-	
+
   /* Backup current running mode */
   switch(src_mode) {
   case USER_MODE:
