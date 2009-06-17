@@ -2,7 +2,6 @@
 
 \subsection{Simulator features}
 
-
 The TMS320C3X is a 32-bit floating-point DSP from Texas Instrument.
 The UNISIM TMS320C3X simulator features:
 \begin{itemize}
@@ -115,11 +114,15 @@ $ tms320c3x -g default_sim_config.xml
 $ tms320c3x -c sim_config.xml
 \end{verbatim}
 
+\noindent \textit{Note: Although it's not strictly necessary, Parameter \texttt{inline-debugger.memory-atom-size} should be set to value 4 as the TMS320C3X memory is not byte-addressable. If this parameter is not set to 4, presentation of the memory content and disassembly may seem unconventional in the inline debugger.}
+
 \newpage
 \noindent The available parameters are summarized in table below:
 
 \begin{center}
-	\begin{tabular}{|p{7.5cm}|p{7.5cm}|}
+	\tablehead{\hline}
+	\tabletail{\hline}
+	\begin{supertabular}{|p{7.5cm}|p{7.5cm}|}
 	\hline
 	\multicolumn{2}{|c|}{\textbf{\large CPU run-time parameters}}\\
 	\hline
@@ -161,12 +164,6 @@ $ tms320c3x -c sim_config.xml
 	\multicolumn{2}{|l|}{}\\
 	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Filename of an XML description of the connected processor.}\\
 	\hline
-	\end{tabular}
-\end{center}
-
-\newpage
-\begin{center}
-	\begin{tabular}{|p{7.5cm}|p{7.5cm}|}
 	\hline
 	\multicolumn{2}{|c|}{\textbf{\large Inline Debugger run-time parameters}}\\
 	\hline
@@ -207,13 +204,6 @@ $ tms320c3x -c sim_config.xml
 	\multicolumn{2}{|l|}{}\\
 	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Filename to keep logger output (the option \texttt{file} must be activated).}\\
 	\hline
-	\end{tabular}
-\end{center}
-
-\newpage
-\begin{center}
-	\begin{tabular}{|p{7.5cm}|p{7.5cm}|}
-	\hline
 	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{kernel\_logger.xml\_file}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
 	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
 	\multicolumn{2}{|l|}{}\\
@@ -253,12 +243,6 @@ $ tms320c3x -c sim_config.xml
 	\multicolumn{2}{|l|}{}\\
 	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Size in bytes (8-bit) of memory.}\\
 	\hline
-	\end{tabular}
-\end{center}
-
-\newpage
-\begin{center}
-	\begin{tabular}{|p{7.5cm}|p{7.5cm}|}
 	\hline
 	\multicolumn{2}{|c|}{\textbf{\large Service TI C I/O run-time parameters}}\\
 	\hline
@@ -307,7 +291,7 @@ $ tms320c3x -c sim_config.xml
 	\multicolumn{2}{|l|}{}\\
 	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/disable verbosity of TI C I/O service while setup.}\\
 	\hline
-	\end{tabular}
+	\end{supertabular}
 \end{center}
 
 \subsection{Debugging the target program}
@@ -363,27 +347,41 @@ Command line option \texttt{-i} enables the inline debugger. The inline debugger
 	\end{itemize}
 \end{itemize}
 
+\newpage
 \section{Developer guide}
-
-This part is still under construction.
-
-\subsection{Overview}
 
 The TMS320C3X simulator is the combination of several software components:
 \begin{itemize}
-\item A service infrastructure in \texttt{unisim/kernel/service}
-\item A built-in logger in \texttt{unisim/kernel/logger}
-\item Several small utility classes in \texttt{unisim/util}
-\item A TMS320C3X instruction set simulator in \texttt{unisim/component/cxx/processor/tms320}
-\item A memory in \texttt{unisim/component/cxx/memory/ram}
-\item Service interface definitions in \texttt{unisim/service/interfaces}
-\item A COFF loader service in \texttt{unisim/service/loader/coff\_loader}
-\item A TI C I/O service in \texttt{unisim/service/os/ti\_c\_io}
-\item An inline debugger service in \texttt{unisim/service/debug/inline\_debugger}
-\item A GDB server service in \texttt{unisim/service/debug/gdb\_server}
+\item A service infrastructure in \texttt{unisim/kernel/service} (see ~\ref{tms320c3x_service_infrastructure})
+\item A built-in logger in \texttt{unisim/kernel/logger} (see ~\ref{tms320c3x_logger})
+\item Several small utility classes in \texttt{unisim/util} (see ~\ref{tms320c3x_utils})
+\item A TMS320C3X instruction set simulator in \texttt{unisim/component/cxx/processor/tms320} (see ~\ref{tms320c3x_iss})
+\item A memory in \texttt{unisim/component/cxx/memory/ram} (see ~\ref{tms320c3x_memory})
+\item Service interface definitions in \texttt{unisim/service/interfaces} (see ~\ref{tms320c3x_interfaces})
+\item A COFF loader service in \texttt{unisim/service/loader/coff\_loader} (see ~\ref{tms320c3x_coff_loader})
+\item A TI C I/O service in \texttt{unisim/service/os/ti\_c\_io} (see ~\ref{tms320c3x_ti_c_io})
+\item An inline debugger service in \texttt{unisim/service/debug/inline\_debugger} (see ~\ref{tms320c3x_inline_debugger})
+\item A GDB server service in \texttt{unisim/service/debug/gdb\_server} (see ~\ref{tms320c3x_gdb_server})
 \end{itemize}
 
+\subsection{Simulation Components}
+
+\subsubsection{TMS320C3X instruction set simulator}
+\label{tms320c3x_iss}
+
+The instruction set simulator source code is located in directory: \newline \texttt{unisim/component/cxx/processor/tms320}.\newline
+The UNISIM TMS320C3X instruction set simulator uses an instruction set simulator generator, GenISSLib.
+GenISSLib uses an instruction set description (\texttt{.isa} files) located in sub-directory \texttt{isa} of the instruction set simulator source code directory.
+
+\subsubsection{Memory}
+\label{tms320c3x_memory}
+
+A memory is implemented by class \texttt{unisim::component::cxx::memory::ram::Memory}.
+Methods \texttt{ReadMemory} and \texttt{WriteMemory} respectively implement read and write memory accesses.
+This simulation components provides interface \texttt{unisim::service::interfaces::Memory} to other simulation components (e.g. CPU) or services (e.g. the COFF loader).
+
 \subsection{Service infrastructure}
+\label{tms320c3x_service_infrastructure}
 
 Designing a new emulator, and particularly for a research purpose, means implementing an instruction set emulator but also involves several software components not directly related to pure instruction set execution.
 The most obvious needed software components are memories, debuggers, loaders, but components such as chipsets and peripherals are still mandatory to enable running real unmodified applications.
@@ -405,11 +403,12 @@ The parameterization have been standardized (class \texttt{Parameter}) and the f
 
 \subsubsection{Class hierarchy}
 
-Each software component of the UNISIM TMS320C3X simulator is an object (a client and/or a service). The term \texttt{Client} refers to an object that calls methods of a  \texttt{service} through a \texttt{ServiceImport}. The term \texttt{service} refers to an object that exposes its interface to client through a \texttt{ServiceExport}. \texttt{ServiceImport} acts as gate for a client to call remote methods of a service. \texttt{ServiceExport} is a mean for a service to export its interface, so that a client \texttt{ServiceImport} can be bound to it.
+Each software component of the UNISIM TMS320C3X simulator is an object (a client and/or a service). The term \texttt{Client} refers to an object that calls methods of a \texttt{Service} through a \texttt{ServiceImport}. The term \texttt{Service} refers to an object that exposes its interface to client through a \texttt{ServiceExport}. \texttt{ServiceImport} acts as gate for a client to call remote methods of a service. \texttt{ServiceExport} is a mean for a service to export its interface, so that a client \texttt{ServiceImport} can be bound to it.
 
 Figure~\ref{fig:tms320c3x_object_hierarchy} presents the object/class hierarchy of the service infrastructure. This class hierarchy allows the \texttt{ServiceManager} to see clients and services as a service graph. The base class of the class hierarchy is \texttt{class Object}. Its provides composition (it's a container) and naming of objects. Template class \texttt{Service<SERVICE\_IF>} represents a service implementing interface \texttt{SERVICE\_IF} while template class \texttt{Client<SERVICE\_IF>} represents a client using a service implementing interface \texttt{SERVICE\_IF}. On figure~\ref{fig:tms320c3x_object_hierarchy}, classes \texttt{MyService} and \texttt{MyClient} are respectively examples of a service and a client with interface \texttt{SERVICE\_IF}. Example class \texttt{MyService} has a member of type \texttt{ServiceExport<SERVICE\_IF>} to export \texttt{SERVICE\_IF} to the outside world. Example class \texttt{MyClient} has a member of type \texttt{ServiceImport<SERVICE\_IF>} to import interface \texttt{SERVICE\_IF} from a remote service.
+
 Classes \texttt{ServiceImport<SERVICE\_IF>} and \texttt{ServiceExport<SERVICE\_IF>} provides a C++ operator \texttt{>>} to allow binding a service import to a service export, so that client is bound to a service. In the example of Figure~\ref{fig:tms320c3x_object_hierarchy}, class \texttt{MyClient} would use service \texttt{MyService} as soon as \texttt{ServiceImport} of class \texttt{MyClient} is bound to \texttt{ServiceExport} of class \texttt{MyService}.
-A Concrete use of service binding import and service is provided in next section.
+A Concrete use of service binding import and service is provided in the next section.
 
 \begin{figure}[!h]
 	\begin{center}
@@ -449,7 +448,7 @@ Once \hfill the \hfill programmer \hfill has \hfill created \hfill a \hfill serv
 \subsubsection{Designing a service}
 
 A service is a C++ object inheriting from template class \texttt{Service<SERVICE\_INTERFACE>} \ding{202}, see Figure~\ref{fig:tms320c3x_simple_service}.
-SERVICE\_INTERFACE is a C++ abstract class defining the virtual methods implemented by the service.
+\texttt{SERVICE\_INTERFACE} is a C++ abstract class defining the virtual methods implemented by the service.
 To export its interface, a service must have a member of type \texttt{ServiceExport<SERVICE\_INTERFACE>} \ding{203}.
 For normalization purposes, the service constructor should take only two parameters \ding{204}: the service name and the pointer to the parent (a container service).
 The pointer to the parent is \texttt{null} if the service is a top level service (no parent).
@@ -466,7 +465,7 @@ The base \texttt{Object} constructor \ding{205} and the base \texttt{Service} co
 \subsubsection{Designing a client}
 
 A client is a C++ object inheriting from template class \texttt{Client<SERVICE\_INTERFACE>} \ding{202}, see Figure~\ref{fig:tms320c3x_simple_client}.
-SERVICE\_INTERFACE is a C++ abstract class defining the virtual methods implemented by the service the client can call.
+\texttt{SERVICE\_INTERFACE} is a C++ abstract class defining the virtual methods implemented by the service the client can call.
 To import an interface, a client must have a member of type \texttt{ServiceImport<SERVICE\_INTERFACE>} \ding{203}.
 For normalization purposes, the client constructor should take only two parameters \ding{204}: the client name and the pointer to the parent (a container client).
 The pointer to the parent is \texttt{null} if the client is a top level client (no parent).
@@ -494,129 +493,144 @@ The parameter is bound to the exposed variable \ding{204} in the service/client 
   \end{center}
 \end{figure}
 
-\subsection{Built-in Logger}
+\newpage
+\subsection{Service Interfaces}
+\label{tms320c3x_interfaces}
 
-UNISIM provides you a centralized log system to debug modules and simulators. It should be used to show all debug messages, instead of using the traditional C++ stream output mechanism (\texttt{cerr} and \texttt{cout}). However, as you will see below the UNISIM log system works much like the C++ stream output mechanism.
+All service interfaces are declared in namespace \texttt{unisim::service::interfaces} and located in directory \texttt{unisim/service/interfaces}.
 
-It provides the following advantages:
+\subsubsection{Memory Interfaces}
+
+These interfaces allows reading and writing to memory space. The memory interfaces comes in two flavor:
 \begin{itemize}
-\item Categorization: messages can be categorized on information, warning and error messages
-\item Atomic messages: messages will not be mixed (something which happens when programming concurrent/parallel systems like UNISIM/SystemC)
-\item Multiple outputs: your messages can be written simultaneously to different outputs, for example:
-	\begin{itemize}
-	\item console (error output or standard output)
-	\item raw file
-	\item XML formatted file
-	\item ...
-	\end{itemize}
-\item Simple configuration: the log system configuration is integrated to the UNISIM parameter mechanism provided by UNISIM service, see~\ref{tms320c3x_configuration}.
+\item non-instrusive memory access (\texttt{unisim::service::interfaces::Memory}); It should not affect timing and data placement (e.g. in caches and TLBs).
+\item intrusive memory access (\texttt{unisim::service::interfaces::MemoryInjection}); It can affect timing and dat placement.
 \end{itemize}
 
-To use the UNISIM logger you need to include “unisim/kernel/logger/logger.hh” and declare that you are using the unisim::kernel::logger namespace:
+\noindent The two C++ interfaces are:
 
-\begin{verbatim}
-#include "unisim/kernel/logger/logger.hh"
- 
-using namespace unisim::kernel::logger;
-\end{verbatim}
+\begin{center}
+	\input{tms320c3x/memory_interface}
+\end{center}
 
-The logger can only be used by UNISIM Objects, that is, classes that inherit from \newline
-\texttt{unisim::kernel::service::Object}. So if you want to use the UNISIM log system your class must inherit from a UNISIM Object.
+\begin{center}
+	\input{tms320c3x/memory_injection_interface}
+\end{center}
 
-\begin{verbatim}
-class MyObject : public Object {
-    ...
-};
-\end{verbatim}
-
-You will need to create a member variable of the \texttt{unisim::kernel::logger::Logger} type. And at the construction of your object use its default constructor \newline
-\texttt{Logger(const unisim::kernel::service::Object \&obj)}. For example:
-
-\begin{verbatim}
-#include "unisim/kernel/service/service.hh"
-#include "unisim/kernel/logger/logger.hh"
- 
-using unisim::kernel::service::Object;
-using namespace unisim::kernel::logger;
- 
-class MyObject : public Object {
-private:
-    Logger logger;
- 
-public:
-    MyObject(const char *name, const Object *parent = 0) : 
-            Object(name, parent),
-            logger(*this) {
-        ...
-    }
-};
-\end{verbatim}
-
-Once you have initialized your member logger variable you can start using it in your class methods. Basically it works like an standard C++ output stream, with the << operator. However, it requires that you indicate when a message starts and ends, and its category (information, warning or error) with the following keywords:
+\noindent The arguments to methods \texttt{ReadMemory}, \texttt{InjectReadMemory}, \texttt{WriteMemory}, \texttt{InjectWriteMemory} are:
 \begin{itemize}
-\item DebugInfo and EndDebugInfo to start and end an information message
-\item DebugWarning and EndDebugWarning to start and end a warning message
-\item DebugError and EndDebugError to start and end an error message
+\item \texttt{addr}: the starting address of the data transfer between the memory and the buffer
+\item \texttt{buffer}: a pointer to the buffer of bytes
+\item \texttt{size}: the length in bytes to transfer between the memory and the buffer
 \end{itemize}
 
-You can use the keyword EndDebug instead of EndDebugInfo, EndDebugWarning or EndDebugWarning to indicate that a message ends. The log system will automatically decide which kind of message are you ending. Between the start and the end of a message you can use the logger as a normal C++ output stream. Some of examples of its use:
-\begin{verbatim}
-/* displaying an information message */
-logger << DebugInfo << "This is an information message" << EndDebugInfo;
- 
-/* displaying an information message using   */
-/* the EndDebug keyword to close the message */
-logger << DebugInfo << "This is an information message" << EndDebug;
- 
-/* displaying a warning message written in multiple steps */
-logger << DebugWarning << "This is the start of a warning message" << endl;
-logger << "This is the end of the warning message." << EndDebug;
- 
-/* displaying an error message using variables */
-unsigned int error = 25;
-logger << DebugError << "This is an error message using variable \"error\" with value "
-       << error << EndDebug;
-\end{verbatim}
+\subsubsection{Debugging Interfaces}
 
-\subsection{Utility classes}
+These interfaces are intended for interfacing simulation components (e.g. CPU, memory, devices, \ldots) with a debugger (e.g. inline-debugger, GDB server, \ldots).
 
-The utility classes source code is in \texttt{unisim/util}. They implements:
+\textbf{Instruction disassembly}. A CPU components provides a debugger with a disassembly capability of the instruction set using interface \texttt{unisim::service::interfaces::Disassembly}.
+
+\begin{center}
+	\input{tms320c3x/disassembly_interface}
+\end{center}
+
+\noindent Method \texttt{Disasm} arguments are:
 \begin{itemize}
-\item Fast integer arithmetic computations (assembly on i386 machines):
-	\begin{itemize}
-	\item Full Adders (8, 16, 32, and 64 bits)
-	\item Full Substractors (8, 16, 32, and 64 bits)
-	\item Full Adders with signed saturation (8, 16, 32, and 64 bits)
-	\item Full Substractors with signed saturation (8, 16, 32, and 64 bits)
-	\item Specific Adders (e.g. reversed carry propagation adder)
-	\item Rotates (left, right, through an additional virtual bit, with bit in, with bit out)
-	\item Logical Shifts (left, right, through an additional virtual bit, with bit in, with bit out)
-	\item Arithmetic Shifts (left, right, an additional virtual bit, with, with bit in, with bit out)
-	\item Bit Scanning (from left to right, and from right to left)
-	\item Base 2 Logarithm
-	\item 2's complement sign Extension
-	\end{itemize}
-\item Debugging support
-	\begin{itemize}
-	\item Symbol management (symbol table)
-	\item Profile to keep software activity during a run (e.g. in inline debugger service)
-	\item Breakpoint/Watchpoint registry
-	\item Register debugging support
-	\item Network stub for implementing a fake device, remotely control the simulator, and cosimulate with another external simulation environment
-	\end{itemize}
-\item Endianness support for fast endian conversion (assembly on i386 machines)
-\item Hash table for fast table lookup (e.g. for memory)
-\item bare XML support (e.g. for GDB server service)
+\item \texttt{addr}: the byte address of the instruction to disassemble
+\item \texttt{next\_addr}: the byte address of the next instruction
 \end{itemize}
+\noindent and returns a string with the disassembly of the instruction.
 
-\subsection{TMS320C3X instruction set simulator}
+\textbf{Register access}. A CPU or a device provides a debugger with an access to its registers using interface \texttt{unisim::service::interfaces::Registers}.
 
-The instruction set simulator source code is located in directory: \newline \texttt{unisim/component/cxx/processor/tms320}.\newline
-The UNISIM TMS320C3X instruction set simulator uses an instruction set simulator generator, GenISSLib.
-GenISSLib uses an instruction set description (\texttt{.isa} files) located in sub-directory \texttt{isa} of the instruction simulator source code directory.
+\begin{center}
+	\input{tms320c3x/registers_interface}
+\end{center}
+
+\noindent Method \texttt{GetRegister} arguments are:
+\begin{itemize}
+\item \texttt{name}: the name of the register to retrieve interface
+\end{itemize}
+\noindent and returns a pointer to an interface \texttt{unisim::util::debug::Register}.
+
+\begin{center}
+	\input{tms320c3x/register_interface}
+\end{center}
+
+\noindent Method \texttt{GetName} returns the register name.
+\noindent Method \texttt{GetValue} fills in a buffer with the register value.
+\noindent Method \texttt{SetValue} sets the register value from a buffer.
+\noindent Method \texttt{GetSize} returns the register size in bytes.
+
+\textbf{Step by step execution}. A simulation component (e.g. a CPU) leaves control to a debugger with interface \texttt{unisim::service::interfaces::DebugControl}.
+
+\begin{center}
+	\input{tms320c3x/debug_control_interface}
+\end{center}
+
+Method \texttt{FetchDebugCommand} takes the current program counter as arguments and returns a command for the simulation component: either finish the simulation or execute one instruction.
+
+\textbf{Monitoring memory accesses}. An instrumented simulation component provides a memory access trace using interface \texttt{unisim::service::interfaces::MemoryAccessReporting}.
+Such memory trace is useful for a debugger to monitor memory access.
+
+\begin{center}
+	\input{tms320c3x/memory_access_reporting_interface}
+\end{center}
+
+Method \texttt{ReportMemoryAccess} takes as argument the memory access type (either read or write), the memory type (either data or instruction memory), the address of the access, and the size of the memory access.
+Method\texttt{ReportFinishedInstruction} takes as argument the address of next instruction to be executed.
+
+\textbf{Trap reporting}. An instrumented simulation component informs a debugger about an important event using interface \texttt{unisim::service::interfaces::TrapReporting}.
+Such event is useful for a debugger to pause simulation once such event occurs.
+
+\begin{center}
+	\input{tms320c3x/trap_reporting_interface}
+\end{center}
+
+Method \texttt{ReportTrap} takes no arguments.
+
+\textbf{Symbol}. A service (e.g. a loader) provides lookup to the symbol table using interface \texttt{unisim::service::interfaces::SymbolTableLookup}.
+This interface is usefull for translating addresses to symbol names, and vice-versa.
+
+\begin{center}
+	\input{tms320c3x/symbol_table_lookup_interface}
+\end{center}
+
+\textbf{Efficient instrumentation.} To limit the impact on simulation performance of memory access instrumentation in the simulation components, such instrumentation can be enable or disable at run-time using interface \texttt{unisim::service::interfaces::MemoryAccessReportingControl}.
+
+\begin{center}
+	\input{tms320c3x/memory_access_reporting_control_interface}
+\end{center}
+
+\subsubsection{Loader Interface}
+
+This interface provides basic informations about the loaded program.
+
+\begin{center}
+	\input{tms320c3x/loader_interface}
+\end{center}
+
+\subsubsection{Time Interface}
+
+This interface provides reading of the current time.
+
+\begin{center}
+	\input{tms320c3x/time_interface}
+\end{center}
+
+\subsubsection{TI C I/O Interface}
+
+An instrumented TMS320C3X instruction set simulator provides a trace of SWI instructions using interface \texttt{unisim::service::interfaces::ti\_c\_io}.
+This interface is useful for the TI C I/O service to capture target program I/Os and translate them to host I/Os.
+
+\begin{center}
+	\input{tms320c3x/ti_c_io_interface}
+\end{center}
 
 \newpage
-\subsection{COFF loader service}
+\subsection{Services}
+\subsubsection{COFF loader service}
+\label{tms320c3x_coff_loader}
 
 This service provides UNISIM TMS320C3X simulator with a support for TI COFF v0, v1, and v2 binary files (see TMS320C3x/C4x Assembly Language Tools User’s Guide, Appendix A). The COFF loader service loads the programs into memory while setup (simulator initialization). The loader can interprete \texttt{.cinit} section if option \texttt{-cr} of TI C cross-compiler has been used while building the target program (see TMS320C3x/C4x Optimizing C Compiler User’s Guide, section 4.8.1: Autoinitialization of variables and constants).
 To configure the COFF loader service see section~\ref{tms320c3x_configuration}.
@@ -624,7 +638,9 @@ The source code of COFF loader service is located in directory \texttt{unisim/se
 \noindent Table below summarizes the COFF Loader service API:
 
 \begin{center}
-	\begin{tabular}{|p{7.5cm}|p{7.5cm}|}
+	\tablehead{\hline}
+	\tabletail{\hline}
+	\begin{supertabular}{|p{7.5cm}|p{7.5cm}|}
 		\hline
 		\multicolumn{2}{|l|}{\textbf{\Large Service COFF Loader}}\\
 		\hline
@@ -654,13 +670,6 @@ The source code of COFF loader service is located in directory \texttt{unisim/se
 		\multicolumn{2}{|l|}{}\\
 		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline If true this parameter makes the COFF loader print the file headers on the screen (file header, section headers, symbol table \ldots) while loading the program.}\\
 		\hline
-	\end{tabular}
-\end{center}
-
-\newpage
-\begin{center}
-	\begin{tabular}{|p{7.5cm}|p{7.5cm}|}
-		\hline
 		\multicolumn{2}{|c|}{\textbf{\large Service Exports}}\\
 		\hline
 		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{logger\_export}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces::} \newline$\hookrightarrow$\texttt{Loader<MEMORY\_ADDR>}}\\
@@ -678,11 +687,12 @@ The source code of COFF loader service is located in directory \texttt{unisim/se
 		\multicolumn{2}{|l|}{}\\
 		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The COFF loader accesses to the memory through this import.}\\
 		\hline
-	\end{tabular}
+	\end{supertabular}
 \end{center}
 
 \newpage
-\subsection{TI C I/O service}
+\subsubsection{TI C I/O service}
+\label{tms320c3x_ti_c_io}
 
 This service provides target programs with a support for low level I/O (open, read, write, close, \ldots) on the host machine.
 The TI Run-time support libraries (\texttt{RTS*.lib}) implements a software stack for standard C I/Os (see TMS320C3x/C4x Optimizing C Compiler User’s Guide (SPRU034H, June 1998), Appendix B).
@@ -693,7 +703,9 @@ The source code of COFF loader service is located in directory \texttt{unisim/se
 \noindent Table below summarizes the TI C I/O service API:
 
 \begin{center}
-	\begin{tabular}{|p{7.5cm}|p{7.5cm}|}
+	\tablehead{\hline}
+	\tabletail{\hline}
+	\begin{supertabular}{|p{7.5cm}|p{7.5cm}|}
 		\hline
 		\multicolumn{2}{|l|}{\textbf{\Large Service TI C I/O}}\\
 		\hline
@@ -731,13 +743,6 @@ The source code of COFF loader service is located in directory \texttt{unisim/se
 		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{"\_\_CIOBUF\_"}}\\
 		\multicolumn{2}{|l|}{}\\
 		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline C I/O buffer symbol name.}\\
-		\hline
-	\end{tabular}
-\end{center}
-
-\newpage
-\begin{center}
-	\begin{tabular}{|p{7.5cm}|p{7.5cm}|}
 		\hline
 		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{ti-c-io.c-io-breakpoint-}\newline$\hookrightarrow$\texttt{symbol-name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
 		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{"C\$\$IO\$\$"}}\\
@@ -779,13 +784,6 @@ The source code of COFF loader service is located in directory \texttt{unisim/se
 		\multicolumn{2}{|l|}{}\\
 		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The TI C I/O service accesses to the memory while setup through this import. While setup it installs a two SWI instructions to capture both target I/O and program exit.}\\
 		\hline
-	\end{tabular}
-\end{center}
-
-\newpage
-\begin{center}
-	\begin{tabular}{|p{7.5cm}|p{7.5cm}|}
-		\hline
 		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{memory\_injection\_import}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces::} \newline$\hookrightarrow$\texttt{MemoryInjection<MEMORY\_ADDR>}}\\
 		\multicolumn{2}{|p{15cm}|}{\textbf{Mandatory connected:} no}\\
 		\multicolumn{2}{|l|}{}\\
@@ -799,17 +797,20 @@ The source code of COFF loader service is located in directory \texttt{unisim/se
 		\multicolumn{2}{|l|}{}\\
 		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The TI C I/O service uses this service import get the address of the breakpoints and I/O buffer from their symbol name.}\\
 		\hline
-	\end{tabular}
+	\end{supertabular}
 \end{center}
 
 \newpage
-\subsection{Inline debugger}
+\subsubsection{Inline debugger}
+\label{tms320c3x_inline_debugger}
 
 The inline debugger service is a built-in debugger with a text-based user interface, see~\ref{tms320c3x_inline_debug}. It provides instruction level debugging of the target program.
 \noindent Table below summarizes the inline debugger service API:
 
 \begin{center}
-	\begin{tabular}{|p{7.5cm}|p{7.5cm}|}
+	\tablehead{\hline}
+	\tabletail{\hline}
+	\begin{supertabular}{|p{7.5cm}|p{7.5cm}|}
 		\hline
 		\multicolumn{2}{|l|}{\textbf{\Large Service Inline Debugger}}\\
 		\hline
@@ -848,12 +849,6 @@ The inline debugger service is a built-in debugger with a text-based user interf
 		\multicolumn{2}{|l|}{}\\
 		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline This service export should be connected to a CPU module. A CPU module calls method \texttt{ReportTrap} through its service import. This allows the debugger to break execution on the simulated CPU once a trap condition is detected by the CPU module.}\\
 		\hline
-	\end{tabular}
-\end{center}
-
-\newpage
-\begin{center}
-	\begin{tabular}{|p{7.5cm}|p{7.5cm}|}
 		\hline
 		\multicolumn{2}{|c|}{\textbf{\large Service Imports}}\\
 		\hline
@@ -877,11 +872,12 @@ The inline debugger service is a built-in debugger with a text-based user interf
 		\multicolumn{2}{|l|}{}\\
 		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline This service import should be connected to a symbol table. The debugger calls method \texttt{FindSymbol}, \texttt{FindSymbolByAddr}, \texttt{FindSymbolByName} through this service import to translate address to symbol and vice-versa.}\\
 		\hline
-	\end{tabular}
+	\end{supertabular}
 \end{center}
 
 \newpage
-\subsection{GDB server}
+\subsubsection{GDB server}
+\label{tms320c3x_gdb_server}
 
 The GDB server service emulates the GDB remote serial protocol over TCP/IP (see Debugging with GDB, Appendix D. GDB Remote serial protocol), so that a GDB client can connect to the simulator and debug the target program as if it were run on the real hardware.
 This service uses an architecture XML description file defined by the \texttt{architecture-description-filename} run-time parameter (see table below).
@@ -899,7 +895,9 @@ A sample configuration file for a dummy \texttt{XYZ} big-endian architecture, wi
 \noindent Table below summarizes the GDB server service API:
 
 \begin{center}
-	\begin{tabular}{|p{7.5cm}|p{7.5cm}|}
+	\tablehead{\hline}
+	\tabletail{\hline}
+	\begin{supertabular}{|p{7.5cm}|p{7.5cm}|}
 		\hline
 		\multicolumn{2}{|l|}{\textbf{\Large Service GDB Server}}\\
 		\hline
@@ -922,13 +920,6 @@ A sample configuration file for a dummy \texttt{XYZ} big-endian architecture, wi
 		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{12345}}\\
 		\multicolumn{2}{|l|}{}\\
 		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The TCP port used by GDB server service to communicate with the GDB client.}\\
-		\hline
-	\end{tabular}
-\end{center}
-
-\newpage
-\begin{center}
-	\begin{tabular}{|p{7.5cm}|p{7.5cm}|}
 		\hline
 		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{architecture-description\newline$\hookrightarrow$-filename}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
 		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} empty string}\\
@@ -957,12 +948,6 @@ A sample configuration file for a dummy \texttt{XYZ} big-endian architecture, wi
 		\multicolumn{2}{|l|}{}\\
 		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline This service export should be connected to a CPU module. A CPU module calls method \texttt{ReportTrap} through its service import. This allows the debugger to break execution on the simulated CPU once a trap condition is detected by the CPU module.}\\
 		\hline
-	\end{tabular}
-\end{center}
-
-\newpage
-\begin{center}
-	\begin{tabular}{|p{7.5cm}|p{7.5cm}|}
 		\hline
 		\multicolumn{2}{|c|}{\textbf{\large Service Imports}}\\
 		\hline
@@ -978,8 +963,103 @@ A sample configuration file for a dummy \texttt{XYZ} big-endian architecture, wi
 		\multicolumn{2}{|l|}{}\\
 		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline This service import should be connected to a CPU module. The debugger calls method \texttt{GetRegister} through this service import to get an interface to the CPU registers. The debugger uses methods \texttt{GetName}, \texttt{GetValue}, \texttt{GetSize} and \texttt{SetValue} of that interface to access to CPU registers.}\\
 		\hline
-	\end{tabular}
+	\end{supertabular}
 \end{center}
+
+\newpage
+\subsubsection{Built-in Logger}
+\label{tms320c3x_logger}
+
+UNISIM provides you a centralized log system to debug modules and simulators. It should be used to show all debug messages, instead of using the traditional C++ stream output mechanism (\texttt{cerr} and \texttt{cout}). However, as you will see below the UNISIM log system works much like the C++ stream output mechanism.
+
+It provides the following advantages:
+\begin{itemize}
+\item Categorization: messages can be categorized on information, warning and error messages
+\item Atomic messages: messages will not be mixed (something which happens when programming concurrent/parallel systems like UNISIM/SystemC)
+\item Multiple outputs: your messages can be written simultaneously to different outputs, for example:
+	\begin{itemize}
+	\item console (error output or standard output)
+	\item raw file
+	\item XML formatted file
+	\item ...
+	\end{itemize}
+\item Simple configuration: the log system configuration is integrated to the UNISIM parameter mechanism provided by UNISIM service, see~\ref{tms320c3x_configuration}.
+\end{itemize}
+
+To use the UNISIM logger you need to include “unisim/kernel/logger/logger.hh” and declare that you are using the unisim::kernel::logger namespace:
+
+\begin{center}
+	\input{tms320c3x/including_logger}
+\end{center}
+
+The logger can only be used by UNISIM Objects, that is, classes that inherit from \newline
+\texttt{unisim::kernel::service::Object}. So if you want to use the UNISIM log system your class must inherit from a UNISIM Object.
+
+\begin{center}
+	\input{tms320c3x/deriving_from_object}
+\end{center}
+
+You will need to create a member variable of the \texttt{unisim::kernel::logger::Logger} type. And at the construction of your object use its default constructor \newline
+\texttt{Logger(const unisim::kernel::service::Object \&obj)}. For example:
+
+\begin{center}
+	\input{tms320c3x/binding_logger}
+\end{center}
+
+Once you have initialized your member logger variable you can start using it in your class methods. Basically it works like an standard C++ output stream, with the \texttt{<<} operator. However, it requires that you indicate when a message starts and ends, and its category (information, warning or error) with the following keywords:
+\begin{itemize}
+\item \texttt{DebugInfo} and \texttt{EndDebugInfo} to start and end an information message
+\item \texttt{DebugWarning} and \texttt{EndDebugWarning} to start and end a warning message
+\item \texttt{DebugError} and \texttt{EndDebugError} to start and end an error message
+\end{itemize}
+
+You can use the keyword \texttt{EndDebug} instead of \texttt{EndDebugInfo}, \texttt{EndDebugWarning} or \texttt{EndDebugWarning} to indicate that a message ends. The log system will automatically decide which kind of message are you ending. Between the start and the end of a message you can use the logger as a normal C++ output stream. Some of examples of its use:
+\begin{center}
+	\input{tms320c3x/using_logger}
+\end{center}
+
+\newpage
+\subsection{Utility classes}
+\label{tms320c3x_utils}
+
+The utility classes source code is in \texttt{unisim/util}. They implements:
+\begin{itemize}
+\item Fast integer arithmetic computations (assembly on i386 machines):
+	\begin{itemize}
+	\item Full Adders (8, 16, 32, and 64 bits)
+	\item Full Substractors (8, 16, 32, and 64 bits)
+	\item Full Adders with signed saturation (8, 16, 32, and 64 bits)
+	\item Full Substractors with signed saturation (8, 16, 32, and 64 bits)
+	\item Specific Adders (e.g. reversed carry propagation adder)
+	\item Rotates (left, right, through an additional virtual bit, with bit in, with bit out)
+	\item Logical Shifts (left, right, through an additional virtual bit, with bit in, with bit out)
+	\item Arithmetic Shifts (left, right, an additional virtual bit, with, with bit in, with bit out)
+	\item Bit Scanning (from left to right, and from right to left)
+	\item Base 2 Logarithm
+	\item 2's complement sign Extension
+	\end{itemize}
+\item Debugging support
+	\begin{itemize}
+	\item Symbol management (symbol table)
+	\item Profile to keep software activity during a run (e.g. in inline debugger service)
+	\item Breakpoint/Watchpoint registry
+	\item Register debugging support
+	\item Network stub for implementing a fake device, remotely control the simulator, and cosimulate with another external simulation environment
+	\end{itemize}
+\item Endianness support for fast endian conversion (assembly on i386 machines)
+\item Hash table for fast table lookup (e.g. for memory)
+\item bare XML support (e.g. for GDB server service)
+\end{itemize}
+
+\subsubsection{Arithmetic and Logical helper functions}
+
+\subsubsection{Debugging support}
+
+\subsubsection{Endianness support}
+
+\subsubsection{Hash Table}
+
+\subsubsection{XML}
 
 \newpage
 \section{Validation guide}

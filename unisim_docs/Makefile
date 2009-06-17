@@ -108,7 +108,24 @@ tms320c3x/service_instanciation.cpp \
 tms320c3x/service_connection.cpp \
 tms320c3x/simple_service.cpp \
 tms320c3x/simple_client.cpp \
-tms320c3x/run_time_parameter.cpp
+tms320c3x/run_time_parameter.cpp \
+tms320c3x/debug_control_interface.cpp \
+tms320c3x/disassembly_interface.cpp \
+tms320c3x/loader_interface.cpp \
+tms320c3x/memory_access_reporting_control_interface.cpp \
+tms320c3x/memory_access_reporting_interface.cpp \
+tms320c3x/memory_injection_interface.cpp \
+tms320c3x/memory_interface.cpp \
+tms320c3x/registers_interface.cpp \
+tms320c3x/symbol_table_lookup_interface.cpp \
+tms320c3x/ti_c_io_interface.cpp \
+tms320c3x/time_interface.cpp \
+tms320c3x/trap_reporting_interface.cpp \
+tms320c3x/including_logger.cpp \
+tms320c3x/deriving_from_object.cpp \
+tms320c3x/binding_logger.cpp \
+tms320c3x/using_logger.cpp \
+tms320c3x/register_interface.cpp
 
 TMS320C3X_FIGURES=tms320c3x/fig_tms320c3x.pdf tms320c3x/fig_object_hierarchy.pdf
 
