@@ -579,7 +579,8 @@ IRQ(unsigned int index, bool level, sc_core::sc_time& t)
 
 	if (VerboseRun())
 	{
-		logger << DebugInfo << "Received interrupt (level = " << level << ") on IRQ port " << index << " at " << t
+		logger << DebugInfo << "Received interrupt (level = " << level << ") on IRQ port " << index 
+			<< " at " << (sc_time_stamp() + t) << " (current time = " << sc_time_stamp() << ")"
 			<< EndDebugInfo;
 	}
 	if (trap_reporting_import)
@@ -661,7 +662,8 @@ FIQ(unsigned int index, bool level, sc_core::sc_time& t)
 	
 	if (VerboseRun())
 	{
-		logger << DebugInfo << "Received interrupt (level = " << level << ") on IRQ port " << index << " at " << t
+		logger << DebugInfo << "Received interrupt (level = " << level << ") on IRQ port " << index 
+			<< " at " << (sc_time_stamp() + t) << " (current time = " << sc_time_stamp() << ")"
 			<< EndDebugInfo;
 	}
 	if (trap_reporting_import)
