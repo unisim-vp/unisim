@@ -116,7 +116,6 @@ $ tms320c3x -c sim_config.xml
 
 \noindent \textit{Note: Although it's not strictly necessary, Parameter \texttt{inline-debugger.memory-atom-size} should be set to value 4 as the TMS320C3X memory is not byte-addressable. If this parameter is not set to 4, presentation of the memory content and disassembly may seem unconventional in the inline debugger.}
 
-\newpage
 \noindent The available parameters are summarized in table below:
 
 \begin{center}
@@ -387,9 +386,8 @@ The simulator is implemented in class \texttt{unisim::component::cxx::processor:
 Each register (R0, R1, R2, R3, R4, R5, R6, R7, AR0, AR1, AR2, AR3, AR4, AR5, AR6, AR7, DP, IR0, IR1, BK, SP, ST, IE, IF, IOF, RS, RE, and RC) is implemented by an instance of class \texttt{unisim::component::cxx::processor::tms320::Register}.
 This class has methods to get/set value of a register and to perform floating point computations.
 
-The API of the CPU simulation component is:
+\noindent The table below summarizes the API of the CPU:
 
-\newpage
 \begin{center}
 	\tablehead{\hline}
 	\tabletail{\hline}
@@ -422,7 +420,7 @@ The API of the CPU simulation component is:
 		\multicolumn{2}{|l|}{}\\
 		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Maximum number of instructions to simulate. Once this threshold is reached, the CPU calls virtual method \texttt{Stop} to stop simulation.}\\
 		\hline
-		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{trap-on-instruction-counter}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{sample}}\\
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{trap-on-instruction-counter}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{uint64\_t}}\\
 		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{$2^{64} - 1$}}\\
 		\multicolumn{2}{|l|}{}\\
 		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Number of instructions to simulate before traping, i.e. calling \texttt{ReportTrap} through service import \texttt{trap\_import}. This is useful to inform debugger that CPU has simulated a certain amount of instructions, so that user can take control of the simulation at this point.}\\
@@ -450,11 +448,11 @@ The API of the CPU simulation component is:
 		\hline
 		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{memory\_export}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces} \newline$\hookrightarrow$\texttt{::Memory}}\\
 		\multicolumn{2}{|l|}{}\\
-		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The CPU provides clients (e.g debuggers) with an access to memmory space through this service export. Accesses to memory space are non-intrusive, i.e. they do not affect timing or data placement (e.g. in caches or TLBs).}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The CPU provides clients (e.g debuggers) with an access to memory space through this service export. Accesses to memory space are non-intrusive, i.e. they do not affect timing or data placement (e.g. in caches or TLBs).}\\
 		\hline
-		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{memory\_injection\_export}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces} \newline$\hookrightarrow$\texttt{MemoryInjection}}\\
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{memory\_injection\_export}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces} \newline$\hookrightarrow$\texttt{::MemoryInjection}}\\
 		\multicolumn{2}{|l|}{}\\
-		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The CPU provides clients (e.g debuggers) with an access to memmory space through this service export. Accesses to memory space are intrusive, i.e. they affect timing or data placement (e.g. in caches or TLBs).}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The CPU provides clients (e.g debuggers) with an access to memory space through this service export. Accesses to memory space are intrusive, i.e. they affect timing or data placement (e.g. in caches or TLBs).}\\
 		\hline
 		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{memory\_access\_reporting\_control}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces} \newline$\hookrightarrow$\texttt{::MemoryAccessReportingControl}}\\
 		\multicolumn{2}{|l|}{}\\
@@ -490,7 +488,7 @@ The API of the CPU simulation component is:
 	\end{supertabular}
 \end{center}
 
-
+\newpage
 \subsubsection{Memory}
 \label{tms320c3x_memory}
 
@@ -499,7 +497,8 @@ The source of class \texttt{unisim::component::cxx::memory::ram::Memory} is in d
 Methods \texttt{ReadMemory} and \texttt{WriteMemory} respectively implement read and write memory accesses.
 This simulation components provides interface \texttt{unisim::service::interfaces::Memory} to other simulation components (e.g. CPU) or services (e.g. the COFF loader).
 
-\newpage
+\noindent The table below summarizes the API of the memory:
+
 \begin{center}
 	\tablehead{\hline}
 	\tabletail{\hline}
@@ -542,7 +541,7 @@ This simulation components provides interface \texttt{unisim::service::interface
 		\hline
 		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{memory\_export}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces} \newline$\hookrightarrow$\texttt{::Memory}}\\
 		\multicolumn{2}{|l|}{}\\
-		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The memory provides clients (e.g debuggers or CPU) with an access to memmory space through this service export. Accesses to memory space are non-intrusive, i.e. they do not affect timing or data placement.}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The memory provides clients (e.g debuggers, loaders or CPUs) with an access to memory space through this service export. Accesses to memory space are non-intrusive, i.e. they do not affect timing or data placement.}\\
 		\hline
 	\end{supertabular}
 \end{center}
@@ -787,7 +786,7 @@ This interface provides reading of the current time.
 
 \subsubsection{TI C I/O Interface}
 
-An instrumented TMS320C3X instruction set simulator provides a trace of SWI instructions using interface \texttt{unisim::service::interfaces::ti\_c\_io}.
+An instrumented TMS320C3X instruction set simulator provides a trace of \texttt{SWI} instructions using interface \texttt{unisim::service::interfaces::ti\_c\_io}.
 This interface is useful for the TI C I/O service to capture target program I/Os and translate them to host I/Os.
 
 \begin{center}
@@ -914,12 +913,12 @@ The source code of COFF loader service is located in directory \texttt{unisim/se
 		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{ti-c-io.c-io-breakpoint-}\newline$\hookrightarrow$\texttt{symbol-name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
 		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{"C\$\$IO\$\$"}}\\
 		\multicolumn{2}{|l|}{}\\
-		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline C I/O breakpoint symbol name. The TI C I/O service installs an SWI instruction at this point to capture target program I/O.}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline C I/O breakpoint symbol name. The TI C I/O service installs an \texttt{SWI} instruction at this point to capture target program I/O.}\\
 		\hline
 		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{ti-c-io.c-exit-breakpoint-}\newline$\hookrightarrow$\texttt{symbol-name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
 		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{"C\$\$EXIT"}}\\
 		\multicolumn{2}{|l|}{}\\
-		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline C EXIT breakpoint symbol name. The TI C I/O service installs an SWI instruction at this point to capture target program exit.}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline C EXIT breakpoint symbol name. The TI C I/O service installs an \texttt{SWI} instruction at this point to capture target program exit.}\\
 		\hline
 		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{ti-c-io.verbose-all}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
 		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
@@ -949,7 +948,7 @@ The source code of COFF loader service is located in directory \texttt{unisim/se
 		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{memory\_import}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces::} \newline$\hookrightarrow$\texttt{Memory<MEMORY\_ADDR>}}\\
 		\multicolumn{2}{|p{15cm}|}{\textbf{Mandatory connected:} no}\\
 		\multicolumn{2}{|l|}{}\\
-		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The TI C I/O service accesses to the memory while setup through this import. While setup it installs a two SWI instructions to capture both target I/O and program exit.}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The TI C I/O service accesses to the memory while setup through this import. While setup it installs a two \texttt{SWI} instructions to capture both target I/O and program exit.}\\
 		\hline
 		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{memory\_injection\_import}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces::} \newline$\hookrightarrow$\texttt{MemoryInjection<MEMORY\_ADDR>}}\\
 		\multicolumn{2}{|p{15cm}|}{\textbf{Mandatory connected:} no}\\
@@ -1189,44 +1188,47 @@ You can use the keyword \texttt{EndDebug} instead of \texttt{EndDebugInfo}, \tex
 \subsection{Utility classes}
 \label{tms320c3x_utils}
 
-The utility classes source code is in \texttt{unisim/util}. They implements:
-\begin{itemize}
-\item Fast integer arithmetic computations (assembly on i386 machines):
-	\begin{itemize}
-	\item Full Adders (8, 16, 32, and 64 bits)
-	\item Full Substractors (8, 16, 32, and 64 bits)
-	\item Full Adders with signed saturation (8, 16, 32, and 64 bits)
-	\item Full Substractors with signed saturation (8, 16, 32, and 64 bits)
-	\item Specific Adders (e.g. reversed carry propagation adder)
-	\item Rotates (left, right, through an additional virtual bit, with bit in, with bit out)
-	\item Logical Shifts (left, right, through an additional virtual bit, with bit in, with bit out)
-	\item Arithmetic Shifts (left, right, an additional virtual bit, with, with bit in, with bit out)
-	\item Bit Scanning (from left to right, and from right to left)
-	\item Base 2 Logarithm
-	\item 2's complement sign Extension
-	\end{itemize}
-\item Debugging support
-	\begin{itemize}
-	\item Symbol management (symbol table)
-	\item Profile to keep software activity during a run (e.g. in inline debugger service)
-	\item Breakpoint/Watchpoint registry
-	\item Register debugging support
-	\item Network stub for implementing a fake device, remotely control the simulator, and cosimulate with another external simulation environment
-	\end{itemize}
-\item Endianness support for fast endian conversion (assembly on i386 machines)
-\item Hash table for fast table lookup (e.g. for memory)
-\item bare XML support (e.g. for GDB server service)
-\end{itemize}
+The utility classes source code is in \texttt{unisim/util}.
 
 \subsubsection{Arithmetic and Logical helper functions}
 
+These functions located in \texttt{unisim/util/arithmetic} implement fast integer arithmetic computations (assembly on i386 machines):
+\begin{itemize}
+\item Full Adders (8, 16, 32, and 64 bits)
+\item Full Substractors (8, 16, 32, and 64 bits)
+\item Full Adders with signed saturation (8, 16, 32, and 64 bits)
+\item Full Substractors with signed saturation (8, 16, 32, and 64 bits)
+\item Specific Adders (e.g. reversed carry propagation adder)
+\item Rotates (left, right, through an additional virtual bit, with bit in, with bit out)
+\item Logical Shifts (left, right, through an additional virtual bit, with bit in, with bit out)
+\item Arithmetic Shifts (left, right, an additional virtual bit, with, with bit in, with bit out)
+\item Bit Scanning (from left to right, and from right to left)
+\item Base 2 Logarithm
+\item 2's complement sign Extension
+\end{itemize}
+
 \subsubsection{Debugging support}
+
+Directory \texttt{unisim/util/debug} provides several C++ classes that supports:
+\begin{itemize}
+\item Symbol management (symbol table)
+\item Profile to keep software activity during a run (e.g. in inline debugger service)
+\item Breakpoint/Watchpoint registry
+\item Register debugging support
+\item Network stub for implementing a fake device, remotely control the simulator, and cosimulate with another external simulation environment
+\end{itemize}
 
 \subsubsection{Endianness support}
 
+Directory \texttt{unisim/util/endian} provides support for fast endian conversion (assembly on i386 machines).
+
 \subsubsection{Hash Table}
 
+Directory \texttt{unisim/util/hash\_table} provides support for fast table lookup (e.g. for memory)
+
 \subsubsection{XML}
+
+Directory \texttt{unisim/util/xml} provides support for bare XML file (e.g. for GDB server service)
 
 \newpage
 \section{Validation guide}
