@@ -372,13 +372,180 @@ The TMS320C3X simulator is the combination of several software components:
 The instruction set simulator source code is located in directory: \newline \texttt{unisim/component/cxx/processor/tms320}.\newline
 The UNISIM TMS320C3X instruction set simulator uses an instruction set simulator generator, GenISSLib.
 GenISSLib uses an instruction set description (\texttt{.isa} files) located in sub-directory \texttt{isa} of the instruction set simulator source code directory.
+Most computations (e.g. integer computation) are directly performed in these description file.
+See the GenISSLib manual for additional informations about the GenISSLib instruction set description language.
+The simulator is implemented in class \texttt{unisim::component::cxx::processor::tms320::CPU} which main methods are:
+\begin{itemize}
+\item \texttt{StepInstruction}: executes one instruction
+\item \texttt{PrWrite}: Write a word into memory using service import \texttt{memory\_import}. This methods is virtual so that it can be reimplemented into a derived class.
+\item \texttt{PrRead}: Read a word from memory using service import \texttt{memory\_import}. This methods is virtual so that it can be reimplemented into a derived class.
+\item \texttt{SetIRQLevel}: Set level (0/1, true/false) of an IRQ. IRQ numbering is same as register \texttt{IF} bit numbering.
+\item \texttt{ComputeIndirEA}: Compute the effective address for indirect addressing modes.
+\item \texttt{ComputeDirEA}: Compute the effective address for direct addressing modes.
+\end{itemize}
+
+Each register (R0, R1, R2, R3, R4, R5, R6, R7, AR0, AR1, AR2, AR3, AR4, AR5, AR6, AR7, DP, IR0, IR1, BK, SP, ST, IE, IF, IOF, RS, RE, and RC) is implemented by an instance of class \texttt{unisim::component::cxx::processor::tms320::Register}.
+This class has methods to get/set value of a register and to perform floating point computations.
+
+The API of the CPU simulation component is:
+
+\newpage
+\begin{center}
+	\tablehead{\hline}
+	\tabletail{\hline}
+	\begin{supertabular}{|p{7.5cm}|p{7.5cm}|}
+		\hline
+		\multicolumn{2}{|l|}{\textbf{\Large Module CPU}}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Class Name:} \newline \texttt{unisim::component::cxx::processor}\newline$\hookrightarrow$\texttt{::tms320::CPU}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Header:} \newline \texttt{unisim/component/cxx/processor}\newline$\hookrightarrow$\texttt{/tms320/cpu.hh}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline This C++ class is TMS320C3X instruction set simulator.}\\
+		\hline
+		\hline
+		\multicolumn{2}{|c|}{\textbf{\large Template Parameters}}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{CONFIG}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{class}}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{none}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline This is a configuration class that is a collection of definitions to parameterize the simulation model.}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{DEBUG}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/Disable debug.}\\
+		\hline
+		\hline
+		\multicolumn{2}{|c|}{\textbf{\large Run-Time Parameters}}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{max-inst}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{uint64\_t}}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{$2^{64} - 1$}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Maximum number of instructions to simulate. Once this threshold is reached, the CPU calls virtual method \texttt{Stop} to stop simulation.}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{trap-on-instruction-counter}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{sample}}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{$2^{64} - 1$}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Number of instructions to simulate before traping, i.e. calling \texttt{ReportTrap} through service import \texttt{trap\_import}. This is useful to inform debugger that CPU has simulated a certain amount of instructions, so that user can take control of the simulation at this point.}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{verbose-setup}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/disable verbosity of CPU while setup.}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{verbose-all}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Globally enable/disable verbosity of CPU.}\\
+		\hline
+		\hline
+		\multicolumn{2}{|c|}{\textbf{\large Service Exports}}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{disassembly\_export}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces} \newline$\hookrightarrow$\texttt{::Disassembly}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The CPU provides clients (e.g. debuggers) with a disassembly capability through this service export.}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{registers\_export}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::services::interfaces} \newline$\hookrightarrow$\texttt{::Registers}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The CPU provides clients (e.g. debuggers) with an access to its registers through this service export.}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{memory\_export}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces} \newline$\hookrightarrow$\texttt{::Memory}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The CPU provides clients (e.g debuggers) with an access to memmory space through this service export. Accesses to memory space are non-intrusive, i.e. they do not affect timing or data placement (e.g. in caches or TLBs).}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{memory\_injection\_export}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces} \newline$\hookrightarrow$\texttt{MemoryInjection}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The CPU provides clients (e.g debuggers) with an access to memmory space through this service export. Accesses to memory space are intrusive, i.e. they affect timing or data placement (e.g. in caches or TLBs).}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{memory\_access\_reporting\_control}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces} \newline$\hookrightarrow$\texttt{::MemoryAccessReportingControl}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The CPU allows a client to enable/disable memory access reporting through this service export.}\\
+		\hline
+		\hline
+		\multicolumn{2}{|c|}{\textbf{\large Service Imports}}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{debug\_control\_import} \newline \textbf{Mandatory connected:} no} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces} \newline$\hookrightarrow$\texttt{::DebugControl}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline This service import allow to interactively control the CPU. Method \texttt{FetchDebugCommand} of the service import interface returns command for CPU: either execute one instruction or stop simulation.}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{memory\_access\_reporting\_import} \newline \textbf{Mandatory connected:} no} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces} \newline$\hookrightarrow$\texttt{::MemoryAccessReporting}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The CPU reports memory accesses (e.g. to a debugger) using this service import.}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{trap\_reporting} \newline \textbf{Mandatory connected:} no} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces} \newline$\hookrightarrow$\texttt{::TrapReporting}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The CPU informs a remote service (e.g. a debugger) that an event has occurred using this service import.}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{symbol\_table\_lookup\_import} \newline \textbf{Mandatory connected:} no} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces} \newline$\hookrightarrow$\texttt{::SymbolTableLookup}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The CPU can obtain a translation from an address to a symbol name using this service import.}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{memory\_import} \newline \textbf{Mandatory connected:} no} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces} \newline$\hookrightarrow$\texttt{::Memory}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The CPU accesses to an external memory using this service import.}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{ti\_c\_io\_import} \newline \textbf{Mandatory connected:} yes} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces} \newline$\hookrightarrow$\texttt{::TI\_C\_IO}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The CPU allow a remote service (e.g. TI C I/O service) to capture \texttt{SWI} instructions. Such service should translate target program I/Os to host I/Os.}\\
+		\hline
+	\end{supertabular}
+\end{center}
+
 
 \subsubsection{Memory}
 \label{tms320c3x_memory}
 
-A memory is implemented by class \texttt{unisim::component::cxx::memory::ram::Memory}.
+The source of class \texttt{unisim::component::cxx::memory::ram::Memory} is in directory: \newline
+\texttt{unisim/component/cxx/memory/ram}.\newline
 Methods \texttt{ReadMemory} and \texttt{WriteMemory} respectively implement read and write memory accesses.
 This simulation components provides interface \texttt{unisim::service::interfaces::Memory} to other simulation components (e.g. CPU) or services (e.g. the COFF loader).
+
+\newpage
+\begin{center}
+	\tablehead{\hline}
+	\tabletail{\hline}
+	\begin{supertabular}{|p{7.5cm}|p{7.5cm}|}
+		\hline
+		\multicolumn{2}{|l|}{\textbf{\Large Module Memory}}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Class Name:} \newline \texttt{unisim::component::cxx::memory}\newline$\hookrightarrow$\texttt{::ram::Memory}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Header:} \newline \texttt{unisim/component/cxx/memory}\newline$\hookrightarrow$\texttt{/ram/memory.hh}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline This C++ class models a RAM.}\\
+		\hline
+		\hline
+		\multicolumn{2}{|c|}{\textbf{\large Template Parameters}}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{PHYSICAL\_ADDR}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{class}}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{none}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline This is the C++ type of a memory address (typically uint32\_t or uint64\_t).}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{PAGE\_SIZE}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{uint32\_t}}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{1 MB}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline This is the size of a memory page in the implementation. This parameter is absolutely not related to an architectural parameter but only a hint to speed-up simulation (memory usage vs. speed).}\\
+		\hline
+		\hline
+		\multicolumn{2}{|c|}{\textbf{\large Run-Time Parameters}}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{org}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{PHYSICAL\_ADDR}}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{0}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Starting address of the memory (typically 0).}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{bytesize}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{PHYSICAL\_ADDR}}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{0}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Size in bytes of the memory.}\\
+		\hline
+		\hline
+		\multicolumn{2}{|c|}{\textbf{\large Service Exports}}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{memory\_export}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces} \newline$\hookrightarrow$\texttt{::Memory}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The memory provides clients (e.g debuggers or CPU) with an access to memmory space through this service export. Accesses to memory space are non-intrusive, i.e. they do not affect timing or data placement.}\\
+		\hline
+	\end{supertabular}
+\end{center}
 
 \subsection{Service infrastructure}
 \label{tms320c3x_service_infrastructure}
@@ -504,7 +671,7 @@ All service interfaces are declared in namespace \texttt{unisim::service::interf
 These interfaces allows reading and writing to memory space. The memory interfaces comes in two flavor:
 \begin{itemize}
 \item non-instrusive memory access (\texttt{unisim::service::interfaces::Memory}); It should not affect timing and data placement (e.g. in caches and TLBs).
-\item intrusive memory access (\texttt{unisim::service::interfaces::MemoryInjection}); It can affect timing and dat placement.
+\item intrusive memory access (\texttt{unisim::service::interfaces::MemoryInjection}); It can affect timing and data placement.
 \end{itemize}
 
 \noindent The two C++ interfaces are:
@@ -578,7 +745,7 @@ Such memory trace is useful for a debugger to monitor memory access.
 \end{center}
 
 Method \texttt{ReportMemoryAccess} takes as argument the memory access type (either read or write), the memory type (either data or instruction memory), the address of the access, and the size of the memory access.
-Method\texttt{ReportFinishedInstruction} takes as argument the address of next instruction to be executed.
+Method \texttt{ReportFinishedInstruction} takes as argument the address of next instruction to be executed.
 
 \textbf{Trap reporting}. An instrumented simulation component informs a debugger about an important event using interface \texttt{unisim::service::interfaces::TrapReporting}.
 Such event is useful for a debugger to pause simulation once such event occurs.
