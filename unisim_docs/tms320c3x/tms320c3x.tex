@@ -585,6 +585,7 @@ A Concrete use of service binding import and service is provided in the next sec
 \end{figure}
 
 \subsubsection{Building a service graph}
+\label{tms320c3x_building_a_service_graph}
 
 Using services implies building a service graph.
 For instance, consider that the client is a loader, and the service is a memory.
@@ -658,6 +659,12 @@ The parameter is bound to the exposed variable \ding{204} in the service/client 
     \caption{\label{fig:tms320c3x_run_time_parameter} Exposing a service/client member variable as a run-time parameter.}
   \end{center}
 \end{figure}
+
+\subsubsection{Setup Order}
+
+As explained in section~\ref{tms320c3x_building_a_service_graph}, Method \texttt{Setup} of class \texttt{ServiceManager} calls all \texttt{Setup} methods in the simulator. A problem may occur if setup order is important. For instance, consider two services: service \texttt{A} and \texttt{B}. \texttt{A::Setup()} uses service \texttt{B}. A correct setup order consist to first setup service \texttt{B} and then service \texttt{A}.
+To solve such setup dependency, programmer should call method \texttt{Object::SetupDependsOn} (e.g. in the class constructor) so that the service manager can ensure correct setup order.
+If the service manager finds a cyclic dependency, \texttt{ServiceManager::Setup()} fails: it generally means that clients and services have been badly designed.
 
 \newpage
 \subsection{Service Interfaces}
