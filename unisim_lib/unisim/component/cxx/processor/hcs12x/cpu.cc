@@ -304,13 +304,15 @@ uint8_t CPU::Step()
 
 		if (trace_enable) {
 			stringstream disasm_str;
+			stringstream ctstr;
 
 			op->disasm(disasm_str);
 
-			logger << DebugInfo << GetSimulatedTime() << " ms\t\t\t\t"
-				<< "PC = 0x" << std::hex << current_pc << std::dec << "\t\t\t"
+			ctstr << insn;
+			logger << DebugInfo << GetSimulatedTime() << " ms: "
+				<< "PC = 0x" << std::hex << current_pc << std::dec << " : "
 				<< disasm_str.str()
-				<< "\t\t\t" << EndDebugInfo	<< std::endl;
+				<< " (0x" << std::hex << ctstr.str() << std::dec << ") " << EndDebugInfo	<< std::endl;
 
 		} else if (debug_enabled && verbose_step) {
 			stringstream disasm_str;

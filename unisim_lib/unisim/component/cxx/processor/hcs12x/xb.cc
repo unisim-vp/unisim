@@ -826,7 +826,7 @@ cpu
 		{
 			regNewVal = regOldVal + val + 1;
 			} else { // decrement index register
-			regNewVal = (int16_t) regOldVal + val - 16;
+			regNewVal = regOldVal + val - 16;
 		}
 
 		cpu->xb_setAddrRegValue(rr,regNewVal);
@@ -931,7 +931,7 @@ cpu
 #line 176 "xb.isa"
 	{
 
-		address_t addr = (int16_t) cpu->xb_getAddrRegValue(rr) + nnnnn;
+		address_t addr = cpu->xb_getAddrRegValue(rr) + nnnnn;
 
 		return addr;
 
@@ -1012,9 +1012,9 @@ cpu
 
 		address_t addr;
 		if (s==0) {
-			addr = (int16_t) cpu->xb_getAddrRegValue(rr) + n8;
+			addr = cpu->xb_getAddrRegValue(rr) + ((uint8_t) n8);
 			} else {
-			addr = (int16_t) cpu->xb_getAddrRegValue(rr) + (n8 - 256);
+			addr = cpu->xb_getAddrRegValue(rr) + ((uint8_t) n8) - 256;
 		}
 
 		return addr;
@@ -1039,9 +1039,9 @@ sink
 
 		string regLabel = CPU::xb_getAddrRegLabel(rr);
 		if (s==0) {
-			sink << std::dec << n8 << "," << regLabel;
+			sink << std::dec << ((uint8_t) n8) << "," << regLabel;
 			} else {
-			sink << std::dec << (n8 - 256) << "," << regLabel;
+			sink << std::dec << ((uint8_t) n8) - 256 << "," << regLabel;
 		}
 
 	}

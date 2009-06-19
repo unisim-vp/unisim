@@ -795,9 +795,9 @@ Bits 7 and 6 would be 0:0 for DBNE.
 	}
 	
 	if (b4 == 0) {
-			sink << mnem << " " << EBLB::getRegName(b210) << " , " << std::dec << rel9;
+			sink << mnem << " " << EBLB::getRegName(b210) << " , " << std::dec << ((uint8_t) rel9);
 	} else {
-		sink << mnem << " " << EBLB::getRegName(b210) << " , " << std::dec << (rel9 - 256);
+		sink << mnem << " " << EBLB::getRegName(b210) << " , " << std::dec << ((uint8_t) rel9) - 256;
 	}
 	
 	return mnem;
@@ -809,9 +809,9 @@ loop.execute = {
 	isBranch = false;
 
 	if (b4 == 0) {
-		branchAddr = cpu->getRegPC() + rel9;
+		branchAddr = cpu->getRegPC() + ((uint8_t) rel9);
 	} else {
-		branchAddr = cpu->getRegPC() + (rel9 - 256);
+		branchAddr = cpu->getRegPC() + ((uint8_t) rel9) - 256;
 	}
 	
 	switch (b765) {
