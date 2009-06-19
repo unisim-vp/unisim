@@ -111,70 +111,72 @@ public:
 	inline CodeType const& GetEncoding() const { return encoding; }
 	inline unsigned int GetLength() const { return this->encoding.size; }
 	inline const char *GetName() const { return name; }
+	static unsigned int const minsize = 8;
+	static unsigned int const maxsize = 24;
 	virtual
 #line 136 "xb.isa"
 	void
-#line 118 "xb.hh"
+#line 120 "xb.hh"
 	post_execute(
 #line 136 "xb.isa"
 	ostream&
-#line 122 "xb.hh"
+#line 124 "xb.hh"
 #line 136 "xb.isa"
 	sink
-#line 125 "xb.hh"
+#line 127 "xb.hh"
 	);
 	virtual
 #line 100 "xb.isa"
 	void
-#line 130 "xb.hh"
+#line 132 "xb.hh"
 	pre_execute(
 #line 100 "xb.isa"
 	ostream&
-#line 134 "xb.hh"
+#line 136 "xb.hh"
 #line 100 "xb.isa"
 	sink
-#line 137 "xb.hh"
+#line 139 "xb.hh"
 	);
 	virtual
 #line 97 "xb.isa"
 	void
-#line 142 "xb.hh"
+#line 144 "xb.hh"
 	getRegsLabel(
 #line 97 "xb.isa"
 	vector<string>
-#line 146 "xb.hh"
+#line 148 "xb.hh"
 #line 97 "xb.isa"
 	&vect
-#line 149 "xb.hh"
+#line 151 "xb.hh"
 	);
 	virtual
 #line 95 "xb.isa"
 	uint16_t
-#line 154 "xb.hh"
+#line 156 "xb.hh"
 	getEAddr(
 #line 95 "xb.isa"
 	CPU *
-#line 158 "xb.hh"
+#line 160 "xb.hh"
 #line 95 "xb.isa"
 	cpu
-#line 161 "xb.hh"
+#line 163 "xb.hh"
 	);
 	virtual
 #line 91 "xb.isa"
 	void
-#line 166 "xb.hh"
+#line 168 "xb.hh"
 	disasm(
 #line 91 "xb.isa"
 	ostream&
-#line 170 "xb.hh"
+#line 172 "xb.hh"
 #line 91 "xb.isa"
 	sink
-#line 173 "xb.hh"
+#line 175 "xb.hh"
 	);
 	virtual
 #line 86 "xb.isa"
 	uint8_t
-#line 178 "xb.hh"
+#line 180 "xb.hh"
 	getXbMode( );
 protected:
 	CodeType encoding;
