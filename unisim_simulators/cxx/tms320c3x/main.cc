@@ -297,14 +297,21 @@ int main(int argc, char *argv[]) {
 	}
 
 	if(use_gdb_server) {
-		cerr << "gdb_server_port = " << gdb_server_port << endl;
 		VariableBase *var =	ServiceManager::GetParameter("gdb-server.tcp-port");
+		cerr << "Using " << var->GetName() << " = " << gdb_server_port << endl;
 		*var = gdb_server_port;
 		if(gdb_xml != 0) {
-			cerr << "gdb_xml = " << gdb_xml << endl;
 			var = ServiceManager::GetParameter("gdb-server.architecture-description-filename");
+			cerr << "Using " << var->GetName() << " = " << gdb_xml << endl;
 			*var = gdb_xml;
 		}
+	}
+
+	if(filename)
+	{
+		VariableBase *var = ServiceManager::GetParameter("loader.filename");
+		cerr << "Using " << var->GetName() << " = " << filename << endl;
+		*var = filename;
 	}
 	
 	if(ServiceManager::Setup())
