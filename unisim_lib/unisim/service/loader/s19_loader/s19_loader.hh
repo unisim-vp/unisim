@@ -75,7 +75,7 @@ using unisim::service::interfaces::Loader;
 #define CPU12_RESET_ADDR		0xFFFE 	//is the local Reset Vector Address for the CPU12
 #define GLOBAL_CPU12_RESET_ADDR	0xFFBFFE 	//is the global Reset Vector Address offset for the CPU12
 
-template <class MEMORY_ADDR>	
+template <class MEMORY_ADDR>
 class S19_Loader :
 	public Client<Memory<MEMORY_ADDR> >,
 	public Service<Loader<MEMORY_ADDR> >
@@ -84,7 +84,7 @@ public:
 
 	enum {ERR_NOFILE, ERR_BADREC, ERR_NOSUPPORT, ERR_BADADDR, ERR_BADCHKSUM, ERR_BADFILENAME};
 
-/* ********* S-Record Types *********************** 
+/* ********* S-Record Types ***********************
  * Record	Description		Address Bytes	Data Sequence
  * ------	-----------		-------------	-------------
  * S0		Block header	2				Yes
@@ -109,18 +109,14 @@ public:
 	virtual MEMORY_ADDR GetStackBase() const;
 
 	S19_Loader(char const *name, Object *parent = 0);
-	virtual ~S19_Loader();	
+	virtual ~S19_Loader();
 
 private:
 	string				filename;
 	physical_address_t	entry_point;
-	physical_address_t	base_addr;
-	bool				force_use_virtual_address;
-	
+
 	Parameter<string>	param_filename;
-	Parameter<physical_address_t>	param_base_addr;
-	Parameter<bool>		param_force_use_virtual_address;
-	
+
 	bool				isFirstDataRec;
 
 	bool	ProcessRecord(int linenum, char srec[S_RECORD_SIZE]);

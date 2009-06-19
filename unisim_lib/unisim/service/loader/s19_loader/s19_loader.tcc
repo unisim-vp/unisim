@@ -51,14 +51,10 @@ S19_Loader<MEMORY_ADDR>::S19_Loader(char const *name, Object *parent) :
 	Service<Loader<MEMORY_ADDR> >(name, parent),
 	memory_import("memory-import", this),
 	loader_export("loader-export", this),
-	filename(),
 	entry_point(0),
-	base_addr(0),
-	force_use_virtual_address(false),
-	param_filename("filename", this, filename),
-	param_base_addr("base-addr", this, base_addr),
-	param_force_use_virtual_address("force-use-virtual-address", this, force_use_virtual_address),
-	isFirstDataRec(true)
+	isFirstDataRec(true),
+	filename(),
+	param_filename("filename", this, filename)
 	
 {
 	Object::SetupDependsOn(memory_import);
