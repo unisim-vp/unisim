@@ -55,7 +55,7 @@
 #include "unisim/service/interfaces/symbol_table_lookup.hh"
 #include "unisim/service/interfaces/memory.hh"
 #include "unisim/service/interfaces/registers.hh"
-#include "unisim/service/interfaces/logger.hh"
+#include "unisim/kernel/logger/logger.hh"
 
 #include "unisim/util/debug/register.hh"
 #include "unisim/util/arithmetic/arithmetic.hh"
@@ -94,19 +94,16 @@ using unisim::service::interfaces::Disassembly;
 using unisim::service::interfaces::SymbolTableLookup;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Registers;
-using unisim::service::interfaces::Logger;
-using unisim::service::interfaces::Hex;
-using unisim::service::interfaces::Dec;
-using unisim::service::interfaces::Endl;
-using unisim::service::interfaces::DebugInfo;
-using unisim::service::interfaces::DebugWarning;
-using unisim::service::interfaces::DebugError;
-using unisim::service::interfaces::EndDebugInfo;
-using unisim::service::interfaces::EndDebugWarning;
-using unisim::service::interfaces::EndDebugError;
-using unisim::service::interfaces::Function;
-using unisim::service::interfaces::File;
-using unisim::service::interfaces::Line;
+
+using unisim::kernel::logger::Logger;
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::EndDebugInfo;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::EndDebugWarning;
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugError;
+using unisim::kernel::logger::EndDebug;
+
 
 using unisim::util::debug::Register;
 
@@ -217,7 +214,6 @@ class CPU : public Decoder,
 	public Service<Memory<service_address_t> >,
 	public Client<Memory<service_address_t> >,
 	public Client<SymbolTableLookup<service_address_t> >,
-	public Client<Logger>,
 	public Client<TrapReporting >
 
 {
@@ -247,9 +243,10 @@ public:
 
 	ServiceImport<DebugControl<service_address_t> > debug_control_import;
 	ServiceImport<MemoryAccessReporting<service_address_t> > memory_access_reporting_import;
-//	ServiceImport<SymbolTableLookup<service_address_t> > symbol_table_lookup_import;
 	ServiceImport<Memory<service_address_t> > memory_import;
-	ServiceImport<Logger> logger_import;
+
+	// the kernel logger
+	unisim::kernel::logger::Logger logger;
 
 	ServiceImport<TrapReporting > trap_reporting_import;
 
@@ -305,6 +302,8 @@ public:
 	 * Else return INT_Vector
 	 */
 	virtual address_t GetIntVector(uint8_t &ipl) = 0;
+
+	virtual double  GetSimulatedTime() = 0;
 
 	//=====================================================================
 	//=                    Interface with outside                         =
@@ -508,7 +507,7 @@ public:
 	//=====================================================================
 
     inline uint64_t GetInstructionCounter() const { return instruction_counter; }
-	inline bool IsVerboseException() const { return logger_import && debug_enabled && CONFIG::DEBUG_EXCEPTION_ENABLE && (verbose_all || verbose_exception); }
+	inline bool IsVerboseException() const { return debug_enabled && CONFIG::DEBUG_EXCEPTION_ENABLE && (verbose_all || verbose_exception); }
 
 	address_t getLastPC() {return lastPC; }
 
@@ -529,11 +528,20 @@ protected:
 
 	//utils attributes
 	bool verbose_all;
+	Parameter<bool> param_verbose_all;
 	bool verbose_setup;
+	Parameter<bool> param_verbose_setup;
 	bool verbose_step;
+	Parameter<bool> param_verbose_step;
 	bool verbose_dump_regs_start;
+	Parameter<bool> param_verbose_dump_regs_start;
 	bool verbose_dump_regs_end;
+	Parameter<bool> param_verbose_dump_regs_end;
 	bool verbose_exception;
+	Parameter<bool> param_verbose_exception;
+
+	bool trace_enable;
+	Parameter<bool> param_trace_enable;
 
 		// verbose methods
 	inline bool VerboseSetup() GCC_INLINE;
@@ -546,8 +554,11 @@ protected:
 
 	/** indicates if the memory accesses require to be reported */
 	bool requires_memory_access_reporting;
+	Parameter<bool> param_requires_memory_access_reporting;
+
 	/** indicates if the finished instructions require to be reported */
 	bool requires_finished_instruction_reporting;
+	Parameter<bool> param_requires_finished_instruction_reporting;
 
 	bool	debug_enabled;
 	Parameter<bool>	param_debug_enabled;

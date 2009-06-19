@@ -37,9 +37,6 @@
 #include <stdlib.h>
 #include "unisim/util/debug/simple_register.hh"
 
-#define LOCATION Function << __FUNCTION__ << File <<  __FILE__ << Line << __LINE__
-
-
 namespace unisim {
 namespace component {
 namespace cxx {
@@ -54,9 +51,6 @@ namespace hcs12x {
 
 using std::cout;
 
-using unisim::service::interfaces::Function;
-using unisim::service::interfaces::File;
-using unisim::service::interfaces::Line;
 using unisim::util::debug::SimpleRegister;
 using unisim::util::debug::Symbol;
 
@@ -78,37 +72,50 @@ CPU::CPU(const char *name, Object *parent):
 	Service<Memory<service_address_t> >(name, parent),
 	Client<Memory<service_address_t> >(name, parent),
 	Client<SymbolTableLookup<service_address_t> >(name, parent),
-	Client<Logger>(name, parent),
+
+	logger(*this),
 	disasm_export("disasm_export", this),
 	registers_export("registers_export", this),
 	memory_access_reporting_control_export("memory_access_reporting_control_export", this),
 	memory_export("memory_export", this),
 	debug_control_import("debug_control_import", this),
 	memory_access_reporting_import("memory_access_reporting_import", this),
-//	symbol_table_lookup_import("symbol_table_lookup_import", this),
 	memory_import("memory_import", this),
-	logger_import("logger_import", this),
-	requires_memory_access_reporting(true),
-	requires_finished_instruction_reporting(true),
 	trap_reporting_import("trap_reproting_import", this),
-	verbose_all(false),
-	verbose_exception(false),
-	verbose_setup(false),
-	verbose_step(false),
-	verbose_dump_regs_start(false),
-	verbose_dump_regs_end(false),
-	debug_enabled(false),
-	param_debug_enabled("debug-enabled", this, debug_enabled),
+
 	instruction_counter(0),
-	max_inst((uint64_t) -1),
-	param_max_inst("max-inst",this,max_inst),
 	queueFirst(-1), queueNElement(0), queueCurrentAddress(0xFFFE),
 	bus_cycle(0),
 	cpu_cycle(0),
 	asynchronous_interrupt(false),
 	maskableIbit_interrupt(false),
 	nonMaskableXIRQ_interrupt(false),
-	reset(false)
+	reset(false),
+
+	requires_memory_access_reporting(true),
+	param_requires_memory_access_reporting("requires-memory-access-reporting", this, requires_memory_access_reporting),
+	requires_finished_instruction_reporting(true),
+	param_requires_finished_instruction_reporting("requires-finished-instruction-reporting", this, requires_finished_instruction_reporting),
+
+	verbose_all(false),
+	param_verbose_all("verbose-all", this, verbose_all),
+	verbose_exception(false),
+	param_verbose_exception("verbose-exception", this, verbose_exception),
+	verbose_setup(false),
+	param_verbose_setup("verbose-setup", this, verbose_setup),
+	verbose_step(false),
+	param_verbose_step("verbose-step", this, verbose_step),
+	verbose_dump_regs_start(false),
+	param_verbose_dump_regs_start("verbose-dump-regs-start", this, verbose_dump_regs_start),
+	verbose_dump_regs_end(false),
+	param_verbose_dump_regs_end("verbose-dump-regs-end", this, verbose_dump_regs_end),
+	trace_enable(false),
+	param_trace_enable("trace-enable", this, trace_enable),
+
+	debug_enabled(false),
+	param_debug_enabled("debug-enabled", this, debug_enabled),
+	max_inst((uint64_t) -1),
+	param_max_inst("max-inst",this,max_inst)
 
 {
     ccr = new CCR_t();
@@ -202,94 +209,89 @@ uint8_t CPU::Step()
 
 		VerboseDumpRegsStart();
 
-		if(debug_enabled && verbose_step && logger_import)
-			(*logger_import) << DebugInfo << LOCATION
-				<< "Starting step at PC = 0x"
-				<< Hex << current_pc << Dec
-				<< Endl << EndDebugInfo;
+		if(debug_enabled && verbose_step)
+			logger << DebugInfo << "Starting step at PC = 0x" << std::hex << current_pc << std::dec << std::endl << EndDebugInfo;
 
 		if(debug_control_import) {
 			DebugControl<service_address_t>::DebugCommand dbg_cmd;
 
 			do {
-				if(debug_enabled && verbose_step && logger_import)
-					(*logger_import) << DebugInfo << LOCATION
-						<< "Fetching debug command (PC = 0x"
-						<< Hex << current_pc << Dec << ")"
-						<< Endl << EndDebugInfo;
+				if(debug_enabled && verbose_step)
+					logger << DebugInfo << "Fetching debug command (PC = 0x" << std::hex << current_pc << std::dec << ")"
+						<< std::endl << EndDebugInfo;
 
 				dbg_cmd = debug_control_import->FetchDebugCommand(current_pc);
 
 				if(dbg_cmd == DebugControl<service_address_t>::DBG_STEP) {
-					if(debug_enabled && verbose_step && logger_import)
-						(*logger_import) << DebugInfo << LOCATION
+					if(debug_enabled && verbose_step)
+						logger << DebugInfo
 							<< "Received debug DBG_STEP command (PC = 0x"
-							<< Hex << current_pc << Dec << ")"
-							<< Endl << EndDebugInfo;
+							<< std::hex << current_pc << std::dec << ")"
+							<< std::endl << EndDebugInfo;
 					break;
 				}
 				if(dbg_cmd == DebugControl<service_address_t>::DBG_SYNC) {
-					if(debug_enabled && verbose_step && logger_import)
-						(*logger_import) << DebugInfo << LOCATION
+					if(debug_enabled && verbose_step)
+						logger << DebugInfo
 							<< "Received debug DBG_SYNC command (PC = 0x"
-							<< Hex << current_pc << Dec << ")"
-							<< Endl << EndDebugInfo;
+							<< std::hex << current_pc << std::dec << ")"
+							<< std::endl << EndDebugInfo;
 					Sync();
 					continue;
 				}
 
 				if(dbg_cmd == DebugControl<service_address_t>::DBG_KILL) {
-					if(debug_enabled && verbose_step && logger_import)
-						(*logger_import) << DebugInfo << LOCATION
+					if(debug_enabled && verbose_step)
+						logger << DebugInfo
 							<< "Received debug DBG_KILL command (PC = 0x"
-							<< Hex << current_pc << Dec << ")"
-							<< Endl << EndDebugInfo;
+							<< std::hex << current_pc << std::dec << ")"
+							<< std::endl << EndDebugInfo;
 					Stop(0);
 				}
 				if(dbg_cmd == DebugControl<service_address_t>::DBG_RESET) {
-					if(debug_enabled && verbose_step && logger_import)
-						(*logger_import) << DebugInfo << LOCATION
+					if(debug_enabled && verbose_step)
+						logger << DebugInfo
 							<< "Received debug DBG_RESET command (PC = 0x"
-							<< Hex << current_pc << Dec << ")"
-							<< Endl << EndDebugInfo;
+							<< std::hex << current_pc << std::dec << ")"
+							<< std::endl << EndDebugInfo;
 				}
 			} while(1);
 		}
 
 		if(requires_memory_access_reporting) {
 			if(memory_access_reporting_import) {
-				if(debug_enabled && verbose_step && logger_import)
-					(*logger_import) << DebugInfo << LOCATION
+				if(debug_enabled && verbose_step)
+					logger << DebugInfo
 						<< "Reporting memory acces for fetch at address 0x"
-						<< Hex << current_pc << Dec
-						<< Endl << EndDebugInfo;
+						<< std::hex << current_pc << std::dec
+						<< std::endl << EndDebugInfo;
 
 				memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<service_address_t>::MAT_READ, MemoryAccessReporting<service_address_t>::MT_INSN, current_pc, MAX_INS_SIZE);
 			}
 		}
 
 
-		if(debug_enabled && verbose_step && logger_import)
+		if(debug_enabled && verbose_step)
 		{
-			(*logger_import) << DebugInfo << LOCATION
+			logger << DebugInfo
 				<< "Fetching (reading) instruction at address 0x"
-				<< Hex << current_pc << Dec
-				<< Endl << EndDebugInfo;
+				<< std::hex << current_pc << std::dec
+				<< std::endl << EndDebugInfo;
 		}
 
 		queueFetch(current_pc, buffer, MAX_INS_SIZE);
 		CodeType 	insn( buffer, MAX_INS_SIZE);
 
 		/* Decode current PC */
-		if(debug_enabled && verbose_step && logger_import)
+		if(debug_enabled && verbose_step)
 		{
 			stringstream ctstr;
 			ctstr << insn;
-			(*logger_import) << DebugInfo << LOCATION
+			logger << DebugInfo
 				<< "Decoding instruction at 0x"
-				<< Hex << current_pc << Dec
-				<< " (0x" << Hex << ctstr.str() << Dec << ")"
-				<< Endl << EndDebugInfo;
+				<< std::hex << current_pc << std::dec
+				<< " (0x" << std::hex << ctstr.str() << std::dec << ")"
+				<< std::endl << EndDebugInfo;
 		}
 
 		op = this->Decode(current_pc, insn);
@@ -300,19 +302,29 @@ uint8_t CPU::Step()
 
 		/* Execute instruction */
 
-		if(logger_import) {
+		if (trace_enable) {
+			stringstream disasm_str;
+
+			op->disasm(disasm_str);
+
+			logger << DebugInfo << GetSimulatedTime() << " ms\t\t\t\t"
+				<< "PC = 0x" << std::hex << current_pc << std::dec << "\t\t\t"
+				<< disasm_str.str()
+				<< "\t\t\t" << EndDebugInfo	<< std::endl;
+
+		} else if (debug_enabled && verbose_step) {
 			stringstream disasm_str;
 			stringstream ctstr;
 
 			op->disasm(disasm_str);
 
 			ctstr << insn;
-			(*logger_import) << DebugInfo << LOCATION
+			logger << DebugInfo << GetSimulatedTime() << "ms: "
 				<< "Executing instruction "
 				<< disasm_str.str()
-				<< " at 0x" << Hex << current_pc << Dec
-				<< " (0x" << Hex << ctstr.str() << Dec << ", " << instruction_counter << ")"
-				<< Endl << EndDebugInfo;
+				<< " at PC = 0x" << std::hex << current_pc << std::dec
+				<< " (0x" << std::hex << ctstr.str() << std::dec << ") , Instruction Counter = " << instruction_counter
+				<< "  " << EndDebugInfo	<< std::endl;
 		}
 
 		op->execute(this);
@@ -349,8 +361,8 @@ uint8_t CPU::Step()
 	catch (SpuriousInterrupt& exc) { HandleException(exc); }
 	catch(Exception& e)
 	{
-		if(logger_import)
-			(*logger_import) << DebugError << "uncaught processor exception :" << e.what() << Endl << EndDebugError;
+		if(debug_enabled && verbose_step)
+			logger << DebugError << "uncaught processor exception :" << e.what() << std::endl << EndDebugError;
 		Stop(1);
 	}
 
@@ -838,34 +850,34 @@ bool CPU::Setup()
 		verbose_dump_regs_start = true;
 		verbose_dump_regs_end = true;
 	}
-	if(debug_enabled && verbose_all && logger_import) {
-		(*logger_import) << DebugInfo << LOCATION
+	if(debug_enabled && verbose_all) {
+		logger << DebugInfo
 			<< "verbose-all = true"
-			<< Endl << EndDebugInfo;
+			<< std::endl << EndDebugInfo;
 	} else {
-		if(debug_enabled && verbose_setup && logger_import)
-			(*logger_import) << DebugInfo << LOCATION
+		if(debug_enabled && verbose_setup)
+			logger << DebugInfo
 				<< "verbose-setup = true"
-				<< Endl << EndDebugInfo;
-		if(debug_enabled && verbose_step && logger_import)
-			(*logger_import) << DebugInfo << LOCATION
+				<< std::endl << EndDebugInfo;
+		if(debug_enabled && verbose_step)
+			logger << DebugInfo
 				<< "verbose-step = true"
-				<< Endl << EndDebugInfo;
-		if(debug_enabled && verbose_dump_regs_start && logger_import)
-			(*logger_import) << DebugInfo << LOCATION
+				<< std::endl << EndDebugInfo;
+		if(debug_enabled && verbose_dump_regs_start)
+			logger << DebugInfo
 				<< "verbose-dump-regs-end = true"
-				<< Endl << EndDebugInfo;
-		if(debug_enabled && verbose_dump_regs_end && logger_import)
-			(*logger_import) << DebugInfo << LOCATION
+				<< std::endl << EndDebugInfo;
+		if(debug_enabled && verbose_dump_regs_end)
+			logger << DebugInfo
 				<< "verbose-dump-regs-start = true"
-				<< Endl << EndDebugInfo;
+				<< std::endl << EndDebugInfo;
 	}
 
 	/* setting debugging registers */
-	if(verbose_setup && logger_import)
-		(*logger_import) << DebugInfo << LOCATION
+	if(verbose_setup)
+		logger << DebugInfo
 			<< "Initializing debugging registers"
-			<< Endl << EndDebugInfo;
+			<< std::endl << EndDebugInfo;
 
 	registers_registry["A"] = new SimpleRegister<uint8_t>("A", &regA);
 	registers_registry["B"] = new SimpleRegister<uint8_t>("B", &regB);
@@ -914,47 +926,47 @@ void CPU::RequiresFinishedInstructionReporting(bool report)
 
 inline INLINE
 bool CPU::VerboseSetup() {
-	return debug_enabled && verbose_setup && logger_import;
+	return debug_enabled && verbose_setup;
 }
 
 inline INLINE
 bool CPU::VerboseStep() {
-	return debug_enabled && verbose_step && logger_import;
+	return debug_enabled && verbose_step;
 }
 
 inline INLINE
 void CPU::VerboseDumpRegs() {
 
-	(*logger_import) << "\t- A" << " = 0x" << Hex << getRegA() << Dec;
-	(*logger_import) << "\t- B" << " = 0x" << Hex << getRegB() << Dec;
-	(*logger_import) << "\t- D" << " = 0x" << Hex << getRegD() << Dec;
-	(*logger_import) << Endl;
-	(*logger_import) << "\t- X" << " = 0x" << Hex << getRegX() << Dec;
-	(*logger_import) << "\t- Y" << " = 0x" << Hex << getRegY() << Dec;
-	(*logger_import) << Endl;
-	(*logger_import) << "\t- SP" << " = 0x" << Hex << getRegSP() << Dec;
-	(*logger_import) << "\t- PC" << " = 0x" << Hex << getRegPC() << Dec;
-	(*logger_import) << Endl;
+	logger << "\t- A" << " = 0x" << std::hex << getRegA() << std::dec;
+	logger << "\t- B" << " = 0x" << std::hex << getRegB() << std::dec;
+	logger << "\t- D" << " = 0x" << std::hex << getRegD() << std::dec;
+	logger << std::endl;
+	logger << "\t- X" << " = 0x" << std::hex << getRegX() << std::dec;
+	logger << "\t- Y" << " = 0x" << std::hex << getRegY() << std::dec;
+	logger << std::endl;
+	logger << "\t- SP" << " = 0x" << std::hex << getRegSP() << std::dec;
+	logger << "\t- PC" << " = 0x" << std::hex << getRegPC() << std::dec;
+	logger << std::endl;
 
 }
 
 inline INLINE
 void CPU::VerboseDumpRegsStart() {
-	if(debug_enabled && verbose_dump_regs_start && logger_import) {
-		(*logger_import) << DebugInfo << LOCATION
-			<< "Register dump before starting instruction execution: " << Endl;
+	if(debug_enabled && verbose_dump_regs_start) {
+		logger << DebugInfo
+			<< "Register dump before starting instruction execution: " << std::endl;
 		VerboseDumpRegs();
-		(*logger_import) << EndDebugInfo;
+		logger << EndDebugInfo;
 	}
 }
 
 inline INLINE
 void CPU::VerboseDumpRegsEnd() {
-	if(debug_enabled && verbose_dump_regs_end && logger_import) {
-		(*logger_import) << DebugInfo << LOCATION
-			<< "Register dump at the end of instruction execution: " << Endl;
+	if(debug_enabled && verbose_dump_regs_end) {
+		logger << DebugInfo
+			<< "Register dump at the end of instruction execution: " << std::endl;
 		VerboseDumpRegs();
-		(*logger_import) << EndDebugInfo;
+		logger << EndDebugInfo;
 	}
 }
 
