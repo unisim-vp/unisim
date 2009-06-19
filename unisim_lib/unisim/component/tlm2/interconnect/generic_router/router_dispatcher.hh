@@ -41,7 +41,6 @@
 #include <map>
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger.hh"
-#include "unisim/component/tlm2/interconnect/generic_router/config.hh"
 
 namespace unisim {
 namespace component {
@@ -49,7 +48,7 @@ namespace tlm2 {
 namespace interconnect {
 namespace generic_router {
 
-template<typename OWNER, class CONFIG = unisim::component::tlm2::interconnect::generic_router::Config>
+template<typename OWNER, class CONFIG>
 class RouterDispatcher :
 	public sc_module {
 private:

@@ -44,8 +44,6 @@ namespace ram {
 
 template class Memory<>;
 
-template class Memory<DEFAULT_BUSWIDTH, DEFAULT_PAGE_SIZE, true>;
-
 } // end of namespace ram
 } // end of namespace memory
 } // end of namespace tlm

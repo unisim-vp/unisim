@@ -46,7 +46,6 @@
 #include "unisim/kernel/tlm2/tlm.hh"
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger.hh"
-#include "unisim/component/tlm2/interconnect/generic_router/config.hh"
 #include "unisim/component/tlm2/interconnect/generic_router/router_dispatcher.hh"
 #include "unisim/service/interfaces/memory.hh"
 
@@ -109,7 +108,7 @@ private:
 	RouterPayloadExtension(std::queue<unsigned int> const &fifo_clone) : fifo(fifo_clone) {}
 };
 
-template<class CONFIG = unisim::component::tlm2::interconnect::generic_router::Config>
+template<class CONFIG>
 class Router :
 	public unisim::kernel::service::Service<unisim::service::interfaces::Memory<uint64_t> >,
 	public unisim::kernel::service::Client<unisim::service::interfaces::Memory<uint64_t> >,
