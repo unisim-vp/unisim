@@ -24,7 +24,7 @@ The UNISIM TMS320C3X simulator features:
 
 \subsection{Status of implementation}
 
-The UNISIM TMS320C3X has been developped using the following documentation:
+The UNISIM TMS320C3X has been developed using the following documentation:
 \begin{itemize}
 \item TMS320C3x User’s Guide (SPRU031F, 2558539-9761 revision L, March 2004)
 \item TMS320C3x/C4x Assembly Language Tools User’s Guide (SPRU035D, June 1998)
@@ -84,18 +84,22 @@ tms320c3x [<options>] <binary to simulate>
 To compile programs for the TMS320C3X simulator, you can use the free evaluation cross-compiler for TMS320C3X running on a Windows host (SPRC147, TMS320C3x DSK Software) available at \url{http://focus.ti.com/docs/toolsw/folders/print/tmdsdsk33.html}.
 This cross-compiler also runs under other x86 operating systems such as Linux or MacOSX using Wine, a Windows emulator (\url{http://www.winehq.org/}).
 
-The cross-compiler tool chain (\texttt{CL30.EXE, LNK30.EXE, ASM30.EXE, MK30.EXE, AR30.EXE, \ldots}) should be in your \texttt{PATH}, for instance:
+\textit{Note: Be aware that any call to the C standard library requires linking the program with \texttt{RTS30.LIB}.
+Moreover, any call to I/O functions (open, close, read, write, printf, \ldots) requires TI C I/O support enabled in the TMS320C3X simulator.}
+
+The cross-compiler tool chain (\texttt{CL30.EXE, LNK30.EXE, ASM30.EXE, MK30.EXE, AR30.EXE, \ldots}) should be in your \texttt{PATH}.
+The shell variable \texttt{C\_DIR} points to the location where cross-compiler should search for the standard C headers and libraries.
+Suppose the tool chain is installed in \texttt{C:{\textbackslash\textbackslash}TI}.
+Windows users should add the following in their \texttt{AUTOEXEC.BAT}:
 \begin{verbatim}
 set PATH=C:\TI\TIC3X4X\BIN;%PATH%
-\end{verbatim}
-
-The shell variable \texttt{C\_DIR} points to the location where cross-compiler should search for the standard C headers and libraries, for instance:
-\begin{verbatim}
 set C_DIR=C:\TI\TIC3X4X\INCLUDE;C:\TI\TIC3X4X\LIB
 \end{verbatim}
-
-Be aware that any call to the C standard library requires linking the program with \texttt{RTS30.LIB}.
-Moreover, any call to I/O functions (open, close, read, write, printf, \ldots) requires TI C I/O support enabled in the TMS320C3X simulator.
+Wine and GNU bash users should add the following in their \texttt{.bashrc}:
+\begin{verbatim}
+export PATH=${HOME}/.wine/drive_c/TI/TIC3X4X/BIN:${PATH}
+export C_DIR=C:\\TI\\TIC3X4X\\INCLUDE\;C:\\TI\\TIC3X4X\\LIB
+\end{verbatim}
 
 \subsection{Simulator configuration}
 \label{tms320c3x_configuration}
@@ -144,11 +148,6 @@ $ tms320c3x -c sim_config.xml
 	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
 	\multicolumn{2}{|l|}{}\\
 	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/disable verbosity of CPU while setup.}\\
-	\hline
-	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.verbose-all}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
-	\multicolumn{2}{|l|}{}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Globally enable/disable verbosity of CPU.}\\
 	\hline
 	\hline
 	\multicolumn{2}{|c|}{\textbf{\large Service GDB Server run-time parameters}}\\
@@ -296,7 +295,7 @@ $ tms320c3x -c sim_config.xml
 \subsection{Debugging the target program}
 \label{tms320c3x_inline_debug}
 
-Command line option \texttt{-i} enables the inline debugger. The inline debugger has support for controling the program execution, inspecting the program and its data, and putting breakpoints and watchpoints. The user can interact with the debugger using the following commands:
+Command line option \texttt{-i} enables the inline debugger. The inline debugger has support for controlling the program execution, inspecting the program and its data, and putting breakpoints and watchpoints. The user can interact with the debugger using the following commands:
 \begin{itemize}
 \item Execution commands:
 	\begin{itemize}
@@ -423,7 +422,7 @@ This class has methods to get/set value of a register and to perform floating po
 		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{trap-on-instruction-counter}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{uint64\_t}}\\
 		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{$2^{64} - 1$}}\\
 		\multicolumn{2}{|l|}{}\\
-		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Number of instructions to simulate before traping, i.e. calling \texttt{ReportTrap} through service import \texttt{trap\_import}. This is useful to inform debugger that CPU has simulated a certain amount of instructions, so that user can take control of the simulation at this point.}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Number of instructions to simulate before trapping, i.e. calling \texttt{ReportTrap} through service import \texttt{trap\_import}. This is useful to inform debugger that CPU has simulated a certain amount of instructions, so that user can take control of the simulation at this point.}\\
 		\hline
 		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{verbose-setup}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
 		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
@@ -556,7 +555,7 @@ Making all these components running together requires programming interfaces as 
 
 Usually the programmer faces to the problems of sharing source codes among several emulators, reusing existing source codes, and building a fully functional emulator from all these heterogeneous pieces of source codes.
 Most of the time, the software components are strongly dependent for each other: components are statically linked together through explicit function calls and adhoc interfaces.
-Replacing these adhoc interfaces with C++ pure interfaces (C++ classes with only unimplemented virtual methods, see your C++ manual for more details) and linking the components through pointers is a step toward avoiding such strong dependencies between the components. But still finding a standard manner to initialize those pointers is necessary. This can be done either by directly writting in those pointers or calling special functions to do the job.
+Replacing these adhoc interfaces with C++ pure interfaces (C++ classes with only unimplemented virtual methods, see your C++ manual for more details) and linking the components through pointers is a step toward avoiding such strong dependencies between the components. But still finding a standard manner to initialize those pointers is necessary. This can be done either by directly writing in those pointers or calling special functions to do the job.
 
 Another problem with heterogeneous software components is the manner to instantiate and parameterize those components in a standard way, so that it is easier for the component's user to use a new component.
 Usually, parameterizing a component means passing arguments to an initialization function or a class constructor. It implies that the programmers agree on using only one of these two solutions or both.
@@ -594,7 +593,7 @@ The programmer creates objects \texttt{loader} and \texttt{memory}, see Figure~\
 \begin{figure}[h]
   \begin{center}
     \input{tms320c3x/service_instanciation}
-    \caption{\label{fig:tms320c3x_service_instanciation} Client/Service instanciation.}
+    \caption{\label{fig:tms320c3x_service_instanciation} Client/Service instantiation.}
   \end{center}
 \end{figure}
 
@@ -649,7 +648,7 @@ The base \texttt{Object} constructor \ding{205} and the base \texttt{Client} con
 
 \subsubsection{Run-time parameters}
 
-Run-time parameterization can be added to a service or a client. "Run-time parametrization" means that the service and/or client can be reconfigured at run-time. It is opposed to "Static parametrization or template parametrization" which allows configuring a service and/or client at compilation-time.
+Run-time parameterization can be added to a service or a client. "Run-time parameterization" means that the service and/or client can be reconfigured at run-time. It is opposed to "Static parameterization or template parameterization" which allows configuring a service and/or client at compilation-time.
 To expose a member variable as a run-time parameter, a client/service must have member variable of type \texttt{Parameter<TYPE>}, where \texttt{TYPE} is the C++ type of the exposed member variable, see Figure~\ref{fig:tms320c3x_run_time_parameter}. Consider that a service would expose a member variable \texttt{x} \ding{202}. An instance of class \texttt{Parameter} is defined as a member of the service \ding{203}. 
 The parameter is bound to the exposed variable \ding{204} in the service/client constructor.
 
@@ -676,7 +675,7 @@ All service interfaces are declared in namespace \texttt{unisim::service::interf
 
 These interfaces allows reading and writing to memory space. The memory interfaces comes in two flavor:
 \begin{itemize}
-\item non-instrusive memory access (\texttt{unisim::service::interfaces::Memory}); It should not affect timing and data placement (e.g. in caches and TLBs).
+\item non-intrusive memory access (\texttt{unisim::service::interfaces::Memory}); It should not affect timing and data placement (e.g. in caches and TLBs).
 \item intrusive memory access (\texttt{unisim::service::interfaces::MemoryInjection}); It can affect timing and data placement.
 \end{itemize}
 
@@ -763,7 +762,7 @@ Such event is useful for a debugger to pause simulation once such event occurs.
 Method \texttt{ReportTrap} takes no arguments.
 
 \textbf{Symbol}. A service (e.g. a loader) provides lookup to the symbol table using interface \texttt{unisim::service::interfaces::SymbolTableLookup}.
-This interface is usefull for translating addresses to symbol names, and vice-versa.
+This interface is useful for translating addresses to symbol names, and vice-versa.
 
 \begin{center}
 	\input{tms320c3x/symbol_table_lookup_interface}
@@ -805,7 +804,7 @@ This interface is useful for the TI C I/O service to capture target program I/Os
 \subsubsection{COFF loader service}
 \label{tms320c3x_coff_loader}
 
-This service provides UNISIM TMS320C3X simulator with a support for TI COFF v0, v1, and v2 binary files (see TMS320C3x/C4x Assembly Language Tools User’s Guide, Appendix A). The COFF loader service loads the programs into memory while setup (simulator initialization). The loader can interprete \texttt{.cinit} section if option \texttt{-cr} of TI C cross-compiler has been used while building the target program (see TMS320C3x/C4x Optimizing C Compiler User’s Guide, section 4.8.1: Autoinitialization of variables and constants).
+This service provides UNISIM TMS320C3X simulator with a support for TI COFF v0, v1, and v2 binary files (see TMS320C3x/C4x Assembly Language Tools User’s Guide, Appendix A). The COFF loader service loads the programs into memory while setup (simulator initialization). The loader can interpret \texttt{.cinit} section if option \texttt{-cr} of TI C cross-compiler has been used while building the target program (see TMS320C3x/C4x Optimizing C Compiler User’s Guide, section 4.8.1: Autoinitialization of variables and constants).
 To configure the COFF loader service see section~\ref{tms320c3x_configuration}.
 The source code of COFF loader service is located in directory \texttt{unisim/service/loader/coff\_loader}.
 \noindent Table below summarizes the COFF Loader service API:
@@ -1261,7 +1260,7 @@ A simulation configuration (\texttt{sim\_config.xml}) for this simulator is also
 $ tms320c3x -c sim_config.xml
 \end{verbatim}
 
-\noindent The expected ouput on the screen of the benchmarks is:
+\noindent The expected output on the screen of the benchmarks is:
 
 \begin{verbatim}
 Fibo(1)=1 (0x1)
@@ -1314,7 +1313,7 @@ A simulation configuration (\texttt{sim\_config.xml}) for this simulator is also
  $ tms320c3x -c sim_config.xml
 \end{verbatim}
 
-\noindent The expected ouput data set is in file \texttt{sort.ref.txt}.
+\noindent The expected output data set is in file \texttt{sort.ref.txt}.
 
 \subsubsection{CRC32 (check sum)}
 
@@ -1330,7 +1329,7 @@ A simulation configuration (\texttt{sim\_config.xml}) for this simulator is also
 $ tms320c3x -c sim_config.xml
 \end{verbatim}
 
-\noindent The expected ouput on the screen of the benchmarks is in file ref.txt:
+\noindent The expected output on the screen of the benchmarks is in file ref.txt:
 
 \begin{verbatim}
 32 BIT ANSI X3.66 CRC checksum:
@@ -1379,7 +1378,7 @@ A simulation configuration (\texttt{sim\_config.xml}) for this simulator is also
 $ tms320c3x -c sim_config.xml
 \end{verbatim}
 
-The expected ouput on the screen of the benchmark is in file ref.txt:
+The expected output on the screen of the benchmark is in file ref.txt:
 
 \begin{verbatim}
 NIST Secure Hash Algorithm:
@@ -1407,8 +1406,8 @@ $ tms320c3x -c coder_sim_config.xml
 $ tms320c3x -c decoder_sim_config.xml
 \end{verbatim}
 
-The expected ouput data set of the ADPCM coder benchmark is in file \texttt{output\_large.ref.adpcm}.
-The expected ouput data set of the ADPCM decoder benchmark is in file \texttt{output\_large.ref.pcm}.
+The expected output data set of the ADPCM coder benchmark is in file \texttt{output\_large.ref.adpcm}.
+The expected output data set of the ADPCM decoder benchmark is in file \texttt{output\_large.ref.pcm}.
 
 \subsubsection{DCT/Quantization (image processing)}
 
@@ -1436,7 +1435,7 @@ A simulation configuration (\texttt{sim\_config.xml}) for this simulator is also
 $ tms320c3x -c sim_config.xml
 \end{verbatim}
 
-The expected ouput image is in file \texttt{output\_image.ref.bmp}.
+The expected output image is in file \texttt{output\_image.ref.bmp}.
 
 \subsection{Floating point benchmarks}
 
