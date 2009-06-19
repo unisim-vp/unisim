@@ -3466,7 +3466,7 @@
 		<variable name="kernel_logger.file">
 			<type>parameter</type>
 			<data_type>bool</data_type>
-			<value>true</value>
+			<value>false</value>
 			<description>Keep logger output in a file</description>
 		</variable>
 		<variable name="kernel_logger.filename">
