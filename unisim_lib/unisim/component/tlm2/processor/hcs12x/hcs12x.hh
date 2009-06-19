@@ -134,11 +134,12 @@ public:
 	 */
 	virtual address_t GetIntVector(uint8_t &ipl);
 
+	virtual double  GetSimulatedTime();
+
 	void AsyncIntThread(tlm::tlm_generic_payload& trans, sc_time& delay);
 
 private:
 	void Synchronize();
-	bool DebugEnable();
 
 	sc_event	irq_event,		// I-bit-Maskable Interrupt Requests and X-bit Non-Maskable Interrupt Requests
 				reset_event;	// Hardware and Software Reset

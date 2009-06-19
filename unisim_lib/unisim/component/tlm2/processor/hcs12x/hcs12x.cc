@@ -40,26 +40,32 @@
 #include "unisim/component/tlm2/processor/hcs12x/hcs12x.hh"
 #include "unisim/component/tlm2/processor/hcs12x/xint.hh"
 
-#define LOCATION Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
-
 namespace unisim {
 namespace component {
 namespace tlm2 {
 namespace processor {
 namespace hcs12x {
 
-using unisim::service::interfaces::Hex;
-using unisim::service::interfaces::Dec;
-using unisim::service::interfaces::Endl;
-using unisim::service::interfaces::DebugInfo;
-using unisim::service::interfaces::DebugWarning;
-using unisim::service::interfaces::DebugError;
-using unisim::service::interfaces::EndDebugInfo;
-using unisim::service::interfaces::EndDebugWarning;
-using unisim::service::interfaces::EndDebugError;
-using unisim::service::interfaces::Function;
-using unisim::service::interfaces::File;
-using unisim::service::interfaces::Line;
+//using unisim::service::interfaces::Hex;
+//using unisim::service::interfaces::Dec;
+//using unisim::service::interfaces::Endl;
+//using unisim::service::interfaces::DebugInfo;
+//using unisim::service::interfaces::DebugWarning;
+//using unisim::service::interfaces::DebugError;
+//using unisim::service::interfaces::EndDebugInfo;
+//using unisim::service::interfaces::EndDebugWarning;
+//using unisim::service::interfaces::EndDebugError;
+//using unisim::service::interfaces::Function;
+//using unisim::service::interfaces::File;
+//using unisim::service::interfaces::Line;
+
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::EndDebugInfo;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::EndDebugWarning;
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugError;
+using unisim::kernel::logger::EndDebug;
 
 
 HCS12X::
@@ -102,14 +108,6 @@ HCS12X(const sc_module_name& name, Object *parent) :
 HCS12X ::
 ~HCS12X() {
 }
-
-
-bool
- HCS12X ::
-DebugEnable() {
-	return inherited::logger_import;
-}
-
 
 void
 HCS12X ::
@@ -242,26 +240,26 @@ bool
 HCS12X ::
 Setup() {
 	if(!inherited::Setup()) {
-		if(inherited::logger_import)
-			(*inherited::logger_import) << DebugError << LOCATION
+		if(debug_enabled && verbose_step)
+			inherited::logger << DebugError
 				<< "Error while trying to set up the HCS12X cpu"
-				<< Endl << EndDebugError;
+				<< std::endl << EndDebugError;
 		return false;
 	}
 
 	/* check verbose settings */
-	if( inherited::verbose_all) {
+	if( debug_enabled && inherited::verbose_all) {
 		verbose_tlm_bus_synchronize = true;
 		verbose_tlm_run_thread = true;
 	} else {
-		if( verbose_tlm_bus_synchronize && inherited::logger_import)
-			(*inherited::logger_import) << DebugInfo << LOCATION
+		if( verbose_tlm_bus_synchronize)
+			inherited::logger << DebugInfo
 				<< "verbose-tlm-bus-synchronize = true"
-				<< Endl << EndDebugInfo;
-		if( verbose_tlm_run_thread && inherited::logger_import)
-			(*inherited::logger_import) << DebugInfo << LOCATION
+				<< std::endl << EndDebugInfo;
+		if( verbose_tlm_run_thread)
+			inherited::logger << DebugInfo
 				<< "verbose-tlm-run-thread = true"
-				<< Endl << EndDebugInfo;
+				<< std::endl << EndDebugInfo;
 	}
 
 	cpu_cycle_time = sc_time((double)cpu_cycle_time_int, SC_PS);
@@ -274,12 +272,12 @@ Setup() {
 	this->Reset();
 
 	nice_time = sc_time((double)nice_time_int, SC_PS);
-	if( inherited::verbose_setup && inherited::logger_import) {
-		(*inherited::logger_import) << DebugInfo << LOCATION
-			<< "Setting CPU cycle time to " << cpu_cycle_time.to_string() << Endl
-			<< "Setting Bus cycle time to " << bus_cycle_time.to_string() << Endl
-			<< "Setting nice time to " << nice_time.to_string() << Endl
-//			<< "Setting IPC to " << ipc << Endl
+	if(debug_enabled &&  inherited::verbose_setup) {
+		inherited::logger << DebugInfo
+			<< "Setting CPU cycle time to " << cpu_cycle_time.to_string() << std::endl
+			<< "Setting Bus cycle time to " << bus_cycle_time.to_string() << std::endl
+			<< "Setting nice time to " << nice_time.to_string() << std::endl
+//			<< "Setting IPC to " << ipc << std::endl
 			<< EndDebugInfo;
 	}
 
@@ -312,45 +310,45 @@ BusSynchronize() {
 
 	return;
 
-	if( verbose_tlm_bus_synchronize && inherited::logger_import)
-		(*inherited::logger_import) << DebugInfo << LOCATION
+	if(debug_enabled && verbose_tlm_bus_synchronize)
+		inherited::logger << DebugInfo
 			<< "Bus synchro START"
-			<< Endl << EndDebugInfo;
+			<< std::endl << EndDebugInfo;
 	sc_dt::uint64 current_time_tu = sc_time_stamp().value();
 	sc_dt::uint64 time_spent_tu = time_spent.value();
-	if( verbose_tlm_bus_synchronize && inherited::logger_import)
-		(*inherited::logger_import) << DebugInfo << LOCATION
+	if(debug_enabled && verbose_tlm_bus_synchronize)
+		inherited::logger << DebugInfo
 			<< "time_spent_tu = " << time_spent_tu
-			<< Endl << EndDebugInfo;
+			<< std::endl << EndDebugInfo;
 	sc_dt::uint64 next_time_tu = current_time_tu + time_spent_tu;
-	if( verbose_tlm_bus_synchronize && inherited::logger_import)
-		(*inherited::logger_import) << DebugInfo << LOCATION
+	if(debug_enabled && verbose_tlm_bus_synchronize)
+		inherited::logger << DebugInfo
 			<< "next_time_tu = " << next_time_tu
-			<< Endl << EndDebugInfo;
+			<< std::endl << EndDebugInfo;
 	sc_dt::uint64 bus_cycle_time_tu = bus_cycle_time.value();
-	if( verbose_tlm_bus_synchronize && inherited::logger_import)
-		(*inherited::logger_import) << DebugInfo << LOCATION
+	if(debug_enabled && verbose_tlm_bus_synchronize)
+		inherited::logger << DebugInfo
 			<< "bus_cycle_time_tu = " << bus_cycle_time_tu
-			<< Endl << EndDebugInfo;
+			<< std::endl << EndDebugInfo;
 	sc_dt::uint64 bus_time_phase_tu = next_time_tu % bus_cycle_time_tu;
-	if( verbose_tlm_bus_synchronize && inherited::logger_import)
-		(*inherited::logger_import) << DebugInfo << LOCATION
+	if(debug_enabled && verbose_tlm_bus_synchronize)
+		inherited::logger << DebugInfo
 			<< "bus_time_phase_tu = " << bus_time_phase_tu
-			<< Endl << EndDebugInfo;
+			<< std::endl << EndDebugInfo;
 	if(time_spent_tu || bus_time_phase_tu) {
 		sc_dt::uint64 delay_tu = next_time_tu - current_time_tu + (bus_cycle_time_tu - bus_time_phase_tu);
-		if( verbose_tlm_bus_synchronize && inherited::logger_import)
-			(*inherited::logger_import) << DebugInfo << LOCATION
+		if(debug_enabled && verbose_tlm_bus_synchronize)
+			inherited::logger << DebugInfo
 				<< "delay_tu = " << delay_tu
-				<< Endl << EndDebugInfo;
+				<< std::endl << EndDebugInfo;
 		wait(sc_time(delay_tu, false));
 		cpu_time = sc_time_stamp();
 		bus_time = cpu_time + bus_cycle_time;
 	}
-	if( verbose_tlm_bus_synchronize && inherited::logger_import)
-		(*inherited::logger_import) << DebugInfo << LOCATION
+	if(debug_enabled && verbose_tlm_bus_synchronize)
+		inherited::logger << DebugInfo
 			<< "Bus synchro END"
-			<< Endl << EndDebugInfo;
+			<< std::endl << EndDebugInfo;
 
 }
 
@@ -380,17 +378,17 @@ Run() {
 			Synchronize();
 		}
 
-		if( verbose_tlm_run_thread && inherited::logger_import)
-			(*inherited::logger_import) << DebugInfo << LOCATION
+		if(debug_enabled && verbose_tlm_run_thread)
+			inherited::logger << DebugInfo
 				<< "Executing step"
-				<< Endl << EndDebugInfo;
+				<< std::endl << EndDebugInfo;
 
 		opCycles = inherited::Step();
 
-		if( verbose_tlm_run_thread && inherited::logger_import)
-			(*inherited::logger_import) << DebugInfo << LOCATION
+		if(debug_enabled && verbose_tlm_run_thread)
+			inherited::logger << DebugInfo
 				<< "Finished executing step"
-				<< Endl << EndDebugInfo;
+				<< std::endl << EndDebugInfo;
 
 		time_per_instruction = opCyclesArray[opCycles];
 		cpu_time += time_per_instruction;
@@ -404,6 +402,12 @@ Run() {
 	}
 }
 
+double
+HCS12X ::
+GetSimulatedTime() {
+//	return cpu_time.to_seconds();
+	return cpu_time.to_default_time_units()/1e6;
+}
 
 void
 HCS12X ::
