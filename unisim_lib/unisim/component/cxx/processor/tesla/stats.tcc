@@ -80,6 +80,16 @@ void OperationStats<CONFIG>::Merge(OperationStats<CONFIG> const & other)
 	branchDivergent += other.branchDivergent;
 	jump += other.jump;
 	
+	gatherGlobal += other.gatherGlobal;
+	loadGlobal += other.loadGlobal;
+	scatterGlobal += other.scatterGlobal;
+	storeGlobal += other.storeGlobal;
+
+	gatherLocal += other.gatherLocal;
+	loadLocal += other.loadLocal;
+	scatterLocal += other.scatterLocal;
+	storeLocal += other.storeLocal;
+	
 	time_spent += other.time_spent;
 }
 
@@ -202,6 +212,75 @@ void OperationStats<CONFIG>::End()
 	}
 }
 
+template<class CONFIG>
+bool Coalesceable(VectorAddress<CONFIG> const & addr, unsigned int logsize, std::bitset<CONFIG::WARP_SIZE> mask)
+{
+	for(unsigned int j = 0; j != CONFIG::WARP_SIZE; j += CONFIG::TRANSACTION_SIZE)
+	{
+		typename CONFIG::address_t base = addr[j];
+		if(base & ((1 << logsize) * CONFIG::TRANSACTION_SIZE - 1)) {
+			return false;	// Unaligned
+		}
+		for(unsigned int i = 1; i != CONFIG::TRANSACTION_SIZE; ++i)
+		{
+			if(mask[j + i]) {
+				if(addr[j + i] != base + i * (1 << logsize)) {
+					return false;
+				}
+			}
+		}
+	}
+	return true;
+}
+
+template<class CONFIG>
+void OperationStats<CONFIG>::GatherGlobal(VectorAddress<CONFIG> const & addr, unsigned int logsize,
+	std::bitset<CONFIG::WARP_SIZE> mask)
+{
+	if(Coalesceable(addr, logsize, mask)) {
+		LoadGlobal(logsize);
+	}
+	else {
+		gatherGlobal += (1 << logsize);
+	}
+}
+
+template<class CONFIG>
+void OperationStats<CONFIG>::ScatterGlobal(VectorAddress<CONFIG> const & addr, unsigned int logsize,
+	std::bitset<CONFIG::WARP_SIZE> mask)
+{
+	if(Coalesceable(addr, logsize, mask)) {
+		StoreGlobal(logsize);
+	}
+	else {
+		scatterGlobal += (1 << logsize);
+	}
+}
+
+template<class CONFIG>
+void OperationStats<CONFIG>::GatherLocal(VectorAddress<CONFIG> const & addr, unsigned int logsize,
+	std::bitset<CONFIG::WARP_SIZE> mask)
+{
+	if(Coalesceable(addr, logsize, mask)) {
+		LoadLocal(logsize);
+	}
+	else {
+		gatherLocal += (1 << logsize);
+	}
+}
+
+template<class CONFIG>
+void OperationStats<CONFIG>::ScatterLocal(VectorAddress<CONFIG> const & addr, unsigned int logsize,
+	std::bitset<CONFIG::WARP_SIZE> mask)
+{
+	if(Coalesceable(addr, logsize, mask)) {
+		StoreLocal(logsize);
+	}
+	else {
+		scatterLocal += (1 << logsize);
+	}
+}
+
 
 // Format:
 // address,name,count,scalarcount,integer,fp,flow,memory
@@ -248,6 +327,16 @@ void OperationStats<CONFIG>::DumpCSV(std::ostream & os) const
 	   << "," << branchDivergent
 	   << "," << jump;
 
+	os << "," << gatherGlobal
+	   << "," << loadGlobal
+	   << "," << scatterGlobal
+	   << "," << storeGlobal;
+
+	os << "," << gatherLocal
+	   << "," << loadLocal
+	   << "," << scatterLocal
+	   << "," << storeLocal;
+
 	os << endl;
 }
 
@@ -286,6 +375,17 @@ void Stats<CONFIG>::DumpCSV(std::ostream & os) const
 	   << ",\"Branch not taken\""
 	   << ",\"Branch mixed\""
 	   << ",\"Jump\"";
+
+	os << ",\"Gather global\""
+	   << ",\"Load global\""
+	   << ",\"Scatter global\""
+	   << ",\"Store global\"";
+
+	os << ",\"Gather local\""
+	   << ",\"Load local\""
+	   << ",\"Scatter local\""
+	   << ",\"Store local\"";
+
 	os << endl;
 
 	typedef typename stats_map::const_iterator it_t;

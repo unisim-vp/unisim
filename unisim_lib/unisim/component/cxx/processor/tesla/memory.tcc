@@ -489,6 +489,8 @@ void CPU<CONFIG>::ScatterGlobal(VecReg const output[], uint32_t dest, uint32_t a
 	// TODO: segment
 	assert(segment == 14);
 	Scatter(offset, output, mask, dt);
+
+	GetOpStats().ScatterGlobal(offset, shift, mask);
 }
 
 template <class CONFIG>
@@ -506,6 +508,8 @@ void CPU<CONFIG>::GatherGlobal(VecReg output[], uint32_t src, uint32_t addr_lo, 
 	// TODO: segment??
 	assert(segment == 14);
 	Gather(offset, output, mask, dt);
+	
+	GetOpStats().GatherGlobal(offset, shift, mask);
 }
 
 template <class CONFIG>
@@ -523,6 +527,7 @@ void CPU<CONFIG>::ScatterLocal(VecReg const output[], uint32_t dest, uint32_t ad
 	if(addr == 0 && addr_imm && dt == DT_U32) {
 		assert(segment == 0);
 		StoreLocal32(output[0], dest);
+		GetOpStats().StoreLocal(4);
 	}
 	else {
 		// [seg][$a#addr_reg + dest]
@@ -531,6 +536,7 @@ void CPU<CONFIG>::ScatterLocal(VecReg const output[], uint32_t dest, uint32_t ad
 		offset = LocalAddress(offset, segment);
 
 		Scatter(offset, output, mask, dt);
+		GetOpStats().ScatterLocal(offset, DataTypeLogSize(dt), mask);
 	}
 }
 
@@ -549,6 +555,7 @@ void CPU<CONFIG>::GatherLocal(VecReg output[], uint32_t src, uint32_t addr_lo, u
 	if(addr == 0 && addr_imm && dt == DT_U32) {
 		assert(segment == 0);
 		LoadLocal32(output[0], src);
+		GetOpStats().LoadLocal(4);
 	}
 	else {
 		// [seg][$a#addr_reg + dest]
@@ -557,6 +564,7 @@ void CPU<CONFIG>::GatherLocal(VecReg output[], uint32_t src, uint32_t addr_lo, u
 		offset = LocalAddress(offset, segment);
 
 		Gather(offset, output, mask, dt);
+		GetOpStats().GatherLocal(offset, DataTypeLogSize(dt), mask);
 	}
 }
 

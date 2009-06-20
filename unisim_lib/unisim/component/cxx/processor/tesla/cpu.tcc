@@ -826,6 +826,12 @@ void CPU<CONFIG>::SetSampler(Sampler<CONFIG> const & sampler, unsigned int n)
 	samplers[n] = sampler;
 }
 
+template <class CONFIG>
+typename CONFIG::operationstats_t & CPU<CONFIG>::GetOpStats()
+{
+	// TODO: cache this...
+	return (*stats)[GetPC() - CONFIG::CODE_START];
+}
 
 
 } // end of namespace tesla

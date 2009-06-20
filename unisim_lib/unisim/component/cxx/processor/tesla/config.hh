@@ -93,6 +93,9 @@ public:
 	static uint32_t const MAX_ADDR_REGS = 4;
 	static uint32_t const MAX_PRED_REGS = 4;
 	static uint32_t const MAX_SAMPLERS = 16;
+	
+	static uint32_t const TRANSACTION_SIZE = 16;
+	static uint32_t const TRANSACTIONS_PER_WARP = WARP_SIZE / TRANSACTION_SIZE;
 
 	// Memory layout
 	static address_t const CODE_START = 0x10000000;

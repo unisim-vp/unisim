@@ -392,6 +392,9 @@ public:
 	Warp<CONFIG> const & GetWarp(unsigned int wid) const;
 
 	Sampler<CONFIG> & GetSampler(unsigned int s);
+	
+	typename CONFIG::operationstats_t & GetOpStats();
+	
 private:
 	//=====================================================================
 	//=                           G80 registers                           =

@@ -74,6 +74,9 @@ private:
 	unsigned int branchTaken, branchNotTaken, branchDivergent;
 	unsigned int jump;
 	
+	unsigned int gatherGlobal, loadGlobal, scatterGlobal, storeGlobal;
+	unsigned int gatherLocal, loadLocal, scatterLocal, storeLocal;
+	
 	uint64_t time_spent;
 	uint64_t timestamp;
 	
@@ -88,6 +91,8 @@ public:
 		scalarRegOutputsCaught(0), stridedRegOutputsCaught(0),
 		branchTaken(0), branchNotTaken(0), branchDivergent(0),
 		jump(0),
+		gatherGlobal(0), loadGlobal(0), scatterGlobal(0), storeGlobal(0),
+		gatherLocal(0), loadLocal(0), scatterLocal(0), storeLocal(0),
 		time_spent(0)
 	{
 		std::fill(regnum, regnum + 4, -1);
@@ -133,6 +138,17 @@ public:
 	// Effective jump, by branch, call, return, join...
 	void Jump() { ++jump; }
 	//void Gather(VectorAddress<CONFIG> const & addr, std::bitset<CONFIG::WARP_SIZE> mask);
+
+	void GatherGlobal(VectorAddress<CONFIG> const & addr, unsigned int logsize, std::bitset<CONFIG::WARP_SIZE> mask);
+	void LoadGlobal(unsigned int logsize) { loadGlobal += (1 << logsize); }
+	void ScatterGlobal(VectorAddress<CONFIG> const & addr, unsigned int logsize, std::bitset<CONFIG::WARP_SIZE> mask);
+	void StoreGlobal(unsigned int logsize) { storeGlobal += (1 << logsize); }
+
+	void GatherLocal(VectorAddress<CONFIG> const & addr, unsigned int logsize, std::bitset<CONFIG::WARP_SIZE> mask);
+	void LoadLocal(unsigned int logsize) { loadLocal += (1 << logsize); }
+	void ScatterLocal(VectorAddress<CONFIG> const & addr, unsigned int logsize, std::bitset<CONFIG::WARP_SIZE> mask);
+	void StoreLocal(unsigned int logsize) { storeLocal += (1 << logsize); }
+
 
 	void DumpCSV(std::ostream & os) const;
 };

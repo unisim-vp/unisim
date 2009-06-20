@@ -110,6 +110,7 @@ inline DataType RegTypeToDataType(RegType rt);
 inline DataType MvSizeToDataType(uint32_t mv_size);
 inline DataType CvtTypeToDataType(ConvType ct);
 inline size_t DataTypeSize(DataType dt);
+inline unsigned int DataTypeLogSize(DataType dt);
 inline DataType SMTypeToDataType(SMType st);
 inline ConvType SMTypeToConvType(SMType st);
 
@@ -212,6 +213,28 @@ inline size_t DataTypeSize(DataType dt)
 		return 8;
 	case DT_U128:
 		return 16;
+	default:
+		assert(false);
+	}
+}
+
+inline unsigned int DataTypeLogSize(DataType dt)
+{
+	switch(dt) {
+	case DT_U8:
+	case DT_S8:
+		return 0;
+	case DT_U16:
+	case DT_S16:
+		return 1;
+	case DT_U32:
+	case DT_S32:
+	case DT_F32:
+		return 2;
+	case DT_U64:
+		return 3;
+	case DT_U128:
+		return 4;
 	default:
 		assert(false);
 	}

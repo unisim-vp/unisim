@@ -291,6 +291,77 @@ VectorRegister<CONFIG> & VectorFP32SSE<CONFIG>::Rsq(VectorRegister<CONFIG> & a)
 	return a;
 }
 
+#if 0
+template<class CONFIG>
+VectorRegister<CONFIG> VectorFP32SSE<CONFIG>::Exp2(VectorRegister<CONFIG> const & a)
+{
+	NoDenorm nd;
+	__m128 half = _mm_set1_ps(0.5f);
+	__m128 three = _mm_set1_ps(3.0f);
+	__m128 one = _mm_set1_ps(1.0f);
+	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; i += 4)
+	{
+		__m128 sa = _mm_loadu_ps((float*)a.v + i);
+		
+		// Input in FX sv7.23
+		
+		//__m128 x = _mm_slli_epi32(sa, 9);	// Reduced argument. FX .31
+		__m128 x = _mm_and_si128(sa, _mm_set1_epi32(0x007fffff));
+		
+		__m128 exponent = _mm_and_si128(sa, _mm_set1_epi32(0x3f800000));
+		
+		// if(sa & 0x8000000) {
+		//  x = 0x00800000 - x;
+		//  exponent = -exponent;
+
+		x = _mm_or_si128(x, _mm_set1_epi32(0x3f800000));
+		// x in [1,2[
+		
+		// Brute-force exp2(x-1) with a Remez polynomial:
+		// 8357823 * 2^(-24) + x * (5942233 * 2^(-24) + x * (14392689 * 2^(-27)
+		// + x * (10484857 * 2^(-28) + x * (-9265639 * 2^(-34) + x * 16290301 * 2^(-33)))))
+
+		// Should use 0 as 0th-order coeff...
+		__m128 c0 = _mm_set1_ps(8357823.f / (1 << 24));
+		__m128 c1 = _mm_set1_ps(5942233.f / (1 << 24));
+		__m128 c2 = _mm_set1_ps(14392689.f / (1 << 27));
+		__m128 c3 = _mm_set1_ps(10484857.f / (1 << 28));
+		__m128 c4 = _mm_set1_ps(-9265639.f / (1 << 34));
+		__m128 c5 = _mm_set1_ps(16290301.f / (1 << 33));
+		
+		__m128 y = _mm_add_ps(c4, _mm_mul_ps(x, c5));
+		y = _mm_add_ps(_mm_mul_ps(y, x), c3);
+		y = _mm_add_ps(_mm_mul_ps(y, x), c2);
+		y = _mm_add_ps(_mm_mul_ps(y, x), c1);
+		y = _mm_add_ps(_mm_mul_ps(y, x), c0);
+		
+		// Reconstruction
+		// y should be in [1, 2[
+		y = _mm_add_epi32(y, exponent);
+		
+		// If overflow return infinity same sign
+		_mm_storeu_ps((float*)rv.v + i, y);
+	}
+
+
+	VectorRegister<CONFIG> rv;
+	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i)
+	{
+		uint32_t ia = a[i];
+		double r = FXToFP(ia);
+		r = exp2(float(r));
+		// Flush denormals to zero
+		if(r < ldexp(1.0, FLT_MIN_EXP)) {	// r >= 0
+			r = 0;
+		}
+		rv.WriteFloat(float(r), i);
+		
+	}
+	rv.SetScalar(a.IsScalar());
+	return rv;
+}
+#endif
+
 } // end of namespace tesla
 } // end of namespace processor
 } // end of namespace cxx
@@ -299,3 +370,4 @@ VectorRegister<CONFIG> & VectorFP32SSE<CONFIG>::Rsq(VectorRegister<CONFIG> & a)
 
 
 #endif
+

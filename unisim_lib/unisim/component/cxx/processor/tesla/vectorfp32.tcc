@@ -42,7 +42,7 @@
 #include <cmath>
 #include <cfloat>
 
-#ifdef __SSE2__
+#if defined(__SSE2__) && !defined(NO_SSE)
 #include <unisim/component/cxx/processor/tesla/vectorfp32sse.tcc>
 #endif
 

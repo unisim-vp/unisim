@@ -37,7 +37,6 @@
 
 #include <unisim/component/cxx/processor/tesla/register.hh>
 
-
 namespace unisim {
 namespace component {
 namespace cxx {
@@ -114,7 +113,7 @@ private:
 } // end of namespace component
 } // end of namespace unisim
 
-#ifdef __SSE2__
+#if defined(__SSE2__) && !defined(NO_SSE)
 #include <unisim/component/cxx/processor/tesla/vectorfp32sse.hh>
 namespace unisim {
 namespace component {
