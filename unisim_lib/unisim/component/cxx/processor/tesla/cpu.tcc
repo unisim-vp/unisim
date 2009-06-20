@@ -800,6 +800,34 @@ void CPU<CONFIG>::Call(address_t target)
 	CurrentWarp().flow.Call(target);
 }
 
+template <class CONFIG>
+void CPU<CONFIG>::ReadShared(address_t addr, void *buffer, uint32_t size)
+{
+	assert(addr < CONFIG::SHARED_SIZE && addr + size < CONFIG::SHARED_SIZE);
+	address_t effective_addr = CONFIG::SHARED_START + coreid * CONFIG::SHARED_SIZE + addr;
+	if(!ReadMemory(effective_addr, buffer, size)) {
+		throw MemoryAccessException<CONFIG>();
+	}
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::WriteShared(address_t addr, const void *buffer, uint32_t size)
+{
+	assert(addr < CONFIG::SHARED_SIZE && addr + size < CONFIG::SHARED_SIZE);
+	address_t effective_addr = CONFIG::SHARED_START + coreid * CONFIG::SHARED_SIZE + addr;
+	if(!WriteMemory(effective_addr, buffer, size)) {
+		throw MemoryAccessException<CONFIG>();
+	}
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::SetSampler(Sampler<CONFIG> const & sampler, unsigned int n)
+{
+	samplers[n] = sampler;
+}
+
+
+
 } // end of namespace tesla
 } // end of namespace processor
 } // end of namespace cxx

@@ -54,6 +54,7 @@ private:
 	unsigned int count;
 	unsigned int scalarcount;
 	bool integer;
+	bool mov;
 	bool fp;
 	bool flow;
 	bool memory;
@@ -70,17 +71,23 @@ private:
 	unsigned int scalarRegOutputsCaught;
 	unsigned int stridedRegOutputsCaught;
 	
+	unsigned int branchTaken, branchNotTaken, branchDivergent;
+	unsigned int jump;
+	
 	uint64_t time_spent;
 	uint64_t timestamp;
 	
 public:
 	OperationStats() :
-		count(0), scalarcount(0), integer(false), fp(false), flow(false), memory(false),
+		count(0), scalarcount(0), integer(false), mov(false),
+		fp(false), flow(false), memory(false),
 		shared(false), constant(false),
 		scalarRegInputs(0), stridedRegInputs(0),
 		scalarRegOutputs(0), stridedRegOutputs(0),
 		scalarRegInputsCaught(0), stridedRegInputsCaught(0),
 		scalarRegOutputsCaught(0), stridedRegOutputsCaught(0),
+		branchTaken(0), branchNotTaken(0), branchDivergent(0),
+		jump(0),
 		time_spent(0)
 	{
 		std::fill(regnum, regnum + 4, -1);
@@ -95,7 +102,7 @@ public:
 	void SetInteger() { integer = true;	}
 	void SetFP() { fp = true; }
 	void SetFlow() { flow = true; }
-	void SetMov() { integer = true;	}
+	void SetMov() { mov = true;	}
 	void SetGather() { memory = true;	}
 	void SetScatter() { memory = true;	}
 	void SetInputConst() { constant = true; }
@@ -118,8 +125,14 @@ public:
 	void Begin();
 	void End();
 	
+	// Branch instruction
+	void BranchUniTaken() { ++branchTaken; }
+	void BranchUniNotTaken() { ++branchNotTaken; }
+	void BranchDivergent() { ++branchDivergent; }
+
+	// Effective jump, by branch, call, return, join...
+	void Jump() { ++jump; }
 	//void Gather(VectorAddress<CONFIG> const & addr, std::bitset<CONFIG::WARP_SIZE> mask);
-	//void BranchUniTaken(std::bitset<CONFIG::WARP_SIZE> mask);
 
 	void DumpCSV(std::ostream & os) const;
 };

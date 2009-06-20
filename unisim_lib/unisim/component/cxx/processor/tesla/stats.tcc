@@ -53,6 +53,7 @@ void OperationStats<CONFIG>::Merge(OperationStats<CONFIG> const & other)
 {
 	name = other.name;
 	integer = other.integer;
+	mov = other.mov;
 	fp = other.fp;
 	flow = other.flow;
 	memory = other.memory;
@@ -73,6 +74,11 @@ void OperationStats<CONFIG>::Merge(OperationStats<CONFIG> const & other)
 	stridedRegInputsCaught += other.stridedRegInputsCaught;
 	scalarRegOutputsCaught += other.scalarRegOutputsCaught;
 	stridedRegOutputsCaught += other.stridedRegOutputsCaught;
+	
+	branchTaken += other.branchTaken;
+	branchNotTaken += other.branchNotTaken;
+	branchDivergent += other.branchDivergent;
+	jump += other.jump;
 	
 	time_spent += other.time_spent;
 }
@@ -216,6 +222,7 @@ void OperationStats<CONFIG>::DumpCSV(std::ostream & os) const
 	   << integer << ","
 	   << fp << ","
 	   << flow << ","
+	   << mov << ","
 	   << memory << ","
 	   << shared << ","
 	   << constant << ","
@@ -236,6 +243,11 @@ void OperationStats<CONFIG>::DumpCSV(std::ostream & os) const
 	if(CONFIG::STAT_SIMTIME) {
 		os << "," << time_spent;
 	}
+	os << "," << branchTaken
+	   << "," << branchNotTaken
+	   << "," << branchDivergent
+	   << "," << jump;
+
 	os << endl;
 }
 
@@ -249,6 +261,7 @@ void Stats<CONFIG>::DumpCSV(std::ostream & os) const
 	   << "\"Integer\","
 	   << "\"FP32\","
 	   << "\"Flow\","
+	   << "\"Mov\","
 	   << "\"Memory\","
 	   << "\"Shared\","
 	   << "\"Constant\","
@@ -269,6 +282,10 @@ void Stats<CONFIG>::DumpCSV(std::ostream & os) const
 	if(CONFIG::STAT_SIMTIME) {
 		os << ",\"Simulation time\"";
 	}
+	os << ",\"Branch taken\""
+	   << ",\"Branch not taken\""
+	   << ",\"Branch mixed\""
+	   << ",\"Jump\"";
 	os << endl;
 
 	typedef typename stats_map::const_iterator it_t;

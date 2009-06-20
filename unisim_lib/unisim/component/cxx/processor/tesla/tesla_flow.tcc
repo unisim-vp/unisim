@@ -83,6 +83,7 @@ void TeslaFlow<CONFIG>::Branch(address_t target_addr, std::bitset<CONFIG::WARP_S
 		if(cpu->trace_branch) {
 			cerr << "  Coherent, not taken." << endl;
 		}
+		(*cpu->stats)[warp.pc - CONFIG::CODE_START].BranchUniNotTaken();
 		// Nop, just increment PC as usual
 	}
 	else if(mask == GetCurrentMask())	// Same number of enabled threads as before
@@ -91,11 +92,15 @@ void TeslaFlow<CONFIG>::Branch(address_t target_addr, std::bitset<CONFIG::WARP_S
 		if(cpu->trace_branch) {
 			cerr << "  Coherent, taken." << endl;
 		}
+		(*cpu->stats)[warp.pc - CONFIG::CODE_START].BranchUniTaken();
+		(*cpu->stats)[warp.pc - CONFIG::CODE_START].Jump();
 		warp.npc = abs_target;
 		// current_mask = mask already
 	}
 	else
 	{
+		(*cpu->stats)[warp.pc - CONFIG::CODE_START].BranchDivergent();
+		(*cpu->stats)[warp.pc - CONFIG::CODE_START].Jump();
 		// Start by *taking* the branch ??
 	
 		// Mixed
@@ -169,6 +174,7 @@ bool TeslaFlow<CONFIG>::Join()
 			cerr << " Pop. Not a SYNC token. Go back." << endl;
 		}
 		// Re-branch to address in token
+		(*cpu->stats)[warp.pc - CONFIG::CODE_START].Jump();
 		warp.npc = token.address;
 		
 		// Do NOT execute current instruction
@@ -188,6 +194,15 @@ void TeslaFlow<CONFIG>::End()
 template<class CONFIG>
 void TeslaFlow<CONFIG>::Return(std::bitset<CONFIG::WARP_SIZE> mask)
 {
+	if((mask).none()) {
+		(*cpu->stats)[warp.pc - CONFIG::CODE_START].BranchUniNotTaken();
+	}
+	else if(mask == GetCurrentMask()) {
+		(*cpu->stats)[warp.pc - CONFIG::CODE_START].BranchUniTaken();
+	}
+	else {
+		(*cpu->stats)[warp.pc - CONFIG::CODE_START].BranchDivergent();
+	}
 	// mask : threads to return
 	if(stack.empty()) {
 		if(cpu->trace_branch) {
@@ -205,6 +220,7 @@ void TeslaFlow<CONFIG>::Return(std::bitset<CONFIG::WARP_SIZE> mask)
 		assert(token.id = ID_CALL);
 		stack.pop();
 		current_mask = token.mask;
+		(*cpu->stats)[warp.pc - CONFIG::CODE_START].Jump();
 		warp.npc = token.address;	// always go back?
 		// what if some threads are still enabled?
 		// Patent: "no thread diverge when a call/return branch is encountered"
@@ -235,6 +251,7 @@ void TeslaFlow<CONFIG>::Break(std::bitset<CONFIG::WARP_SIZE> mask)
 		assert(token.id = ID_BREAK);
 		stack.pop();
 		current_mask = token.mask;
+		(*cpu->stats)[warp.pc - CONFIG::CODE_START].Jump();
 		warp.npc = token.address;	// always go back?
 		// what if some threads are still enabled?
 		// handled by software?
@@ -260,6 +277,7 @@ template<class CONFIG>
 void TeslaFlow<CONFIG>::Call(address_t target_addr)
 {
 	stack.push(StackToken(current_mask, ID_CALL, warp.npc));
+	(*cpu->stats)[warp.pc - CONFIG::CODE_START].Jump();
 	warp.npc = target_addr + CONFIG::CODE_START;
 	assert(stack.size() < CONFIG::STACK_DEPTH);
 }

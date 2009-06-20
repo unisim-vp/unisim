@@ -213,6 +213,11 @@ public:
 	virtual bool InjectReadMemory(address_t addr, void *buffer, uint32_t size);
 	virtual bool InjectWriteMemory(address_t addr, const void *buffer, uint32_t size);
 
+	void ReadShared(address_t addr, void *buffer, uint32_t size);
+	void WriteShared(address_t addr, const void *buffer, uint32_t size);
+	void SetSampler(Sampler<CONFIG> const & sampler, unsigned int n);
+	
+
 	//=====================================================================
 	//=                         utility methods                           =
 	//=====================================================================
