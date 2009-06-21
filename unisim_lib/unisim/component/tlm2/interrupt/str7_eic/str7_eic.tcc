@@ -119,8 +119,8 @@ using unisim::kernel::logger::EndDebugInfo;
 using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 
-template <unsigned int BUS_WIDTH, bool VERBOSE>
-STR7_EIC<BUS_WIDTH, VERBOSE> ::
+template <unsigned int BUS_WIDTH>
+STR7_EIC<BUS_WIDTH> ::
 STR7_EIC(const sc_module_name& name, Object* parent) :
 		Object(name, parent),
 		Client<TrapReporting>(name, parent),
@@ -146,23 +146,19 @@ STR7_EIC(const sc_module_name& name, Object* parent) :
 		param_base_address("base-address", this, base_address),
 		logger(*this),
 		verbose_all(false),
+		param_verbose_all("verbose-all", this, verbose_all, "Enable all the verbose options"),
 		verbose_setup(false),
+		param_verbose_setup("verbose-setup", this, verbose_setup, "Display module setup"),
 		verbose_run(false),
-		verbose_tlm(false)
+		param_verbose_run("verbose-run", this, verbose_run, "Display runtime information"),
+		verbose_tlm(false),
+		param_verbose_tlm("verbose-tlm", this, verbose_tlm, "Display TLM2.0 transaction management")
 {
 	SC_HAS_PROCESS(STR7_EIC);
 
 	SC_THREAD(IRQFifoHandler);
 	SC_THREAD(FIQFifoHandler);
 
-	if (VERBOSE)
-	{
-		param_verbose_all = new unisim::kernel::service::Parameter<bool>("verbose-all", this, verbose_all, "Enable all the verbose options");
-		param_verbose_setup = new unisim::kernel::service::Parameter<bool>("verbose-setup", this, verbose_setup, "Display module setup");
-		param_verbose_run = new unisim::kernel::service::Parameter<bool>("verbose-run", this, verbose_run);
-		param_verbose_tlm = new unisim::kernel::service::Parameter<bool>("verbose-tlm", this, verbose_tlm, "Display TLM2.0 transaction management");
-	}
-	
 	/* bind the in_mem socket to the methods implementations provided by the module */
 	in_mem.bind(*this);
 	/* register the in_irq sockets to the methods implementations provided by the module */
@@ -189,24 +185,18 @@ STR7_EIC(const sc_module_name& name, Object* parent) :
 	out_fiq.register_invalidate_direct_mem_ptr(this, &THIS_MODULE::OutFIQDMI);
 }
 
-template <unsigned int BUS_WIDTH, bool VERBOSE>
-STR7_EIC<BUS_WIDTH, VERBOSE> ::
+template <unsigned int BUS_WIDTH>
+STR7_EIC<BUS_WIDTH> ::
 ~STR7_EIC()
 {
-	if (param_verbose_all) delete param_verbose_all;
-	if (param_verbose_setup) delete param_verbose_setup;
-	if (param_verbose_run) delete param_verbose_run;
 }
 	
-template <unsigned int BUS_WIDTH, bool VERBOSE>
+template <unsigned int BUS_WIDTH>
 bool
-STR7_EIC<BUS_WIDTH, VERBOSE> ::
+STR7_EIC<BUS_WIDTH> ::
 Setup()
 {
-	if (VERBOSE)
-	{
-		if (verbose_all) verbose_setup = verbose_run = true;
-	}
+	if (verbose_all) verbose_setup = verbose_run = true;
 
 	if (VerboseSetup())
 	{
@@ -225,9 +215,9 @@ Setup()
 
 /* START: callback methods for the in_irq sockets */
 
-template <unsigned int BUS_WIDTH, bool VERBOSE>
+template <unsigned int BUS_WIDTH>
 tlm::tlm_sync_enum
-STR7_EIC<BUS_WIDTH, VERBOSE> ::
+STR7_EIC<BUS_WIDTH> ::
 InIRQNb(int index, TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
 {
 	switch (phase)
@@ -248,26 +238,26 @@ InIRQNb(int index, TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::s
 	return tlm::TLM_COMPLETED;
 }
 
-template <unsigned int BUS_WIDTH, bool VERBOSE>
+template <unsigned int BUS_WIDTH>
 void
-STR7_EIC<BUS_WIDTH, VERBOSE> ::
+STR7_EIC<BUS_WIDTH> ::
 InIRQB(int index, TLMInterruptPayload& trans, sc_core::sc_time& t)
 {
 	IRQ(index, trans.level, t);
 }
 
-template <unsigned int BUS_WIDTH, bool VERBOSE>
+template <unsigned int BUS_WIDTH>
 unsigned int
-STR7_EIC<BUS_WIDTH, VERBOSE> ::
+STR7_EIC<BUS_WIDTH> ::
 InIRQDbg(int index, TLMInterruptPayload& trans)
 {
 	/* This should never be called */
 	return 0;
 }
 
-template <unsigned int BUS_WIDTH, bool VERBOSE>
+template <unsigned int BUS_WIDTH>
 bool
-STR7_EIC<BUS_WIDTH, VERBOSE> ::
+STR7_EIC<BUS_WIDTH> ::
 InIRQDmi(int index, TLMInterruptPayload& trans, tlm::tlm_dmi& dmi)
 {
 	/* This should never be called */
@@ -278,9 +268,9 @@ InIRQDmi(int index, TLMInterruptPayload& trans, tlm::tlm_dmi& dmi)
 
 /* START: callback methods for the in_fiq sockets */
 
-template <unsigned int BUS_WIDTH, bool VERBOSE>
+template <unsigned int BUS_WIDTH>
 tlm::tlm_sync_enum
-STR7_EIC<BUS_WIDTH, VERBOSE> ::
+STR7_EIC<BUS_WIDTH> ::
 InFIQNb(int index, TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
 {
 	switch (phase)
@@ -301,26 +291,26 @@ InFIQNb(int index, TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::s
 	return tlm::TLM_COMPLETED;
 }
 
-template <unsigned int BUS_WIDTH, bool VERBOSE>
+template <unsigned int BUS_WIDTH>
 void
-STR7_EIC<BUS_WIDTH, VERBOSE> ::
+STR7_EIC<BUS_WIDTH> ::
 InFIQB(int index, TLMInterruptPayload& trans, sc_core::sc_time& t)
 {
 	FIQ(index, trans.level, t);
 }
 
-template <unsigned int BUS_WIDTH, bool VERBOSE>
+template <unsigned int BUS_WIDTH>
 unsigned int
-STR7_EIC<BUS_WIDTH, VERBOSE> ::
+STR7_EIC<BUS_WIDTH> ::
 InFIQDbg(int index, TLMInterruptPayload& trans)
 {
 	/* This should never be called */
 	return 0;
 }
 
-template <unsigned int BUS_WIDTH, bool VERBOSE>
+template <unsigned int BUS_WIDTH>
 bool
-STR7_EIC<BUS_WIDTH, VERBOSE> ::
+STR7_EIC<BUS_WIDTH> ::
 InFIQDmi(int index, TLMInterruptPayload& trans, tlm::tlm_dmi& dmi)
 {
 	/* This should never be called */
@@ -331,9 +321,9 @@ InFIQDmi(int index, TLMInterruptPayload& trans, tlm::tlm_dmi& dmi)
 
 /* START: callback methods for the out_irq sockets */
 
-template <unsigned int BUS_WIDTH, bool VERBOSE>
+template <unsigned int BUS_WIDTH>
 tlm::tlm_sync_enum
-STR7_EIC<BUS_WIDTH, VERBOSE> ::
+STR7_EIC<BUS_WIDTH> ::
 OutIRQNb(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
 {
 	switch (phase)
@@ -367,9 +357,9 @@ OutIRQNb(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
 	return tlm::TLM_COMPLETED;
 }
 
-template <unsigned int BUS_WIDTH, bool VERBOSE>
+template <unsigned int BUS_WIDTH>
 void
-STR7_EIC<BUS_WIDTH, VERBOSE> ::
+STR7_EIC<BUS_WIDTH> ::
 OutIRQDMI(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
 {
 	/* This method shoud never be used */
@@ -379,9 +369,9 @@ OutIRQDMI(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
 	
 /* START: callback methods for the out_fiq sockets */
 
-template <unsigned int BUS_WIDTH, bool VERBOSE>
+template <unsigned int BUS_WIDTH>
 tlm::tlm_sync_enum
-STR7_EIC<BUS_WIDTH, VERBOSE> ::
+STR7_EIC<BUS_WIDTH> ::
 OutFIQNb(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
 {
 	switch (phase)
@@ -415,9 +405,9 @@ OutFIQNb(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
 	return tlm::TLM_COMPLETED;
 }
 
-template <unsigned int BUS_WIDTH, bool VERBOSE>
+template <unsigned int BUS_WIDTH>
 void
-STR7_EIC<BUS_WIDTH, VERBOSE> ::
+STR7_EIC<BUS_WIDTH> ::
 OutFIQDMI(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
 {
 	/* This method should never be used */
@@ -427,9 +417,9 @@ OutFIQDMI(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
 
 /* START: methods implementing the "in_mem" socket */
 
-template <unsigned int BUS_WIDTH, bool VERBOSE>
+template <unsigned int BUS_WIDTH>
 void
-STR7_EIC<BUS_WIDTH, VERBOSE> ::
+STR7_EIC<BUS_WIDTH> ::
 b_transport(tlm::tlm_generic_payload& trans, sc_core::sc_time& t)
 {
 	if (VerboseTLM())
@@ -477,9 +467,9 @@ b_transport(tlm::tlm_generic_payload& trans, sc_core::sc_time& t)
 	}
 }
 
-template <unsigned int BUS_WIDTH, bool VERBOSE>
+template <unsigned int BUS_WIDTH>
 tlm::tlm_sync_enum
-STR7_EIC<BUS_WIDTH, VERBOSE> ::
+STR7_EIC<BUS_WIDTH> ::
 nb_transport_fw(tlm::tlm_generic_payload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
 {
 	if (VerboseTLM())
@@ -494,18 +484,18 @@ nb_transport_fw(tlm::tlm_generic_payload& trans, tlm::tlm_phase& phase, sc_core:
 	return tlm::TLM_COMPLETED;
 }
 
-template <unsigned int BUS_WIDTH, bool VERBOSE>
+template <unsigned int BUS_WIDTH>
 bool
-STR7_EIC<BUS_WIDTH, VERBOSE> ::
+STR7_EIC<BUS_WIDTH> ::
 get_direct_mem_ptr(tlm::tlm_generic_payload& trans, tlm::tlm_dmi& dmi_data)
 {
 	/* This method should never be used */
 	return false;
 }
 
-template <unsigned int BUS_WIDTH, bool VERBOSE>
+template <unsigned int BUS_WIDTH>
 unsigned int
-STR7_EIC<BUS_WIDTH, VERBOSE> ::
+STR7_EIC<BUS_WIDTH> ::
 transport_dbg(tlm::tlm_generic_payload& trans)
 {
 	unsigned char *data = trans.get_data_ptr();
@@ -567,9 +557,9 @@ transport_dbg(tlm::tlm_generic_payload& trans)
  * @param level		interrupt level
  * @param t			the time that the interrupt is received
  */
-template <unsigned int BUS_WIDTH, bool VERBOSE>
+template <unsigned int BUS_WIDTH>
 void
-STR7_EIC<BUS_WIDTH, VERBOSE> ::
+STR7_EIC<BUS_WIDTH> ::
 IRQ(unsigned int index, bool level, sc_core::sc_time& t)
 {
 	struct irq_fifo_t *entry = new irq_fifo_t();
@@ -588,9 +578,9 @@ IRQ(unsigned int index, bool level, sc_core::sc_time& t)
 }
 
 /** Handle the incomming irqs at the right time */
-template <unsigned int BUS_WIDTH, bool VERBOSE>
+template <unsigned int BUS_WIDTH>
 void
-STR7_EIC<BUS_WIDTH, VERBOSE> ::
+STR7_EIC<BUS_WIDTH> ::
 IRQFifoHandler()
 {
 	sc_core::sc_event &ev = irq_fifo.get_event();
@@ -650,9 +640,9 @@ IRQFifoHandler()
  * @param level		interrupt level
  * @param t			the time that the interrupt is received
  */
-template <unsigned int BUS_WIDTH, bool VERBOSE>
+template <unsigned int BUS_WIDTH>
 void
-STR7_EIC<BUS_WIDTH, VERBOSE> ::
+STR7_EIC<BUS_WIDTH> ::
 FIQ(unsigned int index, bool level, sc_core::sc_time& t)
 {
 	struct irq_fifo_t *entry = new irq_fifo_t();
@@ -671,9 +661,9 @@ FIQ(unsigned int index, bool level, sc_core::sc_time& t)
 }
 
 /** Handle the incomming fiqs at the right time */
-template <unsigned int BUS_WIDTH, bool VERBOSE>
+template <unsigned int BUS_WIDTH>
 void
-STR7_EIC<BUS_WIDTH, VERBOSE> ::
+STR7_EIC<BUS_WIDTH> ::
 FIQFifoHandler()
 {
 	sc_core::sc_event &ev = fiq_fifo.get_event();
@@ -717,45 +707,45 @@ FIQFifoHandler()
 }
 
 /** Set FSM to READY state */
-template <unsigned int BUS_WIDTH, bool VERBOSE>
+template <unsigned int BUS_WIDTH>
 void 
-STR7_EIC<BUS_WIDTH, VERBOSE> ::
+STR7_EIC<BUS_WIDTH> ::
 FSMReady()
 {
 	fsm_state = READY;
 }
 
 /** Set FSM to WAIT state */
-template <unsigned int BUS_WIDTH, bool VERBOSE>
+template <unsigned int BUS_WIDTH>
 void 
-STR7_EIC<BUS_WIDTH, VERBOSE> ::
+STR7_EIC<BUS_WIDTH> ::
 FSMWait()
 {
 	fsm_state = WAIT;
 }
 
 /** Is the FSM at the READY state? */
-template <unsigned int BUS_WIDTH, bool VERBOSE>
+template <unsigned int BUS_WIDTH>
 bool 
-STR7_EIC<BUS_WIDTH, VERBOSE> ::
+STR7_EIC<BUS_WIDTH> ::
 IsFSMReady()
 {
 	return fsm_state == READY;
 }
 
 /** Is the FSM at the WAIT state? */
-template <unsigned int BUS_WIDTH, bool VERBOSE>
+template <unsigned int BUS_WIDTH>
 bool 
-STR7_EIC<BUS_WIDTH, VERBOSE> ::
+STR7_EIC<BUS_WIDTH> ::
 IsFSMWait()
 {
 	return fsm_state == WAIT;
 }
 
 /** Update the FSM. */
-template <unsigned int BUS_WIDTH, bool VERBOSE>
+template <unsigned int BUS_WIDTH>
 void
-STR7_EIC<BUS_WIDTH, VERBOSE> ::
+STR7_EIC<BUS_WIDTH> ::
 FSMUpdate()
 {
 	/* update the pending interrupt register 0 (IPR0) */
@@ -860,9 +850,9 @@ FSMUpdate()
 }
 
 /** Pushes the CICR and the CIPR into the stack */
-template <unsigned int BUS_WIDTH, bool VERBOSE>
+template <unsigned int BUS_WIDTH>
 void 
-STR7_EIC<BUS_WIDTH, VERBOSE> ::
+STR7_EIC<BUS_WIDTH> ::
 Push()
 {
 	if (likely(stack_depth < STACK_DEPTH))
@@ -881,9 +871,9 @@ Push()
 }
 
 /** Pops the top of the stack from the stack */
-template <unsigned int BUS_WIDTH, bool VERBOSE>
+template <unsigned int BUS_WIDTH>
 void 
-STR7_EIC<BUS_WIDTH, VERBOSE> ::
+STR7_EIC<BUS_WIDTH> ::
 Pop()
 {
 	if (likely(stack_depth != 0))
@@ -905,9 +895,9 @@ Pop()
  * @param addr		the register address
  * @return 			the contents of the register
  */
-template <unsigned int BUS_WIDTH, bool VERBOSE>
+template <unsigned int BUS_WIDTH>
 uint32_t 
-STR7_EIC<BUS_WIDTH, VERBOSE> ::
+STR7_EIC<BUS_WIDTH> ::
 ReadRegister(uint32_t const addr, bool update)
 {
 	uint32_t index = addr;
@@ -962,9 +952,9 @@ ReadRegister(uint32_t const addr, bool update)
  * @param addr		the register address
  * @param value		the data to write into the register
  */
-template <unsigned int BUS_WIDTH, bool VERBOSE>
+template <unsigned int BUS_WIDTH>
 void 
-STR7_EIC<BUS_WIDTH, VERBOSE> ::
+STR7_EIC<BUS_WIDTH> ::
 WriteRegister(uint32_t addr, uint32_t value, bool update)
 {
 	unsigned int irq;
@@ -1077,145 +1067,145 @@ WriteRegister(uint32_t addr, uint32_t value, bool update)
 
 /* START: interrupt controller accessors */
 
-template <unsigned int BUS_WIDTH, bool VERBOSE>
+template <unsigned int BUS_WIDTH>
 uint32_t
-STR7_EIC<BUS_WIDTH, VERBOSE> ::
+STR7_EIC<BUS_WIDTH> ::
 ICR()
 {
 	return icr;
 }
 
-template <unsigned int BUS_WIDTH, bool VERBOSE>
+template <unsigned int BUS_WIDTH>
 uint32_t
-STR7_EIC<BUS_WIDTH, VERBOSE> ::
+STR7_EIC<BUS_WIDTH> ::
 CICR()
 {
 	return cicr;
 }
 
-template <unsigned int BUS_WIDTH, bool VERBOSE>
+template <unsigned int BUS_WIDTH>
 uint32_t
-STR7_EIC<BUS_WIDTH, VERBOSE> ::
+STR7_EIC<BUS_WIDTH> ::
 CIPR()
 {
 	return cipr;
 }
 
-template <unsigned int BUS_WIDTH, bool VERBOSE>
+template <unsigned int BUS_WIDTH>
 uint32_t
-STR7_EIC<BUS_WIDTH, VERBOSE> ::
+STR7_EIC<BUS_WIDTH> ::
 IVR()
 {
 	return ivr;
 }
 
-template <unsigned int BUS_WIDTH, bool VERBOSE>
+template <unsigned int BUS_WIDTH>
 uint32_t
-STR7_EIC<BUS_WIDTH, VERBOSE> ::
+STR7_EIC<BUS_WIDTH> ::
 FIR()
 {
 	return fir;
 }
 
-template <unsigned int BUS_WIDTH, bool VERBOSE>
+template <unsigned int BUS_WIDTH>
 uint32_t
-STR7_EIC<BUS_WIDTH, VERBOSE> ::
+STR7_EIC<BUS_WIDTH> ::
 IER0()
 {
 	return ier0;
 }
 
-template <unsigned int BUS_WIDTH, bool VERBOSE>
+template <unsigned int BUS_WIDTH>
 uint32_t
-STR7_EIC<BUS_WIDTH, VERBOSE> ::
+STR7_EIC<BUS_WIDTH> ::
 IPR0()
 {
 	return ipr0;
 }
 
-template <unsigned int BUS_WIDTH, bool VERBOSE>
+template <unsigned int BUS_WIDTH>
 uint32_t
-STR7_EIC<BUS_WIDTH, VERBOSE> ::
+STR7_EIC<BUS_WIDTH> ::
 SIR(unsigned int index)
 {
 	return sir[index];
 }
 
-template <unsigned int BUS_WIDTH, bool VERBOSE>
+template <unsigned int BUS_WIDTH>
 bool
-STR7_EIC<BUS_WIDTH, VERBOSE> ::
+STR7_EIC<BUS_WIDTH> ::
 FIQ_EN()
 {
 	return ICR() & (0x01 << 1);
 }
 
-template <unsigned int BUS_WIDTH, bool VERBOSE>
+template <unsigned int BUS_WIDTH>
 bool
-STR7_EIC<BUS_WIDTH, VERBOSE> ::
+STR7_EIC<BUS_WIDTH> ::
 IRQ_EN()
 {
 	return ICR() & 0x01;
 }
 
-template <unsigned int BUS_WIDTH, bool VERBOSE>
+template <unsigned int BUS_WIDTH>
 uint32_t
-STR7_EIC<BUS_WIDTH, VERBOSE> ::
+STR7_EIC<BUS_WIDTH> ::
 CIC()
 {
 	return CICR() & (uint32_t)0x01f;
 }
 
-template <unsigned int BUS_WIDTH, bool VERBOSE>
+template <unsigned int BUS_WIDTH>
 uint32_t
-STR7_EIC<BUS_WIDTH, VERBOSE> ::
+STR7_EIC<BUS_WIDTH> ::
 CIP()
 {
 	return CIPR() & (uint32_t)0x0f;
 }
 
-template <unsigned int BUS_WIDTH, bool VERBOSE>
+template <unsigned int BUS_WIDTH>
 uint32_t
-STR7_EIC<BUS_WIDTH, VERBOSE> ::
+STR7_EIC<BUS_WIDTH> ::
 IVRhigh()
 {
 	return IVR() >> 16;
 }
 
-template <unsigned int BUS_WIDTH, bool VERBOSE>
+template <unsigned int BUS_WIDTH>
 uint32_t
-STR7_EIC<BUS_WIDTH, VERBOSE> ::
+STR7_EIC<BUS_WIDTH> ::
 IVRlow()
 {
 	return IVR() & (uint32_t)0x0ffff;
 }
 
-template <unsigned int BUS_WIDTH, bool VERBOSE>
+template <unsigned int BUS_WIDTH>
 uint32_t
-STR7_EIC<BUS_WIDTH, VERBOSE> ::
+STR7_EIC<BUS_WIDTH> ::
 FIP()
 {
 	return (FIR() >> 2) & (uint32_t)0x03;
 }
 
-template <unsigned int BUS_WIDTH, bool VERBOSE>
+template <unsigned int BUS_WIDTH>
 uint32_t
-STR7_EIC<BUS_WIDTH, VERBOSE> ::
+STR7_EIC<BUS_WIDTH> ::
 FIE()
 {
 	return FIR() & (uint32_t)0x03;
 }
 
-template <unsigned int BUS_WIDTH, bool VERBOSE>
+template <unsigned int BUS_WIDTH>
 uint32_t
-STR7_EIC<BUS_WIDTH, VERBOSE> ::
+STR7_EIC<BUS_WIDTH> ::
 SIV(unsigned int index)
 {
 	return SIR(index) >> 16;
 }
 
-template <unsigned int BUS_WIDTH, bool VERBOSE>
+template <unsigned int BUS_WIDTH>
 uint32_t
-STR7_EIC<BUS_WIDTH, VERBOSE> ::
+STR7_EIC<BUS_WIDTH> ::
 SIPL(unsigned int index)
 {
 	return SIR(index) & (uint32_t)0x0f;
@@ -1225,36 +1215,36 @@ SIPL(unsigned int index)
 
 /* START: verbose methods */
 
-template <unsigned int BUS_WIDTH, bool VERBOSE>
+template <unsigned int BUS_WIDTH>
 bool
-STR7_EIC<BUS_WIDTH, VERBOSE> ::
+STR7_EIC<BUS_WIDTH> ::
 VerboseAll()
 {
-	return VERBOSE && verbose_all;
+	return verbose_all;
 }
 
-template <unsigned int BUS_WIDTH, bool VERBOSE>
+template <unsigned int BUS_WIDTH>
 bool
-STR7_EIC<BUS_WIDTH, VERBOSE> ::
+STR7_EIC<BUS_WIDTH> ::
 VerboseSetup()
 {
-	return VERBOSE && verbose_setup;
+	return verbose_setup;
 }
 
-template <unsigned int BUS_WIDTH, bool VERBOSE>
+template <unsigned int BUS_WIDTH>
 bool
-STR7_EIC<BUS_WIDTH, VERBOSE> ::
+STR7_EIC<BUS_WIDTH> ::
 VerboseRun()
 {
-	return VERBOSE && verbose_run;
+	return verbose_run;
 }
 
-template <unsigned int BUS_WIDTH, bool VERBOSE>
+template <unsigned int BUS_WIDTH>
 bool
-STR7_EIC<BUS_WIDTH, VERBOSE> ::
+STR7_EIC<BUS_WIDTH> ::
 VerboseTLM()
 {
-	return VERBOSE && verbose_tlm;
+	return verbose_tlm;
 }
 
 /* END: verbose methods */

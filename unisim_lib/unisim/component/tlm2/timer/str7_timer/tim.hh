@@ -63,14 +63,14 @@ using unisim::kernel::service::ServiceImport;
 using unisim::service::interfaces::TrapReporting;
 using unisim::kernel::tlm2::PayloadFabric;
 
-template<unsigned int BUSWIDTH = 32, bool VERBOSE = false>
+template<unsigned int BUSWIDTH = 32>
 class TIM :
 	public sc_module,
 	public tlm::tlm_fw_transport_if<>,
 	public Client<TrapReporting>
 {
 private:
-	typedef TIM<BUSWIDTH, VERBOSE> THIS_MODULE;
+	typedef TIM<BUSWIDTH> THIS_MODULE;
 
 public:
 	/* output timer global interrupt socket */
@@ -289,21 +289,21 @@ private:
 	/* START: logger and logger methods and verbose/trap parameters/methods */
 	unisim::kernel::logger::Logger logger;
 	bool verbose_all;
-	unisim::kernel::service::Parameter<bool> *param_verbose_all;
+	unisim::kernel::service::Parameter<bool> param_verbose_all;
 	bool VerboseAll();
 	bool verbose_setup;
-	unisim::kernel::service::Parameter<bool> *param_verbose_setup;
+	unisim::kernel::service::Parameter<bool> param_verbose_setup;
 	bool VerboseSetup();
 	bool verbose_run;
-	unisim::kernel::service::Parameter<bool> *param_verbose_run;
+	unisim::kernel::service::Parameter<bool> param_verbose_run;
 	bool VerboseRun();
 	bool trap_on_verbose_run;
-	unisim::kernel::service::Parameter<bool> *param_trap_on_verbose_run;
+	unisim::kernel::service::Parameter<bool> param_trap_on_verbose_run;
 	bool verbose_tlm;
-	unisim::kernel::service::Parameter<bool> *param_verbose_tlm;
+	unisim::kernel::service::Parameter<bool> param_verbose_tlm;
 	bool VerboseTLM();
 	bool trap_on_verbose_tlm;
-	unisim::kernel::service::Parameter<bool> *param_trap_on_verbose_tlm;
+	unisim::kernel::service::Parameter<bool> param_trap_on_verbose_tlm;
 	bool trap_on_warning;
 	unisim::kernel::service::Parameter<bool> param_trap_on_warning;
 	void TrapOnWarning();

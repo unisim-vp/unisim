@@ -44,6 +44,7 @@
 #include "unisim/component/cxx/processor/arm/isa_arm32.tcc"
 #include "unisim/component/cxx/processor/arm/isa_thumb.tcc"
 #include "unisim/component/cxx/processor/arm/instruction.tcc"
+#include "unisim/component/cxx/processor/arm/exception.tcc"
 
 #ifndef SOCLIB
 

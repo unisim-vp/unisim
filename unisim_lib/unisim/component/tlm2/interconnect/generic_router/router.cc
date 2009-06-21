@@ -34,9 +34,10 @@
  
 #include "unisim/component/tlm2/interconnect/generic_router/router.hh"
 #include "unisim/component/tlm2/interconnect/generic_router/router.tcc"
+#include "unisim/component/tlm2/interconnect/generic_router/config.hh"
 
 template
-class unisim::component::tlm2::interconnect::generic_router::Router<>;
+class unisim::component::tlm2::interconnect::generic_router::Router<unisim::component::tlm2::interconnect::generic_router::Config>;
 
 template
 class unisim::component::tlm2::interconnect::generic_router::Router<unisim::component::tlm2::interconnect::generic_router::VerboseConfig>;

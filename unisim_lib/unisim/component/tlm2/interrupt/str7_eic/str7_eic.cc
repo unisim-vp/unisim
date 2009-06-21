@@ -42,7 +42,7 @@ namespace interrupt {
 namespace str7_eic {
 
 template
-class STR7_EIC<32, false>;
+class STR7_EIC<32>;
 
 } // end of namespace str7_eic
 } // end of namespace interrupt

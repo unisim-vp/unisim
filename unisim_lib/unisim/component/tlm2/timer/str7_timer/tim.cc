@@ -36,4 +36,4 @@
 #include "unisim/component/tlm2/timer/str7_timer/tim.tcc"
 
 template 
-class unisim::component::tlm2::timer::str7_timer::TIM<32, false>;
+class unisim::component::tlm2::timer::str7_timer::TIM<32>;

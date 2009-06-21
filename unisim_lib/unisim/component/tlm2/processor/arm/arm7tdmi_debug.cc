@@ -32,6 +32,7 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
+#include "unisim/component/tlm2/processor/arm/arm7tdmi.hh"
 #include "unisim/component/tlm2/processor/arm/arm.hh"
 #include "unisim/component/tlm2/processor/arm/arm.tcc"
 #include "unisim/component/cxx/processor/arm/config.hh"

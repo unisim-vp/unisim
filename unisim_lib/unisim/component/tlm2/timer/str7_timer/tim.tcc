@@ -123,8 +123,8 @@ using unisim::kernel::logger::EndDebugError;
 using unisim::util::endian::Host2LittleEndian;
 using unisim::util::endian::LittleEndian2Host;
 
-template<unsigned int BUSWIDTH, bool VERBOSE>
-TIM<BUSWIDTH, VERBOSE> ::
+template<unsigned int BUSWIDTH>
+TIM<BUSWIDTH> ::
 TIM(const sc_module_name &name, Object *parent) :
 	unisim::kernel::service::Object(name, parent),
 	Client<TrapReporting>(name, parent),
@@ -166,11 +166,17 @@ TIM(const sc_module_name &name, Object *parent) :
 	param_inverse_icapb("inverse-icapb", this, inverse_icapb, "consider no interruption like interruption, and interruption like no interruption for irq capture B"),
 	logger(*this),
 	verbose_all(false),
+	param_verbose_all("verbose-all", this, verbose_all, "Display all the verbose information"),
 	verbose_setup(false),
+	param_verbose_setup("verbose-setup", this, verbose_setup, "Display module setup verbose information"),
 	verbose_run(false),
+	param_verbose_run("verbose-run", this, verbose_run, "Display module run verbose information"),
 	trap_on_verbose_run(false),
+	param_verbose_tlm("verbose-tlm", this, verbose_tlm, "Display module tlm verbose information"),
 	verbose_tlm(false),
+	param_trap_on_verbose_run("trap-on-verbose-run", this, trap_on_verbose_run, "Send a trap when displaying run verbose information (requires verbose-run to be also activated)"),
 	trap_on_verbose_tlm(false),
+	param_trap_on_verbose_tlm("trap-on-verbose-tlm", this, trap_on_verbose_tlm, "Send a trap when displaying tlm verbose information (requires verbose-tlm to be also activated)"),
 	trap_on_warning(false),
 	param_trap_on_warning("trap-on-warning", this, trap_on_warning, "Send a trap when displaying a warning message")
 {
@@ -181,16 +187,6 @@ TIM(const sc_module_name &name, Object *parent) :
 	SC_THREAD(TimerOverflowHandler);
 	SC_THREAD(OutputCompareAHandler);
 	SC_THREAD(OutputCompareBHandler);
-
-	if (VERBOSE)
-	{
-		param_verbose_all = new unisim::kernel::service::Parameter<bool>("verbose-all", this, verbose_all, "Display all the verbose information");
-		param_verbose_setup = new unisim::kernel::service::Parameter<bool>("verbose-setup", this, verbose_setup, "Display module setup verbose information");
-		param_verbose_run = new unisim::kernel::service::Parameter<bool>("verbose-run", this, verbose_run, "Display module run verbose information");
-		param_verbose_tlm = new unisim::kernel::service::Parameter<bool>("verbose-tlm", this, verbose_tlm, "Display module tlm verbose information");
-		param_trap_on_verbose_run = new unisim::kernel::service::Parameter<bool>("trap-on-verbose-run", this, trap_on_verbose_run, "Send a trap when displaying run verbose information (requires verbose-run to be also activated)");
-		param_trap_on_verbose_tlm = new unisim::kernel::service::Parameter<bool>("trap-on-verbose-tlm", this, trap_on_verbose_tlm, "Send a trap when displaying tlm verbose information (requires verbose-tlm to be also activated)");
-	}
 
 	/* register the callbacks */
 	timeri_irq.register_nb_transport_bw(this, &THIS_MODULE::TimeriNbTransportBw);
@@ -220,21 +216,15 @@ TIM(const sc_module_name &name, Object *parent) :
 	in_mem.bind(*this);
 }
 
-template<unsigned int BUSWIDTH, bool VERBOSE>
-TIM<BUSWIDTH, VERBOSE> ::
+template<unsigned int BUSWIDTH>
+TIM<BUSWIDTH> ::
 ~TIM()
 {
-	if (param_verbose_all) delete param_verbose_all;
-	if (param_verbose_setup) delete param_verbose_setup;
-	if (param_verbose_run) delete param_verbose_run;
-	if (param_trap_on_verbose_run) delete param_trap_on_verbose_run;
-	if (param_verbose_tlm) delete param_verbose_tlm;
-	if (param_trap_on_verbose_tlm) delete param_trap_on_verbose_tlm;
 }
 
-template<unsigned int BUSWIDTH, bool VERBOSE>
+template<unsigned int BUSWIDTH>
 bool
-TIM<BUSWIDTH, VERBOSE> ::
+TIM<BUSWIDTH> ::
 Setup()
 {
 	if (VerboseAll())
@@ -308,9 +298,9 @@ Setup()
 }
 
 /* START: output timer global interrupt socket methods */
-template<unsigned int BUSWIDTH, bool VERBOSE>
+template<unsigned int BUSWIDTH>
 tlm::tlm_sync_enum
-TIM<BUSWIDTH, VERBOSE> ::
+TIM<BUSWIDTH> ::
 TimeriNbTransportBw(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
 {
 	switch (phase)
@@ -341,9 +331,9 @@ TimeriNbTransportBw(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::
 	return tlm::TLM_COMPLETED;
 }
 
-template<unsigned int BUSWIDTH, bool VERBOSE>
+template<unsigned int BUSWIDTH>
 void
-TIM<BUSWIDTH, VERBOSE> ::
+TIM<BUSWIDTH> ::
 TimeriInvalidateDirectMemPtr(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
 {
 	/* not supported */
@@ -352,9 +342,9 @@ TimeriInvalidateDirectMemPtr(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
 /* END: output timer global interrupt socket methods */
 
 /* START: output timer overflow interrupt (TOI) socket methods */
-template<unsigned int BUSWIDTH, bool VERBOSE>
+template<unsigned int BUSWIDTH>
 tlm::tlm_sync_enum
-TIM<BUSWIDTH, VERBOSE> ::
+TIM<BUSWIDTH> ::
 TOINbTransportBw(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
 {
 	switch (phase)
@@ -386,9 +376,9 @@ TOINbTransportBw(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_
 	return tlm::TLM_COMPLETED;
 }
 
-template<unsigned int BUSWIDTH, bool VERBOSE>
+template<unsigned int BUSWIDTH>
 void
-TIM<BUSWIDTH, VERBOSE> ::
+TIM<BUSWIDTH> ::
 TOIInvalidateDirectMemPtr(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
 {
 	/* not supported */
@@ -397,9 +387,9 @@ TOIInvalidateDirectMemPtr(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
 /* END: output timer overflow interrupt (TOI) socket methods */
 
 /* START: output input capture A interrupt (ICIA) socket methods */
-template<unsigned int BUSWIDTH, bool VERBOSE>
+template<unsigned int BUSWIDTH>
 tlm::tlm_sync_enum
-TIM<BUSWIDTH, VERBOSE> ::
+TIM<BUSWIDTH> ::
 ICIANbTransportBw(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
 {
 	switch (phase)
@@ -430,9 +420,9 @@ ICIANbTransportBw(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc
 	return tlm::TLM_COMPLETED;
 }
 
-template<unsigned int BUSWIDTH, bool VERBOSE>
+template<unsigned int BUSWIDTH>
 void
-TIM<BUSWIDTH, VERBOSE> ::
+TIM<BUSWIDTH> ::
 ICIAInvalidateDirectMemPtr(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
 {
 	/* not supported */
@@ -441,9 +431,9 @@ ICIAInvalidateDirectMemPtr(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
 /* END: output input capture A interrupt (ICIA) socket methods */
 
 /* START: output input capture B interrupt (ICIB) socket methods */
-template<unsigned int BUSWIDTH, bool VERBOSE>
+template<unsigned int BUSWIDTH>
 tlm::tlm_sync_enum
-TIM<BUSWIDTH, VERBOSE> ::
+TIM<BUSWIDTH> ::
 ICIBNbTransportBw(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
 {
 	switch (phase)
@@ -474,9 +464,9 @@ ICIBNbTransportBw(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc
 	return tlm::TLM_COMPLETED;
 }
 
-template<unsigned int BUSWIDTH, bool VERBOSE>
+template<unsigned int BUSWIDTH>
 void
-TIM<BUSWIDTH, VERBOSE> ::
+TIM<BUSWIDTH> ::
 ICIBInvalidateDirectMemPtr(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
 {
 	/* not supported */
@@ -485,9 +475,9 @@ ICIBInvalidateDirectMemPtr(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
 /* END: output input capture B interrupt (ICIB) socket methods */
 
 /* START: output output compare A interrupt (OCIA) socket methods */
-template<unsigned int BUSWIDTH, bool VERBOSE>
+template<unsigned int BUSWIDTH>
 tlm::tlm_sync_enum
-TIM<BUSWIDTH, VERBOSE> ::
+TIM<BUSWIDTH> ::
 OCIANbTransportBw(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
 {
 	switch (phase)
@@ -518,9 +508,9 @@ OCIANbTransportBw(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc
 	return tlm::TLM_COMPLETED;
 }
 
-template<unsigned int BUSWIDTH, bool VERBOSE>
+template<unsigned int BUSWIDTH>
 void
-TIM<BUSWIDTH, VERBOSE> ::
+TIM<BUSWIDTH> ::
 OCIAInvalidateDirectMemPtr(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
 {
 	/* not supported */
@@ -529,9 +519,9 @@ OCIAInvalidateDirectMemPtr(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
 /* END: output output compare A interrupt (OCIA) socket methods */
 
 /* START: output output compare B interrupt (OCIB) socket methods */
-template<unsigned int BUSWIDTH, bool VERBOSE>
+template<unsigned int BUSWIDTH>
 tlm::tlm_sync_enum
-TIM<BUSWIDTH, VERBOSE> ::
+TIM<BUSWIDTH> ::
 OCIBNbTransportBw(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
 {
 	switch (phase)
@@ -562,9 +552,9 @@ OCIBNbTransportBw(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc
 	return tlm::TLM_COMPLETED;
 }
 
-template<unsigned int BUSWIDTH, bool VERBOSE>
+template<unsigned int BUSWIDTH>
 void
-TIM<BUSWIDTH, VERBOSE> ::
+TIM<BUSWIDTH> ::
 OCIBInvalidateDirectMemPtr(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
 {
 	/* not supported */
@@ -574,9 +564,9 @@ OCIBInvalidateDirectMemPtr(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
 
 /* START: output compare A (OCMPA) edge socket methods */
 
-template<unsigned int BUSWIDTH, bool VERBOSE>
+template<unsigned int BUSWIDTH>
 tlm::tlm_sync_enum
-TIM<BUSWIDTH, VERBOSE> ::
+TIM<BUSWIDTH> ::
 OCMPANbTransportBw(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
 {
 	switch (phase)
@@ -607,9 +597,9 @@ OCMPANbTransportBw(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::s
 	return tlm::TLM_COMPLETED;
 }
 
-template<unsigned int BUSWIDTH, bool VERBOSE>
+template<unsigned int BUSWIDTH>
 void
-TIM<BUSWIDTH, VERBOSE> ::
+TIM<BUSWIDTH> ::
 OCMPAInvalidateDirectMemPtr(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
 {
 	/* not supported */
@@ -619,9 +609,9 @@ OCMPAInvalidateDirectMemPtr(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
 
 /* START: output compare A (OCMPB) edge socket methods */
 
-template<unsigned int BUSWIDTH, bool VERBOSE>
+template<unsigned int BUSWIDTH>
 tlm::tlm_sync_enum
-TIM<BUSWIDTH, VERBOSE> ::
+TIM<BUSWIDTH> ::
 OCMPBNbTransportBw(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
 {
 	switch (phase)
@@ -652,9 +642,9 @@ OCMPBNbTransportBw(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::s
 	return tlm::TLM_COMPLETED;
 }
 
-template<unsigned int BUSWIDTH, bool VERBOSE>
+template<unsigned int BUSWIDTH>
 void
-TIM<BUSWIDTH, VERBOSE> ::
+TIM<BUSWIDTH> ::
 OCMPBInvalidateDirectMemPtr(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
 {
 	/* not supported */
@@ -664,9 +654,9 @@ OCMPBInvalidateDirectMemPtr(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
 
 /* START: input capture A (ICAPA) edge socket methods */
 
-template<unsigned int BUSWIDTH, bool VERBOSE>
+template<unsigned int BUSWIDTH>
 tlm::tlm_sync_enum
-TIM<BUSWIDTH, VERBOSE> ::
+TIM<BUSWIDTH> ::
 ICAPANbTransportFw(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
 {
 	irq_fifo_t *entry = 0;
@@ -705,9 +695,9 @@ ICAPANbTransportFw(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::s
 	}
 }
 
-template<unsigned int BUSWIDTH, bool VERBOSE>
+template<unsigned int BUSWIDTH>
 void
-TIM<BUSWIDTH, VERBOSE> ::
+TIM<BUSWIDTH> ::
 ICAPABTransport(TLMInterruptPayload& trans, sc_core::sc_time& t)
 {
 	wait(t);
@@ -715,18 +705,18 @@ ICAPABTransport(TLMInterruptPayload& trans, sc_core::sc_time& t)
 	return;
 }
 
-template<unsigned int BUSWIDTH, bool VERBOSE>
+template<unsigned int BUSWIDTH>
 bool
-TIM<BUSWIDTH, VERBOSE> ::
+TIM<BUSWIDTH> ::
 ICAPAGetDirectMemPtr(TLMInterruptPayload& trans, tlm::tlm_dmi& dmi_data)
 {
 	/* not supported */
 	return false;
 }
 
-template<unsigned int BUSWIDTH, bool VERBOSE>
+template<unsigned int BUSWIDTH>
 unsigned int
-TIM<BUSWIDTH, VERBOSE> ::
+TIM<BUSWIDTH> ::
 ICAPATransportDbg(TLMInterruptPayload& trans)
 {
 	/* no sense for interrupt */
@@ -737,9 +727,9 @@ ICAPATransportDbg(TLMInterruptPayload& trans)
 
 /* START: input capture B (ICAPB) edge socket methods */
 
-template<unsigned int BUSWIDTH, bool VERBOSE>
+template<unsigned int BUSWIDTH>
 tlm::tlm_sync_enum
-TIM<BUSWIDTH, VERBOSE> ::
+TIM<BUSWIDTH> ::
 ICAPBNbTransportFw(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
 {
 	irq_fifo_t *entry = 0;
@@ -778,9 +768,9 @@ ICAPBNbTransportFw(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::s
 	}
 }
 
-template<unsigned int BUSWIDTH, bool VERBOSE>
+template<unsigned int BUSWIDTH>
 void
-TIM<BUSWIDTH, VERBOSE> ::
+TIM<BUSWIDTH> ::
 ICAPBBTransport(TLMInterruptPayload& trans, sc_core::sc_time& t)
 {
 	wait(t);
@@ -788,18 +778,18 @@ ICAPBBTransport(TLMInterruptPayload& trans, sc_core::sc_time& t)
 	return;
 }
 
-template<unsigned int BUSWIDTH, bool VERBOSE>
+template<unsigned int BUSWIDTH>
 bool
-TIM<BUSWIDTH, VERBOSE> ::
+TIM<BUSWIDTH> ::
 ICAPBGetDirectMemPtr(TLMInterruptPayload& trans, tlm::tlm_dmi& dmi_data)
 {
 	/* not supported */
 	return false;
 }
 
-template<unsigned int BUSWIDTH, bool VERBOSE>
+template<unsigned int BUSWIDTH>
 unsigned int
-TIM<BUSWIDTH, VERBOSE> ::
+TIM<BUSWIDTH> ::
 ICAPBTransportDbg(TLMInterruptPayload& trans)
 {
 	/* not supported */
@@ -810,9 +800,9 @@ ICAPBTransportDbg(TLMInterruptPayload& trans)
 	
 /* START: input memory socket methods */
 
-template<unsigned int BUSWIDTH, bool VERBOSE>
+template<unsigned int BUSWIDTH>
 tlm::tlm_sync_enum
-TIM<BUSWIDTH, VERBOSE> ::
+TIM<BUSWIDTH> ::
 nb_transport_fw(tlm::tlm_generic_payload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
 {
 	if (VerboseTLM())
@@ -857,9 +847,9 @@ nb_transport_fw(tlm::tlm_generic_payload& trans, tlm::tlm_phase& phase, sc_core:
 	}
 }
 
-template<unsigned int BUSWIDTH, bool VERBOSE>
+template<unsigned int BUSWIDTH>
 void
-TIM<BUSWIDTH, VERBOSE> ::
+TIM<BUSWIDTH> ::
 b_transport(tlm::tlm_generic_payload& trans, sc_core::sc_time& t)
 {
 	if (VerboseTLM())
@@ -896,18 +886,18 @@ b_transport(tlm::tlm_generic_payload& trans, sc_core::sc_time& t)
 	}
 }
 
-template<unsigned int BUSWIDTH, bool VERBOSE>
+template<unsigned int BUSWIDTH>
 bool
-TIM<BUSWIDTH, VERBOSE> ::
+TIM<BUSWIDTH> ::
 get_direct_mem_ptr(tlm::tlm_generic_payload& trans, tlm::tlm_dmi& dmi_data)
 {
 	/* not supported */
 	return false;
 }
 
-template<unsigned int BUSWIDTH, bool VERBOSE>
+template<unsigned int BUSWIDTH>
 unsigned int
-TIM<BUSWIDTH, VERBOSE> ::
+TIM<BUSWIDTH> ::
 transport_dbg(tlm::tlm_generic_payload& trans)
 {
 	return 0;
@@ -916,9 +906,9 @@ transport_dbg(tlm::tlm_generic_payload& trans)
 /* END: input memory socket methods */
 
 /* Memory requests fifo handler */
-template<unsigned int BUSWIDTH, bool VERBOSE>
+template<unsigned int BUSWIDTH>
 void
-TIM<BUSWIDTH, VERBOSE> ::
+TIM<BUSWIDTH> ::
 MemFifoHandler()
 {
 	sc_time t = SC_ZERO_TIME;
@@ -975,9 +965,9 @@ MemFifoHandler()
 }
 
 /* ICAPA requests fifo handler */
-template<unsigned int BUSWIDTH, bool VERBOSE>
+template<unsigned int BUSWIDTH>
 void
-TIM<BUSWIDTH, VERBOSE> ::
+TIM<BUSWIDTH> ::
 IcapaFifoHandler()
 {
 	while (1)
@@ -990,9 +980,9 @@ IcapaFifoHandler()
 }
 
 /* ICAPB requests fifo handler */
-template<unsigned int BUSWIDTH, bool VERBOSE>
+template<unsigned int BUSWIDTH>
 void
-TIM<BUSWIDTH, VERBOSE> ::
+TIM<BUSWIDTH> ::
 IcapbFifoHandler()
 {
 	while (1)
@@ -1004,9 +994,9 @@ IcapbFifoHandler()
 	}
 }
 
-template<unsigned int BUSWIDTH, bool VERBOSE>
+template<unsigned int BUSWIDTH>
 tlm::tlm_response_status
-TIM<BUSWIDTH, VERBOSE> ::
+TIM<BUSWIDTH> ::
 ReadRegister(uint64_t addr, uint16_t &value)
 {
 	uint64_t reg_index = addr - base_address;
@@ -1076,9 +1066,9 @@ ReadRegister(uint64_t addr, uint16_t &value)
 	}
 }
 
-template<unsigned int BUSWIDTH, bool VERBOSE>
+template<unsigned int BUSWIDTH>
 tlm::tlm_response_status 
-TIM<BUSWIDTH, VERBOSE> ::
+TIM<BUSWIDTH> ::
 WriteRegister(uint64_t addr, uint16_t value)
 {
 	uint64_t reg_index = addr - base_address;
@@ -1267,9 +1257,9 @@ WriteRegister(uint64_t addr, uint16_t value)
 
 /* START: interrupt transaction generation methods */
 
-template<unsigned int BUSWIDTH, bool VERBOSE>
+template<unsigned int BUSWIDTH>
 void 
-TIM<BUSWIDTH, VERBOSE> ::
+TIM<BUSWIDTH> ::
 SendInputCaptureAInterrupt()
 {
 	bool level = ICFA() && ICAIE();
@@ -1290,9 +1280,9 @@ SendInputCaptureAInterrupt()
 	}
 }
 
-template<unsigned int BUSWIDTH, bool VERBOSE>
+template<unsigned int BUSWIDTH>
 void 
-TIM<BUSWIDTH, VERBOSE> ::
+TIM<BUSWIDTH> ::
 SendOutputCompareAInterrupt()
 {
 	bool level = OCFA() && OCAIE();
@@ -1313,9 +1303,9 @@ SendOutputCompareAInterrupt()
 	}
 }
 
-template<unsigned int BUSWIDTH, bool VERBOSE>
+template<unsigned int BUSWIDTH>
 void 
-TIM<BUSWIDTH, VERBOSE> ::
+TIM<BUSWIDTH> ::
 SendTimerOverflowInterrupt()
 {
 	bool level = TOF() && TOIE();
@@ -1336,9 +1326,9 @@ SendTimerOverflowInterrupt()
 	}
 }
 
-template<unsigned int BUSWIDTH, bool VERBOSE>
+template<unsigned int BUSWIDTH>
 void 
-TIM<BUSWIDTH, VERBOSE> ::
+TIM<BUSWIDTH> ::
 SendInputCaptureBInterrupt()
 {
 	bool level = ICFB() && ICBIE();
@@ -1359,9 +1349,9 @@ SendInputCaptureBInterrupt()
 	}
 }
 
-template<unsigned int BUSWIDTH, bool VERBOSE>
+template<unsigned int BUSWIDTH>
 void 
-TIM<BUSWIDTH, VERBOSE> ::
+TIM<BUSWIDTH> ::
 SendOutputCompareBInterrupt()
 {
 	bool level = OCFB() && OCBIE();
@@ -1382,9 +1372,9 @@ SendOutputCompareBInterrupt()
 	}
 }
 
-template<unsigned int BUSWIDTH, bool VERBOSE>
+template<unsigned int BUSWIDTH>
 void 
-TIM<BUSWIDTH, VERBOSE> ::
+TIM<BUSWIDTH> ::
 SendGlobalTimerInterrupt()
 {
 	bool level = (TOF() && TOIE()) ||
@@ -1414,9 +1404,9 @@ SendGlobalTimerInterrupt()
 
 /* START: event handlers */
 
-template<unsigned int BUSWIDTH, bool VERBOSE>
+template<unsigned int BUSWIDTH>
 void 
-TIM<BUSWIDTH, VERBOSE> ::
+TIM<BUSWIDTH> ::
 TimerOverflowHandler()
 {
 	while(1)
@@ -1462,9 +1452,9 @@ TimerOverflowHandler()
 	}
 }
 
-template<unsigned int BUSWIDTH, bool VERBOSE>
+template<unsigned int BUSWIDTH>
 void
-TIM<BUSWIDTH, VERBOSE> ::
+TIM<BUSWIDTH> ::
 OutputCompareAHandler()
 {
 	while(1)
@@ -1499,9 +1489,9 @@ OutputCompareAHandler()
 	}
 }
 
-template<unsigned int BUSWIDTH, bool VERBOSE>
+template<unsigned int BUSWIDTH>
 void
-TIM<BUSWIDTH, VERBOSE> ::
+TIM<BUSWIDTH> ::
 OutputCompareBHandler()
 {
 	while(1)
@@ -1539,43 +1529,43 @@ OutputCompareBHandler()
 
 /* END: event handler */
 
-template<unsigned int BUSWIDTH, bool VERBOSE>
+template<unsigned int BUSWIDTH>
 void
-TIM<BUSWIDTH, VERBOSE> ::
+TIM<BUSWIDTH> ::
 ProcessICAPA(bool level)
 {
 }
 
-template<unsigned int BUSWIDTH, bool VERBOSE>
+template<unsigned int BUSWIDTH>
 void
-TIM<BUSWIDTH, VERBOSE> ::
+TIM<BUSWIDTH> ::
 ProcessICAPB(bool level)
 {
 }
 
 /* START: verbose methods */
 
-template<unsigned int BUSWIDTH, bool VERBOSE>
+template<unsigned int BUSWIDTH>
 bool 
-TIM<BUSWIDTH, VERBOSE> ::
+TIM<BUSWIDTH> ::
 VerboseAll()
 {
-	return VERBOSE && verbose_all;
+	return verbose_all;
 }
 
-template<unsigned int BUSWIDTH, bool VERBOSE>
+template<unsigned int BUSWIDTH>
 bool 
-TIM<BUSWIDTH, VERBOSE> ::
+TIM<BUSWIDTH> ::
 VerboseSetup()
 {
-	return VERBOSE && verbose_setup;
+	return verbose_setup;
 }
-template<unsigned int BUSWIDTH, bool VERBOSE>
+template<unsigned int BUSWIDTH>
 bool 
-TIM<BUSWIDTH, VERBOSE> ::
+TIM<BUSWIDTH> ::
 VerboseRun()
 {
-	if (VERBOSE && verbose_run)
+	if (verbose_run)
 	{
 		if (trap_on_verbose_run && trap_reporting_import)
 			trap_reporting_import->ReportTrap();
@@ -1584,12 +1574,12 @@ VerboseRun()
 	return false;
 }
 
-template<unsigned int BUSWIDTH, bool VERBOSE>
+template<unsigned int BUSWIDTH>
 bool 
-TIM<BUSWIDTH, VERBOSE> ::
+TIM<BUSWIDTH> ::
 VerboseTLM()
 {
-	if (VERBOSE && verbose_tlm)
+	if (verbose_tlm)
 	{
 		if (trap_on_verbose_tlm && trap_reporting_import)
 			trap_reporting_import->ReportTrap();
@@ -1598,9 +1588,9 @@ VerboseTLM()
 	return false;
 }
 
-template<unsigned int BUSWIDTH, bool VERBOSE>
+template<unsigned int BUSWIDTH>
 void
-TIM<BUSWIDTH, VERBOSE> ::
+TIM<BUSWIDTH> ::
 TrapOnWarning()
 {
 	if (trap_on_warning) trap_reporting_import->ReportTrap();

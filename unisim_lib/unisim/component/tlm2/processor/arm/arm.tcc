@@ -39,6 +39,7 @@
 #include <tlm.h>
 #include "unisim/kernel/tlm2/tlm.hh"
 #include "unisim/kernel/logger/logger.hh"
+#include "unisim/component/cxx/processor/arm/cpu.tcc"
 
 #define LOCATION 	" - location = " << __FUNCTION__ << ":unisim_lib/unisim/component/tlm2/processor/arm/arm.tcc:" << __LINE__
 #define TIME(X) 	" - time = " << sc_time_stamp() + (X) << " (current time = " << sc_time_stamp() << ")"

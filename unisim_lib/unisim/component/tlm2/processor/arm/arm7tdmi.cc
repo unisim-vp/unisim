@@ -32,6 +32,9 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
+#include <systemc.h>
+#include "unisim/kernel/service/service.hh"
+#include "unisim/component/tlm2/processor/arm/arm7tdmi.hh"
 #include "unisim/component/tlm2/processor/arm/arm.hh"
 #include "unisim/component/tlm2/processor/arm/arm.tcc"
 #include "unisim/component/cxx/processor/arm/config.hh"
@@ -42,13 +45,16 @@ namespace tlm2 {
 namespace processor {
 namespace arm {
 
-using unisim::component::cxx::processor::arm::ARM7TDMI_Config;
+ARM7TDMI ::
+ARM7TDMI(const sc_module_name& name, unisim::kernel::service::Object* parent) :
+	unisim::kernel::service::Object(name, parent),
+	ARM<unisim::component::cxx::processor::arm::ARM7TDMI_DebugConfig, true>(name, parent)
+{
+}
 
-template
-class ARM<ARM7TDMI_Config, false>;
-
-template
-class ARM<ARM7TDMI_Config, true>;
+ARM7TDMI ::
+~ARM7TDMI()
+{}
 
 } // end of namespace arm
 } // end of namespace processor
