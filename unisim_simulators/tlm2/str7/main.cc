@@ -100,12 +100,11 @@ using unisim::service::debug::inline_debugger::InlineDebugger;
 #ifdef STR7_VERBOSE
 typedef unisim::component::tlm2::memory::ram::Memory<32, 1024 * 1024, true> MEMORY;
 typedef unisim::component::tlm2::memory::ram::Memory<32, 1024 * 1024, true> FLASH;
-typedef unisim::component::tlm2::interconnect::generic_router::Router<RouterConfigVerbose> ROUTER;
 #else
 typedef unisim::component::tlm2::memory::ram::Memory<32, 1024 * 1024, false> MEMORY;
 typedef unisim::component::tlm2::memory::ram::Memory<32, 1024 * 1024, false> FLASH;
-typedef unisim::component::tlm2::interconnect::generic_router::Router<RouterConfig> ROUTER;
 #endif
+typedef unisim::component::tlm2::interconnect::generic_router::Router<RouterConfig> ROUTER;
 typedef unisim::component::tlm2::processor::arm::ARM7TDMI CPU;
 typedef unisim::component::tlm2::timer::str7_timer::TIM<32> TIM;
 typedef unisim::component::tlm2::interrupt::str7_eic::STR7_EIC<32> EIC;
