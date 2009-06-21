@@ -312,7 +312,7 @@ uint8_t CPU::Step()
 			logger << DebugInfo << GetSimulatedTime() << " ms: "
 				<< "PC = 0x" << std::hex << current_pc << std::dec << " : "
 				<< disasm_str.str()
-				<< " (0x" << std::hex << ctstr.str() << std::dec << ") " << EndDebugInfo	<< std::endl;
+				<< " : ( " << std::hex << ctstr.str() << std::dec << " ) " << EndDebugInfo	<< std::endl;
 
 		} else if (debug_enabled && verbose_step) {
 			stringstream disasm_str;
