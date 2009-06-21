@@ -45,9 +45,11 @@
 #include "unisim/component/tlm2/interconnect/generic_router/router.hh"
 #include "router_config.hh"
 #include "unisim/component/tlm2/interrupt/str7_eic/str7_eic.hh"
+#include "unisim/component/tlm2/com/str7_spi/str7_spi.hh"
 #include "unisim/component/tlm2/timer/str7_timer/tim.hh"
 #include "unisim/component/tlm2/interrupt/master_stub.hh"
 #include "unisim/component/tlm2/interrupt/slave_stub.hh"
+#include "unisim/component/tlm2/signal_converter/generic_adc/adc.hh"
 
 #include "unisim/service/time/sc_time/time.hh"
 #include "unisim/service/time/host_time/time.hh"
@@ -110,6 +112,8 @@ typedef unisim::component::tlm2::interrupt::str7_eic::STR7_EIC<32> EIC;
 typedef unisim::component::tlm2::interrupt::InterruptMasterStub IRQMSTUB;
 typedef unisim::component::tlm2::interrupt::InterruptMasterStub FIQMSTUB;
 typedef unisim::component::tlm2::interrupt::InterruptSlaveStub IRQSSTUB;
+typedef unisim::component::tlm2::com::str7_spi::STR7_SPI<32, true> SPI;
+typedef unisim::component::tlm2::signal_converter::generic_adc::ADC ADC;
 
 
 typedef unisim::service::loader::elf_loader::ElfLoaderImpl<uint64_t, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym> ElfLoader;
@@ -211,38 +215,63 @@ int sc_main(int argc, char *argv[]) {
 	FLASH *flash = new FLASH("flash");
 	EIC *eic = new EIC("eic");
 	TIM *timer0 = new TIM("timer0");
-	IRQSSTUB *icia_irqsstub = new IRQSSTUB("icia_irqsstub");
-	IRQSSTUB *icib_irqsstub = new IRQSSTUB("icib_irqsstub");
-	IRQMSTUB *icapa_edgemstub = new IRQMSTUB("icapa_edgemstub");
-	IRQMSTUB *icapb_edgemstub = new IRQMSTUB("icapb_edgemstub");
-	IRQSSTUB *ocmpa_edgesstub = new IRQSSTUB("ocmpa_edgesstub");
-	IRQSSTUB *ocmpb_edgesstub = new IRQSSTUB("ocmpb_edgesstub");
-	IRQMSTUB *irqmstub[32];
+	TIM *timer2 = new TIM("timer2");
+	SPI *spi0 = new SPI("spi0");
+	ADC *adc = new ADC("ADC");
+
+	//Timer0  stubs
+	IRQSSTUB *icia_irqsstub0 = new IRQSSTUB("icia_irqsstub0");
+	IRQSSTUB *icib_irqsstub0 = new IRQSSTUB("icib_irqsstub0");
+	IRQMSTUB *icapa_edgemstub0 = new IRQMSTUB("icapa_edgemstub0");
+	IRQMSTUB *icapb_edgemstub0 = new IRQMSTUB("icapb_edgemstub0");
+	IRQSSTUB *ocmpa_edgesstub0 = new IRQSSTUB("ocmpa_edgesstub0");
+	IRQSSTUB *ocmpb_edgesstub0 = new IRQSSTUB("ocmpb_edgesstub0");
+       
+	//Timer2  stubs
+	IRQSSTUB *toi_irqsstub2 = new IRQSSTUB("toi_irqsstub2");
+	IRQSSTUB *ocia_irqsstub2 = new IRQSSTUB("ocia_irqsstub2");
+	IRQSSTUB *ocib_irqsstub2 = new IRQSSTUB("ocib_irqsstub2");
+	IRQSSTUB *icia_irqsstub2 = new IRQSSTUB("icia_irqsstub2");
+	IRQSSTUB *icib_irqsstub2 = new IRQSSTUB("icib_irqsstub2");
+	IRQMSTUB *icapb_edgemstub2 = new IRQMSTUB("icapb_edgemstub2");
+   	IRQSSTUB *ocmpb_edgesstub2 = new IRQSSTUB("ocmpb_edgesstub2");
+
+
+	//EIC stubs
+	IRQMSTUB *irqmstubFLASH = new IRQMSTUB("irqmstubFLASH");
+	IRQMSTUB *irqmstubPRCCU = new IRQMSTUB("irqmstubPRCCU");
+	IRQMSTUB *irqmstubRTC = new IRQMSTUB("irqmstubRTC");
+	IRQMSTUB *irqmstubWDG = new IRQMSTUB("irqmstubWDG");
+	IRQMSTUB *irqmstubXTI = new IRQMSTUB("irqmstubXTI");
+	IRQMSTUB *irqmstubUSB = new IRQMSTUB("irqmstubUSB");
+	IRQMSTUB *irqmstubI2C0ITERR = new IRQMSTUB("irqmstubI2C0ITERR");
+	IRQMSTUB *irqmstubI2C1ITERR = new IRQMSTUB("irqmstubI2C1ITERR");
+	IRQMSTUB *irqmstubUART0 = new IRQMSTUB("irqmstubUART0");
+	IRQMSTUB *irqmstubUART1 = new IRQMSTUB("irqmstubUART1");
+	IRQMSTUB *irqmstubUART2 = new IRQMSTUB("irqmstubUART2");
+	IRQMSTUB *irqmstubUART3 = new IRQMSTUB("irqmstubUART3");
+	IRQMSTUB *irqmstubBSPI1 = new IRQMSTUB("irqmstubBSPI1");
+	IRQMSTUB *irqmstubI2C0IRQ = new IRQMSTUB("irqmstubI2C0IRQ");
+	IRQMSTUB *irqmstubI2C1IRQ = new IRQMSTUB("irqmstubI2C1IRQ");
+	IRQMSTUB *irqmstubCAN = new IRQMSTUB("irqmstubCAN");
+	IRQMSTUB *irqmstubADC = new IRQMSTUB("irqmstubADC");
+	IRQMSTUB *irqmstubT1GLOBAL = new IRQMSTUB("irqmstubT1GLOBAL");
+	IRQMSTUB *irqmstubT3GLOBAL = new IRQMSTUB("irqmstubT3GLOBAL");
+	IRQMSTUB *irqmstubRESERVED0 = new IRQMSTUB("irqmstubRESERVED0");
+	IRQMSTUB *irqmstubRESERVED1 = new IRQMSTUB("irqmstubRESERVED1");
+	IRQMSTUB *irqmstubRESERVED2 = new IRQMSTUB("irqmstubRESERVED2");
+	IRQMSTUB *irqmstubHDLC = new IRQMSTUB("irqmstubHDLC");
+	IRQMSTUB *irqmstubUSBLPIRQ = new IRQMSTUB("irqmstubUSBLPIRQ");
+	IRQMSTUB *irqmstubRESERVED3 = new IRQMSTUB("irqmstubRESERVED3");
+	IRQMSTUB *irqmstubRESERVED4 = new IRQMSTUB("irqmstubRESERVED4");
+
 	FIQMSTUB *fiqmstub[2];
-
-	for (unsigned int i = 0; i < 1; i ++)
-		irqmstub[i] = 0;
-	for (unsigned int i = 1; i < 29; i++)
-	{
-		stringstream str;
-		str << "irq_master_stub[" << i << "]";
-		irqmstub[i] = new IRQMSTUB(str.str().c_str());
-	}
-	for (unsigned int i = 29; i < 32; i++)
-	{
-		irqmstub[i] = 0;
-//		stringstream str;
-//		irqmstub[i] = new IRQMSTUB(str.str().c_str());
-//		delete irqmstub[i];
-	}
-
 	for (unsigned int i = 0; i < 2; i++)
 	{
 		stringstream str;
 		str << "fiq_master_stub[" << i << "]";
 		fiqmstub[i] = new FIQMSTUB(str.str().c_str());
 	}
-
 	// Instanciate an ELF32 loader
 	elf_loader = new ElfLoader("elf-loader");
 	
@@ -261,24 +290,71 @@ int sc_main(int argc, char *argv[]) {
 	router->init_socket[1](flash->slave_sock);
 	router->init_socket[2](eic->in_mem);
 	router->init_socket[3](timer0->in_mem);
+	router->init_socket[4](timer2->in_mem);
+	router->init_socket[5](spi0->in_mem);
 
+//Connect the interrupt controler
 	eic->out_irq(cpu->in_irq);
 	eic->out_fiq(cpu->in_fiq);
 	timer0->timeri_irq(eic->in_irq[0]);
-	for (unsigned int i = 1; i < 29; i++)
-		irqmstub[i]->out_interrupt(eic->in_irq[i]);
+	irqmstubFLASH->out_interrupt(eic->in_irq[1]);
+	irqmstubPRCCU->out_interrupt(eic->in_irq[2]);
+	irqmstubRTC->out_interrupt(eic->in_irq[3]);
+	irqmstubWDG->out_interrupt(eic->in_irq[4]);
+	irqmstubXTI->out_interrupt(eic->in_irq[5]);
+	irqmstubUSB->out_interrupt(eic->in_irq[6]);
+	irqmstubI2C0ITERR->out_interrupt(eic->in_irq[7]);
+	irqmstubI2C1ITERR->out_interrupt(eic->in_irq[8]);
+	irqmstubUART0->out_interrupt(eic->in_irq[9]);
+	irqmstubUART1->out_interrupt(eic->in_irq[10]);
+	irqmstubUART2->out_interrupt(eic->in_irq[11]);
+	irqmstubUART3->out_interrupt(eic->in_irq[12]);
+	spi0->irq(eic->in_irq[13]);
+	irqmstubBSPI1->out_interrupt(eic->in_irq[14]);
+	irqmstubI2C0IRQ->out_interrupt(eic->in_irq[15]);
+	irqmstubI2C1IRQ->out_interrupt(eic->in_irq[16]);
+	irqmstubCAN->out_interrupt(eic->in_irq[17]);
+	irqmstubADC->out_interrupt(eic->in_irq[18]);
+	irqmstubT1GLOBAL->out_interrupt(eic->in_irq[19]);
+	timer2->timeri_irq(eic->in_irq[20]);
+	irqmstubT3GLOBAL->out_interrupt(eic->in_irq[21]);
+	irqmstubRESERVED0->out_interrupt(eic->in_irq[22]);
+	irqmstubRESERVED1->out_interrupt(eic->in_irq[23]);
+	irqmstubRESERVED2->out_interrupt(eic->in_irq[24]);
+	irqmstubHDLC->out_interrupt(eic->in_irq[25]);
+	irqmstubUSBLPIRQ->out_interrupt(eic->in_irq[26]);
+	irqmstubRESERVED3->out_interrupt(eic->in_irq[27]);
+	irqmstubRESERVED4->out_interrupt(eic->in_irq[28]);
 	timer0->toi_irq(eic->in_irq[29]);
 	timer0->ocia_irq(eic->in_irq[30]);
 	timer0->ocib_irq(eic->in_irq[31]);
-	timer0->icia_irq(icia_irqsstub->in_interrupt);
-	timer0->icib_irq(icib_irqsstub->in_interrupt);
+
 	// TODO: timer0 timeri_irq should also be connected to eic->in_fiq[0]
 	for (unsigned int i = 0; i < 2; i++)
 		fiqmstub[i]->out_interrupt(eic->in_fiq[i]);
-	icapa_edgemstub->out_interrupt(timer0->icapa_edge);
-	icapb_edgemstub->out_interrupt(timer0->icapb_edge);
-	timer0->ocmpa_edge(ocmpa_edgesstub->in_interrupt);
-	timer0->ocmpb_edge(ocmpb_edgesstub->in_interrupt);
+
+	//Connect the Timer0
+	timer0->icia_irq(icia_irqsstub0->in_interrupt);
+	timer0->icib_irq(icib_irqsstub0->in_interrupt);
+	icapa_edgemstub0->out_interrupt(timer0->icapa_edge);
+	icapb_edgemstub0->out_interrupt(timer0->icapb_edge);
+	timer0->ocmpa_edge(ocmpa_edgesstub0->in_interrupt);
+	timer0->ocmpb_edge(ocmpb_edgesstub0->in_interrupt);
+
+	//Connect the Timer2
+	timer2->toi_irq(toi_irqsstub2->in_interrupt);
+	timer2->ocia_irq(ocia_irqsstub2->in_interrupt);
+	timer2->ocib_irq(ocib_irqsstub2->in_interrupt);
+	timer2->icia_irq(icia_irqsstub2->in_interrupt);
+	timer2->icib_irq(icib_irqsstub2->in_interrupt);
+	icapb_edgemstub2->out_interrupt(timer2->icapb_edge);
+	timer2->ocmpa_edge(adc->chip_select);
+	timer2->ocmpb_edge(ocmpb_edgesstub2->in_interrupt);
+
+	//Connect the Spi0 to the ADC
+	spi0->mosi (adc->mosi);
+	adc->miso (spi0->miso);
+	adc->data_ready(timer2->icapa_edge);
 
 	// Connect everything
 	elf_loader->memory_import >> router->memory_export;
@@ -386,16 +462,50 @@ int sc_main(int argc, char *argv[]) {
 	if (flash) delete flash;
 	if (eic) delete eic;
 	if (timer0) delete timer0;
-	if (icia_irqsstub) delete icia_irqsstub;
-	if (icib_irqsstub) delete icib_irqsstub;
-	if (icapa_edgemstub) delete icapa_edgemstub;
-	if (icapb_edgemstub) delete icapb_edgemstub;
-	if (ocmpa_edgesstub) delete ocmpa_edgesstub;
-	if (ocmpb_edgesstub) delete ocmpb_edgesstub;
-	for (int i = 0; i < 32; i++)
-		if (irqmstub[i]) delete irqmstub[i];
+if (timer2) delete timer2;
+	
+  
+	if (icib_irqsstub0) delete icib_irqsstub0;
+	if (icapa_edgemstub0) delete icapa_edgemstub0;
+	if (icapb_edgemstub0) delete icapb_edgemstub0;
+	if (ocmpa_edgesstub0) delete ocmpa_edgesstub0;
+	if (ocmpb_edgesstub0) delete ocmpb_edgesstub0;
+	if (toi_irqsstub2) delete toi_irqsstub2;
+	if (ocia_irqsstub2) delete ocia_irqsstub2;
+	if (ocib_irqsstub2) delete ocib_irqsstub2;
+	if (icia_irqsstub2) delete icia_irqsstub2;
+	if (icib_irqsstub2) delete icib_irqsstub2;
+	if (icapb_edgemstub2) delete icapb_edgemstub2;
+	if (ocmpb_edgesstub2) delete ocmpb_edgesstub2;
+	if (irqmstubFLASH) delete irqmstubFLASH;
+	if (irqmstubPRCCU) delete irqmstubPRCCU;
+	if (irqmstubRTC) delete irqmstubRTC;
+	if (irqmstubWDG) delete irqmstubWDG;
+	if (irqmstubXTI) delete irqmstubXTI;
+	if (irqmstubUSB) delete irqmstubUSB;
+	if (irqmstubI2C0ITERR) delete irqmstubI2C0ITERR;
+	if (irqmstubI2C1ITERR) delete irqmstubI2C1ITERR;
+	if (irqmstubUART0) delete irqmstubUART0;
+	if (irqmstubUART1) delete irqmstubUART1;
+	if (irqmstubUART2) delete irqmstubUART2;
+	if (irqmstubUART3) delete irqmstubUART3;
+	if (irqmstubBSPI1) delete irqmstubBSPI1;
+	if (irqmstubI2C0IRQ) delete irqmstubI2C0IRQ;
+	if (irqmstubI2C1IRQ) delete irqmstubI2C1IRQ;
+	if (irqmstubCAN) delete irqmstubCAN;
+	if (irqmstubADC) delete irqmstubADC;
+	if (irqmstubT1GLOBAL) delete irqmstubT1GLOBAL;
+	if (irqmstubT3GLOBAL) delete irqmstubT3GLOBAL;
+	if (irqmstubRESERVED0) delete irqmstubRESERVED0;
+	if (irqmstubRESERVED1) delete irqmstubRESERVED1;
+	if (irqmstubRESERVED2) delete irqmstubRESERVED2;
+	if (irqmstubHDLC) delete irqmstubHDLC;
+	if (irqmstubUSBLPIRQ) delete irqmstubUSBLPIRQ;
+	if (irqmstubRESERVED3) delete irqmstubRESERVED3;
+	if (irqmstubRESERVED4) delete irqmstubRESERVED4;
+	
 	for (int i = 0; i < 2; i++)
-		if (irqmstub[i]) delete fiqmstub[i];
+		if (fiqmstub[i]) delete fiqmstub[i];
 
 #ifdef STR7_DEBUG
 	if(gdb_server) delete gdb_server;
