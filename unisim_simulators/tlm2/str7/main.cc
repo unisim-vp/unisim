@@ -40,7 +40,7 @@
 #include "unisim/kernel/service/service.hh"
 
 #include "unisim/component/cxx/processor/arm/config.hh"
-#include "unisim/component/tlm2/processor/arm/arm.hh"
+#include "unisim/component/tlm2/processor/arm/arm7tdmi.hh"
 #include "unisim/component/tlm2/memory/ram/memory.hh"
 #include "unisim/component/tlm2/interconnect/generic_router/router.hh"
 #include "router_config.hh"
@@ -51,8 +51,12 @@
 
 #include "unisim/service/time/sc_time/time.hh"
 #include "unisim/service/time/host_time/time.hh"
+#ifdef STR7_DEBUG
 #include "unisim/service/debug/gdb_server/gdb_server.hh"
+#endif
+#ifdef STR7_DEBUG_INLINE
 #include "unisim/service/debug/inline_debugger/inline_debugger.hh"
+#endif
 #include "unisim/service/loader/elf_loader/elf_loader.hh"
 #include "unisim/service/loader/elf_loader/elf_loader.tcc"
 
@@ -92,21 +96,17 @@ using unisim::service::debug::inline_debugger::InlineDebugger;
 
 
 #ifdef STR7_VERBOSE
-typedef unisim::component::cxx::processor::arm::ARM7TDMI_DebugConfig CPU_CONFIG;
 typedef unisim::component::tlm2::memory::ram::Memory<32, 1024 * 1024, true> MEMORY;
 typedef unisim::component::tlm2::memory::ram::Memory<32, 1024 * 1024, true> FLASH;
-typedef unisim::component::tlm2::interrupt::str7_eic::STR7_EIC<32, true> EIC;
-typedef unisim::component::tlm2::timer::str7_timer::TIM<32, true> TIM;
 typedef unisim::component::tlm2::interconnect::generic_router::Router<RouterConfigVerbose> ROUTER;
 #else
-typedef unisim::component::cxx::processor::arm::ARM7TDMI_Config CPU_CONFIG;
 typedef unisim::component::tlm2::memory::ram::Memory<32, 1024 * 1024, false> MEMORY;
 typedef unisim::component::tlm2::memory::ram::Memory<32, 1024 * 1024, false> FLASH;
-typedef unisim::component::tlm2::interrupt::str7_eic::STR7_EIC<32, false> EIC;
-typedef unisim::component::tlm2::timer::str7_timer::TIM<32, false> TIM;
 typedef unisim::component::tlm2::interconnect::generic_router::Router<RouterConfig> ROUTER;
 #endif
-typedef unisim::component::tlm2::processor::arm::ARM<CPU_CONFIG, true> CPU;
+typedef unisim::component::tlm2::processor::arm::ARM7TDMI CPU;
+typedef unisim::component::tlm2::timer::str7_timer::TIM<32> TIM;
+typedef unisim::component::tlm2::interrupt::str7_eic::STR7_EIC<32> EIC;
 typedef unisim::component::tlm2::interrupt::InterruptMasterStub IRQMSTUB;
 typedef unisim::component::tlm2::interrupt::InterruptMasterStub FIQMSTUB;
 typedef unisim::component::tlm2::interrupt::InterruptSlaveStub IRQSSTUB;
@@ -137,11 +137,11 @@ void help(char *prog_name) {
 }
 
 // Front Side Bus template parameters
-typedef CPU_CONFIG::address_t FSB_ADDRESS_TYPE;
-typedef CPU_CONFIG::address_t CPU_ADDRESS_TYPE;
-typedef CPU_CONFIG::reg_t CPU_REG_TYPE;
-const uint32_t FSB_MAX_DATA_SIZE = 32;        // in bytes
-const uint32_t FSB_NUM_PROCS = 1;
+//typedef CPU_CONFIG::address_t FSB_ADDRESS_TYPE;
+//typedef CPU_CONFIG::address_t CPU_ADDRESS_TYPE;
+//typedef CPU_CONFIG::reg_t CPU_REG_TYPE;
+//const uint32_t FSB_MAX_DATA_SIZE = 32;        // in bytes
+//const uint32_t FSB_NUM_PROCS = 1;
 
 int sc_main(int argc, char *argv[]) {
 
