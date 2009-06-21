@@ -1,3 +1,4 @@
+
 /*
  *  Copyright (c) 2009,
  *  Commissariat a l'Energie Atomique (CEA)
@@ -29,8 +30,9 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: khaled Rahmouni
+ * Authors: Khaled Rahmouni (khaled.rahmouni@fr.schneider-electric.com)
  */
+
 
 #ifndef __UNISIM_COMPONENT_TLM2_COM_STR7_SPI_STR7_SPI_TCC__
 #define __UNISIM_COMPONENT_TLM2_COM_STR7_SPI_STR7_SPI_TCC__
@@ -161,8 +163,8 @@ namespace unisim {
                         MaskW[BSPIn_CLK] = 0x00FF;
 
 
-                  //      SC_HAS_PROCESS(STR7_SPI);
-                    //    SC_THREAD(SPIHANDLER);
+                        //      SC_HAS_PROCESS(STR7_SPI);
+                        //    SC_THREAD(SPIHANDLER);
 
 
                         if (VERBOSE) {
@@ -465,7 +467,7 @@ namespace unisim {
                             case BSPIn_TX:
                                 if ((Registers[BSPIn_CSR2] & 0x0040) == 0x0040) // transmit FIFO empty enable
                                 {
-                                   //irq_payload->level = false;
+                                    //irq_payload->level = false;
                                     //    irq->b_transport(*irq_payload, delay);
                                 }
                                 if ((Registers[BSPIn_CSR1] & 0x0001) && (tx_fifo.size() < tx_fifo_size)) {
@@ -599,14 +601,13 @@ namespace unisim {
                     void
                     STR7_SPI<BUS_WIDTH, VERBOSE>::SPIHANDLER() {
 
-                        while (1) {
+                        /* while (1) {
 
-                            cout << "+ toto " << sc_time_stamp() << endl;
-                         //   wait(PERIODE_2000HZ, SC_NS);
-                            cout << "  - toto " << sc_time_stamp() << endl;
+                             cout << "+ toto " << sc_time_stamp() << endl;
+                             wait(PERIODE_2000HZ, SC_NS);
+                             cout << "  - toto " << sc_time_stamp() << endl;
 
-
-                        }
+                         }*/
 
                     }
 

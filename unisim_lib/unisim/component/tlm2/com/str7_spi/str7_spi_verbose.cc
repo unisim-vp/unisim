@@ -1,3 +1,4 @@
+
 /*
  *  Copyright (c) 2009,
  *  Commissariat a l'Energie Atomique (CEA)
@@ -29,7 +30,7 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: khaled Rahmouni
+ * Authors: Khaled Rahmouni (khaled.rahmouni@fr.schneider-electric.com)
  */
 
 #include "unisim/component/tlm2/com/str7_spi/str7_spi.hh"
