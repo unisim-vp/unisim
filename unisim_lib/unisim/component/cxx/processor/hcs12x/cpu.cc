@@ -82,6 +82,7 @@ CPU::CPU(const char *name, Object *parent):
 	memory_access_reporting_import("memory_access_reporting_import", this),
 	memory_import("memory_import", this),
 	trap_reporting_import("trap_reproting_import", this),
+	symbol_table_lookup_import("symbol-table-lookup-import",  this),
 
 	instruction_counter(0),
 	queueFirst(-1), queueNElement(0), queueCurrentAddress(0xFFFE),
@@ -311,6 +312,7 @@ uint8_t CPU::Step()
 			ctstr << insn;
 			logger << DebugInfo << GetSimulatedTime() << " ms: "
 				<< "PC = 0x" << std::hex << current_pc << std::dec << " : "
+				<< GetFunctionFriendlyName(current_pc) << " : "
 				<< disasm_str.str()
 				<< " : ( " << std::hex << ctstr.str() << std::dec << " ) " << EndDebugInfo	<< std::endl;
 
@@ -1007,6 +1009,42 @@ bool CPU::WriteMemory(service_address_t addr, const void *buffer, uint32_t size)
 //=====================================================================
 //=             CPURegistersInterface interface methods               =
 //=====================================================================
+
+string CPU::GetObjectFriendlyName(service_address_t addr)
+{
+	stringstream sstr;
+	
+	const Symbol<service_address_t> *symbol = NULL;
+
+	if (symbol_table_lookup_import) {
+		symbol = symbol_table_lookup_import->FindSymbolByAddr(addr, Symbol<service_address_t>::SYM_OBJECT);
+	}
+ 
+	if(symbol)
+		sstr << symbol->GetFriendlyName(addr);
+	else
+		sstr << "0x" << std::hex << addr << std::dec;
+
+	return sstr.str();
+}
+
+string CPU::GetFunctionFriendlyName(service_address_t addr)
+{
+	stringstream sstr;
+	
+	const Symbol<service_address_t> *symbol = NULL;
+
+	if (symbol_table_lookup_import) {
+		symbol = symbol_table_lookup_import->FindSymbolByAddr(addr, Symbol<service_address_t>::SYM_FUNC); 
+	}
+
+	if(symbol)
+		sstr << symbol->GetFriendlyName(addr);
+	else
+		sstr << "0x" << std::hex << addr << std::dec;
+
+	return sstr.str();
+}
 
 /**
  * Gets a register interface to the register specified by name.

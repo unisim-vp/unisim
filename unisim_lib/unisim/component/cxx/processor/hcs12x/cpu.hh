@@ -244,6 +244,7 @@ public:
 	ServiceImport<DebugControl<service_address_t> > debug_control_import;
 	ServiceImport<MemoryAccessReporting<service_address_t> > memory_access_reporting_import;
 	ServiceImport<Memory<service_address_t> > memory_import;
+	ServiceImport<SymbolTableLookup<service_address_t> > symbol_table_lookup_import;
 
 	// the kernel logger
 	unisim::kernel::logger::Logger logger;
@@ -506,6 +507,8 @@ public:
 	//=                   Debugging methods                               =
 	//=====================================================================
 
+	string GetObjectFriendlyName(service_address_t addr);
+	string GetFunctionFriendlyName(service_address_t addr);
     inline uint64_t GetInstructionCounter() const { return instruction_counter; }
 	inline bool IsVerboseException() const { return debug_enabled && CONFIG::DEBUG_EXCEPTION_ENABLE && (verbose_all || verbose_exception); }
 
