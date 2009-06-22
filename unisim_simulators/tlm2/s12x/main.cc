@@ -487,8 +487,13 @@ int sc_main(int argc, char *argv[])
 
 	if (isS19) {
 		((S19_Loader<SERVICE_ADDRESS_TYPE> *) loaderS19)->memory_import >> mmc->memory_export;
+
 	} else {
 		((Elf32Loader *) loaderELF)->memory_import >> mmc->memory_export;
+	}
+
+	if (loaderELF) {
+		cpu->symbol_table_lookup_import >> ((Elf32Loader *) loaderELF)->symbol_table_lookup_export;
 	}
 
 	if(inline_debugger)
@@ -515,7 +520,6 @@ int sc_main(int argc, char *argv[])
 		cerr << "Parameters saved on file \"" << extracted_parameter_file << "\"" << endl;
 
 		goto STOP_MAIN;
-//		return 0;
 	}
 
 	if(ServiceManager::Setup())
