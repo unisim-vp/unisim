@@ -89,7 +89,7 @@ Moreover, any call to I/O functions (open, close, read, write, printf, \ldots) r
 
 The cross-compiler tool chain (\texttt{CL30.EXE, LNK30.EXE, ASM30.EXE, MK30.EXE, AR30.EXE, \ldots}) should be in your \texttt{PATH}.
 The shell variable \texttt{C\_DIR} points to the location where cross-compiler should search for the standard C headers and libraries.
-Suppose the tool chain is installed in \texttt{C:{\textbackslash\textbackslash}TI}.
+Suppose the tool chain is installed in \texttt{C:{\textbackslash}TI}.
 Windows users should add the following in their \texttt{AUTOEXEC.BAT}:
 \begin{verbatim}
 set PATH=C:\TI\TIC3X4X\BIN;%PATH%
@@ -375,12 +375,13 @@ See the GenISSLib manual for additional informations about the GenISSLib instruc
 The simulator is implemented in class \texttt{unisim::component::cxx::processor::tms320::CPU} which main methods are:
 \begin{itemize}
 \item \texttt{StepInstruction}: executes one instruction
-\item \texttt{PrWrite}: Write a word into memory using service import \texttt{memory\_import}. This methods is virtual so that it can be reimplemented into a derived class.
-\item \texttt{PrRead}: Read a word from memory using service import \texttt{memory\_import}. This methods is virtual so that it can be reimplemented into a derived class.
+\item \texttt{PrWrite}: Write a word into memory using service import \texttt{memory\_import} (see ~\ref{tms320c3x_service_infrastructure} for details about services). This methods is virtual so that it can be reimplemented into a derived class.
+\item \texttt{PrRead}: Read a word from memory using service import \texttt{memory\_import} (see ~\ref{tms320c3x_service_infrastructure} for details about services). This methods is virtual so that it can be reimplemented into a derived class.
 \item \texttt{SetIRQLevel}: Set level (0/1, true/false) of an IRQ. IRQ numbering is same as register \texttt{IF} bit numbering.
 \item \texttt{ComputeIndirEA}: Compute the effective address for indirect addressing modes.
 \item \texttt{ComputeDirEA}: Compute the effective address for direct addressing modes.
 \end{itemize}
+This class is a client and a service (see ~\ref{tms320c3x_service_infrastructure} for details) that can be connected to a debugger, a loader, and a memory.
 
 Each register (R0, R1, R2, R3, R4, R5, R6, R7, AR0, AR1, AR2, AR3, AR4, AR5, AR6, AR7, DP, IR0, IR1, BK, SP, ST, IE, IF, IOF, RS, RE, and RC) is implemented by an instance of class \texttt{unisim::component::cxx::processor::tms320::Register}.
 This class has methods to get/set value of a register and to perform floating point computations.
@@ -570,7 +571,7 @@ The parameterization have been standardized (class \texttt{Parameter}) and the f
 
 Each software component of the UNISIM TMS320C3X simulator is an object (a client and/or a service). The term \texttt{Client} refers to an object that calls methods of a \texttt{Service} through a \texttt{ServiceImport}. The term \texttt{Service} refers to an object that exposes its interface to client through a \texttt{ServiceExport}. \texttt{ServiceImport} acts as gate for a client to call remote methods of a service. \texttt{ServiceExport} is a mean for a service to export its interface, so that a client \texttt{ServiceImport} can be bound to it.
 
-Figure~\ref{fig:tms320c3x_object_hierarchy} presents the object/class hierarchy of the service infrastructure. This class hierarchy allows the \texttt{ServiceManager} to see clients and services as a service graph. The base class of the class hierarchy is \texttt{class Object}. Its provides composition (it's a container) and naming of objects. Template class \texttt{Service<SERVICE\_IF>} represents a service implementing interface \texttt{SERVICE\_IF} while template class \texttt{Client<SERVICE\_IF>} represents a client using a service implementing interface \texttt{SERVICE\_IF}. On figure~\ref{fig:tms320c3x_object_hierarchy}, classes \texttt{MyService} and \texttt{MyClient} are respectively examples of a service and a client with interface \texttt{SERVICE\_IF}. Example class \texttt{MyService} has a member of type \texttt{ServiceExport<SERVICE\_IF>} to export \texttt{SERVICE\_IF} to the outside world. Example class \texttt{MyClient} has a member of type \texttt{ServiceImport<SERVICE\_IF>} to import interface \texttt{SERVICE\_IF} from a remote service.
+Figure~\ref{fig:tms320c3x_object_hierarchy} presents the object/class hierarchy of the service infrastructure. This class hierarchy allows the \texttt{ServiceManager} to see clients and services as a service graph. The base class of the class hierarchy is \texttt{class Object}. It provides composition (it's a container) and naming of objects. Template class \texttt{Service<SERVICE\_IF>} represents a service implementing interface \texttt{SERVICE\_IF} while template class \texttt{Client<SERVICE\_IF>} represents a client using a service implementing interface \texttt{SERVICE\_IF}. On figure~\ref{fig:tms320c3x_object_hierarchy}, classes \texttt{MyService} and \texttt{MyClient} are respectively examples of a service and a client with interface \texttt{SERVICE\_IF}. Example class \texttt{MyService} has a member of type \texttt{ServiceExport<SERVICE\_IF>} to export \texttt{SERVICE\_IF} to the outside world. Example class \texttt{MyClient} has a member of type \texttt{ServiceImport<SERVICE\_IF>} to import interface \texttt{SERVICE\_IF} from a remote service.
 
 Classes \texttt{ServiceImport<SERVICE\_IF>} and \texttt{ServiceExport<SERVICE\_IF>} provides a C++ operator \texttt{>>} to allow binding a service import to a service export, so that client is bound to a service. In the example of Figure~\ref{fig:tms320c3x_object_hierarchy}, class \texttt{MyClient} would use service \texttt{MyService} as soon as \texttt{ServiceImport} of class \texttt{MyClient} is bound to \texttt{ServiceExport} of class \texttt{MyService}.
 A Concrete use of service binding import and service is provided in the next section.
@@ -673,7 +674,7 @@ All service interfaces are declared in namespace \texttt{unisim::service::interf
 
 \subsubsection{Memory Interfaces}
 
-These interfaces allows reading and writing to memory space. The memory interfaces comes in two flavor:
+These interfaces allows reading and writing to memory space. The memory interfaces comes in two flavors:
 \begin{itemize}
 \item non-intrusive memory access (\texttt{unisim::service::interfaces::Memory}); It should not affect timing and data placement (e.g. in caches and TLBs).
 \item intrusive memory access (\texttt{unisim::service::interfaces::MemoryInjection}); It can affect timing and data placement.
