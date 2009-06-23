@@ -45,7 +45,7 @@ namespace loader {
 namespace coff_loader {
 namespace ti {
 
-// TI's IDs for little-endian headers
+// TI's IDs
 const uint16_t TARGET_ID_TMS320_C1X_C2X_C5X = 0x0092;
 const uint16_t TARGET_ID_TMS320_C3X_C4X = 0x0093;
 const uint16_t TARGET_ID_C80 = 0x0095;
@@ -53,10 +53,36 @@ const uint16_t TARGET_ID_TMS320_C54X = 0x0098;
 const uint16_t TARGET_ID_TMS320_C6X = 0x0099;
 const uint16_t TARGET_ID_TMS320_C28X = 0x009d;
 
-// magic numbers for little-endian headers
+// TI's IDs for little-endian headers
+const uint16_t LEH_TARGET_ID_TMS320_C1X_C2X_C5X = TARGET_ID_TMS320_C1X_C2X_C5X;
+const uint16_t LEH_TARGET_ID_TMS320_C3X_C4X = TARGET_ID_TMS320_C3X_C4X;
+const uint16_t LEH_TARGET_ID_C80 = TARGET_ID_C80;
+const uint16_t LEH_TARGET_ID_TMS320_C54X = TARGET_ID_TMS320_C54X;
+const uint16_t LEH_TARGET_ID_TMS320_C6X = TARGET_ID_TMS320_C6X;
+const uint16_t LEH_TARGET_ID_TMS320_C28X = TARGET_ID_TMS320_C28X;
+
+// TI's IDs for big-endian headers
+const uint16_t BEH_TARGET_ID_TMS320_C1X_C2X_C5X = 0x9200;
+const uint16_t BEH_TARGET_ID_TMS320_C3X_C4X = 0x9300;
+const uint16_t BEH_TARGET_ID_C80 = 0x9500;
+const uint16_t BEH_TARGET_ID_TMS320_C54X = 0x9800;
+const uint16_t BEH_TARGET_ID_TMS320_C6X = 0x9900;
+const uint16_t BEH_TARGET_ID_TMS320_C28X = 0x9d00;
+
+// magic numbers
 const uint16_t COFF_V1_MAGIC = 0x00c1;
 const uint16_t COFF_V2_MAGIC = 0x00c2;
 const uint16_t AOUT_MAGIC = 0x0108;
+
+// magic numbers for little-endian headers
+const uint16_t LEH_COFF_V1_MAGIC = COFF_V1_MAGIC;
+const uint16_t LEH_COFF_V2_MAGIC = COFF_V2_MAGIC;
+const uint16_t LEH_AOUT_MAGIC = AOUT_MAGIC;
+
+// magic numbers for big-endian headers
+const uint16_t BEH_COFF_V1_MAGIC = 0xc100;
+const uint16_t BEH_COFF_V2_MAGIC = 0xc200;
+const uint16_t BEH_AOUT_MAGIC = 0x0801;
 
 // file header flags
 const uint32_t F_VERS0 = 0x0000;  // TMS320C30/C31 object code
@@ -163,14 +189,22 @@ template <class MEMORY_ADDR>
 void FileHandler<MEMORY_ADDR>::Register(unisim::service::loader::coff_loader::FileHandlerRegistry<MEMORY_ADDR> *file_handler_registry)
 {
 	uint16_t magic_numbers[] = {
-		TARGET_ID_TMS320_C1X_C2X_C5X,
-		TARGET_ID_TMS320_C3X_C4X,
-		TARGET_ID_C80,
-		TARGET_ID_TMS320_C54X,
-		TARGET_ID_TMS320_C6X,
-		TARGET_ID_TMS320_C28X,
-		COFF_V1_MAGIC,
-		COFF_V2_MAGIC
+		LEH_TARGET_ID_TMS320_C1X_C2X_C5X,
+		LEH_TARGET_ID_TMS320_C3X_C4X,
+		LEH_TARGET_ID_C80,
+		LEH_TARGET_ID_TMS320_C54X,
+		LEH_TARGET_ID_TMS320_C6X,
+		LEH_TARGET_ID_TMS320_C28X,
+		LEH_COFF_V1_MAGIC,
+		LEH_COFF_V2_MAGIC,
+		BEH_TARGET_ID_TMS320_C1X_C2X_C5X,
+		BEH_TARGET_ID_TMS320_C3X_C4X,
+		BEH_TARGET_ID_C80,
+		BEH_TARGET_ID_TMS320_C54X,
+		BEH_TARGET_ID_TMS320_C6X,
+		BEH_TARGET_ID_TMS320_C28X,
+		BEH_COFF_V1_MAGIC,
+		BEH_COFF_V2_MAGIC
 	};
 
 	unsigned int i;
@@ -203,22 +237,38 @@ const char *FileHandler<MEMORY_ADDR>::What() const
 {
 	switch(magic)
 	{
-		case TARGET_ID_TMS320_C1X_C2X_C5X:
+		case LEH_TARGET_ID_TMS320_C1X_C2X_C5X:
 			return "TI COFF v0 for TMS320C1x/C2x/C5x (little-endian headers)";
-		case TARGET_ID_TMS320_C3X_C4X:
+		case LEH_TARGET_ID_TMS320_C3X_C4X:
 			return "TI COFF v0 for TMS320C3x/C4x (little-endian headers)";
-		case TARGET_ID_C80:
+		case LEH_TARGET_ID_C80:
 			return "TI COFF v0 for C80 (little-endian headers)";
-		case TARGET_ID_TMS320_C54X:
+		case LEH_TARGET_ID_TMS320_C54X:
 			return "TI COFF v0 for TMS320C54x (little-endian headers)";
-		case TARGET_ID_TMS320_C6X:
+		case LEH_TARGET_ID_TMS320_C6X:
 			return "TI COFF v0 for TMS320C6x (little-endian headers)";
-		case TARGET_ID_TMS320_C28X:
+		case LEH_TARGET_ID_TMS320_C28X:
 			return "TI COFF v0 for TMS320C28x (little-endian headers)";
-		case COFF_V1_MAGIC:
+		case LEH_COFF_V1_MAGIC:
 			return "TI COFF v1 (little-endian headers)";
-		case COFF_V2_MAGIC:
+		case LEH_COFF_V2_MAGIC:
 			return "TI COFF v2 (little-endian headers)";
+		case BEH_TARGET_ID_TMS320_C1X_C2X_C5X:
+			return "TI COFF v0 for TMS320C1x/C2x/C5x (big-endian headers)";
+		case BEH_TARGET_ID_TMS320_C3X_C4X:
+			return "TI COFF v0 for TMS320C3x/C4x (big-endian headers)";
+		case BEH_TARGET_ID_C80:
+			return "TI COFF v0 for C80 (big-endian headers)";
+		case BEH_TARGET_ID_TMS320_C54X:
+			return "TI COFF v0 for TMS320C54x (big-endian headers)";
+		case BEH_TARGET_ID_TMS320_C6X:
+			return "TI COFF v0 for TMS320C6x (big-endian headers)";
+		case BEH_TARGET_ID_TMS320_C28X:
+			return "TI COFF v0 for TMS320C28x (big-endian headers)";
+		case BEH_COFF_V1_MAGIC:
+			return "TI COFF v1 (big-endian headers)";
+		case BEH_COFF_V2_MAGIC:
+			return "TI COFF v2 (big-endian headers)";
 	}
 	return "?";
 }
@@ -228,14 +278,22 @@ unisim::service::loader::coff_loader::File<MEMORY_ADDR> *FileHandler<MEMORY_ADDR
 {
 	switch(magic)
 	{
-		case TARGET_ID_TMS320_C1X_C2X_C5X:
-		case TARGET_ID_TMS320_C3X_C4X:
-		case TARGET_ID_C80:
-		case TARGET_ID_TMS320_C54X:
-		case TARGET_ID_TMS320_C6X:
-		case TARGET_ID_TMS320_C28X:
-		case COFF_V1_MAGIC:
-		case COFF_V2_MAGIC:
+		case LEH_TARGET_ID_TMS320_C1X_C2X_C5X:
+		case LEH_TARGET_ID_TMS320_C3X_C4X:
+		case LEH_TARGET_ID_C80:
+		case LEH_TARGET_ID_TMS320_C54X:
+		case LEH_TARGET_ID_TMS320_C6X:
+		case LEH_TARGET_ID_TMS320_C28X:
+		case LEH_COFF_V1_MAGIC:
+		case LEH_COFF_V2_MAGIC:
+		case BEH_TARGET_ID_TMS320_C1X_C2X_C5X:
+		case BEH_TARGET_ID_TMS320_C3X_C4X:
+		case BEH_TARGET_ID_C80:
+		case BEH_TARGET_ID_TMS320_C54X:
+		case BEH_TARGET_ID_TMS320_C6X:
+		case BEH_TARGET_ID_TMS320_C28X:
+		case BEH_COFF_V1_MAGIC:
+		case BEH_COFF_V2_MAGIC:
 			return new File<MEMORY_ADDR>(magic);
 	}
 
@@ -262,15 +320,25 @@ File<MEMORY_ADDR>::File(uint16_t _magic)
 {
 	switch(magic)
 	{
-		case TARGET_ID_TMS320_C1X_C2X_C5X:
-		case TARGET_ID_TMS320_C3X_C4X:
-		case TARGET_ID_C80:
-		case TARGET_ID_TMS320_C54X:
-		case TARGET_ID_TMS320_C6X:
-		case TARGET_ID_TMS320_C28X:
-		case COFF_V1_MAGIC:
-		case COFF_V2_MAGIC:
+		case LEH_TARGET_ID_TMS320_C1X_C2X_C5X:
+		case LEH_TARGET_ID_TMS320_C3X_C4X:
+		case LEH_TARGET_ID_C80:
+		case LEH_TARGET_ID_TMS320_C54X:
+		case LEH_TARGET_ID_TMS320_C6X:
+		case LEH_TARGET_ID_TMS320_C28X:
+		case LEH_COFF_V1_MAGIC:
+		case LEH_COFF_V2_MAGIC:
 			header_endianness = E_LITTLE_ENDIAN;
+			break;
+		case BEH_TARGET_ID_TMS320_C1X_C2X_C5X:
+		case BEH_TARGET_ID_TMS320_C3X_C4X:
+		case BEH_TARGET_ID_C80:
+		case BEH_TARGET_ID_TMS320_C54X:
+		case BEH_TARGET_ID_TMS320_C6X:
+		case BEH_TARGET_ID_TMS320_C28X:
+		case BEH_COFF_V1_MAGIC:
+		case BEH_COFF_V2_MAGIC:
+			header_endianness = E_BIG_ENDIAN;
 			break;
 		default:
 			assert(0 == 1);
@@ -278,18 +346,26 @@ File<MEMORY_ADDR>::File(uint16_t _magic)
 
 	switch(magic)
 	{
-		case TARGET_ID_TMS320_C1X_C2X_C5X:
-		case TARGET_ID_TMS320_C3X_C4X:
-		case TARGET_ID_C80:
-		case TARGET_ID_TMS320_C54X:
-		case TARGET_ID_TMS320_C6X:
-		case TARGET_ID_TMS320_C28X:
+		case LEH_TARGET_ID_TMS320_C1X_C2X_C5X:
+		case LEH_TARGET_ID_TMS320_C3X_C4X:
+		case LEH_TARGET_ID_C80:
+		case LEH_TARGET_ID_TMS320_C54X:
+		case LEH_TARGET_ID_TMS320_C6X:
+		case LEH_TARGET_ID_TMS320_C28X:
+		case BEH_TARGET_ID_TMS320_C1X_C2X_C5X:
+		case BEH_TARGET_ID_TMS320_C3X_C4X:
+		case BEH_TARGET_ID_C80:
+		case BEH_TARGET_ID_TMS320_C54X:
+		case BEH_TARGET_ID_TMS320_C6X:
+		case BEH_TARGET_ID_TMS320_C28X:
 			ti_coff_version = 0;
 			break;
-		case COFF_V1_MAGIC:
+		case LEH_COFF_V1_MAGIC:
+		case BEH_COFF_V1_MAGIC:
 			ti_coff_version = 1;
 			break;
-		case COFF_V2_MAGIC:
+		case LEH_COFF_V2_MAGIC:
+		case BEH_COFF_V2_MAGIC:
 			ti_coff_version = 2;
 			break;
 		default:

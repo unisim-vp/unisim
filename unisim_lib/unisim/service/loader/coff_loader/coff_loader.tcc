@@ -195,6 +195,7 @@ bool CoffLoader<MEMORY_ADDR>::Setup()
 		logger << DebugInfo << sstr.str() << EndDebugInfo;
 	}
 
+	logger << DebugInfo << "File \"" << filename << "\" has " << (file->GetFileEndian() == E_LITTLE_ENDIAN ? "little" : "big") << "-endian headers" << EndDebugInfo;
 	logger << DebugInfo << "File \"" << filename << "\" is for " << file->GetArchitectureName() << EndDebugInfo;
 
 	if(!file->IsExecutable())

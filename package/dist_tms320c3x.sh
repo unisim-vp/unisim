@@ -124,9 +124,9 @@ unisim/service/debug/gdb_server/gdb_server.cc \
 unisim/service/os/ti_c_io/ti_c_io_32.cc \
 unisim/service/os/ti_c_io/ti_c_io_64.cc \
 unisim/service/time/host_time/time.cc \
-unisim/component/cxx/processor/tms320/cpu.cc \
 unisim/component/cxx/processor/tms320/cpu_tms320vc33.cc \
 unisim/component/cxx/processor/tms320/cpu_tms320vc33_debug.cc \
+unisim/component/cxx/processor/tms320/register.cc \
 unisim/component/cxx/memory/ram/memory_32.cc \
 unisim/component/cxx/memory/ram/memory_64.cc"
 
@@ -180,6 +180,7 @@ unisim/service/time/host_time/time.hh \
 unisim/component/cxx/processor/tms320/config.hh \
 unisim/component/cxx/processor/tms320/cpu.hh \
 unisim/component/cxx/processor/tms320/exception.hh \
+unisim/component/cxx/processor/tms320/register.hh \
 unisim/component/cxx/memory/ram/memory.hh"
 
 

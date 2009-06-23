@@ -8,13 +8,14 @@ lib_LTLIBRARIES = libunisim_component_cxx_processor_tms320.la
 libunisim_component_cxx_processor_tms320_la_SOURCES = \
 	cpu_tms320vc33_debug.cc \
 	cpu_tms320vc33.cc \
-	cpu.cc
+	register.cc
 
 include_HEADERS = config.hh \
 	cpu.hh \
 	cpu.tcc \
 	exception.hh \
-	exception.tcc
+	exception.tcc \
+	register.hh
 
 nobase_include_HEADERS = isa/tms320.isa \
 	isa/actions_dec.isa \

@@ -217,13 +217,21 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
-	if(optind != argc) {
-		cerr << "Error? (optind = " << optind << ", argc = " << argc <<" )" << endl;
-		help(argv[0]);
-		return 0;
+	cerr << "optind=" << optind << endl;
+	cerr << "argc=" << argc << endl;
+	if(optind == (argc - 1))
+	{
+		cerr << "yes" << endl;
+		filename = argv[optind];
 	}
-
-	filename = argv[optind];
+	else
+	{
+		if(optind != argc)
+		{
+			help(argv[0]);
+			return 0;
+		}
+	}
 
 	// Time
 	HOST_TIME *host_time = new HOST_TIME("host-time");
