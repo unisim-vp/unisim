@@ -87,7 +87,8 @@
 #include <unisim/component/clm/pipeline/execute/functional_unit.hh>
 #include <unisim/component/clm/pipeline/execute/address_generation_unit.hh>
 #ifdef ALL_PERFECT
-#include <unisim/component/clm/pipeline/execute/load_store_queue_nospec.hh>
+//#include <unisim/component/clm/pipeline/execute/load_store_queue_nospec.hh>
+#include <unisim/component/clm/pipeline/execute/load_store_queue_perfspec.hh>
 #else
 #include <unisim/component/clm/pipeline/execute/load_store_queue.hh>
 #endif

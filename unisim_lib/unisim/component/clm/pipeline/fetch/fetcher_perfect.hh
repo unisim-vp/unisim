@@ -534,7 +534,7 @@ public:
 	      else
 		{
 	      */
-		  (*instruction)->operation = emulator->Decoder<CPU_CONFIG>::Decode((*instruction)->cia, (*instruction)->binary);		  
+		  (*instruction)->operation = emulator->Decoder<CPU_CONFIG>::Decode((*instruction)->cia, (*instruction)->binary);
 		  (*instruction)->operation_refcount = NULL; 
 		  //(*instruction)->operation_refcount = new int(1);
 		  /*	}*/
@@ -1374,7 +1374,7 @@ public:
 		      //		      if( entry->instruction->operation->function == FnSysCall )
 		      //			{ 
 		      if (!entry->executed_in_fetch && !(entry->instruction->operation->function == FnSysCall))
-		    {
+		     {
 #ifdef DDDFILLING
 		      cerr << "\t\t--- DDDFILL: While: in Executing... "<< endl;
 #endif //DDDFILLING
@@ -1414,12 +1414,18 @@ public:
 			}
 #endif
 
+		      // Set perfect prediction of effective address
+		      if (entry->instruction->operation->function & FnLoad ||
+			  entry->instruction->operation->function & FnStore )
+			{
+			  entry->instruction->pred_ea = emulator->GetEA();
+			}
 
 		      //				if (!previous_was_splitted)
 		      //				if (!entry->instruction->operation->is_splitted())
 		      if (!previous_splitting)
 			{ 
-			  cia += InstructionSize; 
+			  cia += InstructionSize;
 			}
 		      //				emulator->StepOneInstruction();
 		      //entry->instruction->predicted_nia = entry->instruction->cia + InstructionSize;
@@ -1492,7 +1498,10 @@ public:
 		{
 		  if (inFlush.enable && inFlush.data)
 		  {
-		  
+		    // DD DEBUGING PERFECT CONFLICT PREDICTION
+		    cerr << "Error: a flush have been sent in perfect mode !!!" << endl;
+		    abort();
+
 #ifdef DD_DEBUG_FLUSH
 		cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== EOC ====  Flush !!!" << endl;
 #endif

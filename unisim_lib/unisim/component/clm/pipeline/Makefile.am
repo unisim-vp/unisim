@@ -21,6 +21,7 @@ nobase_include_HEADERS = \
 	execute/functional_unit_mc.hh \
 	execute/load_store_queue.hh \
 	execute/load_store_queue_nospec.hh \
+	execute/load_store_queue_perfspec.hh \
 	execute/load_store_queue_mc.hh \
 	fetch/branch_history_table.hh \
 	fetch/branch_target_buffer.hh \

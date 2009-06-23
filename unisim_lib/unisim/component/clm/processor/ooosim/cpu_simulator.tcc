@@ -1190,6 +1190,7 @@ Check()
 			exit(-1);
 		      }
 		  }
+#ifndef DO_NOT_CHECK_FPSCR
 		for(int i = 0; i < nFPSCArchitecturalRegisters; i++)
 		  {
 		    UInt64 sim_value = ReadFPSCR(i);
@@ -1205,6 +1206,7 @@ Check()
 			exit(-1);
 		      }
 		  }
+#endif
 		for(int i = 0; i < nLinkArchitecturalRegisters; i++)
 		  {
 		    UInt64 sim_value = ReadLR(i);

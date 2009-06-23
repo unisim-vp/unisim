@@ -994,6 +994,8 @@ public:
 		    {
 		      RegTimeStamp = max(RegTimeStamp, time_stamp + addressGenerationPipelineDepth);
 		    }
+		  // Bypass allow a latency reduction of 1.
+		  RegTimeStamp--;
 		}
 	      
 	      switch(instruction->destinations[j].type)

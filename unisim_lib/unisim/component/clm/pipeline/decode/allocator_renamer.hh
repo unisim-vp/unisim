@@ -64,6 +64,8 @@ using unisim::component::clm::processor::ooosim::nXERRegisters;
  
 using unisim::component::clm::interfaces::InstructionPtr;
 
+  using unisim::kernel::service::Object;
+  using unisim::kernel::service::Statistic;
 
 /* A mapping table */
 template <int nArchitecturalRegisters, int nRegisters>
@@ -383,7 +385,7 @@ public:
 
 /* A SystemC module allocating reorder buffer entries and physical register and renaming source operands */
 template <class T, int nSources, int nIntegerArchitecturalRegisters, int nFloatingPointArchitecturalRegisters, int nIntegerRegisters, int nFloatingPointRegisters, int Width, int WriteBackWidth, int RetireWidth, int ReorderBufferSize, int nStages>
-class AllocatorRenamer : public module
+class AllocatorRenamer : public module, public Object
 {
 public:
 	/* Clock */
@@ -413,8 +415,32 @@ public:
 	inport<bool> inFlush;
   	outport<bool> outFlush;
 
+
+  uint64_t allocator_no_enough_resources;
+  uint64_t stall_sched;
+  uint64_t stall_reord;
+  uint64_t stall_loadq;
+  uint64_t stall_storq;
+  
+  Statistic<uint64_t> stat_allocator_no_enough_resources;
+  Statistic<uint64_t> stat_stall_sched;
+  Statistic<uint64_t> stat_stall_reord;
+  Statistic<uint64_t> stat_stall_loadq;
+  Statistic<uint64_t> stat_stall_storq;
+
 	/* Constructor */
 	AllocatorRenamer(const char *name) : module(name)
+					   , Object(name)
+					   , allocator_no_enough_resources(0)
+					   , stall_sched(0)
+					   , stall_reord(0)
+					   , stall_loadq(0)
+					   , stall_storq(0)
+					   , stat_allocator_no_enough_resources("stat_allocator_no_enough_resources",this,allocator_no_enough_resources)
+					   , stat_stall_sched("stall_sched",this,stall_sched)
+					   , stat_stall_reord("stall_reord",this,stall_reord)
+					   , stat_stall_loadq("stall_loadq",this,stall_loadq)
+					   , stat_stall_storq("stall_storq",this,stall_storq)
 	{
 		int i, j;
 
@@ -1240,7 +1266,7 @@ public:
 
 			/* Get the instruction in the pipeline entry */
 			//const InstructionPtr<T, nSources>& instruction = renamePipelineEntry->instruction;
-			const InstructionPtr instruction = renamePipelineEntry->instruction;
+			InstructionPtr instruction = renamePipelineEntry->instruction;
 
 			/* We consider that we have an accept if we got an accept from both the issue queues and the reorder buffer.
 			If instruction is a load/prefetch load, we need an accept from the load queue
@@ -1257,6 +1283,28 @@ public:
 			  (!(instruction->fn & (FnLoad | FnPrefetchLoad)) || outLoadInstruction[loadPort].accept) &&
 			  (!(instruction->fn & FnStore) || outStoreInstruction[storePort].accept);
 			  
+
+                        // For Dump
+                        if (!accept)
+                          {
+                            if (!outInstructionIssue[renamePort].accept)
+                              //{ instruction->alloc_stall_sched_reject++; stall_sched++; }
+                              { stall_sched++; }
+                            if (!outInstructionReorder[renamePort].accept)
+                              //{ stall_reord++; instruction->alloc_stall_reord_reject = stall_reord;}
+                              { stall_reord++; }
+                            if (! (!(instruction->fn & (FnLoad | FnPrefetchLoad)) || outLoadInstruction[loadPort].accept) )
+                              //{ instruction->alloc_stall_loadq_reject++; stall_loadq++; }
+                              {  stall_loadq++; }
+                            if (! (!(instruction->fn & FnStore) || outStoreInstruction[storePort].accept) )
+                              //{ instruction->alloc_stall_storq_reject++; stall_storq++; }
+                              { stall_storq++; }
+                          }
+                        instruction->alloc_stall_sched_reject = stall_sched;
+                        instruction->alloc_stall_reord_reject = stall_reord;
+                        instruction->alloc_stall_loadq_reject = stall_loadq;
+                        instruction->alloc_stall_storq_reject = stall_storq;
+
 			/* Instruction was rejected */
 			if(!accept) break;
 
@@ -1296,6 +1344,8 @@ public:
 				/* Allocate ressources for the instruction */
 				Allocate(&(renamePipelineEntry->instruction));
 				//changed = true;
+                                // For Dump
+                                renamePipelineEntry->instruction->timing_allocate_cycle=timestamp();
 			}
 			else
 			{

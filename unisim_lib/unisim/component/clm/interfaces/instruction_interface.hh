@@ -286,6 +286,7 @@ class Instruction
   function_t function;
   int      tag;                                         /*< reorder buffer tag */
   uint32_t ea;                                          /*< effective address of a load/store instruction */
+  uint32_t pred_ea;                                          /*< effective address of a load/store instruction */
   int      ls_reg_count;                                 // load/store counter for FnLoadMultiple/FnStoreMultiple
   int      ls_byte_count;
   int      load_reg;
@@ -349,6 +350,7 @@ class Instruction
     function = FnInvalid;
     tag = -1;
     ea = 0;
+    pred_ea = 0;
     ls_reg_count = 0;
     ls_byte_count = 0;
     load_reg = 0;
@@ -488,6 +490,7 @@ class Instruction
     function = instruction.function;
     tag = instruction.tag;
     ea = instruction.ea;
+    pred_ea = instruction.pred_ea;
     ls_reg_count = instruction.ls_reg_count;
     ls_byte_count = instruction.ls_byte_count;
     load_reg = instruction.load_reg;
@@ -571,6 +574,7 @@ class Instruction
     function = instruction.function;
     tag = instruction.tag;
     ea = instruction.ea;
+    pred_ea = instruction.pred_ea;
     ls_reg_count = instruction.ls_reg_count;
     ls_byte_count = instruction.ls_byte_count;
     load_reg = instruction.load_reg;
@@ -703,6 +707,7 @@ class Instruction
     if (instruction.branch_direction == DontKnow) os << "DontKnow ";
     os << ",func=" << hexa(instruction.fn);
     os << ",ea=" << hexa(instruction.ea);
+    os << ",pred_ea=" << hexa(instruction.pred_ea);
     os << ",mbr=" << (instruction.must_reschedule?"true":"false");
     os << ",may-need-replay=" << (instruction.may_need_replay?"true":"false");
     os << ",replay_trap=" << (instruction.replay_trap?"true":"false");

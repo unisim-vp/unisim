@@ -1286,6 +1286,8 @@ class RegisterFile : public module
 					entry->Initialize(inIntegerInstruction[i].data);
 					/* Read the source operand of the instruction from the register file */
 					Read(entry);
+                                        // For Dump
+                                        entry->instruction->timing_register_cycle = timestamp();
 					//					if (timestamp()>380)
 					//					  cerr << "DDDD: " << *entry << endl;
 					/* Invalidate destination operand register of the instruction */
@@ -1336,6 +1338,8 @@ class RegisterFile : public module
 					entry->Initialize(inFloatingPointInstruction[i].data);
 					/* Read the source operand of the instruction from the register file */
 					Read(entry);
+                                        // For Dump
+                                        entry->instruction->timing_register_cycle = timestamp();
 
 					/* Invalidate destination operand register of the instruction */
 					/*
@@ -1385,6 +1389,8 @@ class RegisterFile : public module
 					entry->Initialize(inLoadStoreInstruction[i].data);
 					/* Read the source operand of the instruction from the register file */
 					Read(entry);
+                                        // For Dump
+                                        entry->instruction->timing_register_cycle = timestamp();
 
 					/*
 					if(entry->instruction->destination.tag >= 0)
@@ -1438,6 +1444,9 @@ class RegisterFile : public module
 					/* Records the instruction */
 					entry->instruction = writeBackInstruction;
 					//changed = true;
+                                        // For Dump
+                                        entry->instruction->timing_writeback_cycle = timestamp();
+
 				}
 				else
 				{
