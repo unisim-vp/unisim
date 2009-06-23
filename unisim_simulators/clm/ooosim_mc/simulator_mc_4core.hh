@@ -708,6 +708,21 @@ public:
 	//===                     Component run-time configuration              ===
 	//=========================================================================
 
+        for(int cfg=0; cfg<nConfig; cfg++)
+          {
+            (*cpu[cfg])["cpu-cycle-time"] = cpu_cycle_time;
+            (*cpu[cfg])["bus-cycle-time"] = fsb_cycle_time;
+            (*cpu[cfg])["voltage"] = 1.0 * 1e3; // mV
+          }
+
+        (*(__cpu->fetch_emulator))["cpu-cycle-time"] = cpu_cycle_time;
+        (*(__cpu->fetch_emulator))["bus-cycle-time"] = fsb_cycle_time;
+        (*(__cpu->fetch_emulator))["voltage"] = 1.0 * 1e3; //mV
+
+        (*(__cpu->speculative_cpu_state))["cpu-cycle-time"] = cpu_cycle_time;
+        (*(__cpu->speculative_cpu_state))["bus-cycle-time"] = fsb_cycle_time;
+        (*(__cpu->speculative_cpu_state))["voltage"] = 1.0 * 1e3; //mV
+
 	//  - Front Side Bus
 	//	(*bus)["cycle-time"] = fsb_cycle_time;
 
