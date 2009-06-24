@@ -384,7 +384,7 @@ bool File<MEMORY_ADDR>::ParseFileHeader(const void *raw_data)
 {
 	const filehdr *hdr = (const filehdr *) raw_data;
 
-	assert(magic == unisim::util::endian::Target2Host(header_endianness, hdr->v0.f_magic));
+	assert(magic == hdr->v0.f_magic);
 	
 	num_sections = unisim::util::endian::Target2Host(header_endianness, hdr->v0.f_nscns);
 	section_table = new SectionTable<MEMORY_ADDR>(num_sections);
@@ -477,20 +477,28 @@ const char *File<MEMORY_ADDR>::GetArchitectureName() const
 {
 	switch(magic)
 	{
-		case TARGET_ID_TMS320_C1X_C2X_C5X:
+		case LEH_TARGET_ID_TMS320_C1X_C2X_C5X:
+		case BEH_TARGET_ID_TMS320_C1X_C2X_C5X:
 			return "TI TMS320C1x/C2x/C5x";
-		case TARGET_ID_TMS320_C3X_C4X:
+		case LEH_TARGET_ID_TMS320_C3X_C4X:
+		case BEH_TARGET_ID_TMS320_C3X_C4X:
 			return "TI TMS320C3x/C4x";
-		case TARGET_ID_C80:
+		case LEH_TARGET_ID_C80:
+		case BEH_TARGET_ID_C80:
 			return "TI C80";
-		case TARGET_ID_TMS320_C54X:
+		case LEH_TARGET_ID_TMS320_C54X:
+		case BEH_TARGET_ID_TMS320_C54X:
 			return "TI TMS320C54x";
-		case TARGET_ID_TMS320_C6X:
+		case LEH_TARGET_ID_TMS320_C6X:
+		case BEH_TARGET_ID_TMS320_C6X:
 			return "TI TMS320C6x";
-		case TARGET_ID_TMS320_C28X:
+		case LEH_TARGET_ID_TMS320_C28X:
+		case BEH_TARGET_ID_TMS320_C28X:
 			return "TI TMS320C28x";
-		case COFF_V1_MAGIC:
-		case COFF_V2_MAGIC:
+		case LEH_COFF_V1_MAGIC:
+		case BEH_COFF_V1_MAGIC:
+		case LEH_COFF_V2_MAGIC:
+		case BEH_COFF_V2_MAGIC:
 			switch(target_id)
 			{
 				case TARGET_ID_TMS320_C1X_C2X_C5X:

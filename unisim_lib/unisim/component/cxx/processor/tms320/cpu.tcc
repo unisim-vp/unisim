@@ -609,7 +609,7 @@ GetObjectFriendlyName(address_t addr)
 	stringstream sstr;
 	const Symbol<uint64_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(4 * addr, Symbol<uint64_t>::SYM_OBJECT) : 0;
 	if(symbol)
-		sstr << symbol->GetFriendlyName(4 * addr);
+		sstr << symbol->GetFriendlyName(4 * addr) << " @0x" << std::hex << addr << std::dec;
 	else
 		sstr << "@0x" << std::hex << addr << std::dec;
 
@@ -1321,6 +1321,10 @@ StepInstruction()
 						{
 							// Decrement RC
 							SetRC(GetRC() - 1);
+
+							// Note: RE < RS
+							// If RE < RS and the block mode is enabled, the code between RE and RS is
+							// bypassed when the program counter encounters the repeat end (RE) address.
 
 							// Check if RC is >= 0
 							if((int32_t) GetRC() >= 0)

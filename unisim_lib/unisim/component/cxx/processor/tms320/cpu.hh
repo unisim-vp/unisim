@@ -53,6 +53,7 @@
 #include "unisim/util/arithmetic/arithmetic.hh"
 #include <stdexcept>
 #include <iosfwd>
+#include <assert.h>
 
 #include <string>
 #include <map>

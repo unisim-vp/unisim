@@ -431,13 +431,6 @@ unisim::service::interfaces::TI_C_IO::Status TI_C_IO<MEMORY_ADDR>::HandleEmulato
 			break;
 	}
 
-	// Adapt output message to target endianness
-	output_msg.length = unisim::util::endian::Host2LittleEndian(output_msg.length);
-	for(i = 0; i < NUM_PARMS; i++)
-	{
-		output_msg.parm[i] = unisim::util::endian::Host2LittleEndian(output_msg.parm[i]);
-	}
-
 	if((verbose_io || verbose_all))
 	{
 		logger << DebugInfo << "output msg:" << endl << "  - length=" << output_msg.length << endl;
@@ -464,15 +457,23 @@ unisim::service::interfaces::TI_C_IO::Status TI_C_IO<MEMORY_ADDR>::HandleEmulato
 		logger << endl << EndDebugInfo;
 	}
 
+	// Adapt output message to target endianness
+	uint32_t output_msg_length = output_msg.length; // Keep the length in the host endian format as we need it for writing the message in the target memory
+	output_msg.length = unisim::util::endian::Host2LittleEndian(output_msg.length);
+	for(i = 0; i < NUM_PARMS; i++)
+	{
+		output_msg.parm[i] = unisim::util::endian::Host2LittleEndian(output_msg.parm[i]);
+	}
+
 	addr = c_io_buffer_addr;
 
 	if(!memory_injection_import->InjectWriteMemory(addr, &output_msg, sizeof(output_msg))) return unisim::service::interfaces::TI_C_IO::ERROR;
 
-	if(output_msg.length)
+	if(output_msg_length)
 	{
 		addr += sizeof(output_msg);
 
-		if(!memory_injection_import->InjectWriteMemory(addr, buffer, output_msg.length)) return unisim::service::interfaces::TI_C_IO::ERROR;
+		if(!memory_injection_import->InjectWriteMemory(addr, buffer, output_msg_length)) return unisim::service::interfaces::TI_C_IO::ERROR;
 	}
 
 	return unisim::service::interfaces::TI_C_IO::OK;

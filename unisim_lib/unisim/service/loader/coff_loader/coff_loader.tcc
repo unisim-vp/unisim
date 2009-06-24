@@ -145,7 +145,9 @@ bool CoffLoader<MEMORY_ADDR>::Setup()
 		return false;
 	}
 
-	FileHandler<MEMORY_ADDR> *file_handler = file_handler_registry[unisim::util::endian::LittleEndian2Host(magic)];
+	magic = unisim::util::endian::Host2LittleEndian(magic);
+
+	FileHandler<MEMORY_ADDR> *file_handler = file_handler_registry[magic];
 
 	if(!file_handler)
 	{
