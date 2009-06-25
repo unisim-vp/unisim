@@ -34,6 +34,7 @@
 
 #include <unisim/component/tlm2/processor/hcs12x/atd10b.hh>
 #include <unisim/component/cxx/processor/hcs12x/config.hh>
+#include "unisim/util/debug/simple_register.hh"
 
 namespace unisim {
 namespace component {
@@ -42,12 +43,14 @@ namespace processor {
 namespace hcs12x {
 
 using unisim::component::cxx::processor::hcs12x::CONFIG;
+using unisim::util::debug::SimpleRegister;
 
 template <uint8_t ATD_SIZE>
 ATD10B<ATD_SIZE>::ATD10B(const sc_module_name& name, Object *parent) :
 	Object(name, parent),
 	sc_module(name),
 	Service<Memory<service_address_t> >(name, parent),
+	Service<Registers>(name, parent),
 	Client<Memory<service_address_t> >(name, parent),
 	Client<TrapReporting>(name, parent),
 
@@ -58,6 +61,7 @@ ATD10B<ATD_SIZE>::ATD10B(const sc_module_name& name, Object *parent) :
 
 	memory_export("memory_export", this),
 	memory_import("memory_import", this),
+	registers_export("registers_export", this),
 	trap_reporting_import("trap_reproting_import", this),
 
 	baseAddress(0x0080), // MC9S12XDP512V2 - ATD baseAddress
@@ -101,6 +105,17 @@ ATD10B<ATD_SIZE>::ATD10B(const sc_module_name& name, Object *parent) :
 
 template <uint8_t ATD_SIZE>
 ATD10B<ATD_SIZE>::~ATD10B() {
+
+	// Release registers_registry
+	map<string, unisim::util::debug::Register *>::iterator reg_iter;
+
+	for(reg_iter = registers_registry.begin(); reg_iter != registers_registry.end(); reg_iter++)
+	{
+		if(reg_iter->second)
+			delete reg_iter->second;
+	}
+
+	registers_registry.clear();
 
 }
 
@@ -652,7 +667,7 @@ void ATD10B<ATD_SIZE>::read(uint8_t offset, void *buffer) {
 			*((uint8_t *) buffer) = portad1_register;
 		} break;
 
-		default: if ((offset >= ATDDR0H) && (offset < ATDDR0H + ATD_SIZE)) {
+		default: if ((offset >= ATDDR0H) && (offset < ATDDR0H + ATD_SIZE*2)) {
 			*((uint16_t *) buffer) = atddrhl_register[offset] & 0xFFC0;
 			uint8_t index = offset - ATDDR0H;
 			uint8_t clearMask = 0xFF;
@@ -759,7 +774,7 @@ void ATD10B<ATD_SIZE>::write(uint8_t offset, const void *buffer) {
 			/* write has no effect */
 		} break;
 
-		default: if ((offset >= ATDDR0H) && (offset < ATDDR0H+ATD_SIZE)) {
+		default: if ((offset >= ATDDR0H) && (offset < ATDDR0H+ATD_SIZE*2)) {
 			/* write has no effect */
 		} else {
 		}
@@ -792,6 +807,61 @@ void ATD10B<ATD_SIZE>::read_write( tlm::tlm_generic_payload& trans, sc_time& del
 template <uint8_t ATD_SIZE>
 bool ATD10B<ATD_SIZE>::Setup() {
 
+	char buf[20];
+
+	sprintf(buf, "%s.ATDCTL0",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &atdctl0_register);
+
+	sprintf(buf, "%s.ATDCTL1",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &atdctl1_register);
+
+	sprintf(buf, "%s.ATDCTL2",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &atdctl2_register);
+
+	sprintf(buf, "%s.ATDCTL3",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &atdctl3_register);
+
+	sprintf(buf, "%s.ATDCTL4",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &atdctl4_register);
+
+	sprintf(buf, "%s.ATDCTL5",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &atdctl5_register);
+
+	sprintf(buf, "%s.ATDSTAT0",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &atdstat0_register);
+
+	sprintf(buf, "%s.ATDTEST0",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &atdtest0_register);
+
+	sprintf(buf, "%s.ATDTEST1",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &atdtest1_register);
+
+	sprintf(buf, "%s.ATDTEST2",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &atdstat2_register);
+
+	sprintf(buf, "%s.ATDSTAT1",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &atdstat1_register);
+
+	sprintf(buf, "%s.ATDDIEN0",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &atddien0_register);
+
+	sprintf(buf, "%s.ATDDIEN1",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &atddien1_register);
+
+	sprintf(buf, "%s.PORTAD0",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &portad0_register);
+
+	sprintf(buf, "%s.PORTAD1",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &portad1_register);
+
+	for (uint8_t i=0; i < ATD_SIZE; i++) {
+
+		sprintf(buf, "%s.ATDDR%d", name(), i);
+
+		registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &atddrhl_register[i]);
+
+	}
+
 	if (vrh <= vrl) {
 		if (debug_enabled) {
 			cerr << "Warning: " << name() << " : Wrong Values of Vrl and Vrh.\n";
@@ -811,6 +881,16 @@ bool ATD10B<ATD_SIZE>::Setup() {
 	Reset();
 
 	return true;
+}
+
+template <uint8_t ATD_SIZE>
+Register* ATD10B<ATD_SIZE>::GetRegister(const char *name)
+{
+	if(registers_registry.find(string(name)) != registers_registry.end())
+		return registers_registry[string(name)];
+	else
+		return NULL;
+
 }
 
 template <uint8_t ATD_SIZE>

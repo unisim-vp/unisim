@@ -38,17 +38,21 @@
 #include <systemc.h>
 
 #include <inttypes.h>
-#include <iostream>
+#include <map>
 
 #include <tlm.h>
 #include <tlm_utils/tlm_quantumkeeper.h>
 #include <tlm_utils/peq_with_get.h>
 #include "tlm_utils/simple_target_socket.h"
 
-#include "unisim/service/interfaces/trap_reporting.hh"
 #include "unisim/kernel/service/service.hh"
-#include "unisim/service/interfaces/memory.hh"
 #include "unisim/kernel/tlm2/tlm.hh"
+
+#include "unisim/service/interfaces/memory.hh"
+#include "unisim/service/interfaces/registers.hh"
+#include "unisim/service/interfaces/trap_reporting.hh"
+
+#include "unisim/util/debug/register.hh"
 
 #include <unisim/component/cxx/processor/hcs12x/config.hh>
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
@@ -77,6 +81,9 @@ using unisim::component::cxx::processor::hcs12x::service_address_t;
 using unisim::component::cxx::processor::hcs12x::CONFIG;
 
 using unisim::service::interfaces::Memory;
+using unisim::service::interfaces::Registers;
+
+using unisim::util::debug::Register;
 
 using unisim::kernel::tlm2::PayloadFabric;
 
@@ -90,6 +97,7 @@ class ATD10B :
 	virtual public tlm_fw_transport_if<UNISIM_ATD_ProtocolTypes<ATD_SIZE> >,
 	virtual public tlm_bw_transport_if<XINT_REQ_ProtocolTypes>,
 	public Service<Memory<service_address_t> >,
+	public Service<Registers>,
 	public Client<Memory<service_address_t> >,
 	public Client<TrapReporting >
 {
@@ -112,7 +120,7 @@ public:
 
 	ServiceExport<Memory<service_address_t> > memory_export;
 	ServiceImport<Memory<service_address_t> > memory_import;
-
+	ServiceExport<Registers> registers_export;
 	ServiceImport<TrapReporting > trap_reporting_import;
 
 	ATD10B(const sc_module_name& name, Object *parent=0);
@@ -150,6 +158,18 @@ public:
 
 	virtual bool ReadMemory(service_address_t addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(service_address_t addr, const void *buffer, uint32_t size);
+
+	//=====================================================================
+	//=             XINT Registers Interface interface methods               =
+	//=====================================================================
+
+	/**
+	 * Gets a register interface to the register specified by name.
+	 *
+	 * @param name The name of the requested register.
+	 * @return A pointer to the RegisterInterface corresponding to name.
+	 */
+    virtual Register *GetRegister(const char *name);
 
 	//=====================================================================
 	//=             registers setters and getters                         =
@@ -204,6 +224,9 @@ private:
 	// External Trigger Parameter
 	bool			hasExternalTrigger;
 	Parameter<bool>	param_hasExternalTrigger;
+
+	// Registers map
+	map<string, Register *> registers_registry;
 
 	bool conversionStop;
 	bool abortSequence;
