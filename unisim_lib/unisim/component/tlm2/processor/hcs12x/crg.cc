@@ -33,6 +33,7 @@
  */
 
 #include <unisim/component/tlm2/processor/hcs12x/crg.hh>
+#include "unisim/util/debug/simple_register.hh"
 
 namespace unisim {
 namespace component {
@@ -40,16 +41,22 @@ namespace tlm2 {
 namespace processor {
 namespace hcs12x {
 
+using unisim::util::debug::SimpleRegister;
+
 CRG::CRG(const sc_module_name& name, Object *parent) :
 	Object(name, parent),
 	sc_module(name),
 	slave_socket("slave_socket"),
 	Service<Memory<service_address_t> >(name, parent),
+	Service<Registers>(name, parent),
 	Client<Memory<service_address_t> >(name, parent),
 	Client<TrapReporting>(name, parent),
+
 	trap_reporting_import("trap_reproting_import", this),
 	memory_export("memory_export", this),
 	memory_import("memory_import", this),
+	registers_export("registers_export", this),
+
 	baseAddress(0x0034), // MC9S12XDP512V2 - CRG baseAddress
 	param_baseAddress("base-address", this, baseAddress),
 	debug_enabled(false),
@@ -77,6 +84,17 @@ CRG::CRG(const sc_module_name& name, Object *parent) :
 }
 
 CRG::~CRG() {
+
+	// Release registers_registry
+	map<string, unisim::util::debug::Register *>::iterator reg_iter;
+
+	for(reg_iter = registers_registry.begin(); reg_iter != registers_registry.end(); reg_iter++)
+	{
+		if(reg_iter->second)
+			delete reg_iter->second;
+	}
+
+	registers_registry.clear();
 
 }
 
@@ -352,6 +370,19 @@ void CRG::restart_cop_timeout() {
 
 bool CRG::Setup() {
 
+	registers_registry["SYNR"] = new SimpleRegister<uint8_t>("SYNR", &synr_register);
+	registers_registry["REFDV"] = new SimpleRegister<uint8_t>("REFDV", &refdv_register);
+	registers_registry["CTFLG"] = new SimpleRegister<uint8_t>("CTFLG", &ctflg_register);
+	registers_registry["CRGFLG"] = new SimpleRegister<uint8_t>("CRGFLG", &crgflg_register);
+	registers_registry["CRGINT"] = new SimpleRegister<uint8_t>("CRGINT", &crgint_register);
+	registers_registry["CLKSEL"] = new SimpleRegister<uint8_t>("CLKSEL", &clksel_register);
+	registers_registry["PLLCTL"] = new SimpleRegister<uint8_t>("PLLCTL", &pllctl_register);
+	registers_registry["RTICTL"] = new SimpleRegister<uint8_t>("RTICTL", &rtictl_register);
+	registers_registry["COPCTL"] = new SimpleRegister<uint8_t>("COPCTL", &copctl_register);
+	registers_registry["FORBYP"] = new SimpleRegister<uint8_t>("FORBYP", &forbyp_register);
+	registers_registry["CTCTL"] = new SimpleRegister<uint8_t>("CTCTL", &ctctl_register);
+	registers_registry["ARMCOP"] = new SimpleRegister<uint8_t>("ARMCOP", &armcop_register);
+
 	/**
 	 * TODO:
 	 *  - One of the output of the CRG is the BusClock (hereafter fsb_cycle_time).
@@ -365,6 +396,15 @@ bool CRG::Setup() {
 	compute_clock();
 
 	return true;
+}
+
+Register* CRG::GetRegister(const char *name)
+{
+	if(registers_registry.find(string(name)) != registers_registry.end())
+		return registers_registry[string(name)];
+	else
+		return NULL;
+
 }
 
 void CRG::OnDisconnect() {
