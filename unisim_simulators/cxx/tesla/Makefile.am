@@ -7,7 +7,7 @@ libunisimsimulator_cxx_tesla_tesla_la_SOURCES = cuda.cc driver_objects.cc except
 libunisimsimulator_cxx_tesla_tesla_la_LDFLAGS = -version-info 0:1:0
 
 include_HEADERS = device.hh exception.hh device.tcc cuda.h driver.hh driver_objects.hh module.hh module.tcc \
-	driver.tcc config.hh kernel.hh kernel.tcc fatformat.hh
+	driver.tcc config.hh kernel.hh kernel.tcc fatformat.hh event.hh event.tcc
 
 dist_share_DATA = COPYING README
 

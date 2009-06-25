@@ -40,6 +40,7 @@
 #include <driver.hh>
 #include <module.hh>
 #include <iostream>
+#include <cerrno>
 #include "exception.hh"
 
 
@@ -53,7 +54,10 @@ Driver<CONFIG>::Driver()
 
 //    Initialization
 template<class CONFIG>
-CUresult Driver<CONFIG>::cuInit(unsigned int&Flags) { return CUDA_SUCCESS; }
+CUresult Driver<CONFIG>::cuInit(unsigned int&Flags) {
+	errno = 0;	// ?
+	return CUDA_SUCCESS;
+}
 
 //    Device management
 template<class CONFIG>

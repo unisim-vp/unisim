@@ -202,7 +202,7 @@ void Device<CONFIG>::DumpCode(Kernel<CONFIG> & kernel, std::ostream & os)
 {
 	Load(kernel);
 	typename CONFIG::address_t pc = CONFIG::CODE_START;
-	os << "Dumping code @" << std::hex << pc << endl;
+	os << "Dumping code from " << kernel.Name() << " @" << std::hex << pc << endl;
 	while(pc < CONFIG::CODE_START + kernel.CodeSize())
 	{
 		string s = cores[0]->Disasm(pc, pc);

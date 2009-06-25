@@ -44,6 +44,7 @@
 #include "driver.tcc"
 #include "module.tcc"
 #include "device.tcc"
+#include "event.tcc"
 
 using std::cerr;
 using std::endl;
@@ -1005,43 +1006,79 @@ CUresult CUDAAPI cuLaunchGridAsync( CUfunction f, int grid_width, int grid_heigh
  ***********************************/
 CUresult CUDAAPI cuEventCreate( CUevent *phEvent, unsigned int Flags )
 {
-  cerr << "function not implemented !!!" << endl;
-  assert(false);
+	try {
+		Event<MyConfig>* evt = new Event<MyConfig>(Flags);
+		*phEvent = evt;
+		return CUDA_SUCCESS;
+	}
+	catch(CudaException e) {
+		return e.code;
+	}
 }
 
 
 CUresult CUDAAPI cuEventRecord( CUevent hEvent, CUstream hStream )
 {
-  cerr << "function not implemented !!!" << endl;
-  assert(false);
+	try {
+		Event<MyConfig> * evt = static_cast<Event<MyConfig> *>(hEvent);
+		evt->Record(/*...hStream*/);
+		return CUDA_SUCCESS;
+	}
+	catch(CudaException e) {
+		return e.code;
+	}
 }
 
 
 CUresult CUDAAPI cuEventQuery( CUevent hEvent )
 {
-  cerr << "function not implemented !!!" << endl;
-  assert(false);
+	try {
+		Event<MyConfig> * evt = static_cast<Event<MyConfig> *>(hEvent);
+		return evt->Query() ? CUDA_SUCCESS : CUDA_ERROR_NOT_READY;
+	}
+	catch(CudaException e) {
+		return e.code;
+	}
 }
 
 
 CUresult CUDAAPI cuEventSynchronize( CUevent hEvent )
 {
-  cerr << "function not implemented !!!" << endl;
-  assert(false);
+	try {
+		Event<MyConfig> * evt = static_cast<Event<MyConfig> *>(hEvent);
+		evt->Synchronize();
+		return CUDA_SUCCESS;
+	}
+	catch(CudaException e) {
+		return e.code;
+	}
 }
 
 
 CUresult CUDAAPI cuEventDestroy( CUevent hEvent )
 {
-  cerr << "function not implemented !!!" << endl;
-  assert(false);
+	try {
+		Event<MyConfig> * evt = static_cast<Event<MyConfig> *>(hEvent);
+		delete evt;
+		return CUDA_SUCCESS;
+	}
+	catch(CudaException e) {
+		return e.code;
+	}
 }
 
 
 CUresult CUDAAPI cuEventElapsedTime( float *pMilliseconds, CUevent hStart, CUevent hEnd )
 {
-  cerr << "function not implemented !!!" << endl;
-  assert(false);
+	try {
+		Event<MyConfig> * evtStart = static_cast<Event<MyConfig> *>(hStart);
+		Event<MyConfig> * evtEnd = static_cast<Event<MyConfig> *>(hEnd);
+		*pMilliseconds = evtStart->ElapsedTime(*evtEnd);
+		return CUDA_SUCCESS;
+	}
+	catch(CudaException e) {
+		return e.code;
+	}
 }
 
 

@@ -109,6 +109,10 @@ Kernel<CONFIG>::Kernel(Module<CONFIG> * module, std::istream & is) :
 							cerr << "  const {...}\n";
 						const_segs.push_back(MemSegment<CONFIG>(is, SegmentConst));
 					}
+					else if(cmd == "constrelocs")
+					{
+						cerr << " Warning: ignored constrelocs\n";
+					}
 					else
 					{
 						throw ParsingException("Unknown multi-line field : ", cmd);
