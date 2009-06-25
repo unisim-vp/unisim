@@ -151,6 +151,7 @@ using unisim::util::endian::E_BIG_ENDIAN;
 using unisim::util::garbage_collector::GarbageCollector;
 
 typedef unisim::service::loader::elf_loader::ElfLoaderImpl<uint64_t, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym> Elf32Loader;
+typedef unisim::service::tee::registers::RegistersTee<> RegistersTee;
 
 using unisim::component::tlm2::processor::hcs12x::XINT;
 using unisim::component::tlm2::processor::hcs12x::CRG;
@@ -158,7 +159,6 @@ using unisim::component::tlm2::processor::hcs12x::ECT;
 using unisim::service::loader::s19_loader::S19_Loader;
 using unisim::service::debug::gdb_server::GDBServer;
 using unisim::service::debug::inline_debugger::InlineDebugger;
-using unisim::service::tee::registers::RegistersTee;
 using unisim::kernel::service::Service;
 using unisim::kernel::service::Client;
 using unisim::service::interfaces::Loader;
@@ -337,6 +337,8 @@ int sc_main(int argc, char *argv[])
 	// - Interrupt controller
 	XINT *s12xint = new XINT("s12xint");
 
+	RegistersTee* registersTee = new RegistersTee("registersTee");
+
 	RTBStub *rtbStub = new RTBStub("rtbStub", fsb_cycle_time);
 
 	//=========================================================================
@@ -453,7 +455,6 @@ int sc_main(int argc, char *argv[])
 	mmc->internal_memory_import >> internal_memory->memory_export;
 	mmc->external_memory_import >> external_memory->memory_export;
 
-	RegistersTee<2>* registersTee = new RegistersTee<2>("registersTee");
 	if(inline_debugger)
 	{
 		// Connect inline-debugger to CPU
@@ -471,7 +472,8 @@ int sc_main(int argc, char *argv[])
 		inline_debugger->memory_import >> cpu->memory_export;
 
 		*registersTee->registers_import[0] >> cpu->registers_export;
-		*registersTee->registers_import[1] >> s12xint->registers_export;
+		*registersTee->registers_import[1] >> mmc->registers_export;
+		*registersTee->registers_import[2] >> s12xint->registers_export;
 //		inline_debugger->registers_import >> cpu->registers_export;
 		inline_debugger->registers_import >> registersTee->registers_export;
 
