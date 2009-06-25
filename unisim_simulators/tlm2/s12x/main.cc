@@ -314,17 +314,17 @@ int sc_main(int argc, char *argv[])
 	//=========================================================================
 	//  - 68HCS12X processor
 
-	CPU *cpu =new CPU("cpu");
+	CPU *cpu =new CPU("CPU");
 
-	MMC *mmc = 	new MMC("mmc");
+	MMC *mmc = 	new MMC("MMC");
 
-	CRG  *crg = new CRG("crg");
-	ECT  *ect = new ECT("ect");
+	CRG  *crg = new CRG("CRG");
+	ECT  *ect = new ECT("ECT");
 
-	ATD1 *atd1 = new ATD1("atd1");
-	ATD0 *atd0 = new ATD0("atd0");
+	ATD1 *atd1 = new ATD1("ATD1");
+	ATD0 *atd0 = new ATD0("ATD0");
 
-	PWM *pwm = new PWM("pwm");
+	PWM *pwm = new PWM("PWM");
 
 	//  - tlm2 router
 	EXTERNAL_ROUTER	*external_router = new EXTERNAL_ROUTER("external_router");
@@ -335,7 +335,7 @@ int sc_main(int argc, char *argv[])
 	MEMORY *external_memory = new MEMORY("external-memory");
 
 	// - Interrupt controller
-	XINT *s12xint = new XINT("s12xint");
+	XINT *s12xint = new XINT("XINT");
 
 	RegistersTee* registersTee = new RegistersTee("registersTee");
 
