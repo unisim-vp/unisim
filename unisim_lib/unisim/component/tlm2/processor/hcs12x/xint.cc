@@ -36,6 +36,7 @@
 
 #include <unisim/component/tlm2/processor/hcs12x/xint.hh>
 #include <unisim/component/tlm2/processor/hcs12x/tlm_types.hh>
+#include "unisim/util/debug/simple_register.hh"
 
 namespace unisim {
 namespace component {
@@ -43,13 +44,18 @@ namespace tlm2 {
 namespace processor {
 namespace hcs12x {
 
+using unisim::util::debug::SimpleRegister;
+
 XINT::XINT(const sc_module_name& name, Object *parent) :
 	sc_module(name),
 	Object(name, parent),
 	Service<Memory<service_address_t> >(name, parent),
+	Service<Registers>(name, parent),
 	Client<Memory<service_address_t> >(name, parent),
+
 	memory_export("memory_export", this),
 	memory_import("memory_import", this),
+	registers_export("registers_export", this),
 
 	interrupt_request("interrupt_request"),
 	input_payload_queue("input_payload_queue"),
@@ -73,6 +79,17 @@ XINT::XINT(const sc_module_name& name, Object *parent) :
 }
 
 XINT::~XINT() {
+
+	// Release registers_registry
+	map<string, unisim::util::debug::Register *>::iterator reg_iter;
+
+	for(reg_iter = registers_registry.begin(); reg_iter != registers_registry.end(); reg_iter++)
+	{
+		if(reg_iter->second)
+			delete reg_iter->second;
+	}
+
+	registers_registry.clear();
 
 }
 
@@ -303,6 +320,39 @@ void XINT::Reset() {
 	for (int i=0; i<XINT_SIZE; i++) {
 		interrupt_flags[i] = false;
 	}
+
+}
+
+bool XINT::Setup()
+{
+
+	registers_registry["IVBR"] = new SimpleRegister<uint8_t>("IVBR", &ivbr);
+	registers_registry["INT_XGPRIO"] = new SimpleRegister<uint8_t>("INT_XGPRIO", &int_xgprio);
+	registers_registry["INT_CFADDR"] = new SimpleRegister<uint8_t>("INT_CFADDR", &int_cfaddr);
+	registers_registry["INT_CFDATA0"] = new SimpleRegister<uint8_t>("INT_CFDATA0", &int_cfdata[0]);
+	registers_registry["INT_CFDATA1"] = new SimpleRegister<uint8_t>("INT_CFDATA1", &int_cfdata[1]);
+	registers_registry["INT_CFDATA2"] = new SimpleRegister<uint8_t>("INT_CFDATA2", &int_cfdata[2]);
+	registers_registry["INT_CFDATA3"] = new SimpleRegister<uint8_t>("INT_CFDATA3", &int_cfdata[3]);
+	registers_registry["INT_CFDATA4"] = new SimpleRegister<uint8_t>("INT_CFDATA4", &int_cfdata[4]);
+	registers_registry["INT_CFDATA5"] = new SimpleRegister<uint8_t>("INT_CFDATA5", &int_cfdata[5]);
+	registers_registry["INT_CFDATA6"] = new SimpleRegister<uint8_t>("INT_CFDATA6", &int_cfdata[6]);
+	registers_registry["INT_CFDATA7"] = new SimpleRegister<uint8_t>("INT_CFDATA0", &int_cfdata[7]);
+
+	return true;
+}
+
+/**
+ * Gets a register interface to the register specified by name.
+ *
+ * @param name The name of the requested register.
+ * @return A pointer to the RegisterInterface corresponding to name.
+ */
+Register* XINT::GetRegister(const char *name)
+{
+	if(registers_registry.find(string(name)) != registers_registry.end())
+		return registers_registry[string(name)];
+	else
+		return NULL;
 
 }
 

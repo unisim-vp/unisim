@@ -42,6 +42,7 @@
 #include <inttypes.h>
 #include <iostream>
 #include <cmath>
+#include <map>
 
 #include <systemc.h>
 #include "tlm_utils/tlm_quantumkeeper.h"
@@ -51,8 +52,13 @@
 
 #include <unisim/component/cxx/processor/hcs12x/config.hh>
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
+
 #include <unisim/kernel/service/service.hh>
+
 #include "unisim/service/interfaces/memory.hh"
+#include "unisim/service/interfaces/registers.hh"
+
+#include "unisim/util/debug/register.hh"
 
 #include <unisim/component/tlm2/processor/hcs12x/tlm_types.hh>
 
@@ -77,6 +83,9 @@ using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::ServiceImport;
 
 using unisim::service::interfaces::Memory;
+using unisim::service::interfaces::Registers;
+
+using unisim::util::debug::Register;
 
 using unisim::component::tlm2::processor::hcs12x::XINT_REQ_ProtocolTypes;
 using unisim::component::tlm2::processor::hcs12x::XINT_Payload;
@@ -87,6 +96,7 @@ using unisim::kernel::tlm2::PayloadFabric;
 class XINT :
 	public sc_module,
 	public Service<Memory<service_address_t> >,
+	public Service<Registers>,
 	public Client<Memory<service_address_t> >,
 	virtual public tlm_fw_transport_if<XINT_REQ_ProtocolTypes >
 
@@ -173,7 +183,7 @@ public:
 
 	ServiceExport<Memory<service_address_t> > memory_export;
 	ServiceImport<Memory<service_address_t> > memory_import;
-
+	ServiceExport<Registers> registers_export;
 
 	XINT(const sc_module_name& name, Object *parent = 0);
 	virtual ~XINT();
@@ -183,6 +193,7 @@ public:
 	virtual void getVectorAddress( tlm::tlm_generic_payload& trans, sc_time& delay );
 
 	virtual void Reset();
+	virtual bool Setup();
 	virtual bool ReadMemory(service_address_t addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(service_address_t addr, const void *buffer, uint32_t size);
 
@@ -196,6 +207,18 @@ public:
 	virtual bool get_direct_mem_ptr(XINT_Payload& payload, tlm_dmi&  dmi_data);
 
 	virtual void read_write( tlm::tlm_generic_payload& trans, sc_time& delay );
+
+	//=====================================================================
+	//=             XINT Registers Interface interface methods               =
+	//=====================================================================
+
+	/**
+	 * Gets a register interface to the register specified by name.
+	 *
+	 * @param name The name of the requested register.
+	 * @return A pointer to the RegisterInterface corresponding to name.
+	 */
+    virtual Register *GetRegister(const char *name);
 
 	//==============================================================
 	//=              XINT Registers Access Routines                =
@@ -242,6 +265,8 @@ private:
 	bool	debug_enabled;
 	Parameter<bool>	param_debug_enabled;
 
+	// Registers map
+	map<string, Register *> registers_registry;
 
 public:
 
