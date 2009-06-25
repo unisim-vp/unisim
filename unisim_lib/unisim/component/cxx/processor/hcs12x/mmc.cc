@@ -32,6 +32,8 @@
  * Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
  */
 
+#include "unisim/util/debug/simple_register.hh"
+
 #include <unisim/component/cxx/processor/hcs12x/mmc.hh>
 
 #include <stdio.h>
@@ -43,13 +45,17 @@ namespace cxx {
 namespace processor {
 namespace hcs12x {
 
+using unisim::util::debug::SimpleRegister;
+
 MMC::MMC(const char *name, Object *parent):
 	Object(name, parent),
 	Service<Memory<service_address_t> >(name, parent),
+	Service<Registers>(name, parent),
 	Client<Memory<service_address_t> >(name, parent),
 	memory_export("memory_export", this),
 	internal_memory_import("internal_memory_import", this),
 	external_memory_import("external_memory_import", this),
+	registers_export("registers_export", this),
 	address_encoding(ADDRESS::BANKED),
 	param_address_encoding("address-encoding",this,address_encoding),
 	mode_int(MMC_MODE_RESET),
@@ -62,6 +68,21 @@ MMC::MMC(const char *name, Object *parent):
 {
 
 	Reset();
+}
+
+MMC::~MMC() {
+
+	// Release registers_registry
+	std::map<string, unisim::util::debug::Register *>::iterator reg_iter;
+
+	for(reg_iter = registers_registry.begin(); reg_iter != registers_registry.end(); reg_iter++)
+	{
+		if(reg_iter->second)
+			delete reg_iter->second;
+	}
+
+	registers_registry.clear();
+
 }
 
 void MMC::Reset() {
@@ -87,7 +108,29 @@ void MMC::Reset() {
 
 bool MMC::Setup() {
 
+	registers_registry["MMCCTL0"] = new SimpleRegister<uint8_t>("MMCCTL0", &mmcctl0);
+	registers_registry["MODE"] = new SimpleRegister<uint8_t>("MODE", &mode);
+	registers_registry["GPAGE"] = new SimpleRegister<uint8_t>("GPAGE", &gpage);
+	registers_registry["DIRECT"] = new SimpleRegister<uint8_t>("DIRECT", &direct);
+	registers_registry["MMCCTL1"] = new SimpleRegister<uint8_t>("MMCCTL1", &mmcctl1);
+	registers_registry["RPAGE"] = new SimpleRegister<uint8_t>("RPAGE", &rpage);
+	registers_registry["EPAGE"] = new SimpleRegister<uint8_t>("EPAGE", &epage);
+	registers_registry["PPAGE"] = new SimpleRegister<uint8_t>("PPAGE", &ppage);
+	registers_registry["RAMWPC"] = new SimpleRegister<uint8_t>("RAMWPC", &ramwpc);
+	registers_registry["RAMXGU"] = new SimpleRegister<uint8_t>("RAMXGU", &ramxgu);
+	registers_registry["RAMSHL"] = new SimpleRegister<uint8_t>("RAMSHL", &ramshl);
+	registers_registry["RAMSHU"] = new SimpleRegister<uint8_t>("RAMSHU", &ramshu);
+
 	return true;
+}
+
+Register* MMC::GetRegister(const char *name)
+{
+	if(registers_registry.find(string(name)) != registers_registry.end())
+		return registers_registry[string(name)];
+	else
+		return NULL;
+
 }
 
 void MMC::OnDisconnect() {

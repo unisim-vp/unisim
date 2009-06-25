@@ -38,11 +38,14 @@
 #include <inttypes.h>
 #include <iostream>
 #include <cmath>
-
+#include <map>
 
 #include "unisim/kernel/service/service.hh"
-#include "unisim/service/interfaces/memory.hh"
 
+#include "unisim/service/interfaces/memory.hh"
+#include "unisim/service/interfaces/registers.hh"
+
+#include "unisim/util/debug/register.hh"
 
 #include <unisim/component/cxx/processor/hcs12x/config.hh>
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
@@ -62,9 +65,13 @@ using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::Parameter;
 
 using unisim::service::interfaces::Memory;
+using unisim::service::interfaces::Registers;
+
+using unisim::util::debug::Register;
 
 class MMC : public Service<Memory<service_address_t> >,
-	public Client<Memory<service_address_t> >
+	public Client<Memory<service_address_t> >,
+	public Service<Registers>
 {
 public:
 
@@ -184,8 +191,10 @@ public:
 	ServiceExport<Memory<service_address_t> > memory_export;
 	ServiceImport<Memory<service_address_t> > internal_memory_import;
 	ServiceImport<Memory<service_address_t> > external_memory_import;
+	ServiceExport<Registers> registers_export;
 
     MMC(const char *name, Object *parent = 0);
+    ~MMC();
 
     inline physical_address_t getPhysicalAddress(address_t logicalAddress, ADDRESS::MODE type, bool isGlobal, bool debugload = false, uint8_t debug_page = 0xFF);
 	inline bool isPaged(address_t addr, page_t page, bool isGlobal, bool debugload);
@@ -206,6 +215,19 @@ public:
 	virtual bool ReadMemory(service_address_t addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(service_address_t addr, const void *buffer, uint32_t size);
 	void SplitPagedAddress(physical_address_t paged_addr, page_t &page, address_t &cpu_address);
+
+	//=====================================================================
+	//=             MMC Registers Interface interface methods               =
+	//=====================================================================
+
+	/**
+	 * Gets a register interface to the register specified by name.
+	 *
+	 * @param name The name of the requested register.
+	 * @return A pointer to the RegisterInterface corresponding to name.
+	 */
+    virtual Register *GetRegister(const char *name);
+
 
 	//=====================================================================
 	//=             Internal Registers Accessors                          =
@@ -264,6 +286,9 @@ private:
 
 	uint8_t	address_encoding;
 	Parameter<uint8_t> param_address_encoding;
+
+	// Registers map
+	std::map<string, Register *> registers_registry;
 
 };
 

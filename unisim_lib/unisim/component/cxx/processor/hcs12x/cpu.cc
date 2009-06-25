@@ -142,14 +142,6 @@ CPU::~CPU()
 
 	registers_registry.clear();
 
-/*
-	map<string, Register *>::iterator the_iterator = registers_registry.begin();
-	while( the_iterator != registers_registry.end() ) {
-
-		the_iterator++;
-	}
-*/
-
 }
 
 void CPU::SetEntryPoint(address_t cpu_address)
@@ -1013,13 +1005,13 @@ bool CPU::WriteMemory(service_address_t addr, const void *buffer, uint32_t size)
 string CPU::GetObjectFriendlyName(service_address_t addr)
 {
 	stringstream sstr;
-	
+
 	const Symbol<service_address_t> *symbol = NULL;
 
 	if (symbol_table_lookup_import) {
 		symbol = symbol_table_lookup_import->FindSymbolByAddr(addr, Symbol<service_address_t>::SYM_OBJECT);
 	}
- 
+
 	if(symbol)
 		sstr << symbol->GetFriendlyName(addr);
 	else
@@ -1031,11 +1023,11 @@ string CPU::GetObjectFriendlyName(service_address_t addr)
 string CPU::GetFunctionFriendlyName(service_address_t addr)
 {
 	stringstream sstr;
-	
+
 	const Symbol<service_address_t> *symbol = NULL;
 
 	if (symbol_table_lookup_import) {
-		symbol = symbol_table_lookup_import->FindSymbolByAddr(addr, Symbol<service_address_t>::SYM_FUNC); 
+		symbol = symbol_table_lookup_import->FindSymbolByAddr(addr, Symbol<service_address_t>::SYM_FUNC);
 	}
 
 	if(symbol)
