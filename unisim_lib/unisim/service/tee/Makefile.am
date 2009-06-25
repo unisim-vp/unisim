@@ -9,6 +9,11 @@ SUBDIRS += memory_access_reporting
 INCLUDE_SUBDIRS += memory_access_reporting
 endif
 
+if COND_registers
+SUBDIRS += registers
+INCLUDE_SUBDIRS += registers
+endif
+
 if COND_symbol_table_lookup
 SUBDIRS += symbol_table_lookup
 INCLUDE_SUBDIRS += symbol_table_lookup
