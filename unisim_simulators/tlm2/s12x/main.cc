@@ -32,16 +32,26 @@
  * Authors: Reda Nouacer (reda.nouacer@cea.fr)
  */
 
+#include <iostream>
+#include <getopt.h>
+#include <stdlib.h>
+#include <stdexcept>
+
+#include <unisim/kernel/service/service.hh>
 
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
+
+#include <unisim/service/interfaces/loader.hh>
+
 #include <unisim/service/loader/elf_loader/elf_loader.hh>
 #include <unisim/service/loader/elf_loader/elf_loader.tcc>
 #include <unisim/service/loader/s19_loader/s19_loader.hh>
-#include <iostream>
-#include <getopt.h>
-#include <unisim/kernel/service/service.hh>
-#include <stdlib.h>
+
+#include <unisim/service/tee/registers/registers_tee.hh>
+
+#include <unisim/service/time/sc_time/time.hh>
+#include <unisim/service/time/host_time/time.hh>
 
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
 
@@ -58,16 +68,8 @@
 #include <unisim/component/tlm2/interconnect/generic_router/router.tcc>
 
 #include <unisim/util/garbage_collector/garbage_collector.hh>
-#include <unisim/service/time/sc_time/time.hh>
-#include <unisim/service/time/host_time/time.hh>
-#include <unisim/service/loader/s19_loader/s19_loader.hh>
-
-#include <unisim/kernel/service/service.hh>
-#include <unisim/service/interfaces/loader.hh>
 
 #include "rtb_unisim.hh"
-
-#include <stdexcept>
 
 #include <signal.h>
 
@@ -156,7 +158,9 @@ using unisim::component::tlm2::processor::hcs12x::ECT;
 using unisim::service::loader::s19_loader::S19_Loader;
 using unisim::service::debug::gdb_server::GDBServer;
 using unisim::service::debug::inline_debugger::InlineDebugger;
+using unisim::service::tee::registers::RegistersTee;
 using unisim::kernel::service::Service;
+using unisim::kernel::service::Client;
 using unisim::service::interfaces::Loader;
 
 using unisim::kernel::service::ServiceManager;
@@ -449,6 +453,7 @@ int sc_main(int argc, char *argv[])
 	mmc->internal_memory_import >> internal_memory->memory_export;
 	mmc->external_memory_import >> external_memory->memory_export;
 
+	RegistersTee<2>* registersTee = new RegistersTee<2>("registersTee");
 	if(inline_debugger)
 	{
 		// Connect inline-debugger to CPU
@@ -464,7 +469,12 @@ int sc_main(int argc, char *argv[])
 
 		inline_debugger->disasm_import >> cpu->disasm_export;
 		inline_debugger->memory_import >> cpu->memory_export;
-		inline_debugger->registers_import >> cpu->registers_export;
+
+		*registersTee->registers_import[0] >> cpu->registers_export;
+		*registersTee->registers_import[1] >> s12xint->registers_export;
+//		inline_debugger->registers_import >> cpu->registers_export;
+		inline_debugger->registers_import >> registersTee->registers_export;
+
 		inline_debugger->memory_access_reporting_control_import >> cpu->memory_access_reporting_control_export;
 	}
 	else if(gdb_server)
@@ -590,6 +600,7 @@ int sc_main(int argc, char *argv[])
 	}
 
 STOP_MAIN:
+	if (registersTee) { delete registersTee; registersTee = NULL; }
 	if(loaderS19) { delete loaderS19; loaderS19 = NULL; }
 	if(loaderELF) { delete loaderELF; loaderELF = NULL; }
 
