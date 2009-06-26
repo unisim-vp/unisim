@@ -40,7 +40,7 @@
 #include "unisim/kernel/service/service.hh"
 
 #include "unisim/component/cxx/processor/arm/config.hh"
-#include "unisim/component/tlm2/processor/arm/arm.hh"
+#include "unisim/component/tlm2/processor/arm/arm7tdmi.hh"
 #include "unisim/component/tlm2/memory/ram/memory.hh"
 
 #include "unisim/service/time/sc_time/time.hh"
@@ -61,12 +61,6 @@
 
 #endif
 
-#ifdef ARM7TDMI_DEBUG
-	typedef unisim::component::cxx::processor::arm::ARM7TDMI_DebugConfig CPU_CONFIG;
-#else
-	typedef unisim::component::cxx::processor::arm::ARM7TDMI_Config CPU_CONFIG;
-#endif
-	
 //static const bool DEBUG_INFORMATION = true;
 
 bool debug_enabled;
@@ -131,11 +125,11 @@ void help(char *prog_name) {
 }
 
 // Front Side Bus template parameters
-typedef CPU_CONFIG::address_t FSB_ADDRESS_TYPE;
-typedef CPU_CONFIG::address_t CPU_ADDRESS_TYPE;
-typedef CPU_CONFIG::reg_t CPU_REG_TYPE;
-const uint32_t FSB_MAX_DATA_SIZE = 32;        // in bytes
-const uint32_t FSB_NUM_PROCS = 1;
+//typedef CPU_CONFIG::address_t FSB_ADDRESS_TYPE;
+//typedef CPU_CONFIG::address_t CPU_ADDRESS_TYPE;
+//typedef CPU_CONFIG::reg_t CPU_REG_TYPE;
+//const uint32_t FSB_MAX_DATA_SIZE = 32;        // in bytes
+//const uint32_t FSB_NUM_PROCS = 1;
 
 int sc_main(int argc, char *argv[]) {
 
@@ -239,8 +233,8 @@ int sc_main(int argc, char *argv[]) {
 		use_gdb_server ? new GDBServer<uint64_t>("gdb-server") : 0;
 	InlineDebugger<uint64_t> *inline_debugger = 
 		use_inline_debugger ? new InlineDebugger<uint64_t>("inline-debugger") : 0;
-	unisim::component::tlm2::processor::arm::ARM<CPU_CONFIG, true> *cpu =
-		new unisim::component::tlm2::processor::arm::ARM<CPU_CONFIG, true>("cpu"); 
+	unisim::component::tlm2::processor::arm::ARM7TDMI *cpu =
+		new unisim::component::tlm2::processor::arm::ARM7TDMI("cpu"); 
 
 	// Instanciate an ELF32 loader
 	elf32_loader = new Elf32Loader("elf32-loader");
