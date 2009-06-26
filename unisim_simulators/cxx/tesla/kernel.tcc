@@ -112,6 +112,24 @@ Kernel<CONFIG>::Kernel(Module<CONFIG> * module, std::istream & is) :
 					else if(cmd == "constrelocs")
 					{
 						cerr << " Warning: ignored constrelocs\n";
+						while(find(line.begin(), line.end(), '}') == line.end()) {
+							getline(is, line);
+						}
+					}
+					else if(cmd == "shared")
+					{
+						cerr << " Warning: ignored shared\n";
+						while(find(line.begin(), line.end(), '}') == line.end()) {
+							getline(is, line);
+						}
+
+					}
+					else if(cmd == "local")
+					{
+						cerr << " Warning: ignored local\n";
+						while(find(line.begin(), line.end(), '}') == line.end()) {
+							getline(is, line);
+						}
 					}
 					else
 					{

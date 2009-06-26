@@ -83,9 +83,10 @@ void FatFormat::Dump()
 	
 	cerr << " debug:\n";
 	cudaFatDebugEntry const * debug = fcb->debug;
-	while(debug->debug != 0)
+	if(debug->debug != 0)	// Second one has invalid pointer??
 	{
 		cerr << "  gpuProfileName=\"" << debug->gpuProfileName << "\"\n";
+		cerr << "  debug = \"" << debug->debug << "\"\n";
 		++debug;
 	}
 	
