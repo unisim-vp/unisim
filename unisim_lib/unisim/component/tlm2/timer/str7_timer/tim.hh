@@ -219,17 +219,28 @@ private:
 	inline bool ICFB() const { return (SR() & ((uint16_t)1 << 12)) != 0; }
 	inline bool OCFB() const { return (SR() & ((uint16_t)1 << 11)) != 0; }
 
+	inline void SetCR1(uint16_t val) { cr1 = val & ~(uint16_t)0x30; }
 	inline void SetOCAR(uint16_t val) { ocar = val; }
 	inline void SetOCBR(uint16_t val) { ocbr = val; }
 	inline void SetCNTR(uint16_t val) { cntr = val; }
+	inline void SetICAR(uint16_t val) { icar = val; }
+	inline void SetICBR(uint16_t val) { icbr = val; }
+	inline void SetICFA(bool val) { if (val) sr = sr | ((uint16_t)1 << 15); else sr = sr & ~((uint16_t)1 << 15); }
+	inline void SetICFB(bool val) { if (val) sr = sr | ((uint16_t)1 << 12); else sr = sr & ~((uint16_t)1 << 12); }
 
 	tlm::tlm_response_status ReadRegister(uint64_t addr, uint16_t &value);
 	tlm::tlm_response_status WriteRegister(uint64_t addr, uint16_t value);
 
+	/* END: TIM registers */
+
+	/* START: variables and methods to handle input capture signals */
+	
+	bool icapa_edge_prev; /* current signal value of the icapa signal */
+	bool icapb_edge_prev; /* current signal value of the icapb signal */
 	void ProcessICAPA(bool level);
 	void ProcessICAPB(bool level);
 
-	/* END: TIM registers */
+	/* END: variables and methods to handle input capture signals */
 
 	/* the interrupt payload fabric */
 	PayloadFabric<TLMInterruptPayload> irqPayloadFabric;
@@ -257,6 +268,13 @@ private:
 	void SendOutputCompareBInterrupt();
 	void SendGlobalTimerInterrupt();
 	/* END: interrupt transaction generation methods */
+
+	/* START: OCMP<A/B> transaction generation methods and variables */
+	bool ocmpa_prev;
+	bool ocmpb_prev;
+	void SendOCMPA(bool level);
+	void SendOCMPB(bool level);
+	/* END: OCMP<A/B> transaction generation methods and variables */
 
 	/* START: timer overflow variables and handler method */
 	sc_core::sc_event to_event;

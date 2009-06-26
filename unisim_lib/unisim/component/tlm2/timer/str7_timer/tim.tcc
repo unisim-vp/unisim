@@ -149,9 +149,13 @@ TIM(const sc_module_name &name, Object *parent) :
 	cr1(0),
 	cr2(0),
 	sr(0),
+	icapa_edge_prev(false),
+	icapb_edge_prev(false),
 	mem_fifo("mem_fifo"),
 	icapa_fifo("icapa_fifo"),
 	icapb_fifo("icapb_fifo"),
+	ocmpa_prev(false),
+	ocmpb_prev(false),
 	base_address(0),
 	param_base_address("base-address", this, base_address, "Timer base address"),
 	pclk2_cycle_time_double(0.0),
@@ -1025,6 +1029,24 @@ ReadRegister(uint64_t addr, uint16_t &value)
 			name = "OCBR";
 			break;
 		case 0x10: // TIMn_CNTR
+			{
+				/* update the value of CNTR before returning it */
+				sc_core::sc_time delta_time = sc_time_stamp() - cntr_update_time;
+				uint64_t cntr_update;
+				if (ECKEN())
+					/* the external clock is used */
+					cntr_update = floor(delta_time / extclk_cycle_time);
+				else
+					/* the internal clock is used */
+					cntr_update = floor(delta_time / (pclk2_cycle_time * (CC() + 1)));
+				cntr_update += CNTR();
+				SetCNTR((uint16_t)(cntr_update % (uint64_t)0x10000));
+				cntr_update_time = sc_time_stamp();
+				/* get the CNTR value */
+				done = true;
+				value = CNTR();
+				name = "CNTR";
+			}
 			break;
 		case 0x14: // TIMn_CR1
 			done = true;
@@ -1076,8 +1098,16 @@ WriteRegister(uint64_t addr, uint16_t value)
 	switch (reg_index)
 	{
 		case 0x0: // TIMn_ICAR
+			done = true;
+			logger << DebugWarning
+				<< "Trying to write ICAR (read only register) with 0x" << hex << value << dec
+				<< EndDebugWarning;
 			break;
 		case 0x4: // TIMn_ICBR
+			done = true;
+			logger << DebugWarning
+				<< "Trying to write ICBR (read only register) with 0x" << hex << value << dec
+				<< EndDebugWarning;
 			break;
 		case 0x8: // TIMn_OCAR
 			done = true;
@@ -1087,6 +1117,35 @@ WriteRegister(uint64_t addr, uint16_t value)
 				logger << DebugInfo
 					<< "Setting OCAR to 0x" << hex << OCAR() << dec
 					<< EndDebugInfo;
+			}
+			if (EN())
+			{
+				/* update CNTR */
+				sc_core::sc_time delta_time = sc_time_stamp() - cntr_update_time;
+				uint64_t cntr_update;
+				if (ECKEN())
+					// the external clock is used
+					cntr_update = floor(delta_time / extclk_cycle_time);
+				else
+					// the internal clock is used
+					cntr_update = floor(delta_time / (pclk2_cycle_time * (CC() + 1)));
+				cntr_update += CNTR();
+				SetCNTR((uint16_t)(cntr_update % (uint64_t)0x10000));
+				cntr_update_time = sc_time_stamp();
+				// notify when the counter will reach the OCAR value
+				uint32_t rem;
+				if (OCAR() < CNTR()) rem = ((uint32_t)0x10000 + (uint32_t)OCAR()) - CNTR();
+				else rem = OCAR() - CNTR();
+				sc_core::sc_time t;
+				if (ECKEN())
+					t = extclk_cycle_time * rem;
+				else
+					t = pclk2_cycle_time * (CC() + 1) * rem;
+				if (VerboseRun())
+					logger << DebugInfo
+						<< "Notifying output compare A in " << t
+						<< EndDebugInfo;
+				oca_event.notify(t);
 			}
 			break;
 		case 0xc: // TIMn_OCBR
@@ -1098,58 +1157,128 @@ WriteRegister(uint64_t addr, uint16_t value)
 					<< "Setting OCBR to 0x" << hex << OCBR() << dec
 					<< EndDebugInfo;
 			}
+			if (EN())
+			{
+				/* update CNTR */
+				sc_core::sc_time delta_time = sc_time_stamp() - cntr_update_time;
+				uint64_t cntr_update;
+				if (ECKEN())
+					// the external clock is used
+					cntr_update = floor(delta_time / extclk_cycle_time);
+				else
+					// the internal clock is used
+					cntr_update = floor(delta_time / (pclk2_cycle_time * (CC() + 1)));
+				cntr_update += CNTR();
+				SetCNTR((uint16_t)(cntr_update % (uint64_t)0x10000));
+				cntr_update_time = sc_time_stamp();
+				// notify when the counter will reach the OCBR value
+				uint32_t rem;
+				if (OCBR() < CNTR()) rem = ((uint32_t)0x10000 + (uint32_t)OCBR()) - CNTR();
+				else rem = OCBR() - CNTR();
+				sc_core::sc_time t;
+				if (ECKEN())
+					t = extclk_cycle_time * rem;
+				else
+					t = pclk2_cycle_time * (CC() + 1) * rem;
+				if (VerboseRun())
+					logger << DebugInfo
+						<< "Notifying output compare B in " << t
+						<< EndDebugInfo;
+				ocb_event.notify(t);
+			}
 			break;
 		case 0x10: // TIMn_CNTR
-			break;
-		case 0x14: // TIMn_CR1
 			done = true;
-			cr1 = value & ~(uint16_t)0x30;
-			if (VerboseRun())
-			{
-				logger << DebugInfo
-					<< "Setting CR1 to 0x" << hex << CR1() << dec << endl
-					<< " - EN    " << EN() << endl
-					<< " - PWMI  " << PWMI() << endl
-					<< " - FOLVB " << FOLVB() << endl
-					<< " - FOLVA " << FOLVA() << endl
-					<< " - OLVLB " << OLVLB() << endl
-					<< " - OLVLA " << OLVLA() << endl
-					<< " - OCBE  " << OCBE() << endl
-					<< " - OCAE  " << OCAE() << endl
-					<< " - OPM   " << OPM() << endl
-					<< " - PWM   " << PWM() << endl
-					<< " - IEDGB " << IEDGB() << endl
-					<< " - IEDGA " << IEDGA() << endl
-					<< " - EXEDG " << EXEDG() << endl
-					<< " - ECKEN " << ECKEN();
-				logger << EndDebugInfo;
-			}
+			SetCNTR(value);
+			cntr_update_time = sc_time_stamp();
 			// check if the timer has been activated or desactivated
 			if (EN())
 			{
-				// activated
 				// compute when the next signal should be generated
+				sc_core::sc_time tmp_cycle_time;
+				if (ECKEN())
+					// external clock
+					tmp_cycle_time = extclk_cycle_time;
+				else
+					// internal clock
+					tmp_cycle_time = pclk2_cycle_time * (CC() + 1);
 				uint32_t rem = (uint32_t)0x10000 - CNTR();
 				cntr_update_time = sc_time_stamp();
-				// check which clock (internal or external) is being used
-				if (ECKEN())
-				{
-					// external clock
-					sc_core::sc_time t = extclk_cycle_time * rem;
-					if (VerboseRun())
-						logger << DebugInfo
-							<< "Notifying timer count in " << t << " (using external clock)"
-							<< EndDebugInfo;
-					to_event.notify(t);
-				}
+				// set a notification for when the timer gets to 0
+				sc_core::sc_time t = tmp_cycle_time * rem;
+				if (VerboseRun())
+					logger << DebugInfo
+						<< "Notifying timer count in " << t 
+						<< EndDebugInfo;
+				to_event.notify(t);
+				// set a notification for when the timer gets to OCAR
+				if (CNTR() > OCAR())
+					rem = (uint32_t)0x10000 + OCAR() - CNTR();
 				else
+					rem = CNTR() - OCAR();
+				t = tmp_cycle_time * rem;
+				if (VerboseRun())
+					logger << DebugInfo
+						<< "Notifying output compare A in " << t
+						<< EndDebugInfo;
+				oca_event.notify(t);
+				// set a notification for when the timer gets to OCAB
+				if (CNTR() > OCBR())
+					rem = (uint32_t)0x10000 + OCBR() - CNTR();
+				else
+					rem = CNTR() - OCBR();
+				t = tmp_cycle_time * rem;
+				if (VerboseRun())
+					logger << DebugInfo
+						<< "Notifying output compare B in " << t
+						<< EndDebugInfo;
+				ocb_event.notify(t);
+			}
+			break;
+		case 0x14: // TIMn_CR1
+			{
+				done = true;
+				bool old_folva = FOLVA();
+				bool old_folvb = FOLVB();
+				SetCR1(value);
+				if (VerboseRun())
 				{
-					// internal clock
+					logger << DebugInfo
+						<< "Setting CR1 to 0x" << hex << CR1() << dec << endl
+						<< " - EN    " << EN() << endl
+						<< " - PWMI  " << PWMI() << endl
+						<< " - FOLVB " << FOLVB() << endl
+						<< " - FOLVA " << FOLVA() << endl
+						<< " - OLVLB " << OLVLB() << endl
+						<< " - OLVLA " << OLVLA() << endl
+						<< " - OCBE  " << OCBE() << endl
+						<< " - OCAE  " << OCAE() << endl
+						<< " - OPM   " << OPM() << endl
+						<< " - PWM   " << PWM() << endl
+						<< " - IEDGB " << IEDGB() << endl
+						<< " - IEDGA " << IEDGA() << endl
+						<< " - EXEDG " << EXEDG() << endl
+						<< " - ECKEN " << ECKEN();
+					logger << EndDebugInfo;
+				}
+				// check if the timer has been activated or desactivated
+				if (EN())
+				{
+					// compute when the next signal should be generated
+					sc_core::sc_time tmp_cycle_time;
+					if (ECKEN())
+						// external clock
+						tmp_cycle_time = extclk_cycle_time;
+					else
+						// internal clock
+						tmp_cycle_time = pclk2_cycle_time * (CC() + 1);
+					uint32_t rem = (uint32_t)0x10000 - CNTR();
+					cntr_update_time = sc_time_stamp();
 					// set a notification for when the timer gets to 0
-					sc_core::sc_time t = pclk2_cycle_time * (uint32_t)(CC() + 1) * rem;
+					sc_core::sc_time t = tmp_cycle_time * rem;
 					if (VerboseRun())
 						logger << DebugInfo
-							<< "Notifying timer count in " << t
+							<< "Notifying timer count in " << t 
 							<< EndDebugInfo;
 					to_event.notify(t);
 					// set a notification for when the timer gets to OCAR
@@ -1157,30 +1286,30 @@ WriteRegister(uint64_t addr, uint16_t value)
 						rem = (uint32_t)0x10000 + OCAR() - CNTR();
 					else
 						rem = CNTR() - OCAR();
-					t = pclk2_cycle_time * (uint32_t)(CC() + 1) * rem;
-					logger << DebugInfo
-						<< "Notifying output compare A in " << t
-						<< EndDebugInfo;
+					t = tmp_cycle_time * rem;
+					if (VerboseRun())
+						logger << DebugInfo
+							<< "Notifying output compare A in " << t
+							<< EndDebugInfo;
 					oca_event.notify(t);
 					// set a notification for when the timer gets to OCAB
 					if (CNTR() > OCBR())
 						rem = (uint32_t)0x10000 + OCBR() - CNTR();
 					else
 						rem = CNTR() - OCBR();
-					t = pclk2_cycle_time * (uint32_t)(CC() + 1) * rem;
-					logger << DebugInfo
-						<< "Notifying output compare B in " << t
-						<< EndDebugInfo;
+					t = tmp_cycle_time * rem;
+					if (VerboseRun())
+						logger << DebugInfo
+							<< "Notifying output compare B in " << t
+							<< EndDebugInfo;
 					ocb_event.notify(t);
 				}
-			}
-			else
-			{
-				// desactivated
-				// the counter should be set to the correct value depending on when the 
-				//   desactivation command has arrived
-				// to do it simple we just set the counter to the reset value
-				cntr = (uint16_t)0xfffc;
+
+				/* Force compare mode */
+				if (FOLVA() && !old_folva)
+					if (!PWM() && !OPM()) SendOCMPA(OLVLA());
+				if (FOLVB() && !old_folvb)
+					SendOCMPB(OLVLB());
 			}
 			break;
 		case 0x18: // TIMn_CR2
@@ -1402,6 +1531,62 @@ SendGlobalTimerInterrupt()
 
 /* END: interrupt transaction generation methods */
 
+/* START: OCMP<A/B> transaction generation methods */
+
+template<unsigned int BUSWIDTH>
+void 
+TIM<BUSWIDTH> ::
+SendOCMPA(bool level)
+{
+	/* only change the signal if different than the previous output */
+	if (level != ocmpa_prev) return;
+	ocmpa_prev = level;
+
+	TLMInterruptPayload *trans = irqPayloadFabric.allocate();
+	trans->level = level;
+	tlm::tlm_phase phase = tlm::BEGIN_REQ;
+	sc_core::sc_time t = SC_ZERO_TIME;
+	switch (ocmpa_edge->nb_transport_fw(*trans, phase, t))
+	{
+		case tlm::TLM_ACCEPTED:
+		case tlm::TLM_UPDATED:
+			/* nothing else to do wait for the response (which does nothing) */
+			break;
+		case tlm::TLM_COMPLETED:
+			/* release the transaction */
+			trans->release();
+			break;
+	}
+}
+
+template<unsigned int BUSWIDTH>
+void 
+TIM<BUSWIDTH> ::
+SendOCMPB(bool level)
+{
+	/* only change the signal if different than the previous output */
+	if (level != ocmpb_prev) return;
+	ocmpb_prev = level;
+
+	TLMInterruptPayload *trans = irqPayloadFabric.allocate();
+	trans->level = level;
+	tlm::tlm_phase phase = tlm::BEGIN_REQ;
+	sc_core::sc_time t = SC_ZERO_TIME;
+	switch (ocmpb_edge->nb_transport_fw(*trans, phase, t))
+	{
+		case tlm::TLM_ACCEPTED:
+		case tlm::TLM_UPDATED:
+			/* nothing else to do wait for the response (which does nothing) */
+			break;
+		case tlm::TLM_COMPLETED:
+			/* release the transaction */
+			trans->release();
+			break;
+	}
+}
+
+/* END: OCMP<A/B> transaction generation methods */
+
 /* START: event handlers */
 
 template<unsigned int BUSWIDTH>
@@ -1415,7 +1600,7 @@ TimerOverflowHandler()
 		// check if timer count is enabled, otherwise it is just an spurious event that can be ignored
 		if (!EN()) continue;
 		// set the counter to 0
-		cntr = 0;
+		SetCNTR(0);
 		cntr_update_time = sc_time_stamp();
 		// set the TOF bit if not already set, if it was not already send an interrupt may need to be generated
 		if (!TOF())
@@ -1437,18 +1622,18 @@ TimerOverflowHandler()
 		// notify the timer overflow event for the next overflow
 		uint32_t rem = (uint32_t)0x10000;
 		// check which clock (internal or external) is being used
+		sc_core::sc_time t;
 		if (ECKEN())
-		{
 			// external clock
-			sc_core::sc_time t = extclk_cycle_time * rem;
-			to_event.notify(t);
-		}
+			t = extclk_cycle_time * rem;
 		else
-		{
 			// internal clock
-			sc_core::sc_time t = pclk2_cycle_time * (uint32_t)(CC() + 1) * rem;
-			to_event.notify(t);
-		}
+			t = pclk2_cycle_time * (uint32_t)(CC() + 1) * rem;
+		if (VerboseRun())
+			logger << DebugInfo
+				<< "Notifying timer overflow in " << t
+				<< EndDebugInfo;
+		to_event.notify(t);
 	}
 }
 
@@ -1462,11 +1647,14 @@ OutputCompareAHandler()
 		wait(oca_event);
 		// check if timer count is enabled, otherwise it is just a spurious event that can be ignored
 		if (!EN()) continue;
+		// check that we are using the timer clock and not the external, otherwise the event is spurious and can be ignored
+		if (ECKEN()) continue;
 		// update the counter to OCAR
-		cntr = OCAR();
+		SetCNTR(OCAR());
 		cntr_update_time = sc_time_stamp();
 		// set the OCFA bit if not already set, if it was not already send an interrupt may need to be generated
-		if (!OCFA())
+		// note that OCFA can not be set if PWM is active
+		if (!OCFA() && !OPM() && !PWM())
 		{
 			if (VerboseRun())
 				logger << DebugInfo << "Detected output compare A at " << sc_time_stamp() << ", setting OCFA";
@@ -1482,9 +1670,18 @@ OutputCompareAHandler()
 			if (VerboseRun())
 				logger << EndDebugInfo;
 		}
+		// check if the OCMP<A/B> pin needs to be set
+		if (OCAE())
+			SendOCMPA(OLVLA());
 		// notify the output compare for the next count
 		uint32_t rem = (uint32_t)0x10000;
-		sc_core::sc_time t = pclk2_cycle_time * (uint32_t)(CC() + 1) * rem;
+		sc_core::sc_time t;
+		if (ECKEN())
+			// external clock
+			t = extclk_cycle_time * rem;
+		else
+			// internal clock
+			t = pclk2_cycle_time * (uint32_t)(CC() + 1) * rem;
 		oca_event.notify(t);
 	}
 }
@@ -1500,7 +1697,7 @@ OutputCompareBHandler()
 		// check if timer count is enabled, otherwise it is just a spurious event that can be ignored
 		if (!EN()) continue;
 		// update the counter to OCBR
-		cntr = OCBR();
+		SetCNTR(OCBR());
 		cntr_update_time = sc_time_stamp();
 		// set the OCFB bit if not already set, if it was not already send an interrupt may need to be generated
 		if (!OCFB())
@@ -1519,10 +1716,77 @@ OutputCompareBHandler()
 			if (VerboseRun())
 				logger << EndDebugInfo;
 		}
-		// notify the output compare for the next count
-		uint32_t rem = (uint32_t)0x10000;
-		sc_core::sc_time t = pclk2_cycle_time * (uint32_t)(CC() + 1) * rem;
-		ocb_event.notify(t);
+		// check if the OCMP<A/B> pin needs to be set
+		if (OCBE())
+		{
+			if (VerboseRun())
+				logger << DebugInfo << "Setting OCMPB to OLVLB (" << OLVLB() << ") at " << sc_time_stamp()
+					<< EndDebugInfo;
+			SendOCMPB(OLVLB());
+		}
+		// check if we are in PWM mode
+		if ((PWM() && !OPM()) || (PWM() && OPM() && !FOLVA()))
+		{
+			SendOCMPA(OLVLB());
+			// Reset counter to 0xfffc
+			SetCNTR((uint16_t)0xfffc);
+			cntr_update_time = sc_time_stamp();
+			// set a notification for when the timer gets to 0
+			sc_core::sc_time tmp_cycle_time;
+			sc_core::sc_time t;
+			if (ECKEN())
+				// external clock
+				tmp_cycle_time = extclk_cycle_time;
+			else
+				// internal clock
+				tmp_cycle_time = pclk2_cycle_time * (CC() + 1);
+			uint32_t rem = (uint32_t)0x10000 - CNTR();
+			t = tmp_cycle_time * rem;
+			if (VerboseRun())
+				logger << DebugInfo
+					<< "Notifying timer count in " << t
+					<< EndDebugInfo;
+			to_event.notify(t);
+			// set a notification for when the timer gets to OCAR
+			if (CNTR() > OCAR())
+				rem = (uint32_t)0x10000 + OCAR() - CNTR();
+			else
+				rem = CNTR() - OCAR();
+			t = tmp_cycle_time * rem;
+			if (VerboseRun())
+				logger << DebugInfo
+					<< "Notifying output compare A in " << t
+					<< EndDebugInfo;
+			oca_event.notify(t);
+			// set a notification for when the timer gets to OCAB
+			if (CNTR() > OCBR())
+				rem = (uint32_t)0x10000 + OCBR() - CNTR();
+			else
+				rem = CNTR() - OCBR();
+			t = tmp_cycle_time * rem;
+			if (VerboseRun())
+				logger << DebugInfo
+					<< "Notifying output compare B in " << t
+					<< EndDebugInfo;
+			ocb_event.notify(t);
+		}
+		else
+		{
+			// notify the output compare for the next count
+			uint32_t rem = (uint32_t)0x10000;
+			sc_core::sc_time t;
+			if (ECKEN())
+				// external clock
+				t = extclk_cycle_time * rem;
+			else
+				// internal clock
+				t = pclk2_cycle_time * (uint32_t)(CC() + 1) * rem;
+			if (VerboseRun())
+				logger << DebugInfo
+					<< "Notifying output compare B in " << t
+					<< EndDebugInfo;
+			ocb_event.notify(t);
+		}
 	}
 }
 
@@ -1534,6 +1798,127 @@ void
 TIM<BUSWIDTH> ::
 ProcessICAPA(bool level)
 {
+	/* if the current value of the icapa signal and the new is the same, nothing is needed */
+	if (level == icapa_edge_prev) return;
+
+	/* the level has changed, set the new current icapa signal value */
+	icapa_edge_prev = level;
+
+	/* copy the current counter value into the IC<A/B>R register, CNTR must be updated before */
+	if (EN())
+	{
+		/* handle the one pulse mode independently of the level */
+		if ((OPM() && !PWM() && !PWMI()) ||
+				(OPM() && FOLVA()))
+		{
+			// reset the counter to the 0xfffc value
+			cntr_update_time = sc_time_stamp();
+			SetCNTR((uint16_t)0xfffc);
+			// set a notification for when the timer gets to 0
+			sc_core::sc_time tmp_cycle_time;
+			sc_core::sc_time t;
+			if (ECKEN())
+				// external clock
+				tmp_cycle_time = extclk_cycle_time;
+			else
+				// internal clock
+				tmp_cycle_time = pclk2_cycle_time * (CC() + 1);
+			uint32_t rem = (uint32_t)0x10000 - CNTR();
+			t = tmp_cycle_time * rem;
+			if (VerboseRun())
+				logger << DebugInfo
+					<< "Notifying timer count in " << t
+					<< EndDebugInfo;
+			to_event.notify(t);
+			// set a notification for when the timer gets to OCAR
+			if (CNTR() > OCAR())
+				rem = (uint32_t)0x10000 + OCAR() - CNTR();
+			else
+				rem = CNTR() - OCAR();
+			t = tmp_cycle_time * rem;
+			if (VerboseRun())
+				logger << DebugInfo
+					<< "Notifying output compare A in " << t
+					<< EndDebugInfo;
+			oca_event.notify(t);
+			// set a notification for when the timer gets to OCBR
+			if (CNTR() > OCBR())
+				rem = (uint32_t)0x10000 + OCBR() - CNTR();
+			else
+				rem = CNTR() - OCBR();
+			t = tmp_cycle_time * rem;
+			if (VerboseRun())
+				logger << DebugInfo
+					<< "Notifying output compare B in " << t
+					<< EndDebugInfo;
+			ocb_event.notify(t);
+			// copy OLVLB to OCMPA
+			SendOCMPA(OLVLB());
+		}
+
+		/* only perform a capture if the active edge is detected */
+		if (level != IEDGA()) return;
+
+		sc_core::sc_time delta_time = sc_time_stamp() - cntr_update_time;
+		uint64_t cntr_update;
+		if (ECKEN())
+			/* the external clock is used */
+			cntr_update = floor(delta_time / extclk_cycle_time);
+		else
+			/* the internal clock is used */
+			cntr_update = floor(delta_time / (pclk2_cycle_time * (CC() + 1)));
+		cntr_update += CNTR();
+		SetCNTR((uint16_t)(cntr_update % (uint64_t)0x10000));
+		cntr_update_time = sc_time_stamp();
+		SetICAR(CNTR());
+	
+		/* handle pulse width modulation input */
+		if ((PWMI() && !OPM()) || (PWMI() && !FOLVA()))
+		{
+			// set CNTR to 0
+			cntr_update_time = sc_time_stamp();
+			SetCNTR(0);
+			sc_core::sc_time tmp_cycle_time;
+			sc_core::sc_time t;
+			if (ECKEN())
+				// external clock
+				tmp_cycle_time = extclk_cycle_time;
+			else
+				// internal clock
+				tmp_cycle_time = pclk2_cycle_time * (CC() + 1);
+			// set a notification for when the timer gets to OCAR
+			uint32_t rem;
+			if (CNTR() > OCAR())
+				rem = (uint32_t)0x10000 + OCAR() - CNTR();
+			else
+				rem = CNTR() - OCAR();
+			t = tmp_cycle_time * rem;
+			if (VerboseRun())
+				logger << DebugInfo
+					<< "Notifying output compare A in " << t
+					<< EndDebugInfo;
+			oca_event.notify(t);
+			// set a notification for when the timer gets to OCBR
+			if (CNTR() > OCBR())
+				rem = (uint32_t)0x10000 + OCBR() - CNTR();
+			else
+				rem = CNTR() - OCBR();
+			t = tmp_cycle_time * rem;
+			if (VerboseRun())
+				logger << DebugInfo
+					<< "Notifying output compare B in " << t
+					<< EndDebugInfo;
+			ocb_event.notify(t);
+		}
+	}
+
+	/* generate an interrupt (set the ICF<A/B> bit of the SR register */
+	if (ICFA()) return;
+	SetICFA(true);
+	/* Call the send interrupt methods (that will only send an interrupt if the interrupts are enabled */
+	SendInputCaptureAInterrupt();
+	SendGlobalTimerInterrupt();
+
 }
 
 template<unsigned int BUSWIDTH>
@@ -1541,6 +1926,37 @@ void
 TIM<BUSWIDTH> ::
 ProcessICAPB(bool level)
 {
+	/* if the current value of the icapb signal and the new is the same, nothing is needed */
+	if (level == icapb_edge_prev) return;
+
+	/* the level has changed, set the new current icapb signal value */
+	icapb_edge_prev = level;
+
+	if (EN())
+	{
+		/* only perform a capture if the active edge is detected */
+		if (level != IEDGB()) return;
+		/* copy the current counter value into the IC<A/B>R register, CNTR must be updated before */
+		sc_core::sc_time delta_time = sc_time_stamp() - cntr_update_time;
+		uint64_t cntr_update;
+		if (ECKEN())
+			/* the external clock is used */
+			cntr_update = floor(delta_time / extclk_cycle_time);
+		else
+			/* the internal clock is used */
+			cntr_update = floor(delta_time / (pclk2_cycle_time * (CC() + 1)));
+		cntr_update += CNTR();
+		SetCNTR((uint16_t)(cntr_update % (uint64_t)0x10000));
+		cntr_update_time = sc_time_stamp();
+		SetICBR(CNTR());
+	}
+
+	/* generate an interrupt (set the ICF<A/B> bit of the SR register, if not already send */
+	if (ICFB()) return;
+	SetICFB(true);
+	/* Call the send interrupt methods (that will only send an interrupt if the interrupts are enabled */
+	SendInputCaptureBInterrupt();
+	SendGlobalTimerInterrupt();
 }
 
 /* START: verbose methods */

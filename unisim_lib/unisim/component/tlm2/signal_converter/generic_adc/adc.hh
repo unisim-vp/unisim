@@ -45,6 +45,7 @@
 
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger.hh"
+#include "unisim/kernel/tlm2/tlm.hh"
 #include "unisim/component/tlm2/interrupt/types.hh"
 #include "unisim/service/interfaces/trap_reporting.hh"
 
