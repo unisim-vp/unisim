@@ -673,7 +673,7 @@ ldm_3_ia.execute = {
   
 	/* update rn */
 	if(w)
-		cpu.SetGPR(rn, rn_new_val);
+		cpu.SetGPR(rn, rn_new_val + 4); // we need to add 4 bytes for the pc saving
 
 	cpu.MoveSPSRtoCPSR();
 
@@ -713,7 +713,7 @@ ldm_3_ib.execute = {
 
 	/* update rn */
 	if(w)
-		cpu.SetGPR(rn, rn_new_val);
+		cpu.SetGPR(rn, rn_new_val + 4);
 
 	cpu.MoveSPSRtoCPSR();
 
@@ -753,7 +753,7 @@ ldm_3_da.execute = {
   
 	/* update rn */
 	if(w)
-		cpu.SetGPR(rn, rn_new_val);
+		cpu.SetGPR(rn, rn_new_val - 4);
 
 	cpu.MoveSPSRtoCPSR();
 
@@ -793,7 +793,7 @@ ldm_3_db.execute = {
   
 	/* update rn */
 	if(w)
-		cpu.SetGPR(rn, rn_new_val);
+		cpu.SetGPR(rn, rn_new_val - 4);
 
 	cpu.MoveSPSRtoCPSR();
 

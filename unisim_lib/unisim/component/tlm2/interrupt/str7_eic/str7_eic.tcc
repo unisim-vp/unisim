@@ -139,9 +139,11 @@ STR7_EIC(const sc_module_name& name, Object* parent) :
 		irq_status(0),
 		fiq_status(0),
 		fsm_state(READY),
-		stack_depth(0),
 		irq_fifo("irq_fifo"),
 		fiq_fifo("fiq_fifo"),
+		new_irq(0),
+		stack_depth(0),
+		irqPayloadFabric(),
 		base_address(0),
 		param_base_address("base-address", this, base_address),
 		logger(*this),
@@ -797,6 +799,7 @@ FSMUpdate()
 
 			/* the interrupt is signaled only if global irqs (IRQ_EN) are activated */
 			has_irq = IRQ_EN();
+			new_irq = index;
 		}
 		else
 			if (VerboseRun())
@@ -857,6 +860,11 @@ Push()
 {
 	if (likely(stack_depth < STACK_DEPTH))
 	{
+		if (VerboseRun())
+			logger << DebugInfo << "Pushing into the stack current CICR (0x" << hex << CICR() << dec << ")"
+				<< " and CIPR (0x" << hex << CIPR() << dec << ")"
+				<< ", stack depth before pushing = " << stack_depth
+				<< EndDebugInfo;
 		stack[stack_depth].cicr = CICR();
 		stack[stack_depth].cipr = CIPR();
 		stack_depth++;
@@ -876,11 +884,20 @@ void
 STR7_EIC<BUS_WIDTH> ::
 Pop()
 {
+	uint32_t old_cicr = CICR();
+	uint32_t old_cipr = CIPR();
+
 	if (likely(stack_depth != 0))
 	{
 		stack_depth--;
 		cicr = stack[stack_depth].cicr;
 		cipr = stack[stack_depth].cipr;
+		if (VerboseRun())
+			logger << DebugInfo << "Popping from the stack"
+				<< " CICR (0x" << hex << CICR() << ", previous = 0x" << old_cicr << ")"
+				<< " and CIPR (0x" << CIPR() << ", previous = 0x" << old_cipr << dec << ")"
+				<< ", stack depth after pushing = " << stack_depth
+				<< EndDebugInfo;
 	}
 	else
 	{
@@ -923,6 +940,7 @@ ReadRegister(uint32_t const addr, bool update)
 					Push();
 					cicr = new_irq;
 					cipr = SIPL(new_irq);
+					new_irq = 0;
 				}	
 				FSMReady();
 			}
@@ -1041,9 +1059,6 @@ WriteRegister(uint32_t addr, uint32_t value, bool update)
 				{
 					if (irq == CICR())
 					{
-						if (VerboseRun())
-							logger << DebugInfo << "Popping stack (CICR = 0x" << hex << CICR() << dec << ")" 
-								<< EndDebugInfo;
 						Pop();
 					}
 					else
