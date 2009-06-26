@@ -875,19 +875,40 @@ bool CPU::Setup()
 			<< "Initializing debugging registers"
 			<< std::endl << EndDebugInfo;
 
-	registers_registry["A"] = new SimpleRegister<uint8_t>("A", &regA);
-	registers_registry["B"] = new SimpleRegister<uint8_t>("B", &regB);
-	registers_registry["D"] = new ConcatenatedRegister<uint16_t,uint8_t>("D", &regA, &regB);
-	registers_registry["X"] = new SimpleRegister<uint16_t>("X", &regX);
-	registers_registry["Y"] = new SimpleRegister<uint16_t>("Y", &regY);
-	registers_registry["SP"] = new SimpleRegister<uint16_t>("SP", &regSP);
-	registers_registry["PC"] = new SimpleRegister<uint16_t>("PC", &regPC);
-	registers_registry[ccr->GetName()] = ccr;
-	unisim::util::debug::Register *ccrl = ccr->GetLowRegister();
-	registers_registry[ccrl->GetName()] = ccrl;
-	unisim::util::debug::Register *ccrh = ccr->GetHighRegister();
-	registers_registry[ccrh->GetName()] = ccrh;
+	char buf[80];
 
+	sprintf(buf, "%s.A", GetName());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &regA);
+
+	sprintf(buf, "%s.B", GetName());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &regB);
+
+	sprintf(buf, "%s.D", GetName());
+	registers_registry[buf] = new ConcatenatedRegister<uint16_t,uint8_t>(buf, &regA, &regB);
+
+	sprintf(buf, "%s.X", GetName());
+	registers_registry[buf] = new SimpleRegister<address_t>(buf, &regX);
+
+	sprintf(buf, "%s.Y", GetName());
+	registers_registry[buf] = new SimpleRegister<address_t>(buf, &regY);
+
+	sprintf(buf, "%s.SP", GetName());
+	registers_registry[buf] = new SimpleRegister<address_t>(buf, &regSP);
+
+	sprintf(buf, "%s.PC", GetName());
+	registers_registry[buf] = new SimpleRegister<address_t>(buf, &regPC);
+
+	sprintf(buf, "%s.%s", GetName(), ccr->GetName());
+	registers_registry[buf] = ccr;
+
+	unisim::util::debug::Register *ccrl = ccr->GetLowRegister();
+	sprintf(buf, "%s.%s", GetName(), ccrl->GetName());
+	registers_registry[buf] = ccrl;
+
+
+	unisim::util::debug::Register *ccrh = ccr->GetHighRegister();
+	sprintf(buf, "%s.%s", GetName(), ccrh->GetName());
+	registers_registry[buf] = ccrh;
 
 	if(!memory_access_reporting_import) {
 		requires_memory_access_reporting = false;
