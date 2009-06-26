@@ -34,6 +34,7 @@
 
 #include <unisim/component/tlm2/processor/hcs12x/pwm.hh>
 #include <unisim/component/cxx/processor/hcs12x/config.hh>
+#include "unisim/util/debug/simple_register.hh"
 
 namespace unisim {
 namespace component {
@@ -42,12 +43,14 @@ namespace processor {
 namespace hcs12x {
 
 using unisim::component::cxx::processor::hcs12x::CONFIG;
+using unisim::util::debug::SimpleRegister;
 
 template <uint8_t PWM_SIZE>
 PWM<PWM_SIZE>::PWM(const sc_module_name& name, Object *parent) :
 	Object(name, parent),
 	sc_module(name),
 	Service<Memory<service_address_t> >(name, parent),
+	Service<Registers>(name, parent),
 	Client<Memory<service_address_t> >(name, parent),
 	Client<TrapReporting>(name, parent),
 
@@ -56,6 +59,7 @@ PWM<PWM_SIZE>::PWM(const sc_module_name& name, Object *parent) :
 
 	memory_export("memory_export", this),
 	memory_import("memory_import", this),
+	registers_export("registers_export", this),
 	trap_reporting_import("trap_reproting_import", this),
 
 	debug_enabled(false),
@@ -97,6 +101,17 @@ PWM<PWM_SIZE>::PWM(const sc_module_name& name, Object *parent) :
 
 template <uint8_t PWM_SIZE>
 PWM<PWM_SIZE>::~PWM() {
+
+	// Release registers_registry
+	map<string, unisim::util::debug::Register *>::iterator reg_iter;
+
+	for(reg_iter = registers_registry.begin(); reg_iter != registers_registry.end(); reg_iter++)
+	{
+		if(reg_iter->second)
+			delete reg_iter->second;
+	}
+
+	registers_registry.clear();
 
 }
 
@@ -644,9 +659,86 @@ bool PWM<PWM_SIZE>::Setup() {
 		clockVector[i] = bus_cycle_time/(1 << i);
 	}
 
+	char buf[80];
+
+	sprintf(buf, "%sPWME.",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pwme_register);
+
+	sprintf(buf, "%s.PWMPOL",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pwmpol_register);
+
+	sprintf(buf, "%s.PWMCLK",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pwmclk_register);
+
+	sprintf(buf, "%s.PWMPRCLK",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pwmprclk_register);
+
+	sprintf(buf, "%s.PWMCAE",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pwmcae_register);
+
+	sprintf(buf, "%s.PWMCTL",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pwmctl_register);
+
+	sprintf(buf, "%s.PWMTST",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pwmtst_register);
+
+	sprintf(buf, "%s.PWMPRSC",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pwmprsc_register);
+
+	sprintf(buf, "%s.PWMSCLA",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pwmscla_register);
+
+	sprintf(buf, "%s.PWMSCLB",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pwmsclb_register);
+
+	sprintf(buf, "%s.PWMSCNTA",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pwmscnta_register);
+
+	sprintf(buf, "%s.PWMSCNTB",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pwmscntb_register);
+
+	uint8_t channel_number;
+
+	for (int i=0; i<PWM_SIZE; i++) {
+#if BYTE_ORDER == BIG_ENDIAN
+		channel_number = i;
+#else
+		channel_number =  PWM_SIZE-i-1;
+#endif
+
+		sprintf(buf, "%s.PWMCNT%d", name(), channel_number);
+		registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pwmcnt16_register[i]);
+
+		sprintf(buf, "%s.PWMPER%d", name(), channel_number);
+		registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pwmper16_register[i]);
+
+		sprintf(buf, "%s.PWMDTY%d", name(), channel_number);
+		registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pwmdty16_register_value[i]);
+
+	}
+
+	sprintf(buf, "%s.PWMSDN",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pwmsdn_register);
+
 	Reset();
-	
+
 	return true;
+}
+
+/**
+ * Gets a register interface to the register specified by name.
+ *
+ * @param name The name of the requested register.
+ * @return A pointer to the RegisterInterface corresponding to name.
+ */
+template <uint8_t PWM_SIZE>
+Register* PWM<PWM_SIZE>::GetRegister(const char *name)
+{
+	if(registers_registry.find(string(name)) != registers_registry.end())
+		return registers_registry[string(name)];
+	else
+		return NULL;
+
 }
 
 template <uint8_t PWM_SIZE>

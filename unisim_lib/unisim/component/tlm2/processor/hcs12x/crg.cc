@@ -370,18 +370,43 @@ void CRG::restart_cop_timeout() {
 
 bool CRG::Setup() {
 
-	registers_registry["SYNR"] = new SimpleRegister<uint8_t>("SYNR", &synr_register);
-	registers_registry["REFDV"] = new SimpleRegister<uint8_t>("REFDV", &refdv_register);
-	registers_registry["CTFLG"] = new SimpleRegister<uint8_t>("CTFLG", &ctflg_register);
-	registers_registry["CRGFLG"] = new SimpleRegister<uint8_t>("CRGFLG", &crgflg_register);
-	registers_registry["CRGINT"] = new SimpleRegister<uint8_t>("CRGINT", &crgint_register);
-	registers_registry["CLKSEL"] = new SimpleRegister<uint8_t>("CLKSEL", &clksel_register);
-	registers_registry["PLLCTL"] = new SimpleRegister<uint8_t>("PLLCTL", &pllctl_register);
-	registers_registry["RTICTL"] = new SimpleRegister<uint8_t>("RTICTL", &rtictl_register);
-	registers_registry["COPCTL"] = new SimpleRegister<uint8_t>("COPCTL", &copctl_register);
-	registers_registry["FORBYP"] = new SimpleRegister<uint8_t>("FORBYP", &forbyp_register);
-	registers_registry["CTCTL"] = new SimpleRegister<uint8_t>("CTCTL", &ctctl_register);
-	registers_registry["ARMCOP"] = new SimpleRegister<uint8_t>("ARMCOP", &armcop_register);
+	char buf[80];
+
+	sprintf(buf, "%s.SYNR",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &synr_register);
+
+	sprintf(buf, "%s.REFDV",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &refdv_register);
+
+	sprintf(buf, "%s.CTFLG",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &ctflg_register);
+
+	sprintf(buf, "%s.CRGFLG",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &crgflg_register);
+
+	sprintf(buf, "%s.CRGINT",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &crgint_register);
+
+	sprintf(buf, "%s.CLKSEL",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &clksel_register);
+
+	sprintf(buf, "%s.PLLCTL",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pllctl_register);
+
+	sprintf(buf, "%s.RTICTL",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &rtictl_register);
+
+	sprintf(buf, "%s.COPCTL",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &copctl_register);
+
+	sprintf(buf, "%s.FORBYP",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &forbyp_register);
+
+	sprintf(buf, "%s.CTCTL",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &ctctl_register);
+
+	sprintf(buf, "%s.ARMCOP",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &armcop_register);
 
 	/**
 	 * TODO:

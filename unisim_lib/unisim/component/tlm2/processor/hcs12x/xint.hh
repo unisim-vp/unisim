@@ -209,7 +209,7 @@ public:
 	virtual void read_write( tlm::tlm_generic_payload& trans, sc_time& delay );
 
 	//=====================================================================
-	//=             XINT Registers Interface interface methods               =
+	//=              Registers Interface interface methods               =
 	//=====================================================================
 
 	/**

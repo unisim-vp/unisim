@@ -325,18 +325,21 @@ void XINT::Reset() {
 
 bool XINT::Setup()
 {
+	char buf[80];
 
-	registers_registry["IVBR"] = new SimpleRegister<uint8_t>("IVBR", &ivbr);
-	registers_registry["INT_XGPRIO"] = new SimpleRegister<uint8_t>("INT_XGPRIO", &int_xgprio);
-	registers_registry["INT_CFADDR"] = new SimpleRegister<uint8_t>("INT_CFADDR", &int_cfaddr);
-	registers_registry["INT_CFDATA0"] = new SimpleRegister<uint8_t>("INT_CFDATA0", &int_cfdata[0]);
-	registers_registry["INT_CFDATA1"] = new SimpleRegister<uint8_t>("INT_CFDATA1", &int_cfdata[1]);
-	registers_registry["INT_CFDATA2"] = new SimpleRegister<uint8_t>("INT_CFDATA2", &int_cfdata[2]);
-	registers_registry["INT_CFDATA3"] = new SimpleRegister<uint8_t>("INT_CFDATA3", &int_cfdata[3]);
-	registers_registry["INT_CFDATA4"] = new SimpleRegister<uint8_t>("INT_CFDATA4", &int_cfdata[4]);
-	registers_registry["INT_CFDATA5"] = new SimpleRegister<uint8_t>("INT_CFDATA5", &int_cfdata[5]);
-	registers_registry["INT_CFDATA6"] = new SimpleRegister<uint8_t>("INT_CFDATA6", &int_cfdata[6]);
-	registers_registry["INT_CFDATA7"] = new SimpleRegister<uint8_t>("INT_CFDATA0", &int_cfdata[7]);
+	sprintf(buf, "%s.IVBR",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &ivbr);
+
+	sprintf(buf, "%s.INT_XGPRIO",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &int_xgprio);
+
+	sprintf(buf, "%s.INT_CFADDR",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &int_cfaddr);
+
+	for (uint8_t i=0; i<8; i++) {
+		sprintf(buf, "%s.INT_CFDATA%d", name(), i);
+		registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &int_cfdata[i]);
+	}
 
 	return true;
 }

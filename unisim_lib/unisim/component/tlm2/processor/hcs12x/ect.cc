@@ -33,6 +33,7 @@
  */
 
 #include <unisim/component/tlm2/processor/hcs12x/ect.hh>
+#include "unisim/util/debug/simple_register.hh"
 
 namespace unisim {
 namespace component {
@@ -40,16 +41,24 @@ namespace tlm2 {
 namespace processor {
 namespace hcs12x {
 
+using unisim::util::debug::SimpleRegister;
+
 ECT::ECT(const sc_module_name& name, Object *parent) :
 	Object(name, parent),
 	sc_module(name),
-	slave_socket("slave_socket"),
+
 	Service<Memory<service_address_t> >(name, parent),
+	Service<Registers>(name, parent),
 	Client<Memory<service_address_t> >(name, parent),
 	Client<TrapReporting>(name, parent),
+
+	slave_socket("slave_socket"),
+
 	trap_reporting_import("trap_reproting_import", this),
 	memory_export("memory_export", this),
 	memory_import("memory_import", this),
+	registers_export("registers_export", this),
+
 	baseAddress(0x0040), // MC9S12XDP512V2 - ECT baseAddress
 	param_baseAddress("base-address", this, baseAddress),
 	debug_enabled(false),
@@ -75,6 +84,17 @@ ECT::ECT(const sc_module_name& name, Object *parent) :
 }
 
 ECT::~ECT() {
+
+	// Release registers_registry
+	map<string, unisim::util::debug::Register *>::iterator reg_iter;
+
+	for(reg_iter = registers_registry.begin(); reg_iter != registers_registry.end(); reg_iter++)
+	{
+		if(reg_iter->second)
+			delete reg_iter->second;
+	}
+
+	registers_registry.clear();
 
 }
 
@@ -184,9 +204,30 @@ bool ECT::Setup() {
 
 	bus_cycle_time = sc_time((double) bus_cycle_time_int, SC_PS);
 
+//	char buf[80];
+//
+//	sprintf(buf, "%s.ATDCTL0",name());
+//	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &atdctl0_register);
+
+
 	Reset();
 
 	return true;
+}
+
+/**
+ * Gets a register interface to the register specified by name.
+ *
+ * @param name The name of the requested register.
+ * @return A pointer to the RegisterInterface corresponding to name.
+ */
+Register* ECT::GetRegister(const char *name)
+{
+	if(registers_registry.find(string(name)) != registers_registry.end())
+		return registers_registry[string(name)];
+	else
+		return NULL;
+
 }
 
 void ECT::OnDisconnect() {
