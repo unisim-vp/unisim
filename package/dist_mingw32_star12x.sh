@@ -125,6 +125,7 @@ unisim/service/loader/elf_loader/elf64_loader.cc \
 unisim/service/loader/s19_loader/s19_loader.cc \
 unisim/service/time/host_time/time.cc \
 unisim/service/time/sc_time/time.cc \
+unisim/service/tee/registers/registers_tee.cc \
 unisim/component/cxx/processor/hcs12x/ccr.cc \
 unisim/component/cxx/processor/hcs12x/cpu.cc \
 unisim/component/cxx/processor/hcs12x/exception.cc \
@@ -209,6 +210,7 @@ unisim/service/loader/elf_loader/elf32_loader.hh \
 unisim/service/loader/elf_loader/elf64.h \
 unisim/service/loader/elf_loader/elf64_loader.hh \
 unisim/service/loader/s19_loader/s19_loader.hh \
+unisim/service/tee/registers/registers_tee.hh \
 unisim/service/time/host_time/time.hh \
 unisim/service/time/sc_time/time.hh \
 unisim/component/cxx/memory/ram/memory.hh \
