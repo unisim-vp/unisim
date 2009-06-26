@@ -477,6 +477,9 @@ int sc_main(int argc, char *argv[])
 		*registersTee->registers_import[3] >> crg->registers_export;
 		*registersTee->registers_import[4] >> atd1->registers_export;
 		*registersTee->registers_import[5] >> atd0->registers_export;
+		*registersTee->registers_import[6] >> pwm->registers_export;
+		*registersTee->registers_import[7] >> ect->registers_export;
+
 //		inline_debugger->registers_import >> cpu->registers_export;
 		inline_debugger->registers_import >> registersTee->registers_export;
 
