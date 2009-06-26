@@ -1078,14 +1078,13 @@ ReadRegister(uint64_t addr, uint16_t &value)
 			<< LOCATION
 			<< EndDebugWarning;
 		TrapOnWarning();
+		return tlm::TLM_ADDRESS_ERROR_RESPONSE;
 	}
-	else
-	{
-		if (VerboseRun())
-			logger << DebugInfo
-				<< "Reading register " << name << " with value 0x" << hex << value << dec
-				<< EndDebugInfo;
-	}
+	if (VerboseRun())
+		logger << DebugInfo
+			<< "Reading register " << name << " with value 0x" << hex << value << dec
+			<< EndDebugInfo;
+	return tlm::TLM_OK_RESPONSE;
 }
 
 template<unsigned int BUSWIDTH>
@@ -1381,7 +1380,9 @@ WriteRegister(uint64_t addr, uint16_t value)
 			<< LOCATION
 			<< EndDebugWarning;
 		TrapOnWarning();
+		return tlm::TLM_ADDRESS_ERROR_RESPONSE;
 	}
+	return tlm::TLM_OK_RESPONSE;
 }
 
 /* START: interrupt transaction generation methods */
@@ -1605,19 +1606,20 @@ TimerOverflowHandler()
 		// set the TOF bit if not already set, if it was not already send an interrupt may need to be generated
 		if (!TOF())
 		{
-			if (VerboseRun())
-				logger << DebugInfo << "Detected timer overflow at " << sc_time_stamp() << ", setting TOF";
 			sr = sr | (uint16_t)0x2000;
+			if (VerboseRun()) 
+			{
+				logger << DebugInfo << "Detected timer overflow at " << sc_time_stamp() << ", setting TOF";
+				if (TOIE())
+					logger << " and sending interrupt";
+				logger << EndDebugInfo;
+			}
 			// check if an interrupt should be generated
 			if (TOIE())
 			{
-				if (VerboseRun())
-					logger << DebugInfo << " and sending interrupt";
 				SendTimerOverflowInterrupt();
 				SendGlobalTimerInterrupt();
 			}
-			if (VerboseRun())
-				logger << EndDebugInfo;
 		}
 		// notify the timer overflow event for the next overflow
 		uint32_t rem = (uint32_t)0x10000;
@@ -1656,19 +1658,20 @@ OutputCompareAHandler()
 		// note that OCFA can not be set if PWM is active
 		if (!OCFA() && !OPM() && !PWM())
 		{
-			if (VerboseRun())
-				logger << DebugInfo << "Detected output compare A at " << sc_time_stamp() << ", setting OCFA";
 			sr = sr | (uint16_t)0x4000;
+			if (VerboseRun())
+			{
+				logger << DebugInfo << "Detected output compare A at " << sc_time_stamp() << ", setting OCFA";
+				if (OCAIE())
+					logger << " and sending interrupt";
+				logger << EndDebugInfo;
+			}
 			// check if an interrupt should be generated
 			if (OCAIE())
 			{
-				if (VerboseRun())
-					logger << " and sending interrupt";
 				SendOutputCompareAInterrupt();
 				SendGlobalTimerInterrupt();
 			}
-			if (VerboseRun())
-				logger << EndDebugInfo;
 		}
 		// check if the OCMP<A/B> pin needs to be set
 		if (OCAE())
@@ -1702,19 +1705,20 @@ OutputCompareBHandler()
 		// set the OCFB bit if not already set, if it was not already send an interrupt may need to be generated
 		if (!OCFB())
 		{
-			if (VerboseRun())
-				logger << DebugInfo << "Detected output compare B at " << sc_time_stamp() << ", setting OCFB";
 			sr = sr | (uint16_t)0x0800;
+			if (VerboseRun())
+			{
+				logger << DebugInfo << "Detected output compare B at " << sc_time_stamp() << ", setting OCFB";
+				if (OCBIE())
+					logger << " and sending interrupt";
+				logger << EndDebugInfo;
+			}
 			// check if an interrupt should be generated
 			if (OCBIE())
 			{
-				if (VerboseRun())
-					logger << " and sending interrupt";
 				SendOutputCompareBInterrupt();
 				SendGlobalTimerInterrupt();
 			}
-			if (VerboseRun())
-				logger << EndDebugInfo;
 		}
 		// check if the OCMP<A/B> pin needs to be set
 		if (OCBE())
@@ -1976,6 +1980,7 @@ VerboseSetup()
 {
 	return verbose_setup;
 }
+
 template<unsigned int BUSWIDTH>
 bool 
 TIM<BUSWIDTH> ::
@@ -2009,7 +2014,8 @@ void
 TIM<BUSWIDTH> ::
 TrapOnWarning()
 {
-	if (trap_on_warning) trap_reporting_import->ReportTrap();
+	if (trap_on_warning && trap_reporting_import)
+		trap_reporting_import->ReportTrap();
 }
 
 /* END: verbose methods */
