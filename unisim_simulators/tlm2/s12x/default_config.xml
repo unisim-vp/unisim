@@ -4,7 +4,7 @@
 		<variable name="ATD0.bus-cycle-time">
 			<type>parameter</type>
 			<data_type>long</data_type>
-			<value>0x61a8</value>
+			<value>500000</value>
 			<description></description>
 		</variable>
 		<variable name="ATD0.base-address">
@@ -60,7 +60,7 @@
 		<variable name="ATD1.bus-cycle-time">
 			<type>parameter</type>
 			<data_type>long</data_type>
-			<value>0x61a8</value>
+			<value>500000</value>
 			<description></description>
 		</variable>
 		<variable name="ATD1.base-address">
@@ -188,13 +188,13 @@
 		<variable name="CPU.cpu-cycle-time">
 			<type>parameter</type>
 			<data_type>unsigned long long</data_type>
-			<value>0x61a8</value>
+			<value>500000</value>
 			<description></description>
 		</variable>
 		<variable name="CPU.bus-cycle-time">
 			<type>parameter</type>
 			<data_type>unsigned long long</data_type>
-			<value>0x61a8</value>
+			<value>500000</value>
 			<description></description>
 		</variable>
 		<variable name="CPU.verbose-tlm-bus-synchronize">
@@ -220,7 +220,7 @@
 		<variable name="CRG.oscillator-clock">
 			<type>parameter</type>
 			<data_type>long</data_type>
-			<value>0x30d4</value>
+			<value>250000</value>
 			<description></description>
 		</variable>
 		<variable name="CRG.base-address">
@@ -258,7 +258,7 @@
 		<variable name="ECT.bus-cycle-time">
 			<type>parameter</type>
 			<data_type>long</data_type>
-			<value>0x61a8</value>
+			<value>500000</value>
 			<description></description>
 		</variable>
 		<variable name="ECT.base-address">
@@ -302,7 +302,7 @@
 		<variable name="external-memory.cycle-time">
 			<type>parameter</type>
 			<data_type>unsigned int</data_type>
-			<value>0x61a8</value>
+			<value>500000</value>
 			<description>memory cycle time in picoseconds</description>
 		</variable>
 		<variable name="external-memory.verbose">
@@ -316,7 +316,7 @@
 		<variable name="external_router.cycle_time">
 			<type>parameter</type>
 			<data_type>double</data_type>
-			<value>2.500000e+04</value>
+			<value>500000</value>
 			<description>Time to process a request/response by the router in SC_PS)</description>
 		</variable>
 		<variable name="external_router.port_buffer_size">
@@ -348,7 +348,7 @@
 		<variable name="internal-memory.cycle-time">
 			<type>parameter</type>
 			<data_type>unsigned int</data_type>
-			<value>0x61a8</value>
+			<value>500000</value>
 			<description>memory cycle time in picoseconds</description>
 		</variable>
 		<variable name="internal-memory.verbose">
@@ -362,7 +362,7 @@
 		<variable name="internal_router.cycle_time">
 			<type>parameter</type>
 			<data_type>double</data_type>
-			<value>2.500000e+04</value>
+			<value>500000</value>
 			<description>Time to process a request/response by the router in SC_PS)</description>
 		</variable>
 		<variable name="internal_router.port_buffer_size">
@@ -500,7 +500,7 @@
 		<variable name="PWM.bus-cycle-time">
 			<type>parameter</type>
 			<data_type>long</data_type>
-			<value>0x61a8</value>
+			<value>500000</value>
 			<description></description>
 		</variable>
 		<variable name="PWM.base-address">
