@@ -201,7 +201,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 	ADDRESS addr;
 	ADDRESS cont_addr;
 	unsigned int size;
-	char parm[8][256];
+	char parm[32][1024];
 
 	if(!trap && (running_mode == INLINE_DEBUGGER_MODE_CONTINUE || running_mode == INLINE_DEBUGGER_MODE_CONTINUE_UNTIL))
 	{
@@ -242,8 +242,12 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 //			cout << "\033[1A\033[2C" << line << endl;
 		}
 		
-		nparms = sscanf(line, " %s %s %s %s %s %s %s %s",
-	                parm[0], parm[1], parm[2], parm[3], parm[4], parm[5], parm[6], parm[7]);
+		nparms = sscanf(line, " %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s",
+	                parm[0], parm[1], parm[2], parm[3], parm[4], parm[5], parm[6], parm[7],
+	                parm[8], parm[9], parm[10], parm[11], parm[12], parm[13], parm[14], parm[7],
+	                parm[16], parm[17], parm[18], parm[19], parm[20], parm[21], parm[22], parm[23],
+	                parm[24], parm[25], parm[26], parm[27], parm[28], parm[29], parm[30], parm[31]
+					);
 
 	
 		recognized = false;
@@ -509,12 +513,39 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 						}
 					}
 				}
+				
+				if(IsMonitorCommand(parm[0], parm[1]))
+				{
+					recognized = true;
+					std::stringstream str;
+					str << parm[0];
+					str << parm[1];
+					DumpVariable(str.str().c_str(), parm[2]);
+					break;
+				}
+
 				break;
 
 			case EOF:
 				recognized = true;
 				break;
+
 		} // end of switch
+
+		if (nparms >= 3 && nparms <= 33)
+		{
+			if (IsMonitorSetCommand(parm[0]))
+			{
+				recognized = true;
+				std::stringstream str;
+				for (unsigned int i = 2; i < nparms; i++)
+				{
+					if (i > 2) str << " ";
+						str << parm[i];
+				}
+				SetVariable(parm[1], str.str().c_str());
+			}
+		}
 
 		if(!recognized)
 		{
@@ -570,6 +601,9 @@ void InlineDebugger<ADDRESS>::Help()
 	cout << "     a     print variable as an address (equivalent to 'x')" << endl;
 	cout << "     c     print variable as a string" << endl;
 	cout << "     f     print variable as a float (actually is considered as a double)" << endl;
+	cout << "--------------------------------------------------------------------------------" << endl;
+	cout << "set <variable name> <value>" << endl;
+	cout << "    sets the variable to the given value" << endl;
 	cout << "--------------------------------------------------------------------------------" << endl;
 	cout << "<p | prof | profile>" << endl;
 	cout << "<p | prof | profile> program" << endl;
@@ -971,6 +1005,20 @@ void InlineDebugger<ADDRESS>::DumpVariable(const char *cmd, const char *name)
 }
 
 template <class ADDRESS>
+void InlineDebugger<ADDRESS>::SetVariable(const char *name, const char *value)
+{
+	VariableBase *variable = ServiceManager::GetVariable(name);
+	
+	if (variable == &unisim::kernel::service::ServiceManager::void_variable)
+	{
+		cout << "Unknow variable (" << name << ")" << endl;
+		return;
+	}
+
+	*(variable) = value;
+}
+
+template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DumpProgramProfile()
 {
 	cout << "Program profile:" << endl;
@@ -1239,6 +1287,19 @@ bool InlineDebugger<ADDRESS>::IsMonitorCommand(const char *cmd)
 {
 	return strcmp(cmd, "m") == 0 || strcmp(cmd, "monitor") == 0 
 		|| strncmp(cmd, "m/", 2) == 0 || strncmp(cmd, "monitor/", 8) == 0;
+}
+
+template <class ADDRESS>
+bool InlineDebugger<ADDRESS>::IsMonitorCommand(const char *cmd, const char *format)
+{
+	return (strcmp(cmd, "m") == 0 || strcmp(cmd, "monitor") == 0)
+		&& strncmp(format, "/", 1) == 0;
+}
+
+template <class ADDRESS>
+bool InlineDebugger<ADDRESS>::IsMonitorSetCommand(const char *cmd)
+{
+	return strcmp(cmd, "set") == 0;
 }
 
 template <class ADDRESS>

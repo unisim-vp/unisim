@@ -175,6 +175,8 @@ private:
 	bool IsHelpCommand(const char *cmd);
 	bool IsResetCommand(const char *cmd);
 	bool IsMonitorCommand(const char *cmd);
+	bool IsMonitorCommand(const char *cmd, const char *format);
+	bool IsMonitorSetCommand(const char *cmd);
 	bool IsProfileCommand(const char *cmd);
 
 	void Help();
@@ -192,6 +194,7 @@ private:
 	void DumpVariables();
 	bool MonitorHasFormat(const char *cmd, char &format);
 	void DumpVariable(const char *cmd, const char *name);
+	void SetVariable(const char *name, const char *value);
 	void DumpProgramProfile();
 	void DumpDataProfile(bool write);
 
