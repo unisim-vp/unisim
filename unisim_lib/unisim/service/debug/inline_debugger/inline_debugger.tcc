@@ -438,7 +438,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 				if(IsMonitorCommand(parm[0]))
 				{
 					recognized = true;
-					DumpVariable(parm[1]);
+					DumpVariable(parm[0], parm[1]);
 					break;
 				}
 
@@ -491,13 +491,6 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 					break;
 				}
 				
-				if(IsMonitorCommand(parm[0]))
-				{
-					recognized = true;
-					DumpVariable(parm[1], parm[2]);
-					break;
-				}
-
 				if(IsProfileCommand(parm[0]))
 				{
 					if(strcmp(parm[1], "data") == 0)
@@ -565,9 +558,18 @@ void InlineDebugger<ADDRESS>::Help()
 	cout << "<register name>" << endl;
 	cout << "    display the register value" << endl << endl;
 	cout << "--------------------------------------------------------------------------------" << endl;
-	cout << "<m | monitor> [<variable name>]" << endl;
+	cout << "<m | monitor>[/<format>] [<variable name>]" << endl;
 	cout << "    display the given simulator variable (displays all variable names if none is" << endl;
 	cout << "    given)" << endl;
+	cout << "    when giving a variable name a format can be used, the available formats are:" << endl;
+	cout << "     x     print variable as an integer in hexadecimal format" << endl;
+	cout << "     d     print variable as a signed integer" << endl;
+	cout << "     u     print variable as an unsigned integer" << endl;
+	cout << "     o     print variable as an integer in octal format" << endl;
+	cout << "     t     print variable as an integer in binary format" << endl;
+	cout << "     a     print variable as an address (equivalent to 'x')" << endl;
+	cout << "     c     print variable as a string" << endl;
+	cout << "     f     print variable as a float (actually is considered as a double)" << endl;
 	cout << "--------------------------------------------------------------------------------" << endl;
 	cout << "<p | prof | profile>" << endl;
 	cout << "<p | prof | profile> program" << endl;
@@ -866,10 +868,60 @@ void InlineDebugger<ADDRESS>::DumpVariables()
 }
 
 template <class ADDRESS>
-void InlineDebugger<ADDRESS>::DumpVariable(const char *name, const char *format)
+bool InlineDebugger<ADDRESS>::MonitorHasFormat(const char *cmd, char &format)
+{
+	if (!(strncmp(cmd, "m/", 2) == 0 || strncmp(cmd, "monitor/", 8) == 0)) return false; // no format was used
+
+	// accepted formats = x, d, u, o, t, a, c, f
+	if (strcmp(cmd, "m/x") == 0 || strcmp(cmd, "monitor/x") == 0) 
+	{
+		format = 'x';
+		return true;
+	}
+	if (strcmp(cmd, "m/d") == 0 || strcmp(cmd, "monitor/d") == 0)
+	{
+		format = 'd';
+		return true;
+	}
+	if (strcmp(cmd, "m/u") == 0 || strcmp(cmd, "monitor/u") == 0)
+	{
+		format = 'u';
+		return true;
+	}
+	if (strcmp(cmd, "m/o") == 0 || strcmp(cmd, "monitor/o") == 0)
+	{
+		format = 'o';
+		return true;
+	}
+	if (strcmp(cmd, "m/t") == 0 || strcmp(cmd, "monitor/t") == 0)
+	{
+		format = 't';
+		return true;
+	}
+	if (strcmp(cmd, "m/a") == 0 || strcmp(cmd, "monitor/a") == 0)
+	{
+		format = 'a';
+		return true;
+	}
+	if (strcmp(cmd, "m/c") == 0 || strcmp(cmd, "monitor/c") == 0)
+	{
+		format = 'c';
+		return true;
+	}
+	if (strcmp(cmd, "m/f") == 0 || strcmp(cmd, "monitor/f") == 0)
+	{
+		format = 'f';
+		return true;
+	}
+	cerr << "WARNING: unknow monitor format (" << cmd << "). See help for available formats." << endl;
+	return false;
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::DumpVariable(const char *cmd, const char *name)
 {
 	VariableBase *variable = ServiceManager::GetVariable(name);
-	bool recognized_format = false;
+	bool has_format = false;
 
 	if (variable == &unisim::kernel::service::ServiceManager::void_variable)
 	{
@@ -877,115 +929,44 @@ void InlineDebugger<ADDRESS>::DumpVariable(const char *name, const char *format)
 		return;
 	}
 
+	/* extract the format if any */
+	char format = 0;
+	has_format = MonitorHasFormat(cmd, format);
+	if (has_format == false) format ='c';	
+
 	cout << name << " = ";
-	if (strcmp(format, "string") == 0)
+	switch (format)
 	{
-		cout << ((string) *variable);
-		recognized_format = true;
-	}
-	else if (strcmp(format, "b") == 0)
-	{
-		cout << ((bool) *variable);
-		recognized_format = true;
-	}
-	else if (strcmp(format, "c") == 0)
-	{
-		cout << ((char) *variable);
-		recognized_format = true;
-	}
-	else if (strcmp(format, "s") == 0)
-	{
-		cout << ((short) *variable);
-		recognized_format = true;
-	}
-	else if (strcmp(format, "hs") == 0)
-	{
-		cout << hex << "0x" << ((short) *variable) << dec;
-		recognized_format = true;
-	}
-	else if (strcmp(format, "us") == 0)
-	{
-		cout << ((unsigned short) *variable);
-		recognized_format = true;
-	}
-	else if (strcmp(format, "hus") == 0)
-	{
-		cout << hex << "0x" << ((unsigned short) *variable) << dec;
-		recognized_format = true;
-	}
-	else if (strcmp(format, "i") == 0)
-	{
-		cout << ((int) *variable);
-		recognized_format = true;
-	}
-	else if (strcmp(format, "hi") == 0)
-	{
-		cout << hex << "0x" << ((int) *variable) << dec;
-		recognized_format = true;
-	}
-	else if (strcmp(format, "ui") == 0)
-	{
-		cout << ((unsigned int) *variable);
-		recognized_format = true;
-	}
-	else if (strcmp(format, "hui") == 0)
-	{
-		cout << hex << "0x" << ((unsigned int) *variable) << dec;
-		recognized_format = true;
-	}
-	else if (strcmp(format, "l") == 0)
-	{
-		cout << ((long) *variable);
-		recognized_format = true;
-	}
-	else if (strcmp(format, "hl") == 0)
-	{
-		cout << hex << "0x" << ((long) *variable) << dec;
-		recognized_format = true;
-	}
-	else if (strcmp(format, "ul") == 0)
-	{
-		cout << ((unsigned long) *variable);
-		recognized_format = true;
-	}
-	else if (strcmp(format, "hul") == 0)
-	{
-		cout << hex << "0x" << ((unsigned long) *variable) << dec;
-		recognized_format = true;
-	}
-	else if (strcmp(format, "ll") == 0)
-	{
-		cout << ((long long) *variable);
-		recognized_format = true;
-	}
-	else if (strcmp(format, "hll") == 0)
-	{
-		cout << hex << "0x" << ((long long) *variable) << dec;
-		recognized_format = true;
-	}
-	else if (strcmp(format, "ull") == 0)
-	{
-		cout << ((unsigned long long) *variable);
-		recognized_format = true;
-	}
-	else if (strcmp(format, "hull") == 0)
-	{
-		cout << hex << "0x" << ((unsigned long long) *variable) << dec;
-		recognized_format = true;
-	}
-	else if (strcmp(format, "f") == 0)
-	{
-		cout << ((float) *variable);
-		recognized_format = true;
-	}
-	else if (strcmp(format, "d") == 0)
-	{
-		cout << ((double) *variable);
-		recognized_format = true;
+		case 'x':
+			cout << "0x" << hex << ((unsigned long long) *variable) << dec;
+			break;
+		case 'd':
+			cout << ((long long) *variable);
+			break;
+		case 'u':
+			cout << ((unsigned long long) *variable);
+			break;
+		case 'o':
+			cout.setf(std::ios::oct);
+			cout << "0" << ((unsigned long long) *variable);
+			cout.unsetf(std::ios::oct);
+			break;
+		case 't':
+			cout << "0b";
+			for (unsigned int i = 0; i < sizeof(unsigned long long) * 8; i++)
+				cout << (int)((((unsigned long long) *variable) >> i) & 1);
+			break;
+		case 'a':
+			cout << "0x" << hex << ((unsigned long long) *variable) << dec;
+			break;
+		case 'c':
+			cout << ((string) *variable);
+			break;
+		case 'f':
+			cout << ((double) *variable);
+			break;
 	}
 
-	if (!recognized_format)
-		cout << "Unrecognized monitor format conversion \"" << format << "\"";
 	cout << endl;
 }
 
@@ -1256,7 +1237,8 @@ bool InlineDebugger<ADDRESS>::IsResetCommand(const char *cmd)
 template <class ADDRESS>
 bool InlineDebugger<ADDRESS>::IsMonitorCommand(const char *cmd)
 {
-	return strcmp(cmd, "m") == 0 || strcmp(cmd, "monitor") == 0;
+	return strcmp(cmd, "m") == 0 || strcmp(cmd, "monitor") == 0 
+		|| strncmp(cmd, "m/", 2) == 0 || strncmp(cmd, "monitor/", 8) == 0;
 }
 
 template <class ADDRESS>

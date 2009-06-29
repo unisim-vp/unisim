@@ -190,7 +190,8 @@ private:
 	void DumpWatchpoints();
 	void DumpMemory(ADDRESS addr);
 	void DumpVariables();
-	void DumpVariable(const char *name, const char *format = "string");
+	bool MonitorHasFormat(const char *cmd, char &format);
+	void DumpVariable(const char *cmd, const char *name);
 	void DumpProgramProfile();
 	void DumpDataProfile(bool write);
 
