@@ -181,19 +181,22 @@ void ECT::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 	trans.set_response_status( tlm::TLM_OK_RESPONSE );
 }
 
-void ECT::read(uint8_t offset, uint8_t &value) {
+bool ECT::read(uint8_t offset, uint8_t &value) {
 
 	switch (offset) {
 		default: std::cerr << "Warning: ETC => Read Request not supported for register " << sc_time(offset, SC_NS) << std::endl;
 	}
+
+	return false;
 }
 
-void ECT::write(uint8_t offset, uint8_t value) {
+bool ECT::write(uint8_t offset, uint8_t value) {
 
 	switch (offset) {
 		default: std::cerr << "Warning: ETC => Write Request not supported for register 0x" << sc_time(offset, SC_NS) << std::endl;
 	}
 
+	return false;
 }
 
 //=====================================================================
@@ -244,14 +247,29 @@ void ECT::Reset() {
 
 bool ECT::ReadMemory(service_address_t addr, void *buffer, uint32_t size) {
 
-	read(addr-baseAddress, *(uint8_t *) buffer);
-	return true;
+	// TODO: This is a temporary code. The ECT is not implemented yet
+	if (addr-baseAddress < 0x40) {
+		*((uint8_t *) buffer) = 0x3F;
+		return true;
+	} else {
+		return false;
+	}
+
+	// TODO: the code below has to be used once the ECT is implemented
+//	return read(addr-baseAddress, *(uint8_t *) buffer);
 }
 
 bool ECT::WriteMemory(service_address_t addr, const void *buffer, uint32_t size) {
 
-	write(addr-baseAddress, *(uint8_t *) buffer);
-	return true;
+	// TODO: This is a temporary code. The ECT is not implemented yet
+	if (addr-baseAddress < 0x40) {
+		return true;
+	} else {
+		return false;
+	}
+
+	// TODO: the code below has to be used once the ECT is implemented
+//	return write(addr-baseAddress, *(uint8_t *) buffer);
 }
 
 

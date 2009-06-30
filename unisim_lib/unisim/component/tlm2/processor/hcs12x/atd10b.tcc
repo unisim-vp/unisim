@@ -607,7 +607,7 @@ uint16_t ATD10B<ATD_SIZE>::getDigitalToken(double analogVoltage) {
 //=             registers setters and getters                         =
 //=====================================================================
 template <uint8_t ATD_SIZE>
-void ATD10B<ATD_SIZE>::read(uint8_t offset, void *buffer) {
+bool ATD10B<ATD_SIZE>::read(uint8_t offset, void *buffer) {
 
 	switch (offset) {
 		case ATDCTL0: *((uint8_t *) buffer) = atdctl0_register & 0x0F; break;
@@ -685,16 +685,15 @@ void ATD10B<ATD_SIZE>::read(uint8_t offset, void *buffer) {
 				atdstat0_register = atdstat0_register & 0x7F;
 			}
 		} else {
-			if (debug_enabled) {
-				cerr << "Warning: " << name() << " => Wrong offset.\n";
-			}
+			return false;
 		}
 	}
 
+	return true;
 }
 
 template <uint8_t ATD_SIZE>
-void ATD10B<ATD_SIZE>::write(uint8_t offset, const void *buffer) {
+bool ATD10B<ATD_SIZE>::write(uint8_t offset, const void *buffer) {
 
 	switch (offset) {
 		case ATDCTL0: {
@@ -777,9 +776,11 @@ void ATD10B<ATD_SIZE>::write(uint8_t offset, const void *buffer) {
 		default: if ((offset >= ATDDR0H) && (offset < ATDDR0H+ATD_SIZE*2)) {
 			/* write has no effect */
 		} else {
+			return false;
 		}
 	}
 
+	return true;
 }
 
 template <uint8_t ATD_SIZE>
@@ -836,7 +837,7 @@ bool ATD10B<ATD_SIZE>::Setup() {
 	sprintf(buf, "%s.ATDTEST1",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &atdtest1_register);
 
-	sprintf(buf, "%s.ATDTEST2",name());
+	sprintf(buf, "%s.ATDSTAT2",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &atdstat2_register);
 
 	sprintf(buf, "%s.ATDSTAT1",name());
@@ -930,15 +931,13 @@ void ATD10B<ATD_SIZE>::Reset() {
 template <uint8_t ATD_SIZE>
 bool ATD10B<ATD_SIZE>::ReadMemory(service_address_t addr, void *buffer, uint32_t size) {
 
-	read(addr-baseAddress, buffer);
-	return true;
+	return read(addr-baseAddress, buffer);
 }
 
 template <uint8_t ATD_SIZE>
 bool ATD10B<ATD_SIZE>::WriteMemory(service_address_t addr, const void *buffer, uint32_t size) {
 
-	write(addr-baseAddress, buffer);
-	return true;
+	return write(addr-baseAddress, buffer);
 }
 
 

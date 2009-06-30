@@ -195,7 +195,7 @@ void CRG::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 	trans.set_response_status( tlm::TLM_OK_RESPONSE );
 }
 
-void CRG::read(uint8_t offset, uint8_t &value) {
+bool CRG::read(uint8_t offset, uint8_t &value) {
 
 	switch (offset) {
 		case SYNR: value = synr_register & 0x3F; break;
@@ -210,22 +210,24 @@ void CRG::read(uint8_t offset, uint8_t &value) {
 		case FORBYP: value = 0; break;
 		case CTCTL: value = 0; break;
 		case ARMCOP: value = 0; break;
-		default: ;
+		default: return false;
 	}
+
+	return true;
 }
 
-void CRG::write(uint8_t offset, uint8_t value) {
+bool CRG::write(uint8_t offset, uint8_t value) {
 
 	switch (offset) {
 		case SYNR: {
-			if ((clksel_register & 0x80) != 0) return; // if (PLLSEL == 1) then return;
+			if ((clksel_register & 0x80) != 0) return true; // if (PLLSEL == 1) then return;
 
 			synr_register = value & 0x3F;
 			compute_clock();
 			crgflg_register = crgflg_register | 0x0C; // set Lock and track bits
 		} break;
 		case REFDV: {
-			if ((clksel_register & 0x80) != 0) return; // if (PLLSEL == 1) then return;
+			if ((clksel_register & 0x80) != 0) return true; // if (PLLSEL == 1) then return;
 
 			refdv_register = value & 0x3F;
 			compute_clock();
@@ -234,7 +236,7 @@ void CRG::write(uint8_t offset, uint8_t value) {
 		} break;
 		case CTFLG: {
 			// This register is reserved for factory testing
-			return;
+			return true;
 		} break;
 		case CRGFLG: {
 			/**
@@ -308,8 +310,10 @@ void CRG::write(uint8_t offset, uint8_t value) {
 			}
 
 		} break;
-		default: ;
+		default: return false;
 	}
+
+	return true;
 }
 
 void CRG::compute_clock() {
@@ -459,14 +463,12 @@ void CRG::Reset() {
 
 bool CRG::ReadMemory(service_address_t addr, void *buffer, uint32_t size) {
 
-	read(addr-baseAddress, *(uint8_t *) buffer);
-	return true;
+	return read(addr-baseAddress, *(uint8_t *) buffer);
 }
 
 bool CRG::WriteMemory(service_address_t addr, const void *buffer, uint32_t size) {
 
-	write(addr-baseAddress, *(uint8_t *) buffer);
-	return true;
+	return write(addr-baseAddress, *(uint8_t *) buffer);
 }
 
 

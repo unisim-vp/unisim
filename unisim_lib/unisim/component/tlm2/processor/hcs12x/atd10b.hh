@@ -174,8 +174,8 @@ public:
 	//=====================================================================
 	//=             registers setters and getters                         =
 	//=====================================================================
-	void read(uint8_t offset, void *buffer);
-	void write(uint8_t offset, const void *buffer);
+	bool read(uint8_t offset, void *buffer);
+	bool write(uint8_t offset, const void *buffer);
 
 protected:
 

@@ -207,6 +207,8 @@ public:
 	virtual bool get_direct_mem_ptr(XINT_Payload& payload, tlm_dmi&  dmi_data);
 
 	virtual void read_write( tlm::tlm_generic_payload& trans, sc_time& delay );
+	bool write(address_t address, uint8_t value);
+	bool read(address_t address, uint8_t &value);
 
 	//=====================================================================
 	//=              Registers Interface interface methods               =
@@ -251,9 +253,6 @@ private:
 	peq_with_get<XINT_Payload> input_payload_queue;
 
 //	sc_event interrupt_request_event;
-
-	void write(address_t address, uint8_t value);
-	void read(address_t address, uint8_t &value);
 
 	uint8_t ivbr;
 	uint8_t	int_xgprio;

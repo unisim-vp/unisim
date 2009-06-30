@@ -346,7 +346,7 @@ void PWM<PWM_SIZE>::read_write( tlm::tlm_generic_payload& trans, sc_time& delay 
 }
 
 template <uint8_t PWM_SIZE>
-void PWM<PWM_SIZE>::read(uint8_t offset, uint8_t &value) {
+bool PWM<PWM_SIZE>::read(uint8_t offset, uint8_t &value) {
 
 	switch (offset) {
 		case PWME: value = pwme_register; break;
@@ -394,24 +394,24 @@ void PWM<PWM_SIZE>::read(uint8_t offset, uint8_t &value) {
 			// PWMCNTx
 			if ((offset >= PWMCNT0) && (offset <= PWMCNT7)) {
 				value = channel[offset-PWMCNT0]->getPwmcnt_register();
-			}
-
-			// PWMPERx
+			} else	// PWMPERx
 			if ((offset >= PWMPER0) && (offset <= PWMPER7)) {
 				value = channel[offset-PWMPER0]->getPWMPERValue();
-			}
-
-			// PWMDTYx
+			} else	// PWMDTYx
 			if ((offset >= PWMDTY0) && (offset <= PWMDTY7)) {
 				value = channel[offset-PWMDTY0]->getPWMDTYValue();
+			} else {
+				return false;
 			}
 		}
 	}
 
+	return true;
+
 }
 
 template <uint8_t PWM_SIZE>
-void PWM<PWM_SIZE>::write(uint8_t offset, uint8_t val) {
+bool PWM<PWM_SIZE>::write(uint8_t offset, uint8_t val) {
 
 	switch (offset) {
 		case PWME: {
@@ -550,9 +550,7 @@ void PWM<PWM_SIZE>::write(uint8_t offset, uint8_t val) {
 			if ((offset >= PWMCNT0) && (offset <= PWMCNT7)) {
 				// Any external write operation to the counter register sets it to zero (0)
 				channel[offset-PWMCNT0]->setPwmcnt_register(0);
-			}
-
-			// PWMPERx
+			} else 	// PWMPERx
 			if ((offset >= PWMPER0) && (offset <= PWMPER7)) {
 
 				uint8_t pwmeMask = 0x01;
@@ -564,9 +562,7 @@ void PWM<PWM_SIZE>::write(uint8_t offset, uint8_t val) {
 					channel[offset-PWMPER0]->setPWMPERValue(val);
 				}
 
-			}
-
-			// PWMDTYx
+			} else	// PWMDTYx
 			if ((offset >= PWMDTY0) && (offset <= PWMDTY7)) {
 
 				uint8_t pwmeMask = 0x01;
@@ -578,10 +574,13 @@ void PWM<PWM_SIZE>::write(uint8_t offset, uint8_t val) {
 					channel[offset-PWMDTY0]->setPWMDTYValue(val);
 				}
 
+			} else {
+				return false;
 			}
-
 		}
 	}
+
+	return true;
 }
 
 template <uint8_t PWM_SIZE>
@@ -1031,23 +1030,13 @@ void PWM<PWM_SIZE>::Channel_t::setPWMDTYBuffer(uint8_t val) { pwmdty_register_bu
 template <uint8_t PWM_SIZE>
 bool PWM<PWM_SIZE>::ReadMemory(service_address_t addr, void *buffer, uint32_t size) {
 
-	if ((addr >= baseAddress) && (addr <= (baseAddress+PWMSDN))){
-		read(addr-baseAddress, *((uint8_t *)buffer));
-		return true;
-	}
-
-	return false;
+	return read(addr-baseAddress, *((uint8_t *)buffer));
 }
 
 template <uint8_t PWM_SIZE>
 bool PWM<PWM_SIZE>::WriteMemory(service_address_t addr, const void *buffer, uint32_t size) {
 
-	if ((addr >= baseAddress) && (addr <= (baseAddress+PWMSDN))){
-		write(addr-baseAddress, *((uint8_t *)buffer));
-		return true;
-	}
-
-	return false;
+	return write(addr-baseAddress, *((uint8_t *)buffer));
 }
 
 

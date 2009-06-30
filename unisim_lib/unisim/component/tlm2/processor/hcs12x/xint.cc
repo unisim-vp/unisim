@@ -374,7 +374,7 @@ void XINT::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 	trans.set_response_status( tlm::TLM_OK_RESPONSE );
 }
 
-void XINT::write(address_t address, uint8_t value)
+bool XINT::write(address_t address, uint8_t value)
 {
 	switch (address)
 	{
@@ -389,11 +389,13 @@ void XINT::write(address_t address, uint8_t value)
 		case INT_CFDATA5: write_INT_CFDATA(5, value); break;
 		case INT_CFDATA6: write_INT_CFDATA(6, value); break;
 		case INT_CFDATA7: write_INT_CFDATA(7, value); break;
-		default: ;
+		default: return false;
 	}
+
+	return true;
 }
 
-void XINT::read(address_t address, uint8_t &value)
+bool XINT::read(address_t address, uint8_t &value)
 {
 	switch (address)
 	{
@@ -408,8 +410,10 @@ void XINT::read(address_t address, uint8_t &value)
 		case INT_CFDATA5: value = read_INT_CFDATA(5);
 		case INT_CFDATA6: value = read_INT_CFDATA(6);
 		case INT_CFDATA7: value = read_INT_CFDATA(7);
-		default: value = 0;
+		default: return false;
 	}
+
+	return true;
 }
 
 uint8_t XINT::getIVBR() { return ivbr; }
@@ -506,14 +510,12 @@ void XINT::write_INT_CFDATA(uint8_t index, uint8_t value)
 
 bool XINT::ReadMemory(service_address_t addr, void *buffer, uint32_t size) {
 
-	read(addr, *(uint8_t *) buffer);
-	return true;
+	return read(addr, *(uint8_t *) buffer);
 }
 
 bool XINT::WriteMemory(service_address_t addr, const void *buffer, uint32_t size) {
 
-	write(addr, *(uint8_t *) buffer);
-	return true;
+	return write(addr, *(uint8_t *) buffer);
 }
 
 

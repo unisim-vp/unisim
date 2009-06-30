@@ -188,8 +188,8 @@ public:
 	//=====================================================================
 	//=             registers setters and getters                         =
 	//=====================================================================
-    void read(uint8_t offset, uint8_t &value);
-    void write(uint8_t offset, uint8_t val);
+    bool read(uint8_t offset, uint8_t &value);
+    bool write(uint8_t offset, uint8_t val);
 
 private:
 
