@@ -111,7 +111,7 @@ void S12XMMC::b_transport( tlm::tlm_generic_payload& trans, sc_time& delay ) {
 
 
 	bool find = false;
-	for (int i=0; (i<MMC_SIZE) && !find; i++) {
+	for (int i=0; (i<MMC_MEMMAP_SIZE) && !find; i++) {
 		find = (MMC_REGS_ADDRESSES[i] == logicalAddress);
 	}
 
