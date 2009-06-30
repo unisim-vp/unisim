@@ -47,7 +47,7 @@ namespace hcs12x {
 
 using unisim::util::debug::SimpleRegister;
 
-address_t MMC::MMC_REGS_ADDRESSES[MMC::MMC_SIZE];
+address_t MMC::MMC_REGS_ADDRESSES[MMC::MMC_MEMMAP_SIZE];
 
 MMC::MMC(const char *name, Object *parent):
 	Object(name, parent),
@@ -209,10 +209,20 @@ bool MMC::ReadMemory(service_address_t paged_addr, void *buffer, uint32_t size) 
 	address_t cpu_address;
 	physical_address_t addr;
 
-	// TODO: read registers
 
 	SplitPagedAddress(paged_addr, page, cpu_address);
 	addr = getPhysicalAddress(cpu_address, ADDRESS::EXTENDED, false, true, page);
+
+	if (addr <= REG_HIGH_OFFSET) {
+		for (uint8_t i=0; i<MMC_MEMMAP_SIZE; i++) {
+			if (MMC_REGS_ADDRESSES[i] == addr) {
+				*((uint8_t *) buffer) = read(addr);
+				return true;
+			}
+		}
+
+	}
+
 
 	if (isPaged(cpu_address, page, false, true)) {
 		if (external_memory_import) {
@@ -234,10 +244,18 @@ bool MMC::WriteMemory(service_address_t paged_addr, const void *buffer, uint32_t
 	address_t cpu_address;
 	physical_address_t addr;
 
-	// TODO: write to registers
 
 	SplitPagedAddress(paged_addr, page, cpu_address);
 	addr = getPhysicalAddress(cpu_address, ADDRESS::EXTENDED, false, true, page);
+
+	if (addr <= REG_HIGH_OFFSET) {
+		for (uint8_t i=0; i<MMC_MEMMAP_SIZE; i++) {
+			if (MMC_REGS_ADDRESSES[i] == addr) {
+				write(addr, *((uint8_t *) buffer));
+				return true;
+			}
+		}
+	}
 
 	if (isPaged(cpu_address, page, false, true)) {
 		if (external_memory_import) {

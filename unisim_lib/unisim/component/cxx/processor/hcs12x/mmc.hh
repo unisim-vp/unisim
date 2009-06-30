@@ -138,8 +138,8 @@ public:
 
 	enum {MMCCTL0,	MODE, GPAGE, DIRECT, MMCCTL1, RPAGE, EPAGE, PPAGE, RAMWPC, RAMXGU, RAMSHL, RAMSHU};
 
-	static const uint8_t MMC_SIZE = 12;
-	static address_t MMC_REGS_ADDRESSES[MMC_SIZE];
+	static const uint8_t MMC_MEMMAP_SIZE = 12;
+	static address_t MMC_REGS_ADDRESSES[MMC_MEMMAP_SIZE];
 
 
 	static const uint16_t REGISTERS_SPACE_SIZE	= 0x800;	// MCS12XDP512 has 2k-bytes of io-register space
