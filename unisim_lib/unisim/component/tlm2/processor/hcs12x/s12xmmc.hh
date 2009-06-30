@@ -105,9 +105,6 @@ private:
 	sc_time tlm2_btrans_time;
 	PayloadFabric<tlm::tlm_generic_payload> payloadFabric;
 
-	static const uint8_t MMC_SIZE = 12;
-	address_t MMC_REGS_ADDRESSES[MMC_SIZE];
-
 	// TODO: complete by integrating the routing functionality to the MMC
 	static const uint8_t DEVICE_MAP_SIZE = 6;
 	struct {

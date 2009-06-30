@@ -661,7 +661,7 @@ bool PWM<PWM_SIZE>::Setup() {
 
 	char buf[80];
 
-	sprintf(buf, "%sPWME.",name());
+	sprintf(buf, "%s.PWME",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pwme_register);
 
 	sprintf(buf, "%s.PWMPOL",name());

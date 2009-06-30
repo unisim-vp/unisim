@@ -43,6 +43,8 @@ namespace tlm2 {
 namespace processor {
 namespace hcs12x {
 
+
+
 S12XMMC::S12XMMC(const sc_module_name& name, Object *parent) :
 	Object(name, parent),
 	sc_module(name),
@@ -57,18 +59,6 @@ S12XMMC::S12XMMC(const sc_module_name& name, Object *parent) :
 
 	tlm2_btrans_time = sc_time((double)0, SC_PS);
 
-	MMC_REGS_ADDRESSES[0] = 0x000A;
-	MMC_REGS_ADDRESSES[1] = 0x000B;
-	MMC_REGS_ADDRESSES[2] = 0x0010;
-	MMC_REGS_ADDRESSES[3] = 0x0011;
-	MMC_REGS_ADDRESSES[4] = 0x0013;
-	MMC_REGS_ADDRESSES[5] = 0x0016;
-	MMC_REGS_ADDRESSES[6] = 0x0017;
-	MMC_REGS_ADDRESSES[7] = 0x0030;
-	MMC_REGS_ADDRESSES[8] = 0x011C;
-	MMC_REGS_ADDRESSES[9] = 0x011D;
-	MMC_REGS_ADDRESSES[10] = 0x011E;
-	MMC_REGS_ADDRESSES[11] = 0x011F;
 
 	deviceMap[0].start_address = 0x0034; // CRG
 	deviceMap[0].end_address = 0x003F;
