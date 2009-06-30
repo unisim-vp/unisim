@@ -759,8 +759,8 @@ void PWM<PWM_SIZE>::Reset() {
 
 	for (int i=0; i < PWM_SIZE; i++) {
 		pwmcnt16_register[i] = 0;
-		pwmper16_register[i] = 0;
-		pwmdty16_register_value[i] = 0;
+		pwmper16_register[i] = 0xFF;
+		pwmdty16_register_value[i] = 0xFF;
 	}
 
 	pwmsdn_register = 0;

@@ -900,8 +900,8 @@ void ATD10B<ATD_SIZE>::OnDisconnect() {
 template <uint8_t ATD_SIZE>
 void ATD10B<ATD_SIZE>::Reset() {
 
-	atdctl0_register = 0x0F;
-	atdctl1_register = 0x0F;
+	atdctl0_register = ATD_SIZE - 1;
+	atdctl1_register = ATD_SIZE - 1;
 	atdctl2_register = 0x00;
 	atdctl3_register = 0x20;
 	atdctl4_register = 0x05;
