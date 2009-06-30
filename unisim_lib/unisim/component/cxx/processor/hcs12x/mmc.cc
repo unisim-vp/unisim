@@ -47,6 +47,8 @@ namespace hcs12x {
 
 using unisim::util::debug::SimpleRegister;
 
+address_t MMC::MMC_REGS_ADDRESSES[MMC::MMC_SIZE];
+
 MMC::MMC(const char *name, Object *parent):
 	Object(name, parent),
 	Service<Memory<service_address_t> >(name, parent),
@@ -66,6 +68,20 @@ MMC::MMC(const char *name, Object *parent):
 	param_mmcctl1("mmcctl1", this, mmcctl1_int)
 
 {
+
+	MMC_REGS_ADDRESSES[MMCCTL0] = 0x000A;
+	MMC_REGS_ADDRESSES[MODE] = 0x000B;
+	MMC_REGS_ADDRESSES[GPAGE] = 0x0010;
+	MMC_REGS_ADDRESSES[DIRECT] = 0x0011;
+	MMC_REGS_ADDRESSES[MMCCTL1] = 0x0013;
+	MMC_REGS_ADDRESSES[RPAGE] = 0x0016;
+	MMC_REGS_ADDRESSES[EPAGE] = 0x0017;
+	MMC_REGS_ADDRESSES[PPAGE] = 0x0030;
+	MMC_REGS_ADDRESSES[RAMWPC] = 0x011C;
+	MMC_REGS_ADDRESSES[RAMXGU] = 0x011D;
+	MMC_REGS_ADDRESSES[RAMSHL] = 0x011E;
+	MMC_REGS_ADDRESSES[RAMSHU] = 0x011F;
+
 
 	Reset();
 }
@@ -108,18 +124,43 @@ void MMC::Reset() {
 
 bool MMC::Setup() {
 
-	registers_registry["MMCCTL0"] = new SimpleRegister<uint8_t>("MMCCTL0", &mmcctl0);
-	registers_registry["MODE"] = new SimpleRegister<uint8_t>("MODE", &mode);
-	registers_registry["GPAGE"] = new SimpleRegister<uint8_t>("GPAGE", &gpage);
-	registers_registry["DIRECT"] = new SimpleRegister<uint8_t>("DIRECT", &direct);
-	registers_registry["MMCCTL1"] = new SimpleRegister<uint8_t>("MMCCTL1", &mmcctl1);
-	registers_registry["RPAGE"] = new SimpleRegister<uint8_t>("RPAGE", &rpage);
-	registers_registry["EPAGE"] = new SimpleRegister<uint8_t>("EPAGE", &epage);
-	registers_registry["PPAGE"] = new SimpleRegister<uint8_t>("PPAGE", &ppage);
-	registers_registry["RAMWPC"] = new SimpleRegister<uint8_t>("RAMWPC", &ramwpc);
-	registers_registry["RAMXGU"] = new SimpleRegister<uint8_t>("RAMXGU", &ramxgu);
-	registers_registry["RAMSHL"] = new SimpleRegister<uint8_t>("RAMSHL", &ramshl);
-	registers_registry["RAMSHU"] = new SimpleRegister<uint8_t>("RAMSHU", &ramshu);
+	char buf[80];
+
+	sprintf(buf, "%s.MMCCTL0", GetName());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &mmcctl0);
+
+	sprintf(buf, "%s.MODE", GetName());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &mode);
+
+	sprintf(buf, "%s.GPAGE", GetName());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &gpage);
+
+	sprintf(buf, "%s.DIRECT", GetName());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &direct);
+
+	sprintf(buf, "%s.MMCCTL1", GetName());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &mmcctl1);
+
+	sprintf(buf, "%s.RPAGE", GetName());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &rpage);
+
+	sprintf(buf, "%s.EPAGE", GetName());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &epage);
+
+	sprintf(buf, "%s.PPAGE", GetName());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &ppage);
+
+	sprintf(buf, "%s.RAMWPC", GetName());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &ramwpc);
+
+	sprintf(buf, "%s.RAMXGU", GetName());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &ramxgu);
+
+	sprintf(buf, "%s.RAMSHL", GetName());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &ramshl);
+
+	sprintf(buf, "%s.RAMSHU", GetName());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &ramshu);
 
 	return true;
 }
@@ -168,7 +209,7 @@ bool MMC::ReadMemory(service_address_t paged_addr, void *buffer, uint32_t size) 
 	address_t cpu_address;
 	physical_address_t addr;
 
-	// TODO: read MMC registers
+	// TODO: read registers
 
 	SplitPagedAddress(paged_addr, page, cpu_address);
 	addr = getPhysicalAddress(cpu_address, ADDRESS::EXTENDED, false, true, page);
@@ -193,7 +234,7 @@ bool MMC::WriteMemory(service_address_t paged_addr, const void *buffer, uint32_t
 	address_t cpu_address;
 	physical_address_t addr;
 
-	// TODO: write to MMC registers
+	// TODO: write to registers
 
 	SplitPagedAddress(paged_addr, page, cpu_address);
 	addr = getPhysicalAddress(cpu_address, ADDRESS::EXTENDED, false, true, page);

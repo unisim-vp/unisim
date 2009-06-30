@@ -69,6 +69,7 @@ using unisim::service::interfaces::Registers;
 
 using unisim::util::debug::Register;
 
+
 class MMC : public Service<Memory<service_address_t> >,
 	public Client<Memory<service_address_t> >,
 	public Service<Registers>
@@ -135,18 +136,11 @@ public:
 	static const physical_address_t GLOBAL_FLASH_UNPAGED_LOW_OFFSET		= 0x7F4000;	// GPAGE_CPUAddress
 	static const physical_address_t GLOBAL_FLASH_UNPAGED_HIGH_OFFSET	= 0x7FFFFF;	// GPAGE_CPUAddress
 
-	static const address_t MMCCTL0_REG_ADDRESS	= 0x000A;
-	static const address_t MMC_MODE_REG_ADDRESS	= 0x000B;
-	static const address_t GPAGE_REG_ADDRESS	= 0x0010;
-	static const address_t DIRECT_REG_ADDRESS	= 0x0011;
-	static const address_t MMCCTL1_REG_ADDRESS	= 0x0013;
-	static const address_t RPAGE_REG_ADDRESS	= 0x0016;
-	static const address_t EPAGE_REG_ADDRESS	= 0x0017;
-	static const address_t PPAGE_REG_ADDRESS	= 0x0030;
-	static const address_t RAMWPC_REG_ADDRESS	= 0x011C;
-	static const address_t RAMXGU_REG_ADDRESS	= 0x011D;
-	static const address_t RAMSHL_REG_ADDRESS	= 0x011E;
-	static const address_t RAMSHU_REG_ADDRESS	= 0x011F;
+	enum {MMCCTL0,	MODE, GPAGE, DIRECT, MMCCTL1, RPAGE, EPAGE, PPAGE, RAMWPC, RAMXGU, RAMSHL, RAMSHU};
+
+	static const uint8_t MMC_SIZE = 12;
+	static address_t MMC_REGS_ADDRESSES[MMC_SIZE];
+
 
 	static const uint16_t REGISTERS_SPACE_SIZE	= 0x800;	// MCS12XDP512 has 2k-bytes of io-register space
 															// mapped at low address of memory
@@ -417,44 +411,43 @@ inline physical_address_t MMC::getPhysicalAddress(address_t logicalAddress, ADDR
 
 inline uint8_t MMC::read(address_t address)
 {
-	switch (address) {
-	case MMCCTL0_REG_ADDRESS: return mmcctl0;
-	case MMC_MODE_REG_ADDRESS: return mode;
-	case GPAGE_REG_ADDRESS: return gpage;
-	case DIRECT_REG_ADDRESS: return direct;
-	case MMCCTL1_REG_ADDRESS: return mmcctl1;
-	case RPAGE_REG_ADDRESS: return rpage;
-	case EPAGE_REG_ADDRESS: return epage;
-	case PPAGE_REG_ADDRESS: return ppage;
-	case RAMWPC_REG_ADDRESS: return ramwpc;
-	case RAMXGU_REG_ADDRESS: return ramxgu;
-	case RAMSHL_REG_ADDRESS: return ramshl;
-	case RAMSHU_REG_ADDRESS: return ramshu;
-	default: return 0;
-	}
+
+	if (address == MMC_REGS_ADDRESSES[MMCCTL0]) return mmcctl0;
+	if (address == MMC_REGS_ADDRESSES[MODE]) return mode;
+	if (address == MMC_REGS_ADDRESSES[GPAGE]) return gpage;
+	if (address == MMC_REGS_ADDRESSES[DIRECT]) return direct;
+	if (address == MMC_REGS_ADDRESSES[MMCCTL1]) return mmcctl1;
+	if (address == MMC_REGS_ADDRESSES[RPAGE]) return rpage;
+	if (address == MMC_REGS_ADDRESSES[EPAGE]) return epage;
+	if (address == MMC_REGS_ADDRESSES[PPAGE]) return ppage;
+	if (address == MMC_REGS_ADDRESSES[RAMWPC]) return ramwpc;
+	if (address == MMC_REGS_ADDRESSES[RAMXGU]) return ramxgu;
+	if (address == MMC_REGS_ADDRESSES[RAMSHL]) return ramshl;
+	if (address == MMC_REGS_ADDRESSES[RAMSHU]) return ramshu;
+
 }
 
 inline void MMC::write(address_t address, uint8_t val)
 {
-	switch (address) {
-	case MMCCTL0_REG_ADDRESS: mmcctl0 = val; break;
-	case MMC_MODE_REG_ADDRESS: mode = val; break;
-	case GPAGE_REG_ADDRESS: gpage = val; break;
-	case DIRECT_REG_ADDRESS: {
+
+	if (address == MMC_REGS_ADDRESSES[MMCCTL0]) { mmcctl0 = val; return; }
+	if (address == MMC_REGS_ADDRESSES[MODE]) { mode = val; return; }
+	if (address == MMC_REGS_ADDRESSES[GPAGE]) { gpage = val; return; }
+	if (address == MMC_REGS_ADDRESSES[DIRECT]) {
 		if (!directSet) {
 			direct = val;
 			directSet = true;
 		}
-	} break;
-	case MMCCTL1_REG_ADDRESS: mmcctl1 = val;
-	case RPAGE_REG_ADDRESS: rpage = val;
-	case EPAGE_REG_ADDRESS: epage = val;
-	case PPAGE_REG_ADDRESS: ppage = val;
-	case RAMWPC_REG_ADDRESS: ramwpc = val;
-	case RAMXGU_REG_ADDRESS: ramxgu = val;
-	case RAMSHL_REG_ADDRESS: ramshl = val;
-	case RAMSHU_REG_ADDRESS: ramshu = val;
+		return;
 	}
+	if (address == MMC_REGS_ADDRESSES[MMCCTL1]) { mmcctl1 = val; return; }
+	if (address == MMC_REGS_ADDRESSES[RPAGE]) { rpage = val; return; }
+	if (address == MMC_REGS_ADDRESSES[EPAGE]) { epage = val; return; }
+	if (address == MMC_REGS_ADDRESSES[PPAGE]) { ppage = val; return; }
+	if (address == MMC_REGS_ADDRESSES[RAMWPC]) { ramwpc = val; return; }
+	if (address == MMC_REGS_ADDRESSES[RAMXGU]) { ramxgu = val; return; }
+	if (address == MMC_REGS_ADDRESSES[RAMSHL]) { ramshl = val; return; }
+	if (address == MMC_REGS_ADDRESSES[RAMSHU]) { ramshu = val; return; }
 
 }
 

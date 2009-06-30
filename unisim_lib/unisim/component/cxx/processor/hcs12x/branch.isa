@@ -407,10 +407,10 @@ call_ext.execute = {
 	addr = cpu->getRegSP() - 1;
 	cpu->setRegSP(addr);
 
-	old_ppage = cpu->memRead8(MMC::PPAGE_REG_ADDRESS);
+	old_ppage = cpu->memRead8(MMC::MMC_REGS_ADDRESSES[MMC::PPAGE]);
 	cpu->memWrite8(addr, old_ppage);
 
-	cpu->memWrite8(MMC::PPAGE_REG_ADDRESS, page);
+	cpu->memWrite8(MMC::MMC_REGS_ADDRESSES[MMC::PPAGE], page);
 	cpu->setRegPC(opr16a);
 
 }
@@ -456,10 +456,10 @@ call_16offset_idx_ind.execute = {
 	addr = cpu->getRegSP() - 1;
 	cpu->setRegSP(addr);
 	
-	old_ppage = cpu->memRead8(MMC::PPAGE_REG_ADDRESS);
+	old_ppage = cpu->memRead8(MMC::MMC_REGS_ADDRESSES[MMC::PPAGE]);
 	cpu->memWrite8(addr, old_ppage);
 
-	cpu->memWrite8(MMC::PPAGE_REG_ADDRESS, ppageVal);
+	cpu->memWrite8(MMC::MMC_REGS_ADDRESSES[MMC::PPAGE], ppageVal);
 	cpu->setRegPC(subAddr);
 
 }
@@ -502,10 +502,10 @@ call_accD_offset_idx_ind.execute = {
 	addr = cpu->getRegSP() - 1;
 	cpu->setRegSP(addr);
 
-	old_ppage = cpu->memRead8(MMC::PPAGE_REG_ADDRESS);
+	old_ppage = cpu->memRead8(MMC::MMC_REGS_ADDRESSES[MMC::PPAGE]);
 	cpu->memWrite8(addr, old_ppage);
 
-	cpu->memWrite8(MMC::PPAGE_REG_ADDRESS, ppageVal);
+	cpu->memWrite8(MMC::MMC_REGS_ADDRESSES[MMC::PPAGE], ppageVal);
 	cpu->setRegPC(subAddr);
 }
 
@@ -558,10 +558,10 @@ call_idx.execute = {
 	addr = cpu->getRegSP() - 1;
 	cpu->setRegSP(addr);
 
-	old_ppage = cpu->memRead8(MMC::PPAGE_REG_ADDRESS);
+	old_ppage = cpu->memRead8(MMC::MMC_REGS_ADDRESSES[MMC::PPAGE]);
 	cpu->memWrite8(addr, old_ppage);
 
-	cpu->memWrite8(MMC::PPAGE_REG_ADDRESS, page);
+	cpu->memWrite8(MMC::MMC_REGS_ADDRESSES[MMC::PPAGE], page);
 	cpu->setRegPC(callAddr);
 }
 
@@ -638,7 +638,7 @@ jsr_dir.execute = {
 	
 	cpu->memWrite16(addr, cpu->getRegPC());
 	
-	direct_reg = cpu->memRead8(MMC::DIRECT_REG_ADDRESS);
+	direct_reg = cpu->memRead8(MMC::MMC_REGS_ADDRESSES[MMC::DIRECT]);
 	addr = ((uint16_t) direct_reg << 8) | opr8a;
 	cpu->setRegPC(addr);
 }
@@ -730,7 +730,7 @@ rtc.execute = {
 	 physical_address_t addr;
 	 
 	 addr = cpu->getRegSP();
-	 cpu->memWrite8(MMC::PPAGE_REG_ADDRESS, cpu->memRead8(addr));
+	 cpu->memWrite8(MMC::MMC_REGS_ADDRESSES[MMC::PPAGE], cpu->memRead8(addr));
 	 cpu->setRegSP(addr + 1);
 	 
 	 addr = cpu->getRegSP();
