@@ -463,12 +463,25 @@ void CRG::Reset() {
 
 bool CRG::ReadMemory(service_address_t addr, void *buffer, uint32_t size) {
 
-	return read(addr-baseAddress, *(uint8_t *) buffer);
+	service_address_t offset = addr-baseAddress;
+
+	if (offset <= ARMCOP) {
+		return read(offset, *(uint8_t *) buffer);
+	}
+
+	return false;
 }
 
 bool CRG::WriteMemory(service_address_t addr, const void *buffer, uint32_t size) {
 
-	return write(addr-baseAddress, *(uint8_t *) buffer);
+	service_address_t offset = addr-baseAddress;
+
+	if (offset <= ARMCOP) {
+		return write(offset, *(uint8_t *) buffer);
+	}
+
+	return false;
+
 }
 
 

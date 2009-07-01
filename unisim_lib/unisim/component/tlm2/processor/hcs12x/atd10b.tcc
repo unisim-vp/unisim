@@ -931,13 +931,26 @@ void ATD10B<ATD_SIZE>::Reset() {
 template <uint8_t ATD_SIZE>
 bool ATD10B<ATD_SIZE>::ReadMemory(service_address_t addr, void *buffer, uint32_t size) {
 
-	return read(addr-baseAddress, buffer);
+	service_address_t offset = addr-baseAddress;
+
+	if (offset <= ATDDR15L) {
+		return read(offset, buffer);
+	}
+
+	return false;
 }
 
 template <uint8_t ATD_SIZE>
 bool ATD10B<ATD_SIZE>::WriteMemory(service_address_t addr, const void *buffer, uint32_t size) {
 
-	return write(addr-baseAddress, buffer);
+	service_address_t offset = addr-baseAddress;
+
+	if (offset <= ATDDR15L) {
+		return write(offset, buffer);
+	}
+
+	return false;
+
 }
 
 

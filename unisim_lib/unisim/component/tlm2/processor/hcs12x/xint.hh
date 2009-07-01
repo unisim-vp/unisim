@@ -106,38 +106,11 @@ public:
 	//=   XINT Registers addresses and Reset Values          =
 	//========================================================
 
-	static const address_t	IVBR_ADDRESS			= 0x0121;	// S12XINT: Address of the Interrupt Vector Base Register
-	static const uint8_t	IVBR_RESET_VALUE		= 0xFF;		// IVBR is only one.
+	enum {IVBR,	INT_XGPRIO, INT_CFADDR, INT_CFDATA0, INT_CFDATA1, INT_CFDATA2, INT_CFDATA3, INT_CFDATA4, INT_CFDATA5, INT_CFDATA6, INT_CFDATA7 };
 
-	static const address_t	INT_XGPRIO				= 0x0126;
-	static const uint8_t	INT_XGPRIO_RESET_VALUE	= 0x01;
-
-	static const address_t	INT_CFADDR				= 0x0127;
-	static const uint8_t	INT_CFADDR_RESET_VALUE	= 0x10;
-
-	static const address_t	INT_CFDATA0				= 0x0128;
-	static const uint8_t	INT_CFDATA0_RESET_VALUE	= 0x01;
-
-	static const address_t	INT_CFDATA1				= 0x0129;
-	static const uint8_t	INT_CFDATA1_RESET_VALUE	= 0x01;
-
-	static const address_t	INT_CFDATA2				= 0x012A;
-	static const uint8_t	INT_CFDATA2_RESET_VALUE	= 0x01;
-
-	static const address_t	INT_CFDATA3				= 0x012B;
-	static const uint8_t	INT_CFDATA3_RESET_VALUE	= 0x01;
-
-	static const address_t	INT_CFDATA4				= 0x012C;
-	static const uint8_t	INT_CFDATA4_RESET_VALUE	= 0x01;
-
-	static const address_t	INT_CFDATA5				= 0x012D;
-	static const uint8_t	INT_CFDATA5_RESET_VALUE	= 0x01;
-
-	static const address_t	INT_CFDATA6				= 0x012E;
-	static const uint8_t	INT_CFDATA6_RESET_VALUE	= 0x01;
-
-	static const address_t	INT_CFDATA7				= 0x012F;
-	static const uint8_t	INT_CFDATA7_RESET_VALUE	= 0x01;
+	static const uint8_t XINT_MEMMAP_SIZE = 11;
+	static address_t XINT_REGS_ADDRESSES[XINT_MEMMAP_SIZE];
+	static uint8_t XINT_REGS_RESET_VALUES[XINT_MEMMAP_SIZE];
 
 	//==================================================================
 	//=           XINT  Fixed Interrupt vectors Offsets                =

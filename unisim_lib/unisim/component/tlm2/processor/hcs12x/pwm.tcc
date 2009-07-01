@@ -1030,13 +1030,25 @@ void PWM<PWM_SIZE>::Channel_t::setPWMDTYBuffer(uint8_t val) { pwmdty_register_bu
 template <uint8_t PWM_SIZE>
 bool PWM<PWM_SIZE>::ReadMemory(service_address_t addr, void *buffer, uint32_t size) {
 
-	return read(addr-baseAddress, *((uint8_t *)buffer));
+	service_address_t offset = addr-baseAddress;
+
+	if (offset <= PWMSDN) {
+		return read(offset, *((uint8_t *)buffer));
+	}
+
+	return false;
 }
 
 template <uint8_t PWM_SIZE>
 bool PWM<PWM_SIZE>::WriteMemory(service_address_t addr, const void *buffer, uint32_t size) {
 
-	return write(addr-baseAddress, *((uint8_t *)buffer));
+	service_address_t offset = addr-baseAddress;
+
+	if (offset <= PWMSDN) {
+		return write(offset, *((uint8_t *)buffer));
+	}
+
+	return false;
 }
 
 

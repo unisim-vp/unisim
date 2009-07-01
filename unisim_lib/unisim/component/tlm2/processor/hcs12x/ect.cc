@@ -249,7 +249,7 @@ bool ECT::ReadMemory(service_address_t addr, void *buffer, uint32_t size) {
 
 	// TODO: This is a temporary code. The ECT is not implemented yet
 	if (addr-baseAddress < 0x40) {
-		*((uint8_t *) buffer) = 0x3F;
+		*((uint8_t *) buffer) = 0x0;
 		return true;
 	} else {
 		return false;

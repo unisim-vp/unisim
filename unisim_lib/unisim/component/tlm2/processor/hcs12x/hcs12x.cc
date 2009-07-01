@@ -241,7 +241,7 @@ HCS12X ::
 Setup() {
 	if(!inherited::Setup()) {
 		if(debug_enabled && verbose_step)
-			inherited::logger << DebugError
+			*inherited::logger << DebugError
 				<< "Error while trying to set up the HCS12X cpu"
 				<< std::endl << EndDebugError;
 		return false;
@@ -253,11 +253,11 @@ Setup() {
 		verbose_tlm_run_thread = true;
 	} else {
 		if( verbose_tlm_bus_synchronize)
-			inherited::logger << DebugInfo
+			*inherited::logger << DebugInfo
 				<< "verbose-tlm-bus-synchronize = true"
 				<< std::endl << EndDebugInfo;
 		if( verbose_tlm_run_thread)
-			inherited::logger << DebugInfo
+			*inherited::logger << DebugInfo
 				<< "verbose-tlm-run-thread = true"
 				<< std::endl << EndDebugInfo;
 	}
@@ -273,7 +273,7 @@ Setup() {
 
 	nice_time = sc_time((double)nice_time_int, SC_PS);
 	if(debug_enabled &&  inherited::verbose_setup) {
-		inherited::logger << DebugInfo
+		*inherited::logger << DebugInfo
 			<< "Setting CPU cycle time to " << cpu_cycle_time.to_string() << std::endl
 			<< "Setting Bus cycle time to " << bus_cycle_time.to_string() << std::endl
 			<< "Setting nice time to " << nice_time.to_string() << std::endl
@@ -311,34 +311,34 @@ BusSynchronize() {
 	return;
 
 	if(debug_enabled && verbose_tlm_bus_synchronize)
-		inherited::logger << DebugInfo
+		*inherited::logger << DebugInfo
 			<< "Bus synchro START"
 			<< std::endl << EndDebugInfo;
 	sc_dt::uint64 current_time_tu = sc_time_stamp().value();
 	sc_dt::uint64 time_spent_tu = time_spent.value();
 	if(debug_enabled && verbose_tlm_bus_synchronize)
-		inherited::logger << DebugInfo
+		*inherited::logger << DebugInfo
 			<< "time_spent_tu = " << time_spent_tu
 			<< std::endl << EndDebugInfo;
 	sc_dt::uint64 next_time_tu = current_time_tu + time_spent_tu;
 	if(debug_enabled && verbose_tlm_bus_synchronize)
-		inherited::logger << DebugInfo
+		*inherited::logger << DebugInfo
 			<< "next_time_tu = " << next_time_tu
 			<< std::endl << EndDebugInfo;
 	sc_dt::uint64 bus_cycle_time_tu = bus_cycle_time.value();
 	if(debug_enabled && verbose_tlm_bus_synchronize)
-		inherited::logger << DebugInfo
+		*inherited::logger << DebugInfo
 			<< "bus_cycle_time_tu = " << bus_cycle_time_tu
 			<< std::endl << EndDebugInfo;
 	sc_dt::uint64 bus_time_phase_tu = next_time_tu % bus_cycle_time_tu;
 	if(debug_enabled && verbose_tlm_bus_synchronize)
-		inherited::logger << DebugInfo
+		*inherited::logger << DebugInfo
 			<< "bus_time_phase_tu = " << bus_time_phase_tu
 			<< std::endl << EndDebugInfo;
 	if(time_spent_tu || bus_time_phase_tu) {
 		sc_dt::uint64 delay_tu = next_time_tu - current_time_tu + (bus_cycle_time_tu - bus_time_phase_tu);
 		if(debug_enabled && verbose_tlm_bus_synchronize)
-			inherited::logger << DebugInfo
+			*inherited::logger << DebugInfo
 				<< "delay_tu = " << delay_tu
 				<< std::endl << EndDebugInfo;
 		wait(sc_time(delay_tu, false));
@@ -346,7 +346,7 @@ BusSynchronize() {
 		bus_time = cpu_time + bus_cycle_time;
 	}
 	if(debug_enabled && verbose_tlm_bus_synchronize)
-		inherited::logger << DebugInfo
+		*inherited::logger << DebugInfo
 			<< "Bus synchro END"
 			<< std::endl << EndDebugInfo;
 
@@ -379,14 +379,14 @@ Run() {
 		}
 
 		if(debug_enabled && verbose_tlm_run_thread)
-			inherited::logger << DebugInfo
+			*inherited::logger << DebugInfo
 				<< "Executing step"
 				<< std::endl << EndDebugInfo;
 
 		opCycles = inherited::Step();
 
 		if(debug_enabled && verbose_tlm_run_thread)
-			inherited::logger << DebugInfo
+			*inherited::logger << DebugInfo
 				<< "Finished executing step"
 				<< std::endl << EndDebugInfo;
 
