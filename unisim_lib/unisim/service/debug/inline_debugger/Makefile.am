@@ -1,4 +1,4 @@
-INCLUDES = -I$(top_srcdir)/../../../..
+INCLUDES = -I$(top_srcdir)/../../../.. -I$(top_builddir)/../../../..
 includedir = $(prefix)/include/unisim/service/debug/inline_debugger
 sharedir = $(prefix)/share/unisim_lib/unisim/service/debug/inline_debugger
 include_HEADERS = inline_debugger.hh inline_debugger.tcc

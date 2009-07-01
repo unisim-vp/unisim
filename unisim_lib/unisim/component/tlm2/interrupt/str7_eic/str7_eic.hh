@@ -277,6 +277,35 @@ private:
 	inline bool VerboseRun();
 	inline bool VerboseTLM();
 	/* END: logger and logger methods and verbose parameters/methods */
+	
+	/* START: trap variables and methods */
+	bool trap_on_irq;
+	unisim::kernel::service::Parameter<bool> param_trap_on_irq;
+	bool trap_on_fiq;
+	unisim::kernel::service::Parameter<bool> param_trap_on_fiq;
+	bool trap_on_irq_handling;
+	unisim::kernel::service::Parameter<bool> param_trap_on_irq_handling;
+	bool trap_on_fiq_handling;
+	unisim::kernel::service::Parameter<bool> param_trap_on_fiq_handling;
+	bool trap_on_warning;
+	unisim::kernel::service::Parameter<bool> param_trap_on_warning;
+	inline bool TrapOnIRQ();
+	inline bool TrapOnFIQ();
+	inline bool TrapOnIRQHandling();
+	inline bool TrapOnFIQHandling();
+	inline bool TrapOnWarning();
+	/* END: trap variables and methods */
+	
+	/* START: registers variables */
+	unisim::kernel::service::Register<uint32_t> reg_icr;
+	unisim::kernel::service::Register<uint32_t> reg_cicr;
+	unisim::kernel::service::Register<uint32_t> reg_cipr;
+	unisim::kernel::service::Register<uint32_t> reg_ivr;
+	unisim::kernel::service::Register<uint32_t> reg_fir;
+	unisim::kernel::service::Register<uint32_t> reg_ier0;
+	unisim::kernel::service::Register<uint32_t> reg_ipr0;
+	unisim::kernel::service::Register<uint32_t> *reg_sir[32];
+	/* END: registers_variables */
 };
 
 } // end of namespace str7_eic

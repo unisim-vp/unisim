@@ -105,6 +105,8 @@
 #define unlikely(x) (x)
 #endif
 
+#include <sstream>
+
 namespace unisim {
 namespace component {
 namespace tlm2 {
@@ -154,7 +156,24 @@ STR7_EIC(const sc_module_name& name, Object* parent) :
 		verbose_run(false),
 		param_verbose_run("verbose-run", this, verbose_run, "Display runtime information"),
 		verbose_tlm(false),
-		param_verbose_tlm("verbose-tlm", this, verbose_tlm, "Display TLM2.0 transaction management")
+		param_verbose_tlm("verbose-tlm", this, verbose_tlm, "Display TLM2.0 transaction management"),
+		trap_on_irq(false),
+		param_trap_on_irq("trap-on-irq", this, trap_on_irq, "Send a trap when an IRQ arrives"),
+		trap_on_fiq(false),
+		param_trap_on_fiq("trap-on-fiq", this, trap_on_fiq, "Send a trap when a FIQ arrives"),
+		trap_on_irq_handling(false),
+		param_trap_on_irq_handling("trap-on-irq-handling", this, trap_on_irq_handling, "Send a trap when an IRQ is handled"),
+		trap_on_fiq_handling(false),
+		param_trap_on_fiq_handling("trap-on-fiq-handling", this, trap_on_fiq_handling, "Send a trap when a FIQ is handled"),
+		trap_on_warning(false),
+		param_trap_on_warning("trap-on-warning", this, trap_on_warning, "Send a trap when an unexpected behavior is found"),
+		reg_icr("ICR", this, icr),
+		reg_cicr("CICR", this, cicr),
+		reg_cipr("CIPR", this, cipr),
+		reg_ivr("IVR", this, ivr),
+		reg_fir("FIR", this, fir),
+		reg_ier0("IER0", this, ier0),
+		reg_ipr0("IPR0", this, ipr0)
 {
 	SC_HAS_PROCESS(STR7_EIC);
 
@@ -185,6 +204,14 @@ STR7_EIC(const sc_module_name& name, Object* parent) :
 	/* register the out_fiq socket to the methods implementation provided by the module */
 	out_fiq.register_nb_transport_bw(this, &THIS_MODULE::OutFIQNb);
 	out_fiq.register_invalidate_direct_mem_ptr(this, &THIS_MODULE::OutFIQDMI);
+
+	unisim::kernel::service::Register<uint32_t> *reg_sir[32];
+	for (unsigned int i = 0; i < 32; i++)
+	{
+		std::stringstream ss;
+		ss << "SIR[" << i << "]";
+		reg_sir[i] = new unisim::kernel::service::Register<uint32_t>(ss.str().c_str(), this, sir[i]);
+	}
 }
 
 template <unsigned int BUS_WIDTH>
@@ -575,7 +602,7 @@ IRQ(unsigned int index, bool level, sc_core::sc_time& t)
 			<< " at " << (sc_time_stamp() + t) << " (current time = " << sc_time_stamp() << ")"
 			<< EndDebugInfo;
 	}
-	if (trap_reporting_import)
+	if (TrapOnIRQ())
 		trap_reporting_import->ReportTrap();
 }
 
@@ -605,7 +632,7 @@ IRQFifoHandler()
 						<< "Processing IRQ interrupt received on port " << index << " with level = " << level << " at " << sc_time_stamp()
 						<< endl
 						<< " - prev irq_status = 0x" << hex << irq_status << dec << endl;
-				if (trap_reporting_import)
+				if (TrapOnIRQHandling())
 					trap_reporting_import->ReportTrap();
 				if (level)
 					irq_status |= ((uint32_t)1 << index);
@@ -631,7 +658,7 @@ IRQFifoHandler()
 				<< TIME(SC_ZERO_TIME) << endl
 				<< LOCATION
 				<< EndDebugWarning;
-			if (trap_reporting_import)
+			if (TrapOnWarning())
 				trap_reporting_import->ReportTrap();
 		}
 	}
@@ -658,7 +685,7 @@ FIQ(unsigned int index, bool level, sc_core::sc_time& t)
 			<< " at " << (sc_time_stamp() + t) << " (current time = " << sc_time_stamp() << ")"
 			<< EndDebugInfo;
 	}
-	if (trap_reporting_import)
+	if (TrapOnFIQ())
 		trap_reporting_import->ReportTrap();
 }
 
@@ -686,7 +713,7 @@ FIQFifoHandler()
 					logger << DebugInfo
 						<< "Processing FIQ interrupt received on port " << index << " with level = " << level << " at " << sc_time_stamp()
 						<< EndDebugInfo;
-				if (trap_reporting_import)
+				if (TrapOnFIQHandling())
 					trap_reporting_import->ReportTrap();
 				if (level)
 					fiq_status |= ((uint32_t)1 << index);
@@ -702,7 +729,7 @@ FIQFifoHandler()
 				<< TIME(SC_ZERO_TIME) << endl
 				<< LOCATION
 				<< EndDebugWarning;
-			if (trap_reporting_import)
+			if (TrapOnWarning())
 				trap_reporting_import->ReportTrap();
 		}
 	}
@@ -1264,6 +1291,48 @@ VerboseTLM()
 
 /* END: verbose methods */
 
+/* START: trap methods */
+template <unsigned int BUS_WIDTH>
+bool
+STR7_EIC<BUS_WIDTH> ::
+TrapOnIRQ()
+{
+	return trap_on_irq && trap_reporting_import;
+}
+
+template <unsigned int BUS_WIDTH>
+bool
+STR7_EIC<BUS_WIDTH> ::
+TrapOnFIQ()
+{
+	return trap_on_fiq && trap_reporting_import;
+}
+
+template <unsigned int BUS_WIDTH>
+bool
+STR7_EIC<BUS_WIDTH> ::
+TrapOnIRQHandling()
+{
+	return trap_on_irq_handling && trap_reporting_import;
+}
+	
+template <unsigned int BUS_WIDTH>
+bool
+STR7_EIC<BUS_WIDTH> ::
+TrapOnFIQHandling()
+{
+	return trap_on_fiq_handling && trap_reporting_import;
+}
+
+template <unsigned int BUS_WIDTH>
+bool
+STR7_EIC<BUS_WIDTH>::
+TrapOnWarning()
+{
+	return trap_on_warning && trap_reporting_import;
+}
+
+/* END: trap methods */
 } // end of namespace str7_eic
 } // end of namespace interrupt
 } // end of namespace tlm2

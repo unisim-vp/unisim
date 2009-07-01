@@ -41,7 +41,7 @@
 #include <list>
 
 #if defined(HAVE_CONFIG_H)
-#include "config.h"
+#include "unisim/service/debug/inline_debugger/config.h"
 #endif
 
 #if defined(HAVE_LIBEDIT)
@@ -368,10 +368,31 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 					return DebugControl<ADDRESS>::DBG_RESET;
 				}
 
-				if(IsMonitorCommand(parm[0]))
+				if (IsMonitorCommand(parm[0]))
 				{
 					recognized = true;
 					DumpVariables();
+					break;
+				}
+				
+				if (IsRegisterCommand(parm[0]))
+				{
+					recognized = true;
+					DumpRegisters();
+					break;
+				}
+				
+				if (IsStatisticCommand(parm[0]))
+				{
+					recognized = true;
+					DumpStatistics();
+					break;
+				}
+				
+				if (IsParameterCommand(parm[0]))
+				{
+					recognized = true;
+					DumpParameters();
 					break;
 				}
 
@@ -439,10 +460,31 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 					return DebugControl<ADDRESS>::DBG_STEP;
 				}
 				
-				if(IsMonitorCommand(parm[0]))
+				if (IsMonitorCommand(parm[0]))
 				{
 					recognized = true;
 					DumpVariable(parm[0], parm[1]);
+					break;
+				}
+				
+				if (IsRegisterCommand(parm[0]))
+				{
+					recognized = true;
+					DumpRegister(parm[0], parm[1]);
+					break;
+				}
+				
+				if (IsStatisticCommand(parm[0]))
+				{
+					recognized = true;
+					DumpStatistic(parm[0], parm[1]);
+					break;
+				}
+				
+				if (IsParameterCommand(parm[0]))
+				{
+					recognized = true;
+					DumpParameter(parm[0], parm[1]);
 					break;
 				}
 
@@ -514,13 +556,43 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 					}
 				}
 				
-				if(IsMonitorCommand(parm[0], parm[1]))
+				if (IsMonitorCommand(parm[0], parm[1]))
 				{
 					recognized = true;
 					std::stringstream str;
 					str << parm[0];
 					str << parm[1];
 					DumpVariable(str.str().c_str(), parm[2]);
+					break;
+				}
+				
+				if (IsRegisterCommand(parm[0], parm[1]))
+				{
+					recognized = true;
+					std::stringstream str;
+					str << parm[0];
+					str << parm[1];
+					DumpRegister(str.str().c_str(), parm[2]);
+					break;
+				}
+				
+				if (IsStatisticCommand(parm[0], parm[1]))
+				{
+					recognized = true;
+					std::stringstream str;
+					str << parm[0];
+					str << parm[1];
+					DumpStatistic(str.str().c_str(), parm[2]);
+					break;
+				}
+				
+				if (IsParameterCommand(parm[0], parm[1]))
+				{
+					recognized = true;
+					std::stringstream str;
+					str << parm[0];
+					str << parm[1];
+					DumpParameter(str.str().c_str(), parm[2]);
 					break;
 				}
 
@@ -590,8 +662,11 @@ void InlineDebugger<ADDRESS>::Help()
 	cout << "    display the register value" << endl << endl;
 	cout << "--------------------------------------------------------------------------------" << endl;
 	cout << "<m | monitor>[/<format>] [<variable name>]" << endl;
-	cout << "    display the given simulator variable (displays all variable names if none is" << endl;
-	cout << "    given)" << endl;
+	cout << "<reg | register>[/<format>] [<reg name>]" << endl;
+	cout << "<param | parameter>[/<format>] [<param name>]" << endl;
+	cout << "<stat | statistic>[/<format>] [<stat name>]" << endl;
+	cout << "    display the given simulator variable (register/parameter/statistic), or " << endl;
+	cout << "    display all variable (register/parameter/statistic) names if none is given" << endl;
 	cout << "    when giving a variable name a format can be used, the available formats are:" << endl;
 	cout << "     x     print variable as an integer in hexadecimal format" << endl;
 	cout << "     d     print variable as a signed integer" << endl;
@@ -603,7 +678,7 @@ void InlineDebugger<ADDRESS>::Help()
 	cout << "     f     print variable as a float (actually is considered as a double)" << endl;
 	cout << "--------------------------------------------------------------------------------" << endl;
 	cout << "set <variable name> <value>" << endl;
-	cout << "    sets the variable to the given value" << endl;
+	cout << "    sets the variable (register/parameter/statistic) to the given value" << endl;
 	cout << "--------------------------------------------------------------------------------" << endl;
 	cout << "<p | prof | profile>" << endl;
 	cout << "<p | prof | profile> program" << endl;
@@ -891,84 +966,149 @@ void InlineDebugger<ADDRESS>::DumpVariables()
 {
 	list<VariableBase *> lst;
 	list<VariableBase *>::iterator iter;
-
-	cout << "VARIABLE LIST:" << endl;
-
+	
+	cout << "VARIABLES LIST:";
+	
 	ServiceManager::GetVariables(lst);
-	for (iter = lst.begin(); iter != lst.end(); iter++)
+	if (lst.size() == 0) cout << " No variables" << endl;
+	else
 	{
-		cout << "\t" << (*iter)->GetName() << endl;
+		cout << endl;
+		for (iter = lst.begin(); iter != lst.end(); iter++)
+			cout << "\t" << (*iter)->GetName() << endl;
 	}
 }
 
 template <class ADDRESS>
-bool InlineDebugger<ADDRESS>::MonitorHasFormat(const char *cmd, char &format)
+void InlineDebugger<ADDRESS>::DumpRegisters()
 {
-	if (!(strncmp(cmd, "m/", 2) == 0 || strncmp(cmd, "monitor/", 8) == 0)) return false; // no format was used
+	list<VariableBase *> lst;
+	list<VariableBase *>::iterator iter;
+	
+	cout << "REGISTERS LIST:";
+	
+	ServiceManager::GetRegisters(lst);
+	if (lst.size() == 0) cout << " No registers" << endl;
+	else
+	{
+		cout << endl;
+		for (iter = lst.begin(); iter != lst.end(); iter++)
+			cout << "\t" << (*iter)->GetName() << endl;
+	}
+}
 
-	// accepted formats = x, d, u, o, t, a, c, f
-	if (strcmp(cmd, "m/x") == 0 || strcmp(cmd, "monitor/x") == 0) 
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::DumpStatistics()
+{
+	list<VariableBase *> lst;
+	list<VariableBase *>::iterator iter;
+	
+	cout << "STATISTICS LIST:";
+	
+	ServiceManager::GetStatistics(lst);
+	if (lst.size() == 0) cout << " No statistics" << endl;
+	else
 	{
-		format = 'x';
-		return true;
+		cout << endl;
+		for (iter = lst.begin(); iter != lst.end(); iter++)
+			cout << "\t" << (*iter)->GetName() << endl;
 	}
-	if (strcmp(cmd, "m/d") == 0 || strcmp(cmd, "monitor/d") == 0)
+}
+	
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::DumpParameters()
+{
+	list<VariableBase *> lst;
+	list<VariableBase *>::iterator iter;
+	
+	cout << "PARAMETERS LIST:";
+	
+	ServiceManager::GetParameters(lst);
+	if (lst.size() == 0) cout << " No parameters" << endl;
+	else
 	{
-		format = 'd';
-		return true;
+		cout << endl;
+		for (iter = lst.begin(); iter != lst.end(); iter++)
+			cout << "\t" << (*iter)->GetName() << endl;
 	}
-	if (strcmp(cmd, "m/u") == 0 || strcmp(cmd, "monitor/u") == 0)
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::MonitorGetFormat(const char *cmd, char &format)
+{
+	unsigned int len = 0;
+	
+	if (strncmp(cmd, "monitor/", 8) == 0) len = 8;
+	if (strncmp(cmd, "m/", 2) == 0) len = 2;
+	if (strncmp(cmd, "register/", 9) == 0) len = 9;
+	if (strncmp(cmd, "reg/", 4) == 0) len = 4;
+	if (strncmp(cmd, "statistic/", 10) == 0) len = 10;
+	if (strncmp(cmd, "stat/", 5) == 0) len = 5;
+	if (strncmp(cmd, "parameter/", 10) == 0) len = 10;
+	if (strncmp(cmd, "param/", 6) == 0) len = 6;
+	
+	if (len == 0)
 	{
-		format = 'u';
-		return true;
-	}
-	if (strcmp(cmd, "m/o") == 0 || strcmp(cmd, "monitor/o") == 0)
-	{
-		format = 'o';
-		return true;
-	}
-	if (strcmp(cmd, "m/t") == 0 || strcmp(cmd, "monitor/t") == 0)
-	{
-		format = 't';
-		return true;
-	}
-	if (strcmp(cmd, "m/a") == 0 || strcmp(cmd, "monitor/a") == 0)
-	{
-		format = 'a';
-		return true;
-	}
-	if (strcmp(cmd, "m/c") == 0 || strcmp(cmd, "monitor/c") == 0)
-	{
+		// no format was used, returning default format 'c'
 		format = 'c';
-		return true;
-	}
-	if (strcmp(cmd, "m/f") == 0 || strcmp(cmd, "monitor/f") == 0)
-	{
-		format = 'f';
-		return true;
-	}
-	cerr << "WARNING: unknow monitor format (" << cmd << "). See help for available formats." << endl;
-	return false;
-}
-
-template <class ADDRESS>
-void InlineDebugger<ADDRESS>::DumpVariable(const char *cmd, const char *name)
-{
-	VariableBase *variable = ServiceManager::GetVariable(name);
-	bool has_format = false;
-
-	if (variable == &unisim::kernel::service::ServiceManager::void_variable)
-	{
-		cout << "Unknow variable (" << name << ")" << endl;
 		return;
 	}
+	
+	cmd = cmd + len;
+	
+	// accepted formats = x, d, u, o, t, a, c, f
+	if (strcmp(cmd, "x") == 0) 
+	{
+		format = 'x';
+		return;
+	}
+	if (strcmp(cmd, "d") == 0)
+	{
+		format = 'd';
+		return;
+	}
+	if (strcmp(cmd, "u") == 0)
+	{
+		format = 'u';
+		return;
+	}
+	if (strcmp(cmd, "o") == 0)
+	{
+		format = 'o';
+		return;
+	}
+	if (strcmp(cmd, "t") == 0)
+	{
+		format = 't';
+		return;
+	}
+	if (strcmp(cmd, "a") == 0)
+	{
+		format = 'a';
+		return;
+	}
+	if (strcmp(cmd, "c") == 0)
+	{
+		format = 'c';
+		return;
+	}
+	if (strcmp(cmd, "f") == 0)
+	{
+		format = 'f';
+		return;
+	}
+	cerr << "WARNING: unknow monitor/register/statistic/parameter format (" << cmd << "). See help for available formats." << endl;
+	format = 'c';
+}
 
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::DumpVariable(const char *cmd, const VariableBase *variable)
+{
 	/* extract the format if any */
 	char format = 0;
-	has_format = MonitorHasFormat(cmd, format);
-	if (has_format == false) format ='c';	
-
-	cout << name << " = ";
+	MonitorGetFormat(cmd, format);
+	
+	cout << variable->GetName() << " = ";
 	switch (format)
 	{
 		case 'x':
@@ -1000,10 +1140,66 @@ void InlineDebugger<ADDRESS>::DumpVariable(const char *cmd, const char *name)
 			cout << ((double) *variable);
 			break;
 	}
-
+	
 	cout << endl;
 }
 
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::DumpVariable(const char *cmd, const char *name)
+{
+	VariableBase *variable = ServiceManager::GetVariable(name);
+	
+	if (variable == &unisim::kernel::service::ServiceManager::void_variable)
+	{
+		cout << "Unknow variable (" << name << ")" << endl;
+		return;
+	}
+
+	DumpVariable(cmd, variable);
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::DumpRegister(const char *cmd, const char *name)
+{
+	VariableBase *variable = ServiceManager::GetRegister(name);
+	
+	if (variable == &unisim::kernel::service::ServiceManager::void_variable)
+	{
+		cout << "Unknow register (" << name << ")" << endl;
+		return;
+	}
+
+	DumpVariable(cmd, variable);
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::DumpStatistic(const char *cmd, const char *name)
+{
+	VariableBase *variable = ServiceManager::GetStatistic(name);
+	
+	if (variable == &unisim::kernel::service::ServiceManager::void_variable)
+	{
+		cout << "Unknow statistic (" << name << ")" << endl;
+		return;
+	}
+	
+	DumpVariable(cmd, variable);
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::DumpParameter(const char *cmd, const char *name)
+{
+	VariableBase *variable = ServiceManager::GetParameter(name);
+	
+	if (variable == &unisim::kernel::service::ServiceManager::void_variable)
+	{
+		cout << "Unknow parameter (" << name << ")" << endl;
+		return;
+	}
+	
+	DumpVariable(cmd, variable);
+}
+	
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::SetVariable(const char *name, const char *value)
 {
@@ -1283,17 +1479,51 @@ bool InlineDebugger<ADDRESS>::IsResetCommand(const char *cmd)
 }
 
 template <class ADDRESS>
-bool InlineDebugger<ADDRESS>::IsMonitorCommand(const char *cmd)
+bool InlineDebugger<ADDRESS>::IsMonitorCommand(const char *cmd, const char *format)
 {
+	if (format)
+	{
+		return (strcmp(cmd, "m") == 0 || strcmp(cmd, "monitor") == 0)
+		&& strncmp(format, "/", 1) == 0;
+	}
 	return strcmp(cmd, "m") == 0 || strcmp(cmd, "monitor") == 0 
-		|| strncmp(cmd, "m/", 2) == 0 || strncmp(cmd, "monitor/", 8) == 0;
+	|| strncmp(cmd, "m/", 2) == 0 || strncmp(cmd, "monitor/", 8) == 0;
 }
 
 template <class ADDRESS>
-bool InlineDebugger<ADDRESS>::IsMonitorCommand(const char *cmd, const char *format)
+bool InlineDebugger<ADDRESS>::IsRegisterCommand(const char *cmd, const char *format)
 {
-	return (strcmp(cmd, "m") == 0 || strcmp(cmd, "monitor") == 0)
+	if (format)
+	{
+		return (strcmp(cmd, "reg") == 0 || strcmp(cmd, "register") == 0)
 		&& strncmp(format, "/", 1) == 0;
+	}
+	return strcmp(cmd, "reg") == 0 || strcmp(cmd, "register") == 0 
+	|| strncmp(cmd, "reg/", 2) == 0 || strncmp(cmd, "register/", 8) == 0;
+}
+
+template <class ADDRESS>
+bool InlineDebugger<ADDRESS>::IsStatisticCommand(const char *cmd, const char *format)
+{
+	if (format)
+	{
+		return (strcmp(cmd, "stat") == 0 || strcmp(cmd, "statistic") == 0)
+		&& strncmp(format, "/", 1) == 0;
+	}
+	return strcmp(cmd, "stat") == 0 || strcmp(cmd, "statistic") == 0 
+	|| strncmp(cmd, "stat/", 2) == 0 || strncmp(cmd, "statistic/", 8) == 0;
+}
+
+template <class ADDRESS>
+bool InlineDebugger<ADDRESS>::IsParameterCommand(const char *cmd, const char *format)
+{
+	if (format)
+	{
+		return (strcmp(cmd, "param") == 0 || strcmp(cmd, "parameter") == 0)
+		&& strncmp(format, "/", 1) == 0;
+	}
+	return strcmp(cmd, "param") == 0 || strcmp(cmd, "parameter") == 0 
+	|| strncmp(cmd, "param/", 2) == 0 || strncmp(cmd, "parameter/", 8) == 0;
 }
 
 template <class ADDRESS>

@@ -174,8 +174,10 @@ private:
 	bool IsDumpCommand(const char *cmd);
 	bool IsHelpCommand(const char *cmd);
 	bool IsResetCommand(const char *cmd);
-	bool IsMonitorCommand(const char *cmd);
-	bool IsMonitorCommand(const char *cmd, const char *format);
+	bool IsMonitorCommand(const char *cmd, const char *format = 0);
+	bool IsRegisterCommand(const char *cmd, const char *format = 0);
+	bool IsStatisticCommand(const char *cmd, const char *format = 0);
+	bool IsParameterCommand(const char *cmd, const char *format = 0);
 	bool IsMonitorSetCommand(const char *cmd);
 	bool IsProfileCommand(const char *cmd);
 
@@ -192,8 +194,15 @@ private:
 	void DumpWatchpoints();
 	void DumpMemory(ADDRESS addr);
 	void DumpVariables();
-	bool MonitorHasFormat(const char *cmd, char &format);
+	void DumpRegisters();
+	void DumpStatistics();
+	void DumpParameters();
+	void MonitorGetFormat(const char *cmd, char &format);
+	void DumpVariable(const char *cmd, const unisim::kernel::service::VariableBase *variable);
 	void DumpVariable(const char *cmd, const char *name);
+	void DumpRegister(const char *cmd, const char *name);
+	void DumpStatistic(const char *cmd, const char *name);
+	void DumpParameter(const char *cmd, const char *name);
 	void SetVariable(const char *name, const char *value);
 	void DumpProgramProfile();
 	void DumpDataProfile(bool write);

@@ -118,9 +118,10 @@ CPU(CacheInterface<typename CONFIG::address_t> *_memory_interface) :
 	verbose_all(false),
 	verbose_setup(false),
 	verbose_step(false),
-	verbose_step_insn(false),
+	verbose_exception(false),
 	verbose_dump_regs_start(false),
-	verbose_dump_regs_end(false)
+	verbose_dump_regs_end(false),
+	trap_on_exception(false)
 #ifdef PROFILE_ARM966
 	, insn_profile()
 #endif //PROFILE_ARM966
@@ -259,19 +260,23 @@ CPU(const char *name,
 	default_endianness(E_BIG_ENDIAN),
 	param_default_endianness("default-endianness", this, default_endianness),
 	verbose_all(false),
-	param_verbose_all("verbose-all", this, verbose_all),
+	param_verbose_all("verbose-all", this, verbose_all,
+					  "Activate all the verbose option"),
 	verbose_setup(false),
-	param_verbose_setup("verbose-setup", this, verbose_setup),
+	param_verbose_setup("verbose-setup", this, verbose_setup,
+						"Display setup information"),
 	verbose_step(false),
-	param_verbose_step("verbose-step", this, verbose_step),
-	verbose_step_insn(false),
-	param_verbose_step_insn("verbose-step-insn", this, verbose_step_insn),
+	param_verbose_step("verbose-step", this, verbose_step,
+					   "Display instruction step information"),
+	verbose_exception(false),
+	param_verbose_exception("verbose-exception", this, verbose_exception),
 	verbose_dump_regs_start(false),
-	param_verbose_dump_regs_start("verbose-dump-regs-start",
-		this, verbose_dump_regs_start),
+	param_verbose_dump_regs_start("verbose-dump-regs-start", this, verbose_dump_regs_start),
 	verbose_dump_regs_end(false),
-	param_verbose_dump_regs_end("verbose-dump-regs-end", this, 
-		verbose_dump_regs_end),
+	param_verbose_dump_regs_end("verbose-dump-regs-end", this, verbose_dump_regs_end),
+	trap_on_exception(false),
+	param_trap_on_exception("trap-on-exception", this, trap_on_exception,
+							"Produce a trap when an exception occurs"),
 	memory_interface(_memory_interface),
 	instruction_counter(0),
 	insn_cache_line_address(0),
@@ -4577,7 +4582,8 @@ template<class CONFIG>
 inline INLINE
 bool
 CPU<CONFIG> ::
-VerboseSetup() {
+VerboseSetup() 
+{
 	
 	return CONFIG::DEBUG_ENABLE && verbose_setup;
 	
@@ -4587,10 +4593,20 @@ template<class CONFIG>
 inline INLINE
 bool
 CPU<CONFIG> ::
-VerboseStep() {
+VerboseStep() 
+{
 	
 	return CONFIG::DEBUG_ENABLE && verbose_step;
 	
+}
+	
+template<class CONFIG>
+inline INLINE
+bool
+CPU<CONFIG> ::
+VerboseException()
+{
+	return verbose_exception;
 }
 
 template<class CONFIG>
@@ -4688,6 +4704,15 @@ VerboseDumpRegsEnd() {
 #endif // SOCLIB
 }
 
+template<class CONFIG>
+inline INLINE
+bool
+CPU<CONFIG>::
+TrapOnException()
+{
+	return trap_on_exception && trap_reporting_import;
+}
+		
 /**************************************************************/
 /* Verbose methods (protected)                            END */
 /**************************************************************/

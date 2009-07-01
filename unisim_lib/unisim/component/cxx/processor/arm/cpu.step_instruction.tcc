@@ -180,17 +180,6 @@ StepInstruction() {
 					<< EndDebugInfo;
 
 			ReadInsn(current_pc, insn);
-			/* 
-			 * if(insn_cache_line_address != 
-				(current_pc & ~(typename CONFIG::address_t)0x1F)) {
-				insn_cache_line_address = 
-					(current_pc & ~(typename CONFIG::address_t)0x1F);
-				ReadInsnLine(insn_cache_line_address, 
-					(uint8_t *)&insn_cache_line, 4 *8);
-			}
-			insn = ((uint16_t *)insn_cache_line)[(current_pc & 
-						(typename CONFIG::address_t)0x1F) >> 1];
-						*/
 
 			/* convert the instruction to host endianness */
 			insn = Target2Host(GetEndianness(), insn);
@@ -204,8 +193,8 @@ StepInstruction() {
 					<< EndDebugInfo;
 			op = thumb_decoder.Decode(current_pc, insn);
 			/* Execute instruction */
-			if(CONFIG::DEBUG_ENABLE && (verbose_step 
-				|| verbose_step_insn)) {
+			if (VerboseStep())
+			{
 				stringstream disasm_str;
 				op->disasm(*this, disasm_str);
 				logger << DebugInfo
@@ -218,34 +207,25 @@ StepInstruction() {
 			}
 			op->execute(*this);
 			//op->profile(profile);
-		} else {
+		} 
+		else
+		{
 			/* ARM state */
 			typename isa::arm32::Operation<CONFIG> *op = NULL;
 			insn_t insn;
-			if(CONFIG::DEBUG_ENABLE && verbose_step)
+			if (VerboseStep())
 				logger << DebugInfo
 					<< "Fetching (reading) instruction at address 0x"
 					<< hex << current_pc << dec
 					<< EndDebugInfo;
 
 			ReadInsn(current_pc, insn);
-			/*
-			 * if(insn_cache_line_address != 
-				(current_pc & ~(typename CONFIG::address_t)0x1F)) {
-				insn_cache_line_address = 
-					(current_pc & ~(typename CONFIG::address_t)0x1F);
-				ReadInsnLine(insn_cache_line_address, 
-					(uint8_t *)&insn_cache_line, 4 *8);
-			}
-			insn = insn_cache_line[(current_pc & 
-				(typename CONFIG::address_t)0x1F) >> 2];
-				*/
 
 			/* convert the instruction to host endianness */
 			insn = Target2Host(GetEndianness(), insn);
 			
 			/* Decode current PC */
-			if(CONFIG::DEBUG_ENABLE && verbose_step)
+			if ( VerboseStep() )
 				logger << DebugInfo 
 					<< "Decoding instruction at 0x"
 					<< hex << current_pc << dec
@@ -253,8 +233,8 @@ StepInstruction() {
 					<< EndDebugInfo;
 			op = arm32_decoder.Decode(current_pc, insn);
 			/* Execute instruction */
-			if(CONFIG::DEBUG_ENABLE && 
-				(verbose_step || verbose_step_insn)) {
+			if (VerboseStep())
+			{
 				stringstream disasm_str;
 				op->disasm(*this, disasm_str);
 				logger << DebugInfo 
@@ -276,61 +256,79 @@ StepInstruction() {
 
 		if (unlikely(HasPendingException()))
 		{
-			cerr << "Handling interruption" << endl;
-			logger << DebugInfo << "Handling interruption" << EndDebugInfo;
 			if (HasPendingException(IRQ_EXCEPTION)) { ClearPendingException(IRQ_EXCEPTION); throw IRQException<CONFIG>();}
 			if (HasPendingException(FIQ_EXCEPTION)) { ClearPendingException(FIQ_EXCEPTION); throw FIQException<CONFIG>();}
 		}
 	} 
-	catch(ResetException<CONFIG> &exc) {
+	catch (ResetException<CONFIG> &exc) 
+	{
 		logger << DebugError 
 				<< "Received processor reset exception :" << exc.what() 
 				<< EndDebugError;
+		if (TrapOnException())
+			trap_reporting_import->ReportTrap();
 		PerformResetException();
 	}
-	catch(UndefinedInstructionException<CONFIG> &exc) {
-		if(VerboseStep()) {
+	catch (UndefinedInstructionException<CONFIG> &exc) 
+	{
+		if (VerboseException()) 
 			logger << DebugInfo 
 				<< "Received undefined instruction exception: " << exc.what()
 				<< EndDebugInfo;
-		}
+		if (TrapOnException())
+			trap_reporting_import->ReportTrap();
 		PerformUndefInsnException();
 	}
-	catch(SoftwareInterruptException<CONFIG> &exc) {
-		if(VerboseStep()) {
+	catch (SoftwareInterruptException<CONFIG> &exc) 
+	{
+		if (VerboseException()) 
 			logger << DebugInfo 
 				<< "Received software interrupt exception: " << exc.what()
 				<< EndDebugInfo;
-		}
+		if (TrapOnException())
+			trap_reporting_import->ReportTrap();
 		PerformSWIException();
 	}
-	catch(PrefetchAbortException<CONFIG> &exc) {
+	catch (PrefetchAbortException<CONFIG> &exc) 
+	{
 		logger << DebugError 
 			<< "Received processor prefetch abort exception :" << exc.what() << endl
 			<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << EndDebugError;
+		if (TrapOnException())
+			trap_reporting_import->ReportTrap();
 		PerformPrefetchAbortException();
 	}
-	catch(DataAbortException<CONFIG> &exc) {
+	catch (DataAbortException<CONFIG> &exc) 
+	{
 		logger << DebugError 
 			<< "Received processor data abort exception :" << exc.what() 
 			<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << EndDebugError;
+		if (TrapOnException())
+			trap_reporting_import->ReportTrap();
 		PerformDataAbortException();
 	}
-	catch(IRQException<CONFIG> &exc) {
-		logger << DebugInfo 
-			<< "Received processor IRQ exception:" << exc.what() 
-			<< EndDebugInfo;
-		if (trap_reporting_import)
+	catch (IRQException<CONFIG> &exc) 
+	{
+		if (VerboseException())
+			logger << DebugInfo 
+				<< "Received processor IRQ exception:" << exc.what() 
+				<< EndDebugInfo;
+		if (TrapOnException())
 			trap_reporting_import->ReportTrap();
 		PerformIRQException();
 	}
-	catch(FIQException<CONFIG> &exc) {
-		logger << DebugError
-			<< "Received processor FIQ exception :" << exc.what() 
-			<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << EndDebugError;
+	catch (FIQException<CONFIG> &exc) 
+	{
+		if (VerboseException())
+			logger << DebugInfo
+				<< "Received processor FIQ exception:" << exc.what()
+				<< EndDebugInfo;
+		if (TrapOnException())
+			trap_reporting_import->ReportTrap();
 		PerformFIQException();
 	}
-	catch(Exception &exc) {
+	catch (Exception &exc) 
+	{
 		logger << DebugError 
 			<< "Received unhandled processor exception :" << exc.what() 
 			<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << EndDebugError;

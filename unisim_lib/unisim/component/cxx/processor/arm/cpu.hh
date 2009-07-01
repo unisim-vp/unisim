@@ -1314,10 +1314,12 @@ protected:
 	bool verbose_all;
 	bool verbose_setup;
 	bool verbose_step;
-	bool verbose_step_insn;
+	bool verbose_exception;
 	bool verbose_dump_regs_start;
 	bool verbose_dump_regs_end;
-
+	// trap parameters
+	bool trap_on_exception;
+	
 #ifndef SOCLIB
 	
 	Parameter<endian_type> param_default_endianness;
@@ -1326,18 +1328,21 @@ protected:
 	Parameter<bool> param_verbose_all;
 	Parameter<bool> param_verbose_setup;
 	Parameter<bool> param_verbose_step;
-	Parameter<bool> param_verbose_step_insn;
+	Parameter<bool> param_verbose_exception;
 	Parameter<bool> param_verbose_dump_regs_start;
 	Parameter<bool> param_verbose_dump_regs_end;
+	Parameter<bool> param_trap_on_exception;
 
 #endif // SOCLIB
 	
 	// verbose methods
 	inline bool VerboseSetup() GCC_INLINE;
 	inline bool VerboseStep() GCC_INLINE;
+	inline bool VerboseException() GCC_INLINE;
 	inline void VerboseDumpRegs() GCC_INLINE;
 	inline void VerboseDumpRegsStart() GCC_INLINE;
 	inline void VerboseDumpRegsEnd() GCC_INLINE;
+	inline bool TrapOnException() GCC_INLINE;
 
 #ifdef SOCLIB
 #ifdef PROFILE_ARM966

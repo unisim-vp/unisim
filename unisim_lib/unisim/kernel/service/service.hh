@@ -273,7 +273,7 @@ public:
 };
 
 template <class TYPE>
-class Register : public Register<TYPE>
+class Register : public Variable<TYPE>
 {
 public:
 	Register(const char *name, Object *owner, TYPE& storage, const char *description = NULL) : Variable<TYPE>(name, owner, storage, VariableBase::VAR_REGISTER, description) {}
