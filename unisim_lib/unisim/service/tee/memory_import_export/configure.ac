@@ -1,5 +1,5 @@
 #
-#  Copyright (c) 2007,
+#  Copyright (c) 2007-2009,
 #  Commissariat a l'Energie Atomique (CEA)
 #  All rights reserved.
 #
@@ -29,27 +29,45 @@
 #  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
 #  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
-# Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
-#          Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+# Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+#          Gilles Mouchard (gilles.mouchard@cea.fr)
+#          Reda NOUACER (reda.nouacer@cea.fr)
 #
 
-AC_INIT([UNISIM Tee Service Library], [1.0])
+AC_INIT([UNISIM Service Tee Memory Import Export], [1.0])
 AC_CONFIG_AUX_DIR(config)
+AC_CONFIG_HEADERS([config.h])
+AC_CANONICAL_BUILD
+AC_CANONICAL_HOST
+AC_CANONICAL_TARGET
 
 AM_INIT_AUTOMAKE
 
+AC_PATH_PROGS(SH, sh)
+AC_PROG_CXX
 AC_PROG_INSTALL
+AC_LIBTOOL_WIN32_DLL # must be *before* AC_PROG_LIBTOOL
+AC_PROG_LIBTOOL
+AC_ENABLE_STATIC
+AC_ENABLE_SHARED
+AC_PROG_LN_S
+
+AC_LANG([C++])
+
+###### CHECK FOR C HEADERS ####################################################
+AC_CHECK_HEADERS([inttypes.h],,\
+    AC_MSG_ERROR([Some standard C headers are missing.]))
+
+###### CHECK FOR C++ HEADERS ##################################################
+AC_CHECK_HEADERS([string sstream],,\
+    AC_MSG_ERROR([Some standard C++ headers are missing.]))
+
+UNISIM_LIBTOOL
 
 # files to generate
 #   this should include all the makefiles to generate
 AC_CONFIG_FILES([Makefile])
 
-UNISIM_CONFIG_SUBDIR(unisim-service-tee-memory_access_reporting, memory_access_reporting)
-UNISIM_CONFIG_SUBDIR(unisim-service-tee-memory_import_export, memory_import_export)
-UNISIM_CONFIG_SUBDIR(unisim-service-tee-registers, registers)
-UNISIM_CONFIG_SUBDIR(unisim-service-tee-symbol_table_lookup, symbol_table_lookup)
-
 # launch the generation of makefiles
 #   this must be the last command of configure.ac
 AC_OUTPUT
-

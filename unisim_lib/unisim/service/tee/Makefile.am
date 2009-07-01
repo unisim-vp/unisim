@@ -9,6 +9,11 @@ SUBDIRS += memory_access_reporting
 INCLUDE_SUBDIRS += memory_access_reporting
 endif
 
+if COND_memory_import_export
+SUBDIRS += memory_import_export
+INCLUDE_SUBDIRS += memory_import_export
+endif
+
 if COND_registers
 SUBDIRS += registers
 INCLUDE_SUBDIRS += registers
