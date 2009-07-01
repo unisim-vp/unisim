@@ -247,7 +247,7 @@ public:
 	ServiceImport<SymbolTableLookup<service_address_t> > symbol_table_lookup_import;
 
 	// the kernel logger
-	unisim::kernel::logger::Logger logger;
+	unisim::kernel::logger::Logger *logger;
 
 	ServiceImport<TrapReporting > trap_reporting_import;
 
