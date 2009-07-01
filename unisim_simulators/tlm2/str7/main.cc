@@ -53,14 +53,11 @@
 
 #include "unisim/service/time/sc_time/time.hh"
 #include "unisim/service/time/host_time/time.hh"
-#ifdef STR7_DEBUG
 #include "unisim/service/debug/gdb_server/gdb_server.hh"
-#endif
-#ifdef STR7_DEBUG_INLINE
 #include "unisim/service/debug/inline_debugger/inline_debugger.hh"
-#endif
 #include "unisim/service/loader/elf_loader/elf_loader.hh"
 #include "unisim/service/loader/elf_loader/elf_loader.tcc"
+#include "unisim/service/loader/s19_loader/s19_loader.hh"
 
 #ifdef WIN32
 
@@ -87,23 +84,11 @@ void SigIntHandler(int signum) {
 }
 
 using namespace std;
-#ifdef STR7_DEBUG
 using unisim::service::debug::gdb_server::GDBServer;
-#define STR7_VERBOSE
-#endif
-#ifdef STR7_DEBUG_INLINE
 using unisim::service::debug::inline_debugger::InlineDebugger;
-#define STR7_VERBOSE
-#endif
 
-
-#ifdef STR7_VERBOSE
 typedef unisim::component::tlm2::memory::ram::Memory<32, 1024 * 1024, true> MEMORY;
 typedef unisim::component::tlm2::memory::ram::Memory<32, 1024 * 1024, true> FLASH;
-#else
-typedef unisim::component::tlm2::memory::ram::Memory<32, 1024 * 1024, false> MEMORY;
-typedef unisim::component::tlm2::memory::ram::Memory<32, 1024 * 1024, false> FLASH;
-#endif
 typedef unisim::component::tlm2::interconnect::generic_router::Router<RouterConfig> ROUTER;
 typedef unisim::component::tlm2::processor::arm::ARM7TDMI CPU;
 typedef unisim::component::tlm2::timer::str7_timer::TIM<32> TIM;
@@ -116,6 +101,7 @@ typedef unisim::component::tlm2::signal_converter::generic_adc::ADC ADC;
 
 
 typedef unisim::service::loader::elf_loader::ElfLoaderImpl<uint64_t, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym> ElfLoader;
+typedef unisim::service::loader::s19_loader::S19_Loader<uint64_t> S19Loader;
 
 using unisim::service::time::sc_time::ScTime;
 using unisim::service::time::host_time::HostTime;
@@ -137,14 +123,13 @@ void help(char *prog_name) {
 	cerr << " --get-config <xml file>" << endl;
 	cerr << " -g <xml file>" << endl;
 	cerr << "            get the simulator default configuration xml file (you can use it to create your own configuration)" << endl << endl;
+	cerr << " --debug-gdb-server" << endl;
+	cerr << " -d" << endl;
+	cerr << "            enable debugging of the simulator using the gdb_server (if the inline debugger is used at the same time, this option will be ignored)" << endl << endl;
+	cerr << " --debug-inline-debugger" << endl;
+	cerr << " -i" << endl;
+	cerr << "            enable debugging of the simulator using the inline debugger" << endl << endl;
 }
-
-// Front Side Bus template parameters
-//typedef CPU_CONFIG::address_t FSB_ADDRESS_TYPE;
-//typedef CPU_CONFIG::address_t CPU_ADDRESS_TYPE;
-//typedef CPU_CONFIG::reg_t CPU_REG_TYPE;
-//const uint32_t FSB_MAX_DATA_SIZE = 32;        // in bytes
-//const uint32_t FSB_NUM_PROCS = 1;
 
 int sc_main(int argc, char *argv[]) {
 
@@ -164,6 +149,8 @@ int sc_main(int argc, char *argv[]) {
 		{"get-variables", required_argument, 0, 'v'},
 		{"get-config", required_argument, 0, 'g'},
 		{"config", required_argument, 0, 'c'},
+		{"debug-gdb-server", no_argument, 0, 'd'},
+		{"debug-inline-debugger", no_argument, 0, 'i'},
 		{0, 0, 0, 0}
 	};
 
@@ -173,27 +160,35 @@ int sc_main(int argc, char *argv[]) {
 	bool get_variables = false;
 	bool get_config = false;
 	bool set_config = false;
+	bool use_gdb_server = false;
+	bool use_inline_debugger = false;
 
 	// Parse the command line arguments
 	int c;
-	while((c = getopt_long (argc, argv, "hv:g:c:", long_options, 0)) != -1) {
+	while((c = getopt_long (argc, argv, "hv:g:c:di", long_options, 0)) != -1) {
 		switch(c) {
-		case 'h':
-			help(argv[0]);
-			return 0;
-			break;
-		case 'v':
-			get_variables_name = optarg;
-			get_variables = true;
-			break;
-		case 'g':
-			get_config_name = optarg;
-			get_config = true;
-			break;
-		case 'c':
-			set_config_name = optarg;
-			set_config = true;
-			break;
+			case 'h':
+				help(argv[0]);
+				return 0;
+				break;
+			case 'v':
+				get_variables_name = optarg;
+				get_variables = true;
+				break;
+			case 'g':
+				get_config_name = optarg;
+				get_config = true;
+				break;
+			case 'c':
+				set_config_name = optarg;
+				set_config = true;
+				break;
+			case 'd':
+				use_gdb_server = true;
+				break;
+			case 'i':
+				use_inline_debugger = true;
+				break;
 		}
 	}
 
@@ -203,11 +198,15 @@ int sc_main(int argc, char *argv[]) {
 		return 0;
 	}
 
+	// we can only use one of the debuggers at a time, and we set it to the inline_debugger
+	if (use_inline_debugger && use_gdb_server) use_gdb_server = false;
+	
 	// Time
 	ScTime *time = new ScTime("time");
 	HostTime *host_time = new HostTime("host-time");
 	
 	ElfLoader *elf_loader = 0;
+	S19Loader *s19_loader = 0;
 	MEMORY *memory = new MEMORY("memory");
 	ROUTER *router = new ROUTER("router");
 	CPU *cpu = new CPU("cpu");
@@ -273,25 +272,30 @@ int sc_main(int argc, char *argv[]) {
 	}
 	// Instanciate an ELF32 loader
 	elf_loader = new ElfLoader("elf-loader");
+	s19_loader = new S19Loader("s19-loader");
 	
-#ifdef STR7_DEBUG
-	GDBServer<uint64_t> *gdb_server = 
-		new GDBServer<uint64_t>("gdb-server");
-#endif // STR7_DEBUG
-#ifdef STR7_DEBUG_INLINE
-	InlineDebugger<uint64_t> *inline_debugger = 
-		new InlineDebugger<uint64_t>("inline-debugger");
-#endif // STR7_DEBUG_INLINE
-
-	// Connect the CPU to the memory
-	cpu->master_socket(router->targ_socket[0]);
-	router->init_socket[0](memory->slave_sock);
-	router->init_socket[1](flash->slave_sock);
-	router->init_socket[2](eic->in_mem);
-	router->init_socket[3](timer0->in_mem);
-	router->init_socket[4](timer2->in_mem);
-	router->init_socket[5](spi0->in_mem);
-
+	GDBServer<uint64_t> *gdb_server = 0;
+	if (use_gdb_server || get_config)
+		gdb_server = new GDBServer<uint64_t>("gdb-server");
+	InlineDebugger<uint64_t> *inline_debugger = 0;
+	if (use_inline_debugger || get_config)
+		inline_debugger = new InlineDebugger<uint64_t>("inline-debugger");
+	
+	// now that all the components have been created, we can set the config and/or save
+	//   it as required
+	if(set_config)
+		ServiceManager::LoadXmlParameters(set_config_name);
+	if(get_config)
+	{
+		cerr << "getting simulator configuration in \"" << get_config_name << "\"" << endl;
+		ServiceManager::XmlfyParameters(get_config_name);
+		return 0;
+	}
+	if(!set_config) {
+		if(!get_config) help(argv[0]);
+		return 0;
+	}
+	
 //Connect the interrupt controler
 	eic->out_irq(cpu->in_irq);
 	eic->out_fiq(cpu->in_fiq);
@@ -328,6 +332,15 @@ int sc_main(int argc, char *argv[]) {
 	timer0->ocia_irq(eic->in_irq[30]);
 	timer0->ocib_irq(eic->in_irq[31]);
 
+	// Connect the CPU to the memory
+	cpu->master_socket(router->targ_socket[0]);
+	router->init_socket[0](memory->slave_sock);
+	router->init_socket[1](flash->slave_sock);
+	router->init_socket[2](eic->in_mem);
+	router->init_socket[3](timer0->in_mem);
+	router->init_socket[4](timer2->in_mem);
+	router->init_socket[5](spi0->in_mem);
+
 	// TODO: timer0 timeri_irq should also be connected to eic->in_fiq[0]
 	for (unsigned int i = 0; i < 2; i++)
 		fiqmstub[i]->out_interrupt(eic->in_fiq[i]);
@@ -357,6 +370,7 @@ int sc_main(int argc, char *argv[]) {
 
 	// Connect everything
 	elf_loader->memory_import >> router->memory_export;
+	s19_loader->memory_import >> router->memory_export;
 	(*router->memory_import[0]) >> memory->memory_export;
 	(*router->memory_import[1]) >> flash->memory_export;
 	// TODO: missing a connection with the eic
@@ -364,43 +378,32 @@ int sc_main(int argc, char *argv[]) {
 
 	cpu->symbol_table_lookup_import >> elf_loader->symbol_table_lookup_export;
 
-#ifdef STR7_DEBUG
-	cpu->debug_control_import >> gdb_server->debug_control_export;
-	cpu->memory_access_reporting_import >> gdb_server->memory_access_reporting_export;
-	gdb_server->memory_import >> cpu->memory_export;
-	gdb_server->registers_import >> cpu->registers_export;
-	gdb_server->memory_access_reporting_control_import >> cpu->memory_access_reporting_control_export;
-#endif // STR7_DEBUG
+	if (use_gdb_server)
+	{
+		cpu->debug_control_import >> gdb_server->debug_control_export;
+		cpu->memory_access_reporting_import >> gdb_server->memory_access_reporting_export;
+		gdb_server->memory_import >> cpu->memory_export;
+		gdb_server->registers_import >> cpu->registers_export;
+		gdb_server->memory_access_reporting_control_import >> cpu->memory_access_reporting_control_export;
+	}
 
-#ifdef STR7_DEBUG_INLINE
-	cpu->debug_control_import >> inline_debugger->debug_control_export;
-	cpu->memory_access_reporting_import >> inline_debugger->memory_access_reporting_export;
-	cpu->trap_reporting_import >> inline_debugger->trap_reporting_export;
-	timer0->trap_reporting_import >> inline_debugger->trap_reporting_export;
-	eic->trap_reporting_import >> inline_debugger->trap_reporting_export;
-	inline_debugger->disasm_import >> cpu->disasm_export;
-	inline_debugger->memory_import >> cpu->memory_export;
-	inline_debugger->registers_import >> cpu->registers_export;
-	inline_debugger->symbol_table_lookup_import >> 
-		elf_loader->symbol_table_lookup_export;
-#endif // STR7_DEBUG_INLINE
-
+	if (use_inline_debugger)
+	{
+		cpu->debug_control_import >> inline_debugger->debug_control_export;
+		cpu->memory_access_reporting_import >> inline_debugger->memory_access_reporting_export;
+		cpu->trap_reporting_import >> inline_debugger->trap_reporting_export;
+		timer0->trap_reporting_import >> inline_debugger->trap_reporting_export;
+		eic->trap_reporting_import >> inline_debugger->trap_reporting_export;
+		inline_debugger->disasm_import >> cpu->disasm_export;
+		inline_debugger->memory_import >> cpu->memory_export;
+		inline_debugger->registers_import >> cpu->registers_export;
+		inline_debugger->symbol_table_lookup_import >> 
+			elf_loader->symbol_table_lookup_export;
+	}
+	
 #ifdef DEBUG_SERVICE
 	ServiceManager::Dump(cerr);
 #endif
-
-	if(set_config)
-		ServiceManager::LoadXmlParameters(set_config_name);
-	if(get_config)
-	{
-		cerr << "getting simulator configuration in \"" << get_config_name << "\"" << endl;
-		ServiceManager::XmlfyParameters(get_config_name);
-		return 0;
-	}
-	if(!set_config) {
-		if(!get_config) help(argv[0]);
-		return 0;
-	}
 
 	if(ServiceManager::Setup())
 	{
@@ -411,9 +414,8 @@ int sc_main(int argc, char *argv[]) {
 		EnableDebug();
 		void (*prev_sig_int_handler)(int);
 
-#ifndef STR7_DEBUG_INLINE
-		prev_sig_int_handler = signal(SIGINT, SigIntHandler);
-#endif // not STR7_DEBUG_INLINE
+		if (!use_inline_debugger)
+			prev_sig_int_handler = signal(SIGINT, SigIntHandler);
 
 		try
 		{
@@ -425,9 +427,8 @@ int sc_main(int argc, char *argv[]) {
 			cerr << e.what() << endl;
 		}
 		
-#ifdef STR7_DEBUG_INLINE
-		signal(SIGINT, prev_sig_int_handler);
-#endif // STR7_DEBUG_INLINE
+		if (!use_inline_debugger)
+			signal(SIGINT, prev_sig_int_handler);
 
 		cerr << "Simulation finished" << endl;
 		cerr << "Simulation statistics:" << endl;
@@ -461,7 +462,7 @@ int sc_main(int argc, char *argv[]) {
 	if (flash) delete flash;
 	if (eic) delete eic;
 	if (timer0) delete timer0;
-if (timer2) delete timer2;
+	if (timer2) delete timer2;
 	
   
 	if (icib_irqsstub0) delete icib_irqsstub0;
@@ -506,12 +507,8 @@ if (timer2) delete timer2;
 	for (int i = 0; i < 2; i++)
 		if (fiqmstub[i]) delete fiqmstub[i];
 
-#ifdef STR7_DEBUG
 	if(gdb_server) delete gdb_server;
-#endif // STR7_DEBUG
-#ifdef STR7_DEBUG_INLINE
 	if(inline_debugger) delete inline_debugger;
-#endif // STR7_DEBUG_INLINE
 
 #ifdef WIN32
 	// releases the winsock2 resources
