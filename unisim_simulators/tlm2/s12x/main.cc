@@ -49,6 +49,7 @@
 #include <unisim/service/loader/s19_loader/s19_loader.hh>
 
 #include <unisim/service/tee/registers/registers_tee.hh>
+#include <unisim/service/tee/memory_import_export/memory_import_export_tee.hh>
 
 #include <unisim/service/time/sc_time/time.hh>
 #include <unisim/service/time/host_time/time.hh>
@@ -152,6 +153,8 @@ using unisim::util::garbage_collector::GarbageCollector;
 
 typedef unisim::service::loader::elf_loader::ElfLoaderImpl<uint64_t, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym> Elf32Loader;
 typedef unisim::service::tee::registers::RegistersTee<> RegistersTee;
+typedef unisim::service::tee::memory_import_export::MemoryImportExportTee<service_address_t> MemoryImportExportTee;
+
 
 using unisim::component::tlm2::processor::hcs12x::XINT;
 using unisim::component::tlm2::processor::hcs12x::CRG;
@@ -339,6 +342,8 @@ int sc_main(int argc, char *argv[])
 
 	RegistersTee* registersTee = new RegistersTee("registersTee");
 
+	MemoryImportExportTee* memoryImportExportTee = new MemoryImportExportTee("memoryImportExportTee");
+
 	RTBStub *rtbStub = new RTBStub("rtbStub", fsb_cycle_time);
 
 	//=========================================================================
@@ -452,7 +457,17 @@ int sc_main(int argc, char *argv[])
 	//=========================================================================
 
 	cpu->memory_import >> mmc->memory_export;
-	mmc->internal_memory_import >> internal_memory->memory_export;
+
+	*(memoryImportExportTee->memory_import[0]) >> s12xint->memory_export;
+	*(memoryImportExportTee->memory_import[1]) >> crg->memory_export;
+	*(memoryImportExportTee->memory_import[2]) >> atd1->memory_export;
+	*(memoryImportExportTee->memory_import[3]) >> atd0->memory_export;
+	*(memoryImportExportTee->memory_import[4]) >> pwm->memory_export;
+	*(memoryImportExportTee->memory_import[5]) >> ect->memory_export;
+	*(memoryImportExportTee->memory_import[6]) >> internal_memory->memory_export;
+
+	mmc->internal_memory_import >> memoryImportExportTee->memory_export;
+
 	mmc->external_memory_import >> external_memory->memory_export;
 
 	if(inline_debugger)
@@ -471,14 +486,14 @@ int sc_main(int argc, char *argv[])
 		inline_debugger->disasm_import >> cpu->disasm_export;
 		inline_debugger->memory_import >> cpu->memory_export;
 
-		*registersTee->registers_import[0] >> cpu->registers_export;
-		*registersTee->registers_import[1] >> mmc->registers_export;
-		*registersTee->registers_import[2] >> s12xint->registers_export;
-		*registersTee->registers_import[3] >> crg->registers_export;
-		*registersTee->registers_import[4] >> atd1->registers_export;
-		*registersTee->registers_import[5] >> atd0->registers_export;
-		*registersTee->registers_import[6] >> pwm->registers_export;
-		*registersTee->registers_import[7] >> ect->registers_export;
+		*(registersTee->registers_import[0]) >> cpu->registers_export;
+		*(registersTee->registers_import[1]) >> mmc->registers_export;
+		*(registersTee->registers_import[2]) >> s12xint->registers_export;
+		*(registersTee->registers_import[3]) >> crg->registers_export;
+		*(registersTee->registers_import[4]) >> atd1->registers_export;
+		*(registersTee->registers_import[5]) >> atd0->registers_export;
+		*(registersTee->registers_import[6]) >> pwm->registers_export;
+		*(registersTee->registers_import[7]) >> ect->registers_export;
 
 //		inline_debugger->registers_import >> cpu->registers_export;
 		inline_debugger->registers_import >> registersTee->registers_export;
@@ -608,11 +623,25 @@ int sc_main(int argc, char *argv[])
 	}
 
 STOP_MAIN:
+
 	if (registersTee) { delete registersTee; registersTee = NULL; }
+	if (memoryImportExportTee) { delete memoryImportExportTee; memoryImportExportTee = NULL; }
+
+	if(gdb_server) { delete gdb_server; gdb_server = NULL; }
+	if(inline_debugger) { delete inline_debugger; inline_debugger = NULL; }
+
+	if (host_time) { delete host_time; host_time = NULL; }
+	if(time) { delete time; time = NULL; }
+
 	if(loaderS19) { delete loaderS19; loaderS19 = NULL; }
 	if(loaderELF) { delete loaderELF; loaderELF = NULL; }
 
 	if (rtbStub) { delete rtbStub; rtbStub = NULL; }
+
+	if(external_memory) { delete external_memory; external_memory = NULL; }
+	if(internal_memory) { delete internal_memory; internal_memory = NULL; }
+	if(external_router) { delete external_router; external_router = NULL; }
+	if(internal_router) { delete internal_router; internal_router = NULL; }
 
 	if (crg) { delete crg; crg = NULL; }
 	if (ect) { delete ect; ect = NULL; }
@@ -621,17 +650,8 @@ STOP_MAIN:
 	if (atd0) { delete atd0; atd0 = NULL; }
 	if (s12xint) { delete s12xint; s12xint = NULL; }
 	if (mmc) { delete mmc; mmc = NULL; }
-	if(external_memory) { delete external_memory; external_memory = NULL; }
-	if(internal_memory) { delete internal_memory; internal_memory = NULL; }
-	if(external_router) { delete external_router; external_router = NULL; }
-	if(internal_router) { delete internal_router; internal_router = NULL; }
+
 	if(cpu) { delete cpu; cpu = NULL; }
-
-	if(gdb_server) { delete gdb_server; gdb_server = NULL; }
-	if(inline_debugger) { delete inline_debugger; inline_debugger = NULL; }
-
-	if (host_time) { delete host_time; host_time = NULL; }
-	if(time) { delete time; time = NULL; }
 
 #ifdef WIN32
 	// releases the winsock2 resources
