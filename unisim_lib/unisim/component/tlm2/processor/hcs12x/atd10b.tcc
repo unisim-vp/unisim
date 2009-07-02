@@ -667,7 +667,7 @@ bool ATD10B<ATD_SIZE>::read(uint8_t offset, void *buffer) {
 			*((uint8_t *) buffer) = portad1_register;
 		} break;
 
-		default: if ((offset >= ATDDR0H) && (offset < ATDDR0H + ATD_SIZE*2)) {
+		default: if ((offset >= ATDDR0H) && (offset <= ATDDR15L)) {
 			*((uint16_t *) buffer) = atddrhl_register[offset] & 0xFFC0;
 			uint8_t index = offset - ATDDR0H;
 			uint8_t clearMask = 0xFF;
@@ -773,7 +773,7 @@ bool ATD10B<ATD_SIZE>::write(uint8_t offset, const void *buffer) {
 			/* write has no effect */
 		} break;
 
-		default: if ((offset >= ATDDR0H) && (offset < ATDDR0H+ATD_SIZE*2)) {
+		default: if ((offset >= ATDDR0H) && (offset <= ATDDR15L)) {
 			/* write has no effect */
 		} else {
 			return false;
@@ -917,7 +917,7 @@ void ATD10B<ATD_SIZE>::Reset() {
 	portad0_register = 0xFF;
 	portad1_register = 0xFF;
 
-	for (int i=0; i<ATD_SIZE; i++)
+	for (int i=0; i < ATD_SIZE; i++)
 		atddrhl_register[ATDDR0H + i] = 0x00;
 
 	setATDClock();
