@@ -41,7 +41,8 @@
 #include <list>
 
 #if defined(HAVE_CONFIG_H)
-#include "unisim/service/debug/inline_debugger/config.h"
+//#include "unisim/service/debug/inline_debugger/config.h"
+#include "config.h"
 #endif
 
 #if defined(HAVE_LIBEDIT)
