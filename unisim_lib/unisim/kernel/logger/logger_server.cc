@@ -86,6 +86,7 @@ LoggerServer::
 				<< "could not correctly close the xml output file" << endl;
 		}
 		xmlFreeTextWriter(xml_writer);
+		xml_writer = NULL;
 	}
 	if (text_file.is_open())
 	{
@@ -172,6 +173,7 @@ OnDisconnect() {
 				<< "could not correctly close the xml output file" << endl;
 		}
 		xmlFreeTextWriter(xml_writer);
+		xml_writer = NULL;
 	}
 	if (text_file.is_open())
 	{
