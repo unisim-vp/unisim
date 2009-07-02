@@ -59,7 +59,6 @@ cba.execute = {
 	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 }
 
-
 //  CMPab  IMM
 op cmp_ab_imm(0b1[1]:b[1]:0x01[6]:opr8i[8])
 

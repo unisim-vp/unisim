@@ -22,9 +22,11 @@ $(top_srcdir)/hcs12x.hh: $(top_srcdir)/xb.hh
 
 $(top_srcdir)/xb_sub.isa: $(top_srcdir)/xb.hh
 $(top_srcdir)/xb.hh: $(top_srcdir)/xb.isa
-	cd $(top_srcdir); $(GENISSLIB_PATH) -I . -o xb -w 32 xb.isa
+	cd $(top_srcdir); $(GENISSLIB_PATH) -I . -o xb -w 32 xb.isa 
 
-$(top_srcdir)/hcs12x.hh: $(top_srcdir)/hcs12x.isa
+$(top_srcdir)/hcs12x.hh: $(top_srcdir)/hcs12x.isa load_store.isa transfer_exchange.isa move.isa \
+	addition_substraction.isa decrement_increment.isa compare_test.isa boolean-logic.isa bit.isa \
+	multiplication_division.isa branch.isa stacking.isa fuzzy-logic.isa others.isa
 	cd $(top_srcdir); $(GENISSLIB_PATH) -I . -o hcs12x -w 32 hcs12x.isa
 
 # $(top_srcdir)/xb.hh $(top_srcdir)/hcs12x.hh: $(top_srcdir)/%.hh: $(top_srcdir)/%.isa
