@@ -126,6 +126,7 @@ unisim/service/loader/s19_loader/s19_loader.cc \
 unisim/service/time/host_time/time.cc \
 unisim/service/time/sc_time/time.cc \
 unisim/service/tee/registers/registers_tee.cc \
+unisim/service/tee/memory_import_export/memory_import_export_tee.cc \
 unisim/component/cxx/processor/hcs12x/ccr.cc \
 unisim/component/cxx/processor/hcs12x/cpu.cc \
 unisim/component/cxx/processor/hcs12x/exception.cc \
@@ -199,6 +200,7 @@ unisim/service/interfaces/memory_injection.hh \
 unisim/service/interfaces/registers.hh \
 unisim/service/interfaces/trap_reporting.hh \
 unisim/service/tee/registers/registers_tee.hh \
+unisim/service/tee/memory_import_export/memory_import_export_tee.hh \
 unisim/service/debug/inline_debugger/inline_debugger.hh \
 unisim/service/debug/gdb_server/gdb_server.hh \
 unisim/service/logger/logger_server.hh \
