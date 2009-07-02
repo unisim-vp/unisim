@@ -463,7 +463,7 @@ int sc_main(int argc, char *argv[]) {
 	if (eic) delete eic;
 	if (timer0) delete timer0;
 	if (timer2) delete timer2;
-	
+	if (spi0) delete spi0;
   
 	if (icib_irqsstub0) delete icib_irqsstub0;
 	if (icapa_edgemstub0) delete icapa_edgemstub0;
