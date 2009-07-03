@@ -60,107 +60,145 @@ namespace component {
 namespace cxx {
 namespace processor {
 namespace tms320 {
-
-class Register
-{
-public:
-	Register();
-
-	inline void SetLo(uint32_t value) INLINE;
-	inline uint32_t GetLo() const INLINE;
-	inline void SetHi(uint8_t value) INLINE;
-	inline uint8_t GetHi() const INLINE;
-	void SetFromSinglePresicionFPFormat(uint32_t value);
-	void SetFromShortFPFormat(uint16_t value);
-	void Float(uint32_t value);
-	uint32_t Fix(bool& overflow);
-	void Add(const Register& reg, bool& overflow, bool& underflow);
-	void Add(uint16_t imm, bool& overflow, bool& underflow);
-	void Add(uint32_t imm, bool& overflow, bool& underflow);
-	void Add(const Register& reg_a, const Register& reg_b, bool& overflow, bool& underflow);
-	void Add(const Register& reg, uint32_t imm, bool& overflow, bool& underflow);
-	void Add(uint32_t imm, const Register& reg, bool& overflow, bool& underflow);
-	void Add(uint32_t imm_a, uint32_t imm_b, bool& overflow, bool& underflow);
-	void Sub(const Register& reg, bool& overflow, bool& underflow);
-	void Sub(uint16_t imm, bool& overflow, bool& underflow);
-	void Sub(uint32_t imm, bool& overflow, bool& underflow);
-	void Sub(const Register& reg_a, const Register& reg_b, bool& overflow, bool& underflow);
-	void Sub(const Register& reg, uint32_t imm, bool& overflow, bool& underflow);
-	void Sub(uint32_t imm, const Register& reg, bool& overflow, bool& underflow);
-	void Sub(uint32_t imm_a, uint32_t imm_b, bool& overflow, bool& underflow);
-	void Mpy(const Register& reg, bool& overflow, bool& underflow);
-	void Mpy(uint16_t imm, bool& overflow, bool& underflow);
-	void Mpy(uint32_t imm, bool& overflow, bool& underflow);
-	void Mpy(const Register& reg_a, const Register& reg_b, bool& overflow, bool& underflow);
-	void Mpy(const Register& reg, uint32_t imm, bool& overflow, bool& underflow);
-	void Mpy(uint32_t imm, const Register& reg, bool& overflow, bool& underflow);
-	void Mpy(uint32_t imm_a, uint32_t imm_b, bool& overflow, bool& underflow);
-	friend std::ostream& operator << (std::ostream& os, const Register& reg);
-
-	void SetLoWriteMask(uint32_t lo_write_mask);
-private:
-	uint32_t lo_write_mask; // write mask for the 32 LSBs
-	uint32_t lo; // 32 LSB
-	uint8_t hi;  // 8 MSB
-
-	void Add(uint8_t hi_a, uint32_t lo_a, uint8_t hi_b, uint32_t lo_b, bool& overflow, bool& underflow);
-	void Sub(uint8_t hi_a, uint32_t lo_a, uint8_t hi_b, uint32_t lo_b, bool& overflow, bool& underflow);
-	void AddSub(bool add, uint8_t hi_a, uint32_t lo_a, uint8_t hi_b, uint32_t lo_b, bool& overflow, bool& underflow);
-	void Mpy(uint8_t hi_a, uint32_t lo_a, uint8_t hi_b, uint32_t lo_b, bool& overflow, bool& underflow);
-};
-
-class RegisterDebugInterface : public unisim::util::debug::Register
-{
-public:
-	RegisterDebugInterface(const char *name, unisim::component::cxx::processor::tms320::Register *reg, bool extended_precision = false);
-	virtual ~RegisterDebugInterface();
-	virtual const char *GetName() const;
-	virtual void GetValue(void *buffer) const;
-	virtual void SetValue(const void *buffer);
-	virtual int GetSize() const;
-private:
-	std::string name;
-	bool extended_precision;
-	unisim::component::cxx::processor::tms320::Register *reg;
-};
-
-class RegisterBitFieldDebugInterface : public unisim::util::debug::Register
-{
-public:
-	RegisterBitFieldDebugInterface(const char *name, unisim::component::cxx::processor::tms320::Register *reg, unsigned int bit_offset, unsigned int bit_size = 1);
-	virtual ~RegisterBitFieldDebugInterface();
-	virtual const char *GetName() const;
-	virtual void GetValue(void *buffer) const;
-	virtual void SetValue(const void *buffer);
-	virtual int GetSize() const;
-private:
-	std::string name;
-	unisim::component::cxx::processor::tms320::Register *reg;
-	unsigned int bit_offset;
-	unsigned int bit_size;
-};
-
-
-inline void Register::SetLo(uint32_t value)
-{
-	lo = value & lo_write_mask;
-}
-
-inline uint32_t Register::GetLo() const
-{
-	return lo;
-}
-
-inline void Register::SetHi(uint8_t value)
-{
-	hi = value;
-}
-
-inline uint8_t Register::GetHi() const
-{
-	return hi;
-}
-
+	
+	class Register
+	{
+	public:
+		Register();
+		
+		inline Register& operator=(const Register& reg) INLINE;
+		inline void SetLo(uint32_t value) INLINE;
+		inline uint32_t GetLo() const INLINE;
+		inline void SetHi(uint8_t value) INLINE;
+		inline uint8_t GetHi() const INLINE;
+		void SetFromSinglePresicionFPFormat(uint32_t value);
+		void SetFromShortFPFormat(uint16_t value);
+		uint32_t GetSinglePrecisionFPFormat();
+		void Float(uint32_t value);
+		uint32_t Fix(bool& overflow);
+		void Abs(const Register& reg, bool& overflow);
+		void Abs(uint16_t imm, bool& overflow);
+		void Abs(uint32_t imm, bool& overflow);
+		void Add(const Register& reg, bool& overflow, bool& underflow);
+		void Add(uint16_t imm, bool& overflow, bool& underflow);
+		void Add(uint32_t imm, bool& overflow, bool& underflow);
+		void Add(const Register& reg_a, const Register& reg_b, bool& overflow, bool& underflow);
+		void Add(const Register& reg, uint32_t imm, bool& overflow, bool& underflow);
+		void Add(uint32_t imm, const Register& reg, bool& overflow, bool& underflow);
+		void Add(uint32_t imm_a, uint32_t imm_b, bool& overflow, bool& underflow);
+		void Sub(const Register& reg, bool& overflow, bool& underflow);
+		void Sub(uint16_t imm, bool& overflow, bool& underflow);
+		void Sub(uint32_t imm, bool& overflow, bool& underflow);
+		void Sub(const Register& reg_a, const Register& reg_b, bool& overflow, bool& underflow);
+		void Sub(const Register& reg, uint32_t imm, bool& overflow, bool& underflow);
+		void Sub(uint32_t imm, const Register& reg, bool& overflow, bool& underflow);
+		void Sub(uint32_t imm_a, uint32_t imm_b, bool& overflow, bool& underflow);
+		void Neg(const Register& reg, bool& overflow, bool& underflow);
+		void Neg(uint16_t imm, bool& overflow, bool& underflow);
+		void Neg(uint32_t imm, bool& overflow, bool& underflow);
+		void Norm(const Register& reg, bool& underflow);
+		void Norm(uint16_t imm, bool& underflow);
+		void Norm(uint32_t imm, bool& underflow);
+		void Mpy(const Register& reg, bool& overflow, bool& underflow);
+		void Mpy(uint16_t imm, bool& overflow, bool& underflow);
+		void Mpy(uint32_t imm, bool& overflow, bool& underflow);
+		void Mpy(const Register& reg_a, const Register& reg_b, bool& overflow, bool& underflow);
+		void Mpy(const Register& reg, uint32_t imm, bool& overflow, bool& underflow);
+		void Mpy(uint32_t imm, const Register& reg, bool& overflow, bool& underflow);
+		void Mpy(uint32_t imm_a, uint32_t imm_b, bool& overflow, bool& underflow);
+		void Rnd(const Register& reg, bool& overflow, bool& underflow);
+		void Rnd(uint16_t imm, bool& overflow, bool& underflow);
+		void Rnd(uint32_t imm, bool& overflow, bool& underflow);
+		void LoadExp(const Register& reg);
+		void LoadExp(uint32_t value);
+		void LoadExp(uint16_t value);
+		void LoadMan(const Register& reg);
+		void LoadMan(uint32_t value);
+		void LoadMan(uint16_t value);
+		
+		friend std::ostream& operator << (std::ostream& os, const Register& reg);
+		
+		void SetLoWriteMask(uint32_t lo_write_mask);
+	private:
+		uint32_t lo_write_mask; // write mask for the 32 LSBs
+		uint32_t lo; // 32 LSB
+		uint8_t hi;  // 8 MSB
+		
+		uint32_t GetLo(uint16_t value) ;
+		uint8_t GetHi(uint16_t value) ;
+		uint32_t GetLo(uint32_t value) ;
+		uint8_t GetHi(uint32_t value) ;
+		
+		void Abs(uint8_t hi_a, uint32_t lo_a, bool& overflow);
+		void Add(uint8_t hi_a, uint32_t lo_a, uint8_t hi_b, uint32_t lo_b, bool& overflow, bool& underflow);
+		void Sub(uint8_t hi_a, uint32_t lo_a, uint8_t hi_b, uint32_t lo_b, bool& overflow, bool& underflow);
+		void AddSub(bool add, uint8_t hi_a, uint32_t lo_a, uint8_t hi_b, uint32_t lo_b, bool& overflow, bool& underflow);
+		void Mpy(uint8_t hi_a, uint32_t lo_a, uint8_t hi_b, uint32_t lo_b, bool& overflow, bool& underflow);
+		void Norm(uint8_t hi_a, uint32_t lo_a, bool& underflow);
+		void Rnd(uint8_t hi_a, uint32_t lo_a, bool& overflow, bool& underflow);
+	};
+	
+	class RegisterDebugInterface : public unisim::util::debug::Register
+	{
+	public:
+		RegisterDebugInterface(const char *name, unisim::component::cxx::processor::tms320::Register *reg, bool extended_precision = false);
+		virtual ~RegisterDebugInterface();
+		virtual const char *GetName() const;
+		virtual void GetValue(void *buffer) const;
+		virtual void SetValue(const void *buffer);
+		virtual int GetSize() const;
+	private:
+		std::string name;
+		bool extended_precision;
+		unisim::component::cxx::processor::tms320::Register *reg;
+	};
+	
+	class RegisterBitFieldDebugInterface : public unisim::util::debug::Register
+	{
+	public:
+		RegisterBitFieldDebugInterface(const char *name, unisim::component::cxx::processor::tms320::Register *reg, unsigned int bit_offset, unsigned int bit_size = 1);
+		virtual ~RegisterBitFieldDebugInterface();
+		virtual const char *GetName() const;
+		virtual void GetValue(void *buffer) const;
+		virtual void SetValue(const void *buffer);
+		virtual int GetSize() const;
+	private:
+		std::string name;
+		unisim::component::cxx::processor::tms320::Register *reg;
+		unsigned int bit_offset;
+		unsigned int bit_size;
+	};
+	
+	inline Register& Register::operator=(const Register& reg)
+	{
+		if (this != &reg)
+		{
+			this->hi = reg.GetHi();
+			this->lo = reg.GetLo();
+		}
+		return *this;
+	}
+	
+	inline void Register::SetLo(uint32_t value)
+	{
+		lo = value & lo_write_mask;
+	}
+	
+	inline uint32_t Register::GetLo() const
+	{
+		return lo;
+	}
+	
+	inline void Register::SetHi(uint8_t value)
+	{
+		hi = value;
+	}
+	
+	inline uint8_t Register::GetHi() const
+	{
+		return hi;
+	}
+	
 } // end of namespace tms320
 } // end of namespace processor
 } // end of namespace cxx
