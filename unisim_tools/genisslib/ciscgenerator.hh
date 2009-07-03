@@ -27,19 +27,25 @@
 struct CiscGenerator : public Generator {
   /* The opcode structure used to work on operation structures*/
   struct OpCode_t {
-    unsigned int                m_size;
     uint8_t*                    m_mask;
     uint8_t*                    m_bits;
+    unsigned int                m_prefixsize;
+    unsigned int                m_fullsize;
+    bool                        m_vlen;
     // Topology information
     OpCode_t*                   m_upper;
     intptr_t                    m_lowercount;
     
-    OpCode_t() : m_size( 0 ), m_mask( 0 ), m_bits( 0 ), m_upper( 0 ), m_lowercount( 0 ) {}
+    OpCode_t()
+      : m_mask( 0 ), m_bits( 0 ), m_prefixsize( 0 ), m_fullsize( 0 ), m_vlen( false ),
+        m_upper( 0 ), m_lowercount( 0 ) {}
     ~OpCode_t() { delete [] m_mask; }
     
-    void                        size( unsigned int _size );
+    void                        size_attrs( unsigned int prefixsize, unsigned int fullsize, bool vlen );
     bool                        match( OpCode_t const& _oc ) const;
-    void                        optimize();
+    void                        optimize( bool is_little_endian );
+    unsigned int                maskbytesize() const { return (m_prefixsize+7)/8; };
+    
     // Topology methods
     enum Location_t { Outside, Overlaps, Inside, Contains, Equal };
     Location_t                  locate( OpCode_t const& _oc ) const;
@@ -51,7 +57,7 @@ struct CiscGenerator : public Generator {
   typedef std::map<Operation_t const*,OpCode_t> OpCodes_t;
 
   OpCodes_t                     m_opcodes;
-  unsigned int                  m_insn_bytesize;
+  unsigned int                  m_code_capacity;
   
   CiscGenerator();
   ~CiscGenerator() {};

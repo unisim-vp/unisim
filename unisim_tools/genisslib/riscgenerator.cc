@@ -124,12 +124,21 @@ RiscGenerator::finalize() {
   for( Vect_t<Operation_t>::const_iterator op = operations.begin(); op < operations.end(); ++ op ) {
     Vect_t<BitField_t> const& bitfields = (**op).m_bitfields;
     
-    bool vlen = false, outprefix = false;
+    bool vlen = false, outprefix = false, vword = false;
     unsigned int insn_size = 0;
     uint64_t mask = 0, bits = 0;
     
     for (FieldIterator fi( isa().m_little_endian, bitfields, m_insn_maxsize ); fi.next(); ) { 
+      if (fi.item().type() == BitField_t::Separator) {
+        if (dynamic_cast<SeparatorBitField_t const&>( fi.item() ).m_rewind and vword) {
+          (**op).m_fileloc.err( "error: operation `%s' rewinds a variable length word.", (**op).m_symbol.str() );
+          throw GenerationError;
+        }
+        vword = false;
+      }
+      
       if (fi.item().minsize() != fi.item().maxsize()) {
+        vword = true;
         vlen = true;
         outprefix = true;
       }
@@ -140,7 +149,7 @@ RiscGenerator::finalize() {
       bits |= fi.item().bits() << fi.pos();
       mask |= fi.item().mask() << fi.pos();
     }
-    m_opcodes[*op] = OpCode_t( vlen, insn_size, mask, bits );
+    m_opcodes[*op] = OpCode_t( mask, bits, insn_size, vlen );
   }
   
   /* Generating the topological graph of operations, checking for
@@ -241,7 +250,7 @@ RiscGenerator::insn_decode_impl( Product_t& _product, Operation_t const& _op, ch
       _product.code( "%s = ", opbf.m_symbol.str() );
       
       if( opbf.m_sext ) {
-        int sizeofop = std::max( opbf.dstsize(), m_minwordsize );
+        int sizeofop = std::max( least_ctype_size( opbf.dstsize() ), m_minwordsize );
         int sext_shift = sizeofop - opbf.m_size;
         _product.code( "(((((int%d_t)(%s >> %u)) & 0x%llx) << %u) >> %u)",
                        sizeofop, _codename, fi.pos(),
