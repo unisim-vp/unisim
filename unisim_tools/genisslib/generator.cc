@@ -683,17 +683,18 @@ Generator::isa_operations_ctors( Product_t& _product ) const {
     _product.code( "(code, addr, \"%s\")\n",
                    (**op).m_symbol.str() );
 
+    _product.code( "{\n" );
+    
+    insn_decode_impl( _product, **op, "code", "addr" );
+
     if( not (**op).m_variables.empty() ) {
       for( Vect_t<Variable_t>::const_iterator var = (**op).m_variables.begin(); var < (**op).m_variables.end(); ++ var ) {
         if( (**var).m_cinit ) {
-          _product.code( ",%s(", (**var).m_symbol.str() ).usercode( *(**var).m_cinit, "%s)\n" );
+          _product.code( "%s = ", (**var).m_symbol.str() ).usercode( *(**var).m_cinit ).code( ";\n" );
         }
       }
     }
 
-    _product.code( "{\n" );
-    
-    insn_decode_impl( _product, **op, "code", "addr" );
     _product.code( "}\n\n" );
     
     insn_destructor_impl( _product, **op );
