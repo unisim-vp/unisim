@@ -95,6 +95,7 @@ CPU(const char *name,
 	Service<MemoryInjection<uint64_t> >(name, parent),
 	Client<Memory<uint64_t> >(name, parent),
 	Client<TI_C_IO>(name, parent),
+	Client<Loader<uint64_t> >(name, parent),
 	disasm_export("disasm_export", this),
 	registers_export("registers_export", this),
 	memory_access_reporting_control_export(
@@ -108,6 +109,7 @@ CPU(const char *name,
 	memory_import("memory_import", this),
 	memory_injection_export("memory_injection_export", this),
 	ti_c_io_import("ti-c-io-import", this),
+	loader_import("loader-import", this),
 	requires_memory_access_reporting(true),
 	requires_finished_instruction_reporting(true),
 	logger(*this),
@@ -119,12 +121,14 @@ CPU(const char *name,
 	trap_on_instruction_counter(0xffffffffffffffffULL),
 	insn_cache_hits(0),
 	insn_cache_misses(0),
+	mimic_dev_board(false),
 	stat_instruction_counter("instruction-counter", this, instruction_counter),
 	param_trap_on_instruction_counter("trap-on-instruction-counter", this, trap_on_instruction_counter),
 	max_inst(0xffffffffffffffffULL),
 	param_max_inst("max-inst", this, max_inst),
 	stat_insn_cache_hits("insn-cache-hits", this, insn_cache_hits),
 	stat_insn_cache_misses("insn-cache-misses", this, insn_cache_misses),
+	param_mimic_dev_board("mimic-dev-board", this, mimic_dev_board),
 	delay_before_branching(0),
 	branch_addr(0),
 	repeat_single(false),
@@ -135,6 +139,8 @@ CPU(const char *name,
 	reg_pc(0),
 	reg_npc(0)
 {
+	Object::SetupDependsOn(loader_import);
+
 	regs[REG_ST].SetLoWriteMask(ST_WRITE_MASK);
 	regs[REG_IE].SetLoWriteMask(IE_WRITE_MASK);
 	regs[REG_IF].SetLoWriteMask(IF_WRITE_MASK);
@@ -314,7 +320,25 @@ Reset()
 		regs[reg_num].SetHi(0);
 	}
 
-	reset = true;
+	if(loader_import && mimic_dev_board)
+	{
+		if(verbose_setup)
+		{
+			logger << DebugInfo << "Minicing development board behavior after reset" << EndDebugInfo;
+		}
+		SetSP(loader_import->GetStackBase() / 4);
+		SetPC(loader_import->GetEntryPoint() / 4);
+		SetNPC(loader_import->GetEntryPoint() / 4);
+		reset = false;
+	}
+	else
+	{
+		if(verbose_setup)
+		{
+			logger << DebugInfo << "Reseting" << EndDebugInfo;
+		}
+		reset = true;
+	}
 }
 
 template<class CONFIG, bool DEBUG>

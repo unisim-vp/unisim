@@ -8,11 +8,13 @@ The UNISIM TMS320C3X simulator features:
 \item Simulation of the TMS320C3X Instruction set
 \item A simulation speed average around 10 MIPS and up to 28 MIPS on a 2.4 Ghz Core2 Duo machine under Linux
 \item Support for instruction cache
-\item Support for TI COFF v0, v1, and v2
+\item Support for TI COFF v0, v1, and v2 (either with big-endian or little-endian headers)
 \item Built-in debugger (Inline Debugger)
 \item Support for GDB serial remote protocol (GDB server)
 \item Support for TI C I/O
 \end{itemize}
+
+\textit{Note: Support for the GDB serial remote protocol is experimental in the sense that although some GDB versions supported the TMS320C3X target (see~\url{http://www.elec.canterbury.ac.nz/c4x/doc/c4x-tools.html}), these versions are no longer available on the web. As a consequence this simulator functionality could not be tested and validated for the TMS320C3X target but only for ARM7/9, PowerPC and HCS12X targets.}
 
 \begin{figure}[!h]
 	\begin{center}
@@ -99,6 +101,27 @@ Wine and GNU bash users should add the following in their \texttt{.bashrc}:
 \begin{verbatim}
 export PATH=${HOME}/.wine/drive_c/TI/TIC3X4X/BIN:${PATH}
 export C_DIR=C:\\TI\\TIC3X4X\\INCLUDE\;C:\\TI\\TIC3X4X\\LIB
+\end{verbatim}
+
+\subsection{The GNU binutils}
+
+The GNU binutils is a set of open source tools to manipulate binaries. They provide an assembler, a linker, and an object dump utility among others.
+The last version, at the time of writing this document, is available at: \url{ftp://ftp.gnu.org/gnu/binutils/binutils-2.19.1.tar.gz}
+The GNU binutils support TI COFF v0, v1 and v2 binary files for both TMS320C3X and TMS320C4X targets.
+
+To compile the binutils and install them into \texttt{/opt/c4x-coff}:
+
+\begin{verbatim}
+$ ./configure --target=c4x-unknown-coff --prefix=/opt/c4x-coff
+$ make
+$ make install
+\end{verbatim}
+
+A key feature we're interested on is the ability of \texttt{objdump} to dump/disassemble a TI COFF binary for the TMS320C3X.
+For instance, the following command will dump file \texttt{test.bin} into file \texttt{dump.txt}:
+
+\begin{verbatim}
+$ /opt/c4x-coff/bin/c4x-unknown-coff-objdump -D test.bin > dump.txt
 \end{verbatim}
 
 \subsection{Simulator configuration}
@@ -805,7 +828,7 @@ This interface is useful for the TI C I/O service to capture target program I/Os
 \subsubsection{COFF loader service}
 \label{tms320c3x_coff_loader}
 
-This service provides UNISIM TMS320C3X simulator with a support for TI COFF v0, v1, and v2 binary files (see TMS320C3x/C4x Assembly Language Tools User’s Guide, Appendix A). The COFF loader service loads the programs into memory while setup (simulator initialization). The loader can interpret \texttt{.cinit} section if option \texttt{-cr} of TI C cross-compiler has been used while building the target program (see TMS320C3x/C4x Optimizing C Compiler User’s Guide, section 4.8.1: Autoinitialization of variables and constants).
+This service provides UNISIM TMS320C3X simulator with a support for TI COFF v0, v1, and v2 binary files  either with little-endian or big-endian headers (see TMS320C3x/C4x Assembly Language Tools User’s Guide, Appendix A). The COFF loader service loads the programs into memory while setup (simulator initialization). The loader can interpret \texttt{.cinit} section if option \texttt{-cr} of TI C cross-compiler has been used while building the target program (see TMS320C3x/C4x Optimizing C Compiler User’s Guide, section 4.8.1: Autoinitialization of variables and constants).
 To configure the COFF loader service see section~\ref{tms320c3x_configuration}.
 The source code of COFF loader service is located in directory \texttt{unisim/service/loader/coff\_loader}.
 \noindent Table below summarizes the COFF Loader service API:
@@ -1239,6 +1262,25 @@ Directory \texttt{unisim/util/xml} provides support for bare XML file (e.g. for 
 
 \newpage
 \section{Validation guide}
+
+The simulator validation involved using the TI C cross-compiler for Windows (see section~\ref{tms320c3x_cross_compiler}) with the following versions:
+\begin{itemize}
+\item TMS320C3x/4x ANSI C Compiler Version 5.11
+\item TMS320C3x/4x ANSI C Optimizer Version 5.13
+\item TMS320C3x/4x ANSI C Code Generator Version 5.13
+\item TMS320C3x/4x COFF Assembler Version 5.12
+\item TMS320C3x/4x COFF Linker Version 5.11
+\end{itemize}
+
+The cross-compiler has generated COFF v2 files for TMS320C3X/C4X with little-endian headers matching the endianness of our building host machine (Windows XP x86)
+
+\noindent The host machine configurations used to test both compilation and run of the simulator are:
+\begin{itemize}
+\item Redhat Linux RHEL4 x86/gcc 3.4.6 (32-bit little-endian machine)
+\item Mandriva Linux 2009.1 x86/gcc 4.3.2 (32-bit little-endian machine)
+\item Ubuntu Linux 7.04 powerpc/gcc 4.1.2 (32-bit big-endian machine)
+\item Ubuntu Linux 9.04 AMD64/x86\_64/gcc 4.3.3 (64-bit little-endian machine)
+\end{itemize}
 
 \subsection{Integer benchmarks}
 

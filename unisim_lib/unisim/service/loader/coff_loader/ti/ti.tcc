@@ -746,6 +746,10 @@ typename unisim::service::loader::coff_loader::Section<MEMORY_ADDR>::Type Sectio
 		else
 			return unisim::service::loader::coff_loader::Section<MEMORY_ADDR>::ST_LOADABLE_RAWDATA;
 	}
+	if((flags & STYP_BSS) && name == string(".stack"))
+	{
+		return unisim::service::loader::coff_loader::Section<MEMORY_ADDR>::ST_STACK;
+	}
 	return unisim::service::loader::coff_loader::Section<MEMORY_ADDR>::ST_NOT_LOADABLE;
 }
 

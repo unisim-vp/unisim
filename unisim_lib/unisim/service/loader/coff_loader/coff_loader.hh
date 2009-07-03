@@ -153,7 +153,7 @@ template <class MEMORY_ADDR>
 class Section
 {
 public:
-	typedef enum { ST_LOADABLE_RAWDATA, ST_SPECIFIC_CONTENT, ST_NOT_LOADABLE } Type;
+	typedef enum { ST_LOADABLE_RAWDATA, ST_STACK, ST_SPECIFIC_CONTENT, ST_NOT_LOADABLE } Type;
 	virtual const char *GetName() const = 0;
 	virtual MEMORY_ADDR GetVirtualAddress() const = 0;
 	virtual MEMORY_ADDR GetPhysicalAddress() const = 0;
@@ -334,12 +334,15 @@ private:
 	string filename;
 	MEMORY_ADDR entry_point;
 	MEMORY_ADDR top_addr;
+	MEMORY_ADDR stack_base;
 	unisim::util::endian::endian_type file_endianness;
 	bool dump_headers;
+	bool verbose_write;
 
 	// Run-time parameters (accessors)
 	Parameter<string> param_filename;
 	Parameter<bool> param_dump_headers;
+	Parameter<bool> param_verbose_write;
 
 	unisim::kernel::logger::Logger logger;
 

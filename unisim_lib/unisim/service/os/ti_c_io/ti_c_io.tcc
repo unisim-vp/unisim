@@ -107,6 +107,7 @@ TI_C_IO<MEMORY_ADDR>::TI_C_IO(const char *name, Object *parent) :
 	verbose_all(false),
 	verbose_io(false),
 	verbose_setup(false),
+	enable_lseek_bug(false),
 	enable(false),
 	warning_as_error(false),
 	reg_pc(0),
@@ -117,6 +118,7 @@ TI_C_IO<MEMORY_ADDR>::TI_C_IO(const char *name, Object *parent) :
 	param_verbose_all("verbose-all", this, verbose_all, "globally enable/disable verbosity"),
 	param_verbose_io("verbose-io", this, verbose_io, "enable/disable verbosity while I/Os"),
 	param_verbose_setup("verbose-setup", this, verbose_setup, "enable/disable verbosity while setup"),
+	param_enable_lseek_bug("enable-lseek-bug", this, enable_lseek_bug, "enable/disable lseek bug (as code composer)"),
 	param_enable("enable", this, enable, "enable/disable TI C I/O support"),
 	param_warning_as_error("warning-as-error", this, warning_as_error, "Whether Warnings are considered as error or not"),
 	param_pc_register_name("pc-register-name", this, pc_register_name, "Name of the CPU program counter register"),
@@ -385,7 +387,10 @@ unisim::service::interfaces::TI_C_IO::Status TI_C_IO<MEMORY_ADDR>::HandleEmulato
 			{
 				uint32_t fpos = c_io_lseek(input_msg.parm[0], (int32_t) input_msg.parm[1] | ((int32_t) input_msg.parm[2] << 16), input_msg.parm[3]);
 				output_msg.parm[0] = fpos & 0xffff;
-				output_msg.parm[1] = (fpos >> 16) & 0xffff;
+				if(!enable_lseek_bug)
+				{
+					output_msg.parm[1] = (fpos >> 16) & 0xffff; // Code Composer 4.10.37 for Windows has a bug, it leaves this value unchanged.
+				}
 			}
 			break;
 		case C_IO_CMD_UNLINK:
@@ -701,6 +706,11 @@ int32_t TI_C_IO<MEMORY_ADDR>::c_io_lseek(int16_t fno, int32_t offset, int16_t or
 	if((verbose_io || verbose_all) && ret == -1)
 	{
 		logger << DebugInfo << "'lseek' reports an error (" << strerror(errno) << ")" << EndDebugInfo;
+	}
+
+	if(verbose_io || verbose_all)
+	{
+		logger << DebugInfo << "'lseek' returns " << ret << EndDebugInfo;
 	}
 
 	return ret;

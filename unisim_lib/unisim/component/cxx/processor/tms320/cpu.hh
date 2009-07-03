@@ -47,6 +47,7 @@
 #include "unisim/service/interfaces/registers.hh"
 #include "unisim/service/interfaces/symbol_table_lookup.hh"
 #include "unisim/service/interfaces/ti_c_io.hh"
+#include "unisim/service/interfaces/loader.hh"
 #include "unisim/component/cxx/processor/tms320/isa_tms320.hh"
 #include "unisim/component/cxx/processor/tms320/register.hh"
 #include "unisim/util/endian/endian.hh"
@@ -96,6 +97,7 @@ using unisim::service::interfaces::MemoryInjection;
 using unisim::service::interfaces::Registers;
 using unisim::service::interfaces::SymbolTableLookup;
 using unisim::service::interfaces::TI_C_IO;
+using unisim::service::interfaces::Loader;
 using std::string;
 
 // Status register bitfields offsets
@@ -142,7 +144,8 @@ class CPU :
 	public Service<Registers>,
 	public Service<Memory<uint64_t> >,
 	public Client<Memory<uint64_t> >,
-	public Client<TI_C_IO>
+	public Client<TI_C_IO>,
+	public Client<Loader<uint64_t> >
 {
 protected:
 	typedef typename CONFIG::address_t address_t;
@@ -178,6 +181,7 @@ public:
 	ServiceImport<SymbolTableLookup<uint64_t> > symbol_table_lookup_import;
 	ServiceImport<Memory<uint64_t> > memory_import; // TODO: check for removal
 	ServiceImport<TI_C_IO> ti_c_io_import;
+	ServiceImport<Loader<uint64_t> > loader_import;
 	
 	//===============================================================
 	//= Public service imports/exports                         STOP =
@@ -492,9 +496,11 @@ private:
 	uint64_t instruction_counter;                         //!< Number of executed instructions
 	uint64_t trap_on_instruction_counter;
 	uint64_t max_inst;                                    //!< Maximum number of instructions to execute
+	bool mimic_dev_board;
 	Parameter<uint64_t> param_max_inst;                   //!< linked to member max_inst
 	Parameter<uint64_t> param_trap_on_instruction_counter;
 	Statistic<uint64_t> stat_instruction_counter;
+	Parameter<bool> param_mimic_dev_board;
 
 	//===============================================================
 	//= Registers                                             START =

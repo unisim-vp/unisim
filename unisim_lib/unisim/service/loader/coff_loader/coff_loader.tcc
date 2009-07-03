@@ -64,10 +64,13 @@ CoffLoader<MEMORY_ADDR>::CoffLoader(const char *name, Object *parent)
 	, filename()
 	, entry_point(0)
 	, top_addr(0)
+	, stack_base(0)
 	, dump_headers(false)
+	, verbose_write(false)
 	, logger(*this)
 	, param_filename("filename", this, filename)
 	, param_dump_headers("dump-headers", this, dump_headers)
+	, param_verbose_write("verbose-write", this, verbose_write)
 {
 	Object::SetupDependsOn(memory_import);
 
@@ -87,19 +90,19 @@ void CoffLoader<MEMORY_ADDR>::OnDisconnect()
 template <class MEMORY_ADDR>
 MEMORY_ADDR CoffLoader<MEMORY_ADDR>::GetEntryPoint() const
 {
-	return (MEMORY_ADDR) entry_point;
+	return (MEMORY_ADDR) entry_point * memory_atom_size;
 }
 
 template <class MEMORY_ADDR>
 MEMORY_ADDR CoffLoader<MEMORY_ADDR>::GetTopAddr() const
 {
-	return (MEMORY_ADDR) top_addr;
+	return (MEMORY_ADDR) top_addr * memory_atom_size;
 }
 
 template <class MEMORY_ADDR>
 MEMORY_ADDR CoffLoader<MEMORY_ADDR>::GetStackBase() const
 {
-  return 0;
+  return (MEMORY_ADDR) stack_base * memory_atom_size;
 }
 
 template <class MEMORY_ADDR>
@@ -111,7 +114,7 @@ bool CoffLoader<MEMORY_ADDR>::Write(MEMORY_ADDR addr, const void *content, uint3
 		return false;
 	}
 
-	logger << DebugInfo << "Write into memory (@0x" << hex << addr << " - @0x" << (addr +  size - 1) << dec << ")" << EndDebugInfo;
+	if(verbose_write) logger << DebugInfo << "Write into memory (@0x" << hex << addr << " - @0x" << (addr +  size - 1) << dec << ")" << EndDebugInfo;
 	return true;
 }
 
@@ -289,18 +292,28 @@ bool CoffLoader<MEMORY_ADDR>::Setup()
 		MEMORY_ADDR section_size = section->GetSize();
 		long section_content_file_ptr = section->GetContentFilePtr();
 
-		if(section_size > 0 && section_content_file_ptr && section_type != Section<MEMORY_ADDR>::ST_NOT_LOADABLE)
+		if(section_size > 0 && section_type != Section<MEMORY_ADDR>::ST_NOT_LOADABLE)
 		{
-			logger << DebugInfo << "Loading section " << section_name << EndDebugInfo;
+			void *section_content = 0;
 
-			void *section_content = calloc(section_size, memory_atom_size);
-
-			if(!section_content || is.seekg(section_content_file_ptr, ios::beg).fail() || is.read((char *) section_content, section_size * memory_atom_size).fail())
+			switch(section_type)
 			{
-				logger << DebugError << "Can't load section " << section_name << EndDebugError;
-				success = false;
+				case Section<MEMORY_ADDR>::ST_LOADABLE_RAWDATA:
+				case Section<MEMORY_ADDR>::ST_SPECIFIC_CONTENT:
+				{
+					logger << DebugInfo << "Loading section " << section_name << EndDebugInfo;
+					section_content = calloc(section_size, memory_atom_size);
+
+					if(!section_content || is.seekg(section_content_file_ptr, ios::beg).fail() || is.read((char *) section_content, section_size * memory_atom_size).fail())
+					{
+						logger << DebugError << "Can't load section " << section_name << EndDebugError;
+						success = false;
+					}
+					break;
+				}
 			}
-			else
+
+			if(success)
 			{
 				switch(section_type)
 				{
@@ -311,6 +324,10 @@ bool CoffLoader<MEMORY_ADDR>::Setup()
 							success = false;
 						}
 						break;
+					case Section<MEMORY_ADDR>::ST_STACK:
+						stack_base = section_addr;
+						logger << DebugInfo << "Stack base at 0x" << hex << stack_base << dec << EndDebugInfo;
+						break;
 					case Section<MEMORY_ADDR>::ST_SPECIFIC_CONTENT:
 						if(!section->LoadSpecificContent(this, section_content, section_size))
 						{
@@ -319,9 +336,9 @@ bool CoffLoader<MEMORY_ADDR>::Setup()
 						}
 						break;
 				}
-
-				if(section_content) free(section_content);
 			}
+
+			if(section_content) free(section_content);
 		}
 	}
 

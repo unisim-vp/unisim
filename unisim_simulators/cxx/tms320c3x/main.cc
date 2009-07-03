@@ -217,11 +217,9 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
-	cerr << "optind=" << optind << endl;
-	cerr << "argc=" << argc << endl;
+	// If last argument is not an option then it's a filename
 	if(optind == (argc - 1))
 	{
-		cerr << "yes" << endl;
 		filename = argv[optind];
 	}
 	else
@@ -251,6 +249,7 @@ int main(int argc, char *argv[]) {
 	// Connect the CPU to the memory
 	cpu->memory_import >> memory->memory_export;
 	cpu->ti_c_io_import >> ti_c_io->ti_c_io_export;
+	cpu->loader_import >> loader->loader_export;
 	ti_c_io->memory_import >> cpu->memory_export;
 	ti_c_io->memory_injection_import >> cpu->memory_injection_export;
 	ti_c_io->registers_import >> cpu->registers_export;

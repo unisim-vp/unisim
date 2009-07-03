@@ -175,9 +175,11 @@ private:
 	bool verbose_all;
 	bool verbose_io;
 	bool verbose_setup;
+	bool enable_lseek_bug;
 	Parameter<bool> param_verbose_all;
 	Parameter<bool> param_verbose_io;
 	Parameter<bool> param_verbose_setup;
+	Parameter<bool> param_enable_lseek_bug;
 
 	void GrowBuffer(uint32_t byte_length);
 	const char *GetCommandFriendlyName(uint32_t command);
