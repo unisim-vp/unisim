@@ -242,19 +242,19 @@ iaddsub.classify = {
 
 op imad_full_normal( \
 	subop[3]:/*?*/0[1]:src3_neg[1]:src1_neg[1]:0[2]:?[22]:/*marker*/0[2]: \
-	0x6[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:/*src2*/?[7]:\
+	0x6[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*aba*/0[1]:/*src2_cm*/?[1]:/*src2*/?[7]:\
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1] \
 )
 
 op imad_full_end( \
 	subop[3]:/*?*/0[1]:src3_neg[1]:src1_neg[1]:0[2]:?[22]:/*marker*/1[2]: \
-	0x6[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:/*src2*/?[7]:\
+	0x6[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*aba*/0[1]:/*src2_cm*/?[1]:/*src2*/?[7]:\
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1] \
 )
 
 op imad_full_join( \
 	subop[3]:/*?*/0[1]:src3_neg[1]:src1_neg[1]:0[2]:?[22]:/*marker*/2[2]: \
-	0x6[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:/*src2*/?[7]:\
+	0x6[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*aba*/0[1]:/*src2_cm*/?[1]:/*src2*/?[7]:\
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1] \
 )
 
