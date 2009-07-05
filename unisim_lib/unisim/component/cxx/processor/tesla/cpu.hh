@@ -168,7 +168,7 @@ public:
 	//=                    Constructor/Destructor                         =
 	//=====================================================================
 
-	CPU(const char *name, Object *parent = 0, int coreid = 0);
+	CPU(const char *name, Object *parent = 0, int coreid = 0, int core_count = 1);
 	virtual ~CPU();
 	
 	//=====================================================================
@@ -334,6 +334,7 @@ public:
 	
 	// Only for <= 32-bit accesses
 	VecAddr LocalAddress(VecAddr const & addr, unsigned int segment);
+	address_t LocalAddress(address_t addr, unsigned int segment);
 	
 	void ScatterGlobal(VecReg const output[], uint32_t dest, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, std::bitset<CONFIG::WARP_SIZE> mask, DataType dt);
 	void GatherGlobal(VecReg output[], uint32_t src, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, std::bitset<CONFIG::WARP_SIZE> mask, DataType dt);
@@ -400,7 +401,8 @@ private:
 	//=                           G80 registers                           =
 	//=====================================================================
 	
-	int coreid;
+	unsigned int coreid;
+	unsigned int core_count;
 
 	Warp<CONFIG> warps[MAX_WARPS];
 	uint32_t current_warpid;

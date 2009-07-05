@@ -75,6 +75,8 @@ void VectorFP32SSE<CONFIG>::Init()
 
 inline __m128 Saturate(__m128 x)
 {
+	// TODO: Saturate(-0) = ?
+	// SSE min/max are non-commutative.
 	_mm_max_ps(x, (__m128)_mm_setzero_si128());
 	_mm_min_ps(x, _mm_set1_ps(1.0f));
 	return x;
@@ -111,7 +113,7 @@ VectorRegister<CONFIG> & VectorFP32SSE<CONFIG>::Mad(VectorRegister<CONFIG> & a,
 
 	NoDenorm nd;
 
-	// G80-GT200: first mul always rounded to zero
+	// G80-GT200: first mul always rounded toward zero
 	_MM_SET_ROUNDING_MODE(_MM_ROUND_TOWARD_ZERO);
 	
 	__m128 sign_mask = (__m128)_mm_set1_epi32(0x80000000);

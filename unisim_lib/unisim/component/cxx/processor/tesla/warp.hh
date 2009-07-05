@@ -59,6 +59,7 @@ struct Warp
 
 	uint32_t GetGPRAddress(uint32_t reg) const;
 	address_t GetSMAddress(uint32_t sm = 0) const;
+	address_t GetLocalAddress(address_t addr, unsigned int segment) const;
 	
 	address_t pc;
 	address_t npc;

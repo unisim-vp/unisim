@@ -49,9 +49,10 @@ VectorAddress<CONFIG> CPU<CONFIG>::LocalAddress(VectorAddress<CONFIG> const & ad
 	assert(segment == 0);
 	// Local memory interleaved.
 	// Across all threads in the GPU * 32-bit? (rounded to warp size)
-	unsigned int chunk_size = CONFIG::CORE_COUNT * num_warps * WARP_SIZE * 4;
+	// TODO: num_warp can de different for last block!
+	unsigned int chunk_size = core_count * num_warps * WARP_SIZE * 4;
 	address_t chunk_offset_base = (coreid * num_warps + current_warpid) * WARP_SIZE * 4 + CONFIG::LOCAL_START;
-	
+
 	VecAddr chunk_offset(chunk_offset_base);
 	for(unsigned int i = 0; i != WARP_SIZE; ++i) {
 		chunk_offset[i] += i * 4;
@@ -60,6 +61,19 @@ VectorAddress<CONFIG> CPU<CONFIG>::LocalAddress(VectorAddress<CONFIG> const & ad
 	// TODO: check bounds	
 	return chunk_size * addr + chunk_offset;
 }
+
+template <class CONFIG>
+typename CONFIG::address_t CPU<CONFIG>::LocalAddress(address_t addr, unsigned int segment)
+{
+	assert(segment == 0);
+	// Local memory interleaved.
+	// Across all threads in the GPU * 32-bit? (rounded to warp size)
+	// TODO: num_warp can de different for last block!
+	unsigned int chunk_size = core_count * num_warps * WARP_SIZE * 4;
+	address_t chunk_offset_base = (coreid * num_warps + current_warpid) * WARP_SIZE * 4 + CONFIG::LOCAL_START;
+	return chunk_offset_base + addr * chunk_size;
+}
+
 
 template <class CONFIG>
 VectorRegister<CONFIG> CPU<CONFIG>::ReadConstant(VectorRegister<CONFIG> const & addr, uint32_t seg)
@@ -571,9 +585,7 @@ void CPU<CONFIG>::GatherLocal(VecReg output[], uint32_t src, uint32_t addr_lo, u
 template <class CONFIG>
 void CPU<CONFIG>::LoadLocal32(VecReg & output, address_t addr)
 {
-	unsigned int chunk_size = CONFIG::CORE_COUNT * num_warps * WARP_SIZE * 4;
-	address_t chunk_offset_base = (coreid * num_warps + current_warpid) * WARP_SIZE * 4 + CONFIG::LOCAL_START;
-	addr = chunk_offset_base + addr * chunk_size;
+	addr = LocalAddress(addr, 0);
 	if(!ReadMemory(addr, &output.v[0], CONFIG::WARP_SIZE * 4)) {
 		throw MemoryAccessException<CONFIG>();
 	}	
@@ -582,9 +594,7 @@ void CPU<CONFIG>::LoadLocal32(VecReg & output, address_t addr)
 template <class CONFIG>
 void CPU<CONFIG>::StoreLocal32(VecReg const & output, address_t addr)
 {
-	unsigned int chunk_size = CONFIG::CORE_COUNT * num_warps * WARP_SIZE * 4;
-	address_t chunk_offset_base = (coreid * num_warps + current_warpid) * WARP_SIZE * 4 + CONFIG::LOCAL_START;
-	addr = chunk_offset_base + addr * chunk_size;
+	addr = LocalAddress(addr, 0);
 	if(!WriteMemory(addr, &output.v[0], CONFIG::WARP_SIZE * 4)) {
 		throw MemoryAccessException<CONFIG>();
 	}

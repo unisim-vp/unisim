@@ -71,7 +71,7 @@ namespace tesla {
 using namespace std;
 
 template <class CONFIG>
-CPU<CONFIG>::CPU(const char *name, Object *parent, int coreid) :
+CPU<CONFIG>::CPU(const char *name, Object *parent, int coreid, int core_count) :
 	Object(name, parent),
 	Service<Disassembly<typename CONFIG::address_t> >(name, parent),
 	Service<Memory<typename CONFIG::address_t> >(name, parent),
@@ -108,6 +108,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent, int coreid) :
 //	voltage(0),
 //	bus_cycle_time(0),
 	coreid(coreid),
+	core_count(core_count),
 	zero_reg(0),
 	instruction_counter(0),
 	max_inst(0xffffffffffffffffULL),
@@ -225,7 +226,6 @@ void CPU<CONFIG>::Reset(unsigned int threadsperblock, unsigned int numblocks, un
 	assert(total_warps <= MAX_WARPS);
 	
 	num_warps = total_warps;
-	
 	
 	//int gprs_per_warp = MAX_VGPR / total_warps;	// TODO: round to power of 2?
 												// and/or use count given by the compiler?

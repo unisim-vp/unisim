@@ -106,8 +106,6 @@ typename CONFIG::address_t Warp<CONFIG>::GetSMAddress(uint32_t sm) const
 	return sm_window_base + sm;
 }
 
-
-
 } // end of namespace tesla
 } // end of namespace processor
 } // end of namespace cxx
