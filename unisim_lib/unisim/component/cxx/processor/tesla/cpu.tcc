@@ -324,7 +324,7 @@ void CPU<CONFIG>::StepWarp(uint32_t warpid)
 
 	if(trace_insn)
 	{
-		cerr << warpid << ": ";
+		cerr << coreid << "." << warpid << ": ";
 		//address_t dummy;
 		//cerr << Disasm(fetchaddr, dummy);
 		cerr << std::hex;

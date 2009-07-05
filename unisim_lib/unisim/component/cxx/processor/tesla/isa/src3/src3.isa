@@ -130,18 +130,18 @@ alu_reg.classify = {
 // Constant memory
 
 op alu_full_normal_const(/*subop*/?[3]:/*?*/?[1]:/*src3_neg*/?[1]:/*src1_neg*/?[1]:segment[4]:/*src1_sh*/?[1]:src3[7]\
-	:/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*ignore_output*/?[1]:/*addr_hi*/?[1]:/*marker*/0[2]:\
-	/*op*/?[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/1[1]:/*src2_cm*/?[1]:/*src2*/?[7]:/*src1*/?[7]:\
+	:/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*ignore_output*/?[1]:addr_hi[1]:/*marker*/0[2]:\
+	/*op*/?[4]:addr_lo[2]:addr_imm[1]:/*src3_cm*/1[1]:/*src2_cm*/?[1]:/*src2*/?[7]:/*src1*/?[7]:\
 	/*dest*/?[7]:/*flow*/0[1]:/*long*/1[1])
 
 op alu_full_end_const(/*subop*/?[3]:/*?*/?[1]:/*src3_neg*/?[1]:/*src1_neg*/?[1]:segment[4]:/*src1_sh*/?[1]:src3[7]\
-	:/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*ignore_output*/?[1]:/*addr_hi*/?[1]:/*marker*/1[2]:\
-	/*op*/?[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/1[1]:/*src2_cm*/?[1]:/*src2*/?[7]:/*src1*/?[7]:\
+	:/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*ignore_output*/?[1]:addr_hi[1]:/*marker*/1[2]:\
+	/*op*/?[4]:addr_lo[2]:addr_imm[1]:/*src3_cm*/1[1]:/*src2_cm*/?[1]:/*src2*/?[7]:/*src1*/?[7]:\
 	/*dest*/?[7]:/*flow*/0[1]:/*long*/1[1])
 
 op alu_full_join_const(/*subop*/?[3]:/*?*/?[1]:/*src3_neg*/?[1]:/*src1_neg*/?[1]:segment[4]:/*src1_sh*/?[1]:src3[7]\
-	:/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*ignore_output*/?[1]:/*addr_hi*/?[1]:/*marker*/2[2]:\
-	/*op*/?[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/1[1]:/*src2_cm*/?[1]:/*src2*/?[7]:/*src1*/?[7]:\
+	:/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*ignore_output*/?[1]:addr_hi[1]:/*marker*/2[2]:\
+	/*op*/?[4]:addr_lo[2]:addr_imm[1]:/*src3_cm*/1[1]:/*src2_cm*/?[1]:/*src2*/?[7]:/*src1*/?[7]:\
 	/*dest*/?[7]:/*flow*/0[1]:/*long*/1[1])
 
 
@@ -155,11 +155,19 @@ alu_const.read = {
 		RegType rt = insn->OperandRegType(OpSrc3);
 		insn->ReadReg(src3, Insn::TempSrc3, rt);
 	}
-	else if(insn->AllowSegment()) {
-		insn->Temp(Insn::TempSrc3) = cpu->ReadConstant(src3 * insn->OperandSize(OpSrc3), segment);
+	unsigned int addr_reg = (addr_hi << 2) | addr_lo;
+	if(addr_reg == 0) {
+		if(insn->AllowSegment()) {
+			insn->Temp(Insn::TempSrc3) = cpu->ReadConstant(src3 * insn->OperandSize(OpSrc3), segment);
+		}
+		else {
+			insn->Temp(Insn::TempSrc3) = cpu->ReadConstant(src3 * insn->OperandSize(OpSrc3), 0);
+		}
 	}
-	else {
-		insn->Temp(Insn::TempSrc3) = cpu->ReadConstant(src3 * insn->OperandSize(OpSrc3), 0);
+	else
+	{
+		cpu->GatherConstant(insn->Temp(Insn::TempSrc3), src3,
+			addr_lo, addr_hi, 1, segment, insn->Mask(), insn->OperandSMType(OpSrc3));
 	}
 }
 
@@ -169,7 +177,9 @@ alu_const.disasm = {
 		DisasmReg(src3, rt, os);
 	}
 	else if(insn->AllowSegment()) {
-		DisasmConstant(src3, 0, 0, 1, segment, insn->OperandSMType(OpSrc3), os);
+		//DisasmConstant(src3, 0, 0, 1, segment, insn->OperandSMType(OpSrc3), os);
+		// Always immediate?
+		DisasmConstant(src3, addr_lo, addr_hi, 1, segment, insn->OperandSMType(OpSrc3), os);
 	}
 	else {
 		DisasmConstant(src3, 0, 0, 1, 0, insn->OperandSMType(OpSrc3), os);
