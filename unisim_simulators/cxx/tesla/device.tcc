@@ -144,7 +144,7 @@ Device<CONFIG>::Device() :
 	{
 		std::ostringstream name;
 		name << "gpu_core_" << i;
-		cores[i] = new CPU<CONFIG>(name.str().c_str(), this, i);
+		cores[i] = new CPU<CONFIG>(name.str().c_str(), this, i, core_count);
 		cores[i]->memory_import >> memory.memory_export;
 	}
 	
@@ -212,8 +212,6 @@ void Device<CONFIG>::DumpCode(Kernel<CONFIG> & kernel, std::ostream & os)
 
 inline uint32_t BuildTID(int x, int y, int z)
 {
-	// TODO: check it matches actual hardware
-	// TODO: and use config
 	return (z << 26) | (y << 16) | x;
 }
 
@@ -303,8 +301,9 @@ void Device<CONFIG>::Run(Kernel<CONFIG> & kernel, int width, int height)
 	global_allocator.Prealloc(CONFIG::SHARED_START, CONFIG::SHARED_SIZE * core_count);
 	
 	// Alloc local memory
+	// Round up to warp size...
 	global_allocator.Prealloc(CONFIG::LOCAL_START,
-		core_count * kernel.ThreadsPerBlock() * kernel.BlocksPerCore()
+		core_count * kernel.WarpsPerBlock() * CONFIG::WARP_SIZE * kernel.BlocksPerCore()
 		 * core_count * kernel.LocalTotal());
 	
 	for(int i = 0; i != core_count; ++i) {
