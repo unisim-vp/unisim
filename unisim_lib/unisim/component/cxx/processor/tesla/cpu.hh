@@ -441,6 +441,7 @@ private:
 	Parameter<bool> param_trace_branch;
 	Parameter<bool> param_trace_sync;
 	Parameter<bool> param_trace_reset;
+	Parameter<bool> param_export_stats;
 	
 
 	//=====================================================================
@@ -476,6 +477,7 @@ public:
 	Logger trace_logger;
 
 	typename CONFIG::stats_t* stats;
+	bool export_stats;
 };
 
 } // end of namespace tesla

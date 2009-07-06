@@ -179,13 +179,17 @@ group alu_full_shared(alu_full_normal_shared, alu_full_end_shared, alu_full_join
 alu_full_shared.read = {
 	typedef Instruction<CONFIG> Insn;
 	VectorRegister<CONFIG> & vr = insn->Temp(Insn::TempSrc1);
-	// always immediate
-	cpu->GatherShared(vr, src1, addr_lo, addr_hi, 1, insn->Mask(), SMType(smtype));
 	
 	// TODO: Argh, this should be done on writeback stage!
 	if(addr_incr) {
+		// Immediate = 0 (post-increment)
+		cpu->GatherShared(vr, 0, addr_lo, addr_hi, 1, insn->Mask(), SMType(smtype));
 		// side effect: increment ai
 		cpu->GetAddr((addr_hi << 2) | addr_lo).Increment(SMTypeToDataType(SMType(smtype)), src1, insn->Mask());
+	}
+	else {
+		// always immediate
+		cpu->GatherShared(vr, src1, addr_lo, addr_hi, 1, insn->Mask(), SMType(smtype));
 	}
 }
 

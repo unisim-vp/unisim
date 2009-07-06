@@ -217,15 +217,19 @@ bool Coalesceable(VectorAddress<CONFIG> const & addr, unsigned int logsize, std:
 {
 	for(unsigned int j = 0; j != CONFIG::WARP_SIZE; j += CONFIG::TRANSACTION_SIZE)
 	{
-		typename CONFIG::address_t base = addr[j];
-		if(base & ((1 << logsize) * CONFIG::TRANSACTION_SIZE - 1)) {
-			return false;	// Unaligned
-		}
-		for(unsigned int i = 1; i != CONFIG::TRANSACTION_SIZE; ++i)
-		{
-			if(mask[j + i]) {
-				if(addr[j + i] != base + i * (1 << logsize)) {
-					return false;
+		unsigned int i = 0;
+		for(;i != CONFIG::TRANSACTION_SIZE && !mask[j + i];++i) {}
+		if(i != CONFIG::TRANSACTION_SIZE) {
+			typename CONFIG::address_t base = addr[j + i];
+			if((base & ((1 << logsize) * CONFIG::TRANSACTION_SIZE - 1)) != (i << logsize)) {
+				return false;	// Unaligned
+			}
+			for(i; i != CONFIG::TRANSACTION_SIZE; ++i)
+			{
+				if(mask[j + i]) {
+					if(addr[j + i] != base + i * (1 << logsize)) {
+						return false;
+					}
 				}
 			}
 		}

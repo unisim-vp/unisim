@@ -106,6 +106,11 @@ public:
 	
 	void SetInteger() { integer = true;	}
 	void SetFP() { fp = true; }
+
+	void SetTransc() { fp = true; }
+	void SetIMul() { integer = true; }
+	void SetFMul() { fp = true; }
+
 	void SetFlow() { flow = true; }
 	void SetMov() { mov = true;	}
 	void SetGather() { memory = true;	}

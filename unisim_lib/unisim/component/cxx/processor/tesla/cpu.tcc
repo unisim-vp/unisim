@@ -126,6 +126,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent, int coreid, int core_count) :
 	param_trace_branch("trace-branch", this, trace_branch),
 	param_trace_sync("trace-sync", this, trace_sync),
 	param_trace_reset("trace-reset", this, trace_reset),
+	param_export_stats("export-stats", this, export_stats),
 	stat_instruction_counter("instruction-counter", this, instruction_counter),
 	stat_cpu_cycle("cpu-cycle", this, cpu_cycle),
 	stat_bus_cycle("bus-cycle", this, bus_cycle),
@@ -138,7 +139,8 @@ CPU<CONFIG>::CPU(const char *name, Object *parent, int coreid, int core_count) :
 	trace_sync(CONFIG::TRACE_SYNC),
 	trace_reset(CONFIG::TRACE_RESET),
 	trace_logger(*this),
-	stats(0)
+	stats(0),
+	export_stats(false)
 {
 //	Object::SetupDependsOn(logger_import);
 

@@ -40,7 +40,6 @@
 ****************************************************/
 
 
-// what about Decuda's 'subr' instruction?
 op iadd_full_normal( \
 	/*subop*/0[3]:/*?*/0[1]:sat[1]:w32[1]:/*seg[4]*/?[24]:/*marker*/0[2]: \
 	0x2[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:src3_neg[1]:/*src2*/0[6]:\
@@ -128,13 +127,13 @@ iadd_halfimm.disasm = {
 iadd_halfimm.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 
-	// dest = a + c
+	// dest = a + b
 	reg_t & a = insn->GetSrc1();
-	reg_t & c = insn->GetSrc2();
+	reg_t & b = insn->GetSrc2();
 	
 	VectorFlags<CONFIG> flags;
 	
-	insn->GetDest() = IAdd(a, c, insn->Flags(), false, false, src3_neg, w32);
+	insn->GetDest() = IAdd(a, b, insn->Flags(), false, false, src3_neg, w32);
 }
 
 op isubr_full_normal( \
@@ -242,19 +241,19 @@ iaddsub.classify = {
 
 op imad_full_normal( \
 	subop[3]:/*?*/0[1]:src3_neg[1]:src1_neg[1]:0[2]:?[22]:/*marker*/0[2]: \
-	0x6[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*aba*/0[1]:/*src2_cm*/?[1]:/*src2*/?[7]:\
+	0x6[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:aba[1]:/*src2_cm*/?[1]:/*src2*/?[7]:\
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1] \
 )
 
 op imad_full_end( \
 	subop[3]:/*?*/0[1]:src3_neg[1]:src1_neg[1]:0[2]:?[22]:/*marker*/1[2]: \
-	0x6[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*aba*/0[1]:/*src2_cm*/?[1]:/*src2*/?[7]:\
+	0x6[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:aba[1]:/*src2_cm*/?[1]:/*src2*/?[7]:\
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1] \
 )
 
 op imad_full_join( \
 	subop[3]:/*?*/0[1]:src3_neg[1]:src1_neg[1]:0[2]:?[22]:/*marker*/2[2]: \
-	0x6[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*aba*/0[1]:/*src2_cm*/?[1]:/*src2*/?[7]:\
+	0x6[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:aba[1]:/*src2_cm*/?[1]:/*src2*/?[7]:\
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1] \
 )
 
@@ -290,7 +289,10 @@ imad_full.init = {
 	inherited::op_type[OpDest] = DT_U32;
 	inherited::op_type[OpSrc1] = dt;
 	inherited::op_type[OpSrc2] = dt;
-	inherited::op_type[OpSrc3] = DT_U32;	// always 32-bit
+	if(aba)
+		inherited::op_type[OpSrc3] = DT_NONE;
+	else
+		inherited::op_type[OpSrc3] = DT_U32;	// always 32-bit
 }
 
 imad_full.init_force_reg = {
@@ -332,6 +334,10 @@ imad_full.disasm = {
 	default:
 		buffer << ".?" << subop << "?";
 	}
+
+	if(aba) {
+		buffer << ".232";	// 4th operand is 2nd (d=a*b+a)
+	}
 		
 	buffer << " ";
 	insn->DisasmDest(buffer);
@@ -342,10 +348,21 @@ imad_full.disasm = {
 
 	buffer << ", ";
 	insn->DisasmSrc2(buffer);
-		
-	buffer << ", ";
-	DisasmSign(src3_neg, buffer);
-	insn->DisasmSrc3(buffer);
+	
+	if(!aba) {
+		buffer << ", ";
+		DisasmSign(src3_neg, buffer);
+		insn->DisasmSrc3(buffer);
+	}
+}
+
+imad_full.read = {
+	this->src1->read(cpu, insn);
+	this->src2->read(cpu, insn);
+	if(aba)
+		insn->GetSrc3() = insn->GetSrc1();
+	else
+		this->src3->read(cpu, insn);
 }
 
 imad_full.execute = {
@@ -522,6 +539,7 @@ group imad(imad_full, imac_imm)
 imad.classify = {
 	stats->SetInteger();
 }
+
 
 //--------------------------------------------------------------------
 
