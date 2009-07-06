@@ -697,11 +697,11 @@ bool ATD10B<ATD_SIZE>::write(uint8_t offset, const void *buffer) {
 
 	switch (offset) {
 		case ATDCTL0: {
-			atdctl0_register = *((uint8_t *) buffer) & 0x0F;
+			atdctl0_register = *((uint8_t *) buffer) & (ATD_SIZE - 1);
 			abortConversion();
 		} break;
 		case ATDCTL1: {
-			atdctl1_register = *((uint8_t *) buffer) & 0x8F;
+			atdctl1_register = *((uint8_t *) buffer) & (0x80 | (ATD_SIZE - 1));
 			abortConversion();
 		} break;
 		case ATDCTL2: {
@@ -725,20 +725,20 @@ bool ATD10B<ATD_SIZE>::write(uint8_t offset, const void *buffer) {
 
 		} break;
 		case ATDCTL5: {
-			atdctl5_register = *((uint8_t *) buffer);
+			atdctl5_register = *((uint8_t *) buffer) & (0xF0 | (ATD_SIZE - 1));
 			abortAndStartNewConversion();
 
 		} break;
 		case ATDSTAT0: {
 			uint8_t highMask = (*((uint8_t *) buffer) & 0xB0);
 			if ((highMask & 0x80) != 0) {
-				atdstat0_register = atdstat0_register & 0x7F;
+				atdstat0_register = atdstat0_register & (0x70 | (ATD_SIZE - 1));
 			}
 			if ((highMask & 0x20) != 0) {
-				atdstat0_register = atdstat0_register & 0xDF;
+				atdstat0_register = atdstat0_register & (0xD0 | (ATD_SIZE - 1));
 			}
 			if ((highMask & 0x10) != 0) {
-				atdstat0_register = atdstat0_register & 0xEF;
+				atdstat0_register = atdstat0_register & (0xE0 | (ATD_SIZE - 1));
 			}
 
 		} break;
