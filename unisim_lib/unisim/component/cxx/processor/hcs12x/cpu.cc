@@ -994,7 +994,7 @@ void CPU::VerboseDumpRegsEnd() {
 inline INLINE
 void CPU::RegistersInfo() {
 
-	if (CONFIG::REGISTERS_INFO && debug_enabled) {
+	if (debug_enabled) {
 		cout << "CPU:: Registers Info " << std::endl;
 		cout << std::hex << "CCR=0x" << ccr->getCCR() << "  PC=0x" << getRegPC() << "  SP=0x" << getRegSP() << "\n";
 		cout << "D  =0x" << getRegD() << "  X =0x" << getRegX() << "  Y =0x" << getRegY() << std::dec << "\n";
