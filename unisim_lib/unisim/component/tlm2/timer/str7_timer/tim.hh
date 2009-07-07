@@ -326,6 +326,17 @@ private:
 	unisim::kernel::service::Parameter<bool> param_trap_on_warning;
 	void TrapOnWarning();
 	/* END: logger and logger methods and verbose parameters/methods */
+	
+	/* START: timer register & unisim::kernel::service integration */
+	unisim::kernel::service::Register<uint16_t> reg_icar;
+	unisim::kernel::service::Register<uint16_t> reg_icbr;
+	unisim::kernel::service::Register<uint16_t> reg_ocar;
+	unisim::kernel::service::Register<uint16_t> reg_ocbr;
+	unisim::kernel::service::Register<uint16_t> reg_cntr;
+	unisim::kernel::service::Register<uint16_t> reg_cr1;
+	unisim::kernel::service::Register<uint16_t> reg_cr2;
+	unisim::kernel::service::Register<uint16_t> reg_sr;
+	/* END: timer register & unisim::kernel::service integration */
 };
 
 

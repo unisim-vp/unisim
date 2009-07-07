@@ -36,6 +36,7 @@
 #include <unisim/component/cxx/processor/tms320/register.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <sstream>
+#include <iostream>
 #include <string.h>
 
 namespace unisim {
@@ -64,6 +65,7 @@ namespace tms320 {
 		sstr.fill('0');
 		sstr.width(2);
 		sstr << (unsigned int) reg.hi;
+		sstr << " ";
 		sstr.width(8);
 		sstr << reg.lo;
 		return os << sstr.str();
@@ -71,18 +73,20 @@ namespace tms320 {
 	
 	uint32_t Register::GetLo(uint16_t value)
 	{
-		return (((uint32_t)value) & (uint32_t)0x00000fff) << 8;
+		return (((uint32_t)value) & (uint32_t)0x00000fff) << 20;
 	}
 	
 	uint8_t Register::GetHi(uint16_t value)
 	{
+		if (value == (uint16_t)0x8000)
+			return (uint8_t)0x80;
 		return (uint8_t)(((int16_t)value >> 12) & (uint16_t)0x00ff);
 	}
 	
 	void Register::SetFromShortFPFormat(uint16_t value)
 	{
-		lo = GetLo(value);
-		hi = GetHi(value);
+		this->SetLo(GetLo(value));
+		this->SetHi(GetHi(value));
 		// lo = value & (uint32_t)0x00000fff;
 		// lo = lo << 20;
 		// hi = (uint8_t)(((int16_t)value >> 12) & (uint16_t)0x00ff);
@@ -99,8 +103,10 @@ namespace tms320 {
 	
 	void Register::SetFromSinglePresicionFPFormat(uint32_t value)
 	{
-		lo = GetLo(value);
-		hi = GetHi(value);
+		// the 0 value is converted seamlessly from single presicion to extended
+		//   so no need to check the input value
+		this->SetLo(GetLo(value));
+		this->SetHi(GetHi(value));
 		// lo = value & (uint32_t)0x00ffffff;
 		// lo = lo << 8;
 		// hi = (uint8_t)((value >> 24) & (uint32_t)0x00ff);
@@ -180,23 +186,16 @@ namespace tms320 {
 		// to avoid circular shift trunk it to 32
 		if (shift > 32) shift = 32;
 		
-		// get the mantissa in a 64 bit format 
-		// we need that because the mantissa once the sign is implied makes 33 bits
-		uint64_t val;
+		int64_t ext_lo;
+		// convert mantissas to their full representation (33-bit)
 		if (lo & (uint32_t)0x80000000)
-		{
-			val = (int64_t)-1;
-			val = val & (lo & ~(uint32_t)0x80000000);
-		}
+			ext_lo = (int64_t)((int32_t)lo) & ~(uint64_t)0x80000000;
 		else
-		{
-			val = lo;
-			val += (uint32_t)0x80000000;
-		}
+			ext_lo = (uint64_t)(lo | (uint32_t)0x80000000);
 		
 		// perform the shift on the mantissa and return the lowest 32 bits
-		val = (int64_t)val >> shift;
-		return (uint32_t)val;
+		ext_lo = (int64_t)ext_lo >> shift;
+		return (uint32_t)ext_lo;
 	}
 	
 	void Register::Abs(const Register& reg, bool& overflow)
@@ -221,7 +220,7 @@ namespace tms320 {
 	
 	void Register::Add(uint16_t imm, bool& overflow, bool& underflow)
 	{
-		this->Add(this->hi, this->lo, GetHi(imm), GetLo(imm), overflow, underflow);
+		this->Add(this->GetHi(), this->GetLo(), GetHi(imm), GetLo(imm), overflow, underflow);
 	}
 	
 	void Register::Add(uint32_t imm, bool& overflow, bool& underflow)
@@ -251,32 +250,42 @@ namespace tms320 {
 	
 	void Register::Sub(const Register& reg, bool& overflow, bool& underflow) 
 	{
-		this->Sub(this->hi, this->lo, reg.hi, reg.lo, overflow, underflow);
+		this->Sub(this->GetHi(), this->GetLo(), reg.hi, reg.lo, overflow, underflow);
 	}
 	
 	void Register::Sub(uint16_t imm, bool& overflow, bool& underflow)
 	{
-		this->Sub(this->hi, this->lo, GetHi(imm), GetLo(imm), overflow, underflow);
+		this->Sub(this->GetHi(), this->GetLo(), GetHi(imm), GetLo(imm), overflow, underflow);
 	}
 	
 	void Register::Sub(uint32_t imm, bool& overflow, bool& underflow)
 	{
-		this->Sub(this->hi, this->lo, GetHi(imm), GetLo(imm), overflow, underflow);
+		this->Sub(this->GetHi(), this->GetLo(), GetHi(imm), GetLo(imm), overflow, underflow);
 	}
 	
 	void Register::Sub(const Register& reg_a, const Register& reg_b, bool& overflow, bool& underflow)
 	{
-		this->Sub(reg_a.hi, reg_a.lo, reg_b.hi, reg_b.lo, overflow, underflow);
+		this->Sub(reg_a.GetHi(), reg_a.GetLo(), reg_b.GetHi(), reg_b.GetLo(), overflow, underflow);
+	}
+	
+	void Register::Sub(const Register& reg, uint16_t imm, bool& overflow, bool& underflow)
+	{
+		this->Sub(reg.GetHi(), reg.GetLo(), GetHi(imm), GetLo(imm), overflow, underflow);
 	}
 	
 	void Register::Sub(const Register& reg, uint32_t imm, bool& overflow, bool& underflow)
 	{
-		this->Sub(reg.hi, reg.lo, GetHi(imm), GetLo(imm), overflow, underflow);
+		this->Sub(reg.GetHi(), reg.GetLo(), GetHi(imm), GetLo(imm), overflow, underflow);
+	}
+	
+	void Register::Sub(uint16_t imm, const Register& reg, bool& overflow, bool& underflow)
+	{
+		this->Sub(GetHi(imm), GetLo(imm), reg.GetHi(), reg.GetLo(), overflow, underflow);
 	}
 	
 	void Register::Sub(uint32_t imm, const Register& reg, bool& overflow, bool& underflow)
 	{
-		this->Sub(GetHi(imm), GetLo(imm), reg.hi, reg.lo, overflow, underflow);
+		this->Sub(GetHi(imm), GetLo(imm), reg.GetHi(), reg.GetLo(), overflow, underflow);
 	}
 	
 	void Register::Sub(uint32_t imm_a, uint32_t imm_b, bool& overflow, bool& underflow)
@@ -286,17 +295,17 @@ namespace tms320 {
 	
 	void Register::Neg(const Register& reg, bool& overflow, bool& underflow)
 	{
-		this->Sub((uint8_t)0xff, 0, reg.GetHi(), reg.GetLo(), overflow, underflow);
+		this->Sub((uint8_t)0x80, 0, reg.GetHi(), reg.GetLo(), overflow, underflow);
 	}
 	
 	void Register::Neg(uint16_t imm, bool& overflow, bool& underflow)
 	{
-		this->Sub((uint8_t)0xff, 0, GetHi(imm), GetLo(imm), overflow, underflow);
+		this->Sub((uint8_t)0x80, 0, GetHi(imm), GetLo(imm), overflow, underflow);
 	}
 	
 	void Register::Neg(uint32_t imm, bool& overflow, bool& underflow)
 	{
-		this->Sub((uint8_t)0xff, 0, GetHi(imm), GetLo(imm), overflow, underflow);
+		this->Sub((uint8_t)0x80, 0, GetHi(imm), GetLo(imm), overflow, underflow);
 	}
 	
 	void Register::Norm(const Register& reg, bool& underflow)
@@ -366,7 +375,7 @@ namespace tms320 {
 
 	void Register::Abs(uint8_t hi_a, uint32_t lo_a, bool& overflow)
 	{
-		// TODO
+		// TOCHECK
 		overflow = false;
 		if (hi_a == (uint8_t)0x7f && lo_a == (uint32_t)0x8000000)
 		{
@@ -399,30 +408,33 @@ namespace tms320 {
 		overflow = false;
 		underflow = false;
 		
+		/* std::cerr 
+		<< "1- add = " << is_add << std::endl
+		<< "   hi_a = 0x" << std::hex << (unsigned int)hi_a << "\t lo_a = 0x" << (unsigned int)lo_a << std::endl
+		<< "   hi_b = 0x"             << (unsigned int)hi_b << "\t lo_b = 0x" << (unsigned int)lo_b << std::dec << std::endl;
+		 */		
 		// convert mantissas to their full representation (33-bit)
 		if (lo_a & (uint32_t)0x80000000)
-		{
-			ext_lo_a = ~ext_lo_a;
-			ext_lo_a = ext_lo_a & (uint64_t)(lo_a & ~(uint32_t)0x80000000);
-		}
+			ext_lo_a = (int64_t)((int32_t)lo_a) & ~(uint64_t)0x80000000;
 		else
-			ext_lo_a = ext_lo_a | (uint64_t)(lo_a | (uint32_t)0x80000000);
+			ext_lo_a = (uint64_t)(lo_a | (uint32_t)0x80000000);
 		
 		if (lo_b & (uint32_t)0x80000000)
-		{
-			ext_lo_b = ~ext_lo_b;
-			ext_lo_b = ext_lo_b & (uint64_t)(lo_a & ~(uint32_t)0x80000000);
-		}
+			ext_lo_b = (int64_t)((int32_t)lo_b) & ~(uint64_t)0x80000000;
 		else
-			ext_lo_b = ext_lo_b | (uint64_t)(lo_b | (uint32_t)0x80000000);
+			ext_lo_b = (uint64_t)(lo_b | (uint32_t)0x80000000);
 		
+		/* std::cerr << std::hex
+		<< "2- hi_a = 0x" << (unsigned int)hi_a << "\t ext_lo_a = 0x" << (unsigned long long int)ext_lo_a << std::endl
+		<< "   hi_b = 0x" << (unsigned int)hi_b << "\t ext_lo_b = 0x" << (unsigned long long int)ext_lo_b << std::dec << std::endl;
+		 */						
 		// result takes the biggest exponent
 		// and compute the difference of the exponent to align mantissas
 		uint32_t diff_exp;
 		if ((int8_t)hi_a <= (int8_t)hi_b)
 		{
 			this->hi = hi_b;
-			diff_exp = (int8_t)hi_b - (int8_t)hi_a;
+			diff_exp = (int32_t)(int8_t)hi_b - (int32_t)(int8_t)hi_a;
 			if (diff_exp >= 64)
 			{
 				if (ext_lo_a < 0) ext_lo_a = -1;
@@ -434,7 +446,7 @@ namespace tms320 {
 		else
 		{
 			this->hi = hi_a;
-			diff_exp = (int8_t)hi_a - (int8_t)hi_b;
+			diff_exp = (int32_t)(int8_t)hi_a - (int32_t)(int8_t)hi_b;
 			if (diff_exp >= 64)
 			{
 				if (ext_lo_b < 0) ext_lo_b = -1;
@@ -444,16 +456,28 @@ namespace tms320 {
 				ext_lo_b = ext_lo_b >> diff_exp;
 		}
 		
+		/* std::cerr
+		<< "3- diff_exp = " << (int)diff_exp << std::endl << std::hex
+		<< "   hi_a = 0x" << (unsigned int)hi_a << "\t ext_lo_a = 0x" << (unsigned long long int)ext_lo_a << std::endl
+		<< "   hi_b = 0x" << (unsigned int)hi_b << "\t ext_lo_b = 0x" << (unsigned long long int)ext_lo_b << std::endl
+		<< "   hi   = 0x" << (unsigned int)this->GetHi() << std::dec << std::endl;
+		 */				
 		// add the mantissas
 		int64_t ext_lo_c = ext_lo_a;
 		if (is_add) ext_lo_c += ext_lo_b;
 		else ext_lo_c -= ext_lo_b;
 		
+		/* std::cerr
+		<< "4- diff_exp = " << (int)diff_exp << std::endl << std::hex
+		<< "   hi_a = 0x" << (unsigned int)hi_a          << "\t ext_lo_a = 0x" << (unsigned long long int)ext_lo_a << std::endl
+		<< "   hi_b = 0x" << (unsigned int)hi_b          << "\t ext_lo_b = 0x" << (unsigned long long int)ext_lo_b << std::endl
+		<< "   hi   = 0x" << (unsigned int)this->GetHi() << "\t ext_lo_c = 0x" << (unsigned long long int)ext_lo_c << std::dec << std::endl;
+		 */						
 		// check for special cases of the result mantissa
 		// 1 - check mantissa is 0
 		if (ext_lo_c == 0)
 		{
-			this->hi = (uint8_t)0xff;
+			this->hi = (uint8_t)0x80;
 		}
 		else
 		{
@@ -473,7 +497,7 @@ namespace tms320 {
 			}
 			else
 			{
-				if (ext_lo_c < 0 && ~(ext_lo_c >> 32) != 1)
+				if (ext_lo_c < 0 && ~(ext_lo_c >> 32) != 0)
 				{
 					// the mantissa is negative, check how many bits we have to shift it
 					//   to be a signed 33bits number
@@ -497,7 +521,7 @@ namespace tms320 {
 						if ((int32_t)((int32_t)this->hi - count) < -128)
 						{
 							underflow = true;
-							this->hi = (uint8_t)0xff;
+							this->hi = (uint8_t)0x80;
 						}
 						else
 							this->hi = this->hi - count;
@@ -564,21 +588,15 @@ namespace tms320 {
 		
 		// convert mantissas to their full representation (33-bit)
 		if (lo_a & (uint32_t)0x80000000)
-		{
-			ext_lo_a = ~ext_lo_a;
-			ext_lo_a = ext_lo_a & (uint64_t)(lo_a & ~(uint32_t)0x80000000);
-		}
+			ext_lo_a = (int64_t)((int32_t)lo_a) & ~(uint64_t)0x80000000;
 		else
-			ext_lo_a = ext_lo_a | (uint64_t)(lo_a | (uint32_t)0x80000000);
+			ext_lo_a = (uint64_t)(lo_a | (uint32_t)0x80000000);
 		
 		if (lo_b & (uint32_t)0x80000000)
-		{
-			ext_lo_b = ~ext_lo_b;
-			ext_lo_b = ext_lo_b & (uint64_t)(lo_a & ~(uint32_t)0x80000000);
-		}
+			ext_lo_b = (int64_t)((int32_t)lo_b) & ~(uint64_t)0x80000000;
 		else
-			ext_lo_b = ext_lo_b | (uint64_t)(lo_b | (uint32_t)0x80000000);
-		
+			ext_lo_b = (uint64_t)(lo_b | (uint32_t)0x80000000);
+				
 		// convert the mantissas to their 25-bit representation
 		ext_lo_a = ext_lo_a >> 8;
 		ext_lo_b = ext_lo_b >> 8;
@@ -686,7 +704,7 @@ namespace tms320 {
 		underflow = false;
 		
 		// check when src = 0
-		if (lo_a == 0 && hi_a == 0xff)
+		if (lo_a == 0 && hi_a == (uint8_t)0x80)
 		{
 			underflow = true;
 			this->SetHi(hi_a);
@@ -703,13 +721,11 @@ namespace tms320 {
 		ext_lo_b = ext_lo_b >> 24;
 		// convert mantissas to their full representation (33-bit)
 		if (lo_a & (uint32_t)0x80000000)
-		{
-			ext_lo_a = ~ext_lo_a;
-			ext_lo_a = ext_lo_a & (uint64_t)(lo_a & ~(uint32_t)0x80000000);
-		}
+			ext_lo_a = (int64_t)((int32_t)lo_a) & ~(uint64_t)0x80000000;
 		else
-			ext_lo_a = ext_lo_a | (uint64_t)(lo_a | (uint32_t)0x80000000);
-	
+			ext_lo_a = (uint64_t)(lo_a | (uint32_t)0x80000000);
+		
+		
 		// add the mantissas
 		int64_t ext_lo_c = ext_lo_a + ext_lo_b;
 		
@@ -721,7 +737,7 @@ namespace tms320 {
 		if (ext_lo_c == 0)
 		{
 			ext_lo_c = 0;
-			this->SetHi((uint8_t)0xff);
+			this->SetHi((uint8_t)0x80);
 		}
 		else
 		{
@@ -907,16 +923,20 @@ namespace tms320 {
 		uint32_t lo = reg->GetLo();
 		uint32_t value = (lo >> bit_offset) & ((1 << bit_size) - 1);
 		
-		if(bit_size <= 8) *(uint8_t *) buffer = value; else
-			if(bit_size <= 16) *(uint16_t *) buffer = value; else *(uint32_t *) buffer = value;
+		if(bit_size <= 8) *(uint8_t *) buffer = value; 
+		else
+			if(bit_size <= 16) *(uint16_t *) buffer = value; 
+			else *(uint32_t *) buffer = value;
 	}
 	
 	void RegisterBitFieldDebugInterface::SetValue(const void *buffer)
 	{
 		uint32_t value;
 		
-		if(bit_size <= 8) value = *(uint8_t *) buffer; else
-			if(bit_size <= 16) value = *(uint16_t *) buffer; else value = *(uint32_t *) buffer;
+		if(bit_size <= 8) value = *(uint8_t *) buffer; 
+		else
+			if(bit_size <= 16) value = *(uint16_t *) buffer; 
+			else value = *(uint32_t *) buffer;
 		
 		reg->SetLo((reg->GetLo() & ~(((1 << bit_size) - 1) << bit_offset)) | (value << bit_offset));
 	}

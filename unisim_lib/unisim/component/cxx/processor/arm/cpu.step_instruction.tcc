@@ -253,6 +253,8 @@ StepInstruction() {
 		VerboseDumpRegsEnd();
 
 		instruction_counter++;
+		if (unlikely((trap_on_instruction_counter == instruction_counter) && trap_reporting_import))
+			trap_reporting_import->ReportTrap();
 
 		if (unlikely(HasPendingException()))
 		{

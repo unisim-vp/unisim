@@ -182,7 +182,15 @@ TIM(const sc_module_name &name, Object *parent) :
 	trap_on_verbose_tlm(false),
 	param_trap_on_verbose_tlm("trap-on-verbose-tlm", this, trap_on_verbose_tlm, "Send a trap when displaying tlm verbose information (requires verbose-tlm to be also activated)"),
 	trap_on_warning(false),
-	param_trap_on_warning("trap-on-warning", this, trap_on_warning, "Send a trap when displaying a warning message")
+	param_trap_on_warning("trap-on-warning", this, trap_on_warning, "Send a trap when displaying a warning message"),
+	reg_icar("ICAR", this, icar, "ICAR register"),
+	reg_icbr("ICBR", this, icbr, "ICBR register"),
+	reg_ocar("OCAR", this, ocar, "OCAR register"),
+	reg_ocbr("OCBR", this, ocbr, "OCBR register"),
+	reg_cntr("CNTR", this, cntr, "CNTR register"),
+	reg_cr1("CR1", this, cr1, "CR1 register"),
+	reg_cr2("CR2", this, cr2, "CR2 register"),
+	reg_sr("SR", this, sr, "SR register")
 {
 	SC_HAS_PROCESS(TIM);
 	SC_THREAD(MemFifoHandler);

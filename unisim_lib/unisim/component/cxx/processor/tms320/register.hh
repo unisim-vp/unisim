@@ -90,7 +90,9 @@ namespace tms320 {
 		void Sub(uint16_t imm, bool& overflow, bool& underflow);
 		void Sub(uint32_t imm, bool& overflow, bool& underflow);
 		void Sub(const Register& reg_a, const Register& reg_b, bool& overflow, bool& underflow);
+		void Sub(const Register& reg, uint16_t imm, bool& overflow, bool& underflow);
 		void Sub(const Register& reg, uint32_t imm, bool& overflow, bool& underflow);
+		void Sub(uint16_t imm, const Register& reg, bool& overflow, bool& underflow);
 		void Sub(uint32_t imm, const Register& reg, bool& overflow, bool& underflow);
 		void Sub(uint32_t imm_a, uint32_t imm_b, bool& overflow, bool& underflow);
 		void Neg(const Register& reg, bool& overflow, bool& underflow);

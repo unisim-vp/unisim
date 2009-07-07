@@ -6042,19 +6042,119 @@ SUBRF_imm.disasm = {
 }
 
 SUBRF_reg.execute = {
-	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+	// no need to check the operands, they must be valid
+	
+	// get source register
+	Register& src_reg = cpu.GetExtReg(src);
+
+	// get destination register
+	Register& dst_reg = cpu.GetExtReg(dst);
+
+	// compute
+	bool underflow;
+	bool overflow;
+	dst_reg.Sub(src_reg, dst_reg, overflow, underflow);
+
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		dst_reg,
+		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+		M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
+		0,
+		overflow,
+		underflow
+	);
 }
 
 SUBRF_dir.execute = {
-	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+	// no need to check the operands, they must be valid
+	
+	// get destination register
+	Register& dst_reg = cpu.GetExtReg(dst);
+	
+	// Compute the source operand effective address
+	typename CONFIG::address_t ea = cpu.ComputeDirEA(direct);
+
+	// Read the source operand from memory
+	uint32_t src_value = cpu.IntLoad(ea);
+
+	// compute
+	bool underflow;
+	bool overflow;
+	dst_reg.Sub(src_value, dst_reg, overflow, underflow);
+
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		dst_reg,
+		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+		M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
+		0,
+		overflow,
+		underflow
+	);
 }
 
 SUBRF_indir.execute = {
-	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+	// no need to check the operands, they must be valid
+	
+	// get destination register
+	Register& dst_reg = cpu.GetExtReg(dst);
+
+	// Check that indirect addressing mode is valid and compute the effective address of the source operand
+	typename CONFIG::address_t ea;        // The effective address
+	bool update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(ea, update_ar, output_ar, mod, ar, disp)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read the source operand from memory
+	uint32_t src_value = cpu.IntLoad(ea);
+
+	// compute
+	bool underflow;
+	bool overflow;
+	dst_reg.Sub(src_value, dst_reg, overflow, underflow);
+
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar, output_ar);
+	}
+	
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		dst_reg,
+		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+		M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
+		0,
+		overflow,
+		underflow
+	);
 }
 
 SUBRF_imm.execute = {
-	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+	// no need to check the operands, they must be valid
+	
+	// get destination register
+	Register& dst_reg = cpu.GetExtReg(dst);
+
+	// compute
+	bool underflow;
+	bool overflow;
+	dst_reg.Sub((uint16_t)imm, dst_reg, overflow, underflow);
+
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		dst_reg,
+		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+		M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
+		0,
+		overflow,
+		underflow
+	);
 }
 
 /* end of SUBRF (subtract reverse floating-point value)
