@@ -368,13 +368,6 @@ LDFcond_reg.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 	
 	dst_reg = src_reg;
-	
-	// Generate flags (into ST)
-	cpu.GenFlags(
-				 dst_reg,
-				 M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-				 M_ST_UF | M_ST_N | M_ST_Z | M_ST_V  // or mask
-				 );
 }
 
 LDFcond_dir.execute = {
@@ -393,13 +386,6 @@ LDFcond_dir.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 	
 	dst_reg.SetFromSinglePresicionFPFormat(src_value);
-	
-	// Generate flags (into ST)
-	cpu.GenFlags(
-				 dst_reg,
-				 M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-				 M_ST_UF | M_ST_N | M_ST_Z | M_ST_V  // or mask
-				 );
 }
 
 LDFcond_indir.execute = {
@@ -436,13 +422,6 @@ LDFcond_indir.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 	
 	dst_reg.SetFromSinglePresicionFPFormat(src_value);
-	
-	// Generate flags (into ST)
-	cpu.GenFlags(
-				 dst_reg,
-				 M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-				 M_ST_UF | M_ST_N | M_ST_Z | M_ST_V  // or mask
-				 );
 }
 
 LDFcond_imm.execute = {
@@ -455,13 +434,6 @@ LDFcond_imm.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 	
 	dst_reg.SetFromShortFPFormat((uint16_t)imm);
-	
-	// Generate flags (into ST)
-	cpu.GenFlags(
-				 dst_reg,
-				 M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-				 M_ST_UF | M_ST_N | M_ST_Z | M_ST_V  // or mask
-				 );
 }
 
 /* end of LDFcond (load floating-point value conditionally)

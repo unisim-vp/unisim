@@ -215,7 +215,7 @@ namespace tms320 {
 	
 	void Register::Add(const Register& reg, bool& overflow, bool& underflow) 
 	{
-		this->Add(this->hi, this->lo, reg.hi, reg.lo, overflow, underflow);
+		this->Add(this->GetHi(), this->GetLo(), reg.GetHi(), reg.GetLo(), overflow, underflow);
 	}
 	
 	void Register::Add(uint16_t imm, bool& overflow, bool& underflow)
@@ -230,12 +230,12 @@ namespace tms320 {
 	
 	void Register::Add(const Register& reg_a, const Register& reg_b, bool& overflow, bool& underflow)
 	{
-		this->Add(reg_a.hi, reg_a.lo, reg_b.hi, reg_b.lo, overflow, underflow);
+		this->Add(reg_a.GetHi(), reg_a.GetLo(), reg_b.GetHi(), reg_b.GetLo(), overflow, underflow);
 	}
 	
 	void Register::Add(const Register& reg, uint32_t imm, bool& overflow, bool& underflow)
 	{
-		this->Add(reg.hi, reg.lo, GetHi(), GetLo(), overflow, underflow);
+		this->Add(reg.GetHi(), reg.GetLo(), GetHi(), GetLo(), overflow, underflow);
 	}
 	
 	void Register::Add(uint32_t imm, const Register& reg, bool& overflow, bool& underflow)
@@ -377,7 +377,7 @@ namespace tms320 {
 	{
 		// TOCHECK
 		overflow = false;
-		if (hi_a == (uint8_t)0x7f && lo_a == (uint32_t)0x8000000)
+		if (hi_a == (uint8_t)0x7f && lo_a == (uint32_t)0x80000000)
 		{
 			this->SetHi((uint8_t)0x7f);
 			this->SetLo((uint32_t)0x7fffffff);
@@ -412,7 +412,7 @@ namespace tms320 {
 		<< "1- add = " << is_add << std::endl
 		<< "   hi_a = 0x" << std::hex << (unsigned int)hi_a << "\t lo_a = 0x" << (unsigned int)lo_a << std::endl
 		<< "   hi_b = 0x"             << (unsigned int)hi_b << "\t lo_b = 0x" << (unsigned int)lo_b << std::dec << std::endl;
-		 */		
+		 */				
 		// convert mantissas to their full representation (33-bit)
 		if (lo_a & (uint32_t)0x80000000)
 			ext_lo_a = (int64_t)((int32_t)lo_a) & ~(uint64_t)0x80000000;
@@ -427,7 +427,7 @@ namespace tms320 {
 		/* std::cerr << std::hex
 		<< "2- hi_a = 0x" << (unsigned int)hi_a << "\t ext_lo_a = 0x" << (unsigned long long int)ext_lo_a << std::endl
 		<< "   hi_b = 0x" << (unsigned int)hi_b << "\t ext_lo_b = 0x" << (unsigned long long int)ext_lo_b << std::dec << std::endl;
-		 */						
+		 */								
 		// result takes the biggest exponent
 		// and compute the difference of the exponent to align mantissas
 		uint32_t diff_exp;
@@ -461,7 +461,7 @@ namespace tms320 {
 		<< "   hi_a = 0x" << (unsigned int)hi_a << "\t ext_lo_a = 0x" << (unsigned long long int)ext_lo_a << std::endl
 		<< "   hi_b = 0x" << (unsigned int)hi_b << "\t ext_lo_b = 0x" << (unsigned long long int)ext_lo_b << std::endl
 		<< "   hi   = 0x" << (unsigned int)this->GetHi() << std::dec << std::endl;
-		 */				
+		 */						
 		// add the mantissas
 		int64_t ext_lo_c = ext_lo_a;
 		if (is_add) ext_lo_c += ext_lo_b;
@@ -472,7 +472,7 @@ namespace tms320 {
 		<< "   hi_a = 0x" << (unsigned int)hi_a          << "\t ext_lo_a = 0x" << (unsigned long long int)ext_lo_a << std::endl
 		<< "   hi_b = 0x" << (unsigned int)hi_b          << "\t ext_lo_b = 0x" << (unsigned long long int)ext_lo_b << std::endl
 		<< "   hi   = 0x" << (unsigned int)this->GetHi() << "\t ext_lo_c = 0x" << (unsigned long long int)ext_lo_c << std::dec << std::endl;
-		 */						
+		 */								
 		// check for special cases of the result mantissa
 		// 1 - check mantissa is 0
 		if (ext_lo_c == 0)
@@ -512,6 +512,8 @@ namespace tms320 {
 				}
 				else
 				{
+					/* std::cerr << "5- normalizing" << std::endl;
+					 */
 					// 3 - check if the result needs to be normalized
 					if (ext_lo_c > 0 && (ext_lo_c & (uint64_t)0x80000000) == 0)
 					{
@@ -528,9 +530,15 @@ namespace tms320 {
 					}
 					else
 					{
-						if (ext_lo_c < 0 && (ext_lo_c & (uint64_t)0x80000000 != 0))
+						/* std::cerr 
+						<< "5.1- normalizing neg" << std::endl
+						<< "   hi   = 0x" << std::hex << (unsigned int)this->GetHi() << "\t ext_lo_c = 0x" << (unsigned long long)ext_lo_c << std::dec << std::endl
+						<< "   -> 0x" << std::hex << (ext_lo_c & (uint64_t)0x80000000) << std::dec
+						<< std::endl;
+						 */						if (ext_lo_c < 0 && ((ext_lo_c & (uint64_t)0x80000000) != 0))
 						{
 							uint32_t count = unisim::util::arithmetic::CountLeadingZeros(~(uint64_t)ext_lo_c);
+
 							count = count - 32;
 							ext_lo_c = ext_lo_c << count;
 							if ((int32_t)((int32_t)this->hi - count) < -128)
@@ -796,28 +804,28 @@ namespace tms320 {
 	
 	void Register::LoadExp(const Register& reg)
 	{
-		if (reg.GetHi() == 0)
-			this->lo = 0;
-		this->hi = reg.GetHi();
+		if (reg.GetHi() == 0x80)
+			this->SetLo(0);
+		this->SetHi(reg.GetHi());
 	}
 	
 	void Register::LoadExp(uint32_t value)
 	{
-		if (GetHi(value) == 0)
-			this->lo = 0;
-		this->hi = GetHi(value);
+		if (GetHi(value) == 0x80)
+			this->SetLo(0);
+		this->SetHi(GetHi(value));
 	}
 	
 	void Register::LoadExp(uint16_t value)
 	{
-		if (GetHi(value) == 0)
-			this->lo = 0;
-		this->hi = GetHi(value);
+		if (GetHi(value) == 0x80)
+			this->SetLo(0);
+		this->SetHi(GetHi(value));
 	}
 	
 	void Register::LoadMan(const Register& reg)
 	{
-		this->lo = reg.GetLo();
+		this->SetLo(reg.GetLo());
 	}
 	
 	void Register::LoadMan(uint32_t value)
@@ -825,12 +833,12 @@ namespace tms320 {
 		// TOCHECK: the documentation states that the memory value
 		//   doesn't need to be interpreted as a float, but that all
 		//   the value is loaded into the register mantissa (see LDM instruction)
-		this->lo = value;
+		this->SetLo(value);
 	}
 	
 	void Register::LoadMan(uint16_t value)
 	{
-		this->lo = GetLo(value);
+		this->SetLo(GetLo(value));
 	}
 	
 	RegisterDebugInterface::RegisterDebugInterface(const char *_name, unisim::component::cxx::processor::tms320::Register *_reg, bool _extended_precision)
