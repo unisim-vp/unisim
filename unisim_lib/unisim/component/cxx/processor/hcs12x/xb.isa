@@ -203,9 +203,9 @@ xb_9_cst_z0.getEAddr = {
 
 	address_t addr;
 	if (s==0) {
-		addr = cpu->xb_getAddrRegValue(rr) + ((uint8_t) n8);
+		addr = cpu->xb_getAddrRegValue(rr) + (n8 & 0xFF);
 	} else {
-		addr = cpu->xb_getAddrRegValue(rr) + ((uint8_t) n8) - 256;
+		addr = cpu->xb_getAddrRegValue(rr) + (n8 & 0xFF) - 256;
 	}
 
 	return addr;
@@ -216,9 +216,9 @@ xb_9_cst_z0.disasm = {
 
 	string regLabel = CPU::xb_getAddrRegLabel(rr);
 	if (s==0) {
-		sink << std::dec << ((uint8_t) n8) << "," << regLabel;
+		sink << std::dec << (n8 & 0xFF) << "," << regLabel;
 	} else {
-		sink << std::dec << ((uint8_t) n8) - 256 << "," << regLabel;
+		sink << std::dec << (n8 & 0xFF) - 256 << "," << regLabel;
 	}
 
 }
@@ -235,7 +235,7 @@ xb_16bit_cst_z1_s0.getXbMode = { return XbModes::IDX2; }
 
 xb_16bit_cst_z1_s0.getEAddr = {
 
-	physical_address_t addr = cpu->xb_getAddrRegValue(rr) + ((uint16_t) n16);
+	physical_address_t addr = cpu->xb_getAddrRegValue(rr) + (n16 & 0xFFFF);
 
 	// Constant offset 16-bit signed
    	return addr;
@@ -245,7 +245,7 @@ xb_16bit_cst_z1_s0.disasm = {
 
 	// constant offset 16-bit signed
 	string regLabel = CPU::xb_getAddrRegLabel(rr);
-	sink << std::dec << ((uint16_t) n16) << "," << regLabel;
+	sink << std::dec << (n16 & 0xFFFF) << "," << regLabel;
 }
 
 xb_16bit_cst_z1_s0.getRegsLabel = {
