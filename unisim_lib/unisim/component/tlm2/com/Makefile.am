@@ -19,6 +19,11 @@ SUBDIRS += str7_i2c
 INCLUDE_SUBDIRS += str7_i2c
 endif
 
+if COND_str7_gpio
+SUBDIRS += str7_gpio
+INCLUDE_SUBDIRS += str7_gpio
+endif
+
 dist_share_DATA = COPYING
 
 uninstall-hook:
