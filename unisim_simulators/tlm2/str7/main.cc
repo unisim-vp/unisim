@@ -46,6 +46,7 @@
 #include "router_config.hh"
 #include "unisim/component/tlm2/interrupt/str7_eic/str7_eic.hh"
 #include "unisim/component/tlm2/com/str7_spi/str7_spi.hh"
+#include "unisim/component/tlm2/com/str7_gpio/str7_gpio.hh"
 #include "unisim/component/tlm2/timer/str7_timer/tim.hh"
 #include "unisim/component/tlm2/interrupt/master_stub.hh"
 #include "unisim/component/tlm2/interrupt/slave_stub.hh"
@@ -97,6 +98,7 @@ typedef unisim::component::tlm2::interrupt::InterruptMasterStub IRQMSTUB;
 typedef unisim::component::tlm2::interrupt::InterruptMasterStub FIQMSTUB;
 typedef unisim::component::tlm2::interrupt::InterruptSlaveStub IRQSSTUB;
 typedef unisim::component::tlm2::com::str7_spi::STR7_SPI<32, true> SPI;
+typedef unisim::component::tlm2::com::str7_gpio::STR7_GPIO<32> GPIO;
 typedef unisim::component::tlm2::signal_converter::generic_adc::ADC ADC;
 
 
@@ -215,6 +217,9 @@ int sc_main(int argc, char *argv[]) {
 	TIM *timer0 = new TIM("timer0");
 	TIM *timer2 = new TIM("timer2");
 	SPI *spi0 = new SPI("spi0");
+	GPIO *ioport0 = new GPIO("ioport0");
+	GPIO *ioport1 = new GPIO("ioport1");
+	GPIO *ioport2 = new GPIO("ioport2");
 	ADC *adc = new ADC("ADC");
 
 	//Timer0  stubs
@@ -340,6 +345,9 @@ int sc_main(int argc, char *argv[]) {
 	router->init_socket[3](timer0->in_mem);
 	router->init_socket[4](timer2->in_mem);
 	router->init_socket[5](spi0->in_mem);
+	router->init_socket[6](ioport0->in_mem);
+	router->init_socket[7](ioport1->in_mem);
+	router->init_socket[8](ioport2->in_mem);
 
 	// TODO: timer0 timeri_irq should also be connected to eic->in_fiq[0]
 	for (unsigned int i = 0; i < 2; i++)
@@ -375,6 +383,10 @@ int sc_main(int argc, char *argv[]) {
 	(*router->memory_import[1]) >> flash->memory_export;
 	// TODO: missing a connection with the eic
 	// TODO: missing a connection with the timer0
+	// TODO: missing a connection with the spi0
+	// TODO: missing a connection with the ioport0
+	// TODO: missing a connection with the ioport1
+	// TODO: missing a connection with the ioport2
 
 	cpu->symbol_table_lookup_import >> elf_loader->symbol_table_lookup_export;
 
@@ -464,6 +476,9 @@ int sc_main(int argc, char *argv[]) {
 	if (timer0) delete timer0;
 	if (timer2) delete timer2;
 	if (spi0) delete spi0;
+	if (ioport0) delete ioport0;
+	if (ioport1) delete ioport1;
+	if (ioport2) delete ioport2;
   
 	if (icib_irqsstub0) delete icib_irqsstub0;
 	if (icapa_edgemstub0) delete icapa_edgemstub0;

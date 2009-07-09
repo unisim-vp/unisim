@@ -112,6 +112,7 @@ UNISIM_LINK(unisim_component_tlm2_interrupt)
 UNISIM_LINK(unisim_component_tlm2_interrupt_str7_eic)
 UNISIM_LINK(unisim_component_tlm2_timer_str7_timer)
 UNISIM_LINK(unisim_component_tlm2_com_str7_spi)
+UNISIM_LINK(unisim_component_tlm2_com_str7_gpio)
 UNISIM_LINK(unisim_component_tlm2_signal_converter_generic_adc)
 
 UNISIM_LIBTOOL
