@@ -126,11 +126,7 @@ public:
 	inline uint16_t getCCR();
 	inline void setCCR(uint16_t val);
 
-//	void reset() { ccrVal = 0x00D0; /* S=1 X=1 I=1 */ }
-	/**
-	 * The S and X bits are set to 0 after platform reset by hardware
-	 */
-	void reset() { ccrVal = 0x0010; /* I=1 */ }
+	void reset() { ccrVal = 0x00D0; /* S=1 X=1 I=1 */ }
 
 	virtual const char *GetName() const;
 	virtual void GetValue(void *buffer) const;

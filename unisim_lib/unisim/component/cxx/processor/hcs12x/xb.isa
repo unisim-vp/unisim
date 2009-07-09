@@ -202,10 +202,18 @@ xb_9_cst_z0.getXbMode = { return XbModes::IDX1; }
 xb_9_cst_z0.getEAddr = {
 
 	address_t addr;
+/*	
 	if (s==0) {
 		addr = cpu->xb_getAddrRegValue(rr) + (n8 & 0xFF);
 	} else {
 		addr = cpu->xb_getAddrRegValue(rr) + (n8 & 0xFF) - 256;
+	}
+*/
+	int32_t val = (int32_t) ((n8 << 24) >> 24);
+	if (s==0) {
+		addr = cpu->xb_getAddrRegValue(rr) + val;
+	} else {
+		addr = cpu->xb_getAddrRegValue(rr) + val - 256;
 	}
 
 	return addr;
@@ -215,12 +223,20 @@ xb_9_cst_z0.getEAddr = {
 xb_9_cst_z0.disasm = {
 
 	string regLabel = CPU::xb_getAddrRegLabel(rr);
+/*	
 	if (s==0) {
 		sink << std::dec << (n8 & 0xFF) << "," << regLabel;
 	} else {
 		sink << std::dec << (n8 & 0xFF) - 256 << "," << regLabel;
 	}
-
+*/
+	int32_t val = (int32_t) ((n8 << 24) >> 24);
+	if (s==0) {
+		sink << std::dec << val << "," << regLabel;
+	} else {
+		sink << std::dec << val - 256 << "," << regLabel;
+	}
+	
 }
 
 xb_9_cst_z0.getRegsLabel = {

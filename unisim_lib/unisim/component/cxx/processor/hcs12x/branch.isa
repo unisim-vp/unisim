@@ -793,11 +793,18 @@ Bits 7 and 6 would be 0:0 for DBNE.
 		case 0x05: mnem = "IBNE"; break;
 		default: mnem = "?";
 	}
-	
+/*	
 	if (b4 == 0) {
 			sink << mnem << " " << EBLB::getRegName(b210) << " , " << std::dec << (rel9 & 0xFF);
 	} else {
 		sink << mnem << " " << EBLB::getRegName(b210) << " , " << std::dec << (rel9 & 0xFF) - 256;
+	}
+*/
+	int32_t val = (int32_t) ((rel9 << 24) >> 24);
+	if (b4 == 0) {
+		sink << mnem << " " << EBLB::getRegName(b210) << " , " << std::dec << val;
+	} else {
+		sink << mnem << " " << EBLB::getRegName(b210) << " , " << std::dec << val - 256;
 	}
 	
 	return mnem;
@@ -807,11 +814,18 @@ loop.execute = {
 	address_t branchAddr;
 	
 	isBranch = false;
-
+/*
 	if (b4 == 0) {
 		branchAddr = cpu->getRegPC() + (rel9 & 0xFF);
 	} else {
 		branchAddr = cpu->getRegPC() + (rel9 & 0xFF) - 256;
+	}
+*/
+	int32_t val = (int32_t) ((rel9 << 24) >> 24);
+	if (b4 == 0) {
+		branchAddr = cpu->getRegPC() + val;
+	} else {
+		branchAddr = cpu->getRegPC() + val - 256;
 	}
 	
 	switch (b765) {

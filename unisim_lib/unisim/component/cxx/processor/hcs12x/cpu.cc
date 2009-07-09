@@ -476,7 +476,7 @@ void CPU::HandleException(const AsynchronousException& exc)
 	if (CONFIG::HAS_NON_MASKABLE_XIRQ_INTERRUPT && HasNonMaskableXIRQInterrupt() && (ccr->getX() == 0))
 		HandleNonMaskableXIRQException(asyncVector, newIPL);
 
-	if (CONFIG::HAS_MASKABLE_IBIT_INTERRUPT && HasMaskableIbitInterrup() && (ccr->getX() == 0) && (ccr->getI() == 0))
+	if (CONFIG::HAS_MASKABLE_IBIT_INTERRUPT && HasMaskableIbitInterrup() && /*(ccr->getX() == 0) &&*/ (ccr->getI() == 0))
 		HandleMaskableIbitException(asyncVector, newIPL);
 
 	// It is necessary to call AckAsynchronousInterrupt() if XIRQ and I-bit interrupt are masked
