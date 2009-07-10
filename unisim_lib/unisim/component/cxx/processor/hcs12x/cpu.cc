@@ -277,7 +277,7 @@ uint8_t CPU::Step()
 		}
 
 		queueFetch(current_pc, buffer, MAX_INS_SIZE);
-		CodeType 	insn( buffer, MAX_INS_SIZE);
+		CodeType 	insn( buffer, MAX_INS_SIZE*8);
 
 		/* Decode current PC */
 		if(debug_enabled && verbose_step)
@@ -293,9 +293,11 @@ uint8_t CPU::Step()
 
 		op = this->Decode(current_pc, insn);
 		lastPC = current_pc;
-		setRegPC(current_pc+op->GetEncoding().size);
+                unsigned int insn_length = op->GetLength();
+                if (insn_length % 8) throw "InternalError";
+		setRegPC(current_pc + (insn_length/8));
 
-		queueFlush(op->GetEncoding().size);
+		queueFlush(insn_length/8);
 
 		/* Execute instruction */
 
@@ -1094,17 +1096,20 @@ string CPU::Disasm(service_address_t service_addr, service_address_t &next_addr)
 {
 	Operation *op = NULL;
 
-	uint8_t 	buffer[CodeType::maxsize];
+	uint8_t 	buffer[CodeType::capacity];
 
-	ReadMemory(service_addr, buffer, CodeType::maxsize);
-	CodeType 	insn( buffer, CodeType::maxsize);
+	ReadMemory(service_addr, buffer, CodeType::capacity);
+	CodeType 	insn( buffer, CodeType::capacity*8 );
 
 	op = this->Decode(service_addr, insn);
 
 	stringstream disasmBuffer;
 	op->disasm(disasmBuffer);
-
-	next_addr = service_addr + op->GetEncoding().size;
+        
+        unsigned int insn_length = op->GetLength();
+        if (insn_length % 8) throw "InternalError";
+	next_addr = service_addr + (insn_length/8);
+        
 	return disasmBuffer.str();
 }
 
