@@ -8,13 +8,17 @@ using namespace std;
 
 #line 10 "xb.cc"
 namespace unisim { namespace component { namespace cxx { namespace processor { namespace hcs12x { namespace XB {
-unsigned int const CodeType::maxsize;
+unsigned int const CodeType::capacity;
 std::ostream& operator << ( std::ostream& _sink, CodeType const& _ct ) {
-	char const* xrepr = "0123456789abcdef";
-	char const* sep = "";
-	for( unsigned int idx = 0; idx < _ct.size; ++idx, sep = " " ) {
-		uint32_t byte = _ct.str[idx];
-		_sink << sep << xrepr[byte/16] << xrepr[byte%16];
+	if (_ct.size        ) {
+		for (unsigned int idx = 0; idx < _ct.size; ++idx ) {
+			_sink << (((_ct.str[idx/8] >> ((7-idx)       )) & 1) ? '1' : '0');  }
+		} else {
+		char const* xrepr = "0123456789abcdef";
+		for (unsigned int idx = 0; idx < _ct.size/8; ++idx ) {
+			uint8_t byte = _ct.str[idx/8];
+			_sink << xrepr[(byte >> 4) & 0xf] << xrepr[(byte >> 0) & 0xf];
+		}
 	}
 	return _sink;
 }
@@ -32,14 +36,14 @@ Operation::~Operation()
 
 #line 136 "xb.isa"
 void
-#line 36 "xb.cc"
+#line 40 "xb.cc"
 Operation::post_execute(
 #line 136 "xb.isa"
 ostream&
-#line 40 "xb.cc"
+#line 44 "xb.cc"
 #line 136 "xb.isa"
 sink
-#line 43 "xb.cc"
+#line 47 "xb.cc"
 )
 {
 #line 136 "xb.isa"
@@ -77,18 +81,18 @@ sink
 		}
 
 	}
-#line 81 "xb.cc"
+#line 85 "xb.cc"
 }
 #line 100 "xb.isa"
 void
-#line 85 "xb.cc"
+#line 89 "xb.cc"
 Operation::pre_execute(
 #line 100 "xb.isa"
 ostream&
-#line 89 "xb.cc"
+#line 93 "xb.cc"
 #line 100 "xb.isa"
 sink
-#line 92 "xb.cc"
+#line 96 "xb.cc"
 )
 {
 #line 100 "xb.isa"
@@ -127,68 +131,68 @@ sink
 		}
 
 	}
-#line 131 "xb.cc"
+#line 135 "xb.cc"
 }
 #line 97 "xb.isa"
 void
-#line 135 "xb.cc"
+#line 139 "xb.cc"
 Operation::getRegsLabel(
 #line 97 "xb.isa"
 vector<string>
-#line 139 "xb.cc"
+#line 143 "xb.cc"
 #line 97 "xb.isa"
 &vect
-#line 142 "xb.cc"
+#line 146 "xb.cc"
 )
 {
 #line 97 "xb.isa"
 	{ return; }
-#line 147 "xb.cc"
+#line 151 "xb.cc"
 }
 #line 95 "xb.isa"
 uint16_t
-#line 151 "xb.cc"
+#line 155 "xb.cc"
 Operation::getEAddr(
 #line 95 "xb.isa"
 CPU *
-#line 155 "xb.cc"
+#line 159 "xb.cc"
 #line 95 "xb.isa"
 cpu
-#line 158 "xb.cc"
+#line 162 "xb.cc"
 )
 {
 #line 95 "xb.isa"
 	{ assert( false ); return 0; }
-#line 163 "xb.cc"
+#line 167 "xb.cc"
 }
 #line 91 "xb.isa"
 void
-#line 167 "xb.cc"
+#line 171 "xb.cc"
 Operation::disasm(
 #line 91 "xb.isa"
 ostream&
-#line 171 "xb.cc"
+#line 175 "xb.cc"
 #line 91 "xb.isa"
 sink
-#line 174 "xb.cc"
+#line 178 "xb.cc"
 )
 {
 #line 91 "xb.isa"
 	{
 		sink << "?";
 	}
-#line 181 "xb.cc"
+#line 185 "xb.cc"
 }
 #line 86 "xb.isa"
 uint8_t
-#line 185 "xb.cc"
+#line 189 "xb.cc"
 Operation::getXbMode()
 {
 #line 87 "xb.isa"
 	{
 		return XbModes::Unknown;
 	}
-#line 192 "xb.cc"
+#line 196 "xb.cc"
 }
 class OpXb_auto : public Operation
 {
@@ -236,43 +240,43 @@ public:
 	virtual
 #line 86 "xb.isa"
 	uint8_t
-#line 240 "xb.cc"
+#line 244 "xb.cc"
 	getXbMode();
 	virtual
 #line 95 "xb.isa"
 	uint16_t
-#line 245 "xb.cc"
+#line 249 "xb.cc"
 	getEAddr(
 #line 95 "xb.isa"
 	CPU *
-#line 249 "xb.cc"
+#line 253 "xb.cc"
 #line 95 "xb.isa"
 	cpu
-#line 252 "xb.cc"
+#line 256 "xb.cc"
 	);
 	virtual
 #line 91 "xb.isa"
 	void
-#line 257 "xb.cc"
+#line 261 "xb.cc"
 	disasm(
 #line 91 "xb.isa"
 	ostream&
-#line 261 "xb.cc"
+#line 265 "xb.cc"
 #line 91 "xb.isa"
 	sink
-#line 264 "xb.cc"
+#line 268 "xb.cc"
 	);
 	virtual
 #line 97 "xb.isa"
 	void
-#line 269 "xb.cc"
+#line 273 "xb.cc"
 	getRegsLabel(
 #line 97 "xb.isa"
 	vector<string>
-#line 273 "xb.cc"
+#line 277 "xb.cc"
 #line 97 "xb.isa"
 	&vect
-#line 276 "xb.cc"
+#line 280 "xb.cc"
 	);
 private:
 };
@@ -322,43 +326,43 @@ public:
 	virtual
 #line 86 "xb.isa"
 	uint8_t
-#line 326 "xb.cc"
+#line 330 "xb.cc"
 	getXbMode();
 	virtual
 #line 95 "xb.isa"
 	uint16_t
-#line 331 "xb.cc"
+#line 335 "xb.cc"
 	getEAddr(
 #line 95 "xb.isa"
 	CPU *
-#line 335 "xb.cc"
+#line 339 "xb.cc"
 #line 95 "xb.isa"
 	cpu
-#line 338 "xb.cc"
+#line 342 "xb.cc"
 	);
 	virtual
 #line 91 "xb.isa"
 	void
-#line 343 "xb.cc"
+#line 347 "xb.cc"
 	disasm(
 #line 91 "xb.isa"
 	ostream&
-#line 347 "xb.cc"
+#line 351 "xb.cc"
 #line 91 "xb.isa"
 	sink
-#line 350 "xb.cc"
+#line 354 "xb.cc"
 	);
 	virtual
 #line 97 "xb.isa"
 	void
-#line 355 "xb.cc"
+#line 359 "xb.cc"
 	getRegsLabel(
 #line 97 "xb.isa"
 	vector<string>
-#line 359 "xb.cc"
+#line 363 "xb.cc"
 #line 97 "xb.isa"
 	&vect
-#line 362 "xb.cc"
+#line 366 "xb.cc"
 	);
 private:
 };
@@ -409,43 +413,43 @@ public:
 	virtual
 #line 86 "xb.isa"
 	uint8_t
-#line 413 "xb.cc"
+#line 417 "xb.cc"
 	getXbMode();
 	virtual
 #line 95 "xb.isa"
 	uint16_t
-#line 418 "xb.cc"
+#line 422 "xb.cc"
 	getEAddr(
 #line 95 "xb.isa"
 	CPU *
-#line 422 "xb.cc"
+#line 426 "xb.cc"
 #line 95 "xb.isa"
 	cpu
-#line 425 "xb.cc"
+#line 429 "xb.cc"
 	);
 	virtual
 #line 91 "xb.isa"
 	void
-#line 430 "xb.cc"
+#line 434 "xb.cc"
 	disasm(
 #line 91 "xb.isa"
 	ostream&
-#line 434 "xb.cc"
+#line 438 "xb.cc"
 #line 91 "xb.isa"
 	sink
-#line 437 "xb.cc"
+#line 441 "xb.cc"
 	);
 	virtual
 #line 97 "xb.isa"
 	void
-#line 442 "xb.cc"
+#line 446 "xb.cc"
 	getRegsLabel(
 #line 97 "xb.isa"
 	vector<string>
-#line 446 "xb.cc"
+#line 450 "xb.cc"
 #line 97 "xb.isa"
 	&vect
-#line 449 "xb.cc"
+#line 453 "xb.cc"
 	);
 private:
 };
@@ -495,43 +499,43 @@ public:
 	virtual
 #line 86 "xb.isa"
 	uint8_t
-#line 499 "xb.cc"
+#line 503 "xb.cc"
 	getXbMode();
 	virtual
 #line 95 "xb.isa"
 	uint16_t
-#line 504 "xb.cc"
+#line 508 "xb.cc"
 	getEAddr(
 #line 95 "xb.isa"
 	CPU *
-#line 508 "xb.cc"
+#line 512 "xb.cc"
 #line 95 "xb.isa"
 	cpu
-#line 511 "xb.cc"
+#line 515 "xb.cc"
 	);
 	virtual
 #line 91 "xb.isa"
 	void
-#line 516 "xb.cc"
+#line 520 "xb.cc"
 	disasm(
 #line 91 "xb.isa"
 	ostream&
-#line 520 "xb.cc"
+#line 524 "xb.cc"
 #line 91 "xb.isa"
 	sink
-#line 523 "xb.cc"
+#line 527 "xb.cc"
 	);
 	virtual
 #line 97 "xb.isa"
 	void
-#line 528 "xb.cc"
+#line 532 "xb.cc"
 	getRegsLabel(
 #line 97 "xb.isa"
 	vector<string>
-#line 532 "xb.cc"
+#line 536 "xb.cc"
 #line 97 "xb.isa"
 	&vect
-#line 535 "xb.cc"
+#line 539 "xb.cc"
 	);
 private:
 };
@@ -581,43 +585,43 @@ public:
 	virtual
 #line 86 "xb.isa"
 	uint8_t
-#line 585 "xb.cc"
+#line 589 "xb.cc"
 	getXbMode();
 	virtual
 #line 95 "xb.isa"
 	uint16_t
-#line 590 "xb.cc"
+#line 594 "xb.cc"
 	getEAddr(
 #line 95 "xb.isa"
 	CPU *
-#line 594 "xb.cc"
+#line 598 "xb.cc"
 #line 95 "xb.isa"
 	cpu
-#line 597 "xb.cc"
+#line 601 "xb.cc"
 	);
 	virtual
 #line 91 "xb.isa"
 	void
-#line 602 "xb.cc"
+#line 606 "xb.cc"
 	disasm(
 #line 91 "xb.isa"
 	ostream&
-#line 606 "xb.cc"
+#line 610 "xb.cc"
 #line 91 "xb.isa"
 	sink
-#line 609 "xb.cc"
+#line 613 "xb.cc"
 	);
 	virtual
 #line 97 "xb.isa"
 	void
-#line 614 "xb.cc"
+#line 618 "xb.cc"
 	getRegsLabel(
 #line 97 "xb.isa"
 	vector<string>
-#line 618 "xb.cc"
+#line 622 "xb.cc"
 #line 97 "xb.isa"
 	&vect
-#line 621 "xb.cc"
+#line 625 "xb.cc"
 	);
 private:
 };
@@ -667,43 +671,43 @@ public:
 	virtual
 #line 86 "xb.isa"
 	uint8_t
-#line 671 "xb.cc"
+#line 675 "xb.cc"
 	getXbMode();
 	virtual
 #line 95 "xb.isa"
 	uint16_t
-#line 676 "xb.cc"
+#line 680 "xb.cc"
 	getEAddr(
 #line 95 "xb.isa"
 	CPU *
-#line 680 "xb.cc"
+#line 684 "xb.cc"
 #line 95 "xb.isa"
 	cpu
-#line 683 "xb.cc"
+#line 687 "xb.cc"
 	);
 	virtual
 #line 91 "xb.isa"
 	void
-#line 688 "xb.cc"
+#line 692 "xb.cc"
 	disasm(
 #line 91 "xb.isa"
 	ostream&
-#line 692 "xb.cc"
+#line 696 "xb.cc"
 #line 91 "xb.isa"
 	sink
-#line 695 "xb.cc"
+#line 699 "xb.cc"
 	);
 	virtual
 #line 97 "xb.isa"
 	void
-#line 700 "xb.cc"
+#line 704 "xb.cc"
 	getRegsLabel(
 #line 97 "xb.isa"
 	vector<string>
-#line 704 "xb.cc"
+#line 708 "xb.cc"
 #line 97 "xb.isa"
 	&vect
-#line 707 "xb.cc"
+#line 711 "xb.cc"
 	);
 private:
 };
@@ -752,66 +756,66 @@ public:
 	virtual
 #line 86 "xb.isa"
 	uint8_t
-#line 756 "xb.cc"
+#line 760 "xb.cc"
 	getXbMode();
 	virtual
 #line 95 "xb.isa"
 	uint16_t
-#line 761 "xb.cc"
+#line 765 "xb.cc"
 	getEAddr(
 #line 95 "xb.isa"
 	CPU *
-#line 765 "xb.cc"
+#line 769 "xb.cc"
 #line 95 "xb.isa"
 	cpu
-#line 768 "xb.cc"
+#line 772 "xb.cc"
 	);
 	virtual
 #line 91 "xb.isa"
 	void
-#line 773 "xb.cc"
+#line 777 "xb.cc"
 	disasm(
 #line 91 "xb.isa"
 	ostream&
-#line 777 "xb.cc"
+#line 781 "xb.cc"
 #line 91 "xb.isa"
 	sink
-#line 780 "xb.cc"
+#line 784 "xb.cc"
 	);
 	virtual
 #line 97 "xb.isa"
 	void
-#line 785 "xb.cc"
+#line 789 "xb.cc"
 	getRegsLabel(
 #line 97 "xb.isa"
 	vector<string>
-#line 789 "xb.cc"
+#line 793 "xb.cc"
 #line 97 "xb.isa"
 	&vect
-#line 792 "xb.cc"
+#line 796 "xb.cc"
 	);
 private:
 };
 
 #line 86 "xb.isa"
 uint8_t
-#line 799 "xb.cc"
+#line 803 "xb.cc"
 OpXb_auto::getXbMode()
 {
 #line 300 "xb.isa"
 	{ return XbModes::IDX; }
-#line 804 "xb.cc"
+#line 808 "xb.cc"
 }
 #line 95 "xb.isa"
 uint16_t
-#line 808 "xb.cc"
+#line 812 "xb.cc"
 OpXb_auto::getEAddr(
 #line 95 "xb.isa"
 CPU *
-#line 812 "xb.cc"
+#line 816 "xb.cc"
 #line 95 "xb.isa"
 cpu
-#line 815 "xb.cc"
+#line 819 "xb.cc"
 )
 {
 #line 302 "xb.isa"
@@ -840,18 +844,18 @@ cpu
 		}
 
 	}
-#line 844 "xb.cc"
+#line 848 "xb.cc"
 }
 #line 91 "xb.isa"
 void
-#line 848 "xb.cc"
+#line 852 "xb.cc"
 OpXb_auto::disasm(
 #line 91 "xb.isa"
 ostream&
-#line 852 "xb.cc"
+#line 856 "xb.cc"
 #line 91 "xb.isa"
 sink
-#line 855 "xb.cc"
+#line 859 "xb.cc"
 )
 {
 #line 328 "xb.isa"
@@ -879,18 +883,18 @@ sink
 			sink << regLabel << sign;
 		}
 	}
-#line 883 "xb.cc"
+#line 887 "xb.cc"
 }
 #line 97 "xb.isa"
 void
-#line 887 "xb.cc"
+#line 891 "xb.cc"
 OpXb_auto::getRegsLabel(
 #line 97 "xb.isa"
 vector<string>
-#line 891 "xb.cc"
+#line 895 "xb.cc"
 #line 97 "xb.isa"
 &vect
-#line 894 "xb.cc"
+#line 898 "xb.cc"
 )
 {
 #line 353 "xb.isa"
@@ -899,7 +903,7 @@ vector<string>
 		string	regLabel(CPU::xb_getAddrRegLabel(rr));
 		vect.push_back(regLabel);
 	}
-#line 903 "xb.cc"
+#line 907 "xb.cc"
 }
 
 static Operation *DecodeOpXb_auto(CodeType const& code, uint16_t addr)
@@ -909,23 +913,23 @@ static Operation *DecodeOpXb_auto(CodeType const& code, uint16_t addr)
 
 #line 86 "xb.isa"
 uint8_t
-#line 913 "xb.cc"
+#line 917 "xb.cc"
 OpXb_5bit_cst::getXbMode()
 {
 #line 174 "xb.isa"
 	{ return XbModes::IDX; }
-#line 918 "xb.cc"
+#line 922 "xb.cc"
 }
 #line 95 "xb.isa"
 uint16_t
-#line 922 "xb.cc"
+#line 926 "xb.cc"
 OpXb_5bit_cst::getEAddr(
 #line 95 "xb.isa"
 CPU *
-#line 926 "xb.cc"
+#line 930 "xb.cc"
 #line 95 "xb.isa"
 cpu
-#line 929 "xb.cc"
+#line 933 "xb.cc"
 )
 {
 #line 176 "xb.isa"
@@ -936,18 +940,18 @@ cpu
 		return addr;
 
 	}
-#line 940 "xb.cc"
+#line 944 "xb.cc"
 }
 #line 91 "xb.isa"
 void
-#line 944 "xb.cc"
+#line 948 "xb.cc"
 OpXb_5bit_cst::disasm(
 #line 91 "xb.isa"
 ostream&
-#line 948 "xb.cc"
+#line 952 "xb.cc"
 #line 91 "xb.isa"
 sink
-#line 951 "xb.cc"
+#line 955 "xb.cc"
 )
 {
 #line 184 "xb.isa"
@@ -958,18 +962,18 @@ sink
 		sink << std::dec << nnnnn << "," << regLabel;
 
 	}
-#line 962 "xb.cc"
+#line 966 "xb.cc"
 }
 #line 97 "xb.isa"
 void
-#line 966 "xb.cc"
+#line 970 "xb.cc"
 OpXb_5bit_cst::getRegsLabel(
 #line 97 "xb.isa"
 vector<string>
-#line 970 "xb.cc"
+#line 974 "xb.cc"
 #line 97 "xb.isa"
 &vect
-#line 973 "xb.cc"
+#line 977 "xb.cc"
 )
 {
 #line 192 "xb.isa"
@@ -978,7 +982,7 @@ vector<string>
 		string regLabel(CPU::xb_getAddrRegLabel(rr));
 		vect.push_back(regLabel);
 	}
-#line 982 "xb.cc"
+#line 986 "xb.cc"
 }
 
 static Operation *DecodeOpXb_5bit_cst(CodeType const& code, uint16_t addr)
@@ -988,23 +992,23 @@ static Operation *DecodeOpXb_5bit_cst(CodeType const& code, uint16_t addr)
 
 #line 86 "xb.isa"
 uint8_t
-#line 992 "xb.cc"
+#line 996 "xb.cc"
 OpXb_9_cst_z0::getXbMode()
 {
 #line 200 "xb.isa"
 	{ return XbModes::IDX1; }
-#line 997 "xb.cc"
+#line 1001 "xb.cc"
 }
 #line 95 "xb.isa"
 uint16_t
-#line 1001 "xb.cc"
+#line 1005 "xb.cc"
 OpXb_9_cst_z0::getEAddr(
 #line 95 "xb.isa"
 CPU *
-#line 1005 "xb.cc"
+#line 1009 "xb.cc"
 #line 95 "xb.isa"
 cpu
-#line 1008 "xb.cc"
+#line 1012 "xb.cc"
 )
 {
 #line 202 "xb.isa"
@@ -1028,18 +1032,18 @@ cpu
 		return addr;
 
 	}
-#line 1032 "xb.cc"
+#line 1036 "xb.cc"
 }
 #line 91 "xb.isa"
 void
-#line 1036 "xb.cc"
+#line 1040 "xb.cc"
 OpXb_9_cst_z0::disasm(
 #line 91 "xb.isa"
 ostream&
-#line 1040 "xb.cc"
+#line 1044 "xb.cc"
 #line 91 "xb.isa"
 sink
-#line 1043 "xb.cc"
+#line 1047 "xb.cc"
 )
 {
 #line 223 "xb.isa"
@@ -1061,18 +1065,18 @@ sink
 		}
 
 	}
-#line 1065 "xb.cc"
+#line 1069 "xb.cc"
 }
 #line 97 "xb.isa"
 void
-#line 1069 "xb.cc"
+#line 1073 "xb.cc"
 OpXb_9_cst_z0::getRegsLabel(
 #line 97 "xb.isa"
 vector<string>
-#line 1073 "xb.cc"
+#line 1077 "xb.cc"
 #line 97 "xb.isa"
 &vect
-#line 1076 "xb.cc"
+#line 1080 "xb.cc"
 )
 {
 #line 242 "xb.isa"
@@ -1081,7 +1085,7 @@ vector<string>
 		string regLabel(CPU::xb_getAddrRegLabel(rr));
 		vect.push_back(regLabel);
 	}
-#line 1085 "xb.cc"
+#line 1089 "xb.cc"
 }
 
 static Operation *DecodeOpXb_9_cst_z0(CodeType const& code, uint16_t addr)
@@ -1091,23 +1095,23 @@ static Operation *DecodeOpXb_9_cst_z0(CodeType const& code, uint16_t addr)
 
 #line 86 "xb.isa"
 uint8_t
-#line 1095 "xb.cc"
+#line 1099 "xb.cc"
 OpXb_16bit_cst_z1_s0::getXbMode()
 {
 #line 250 "xb.isa"
 	{ return XbModes::IDX2; }
-#line 1100 "xb.cc"
+#line 1104 "xb.cc"
 }
 #line 95 "xb.isa"
 uint16_t
-#line 1104 "xb.cc"
+#line 1108 "xb.cc"
 OpXb_16bit_cst_z1_s0::getEAddr(
 #line 95 "xb.isa"
 CPU *
-#line 1108 "xb.cc"
+#line 1112 "xb.cc"
 #line 95 "xb.isa"
 cpu
-#line 1111 "xb.cc"
+#line 1115 "xb.cc"
 )
 {
 #line 252 "xb.isa"
@@ -1118,18 +1122,18 @@ cpu
 		// Constant offset 16-bit signed
 		return addr;
 	}
-#line 1122 "xb.cc"
+#line 1126 "xb.cc"
 }
 #line 91 "xb.isa"
 void
-#line 1126 "xb.cc"
+#line 1130 "xb.cc"
 OpXb_16bit_cst_z1_s0::disasm(
 #line 91 "xb.isa"
 ostream&
-#line 1130 "xb.cc"
+#line 1134 "xb.cc"
 #line 91 "xb.isa"
 sink
-#line 1133 "xb.cc"
+#line 1137 "xb.cc"
 )
 {
 #line 260 "xb.isa"
@@ -1139,18 +1143,18 @@ sink
 		string regLabel = CPU::xb_getAddrRegLabel(rr);
 		sink << std::dec << (n16 & 0xFFFF) << "," << regLabel;
 	}
-#line 1143 "xb.cc"
+#line 1147 "xb.cc"
 }
 #line 97 "xb.isa"
 void
-#line 1147 "xb.cc"
+#line 1151 "xb.cc"
 OpXb_16bit_cst_z1_s0::getRegsLabel(
 #line 97 "xb.isa"
 vector<string>
-#line 1151 "xb.cc"
+#line 1155 "xb.cc"
 #line 97 "xb.isa"
 &vect
-#line 1154 "xb.cc"
+#line 1158 "xb.cc"
 )
 {
 #line 267 "xb.isa"
@@ -1159,7 +1163,7 @@ vector<string>
 		string regLabel(CPU::xb_getAddrRegLabel(rr));
 		vect.push_back(regLabel);
 	}
-#line 1163 "xb.cc"
+#line 1167 "xb.cc"
 }
 
 static Operation *DecodeOpXb_16bit_cst_z1_s0(CodeType const& code, uint16_t addr)
@@ -1169,23 +1173,23 @@ static Operation *DecodeOpXb_16bit_cst_z1_s0(CodeType const& code, uint16_t addr
 
 #line 86 "xb.isa"
 uint8_t
-#line 1173 "xb.cc"
+#line 1177 "xb.cc"
 OpXb_16bit_cst_z1_s1::getXbMode()
 {
 #line 275 "xb.isa"
 	{ return XbModes::IDX2_Ind; }
-#line 1178 "xb.cc"
+#line 1182 "xb.cc"
 }
 #line 95 "xb.isa"
 uint16_t
-#line 1182 "xb.cc"
+#line 1186 "xb.cc"
 OpXb_16bit_cst_z1_s1::getEAddr(
 #line 95 "xb.isa"
 CPU *
-#line 1186 "xb.cc"
+#line 1190 "xb.cc"
 #line 95 "xb.isa"
 cpu
-#line 1189 "xb.cc"
+#line 1193 "xb.cc"
 )
 {
 #line 277 "xb.isa"
@@ -1196,18 +1200,18 @@ cpu
 		// 16-bit offset indexed-indirect
 		return cpu->memRead16(addr);
 	}
-#line 1200 "xb.cc"
+#line 1204 "xb.cc"
 }
 #line 91 "xb.isa"
 void
-#line 1204 "xb.cc"
+#line 1208 "xb.cc"
 OpXb_16bit_cst_z1_s1::disasm(
 #line 91 "xb.isa"
 ostream&
-#line 1208 "xb.cc"
+#line 1212 "xb.cc"
 #line 91 "xb.isa"
 sink
-#line 1211 "xb.cc"
+#line 1215 "xb.cc"
 )
 {
 #line 285 "xb.isa"
@@ -1217,18 +1221,18 @@ sink
 		string regLabel = CPU::xb_getAddrRegLabel(rr);
 		sink << "[" << std::dec << n16 << "," << regLabel << "]";
 	}
-#line 1221 "xb.cc"
+#line 1225 "xb.cc"
 }
 #line 97 "xb.isa"
 void
-#line 1225 "xb.cc"
+#line 1229 "xb.cc"
 OpXb_16bit_cst_z1_s1::getRegsLabel(
 #line 97 "xb.isa"
 vector<string>
-#line 1229 "xb.cc"
+#line 1233 "xb.cc"
 #line 97 "xb.isa"
 &vect
-#line 1232 "xb.cc"
+#line 1236 "xb.cc"
 )
 {
 #line 292 "xb.isa"
@@ -1237,7 +1241,7 @@ vector<string>
 		string regLabel(CPU::xb_getAddrRegLabel(rr));
 		vect.push_back(regLabel);
 	}
-#line 1241 "xb.cc"
+#line 1245 "xb.cc"
 }
 
 static Operation *DecodeOpXb_16bit_cst_z1_s1(CodeType const& code, uint16_t addr)
@@ -1247,23 +1251,23 @@ static Operation *DecodeOpXb_16bit_cst_z1_s1(CodeType const& code, uint16_t addr
 
 #line 86 "xb.isa"
 uint8_t
-#line 1251 "xb.cc"
+#line 1255 "xb.cc"
 OpXb_acc_offset::getXbMode()
 {
 #line 361 "xb.isa"
 	{ return XbModes::IDX; }
-#line 1256 "xb.cc"
+#line 1260 "xb.cc"
 }
 #line 95 "xb.isa"
 uint16_t
-#line 1260 "xb.cc"
+#line 1264 "xb.cc"
 OpXb_acc_offset::getEAddr(
 #line 95 "xb.isa"
 CPU *
-#line 1264 "xb.cc"
+#line 1268 "xb.cc"
 #line 95 "xb.isa"
 cpu
-#line 1267 "xb.cc"
+#line 1271 "xb.cc"
 )
 {
 #line 363 "xb.isa"
@@ -1273,18 +1277,18 @@ cpu
 
 		return addrRegVal + accRegVal;
 	}
-#line 1277 "xb.cc"
+#line 1281 "xb.cc"
 }
 #line 91 "xb.isa"
 void
-#line 1281 "xb.cc"
+#line 1285 "xb.cc"
 OpXb_acc_offset::disasm(
 #line 91 "xb.isa"
 ostream&
-#line 1285 "xb.cc"
+#line 1289 "xb.cc"
 #line 91 "xb.isa"
 sink
-#line 1288 "xb.cc"
+#line 1292 "xb.cc"
 )
 {
 #line 370 "xb.isa"
@@ -1295,18 +1299,18 @@ sink
 
 		sink << accRegLabel << "," << addrRegLabel;
 	}
-#line 1299 "xb.cc"
+#line 1303 "xb.cc"
 }
 #line 97 "xb.isa"
 void
-#line 1303 "xb.cc"
+#line 1307 "xb.cc"
 OpXb_acc_offset::getRegsLabel(
 #line 97 "xb.isa"
 vector<string>
-#line 1307 "xb.cc"
+#line 1311 "xb.cc"
 #line 97 "xb.isa"
 &vect
-#line 1310 "xb.cc"
+#line 1314 "xb.cc"
 )
 {
 #line 378 "xb.isa"
@@ -1318,7 +1322,7 @@ vector<string>
 		vect.push_back(accRegLabel);
 		vect.push_back(addrRegLabel);
 	}
-#line 1322 "xb.cc"
+#line 1326 "xb.cc"
 }
 
 static Operation *DecodeOpXb_acc_offset(CodeType const& code, uint16_t addr)
@@ -1328,23 +1332,23 @@ static Operation *DecodeOpXb_acc_offset(CodeType const& code, uint16_t addr)
 
 #line 86 "xb.isa"
 uint8_t
-#line 1332 "xb.cc"
+#line 1336 "xb.cc"
 OpXb_accD_offset_idx_ind::getXbMode()
 {
 #line 389 "xb.isa"
 	{ return XbModes::IDXD_Ind; }
-#line 1337 "xb.cc"
+#line 1341 "xb.cc"
 }
 #line 95 "xb.isa"
 uint16_t
-#line 1341 "xb.cc"
+#line 1345 "xb.cc"
 OpXb_accD_offset_idx_ind::getEAddr(
 #line 95 "xb.isa"
 CPU *
-#line 1345 "xb.cc"
+#line 1349 "xb.cc"
 #line 95 "xb.isa"
 cpu
-#line 1348 "xb.cc"
+#line 1352 "xb.cc"
 )
 {
 #line 391 "xb.isa"
@@ -1352,18 +1356,18 @@ cpu
 
 		return cpu->memRead16(cpu->getRegD() + cpu->xb_getAddrRegValue(rr));
 	}
-#line 1356 "xb.cc"
+#line 1360 "xb.cc"
 }
 #line 91 "xb.isa"
 void
-#line 1360 "xb.cc"
+#line 1364 "xb.cc"
 OpXb_accD_offset_idx_ind::disasm(
 #line 91 "xb.isa"
 ostream&
-#line 1364 "xb.cc"
+#line 1368 "xb.cc"
 #line 91 "xb.isa"
 sink
-#line 1367 "xb.cc"
+#line 1371 "xb.cc"
 )
 {
 #line 396 "xb.isa"
@@ -1371,18 +1375,18 @@ sink
 		string regLabel = CPU::xb_getAddrRegLabel(rr);
 		sink << "[D," << regLabel << "]";
 	}
-#line 1375 "xb.cc"
+#line 1379 "xb.cc"
 }
 #line 97 "xb.isa"
 void
-#line 1379 "xb.cc"
+#line 1383 "xb.cc"
 OpXb_accD_offset_idx_ind::getRegsLabel(
 #line 97 "xb.isa"
 vector<string>
-#line 1383 "xb.cc"
+#line 1387 "xb.cc"
 #line 97 "xb.isa"
 &vect
-#line 1386 "xb.cc"
+#line 1390 "xb.cc"
 )
 {
 #line 401 "xb.isa"
@@ -1390,7 +1394,7 @@ vector<string>
 		string regLabel(CPU::xb_getAddrRegLabel(rr));
 		vect.push_back(regLabel);
 	}
-#line 1394 "xb.cc"
+#line 1398 "xb.cc"
 }
 
 static Operation *DecodeOpXb_accD_offset_idx_ind(CodeType const& code, uint16_t addr)
@@ -1400,99 +1404,54 @@ static Operation *DecodeOpXb_accD_offset_idx_ind(CodeType const& code, uint16_t 
 
 OpXb_auto::OpXb_auto(CodeType const& code, uint16_t addr) : Operation(code, addr, "xb_auto")
 {
-	CodeType _code_( code );
-	{
-		uint8_t _subword_ = (uint8_t( _code_.str[0] ) << 0);
-		rr = ((_subword_ >> 6) & 0x3ULL);
-		p = ((_subword_ >> 4) & 0x1ULL);
-		nnnn = ((_subword_ >> 0) & 0xfULL);
-	}
-	_code_.pop( 1 );
-	this->encoding.size -= _code_.size;
+	this->encoding.size = 8;
+	rr = (((uint32_t( code.str[0] ) >> 6) % 4) << 0);
+	p = (((uint32_t( code.str[0] ) >> 4) % 2) << 0);
+	nnnn = (((uint32_t( code.str[0] ) >> 0) % 16) << 0);
 }
 
 OpXb_5bit_cst::OpXb_5bit_cst(CodeType const& code, uint16_t addr) : Operation(code, addr, "xb_5bit_cst")
 {
-	CodeType _code_( code );
-	{
-		uint8_t _subword_ = (uint8_t( _code_.str[0] ) << 0);
-		rr = ((_subword_ >> 6) & 0x3ULL);
-		nnnnn = (((int32_t((_subword_ >> 0) & 0x1fLL)) << 27) >> 27);
-	}
-	_code_.pop( 1 );
-	this->encoding.size -= _code_.size;
+	this->encoding.size = 8;
+	rr = (((uint32_t( code.str[0] ) >> 6) % 4) << 0);
+	nnnnn = (((uint32_t( code.str[0] ) >> 0) % 32) << 0);
+	nnnnn = (nnnnn << 27) >> 27;
 }
 
 OpXb_9_cst_z0::OpXb_9_cst_z0(CodeType const& code, uint16_t addr) : Operation(code, addr, "xb_9_cst_z0")
 {
-	CodeType _code_( code );
-	{
-		uint8_t _subword_ = (uint8_t( _code_.str[0] ) << 0);
-		rr = ((_subword_ >> 3) & 0x3ULL);
-		s = ((_subword_ >> 0) & 0x1ULL);
-	}
-	_code_.pop( 1 );
-	{
-		uint8_t _subword_ = (uint8_t( _code_.str[0] ) << 0);
-		n8 = ((_subword_ >> 0) & 0xffULL);
-	}
-	_code_.pop( 1 );
-	this->encoding.size -= _code_.size;
+	this->encoding.size = 16;
+	rr = (((uint32_t( code.str[0] ) >> 3) % 4) << 0);
+	s = (((uint32_t( code.str[0] ) >> 0) % 2) << 0);
+	n8 = (((uint32_t( code.str[1] ) >> 0) % 256) << 0);
 }
 
 OpXb_16bit_cst_z1_s0::OpXb_16bit_cst_z1_s0(CodeType const& code, uint16_t addr) : Operation(code, addr, "xb_16bit_cst_z1_s0")
 {
-	CodeType _code_( code );
-	{
-		uint8_t _subword_ = (uint8_t( _code_.str[0] ) << 0);
-		rr = ((_subword_ >> 3) & 0x3ULL);
-	}
-	_code_.pop( 1 );
-	{
-		uint16_t _subword_ = (uint16_t( _code_.str[0] ) << 8) | (uint16_t( _code_.str[1] ) << 0);
-		n16 = ((_subword_ >> 0) & 0xffffULL);
-	}
-	_code_.pop( 2 );
-	this->encoding.size -= _code_.size;
+	this->encoding.size = 24;
+	rr = (((uint32_t( code.str[0] ) >> 3) % 4) << 0);
+	n16 = (((uint32_t( code.str[1] ) >> 0) % 256) << 8) | (((uint32_t( code.str[2] ) >> 0) % 256) << 0);
 }
 
 OpXb_16bit_cst_z1_s1::OpXb_16bit_cst_z1_s1(CodeType const& code, uint16_t addr) : Operation(code, addr, "xb_16bit_cst_z1_s1")
 {
-	CodeType _code_( code );
-	{
-		uint8_t _subword_ = (uint8_t( _code_.str[0] ) << 0);
-		rr = ((_subword_ >> 3) & 0x3ULL);
-	}
-	_code_.pop( 1 );
-	{
-		uint16_t _subword_ = (uint16_t( _code_.str[0] ) << 8) | (uint16_t( _code_.str[1] ) << 0);
-		n16 = (((int32_t((_subword_ >> 0) & 0xffffLL)) << 16) >> 16);
-	}
-	_code_.pop( 2 );
-	this->encoding.size -= _code_.size;
+	this->encoding.size = 24;
+	rr = (((uint32_t( code.str[0] ) >> 3) % 4) << 0);
+	n16 = (((uint32_t( code.str[1] ) >> 0) % 256) << 8) | (((uint32_t( code.str[2] ) >> 0) % 256) << 0);
+	n16 = (n16 << 16) >> 16;
 }
 
 OpXb_acc_offset::OpXb_acc_offset(CodeType const& code, uint16_t addr) : Operation(code, addr, "xb_acc_offset")
 {
-	CodeType _code_( code );
-	{
-		uint8_t _subword_ = (uint8_t( _code_.str[0] ) << 0);
-		rr = ((_subword_ >> 3) & 0x3ULL);
-		aa = ((_subword_ >> 0) & 0x3ULL);
-	}
-	_code_.pop( 1 );
-	this->encoding.size -= _code_.size;
+	this->encoding.size = 8;
+	rr = (((uint32_t( code.str[0] ) >> 3) % 4) << 0);
+	aa = (((uint32_t( code.str[0] ) >> 0) % 4) << 0);
 }
 
 OpXb_accD_offset_idx_ind::OpXb_accD_offset_idx_ind(CodeType const& code, uint16_t addr) : Operation(code, addr, "xb_accD_offset_idx_ind")
 {
-	CodeType _code_( code );
-	{
-		uint8_t _subword_ = (uint8_t( _code_.str[0] ) << 0);
-		rr = ((_subword_ >> 3) & 0x3ULL);
-	}
-	_code_.pop( 1 );
-	this->encoding.size -= _code_.size;
+	this->encoding.size = 8;
+	rr = (((uint32_t( code.str[0] ) >> 3) % 4) << 0);
 }
 
 DecodeTableEntry::DecodeTableEntry(CodeType const& opcode, CodeType const& opcode_mask, Operation *(*decode)(CodeType const&, uint16_t))
@@ -1505,13 +1464,13 @@ DecodeTableEntry::DecodeTableEntry(CodeType const& opcode, CodeType const& opcod
 Decoder::Decoder()
 : is_little_endian( false )
 {
-	decode_table.push_back(DecodeTableEntry(CodeType( (uint8_t*)( "\xe7" ), 1 ), CodeType( (uint8_t*)( "\xe7" ), 1 ), DecodeOpXb_accD_offset_idx_ind));
-	decode_table.push_back(DecodeTableEntry(CodeType( (uint8_t*)( "\xe4" ), 1 ), CodeType( (uint8_t*)( "\xe4" ), 1 ), DecodeOpXb_acc_offset));
-	decode_table.push_back(DecodeTableEntry(CodeType( (uint8_t*)( "\xe3" ), 1 ), CodeType( (uint8_t*)( "\xe7" ), 1 ), DecodeOpXb_16bit_cst_z1_s1));
-	decode_table.push_back(DecodeTableEntry(CodeType( (uint8_t*)( "\xe2" ), 1 ), CodeType( (uint8_t*)( "\xe7" ), 1 ), DecodeOpXb_16bit_cst_z1_s0));
-	decode_table.push_back(DecodeTableEntry(CodeType( (uint8_t*)( "\xe0" ), 1 ), CodeType( (uint8_t*)( "\xe6" ), 1 ), DecodeOpXb_9_cst_z0));
-	decode_table.push_back(DecodeTableEntry(CodeType( (uint8_t*)( "\x00" ), 1 ), CodeType( (uint8_t*)( "\x20" ), 1 ), DecodeOpXb_5bit_cst));
-	decode_table.push_back(DecodeTableEntry(CodeType( (uint8_t*)( "\x20" ), 1 ), CodeType( (uint8_t*)( "\x20" ), 1 ), DecodeOpXb_auto));
+	decode_table.push_back(DecodeTableEntry(CodeType( (uint8_t*)( "\xe7" ), 8 ), CodeType( (uint8_t*)( "\xe7" ), 8 ), DecodeOpXb_accD_offset_idx_ind));
+	decode_table.push_back(DecodeTableEntry(CodeType( (uint8_t*)( "\xe4" ), 6 ), CodeType( (uint8_t*)( "\xe4" ), 6 ), DecodeOpXb_acc_offset));
+	decode_table.push_back(DecodeTableEntry(CodeType( (uint8_t*)( "\xe3" ), 8 ), CodeType( (uint8_t*)( "\xe7" ), 8 ), DecodeOpXb_16bit_cst_z1_s1));
+	decode_table.push_back(DecodeTableEntry(CodeType( (uint8_t*)( "\xe2" ), 8 ), CodeType( (uint8_t*)( "\xe7" ), 8 ), DecodeOpXb_16bit_cst_z1_s0));
+	decode_table.push_back(DecodeTableEntry(CodeType( (uint8_t*)( "\xe0" ), 7 ), CodeType( (uint8_t*)( "\xe6" ), 7 ), DecodeOpXb_9_cst_z0));
+	decode_table.push_back(DecodeTableEntry(CodeType( (uint8_t*)( "\x00" ), 3 ), CodeType( (uint8_t*)( "\x20" ), 3 ), DecodeOpXb_5bit_cst));
+	decode_table.push_back(DecodeTableEntry(CodeType( (uint8_t*)( "\x20" ), 3 ), CodeType( (uint8_t*)( "\x20" ), 3 ), DecodeOpXb_auto));
 }
 
 Decoder::~Decoder()

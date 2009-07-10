@@ -11,30 +11,70 @@
 #include <iosfwd>
 namespace unisim { namespace component { namespace cxx { namespace processor { namespace hcs12x { namespace XB {
 struct CodeType {
-	static const unsigned int maxsize = 3;
+	static const unsigned int capacity = 3;
 	unsigned int              size;
-	uint8_t                   str[maxsize];
+	uint8_t                   str[capacity];
 	enum Exception_t { NotEnoughBytes };
 	CodeType() : size( 0 ) {};
-	CodeType( uint8_t* _src, unsigned int _size )
-	: size( std::min( _size, maxsize ) ) { memcpy( str, _src, size ); }
-	CodeType( CodeType const& _ct )
-	: size( _ct.size ) { memcpy( str, _ct.str, _ct.size ); }
-	bool match( CodeType const& _bits, CodeType const& _mask ) const {
-		for( unsigned int idx = 0; idx < _mask.size; ++idx ) {
-			if( idx >= size ) throw NotEnoughBytes;
-			if( (str[idx] & _mask.str[idx]) != _bits.str[idx] ) return false;
+	CodeType( uint8_t* src, unsigned int sz )
+	: size( std::min( sz, capacity*8 ) )
+	{
+		for (int idx = (size+7)/8; (--idx) >= 0;) str[idx] = src[idx];
+	}
+	CodeType( CodeType const& ct )
+	: size( ct.size )
+	{
+		str[0] = ct.str[0]; str[1] = ct.str[1]; str[2] = ct.str[2];
+	}
+	bool match( CodeType const& bits, CodeType const& mask ) const {
+		unsigned int maskbound = (mask.size+7)/8, codebound = (size+7)/8;
+		for (unsigned int idx = 0; idx < maskbound; ++idx) {
+			if (idx >= codebound) throw NotEnoughBytes;
+			if ((str[idx] & mask.str[idx]) != bits.str[idx]) return false;
 		};
 		return true;
-	};
-	bool match( CodeType const& _bits ) const {
-		if( size < _bits.size ) throw NotEnoughBytes;
-		return memcmp( str, _bits.str, _bits.size ) == 0;
 	}
-	void pop( unsigned int _bytes ) {
-		if( size < _bytes ) throw NotEnoughBytes;
-		size -= _bytes;
-		memmove( str, str + _bytes, size );
+	bool match( CodeType const& bits ) const {
+		if (size < bits.size) throw NotEnoughBytes;
+		unsigned int end = bits.size/8;
+		for (unsigned int idx = 0; idx < end; idx += 1)
+		if (str[idx] != bits.str[idx]) return false;
+		unsigned int tail = (bits.size        );
+		if (tail == 0); return true;  uint8_t tailmask = 0xff << (8-tail);
+		return ((str[end] ^ bits.str[end]) & tailmask) == 0;
+	}
+	CodeType& stretch_front( unsigned int shift ) {
+		int hish = shift / 8, losh = shift % 8;
+		for (int dst = 2, src = dst - hish; dst >= 0; dst-=1, src-=1) {
+			if (src > 0) str[dst] = (str[src] >> losh) | (str[src-1] << (8-losh));
+			else if (src == 0) str[dst] = (str[src] >> losh);
+			else str[dst] = 0;
+		}
+		return *this;
+	}
+	CodeType& shrink_front( unsigned int shift ) {
+		int hish = shift / 8, losh = shift % 8;
+		for (unsigned int dst = 0, src = dst + hish; dst < 3; dst+=1, src+=1) {
+			if (src < 2) str[dst] = (str[src] << losh) | (str[src-1] >> (8-losh));
+			else if (src == 2) str[dst] = (str[src] << losh);
+			else str[dst] = 0;
+		}
+		return *this;
+	}
+	CodeType& extend( uint8_t* src, unsigned int sz ) {
+		CodeType tail( src, sz );
+		unsigned int mod = this->size % 8;
+		if (mod) {
+			tail.size = std::min( tail.size + mod, capacity*8 );
+			tail.stretch_front( mod );
+			tail.str[0] = (tail.str[0] & (0xff >> mod)) | (this->str[this->size/8] & (0xff << (8-mod)));
+			this->size -= mod;
+		}
+		for (unsigned int src = 0, dst = this->size/8; (src < this->capacity) and (dst < this->capacity); src+=1, dst+=1) {
+			this->str[dst] = tail.str[src];
+		}
+		this->size = std::min( this->size + tail.size, capacity*8 );
+		return *this;
 	}
 	friend std::ostream& operator << ( std::ostream& _sink, CodeType const& _ct );
 };
@@ -100,7 +140,7 @@ namespace unisim { namespace component { namespace cxx { namespace processor { n
 
 } } } } } }  // end namespaces
 
-#line 104 "xb.hh"
+#line 144 "xb.hh"
 namespace unisim { namespace component { namespace cxx { namespace processor { namespace hcs12x { namespace XB {
 class Operation
 {
@@ -116,67 +156,67 @@ public:
 	virtual
 #line 136 "xb.isa"
 	void
-#line 120 "xb.hh"
+#line 160 "xb.hh"
 	post_execute(
 #line 136 "xb.isa"
 	ostream&
-#line 124 "xb.hh"
+#line 164 "xb.hh"
 #line 136 "xb.isa"
 	sink
-#line 127 "xb.hh"
+#line 167 "xb.hh"
 	);
 	virtual
 #line 100 "xb.isa"
 	void
-#line 132 "xb.hh"
+#line 172 "xb.hh"
 	pre_execute(
 #line 100 "xb.isa"
 	ostream&
-#line 136 "xb.hh"
+#line 176 "xb.hh"
 #line 100 "xb.isa"
 	sink
-#line 139 "xb.hh"
+#line 179 "xb.hh"
 	);
 	virtual
 #line 97 "xb.isa"
 	void
-#line 144 "xb.hh"
+#line 184 "xb.hh"
 	getRegsLabel(
 #line 97 "xb.isa"
 	vector<string>
-#line 148 "xb.hh"
+#line 188 "xb.hh"
 #line 97 "xb.isa"
 	&vect
-#line 151 "xb.hh"
+#line 191 "xb.hh"
 	);
 	virtual
 #line 95 "xb.isa"
 	uint16_t
-#line 156 "xb.hh"
+#line 196 "xb.hh"
 	getEAddr(
 #line 95 "xb.isa"
 	CPU *
-#line 160 "xb.hh"
+#line 200 "xb.hh"
 #line 95 "xb.isa"
 	cpu
-#line 163 "xb.hh"
+#line 203 "xb.hh"
 	);
 	virtual
 #line 91 "xb.isa"
 	void
-#line 168 "xb.hh"
+#line 208 "xb.hh"
 	disasm(
 #line 91 "xb.isa"
 	ostream&
-#line 172 "xb.hh"
+#line 212 "xb.hh"
 #line 91 "xb.isa"
 	sink
-#line 175 "xb.hh"
+#line 215 "xb.hh"
 	);
 	virtual
 #line 86 "xb.isa"
 	uint8_t
-#line 180 "xb.hh"
+#line 220 "xb.hh"
 	getXbMode( );
 protected:
 	CodeType encoding;
