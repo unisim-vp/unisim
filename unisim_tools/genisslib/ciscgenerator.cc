@@ -382,7 +382,7 @@ CiscGenerator::codetype_decl( Product_t& _product ) const {
   _product.code( "  return ((str[end] ^ bits.str[end]) & tailmask) == 0;\n" );
   _product.code( " }\n" );
   _product.code( " CodeType& stretch_front( unsigned int shift ) {\n" );
-  _product.code( "  int hish = shift / 8, losh = shift % 8;\n" );
+  _product.code( "  int hish = shift / 8, losh = shift %% 8; \n" );
   _product.code( "  for (int dst = %u, src = dst - hish; dst >= 0; dst-=1, src-=1) {\n",
                  m_code_capacity - 1 );
   _product.code( "   if (src > 0) str[dst] = (str[src] %s losh) | (str[src-1] %s (8-losh));\n",
@@ -393,7 +393,7 @@ CiscGenerator::codetype_decl( Product_t& _product ) const {
   _product.code( "  return *this;\n" );
   _product.code( " }\n" );
   _product.code( " CodeType& shrink_front( unsigned int shift ) {\n" );
-  _product.code( "  int hish = shift / 8, losh = shift % 8;\n" );
+  _product.code( "  int hish = shift / 8, losh = shift %% 8; \n" );
   _product.code( "  for (unsigned int dst = 0, src = dst + hish; dst < %u; dst+=1, src+=1) {\n",
                  m_code_capacity);
   _product.code( "   if (src < %u) str[dst] = (str[src] %s losh) | (str[src-1] %s (8-losh));\n",
@@ -406,7 +406,7 @@ CiscGenerator::codetype_decl( Product_t& _product ) const {
   _product.code( " }\n" );
   _product.code( " CodeType& extend( uint8_t* src, unsigned int sz ) {\n" );
   _product.code( "  CodeType tail( src, sz );\n" );
-  _product.code( "  unsigned int mod = this->size % 8;\n" );
+  _product.code( "  unsigned int mod = this->size %% 8; \n" );
   _product.code( "  if (mod) {\n" );
   _product.code( "   tail.size = std::min( tail.size + mod, capacity*8 );\n" );
   _product.code( "   tail.stretch_front( mod );\n" );
