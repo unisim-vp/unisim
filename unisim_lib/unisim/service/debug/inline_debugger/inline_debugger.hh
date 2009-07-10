@@ -132,7 +132,12 @@ public:
 	virtual void ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size);
 	virtual void ReportFinishedInstruction(ADDRESS next_addr);
 	virtual void ReportTrap();
-
+	virtual void ReportTrap(const unisim::kernel::service::Object &obj);
+	virtual void ReportTrap(const unisim::kernel::service::Object &obj,
+							const std::string &str);
+	virtual void ReportTrap(const unisim::kernel::service::Object &obj,
+							const char *c_str);
+	
 	// DebugControlInterface
 	virtual typename DebugControl<ADDRESS>::DebugCommand FetchDebugCommand(ADDRESS cia);
 

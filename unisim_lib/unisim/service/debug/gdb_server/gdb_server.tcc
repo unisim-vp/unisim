@@ -544,6 +544,32 @@ void GDBServer<ADDRESS>::ReportTrap()
 	trap = true;
 	synched = false;
 }
+	
+template <class ADDRESS>
+void 
+GDBServer<ADDRESS>::
+ReportTrap(const unisim::kernel::service::Object &obj)
+{
+	ReportTrap();
+}
+	
+template <class ADDRESS>
+void 
+GDBServer<ADDRESS>::
+ReportTrap(const unisim::kernel::service::Object &obj,
+		   const std::string &str)
+{
+	ReportTrap();
+}
+
+template <class ADDRESS>
+void 
+GDBServer<ADDRESS>::
+ReportTrap(const unisim::kernel::service::Object &obj,
+		   const char *c_str)
+{
+	ReportTrap();
+}
 
 template <class ADDRESS>
 typename DebugControl<ADDRESS>::DebugCommand GDBServer<ADDRESS>::FetchDebugCommand(ADDRESS cia)

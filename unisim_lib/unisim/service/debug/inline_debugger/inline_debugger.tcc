@@ -192,8 +192,38 @@ template <class ADDRESS>
 void InlineDebugger<ADDRESS>::ReportTrap()
 {
 	trap = true;
+	cout << "-> Trap recieved" << endl;
 }
 
+template <class ADDRESS>
+void 
+InlineDebugger<ADDRESS>::
+ReportTrap(const unisim::kernel::service::Object &obj)
+{
+	trap = true;
+	cout << "-> Received trap from \"" << obj.GetName() << "\"" << endl;
+}
+	
+template <class ADDRESS>
+void
+InlineDebugger<ADDRESS>::
+ReportTrap(const unisim::kernel::service::Object &obj,
+		   const std::string &str)
+{
+	trap = true;
+	cout << "-> Received trap from \"" << obj.GetName() << "\": " << str << endl;
+}
+	
+template <class ADDRESS>
+void 
+InlineDebugger<ADDRESS>::
+ReportTrap(const unisim::kernel::service::Object &obj,
+		   const char *c_str)
+{
+	trap = true;
+	cout << "-> Received trap from \"" << obj.GetName() << "\": " << c_str << endl;
+}
+	
 template <class ADDRESS>
 typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebugCommand(ADDRESS cia)
 {

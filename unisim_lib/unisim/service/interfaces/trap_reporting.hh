@@ -36,6 +36,8 @@
 #ifndef __UNISIM_SERVICE_INTERFACES_TRAP_REPORTING_HH__
 #define __UNISIM_SERVICE_INTERFACES_TRAP_REPORTING_HH__
 
+#include "unisim/kernel/service/service.hh"
+
 namespace unisim {
 namespace service {
 namespace interfaces {
@@ -44,6 +46,11 @@ class TrapReporting
 {
 public:
 	virtual void ReportTrap() = 0;
+	virtual void ReportTrap(const unisim::kernel::service::Object &obj) = 0;
+	virtual void ReportTrap(const unisim::kernel::service::Object &obj,
+							const std::string &str) = 0;
+	virtual void ReportTrap(const unisim::kernel::service::Object &obj,
+							const char *c_str) = 0;
 };
 
 } // end of namespace interfaces

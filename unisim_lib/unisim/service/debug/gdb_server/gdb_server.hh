@@ -154,6 +154,11 @@ public:
 	virtual void ReportFinishedInstruction(ADDRESS next_addr);
 	virtual typename DebugControl<ADDRESS>::DebugCommand FetchDebugCommand(ADDRESS cia);
 	virtual void ReportTrap();
+	virtual void ReportTrap(const unisim::kernel::service::Object &obj);
+	virtual void ReportTrap(const unisim::kernel::service::Object &obj,
+							const std::string &str);
+	virtual void ReportTrap(const unisim::kernel::service::Object &obj,
+							const char *c_str);
 	virtual bool Setup();
 	virtual void OnDisconnect();
 
