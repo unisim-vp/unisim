@@ -362,6 +362,11 @@ void Instruction<CONFIG>::WriteDest()
 	operation->dest->write(cpu, this, Mask());
 }
 
+template <class CONFIG>
+void Instruction<CONFIG>::WriteFlags()
+{
+	operation->dest->writePred(cpu, flags, Mask());
+}
 
 template <class CONFIG>
 void Instruction<CONFIG>::SetDest(VectorRegister<CONFIG> const & value)

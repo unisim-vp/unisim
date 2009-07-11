@@ -132,6 +132,11 @@ template<class CONFIG>
 VectorRegister<CONFIG> Max(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
 	unsigned int m32, unsigned int issigned);
 
+template<class CONFIG>
+void FlagsToReg(VectorRegister<CONFIG> & dest, VectorFlags<CONFIG> const & src);
+
+template<class CONFIG>
+void RegToFlags(VectorFlags<CONFIG> & dest, VectorRegister<CONFIG> const & src);
 
 } // end of namespace tesla
 } // end of namespace processor

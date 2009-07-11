@@ -194,7 +194,7 @@ mov_reg.classify = {
 op stsh_full( \
 	/*subop*/7[3]:/*?*/0[1]:/*cvt_round_half*/0[1]:w32[1]:/*?*/0[2]: m_size[3]:src3[7]\
 	:/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output*/?[1]:addr_hi[1]:/*marker*/?[2]: \
-	0x0[4]:addr_lo[2]:/*??*/0[1]:/*src3_cm*/0[1]:/*src2_cm*/0[1]: \
+	0x0[4]:addr_lo[2]:addr_inc[1]:/*src3_cm*/0[1]:/*src2_cm*/0[1]: \
 	dest[14]:/*?*/0[7]:/*flow*/0[1]:/*IWidth*/1[1]\
 )
 
@@ -243,7 +243,7 @@ stsh_full.disasm = {
 
 	buffer << " ";
 	
-	DisasmShared(dest, addr_lo, addr_hi, 1, MvSizeToSMType(m_size), buffer);
+	DisasmShared(dest, addr_lo, addr_hi, 1, MvSizeToSMType(m_size), buffer, addr_inc);
 	buffer << ", ";
 
 //	buffer << "r" << src3;
@@ -257,7 +257,13 @@ stsh_full.execute = {
 	
 	insn->SetDest(output);	// To compute flags
 
-	cpu->ScatterShared(output, dest, addr_lo, addr_hi, 1, insn->Mask(), MvSizeToSMType(m_size));
+	if(addr_inc) {
+		cpu->ScatterShared(output, 0, addr_lo, addr_hi, 1, insn->Mask(), MvSizeToSMType(m_size));
+		cpu->GetAddr((addr_hi << 2) | addr_lo).Increment(MvSizeToDataType(m_size), dest, insn->Mask());
+	}
+	else {
+		cpu->ScatterShared(output, dest, addr_lo, addr_hi, 1, insn->Mask(), MvSizeToSMType(m_size));
+	}
 	//insn->SetPredI32(output);
 }
 
@@ -701,7 +707,19 @@ op sta_full_normal( \
 	0x0[4]:addr_lo[2]:/*addr_imm??*/0[1]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:/*src*/0[14]:dest[7]:/*flow*/0[1]:/*IWidth*/1[1]\
 )
 
-group sta(sta_full_normal)
+op sta_full_end( \
+	/*subop*/2[3]:/*?*/0[1]:/*cvt_round_half*/0[1]:/*data_32?*/0[1]:/*const_seg*/?[4]:/*src1_sh*/?[1]:/*abs_sat*/?[2]:/*cvt_round*/?[2]:/*cvt_type*/?[3]:\
+	/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output*/?[1]:addr_hi[1]:/*marker*/1[2]: \
+	0x0[4]:addr_lo[2]:/*addr_imm??*/0[1]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:/*src*/0[14]:dest[7]:/*flow*/0[1]:/*IWidth*/1[1]\
+)
+
+op sta_full_join( \
+	/*subop*/2[3]:/*?*/0[1]:/*cvt_round_half*/0[1]:/*data_32?*/0[1]:/*const_seg*/?[4]:/*src1_sh*/?[1]:/*abs_sat*/?[2]:/*cvt_round*/?[2]:/*cvt_type*/?[3]:\
+	/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output*/?[1]:addr_hi[1]:/*marker*/2[2]: \
+	0x0[4]:addr_lo[2]:/*addr_imm??*/0[1]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:/*src*/0[14]:dest[7]:/*flow*/0[1]:/*IWidth*/1[1]\
+)
+
+group sta(sta_full_normal, sta_full_end, sta_full_join)
 
 sta.init = {
 	typedef Operation<CONFIG> inherited;
@@ -734,6 +752,115 @@ sta.read = {
 sta.execute = {
 	// Nothing to do
 }
+
+
+op ldf_full_normal( \
+	/*subop*/1[3]:/*?*/0[1]:/*cvt_round_half*/0[1]:w32[1]:/*const_seg*/?[4]:/*src1_sh*/?[1]:/*abs_sat*/?[2]:/*cvt_round*/?[2]:/*cvt_type*/?[3]:\
+	pred_reg[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output*/?[1]:/*addr_hi*/?[1]:/*marker*/0[2]: \
+	0x0[4]:/*addr_lo*/?[2]:/*addr_imm??*/0[1]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:/*src*/0[14]:dest[7]:/*flow*/0[1]:/*IWidth*/1[1]\
+)
+
+op ldf_full_end( \
+	/*subop*/1[3]:/*?*/0[1]:/*cvt_round_half*/0[1]:w32[1]:/*const_seg*/?[4]:/*src1_sh*/?[1]:/*abs_sat*/?[2]:/*cvt_round*/?[2]:/*cvt_type*/?[3]:\
+	pred_reg[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output*/?[1]:/*addr_hi*/?[1]:/*marker*/1[2]: \
+	0x0[4]:/*addr_lo*/?[2]:/*addr_imm??*/0[1]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:/*src*/0[14]:dest[7]:/*flow*/0[1]:/*IWidth*/1[1]\
+)
+op ldf_full_join( \
+	/*subop*/1[3]:/*?*/0[1]:/*cvt_round_half*/0[1]:w32[1]:/*const_seg*/?[4]:/*src1_sh*/?[1]:/*abs_sat*/?[2]:/*cvt_round*/?[2]:/*cvt_type*/?[3]:\
+	pred_reg[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output*/?[1]:/*addr_hi*/?[1]:/*marker*/2[2]: \
+	0x0[4]:/*addr_lo*/?[2]:/*addr_imm??*/0[1]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:/*src*/0[14]:dest[7]:/*flow*/0[1]:/*IWidth*/1[1]\
+)
+
+group ldf(ldf_full_normal, ldf_full_end, ldf_full_join)
+
+ldf.init = {
+	typedef Operation<CONFIG> inherited;
+	inherited::allow_segment = false;
+	DataType dt = RegTypeToDataType(RegType(w32));
+	inherited::op_type[OpDest] = dt;
+	inherited::op_type[OpSrc1] = DT_NONE;
+	inherited::op_type[OpSrc2] = DT_NONE;
+	inherited::op_type[OpSrc3] = DT_NONE;
+}
+
+ldf.classify = {
+	stats->SetMov();
+}
+
+ldf.disasm = {
+	buffer << "ldp";
+	insn->DisasmControl(buffer);
+	DisasmSignWidth(0, w32, buffer);
+	
+	buffer << " ";
+	insn->DisasmDest(buffer);
+	buffer << ", ";
+	buffer << "p" << pred_reg;
+}
+
+ldf.read = {
+	typedef VectorRegister<CONFIG> reg_t;
+	FlagsToReg(insn->GetDest(), cpu->GetFlags(pred_reg));
+}
+
+ldf.execute = {
+	// Nothing to do
+}
+
+
+op stf_full_normal( \
+	/*subop*/5[3]:/*?*/0[1]:/*cvt_round_half*/0[1]:w32[1]:/*const_seg*/?[4]:/*src1_sh*/?[1]:/*abs_sat*/?[2]:/*cvt_round*/?[2]:/*cvt_type*/?[3]:\
+	/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:set_pred_reg[2]:/*output*/?[1]:/*addr_hi*/?[1]:/*marker*/0[2]: \
+	0x0[4]:/*addr_lo*/?[2]:/*addr_imm??*/0[1]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:/*src*/?[14]:/*dest*/0[7]:/*flow*/0[1]:/*IWidth*/1[1]\
+)
+
+op stf_full_end( \
+	/*subop*/5[3]:/*?*/0[1]:/*cvt_round_half*/0[1]:w32[1]:/*const_seg*/?[4]:/*src1_sh*/?[1]:/*abs_sat*/?[2]:/*cvt_round*/?[2]:/*cvt_type*/?[3]:\
+	/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:set_pred_reg[2]:/*output*/?[1]:/*addr_hi*/?[1]:/*marker*/1[2]: \
+	0x0[4]:/*addr_lo*/?[2]:/*addr_imm??*/0[1]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:/*src*/?[14]:/*dest*/0[7]:/*flow*/0[1]:/*IWidth*/1[1]\
+)
+
+op stf_full_join( \
+	/*subop*/5[3]:/*?*/0[1]:/*cvt_round_half*/0[1]:w32[1]:/*const_seg*/?[4]:/*src1_sh*/?[1]:/*abs_sat*/?[2]:/*cvt_round*/?[2]:/*cvt_type*/?[3]:\
+	/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:set_pred_reg[2]:/*output*/?[1]:/*addr_hi*/?[1]:/*marker*/2[2]: \
+	0x0[4]:/*addr_lo*/?[2]:/*addr_imm??*/0[1]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:/*src*/?[14]:/*dest*/0[7]:/*flow*/0[1]:/*IWidth*/1[1]\
+)
+
+group stf(stf_full_normal/*, stf_full_end, stf_full_join*/)
+
+stf.init = {
+	typedef Operation<CONFIG> inherited;
+	inherited::allow_segment = false;
+	DataType dt = RegTypeToDataType(RegType(w32));
+	inherited::op_type[OpDest] = DT_NONE;
+	inherited::op_type[OpSrc1] = dt;
+	inherited::op_type[OpSrc2] = DT_NONE;
+	inherited::op_type[OpSrc3] = DT_NONE;
+}
+
+stf.classify = {
+	stats->SetMov();
+}
+
+stf.disasm = {
+	buffer << "stp";
+	insn->DisasmControl(buffer);
+	DisasmSignWidth(0, w32, buffer);
+	
+	buffer << " ";
+	buffer << "p" << set_pred_reg;
+	buffer << ", ";
+	insn->DisasmSrc1(buffer);
+}
+
+stf.execute = {
+	RegToFlags(insn->Flags(), insn->GetSrc1());
+}
+
+stf.writePred = {
+	insn->WriteFlags();
+}
+
 
 op tex1d_s32_full( \
 	/*subop*/0[3]:/*?*/0[1]:/*cvt_round_half*/0[1]:/*?*/0[3]:?[3]:/*?*/0[1]:/*?*/0[3]:?[1]:bf_hi[2]\

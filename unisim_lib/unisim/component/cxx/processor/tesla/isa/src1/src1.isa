@@ -180,11 +180,11 @@ alu_full_shared.read = {
 	typedef Instruction<CONFIG> Insn;
 	VectorRegister<CONFIG> & vr = insn->Temp(Insn::TempSrc1);
 	
-	// TODO: Argh, this should be done on writeback stage!
 	if(addr_incr) {
 		// Immediate = 0 (post-increment)
 		cpu->GatherShared(vr, 0, addr_lo, addr_hi, 1, insn->Mask(), SMType(smtype));
 		// side effect: increment ai
+		// TODO: Argh, this should be done on writeback stage!
 		cpu->GetAddr((addr_hi << 2) | addr_lo).Increment(SMTypeToDataType(SMType(smtype)), src1, insn->Mask());
 	}
 	else {

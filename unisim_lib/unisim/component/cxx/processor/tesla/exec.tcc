@@ -622,6 +622,24 @@ VectorRegister<CONFIG> Max(VectorRegister<CONFIG> const & a, VectorRegister<CONF
 	return rv;
 }
 
+template<class CONFIG>
+void FlagsToReg(VectorRegister<CONFIG> & dest, VectorFlags<CONFIG> const & src)
+{
+	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i)
+	{
+		dest[i] = src[i].to_ulong();
+	}
+}
+
+template<class CONFIG>
+void RegToFlags(VectorFlags<CONFIG> & dest, VectorRegister<CONFIG> const & src)
+{
+	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i)
+	{
+		dest[i] = (src[i] & 0x0000000f);
+	}
+}
+
 } // end of namespace tesla
 } // end of namespace processor
 } // end of namespace cxx

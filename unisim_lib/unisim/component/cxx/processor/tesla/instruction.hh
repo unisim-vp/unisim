@@ -105,6 +105,7 @@ public:
 	VectorFlags<CONFIG> & Flags();
 
 	void WriteDest();
+	void WriteFlags();
 	void SetPredI32();
 	void SetPredI16();
 	void SetPredF32();
