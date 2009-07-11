@@ -60,18 +60,36 @@ VectorRegister<CONFIG> IAdd(VectorRegister<CONFIG> const & a,
 	bool sat, bool ra, bool rb, bool m32)
 {
 	if(m32) {
-		return IAdd32(a, b, flags, sat, ra, rb);
+		return IAdd32(a, b, flags, flags, sat, ra, rb);
 	}
 	else {
-		return IAdd16(a, b, flags, sat, ra, rb); 
+		return IAdd16(a, b, flags, flags, sat, ra, rb); 
 	}
 }
+
+template<class CONFIG>
+VectorRegister<CONFIG> IAddC(VectorRegister<CONFIG> const & a,
+	VectorRegister<CONFIG> const & b,
+	VectorFlags<CONFIG> & flags,
+	VectorFlags<CONFIG> const & inputflags,
+	bool sat, bool ra, bool rb,
+	bool m32)
+{
+	if(m32) {
+		return IAdd32(a, b, flags, inputflags, sat, ra, rb, true);
+	}
+	else {
+		return IAdd16(a, b, flags, inputflags, sat, ra, rb, true);
+	}
+}
+
 
 template<class CONFIG>
 VectorRegister<CONFIG> IAdd32(VectorRegister<CONFIG> const & a,
 	VectorRegister<CONFIG> const & b,
 	VectorFlags<CONFIG> & flags,
-	bool sat, bool ra, bool rb)
+	VectorFlags<CONFIG> const & inputflags,
+	bool sat, bool ra, bool rb, bool use_cin)
 {
 	VectorRegister<CONFIG> rv;
 	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i)
@@ -84,7 +102,7 @@ VectorRegister<CONFIG> IAdd32(VectorRegister<CONFIG> const & a,
 		//  Tesla semantics: http://developer.download.nvidia.com/opengl/specs/g80specs.pdf
 		// add a -b -> sub a b
 		// add -a b -> sub b a
-		// add -a -b -> flags undefined (= add -a -b)
+		// add -a -b -> flags undefined (= add -a -b): not in Tesla ISA anyway...
 		if(ra && rb) {
 			sa = -int32_t(sa);
 			sb = -int32_t(sb);
@@ -97,6 +115,7 @@ VectorRegister<CONFIG> IAdd32(VectorRegister<CONFIG> const & a,
 		uint32_t r;
 		if(sat) {
 			uint8_t does_sat;
+			assert(!use_cin);
 
 			if((ra || rb) && !(ra && rb)) {
 				SignedSatSub32(r, does_sat, sa, sb);
@@ -110,12 +129,16 @@ VectorRegister<CONFIG> IAdd32(VectorRegister<CONFIG> const & a,
 			flags.SetCarry(0, i);
 		}
 		else {
+			uint8_t carry_in = 0;
 			uint8_t carry_out, overflow;
+			if(use_cin) {
+				carry_in = inputflags.GetCarry(i);
+			}
 			if((ra || rb) && !(ra && rb)) {
-				Sub32(r, carry_out, overflow, sa, sb, 0);
+				Sub32(r, carry_out, overflow, sa, sb, carry_in);
 			}
 			else {
-				Add32(r, carry_out, overflow, sa, sb, 0);
+				Add32(r, carry_out, overflow, sa, sb, carry_in);
 			}
 			flags.SetOvf(int(overflow), i);
 			flags.SetCarry(int(carry_out), i);
@@ -131,7 +154,8 @@ template<class CONFIG>
 VectorRegister<CONFIG> IAdd16(VectorRegister<CONFIG> const & a,
 	VectorRegister<CONFIG> const & b,
 	VectorFlags<CONFIG> & flags,
-	bool sat, bool ra, bool rb)
+	VectorFlags<CONFIG> const & inputflags,
+	bool sat, bool ra, bool rb, bool use_cin)
 {
 	VectorRegister<CONFIG> rv;
 	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i)
@@ -160,6 +184,7 @@ VectorRegister<CONFIG> IAdd16(VectorRegister<CONFIG> const & a,
 		if(sat) {
 			uint8_t does_sat;
 
+			assert(!use_cin);
 			if(rb) {
 				SignedSatSub16(r, does_sat, sa, sb);
 			}
@@ -172,12 +197,16 @@ VectorRegister<CONFIG> IAdd16(VectorRegister<CONFIG> const & a,
 			flags.SetCarry(0, i);
 		}
 		else {
+			uint8_t carry_in = 0;
 			uint8_t carry_out, overflow;
+			if(use_cin) {
+				carry_in = inputflags.GetCarry(i);
+			}
 			if(rb) {
-				Sub16(r, carry_out, overflow, sa, sb, 0);
+				Sub16(r, carry_out, overflow, sa, sb, carry_in);
 			}
 			else {
-				Add16(r, carry_out, overflow, sa, sb, 0);
+				Add16(r, carry_out, overflow, sa, sb, carry_in);
 			}
 			flags.SetOvf(int(overflow), i);
 			flags.SetCarry(int(carry_out), i);

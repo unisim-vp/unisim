@@ -103,13 +103,13 @@ struct VectorFlags
 	VectorFlags<CONFIG> Reset();
 	
 	void SetZero(int z, int lane);
-	int GetZero(int lane);
+	int GetZero(int lane) const;
 	void SetSign(int s, int lane);
-	int GetSign(int lane);
+	int GetSign(int lane) const;
 	void SetCarry(int c, int lane);
-	int GetCarry(int lane);
+	int GetCarry(int lane) const;
 	void SetOvf(int o, int lane);
-	int GetOvf(int lane);
+	int GetOvf(int lane) const;
 	
 	bitset<4> operator[](unsigned int i) const;
 	bitset<4> & operator[](unsigned int i);

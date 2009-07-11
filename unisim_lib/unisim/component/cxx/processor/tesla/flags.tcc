@@ -174,7 +174,7 @@ void VectorFlags<CONFIG>::SetZero(int z, int lane)
 }
 
 template <class CONFIG>
-int VectorFlags<CONFIG>::GetZero(int lane)
+int VectorFlags<CONFIG>::GetZero(int lane) const
 {
 	return int(v[lane][0]);
 }
@@ -185,7 +185,7 @@ void VectorFlags<CONFIG>::SetSign(int s, int lane)
 }
 
 template <class CONFIG>
-int VectorFlags<CONFIG>::GetSign(int lane)
+int VectorFlags<CONFIG>::GetSign(int lane) const
 {
 	return int(v[lane][1]);
 }
@@ -198,7 +198,7 @@ void VectorFlags<CONFIG>::SetCarry(int c, int lane)
 }
 
 template <class CONFIG>
-int VectorFlags<CONFIG>::GetCarry(int lane)
+int VectorFlags<CONFIG>::GetCarry(int lane) const
 {
 	return int(v[lane][2]);
 }
@@ -209,7 +209,7 @@ void VectorFlags<CONFIG>::SetOvf(int o, int lane)
 	v[lane][3] = o;
 }
 template <class CONFIG>
-int VectorFlags<CONFIG>::GetOvf(int lane)
+int VectorFlags<CONFIG>::GetOvf(int lane) const
 {
 	return int(v[lane][3]);
 }

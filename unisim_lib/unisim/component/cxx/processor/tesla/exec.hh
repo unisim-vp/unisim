@@ -52,16 +52,27 @@ VectorRegister<CONFIG> IAdd(VectorRegister<CONFIG> const & a,
 	bool m32 = true);	// No carry in
 
 template<class CONFIG>
+VectorRegister<CONFIG> IAddC(VectorRegister<CONFIG> const & a,
+	VectorRegister<CONFIG> const & b,
+	VectorFlags<CONFIG> & flags,
+	VectorFlags<CONFIG> const & inputflags,
+	bool sat = false, bool ra = false, bool rb = false,
+	bool m32 = true);
+
+
+template<class CONFIG>
 VectorRegister<CONFIG> IAdd16(VectorRegister<CONFIG> const & a,
 	VectorRegister<CONFIG> const & b,
 	VectorFlags<CONFIG> & flags,
-	bool sat = false, bool ra = false, bool rb = false);	// No carry in
+	VectorFlags<CONFIG> const & inputflags,
+	bool sat = false, bool ra = false, bool rb = false, bool use_cin = false);
 
 template<class CONFIG>
 VectorRegister<CONFIG> IAdd32(VectorRegister<CONFIG> const & a,
 	VectorRegister<CONFIG> const & b,
 	VectorFlags<CONFIG> & flags,
-	bool sat = false, bool ra = false, bool rb = false);	// No carry in
+	VectorFlags<CONFIG> const & inputflags,
+	bool sat = false, bool ra = false, bool rb = false, bool use_cin = false);
 
 
 template<class CONFIG>

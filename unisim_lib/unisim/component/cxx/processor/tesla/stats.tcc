@@ -224,7 +224,7 @@ bool Coalesceable(VectorAddress<CONFIG> const & addr, unsigned int logsize, std:
 			if((base & ((1 << logsize) * CONFIG::TRANSACTION_SIZE - 1)) != (i << logsize)) {
 				return false;	// Unaligned
 			}
-			for(i; i != CONFIG::TRANSACTION_SIZE; ++i)
+			for(; i != CONFIG::TRANSACTION_SIZE; ++i)
 			{
 				if(mask[j + i]) {
 					if(addr[j + i] != base + i * (1 << logsize)) {
