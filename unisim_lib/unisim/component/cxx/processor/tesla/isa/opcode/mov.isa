@@ -264,7 +264,6 @@ stsh_full.execute = {
 	else {
 		cpu->ScatterShared(output, dest, addr_lo, addr_hi, 1, insn->Mask(), MvSizeToSMType(m_size));
 	}
-	//insn->SetPredI32(output);
 }
 
 stsh_full.write = {
