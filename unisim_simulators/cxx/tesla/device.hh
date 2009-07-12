@@ -116,6 +116,7 @@ private:
 	//void SetThreadIDs(Kernel<CONFIG> const & kernel, int bnum, int core);
 	//uint32_t BuildTID(int x, int y, int z);
 	void SetVariableBool(char const * env, char const * varname);
+	void SetVariableUInt(char const * env, char const * varname);
 
 	std::vector<CPU<CONFIG> *> cores;
 	unisim::component::cxx::memory::ram::Memory<typename CONFIG::address_t> memory;

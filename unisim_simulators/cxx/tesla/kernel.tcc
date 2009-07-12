@@ -184,7 +184,7 @@ void Kernel<CONFIG>::Load(Service<unisim::service::interfaces::Memory<typename C
 	module->Load(mem, allocator);
 	
 	if(trace_loading)
-		cerr << "Loading " << CodeSize() << "B code @" << std::hex << CONFIG::CODE_START + offset << std::endl;
+		cerr << "Loading " << CodeSize() << "B code @" << std::hex << CONFIG::CODE_START + offset << std::dec << std::endl;
 	if(!mem.WriteMemory(CONFIG::CODE_START + offset, &bincode[0], CodeSize())) {
 		cerr << "Kernel::Load : Cannot write memory??\n";
 		throw CudaException(CUDA_ERROR_OUT_OF_MEMORY);	// Generic memory error

@@ -584,7 +584,7 @@ CUresult  CUDAAPI cuMemcpy3DAsync( const CUDA_MEMCPY3D *pCopy, CUstream hStream 
  ***********************************/
 CUresult  CUDAAPI cuMemsetD8( CUdeviceptr dstDevice, unsigned char uc, unsigned int N )
 {
-	if(verbose) cerr << "cuMemsetD8(" << dstDevice << ", " << uc << ", " << N << ")" << endl;
+	if(verbose) cerr << "cuMemsetD8(" << dstDevice << ", " << (unsigned int)uc << ", " << N << ")" << endl;
 	try
 	{
 		driver.Memset(dstDevice, uc, N);

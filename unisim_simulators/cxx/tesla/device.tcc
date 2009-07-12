@@ -124,6 +124,21 @@ void Device<CONFIG>::SetVariableBool(char const * envName, char const * varName)
 }
 
 template<class CONFIG>
+void Device<CONFIG>::SetVariableUInt(char const * envName, char const * varName)
+{
+	char const * env;
+	env = getenv(envName);
+	if(env != 0) {
+		unsigned int u = atoi(env);
+		for(int i = 0; i != core_count; ++i)
+		{
+			(*cores[i])[varName] = u;
+		}
+	}
+}
+
+
+template<class CONFIG>
 Device<CONFIG>::Device() :
 	Object("device_0"),
 	memory("memory", this),
@@ -170,6 +185,8 @@ Device<CONFIG>::Device() :
 	SetVariableBool("TRACE_BRANCH", "trace-branch");
 	SetVariableBool("TRACE_SYNC", "trace-sync");
 	SetVariableBool("TRACE_RESET", "trace-reset");
+	SetVariableBool("FILTER_TRACE", "filter-trace");
+	SetVariableUInt("FILTER_TRACE_WARP", "filter-warp");
 
 	env = getenv("TRACE_KERNEL_PARSING");
 	if(env != 0)
