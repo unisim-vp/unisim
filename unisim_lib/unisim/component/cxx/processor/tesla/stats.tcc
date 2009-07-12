@@ -169,6 +169,14 @@ void OperationStats<CONFIG>::RegWrite(VectorRegister<CONFIG> const * regs, DataT
 			}
 		}
 	}
+	
+	if(CONFIG::DEBUG_NONAN && (dt == DT_F32)) {
+		for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i)
+		{
+			if(mask[i])
+				assert(!isnan(regs[0].ReadFloat(i)));
+		}
+	}
 }
 
 #if defined(__GNUC__) && defined(__i386__)

@@ -71,7 +71,7 @@ void TeslaFlow<CONFIG>::Branch(address_t target_addr, std::bitset<CONFIG::WARP_S
 	// Mask == other -> argh
 	
 	typename CONFIG::address_t abs_target = target_addr + CONFIG::CODE_START;
-	if(cpu->trace_branch) {
+	if(cpu->TraceBranch()) {
 		cerr << "  Branch mask = " << mask << endl;
 	}
 	
@@ -80,7 +80,7 @@ void TeslaFlow<CONFIG>::Branch(address_t target_addr, std::bitset<CONFIG::WARP_S
 	if((mask).none())
 	{
 		// Uniformally not taken
-		if(cpu->trace_branch) {
+		if(cpu->TraceBranch()) {
 			cerr << "  Coherent, not taken." << endl;
 		}
 		(*cpu->stats)[warp.pc - CONFIG::CODE_START].BranchUniNotTaken();
@@ -89,7 +89,7 @@ void TeslaFlow<CONFIG>::Branch(address_t target_addr, std::bitset<CONFIG::WARP_S
 	else if(mask == GetCurrentMask())	// Same number of enabled threads as before
 	{
 		// Uniformally taken
-		if(cpu->trace_branch) {
+		if(cpu->TraceBranch()) {
 			cerr << "  Coherent, taken." << endl;
 		}
 		(*cpu->stats)[warp.pc - CONFIG::CODE_START].BranchUniTaken();
@@ -106,7 +106,7 @@ void TeslaFlow<CONFIG>::Branch(address_t target_addr, std::bitset<CONFIG::WARP_S
 		// Mixed
 		// Push divergence token
 		stack.push(StackToken(current_mask & ~mask, ID_DIVERGE, warp.npc));
-		if(cpu->trace_branch) {
+		if(cpu->TraceBranch()) {
 			cerr << hex;
 			cerr << " Conditional non-coherent jump from "
 				<< adjpc << " to " << target_addr << endl;
@@ -116,7 +116,7 @@ void TeslaFlow<CONFIG>::Branch(address_t target_addr, std::bitset<CONFIG::WARP_S
 		warp.npc = abs_target;
 		current_mask = mask;
 
-		if(cpu->trace_branch) {
+		if(cpu->TraceBranch()) {
 			cerr << "  New mask = " << GetCurrentMask() << endl;
 		}
 	}
@@ -129,7 +129,7 @@ void TeslaFlow<CONFIG>::Meet(address_t addr)
 	// Addr relative address
 	// SYNC instruction
 	stack.push(StackToken(current_mask, ID_SYNC, addr + CONFIG::CODE_START));	// Does addr mean anything here??
-	if(cpu->trace_branch) {
+	if(cpu->TraceBranch()) {
 		cerr << " Push SYNC." << endl;
 		cerr << "  Mask = " << GetCurrentMask() << endl;
 	}
@@ -140,7 +140,7 @@ template<class CONFIG>
 void TeslaFlow<CONFIG>::PreBreak(address_t addr)
 {
 	stack.push(StackToken(current_mask, ID_BREAK, addr + CONFIG::CODE_START));
-	if(cpu->trace_branch) {
+	if(cpu->TraceBranch()) {
 		cerr << " Push BREAK." << endl;
 		cerr << "  Mask = " << GetCurrentMask() << endl;
 	}
@@ -151,12 +151,12 @@ template<class CONFIG>
 bool TeslaFlow<CONFIG>::Join()
 {
 	if(stack.empty()) {
-		if(cpu->trace_branch) {
+		if(cpu->TraceBranch()) {
 			cerr << " Reached bottom of stack, restoring initial mask." << endl;
 		}
 		// implicit SYNC token at the bottom of stack?
 		current_mask = initial_mask;
-		if(cpu->trace_branch) {
+		if(cpu->TraceBranch()) {
 			cerr << "  New mask = " << GetCurrentMask() << endl;
 		}
 		return true;
@@ -165,12 +165,12 @@ bool TeslaFlow<CONFIG>::Join()
 	stack.pop();
 	
 	current_mask = token.mask;
-	if(cpu->trace_branch) {
+	if(cpu->TraceBranch()) {
 		cerr << "  New mask = " << GetCurrentMask() << endl;
 	}
 	if(token.id != ID_SYNC)
 	{
-		if(cpu->trace_branch) {
+		if(cpu->TraceBranch()) {
 			cerr << " Pop. Not a SYNC token. Go back." << endl;
 		}
 		// Re-branch to address in token
@@ -180,7 +180,7 @@ bool TeslaFlow<CONFIG>::Join()
 		// Do NOT execute current instruction
 		return false;
 	}
-	else if(cpu->trace_branch) {
+	else if(cpu->TraceBranch()) {
 		cerr << " Pop. SYNC token." << endl;
 	}
 	return true;
@@ -205,7 +205,7 @@ void TeslaFlow<CONFIG>::Return(std::bitset<CONFIG::WARP_SIZE> mask)
 	}
 	// mask : threads to return
 	if(stack.empty()) {
-		if(cpu->trace_branch) {
+		if(cpu->TraceBranch()) {
 			cerr << " Reached bottom of stack, killing thread." << endl;
 		}
 		current_mask = GetCurrentMask() & ~mask;
@@ -213,7 +213,7 @@ void TeslaFlow<CONFIG>::Return(std::bitset<CONFIG::WARP_SIZE> mask)
 	}
 	else
 	{
-		if(cpu->trace_branch) {
+		if(cpu->TraceBranch()) {
 			cerr << " Pop." << endl;
 		}
 		StackToken token = stack.top();
@@ -225,7 +225,7 @@ void TeslaFlow<CONFIG>::Return(std::bitset<CONFIG::WARP_SIZE> mask)
 		// what if some threads are still enabled?
 		// Patent: "no thread diverge when a call/return branch is encountered"
 	}
-	if(cpu->trace_branch) {
+	if(cpu->TraceBranch()) {
 		cerr << "  New mask = " << GetCurrentMask() << endl;
 	}
 }
@@ -234,7 +234,7 @@ template<class CONFIG>
 void TeslaFlow<CONFIG>::Break(std::bitset<CONFIG::WARP_SIZE> mask)
 {
 	if(stack.empty()) {
-		if(cpu->trace_branch) {
+		if(cpu->TraceBranch()) {
 			cerr << " Reached bottom of stack, killing threads." << endl;
 		}
 		current_mask = GetCurrentMask() & ~mask;
@@ -243,7 +243,7 @@ void TeslaFlow<CONFIG>::Break(std::bitset<CONFIG::WARP_SIZE> mask)
 	else if(mask == GetCurrentMask())
 	{
 		// All threads take a break
-		if(cpu->trace_branch) {
+		if(cpu->TraceBranch()) {
 			cerr << " Coherent break." << endl;
 			cerr << " Pop." << endl;
 		}
@@ -262,7 +262,7 @@ void TeslaFlow<CONFIG>::Break(std::bitset<CONFIG::WARP_SIZE> mask)
 		// Just disable breaking threads
 		current_mask = GetCurrentMask() & ~mask;
 	}
-	if(cpu->trace_branch) {
+	if(cpu->TraceBranch()) {
 		cerr << "  New mask = " << GetCurrentMask() << endl;
 	}
 }

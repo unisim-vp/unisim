@@ -639,7 +639,7 @@ VectorRegister<CONFIG> VectorFP32Base<CONFIG>::RRTrig(VectorRegister<CONFIG> con
 		float f = a.ReadFloat(i) * float(M_2_PI);	// Convert 2/pi to float first
 		// Only keep fractional part??
 		//f = f - floorf(f);
-		rv[i] = FPToFX(f);
+		rv[i] = FPToFX(f, true);	// sin(MAX_FLOAT) = 0, not NaN.
 	}
 	rv.SetScalar(a.IsScalar());
 	return rv;
@@ -708,16 +708,23 @@ VectorRegister<CONFIG> VectorFP32Base<CONFIG>::Cos(VectorRegister<CONFIG> const 
 }
 
 template<class CONFIG>
-uint32_t VectorFP32Base<CONFIG>::FPToFX(float f)
+uint32_t VectorFP32Base<CONFIG>::FPToFX(float f, bool noovf)
 {
+	if(noovf)
+		f = fmod(f, float(1 << 7));
+		
 	uint32_t r = uint32_t(lrint(fabs(ldexp(f, 23))));	// Round to nearest
-	if(!(fabs(f) < float(1 << 23))) {
-		r |= 0x40000000;
+	if(!(fabs(f) < float(1 << 7))) {
+		// overflow
+		assert(!noovf);
+		r |= 0x40800000;
 	}
-	if(f < 0) {	// or -0?
-		r |= 0x80000000;
+
+	if(isnan(f)) {
+		r = 0x40000000;
 	}
-	// What do we do with NaN???
+	
+	r |= (FloatAsInt(f) & 0x80000000);	// <0 ?
 	return r;
 }
 
@@ -725,8 +732,13 @@ template<class CONFIG>
 double VectorFP32Base<CONFIG>::FXToFP(uint32_t f)
 {
 	float r;
-	if(f & 0x40000000) {	// ovf
-		r = (f & 0x80000000) ? -INFINITY : INFINITY;	// Compatibility??
+	if(f & 0x40000000) {
+		if(f & ~0xc0000000) {	// ovf
+			r = (f & 0x80000000) ? -INFINITY : INFINITY;	// Portable??
+		}
+		else {
+			r = nanf((f & 0x80000000) ? "NAN(0xffc00000)" : "NAN(0x7fc00000)");
+		}
 	}
 	else if(f & 0x80000000) {
 		r = -ldexp(double(f & ~0x80000000), -23);
@@ -735,6 +747,22 @@ double VectorFP32Base<CONFIG>::FXToFP(uint32_t f)
 		r = ldexp(double(f), -23);
 	}
 	return r;
+}
+
+template<class CONFIG>
+uint32_t VectorFP32Base<CONFIG>::FloatAsInt(float f)
+{
+	union { float f; uint32_t i; } conv;
+	conv.f = f;
+	return conv.i;
+}
+
+template<class CONFIG>
+float VectorFP32Base<CONFIG>::IntAsFloat(uint32_t i)
+{
+	union { float f; uint32_t i; } conv;
+	conv.i = i;
+	return conv.f;
 }
 
 // IEEE-754:2008-compliant min and max

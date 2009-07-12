@@ -127,6 +127,8 @@ CPU<CONFIG>::CPU(const char *name, Object *parent, int coreid, int core_count) :
 	param_trace_sync("trace-sync", this, trace_sync),
 	param_trace_reset("trace-reset", this, trace_reset),
 	param_export_stats("export-stats", this, export_stats),
+	param_filter_trace("filter-trace", this, filter_trace),
+	param_filter_warp("filter-warp", this, filter_warp),
 	stat_instruction_counter("instruction-counter", this, instruction_counter),
 	stat_cpu_cycle("cpu-cycle", this, cpu_cycle),
 	stat_bus_cycle("bus-cycle", this, bus_cycle),
@@ -138,6 +140,8 @@ CPU<CONFIG>::CPU(const char *name, Object *parent, int coreid, int core_count) :
 	trace_branch(CONFIG::TRACE_BRANCH),
 	trace_sync(CONFIG::TRACE_SYNC),
 	trace_reset(CONFIG::TRACE_RESET),
+	filter_trace(false),
+	filter_warp(0),
 	trace_logger(*this),
 	stats(0),
 	export_stats(false)
@@ -241,7 +245,7 @@ void CPU<CONFIG>::Reset(unsigned int threadsperblock, unsigned int numblocks, un
 
 	address_t sm_base = CONFIG::SHARED_START + coreid * CONFIG::SHARED_SIZE;
 
-	if(trace_reset) {
+	if(TraceReset()) {
 		cerr << dec;
 		cerr << "Core " << coreid << ": reset: " << threadsperblock << " threads (" << warpsperblock << "warps) * " << numblocks << " blocks\n";
 		cerr << " total " << total_warps << " warps.\n";
@@ -324,7 +328,7 @@ void CPU<CONFIG>::StepWarp(uint32_t warpid)
 	Instruction<CONFIG> insn(this, fetchaddr, iw);
 	insn.Stats()->Begin();
 
-	if(trace_insn)
+	if(TraceInsn())
 	{
 		cerr << coreid << "." << warpid << ": ";
 		//address_t dummy;
@@ -384,7 +388,7 @@ void CPU<CONFIG>::Run()
 	{
 	}
 	
-	if(trace_reset)
+	if(TraceReset())
 		cerr << "All warps finished\n";
 	//DumpRegisters(0, cerr);
 }
@@ -751,16 +755,16 @@ void CPU<CONFIG>::CheckFenceCompleted()
 	std::fill(synchronized, synchronized + MAX_BLOCKS, true);
 	for(unsigned int i = 0; i != num_warps; ++i)
 	{
-		if(trace_sync) {
+		if(TraceSync()) {
 			cerr << "  Warp " << i << ", block " << warps[i].blockid << endl;
 		}
 		if(warps[i].state != Warp<CONFIG>::WaitingFence) {
 			synchronized[warps[i].blockid] = false;
-			if(trace_sync) {
+			if(TraceSync()) {
 				cerr << "   Not synchronized\n";
 			}
 		}
-		else if(trace_sync) {
+		else if(TraceSync()) {
 			cerr << "   Synchronized\n";
 		}
 	}
@@ -770,7 +774,7 @@ void CPU<CONFIG>::CheckFenceCompleted()
 	{
 		if(synchronized[warps[i].blockid]) {
 			warps[i].state = Warp<CONFIG>::Active;
-			if(trace_sync) {
+			if(TraceSync()) {
 				cerr << "  Warp " << i << ", block " << warps[i].blockid << endl;
 				cerr << "   Activated\n";
 			}

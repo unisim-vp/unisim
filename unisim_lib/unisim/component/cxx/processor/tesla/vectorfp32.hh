@@ -104,8 +104,10 @@ struct VectorFP32Base
 
 private:
 	static void AbsSaturate(typename CONFIG::float_t & f, AbsSat abssat);
-	static uint32_t FPToFX(float f);
+	static uint32_t FPToFX(float f, bool noovf = false);
 	static double FXToFP(uint32_t f);
+	static uint32_t FloatAsInt(float f);
+	static float IntAsFloat(uint32_t i);
 };
 } // end of namespace tesla
 } // end of namespace processor

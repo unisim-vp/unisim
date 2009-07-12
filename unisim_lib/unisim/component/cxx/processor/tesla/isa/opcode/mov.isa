@@ -628,7 +628,7 @@ ldam_full.execute = {
 
 ldam_full.write = {
 	cpu->GetAddr(dest).Write(VectorAddress<CONFIG>(insn->GetDest()), insn->Mask());
-	if(cpu->trace_reg) {
+	if(cpu->TraceReg()) {
 		cpu->DumpAddr(dest, cerr);
 	}
 }
@@ -686,7 +686,7 @@ ldaa_full.execute = {
 
 ldaa_full.write = {
 	cpu->GetAddr(dest).Write(VectorAddress<CONFIG>(insn->GetDest()), insn->Mask());
-	if(cpu->trace_reg) {
+	if(cpu->TraceReg()) {
 		cpu->DumpAddr(dest, cerr);
 	}
 }

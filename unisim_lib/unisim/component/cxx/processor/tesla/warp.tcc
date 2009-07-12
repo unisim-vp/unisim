@@ -80,7 +80,7 @@ void Warp<CONFIG>::Reset(unsigned int wid, unsigned int bid, unsigned int gpr_nu
 	
 	
 	state = Active;
-	if(cpu->trace_reset) {
+	if(cpu->TraceReset()) {
 		cerr << " Warp " << id << " (" << bid << ", " << wid << "): reset\n";
 		cerr << "  " << gpr_window_size << " GPRs from " << gpr_window_base << "\n";
 		cerr << "  " << sm_size << "B shared mem from " << std::hex << sm_window_base << std::dec << "\n";

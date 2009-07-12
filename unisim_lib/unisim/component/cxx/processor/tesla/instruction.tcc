@@ -241,7 +241,7 @@ void Instruction<CONFIG>::WriteBlock(int reg, DataType dt)
 	case DT_F32:
 		// Overwrite whole register
 		cpu->GetGPR(reg).Write(Temp(0), mask);
-		if(cpu->trace_reg) {
+		if(cpu->TraceReg()) {
 			cpu->DumpGPR(reg, cerr);
 		}
 		break;
@@ -250,7 +250,7 @@ void Instruction<CONFIG>::WriteBlock(int reg, DataType dt)
 		assert(reg % 2 == 0);
 		cpu->GetGPR(reg).Write(Temp(0), mask);
 		cpu->GetGPR(reg + 1).Write(Temp(1), mask);
-		if(cpu->trace_reg) {
+		if(cpu->TraceReg()) {
 			cpu->DumpGPR(reg, cerr);
 			cpu->DumpGPR(reg + 1, cerr);
 		}
@@ -261,7 +261,7 @@ void Instruction<CONFIG>::WriteBlock(int reg, DataType dt)
 		cpu->GetGPR(reg + 1).Write(Temp(1), mask);
 		cpu->GetGPR(reg + 2).Write(Temp(2), mask);
 		cpu->GetGPR(reg + 3).Write(Temp(3), mask);
-		if(cpu->trace_reg) {
+		if(cpu->TraceReg()) {
 			cpu->DumpGPR(reg, cerr);
 			cpu->DumpGPR(reg + 1, cerr);
 			cpu->DumpGPR(reg + 2, cerr);
@@ -314,14 +314,14 @@ void Instruction<CONFIG>::WriteReg(int reg, int tempbase, RegType rt,
 		uint32_t rnum = (reg >> 1);
 		uint32_t hilo = (reg & 1);
 		cpu->GetGPR(rnum).Write16(Temp(tempbase), mask, hilo);
-		if(cpu->trace_reg) {
+		if(cpu->TraceReg()) {
 			cpu->DumpGPR(rnum, cerr);
 		}
 		}
 		break;
 	case RT_U32:
 		cpu->GetGPR(reg).Write(Temp(tempbase), mask);
-		if(cpu->trace_reg) {
+		if(cpu->TraceReg()) {
 			cpu->DumpGPR(reg, cerr);
 		}
 		break;
@@ -329,7 +329,7 @@ void Instruction<CONFIG>::WriteReg(int reg, int tempbase, RegType rt,
 		assert(reg % 2 == 0);
 		cpu->GetGPR(reg).Write(Temp(tempbase), mask);
 		cpu->GetGPR(reg + 1).Write(Temp(tempbase), mask);
-		if(cpu->trace_reg) {
+		if(cpu->TraceReg()) {
 			cpu->DumpGPR(reg, cerr);
 			cpu->DumpGPR(reg + 1, cerr);
 		}

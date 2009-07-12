@@ -443,6 +443,8 @@ private:
 	Parameter<bool> param_trace_reset;
 	Parameter<bool> param_export_stats;
 	
+	Parameter<bool> param_filter_trace;
+	Parameter<uint32_t> param_filter_warp;
 
 	//=====================================================================
 	//=                    CPU run-time statistics                        =
@@ -473,6 +475,18 @@ public:
 	bool trace_branch;
 	bool trace_sync;
 	bool trace_reset;
+	
+	bool filter_trace;
+	uint32_t filter_warp;
+	
+	bool TraceEnabled() { return !filter_trace || current_warpid == filter_warp; }
+	bool TraceInsn() { return trace_insn && TraceEnabled(); }
+	bool TraceMask() { return trace_mask && TraceEnabled(); }
+	bool TraceReg() { return trace_reg && TraceEnabled(); }
+	bool TraceLoadstore() { return trace_loadstore && TraceEnabled(); }
+	bool TraceBranch() { return trace_branch && TraceEnabled(); }
+	bool TraceSync() { return trace_sync && TraceEnabled(); }
+	bool TraceReset() { return trace_reset && TraceEnabled(); }
 
 	Logger trace_logger;
 

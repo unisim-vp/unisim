@@ -165,7 +165,7 @@ alu_full.writePred = {
 	// TODO: During writeback?...
 	if(set_pred) {
 		cpu->GetFlags(set_pred_reg).Write(flags, mask);
-		if(cpu->trace_reg) {
+		if(cpu->TraceReg()) {
 			cpu->DumpFlags(set_pred_reg, cerr);
 		}
 	}
@@ -264,7 +264,7 @@ flow_full.predMask = {
 flow_full.writePred = {
 	if(set_pred) {
 		cpu->GetFlags(set_pred_reg).Write(flags, mask);
-		if(cpu->trace_reg) {
+		if(cpu->TraceReg()) {
 			cpu->DumpFlags(set_pred_reg, cerr);
 		}
 	}
