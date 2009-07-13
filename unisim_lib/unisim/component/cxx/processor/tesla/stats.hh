@@ -46,6 +46,26 @@ namespace cxx {
 namespace processor {
 namespace tesla {
 
+template<class T, class ACCUM>
+struct StatCounter
+{
+	StatCounter();
+	void Append(T v);
+	ACCUM Avg() const;
+	ACCUM Variance() const;
+	T Min() const;
+	T Max() const;
+	T N() const;
+	void Merge(StatCounter<T, ACCUM> const & other);
+
+private:
+	unsigned int n;
+	ACCUM mean;
+	ACCUM m2;
+	T min;
+	T max;
+};
+
 template<class CONFIG>
 struct OperationStats
 {
@@ -79,6 +99,8 @@ private:
 	
 	uint64_t time_spent;
 	uint64_t timestamp;
+	
+	StatCounter<float, double> fpValue;
 	
 public:
 	OperationStats() :

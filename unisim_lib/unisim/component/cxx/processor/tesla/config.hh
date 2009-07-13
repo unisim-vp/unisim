@@ -134,8 +134,9 @@ public:
 	static bool const STAT_SCALAR_REG = false;
 	static bool const STAT_STRIDED_REG = false;
 	static bool const STAT_SIMTIME = false;
+	static bool const STAT_FPDOMAIN = false;
 	
-	static bool const DEBUG_NONAN = true;
+	static bool const DEBUG_NONAN = false;
 };
 
 

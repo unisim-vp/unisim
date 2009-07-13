@@ -113,7 +113,7 @@ public:
 	void ReadBlock(int reg, DataType dt);
 	void WriteBlock(int reg, DataType dt);
 	void ReadReg(int reg, int tempbase, RegType rt);
-	void WriteReg(int reg, int tempbase, RegType rt,
+	void WriteReg(int reg, int tempbase, DataType dt,
 		std::bitset<CONFIG::WARP_SIZE> mask);
 
 	void ReadSrc1();

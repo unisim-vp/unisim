@@ -304,12 +304,13 @@ void Instruction<CONFIG>::ReadReg(int reg, int tempbase, RegType rt)
 }
 
 template <class CONFIG>
-void Instruction<CONFIG>::WriteReg(int reg, int tempbase, RegType rt,
+void Instruction<CONFIG>::WriteReg(int reg, int tempbase, DataType dt,
 	bitset<CONFIG::WARP_SIZE> mask)
 {
-	switch(rt)
+	switch(dt)
 	{
-	case RT_U16:
+	case DT_U16:
+	case DT_S16:
 		{
 		uint32_t rnum = (reg >> 1);
 		uint32_t hilo = (reg & 1);
@@ -319,13 +320,15 @@ void Instruction<CONFIG>::WriteReg(int reg, int tempbase, RegType rt,
 		}
 		}
 		break;
-	case RT_U32:
+	case DT_U32:
+	case DT_S32:
+	case DT_F32:
 		cpu->GetGPR(reg).Write(Temp(tempbase), mask);
 		if(cpu->TraceReg()) {
 			cpu->DumpGPR(reg, cerr);
 		}
 		break;
-	case RT_U64:
+	case DT_U64:
 		assert(reg % 2 == 0);
 		cpu->GetGPR(reg).Write(Temp(tempbase), mask);
 		cpu->GetGPR(reg + 1).Write(Temp(tempbase), mask);
@@ -334,8 +337,10 @@ void Instruction<CONFIG>::WriteReg(int reg, int tempbase, RegType rt,
 			cpu->DumpGPR(reg + 1, cerr);
 		}
 		break;
+	default:
+		assert(false);
 	}
-	stats->RegWrite(&Temp(tempbase), RegTypeToDataType(rt), mask);
+	stats->RegWrite(&Temp(tempbase), dt, mask);
 }
 
 template <class CONFIG>

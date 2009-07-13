@@ -48,6 +48,79 @@ namespace tesla {
 
 using namespace std;
 
+
+template<class T, class ACCUM>
+StatCounter<T, ACCUM>::StatCounter() :
+	n(0), mean(0), m2(0),
+	min(numeric_limits<T>::has_infinity ? +numeric_limits<T>::infinity() : numeric_limits<T>::max()),
+	max(numeric_limits<T>::has_infinity ? -numeric_limits<T>::infinity() : numeric_limits<T>::min())
+{
+}
+
+template<class T, class ACCUM>
+void StatCounter<T, ACCUM>::Append(T v)
+{
+	// Don't consider NaNs when computing min and max
+	if(v > max)
+		max = v;
+	if(v < min)
+		min = v;
+	
+	// Knuth inline variance calculation
+	++n;
+	ACCUM delta = v - mean;
+	mean += delta / n;
+	m2 += delta * (v - mean);
+}
+
+template<class T, class ACCUM>
+ACCUM StatCounter<T, ACCUM>::Avg() const
+{
+	return mean;
+}
+
+template<class T, class ACCUM>
+ACCUM StatCounter<T, ACCUM>::Variance() const
+{
+	if(n < 2) {
+		return 0;
+	}
+	return m2 / (n - 1);
+}
+
+template<class T, class ACCUM>
+T StatCounter<T, ACCUM>::Min() const
+{
+	return min;
+}
+
+template<class T, class ACCUM>
+T StatCounter<T, ACCUM>::Max() const
+{
+	return max;
+}
+
+template<class T, class ACCUM>
+T StatCounter<T, ACCUM>::N() const
+{
+	return n;
+}
+
+template<class T, class ACCUM>
+void StatCounter<T, ACCUM>::Merge(StatCounter<T, ACCUM> const & other)
+{
+	if(other.n > 0) {
+		ACCUM delta = other.mean - mean;
+		unsigned int nsum = n + other.n;
+		mean += delta * other.n / nsum;
+		m2 += other.m2 + delta * delta * (n * other.n) / nsum;
+		n = nsum;
+		min = std::min(min, other.min);
+		max = std::max(max, other.max);
+	}
+}
+
+
 template<class CONFIG>
 void OperationStats<CONFIG>::Merge(OperationStats<CONFIG> const & other)
 {
@@ -91,6 +164,7 @@ void OperationStats<CONFIG>::Merge(OperationStats<CONFIG> const & other)
 	storeLocal += other.storeLocal;
 	
 	time_spent += other.time_spent;
+	fpValue.Merge(other.fpValue);
 }
 
 template<class CONFIG>
@@ -170,12 +244,22 @@ void OperationStats<CONFIG>::RegWrite(VectorRegister<CONFIG> const * regs, DataT
 		}
 	}
 	
+	// TODO: should not be here
 	if(CONFIG::DEBUG_NONAN && (dt == DT_F32)) {
 		for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i)
 		{
 			if(mask[i])
 				assert(!isnan(regs[0].ReadFloat(i)));
 		}
+	}
+	
+	if(CONFIG::STAT_FPDOMAIN && (dt == DT_F32)) {
+		for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i)
+		{
+			if(mask[i])
+				fpValue.Append(regs[0].ReadFloat(i));
+		}
+		
 	}
 }
 
@@ -349,6 +433,19 @@ void OperationStats<CONFIG>::DumpCSV(std::ostream & os) const
 	   << "," << scatterLocal
 	   << "," << storeLocal;
 
+
+	if(CONFIG::STAT_FPDOMAIN) {
+		if(fpValue.N() > 0) {
+			os << "," << fpValue.Avg()
+			   << "," << fpValue.Variance()
+			   << "," << fpValue.Min()
+			   << "," << fpValue.Max();
+		}
+		else {
+			os << ",,,,";
+		}
+	}
+
 	os << endl;
 }
 
@@ -397,6 +494,13 @@ void Stats<CONFIG>::DumpCSV(std::ostream & os) const
 	   << ",\"Load local\""
 	   << ",\"Scatter local\""
 	   << ",\"Store local\"";
+
+	if(CONFIG::STAT_FPDOMAIN) {
+		os << ",\"fp-avg\""
+		   << ",\"fp-var\""
+		   << ",\"fp-min\""
+		   << ",\"fp-max\"";
+	}
 
 	os << endl;
 

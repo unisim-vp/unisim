@@ -146,7 +146,7 @@ alu_full.predMask = {
 
 alu_full.write = {
 	typedef Instruction<CONFIG> Insn;
-	RegType rt = insn->OperandRegType(OpDest);
+	DataType dt = insn->OperandDataType(OpDest);
 	if(output_reg)
 	{
 		// Long insn : o127 = sink
@@ -157,7 +157,7 @@ alu_full.write = {
 	}
 	else
 	{
-		insn->WriteReg(dest, Insn::TempDest, rt, mask);
+		insn->WriteReg(dest, Insn::TempDest, dt, mask);
 	}
 }
 
@@ -230,8 +230,8 @@ alu_halfimm.predMask = {
 
 alu_halfimm.write = {
 	typedef Instruction<CONFIG> Insn;
-	RegType rt = insn->OperandRegType(OpDest);
-	insn->WriteReg(dest, Insn::TempDest, rt, mask);
+	DataType dt = insn->OperandDataType(OpDest);
+	insn->WriteReg(dest, Insn::TempDest, dt, mask);
 }
 
 alu_halfimm.writePred = {
