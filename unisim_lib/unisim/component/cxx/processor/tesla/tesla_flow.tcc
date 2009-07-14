@@ -210,6 +210,10 @@ void TeslaFlow<CONFIG>::Return(std::bitset<CONFIG::WARP_SIZE> mask)
 		}
 		current_mask = GetCurrentMask() & ~mask;
 		initial_mask = current_mask;
+		if(initial_mask.none()) {
+			// Kill warp
+			warp.state = Warp<CONFIG>::Finished;
+		}
 	}
 	else
 	{

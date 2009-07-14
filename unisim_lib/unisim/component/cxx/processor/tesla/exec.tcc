@@ -103,13 +103,14 @@ VectorRegister<CONFIG> IAdd32(VectorRegister<CONFIG> const & a,
 		// add a -b -> sub a b
 		// add -a b -> sub b a
 		// add -a -b -> flags undefined (= add -a -b): not in Tesla ISA anyway...
-		if(ra && rb) {
+		
+		// The documentation is wrong...
+		// Tesla seem to use the obvious implementation (2's-complement before operation)
+		if(ra) {
 			sa = -int32_t(sa);
-			sb = -int32_t(sb);
 		}
-		else if(ra) {
-			std::swap(sa, sb);
-//			std::swap(ra, rb);
+		if(rb) {
+			sb = -int32_t(sb);
 		}
 
 		uint32_t r;
@@ -117,12 +118,14 @@ VectorRegister<CONFIG> IAdd32(VectorRegister<CONFIG> const & a,
 			uint8_t does_sat;
 			assert(!use_cin);
 
-			if((ra || rb) && !(ra && rb)) {
-				SignedSatSub32(r, does_sat, sa, sb);
-			}
-			else {
+			// TODO: test cases
+			
+			//if((ra || rb) && !(ra && rb)) {
+			//	SignedSatSub32(r, does_sat, sa, sb);
+			//}
+			//else {
 				SignedSatAdd32(r, does_sat, sa, sb);
-			}
+			//}
 			// G80Specs: ovf not updated
 			//flags.SetOvf(int(does_sat), i);
 			flags.SetOvf(0, i);
@@ -134,12 +137,7 @@ VectorRegister<CONFIG> IAdd32(VectorRegister<CONFIG> const & a,
 			if(use_cin) {
 				carry_in = inputflags.GetCarry(i);
 			}
-			if((ra || rb) && !(ra && rb)) {
-				Sub32(r, carry_out, overflow, sa, sb, carry_in);
-			}
-			else {
-				Add32(r, carry_out, overflow, sa, sb, carry_in);
-			}
+			Add32(r, carry_out, overflow, sa, sb, carry_in);
 			flags.SetOvf(int(overflow), i);
 			flags.SetCarry(int(carry_out), i);
 		}
@@ -304,20 +302,15 @@ VectorRegister<CONFIG> ShiftLeft(VectorRegister<CONFIG> const & a, VectorRegiste
 	VectorRegister<CONFIG> rv;
 	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i)
 	{
-		int32_t sb = b[i];
-		if(sb < 0) {
-			if(issigned)
-				sb = 0;
-			else
-				sb = u32 ? 32 : 16;
-		}
-		if(u32 && sb > 32) {
-			sb = 32;
-		}
-		if(!u32 && sb > 16) {
-			sb = 16;
-		}
+		uint32_t sb = b[i];
+
 		uint32_t r = a[i] << sb;
+		if(u32 && sb >= 32) {
+			r = 0;
+		}
+		else if(!u32 && sb >= 16) {
+			r = 0;
+		}
 		if(!u32)
 			r &= 0x0000ffff;
 		rv[i] = r;
@@ -330,14 +323,11 @@ VectorRegister<CONFIG> ShiftLeft(VectorRegister<CONFIG> const & a, VectorRegiste
 template<class CONFIG>
 VectorRegister<CONFIG> ShiftLeft(VectorRegister<CONFIG> const & a, uint32_t sb, bool u32)
 {
-	if(u32 && sb > 32) {
-		sb = 32;
+	if(u32 && sb >= 32) {
+		return VectorRegister<CONFIG>(0);
 	}
-	if(!u32 && sb > 16) {
-		sb = 16;
-	}
-	if(sb < 0) {
-		sb = 0;
+	if(!u32 && sb >= 16) {
+		return VectorRegister<CONFIG>(0);
 	}
 	VectorRegister<CONFIG> rv;
 	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i)
@@ -360,20 +350,21 @@ VectorRegister<CONFIG> ShiftRight(VectorRegister<CONFIG> const & a, VectorRegist
 	VectorRegister<CONFIG> rv;
 	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i)
 	{
-		int32_t sb = b[i];
-		if(sb < 0) {
-			if(issigned)
-				sb = 0;
+		uint32_t sb = b[i];
+		
+		if(u32 && sb >= 32) {
+			if(issigned && int32_t(a[i]) < 0)
+				rv[i] = 0xffffffff;
 			else
-				sb = u32 ? 32 : 16;
+				rv[i] = 0;
 		}
-		if(u32 && sb > 32) {
-			sb = 32;
+		else if(!u32 && sb >= 16) {
+			if(issigned && int32_t(a[i]) < 0)
+				rv[i] = 0x0000ffff;
+			else
+				rv[i] = 0;
 		}
-		if(!u32 && sb > 16) {
-			sb = 16;
-		}
-		if(issigned) {
+		else if(issigned) {
 			if(u32) {
 				int32_t sa = a[i];
 				rv[i] = sa >> sb;
@@ -395,12 +386,6 @@ VectorRegister<CONFIG> ShiftRight(VectorRegister<CONFIG> const & a, VectorRegist
 template<class CONFIG>
 VectorRegister<CONFIG> ShiftRight(VectorRegister<CONFIG> const & a, uint32_t sb, bool u32, bool issigned)
 {
-	if(sb < 0) {
-		if(issigned)
-			sb = 0;
-		else
-			sb = u32 ? 32 : 16;
-	}
 	if(u32 && sb > 32) {
 		sb = 32;
 	}
