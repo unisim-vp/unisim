@@ -86,7 +86,7 @@ public:
 	
 	template<class T>
 	static T ToInt(T src) {
-		return rint(src);
+		return nearbyint(src);
 	}
 };
 

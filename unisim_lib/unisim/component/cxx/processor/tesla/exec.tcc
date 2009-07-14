@@ -247,8 +247,13 @@ VectorRegister<CONFIG> Mul24(VectorRegister<CONFIG> const & a,
 			assert(!sat);	// TODO: sat
 		}
 		else {
+			 // G80Spec (345): "For unsigned integer operands, the negate operand
+			 //                 performs a two's complement operation."
+
 			uint32_t sa = a[i];
-			uint32_t sb = b[i];
+			uint32_t sb = b[i];	// TODO: test cases...
+			if(ra) sa = -int32_t(sa);
+			if(rb) sb = -int32_t(sb);
 			if(m24) {
 				sa = sa & 0x00ffffff;
 				sb = sb & 0x00ffffff;
@@ -257,7 +262,6 @@ VectorRegister<CONFIG> Mul24(VectorRegister<CONFIG> const & a,
 				sa = sa & 0x0000ffff;
 				sb = sb & 0x0000ffff;
 			}
-			assert(!ra && !rb);
 			assert(!sat);
 			r = (sa * sb);
 		}

@@ -527,7 +527,7 @@ VectorFlags<CONFIG> VectorFP32Base<CONFIG>::ComputePredFP32(VectorRegister<CONFI
 		if(f > 0) {	// strictly positive, not NaN
 			fl = 0;
 		}
-		if(f == 0) {
+		else if(f == 0) {
 			fl = 1;
 		}
 		else if(f < 0) {

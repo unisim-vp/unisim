@@ -387,7 +387,6 @@ imad_full.init_force_reg = {
 }
 
 imad_full.disasm = {
-	//buffer << "umad16x16+32";
 	buffer << "mad24";
 	insn->DisasmControl(buffer);
 	switch(subop) {
@@ -428,7 +427,9 @@ imad_full.disasm = {
 	insn->DisasmDest(buffer);
 
 	buffer << ", ";
-	//DisasmSign(src1_neg, buffer);
+	
+	// TODO: What does src1_neg means here? (not sign?)
+	DisasmSign(src1_neg, buffer);
 	insn->DisasmSrc1(buffer);
 
 	buffer << ", ";
@@ -1545,7 +1546,7 @@ nop_full.execute = {
 }
 
 // Input operands 1, 2 and output operand of type w32
-group intd12(iadd_halfimm, isubr_halfimm, shl_full, shr_full, \
+group intd12(iadd_halfimm, isubr_halfimm, iaddc_halfimm, shl_full, shr_full, \
 	and_full, or_full, xor_full, min, max, set_full)
 
 intd12.init = {
@@ -1559,7 +1560,7 @@ intd12.init = {
 }
 
 // Input operands 1, 3 and output operand of type w32
-group intd13(iadd_full, isubr_full)
+group intd13(iadd_full, isubr_full, iaddc_full)
 
 intd13.init = {
 	typedef Operation<CONFIG> inherited;

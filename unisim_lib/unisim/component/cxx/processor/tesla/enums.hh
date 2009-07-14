@@ -36,6 +36,7 @@
 #define UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_ENUMS_HH
 
 #include <cassert>
+#include <stdint.h>
 
 namespace unisim {
 namespace component {

@@ -157,6 +157,7 @@ template<class T, class Traits>
 template<class IntConv>
 void HostFloat<T, Traits>::retrieveInteger(IntConv& result, StatusAndControlFlags& flags) const
 {
+	Rounding rnd(flags.roundingMode());
 	T r = RC::ToInt(impl);
 	// Saturate
 	if(r >= T(numeric_limits<IntConv>::max())){ // may round down, hence >=

@@ -78,14 +78,14 @@ public:
 	}
 	
 	template<class T>
-	static T ForceRounding(T& src) {
+	static T ForceRounding(T src) {
 		volatile T r = src;
 		return r;
 	}
 
 	template<class T>
 	static T ToInt(T src) {
-		return rint(src);
+		return nearbyint(src);
 	}
 };
 
