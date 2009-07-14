@@ -73,13 +73,13 @@ VectorRegister<CONFIG> IAddC(VectorRegister<CONFIG> const & a,
 	VectorFlags<CONFIG> & flags,
 	VectorFlags<CONFIG> const & inputflags,
 	bool sat, bool ra, bool rb,
-	bool m32)
+	bool m32, bool use_cin)
 {
 	if(m32) {
-		return IAdd32(a, b, flags, inputflags, sat, ra, rb, true);
+		return IAdd32(a, b, flags, inputflags, sat, ra, rb, use_cin);
 	}
 	else {
-		return IAdd16(a, b, flags, inputflags, sat, ra, rb, true);
+		return IAdd16(a, b, flags, inputflags, sat, ra, rb, use_cin);
 	}
 }
 
@@ -270,7 +270,6 @@ VectorRegister<CONFIG> Mul24(VectorRegister<CONFIG> const & a,
 	return rv;
 }
 
-
 template<class CONFIG>
 VectorRegister<CONFIG> Mad24(VectorRegister<CONFIG> const & a,
 	VectorRegister<CONFIG> const & b,
@@ -289,6 +288,28 @@ VectorRegister<CONFIG> Mad24(VectorRegister<CONFIG> const & a,
 	// need to keep all 48 bits of the intermediate result (FMA-like)?
 	rv = Mul24(a, b, sat, src1_neg, false, m24, issigned, hi);
 	rv = IAdd(rv, c, flags, sat, false, src3_neg, true);
+	return rv;
+	
+}
+
+template<class CONFIG>
+VectorRegister<CONFIG> Mad24C(VectorRegister<CONFIG> const & a,
+	VectorRegister<CONFIG> const & b,
+	VectorRegister<CONFIG> const & c,
+	VectorFlags<CONFIG> & flags,
+	VectorFlags<CONFIG> const & inputflags,
+	bool sat,
+	bool src1_neg,
+	bool src3_neg,
+	bool m24,
+	bool issigned,
+	bool hi,
+	bool use_cin)
+{
+	VectorRegister<CONFIG> rv;
+	
+	rv = Mul24(a, b, sat, src1_neg, false, m24, issigned, hi);
+	rv = IAddC(rv, c, flags, inputflags, sat, false, src3_neg, true, use_cin);
 	return rv;
 	
 }

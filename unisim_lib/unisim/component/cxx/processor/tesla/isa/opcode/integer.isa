@@ -325,19 +325,19 @@ iaddsub.classify = {
 
 
 op imad_full_normal( \
-	subop[3]:/*?*/0[1]:src3_neg[1]:src1_neg[1]:0[2]:?[22]:/*marker*/0[2]: \
+	subop[3]:/*?*/0[1]:carry[2]:0[2]:?[22]:/*marker*/0[2]: \
 	0x6[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:aba[1]:/*src2_cm*/?[1]:/*src2*/?[7]:\
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1] \
 )
 
 op imad_full_end( \
-	subop[3]:/*?*/0[1]:src3_neg[1]:src1_neg[1]:0[2]:?[22]:/*marker*/1[2]: \
+	subop[3]:/*?*/0[1]:carry[2]:0[2]:?[22]:/*marker*/1[2]: \
 	0x6[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:aba[1]:/*src2_cm*/?[1]:/*src2*/?[7]:\
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1] \
 )
 
 op imad_full_join( \
-	subop[3]:/*?*/0[1]:src3_neg[1]:src1_neg[1]:0[2]:?[22]:/*marker*/2[2]: \
+	subop[3]:/*?*/0[1]:carry[2]:0[2]:?[22]:/*marker*/2[2]: \
 	0x6[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:aba[1]:/*src2_cm*/?[1]:/*src2*/?[7]:\
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1] \
 )
@@ -388,6 +388,9 @@ imad_full.init_force_reg = {
 
 imad_full.disasm = {
 	buffer << "mad24";
+	if(carry)
+		buffer << "c";
+		
 	insn->DisasmControl(buffer);
 	switch(subop) {
 	case 0:
@@ -428,8 +431,6 @@ imad_full.disasm = {
 
 	buffer << ", ";
 	
-	// TODO: What does src1_neg means here? (not sign?)
-	DisasmSign(src1_neg, buffer);
 	insn->DisasmSrc1(buffer);
 
 	buffer << ", ";
@@ -437,8 +438,14 @@ imad_full.disasm = {
 	
 	if(!aba) {
 		buffer << ", ";
-		DisasmSign(src3_neg, buffer);
 		insn->DisasmSrc3(buffer);
+	}
+	
+	if(carry == 3) {
+		buffer << ", p1";
+	}
+	else if(carry != 0) {
+		buffer << ", ???";
 	}
 }
 
@@ -484,7 +491,16 @@ imad_full.execute = {
 	reg_t & b = insn->GetSrc2();
 	reg_t & c = insn->GetSrc3();	// Always 32-bit
 	
-	reg_t output = Mad24(a, b, c, insn->Flags(), sat, src1_neg, src3_neg, rt, issigned, hi);
+	reg_t output;
+	if(carry == 3) {
+		VectorFlags<CONFIG> & inputflags = cpu->GetFlags(1);
+		output = Mad24C(a, b, c, insn->Flags(), inputflags, sat, /*src1_neg*/0, /*src3_neg*/0, rt, issigned, hi);
+	}
+	else if(carry == 0) {
+		output = Mad24(a, b, c, insn->Flags(), sat, /*src1_neg*/0, /*src3_neg*/0, rt, issigned, hi);
+	}
+	else
+		assert(false);
 	
 	insn->SetDest(output);
 }

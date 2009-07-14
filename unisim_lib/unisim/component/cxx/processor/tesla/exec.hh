@@ -57,7 +57,7 @@ VectorRegister<CONFIG> IAddC(VectorRegister<CONFIG> const & a,
 	VectorFlags<CONFIG> & flags,
 	VectorFlags<CONFIG> const & inputflags,
 	bool sat = false, bool ra = false, bool rb = false,
-	bool m32 = true);
+	bool m32 = true, bool use_cin = true);
 
 
 template<class CONFIG>
@@ -92,6 +92,21 @@ VectorRegister<CONFIG> Mad24(VectorRegister<CONFIG> const & a,
 	bool m24,
 	bool issigned,
 	bool hi);
+
+
+template<class CONFIG>
+VectorRegister<CONFIG> Mad24C(VectorRegister<CONFIG> const & a,
+	VectorRegister<CONFIG> const & b,
+	VectorRegister<CONFIG> const & c,
+	VectorFlags<CONFIG> & flags,
+	VectorFlags<CONFIG> const & inputflags,
+	bool sat,
+	bool src1_neg,
+	bool src3_neg,
+	bool m24,
+	bool issigned,
+	bool hi,
+	bool use_cin = true);
 
 
 template<class CONFIG>
