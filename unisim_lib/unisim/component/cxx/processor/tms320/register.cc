@@ -389,6 +389,7 @@ namespace tms320 {
 		{
 			this->SetHi((uint8_t)0x80);
 			this->SetLo(0);
+			overflow = false;
 			return;
 		}
 		overflow = false;

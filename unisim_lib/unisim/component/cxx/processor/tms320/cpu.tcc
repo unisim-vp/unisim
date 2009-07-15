@@ -329,6 +329,8 @@ Reset()
 		SetSP(loader_import->GetStackBase() / 4);
 		SetPC(loader_import->GetEntryPoint() / 4);
 		SetNPC(loader_import->GetEntryPoint() / 4);
+		// Invalidate the instruction cache
+		InvalidateInsnCache();
 		reset = false;
 	}
 	else
