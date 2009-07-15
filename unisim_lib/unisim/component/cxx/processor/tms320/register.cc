@@ -39,6 +39,8 @@
 #include <iostream>
 #include <string.h>
 
+//#define __DEBUG_TMS320C3X_REGISTER__
+
 namespace unisim {
 namespace component {
 namespace cxx {
@@ -73,13 +75,17 @@ namespace tms320 {
 	
 	uint32_t Register::GetLo(uint16_t value)
 	{
+		if (value & (uint16_t)0xf000 == (uint16_t)0x8000)
+			return 0;
 		return (((uint32_t)value) & (uint32_t)0x00000fff) << 20;
 	}
 	
 	uint8_t Register::GetHi(uint16_t value)
 	{
-		if (value == (uint16_t)0x8000)
+		if (value & (uint16_t)0xf000 == (uint16_t)0x8000)
 			return (uint8_t)0x80;
+//		if (value == (uint16_t)0x8000)
+//			return (uint8_t)0x80;
 		return (uint8_t)(((int16_t)value >> 12) & (uint16_t)0x00ff);
 	}
 	
@@ -94,8 +100,10 @@ namespace tms320 {
 	
 	uint32_t Register::GetLo(uint32_t value)
 	{
+		if (value & (uint32_t)0xff000000 == (uint32_t)0x80000000) return 0;
 		return ((uint32_t)value & (uint32_t)0x00ffffff) << 8;
 	}
+	
 	uint8_t Register::GetHi(uint32_t value)
 	{
 		return (uint8_t)((value >> 24) & (uint32_t)0x00ff);
@@ -375,7 +383,14 @@ namespace tms320 {
 
 	void Register::Abs(uint8_t hi_a, uint32_t lo_a, bool& overflow)
 	{
-		// TOCHECK
+		// if the exponent value is -128, then the mantissa should be 0
+		//   to represent the 0.0 value
+		if (hi_a == (uint8_t)0x80)
+		{
+			this->SetHi((uint8_t)0x80);
+			this->SetLo(0);
+			return;
+		}
 		overflow = false;
 		if (hi_a == (uint8_t)0x7f && lo_a == (uint32_t)0x80000000)
 		{
@@ -384,11 +399,16 @@ namespace tms320 {
 			overflow = true;
 			return;
 		}
+		// if the value is negative, then the abs operation can be performed
 		if ((int32_t)lo_a < 0)
 		{
 			this->SetHi(hi_a);
 			this->SetLo((~lo_a) + 1); // absolute value of the mantissa
+			return;
 		}
+		// the value is positive, simply copy exponent and mantissa
+		this->SetHi(hi_a);
+		this->SetLo(lo_a);
 	}
 	
 	void Register::Add(uint8_t hi_a, uint32_t lo_a, uint8_t hi_b, uint32_t lo_b, bool& overflow, bool& underflow)
@@ -408,26 +428,36 @@ namespace tms320 {
 		overflow = false;
 		underflow = false;
 		
-		/* std::cerr 
+#ifdef __DEBUG_TMS320C3X_REGISTER__
+		std::cerr 
 		<< "1- add = " << is_add << std::endl
 		<< "   hi_a = 0x" << std::hex << (unsigned int)hi_a << "\t lo_a = 0x" << (unsigned int)lo_a << std::endl
 		<< "   hi_b = 0x"             << (unsigned int)hi_b << "\t lo_b = 0x" << (unsigned int)lo_b << std::dec << std::endl;
-		 */				
+#endif
+
 		// convert mantissas to their full representation (33-bit)
-		if (lo_a & (uint32_t)0x80000000)
-			ext_lo_a = (int64_t)((int32_t)lo_a) & ~(uint64_t)0x80000000;
+		// when the exponent is 0x80 (-128) the mantissa should be considered to contain 0, whatever its real value is
+		if (hi_a == (uint8_t)0x80)
+			ext_lo_a = 0;
 		else
-			ext_lo_a = (uint64_t)(lo_a | (uint32_t)0x80000000);
+			if (lo_a & (uint32_t)0x80000000)
+				ext_lo_a = (int64_t)((int32_t)lo_a) & ~(uint64_t)0x80000000;
+			else
+				ext_lo_a = (uint64_t)(lo_a | (uint32_t)0x80000000);
 		
-		if (lo_b & (uint32_t)0x80000000)
-			ext_lo_b = (int64_t)((int32_t)lo_b) & ~(uint64_t)0x80000000;
+		if (hi_b == (uint8_t)0x80)
+			ext_lo_b = 0;
 		else
-			ext_lo_b = (uint64_t)(lo_b | (uint32_t)0x80000000);
+			if (lo_b & (uint32_t)0x80000000)
+				ext_lo_b = (int64_t)((int32_t)lo_b) & ~(uint64_t)0x80000000;
+			else
+				ext_lo_b = (uint64_t)(lo_b | (uint32_t)0x80000000);
 		
-		/* std::cerr << std::hex
+#ifdef __DEBUG_TMS320C3X_REGISTER__
+	std::cerr << std::hex
 		<< "2- hi_a = 0x" << (unsigned int)hi_a << "\t ext_lo_a = 0x" << (unsigned long long int)ext_lo_a << std::endl
 		<< "   hi_b = 0x" << (unsigned int)hi_b << "\t ext_lo_b = 0x" << (unsigned long long int)ext_lo_b << std::dec << std::endl;
-		 */								
+#endif										
 		// result takes the biggest exponent
 		// and compute the difference of the exponent to align mantissas
 		uint32_t diff_exp;
@@ -456,64 +486,77 @@ namespace tms320 {
 				ext_lo_b = ext_lo_b >> diff_exp;
 		}
 		
-		/* std::cerr
+#ifdef __DEBUG_TMS320C3X_REGISTER__
+	std::cerr
 		<< "3- diff_exp = " << (int)diff_exp << std::endl << std::hex
 		<< "   hi_a = 0x" << (unsigned int)hi_a << "\t ext_lo_a = 0x" << (unsigned long long int)ext_lo_a << std::endl
 		<< "   hi_b = 0x" << (unsigned int)hi_b << "\t ext_lo_b = 0x" << (unsigned long long int)ext_lo_b << std::endl
 		<< "   hi   = 0x" << (unsigned int)this->GetHi() << std::dec << std::endl;
-		 */						
+#endif								
 		// add the mantissas
 		int64_t ext_lo_c = ext_lo_a;
 		if (is_add) ext_lo_c += ext_lo_b;
 		else ext_lo_c -= ext_lo_b;
 		
-		/* std::cerr
+#ifdef __DEBUG_TMS320C3X_REGISTER__
+		std::cerr
 		<< "4- diff_exp = " << (int)diff_exp << std::endl << std::hex
 		<< "   hi_a = 0x" << (unsigned int)hi_a          << "\t ext_lo_a = 0x" << (unsigned long long int)ext_lo_a << std::endl
 		<< "   hi_b = 0x" << (unsigned int)hi_b          << "\t ext_lo_b = 0x" << (unsigned long long int)ext_lo_b << std::endl
 		<< "   hi   = 0x" << (unsigned int)this->GetHi() << "\t ext_lo_c = 0x" << (unsigned long long int)ext_lo_c << std::dec << std::endl;
-		 */								
+#endif										
 		// check for special cases of the result mantissa
 		// 1 - check mantissa is 0
 		if (ext_lo_c == 0)
 		{
-			this->hi = (uint8_t)0x80;
+			this->SetHi((uint8_t)0x80);
 		}
 		else
 		{
+#ifdef __DEBUG_TMS320C3X_REGISTER__
+			std::cerr
+			<< "5- ext_lo_c = 0x" << (unsigned long long int)ext_lo_c << std::endl
+			<< "   ext_lo_c > 0 --> " << (ext_lo_c > 0) << std::endl
+			<< "   ext_lo_c >> 32 --> 0x" << (unsigned long long int)(ext_lo_c >> 32) << std::endl;
+#endif
 			// 2 - check for overflow
-			if (ext_lo_c > 0 && (ext_lo_c >> 32) != 0)
+			if ((ext_lo_c > 0) && ((ext_lo_c >> 32) != 0))
 			{
-				// the mantissa is possitive, check how many bits we have to shift it
+#ifdef __DEBUG_TMS320C3X_REGISTER__
+				std::cerr
+				<< "6- overflow checking" << std::endl;
+#endif
+				// the mantissa is positive, check how many bits we have to shift it
 				//   to be an signed 33bits number
 				ext_lo_c = ext_lo_c >> 1;
-				if ((int32_t)this->hi + 1 > 127) 
+				if (((int32_t)(int8_t)this->GetHi()) + 1 > 127) 
 				{
 					overflow = true;
-					this->hi = (uint8_t)0x7f;
+					this->SetHi((uint8_t)0x7f);
 				}
 				else
-					this->hi = this->hi + 1;
+					this->SetHi(this->GetHi() + 1);
 			}
 			else
 			{
-				if (ext_lo_c < 0 && ~(ext_lo_c >> 32) != 0)
+				if ((ext_lo_c < 0) && (~(ext_lo_c >> 32) != 0))
 				{
 					// the mantissa is negative, check how many bits we have to shift it
 					//   to be a signed 33bits number
 					ext_lo_c = (uint64_t)ext_lo_c >> 1;
-					if ((int32_t)this->hi + 1 > 127) 
+					if ((int32_t)(int8_t)this->GetHi() + 1 > 127) 
 					{
 						overflow = true;
-						this->hi = (uint8_t)0x7f;
+						this->SetHi((uint8_t)0x7f);
 					}
 					else
-						this->hi = this->hi + 1;
+						this->SetHi(this->GetHi() + 1);
 				}
 				else
 				{
-					/* std::cerr << "5- normalizing" << std::endl;
-					 */
+#ifdef __DEBUG_TMS320C3X_REGISTER__
+				std::cerr << "5- normalizing" << std::endl;
+#endif					
 					// 3 - check if the result needs to be normalized
 					if (ext_lo_c > 0 && (ext_lo_c & (uint64_t)0x80000000) == 0)
 					{
@@ -523,19 +566,21 @@ namespace tms320 {
 						if ((int32_t)((int32_t)this->hi - count) < -128)
 						{
 							underflow = true;
-							this->hi = (uint8_t)0x80;
+							this->SetHi((uint8_t)0x80);
 						}
 						else
-							this->hi = this->hi - count;
+							this->SetHi(this->GetHi() - count);
 					}
 					else
 					{
-						/* std::cerr 
+#ifdef __DEBUG_TMS320C3X_REGISTER__
+						std::cerr 
 						<< "5.1- normalizing neg" << std::endl
 						<< "   hi   = 0x" << std::hex << (unsigned int)this->GetHi() << "\t ext_lo_c = 0x" << (unsigned long long)ext_lo_c << std::dec << std::endl
 						<< "   -> 0x" << std::hex << (ext_lo_c & (uint64_t)0x80000000) << std::dec
 						<< std::endl;
-						 */						if (ext_lo_c < 0 && ((ext_lo_c & (uint64_t)0x80000000) != 0))
+#endif						
+						if (ext_lo_c < 0 && ((ext_lo_c & (uint64_t)0x80000000) != 0))
 						{
 							uint32_t count = unisim::util::arithmetic::CountLeadingZeros(~(uint64_t)ext_lo_c);
 
@@ -544,10 +589,10 @@ namespace tms320 {
 							if ((int32_t)((int32_t)this->hi - count) < -128)
 							{
 								underflow = true;
-								this->hi = (uint8_t)0xff;
+								this->SetHi((uint8_t)0xff);
 							}
 							else
-								this->hi = this->hi - count;
+								this->SetHi(this->GetHi() - count);
 						}
 					}
 				}
@@ -595,16 +640,23 @@ namespace tms320 {
 		underflow = false;
 		
 		// convert mantissas to their full representation (33-bit)
-		if (lo_a & (uint32_t)0x80000000)
-			ext_lo_a = (int64_t)((int32_t)lo_a) & ~(uint64_t)0x80000000;
+		// when the exponent is 0x80 (-128) the mantissa should be considered to contain 0, whatever its real value is
+		if (hi_a == (uint8_t)0x80)
+			ext_lo_a = 0;
 		else
-			ext_lo_a = (uint64_t)(lo_a | (uint32_t)0x80000000);
+			if (lo_a & (uint32_t)0x80000000)
+				ext_lo_a = (int64_t)((int32_t)lo_a) & ~(uint64_t)0x80000000;
+			else
+				ext_lo_a = (uint64_t)(lo_a | (uint32_t)0x80000000);
 		
-		if (lo_b & (uint32_t)0x80000000)
-			ext_lo_b = (int64_t)((int32_t)lo_b) & ~(uint64_t)0x80000000;
+		if (hi_b == (uint8_t)0x80)
+			ext_lo_b = 0;
 		else
-			ext_lo_b = (uint64_t)(lo_b | (uint32_t)0x80000000);
-				
+			if (lo_b & (uint32_t)0x80000000)
+				ext_lo_b = (int64_t)((int32_t)lo_b) & ~(uint64_t)0x80000000;
+			else
+				ext_lo_b = (uint64_t)(lo_b | (uint32_t)0x80000000);
+		
 		// convert the mantissas to their 25-bit representation
 		ext_lo_a = ext_lo_a >> 8;
 		ext_lo_b = ext_lo_b >> 8;

@@ -1829,11 +1829,12 @@ GenFlags(const Register& result, uint32_t reset_mask, uint32_t or_mask, uint32_t
 	}
 
 	// Z
-	if(or_mask & M_ST_Z)
-	{
-		uint32_t is_zero = (result.GetLo() == 0) && ((int8_t)result.GetHi() == -128);
-		st |= (is_zero << ST_Z);
-	}
+	if (or_mask & M_ST_Z)
+		if (underflow == 0)
+		{
+			uint32_t is_zero = (result.GetLo() == 0) && (result.GetHi() == (uint8_t)0x80);
+			st |= (is_zero << ST_Z);
+		}
 
 	// C
 	if(or_mask & M_ST_C) st |= (carry_out << ST_C);
