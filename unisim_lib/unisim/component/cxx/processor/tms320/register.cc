@@ -563,7 +563,7 @@ namespace tms320 {
 						uint32_t count = unisim::util::arithmetic::CountLeadingZeros((uint64_t)ext_lo_c);
 						count = count - 32;
 						ext_lo_c = ext_lo_c << count;
-						if ((int32_t)((int32_t)this->hi - count) < -128)
+						if ((int32_t)((int32_t)this->GetHi() - count) < -128)
 						{
 							underflow = true;
 							this->SetHi((uint8_t)0x80);
