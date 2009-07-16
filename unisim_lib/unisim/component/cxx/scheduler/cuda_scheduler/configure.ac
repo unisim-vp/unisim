@@ -1,6 +1,6 @@
 #
-#  Copyright (c) 2007,
-#  Commissariat a l'Energie Atomique (CEA)
+#  Copyright (c) 2009,
+#  University of Perpignan (UPVD),
 #  All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without modification,
@@ -29,30 +29,40 @@
 #  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
 #  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
-# Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
-#          Gilles Mouchard (gilles.mouchard@cea.fr)
+# Authors: Sylvain Collange (sylvain.collange@univ-perp.fr)
 #
 
-AC_INIT([UNISIM CXX Library], [1.0])
+AC_INIT([UNISIM C++ CUDA Scheduler Component Library], [1.0])
 AC_CONFIG_AUX_DIR(config)
+AC_CONFIG_HEADERS([config.h])
+AC_CANONICAL_BUILD
+AC_CANONICAL_HOST
+AC_CANONICAL_TARGET
 
 AM_INIT_AUTOMAKE
 
+AC_PATH_PROGS(SH, sh)
+AC_PROG_CXX
 AC_PROG_INSTALL
+AC_LIBTOOL_WIN32_DLL # must be *before* AC_PROG_LIBTOOL
+AC_PROG_LIBTOOL
+AC_ENABLE_STATIC
+AC_ENABLE_SHARED
+AC_PROG_LN_S
 
+AC_LANG([C++])
+
+###### CHECK FOR C HEADERS ####################################################
+AC_CHECK_HEADERS([inttypes.h],,\
+    AC_MSG_ERROR([Some standard C headers are missing.]))
+
+UNISIM_WITH_BOOST
+UNISIM_CHECK_BOOST_THREAD
+
+UNISIM_LIBTOOL
 # files to generate
 #   this should include all the makefiles to generate
 AC_CONFIG_FILES([Makefile])
-
-UNISIM_CONFIG_SUBDIR(unisim-component-cxx-memory, memory)
-UNISIM_CONFIG_SUBDIR(unisim-component-cxx-cache, cache)
-UNISIM_CONFIG_SUBDIR(unisim-component-cxx-tlb, tlb)
-UNISIM_CONFIG_SUBDIR(unisim-component-cxx-processor, processor)
-UNISIM_CONFIG_SUBDIR(unisim-component-cxx-pci, pci)
-UNISIM_CONFIG_SUBDIR(unisim-component-cxx-isa, isa)
-UNISIM_CONFIG_SUBDIR(unisim-component-cxx-bridge, bridge)
-UNISIM_CONFIG_SUBDIR(unisim-component-cxx-chipset, chipset)
-UNISIM_CONFIG_SUBDIR(unisim-component-cxx-scheduler, scheduler)
 
 # launch the generation of makefiles
 #   this must be the last command of configure.ac

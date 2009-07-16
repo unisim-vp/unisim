@@ -1,6 +1,6 @@
 #
-#  Copyright (c) 2007,
-#  Commissariat a l'Energie Atomique (CEA)
+#  Copyright (c) 2009,
+#  University of Perpignan (UPVD),
 #  All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without modification,
@@ -29,11 +29,10 @@
 #  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
 #  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
-# Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
-#          Gilles Mouchard (gilles.mouchard@cea.fr)
+# Authors: Sylvain Collange (sylvain.collange@univ-perp.fr)
 #
 
-AC_INIT([UNISIM CXX Library], [1.0])
+AC_INIT([UNISIM Scheduler Component Library], [1.0])
 AC_CONFIG_AUX_DIR(config)
 
 AM_INIT_AUTOMAKE
@@ -44,15 +43,7 @@ AC_PROG_INSTALL
 #   this should include all the makefiles to generate
 AC_CONFIG_FILES([Makefile])
 
-UNISIM_CONFIG_SUBDIR(unisim-component-cxx-memory, memory)
-UNISIM_CONFIG_SUBDIR(unisim-component-cxx-cache, cache)
-UNISIM_CONFIG_SUBDIR(unisim-component-cxx-tlb, tlb)
-UNISIM_CONFIG_SUBDIR(unisim-component-cxx-processor, processor)
-UNISIM_CONFIG_SUBDIR(unisim-component-cxx-pci, pci)
-UNISIM_CONFIG_SUBDIR(unisim-component-cxx-isa, isa)
-UNISIM_CONFIG_SUBDIR(unisim-component-cxx-bridge, bridge)
-UNISIM_CONFIG_SUBDIR(unisim-component-cxx-chipset, chipset)
-UNISIM_CONFIG_SUBDIR(unisim-component-cxx-scheduler, scheduler)
+UNISIM_CONFIG_SUBDIR(unisim-component-cxx-scheduler-cuda_scheduler, cuda_scheduler)
 
 # launch the generation of makefiles
 #   this must be the last command of configure.ac
