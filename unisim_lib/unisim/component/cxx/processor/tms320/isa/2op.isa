@@ -134,7 +134,7 @@ ABSF_reg.execute = {
 	Register& dst_reg = cpu.GetExtReg(dst);
 	
 	// Compute the result
-	bool overflow;
+	uint32_t overflow;
 	
 	dst_reg.Abs(src_reg, overflow);
 	
@@ -160,7 +160,7 @@ ABSF_dir.execute = {
 	uint32_t src_value = cpu.IntLoad(ea);
 	
 	// Compute the result
-	bool overflow;
+	uint32_t overflow;
 
 	dst_reg.Abs(src_value, overflow);
 	
@@ -193,7 +193,7 @@ ABSF_indir.execute = {
 	uint32_t src_value = cpu.IntLoad(ea);
 	
 	// Compute the result
-	bool overflow;
+	uint32_t overflow;
 	
 	dst_reg.Abs(src_value, overflow);
 	
@@ -219,7 +219,7 @@ ABSF_imm.execute = {
 	Register& dst_reg = cpu.GetExtReg(dst);
 	
 	// Compute the result
-	bool overflow;
+	uint32_t overflow;
 	
 	dst_reg.Abs(imm, overflow);
 	
@@ -794,8 +794,8 @@ ADDF_reg.execute = {
 	Register& dst_reg = cpu.GetExtReg(dst);
 
 	// compute
-	bool underflow;
-	bool overflow;
+	uint32_t underflow;
+	uint32_t overflow;
 	dst_reg.Add(src_reg, overflow, underflow);
 
 	// Generate flags (into ST)
@@ -822,8 +822,8 @@ ADDF_dir.execute = {
 	uint32_t src_value = cpu.IntLoad(ea);
 
 	// compute
-	bool underflow;
-	bool overflow;
+	uint32_t underflow;
+	uint32_t overflow;
 	dst_reg.Add(src_value, overflow, underflow);
 
 	// Generate flags (into ST)
@@ -857,8 +857,8 @@ ADDF_indir.execute = {
 	uint32_t src_value = cpu.IntLoad(ea);
 
 	// compute
-	bool underflow;
-	bool overflow;
+	uint32_t underflow;
+	uint32_t overflow;
 	dst_reg.Add(src_value, overflow, underflow);
 
 	if(update_ar)
@@ -885,8 +885,8 @@ ADDF_imm.execute = {
 	Register& dst_reg = cpu.GetExtReg(dst);
 
 	// compute
-	bool underflow;
-	bool overflow;
+	uint32_t underflow;
+	uint32_t overflow;
 	dst_reg.Add((uint16_t)imm, overflow, underflow);
 
 	// Generate flags (into ST)
@@ -1934,8 +1934,8 @@ CMPF_reg.execute = {
 	Register result_reg;
 	
 	// compute
-	bool underflow;
-	bool overflow;
+	uint32_t underflow;
+	uint32_t overflow;
 	result_reg.Sub(dst_reg, src_reg, overflow, underflow);
 	
 	// Generate flags (into ST)
@@ -1964,8 +1964,8 @@ CMPF_dir.execute = {
 	uint32_t src_value = cpu.IntLoad(ea);
 	
 	// compute
-	bool underflow;
-	bool overflow;
+	uint32_t underflow;
+	uint32_t overflow;
 	result_reg.Sub(dst_reg, src_value, overflow, underflow);
 	
 	// Generate flags (into ST)
@@ -2001,8 +2001,8 @@ CMPF_indir.execute = {
 	uint32_t src_value = cpu.IntLoad(ea);
 	
 	// compute
-	bool underflow;
-	bool overflow;
+	uint32_t underflow;
+	uint32_t overflow;
 	result_reg.Sub(dst_reg, src_value, overflow, underflow);
 	
 	if(update_ar)
@@ -2031,8 +2031,8 @@ CMPF_imm.execute = {
 	Register result_reg;
 	
 	// compute
-	bool underflow;
-	bool overflow;
+	uint32_t underflow;
+	uint32_t overflow;
 	result_reg.Sub(dst_reg, (uint16_t)imm, overflow, underflow);
 	
 	// Generate flags (into ST)
@@ -2305,7 +2305,7 @@ FIX_reg.execute = {
 	Register &src_reg = cpu.GetExtReg(src);
 
 	// Perform computation
-	bool overflow;
+	uint32_t overflow;
 	uint32_t result = src_reg.Fix(overflow);
 
 	// Set destination register
@@ -2339,7 +2339,7 @@ FIX_dir.execute = {
 	tmp_reg.SetFromSinglePresicionFPFormat(src_value);
 
 	// Perform computation
-	bool overflow;
+	uint32_t overflow;
 	uint32_t result = tmp_reg.Fix(overflow);
 
 	// Set destination register
@@ -2380,7 +2380,7 @@ FIX_indir.execute = {
 	tmp_reg.SetFromSinglePresicionFPFormat(src_value);
 
 	// Perform computation
-	bool overflow;
+	uint32_t overflow;
 	uint32_t result = tmp_reg.Fix(overflow);
 
 	// Set destination register
@@ -2415,7 +2415,7 @@ FIX_imm.execute = {
 	tmp_reg.SetFromShortFPFormat(imm);
 
 	// Perform computation
-	bool overflow;
+	uint32_t overflow;
 	uint32_t result = tmp_reg.Fix(overflow);
 
 	// Set destination register
@@ -2998,8 +2998,8 @@ MPYF_reg.execute = {
 	Register& dst_reg = cpu.GetExtReg(dst);
 
 	// Compute result and flags
-	bool overflow;
-	bool underflow;
+	uint32_t overflow;
+	uint32_t underflow;
 	dst_reg.Mpy(src_reg, overflow, underflow);
 
 	// Generate flags (into ST)
@@ -3026,8 +3026,8 @@ MPYF_dir.execute = {
 	Register& dst_reg = cpu.GetExtReg(dst);
 
 	// Compute result and flags
-	bool overflow;
-	bool underflow;
+	uint32_t overflow;
+	uint32_t underflow;
 	dst_reg.Mpy(src_value, overflow, underflow);
 
 	// Generate flags (into ST)
@@ -3061,8 +3061,8 @@ MPYF_indir.execute = {
 	Register& dst_reg = cpu.GetExtReg(dst);
 
 	// Compute result and flags
-	bool overflow;
-	bool underflow;
+	uint32_t overflow;
+	uint32_t underflow;
 	dst_reg.Mpy(src_value, overflow, underflow);
 	
 	if(update_ar)
@@ -3089,8 +3089,8 @@ MPYF_imm.execute = {
 	Register& dst_reg = cpu.GetExtReg(dst);
 
 	// Compute result and flags
-	bool overflow;
-	bool underflow;
+	uint32_t overflow;
+	uint32_t underflow;
 	dst_reg.Mpy((uint16_t)imm, overflow, underflow);
 
 	// Generate flags (into ST)
@@ -3656,8 +3656,8 @@ NEGF_reg.execute = {
 	Register& dst_reg = cpu.GetExtReg(dst);
 	
 	// compute
-	bool underflow;
-	bool overflow;
+	uint32_t underflow;
+	uint32_t overflow;
 	dst_reg.Neg(src_reg, overflow, underflow);
 	
 	// Generate flags (into ST)
@@ -3683,8 +3683,8 @@ NEGF_dir.execute = {
 	uint32_t src_value = cpu.IntLoad(ea);
 	
 	// compute
-	bool underflow;
-	bool overflow;
+	uint32_t underflow;
+	uint32_t overflow;
 	dst_reg.Neg(src_value, overflow, underflow);
 	
 	// Generate flags (into ST)
@@ -3717,8 +3717,8 @@ NEGF_indir.execute = {
 	uint32_t src_value = cpu.IntLoad(ea);
 	
 	// compute
-	bool underflow;
-	bool overflow;
+	uint32_t underflow;
+	uint32_t overflow;
 	dst_reg.Neg(src_value, overflow, underflow);
 	
 	if(update_ar)
@@ -3744,8 +3744,8 @@ NEGF_imm.execute = {
 	Register& dst_reg = cpu.GetExtReg(dst);
 	
 	// compute
-	bool underflow;
-	bool overflow;
+	uint32_t underflow;
+	uint32_t overflow;
 	dst_reg.Neg((uint16_t)imm, overflow, underflow);
 	
 	// Generate flags (into ST)
@@ -4051,7 +4051,7 @@ NORM_reg.execute = {
 	Register& dst_reg = cpu.GetExtReg(dst);
 	
 	// compute
-	bool underflow;
+	uint32_t underflow;
 	dst_reg.Norm(src_reg, underflow);
 	
 	// Generate flags (into ST)
@@ -4077,7 +4077,7 @@ NORM_dir.execute = {
 	uint32_t src_value = cpu.IntLoad(ea);
 	
 	// compute
-	bool underflow;
+	uint32_t underflow;
 	dst_reg.Norm(src_value, underflow);
 	
 	// Generate flags (into ST)
@@ -4110,7 +4110,7 @@ NORM_indir.execute = {
 	uint32_t src_value = cpu.IntLoad(ea);
 	
 	// compute
-	bool underflow;
+	uint32_t underflow;
 	dst_reg.Norm(src_value, underflow);
 	
 	if(update_ar)
@@ -4136,7 +4136,7 @@ NORM_imm.execute = {
 	Register& dst_reg = cpu.GetExtReg(dst);
 	
 	// compute
-	bool underflow;
+	uint32_t underflow;
 	dst_reg.Norm((uint16_t)imm, underflow);
 	
 	// Generate flags (into ST)
@@ -4598,8 +4598,8 @@ RND_reg.execute = {
 	Register& dst_reg = cpu.GetExtReg(dst);
 	
 	// compute
-	bool underflow;
-	bool overflow;
+	uint32_t underflow;
+	uint32_t overflow;
 	dst_reg.Rnd(src_reg, overflow, underflow);
 	
 	// Generate flags (into ST)
@@ -4625,8 +4625,8 @@ RND_dir.execute = {
 	uint32_t src_value = cpu.IntLoad(ea);
 	
 	// compute
-	bool underflow;
-	bool overflow;
+	uint32_t underflow;
+	uint32_t overflow;
 	dst_reg.Rnd(src_value, overflow, underflow);
 	
 	// Generate flags (into ST)
@@ -4659,8 +4659,8 @@ RND_indir.execute = {
 	uint32_t src_value = cpu.IntLoad(ea);
 	
 	// compute
-	bool underflow;
-	bool overflow;
+	uint32_t underflow;
+	uint32_t overflow;
 	dst_reg.Rnd(src_value, overflow, underflow);
 	
 	if(update_ar)
@@ -4686,8 +4686,8 @@ RND_imm.execute = {
 	Register& dst_reg = cpu.GetExtReg(dst);
 	
 	// compute
-	bool underflow;
-	bool overflow;
+	uint32_t underflow;
+	uint32_t overflow;
 	dst_reg.Rnd((uint16_t)imm, overflow, underflow);
 	
 	// Generate flags (into ST)
@@ -5393,8 +5393,8 @@ SUBF_reg.execute = {
 	Register& dst_reg = cpu.GetExtReg(dst);
 
 	// compute
-	bool underflow;
-	bool overflow;
+	uint32_t underflow;
+	uint32_t overflow;
 	dst_reg.Sub(src_reg, overflow, underflow);
 
 	// Generate flags (into ST)
@@ -5421,8 +5421,8 @@ SUBF_dir.execute = {
 	uint32_t src_value = cpu.IntLoad(ea);
 
 	// compute
-	bool underflow;
-	bool overflow;
+	uint32_t underflow;
+	uint32_t overflow;
 	dst_reg.Sub(src_value, overflow, underflow);
 
 	// Generate flags (into ST)
@@ -5456,8 +5456,8 @@ SUBF_indir.execute = {
 	uint32_t src_value = cpu.IntLoad(ea);
 
 	// compute
-	bool underflow;
-	bool overflow;
+	uint32_t underflow;
+	uint32_t overflow;
 	dst_reg.Sub(src_value, overflow, underflow);
 
 	if(update_ar)
@@ -5484,8 +5484,8 @@ SUBF_imm.execute = {
 	Register& dst_reg = cpu.GetExtReg(dst);
 
 	// compute
-	bool underflow;
-	bool overflow;
+	uint32_t underflow;
+	uint32_t overflow;
 	dst_reg.Sub((uint16_t)imm, overflow, underflow);
 
 	// Generate flags (into ST)
@@ -6051,8 +6051,8 @@ SUBRF_reg.execute = {
 	Register& dst_reg = cpu.GetExtReg(dst);
 
 	// compute
-	bool underflow;
-	bool overflow;
+	uint32_t underflow;
+	uint32_t overflow;
 	dst_reg.Sub(src_reg, dst_reg, overflow, underflow);
 
 	// Generate flags (into ST)
@@ -6079,8 +6079,8 @@ SUBRF_dir.execute = {
 	uint32_t src_value = cpu.IntLoad(ea);
 
 	// compute
-	bool underflow;
-	bool overflow;
+	uint32_t underflow;
+	uint32_t overflow;
 	dst_reg.Sub(src_value, dst_reg, overflow, underflow);
 
 	// Generate flags (into ST)
@@ -6114,8 +6114,8 @@ SUBRF_indir.execute = {
 	uint32_t src_value = cpu.IntLoad(ea);
 
 	// compute
-	bool underflow;
-	bool overflow;
+	uint32_t underflow;
+	uint32_t overflow;
 	dst_reg.Sub(src_value, dst_reg, overflow, underflow);
 
 	if(update_ar)
@@ -6142,8 +6142,8 @@ SUBRF_imm.execute = {
 	Register& dst_reg = cpu.GetExtReg(dst);
 
 	// compute
-	bool underflow;
-	bool overflow;
+	uint32_t underflow;
+	uint32_t overflow;
 	dst_reg.Sub((uint16_t)imm, dst_reg, overflow, underflow);
 
 	// Generate flags (into ST)

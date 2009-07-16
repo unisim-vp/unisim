@@ -1151,6 +1151,7 @@ public:
 	{
 		return delay_before_branching != 0;
 	}
+
 protected:
 	bool verbose_all;
 	bool verbose_setup;

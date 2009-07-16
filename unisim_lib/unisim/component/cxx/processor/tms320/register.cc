@@ -168,14 +168,14 @@ namespace tms320 {
 		
 	}
 	
-	uint32_t Register::Fix(bool& overflow)
+	uint32_t Register::Fix(uint32_t& overflow)
 	{
-		overflow = false;
+		overflow = 0;
 		
 		// check for special cases of exponent to signal an overflow
 		if ((int8_t)hi > 30)
 		{
-			overflow = true;
+			overflow = 1;
 			// check if the sign is positive or negative
 			// if positive return the biggest positive number
 			// if negative return the biggest negative number
@@ -206,190 +206,190 @@ namespace tms320 {
 		return (uint32_t)ext_lo;
 	}
 	
-	void Register::Abs(const Register& reg, bool& overflow)
+	void Register::Abs(const Register& reg, uint32_t& overflow)
 	{
 		this->Abs(reg.GetHi(), reg.GetLo(), overflow);
 	}
 	
-	void Register::Abs(uint16_t imm, bool& overflow)
+	void Register::Abs(uint16_t imm, uint32_t& overflow)
 	{
 		this->Abs(GetHi(imm), GetLo(imm), overflow);
 	}
 	
-	void Register::Abs(uint32_t imm, bool& overflow)
+	void Register::Abs(uint32_t imm, uint32_t& overflow)
 	{
 		this->Abs(GetHi(imm), GetLo(imm), overflow);
 	}
 	
-	void Register::Add(const Register& reg, bool& overflow, bool& underflow) 
+	void Register::Add(const Register& reg, uint32_t& overflow, uint32_t& underflow) 
 	{
 		this->Add(this->GetHi(), this->GetLo(), reg.GetHi(), reg.GetLo(), overflow, underflow);
 	}
 	
-	void Register::Add(uint16_t imm, bool& overflow, bool& underflow)
+	void Register::Add(uint16_t imm, uint32_t& overflow, uint32_t& underflow)
 	{
 		this->Add(this->GetHi(), this->GetLo(), GetHi(imm), GetLo(imm), overflow, underflow);
 	}
 	
-	void Register::Add(uint32_t imm, bool& overflow, bool& underflow)
+	void Register::Add(uint32_t imm, uint32_t& overflow, uint32_t& underflow)
 	{
 		this->Add(this->hi, this->lo, GetHi(imm), GetLo(imm), overflow, underflow);
 	}
 	
-	void Register::Add(const Register& reg_a, const Register& reg_b, bool& overflow, bool& underflow)
+	void Register::Add(const Register& reg_a, const Register& reg_b, uint32_t& overflow, uint32_t& underflow)
 	{
 		this->Add(reg_a.GetHi(), reg_a.GetLo(), reg_b.GetHi(), reg_b.GetLo(), overflow, underflow);
 	}
 	
-	void Register::Add(const Register& reg, uint32_t imm, bool& overflow, bool& underflow)
+	void Register::Add(const Register& reg, uint32_t imm, uint32_t& overflow, uint32_t& underflow)
 	{
 		this->Add(reg.GetHi(), reg.GetLo(), GetHi(), GetLo(), overflow, underflow);
 	}
 	
-	void Register::Add(uint32_t imm, const Register& reg, bool& overflow, bool& underflow)
+	void Register::Add(uint32_t imm, const Register& reg, uint32_t& overflow, uint32_t& underflow)
 	{
 		this->Add(reg, imm, overflow, underflow);
 	}
 	
-	void Register::Add(uint32_t imm_a, uint32_t imm_b, bool& overflow, bool& underflow)
+	void Register::Add(uint32_t imm_a, uint32_t imm_b, uint32_t& overflow, uint32_t& underflow)
 	{
 		this->Add(GetHi(imm_a), GetLo(imm_a), GetHi(imm_b), GetLo(imm_b), overflow, underflow);
 	}
 	
-	void Register::Sub(const Register& reg, bool& overflow, bool& underflow) 
+	void Register::Sub(const Register& reg, uint32_t& overflow, uint32_t& underflow) 
 	{
 		this->Sub(this->GetHi(), this->GetLo(), reg.hi, reg.lo, overflow, underflow);
 	}
 	
-	void Register::Sub(uint16_t imm, bool& overflow, bool& underflow)
+	void Register::Sub(uint16_t imm, uint32_t& overflow, uint32_t& underflow)
 	{
 		this->Sub(this->GetHi(), this->GetLo(), GetHi(imm), GetLo(imm), overflow, underflow);
 	}
 	
-	void Register::Sub(uint32_t imm, bool& overflow, bool& underflow)
+	void Register::Sub(uint32_t imm, uint32_t& overflow, uint32_t& underflow)
 	{
 		this->Sub(this->GetHi(), this->GetLo(), GetHi(imm), GetLo(imm), overflow, underflow);
 	}
 	
-	void Register::Sub(const Register& reg_a, const Register& reg_b, bool& overflow, bool& underflow)
+	void Register::Sub(const Register& reg_a, const Register& reg_b, uint32_t& overflow, uint32_t& underflow)
 	{
 		this->Sub(reg_a.GetHi(), reg_a.GetLo(), reg_b.GetHi(), reg_b.GetLo(), overflow, underflow);
 	}
 	
-	void Register::Sub(const Register& reg, uint16_t imm, bool& overflow, bool& underflow)
+	void Register::Sub(const Register& reg, uint16_t imm, uint32_t& overflow, uint32_t& underflow)
 	{
 		this->Sub(reg.GetHi(), reg.GetLo(), GetHi(imm), GetLo(imm), overflow, underflow);
 	}
 	
-	void Register::Sub(const Register& reg, uint32_t imm, bool& overflow, bool& underflow)
+	void Register::Sub(const Register& reg, uint32_t imm, uint32_t& overflow, uint32_t& underflow)
 	{
 		this->Sub(reg.GetHi(), reg.GetLo(), GetHi(imm), GetLo(imm), overflow, underflow);
 	}
 	
-	void Register::Sub(uint16_t imm, const Register& reg, bool& overflow, bool& underflow)
+	void Register::Sub(uint16_t imm, const Register& reg, uint32_t& overflow, uint32_t& underflow)
 	{
 		this->Sub(GetHi(imm), GetLo(imm), reg.GetHi(), reg.GetLo(), overflow, underflow);
 	}
 	
-	void Register::Sub(uint32_t imm, const Register& reg, bool& overflow, bool& underflow)
+	void Register::Sub(uint32_t imm, const Register& reg, uint32_t& overflow, uint32_t& underflow)
 	{
 		this->Sub(GetHi(imm), GetLo(imm), reg.GetHi(), reg.GetLo(), overflow, underflow);
 	}
 	
-	void Register::Sub(uint32_t imm_a, uint32_t imm_b, bool& overflow, bool& underflow)
+	void Register::Sub(uint32_t imm_a, uint32_t imm_b, uint32_t& overflow, uint32_t& underflow)
 	{
 		this->Sub(GetHi(imm_a), GetLo(imm_a), GetHi(imm_b), GetLo(imm_b), overflow, underflow);
 	}
 	
-	void Register::Neg(const Register& reg, bool& overflow, bool& underflow)
+	void Register::Neg(const Register& reg, uint32_t& overflow, uint32_t& underflow)
 	{
 		this->Sub((uint8_t)0x80, 0, reg.GetHi(), reg.GetLo(), overflow, underflow);
 	}
 	
-	void Register::Neg(uint16_t imm, bool& overflow, bool& underflow)
+	void Register::Neg(uint16_t imm, uint32_t& overflow, uint32_t& underflow)
 	{
 		this->Sub((uint8_t)0x80, 0, GetHi(imm), GetLo(imm), overflow, underflow);
 	}
 	
-	void Register::Neg(uint32_t imm, bool& overflow, bool& underflow)
+	void Register::Neg(uint32_t imm, uint32_t& overflow, uint32_t& underflow)
 	{
 		this->Sub((uint8_t)0x80, 0, GetHi(imm), GetLo(imm), overflow, underflow);
 	}
 	
-	void Register::Norm(const Register& reg, bool& underflow)
+	void Register::Norm(const Register& reg, uint32_t& underflow)
 	{
 		this->Norm(reg.GetHi(), reg.GetLo(), underflow);
 	}
 	
-	void Register::Norm(uint16_t imm, bool& underflow)
+	void Register::Norm(uint16_t imm, uint32_t& underflow)
 	{
 		this->Norm(GetHi(imm), GetLo(imm), underflow);
 	}
 	
-	void Register::Norm(uint32_t imm, bool& underflow)
+	void Register::Norm(uint32_t imm, uint32_t& underflow)
 	{
 		this->Norm(GetHi(imm), GetLo(imm), underflow);
 	}
 	
-	void Register::Mpy(const Register& reg, bool& overflow, bool& underflow)
+	void Register::Mpy(const Register& reg, uint32_t& overflow, uint32_t& underflow)
 	{
 		this->Mpy(this->hi, this->lo, reg.GetHi(), reg.GetLo(), overflow, underflow);
 	}
 	
-	void Register::Mpy(uint16_t imm, bool& overflow, bool& underflow)
+	void Register::Mpy(uint16_t imm, uint32_t& overflow, uint32_t& underflow)
 	{
 		this->Mpy(this->hi, this->lo, GetHi(imm), GetLo(imm), overflow, underflow);
 	}
 	
-	void Register::Mpy(uint32_t imm, bool& overflow, bool& underflow)
+	void Register::Mpy(uint32_t imm, uint32_t& overflow, uint32_t& underflow)
 	{
 		this->Mpy(this->hi, this->lo, GetHi(imm), GetLo(imm), overflow, underflow);
 	}
 	
-	void Register::Mpy(const Register& reg_a, const Register& reg_b, bool& overflow, bool& underflow)
+	void Register::Mpy(const Register& reg_a, const Register& reg_b, uint32_t& overflow, uint32_t& underflow)
 	{
 		this->Mpy(reg_a.hi, reg_a.lo, reg_b.hi, reg_b.lo, overflow, underflow);
 	}
 	
-	void Register::Mpy(const Register& reg, uint32_t imm, bool& overflow, bool& underflow)
+	void Register::Mpy(const Register& reg, uint32_t imm, uint32_t& overflow, uint32_t& underflow)
 	{
 		this->Mpy(reg.hi, reg.lo, GetHi(imm), GetLo(imm), overflow, underflow);
 	}
 	
-	void Register::Mpy(uint32_t imm, const Register& reg, bool& overflow, bool& underflow)
+	void Register::Mpy(uint32_t imm, const Register& reg, uint32_t& overflow, uint32_t& underflow)
 	{
 		this->Mpy(reg, imm, overflow, underflow);
 	}
 	
-	void Register::Mpy(uint32_t imm_a, uint32_t imm_b, bool& overflow, bool& underflow)
+	void Register::Mpy(uint32_t imm_a, uint32_t imm_b, uint32_t& overflow, uint32_t& underflow)
 	{
 		this->Mpy(GetHi(imm_a), GetLo(imm_a), GetHi(imm_b), GetHi(imm_b), overflow, underflow);
 	}
 	
-	void Register::Rnd(const Register& reg, bool& overflow, bool& underflow)
+	void Register::Rnd(const Register& reg, uint32_t& overflow, uint32_t& underflow)
 	{
 		this->Rnd(reg.GetHi(), reg.GetLo(), overflow, underflow);
 	}
 	
-	void Register::Rnd(uint16_t imm, bool& overflow, bool& underflow)
+	void Register::Rnd(uint16_t imm, uint32_t& overflow, uint32_t& underflow)
 	{
 		this->Rnd(GetHi(imm), GetLo(imm), overflow, underflow);
 	}
 	
-	void Register::Rnd(uint32_t imm, bool& overflow, bool& underflow)
+	void Register::Rnd(uint32_t imm, uint32_t& overflow, uint32_t& underflow)
 	{
 		this->Rnd(GetHi(imm), GetLo(imm), overflow, underflow);
 	}
 
-	void Register::Abs(uint8_t hi_a, uint32_t lo_a, bool& overflow)
+	void Register::Abs(uint8_t hi_a, uint32_t lo_a, uint32_t& overflow)
 	{
+		overflow = 0;
 		// if the exponent value is -128, then the mantissa should be 0
 		//   to represent the 0.0 value
 		if (hi_a == (uint8_t)0x80)
 		{
 			this->SetHi((uint8_t)0x80);
 			this->SetLo(0);
-			overflow = false;
 			return;
 		}
 		overflow = false;
@@ -397,7 +397,7 @@ namespace tms320 {
 		{
 			this->SetHi((uint8_t)0x7f);
 			this->SetLo((uint32_t)0x7fffffff);
-			overflow = true;
+			overflow = 1;
 			return;
 		}
 		// if the value is negative, then the abs operation can be performed
@@ -412,22 +412,22 @@ namespace tms320 {
 		this->SetLo(lo_a);
 	}
 	
-	void Register::Add(uint8_t hi_a, uint32_t lo_a, uint8_t hi_b, uint32_t lo_b, bool& overflow, bool& underflow)
+	void Register::Add(uint8_t hi_a, uint32_t lo_a, uint8_t hi_b, uint32_t lo_b, uint32_t& overflow, uint32_t& underflow)
 	{
 		AddSub(true, hi_a, lo_a, hi_b, lo_b, overflow, underflow);
 	}
 	
-	void Register::Sub(uint8_t hi_a, uint32_t lo_a, uint8_t hi_b, uint32_t lo_b, bool& overflow, bool& underflow)
+	void Register::Sub(uint8_t hi_a, uint32_t lo_a, uint8_t hi_b, uint32_t lo_b, uint32_t& overflow, uint32_t& underflow)
 	{
 		AddSub(false, hi_a, lo_a, hi_b, lo_b, overflow, underflow);
 	}
 	
-	void Register::AddSub(bool is_add, uint8_t hi_a, uint32_t lo_a, uint8_t hi_b, uint32_t lo_b, bool& overflow, bool& underflow)
+	void Register::AddSub(bool is_add, uint8_t hi_a, uint32_t lo_a, uint8_t hi_b, uint32_t lo_b, uint32_t& overflow, uint32_t& underflow)
 	{
 		int64_t ext_lo_a = 0;
 		int64_t ext_lo_b = 0;
-		overflow = false;
-		underflow = false;
+		overflow = 0;
+		underflow = 0;
 		
 #ifdef __DEBUG_TMS320C3X_REGISTER__
 		std::cerr 
@@ -532,7 +532,7 @@ namespace tms320 {
 				ext_lo_c = ext_lo_c >> 1;
 				if (((int32_t)(int8_t)this->GetHi()) + 1 > 127) 
 				{
-					overflow = true;
+					overflow = 1;
 					this->SetHi((uint8_t)0x7f);
 				}
 				else
@@ -547,7 +547,7 @@ namespace tms320 {
 					ext_lo_c = (uint64_t)ext_lo_c >> 1;
 					if ((int32_t)(int8_t)this->GetHi() + 1 > 127) 
 					{
-						overflow = true;
+						overflow = 1;
 						this->SetHi((uint8_t)0x7f);
 					}
 					else
@@ -566,7 +566,7 @@ namespace tms320 {
 						ext_lo_c = ext_lo_c << count;
 						if ((int32_t)((int32_t)this->GetHi() - count) < -128)
 						{
-							underflow = true;
+							underflow = 1;
 							this->SetHi((uint8_t)0x80);
 						}
 						else
@@ -633,12 +633,12 @@ namespace tms320 {
 								  (uint64_t)0x80000000)));
 	}
 	
-	void Register::Mpy(uint8_t hi_a, uint32_t lo_a, uint8_t hi_b, uint32_t lo_b, bool& overflow, bool& underflow)
+	void Register::Mpy(uint8_t hi_a, uint32_t lo_a, uint8_t hi_b, uint32_t lo_b, uint32_t& overflow, uint32_t& underflow)
 	{
 		int64_t ext_lo_a = 0;
 		int64_t ext_lo_b = 0;
-		overflow = false;
-		underflow = false;
+		overflow = 0;
+		underflow = 0;
 		
 		// convert mantissas to their full representation (33-bit)
 		// when the exponent is 0x80 (-128) the mantissa should be considered to contain 0, whatever its real value is
@@ -696,7 +696,7 @@ namespace tms320 {
 		// 1 - exponent overflow
 		if (exp_c > 127)
 		{
-			overflow = true;
+			overflow = 1;
 			exp_c = 127;
 			if (ext_lo_c > 0)
 			{
@@ -712,7 +712,7 @@ namespace tms320 {
 			// 2 - exponent underflow
 			if (exp_c < -128)
 			{
-				underflow = true;
+				underflow = 1;
 				exp_c = -128;
 				ext_lo_c = 0;
 			}
@@ -728,9 +728,9 @@ namespace tms320 {
 		this->hi = (uint8_t)((int8_t)exp_c);
 	}
 	
-	void Register::Norm(uint8_t hi_a, uint32_t lo_a, bool& underflow)
+	void Register::Norm(uint8_t hi_a, uint32_t lo_a, uint32_t& underflow)
 	{
-		underflow = false;
+		underflow = 0;
 		
 		if (lo_a == 0)
 		{
@@ -753,16 +753,16 @@ namespace tms320 {
 		if (exp < -128)
 		{
 			exp = -128;
-			underflow = true;
+			underflow = 1;
 		}
 		this->SetHi((uint32_t)exp);
 		this->SetLo(man ^ (uint32_t)0x80000000);
 	}
 	
-	void Register::Rnd(uint8_t hi_a, uint32_t lo_a, bool& overflow, bool& underflow)
+	void Register::Rnd(uint8_t hi_a, uint32_t lo_a, uint32_t& overflow, uint32_t& underflow)
 	{
-		overflow = false;
-		underflow = false;
+		overflow = 0;
+		underflow = 0;
 		
 		// check when src = 0
 		if (lo_a == 0 && hi_a == (uint8_t)0x80)
@@ -810,7 +810,7 @@ namespace tms320 {
 				ext_lo_c = ext_lo_c >> 1;
 				if ((int32_t)this->GetHi() + 1 > 127) 
 				{
-					overflow = true;
+					overflow = 1;
 					this->SetHi((uint8_t)0x7f);
 				}
 				else
@@ -825,7 +825,7 @@ namespace tms320 {
 					ext_lo_c = (uint64_t)ext_lo_c >> 1;
 					if ((int32_t)this->GetHi() + 1 > 127) 
 					{
-						overflow = true;
+						overflow = 1;
 						this->SetHi((uint8_t)0x7f);
 					}
 					else
