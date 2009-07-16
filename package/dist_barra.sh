@@ -99,12 +99,12 @@ unisim/util/debug/profile_32.cc \
 unisim/util/debug/profile_64.cc \
 unisim/util/endian/endian.cc \
 unisim/util/queue/queue.cc \
+unisim/component/cxx/scheduler/cuda_scheduler/cuda_scheduler.cc \
 unisim/component/cxx/processor/tesla/cpu.cc \
 unisim/component/cxx/processor/tesla/g80_debug.cc \
 unisim/component/cxx/processor/tesla/flags.cc \
 unisim/component/cxx/processor/tesla/disasm.cc \
 unisim/component/cxx/memory/ram/memory_32.cc"
-
 
 UNISIM_LIB_BARRA_ISA_FILES="\
 unisim/component/cxx/processor/tesla/isa/opcode/tesla.isa \
@@ -155,6 +155,10 @@ unisim/service/interfaces/registers.hh \
 unisim/service/interfaces/resetable.hh \
 unisim/service/interfaces/trap_reporting.hh \
 unisim/service/interfaces/synchronizable.hh \
+unisim/service/interfaces/instruction_stats.hh \
+unisim/service/interfaces/typed_registers.hh \
+unisim/service/interfaces/runnable.hh \
+unisim/component/cxx/scheduler/cuda_scheduler/cuda_scheduler.hh \
 unisim/component/cxx/processor/tesla/cpu.hh \
 unisim/component/cxx/processor/tesla/config.hh \
 unisim/component/cxx/processor/tesla/disasm.hh \
@@ -182,6 +186,7 @@ unisim/component/cxx/processor/tesla/hostfloat/denormals.hh \
 unisim/component/cxx/processor/tesla/hostfloat/c99_rounding.hh \
 unisim/component/cxx/processor/tesla/hostfloat/msvc_rounding.hh \
 unisim/component/cxx/processor/tesla/hostfloat/traits.hh \
+unisim/component/cxx/processor/tesla/interfaces.hh \
 unisim/component/cxx/memory/ram/memory.hh"
 
 
@@ -197,6 +202,7 @@ unisim/util/queue/queue.tcc \
 unisim/util/simfloat/integer.tcc \
 unisim/util/simfloat/floating.tcc \
 unisim/util/simfloat/host_floating.tcc \
+unisim/component/cxx/scheduler/cuda_scheduler/cuda_scheduler.tcc \
 unisim/component/cxx/processor/tesla/cpu.tcc \
 unisim/component/cxx/processor/tesla/exec.tcc \
 unisim/component/cxx/processor/tesla/flags.tcc \
@@ -506,6 +512,7 @@ if [ "${has_to_build_genisslib_configure}" = "yes" ]; then
 	echo "CLEANFILES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "AM_YFLAGS = -d -p yy" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "AM_LFLAGS = -l" >> "${GENISSLIB_MAKEFILE_AM}"
+#	echo "AM_CXXFLAGS = -O1 # workaround for gcc-4.1" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "genisslib_INCLUDES=-I\$(top_srcdir) -I\$(top_builddir)" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "bin_PROGRAMS = genisslib" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "genisslib_SOURCES = ${UNISIM_TOOLS_GENISSLIB_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
