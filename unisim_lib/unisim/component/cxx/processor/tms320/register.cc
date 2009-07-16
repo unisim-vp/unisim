@@ -769,11 +769,11 @@ namespace tms320 {
 		underflow = 0;
 		
 		// check when src = 0
-		if (lo_a == 0 && hi_a == (uint8_t)0x80)
+		if (hi_a == (uint8_t)0x80)
 		{
-			underflow = true;
-			this->SetHi(hi_a);
-			this->SetLo(lo_a);
+			underflow = 1;
+			this->SetHi((uint8_t)0x80);
+			this->SetLo(0);
 			return;
 		}
 		
