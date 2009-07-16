@@ -95,7 +95,6 @@ UNISIM_CHECK_UNISIM_LIB
 UNISIM_CHECK_CXXABI
 UNISIM_RELEASE
 
-#UNISIM_LINK(unisim_kernel_clm_engine)
 UNISIM_LINK(unisim_kernel_logger)
 UNISIM_LINK(unisim_kernel_service)
 #UNISIM_LINK(unisim_kernel_debug)
@@ -111,30 +110,12 @@ UNISIM_LINK(unisim_kernel_service)
 #UNISIM_LINK(unisim_service_power)
 #UNISIM_LINK(unisim_service_debug_gdb_server)
 #UNISIM_LINK(unisim_service_debug_inline_debugger)
-#UNISIM_LINK(unisim_service_os_linux_os)
-#UNISIM_LINK(unisim_service_loader_elf_loader)
 #UNISIM_LINK(unisim_service_debug_symbol_table)
-#UNISIM_LINK(unisim_service_loader_pmac_bootx)
-#UNISIM_LINK(unisim_service_loader_pmac_linux_kernel_loader)
-#UNISIM_LINK(unisim_service_loader_linux_loader)
 #UNISIM_LINK(unisim_service_logger)
-#UNISIM_LINK(unisim_service_sdl)
 
 UNISIM_LINK(unisim_component_cxx_processor_tesla)
-#UNISIM_LINK(unisim_component_cxx_processor_arm)
-#UNISIM_LINK(unisim_component_cxx_processor_powerpc)
-#UNISIM_LINK(unisim_component_cxx_pci_debug)
-#UNISIM_LINK(unisim_component_cxx_pci_macio)
-#UNISIM_LINK(unisim_component_cxx_pci)
-#UNISIM_LINK(unisim_component_cxx_pci_ide)
-#UNISIM_LINK(unisim_component_cxx_pci_video)
-#UNISIM_LINK(unisim_component_cxx_chipset_mpc107_epic)
-#UNISIM_LINK(unisim_component_cxx_chipset_mpc107_dma)
-#UNISIM_LINK(unisim_component_cxx_chipset_mpc107)
-#UNISIM_LINK(unisim_component_cxx_isa_i8042)
-#UNISIM_LINK(unisim_component_cxx_bridge_pci_isa)
 UNISIM_LINK(unisim_component_cxx_memory_ram)
-#UNISIM_LINK(unisim_component_cxx_memory_flash_am29lv)
+UNISIM_LINK(unisim_component_cxx_scheduler_cuda_scheduler)
 
 UNISIM_LIBTOOL
 

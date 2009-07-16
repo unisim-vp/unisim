@@ -44,11 +44,16 @@
 #include <map>
 #include <unisim/kernel/service/service.hh>
 #include <unisim/service/interfaces/memory.hh>
+#include <unisim/component/cxx/processor/tesla/interfaces.hh>
 #include <unisim/component/cxx/processor/tesla/stats.hh>
+#include <unisim/component/cxx/scheduler/cuda_scheduler/cuda_scheduler.hh>
 
 using unisim::kernel::service::Service;
 using unisim::component::cxx::processor::tesla::CPU;
 using unisim::component::cxx::processor::tesla::Stats;
+using unisim::component::cxx::scheduler::cuda_scheduler::Schedulable;
+using unisim::component::cxx::processor::tesla::SMAddress;
+
 //using unisim::service::interfaces::Memory;
 // Conflicts with ram::Memory, do NOT use in headers
 
@@ -65,7 +70,14 @@ template<class CONFIG>
 struct Allocator;
 
 template<class CONFIG>
-struct Kernel : CUfunc_st
+struct Loadable
+{
+	virtual void Load(Service<unisim::service::interfaces::Memory<typename CONFIG::address_t> > & mem,
+		Allocator<CONFIG> & allocator, uint32_t offset = 0) = 0;
+};
+
+template<class CONFIG>
+struct Kernel : CUfunc_st, Schedulable, Loadable<CONFIG>
 {
 	Kernel(Module<CONFIG> * module, std::istream & is);
 	Kernel();	// Default constructor needed for std containers
@@ -79,12 +91,14 @@ struct Kernel : CUfunc_st
 	void Dump(std::ostream & os) const;
 	void SetBlockShape(int x, int y, int z);
 	void SetGridShape(int x, int y);
-	int BlockX() const;
-	int BlockY() const;
-	int BlockZ() const;
-	int ThreadsPerBlock() const;
-	int WarpsPerBlock() const;
-	int GPRs() const;
+	virtual int BlockX() const;
+	virtual int BlockY() const;
+	virtual int BlockZ() const;
+	virtual int GridX() const;
+	virtual int GridY() const;
+	virtual int ThreadsPerBlock() const;
+	virtual int WarpsPerBlock() const;
+	virtual int GPRs() const;
 	
 	void ParamSeti(int offset, uint32_t value);
 	void ParamSetf(int offest, float value);
@@ -94,11 +108,12 @@ struct Kernel : CUfunc_st
 	void SetTexRef(::Sampler<CONFIG> * sampler);
 	void LoadSamplers(CPU<CONFIG> & cpu);
 	
-	uint32_t SharedTotal() const;
+	virtual uint32_t SharedTotal() const;
 	uint32_t LocalTotal() const;
-	void InitShared(Service<unisim::service::interfaces::Memory<typename CONFIG::address_t> > & mem, int index = 0,
+	virtual void InitShared(unisim::service::interfaces::Memory<SMAddress> & mem, int index = 0,
 		int bidx = 0, int bidy = 0, int core = 0) const;
-	
+
+	// TODO: To be removed someday, duplicated with CUDAScheduler
 	int BlocksPerCore() const;	// Max blocks that can run on a SM of target architecture
 	
 	Stats<CONFIG> stats;

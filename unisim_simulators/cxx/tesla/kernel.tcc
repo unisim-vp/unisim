@@ -315,6 +315,18 @@ int Kernel<CONFIG>::BlockZ() const
 }
 
 template<class CONFIG>
+int Kernel<CONFIG>::GridX() const
+{
+	return gridx;
+}
+
+template<class CONFIG>
+int Kernel<CONFIG>::GridY() const
+{
+	return gridy;
+}
+
+template<class CONFIG>
 void Kernel<CONFIG>::ParamSeti(int offset, uint32_t value)
 {
 	cerr << "ParamSeti @" << offset << " = " << value << endl; 
@@ -386,7 +398,7 @@ uint32_t Kernel<CONFIG>::LocalTotal() const
 
 
 template<class CONFIG>
-void Kernel<CONFIG>::InitShared(Service<unisim::service::interfaces::Memory<typename CONFIG::address_t> > & mem, int index,
+void Kernel<CONFIG>::InitShared(unisim::service::interfaces::Memory<SMAddress> & mem, int index,
 	int bidx, int bidy, int core) const
 {
 	// Header
@@ -403,19 +415,22 @@ void Kernel<CONFIG>::InitShared(Service<unisim::service::interfaces::Memory<type
 	if(trace_loading)
 		cerr << "Init block " << index << " (" << bidx << ", " << bidy << ") / ("
 			<< gridx << ", " << gridy << ") shared memory\n";
-	typename CONFIG::address_t shared_base = CONFIG::SHARED_START
-		+ core * CONFIG::SHARED_SIZE
-		+ index * SharedTotal();
+	//typename CONFIG::address_t shared_base = CONFIG::SHARED_START
+	//	+ core * CONFIG::SHARED_SIZE
+	//	+ index * SharedTotal();
+	
+	// Address translation already done by Core
 
-	if(!mem.WriteMemory(shared_base, header, 16)) {
+	if(!mem.WriteMemory(SMAddress(index, 0), header, 16)) {
 		throw CudaException(CUDA_ERROR_OUT_OF_MEMORY);
 	}
 	
 	if(trace_loading)
-		cerr << "Loading " << param_size << "B parameters @"
-			<< hex << shared_base + 16 << dec << endl;
+		cerr << "Loading " << param_size << "B parameters in core "
+		     << core << ", block " << index << endl;
+	
 	// Parameters
-	if(!mem.WriteMemory(shared_base + 16, &parameters[0], param_size)) {
+	if(!mem.WriteMemory(SMAddress(index, 16), &parameters[0], param_size)) {
 		throw CudaException(CUDA_ERROR_OUT_OF_MEMORY);
 	}
 }
@@ -427,7 +442,7 @@ int Kernel<CONFIG>::BlocksPerCore() const
 	int blockssm = CONFIG::SHARED_SIZE / SharedTotal();	// TODO: align
 	int blockswarps = CONFIG::MAX_WARPS / WarpsPerBlock();
 	
-	return std::min(std::min(blocksreg, blockssm), std::min(int(CONFIG::MAX_BLOCKS), blockswarps));
+	return std::min(std::min(blocksreg, blockssm), std::min(int(CONFIG::MAX_CTAS), blockswarps));
 }
 
 #endif

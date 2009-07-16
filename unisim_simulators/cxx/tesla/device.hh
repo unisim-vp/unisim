@@ -40,17 +40,21 @@
 #include "driver_objects.hh"
 #include "module.hh"
 #include <iosfwd>
+#include <boost/shared_ptr.hpp>
 
 #include <unisim/component/cxx/processor/tesla/cpu.hh>
 //#include <unisim/component/cxx/processor/tesla/cpu.tcc>
 #include <unisim/component/cxx/processor/tesla/config.hh>
 #include <unisim/component/cxx/memory/ram/memory.hh>
 #include <unisim/kernel/service/service.hh>
+#include <unisim/component/cxx/scheduler/cuda_scheduler/cuda_scheduler.hh>
 
+using boost::shared_ptr;
 using unisim::component::cxx::processor::tesla::CPU;
 using unisim::component::cxx::processor::tesla::BaseConfig;
 //using unisim::component::cxx::memory::ram::Memory;
 using unisim::kernel::service::Object;
+using unisim::component::cxx::scheduler::cuda_scheduler::CUDAScheduler;
 
 // Trivial allocator, no deallocation at all
 // for the moment
@@ -120,6 +124,8 @@ private:
 
 	std::vector<CPU<CONFIG> *> cores;
 	unisim::component::cxx::memory::ram::Memory<typename CONFIG::address_t> memory;
+	shared_ptr<CUDAScheduler<CONFIG> > scheduler;
+	
 	Allocator<CONFIG> global_allocator;
 	unsigned int core_count;
 	

@@ -153,6 +153,9 @@ Device<CONFIG>::Device() :
 	if(env != 0)
 		core_count = atoi(env);
 	
+	scheduler = shared_ptr<CUDAScheduler<CONFIG> >(
+		new CUDAScheduler<CONFIG>(core_count, "scheduler", this));
+
 	// Initialize cores
 	cores.resize(core_count);
 	for(int i = 0; i != core_count; ++i)
@@ -161,6 +164,12 @@ Device<CONFIG>::Device() :
 		name << "gpu_core_" << i;
 		cores[i] = new CPU<CONFIG>(name.str().c_str(), this, i, core_count);
 		cores[i]->memory_import >> memory.memory_export;
+		
+		scheduler->Socket(i).registers_import >> cores[i]->registers_export;
+		scheduler->Socket(i).configuration_import >> cores[i]->configuration_export;
+		scheduler->Socket(i).shared_memory_import >> cores[i]->shared_memory_export;
+		scheduler->Socket(i).reset_import >> cores[i]->reset_export;
+		scheduler->Socket(i).run_import >> cores[i]->run_export;
 	}
 	
 	memory.Setup();
@@ -168,10 +177,12 @@ Device<CONFIG>::Device() :
 	{
 		cores[i]->Setup();
 	}
+	scheduler->Setup();
 	
 	env = getenv("EXPORT_STATS");
 	if(env != 0)
 		export_stats = ParseBool(env);
+	SetVariableBool("EXPORT_STATS", "export-stats");
 
 	env = getenv("EXPORT_STATS_PREFIX");
 	if(env != 0)
@@ -227,6 +238,7 @@ void Device<CONFIG>::DumpCode(Kernel<CONFIG> & kernel, std::ostream & os)
 	}
 }
 
+#if 0
 inline uint32_t BuildTID(int x, int y, int z)
 {
 	return (z << 26) | (y << 16) | x;
@@ -306,6 +318,7 @@ void Runner<CONFIG>::operator() ()
 		// TODO: Sync
 	}
 }
+#endif
 
 template<class CONFIG>
 void Device<CONFIG>::Run(Kernel<CONFIG> & kernel, int width, int height)
@@ -332,7 +345,8 @@ void Device<CONFIG>::Run(Kernel<CONFIG> & kernel, int width, int height)
 		kernel.LoadSamplers(*cores[i]);
 	}
 	kernel.SetGridShape(width, height);
-	
+
+#if 0	
 	thread_group GPUThreads;
 	
 	for(int c = 1; c < core_count; ++c)
@@ -346,10 +360,13 @@ void Device<CONFIG>::Run(Kernel<CONFIG> & kernel, int width, int height)
 			core_count, 0)();
 	
 	GPUThreads.join_all();
+#endif
+	scheduler->Run(kernel);
 	
 	for(int i = 0; i != core_count; ++i) {
 		cores[i]->stats = 0;
 	}
+
 	
 	// Merge stats
 	if(export_stats) {
@@ -546,8 +563,8 @@ int Device<CONFIG>::Attribute(int attrib)
     	return 0;
     case CU_DEVICE_ATTRIBUTE_COMPUTE_MODE:
     	return 0;  // CU_COMPUTEMODE_DEFAULT
-	case 0x20080403:
-		//return 1;    // Happy birthday!
+	case 20080403:
+		return 2030;    // Happy birthday!
 	default:
     	throw CudaException(CUDA_ERROR_INVALID_VALUE);
 	}
