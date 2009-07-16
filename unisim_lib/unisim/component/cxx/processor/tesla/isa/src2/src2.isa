@@ -133,24 +133,24 @@ alu_reg.classify = {
 
 // Constant memory
 
-op alu_full_normal_const(/*subop*/?[3]:/*?*/?[1]:/*src3_neg*/?[1]:/*src1_neg*/?[1]:0[1]:/*src2_imm??*/?[1]:constseg[2]:/*src1_sh*/?[1]:/*src3*/?[7]\
+op alu_full_normal_const(/*subop*/?[3]:/*?*/?[1]:/*src3_neg*/?[1]:/*src1_neg*/?[1]:0[1]:/*src2_imm??*/?[1]:constseg[2]:src1_sh[1]:/*src3*/?[7]\
 	:/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*ignore_output*/?[1]:addr_hi[1]:/*marker*/0[2]:\
 	/*op*/?[4]:addr_lo[2]:/*addr_imm??*/0[1]:/*src3_cm*/?[1]:/*src2_cm*/1[1]:src2[7]:/*src1*/?[7]:\
 	/*dest*/?[7]:/*flow*/0[1]:/*long*/1[1])
 
-op alu_full_end_const(/*subop*/?[3]:/*?*/?[1]:/*src3_neg*/?[1]:/*src1_neg*/?[1]:0[1]:/*src2_imm??*/?[1]:constseg[2]:/*src1_sh*/?[1]:/*src3*/?[7]\
+op alu_full_end_const(/*subop*/?[3]:/*?*/?[1]:/*src3_neg*/?[1]:/*src1_neg*/?[1]:0[1]:/*src2_imm??*/?[1]:constseg[2]:src1_sh[1]:/*src3*/?[7]\
 	:/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*ignore_output*/?[1]:addr_hi[1]:/*marker*/1[2]:\
 	/*op*/?[4]:addr_lo[2]:/*addr_imm??*/0[1]:/*src3_cm*/?[1]:/*src2_cm*/1[1]:src2[7]:/*src1*/?[7]:\
 	/*dest*/?[7]:/*flow*/0[1]:/*long*/1[1])
 	
-op alu_full_join_const(/*subop*/?[3]:/*?*/?[1]:/*src3_neg*/?[1]:/*src1_neg*/?[1]:0[1]:/*src2_imm??*/?[1]:constseg[2]:/*src1_sh*/?[1]:/*src3*/?[7]\
+op alu_full_join_const(/*subop*/?[3]:/*?*/?[1]:/*src3_neg*/?[1]:/*src1_neg*/?[1]:0[1]:/*src2_imm??*/?[1]:constseg[2]:src1_sh[1]:/*src3*/?[7]\
 	:/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*ignore_output*/?[1]:addr_hi[1]:/*marker*/2[2]:\
 	/*op*/?[4]:addr_lo[2]:/*addr_imm??*/0[1]:/*src3_cm*/?[1]:/*src2_cm*/1[1]:src2[7]:/*src1*/?[7]:\
 	/*dest*/?[7]:/*flow*/0[1]:/*long*/1[1])
 	
 
 op alu_half_const(\
-	/*op*/?[4]:addr_lo[2]:/*addr_imm??*/0[1]:/*src1_sh*/?[1]:/*src2_cm*/1[1]:/*src2_neg*/?[1]:src2[6]:/*src1_n*/?[7]:\
+	/*op*/?[4]:addr_lo[2]:/*addr_imm??*/0[1]:src1_sh[1]:/*src2_cm*/1[1]:/*src2_neg*/?[1]:src2[6]:/*src1_n*/?[7]:\
 	/*dest*/?[7]:/*flow*/0[1]:/*long*/0[1])
 
 // Invalid op?
@@ -171,7 +171,9 @@ alu_const.read = {
 	//	constseg = 0;	// overlaps with rounding mode
 		
 	unsigned int ar = (addr_hi << 2) | addr_lo;
-	if(ar == 0) {
+	
+	// Indirect addressing on src1 (shared) has priority
+	if(ar == 0 || src1_sh) {
 		insn->Temp(Insn::TempSrc2) = cpu->ReadConstant(src2 * insn->OperandSize(OpSrc2), constseg);
 	}
 	else {
@@ -183,7 +185,7 @@ alu_const.read = {
 alu_const.disasm = {
 	//if(!insn->AllowSegment())
 	//	constseg = 0;	// overlaps with rounding mode
-	if(addr_hi == 0 && addr_lo == 0) {
+	if(addr_hi == 0 && addr_lo == 0 || src1_sh) {
 		os << "c" << constseg << "[" << src2 * insn->OperandSize(OpSrc2) << "]";
 	}
 	else {
@@ -198,7 +200,7 @@ alu_const.classify = {
 alu_half_const.read = {
 	typedef Instruction<CONFIG> Insn;
 	// Default segment = 0??
-	if(addr_lo == 0) {
+	if(addr_lo == 0 || src1_sh) {
 		insn->Temp(Insn::TempSrc2) = cpu->ReadConstant(src2 * insn->OperandSize(OpSrc2), 0);
 	}
 	else {
@@ -208,7 +210,7 @@ alu_half_const.read = {
 }
 
 alu_half_const.disasm = {
-	if(addr_lo == 0) {
+	if(addr_lo == 0 || src1_sh) {
 		os << "c" << 0 << "[" << src2 * insn->OperandSize(OpSrc2) << "]";
 	}
 	else {

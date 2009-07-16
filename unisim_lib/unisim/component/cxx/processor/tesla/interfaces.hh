@@ -32,12 +32,9 @@
  * Authors: Sylvain Collange (sylvain.collange@univ-perp.fr)
  */
  
-#ifndef UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_WARP_HH
-#define UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_WARP_HH
+#ifndef UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_INTERFACES_HH
+#define UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_INTERFACES_HH
 
-#include <bitset>
-#include <unisim/component/cxx/processor/tesla/forward.hh>
-#include <unisim/component/cxx/processor/tesla/flags.hh>
 
 namespace unisim {
 namespace component {
@@ -45,61 +42,39 @@ namespace cxx {
 namespace processor {
 namespace tesla {
 
-template<class CONFIG>
-struct Warp
+// VectorRegister<CONFIG> is not part of the public interface!
+
+// Scalar register
+struct GPRID
 {
-	typedef typename CONFIG::address_t address_t;
-
-	Warp();
-
-	// wid unique across blocks
-	void Reset(unsigned int wid, unsigned int gpr_num, CTA<CONFIG> * cta,
-		std::bitset<CONFIG::WARP_SIZE> init_mask, CPU<CONFIG> * cpu);
-
-	uint32_t GetGPRAddress(uint32_t reg) const;
-	address_t GetSMAddress(uint32_t sm = 0) const;
-	address_t GetLocalAddress(address_t addr, unsigned int segment) const;
-	unsigned int CTAID() const;
+	uint16_t warpid;
+	uint16_t regid;
+	uint16_t laneid;
 	
-	address_t pc;
-	address_t npc;
-
-	VectorFlags<CONFIG> pred_flags[CONFIG::MAX_PRED_REGS];
-	VectorAddress<CONFIG> addr[CONFIG::MAX_ADDR_REGS];
-	
-	uint32_t gpr_window_base;
-	uint32_t gpr_window_size;
-	
-	typename CONFIG::control_flow_t flow;
-
-	enum WarpState {
-		Active,
-		WaitingFence,
-		Finished
-	};
-	
-	WarpState state;
-	CTA<CONFIG> * cta;
-	
-	uint32_t id;	// for debugging purposes only
-	//CPU<CONFIG> * cpu;
+	GPRID(uint16_t warpid, uint16_t regid, uint16_t laneid) :
+		warpid(warpid), regid(regid), laneid(laneid) {}
 };
 
-
-template<class CONFIG>
-struct CTA
+struct SMAddress
 {
-	typedef typename CONFIG::address_t address_t;
-	CTA() {}
+	uint16_t blockid;
+	uint16_t address;
+	
+	SMAddress(uint16_t blockid, uint16_t address) :
+		blockid(blockid), address(address) {}
+};
 
-	void Reset(unsigned int bid, unsigned int sm_size,
-		address_t sm_base);
+struct ConfigurationRegisterID
+{
+	enum id_t {
+		ThreadsPerBlock,
+		Blocks,
+		GPRsPerWarp,
+		SMSize
+	};
+	id_t id;
 	
-	address_t GetSMAddress(uint32_t sm = 0) const;
-	
-	address_t sm_window_base;
-	uint32_t sm_window_size;
-	uint32_t id;
+	ConfigurationRegisterID(id_t id) : id(id) {}
 };
 
 } // end of namespace tesla
@@ -107,6 +82,5 @@ struct CTA
 } // end of namespace cxx
 } // end of namespace component
 } // end of namespace unisim
-
 
 #endif

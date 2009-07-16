@@ -85,7 +85,7 @@ public:
 	static uint32_t const MAX_WARPS_PER_BLOCK = 16;
 	static uint32_t const MAX_WARPS = 24;
 	static uint32_t const MAX_VGPR = 256;
-	static uint32_t const MAX_BLOCKS = 8;
+	static uint32_t const MAX_CTAS = 8;
 	static uint32_t const MAX_THREADS = MAX_WARPS * WARP_SIZE;
 	static uint32_t const STACK_DEPTH = 100;	// Random value
 //	static uint32_t const BRANCH_STACK_DEPTH = 100;	// Random value

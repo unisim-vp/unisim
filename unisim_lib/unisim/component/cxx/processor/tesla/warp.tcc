@@ -54,19 +54,17 @@ Warp<CONFIG>::Warp() :
 }
 
 template <class CONFIG>
-void Warp<CONFIG>::Reset(unsigned int wid, unsigned int bid, unsigned int gpr_num, unsigned int sm_size,
-	std::bitset<CONFIG::WARP_SIZE> init_mask, address_t sm_base, CPU<CONFIG> * cpu)
+void Warp<CONFIG>::Reset(unsigned int wid, unsigned int gpr_num, CTA<CONFIG> * cta,
+	std::bitset<CONFIG::WARP_SIZE> init_mask, CPU<CONFIG> * cpu)
 {
 	pc = CONFIG::CODE_START;
 	npc = 0;
 	
-	blockid = bid;
-	
 	gpr_window_size = gpr_num;
 	gpr_window_base = gpr_num * wid;
 	
-	sm_window_size = sm_size;
-	sm_window_base = sm_base + sm_size * bid;
+	this->cta = cta;
+	id = wid;
 	
 	flow.Reset(cpu, init_mask);
 	
@@ -81,9 +79,8 @@ void Warp<CONFIG>::Reset(unsigned int wid, unsigned int bid, unsigned int gpr_nu
 	
 	state = Active;
 	if(cpu->TraceReset()) {
-		cerr << " Warp " << id << " (" << bid << ", " << wid << "): reset\n";
+		cerr << " Warp " << id << ": reset\n";
 		cerr << "  " << gpr_window_size << " GPRs from " << gpr_window_base << "\n";
-		cerr << "  " << sm_size << "B shared mem from " << std::hex << sm_window_base << std::dec << "\n";
 	}
 }
 
@@ -102,9 +99,34 @@ uint32_t Warp<CONFIG>::GetGPRAddress(uint32_t reg) const
 template <class CONFIG>
 typename CONFIG::address_t Warp<CONFIG>::GetSMAddress(uint32_t sm) const
 {
+	return cta->GetSMAddress(sm);
+}
+
+template <class CONFIG>
+unsigned int Warp<CONFIG>::CTAID() const
+{
+	return cta->id;
+}
+
+//////////////////////////////////////////////////////////////////////
+
+
+template <class CONFIG>
+void CTA<CONFIG>::Reset(unsigned int bid, unsigned int sm_size,
+	address_t sm_base)
+{
+	id = bid;
+	sm_window_base = sm_base + sm_size * bid;
+	sm_window_size = sm_size;
+}
+
+template <class CONFIG>
+typename CONFIG::address_t CTA<CONFIG>::GetSMAddress(uint32_t sm) const
+{
 	assert(sm < sm_window_size);
 	return sm_window_base + sm;
 }
+
 
 } // end of namespace tesla
 } // end of namespace processor

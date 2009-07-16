@@ -41,11 +41,21 @@ namespace cxx {
 namespace processor {
 namespace tesla {
 
+template<class CONFIG>
+struct CPU;
+
 template <class CONFIG>
 struct VectorRegister;
 
 template <class CONFIG>
 struct VectorAddress;
+
+template<class CONFIG>
+struct Warp;
+
+template<class CONFIG>
+struct CTA;
+
 
 
 } // end of namespace tesla

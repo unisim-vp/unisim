@@ -45,6 +45,8 @@ namespace tesla {
 
 template class CPU<BaseConfig>;
 
+template class Stats<BaseConfig>;
+
 } // end of namespace tesla
 } // end of namespace processor
 } // end of namespace cxx

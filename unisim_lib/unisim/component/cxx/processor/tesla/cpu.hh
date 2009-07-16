@@ -39,7 +39,6 @@
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/memory_injection.hh>
 #include <unisim/service/interfaces/debug_control.hh>
-#include <unisim/service/interfaces/memory_access_reporting.hh>
 #include <unisim/service/interfaces/disassembly.hh>
 #include <unisim/util/debug/simple_register.hh>
 #include <unisim/util/endian/endian.hh>
@@ -48,10 +47,11 @@
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/loader.hh>
 #include <unisim/service/interfaces/symbol_table_lookup.hh>
-//#include <unisim/service/interfaces/logger.hh>
+#include <unisim/service/interfaces/resetable.hh>
+#include <unisim/service/interfaces/runnable.hh>
 #include "unisim/kernel/logger/logger.hh"
-#include <unisim/service/interfaces/trap_reporting.hh>
-#include <unisim/service/interfaces/registers.hh>
+#include <unisim/service/interfaces/typed_registers.hh>
+#include <unisim/service/interfaces/instruction_stats.hh>
 #include <unisim/util/queue/queue.hh>
 #include <map>
 #include <iostream>
@@ -59,6 +59,7 @@
 #include <boost/integer.hpp>
 #include <stack>
 #include <bitset>
+#include <unisim/component/cxx/processor/tesla/interfaces.hh>
 #include <unisim/component/cxx/processor/tesla/register.hh>
 #include <unisim/component/cxx/processor/tesla/warp.hh>
 #include <unisim/component/cxx/processor/tesla/flags.hh>
@@ -77,10 +78,12 @@ namespace tesla {
 
 using unisim::service::interfaces::DebugControl;
 using unisim::service::interfaces::Disassembly;
-using unisim::service::interfaces::MemoryAccessReporting;
-using unisim::service::interfaces::MemoryAccessReportingControl;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::MemoryInjection;
+using unisim::service::interfaces::TypedRegisters;
+using unisim::service::interfaces::InstructionStats;
+using unisim::service::interfaces::Resetable;
+using unisim::service::interfaces::Runnable;
 using namespace unisim::util::endian;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::Service;
@@ -101,21 +104,19 @@ using unisim::kernel::logger::Logger;
 
 template <class CONFIG>
 class CPU :
-//	public Decoder<CONFIG>
 	public Service<Disassembly<typename CONFIG::address_t> >,
 	public Service<Memory<typename CONFIG::address_t> >,
 	public Service<MemoryInjection<typename CONFIG::address_t> >,
+	public Service<TypedRegisters<uint32_t, GPRID> >,
+	public Service<TypedRegisters<uint32_t, ConfigurationRegisterID> >,
+	public Service<Memory<SMAddress> >,
+	public Service<InstructionStats<typename CONFIG::stats_t> >,
+	public Service<Resetable>,
+	public Service<Runnable>,
 	public Client<Loader<typename CONFIG::physical_address_t> >,
 	public Client<DebugControl<typename CONFIG::address_t> >,
 	public Client<SymbolTableLookup<typename CONFIG::address_t> >,
-//	public Client<MemoryAccessReporting<typename CONFIG::address_t> >,
-//	public Client<TrapReporting>,
-//	public Service<MemoryAccessReportingControl>,
-//	public Service<unisim::service::interfaces::Registers>,
 	public Client<Memory<typename CONFIG::address_t> >
-//	public Client<Logger>
-//	public Client<CachePowerEstimator>,
-//	public Client<PowerMode>,
 //	public Service<Synchronizable>
 {
 public:
@@ -129,17 +130,13 @@ public:
 	typedef VectorAddress<CONFIG> VecAddr;
 	typedef typename float_t::StatusAndControlFlags FPFlags;
 	
-//	static const uint32_t MEMORY_PAGE_SIZE = CONFIG::MEMORY_PAGE_SIZE;
-	
 	static uint32_t const WARP_SIZE = CONFIG::WARP_SIZE;
 	static uint32_t const MAX_WARPS_PER_BLOCK = CONFIG::MAX_WARPS_PER_BLOCK;
 	static uint32_t const MAX_WARPS = CONFIG::MAX_WARPS;
 	static uint32_t const MAX_VGPR = CONFIG::MAX_VGPR;
-	static uint32_t const MAX_BLOCKS = CONFIG::MAX_BLOCKS;
+	static uint32_t const MAX_CTAS = CONFIG::MAX_CTAS;
 	static uint32_t const MAX_THREADS = MAX_WARPS * WARP_SIZE;
 	static uint32_t const SHARED_MEM_SIZE = CONFIG::SHARED_SIZE;
-//	static uint32_t const BRANCH_STACK_DEPTH = CONFIG::BRANCH_STACK_DEPTH;
-//	static uint32_t const CALL_STACK_DEPTH = CONFIG::CALL_STACK_DEPTH;
 	static uint32_t const MAX_ADDR_REGS = CONFIG::MAX_ADDR_REGS;
 	static uint32_t const MAX_PRED_REGS = CONFIG::MAX_PRED_REGS;
 
@@ -150,19 +147,19 @@ public:
 	
 	ServiceExport<Disassembly<address_t> > disasm_export;
 
-//	ServiceExport<unisim::service::interfaces::Registers> registers_export;
 	ServiceExport<Memory<address_t> > memory_export;
 	ServiceExport<MemoryInjection<address_t> > memory_injection_export;
 //	ServiceExport<Synchronizable> synchronizable_export;
-//	ServiceExport<MemoryAccessReportingControl> memory_access_reporting_control_export;
-
+	ServiceExport<TypedRegisters<uint32_t, GPRID> > registers_export;
+	ServiceExport<TypedRegisters<uint32_t, ConfigurationRegisterID> > configuration_export;
+	ServiceExport<Memory<SMAddress> > shared_memory_export;
+	ServiceExport<InstructionStats<typename CONFIG::stats_t> > instruction_stats_export;
+	ServiceExport<Resetable> reset_export;
+	ServiceExport<Runnable> run_export;
 	ServiceImport<Loader<physical_address_t> > kernel_loader_import;
 	ServiceImport<DebugControl<address_t> > debug_control_import;
-//	ServiceImport<MemoryAccessReporting<address_t> > memory_access_reporting_import;
 	ServiceImport<SymbolTableLookup<address_t> > symbol_table_lookup_import;
 	ServiceImport<Memory<physical_address_t> > memory_import;
-//	ServiceImport<TrapReporting> trap_reporting_import;
-//	ServiceImport<Logger> logger_import;
 
 	//=====================================================================
 	//=                    Constructor/Destructor                         =
@@ -183,35 +180,28 @@ public:
 	//=====================================================================
 	
 	bool Step();	// -> true when finished
-	void Run();
+	virtual void Run();
 	virtual void Stop(int ret);
 	virtual void Synchronize();
 	virtual void Reset();
 	void Reset(unsigned int threadsperblock, unsigned int numblocks, unsigned int regnum, unsigned int smsize);
 	void InitStats(unsigned int code_size);
 
-//	virtual void BusRead(physical_address_t physical_addr, void *buffer, uint32_t size, WIMG wimg = CONFIG::WIMG_DEFAULT, bool rwitm = false);
-//	virtual void BusWrite(physical_address_t physical_addr, const void *buffer, uint32_t size, WIMG wimg = CONFIG::WIMG_DEFAULT);
-//	virtual void BusZeroBlock(physical_address_t physical_addr);
-//	virtual void BusFlushBlock(physical_address_t physical_addr);
-
-	//=====================================================================
-	//=             memory access reporting control interface methods     =
-	//=====================================================================
-
-	// PowerPC Linux OS Interface
-//	virtual void PerformExit(int ret);
-	
-	//=====================================================================
-	//=               Programmer view memory access methods               =
-	//=====================================================================
-	
-//	bool ReadMemory(address_t addr, void *buffer, uint32_t size, MemoryType mt, bool translate_addr);
-//	bool WriteMemory(address_t addr, const void *buffer, uint32_t size, MemoryType mt, bool translate_addr);
 	virtual bool ReadMemory(address_t addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(address_t addr, const void *buffer, uint32_t size);
 	virtual bool InjectReadMemory(address_t addr, void *buffer, uint32_t size);
 	virtual bool InjectWriteMemory(address_t addr, const void *buffer, uint32_t size);
+
+	virtual uint32_t ReadTypedRegister(GPRID addr);
+	virtual void WriteTypedRegister(GPRID addr, uint32_t const & r);
+	virtual uint32_t ReadTypedRegister(ConfigurationRegisterID addr);
+	virtual void WriteTypedRegister(ConfigurationRegisterID addr, uint32_t const & r);
+	
+	virtual bool ReadMemory(SMAddress addr, void *buffer, uint32_t size);
+	virtual bool WriteMemory(SMAddress addr, const void *buffer, uint32_t size);
+
+	virtual typename CONFIG::stats_t * GetStats();
+	virtual void SetStats(typename CONFIG::stats_t * stats);
 
 	void ReadShared(address_t addr, void *buffer, uint32_t size);
 	void WriteShared(address_t addr, const void *buffer, uint32_t size);
@@ -298,16 +288,6 @@ public:
 	void Return(std::bitset<CONFIG::WARP_SIZE> mask);
 	void Break(std::bitset<CONFIG::WARP_SIZE> mask);
 
-
-//	void ExecMarker(uint32_t marker);
-//	VecReg ReadOperandFP32(uint32_t reg, uint32_t cm, uint32_t sh, uint32_t neg);
-//	VecReg ReadOperandFP32(uint32_t reg, uint32_t cm, uint32_t sh, uint32_t neg, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm);
-//	VecReg ReadOperand(uint32_t reg, uint32_t cm, uint32_t sh);
-//	VecReg ReadImmediate(uint32_t imm_hi, uint32_t imm_lo);
-//	void WriteOutput(VecReg const & v, uint32_t reg, uint32_t pred_cond, uint32_t pred_reg);
-//	void WritePred(uint32_t set_pred_reg, uint32_t pred_cond, uint32_t pred_reg, VecFlags flags);	// To be called last - can modify its own predicate
-
-	
 	VecReg & GetGPR(unsigned int reg);	// for current warp
 	VecReg GetGPR(unsigned int reg) const;	// for current warp
 	
@@ -400,11 +380,20 @@ private:
 	//=====================================================================
 	//=                           G80 registers                           =
 	//=====================================================================
+
+	// Configuration registers
+	// Only used for Reset?
+	uint32_t threadsperblock;
+	uint32_t numblocks;
+	uint32_t gprs_per_warp;
+	uint32_t sm_size;
 	
+	// Runtime registers
 	unsigned int coreid;
 	unsigned int core_count;
 
 	Warp<CONFIG> warps[MAX_WARPS];
+	CTA<CONFIG> ctas[MAX_CTAS];
 	uint32_t current_warpid;
 	
 	VecReg gpr[MAX_VGPR];
@@ -413,6 +402,7 @@ private:
 	VecReg zero_reg;
 	
 	uint32_t num_warps;
+	uint32_t num_ctas;
 
 	// GT200
 //	bool mutex[SHARED_MEM_SIZE];
@@ -420,7 +410,6 @@ private:
 	//=====================================================================
 	//=                      Debugging stuffs                             =
 	//=====================================================================
-//	address_t effective_address;
 	uint64_t instruction_counter;                              //!< Number of executed instructions
 	uint64_t max_inst;                                         //!< Maximum number of instructions to execute
 
@@ -428,9 +417,6 @@ private:
 	//=                    CPU run-time parameters                        =
 	//=====================================================================
 	
-//	Parameter<uint64_t> param_cpu_cycle_time;             //!< linked to member cpu_cycle_time
-//	Parameter<uint64_t> param_voltage;                    //!< linked to member voltage
-//	Parameter<uint64_t> param_bus_cycle_time;             //!< linked to member bus_cycle_time
 	Parameter<uint64_t> param_max_inst;                   //!< linked to member max_inst
 
 	Parameter<bool> param_trace_insn;
@@ -458,9 +444,6 @@ protected:
 	//=              CPU Cycle Time/Voltage/Bus Cycle Time                =
 	//=====================================================================
 	
-//	uint64_t cpu_cycle_time; //!< CPU cycle time in ps
-//	uint64_t voltage;        //!< CPU voltage in mV
-//	uint64_t bus_cycle_time; //!< Front side bus cycle time in ps
 	uint64_t bus_cycle;      //!< Number of front side bus cycles
 	uint64_t cpu_cycle;      //!< Number of cpu cycles
 

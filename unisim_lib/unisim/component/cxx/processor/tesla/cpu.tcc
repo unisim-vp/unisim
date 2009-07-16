@@ -53,10 +53,6 @@
 #include <unisim/component/cxx/processor/tesla/vectorfp32.tcc>
 #include <unisim/component/cxx/processor/tesla/sampler.tcc>
 
-//#include <unisim/component/cxx/cache/cache.tcc>
-//#include <unisim/component/cxx/tlb/tlb.tcc>
-//#include <unisim/util/queue/queue.tcc>
-
 #include <sstream>
 #include <stdexcept>
 #include <cassert>
@@ -76,48 +72,41 @@ CPU<CONFIG>::CPU(const char *name, Object *parent, int coreid, int core_count) :
 	Service<Disassembly<typename CONFIG::address_t> >(name, parent),
 	Service<Memory<typename CONFIG::address_t> >(name, parent),
 	Service<MemoryInjection<typename CONFIG::address_t> >(name, parent),
-
+	Service<TypedRegisters<uint32_t, GPRID> >(name, parent),
+	Service<TypedRegisters<uint32_t, ConfigurationRegisterID> >(name, parent),
+	Service<Memory<SMAddress> >(name, parent),
+	Service<InstructionStats<typename CONFIG::stats_t> >(name, parent),
+	Service<Resetable>(name, parent),
+	Service<Runnable>(name, parent),
 	Client<Loader<typename CONFIG::physical_address_t> >(name, parent),
 	Client<DebugControl<typename CONFIG::address_t> >(name, parent),
 	Client<SymbolTableLookup<typename CONFIG::address_t> >(name, parent),
-//	Client<MemoryAccessReporting<typename CONFIG::address_t> >(name, parent),
-//	Client<TrapReporting>(name, parent),
-//	Service<MemoryAccessReportingControl>(name, parent),
-//	Service<unisim::service::interfaces::Registers>(name, parent),
 	Client<Memory<typename CONFIG::address_t> >(name, parent),
-//	Client<LinuxOS>(name, parent),
-//	Client<Logger>(name, parent),
-//	Client<CachePowerEstimator>(name, parent),
-//	Client<PowerMode>(name, parent),
 //	Service<Synchronizable>(name, parent),
 	disasm_export("disasm-export", this),
-//	registers_export("registers-export", this),
 	memory_export("memory-export", this),
 	memory_injection_export("memory-injection-export", this),
-//	cpu_linux_os_export("cpu-linux-os-export", this),
-//	memory_access_reporting_control_export("memory_access_reporting_control_export", this),
+	registers_export("registers-export", this),
+	configuration_export("configuration-export", this),
+	shared_memory_export("shared-memory-export", this),
+	instruction_stats_export("instruction-stats-export", this),
+	reset_export("reset-export", this),
+	run_export("run-export", this),
 	kernel_loader_import("kernel-loader-import", this),
 	debug_control_import("debug-control-import", this),
-//	memory_access_reporting_import("memory-access-reporting-import", this),
 	symbol_table_lookup_import("symbol-table-lookup-import", this),
 	memory_import("memory-import", this),
-//	trap_reporting_import("trap-reporting-import", this),
-//	logger_import("logger-import", this),
 //	synchronizable_export("synchronizable-export", this),
-//	cpu_cycle_time(0),
-//	voltage(0),
-//	bus_cycle_time(0),
+	threadsperblock(0),
+	numblocks(0),
+	gprs_per_warp(0),
+	sm_size(0),
 	coreid(coreid),
 	core_count(core_count),
 	zero_reg(0),
 	instruction_counter(0),
 	max_inst(0xffffffffffffffffULL),
-//	param_cpu_cycle_time("cpu-cycle-time", this, cpu_cycle_time),
-//	param_voltage("voltage", this, voltage),
-//	param_bus_cycle_time("bus-cycle-time", this, bus_cycle_time),
 	param_max_inst("max-inst", this, max_inst),
-//	param_verbose_all("verbose-all", this, verbose_all),
-//	param_trap_on_instruction_counter("trap-on-instruction-counter", this, trap_on_instruction_counter),
 	param_trace_insn("trace-insn", this, trace_insn),
 	param_trace_mask("trace-mask", this, trace_mask),
 	param_trace_reg("trace-reg", this, trace_reg),
@@ -162,30 +151,6 @@ bool CPU<CONFIG>::Setup()
 	return true;
 }
 
-#if 0
-//=====================================================================
-//=         memory access reporting control interface methods   START =
-//=====================================================================
-
-template<class CONFIG>
-void 
-CPU<CONFIG>::RequiresMemoryAccessReporting(bool report) {
-	requires_memory_access_reporting = report;
-}
-
-template<class CONFIG>
-void 
-CPU<CONFIG>::RequiresFinishedInstructionReporting(bool report) {
-	requires_finished_instruction_reporting = report;
-}
-
-//=====================================================================
-//=         memory access reporting control interface methods   END   =
-//=====================================================================
-
-#endif
-
-
 template <class CONFIG>
 void CPU<CONFIG>::OnDisconnect()
 {
@@ -203,6 +168,7 @@ void CPU<CONFIG>::Synchronize()
 
 template <class CONFIG>
 void CPU<CONFIG>::Reset()
+#if 0
 {
 	for(unsigned int i = 0; i != MAX_WARPS; ++i)
 	{
@@ -210,7 +176,7 @@ void CPU<CONFIG>::Reset()
 		warps[i].state = Warp<CONFIG>::Finished;
 	}
 	num_warps = 0;
-	
+	num_ctas = 0;
 	for(unsigned int i = 0; i != CONFIG::MAX_SAMPLERS; ++i)
 	{
 		samplers[i].Reset(this);
@@ -219,19 +185,31 @@ void CPU<CONFIG>::Reset()
 
 template <class CONFIG>
 void CPU<CONFIG>::Reset(unsigned int threadsperblock, unsigned int numblocks, unsigned int gprs_per_warp, unsigned int sm_size)
+#endif
 {
-	Reset();
+	for(unsigned int i = 0; i != MAX_WARPS; ++i)
+	{
+		warps[i].id = i;
+		warps[i].state = Warp<CONFIG>::Finished;
+	}
+	num_warps = 0;
+	num_ctas = 0;
+	for(unsigned int i = 0; i != CONFIG::MAX_SAMPLERS; ++i)
+	{
+		samplers[i].Reset(this);
+	}
 
 	// Round up
 	unsigned int warpsperblock = (threadsperblock + WARP_SIZE - 1) / WARP_SIZE;
 	
 	// TODO: move this to the driver/loader?
-	assert(numblocks <= MAX_BLOCKS);
+	assert(numblocks <= MAX_CTAS);
 	assert(warpsperblock <= MAX_WARPS_PER_BLOCK);
 	unsigned int total_warps = warpsperblock * numblocks;
 	assert(total_warps <= MAX_WARPS);
 	
 	num_warps = total_warps;
+	num_ctas = numblocks;
 	
 	//int gprs_per_warp = MAX_VGPR / total_warps;	// TODO: round to power of 2?
 												// and/or use count given by the compiler?
@@ -254,6 +232,8 @@ void CPU<CONFIG>::Reset(unsigned int threadsperblock, unsigned int numblocks, un
 
 	for(unsigned int b = 0; b != numblocks; ++b)
 	{
+		ctas[b].Reset(b, sm_size, sm_base);
+	
 		//address_t sm_block = sm_base + b * sm_size;
 		for(unsigned int w = 0; w != warpsperblock; ++w)
 		{
@@ -268,7 +248,7 @@ void CPU<CONFIG>::Reset(unsigned int threadsperblock, unsigned int numblocks, un
 				mask.set();
 			}
 			unsigned int wid = b * warpsperblock + w;
-			GetWarp(wid).Reset(wid, b, gprs_per_warp, sm_size, mask, sm_base, this);
+			GetWarp(wid).Reset(wid, gprs_per_warp, &ctas[b], mask, this);
 		}
 	}
 	instruction_counter = 0;
@@ -399,41 +379,6 @@ const char *CPU<CONFIG>::GetArchitectureName() const
 	return "Tesla";
 }
 
-#if 0
-template <class CONFIG>
-void CPU<CONFIG>::BusRead(physical_address_t physical_addr, void *buffer, uint32_t size, WIMG wimg, bool rwitm)
-{
-	memory_import->ReadMemory(physical_addr, buffer, size);
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::BusWrite(physical_address_t physical_addr, const void *buffer, uint32_t size, WIMG wimg)
-{
-	memory_import->WriteMemory(physical_addr, buffer, size);
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::BusZeroBlock(physical_address_t physical_addr)
-{
-	uint8_t zero[32];
-	memset(zero, 0, sizeof(zero));
-	memory_import->WriteMemory(physical_addr & (~31), zero, sizeof(zero));
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::BusFlushBlock(physical_address_t physical_addr)
-{
-}
-
-
-template <class CONFIG>
-bool CPU<CONFIG>::WriteMemory(address_t addr, const void *buffer, uint32_t size, MemoryType mt, bool translate_addr)
-{
-
-	return true;
-}
-#endif
-
 template <class CONFIG>
 bool CPU<CONFIG>::ReadMemory(address_t addr, void *buffer, uint32_t size)
 {
@@ -457,6 +402,87 @@ template <class CONFIG>
 bool CPU<CONFIG>::InjectWriteMemory(address_t addr, const void *buffer, uint32_t size)
 {
 	return WriteMemory(addr, buffer, size);
+}
+
+template <class CONFIG>
+uint32_t CPU<CONFIG>::ReadTypedRegister(GPRID addr)
+{
+	return GetGPR(addr.warpid, addr.regid)[addr.laneid];
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::WriteTypedRegister(GPRID addr, uint32_t const & r)
+{
+	GetGPR(addr.warpid, addr.regid)[addr.laneid] = r;
+}
+
+
+template <class CONFIG>
+uint32_t CPU<CONFIG>::ReadTypedRegister(ConfigurationRegisterID addr)
+{
+	switch(addr.id)
+	{
+	case ConfigurationRegisterID::ThreadsPerBlock:
+		return threadsperblock;
+	case ConfigurationRegisterID::Blocks:
+		return numblocks;
+	case ConfigurationRegisterID::GPRsPerWarp:
+		return gprs_per_warp;
+	case ConfigurationRegisterID::SMSize:
+		return sm_size;
+	default:
+		assert(false);
+	}
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::WriteTypedRegister(ConfigurationRegisterID addr, uint32_t const & r)
+{
+	switch(addr.id)
+	{
+	case ConfigurationRegisterID::ThreadsPerBlock:
+		threadsperblock = r;
+		break;
+	case ConfigurationRegisterID::Blocks:
+		numblocks = r;
+		break;
+	case ConfigurationRegisterID::GPRsPerWarp:
+		gprs_per_warp = r;
+		break;
+	case ConfigurationRegisterID::SMSize:
+		sm_size = r;
+		break;
+	default:
+		assert(false);
+	}
+}
+
+template <class CONFIG>
+bool CPU<CONFIG>::ReadMemory(SMAddress addr, void *buffer, uint32_t size)
+{
+	assert(addr.blockid < num_ctas);
+	address_t effective_addr = ctas[addr.blockid].GetSMAddress(addr.address);
+	return ReadMemory(effective_addr, buffer, size);
+}
+
+template <class CONFIG>
+bool CPU<CONFIG>::WriteMemory(SMAddress addr, const void *buffer, uint32_t size)
+{
+	assert(addr.blockid < num_ctas);
+	address_t effective_addr = ctas[addr.blockid].GetSMAddress(addr.address);
+	return WriteMemory(effective_addr, buffer, size);
+}
+
+template <class CONFIG>
+typename CONFIG::stats_t * CPU<CONFIG>::GetStats()
+{
+	return stats;
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::SetStats(typename CONFIG::stats_t * stats)
+{
+	this->stats = stats;
 }
 
 template <class CONFIG>
@@ -555,26 +581,6 @@ void CPU<CONFIG>::DumpAddr(int reg, ostream & os) const
 	os << " a" << reg << " = " << GetAddr(reg) << endl;
 }
 
-
-#if 0
-/* PowerPC Linux OS Interface */
-template <class CONFIG>
-void CPU<CONFIG>::PerformExit(int ret)
-{
-	if(logger_import)
-		(*logger_import) << DebugInfo << "Program exited with code " << ret << Endl << EndDebugInfo;
-	Stop(ret);
-}
-
-/* Endian interface */
-template <class CONFIG>
-endian_type CPU<CONFIG>::GetEndianess()
-{
-	return E_LITTLE_ENDIAN;
-}
-
-#endif
-
 template <class CONFIG>
 void CPU<CONFIG>::Fetch(typename CONFIG::insn_t & insn, typename CONFIG::address_t addr)
 {
@@ -640,14 +646,6 @@ VectorAddress<CONFIG> CPU<CONFIG>::GetAddr(unsigned int reg) const
 	assert(reg <= MAX_ADDR_REGS);
 	return CurrentWarp().addr[reg - 1];
 }
-
-#if 0
-template <class CONFIG>
-std::bitset<CONFIG::WARP_SIZE> & CPU<CONFIG>::GetCurrentMask()
-{
-	return CurrentWarp().flow.GetCurrentMask();
-}
-#endif
 
 template <class CONFIG>
 std::bitset<CONFIG::WARP_SIZE> CPU<CONFIG>::GetCurrentMask() const
@@ -751,15 +749,15 @@ template <class CONFIG>
 void CPU<CONFIG>::CheckFenceCompleted()
 {
 	// When all warps in a block are in WaitingFence state
-	bool synchronized[MAX_BLOCKS];
-	std::fill(synchronized, synchronized + MAX_BLOCKS, true);
+	bool synchronized[MAX_CTAS];
+	std::fill(synchronized, synchronized + MAX_CTAS, true);
 	for(unsigned int i = 0; i != num_warps; ++i)
 	{
 		if(TraceSync()) {
-			cerr << "  Warp " << i << ", block " << warps[i].blockid << endl;
+			cerr << "  Warp " << i << ", block " << warps[i].cta->id << endl;
 		}
 		if(warps[i].state != Warp<CONFIG>::WaitingFence) {
-			synchronized[warps[i].blockid] = false;
+			synchronized[warps[i].CTAID()] = false;
 			if(TraceSync()) {
 				cerr << "   Not synchronized\n";
 			}
@@ -772,10 +770,10 @@ void CPU<CONFIG>::CheckFenceCompleted()
 	// Turn them to active state
 	for(unsigned int i = 0; i != num_warps; ++i)
 	{
-		if(synchronized[warps[i].blockid]) {
+		if(synchronized[warps[i].CTAID()]) {
 			warps[i].state = Warp<CONFIG>::Active;
 			if(TraceSync()) {
-				cerr << "  Warp " << i << ", block " << warps[i].blockid << endl;
+				cerr << "  Warp " << i << ", block " << warps[i].CTAID() << endl;
 				cerr << "   Activated\n";
 			}
 		}
