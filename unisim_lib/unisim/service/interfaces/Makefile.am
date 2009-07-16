@@ -22,7 +22,10 @@ include_HEADERS = \
 	symbol_table_lookup.hh \
 	time.hh \
 	trap_reporting.hh \
-	ti_c_io.hh
+	ti_c_io.hh \
+	typed_registers.hh \
+	runnable.hh \
+	instruction_stats.hh
 
 dist_share_DATA = COPYING
 
