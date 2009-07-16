@@ -435,6 +435,13 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 					DumpDataProfile(true /* write */);
 					break;
 				}
+				
+				if (recognized == false)
+				{
+					// check for possible variable that could have the given name (parm[0])
+					recognized = DumpVariable(parm[0]);
+					break;
+				}
 
 				break;
 			case 2:
@@ -680,7 +687,7 @@ void InlineDebugger<ADDRESS>::Help()
 	cout << "    next contiguous instruction, a breakpoint or a watchpoint" << endl;
 	cout << "--------------------------------------------------------------------------------" << endl;
 	cout << "<r | run>" << endl;
-	cout << "    restart the simulation from the beginning" << endl << endl;
+	cout << "    restart the simulation from the beginning" << endl;
 	cout << "================================ INSPECT =======================================" << endl;
 	cout << "<dis | disasm | disassemble> [<symbol | *address>]" << endl;
 	cout << "    continue to disassemble starting from 'symbol', 'address', or after" << endl;
@@ -690,12 +697,17 @@ void InlineDebugger<ADDRESS>::Help()
 	cout << "    dump memory starting from 'symbol', 'address', or after the previous dump" << endl;
 	cout << "--------------------------------------------------------------------------------" << endl;
 	cout << "<register name>" << endl;
-	cout << "    display the register value" << endl << endl;
+	cout << "    display the register value" << endl;
+	cout << "--------------------------------------------------------------------------------" << endl;
+	cout << "<variable name | hierarchical variable name>" << endl;
+	cout << "    display all the objects variables that are named as variable name, or if a" << endl;
+	cout << "    hierarchical name is given the variable indicated" << endl;
+	cout << "    this command is equivalent to \"monitor <variable name>\"" << endl;
 	cout << "--------------------------------------------------------------------------------" << endl;
 	cout << "<m | monitor>[/<format>] [<variable name>]" << endl;
-	cout << "<reg | register>[/<format>] [<reg name>]" << endl;
-	cout << "<param | parameter>[/<format>] [<param name>]" << endl;
-	cout << "<stat | statistic>[/<format>] [<stat name>]" << endl;
+	cout << "<reg | register>[/<format>] [<register name>]" << endl;
+	cout << "<param | parameter>[/<format>] [<parameter name>]" << endl;
+	cout << "<stat | statistic>[/<format>] [<statistic name>]" << endl;
 	cout << "    display the given simulator variable (register/parameter/statistic), or " << endl;
 	cout << "    display all variable (register/parameter/statistic) names if none is given" << endl;
 	cout << "    when giving a variable name a format can be used, the available formats are:" << endl;
@@ -726,13 +738,13 @@ void InlineDebugger<ADDRESS>::Help()
 	cout << "    set a watchpoint at 'symbol' or 'address'." << endl;
 	cout << "    When using 'continue' and 'next' commands, the debugger will spy CPU loads" << endl;
 	cout << "    and store. The debugger will return to command line prompt once a load," << endl;
-	cout << "    or a store will access to 'symbol' or 'address'." << endl << endl;
+	cout << "    or a store will access to 'symbol' or 'address'." << endl;
 	cout << "--------------------------------------------------------------------------------" << endl;
 	cout << "<del | delete> <symbol | *address>" << endl;
 	cout << "    delete the breakpoint at 'symbol' or 'address'" << endl << endl;
 	cout << "--------------------------------------------------------------------------------" << endl;
 	cout << "<delw | delwatch> <symbol | *address> [<read | write>] [<size>]" << endl;
-	cout << "    delete the watchpoint at 'symbol' or 'address'" << endl << endl;
+	cout << "    delete the watchpoint at 'symbol' or 'address'" << endl;
 	cout << "============================== MISCELLANEOUS ===================================" << endl;
 	cout << "<h | ? | help>" << endl;
 	cout << "    display the help" << endl;
@@ -991,7 +1003,7 @@ void InlineDebugger<ADDRESS>::DumpMemory(ADDRESS addr)
 	}
 	cout.width(width);
 }
-
+	
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DumpVariables()
 {
@@ -1132,6 +1144,62 @@ void InlineDebugger<ADDRESS>::MonitorGetFormat(const char *cmd, char &format)
 	format = 'c';
 }
 
+template <class ADDRESS>
+bool 
+InlineDebugger<ADDRESS>::
+DumpVariable(const char *name)
+{
+	VariableBase *variable = ServiceManager::GetVariable(name);
+	bool found = false;
+	
+	// first check for the complete name (object.var, object.object.var, ...)
+	if (variable == &unisim::kernel::service::ServiceManager::void_variable)
+	{
+		// check if an object has the given variable name
+		list<Object *> root_objs;
+		ServiceManager::GetRootObjects(root_objs);
+		list<Object *>::iterator root_it;
+		for (root_it = root_objs.begin(); root_it != root_objs.end(); root_it++)
+		{
+			found |= DumpVariable(*(*root_it), name);
+		}
+	}
+	else
+	{
+		cout << variable->GetName() << " = " << ((string) *variable) << endl;
+		found = true;
+	}
+	return found;
+}
+	
+template <class ADDRESS>
+bool
+InlineDebugger<ADDRESS>::
+DumpVariable(const Object &obj, const char *name)
+{
+	bool found = false;
+	list<VariableBase *> vars;
+	vars = obj.GetVariables();
+	list<VariableBase *>::iterator var_it;
+	for (var_it = vars.begin(); var_it != vars.end(); var_it++)
+	{
+		if (strcmp((*var_it)->GetVarName(), name) == 0)
+		{
+			found = true;
+			cout << (*var_it)->GetName() << " = " << ((string) *(*var_it)) << endl;
+		}
+	}
+	// check if an object has the given variable name
+	list<Object *> objs;
+	objs = obj.GetLeafs();
+	list<Object *>::iterator obj_it;
+	for (obj_it = objs.begin(); obj_it != objs.end(); obj_it++)
+	{
+		found |= DumpVariable(*(*obj_it), name);
+	}
+	return found;
+}
+	
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DumpVariable(const char *cmd, const VariableBase *variable)
 {

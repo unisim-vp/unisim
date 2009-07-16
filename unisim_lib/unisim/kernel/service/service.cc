@@ -61,7 +61,8 @@ using namespace boost;
 //=============================================================================
 	
 VariableBase::VariableBase(const char *_name, Object *_owner, Type _type, const char *_description) :
-	name(_owner ? _owner->GetName() + string(".") + string(_name) : _name), 
+	name(_owner ? _owner->GetName() + string(".") + string(_name) : _name),
+	var_name(_name),
 	description(_description ? _description : ""),
 	owner(_owner),
 	container(0),
@@ -74,6 +75,7 @@ VariableBase::VariableBase(const char *_name, Object *_owner, Type _type, const 
 
 VariableBase::VariableBase(const char *_name, VariableBase *_container, Type _type, const char *_description) :
 	name(_container ? _container->GetName() + string(".") + string(_name) : _name), 
+	var_name(_container ? _container->GetVarName() + string(".") + string(_name) : _name),
 	description(_description ? _description : ""),
 	owner(0),
 	container(_container),
@@ -109,6 +111,11 @@ const char *VariableBase::GetName() const
 	return name.c_str();
 }
 
+const char *VariableBase::GetVarName() const
+{
+	return var_name.c_str();
+}
+	
 const char *VariableBase::GetDescription() const
 {
 	return description.c_str();
@@ -1008,7 +1015,7 @@ VariableBase *ServiceManager::GetVariable(const char *name, VariableBase::Type t
 	
 	if(variable_iter != variables.end() && (type == VariableBase::VAR_VOID || (*variable_iter).second->GetType() == type)) return (*variable_iter).second;
 	
-	cerr << "ConfigManager: unknown variable \"" << name << "\"" << endl;
+	// cerr << "ConfigManager: unknown variable \"" << name << "\"" << endl;
 	return &void_variable;
 }
 

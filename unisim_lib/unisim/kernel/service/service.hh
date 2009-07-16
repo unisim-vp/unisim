@@ -110,6 +110,7 @@ public:
 	Object *GetOwner() const;
 	VariableBase *GetObject() const;
 	const char *GetName() const;
+	const char *GetVarName() const;
 	const char *GetDescription() const;
 	Type GetType() const;
 	virtual const char *GetDataTypeName() const;
@@ -151,6 +152,7 @@ public:
 	virtual VariableBase& operator [] (unsigned int index);
 private:
 	string name;
+	string var_name;
 	Object *owner;
 	VariableBase *container;
 	string description;
