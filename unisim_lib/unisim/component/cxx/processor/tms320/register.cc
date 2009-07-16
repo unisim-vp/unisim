@@ -724,8 +724,8 @@ namespace tms320 {
 		}
 		
 		// set the mantissa and exponent into the register
-		this->lo = (uint32_t)((ext_lo_c & ~(uint64_t)0x80000000) | ((ext_lo_c >> 1) & (uint64_t)0x80000000));
-		this->hi = (uint8_t)((int8_t)exp_c);
+		this->SetLo((uint32_t)((ext_lo_c & ~(uint64_t)0x80000000) | ((ext_lo_c >> 1) & (uint64_t)0x80000000)));
+		this->SetHi((uint8_t)((int8_t)exp_c));
 	}
 	
 	void Register::Norm(uint8_t hi_a, uint32_t lo_a, uint32_t& underflow)
@@ -750,13 +750,17 @@ namespace tms320 {
 		
 		man = man << count;
 		exp = exp - count;
-		if (exp < -128)
+		if (exp <= -128)
 		{
-			exp = -128;
+			this->SetHi((uint8_t)0x80);
+			this->SetLo(0);
 			underflow = 1;
 		}
-		this->SetHi((uint32_t)exp);
-		this->SetLo(man ^ (uint32_t)0x80000000);
+		else
+		{
+			this->SetHi((uint32_t)exp);
+			this->SetLo(man ^ (uint32_t)0x80000000);
+		}
 	}
 	
 	void Register::Rnd(uint8_t hi_a, uint32_t lo_a, uint32_t& overflow, uint32_t& underflow)
