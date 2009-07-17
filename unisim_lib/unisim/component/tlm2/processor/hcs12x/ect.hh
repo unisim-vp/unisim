@@ -123,6 +123,8 @@ public:
 
 	tlm_utils::simple_target_socket<ECT> slave_socket;
 
+	tlm_utils::simple_target_socket<ECT> bus_clock_socket;
+
 	ServiceExport<Memory<service_address_t> > memory_export;
 	ServiceImport<Memory<service_address_t> > memory_import;
 	ServiceExport<Registers> registers_export;
@@ -132,6 +134,7 @@ public:
 
 	void Run();
 	void assertInterrupt(uint8_t interrupt_offset);
+	void UpdateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay);
 
     //================================================================
     //=                    tlm2 Interface                            =
@@ -179,6 +182,8 @@ public:
 protected:
 
 private:
+	void ComputeInternalTime();
+
 	tlm_quantumkeeper quantumkeeper;
 	PayloadFabric<XINT_Payload> xint_payload_fabric;
 

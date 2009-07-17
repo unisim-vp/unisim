@@ -125,6 +125,7 @@ public:
 
 	// interface with bus
 	tlm_utils::simple_target_socket<PWM> slave_socket;
+	tlm_utils::simple_target_socket<PWM> bus_clock_socket;
 
 	ServiceExport<Memory<service_address_t> > memory_export;
 	ServiceImport<Memory<service_address_t> > memory_import;
@@ -134,6 +135,7 @@ public:
     PWM(const sc_module_name& name, Object *parent = 0);
     ~PWM();
 
+	void UpdateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay);
 
     void refresh_channel(uint8_t channel_number);
 
@@ -192,6 +194,7 @@ public:
     bool write(uint8_t offset, uint8_t val);
 
 private:
+	void ComputeInternalTime();
 
 	tlm_quantumkeeper quantumkeeper;
 	PayloadFabric<PWM_Payload<PWM_SIZE> > payload_fabric;

@@ -92,7 +92,8 @@ ATD10B<ATD_SIZE>::ATD10B(const sc_module_name& name, Object *parent) :
 	anx_socket(*this);
 	interrupt_request(*this);
 	slave_socket.register_b_transport(this, &ATD10B::read_write);
-
+	bus_clock_socket.register_b_transport(this, &ATD10B::UpdateBusClock);
+	
 	SC_HAS_PROCESS(ATD10B);
 
 	SC_THREAD(Process);
@@ -801,6 +802,24 @@ void ATD10B<ATD_SIZE>::read_write( tlm::tlm_generic_payload& trans, sc_time& del
 	trans.set_response_status( tlm::TLM_OK_RESPONSE );
 }
 
+template <uint8_t ATD_SIZE>
+void ATD10B<ATD_SIZE>::ComputeInternalTime() {
+
+	bus_cycle_time = sc_time((double)bus_cycle_time_int, SC_PS);
+
+}
+
+template <uint8_t ATD_SIZE>
+void ATD10B<ATD_SIZE>::UpdateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay) {
+
+	sc_dt::uint64*   external_bus_clock = (sc_dt::uint64*) trans.get_data_ptr();
+    trans.set_response_status( tlm::TLM_OK_RESPONSE );
+
+	bus_cycle_time_int = *external_bus_clock;
+
+	ComputeInternalTime();
+}
+
 
 //=====================================================================
 //=                  Client/Service setup methods                     =
@@ -871,15 +890,15 @@ bool ATD10B<ATD_SIZE>::Setup() {
 		return false;
 	}
 
-	bus_cycle_time = sc_time((double)bus_cycle_time_int, SC_PS);
+	Reset();
+
+	ComputeInternalTime();
 
 	// the index 'i' model BusClock in MHz
 	for (int i=0; i<32; i++) {
 		busClockRange[i].maxBusClock = 1e6/(i+1); // busClock is modeled in PS
 		busClockRange[i].minBusClock = 1e6/((i+1)*4);
 	}
-
-	Reset();
 
 	return true;
 }

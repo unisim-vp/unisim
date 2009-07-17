@@ -46,11 +46,14 @@ using unisim::util::debug::SimpleRegister;
 CRG::CRG(const sc_module_name& name, Object *parent) :
 	Object(name, parent),
 	sc_module(name),
-	slave_socket("slave_socket"),
+
 	Service<Memory<service_address_t> >(name, parent),
 	Service<Registers>(name, parent),
 	Client<Memory<service_address_t> >(name, parent),
 	Client<TrapReporting>(name, parent),
+
+	slave_socket("slave_socket"),
+	bus_clock_socket("Bus-Clock"),
 
 	trap_reporting_import("trap_reproting_import", this),
 	memory_export("memory_export", this),
@@ -75,12 +78,14 @@ CRG::CRG(const sc_module_name& name, Object *parent) :
 {
 
 	interrupt_request(*this);
+
 	slave_socket.register_b_transport(this, &CRG::read_write);
 
 	SC_HAS_PROCESS(CRG);
 
 	SC_THREAD(RunRTI);
 
+	SC_THREAD(UpdateBusClock);
 }
 
 CRG::~CRG() {
@@ -223,15 +228,19 @@ bool CRG::write(uint8_t offset, uint8_t value) {
 			if ((clksel_register & 0x80) != 0) return true; // if (PLLSEL == 1) then return;
 
 			synr_register = value & 0x3F;
-			compute_clock();
 			crgflg_register = crgflg_register | 0x0C; // set Lock and track bits
+
+			compute_clock();
+			UpdateBusClock();
 		} break;
 		case REFDV: {
 			if ((clksel_register & 0x80) != 0) return true; // if (PLLSEL == 1) then return;
 
 			refdv_register = value & 0x3F;
-			compute_clock();
 			crgflg_register = crgflg_register | 0x1C;
+
+			compute_clock();
+			UpdateBusClock();
 			assertInterrupt(interrupt_offset_pll_lock);
 		} break;
 		case CTFLG: {
@@ -268,6 +277,7 @@ bool CRG::write(uint8_t offset, uint8_t value) {
 		case CLKSEL: {
 			clksel_register = value;
 			compute_clock();
+			UpdateBusClock();
 		} break;
 		case PLLCTL: {
 			uint8_t cme_bit = pllctl_register & 0x80;
@@ -326,6 +336,30 @@ void CRG::compute_clock() {
 		bus_clock = oscillator_clock / 2;
 	}
 
+}
+
+void CRG::UpdateBusClock() {
+	// notify bus_clock update
+	sc_dt::uint64 bus_clock_value = bus_clock.value();
+
+	tlm::tlm_generic_payload* trans = payloadFabric.allocate();
+
+	trans->set_command( tlm::TLM_WRITE_COMMAND );
+	trans->set_data_ptr( (unsigned char *)&bus_clock_value);
+
+	sc_time delay = SC_ZERO_TIME;
+
+	for (uint8_t i = 0; i < bus_clock_socket.size(); i++) {
+		trans->set_response_status( tlm::TLM_INCOMPLETE_RESPONSE );
+
+		bus_clock_socket[i]->b_transport( *trans, delay);
+
+		if (trans->is_response_error() )
+			SC_REPORT_ERROR("CRG : ", "Response error from b_transport");
+
+	}
+
+	trans->release();
 }
 
 void CRG::initialize_rti_counter() {
@@ -411,12 +445,6 @@ bool CRG::Setup() {
 
 	sprintf(buf, "%s.ARMCOP",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &armcop_register);
-
-	/**
-	 * TODO:
-	 *  - One of the output of the CRG is the BusClock (hereafter fsb_cycle_time).
-	 *  - In fact I have to connect all the others component to the CRG::BusClock output.
-	 */
 
 	oscillator_clock = sc_time((double) oscillator_clock_int, SC_PS);
 

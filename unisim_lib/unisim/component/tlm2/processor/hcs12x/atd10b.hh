@@ -121,6 +121,7 @@ public:
 
 	// interface with bus
 	tlm_utils::simple_target_socket<ATD10B> slave_socket;
+	tlm_utils::simple_target_socket<ATD10B> bus_clock_socket;
 
 	ServiceExport<Memory<service_address_t> > memory_export;
 	ServiceImport<Memory<service_address_t> > memory_import;
@@ -133,6 +134,7 @@ public:
 	void Process();
 	void RunScanMode();
 	void RunTriggerMode();
+	void UpdateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay);
 
 	//================================================================
 	//=                    tlm2 Interface                            =
@@ -184,6 +186,8 @@ public:
 protected:
 
 private:
+	void ComputeInternalTime();
+
 	tlm_quantumkeeper quantumkeeper;
 	peq_with_get<ATD_Payload<ATD_SIZE> > input_payload_queue;
 

@@ -96,7 +96,7 @@ PWM<PWM_SIZE>::PWM(const sc_module_name& name, Object *parent) :
 	master_sock(*this);
 	interrupt_request(*this);
 	slave_socket.register_b_transport(this, &PWM::read_write);
-
+	bus_clock_socket.register_b_transport(this, &PWM::UpdateBusClock);
 }
 
 template <uint8_t PWM_SIZE>
@@ -646,17 +646,34 @@ sc_time PWM<PWM_SIZE>::getClockSB() {
 	return clockSB;
 }
 
-	//=====================================================================
-	//=                  Client/Service setup methods                     =
-	//=====================================================================
 template <uint8_t PWM_SIZE>
-bool PWM<PWM_SIZE>::Setup() {
+void PWM<PWM_SIZE>::ComputeInternalTime() {
 
 	bus_cycle_time = sc_time((double)bus_cycle_time_int, SC_PS);
 
 	for (int i=0; i < 8; i++) {
 		clockVector[i] = bus_cycle_time/(1 << i);
 	}
+
+}
+
+template <uint8_t PWM_SIZE>
+void PWM<PWM_SIZE>::UpdateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay) {
+
+	sc_dt::uint64*   external_bus_clock = (sc_dt::uint64*) trans.get_data_ptr();
+    trans.set_response_status( tlm::TLM_OK_RESPONSE );
+
+	bus_cycle_time_int = *external_bus_clock;
+
+	ComputeInternalTime();
+}
+
+
+	//=====================================================================
+	//=                  Client/Service setup methods                     =
+	//=====================================================================
+template <uint8_t PWM_SIZE>
+bool PWM<PWM_SIZE>::Setup() {
 
 	char buf[80];
 
@@ -721,6 +738,8 @@ bool PWM<PWM_SIZE>::Setup() {
 
 	Reset();
 
+	ComputeInternalTime();
+	
 	return true;
 }
 

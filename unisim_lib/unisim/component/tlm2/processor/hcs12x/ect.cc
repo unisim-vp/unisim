@@ -76,6 +76,7 @@ ECT::ECT(const sc_module_name& name, Object *parent) :
 
 	interrupt_request(*this);
 	slave_socket.register_b_transport(this, &ECT::read_write);
+	bus_clock_socket.register_b_transport(this, &ECT::UpdateBusClock);
 
 	SC_HAS_PROCESS(ECT);
 
@@ -184,7 +185,11 @@ void ECT::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 bool ECT::read(uint8_t offset, uint8_t &value) {
 
 	switch (offset) {
-		default: std::cerr << "Warning: ETC => Read Request not supported for register " << sc_time(offset, SC_NS) << std::endl;
+		default: {
+			char buff[30];
+			sprintf(buff,"%d",offset);
+			std::cerr << "Warning: ETC => Read Request not supported for register at offset = " << buff << std::endl;
+		}
 	}
 
 	return false;
@@ -193,7 +198,11 @@ bool ECT::read(uint8_t offset, uint8_t &value) {
 bool ECT::write(uint8_t offset, uint8_t value) {
 
 	switch (offset) {
-		default: std::cerr << "Warning: ETC => Write Request not supported for register 0x" << sc_time(offset, SC_NS) << std::endl;
+		default: {
+			char buff[30];
+			sprintf(buff,"%d",offset);
+			std::cerr << "Warning: ETC => Write Request not supported for register at offset = " << buff << std::endl;
+		}
 	}
 
 	return false;
@@ -205,8 +214,6 @@ bool ECT::write(uint8_t offset, uint8_t value) {
 
 bool ECT::Setup() {
 
-	bus_cycle_time = sc_time((double) bus_cycle_time_int, SC_PS);
-
 //	char buf[80];
 //
 //	sprintf(buf, "%s.ATDCTL0",name());
@@ -214,6 +221,8 @@ bool ECT::Setup() {
 
 
 	Reset();
+
+	ComputeInternalTime();
 
 	return true;
 }
@@ -240,6 +249,20 @@ void ECT::Reset() {
 
 }
 
+void ECT::ComputeInternalTime() {
+
+	bus_cycle_time = sc_time((double)bus_cycle_time_int, SC_PS);
+}
+
+void ECT::UpdateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay) {
+
+	sc_dt::uint64*   external_bus_clock = (sc_dt::uint64*) trans.get_data_ptr();
+    trans.set_response_status( tlm::TLM_OK_RESPONSE );
+
+	bus_cycle_time_int = *external_bus_clock;
+
+	ComputeInternalTime();
+}
 
 //=====================================================================
 //=             memory interface methods                              =

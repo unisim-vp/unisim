@@ -46,19 +46,6 @@ namespace tlm2 {
 namespace processor {
 namespace hcs12x {
 
-//using unisim::service::interfaces::Hex;
-//using unisim::service::interfaces::Dec;
-//using unisim::service::interfaces::Endl;
-//using unisim::service::interfaces::DebugInfo;
-//using unisim::service::interfaces::DebugWarning;
-//using unisim::service::interfaces::DebugError;
-//using unisim::service::interfaces::EndDebugInfo;
-//using unisim::service::interfaces::EndDebugWarning;
-//using unisim::service::interfaces::EndDebugError;
-//using unisim::service::interfaces::Function;
-//using unisim::service::interfaces::File;
-//using unisim::service::interfaces::Line;
-
 using unisim::kernel::logger::DebugInfo;
 using unisim::kernel::logger::EndDebugInfo;
 using unisim::kernel::logger::DebugWarning;
@@ -82,11 +69,9 @@ HCS12X(const sc_module_name& name, Object *parent) :
 	nice_time(),
 	next_nice_time(),
 	nice_time_int(1000000000000ULL),
-	cpu_cycle_time_int(0),
 	bus_cycle_time_int(0),
 	last_instruction_counter(0),
 	param_nice_time("nice-time", this, nice_time_int),
-	param_cpu_cycle_time("cpu-cycle-time", this, cpu_cycle_time_int),
 	param_bus_cycle_time("bus-cycle-time", this, bus_cycle_time_int),
 	verbose_tlm_bus_synchronize(false),
 	param_verbose_tlm_bus_synchronize("verbose-tlm-bus-synchronize", this, verbose_tlm_bus_synchronize),
@@ -99,6 +84,7 @@ HCS12X(const sc_module_name& name, Object *parent) :
 	SC_HAS_PROCESS(HCS12X);
 
 	interrupt_request.register_b_transport(this, &HCS12X::AsyncIntThread);
+	bus_clock_socket.register_b_transport(this, &HCS12X::UpdateBusClock);
 
 	SC_THREAD(Run);
 
@@ -262,12 +248,7 @@ Setup() {
 				<< std::endl << EndDebugInfo;
 	}
 
-	cpu_cycle_time = sc_time((double)cpu_cycle_time_int, SC_PS);
-	bus_cycle_time = sc_time((double)bus_cycle_time_int, SC_PS);
-
-	tlm2_btrans_time = sc_time((double)0, SC_PS);
-
-	for (int i=0; i<32; i++) opCyclesArray[i] = cpu_cycle_time * i;
+	ComputeInternalTime();
 
 	this->Reset();
 
@@ -282,6 +263,17 @@ Setup() {
 	}
 
 	return true;
+}
+
+void HCS12X::ComputeInternalTime() {
+
+	bus_cycle_time = sc_time((double)bus_cycle_time_int, SC_PS);
+	cpu_cycle_time = bus_cycle_time;
+
+	tlm2_btrans_time = sc_time((double)0, SC_PS);
+
+	for (int i=0; i<32; i++) opCyclesArray[i] = cpu_cycle_time * i;
+
 }
 
 
@@ -474,6 +466,16 @@ void HCS12X::AsyncIntThread(tlm::tlm_generic_payload& trans, sc_time& delay)
 	if (debug_enabled) {
 		cout << "HCS12X:: Has receive an interrupt notification." << endl;
 	}
+}
+
+void HCS12X::UpdateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay) {
+
+	sc_dt::uint64*   external_bus_clock = (sc_dt::uint64*) trans.get_data_ptr();
+    trans.set_response_status( tlm::TLM_OK_RESPONSE );
+
+	bus_cycle_time_int = *external_bus_clock;
+
+	ComputeInternalTime();
 }
 
 } // end of namespace hcs12x

@@ -50,6 +50,7 @@
 #include <tlm_utils/tlm_quantumkeeper.h>
 #include <tlm_utils/peq_with_get.h>
 #include "tlm_utils/simple_target_socket.h"
+#include "tlm_utils/multi_passthrough_initiator_socket.h"
 
 #include <unisim/kernel/service/service.hh>
 #include "unisim/kernel/tlm2/tlm.hh"
@@ -95,6 +96,7 @@ using unisim::component::cxx::processor::hcs12x::service_address_t;
 using unisim::component::cxx::processor::hcs12x::CONFIG;
 
 using unisim::kernel::service::Object;
+using unisim::kernel::tlm2::ManagedPayload;
 using unisim::kernel::tlm2::PayloadFabric;
 
 class CRG :
@@ -117,6 +119,8 @@ public:
 	ServiceImport<TrapReporting > trap_reporting_import;
 
 	tlm_initiator_socket<CONFIG::EXTERNAL2UNISIM_BUS_WIDTH, XINT_REQ_ProtocolTypes> interrupt_request;
+
+	tlm_utils::multi_passthrough_initiator_socket<CRG> bus_clock_socket;
 
 	tlm_utils::simple_target_socket<CRG> slave_socket;
 
@@ -180,6 +184,8 @@ private:
 	tlm_quantumkeeper quantumkeeper;
 	PayloadFabric<XINT_Payload> xint_payload_fabric;
 
+	PayloadFabric<tlm::tlm_generic_payload> payloadFabric;
+
 	clock_t	oscillator_clock_int;	// The time unit is PS
 	Parameter<clock_t>	param_oscillator_clock_int;
 	sc_time		oscillator_clock;
@@ -212,6 +218,7 @@ private:
 
 	void compute_clock();
 	void initialize_rti_counter();
+	void UpdateBusClock();
 
 	void select_cop_timeout();
 	void cop_reset();

@@ -37,15 +37,20 @@
 #define __UNISIM_COMPONENT_TLM2_PROCESSOR_HCS12X_HH__
 
 #include <systemc.h>
+
 #include <tlm.h>
 #include <tlm_utils/simple_initiator_socket.h>
 #include <tlm_utils/simple_target_socket.h>
-#include "unisim/component/cxx/processor/hcs12x/hcs12x.hh"
+
 #include "unisim/kernel/tlm2/tlm.hh"
-#include <unisim/component/tlm2/processor/hcs12x/tlm_types.hh>
-#include <unisim/component/cxx/processor/hcs12x/types.hh>
 #include "unisim/util/garbage_collector/garbage_collector.hh"
+
 #include <unisim/component/cxx/processor/hcs12x/config.hh>
+#include "unisim/component/cxx/processor/hcs12x/hcs12x.hh"
+#include <unisim/component/cxx/processor/hcs12x/types.hh>
+
+#include <unisim/component/tlm2/processor/hcs12x/tlm_types.hh>
+
 
 #include <inttypes.h>
 #include <string>
@@ -87,6 +92,8 @@ public:
 
 	// Initiator
 	tlm_utils::simple_initiator_socket<HCS12X> toXINT;
+
+	tlm_utils::simple_target_socket<HCS12X> bus_clock_socket;
 
 	HCS12X(const sc_module_name& name, Object *parent = 0);
 	virtual ~HCS12X();
@@ -137,9 +144,11 @@ public:
 	virtual double  GetSimulatedTime();
 
 	void AsyncIntThread(tlm::tlm_generic_payload& trans, sc_time& delay);
+	void UpdateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay);
 
 private:
 	void Synchronize();
+	void ComputeInternalTime();
 
 	sc_event	irq_event,		// I-bit-Maskable Interrupt Requests and X-bit Non-Maskable Interrupt Requests
 				reset_event;	// Hardware and Software Reset
@@ -156,13 +165,9 @@ private:
 	sc_time tlm2_btrans_time;
 	sc_time opCyclesArray[32]; // replace with the Max Inst Cycles
 
-//	double ipc;
-	uint64_t cpu_cycle_time_int;
 	uint64_t bus_cycle_time_int;
 
 	Parameter<uint64_t> param_nice_time;
-//	Parameter<double> param_ipc;
-	Parameter<uint64_t> param_cpu_cycle_time;
 	Parameter<uint64_t> param_bus_cycle_time;
 
 	// verbose parameters
