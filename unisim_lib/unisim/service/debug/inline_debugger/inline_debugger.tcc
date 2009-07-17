@@ -700,9 +700,10 @@ void InlineDebugger<ADDRESS>::Help()
 	cout << "    display the register value" << endl;
 	cout << "--------------------------------------------------------------------------------" << endl;
 	cout << "<variable name | hierarchical variable name>" << endl;
-	cout << "    display all the objects variables that are named as variable name, or if a" << endl;
-	cout << "    hierarchical name is given the variable indicated" << endl;
-	cout << "    this command is equivalent to \"monitor <variable name>\"" << endl;
+	cout << "    display all the objects variables that are named as the given variable name," << endl;
+	cout << "    or that contain part of the given name" << endl;
+	cout << "    note: this command is overriden if the given name matches any of the other" << endl;
+	cout << "    inline debugger commands" << endl;
 	cout << "--------------------------------------------------------------------------------" << endl;
 	cout << "<m | monitor>[/<format>] [<variable name>]" << endl;
 	cout << "<reg | register>[/<format>] [<register name>]" << endl;
