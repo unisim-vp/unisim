@@ -34,6 +34,7 @@
  *
  */
  
+
 #ifndef SIMULATOR_CXX_TESLA_DRIVER_DEVICE_TCC
 #define SIMULATOR_CXX_TESLA_DRIVER_DEVICE_TCC
 
@@ -44,6 +45,7 @@
 #include "kernel.hh"
 #include <unisim/component/cxx/processor/tesla/stats.tcc>
 #include <boost/thread.hpp>
+#include <unisim/kernel/service/service.hh>
 
 using std::string;
 using std::endl;
@@ -51,6 +53,8 @@ using std::hex;
 using std::dec;
 using boost::thread;
 using boost::thread_group;
+using unisim::kernel::service::ServiceManager;
+
 
 template<class CONFIG>
 Allocator<CONFIG>::Allocator(unisim::component::cxx::memory::ram::Memory<typename CONFIG::address_t> & memory,
@@ -153,9 +157,6 @@ Device<CONFIG>::Device() :
 	if(env != 0)
 		core_count = atoi(env);
 	
-	scheduler = shared_ptr<CUDAScheduler<CONFIG> >(
-		new CUDAScheduler<CONFIG>(core_count, "scheduler", this));
-
 	// Initialize cores
 	cores.resize(core_count);
 	for(int i = 0; i != core_count; ++i)
@@ -164,7 +165,14 @@ Device<CONFIG>::Device() :
 		name << "gpu_core_" << i;
 		cores[i] = new CPU<CONFIG>(name.str().c_str(), this, i, core_count);
 		cores[i]->memory_import >> memory.memory_export;
+	}
+	
+	scheduler = shared_ptr<CUDAScheduler<CONFIG> >(
+		new CUDAScheduler<CONFIG>(core_count, "scheduler", this));
+
 		
+	for(int i = 0; i != core_count; ++i)
+	{
 		scheduler->Socket(i).registers_import >> cores[i]->registers_export;
 		scheduler->Socket(i).configuration_import >> cores[i]->configuration_export;
 		scheduler->Socket(i).shared_memory_import >> cores[i]->shared_memory_export;
@@ -172,12 +180,17 @@ Device<CONFIG>::Device() :
 		scheduler->Socket(i).run_import >> cores[i]->run_export;
 	}
 	
-	memory.Setup();
+	/*memory.Setup();
 	for(int i = 0; i != core_count; ++i)
 	{
 		cores[i]->Setup();
 	}
-	scheduler->Setup();
+	scheduler->Setup();*/
+	if(!ServiceManager::Setup()) {
+		cerr << "Error, setup failed\n";
+		ServiceManager::Dump(cerr);
+		assert(false);
+	}
 	
 	env = getenv("EXPORT_STATS");
 	if(env != 0)

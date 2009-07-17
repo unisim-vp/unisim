@@ -81,7 +81,7 @@ private:
 };
 
 template<class CONFIG>
-struct Device: CUdevice_st, Object
+struct Device: CUdevice_st, virtual Object
 {
 	Device();
 	~Device();

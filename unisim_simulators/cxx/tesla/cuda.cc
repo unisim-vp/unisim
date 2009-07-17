@@ -38,6 +38,7 @@
 #include <cuda.h>
 #include <driver.hh>
 #include <iostream>
+#include <boost/shared_ptr.hpp>
 
 #include "config.hh"
 
@@ -48,15 +49,28 @@
 
 using std::cerr;
 using std::endl;
+using boost::shared_ptr;
 
 typedef BaseConfig MyConfig;
 
-Driver<MyConfig> driver;
+// Do NOT create static Unisim objects!
+// Undefined initialization order would cause undefined behavior.
+//Driver<MyConfig> driver;
+// What about destruction order??
+//shared_ptr<Driver<MyConfig> > driver;
+Driver<MyConfig> * driver = 0;	// Dumb pointer
+// Memory leak here
 
 #define CHECK_PTR(p) \
 	{ if(!p) { \
-		cerr << "Null pointer " #p " at " << __FILE__ << ":" << __LINE__ << endl; \
+		cerr << "Error: null pointer " #p " at " << __FILE__ << ":" << __LINE__ << endl; \
 		return CUDA_ERROR_INVALID_VALUE; } }
+
+#define CHECK_DRIVER \
+	{ if(!driver) { \
+		cerr << "Error: driver not initialized. At " << __FILE__ << ":" << __LINE__ << endl; \
+		return CUDA_ERROR_NOT_INITIALIZED; } }
+
 
 bool const verbose = true;
 
@@ -66,7 +80,9 @@ bool const verbose = true;
 CUresult  CUDAAPI cuInit(unsigned int Flags)
 {
 	if(verbose) cerr << "cuInit(" << Flags << ")" << endl;
-	return driver.cuInit(Flags);
+	//driver = shared_ptr<Driver<MyConfig> >(new Driver<MyConfig>());
+	driver = new Driver<MyConfig>();
+	return driver->cuInit(Flags);
 }
 /************************************
  **
@@ -77,20 +93,23 @@ CUresult  CUDAAPI cuInit(unsigned int Flags)
 CUresult CUDAAPI cuDeviceGet(CUdevice *device, int ordinal)
 {
 	if(verbose) cerr << "cuDeviceGet(" << device << ", " << ordinal << ")" << endl;
-	return driver.cuDeviceGet(device, ordinal);
+	CHECK_DRIVER;
+	return driver->cuDeviceGet(device, ordinal);
 }
 
 CUresult CUDAAPI cuDeviceGetCount(int *count)
 {
 	if(verbose) cerr << "cuDeviceGetCount(" << count << ")" << endl;
-	return driver.cuDeviceGetCount(count);
+	CHECK_DRIVER;
+	return driver->cuDeviceGetCount(count);
 }
 
 CUresult CUDAAPI cuDeviceGetName(char *name, int len, CUdevice dev)
 {
 	if(verbose) cerr << "cuDeviceGetName(" << name << ", " << len << ")" << endl;
+	CHECK_DRIVER;
 	try {
-		strncpy(name, driver.Dev(dev).Name().c_str(), len);
+		strncpy(name, driver->Dev(dev).Name().c_str(), len);
 		return CUDA_SUCCESS;
 	}
 	catch(CudaException e) {
@@ -101,9 +120,10 @@ CUresult CUDAAPI cuDeviceGetName(char *name, int len, CUdevice dev)
 CUresult CUDAAPI cuDeviceComputeCapability(int *major, int *minor, CUdevice dev)
 {
 	if(verbose) cerr << "cuDeviceComputeCapability(..., " << dev << ")" << endl;
+	CHECK_DRIVER;
 	try {
-		*major = driver.Dev(dev).ComputeCapabilityMajor();
-		*minor = driver.Dev(dev).ComputeCapabilityMinor();
+		*major = driver->Dev(dev).ComputeCapabilityMajor();
+		*minor = driver->Dev(dev).ComputeCapabilityMinor();
 		return CUDA_SUCCESS;
 	}
 	catch(CudaException e) {
@@ -114,8 +134,9 @@ CUresult CUDAAPI cuDeviceComputeCapability(int *major, int *minor, CUdevice dev)
 CUresult CUDAAPI cuDeviceTotalMem(unsigned int *bytes, CUdevice dev)
 {
 	if(verbose) cerr << "cuDeviceTotalMem(..., " << dev << ")" << endl;
- 	try {
-		*bytes = driver.Dev(dev).TotalMem();
+ 	CHECK_DRIVER;
+	try {
+		*bytes = driver->Dev(dev).TotalMem();
 		return CUDA_SUCCESS;
 	}
 	catch(CudaException e) {
@@ -126,8 +147,9 @@ CUresult CUDAAPI cuDeviceTotalMem(unsigned int *bytes, CUdevice dev)
 CUresult  CUDAAPI cuDeviceGetProperties(CUdevprop *prop, CUdevice dev)
 {
 	if(verbose) cerr << "cuDeviceGetProperties(..., " << dev << ")" << endl;
+	CHECK_DRIVER;
   	try {
-		*prop = driver.Dev(dev).Properties();
+		*prop = driver->Dev(dev).Properties();
 		return CUDA_SUCCESS;
 	}
 	catch(CudaException e) {
@@ -138,8 +160,9 @@ CUresult  CUDAAPI cuDeviceGetProperties(CUdevprop *prop, CUdevice dev)
 CUresult  CUDAAPI cuDeviceGetAttribute(int *pi, CUdevice_attribute attrib, CUdevice dev)
 {
 	if(verbose) cerr << "cuDeviceGetAttribute(..., " << attrib << ", " << dev << ")" << endl;
+	CHECK_DRIVER;
  	try {
-		*pi = driver.Dev(dev).Attribute(attrib);
+		*pi = driver->Dev(dev).Attribute(attrib);
 		return CUDA_SUCCESS;
 	}
 	catch(CudaException e) {
@@ -157,30 +180,35 @@ CUresult  CUDAAPI cuDeviceGetAttribute(int *pi, CUdevice_attribute attrib, CUdev
 CUresult  CUDAAPI cuCtxCreate(CUcontext *pctx, unsigned int flags, CUdevice dev )
 {
 	if(verbose) cerr << "cuCtxCreate(..., " << flags << ", " << dev << ")" << endl;
-	return driver.cuCtxCreate(pctx, flags, dev);
+	CHECK_DRIVER;
+	return driver->cuCtxCreate(pctx, flags, dev);
 }
 
 CUresult  CUDAAPI cuCtxDestroy( CUcontext ctx )
 {
 	if(verbose) cerr << "cuCtxDestroy(" << ctx << ")" << endl;
-	return driver.cuCtxDestroy(ctx);
+	CHECK_DRIVER;
+	return driver->cuCtxDestroy(ctx);
 }
 
 CUresult  CUDAAPI cuCtxAttach(CUcontext *pctx, unsigned int flags)
 {
 	if(verbose) cerr << "cuCtxAttach(..., " << flags << ")" << endl;
-	return driver.cuCtxCreate(pctx, flags, 0);	// ?
+	CHECK_DRIVER;
+	return driver->cuCtxCreate(pctx, flags, 0);	// ?
 }
 
 CUresult  CUDAAPI cuCtxDetach(CUcontext ctx)
 {
 	if(verbose) cerr << "cuCtxDetach(" << ctx << ")" << endl;
-	return driver.cuCtxDestroy(ctx);	// ?
+	CHECK_DRIVER;
+	return driver->cuCtxDestroy(ctx);	// ?
 }
 
 CUresult  CUDAAPI cuCtxPushCurrent( CUcontext ctx )
 {
 	if(verbose) cerr << "cuPushCurrent(" << ctx << ")" << endl;
+	CHECK_DRIVER;
 	cerr << "function not implemented !!!" << endl;
 	assert(false);
 }
@@ -200,6 +228,7 @@ CUresult  CUDAAPI cuCtxGetDevice(CUdevice *device)
 CUresult CUDAAPI cuCtxSynchronize()
 {
 	if(verbose) cerr << "cuCtxSynchronize()" << endl;
+	CHECK_DRIVER;
 	return CUDA_SUCCESS;
 }
 
@@ -214,8 +243,9 @@ CUresult CUDAAPI cuCtxSynchronize()
 CUresult CUDAAPI cuModuleLoad(CUmodule *module, const char *fname)
 {
 	if(verbose) cerr << "cuModuleLoad(..., " << fname << ")" << endl;
+	CHECK_DRIVER;
 	Module<MyConfig>* mod = 0;
-	CUresult res = driver.ModuleLoad(mod, fname);
+	CUresult res = driver->ModuleLoad(mod, fname);
 	assert(mod != 0);
 	*module = mod;
 	return res;
@@ -230,6 +260,7 @@ CUresult  CUDAAPI cuModuleLoadData(CUmodule *module, const void *image)
 CUresult  CUDAAPI cuModuleLoadFatBinary(CUmodule *module, const void *fatCubin)
 {
 	if(verbose) cerr << "cuModuleLoadFatBinary(..., " << fatCubin << ")" << endl;
+	CHECK_DRIVER;
 	try
 	{
 		Module<MyConfig>* mod = new Module<MyConfig>(fatCubin, 17);
@@ -247,12 +278,14 @@ CUresult  CUDAAPI cuModuleLoadFatBinary(CUmodule *module, const void *fatCubin)
 CUresult  CUDAAPI cuModuleUnload(CUmodule hmod)
 {
 	if(verbose) cerr << "cuModuleUnload(" << hmod << ")" << endl;
-	return driver.ModuleUnload(static_cast<Module<MyConfig>*>(hmod));
+	CHECK_DRIVER;
+	return driver->ModuleUnload(static_cast<Module<MyConfig>*>(hmod));
 }
 
 CUresult cuModuleGetFunction(CUfunction *hfunc, CUmodule hmod, const char *name)
 {
 	if(verbose) cerr << "cuModuleGetFunction(..." << hmod << ", " << name << ")" << endl;
+	CHECK_DRIVER;
 	CHECK_PTR(hmod);
 	Module<MyConfig>* mod = static_cast<Module<MyConfig>*>(hmod);
 	Kernel<MyConfig>* kernel;
@@ -269,13 +302,14 @@ CUresult cuModuleGetFunction(CUfunction *hfunc, CUmodule hmod, const char *name)
 CUresult  CUDAAPI cuModuleGetGlobal(CUdeviceptr *dptr, unsigned int *bytes, CUmodule hmod, const char *name)
 {
 	if(verbose) cerr << "cuModuleGetGlobal(..." << hmod << ", " << name << ")" << endl;
+	CHECK_DRIVER;
 	CHECK_PTR(hmod);
 	Module<MyConfig>* mod = static_cast<Module<MyConfig>*>(hmod);
 	try {
 		MemSegment<MyConfig> & seg = mod->GetGlobal(name);
 		if(dptr != 0) {
 			// If reloc, need to alloc in device mem first
-			driver.CurrentDevice().LoadSegment(seg);
+			driver->CurrentDevice().LoadSegment(seg);
 			*dptr = seg.Address();
 		}
 		if(bytes != 0)
@@ -290,6 +324,7 @@ CUresult  CUDAAPI cuModuleGetGlobal(CUdeviceptr *dptr, unsigned int *bytes, CUmo
 CUresult  CUDAAPI cuModuleGetTexRef(CUtexref *pTexRef, CUmodule hmod, const char *name)
 {
 	if(verbose) cerr << "cuModuleGetTexRef(..." << hmod << ", " << name << ")" << endl;
+	CHECK_DRIVER;
 	CHECK_PTR(hmod);
 	Module<MyConfig>* mod = static_cast<Module<MyConfig>*>(hmod);
 	try {
@@ -314,9 +349,10 @@ CUresult  CUDAAPI cuModuleGetTexRef(CUtexref *pTexRef, CUmodule hmod, const char
 CUresult CUDAAPI cuMemGetInfo(unsigned int *free, unsigned int *total)
 {
 	if(verbose) cerr << "cuMemGetInfo(...)" << endl;
+	CHECK_DRIVER;
 	try
 	{
-		driver.CurrentDevice().MemGetInfo(free, total);
+		driver->CurrentDevice().MemGetInfo(free, total);
 		return CUDA_SUCCESS;
 	}
 	catch(CudaException e) {
@@ -328,9 +364,10 @@ CUresult CUDAAPI cuMemGetInfo(unsigned int *free, unsigned int *total)
 CUresult CUDAAPI cuMemAlloc( CUdeviceptr *dptr, unsigned int bytesize)
 {
 	if(verbose) cerr << "cuMemAlloc(..." << bytesize << ")" << endl;
+	CHECK_DRIVER;
 	try
 	{
-		MyConfig::address_t addr = driver.MAlloc(bytesize);
+		MyConfig::address_t addr = driver->MAlloc(bytesize);
 		*dptr = addr;
 		return CUDA_SUCCESS;
 	}
@@ -355,9 +392,10 @@ CUresult CUDAAPI cuMemAllocPitch( CUdeviceptr *dptr,
 CUresult CUDAAPI cuMemFree(CUdeviceptr dptr)
 {
 	if(verbose) cerr << "cuMemFree(" << dptr << ")" << endl;
+	CHECK_DRIVER;
 	try
 	{
-		driver.Free(dptr);
+		driver->Free(dptr);
 		return CUDA_SUCCESS;
 	}
 	catch(CudaException e) {
@@ -374,6 +412,7 @@ CUresult CUDAAPI cuMemGetAddressRange( CUdeviceptr *pbase, unsigned int *psize, 
 CUresult CUDAAPI cuMemAllocHost(void **pp, unsigned int bytesize)
 {
 	if(verbose) cerr << "cuMemAllocHost(..." << bytesize << ")" << endl;
+	CHECK_DRIVER;
 	try
 	{
 		*pp = new uint8_t[bytesize];
@@ -388,6 +427,7 @@ CUresult CUDAAPI cuMemAllocHost(void **pp, unsigned int bytesize)
 CUresult CUDAAPI cuMemFreeHost(void *p)
 {
 	if(verbose) cerr << "cuMemFreeHost(" << p << ")" << endl;
+	CHECK_DRIVER;
 	uint8_t * ptr = static_cast<uint8_t*>(p);
 	delete [] ptr;
 	return CUDA_SUCCESS;
@@ -408,9 +448,10 @@ CUresult CUDAAPI cuMemFreeHost(void *p)
 CUresult  CUDAAPI cuMemcpyHtoD (CUdeviceptr dstDevice, const void *srcHost, unsigned int ByteCount )
 {
 	if(verbose) cerr << "cuMemcpyHtoD(" << dstDevice << ", " << srcHost << ", " << ByteCount << ")" << endl;
+	CHECK_DRIVER;
 	try
 	{
-		driver.CopyHtoD(dstDevice, srcHost, ByteCount);
+		driver->CopyHtoD(dstDevice, srcHost, ByteCount);
 		return CUDA_SUCCESS;
 	}
 	catch(CudaException e) {
@@ -421,9 +462,10 @@ CUresult  CUDAAPI cuMemcpyHtoD (CUdeviceptr dstDevice, const void *srcHost, unsi
 CUresult  CUDAAPI cuMemcpyDtoH (void *dstHost, CUdeviceptr srcDevice, unsigned int ByteCount )
 {
 	if(verbose) cerr << "cuMemcpyDtoH(" << dstHost << ", " << srcDevice << ", " << ByteCount << ")" << endl;
+	CHECK_DRIVER;
 	try
 	{
-		driver.CopyDtoH(dstHost, srcDevice, ByteCount);
+		driver->CopyDtoH(dstHost, srcDevice, ByteCount);
 		return CUDA_SUCCESS;
 	}
 	catch(CudaException e) {
@@ -436,9 +478,10 @@ CUresult  CUDAAPI cuMemcpyDtoH (void *dstHost, CUdeviceptr srcDevice, unsigned i
 CUresult  CUDAAPI cuMemcpyDtoD (CUdeviceptr dstDevice, CUdeviceptr srcDevice, unsigned int ByteCount )
 {
 	if(verbose) cerr << "cuMemcpyDtoD(" << dstDevice << ", " << srcDevice << ", " << ByteCount << ")" << endl;
+	CHECK_DRIVER;
 	try
 	{
-		driver.CopyDtoD(dstDevice, srcDevice, ByteCount);
+		driver->CopyDtoD(dstDevice, srcDevice, ByteCount);
 		return CUDA_SUCCESS;
 	}
 	catch(CudaException e) {
@@ -585,9 +628,10 @@ CUresult  CUDAAPI cuMemcpy3DAsync( const CUDA_MEMCPY3D *pCopy, CUstream hStream 
 CUresult  CUDAAPI cuMemsetD8( CUdeviceptr dstDevice, unsigned char uc, unsigned int N )
 {
 	if(verbose) cerr << "cuMemsetD8(" << dstDevice << ", " << (unsigned int)uc << ", " << N << ")" << endl;
+	CHECK_DRIVER;
 	try
 	{
-		driver.Memset(dstDevice, uc, N);
+		driver->Memset(dstDevice, uc, N);
 		return CUDA_SUCCESS;
 	}
 	catch(CudaException e) {
@@ -599,9 +643,10 @@ CUresult  CUDAAPI cuMemsetD8( CUdeviceptr dstDevice, unsigned char uc, unsigned 
 CUresult  CUDAAPI cuMemsetD16( CUdeviceptr dstDevice, unsigned short us, unsigned int N )
 {
 	if(verbose) cerr << "cuMemsetD16(" << dstDevice << ", " << us << ", " << N << ")" << endl;
+	CHECK_DRIVER;
 	try
 	{
-		driver.Memset(dstDevice, us, N);
+		driver->Memset(dstDevice, us, N);
 		return CUDA_SUCCESS;
 	}
 	catch(CudaException e) {
@@ -613,9 +658,10 @@ CUresult  CUDAAPI cuMemsetD16( CUdeviceptr dstDevice, unsigned short us, unsigne
 CUresult  CUDAAPI cuMemsetD32( CUdeviceptr dstDevice, unsigned int ui, unsigned int N )
 {
 	if(verbose) cerr << "cuMemsetD16(" << dstDevice << ", " << ui << ", " << N << ")" << endl;
+	CHECK_DRIVER;
 	try
 	{
-		driver.Memset(dstDevice, ui, N);
+		driver->Memset(dstDevice, ui, N);
 		return CUDA_SUCCESS;
 	}
 	catch(CudaException e) {
@@ -658,6 +704,7 @@ CUresult CUDAAPI cuFuncSetBlockShape(CUfunction hfunc, int x, int y, int z)
 {
 	if(verbose) cerr << "cuFuncSetBlockShape(" << hfunc << ", "
 		<< x << ", " << y << ", " << z << ")" << endl;
+	CHECK_DRIVER;
 	Kernel<MyConfig> * kernel = static_cast<Kernel<MyConfig> *>(hfunc);
 	try {
 		kernel->SetBlockShape(x, y, z);
@@ -673,6 +720,7 @@ CUresult CUDAAPI cuFuncSetBlockShape(CUfunction hfunc, int x, int y, int z)
 CUresult CUDAAPI cuFuncSetSharedSize(CUfunction hfunc, unsigned int bytes)
 {
 	if(verbose) cerr << "cuFuncSetSharedSize(" << hfunc << ", " << bytes << ")" << endl;
+	CHECK_DRIVER;
 	Kernel<MyConfig> * kernel = static_cast<Kernel<MyConfig> *>(hfunc);
 	try {
 		kernel->SetSharedSize(bytes);
@@ -759,6 +807,7 @@ CUresult  CUDAAPI cuTexRefSetArray( CUtexref hTexRef, CUarray hArray, unsigned i
 CUresult  CUDAAPI cuTexRefSetAddress( unsigned int *ByteOffset, CUtexref hTexRef, CUdeviceptr dptr, unsigned int bytes )
 {
 	if(verbose) cerr << "cuTexRefSetAddress(...," << hTexRef << ", " << dptr << ", " << bytes << ")" << endl;
+	CHECK_DRIVER;
 	Sampler<MyConfig> * sampler = static_cast<Sampler<MyConfig> *>(hTexRef);
 	try {
 		unsigned int offset = sampler->SetAddress(dptr, bytes);
@@ -775,6 +824,7 @@ CUresult  CUDAAPI cuTexRefSetAddress( unsigned int *ByteOffset, CUtexref hTexRef
 CUresult  CUDAAPI cuTexRefSetFormat( CUtexref hTexRef, CUarray_format fmt, int NumPackedComponents )
 {
 	if(verbose) cerr << "cuTexRefSetFormat(...," << hTexRef << ", " << fmt << ", " << NumPackedComponents << ")" << endl;
+	CHECK_DRIVER;
 	Sampler<MyConfig> * sampler = static_cast<Sampler<MyConfig> *>(hTexRef);
 	try {
 		sampler->SetFormat(fmt, NumPackedComponents);
@@ -790,6 +840,7 @@ CUresult  CUDAAPI cuTexRefSetFormat( CUtexref hTexRef, CUarray_format fmt, int N
 CUresult  CUDAAPI cuTexRefSetAddressMode( CUtexref hTexRef, int dim, CUaddress_mode am )
 {
 	if(verbose) cerr << "cuTexRefSetAddressMode(...," << hTexRef << ", " << dim << ", " << am << ")" << endl;
+	CHECK_DRIVER;
 	Sampler<MyConfig> * sampler = static_cast<Sampler<MyConfig> *>(hTexRef);
 	try {
 		sampler->SetAddressMode(dim, am);
@@ -804,6 +855,7 @@ CUresult  CUDAAPI cuTexRefSetAddressMode( CUtexref hTexRef, int dim, CUaddress_m
 CUresult  CUDAAPI cuTexRefSetFilterMode( CUtexref hTexRef, CUfilter_mode fm )
 {
 	if(verbose) cerr << "cuTexRefSetFilterMode(...," << hTexRef << ", " << fm << endl;
+	CHECK_DRIVER;
 	Sampler<MyConfig> * sampler = static_cast<Sampler<MyConfig> *>(hTexRef);
 	try {
 		sampler->SetFilterMode(fm);
@@ -818,6 +870,7 @@ CUresult  CUDAAPI cuTexRefSetFilterMode( CUtexref hTexRef, CUfilter_mode fm )
 CUresult  CUDAAPI cuTexRefSetFlags( CUtexref hTexRef, unsigned int Flags )
 {
 	if(verbose) cerr << "cuTexRefSetFlags(...," << hTexRef << ", " << Flags << endl;
+	CHECK_DRIVER;
 	Sampler<MyConfig> * sampler = static_cast<Sampler<MyConfig> *>(hTexRef);
 	try {
 		sampler->SetFlags(Flags);
@@ -888,6 +941,7 @@ CUresult  CUDAAPI cuTexRefGetFlags( unsigned int *pFlags, CUtexref hTexRef )
 CUresult CUDAAPI cuParamSetSize(CUfunction hfunc, unsigned int numbytes)
 {
 	if(verbose) cerr << "cuParamSetSize(" << hfunc << ", " << numbytes << ")" << endl;
+	CHECK_DRIVER;
 	Kernel<MyConfig> * kernel = static_cast<Kernel<MyConfig> *>(hfunc);
 	try {
 		kernel->ParamSetSize(numbytes);
@@ -901,6 +955,7 @@ CUresult CUDAAPI cuParamSetSize(CUfunction hfunc, unsigned int numbytes)
 CUresult CUDAAPI cuParamSeti(CUfunction hfunc, int offset, unsigned int value)
 {
 	if(verbose) cerr << "cuParamSeti(" << hfunc << ", " << offset << ", " << value << ")" << endl;
+	CHECK_DRIVER;
 	Kernel<MyConfig> * kernel = static_cast<Kernel<MyConfig> *>(hfunc);
 	try {
 		kernel->ParamSeti(offset, value);
@@ -914,6 +969,7 @@ CUresult CUDAAPI cuParamSeti(CUfunction hfunc, int offset, unsigned int value)
 CUresult CUDAAPI cuParamSetf(CUfunction hfunc, int offset, float value)
 {
 	if(verbose) cerr << "cuParamSetf(" << hfunc << ", " << offset << ", " << value << ")" << endl;
+	CHECK_DRIVER;
 	Kernel<MyConfig> * kernel = static_cast<Kernel<MyConfig> *>(hfunc);
 	try {
 		kernel->ParamSetf(offset, value);
@@ -927,6 +983,7 @@ CUresult CUDAAPI cuParamSetf(CUfunction hfunc, int offset, float value)
 CUresult CUDAAPI cuParamSetv(CUfunction hfunc, int offset, void * ptr, unsigned int numbytes)
 {
 	if(verbose) cerr << "cuParamSetv(" << hfunc << ", " << offset << ", ..." << numbytes << ")" << endl;
+	CHECK_DRIVER;
 	Kernel<MyConfig> * kernel = static_cast<Kernel<MyConfig> *>(hfunc);
 	try {
 		kernel->ParamSetv(offset, ptr, numbytes);
@@ -941,6 +998,7 @@ CUresult CUDAAPI cuParamSetv(CUfunction hfunc, int offset, void * ptr, unsigned 
 CUresult CUDAAPI cuParamSetTexRef(CUfunction hfunc, int texunit, CUtexref hTexRef)
 {
 	if(verbose) cerr << "cuParamSetTexRef(" << hfunc << ", " << texunit << ", " << hTexRef << ")" << endl;
+	CHECK_DRIVER;
 	if(texunit != CU_PARAM_TR_DEFAULT) return CUDA_ERROR_INVALID_VALUE;
 	Kernel<MyConfig> * kernel = static_cast<Kernel<MyConfig> *>(hfunc);
 	try {
@@ -966,9 +1024,10 @@ CUresult CUDAAPI cuParamSetTexRef(CUfunction hfunc, int texunit, CUtexref hTexRe
 CUresult CUDAAPI cuLaunch (CUfunction f)
 {
 	if(verbose) cerr << "cuLaunch(" << f << ")" << endl;
+	CHECK_DRIVER;
 	Kernel<MyConfig> * kernel = static_cast<Kernel<MyConfig> *>(f);
 	try {
-		driver.Launch(*kernel);
+		driver->Launch(*kernel);
 		return CUDA_SUCCESS;
 	}
 	catch(CudaException e) {
@@ -980,9 +1039,10 @@ CUresult CUDAAPI cuLaunch (CUfunction f)
 CUresult CUDAAPI cuLaunchGrid (CUfunction f, int grid_width, int grid_height)
 {
 	if(verbose) cerr << "cuLaunchGrid(" << f << ", " << grid_width << ", " << grid_height << ")" << endl;
+	CHECK_DRIVER;
 	Kernel<MyConfig> * kernel = static_cast<Kernel<MyConfig> *>(f);
 	try {
-		driver.LaunchGrid(*kernel, grid_width, grid_height);
+		driver->LaunchGrid(*kernel, grid_width, grid_height);
 		return CUDA_SUCCESS;
 	}
 	catch(CudaException e) {
@@ -993,6 +1053,7 @@ CUresult CUDAAPI cuLaunchGrid (CUfunction f, int grid_width, int grid_height)
 
 CUresult CUDAAPI cuLaunchGridAsync( CUfunction f, int grid_width, int grid_height, CUstream hStream )
 {
+	CHECK_DRIVER;
 	assert(hStream == 0);
 	return cuLaunchGrid(f, grid_width, grid_height);
 }
@@ -1006,6 +1067,7 @@ CUresult CUDAAPI cuLaunchGridAsync( CUfunction f, int grid_width, int grid_heigh
  ***********************************/
 CUresult CUDAAPI cuEventCreate( CUevent *phEvent, unsigned int Flags )
 {
+	CHECK_DRIVER;
 	try {
 		Event<MyConfig>* evt = new Event<MyConfig>(Flags);
 		*phEvent = evt;
@@ -1019,6 +1081,7 @@ CUresult CUDAAPI cuEventCreate( CUevent *phEvent, unsigned int Flags )
 
 CUresult CUDAAPI cuEventRecord( CUevent hEvent, CUstream hStream )
 {
+	CHECK_DRIVER;
 	try {
 		Event<MyConfig> * evt = static_cast<Event<MyConfig> *>(hEvent);
 		evt->Record(/*...hStream*/);
@@ -1032,6 +1095,7 @@ CUresult CUDAAPI cuEventRecord( CUevent hEvent, CUstream hStream )
 
 CUresult CUDAAPI cuEventQuery( CUevent hEvent )
 {
+	CHECK_DRIVER;
 	try {
 		Event<MyConfig> * evt = static_cast<Event<MyConfig> *>(hEvent);
 		return evt->Query() ? CUDA_SUCCESS : CUDA_ERROR_NOT_READY;
@@ -1044,6 +1108,7 @@ CUresult CUDAAPI cuEventQuery( CUevent hEvent )
 
 CUresult CUDAAPI cuEventSynchronize( CUevent hEvent )
 {
+	CHECK_DRIVER;
 	try {
 		Event<MyConfig> * evt = static_cast<Event<MyConfig> *>(hEvent);
 		evt->Synchronize();
@@ -1057,6 +1122,7 @@ CUresult CUDAAPI cuEventSynchronize( CUevent hEvent )
 
 CUresult CUDAAPI cuEventDestroy( CUevent hEvent )
 {
+	CHECK_DRIVER;
 	try {
 		Event<MyConfig> * evt = static_cast<Event<MyConfig> *>(hEvent);
 		delete evt;
@@ -1070,6 +1136,7 @@ CUresult CUDAAPI cuEventDestroy( CUevent hEvent )
 
 CUresult CUDAAPI cuEventElapsedTime( float *pMilliseconds, CUevent hStart, CUevent hEnd )
 {
+	CHECK_DRIVER;
 	try {
 		Event<MyConfig> * evtStart = static_cast<Event<MyConfig> *>(hStart);
 		Event<MyConfig> * evtEnd = static_cast<Event<MyConfig> *>(hEnd);
@@ -1124,8 +1191,9 @@ CUresult CUDAAPI  cuStreamDestroy( CUstream hStream )
 
 CUresult CUDAAPI barFunctionDump(CUfunction f)
 {
+	CHECK_DRIVER;
 	try {
-		driver.FunctionDump(*static_cast<Kernel<MyConfig>*>(f));
+		driver->FunctionDump(*static_cast<Kernel<MyConfig>*>(f));
 		return CUDA_SUCCESS;
 	}
 	catch(CudaException e) {
