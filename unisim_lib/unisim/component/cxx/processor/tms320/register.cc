@@ -679,11 +679,11 @@ namespace tms320 {
 			tmp = tmp >> 1;
 			shift += 1;
 		}
-		if (tmp != 1) 
-		{
-			tmp = tmp >> 1;
-			shift += 1;
-		}
+//		if (tmp != 1) 
+//		{
+//			tmp = tmp >> 1;
+//			shift += 1;
+//		}
 		ext_lo_c = ext_lo_c >> shift;
 		exp_c += shift;
 		// 2 - dispose of extra bits
@@ -710,7 +710,7 @@ namespace tms320 {
 		else
 		{
 			// 2 - exponent underflow
-			if (exp_c < -128)
+			if ( exp_c <= -128 && ext_lo_c != 0 )
 			{
 				underflow = 1;
 				exp_c = -128;
