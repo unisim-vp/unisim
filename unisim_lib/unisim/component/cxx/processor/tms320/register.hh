@@ -175,8 +175,8 @@ namespace tms320 {
 	{
 		if (this != &reg)
 		{
-			this->hi = reg.GetHi();
-			this->lo = reg.GetLo();
+			this->SetHi(reg.GetHi());
+			this->SetLo(reg.GetLo());
 		}
 		return *this;
 	}
