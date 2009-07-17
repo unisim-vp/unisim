@@ -118,10 +118,10 @@ $ make install
 \end{verbatim}
 
 A key feature we're interested on is the ability of \texttt{objdump} to dump/disassemble a TI COFF binary for the TMS320C3X.
-For instance, the following command will dump file \texttt{test.bin} into file \texttt{dump.txt}:
+For instance, the following command will dump file \texttt{test.out} into file \texttt{dump.txt}:
 
 \begin{verbatim}
-$ /opt/c4x-coff/bin/c4x-unknown-coff-objdump -D test.bin > dump.txt
+$ /opt/c4x-coff/bin/c4x-unknown-coff-objdump -D test.out > dump.txt
 \end{verbatim}
 
 \subsection{Simulator configuration}
@@ -1282,6 +1282,16 @@ The cross-compiler has generated COFF v2 files for TMS320C3X/C4X with little-end
 \item Ubuntu Linux 9.04 AMD64/x86\_64/gcc 4.3.3 (64-bit little-endian machine)
 \end{itemize}
 
+The following developement board has been used to compare the simulator results against a real TMS320C3X DSP:
+\begin{itemize}
+\item A D.SignT DK.VC33-150-S2 development board
+\item A D.SignT D.Module.VC33-150-S2 module including a TI TMS320VC33
+\item A 256K 32 bits SRAM with 1 Wait state
+\item A 512K 8 bits Flash Memory
+\item A Spectrum Digital XDS510USB JTAG Emulator
+\item Code Composer IDE 4.10.36 SP2 C3X'C4X for Windows
+\end{itemize}
+
 \subsection{Integer benchmarks}
 
 \subsubsection{Fibonacci}
@@ -1296,7 +1306,7 @@ This benchmarks recursively (and quite inefficiently) computes the Fibonacci num
 \newline
 
 This benchmark requires TI C I/O service enabled to run in the TMS320C3X simulator.
-A precompiled binary (\texttt{fibo.bin}) is provided together with a GNU Make compatible \texttt{Makefile}.
+A precompiled binary (\texttt{fibo.out}) is provided together with a GNU Make compatible \texttt{Makefile}.
 A simulation configuration (\texttt{sim\_config.xml}) for this simulator is also provided, so that simulator can run the benchmark:
 
 \begin{verbatim}
@@ -1349,7 +1359,7 @@ The input data set is in file \texttt{random.txt} that contains random generated
 The output data set after the benchmark run is in file \texttt{sort.sim.txt}.
 
 This benchmark requires TI C I/O service enabled to run in the TMS320C3X simulator.
-A precompiled binary (\texttt{quicksort.bin}) is provided together with a GNU Make compatible \texttt{Makefile}.
+A precompiled binary (\texttt{quicksort.out}) is provided together with a GNU Make compatible \texttt{Makefile}.
 A simulation configuration (\texttt{sim\_config.xml}) for this simulator is also provided, so that simulator can run the benchmark:
 
 \begin{verbatim}
@@ -1396,7 +1406,7 @@ The benchmark reads file \texttt{input\_large.asc}, and encrypt it into file \te
 It decrypts \texttt{output\_large.sim.enc} into file \texttt{output\_large.sim.dec}.
 
 This benchmark requires TI C I/O service enabled to run in the TMS320C3X simulator.
-A precompiled binary (\texttt{rijndael.bin}) is provided together with a GNU Make compatible Makefile.
+A precompiled binary (\texttt{rijndael.out}) is provided together with a GNU Make compatible Makefile.
 A simulation configuration (\texttt{sim\_config.xml}) for this simulator is also provided, so that simulator can run the benchmark:
 
 \begin{verbatim}
@@ -1414,7 +1424,7 @@ well-known MD4 and MD5 hashing functions.
 
 The benchmark its input data set from file \texttt{input\_large.asc} and prints the SHA digest on the screen.
 
-A precompiled binary (\texttt{sha.bin}) is provided together with a GNU Make compatible Makefile.
+A precompiled binary (\texttt{sha.out}) is provided together with a GNU Make compatible Makefile.
 A simulation configuration (\texttt{sim\_config.xml}) for this simulator is also provided, so that simulator can run the benchmark:
 
 \begin{verbatim}
@@ -1441,7 +1451,7 @@ The ADPCM coder benchmark reads file \texttt{large.pcm} and writes the compresse
 The ADPCM decoder benchmark reads file \texttt{large.adpcm} and writes the uncompressed data in file \texttt{output\_large.sim.pcm}.
 
 This benchmark requires TI C I/O service enabled to run in the TMS320C3X simulator.
-Precompiled binaries (\texttt{coder.bin} and \texttt{decoder.bin}) are provided together with a GNU Make compatible Makefile.
+Precompiled binaries (\texttt{coder.out} and \texttt{decoder.out}) are provided together with a GNU Make compatible Makefile.
 Simulation configurations (\texttt{coder\_sim\_config.xml} and \texttt{decoder\_sim\_config.xml})) for this simulator are also provided, so that simulator can run the benchmarks:
 
 \begin{verbatim}
@@ -1471,7 +1481,7 @@ The benchmark reads the input image from file \texttt{image.bmp} and the quantiz
 It save the resulting image in file \texttt{output\_image.sim.bmp}
 
 This benchmark requires TI C I/O service enabled to run in the TMS320C3X simulator.
-A precompiled binary (\texttt{dct\_quant.bin}) is provided together with a GNU Make compatible Makefile.
+A precompiled binary (\texttt{dct\_quant.out}) is provided together with a GNU Make compatible Makefile.
 A simulation configuration (\texttt{sim\_config.xml}) for this simulator is also provided, so that simulator can run the benchmark:
 
 \begin{verbatim}

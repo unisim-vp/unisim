@@ -191,13 +191,19 @@ int sc_main(int argc, char *argv[]) {
 		}
 	}
 
-	if(optind != argc) {
-		cerr << "Error? (optind = " << optind << ", argc = " << argc <<" )" << endl;
-		help(argv[0]);
-		return 0;
+	// If last argument is not an option then it's a filename
+	if(optind == (argc - 1))
+	{
+		filename = argv[optind];
 	}
-
-	filename = argv[optind];
+	else
+	{
+		if(optind != argc)
+		{
+			help(argv[0]);
+			return 0;
+		}
+	}
 
 	// Time
 	SC_TIME *time = new SC_TIME("time");
@@ -219,6 +225,7 @@ int sc_main(int argc, char *argv[]) {
 	cpu->master_socket(memory->slave_sock);
 	cpu->memory_import >> memory->memory_export;
 	cpu->ti_c_io_import >> ti_c_io->ti_c_io_export;
+	cpu->loader_import >> loader->loader_export;
 	ti_c_io->memory_import >> cpu->memory_export;
 	ti_c_io->memory_injection_import >> cpu->memory_injection_export;
 	ti_c_io->registers_import >> cpu->registers_export;

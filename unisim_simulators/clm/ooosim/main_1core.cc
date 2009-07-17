@@ -14,9 +14,9 @@
 int main(int argc, char **argv, char **envp)
 { 
   command_line.add_flag("display-signals", "display signals at each cycle");
-  command_line.add_flag("inline-debugger", "starts the inline debugger");
-  command_line.add_option("gdb-server", "<port>", "starts a gdb server to be connected on <port>");
-  command_line.add_option("gdb-server-arch-file", "<file>", "uses <arch file> as architecture description file for GDB server.\nDefaults to \"gdb_powerpc.xml\"");
+
+
+
   command_line.add_option("max:inst", "<count>", "execute <count> instructions then exit");
   //  command_line.add_option("fastforward", "number of instructions to skip before starting the simulation");
   command_line.add_option("dump-latex", "<file>", "Draw the architecture");
@@ -35,11 +35,11 @@ int main(int argc, char **argv, char **envp)
   /* Variables from Powerpc tlm main.cc */
   /*
     int c;
-	bool use_gdb_server = false;
-	bool use_inline_debugger = false;
+
+
 	bool estimate_power = false;
-	int gdb_server_tcp_port = 0;
-	const char *gdb_server_arch_filename = "gdb_powerpc.xml";
+
+
 	uint64_t maxinst = 0; // maximum number of instruction to simulate
 	char *logger_filename = 0;
 	bool logger_zip = false;
@@ -60,28 +60,16 @@ int main(int argc, char **argv, char **envp)
 
   ///////////////////////////////////////// "From Emulator" Start ///////////////////////
   int c;
-  bool use_gdb_server = false;
-  bool use_inline_debugger = false;
+
+
   bool kernel_mode = false;
   uint32_t video_refresh_period = 1000;
-  int gdb_server_tcp_port = 0;
+
   const char *device_tree_filename = "device_tree.xml";
-  const char *gdb_server_arch_filename = "gdb_powerpc.xml";
+
   uint64_t maxinst = 0;
   bool check_sig=false;
   
-  if(command_line["inline-debugger"])
-    { use_inline_debugger = true;
-    }
-  if(command_line["gdb-server"])
-    { use_gdb_server = true;
-    gdb_server_tcp_port = atoi(command_line["gdb-server"]);
-    }
-  /*
-    if(command_line["gdb-server-arch-file"])
-    { gdb_server_arch_filename = command_line["gdb-server-arch-file"];
-    }
-  */
   if(command_line["max:inst"])
     { maxinst = strtoull(command_line["max:inst"], 0, 0);
     }
@@ -118,7 +106,7 @@ int main(int argc, char **argv, char **envp)
   //  GeneratedSimulator s;
   //#include "cmp-nosnoop.uni.inc.init.cxx"
   
-  //  s.ServiceConnection(kernel_mode,use_gdb_server,use_inline_debugger);
+
   if(kernel_mode)
     {
       cerr << "<<< Error: kernel mode is no more supported, until it will be implement by none TLM modules. >>>" << endl;
@@ -132,13 +120,13 @@ int main(int argc, char **argv, char **envp)
 			  /*
 		      filename,
 		      argc,
-		      use_gdb_server,
-		      use_inline_debugger,
+
+
 		      kernel_mode,
 		      video_refresh_period,
-		      gdb_server_tcp_port,
+
 		      device_tree_filename,
-		      gdb_server_arch_filename,
+
 		      maxinst
 			  */
 		      );
