@@ -204,7 +204,6 @@ private:
 	void DumpParameters();
 	void MonitorGetFormat(const char *cmd, char &format);
 	bool DumpVariable(const char *name);
-	bool DumpVariable(const Object &obj, const char *name);
 	void DumpVariable(const char *cmd, const unisim::kernel::service::VariableBase *variable);
 	void DumpVariable(const char *cmd, const char *name);
 	void DumpRegister(const char *cmd, const char *name);

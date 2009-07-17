@@ -63,11 +63,11 @@ using namespace boost;
 VariableBase::VariableBase(const char *_name, Object *_owner, Type _type, const char *_description) :
 	name(_owner ? _owner->GetName() + string(".") + string(_name) : _name),
 	var_name(_name),
-	description(_description ? _description : ""),
 	owner(_owner),
 	container(0),
-	type(_type),
-	enumerated_values()
+	description(_description ? _description : ""),
+	enumerated_values(),
+	type(_type)
 {
 	_owner->Add(*this);
 	ServiceManager::Register(this);
@@ -76,11 +76,11 @@ VariableBase::VariableBase(const char *_name, Object *_owner, Type _type, const 
 VariableBase::VariableBase(const char *_name, VariableBase *_container, Type _type, const char *_description) :
 	name(_container ? _container->GetName() + string(".") + string(_name) : _name), 
 	var_name(_container ? _container->GetVarName() + string(".") + string(_name) : _name),
-	description(_description ? _description : ""),
 	owner(0),
 	container(_container),
-	type(_type),
-	enumerated_values()
+	description(_description ? _description : ""),
+	enumerated_values(),
+	type(_type)
 {
 	ServiceManager::Register(this);
 }
@@ -148,7 +148,7 @@ bool VariableBase::HasEnumeratedValue(const char * value) const {
 
 void VariableBase::GetEnumeratedValues(vector<string> &values) const {
 	if(!HasEnumeratedValues()) return;
-	for(int i = 0; i < enumerated_values.size(); i++) {
+	for(unsigned int i = 0; i < enumerated_values.size(); i++) {
 		values.push_back(enumerated_values[i]);
 	}
 }

@@ -1018,7 +1018,24 @@ void InlineDebugger<ADDRESS>::DumpVariables()
 	{
 		cout << endl;
 		for (iter = lst.begin(); iter != lst.end(); iter++)
+		{
+			switch ((*iter)->GetType())
+			{
+				case VariableBase::VAR_VOID:
+					cout << " V";
+					break;
+				case VariableBase::VAR_PARAMETER:
+					cout << " P";
+					break;
+				case VariableBase::VAR_STATISTIC:
+					cout << " S";
+					break;
+				case VariableBase::VAR_REGISTER:
+					cout << " R";
+					break;
+			}
 			cout << "\t" << (*iter)->GetName() << endl;
+		}
 	}
 }
 
@@ -1149,53 +1166,18 @@ bool
 InlineDebugger<ADDRESS>::
 DumpVariable(const char *name)
 {
-	VariableBase *variable = ServiceManager::GetVariable(name);
-	bool found = false;
-	
-	// first check for the complete name (object.var, object.object.var, ...)
-	if (variable == &unisim::kernel::service::ServiceManager::void_variable)
-	{
-		// check if an object has the given variable name
-		list<Object *> root_objs;
-		ServiceManager::GetRootObjects(root_objs);
-		list<Object *>::iterator root_it;
-		for (root_it = root_objs.begin(); root_it != root_objs.end(); root_it++)
-		{
-			found |= DumpVariable(*(*root_it), name);
-		}
-	}
-	else
-	{
-		cout << variable->GetName() << " = " << ((string) *variable) << endl;
-		found = true;
-	}
-	return found;
-}
-	
-template <class ADDRESS>
-bool
-InlineDebugger<ADDRESS>::
-DumpVariable(const Object &obj, const char *name)
-{
 	bool found = false;
 	list<VariableBase *> vars;
-	vars = obj.GetVariables();
+	ServiceManager::GetVariables(vars);
 	list<VariableBase *>::iterator var_it;
+	
 	for (var_it = vars.begin(); var_it != vars.end(); var_it++)
 	{
-		if (strcmp((*var_it)->GetVarName(), name) == 0)
+		if (string((*var_it)->GetName()).find(name, 0, strlen(name)) != string::npos)
 		{
 			found = true;
-			cout << (*var_it)->GetName() << " = " << ((string) *(*var_it)) << endl;
+			DumpVariable("m", (*var_it)->GetName());
 		}
-	}
-	// check if an object has the given variable name
-	list<Object *> objs;
-	objs = obj.GetLeafs();
-	list<Object *>::iterator obj_it;
-	for (obj_it = objs.begin(); obj_it != objs.end(); obj_it++)
-	{
-		found |= DumpVariable(*(*obj_it), name);
 	}
 	return found;
 }
@@ -1254,6 +1236,23 @@ void InlineDebugger<ADDRESS>::DumpVariable(const char *cmd, const char *name)
 		return;
 	}
 
+	switch (variable->GetType())
+	{
+		case VariableBase::VAR_VOID:
+			cout << " V";
+			break;
+		case VariableBase::VAR_PARAMETER:
+			cout << " P";
+			break;
+		case VariableBase::VAR_STATISTIC:
+			cout << " S";
+			break;
+		case VariableBase::VAR_REGISTER:
+			cout << " R";
+			break;
+	}
+
+	cout << "\t";
 	DumpVariable(cmd, variable);
 }
 
