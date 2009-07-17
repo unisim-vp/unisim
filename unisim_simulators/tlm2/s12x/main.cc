@@ -452,6 +452,12 @@ int sc_main(int argc, char *argv[])
 
 	external_router->init_socket[0](external_memory->slave_sock);
 
+	crg->bus_clock_socket(cpu->bus_clock_socket);
+	crg->bus_clock_socket(ect->bus_clock_socket);
+	crg->bus_clock_socket(pwm->bus_clock_socket);
+	crg->bus_clock_socket(atd1->bus_clock_socket);
+	crg->bus_clock_socket(atd0->bus_clock_socket);
+
 	//=========================================================================
 	//===                        Clients/Services connection                ===
 	//=========================================================================
