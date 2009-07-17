@@ -446,7 +446,7 @@ CiscGenerator::codetype_impl( Product_t& _product ) const {
   } else {
     _product.code( "  for (unsigned int idx = 0; idx < _ct.size/8; ++idx ) {\n" );
   }
-  _product.code( "    uint8_t byte = _ct.str[idx/8];\n" );
+  _product.code( "    uint8_t byte = _ct.str[idx];\n" );
   _product.code( "   _sink << xrepr[(byte >> 4) & 0xf] << xrepr[(byte >> 0) & 0xf];\n" );
   _product.code( "  }\n" );
   _product.code( " }\n" );
