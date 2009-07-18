@@ -386,7 +386,7 @@ private:
 	uint32_t threadsperblock;
 	uint32_t numblocks;
 	uint32_t gprs_per_warp;
-	uint32_t sm_size;
+	uint32_t sm_size;	// Used for bound checks
 	
 	// Runtime registers
 	unsigned int coreid;

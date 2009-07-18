@@ -125,7 +125,9 @@ void CPU<CONFIG>::GatherShared(VectorRegister<CONFIG> & output, uint32_t src, ui
 
 	if(((addr_hi << 2) | addr_lo) == 0 && addr_imm) {
 		address_t addr = src;
-		ReadShared(addr, output, type);
+		if(mask.any()) {
+			ReadShared(addr, output, type);
+		}
 		output.SetScalar();
 	}
 	else {
@@ -139,6 +141,10 @@ template <class CONFIG>
 void CPU<CONFIG>::GatherShared(VectorAddress<CONFIG> const & addr,
 	VectorRegister<CONFIG> & data, std::bitset<CONFIG::WARP_SIZE> mask, SMType t)
 {
+	for(unsigned int i = 0; i != WARP_SIZE; ++i) {
+		assert(!mask[i] || addr[i] < sm_size);
+	}
+	
 	switch(t)
 	{
 	case SM_U32:
@@ -167,6 +173,10 @@ void CPU<CONFIG>::ScatterShared(VectorRegister<CONFIG> const & output, uint32_t 
 	else if(type == SM_U32) shift = 2;
 	VecAddr offset = EffectiveAddress(dest, addr_lo, addr_hi, addr_imm, shift);
 
+	for(unsigned int i = 0; i != WARP_SIZE; ++i) {
+		assert(!mask[i] || offset[i] < sm_size);
+	}
+	
 	// TODO: check memory range
 	address_t base = CurrentWarp().GetSMAddress();
 	switch(type)
@@ -193,13 +203,16 @@ void CPU<CONFIG>::ReadShared(typename CONFIG::address_t addr, VectorRegister<CON
 	switch(t)
 	{
 	case SM_U32:
+		assert(4 * addr < sm_size);
 		Broadcast32(addr, data, 4, CurrentWarp().GetSMAddress());
 		break;
 	case SM_U16:
 	case SM_S16:
+		assert(2 * addr < sm_size);
 		Broadcast16(addr, data, 2, CurrentWarp().GetSMAddress());
 		break;
 	case SM_U8:
+		assert(addr < sm_size);
 		Broadcast8(addr, data, 1, CurrentWarp().GetSMAddress());
 		break;
 	default:

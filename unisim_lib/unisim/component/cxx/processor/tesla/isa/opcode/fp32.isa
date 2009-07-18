@@ -510,7 +510,7 @@ fsmul_halfimm.execute = {
 // TODO: forbid immediate?
 // TODO: setcond > 7 (or flag??)
 op fsset_full( \
-	/*subop*/3[3]:/*?*/0[1]:src3_neg[1]:m32[1]:/*const seg*/?[4]:/*src1_sh*/?[1]:src1_abs[1]:0[2]:setcond[4]\
+	/*subop*/3[3]:/*?*/0[1]:src3_neg[1]:0[1]:/*const seg*/?[4]:/*src1_sh*/?[1]:src1_abs[1]:0[2]:setcond[4]\
 	:/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output_reg*/?[1]:/*addr_hi*/?[1]:/*marker*/?[2]: \
 	0xb[4]:?[26]:0[1]:/*IWidth*/1[1]\
 )
@@ -521,9 +521,8 @@ group fsset(fsset_full)
 
 fsset.init = {
 	typedef Operation<CONFIG> inherited;
-	DataType dt = RegTypeToDataType(RegType(m32));
 	inherited::allow_segment = false;
-	inherited::op_type[OpDest] = dt;
+	inherited::op_type[OpDest] = DT_U32;	// Always 32-bit?
 	inherited::op_type[OpSrc1] = DT_F32;
 	inherited::op_type[OpSrc2] = DT_F32;
 	inherited::op_type[OpSrc3] = DT_NONE;
@@ -537,12 +536,12 @@ fsset.disasm = {
 	buffer << "set.";
 	buffer << SetCondString(SetCond(setcond));
 	insn->DisasmControl(buffer);
-	DisasmSignWidth(true, m32, buffer);
+	//DisasmSignWidth(false, m32, buffer);
 	buffer << ".f32";
 	
 	buffer << " ";
 	insn->DisasmDest(buffer);
-	buffer << " ";
+	buffer << ", ";
 	if(src1_abs) {
 		buffer << "|";
 	}
