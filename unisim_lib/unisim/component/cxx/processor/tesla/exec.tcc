@@ -646,7 +646,7 @@ void RegToFlags(VectorFlags<CONFIG> & dest, VectorRegister<CONFIG> const & src)
 {
 	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i)
 	{
-		dest[i] = (src[i] & 0x0000000f);
+		dest[i] = std::bitset<4>(src[i] & 0x0000000f);
 	}
 }
 
