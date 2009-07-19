@@ -873,7 +873,7 @@ op tex1d_s32_full( \
 tex1d_s32_full.init = {
 	typedef Operation<CONFIG> inherited;
 	inherited::allow_segment = false;
-	inherited::op_type[OpDest] = DT_S32;
+	inherited::op_type[OpDest] = DT_F32;	//DT_S32;
 	inherited::op_type[OpSrc1] = DT_NONE;
 	inherited::op_type[OpSrc2] = DT_NONE;
 	inherited::op_type[OpSrc3] = DT_NONE;
@@ -920,7 +920,7 @@ tex1d_s32_full.write = {
 	for(int i = 0; i != 4; ++i)
 	{
 		if(bitfield & (1 << i)) {
-			insn->WriteReg(dest + j, j, DT_U32, insn->Mask());
+			insn->WriteReg(dest + j, j, DT_F32, insn->Mask());
 			++j;
 		}
 	}

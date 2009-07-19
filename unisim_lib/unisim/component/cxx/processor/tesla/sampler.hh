@@ -97,7 +97,7 @@ struct Sampler
 	CPU<CONFIG> * cpu;
 
 private:
-	void Fetch8(VectorRegister<CONFIG> dest[],
+	void Fetch(VectorRegister<CONFIG> dest[],
 		VectorAddress<CONFIG> const & addr,
 		uint32_t destBitfield);
 	uint32_t Unpack(uint32_t rawval);

@@ -74,12 +74,12 @@ void Sampler<CONFIG>::Sample1DS32(VectorRegister<CONFIG> dest[],
 
 	// Coordinates as int32_t
 	VectorAddress<CONFIG> addr(src[0]);
-	int elSize = 1 * numPackedComponents;
+	int elSize = ArrayFormatSize(format) * numPackedComponents;
 	
 	// TODO: Wrap / Clamp / Mirror
 	addr = VectorAddress<CONFIG>(baseAddress) + elSize * addr;
 	
-	Fetch8(dest, addr, destBitfield);
+	Fetch(dest, addr, destBitfield);
 }
 
 template<class CONFIG>
@@ -100,24 +100,25 @@ void Sampler<CONFIG>::Reset(CPU<CONFIG> * cpu)
 
 
 template<class CONFIG>
-void Sampler<CONFIG>::Fetch8(VectorRegister<CONFIG> dest[],
+void Sampler<CONFIG>::Fetch(VectorRegister<CONFIG> dest[],
 	VectorAddress<CONFIG> const & addr,
 	uint32_t destBitfield)
 {
-	uint8_t buffer[4];
-	int elSize = 1 * numPackedComponents;
+	
+	int elSize = ArrayFormatSize(format);
 	
 	
 	for(unsigned int l = 0; l != CONFIG::WARP_SIZE; ++l)
 	{
-		if(!cpu->ReadMemory(addr[l], buffer, elSize))
-			assert(false);
 
 		int j = 0;
 		for(int i = 0; i != 4; ++i)
 		{
 			if(destBitfield & (1 << i)) {
-				dest[j][l] = Unpack(buffer[i]);
+				uint32_t buffer;
+				if(!cpu->ReadMemory(addr[l] + i * elSize, &buffer, elSize))
+					assert(false);
+				dest[j][l] = Unpack(buffer);
 				++j;
 			}
 		}
@@ -134,6 +135,7 @@ inline uint32_t FloatAsUint32(float x)
 template<class CONFIG>
 uint32_t Sampler<CONFIG>::Unpack(uint32_t rawval)
 {
+	// Assumes little-endian encoding
 	if(flags & TF_READ_AS_INTEGER) {
 		// Int -> Int, Z-extend or S-extend
 		uint32_t intval;
