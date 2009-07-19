@@ -60,7 +60,9 @@ Instruction<CONFIG>::Instruction(CPU<CONFIG> * cpu, typename CONFIG::address_t a
 	cpu(cpu), addr(addr), iw(iw), stats(0)
 {
 	operation = op_decoder.Decode(addr, iw);
-	flags.Reset();
+	if(operation->OutputsPred()) {
+		flags.Reset();
+	}
 	if(cpu->stats != 0) {
 		stats = &(*cpu->stats)[addr - CONFIG::CODE_START];
 	}
@@ -114,7 +116,9 @@ template <class CONFIG>
 void Instruction<CONFIG>::Write()
 {
 	operation->write(cpu, this);
-	operation->writePred(cpu, this);
+	if(operation->OutputsPred()) {
+		operation->writePred(cpu, this);
+	}
 }
 
 template <class CONFIG>
@@ -396,7 +400,7 @@ void Instruction<CONFIG>::SetPredI32(VectorRegister<CONFIG> const & value, Vecto
 template <class CONFIG>
 void Instruction<CONFIG>::SetPredI32(VectorRegister<CONFIG> const & value) const
 {
-	SetPredI32(value, VectorFlags<CONFIG>().Reset());
+	SetPredI32(value, flags);
 }
 
 template <class CONFIG>

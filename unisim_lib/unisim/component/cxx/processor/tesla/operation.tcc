@@ -105,6 +105,13 @@ void Operation<CONFIG>::initStats(typename CONFIG::operationstats_t * stats)
 	}
 }
 
+
+template <class CONFIG>
+bool Operation<CONFIG>::OutputsPred()
+{
+	return dest->needWritePred;
+}
+
 } // end of namespace tesla
 } // end of namespace processor
 } // end of namespace cxx

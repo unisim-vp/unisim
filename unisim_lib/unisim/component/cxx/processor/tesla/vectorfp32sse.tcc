@@ -77,21 +77,19 @@ inline __m128 Saturate(__m128 x)
 {
 	// TODO: Saturate(-0) = ?
 	// SSE min/max are non-commutative.
-	_mm_max_ps(x, (__m128)_mm_setzero_si128());
+	_mm_max_ps(x, _mm_castsi128_ps(_mm_setzero_si128()));
 	_mm_min_ps(x, _mm_set1_ps(1.0f));
 	return x;
 }
 
 inline void SetDAZFTZ()
 {
-	_MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
-	MM_SET_DAZ_MODE(MM_DAZ_ON);
+	_mm_setcsr(_mm_getcsr() | (_MM_FLUSH_ZERO_ON | MM_DAZ_ON));
 }
 
 inline void ClearDAZFTZ()
 {
-	_MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_OFF);
-	MM_SET_DAZ_MODE(MM_DAZ_OFF);
+	_mm_setcsr(_mm_getcsr() & (~_MM_FLUSH_ZERO_MASK & ~MM_DAZ_MASK));
 }
 
 struct NoDenorm
@@ -116,7 +114,7 @@ VectorRegister<CONFIG> & VectorFP32SSE<CONFIG>::Mad(VectorRegister<CONFIG> & a,
 	// G80-GT200: first mul always rounded toward zero
 	_MM_SET_ROUNDING_MODE(_MM_ROUND_TOWARD_ZERO);
 	
-	__m128 sign_mask = (__m128)_mm_set1_epi32(0x80000000);
+	__m128 sign_mask = _mm_castsi128_ps(_mm_set1_epi32(0x80000000));
 	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; i += 4)
 	{
 		// TODO: force alignment of VectorRegister (or just switch to Nehalem...)
@@ -177,7 +175,7 @@ VectorRegister<CONFIG> & VectorFP32SSE<CONFIG>::Mul(VectorRegister<CONFIG> & a,
 
 	NoDenorm nd;
 	
-	__m128 sign_mask = (__m128)_mm_set1_epi32(0x80000000);
+	__m128 sign_mask = _mm_castsi128_ps(_mm_set1_epi32(0x80000000));
 
 	if(rounding_mode == RM_RZ) {
 		_MM_SET_ROUNDING_MODE(_MM_ROUND_TOWARD_ZERO);
@@ -220,7 +218,7 @@ VectorRegister<CONFIG> & VectorFP32SSE<CONFIG>::Add(VectorRegister<CONFIG> & a,
 {
 	NoDenorm nd;
 
-	__m128 sign_mask = (__m128)_mm_set1_epi32(0x80000000);
+	__m128 sign_mask = _mm_castsi128_ps(_mm_set1_epi32(0x80000000));
 	if(rounding_mode == RM_RZ) {
 		_MM_SET_ROUNDING_MODE(_MM_ROUND_TOWARD_ZERO);
 	}
@@ -258,6 +256,10 @@ VectorRegister<CONFIG> & VectorFP32SSE<CONFIG>::Rcp(VectorRegister<CONFIG> & a)
 {
 	NoDenorm nd;
 	// Do NOT use the SSE reciprocal estimate, it's way too unprecise
+	// A NR iteration would be faster:
+	// On Penryn
+	// DIVPS = 12 cycles
+	// RCPPS + 2xMULPS + SUBPS < 5 cycles
 	__m128 one = _mm_set1_ps(1.0f);
 	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; i += 4)
 	{

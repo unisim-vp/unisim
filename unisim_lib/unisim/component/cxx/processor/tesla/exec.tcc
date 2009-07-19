@@ -105,7 +105,7 @@ VectorRegister<CONFIG> IAdd32(VectorRegister<CONFIG> const & a,
 		// add -a -b -> flags undefined (= add -a -b): not in Tesla ISA anyway...
 		
 		// The documentation is wrong...
-		// Tesla seem to use the obvious implementation (2's-complement before operation)
+		// Tesla seems to use the obvious implementation (2's-complement before operation)
 		if(ra) {
 			sa = -int32_t(sa);
 		}
@@ -167,7 +167,13 @@ VectorRegister<CONFIG> IAdd16(VectorRegister<CONFIG> const & a,
 		// add a -b -> sub a b
 		// add -a b -> sub b a
 		// add -a -b -> flags undefined (= add -a -b)
-		if(ra && rb) {
+		if(ra) {
+			sa = -int16_t(sa);
+		}
+		if(rb) {
+			sb = -int16_t(sb);
+		}
+		/*if(ra && rb) {
 			sa = -int16_t(sa);
 			sb = -int16_t(sb);
 			ra = false;
@@ -176,19 +182,19 @@ VectorRegister<CONFIG> IAdd16(VectorRegister<CONFIG> const & a,
 		else if(ra) {
 			std::swap(sa, sb);
 			std::swap(ra, rb);
-		}
+		}*/
 
 		uint16_t r;
 		if(sat) {
 			uint8_t does_sat;
 
 			assert(!use_cin);
-			if(rb) {
-				SignedSatSub16(r, does_sat, sa, sb);
-			}
-			else {
+			//if(rb) {
+			//	SignedSatSub16(r, does_sat, sa, sb);
+			//}
+			//else {
 				SignedSatAdd16(r, does_sat, sa, sb);
-			}
+			//}
 			// G80Specs: ovf not updated
 			//flags.SetOvf(int(does_sat), i);
 			flags.SetOvf(0, i);
@@ -200,12 +206,12 @@ VectorRegister<CONFIG> IAdd16(VectorRegister<CONFIG> const & a,
 			if(use_cin) {
 				carry_in = inputflags.GetCarry(i);
 			}
-			if(rb) {
-				Sub16(r, carry_out, overflow, sa, sb, carry_in);
-			}
-			else {
+			//if(rb) {
+			//	Sub16(r, carry_out, overflow, sa, sb, carry_in);
+			//}
+			//else {
 				Add16(r, carry_out, overflow, sa, sb, carry_in);
-			}
+			//}
 			flags.SetOvf(int(overflow), i);
 			flags.SetCarry(int(carry_out), i);
 		}

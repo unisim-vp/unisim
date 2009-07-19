@@ -101,6 +101,8 @@ struct Operation
 	virtual void classify(typename CONFIG::operationstats_t * stats) = 0;
 	void initStats(typename CONFIG::operationstats_t * stats);
 	
+	bool OutputsPred();
+	
 	//typedef typename isa::opcode::Operation<CONFIG> OpCode;
 	typedef isa::dest::Operation<CONFIG> OperDest;
 	typedef isa::src1::Operation<CONFIG> OperSrc1;
