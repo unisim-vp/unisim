@@ -442,6 +442,7 @@ void Sampler<CONFIG>::Load(CPU<CONFIG> & cpu)
 	}
 	smp.filterMode = unisim::component::cxx::processor::tesla::FilterMode(filter_mode);
 	smp.flags = flags;
+	smp.format = unisim::component::cxx::processor::tesla::ArrayFormat(format);
 }
 
 
