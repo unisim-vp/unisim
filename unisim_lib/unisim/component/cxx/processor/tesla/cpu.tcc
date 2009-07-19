@@ -118,6 +118,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent, int coreid, int core_count) :
 	param_export_stats("export-stats", this, export_stats),
 	param_filter_trace("filter-trace", this, filter_trace),
 	param_filter_warp("filter-warp", this, filter_warp),
+	param_filter_cta("filter-cta", this, filter_cta),
 	stat_instruction_counter("instruction-counter", this, instruction_counter),
 	stat_cpu_cycle("cpu-cycle", this, cpu_cycle),
 	stat_bus_cycle("bus-cycle", this, bus_cycle),
@@ -131,6 +132,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent, int coreid, int core_count) :
 	trace_reset(CONFIG::TRACE_RESET),
 	filter_trace(false),
 	filter_warp(0),
+	filter_cta(0),
 	trace_logger(*this),
 	stats(0),
 	export_stats(false)
@@ -148,6 +150,10 @@ CPU<CONFIG>::~CPU()
 template <class CONFIG>
 bool CPU<CONFIG>::Setup()
 {
+	for(unsigned int i = 0; i != CONFIG::MAX_SAMPLERS; ++i)
+	{
+		samplers[i].Reset(this);
+	}
 	return true;
 }
 
@@ -194,10 +200,6 @@ void CPU<CONFIG>::Reset(unsigned int threadsperblock, unsigned int numblocks, un
 	}
 	num_warps = 0;
 	num_ctas = 0;
-	for(unsigned int i = 0; i != CONFIG::MAX_SAMPLERS; ++i)
-	{
-		samplers[i].Reset(this);
-	}
 
 	// Round up
 	unsigned int warpsperblock = (threadsperblock + WARP_SIZE - 1) / WARP_SIZE;

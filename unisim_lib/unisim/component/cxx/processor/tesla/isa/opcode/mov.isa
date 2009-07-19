@@ -873,7 +873,7 @@ op tex1d_s32_full( \
 tex1d_s32_full.init = {
 	typedef Operation<CONFIG> inherited;
 	inherited::allow_segment = false;
-	inherited::op_type[OpDest] = DT_NONE;
+	inherited::op_type[OpDest] = DT_S32;
 	inherited::op_type[OpSrc1] = DT_NONE;
 	inherited::op_type[OpSrc2] = DT_NONE;
 	inherited::op_type[OpSrc3] = DT_NONE;
@@ -910,9 +910,20 @@ tex1d_s32_full.read = {
 }
 
 tex1d_s32_full.execute = {
+	unsigned int bitfield = (bf_hi << 2) | bf_lo;
+	cpu->GetSampler(sampler).Sample1DS32(&insn->GetDest(), &insn->GetSrc1(), bitfield);
 }
 
 tex1d_s32_full.write = {
+	unsigned int bitfield = (bf_hi << 2) | bf_lo;
+	int j = 0;
+	for(int i = 0; i != 4; ++i)
+	{
+		if(bitfield & (1 << i)) {
+			insn->WriteReg(dest + j, j, DT_U32, insn->Mask());
+			++j;
+		}
+	}
 }
 
 group tex(tex1d_s32_full)

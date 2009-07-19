@@ -431,6 +431,7 @@ private:
 	
 	Parameter<bool> param_filter_trace;
 	Parameter<uint32_t> param_filter_warp;
+	Parameter<uint32_t> param_filter_cta;
 
 	//=====================================================================
 	//=                    CPU run-time statistics                        =
@@ -461,8 +462,12 @@ public:
 	
 	bool filter_trace;
 	uint32_t filter_warp;
+	uint32_t filter_cta;
 	
-	bool TraceEnabled() { return !filter_trace || current_warpid == filter_warp; }
+	bool TraceEnabled() {
+		return !filter_trace
+			|| (current_warpid == filter_warp && CurrentWarp().CTAID() == filter_cta);
+	}
 	bool TraceInsn() { return trace_insn && TraceEnabled(); }
 	bool TraceMask() { return trace_mask && TraceEnabled(); }
 	bool TraceReg() { return trace_reg && TraceEnabled(); }

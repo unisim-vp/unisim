@@ -141,16 +141,22 @@ uint32_t Sampler<CONFIG>::Unpack(uint32_t rawval)
 		{
 		case AF_U8:
 			intval = uint8_t(rawval);
+			break;
 		case AF_S8:
 			intval = int8_t(rawval);
+			break;
 		case AF_U16:
 			intval = uint16_t(rawval);
+			break;
 		case AF_S16:
 			intval = int16_t(rawval);
+			break;
 		case AF_U32:
 			intval = uint32_t(rawval);
+			break;
 		case AF_S32:
 			intval = int32_t(rawval);
+			break;
 		case AF_F16:
 		case AF_F32:
 		default:
@@ -166,16 +172,22 @@ uint32_t Sampler<CONFIG>::Unpack(uint32_t rawval)
 		{
 		case AF_U8:
 			floatval = uint8_t(rawval) / 255.f;
+			break;
 		case AF_S8:
 			floatval = (2.f * int8_t(rawval) + 1.f) / 255.f;
+			break;
 		case AF_U16:
 			floatval = uint16_t(rawval) / 65535.f;
+			break;
 		case AF_S16:
 			floatval = (2.f * int16_t(rawval) + 1.f) / 65535.f;
+			break;
 		case AF_U32:
 			floatval = ldexp(float(uint32_t(rawval)), -32);	// 2^32-1 is rounded to 2^32 in FP32
+			break;
 		case AF_S32:
 			floatval = ldexp(float(int32_t(rawval)), -31);
+			break;
 		case AF_F16:
 			assert(false);	// TODO
 		case AF_F32:
