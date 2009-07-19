@@ -368,6 +368,8 @@ template<class CONFIG>
 void Kernel<CONFIG>::SetTexRef(Sampler<CONFIG> * sampler)
 {
 	assert(sampler->TexUnit() < CONFIG::MAX_SAMPLERS);
+	if(trace_loading)
+		cerr << " texunit = " << sampler->TexUnit() << endl;
 	samplers[sampler->TexUnit()] = sampler;
 }
 
@@ -377,6 +379,9 @@ void Kernel<CONFIG>::LoadSamplers(CPU<CONFIG> & cpu)
 	for(int i = 0; i != CONFIG::MAX_SAMPLERS; ++i)
 	{
 		if(samplers[i] != 0) {
+			if(trace_loading)
+				cerr << " Loading sampler " << i << endl;
+			assert(samplers[i]->TexUnit() == i);
 			samplers[i]->Load(cpu);
 		}
 	}

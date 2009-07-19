@@ -89,6 +89,8 @@ struct FatFormat
 	char const * GetCubin(char const * gpuname);
 	void Dump();
 
+	static bool verbose;
+
 private:
 	cudaFatCudaBinary const * fcb;
 };

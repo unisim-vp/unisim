@@ -451,7 +451,8 @@ void Sampler<CONFIG>::Load(CPU<CONFIG> & cpu)
 template<class CONFIG>
 Module<CONFIG>::Module(char const * fname)
 {
-	cerr << "Cubin " << fname << endl;
+	if(verbose)
+		cerr << "Cubin " << fname << endl;
 	ifstream is(fname, ifstream::in);
 	LoadCubin(is);
 }
@@ -460,7 +461,8 @@ template<class CONFIG>
 Module<CONFIG>::Module(void const *fatCubin, int)
 {
 	FatFormat ff(fatCubin);
-	ff.Dump();
+	if(verbose)
+		ff.Dump();
 	char const * cubin = ff.GetCubin(0);
 	istringstream is(cubin);
 	LoadCubin(is);
@@ -469,7 +471,8 @@ Module<CONFIG>::Module(void const *fatCubin, int)
 template<class CONFIG>
 Kernel<CONFIG> & Module<CONFIG>::GetKernel(char const * name)
 {
-	cerr << "GetFunction : \"" << name << "\"\n";
+	if(verbose)
+		cerr << "GetFunction : \"" << name << "\"\n";
 	typename KernelMap::iterator it = kernels.find(string(name));
 	if(it == kernels.end()) {
 		throw CudaException(CUDA_ERROR_NOT_FOUND);
@@ -496,6 +499,9 @@ Sampler<CONFIG> & Module<CONFIG>::GetSampler(char const * name)
 	}
 	return it->second;
 }
+
+template<class CONFIG>
+bool Module<CONFIG>::verbose = true;
 
 template<class CONFIG>
 void Module<CONFIG>::Load(Service<unisim::service::interfaces::Memory<typename CONFIG::address_t> > & mem,

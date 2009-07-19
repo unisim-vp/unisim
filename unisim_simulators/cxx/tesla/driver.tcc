@@ -42,7 +42,11 @@
 #include <iostream>
 #include <cerrno>
 #include "exception.hh"
+#include <unisim/kernel/service/service.hh>
 
+
+using unisim::kernel::service::ServiceManager;
+using std::cerr;
 
 /*****************************************
  *                DRIVER                 *
@@ -55,6 +59,13 @@ Driver<CONFIG>::Driver()
 //    Initialization
 template<class CONFIG>
 CUresult Driver<CONFIG>::cuInit(unsigned int&Flags) {
+	if(!ServiceManager::Setup()) {
+		cerr << "Error, setup failed\n";
+		ServiceManager::Dump(cerr);
+		assert(false);
+	}
+	
+
 	errno = 0;	// ?
 	return CUDA_SUCCESS;
 }

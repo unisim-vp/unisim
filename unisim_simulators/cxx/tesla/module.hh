@@ -135,6 +135,8 @@ struct Module : CUmod_st
 	void Load(Service<unisim::service::interfaces::Memory<typename CONFIG::address_t> > & mem,
 		Allocator<CONFIG> & allocator);
 
+	static bool verbose;
+
 private:
 	void LoadCubin(std::istream & is);
 	void SetField(std::string const & name, std::string const & value);

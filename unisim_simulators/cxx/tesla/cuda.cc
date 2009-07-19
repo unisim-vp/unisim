@@ -163,6 +163,7 @@ CUresult  CUDAAPI cuDeviceGetAttribute(int *pi, CUdevice_attribute attrib, CUdev
 	CHECK_DRIVER;
  	try {
 		*pi = driver->Dev(dev).Attribute(attrib);
+		errno = 0;
 		return CUDA_SUCCESS;
 	}
 	catch(CudaException e) {

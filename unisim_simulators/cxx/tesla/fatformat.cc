@@ -40,6 +40,8 @@
 
 using namespace std;
 
+bool FatFormat::verbose = true;
+
 FatFormat::FatFormat(void const *fatCubin) :
 	fcb(static_cast<cudaFatCudaBinary const *>(fatCubin))
 {
@@ -49,8 +51,10 @@ FatFormat::FatFormat(void const *fatCubin) :
 char const * FatFormat::GetCubin(char const * gpuname)
 {
 	assert(fcb->cubin[0].cubin != 0 && fcb->cubin[0].gpuProfileName != 0);
-	cerr << "Fat: using cubin profile " << fcb->cubin[0].gpuProfileName << endl;
-	cerr << fcb->cubin[0].cubin << endl;
+	if(verbose) {
+		cerr << "Fat: using cubin profile " << fcb->cubin[0].gpuProfileName << endl;
+		cerr << fcb->cubin[0].cubin << endl;
+	}
 	return fcb->cubin[0].cubin;
 }
 

@@ -45,7 +45,6 @@
 #include "kernel.hh"
 #include <unisim/component/cxx/processor/tesla/stats.tcc>
 #include <boost/thread.hpp>
-#include <unisim/kernel/service/service.hh>
 
 using std::string;
 using std::endl;
@@ -53,7 +52,6 @@ using std::hex;
 using std::dec;
 using boost::thread;
 using boost::thread_group;
-using unisim::kernel::service::ServiceManager;
 
 
 template<class CONFIG>
@@ -180,18 +178,6 @@ Device<CONFIG>::Device() :
 		scheduler->Socket(i).run_import >> cores[i]->run_export;
 	}
 	
-	/*memory.Setup();
-	for(int i = 0; i != core_count; ++i)
-	{
-		cores[i]->Setup();
-	}
-	scheduler->Setup();*/
-	if(!ServiceManager::Setup()) {
-		cerr << "Error, setup failed\n";
-		ServiceManager::Dump(cerr);
-		assert(false);
-	}
-	
 	env = getenv("EXPORT_STATS");
 	if(env != 0)
 		export_stats = ParseBool(env);
@@ -211,10 +197,15 @@ Device<CONFIG>::Device() :
 	SetVariableBool("TRACE_RESET", "trace-reset");
 	SetVariableBool("FILTER_TRACE", "filter-trace");
 	SetVariableUInt("FILTER_TRACE_WARP", "filter-warp");
+	SetVariableUInt("FILTER_TRACE_BLOCK", "filter-cta");
 
 	env = getenv("TRACE_KERNEL_PARSING");
-	if(env != 0)
-		Kernel<CONFIG>::trace_parsing = ParseBool(env);
+	if(env != 0) {
+		bool b = ParseBool(env);
+		Kernel<CONFIG>::trace_parsing = b;
+		Module<CONFIG>::verbose = b;
+		FatFormat::verbose = b;
+	}
 
 	env = getenv("TRACE_KERNEL_LOADING");
 	if(env != 0)
