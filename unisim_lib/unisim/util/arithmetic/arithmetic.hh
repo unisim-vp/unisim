@@ -129,7 +129,7 @@ inline int64_t SignExtend(uint64_t v, unsigned int n) __attribute__((always_inli
 
 inline void Add8(uint8_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t x, uint8_t y, uint8_t carry_in)
 {
-#if defined(__GNUC__) && (__GNUC__ >= 3) && defined(__i386)
+#if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
 	if(carry_in)
 	{
 		__asm__ ("stc\nadcb %b4, %b0\nsetc %1\nseto %2" : "=qQ" (result), "=qQ" (carry_out), "=qQ" (overflow) : "0" (x), "q" (y) : "cc");	
@@ -153,7 +153,7 @@ inline void Add8(uint8_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t
 
 inline void Add16(uint16_t& result, uint8_t& carry_out, uint8_t& overflow, uint16_t x, uint16_t y, uint8_t carry_in)
 {
-#if defined(__GNUC__) && (__GNUC__ >= 3) && defined(__i386)
+#if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
 	if(carry_in)
 	{
 		__asm__ ("stc\nadcw %4, %w0\nsetc %1\nseto %2" : "=r" (result), "=qQ" (carry_out), "=qQ" (overflow) : "0" (x), "rm" (y) : "cc");	
@@ -185,7 +185,7 @@ inline void Add16(uint16_t& result, uint8_t& carry_out, uint8_t& overflow, uint1
 */
 inline void Add32(uint32_t& result, uint8_t& carry_out, uint8_t& overflow, uint32_t x, uint32_t y, uint8_t carry_in)
 {
-#if defined(__GNUC__) && (__GNUC__ >= 3) && defined(__i386)
+#if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
 	if(carry_in)
 	{
 		__asm__ ("stc\nadcl %4, %0\nsetc %1\nseto %2" : "=r" (result), "=qQ" (carry_out), "=qQ" (overflow) : "0" (x), "rm" (y) : "cc");	
@@ -212,7 +212,7 @@ inline void Add32(uint32_t& result, uint8_t& carry_out, uint8_t& overflow, uint3
 //=============================================================================
 
 inline void Sub8(uint8_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t x, uint8_t y, uint8_t borrow_in) {
-#if defined(__GNUC__) && (__GNUC__ >= 3) && defined(__i386)
+#if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
 	if(borrow_in)
 	{
 		__asm__ ("stc\nsbbb %b4, %b0\nsetc %1\nseto %2" : "=qQ" (result), "=qQ" (borrow_out), "=qQ" (overflow) : "0" (x), "q" (y) : "cc");	
@@ -235,7 +235,7 @@ inline void Sub8(uint8_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_
 }
 
 inline void Sub16(uint16_t& result, uint8_t& borrow_out, uint8_t& overflow, uint16_t x, uint16_t y, uint8_t borrow_in) {
-#if defined(__GNUC__) && (__GNUC__ >= 3) && defined(__i386)
+#if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
 	if(borrow_in)
 	{
 		__asm__ ("stc\nsbbw %4, %w0\nsetc %1\nseto %2" : "=r" (result), "=qQ" (borrow_out), "=qQ" (overflow) : "0" (x), "rm" (y) : "cc");	
@@ -266,7 +266,7 @@ inline void Sub16(uint16_t& result, uint8_t& borrow_out, uint8_t& overflow, uint
    borrow_out is computed from equation (2), overflow from equation (3)
 */
 inline void Sub32(uint32_t& result, uint8_t& borrow_out, uint8_t& overflow, uint32_t x, uint32_t y, uint8_t borrow_in) {
-#if defined(__GNUC__) && (__GNUC__ >= 3) && defined(__i386)
+#if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
 	if(borrow_in)
 	{
 		__asm__ ("stc\nsbbl %4, %0\nsetc %1\nseto %2" : "=r" (result), "=qQ" (borrow_out), "=qQ" (overflow) : "0" (x), "rm" (y) : "cc");	
