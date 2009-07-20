@@ -172,8 +172,13 @@ namespace tms320 {
 	{
 		overflow = 0;
 		
+		if (GetHi() == 0x80)
+		{
+			return 0;
+		}
+		
 		// check for special cases of exponent to signal an overflow
-		if ((int8_t)hi > 30)
+		if ((int8_t)GetHi() > 30)
 		{
 			overflow = 1;
 			// check if the sign is positive or negative
@@ -782,8 +787,7 @@ namespace tms320 {
 		//           signed(hi_a) - 24
 		//     1 x 2
 		int64_t ext_lo_a = 0;
-		int64_t ext_lo_b = (uint32_t)0x80000000;
-		ext_lo_b = ext_lo_b >> 24;
+		int64_t ext_lo_b = (uint32_t)0x00000080;
 		// convert mantissas to their full representation (33-bit)
 		if (lo_a & (uint32_t)0x80000000)
 			ext_lo_a = (int64_t)((int32_t)lo_a) & ~(uint64_t)0x80000000;
@@ -822,12 +826,12 @@ namespace tms320 {
 			}
 			else
 			{
-				if (ext_lo_c < 0 && ~(ext_lo_c >> 32) != 1)
+				if (ext_lo_c < 0 && ~(ext_lo_c >> 32) != 0)
 				{
 					// the mantissa is negative, check how many bits we have to shift it
 					//   to be a signed 33bits number
 					ext_lo_c = (uint64_t)ext_lo_c >> 1;
-					if ((int32_t)this->GetHi() + 1 > 127) 
+					if ((int32_t)(int8_t)this->GetHi() + 1 > 127) 
 					{
 						overflow = 1;
 						this->SetHi((uint8_t)0x7f);

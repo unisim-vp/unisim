@@ -2992,9 +2992,10 @@ MPYF_reg.execute = {
 	// No need to check input registers, they must exist
 	
 	// Get the source register
-	Register& src_reg = cpu.GetExtReg(src);
+	Register src_reg = cpu.GetExtReg(src);
 
 	// Get the destination register
+	Register src_dst_reg = cpu.GetExtReg(dst);
 	Register& dst_reg = cpu.GetExtReg(dst);
 
 	// Compute result and flags
@@ -3011,6 +3012,22 @@ MPYF_reg.execute = {
 		overflow,
 		underflow
 	);
+	
+	// NOTE: the ST_N flag may need to be fixed if the result is equal to 0.0,
+	//   then the ST_N flag is set to 1 if one of two inputs is negative (but
+	//   not both) and none of them had 0x80 as exponent
+	if (dst_reg.GetHi() == 0x80)
+	{
+		if (((src_reg.GetHi() != (uint8_t)0x80)
+			 && (src_dst_reg.GetHi() != (uint8_t)0x80))
+			&& (((src_reg.GetLo() & (uint32_t)0x80000000)
+				 ^ (src_dst_reg.GetLo() & (uint32_t)0x80000000)) != 0))
+		{
+			uint32_t st = cpu.GetST();
+			st |= ((uint32_t)1 << ST_N);
+			cpu.SetST(st);
+		}
+	}
 }
 
 MPYF_dir.execute = {
@@ -3023,6 +3040,7 @@ MPYF_dir.execute = {
 	uint32_t src_value = cpu.IntLoad(ea);
 
 	// Get the destination register
+	Register src_dst_reg = cpu.GetExtReg(dst);
 	Register& dst_reg = cpu.GetExtReg(dst);
 
 	// Compute result and flags
@@ -3039,6 +3057,22 @@ MPYF_dir.execute = {
 		overflow,
 		underflow
 	);
+
+	// NOTE: the ST_N flag may need to be fixed if the result is equal to 0.0,
+	//   then the ST_N flag is set to 1 if one of two inputs is negative (but
+	//   not both) and none of them had 0x80 as exponent
+	if (dst_reg.GetHi() == 0x80)
+	{
+		if (((src_value >> 24 != (uint32_t)0x80)
+			 && (src_dst_reg.GetHi() != (uint8_t)0x80))
+			&& (((src_value & (uint32_t)0x800000)
+				 ^ (src_dst_reg.GetLo() & (uint32_t)0x80000000)) != 0))
+		{
+			uint32_t st = cpu.GetST();
+			st |= ((uint32_t)1 << ST_N);
+			cpu.SetST(st);
+		}
+	}
 }
 
 MPYF_indir.execute = {
@@ -3058,6 +3092,7 @@ MPYF_indir.execute = {
 	uint32_t src_value = cpu.IntLoad(ea);
 
 	// Get the destination register
+	Register src_dst_reg = cpu.GetExtReg(dst);
 	Register& dst_reg = cpu.GetExtReg(dst);
 
 	// Compute result and flags
@@ -3080,12 +3115,29 @@ MPYF_indir.execute = {
 		overflow,
 		underflow
 	);
+
+	// NOTE: the ST_N flag may need to be fixed if the result is equal to 0.0,
+	//   then the ST_N flag is set to 1 if one of two inputs is negative (but
+	//   not both) and none of them had 0x80 as exponent
+	if (dst_reg.GetHi() == 0x80)
+	{
+		if (((src_value >> 24 != (uint32_t)0x80)
+			 && (src_dst_reg.GetHi() != (uint8_t)0x80))
+			&& (((src_value & (uint32_t)0x800000)
+				 ^ (src_dst_reg.GetLo() & (uint32_t)0x80000000)) != 0))
+		{
+			uint32_t st = cpu.GetST();
+			st |= ((uint32_t)1 << ST_N);
+			cpu.SetST(st);
+		}
+	}
 }
 
 MPYF_imm.execute = {
 	// No need to check input registers, they must exist
 	
 	// Get the destination register
+	Register src_dst_reg = cpu.GetExtReg(dst);
 	Register& dst_reg = cpu.GetExtReg(dst);
 
 	// Compute result and flags
@@ -3102,6 +3154,22 @@ MPYF_imm.execute = {
 		overflow,
 		underflow
 	);
+
+	// NOTE: the ST_N flag may need to be fixed if the result is equal to 0.0,
+	//   then the ST_N flag is set to 1 if one of two inputs is negative (but
+	//   not both) and none of them had 0x80 as exponent
+	if (dst_reg.GetHi() == 0x80)
+	{
+		if ((((uint16_t)imm & (uint16_t)0xf000 != (uint16_t)0x8000)
+			 && (src_dst_reg.GetHi() != (uint8_t)0x80))
+			&& ((((uint16_t)imm & (uint16_t)0x0800)
+				 ^ (src_dst_reg.GetLo() & (uint32_t)0x80000000)) != 0))
+		{
+			uint32_t st = cpu.GetST();
+			st |= ((uint32_t)1 << ST_N);
+			cpu.SetST(st);
+		}
+	}
 }
 
 /* end of MPYF (multiply floating-point values)
@@ -4045,7 +4113,10 @@ NORM_reg.execute = {
 	// no need to check the operands, they must be valid
 	
 	// get source register
-	Register& src_reg = cpu.GetExtReg(src);
+	// NOTE: we make a copy because we need to perform a fix of the ST_N flag
+	//  at the end of the instruction execution where the value of the source
+	//  needs to be kept
+	Register src_reg = cpu.GetExtReg(src);
 	
 	// get destination register
 	Register& dst_reg = cpu.GetExtReg(dst);
@@ -4062,6 +4133,17 @@ NORM_reg.execute = {
 				 0,
 				 underflow
 				 );
+				 
+	// NOTE: from the target behavior we have noted that the ST_N flag needs
+	//  to be fixed if the result is 0 and the source mantissa value was 
+	//  negative, in that case ST_N needs to be set to true
+	if (dst_reg.GetHi() == (uint8_t)0x80 && dst_reg.GetLo() == 0)
+		if (src_reg.GetLo() & (uint32_t)0x80000000)
+		{
+			uint32_t st = cpu.GetST();
+			st |= ((uint32_t)1 << ST_N);
+			cpu.SetST(st);
+		}
 }
 
 NORM_dir.execute = {
