@@ -39,7 +39,7 @@
 #include <iostream>
 #include <string.h>
 
-//#define __DEBUG_TMS320C3X_REGISTER__
+// #define __DEBUG_TMS320C3X_REGISTER__
 
 namespace unisim {
 namespace component {
@@ -521,16 +521,16 @@ namespace tms320 {
 		{
 #ifdef __DEBUG_TMS320C3X_REGISTER__
 			std::cerr
-			<< "5- ext_lo_c = 0x" << (unsigned long long int)ext_lo_c << std::endl
+			<< "5- ext_lo_c = 0x" << std::hex << (unsigned long long int)ext_lo_c << std::dec << std::endl
 			<< "   ext_lo_c > 0 --> " << (ext_lo_c > 0) << std::endl
-			<< "   ext_lo_c >> 32 --> 0x" << (unsigned long long int)(ext_lo_c >> 32) << std::endl;
+			<< "   ext_lo_c >> 32 --> 0x" << std::hex << (unsigned long long int)(ext_lo_c >> 32) << std::dec << std::endl;
 #endif
 			// 2 - check for overflow
 			if ((ext_lo_c > 0) && ((ext_lo_c >> 32) != 0))
 			{
 #ifdef __DEBUG_TMS320C3X_REGISTER__
 				std::cerr
-				<< "6- overflow checking" << std::endl;
+				<< "6- positive overflow checking" << std::endl;
 #endif
 				// the mantissa is positive, check how many bits we have to shift it
 				//   to be an signed 33bits number
@@ -547,9 +547,13 @@ namespace tms320 {
 			{
 				if ((ext_lo_c < 0) && (~(ext_lo_c >> 32) != 0))
 				{
+#ifdef __DEBUG_TMS320C3X_REGISTER__
+					std::cerr
+					<< "7- negative overflow checking" << std::endl;
+#endif
 					// the mantissa is negative, check how many bits we have to shift it
 					//   to be a signed 33bits number
-					ext_lo_c = (uint64_t)ext_lo_c >> 1;
+					ext_lo_c = ext_lo_c >> 1;
 					if ((int32_t)(int8_t)this->GetHi() + 1 > 127) 
 					{
 						overflow = 1;
@@ -561,7 +565,7 @@ namespace tms320 {
 				else
 				{
 #ifdef __DEBUG_TMS320C3X_REGISTER__
-				std::cerr << "5- normalizing" << std::endl;
+				std::cerr << "8- normalizing" << std::endl;
 #endif					
 					// 3 - check if the result needs to be normalized
 					if (ext_lo_c > 0 && (ext_lo_c & (uint64_t)0x80000000) == 0)
@@ -581,7 +585,7 @@ namespace tms320 {
 					{
 #ifdef __DEBUG_TMS320C3X_REGISTER__
 						std::cerr 
-						<< "5.1- normalizing neg" << std::endl
+						<< "8.1- normalizing neg" << std::endl
 						<< "   hi   = 0x" << std::hex << (unsigned int)this->GetHi() << "\t ext_lo_c = 0x" << (unsigned long long)ext_lo_c << std::dec << std::endl
 						<< "   -> 0x" << std::hex << (ext_lo_c & (uint64_t)0x80000000) << std::dec
 						<< std::endl;
@@ -632,6 +636,11 @@ namespace tms320 {
 			}
 		}
 		
+#ifdef __DEBUG_TMS320C3X_REGISTER__
+		std::cerr << "9- Setting lo" << std::endl;
+		std::cerr << "  ext_lo_c = 0x" << std::hex << (unsigned long long)ext_lo_c << std::dec << std::endl;
+		
+#endif
 		// set the mantissa into the register
 		this->SetLo((uint32_t)((ext_lo_c & ~(uint64_t)0x80000000) 
 							   | ((ext_lo_c >> 1) & 

@@ -167,11 +167,14 @@ ABSF_STF.execute = {
 }
 
 ABSF_STF_ext.execute = {
+	// TODO: check if the src2 register must be an extended register or can 
+	//   really be any register of the cpu
+	
 	// Check that 'src2' register is valid
-	if(unlikely(!cpu.HasReg(src2)))
-	{
-		throw BogusOpcodeException<CONFIG, DEBUG>(this);
-	}
+//	if(unlikely(!cpu.HasReg(src2)))
+//	{
+//		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+//	}
 
 	// Read the 'src2' register operand
 	Register &src2_reg = cpu.GetExtReg(src2);
@@ -444,11 +447,132 @@ ADDF3_STF_ext.disasm = {
 }
 
 ADDF3_STF.execute = {
-	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+	// Check that indirect addressing mode is valid and compute the effective address of 'src2' operand
+	typename CONFIG::address_t s2_ea;        // The effective address
+	bool s2_update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t s2_output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(s2_ea, s2_update_ar, s2_output_ar, s2_mod, s2_ar)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read the 'src3' register
+	Register &src3_reg = cpu.GetExtReg(src3);
+
+	// Check that indirect addressing mode is valid and compute the effective address of 'dst2' operand
+	typename CONFIG::address_t d2_ea;        // The effective address
+	bool d2_update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t d2_output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(d2_ea, d2_update_ar, d2_output_ar, d2_mod, d2_ar)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read the 'src1' register
+	Register &src1_reg = cpu.GetExtReg(src1);
+	
+	// Read the 'src2' operand from memory
+	uint32_t src2_value = cpu.IntLoad(s2_ea);
+
+	// Get the 'dst1' register (no need to initialize, as will be rewritten by the abs method)
+	Register dst1_reg;
+	
+	// Compute the result of ABSF
+	uint32_t overflow;      // the overflow (0 or 1)
+	uint32_t underflow;     // the underflow (0 or 1)
+	dst1_reg.Add(src1_reg, src2_value, overflow, underflow);
+	
+	// Store the word into memory
+	cpu.IntStore(d2_ea, src3_reg.GetSinglePrecisionFPFormat());
+
+	// Write back result of ADDF3 in register 'dst1'
+	cpu.GetExtReg(dst1) = dst1_reg;
+
+	// Note: ...if the src3 and src4 fields use the same auxiliary register,
+	// both addresses are correctly generated, but only the value created by
+	// the src3 field is saved in the auxiliary register specified...
+
+	if(d2_update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(d2_ar, d2_output_ar);
+	}
+
+	if(s2_update_ar && s2_ar != d2_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(s2_ar, s2_output_ar);
+	}
+
+	// Generate flags (into ST)
+	cpu.GenFlags(dst1_reg,
+				 M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+				 M_ST_LUF | M_ST_LV | M_ST_UF| M_ST_N | M_ST_Z | M_ST_V,    // or mask
+				 0,
+				 overflow,
+				 underflow
+				 );
 }
 
 ADDF3_STF_ext.execute = {
-	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+	// TODO: check if the src2 register must be an extended register or can 
+	//   really be any register of the cpu
+	
+	// Check that 'src2' register is valid
+//	if(unlikely(!cpu.HasReg(src2)))
+//	{
+//		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+//	}
+
+	// Read the 'src1' register operand
+	Register &src1_reg = cpu.GetExtReg(src1);
+
+	// Read the 'src2' register operand
+	Register &src2_reg = cpu.GetExtReg(src2);
+
+	// Read the 'src3' register operand
+	Register &src3_reg = cpu.GetExtReg(src3);
+
+	// Check that indirect addressing mode is valid and compute the effective address of 'dst2' operand
+	typename CONFIG::address_t d2_ea;        // The effective address
+	bool d2_update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t d2_output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(d2_ea, d2_update_ar, d2_output_ar, d2_mod, d2_ar)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Get the 'dst1' register (no need to initialize, as will be rewritten by the abs method)
+	Register dst1_reg;
+	
+	// Compute the result of ABSF
+	uint32_t overflow;      // the overflow (0 or 1)
+	uint32_t underflow;     // the underflow (0 or 1)
+	dst1_reg.Add(src1_reg, src2_reg, overflow, underflow);
+	
+	// Store the word into memory
+	cpu.IntStore(d2_ea, src3_reg.GetSinglePrecisionFPFormat());
+
+	// Write back result of ABSF in register 'dst1'
+	cpu.GetExtReg(dst1) = dst1_reg;
+
+	if(d2_update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(d2_ar, d2_output_ar);
+	}
+
+	// Generate flags (into ST)
+	cpu.GenFlags(dst1_reg,
+				 M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+				 M_ST_LUF | M_ST_LV | M_ST_UF| M_ST_N | M_ST_Z | M_ST_V,    // or mask
+				 0,
+				 overflow,
+				 underflow
+				 );
 }
 
 /*
