@@ -70,7 +70,7 @@
  */
 
 op ABSF_STF    (0b11[2]:0b00100[5]:dst1[3]:0b000[3]:src3[3]:d2_mod[5]:d2_ar[3]:s2_mod[5]:s2_ar[3])
-op ABSF_STF_ext(0b11[2]:0b00100[5]:dst1[3]:0b000[3]:src3[3]:d2_mod[5]:d2_ar[3]:0b111[3]:src2[5])
+op ABSF_STF_ext(0b11[2]:0b00100[5]:dst1[3]:0b000[3]:src3[3]:d2_mod[5]:d2_ar[3]:0b111[3]:0b00[2]:src2[3])
 
 ABSF_STF.disasm = {
 	const char *dst1_name = REG_NAME[dst1];
@@ -167,14 +167,9 @@ ABSF_STF.execute = {
 }
 
 ABSF_STF_ext.execute = {
-	// TODO: check if the src2 register must be an extended register or can 
-	//   really be any register of the cpu
-	
-	// Check that 'src2' register is valid
-//	if(unlikely(!cpu.HasReg(src2)))
-//	{
-//		throw BogusOpcodeException<CONFIG, DEBUG>(this);
-//	}
+	// NOTE: the documentation says that the src2 register can be any cpu
+	// register, but tests with the assemble have shown that only extended
+	// registers can be used
 
 	// Read the 'src2' register operand
 	Register &src2_reg = cpu.GetExtReg(src2);
@@ -1159,7 +1154,7 @@ ASH3_STI_ext.execute = {
  */
 
 op FIX_STI    (0b11[2]:0b01010[5]:dst1[3]:0b000[3]:src3[3]:d2_mod[5]:d2_ar[3]:s2_mod[5]:s2_ar[3])
-op FIX_STI_ext(0b11[2]:0b01010[5]:dst1[3]:0b000[3]:src3[3]:d2_mod[5]:d2_ar[3]:0b111[3]:src2[5])
+op FIX_STI_ext(0b11[2]:0b01010[5]:dst1[3]:0b000[3]:src3[3]:d2_mod[5]:d2_ar[3]:0b111[3]:0b00[2]:src2[3])
 
 FIX_STI.disasm = {
 	const char *dst1_name = REG_NAME[dst1];
@@ -1191,11 +1186,116 @@ FIX_STI_ext.disasm = {
 }
 
 FIX_STI.execute = {
-	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+	// Check that indirect addressing mode is valid and compute the effective address of 'src2' operand
+	typename CONFIG::address_t s2_ea;        // The effective address
+	bool s2_update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t s2_output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(s2_ea, s2_update_ar, s2_output_ar, s2_mod, s2_ar)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read the 'src3' register operand
+	uint32_t src3_value = cpu.GetReg(src3);
+
+	// Check that indirect addressing mode is valid and compute the effective address of 'dst2' operand
+	typename CONFIG::address_t d2_ea;        // The effective address
+	bool d2_update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t d2_output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(d2_ea, d2_update_ar, d2_output_ar, d2_mod, d2_ar)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read the 'src2' operand from memory
+	Register src2_reg;
+	src2_reg.SetFromSinglePresicionFPFormat(cpu.IntLoad(s2_ea));
+
+	// Compute the result of ABSI
+	uint32_t result;  // the 32-bit result
+	uint32_t overflow;      // the overflow (0 or 1)
+
+	result = src2_reg.Fix(overflow);
+
+	// Store the word into memory
+	cpu.IntStore(d2_ea, src3_value);
+
+	// Write back result of FIX in register 'dst1'
+	cpu.SetReg(dst1, result);
+
+	// Note: ...if the src3 and src4 fields use the same auxiliary register,
+	// both addresses are correctly generated, but only the value created by
+	// the src3 field is saved in the auxiliary register specified...
+
+	if(d2_update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(d2_ar, d2_output_ar);
+	}
+
+	if(s2_update_ar && s2_ar != d2_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(s2_ar, s2_output_ar);
+	}
+
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		result,
+		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+		M_ST_LV | M_ST_N | M_ST_Z | M_ST_V,    // or mask
+		0,
+		overflow
+	);
 }
 
 FIX_STI_ext.execute = {
-	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+	// TODO: check that the src2 register can only be an extended register
+	
+	// Read the 'src2' register operand
+	Register src2_reg = cpu.GetExtReg(src2);
+
+	// Read the 'src3' register operand
+	uint32_t src3_value = cpu.GetReg(src3);
+
+	// Check that indirect addressing mode is valid and compute the effective address of 'dst2' operand
+	typename CONFIG::address_t d2_ea;        // The effective address
+	bool d2_update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t d2_output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(d2_ea, d2_update_ar, d2_output_ar, d2_mod, d2_ar)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Compute the result of FIX
+	uint32_t result;  // the 32-bit result
+	uint32_t overflow;      // the overflow (0 or 1)
+
+	result = src2_reg.Fix(overflow);
+
+	// Store the word into memory
+	cpu.IntStore(d2_ea, src3_value);
+
+	// Write back result of ABSI in register 'dst1'
+	cpu.SetReg(dst1, result);
+
+	if(d2_update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(d2_ar, d2_output_ar);
+	}
+
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		result,
+		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+		M_ST_LV | M_ST_N | M_ST_Z | M_ST_V,    // or mask
+		0,
+		overflow
+	);
 }
 
 /*
