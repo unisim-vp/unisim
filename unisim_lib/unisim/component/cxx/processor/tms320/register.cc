@@ -100,12 +100,30 @@ namespace tms320 {
 	
 	uint32_t Register::GetLo(uint32_t value)
 	{
-		if (value & (uint32_t)0xff000000 == (uint32_t)0x80000000) return 0;
+#ifdef __DEBUG_TMS320C3X_REGISTER__
+		std::cerr << "GetLo(32)" << std::endl;
+		std::cerr << " -> in = 0x" << std::hex << (unsigned long)value << std::dec << std::endl;
+#endif
+		if (value & (uint32_t)0xff000000 == (uint32_t)0x80000000)
+		{
+#ifdef __DEBUG_TMS320C3X_REGISTER__
+			std::cerr << " <- out = 0x0" << std::endl;
+#endif
+			return 0;
+		}
+#ifdef __DEBUG_TMS320C3X_REGISTER__
+		std::cerr << " <- out = 0x" << std::hex << (unsigned long)(((uint32_t)value & (uint32_t)0x00ffffff) << 8) << std::dec << std::endl;
+#endif
 		return ((uint32_t)value & (uint32_t)0x00ffffff) << 8;
 	}
 	
 	uint8_t Register::GetHi(uint32_t value)
 	{
+#ifdef __DEBUG_TMS320C3X_REGISTER__
+		std::cerr << "GetHi(32)" << std::endl;
+		std::cerr << " <- in = 0x" << std::hex << (unsigned long)value << std::dec << std::endl;
+		std::cerr << " -> out = 0x" << std::hex << (unsigned int)(uint8_t)((value >> 24) & (uint32_t)0x00ff) << std::dec << std::endl;
+#endif
 		return (uint8_t)((value >> 24) & (uint32_t)0x00ff);
 	}
 	
@@ -248,7 +266,7 @@ namespace tms320 {
 	
 	void Register::Add(const Register& reg, uint32_t imm, uint32_t& overflow, uint32_t& underflow)
 	{
-		this->Add(reg.GetHi(), reg.GetLo(), GetHi(), GetLo(), overflow, underflow);
+		this->Add(reg.GetHi(), reg.GetLo(), GetHi(imm), GetLo(imm), overflow, underflow);
 	}
 	
 	void Register::Add(uint32_t imm, const Register& reg, uint32_t& overflow, uint32_t& underflow)
@@ -587,7 +605,6 @@ namespace tms320 {
 						std::cerr 
 						<< "8.1- normalizing neg" << std::endl
 						<< "   hi   = 0x" << std::hex << (unsigned int)this->GetHi() << "\t ext_lo_c = 0x" << (unsigned long long)ext_lo_c << std::dec << std::endl
-						<< "   -> 0x" << std::hex << (ext_lo_c & (uint64_t)0x80000000) << std::dec
 						<< std::endl;
 #endif						
 						if (ext_lo_c < 0 && ((ext_lo_c & (uint64_t)0x80000000) != 0))
@@ -596,10 +613,10 @@ namespace tms320 {
 
 							count = count - 32;
 							ext_lo_c = ext_lo_c << count;
-							if ((int32_t)((int32_t)this->hi - count) < -128)
+							if ((int32_t)((int32_t)(int8_t)this->hi - count) < -128)
 							{
 								underflow = true;
-								this->SetHi((uint8_t)0xff);
+								this->SetHi((uint8_t)0x80);
 							}
 							else
 								this->SetHi(this->GetHi() - count);
