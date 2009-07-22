@@ -113,6 +113,9 @@ CPU(const char *name,
 	requires_memory_access_reporting(true),
 	requires_finished_instruction_reporting(true),
 	logger(*this),
+	enable_parallel_load_bug(true),
+	param_enable_parallel_load_bug("enable-parallel-load-bug", this, enable_parallel_load_bug,
+		"When using parallel loads (LDF src2, dst2 || LDF src1, dst1) the src1 load doesn't transform incorrect zero values to valid zero representation, instead they copy the contents of the memory to the register. Set to this parameter to false to transform incorrect zero values."),
 	verbose_all(false),
 	param_verbose_all("verbose-all", this, verbose_all),
 	verbose_setup(false),
@@ -1452,6 +1455,15 @@ Stop(int ret)
 //= Verbose variables, parameters, and methods            START =
 //===============================================================
 
+template<class CONFIG, bool DEBUG>
+inline INLINE
+bool
+CPU<CONFIG, DEBUG> ::
+EnableParallelLoadBug()
+{
+	return enable_parallel_load_bug;
+}
+	
 template<class CONFIG, bool DEBUG>
 inline INLINE 
 bool

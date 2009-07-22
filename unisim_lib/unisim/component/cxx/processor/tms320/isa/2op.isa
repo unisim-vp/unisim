@@ -2336,7 +2336,7 @@ FIX_dir.execute = {
 
 	// Convert value into a float
 	Register tmp_reg;
-	tmp_reg.SetFromSinglePresicionFPFormat(src_value);
+	tmp_reg.SetFromSinglePrecisionFPFormat(src_value);
 
 	// Perform computation
 	uint32_t overflow;
@@ -2377,7 +2377,7 @@ FIX_indir.execute = {
 
 	// Convert value into a float
 	Register tmp_reg;
-	tmp_reg.SetFromSinglePresicionFPFormat(src_value);
+	tmp_reg.SetFromSinglePrecisionFPFormat(src_value);
 
 	// Perform computation
 	uint32_t overflow;

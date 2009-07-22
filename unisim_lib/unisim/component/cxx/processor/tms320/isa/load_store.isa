@@ -243,7 +243,7 @@ LDF_dir.execute = {
 	// get destination register
 	Register& dst_reg = cpu.GetExtReg(dst);
 	
-	dst_reg.SetFromSinglePresicionFPFormat(src_value);
+	dst_reg.SetFromSinglePrecisionFPFormat(src_value);
 	
 	// Generate flags (into ST)
 	cpu.GenFlags(
@@ -272,7 +272,7 @@ LDF_indir.execute = {
 	// Read the source operand from memory
 	uint32_t src_value = cpu.IntLoad(ea);
 	
-	dst_reg.SetFromSinglePresicionFPFormat(src_value);
+	dst_reg.SetFromSinglePrecisionFPFormat(src_value);
 	
 	if(update_ar)
 	{
@@ -385,7 +385,7 @@ LDFcond_dir.execute = {
 	// Check the condition
 	if(!cpu.CheckCondition(cond)) return;
 	
-	dst_reg.SetFromSinglePresicionFPFormat(src_value);
+	dst_reg.SetFromSinglePrecisionFPFormat(src_value);
 }
 
 LDFcond_indir.execute = {
@@ -421,7 +421,7 @@ LDFcond_indir.execute = {
 	// Check the condition
 	if(!cpu.CheckCondition(cond)) return;
 	
-	dst_reg.SetFromSinglePresicionFPFormat(src_value);
+	dst_reg.SetFromSinglePrecisionFPFormat(src_value);
 }
 
 LDFcond_imm.execute = {

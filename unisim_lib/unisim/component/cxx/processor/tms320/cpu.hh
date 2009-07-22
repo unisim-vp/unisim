@@ -1153,6 +1153,12 @@ public:
 	}
 
 protected:
+	bool enable_parallel_load_bug;
+	Parameter<bool> param_enable_parallel_load_bug;
+public:
+	inline INLINE bool EnableParallelLoadBug();
+	
+protected:
 	bool verbose_all;
 	bool verbose_setup;
 	

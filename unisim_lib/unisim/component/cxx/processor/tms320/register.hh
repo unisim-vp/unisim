@@ -71,7 +71,7 @@ namespace tms320 {
 		inline uint32_t GetLo() const INLINE;
 		inline void SetHi(uint8_t value) INLINE;
 		inline uint8_t GetHi() const INLINE;
-		void SetFromSinglePresicionFPFormat(uint32_t value);
+		void SetFromSinglePrecisionFPFormat(uint32_t value);
 		void SetFromShortFPFormat(uint16_t value);
 		uint32_t GetSinglePrecisionFPFormat();
 		void Float(uint32_t value);
@@ -176,7 +176,10 @@ namespace tms320 {
 		if (this != &reg)
 		{
 			this->SetHi(reg.GetHi());
-			this->SetLo(reg.GetLo());
+			if (reg.GetHi() == (uint8_t)0x80)
+				this->SetLo(0);
+			else
+				this->SetLo(reg.GetLo());
 		}
 		return *this;
 	}

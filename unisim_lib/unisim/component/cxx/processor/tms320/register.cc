@@ -91,8 +91,8 @@ namespace tms320 {
 	
 	void Register::SetFromShortFPFormat(uint16_t value)
 	{
-		this->SetLo(GetLo(value));
 		this->SetHi(GetHi(value));
+		this->SetLo(GetLo(value));
 		// lo = value & (uint32_t)0x00000fff;
 		// lo = lo << 20;
 		// hi = (uint8_t)(((int16_t)value >> 12) & (uint16_t)0x00ff);
@@ -104,7 +104,7 @@ namespace tms320 {
 		std::cerr << "GetLo(32)" << std::endl;
 		std::cerr << " -> in = 0x" << std::hex << (unsigned long)value << std::dec << std::endl;
 #endif
-		if (value & (uint32_t)0xff000000 == (uint32_t)0x80000000)
+		if ((value & (uint32_t)0xff000000) == (uint32_t)0x80000000)
 		{
 #ifdef __DEBUG_TMS320C3X_REGISTER__
 			std::cerr << " <- out = 0x0" << std::endl;
@@ -127,9 +127,9 @@ namespace tms320 {
 		return (uint8_t)((value >> 24) & (uint32_t)0x00ff);
 	}
 	
-	void Register::SetFromSinglePresicionFPFormat(uint32_t value)
+	void Register::SetFromSinglePrecisionFPFormat(uint32_t value)
 	{
-		// the 0 value is converted seamlessly from single presicion to extended
+		// the 0 value is converted seamlessly from single Precision to extended
 		//   so no need to check the input value
 		this->SetLo(GetLo(value));
 		this->SetHi(GetHi(value));
