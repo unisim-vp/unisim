@@ -116,6 +116,9 @@ CPU(const char *name,
 	enable_parallel_load_bug(true),
 	param_enable_parallel_load_bug("enable-parallel-load-bug", this, enable_parallel_load_bug,
 		"When using parallel loads (LDF src2, dst2 || LDF src1, dst1) the src1 load doesn't transform incorrect zero values to valid zero representation, instead they copy the contents of the memory to the register. Set to this parameter to false to transform incorrect zero values."),
+	enable_rnd_bug(true),
+	param_enable_rnd_bug("enable-rnd-bug", this, enable_rnd_bug,
+		"If enabled the `rnd` instruction sets the Z flag to 0 systematically, as it is done in the evaluation board. Otherwise, Z is unchanged as it is written in the documentation."),
 	verbose_all(false),
 	param_verbose_all("verbose-all", this, verbose_all),
 	verbose_setup(false),
@@ -1462,6 +1465,15 @@ CPU<CONFIG, DEBUG> ::
 EnableParallelLoadBug()
 {
 	return enable_parallel_load_bug;
+}
+	
+template<class CONFIG, bool DEBUG>
+inline INLINE
+bool
+CPU<CONFIG, DEBUG> ::
+EnableRndBug()
+{
+	return enable_rnd_bug;
 }
 	
 template<class CONFIG, bool DEBUG>

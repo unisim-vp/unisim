@@ -1152,11 +1152,15 @@ public:
 		return delay_before_branching != 0;
 	}
 
+	/* Parameters to enable the different bugs */
 protected:
 	bool enable_parallel_load_bug;
 	Parameter<bool> param_enable_parallel_load_bug;
+	bool enable_rnd_bug;
+	Parameter<bool> param_enable_rnd_bug;
 public:
 	inline INLINE bool EnableParallelLoadBug();
+	inline INLINE bool EnableRndBug();
 	
 protected:
 	bool verbose_all;

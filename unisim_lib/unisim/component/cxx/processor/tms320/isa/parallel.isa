@@ -1458,7 +1458,7 @@ FLOAT_STF_ext.execute = {
  */
 
 op LDF_STF    (0b11[2]:0b01100[5]:dst1[3]:0b000[3]:src3[3]:d2_mod[5]:d2_ar[3]:s2_mod[5]:s2_ar[3])
-op LDF_STF_ext(0b11[2]:0b01100[5]:dst1[3]:0b000[3]:src3[3]:d2_mod[5]:d2_ar[3]:0b111[3]:src2[5])
+op LDF_STF_ext(0b11[2]:0b01100[5]:dst1[3]:0b000[3]:src3[3]:d2_mod[5]:d2_ar[3]:0b111[3]:0b00[2]:src2[3])
 
 LDF_STF.disasm = {
 	const char *dst1_name = REG_NAME[dst1];

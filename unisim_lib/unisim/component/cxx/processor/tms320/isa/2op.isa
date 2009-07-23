@@ -4685,7 +4685,20 @@ RND_reg.execute = {
 	dst_reg.Rnd(src_reg, overflow, underflow);
 	
 	// Generate flags (into ST)
-	cpu.GenFlags(dst_reg,
+	// the documentation says that the rnd instruction doesn't touch the Z flag
+	//   however the real hardware systematically sets Z to 0. We consider it
+	//   a bug. The simulator user can chose the behavior to use using the 
+	//   enable-rnd-bug parameter.
+	if (cpu.EnableRndBug())
+		cpu.GenFlags(dst_reg,
+					 M_ST_Z | M_ST_UF | M_ST_N | M_ST_V,  // reset mask
+					 M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_V,  // or mask
+					 0,
+					 overflow,
+					 underflow
+					 );
+	else
+		cpu.GenFlags(dst_reg,
 				 M_ST_UF | M_ST_N | M_ST_V,  // reset mask
 				 M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_V,  // or mask
 				 0,
@@ -4712,13 +4725,26 @@ RND_dir.execute = {
 	dst_reg.Rnd(src_value, overflow, underflow);
 	
 	// Generate flags (into ST)
-	cpu.GenFlags(dst_reg,
-				 M_ST_UF | M_ST_N | M_ST_V,  // reset mask
-				 M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_V,  // or mask
-				 0,
-				 overflow,
-				 underflow
-				 );
+	// the documentation says that the rnd instruction doesn't touch the Z flag
+	//   however the real hardware systematically sets Z to 0. We consider it
+	//   a bug. The simulator user can chose the behavior to use using the 
+	//   enable-rnd-bug parameter.
+	if (cpu.EnableRndBug())
+		cpu.GenFlags(dst_reg,
+					 M_ST_Z | M_ST_UF | M_ST_N | M_ST_V,  // reset mask
+					 M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_V,  // or mask
+					 0,
+					 overflow,
+					 underflow
+					 );
+	else
+		cpu.GenFlags(dst_reg,
+					 M_ST_UF | M_ST_N | M_ST_V,  // reset mask
+					 M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_V,  // or mask
+					 0,
+					 overflow,
+					 underflow
+					 );
 }
 
 RND_indir.execute = {
@@ -4752,13 +4778,26 @@ RND_indir.execute = {
 	}
 	
 	// Generate flags (into ST)
-	cpu.GenFlags(dst_reg,
-				 M_ST_UF | M_ST_N | M_ST_V,  // reset mask
-				 M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_V,  // or mask
-				 0,
-				 overflow,
-				 underflow
-				 );
+	// the documentation says that the rnd instruction doesn't touch the Z flag
+	//   however the real hardware systematically sets Z to 0. We consider it
+	//   a bug. The simulator user can chose the behavior to use using the 
+	//   enable-rnd-bug parameter.
+	if (cpu.EnableRndBug())
+		cpu.GenFlags(dst_reg,
+					 M_ST_Z | M_ST_UF | M_ST_N | M_ST_V,  // reset mask
+					 M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_V,  // or mask
+					 0,
+					 overflow,
+					 underflow
+					 );
+	else
+		cpu.GenFlags(dst_reg,
+					 M_ST_UF | M_ST_N | M_ST_V,  // reset mask
+					 M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_V,  // or mask
+					 0,
+					 overflow,
+					 underflow
+					 );
 }
 
 RND_imm.execute = {
@@ -4773,13 +4812,26 @@ RND_imm.execute = {
 	dst_reg.Rnd((uint16_t)imm, overflow, underflow);
 	
 	// Generate flags (into ST)
-	cpu.GenFlags(dst_reg,
-				 M_ST_UF | M_ST_N | M_ST_V,  // reset mask
-				 M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_V,  // or mask
-				 0,
-				 overflow,
-				 underflow
-				 );
+	// the documentation says that the rnd instruction doesn't touch the Z flag
+	//   however the real hardware systematically sets Z to 0. We consider it
+	//   a bug. The simulator user can chose the behavior to use using the 
+	//   enable-rnd-bug parameter.
+	if (cpu.EnableRndBug())
+		cpu.GenFlags(dst_reg,
+					 M_ST_Z | M_ST_UF | M_ST_N | M_ST_V,  // reset mask
+					 M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_V,  // or mask
+					 0,
+					 overflow,
+					 underflow
+					 );
+	else
+		cpu.GenFlags(dst_reg,
+					 M_ST_UF | M_ST_N | M_ST_V,  // reset mask
+					 M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_V,  // or mask
+					 0,
+					 overflow,
+					 underflow
+					 );
 }
 
 /* end of RND (round floating-point value)
