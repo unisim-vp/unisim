@@ -326,19 +326,19 @@ iaddsub.classify = {
 
 op imad_full_normal( \
 	subop[3]:/*?*/0[1]:carry[2]:0[2]:?[22]:/*marker*/0[2]: \
-	0x6[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:aba[1]:/*src2_cm*/?[1]:/*src2*/?[7]:\
+	0x6[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:/*src2*/?[7]:\
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1] \
 )
 
 op imad_full_end( \
 	subop[3]:/*?*/0[1]:carry[2]:0[2]:?[22]:/*marker*/1[2]: \
-	0x6[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:aba[1]:/*src2_cm*/?[1]:/*src2*/?[7]:\
+	0x6[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:?[1]:/*src2_cm*/?[1]:/*src2*/?[7]:\
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1] \
 )
 
 op imad_full_join( \
 	subop[3]:/*?*/0[1]:carry[2]:0[2]:?[22]:/*marker*/2[2]: \
-	0x6[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:aba[1]:/*src2_cm*/?[1]:/*src2*/?[7]:\
+	0x6[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:?[1]:/*src2_cm*/?[1]:/*src2*/?[7]:\
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1] \
 )
 
@@ -370,20 +370,17 @@ imad_full.init = {
 	default:
 		dt = DT_UNKNOWN;
 	}
-	inherited::allow_segment = false;
+	inherited::allow_segment = true;
 	inherited::op_type[OpDest] = DT_U32;
 	inherited::op_type[OpSrc1] = dt;
 	inherited::op_type[OpSrc2] = dt;
-	if(aba)
-		inherited::op_type[OpSrc3] = DT_NONE;
-	else
-		inherited::op_type[OpSrc3] = DT_U32;	// always 32-bit
+	inherited::op_type[OpSrc3] = DT_U32;	// always 32-bit
 }
 
 imad_full.init_force_reg = {
 	typedef Operation<CONFIG> inherited;
 	inherited::init_force_reg();
-	inherited::force_reg[OpSrc3] = true;
+	//inherited::force_reg[OpSrc3] = true; // WTF??
 }
 
 imad_full.disasm = {
@@ -422,9 +419,9 @@ imad_full.disasm = {
 		buffer << ".?" << subop << "?";
 	}
 
-	if(aba) {
-		buffer << ".232";	// 4th operand is 2nd (d=a*b+a)
-	}
+	//if(aba) {
+	//	buffer << ".232";	// 4th operand is 2nd (d=a*b+a)
+	//}
 		
 	buffer << " ";
 	insn->DisasmDest(buffer);
@@ -436,10 +433,10 @@ imad_full.disasm = {
 	buffer << ", ";
 	insn->DisasmSrc2(buffer);
 	
-	if(!aba) {
+	//if(!aba) {
 		buffer << ", ";
 		insn->DisasmSrc3(buffer);
-	}
+	//}
 	
 	if(carry == 3) {
 		buffer << ", p1";
@@ -452,9 +449,9 @@ imad_full.disasm = {
 imad_full.read = {
 	this->src1->read(cpu, insn);
 	this->src2->read(cpu, insn);
-	if(aba)
-		insn->GetSrc3() = insn->GetSrc1();
-	else
+	//if(aba)
+	//	insn->GetSrc3() = insn->GetSrc1();
+	//else
 		this->src3->read(cpu, insn);
 }
 
