@@ -622,8 +622,8 @@ if [ "${has_to_build_barra_configure}" = "yes" ]; then
 	echo '	cd $(top_srcdir)/unisim/component/cxx/processor/tesla; $(GENISSLIB_PATH) -I . -o tesla_control -w 32 isa/control/control.isa' >> "${BARRA_MAKEFILE_AM}"
 	echo '' >> "${BARRA_MAKEFILE_AM}"
 	echo 'install-exec-hook:' >> "${BARRA_MAKEFILE_AM}"
-	echo '	$(LN_S) $(DESTDIR)$(libdir)/libbarra.so $(DESTDIR)$(libdir)/libcuda.so' >> "${BARRA_MAKEFILE_AM}"
-	echo '	$(LN_S) $(DESTDIR)$(libdir)/libbarra.so $(DESTDIR)$(libdir)/libcuda.so.1' >> "${BARRA_MAKEFILE_AM}"
+	echo '	cd $(DESTDIR)$(libdir); $(LN_S) libbarra.so libcuda.so' >> "${BARRA_MAKEFILE_AM}"
+	echo '	cd $(DESTDIR)$(libdir); $(LN_S) libbarra.so libcuda.so.1' >> "${BARRA_MAKEFILE_AM}"
 
 	echo "Building BARRA configure"
 	${SHELL} -c "cd ${DEST_DIR}/barra && libtoolize --force && aclocal -I m4 && autoconf --force && autoheader && automake -ac"
