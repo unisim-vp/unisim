@@ -75,14 +75,14 @@ namespace tms320 {
 	
 	uint32_t Register::GetLo(uint16_t value)
 	{
-		if (value & (uint16_t)0xf000 == (uint16_t)0x8000)
+		if ((value & (uint16_t)0xf000) == (uint16_t)0x8000)
 			return 0;
 		return (((uint32_t)value) & (uint32_t)0x00000fff) << 20;
 	}
 	
 	uint8_t Register::GetHi(uint16_t value)
 	{
-		if (value & (uint16_t)0xf000 == (uint16_t)0x8000)
+		if ((value & (uint16_t)0xf000) == (uint16_t)0x8000)
 			return (uint8_t)0x80;
 //		if (value == (uint16_t)0x8000)
 //			return (uint8_t)0x80;
@@ -386,7 +386,7 @@ namespace tms320 {
 	
 	void Register::Mpy(uint32_t imm_a, uint32_t imm_b, uint32_t& overflow, uint32_t& underflow)
 	{
-		this->Mpy(GetHi(imm_a), GetLo(imm_a), GetHi(imm_b), GetHi(imm_b), overflow, underflow);
+		this->Mpy(GetHi(imm_a), GetLo(imm_a), GetHi(imm_b), GetLo(imm_b), overflow, underflow);
 	}
 	
 	void Register::Rnd(const Register& reg, uint32_t& overflow, uint32_t& underflow)

@@ -3063,9 +3063,11 @@ MPYF_dir.execute = {
 	//   not both) and none of them had 0x80 as exponent
 	if (dst_reg.GetHi() == 0x80)
 	{
-		if (((src_value >> 24 != (uint32_t)0x80)
+		Register src_reg;
+		src_reg.SetFromSinglePrecisionFPFormat(src_value);
+		if (((src_reg.GetHi() != (uint8_t)0x80)
 			 && (src_dst_reg.GetHi() != (uint8_t)0x80))
-			&& (((src_value & (uint32_t)0x800000)
+			&& (((src_reg.GetLo() & (uint32_t)0x80000000)
 				 ^ (src_dst_reg.GetLo() & (uint32_t)0x80000000)) != 0))
 		{
 			uint32_t st = cpu.GetST();
@@ -3121,10 +3123,12 @@ MPYF_indir.execute = {
 	//   not both) and none of them had 0x80 as exponent
 	if (dst_reg.GetHi() == 0x80)
 	{
-		if (((src_value >> 24 != (uint32_t)0x80)
+		Register src_reg;
+		src_reg.SetFromSinglePrecisionFPFormat(src_value);
+		if (((src_reg.GetHi() != (uint8_t)0x80)
 			 && (src_dst_reg.GetHi() != (uint8_t)0x80))
-			&& (((src_value & (uint32_t)0x800000)
-				 ^ (src_dst_reg.GetLo() & (uint32_t)0x80000000)) != 0))
+			&& (((src_reg.GetLo() & (uint32_t)0x80000000)
+				^ (src_dst_reg.GetLo() & (uint32_t)0x80000000)) != 0))
 		{
 			uint32_t st = cpu.GetST();
 			st |= ((uint32_t)1 << ST_N);
