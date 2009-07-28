@@ -246,8 +246,7 @@ int sc_main(int argc, char *argv[])
 
 	char *symbol_filename = NULL;
 
-	double cpu_frequency = 40.0; // in Mhz
-//	double cpu_frequency = 4.0; // in Mhz
+	double cpu_frequency = 4.0; // in Mhz
 
 	uint8_t cpu_clock_multiplier = 1;
 	uint8_t xgate_clock_multiplier = 2;

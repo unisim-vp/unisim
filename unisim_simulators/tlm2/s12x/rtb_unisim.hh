@@ -36,12 +36,21 @@
 
 
 #include <systemc.h>
+#include <inttypes.h>
+
 #include <iostream>
+#include <queue>
+
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <libxml/xmlmemory.h>
+#include <libxml/xpath.h>
+#include <libxml/parser.h>
+
 #include <tlm.h>
 #include <tlm_utils/tlm_quantumkeeper.h>
 #include <tlm_utils/peq_with_get.h>
-#include <inttypes.h>
-#include <queue>
 
 #include <unisim/component/tlm2/processor/hcs12x/tlm_types.hh>
 
@@ -103,5 +112,15 @@ public:
 	void Output_ATD1(double anValue[ATD1_SIZE]);
 	void Output_ATD0(double anValue[ATD0_SIZE]);
 	void Process();
+
+private:
+
+	struct data_t {
+		double volte;
+		double time;
+	};
+
+	int LoadXmlData(const char *filename, const char *path, std::vector<data_t> &vect);
+	void parseRow (xmlDocPtr doc, xmlNodePtr cur, data_t &data);
 
 };

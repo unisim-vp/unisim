@@ -126,7 +126,7 @@ void RTBStub::Input(bool pwmValue[PWM_SIZE])
 
 	payload = last_payload;
 
-//	cout << sc_time_stamp() << ":" << name() << "::PWM:: Last Receive " << payload->serialize() << endl;
+	cout << sc_time_stamp() << ":" << name() << "::PWM:: Last Receive " << payload->serialize() << endl;
 
 	for (int i=0; i<PWM_SIZE; i++) {
 		pwmValue[i] = payload->pwmChannel[i];
@@ -205,34 +205,135 @@ void RTBStub::Output_ATD0(double anValue[ATD0_SIZE])
 	}
 }
 
+void RTBStub::parseRow (xmlDocPtr doc, xmlNodePtr cur, data_t &data) {
+
+	xmlChar *key;
+
+	int cellCount = 0;
+
+	cur = cur->xmlChildrenNode;
+	while ((cur != NULL) && (cellCount < 2)) {
+		if ((!xmlStrcmp(cur->name, (const xmlChar *)"Cell"))) {
+			xmlNodePtr node = cur->children;
+			while (xmlStrcmp(node->name, (const xmlChar *)"Data")) {
+				node = node->next;
+			}
+
+			cellCount = cellCount + 1;
+			key = xmlNodeListGetString(doc, node->xmlChildrenNode, 1);
+			if (cellCount == 1) {
+
+				data.volte = std::atof((const char *) key);
+			} else {
+				data.time = std::atof((const char *) key);
+			}
+
+			xmlFree(key);
+		}
+		cur = cur->next;
+	}
+
+	return;
+}
+
+int RTBStub::LoadXmlData(const char *filename, const char *path, std::vector<data_t> &vect) {
+
+	xmlDocPtr doc = NULL;
+	xmlXPathContextPtr context = NULL;
+	xmlXPathObjectPtr xmlobject;
+	int result = 0;
+
+	doc = xmlParseFile (filename);
+	if (!doc)
+	{
+		fprintf (stderr, "%s:%d Could not parse the document\n", __FILE__, __LINE__);
+		return (0);
+	}
+
+	xmlXPathInit ();
+	context = xmlXPathNewContext (doc);
+
+	xmlobject = xmlXPathEval ((xmlChar *) path, context);
+	xmlXPathFreeContext (context);
+	if ((xmlobject->type == XPATH_NODESET) && (xmlobject->nodesetval))
+	{
+		if (xmlobject->nodesetval->nodeNr)
+		{
+			result = xmlobject->nodesetval->nodeNr;
+
+			xmlNodePtr node;
+			data_t data;
+			for (int i=0; i<xmlobject->nodesetval->nodeNr; i++) {
+				node = xmlobject->nodesetval->nodeTab[i];
+				parseRow (doc, node, data);
+				vect.push_back(data);
+			}
+		}
+	}
+
+	xmlXPathFreeObject (xmlobject);
+	xmlFreeDoc(doc);
+
+	return (result);
+}
+
 void RTBStub::Process()
 {
-	unsigned int num_cycles;
+	unsigned long num_cycles;
 
 	srand(12345);
 
-/*
-	cout << "delay (#cycles) ? : ";
 
-	cin >> num_cycles;
-*/
-	num_cycles = 10;
-	sc_time delay(num_cycles * cycle_time);
+//	cout << "delay (#cycles) ? : ";
+//
+//	cin >> num_cycles;
+//
+//	num_cycles = 10;
+//	sc_time delay(num_cycles * cycle_time);
 
+	sc_time delay(80, SC_US);
+
+	std::vector<data_t> vect;
+	int data_size, data_index = 0;
+
+	LoadXmlData("/export/is010125/rnouacer/SharedVirBox/TraReda/Projects/Hecosim/Binaire_Autosar_20090702/Mesure/ATD.xml", "//Row", vect);
+	data_size = vect.size();
+
+	if (data_size == 0) {
+		cerr << "SIMULATION STOP: ATD inputs empty !" << endl;
+		cerr << "RANDOM values will be used during simulation." << endl;
+	}
 
 	while(1)
 	{
 		double atd1_anValue[ATD1_SIZE];
 		double atd0_anValue[ATD0_SIZE];
 		bool pwmValue[PWM_SIZE];
+		double atdSample;
+
+		if (data_size == 0) {
+			atdSample =  5.2 * ((double) rand() / (double) RAND_MAX); // Compute a random value: 0 Volts <= anValue[i] < 5 Volts
+		} else {
+			data_t data = vect.at(data_index);
+			data_index = (data_index + 1) % data_size;
+			atdSample = data.volte;
+		}
 
 		for (int i=0; i<ATD1_SIZE; i++) {
-			atd1_anValue[i] = 5.0 * ((double) rand() / (double) RAND_MAX); // Compute a random value: 0 Volts <= anValue[i] < 5 Volts
+			atd1_anValue[i] = atdSample;
 		}
 
 		for (int i=0; i<ATD0_SIZE; i++) {
-			atd0_anValue[i] = 5.0 * ((double) rand() / (double) RAND_MAX); // Compute a random value: 0 Volts <= anValue[i] < 5 Volts
+			atd0_anValue[i] = atdSample;
 		}
+
+//		for (int i=0; i<ATD1_SIZE; i++) {
+//			atd1_anValue[i] = 5.2 * ((double) rand() / (double) RAND_MAX); // Compute a random value: 0 Volts <= anValue[i] < 5 Volts
+//		}
+//
+//		for (int i=0; i<ATD0_SIZE; i++) {
+//			atd0_anValue[i] = 5.2 * ((double) rand() / (double) RAND_MAX); // Compute a random value: 0 Volts <= anValue[i] < 5 Volts
+//		}
 
 		quantumkeeper.inc(delay);
 
