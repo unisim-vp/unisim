@@ -37,13 +37,20 @@
 
 #include "rtb_unisim.hh"
 
-RTBStub::RTBStub(const sc_module_name& name, clock_t	bus_cycle_time) :
+RTBStub::RTBStub(const sc_module_name& name, Object *parent) :
+	Object(name),
 	sc_module(name),
 	atd1_master_sock("atd1_master_sock"),
 	atd0_master_sock("atd0_master_sock"),
 	slave_sock("slave_sock"),
 	input_payload_queue("input_payload_queue"),
-	cycle_time(bus_cycle_time, SC_PS)
+	anx_stimulus_period(80000000), // 80 us
+	param_anx_stimulus_period("anx-stimulus-period", this, anx_stimulus_period),
+	anx_stimulus_period_file(""),
+	param_anx_stimulus_period_file("anx-stimulus-period-file", this, anx_stimulus_period_file)
+
+
+
 {
 	atd1_master_sock(*this);
 	atd0_master_sock(*this);
@@ -121,12 +128,12 @@ void RTBStub::Input(bool pwmValue[PWM_SIZE])
 		last_payload = payload;
 		payload = input_payload_queue.get_next_transaction();
 
-//				cout << sc_time_stamp() << ":" << name() << "::PWM:: Receive " << payload->serialize() << endl;
+//				cout << name() << "::PWM:: Receive " << payload->serialize() << " - " << sc_time_stamp() << endl;
 	} while(payload);
 
 	payload = last_payload;
 
-	cout << sc_time_stamp() << ":" << name() << "::PWM:: Last Receive " << payload->serialize() << endl;
+	cout << name() << "::PWM:: Last Receive " << payload->serialize() << " - " << sc_time_stamp() << endl;
 
 	for (int i=0; i<PWM_SIZE; i++) {
 		pwmValue[i] = payload->pwmChannel[i];
@@ -144,7 +151,7 @@ void RTBStub::Output_ATD1(double anValue[ATD1_SIZE])
 		payload->anPort[i] = anValue[i];
 	}
 
-//			cout << sc_time_stamp() << ":" << name() << "::ATD1::send " << payload->serialize() << endl;
+//			cout << name() << "::ATD1::send " << payload->serialize() << " - " << sc_time_stamp() << endl;
 
 	sc_time local_time = quantumkeeper.get_local_time();
 
@@ -179,7 +186,7 @@ void RTBStub::Output_ATD0(double anValue[ATD0_SIZE])
 		payload->anPort[i] = anValue[i];
 	}
 
-//	cout << sc_time_stamp() << ":" << name() << "::ATD0::send " << payload->serialize() << endl;
+//	cout << name() << "::ATD0::send " << payload->serialize() << " - " << sc_time_stamp() << endl;
 
 	sc_time local_time = quantumkeeper.get_local_time();
 
@@ -283,20 +290,14 @@ void RTBStub::Process()
 
 	srand(12345);
 
-
-//	cout << "delay (#cycles) ? : ";
-//
-//	cin >> num_cycles;
-//
-//	num_cycles = 10;
-//	sc_time delay(num_cycles * cycle_time);
-
-	sc_time delay(80, SC_US);
+	sc_time delay(anx_stimulus_period, SC_PS);
 
 	std::vector<data_t> vect;
 	int data_size, data_index = 0;
 
-	LoadXmlData("/export/is010125/rnouacer/SharedVirBox/TraReda/Projects/Hecosim/Binaire_Autosar_20090702/Mesure/ATD.xml", "//Row", vect);
+//	LoadXmlData("/export/is010125/rnouacer/SharedVirBox/TraReda/Projects/Hecosim/Binaire_Autosar_20090702/Mesure/ATD.xml", "//Row", vect);
+	LoadXmlData(anx_stimulus_period_file.c_str(), "//Row", vect);
+
 	data_size = vect.size();
 
 	if (data_size == 0) {
@@ -327,24 +328,15 @@ void RTBStub::Process()
 			atd0_anValue[i] = atdSample;
 		}
 
-//		for (int i=0; i<ATD1_SIZE; i++) {
-//			atd1_anValue[i] = 5.2 * ((double) rand() / (double) RAND_MAX); // Compute a random value: 0 Volts <= anValue[i] < 5 Volts
-//		}
-//
-//		for (int i=0; i<ATD0_SIZE; i++) {
-//			atd0_anValue[i] = 5.2 * ((double) rand() / (double) RAND_MAX); // Compute a random value: 0 Volts <= anValue[i] < 5 Volts
-//		}
-
-		quantumkeeper.inc(delay);
-
-		Output_ATD1(atd1_anValue);
-		Output_ATD0(atd0_anValue);
-
-		quantumkeeper.sync();
 		wait(input_payload_queue.get_event());
 
 		Input(pwmValue);
 
+		Output_ATD1(atd1_anValue);
+		Output_ATD0(atd0_anValue);
+
+		quantumkeeper.inc(delay);
+		quantumkeeper.sync();
 	}
 
 }

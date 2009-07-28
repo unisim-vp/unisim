@@ -343,7 +343,7 @@ int sc_main(int argc, char *argv[])
 
 	MemoryImportExportTee* memoryImportExportTee = new MemoryImportExportTee("memoryImportExportTee");
 
-	RTBStub *rtbStub = new RTBStub("rtbStub", fsb_cycle_time);
+	RTBStub *rtbStub = new RTBStub("RTBStub"/*, fsb_cycle_time*/);
 
 	//=========================================================================
 	//===                         Service instantiations                    ===

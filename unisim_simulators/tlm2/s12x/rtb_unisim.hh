@@ -52,11 +52,16 @@
 #include <tlm_utils/tlm_quantumkeeper.h>
 #include <tlm_utils/peq_with_get.h>
 
+#include <unisim/kernel/service/service.hh>
+
 #include <unisim/component/tlm2/processor/hcs12x/tlm_types.hh>
 
 using namespace std;
 using namespace tlm;
 using namespace tlm_utils;
+
+using unisim::kernel::service::Object;
+using unisim::kernel::service::Parameter;
 
 using unisim::component::tlm2::processor::hcs12x::PWM_Payload;
 using unisim::component::tlm2::processor::hcs12x::ATD_Payload;
@@ -76,7 +81,9 @@ static const unsigned int RTB2UNISIM_BUS_WIDTH = 32; // in bits (unused in this 
 
 // A module that should implement communication with RT-Builder
 class RTBStub :
+	public Object,
 	public sc_module,
+
 	virtual public tlm_fw_transport_if<UNISIM_PWM_ProtocolTypes<PWM_SIZE> >,
 	virtual public tlm_bw_transport_if<UNISIM_ATD_ProtocolTypes<ATD0_SIZE> >,
 	virtual public tlm_bw_transport_if<UNISIM_ATD_ProtocolTypes<ATD1_SIZE> >
@@ -94,7 +101,7 @@ public:
 	clock_t	bus_cycle_time;
 	sc_time		cycle_time;
 
-	RTBStub(const sc_module_name& name, clock_t	bus_cycle_time);
+	RTBStub(const sc_module_name& name, Object *parent = 0);
 
 	// Slave methods
 	virtual bool get_direct_mem_ptr( PWM_Payload<PWM_SIZE>& payload, tlm_dmi&  dmi_data);
@@ -122,5 +129,11 @@ private:
 
 	int LoadXmlData(const char *filename, const char *path, std::vector<data_t> &vect);
 	void parseRow (xmlDocPtr doc, xmlNodePtr cur, data_t &data);
+
+	clock_t	anx_stimulus_period;
+	Parameter<clock_t>	param_anx_stimulus_period;
+
+	string anx_stimulus_period_file;
+	Parameter<string>	param_anx_stimulus_period_file;
 
 };
