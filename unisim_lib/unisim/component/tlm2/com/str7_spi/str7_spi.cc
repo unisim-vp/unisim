@@ -45,7 +45,7 @@ namespace str7_spi {
 
 
 template
-class STR7_SPI<32, false>;
+class STR7_SPI<32>;
 
 } // end of namespace str7_spi
 } // end of namespace com

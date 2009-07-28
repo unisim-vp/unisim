@@ -119,8 +119,8 @@ namespace unisim {
                     using unisim::kernel::logger::EndDebugWarning;
                     using unisim::kernel::logger::EndDebugError;
 
-                    template <unsigned int BUS_WIDTH, bool VERBOSE>
-                    STR7_SPI<BUS_WIDTH, VERBOSE> ::
+                    template <unsigned int BUS_WIDTH>
+                    STR7_SPI<BUS_WIDTH> ::
                     STR7_SPI(const sc_module_name& name, Object* parent) :
                     Object(name, parent),
                     sc_module(name),
@@ -134,7 +134,12 @@ namespace unisim {
                     verbose_all(false),
                     verbose_setup(false),
                     verbose_run(false),
-                    verbose_tlm(false) {
+                    verbose_tlm(false),
+					param_verbose_all("verbose-all", this, verbose_all, "Enable all the verbose options"),
+					param_verbose_setup("verbose-setup", this, verbose_setup, "Display module setup"),
+					param_verbose_run("verbose-run", this, verbose_run),
+					param_verbose_tlm("verbose-tlm", this, verbose_tlm, "Display TLM2.0 transaction management")
+					{
 
                         //reset registers values
                         Registers[BSPIn_RX] = 0x0000;
@@ -165,12 +170,6 @@ namespace unisim {
                     //    SC_THREAD(SPIHANDLER);
 
 
-                        if (VERBOSE) {
-                            param_verbose_all = new unisim::kernel::service::Parameter<bool>("verbose-all", this, verbose_all, "Enable all the verbose options");
-                            param_verbose_setup = new unisim::kernel::service::Parameter<bool>("verbose-setup", this, verbose_setup, "Display module setup");
-                            param_verbose_run = new unisim::kernel::service::Parameter<bool>("verbose-run", this, verbose_run);
-                            param_verbose_tlm = new unisim::kernel::service::Parameter<bool>("verbose-tlm", this, verbose_tlm, "Display TLM2.0 transaction management");
-                        }
 
                         /* bind the in_mem socket to the methods implementations provided by the module */
                         in_mem.bind(*this);
@@ -184,21 +183,16 @@ namespace unisim {
                         miso.register_b_transport(this, &THIS_MODULE::MISOB);
                     }
 
-                    template <unsigned int BUS_WIDTH, bool VERBOSE>
-                    STR7_SPI<BUS_WIDTH, VERBOSE> ::
+                    template <unsigned int BUS_WIDTH>
+                    STR7_SPI<BUS_WIDTH> ::
                     ~STR7_SPI() {
-                        if (param_verbose_all) delete param_verbose_all;
-                        if (param_verbose_setup) delete param_verbose_setup;
-                        if (param_verbose_run) delete param_verbose_run;
                     }
 
-                    template <unsigned int BUS_WIDTH, bool VERBOSE>
+                    template <unsigned int BUS_WIDTH>
                     bool
-                    STR7_SPI<BUS_WIDTH, VERBOSE> ::
+                    STR7_SPI<BUS_WIDTH> ::
                     Setup() {
-                        if (VERBOSE) {
-                            if (verbose_all) verbose_setup = verbose_run = true;
-                        }
+                        if (verbose_all) verbose_setup = verbose_run = true;
 
                         if (VerboseSetup()) {
                             logger << DebugInfo << "Setup:" << endl;
@@ -216,9 +210,9 @@ namespace unisim {
 
                     /* START: callback methods for the out_irq sockets */
 
-                    template <unsigned int BUS_WIDTH, bool VERBOSE>
+                    template <unsigned int BUS_WIDTH>
                     tlm::tlm_sync_enum
-                    STR7_SPI<BUS_WIDTH, VERBOSE> ::
+                    STR7_SPI<BUS_WIDTH> ::
                     OutIRQNb(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t) {
                         switch (phase) {
                             case tlm::END_REQ :
@@ -250,9 +244,9 @@ namespace unisim {
                         return tlm::TLM_COMPLETED;
                     }
 
-                    template <unsigned int BUS_WIDTH, bool VERBOSE>
+                    template <unsigned int BUS_WIDTH>
                     void
-                    STR7_SPI<BUS_WIDTH, VERBOSE> ::
+                    STR7_SPI<BUS_WIDTH> ::
                     OutIRQDMI(sc_dt::uint64 start_range, sc_dt::uint64 end_range) {
                         /* This method shoud never be used */
                     }
@@ -261,9 +255,9 @@ namespace unisim {
 
                     /* START: callback methods for the spi sockets */
 
-                    template <unsigned int BUS_WIDTH, bool VERBOSE>
+                    template <unsigned int BUS_WIDTH>
                     tlm::tlm_sync_enum
-                    STR7_SPI<BUS_WIDTH, VERBOSE> ::
+                    STR7_SPI<BUS_WIDTH> ::
                     MOSINb(tlm::tlm_generic_payload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t) {
                         switch (phase) {
                             case tlm::END_REQ :
@@ -293,16 +287,16 @@ namespace unisim {
                         return tlm::TLM_COMPLETED;
                     }
 
-                    template <unsigned int BUS_WIDTH, bool VERBOSE>
+                    template <unsigned int BUS_WIDTH>
                     void
-                    STR7_SPI<BUS_WIDTH, VERBOSE> ::
+                    STR7_SPI<BUS_WIDTH> ::
                     MOSIDMI(sc_dt::uint64 start_range, sc_dt::uint64 end_range) {
                         /* This method should never be used */
                     }
 
-                    template <unsigned int BUS_WIDTH, bool VERBOSE>
+                    template <unsigned int BUS_WIDTH>
                     void
-                    STR7_SPI<BUS_WIDTH, VERBOSE> ::
+                    STR7_SPI<BUS_WIDTH> ::
                     MISOB(tlm::tlm_generic_payload& trans, sc_core::sc_time& t) {
                     }
 
@@ -311,9 +305,9 @@ namespace unisim {
 
                     /* START: methods implementing the "in_mem" socket */
 
-                    template <unsigned int BUS_WIDTH, bool VERBOSE>
+                    template <unsigned int BUS_WIDTH>
                     void
-                    STR7_SPI<BUS_WIDTH, VERBOSE> ::
+                    STR7_SPI<BUS_WIDTH> ::
                     b_transport(tlm::tlm_generic_payload& trans, sc_core::sc_time& t) {
                         if (VerboseTLM()) {
                             logger << DebugInfo << "Received memory b_transport transaction:" << endl;
@@ -352,9 +346,9 @@ namespace unisim {
                         }
                     }
 
-                    template <unsigned int BUS_WIDTH, bool VERBOSE>
+                    template <unsigned int BUS_WIDTH>
                     tlm::tlm_sync_enum
-                    STR7_SPI<BUS_WIDTH, VERBOSE> ::
+                    STR7_SPI<BUS_WIDTH> ::
                     nb_transport_fw(tlm::tlm_generic_payload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t) {
                         if (VerboseTLM()) {
                             logger << DebugInfo << "Received memory nb_transport_fw transaction:" << endl;
@@ -367,17 +361,17 @@ namespace unisim {
                         return tlm::TLM_COMPLETED;
                     }
 
-                    template <unsigned int BUS_WIDTH, bool VERBOSE>
+                    template <unsigned int BUS_WIDTH>
                     bool
-                    STR7_SPI<BUS_WIDTH, VERBOSE> ::
+                    STR7_SPI<BUS_WIDTH> ::
                     get_direct_mem_ptr(tlm::tlm_generic_payload& trans, tlm::tlm_dmi& dmi_data) {
                         /* This method should never be used */
                         return false;
                     }
 
-                    template <unsigned int BUS_WIDTH, bool VERBOSE>
+                    template <unsigned int BUS_WIDTH>
                     unsigned int
-                    STR7_SPI<BUS_WIDTH, VERBOSE> ::
+                    STR7_SPI<BUS_WIDTH> ::
                     transport_dbg(tlm::tlm_generic_payload& trans) {
                         /* This method should never be used */
                         return 0;
@@ -389,9 +383,9 @@ namespace unisim {
                      * @param addr		the register address
                      * @return 			the contents of the register
                      */
-                    template <unsigned int BUS_WIDTH, bool VERBOSE>
+                    template <unsigned int BUS_WIDTH>
                     uint32_t
-                    STR7_SPI<BUS_WIDTH, VERBOSE> ::
+                    STR7_SPI<BUS_WIDTH> ::
                     ReadRegister(uint32_t const addr) {
                         uint32_t value = -1;
                         uint32_t index = (addr >> 2);
@@ -443,9 +437,9 @@ namespace unisim {
                      * @param addr		the register address
                      * @param value		the data to write into the register
                      */
-                    template <unsigned int BUS_WIDTH, bool VERBOSE>
+                    template <unsigned int BUS_WIDTH>
                     void
-                    STR7_SPI<BUS_WIDTH, VERBOSE> ::
+                    STR7_SPI<BUS_WIDTH> ::
                     WriteRegister(uint32_t addr, uint32_t value) {
                         uint32_t index = (addr >> 2);
                         if (MaskW[index] == 0x0000)
@@ -533,9 +527,9 @@ namespace unisim {
                         }
                     }
 
-                    template <unsigned int BUS_WIDTH, bool VERBOSE>
+                    template <unsigned int BUS_WIDTH>
                     void
-                    STR7_SPI<BUS_WIDTH, VERBOSE>::manage_interrupt() // Set interruption signals
+                    STR7_SPI<BUS_WIDTH>::manage_interrupt() // Set interruption signals
                     {
                         sc_time delay = sc_time(0, SC_NS);
                         switch ((Registers[BSPIn_CSR2] >> 14)&0x0003) // read TIE
@@ -595,9 +589,9 @@ namespace unisim {
                         }
                     }
 
-                    template <unsigned int BUS_WIDTH, bool VERBOSE>
+                    template <unsigned int BUS_WIDTH>
                     void
-                    STR7_SPI<BUS_WIDTH, VERBOSE>::SPIHANDLER() {
+                    STR7_SPI<BUS_WIDTH>::SPIHANDLER() {
 
                         while (1) {
 
@@ -612,32 +606,32 @@ namespace unisim {
 
                     /* START: verbose methods */
 
-                    template <unsigned int BUS_WIDTH, bool VERBOSE>
+                    template <unsigned int BUS_WIDTH>
                     bool
-                    STR7_SPI<BUS_WIDTH, VERBOSE> ::
+                    STR7_SPI<BUS_WIDTH> ::
                     VerboseAll() {
-                        return VERBOSE && verbose_all;
+                        return verbose_all;
                     }
 
-                    template <unsigned int BUS_WIDTH, bool VERBOSE>
+                    template <unsigned int BUS_WIDTH>
                     bool
-                    STR7_SPI<BUS_WIDTH, VERBOSE> ::
+                    STR7_SPI<BUS_WIDTH> ::
                     VerboseSetup() {
-                        return VERBOSE && verbose_setup;
+                        return verbose_setup;
                     }
 
-                    template <unsigned int BUS_WIDTH, bool VERBOSE>
+                    template <unsigned int BUS_WIDTH>
                     bool
-                    STR7_SPI<BUS_WIDTH, VERBOSE> ::
+                    STR7_SPI<BUS_WIDTH> ::
                     VerboseRun() {
-                        return VERBOSE && verbose_run;
+                        return verbose_run;
                     }
 
-                    template <unsigned int BUS_WIDTH, bool VERBOSE>
+                    template <unsigned int BUS_WIDTH>
                     bool
-                    STR7_SPI<BUS_WIDTH, VERBOSE> ::
+                    STR7_SPI<BUS_WIDTH> ::
                     VerboseTLM() {
-                        return VERBOSE && verbose_tlm;
+                        return verbose_tlm;
                     }
 
                     /* END: verbose methods */

@@ -70,14 +70,13 @@ namespace unisim {
                     static const uint8_t BSPIn_CSR2 = 3;
                     static const uint8_t BSPIn_CLK = 4;
 
-                    template <unsigned int BUS_WIDTH = 32,
-                            bool VERBOSE = false >
+                    template <unsigned int BUS_WIDTH = 32>
                             class STR7_SPI :
                             public Object,
                             public sc_module,
                             public tlm::tlm_fw_transport_if<> {
                     private:
-                        typedef STR7_SPI<BUS_WIDTH, VERBOSE> THIS_MODULE;
+                        typedef STR7_SPI<BUS_WIDTH> THIS_MODULE;
 
                     public:
 
@@ -158,13 +157,13 @@ namespace unisim {
                         /* START: logger and logger methods and verbose parameters/methods */
                         unisim::kernel::logger::Logger logger;
                         bool verbose_all;
-                        unisim::kernel::service::Parameter<bool> *param_verbose_all;
+                        unisim::kernel::service::Parameter<bool> param_verbose_all;
                         bool verbose_setup;
-                        unisim::kernel::service::Parameter<bool> *param_verbose_setup;
+                        unisim::kernel::service::Parameter<bool> param_verbose_setup;
                         bool verbose_run;
-                        unisim::kernel::service::Parameter<bool> *param_verbose_run;
+                        unisim::kernel::service::Parameter<bool> param_verbose_run;
                         bool verbose_tlm;
-                        unisim::kernel::service::Parameter<bool> *param_verbose_tlm;
+                        unisim::kernel::service::Parameter<bool> param_verbose_tlm;
                         inline bool VerboseAll();
                         inline bool VerboseSetup();
                         inline bool VerboseRun();
