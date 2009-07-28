@@ -45,8 +45,14 @@
 #include "unisim/component/tlm2/interconnect/generic_router/router.hh"
 #include "router_config.hh"
 #include "unisim/component/tlm2/interrupt/str7_eic/str7_eic.hh"
-#include "unisim/component/tlm2/com/str7_spi/str7_spi.hh"
+#include "unisim/component/tlm2/com/str7_adc/str7_adc.hh"
+#include "unisim/component/tlm2/com/str7_apb/str7_apb.hh"
+#include "unisim/component/tlm2/com/str7_emi/str7_emi.hh"
 #include "unisim/component/tlm2/com/str7_gpio/str7_gpio.hh"
+// #include "unisim/component/tlm2/com/str7_i2c/str7_i2c.hh"
+#include "unisim/component/tlm2/com/str7_prccu/str7_prccu.hh"
+#include "unisim/component/tlm2/com/str7_spi/str7_spi.hh"
+// #include "unisim/component/tlm2/com/str7_uart/str7_uart.hh"
 #include "unisim/component/tlm2/timer/str7_timer/tim.hh"
 #include "unisim/component/tlm2/interrupt/master_stub.hh"
 #include "unisim/component/tlm2/interrupt/slave_stub.hh"
@@ -97,7 +103,7 @@ typedef unisim::component::tlm2::interrupt::str7_eic::STR7_EIC<32> EIC;
 typedef unisim::component::tlm2::interrupt::InterruptMasterStub IRQMSTUB;
 typedef unisim::component::tlm2::interrupt::InterruptMasterStub FIQMSTUB;
 typedef unisim::component::tlm2::interrupt::InterruptSlaveStub IRQSSTUB;
-typedef unisim::component::tlm2::com::str7_spi::STR7_SPI<32, true> SPI;
+typedef unisim::component::tlm2::com::str7_spi::STR7_SPI<32> SPI;
 typedef unisim::component::tlm2::com::str7_gpio::STR7_GPIO<32> GPIO;
 typedef unisim::component::tlm2::signal_converter::generic_adc::ADC ADC;
 
