@@ -1935,8 +1935,34 @@ namespace arm {
 				phys_gpr[15] = gpr[15];
 				break;
 			default:
-				cerr << "ERROR(" << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << "): "
-				<< " unknown running mode (0x" << hex << src_mode << dec << ")" << endl;
+				const char *c_tar_mode = "unknown";
+				switch(tar_mode)
+				{
+				case USER_MODE:
+					c_tar_mode = "USER_MODE";
+					break;
+				case SYSTEM_MODE:
+					c_tar_mode = "SYSTEM_MODE";
+					break;
+				case SUPERVISOR_MODE:
+					c_tar_mode = "SUPERVISOR_MODE";
+					break;
+				case ABORT_MODE:
+					c_tar_mode = "ABORT_MODE";
+					break;
+				case UNDEFINED_MODE:
+					c_tar_mode = "UNDEFINED_MODE";
+					break;
+				case IRQ_MODE:
+					c_tar_mode = "IRQ_MODE";
+					break;
+				case FIQ_MODE:
+					c_tar_mode = "FIQ_MODE";
+					break;
+				}
+				logger << DebugError << "ERROR(" << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << "): "
+					<< " unknown running mode (0x" << hex << src_mode << dec << "), target mode = " << c_tar_mode
+					<< EndDebug;
 				Stop(-1);
 				break;
 		}
@@ -1991,8 +2017,34 @@ namespace arm {
 				gpr[15] = phys_gpr[15];
 				break;
 			default:
-				cerr << "ERROR(" << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << "): "
-				<< " unknown running mode (0x" << hex << tar_mode << dec << ")" << endl;
+				const char *c_src_mode = "unknown";
+				switch(src_mode)
+			{
+				case USER_MODE:
+					c_src_mode = "USER_MODE";
+					break;
+				case SYSTEM_MODE:
+					c_src_mode = "SYSTEM_MODE";
+					break;
+				case SUPERVISOR_MODE:
+					c_src_mode = "SUPERVISOR_MODE";
+					break;
+				case ABORT_MODE:
+					c_src_mode = "ABORT_MODE";
+					break;
+				case UNDEFINED_MODE:
+					c_src_mode = "UNDEFINED_MODE";
+					break;
+				case IRQ_MODE:
+					c_src_mode = "IRQ_MODE";
+					break;
+				case FIQ_MODE:
+					c_src_mode = "FIQ_MODE";
+					break;
+			}
+				logger << DebugError << "ERROR(" << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << "): "
+				<< " unknown target mode (0x" << hex << tar_mode << dec << "), source mode = " << c_src_mode
+				<< EndDebug;
 				Stop(-1);
 				break;
 		}

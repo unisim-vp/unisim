@@ -9,6 +9,11 @@ SUBDIRS += generic_adc
 INCLUDE_SUBDIRS += generic_adc
 endif
 
+if COND_lcd_driver
+SUBDIRS += lcd_driver
+INCLUDE_SUBDIRS += lcd_driver
+endif
+
 dist_share_DATA = COPYING
 
 uninstall-hook:

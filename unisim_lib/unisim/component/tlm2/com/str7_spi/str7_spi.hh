@@ -118,6 +118,8 @@ namespace unisim {
                         virtual unsigned int transport_dbg(tlm::tlm_generic_payload& trans);
                         /* END: methods implementing the "in_mem" socket */
 
+                        sc_core::sc_event write_event;
+
                     private:
 
                         uint16_t Registers[NB_REGS]; /* Declared as 32 bits registers*/
@@ -134,11 +136,10 @@ namespace unisim {
                          * @param addr		the register address
                          * @param value		the data to write into the register
                          */
-                        void WriteRegister(uint32_t addr, uint32_t value);
-
-
-                        void manage_interrupt(); // Set interruption signals
-                        void SPIHANDLER();
+                        void WriteRegister(uint32_t addr, uint16_t value);
+                        void spi_process();
+                        void manage_tx_interrupt(); // Set interruption signals
+                        void manage_rx_interrupt();
 
                         /* tx and rx fifos */
 
@@ -147,6 +148,9 @@ namespace unisim {
 
                         uint32_t tx_fifo_size;
                         uint32_t rx_fifo_size;
+
+                        /* the interrupt payload fabric */
+                        PayloadFabric<TLMInterruptPayload> irq_signal;
 
 
                         /* START: module parameters */

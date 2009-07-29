@@ -29,88 +29,76 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: khaled Rahmouni
+ * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
-#ifndef __UNISIM_COMPONENT_TLM2_COM_STR7_SPI_STR7_SPI_HH__
-#define __UNISIM_COMPONENT_TLM2_COM_STR7_SPI_STR7_SPI_HH__
+#ifndef __UNISIM_COMPONENT_TLM2_COM_STR7_UART_STR7_UART_HH__
+#define __UNISIM_COMPONENT_TLM2_COM_STR7_UART_STR7_UART_HH__
 
 #include <systemc.h>
 #include <tlm.h>
 #include <tlm_utils/passthrough_target_socket.h>
 #include <tlm_utils/simple_initiator_socket.h>
-#include <tlm_utils/simple_target_socket.h>
-#include <tlm_utils/peq_with_get.h>
 #include <inttypes.h>
+
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger.hh"
-#include "unisim/component/tlm2/interrupt/types.hh"
-
 
 namespace unisim {
 namespace component {
 namespace tlm2 {
 namespace com {
-namespace str7_spi {
-
-using unisim::component::tlm2::interrupt::InterruptProtocolTypes;
-using unisim::component::tlm2::interrupt::TLMInterruptPayload;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::Object;
-using unisim::kernel::logger::Logger;
-using unisim::kernel::tlm2::PayloadFabric;
-
-
-#define   NB_REGS_SPI_CONTROLER                         5
-#define   BSPIn_RX                                      0
-#define   BSPIn_TX                                      1
-#define   BSPIn_CSR1                                    2
-#define   BSPIn_CSR2                                    3
-#define   BSPIn_CLK                                     4
-
-
-template <unsigned int BUS_WIDTH = 32>
-class STR7_SPI :
-	public Object,
+namespace str7_uart {
+	
+	template <unsigned int BUS_WIDTH = 32>
+	class STR7_UART :
 	public sc_module,
+	public unisim::kernel::service::Object,
 	public tlm::tlm_fw_transport_if<>
-{
-private:
-	typedef STR7_SPI<BUS_WIDTH> THIS_MODULE;
-
+	{
 public:
-
-	/* output socket for outgoing IRQ */
-	tlm_utils::simple_initiator_socket<THIS_MODULE, 1, InterruptProtocolTypes> irq;
-
-	/* socket for spi management */	
-	tlm_utils::simple_initiator_socket<THIS_MODULE> mosi; //master out slave in port
-    tlm_utils::simple_target_socket<THIS_MODULE> miso;//master in slave out port
-
 	/* input socket for memory transactions */
 	tlm::tlm_target_socket<BUS_WIDTH> in_mem;
-
-	STR7_SPI(const sc_module_name& name, Object* parent = 0);
-	virtual ~STR7_SPI();
-
+	
+	STR7_UART(const sc_module_name& name, Object* parent = 0);
+	virtual ~STR7_UART();
+	
 	virtual bool Setup();
+	
+private:
+	typedef STR7_UART<BUS_WIDTH> THIS_MODULE;
+	
+	/* START: UART registers and methods */
+	uint16_t uartn_br;
+	uint16_t uartn_txbufr;
+	uint16_t uartn_rxbufr;
+	uint16_t uartn_cr;
+	uint16_t uartn_ier;
+	uint16_t uartn_sr;
+	uint16_t uartn_gtr;
+	uint16_t uartn_tor;
+	uint16_t uartn_txrstr;
+	uint16_t uartn_rxrstr;
+	
+        unisim::kernel::service::Register<uint16_t> reg_uartn_br;
+	unisim::kernel::service::Register<uint16_t> reg_uartn_txbufr;
+	unisim::kernel::service::Register<uint16_t> reg_uartn_rxbufr;
+	unisim::kernel::service::Register<uint16_t> reg_uartn_cr;
+	unisim::kernel::service::Register<uint16_t> reg_uartn_ier;
+	unisim::kernel::service::Register<uint16_t> reg_uartn_sr;
+	unisim::kernel::service::Register<uint16_t> reg_uartn_gtr;
+	unisim::kernel::service::Register<uint16_t> reg_uartn_tor;
+	unisim::kernel::service::Register<uint16_t> reg_uartn_txrstr;
+	unisim::kernel::service::Register<uint16_t> reg_uartn_rxrstr;
 
-
-	/* START: callback methods for the out_irq sockets */
-	tlm::tlm_sync_enum OutIRQNb(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t);
-	void OutIRQDMI(sc_dt::uint64 start_range, sc_dt::uint64 end_range);
-	/* END: callback methods for the out_irq sockets */
-
-
-
-	/* START: callback methods for the spi sockets */
-	tlm::tlm_sync_enum MOSINb(tlm::tlm_generic_payload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t);
-	void MOSIDMI(sc_dt::uint64 start_range, sc_dt::uint64 end_range);
-	virtual void MISOB(tlm::tlm_generic_payload& trans, sc_core::sc_time& t);
-
-	/* END: callback methods for the spi sockets */
-
-
+        uint16_t ReadRegister(uint64_t address, bool update = true);
+	void WriteRegister(uint64_t address, uint16_t value, bool update = true);
+	/* END: UART registers and methods */
+	
+	/* Base address that will be used by the UART and its parameter to set it up */
+	uint64_t base_address;
+	unisim::kernel::service::Parameter<uint64_t> param_base_address;
+	
 	/* START: methods implementing the "in_mem" socket */
 	virtual void b_transport(tlm::tlm_generic_payload& trans, sc_core::sc_time& t);
 	virtual tlm::tlm_sync_enum nb_transport_fw(tlm::tlm_generic_payload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t);
@@ -118,73 +106,25 @@ public:
 	virtual unsigned int transport_dbg(tlm::tlm_generic_payload& trans);
 	/* END: methods implementing the "in_mem" socket */
 
-private:
-
-	uint16_t Registers[NB_REGS_SPI_CONTROLER]; /* Declared as 32 bits registers*/
-    	uint16_t MaskR[NB_REGS_SPI_CONTROLER]; /* but 16 bits used to simplify*/
-    	uint16_t MaskW[NB_REGS_SPI_CONTROLER]; /* R/W accesses*/
-
-
-	/** Read register method and update interrupt controller state as necessary.
-	 * @param addr		the register address
-	 * @return 			the contents of the register
-	 */
-	uint32_t ReadRegister(uint32_t addr);
-	/** Write register method and update interrupt controller state as necessary.
-	 * @param addr		the register address
-	 * @param value		the data to write into the register
-	 */
-	void WriteRegister(uint32_t addr, uint32_t value);
-    	
-
-	void manage_interrupt(); // Set interruption signals
- 	void SPIHANDLER();
-
-	/* tx and rx fifos */
-
-	std::list<uint16_t> tx_fifo;
-	std::list<uint16_t> rx_fifo;
-
-	uint32_t tx_fifo_size;
-	uint32_t rx_fifo_size;
-
-
-	/* START: module parameters */
-	uint64_t base_address;
-	unisim::kernel::service::Parameter<uint64_t> param_base_address;
-	/* END: module parameters */
-
-	/* START: logger and logger methods and verbose parameters/methods */
-	unisim::kernel::logger::Logger logger;
+	/* START: verbose options */
 	bool verbose_all;
 	unisim::kernel::service::Parameter<bool> param_verbose_all;
 	bool verbose_setup;
 	unisim::kernel::service::Parameter<bool> param_verbose_setup;
-	bool verbose_run;
-	unisim::kernel::service::Parameter<bool> param_verbose_run;
+	bool VerboseSetup();
 	bool verbose_tlm;
 	unisim::kernel::service::Parameter<bool> param_verbose_tlm;
-	inline bool VerboseAll();
-	inline bool VerboseSetup();
-	inline bool VerboseRun();
-	inline bool VerboseTLM();
-	/* END: logger and logger methods and verbose parameters/methods */
+	bool VerboseTLM();
+	/* END: verbose options */
+	
+	/* the logger */
+	unisim::kernel::logger::Logger logger;
 };
-
-/*************************************************************************************
-**************************************************************************************
-**************************************************************************************/
-
-
-
-
-
-} // end of namespace str7_spi
+	
+} // end of namespace str7_uart
 } // end of namespace com
 } // end of namespace tlm2
 } // end of namespace component
 } // end of namespace unisim
 
-#endif // __UNISIM_COMPONENT_TLM2_COM_STR7_SPI_STR7_SPI_HH__
-
-
+#endif // __UNISIM_COMPONENT_TLM2_COM_STR7_UART_STR7_UART_HH__

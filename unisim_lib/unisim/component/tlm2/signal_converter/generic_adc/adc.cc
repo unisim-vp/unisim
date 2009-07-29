@@ -118,7 +118,7 @@ void ADC::adc_receive_frame(tlm::tlm_generic_payload& trans, sc_time& delay)
                 uint8_t *data;
                 data = (uint8_t *) trans.get_data_ptr();
                 stream2receive[NbByte] = *data;
-              //  printf("DATA_READ=%x\n", *data);
+                //printf("DATA_READ=%x\n", *data);
 
 
                 tlm::tlm_generic_payload byte2send;
@@ -138,6 +138,7 @@ void ADC::adc_receive_frame(tlm::tlm_generic_payload& trans, sc_time& delay)
                     case ADC_CMD_RAM:
                         stream2send[0] = stream2receive[0];
                         stream2send[1] = stream2receive[1];
+                    
 
                         switch (Address(Header))
                         {
@@ -194,6 +195,11 @@ void ADC::adc_receive_frame(tlm::tlm_generic_payload& trans, sc_time& delay)
                         sc_core::sc_time t = SC_ZERO_TIME;
                         while (true) {
 
+                              /* send the interrupt level through the data_ready port */
+                            TLMInterruptPayload *trans = data_ready_signal.allocate();
+                            trans->level = true;
+                            data_ready->b_transport(*trans, t); // generate interrupt to signal that a data is ready
+
                             switch (ADC_CHANNEL) {
                                 case CHANNEL0:
                                     val[0] = C0_AMPL / sensor_coeff;
@@ -244,8 +250,7 @@ void ADC::adc_receive_frame(tlm::tlm_generic_payload& trans, sc_time& delay)
                             //     cout << " the time is " << sc_time_stamp() << endl;
 
                             /* send the interrupt level through the data_ready port */
-                            TLMInterruptPayload *trans = data_ready_signal.allocate();
-                            trans->level = true;
+                            trans->level = false;
                             data_ready->b_transport(*trans, t); // generate interrupt to signal that a data is ready
                             /* release the transaction */
                             trans->release();

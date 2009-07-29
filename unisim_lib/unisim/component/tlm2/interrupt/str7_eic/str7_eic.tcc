@@ -43,6 +43,7 @@
 										( (X) == tlm::END_RESP   ?  "END_RESP" : \
 										  							"UNINITIALIZED_PHASE"))))
 #define ITRANS(X)	" - trans.level = " << (X).level
+
 #define TRANS(L,X) \
 { \
 	(L) << " - trans = " << &(X) << endl \
@@ -457,6 +458,9 @@ b_transport(tlm::tlm_generic_payload& trans, sc_core::sc_time& t)
 		TRANS(logger, trans);
 		logger << endl << TIME(t) << EndDebug;
 	}
+	
+	wait(t);
+	t = SC_ZERO_TIME;
 	unsigned char *data = trans.get_data_ptr();
 	unsigned int size = trans.get_data_length();
 	uint64_t addr = trans.get_address();
@@ -478,7 +482,7 @@ b_transport(tlm::tlm_generic_payload& trans, sc_core::sc_time& t)
 		{
 			logger << DebugInfo << "Replying received memory b_transport transaction:" << endl;
 			ETRANS(logger, trans);
-			logger << endl << TIME(t) << EndDebug;
+			logger << endl << TIME(SC_ZERO_TIME) << EndDebug;
 		}
 		return;
 	}
@@ -603,7 +607,12 @@ IRQ(unsigned int index, bool level, sc_core::sc_time& t)
 			<< EndDebugInfo;
 	}
 	if (TrapOnIRQ())
-		trap_reporting_import->ReportTrap();
+	{
+		std::stringstream ss;
+		ss << "Received interrupt (level = " << level << ") on IRQ port " << index 
+			<< " at " << (sc_time_stamp() + t) << " (current time = " << sc_time_stamp() << ")";
+		trap_reporting_import->ReportTrap(*this, ss.str().c_str());
+	}
 }
 
 /** Handle the incomming irqs at the right time */
@@ -633,7 +642,13 @@ IRQFifoHandler()
 						<< endl
 						<< " - prev irq_status = 0x" << hex << irq_status << dec << endl;
 				if (TrapOnIRQHandling())
-					trap_reporting_import->ReportTrap();
+				{
+					std::stringstream ss;
+					ss << "Processing IRQ interrupt received on port " << index << " with level = " << level << " at " << sc_time_stamp()
+						<< endl
+						<< " - prev irq_status = 0x" << hex << irq_status << dec;
+					trap_reporting_import->ReportTrap(*this, ss.str().c_str());
+				}
 				if (level)
 					irq_status |= ((uint32_t)1 << index);
 				else
@@ -789,8 +804,8 @@ FSMUpdate()
 		{
 			if (ipr0 & ((uint32_t)1 << i))
 			{
-				if (SIPL(i) > CIPR() &&
-					has_irq ? SIPL(i) >= SIPL(index) : true)
+				if ((SIPL(i) > CIPR()) &&
+					(has_irq ? SIPL(i) >= SIPL(index) : true))
 				{
 					has_irq = true;
 					index = i;
@@ -819,7 +834,7 @@ FSMUpdate()
 			ivr &= (uint32_t)0xFFFF0000;
 			ivr |= SIV(index);
 			if (VerboseRun())
-				logger << ", setting IVR to 0x" << hex << ivr << dec << EndDebugInfo;
+				logger << ", setting IVR to 0x" << hex << ivr << dec;
 
 			/* change the FSM state when an irq is detected */
 			FSMWait();
@@ -828,16 +843,18 @@ FSMUpdate()
 			has_irq = IRQ_EN();
 			new_irq = index;
 		}
-		else
-			if (VerboseRun())
-				logger << EndDebugInfo;
+		if (VerboseRun())
+			logger << " (current time = " << sc_time_stamp() << ")"
+				<< EndDebugInfo;
 	}
 
-	/* send the interrupt level through the out_irq port */
-	TLMInterruptPayload *trans = irqPayloadFabric.allocate();
-	trans->level = has_irq;
+	TLMInterruptPayload *trans = 0;
 	tlm::tlm_phase phase = tlm::BEGIN_REQ;
 	sc_core::sc_time t = SC_ZERO_TIME;
+	/* send the interrupt level through the out_irq port */
+	trans = irqPayloadFabric.allocate();
+	trans->level = has_irq;
+	phase = tlm::BEGIN_REQ;
 	if (VerboseTLM())
 	{
 		logger << DebugInfo << "Sending transaction through port out_irq:" << endl
@@ -923,7 +940,8 @@ Pop()
 			logger << DebugInfo << "Popping from the stack"
 				<< " CICR (0x" << hex << CICR() << ", previous = 0x" << old_cicr << ")"
 				<< " and CIPR (0x" << CIPR() << ", previous = 0x" << old_cipr << dec << ")"
-				<< ", stack depth after pushing = " << stack_depth
+				<< ", stack depth after popping = " << stack_depth
+				<< ", at time = " << sc_time_stamp()
 				<< EndDebugInfo;
 	}
 	else
@@ -946,6 +964,8 @@ ReadRegister(uint32_t const addr, bool update)
 {
 	uint32_t index = addr;
 	unsigned int sir_index = 0;
+	uint32_t old_cicr;
+	uint32_t old_cipr;
 
 	if (addr >= 0x60 && addr <= 0xdc) index = 0x60;
 	switch (index)
@@ -965,11 +985,19 @@ ReadRegister(uint32_t const addr, bool update)
 				if (IsFSMWait())
 				{
 					Push();
+					old_cicr = CICR();
+					old_cipr = CIPR();
 					cicr = new_irq;
 					cipr = SIPL(new_irq);
+					if (VerboseRun())
+						logger << DebugInfo
+							<< "Setting CICR to 0x" << hex << CICR() << " (old value = 0x" << old_cicr << ")"
+							<< " and CIPR to 0x" << CIPR() << " (old value = 0x" << old_cipr << ")" << dec
+							<< EndDebugInfo;
 					new_irq = 0;
 				}	
 				FSMReady();
+				FSMUpdate();
 			}
 			return IVR();
 			break;
@@ -1079,7 +1107,7 @@ WriteRegister(uint32_t addr, uint32_t value, bool update)
 				}
 			}
 			if (VerboseRun())
-				logger << "new IPR0 = 0X" << hex << IPR0() << dec << ")" << EndDebugInfo;
+				logger << "new IPR0 = 0X" << hex << IPR0() << dec << "), current time = " << sc_time_stamp() << EndDebugInfo;
 			if (update)
 			{
 				if (has_irq)

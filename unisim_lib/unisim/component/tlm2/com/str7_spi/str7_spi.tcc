@@ -14,7 +14,7 @@
  *     this list of conditions and the following disclaimer in the documentation
  *     and/or other materials provided with the distribution.
  *
- *   - Neither the name of CEA nor the names of its contributors may be used to
+ *   - Neither the name of CEA nor the names o>f its contributors may be used to
  *     endorse or promote products derived from this software without specific prior
  *     written permission.
  *
@@ -168,10 +168,8 @@ namespace unisim {
                         MaskW[BSPIn_CLK] = 0x00FF;
 
 
-                        //      SC_HAS_PROCESS(STR7_SPI);
-                        //    SC_THREAD(SPIHANDLER);
-
-
+                        SC_HAS_PROCESS(STR7_SPI);
+                        SC_THREAD(spi_process);
 
                         /* bind the in_mem socket to the methods implementations provided by the module */
                         in_mem.bind(*this);
@@ -194,7 +192,7 @@ namespace unisim {
                     bool
                     STR7_SPI<BUS_WIDTH> ::
                     Setup() {
-                        if (verbose_all) verbose_setup = verbose_run = true;
+						if (verbose_all) verbose_setup = verbose_run = true;
 
                         if (VerboseSetup()) {
                             logger << DebugInfo << "Setup:" << endl;
@@ -300,8 +298,17 @@ namespace unisim {
                     void
                     STR7_SPI<BUS_WIDTH> ::
                     MISOB(tlm::tlm_generic_payload& trans, sc_core::sc_time& t) {
-                    }
 
+                        uint8_t *data;
+                        uint16_t rsp;
+                        data = (uint8_t *) trans.get_data_ptr();
+                        if ((Registers[BSPIn_CSR1] & 0x0C00) == 0x0000)
+                            rsp = (*data << 8) & 0xFF00;
+                        else
+                            rsp = (uint16_t) (*data);
+
+                        rx_fifo.push_back(rsp);
+                    }
 
                     /* END: callback methods for the spi sockets */
 
@@ -324,10 +331,9 @@ namespace unisim {
                             trans.set_response_status(tlm::TLM_OK_RESPONSE);
                             if (size != 2) {
                                 memset(data, 0, size);
-
                             } else {
                                 addr = addr - base_address;
-                                *(uint32_t *) data = ReadRegister(addr);
+                                *(uint16_t *) data = ReadRegister(addr);
                             }
 
                             if (VerboseTLM()) {
@@ -342,7 +348,7 @@ namespace unisim {
                                 if (size != 2)
                                     return;
                                 addr = addr - base_address;
-                                WriteRegister(addr, *(uint32_t *) data);
+                                WriteRegister(addr, *(uint16_t *) data);
                                 return;
                             }
                         }
@@ -431,7 +437,6 @@ namespace unisim {
                             default:
                                 break;
                         }
-
                         return (value);
                     }
 
@@ -442,7 +447,7 @@ namespace unisim {
                     template <unsigned int BUS_WIDTH>
                     void
                     STR7_SPI<BUS_WIDTH> ::
-                    WriteRegister(uint32_t addr, uint32_t value) {
+                    WriteRegister(uint32_t addr, uint16_t value) {
                         uint32_t index = (addr >> 2);
                         if (MaskW[index] == 0x0000)
                             cout << __func__ << "(" << __LINE__ << ")" << ": WARNING write read only register at " << (void*) index << endl;
@@ -451,19 +456,12 @@ namespace unisim {
                                     (Registers[index] & ~MaskW[index]) /* protect read only bits */
                                     | (value & MaskW[index])); /* affect only writtable bits */
                         }
-                        sc_time delay = sc_time(0, SC_NS);
-                        tlm::tlm_generic_payload trans;
-
 
                         switch (index) {
                             case BSPIn_RX:
                                 break;
                             case BSPIn_TX:
-                                if ((Registers[BSPIn_CSR2] & 0x0040) == 0x0040) // transmit FIFO empty enable
-                                {
-                                    //irq_payload->level = false;
-                                    //    irq->b_transport(*irq_payload, delay);
-                                }
+
                                 if ((Registers[BSPIn_CSR1] & 0x0001) && (tx_fifo.size() < tx_fifo_size)) {
                                     tx_fifo.push_back(Registers[BSPIn_TX]);
 
@@ -481,13 +479,7 @@ namespace unisim {
                                     // Set TFF: Transmit FIFO Full
                                     Registers[BSPIn_CSR2] |= 0x0100;
                                 }
-
-                                trans.set_command(tlm::TLM_WRITE_COMMAND);
-                                trans.set_address(0x00);
-                                trans.set_data_length(2);
-                                trans.set_data_ptr((unsigned char *) &(Registers[BSPIn_TX]));
-
-                                mosi->b_transport(trans, delay);
+                                write_event.notify();
                                 break;
                             case BSPIn_CSR1:
 
@@ -527,13 +519,34 @@ namespace unisim {
                             default:
                                 break;
                         }
+
                     }
 
                     template <unsigned int BUS_WIDTH>
                     void
-                    STR7_SPI<BUS_WIDTH>::manage_interrupt() // Set interruption signals
+                    STR7_SPI<BUS_WIDTH>::spi_process() // manage the spi communication
                     {
-                        sc_time delay = sc_time(0, SC_NS);
+
+                        while (1) {
+                            wait(write_event);
+                            if (!tx_fifo.empty()) {
+                                sc_core::sc_time t = SC_ZERO_TIME;
+                                tlm::tlm_generic_payload trans;
+                                trans.set_command(tlm::TLM_WRITE_COMMAND);
+                                trans.set_address(0x00);
+                                trans.set_data_length(2);
+                                trans.set_data_ptr((unsigned char *) &(tx_fifo.front()));
+                                tx_fifo.pop_front();
+                                mosi->b_transport(trans, t);
+                            }
+                        }
+                    }
+
+                    template <unsigned int BUS_WIDTH>
+                    void
+                    STR7_SPI<BUS_WIDTH>::manage_tx_interrupt() // Set interruption signals
+                    {
+                        sc_time t = SC_ZERO_TIME;
                         switch ((Registers[BSPIn_CSR2] >> 14)&0x0003) // read TIE
                         {
                             case 0:
@@ -541,27 +554,80 @@ namespace unisim {
                             case 1:
                                 if ((Registers[BSPIn_CSR2] & 0x0040) == 0x0040) // transmit FIFO empty enable
                                 {
-                                    //irq_payload->level = true;
-                                    //    irq->b_transport(*irq_payload, delay);
+                                    /* send the interrupt level through the irq port */
+                                    TLMInterruptPayload *trans_interrupt = irq_signal.allocate();
+                                    trans_interrupt->level = true;
+                                    irq->b_transport(*trans_interrupt, t); // generate interrupt
+                                    /* release the transaction */
+                                    trans_interrupt->release();
+
                                 }
+                                else
+                                 {
+                                    /* send the interrupt level through the irq port */
+                                    TLMInterruptPayload *trans_interrupt = irq_signal.allocate();
+                                    trans_interrupt->level = false;
+                                    irq->b_transport(*trans_interrupt, t); // generate interrupt
+                                    /* release the transaction */
+                                    trans_interrupt->release();
+
+                                }
+
                                 break;
                             case 2:
                                 if ((Registers[BSPIn_CSR2] & 0x0080) == 0x0080) // transmit FIFO underflow enable
                                 {
-                                    //irq_payload->level = true;
-                                    //   irq->b_transport(*irq_payload, delay);
+                                    /* send the interrupt level through the irq port */
+                                    TLMInterruptPayload *trans_interrupt = irq_signal.allocate();
+                                    trans_interrupt->level = true;
+                                    irq->b_transport(*trans_interrupt, t); // generate interrupt
+                                    /* release the transaction */
+                                    trans_interrupt->release();
+
+                                }
+                                 else
+                                 {
+                                    /* send the interrupt level through the irq port */
+                                    TLMInterruptPayload *trans_interrupt = irq_signal.allocate();
+                                    trans_interrupt->level = false;
+                                    irq->b_transport(*trans_interrupt, t); // generate interrupt
+                                    /* release the transaction */
+                                    trans_interrupt->release();
+
                                 }
                                 break;
                             case 3:
                                 if ((Registers[BSPIn_CSR2] & 0x0100) == 0x0100) // transmit FIFO full enable
                                 {
-                                    //irq_payload->level = true;
-                                    //     irq->b_transport(*irq_payload, delay);
+                                    /* send the interrupt level through the irq port */
+                                    TLMInterruptPayload *trans_interrupt = irq_signal.allocate();
+                                    trans_interrupt->level = true;
+                                    irq->b_transport(*trans_interrupt, t); // generate interrupt
+                                    /* release the transaction */
+                                    trans_interrupt->release();
+
+                                }
+                                 else
+                                 {
+                                    /* send the interrupt level through the irq port */
+                                    TLMInterruptPayload *trans_interrupt = irq_signal.allocate();
+                                    trans_interrupt->level = false;
+                                    irq->b_transport(*trans_interrupt, t); // generate interrupt
+                                    /* release the transaction */
+                                    trans_interrupt->release();
+
                                 }
                                 break;
                             default:
                                 break;
                         }
+                    }
+
+                    template <unsigned int BUS_WIDTH>
+                    void
+                    STR7_SPI<BUS_WIDTH>::manage_rx_interrupt() // Set interruption signals
+                    {
+                        sc_time t = sc_time(0, SC_NS);
                         switch (((Registers[BSPIn_CSR1] >> 2)&0x0003)) // read RIE
                         {
                             case 0:
@@ -569,8 +635,23 @@ namespace unisim {
                             case 1:
                                 if ((Registers[BSPIn_CSR2] & 0x0008) == 0x0008) // receive FIFO not empty enable
                                 {
-                                    //irq_payload->level = true;
-                                    //     irq->b_transport(*irq_payload, delay);
+                                    /* send the interrupt level through the irq port */
+                                    TLMInterruptPayload *trans_interrupt = irq_signal.allocate();
+                                    trans_interrupt->level = true;
+                                    irq->b_transport(*trans_interrupt, t); // generate interrupt
+                                    /* release the transaction */
+                                    trans_interrupt->release();
+
+                                }
+                                 else
+                                 {
+                                    /* send the interrupt level through the irq port */
+                                    TLMInterruptPayload *trans_interrupt = irq_signal.allocate();
+                                    trans_interrupt->level = false;
+                                    irq->b_transport(*trans_interrupt, t); // generate interrupt
+                                    /* release the transaction */
+                                    trans_interrupt->release();
+
                                 }
                                 break;
                             case 2:
@@ -578,31 +659,28 @@ namespace unisim {
                             case 3:
                                 if ((Registers[BSPIn_CSR2] & 0x0010) == 0x0010) // receive FIFO full enable
                                 {
-                                    //irq_payload->level = true;
-                                    //      irq->b_transport(*irq_payload, delay);
+                                    /* send the interrupt level through the irq port */
+                                    TLMInterruptPayload *trans_interrupt = irq_signal.allocate();
+                                    trans_interrupt->level = true;
+                                    irq->b_transport(*trans_interrupt, t); // generate interrupt
+                                    /* release the transaction */
+                                    trans_interrupt->release();
+
                                 }
+                                 else
+                                 {
+                                    /* send the interrupt level through the irq port */
+                                    TLMInterruptPayload *trans_interrupt = irq_signal.allocate();
+                                    trans_interrupt->level = false;
+                                    irq->b_transport(*trans_interrupt, t); // generate interrupt
+                                    /* release the transaction */
+                                    trans_interrupt->release();
+
+                                }   
                                 break;
                             default:
                                 break;
                         }
-                        if (((Registers[BSPIn_CSR1] & 0x0010) == 0x0010) && ((Registers[BSPIn_CSR2] & 0x0020) == 0x0020)) {
-                            // irq_payload->level = true;
-                            //  irq->b_transport(*irq_payload, delay);
-                        }
-                    }
-
-                    template <unsigned int BUS_WIDTH>
-                    void
-                    STR7_SPI<BUS_WIDTH>::SPIHANDLER() {
-
-                        /* while (1) {
-
-                             cout << "+ toto " << sc_time_stamp() << endl;
-                             wait(PERIODE_2000HZ, SC_NS);
-                             cout << "  - toto " << sc_time_stamp() << endl;
-
-                         }*/
-
                     }
 
                     /* START: verbose methods */
@@ -636,13 +714,6 @@ namespace unisim {
                     }
 
                     /* END: verbose methods */
-
-
-
-
-
-
-
                 } // end of namespace str7_spi
             } // end of namespace com
         } // end of namespace tlm2

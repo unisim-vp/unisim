@@ -124,7 +124,7 @@ namespace str7_prccu {
 	unisim::kernel::service::Object(name, parent),
 	in_mem("in_mem"),
 	rccu_ccr(0x0000),
-	rccu_cfr(0x8048),
+	rccu_cfr(0x804A),
 	rccu_pll1cr(0x0007),
 	prccu_per(0xFFFF),
 	prccu_smr(0x0001),
@@ -202,9 +202,9 @@ namespace str7_prccu {
 	/* START: PRCCU registers methods */
 	
 	template<unsigned int BUS_WIDTH>
-	uint16_t
+	uint32_t
 	STR7_PRCCU<BUS_WIDTH>::
-	ReadRegister(uint64_t address, bool update)
+	ReadRegister(uint32_t address, bool update)
 	{
 		switch (address)
 		{
@@ -252,7 +252,7 @@ namespace str7_prccu {
 	template<unsigned int BUS_WIDTH>
 	void
 	STR7_PRCCU<BUS_WIDTH>::
-	WriteRegister(uint64_t address, uint16_t value, bool update)
+	WriteRegister(uint32_t address, uint32_t value, bool update)
 	{
 		switch (address)
 		{
@@ -260,7 +260,7 @@ namespace str7_prccu {
 				rccu_ccr=value;
 				break;
 			case 0x08: // PRCCU_CFR
-				rccu_cfr=value;
+				rccu_cfr=value|0x00000002; //to simulate that the bit PLL LOCK is true...
 				break;
 			case 0x18: // PRCCU_PLL1CR
 				rccu_pll1cr=value;
@@ -272,22 +272,22 @@ namespace str7_prccu {
                                 prccu_smr=value;
                                 break;
                         case 0x40: // PCU_MDIVR
-                                pcu_mdivr=value;
+                                pcu_mdivr=(uint16_t)value;
                                 break;
             		case 0x44: // PCU_PDIVR
-				pcu_pdivr=value;
+				pcu_pdivr=(uint16_t)value;
 				break;
 			case 0x48: // PCU_RSTR
-				pcu_rstr=value;
+				pcu_rstr=(uint16_t)value;
 				break;
                         case 0x4c: // PCU_PLL2CR
-                                pcu_pll2cr=value;
+                                pcu_pll2cr=(uint16_t)value;
                                 break;
                         case 0x50: // PCU_BOOTCR
-                                pcu_bootcr=value;
+                                pcu_bootcr=(uint16_t)value;
                                 break;
                         case 0x54: // PCU_PWRCR
-                                pcu_pwrcr=value;
+                                pcu_pwrcr=(uint16_t) (value|0x00001000); //to simulate the flag VROK...
                                 break;
 			
 			default:
@@ -299,56 +299,55 @@ namespace str7_prccu {
 	
 	/* START: methods implementing the "in_mem" socket */
 
-	template<unsigned int BUS_WIDTH>
-	void
-	STR7_PRCCU<BUS_WIDTH>::
-	b_transport(tlm::tlm_generic_payload& trans, sc_core::sc_time& t)
+template <unsigned int BUS_WIDTH>
+void
+STR7_PRCCU<BUS_WIDTH> ::
+b_transport(tlm::tlm_generic_payload& trans, sc_core::sc_time& t)
+{
+	if (VerboseTLM())
 	{
+		logger << DebugInfo << "Received memory b_transport transaction:" << endl;
+		TRANS(logger, trans);
+		logger << endl << TIME(t) << EndDebug;
+	}
+	unsigned char *data = trans.get_data_ptr();
+	unsigned int size = trans.get_data_length();
+	uint64_t addr = trans.get_address();
+
+	if (trans.is_read())
+	{
+		trans.set_response_status(tlm::TLM_OK_RESPONSE);
+		if ((size !=4) && (size !=2))
+		{
+			memset(data, 0, size);
+		}
+		else
+		{
+			addr = addr - base_address;
+			*(uint32_t *)data = ReadRegister(addr);
+		}
+
 		if (VerboseTLM())
 		{
-			logger << DebugInfo << "Received memory b_transport transaction:" << endl;
-			TRANS(logger, trans);
+			logger << DebugInfo << "Replying received memory b_transport transaction:" << endl;
+			ETRANS(logger, trans);
 			logger << endl << TIME(t) << EndDebug;
 		}
-		unsigned char *data = trans.get_data_ptr();
-		unsigned int size = trans.get_data_length();
-		uint64_t addr = trans.get_address();
-		
-		if (trans.is_read())
+		return;
+	}
+	else
+	{
+		if (trans.is_write())
 		{
 			trans.set_response_status(tlm::TLM_OK_RESPONSE);
-			if (size != 2)
-			{
-				memset(data, 0, size);
-			}
-			else
-			{
-				addr = addr - base_address;
-				*(uint16_t *)data = ReadRegister(addr);
-			}
-			
-			if (VerboseTLM()) 
-			{
-				logger << DebugInfo << "Replying received memory b_transport transaction:" << endl;
-				ETRANS(logger, trans);
-				logger << endl << TIME(t) << EndDebug;
-			}
+			if ((size !=4) && (size !=2))
+				return;
+			addr = addr - base_address;
+			WriteRegister(addr, *(uint32_t *)data);
 			return;
 		}
-		else 
-		{
-			if (trans.is_write())
-			{
-				trans.set_response_status(tlm::TLM_OK_RESPONSE);
-				if (size != 2)
-					return;
-				addr = addr - base_address;
-				WriteRegister(addr, *(uint16_t *)data);
-				return;
-			}
-		}
 	}
-	
+}
 	template<unsigned int BUS_WIDTH>
 	tlm::tlm_sync_enum 
 	STR7_PRCCU<BUS_WIDTH>::

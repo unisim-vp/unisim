@@ -29,7 +29,7 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: khaled Rahmouni
+ * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
 #include "unisim/component/tlm2/com/str7_uart/str7_uart.hh"
@@ -39,13 +39,12 @@ namespace unisim {
 namespace component {
 namespace tlm2 {
 namespace com {
-namespace str7_spi {
-
-
+namespace str7_uart {
+					
 template
-class STR7_SPI<32>;
-
-} // end of namespace str7_spi
+class STR7_UART<32>;
+					
+} // end of namespace str7_uart
 } // end of namespace com
 } // end of namespace tlm2
 } // end of namespace component

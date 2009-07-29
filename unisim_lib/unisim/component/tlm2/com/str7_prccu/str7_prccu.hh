@@ -69,33 +69,38 @@ private:
 	typedef STR7_PRCCU<BUS_WIDTH> THIS_MODULE;
 	
 	/* START: PRCCU registers and methods */
-	uint16_t rccu_ccr;
-	uint16_t rccu_cfr;
-	uint16_t rccu_pll1cr;
-	uint16_t prccu_per;
-	uint16_t prccu_smr;
-	uint16_t pcu_mdivr;
-	uint16_t pcu_pdivr;
-	uint16_t pcu_rstr;
-        uint16_t pcu_pll2cr;
-	uint16_t pcu_bootcr;
-	uint16_t pcu_pwrcr;
+	uint32_t rccu_ccr;
+	uint32_t rccu_cfr;
+	uint32_t rccu_pll1cr;
+	uint32_t prccu_per;
+	uint32_t prccu_smr;
+	uint32_t pcu_mdivr;
+	uint32_t pcu_pdivr;
+	uint32_t pcu_rstr;
+        uint32_t pcu_pll2cr;
+	uint32_t pcu_bootcr;
+	uint32_t pcu_pwrcr;
 
-        unisim::kernel::service::Register<uint16_t> reg_rccu_ccr;
-	unisim::kernel::service::Register<uint16_t> reg_rccu_cfr;
-	unisim::kernel::service::Register<uint16_t> reg_rccu_pll1cr;
-	unisim::kernel::service::Register<uint16_t> reg_prccu_per;
-        unisim::kernel::service::Register<uint16_t> reg_prccu_smr;
-	unisim::kernel::service::Register<uint16_t> reg_pcu_mdivr;
-	unisim::kernel::service::Register<uint16_t> reg_pcu_pdivr;
-	unisim::kernel::service::Register<uint16_t> reg_pcu_rstr;
-	unisim::kernel::service::Register<uint16_t> reg_pcu_pll2cr;
-	unisim::kernel::service::Register<uint16_t> reg_pcu_bootcr;
-	unisim::kernel::service::Register<uint16_t> reg_pcu_pwrcr;
+        unisim::kernel::service::Register<uint32_t> reg_rccu_ccr;
+	unisim::kernel::service::Register<uint32_t> reg_rccu_cfr;
+	unisim::kernel::service::Register<uint32_t> reg_rccu_pll1cr;
+	unisim::kernel::service::Register<uint32_t> reg_prccu_per;
+        unisim::kernel::service::Register<uint32_t> reg_prccu_smr;
+	unisim::kernel::service::Register<uint32_t> reg_pcu_mdivr;
+	unisim::kernel::service::Register<uint32_t> reg_pcu_pdivr;
+	unisim::kernel::service::Register<uint32_t> reg_pcu_rstr;
+	unisim::kernel::service::Register<uint32_t> reg_pcu_pll2cr;
+	unisim::kernel::service::Register<uint32_t> reg_pcu_bootcr;
+	unisim::kernel::service::Register<uint32_t> reg_pcu_pwrcr;
 
 
-        uint16_t ReadRegister(uint64_t address, bool update = true);
-	void WriteRegister(uint64_t address, uint16_t value, bool update = true);
+      uint32_t ReadRegister(uint32_t addr, bool update = true);
+	/** Write register method and update interrupt controller state as necessary.
+	 * @param addr		the register address
+	 * @param value		the data to write into the register
+	 * @param update	read the register and perform the writing side effects
+	 */
+	void WriteRegister(uint32_t addr, uint32_t value, bool update = true);
 	/* END: PRCCU registers and methods */
 	
 	/* Base address that will be used by the PRCCU and its parameter to set it up */
