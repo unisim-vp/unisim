@@ -185,7 +185,6 @@ public:
 	virtual void Synchronize();
 	virtual void Reset();
 	void Reset(unsigned int threadsperblock, unsigned int numblocks, unsigned int regnum, unsigned int smsize);
-	void InitStats(unsigned int code_size);
 
 	virtual bool ReadMemory(address_t addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(address_t addr, const void *buffer, uint32_t size);
@@ -202,6 +201,7 @@ public:
 
 	virtual typename CONFIG::stats_t * GetStats();
 	virtual void SetStats(typename CONFIG::stats_t * stats);
+	virtual void InitStats(unsigned int code_size);
 
 	void ReadShared(address_t addr, void *buffer, uint32_t size);
 	void WriteShared(address_t addr, const void *buffer, uint32_t size);

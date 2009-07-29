@@ -231,7 +231,7 @@ CUDAScheduler<CONFIG>::CUDAScheduler(unsigned int cores, const char *name, Objec
 	core_count(cores),
 	sockets(cores)
 {
-	for(int i = 0; i != cores; ++i)
+	for(unsigned int i = 0; i != cores; ++i)
 	{
 		std::ostringstream name;
 		name << "scheduler_socket_" << i;
@@ -252,7 +252,7 @@ void CUDAScheduler<CONFIG>::Schedule(CUDAGrid const & kernel)
 {
 	thread_group GPUThreads;
 	
-	for(int c = 1; c < core_count; ++c)
+	for(unsigned int c = 1; c < core_count; ++c)
 	{
 		Runner<CONFIG> runner(Socket(c), kernel, core_count, c);
 		GPUThreads.create_thread(runner);

@@ -1171,6 +1171,7 @@ op and_full( \
 and_full.disasm = {
 	buffer << "and";
 	insn->DisasmControl(buffer);
+	DisasmSignWidth(false, w32, buffer);
 
 	buffer << " ";
 	insn->DisasmDest(buffer);
@@ -1215,6 +1216,7 @@ op or_full( \
 or_full.disasm = {
 	buffer << "or";
 	insn->DisasmControl(buffer);
+	DisasmSignWidth(false, w32, buffer);
 
 	buffer << " ";
 	insn->DisasmDest(buffer);
@@ -1259,6 +1261,7 @@ op xor_full( \
 xor_full.disasm = {
 	buffer << "xor";
 	insn->DisasmControl(buffer);
+	DisasmSignWidth(false, w32, buffer);
 
 	buffer << " ";
 	insn->DisasmDest(buffer);
@@ -1304,6 +1307,7 @@ op bid_full( \
 bid_full.disasm = {
 	buffer << "mov";
 	insn->DisasmControl(buffer);
+	DisasmSignWidth(false, w32, buffer);
 
 	buffer << " ";
 	insn->DisasmDest(buffer);

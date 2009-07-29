@@ -293,6 +293,7 @@ VectorRegister<CONFIG> Mad24(VectorRegister<CONFIG> const & a,
 	// TODO: CHECK should only saturate at the end??
 	// need to keep all 48 bits of the intermediate result (FMA-like)?
 	rv = Mul24(a, b, sat, src1_neg, false, m24, issigned, hi);
+	// No sign-extension for mad24.s16?
 	rv = IAdd(rv, c, flags, sat, false, src3_neg, true);
 	return rv;
 	

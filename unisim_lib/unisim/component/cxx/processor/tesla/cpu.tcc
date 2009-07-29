@@ -139,7 +139,14 @@ CPU<CONFIG>::CPU(const char *name, Object *parent, int coreid, int core_count) :
 {
 //	Object::SetupDependsOn(logger_import);
 
-	Reset();
+	//Reset();
+	for(unsigned int i = 0; i != MAX_WARPS; ++i)
+	{
+		warps[i].id = i;
+		warps[i].state = Warp<CONFIG>::Finished;
+	}
+	num_warps = 0;
+	num_ctas = 0;
 }
 
 template <class CONFIG>
@@ -174,25 +181,8 @@ void CPU<CONFIG>::Synchronize()
 
 template <class CONFIG>
 void CPU<CONFIG>::Reset()
-#if 0
 {
-	for(unsigned int i = 0; i != MAX_WARPS; ++i)
-	{
-		warps[i].id = i;
-		warps[i].state = Warp<CONFIG>::Finished;
-	}
-	num_warps = 0;
-	num_ctas = 0;
-	for(unsigned int i = 0; i != CONFIG::MAX_SAMPLERS; ++i)
-	{
-		samplers[i].Reset(this);
-	}
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::Reset(unsigned int threadsperblock, unsigned int numblocks, unsigned int gprs_per_warp, unsigned int sm_size)
-#endif
-{
+	assert(stats != 0);
 	for(unsigned int i = 0; i != MAX_WARPS; ++i)
 	{
 		warps[i].id = i;
@@ -259,6 +249,7 @@ void CPU<CONFIG>::Reset(unsigned int threadsperblock, unsigned int numblocks, un
 template <class CONFIG>
 void CPU<CONFIG>::InitStats(unsigned int code_size)
 {
+	assert(stats != 0);
 	typename CONFIG::address_t pc = CONFIG::CODE_START;
 	while(pc < CONFIG::CODE_START + code_size)
 	{

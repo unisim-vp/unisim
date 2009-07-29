@@ -35,7 +35,7 @@
 #include "unisim/service/interfaces/registers.hh"
 #include "unisim/util/debug/register.hh"
 #include <unisim/kernel/service/service.hh>
-
+#include <stdint.h>
 
 namespace unisim {
 namespace service {

@@ -359,6 +359,7 @@ template <class CONFIG>
 void CPU<CONFIG>::Read32(address_t addr, uint32_t & data,
 	uint32_t factor, address_t offset)
 {
+	assert(!((addr * factor + offset) & 3));	// Check alignment
 	if(!ReadMemory(addr * factor + offset, &data, 4)) {
 		throw MemoryAccessException<CONFIG>();
 	}
@@ -372,6 +373,7 @@ template <class CONFIG>
 void CPU<CONFIG>::Write32(address_t addr, uint32_t data,
 	uint32_t factor, address_t offset)
 {
+	assert(!((addr * factor + offset) & 3));
 	if(TraceLoadstore()) {
 		cerr << " Write32: " << std::hex << data
 			<< " @" << offset << "+" << addr << "*" << factor << std::dec << endl;
@@ -385,6 +387,7 @@ template <class CONFIG>
 void CPU<CONFIG>::Read16(address_t addr, uint32_t & data,
 	uint32_t factor, address_t offset)
 {
+	assert(!((addr * factor + offset) & 1));	// Check alignment
 	if(!ReadMemory(addr * factor + offset, &data, 2)) {
 		throw MemoryAccessException<CONFIG>();
 	}
@@ -398,6 +401,7 @@ template <class CONFIG>
 void CPU<CONFIG>::Write16(address_t addr, uint32_t data,
 	uint32_t factor, address_t offset)
 {
+	assert(!((addr * factor + offset) & 1));	// Check alignment
 	if(TraceLoadstore()) {
 		cerr << " Write16: " << std::hex << data
 			<< " @" << offset << "+" << addr << "*" << factor << std::dec << endl;
@@ -452,12 +456,14 @@ void CPU<CONFIG>::Gather(VecAddr const & addr, VecReg data[],
 		Gather8(addr, data[0], mask, 1, 0);
 		break;
 	case DT_U64:
-		// Burst access? Or actual Gather64?
+		// Actual Gather64, not bust transfer?
+		// TODO: check alignment
 		// From little-endian mem to little-endian regs
 		Gather32(addr, data[0], mask, 1, 0);
 		Gather32(addr, data[1], mask, 1, 4);
 		break;
 	case DT_U128:
+		// TODO: check alignment
 		Gather32(addr, data[0], mask, 1, 0);
 		Gather32(addr, data[1], mask, 1, 4);
 		Gather32(addr, data[2], mask, 1, 8);

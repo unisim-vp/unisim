@@ -38,6 +38,7 @@
 #include <string>
 #include <list>
 #include <stdexcept>
+#include "unisim_inttypes.h"
 
 using namespace std;
 

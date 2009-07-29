@@ -289,7 +289,7 @@ void TeslaFlow<CONFIG>::Call(address_t target_addr)
 template <class CONFIG>
 void TeslaFlow<CONFIG>::CheckJoin()
 {
-	if(cpu->trace_mask) {
+	if(cpu->TraceMask()) {
 		cerr << " " << GetCurrentMask() << endl;
 	}
 }

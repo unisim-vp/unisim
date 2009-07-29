@@ -44,6 +44,7 @@ struct InstructionStats
 {
 	virtual STATS * GetStats() = 0;
 	virtual void SetStats(STATS *) = 0;
+	virtual void InitStats(unsigned int code_size) = 0;
 };
 
 } // end of namespace interfaces
