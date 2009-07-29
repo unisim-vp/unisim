@@ -521,7 +521,6 @@ group fsset(fsset_full)
 
 fsset.init = {
 	typedef Operation<CONFIG> inherited;
-	inherited::allow_segment = false;
 	inherited::op_type[OpDest] = DT_U32;	// Always 32-bit?
 	inherited::op_type[OpSrc1] = DT_F32;
 	inherited::op_type[OpSrc2] = DT_F32;
@@ -590,7 +589,6 @@ group fcvti_full(fcvti_full_normal)
 fcvti_full.init = {
 	typedef Operation<CONFIG> inherited;
 	DataType dt = RegTypeToDataType(RegType(dest_32));
-	inherited::allow_segment = false;
 	inherited::op_type[OpDest] = dt;
 	assert(cvt_type == CT_U32 || cvt_type == CT_U16);
 	inherited::op_type[OpSrc1] = (
@@ -669,7 +667,6 @@ group fcvtf_full(fcvtf_full_normal, fcvtf_full_end, fcvtf_full_join)
 fcvtf_full.init = {
 	typedef Operation<CONFIG> inherited;
 	DataType dt = RegTypeToDataType(RegType(dest_32));
-	inherited::allow_segment = false;
 	inherited::op_type[OpDest] = (dt == DT_U32 ? DT_F32 : DT_U16);
 	assert(cvt_type == CT_U32 || cvt_type == CT_U16);
 	inherited::op_type[OpSrc1] = (
@@ -1203,7 +1200,6 @@ group fp32d123(fsmad_full, fsmad_full_const)
 
 fp32d123.init = {
 	typedef Operation<CONFIG> inherited;
-	inherited::allow_segment = true;
 	inherited::op_type[OpDest] = DT_F32;
 	inherited::op_type[OpSrc1] = DT_F32;
 	inherited::op_type[OpSrc2] = DT_F32;
@@ -1220,7 +1216,6 @@ group fp32d12(fsmac, fsadd_halfimm, fsmul_full, fsmul_halfimm, \
 
 fp32d12.init = {
 	typedef Operation<CONFIG> inherited;
-	inherited::allow_segment = true;
 	inherited::op_type[OpDest] = DT_F32;
 	inherited::op_type[OpSrc1] = DT_F32;
 	inherited::op_type[OpSrc2] = DT_F32;
@@ -1236,7 +1231,6 @@ group fp32d13(fsadd_full, fsadd_full_const)
 
 fp32d13.init = {
 	typedef Operation<CONFIG> inherited;
-	inherited::allow_segment = true;
 	inherited::op_type[OpDest] = DT_F32;
 	inherited::op_type[OpSrc1] = DT_F32;
 	inherited::op_type[OpSrc2] = DT_NONE;
@@ -1252,7 +1246,6 @@ group fp32d1(fmov, rcp, rsq, lg2)
 
 fp32d1.init = {
 	typedef Operation<CONFIG> inherited;
-	inherited::allow_segment = true;
 	inherited::op_type[OpDest] = DT_F32;
 	inherited::op_type[OpSrc1] = DT_F32;
 	inherited::op_type[OpSrc2] = DT_NONE;
@@ -1268,7 +1261,6 @@ group fp32dint1(ex2, sin, cos)
 
 fp32dint1.init = {
 	typedef Operation<CONFIG> inherited;
-	inherited::allow_segment = true;
 	inherited::op_type[OpDest] = DT_F32;
 	inherited::op_type[OpSrc1] = DT_U32;
 	inherited::op_type[OpSrc2] = DT_NONE;
@@ -1284,7 +1276,6 @@ group intdfp321(rr_ex2, rr_trig)
 
 intdfp321.init = {
 	typedef Operation<CONFIG> inherited;
-	inherited::allow_segment = true;
 	inherited::op_type[OpDest] = DT_U32;
 	inherited::op_type[OpSrc1] = DT_F32;
 	inherited::op_type[OpSrc2] = DT_NONE;

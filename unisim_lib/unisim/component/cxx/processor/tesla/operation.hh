@@ -69,23 +69,6 @@ enum Operand
 	OpSrc3
 };
 
-template <class T, size_t SIZE>
-struct SimpleArray
-{
-	T dt[SIZE];
-	
-	T & operator[] (size_t i) {
-		assert(i < SIZE);
-		return dt[i];
-	}
-	T operator[] (size_t i) const {
-		assert(i < SIZE);
-		return dt[i];
-	}
-};
-
-//typedef SimpleArray<DataType, 4> DataTypeArray;
-
 // Operation: base of all opcodes
 // Only one instance of Operation per machine instruction in memory
 // Unmutable

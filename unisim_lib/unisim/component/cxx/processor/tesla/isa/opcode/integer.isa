@@ -370,7 +370,6 @@ imad_full.init = {
 	default:
 		dt = DT_UNKNOWN;
 	}
-	inherited::allow_segment = true;
 	inherited::op_type[OpDest] = DT_U32;
 	inherited::op_type[OpSrc1] = dt;
 	inherited::op_type[OpSrc2] = dt;
@@ -533,7 +532,6 @@ imac_imm.init = {
 	default:
 		dt = DT_UNKNOWN;
 	}
-	inherited::allow_segment = false;
 	inherited::op_type[OpDest] = DT_U32;	// ???
 	inherited::op_type[OpSrc1] = dt;
 	inherited::op_type[OpSrc2] = dt;
@@ -681,7 +679,6 @@ group imul24_halfimm(imul24_half, imul24_imm)
 imul24.init = {
 	typedef Operation<CONFIG> inherited;
 	DataType dt = RegTypeToDataType(RegType(w32));
-	inherited::allow_segment = true;
 	inherited::op_type[OpDest] = DT_U32;
 //	inherited::op_type[OpDest] = dt;	// ???
 	inherited::op_type[OpSrc1] = dt;
@@ -729,7 +726,6 @@ imul24.execute = {
 imul24_halfimm.init = {
 	typedef Operation<CONFIG> inherited;
 	DataType dt = RegTypeToDataType(RegType(w32));
-	inherited::allow_segment = false;
 	inherited::op_type[OpDest] = DT_U32;
 	inherited::op_type[OpSrc1] = dt;
 	inherited::op_type[OpSrc2] = dt;
@@ -806,7 +802,6 @@ group i2i_full_noimm(i2i_full_normal, i2i_full_end, i2i_full_join)
 i2i_full_noimm.init = {
 	typedef Operation<CONFIG> inherited;
 	DataType dt = RegTypeToDataType(RegType(data_32));
-	inherited::allow_segment = false;
 	inherited::op_type[OpDest] = dt;
 	inherited::op_type[OpSrc1] = CvtTypeToDataType(ConvType(cvt_type));	// Or always 32??
 	inherited::op_type[OpSrc2] = DT_NONE;
@@ -872,7 +867,6 @@ group i2in_full_noimm(i2in_full_normal, i2in_full_end, i2in_full_join)
 i2in_full_noimm.init = {
 	typedef Operation<CONFIG> inherited;
 	DataType dt = RegTypeToDataType(RegType(data_32));
-	inherited::allow_segment = false;
 	inherited::op_type[OpDest] = dt;
 	inherited::op_type[OpSrc1] = CvtTypeToDataType(ConvType(cvt_type));	// Or always 32??
 	inherited::op_type[OpSrc2] = DT_NONE;
@@ -945,7 +939,6 @@ group i2f_full(i2f_full_normal, i2f_full_end, i2f_full_join)
 i2f_full.init = {
 	typedef Operation<CONFIG> inherited;
 	//DataType dt = RegTypeToDataType(RegType(data_32));
-	inherited::allow_segment = false;
 	inherited::op_type[OpDest] = DT_F32; //dt;
 	inherited::op_type[OpSrc1] = CvtTypeToDataType(ConvType(cvt_type));	// Or always 32??
 	inherited::op_type[OpSrc2] = DT_NONE;
@@ -1345,7 +1338,6 @@ bid_full.execute = {
 bid_full.init = {
 	typedef Operation<CONFIG> inherited;
 	DataType dt = RegTypeToDataType(RegType(w32));
-	inherited::allow_segment = true;
 	inherited::op_type[OpDest] = dt;
 	inherited::op_type[OpSrc1] = DT_NONE;
 	inherited::op_type[OpSrc2] = dt;
@@ -1547,7 +1539,6 @@ group nop_full(nop_full_normal, nop_full_end, nop_full_join)
 
 nop_full.init = {
 	typedef Operation<CONFIG> inherited;
-	inherited::allow_segment = false;
 	inherited::op_type[OpDest] = DT_NONE;
 	inherited::op_type[OpSrc1] = DT_NONE;
 	inherited::op_type[OpSrc2] = DT_NONE;
@@ -1569,7 +1560,6 @@ group intd12(iadd_halfimm, isubr_halfimm, iaddc_halfimm, shl_full, shr_full, \
 intd12.init = {
 	typedef Operation<CONFIG> inherited;
 	DataType dt = RegTypeToDataType(RegType(w32));
-	inherited::allow_segment = true;
 	inherited::op_type[OpDest] = dt;
 	inherited::op_type[OpSrc1] = dt;
 	inherited::op_type[OpSrc2] = dt;
@@ -1582,7 +1572,6 @@ group intd13(iadd_full, isubr_full, iaddc_full)
 intd13.init = {
 	typedef Operation<CONFIG> inherited;
 	DataType dt = RegTypeToDataType(RegType(w32));
-	inherited::allow_segment = true;
 	inherited::op_type[OpDest] = dt;
 	inherited::op_type[OpSrc1] = dt;
 	inherited::op_type[OpSrc2] = DT_NONE;
@@ -1595,7 +1584,6 @@ group intd1(shr_full_imm2, shl_full_imm2)
 intd1.init = {
 	typedef Operation<CONFIG> inherited;
 	DataType dt = RegTypeToDataType(RegType(w32));
-	inherited::allow_segment = true;
 	inherited::op_type[OpDest] = dt;
 	inherited::op_type[OpSrc1] = dt;
 	inherited::op_type[OpSrc2] = DT_NONE;

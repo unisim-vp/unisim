@@ -84,7 +84,6 @@ op mov_reg_half( \
 mov_reg_full_noimm.init = {
 	typedef Operation<CONFIG> inherited;
 	DataType dt = RegTypeToDataType(RegType(data_32));
-	inherited::allow_segment = false;	// ??
 	inherited::op_type[OpDest] = dt;
 	inherited::op_type[OpSrc1] = dt;
 	inherited::op_type[OpSrc2] = DT_NONE;
@@ -123,7 +122,6 @@ mov_reg_full_noimm.execute = {
 mov_reg_full_imm.init = {
 	typedef Operation<CONFIG> inherited;
 	DataType dt = RegTypeToDataType(RegType(data_32));
-	inherited::allow_segment = false;
 	inherited::op_type[OpDest] = dt;
 	inherited::op_type[OpSrc1] = DT_NONE;
 	inherited::op_type[OpSrc2] = dt;
@@ -157,7 +155,6 @@ mov_reg_full_imm.execute = {
 mov_reg_half.init = {
 	typedef Operation<CONFIG> inherited;
 	DataType dt = RegTypeToDataType(RegType(data_32));
-	inherited::allow_segment = false;
 	inherited::op_type[OpDest] = dt;
 	inherited::op_type[OpSrc1] = dt;
 	inherited::op_type[OpSrc2] = DT_NONE;
@@ -206,7 +203,6 @@ op stsh_full( \
 stsh_full.init = {
 	typedef Operation<CONFIG> inherited;
 	DataType dt = RegTypeToDataType(RegType(w32));
-	inherited::allow_segment = false;
 	inherited::op_type[OpDest] = MvSizeToDataType(m_size);
 	inherited::op_type[OpSrc1] = DT_NONE;
 	inherited::op_type[OpSrc2] = DT_NONE;
@@ -297,7 +293,6 @@ group ldc_full(ldc_full_normal, ldc_full_end, ldc_full_join)
 ldc_full.init = {
 	typedef Operation<CONFIG> inherited;
 	DataType dt = RegTypeToDataType(RegType(data_32));
-	inherited::allow_segment = false;	// ??
 	inherited::op_type[OpDest] = dt;
 	inherited::op_type[OpSrc1] = DT_NONE;
 	inherited::op_type[OpSrc2] = SMTypeToDataType(SMType(mem_type));
@@ -351,7 +346,6 @@ op stg_full( \
 
 stg_full.init = {
 	typedef Operation<CONFIG> inherited;
-	inherited::allow_segment = false;
 	inherited::op_type[OpDest] = DataType(m_size);
 	inherited::op_type[OpSrc1] = DataType(m_size);
 	inherited::op_type[OpSrc2] = DT_NONE;
@@ -405,7 +399,6 @@ op ldg_full( \
 //  mov dest, g[src1]
 ldg_full.init = {
 	typedef Operation<CONFIG> inherited;
-	inherited::allow_segment = false;
 	inherited::op_type[OpDest] = DataType(m_size);
 	inherited::op_type[OpSrc1] = DataType(m_size);
 	inherited::op_type[OpSrc2] = DT_NONE;
@@ -462,7 +455,6 @@ op stl_full( \
 
 stl_full.init = {
 	typedef Operation<CONFIG> inherited;
-	inherited::allow_segment = false;
 	inherited::op_type[OpDest] = DataType(m_size);
 	inherited::op_type[OpSrc1] = DataType(m_size);
 	inherited::op_type[OpSrc2] = DT_NONE;
@@ -516,7 +508,6 @@ op ldl_full( \
 //  mov dest, g[src1]
 ldl_full.init = {
 	typedef Operation<CONFIG> inherited;
-	inherited::allow_segment = false;
 	inherited::op_type[OpDest] = DataType(m_size);
 	inherited::op_type[OpSrc1] = DataType(m_size);
 	inherited::op_type[OpSrc2] = DT_NONE;
@@ -600,7 +591,6 @@ group ldam_full(ldam_full_normal, ldam_full_end, ldam_full_join)
 ldam_full.init = {
 	typedef Operation<CONFIG> inherited;
 	//DataType dt = RegTypeToDataType(RegType(data_32));
-	inherited::allow_segment = false;
 	inherited::op_type[OpDest] = DT_U32;
 	inherited::op_type[OpSrc1] = DT_U32;//dt;
 	inherited::op_type[OpSrc2] = DT_NONE;
@@ -660,7 +650,6 @@ group ldaa_full(ldaa_full_normal, ldaa_full_end, ldaa_full_join)
 
 ldaa_full.init = {
 	typedef Operation<CONFIG> inherited;
-	inherited::allow_segment = false;
 	inherited::op_type[OpDest] = DT_U32;
 	inherited::op_type[OpSrc1] = DT_U32;
 	inherited::op_type[OpSrc2] = DT_NONE;
@@ -722,7 +711,6 @@ group sta(sta_full_normal, sta_full_end, sta_full_join)
 
 sta.init = {
 	typedef Operation<CONFIG> inherited;
-	inherited::allow_segment = false;
 	inherited::op_type[OpDest] = DT_U32;
 	inherited::op_type[OpSrc1] = DT_NONE;
 	inherited::op_type[OpSrc2] = DT_NONE;
@@ -774,8 +762,6 @@ group ldf(ldf_full_normal, ldf_full_end, ldf_full_join)
 
 ldf.init = {
 	typedef Operation<CONFIG> inherited;
-	inherited::allow_segment = false;
-	//DataType dt = RegTypeToDataType(RegType(w32));
 	inherited::op_type[OpDest] = DT_U32;
 	inherited::op_type[OpSrc1] = DT_NONE;
 	inherited::op_type[OpSrc2] = DT_NONE;
@@ -829,8 +815,6 @@ group stf(stf_full_normal, stf_full_end, stf_full_join)
 
 stf.init = {
 	typedef Operation<CONFIG> inherited;
-	inherited::allow_segment = false;
-	//DataType dt = RegTypeToDataType(RegType(w32));
 	inherited::op_type[OpDest] = DT_NONE;
 	inherited::op_type[OpSrc1] = DT_U32;
 	inherited::op_type[OpSrc2] = DT_NONE;
@@ -872,7 +856,6 @@ op tex1d_s32_full( \
 
 tex1d_s32_full.init = {
 	typedef Operation<CONFIG> inherited;
-	inherited::allow_segment = false;
 	inherited::op_type[OpDest] = DT_F32;	//DT_S32;
 	inherited::op_type[OpSrc1] = DT_NONE;
 	inherited::op_type[OpSrc2] = DT_NONE;

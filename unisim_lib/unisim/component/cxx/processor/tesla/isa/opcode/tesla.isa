@@ -69,6 +69,8 @@ using namespace unisim::component::cxx::processor::tesla;
 }
 }
 
+typedef bool bool4[4];
+
 } // end of namespace tesla 
 } // end of namespace processor
 } // end of namespace cxx
@@ -128,12 +130,10 @@ action {void} disasm({CPU<CONFIG> *} {cpu}, {Instruction<CONFIG> const *} {insn}
 }
 
 //var op_type : { DataTypeArray }
-var allow_segment : { bool }
-var force_reg : { SimpleArray<bool, 4> }
+var force_reg : { bool4 }	// Is this used??
 
 constructor action init() {
-//	assert(false);
-	this->allow_segment = true;		// Actually always true (?)
+	assert(false);
 	this->op_type[OpDest] = DT_U32;
 	this->op_type[OpSrc1] = DT_U32;
 	this->op_type[OpSrc2] = DT_U32;

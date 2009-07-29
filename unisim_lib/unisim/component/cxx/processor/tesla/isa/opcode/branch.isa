@@ -154,7 +154,6 @@ group flow(br, join, prebreak, fence, ret, break, call)
 
 flow.init = {
 	typedef Operation<CONFIG> inherited;
-	inherited::allow_segment = true;
 	inherited::op_type[OpDest] = DT_NONE;
 	inherited::op_type[OpSrc1] = DT_NONE;
 	inherited::op_type[OpSrc2] = DT_NONE;

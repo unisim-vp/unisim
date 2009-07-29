@@ -166,10 +166,6 @@ alu_const.read = {
 
 	// Disallow segment for mad?
 	// NO. Const seg has priority over rounding mode, it is already taken care of in fp32.isa
-	// (so no use at all for allowSegment?)
-	//if(!insn->AllowSegment())
-	//	constseg = 0;	// overlaps with rounding mode
-		
 	unsigned int ar = (addr_hi << 2) | addr_lo;
 	
 	// Indirect addressing on src1 (shared) has priority
@@ -185,8 +181,6 @@ alu_const.read = {
 }
 
 alu_const.disasm = {
-	//if(!insn->AllowSegment())
-	//	constseg = 0;	// overlaps with rounding mode
 	if((addr_hi == 0 && addr_lo == 0) || src1_sh) {
 		os << "c" << constseg << "[" << src2 * insn->OperandSize(OpSrc2) << "]";
 	}

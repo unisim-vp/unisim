@@ -157,12 +157,7 @@ alu_const.read = {
 	}
 	unsigned int addr_reg = (addr_hi << 2) | addr_lo;
 	if(addr_reg == 0) {
-		if(insn->AllowSegment()) {
-			insn->Temp(Insn::TempSrc3) = cpu->ReadConstant(src3 * insn->OperandSize(OpSrc3), segment);
-		}
-		else {
-			insn->Temp(Insn::TempSrc3) = cpu->ReadConstant(src3 * insn->OperandSize(OpSrc3), 0);
-		}
+		insn->Temp(Insn::TempSrc3) = cpu->ReadConstant(src3 * insn->OperandSize(OpSrc3), segment);
 	}
 	else
 	{
@@ -176,13 +171,8 @@ alu_const.disasm = {
 		RegType rt = insn->OperandRegType(OpSrc3);
 		DisasmReg(src3, rt, os);
 	}
-	else if(insn->AllowSegment()) {
-		//DisasmConstant(src3, 0, 0, 1, segment, insn->OperandSMType(OpSrc3), os);
-		// Always immediate?
-		DisasmConstant(src3, addr_lo, addr_hi, 1, segment, insn->OperandSMType(OpSrc3), os);
-	}
 	else {
-		DisasmConstant(src3, 0, 0, 1, 0, insn->OperandSMType(OpSrc3), os);
+		DisasmConstant(src3, addr_lo, addr_hi, 1, segment, insn->OperandSMType(OpSrc3), os);
 	}
 }
 

@@ -544,12 +544,6 @@ Domain Instruction<CONFIG>::OperandDomain(Operand op) const
 }
 
 template <class CONFIG>
-bool Instruction<CONFIG>::AllowSegment() const
-{
-	return operation->allow_segment;
-}
-
-template <class CONFIG>
 bool Instruction<CONFIG>::ForceReg(Operand op) const
 {
 	return operation->force_reg[op];
