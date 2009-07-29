@@ -401,7 +401,19 @@ uint32_t Kernel<CONFIG>::LocalTotal() const
 	return lmem;
 }
 
+template<class CONFIG>
+uint8_t const * Kernel<CONFIG>::GetParameters() const
+{
+	return &parameters[0];
+}
 
+template<class CONFIG>
+uint32_t Kernel<CONFIG>::ParametersSize() const
+{
+	return param_size;
+}
+
+#if 0
 template<class CONFIG>
 void Kernel<CONFIG>::InitShared(unisim::service::interfaces::Memory<SMAddress> & mem, int index,
 	int bidx, int bidy, int core) const
@@ -439,6 +451,7 @@ void Kernel<CONFIG>::InitShared(unisim::service::interfaces::Memory<SMAddress> &
 		throw CudaException(CUDA_ERROR_OUT_OF_MEMORY);
 	}
 }
+#endif
 
 template<class CONFIG>
 int Kernel<CONFIG>::BlocksPerCore() const

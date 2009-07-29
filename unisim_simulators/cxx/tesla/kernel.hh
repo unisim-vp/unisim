@@ -51,7 +51,7 @@
 using unisim::kernel::service::Service;
 using unisim::component::cxx::processor::tesla::CPU;
 using unisim::component::cxx::processor::tesla::Stats;
-using unisim::component::cxx::scheduler::cuda_scheduler::Schedulable;
+using unisim::component::cxx::scheduler::cuda_scheduler::CUDAGrid;
 using unisim::component::cxx::processor::tesla::SMAddress;
 
 //using unisim::service::interfaces::Memory;
@@ -77,7 +77,7 @@ struct Loadable
 };
 
 template<class CONFIG>
-struct Kernel : CUfunc_st, Schedulable, Loadable<CONFIG>
+struct Kernel : CUfunc_st, CUDAGrid, Loadable<CONFIG>
 {
 	Kernel(Module<CONFIG> * module, std::istream & is);
 	Kernel();	// Default constructor needed for std containers
@@ -110,8 +110,10 @@ struct Kernel : CUfunc_st, Schedulable, Loadable<CONFIG>
 	
 	virtual uint32_t SharedTotal() const;
 	uint32_t LocalTotal() const;
-	virtual void InitShared(unisim::service::interfaces::Memory<SMAddress> & mem, int index = 0,
-		int bidx = 0, int bidy = 0, int core = 0) const;
+	virtual uint8_t const * GetParameters() const;
+	virtual uint32_t ParametersSize() const;
+	//virtual void InitShared(unisim::service::interfaces::Memory<SMAddress> & mem, int index = 0,
+	//	int bidx = 0, int bidy = 0, int core = 0) const;
 
 	// TODO: To be removed someday, duplicated with CUDAScheduler
 	int BlocksPerCore() const;	// Max blocks that can run on a SM of target architecture

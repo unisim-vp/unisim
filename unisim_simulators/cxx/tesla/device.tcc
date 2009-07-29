@@ -365,7 +365,7 @@ void Device<CONFIG>::Run(Kernel<CONFIG> & kernel, int width, int height)
 	
 	GPUThreads.join_all();
 #endif
-	scheduler->Run(kernel);
+	scheduler->Schedule(kernel);
 	
 	for(int i = 0; i != core_count; ++i) {
 		cores[i]->stats = 0;
