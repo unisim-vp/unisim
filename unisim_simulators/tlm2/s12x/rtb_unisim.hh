@@ -102,6 +102,7 @@ public:
 	sc_time		cycle_time;
 
 	RTBStub(const sc_module_name& name, Object *parent = 0);
+	~RTBStub();
 
 	// Slave methods
 	virtual bool get_direct_mem_ptr( PWM_Payload<PWM_SIZE>& payload, tlm_dmi&  dmi_data);
@@ -135,5 +136,7 @@ private:
 
 	string anx_stimulus_period_file;
 	Parameter<string>	param_anx_stimulus_period_file;
+
+	ofstream output_file;
 
 };
