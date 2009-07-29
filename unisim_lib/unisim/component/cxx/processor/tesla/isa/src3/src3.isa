@@ -151,10 +151,6 @@ group alu_const(alu_full_normal_const, alu_full_end_const, alu_full_join_const)
 
 alu_const.read = {
 	typedef Instruction<CONFIG> Insn;
-	if(insn->ForceReg(OpSrc3)) {
-		RegType rt = insn->OperandRegType(OpSrc3);
-		insn->ReadReg(src3, Insn::TempSrc3, rt);
-	}
 	unsigned int addr_reg = (addr_hi << 2) | addr_lo;
 	if(addr_reg == 0) {
 		insn->Temp(Insn::TempSrc3) = cpu->ReadConstant(src3 * insn->OperandSize(OpSrc3), segment);
@@ -167,13 +163,7 @@ alu_const.read = {
 }
 
 alu_const.disasm = {
-	if(insn->ForceReg(OpSrc3)) {
-		RegType rt = insn->OperandRegType(OpSrc3);
-		DisasmReg(src3, rt, os);
-	}
-	else {
-		DisasmConstant(src3, addr_lo, addr_hi, 1, segment, insn->OperandSMType(OpSrc3), os);
-	}
+	DisasmConstant(src3, addr_lo, addr_hi, 1, segment, insn->OperandSMType(OpSrc3), os);
 }
 
 alu_const.classify = {

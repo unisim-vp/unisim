@@ -544,12 +544,6 @@ Domain Instruction<CONFIG>::OperandDomain(Operand op) const
 }
 
 template <class CONFIG>
-bool Instruction<CONFIG>::ForceReg(Operand op) const
-{
-	return operation->force_reg[op];
-}
-
-template <class CONFIG>
 size_t Instruction<CONFIG>::NumGPRsIn() const
 {
 	assert(false);

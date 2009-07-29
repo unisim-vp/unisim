@@ -155,7 +155,6 @@ public:
 	SMType	OperandSMType(Operand op) const;
 	size_t OperandSize(Operand op) const;
 	Domain OperandDomain(Operand op) const;
-	bool ForceReg(Operand op) const;
 	size_t NumGPRsIn() const;
 	VectorAddress<CONFIG> EffectiveAddress(Operand op) const;
 	typename CONFIG::operationstats_t * Stats();

@@ -69,8 +69,6 @@ using namespace unisim::component::cxx::processor::tesla;
 }
 }
 
-typedef bool bool4[4];
-
 } // end of namespace tesla 
 } // end of namespace processor
 } // end of namespace cxx
@@ -130,7 +128,6 @@ action {void} disasm({CPU<CONFIG> *} {cpu}, {Instruction<CONFIG> const *} {insn}
 }
 
 //var op_type : { DataTypeArray }
-var force_reg : { bool4 }	// Is this used??
 
 constructor action init() {
 	assert(false);
@@ -140,13 +137,6 @@ constructor action init() {
 	this->op_type[OpSrc3] = DT_U32;
 }
 
-constructor action init_force_reg() {
-	this->force_reg[OpDest] = false;
-	this->force_reg[OpSrc1] = false;
-	this->force_reg[OpSrc2] = false;
-	this->force_reg[OpSrc3] = false;
-}
-
 action classify({typename CONFIG::operationstats_t *} {stats}) {
 }
 
@@ -154,16 +144,4 @@ include "isa/opcode/fp32.isa"
 include "isa/opcode/integer.isa"
 include "isa/opcode/mov.isa"
 include "isa/opcode/branch.isa"
-
-//include "operands/operands.isa"
-
-//op alu_reg_reg_reg_reg_full(opcode[4]:addr_lo[2]:addr_imm[1]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:src2[7]:\
-//	src1[7]:dest[7]:/*flow*/0[1]:/*IWidth*/1[1]:\
-//	subop[3]:/*?*/0[1]:sat[1]:src1_neg[1]:0[2]:const_seg[2]:src1_sh[1]:src3[7]\
-//	:pred_reg[2]:pred_cond[5]:set_pred[1]:set_pred_reg[2]:ignore_output[1]:addr_hi[1]:marker[2])
-
-//op alu_reg_sm_reg_reg_full(opcode[4]:addr_lo[2]:addr_imm[1]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:src2[7]:\
-//	src1[7]:dest[7]:/*flow*/0[1]:/*IWidth*/1[1]:\
-//	subop[3]:/*?*/0[1]:sat[1]:src1_neg[1]:0[2]:const_seg[2]:src1_sh[1]:src3[7]\
-//	:pred_reg[2]:pred_cond[5]:set_pred[1]:set_pred_reg[2]:ignore_output[1]:addr_hi[1]:marker[2])
 

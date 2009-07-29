@@ -376,12 +376,6 @@ imad_full.init = {
 	inherited::op_type[OpSrc3] = DT_U32;	// always 32-bit
 }
 
-imad_full.init_force_reg = {
-	typedef Operation<CONFIG> inherited;
-	inherited::init_force_reg();
-	//inherited::force_reg[OpSrc3] = true; // WTF??
-}
-
 imad_full.disasm = {
 	buffer << "mad24";
 	if(carry)
