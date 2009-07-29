@@ -120,6 +120,7 @@ UNISIM_LINK(unisim_component_tlm2_com_str7_prccu)
 UNISIM_LINK(unisim_component_tlm2_com_str7_spi)
 UNISIM_LINK(unisim_component_tlm2_com_str7_uart)
 UNISIM_LINK(unisim_component_tlm2_signal_converter_generic_adc)
+UNISIM_LINK(unisim_component_tlm2_signal_converter_lcd_driver)
 
 UNISIM_LIBTOOL
 
