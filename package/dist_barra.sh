@@ -158,6 +158,7 @@ unisim/service/interfaces/synchronizable.hh \
 unisim/service/interfaces/instruction_stats.hh \
 unisim/service/interfaces/typed_registers.hh \
 unisim/service/interfaces/runnable.hh \
+unisim/service/interfaces/scheduler.hh \
 unisim/component/cxx/scheduler/cuda_scheduler/cuda_scheduler.hh \
 unisim/component/cxx/processor/tesla/cpu.hh \
 unisim/component/cxx/processor/tesla/config.hh \
@@ -269,9 +270,9 @@ vector \
 # TODO: find the many other headers used and declare them here...
 
 
-UNISIM_SIMULATORS_BARRA_SOURCE_FILES="cuda.cc driver_objects.cc exception.cc fatformat.cc"
+UNISIM_SIMULATORS_BARRA_SOURCE_FILES="cuda.cc driver_objects.cc exception.cc fatformat.cc system.cc"
 UNISIM_SIMULATORS_BARRA_HEADER_FILES="device.hh exception.hh cuda.h driver.hh driver_objects.hh module.hh \
-	config.hh kernel.hh fatformat.hh event.hh"
+	config.hh kernel.hh fatformat.hh event.hh system.hh"
 UNISIM_SIMULATORS_BARRA_TEMPLATE_FILES="device.tcc module.tcc driver.tcc kernel.tcc event.tcc"
 UNISIM_SIMULATORS_BARRA_DATA_FILES="COPYING INSTALL NEWS README AUTHORS ChangeLog"
 
@@ -622,10 +623,10 @@ if [ "${has_to_build_barra_configure}" = "yes" ]; then
 	echo '	cd $(top_srcdir)/unisim/component/cxx/processor/tesla; $(GENISSLIB_PATH) -I . -o tesla_control -w 32 isa/control/control.isa' >> "${BARRA_MAKEFILE_AM}"
 	echo '' >> "${BARRA_MAKEFILE_AM}"
 	echo 'install-exec-hook:' >> "${BARRA_MAKEFILE_AM}"
-	echo '	cd $(DESTDIR)$(libdir); $(LN_S) libbarra.so libcuda.so' >> "${BARRA_MAKEFILE_AM}"
-	echo '	cd $(DESTDIR)$(libdir); $(LN_S) libbarra.so libcuda.so.1' >> "${BARRA_MAKEFILE_AM}"
+	echo '	cd $(DESTDIR)$(libdir); $(LN_S) -f libbarra.so libcuda.so' >> "${BARRA_MAKEFILE_AM}"
+	echo '	cd $(DESTDIR)$(libdir); $(LN_S) -f libbarra.so libcuda.so.1' >> "${BARRA_MAKEFILE_AM}"
 
-	echo "Building BARRA configure"
+	echo "Building Barra configure"
 	${SHELL} -c "cd ${DEST_DIR}/barra && libtoolize --force && aclocal -I m4 && autoconf --force && autoheader && automake -ac"
 fi
 
