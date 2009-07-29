@@ -115,10 +115,10 @@ UNISIM_LINK(unisim_component_tlm2_com_str7_adc)
 UNISIM_LINK(unisim_component_tlm2_com_str7_apb)
 UNISIM_LINK(unisim_component_tlm2_com_str7_emi)
 UNISIM_LINK(unisim_component_tlm2_com_str7_gpio)
-# UNISIM_LINK(unisim_component_tlm2_com_str7_i2c)
+UNISIM_LINK(unisim_component_tlm2_com_str7_i2c)
 UNISIM_LINK(unisim_component_tlm2_com_str7_prccu)
 UNISIM_LINK(unisim_component_tlm2_com_str7_spi)
-# UNISIM_LINK(unisim_component_tlm2_com_str7_uart)
+UNISIM_LINK(unisim_component_tlm2_com_str7_uart)
 UNISIM_LINK(unisim_component_tlm2_signal_converter_generic_adc)
 
 UNISIM_LIBTOOL

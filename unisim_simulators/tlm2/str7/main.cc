@@ -52,11 +52,12 @@
 // #include "unisim/component/tlm2/com/str7_i2c/str7_i2c.hh"
 #include "unisim/component/tlm2/com/str7_prccu/str7_prccu.hh"
 #include "unisim/component/tlm2/com/str7_spi/str7_spi.hh"
-// #include "unisim/component/tlm2/com/str7_uart/str7_uart.hh"
+#include "unisim/component/tlm2/com/str7_uart/str7_uart.hh"
 #include "unisim/component/tlm2/timer/str7_timer/tim.hh"
 #include "unisim/component/tlm2/interrupt/master_stub.hh"
 #include "unisim/component/tlm2/interrupt/slave_stub.hh"
 #include "unisim/component/tlm2/signal_converter/generic_adc/adc.hh"
+#include "unisim/component/tlm2/signal_converter/lcd_driver/em6124.hh"
 
 #include "unisim/service/time/sc_time/time.hh"
 #include "unisim/service/time/host_time/time.hh"
@@ -105,7 +106,13 @@ typedef unisim::component::tlm2::interrupt::InterruptMasterStub FIQMSTUB;
 typedef unisim::component::tlm2::interrupt::InterruptSlaveStub IRQSSTUB;
 typedef unisim::component::tlm2::com::str7_spi::STR7_SPI<32> SPI;
 typedef unisim::component::tlm2::com::str7_gpio::STR7_GPIO<32> GPIO;
+typedef unisim::component::tlm2::com::str7_adc::STR7_ADC<32> ADC12;
+typedef unisim::component::tlm2::com::str7_prccu::STR7_PRCCU<32> PRCCU;
+typedef unisim::component::tlm2::com::str7_apb::STR7_APB<32> APB;
+typedef unisim::component::tlm2::com::str7_emi::STR7_EMI<32> EMI;
+typedef unisim::component::tlm2::com::str7_uart::STR7_UART<32> UART;
 typedef unisim::component::tlm2::signal_converter::generic_adc::ADC ADC;
+typedef unisim::component::tlm2::signal_converter::lcd_driver::EM6124 EM6124;
 
 
 typedef unisim::service::loader::elf_loader::ElfLoaderImpl<uint64_t, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym> ElfLoader;
@@ -223,10 +230,22 @@ int sc_main(int argc, char *argv[]) {
 	TIM *timer0 = new TIM("timer0");
 	TIM *timer2 = new TIM("timer2");
 	SPI *spi0 = new SPI("spi0");
+        SPI *spi1 = new SPI("spi1");
 	GPIO *ioport0 = new GPIO("ioport0");
 	GPIO *ioport1 = new GPIO("ioport1");
 	GPIO *ioport2 = new GPIO("ioport2");
-	ADC *adc = new ADC("ADC");
+	ADC12 *adc12 = new ADC12("str7adc");
+        EMI *emi = new EMI("emi");
+        APB *apb1 = new APB("apb1");
+        APB *apb2 = new APB("apb2");
+        PRCCU *prccu = new PRCCU("prccu");
+        ADC *adc = new ADC("ADC");
+        EM6124 *em6124 = new EM6124("EM6124");
+        UART *uart0 = new UART("uart0");
+        UART *uart1 = new UART("uart1");
+        UART *uart2 = new UART("uart2");
+        UART *uart3 = new UART("uart3");
+        MEMORY *emi_bank1 = new MEMORY("emi_bank1");
 
 	//Timer0  stubs
 	IRQSSTUB *icia_irqsstub0 = new IRQSSTUB("icia_irqsstub0");
@@ -259,7 +278,6 @@ int sc_main(int argc, char *argv[]) {
 	IRQMSTUB *irqmstubUART1 = new IRQMSTUB("irqmstubUART1");
 	IRQMSTUB *irqmstubUART2 = new IRQMSTUB("irqmstubUART2");
 	IRQMSTUB *irqmstubUART3 = new IRQMSTUB("irqmstubUART3");
-	IRQMSTUB *irqmstubBSPI1 = new IRQMSTUB("irqmstubBSPI1");
 	IRQMSTUB *irqmstubI2C0IRQ = new IRQMSTUB("irqmstubI2C0IRQ");
 	IRQMSTUB *irqmstubI2C1IRQ = new IRQMSTUB("irqmstubI2C1IRQ");
 	IRQMSTUB *irqmstubCAN = new IRQMSTUB("irqmstubCAN");
@@ -324,7 +342,7 @@ int sc_main(int argc, char *argv[]) {
 	irqmstubUART2->out_interrupt(eic->in_irq[11]);
 	irqmstubUART3->out_interrupt(eic->in_irq[12]);
 	spi0->irq(eic->in_irq[13]);
-	irqmstubBSPI1->out_interrupt(eic->in_irq[14]);
+	spi1->irq(eic->in_irq[14]);
 	irqmstubI2C0IRQ->out_interrupt(eic->in_irq[15]);
 	irqmstubI2C1IRQ->out_interrupt(eic->in_irq[16]);
 	irqmstubCAN->out_interrupt(eic->in_irq[17]);
@@ -354,6 +372,18 @@ int sc_main(int argc, char *argv[]) {
 	router->init_socket[6](ioport0->in_mem);
 	router->init_socket[7](ioport1->in_mem);
 	router->init_socket[8](ioport2->in_mem);
+        router->init_socket[9](apb1->in_mem);
+        router->init_socket[10](apb2->in_mem);
+        router->init_socket[11](prccu->in_mem);
+        router->init_socket[12](adc12->in_mem);
+        router->init_socket[13](emi->in_mem);
+        router->init_socket[14](spi1->in_mem);
+        router->init_socket[15](uart0->in_mem);
+        router->init_socket[16](uart1->in_mem);
+        router->init_socket[17](uart2->in_mem);
+        router->init_socket[18](uart3->in_mem);
+        router->init_socket[19](emi_bank1->slave_sock);
+
 
 	// TODO: timer0 timeri_irq should also be connected to eic->in_fiq[0]
 	for (unsigned int i = 0; i < 2; i++)
@@ -381,6 +411,10 @@ int sc_main(int argc, char *argv[]) {
 	spi0->mosi (adc->mosi);
 	adc->miso (spi0->miso);
 	adc->data_ready(timer2->icapa_edge);
+
+        //Connect the Spi1 to the LCD driver (EM6124)
+	spi1->mosi (em6124->mosi);
+	em6124->miso (spi1->miso);
 
 	// Connect everything
 	elf_loader->memory_import >> router->memory_export;
@@ -482,9 +516,20 @@ int sc_main(int argc, char *argv[]) {
 	if (timer0) delete timer0;
 	if (timer2) delete timer2;
 	if (spi0) delete spi0;
+        if (spi1) delete spi1;
 	if (ioport0) delete ioport0;
 	if (ioport1) delete ioport1;
 	if (ioport2) delete ioport2;
+        if (adc12) delete adc12;
+	if (emi) delete emi;
+	if (prccu) delete prccu;
+        if (apb2) delete apb2;
+	if (apb1) delete apb1;
+        if (uart0) delete uart0;
+	if (uart1) delete uart1;
+        if (uart2) delete uart2;
+	if (uart3) delete uart3;
+
   
 	if (icib_irqsstub0) delete icib_irqsstub0;
 	if (icapa_edgemstub0) delete icapa_edgemstub0;
@@ -510,7 +555,6 @@ int sc_main(int argc, char *argv[]) {
 	if (irqmstubUART1) delete irqmstubUART1;
 	if (irqmstubUART2) delete irqmstubUART2;
 	if (irqmstubUART3) delete irqmstubUART3;
-	if (irqmstubBSPI1) delete irqmstubBSPI1;
 	if (irqmstubI2C0IRQ) delete irqmstubI2C0IRQ;
 	if (irqmstubI2C1IRQ) delete irqmstubI2C1IRQ;
 	if (irqmstubCAN) delete irqmstubCAN;
