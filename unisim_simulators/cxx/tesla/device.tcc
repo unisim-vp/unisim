@@ -65,6 +65,8 @@ Allocator<CONFIG>::Allocator(unisim::component::cxx::memory::ram::Memory<typenam
 template<class CONFIG>
 typename CONFIG::address_t Allocator<CONFIG>::Alloc(size_t size)
 {
+	assert(!(limit & (alignment - 1)));
+	size = (size + (alignment - 1)) & ~(alignment - 1);	// align
 	if(limit + size > base + max_size)
 	{
 		throw CudaException(CUDA_ERROR_OUT_OF_MEMORY);
@@ -102,115 +104,22 @@ void Allocator<CONFIG>::Prealloc(typename CONFIG::address_t addr, size_t size)
 
 
 
-bool ParseBool(char const * str)
-{
-	if(str == 0 || strcmp(str, "0") == 0
-		|| strcmp(str, "false") == 0) {
-		return false;
-	}
-	return true;
-}
-
 template<class CONFIG>
-void Device<CONFIG>::SetVariableBool(char const * envName, char const * varName)
-{
-	char const * env;
-	env = getenv(envName);
-	if(env != 0) {
-		bool b = ParseBool(env);
-		for(int i = 0; i != core_count; ++i)
-		{
-			(*cores[i])[varName] = b;
-		}
-	}
-}
-
-template<class CONFIG>
-void Device<CONFIG>::SetVariableUInt(char const * envName, char const * varName)
-{
-	char const * env;
-	env = getenv(envName);
-	if(env != 0) {
-		unsigned int u = atoi(env);
-		for(int i = 0; i != core_count; ++i)
-		{
-			(*cores[i])[varName] = u;
-		}
-	}
-}
-
-
-template<class CONFIG>
-Device<CONFIG>::Device() :
+Device<CONFIG>::Device(unisim::component::cxx::memory::ram::Memory<typename CONFIG::address_t> * memory,
+		CUDAScheduler<CONFIG> * scheduler,
+		unsigned int core_count,
+		CPU<CONFIG> ** cores,
+		bool export_stats,
+		char const * stats_prefix) :
 	Object("device_0"),
-	memory("memory", this),
-	global_allocator(memory, CONFIG::GLOBAL_START, CONFIG::GLOBAL_SIZE),
-	core_count(CONFIG::CORE_COUNT),
-	export_stats(false)
+	cores(cores),
+	memory(memory),
+	scheduler(scheduler),
+	global_allocator(*memory, CONFIG::GLOBAL_START, CONFIG::GLOBAL_SIZE),
+	core_count(core_count),
+	export_stats(export_stats),
+	stats_prefix(stats_prefix)
 {
-
-	// Parse environment variables and set GPU parameters accordingly
-	char const * env;
-	env = getenv("CORE_COUNT");
-	if(env != 0)
-		core_count = atoi(env);
-	
-	// Initialize cores
-	cores.resize(core_count);
-	for(int i = 0; i != core_count; ++i)
-	{
-		std::ostringstream name;
-		name << "gpu_core_" << i;
-		cores[i] = new CPU<CONFIG>(name.str().c_str(), this, i, core_count);
-		cores[i]->memory_import >> memory.memory_export;
-	}
-	
-	scheduler = shared_ptr<CUDAScheduler<CONFIG> >(
-		new CUDAScheduler<CONFIG>(core_count, "scheduler", this));
-
-		
-	for(int i = 0; i != core_count; ++i)
-	{
-		scheduler->Socket(i).registers_import >> cores[i]->registers_export;
-		scheduler->Socket(i).configuration_import >> cores[i]->configuration_export;
-		scheduler->Socket(i).shared_memory_import >> cores[i]->shared_memory_export;
-		scheduler->Socket(i).reset_import >> cores[i]->reset_export;
-		scheduler->Socket(i).run_import >> cores[i]->run_export;
-	}
-	
-	env = getenv("EXPORT_STATS");
-	if(env != 0)
-		export_stats = ParseBool(env);
-	SetVariableBool("EXPORT_STATS", "export-stats");
-
-	env = getenv("EXPORT_STATS_PREFIX");
-	if(env != 0)
-		stats_prefix = env;
-
-	SetVariableBool("TRACE_INSN", "trace-insn");
-	SetVariableBool("TRACE_MASK", "trace-mask");
-	SetVariableBool("TRACE_REG", "trace-reg");
-	SetVariableBool("TRACE_REG_FLOAT", "trace-reg-float");
-	SetVariableBool("TRACE_LOADSTORE", "trace-loadstore");
-	SetVariableBool("TRACE_BRANCH", "trace-branch");
-	SetVariableBool("TRACE_SYNC", "trace-sync");
-	SetVariableBool("TRACE_RESET", "trace-reset");
-	SetVariableBool("FILTER_TRACE", "filter-trace");
-	SetVariableUInt("FILTER_TRACE_WARP", "filter-warp");
-	SetVariableUInt("FILTER_TRACE_BLOCK", "filter-cta");
-
-	env = getenv("TRACE_KERNEL_PARSING");
-	if(env != 0) {
-		bool b = ParseBool(env);
-		Kernel<CONFIG>::trace_parsing = b;
-		Module<CONFIG>::verbose = b;
-		FatFormat::verbose = b;
-	}
-
-	env = getenv("TRACE_KERNEL_LOADING");
-	if(env != 0)
-		Kernel<CONFIG>::trace_loading = ParseBool(env);
-
 
 }
 
@@ -226,7 +135,7 @@ Device<CONFIG>::~Device()
 template<class CONFIG>
 void Device<CONFIG>::Load(Kernel<CONFIG> & kernel)
 {
-	kernel.Load(memory, global_allocator);
+	kernel.Load(*memory, global_allocator);
 }
 
 template<class CONFIG>
@@ -241,88 +150,6 @@ void Device<CONFIG>::DumpCode(Kernel<CONFIG> & kernel, std::ostream & os)
 		os << s << endl;
 	}
 }
-
-#if 0
-inline uint32_t BuildTID(int x, int y, int z)
-{
-	return (z << 26) | (y << 16) | x;
-}
-
-template<class CONFIG>
-void SetThreadIDs(Kernel<CONFIG> const & kernel, int bnum, CPU<CONFIG> * cpu)
-{
-	// Set register 0 of each thread
-	int warpsperblock = kernel.WarpsPerBlock();
-	int blockstart = bnum * warpsperblock;
-	//cerr << "Warpsperblocks = " << warpsperblock << ", blockstart = " << blockstart << endl;
-	for(int z = 0; z != kernel.BlockZ(); ++z)
-	{
-		for(int y = 0; y != kernel.BlockY(); ++y)
-		{
-			for(int x = 0; x != kernel.BlockX(); ++x)
-			{
-				int tid = ((z * kernel.BlockY()) + y) * kernel.BlockX() + x;
-				int warpid = blockstart + tid / CONFIG::WARP_SIZE;
-				int lane = tid % CONFIG::WARP_SIZE;
-				
-				//cerr << "Setting r0 of warp " << warpid << endl;
-				uint32_t reg = BuildTID(x, y, z);
-				cpu->GetGPR(warpid, 0).WriteLane(reg, lane);	// TID on r0
-			}
-		}
-	}
-
-}
-
-template<class CONFIG>
-struct Runner
-{
-	CPU<CONFIG> * cpu;
-	int width, height;
-	int c;
-	Kernel<CONFIG> & kernel;
-	unisim::component::cxx::memory::ram::Memory<typename CONFIG::address_t> & memory;
-	unsigned int core_count;
-	
-	Runner(CPU<CONFIG> * cpu, Kernel<CONFIG> & kernel,
-		unisim::component::cxx::memory::ram::Memory<typename CONFIG::address_t> & memory,
-		int width, int height, int core_count, int c) :
-		cpu(cpu), width(width), height(height), c(c), kernel(kernel),
-		memory(memory), core_count(core_count) {}
-	void operator() ();
-};
-
-template<class CONFIG>
-void Runner<CONFIG>::operator() ()
-{
-	int blocksPerCore = kernel.BlocksPerCore();
-	int blocksPerGPU = blocksPerCore * core_count;
-	
-	// Simple round-robin scheduling policy
-	for(int i = c * blocksPerCore; i < height * width; i += blocksPerGPU)
-	{
-		int blocks = std::min(blocksPerCore, height * width - i);
-		
-		if(blocks > 0)
-		{
-			cpu->Reset(kernel.ThreadsPerBlock(), blocks, kernel.GPRs(), kernel.SharedTotal());
-
-			for(int j = 0; j < blocks; ++j)
-			{
-				int bidx = (i+j) % width;
-				int bidy = (i+j) / width;
-				kernel.InitShared(memory, j, bidx, bidy, c);
-				SetThreadIDs(kernel, j, cpu);
-			}
-
-			// Start execution
-			cpu->Run();
-		}
-		
-		// TODO: Sync
-	}
-}
-#endif
 
 template<class CONFIG>
 void Device<CONFIG>::Run(Kernel<CONFIG> & kernel, int width, int height)
@@ -341,7 +168,7 @@ void Device<CONFIG>::Run(Kernel<CONFIG> & kernel, int width, int height)
 		 * core_count * kernel.LocalTotal());
 	
 	for(int i = 0; i != core_count; ++i) {
-		cores[i]->stats = &temp_stats[i];
+		cores[i]->SetStats(&temp_stats[i]);
 		cores[i]->InitStats(kernel.CodeSize());	// Even if not exporting
 	}
 
@@ -350,25 +177,10 @@ void Device<CONFIG>::Run(Kernel<CONFIG> & kernel, int width, int height)
 	}
 	kernel.SetGridShape(width, height);
 
-#if 0	
-	thread_group GPUThreads;
-	
-	for(int c = 1; c < core_count; ++c)
-	{
-		GPUThreads.create_thread(Runner<CONFIG>(cores[c], kernel, memory, width, height,
-			core_count, c));
-	}
-	
-	// Run first block on current thread
-	Runner<CONFIG>(cores[0], kernel, memory, width, height,
-			core_count, 0)();
-	
-	GPUThreads.join_all();
-#endif
 	scheduler->Schedule(kernel);
 	
 	for(int i = 0; i != core_count; ++i) {
-		cores[i]->stats = 0;
+		cores[i]->SetStats(0);
 	}
 
 	
@@ -408,7 +220,7 @@ template<class CONFIG>
 void Device<CONFIG>::CopyHtoD(typename CONFIG::address_t dest, void const * src, size_t size)
 {
 	cerr << "Device copy " << size << "B to @" << hex << dest << dec << endl;
-	if(!memory.WriteMemory(dest, src, size)) {
+	if(!memory->WriteMemory(dest, src, size)) {
 		throw CudaException(CUDA_ERROR_INVALID_VALUE);
 	}
 }
@@ -417,7 +229,7 @@ template<class CONFIG>
 void Device<CONFIG>::CopyDtoH(void * dest, typename CONFIG::address_t src, size_t size)
 {
 	cerr << "Device copy " << size << "B from @" << hex << src << dec << endl;
-	if(!memory.ReadMemory(src, dest, size)) {
+	if(!memory->ReadMemory(src, dest, size)) {
 		throw CudaException(CUDA_ERROR_INVALID_VALUE);
 	}
 }
@@ -427,10 +239,10 @@ void Device<CONFIG>::CopyDtoD(typename CONFIG::address_t dest, typename CONFIG::
 {
 	cerr << "Device copy " << size << "B from @" << hex << src << " to @" << dest << dec << endl;
 	std::vector<uint8_t> buffer(size);
-	if(!memory.ReadMemory(src, &buffer[0], size)) {
+	if(!memory->ReadMemory(src, &buffer[0], size)) {
 		throw CudaException(CUDA_ERROR_INVALID_VALUE);
 	}
-	if(!memory.WriteMemory(dest, &buffer[0], size)) {
+	if(!memory->WriteMemory(dest, &buffer[0], size)) {
 		throw CudaException(CUDA_ERROR_INVALID_VALUE);
 	}
 }
@@ -441,7 +253,7 @@ void Device<CONFIG>::Memset(typename CONFIG::address_t dest, uint32_t val, size_
 	cerr << "Device memset: " << n * sizeof(val) << "B @" << hex << dest << dec << endl;
 	for(unsigned int i = 0; i != n; ++i)
 	{
-		if(!memory.WriteMemory(dest + i * sizeof(val), &val, sizeof(val))) {
+		if(!memory->WriteMemory(dest + i * sizeof(val), &val, sizeof(val))) {
 			throw CudaException(CUDA_ERROR_INVALID_VALUE);
 		}
 	}
@@ -453,7 +265,7 @@ void Device<CONFIG>::Memset(typename CONFIG::address_t dest, uint16_t val, size_
 	cerr << "Device memset: " << n * sizeof(val) << "B @" << hex << dest << dec << endl;
 	for(unsigned int i = 0; i != n; ++i)
 	{
-		if(!memory.WriteMemory(dest + i * sizeof(val), &val, sizeof(val))) {
+		if(!memory->WriteMemory(dest + i * sizeof(val), &val, sizeof(val))) {
 			throw CudaException(CUDA_ERROR_INVALID_VALUE);
 		}
 	}
@@ -465,7 +277,7 @@ void Device<CONFIG>::Memset(typename CONFIG::address_t dest, uint8_t val, size_t
 	cerr << "Device memset: " << n * sizeof(val) << "B @" << hex << dest << dec << endl;
 	for(unsigned int i = 0; i != n; ++i)
 	{
-		if(!memory.WriteMemory(dest + i * sizeof(val), &val, sizeof(val))) {
+		if(!memory->WriteMemory(dest + i * sizeof(val), &val, sizeof(val))) {
 			throw CudaException(CUDA_ERROR_INVALID_VALUE);
 		}
 	}
@@ -583,7 +395,7 @@ Allocator<CONFIG> & Device<CONFIG>::GlobalAllocator()
 template<class CONFIG>
 void Device<CONFIG>::LoadSegment(MemSegment<CONFIG> & seg)
 {
-	seg.Load(memory, global_allocator);
+	seg.Load(*memory, global_allocator);
 }
 
 template<class CONFIG>

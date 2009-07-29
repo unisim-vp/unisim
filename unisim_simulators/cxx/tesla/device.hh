@@ -77,13 +77,21 @@ private:
 	typename CONFIG::address_t base;
 	typename CONFIG::address_t limit;
 	size_t max_size;
+	
+	static unsigned int const alignment = 256;
 
 };
 
 template<class CONFIG>
 struct Device: CUdevice_st, virtual Object
 {
-	Device();
+	Device(unisim::component::cxx::memory::ram::Memory<typename CONFIG::address_t> * memory,
+		CUDAScheduler<CONFIG> * scheduler,
+		unsigned int core_count,
+		CPU<CONFIG> ** cores,
+		bool export_stats,
+		char const * stats_prefix);
+		
 	~Device();
 
 	void DumpCode(Kernel<CONFIG> & kernel, std::ostream & os);
@@ -119,12 +127,10 @@ private:
 	void Reset();
 	//void SetThreadIDs(Kernel<CONFIG> const & kernel, int bnum, int core);
 	//uint32_t BuildTID(int x, int y, int z);
-	void SetVariableBool(char const * env, char const * varname);
-	void SetVariableUInt(char const * env, char const * varname);
 
-	std::vector<CPU<CONFIG> *> cores;
-	unisim::component::cxx::memory::ram::Memory<typename CONFIG::address_t> memory;
-	shared_ptr<CUDAScheduler<CONFIG> > scheduler;
+	CPU<CONFIG> ** cores;
+	unisim::component::cxx::memory::ram::Memory<typename CONFIG::address_t> * memory;
+	CUDAScheduler<CONFIG> * scheduler;
 	
 	Allocator<CONFIG> global_allocator;
 	unsigned int core_count;

@@ -38,9 +38,21 @@
 #ifndef SIMULATOR_CXX_TESLA_DRIVER_HH
 #define SIMULATOR_CXX_TESLA_DRIVER_HH
 
+#include <boost/shared_ptr.hpp>
 #include <driver_objects.hh>
 #include <module.hh>
 #include <device.hh>
+#include <unisim/component/cxx/processor/tesla/cpu.hh>
+#include <unisim/component/cxx/processor/tesla/config.hh>
+#include <unisim/component/cxx/memory/ram/memory.hh>
+#include <unisim/component/cxx/scheduler/cuda_scheduler/cuda_scheduler.hh>
+
+using unisim::component::cxx::processor::tesla::CPU;
+using unisim::component::cxx::processor::tesla::BaseConfig;
+//using unisim::component::cxx::memory::ram::Memory;
+using unisim::kernel::service::Object;
+using unisim::component::cxx::scheduler::cuda_scheduler::CUDAScheduler;
+using boost::shared_ptr;
 
 /*****************************************
  *                DRIVER                 *
@@ -52,7 +64,12 @@ public:
 	//  const usigned int MAX_CONTEXT=1;
 	static const int MAXDEVICE=1;
 
-	Driver();
+	Driver(unisim::component::cxx::memory::ram::Memory<typename CONFIG::address_t> * memory,
+		CUDAScheduler<CONFIG> * scheduler,
+		unsigned int core_count,
+		CPU<CONFIG> ** cores,
+		bool export_stats,
+		char const * stats_prefix);
 
 	//    Initialization
 	CUresult  cuInit(unsigned int&Flags);
@@ -95,9 +112,9 @@ public:
 	Device<CONFIG> & CurrentDevice();
 
 private:
-	//CUcontext context_list; // TODO: have to be a list of context.
-	CUcontext current_context; // TODO: to be a per thread current context.
-	Device<CONFIG> device[MAXDEVICE];	// TODO: one config per device
+	CUcontext current_context;
+//	Device<CONFIG> device[MAXDEVICE];
+	shared_ptr<Device<CONFIG> > device;
 
 };
 

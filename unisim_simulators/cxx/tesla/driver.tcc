@@ -31,6 +31,7 @@
  *
  * Authors: 
  *     David Parello (david.parello@univ-perp.fr)
+ *     Sylvain Collange (sylvain.collange@univ-perp.fr)
  *
  */
 
@@ -42,29 +43,26 @@
 #include <iostream>
 #include <cerrno>
 #include "exception.hh"
-#include <unisim/kernel/service/service.hh>
-
-
-using unisim::kernel::service::ServiceManager;
 using std::cerr;
 
 /*****************************************
  *                DRIVER                 *
  *****************************************/
 template<class CONFIG>
-Driver<CONFIG>::Driver()
+Driver<CONFIG>::Driver(unisim::component::cxx::memory::ram::Memory<typename CONFIG::address_t> * memory,
+		CUDAScheduler<CONFIG> * scheduler,
+		unsigned int core_count,
+		CPU<CONFIG> ** cores,
+		bool export_stats,
+		char const * stats_prefix)
 {
+	device = shared_ptr<Device<CONFIG> >(new Device<CONFIG>(memory, scheduler, core_count, cores,
+		export_stats, stats_prefix));
 }
 
 //    Initialization
 template<class CONFIG>
 CUresult Driver<CONFIG>::cuInit(unsigned int&Flags) {
-	if(!ServiceManager::Setup()) {
-		cerr << "Error, setup failed\n";
-		ServiceManager::Dump(cerr);
-		assert(false);
-	}
-	
 
 	errno = 0;	// ?
 	return CUDA_SUCCESS;
@@ -175,78 +173,67 @@ CUresult Driver<CONFIG>::cuMemGetInfo(unsigned int *free, unsigned int *total)
 template<class CONFIG>
 typename CONFIG::address_t Driver<CONFIG>::MAlloc(size_t size)
 {
-	int dev = current_context->GetDevice();
-	return device[dev].MAlloc(size);
+	return CurrentDevice().MAlloc(size);
 }
 
 template<class CONFIG>
 void Driver<CONFIG>::Free(typename CONFIG::address_t addr)
 {
-	int dev = current_context->GetDevice();
-	return device[dev].Free(addr);
+	return CurrentDevice().Free(addr);
 }
 
 template<class CONFIG>
 void Driver<CONFIG>::FunctionDump(Kernel<CONFIG> & kernel)
 {
-	int dev = current_context->GetDevice();
-	device[dev].DumpCode(kernel, std::cout);
+	CurrentDevice().DumpCode(kernel, std::cout);
 }
 
 template<class CONFIG>
 void Driver<CONFIG>::Launch(Kernel<CONFIG> & kernel)
 {
-	int dev = current_context->GetDevice();
-	device[dev].Run(kernel);	// Synchronous call
+	CurrentDevice().Run(kernel);	// Synchronous call
 }
 
 template<class CONFIG>
 void Driver<CONFIG>::LaunchGrid(Kernel<CONFIG> & kernel, int width, int height)
 {
-	int dev = current_context->GetDevice();
-	device[dev].Run(kernel, width, height);
+	CurrentDevice().Run(kernel, width, height);
 }
 
 template<class CONFIG>
 void Driver<CONFIG>::CopyHtoD(typename CONFIG::address_t dest, void const * src, size_t size)
 {
-	int dev = current_context->GetDevice();
-	device[dev].CopyHtoD(dest, src, size);
+	CurrentDevice().CopyHtoD(dest, src, size);
 }
 
 template<class CONFIG>
 void Driver<CONFIG>::CopyDtoH(void * dest, typename CONFIG::address_t src, size_t size)
 {
-	int dev = current_context->GetDevice();
-	device[dev].CopyDtoH(dest, src, size);
+	CurrentDevice().CopyDtoH(dest, src, size);
 }
 
 template<class CONFIG>
 void Driver<CONFIG>::CopyDtoD(typename CONFIG::address_t dest, typename CONFIG::address_t src, size_t size)
 {
-	int dev = current_context->GetDevice();
-	device[dev].CopyDtoD(dest, src, size);
+	CurrentDevice().CopyDtoD(dest, src, size);
 }
 
 template<class CONFIG>
 void Driver<CONFIG>::Memset(typename CONFIG::address_t dest, uint32_t val, size_t n)
 {
-	int dev = current_context->GetDevice();
-	device[dev].Memset(dest, val, n);
+	CurrentDevice().Memset(dest, val, n);
 }
 
 template<class CONFIG>
 void Driver<CONFIG>::Memset(typename CONFIG::address_t dest, uint16_t val, size_t n)
 {
-	int dev = current_context->GetDevice();
-	device[dev].Memset(dest, val, n);
+	CurrentDevice().Memset(dest, val, n);
 }
 
 template<class CONFIG>
 void Driver<CONFIG>::Memset(typename CONFIG::address_t dest, uint8_t val, size_t n)
 {
-	int dev = current_context->GetDevice();
-	device[dev].Memset(dest, val, n);
+	CurrentDevice().Memset(dest, val, n);
 }
 
 template<class CONFIG>
@@ -254,7 +241,8 @@ Device<CONFIG> const & Driver<CONFIG>::Dev(int dev) const
 {
 	if(dev < 0 || dev >= MAXDEVICE)
 		throw CudaException(CUDA_ERROR_INVALID_DEVICE);
-	return device[dev];
+	//return device[dev];
+	return *device;
 }
 
 template<class CONFIG>
@@ -262,21 +250,22 @@ Device<CONFIG> & Driver<CONFIG>::Dev(int dev)
 {
 	if(dev < 0 || dev >= MAXDEVICE)
 		throw CudaException(CUDA_ERROR_INVALID_DEVICE);
-	return device[dev];
+	//return device[dev];
+	return *device;
 }
 
 template<class CONFIG>
 Device<CONFIG> const & Driver<CONFIG>::CurrentDevice() const
 {
 	int dev = current_context->GetDevice();
-	return device[dev];
+	return Dev(dev);
 }
 
 template<class CONFIG>
 Device<CONFIG> & Driver<CONFIG>::CurrentDevice()
 {
 	int dev = current_context->GetDevice();
-	return device[dev];
+	return Dev(dev);
 }
 
 #endif

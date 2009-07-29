@@ -39,8 +39,16 @@
 #include <driver.hh>
 #include <iostream>
 #include <boost/shared_ptr.hpp>
+#include <cerrno>
 
-#include "config.hh"
+#include <unisim/component/cxx/processor/tesla/config.hh>
+#include "system.hh"
+#include "driver.hh"
+
+#include "module.hh"
+#include "device.hh"
+#include "event.hh"
+#include "exception.hh"
 
 #include "driver.tcc"
 #include "module.tcc"
@@ -60,6 +68,8 @@ typedef BaseConfig MyConfig;
 //shared_ptr<Driver<MyConfig> > driver;
 Driver<MyConfig> * driver = 0;	// Dumb pointer
 // Memory leak here
+
+System mysystem;
 
 #define CHECK_PTR(p) \
 	{ if(!p) { \
@@ -81,7 +91,9 @@ CUresult  CUDAAPI cuInit(unsigned int Flags)
 {
 	if(verbose) cerr << "cuInit(" << Flags << ")" << endl;
 	//driver = shared_ptr<Driver<MyConfig> >(new Driver<MyConfig>());
-	driver = new Driver<MyConfig>();
+	//driver = new Driver<MyConfig>();
+	mysystem.Build();
+	driver = mysystem.GetDriver();
 	return driver->cuInit(Flags);
 }
 /************************************

@@ -97,27 +97,27 @@ inline void ParseBinCode(vector<uint32_t> & v, istream & is)
 	}
 }
 
-ParsingException::ParsingException() :
+inline ParsingException::ParsingException() :
 	str(0)
 {
 	assert(false);
 }
 
-ParsingException::ParsingException(char const * str) :
+inline ParsingException::ParsingException(char const * str) :
 	str(str)
 {
 	std::cerr << str << std::endl;
 	assert(false);
 }
 
-ParsingException::ParsingException(char const * str, std::string const & param) :
+inline ParsingException::ParsingException(char const * str, std::string const & param) :
 	str(str), param(param)
 {
 	std::cerr << str << param<< std::endl;
 	assert(false);
 }
 
-std::ostream & operator<< (std::ostream & os, ParsingException const & pe)
+inline std::ostream & operator<< (std::ostream & os, ParsingException const & pe)
 {
 	os << pe.str;
 	os << pe.param;
