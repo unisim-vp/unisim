@@ -71,20 +71,20 @@ bool CoreSocket<CPUCONFIG>::Setup()
 }
 
 inline
-int ThreadsPerBlock(Schedulable const & kernel)
+int ThreadsPerBlock(CUDAGrid const & kernel)
 {
 	return kernel.BlockZ() * kernel.BlockY() * kernel.BlockX();
 }
 
 template<class CONFIG>
-int WarpsPerBlock(Schedulable const & kernel)
+int WarpsPerBlock(CUDAGrid const & kernel)
 {
 	return (ThreadsPerBlock(kernel) + CONFIG::WARP_SIZE - 1) / CONFIG::WARP_SIZE;
 }
 
 
 template<class CONFIG>
-int BlocksPerCore(Schedulable const & kernel)
+int BlocksPerCore(CUDAGrid const & kernel)
 {
 	int blocksreg = CONFIG::MAX_VGPR / (kernel.GPRs() * WarpsPerBlock<CONFIG>(kernel));
 	int blockssm = CONFIG::SHARED_SIZE / kernel.SharedTotal(); // Already aligned
@@ -99,7 +99,7 @@ inline uint32_t BuildTID(int x, int y, int z)
 }
 
 template<class CONFIG>
-void SetThreadIDs(Schedulable const & kernel, int bnum, CoreSocket<CONFIG> & cpu)
+void SetThreadIDs(CUDAGrid const & kernel, int bnum, CoreSocket<CONFIG> & cpu)
 {
 	// Set register 0 of each thread
 	int warpsperblock = WarpsPerBlock<CONFIG>(kernel);
@@ -124,14 +124,50 @@ void SetThreadIDs(Schedulable const & kernel, int bnum, CoreSocket<CONFIG> & cpu
 }
 
 template<class CONFIG>
+void InitShared(CUDAGrid const & kernel, Memory<SMAddress> & mem, int index,
+	int bidx, int bidy, int core)
+{
+	// Header
+	uint16_t header[8];	// 10?
+	header[0] = 0;	// flags? gridid?
+	header[1] = kernel.BlockX();
+	header[2] = kernel.BlockY();
+	header[3] = kernel.BlockZ();
+	header[4] = kernel.GridX();	// gridx
+	header[5] = kernel.GridY();	// gridy
+	header[6] = bidx;	// bidx
+	header[7] = bidy;	// bidy
+
+	//if(trace_loading)
+	//	cerr << "Init block " << index << " (" << bidx << ", " << bidy << ") / ("
+	//		<< gridx << ", " << gridy << ") shared memory\n";
+
+	if(!mem.WriteMemory(SMAddress(index, 0), header, 16)) {
+		assert(false);
+		//throw CudaException(CUDA_ERROR_OUT_OF_MEMORY);
+	}
+	
+	//if(trace_loading)
+	//	cerr << "Loading " << param_size << "B parameters in core "
+	//	     << core << ", block " << index << endl;
+	
+	// Parameters
+	if(!mem.WriteMemory(SMAddress(index, 16), kernel.GetParameters(), kernel.ParametersSize())) {
+		assert(false);
+		//throw CudaException(CUDA_ERROR_OUT_OF_MEMORY);
+	}
+}
+
+
+template<class CONFIG>
 struct Runner
 {
 	CoreSocket<CONFIG> & core;
 	int c;
-	Schedulable const & kernel;
+	CUDAGrid const & kernel;
 	unsigned int core_count;
 	
-	Runner(CoreSocket<CONFIG> & core, Schedulable const & kernel,
+	Runner(CoreSocket<CONFIG> & core, CUDAGrid const & kernel,
 		int core_count, int c) :
 		core(core), c(c), kernel(kernel),
 		core_count(core_count) {}
@@ -174,7 +210,7 @@ void Runner<CONFIG>::operator() ()
 			{
 				int bidx = (i+j) % width;
 				int bidy = (i+j) / width;
-				kernel.InitShared(*core.shared_memory_import, j, bidx, bidy, c);
+				InitShared<CONFIG>(kernel, *core.shared_memory_import, j, bidx, bidy, c);
 				SetThreadIDs(kernel, j, core);
 			}
 
@@ -190,6 +226,8 @@ void Runner<CONFIG>::operator() ()
 template<class CONFIG>
 CUDAScheduler<CONFIG>::CUDAScheduler(unsigned int cores, const char *name, Object *parent) :
 	Object(name, parent),
+	Service<Scheduler<CUDAGrid> >(name, parent),
+	scheduler_export("scheduler-export", this),
 	core_count(cores),
 	sockets(cores)
 {
@@ -205,18 +243,12 @@ CUDAScheduler<CONFIG>::CUDAScheduler(unsigned int cores, const char *name, Objec
 template<class CONFIG>
 bool CUDAScheduler<CONFIG>::Setup()
 {
-	for(typename sockets_t::iterator it = sockets.begin();
-	    it != sockets.end();
-	    ++it)
-	{
-		(*it)->Setup();
-	}
 	return true;
 }
 
 
 template<class CONFIG>
-void CUDAScheduler<CONFIG>::Run(Schedulable const & kernel)
+void CUDAScheduler<CONFIG>::Schedule(CUDAGrid const & kernel)
 {
 	thread_group GPUThreads;
 	

@@ -25,7 +25,8 @@ include_HEADERS = \
 	ti_c_io.hh \
 	typed_registers.hh \
 	runnable.hh \
-	instruction_stats.hh
+	instruction_stats.hh \
+	scheduler.hh
 
 dist_share_DATA = COPYING
 
