@@ -261,7 +261,7 @@ int RTBStub::LoadXmlData(const char *filename, const char *path, std::vector<dat
 	doc = xmlParseFile (filename);
 	if (!doc)
 	{
-		fprintf (stderr, "%s:%d Could not parse the document\n", __FILE__, __LINE__);
+		cerr << __FILE__ << ":" << __LINE__ << " Could not parse the document" << endl;
 		return (0);
 	}
 
