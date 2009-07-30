@@ -131,6 +131,7 @@ private:
 	int LoadXmlData(const char *filename, const char *path, std::vector<data_t> &vect);
 	void parseRow (xmlDocPtr doc, xmlNodePtr cur, data_t &data);
 
+	std::vector<data_t> vect;
 	clock_t	anx_stimulus_period;
 	Parameter<clock_t>	param_anx_stimulus_period;
 

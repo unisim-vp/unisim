@@ -67,6 +67,7 @@ RTBStub::RTBStub(const sc_module_name& name, Object *parent) :
 
 RTBStub::~RTBStub() {
 	output_file.close();
+	vect.clear();
 }
 
 // Slave methods
@@ -300,7 +301,6 @@ void RTBStub::Process()
 
 	sc_time delay(anx_stimulus_period, SC_PS);
 
-	std::vector<data_t> vect;
 	int data_size, data_index = 0;
 
 //	LoadXmlData("/export/is010125/rnouacer/SharedVirBox/TraReda/Projects/Hecosim/Binaire_Autosar_20090702/Mesure/ATD.xml", "//Row", vect);
