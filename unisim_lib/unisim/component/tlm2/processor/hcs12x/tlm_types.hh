@@ -87,11 +87,10 @@ public:
 	std::string serialize() {
 
 		std::stringstream os;
-		os << "[ ";
+
 		for (int i=0; i<PWM_SIZE; i++) {
-			os << " " << this->pwmChannel[i] << " ";
+			os << " " << this->pwmChannel[i] << " ;";
 		}
-		os << " ]";
 
 		return os.str();
 	}
@@ -114,13 +113,12 @@ public:
 	string serialize() {
 
 		stringstream os;
-		os << "[ ";
-		os.precision(5);
+
+		os.precision(3);
 
 		for (int i=0; i<ATD_SIZE; i++) {
-			os << " " << fixed << this->anPort[i] << " ";
+			os << " " << fixed << this->anPort[i] << " ;";
 		}
-		os << " ]";
 
 		return os.str();
 
