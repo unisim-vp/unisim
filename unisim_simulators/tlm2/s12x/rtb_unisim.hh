@@ -138,6 +138,8 @@ private:
 	string anx_stimulus_period_file;
 	Parameter<string>	param_anx_stimulus_period_file;
 
-	ofstream output_file;
+	ofstream atd0_output_file;
+	ofstream atd1_output_file;
+	ofstream pwm_output_file;
 
 };

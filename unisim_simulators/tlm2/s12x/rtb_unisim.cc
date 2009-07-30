@@ -60,13 +60,19 @@ RTBStub::RTBStub(const sc_module_name& name, Object *parent) :
 
 	SC_THREAD(Process);
 
-	output_file.open ("rtbstub_output.txt");
+	atd0_output_file.open ("rtbstub_atd0_output.txt");
+	atd1_output_file.open ("rtbstub_atd1_output.txt");
+	pwm_output_file.open ("rtbstub_pwm_output.txt");
 
 
 }
 
 RTBStub::~RTBStub() {
-	output_file.close();
+
+	atd0_output_file.close();
+	atd1_output_file.close();
+	pwm_output_file.close();
+
 	vect.clear();
 }
 
@@ -137,12 +143,12 @@ void RTBStub::Input(bool pwmValue[PWM_SIZE])
 		last_payload = payload;
 		payload = input_payload_queue.get_next_transaction();
 
-//				output_file <<  name() << "::PWM:: Receive " << payload->serialize() << " - " << sc_time_stamp() << endl;
+//				pwm_output_file <<  "[" << name() << "::PWM::Receive] " << payload->serialize() << " " << sc_time_stamp() << endl;
 	} while(payload);
 
 	payload = last_payload;
 
-	output_file <<  name() << "::PWM:: Last Receive " << payload->serialize() << " - " << sc_time_stamp() << endl;
+	pwm_output_file <<  "[" << name() << "::PWM::Receive] " << payload->serialize() << " " << sc_time_stamp() << endl;
 
 	for (int i=0; i<PWM_SIZE; i++) {
 		pwmValue[i] = payload->pwmChannel[i];
@@ -160,7 +166,7 @@ void RTBStub::Output_ATD1(double anValue[ATD1_SIZE])
 		payload->anPort[i] = anValue[i];
 	}
 
-			output_file <<  name() << "::ATD1::send " << payload->serialize() << " - " << sc_time_stamp() << endl;
+	atd1_output_file << "[" << name() << "::ATD1::send]" << payload->serialize() << " " << sc_time_stamp() << endl;
 
 	sc_time local_time = quantumkeeper.get_local_time();
 
@@ -195,7 +201,7 @@ void RTBStub::Output_ATD0(double anValue[ATD0_SIZE])
 		payload->anPort[i] = anValue[i];
 	}
 
-	output_file <<  name() << "::ATD0::send " << payload->serialize() << " - " << sc_time_stamp() << endl;
+	atd0_output_file << "[" << name() << "::ATD0::send]" << payload->serialize() << " " << sc_time_stamp() << endl;
 
 	sc_time local_time = quantumkeeper.get_local_time();
 
@@ -309,8 +315,7 @@ void RTBStub::Process()
 	data_size = vect.size();
 
 	if (data_size == 0) {
-		cerr << "SIMULATION STOP: ATD inputs empty !" << endl;
-		cerr << "RANDOM values will be used during simulation." << endl;
+		cerr << "ATD random inputs values will be used during simulation !" << endl;
 	}
 
 	while(1)
