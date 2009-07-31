@@ -123,23 +123,43 @@ public:
 
 private:
 
+	template <int ATD_SIZE>
 	struct data_t {
-		double volte;
+		double volte[ATD_SIZE];
 		double time;
 	};
 
-	int LoadXmlData(const char *filename, const char *path, std::vector<data_t> &vect);
-	void parseRow (xmlDocPtr doc, xmlNodePtr cur, data_t &data);
+	template <int SIZE> int LoadXmlData(const char *filename, std::vector<data_t<SIZE> > &vect);
+	template <int SIZE> void parseRow (xmlDocPtr doc, xmlNodePtr cur, data_t<SIZE> &data);
 
-	std::vector<data_t> vect;
+	std::vector<data_t<ATD0_SIZE> > atd0_vect;
+	std::vector<data_t<ATD1_SIZE> > atd1_vect;
+
 	clock_t	anx_stimulus_period;
 	Parameter<clock_t>	param_anx_stimulus_period;
 
-	string anx_stimulus_period_file;
-	Parameter<string>	param_anx_stimulus_period_file;
+	string atd0_anx_stimulus_file;
+	Parameter<string>	param_atd0_anx_stimulus_file;
+
+	uint8_t atd0_anx_start_channel;
+	Parameter<uint8_t> param_atd0_anx_start_channel;
+
+	uint8_t atd0_anx_wrap_around_channel;
+	Parameter<uint8_t> param_atd0_anx_wrap_around_channel;
+
+
+	string atd1_anx_stimulus_file;
+	Parameter<string>	param_atd1_anx_stimulus_file;
+
+	uint8_t atd1_anx_start_channel;
+	Parameter<uint8_t> param_atd1_anx_start_channel;
+
+	uint8_t atd1_anx_wrap_around_channel;
+	Parameter<uint8_t> param_atd1_anx_wrap_around_channel;
 
 	ofstream atd0_output_file;
 	ofstream atd1_output_file;
 	ofstream pwm_output_file;
 
 };
+
