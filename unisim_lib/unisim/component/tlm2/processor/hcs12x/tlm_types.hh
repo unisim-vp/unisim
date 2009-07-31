@@ -120,6 +120,8 @@ public:
 			os << " " << fixed << this->anPort[i] << " ;";
 		}
 
+		os << std::dec;
+
 		return os.str();
 
 	}
