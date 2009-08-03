@@ -367,12 +367,13 @@ void Kernel<CONFIG>::SetSharedSize(int size)
 template<class CONFIG>
 void Kernel<CONFIG>::SetTexRef(Sampler<CONFIG> * sampler)
 {
-	assert(sampler->TexUnit() < CONFIG::MAX_SAMPLERS);
+	assert(sampler->GetTexUnit() < CONFIG::MAX_SAMPLERS);
 	if(trace_loading)
-		cerr << " texunit = " << sampler->TexUnit() << endl;
-	samplers[sampler->TexUnit()] = sampler;
+		cerr << " texunit = " << sampler->GetTexUnit() << endl;
+	samplers[sampler->GetTexUnit()] = sampler;
 }
 
+#if 0
 template<class CONFIG>
 void Kernel<CONFIG>::LoadSamplers(CPU<CONFIG> & cpu)
 {
@@ -386,6 +387,7 @@ void Kernel<CONFIG>::LoadSamplers(CPU<CONFIG> & cpu)
 		}
 	}
 }
+#endif
 
 template<class CONFIG>
 uint32_t Kernel<CONFIG>::SharedTotal() const
@@ -412,6 +414,20 @@ uint32_t Kernel<CONFIG>::ParametersSize() const
 {
 	return param_size;
 }
+
+template<class CONFIG>
+unsigned int Kernel<CONFIG>::SamplersSize() const
+{
+	return CONFIG::MAX_SAMPLERS;
+}
+
+template<class CONFIG>
+SamplerBase<typename CONFIG::address_t> const * Kernel<CONFIG>::GetSampler(unsigned int i) const
+{
+	assert(i < CONFIG::MAX_SAMPLERS);
+	return samplers[i];
+}
+
 
 #if 0
 template<class CONFIG>

@@ -43,6 +43,25 @@ namespace cxx {
 namespace processor {
 namespace tesla {
 
+
+template<class CONFIG>
+Sampler<CONFIG>::Sampler()
+{
+}
+
+template<class CONFIG>
+Sampler<CONFIG>::Sampler(SamplerBase<typename CONFIG::address_t> const & other)
+{
+	this->address = other.GetBaseAddress();
+	this->num_packed_components = other.GetNumPackedComponents();
+	for(int i = 0; i != 3; ++i) {
+		this->address_mode[i] = other.GetAddressMode(i);
+	}
+	this->filter_mode = other.GetFilterMode();
+	this->flags = other.GetFlags();
+	this->format = other.GetFormat();
+}
+
 inline int ArrayFormatSize(ArrayFormat af)
 {
 	switch(af)
@@ -68,16 +87,15 @@ void Sampler<CONFIG>::Sample1DS32(VectorRegister<CONFIG> dest[],
 	VectorRegister<CONFIG> const src[],
 	uint32_t destBitfield)
 {
-	assert(!(flags & TF_NORMALIZED_COORDINATES));
-	assert(filterMode == FM_POINT);
-	assert(ndims == 1);
+	assert(!(this->flags & TF_NORMALIZED_COORDINATES));
+	assert(this->filter_mode == FM_POINT);
 
 	// Coordinates as int32_t
 	VectorAddress<CONFIG> addr(src[0]);
-	int elSize = ArrayFormatSize(format) * numPackedComponents;
+	int elSize = ArrayFormatSize(this->format) * this->num_packed_components;
 	
 	// TODO: Wrap / Clamp / Mirror
-	addr = VectorAddress<CONFIG>(baseAddress) + elSize * addr;
+	addr = VectorAddress<CONFIG>(this->address) + elSize * addr;
 	
 	Fetch(dest, addr, destBitfield);
 }
@@ -85,16 +103,14 @@ void Sampler<CONFIG>::Sample1DS32(VectorRegister<CONFIG> dest[],
 template<class CONFIG>
 void Sampler<CONFIG>::Reset(CPU<CONFIG> * cpu)
 {
-	baseAddress = 0;
-	ndims = 0;
-	numPackedComponents = 0;
+	this->address = 0;
+	this->num_packed_components = 0;
 	for(int i = 0; i != 3; ++i) {
-		size[i] = 0;
-		addressMode[i] = AM_WRAP;
+		this->address_mode[i] = AM_WRAP;
 	}
-	format = AF_U8;
-	filterMode = FM_POINT;
-	flags = 0;
+	this->format = AF_U8;
+	this->filter_mode = FM_POINT;
+	this->flags = 0;
 	this->cpu = cpu;
 }
 
@@ -105,7 +121,7 @@ void Sampler<CONFIG>::Fetch(VectorRegister<CONFIG> dest[],
 	uint32_t destBitfield)
 {
 	
-	int elSize = ArrayFormatSize(format);
+	int elSize = ArrayFormatSize(this->format);
 	
 	
 	for(unsigned int l = 0; l != CONFIG::WARP_SIZE; ++l)
@@ -136,10 +152,10 @@ template<class CONFIG>
 uint32_t Sampler<CONFIG>::Unpack(uint32_t rawval)
 {
 	// Assumes little-endian encoding
-	if(flags & TF_READ_AS_INTEGER) {
+	if(this->flags & TF_READ_AS_INTEGER) {
 		// Int -> Int, Z-extend or S-extend
 		uint32_t intval;
-		switch(format)
+		switch(this->format)
 		{
 		case AF_U8:
 			intval = uint8_t(rawval);
@@ -170,7 +186,7 @@ uint32_t Sampler<CONFIG>::Unpack(uint32_t rawval)
 		// Int -> Float
 		// GLspec 2.19
 		float floatval;
-		switch(format)
+		switch(this->format)
 		{
 		case AF_U8:
 			floatval = uint8_t(rawval) / 255.f;

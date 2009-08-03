@@ -175,10 +175,10 @@ op fsmac_imm(\
 	dest[7]:/*flow*/0[1]:/*long*/1[1] \
 )
 
-op fsmad_half(\
-	0xe[4]:/*addr_reg*/?[3]:/*src1_sh*/?[1]:/*src2_cm*/?[1]:/*src2_neg*/0[1]:/*src1_neg*/?[1]:/*src2*/?[5]:src3_neg[1]:/*src1*/?[6]: \
-	/*dest*/?[7]:/*flow*/0[1]:/*long*/0[1] \
-)
+//op fsmad_half(\
+//	0xe[4]:/*addr_reg*/?[3]:/*src1_sh*/?[1]:/*src2_cm*/?[1]:/*src2_neg*/0[1]:/*src1_neg*/?[1]:/*src2*/?[5]:src3_neg[1]:/*src1*/?[6]: \
+//	/*dest*/?[7]:/*flow*/0[1]:/*long*/0[1] \
+//)
 
 // TODO: fsmad_half
 

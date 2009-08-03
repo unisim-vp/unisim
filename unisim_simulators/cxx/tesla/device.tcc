@@ -172,9 +172,11 @@ void Device<CONFIG>::Run(Kernel<CONFIG> & kernel, int width, int height)
 		cores[i]->InitStats(kernel.CodeSize());	// Even if not exporting
 	}
 
+#if 0
 	for(int i = 0; i != core_count; ++i) {
 		kernel.LoadSamplers(*cores[i]);
 	}
+#endif
 	kernel.SetGridShape(width, height);
 
 	scheduler->Schedule(kernel);

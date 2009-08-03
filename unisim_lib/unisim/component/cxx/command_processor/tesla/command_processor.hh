@@ -64,13 +64,17 @@ namespace cxx {
 namespace command_processor {
 namespace tesla {
 
-struct Command;
-
-struct CommandFactory
+struct Event
 {
-    Command * LaunchGrid(CUDAGrid const & grid);
+	void Wait();
+	float ElapsedTime();
 };
 
+struct Context
+{
+};
+
+template<class CONFIG>
 struct CommandProcessor : virtual Object
 {
     CommandFactory & Context(ctx);

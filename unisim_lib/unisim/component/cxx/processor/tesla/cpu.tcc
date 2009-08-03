@@ -74,6 +74,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent, int coreid, int core_count) :
 	Service<MemoryInjection<typename CONFIG::address_t> >(name, parent),
 	Service<TypedRegisters<uint32_t, GPRID> >(name, parent),
 	Service<TypedRegisters<uint32_t, ConfigurationRegisterID> >(name, parent),
+	Service<TypedRegisters<SamplerBase<typename CONFIG::address_t>, SamplerIndex> >(name, parent),
 	Service<Memory<SMAddress> >(name, parent),
 	Service<InstructionStats<typename CONFIG::stats_t> >(name, parent),
 	Service<Resetable>(name, parent),
@@ -88,6 +89,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent, int coreid, int core_count) :
 	memory_injection_export("memory-injection-export", this),
 	registers_export("registers-export", this),
 	configuration_export("configuration-export", this),
+	samplers_export("samplers-export", this),
 	shared_memory_export("shared-memory-export", this),
 	instruction_stats_export("instruction-stats-export", this),
 	reset_export("reset-export", this),
@@ -449,6 +451,21 @@ void CPU<CONFIG>::WriteTypedRegister(ConfigurationRegisterID addr, uint32_t cons
 		assert(false);
 	}
 }
+
+template <class CONFIG>
+SamplerBase<typename CONFIG::address_t> CPU<CONFIG>::ReadTypedRegister(SamplerIndex addr)
+{
+	assert(addr.id < CONFIG::MAX_SAMPLERS);
+	return samplers[addr.id];
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::WriteTypedRegister(SamplerIndex addr, SamplerBase<address_t> const & r)
+{
+	assert(addr.id < CONFIG::MAX_SAMPLERS);
+	samplers[addr.id] = r;	
+}
+
 
 template <class CONFIG>
 bool CPU<CONFIG>::ReadMemory(SMAddress addr, void *buffer, uint32_t size)

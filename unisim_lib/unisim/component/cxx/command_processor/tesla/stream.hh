@@ -32,53 +32,29 @@
  * Authors: Sylvain Collange (sylvain.collange@univ-perp.fr)
  */
  
-#ifndef UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_SAMPLER_HH
-#define UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_SAMPLER_HH
-
-#include <unisim/component/cxx/processor/tesla/register.hh>
-#include <unisim/component/cxx/processor/tesla/interfaces.hh>
+#ifndef UNISIM_COMPONENT_CXX_COMMAND_PROCESSOR_TESLA_STREAM_HH
+#define UNISIM_COMPONENT_CXX_COMMAND_PROCESSOR_TESLA_STREAM_HH
 
 namespace unisim {
 namespace component {
 namespace cxx {
-namespace processor {
+namespace command_processor {
 namespace tesla {
 
-inline int ArrayFormatSize(ArrayFormat af);
-
-template<class CONFIG>
-struct Sampler : SamplerBase<typename CONFIG::address_t>
+struct Stream
 {
-	Sampler();
-	Sampler(SamplerBase<typename CONFIG::address_t> const & other);
-
-	void Sample1DS32(VectorRegister<CONFIG> dest[],
-		VectorRegister<CONFIG> const src[],
-		uint32_t destBitfield);
-
-	void Reset(CPU<CONFIG> * cpu);
-
-#if 0
-	typename CONFIG::address_t baseAddress;
-	int ndims;
-	int numPackedComponents;
-	uint32_t size[3];
-	ArrayFormat format;
-	AddressMode addressMode[3];
-	FilterMode filterMode;
-	uint32_t flags;
-#endif	
-	CPU<CONFIG> * cpu;
-
-private:
-	void Fetch(VectorRegister<CONFIG> dest[],
-		VectorAddress<CONFIG> const & addr,
-		uint32_t destBitfield);
-	uint32_t Unpack(uint32_t rawval);
+	void Synchronize();
+	
+	Event * CreateEvent();
+	void PushEvent(Event & event);
+	
+	void PushLaunchGrid(CUDAGrid & grid);
 };
 
+
+
 } // end of namespace tesla
-} // end of namespace processor
+} // end of namespace command_processor
 } // end of namespace cxx
 } // end of namespace component
 } // end of namespace unisim

@@ -44,11 +44,17 @@
 #include <map>
 #include <unisim/kernel/service/service.hh>
 #include <unisim/service/interfaces/memory.hh>
+#include <unisim/component/cxx/processor/tesla/interfaces.hh>
 
 #include "kernel.hh"
 
 using unisim::kernel::service::Service;
 using unisim::service::interfaces::Memory;
+using unisim::component::cxx::processor::tesla::SamplerBase;
+using unisim::component::cxx::processor::tesla::ArrayFormat;
+using unisim::component::cxx::processor::tesla::AddressMode;
+using unisim::component::cxx::processor::tesla::FilterMode;
+using unisim::component::cxx::processor::tesla::TextureFlags;
 
 struct ParsingException
 {
@@ -96,23 +102,27 @@ private:
 };
 
 template<class CONFIG>
-struct Sampler : CUtexref_st
+struct Sampler : CUtexref_st, SamplerBase<typename CONFIG::address_t>
 {
 	Sampler(std::istream & is);
 	Sampler();
 	
 	std::string const & Name() const;
-	int TexUnit() const;
-	unsigned int SetAddress(typename CONFIG::address_t addr, unsigned int bytes);
-	void SetFormat(CUarray_format fmt, int NumPackedComponents);
-	void SetAddressMode(int dim, CUaddress_mode am);
-	void SetFilterMode(CUfilter_mode fm);
-	void SetFlags(unsigned int Flags);
-	void Load(CPU<CONFIG> & cpu);
+//	int TexUnit() const;
+//	unsigned int SetAddress(typename CONFIG::address_t addr, unsigned int bytes);
+
+//	void SetFormat(CUarray_format fmt, int NumPackedComponents);
+	void SetAddressMode(int dim, AddressMode am);
+//	void SetFilterMode(CUfilter_mode fm);
+//	void SetFlags(unsigned int Flags);
+	//void Load(CPU<CONFIG> & cpu);
 	
+	typedef SamplerBase<typename CONFIG::address_t> Base;
+
 private:
 	void SetAttribute(std::string const & name, std::string const & value);
 	std::string name;
+#if 0
 	int texunit;
 	typename CONFIG::address_t address;
 	uint32_t bytes;
@@ -121,6 +131,23 @@ private:
 	CUaddress_mode address_mode[3];
 	CUfilter_mode filter_mode;
 	unsigned int flags;
+
+public:
+	virtual int GetTexUnit() const {
+		return texunit; }
+	virtual address_t GetBaseAddress() const {
+		return address; }
+	virtual int GetNumPackedComponents() const {
+		return num_packed_components; }
+	virtual ArrayFormat GetFormat() const {
+		return ArrayFormat(format); }
+	virtual AddressMode GetAddressMode(unsigned int i) const {
+		assert(i < 3); return AddressMode(address_mode[i]); }
+	virtual FilterMode GetFilterMode() const {
+		return FilterMode(filter_mode); }
+	virtual uint32_t GetFlags() const {
+		return flags; }
+#endif	
 };
 
 template<class CONFIG>

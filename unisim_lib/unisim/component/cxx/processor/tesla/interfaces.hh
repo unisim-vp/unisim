@@ -35,6 +35,7 @@
 #ifndef UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_INTERFACES_HH
 #define UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_INTERFACES_HH
 
+#include <cassert>
 
 namespace unisim {
 namespace component {
@@ -75,6 +76,113 @@ struct ConfigurationRegisterID
 	id_t id;
 	
 	ConfigurationRegisterID(id_t id) : id(id) {}
+};
+
+struct SamplerIndex
+{
+	uint32_t id;
+	
+	SamplerIndex(uint32_t id) : id(id) {}
+};
+
+enum ArrayFormat
+{
+    AF_U8  = 0x01,
+    AF_U16 = 0x02,
+    AF_U32 = 0x03,
+    AF_S8 = 0x08,
+    AF_S16 = 0x09,
+    AF_S32 = 0x0a,
+    AF_F16 = 0x10,
+    AF_F32 = 0x20
+};
+
+enum AddressMode
+{
+    AM_WRAP = 0,
+    AM_CLAMP = 1,
+    AM_MIRROR = 2
+};
+
+enum FilterMode
+{
+    FM_POINT = 0,
+    FM_LINEAR = 1
+};
+
+enum TextureFlags
+{
+	TF_READ_AS_INTEGER = 0x01,
+	TF_NORMALIZED_COORDINATES = 0x02
+};
+
+
+
+template<typename address_t = uint32_t>
+struct SamplerBase
+{
+protected:
+	int texunit;
+	address_t address;
+	uint32_t bytes;
+	ArrayFormat format;
+	int num_packed_components;
+	AddressMode address_mode[3];
+	FilterMode filter_mode;
+	unsigned int flags;
+
+
+public:
+	SamplerBase() :
+		texunit(-1),
+		address(0),
+		bytes(0),
+		format(AF_U32),
+		num_packed_components(1),
+		filter_mode(FM_POINT),
+		flags(0)
+	{
+		for(int d = 0; d != 3; ++d) {
+			address_mode[d] = AM_WRAP;
+		}
+	}
+	
+	int GetTexUnit() const {
+		return texunit; }
+	address_t GetBaseAddress() const {
+		return address; }
+	int GetNumPackedComponents() const {
+		return num_packed_components; }
+	ArrayFormat GetFormat() const {
+		return ArrayFormat(format); }
+	AddressMode GetAddressMode(unsigned int i) const {
+		assert(i < 3); return address_mode[i]; }
+	FilterMode GetFilterMode() const {
+		return filter_mode; }
+	uint32_t GetFlags() const {
+		return flags; }
+
+	void SetAddress(address_t addr, unsigned int bytes) {
+		address = addr;
+		this->bytes = bytes;
+	}
+		
+	void SetFormat(ArrayFormat fmt, int NumPackedComponents) {
+		format = fmt;
+		num_packed_components = NumPackedComponents;
+	}
+	
+	void SetAddressMode(int dim, AddressMode am) {
+		assert(dim >= 0 && dim < 3);
+		address_mode[dim] = am;
+	}
+	
+	void SetFilterMode(FilterMode fm) {
+		filter_mode = fm;		
+	}
+	void SetFlags(unsigned int Flags) {
+		flags = Flags;
+	}
 };
 
 } // end of namespace tesla

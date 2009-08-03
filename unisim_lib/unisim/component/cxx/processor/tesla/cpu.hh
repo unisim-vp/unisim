@@ -109,6 +109,7 @@ class CPU :
 	public Service<MemoryInjection<typename CONFIG::address_t> >,
 	public Service<TypedRegisters<uint32_t, GPRID> >,
 	public Service<TypedRegisters<uint32_t, ConfigurationRegisterID> >,
+	public Service<TypedRegisters<SamplerBase<typename CONFIG::address_t>, SamplerIndex> >,
 	public Service<Memory<SMAddress> >,
 	public Service<InstructionStats<typename CONFIG::stats_t> >,
 	public Service<Resetable>,
@@ -152,6 +153,7 @@ public:
 //	ServiceExport<Synchronizable> synchronizable_export;
 	ServiceExport<TypedRegisters<uint32_t, GPRID> > registers_export;
 	ServiceExport<TypedRegisters<uint32_t, ConfigurationRegisterID> > configuration_export;
+	ServiceExport<TypedRegisters<SamplerBase<typename CONFIG::address_t>, SamplerIndex> > samplers_export;
 	ServiceExport<Memory<SMAddress> > shared_memory_export;
 	ServiceExport<InstructionStats<typename CONFIG::stats_t> > instruction_stats_export;
 	ServiceExport<Resetable> reset_export;
@@ -195,6 +197,9 @@ public:
 	virtual void WriteTypedRegister(GPRID addr, uint32_t const & r);
 	virtual uint32_t ReadTypedRegister(ConfigurationRegisterID addr);
 	virtual void WriteTypedRegister(ConfigurationRegisterID addr, uint32_t const & r);
+	virtual SamplerBase<address_t> ReadTypedRegister(SamplerIndex addr);
+	virtual void WriteTypedRegister(SamplerIndex addr, SamplerBase<address_t> const & r);
+
 	
 	virtual bool ReadMemory(SMAddress addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(SMAddress addr, const void *buffer, uint32_t size);

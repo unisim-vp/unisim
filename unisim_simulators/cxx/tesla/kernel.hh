@@ -106,7 +106,7 @@ struct Kernel : CUfunc_st, CUDAGrid, Loadable<CONFIG>
 	void ParamSetSize(int size);
 	void SetSharedSize(int size);
 	void SetTexRef(::Sampler<CONFIG> * sampler);
-	void LoadSamplers(CPU<CONFIG> & cpu);
+	//void LoadSamplers(CPU<CONFIG> & cpu);
 	
 	virtual uint32_t SharedTotal() const;
 	uint32_t LocalTotal() const;
@@ -114,6 +114,9 @@ struct Kernel : CUfunc_st, CUDAGrid, Loadable<CONFIG>
 	virtual uint32_t ParametersSize() const;
 	//virtual void InitShared(unisim::service::interfaces::Memory<SMAddress> & mem, int index = 0,
 	//	int bidx = 0, int bidy = 0, int core = 0) const;
+
+	virtual unsigned int SamplersSize() const;
+	virtual SamplerBase<typename CONFIG::address_t> const * GetSampler(unsigned int i) const;
 
 	// TODO: To be removed someday, duplicated with CUDAScheduler
 	int BlocksPerCore() const;	// Max blocks that can run on a SM of target architecture

@@ -53,11 +53,13 @@ CoreSocket<CPUCONFIG>::CoreSocket(const char *name, Object *parent) :
 	Object(name, parent),
 	Client<TypedRegisters<uint32_t, GPRID> >(name, parent),
 	Client<TypedRegisters<uint32_t, ConfigurationRegisterID> >(name, parent),
+	Client<TypedRegisters<SamplerBase<typename CPUCONFIG::address_t>, SamplerIndex> >(name, parent),
 	Client<Memory<SMAddress> >(name, parent),
 	Client<Resetable>(name, parent),
 	Client<Runnable>(name, parent),
 	registers_import("registers-import", this),
 	configuration_import("configuration-import", this),
+	samplers_import("samplers-import", this),
 	shared_memory_import("shared-memory-import", this),
 	reset_import("reset-import", this),
 	run_import("run-import", this)
@@ -229,7 +231,9 @@ CUDAScheduler<CONFIG>::CUDAScheduler(unsigned int cores, const char *name, Objec
 	Service<Scheduler<CUDAGrid> >(name, parent),
 	scheduler_export("scheduler-export", this),
 	core_count(cores),
-	sockets(cores)
+	sockets(cores),
+	param_export_stats("export-stats", this, export_stats),
+	export_stats(false)
 {
 	for(unsigned int i = 0; i != cores; ++i)
 	{
@@ -251,6 +255,15 @@ template<class CONFIG>
 void CUDAScheduler<CONFIG>::Schedule(CUDAGrid const & kernel)
 {
 	thread_group GPUThreads;
+
+	for(unsigned int c = 0; c != core_count; ++c) {
+		for(unsigned int s = 0; s != kernel.SamplersSize(); ++s) {
+			SamplerBase<typename CONFIG::address_t> const * smp = kernel.GetSampler(s);
+			if(smp != 0) {
+				Socket(c).samplers_import->WriteTypedRegister(SamplerIndex(s), *smp);
+			}
+		}
+	}
 	
 	for(unsigned int c = 1; c < core_count; ++c)
 	{

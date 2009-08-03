@@ -359,7 +359,7 @@ void Sampler<CONFIG>::SetAttribute(std::string const & attrname, std::string con
 	}
 	else if(attrname == "texunit")
 	{
-		texunit = atoi(value.c_str());
+		this->texunit = atoi(value.c_str());
 	}
 	else
 	{
@@ -368,18 +368,8 @@ void Sampler<CONFIG>::SetAttribute(std::string const & attrname, std::string con
 }
 
 template<class CONFIG>
-Sampler<CONFIG>::Sampler() :
-	texunit(-1),
-	address(0),
-	bytes(0),
-	format(CU_AD_FORMAT_UNSIGNED_INT32),
-	num_packed_components(1),
-	filter_mode(CU_TR_FILTER_MODE_POINT),
-	flags(0)
+Sampler<CONFIG>::Sampler()
 {
-	for(int d = 0; d != 3; ++d) {
-		address_mode[d] = CU_TR_ADDRESS_MODE_WRAP;
-	}
 }
 
 template<class CONFIG>
@@ -388,6 +378,7 @@ std::string const & Sampler<CONFIG>::Name() const
 	return name;
 }
 
+#if 0
 template<class CONFIG>
 int Sampler<CONFIG>::TexUnit() const
 {
@@ -407,28 +398,19 @@ void Sampler<CONFIG>::SetFormat(CUarray_format fmt, int NumPackedComponents)
 	format = fmt;
 	num_packed_components = NumPackedComponents;
 }
+#endif
 
 template<class CONFIG>
-void Sampler<CONFIG>::SetAddressMode(int dim, CUaddress_mode am)
+void Sampler<CONFIG>::SetAddressMode(int dim, AddressMode am)
 {
 	if(dim < 0 || dim > 2) {
 		throw CudaException(CUDA_ERROR_INVALID_VALUE);
 	}
-	address_mode[dim] = am;
+	Base::SetAddressMode(dim, am);
 }
 
-template<class CONFIG>
-void Sampler<CONFIG>::SetFilterMode(CUfilter_mode fm)
-{
-	filter_mode = fm;
-}
 
-template<class CONFIG>
-void Sampler<CONFIG>::SetFlags(unsigned int Flags)
-{
-	flags = Flags;
-}
-
+#if 0
 template<class CONFIG>
 void Sampler<CONFIG>::Load(CPU<CONFIG> & cpu)
 {
@@ -444,7 +426,7 @@ void Sampler<CONFIG>::Load(CPU<CONFIG> & cpu)
 	smp.flags = flags;
 	smp.format = unisim::component::cxx::processor::tesla::ArrayFormat(format);
 }
-
+#endif
 
 //////////////////////////////////////////////////////////////////////
 

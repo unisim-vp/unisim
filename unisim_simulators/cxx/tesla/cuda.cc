@@ -54,10 +54,17 @@
 #include "module.tcc"
 #include "device.tcc"
 #include "event.tcc"
+#include <unisim/component/cxx/processor/tesla/interfaces.hh>
 
 using std::cerr;
 using std::endl;
 using boost::shared_ptr;
+using unisim::component::cxx::processor::tesla::SamplerBase;
+using unisim::component::cxx::processor::tesla::ArrayFormat;
+using unisim::component::cxx::processor::tesla::AddressMode;
+using unisim::component::cxx::processor::tesla::FilterMode;
+using unisim::component::cxx::processor::tesla::TextureFlags;
+
 
 typedef BaseConfig MyConfig;
 
@@ -823,9 +830,9 @@ CUresult  CUDAAPI cuTexRefSetAddress( unsigned int *ByteOffset, CUtexref hTexRef
 	CHECK_DRIVER;
 	Sampler<MyConfig> * sampler = static_cast<Sampler<MyConfig> *>(hTexRef);
 	try {
-		unsigned int offset = sampler->SetAddress(dptr, bytes);
+		sampler->SetAddress(dptr, bytes);
 		if(ByteOffset != 0)
-			*ByteOffset = offset;
+			*ByteOffset = 0;	// Does anyone use this feature?
 		return CUDA_SUCCESS;
 	}
 	catch(CudaException e) {
@@ -840,7 +847,7 @@ CUresult  CUDAAPI cuTexRefSetFormat( CUtexref hTexRef, CUarray_format fmt, int N
 	CHECK_DRIVER;
 	Sampler<MyConfig> * sampler = static_cast<Sampler<MyConfig> *>(hTexRef);
 	try {
-		sampler->SetFormat(fmt, NumPackedComponents);
+		sampler->SetFormat(ArrayFormat(fmt), NumPackedComponents);
 		return CUDA_SUCCESS;
 	}
 	catch(CudaException e) {
@@ -856,7 +863,7 @@ CUresult  CUDAAPI cuTexRefSetAddressMode( CUtexref hTexRef, int dim, CUaddress_m
 	CHECK_DRIVER;
 	Sampler<MyConfig> * sampler = static_cast<Sampler<MyConfig> *>(hTexRef);
 	try {
-		sampler->SetAddressMode(dim, am);
+		sampler->SetAddressMode(dim, AddressMode(am));
 		return CUDA_SUCCESS;
 	}
 	catch(CudaException e) {
@@ -871,7 +878,7 @@ CUresult  CUDAAPI cuTexRefSetFilterMode( CUtexref hTexRef, CUfilter_mode fm )
 	CHECK_DRIVER;
 	Sampler<MyConfig> * sampler = static_cast<Sampler<MyConfig> *>(hTexRef);
 	try {
-		sampler->SetFilterMode(fm);
+		sampler->SetFilterMode(FilterMode(fm));
 		return CUDA_SUCCESS;
 	}
 	catch(CudaException e) {
