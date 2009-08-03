@@ -16,6 +16,7 @@
  ***************************************************************************/
 
 #include <errtools.hh>
+#include <cstdio>
 #include <cstdarg>
 #include <cstring>
 #include <cassert>
