@@ -151,6 +151,7 @@ void System::Build()
 		scheduler->Socket(i).shared_memory_import >> cores[i]->shared_memory_export;
 		scheduler->Socket(i).reset_import >> cores[i]->reset_export;
 		scheduler->Socket(i).run_import >> cores[i]->run_export;
+		scheduler->Socket(i).stats_import >> cores[i]->instruction_stats_export;
 	}
 	
 
@@ -182,9 +183,11 @@ void System::Build()
 	char const * stats_prefix = "";
 	
 	env = getenv("EXPORT_STATS");
-	if(env != 0)
+	if(env != 0) {
 		export_stats = ParseBool(env);
-	SetVariableBool("EXPORT_STATS", "export-stats");
+    	SetVariableBool("EXPORT_STATS", "export-stats");
+    	(*scheduler)["export-stats"] = export_stats;
+	}
 
 	env = getenv("EXPORT_STATS_PREFIX");
 	if(env != 0)

@@ -158,18 +158,6 @@ Kernel<CONFIG>::Kernel() :
 {
 }
 
-#if 0
-template<class CONFIG>
-uint32_t Kernel<CONFIG>::ConstSize() const
-{
-}
-
-template<class CONFIG>
-uint32_t Kernel<CONFIG>::LocalSize() const
-{
-}
-#endif
-
 template<class CONFIG>
 uint32_t Kernel<CONFIG>::CodeSize() const
 {
@@ -373,22 +361,6 @@ void Kernel<CONFIG>::SetTexRef(Sampler<CONFIG> * sampler)
 	samplers[sampler->GetTexUnit()] = sampler;
 }
 
-#if 0
-template<class CONFIG>
-void Kernel<CONFIG>::LoadSamplers(CPU<CONFIG> & cpu)
-{
-	for(int i = 0; i != CONFIG::MAX_SAMPLERS; ++i)
-	{
-		if(samplers[i] != 0) {
-			if(trace_loading)
-				cerr << " Loading sampler " << i << endl;
-			assert(samplers[i]->TexUnit() == i);
-			samplers[i]->Load(cpu);
-		}
-	}
-}
-#endif
-
 template<class CONFIG>
 uint32_t Kernel<CONFIG>::SharedTotal() const
 {
@@ -428,46 +400,11 @@ SamplerBase<typename CONFIG::address_t> const * Kernel<CONFIG>::GetSampler(unsig
 	return samplers[i];
 }
 
-
-#if 0
 template<class CONFIG>
-void Kernel<CONFIG>::InitShared(unisim::service::interfaces::Memory<SMAddress> & mem, int index,
-	int bidx, int bidy, int core) const
+Stats<CONFIG> & Kernel<CONFIG>::GetStats()
 {
-	// Header
-	uint16_t header[8];	// 10?
-	header[0] = 0;	// flags? gridid?
-	header[1] = blockx;
-	header[2] = blocky;
-	header[3] = blockz;
-	header[4] = gridx;	// gridx
-	header[5] = gridy;	// gridy
-	header[6] = bidx;	// bidx
-	header[7] = bidy;	// bidy
-
-	if(trace_loading)
-		cerr << "Init block " << index << " (" << bidx << ", " << bidy << ") / ("
-			<< gridx << ", " << gridy << ") shared memory\n";
-	//typename CONFIG::address_t shared_base = CONFIG::SHARED_START
-	//	+ core * CONFIG::SHARED_SIZE
-	//	+ index * SharedTotal();
-	
-	// Address translation already done by Core
-
-	if(!mem.WriteMemory(SMAddress(index, 0), header, 16)) {
-		throw CudaException(CUDA_ERROR_OUT_OF_MEMORY);
-	}
-	
-	if(trace_loading)
-		cerr << "Loading " << param_size << "B parameters in core "
-		     << core << ", block " << index << endl;
-	
-	// Parameters
-	if(!mem.WriteMemory(SMAddress(index, 16), &parameters[0], param_size)) {
-		throw CudaException(CUDA_ERROR_OUT_OF_MEMORY);
-	}
+    return stats;
 }
-#endif
 
 template<class CONFIG>
 int Kernel<CONFIG>::BlocksPerCore() const

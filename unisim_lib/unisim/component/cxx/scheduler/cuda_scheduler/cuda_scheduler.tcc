@@ -57,12 +57,14 @@ CoreSocket<CPUCONFIG>::CoreSocket(const char *name, Object *parent) :
 	Client<Memory<SMAddress> >(name, parent),
 	Client<Resetable>(name, parent),
 	Client<Runnable>(name, parent),
+	Client<InstructionStats<typename CPUCONFIG::stats_t> >(name, parent),
 	registers_import("registers-import", this),
 	configuration_import("configuration-import", this),
 	samplers_import("samplers-import", this),
 	shared_memory_import("shared-memory-import", this),
 	reset_import("reset-import", this),
-	run_import("run-import", this)
+	run_import("run-import", this),
+	stats_import("stats-import", this)
 {
 }
 
@@ -72,21 +74,21 @@ bool CoreSocket<CPUCONFIG>::Setup()
 	return true;
 }
 
-inline
-int ThreadsPerBlock(CUDAGrid const & kernel)
+template<class CONFIG>
+int ThreadsPerBlock(CUDAGrid<CONFIG> const & kernel)
 {
 	return kernel.BlockZ() * kernel.BlockY() * kernel.BlockX();
 }
 
 template<class CONFIG>
-int WarpsPerBlock(CUDAGrid const & kernel)
+int WarpsPerBlock(CUDAGrid<CONFIG> const & kernel)
 {
 	return (ThreadsPerBlock(kernel) + CONFIG::WARP_SIZE - 1) / CONFIG::WARP_SIZE;
 }
 
 
 template<class CONFIG>
-int BlocksPerCore(CUDAGrid const & kernel)
+int BlocksPerCore(CUDAGrid<CONFIG> const & kernel)
 {
 	int blocksreg = CONFIG::MAX_VGPR / (kernel.GPRs() * WarpsPerBlock<CONFIG>(kernel));
 	int blockssm = CONFIG::SHARED_SIZE / kernel.SharedTotal(); // Already aligned
@@ -101,7 +103,7 @@ inline uint32_t BuildTID(int x, int y, int z)
 }
 
 template<class CONFIG>
-void SetThreadIDs(CUDAGrid const & kernel, int bnum, CoreSocket<CONFIG> & cpu)
+void SetThreadIDs(CUDAGrid<CONFIG> const & kernel, int bnum, CoreSocket<CONFIG> & cpu)
 {
 	// Set register 0 of each thread
 	int warpsperblock = WarpsPerBlock<CONFIG>(kernel);
@@ -126,7 +128,7 @@ void SetThreadIDs(CUDAGrid const & kernel, int bnum, CoreSocket<CONFIG> & cpu)
 }
 
 template<class CONFIG>
-void InitShared(CUDAGrid const & kernel, Memory<SMAddress> & mem, int index,
+void InitShared(CUDAGrid<CONFIG> const & kernel, Memory<SMAddress> & mem, int index,
 	int bidx, int bidy, int core)
 {
 	// Header
@@ -166,10 +168,10 @@ struct Runner
 {
 	CoreSocket<CONFIG> & core;
 	int c;
-	CUDAGrid const & kernel;
+	CUDAGrid<CONFIG> const & kernel;
 	unsigned int core_count;
 	
-	Runner(CoreSocket<CONFIG> & core, CUDAGrid const & kernel,
+	Runner(CoreSocket<CONFIG> & core, CUDAGrid<CONFIG> const & kernel,
 		int core_count, int c) :
 		core(core), c(c), kernel(kernel),
 		core_count(core_count) {}
@@ -228,7 +230,7 @@ void Runner<CONFIG>::operator() ()
 template<class CONFIG>
 CUDAScheduler<CONFIG>::CUDAScheduler(unsigned int cores, const char *name, Object *parent) :
 	Object(name, parent),
-	Service<Scheduler<CUDAGrid> >(name, parent),
+	Service<Scheduler<CUDAGrid<CONFIG> > >(name, parent),
 	scheduler_export("scheduler-export", this),
 	core_count(cores),
 	sockets(cores),
@@ -252,9 +254,15 @@ bool CUDAScheduler<CONFIG>::Setup()
 
 
 template<class CONFIG>
-void CUDAScheduler<CONFIG>::Schedule(CUDAGrid const & kernel)
+void CUDAScheduler<CONFIG>::Schedule(CUDAGrid<CONFIG> & kernel)
 {
 	thread_group GPUThreads;
+
+	std::vector<Stats<CONFIG> > temp_stats(core_count);
+	for(unsigned int c = 0; c != core_count; ++c) {
+		Socket(c).stats_import->SetStats(&temp_stats[c]);
+		Socket(c).stats_import->InitStats(kernel.CodeSize());	// Even if not exporting
+	}
 
 	for(unsigned int c = 0; c != core_count; ++c) {
 		for(unsigned int s = 0; s != kernel.SamplersSize(); ++s) {
@@ -275,6 +283,17 @@ void CUDAScheduler<CONFIG>::Schedule(CUDAGrid const & kernel)
 	Runner<CONFIG>(Socket(0), kernel, core_count, 0)();
 	
 	GPUThreads.join_all();
+
+	for(unsigned int c = 0; c != core_count; ++c) {
+		Socket(c).stats_import->SetStats(0);
+	}
+	
+	if(export_stats) {
+		for(int c = 0; c != core_count; ++c)
+		{
+			kernel.GetStats().Merge(temp_stats[c]);
+		}
+	}
 }
 
 template<class CONFIG>

@@ -77,13 +77,11 @@ struct Loadable
 };
 
 template<class CONFIG>
-struct Kernel : CUfunc_st, CUDAGrid, Loadable<CONFIG>
+struct Kernel : CUfunc_st, CUDAGrid<CONFIG>, Loadable<CONFIG>
 {
 	Kernel(Module<CONFIG> * module, std::istream & is);
 	Kernel();	// Default constructor needed for std containers
-//	uint32_t ConstSize() const;
-//	uint32_t LocalSize() const;
-	uint32_t CodeSize() const;
+	virtual uint32_t CodeSize() const;
 
 	void Load(Service<unisim::service::interfaces::Memory<typename CONFIG::address_t> > & mem,
 		Allocator<CONFIG> & allocator, uint32_t offset = 0);
@@ -99,6 +97,7 @@ struct Kernel : CUfunc_st, CUDAGrid, Loadable<CONFIG>
 	virtual int ThreadsPerBlock() const;
 	virtual int WarpsPerBlock() const;
 	virtual int GPRs() const;
+	virtual Stats<CONFIG> & GetStats();
 	
 	void ParamSeti(int offset, uint32_t value);
 	void ParamSetf(int offest, float value);
@@ -106,14 +105,11 @@ struct Kernel : CUfunc_st, CUDAGrid, Loadable<CONFIG>
 	void ParamSetSize(int size);
 	void SetSharedSize(int size);
 	void SetTexRef(::Sampler<CONFIG> * sampler);
-	//void LoadSamplers(CPU<CONFIG> & cpu);
 	
 	virtual uint32_t SharedTotal() const;
 	uint32_t LocalTotal() const;
 	virtual uint8_t const * GetParameters() const;
 	virtual uint32_t ParametersSize() const;
-	//virtual void InitShared(unisim::service::interfaces::Memory<SMAddress> & mem, int index = 0,
-	//	int bidx = 0, int bidy = 0, int core = 0) const;
 
 	virtual unsigned int SamplersSize() const;
 	virtual SamplerBase<typename CONFIG::address_t> const * GetSampler(unsigned int i) const;
@@ -121,11 +117,11 @@ struct Kernel : CUfunc_st, CUDAGrid, Loadable<CONFIG>
 	// TODO: To be removed someday, duplicated with CUDAScheduler
 	int BlocksPerCore() const;	// Max blocks that can run on a SM of target architecture
 	
-	Stats<CONFIG> stats;
 	
 	static bool trace_loading;
 	static bool trace_parsing;
 private:
+	Stats<CONFIG> stats;
 	void SetAttribute(std::string const & name, std::string const & value);
 
 	Module<CONFIG> * module;

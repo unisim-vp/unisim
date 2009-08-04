@@ -154,7 +154,6 @@ void Device<CONFIG>::DumpCode(Kernel<CONFIG> & kernel, std::ostream & os)
 template<class CONFIG>
 void Device<CONFIG>::Run(Kernel<CONFIG> & kernel, int width, int height)
 {
-	std::vector<Stats<CONFIG> > temp_stats(core_count);
 	DumpCode(kernel, cerr);
 	Load(kernel);
 	
@@ -167,32 +166,12 @@ void Device<CONFIG>::Run(Kernel<CONFIG> & kernel, int width, int height)
 		core_count * kernel.WarpsPerBlock() * CONFIG::WARP_SIZE * kernel.BlocksPerCore()
 		 * core_count * kernel.LocalTotal());
 	
-	for(int i = 0; i != core_count; ++i) {
-		cores[i]->SetStats(&temp_stats[i]);
-		cores[i]->InitStats(kernel.CodeSize());	// Even if not exporting
-	}
-
-#if 0
-	for(int i = 0; i != core_count; ++i) {
-		kernel.LoadSamplers(*cores[i]);
-	}
-#endif
 	kernel.SetGridShape(width, height);
 
 	scheduler->Schedule(kernel);
 	
-	for(int i = 0; i != core_count; ++i) {
-		cores[i]->SetStats(0);
-	}
-
-	
-	// Merge stats
 	if(export_stats) {
-		for(int c = 0; c != core_count; ++c)
-		{
-			kernel.stats.Merge(temp_stats[c]);
-		}
-		ExportStats(kernel.stats, (kernel.Name() + ".csv").c_str());
+		ExportStats(kernel.GetStats(), (kernel.Name() + ".csv").c_str());
 	}
 }
 

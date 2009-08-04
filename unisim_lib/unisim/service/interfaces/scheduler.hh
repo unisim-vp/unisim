@@ -42,7 +42,7 @@ namespace interfaces {
 template<class GRID>
 struct Scheduler
 {
-	virtual void Schedule(GRID const & g) = 0;
+	virtual void Schedule(GRID & g) = 0;
 };
 
 } // end of namespace interfaces

@@ -45,6 +45,8 @@
 #include <unisim/service/interfaces/scheduler.hh>
 #include <unisim/service/interfaces/instruction_stats.hh>
 #include <unisim/component/cxx/processor/tesla/interfaces.hh>
+#include <unisim/component/cxx/processor/tesla/stats.hh>    // Argh
+
 
 using boost::shared_ptr;
 using unisim::service::interfaces::TypedRegisters;
@@ -63,6 +65,7 @@ using unisim::component::cxx::processor::tesla::SMAddress;
 using unisim::component::cxx::processor::tesla::ConfigurationRegisterID;
 using unisim::component::cxx::processor::tesla::SamplerBase;
 using unisim::component::cxx::processor::tesla::SamplerIndex;
+using unisim::component::cxx::processor::tesla::Stats;
 using unisim::kernel::service::Parameter;
 
 namespace unisim {
@@ -78,7 +81,8 @@ struct CoreSocket :
 	Client<TypedRegisters<SamplerBase<typename CPUCONFIG::address_t>, SamplerIndex> >,
 	Client<Memory<SMAddress> >,
 	Client<Resetable>,
-	Client<Runnable>
+	Client<Runnable>,
+	Client<InstructionStats<typename CPUCONFIG::stats_t> >
 {
 	ServiceImport<TypedRegisters<uint32_t, GPRID> > registers_import;
 	ServiceImport<TypedRegisters<uint32_t, ConfigurationRegisterID> > configuration_import;
@@ -86,11 +90,13 @@ struct CoreSocket :
 	ServiceImport<Memory<SMAddress> > shared_memory_import;
 	ServiceImport<Resetable> reset_import;
 	ServiceImport<Runnable> run_import;
+	ServiceImport<InstructionStats<typename CPUCONFIG::stats_t> > stats_import;
 	
 	CoreSocket(const char *name, Object *parent = 0);
 	virtual bool Setup();
 };
 
+template<class CONFIG>
 struct CUDAGrid
 {
 	virtual int BlockX() const = 0;
@@ -106,21 +112,23 @@ struct CUDAGrid
 	virtual uint32_t ParametersSize() const = 0;
 	// Samplers
 	virtual unsigned int SamplersSize() const = 0;
-	virtual SamplerBase<> const * GetSampler(unsigned int i) const = 0;
+	virtual SamplerBase<typename CONFIG::address_t> const * GetSampler(unsigned int i) const = 0;
 	// Stats
 	// depends on config...
+	virtual Stats<CONFIG> & GetStats() = 0;
+	virtual uint32_t CodeSize() const = 0;
 };
 
 template<class CONFIG>
 struct CUDAScheduler :
-    Service<Scheduler<CUDAGrid> >
+    Service<Scheduler<CUDAGrid<CONFIG> > >
 {
-    ServiceExport<Scheduler<CUDAGrid> > scheduler_export;
+    ServiceExport<Scheduler<CUDAGrid<CONFIG> > > scheduler_export;
 
 	CUDAScheduler(unsigned int cores, const char *name, Object *parent = 0);
 	virtual bool Setup();
 	
-	void Schedule(CUDAGrid const & grid);
+	void Schedule(CUDAGrid<CONFIG> & grid);
 
 	// One CONFIG to rule them all?
 	CoreSocket<CONFIG> & Socket(unsigned int i);
