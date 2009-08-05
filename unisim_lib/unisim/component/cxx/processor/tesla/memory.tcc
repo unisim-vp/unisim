@@ -97,7 +97,7 @@ VectorRegister<CONFIG> CPU<CONFIG>::ReadConstant(unsigned int addr, uint32_t seg
 
 template <class CONFIG>
 VectorAddress<CONFIG> CPU<CONFIG>::EffectiveAddress(uint32_t reg, uint32_t addr_lo, uint32_t addr_hi,
-	uint32_t addr_imm, uint32_t shift)
+	bool addr_imm, uint32_t shift)
 {
 	uint32_t addr_reg = (addr_hi << 2) | addr_lo;
 	VecAddr offset;
@@ -117,7 +117,7 @@ VectorAddress<CONFIG> CPU<CONFIG>::EffectiveAddress(uint32_t reg, uint32_t addr_
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::GatherShared(VectorRegister<CONFIG> & output, uint32_t src, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, std::bitset<CONFIG::WARP_SIZE> mask, SMType type)
+void CPU<CONFIG>::GatherShared(VectorRegister<CONFIG> & output, uint32_t src, uint32_t addr_lo, uint32_t addr_hi, bool addr_imm, std::bitset<CONFIG::WARP_SIZE> mask, SMType type)
 {
 	uint32_t shift = 0;
 	if(type == SM_U16 || type == SM_S16) shift = 1;
@@ -164,7 +164,7 @@ void CPU<CONFIG>::GatherShared(VectorAddress<CONFIG> const & addr,
 
 template <class CONFIG>
 void CPU<CONFIG>::ScatterShared(VectorRegister<CONFIG> const & output, uint32_t dest,
-	uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm,
+	uint32_t addr_lo, uint32_t addr_hi, bool addr_imm,
 	std::bitset<CONFIG::WARP_SIZE> mask, SMType type)
 {
 
@@ -222,7 +222,7 @@ void CPU<CONFIG>::ReadShared(typename CONFIG::address_t addr, VectorRegister<CON
 
 template <class CONFIG>
 void CPU<CONFIG>::GatherConstant(VecReg & output, uint32_t src, uint32_t addr_lo,
-	uint32_t addr_hi, uint32_t addr_imm, uint32_t segment,
+	uint32_t addr_hi, bool addr_imm, uint32_t segment,
 	std::bitset<CONFIG::WARP_SIZE> mask, SMType type)
 {
 	uint32_t shift = 0;
@@ -508,7 +508,7 @@ void CPU<CONFIG>::Scatter(VecAddr const & addr, VecReg const data[],
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::ScatterGlobal(VecReg const output[], uint32_t dest, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, std::bitset<CONFIG::WARP_SIZE> mask, DataType dt)
+void CPU<CONFIG>::ScatterGlobal(VecReg const output[], uint32_t dest, uint32_t addr_lo, uint32_t addr_hi, bool addr_imm, uint32_t segment, std::bitset<CONFIG::WARP_SIZE> mask, DataType dt)
 {
 	unsigned int shift = 0;
 	if(dt == DT_U16 || dt == DT_S16) shift = 1;	// 16-bit
@@ -528,7 +528,7 @@ void CPU<CONFIG>::ScatterGlobal(VecReg const output[], uint32_t dest, uint32_t a
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::GatherGlobal(VecReg output[], uint32_t src, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, std::bitset<CONFIG::WARP_SIZE> mask, DataType dt)
+void CPU<CONFIG>::GatherGlobal(VecReg output[], uint32_t src, uint32_t addr_lo, uint32_t addr_hi, bool addr_imm, uint32_t segment, std::bitset<CONFIG::WARP_SIZE> mask, DataType dt)
 {
 	unsigned int shift = 0;
 	if(dt == DT_U16 || dt == DT_S16) shift = 1;	// 16-bit
@@ -548,7 +548,7 @@ void CPU<CONFIG>::GatherGlobal(VecReg output[], uint32_t src, uint32_t addr_lo, 
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::ScatterLocal(VecReg const output[], uint32_t dest, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, std::bitset<CONFIG::WARP_SIZE> mask, DataType dt)
+void CPU<CONFIG>::ScatterLocal(VecReg const output[], uint32_t dest, uint32_t addr_lo, uint32_t addr_hi, bool addr_imm, uint32_t segment, std::bitset<CONFIG::WARP_SIZE> mask, DataType dt)
 {
 	// Local memory always byte-indexed
 	unsigned int shift = 0;
@@ -578,7 +578,7 @@ void CPU<CONFIG>::ScatterLocal(VecReg const output[], uint32_t dest, uint32_t ad
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::GatherLocal(VecReg output[], uint32_t src, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, std::bitset<CONFIG::WARP_SIZE> mask, DataType dt)
+void CPU<CONFIG>::GatherLocal(VecReg output[], uint32_t src, uint32_t addr_lo, uint32_t addr_hi, bool addr_imm, uint32_t segment, std::bitset<CONFIG::WARP_SIZE> mask, DataType dt)
 {
 	// Local memory always byte-indexed
 	unsigned int shift = 0;

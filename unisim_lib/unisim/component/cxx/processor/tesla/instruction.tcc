@@ -474,6 +474,7 @@ RegType Instruction<CONFIG>::OperandRegType(Operand op) const
 	case DT_F32:
 		return RT_U32;
 	case DT_U64:
+	case DT_F64:
 		return RT_U64;
 	default:
 		assert(false);
@@ -506,26 +507,7 @@ template <class CONFIG>
 size_t Instruction<CONFIG>::OperandSize(Operand op) const
 {
 	DataType dt = OperandDataType(op);
-	switch(dt)
-	{
-	case DT_U8:
-	case DT_S8:
-		return 1;
-	case DT_U16:
-	case DT_S16:
-		return 2;
-	case DT_U32:
-	case DT_S32:
-	case DT_F32:
-		return 4;
-	case DT_U64:
-		return 8;
-	case DT_U128:
-		return 16;
-	default:
-		assert(false);
-	}
-	
+	return DataTypeSize(dt);
 }
 
 template <class CONFIG>

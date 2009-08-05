@@ -321,15 +321,29 @@ public:
 	VecAddr LocalAddress(VecAddr const & addr, unsigned int segment);
 	address_t LocalAddress(address_t addr, unsigned int segment);
 	
-	void ScatterGlobal(VecReg const output[], uint32_t dest, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, std::bitset<CONFIG::WARP_SIZE> mask, DataType dt);
-	void GatherGlobal(VecReg output[], uint32_t src, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, std::bitset<CONFIG::WARP_SIZE> mask, DataType dt);
-	void ScatterLocal(VecReg const output[], uint32_t dest, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, std::bitset<CONFIG::WARP_SIZE> mask, DataType dt);
-	void GatherLocal(VecReg output[], uint32_t src, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, std::bitset<CONFIG::WARP_SIZE> mask, DataType dt);
-	void ScatterShared(VecReg const & output, uint32_t dest, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, std::bitset<CONFIG::WARP_SIZE> mask, SMType type);
+	void ScatterGlobal(VecReg const output[], uint32_t dest, uint32_t addr_lo,
+		uint32_t addr_hi, bool addr_imm, uint32_t segment,
+		std::bitset<CONFIG::WARP_SIZE> mask, DataType dt);
+	void GatherGlobal(VecReg output[], uint32_t src, uint32_t addr_lo,
+		uint32_t addr_hi, bool addr_imm, uint32_t segment,
+		std::bitset<CONFIG::WARP_SIZE> mask, DataType dt);
+	void ScatterLocal(VecReg const output[], uint32_t dest, uint32_t addr_lo,
+		uint32_t addr_hi, bool addr_imm, uint32_t segment,
+		std::bitset<CONFIG::WARP_SIZE> mask, DataType dt);
+	void GatherLocal(VecReg output[], uint32_t src, uint32_t addr_lo,
+		uint32_t addr_hi, bool addr_imm, uint32_t segment,
+		std::bitset<CONFIG::WARP_SIZE> mask, DataType dt);
+	void ScatterShared(VecReg const & output, uint32_t dest, uint32_t addr_lo,
+		uint32_t addr_hi, bool addr_imm,
+		std::bitset<CONFIG::WARP_SIZE> mask, SMType type);
 
-	void GatherShared(VecAddr const & addr, VecReg & data, std::bitset<CONFIG::WARP_SIZE> mask, SMType t = SM_U32);	// addr in bytes
-	void GatherShared(VecReg & output, uint32_t src, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, std::bitset<CONFIG::WARP_SIZE> mask, SMType type);
-	void GatherConstant(VecReg & output, uint32_t src, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, std::bitset<CONFIG::WARP_SIZE> mask, SMType type);
+	void GatherShared(VecAddr const & addr, VecReg & data,
+		std::bitset<CONFIG::WARP_SIZE> mask, SMType t = SM_U32);	// addr in bytes
+	void GatherShared(VecReg & output, uint32_t src, uint32_t addr_lo,
+		uint32_t addr_hi, bool addr_imm, std::bitset<CONFIG::WARP_SIZE> mask, SMType type);
+	void GatherConstant(VecReg & output, uint32_t src, uint32_t addr_lo,
+		uint32_t addr_hi, bool addr_imm, uint32_t segment,
+		std::bitset<CONFIG::WARP_SIZE> mask, SMType type);
 
 	void Gather(VecAddr const & addr, VecReg data[],
 		std::bitset<CONFIG::WARP_SIZE> mask, DataType dt);
@@ -364,7 +378,7 @@ public:
 	void Write8(address_t addr, uint32_t data, uint32_t factor = 1, address_t offset = 0);
 
 	VecAddr EffectiveAddress(uint32_t reg, uint32_t addr_lo, uint32_t addr_hi,
-		uint32_t addr_imm, uint32_t shift);
+		bool addr_imm, uint32_t shift);
 	
 	void Sample1DS32(unsigned int sampler,
 		VectorRegister<CONFIG> dest[],

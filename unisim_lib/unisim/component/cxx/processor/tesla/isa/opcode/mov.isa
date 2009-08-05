@@ -40,21 +40,21 @@
 ****************************************************/
 
 op mov_reg_full_normal( \
-	/*subop*/0[3]:/*?*/0[1]:sign[1]:data_32[1]:/*const_seg*/?[4]:/*src1_sh*/?[1]:abs_sat[2]:cvt_round[2]:cvt_type[3]:\
+	/*subop*/0[3]:/*?*/0[1]:sign[1]:data_32[1]:alt[1]:/*?*/0[3]:/*src1_sh*/?[1]:abs_sat[2]:cvt_round[2]:cvt_type[3]:\
 	/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output*/?[1]:/*addr_hi*/?[1]:/*marker*/0[2]: \
 	0x1[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:f64[1]:/*?*/0[6]:\
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1]\
 )
 
 op mov_reg_full_end( \
-	/*subop*/0[3]:/*?*/0[1]:sign[1]:data_32[1]:/*const_seg*/?[4]:/*src1_sh*/?[1]:abs_sat[2]:cvt_round[2]:cvt_type[3]:\
+	/*subop*/0[3]:/*?*/0[1]:sign[1]:data_32[1]:alt[1]:/*?*/0[3]:/*src1_sh*/?[1]:abs_sat[2]:cvt_round[2]:cvt_type[3]:\
 	/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output*/?[1]:/*addr_hi*/?[1]:/*marker*/1[2]: \
 	0x1[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:f64[1]:/*?*/0[6]:\
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1]\
 )
 
 op mov_reg_full_join( \
-	/*subop*/0[3]:/*?*/0[1]:sign[1]:data_32[1]:/*const_seg*/?[4]:/*src1_sh*/?[1]:abs_sat[2]:cvt_round[2]:cvt_type[3]:\
+	/*subop*/0[3]:/*?*/0[1]:sign[1]:data_32[1]:alt[1]:/*?*/0[3]:/*src1_sh*/?[1]:abs_sat[2]:cvt_round[2]:cvt_type[3]:\
 	/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output*/?[1]:/*addr_hi*/?[1]:/*marker*/2[2]: \
 	0x1[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:f64[1]:/*?*/0[6]:\
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1]\
@@ -75,7 +75,7 @@ op mov_reg_full_imm( \
 )
 
 op mov_reg_half( \
-	0x1[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src1_sm*/?[1]:/*src2_cm*/0[1]:f64[1]:/*imm_lo*/?[6]:\
+	0x1[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src1_sm*/?[1]:/*src2_cm*/0[1]:f64[1]:/*?*/0[4]:alt[1]:0[1]:\
 	data_32[1]:/*src1*/?[6]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/0[1]\
 )
 
@@ -100,6 +100,8 @@ mov_reg_full_noimm.disasm = {
 	// pred_cond = 15 -> default, true
 	buffer << "mov";
 	insn->DisasmControl(buffer);
+	if(alt)
+	    buffer << ".alt?";
 
 	DisasmSignWidth(false, data_32, buffer);
 	DisasmConvert(cvt_round, cvt_type, sign, data_32, abs_sat, buffer);	// Convert allowed??
@@ -165,6 +167,8 @@ mov_reg_half.disasm = {
 	buffer << "mov";
 	insn->DisasmControl(buffer);
 	DisasmSignWidth(false, data_32, buffer);
+	if(alt)
+	    buffer << ".alt?";
 
 	buffer << " ";
 	insn->DisasmDest(buffer);
@@ -187,6 +191,57 @@ group mov_reg(mov_reg_full_noimm, mov_reg_full_imm, mov_reg_half)
 mov_reg.classify = {
 	stats->SetMov();
 }
+
+// LDSH
+
+op ldsh_full( \
+	/*subop*/2[3]:/*?*/0[1]:sign[1]:w32[1]:/*?*/0[4]:/*src1_sh*/?[1]:abs_sat[2]:cvt_round[2]:mem_type[3]:\
+	/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output*/?[1]:addr_hi[1]:/*marker*/?[2]: \
+	0x1[4]:addr_lo[2]:addr_incr[1]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:src1[14]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1]\
+)
+
+ldsh_full.init = {
+	typedef Operation<CONFIG> inherited;
+	DataType dt = RegTypeToDataType(RegType(w32));
+	inherited::op_type[OpDest] = dt;
+	inherited::op_type[OpSrc1] = SMTypeToDataType(SMType(mem_type));
+	inherited::op_type[OpSrc2] = DT_NONE;
+	inherited::op_type[OpSrc3] = DT_NONE;
+}
+
+ldsh_full.classify = {
+	stats->SetMov();
+}
+
+ldsh_full.disasm = {
+	buffer << "mov";
+	insn->DisasmControl(buffer);
+
+	DisasmConvertSharedConst(RoundingMode(cvt_round),
+		SMType(mem_type), sign, w32, AbsSat(abs_sat), buffer);	// Convert allowed??	
+	buffer << " ";
+	insn->DisasmDest(buffer);
+
+	buffer << ", ";
+	DisasmShared(src1, addr_lo, addr_hi, 1, SMType(mem_type), buffer, addr_incr);
+}
+
+ldsh_full.read = {
+	typedef Instruction<CONFIG> Insn;
+	cpu->GatherShared(insn->Temp(Insn::TempSrc1), src1, addr_lo, addr_hi, 1, insn->Mask(), SMType(mem_type));
+}
+
+ldsh_full.execute = {
+	typedef VectorRegister<CONFIG> reg_t;
+	assert(!addr_incr);
+	
+	reg_t & a = insn->GetSrc1();
+	insn->SetDest(ConvertIntInt(a, cvt_round, SMTypeToConvType(SMType(mem_type)),
+		w32, AbsSat(abs_sat)));
+}
+
+
+// STSH
 
 op stsh_full( \
 	/*subop*/7[3]:/*?*/0[1]:/*cvt_round_half*/0[1]:w32[1]:/*?*/0[2]: m_size[3]:src3[7]\

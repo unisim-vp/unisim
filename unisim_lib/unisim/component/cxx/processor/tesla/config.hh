@@ -117,9 +117,13 @@ public:
 
 	
 	static int const COMPUTE_CAP_MAJOR = 1;
-	static int const COMPUTE_CAP_MINOR = 0;
+	static int const COMPUTE_CAP_MINOR = 3;
 	static int const SHADER_CLOCK_KHZ = 1350000;
 	static int const CORE_COUNT = 1;
+	
+	static bool const CAP_GLOBALATOMICS = false;
+	static bool const CAP_SMLOCKS = false;
+	static bool const CAP_DP = true;
 
 	// Default values, can be overriden at run-time
 	static bool const TRACE_INSN = false;

@@ -17,7 +17,7 @@ nobase_include_HEADERS = cpu.hh cpu.tcc config.hh disasm.hh exec.hh exec.tcc \
 	isa/opcode/tesla.isa isa/src1/src1.isa isa/src2/src2.isa isa/src3/src3.isa \
 	isa/dest/dest.isa isa/control/control.isa \
 	isa/opcode/mov.isa isa/opcode/integer.isa isa/opcode/fp32.isa isa/opcode/fp32.isa \
-	isa/opcode/branch.isa \
+	isa/opcode/branch.isa isa/opcode/fp64.isa \
 	hostfloat/hostfloat.hh hostfloat/hostfloat.tcc hostfloat/rounding.hh hostfloat/rounding.tcc \
 	hostfloat/denormals.hh hostfloat/c99_rounding.hh hostfloat/msvc_rounding.hh \
 	hostfloat/traits.hh
@@ -46,7 +46,8 @@ CLEANFILES = $(top_srcdir)/tesla_opcode.tcc $(top_srcdir)/tesla_opcode.hh \
 $(top_srcdir)/tesla_opcode.tcc: $(top_srcdir)/tesla_opcode.hh
 $(top_srcdir)/tesla_opcode.hh: $(srcdir)/isa/opcode/tesla.isa \
 	$(srcdir)/isa/opcode/fp32.isa $(srcdir)/isa/opcode/mov.isa \
-	$(srcdir)/isa/opcode/integer.isa $(srcdir)/isa/opcode/branch.isa
+	$(srcdir)/isa/opcode/integer.isa $(srcdir)/isa/opcode/branch.isa \
+	$(srcdir)/isa/opcode/fp64.isa
 	cd $(top_srcdir); $(GENISSLIB_PATH) -I . -o tesla_opcode -w 32 isa/opcode/tesla.isa
 
 $(top_srcdir)/tesla_src1.tcc: $(top_srcdir)/tesla_src1.hh

@@ -55,6 +55,7 @@ enum DataType
 	DT_U32 = 6,
 	DT_S32 = 7,
 	DT_F32,		// Not in Tesla ISA
+	DT_F64,     //
 	DT_NONE,	//
 	DT_UNKNOWN	//
 };
@@ -211,6 +212,7 @@ inline size_t DataTypeSize(DataType dt)
 	case DT_F32:
 		return 4;
 	case DT_U64:
+	case DT_F64:
 		return 8;
 	case DT_U128:
 		return 16;
@@ -233,6 +235,7 @@ inline unsigned int DataTypeLogSize(DataType dt)
 	case DT_F32:
 		return 2;
 	case DT_U64:
+	case DT_F64:
 		return 3;
 	case DT_U128:
 		return 4;

@@ -130,7 +130,8 @@ action {void} disasm({CPU<CONFIG> *} {cpu}, {Instruction<CONFIG> const *} {insn}
 //var op_type : { DataTypeArray }
 
 constructor action init() {
-	assert(false);
+    // Asserting here would prevent disasm of unknown instructions ("???")
+	//assert(false);
 	this->op_type[OpDest] = DT_U32;
 	this->op_type[OpSrc1] = DT_U32;
 	this->op_type[OpSrc2] = DT_U32;
@@ -144,4 +145,5 @@ include "isa/opcode/fp32.isa"
 include "isa/opcode/integer.isa"
 include "isa/opcode/mov.isa"
 include "isa/opcode/branch.isa"
+include "isa/opcode/fp64.isa"
 

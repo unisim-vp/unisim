@@ -128,6 +128,7 @@ public:
 	
 	void SetInteger() { integer = true;	}
 	void SetFP() { fp = true; }
+	void SetFP64() { fp = true; }
 
 	void SetTransc() { fp = true; }
 	void SetIMul() { integer = true; }

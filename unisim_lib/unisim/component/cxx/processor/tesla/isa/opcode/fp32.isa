@@ -575,18 +575,18 @@ fsset.execute = {
 //--------------------------------------------------------------------
 
 // float to int
-op fcvti_full_normal( \
-	/*subop*/4[3]:/*?*/0[1]:issigned[1]:dest_32[1]:/*const_seg*/?[4]:/*src1_sh*/?[1]:/*abs_sat*/0[2]:cvt_round[2]:cvt_type[3]:\
+op f2i_full_normal( \
+	/*subop*/4[3]:/*?*/0[1]:issigned[1]:dest_32[1]:/*?*/0[3]:/*f64*/0[1]:/*src1_sh*/?[1]:/*abs_sat*/0[2]:cvt_round[2]:cvt_type[3]:\
 	/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output*/?[1]:/*addr_hi*/?[1]:/*marker*/?[2]: \
-	0xa[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:f64[1]:/*?*/0[6]:\
+	0xa[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:/*?*/0[7]:\
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1]\
 )
 
-//specialize fcvti_full_normal(issigned=1, dest_32=1, cvt_round=3, cvt_type=5)
+//specialize f2i_full_normal(issigned=1, dest_32=1, cvt_round=3, cvt_type=5)
 
-group fcvti_full(fcvti_full_normal)
+group f2i_full(f2i_full_normal)
 
-fcvti_full.init = {
+f2i_full.init = {
 	typedef Operation<CONFIG> inherited;
 	DataType dt = RegTypeToDataType(RegType(dest_32));
 	inherited::op_type[OpDest] = dt;
@@ -599,11 +599,11 @@ fcvti_full.init = {
 	inherited::op_type[OpSrc3] = DT_NONE;
 }
 
-fcvti_full.classify = {
+f2i_full.classify = {
 	stats->SetFP();
 }
 
-fcvti_full.disasm = {
+f2i_full.disasm = {
 	buffer << "cvt";
 	insn->DisasmControl(buffer);
 
@@ -626,10 +626,10 @@ fcvti_full.disasm = {
 	insn->DisasmSrc1(buffer);
 }
 
-fcvti_full.execute = {
+f2i_full.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 	// dest = a
-	assert(!f64);
+	//assert(!f64);
 	reg_t & a = insn->GetSrc1();
 	CONFIG::vfp32::ConvertF2I(a, issigned, dest_32, ConvType(cvt_type), RoundingMode(cvt_round));
 }
