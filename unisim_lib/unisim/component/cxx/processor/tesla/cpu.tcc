@@ -52,6 +52,7 @@
 #include <unisim/component/cxx/processor/tesla/stats.tcc>
 #include <unisim/component/cxx/processor/tesla/vectorfp32.tcc>
 #include <unisim/component/cxx/processor/tesla/sampler.tcc>
+#include <unisim/component/cxx/processor/tesla/register_interface.tcc>
 
 #include <sstream>
 #include <stdexcept>
@@ -72,6 +73,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent, int coreid, int core_count) :
 	Service<Disassembly<typename CONFIG::address_t> >(name, parent),
 	Service<Memory<typename CONFIG::address_t> >(name, parent),
 	Service<MemoryInjection<typename CONFIG::address_t> >(name, parent),
+	Service<Registers>(name, parent),
 	Service<TypedRegisters<uint32_t, GPRID> >(name, parent),
 	Service<TypedRegisters<uint32_t, ConfigurationRegisterID> >(name, parent),
 	Service<TypedRegisters<SamplerBase<typename CONFIG::address_t>, SamplerIndex> >(name, parent),
@@ -87,6 +89,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent, int coreid, int core_count) :
 	disasm_export("disasm-export", this),
 	memory_export("memory-export", this),
 	memory_injection_export("memory-injection-export", this),
+	debug_registers_export("debug-registers-export", this),
 	registers_export("registers-export", this),
 	configuration_export("configuration-export", this),
 	samplers_export("samplers-export", this),
@@ -106,6 +109,9 @@ CPU<CONFIG>::CPU(const char *name, Object *parent, int coreid, int core_count) :
 	coreid(coreid),
 	core_count(core_count),
 	zero_reg(0),
+	num_warps(0),
+	num_ctas(0),
+	current_laneid(0),
 	instruction_counter(0),
 	max_inst(0xffffffffffffffffULL),
 	param_max_inst("max-inst", this, max_inst),
@@ -141,14 +147,14 @@ CPU<CONFIG>::CPU(const char *name, Object *parent, int coreid, int core_count) :
 {
 //	Object::SetupDependsOn(logger_import);
 
+	PopulateRegisterRegistry();
+	
 	//Reset();
 	for(unsigned int i = 0; i != MAX_WARPS; ++i)
 	{
 		warps[i].id = i;
 		warps[i].state = Warp<CONFIG>::Finished;
 	}
-	num_warps = 0;
-	num_ctas = 0;
 }
 
 template <class CONFIG>
@@ -192,6 +198,8 @@ void CPU<CONFIG>::Reset()
 	}
 	num_warps = 0;
 	num_ctas = 0;
+	current_laneid = 0;
+	current_warpid = 0;
 
 	// Round up
 	unsigned int warpsperblock = (threadsperblock + WARP_SIZE - 1) / WARP_SIZE;
@@ -398,6 +406,43 @@ bool CPU<CONFIG>::InjectWriteMemory(address_t addr, const void *buffer, uint32_t
 {
 	return WriteMemory(addr, buffer, size);
 }
+
+
+template <class CONFIG>
+Register * CPU<CONFIG>::GetRegister(const char *name)
+{
+	registers_registry_t::iterator it = registers_registry.find(name);
+	if(it != registers_registry.end()) {
+		return it->second.get();
+	}
+	return 0;
+}
+
+#if 0
+template <class CONFIG>
+Register * CPU<CONFIG>::ParseRegisterName(istringstream & name, unsigned int warp)
+{
+	char regtype;
+	unsigned int regnum;
+	name >> regtype;
+	name >> regnum;
+	
+	switch(regtype)
+	{
+	case 'r':
+		// vector register
+		break;
+	case 'w':
+		// warp id
+		break;
+	case 's':
+		// scalar register
+		// TODO
+	default:
+		return 0;
+	}
+}
+#endif
 
 template <class CONFIG>
 uint32_t CPU<CONFIG>::ReadTypedRegister(GPRID addr)
@@ -658,6 +703,18 @@ VectorAddress<CONFIG> CPU<CONFIG>::GetAddr(unsigned int reg) const
 }
 
 template <class CONFIG>
+uint32_t & CPU<CONFIG>::GetScalar(unsigned int reg)
+{
+	return GetGPR(reg)[current_laneid];
+}
+
+template <class CONFIG>
+uint32_t CPU<CONFIG>::GetScalar(unsigned int reg) const
+{
+	return GetGPR(reg)[current_laneid];
+}
+
+template <class CONFIG>
 std::bitset<CONFIG::WARP_SIZE> CPU<CONFIG>::GetCurrentMask() const
 {
 	return CurrentWarp().flow.GetCurrentMask();
@@ -847,6 +904,36 @@ typename CONFIG::operationstats_t & CPU<CONFIG>::GetOpStats()
 	return (*stats)[GetPC() - CONFIG::CODE_START];
 }
 
+template <class CONFIG>
+void CPU<CONFIG>::PopulateRegisterRegistry()
+{
+	// Warp ID
+	registers_registry["wid"] = shared_ptr<Register>(
+		new SimpleRegister<uint32_t>("wid", &current_warpid));
+	
+	// Lane ID
+	registers_registry["lid"] = shared_ptr<Register>(
+		new SimpleRegister<uint32_t>("lid", &current_laneid));
+	
+	for(unsigned int i = 0; i != 128; ++i)
+	{
+		{
+			// Arch vector registers
+			ostringstream sstr;
+			sstr << "r" << i;
+			registers_registry[sstr.str()] = shared_ptr<Register>(
+				new VectorRegisterInterface<CONFIG>(sstr.str().c_str(), i, *this));
+		}
+		{
+			// Scalar registers
+			ostringstream sstr;
+			sstr << "s" << i;
+			registers_registry[sstr.str()] = shared_ptr<Register>(
+				new ScalarRegisterInterface<CONFIG>(sstr.str().c_str(), i, *this));
+		}
+		
+	}
+}
 
 } // end of namespace tesla
 } // end of namespace processor

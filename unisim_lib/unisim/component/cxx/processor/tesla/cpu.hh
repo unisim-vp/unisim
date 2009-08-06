@@ -40,6 +40,7 @@
 #include <unisim/service/interfaces/memory_injection.hh>
 #include <unisim/service/interfaces/debug_control.hh>
 #include <unisim/service/interfaces/disassembly.hh>
+#include <unisim/service/interfaces/registers.hh>
 #include <unisim/util/debug/simple_register.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
@@ -57,6 +58,7 @@
 #include <iostream>
 #include <stdio.h>
 #include <boost/integer.hpp>
+#include <boost/shared_ptr.hpp>
 #include <stack>
 #include <bitset>
 #include <unisim/component/cxx/processor/tesla/interfaces.hh>
@@ -68,6 +70,7 @@
 #include <unisim/component/cxx/processor/tesla/tesla_flow.hh>
 #include <unisim/component/cxx/processor/tesla/hostfloat/hostfloat.hh>
 #include <unisim/component/cxx/processor/tesla/sampler.hh>
+#include <unisim/component/cxx/processor/tesla/register_interface.hh>
 
 
 namespace unisim {
@@ -81,6 +84,7 @@ using unisim::service::interfaces::Disassembly;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::MemoryInjection;
 using unisim::service::interfaces::TypedRegisters;
+using unisim::service::interfaces::Registers;
 using unisim::service::interfaces::InstructionStats;
 using unisim::service::interfaces::Resetable;
 using unisim::service::interfaces::Runnable;
@@ -91,6 +95,8 @@ using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::Object;
 using unisim::service::interfaces::Loader;
+using unisim::util::debug::Register;
+using unisim::util::debug::SimpleRegister;
 using unisim::util::debug::Symbol;
 using unisim::service::interfaces::SymbolTableLookup;
 using unisim::kernel::service::Parameter;
@@ -107,6 +113,7 @@ class CPU :
 	public Service<Disassembly<typename CONFIG::address_t> >,
 	public Service<Memory<typename CONFIG::address_t> >,
 	public Service<MemoryInjection<typename CONFIG::address_t> >,
+	public Service<Registers>,
 	public Service<TypedRegisters<uint32_t, GPRID> >,
 	public Service<TypedRegisters<uint32_t, ConfigurationRegisterID> >,
 	public Service<TypedRegisters<SamplerBase<typename CONFIG::address_t>, SamplerIndex> >,
@@ -150,6 +157,7 @@ public:
 
 	ServiceExport<Memory<address_t> > memory_export;
 	ServiceExport<MemoryInjection<address_t> > memory_injection_export;
+	ServiceExport<Registers> debug_registers_export;
 //	ServiceExport<Synchronizable> synchronizable_export;
 	ServiceExport<TypedRegisters<uint32_t, GPRID> > registers_export;
 	ServiceExport<TypedRegisters<uint32_t, ConfigurationRegisterID> > configuration_export;
@@ -177,9 +185,7 @@ public:
 	virtual bool Setup();
 	virtual void OnDisconnect();
 	
-	//=====================================================================
-	//=                    execution handling methods                     =
-	//=====================================================================
+	// Service implementation
 	
 	bool Step();	// -> true when finished
 	virtual void Run();
@@ -192,6 +198,8 @@ public:
 	virtual bool WriteMemory(address_t addr, const void *buffer, uint32_t size);
 	virtual bool InjectReadMemory(address_t addr, void *buffer, uint32_t size);
 	virtual bool InjectWriteMemory(address_t addr, const void *buffer, uint32_t size);
+
+	virtual Register *GetRegister(const char *name);
 
 	virtual uint32_t ReadTypedRegister(GPRID addr);
 	virtual void WriteTypedRegister(GPRID addr, uint32_t const & r);
@@ -208,6 +216,8 @@ public:
 	virtual void SetStats(typename CONFIG::stats_t * stats);
 	virtual void InitStats(unsigned int code_size);
 
+	//Register * ParseRegisterName(istringstream & name, unsigned int warp);
+	
 	void ReadShared(address_t addr, void *buffer, uint32_t size);
 	void WriteShared(address_t addr, const void *buffer, uint32_t size);
 	void SetSampler(Sampler<CONFIG> const & sampler, unsigned int n);
@@ -268,21 +278,9 @@ public:
 
 	void DumpAddr(int reg, ostream & os) const;
 
-	//=====================================================================
-	//=          DEC/TBL/TBU bus-time based update methods                =
-	//=====================================================================
-	
 	void OnBusCycle();
 
 	
-	
-	
-
-	//=====================================================================
-	//=                 Execution helper functions                        =
-	//=====================================================================
-
-
 	// Control flow
 	void Meet(address_t addr);
 	void PreBreak(address_t addr);
@@ -292,7 +290,13 @@ public:
 	void Kill(std::bitset<CONFIG::WARP_SIZE> mask);
 	void Return(std::bitset<CONFIG::WARP_SIZE> mask);
 	void Break(std::bitset<CONFIG::WARP_SIZE> mask);
+	void Branch(address_t target, std::bitset<CONFIG::WARP_SIZE> mask);
+	void Call(address_t target);
+	void StepWarp(uint32_t warpid);
+	void CheckJoin();
+	void CheckFenceCompleted();
 
+	// Register access
 	VecReg & GetGPR(unsigned int reg);	// for current warp
 	VecReg GetGPR(unsigned int reg) const;	// for current warp
 	
@@ -308,12 +312,10 @@ public:
 //	std::bitset<CONFIG::WARP_SIZE> & GetCurrentMask();
 	std::bitset<CONFIG::WARP_SIZE> GetCurrentMask() const;
 
-	void Branch(address_t target, std::bitset<CONFIG::WARP_SIZE> mask);
-	void Call(address_t target);
-
-	void StepWarp(uint32_t warpid);
-	void CheckJoin();
-	void CheckFenceCompleted();
+	// Debug register access
+	uint32_t & GetScalar(unsigned int reg);
+	uint32_t GetScalar(unsigned int reg) const;
+	
 	
 	// Memory access helpers
 	
@@ -394,7 +396,9 @@ public:
 	Sampler<CONFIG> & GetSampler(unsigned int s);
 	
 	typename CONFIG::operationstats_t & GetOpStats();
-	
+
+	void PopulateRegisterRegistry();
+
 private:
 	//=====================================================================
 	//=                           G80 registers                           =
@@ -429,6 +433,8 @@ private:
 	//=====================================================================
 	//=                      Debugging stuffs                             =
 	//=====================================================================
+	uint32_t current_laneid;
+	
 	uint64_t instruction_counter;                              //!< Number of executed instructions
 	uint64_t max_inst;                                         //!< Maximum number of instructions to execute
 
@@ -468,7 +474,10 @@ protected:
 	uint64_t cpu_cycle;      //!< Number of cpu cycles
 
 	void Fetch(typename CONFIG::insn_t & insn, typename CONFIG::address_t addr);
-	
+
+	typedef map<string, shared_ptr<Register> > registers_registry_t;
+	registers_registry_t registers_registry;
+
 public:
 	bool trace_insn;
 	bool trace_mask;

@@ -380,7 +380,6 @@ std::ostream & operator << (std::ostream & os, BaseVectorAddress<CONFIG> const &
 }
 
 
-
 } // end of namespace tesla
 } // end of namespace processor
 } // end of namespace cxx
