@@ -32,17 +32,21 @@
  * Authors: Sylvain Collange (sylvain.collange@univ-perp.fr)
  */
  
-#ifndef UNISIM_SERVICE_INTERFACES_SCHEDULER_HH
-#define UNISIM_SERVICE_INTERFACES_SCHEDULER_HH
+#ifndef UNISIM_SERVICE_INTERFACES_ALLOCATOR_HH
+#define UNISIM_SERVICE_INTERFACES_ALLOCATOR_HH
 
 namespace unisim {
 namespace service {
 namespace interfaces {
 
-template<class GRID>
-struct Scheduler
+template<class ADDRESS, class SIZE>
+struct Allocator
 {
-	virtual void Schedule(GRID & g) = 0;
+	virtual ADDRESS Alloc(SIZE s) = 0;
+	virtual void Free(ADDRESS a) = 0;
+	
+	virtual ADDRESS GetBase(ADDRESS a) = 0;
+	virtual SIZE GetSize(ADDRESS a) = 0;
 };
 
 } // end of namespace interfaces

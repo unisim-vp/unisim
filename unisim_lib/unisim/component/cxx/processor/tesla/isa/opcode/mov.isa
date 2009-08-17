@@ -501,8 +501,8 @@ ldg_full.write = {
 op stl_full( \
 	/*subop*/3[3]:/*?*/0[1]:/*cvt_round_half*/0[1]:/*?*/0[3]: m_size[3]:/*?*/0[1]:/*?*/0[3]:/*cvt_type*/0[3]\
 	:/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output*/?[1]:addr_hi[1]:/*marker*/?[2]: \
-	0xd[4]:addr_lo[2]:addr_incr[1]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:segment[7]:\
-	src1[7]:dest[7]:/*flow*/0[1]:/*IWidth*/1[1]\
+	0xd[4]:addr_lo[2]:addr_incr[1]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:\
+	src1[14]:dest[7]:/*flow*/0[1]:/*IWidth*/1[1]\
 )
 
 // Source/dest swapped!
@@ -533,7 +533,7 @@ stl_full.disasm = {
 
 	DisasmDataType(m_size, buffer);
 	buffer << " ";
-	DisasmLocal(src1, addr_lo, addr_hi, /*addr_imm*/true, segment, m_size, buffer, addr_incr);
+	DisasmLocal(src1, addr_lo, addr_hi, /*addr_imm*/true, /*segment*/0, m_size, buffer, addr_incr);
 	buffer << ", ";
 	buffer << "r" << dest;
 }
@@ -547,7 +547,7 @@ stl_full.execute = {
 	assert(!addr_incr);
 	// dest = a
 
-	cpu->ScatterLocal(&insn->Temp(0), src1, addr_lo, addr_hi, /*addr_imm*/true, segment, insn->Mask(), DataType(m_size));
+	cpu->ScatterLocal(&insn->Temp(0), src1, addr_lo, addr_hi, /*addr_imm*/true, /*segment*/0, insn->Mask(), DataType(m_size));
 }
 
 stl_full.write = {
@@ -556,8 +556,8 @@ stl_full.write = {
 op ldl_full( \
 	/*subop*/2[3]:/*?*/0[1]:/*cvt_round_half*/0[1]:/*?*/0[3]: m_size[3]:/*?*/0[1]:/*?*/0[3]:/*cvt_type*/0[3]\
 	:/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output*/?[1]:addr_hi[1]:/*marker*/?[2]: \
-	0xd[4]:addr_lo[2]:addr_incr[1]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:segment[7]:\
-	src1[7]:dest[7]:/*flow*/0[1]:/*IWidth*/1[1]\
+	0xd[4]:addr_lo[2]:addr_incr[1]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:\
+	src1[14]:dest[7]:/*flow*/0[1]:/*IWidth*/1[1]\
 )
 
 //  mov dest, g[src1]
@@ -590,7 +590,7 @@ ldl_full.disasm = {
 	//insn->DisasmDest(buffer);
 	buffer << "r" << dest;
 	buffer << ", ";
-	DisasmLocal(src1, addr_lo, addr_hi, /*addr_imm*/true, segment, m_size, buffer, addr_incr);
+	DisasmLocal(src1, addr_lo, addr_hi, /*addr_imm*/true, /*segment*/0, m_size, buffer, addr_incr);
 }
 
 ldl_full.read = {
@@ -600,7 +600,7 @@ ldl_full.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 	assert(!addr_incr);
 
-	cpu->GatherLocal(&insn->Temp(0), src1, addr_lo, addr_hi, /*addr_imm*/true, segment, insn->Mask(), DataType(m_size));
+	cpu->GatherLocal(&insn->Temp(0), src1, addr_lo, addr_hi, /*addr_imm*/true, /*segment*/0, insn->Mask(), DataType(m_size));
 }
 
 ldl_full.write = {

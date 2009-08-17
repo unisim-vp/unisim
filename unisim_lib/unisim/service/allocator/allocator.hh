@@ -32,20 +32,49 @@
  * Authors: Sylvain Collange (sylvain.collange@univ-perp.fr)
  */
  
-#ifndef UNISIM_SERVICE_INTERFACES_SCHEDULER_HH
-#define UNISIM_SERVICE_INTERFACES_SCHEDULER_HH
+#ifndef UNISIM_SERVICE_ALLOCATOR_ALLOCATOR_HH
+#define UNISIM_SERVICE_ALLOCATOR_ALLOCATOR_HH
+
+#include "unisim/service/interfaces/allocator.hh"
+#include "unisim/kernel/service/service.hh"
 
 namespace unisim {
 namespace service {
-namespace interfaces {
+namespace allocator {
 
-template<class GRID>
-struct Scheduler
+using unisim::kernel::service::Object;
+using unisim::kernel::service::Service;
+using unisim::kernel::service::ServiceExport;
+using unisim::kernel::service::Parameter;
+
+template<class ADDRESS, class SIZE>
+struct Allocator : Service<unisim::service::interfaces::Allocator<ADDRESS, SIZE> >
 {
-	virtual void Schedule(GRID & g) = 0;
+	ServiceExport<unisim::service::interfaces::Allocator<ADDRESS, SIZE> > allocator_export;
+
+	Allocator(char const * name, Object * parent = 0);
+	virtual ~Allocator();
+	
+	virtual bool Setup();
+
+	virtual ADDRESS Alloc(SIZE s);
+	virtual void Free(ADDRESS a);
+	
+	virtual ADDRESS GetBase(ADDRESS a);
+	virtual SIZE GetSize(ADDRESS a);
+
+private:
+	Parameter<ADDRESS> param_base;
+	Parameter<ADDRESS> param_limit;
+	Parameter<uint32_t> param_alignment;
+	
+	ADDRESS base;
+	ADDRESS limit;
+	uint32_t alignment;
 };
 
-} // end of namespace interfaces
+
+} // end of namespace allocator
 } // end of namespace service
 } // end of namespace unisim
 

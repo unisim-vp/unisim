@@ -263,11 +263,9 @@ public:
 	virtual string Disasm(address_t addr, address_t& next_addr);
 	virtual const char *GetArchitectureName() const;
 	inline uint64_t GetInstructionCounter() const { return instruction_counter; }
-	string GetObjectFriendlyName(address_t addr);
-	string GetFunctionFriendlyName(address_t addr);
-	bool ProcessCustomDebugCommand(const char *custom_debug_command);
-	inline void MonitorLoad(address_t ea, uint32_t size);
-	inline void MonitorStore(address_t ea, uint32_t size);
+	void ProcessDebugCommands();
+	//inline void MonitorLoad(address_t ea, uint32_t size);
+	//inline void MonitorStore(address_t ea, uint32_t size);
 	
 	void DumpRegisters(int warpid, ostream & os) const;
 	void DumpGPR(int warpid, int reg, ostream & os) const;

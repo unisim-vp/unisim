@@ -32,21 +32,16 @@
  * Authors: Sylvain Collange (sylvain.collange@univ-perp.fr)
  */
  
-#ifndef UNISIM_SERVICE_INTERFACES_SCHEDULER_HH
-#define UNISIM_SERVICE_INTERFACES_SCHEDULER_HH
+#include <unisim/service/allocator/allocator.hh>
+#include <unisim/service/allocator/allocator.tcc>
 
 namespace unisim {
 namespace service {
-namespace interfaces {
+namespace allocator {
 
-template<class GRID>
-struct Scheduler
-{
-	virtual void Schedule(GRID & g) = 0;
-};
+template class Allocator<uint32_t, uint32_t>;
 
-} // end of namespace interfaces
+} // end of namespace allocator
 } // end of namespace service
 } // end of namespace unisim
 
-#endif

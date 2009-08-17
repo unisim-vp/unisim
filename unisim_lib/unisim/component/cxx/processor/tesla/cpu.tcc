@@ -300,6 +300,8 @@ void CPU<CONFIG>::StepWarp(uint32_t warpid)
 {
 	current_warpid = warpid;
 	
+	ProcessDebugCommands();
+	
 	// Fetch
 	address_t fetchaddr = GetPC();
 	typename CONFIG::insn_t iw;
@@ -339,6 +341,33 @@ void CPU<CONFIG>::StepWarp(uint32_t warpid)
 	insn.Stats()->End();
 
 	SetPC(GetNPC());
+}
+
+
+template <class CONFIG>
+void CPU<CONFIG>::ProcessDebugCommands()
+{
+	typedef DebugControl<address_t> Dbg;
+	
+	
+	if(debug_control_import)
+	{
+		while(true)
+		{
+			typename Dbg::DebugCommand dbg_cmd(debug_control_import->FetchDebugCommand(GetPC()));
+			switch(dbg_cmd)
+			{
+			case Dbg::DBG_STEP:
+				return;
+			case Dbg::DBG_RESET:
+			case Dbg::DBG_KILL:
+			case Dbg::DBG_SYNC:
+			default:
+				// Ignore
+				break;
+			}
+		}
+	}
 }
 
 template <class CONFIG>

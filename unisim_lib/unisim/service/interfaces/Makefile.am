@@ -26,7 +26,9 @@ include_HEADERS = \
 	typed_registers.hh \
 	runnable.hh \
 	instruction_stats.hh \
-	scheduler.hh
+	scheduler.hh \
+	memory_direct_access.hh \
+	allocator.hh
 
 dist_share_DATA = COPYING
 

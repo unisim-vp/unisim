@@ -32,17 +32,17 @@
  * Authors: Sylvain Collange (sylvain.collange@univ-perp.fr)
  */
  
-#ifndef UNISIM_SERVICE_INTERFACES_SCHEDULER_HH
-#define UNISIM_SERVICE_INTERFACES_SCHEDULER_HH
+#ifndef UNISIM_SERVICE_INTERFACES_MEMORY_DIRECT_ACCESS_HH
+#define UNISIM_SERVICE_INTERFACES_MEMORY_DIRECT_ACCESS_HH
 
 namespace unisim {
 namespace service {
 namespace interfaces {
 
-template<class GRID>
-struct Scheduler
+template<class ADDRESS>
+struct MemoryDirectAccess
 {
-	virtual void Schedule(GRID & g) = 0;
+	virtual void * GetDirectAccess(ADDRESS addr, ADDRESS & start_addr, PHYSICAL_ADDR& end_addr);
 };
 
 } // end of namespace interfaces

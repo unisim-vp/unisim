@@ -32,20 +32,73 @@
  * Authors: Sylvain Collange (sylvain.collange@univ-perp.fr)
  */
  
-#ifndef UNISIM_SERVICE_INTERFACES_SCHEDULER_HH
-#define UNISIM_SERVICE_INTERFACES_SCHEDULER_HH
+#ifndef UNISIM_SERVICE_ALLOCATOR_ALLOCATOR_TCC
+#define UNISIM_SERVICE_ALLOCATOR_ALLOCATOR_TCC
+
+#include <unisim/service/allocator/allocator.hh>
+#include <limits>
+#include <cassert>
 
 namespace unisim {
 namespace service {
-namespace interfaces {
+namespace allocator {
 
-template<class GRID>
-struct Scheduler
+template<class ADDRESS, class SIZE>
+Allocator<ADDRESS, SIZE>::Allocator(char const * name, Object * parent) :
+	Object(name, parent),
+	param_base("base", this, base),
+	param_limit("limit", this, limit),
+	param_alignment("alignment", this, alignment),
+	base(0),
+	limit(std::numeric_limits<ADDRESS>::max),
+	alignment(128)
 {
-	virtual void Schedule(GRID & g) = 0;
-};
+}
 
-} // end of namespace interfaces
+template<class ADDRESS, class SIZE>
+Allocator<ADDRESS, SIZE>::~Allocator()
+{
+}
+
+template<class ADDRESS, class SIZE>
+bool Allocator<ADDRESS, SIZE>::Setup()
+{
+	if(limit < base
+}
+
+template<class ADDRESS, class SIZE>
+ADDRESS Allocator<ADDRESS, SIZE>::Alloc(SIZE s)
+{
+	assert(!(limit & (alignment - 1)));
+	size = (size + (alignment - 1)) & ~(alignment - 1);	// align
+	if(limit + size > base + max_size)
+	{
+		throw CudaException(CUDA_ERROR_OUT_OF_MEMORY);
+	}
+	typename CONFIG::address_t addr = limit;
+	limit += size;
+	return addr;
+}
+
+template<class ADDRESS, class SIZE>
+void Allocator<ADDRESS, SIZE>::Free(ADDRESS a)
+{
+}
+
+template<class ADDRESS, class SIZE>
+ADDRESS Allocator<ADDRESS, SIZE>::GetBase(ADDRESS a)
+{
+	assert(false);
+}
+
+template<class ADDRESS, class SIZE>
+SIZE Allocator<ADDRESS, SIZE>::GetSize(ADDRESS a)
+{
+	assert(false);
+}
+
+
+} // end of namespace allocator
 } // end of namespace service
 } // end of namespace unisim
 
