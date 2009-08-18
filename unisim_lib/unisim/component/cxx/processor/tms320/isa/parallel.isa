@@ -1490,11 +1490,99 @@ LDF_STF_ext.disasm = {
 }
 
 LDF_STF.execute = {
-	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+	// Check that indirect addressing mode is valid and compute the effective address of 'src2' operand
+	typename CONFIG::address_t s2_ea;        // The effective address
+	bool s2_update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t s2_output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(s2_ea, s2_update_ar, s2_output_ar, s2_mod, s2_ar)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read the 'src3' register
+	Register &src3_reg = cpu.GetExtReg(src3);
+
+	// Check that indirect addressing mode is valid and compute the effective address of 'dst2' operand
+	typename CONFIG::address_t d2_ea;        // The effective address
+	bool d2_update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t d2_output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(d2_ea, d2_update_ar, d2_output_ar, d2_mod, d2_ar)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read the 'src2' operand from memory
+	uint32_t src2_value = cpu.IntLoad(s2_ea);
+
+	// Get the 'dst1' register
+	Register& dst1_reg = cpu.GetExtReg(dst1);
+	
+	// Get the value to store from the 'src3' register
+	uint32_t src3_value = cpu.GetExtReg(src3).GetSinglePrecisionFPFormat();
+	
+	// Load the src2 address from memory
+	dst1_reg.SetFromSinglePrecisionFPFormat(src2_value);
+	
+	// Store the src3 register value into memory
+	cpu.IntStore(d2_ea, src3_value);
+
+	// Note: ...if the src3 and src4 fields use the same auxiliary register,
+	// both addresses are correctly generated, but only the value created by
+	// the src3 field is saved in the auxiliary register specified...
+
+	if(d2_update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(d2_ar, d2_output_ar);
+	}
+
+	if(s2_update_ar && s2_ar != d2_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(s2_ar, s2_output_ar);
+	}
 }
 
 LDF_STF_ext.execute = {
-	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+	// Check that indirect addressing mode is valid and compute the effective address of 'dst2' operand
+	typename CONFIG::address_t d2_ea;        // The effective address
+	bool d2_update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t d2_output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(d2_ea, d2_update_ar, d2_output_ar, d2_mod, d2_ar)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read the 'src2' register and create a copy
+	Register src2_reg = cpu.GetExtReg(src2);
+
+	// Read the 'src3' register
+	Register &src3_reg = cpu.GetExtReg(src3);
+
+	// Get the 'dst1' register
+	Register& dst1_reg = cpu.GetExtReg(dst1);
+	
+	// Get the value to store from the 'src3' register
+	uint32_t src3_value = src3_reg.GetSinglePrecisionFPFormat();
+	
+	// copy the src2 register value to dst1
+	dst1_reg = src2_reg;
+	
+	// Store the src3 register value into memory
+	cpu.IntStore(d2_ea, src3_value);
+
+	// Note: ...if the src3 and src4 fields use the same auxiliary register,
+	// both addresses are correctly generated, but only the value created by
+	// the src3 field is saved in the auxiliary register specified...
+
+	if(d2_update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(d2_ar, d2_output_ar);
+	}
 }
 
 /* end of LDF || STF (load floating-point value and store floating-point value)
@@ -2898,7 +2986,7 @@ OR3_STI_ext.execute = {
  */
 
 op STF_STF    (0b11[2]:0b00000[5]:src2[3]:0b000[3]:src1[3]:d1_mod[5]:d1_ar[3]:d2_mod[5]:d2_ar[3])
-op STF_STF_ext(0b11[2]:0b00000[5]:src2[3]:0b000[3]:src1[3]:d1_mod[5]:d1_ar[3]:0b111[3]:dst2[5])
+op STF_STF_ext(0b11[2]:0b00000[5]:src2[3]:0b000[3]:src1[3]:d1_mod[5]:d1_ar[3]:0b111[3]:0b00[2]:dst2[3])
 
 STF_STF.disasm = {
 	const char *src1_name = REG_NAME[src1];
@@ -2930,11 +3018,83 @@ STF_STF_ext.disasm = {
 }
 
 STF_STF.execute = {
-	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+	// Check that indirect addressing mode is valid and compute the effective address of 'dst1' operand
+	typename CONFIG::address_t d1_ea;        // The effective address
+	bool d1_update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t d1_output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(d1_ea, d1_update_ar, d1_output_ar, d1_mod, d1_ar)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Check that indirect addressing mode is valid and compute the effective address of 'dst2' operand
+	typename CONFIG::address_t d2_ea;        // The effective address
+	bool d2_update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t d2_output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(d2_ea, d2_update_ar, d2_output_ar, d2_mod, d2_ar)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read the 'src1' register uint32_t value
+	uint32_t src1_value = cpu.GetExtReg(src1).GetSinglePrecisionFPFormat();
+
+	// Read the 'src2' register uint32_t value
+	uint32_t src2_value = cpu.GetExtReg(src2).GetSinglePrecisionFPFormat();
+	
+	// Store the 'src1' register value into memory
+	cpu.IntStore(d1_ea, src1_value);
+
+	// Store the 'src2' register value into memory
+	cpu.IntStore(d2_ea, src2_value);
+
+	// Note: ...if the dst1 and dst2 fields use the same auxiliary register,
+	// both addresses are correctly generated, but only the value created by
+	// the dst1 field is saved in the auxiliary register specified...
+
+	if(d1_update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(d1_ar, d1_output_ar);
+	}
+
+	if(d2_update_ar && d1_ar != d2_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(d2_ar, d2_output_ar);
+	}
 }
 
 STF_STF_ext.execute = {
-	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+	// Check that indirect addressing mode is valid and compute the effective address of 'dst1' operand
+	typename CONFIG::address_t d1_ea;        // The effective address
+	bool d1_update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t d1_output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(d1_ea, d1_update_ar, d1_output_ar, d1_mod, d1_ar)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read the 'src1' register uint32_t value
+	uint32_t src1_value = cpu.GetExtReg(src1).GetSinglePrecisionFPFormat();
+
+	// Read the 'src2' register uint32_t value
+	uint32_t src2_value = cpu.GetExtReg(src2).GetSinglePrecisionFPFormat();
+	
+	// Store the 'src1' register value into memory
+	cpu.IntStore(d1_ea, src1_value);
+
+	// Copy the 'src2' register to 'dst2' register
+	cpu.GetExtReg(dst2) = cpu.GetExtReg(src2);
+	
+	if(d1_update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(d1_ar, d1_output_ar);
+	}
 }
 
 /* end of STF || STF (store floating-point values)
