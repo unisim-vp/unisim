@@ -59,7 +59,7 @@ struct ImplicitFlow
 	void Branch(address_t target, std::bitset<CONFIG::WARP_SIZE> mask);
 	void Meet(address_t addr);
 	bool Join();
-	void End();
+	bool End();
 	void Return(std::bitset<CONFIG::WARP_SIZE> mask);
 	void Kill(std::bitset<CONFIG::WARP_SIZE> mask);
 	void CheckJoin();

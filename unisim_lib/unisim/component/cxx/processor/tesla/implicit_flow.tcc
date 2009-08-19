@@ -187,8 +187,13 @@ bool ImplicitFlow<CONFIG>::Join()
 }
 
 template<class CONFIG>
-void ImplicitFlow<CONFIG>::End()
+bool ImplicitFlow<CONFIG>::End()
 {
+	// Make sure stacks are now empty
+	assert(mask_stack.empty());
+	assert(join_stack.empty());
+	assert(loop_stack.empty());
+	return true;
 }
 
 template<class CONFIG>

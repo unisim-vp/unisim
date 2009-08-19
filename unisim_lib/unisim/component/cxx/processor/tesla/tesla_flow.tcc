@@ -187,8 +187,25 @@ bool TeslaFlow<CONFIG>::Join()
 }
 
 template<class CONFIG>
-void TeslaFlow<CONFIG>::End()
+bool TeslaFlow<CONFIG>::End()
 {
+	// Implicit sync
+	if(!stack.empty()) {
+		if(cpu->TraceBranch()) {
+			cerr << " End reached, stack not empty." << endl;
+		}
+		StackToken token = stack.top();
+		stack.pop();
+		if(/*cpu->TraceBranch() && */token.id != ID_DIVERGE) {
+			cerr << " Warning: Unexpected " << token.id << " token remaining." << endl;
+		}
+		// Re-branch to address in token
+		(*cpu->stats)[warp.pc - CONFIG::CODE_START].Jump();
+		warp.npc = token.address;
+		current_mask = token.mask;
+		return false;
+	}
+	return true;
 }
 
 template<class CONFIG>

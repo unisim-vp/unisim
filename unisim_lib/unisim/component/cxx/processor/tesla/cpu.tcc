@@ -826,11 +826,9 @@ bool CPU<CONFIG>::Join()
 template <class CONFIG>
 void CPU<CONFIG>::End()
 {
-	// Make sure stacks are now empty
-	//assert(CurrentWarp().mask_stack.empty());
-	//assert(CurrentWarp().join_stack.empty());
-	//assert(CurrentWarp().loop_stack.empty());
-	CurrentWarp().state = Warp<CONFIG>::Finished;
+	if(CurrentWarp().flow.End()) {
+		CurrentWarp().state = Warp<CONFIG>::Finished;
+	}
 }
 
 template <class CONFIG>

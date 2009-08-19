@@ -44,7 +44,7 @@
 #include <xmmintrin.h>
 #include <emmintrin.h>	// For DAZ mode
 
-// Missing from emmintrin.h...
+// Workaround for gcc bug 21408
 #define MM_DAZ_MASK	0x0040
 #define MM_DAZ_ON	0x0040
 #define MM_DAZ_OFF	0x0000
@@ -58,6 +58,7 @@ inline void MM_SET_DAZ_MODE (unsigned int mode)
 {
 	_mm_setcsr((_mm_getcsr() & ~MM_DAZ_MASK) | mode);
 }
+// end workaround
 
 namespace unisim {
 namespace component {
