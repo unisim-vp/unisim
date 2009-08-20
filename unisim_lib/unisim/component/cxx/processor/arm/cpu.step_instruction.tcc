@@ -316,7 +316,37 @@ StepInstruction() {
 				<< "Received processor IRQ exception:" << exc.what() 
 				<< EndDebugInfo;
 		if (TrapOnException())
-			trap_reporting_import->ReportTrap();
+		{
+			stringstream ss;
+			ss << "Received IRQException on PC = 0x" 
+				<< hex << GetGPR(PC_reg) << dec;
+			ss << " while on ";
+			switch(GetCPSR_Mode())
+			{
+				case USER_MODE:
+					ss << "USER_MODE";
+					break;
+				case SYSTEM_MODE:
+					ss << "SYSTEM_MODE";
+					break;
+				case SUPERVISOR_MODE:
+					ss << "SUPERVISOR_MODE";
+					break;
+				case ABORT_MODE:
+					ss << "ABORT_MODE";
+					break;
+				case UNDEFINED_MODE:
+					ss << "UNDEFINED_MODE";
+					break;
+				case IRQ_MODE:
+					ss << "IRQ_MODE";
+					break;
+				case FIQ_MODE:
+					ss << "FIQ_MODE";
+					break;
+			}
+			trap_reporting_import->ReportTrap(*this, ss.str().c_str());
+		}
 		PerformIRQException();
 	}
 	catch (FIQException<CONFIG> &exc) 

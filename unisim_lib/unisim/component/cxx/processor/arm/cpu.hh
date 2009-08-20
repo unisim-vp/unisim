@@ -1008,7 +1008,15 @@ namespace arm {
 		 */
 		inline bool HasPendingException(exception_mask_t exception) GCC_INLINE
 		{
-			return has_pending_exception & exception;
+			if (has_pending_exception & exception)
+			{
+				if ((exception == IRQ_EXCEPTION) && GetCPSR_I())
+					return false;
+				if ((exception == FIQ_EXCEPTION) && GetCPSR_F())
+					return false;	
+				return true;
+			}
+			return false;
 		}
 		
 		/**************************************************************/
