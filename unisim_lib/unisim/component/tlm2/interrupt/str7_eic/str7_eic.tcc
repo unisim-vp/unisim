@@ -141,9 +141,11 @@ STR7_EIC(const sc_module_name& name, Object* parent) :
 		ipr0(0),
 		irq_status(0),
 		fiq_status(0),
-		fsm_state(READY),
 		irq_fifo("irq_fifo"),
 		fiq_fifo("fiq_fifo"),
+		fsm_state(READY),
+		out_irq_level(false),
+		out_fiq_level(false),
 		new_irq(0),
 		stack_depth(0),
 		irqPayloadFabric(),
@@ -848,51 +850,61 @@ FSMUpdate()
 				<< EndDebugInfo;
 	}
 
-	TLMInterruptPayload *trans = 0;
-	tlm::tlm_phase phase = tlm::BEGIN_REQ;
-	sc_core::sc_time t = SC_ZERO_TIME;
-	/* send the interrupt level through the out_irq port */
-	trans = irqPayloadFabric.allocate();
-	trans->level = has_irq;
-	phase = tlm::BEGIN_REQ;
-	if (VerboseTLM())
+	if (has_irq != out_irq_level)
 	{
-		logger << DebugInfo << "Sending transaction through port out_irq:" << endl
-			<< ITRANS(*trans) << endl
-			<< PHASE(phase) << endl
-			<< TIME(t) << EndDebugInfo;
-	}
-	switch (out_irq->nb_transport_fw(*trans, phase, t))
-	{
-		case tlm::TLM_ACCEPTED:
-		case tlm::TLM_UPDATED:
-			/* nothing else to do wait for the response (which does nothing) */
-			break;
-		case tlm::TLM_COMPLETED:
-			/* release the transaction */
-			trans->release();
-			break;
+		out_irq_level = has_irq;
+		TLMInterruptPayload *trans = 0;
+		tlm::tlm_phase phase = tlm::BEGIN_REQ;
+		sc_core::sc_time t = SC_ZERO_TIME;
+		/* send the interrupt level through the out_irq port */
+		trans = irqPayloadFabric.allocate();
+		trans->level = has_irq;
+		phase = tlm::BEGIN_REQ;
+		if (VerboseTLM())
+		{
+			logger << DebugInfo << "Sending transaction through port out_irq:" << endl
+				<< ITRANS(*trans) << endl
+				<< PHASE(phase) << endl
+				<< TIME(t) << EndDebugInfo;
+		}
+		switch (out_irq->nb_transport_fw(*trans, phase, t))
+		{
+			case tlm::TLM_ACCEPTED:
+			case tlm::TLM_UPDATED:
+				/* nothing else to do wait for the response (which does nothing) */
+				break;
+			case tlm::TLM_COMPLETED:
+				/* release the transaction */
+				trans->release();
+				break;
+		}
 	}
 
 	/* the same process is done for the FIQ */
 	/* update the pending interrupt register 0 (IPR0) */
 	fir = fir | ((FIE() & fiq_status) << 2);
 
-	/* send the interrupt level through the out_fiq port */
-	TLMInterruptPayload *trans_fiq = irqPayloadFabric.allocate();
-	trans_fiq->level = FIQ_EN() && FIP();
-	phase = tlm::BEGIN_REQ;
-	t = SC_ZERO_TIME;
-	switch (out_fiq->nb_transport_fw(*trans_fiq, phase, t))
+	if ((FIQ_EN() && FIP()) != out_fiq_level)
 	{
-		case tlm::TLM_ACCEPTED:
-		case tlm::TLM_UPDATED:
-			/* nothing else to do, wait for the response (which does nothing) */
-			break;
-		case tlm::TLM_COMPLETED:
-			/* release the transaction */
-			trans->release();
-			break;
+		out_fiq_level = !out_fiq_level;
+		/* send the interrupt level through the out_fiq port */
+		TLMInterruptPayload *trans_fiq = irqPayloadFabric.allocate();
+		tlm::tlm_phase phase = tlm::BEGIN_REQ;
+		sc_core::sc_time t = SC_ZERO_TIME;
+		trans_fiq->level = FIQ_EN() && FIP();
+		phase = tlm::BEGIN_REQ;
+		t = SC_ZERO_TIME;
+		switch (out_fiq->nb_transport_fw(*trans_fiq, phase, t))
+		{
+			case tlm::TLM_ACCEPTED:
+			case tlm::TLM_UPDATED:
+				/* nothing else to do, wait for the response (which does nothing) */
+				break;
+			case tlm::TLM_COMPLETED:
+				/* release the transaction */
+				trans_fiq->release();
+				break;
+		}
 	}
 }
 

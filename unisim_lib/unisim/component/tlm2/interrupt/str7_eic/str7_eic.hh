@@ -238,6 +238,10 @@ private:
 	bool IsFSMWait();
 	/** Update the FSM */
 	void FSMUpdate();
+	/** Current value of out_irq to avoid sending the same level than the current one */
+	bool out_irq_level;
+	/** Current value of out_fiq to avoid sending the same level than the current one */
+	bool out_fiq_level;
 	/* END: FSM states */
 
 	/* START: stack entries */
