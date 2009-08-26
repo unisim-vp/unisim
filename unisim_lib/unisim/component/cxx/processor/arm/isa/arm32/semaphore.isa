@@ -59,8 +59,19 @@ swp.disasm = {
 }
 
 swp.execute = {
-	/* if r15 is used the result is impredictable, so just ignore the case of using r15 */
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::address_t address;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
 	if(!cpu.CheckCondition(cond)) return;
+
+	address = rn_value;
+	cpu.Read32toGPR(address, rd);
+	cpu.Write32(address, rm_value);
 }
 
 /*
@@ -82,7 +93,20 @@ swpb.disasm = {
 }
 
 swpb.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::address_t address;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
 	if(!cpu.CheckCondition(cond)) return;
+
+	uint8_t value = rm_value & (uint32_t)0x0ff;
+	address = rn_value;
+	cpu.Read8toGPR(address, rd);
+	cpu.Write8(address, value);
 }
 
 /*
