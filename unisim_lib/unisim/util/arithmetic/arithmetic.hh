@@ -406,7 +406,7 @@ inline uint32_t ReverseCarryPropagationAdd(uint32_t x, uint32_t y)
 
 		// Go to next bit
 		mask = mask >> 1;
-	} while(--n);
+	} while(n--);
 	return r;
 }
 

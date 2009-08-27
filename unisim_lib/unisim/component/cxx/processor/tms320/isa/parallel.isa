@@ -133,7 +133,7 @@ ABSF_STF.execute = {
 	
 	// Compute the result of ABSF
 	uint32_t overflow;      // the overflow (0 or 1)
-	dst1_reg.Abs(src2_value, overflow);
+	dst1_reg.Absf32(src2_value, overflow);
 	
 	// Store the word into memory
 	cpu.IntStore(d2_ea, src3_reg.GetSinglePrecisionFPFormat());
@@ -192,7 +192,7 @@ ABSF_STF_ext.execute = {
 	
 	// Compute the result of ABSF
 	uint32_t overflow;      // the overflow (0 or 1)
-	dst1_reg.Abs(src2_reg, overflow);
+	dst1_reg.Absf(src2_reg, overflow);
 	
 	// Store the word into memory
 	cpu.IntStore(d2_ea, src3_reg.GetSinglePrecisionFPFormat());
@@ -477,7 +477,7 @@ ADDF3_STF.execute = {
 	// Compute the result of ABSF
 	uint32_t overflow;      // the overflow (0 or 1)
 	uint32_t underflow;     // the underflow (0 or 1)
-	dst1_reg.Add(src1_reg, src2_value, overflow, underflow);
+	dst1_reg.Addf(src1_reg, src2_value, overflow, underflow);
 	
 	// Store the word into memory
 	cpu.IntStore(d2_ea, src3_reg.GetSinglePrecisionFPFormat());
@@ -546,7 +546,7 @@ ADDF3_STF_ext.execute = {
 	// Compute the result of ABSF
 	uint32_t overflow;      // the overflow (0 or 1)
 	uint32_t underflow;     // the underflow (0 or 1)
-	dst1_reg.Add(src1_reg, src2_reg, overflow, underflow);
+	dst1_reg.Addf(src1_reg, src2_reg, overflow, underflow);
 	
 	// Store the word into memory
 	cpu.IntStore(d2_ea, src3_reg.GetSinglePrecisionFPFormat());
@@ -2018,7 +2018,7 @@ MPYF3_STF.execute = {
 	// Compute the result of ABSF
 	uint32_t overflow;      // the overflow (0 or 1)
 	uint32_t underflow;     // the underflow (0 or 1)
-	dst1_reg.Mpy(src1_reg, src2_value, overflow, underflow);
+	dst1_reg.Mpyf(src1_reg, src2_value, overflow, underflow);
 	
 	// Store the word into memory
 	cpu.IntStore(d2_ea, src3_reg.GetSinglePrecisionFPFormat());
@@ -2105,7 +2105,7 @@ MPYF3_STF_ext.execute = {
 	// Compute the result of ABSF
 	uint32_t overflow;      // the overflow (0 or 1)
 	uint32_t underflow;     // the underflow (0 or 1)
-	dst1_reg.Mpy(src1_reg, src2_reg, overflow, underflow);
+	dst1_reg.Mpyf(src1_reg, src2_reg, overflow, underflow);
 	
 	// Store the word into memory
 	cpu.IntStore(d2_ea, src3_reg.GetSinglePrecisionFPFormat());
@@ -2408,7 +2408,7 @@ NEGF_STF.execute = {
 	// Compute the result of NEGF
 	uint32_t overflow;      // the overflow (0 or 1)
 	uint32_t underflow;     // the underflow (0 or 1)
-	dst1_reg.Neg(src2_value, overflow, underflow);
+	dst1_reg.Negf32(src2_value, overflow, underflow);
 	
 	// Store the word into memory
 	cpu.IntStore(d2_ea, src3_reg.GetSinglePrecisionFPFormat());
@@ -2469,7 +2469,7 @@ NEGF_STF_ext.execute = {
 	// Compute the result of NEGF
 	uint32_t overflow;      // the overflow (0 or 1)
 	uint32_t underflow;		// the underflow (0 or 1)
-	dst1_reg.Neg(src2_reg, overflow, underflow);
+	dst1_reg.Negf(src2_reg, overflow, underflow);
 	
 	// Store the word into memory
 	cpu.IntStore(d2_ea, src3_reg.GetSinglePrecisionFPFormat());
@@ -3309,7 +3309,7 @@ SUBF3_STF.execute = {
 	// Compute the result of SUBF3
 	uint32_t overflow;      // the overflow (0 or 1)
 	uint32_t underflow;     // the underflow (0 or 1)
-	dst1_reg.Sub(src2_value, src1_reg, overflow, underflow);
+	dst1_reg.Subf32(src2_value, src1_reg, overflow, underflow);
 	
 	// Store the word into memory
 	cpu.IntStore(d2_ea, src3_reg.GetSinglePrecisionFPFormat());
@@ -3378,7 +3378,7 @@ SUBF3_STF_ext.execute = {
 	// Compute the result of SUBF3
 	uint32_t overflow;      // the overflow (0 or 1)
 	uint32_t underflow;     // the underflow (0 or 1)
-	dst1_reg.Sub(src2_reg, src1_reg, overflow, underflow);
+	dst1_reg.Subf(src2_reg, src1_reg, overflow, underflow);
 	
 	// Store the word into memory
 	cpu.IntStore(d2_ea, src3_reg.GetSinglePrecisionFPFormat());

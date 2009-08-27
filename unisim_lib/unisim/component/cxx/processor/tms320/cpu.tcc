@@ -1850,7 +1850,7 @@ GenFlags(const Register& result, uint32_t reset_mask, uint32_t or_mask, uint32_t
 	// N
 	if(or_mask & M_ST_N)
 	{
-		uint32_t is_negative = ((int32_t) result.GetLo() < 0);
+		uint32_t is_negative = ((int32_t) result.GetLo() < 0)?1:0;
 		st |= (is_negative << ST_N);
 	}
 
@@ -1858,7 +1858,7 @@ GenFlags(const Register& result, uint32_t reset_mask, uint32_t or_mask, uint32_t
 	if (or_mask & M_ST_Z)
 		if (underflow == 0)
 		{
-			uint32_t is_zero = (result.GetLo() == 0) && (result.GetHi() == (uint8_t)0x80);
+			uint32_t is_zero = ((result.GetLo() == 0) && (result.GetHi() == (uint8_t)0x80))?1:0;
 			st |= (is_zero << ST_Z);
 		}
 

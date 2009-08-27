@@ -75,24 +75,88 @@ namespace tms320 {
 	
 	uint32_t Register::GetLo(uint16_t value)
 	{
+#ifdef __DEBUG_TMS320C3X_REGISTER__
+		std::cerr << "GetLo(16)" << std::endl;
+		std::cerr << " -> in = 0x" << std::hex << (unsigned long)value << std::dec << std::endl;
+#endif
 		if ((value & (uint16_t)0xf000) == (uint16_t)0x8000)
+		{
+#ifdef __DEBUG_TMS320C3X_REGISTER__
+			std::cerr << " <- out = 0x0" << std::endl;
+#endif
 			return 0;
+		}
+#ifdef __DEBUG_TMS320C3X_REGISTER__
+		std::cerr << " <- out = 0x" << std::hex << (unsigned long)(((uint32_t)value & (uint32_t)0x00000fff) << 20) << std::dec << std::endl;
+#endif
 		return (((uint32_t)value) & (uint32_t)0x00000fff) << 20;
 	}
 	
 	uint8_t Register::GetHi(uint16_t value)
 	{
+#ifdef __DEBUG_TMS320C3X_REGISTER__
+		std::cerr << "GetHi(16)" << std::endl;
+		std::cerr << " -> in = 0x" << std::hex << (unsigned long)value << std::dec << std::endl;
+#endif
 		if ((value & (uint16_t)0xf000) == (uint16_t)0x8000)
+		{
+#ifdef __DEBUG_TMS320C3X_REGISTER__
+			std::cerr << " <- out = 0x80" << std::endl;
+#endif
 			return (uint8_t)0x80;
-//		if (value == (uint16_t)0x8000)
-//			return (uint8_t)0x80;
+		}
+		//		if (value == (uint16_t)0x8000)
+		//			return (uint8_t)0x80;
+#ifdef __DEBUG_TMS320C3X_REGISTER__
+		std::cerr << " <- out = 0x" << std::hex << (unsigned long)(uint8_t)(((int16_t)value >> 12) & (uint16_t)0x00ff) << std::dec << std::endl;
+#endif
+		return (uint8_t)(((int16_t)value >> 12) & (uint16_t)0x00ff);
+	}
+	
+	uint32_t Register::GetLo16(uint16_t value)
+	{
+#ifdef __DEBUG_TMS320C3X_REGISTER__
+		std::cerr << "GetLo(16)" << std::endl;
+		std::cerr << " -> in = 0x" << std::hex << (unsigned long)value << std::dec << std::endl;
+#endif
+		if ((value & (uint16_t)0xf000) == (uint16_t)0x8000)
+		{
+#ifdef __DEBUG_TMS320C3X_REGISTER__
+			std::cerr << " <- out = 0x0" << std::endl;
+#endif
+			return 0;
+		}
+#ifdef __DEBUG_TMS320C3X_REGISTER__
+		std::cerr << " <- out = 0x" << std::hex << (unsigned long)(((uint32_t)value & (uint32_t)0x00000fff) << 20) << std::dec << std::endl;
+#endif
+		return (((uint32_t)value) & (uint32_t)0x00000fff) << 20;
+	}
+	
+	uint8_t Register::GetHi16(uint16_t value)
+	{
+#ifdef __DEBUG_TMS320C3X_REGISTER__
+		std::cerr << "GetHi(16)" << std::endl;
+		std::cerr << " -> in = 0x" << std::hex << (unsigned long)value << std::dec << std::endl;
+#endif
+		if ((value & (uint16_t)0xf000) == (uint16_t)0x8000)
+		{
+#ifdef __DEBUG_TMS320C3X_REGISTER__
+			std::cerr << " <- out = 0x80" << std::endl;
+#endif
+			return (uint8_t)0x80;
+		}
+		//		if (value == (uint16_t)0x8000)
+		//			return (uint8_t)0x80;
+#ifdef __DEBUG_TMS320C3X_REGISTER__
+		std::cerr << " <- out = 0x" << std::hex << (unsigned long)(uint8_t)(((int16_t)value >> 12) & (uint16_t)0x00ff) << std::dec << std::endl;
+#endif
 		return (uint8_t)(((int16_t)value >> 12) & (uint16_t)0x00ff);
 	}
 	
 	void Register::SetFromShortFPFormat(uint16_t value)
 	{
-		this->SetHi(GetHi(value));
-		this->SetLo(GetLo(value));
+		this->SetHi(GetHi16(value));
+		this->SetLo(GetLo16(value));
 		// lo = value & (uint32_t)0x00000fff;
 		// lo = lo << 20;
 		// hi = (uint8_t)(((int16_t)value >> 12) & (uint16_t)0x00ff);
@@ -127,15 +191,41 @@ namespace tms320 {
 		return (uint8_t)((value >> 24) & (uint32_t)0x00ff);
 	}
 	
+	uint32_t Register::GetLo32(uint32_t value)
+	{
+#ifdef __DEBUG_TMS320C3X_REGISTER__
+		std::cerr << "GetLo(32)" << std::endl;
+		std::cerr << " -> in = 0x" << std::hex << (unsigned long)value << std::dec << std::endl;
+#endif
+		if ((value & (uint32_t)0xff000000) == (uint32_t)0x80000000)
+		{
+#ifdef __DEBUG_TMS320C3X_REGISTER__
+			std::cerr << " <- out = 0x0" << std::endl;
+#endif
+			return 0;
+		}
+#ifdef __DEBUG_TMS320C3X_REGISTER__
+		std::cerr << " <- out = 0x" << std::hex << (unsigned long)(((uint32_t)value & (uint32_t)0x00ffffff) << 8) << std::dec << std::endl;
+#endif
+		return ((uint32_t)value & (uint32_t)0x00ffffff) << 8;
+	}
+	
+	uint8_t Register::GetHi32(uint32_t value)
+	{
+#ifdef __DEBUG_TMS320C3X_REGISTER__
+		std::cerr << "GetHi(32)" << std::endl;
+		std::cerr << " <- in = 0x" << std::hex << (unsigned long)value << std::dec << std::endl;
+		std::cerr << " -> out = 0x" << std::hex << (unsigned int)(uint8_t)((value >> 24) & (uint32_t)0x00ff) << std::dec << std::endl;
+#endif
+		return (uint8_t)((value >> 24) & (uint32_t)0x00ff);
+	}
+	
 	void Register::SetFromSinglePrecisionFPFormat(uint32_t value)
 	{
 		// the 0 value is converted seamlessly from single Precision to extended
 		//   so no need to check the input value
-		this->SetLo(GetLo(value));
-		this->SetHi(GetHi(value));
-		// lo = value & (uint32_t)0x00ffffff;
-		// lo = lo << 8;
-		// hi = (uint8_t)((value >> 24) & (uint32_t)0x00ff);
+		this->SetLo(GetLo32(value));
+		this->SetHi(GetHi32(value));
 	}
 	
 	uint32_t Register::GetSinglePrecisionFPFormat() 
@@ -229,182 +319,188 @@ namespace tms320 {
 		return (uint32_t)ext_lo;
 	}
 	
-	void Register::Abs(const Register& reg, uint32_t& overflow)
+	void Register::Absf(const Register& reg, uint32_t& overflow)
 	{
-		this->Abs(reg.GetHi(), reg.GetLo(), overflow);
+		this->Absf(reg.GetHi(), reg.GetLo(), overflow);
 	}
 	
-	void Register::Abs(uint16_t imm, uint32_t& overflow)
+	void Register::Absf16(uint16_t imm, uint32_t& overflow)
 	{
-		this->Abs(GetHi(imm), GetLo(imm), overflow);
+#ifdef __DEBUG_TMS320C3X_REGISTER__
+		std::cerr << "Abs(imm16)" << std::endl;
+#endif
+		this->Absf(GetHi16(imm), GetLo16(imm), overflow);
 	}
 	
-	void Register::Abs(uint32_t imm, uint32_t& overflow)
+	void Register::Absf32(uint32_t imm, uint32_t& overflow)
 	{
-		this->Abs(GetHi(imm), GetLo(imm), overflow);
+#ifdef __DEBUG_TMS320C3X_REGISTER__
+		std::cerr << "Abs(imm32)" << std::endl;
+#endif
+		this->Absf(GetHi32(imm), GetLo32(imm), overflow);
 	}
 	
-	void Register::Add(const Register& reg, uint32_t& overflow, uint32_t& underflow) 
+	void Register::Addf(const Register& reg, uint32_t& overflow, uint32_t& underflow) 
 	{
-		this->Add(this->GetHi(), this->GetLo(), reg.GetHi(), reg.GetLo(), overflow, underflow);
+		this->Addf(this->GetHi(), this->GetLo(), reg.GetHi(), reg.GetLo(), overflow, underflow);
 	}
 	
-	void Register::Add(uint16_t imm, uint32_t& overflow, uint32_t& underflow)
+	void Register::Addf16(uint16_t imm, uint32_t& overflow, uint32_t& underflow)
 	{
-		this->Add(this->GetHi(), this->GetLo(), GetHi(imm), GetLo(imm), overflow, underflow);
+		this->Addf(this->GetHi(), this->GetLo(), GetHi16(imm), GetLo16(imm), overflow, underflow);
 	}
 	
-	void Register::Add(uint32_t imm, uint32_t& overflow, uint32_t& underflow)
+	void Register::Addf32(uint32_t imm, uint32_t& overflow, uint32_t& underflow)
 	{
-		this->Add(this->hi, this->lo, GetHi(imm), GetLo(imm), overflow, underflow);
+		this->Addf(this->hi, this->lo, GetHi32(imm), GetLo32(imm), overflow, underflow);
 	}
 	
-	void Register::Add(const Register& reg_a, const Register& reg_b, uint32_t& overflow, uint32_t& underflow)
+	void Register::Addf(const Register& reg_a, const Register& reg_b, uint32_t& overflow, uint32_t& underflow)
 	{
-		this->Add(reg_a.GetHi(), reg_a.GetLo(), reg_b.GetHi(), reg_b.GetLo(), overflow, underflow);
+		this->Addf(reg_a.GetHi(), reg_a.GetLo(), reg_b.GetHi(), reg_b.GetLo(), overflow, underflow);
 	}
 	
-	void Register::Add(const Register& reg, uint32_t imm, uint32_t& overflow, uint32_t& underflow)
+	void Register::Addf(const Register& reg, uint32_t imm, uint32_t& overflow, uint32_t& underflow)
 	{
-		this->Add(reg.GetHi(), reg.GetLo(), GetHi(imm), GetLo(imm), overflow, underflow);
+		this->Addf(reg.GetHi(), reg.GetLo(), GetHi32(imm), GetLo32(imm), overflow, underflow);
 	}
 	
-	void Register::Add(uint32_t imm, const Register& reg, uint32_t& overflow, uint32_t& underflow)
+	void Register::Addf(uint32_t imm, const Register& reg, uint32_t& overflow, uint32_t& underflow)
 	{
-		this->Add(reg, imm, overflow, underflow);
+		this->Addf(reg, imm, overflow, underflow);
 	}
 	
-	void Register::Add(uint32_t imm_a, uint32_t imm_b, uint32_t& overflow, uint32_t& underflow)
+	void Register::Addf(uint32_t imm_a, uint32_t imm_b, uint32_t& overflow, uint32_t& underflow)
 	{
-		this->Add(GetHi(imm_a), GetLo(imm_a), GetHi(imm_b), GetLo(imm_b), overflow, underflow);
+		this->Addf(GetHi32(imm_a), GetLo32(imm_a), GetHi32(imm_b), GetLo32(imm_b), overflow, underflow);
 	}
 	
-	void Register::Sub(const Register& reg, uint32_t& overflow, uint32_t& underflow) 
+	void Register::Subf(const Register& reg, uint32_t& overflow, uint32_t& underflow) 
 	{
-		this->Sub(this->GetHi(), this->GetLo(), reg.hi, reg.lo, overflow, underflow);
+		this->Subf(this->GetHi(), this->GetLo(), reg.hi, reg.lo, overflow, underflow);
 	}
 	
-	void Register::Sub(uint16_t imm, uint32_t& overflow, uint32_t& underflow)
+	void Register::Subf16(uint16_t imm, uint32_t& overflow, uint32_t& underflow)
 	{
-		this->Sub(this->GetHi(), this->GetLo(), GetHi(imm), GetLo(imm), overflow, underflow);
+		this->Subf(this->GetHi(), this->GetLo(), GetHi16(imm), GetLo16(imm), overflow, underflow);
 	}
 	
-	void Register::Sub(uint32_t imm, uint32_t& overflow, uint32_t& underflow)
+	void Register::Subf32(uint32_t imm, uint32_t& overflow, uint32_t& underflow)
 	{
-		this->Sub(this->GetHi(), this->GetLo(), GetHi(imm), GetLo(imm), overflow, underflow);
+		this->Subf(this->GetHi(), this->GetLo(), GetHi32(imm), GetLo32(imm), overflow, underflow);
 	}
 	
-	void Register::Sub(const Register& reg_a, const Register& reg_b, uint32_t& overflow, uint32_t& underflow)
+	void Register::Subf(const Register& reg_a, const Register& reg_b, uint32_t& overflow, uint32_t& underflow)
 	{
-		this->Sub(reg_a.GetHi(), reg_a.GetLo(), reg_b.GetHi(), reg_b.GetLo(), overflow, underflow);
+		this->Subf(reg_a.GetHi(), reg_a.GetLo(), reg_b.GetHi(), reg_b.GetLo(), overflow, underflow);
 	}
 	
-	void Register::Sub(const Register& reg, uint16_t imm, uint32_t& overflow, uint32_t& underflow)
+	void Register::Subf16(const Register& reg, uint16_t imm, uint32_t& overflow, uint32_t& underflow)
 	{
-		this->Sub(reg.GetHi(), reg.GetLo(), GetHi(imm), GetLo(imm), overflow, underflow);
+		this->Subf(reg.GetHi(), reg.GetLo(), GetHi16(imm), GetLo16(imm), overflow, underflow);
 	}
 	
-	void Register::Sub(const Register& reg, uint32_t imm, uint32_t& overflow, uint32_t& underflow)
+	void Register::Subf32(const Register& reg, uint32_t imm, uint32_t& overflow, uint32_t& underflow)
 	{
-		this->Sub(reg.GetHi(), reg.GetLo(), GetHi(imm), GetLo(imm), overflow, underflow);
+		this->Subf(reg.GetHi(), reg.GetLo(), GetHi32(imm), GetLo32(imm), overflow, underflow);
 	}
 	
-	void Register::Sub(uint16_t imm, const Register& reg, uint32_t& overflow, uint32_t& underflow)
+	void Register::Subf16(uint16_t imm, const Register& reg, uint32_t& overflow, uint32_t& underflow)
 	{
-		this->Sub(GetHi(imm), GetLo(imm), reg.GetHi(), reg.GetLo(), overflow, underflow);
+		this->Subf(GetHi16(imm), GetLo16(imm), reg.GetHi(), reg.GetLo(), overflow, underflow);
 	}
 	
-	void Register::Sub(uint32_t imm, const Register& reg, uint32_t& overflow, uint32_t& underflow)
+	void Register::Subf32(uint32_t imm, const Register& reg, uint32_t& overflow, uint32_t& underflow)
 	{
-		this->Sub(GetHi(imm), GetLo(imm), reg.GetHi(), reg.GetLo(), overflow, underflow);
+		this->Subf(GetHi32(imm), GetLo32(imm), reg.GetHi(), reg.GetLo(), overflow, underflow);
 	}
 	
-	void Register::Sub(uint32_t imm_a, uint32_t imm_b, uint32_t& overflow, uint32_t& underflow)
+	void Register::Subf(uint32_t imm_a, uint32_t imm_b, uint32_t& overflow, uint32_t& underflow)
 	{
-		this->Sub(GetHi(imm_a), GetLo(imm_a), GetHi(imm_b), GetLo(imm_b), overflow, underflow);
+		this->Subf(GetHi32(imm_a), GetLo32(imm_a), GetHi32(imm_b), GetLo32(imm_b), overflow, underflow);
 	}
 	
-	void Register::Neg(const Register& reg, uint32_t& overflow, uint32_t& underflow)
+	void Register::Negf(const Register& reg, uint32_t& overflow, uint32_t& underflow)
 	{
-		this->Sub((uint8_t)0x80, 0, reg.GetHi(), reg.GetLo(), overflow, underflow);
+		this->Subf((uint8_t)0x80, 0, reg.GetHi(), reg.GetLo(), overflow, underflow);
 	}
 	
-	void Register::Neg(uint16_t imm, uint32_t& overflow, uint32_t& underflow)
+	void Register::Negf16(uint16_t imm, uint32_t& overflow, uint32_t& underflow)
 	{
-		this->Sub((uint8_t)0x80, 0, GetHi(imm), GetLo(imm), overflow, underflow);
+		this->Subf((uint8_t)0x80, 0, GetHi16(imm), GetLo16(imm), overflow, underflow);
 	}
 	
-	void Register::Neg(uint32_t imm, uint32_t& overflow, uint32_t& underflow)
+	void Register::Negf32(uint32_t imm, uint32_t& overflow, uint32_t& underflow)
 	{
-		this->Sub((uint8_t)0x80, 0, GetHi(imm), GetLo(imm), overflow, underflow);
+		this->Subf((uint8_t)0x80, 0, GetHi32(imm), GetLo32(imm), overflow, underflow);
 	}
 	
-	void Register::Norm(const Register& reg, uint32_t& underflow)
+	void Register::Normf(const Register& reg, uint32_t& underflow)
 	{
-		this->Norm(reg.GetHi(), reg.GetLo(), underflow);
+		this->Normf(reg.GetHi(), reg.GetLo(), underflow);
 	}
 	
-	void Register::Norm(uint16_t imm, uint32_t& underflow)
+	void Register::Normf16(uint16_t imm, uint32_t& underflow)
 	{
-		this->Norm(GetHi(imm), GetLo(imm), underflow);
+		this->Normf(GetHi16(imm), GetLo16(imm), underflow);
 	}
 	
-	void Register::Norm(uint32_t imm, uint32_t& underflow)
+	void Register::Normf32(uint32_t imm, uint32_t& underflow)
 	{
-		this->Norm(GetHi(imm), GetLo(imm), underflow);
+		this->Normf(GetHi32(imm), GetLo32(imm), underflow);
 	}
 	
-	void Register::Mpy(const Register& reg, uint32_t& overflow, uint32_t& underflow)
+	void Register::Mpyf(const Register& reg, uint32_t& overflow, uint32_t& underflow)
 	{
-		this->Mpy(this->hi, this->lo, reg.GetHi(), reg.GetLo(), overflow, underflow);
+		this->Mpyf(this->hi, this->lo, reg.GetHi(), reg.GetLo(), overflow, underflow);
 	}
 	
-	void Register::Mpy(uint16_t imm, uint32_t& overflow, uint32_t& underflow)
+	void Register::Mpyf16(uint16_t imm, uint32_t& overflow, uint32_t& underflow)
 	{
-		this->Mpy(this->hi, this->lo, GetHi(imm), GetLo(imm), overflow, underflow);
+		this->Mpyf(this->hi, this->lo, GetHi16(imm), GetLo16(imm), overflow, underflow);
 	}
 	
-	void Register::Mpy(uint32_t imm, uint32_t& overflow, uint32_t& underflow)
+	void Register::Mpyf32(uint32_t imm, uint32_t& overflow, uint32_t& underflow)
 	{
-		this->Mpy(this->hi, this->lo, GetHi(imm), GetLo(imm), overflow, underflow);
+		this->Mpyf(this->hi, this->lo, GetHi32(imm), GetLo32(imm), overflow, underflow);
 	}
 	
-	void Register::Mpy(const Register& reg_a, const Register& reg_b, uint32_t& overflow, uint32_t& underflow)
+	void Register::Mpyf(const Register& reg_a, const Register& reg_b, uint32_t& overflow, uint32_t& underflow)
 	{
-		this->Mpy(reg_a.hi, reg_a.lo, reg_b.hi, reg_b.lo, overflow, underflow);
+		this->Mpyf(reg_a.hi, reg_a.lo, reg_b.hi, reg_b.lo, overflow, underflow);
 	}
 	
-	void Register::Mpy(const Register& reg, uint32_t imm, uint32_t& overflow, uint32_t& underflow)
+	void Register::Mpyf(const Register& reg, uint32_t imm, uint32_t& overflow, uint32_t& underflow)
 	{
-		this->Mpy(reg.hi, reg.lo, GetHi(imm), GetLo(imm), overflow, underflow);
+		this->Mpyf(reg.hi, reg.lo, GetHi32(imm), GetLo32(imm), overflow, underflow);
 	}
 	
-	void Register::Mpy(uint32_t imm, const Register& reg, uint32_t& overflow, uint32_t& underflow)
+	void Register::Mpyf(uint32_t imm, const Register& reg, uint32_t& overflow, uint32_t& underflow)
 	{
-		this->Mpy(reg, imm, overflow, underflow);
+		this->Mpyf(reg, imm, overflow, underflow);
 	}
 	
-	void Register::Mpy(uint32_t imm_a, uint32_t imm_b, uint32_t& overflow, uint32_t& underflow)
+	void Register::Mpyf(uint32_t imm_a, uint32_t imm_b, uint32_t& overflow, uint32_t& underflow)
 	{
-		this->Mpy(GetHi(imm_a), GetLo(imm_a), GetHi(imm_b), GetLo(imm_b), overflow, underflow);
+		this->Mpyf(GetHi32(imm_a), GetLo32(imm_a), GetHi32(imm_b), GetLo32(imm_b), overflow, underflow);
 	}
 	
-	void Register::Rnd(const Register& reg, uint32_t& overflow, uint32_t& underflow)
+	void Register::Rndf(const Register& reg, uint32_t& overflow, uint32_t& underflow)
 	{
-		this->Rnd(reg.GetHi(), reg.GetLo(), overflow, underflow);
+		this->Rndf(reg.GetHi(), reg.GetLo(), overflow, underflow);
 	}
 	
-	void Register::Rnd(uint16_t imm, uint32_t& overflow, uint32_t& underflow)
+	void Register::Rndf16(uint16_t imm, uint32_t& overflow, uint32_t& underflow)
 	{
-		this->Rnd(GetHi(imm), GetLo(imm), overflow, underflow);
+		this->Rndf(GetHi16(imm), GetLo16(imm), overflow, underflow);
 	}
 	
-	void Register::Rnd(uint32_t imm, uint32_t& overflow, uint32_t& underflow)
+	void Register::Rndf32(uint32_t imm, uint32_t& overflow, uint32_t& underflow)
 	{
-		this->Rnd(GetHi(imm), GetLo(imm), overflow, underflow);
+		this->Rndf(GetHi32(imm), GetLo32(imm), overflow, underflow);
 	}
 
-	void Register::Abs(uint8_t hi_a, uint32_t lo_a, uint32_t& overflow)
+	void Register::Absf(uint8_t hi_a, uint32_t lo_a, uint32_t& overflow)
 	{
 		overflow = 0;
 		// if the exponent value is -128, then the mantissa should be 0
@@ -426,26 +522,36 @@ namespace tms320 {
 		// if the value is negative, then the abs operation can be performed
 		if ((int32_t)lo_a < 0)
 		{
-			this->SetHi(hi_a);
-			this->SetLo((~lo_a) + 1); // absolute value of the mantissa
-			return;
+			if (lo_a == (uint32_t)0x80000000)
+			{
+				this->SetLo(0);
+				this->SetHi(hi_a + 1);
+			}
+			else
+			{
+				this->SetLo((~lo_a) + 1); // absolute value of the mantissa
+				this->SetHi(hi_a);
+			}
 		}
-		// the value is positive, simply copy exponent and mantissa
-		this->SetHi(hi_a);
-		this->SetLo(lo_a);
+		else
+		{
+			// the value is positive, simply copy exponent and mantissa
+			this->SetHi(hi_a);
+			this->SetLo(lo_a);
+		}
 	}
 	
-	void Register::Add(uint8_t hi_a, uint32_t lo_a, uint8_t hi_b, uint32_t lo_b, uint32_t& overflow, uint32_t& underflow)
+	void Register::Addf(uint8_t hi_a, uint32_t lo_a, uint8_t hi_b, uint32_t lo_b, uint32_t& overflow, uint32_t& underflow)
 	{
-		AddSub(true, hi_a, lo_a, hi_b, lo_b, overflow, underflow);
+		AddfSubf(true, hi_a, lo_a, hi_b, lo_b, overflow, underflow);
 	}
 	
-	void Register::Sub(uint8_t hi_a, uint32_t lo_a, uint8_t hi_b, uint32_t lo_b, uint32_t& overflow, uint32_t& underflow)
+	void Register::Subf(uint8_t hi_a, uint32_t lo_a, uint8_t hi_b, uint32_t lo_b, uint32_t& overflow, uint32_t& underflow)
 	{
-		AddSub(false, hi_a, lo_a, hi_b, lo_b, overflow, underflow);
+		AddfSubf(false, hi_a, lo_a, hi_b, lo_b, overflow, underflow);
 	}
 	
-	void Register::AddSub(bool is_add, uint8_t hi_a, uint32_t lo_a, uint8_t hi_b, uint32_t lo_b, uint32_t& overflow, uint32_t& underflow)
+	void Register::AddfSubf(bool is_add, uint8_t hi_a, uint32_t lo_a, uint8_t hi_b, uint32_t lo_b, uint32_t& overflow, uint32_t& underflow)
 	{
 		int64_t ext_lo_a = 0;
 		int64_t ext_lo_b = 0;
@@ -613,7 +719,7 @@ namespace tms320 {
 
 							count = count - 32;
 							ext_lo_c = ext_lo_c << count;
-							if ((int32_t)((int32_t)(int8_t)this->hi - count) < -128)
+							if ((int32_t)((int32_t)(int8_t)this->hi - count) <= -128)
 							{
 								underflow = true;
 								this->SetHi((uint8_t)0x80);
@@ -664,7 +770,7 @@ namespace tms320 {
 								  (uint64_t)0x80000000)));
 	}
 	
-	void Register::Mpy(uint8_t hi_a, uint32_t lo_a, uint8_t hi_b, uint32_t lo_b, uint32_t& overflow, uint32_t& underflow)
+	void Register::Mpyf(uint8_t hi_a, uint32_t lo_a, uint8_t hi_b, uint32_t lo_b, uint32_t& overflow, uint32_t& underflow)
 	{
 		int64_t ext_lo_a = 0;
 		int64_t ext_lo_b = 0;
@@ -759,14 +865,14 @@ namespace tms320 {
 		this->SetHi((uint8_t)((int8_t)exp_c));
 	}
 	
-	void Register::Norm(uint8_t hi_a, uint32_t lo_a, uint32_t& underflow)
+	void Register::Normf(uint8_t hi_a, uint32_t lo_a, uint32_t& underflow)
 	{
 		underflow = 0;
 		
 		if (lo_a == 0)
 		{
 			this->SetLo(0);
-			this->SetHi((uint8_t)0xff);
+			this->SetHi((uint8_t)0x80);
 			return;
 		}
 		
@@ -794,7 +900,7 @@ namespace tms320 {
 		}
 	}
 	
-	void Register::Rnd(uint8_t hi_a, uint32_t lo_a, uint32_t& overflow, uint32_t& underflow)
+	void Register::Rndf(uint8_t hi_a, uint32_t lo_a, uint32_t& overflow, uint32_t& underflow)
 	{
 		overflow = 0;
 		underflow = 0;
@@ -896,18 +1002,18 @@ namespace tms320 {
 		this->SetHi(reg.GetHi());
 	}
 	
-	void Register::LoadExp(uint32_t value)
+	void Register::LoadExp32(uint32_t value)
 	{
-		if (GetHi(value) == 0x80)
+		if (GetHi32(value) == 0x80)
 			this->SetLo(0);
-		this->SetHi(GetHi(value));
+		this->SetHi(GetHi32(value));
 	}
 	
-	void Register::LoadExp(uint16_t value)
+	void Register::LoadExp16(uint16_t value)
 	{
-		if (GetHi(value) == 0x80)
+		if (GetHi16(value) == 0x80)
 			this->SetLo(0);
-		this->SetHi(GetHi(value));
+		this->SetHi(GetHi16(value));
 	}
 	
 	void Register::LoadMan(const Register& reg)
@@ -915,7 +1021,7 @@ namespace tms320 {
 		this->SetLo(reg.GetLo());
 	}
 	
-	void Register::LoadMan(uint32_t value)
+	void Register::LoadMan32(uint32_t value)
 	{
 		// TOCHECK: the documentation states that the memory value
 		//   doesn't need to be interpreted as a float, but that all
@@ -923,9 +1029,9 @@ namespace tms320 {
 		this->SetLo(value);
 	}
 	
-	void Register::LoadMan(uint16_t value)
+	void Register::LoadMan16(uint16_t value)
 	{
-		this->SetLo(GetLo(value));
+		this->SetLo(GetLo16(value));
 	}
 	
 	RegisterDebugInterface::RegisterDebugInterface(const char *_name, unisim::component::cxx::processor::tms320::Register *_reg, bool _extended_precision)

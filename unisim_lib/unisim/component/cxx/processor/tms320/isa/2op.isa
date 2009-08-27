@@ -136,7 +136,7 @@ ABSF_reg.execute = {
 	// Compute the result
 	uint32_t overflow;
 	
-	dst_reg.Abs(src_reg, overflow);
+	dst_reg.Absf(src_reg, overflow);
 	
 	// Generate flags (into ST)
 	cpu.GenFlags(dst_reg,
@@ -162,7 +162,7 @@ ABSF_dir.execute = {
 	// Compute the result
 	uint32_t overflow;
 
-	dst_reg.Abs(src_value, overflow);
+	dst_reg.Absf32(src_value, overflow);
 	
 	// Generate flags (into ST)
 	cpu.GenFlags(dst_reg,
@@ -195,7 +195,7 @@ ABSF_indir.execute = {
 	// Compute the result
 	uint32_t overflow;
 	
-	dst_reg.Abs(src_value, overflow);
+	dst_reg.Absf32(src_value, overflow);
 	
 	if(update_ar)
 	{
@@ -220,8 +220,7 @@ ABSF_imm.execute = {
 	
 	// Compute the result
 	uint32_t overflow;
-	
-	dst_reg.Abs(imm, overflow);
+	dst_reg.Absf16(imm, overflow);
 	
 	// Generate flags (into ST)
 	cpu.GenFlags(dst_reg,
@@ -796,7 +795,7 @@ ADDF_reg.execute = {
 	// compute
 	uint32_t underflow;
 	uint32_t overflow;
-	dst_reg.Add(src_reg, overflow, underflow);
+	dst_reg.Addf(src_reg, overflow, underflow);
 
 	// Generate flags (into ST)
 	cpu.GenFlags(
@@ -824,7 +823,7 @@ ADDF_dir.execute = {
 	// compute
 	uint32_t underflow;
 	uint32_t overflow;
-	dst_reg.Add(src_value, overflow, underflow);
+	dst_reg.Addf32(src_value, overflow, underflow);
 
 	// Generate flags (into ST)
 	cpu.GenFlags(
@@ -859,7 +858,7 @@ ADDF_indir.execute = {
 	// compute
 	uint32_t underflow;
 	uint32_t overflow;
-	dst_reg.Add(src_value, overflow, underflow);
+	dst_reg.Addf32(src_value, overflow, underflow);
 
 	if(update_ar)
 	{
@@ -887,7 +886,7 @@ ADDF_imm.execute = {
 	// compute
 	uint32_t underflow;
 	uint32_t overflow;
-	dst_reg.Add((uint16_t)imm, overflow, underflow);
+	dst_reg.Addf16((uint16_t)imm, overflow, underflow);
 
 	// Generate flags (into ST)
 	cpu.GenFlags(
@@ -1936,7 +1935,7 @@ CMPF_reg.execute = {
 	// compute
 	uint32_t underflow;
 	uint32_t overflow;
-	result_reg.Sub(dst_reg, src_reg, overflow, underflow);
+	result_reg.Subf(dst_reg, src_reg, overflow, underflow);
 	
 	// Generate flags (into ST)
 	cpu.GenFlags(result_reg,
@@ -1966,7 +1965,7 @@ CMPF_dir.execute = {
 	// compute
 	uint32_t underflow;
 	uint32_t overflow;
-	result_reg.Sub(dst_reg, src_value, overflow, underflow);
+	result_reg.Subf32(dst_reg, src_value, overflow, underflow);
 	
 	// Generate flags (into ST)
 	cpu.GenFlags(result_reg,
@@ -2003,7 +2002,7 @@ CMPF_indir.execute = {
 	// compute
 	uint32_t underflow;
 	uint32_t overflow;
-	result_reg.Sub(dst_reg, src_value, overflow, underflow);
+	result_reg.Subf32(dst_reg, src_value, overflow, underflow);
 	
 	if(update_ar)
 	{
@@ -2033,7 +2032,7 @@ CMPF_imm.execute = {
 	// compute
 	uint32_t underflow;
 	uint32_t overflow;
-	result_reg.Sub(dst_reg, (uint16_t)imm, overflow, underflow);
+	result_reg.Subf16(dst_reg, (uint16_t)imm, overflow, underflow);
 	
 	// Generate flags (into ST)
 	cpu.GenFlags(result_reg,
@@ -3001,7 +3000,7 @@ MPYF_reg.execute = {
 	// Compute result and flags
 	uint32_t overflow;
 	uint32_t underflow;
-	dst_reg.Mpy(src_reg, overflow, underflow);
+	dst_reg.Mpyf(src_reg, overflow, underflow);
 
 	// Generate flags (into ST)
 	cpu.GenFlags(
@@ -3046,7 +3045,7 @@ MPYF_dir.execute = {
 	// Compute result and flags
 	uint32_t overflow;
 	uint32_t underflow;
-	dst_reg.Mpy(src_value, overflow, underflow);
+	dst_reg.Mpyf32(src_value, overflow, underflow);
 
 	// Generate flags (into ST)
 	cpu.GenFlags(
@@ -3100,7 +3099,7 @@ MPYF_indir.execute = {
 	// Compute result and flags
 	uint32_t overflow;
 	uint32_t underflow;
-	dst_reg.Mpy(src_value, overflow, underflow);
+	dst_reg.Mpyf32(src_value, overflow, underflow);
 	
 	if(update_ar)
 	{
@@ -3147,7 +3146,7 @@ MPYF_imm.execute = {
 	// Compute result and flags
 	uint32_t overflow;
 	uint32_t underflow;
-	dst_reg.Mpy((uint16_t)imm, overflow, underflow);
+	dst_reg.Mpyf16((uint16_t)imm, overflow, underflow);
 
 	// Generate flags (into ST)
 	cpu.GenFlags(
@@ -3730,7 +3729,7 @@ NEGF_reg.execute = {
 	// compute
 	uint32_t underflow;
 	uint32_t overflow;
-	dst_reg.Neg(src_reg, overflow, underflow);
+	dst_reg.Negf(src_reg, overflow, underflow);
 	
 	// Generate flags (into ST)
 	cpu.GenFlags(dst_reg,
@@ -3740,6 +3739,14 @@ NEGF_reg.execute = {
 				 overflow,
 				 underflow
 				 );
+				 
+	// fix the N flag if necessary
+	if (underflow)
+	{
+		uint32_t st = cpu.GetST();
+		st |= (uint32_t)1 << ST_N;
+		cpu.SetST(st);
+	}
 }
 
 NEGF_dir.execute = {
@@ -3757,7 +3764,7 @@ NEGF_dir.execute = {
 	// compute
 	uint32_t underflow;
 	uint32_t overflow;
-	dst_reg.Neg(src_value, overflow, underflow);
+	dst_reg.Negf32(src_value, overflow, underflow);
 	
 	// Generate flags (into ST)
 	cpu.GenFlags(dst_reg,
@@ -3767,6 +3774,14 @@ NEGF_dir.execute = {
 				 overflow,
 				 underflow
 				 );
+	
+	// fix the N flag if necessary
+	if (underflow)
+	{
+		uint32_t st = cpu.GetST();
+		st |= (uint32_t)1 << ST_N;
+		cpu.SetST(st);
+	}
 }
 
 NEGF_indir.execute = {
@@ -3791,7 +3806,7 @@ NEGF_indir.execute = {
 	// compute
 	uint32_t underflow;
 	uint32_t overflow;
-	dst_reg.Neg(src_value, overflow, underflow);
+	dst_reg.Negf32(src_value, overflow, underflow);
 	
 	if(update_ar)
 	{
@@ -3807,6 +3822,14 @@ NEGF_indir.execute = {
 				 overflow,
 				 underflow
 				 );
+	
+	// fix the N flag if necessary
+	if (underflow)
+	{
+		uint32_t st = cpu.GetST();
+		st |= (uint32_t)1 << ST_N;
+		cpu.SetST(st);
+	}
 }
 
 NEGF_imm.execute = {
@@ -3818,7 +3841,7 @@ NEGF_imm.execute = {
 	// compute
 	uint32_t underflow;
 	uint32_t overflow;
-	dst_reg.Neg((uint16_t)imm, overflow, underflow);
+	dst_reg.Negf16((uint16_t)imm, overflow, underflow);
 	
 	// Generate flags (into ST)
 	cpu.GenFlags(dst_reg,
@@ -3828,6 +3851,14 @@ NEGF_imm.execute = {
 				 overflow,
 				 underflow
 				 );
+	
+	// fix the N flag if necessary
+	if (underflow)
+	{
+		uint32_t st = cpu.GetST();
+		st |= (uint32_t)1 << ST_N;
+		cpu.SetST(st);
+	}
 }
 
 /* end of NEGF (negate floating-point value)
@@ -4127,7 +4158,7 @@ NORM_reg.execute = {
 	
 	// compute
 	uint32_t underflow;
-	dst_reg.Norm(src_reg, underflow);
+	dst_reg.Normf(src_reg, underflow);
 	
 	// Generate flags (into ST)
 	cpu.GenFlags(dst_reg,
@@ -4164,7 +4195,7 @@ NORM_dir.execute = {
 	
 	// compute
 	uint32_t underflow;
-	dst_reg.Norm(src_value, underflow);
+	dst_reg.Normf32(src_value, underflow);
 	
 	// Generate flags (into ST)
 	cpu.GenFlags(dst_reg,
@@ -4197,7 +4228,7 @@ NORM_indir.execute = {
 	
 	// compute
 	uint32_t underflow;
-	dst_reg.Norm(src_value, underflow);
+	dst_reg.Normf32(src_value, underflow);
 	
 	if(update_ar)
 	{
@@ -4223,7 +4254,7 @@ NORM_imm.execute = {
 	
 	// compute
 	uint32_t underflow;
-	dst_reg.Norm((uint16_t)imm, underflow);
+	dst_reg.Normf16((uint16_t)imm, underflow);
 	
 	// Generate flags (into ST)
 	cpu.GenFlags(dst_reg,
@@ -4686,7 +4717,7 @@ RND_reg.execute = {
 	// compute
 	uint32_t underflow;
 	uint32_t overflow;
-	dst_reg.Rnd(src_reg, overflow, underflow);
+	dst_reg.Rndf(src_reg, overflow, underflow);
 	
 	// Generate flags (into ST)
 	// the documentation says that the rnd instruction doesn't touch the Z flag
@@ -4726,7 +4757,7 @@ RND_dir.execute = {
 	// compute
 	uint32_t underflow;
 	uint32_t overflow;
-	dst_reg.Rnd(src_value, overflow, underflow);
+	dst_reg.Rndf32(src_value, overflow, underflow);
 	
 	// Generate flags (into ST)
 	// the documentation says that the rnd instruction doesn't touch the Z flag
@@ -4773,7 +4804,7 @@ RND_indir.execute = {
 	// compute
 	uint32_t underflow;
 	uint32_t overflow;
-	dst_reg.Rnd(src_value, overflow, underflow);
+	dst_reg.Rndf32(src_value, overflow, underflow);
 	
 	if(update_ar)
 	{
@@ -4813,7 +4844,7 @@ RND_imm.execute = {
 	// compute
 	uint32_t underflow;
 	uint32_t overflow;
-	dst_reg.Rnd((uint16_t)imm, overflow, underflow);
+	dst_reg.Rndf16((uint16_t)imm, overflow, underflow);
 	
 	// Generate flags (into ST)
 	// the documentation says that the rnd instruction doesn't touch the Z flag
@@ -5533,7 +5564,7 @@ SUBF_reg.execute = {
 	// compute
 	uint32_t underflow;
 	uint32_t overflow;
-	dst_reg.Sub(src_reg, overflow, underflow);
+	dst_reg.Subf(src_reg, overflow, underflow);
 
 	// Generate flags (into ST)
 	cpu.GenFlags(
@@ -5561,7 +5592,7 @@ SUBF_dir.execute = {
 	// compute
 	uint32_t underflow;
 	uint32_t overflow;
-	dst_reg.Sub(src_value, overflow, underflow);
+	dst_reg.Subf32(src_value, overflow, underflow);
 
 	// Generate flags (into ST)
 	cpu.GenFlags(
@@ -5596,7 +5627,7 @@ SUBF_indir.execute = {
 	// compute
 	uint32_t underflow;
 	uint32_t overflow;
-	dst_reg.Sub(src_value, overflow, underflow);
+	dst_reg.Subf32(src_value, overflow, underflow);
 
 	if(update_ar)
 	{
@@ -5624,7 +5655,7 @@ SUBF_imm.execute = {
 	// compute
 	uint32_t underflow;
 	uint32_t overflow;
-	dst_reg.Sub((uint16_t)imm, overflow, underflow);
+	dst_reg.Subf16((uint16_t)imm, overflow, underflow);
 
 	// Generate flags (into ST)
 	cpu.GenFlags(
@@ -6191,7 +6222,7 @@ SUBRF_reg.execute = {
 	// compute
 	uint32_t underflow;
 	uint32_t overflow;
-	dst_reg.Sub(src_reg, dst_reg, overflow, underflow);
+	dst_reg.Subf(src_reg, dst_reg, overflow, underflow);
 
 	// Generate flags (into ST)
 	cpu.GenFlags(
@@ -6219,7 +6250,7 @@ SUBRF_dir.execute = {
 	// compute
 	uint32_t underflow;
 	uint32_t overflow;
-	dst_reg.Sub(src_value, dst_reg, overflow, underflow);
+	dst_reg.Subf32(src_value, dst_reg, overflow, underflow);
 
 	// Generate flags (into ST)
 	cpu.GenFlags(
@@ -6254,7 +6285,7 @@ SUBRF_indir.execute = {
 	// compute
 	uint32_t underflow;
 	uint32_t overflow;
-	dst_reg.Sub(src_value, dst_reg, overflow, underflow);
+	dst_reg.Subf32(src_value, dst_reg, overflow, underflow);
 
 	if(update_ar)
 	{
@@ -6282,7 +6313,7 @@ SUBRF_imm.execute = {
 	// compute
 	uint32_t underflow;
 	uint32_t overflow;
-	dst_reg.Sub((uint16_t)imm, dst_reg, overflow, underflow);
+	dst_reg.Subf16((uint16_t)imm, dst_reg, overflow, underflow);
 
 	// Generate flags (into ST)
 	cpu.GenFlags(

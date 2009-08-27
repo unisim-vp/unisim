@@ -436,7 +436,7 @@ ADDF3_reg_reg.execute = {
 	// Compute
 	uint32_t overflow;
 	uint32_t underflow;
-	dst_reg.Add(src1_reg, src2_reg, overflow, underflow);
+	dst_reg.Addf(src1_reg, src2_reg, overflow, underflow);
 
 	// Generate flags (into ST)
 	cpu.GenFlags(
@@ -474,7 +474,7 @@ ADDF3_indir_reg.execute = {
 	// Compute
 	uint32_t overflow;
 	uint32_t underflow;
-	dst_reg.Add(src1_value, src2_reg, overflow, underflow);
+	dst_reg.Addf(src1_value, src2_reg, overflow, underflow);
 
 	// Check whether an auxiliary register is updated for 1st source operand
 	if(update_ar)
@@ -519,7 +519,7 @@ ADDF3_reg_indir.execute = {
 	// Compute
 	uint32_t overflow;
 	uint32_t underflow;
-	dst_reg.Add(src1_reg, src2_value, overflow, underflow);
+	dst_reg.Addf(src1_reg, src2_value, overflow, underflow);
 
 	// Check whether an auxiliary register is updated for 1st source operand
 	if(update_ar)
@@ -574,7 +574,7 @@ ADDF3_indir_indir.execute = {
 	// Compute
 	uint32_t overflow;
 	uint32_t underflow;
-	dst_reg.Add(src1_value, src2_value, overflow, underflow);
+	dst_reg.Addf(src1_value, src2_value, overflow, underflow);
 
 	// Check whether an auxiliary register is updated for 1st source operand
 	if(update_ar1)
@@ -1894,7 +1894,7 @@ CMPF3_reg_reg.execute = {
 	// Compute
 	uint32_t overflow;
 	uint32_t underflow;
-	res_reg.Sub(src1_reg, src2_reg, overflow, underflow);
+	res_reg.Subf(src1_reg, src2_reg, overflow, underflow);
 
 	// Generate flags (into ST)
 	cpu.GenFlags(
@@ -1932,7 +1932,7 @@ CMPF3_indir_reg.execute = {
 	// Compute
 	uint32_t overflow;
 	uint32_t underflow;
-	res_reg.Sub(src1_value, src2_reg, overflow, underflow);
+	res_reg.Subf32(src1_value, src2_reg, overflow, underflow);
 
 	// Check whether an auxiliary register is updated for 1st source operand
 	if(update_ar)
@@ -1977,7 +1977,7 @@ CMPF3_reg_indir.execute = {
 	// Compute
 	uint32_t overflow;
 	uint32_t underflow;
-	res_reg.Sub(src1_reg, src2_value, overflow, underflow);
+	res_reg.Subf32(src1_reg, src2_value, overflow, underflow);
 
 	// Check whether an auxiliary register is updated for 1st source operand
 	if(update_ar)
@@ -2032,7 +2032,7 @@ CMPF3_indir_indir.execute = {
 	// Compute
 	uint32_t overflow;
 	uint32_t underflow;
-	res_reg.Sub(src1_value, src2_value, overflow, underflow);
+	res_reg.Subf(src1_value, src2_value, overflow, underflow);
 
 	// Check whether an auxiliary register is updated for 1st source operand
 	if(update_ar1)
@@ -2786,7 +2786,7 @@ MPYF3_reg_reg.execute = {
 	// Compute
 	uint32_t overflow;
 	uint32_t underflow;
-	dst_reg.Mpy(src1_reg, src2_reg, overflow, underflow);
+	dst_reg.Mpyf(src1_reg, src2_reg, overflow, underflow);
 
 	// Generate flags (into ST)
 	cpu.GenFlags(
@@ -2840,7 +2840,7 @@ MPYF3_indir_reg.execute = {
 	// Compute
 	uint32_t overflow;
 	uint32_t underflow;
-	dst_reg.Mpy(src1_value, src2_reg, overflow, underflow);
+	dst_reg.Mpyf(src1_value, src2_reg, overflow, underflow);
 
 	// Check whether an auxiliary register is updated for 1st source operand
 	if(update_ar)
@@ -2903,7 +2903,7 @@ MPYF3_reg_indir.execute = {
 	// Compute
 	uint32_t overflow;
 	uint32_t underflow;
-	dst_reg.Mpy(src1_reg, src2_value, overflow, underflow);
+	dst_reg.Mpyf(src1_reg, src2_value, overflow, underflow);
 
 	// Check whether an auxiliary register is updated for 1st source operand
 	if(update_ar)
@@ -2976,7 +2976,7 @@ MPYF3_indir_indir.execute = {
 	// Compute
 	uint32_t overflow;
 	uint32_t underflow;
-	dst_reg.Mpy(src1_value, src2_value, overflow, underflow);
+	dst_reg.Mpyf(src1_value, src2_value, overflow, underflow);
 
 	// Check whether an auxiliary register is updated for 1st source operand
 	if(update_ar1)
@@ -3983,7 +3983,7 @@ SUBF3_reg_reg.execute = {
 	// Compute
 	uint32_t overflow;
 	uint32_t underflow;
-	dst_reg.Sub(src1_reg, src2_reg, overflow, underflow);
+	dst_reg.Subf(src1_reg, src2_reg, overflow, underflow);
 
 	// Generate flags (into ST)
 	cpu.GenFlags(
@@ -4021,7 +4021,7 @@ SUBF3_indir_reg.execute = {
 	// Compute
 	uint32_t overflow;
 	uint32_t underflow;
-	dst_reg.Sub(src1_value, src2_reg, overflow, underflow);
+	dst_reg.Subf32(src1_value, src2_reg, overflow, underflow);
 
 	// Check whether an auxiliary register is updated for 1st source operand
 	if(update_ar)
@@ -4066,7 +4066,7 @@ SUBF3_reg_indir.execute = {
 	// Compute
 	uint32_t overflow;
 	uint32_t underflow;
-	dst_reg.Sub(src1_reg, src2_value, overflow, underflow);
+	dst_reg.Subf32(src1_reg, src2_value, overflow, underflow);
 
 	// Check whether an auxiliary register is updated for 1st source operand
 	if(update_ar)
@@ -4121,7 +4121,7 @@ SUBF3_indir_indir.execute = {
 	// Compute
 	uint32_t overflow;
 	uint32_t underflow;
-	dst_reg.Sub(src1_value, src2_value, overflow, underflow);
+	dst_reg.Subf(src1_value, src2_value, overflow, underflow);
 
 	// Check whether an auxiliary register is updated for 1st source operand
 	if(update_ar1)

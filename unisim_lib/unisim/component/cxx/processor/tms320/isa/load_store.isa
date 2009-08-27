@@ -119,7 +119,7 @@ LDE_dir.execute = {
 	// Read the source operand from memory
 	uint32_t src_value = cpu.IntLoad(ea);
 	
-	dst_reg.LoadExp(src_value);
+	dst_reg.LoadExp32(src_value);
 	
 	// no flags to generate
 }
@@ -143,7 +143,7 @@ LDE_indir.execute = {
 	// Read the source operand from memory
 	uint32_t src_value = cpu.IntLoad(ea);
 	
-	dst_reg.LoadExp(src_value);
+	dst_reg.LoadExp32(src_value);
 	
 	if(update_ar)
 	{
@@ -160,7 +160,7 @@ LDE_imm.execute = {
 	// get destination register
 	Register& dst_reg = cpu.GetExtReg(dst);
 	
-	dst_reg.LoadExp((uint16_t)imm);
+	dst_reg.LoadExp16((uint16_t)imm);
 	
 	// no flags to generate
 }
@@ -830,7 +830,7 @@ LDM_dir.execute = {
 	// Read the source operand from memory
 	uint32_t src_value = cpu.IntLoad(ea);
 	
-	dst_reg.LoadMan(src_value);
+	dst_reg.LoadMan32(src_value);
 	
 	// no flags to generate
 }
@@ -854,7 +854,7 @@ LDM_indir.execute = {
 	// Read the source operand from memory
 	uint32_t src_value = cpu.IntLoad(ea);
 	
-	dst_reg.LoadMan(src_value);
+	dst_reg.LoadMan32(src_value);
 	
 	if(update_ar)
 	{
@@ -871,7 +871,7 @@ LDM_imm.execute = {
 	// get destination register
 	Register& dst_reg = cpu.GetExtReg(dst);
 	
-	dst_reg.LoadMan((uint16_t)imm);
+	dst_reg.LoadMan16((uint16_t)imm);
 	
 	// no flags to generate
 }
