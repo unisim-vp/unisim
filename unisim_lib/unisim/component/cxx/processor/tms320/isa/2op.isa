@@ -795,7 +795,8 @@ ADDF_reg.execute = {
 	// compute
 	uint32_t underflow;
 	uint32_t overflow;
-	dst_reg.Addf(src_reg, overflow, underflow);
+	uint32_t neg;
+	dst_reg.Addf(src_reg, overflow, underflow, neg);
 
 	// Generate flags (into ST)
 	cpu.GenFlags(
@@ -804,7 +805,8 @@ ADDF_reg.execute = {
 		M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
 		0,
 		overflow,
-		underflow
+		underflow,
+		neg
 	);
 }
 
@@ -823,7 +825,8 @@ ADDF_dir.execute = {
 	// compute
 	uint32_t underflow;
 	uint32_t overflow;
-	dst_reg.Addf32(src_value, overflow, underflow);
+	uint32_t neg;
+	dst_reg.Addf32(src_value, overflow, underflow, neg);
 
 	// Generate flags (into ST)
 	cpu.GenFlags(
@@ -832,7 +835,8 @@ ADDF_dir.execute = {
 		M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
 		0,
 		overflow,
-		underflow
+		underflow,
+		neg
 	);
 }
 
@@ -858,7 +862,8 @@ ADDF_indir.execute = {
 	// compute
 	uint32_t underflow;
 	uint32_t overflow;
-	dst_reg.Addf32(src_value, overflow, underflow);
+	uint32_t neg;
+	dst_reg.Addf32(src_value, overflow, underflow, neg);
 
 	if(update_ar)
 	{
@@ -873,7 +878,8 @@ ADDF_indir.execute = {
 		M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
 		0,
 		overflow,
-		underflow
+		underflow,
+		neg
 	);
 }
 
@@ -886,7 +892,8 @@ ADDF_imm.execute = {
 	// compute
 	uint32_t underflow;
 	uint32_t overflow;
-	dst_reg.Addf16((uint16_t)imm, overflow, underflow);
+	uint32_t neg;
+	dst_reg.Addf16((uint16_t)imm, overflow, underflow, neg);
 
 	// Generate flags (into ST)
 	cpu.GenFlags(
@@ -895,7 +902,8 @@ ADDF_imm.execute = {
 		M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
 		0,
 		overflow,
-		underflow
+		underflow,
+		neg
 	);
 }
 
@@ -1935,7 +1943,8 @@ CMPF_reg.execute = {
 	// compute
 	uint32_t underflow;
 	uint32_t overflow;
-	result_reg.Subf(dst_reg, src_reg, overflow, underflow);
+	uint32_t neg;
+	result_reg.Subf(dst_reg, src_reg, overflow, underflow, neg);
 	
 	// Generate flags (into ST)
 	cpu.GenFlags(result_reg,
@@ -1943,7 +1952,8 @@ CMPF_reg.execute = {
 				 M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
 				 0,
 				 overflow,
-				 underflow
+				 underflow,
+				 neg
 				 );
 }
 
@@ -1965,7 +1975,8 @@ CMPF_dir.execute = {
 	// compute
 	uint32_t underflow;
 	uint32_t overflow;
-	result_reg.Subf32(dst_reg, src_value, overflow, underflow);
+	uint32_t neg;
+	result_reg.Subf32(dst_reg, src_value, overflow, underflow, neg);
 	
 	// Generate flags (into ST)
 	cpu.GenFlags(result_reg,
@@ -1973,7 +1984,8 @@ CMPF_dir.execute = {
 				 M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
 				 0,
 				 overflow,
-				 underflow
+				 underflow,
+				 neg
 				 );
 }
 
@@ -2002,7 +2014,8 @@ CMPF_indir.execute = {
 	// compute
 	uint32_t underflow;
 	uint32_t overflow;
-	result_reg.Subf32(dst_reg, src_value, overflow, underflow);
+	uint32_t neg;
+	result_reg.Subf32(dst_reg, src_value, overflow, underflow, neg);
 	
 	if(update_ar)
 	{
@@ -2016,7 +2029,8 @@ CMPF_indir.execute = {
 				 M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
 				 0,
 				 overflow,
-				 underflow
+				 underflow,
+				 neg
 				 );
 }
 
@@ -2032,7 +2046,8 @@ CMPF_imm.execute = {
 	// compute
 	uint32_t underflow;
 	uint32_t overflow;
-	result_reg.Subf16(dst_reg, (uint16_t)imm, overflow, underflow);
+	uint32_t neg;
+	result_reg.Subf16(dst_reg, (uint16_t)imm, overflow, underflow, neg);
 	
 	// Generate flags (into ST)
 	cpu.GenFlags(result_reg,
@@ -2040,7 +2055,8 @@ CMPF_imm.execute = {
 				 M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
 				 0,
 				 overflow,
-				 underflow
+				 underflow,
+				 neg
 				 );
 }
 
@@ -3000,7 +3016,8 @@ MPYF_reg.execute = {
 	// Compute result and flags
 	uint32_t overflow;
 	uint32_t underflow;
-	dst_reg.Mpyf(src_reg, overflow, underflow);
+	uint32_t neg;
+	dst_reg.Mpyf(src_reg, overflow, underflow, neg);
 
 	// Generate flags (into ST)
 	cpu.GenFlags(
@@ -3009,24 +3026,25 @@ MPYF_reg.execute = {
 		M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
 		0,
 		overflow,
-		underflow
+		underflow,
+		neg
 	);
 	
-	// NOTE: the ST_N flag may need to be fixed if the result is equal to 0.0,
-	//   then the ST_N flag is set to 1 if one of two inputs is negative (but
-	//   not both) and none of them had 0x80 as exponent
-	if (dst_reg.GetHi() == 0x80)
-	{
-		if (((src_reg.GetHi() != (uint8_t)0x80)
-			 && (src_dst_reg.GetHi() != (uint8_t)0x80))
-			&& (((src_reg.GetLo() & (uint32_t)0x80000000)
-				 ^ (src_dst_reg.GetLo() & (uint32_t)0x80000000)) != 0))
-		{
-			uint32_t st = cpu.GetST();
-			st |= ((uint32_t)1 << ST_N);
-			cpu.SetST(st);
-		}
-	}
+//	// NOTE: the ST_N flag may need to be fixed if the result is equal to 0.0,
+//	//   then the ST_N flag is set to 1 if one of two inputs is negative (but
+//	//   not both) and none of them had 0x80 as exponent
+//	if (dst_reg.GetHi() == 0x80)
+//	{
+//		if (((src_reg.GetHi() != (uint8_t)0x80)
+//			 && (src_dst_reg.GetHi() != (uint8_t)0x80))
+//			&& (((src_reg.GetLo() & (uint32_t)0x80000000)
+//				 ^ (src_dst_reg.GetLo() & (uint32_t)0x80000000)) != 0))
+//		{
+//			uint32_t st = cpu.GetST();
+//			st |= ((uint32_t)1 << ST_N);
+//			cpu.SetST(st);
+//		}
+//	}
 }
 
 MPYF_dir.execute = {
@@ -3045,7 +3063,8 @@ MPYF_dir.execute = {
 	// Compute result and flags
 	uint32_t overflow;
 	uint32_t underflow;
-	dst_reg.Mpyf32(src_value, overflow, underflow);
+	uint32_t neg;
+	dst_reg.Mpyf32(src_value, overflow, underflow, neg);
 
 	// Generate flags (into ST)
 	cpu.GenFlags(
@@ -3054,26 +3073,27 @@ MPYF_dir.execute = {
 		M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
 		0,
 		overflow,
-		underflow
+		underflow,
+		neg
 	);
 
-	// NOTE: the ST_N flag may need to be fixed if the result is equal to 0.0,
-	//   then the ST_N flag is set to 1 if one of two inputs is negative (but
-	//   not both) and none of them had 0x80 as exponent
-	if (dst_reg.GetHi() == 0x80)
-	{
-		Register src_reg;
-		src_reg.SetFromSinglePrecisionFPFormat(src_value);
-		if (((src_reg.GetHi() != (uint8_t)0x80)
-			 && (src_dst_reg.GetHi() != (uint8_t)0x80))
-			&& (((src_reg.GetLo() & (uint32_t)0x80000000)
-				 ^ (src_dst_reg.GetLo() & (uint32_t)0x80000000)) != 0))
-		{
-			uint32_t st = cpu.GetST();
-			st |= ((uint32_t)1 << ST_N);
-			cpu.SetST(st);
-		}
-	}
+//	// NOTE: the ST_N flag may need to be fixed if the result is equal to 0.0,
+//	//   then the ST_N flag is set to 1 if one of two inputs is negative (but
+//	//   not both) and none of them had 0x80 as exponent
+//	if (dst_reg.GetHi() == 0x80)
+//	{
+//		Register src_reg;
+//		src_reg.SetFromSinglePrecisionFPFormat(src_value);
+//		if (((src_reg.GetHi() != (uint8_t)0x80)
+//			 && (src_dst_reg.GetHi() != (uint8_t)0x80))
+//			&& (((src_reg.GetLo() & (uint32_t)0x80000000)
+//				 ^ (src_dst_reg.GetLo() & (uint32_t)0x80000000)) != 0))
+//		{
+//			uint32_t st = cpu.GetST();
+//			st |= ((uint32_t)1 << ST_N);
+//			cpu.SetST(st);
+//		}
+//	}
 }
 
 MPYF_indir.execute = {
@@ -3099,7 +3119,8 @@ MPYF_indir.execute = {
 	// Compute result and flags
 	uint32_t overflow;
 	uint32_t underflow;
-	dst_reg.Mpyf32(src_value, overflow, underflow);
+	uint32_t neg;
+	dst_reg.Mpyf32(src_value, overflow, underflow, neg);
 	
 	if(update_ar)
 	{
@@ -3114,26 +3135,27 @@ MPYF_indir.execute = {
 		M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
 		0,
 		overflow,
-		underflow
+		underflow,
+		neg
 	);
 
-	// NOTE: the ST_N flag may need to be fixed if the result is equal to 0.0,
-	//   then the ST_N flag is set to 1 if one of two inputs is negative (but
-	//   not both) and none of them had 0x80 as exponent
-	if (dst_reg.GetHi() == 0x80)
-	{
-		Register src_reg;
-		src_reg.SetFromSinglePrecisionFPFormat(src_value);
-		if (((src_reg.GetHi() != (uint8_t)0x80)
-			 && (src_dst_reg.GetHi() != (uint8_t)0x80))
-			&& (((src_reg.GetLo() & (uint32_t)0x80000000)
-				^ (src_dst_reg.GetLo() & (uint32_t)0x80000000)) != 0))
-		{
-			uint32_t st = cpu.GetST();
-			st |= ((uint32_t)1 << ST_N);
-			cpu.SetST(st);
-		}
-	}
+//	// NOTE: the ST_N flag may need to be fixed if the result is equal to 0.0,
+//	//   then the ST_N flag is set to 1 if one of two inputs is negative (but
+//	//   not both) and none of them had 0x80 as exponent
+//	if (dst_reg.GetHi() == 0x80)
+//	{
+//		Register src_reg;
+//		src_reg.SetFromSinglePrecisionFPFormat(src_value);
+//		if (((src_reg.GetHi() != (uint8_t)0x80)
+//			 && (src_dst_reg.GetHi() != (uint8_t)0x80))
+//			&& (((src_reg.GetLo() & (uint32_t)0x80000000)
+//				^ (src_dst_reg.GetLo() & (uint32_t)0x80000000)) != 0))
+//		{
+//			uint32_t st = cpu.GetST();
+//			st |= ((uint32_t)1 << ST_N);
+//			cpu.SetST(st);
+//		}
+//	}
 }
 
 MPYF_imm.execute = {
@@ -3146,7 +3168,8 @@ MPYF_imm.execute = {
 	// Compute result and flags
 	uint32_t overflow;
 	uint32_t underflow;
-	dst_reg.Mpyf16((uint16_t)imm, overflow, underflow);
+	uint32_t neg;
+	dst_reg.Mpyf16((uint16_t)imm, overflow, underflow, neg);
 
 	// Generate flags (into ST)
 	cpu.GenFlags(
@@ -3155,24 +3178,25 @@ MPYF_imm.execute = {
 		M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
 		0,
 		overflow,
-		underflow
+		underflow,
+		neg
 	);
 
-	// NOTE: the ST_N flag may need to be fixed if the result is equal to 0.0,
-	//   then the ST_N flag is set to 1 if one of two inputs is negative (but
-	//   not both) and none of them had 0x80 as exponent
-	if (dst_reg.GetHi() == 0x80)
-	{
-		if ((((uint16_t)imm & (uint16_t)0xf000 != (uint16_t)0x8000)
-			 && (src_dst_reg.GetHi() != (uint8_t)0x80))
-			&& ((((uint16_t)imm & (uint16_t)0x0800)
-				 ^ (src_dst_reg.GetLo() & (uint32_t)0x80000000)) != 0))
-		{
-			uint32_t st = cpu.GetST();
-			st |= ((uint32_t)1 << ST_N);
-			cpu.SetST(st);
-		}
-	}
+//	// NOTE: the ST_N flag may need to be fixed if the result is equal to 0.0,
+//	//   then the ST_N flag is set to 1 if one of two inputs is negative (but
+//	//   not both) and none of them had 0x80 as exponent
+//	if (dst_reg.GetHi() == 0x80)
+//	{
+//		if ((((uint16_t)imm & (uint16_t)0xf000 != (uint16_t)0x8000)
+//			 && (src_dst_reg.GetHi() != (uint8_t)0x80))
+//			&& ((((uint16_t)imm & (uint16_t)0x0800)
+//				 ^ (src_dst_reg.GetLo() & (uint32_t)0x80000000)) != 0))
+//		{
+//			uint32_t st = cpu.GetST();
+//			st |= ((uint32_t)1 << ST_N);
+//			cpu.SetST(st);
+//		}
+//	}
 }
 
 /* end of MPYF (multiply floating-point values)
@@ -3729,7 +3753,8 @@ NEGF_reg.execute = {
 	// compute
 	uint32_t underflow;
 	uint32_t overflow;
-	dst_reg.Negf(src_reg, overflow, underflow);
+	uint32_t neg;
+	dst_reg.Negf(src_reg, overflow, underflow, neg);
 	
 	// Generate flags (into ST)
 	cpu.GenFlags(dst_reg,
@@ -3737,16 +3762,17 @@ NEGF_reg.execute = {
 				 M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
 				 0,
 				 overflow,
-				 underflow
+				 underflow,
+				 neg
 				 );
 				 
-	// fix the N flag if necessary
-	if (underflow)
-	{
-		uint32_t st = cpu.GetST();
-		st |= (uint32_t)1 << ST_N;
-		cpu.SetST(st);
-	}
+//	// fix the N flag if necessary
+//	if (underflow)
+//	{
+//		uint32_t st = cpu.GetST();
+//		st |= (uint32_t)1 << ST_N;
+//		cpu.SetST(st);
+//	}
 }
 
 NEGF_dir.execute = {
@@ -3764,7 +3790,8 @@ NEGF_dir.execute = {
 	// compute
 	uint32_t underflow;
 	uint32_t overflow;
-	dst_reg.Negf32(src_value, overflow, underflow);
+	uint32_t neg;
+	dst_reg.Negf32(src_value, overflow, underflow, neg);
 	
 	// Generate flags (into ST)
 	cpu.GenFlags(dst_reg,
@@ -3772,16 +3799,17 @@ NEGF_dir.execute = {
 				 M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
 				 0,
 				 overflow,
-				 underflow
+				 underflow,
+				 neg
 				 );
 	
-	// fix the N flag if necessary
-	if (underflow)
-	{
-		uint32_t st = cpu.GetST();
-		st |= (uint32_t)1 << ST_N;
-		cpu.SetST(st);
-	}
+//	// fix the N flag if necessary
+//	if (underflow)
+//	{
+//		uint32_t st = cpu.GetST();
+//		st |= (uint32_t)1 << ST_N;
+//		cpu.SetST(st);
+//	}
 }
 
 NEGF_indir.execute = {
@@ -3806,7 +3834,8 @@ NEGF_indir.execute = {
 	// compute
 	uint32_t underflow;
 	uint32_t overflow;
-	dst_reg.Negf32(src_value, overflow, underflow);
+	uint32_t neg;
+	dst_reg.Negf32(src_value, overflow, underflow, neg);
 	
 	if(update_ar)
 	{
@@ -3820,16 +3849,17 @@ NEGF_indir.execute = {
 				 M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
 				 0,
 				 overflow,
-				 underflow
+				 underflow,
+				 neg
 				 );
 	
-	// fix the N flag if necessary
-	if (underflow)
-	{
-		uint32_t st = cpu.GetST();
-		st |= (uint32_t)1 << ST_N;
-		cpu.SetST(st);
-	}
+//	// fix the N flag if necessary
+//	if (underflow)
+//	{
+//		uint32_t st = cpu.GetST();
+//		st |= (uint32_t)1 << ST_N;
+//		cpu.SetST(st);
+//	}
 }
 
 NEGF_imm.execute = {
@@ -3841,7 +3871,8 @@ NEGF_imm.execute = {
 	// compute
 	uint32_t underflow;
 	uint32_t overflow;
-	dst_reg.Negf16((uint16_t)imm, overflow, underflow);
+	uint32_t neg;
+	dst_reg.Negf16((uint16_t)imm, overflow, underflow, neg);
 	
 	// Generate flags (into ST)
 	cpu.GenFlags(dst_reg,
@@ -3849,16 +3880,17 @@ NEGF_imm.execute = {
 				 M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
 				 0,
 				 overflow,
-				 underflow
+				 underflow,
+				 neg
 				 );
 	
-	// fix the N flag if necessary
-	if (underflow)
-	{
-		uint32_t st = cpu.GetST();
-		st |= (uint32_t)1 << ST_N;
-		cpu.SetST(st);
-	}
+//	// fix the N flag if necessary
+//	if (underflow)
+//	{
+//		uint32_t st = cpu.GetST();
+//		st |= (uint32_t)1 << ST_N;
+//		cpu.SetST(st);
+//	}
 }
 
 /* end of NEGF (negate floating-point value)
@@ -4205,6 +4237,17 @@ NORM_dir.execute = {
 				 0,
 				 underflow
 				 );
+	
+	// NOTE: from the target behavior we have noted that the ST_N flag needs
+	//  to be fixed if the result is 0 and the source mantissa value was 
+	//  negative, in that case ST_N needs to be set to true
+	if (dst_reg.GetHi() == (uint8_t)0x80 && dst_reg.GetLo() == 0)
+		if (src_value & (uint32_t)0x00800000)
+		{
+			uint32_t st = cpu.GetST();
+			st |= ((uint32_t)1 << ST_N);
+			cpu.SetST(st);
+		}
 }
 
 NORM_indir.execute = {
@@ -4244,6 +4287,17 @@ NORM_indir.execute = {
 				 0,
 				 underflow
 				 );
+
+	// NOTE: from the target behavior we have noted that the ST_N flag needs
+	//  to be fixed if the result is 0 and the source mantissa value was 
+	//  negative, in that case ST_N needs to be set to true
+	if (dst_reg.GetHi() == (uint8_t)0x80 && dst_reg.GetLo() == 0)
+		if (src_value & (uint32_t)0x00800000)
+		{
+			uint32_t st = cpu.GetST();
+			st |= ((uint32_t)1 << ST_N);
+			cpu.SetST(st);
+		}
 }
 
 NORM_imm.execute = {
@@ -4740,6 +4794,19 @@ RND_reg.execute = {
 				 overflow,
 				 underflow
 				 );
+	
+	// NOTE: the ST_N flag may need to be fixed if the result is equal to 0.0,
+	//   then the ST_N flag is set to 1 if the input was negative
+	if (dst_reg.GetHi() == 0x80)
+	{
+		if ((src_reg.GetHi() != (uint8_t)0x80)
+			&& ((src_reg.GetLo() & (uint32_t)0x80000000) != 0))
+		{
+			uint32_t st = cpu.GetST();
+			st |= ((uint32_t)1 << ST_N);
+			cpu.SetST(st);
+		}
+	}
 }
 
 RND_dir.execute = {
@@ -4780,6 +4847,22 @@ RND_dir.execute = {
 					 overflow,
 					 underflow
 					 );
+
+	// NOTE: the ST_N flag may need to be fixed if the result is equal to 0.0,
+	//   then the ST_N flag is set to 1 if the input was negative
+	if (dst_reg.GetHi() == 0x80)
+	{
+		Register src_reg;
+		src_reg.SetFromSinglePrecisionFPFormat(src_value);
+		
+		if ((src_reg.GetHi() != (uint8_t)0x80)
+			&& ((src_reg.GetLo() & (uint32_t)0x80000000) != 0))
+		{
+			uint32_t st = cpu.GetST();
+			st |= ((uint32_t)1 << ST_N);
+			cpu.SetST(st);
+		}
+	}
 }
 
 RND_indir.execute = {
@@ -4833,6 +4916,22 @@ RND_indir.execute = {
 					 overflow,
 					 underflow
 					 );
+	
+	// NOTE: the ST_N flag may need to be fixed if the result is equal to 0.0,
+	//   then the ST_N flag is set to 1 if the input was negative
+	if (dst_reg.GetHi() == 0x80)
+	{
+		Register src_reg;
+		src_reg.SetFromSinglePrecisionFPFormat(src_value);
+		
+		if ((src_reg.GetHi() != (uint8_t)0x80)
+			&& ((src_reg.GetLo() & (uint32_t)0x80000000) != 0))
+		{
+			uint32_t st = cpu.GetST();
+			st |= ((uint32_t)1 << ST_N);
+			cpu.SetST(st);
+		}
+	}
 }
 
 RND_imm.execute = {
@@ -4867,6 +4966,19 @@ RND_imm.execute = {
 					 overflow,
 					 underflow
 					 );
+
+	// NOTE: the ST_N flag may need to be fixed if the result is equal to 0.0,
+	//   then the ST_N flag is set to 1 if the input was negative
+	if (dst_reg.GetHi() == 0x80)
+	{
+		if (((uint16_t)imm & (uint16_t)0xf000 != (uint16_t)0x8000)
+			&& (((uint16_t)imm & (uint16_t)0x0800) != 0))
+		{
+			uint32_t st = cpu.GetST();
+			st |= ((uint32_t)1 << ST_N);
+			cpu.SetST(st);
+		}
+	}
 }
 
 /* end of RND (round floating-point value)
@@ -5564,7 +5676,8 @@ SUBF_reg.execute = {
 	// compute
 	uint32_t underflow;
 	uint32_t overflow;
-	dst_reg.Subf(src_reg, overflow, underflow);
+	uint32_t neg;
+	dst_reg.Subf(src_reg, overflow, underflow, neg);
 
 	// Generate flags (into ST)
 	cpu.GenFlags(
@@ -5573,7 +5686,8 @@ SUBF_reg.execute = {
 		M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
 		0,
 		overflow,
-		underflow
+		underflow,
+		neg
 	);
 }
 
@@ -5592,7 +5706,8 @@ SUBF_dir.execute = {
 	// compute
 	uint32_t underflow;
 	uint32_t overflow;
-	dst_reg.Subf32(src_value, overflow, underflow);
+	uint32_t neg;
+	dst_reg.Subf32(src_value, overflow, underflow, neg);
 
 	// Generate flags (into ST)
 	cpu.GenFlags(
@@ -5601,7 +5716,8 @@ SUBF_dir.execute = {
 		M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
 		0,
 		overflow,
-		underflow
+		underflow,
+		neg
 	);
 }
 
@@ -5627,7 +5743,8 @@ SUBF_indir.execute = {
 	// compute
 	uint32_t underflow;
 	uint32_t overflow;
-	dst_reg.Subf32(src_value, overflow, underflow);
+	uint32_t neg;
+	dst_reg.Subf32(src_value, overflow, underflow, neg);
 
 	if(update_ar)
 	{
@@ -5642,7 +5759,8 @@ SUBF_indir.execute = {
 		M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
 		0,
 		overflow,
-		underflow
+		underflow,
+		neg
 	);
 }
 
@@ -5655,7 +5773,8 @@ SUBF_imm.execute = {
 	// compute
 	uint32_t underflow;
 	uint32_t overflow;
-	dst_reg.Subf16((uint16_t)imm, overflow, underflow);
+	uint32_t neg;
+	dst_reg.Subf16((uint16_t)imm, overflow, underflow, neg);
 
 	// Generate flags (into ST)
 	cpu.GenFlags(
@@ -5664,7 +5783,8 @@ SUBF_imm.execute = {
 		M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
 		0,
 		overflow,
-		underflow
+		underflow,
+		neg
 	);
 }
 
@@ -6222,7 +6342,8 @@ SUBRF_reg.execute = {
 	// compute
 	uint32_t underflow;
 	uint32_t overflow;
-	dst_reg.Subf(src_reg, dst_reg, overflow, underflow);
+	uint32_t neg;
+	dst_reg.Subf(src_reg, dst_reg, overflow, underflow, neg);
 
 	// Generate flags (into ST)
 	cpu.GenFlags(
@@ -6231,7 +6352,8 @@ SUBRF_reg.execute = {
 		M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
 		0,
 		overflow,
-		underflow
+		underflow,
+		neg
 	);
 }
 
@@ -6250,7 +6372,8 @@ SUBRF_dir.execute = {
 	// compute
 	uint32_t underflow;
 	uint32_t overflow;
-	dst_reg.Subf32(src_value, dst_reg, overflow, underflow);
+	uint32_t neg;
+	dst_reg.Subf32(src_value, dst_reg, overflow, underflow, neg);
 
 	// Generate flags (into ST)
 	cpu.GenFlags(
@@ -6259,7 +6382,8 @@ SUBRF_dir.execute = {
 		M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
 		0,
 		overflow,
-		underflow
+		underflow,
+		neg
 	);
 }
 
@@ -6285,7 +6409,8 @@ SUBRF_indir.execute = {
 	// compute
 	uint32_t underflow;
 	uint32_t overflow;
-	dst_reg.Subf32(src_value, dst_reg, overflow, underflow);
+	uint32_t neg;
+	dst_reg.Subf32(src_value, dst_reg, overflow, underflow, neg);
 
 	if(update_ar)
 	{
@@ -6300,7 +6425,8 @@ SUBRF_indir.execute = {
 		M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
 		0,
 		overflow,
-		underflow
+		underflow,
+		neg
 	);
 }
 
@@ -6313,7 +6439,8 @@ SUBRF_imm.execute = {
 	// compute
 	uint32_t underflow;
 	uint32_t overflow;
-	dst_reg.Subf16((uint16_t)imm, dst_reg, overflow, underflow);
+	uint32_t neg;
+	dst_reg.Subf16((uint16_t)imm, dst_reg, overflow, underflow, neg);
 
 	// Generate flags (into ST)
 	cpu.GenFlags(
@@ -6322,7 +6449,8 @@ SUBRF_imm.execute = {
 		M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
 		0,
 		overflow,
-		underflow
+		underflow,
+		neg
 	);
 }
 

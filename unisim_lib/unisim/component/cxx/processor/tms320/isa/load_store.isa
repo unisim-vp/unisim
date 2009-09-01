@@ -227,7 +227,8 @@ LDF_reg.execute = {
 	cpu.GenFlags(
 				 dst_reg,
 				 M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-				 M_ST_UF | M_ST_N | M_ST_Z | M_ST_V  // or mask
+				 M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
+				 0, 0, 0 ,0
 				 );
 }
 
@@ -249,8 +250,8 @@ LDF_dir.execute = {
 	cpu.GenFlags(
 				 dst_reg,
 				 M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-				 M_ST_UF | M_ST_N | M_ST_Z | M_ST_V  // or mask
-				 );
+				 M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
+				 0, 0, 0);
 }
 
 LDF_indir.execute = {
