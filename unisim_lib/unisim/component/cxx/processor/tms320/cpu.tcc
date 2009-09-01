@@ -1830,53 +1830,7 @@ template<class CONFIG, bool DEBUG>
 inline
 void
 CPU<CONFIG, DEBUG> ::
-GenFlags(const Register& result, uint32_t reset_mask, uint32_t or_mask, uint32_t carry_out, uint32_t overflow, uint32_t underflow)
-{
-	// Read ST
-	uint32_t st = GetST();
-	
-	// Apply a reset mask
-	st = st & ~reset_mask;
-	
-	// LUF
-	if (or_mask & M_ST_LUF) st |= (underflow << ST_LUF);
-	
-	// LV
-	if (or_mask & M_ST_LV) st |= (overflow << ST_LV);
-	
-	// UF
-	if (or_mask & M_ST_UF) st |= (underflow << ST_UF);
-	
-	// N
-	if(or_mask & M_ST_N)
-	{
-		uint32_t is_negative = ((int32_t) result.GetLo() < 0)?1:0;
-		st |= (is_negative << ST_N);
-	}
-	
-	// Z
-	if (or_mask & M_ST_Z)
-		if (underflow == 0)
-		{
-			uint32_t is_zero = ((result.GetLo() == 0) && (result.GetHi() == (uint8_t)0x80))?1:0;
-			st |= (is_zero << ST_Z);
-		}
-	
-	// C
-	if(or_mask & M_ST_C) st |= (carry_out << ST_C);
-	
-	// V
-	if(or_mask & M_ST_V) st |= (overflow << ST_V);
-	
-	// Write back ST
-	SetST(st);
-}
-
-template<class CONFIG, bool DEBUG>
-inline
-void
-CPU<CONFIG, DEBUG> ::
-GenFlags(const Register& result, uint32_t reset_mask, uint32_t or_mask, uint32_t carry_out, uint32_t overflow, uint32_t underflow, uint32_t neg)
+GenFlags(const Register& result, uint32_t reset_mask, uint32_t or_mask, uint32_t overflow, uint32_t underflow, uint32_t neg)
 {
 	// Read ST
 	uint32_t st = GetST();
@@ -1905,7 +1859,7 @@ GenFlags(const Register& result, uint32_t reset_mask, uint32_t or_mask, uint32_t
 		}
 	
 	// C
-	if(or_mask & M_ST_C) st |= (carry_out << ST_C);
+	// if(or_mask & M_ST_C) st |= (carry_out << ST_C);
 	
 	// V
 	if(or_mask & M_ST_V) st |= (overflow << ST_V);

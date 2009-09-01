@@ -74,7 +74,7 @@ namespace tms320 {
 		void SetFromSinglePrecisionFPFormat(uint32_t value);
 		void SetFromShortFPFormat(uint16_t value);
 		uint32_t GetSinglePrecisionFPFormat();
-		void Float(uint32_t value);
+		void Float(uint32_t value, uint32_t& neg);
 		uint32_t Fix(uint32_t& overflow);
 		void Absf(const Register& reg, uint32_t& overflow);
 		void Absf16(uint16_t imm, uint32_t& overflow);
@@ -98,9 +98,9 @@ namespace tms320 {
 		void Negf(const Register& reg, uint32_t& overflow, uint32_t& underflow, uint32_t& neg);
 		void Negf16(uint16_t imm, uint32_t& overflow, uint32_t& underflow, uint32_t& neg);
 		void Negf32(uint32_t imm, uint32_t& overflow, uint32_t& underflow, uint32_t& neg);
-		void Normf(const Register& reg, uint32_t& underflow);
-		void Normf16(uint16_t imm, uint32_t& underflow);
-		void Normf32(uint32_t imm, uint32_t& underflow);
+		void Normf(const Register& reg, uint32_t& underflow, uint32_t& neg);
+		void Normf16(uint16_t imm, uint32_t& underflow, uint32_t& neg);
+		void Normf32(uint32_t imm, uint32_t& underflow, uint32_t& neg);
 		void Mpyf(const Register& reg, uint32_t& overflow, uint32_t& underflow, uint32_t& neg);
 		void Mpyf16(uint16_t imm, uint32_t& overflow, uint32_t& underflow, uint32_t& neg);
 		void Mpyf32(uint32_t imm, uint32_t& overflow, uint32_t& underflow, uint32_t& neg);
@@ -108,9 +108,9 @@ namespace tms320 {
 		void Mpyf(const Register& reg, uint32_t imm, uint32_t& overflow, uint32_t& underflow, uint32_t& neg);
 		void Mpyf(uint32_t imm, const Register& reg, uint32_t& overflow, uint32_t& underflow, uint32_t& neg);
 		void Mpyf(uint32_t imm_a, uint32_t imm_b, uint32_t& overflow, uint32_t& underflow, uint32_t& neg);
-		void Rndf(const Register& reg, uint32_t& overflow, uint32_t& underflow);
-		void Rndf16(uint16_t imm, uint32_t& overflow, uint32_t& underflow);
-		void Rndf32(uint32_t imm, uint32_t& overflow, uint32_t& underflow);
+		void Rndf(const Register& reg, uint32_t& overflow, uint32_t& underflow, uint32_t& neg);
+		void Rndf16(uint16_t imm, uint32_t& overflow, uint32_t& underflow, uint32_t& neg);
+		void Rndf32(uint32_t imm, uint32_t& overflow, uint32_t& underflow, uint32_t& neg);
 		void LoadExp(const Register& reg);
 		void LoadExp32(uint32_t value);
 		void LoadExp16(uint16_t value);
@@ -130,18 +130,18 @@ namespace tms320 {
 		uint8_t GetHi(uint16_t value) ;
 		uint32_t GetLo(uint32_t value) ;
 		uint8_t GetHi(uint32_t value) ;
-		uint32_t GetLo16(uint16_t value) ;
-		uint8_t GetHi16(uint16_t value) ;
-		uint32_t GetLo32(uint32_t value) ;
-		uint8_t GetHi32(uint32_t value) ;
+		static uint32_t GetLo16(uint16_t value) ;
+		static uint8_t GetHi16(uint16_t value) ;
+		static uint32_t GetLo32(uint32_t value) ;
+		static uint8_t GetHi32(uint32_t value) ;
 		
 		void Absf(uint8_t hi_a, uint32_t lo_a, uint32_t& overflow);
 		void Addf(uint8_t hi_a, uint32_t lo_a, uint8_t hi_b, uint32_t lo_b, uint32_t& overflow, uint32_t& underflow, uint32_t& neg);
 		void Subf(uint8_t hi_a, uint32_t lo_a, uint8_t hi_b, uint32_t lo_b, uint32_t& overflow, uint32_t& underflow, uint32_t& neg);
 		void AddfSubf(bool is_add, uint8_t hi_a, uint32_t lo_a, uint8_t hi_b, uint32_t lo_b, uint32_t& overflow, uint32_t& underflow, uint32_t& neg);
 		void Mpyf(uint8_t hi_a, uint32_t lo_a, uint8_t hi_b, uint32_t lo_b, uint32_t& overflow, uint32_t& underflow, uint32_t& neg);
-		void Normf(uint8_t hi_a, uint32_t lo_a, uint32_t& underflow);
-		void Rndf(uint8_t hi_a, uint32_t lo_a, uint32_t& overflow, uint32_t& underflow);
+		void Normf(uint8_t hi_a, uint32_t lo_a, uint32_t& underflow, uint32_t& neg);
+		void Rndf(uint8_t hi_a, uint32_t lo_a, uint32_t& overflow, uint32_t& underflow, uint32_t& neg);
 	};
 	
 	class RegisterDebugInterface : public unisim::util::debug::Register

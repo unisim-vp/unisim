@@ -241,17 +241,17 @@ namespace tms320 {
 		return t_hi + t_lo;
 	}
 		
-	void Register::Float(uint32_t value)
+	void Register::Float(uint32_t value, uint32_t& neg)
 	{
 		lo = value;
 		hi = 30;
 		unsigned int count_nsb = 0; // counter of non significative bits
-		bool neg = false;
+		neg = 0;
 		if (lo)
 		{
 			if (lo >= (uint32_t)0x80000000)
 			{
-				neg = true;
+				neg = 1;
 				count_nsb = unisim::util::arithmetic::CountLeadingZeros(~lo) - 1;
 			}
 			else
@@ -438,20 +438,19 @@ namespace tms320 {
 		this->Subf((uint8_t)0x80, 0, GetHi32(imm), GetLo32(imm), overflow, underflow, neg);
 	}
 	
-	void Register::Normf(const Register& reg, uint32_t& underflow)
+	void Register::Normf(const Register& reg, uint32_t& underflow, uint32_t& neg)
 	{
-		this->Normf(reg.GetHi(), reg.GetLo(), underflow);
+		this->Normf(reg.GetHi(), reg.GetLo(), underflow, neg);
 	}
 	
-	void Register::Normf16(uint16_t imm, uint32_t& underflow)
+	void Register::Normf16(uint16_t imm, uint32_t& underflow, uint32_t& neg)
 	{
-		this->Normf(GetHi16(imm), GetLo16(imm), underflow);
+		this->Normf(GetHi16(imm), GetLo16(imm), underflow, neg);
 	}
 	
-	void Register::Normf32(uint32_t imm, uint32_t& underflow)
+	void Register::Normf32(uint32_t imm, uint32_t& underflow, uint32_t& neg)
 	{
-		this->Normf((uint8_t)((imm >> 24) & (uint32_t)0x00ff), ((uint32_t)imm & (uint32_t)0x00ffffff) << 8, underflow);
-//		this->Normf(GetHi32(imm), GetLo32(imm), underflow);
+		this->Normf((uint8_t)((imm >> 24) & (uint32_t)0x00ff), ((uint32_t)imm & (uint32_t)0x00ffffff) << 8, underflow, neg);
 	}
 	
 	void Register::Mpyf(const Register& reg, uint32_t& overflow, uint32_t& underflow, uint32_t& neg)
@@ -489,19 +488,19 @@ namespace tms320 {
 		this->Mpyf(GetHi32(imm_a), GetLo32(imm_a), GetHi32(imm_b), GetLo32(imm_b), overflow, underflow, neg);
 	}
 	
-	void Register::Rndf(const Register& reg, uint32_t& overflow, uint32_t& underflow)
+	void Register::Rndf(const Register& reg, uint32_t& overflow, uint32_t& underflow, uint32_t& neg)
 	{
-		this->Rndf(reg.GetHi(), reg.GetLo(), overflow, underflow);
+		this->Rndf(reg.GetHi(), reg.GetLo(), overflow, underflow, neg);
 	}
 	
-	void Register::Rndf16(uint16_t imm, uint32_t& overflow, uint32_t& underflow)
+	void Register::Rndf16(uint16_t imm, uint32_t& overflow, uint32_t& underflow, uint32_t& neg)
 	{
-		this->Rndf(GetHi16(imm), GetLo16(imm), overflow, underflow);
+		this->Rndf(GetHi16(imm), GetLo16(imm), overflow, underflow, neg);
 	}
 	
-	void Register::Rndf32(uint32_t imm, uint32_t& overflow, uint32_t& underflow)
+	void Register::Rndf32(uint32_t imm, uint32_t& overflow, uint32_t& underflow, uint32_t& neg)
 	{
-		this->Rndf(GetHi32(imm), GetLo32(imm), overflow, underflow);
+		this->Rndf(GetHi32(imm), GetLo32(imm), overflow, underflow, neg);
 	}
 
 	void Register::Absf(uint8_t hi_a, uint32_t lo_a, uint32_t& overflow)
@@ -926,9 +925,10 @@ namespace tms320 {
 		this->SetHi((uint8_t)((int8_t)exp_c));
 	}
 	
-	void Register::Normf(uint8_t hi_a, uint32_t lo_a, uint32_t& underflow)
+	void Register::Normf(uint8_t hi_a, uint32_t lo_a, uint32_t& underflow, uint32_t& neg)
 	{
 		underflow = 0;
+		neg = 0;
 		
 		if (lo_a == 0)
 		{
@@ -942,7 +942,10 @@ namespace tms320 {
 		uint32_t count = 0;
 		
 		if ((int32_t)lo_a < 0)
+		{
+			neg = 1;
 			count = unisim::util::arithmetic::CountLeadingZeros(~lo_a);
+		}
 		else
 			count = unisim::util::arithmetic::CountLeadingZeros(lo_a);
 		
@@ -961,10 +964,11 @@ namespace tms320 {
 		}
 	}
 	
-	void Register::Rndf(uint8_t hi_a, uint32_t lo_a, uint32_t& overflow, uint32_t& underflow)
+	void Register::Rndf(uint8_t hi_a, uint32_t lo_a, uint32_t& overflow, uint32_t& underflow, uint32_t& neg)
 	{
 		overflow = 0;
 		underflow = 0;
+		neg = 0;
 		
 #ifdef __DEBUG_TMS320C3X_REGISTER__
 		std::cerr 
@@ -1007,6 +1011,9 @@ namespace tms320 {
 		<< "3- rnd (adding 1x2^(exp)-24) " << std::endl
 		<< "   ext_lo_c = 0x" << (unsigned long long int)ext_lo_c << std::endl;
 #endif
+		
+		// get the sign
+		if (ext_lo_c < 0) neg = 1;
 		
 		// set the exponent result
 		this->SetHi(hi_a);

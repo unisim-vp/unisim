@@ -444,10 +444,7 @@ ADDF3_reg_reg.execute = {
 		dst_reg,
 		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
 		M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
-		0,
-		overflow,
-		underflow,
-		neg
+		overflow, underflow, neg
 	);
 }
 
@@ -491,10 +488,7 @@ ADDF3_indir_reg.execute = {
 		dst_reg,
 		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
 		M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
-		0,
-		overflow,
-		underflow,
-		neg
+		overflow, underflow, neg
 	);
 }
 
@@ -538,10 +532,7 @@ ADDF3_reg_indir.execute = {
 		dst_reg,
 		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
 		M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
-		0,
-		overflow,
-		underflow,
-		neg
+		overflow, underflow, neg
 	);
 }
 
@@ -607,10 +598,7 @@ ADDF3_indir_indir.execute = {
 		dst_reg,
 		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
 		M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
-		0,
-		overflow,
-		underflow,
-		neg
+		overflow, underflow, neg
 	);
 }
 
@@ -1910,10 +1898,7 @@ CMPF3_reg_reg.execute = {
 		res_reg,
 		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
 		M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
-		0,
-		overflow,
-		underflow,
-		neg
+		overflow, underflow, neg
 	);
 }
 
@@ -1957,10 +1942,7 @@ CMPF3_indir_reg.execute = {
 		res_reg,
 		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
 		M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
-		0,
-		overflow,
-		underflow,
-		neg
+		overflow, underflow, neg
 	);
 }
 
@@ -2004,10 +1986,7 @@ CMPF3_reg_indir.execute = {
 		res_reg,
 		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
 		M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
-		0,
-		overflow,
-		underflow,
-		neg
+		overflow, underflow, neg
 	);
 }
 
@@ -2073,10 +2052,7 @@ CMPF3_indir_indir.execute = {
 		res_reg,
 		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
 		M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
-		0,
-		overflow,
-		underflow,
-		neg
+		overflow, underflow, neg
 	);
 }
 
@@ -2810,27 +2786,8 @@ MPYF3_reg_reg.execute = {
 		dst_reg,
 		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
 		M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
-		0,
-		overflow,
-		underflow,
-		neg
+		overflow, underflow, neg
 	);
-
-//	// NOTE: the ST_N flag may need to be fixed if the result is equal to 0.0,
-//	//   then the ST_N flag is set to 1 if one of two inputs is negative (but
-//	//   not both) and none of them had 0x80 as exponent
-//	if (dst_reg.GetHi() == 0x80)
-//	{
-//		if (((src1_reg.GetHi() != (uint8_t)0x80)
-//			 && (src2_reg.GetHi() != (uint8_t)0x80))
-//			&& (((src1_reg.GetLo() & (uint32_t)0x80000000)
-//				 ^ (src2_reg.GetLo() & (uint32_t)0x80000000)) != 0))
-//		{
-//			uint32_t st = cpu.GetST();
-//			st |= ((uint32_t)1 << ST_N);
-//			cpu.SetST(st);
-//		}
-//	}
 }
 
 MPYF3_indir_reg.execute = {
@@ -2873,29 +2830,8 @@ MPYF3_indir_reg.execute = {
 		dst_reg,
 		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
 		M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
-		0,
-		overflow,
-		underflow,
-		neg
+		overflow, underflow, neg
 	);
-
-//	// NOTE: the ST_N flag may need to be fixed if the result is equal to 0.0,
-//	//   then the ST_N flag is set to 1 if one of two inputs is negative (but
-//	//   not both) and none of them had 0x80 as exponent
-//	if (dst_reg.GetHi() == 0x80)
-//	{
-//		Register src1_reg;
-//		src1_reg.SetFromSinglePrecisionFPFormat(src1_value);
-//		if (((src1_reg.GetHi() != (uint32_t)0x80)
-//			 && (src2_reg.GetHi() != (uint8_t)0x80))
-//			&& (((src1_reg.GetLo() & (uint32_t)0x80000000)
-//				 ^ (src2_reg.GetLo() & (uint32_t)0x80000000)) != 0))
-//		{
-//			uint32_t st = cpu.GetST();
-//			st |= ((uint32_t)1 << ST_N);
-//			cpu.SetST(st);
-//		}
-//	}
 }
 
 MPYF3_reg_indir.execute = {
@@ -2938,29 +2874,8 @@ MPYF3_reg_indir.execute = {
 		dst_reg,
 		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
 		M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
-		0,
-		overflow,
-		underflow,
-		neg
+		overflow, underflow, neg
 	);
-
-//	// NOTE: the ST_N flag may need to be fixed if the result is equal to 0.0,
-//	//   then the ST_N flag is set to 1 if one of two inputs is negative (but
-//	//   not both) and none of them had 0x80 as exponent
-//	if (dst_reg.GetHi() == 0x80)
-//	{
-//		Register src2_reg;
-//		src2_reg.SetFromSinglePrecisionFPFormat(src2_value);
-//		if (((src2_reg.GetHi() != (uint32_t)0x80)
-//			 && (src1_reg.GetHi() != (uint8_t)0x80))
-//			&& (((src2_reg.GetLo() & (uint32_t)0x80000000)
-//				 ^ (src1_reg.GetLo() & (uint32_t)0x80000000)) != 0))
-//		{
-//			uint32_t st = cpu.GetST();
-//			st |= ((uint32_t)1 << ST_N);
-//			cpu.SetST(st);
-//		}
-//	}
 }
 
 MPYF3_indir_indir.execute = {
@@ -3025,31 +2940,8 @@ MPYF3_indir_indir.execute = {
 		dst_reg,
 		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
 		M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
-		0,
-		overflow,
-		underflow,
-		neg
+		overflow, underflow, neg
 	);
-
-//	// NOTE: the ST_N flag may need to be fixed if the result is equal to 0.0,
-//	//   then the ST_N flag is set to 1 if one of two inputs is negative (but
-//	//   not both) and none of them had 0x80 as exponent
-//	if (dst_reg.GetHi() == 0x80)
-//	{
-//		Register src1_reg;
-//		Register src2_reg;
-//		src1_reg.SetFromSinglePrecisionFPFormat(src1_value);
-//		src2_reg.SetFromSinglePrecisionFPFormat(src2_value);
-//		if (((src1_reg.GetHi() != (uint32_t)0x80)
-//			 && (src2_reg.GetHi() != (uint8_t)0x80))
-//			&& (((src1_reg.GetLo() & (uint32_t)0x80000000)
-//				 ^ (src2_reg.GetLo() & (uint32_t)0x80000000)) != 0))
-//		{
-//			uint32_t st = cpu.GetST();
-//			st |= ((uint32_t)1 << ST_N);
-//			cpu.SetST(st);
-//		}
-//	}
 }
 
 /* end of MPYF3 (multiply floating-point values)
@@ -4015,10 +3907,7 @@ SUBF3_reg_reg.execute = {
 		dst_reg,
 		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
 		M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
-		0,
-		overflow,
-		underflow,
-		neg
+		overflow, underflow, neg
 	);
 }
 
@@ -4062,10 +3951,7 @@ SUBF3_indir_reg.execute = {
 		dst_reg,
 		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
 		M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
-		0,
-		overflow,
-		underflow,
-		neg
+		overflow, underflow, neg
 	);
 }
 
@@ -4109,10 +3995,7 @@ SUBF3_reg_indir.execute = {
 		dst_reg,
 		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
 		M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
-		0,
-		overflow,
-		underflow, 
-		neg
+		overflow, underflow, neg
 	);
 }
 
@@ -4178,10 +4061,7 @@ SUBF3_indir_indir.execute = {
 		dst_reg,
 		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
 		M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
-		0,
-		overflow,
-		underflow,
-		neg
+		overflow, underflow, neg
 	);
 }
 
