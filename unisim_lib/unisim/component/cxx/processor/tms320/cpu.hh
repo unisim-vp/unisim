@@ -1147,7 +1147,7 @@ public:
 		@param neg the result is negative (needed when result is 0.0)
 	*/
 	// inline void GenFlags(const Register& result, uint32_t reset_mask, uint32_t or_mask, uint32_t carry_out = 0, uint32_t overflow = 0, uint32_t underflow = 0) INLINE;
-	inline void GenFlags(const Register& result, uint32_t reset_mask, uint32_t or_mask, esuint32_t overflow, uint32_t underflow, uint32_t neg) INLINE;
+	inline void GenFlags(const Register& result, uint32_t reset_mask, uint32_t or_mask, uint32_t overflow, uint32_t underflow, uint32_t neg) INLINE;
 
 	inline bool HasPendingBranch() const
 	{
