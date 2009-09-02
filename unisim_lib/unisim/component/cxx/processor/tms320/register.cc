@@ -279,9 +279,10 @@ namespace tms320 {
 		
 	}
 	
-	uint32_t Register::Fix(uint32_t& overflow)
+	uint32_t Register::Fix(uint32_t& overflow, uint32_t& neg)
 	{
 		overflow = 0;
+		neg = 0;
 		
 		if (GetHi() == 0x80)
 		{
@@ -313,7 +314,10 @@ namespace tms320 {
 		int64_t ext_lo;
 		// convert mantissas to their full representation (33-bit)
 		if (lo & (uint32_t)0x80000000)
+		{
 			ext_lo = (int64_t)((int32_t)lo) & ~(uint64_t)0x80000000;
+			neg = 1;
+		}
 		else
 			ext_lo = (uint64_t)(lo | (uint32_t)0x80000000);
 		

@@ -76,7 +76,7 @@ namespace tms320 {
 		void SetFromShortFPFormat(uint16_t value);
 		uint32_t GetSinglePrecisionFPFormat();
 		void Float(uint32_t value, uint32_t& neg);
-		uint32_t Fix(uint32_t& overflow);
+		uint32_t Fix(uint32_t& overflow, uint32_t& neg);
 		void Absf(const Register& reg, uint32_t& overflow);
 		void Absf16(uint16_t imm, uint32_t& overflow);
 		void Absf32(uint32_t imm, uint32_t& overflow);

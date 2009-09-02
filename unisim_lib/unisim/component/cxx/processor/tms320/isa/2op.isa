@@ -2293,7 +2293,8 @@ FIX_reg.execute = {
 
 	// Perform computation
 	uint32_t overflow;
-	uint32_t result = src_reg.Fix(overflow);
+	uint32_t neg;
+	uint32_t result = src_reg.Fix(overflow, neg);
 
 	// Set destination register
 	cpu.SetReg(dst, result);
@@ -2327,7 +2328,8 @@ FIX_dir.execute = {
 
 	// Perform computation
 	uint32_t overflow;
-	uint32_t result = tmp_reg.Fix(overflow);
+	uint32_t neg;
+	uint32_t result = tmp_reg.Fix(overflow, neg);
 
 	// Set destination register
 	cpu.SetReg(dst, result);
@@ -2368,7 +2370,8 @@ FIX_indir.execute = {
 
 	// Perform computation
 	uint32_t overflow;
-	uint32_t result = tmp_reg.Fix(overflow);
+	uint32_t neg;
+	uint32_t result = tmp_reg.Fix(overflow, neg);
 
 	// Set destination register
 	cpu.SetReg(dst, result);
@@ -2403,7 +2406,8 @@ FIX_imm.execute = {
 
 	// Perform computation
 	uint32_t overflow;
-	uint32_t result = tmp_reg.Fix(overflow);
+	uint32_t neg;
+	uint32_t result = tmp_reg.Fix(overflow, neg);
 
 	// Set destination register
 	cpu.SetReg(dst, result);

@@ -1212,8 +1212,9 @@ FIX_STI.execute = {
 	// Compute the result of ABSI
 	uint32_t result;  // the 32-bit result
 	uint32_t overflow;      // the overflow (0 or 1)
+	uint32_t neg;
 
-	result = src2_reg.Fix(overflow);
+	result = src2_reg.Fix(overflow, neg);
 
 	// Store the word into memory
 	cpu.IntStore(d2_ea, src3_value);
@@ -1269,8 +1270,9 @@ FIX_STI_ext.execute = {
 	// Compute the result of FIX
 	uint32_t result;  // the 32-bit result
 	uint32_t overflow;      // the overflow (0 or 1)
+	uint32_t neg;
 
-	result = src2_reg.Fix(overflow);
+	result = src2_reg.Fix(overflow, neg);
 
 	// Store the word into memory
 	cpu.IntStore(d2_ea, src3_value);
@@ -4117,11 +4119,139 @@ MPYF3_ADDF3_ext.disasm = {
 }
 
 MPYF3_ADDF3.execute = {
-	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+	// Read 'src1' register operand
+	Register src1_reg = cpu.GetExtReg(src1);
+
+	// Read 'src2' register operand
+	Register src2_reg = cpu.GetExtReg(src2);
+
+	// Check that indirect addressing mode is valid and compute the effective address of 'src3' operand
+	typename CONFIG::address_t s3_ea;        // The effective address
+	bool s3_update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t s3_output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(s3_ea, s3_update_ar, s3_output_ar, s3_mod, s3_ar)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Check that indirect addressing mode is valid and compute the effective address of 'src4' operand
+	typename CONFIG::address_t s4_ea;        // The effective address
+	bool s4_update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t s4_output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(s4_ea, s4_update_ar, s4_output_ar, s4_mod, s4_ar)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Load 'src3' operand from memory
+	uint32_t src3_value = cpu.IntLoad(s3_ea);
+
+	// Load 'src4' operand from memory
+	uint32_t src4_value = cpu.IntLoad(s4_ea);
+
+	// Get the reference to the destination registers
+	Register& dst1_reg = cpu.GetExtReg((d1 == 0) ? 0 : 1);
+	Register& dst2_reg = cpu.GetExtReg((d2 == 0) ? 2 : 3);
+	
+	// perform the computation
+	uint32_t mpyf_overflow, addf_overflow;
+	uint32_t mpyf_underflow, addf_underflow;
+	uint32_t mpyf_neg, addf_neg;
+	switch(p)
+	{
+		case 0: // 00
+			dst1_reg.Mpyf(src3_value, src4_value, mpyf_overflow, mpyf_underflow, mpyf_neg);
+			dst2_reg.Addf(src1_reg, src2_reg, addf_overflow, addf_underflow, addf_neg);
+			break;
+		case 1: // 01
+			dst1_reg.Mpyf(src3_value, src1_reg, mpyf_overflow, mpyf_underflow, mpyf_neg);
+			dst2_reg.Addf(src2_reg, src4_value, addf_overflow, addf_underflow, addf_neg);
+			break;
+		case 2: // 10
+			dst1_reg.Mpyf(src1_reg, src2_reg, mpyf_overflow, mpyf_underflow, mpyf_neg);
+			dst2_reg.Addf(src3_value, src4_value, addf_overflow, addf_underflow, addf_neg);
+			break;
+		case 3: // 11
+			dst1_reg.Mpyf(src3_value, src1_reg, mpyf_overflow, mpyf_underflow, mpyf_neg);
+			dst2_reg.Addf(src2_reg, src4_value, addf_overflow, addf_underflow, addf_neg);
+			break;
+	}
+
+	if(s3_update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(s3_ar, s3_output_ar);
+	}
+
+	if(s4_update_ar && s4_ar != s4_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(s4_ar, s4_output_ar);
+	}
+
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		dst1_reg,
+		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+		M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_V,  // or mask
+		mpyf_overflow | addf_overflow,
+		mpyf_underflow | addf_underflow,
+		mpyf_neg | addf_neg
+	);
 }
 
 MPYF3_ADDF3_ext.execute = {
-	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+	// Read 'src1' register operand
+	Register src1_reg = cpu.GetExtReg(src1);
+
+	// Read 'src2' register operand
+	Register src2_reg = cpu.GetExtReg(src2);
+
+	// Read 'src3' register operand
+	Register src3_reg = cpu.GetExtReg(src3);
+
+	// Read 'src4' register operand
+	Register src4_reg = cpu.GetExtReg(src4);
+
+	// Get the reference to the destination registers
+	Register& dst1_reg = cpu.GetExtReg((d1 == 0) ? 0 : 1);
+	Register& dst2_reg = cpu.GetExtReg((d2 == 0) ? 2 : 3);
+	
+	// perform the computation
+	uint32_t mpyf_overflow, addf_overflow;
+	uint32_t mpyf_underflow, addf_underflow;
+	uint32_t mpyf_neg, addf_neg;
+	switch(p)
+	{
+		case 0: // 00
+			dst1_reg.Mpyf(src3_reg, src4_reg, mpyf_overflow, mpyf_underflow, mpyf_neg);
+			dst2_reg.Addf(src1_reg, src2_reg, addf_overflow, addf_underflow, addf_neg);
+			break;
+		case 1: // 01
+			dst1_reg.Mpyf(src3_reg, src1_reg, mpyf_overflow, mpyf_underflow, mpyf_neg);
+			dst2_reg.Addf(src4_reg, src2_reg, addf_overflow, addf_underflow, addf_neg);
+			break;
+		case 2: // 10
+			dst1_reg.Mpyf(src1_reg, src2_reg, mpyf_overflow, mpyf_underflow, mpyf_neg);
+			dst2_reg.Addf(src3_reg, src4_reg, addf_overflow, addf_underflow, addf_neg);
+			break;
+		case 3: // 11
+			dst1_reg.Mpyf(src3_reg, src1_reg, mpyf_overflow, mpyf_underflow, mpyf_neg);
+			dst2_reg.Addf(src2_reg, src4_reg, addf_overflow, addf_underflow, addf_neg);
+			break;
+	}
+
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		dst1_reg,
+		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+		M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_V,  // or mask
+		mpyf_overflow | addf_overflow,
+		mpyf_underflow | addf_underflow,
+		mpyf_neg | addf_neg
+	);
 }
 
 /* end of MPYF3 || ADDF3 (multiply and add floating-point value)
@@ -4234,11 +4364,139 @@ MPYF3_SUBF3_ext.disasm = {
 }
 
 MPYF3_SUBF3.execute = {
-	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+	// Read 'src1' register operand
+	Register src1_reg = cpu.GetExtReg(src1);
+
+	// Read 'src2' register operand
+	Register src2_reg = cpu.GetExtReg(src2);
+
+	// Check that indirect addressing mode is valid and compute the effective address of 'src3' operand
+	typename CONFIG::address_t s3_ea;        // The effective address
+	bool s3_update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t s3_output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(s3_ea, s3_update_ar, s3_output_ar, s3_mod, s3_ar)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Check that indirect addressing mode is valid and compute the effective address of 'src4' operand
+	typename CONFIG::address_t s4_ea;        // The effective address
+	bool s4_update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t s4_output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(s4_ea, s4_update_ar, s4_output_ar, s4_mod, s4_ar)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Load 'src3' operand from memory
+	uint32_t src3_value = cpu.IntLoad(s3_ea);
+
+	// Load 'src4' operand from memory
+	uint32_t src4_value = cpu.IntLoad(s4_ea);
+
+	// Get the reference to the destination registers
+	Register& dst1_reg = cpu.GetExtReg((d1 == 0) ? 0 : 1);
+	Register& dst2_reg = cpu.GetExtReg((d2 == 0) ? 2 : 3);
+	
+	// perform the computation
+	uint32_t mpyf_overflow, subf_overflow;
+	uint32_t mpyf_underflow, subf_underflow;
+	uint32_t mpyf_neg, subf_neg;
+	switch(p)
+	{
+		case 0: // 00
+			dst1_reg.Mpyf(src3_value, src4_value, mpyf_overflow, mpyf_underflow, mpyf_neg);
+			dst2_reg.Subf(src1_reg, src2_reg, subf_overflow, subf_underflow, subf_neg);
+			break;
+		case 1: // 01
+			dst1_reg.Mpyf(src3_value, src1_reg, mpyf_overflow, mpyf_underflow, mpyf_neg);
+			dst2_reg.Subf32(src4_value, src2_reg, subf_overflow, subf_underflow, subf_neg);
+			break;
+		case 2: // 10
+			dst1_reg.Mpyf(src1_reg, src2_reg, mpyf_overflow, mpyf_underflow, mpyf_neg);
+			dst2_reg.Subf(src3_value, src4_value, subf_overflow, subf_underflow, subf_neg);
+			break;
+		case 3: // 11
+			dst1_reg.Mpyf(src3_value, src1_reg, mpyf_overflow, mpyf_underflow, mpyf_neg);
+			dst2_reg.Subf32(src2_reg, src4_value, subf_overflow, subf_underflow, subf_neg);
+			break;
+	}
+
+	if(s3_update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(s3_ar, s3_output_ar);
+	}
+
+	if(s4_update_ar && s4_ar != s4_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(s4_ar, s4_output_ar);
+	}
+
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		dst1_reg,
+		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+		M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_V,  // or mask
+		mpyf_overflow | subf_overflow,
+		mpyf_underflow | subf_underflow,
+		mpyf_neg | subf_neg
+	);
 }
 
 MPYF3_SUBF3_ext.execute = {
-	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+	// Read 'src1' register operand
+	Register src1_reg = cpu.GetExtReg(src1);
+
+	// Read 'src2' register operand
+	Register src2_reg = cpu.GetExtReg(src2);
+
+	// Read 'src3' register operand
+	Register src3_reg = cpu.GetExtReg(src3);
+
+	// Read 'src4' register operand
+	Register src4_reg = cpu.GetExtReg(src4);
+
+	// Get the reference to the destination registers
+	Register& dst1_reg = cpu.GetExtReg((d1 == 0) ? 0 : 1);
+	Register& dst2_reg = cpu.GetExtReg((d2 == 0) ? 2 : 3);
+	
+	// perform the computation
+	uint32_t mpyf_overflow, subf_overflow;
+	uint32_t mpyf_underflow, subf_underflow;
+	uint32_t mpyf_neg, subf_neg;
+	switch(p)
+	{
+		case 0: // 00
+			dst1_reg.Mpyf(src3_reg, src4_reg, mpyf_overflow, mpyf_underflow, mpyf_neg);
+			dst2_reg.Subf(src1_reg, src2_reg, subf_overflow, subf_underflow, subf_neg);
+			break;
+		case 1: // 01
+			dst1_reg.Mpyf(src3_reg, src1_reg, mpyf_overflow, mpyf_underflow, mpyf_neg);
+			dst2_reg.Subf(src4_reg, src2_reg, subf_overflow, subf_underflow, subf_neg);
+			break;
+		case 2: // 10
+			dst1_reg.Mpyf(src1_reg, src2_reg, mpyf_overflow, mpyf_underflow, mpyf_neg);
+			dst2_reg.Subf(src3_reg, src4_reg, subf_overflow, subf_underflow, subf_neg);
+			break;
+		case 3: // 11
+			dst1_reg.Mpyf(src3_reg, src1_reg, mpyf_overflow, mpyf_underflow, mpyf_neg);
+			dst2_reg.Subf(src2_reg, src4_reg, subf_overflow, subf_underflow, subf_neg);
+			break;
+	}
+
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		dst1_reg,
+		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+		M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_V,  // or mask
+		mpyf_overflow | subf_overflow,
+		mpyf_underflow | subf_underflow,
+		mpyf_neg | subf_neg
+	);
 }
 
 /* end of MPYF3 || SUBF3 (multiply and subtract floating-point value)
