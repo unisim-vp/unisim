@@ -71,6 +71,7 @@ namespace tms320 {
 		inline uint32_t GetLo() const INLINE;
 		inline void SetHi(uint8_t value) INLINE;
 		inline uint8_t GetHi() const INLINE;
+		inline uint32_t IsNeg() const INLINE;
 		void SetFromSinglePrecisionFPFormat(uint32_t value);
 		void SetFromShortFPFormat(uint16_t value);
 		uint32_t GetSinglePrecisionFPFormat();
@@ -206,6 +207,12 @@ namespace tms320 {
 	inline uint8_t Register::GetHi() const
 	{
 		return hi;
+	}
+	
+	inline uint32_t Register::IsNeg() const
+	{
+		if (lo >= (uint32_t)0x80000000) return 1;
+		return 0;
 	}
 	
 } // end of namespace tms320

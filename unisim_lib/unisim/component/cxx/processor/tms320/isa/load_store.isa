@@ -228,7 +228,7 @@ LDF_reg.execute = {
 				 dst_reg,
 				 M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
 				 M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
-				 0, 0 ,0
+				 0, 0 , dst_reg.IsNeg()
 				 );
 }
 
@@ -251,7 +251,8 @@ LDF_dir.execute = {
 				 dst_reg,
 				 M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
 				 M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
-				 0, 0, 0);
+				 0, 0, dst_reg.IsNeg()
+				 );
 }
 
 LDF_indir.execute = {
@@ -285,7 +286,8 @@ LDF_indir.execute = {
 	cpu.GenFlags(dst_reg,
 				 M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
 				 M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
-				 0, 0, 0);
+				 0, 0, dst_reg.IsNeg()
+				 );
 }
 
 LDF_imm.execute = {
@@ -300,7 +302,8 @@ LDF_imm.execute = {
 	cpu.GenFlags(dst_reg,
 				 M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
 				 M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
-				 0, 0, 0);
+				 0, 0, dst_reg.IsNeg()
+				 );
 }
 
 /* end of LDF (load floating-point value)
