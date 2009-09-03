@@ -298,6 +298,7 @@ namespace tms320 {
 			// if negative return the biggest negative number
 			if (lo & (uint32_t)0x80000000) // the sign is negative
 			{
+				neg = 1
 				return (uint32_t)0x80000000;
 			}
 			else // the sign is positve
