@@ -4017,8 +4017,7 @@ LDI_LDI_ext.execute = {
  * op MPYF3_ADDF3(0b10[2]:0b0000[4]:p[2]:d1[1]:d2[1]:src1[3]:src2[3]:src3[8]:src4[8])
  */
 
-op MPYF3_ADDF3    (0b10[2]:0b0000[4]:p[2]:d1[1]:d2[1]:src1[3]:src2[3]:s3_mod[5]:s3_ar[3]:s4_mod[5]:s4_ar[3])
-op MPYF3_ADDF3_ext(0b10[2]:0b0000[4]:p[2]:d1[1]:d2[1]:src1[3]:src2[3]:0b111[3]:src3[5]:0b111[3]:src4[5])
+op MPYF3_ADDF3 (0b10[2]:0b0000[4]:p[2]:d1[1]:d2[1]:src1[3]:src2[3]:s3_mod1[3]:s3_mod2[2]:s3_ar[3]:s4_mod1[3]:s4_mod2[2]:s4_ar[3])
 
 MPYF3_ADDF3.disasm = {
 	const char *dst1_name = REG_NAME[d1];
@@ -4032,59 +4031,16 @@ MPYF3_ADDF3.disasm = {
 	const char *srcC_name = 0;
 	const char *srcD_name = 0;
 
-	if (!cpu.DisasmIndir(disasm_src3_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, s3_mod, s3_ar) ||
-			!cpu.DisasmIndir(disasm_src4_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, s4_mod, s4_ar))
-		return false;
-
-	switch(p)
-	{
-		case 0:
-			srcA_name = disasm_src3_indir.c_str();
-			srcB_name = disasm_src4_indir.c_str();
-			srcD_name = src1_name;
-			srcC_name = src2_name;
-			break;
-		case 1:
-			srcA_name = disasm_src3_indir.c_str();
-			srcB_name = src1_name;
-			srcD_name = disasm_src4_indir.c_str();
-			srcC_name = src2_name;
-			break;
-		case 3:
-			srcA_name = src1_name;
-			srcB_name = src2_name;
-			srcD_name = disasm_src3_indir.c_str();
-			srcC_name = disasm_src4_indir.c_str();
-			break;
-		case 4:
-			srcA_name = disasm_src3_indir.c_str();
-			srcB_name = src1_name;
-			srcD_name = src2_name;
-			srcC_name = disasm_src4_indir.c_str();
-			break;
-	}
+	if (s3_mod1 != 0x07)
+		if (!cpu.DisasmIndir(disasm_src3_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, (s3_mod1 << 2) + s3_mod2, s3_ar))
+			return false;
+	if (s4_mod1 != 0x07)
+		if (!cpu.DisasmIndir(disasm_src4_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, (s4_mod1 << 2) + s4_mod2, s4_ar))
+			return false;
+			
+	const char *src3_name = (s3_mod1 == 0x07)?REG_NAME[(s3_mod2 << 3) + s3_ar]:disasm_src3_indir.c_str();
+	const char *src4_name = (s4_mod1 == 0x07)?REG_NAME[(s4_mod2 << 3) + s4_ar]:disasm_src4_indir.c_str();
 	
-	os << "MPYF3 " << srcA_name << ", " << srcB_name << ", " << dst1_name
-		<< " || " << "ADDF3 " << srcC_name << ", " << srcD_name << ", " << dst2_name;
-	return true;
-}
-
-MPYF3_ADDF3_ext.disasm = {
-	const char *dst1_name = REG_NAME[d1];
-	const char *dst2_name = REG_NAME[d2 + 2];
-	const char *src1_name = REG_NAME[src1];
-	const char *src2_name = REG_NAME[src2];
-	const char *src3_name = REG_NAME[src3];
-	const char *src4_name = REG_NAME[src4];
-	const char *srcA_name = 0;
-	const char *srcB_name = 0;
-	const char *srcC_name = 0;
-	const char *srcD_name = 0;
-
-	if (!src3_name ||
-			!src4_name)
-		return false;
-
 	switch(p)
 	{
 		case 0:
@@ -4125,31 +4081,57 @@ MPYF3_ADDF3.execute = {
 	// Read 'src2' register operand
 	Register src2_reg = cpu.GetExtReg(src2);
 
-	// Check that indirect addressing mode is valid and compute the effective address of 'src3' operand
-	typename CONFIG::address_t s3_ea;        // The effective address
+	// Check if src3 is a register or a memory location
+	bool is_src3_reg = false;
+	Register src3_reg;
+	uint32_t src3_value = 0;
 	bool s3_update_ar;                       // Whether to update ARn
 	typename CONFIG::address_t s3_output_ar; // New value of ARn if it is updated
-
-	if(unlikely(!cpu.ComputeIndirEA(s3_ea, s3_update_ar, s3_output_ar, s3_mod, s3_ar)))
+	if (s3_mod1 == 0x07) // src3 is a register
 	{
-		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+		// Read the 'src3' register operand
+		src3_reg = cpu.GetExtReg((s3_mod2 << 3) + s3_ar);
+		is_src3_reg = true;
+	}
+	else // src3 is a memory location memory
+	{
+		// Check that indirect addressing mode is valid and compute the effective address of 'src3' operand
+		typename CONFIG::address_t s3_ea;        // The effective address
+
+		if(unlikely(!cpu.ComputeIndirEA(s3_ea, s3_update_ar, s3_output_ar, (s3_mod1 << 2) + s3_mod2, s3_ar)))
+		{
+			throw BogusOpcodeException<CONFIG, DEBUG>(this);
+		}
+
+		// Load 'src3' operand from memory
+		src3_value = cpu.IntLoad(s3_ea);
 	}
 
-	// Check that indirect addressing mode is valid and compute the effective address of 'src4' operand
-	typename CONFIG::address_t s4_ea;        // The effective address
+	// Check if src4 is a register or a memory location
+	bool is_src4_reg = false;
+	Register src4_reg;
+	uint32_t src4_value = 0;
 	bool s4_update_ar;                       // Whether to update ARn
 	typename CONFIG::address_t s4_output_ar; // New value of ARn if it is updated
-
-	if(unlikely(!cpu.ComputeIndirEA(s4_ea, s4_update_ar, s4_output_ar, s4_mod, s4_ar)))
+	if (s4_mod1 == 0x07) // src4 is a register
 	{
-		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+		// Read the 'src4' register operand
+		src4_reg = cpu.GetExtReg((s4_mod2 << 3) + s4_ar);
+		is_src4_reg = true;
 	}
+	else
+	{
+		// Check that indirect addressing mode is valid and compute the effective address of 'src4' operand
+		typename CONFIG::address_t s4_ea;        // The effective address
 
-	// Load 'src3' operand from memory
-	uint32_t src3_value = cpu.IntLoad(s3_ea);
+		if(unlikely(!cpu.ComputeIndirEA(s4_ea, s4_update_ar, s4_output_ar, (s4_mod1 << 2) + s4_mod2, s4_ar)))
+		{
+			throw BogusOpcodeException<CONFIG, DEBUG>(this);
+		}
 
-	// Load 'src4' operand from memory
-	uint32_t src4_value = cpu.IntLoad(s4_ea);
+		// Load 'src4' operand from memory
+		src4_value = cpu.IntLoad(s4_ea);
+	}
 
 	// Get the reference to the destination registers
 	Register& dst1_reg = cpu.GetExtReg((d1 == 0) ? 0 : 1);
@@ -4162,86 +4144,73 @@ MPYF3_ADDF3.execute = {
 	switch(p)
 	{
 		case 0: // 00
-			dst1_reg.Mpyf(src3_value, src4_value, mpyf_overflow, mpyf_underflow, mpyf_neg);
+			if (is_src3_reg)
+			{
+				if (is_src4_reg)
+					dst1_reg.Mpyf(src3_reg, src4_reg, mpyf_overflow, mpyf_underflow, mpyf_neg);
+				else
+					dst1_reg.Mpyf(src3_reg, src4_value, mpyf_overflow, mpyf_underflow, mpyf_neg);
+			}
+			else
+			{
+				if (is_src4_reg)
+					dst1_reg.Mpyf(src3_value, src4_reg, mpyf_overflow, mpyf_underflow, mpyf_neg);
+				else
+					dst1_reg.Mpyf(src3_value, src4_value, mpyf_overflow, mpyf_underflow, mpyf_neg);
+			}
 			dst2_reg.Addf(src1_reg, src2_reg, addf_overflow, addf_underflow, addf_neg);
 			break;
 		case 1: // 01
-			dst1_reg.Mpyf(src3_value, src1_reg, mpyf_overflow, mpyf_underflow, mpyf_neg);
-			dst2_reg.Addf(src2_reg, src4_value, addf_overflow, addf_underflow, addf_neg);
+			if (is_src3_reg)
+				dst1_reg.Mpyf(src3_reg, src1_reg, mpyf_overflow, mpyf_underflow, mpyf_neg);
+			else
+				dst1_reg.Mpyf(src3_value, src1_reg, mpyf_overflow, mpyf_underflow, mpyf_neg);
+			if (is_src4_reg)
+				dst2_reg.Addf(src2_reg, src4_reg, addf_overflow, addf_underflow, addf_neg);
+			else
+				dst2_reg.Addf(src2_reg, src4_value, addf_overflow, addf_underflow, addf_neg);
 			break;
 		case 2: // 10
 			dst1_reg.Mpyf(src1_reg, src2_reg, mpyf_overflow, mpyf_underflow, mpyf_neg);
-			dst2_reg.Addf(src3_value, src4_value, addf_overflow, addf_underflow, addf_neg);
+			if (is_src3_reg)
+			{
+				if (is_src4_reg)
+					dst2_reg.Addf(src3_reg, src4_reg, addf_overflow, addf_underflow, addf_neg);
+				else
+					dst2_reg.Addf(src3_reg, src4_value, addf_overflow, addf_underflow, addf_neg);
+			}
+			else
+			{
+				if (is_src4_reg)
+					dst2_reg.Addf(src3_value, src4_reg, addf_overflow, addf_underflow, addf_neg);
+				else
+					dst2_reg.Addf(src3_value, src4_value, addf_overflow, addf_underflow, addf_neg);
+			}
 			break;
 		case 3: // 11
-			dst1_reg.Mpyf(src3_value, src1_reg, mpyf_overflow, mpyf_underflow, mpyf_neg);
-			dst2_reg.Addf(src2_reg, src4_value, addf_overflow, addf_underflow, addf_neg);
+			if (is_src3_reg)
+				dst1_reg.Mpyf(src3_reg, src1_reg, mpyf_overflow, mpyf_underflow, mpyf_neg);
+			else
+				dst1_reg.Mpyf(src3_value, src1_reg, mpyf_overflow, mpyf_underflow, mpyf_neg);
+			if (is_src4_reg)
+				dst2_reg.Addf(src2_reg, src4_reg, addf_overflow, addf_underflow, addf_neg);
+			else
+				dst2_reg.Addf(src2_reg, src4_value, addf_overflow, addf_underflow, addf_neg);
 			break;
 	}
 
-	if(s3_update_ar)
+	if (!is_src3_reg && s3_update_ar)
 	{
 		// Write back ARn
 		cpu.SetAR23_0(s3_ar, s3_output_ar);
 	}
 
-	if(s4_update_ar && s4_ar != s4_ar)
-	{
-		// Write back ARn
-		cpu.SetAR23_0(s4_ar, s4_output_ar);
-	}
-
-	// Generate flags (into ST)
-	cpu.GenFlags(
-		dst1_reg,
-		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-		M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_V,  // or mask
-		mpyf_overflow | addf_overflow,
-		mpyf_underflow | addf_underflow,
-		mpyf_neg | addf_neg
-	);
-}
-
-MPYF3_ADDF3_ext.execute = {
-	// Read 'src1' register operand
-	Register src1_reg = cpu.GetExtReg(src1);
-
-	// Read 'src2' register operand
-	Register src2_reg = cpu.GetExtReg(src2);
-
-	// Read 'src3' register operand
-	Register src3_reg = cpu.GetExtReg(src3);
-
-	// Read 'src4' register operand
-	Register src4_reg = cpu.GetExtReg(src4);
-
-	// Get the reference to the destination registers
-	Register& dst1_reg = cpu.GetExtReg((d1 == 0) ? 0 : 1);
-	Register& dst2_reg = cpu.GetExtReg((d2 == 0) ? 2 : 3);
-	
-	// perform the computation
-	uint32_t mpyf_overflow, addf_overflow;
-	uint32_t mpyf_underflow, addf_underflow;
-	uint32_t mpyf_neg, addf_neg;
-	switch(p)
-	{
-		case 0: // 00
-			dst1_reg.Mpyf(src3_reg, src4_reg, mpyf_overflow, mpyf_underflow, mpyf_neg);
-			dst2_reg.Addf(src1_reg, src2_reg, addf_overflow, addf_underflow, addf_neg);
-			break;
-		case 1: // 01
-			dst1_reg.Mpyf(src3_reg, src1_reg, mpyf_overflow, mpyf_underflow, mpyf_neg);
-			dst2_reg.Addf(src4_reg, src2_reg, addf_overflow, addf_underflow, addf_neg);
-			break;
-		case 2: // 10
-			dst1_reg.Mpyf(src1_reg, src2_reg, mpyf_overflow, mpyf_underflow, mpyf_neg);
-			dst2_reg.Addf(src3_reg, src4_reg, addf_overflow, addf_underflow, addf_neg);
-			break;
-		case 3: // 11
-			dst1_reg.Mpyf(src3_reg, src1_reg, mpyf_overflow, mpyf_underflow, mpyf_neg);
-			dst2_reg.Addf(src2_reg, src4_reg, addf_overflow, addf_underflow, addf_neg);
-			break;
-	}
+	if (!is_src4_reg && s4_update_ar)
+		if (is_src3_reg || s4_ar != s3_ar)
+		{
+			// Write back ARn
+			cpu.SetAR23_0(s4_ar, s4_output_ar);
+		}
 
 	// Generate flags (into ST)
 	cpu.GenFlags(
@@ -4262,8 +4231,7 @@ MPYF3_ADDF3_ext.execute = {
  * op MPYF3_SUBF3(0b10[2]:0b0001[4]:p[2]:d1[1]:d2[1]:src1[3]:src2[3]:src3[8]:src4[8])
  */
 
-op MPYF3_SUBF3    (0b10[2]:0b0001[4]:p[2]:d1[1]:d2[1]:src1[3]:src2[3]:s3_mod[5]:s3_ar[3]:s4_mod[5]:s4_ar[3])
-op MPYF3_SUBF3_ext(0b10[2]:0b0001[4]:p[2]:d1[1]:d2[1]:src1[3]:src2[3]:0b111[3]:src3[5]:0b111[3]:src4[5])
+op MPYF3_SUBF3(0b10[2]:0b0001[4]:p[2]:d1[1]:d2[1]:src1[3]:src2[3]:s3_mod1[3]:s3_mod2[2]:s3_ar[3]:s4_mod1[3]:s4_mod2[2]:s4_ar[3])
 
 MPYF3_SUBF3.disasm = {
 	const char *dst1_name = REG_NAME[d1];
@@ -4276,60 +4244,17 @@ MPYF3_SUBF3.disasm = {
 	const char *srcB_name = 0;
 	const char *srcC_name = 0;
 	const char *srcD_name = 0;
-
-	if (!cpu.DisasmIndir(disasm_src3_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, s3_mod, s3_ar) ||
-			!cpu.DisasmIndir(disasm_src4_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, s4_mod, s4_ar))
-		return false;
-
-	switch(p)
-	{
-		case 0:
-			srcA_name = disasm_src3_indir.c_str();
-			srcB_name = disasm_src4_indir.c_str();
-			srcD_name = src1_name;
-			srcC_name = src2_name;
-			break;
-		case 1:
-			srcA_name = disasm_src3_indir.c_str();
-			srcB_name = src1_name;
-			srcD_name = disasm_src4_indir.c_str();
-			srcC_name = src2_name;
-			break;
-		case 3:
-			srcA_name = src1_name;
-			srcB_name = src2_name;
-			srcD_name = disasm_src3_indir.c_str();
-			srcC_name = disasm_src4_indir.c_str();
-			break;
-		case 4:
-			srcA_name = disasm_src3_indir.c_str();
-			srcB_name = src1_name;
-			srcD_name = src2_name;
-			srcC_name = disasm_src4_indir.c_str();
-			break;
-	}
 	
-	os << "MPYF3 " << srcA_name << ", " << srcB_name << ", " << dst1_name
-		<< " || " << "SUBF3 " << srcC_name << ", " << srcD_name << ", " << dst2_name;
-	return true;
-}
-
-MPYF3_SUBF3_ext.disasm = {
-	const char *dst1_name = REG_NAME[d1];
-	const char *dst2_name = REG_NAME[d2 + 2];
-	const char *src1_name = REG_NAME[src1];
-	const char *src2_name = REG_NAME[src2];
-	const char *src3_name = REG_NAME[src3];
-	const char *src4_name = REG_NAME[src4];
-	const char *srcA_name = 0;
-	const char *srcB_name = 0;
-	const char *srcC_name = 0;
-	const char *srcD_name = 0;
-
-	if (!src3_name ||
-			!src4_name)
-		return false;
-
+	if (s3_mod1 != 0x07)
+		if (!cpu.DisasmIndir(disasm_src3_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, (s3_mod1 << 2) + s3_mod2, s3_ar))
+			return false;
+	if (s4_mod1 != 0x07)
+		if (!cpu.DisasmIndir(disasm_src4_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, (s4_mod1 << 2) + s4_mod2, s4_ar))
+			return false;
+	
+	const char *src3_name = (s3_mod1 == 0x07)?REG_NAME[(s3_mod2 << 3) + s3_ar]:disasm_src3_indir.c_str();
+	const char *src4_name = (s4_mod1 == 0x07)?REG_NAME[(s4_mod2 << 3) + s4_ar]:disasm_src4_indir.c_str();
+	
 	switch(p)
 	{
 		case 0:
@@ -4366,40 +4291,66 @@ MPYF3_SUBF3_ext.disasm = {
 MPYF3_SUBF3.execute = {
 	// Read 'src1' register operand
 	Register src1_reg = cpu.GetExtReg(src1);
-
+	
 	// Read 'src2' register operand
 	Register src2_reg = cpu.GetExtReg(src2);
-
-	// Check that indirect addressing mode is valid and compute the effective address of 'src3' operand
-	typename CONFIG::address_t s3_ea;        // The effective address
+	
+	// Check if src3 is a register or a memory location
+	bool is_src3_reg = false;
+	Register src3_reg;
+	uint32_t src3_value = 0;
 	bool s3_update_ar;                       // Whether to update ARn
 	typename CONFIG::address_t s3_output_ar; // New value of ARn if it is updated
-
-	if(unlikely(!cpu.ComputeIndirEA(s3_ea, s3_update_ar, s3_output_ar, s3_mod, s3_ar)))
+	if (s3_mod1 == 0x07) // src3 is a register
 	{
-		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+		// Read the 'src3' register operand
+		src3_reg = cpu.GetExtReg((s3_mod2 << 3) + s3_ar);
+		is_src3_reg = true;
 	}
-
-	// Check that indirect addressing mode is valid and compute the effective address of 'src4' operand
-	typename CONFIG::address_t s4_ea;        // The effective address
+	else // src3 is a memory location memory
+	{
+		// Check that indirect addressing mode is valid and compute the effective address of 'src3' operand
+		typename CONFIG::address_t s3_ea;        // The effective address
+		
+		if(unlikely(!cpu.ComputeIndirEA(s3_ea, s3_update_ar, s3_output_ar, (s3_mod1 << 2) + s3_mod2, s3_ar)))
+		{
+			throw BogusOpcodeException<CONFIG, DEBUG>(this);
+		}
+		
+		// Load 'src3' operand from memory
+		src3_value = cpu.IntLoad(s3_ea);
+	}
+	
+	// Check if src4 is a register or a memory location
+	bool is_src4_reg = false;
+	Register src4_reg;
+	uint32_t src4_value = 0;
 	bool s4_update_ar;                       // Whether to update ARn
 	typename CONFIG::address_t s4_output_ar; // New value of ARn if it is updated
-
-	if(unlikely(!cpu.ComputeIndirEA(s4_ea, s4_update_ar, s4_output_ar, s4_mod, s4_ar)))
+	if (s4_mod1 == 0x07) // src4 is a register
 	{
-		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+		// Read the 'src4' register operand
+		src4_reg = cpu.GetExtReg((s4_mod2 << 3) + s4_ar);
+		is_src4_reg = true;
 	}
-
-	// Load 'src3' operand from memory
-	uint32_t src3_value = cpu.IntLoad(s3_ea);
-
-	// Load 'src4' operand from memory
-	uint32_t src4_value = cpu.IntLoad(s4_ea);
-
+	else
+	{
+		// Check that indirect addressing mode is valid and compute the effective address of 'src4' operand
+		typename CONFIG::address_t s4_ea;        // The effective address
+		
+		if(unlikely(!cpu.ComputeIndirEA(s4_ea, s4_update_ar, s4_output_ar, (s4_mod1 << 2) + s4_mod2, s4_ar)))
+		{
+			throw BogusOpcodeException<CONFIG, DEBUG>(this);
+		}
+		
+		// Load 'src4' operand from memory
+		src4_value = cpu.IntLoad(s4_ea);
+	}
+	
 	// Get the reference to the destination registers
 	Register& dst1_reg = cpu.GetExtReg((d1 == 0) ? 0 : 1);
 	Register& dst2_reg = cpu.GetExtReg((d2 == 0) ? 2 : 3);
-	
+
 	// perform the computation
 	uint32_t mpyf_overflow, subf_overflow;
 	uint32_t mpyf_underflow, subf_underflow;
@@ -4407,87 +4358,78 @@ MPYF3_SUBF3.execute = {
 	switch(p)
 	{
 		case 0: // 00
-			dst1_reg.Mpyf(src3_value, src4_value, mpyf_overflow, mpyf_underflow, mpyf_neg);
+			if (is_src3_reg)
+			{
+				if (is_src4_reg)
+					dst1_reg.Mpyf(src3_reg, src4_reg, mpyf_overflow, mpyf_underflow, mpyf_neg);
+				else
+					dst1_reg.Mpyf(src3_reg, src4_value, mpyf_overflow, mpyf_underflow, mpyf_neg);
+			}
+			else
+			{
+				if (is_src4_reg)
+					dst1_reg.Mpyf(src3_value, src4_reg, mpyf_overflow, mpyf_underflow, mpyf_neg);
+				else
+					dst1_reg.Mpyf(src3_value, src4_value, mpyf_overflow, mpyf_underflow, mpyf_neg);
+			}
 			dst2_reg.Subf(src1_reg, src2_reg, subf_overflow, subf_underflow, subf_neg);
 			break;
 		case 1: // 01
-			dst1_reg.Mpyf(src3_value, src1_reg, mpyf_overflow, mpyf_underflow, mpyf_neg);
-			dst2_reg.Subf32(src4_value, src2_reg, subf_overflow, subf_underflow, subf_neg);
+			if (is_src3_reg)
+				dst1_reg.Mpyf(src3_reg, src1_reg, mpyf_overflow, mpyf_underflow, mpyf_neg);
+			else
+				dst1_reg.Mpyf(src3_value, src1_reg, mpyf_overflow, mpyf_underflow, mpyf_neg);
+			if (is_src4_reg)
+				dst2_reg.Subf(src4_reg, src2_reg, subf_overflow, subf_underflow, subf_neg);
+			else
+				dst2_reg.Subf32(src4_value, src2_reg, subf_overflow, subf_underflow, subf_neg);
+			break;
+			// dst2_reg.Subf32(src4_value, src2_reg, subf_overflow, subf_underflow, subf_neg);
 			break;
 		case 2: // 10
 			dst1_reg.Mpyf(src1_reg, src2_reg, mpyf_overflow, mpyf_underflow, mpyf_neg);
-			dst2_reg.Subf(src3_value, src4_value, subf_overflow, subf_underflow, subf_neg);
+			if (is_src3_reg)
+			{
+				if (is_src4_reg)
+					dst2_reg.Subf(src3_reg, src4_reg, subf_overflow, subf_underflow, subf_neg);
+				else
+					dst2_reg.Subf32(src3_reg, src4_value, subf_overflow, subf_underflow, subf_neg);
+			}
+			else
+			{
+				if (is_src4_reg)
+					dst2_reg.Subf32(src3_value, src4_reg, subf_overflow, subf_underflow, subf_neg);
+				else
+					dst2_reg.Subf(src3_value, src4_value, subf_overflow, subf_underflow, subf_neg);
+			}
+//			dst2_reg.Subf(src3_value, src4_value, subf_overflow, subf_underflow, subf_neg);
 			break;
 		case 3: // 11
-			dst1_reg.Mpyf(src3_value, src1_reg, mpyf_overflow, mpyf_underflow, mpyf_neg);
-			dst2_reg.Subf32(src2_reg, src4_value, subf_overflow, subf_underflow, subf_neg);
+			if (is_src3_reg)
+				dst1_reg.Mpyf(src3_reg, src1_reg, mpyf_overflow, mpyf_underflow, mpyf_neg);
+			else
+				dst1_reg.Mpyf(src3_value, src1_reg, mpyf_overflow, mpyf_underflow, mpyf_neg);
+			if (is_src4_reg)
+				dst2_reg.Subf(src2_reg, src4_reg, subf_overflow, subf_underflow, subf_neg);
+			else
+				dst2_reg.Subf32(src2_reg, src4_value, subf_overflow, subf_underflow, subf_neg);
+//			dst2_reg.Subf32(src2_reg, src4_value, subf_overflow, subf_underflow, subf_neg);
 			break;
 	}
 
-	if(s3_update_ar)
+	if (!is_src3_reg && s3_update_ar)
 	{
 		// Write back ARn
 		cpu.SetAR23_0(s3_ar, s3_output_ar);
 	}
-
-	if(s4_update_ar && s4_ar != s4_ar)
-	{
-		// Write back ARn
-		cpu.SetAR23_0(s4_ar, s4_output_ar);
-	}
-
-	// Generate flags (into ST)
-	cpu.GenFlags(
-		dst1_reg,
-		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-		M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_V,  // or mask
-		mpyf_overflow | subf_overflow,
-		mpyf_underflow | subf_underflow,
-		mpyf_neg | subf_neg
-	);
-}
-
-MPYF3_SUBF3_ext.execute = {
-	// Read 'src1' register operand
-	Register src1_reg = cpu.GetExtReg(src1);
-
-	// Read 'src2' register operand
-	Register src2_reg = cpu.GetExtReg(src2);
-
-	// Read 'src3' register operand
-	Register src3_reg = cpu.GetExtReg(src3);
-
-	// Read 'src4' register operand
-	Register src4_reg = cpu.GetExtReg(src4);
-
-	// Get the reference to the destination registers
-	Register& dst1_reg = cpu.GetExtReg((d1 == 0) ? 0 : 1);
-	Register& dst2_reg = cpu.GetExtReg((d2 == 0) ? 2 : 3);
 	
-	// perform the computation
-	uint32_t mpyf_overflow, subf_overflow;
-	uint32_t mpyf_underflow, subf_underflow;
-	uint32_t mpyf_neg, subf_neg;
-	switch(p)
-	{
-		case 0: // 00
-			dst1_reg.Mpyf(src3_reg, src4_reg, mpyf_overflow, mpyf_underflow, mpyf_neg);
-			dst2_reg.Subf(src1_reg, src2_reg, subf_overflow, subf_underflow, subf_neg);
-			break;
-		case 1: // 01
-			dst1_reg.Mpyf(src3_reg, src1_reg, mpyf_overflow, mpyf_underflow, mpyf_neg);
-			dst2_reg.Subf(src4_reg, src2_reg, subf_overflow, subf_underflow, subf_neg);
-			break;
-		case 2: // 10
-			dst1_reg.Mpyf(src1_reg, src2_reg, mpyf_overflow, mpyf_underflow, mpyf_neg);
-			dst2_reg.Subf(src3_reg, src4_reg, subf_overflow, subf_underflow, subf_neg);
-			break;
-		case 3: // 11
-			dst1_reg.Mpyf(src3_reg, src1_reg, mpyf_overflow, mpyf_underflow, mpyf_neg);
-			dst2_reg.Subf(src2_reg, src4_reg, subf_overflow, subf_underflow, subf_neg);
-			break;
-	}
-
+	if (!is_src4_reg && s4_update_ar)
+		if (is_src3_reg || s4_ar != s3_ar)
+		{
+			// Write back ARn
+			cpu.SetAR23_0(s4_ar, s4_output_ar);
+		}
+	
 	// Generate flags (into ST)
 	cpu.GenFlags(
 		dst1_reg,
