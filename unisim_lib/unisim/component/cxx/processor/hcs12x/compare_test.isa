@@ -48,10 +48,10 @@ cba.disasm = {
 }
 
 cba.execute = {
-	uint8_t result, carry_out, overflow, carry_in;
+	uint8_t result, carry_out, overflow, carry_in, sign;
 	
 	carry_in = 0;
-	Sub8(result, carry_out, overflow, cpu->getRegA(), cpu->getRegB(), carry_in);
+	Sub8(result, carry_out, overflow, sign, cpu->getRegA(), cpu->getRegB(), carry_in);
 	
 	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
 	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
@@ -78,7 +78,7 @@ cmp_ab_imm.disasm = {
 }
 
 cmp_ab_imm.execute = {
-	uint8_t result, carry_out, overflow, carry_in;
+	uint8_t result, carry_out, overflow, carry_in, sign;
 	uint8_t regVal;
 	
 	carry_in = 0;
@@ -88,7 +88,7 @@ cmp_ab_imm.execute = {
 		regVal = cpu->getRegB();
 	}
 	
-	Sub8(result, carry_out, overflow, regVal, opr8i, carry_in);
+	Sub8(result, carry_out, overflow, sign, regVal, opr8i, carry_in);
 	
 	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
 	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
@@ -115,7 +115,7 @@ cmp_ab_dir.disasm = {
 }
 
 cmp_ab_dir.execute = {
-	uint8_t result, carry_out, overflow, carry_in;
+	uint8_t result, carry_out, overflow, carry_in, sign;
 	uint8_t regVal;
 	
 	uint8_t opr8aVal = cpu->memRead8(opr8a, ADDRESS::DIRECT, false);
@@ -127,7 +127,7 @@ cmp_ab_dir.execute = {
 		regVal = cpu->getRegB();
 	}
 	
-	Sub8(result, carry_out, overflow, regVal, opr8aVal, carry_in);
+	Sub8(result, carry_out, overflow, sign, regVal, opr8aVal, carry_in);
 	
 	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
 	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
@@ -154,7 +154,7 @@ cmp_ab_ext.disasm = {
 }
 
 cmp_ab_ext.execute = {
-	uint8_t result, carry_out, overflow, carry_in;
+	uint8_t result, carry_out, overflow, carry_in, sign;
 	uint8_t regVal;
 	physical_address_t addr = opr16a;
 		
@@ -167,7 +167,7 @@ cmp_ab_ext.execute = {
 		regVal = cpu->getRegB();
 	}
 	
-	Sub8(result, carry_out, overflow, regVal, opr16aVal, carry_in);
+	Sub8(result, carry_out, overflow, sign, regVal, opr16aVal, carry_in);
 	
 	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
 	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
@@ -207,7 +207,7 @@ cmp_ab_idx.disasm = {
 }
 
 cmp_ab_idx.execute = {
-	uint8_t result, carry_out, overflow, carry_in;
+	uint8_t result, carry_out, overflow, carry_in, sign;
 	uint8_t regVal;
 	physical_address_t addr = xb->getEAddr(cpu);
 	uint8_t xbVal = cpu->memRead8(addr);
@@ -219,7 +219,7 @@ cmp_ab_idx.execute = {
 		regVal = cpu->getRegB();
 	}
 	
-	Sub8(result, carry_out, overflow, regVal, xbVal, carry_in);
+	Sub8(result, carry_out, overflow, sign, regVal, xbVal, carry_in);
 	
 	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
 	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
@@ -247,7 +247,7 @@ cp_dyxs_imm.disasm = {
 }
 
 cp_dyxs_imm.execute = {
-	uint8_t carry_out, overflow, carry_in;
+	uint8_t carry_out, overflow, carry_in, sign;
 	uint16_t result, regVal;
 	
 	carry_in = 0;
@@ -258,7 +258,7 @@ cp_dyxs_imm.execute = {
 		case 3: regVal = cpu->getRegSP();  
 	}
 
-	Sub16(result, carry_out, overflow, regVal, opr16i, carry_in);
+	Sub16(result, carry_out, overflow, sign, regVal, opr16i, carry_in);
 
 	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
 	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
@@ -287,7 +287,7 @@ cp_dyxs_dir.disasm = {
 }
 
 cp_dyxs_dir.execute = {
-	uint8_t carry_out, overflow, carry_in;
+	uint8_t carry_out, overflow, carry_in, sign;
 	uint16_t result, regVal;
 	uint16_t opr8aVal;
 	
@@ -301,7 +301,7 @@ cp_dyxs_dir.execute = {
 		case 3: regVal = cpu->getRegSP();  
 	}
 	
-	Sub16(result, carry_out, overflow, regVal, opr8aVal, carry_in);
+	Sub16(result, carry_out, overflow, sign, regVal, opr8aVal, carry_in);
 	
 	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
 	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
@@ -330,7 +330,7 @@ cp_dyxs_ext.disasm = {
 }
 
 cp_dyxs_ext.execute = {
-	uint8_t carry_out, overflow, carry_in;
+	uint8_t carry_out, overflow, carry_in, sign;
 	uint16_t result, regVal;
 	uint16_t opr16aVal = cpu->memRead16(opr16a);
 	
@@ -342,7 +342,7 @@ cp_dyxs_ext.execute = {
 		case 3: regVal = cpu->getRegSP();  
 	}
 	
-	Sub16(result, carry_out, overflow, regVal, opr16aVal, carry_in);
+	Sub16(result, carry_out, overflow, sign, regVal, opr16aVal, carry_in);
 	
 	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
 	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
@@ -385,7 +385,7 @@ cp_dyxs_idx.disasm = {
 }
 
 cp_dyxs_idx.execute = {
-	uint8_t carry_out, overflow, carry_in;
+	uint8_t carry_out, overflow, carry_in, sign;
 	uint16_t result, regVal;
 	physical_address_t addr = xb->getEAddr(cpu);
 	uint16_t xbVal = cpu->memRead16(addr);
@@ -398,7 +398,7 @@ cp_dyxs_idx.execute = {
 		case 3: regVal = cpu->getRegSP();  
 	}
 	
-	Sub16(result, carry_out, overflow, regVal, xbVal, carry_in);
+	Sub16(result, carry_out, overflow, sign, regVal, xbVal, carry_in);
 	
 	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
 	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
@@ -427,7 +427,7 @@ cpe_dyxs_imm.disasm = {
 }
 
 cpe_dyxs_imm.execute = {
-	uint8_t carry_out, overflow, carry_in, zeroBit;
+	uint8_t carry_out, overflow, carry_in, zeroBit, sign;
 	uint16_t result, regVal;
 	
 	zeroBit = cpu->ccr->getZ(); 
@@ -439,7 +439,7 @@ cpe_dyxs_imm.execute = {
 		case 3: regVal = cpu->getRegSP();  
 	}
 
-	Sub16(result, carry_out, overflow, regVal, opr16i, carry_in);
+	Sub16(result, carry_out, overflow, sign, regVal, opr16i, carry_in);
 
 	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
 	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
@@ -467,7 +467,7 @@ cpe_dyxs_dir.disasm = {
 }
 
 cpe_dyxs_dir.execute = {
-	uint8_t carry_out, overflow, carry_in, zeroBit;
+	uint8_t carry_out, overflow, carry_in, zeroBit, sign;
 	uint16_t result, regVal;
 	uint16_t opr8aVal;
 
@@ -482,7 +482,7 @@ cpe_dyxs_dir.execute = {
 		case 3: regVal = cpu->getRegSP();  
 	}
 	
-	Sub16(result, carry_out, overflow, regVal, opr8aVal, carry_in);
+	Sub16(result, carry_out, overflow, sign, regVal, opr8aVal, carry_in);
 	
 	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
 	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
@@ -510,7 +510,7 @@ cpe_dyxs_ext.disasm = {
 }
 
 cpe_dyxs_ext.execute = {
-	uint8_t carry_out, overflow, carry_in, zeroBit;
+	uint8_t carry_out, overflow, carry_in, zeroBit, sign;
 	uint16_t result, regVal;
 	uint16_t opr16aVal = cpu->memRead16(opr16a);
 	
@@ -523,7 +523,7 @@ cpe_dyxs_ext.execute = {
 		case 3: regVal = cpu->getRegSP();  
 	}
 	
-	Sub16(result, carry_out, overflow, regVal, opr16aVal, carry_in);
+	Sub16(result, carry_out, overflow, sign, regVal, opr16aVal, carry_in);
 	
 	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
 	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
@@ -564,7 +564,7 @@ cpe_dyxs_idx.disasm = {
 }
 
 cpe_dyxs_idx.execute = {
-	uint8_t carry_out, overflow, carry_in, zeroBit;
+	uint8_t carry_out, overflow, carry_in, zeroBit, sign;
 	uint16_t result, regVal;
 	physical_address_t addr = xb->getEAddr(cpu);
 	uint16_t xbVal = cpu->memRead16(addr);
@@ -578,7 +578,7 @@ cpe_dyxs_idx.execute = {
 		case 3: regVal = cpu->getRegSP();  
 	}
 	
-	Sub16(result, carry_out, overflow, regVal, xbVal, carry_in);
+	Sub16(result, carry_out, overflow, sign, regVal, xbVal, carry_in);
 	
 	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
 	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
@@ -602,13 +602,13 @@ tst_ext.disasm = {
 }
 
 tst_ext.execute = {
-	uint8_t carry_out, overflow, carry_in;
+	uint8_t carry_out, overflow, carry_in, sign;
 	uint8_t result;
 	physical_address_t addr = opr16a;	
 	uint8_t opr16aVal = cpu->memRead8(addr);
 	carry_in = 0;
 	
-	Sub8(result, carry_out, overflow, opr16aVal, 0, carry_in);
+	Sub8(result, carry_out, overflow, sign, opr16aVal, 0, carry_in);
 	
 	cpu->ccr->clrC();
 	cpu->ccr->clrV();
@@ -643,14 +643,14 @@ tst_idx.disasm = {
 }
 
 tst_idx.execute = {
-	uint8_t carry_out, overflow, carry_in;
+	uint8_t carry_out, overflow, carry_in, sign;
 	uint8_t result;
 	physical_address_t addr = xb->getEAddr(cpu);	
 	uint8_t xbVal = cpu->memRead8(addr);
 	
 	carry_in = 0;
 	
-	Sub8(result, carry_out, overflow, xbVal, 0, carry_in);
+	Sub8(result, carry_out, overflow, sign, xbVal, 0, carry_in);
 	
 	cpu->ccr->clrC();
 	cpu->ccr->clrV();
@@ -677,7 +677,7 @@ tst_ab.disasm = {
 }
 
 tst_ab.execute = {
-	uint8_t result, carry_out, overflow, carry_in;
+	uint8_t result, carry_out, overflow, carry_in, sign;
 	uint8_t regVal;
 	
 	carry_in = 0;
@@ -687,7 +687,7 @@ tst_ab.execute = {
 		regVal = cpu->getRegB();
 	}
 	
-	Sub8(result, carry_out, overflow, regVal, 0, carry_in);
+	Sub8(result, carry_out, overflow, sign, regVal, 0, carry_in);
 	
 	cpu->ccr->clrC();
 	cpu->ccr->clrV();
@@ -708,14 +708,14 @@ tstw_ext.disasm = {
 }
 
 tstw_ext.execute = {
-	uint8_t carry_out, overflow, carry_in;
+	uint8_t carry_out, overflow, carry_in, sign;
 	uint16_t result;
 	physical_address_t addr = opr16a;	
 	uint16_t opr16aVal = cpu->memRead16(addr);
 	
 	carry_in = 0;
 	
-	Sub16(result, carry_out, overflow, opr16aVal, 0, carry_in);
+	Sub16(result, carry_out, overflow, sign, opr16aVal, 0, carry_in);
 	
 	cpu->ccr->clrC();
 	cpu->ccr->clrV();
@@ -750,14 +750,14 @@ tstw_idx.disasm = {
 }
 
 tstw_idx.execute = {
-	uint8_t carry_out, overflow, carry_in;
+	uint8_t carry_out, overflow, carry_in, sign;
 	uint16_t result;
 	physical_address_t addr = xb->getEAddr(cpu);	
 	uint16_t xbVal = cpu->memRead16(addr);
 	
 	carry_in = 0;
 	
-	Sub16(result, carry_out, overflow, xbVal, 0, carry_in);
+	Sub16(result, carry_out, overflow, sign, xbVal, 0, carry_in);
 	
 	cpu->ccr->clrC();
 	cpu->ccr->clrV();
@@ -783,7 +783,7 @@ tst_xy.disasm = {
 }
 
 tst_xy.execute = {
-	uint8_t carry_out, overflow, carry_in;
+	uint8_t carry_out, overflow, carry_in, sign;
 	uint16_t result, regVal;
 	
 	carry_in = 0;
@@ -792,7 +792,7 @@ tst_xy.execute = {
 		case 1: regVal = cpu->getRegY(); break;
 	}
 	
-	Sub16(result, carry_out, overflow, regVal, 0, carry_in);
+	Sub16(result, carry_out, overflow, sign, regVal, 0, carry_in);
 	
 	cpu->ccr->clrC();
 	cpu->ccr->clrV();

@@ -7409,14 +7409,14 @@ cpu
 	{
 		typename CONFIG::reg_t res;
 		typename CONFIG::reg_t s1, s2;
-		uint8_t carry_in, carry_out, overflow_out;
+		uint8_t carry_in, carry_out, overflow_out, sign;
 
 		cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 
 		carry_in = (cpu.GetCPSR_C() ? 1 : 0);
 		s1 = cpu.GetGPR(rd);
 		s2 = cpu.GetGPR(rm);
-		Add32(res, carry_out, overflow_out,
+		Add32(res, carry_out, overflow_out, sign,
 		s1, s2, carry_in);
 		cpu.SetGPR(rd, res);
 
@@ -7521,13 +7521,13 @@ cpu
 	{
 		typename CONFIG::reg_t res;
 		typename CONFIG::reg_t s1;
-		uint8_t carry_in, carry_out, overflow_out;
+		uint8_t carry_in, carry_out, overflow_out, sign;
 
 		cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 
 		s1 = cpu.GetGPR(rn);
 		carry_in = 0;
-		Add32(res, carry_out, overflow_out,
+		Add32(res, carry_out, overflow_out, sign,
 		s1, imm, carry_in);
 		cpu.SetGPR(rd, res);
 
@@ -7631,13 +7631,13 @@ cpu
 	{
 		typename CONFIG::reg_t res;
 		typename CONFIG::reg_t s1;
-		uint8_t carry_in, carry_out, overflow_out;
+		uint8_t carry_in, carry_out, overflow_out, sign;
 
 		cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 
 		s1 = cpu.GetGPR(rd);
 		carry_in = 0;
-		Add32(res, carry_out, overflow_out,
+		Add32(res, carry_out, overflow_out, sign,
 		s1, imm, carry_in);
 
 		cpu.SetGPR(rd, res);
@@ -7741,7 +7741,7 @@ cpu
 	{
 		typename CONFIG::reg_t res;
 		typename CONFIG::reg_t s1, s2;
-		uint8_t carry_in, carry_out, overflow_out;
+		uint8_t carry_in, carry_out, overflow_out, sign;
 
 		cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 
@@ -7749,7 +7749,7 @@ cpu
 		s2 = cpu.GetGPR(rn);
 
 		carry_in = 0;
-		Add32(res, carry_out, overflow_out,
+		Add32(res, carry_out, overflow_out, sign,
 		s1, s2, carry_in);
 
 		cpu.SetGPR(rd, res);
@@ -8805,13 +8805,13 @@ cpu
 	{
 		typename CONFIG::reg_t res, s1, s2;
 		cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
-		uint8_t carry_in, carry_out, overflow_out;
+		uint8_t carry_in, carry_out, overflow_out, sign;
 
 		s1 = cpu.GetGPR(rn);
 		s2 = cpu.GetGPR(rm);
 
 		carry_in = 0;
-		Add32(res, carry_out, overflow_out,
+		Add32(res, carry_out, overflow_out, sign,
 		s1, s2, carry_in);
 
 		cpu.SetCPSR_N(res & (typename CONFIG::reg_t)0x80000000);

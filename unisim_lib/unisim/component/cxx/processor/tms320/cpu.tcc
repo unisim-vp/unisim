@@ -696,7 +696,7 @@ CircularAdd(uint32_t ar, uint32_t bk, uint32_t step)
 
 	// Compute the new index in the circular buffer
 	int32_t index = (int32_t) (ar & k_lsb_mask) + (int32_t) step;
-	if(index > bk) index = index - bk;
+	if(index >= bk) index = index - bk;
 
 	// Return the new circular address
 	return (base_addr + index) & ADDRESS_MASK;
@@ -1791,7 +1791,7 @@ template<class CONFIG, bool DEBUG>
 inline
 void
 CPU<CONFIG, DEBUG> ::
-GenFlags(uint32_t result, uint32_t reset_mask, uint32_t or_mask, uint32_t carry_out, uint32_t overflow)
+GenFlags(uint32_t result, uint32_t reset_mask, uint32_t or_mask, uint32_t sign, uint32_t carry_out, uint32_t overflow)
 {
 	// Read ST
 	uint32_t st = GetST();
@@ -1803,11 +1803,7 @@ GenFlags(uint32_t result, uint32_t reset_mask, uint32_t or_mask, uint32_t carry_
 	if(or_mask & M_ST_LV) st |= (overflow << ST_LV);
 
 	// N
-	if(or_mask & M_ST_N)
-	{
-		uint32_t is_negative = ((int32_t) result < 0);
-		st |= (is_negative << ST_N);
-	}
+	if(or_mask & M_ST_N) st |= (sign << ST_N);
 
 	// Z
 	if(or_mask & M_ST_Z)

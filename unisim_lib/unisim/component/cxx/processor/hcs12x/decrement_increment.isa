@@ -47,10 +47,10 @@ dec_ext.disasm = {
 dec_ext.execute = {
 	physical_address_t addr = opr16a;
 	uint8_t opr16aVal = cpu->memRead8(addr);
-	uint8_t result, carry_out, overflow, carry_in;
+	uint8_t result, carry_out, overflow, carry_in, sign;
 	
 	carry_in = 0;
-	Sub8(result, carry_out, overflow, opr16aVal, 1, carry_in);
+	Sub8(result, carry_out, overflow, sign, opr16aVal, 1, carry_in);
 
 	cpu->memWrite8(addr, result);
 		
@@ -88,10 +88,10 @@ dec_idx.execute = {
 	physical_address_t addr = xb->getEAddr(cpu);
 	uint8_t val = cpu->memRead8(addr);
 
-	uint8_t result, carry_out, overflow, carry_in;
+	uint8_t result, carry_out, overflow, carry_in, sign;
 	
 	carry_in = 0;
-	Sub8(result, carry_out, overflow, val, 1, carry_in);
+	Sub8(result, carry_out, overflow, sign, val, 1, carry_in);
 
 	cpu->memWrite8(addr, result);
 	
@@ -121,7 +121,7 @@ dec_ab.disasm = {
 
 dec_ab.execute = {
 	
-	uint8_t result, carry_out, overflow, carry_in;
+	uint8_t result, carry_out, overflow, carry_in, sign;
 
 	uint8_t val;
 	if (b==0) {
@@ -131,7 +131,7 @@ dec_ab.execute = {
 	}
 
 	carry_in = 0;
-	Sub8(result, carry_out, overflow, val, 1, carry_in);
+	Sub8(result, carry_out, overflow, sign, val, 1, carry_in);
 	
 	if (b==0) {
 		cpu->setRegA(result);
@@ -162,10 +162,10 @@ decw_ext.execute = {
 	physical_address_t addr = opr16a;
 	uint16_t opr16aVal = cpu->memRead16(addr);
 	uint16_t result;
-	uint8_t carry_out, overflow, carry_in;
+	uint8_t carry_out, overflow, carry_in, sign;
 	
 	carry_in = 0;
-	Sub16(result, carry_out, overflow, opr16aVal, 1, carry_in);
+	Sub16(result, carry_out, overflow, sign, opr16aVal, 1, carry_in);
 
 	cpu->memWrite16(addr, result);
 		
@@ -205,10 +205,10 @@ decw_idx.execute = {
 	uint16_t val = cpu->memRead16(addr);
 
 	uint16_t result;
-	uint8_t carry_out, overflow, carry_in;
+	uint8_t carry_out, overflow, carry_in, sign;
 	
 	carry_in = 0;
-	Sub16(result, carry_out, overflow, val, 1, carry_in);
+	Sub16(result, carry_out, overflow, sign, val, 1, carry_in);
 
 	cpu->memWrite16(addr, result);
 	
@@ -245,10 +245,10 @@ dec_xy.execute = {
 	}
 
 	uint16_t result;
-	uint8_t carry_out, overflow, carry_in;
+	uint8_t carry_out, overflow, carry_in, sign;
 	
 	carry_in = 0;
-	Sub16(result, carry_out, overflow, val, 1, carry_in);
+	Sub16(result, carry_out, overflow, sign, val, 1, carry_in);
 
 	if (b==0) {
 		cpu->setRegX(result);
@@ -334,10 +334,10 @@ inc_ext.disasm = {
 inc_ext.execute = {
 	physical_address_t addr = opr16a;
 	uint8_t opr16aVal = cpu->memRead8(addr);
-	uint8_t result, carry_out, overflow, carry_in;
+	uint8_t result, carry_out, overflow, carry_in, sign;
 	
 	carry_in = 0;
-	Add8(result, carry_out, overflow, opr16aVal, 1, carry_in);
+	Add8(result, carry_out, overflow, sign, opr16aVal, 1, carry_in);
 
 	cpu->memWrite8(addr, result);
 		
@@ -376,10 +376,10 @@ inc_idx.execute = {
 	physical_address_t addr = xb->getEAddr(cpu);
 	uint8_t val = cpu->memRead8(addr);
 
-	uint8_t result, carry_out, overflow, carry_in;
+	uint8_t result, carry_out, overflow, carry_in, sign;
 	
 	carry_in = 0;
-	Add8(result, carry_out, overflow, val, 1, carry_in);
+	Add8(result, carry_out, overflow, sign, val, 1, carry_in);
 
 	cpu->memWrite8(addr, result);
 	
@@ -408,7 +408,7 @@ inc_ab.disasm = {
 
 inc_ab.execute = {
 	
-	uint8_t result, carry_out, overflow, carry_in;
+	uint8_t result, carry_out, overflow, carry_in, sign;
 
 	uint8_t val;
 	if (b==0) {
@@ -418,7 +418,7 @@ inc_ab.execute = {
 	}
 
 	carry_in = 0;
-	Add8(result, carry_out, overflow, val, 1, carry_in);
+	Add8(result, carry_out, overflow, sign, val, 1, carry_in);
 	
 	if (b==0) {
 		cpu->setRegA(result);
@@ -449,10 +449,10 @@ incw_ext.execute = {
 	physical_address_t addr = opr16a;
 	uint16_t opr16aVal = cpu->memRead16(addr);
 	uint16_t result;
-	uint8_t carry_out, overflow, carry_in;
+	uint8_t carry_out, overflow, carry_in, sign;
 	
 	carry_in = 0;
-	Add16(result, carry_out, overflow, opr16aVal, 1, carry_in);
+	Add16(result, carry_out, overflow, sign, opr16aVal, 1, carry_in);
 
 	cpu->memWrite16(addr, result);
 		
@@ -492,10 +492,10 @@ incw_idx.execute = {
 	uint16_t val = cpu->memRead16(addr);
 
 	uint16_t result;
-	uint8_t carry_out, overflow, carry_in;
+	uint8_t carry_out, overflow, carry_in, sign;
 	
 	carry_in = 0;
-	Add16(result, carry_out, overflow, val, 1, carry_in);
+	Add16(result, carry_out, overflow, sign, val, 1, carry_in);
 
 	cpu->memWrite16(addr, result);
 	
@@ -532,10 +532,10 @@ inc_xy.execute = {
 	}
 
 	uint16_t result;
-	uint8_t carry_out, overflow, carry_in;
+	uint8_t carry_out, overflow, carry_in, sign;
 	
 	carry_in = 0;
-	Add16(result, carry_out, overflow, val, 1, carry_in);
+	Add16(result, carry_out, overflow, sign, val, 1, carry_in);
 
 	if (b==0) {
 		cpu->setRegX(result);

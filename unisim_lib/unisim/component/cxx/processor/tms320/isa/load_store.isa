@@ -466,6 +466,7 @@ LDI_reg.execute = {
 
 	// Read the source operand
 	uint32_t result = cpu.GetReg(src);
+	uint8_t sign = (int32_t) result < 0;
 
 	// Write back result in destination operand
 	cpu.SetReg(dst, result);
@@ -477,7 +478,8 @@ LDI_reg.execute = {
 		cpu.GenFlags(
 			result,
 			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-			M_ST_N | M_ST_Z    // or mask
+			M_ST_N | M_ST_Z,    // or mask
+			sign
 		);
 	}
 }
@@ -505,6 +507,7 @@ LDI_dir.execute = {
 
 	// Load the word from memory
 	uint32_t result = cpu.IntLoad(ea);
+	uint8_t sign = (int32_t) result < 0;
 
 	// Write back result
 	cpu.SetReg(dst, result);
@@ -516,7 +519,8 @@ LDI_dir.execute = {
 		cpu.GenFlags(
 			result,
 			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-			M_ST_N | M_ST_Z    // or mask
+			M_ST_N | M_ST_Z,    // or mask
+			sign
 		);
 	}
 }
@@ -552,6 +556,7 @@ LDI_indir.execute = {
 
 	// Load the word from memory
 	uint32_t result = cpu.IntLoad(ea);
+	uint8_t sign = (int32_t) result < 0;
 
 	// Write back result
 	cpu.SetReg(dst, result);
@@ -569,7 +574,8 @@ LDI_indir.execute = {
 		cpu.GenFlags(
 			result,
 			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-			M_ST_N | M_ST_Z    // or mask
+			M_ST_N | M_ST_Z,    // or mask
+			sign
 		);
 	}
 }
@@ -593,6 +599,7 @@ LDI_imm.execute = {
 
 	// Compute the result
 	uint32_t result = imm; // imm has already been sign extended by the decoder
+	uint8_t sign = (int32_t) result < 0;
 
 	// Write back result in destination operand
 	cpu.SetReg(dst, result);
@@ -604,7 +611,8 @@ LDI_imm.execute = {
 		cpu.GenFlags(
 			result,
 			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-			M_ST_N | M_ST_Z    // or mask
+			M_ST_N | M_ST_Z,    // or mask
+			sign
 		);
 	}
 }
@@ -934,6 +942,7 @@ POP.execute = {
 
 	// Read the word at SP from memory
 	uint32_t result = cpu.IntLoad(sp & ADDRESS_MASK);
+	uint8_t sign = (int32_t) result < 0;
 
 	// Compute the new value of SP
 	sp = sp - 1;
@@ -951,7 +960,8 @@ POP.execute = {
 		cpu.GenFlags(
 			result,
 			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-			M_ST_N | M_ST_Z    // or mask
+			M_ST_N | M_ST_Z,    // or mask
+			sign
 		);
 	}
 }

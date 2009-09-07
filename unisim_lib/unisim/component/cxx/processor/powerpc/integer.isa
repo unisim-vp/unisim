@@ -63,6 +63,7 @@ op add(31[6]:rd[5]:ra[5]:rb[5]:oe[1]:266[9]:rc[1])
 add.execute = {
 	uint8_t ca; // carry out
 	uint8_t ov; // overflow
+	uint8_t sign; // sign
 	uint32_t result;
 
 	// Read the input operands
@@ -70,7 +71,7 @@ add.execute = {
 	uint32_t b = cpu->GetGPR(rb);
 
 	// Compute the result
-	Add32(result, ca, ov, a, b, 0);
+	Add32(result, ca, ov, sign, a, b, 0);
 	
 	// Write back the result
 	cpu->SetGPR(rd, result);
@@ -109,6 +110,7 @@ op addc(31[6]:rd[5]:ra[5]:rb[5]:oe[1]:10[9]:rc[1])
 addc.execute = {
 	uint8_t carry; // carry out
 	uint8_t overflow; // overflow
+	uint8_t sign; // sign
 	uint32_t result;
 
 	// Read the input operands
@@ -117,7 +119,7 @@ addc.execute = {
 	uint32_t xer = cpu->GetXER();
 	
 	// Compute the result
-	Add32(result, carry, overflow, a, b, 0);
+	Add32(result, carry, overflow, sign, a, b, 0);
 	
 	// Write back the result
 	cpu->SetGPR(rd, result);
@@ -156,6 +158,7 @@ op adde(31[6]:rd[5]:ra[5]:rb[5]:oe[1]:138[9]:rc[1])
 adde.execute = {
 	uint8_t carry; // carry out
 	uint8_t overflow; // overflow
+	uint8_t sign; // sign
 	uint32_t result;
 
 	// Read the input operands
@@ -165,7 +168,7 @@ adde.execute = {
 	uint32_t carry_in = (xer >> CONFIG::XER_CA_OFFSET) & 1;
 	
 	// Compute the result
-	Add32(result, carry, overflow, a, b, carry_in);
+	Add32(result, carry, overflow, sign, a, b, carry_in);
 	
 	// Write back the result
 	cpu->SetGPR(rd, result);
@@ -222,6 +225,7 @@ op addic(12[6]:rd[5]:ra[5]:sext<32> simm[16])
 addic.execute = {
 	uint8_t carry; // carry out
 	uint8_t overflow; // overflow
+	uint8_t sign; // sign
 	uint32_t result;
 	
 	// Read the input operands
@@ -229,7 +233,7 @@ addic.execute = {
 	uint32_t xer = cpu->GetXER();
 
 	// Compute the result
-	Add32(result, carry, overflow, a, simm, 0);
+	Add32(result, carry, overflow, sign, a, simm, 0);
 	
 	// Write back the result
 	cpu->SetGPR(rd, result);
@@ -248,6 +252,7 @@ op addic_(13[6]:rd[5]:ra[5]:sext<32> simm[16])
 addic_.execute = {
 	uint8_t carry; // carry out
 	uint8_t overflow; // overflow
+	uint8_t sign; // sign
 	uint32_t result;
 
 	// Read the input operands
@@ -255,7 +260,7 @@ addic_.execute = {
 	uint32_t xer = cpu->GetXER();
 	
 	// Compute the result
-	Add32(result, carry, overflow, a, simm, 0) ;
+	Add32(result, carry, overflow, sign, a, simm, 0) ;
 	
 	// Write back the result
 	cpu->SetGPR(rd, result);
@@ -303,6 +308,7 @@ op addme(31[6]:rd[5]:ra[5]:?[5]:oe[1]:234[9]:rc[1])
 addme.execute = {
 	uint8_t carry; // carry out
 	uint8_t overflow; // overflow
+	uint8_t sign; // sign
 	uint32_t result;
 	
 	// Read the input operands
@@ -311,7 +317,7 @@ addme.execute = {
 	uint8_t carry_in = (xer >> CONFIG::XER_CA_OFFSET) & 1;
 	
 	// Compute the result
-	Add32(result, carry, overflow, 0xFFFFFFFF, a, carry_in);
+	Add32(result, carry, overflow, sign, 0xFFFFFFFF, a, carry_in);
 	
 	// Write back the result
 	cpu->SetGPR(rd, result);
@@ -350,6 +356,7 @@ op addze(31[6]:rd[5]:ra[5]:?[5]:oe[1]:202[9]:rc[1])
 addze.execute = {
 	uint8_t carry; // carry out
 	uint8_t overflow; // overflow
+	uint8_t sign; // sign
 	uint32_t result;
 	
 	// Read the input operands
@@ -358,7 +365,7 @@ addze.execute = {
 	uint8_t carry_in = (xer >> CONFIG::XER_CA_OFFSET) & 1;
 	
 	// Compute the result
-	Add32(result, carry, overflow, a, carry_in, 0);
+	Add32(result, carry, overflow, sign, a, carry_in, 0);
 	
 	// Write back the result
 	cpu->SetGPR(rd, result);
@@ -766,6 +773,7 @@ neg.disasm = {
 op subf(31[6]:rd[5]:ra[5]:rb[5]:oe[1]:40[9]:rc[1])
 subf.execute = {
 	uint8_t carry; // carry out
+	uint8_t sign; // sign
 	uint8_t overflow; // overflow
 	
 	// Read the input operands
@@ -774,7 +782,7 @@ subf.execute = {
 	
 	// Compute the result
 	uint32_t result;
-	Add32(result, carry, overflow, ~a, b, 1);
+	Add32(result, carry, overflow, sign, ~a, b, 1);
 	
 	// Write back the result
 	cpu->SetGPR(rd, result);
@@ -813,6 +821,7 @@ op subfc(31[6]:rd[5]:ra[5]:rb[5]:oe[1]:8[9]:rc[1])
 subfc.execute = {
 	uint8_t carry; // carry out
 	uint8_t overflow; // overflow
+	uint8_t sign; // sign
 	uint32_t result;
 
 	// Read the input operands
@@ -821,7 +830,7 @@ subfc.execute = {
 	uint32_t xer = cpu->GetXER();
 	
 	// Compute the result
-	Add32(result, carry, overflow, ~a, b, 1);
+	Add32(result, carry, overflow, sign, ~a, b, 1);
 	
 	// Write back the result
 	cpu->SetGPR(rd, result);
@@ -859,6 +868,7 @@ op subfe(31[6]:rd[5]:ra[5]:rb[5]:oe[1]:136[9]:rc[1])
 subfe.execute = {
 	uint8_t carry; // carry out
 	uint8_t overflow; // overflow
+	uint8_t sign; // sign
 	uint32_t result;
 
 	// Read the input operands
@@ -868,7 +878,7 @@ subfe.execute = {
 	uint8_t carry_in = (xer >> CONFIG::XER_CA_OFFSET) & 1;
 	
 	// Compute the result
-	Add32(result, carry, overflow, ~a, b, carry_in);
+	Add32(result, carry, overflow, sign, ~a, b, carry_in);
 	
 	// Write back the result
 	cpu->SetGPR(rd, result);
@@ -907,6 +917,7 @@ op subfic(08[6]:rd[5]:ra[5]:sext<32> simm[16])
 subfic.execute = {
 	uint8_t carry; // carry out
 	uint8_t overflow = 0; // overflow
+	uint8_t sign; // sign
 	uint32_t result;
 
 	// Read the input operands
@@ -915,7 +926,7 @@ subfic.execute = {
 	uint32_t xer = cpu->GetXER();
 	
 	// Compute the result
-	Add32(result, carry, overflow, -a, b, 0);
+	Add32(result, carry, overflow, sign, -a, b, 0);
 	
 	// Write back the result
 	cpu->SetGPR(rd, result);
@@ -934,6 +945,7 @@ op subfme(31[6]:rd[5]:ra[5]:?[5]:oe[1]:232[9]:rc[1])
 subfme.execute = {
 	uint8_t carry; // carry out
 	uint8_t overflow; // overflow
+	uint8_t sign; // sign
 	uint32_t result;
 	
 	// Read the input operands
@@ -942,7 +954,7 @@ subfme.execute = {
 	uint8_t carry_in = (xer >> CONFIG::XER_CA_OFFSET) & 1;
 	
 	// Compute the result
-	Add32(result, carry, overflow, ~a, 0xFFFFFFFF, carry_in);
+	Add32(result, carry, overflow, sign, ~a, 0xFFFFFFFF, carry_in);
 	
 	// Write back the result
 	cpu->SetGPR(rd, result);
@@ -981,6 +993,7 @@ op subfze(31[6]:rd[5]:ra[5]:?[5]:oe[1]:200[9]:rc[1])
 subfze.execute = {
 	uint8_t carry; // carry out
 	uint8_t overflow; // overflow
+	uint8_t sign; // sign
 	uint32_t result;
 	
 	// Read the input operands
@@ -989,7 +1002,7 @@ subfze.execute = {
 	uint8_t carry_in = (xer >> CONFIG::XER_CA_OFFSET) & 1;
 	
 	// Compute the result
-	Add32(result, carry, overflow, ~a, carry_in, 0);
+	Add32(result, carry, overflow, sign, ~a, carry_in, 0);
 	
 	// Write back the result
 	cpu->SetGPR(rd, result);

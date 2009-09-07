@@ -485,9 +485,9 @@ neg_ext.disasm = {
 }
 
 neg_ext.execute = {
-	uint8_t result, carry_out, overflow;
+	uint8_t result, carry_out, overflow, sign;
 	physical_address_t addr = opr16a;		
-	Sub8(result, carry_out, overflow, 0, cpu->memRead8(addr), 0);
+	Sub8(result, carry_out, overflow, sign, 0, cpu->memRead8(addr), 0);
 	cpu->memWrite8(addr, result);
 	
 	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
@@ -523,10 +523,10 @@ neg_idx.disasm = {
 
 neg_idx.execute = {
 
-	uint8_t result, carry_out, overflow;
+	uint8_t result, carry_out, overflow, sign;
 	physical_address_t addr = xb->getEAddr(cpu);	
 		
-	Sub8(result, carry_out, overflow, 0, cpu->memRead8(addr), 0);
+	Sub8(result, carry_out, overflow, sign, 0, cpu->memRead8(addr), 0);
 	cpu->memWrite8(addr, result);
 	
 	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
@@ -555,7 +555,7 @@ neg_ab.disasm = {
 }
 
 neg_ab.execute = {
-	uint8_t val, result, carry_out, overflow;
+	uint8_t val, result, carry_out, overflow, sign;
 	
 	if (b==0) {
 		val = cpu->getRegA();
@@ -563,7 +563,7 @@ neg_ab.execute = {
 		val = cpu->getRegB();
 	}
 
-	Sub8(result, carry_out, overflow, 0, val, 0);
+	Sub8(result, carry_out, overflow, sign, 0, val, 0);
 
 	if (b==0) {
 		cpu->setRegA(result);
@@ -590,12 +590,12 @@ negw_ext.disasm = {
 }
 
 negw_ext.execute = {
-	uint8_t carry_out, overflow;
+	uint8_t carry_out, overflow, sign;
 	uint16_t result;
 	
 	physical_address_t addr = opr16a;		
 	
-	Sub16(result, carry_out, overflow, 0, cpu->memRead16(addr), 0);
+	Sub16(result, carry_out, overflow, sign, 0, cpu->memRead16(addr), 0);
 	cpu->memWrite16(addr, result);
 	
 	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
@@ -631,12 +631,12 @@ negw_idx.disasm = {
 
 negw_idx.execute = {
 
-	uint8_t carry_out, overflow;
+	uint8_t carry_out, overflow, sign;
 	uint16_t result;
 	
 	physical_address_t addr = xb->getEAddr(cpu);	
 		
-	Sub16(result, carry_out, overflow, 0, cpu->memRead16(addr), 0);
+	Sub16(result, carry_out, overflow, sign, 0, cpu->memRead16(addr), 0);
 	cpu->memWrite16(addr, result);
 	
 	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
@@ -665,7 +665,7 @@ neg_xy.disasm = {
 }
 
 neg_xy.execute = {
-	uint8_t carry_out, overflow;
+	uint8_t carry_out, overflow, sign;
 	uint16_t val, result;
 	
 	if (b==0) {
@@ -674,7 +674,7 @@ neg_xy.execute = {
 		val = cpu->getRegY();
 	}
 
-	Sub16(result, carry_out, overflow, 0, val, 0);
+	Sub16(result, carry_out, overflow, sign, 0, val, 0);
 
 	if (b==0) {
 		cpu->setRegX(result);

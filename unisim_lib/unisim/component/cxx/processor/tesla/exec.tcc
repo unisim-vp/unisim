@@ -133,11 +133,11 @@ VectorRegister<CONFIG> IAdd32(VectorRegister<CONFIG> const & a,
 		}
 		else {
 			uint8_t carry_in = 0;
-			uint8_t carry_out, overflow;
+			uint8_t carry_out, overflow, sign;
 			if(use_cin) {
 				carry_in = inputflags.GetCarry(i);
 			}
-			Add32(r, carry_out, overflow, sa, sb, carry_in);
+			Add32(r, carry_out, overflow, sign, sa, sb, carry_in);
 			flags.SetOvf(int(overflow), i);
 			flags.SetCarry(int(carry_out), i);
 		}
@@ -202,7 +202,7 @@ VectorRegister<CONFIG> IAdd16(VectorRegister<CONFIG> const & a,
 		}
 		else {
 			uint8_t carry_in = 0;
-			uint8_t carry_out, overflow;
+			uint8_t carry_out, overflow, sign;
 			if(use_cin) {
 				carry_in = inputflags.GetCarry(i);
 			}
@@ -210,7 +210,7 @@ VectorRegister<CONFIG> IAdd16(VectorRegister<CONFIG> const & a,
 			//	Sub16(r, carry_out, overflow, sa, sb, carry_in);
 			//}
 			//else {
-				Add16(r, carry_out, overflow, sa, sb, carry_in);
+				Add16(r, carry_out, overflow, sign, sa, sb, carry_in);
 			//}
 			flags.SetOvf(int(overflow), i);
 			flags.SetCarry(int(carry_out), i);

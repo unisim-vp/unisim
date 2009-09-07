@@ -46,23 +46,23 @@ namespace util {
 namespace arithmetic {
 
 #if defined(__GNUC__) && (__GNUC__ >= 3)
-inline void Add8(uint8_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t x, uint8_t y, uint8_t carry_in) __attribute__((always_inline));
-inline void Add16(uint16_t& result, uint8_t& carry_out, uint8_t& overflow, uint16_t x, uint16_t y, uint8_t carry_in) __attribute__((always_inline));
-inline void Add32(uint32_t& result, uint8_t& carry_out, uint8_t& overflow, uint32_t x, uint32_t y, uint8_t carry_in) __attribute__((always_inline));
+inline void Add8(uint8_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint8_t x, uint8_t y, uint8_t carry_in) __attribute__((always_inline));
+inline void Add16(uint16_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint16_t x, uint16_t y, uint8_t carry_in) __attribute__((always_inline));
+inline void Add32(uint32_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint32_t x, uint32_t y, uint8_t carry_in) __attribute__((always_inline));
 
-inline void Sub8(uint8_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t x, uint8_t y, uint8_t carry_in) __attribute__((always_inline));
-inline void Sub16(uint16_t& result, uint8_t& carry_out, uint8_t& overflow, uint16_t x, uint16_t y, uint8_t carry_in) __attribute__((always_inline));
-inline void Sub32(uint32_t& result, uint8_t& carry_out, uint8_t& overflow, uint32_t x, uint32_t y, uint8_t carry_in) __attribute__((always_inline));
+inline void Sub8(uint8_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint8_t x, uint8_t y, uint8_t carry_in) __attribute__((always_inline));
+inline void Sub16(uint16_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint16_t x, uint16_t y, uint8_t carry_in) __attribute__((always_inline));
+inline void Sub32(uint32_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint32_t x, uint32_t y, uint8_t carry_in) __attribute__((always_inline));
 
-inline void SignedSatAdd8(uint8_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t x, uint8_t y, uint8_t borrow_in) __attribute__((always_inline));
-inline void SignedSatAdd16(uint16_t& result, uint8_t& borrow_out, uint8_t& overflow, uint16_t x, uint16_t y, uint8_t borrow_in) __attribute__((always_inline));
-inline void SignedSatAdd32(uint32_t& result, uint8_t& borrow_out, uint8_t& overflow, uint32_t x, uint32_t y, uint8_t borrow_in) __attribute__((always_inline));
+inline void SignedSatAdd8(uint8_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint8_t x, uint8_t y, uint8_t borrow_in) __attribute__((always_inline));
+inline void SignedSatAdd16(uint16_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint16_t x, uint16_t y, uint8_t borrow_in) __attribute__((always_inline));
+inline void SignedSatAdd32(uint32_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint32_t x, uint32_t y, uint8_t borrow_in) __attribute__((always_inline));
 inline void SignedSatAdd16(uint32_t& result, uint8_t& does_sat, uint32_t x, uint32_t y) __attribute__((always_inline));
 inline void SignedSatAdd32(uint32_t& result, uint8_t& does_sat, uint32_t x, uint32_t y) __attribute__((always_inline));
 
-inline void SignedSatSub8(uint8_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t x, uint8_t y, uint8_t borrow_in) __attribute__((always_inline));
-inline void SignedSatSub16(uint16_t& result, uint8_t& borrow_out, uint8_t& overflow, uint16_t x, uint16_t y, uint8_t borrow_in) __attribute__((always_inline));
-inline void SignedSatSub32(uint32_t& result, uint8_t& borrow_out, uint8_t& overflow, uint32_t x, uint32_t y, uint8_t borrow_in) __attribute__((always_inline));
+inline void SignedSatSub8(uint8_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint8_t x, uint8_t y, uint8_t borrow_in) __attribute__((always_inline));
+inline void SignedSatSub16(uint16_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint16_t x, uint16_t y, uint8_t borrow_in) __attribute__((always_inline));
+inline void SignedSatSub32(uint32_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint32_t x, uint32_t y, uint8_t borrow_in) __attribute__((always_inline));
 inline void SignedSatSub32(uint32_t& result, uint8_t& does_sat, uint32_t x, uint32_t y) __attribute__((always_inline));
 inline void SignedSatSub16(uint32_t& result, uint8_t& does_sat, uint32_t x, uint32_t y) __attribute__((always_inline));
 
@@ -127,16 +127,16 @@ inline int64_t SignExtend(uint64_t v, unsigned int n) __attribute__((always_inli
 //=                              Full Adders                                  =
 //=============================================================================
 
-inline void Add8(uint8_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t x, uint8_t y, uint8_t carry_in)
+inline void Add8(uint8_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint8_t x, uint8_t y, uint8_t carry_in)
 {
 #if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
 	if(carry_in)
 	{
-		__asm__ ("stc\nadcb %b4, %b0\nsetc %1\nseto %2" : "=qQ" (result), "=qQ" (carry_out), "=qQ" (overflow) : "0" (x), "q" (y) : "cc");	
+		__asm__ ("stc\nadcb %5, %0\nsetc %1\nseto %2\nsets %3" : "=qQm" (result), "=qQm" (carry_out), "=qQm" (overflow), "=qQm" (sign) : "0" (x), "qQm" (y) : "cc");	
 	}
 	else
 	{
-		__asm__ ("addb %b4, %b0\nsetc %1\nseto %2" : "=qQ" (result), "=qQ" (carry_out), "=qQ" (overflow) : "0" (x), "q" (y) : "cc");
+		__asm__ ("addb %5, %0\nsetc %1\nseto %2\nsets %3" : "=qQm" (result), "=qQm" (carry_out), "=qQm" (overflow), "=qQm" (sign) : "0" (x), "qQm" (y) : "cc");
 	}
 #else
 	uint8_t res = x + y + carry_in;
@@ -148,19 +148,20 @@ inline void Add8(uint8_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t
 	overflow = c7 ^ c6;
 	carry_out = c7;
 	result = res;
+	sign = (int8_t) res < 0;
 #endif
 }
 
-inline void Add16(uint16_t& result, uint8_t& carry_out, uint8_t& overflow, uint16_t x, uint16_t y, uint8_t carry_in)
+inline void Add16(uint16_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint16_t x, uint16_t y, uint8_t carry_in)
 {
 #if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
 	if(carry_in)
 	{
-		__asm__ ("stc\nadcw %4, %w0\nsetc %1\nseto %2" : "=r" (result), "=qQ" (carry_out), "=qQ" (overflow) : "0" (x), "rm" (y) : "cc");	
+		__asm__ ("stc\nadcw %5, %0\nsetc %1\nseto %2\nsets %3" : "=r" (result), "=qQm" (carry_out), "=qQm" (overflow), "=qQm" (sign) : "0" (x), "rm" (y) : "cc");	
 	}
 	else
 	{
-		__asm__ ("addw %4, %w0\nsetc %1\nseto %2" : "=r" (result), "=qQ" (carry_out), "=qQ" (overflow) : "0" (x), "rm" (y) : "cc");
+		__asm__ ("addw %5, %0\nsetc %1\nseto %2\nsets %3" : "=r" (result), "=qQm" (carry_out), "=qQm" (overflow), "=qQm" (sign) : "0" (x), "rm" (y) : "cc");
 	}
 #else
 	uint16_t res = x + y + carry_in;
@@ -172,6 +173,7 @@ inline void Add16(uint16_t& result, uint8_t& carry_out, uint8_t& overflow, uint1
 	overflow = c15 ^ c14;
 	carry_out = c15;
 	result = res;
+	sign = (int16_t) res < 0;
 #endif
 }
 
@@ -183,16 +185,16 @@ inline void Add16(uint16_t& result, uint8_t& carry_out, uint8_t& overflow, uint1
    from (1) we obtain: carry(30) = result(31) ^ x(31) ^ y(31)
    carry_out is computed from equation (2), overflow from equation (3)
 */
-inline void Add32(uint32_t& result, uint8_t& carry_out, uint8_t& overflow, uint32_t x, uint32_t y, uint8_t carry_in)
+inline void Add32(uint32_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint32_t x, uint32_t y, uint8_t carry_in)
 {
 #if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
 	if(carry_in)
 	{
-		__asm__ ("stc\nadcl %4, %0\nsetc %1\nseto %2" : "=r" (result), "=qQ" (carry_out), "=qQ" (overflow) : "0" (x), "rm" (y) : "cc");	
+		__asm__ ("stc\nadcl %5, %0\nsetc %1\nseto %2\nsets %3" : "=r" (result), "=qQ" (carry_out), "=qQ" (overflow), "=qQ" (sign) : "0" (x), "rm" (y) : "cc");	
 	}
 	else
 	{
-		__asm__ ("addl %4, %0\nsetc %1\nseto %2" : "=r" (result), "=qQ" (carry_out), "=qQ" (overflow) : "0" (x), "rm" (y) : "cc");
+		__asm__ ("addl %5, %0\nsetc %1\nseto %2\nsets %3" : "=r" (result), "=qQ" (carry_out), "=qQ" (overflow), "=qQ" (sign) : "0" (x), "rm" (y) : "cc");
 	}
 #else
 	uint32_t res = x + y + carry_in;
@@ -204,6 +206,7 @@ inline void Add32(uint32_t& result, uint8_t& carry_out, uint8_t& overflow, uint3
 	overflow = c31 ^ c30;
 	carry_out = c31;
 	result = res;
+	sign = (int32_t) res < 0;
 #endif
 }
 
@@ -211,15 +214,15 @@ inline void Add32(uint32_t& result, uint8_t& carry_out, uint8_t& overflow, uint3
 //=                           Full Substractors                               =
 //=============================================================================
 
-inline void Sub8(uint8_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t x, uint8_t y, uint8_t borrow_in) {
+inline void Sub8(uint8_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint8_t x, uint8_t y, uint8_t borrow_in) {
 #if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
 	if(borrow_in)
 	{
-		__asm__ ("stc\nsbbb %b4, %b0\nsetc %1\nseto %2" : "=qQ" (result), "=qQ" (borrow_out), "=qQ" (overflow) : "0" (x), "q" (y) : "cc");	
+		__asm__ ("stc\nsbbb %5, %0\nsetc %1\nseto %2\nsets %3" : "=qQm" (result), "=qQm" (borrow_out), "=qQm" (overflow), "=qQm" (sign) : "0" (x), "q" (y) : "cc");	
 	}
 	else
 	{
-		__asm__ ("subb %b4, %b0\nsetc %1\nseto %2" : "=qQ" (result), "=qQ" (borrow_out), "=qQ" (overflow) : "0" (x), "q" (y) : "cc");
+		__asm__ ("subb %5, %0\nsetc %1\nseto %2\nsets %3" : "=qQm" (result), "=qQm" (borrow_out), "=qQm" (overflow), "=qQm" (sign) : "0" (x), "q" (y) : "cc");
 	}
 #else
 	uint8_t res = x - y - borrow_in;
@@ -231,18 +234,19 @@ inline void Sub8(uint8_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_
 	overflow = b7 ^ b6;
 	borrow_out = b7;
 	result = res;
+	sign = (int8_t) res < 0;
 #endif
 }
 
-inline void Sub16(uint16_t& result, uint8_t& borrow_out, uint8_t& overflow, uint16_t x, uint16_t y, uint8_t borrow_in) {
+inline void Sub16(uint16_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint16_t x, uint16_t y, uint8_t borrow_in) {
 #if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
 	if(borrow_in)
 	{
-		__asm__ ("stc\nsbbw %4, %w0\nsetc %1\nseto %2" : "=r" (result), "=qQ" (borrow_out), "=qQ" (overflow) : "0" (x), "rm" (y) : "cc");	
+		__asm__ ("stc\nsbbw %5, %0\nsetc %1\nseto %2\nsets %3" : "=r" (result), "=qQm" (borrow_out), "=qQm" (overflow), "=qQm" (sign) : "0" (x), "rm" (y) : "cc");	
 	}
 	else
 	{
-		__asm__ ("subw %4, %w0\nsetc %1\nseto %2" : "=r" (result), "=qQ" (borrow_out), "=qQ" (overflow) : "0" (x), "rm" (y) : "cc");
+		__asm__ ("subw %5, %0\nsetc %1\nseto %2\nsets %3" : "=r" (result), "=qQm" (borrow_out), "=qQm" (overflow), "=qQm" (sign) : "0" (x), "rm" (y) : "cc");
 	}
 #else
 	uint16_t res = x - y - borrow_in;
@@ -254,6 +258,7 @@ inline void Sub16(uint16_t& result, uint8_t& borrow_out, uint8_t& overflow, uint
 	overflow = b15 ^ b14;
 	borrow_out = b15;
 	result = res;
+	sign = (int16_t) res < 0;
 #endif
 }
 
@@ -265,15 +270,15 @@ inline void Sub16(uint16_t& result, uint8_t& borrow_out, uint8_t& overflow, uint
    from (1) we obtain: borrow(30) = result(31) ^ x(31) ^ y(31)
    borrow_out is computed from equation (2), overflow from equation (3)
 */
-inline void Sub32(uint32_t& result, uint8_t& borrow_out, uint8_t& overflow, uint32_t x, uint32_t y, uint8_t borrow_in) {
+inline void Sub32(uint32_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint32_t x, uint32_t y, uint8_t borrow_in) {
 #if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
 	if(borrow_in)
 	{
-		__asm__ ("stc\nsbbl %4, %0\nsetc %1\nseto %2" : "=r" (result), "=qQ" (borrow_out), "=qQ" (overflow) : "0" (x), "rm" (y) : "cc");	
+		__asm__ ("stc\nsbbl %5, %0\nsetc %1\nseto %2\nsets %3" : "=r" (result), "=qQ" (borrow_out), "=qQ" (overflow), "=qQ" (sign) : "0" (x), "rm" (y) : "cc");	
 	}
 	else
 	{
-		__asm__ ("subl %4, %0\nsetc %1\nseto %2" : "=r" (result), "=qQ" (borrow_out), "=qQ" (overflow) : "0" (x), "rm" (y) : "cc");
+		__asm__ ("subl %5, %0\nsetc %1\nseto %2\nsets %3" : "=r" (result), "=qQ" (borrow_out), "=qQ" (overflow), "=qQ" (sign) : "0" (x), "rm" (y) : "cc");
 	}
 #else
 	uint32_t res = x - y - borrow_in;
@@ -285,6 +290,7 @@ inline void Sub32(uint32_t& result, uint8_t& borrow_out, uint8_t& overflow, uint
 	overflow = b31 ^ b30;
 	borrow_out = b31;
 	result = res;
+	sign = (int32_t) res < 0;
 #endif
 }
 
@@ -292,92 +298,101 @@ inline void Sub32(uint32_t& result, uint8_t& borrow_out, uint8_t& overflow, uint
 //=                    Full Adders with signed saturation                     =
 //=============================================================================
 
-inline void SignedSatAdd8(uint8_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t x, uint8_t y, uint8_t carry_in)
+inline void SignedSatAdd8(uint8_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint8_t x, uint8_t y, uint8_t carry_in)
 {
-	Add8(result, carry_out, overflow, x, y, carry_in);
+	Add8(result, carry_out, overflow, sign, x, y, carry_in);
 	if(overflow)
 	{
-		result = ((int8_t) result < 0) ? 0x7f : 0x80;
+		sign = !sign;
+		result = sign ? 0x7f : 0x80;
 	}
 }
 
-inline void SignedSatAdd16(uint16_t& result, uint8_t& carry_out, uint8_t& overflow, uint16_t x, uint16_t y, uint8_t carry_in)
+inline void SignedSatAdd16(uint16_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint16_t x, uint16_t y, uint8_t carry_in)
 {
-	Add16(result, carry_out, overflow, x, y, carry_in);
+	Add16(result, carry_out, overflow, sign, x, y, carry_in);
 	if(overflow)
 	{
-		result = ((int16_t) result < 0) ? 0x7fff : 0x8000;
+		result = sign ? 0x7fff : 0x8000;
+		sign = !sign;
 	}
 }
 
-inline void SignedSatAdd32(uint32_t& result, uint8_t& carry_out, uint8_t& overflow, uint32_t x, uint32_t y, uint8_t carry_in)
+inline void SignedSatAdd32(uint32_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint32_t x, uint32_t y, uint8_t carry_in)
 {
-	Add32(result, carry_out, overflow, x, y, carry_in);
+	Add32(result, carry_out, overflow, sign, x, y, carry_in);
 	if(overflow)
 	{
-		result = ((int32_t) result < 0) ? 0x7fffffff : 0x80000000;
+		result = sign ? 0x7fffffff : 0x80000000;
+		sign = !sign;
 	}
 }
 
 inline void SignedSatAdd16(uint16_t& result, uint8_t& overflow, uint16_t x, uint16_t y) 
 {
 	uint8_t carry_out;
-	SignedSatAdd16(result, carry_out, overflow, x, y, 0);
+	uint8_t sign;
+	SignedSatAdd16(result, carry_out, overflow, sign, x, y, 0);
 }
 
 inline void SignedSatAdd32(uint32_t& result, uint8_t& overflow, uint32_t x, uint32_t y) 
 {
 	uint8_t carry_out;
-	SignedSatAdd32(result, carry_out, overflow, x, y, 0);
+	uint8_t sign;
+	SignedSatAdd32(result, carry_out, overflow, sign, x, y, 0);
 }
 
 //=============================================================================
 //=                 Full Substractors with signed saturation                  =
 //=============================================================================
 
-inline void SignedSatSub8(uint8_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t x, uint8_t y, uint8_t borrow_in)
+inline void SignedSatSub8(uint8_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint8_t x, uint8_t y, uint8_t borrow_in)
 {
-	Sub8(result, borrow_out, overflow, x, y, borrow_in);
+	Sub8(result, borrow_out, overflow, sign, x, y, borrow_in);
 	if(overflow)
 	{
-		result = ((int8_t) result < 0) ? 0x7f : 0x80;
+		result = sign ? 0x7f : 0x80;
+		sign = !sign;
 	}
 }
 
-inline void SignedSatSub16(uint16_t& result, uint8_t& borrow_out, uint8_t& overflow, uint16_t x, uint16_t y, uint8_t borrow_in)
+inline void SignedSatSub16(uint16_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint16_t x, uint16_t y, uint8_t borrow_in)
 {
-	Sub16(result, borrow_out, overflow, x, y, borrow_in);
+	Sub16(result, borrow_out, overflow, sign, x, y, borrow_in);
 	if(overflow)
 	{
-		result = ((int16_t) result < 0) ? 0x7fff : 0x8000;
+		result = sign ? 0x7fff : 0x8000;
+		sign = !sign;
 	}
 }
 
-inline void SignedSatSub32(uint32_t& result, uint8_t& borrow_out, uint8_t& overflow, uint32_t x, uint32_t y, uint8_t borrow_in)
+inline void SignedSatSub32(uint32_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint32_t x, uint32_t y, uint8_t borrow_in)
 {
-	Sub32(result, borrow_out, overflow, x, y, borrow_in);
+	Sub32(result, borrow_out, overflow, sign, x, y, borrow_in);
 	if(overflow)
 	{
-		result = ((int32_t) result < 0) ? 0x7fffffff : 0x80000000;
+		result = sign ? 0x7fffffff : 0x80000000;
+		sign = !sign;
 	}
 }
 
 inline void SignedSatSub16(uint16_t& result, uint8_t& overflow, uint16_t x, uint16_t y) 
 {
 	uint8_t borrow_out;
-	SignedSatSub16(result, borrow_out, overflow, x, y, 0);
+	uint8_t sign;
+	SignedSatSub16(result, borrow_out, overflow, sign, x, y, 0);
 }
 
 inline void SignedSatSub32(uint32_t& result, uint8_t& overflow, uint32_t x, uint32_t y) 
 {
 	uint8_t borrow_out;
-	SignedSatSub32(result, borrow_out, overflow, x, y, 0);
+	uint8_t sign;
+	SignedSatSub32(result, borrow_out, overflow, sign, x, y, 0);
 }
 
 //=============================================================================
 //=                          Specific Adders                                  =
 //=============================================================================
-
 inline uint32_t ReverseCarryPropagationAdd(uint32_t x, uint32_t y)
 {
 	// Compute the result as if there were no carry generation and propagation at all
@@ -395,7 +410,7 @@ inline uint32_t ReverseCarryPropagationAdd(uint32_t x, uint32_t y)
 	uint32_t c = 0;
 	uint32_t x_or_y = x | y;
 
-	// loop n times
+	// propagate carry through remaining bits
 	do
 	{
 		// Update result with carry in
@@ -406,7 +421,7 @@ inline uint32_t ReverseCarryPropagationAdd(uint32_t x, uint32_t y)
 
 		// Go to next bit
 		mask = mask >> 1;
-	} while(n--);
+	} while(mask);
 	return r;
 }
 

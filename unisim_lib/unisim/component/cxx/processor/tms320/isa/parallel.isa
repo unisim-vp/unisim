@@ -646,12 +646,18 @@ ADDI3_STI.execute = {
 	uint32_t result;      // the 32-bit result
 	uint8_t carry_out;    // the carry out (0 or 1)
 	uint8_t overflow;     // the overflow (0 or 1)
+	uint8_t sign;         // the sign (0 or 1)
 
 	// Depending on overflow mode do signed saturation or not 
 	if(cpu.GetST_OVM())
-		SignedSatAdd32(result, carry_out, overflow, src1_value, src2_value, 0);
+	{
+		SignedSatAdd32(result, carry_out, overflow, sign, src1_value, src2_value, 0);
+	}
 	else
-		Add32(result, carry_out, overflow, src1_value, src2_value, 0);
+	{
+		Add32(result, carry_out, overflow, sign, src1_value, src2_value, 0);
+		sign = sign ^ overflow;
+	}
 
 	// Store the word into memory
 	cpu.IntStore(d2_ea, src3_value);
@@ -681,6 +687,7 @@ ADDI3_STI.execute = {
 		result,
 		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
 		M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
+		sign,
 		carry_out,
 		overflow
 	);
@@ -719,12 +726,18 @@ ADDI3_STI_ext.execute = {
 	uint32_t result;      // the 32-bit result
 	uint8_t carry_out;    // the carry out (0 or 1)
 	uint8_t overflow;     // the overflow (0 or 1)
+	uint8_t sign;         // the sign (0 or 1)
 
 	// Depending on overflow mode do signed saturation or not 
 	if(cpu.GetST_OVM())
-		SignedSatAdd32(result, carry_out, overflow, src1_value, src2_value, 0);
+	{
+		SignedSatAdd32(result, carry_out, overflow, sign, src1_value, src2_value, 0);
+	}
 	else
-		Add32(result, carry_out, overflow, src1_value, src2_value, 0);
+	{
+		Add32(result, carry_out, overflow, sign, src1_value, src2_value, 0);
+		sign = sign ^ overflow;
+	}
 
 	// Store the word into memory
 	cpu.IntStore(d2_ea, src3_value);
@@ -747,6 +760,7 @@ ADDI3_STI_ext.execute = {
 		result,
 		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
 		M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
+		sign,
 		carry_out,
 		overflow
 	);
@@ -830,6 +844,7 @@ AND3_STI.execute = {
 
 	// Compute the result of ANDI3
 	uint32_t result = src1_value & src2_value;
+	uint8_t sign = (int32_t) result < 0;
 
 	// Store the word into memory
 	cpu.IntStore(d2_ea, src3_value);
@@ -857,7 +872,8 @@ AND3_STI.execute = {
 	cpu.GenFlags(
 		result,
 		M_ST_UF | M_ST_V,  // reset mask
-		M_ST_N | M_ST_Z    // or mask
+		M_ST_N | M_ST_Z,    // or mask
+		sign
 	);
 }
 
@@ -892,6 +908,7 @@ AND3_STI_ext.execute = {
 
 	// Compute the result of ANDI3
 	uint32_t result = src1_value & src2_value;
+	uint8_t sign = (int32_t) result < 0;
 
 	// Store the word into memory
 	cpu.IntStore(d2_ea, src3_value);
@@ -909,7 +926,8 @@ AND3_STI_ext.execute = {
 	cpu.GenFlags(
 		result,
 		M_ST_UF | M_ST_V,  // reset mask
-		M_ST_N | M_ST_Z    // or mask
+		M_ST_N | M_ST_Z,    // or mask
+		sign
 	);
 }
 
@@ -992,6 +1010,7 @@ ASH3_STI.execute = {
 	// Compute the result of ASH3
 	uint8_t carry_out;
 	uint32_t result;
+	uint8_t sign;
 
 	if(count_value == 0)
 	{
@@ -1024,6 +1043,8 @@ ASH3_STI.execute = {
 		}
 	}
 
+	sign = (int32_t) result < 0;
+
 	// Store the word into memory
 	cpu.IntStore(d2_ea, src3_value);
 
@@ -1051,6 +1072,7 @@ ASH3_STI.execute = {
 		result,
 		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
 		M_ST_N | M_ST_Z | M_ST_C,  // or mask
+		sign,
 		carry_out
 	);
 }
@@ -1087,6 +1109,7 @@ ASH3_STI_ext.execute = {
 	// Compute the result of ASH3
 	uint8_t carry_out;
 	uint32_t result;
+	uint8_t sign;
 
 	if(count_value == 0)
 	{
@@ -1119,6 +1142,8 @@ ASH3_STI_ext.execute = {
 		}
 	}
 
+	sign = (int32_t) result < 0;
+
 	// Store the word into memory
 	cpu.IntStore(d2_ea, src3_value);
 
@@ -1136,6 +1161,7 @@ ASH3_STI_ext.execute = {
 		result,
 		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
 		M_ST_N | M_ST_Z | M_ST_C,  // or mask
+		sign,
 		carry_out
 	);
 }
@@ -1243,6 +1269,7 @@ FIX_STI.execute = {
 		result,
 		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
 		M_ST_LV | M_ST_N | M_ST_Z | M_ST_V,    // or mask
+		neg,
 		0,
 		overflow
 	);
@@ -1291,6 +1318,7 @@ FIX_STI_ext.execute = {
 		result,
 		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
 		M_ST_LV | M_ST_N | M_ST_Z | M_ST_V,    // or mask
+		neg,
 		0,
 		overflow
 	);
@@ -1794,6 +1822,7 @@ LSH3_STI.execute = {
 	// Compute the result of LSH3
 	uint8_t carry_out;
 	uint32_t result;
+	uint8_t sign;
 
 	if(count_value == 0)
 	{
@@ -1826,6 +1855,8 @@ LSH3_STI.execute = {
 		}
 	}
 
+	sign = (int32_t) result < 0;
+
 	// Store the word into memory
 	cpu.IntStore(d2_ea, src3_value);
 
@@ -1853,6 +1884,7 @@ LSH3_STI.execute = {
 		result,
 		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
 		M_ST_N | M_ST_Z | M_ST_C,  // or mask
+		sign,
 		carry_out
 	);
 }
@@ -1889,6 +1921,7 @@ LSH3_STI_ext.execute = {
 	// Compute the result of LSH3
 	uint8_t carry_out;
 	uint32_t result;
+	uint8_t sign;
 
 	if(count_value == 0)
 	{
@@ -1921,6 +1954,8 @@ LSH3_STI_ext.execute = {
 		}
 	}
 
+	sign = (int32_t) result < 0;
+	
 	// Store the word into memory
 	cpu.IntStore(d2_ea, src3_value);
 
@@ -1938,6 +1973,7 @@ LSH3_STI_ext.execute = {
 		result,
 		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
 		M_ST_N | M_ST_Z | M_ST_C,  // or mask
+		sign,
 		carry_out
 	);
 }
@@ -2195,6 +2231,7 @@ MPYI3_STI.execute = {
 	// An arithmetic shift of 31 bits is used to duplicate 32 times the MSB of lo32
 	uint8_t overflow = ((lo32 >> 31) != hi32);
 	uint32_t result;
+	uint8_t sign = result64 < 0;
 	
 	if(cpu.GetST_OVM() && overflow)
 		result = (result64 < 0) ? 0x80000000 : 0x7fffffff; // Saturate the result
@@ -2228,6 +2265,7 @@ MPYI3_STI.execute = {
 		result,
 		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
 		M_ST_LV | M_ST_N | M_ST_Z | M_ST_V,  // or mask
+		sign,
 		0,
 		overflow
 	);
@@ -2270,6 +2308,7 @@ MPYI3_STI_ext.execute = {
 	// An arithmetic shift of 31 bits is used to duplicate 32 times the MSB of lo32
 	uint8_t overflow = ((lo32 >> 31) != hi32);
 	uint32_t result;
+	uint8_t sign = result64 < 0;
 	
 	if(cpu.GetST_OVM() && overflow)
 		result = (result64 < 0) ? 0x80000000 : 0x7fffffff; // Saturate the result
@@ -2297,6 +2336,7 @@ MPYI3_STI_ext.execute = {
 		result,
 		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
 		M_ST_LV | M_ST_N | M_ST_Z | M_ST_V,  // or mask
+		sign,
 		0,
 		overflow
 	);
@@ -2532,12 +2572,18 @@ NEGI_STI.execute = {
 	uint32_t result;      // the 32-bit result
 	uint8_t borrow_out;   // the borrow out (0 or 1)
 	uint8_t overflow;     // the overflow (0 or 1)
+	uint8_t sign;         // the sign (0 or 1)
 
 	// Depending on overflow mode do signed saturation or not 
 	if(cpu.GetST_OVM())
-		SignedSatSub32(result, borrow_out, overflow, 0, src2_value, 0);
+	{
+		SignedSatSub32(result, borrow_out, overflow, sign, 0, src2_value, 0);
+	}
 	else
-		Sub32(result, borrow_out, overflow, 0, src2_value, 0);
+	{
+		Sub32(result, borrow_out, overflow, sign, 0, src2_value, 0);
+		sign = sign ^ overflow;
+	}
 
 	// Store the word into memory
 	cpu.IntStore(d2_ea, src3_value);
@@ -2566,6 +2612,7 @@ NEGI_STI.execute = {
 		result,
 		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
 		M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
+		sign,
 		borrow_out,
 		overflow
 	);
@@ -2601,12 +2648,18 @@ NEGI_STI_ext.execute = {
 	uint32_t result;      // the 32-bit result
 	uint8_t borrow_out;   // the borrow out (0 or 1)
 	uint8_t overflow;     // the overflow (0 or 1)
+	uint8_t sign;         // the sign (0 or 1)
 
 	// Depending on overflow mode do signed saturation or not 
 	if(cpu.GetST_OVM())
-		SignedSatSub32(result, borrow_out, overflow, 0, src2_value, 0);
+	{
+		SignedSatSub32(result, borrow_out, overflow, sign, 0, src2_value, 0);
+	}
 	else
-		Sub32(result, borrow_out, overflow, 0, src2_value, 0);
+	{
+		Sub32(result, borrow_out, overflow, sign, 0, src2_value, 0);
+		sign = sign ^ overflow;
+	}
 
 	// Store the word into memory
 	cpu.IntStore(d2_ea, src3_value);
@@ -2625,6 +2678,7 @@ NEGI_STI_ext.execute = {
 		result,
 		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
 		M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
+		sign,
 		borrow_out,
 		overflow
 	);
@@ -2702,6 +2756,7 @@ NOT_STI.execute = {
 
 	// Compute the result of NOT
 	uint32_t result = ~src2_value;
+	uint8_t sign = (int32_t) result < 0;
 
 	// Store the word into memory
 	cpu.IntStore(d2_ea, src3_value);
@@ -2729,7 +2784,8 @@ NOT_STI.execute = {
 	cpu.GenFlags(
 		result,
 		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-		M_ST_N | M_ST_Z    // or mask
+		M_ST_N | M_ST_Z,    // or mask
+		sign
 	);
 }
 
@@ -2761,6 +2817,7 @@ NOT_STI_ext.execute = {
 
 	// Compute the result of NOT
 	uint32_t result = ~src2_value;
+	uint8_t sign = (int32_t) result < 0;
 
 	// Store the word into memory
 	cpu.IntStore(d2_ea, src3_value);
@@ -2778,7 +2835,8 @@ NOT_STI_ext.execute = {
 	cpu.GenFlags(
 		result,
 		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-		M_ST_N | M_ST_Z    // or mask
+		M_ST_N | M_ST_Z,    // or mask
+		sign
 	);
 }
 
@@ -2859,6 +2917,7 @@ OR3_STI.execute = {
 
 	// Compute the result of OR3
 	uint32_t result = src1_value | src2_value;
+	uint8_t sign = (int32_t) result < 0;
 
 	// Store the word into memory
 	cpu.IntStore(d2_ea, src3_value);
@@ -2886,7 +2945,8 @@ OR3_STI.execute = {
 	cpu.GenFlags(
 		result,
 		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-		M_ST_N | M_ST_Z    // or mask
+		M_ST_N | M_ST_Z,    // or mask
+		sign
 	);
 }
 
@@ -2921,6 +2981,7 @@ OR3_STI_ext.execute = {
 
 	// Compute the result of OR3
 	uint32_t result = src1_value | src2_value;
+	uint8_t sign = (int32_t) result < 0;
 
 	// Store the word into memory
 	cpu.IntStore(d2_ea, src3_value);
@@ -2938,7 +2999,8 @@ OR3_STI_ext.execute = {
 	cpu.GenFlags(
 		result,
 		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-		M_ST_N | M_ST_Z    // or mask
+		M_ST_N | M_ST_Z,    // or mask
+		sign
 	);
 }
 
@@ -3444,12 +3506,18 @@ SUBI3_STI.execute = {
 	uint32_t result;      // the 32-bit result
 	uint8_t borrow_out;   // the borrow out (0 or 1)
 	uint8_t overflow;     // the overflow (0 or 1)
+	uint8_t sign;         // the sign (0 or 1)
 
 	// Depending on overflow mode do signed saturation or not 
 	if(cpu.GetST_OVM())
-		SignedSatSub32(result, borrow_out, overflow, src2_value, src1_value, 0);
+	{
+		SignedSatSub32(result, borrow_out, overflow, sign, src2_value, src1_value, 0);
+	}
 	else
-		Sub32(result, borrow_out, overflow, src2_value, src1_value, 0);
+	{
+		Sub32(result, borrow_out, overflow, sign, src2_value, src1_value, 0);
+		sign = sign ^ overflow;
+	}
 
 	// Store the word into memory
 	cpu.IntStore(d2_ea, src3_value);
@@ -3478,6 +3546,7 @@ SUBI3_STI.execute = {
 		result,
 		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
 		M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
+		sign,
 		borrow_out,
 		overflow
 	);
@@ -3516,12 +3585,18 @@ SUBI3_STI_ext.execute = {
 	uint32_t result;      // the 32-bit result
 	uint8_t borrow_out;   // the borrow out (0 or 1)
 	uint8_t overflow;     // the overflow (0 or 1)
+	uint8_t sign;         // the sign (0 or 1)
 
 	// Depending on overflow mode do signed saturation or not 
 	if(cpu.GetST_OVM())
-		SignedSatSub32(result, borrow_out, overflow, src2_value, src1_value, 0);
+	{
+		SignedSatSub32(result, borrow_out, overflow, sign, src2_value, src1_value, 0);
+	}
 	else
-		Sub32(result, borrow_out, overflow, src2_value, src1_value, 0);
+	{
+		Sub32(result, borrow_out, overflow, sign, src2_value, src1_value, 0);
+		sign = sign ^ overflow;
+	}
 
 	// Store the word into memory
 	cpu.IntStore(d2_ea, src3_value);
@@ -3544,6 +3619,7 @@ SUBI3_STI_ext.execute = {
 		result,
 		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
 		M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
+		sign,
 		borrow_out,
 		overflow
 	);
@@ -3626,6 +3702,7 @@ XOR3_STI.execute = {
 
 	// Compute the result of XORI3
 	uint32_t result = src1_value ^ src2_value;
+	uint8_t sign = (int32_t) result < 0;
 
 	// Store the word into memory
 	cpu.IntStore(d2_ea, src3_value);
@@ -3653,7 +3730,8 @@ XOR3_STI.execute = {
 	cpu.GenFlags(
 		result,
 		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-		M_ST_N | M_ST_Z    // or mask
+		M_ST_N | M_ST_Z,    // or mask
+		sign
 	);
 }
 
@@ -3688,6 +3766,7 @@ XOR3_STI_ext.execute = {
 
 	// Compute the result of XORI3
 	uint32_t result = src1_value ^ src2_value;
+	uint8_t sign = (int32_t) result < 0;
 
 	// Store the word into memory
 	cpu.IntStore(d2_ea, src3_value);
@@ -3705,7 +3784,8 @@ XOR3_STI_ext.execute = {
 	cpu.GenFlags(
 		result,
 		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-		M_ST_N | M_ST_Z    // or mask
+		M_ST_N | M_ST_Z,    // or mask
+		sign
 	);
 }
 
@@ -4640,12 +4720,13 @@ MPYI3_ADDI3.execute = {
 	uint32_t addi3_result;      // the 32-bit result
 	uint8_t addi3_carry_out;    // the carry out (0 or 1)
 	uint8_t addi3_overflow;     // the overflow (0 or 1)
+	uint8_t addi3_sign;         // the sign (0 or 1)
 
 	// Depending on overflow mode do signed saturation or not 
 	if(cpu.GetST_OVM())
-		SignedSatAdd32(addi3_result, addi3_carry_out, addi3_overflow, srcD_value, srcC_value, 0);
+		SignedSatAdd32(addi3_result, addi3_carry_out, addi3_overflow, addi3_sign, srcD_value, srcC_value, 0);
 	else
-		Add32(addi3_result, addi3_carry_out, addi3_overflow, srcD_value, srcC_value, 0);
+		Add32(addi3_result, addi3_carry_out, addi3_overflow, addi3_sign, srcD_value, srcC_value, 0);
 
 	// Summarize overflow bit of MPYI3 and ADDI3
 	uint8_t overflow = mpyi3_overflow | addi3_overflow;
@@ -4679,6 +4760,7 @@ MPYI3_ADDI3.execute = {
 		0,
 		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
 		M_ST_LV | M_ST_V,  // or mask
+		0,
 		0,
 		overflow
 	);
@@ -4760,12 +4842,13 @@ MPYI3_ADDI3_ext.execute = {
 	uint32_t addi3_result;      // the 32-bit result
 	uint8_t addi3_carry_out;    // the carry out (0 or 1)
 	uint8_t addi3_overflow;     // the overflow (0 or 1)
+	uint8_t addi3_sign;         // the sign (0 or 1)
 
 	// Depending on overflow mode do signed saturation or not 
 	if(cpu.GetST_OVM())
-		SignedSatAdd32(addi3_result, addi3_carry_out, addi3_overflow, srcD_value, srcC_value, 0);
+		SignedSatAdd32(addi3_result, addi3_carry_out, addi3_overflow, addi3_sign, srcD_value, srcC_value, 0);
 	else
-		Add32(addi3_result, addi3_carry_out, addi3_overflow, srcD_value, srcC_value, 0);
+		Add32(addi3_result, addi3_carry_out, addi3_overflow, addi3_sign, srcD_value, srcC_value, 0);
 
 	// Summarize overflow bit of MPYI3 and ADDI3
 	uint8_t overflow = mpyi3_overflow | addi3_overflow;
@@ -4783,6 +4866,7 @@ MPYI3_ADDI3_ext.execute = {
 		0,
 		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
 		M_ST_LV | M_ST_V,  // or mask
+		0,
 		0,
 		overflow
 	);
@@ -4987,12 +5071,13 @@ MPYI3_SUBI3.execute = {
 	uint32_t subi3_result;      // the 32-bit result
 	uint8_t subi3_borrow_out;   // the borrow out (0 or 1)
 	uint8_t subi3_overflow;     // the overflow (0 or 1)
+	uint8_t subi3_sign;         // the sign (0 or 1)
 
 	// Depending on overflow mode do signed saturation or not 
 	if(cpu.GetST_OVM())
-		SignedSatSub32(subi3_result, subi3_borrow_out, subi3_overflow, srcD_value, srcC_value, 0);
+		SignedSatSub32(subi3_result, subi3_borrow_out, subi3_overflow, subi3_sign, srcD_value, srcC_value, 0);
 	else
-		Sub32(subi3_result, subi3_borrow_out, subi3_overflow, srcD_value, srcC_value, 0);
+		Sub32(subi3_result, subi3_borrow_out, subi3_overflow, subi3_sign, srcD_value, srcC_value, 0);
 
 	// Summarize overflow bit of MPYI3 and SUBI3
 	uint8_t overflow = mpyi3_overflow | subi3_overflow;
@@ -5028,6 +5113,7 @@ MPYI3_SUBI3.execute = {
 		0,
 		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
 		M_ST_LV | M_ST_UF | M_ST_V,  // or mask
+		0,
 		0,
 		overflow
 	);
@@ -5109,12 +5195,13 @@ MPYI3_SUBI3_ext.execute = {
 	uint32_t subi3_result;      // the 32-bit result
 	uint8_t subi3_borrow_out;   // the borrow out (0 or 1)
 	uint8_t subi3_overflow;     // the overflow (0 or 1)
+	uint8_t subi3_sign;         // the sign (0 or 1)
 
 	// Depending on overflow mode do signed saturation or not 
 	if(cpu.GetST_OVM())
-		SignedSatSub32(subi3_result, subi3_borrow_out, subi3_overflow, srcD_value, srcC_value, 0);
+		SignedSatSub32(subi3_result, subi3_borrow_out, subi3_overflow, subi3_sign, srcD_value, srcC_value, 0);
 	else
-		Sub32(subi3_result, subi3_borrow_out, subi3_overflow, srcD_value, srcC_value, 0);
+		Sub32(subi3_result, subi3_borrow_out, subi3_overflow, subi3_sign, srcD_value, srcC_value, 0);
 
 	// Summarize overflow bit of MPYI3 and SUBI3
 	uint8_t overflow = mpyi3_overflow | subi3_overflow;
@@ -5134,6 +5221,7 @@ MPYI3_SUBI3_ext.execute = {
 		0,
 		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
 		M_ST_LV | M_ST_UF | M_ST_V,  // or mask
+		0,
 		0,
 		overflow
 	);

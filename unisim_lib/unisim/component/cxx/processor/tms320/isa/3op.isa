@@ -131,12 +131,18 @@ ADDC3_reg_reg.execute = {
 	uint32_t result;      // the 32-bit result
 	uint8_t carry_out;    // the carry out (0 or 1)
 	uint8_t overflow;     // the overflow (0 or 1)
+	uint8_t sign;         // the sign (0 or 1)
 
 	// Depending on overflow mode do signed saturation or not 
 	if(cpu.GetST_OVM())
-		SignedSatAdd32(result, carry_out, overflow, src1_value, src2_value, carry_in);
+	{
+		SignedSatAdd32(result, carry_out, overflow, sign, src1_value, src2_value, carry_in);
+	}
 	else
-		Add32(result, carry_out, overflow, src1_value, src2_value, carry_in);
+	{
+		Add32(result, carry_out, overflow, sign, src1_value, src2_value, carry_in);
+		sign = sign ^ overflow;
+	}
 
 	// Write back result
 	cpu.SetReg(dst, result);
@@ -149,6 +155,7 @@ ADDC3_reg_reg.execute = {
 			result,
 			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
 			M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
+			sign,
 			carry_out,
 			overflow
 		);
@@ -185,12 +192,18 @@ ADDC3_indir_reg.execute = {
 	uint32_t result;      // the 32-bit result
 	uint8_t carry_out;    // the carry out (0 or 1)
 	uint8_t overflow;     // the overflow (0 or 1)
+	uint8_t sign;         // the sign (0 or 1)
 
 	// Depending on overflow mode do signed saturation or not 
 	if(cpu.GetST_OVM())
-		SignedSatAdd32(result, carry_out, overflow, src1_value, src2_value, carry_in);
+	{
+		SignedSatAdd32(result, carry_out, overflow, sign, src1_value, src2_value, carry_in);
+	}
 	else
-		Add32(result, carry_out, overflow, src1_value, src2_value, carry_in);
+	{
+		Add32(result, carry_out, overflow, sign, src1_value, src2_value, carry_in);
+		sign = sign ^ overflow;
+	}
 
 	// Check whether an auxiliary register is updated for 1st source operand
 	if(update_ar)
@@ -210,6 +223,7 @@ ADDC3_indir_reg.execute = {
 			result,
 			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
 			M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
+			sign,
 			carry_out,
 			overflow
 		);
@@ -246,12 +260,18 @@ ADDC3_reg_indir.execute = {
 	uint32_t result;      // the 32-bit result
 	uint8_t carry_out;    // the carry out (0 or 1)
 	uint8_t overflow;     // the overflow (0 or 1)
+	uint8_t sign;         // the sign (0 or 1)
 
 	// Depending on overflow mode do signed saturation or not 
 	if(cpu.GetST_OVM())
-		SignedSatAdd32(result, carry_out, overflow, src1_value, src2_value, carry_in);
+	{
+		SignedSatAdd32(result, carry_out, overflow, sign, src1_value, src2_value, carry_in);
+	}
 	else
-		Add32(result, carry_out, overflow, src1_value, src2_value, carry_in);
+	{
+		Add32(result, carry_out, overflow, sign, src1_value, src2_value, carry_in);
+		sign = sign ^ overflow;
+	}
 
 	// Check whether an auxiliary register is updated for 1st source operand
 	if(update_ar)
@@ -271,6 +291,7 @@ ADDC3_reg_indir.execute = {
 			result,
 			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
 			M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
+			sign,
 			carry_out,
 			overflow
 		);
@@ -317,12 +338,18 @@ ADDC3_indir_indir.execute = {
 	uint32_t result;      // the 32-bit result
 	uint8_t carry_out;    // the carry out (0 or 1)
 	uint8_t overflow;     // the overflow (0 or 1)
+	uint8_t sign;         // the sign (0 or 1)
 
 	// Depending on overflow mode do signed saturation or not 
 	if(cpu.GetST_OVM())
-		SignedSatAdd32(result, carry_out, overflow, src1_value, src2_value, carry_in);
+	{
+		SignedSatAdd32(result, carry_out, overflow, sign, src1_value, src2_value, carry_in);
+	}
 	else
-		Add32(result, carry_out, overflow, src1_value, src2_value, carry_in);
+	{
+		Add32(result, carry_out, overflow, sign, src1_value, src2_value, carry_in);
+		sign = sign ^ overflow;
+	}
 
 	// Check whether an auxiliary register is updated for 1st source operand
 	if(update_ar1)
@@ -354,6 +381,7 @@ ADDC3_indir_indir.execute = {
 			result,
 			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
 			M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
+			sign,
 			carry_out,
 			overflow
 		);
@@ -680,12 +708,17 @@ ADDI3_reg_reg.execute = {
 	uint32_t result;      // the 32-bit result
 	uint8_t carry_out;    // the carry out (0 or 1)
 	uint8_t overflow;     // the overflow (0 or 1)
+	uint8_t sign;         // the sign (0 or 1)
 
 	// Depending on overflow mode do signed saturation or not 
 	if(cpu.GetST_OVM())
-		SignedSatAdd32(result, carry_out, overflow, src1_value, src2_value, 0);
+	{
+		SignedSatAdd32(result, carry_out, overflow, sign, src1_value, src2_value, 0);
+	}
 	else
-		Add32(result, carry_out, overflow, src1_value, src2_value, 0);
+	{
+		Add32(result, carry_out, overflow, sign, src1_value, src2_value, 0);
+	}
 
 	// Write back result
 	cpu.SetReg(dst, result);
@@ -698,6 +731,7 @@ ADDI3_reg_reg.execute = {
 			result,
 			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
 			M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
+			sign,
 			carry_out,
 			overflow
 		);
@@ -731,12 +765,18 @@ ADDI3_indir_reg.execute = {
 	uint32_t result;      // the 32-bit result
 	uint8_t carry_out;    // the carry out (0 or 1)
 	uint8_t overflow;     // the overflow (0 or 1)
+	uint8_t sign;         // the sign (0 or 1)
 
 	// Depending on overflow mode do signed saturation or not 
 	if(cpu.GetST_OVM())
-		SignedSatAdd32(result, carry_out, overflow, src1_value, src2_value, 0);
+	{
+		SignedSatAdd32(result, carry_out, overflow, sign, src1_value, src2_value, 0);
+	}
 	else
-		Add32(result, carry_out, overflow, src1_value, src2_value, 0);
+	{
+		Add32(result, carry_out, overflow, sign, src1_value, src2_value, 0);
+		sign = sign ^ overflow;
+	}
 
 	// Check whether an auxiliary register is updated for 1st source operand
 	if(update_ar)
@@ -756,6 +796,7 @@ ADDI3_indir_reg.execute = {
 			result,
 			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
 			M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
+			sign,
 			carry_out,
 			overflow
 		);
@@ -789,12 +830,18 @@ ADDI3_reg_indir.execute = {
 	uint32_t result;      // the 32-bit result
 	uint8_t carry_out;    // the carry out (0 or 1)
 	uint8_t overflow;     // the overflow (0 or 1)
+	uint8_t sign;         // the sign (0 or 1)
 
 	// Depending on overflow mode do signed saturation or not 
 	if(cpu.GetST_OVM())
-		SignedSatAdd32(result, carry_out, overflow, src1_value, src2_value, 0);
+	{
+		SignedSatAdd32(result, carry_out, overflow, sign, src1_value, src2_value, 0);
+	}
 	else
-		Add32(result, carry_out, overflow, src1_value, src2_value, 0);
+	{
+		Add32(result, carry_out, overflow, sign, src1_value, src2_value, 0);
+		sign = sign ^ overflow;
+	}
 
 	// Check whether an auxiliary register is updated for 1st source operand
 	if(update_ar)
@@ -814,6 +861,7 @@ ADDI3_reg_indir.execute = {
 			result,
 			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
 			M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
+			sign,
 			carry_out,
 			overflow
 		);
@@ -857,12 +905,17 @@ ADDI3_indir_indir.execute = {
 	uint32_t result;      // the 32-bit result
 	uint8_t carry_out;    // the carry out (0 or 1)
 	uint8_t overflow;     // the overflow (0 or 1)
+	uint8_t sign;         // the sign (0 or 1)
 
 	// Depending on overflow mode do signed saturation or not 
 	if(cpu.GetST_OVM())
-		SignedSatAdd32(result, carry_out, overflow, src1_value, src2_value, 0);
+	{
+		SignedSatAdd32(result, carry_out, overflow, sign, src1_value, src2_value, 0);
+	}
 	else
-		Add32(result, carry_out, overflow, src1_value, src2_value, 0);
+	{
+		Add32(result, carry_out, overflow, sign, src1_value, src2_value, 0);
+	}
 
 	// Check whether an auxiliary register is updated for 1st source operand
 	if(update_ar1)
@@ -894,6 +947,7 @@ ADDI3_indir_indir.execute = {
 			result,
 			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
 			M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
+			sign,
 			carry_out,
 			overflow
 		);
@@ -977,6 +1031,7 @@ AND3_reg_reg.execute = {
 
 	// Compute the result
 	uint32_t result = src1_value & src2_value;
+	uint8_t sign = (int32_t) result < 0;
 
 	// Write back result
 	cpu.SetReg(dst, result);
@@ -988,7 +1043,8 @@ AND3_reg_reg.execute = {
 		cpu.GenFlags(
 			result,
 			M_ST_UF | M_ST_V,  // reset mask
-			M_ST_N | M_ST_Z    // or mask
+			M_ST_N | M_ST_Z,    // or mask
+			sign
 		);
 	}
 }
@@ -1019,6 +1075,7 @@ AND3_indir_reg.execute = {
 
 	// Compute the result
 	uint32_t result = src1_value & src2_value;
+	uint8_t sign = (int32_t) result < 0;
 
 	// Check whether an auxiliary register is updated for 1st source operand
 	if(update_ar)
@@ -1037,7 +1094,8 @@ AND3_indir_reg.execute = {
 		cpu.GenFlags(
 			result,
 			M_ST_UF | M_ST_V,  // reset mask
-			M_ST_N | M_ST_Z    // or mask
+			M_ST_N | M_ST_Z,    // or mask
+			sign
 		);
 	}
 }
@@ -1067,6 +1125,7 @@ AND3_reg_indir.execute = {
 
 	// Compute the result
 	uint32_t result = src1_value & src2_value;
+	uint8_t sign = (int32_t) result < 0;
 
 	// Check whether an auxiliary register is updated for 1st source operand
 	if(update_ar)
@@ -1085,7 +1144,8 @@ AND3_reg_indir.execute = {
 		cpu.GenFlags(
 			result,
 			M_ST_UF | M_ST_V,  // reset mask
-			M_ST_N | M_ST_Z    // or mask
+			M_ST_N | M_ST_Z,    // or mask
+			sign
 		);
 	}
 }
@@ -1125,6 +1185,7 @@ AND3_indir_indir.execute = {
 
 	// Compute the result
 	uint32_t result = src1_value & src2_value;
+	uint8_t sign = (int32_t) result < 0;
 
 	// Check whether an auxiliary register is updated for 1st source operand
 	if(update_ar1)
@@ -1155,7 +1216,8 @@ AND3_indir_indir.execute = {
 		cpu.GenFlags(
 			result,
 			M_ST_UF | M_ST_V,  // reset mask
-			M_ST_N | M_ST_Z    // or mask
+			M_ST_N | M_ST_Z,    // or mask
+			sign
 		);
 	}
 }
@@ -1233,6 +1295,7 @@ ANDN3_reg_reg.execute = {
 
 	// Compute the result
 	uint32_t result = src1_value & ~src2_value;
+	uint8_t sign = (int32_t) result < 0;
 
 	// Write back result
 	cpu.SetReg(dst, result);
@@ -1244,7 +1307,8 @@ ANDN3_reg_reg.execute = {
 		cpu.GenFlags(
 			result,
 			M_ST_UF | M_ST_V,  // reset mask
-			M_ST_N | M_ST_Z    // or mask
+			M_ST_N | M_ST_Z,    // or mask
+			sign
 		);
 	}
 }
@@ -1275,6 +1339,7 @@ ANDN3_indir_reg.execute = {
 
 	// Compute the result
 	uint32_t result = src1_value & ~src2_value;
+	uint8_t sign = (int32_t) result < 0;
 
 	// Check whether an auxiliary register is updated for 1st source operand
 	if(update_ar)
@@ -1293,7 +1358,8 @@ ANDN3_indir_reg.execute = {
 		cpu.GenFlags(
 			result,
 			M_ST_UF | M_ST_V,  // reset mask
-			M_ST_N | M_ST_Z    // or mask
+			M_ST_N | M_ST_Z,    // or mask
+			sign
 		);
 	}
 }
@@ -1323,6 +1389,7 @@ ANDN3_reg_indir.execute = {
 
 	// Compute the result
 	uint32_t result = src1_value & ~src2_value;
+	uint8_t sign = (int32_t) result < 0;
 
 	// Check whether an auxiliary register is updated for 1st source operand
 	if(update_ar)
@@ -1341,7 +1408,8 @@ ANDN3_reg_indir.execute = {
 		cpu.GenFlags(
 			result,
 			M_ST_UF | M_ST_V,  // reset mask
-			M_ST_N | M_ST_Z    // or mask
+			M_ST_N | M_ST_Z,    // or mask
+			sign
 		);
 	}
 }
@@ -1381,6 +1449,7 @@ ANDN3_indir_indir.execute = {
 
 	// Compute the result
 	uint32_t result = src1_value & ~src2_value;
+	uint8_t sign = (int32_t) result < 0;
 
 	// Check whether an auxiliary register is updated for 1st source operand
 	if(update_ar1)
@@ -1411,7 +1480,8 @@ ANDN3_indir_indir.execute = {
 		cpu.GenFlags(
 			result,
 			M_ST_UF | M_ST_V,  // reset mask
-			M_ST_N | M_ST_Z    // or mask
+			M_ST_N | M_ST_Z,    // or mask
+			sign
 		);
 	}
 }
@@ -1496,22 +1566,28 @@ ASH3_reg_reg.execute = {
 	// Compute the result
 	uint8_t carry_out;
 	uint32_t result;
+	uint8_t sign;
+	uint8_t overflow;
 
 	if(count == 0)
 	{
 		result = src1_value;
 		carry_out = 0;
+		overflow = 0;
 	}
 	else if(count >= 0)
 	{
 		if(count >= 32)
 		{
 			result = 0;
-			carry_out = 0;
+			carry_out = (src1_value & 1); // last shifted out bit
+			overflow = src1_value != 0;   // any lost "one" is an overflow
 		}
 		else
 		{
 			result = ShiftLeft(src1_value, count, carry_out);
+			uint32_t shifted_out_mask = ((int32_t) 0x80000000UL >> count);  // mask lost bits
+			overflow = ((src1_value & shifted_out_mask) ? (src1_value & shifted_out_mask) != shifted_out_mask : (src1_value & shifted_out_mask) != 0);   // overflow = whether lost bits are significative or not
 		}
 	}
 	else
@@ -1519,14 +1595,18 @@ ASH3_reg_reg.execute = {
 		count = -count;
 		if(count >= 32)
 		{
-			result = 0;
-			carry_out = 0;
+			result = (src1_value & 0x80000000UL) ? 0xffffffffUL : 0;
+			carry_out = src1_value >> 31; // last shifted out bit
+			overflow = 0; // no overflow
 		}
 		else
 		{
 			result = ShiftArithmeticRight(src1_value, count, carry_out);
+			overflow = 0; // no overflow
 		}
 	}
+
+	sign = (int32_t) result < 0;
 
 	// Write back result
 	cpu.SetReg(dst, result);
@@ -1538,8 +1618,10 @@ ASH3_reg_reg.execute = {
 		cpu.GenFlags(
 			result,
 			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
-			M_ST_N | M_ST_Z | M_ST_C,  // or mask
-			carry_out
+			M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
+			sign,
+			carry_out,
+			overflow
 		);
 	}
 }
@@ -1573,22 +1655,28 @@ ASH3_indir_reg.execute = {
 	// Compute the result
 	uint8_t carry_out;
 	uint32_t result;
+	uint8_t sign;
+	uint8_t overflow;
 
 	if(count == 0)
 	{
 		result = src1_value;
 		carry_out = 0;
+		overflow = 0;
 	}
 	else if(count >= 0)
 	{
 		if(count >= 32)
 		{
 			result = 0;
-			carry_out = 0;
+			carry_out = (src1_value & 1); // last shifted out bit
+			overflow = src1_value != 0;   // any lost "one" is an overflow
 		}
 		else
 		{
 			result = ShiftLeft(src1_value, count, carry_out);
+			uint32_t shifted_out_mask = ((int32_t) 0x80000000UL >> count);  // mask lost bits
+			overflow = ((src1_value & shifted_out_mask) ? (src1_value & shifted_out_mask) != shifted_out_mask : (src1_value & shifted_out_mask) != 0);   // overflow = whether lost bits are significative or not
 		}
 	}
 	else
@@ -1596,14 +1684,18 @@ ASH3_indir_reg.execute = {
 		count = -count;
 		if(count >= 32)
 		{
-			result = 0;
-			carry_out = 0;
+			result = (src1_value & 0x80000000UL) ? 0xffffffffUL : 0;
+			carry_out = src1_value >> 31; // last shifted out bit
+			overflow = 0; // no overflow
 		}
 		else
 		{
 			result = ShiftArithmeticRight(src1_value, count, carry_out);
+			overflow = 0; // no overflow
 		}
 	}
+
+	sign = (int32_t) result < 0;
 
 	// Check whether an auxiliary register is updated for 1st source operand
 	if(update_ar)
@@ -1622,8 +1714,10 @@ ASH3_indir_reg.execute = {
 		cpu.GenFlags(
 			result,
 			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
-			M_ST_N | M_ST_Z | M_ST_C,  // or mask
-			carry_out
+			M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
+			sign,
+			carry_out,
+			overflow
 		);
 	}
 }
@@ -1657,22 +1751,28 @@ ASH3_reg_indir.execute = {
 	// Compute the result
 	uint8_t carry_out;
 	uint32_t result;
+	uint8_t sign;
+	uint8_t overflow;
 
 	if(count == 0)
 	{
 		result = src1_value;
 		carry_out = 0;
+		overflow = 0;
 	}
 	else if(count >= 0)
 	{
 		if(count >= 32)
 		{
 			result = 0;
-			carry_out = 0;
+			carry_out = (src1_value & 1); // last shifted out bit
+			overflow = src1_value != 0;   // any lost "one" is an overflow
 		}
 		else
 		{
 			result = ShiftLeft(src1_value, count, carry_out);
+			uint32_t shifted_out_mask = ((int32_t) 0x80000000UL >> count);  // mask lost bits
+			overflow = ((src1_value & shifted_out_mask) ? (src1_value & shifted_out_mask) != shifted_out_mask : (src1_value & shifted_out_mask) != 0);   // overflow = whether lost bits are significative or not
 		}
 	}
 	else
@@ -1680,14 +1780,18 @@ ASH3_reg_indir.execute = {
 		count = -count;
 		if(count >= 32)
 		{
-			result = 0;
-			carry_out = 0;
+			result = (src1_value & 0x80000000UL) ? 0xffffffffUL : 0;
+			carry_out = src1_value >> 31; // last shifted out bit
+			overflow = 0; // no overflow
 		}
 		else
 		{
 			result = ShiftArithmeticRight(src1_value, count, carry_out);
+			overflow = 0; // no overflow
 		}
 	}
+
+	sign = (int32_t) result < 0;
 
 	// Check whether an auxiliary register is updated for 1st source operand
 	if(update_ar)
@@ -1706,7 +1810,8 @@ ASH3_reg_indir.execute = {
 		cpu.GenFlags(
 			result,
 			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
-			M_ST_N | M_ST_Z | M_ST_C,  // or mask
+			M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
+			sign,
 			carry_out
 		);
 	}
@@ -1751,22 +1856,28 @@ ASH3_indir_indir.execute = {
 	// Compute the result
 	uint8_t carry_out;
 	uint32_t result;
+	uint8_t sign;
+	uint8_t overflow;
 
 	if(count == 0)
 	{
 		result = src1_value;
 		carry_out = 0;
+		overflow = 0;
 	}
 	else if(count >= 0)
 	{
 		if(count >= 32)
 		{
 			result = 0;
-			carry_out = 0;
+			carry_out = (src1_value & 1); // last shifted out bit
+			overflow = src1_value != 0;   // any lost "one" is an overflow
 		}
 		else
 		{
 			result = ShiftLeft(src1_value, count, carry_out);
+			uint32_t shifted_out_mask = ((int32_t) 0x80000000UL >> count);  // mask lost bits
+			overflow = ((src1_value & shifted_out_mask) ? (src1_value & shifted_out_mask) != shifted_out_mask : (src1_value & shifted_out_mask) != 0);   // overflow = whether lost bits are significative or not
 		}
 	}
 	else
@@ -1774,14 +1885,18 @@ ASH3_indir_indir.execute = {
 		count = -count;
 		if(count >= 32)
 		{
-			result = 0;
-			carry_out = 0;
+			result = (src1_value & 0x80000000UL) ? 0xffffffffUL : 0;
+			carry_out = src1_value >> 31; // last shifted out bit
+			overflow = 0; // no overflow
 		}
 		else
 		{
 			result = ShiftArithmeticRight(src1_value, count, carry_out);
+			overflow = 0; // no overflow
 		}
 	}
+
+	sign = (int32_t) result < 0;
 
 	// Check whether an auxiliary register is updated for 1st source operand
 	if(update_ar1)
@@ -1812,8 +1927,10 @@ ASH3_indir_indir.execute = {
 		cpu.GenFlags(
 			result,
 			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
-			M_ST_N | M_ST_Z | M_ST_C,  // or mask
-			carry_out
+			M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
+			sign,
+			carry_out,
+			overflow
 		);
 	}
 }
@@ -2130,14 +2247,17 @@ CMPI3_reg_reg.execute = {
 	uint32_t result;      // the 32-bit result
 	uint8_t borrow_out;   // the borrow out (0 or 1)
 	uint8_t overflow;     // the overflow (0 or 1)
+	uint8_t sign;         // the sign (0 or 1)
 
-	Sub32(result, borrow_out, overflow, src1_value, src2_value, 0);
+	Sub32(result, borrow_out, overflow, sign, src1_value, src2_value, 0);
+	sign = sign ^ overflow;
 
 	// Generate flags (into ST)
 	cpu.GenFlags(
 		result,
 		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
 		M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
+		sign,
 		borrow_out,
 		overflow
 	);
@@ -2170,8 +2290,10 @@ CMPI3_indir_reg.execute = {
 	uint32_t result;      // the 32-bit result
 	uint8_t borrow_out;   // the borrow out (0 or 1)
 	uint8_t overflow;     // the overflow (0 or 1)
+	uint8_t sign;         // the sign (0 or 1)
 
-	Sub32(result, borrow_out, overflow, src1_value, src2_value, 0);
+	Sub32(result, borrow_out, overflow, sign, src1_value, src2_value, 0);
+	sign = sign ^ overflow;
 
 	// Check whether an auxiliary register is updated for 1st source operand
 	if(update_ar)
@@ -2185,6 +2307,7 @@ CMPI3_indir_reg.execute = {
 		result,
 		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
 		M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
+		sign,
 		borrow_out,
 		overflow
 	);
@@ -2217,8 +2340,10 @@ CMPI3_reg_indir.execute = {
 	uint32_t result;      // the 32-bit result
 	uint8_t borrow_out;   // the borrow out (0 or 1)
 	uint8_t overflow;     // the overflow (0 or 1)
+	uint8_t sign;         // the sign (0 or 1)
 
-	Sub32(result, borrow_out, overflow, src1_value, src2_value, 0);
+	Sub32(result, borrow_out, overflow, sign, src1_value, src2_value, 0);
+	sign = sign ^ overflow;
 
 	// Check whether an auxiliary register is updated for 1st source operand
 	if(update_ar)
@@ -2232,6 +2357,7 @@ CMPI3_reg_indir.execute = {
 		result,
 		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
 		M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
+		sign,
 		borrow_out,
 		overflow
 	);
@@ -2268,8 +2394,10 @@ CMPI3_indir_indir.execute = {
 	uint32_t result;      // the 32-bit result
 	uint8_t borrow_out;   // the borrow out (0 or 1)
 	uint8_t overflow;     // the overflow (0 or 1)
+	uint8_t sign;         // the sign (0 or 1)
 
-	Sub32(result, borrow_out, overflow, src1_value, src2_value, 0);
+	Sub32(result, borrow_out, overflow, sign, src1_value, src2_value, 0);
+	sign = sign ^ overflow;
 
 	// Check whether an auxiliary register is updated for 1st source operand
 	if(update_ar1)
@@ -2295,6 +2423,7 @@ CMPI3_indir_indir.execute = {
 		result,
 		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
 		M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
+		sign,
 		borrow_out,
 		overflow
 	);
@@ -2378,24 +2507,25 @@ LSH3_reg_reg.execute = {
 	int32_t count = SignExtend(src2_value, 7);
 
 	// Compute the result
-	uint8_t carry_out;
+	uint8_t bit_out;
 	uint32_t result;
+	uint8_t sign;
 
 	if(count == 0)
 	{
 		result = src1_value;
-		carry_out = 0;
+		bit_out = 0;
 	}
 	else if(count >= 0)
 	{
 		if(count >= 32)
 		{
 			result = 0;
-			carry_out = 0;
+			bit_out = (src1_value & 1); // last shifted out bit
 		}
 		else
 		{
-			result = ShiftLeft(src1_value, count, carry_out);
+			result = ShiftLeft(src1_value, count, bit_out);
 		}
 	}
 	else
@@ -2404,13 +2534,15 @@ LSH3_reg_reg.execute = {
 		if(count >= 32)
 		{
 			result = 0;
-			carry_out = 0;
+			bit_out = (count == 32) ? (src1_value >> 31) : 0; // last shifted out bit
 		}
 		else
 		{
-			result = ShiftRight(src1_value, count, carry_out);
+			result = ShiftRight(src1_value, count, bit_out);
 		}
 	}
+
+	sign = (int32_t) result < 0;
 
 	// Write back result
 	cpu.SetReg(dst, result);
@@ -2423,7 +2555,8 @@ LSH3_reg_reg.execute = {
 			result,
 			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
 			M_ST_N | M_ST_Z | M_ST_C,  // or mask
-			carry_out
+			sign,
+			bit_out
 		);
 	}
 }
@@ -2455,24 +2588,25 @@ LSH3_indir_reg.execute = {
 	int32_t count = SignExtend(src2_value, 7);
 
 	// Compute the result
-	uint8_t carry_out;
+	uint8_t bit_out;
 	uint32_t result;
+	uint8_t sign;
 
 	if(count == 0)
 	{
 		result = src1_value;
-		carry_out = 0;
+		bit_out = 0;
 	}
 	else if(count >= 0)
 	{
 		if(count >= 32)
 		{
 			result = 0;
-			carry_out = 0;
+			bit_out = (src1_value & 1); // last shifted out bit
 		}
 		else
 		{
-			result = ShiftLeft(src1_value, count, carry_out);
+			result = ShiftLeft(src1_value, count, bit_out);
 		}
 	}
 	else
@@ -2481,13 +2615,15 @@ LSH3_indir_reg.execute = {
 		if(count >= 32)
 		{
 			result = 0;
-			carry_out = 0;
+			bit_out = (count == 32) ? (src1_value >> 31) : 0; // last shifted out bit
 		}
 		else
 		{
-			result = ShiftRight(src1_value, count, carry_out);
+			result = ShiftRight(src1_value, count, bit_out);
 		}
 	}
+
+	sign = (int32_t) result < 0;
 
 	// Check whether an auxiliary register is updated for 1st source operand
 	if(update_ar)
@@ -2507,7 +2643,8 @@ LSH3_indir_reg.execute = {
 			result,
 			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
 			M_ST_N | M_ST_Z | M_ST_C,  // or mask
-			carry_out
+			sign,
+			bit_out
 		);
 	}
 }
@@ -2539,24 +2676,25 @@ LSH3_reg_indir.execute = {
 	int32_t count = SignExtend(src2_value, 7);
 
 	// Compute the result
-	uint8_t carry_out;
+	uint8_t bit_out;
 	uint32_t result;
+	uint8_t sign;
 
 	if(count == 0)
 	{
 		result = src1_value;
-		carry_out = 0;
+		bit_out = 0;
 	}
 	else if(count >= 0)
 	{
 		if(count >= 32)
 		{
 			result = 0;
-			carry_out = 0;
+			bit_out = (src1_value & 1); // last shifted out bit
 		}
 		else
 		{
-			result = ShiftLeft(src1_value, count, carry_out);
+			result = ShiftLeft(src1_value, count, bit_out);
 		}
 	}
 	else
@@ -2565,13 +2703,15 @@ LSH3_reg_indir.execute = {
 		if(count >= 32)
 		{
 			result = 0;
-			carry_out = 0;
+			bit_out = (count == 32) ? (src1_value >> 31) : 0; // last shifted out bit
 		}
 		else
 		{
-			result = ShiftRight(src1_value, count, carry_out);
+			result = ShiftRight(src1_value, count, bit_out);
 		}
 	}
+
+	sign = (int32_t) result < 0;
 
 	// Check whether an auxiliary register is updated for 1st source operand
 	if(update_ar)
@@ -2591,7 +2731,8 @@ LSH3_reg_indir.execute = {
 			result,
 			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
 			M_ST_N | M_ST_Z | M_ST_C,  // or mask
-			carry_out
+			sign,
+			bit_out
 		);
 	}
 }
@@ -2633,24 +2774,25 @@ LSH3_indir_indir.execute = {
 	int32_t count = SignExtend(src2_value, 7);
 
 	// Compute the result
-	uint8_t carry_out;
+	uint8_t bit_out;
 	uint32_t result;
+	uint8_t sign;
 
 	if(count == 0)
 	{
 		result = src1_value;
-		carry_out = 0;
+		bit_out = 0;
 	}
 	else if(count >= 0)
 	{
 		if(count >= 32)
 		{
 			result = 0;
-			carry_out = 0;
+			bit_out = (src1_value & 1); // last shifted out bit
 		}
 		else
 		{
-			result = ShiftLeft(src1_value, count, carry_out);
+			result = ShiftLeft(src1_value, count, bit_out);
 		}
 	}
 	else
@@ -2659,13 +2801,15 @@ LSH3_indir_indir.execute = {
 		if(count >= 32)
 		{
 			result = 0;
-			carry_out = 0;
+			bit_out = (count == 32) ? (src1_value >> 31) : 0; // last shifted out bit
 		}
 		else
 		{
-			result = ShiftRight(src1_value, count, carry_out);
+			result = ShiftRight(src1_value, count, bit_out);
 		}
 	}
+
+	sign = (int32_t) result < 0;
 
 	// Check whether an auxiliary register is updated for 1st source operand
 	if(update_ar1)
@@ -2697,7 +2841,8 @@ LSH3_indir_indir.execute = {
 			result,
 			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
 			M_ST_N | M_ST_Z | M_ST_C,  // or mask
-			carry_out
+			sign,
+			bit_out
 		);
 	}
 }
@@ -3026,7 +3171,8 @@ MPYI3_reg_reg.execute = {
 	// An arithmetic shift of 31 bits is used to duplicate 32 times the MSB of lo32
 	uint8_t overflow = ((lo32 >> 31) != hi32);
 	uint32_t result;
-	
+	uint8_t sign = result64 < 0;
+
 	if(cpu.GetST_OVM() && overflow)
 		result = (result64 < 0) ? 0x80000000 : 0x7fffffff; // Saturate the result
 	else
@@ -3043,6 +3189,7 @@ MPYI3_reg_reg.execute = {
 			result,
 			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
 			M_ST_LV | M_ST_N | M_ST_Z | M_ST_V,  // or mask
+			sign,
 			0,
 			overflow
 		);
@@ -3080,6 +3227,7 @@ MPYI3_indir_reg.execute = {
 	// An arithmetic shift of 31 bits is used to duplicate 32 times the MSB of lo32
 	uint8_t overflow = ((lo32 >> 31) != hi32);
 	uint32_t result;
+	uint8_t sign = result64 < 0;
 	
 	if(cpu.GetST_OVM() && overflow)
 		result = (result64 < 0) ? 0x80000000 : 0x7fffffff; // Saturate the result
@@ -3104,6 +3252,7 @@ MPYI3_indir_reg.execute = {
 			result,
 			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
 			M_ST_LV | M_ST_N | M_ST_Z | M_ST_V,  // or mask
+			sign,
 			0,
 			overflow
 		);
@@ -3141,6 +3290,7 @@ MPYI3_reg_indir.execute = {
 	// An arithmetic shift of 31 bits is used to duplicate 32 times the MSB of lo32
 	uint8_t overflow = ((lo32 >> 31) != hi32);
 	uint32_t result;
+	uint8_t sign = result64 < 0;
 	
 	if(cpu.GetST_OVM() && overflow)
 		result = (result64 < 0) ? 0x80000000 : 0x7fffffff; // Saturate the result
@@ -3165,6 +3315,7 @@ MPYI3_reg_indir.execute = {
 			result,
 			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
 			M_ST_LV | M_ST_N | M_ST_Z | M_ST_V,  // or mask
+			sign,
 			0,
 			overflow
 		);
@@ -3212,6 +3363,7 @@ MPYI3_indir_indir.execute = {
 	// An arithmetic shift of 31 bits is used to duplicate 32 times the MSB of lo32
 	uint8_t overflow = ((lo32 >> 31) != hi32);
 	uint32_t result;
+	uint8_t sign = result64 < 0;
 	
 	if(cpu.GetST_OVM() && overflow)
 		result = (result64 < 0) ? 0x80000000 : 0x7fffffff; // Saturate the result
@@ -3248,6 +3400,7 @@ MPYI3_indir_indir.execute = {
 			result,
 			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
 			M_ST_LV | M_ST_N | M_ST_Z | M_ST_V,  // or mask
+			sign,
 			0,
 			overflow
 		);
@@ -3330,6 +3483,7 @@ OR3_reg_reg.execute = {
 
 	// Compute the result
 	uint32_t result = src1_value | src2_value;
+	uint8_t sign = (int32_t) result < 0;
 
 	// Write back result
 	cpu.SetReg(dst, result);
@@ -3341,7 +3495,8 @@ OR3_reg_reg.execute = {
 		cpu.GenFlags(
 			result,
 			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-			M_ST_N | M_ST_Z    // or mask
+			M_ST_N | M_ST_Z,    // or mask
+			sign
 		);
 	}
 }
@@ -3372,6 +3527,7 @@ OR3_indir_reg.execute = {
 
 	// Compute the result
 	uint32_t result = src1_value | src2_value;
+	uint8_t sign = (int32_t) result < 0;
 
 	// Check whether an auxiliary register is updated for 1st source operand
 	if(update_ar)
@@ -3390,7 +3546,8 @@ OR3_indir_reg.execute = {
 		cpu.GenFlags(
 			result,
 			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-			M_ST_N | M_ST_Z    // or mask
+			M_ST_N | M_ST_Z,    // or mask
+			sign
 		);
 	}
 }
@@ -3420,6 +3577,7 @@ OR3_reg_indir.execute = {
 
 	// Compute the result
 	uint32_t result = src1_value | src2_value;
+	uint8_t sign = (int32_t) result < 0;
 
 	// Check whether an auxiliary register is updated for 1st source operand
 	if(update_ar)
@@ -3438,7 +3596,8 @@ OR3_reg_indir.execute = {
 		cpu.GenFlags(
 			result,
 			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-			M_ST_N | M_ST_Z    // or mask
+			M_ST_N | M_ST_Z,    // or mask
+			sign
 		);
 	}
 }
@@ -3478,6 +3637,7 @@ OR3_indir_indir.execute = {
 
 	// Compute the result
 	uint32_t result = src1_value | src2_value;
+	uint8_t sign = (int32_t) result < 0;
 
 	// Check whether an auxiliary register is updated for 1st source operand
 	if(update_ar1)
@@ -3508,7 +3668,8 @@ OR3_indir_indir.execute = {
 		cpu.GenFlags(
 			result,
 			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-			M_ST_N | M_ST_Z    // or mask
+			M_ST_N | M_ST_Z,    // or mask
+			sign
 		);
 	}
 }
@@ -3594,12 +3755,18 @@ SUBB3_reg_reg.execute = {
 	uint32_t result;      // the 32-bit result
 	uint8_t borrow_out;   // the borrow out (0 or 1)
 	uint8_t overflow;     // the overflow (0 or 1)
+	uint8_t sign;         // the sign (0 or 1)
 
 	// Depending on overflow mode do signed saturation or not 
 	if(cpu.GetST_OVM())
-		SignedSatSub32(result, borrow_out, overflow, src1_value, src2_value, borrow_in);
+	{
+		SignedSatSub32(result, borrow_out, overflow, sign, src1_value, src2_value, borrow_in);
+	}
 	else
-		Sub32(result, borrow_out, overflow, src1_value, src2_value, borrow_in);
+	{
+		Sub32(result, borrow_out, overflow, sign, src1_value, src2_value, borrow_in);
+		sign = sign ^ overflow;
+	}
 
 	// Write back result
 	cpu.SetReg(dst, result);
@@ -3612,6 +3779,7 @@ SUBB3_reg_reg.execute = {
 			result,
 			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
 			M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
+			sign,
 			borrow_out,
 			overflow
 		);
@@ -3648,12 +3816,18 @@ SUBB3_indir_reg.execute = {
 	uint32_t result;      // the 32-bit result
 	uint8_t borrow_out;   // the borrow out (0 or 1)
 	uint8_t overflow;     // the overflow (0 or 1)
+	uint8_t sign;         // the sign (0 or 1)
 
 	// Depending on overflow mode do signed saturation or not 
 	if(cpu.GetST_OVM())
-		SignedSatSub32(result, borrow_out, overflow, src1_value, src2_value, borrow_in);
+	{
+		SignedSatSub32(result, borrow_out, overflow, sign, src1_value, src2_value, borrow_in);
+	}
 	else
-		Sub32(result, borrow_out, overflow, src1_value, src2_value, borrow_in);
+	{
+		Sub32(result, borrow_out, overflow, sign, src1_value, src2_value, borrow_in);
+		sign = sign ^ overflow;
+	}
 
 	// Check whether an auxiliary register is updated for 1st source operand
 	if(update_ar)
@@ -3673,6 +3847,7 @@ SUBB3_indir_reg.execute = {
 			result,
 			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
 			M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
+			sign,
 			borrow_out,
 			overflow
 		);
@@ -3709,12 +3884,18 @@ SUBB3_reg_indir.execute = {
 	uint32_t result;      // the 32-bit result
 	uint8_t borrow_out;   // the borrow out (0 or 1)
 	uint8_t overflow;     // the overflow (0 or 1)
+	uint8_t sign;         // the sign (0 or 1)
 
 	// Depending on overflow mode do signed saturation or not 
 	if(cpu.GetST_OVM())
-		SignedSatSub32(result, borrow_out, overflow, src1_value, src2_value, borrow_in);
+	{
+		SignedSatSub32(result, borrow_out, overflow, sign, src1_value, src2_value, borrow_in);
+	}
 	else
-		Sub32(result, borrow_out, overflow, src1_value, src2_value, borrow_in);
+	{
+		Sub32(result, borrow_out, overflow, sign, src1_value, src2_value, borrow_in);
+		sign = sign ^ overflow;
+	}
 
 	// Check whether an auxiliary register is updated for 1st source operand
 	if(update_ar)
@@ -3734,6 +3915,7 @@ SUBB3_reg_indir.execute = {
 			result,
 			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
 			M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
+			sign,
 			borrow_out,
 			overflow
 		);
@@ -3780,12 +3962,18 @@ SUBB3_indir_indir.execute = {
 	uint32_t result;      // the 32-bit result
 	uint8_t borrow_out;   // the borrow out (0 or 1)
 	uint8_t overflow;     // the overflow (0 or 1)
+	uint8_t sign;         // the sign (0 or 1)
 
 	// Depending on overflow mode do signed saturation or not 
 	if(cpu.GetST_OVM())
-		SignedSatSub32(result, borrow_out, overflow, src1_value, src2_value, borrow_in);
+	{
+		SignedSatSub32(result, borrow_out, overflow, sign, src1_value, src2_value, borrow_in);
+	}
 	else
-		Sub32(result, borrow_out, overflow, src1_value, src2_value, borrow_in);
+	{
+		Sub32(result, borrow_out, overflow, sign, src1_value, src2_value, borrow_in);
+		sign = sign ^ overflow;
+	}
 
 	// Check whether an auxiliary register is updated for 1st source operand
 	if(update_ar1)
@@ -3817,6 +4005,7 @@ SUBB3_indir_indir.execute = {
 			result,
 			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
 			M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
+			sign,
 			borrow_out,
 			overflow
 		);
@@ -4143,12 +4332,18 @@ SUBI3_reg_reg.execute = {
 	uint32_t result;      // the 32-bit result
 	uint8_t borrow_out;   // the borrow out (0 or 1)
 	uint8_t overflow;     // the overflow (0 or 1)
+	uint8_t sign;         // the sign (0 or 1)
 
 	// Depending on overflow mode do signed saturation or not 
 	if(cpu.GetST_OVM())
-		SignedSatSub32(result, borrow_out, overflow, src1_value, src2_value, 0);
+	{
+		SignedSatSub32(result, borrow_out, overflow, sign, src1_value, src2_value, 0);
+	}
 	else
-		Sub32(result, borrow_out, overflow, src1_value, src2_value, 0);
+	{
+		Sub32(result, borrow_out, overflow, sign, src1_value, src2_value, 0);
+		sign = sign ^ overflow;
+	}
 
 	// Write back result
 	cpu.SetReg(dst, result);
@@ -4161,6 +4356,7 @@ SUBI3_reg_reg.execute = {
 			result,
 			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
 			M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
+			sign,
 			borrow_out,
 			overflow
 		);
@@ -4194,12 +4390,18 @@ SUBI3_indir_reg.execute = {
 	uint32_t result;      // the 32-bit result
 	uint8_t borrow_out;   // the borrow out (0 or 1)
 	uint8_t overflow;     // the overflow (0 or 1)
+	uint8_t sign;         // the sign (0 or 1)
 
 	// Depending on overflow mode do signed saturation or not 
 	if(cpu.GetST_OVM())
-		SignedSatSub32(result, borrow_out, overflow, src1_value, src2_value, 0);
+	{
+		SignedSatSub32(result, borrow_out, overflow, sign, src1_value, src2_value, 0);
+	}
 	else
-		Sub32(result, borrow_out, overflow, src1_value, src2_value, 0);
+	{
+		Sub32(result, borrow_out, overflow, sign, src1_value, src2_value, 0);
+		sign = sign ^ overflow;
+	}
 
 	// Check whether an auxiliary register is updated for 1st source operand
 	if(update_ar)
@@ -4219,6 +4421,7 @@ SUBI3_indir_reg.execute = {
 			result,
 			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
 			M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
+			sign,
 			borrow_out,
 			overflow
 		);
@@ -4252,12 +4455,18 @@ SUBI3_reg_indir.execute = {
 	uint32_t result;      // the 32-bit result
 	uint8_t borrow_out;   // the borrow out (0 or 1)
 	uint8_t overflow;     // the overflow (0 or 1)
+	uint8_t sign;         // the sign (0 or 1)
 
 	// Depending on overflow mode do signed saturation or not 
 	if(cpu.GetST_OVM())
-		SignedSatSub32(result, borrow_out, overflow, src1_value, src2_value, 0);
+	{
+		SignedSatSub32(result, borrow_out, overflow, sign, src1_value, src2_value, 0);
+	}
 	else
-		Sub32(result, borrow_out, overflow, src1_value, src2_value, 0);
+	{
+		Sub32(result, borrow_out, overflow, sign, src1_value, src2_value, 0);
+		sign = sign ^ overflow;
+	}
 
 	// Check whether an auxiliary register is updated for 1st source operand
 	if(update_ar)
@@ -4277,6 +4486,7 @@ SUBI3_reg_indir.execute = {
 			result,
 			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
 			M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
+			sign,
 			borrow_out,
 			overflow
 		);
@@ -4320,12 +4530,18 @@ SUBI3_indir_indir.execute = {
 	uint32_t result;      // the 32-bit result
 	uint8_t borrow_out;   // the borrow out (0 or 1)
 	uint8_t overflow;     // the overflow (0 or 1)
+	uint8_t sign;         // the sign (0 or 1)
 
 	// Depending on overflow mode do signed saturation or not 
 	if(cpu.GetST_OVM())
-		SignedSatSub32(result, borrow_out, overflow, src1_value, src2_value, 0);
+	{
+		SignedSatSub32(result, borrow_out, overflow, sign, src1_value, src2_value, 0);
+	}
 	else
-		Sub32(result, borrow_out, overflow, src1_value, src2_value, 0);
+	{
+		Sub32(result, borrow_out, overflow, sign, src1_value, src2_value, 0);
+		sign = sign ^ overflow;
+	}
 
 	// Check whether an auxiliary register is updated for 1st source operand
 	if(update_ar1)
@@ -4357,6 +4573,7 @@ SUBI3_indir_indir.execute = {
 			result,
 			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
 			M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
+			sign,
 			borrow_out,
 			overflow
 		);
@@ -4435,12 +4652,14 @@ TSTB3_reg_reg.execute = {
 
 	// Compute the result
 	uint32_t result = src1_value & src2_value;
+	uint8_t sign = (int32_t) result < 0;
 
 	// Generate flags (into ST)
 	cpu.GenFlags(
 		result,
 		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-		M_ST_N | M_ST_Z    // or mask
+		M_ST_N | M_ST_Z,    // or mask
+		sign
 	);
 }
 
@@ -4470,6 +4689,7 @@ TSTB3_indir_reg.execute = {
 
 	// Compute the result
 	uint32_t result = src1_value & src2_value;
+	uint8_t sign = (int32_t) result < 0;
 
 	// Check whether an auxiliary register is updated for 1st source operand
 	if(update_ar)
@@ -4482,7 +4702,8 @@ TSTB3_indir_reg.execute = {
 	cpu.GenFlags(
 		result,
 		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-		M_ST_N | M_ST_Z    // or mask
+		M_ST_N | M_ST_Z,    // or mask
+		sign
 	);
 }
 
@@ -4518,12 +4739,14 @@ TSTB3_reg_indir.execute = {
 
 	// Compute the result
 	uint32_t result = src1_value & src2_value;
+	uint8_t sign = (int32_t) result < 0;
 
 	// Generate flags (into ST)
 	cpu.GenFlags(
 		result,
 		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-		M_ST_N | M_ST_Z    // or mask
+		M_ST_N | M_ST_Z,    // or mask
+		sign
 	);
 }
 
@@ -4556,6 +4779,7 @@ TSTB3_indir_indir.execute = {
 
 	// Compute the result
 	uint32_t result = src1_value & src2_value;
+	uint8_t sign = (int32_t) result < 0;
 
 	// Check whether an auxiliary register is updated for 1st source operand
 	if(update_ar1)
@@ -4580,7 +4804,8 @@ TSTB3_indir_indir.execute = {
 	cpu.GenFlags(
 		result,
 		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-		M_ST_N | M_ST_Z    // or mask
+		M_ST_N | M_ST_Z,    // or mask
+		sign
 	);
 }
 
@@ -4660,6 +4885,7 @@ XOR3_reg_reg.execute = {
 
 	// Compute the result
 	uint32_t result = src1_value ^ src2_value;
+	uint8_t sign = (int32_t) result < 0;
 
 	// Write back result
 	cpu.SetReg(dst, result);
@@ -4671,7 +4897,8 @@ XOR3_reg_reg.execute = {
 		cpu.GenFlags(
 			result,
 			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-			M_ST_N | M_ST_Z    // or mask
+			M_ST_N | M_ST_Z,    // or mask
+			sign
 		);
 	}
 }
@@ -4702,6 +4929,7 @@ XOR3_indir_reg.execute = {
 
 	// Compute the result
 	uint32_t result = src1_value ^ src2_value;
+	uint8_t sign = (int32_t) result < 0;
 
 	// Check whether an auxiliary register is updated for 1st source operand
 	if(update_ar)
@@ -4720,7 +4948,8 @@ XOR3_indir_reg.execute = {
 		cpu.GenFlags(
 			result,
 			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-			M_ST_N | M_ST_Z    // or mask
+			M_ST_N | M_ST_Z,    // or mask
+			sign
 		);
 	}
 }
@@ -4750,6 +4979,7 @@ XOR3_reg_indir.execute = {
 
 	// Compute the result
 	uint32_t result = src1_value ^ src2_value;
+	uint8_t sign = (int32_t) result < 0;
 
 	// Check whether an auxiliary register is updated for 1st source operand
 	if(update_ar)
@@ -4768,7 +4998,8 @@ XOR3_reg_indir.execute = {
 		cpu.GenFlags(
 			result,
 			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-			M_ST_N | M_ST_Z    // or mask
+			M_ST_N | M_ST_Z,    // or mask
+			sign
 		);
 	}
 }
@@ -4808,6 +5039,7 @@ XOR3_indir_indir.execute = {
 
 	// Compute the result
 	uint32_t result = src1_value ^ src2_value;
+	uint8_t sign = (int32_t) result < 0;
 
 	// Check whether an auxiliary register is updated for 1st source operand
 	if(update_ar1)
@@ -4838,7 +5070,8 @@ XOR3_indir_indir.execute = {
 		cpu.GenFlags(
 			result,
 			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-			M_ST_N | M_ST_Z    // or mask
+			M_ST_N | M_ST_Z,    // or mask
+			sign
 		);
 	}
 }

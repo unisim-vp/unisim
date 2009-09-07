@@ -80,6 +80,7 @@ LDII_dir.execute = {
 
 	// Load the word from memory
 	uint32_t result = cpu.IntLoad(ea, true /* interlocked */);
+	uint8_t sign = (int32_t) result < 0;
 
 	// Write back result
 	cpu.SetReg(dst, result);
@@ -91,7 +92,8 @@ LDII_dir.execute = {
 		cpu.GenFlags(
 			result,
 			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-			M_ST_N | M_ST_Z  // or mask
+			M_ST_N | M_ST_Z,  // or mask
+			sign
 		);
 	}
 }
@@ -115,6 +117,7 @@ LDII_indir.execute = {
 
 	// Load the word from memory
 	uint32_t result = cpu.IntLoad(ea, true /* interlocked */);
+	uint8_t sign = (int32_t) result < 0;
 
 	// Write back result
 	cpu.SetReg(dst, result);
@@ -132,7 +135,8 @@ LDII_indir.execute = {
 		cpu.GenFlags(
 			result,
 			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-			M_ST_N | M_ST_Z  // or mask
+			M_ST_N | M_ST_Z,  // or mask
+			sign
 		);
 	}
 }

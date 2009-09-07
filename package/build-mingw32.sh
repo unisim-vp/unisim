@@ -393,6 +393,8 @@ InstallBinArchive file-bin.zip http://gnuwin32.sourceforge.net/downlinks/file-bi
 InstallBinArchive unrar-bin.zip http://gnuwin32.sourceforge.net/downlinks/unrar-bin-zip.php
 InstallBinArchive unzip-bin.zip http://gnuwin32.sourceforge.net/downlinks/unzip-bin-zip.php
 InstallBinArchive zip-bin.zip http://gnuwin32.sourceforge.net/downlinks/zip-bin-zip.php
+InstallBinArchive libintl-bin.zip http://gnuwin32.sourceforge.net/downlinks/libintl-bin-zip.php
+InstallBinArchive libiconv-bin.zip http://gnuwin32.sourceforge.net/downlinks/libiconv-bin-zip.php
 InstallBinArchive wget-bin.zip http://gnuwin32.sourceforge.net/downlinks/wget-bin-zip.php
 InstallBinArchive regex-2.7-bin.zip http://gnuwin32.sourceforge.net/downlinks/regex-bin-zip.php
 InstallBinArchive zlib-1.2.3-bin.zip http://gnuwin32.sourceforge.net/downlinks/zlib-bin-zip.php
