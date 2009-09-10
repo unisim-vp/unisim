@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2008,
+ *  Copyright (c) 2009,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,27 +29,63 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Gilles	Mouchard <gilles.mouchard@cea.fr>
- * 			Reda	Nouacer  <reda.nouacer@cea.fr>
+ * Authors: Reda	Nouacer  <reda.nouacer@cea.fr>
  */
+
+
+#ifndef XML_ATD_PWM_STUB_HH_
+#define XML_ATD_PWM_STUB_HH_
 
 
 #include "atd_pwm_stub.hh"
 
 
 // A module that should implement communication with RT-Builder
-class RTBStub :
+class XML_ATD_PWM_STUB :
 	public ATD_PWM_STUB
 {
 public:
 	typedef ATD_PWM_STUB inherited;
 
-	RTBStub(const sc_module_name& name, Object *parent = 0);
-	~RTBStub();
+	XML_ATD_PWM_STUB(const sc_module_name& name, Object *parent = 0);
+	~XML_ATD_PWM_STUB();
 
 	virtual void Process();
 
+	template <int ATD_SIZE>
+	struct data_t {
+		double volte[ATD_SIZE];
+		double time;
+	};
+
+	template <int SIZE> int LoadXmlData(const char *filename, std::vector<data_t<SIZE> > &vect);
+	template <int SIZE> void parseRow (xmlDocPtr doc, xmlNodePtr cur, data_t<SIZE> &data);
+
 private:
+
+	std::vector<data_t<ATD0_SIZE> > atd0_vect;
+	std::vector<data_t<ATD1_SIZE> > atd1_vect;
+
+	string atd0_anx_stimulus_file;
+	Parameter<string>	param_atd0_anx_stimulus_file;
+
+	uint8_t atd0_anx_start_channel;
+	Parameter<uint8_t> param_atd0_anx_start_channel;
+
+	uint8_t atd0_anx_wrap_around_channel;
+	Parameter<uint8_t> param_atd0_anx_wrap_around_channel;
+
+	string atd1_anx_stimulus_file;
+	Parameter<string>	param_atd1_anx_stimulus_file;
+
+	uint8_t atd1_anx_start_channel;
+	Parameter<uint8_t> param_atd1_anx_start_channel;
+
+	uint8_t atd1_anx_wrap_around_channel;
+	Parameter<uint8_t> param_atd1_anx_wrap_around_channel;
+
 
 };
 
+
+#endif /* XML_ATD_PWM_STUB_HH_ */
