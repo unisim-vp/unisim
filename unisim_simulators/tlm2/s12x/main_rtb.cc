@@ -70,7 +70,7 @@
 
 #include <unisim/util/garbage_collector/garbage_collector.hh>
 
-#include "atd_pwm_stub.hh"
+#include "rtb_unisim.hh"
 
 #include <signal.h>
 
@@ -343,7 +343,7 @@ int sc_main(int argc, char *argv[])
 
 	MemoryImportExportTee* memoryImportExportTee = new MemoryImportExportTee("memoryImportExportTee");
 
-	ATD_PWM_STUB *rtbStub = new ATD_PWM_STUB("RTBStub"/*, fsb_cycle_time*/);
+	RTBStub *rtbStub = new RTBStub("RTBStub"/*, fsb_cycle_time*/);
 
 	//=========================================================================
 	//===                         Service instantiations                    ===

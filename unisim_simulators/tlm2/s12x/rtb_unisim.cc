@@ -1,38 +1,5 @@
 /*
- *  Copyright (c) 2008,
- *  Commissariat a l'Energie Atomique (CEA)
- *  All rights reserved.
- *
- *  Redistribution and use in source and binary forms, with or without modification,
- *  are permitted provided that the following conditions are met:
- *
- *   - Redistributions of source code must retain the above copyright notice, this
- *     list of conditions and the following disclaimer.
- *
- *   - Redistributions in binary form must reproduce the above copyright notice,
- *     this list of conditions and the following disclaimer in the documentation
- *     and/or other materials provided with the distribution.
- *
- *   - Neither the name of CEA nor the names of its contributors may be used to
- *     endorse or promote products derived from this software without specific prior
- *     written permission.
- *
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- *  DISCLAIMED.
- *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
- *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
- *  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
- *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- * Authors: Gilles	Mouchard <gilles.mouchard@cea.fr>
- * 			Reda	Nouacer  <reda.nouacer@cea.fr>
  */
-
 
 
 #include "rtb_unisim.hh"
@@ -48,6 +15,124 @@ RTBStub::~RTBStub() {
 
 }
 
+/*
+Initialization of  Client
+*/
+int RTBStub::init_client(){
+	int NB_INPUT, NB_OUTPUT;
+
+	char IN_DATA_TYPE[128],OUT_DATA_TYPE[128];
+
+	char * host = getenv("COB_HOST");
+	char * port_ptr = getenv("COB_PORT");
+	int port = atoi(port_ptr) ;
+
+	if (host == NULL || port_ptr == NULL) {
+		connected = FALSE;
+		printf("Cob isn't connected.\n");
+
+	}else {
+		connected = TRUE;
+		printf("Cob is connected.\n");
+	}
+	if(connected){
+		init_network();
+
+		client_ctl = new_client_struct(host, port);
+
+		if ( !connect_client_struct(client_ctl) ) {
+			free_client_struct(client_ctl);
+			printf("Connexion to client contoller failed.");
+			clean_network();
+			return 1;
+		}
+
+		client_in = new_client_struct(host , port );
+		if ( !connect_client_struct(client_in)  ) {
+			free_client_struct(client_ctl);
+			free_client_struct(client_in);
+			printf("Connexion to client in failed.");
+			clean_network();
+			return 0;
+		}
+
+		client_out = new_client_struct(host , port);
+		if ( !connect_client_struct(client_out) ) {
+			free_client_struct(client_ctl);
+			free_client_struct(client_in);
+			free_client_struct(client_out);
+			printf("Connexion to client out failed.");
+			clean_network();
+			return 0;
+		}
+
+		dataline_in = new_dataline(2, "integer,integer");
+		init_dataline(dataline_in, client_in->sockfd);
+
+		data_in = new_data(2, "integer,integer", TRUE);
+		data_out = new_data(1, "integer", TRUE);
+	}
+}
+
+/*
+Control
+*/
+void RTBStub::control() {
+
+	if ( is_socket_ready_toread(client_ctl->sockfd, 0) ) {
+		command_enum command = COB_CONTINUE;
+		if ( receive_control(client_ctl->sockfd, &command) ) {
+			switch (command) {
+			case COB_PAUSE:
+				printf("--Command ---> COB_PAUSE received.\n");
+				send_ack(client_ctl->sockfd);
+				break;
+				case COB_CONTINUE:
+				// do continue only if simulation is paused
+				printf("--Command ---> COB_CONTINUE received.\n");
+				send_ack(client_ctl->sockfd);
+				break;
+			case COB_STOP:
+				printf("--Command ---> COB_STOP received.\n");
+				// simulation is ended
+				//sends ack for stop
+				send_ack(client_ctl->sockfd);
+				//cout << "Press button for exiting the program" << endl ;
+				getchar();
+				exit(0);
+				break;
+			default:
+				printf("Controller: Unkwown command: %d.\n", command);
+				break;
+			}
+		}
+	}
+}
+
+/*
+This function can make the exchange process between RT-Builder and RTBstub
+*/
+void RTBStub::exchange(){
+	double current_time = sc_time_stamp().to_seconds() ;
+	/*********send data************/
+	if ( current_time > data_out->time ) {
+		data_out->time = current_time-(2*cycle_time.to_seconds());
+		data_out->validity = current_time ;
+		if ( !send_data(client_out->sockfd, data_out) ) {
+			cerr << "Cannot send data" << endl;
+			exit(1);
+		}
+	}
+	/*********get data************/
+	if ( !get_data_at_time(dataline_in, current_time, INFINITE, data_in) ) {
+		cerr << "error get data " << endl;
+		exit(1);
+	}
+	control();
+	cout << "current_time : " << current_time  <<" s "<<endl;
+}
+
+
 void RTBStub::Process() {
 	unsigned long num_cycles;
 
@@ -55,9 +140,8 @@ void RTBStub::Process() {
 
 	sc_time delay(anx_stimulus_period, SC_PS);
 
-	int atd0_data_index = 0;
-	int atd1_data_index = 0;
-
+	init_client();
+	
 	while(1)
 	{
 		double atd1_anValue[ATD1_SIZE];
@@ -73,6 +157,7 @@ void RTBStub::Process() {
 			atd1_anValue[i] = 5.2 * ((double) rand() / (double) RAND_MAX); // Compute a random value: 0 Volts <= anValue[i] < 5 Volts
 		}
 
+		exchange();
 		wait(input_payload_queue.get_event());
 
 		Input(pwmValue);

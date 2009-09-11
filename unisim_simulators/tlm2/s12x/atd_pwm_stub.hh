@@ -120,7 +120,7 @@ public:
 	void Input(bool pwmValue[PWM_SIZE]);
 	void Output_ATD1(double anValue[ATD1_SIZE]);
 	void Output_ATD0(double anValue[ATD0_SIZE]);
-	virtual void Process() = 0;
+	virtual void Process();
 
 protected:
 	clock_t	anx_stimulus_period;

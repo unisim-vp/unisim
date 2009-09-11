@@ -224,3 +224,41 @@ void ATD_PWM_STUB::Output_ATD0(double anValue[ATD0_SIZE])
 	}
 }
 
+void ATD_PWM_STUB::Process() {
+	unsigned long num_cycles;
+
+	srand(12345);
+
+	sc_time delay(anx_stimulus_period, SC_PS);
+
+	int atd0_data_index = 0;
+	int atd1_data_index = 0;
+
+	while(1)
+	{
+		double atd1_anValue[ATD1_SIZE];
+		double atd0_anValue[ATD0_SIZE];
+		bool pwmValue[PWM_SIZE];
+
+
+		for (uint8_t i=0; i < ATD0_SIZE; i++) {
+			atd0_anValue[i] = 5.2 * ((double) rand() / (double) RAND_MAX); // Compute a random value: 0 Volts <= anValue[i] < 5 Volts
+		}
+
+		for (uint8_t i=0; i < ATD1_SIZE; i++) {
+			atd1_anValue[i] = 5.2 * ((double) rand() / (double) RAND_MAX); // Compute a random value: 0 Volts <= anValue[i] < 5 Volts
+		}
+
+		wait(input_payload_queue.get_event());
+
+		Input(pwmValue);
+
+		Output_ATD1(atd1_anValue);
+		Output_ATD0(atd0_anValue);
+
+		quantumkeeper.inc(delay);
+		quantumkeeper.sync();
+	}
+
+}
+
