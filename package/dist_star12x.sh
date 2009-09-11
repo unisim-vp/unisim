@@ -298,12 +298,10 @@ vector \
 
 UNISIM_SIMULATORS_HCS12X_SOURCE_FILES="\
 main.cc \
-rtb_unisim.cc \
 atd_pwm_stub.cc \
 xml_atd_pwm_stub.cc \
 "
 UNISIM_SIMULATORS_HCS12X_HEADER_FILES="\
-rtb_unisim.hh \
 atd_pwm_stub.hh \
 xml_atd_pwm_stub.hh \
 "
