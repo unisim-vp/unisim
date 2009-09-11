@@ -264,7 +264,8 @@ m4/curses.m4 \
 m4/libedit.m4 \
 m4/systemc.m4 \
 m4/tlm20.m4 \
-m4/with_boost.m4"
+m4/with_boost.m4 \
+m4/rtbcob.m4"
 
 HCS12X_EXTERNAL_HEADERS="\
 assert.h \
@@ -295,13 +296,13 @@ vector \
 "
 
 UNISIM_SIMULATORS_HCS12X_SOURCE_FILES="\
-main.cc \
+main_rtb.cc \
 atd_pwm_stub.cc \
-xml_atd_pwm_stub.cc \
+rtb_unisim.cc \
 "
 UNISIM_SIMULATORS_HCS12X_HEADER_FILES="\
 atd_pwm_stub.hh \
-xml_atd_pwm_stub.hh \
+rtb_unisim.hh \
 "
 
 UNISIM_SIMULATORS_HCS12X_TEMPLATE_FILES=
@@ -575,6 +576,7 @@ if [ "${has_to_build_hcs12x_configure}" = "yes" ]; then
 	echo "UNISIM_CHECK_CXXABI" >> "${HCS12X_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_SYSTEMC" >> "${HCS12X_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_TLM20" >> "${HCS12X_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_RTBCOB" >> "${HCS12X_CONFIGURE_AC}"
 	echo "GENISSLIB_PATH=\`pwd\`/../genisslib/genisslib" >> "${HCS12X_CONFIGURE_AC}"
 	echo "AC_SUBST(GENISSLIB_PATH)" >> "${HCS12X_CONFIGURE_AC}"
 	echo "AC_CONFIG_FILES([Makefile])" >> "${HCS12X_CONFIGURE_AC}"
