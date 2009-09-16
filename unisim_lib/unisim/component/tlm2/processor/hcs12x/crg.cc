@@ -331,9 +331,9 @@ void CRG::compute_clock() {
 	pll_clock = 2 * oscillator_clock * (synr_register + 1) / (refdv_register +1) ;
 
 	if ((clksel_register & 0x80) != 0) {
-		bus_clock = pll_clock / 2;
+		bus_clock = pll_clock * 2;
 	} else {
-		bus_clock = oscillator_clock / 2;
+		bus_clock = oscillator_clock * 2;
 	}
 
 }
