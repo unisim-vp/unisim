@@ -739,7 +739,7 @@ bool PWM<PWM_SIZE>::Setup() {
 	Reset();
 
 	ComputeInternalTime();
-	
+
 	return true;
 }
 
@@ -876,7 +876,7 @@ void PWM<PWM_SIZE>::Channel_t::Run() {
 template <uint8_t PWM_SIZE>
 template <class T> void PWM<PWM_SIZE>::Channel_t::checkChangeStateAndWait(const sc_time clk) {
 
-	clock_t toPeriod;
+	uint16_t toPeriod;
 	bool	isCenterAligned = true;
 	int8_t increment = 1;
 

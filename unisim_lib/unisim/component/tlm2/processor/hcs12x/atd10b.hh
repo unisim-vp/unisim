@@ -195,8 +195,8 @@ private:
 
 	PayloadFabric<ATD_Payload<ATD_SIZE> > payload_fabric;
 
-	clock_t	bus_cycle_time_int;
-	Parameter<clock_t>	param_bus_cycle_time_int;
+	double	bus_cycle_time_int;
+	Parameter<double>	param_bus_cycle_time_int;
 	sc_time		bus_cycle_time;
 
 	sc_time		atd_clock;
@@ -285,8 +285,8 @@ private:
 
 	// Authorised Bus Clock
 	struct {
-		clock_t maxBusClock;
-		clock_t minBusClock;
+		double maxBusClock;
+		double minBusClock;
 	} busClockRange[32];
 
 

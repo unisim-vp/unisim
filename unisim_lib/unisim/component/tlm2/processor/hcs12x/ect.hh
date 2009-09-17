@@ -188,8 +188,8 @@ private:
 	PayloadFabric<XINT_Payload> xint_payload_fabric;
 
 
-	clock_t	bus_cycle_time_int;	// The time unit is PS
-	Parameter<clock_t>	param_bus_cycle_time_int;
+	double	bus_cycle_time_int;	// The time unit is PS
+	Parameter<double>	param_bus_cycle_time_int;
 	sc_time		bus_cycle_time;
 
 	address_t	baseAddress;

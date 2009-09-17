@@ -186,8 +186,8 @@ private:
 
 	PayloadFabric<tlm::tlm_generic_payload> payloadFabric;
 
-	clock_t	oscillator_clock_int;	// The time unit is PS
-	Parameter<clock_t>	param_oscillator_clock_int;
+	double	oscillator_clock_int;	// The time unit is PS
+	Parameter<double>	param_oscillator_clock_int;
 	sc_time		oscillator_clock;
 
 	sc_time		pll_clock;
