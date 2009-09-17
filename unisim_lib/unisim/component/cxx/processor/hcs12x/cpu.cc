@@ -307,12 +307,12 @@ uint8_t CPU::Step()
 
 			op->disasm(disasm_str);
 
-			ctstr << insn;
+			ctstr << op->GetEncoding();
 			*logger << DebugInfo << GetSimulatedTime() << " ms: "
 				<< "PC = 0x" << std::hex << current_pc << std::dec << " : "
 				<< GetFunctionFriendlyName(current_pc) << " : "
 				<< disasm_str.str()
-				<< " : ( " << std::hex << ctstr.str() << std::dec << " ) " << EndDebugInfo	<< std::endl;
+				<< " : (0x" << std::hex << ctstr.str() << std::dec << " ) " << EndDebugInfo	<< std::endl;
 
 		} else if (debug_enabled && verbose_step) {
 			stringstream disasm_str;
@@ -320,7 +320,7 @@ uint8_t CPU::Step()
 
 			op->disasm(disasm_str);
 
-			ctstr << insn;
+			ctstr << op->GetEncoding();
 			*logger << DebugInfo << GetSimulatedTime() << "ms: "
 				<< "Executing instruction "
 				<< disasm_str.str()
@@ -1105,11 +1105,11 @@ string CPU::Disasm(service_address_t service_addr, service_address_t &next_addr)
 
 	stringstream disasmBuffer;
 	op->disasm(disasmBuffer);
-        
+
         unsigned int insn_length = op->GetLength();
         if (insn_length % 8) throw "InternalError";
 	next_addr = service_addr + (insn_length/8);
-        
+
 	return disasmBuffer.str();
 }
 
