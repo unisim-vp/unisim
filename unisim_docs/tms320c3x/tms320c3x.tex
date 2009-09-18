@@ -14,7 +14,7 @@ The UNISIM TMS320C3X simulator features:
 \item Support for TI C I/O
 \end{itemize}
 
-\textit{Note: Support for the GDB serial remote protocol is experimental in the sense that although some GDB versions supported the TMS320C3X target (see~\url{http://www.elec.canterbury.ac.nz/c4x/doc/c4x-tools.html}), these versions are no longer available on the web. As a consequence this simulator functionality could not be tested and validated for the TMS320C3X target but only for ARM7/9, PowerPC and HCS12X targets.}
+\textit{Note: Support for the GDB serial remote protocol is experimental in the sense that although some GDB versions supported the TMS320C3X target (see~\url{http://www.elec.canterbury.ac.nz/c4x/doc/c4x-tools.html}), these versions are no longer available on the web. As a consequence this simulator functionality could not be tested and validated for the TMS320C3X target but only for arM7/9, PowerPC and HCS12X targets.}
 
 \begin{figure}[!h]
 	\begin{center}
@@ -89,7 +89,7 @@ This cross-compiler also runs under other x86 operating systems such as Linux or
 \textit{Note: Be aware that any call to the C standard library requires linking the program with \texttt{RTS30.LIB}.
 Moreover, any call to I/O functions (open, close, read, write, printf, \ldots) requires TI C I/O support enabled in the TMS320C3X simulator.}
 
-The cross-compiler tool chain (\texttt{CL30.EXE, LNK30.EXE, ASM30.EXE, MK30.EXE, AR30.EXE, \ldots}) should be in your \texttt{PATH}.
+The cross-compiler tool chain (\texttt{CL30.EXE, LNK30.EXE, ASM30.EXE, MK30.EXE, ar30.EXE, \ldots}) should be in your \texttt{PATH}.
 The shell variable \texttt{C\_DIR} points to the location where cross-compiler should search for the standard C headers and libraries.
 Suppose the tool chain is installed in \texttt{C:{\textbackslash}TI}.
 Windows users should add the following in their \texttt{AUTOEXEC.BAT}:
@@ -406,7 +406,7 @@ The simulator is implemented in class \texttt{unisim::component::cxx::processor:
 \end{itemize}
 This class is a client and a service (see ~\ref{tms320c3x_service_infrastructure} for details) that can be connected to a debugger, a loader, and a memory.
 
-Each register (R0, R1, R2, R3, R4, R5, R6, R7, AR0, AR1, AR2, AR3, AR4, AR5, AR6, AR7, DP, IR0, IR1, BK, SP, ST, IE, IF, IOF, RS, RE, and RC) is implemented by an instance of class \texttt{unisim::component::cxx::processor::tms320::Register}.
+Each register (R0, R1, R2, R3, R4, R5, R6, R7, ar0, ar1, ar2, ar3, ar4, ar5, ar6, ar7, DP, IR0, IR1, BK, SP, ST, IE, IF, IOF, RS, RE, and RC) is implemented by an instance of class \texttt{unisim::component::cxx::processor::tms320::Register}.
 This class has methods to get/set value of a register and to perform floating point computations.
 
 \noindent The table below summarizes the API of the CPU:
@@ -1120,7 +1120,7 @@ A sample configuration file for a dummy \texttt{XYZ} big-endian architecture, wi
 		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{architecture-description\newline$\hookrightarrow$-filename}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
 		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} empty string}\\
 		\multicolumn{2}{|l|}{}\\
-		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The path to the architecture description file that the GDB server service must use. The description file provides retargetability to the GDB server service. The following files brings support of the ARM, PowerPC and HCS12X processors to the GDB server service: 
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The path to the architecture description file that the GDB server service must use. The description file provides retargetability to the GDB server service. The following files brings support of the arM, PowerPC and HCS12X processors to the GDB server service: 
 		\begin{itemize}
 			\item \texttt{unisim/service/debug/gdb\_server/gdb\_armv4l.xml}
 			\item \texttt{unisim/service/debug/gdb\_server/gdb\_armv5b.xml}
@@ -1263,6 +1263,27 @@ Directory \texttt{unisim/util/xml} provides support for bare XML file (e.g. for 
 \newpage
 \section{Validation guide}
 
+\subsection{Setup}
+
+\begin{figure}[!h]
+	\begin{center}
+		\begin{minipage}{\textwidth}
+			\begin{minipage}{8.0cm}
+				\begin{center}
+					\includegraphics[width=7.0cm]{tms320c3x/fig_tms320c3x_board.jpg}
+					\caption{\label{fig:tms320c3x_board} TMS320VC33 Board.}
+				\end{center}
+			\end{minipage}
+			\begin{minipage}{8.0cm}
+				\begin{center}
+					\includegraphics[width=7.0cm]{tms320c3x/fig_tms320c3x_dev_kit.jpg}
+					\caption{\label{fig:tms320c3x_jtag_emu} TMS320VC33 board with JTAG.}
+				\end{center}
+			\end{minipage}
+		\end{minipage}
+	\end{center}
+\end{figure}
+
 The simulator validation involved using the TI C cross-compiler for Windows (see section~\ref{tms320c3x_cross_compiler}) with the following versions:
 \begin{itemize}
 \item TMS320C3x/4x ANSI C Compiler Version 5.11
@@ -1282,7 +1303,7 @@ The cross-compiler has generated COFF v2 files for TMS320C3X/C4X with little-end
 \item Ubuntu Linux 9.04 AMD64/x86\_64/gcc 4.3.3 (64-bit little-endian machine)
 \end{itemize}
 
-The following developement board has been used to compare the simulator results against a real TMS320C3X DSP:
+The following developement board (see Figures~\ref{fig:tms320c3x_board}~and~\ref{fig:tms320c3x_jtag_emu}) has been used to compare the simulator results against a real TMS320C3X DSP:
 \begin{itemize}
 \item A D.SignT DK.VC33-150-S2 development board
 \item A D.SignT D.Module.VC33-150-S2 module including a TI TMS320VC33PGE at 150 Mhz
@@ -1292,21 +1313,8 @@ The following developement board has been used to compare the simulator results 
 \item Code Composer IDE 4.10.36 SP2 C3X'C4X for Windows
 \end{itemize}
 
-\begin{figure}[!h]
-	\begin{center}
-		\includegraphics[width=\textwidth]{tms320c3x/fig_tms320c3x_board.jpg}
-	\end{center}
-	\caption{TMS320VC33 Board.}
-	\label{fig:tms320c3x}
-\end{figure}
-
-\begin{figure}[!h]
-	\begin{center}
-		\includegraphics[width=\textwidth]{tms320c3x/fig_tms320c3x_dev_kit.jpg}
-	\end{center}
-	\caption{TMS320VC33 board with JTAG Emulator.}
-	\label{fig:tms320c3x}
-\end{figure}
+The UNISIM TMS320C3X has been validated using integer benchmarks, floating point benchmarks, and unit tests of individual instructions.
+The next sections provide details about the validation process.
 
 \subsection{Integer benchmarks}
 
@@ -1510,6 +1518,1132 @@ The expected output image is in file \texttt{output\_image.ref.bmp}.
 
 This part is not yet available.
 
-\subsection{Instruction level unit test}
+\subsection{Instruction level unit tests}
 
-This part is not yet available.
+This part is under construction.
+This section presents the validation process of UNISIM TMS320C3X simulator at the instruction level.
+A comprehensive list of instruction level unit tests is provided in Appendix~\ref{tms320c3x_unit_tests_summary}.
+
+\subsubsection{Validation process}
+
+\noindent \textbf{Unit test generator.} For the purpose of executing unit tests on both the development board and the UNISIM TMS320C3X simulator, a unit test generator has been developped, see Figure~\ref{fig:tms320c3x_unit_test_generator}.
+
+\begin{figure}[!h]
+	\begin{center}
+		\begin{minipage}{\textwidth}
+			\begin{minipage}{8.0cm}
+				\begin{center}
+					\includegraphics[width=7.0cm]{tms320c3x/fig_unit_test_generator.pdf}
+					\caption{\label{fig:tms320c3x_unit_test_generator}UNISIM TMS320C3X unit test generator.}
+				\end{center}
+			\end{minipage}
+			\begin{minipage}{8.0cm}
+				\begin{center}
+					\includegraphics[width=7.0cm]{tms320c3x/fig_unit_test.pdf}
+					\caption{\label{fig:tms320c3x_unit_test} A generated unit test.}
+				\end{center}
+			\end{minipage}
+		\end{minipage}
+	\end{center}
+\end{figure}
+
+% \begin{figure}[!h]
+% 	\begin{center}
+% 		\includegraphics[width=12.0cm]{tms320c3x/fig_unit_test_generator.pdf}
+% 	\end{center}
+% 	\caption{UNISIM TMS320C3X unit test generator.}
+% 	\label{fig:tms320c3x_unit_test_generator}
+% \end{figure}
+
+The generator reads an assembly pattern and generates the unit test source code:
+\begin{itemize}
+\item an assembly function \texttt{unit\_test} (in file \texttt{test.asm}) with the C calling convention and stack parameter passing convention
+\item some random inputs for function \texttt{unit\_test} (\texttt{random.txt}).
+\item a testbench written in C (\texttt{main.c}) that in a loop, reads inputs, calls function \texttt{unit\_test}, and write outputs.
+\end{itemize}
+
+The random inputs are obtained with a KISS (Keep It Simple Stupid) random number generator (see \url{http://www.math.niu.edu/\~rusin/known-math/99/RNG}) embedded in the unit tests generator. The generator generates a uniform distribution for integer numbers. Table~\ref{fig:tms320c3x_unit_test_float_distribution} shows the distribution for the floating point numbers.
+
+\begin{figure}[!h]
+\begin{center}
+\begin{tabular}{|c|c|}
+\hline
+\textbf{Category} & \textbf{Probability}\\
+\hline
+-inf & 1/37\\
+\hline
+smallest negative number & 1/37\\
+\hline
+zero & 1/37\\
+\hline
+real zero & 1/37\\
+\hline
+smallest positive number & 1/37\\
+\hline
+near to integer & 2/37\\
+\hline
++inf & 1/37\\
+\hline
+small & 2/37\\
+\hline
+large & 2/37\\ 
+\hline
+mantissa near previously generated, fully random exponent & 5/37\\
+\hline
+exponent near previously generated, fully random mantissa & 5/37\\
+\hline
+float near previously generated & 5/37\\
+\hline
+fully random & 10/37\\
+\hline
+\end{tabular}
+\caption{UNISIM TMS320C3X unit test generator floating point distribution.}
+\label{fig:tms320c3x_unit_test_float_distribution}
+\end{center}
+\end{figure}
+
+The unit test source code can be compiled for the development board, and run on both the development board and the UNISIM TMS320C3X simulator.
+As a unit test uses the TI C I/O functions, it can reads inputs and write outputs from/to files of the host file system, see Figure~\ref{fig:tms320c3x_unit_test}. Such a capability has considerably reduced the complexity of testing the assembly pattern under test on both the development board and the UNISIM TMS320C3X simulator.
+
+% \begin{figure}[!h]
+% 	\begin{center}
+% 		\includegraphics[width=14.0cm]{tms320c3x/fig_unit_test.pdf}
+% 	\end{center}
+% 	\caption{A generated unit test.}
+% 	\label{fig:tms320c3x_unit_test}
+% \end{figure}
+
+A unit test reads manually selected inputs from file \texttt{input.txt} and some random generated inputs from file \texttt{random.txt}. It writes outputs into file \texttt{output.txt}.
+
+\noindent \textbf{Factorial plan.} The unit test generator has been driven by a factorial plan to generate a sufficient number of instruction alternatives.\\
+\noindent The conditional instructions have 20 possibles conditions:\\
+\texttt{u}, \texttt{lo}, \texttt{ls}, \texttt{hi}, \texttt{hs}, \texttt{eq}, \texttt{ne}, \texttt{lt}, \texttt{le}, \texttt{gt}, \texttt{ge}, \texttt{nv}, \texttt{v}, \texttt{nuf}, \texttt{uf}, \texttt{nlv}, \texttt{lv}, \texttt{nluf}, \texttt{luf}, \texttt{zuf}.\\
+\noindent Instructions with indirect addressing mode have 26 alternatives for each indirect operand:\\
+\texttt{*+ar$_n$(disp)}, \texttt{*-ar$_n$(disp)}, \texttt{*++ar$_n$(disp)}, \texttt{*--ar$_n$(disp)}, \texttt{*ar$_n$++(disp)}, \texttt{*ar$_n$--(disp)}, \texttt{*ar$_n$++(disp)\%}, \texttt{*ar$_n$(disp)\%}, \texttt{*+ar$_n$(ir0)}, \texttt{*-ar$_n$(ir0)}, \texttt{*++ar$_n$(ir0)}, \texttt{*--ar$_n$(ir0)}, \texttt{*ar$_n$++(ir0)}, \texttt{*ar$_n$--(ir0)}, \texttt{*ar$_n$++(ir0)\%}, \texttt{*ar$_n$(ir0)\%}, \texttt{*+ar$_n$(ir1)}, \texttt{*-ar$_n$(ir1)}, \texttt{*++ar$_n$(ir1)}, \texttt{*--ar$_n$(ir1)}, \texttt{*ar$_n$++(ir1)}, \texttt{*ar$_n$--(ir1)}, \texttt{*ar$_n$++(ir1)\%}, \texttt{*ar$_n$(ir1)\%}, \texttt{*ar$_n$}, \texttt{*ar$_n$++(ir0)b}.\\
+
+\noindent Table below summarizes the testing status of all instructions:
+
+\begin{center}
+\tablehead{\hline
+\multicolumn{1}{|c|}{\textbf{Instruction}} & \multicolumn{1}{|c|}{\textbf{Tested?}} & \multicolumn{1}{|c|}{\textbf{Testing method(s)/Description}}\\
+\hline}
+\tabletail{\hline}
+\begin{supertabular}{|p{7.0cm}|p{1.0cm}|p{7.0cm}|}
+\multicolumn{3}{|c|}{\textbf{lde}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{lde reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{lde dir, reg}} & \multicolumn{1}{p{1.0cm}|}{No} & \multicolumn{1}{p{7.0cm}|}{}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{lde indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{lde imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{ldf}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldf reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldf dir, reg}} & \multicolumn{1}{p{1.0cm}|}{No} & \multicolumn{1}{p{7.0cm}|}{}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldf indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldf imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{ldf\textit{cond}}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldf\textit{cond} reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2000 unit tests ($20_{cond} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldf\textit{cond} dir, reg}} & \multicolumn{1}{p{1.0cm}|}{No} & \multicolumn{1}{p{7.0cm}|}{}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldf\textit{cond} indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{52K unit tests ($26_{indir} \times 20_{cond} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldf\textit{cond} imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{ldi}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldi reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldi dir, reg}} & \multicolumn{1}{p{1.0cm}|}{No} & \multicolumn{1}{p{7.0cm}|}{}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldi indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldi imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{ldi\textit{cond}}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldi\textit{cond} reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2000 unit tests ($20_{cond} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldi\textit{cond} dir, reg}} & \multicolumn{1}{p{1.0cm}|}{No} & \multicolumn{1}{p{7.0cm}|}{}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldi\textit{cond} indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{52K unit tests ($26_{indir} \times 20_{cond} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldi\textit{cond} imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{ldm}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldm reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldm dir, reg}} & \multicolumn{1}{p{1.0cm}|}{No} & \multicolumn{1}{p{7.0cm}|}{}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldm indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldm imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{ldp}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldp src}} & \multicolumn{1}{p{1.0cm}|}{No} & \multicolumn{1}{p{7.0cm}|}{}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{pop}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{pop reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{All benchmarks}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{popf}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{popf reg}} & \multicolumn{1}{p{1.0cm}|}{No} & \multicolumn{1}{p{7.0cm}|}{}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{push}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{push reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{All benchmarks}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{pushf}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{pushf reg}} & \multicolumn{1}{p{1.0cm}|}{No} & \multicolumn{1}{p{7.0cm}|}{}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{stf}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{stf reg, dir}} & \multicolumn{1}{p{1.0cm}|}{No} & \multicolumn{1}{p{7.0cm}|}{}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{stf reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{sti}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{sti reg, dir}} & \multicolumn{1}{p{1.0cm}|}{No} & \multicolumn{1}{p{7.0cm}|}{}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{ldfi}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldfi dir, reg}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldfi indir, reg}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{ldii}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldii dir, reg}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldii indir, reg}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{sigi}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{sigi}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{stfi}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{stfi reg, dir}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{stfi reg, indir}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{stii}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{stii reg, dir}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{stii reg, indir}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{b\textit{cond}}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{b\textit{cond} reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2000 unit tests ($20_{cond} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{b\textit{cond} disp}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2000 unit tests ($20_{cond} \times 100_{rand}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{b\textit{cond}d}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{b\textit{cond}d reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2000 unit tests ($20_{cond} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{b\textit{cond}d disp}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2000 unit tests ($20_{cond} \times 100_{rand}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{br}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{br src}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{br}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{brd src}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{call}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{call src}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{call\textit{cond}}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{call\textit{cond} reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2000 unit tests ($20_{cond} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{call\textit{cond} disp}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2000 unit tests ($20_{cond} \times 100_{rand}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{db\textit{cond}}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{db\textit{cond} ar$_n$, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2000 unit tests ($20_{cond} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{db\textit{cond} ar$_n$, disp}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2000 unit tests ($20_{cond} \times 100_{rand}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{db\textit{cond}d}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{db\textit{cond}d ar$_n$, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2000 unit tests ($20_{cond} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{db\textit{cond}d ar$_n$, disp}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2000 unit tests ($20_{cond} \times 100_{rand}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{iack}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{iack dir}} & \multicolumn{1}{p{1.0cm}|}{No} & \multicolumn{1}{p{7.0cm}|}{}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{iack indir}} & \multicolumn{1}{p{1.0cm}|}{No} & \multicolumn{1}{p{7.0cm}|}{}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{idle}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{idle}} & \multicolumn{1}{p{1.0cm}|}{No} & \multicolumn{1}{p{7.0cm}|}{}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{nop}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{nop reg}} & \multicolumn{1}{p{1.0cm}|}{No} & \multicolumn{1}{p{7.0cm}|}{}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{nop indir}} & \multicolumn{1}{p{1.0cm}|}{No} & \multicolumn{1}{p{7.0cm}|}{}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{reti\textit{cond}}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{reti\textit{cond}}} & \multicolumn{1}{p{1.0cm}|}{No} & \multicolumn{1}{p{7.0cm}|}{}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{rets\textit{cond}}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{rets\textit{cond}}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2000 unit tests ($20_{cond} \times 100_{rand}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{rptb}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{rptb src}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{Benchmarks?}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{rpts}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{rpts reg}} & \multicolumn{1}{p{1.0cm}|}{No} & \multicolumn{1}{p{7.0cm}|}{}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{rpts dir}} & \multicolumn{1}{p{1.0cm}|}{No} & \multicolumn{1}{p{7.0cm}|}{}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{rpts indir}} & \multicolumn{1}{p{1.0cm}|}{No} & \multicolumn{1}{p{7.0cm}|}{}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{rpts imm}} & \multicolumn{1}{p{1.0cm}|}{No} & \multicolumn{1}{p{7.0cm}|}{}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{swi}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{swi}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{Decoded only}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{trap\textit{cond}}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{trap\textit{cond} n}} & \multicolumn{1}{p{1.0cm}|}{No} & \multicolumn{1}{p{7.0cm}|}{}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{absf}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{absf reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{10K unit tests ($10K_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{absf dir, reg}} & \multicolumn{1}{p{1.0cm}|}{No} & \multicolumn{1}{p{7.0cm}|}{}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{absf indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{absf imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{absi}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{absi reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{10K unit tests ($10K_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{absi dir, reg}} & \multicolumn{1}{p{1.0cm}|}{No} & \multicolumn{1}{p{7.0cm}|}{}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{absi indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{absi imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{addc}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addc reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{10K unit tests ($10K_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addc dir, reg}} & \multicolumn{1}{p{1.0cm}|}{No} & \multicolumn{1}{p{7.0cm}|}{}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addc indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addc imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{addf}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addf reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{10K unit tests ($10K_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addf dir, reg}} & \multicolumn{1}{p{1.0cm}|}{No} & \multicolumn{1}{p{7.0cm}|}{}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addf indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addf imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{addi}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addi reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{10K unit tests ($10K_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addi dir, reg}} & \multicolumn{1}{p{1.0cm}|}{No} & \multicolumn{1}{p{7.0cm}|}{}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addi indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addi imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{and}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{and reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{10K unit tests ($10K_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{and dir, reg}} & \multicolumn{1}{p{1.0cm}|}{No} & \multicolumn{1}{p{7.0cm}|}{}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{and indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{and imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{andn}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{andn reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{10K unit tests ($10K_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{andn dir, reg}} & \multicolumn{1}{p{1.0cm}|}{No} & \multicolumn{1}{p{7.0cm}|}{}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{andn indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{andn imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{ash}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ash reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{10K unit tests ($10K_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ash dir, reg}} & \multicolumn{1}{p{1.0cm}|}{No} & \multicolumn{1}{p{7.0cm}|}{}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ash indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ash imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{cmpf}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{cmpf reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{10K unit tests ($10K_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{cmpf dir, reg}} & \multicolumn{1}{p{1.0cm}|}{No} & \multicolumn{1}{p{7.0cm}|}{}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{cmpf indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{cmpf imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{cmpi}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{cmpi reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{10K unit tests ($10K_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{cmpi dir, reg}} & \multicolumn{1}{p{1.0cm}|}{No} & \multicolumn{1}{p{7.0cm}|}{}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{cmpi indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{cmpi imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{fix}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{fix reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{10K unit tests ($10K_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{fix dir, reg}} & \multicolumn{1}{p{1.0cm}|}{No} & \multicolumn{1}{p{7.0cm}|}{}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{fix indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{fix imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{float}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{float reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{10K unit tests ($10K_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{float dir, reg}} & \multicolumn{1}{p{1.0cm}|}{No} & \multicolumn{1}{p{7.0cm}|}{}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{float indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{float imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{lsh}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{lsh reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{10K unit tests ($10K_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{lsh dir, reg}} & \multicolumn{1}{p{1.0cm}|}{No} & \multicolumn{1}{p{7.0cm}|}{}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{lsh indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{lsh imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{mpyf}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyf reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{10K unit tests ($10K_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyf dir, reg}} & \multicolumn{1}{p{1.0cm}|}{No} & \multicolumn{1}{p{7.0cm}|}{}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyf indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyf imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{mpyi}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{10K unit tests ($10K_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi dir, reg}} & \multicolumn{1}{p{1.0cm}|}{No} & \multicolumn{1}{p{7.0cm}|}{}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{negb}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{negb reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{10K unit tests ($10K_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{negb dir, reg}} & \multicolumn{1}{p{1.0cm}|}{No} & \multicolumn{1}{p{7.0cm}|}{}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{negb indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{negb imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{negf}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{negf reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{10K unit tests ($10K_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{negf dir, reg}} & \multicolumn{1}{p{1.0cm}|}{No} & \multicolumn{1}{p{7.0cm}|}{}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{negf indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{negf imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{negi}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{negi reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{10K unit tests ($10K_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{negi dir, reg}} & \multicolumn{1}{p{1.0cm}|}{No} & \multicolumn{1}{p{7.0cm}|}{}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{negi indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{negi imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{norm}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{norm reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{10K unit tests ($10K_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{norm dir, reg}} & \multicolumn{1}{p{1.0cm}|}{No} & \multicolumn{1}{p{7.0cm}|}{}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{norm indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{norm imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{not}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{not reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{10K unit tests ($10K_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{not dir, reg}} & \multicolumn{1}{p{1.0cm}|}{No} & \multicolumn{1}{p{7.0cm}|}{}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{not indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{not imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{or}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{or reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{10K unit tests ($10K_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{or dir, reg}} & \multicolumn{1}{p{1.0cm}|}{No} & \multicolumn{1}{p{7.0cm}|}{}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{or indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{or imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{rnd}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{rnd reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{10K unit tests ($10K_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{rnd dir, reg}} & \multicolumn{1}{p{1.0cm}|}{No} & \multicolumn{1}{p{7.0cm}|}{}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{rnd indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{rnd imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{rol}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{rol reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{10K unit tests ($10K_{rand}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{rolc}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{rolc reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{10K unit tests ($10K_{rand}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{ror}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ror reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{10K unit tests ($10K_{rand}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{rorc}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{rorc reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{10K unit tests ($10K_{rand}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{subb}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subb reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{10K unit tests ($10K_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subb dir, reg}} & \multicolumn{1}{p{1.0cm}|}{No} & \multicolumn{1}{p{7.0cm}|}{}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subb indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subb imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{subc}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subc reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{10K unit tests ($10K_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subc dir, reg}} & \multicolumn{1}{p{1.0cm}|}{No} & \multicolumn{1}{p{7.0cm}|}{}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subc indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subc imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{subf}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subf reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{10K unit tests ($10K_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subf dir, reg}} & \multicolumn{1}{p{1.0cm}|}{No} & \multicolumn{1}{p{7.0cm}|}{}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subf indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subf imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{subi}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subi reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{10K unit tests ($10K_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subi dir, reg}} & \multicolumn{1}{p{1.0cm}|}{No} & \multicolumn{1}{p{7.0cm}|}{}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subi indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subi imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{subrb}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subrb reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{10K unit tests ($10K_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subrb dir, reg}} & \multicolumn{1}{p{1.0cm}|}{No} & \multicolumn{1}{p{7.0cm}|}{}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subrb indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subrb imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{subrf}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subrf reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{10K unit tests ($10K_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subrf dir, reg}} & \multicolumn{1}{p{1.0cm}|}{No} & \multicolumn{1}{p{7.0cm}|}{}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subrf indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subrf imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{subri}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subri reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{10K unit tests ($10K_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subri dir, reg}} & \multicolumn{1}{p{1.0cm}|}{No} & \multicolumn{1}{p{7.0cm}|}{}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subri indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subri imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{tstb}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{tstb reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{10K unit tests ($10K_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{tstb dir, reg}} & \multicolumn{1}{p{1.0cm}|}{No} & \multicolumn{1}{p{7.0cm}|}{}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{tstb indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{tstb imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{xor}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{xor reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{10K unit tests ($10K_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{xor dir, reg}} & \multicolumn{1}{p{1.0cm}|}{No} & \multicolumn{1}{p{7.0cm}|}{}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{xor indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{xor imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{addc3}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addc3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addc3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addc3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addc3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{addf3}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addf3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addf3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addf3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addf3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{addi3}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addi3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addi3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addi3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addi3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{and3}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{and3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{and3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{and3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{and3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{andn3}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{andn3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{andn3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{andn3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{andn3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{ash3}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ash3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ash3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ash3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ash3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{cmpf3}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{cmpf3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{cmpf3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{cmpf3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{cmpf3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{cmpi3}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{cmpi3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{cmpi3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{cmpi3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{cmpi3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{lsh3}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{lsh3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{lsh3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{lsh3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{lsh3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{mpyf3}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyf3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyf3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyf3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyf3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{mpyi3}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{or3}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{or3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{or3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{or3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{or3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{subb3}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subb3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subb3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subb3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subb3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{subf3}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subf3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subf3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subf3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subf3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{subi3}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subi3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subi3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subi3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subi3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{tstb3}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{tstb3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{tstb3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{tstb3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{tstb3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{xor3}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{xor3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{xor3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{xor3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{xor3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{absf}\texttt{~||~}\textbf{stf}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{absf indir, reg || stf reg, indir}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{absf reg, reg || stf reg, indir}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{absi}\texttt{~||~}\textbf{sti}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{absi indir, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{absi reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{addf3}\texttt{~||~}\textbf{stf}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addf3 reg, indir, reg || stf reg, indir}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addf3 reg, reg, reg || stf reg, indir}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{addi3}\texttt{~||~}\textbf{sti}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addi3 reg, indir, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addi3 reg, reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{and3}\texttt{~||~}\textbf{sti}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{and3 reg, indir, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{and3 reg, reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{ash3}\texttt{~||~}\textbf{sti}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ash3 count, indir, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ash3 count, reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{fix}\texttt{~||~}\textbf{sti}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{fix indir, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{fix reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{float}\texttt{~||~}\textbf{sti}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{float indir, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{float reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{ldf}\texttt{~||~}\textbf{ldf}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldf indir, reg || ldf indir, reg}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldf reg, reg || ldf indir, reg}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{ldf}\texttt{~||~}\textbf{stf}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldf indir, reg || stf reg, indir}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldf reg, reg || stf reg, indir}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{ldi}\texttt{~||~}\textbf{ldi}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldi indir, reg || ldi indir, reg}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldi reg, reg || ldi indir, reg}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{ldi}\texttt{~||~}\textbf{sti}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldi indir, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldi reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{lsh3}\texttt{~||~}\textbf{sti}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{lsh3 count, indir, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{lsh3 count, reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{mpyf3}\texttt{~||~}\textbf{addf3}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyf3 indir, indir, reg || addf3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyf3 indir, reg, reg || addf3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyf3 indir, reg, reg || addf3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyf3 reg, indir, reg || addf3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyf3 reg, indir, reg || addf3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyf3 reg, reg, reg || addf3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{mpyf3}\texttt{~||~}\textbf{stf}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyf3 indir, reg, reg || stf reg, indir}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyf3 reg, reg, reg || stf reg, indir}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{mpyf3}\texttt{~||~}\textbf{subf3}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyf3 indir, indir, reg || subf3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyf3 indir, reg, reg || subf3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyf3 indir, reg, reg || subf3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyf3 reg, indir, reg || subf3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyf3 reg, indir, reg || subf3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyf3 reg, reg, reg || addf3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{mpyi3}\texttt{~||~}\textbf{addi3}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 indir, indir, reg || addi3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 indir, reg, reg || addi3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 indir, reg, reg || addi3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 reg, indir, reg || addi3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 reg, indir, reg || addi3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 reg, reg, reg || addi3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{mpyi3}\texttt{~||~}\textbf{sti}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 indir, reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 reg, reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{mpyi3}\texttt{~||~}\textbf{subi3}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 indir, indir, reg || subi3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 indir, reg, reg || subi3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 indir, reg, reg || subi3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 reg, indir, reg || subi3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 reg, indir, reg || subi3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 reg, reg, reg || subi3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{negf}\texttt{~||~}\textbf{stf}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{negf indir, reg || stf reg, indir}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{negf reg, reg || stf reg, indir}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{negi}\texttt{~||~}\textbf{sti}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{negi indir, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{negi reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{not}\texttt{~||~}\textbf{sti}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{not indir, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{not reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{or3}\texttt{~||~}\textbf{sti}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{or3 reg, indir, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{or3 reg, reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{stf}\texttt{~||~}\textbf{stf}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{stf reg, indir || stf reg, indir}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{stf reg, reg || stf reg, indir}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{sti}\texttt{~||~}\textbf{sti}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{sti reg, indir || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{sti reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{subf3}\texttt{~||~}\textbf{stf}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subf3 reg, indir, reg || stf reg, indir}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subf3 reg, reg, reg || stf reg, indir}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{subi3}\texttt{~||~}\textbf{sti}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subi3 reg, indir, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subi3 reg, reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{xor3}\texttt{~||~}\textbf{sti}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{xor3 indir, reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{xor3 reg, reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{idle2}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{idle2}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{lopower}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{lowpower}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\hline
+\multicolumn{3}{|c|}{\textbf{maxspeed}}\\
+\hline
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{maxspeed}} & \multicolumn{1}{p{1.0cm}|}{?} & \multicolumn{1}{p{7.0cm}|}{?}\\
+\end{supertabular}
+\end{center}
+
+\subsubsection{The testing environment}
+
+A testing environment has been set up using the unit test generator and assembly patterns.
+A GNU Makefile is provided to run the unit tests on both the development board (our reference) and the UNISIM TMS320C3X simulator.
+File \texttt{output.txt} (the unit test output) is renamed \texttt{output.ref} when run on the development board or \texttt{output.sim} when run on the UNISIM TMS320C3X simulator.
+
+\noindent The list of supported Makefile targets is the following:
+
+\begin{itemize}
+\item \texttt{generator(.exe)}: compile the unit tests generator (\texttt{generator(.exe)})
+\item \texttt{compile}: compile the unit tests for the TMS320C3X development board (objects/binaries are \texttt{test.obj}, \texttt{main.obj} and \texttt{test.out})
+\item \texttt{rnd}: generate the random input files (\texttt{random.txt}) 
+\item \texttt{execute}: execute the unit tests on the TMS320C3X development board (\texttt{EXECUTE} must be set) (execution result is in \texttt{output.ref})
+\item \texttt{simulate}: run the simulator (SIMULATE must be set) (simulation results are in \texttt{output.sim})                                    
+\item \texttt{check}: compare simulator vs. reference (depends on diff) (check result is in \texttt{output.check})
+\item \texttt{diff}: generate difference between simulation vs. reference (depends on \texttt{execute} and \texttt{simulate}) (diff result is in \texttt{output.diff})
+\item \texttt{doc}: generate unit tests latex documentation (test.tex). This feature has been used to generate the comprehensive list of unit tests from Appendix~\ref{tms320c3x_unit_tests_list}
+\item \texttt{clean}: clean everything
+\item \texttt{cleangen}: clean generator executable (generator)
+\item \texttt{cleansrc}: clean TMS320C3X generated source files (\texttt{test.asm} and \texttt{main.c})
+\item \texttt{cleanrnd}: clean generated random input files (\texttt{random.txt})
+\item \texttt{cleanbin}: clean TMS320C3X executable files (\texttt{test.out})
+\item \texttt{cleanobj}: clean TMS320C3X object files (\texttt{test.obj} and \texttt{main.obj})
+\item \texttt{cleangel}: clean GEL scripts (\texttt{run.gel})
+\item \texttt{cleansim}: clean simulation results (\texttt{output.sim})
+\item \texttt{cleanref}: clean execution results (\texttt{output.ref})
+\item \texttt{cleandiff}: clean diff files (\texttt{output.diff})
+\item \texttt{cleancheck}: clean check files (\texttt{output.check})
+\item \texttt{cleandoc}: clean latex files (\texttt{test.tex})
+\end{itemize}
+
+\noindent The following Makefile variables are available for tuning the Makefile:
+\begin{itemize}
+\item Mandatory:
+	\begin{itemize}
+	\item \texttt{SIMULATE}: path to the UNISIM TMS320C3X simulator binary
+	\item \texttt{EXECUTE}: path to Code Composer executable (i.e. \texttt{cc\_app.exe})
+	\end{itemize}
+\item Optional:
+	\begin{itemize}
+	\item \texttt{COMPILER\_PREFIX}: prefix to add before to the compiler tools executables (default: empty)
+	\end{itemize}
+\end{itemize}
+
+The provided Makefile uses a GNU bash script \texttt{factorial.sh}, that contains a factorial plan, to generate most of the Makefile rules in file \texttt{Makefile.aux}.
+
+\subsubsection{Running unit tests on the development board}
+
+To obtain reference outputs from the developement board, do the following at the command prompt:
+\begin{verbatim}
+$ make execute EXECUTE=cc_app.exe
+\end{verbatim}
+
+Figure~\ref{fig:tms320c3x_cc} shows the testing environment running on Windows and launching unit tests on the development board.
+
+\textit{Note: Code Composer may complain in a dialog box that it can't communicate with the board through a USB port, see Figure~\ref{fig:tms320c3x_driver_error}. Disconnect and reconnect the USB cable on the JTAG emulator, and then click button "Retry" to resume execution.}
+
+\begin{figure}[!h]
+	\begin{center}
+		\begin{minipage}{\textwidth}
+			\begin{minipage}{9.5cm}
+				\begin{center}
+					\includegraphics[width=9.0cm]{tms320c3x/fig_code_composer.jpg}
+					\caption{\label{fig:tms320c3x_cc} GNU Make (on the left) launching unit tests on the development board using code composer (on the right)}
+				\end{center}
+			\end{minipage}
+			\begin{minipage}{6.5cm}
+				\begin{center}
+		\includegraphics[width=6.0cm]{tms320c3x/fig_driver_error.jpg}
+		\caption{\label{fig:tms320c3x_driver_error} VC33 device driver communication problem.}
+				\end{center}
+			\end{minipage}
+		\end{minipage}
+	\end{center}
+\end{figure}
+
+% \begin{figure}[!h]
+% 	\begin{center}
+% 		\includegraphics[width=10.0cm]{tms320c3x/fig_code_composer.jpg}
+% 		\caption{\label{fig:tms320c3x_cc} GNU Make (on the left) launching unit tests on the development board using code composer (on the right)}
+% 	\end{center}
+% \end{figure}
+% 
+% \begin{figure}[!h]
+% 	\begin{center}
+% 		\includegraphics[width=8.0cm]{tms320c3x/fig_driver_error.jpg}
+% 		\caption{\label{fig:tms320c3x_driver_error} VC33 device driver communication problem.}
+% 	\end{center}
+% \end{figure}
+
+\subsubsection{Using the testing environment as a non-regression test}
+
+The testing environment also acts as a non-regression test for UNISIM TMS320C3X simulator as the expected results (\texttt{output.ref}) are already provided in the testing environment.
+To check that all unit tests successfully run on the UNISIM TMS320C3X simulator, do the following at the command prompt:
+\begin{verbatim}
+$ make generator cleancheck cleansim
+$ make check SIMULATE=tms320c3x
+\end{verbatim}
+
+\noindent The result for each unit test is either \texttt{PASSED} or \texttt{FAILED}.\\

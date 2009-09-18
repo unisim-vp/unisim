@@ -102,7 +102,7 @@ ARM966E_S_FIGURES=arm966e_s/fig_arm966e_s.pdf
 ARM966E_S_GENERATED_LATEX=$(patsubst %.cpp,%.tex,$(ARM966E_S_CPP_SOURCES))
 
 # tms320c3x
-TMS320C3X_LATEX_SOURCES=tms320c3x/tms320c3x.tex
+TMS320C3X_LATEX_SOURCES=tms320c3x/tms320c3x.tex tms320c3x/unit_tests.tex
 TMS320C3X_CPP_SOURCES=\
 tms320c3x/service_instanciation.cpp \
 tms320c3x/service_connection.cpp \
@@ -127,7 +127,15 @@ tms320c3x/binding_logger.cpp \
 tms320c3x/using_logger.cpp \
 tms320c3x/register_interface.cpp
 
-TMS320C3X_FIGURES=tms320c3x/fig_tms320c3x.pdf tms320c3x/fig_object_hierarchy.pdf
+TMS320C3X_FIGURES=\
+tms320c3x/fig_tms320c3x.pdf \
+tms320c3x/fig_object_hierarchy.pdf \
+tms320c3x/fig_code_composer.jpg \
+tms320c3x/fig_tms320c3x_board.jpg \
+tms320c3x/fig_tms320c3x_dev_kit.jpg \
+tms320c3x/fig_unit_test_generator.pdf \
+tms320c3x/fig_unit_test.pdf \
+tms320c3x/fig_driver_error.jpg
 
 TMS320C3X_GENERATED_LATEX=$(patsubst %.cpp,%.tex,$(TMS320C3X_CPP_SOURCES))
 

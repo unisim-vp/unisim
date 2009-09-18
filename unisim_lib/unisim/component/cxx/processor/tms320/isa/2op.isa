@@ -1608,7 +1608,7 @@ ANDN_imm.execute = {
 op ASH_reg  (0b000[3]:0b000111[6]:0b00[2]:dst[5]:0[11]:src[5])
 op ASH_dir  (0b000[3]:0b000111[6]:0b01[2]:dst[5]:direct[16])
 op ASH_indir(0b000[3]:0b000111[6]:0b10[2]:dst[5]:mod[5]:ar[3]:disp[8])
-op ASH_imm  (0b000[3]:0b000111[6]:0b11[2]:dst[5]:sext<32> imm[16])
+op ASH_imm  (0b000[3]:0b000111[6]:0b11[2]:dst[5]:<32> imm[16])
 
 ASH_reg.disasm = {
 	const char *dst_name = REG_NAME[dst];
@@ -1920,7 +1920,7 @@ ASH_imm.execute = {
 	uint32_t dst_value = cpu.GetReg(dst);
 
 	// Sign extend the 7 LSB of the immediate value to get the shift count
-	int32_t count = imm; // imm has alread been sign extended by the decoder
+	int32_t count = SignExtend(imm, 7);
 
 	// Compute the result
 	uint8_t carry_out;
@@ -2751,7 +2751,7 @@ FLOAT_imm.execute = {
 op LSH_reg  (0b000[3]:0b010011[6]:0b00[2]:dst[5]:0[11]:src[5])
 op LSH_dir  (0b000[3]:0b010011[6]:0b01[2]:dst[5]:direct[16])
 op LSH_indir(0b000[3]:0b010011[6]:0b10[2]:dst[5]:mod[5]:ar[3]:disp[8])
-op LSH_imm  (0b000[3]:0b010011[6]:0b11[2]:dst[5]:?[9]:sext<32> imm[7])
+op LSH_imm  (0b000[3]:0b010011[6]:0b11[2]:dst[5]:?[9]:<32> imm[7])
 
 LSH_reg.disasm = {
 	const char *dst_name = REG_NAME[dst];
@@ -3039,7 +3039,7 @@ LSH_imm.execute = {
 	uint32_t dst_value = cpu.GetReg(dst);
 
 	// Sign extend the 7 LSB of the immediate value to get the shift count
-	int32_t count = imm; // imm has alread been sign extended by the decoder
+	int32_t count = SignExtend(imm, 7);
 
 	// Compute the result
 	uint8_t bit_out;
@@ -4612,7 +4612,7 @@ NOT_imm.execute = {
 op OR_reg  (0b000[3]:0b100000[6]:0b00[2]:dst[5]:0[11]:src[5])
 op OR_dir  (0b000[3]:0b100000[6]:0b01[2]:dst[5]:direct[16])
 op OR_indir(0b000[3]:0b100000[6]:0b10[2]:dst[5]:mod[5]:ar[3]:disp[8])
-op OR_imm  (0b000[3]:0b100000[6]:0b11[2]:dst[5]:sext<32> imm[16])
+op OR_imm  (0b000[3]:0b100000[6]:0b11[2]:dst[5]:<32> imm[16])
 
 OR_reg.disasm = {
 	const char *dst_name = REG_NAME[dst];
@@ -6826,7 +6826,7 @@ SUBRI_imm.execute = {
 op TSTB_reg  (0b000[3]:0b110100[6]:0b00[2]:dst[5]:0[11]:src[5])
 op TSTB_dir  (0b000[3]:0b110100[6]:0b01[2]:dst[5]:direct[16])
 op TSTB_indir(0b000[3]:0b110100[6]:0b10[2]:dst[5]:mod[5]:ar[3]:disp[8])
-op TSTB_imm  (0b000[3]:0b110100[6]:0b11[2]:dst[5]:sext<32> imm[16])
+op TSTB_imm  (0b000[3]:0b110100[6]:0b11[2]:dst[5]:<32> imm[16])
 
 TSTB_reg.disasm = {
 	const char *dst_name = REG_NAME[dst];
@@ -7002,7 +7002,7 @@ TSTB_imm.execute = {
 op XOR_reg  (0b000[3]:0b110101[6]:0b00[2]:dst[5]:0[11]:src[5])
 op XOR_dir  (0b000[3]:0b110101[6]:0b01[2]:dst[5]:direct[16])
 op XOR_indir(0b000[3]:0b110101[6]:0b10[2]:dst[5]:mod[5]:ar[3]:disp[8])
-op XOR_imm  (0b000[3]:0b110101[6]:0b11[2]:dst[5]:sext<32> imm[16])
+op XOR_imm  (0b000[3]:0b110101[6]:0b11[2]:dst[5]:<32> imm[16])
 
 XOR_reg.disasm = {
 	const char *dst_name = REG_NAME[dst];

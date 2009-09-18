@@ -1776,7 +1776,7 @@ CheckCondition(unsigned int cond) const
 		case COND_NLV: // ~LV
 			return !(st & M_ST_LV);
 		case COND_LV: // LV
-			return st & ST_LV;
+			return st & M_ST_LV;
 		case COND_NLUF: // ~LUF
 			return !(st & M_ST_LUF);
 		case COND_LUF: // LUF

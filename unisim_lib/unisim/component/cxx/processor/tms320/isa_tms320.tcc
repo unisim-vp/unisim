@@ -9121,7 +9121,7 @@ DEBUG
 {
 public:
 	OpASH_imm(CodeType code, typename CONFIG::address_t addr);
-	int32_t imm;
+	uint32_t imm;
 	uint32_t dst;
 	virtual
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
@@ -11891,7 +11891,7 @@ DEBUG
 {
 public:
 	OpLSH_imm(CodeType code, typename CONFIG::address_t addr);
-	int32_t imm;
+	uint32_t imm;
 	uint32_t dst;
 	virtual
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
@@ -16323,7 +16323,7 @@ DEBUG
 {
 public:
 	OpOR_imm(CodeType code, typename CONFIG::address_t addr);
-	int32_t imm;
+	uint32_t imm;
 	uint32_t dst;
 	virtual
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
@@ -21857,7 +21857,7 @@ DEBUG
 {
 public:
 	OpTSTB_imm(CodeType code, typename CONFIG::address_t addr);
-	int32_t imm;
+	uint32_t imm;
 	uint32_t dst;
 	virtual
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
@@ -22411,7 +22411,7 @@ DEBUG
 {
 public:
 	OpXOR_imm(CodeType code, typename CONFIG::address_t addr);
-	int32_t imm;
+	uint32_t imm;
 	uint32_t dst;
 	virtual
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
@@ -55585,7 +55585,7 @@ cpu
 		uint32_t dst_value = cpu.GetReg(dst);
 
 		// Sign extend the 7 LSB of the immediate value to get the shift count
-		int32_t count = imm; // imm has alread been sign extended by the decoder
+		int32_t count = SignExtend(imm, 7);
 
 		// Compute the result
 		uint8_t carry_out;
@@ -59029,7 +59029,7 @@ cpu
 		uint32_t dst_value = cpu.GetReg(dst);
 
 		// Sign extend the 7 LSB of the immediate value to get the shift count
-		int32_t count = imm; // imm has alread been sign extended by the decoder
+		int32_t count = SignExtend(imm, 7);
 
 		// Compute the result
 		uint8_t bit_out;
@@ -104518,7 +104518,7 @@ DEBUG
 #line 104519 "isa_tms320.tcc"
 >(code, addr, "ASH_imm")
 {
-	imm = (((((int32_t)(code >> 0)) & 0xffff) << 16) >> 16);
+	imm = ((code >> 0) & 0xffff);
 	dst = ((code >> 16) & 0x1f);
 }
 
@@ -105268,7 +105268,7 @@ DEBUG
 #line 105269 "isa_tms320.tcc"
 >(code, addr, "LSH_imm")
 {
-	imm = (((((int32_t)(code >> 0)) & 0x7f) << 25) >> 25);
+	imm = ((code >> 0) & 0x7f);
 	dst = ((code >> 16) & 0x1f);
 }
 
@@ -106468,7 +106468,7 @@ DEBUG
 #line 106469 "isa_tms320.tcc"
 >(code, addr, "OR_imm")
 {
-	imm = (((((int32_t)(code >> 0)) & 0xffff) << 16) >> 16);
+	imm = ((code >> 0) & 0xffff);
 	dst = ((code >> 16) & 0x1f);
 }
 
@@ -107962,7 +107962,7 @@ DEBUG
 #line 107963 "isa_tms320.tcc"
 >(code, addr, "TSTB_imm")
 {
-	imm = (((((int32_t)(code >> 0)) & 0xffff) << 16) >> 16);
+	imm = ((code >> 0) & 0xffff);
 	dst = ((code >> 16) & 0x1f);
 }
 
@@ -108112,7 +108112,7 @@ DEBUG
 #line 108113 "isa_tms320.tcc"
 >(code, addr, "XOR_imm")
 {
-	imm = (((((int32_t)(code >> 0)) & 0xffff) << 16) >> 16);
+	imm = ((code >> 0) & 0xffff);
 	dst = ((code >> 16) & 0x1f);
 }
 

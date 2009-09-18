@@ -68,6 +68,7 @@ const uint32_t FSB_MAX_DATA_SIZE = 32;        // in bytes
 const uint32_t FSB_NUM_PROCS = 1;
 typedef unisim::component::cxx::processor::tms320::TMS320VC33_Config CPU_CONFIG;
 
+int return_status = 0;
 bool simulating;
 
 class TMS320C3X : public unisim::component::cxx::processor::tms320::CPU<CPU_CONFIG, CPU_DEBUG>
@@ -90,6 +91,7 @@ TMS320C3X::~TMS320C3X()
 
 void TMS320C3X::Stop(int ret)
 {
+	return_status = ret;
 	simulating = false;
 }
 
@@ -390,5 +392,5 @@ int main(int argc, char *argv[]) {
 	WSACleanup();
 #endif
 
-	return 0;
+	return return_status;
 }
