@@ -3,7 +3,7 @@
 	<object name="RTBStub">
 		<variable name="RTBStub.anx-stimulus-period">
 			<type>parameter</type>
-			<data_type>clock_t</data_type>
+			<data_type>double</data_type>
 			<value>80000000</value>
 			<description></description>
 		</variable>
@@ -23,7 +23,7 @@
 		<variable name="RTBStub.atd0-anx-wrap-around-channel">
 			<type>parameter</type>
 			<data_type>uint8_t</data_type>
-			<value>7</value>
+			<value>0</value>
 			<description></description>
 		</variable>
 
@@ -81,7 +81,7 @@
 		<variable name="ATD0.debug-enabled">
 			<type>parameter</type>
 			<data_type>bool</data_type>
-			<value>true</value>
+			<value>false</value>
 			<description></description>
 		</variable>
 		<variable name="ATD0.vih">
@@ -137,7 +137,7 @@
 		<variable name="ATD1.debug-enabled">
 			<type>parameter</type>
 			<data_type>bool</data_type>
-			<value>true</value>
+			<value>false</value>
 			<description></description>
 		</variable>
 		<variable name="ATD1.vih">
@@ -217,13 +217,16 @@
 		<variable name="CPU.debug-enabled">
 			<type>parameter</type>
 			<data_type>bool</data_type>
-			<value>true</value>
+			<value>false</value>
 			<description></description>
 		</variable>
 		<variable name="CPU.max-inst">
 			<type>parameter</type>
 			<data_type>unsigned long long</data_type>
+			<value>1000000</value>
+<!--
 			<value>0xffffffffffffffff</value>
+-->
 			<description></description>
 		</variable>
 		<variable name="CPU.nice-time">

@@ -99,7 +99,7 @@ public:
 	PayloadFabric<ATD_Payload<ATD1_SIZE> > atd1_payload_fabric;
 	PayloadFabric<ATD_Payload<ATD0_SIZE> > atd0_payload_fabric;
 
-	clock_t	bus_cycle_time;
+	double	bus_cycle_time;
 	sc_time		cycle_time;
 
 	ATD_PWM_STUB(const sc_module_name& name, Object *parent = 0);
@@ -123,10 +123,10 @@ public:
 	virtual void Process();
 
 protected:
-	clock_t	anx_stimulus_period;
+	double	anx_stimulus_period;
 
 private:
-	Parameter<clock_t>	param_anx_stimulus_period;
+	Parameter<double>	param_anx_stimulus_period;
 
 	ofstream atd0_output_file;
 	ofstream atd1_output_file;

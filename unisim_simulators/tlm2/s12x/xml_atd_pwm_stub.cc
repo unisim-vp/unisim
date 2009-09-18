@@ -94,7 +94,11 @@ template <int SIZE> void XML_ATD_PWM_STUB::parseRow (xmlDocPtr doc, xmlNodePtr c
 	}
 	data.time = 0;
 
-	for (int i=0; i < (rowCells.size()-1); i++) {
+	/**
+	 * First cells of row are ATD voltage
+	 * The last cell is time of sampling
+	 */
+	for (int i=0; (i < rowCells.size()) && (i < SIZE); i++) {
 		cur = rowCells.at(i);
 
 		xmlNodePtr node = cur->children;
@@ -103,7 +107,7 @@ template <int SIZE> void XML_ATD_PWM_STUB::parseRow (xmlDocPtr doc, xmlNodePtr c
 		}
 
 		key = xmlNodeListGetString(doc, node->xmlChildrenNode, 1);
-		if (i < SIZE) {
+		if (i < (rowCells.size()-1)) {
 			data.volte[i] = std::atof((const char *) key);
 		} else {
 			data.time = std::atof((const char *) key);
@@ -197,7 +201,6 @@ void XML_ATD_PWM_STUB::Process()
 
 		uint8_t atd1_wrap_around;
 		uint8_t atd1_start;
-
 
 		if (atd0_anx_wrap_around_channel < ATD0_SIZE) {
 			atd0_wrap_around = atd0_anx_wrap_around_channel;
