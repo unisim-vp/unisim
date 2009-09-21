@@ -125,7 +125,8 @@ tms320c3x/including_logger.cpp \
 tms320c3x/deriving_from_object.cpp \
 tms320c3x/binding_logger.cpp \
 tms320c3x/using_logger.cpp \
-tms320c3x/register_interface.cpp
+tms320c3x/register_interface.cpp \
+tms320c3x/assembly_pattern.cpp
 
 TMS320C3X_FIGURES=\
 tms320c3x/fig_tms320c3x.pdf \

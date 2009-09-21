@@ -1522,7 +1522,7 @@ This part is not yet available.
 
 This part is under construction.
 This section presents the validation process of UNISIM TMS320C3X simulator at the instruction level.
-A comprehensive list of instruction level unit tests is provided in Appendix~\ref{tms320c3x_unit_tests_summary}.
+A comprehensive list of instruction level unit tests is provided in Appendix~\ref{tms320c3x_unit_tests_list}.
 
 \subsubsection{Validation process}
 
@@ -1533,27 +1533,19 @@ A comprehensive list of instruction level unit tests is provided in Appendix~\re
 		\begin{minipage}{\textwidth}
 			\begin{minipage}{8.0cm}
 				\begin{center}
-					\includegraphics[width=7.0cm]{tms320c3x/fig_unit_test_generator.pdf}
+					\includegraphics[width=8.0cm]{tms320c3x/fig_unit_test_generator.pdf}
 					\caption{\label{fig:tms320c3x_unit_test_generator}UNISIM TMS320C3X unit test generator.}
 				\end{center}
 			\end{minipage}
 			\begin{minipage}{8.0cm}
 				\begin{center}
-					\includegraphics[width=7.0cm]{tms320c3x/fig_unit_test.pdf}
+					\includegraphics[width=8.0cm]{tms320c3x/fig_unit_test.pdf}
 					\caption{\label{fig:tms320c3x_unit_test} A generated unit test.}
 				\end{center}
 			\end{minipage}
 		\end{minipage}
 	\end{center}
 \end{figure}
-
-% \begin{figure}[!h]
-% 	\begin{center}
-% 		\includegraphics[width=12.0cm]{tms320c3x/fig_unit_test_generator.pdf}
-% 	\end{center}
-% 	\caption{UNISIM TMS320C3X unit test generator.}
-% 	\label{fig:tms320c3x_unit_test_generator}
-% \end{figure}
 
 The generator reads an assembly pattern and generates the unit test source code:
 \begin{itemize}
@@ -1562,9 +1554,103 @@ The generator reads an assembly pattern and generates the unit test source code:
 \item a testbench written in C (\texttt{main.c}) that in a loop, reads inputs, calls function \texttt{unit\_test}, and write outputs.
 \end{itemize}
 
-The random inputs are obtained with a KISS (Keep It Simple Stupid) random number generator (see \url{http://www.math.niu.edu/\~rusin/known-math/99/RNG}) embedded in the unit tests generator. The generator generates a uniform distribution for integer numbers. Table~\ref{fig:tms320c3x_unit_test_float_distribution} shows the distribution for the floating point numbers.
+An Assembly pattern is some assembly source code with special tags. These tags start with character \texttt{\%}. Most of them represent input/outputs that are substituted by real processor registers during assembly source code generation. Tag \texttt{\%subst} is substituted by a substitution string passed as command line argument to the generator.
+Tag \texttt{\%clobber} says to the generator that assembly pattern explicitely clobber register following that tag and that the generator should not allocate that register while substituing inputs and outputs.
+Table~\ref{table:tms320c3x_assembly_patterns_tags} lists the available tags.
 
-\begin{figure}[!h]
+\begin{table}[!h]
+\begin{center}
+\begin{tabular}{|c|c|l|}
+\hline
+\textbf{Tag} & \textbf{Type} & \textbf{Storage type}\\
+\hline
+\texttt{\scriptsize \%src\_int\_reg} & {\scriptsize source} & {\scriptsize 32-bit integer register}\\
+\hline
+\texttt{\scriptsize \%src\_float\_reg} & {\scriptsize source} & {\scriptsize 40-bit floating-point register}\\
+\hline
+\texttt{\scriptsize \%src\_aux\_reg} & {\scriptsize source} & {\scriptsize auxiliary register}\\
+\hline
+\texttt{\scriptsize \%st\_in} & {\scriptsize source} & {\scriptsize 32-bit integer register (value for st)}\\
+\hline
+\texttt{\scriptsize \%dst\_int\_reg} & {\scriptsize destination} & {\scriptsize 32-bit integer register}\\
+\hline
+\texttt{\scriptsize \%dst\_float\_reg} & {\scriptsize destination} & {\scriptsize 40-bit floating-point register}\\
+\hline
+\texttt{\scriptsize \%dst\_aux\_reg} & {\scriptsize destination} & {\scriptsize auxiliary register}\\
+\hline
+\texttt{\scriptsize \%st\_out} & {\scriptsize destination} & {\scriptsize 32-bit integer register (value of st)}\\
+\hline
+\texttt{\scriptsize \%src\_dst\_int\_reg} & {\scriptsize source \& destination} & {\scriptsize 32-bit integer register}\\
+\hline
+\texttt{\scriptsize \%src\_dst\_float\_reg} & {\scriptsize source \& destination} & {\scriptsize 40-bit floating-point register}\\
+\hline
+\texttt{\scriptsize \%src\_dst\_aux\_reg} & {\scriptsize source \& destination} & {\scriptsize auxiliary register}\\
+\hline
+\texttt{\scriptsize \%tmp\_int\_reg} & {\scriptsize temporary} & {\scriptsize 32-bit integer register}\\
+\hline
+\texttt{\scriptsize \%tmp\_float\_reg} & {\scriptsize temporary} & {\scriptsize 40-bit floating-point register}\\
+\hline
+\texttt{\scriptsize \%tmp\_aux\_reg} & {\scriptsize temporary} & {\scriptsize auxiliary register}\\
+\hline
+\texttt{\scriptsize \%src\_int\_buf[dim]} & {\scriptsize source} & {\scriptsize auxiliary register pointing to an array of \textit{dim} 32-bit integer values}\\
+\hline
+\texttt{\scriptsize \%dst\_int\_buf[dim]} & {\scriptsize destination} & {\scriptsize auxiliary register pointing to an array of \textit{dim} 32-bit integer values}\\
+\hline
+\texttt{\scriptsize \%src\_float\_buf[dim]} & {\scriptsize source} & {\scriptsize auxiliary register pointing to an array of \textit{dim} 32-bit floating-point values}\\
+\hline
+\texttt{\scriptsize \%dst\_float\_buf[dim]} & {\scriptsize destination} & {\scriptsize auxiliary register pointing to an array of \textit{dim} 32-bit floating-point values}\\
+\hline
+\texttt{\scriptsize \%subst} & {\scriptsize substitution} & {\scriptsize N/A}\\
+\hline
+\texttt{\scriptsize \%clobber reg} & {\scriptsize clobber} & {\scriptsize N/A}\\
+\hline
+\end{tabular}
+\caption{UNISIM TMS320C3X unit test generator assembly patterns tags.}
+\label{table:tms320c3x_assembly_patterns_tags}
+\end{center}
+\end{table}
+
+Figure~\ref{fig:tms320c3x_assembly_pattern} shows an example of assembly pattern while Figure~\ref{fig:tms320c3x_generated_assembly} shows the core of generated assembly.
+
+\begin{figure}[h]
+  \begin{center}
+    \input{tms320c3x/assembly_pattern}
+    \caption{\label{fig:tms320c3x_assembly_pattern} Example of assembly pattern.}
+  \end{center}
+\end{figure}
+
+\begin{figure}[h]
+\begin{center}
+\tablehead{\hline}
+\tabletail{\hline}
+\begin{supertabular}{|p{16cm}|}
+\multicolumn{1}{|p{16cm}|}{{\scriptsize \texttt{; \it {-}{-}{-}{-}~INPUTS~{-}{-}{-}{-}}\newline
+\texttt{; \it ~r0:~a~32-bit~integer~register}\newline
+\texttt{; \it ~ar2:~an~auxiliary~register~pointing~to~an~array~of~16~32-bit~floating~point~values}\newline
+\texttt{; \it ~r1:~a~32-bit~integer~register~(value~for~st)}\newline
+\texttt{; \it ~r2:~a~40-bit~floating~point~register}\newline
+\texttt{; \it {-}{-}{-}{-}~OUTPUTS~{-}{-}{-}{-}}\newline
+\texttt{; \it ~ar4:~an~auxiliary~register}\newline
+\texttt{; \it ~r2:~a~40-bit~floating~point~register}\newline
+\texttt{; \it ~r3:~a~32-bit~integer~register~(value~of~st)}\newline
+\texttt{~~ldiu~5,~bk~~~~~~~~~~~~~~~~~; \it ~load~block~size~(should~be~at~most~8)}\newline
+\texttt{~~and~5~-~1,~r0~~~~~~~~~~~~~~; \it ~crop~random~value~between~0~and~bk~-~1}\newline
+\texttt{~~ldiu~r0,~ir0~~~~~~~~~~~~~~~; \it ~load~ir0~with~this~random~value}\newline
+\texttt{~~ldiu~ar2,~ar4~~~~~~~~~~~~~~; \it ~load~a~pointer~to~a~buffer~of~16~words}\newline
+\texttt{~~addi~7,~ar4}\newline
+\texttt{~~andn~7,~ar4~~~~~~~~~~~~~~~~; \it ~align~circular~buffer~start~on~block~size}\newline
+\texttt{~~ldiu~r1,~st}\newline
+\texttt{~~addf~*ar4++(ir0)\%,~r2~~~~~~; \it ~$\leftarrow$~instruction~under~test}\newline
+\texttt{~~ldiu~st,~r3}\newline
+\texttt{}}}\\
+\end{supertabular}
+\caption{\label{fig:tms320c3x_generated_assembly} Generated assembly from assembly pattern of Figure~\ref{fig:tms320c3x_assembly_pattern} and substitution strings \texttt{"5"} and \texttt{"addf"}.}
+\end{center}
+\end{figure}
+
+The random inputs are obtained with a KISS (Keep It Simple Stupid) random number generator (see \url{http://www.math.niu.edu/\~rusin/known-math/99/RNG}) embedded in the unit tests generator. The generator generates a uniform distribution for integer numbers. Table~\ref{table:tms320c3x_unit_test_float_distribution} shows the distribution for the floating point numbers.
+
+\begin{table}[!h]
 \begin{center}
 \begin{tabular}{|c|c|}
 \hline
@@ -1598,20 +1684,12 @@ fully random & 10/37\\
 \hline
 \end{tabular}
 \caption{UNISIM TMS320C3X unit test generator floating point distribution.}
-\label{fig:tms320c3x_unit_test_float_distribution}
+\label{table:tms320c3x_unit_test_float_distribution}
 \end{center}
-\end{figure}
+\end{table}
 
 The unit test source code can be compiled for the development board, and run on both the development board and the UNISIM TMS320C3X simulator.
 As a unit test uses the TI C I/O functions, it can reads inputs and write outputs from/to files of the host file system, see Figure~\ref{fig:tms320c3x_unit_test}. Such a capability has considerably reduced the complexity of testing the assembly pattern under test on both the development board and the UNISIM TMS320C3X simulator.
-
-% \begin{figure}[!h]
-% 	\begin{center}
-% 		\includegraphics[width=14.0cm]{tms320c3x/fig_unit_test.pdf}
-% 	\end{center}
-% 	\caption{A generated unit test.}
-% 	\label{fig:tms320c3x_unit_test}
-% \end{figure}
 
 A unit test reads manually selected inputs from file \texttt{input.txt} and some random generated inputs from file \texttt{random.txt}. It writes outputs into file \texttt{output.txt}.
 
