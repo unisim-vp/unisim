@@ -58,7 +58,7 @@ AC_CHECK_HEADERS([inttypes.h],,\
     AC_MSG_ERROR([Some standard C headers are missing.]))
 
 ###### CHECK FOR C++ HEADERS ##################################################
-AC_CHECK_HEADERS([string map sstream],,\
+AC_CHECK_HEADERS([string map sstream iomanip],,\
     AC_MSG_ERROR([Some standard C++ headers are missing.]))
 
 UNISIM_CHECK_UNISIM_TOOLS

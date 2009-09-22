@@ -49,6 +49,7 @@
 #include "unisim/util/arithmetic/arithmetic.hh"
 
 #include "unisim/util/debug/simple_register.hh"
+#include <iomanip>
 
 #define LOCATION "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__
 
@@ -629,7 +630,41 @@ template <class CONFIG, bool DEBUG>
 string CPU<CONFIG, DEBUG>::DisasmShortFloat(uint16_t x)
 {
 	stringstream sstr;
-	sstr << "short_float(0x" << hex << x << dec << ")";
+	uint32_t input_fraction = 0;
+	int32_t input_decimal = 0;
+	long double value = 0.0;
+	
+	// compute exponent
+	int16_t exponent = (int16_t)x;
+	exponent = exponent >> 12;
+	if (exponent == -8) 
+		// the coded value is 0
+		sstr << (long double)value;
+	else
+	{
+		// get the input fraction and decimal parts of the input value x
+		if (x & (uint16_t)0x0800)
+			input_decimal = (int32_t)((uint32_t)0xfffff000 | (uint32_t)(x & ~(uint16_t)0x0800));
+		else
+			input_decimal = (int32_t)((uint32_t)(x & (uint16_t)0x07ff) | (uint32_t)0x0800);
+		input_fraction = (uint32_t)input_decimal;
+		input_decimal = input_decimal >> (11 - exponent);
+		input_fraction = input_fraction << (21 + exponent);
+		
+		// compute the float value
+		long double factor = 2.0;
+		uint32_t mask;
+		for (mask = (uint32_t)0x80000000; mask != 0; mask = mask >> 1)
+		{
+			if (mask & input_fraction)
+				value += (long double)1.0/factor;
+			factor *= 2.0;
+		}
+		value += input_decimal;
+	}
+	
+	// and return a formated string
+	sstr << std::scientific << value;
 	return sstr.str();
 }
 
