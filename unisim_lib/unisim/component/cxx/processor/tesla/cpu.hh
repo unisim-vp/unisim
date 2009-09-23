@@ -175,6 +175,7 @@ public:
 	//=                    Constructor/Destructor                         =
 	//=====================================================================
 
+	// TODO: coreid and core_count as Parameters
 	CPU(const char *name, Object *parent = 0, int coreid = 0, int core_count = 1);
 	virtual ~CPU();
 	

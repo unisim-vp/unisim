@@ -1212,7 +1212,7 @@ fp32d123.classify = {
 
 // Input operands 1, 2 and output operand of type DT_F32
 group fp32d12(fsmac, fsadd_halfimm, fsmul_full, fsmul_halfimm, \
-	fsmul_full_const, fsmax_full, fsmax_imm)
+	fsmul_full_const, fsmax_full, fsmax_imm, fsmin_full, fsmin_imm)
 
 fp32d12.init = {
 	typedef Operation<CONFIG> inherited;
