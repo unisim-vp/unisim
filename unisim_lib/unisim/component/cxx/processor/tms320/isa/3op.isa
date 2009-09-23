@@ -718,6 +718,7 @@ ADDI3_reg_reg.execute = {
 	else
 	{
 		Add32(result, carry_out, overflow, sign, src1_value, src2_value, 0);
+		sign = sign ^ overflow;
 	}
 
 	// Write back result
@@ -915,6 +916,7 @@ ADDI3_indir_indir.execute = {
 	else
 	{
 		Add32(result, carry_out, overflow, sign, src1_value, src2_value, 0);
+		sign = sign ^ overflow;
 	}
 
 	// Check whether an auxiliary register is updated for 1st source operand
@@ -1042,7 +1044,7 @@ AND3_reg_reg.execute = {
 		// Generate flags (into ST)
 		cpu.GenFlags(
 			result,
-			M_ST_UF | M_ST_V,  // reset mask
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
 			M_ST_N | M_ST_Z,    // or mask
 			sign
 		);
@@ -1093,7 +1095,7 @@ AND3_indir_reg.execute = {
 		// Generate flags (into ST)
 		cpu.GenFlags(
 			result,
-			M_ST_UF | M_ST_V,  // reset mask
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
 			M_ST_N | M_ST_Z,    // or mask
 			sign
 		);
@@ -1143,7 +1145,7 @@ AND3_reg_indir.execute = {
 		// Generate flags (into ST)
 		cpu.GenFlags(
 			result,
-			M_ST_UF | M_ST_V,  // reset mask
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
 			M_ST_N | M_ST_Z,    // or mask
 			sign
 		);
@@ -1215,7 +1217,7 @@ AND3_indir_indir.execute = {
 		// Generate flags (into ST)
 		cpu.GenFlags(
 			result,
-			M_ST_UF | M_ST_V,  // reset mask
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
 			M_ST_N | M_ST_Z,    // or mask
 			sign
 		);
@@ -1306,7 +1308,7 @@ ANDN3_reg_reg.execute = {
 		// Generate flags (into ST)
 		cpu.GenFlags(
 			result,
-			M_ST_UF | M_ST_V,  // reset mask
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
 			M_ST_N | M_ST_Z,    // or mask
 			sign
 		);
@@ -1357,7 +1359,7 @@ ANDN3_indir_reg.execute = {
 		// Generate flags (into ST)
 		cpu.GenFlags(
 			result,
-			M_ST_UF | M_ST_V,  // reset mask
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
 			M_ST_N | M_ST_Z,    // or mask
 			sign
 		);
@@ -1407,7 +1409,7 @@ ANDN3_reg_indir.execute = {
 		// Generate flags (into ST)
 		cpu.GenFlags(
 			result,
-			M_ST_UF | M_ST_V,  // reset mask
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
 			M_ST_N | M_ST_Z,    // or mask
 			sign
 		);
@@ -1479,7 +1481,7 @@ ANDN3_indir_indir.execute = {
 		// Generate flags (into ST)
 		cpu.GenFlags(
 			result,
-			M_ST_UF | M_ST_V,  // reset mask
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
 			M_ST_N | M_ST_Z,    // or mask
 			sign
 		);
@@ -1812,7 +1814,8 @@ ASH3_reg_indir.execute = {
 			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
 			M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
 			sign,
-			carry_out
+			carry_out,
+			overflow
 		);
 	}
 }
