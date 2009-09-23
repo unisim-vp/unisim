@@ -690,7 +690,7 @@ namespace tms320 {
 					// the mantissa is negative, check how many bits we have to shift it
 					//   to be a signed 33bits number
 					ext_lo_c = ext_lo_c >> 1;
-					if ((int32_t)(int8_t)this->GetHi() + 1 > 127) 
+					if (((int32_t)(int8_t)this->GetHi()) + 1 > 127) 
 					{
 						overflow = 1;
 						this->SetHi((uint8_t)0x7f);
@@ -711,10 +711,10 @@ namespace tms320 {
 						ext_lo_c = ext_lo_c << count;
 #ifdef __DEBUG_TMS320C3X_REGISTER__
 						std::cerr << "8.1- normalizing pos" << std::endl
-						<< "  hi_c = " << (int8_t)this->GetHi() << std::endl
+						<< "  hi_c = " << (int)(int8_t)this->GetHi() << " (" << (int)(((int32_t)(int8_t)this->GetHi()) - count) << ")" << std::endl
 						<< "  count = " << count << std::endl;
 #endif
-						if ((int32_t)((int32_t)(int8_t)this->GetHi() - count) < -128)
+						if ((int32_t)(((int32_t)(int8_t)this->GetHi()) - count) <= -128)
 						{
 							underflow = 1;
 							this->SetHi((uint8_t)0x80);
@@ -736,7 +736,7 @@ namespace tms320 {
 
 							count = count - 32;
 							ext_lo_c = ext_lo_c << count;
-							if ((int32_t)((int32_t)(int8_t)this->hi - count) <= -128)
+							if ((int32_t)((int32_t)(int8_t)this->GetHi() - count) <= -128)
 							{
 								underflow = 1;
 								this->SetHi((uint8_t)0x80);
@@ -954,7 +954,10 @@ namespace tms320 {
 		else
 			count = unisim::util::arithmetic::CountLeadingZeros(lo_a);
 		
-		man = man << count;
+		if (count == 32)
+			man = 0;
+		else
+			man = man << count;
 		exp = exp - count;
 		if (exp <= -128)
 		{
@@ -978,7 +981,7 @@ namespace tms320 {
 #ifdef __DEBUG_TMS320C3X_REGISTER__
 		std::cerr 
 		<< "1- rnd = " << std::endl
-		<< "   hi_a = 0x" << std::hex << (unsigned int)hi_a << "\t lo_a = 0x" << (unsigned int)lo_a << std::endl;
+		<< "   hi_a = 0x" << std::hex << (unsigned int)hi_a << "\t lo_a = 0x" << (unsigned int)lo_a << std::dec << std::endl;
 #endif
 
 		// check when src = 0
@@ -1005,7 +1008,7 @@ namespace tms320 {
 #ifdef __DEBUG_TMS320C3X_REGISTER__
 		std::cerr 
 		<< "2- rnd (extending sign) " << std::endl
-		<< "   ext_lo_a = 0x" << (unsigned long long int)ext_lo_a << std::endl;
+		<< "   ext_lo_a = 0x" << std::hex << (unsigned long long int)ext_lo_a << std::dec << std::endl;
 #endif
 		
 		// add the mantissas
@@ -1014,7 +1017,7 @@ namespace tms320 {
 #ifdef __DEBUG_TMS320C3X_REGISTER__
 		std::cerr 
 		<< "3- rnd (adding 1x2^(exp)-24) " << std::endl
-		<< "   ext_lo_c = 0x" << (unsigned long long int)ext_lo_c << std::endl;
+		<< "   ext_lo_c = 0x" << std::hex << (unsigned long long int)ext_lo_c << std::dec << std::endl;
 #endif
 		
 		// get the sign
@@ -1033,14 +1036,18 @@ namespace tms320 {
 		else
 		{
 			// 2 - mantissa overflow
-			if (ext_lo_c > 0 && (ext_lo_c >> 32) != 0)
+			if ((ext_lo_c > 0) && ((ext_lo_c >> 32) != 0))
 			{
 				// the mantissa is possitive, check how many bits we have to shift it
 				//   to be a signed 33bits number
 				ext_lo_c = ext_lo_c >> 1;
-				if ((int32_t)this->GetHi() + 1 > 127) 
+				if (((int32_t)(int8_t)this->GetHi() + 1) > 127) 
 				{
 					overflow = 1;
+					std::cerr 
+					<< "o- setting overflow" << std::endl
+					<< "   hi = " << (int)((int32_t)this->GetHi()) << " (" << (int)(((int32_t)(this->GetHi())) + 1) << ")" << std::endl
+					<< "   ext_lo_c = 0x" << std::hex << (unsigned long long int)ext_lo_c << std::dec << std::endl;
 					this->SetHi((uint8_t)0x7f);
 				}
 				else
@@ -1048,12 +1055,12 @@ namespace tms320 {
 			}
 			else
 			{
-				if (ext_lo_c < 0 && ~(ext_lo_c >> 32) != 0)
+				if ((ext_lo_c < 0) && (~(ext_lo_c >> 32) != 0))
 				{
 					// the mantissa is negative, check how many bits we have to shift it
 					//   to be a signed 33bits number
 					ext_lo_c = (uint64_t)ext_lo_c >> 1;
-					if ((int32_t)(int8_t)this->GetHi() + 1 > 127) 
+					if (((int32_t)(int8_t)this->GetHi() + 1) > 127) 
 					{
 						overflow = 1;
 						this->SetHi((uint8_t)0x7f);
@@ -1069,7 +1076,7 @@ namespace tms320 {
 						uint32_t count = unisim::util::arithmetic::CountLeadingZeros((uint64_t)ext_lo_c);
 						count = count - 32;
 						ext_lo_c = ext_lo_c << count;
-						if ((int32_t)((int32_t)this->GetHi() - count) < -128)
+						if ((int32_t)((int32_t)(int8_t)this->GetHi() - count) <= -128)
 						{
 							underflow = 1;
 							this->SetHi((uint8_t)0x80);
@@ -1079,13 +1086,13 @@ namespace tms320 {
 					}
 					else
 					{
-						if (ext_lo_c < 0 && ((ext_lo_c & (uint64_t)0x80000000) != 0))
+						if ((ext_lo_c < 0) && ((ext_lo_c & (uint64_t)0x80000000) != 0))
 						{
 							uint32_t count = unisim::util::arithmetic::CountLeadingZeros(~(uint64_t)ext_lo_c);
 							
 							count = count - 32;
 							ext_lo_c = ext_lo_c << count;
-							if ((int32_t)((int32_t)(int8_t)this->hi - count) <= -128)
+							if ((int32_t)(((int32_t)(int8_t)this->hi) - count) <= -128)
 							{
 								underflow = true;
 								this->SetHi((uint8_t)0x80);
