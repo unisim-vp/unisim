@@ -4529,8 +4529,7 @@ MPYF3_SUBF3.execute = {
  * op MPYI3_ADDI3(0b10[2]:0b0010[4]:p[2]:d1[1]:d2[1]:src1[3]:src2[3]:src3[8]:src4[8])
  */
 
-op MPYI3_ADDI3    (0b10[2]:0b0010[4]:p[2]:d1[1]:d2[1]:src1[3]:src2[3]:s3_mod[5]:s3_ar[3]:s4_mod[5]:s4_ar[3])
-op MPYI3_ADDI3_ext(0b10[2]:0b0010[4]:p[2]:d1[1]:d2[1]:src1[3]:src2[3]:0b111[3]:src3[5]:0b111[3]:src4[5])
+op MPYI3_ADDI3    (0b10[2]:0b0010[4]:p[2]:d1[1]:d2[1]:src1[3]:src2[3]:s3_mod1[3]:s3_mod2[2]:s3_ar[3]:s4_mod1[3]:s4_mod2[2]:s4_ar[3])
 
 MPYI3_ADDI3.disasm = {
 	const char *dst1_name = REG_NAME[d1];
@@ -4543,60 +4542,20 @@ MPYI3_ADDI3.disasm = {
 	const char *srcB_name = 0;
 	const char *srcC_name = 0;
 	const char *srcD_name = 0;
-
-	if (!cpu.DisasmIndir(disasm_src3_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, s3_mod, s3_ar) ||
-			!cpu.DisasmIndir(disasm_src4_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, s4_mod, s4_ar))
-		return false;
-
-	switch(p)
+	
+	if(s3_mod1 != 0x07)
 	{
-		case 0:
-			srcA_name = disasm_src3_indir.c_str();
-			srcB_name = disasm_src4_indir.c_str();
-			srcD_name = src1_name;
-			srcC_name = src2_name;
-			break;
-		case 1:
-			srcA_name = disasm_src3_indir.c_str();
-			srcB_name = src1_name;
-			srcD_name = disasm_src4_indir.c_str();
-			srcC_name = src2_name;
-			break;
-		case 3:
-			srcA_name = src1_name;
-			srcB_name = src2_name;
-			srcD_name = disasm_src3_indir.c_str();
-			srcC_name = disasm_src4_indir.c_str();
-			break;
-		case 4:
-			srcA_name = disasm_src3_indir.c_str();
-			srcB_name = src1_name;
-			srcD_name = src2_name;
-			srcC_name = disasm_src4_indir.c_str();
-			break;
+		if(!cpu.DisasmIndir(disasm_src3_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, (s3_mod1 << 2) + s3_mod2, s3_ar)) return false;
+	}
+
+	if(s4_mod1 != 0x07)
+	{
+		if(!cpu.DisasmIndir(disasm_src4_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, (s4_mod1 << 2) + s4_mod2, s4_ar)) return false;
 	}
 	
-	os << "MPYI3 " << srcA_name << ", " << srcB_name << ", " << dst1_name
-		<< " || " << "ADDI3 " << srcC_name << ", " << srcD_name << ", " << dst2_name;
-	return true;
-}
-
-MPYI3_ADDI3_ext.disasm = {
-	const char *dst1_name = REG_NAME[d1];
-	const char *dst2_name = REG_NAME[d2 + 2];
-	const char *src1_name = REG_NAME[src1];
-	const char *src2_name = REG_NAME[src2];
-	const char *src3_name = REG_NAME[src3];
-	const char *src4_name = REG_NAME[src4];
-	const char *srcA_name = 0;
-	const char *srcB_name = 0;
-	const char *srcC_name = 0;
-	const char *srcD_name = 0;
-
-	if (!src3_name ||
-			!src4_name)
-		return false;
-
+	const char *src3_name = (s3_mod1 == 0x07) ? REG_NAME[(s3_mod2 << 3) + s3_ar] : disasm_src3_indir.c_str();
+	const char *src4_name = (s4_mod1 == 0x07) ? REG_NAME[(s4_mod2 << 3) + s4_ar] : disasm_src4_indir.c_str();
+	
 	switch(p)
 	{
 		case 0:
@@ -4640,31 +4599,47 @@ MPYI3_ADDI3.execute = {
 	// Read 'src2' register operand
 	uint32_t src2_value = cpu.GetReg(src2);
 
-	// Check that indirect addressing mode is valid and compute the effective address of 'src3' operand
-	typename CONFIG::address_t s3_ea;        // The effective address
 	bool s3_update_ar;                       // Whether to update ARn
 	typename CONFIG::address_t s3_output_ar; // New value of ARn if it is updated
+	typename CONFIG::address_t s3_ea;        // The effective address
 
-	if(unlikely(!cpu.ComputeIndirEA(s3_ea, s3_update_ar, s3_output_ar, s3_mod, s3_ar)))
+	if(s3_mod1 != 0x7)
 	{
-		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+		// Check that indirect addressing mode is valid and compute the effective address of 'src3' operand
+
+		if(unlikely(!cpu.ComputeIndirEA(s3_ea, s3_update_ar, s3_output_ar, (s3_mod1 << 2) + s3_mod2, s3_ar)))
+		{
+			throw BogusOpcodeException<CONFIG, DEBUG>(this);
+		}
+	}
+	else
+	{
+		s3_update_ar = false;
 	}
 
-	// Check that indirect addressing mode is valid and compute the effective address of 'src4' operand
-	typename CONFIG::address_t s4_ea;        // The effective address
 	bool s4_update_ar;                       // Whether to update ARn
 	typename CONFIG::address_t s4_output_ar; // New value of ARn if it is updated
+	typename CONFIG::address_t s4_ea;        // The effective address
 
-	if(unlikely(!cpu.ComputeIndirEA(s4_ea, s4_update_ar, s4_output_ar, s4_mod, s4_ar)))
+	if(s4_mod1 != 0x7)
 	{
-		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+		// Check that indirect addressing mode is valid and compute the effective address of 'src4' operand
+
+		if(unlikely(!cpu.ComputeIndirEA(s4_ea, s4_update_ar, s4_output_ar, (s4_mod1 << 2) + s4_mod2, s4_ar)))
+		{
+			throw BogusOpcodeException<CONFIG, DEBUG>(this);
+		}
+	}
+	else
+	{
+		s4_update_ar = false;
 	}
 
-	// Load 'src3' operand from memory
-	uint32_t src3_value = cpu.IntLoad(s3_ea);
+	// Load 'src3' operand from memory or register
+	uint32_t src3_value = (s3_mod1 != 0x7) ? cpu.IntLoad(s3_ea) : cpu.GetReg((s3_mod2 << 3) + s3_ar);
 
-	// Load 'src4' operand from memory
-	uint32_t src4_value = cpu.IntLoad(s4_ea);
+	// Load 'src4' operand from memory or register
+	uint32_t src4_value = (s4_mod1 != 0x7) ? cpu.IntLoad(s4_ea) : cpu.GetReg((s4_mod2 << 3) + s4_ar);
 
 	// Map 'src1', 'src2', 'src3', and 'src4' to 'srcA', 'srcB', 'srcC', and 'srcD'
 	// depending on the parallel addressing mode used
@@ -4678,26 +4653,26 @@ MPYI3_ADDI3.execute = {
 		case 0: // 00
 			srcA_value = src3_value;
 			srcB_value = src4_value;
-			srcC_value = src2_value;
 			srcD_value = src1_value;
+			srcC_value = src2_value;
 			break;
 		case 1: // 01
 			srcA_value = src3_value;
 			srcB_value = src1_value;
-			srcC_value = src4_value;
-			srcD_value = src2_value;
+			srcD_value = src4_value;
+			srcC_value = src2_value;
 			break;
 		case 2: // 10
 			srcA_value = src1_value;
 			srcB_value = src2_value;
-			srcC_value = src3_value;
-			srcD_value = src4_value;
+			srcD_value = src3_value;
+			srcC_value = src4_value;
 			break;
 		case 3: // 11
 			srcA_value = src3_value;
 			srcB_value = src1_value;
-			srcC_value = src2_value;
-			srcD_value = src4_value;
+			srcD_value = src2_value;
+			srcC_value = src4_value;
 			break;
 	}
 
@@ -4749,117 +4724,11 @@ MPYI3_ADDI3.execute = {
 		cpu.SetAR23_0(s3_ar, s3_output_ar);
 	}
 
-	if(s4_update_ar && s4_ar != s4_ar)
+	if(s4_update_ar && s4_ar != s3_ar)
 	{
 		// Write back ARn
 		cpu.SetAR23_0(s4_ar, s4_output_ar);
 	}
-
-	// Generate flags (into ST)
-	cpu.GenFlags(
-		0,
-		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-		M_ST_LV | M_ST_V,  // or mask
-		0,
-		0,
-		overflow
-	);
-}
-
-//    srcA * srcB -> dst1
-// ||
-//    srcD + srcC -> dst2
-MPYI3_ADDI3_ext.execute = {
-	// Check whether 'src3' and 'src4' are valid registers
-	if(unlikely(!cpu.HasReg(src3) || !cpu.HasReg(src4)))
-	{
-		throw BogusOpcodeException<CONFIG, DEBUG>(this);
-	}
-
-	// Read 'src1' register operand
-	uint32_t src1_value = cpu.GetReg(src1);
-
-	// Read 'src2' register operand
-	uint32_t src2_value = cpu.GetReg(src2);
-
-	// Read 'src3' register operand
-	uint32_t src3_value = cpu.GetReg(src3);
-
-	// Read 'src4' register operand
-	uint32_t src4_value = cpu.GetReg(src4);
-
-	// Map 'src1', 'src2', 'src3', and 'src4' to 'srcA', 'srcB', 'srcC', and 'srcD'
-	// depending on the parallel addressing mode used
-	uint32_t srcA_value;
-	uint32_t srcB_value;
-	uint32_t srcC_value;
-	uint32_t srcD_value;
-
-	switch(p)
-	{
-		case 0: // 00
-			srcA_value = src3_value;
-			srcB_value = src4_value;
-			srcC_value = src2_value;
-			srcD_value = src1_value;
-			break;
-		case 1: // 01
-			srcA_value = src3_value;
-			srcB_value = src1_value;
-			srcC_value = src4_value;
-			srcD_value = src2_value;
-			break;
-		case 2: // 10
-			srcA_value = src1_value;
-			srcB_value = src2_value;
-			srcC_value = src3_value;
-			srcD_value = src4_value;
-			break;
-		case 3: // 11
-			srcA_value = src3_value;
-			srcB_value = src1_value;
-			srcC_value = src2_value;
-			srcD_value = src4_value;
-			break;
-	}
-
-	// Compute the 32-bit result and overflow of MPYI3
-	// Source operand values are sign extended from 24 bits to 64 bits before the actual computation
-	int64_t mpyi3_result64 = SignExtend((uint64_t)(srcA_value & 0xffffff), 24) * SignExtend((uint64_t)(srcB_value & 0xffffff), 24); // Only 48 bits are useful
-	int32_t lo32 = (int32_t) mpyi3_result64;          // the 32 LSBs of the result
-	int32_t hi32 = (int32_t) (mpyi3_result64 >> 32);  // the 32 MSBs of the result
-	// An overflow occurs if any of the 32-bit MSB of the result differ from MSB of the 32-bit output value
-	// An arithmetic shift of 31 bits is used to duplicate 32 times the MSB of lo32
-	uint8_t mpyi3_overflow = ((lo32 >> 31) != hi32);
-	uint32_t mpyi3_result;
-	
-	if(cpu.GetST_OVM() && mpyi3_overflow)
-		mpyi3_result = (mpyi3_result64 < 0) ? 0x80000000 : 0x7fffffff; // Saturate the result
-	else
-		mpyi3_result = lo32;                                     // No saturation
-
-	// Compute the result of ADDI3
-	uint32_t addi3_result;      // the 32-bit result
-	uint8_t addi3_carry_out;    // the carry out (0 or 1)
-	uint8_t addi3_overflow;     // the overflow (0 or 1)
-	uint8_t addi3_sign;         // the sign (0 or 1)
-
-	// Depending on overflow mode do signed saturation or not 
-	if(cpu.GetST_OVM())
-		SignedSatAdd32(addi3_result, addi3_carry_out, addi3_overflow, addi3_sign, srcD_value, srcC_value, 0);
-	else
-		Add32(addi3_result, addi3_carry_out, addi3_overflow, addi3_sign, srcD_value, srcC_value, 0);
-
-	// Summarize overflow bit of MPYI3 and ADDI3
-	uint8_t overflow = mpyi3_overflow | addi3_overflow;
-
-	// Write back 'dst1' register operand
-	unsigned int dst1 = d1;
-	cpu.SetReg(dst1, mpyi3_result);
-
-	// Write back 'dst2' register operand
-	unsigned int dst2 = d2 + 2;
-	cpu.SetReg(dst2, addi3_result);
 
 	// Generate flags (into ST)
 	cpu.GenFlags(
@@ -4880,8 +4749,7 @@ MPYI3_ADDI3_ext.execute = {
  * op MPYI3_SUBI3(0b10[2]:0b0011[4]:p[2]:d1[1]:d2[1]:src1[3]:src2[3]:src3[8]:src4[8])
  */
 
-op MPYI3_SUBI3    (0b10[2]:0b0011[4]:p[2]:d1[1]:d2[1]:src1[3]:src2[3]:s3_mod[5]:s3_ar[3]:s4_mod[5]:s4_ar[3])
-op MPYI3_SUBI3_ext(0b10[2]:0b0011[4]:p[2]:d1[1]:d2[1]:src1[3]:src2[3]:0b111[3]:src3[5]:0b111[3]:src4[5])
+op MPYI3_SUBI3    (0b10[2]:0b0011[4]:p[2]:d1[1]:d2[1]:src1[3]:src2[3]:s3_mod1[3]:s3_mod2[2]:s3_ar[3]:s4_mod1[3]:s4_mod2[2]:s4_ar[3])
 
 MPYI3_SUBI3.disasm = {
 	const char *dst1_name = REG_NAME[d1];
@@ -4894,60 +4762,20 @@ MPYI3_SUBI3.disasm = {
 	const char *srcB_name = 0;
 	const char *srcC_name = 0;
 	const char *srcD_name = 0;
-
-	if (!cpu.DisasmIndir(disasm_src3_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, s3_mod, s3_ar) ||
-			!cpu.DisasmIndir(disasm_src4_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, s4_mod, s4_ar))
-		return false;
-
-	switch(p)
+	
+	if(s3_mod1 != 0x07)
 	{
-		case 0:
-			srcA_name = disasm_src3_indir.c_str();
-			srcB_name = disasm_src4_indir.c_str();
-			srcD_name = src1_name;
-			srcC_name = src2_name;
-			break;
-		case 1:
-			srcA_name = disasm_src3_indir.c_str();
-			srcB_name = src1_name;
-			srcD_name = disasm_src4_indir.c_str();
-			srcC_name = src2_name;
-			break;
-		case 3:
-			srcA_name = src1_name;
-			srcB_name = src2_name;
-			srcD_name = disasm_src3_indir.c_str();
-			srcC_name = disasm_src4_indir.c_str();
-			break;
-		case 4:
-			srcA_name = disasm_src3_indir.c_str();
-			srcB_name = src1_name;
-			srcD_name = src2_name;
-			srcC_name = disasm_src4_indir.c_str();
-			break;
+		if(!cpu.DisasmIndir(disasm_src3_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, (s3_mod1 << 2) + s3_mod2, s3_ar)) return false;
+	}
+
+	if(s4_mod1 != 0x07)
+	{
+		if(!cpu.DisasmIndir(disasm_src4_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, (s4_mod1 << 2) + s4_mod2, s4_ar)) return false;
 	}
 	
-	os << "MPYI3 " << srcA_name << ", " << srcB_name << ", " << dst1_name
-		<< " || " << "SUBI3 " << srcC_name << ", " << srcD_name << ", " << dst2_name;
-	return true;
-}
-
-MPYI3_SUBI3_ext.disasm = {
-	const char *dst1_name = REG_NAME[d1];
-	const char *dst2_name = REG_NAME[d2 + 2];
-	const char *src1_name = REG_NAME[src1];
-	const char *src2_name = REG_NAME[src2];
-	const char *src3_name = REG_NAME[src3];
-	const char *src4_name = REG_NAME[src4];
-	const char *srcA_name = 0;
-	const char *srcB_name = 0;
-	const char *srcC_name = 0;
-	const char *srcD_name = 0;
-
-	if (!src3_name ||
-			!src4_name)
-		return false;
-
+	const char *src3_name = (s3_mod1 == 0x07) ? REG_NAME[(s3_mod2 << 3) + s3_ar] : disasm_src3_indir.c_str();
+	const char *src4_name = (s4_mod1 == 0x07) ? REG_NAME[(s4_mod2 << 3) + s4_ar] : disasm_src4_indir.c_str();
+	
 	switch(p)
 	{
 		case 0:
@@ -4983,7 +4811,7 @@ MPYI3_SUBI3_ext.disasm = {
 
 //    srcA * srcB -> dst1
 // ||
-//    srcD + srcC -> dst2
+//    srcD - srcC -> dst2
 MPYI3_SUBI3.execute = {
 	// Read 'src1' register operand
 	uint32_t src1_value = cpu.GetReg(src1);
@@ -4991,31 +4819,47 @@ MPYI3_SUBI3.execute = {
 	// Read 'src2' register operand
 	uint32_t src2_value = cpu.GetReg(src2);
 
-	// Check that indirect addressing mode is valid and compute the effective address of 'src3' operand
-	typename CONFIG::address_t s3_ea;        // The effective address
 	bool s3_update_ar;                       // Whether to update ARn
 	typename CONFIG::address_t s3_output_ar; // New value of ARn if it is updated
+	typename CONFIG::address_t s3_ea;        // The effective address
 
-	if(unlikely(!cpu.ComputeIndirEA(s3_ea, s3_update_ar, s3_output_ar, s3_mod, s3_ar)))
+	if(s3_mod1 != 0x7)
 	{
-		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+		// Check that indirect addressing mode is valid and compute the effective address of 'src3' operand
+
+		if(unlikely(!cpu.ComputeIndirEA(s3_ea, s3_update_ar, s3_output_ar, (s3_mod1 << 2) + s3_mod2, s3_ar)))
+		{
+			throw BogusOpcodeException<CONFIG, DEBUG>(this);
+		}
+	}
+	else
+	{
+		s3_update_ar = false;
 	}
 
-	// Check that indirect addressing mode is valid and compute the effective address of 'src4' operand
-	typename CONFIG::address_t s4_ea;        // The effective address
 	bool s4_update_ar;                       // Whether to update ARn
 	typename CONFIG::address_t s4_output_ar; // New value of ARn if it is updated
+	typename CONFIG::address_t s4_ea;        // The effective address
 
-	if(unlikely(!cpu.ComputeIndirEA(s4_ea, s4_update_ar, s4_output_ar, s4_mod, s4_ar)))
+	if(s4_mod1 != 0x7)
 	{
-		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+		// Check that indirect addressing mode is valid and compute the effective address of 'src4' operand
+
+		if(unlikely(!cpu.ComputeIndirEA(s4_ea, s4_update_ar, s4_output_ar, (s4_mod1 << 2) + s4_mod2, s4_ar)))
+		{
+			throw BogusOpcodeException<CONFIG, DEBUG>(this);
+		}
+	}
+	else
+	{
+		s4_update_ar = false;
 	}
 
-	// Load 'src3' operand from memory
-	uint32_t src3_value = cpu.IntLoad(s3_ea);
+	// Load 'src3' operand from memory or register
+	uint32_t src3_value = (s3_mod1 != 0x7) ? cpu.IntLoad(s3_ea) : cpu.GetReg((s3_mod2 << 3) + s3_ar);
 
-	// Load 'src4' operand from memory
-	uint32_t src4_value = cpu.IntLoad(s4_ea);
+	// Load 'src4' operand from memory or register
+	uint32_t src4_value = (s4_mod1 != 0x7) ? cpu.IntLoad(s4_ea) : cpu.GetReg((s4_mod2 << 3) + s4_ar);
 
 	// Map 'src1', 'src2', 'src3', and 'src4' to 'srcA', 'srcB', 'srcC', and 'srcD'
 	// depending on the parallel addressing mode used
@@ -5029,26 +4873,26 @@ MPYI3_SUBI3.execute = {
 		case 0: // 00
 			srcA_value = src3_value;
 			srcB_value = src4_value;
-			srcC_value = src2_value;
 			srcD_value = src1_value;
+			srcC_value = src2_value;
 			break;
 		case 1: // 01
 			srcA_value = src3_value;
 			srcB_value = src1_value;
-			srcC_value = src4_value;
-			srcD_value = src2_value;
+			srcD_value = src4_value;
+			srcC_value = src2_value;
 			break;
 		case 2: // 10
 			srcA_value = src1_value;
 			srcB_value = src2_value;
-			srcC_value = src3_value;
-			srcD_value = src4_value;
+			srcD_value = src3_value;
+			srcC_value = src4_value;
 			break;
 		case 3: // 11
 			srcA_value = src3_value;
 			srcB_value = src1_value;
-			srcC_value = src2_value;
-			srcD_value = src4_value;
+			srcD_value = src2_value;
+			srcC_value = src4_value;
 			break;
 	}
 
@@ -5100,127 +4944,17 @@ MPYI3_SUBI3.execute = {
 		cpu.SetAR23_0(s3_ar, s3_output_ar);
 	}
 
-	if(s4_update_ar && s4_ar != s4_ar)
+	if(s4_update_ar && s4_ar != s3_ar)
 	{
 		// Write back ARn
 		cpu.SetAR23_0(s4_ar, s4_output_ar);
 	}
 
-	// FIXME: Don't known how to generate the underflow flag
-
 	// Generate flags (into ST)
 	cpu.GenFlags(
 		0,
 		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-		M_ST_LV | M_ST_UF | M_ST_V,  // or mask
-		0,
-		0,
-		overflow
-	);
-}
-
-//    srcA * srcB -> dst1
-// ||
-//    srcD + srcC -> dst2
-MPYI3_SUBI3_ext.execute = {
-	// Check whether 'src3' and 'src4' are valid registers
-	if(unlikely(!cpu.HasReg(src3) || !cpu.HasReg(src4)))
-	{
-		throw BogusOpcodeException<CONFIG, DEBUG>(this);
-	}
-
-	// Read 'src1' register operand
-	uint32_t src1_value = cpu.GetReg(src1);
-
-	// Read 'src2' register operand
-	uint32_t src2_value = cpu.GetReg(src2);
-
-	// Read 'src3' register operand
-	uint32_t src3_value = cpu.GetReg(src3);
-
-	// Read 'src4' register operand
-	uint32_t src4_value = cpu.GetReg(src4);
-
-	// Map 'src1', 'src2', 'src3', and 'src4' to 'srcA', 'srcB', 'srcC', and 'srcD'
-	// depending on the parallel addressing mode used
-	uint32_t srcA_value;
-	uint32_t srcB_value;
-	uint32_t srcC_value;
-	uint32_t srcD_value;
-
-	switch(p)
-	{
-		case 0: // 00
-			srcA_value = src3_value;
-			srcB_value = src4_value;
-			srcC_value = src2_value;
-			srcD_value = src1_value;
-			break;
-		case 1: // 01
-			srcA_value = src3_value;
-			srcB_value = src1_value;
-			srcC_value = src4_value;
-			srcD_value = src2_value;
-			break;
-		case 2: // 10
-			srcA_value = src1_value;
-			srcB_value = src2_value;
-			srcC_value = src3_value;
-			srcD_value = src4_value;
-			break;
-		case 3: // 11
-			srcA_value = src3_value;
-			srcB_value = src1_value;
-			srcC_value = src2_value;
-			srcD_value = src4_value;
-			break;
-	}
-
-	// Compute the 32-bit result and overflow of MPYI3
-	// Source operand values are sign extended from 24 bits to 64 bits before the actual computation
-	int64_t mpyi3_result64 = SignExtend((uint64_t)(srcA_value & 0xffffff), 24) * SignExtend((uint64_t)(srcB_value & 0xffffff), 24); // Only 48 bits are useful
-	int32_t lo32 = (int32_t) mpyi3_result64;          // the 32 LSBs of the result
-	int32_t hi32 = (int32_t) (mpyi3_result64 >> 32);  // the 32 MSBs of the result
-	// An overflow occurs if any of the 32-bit MSB of the result differ from MSB of the 32-bit output value
-	// An arithmetic shift of 31 bits is used to duplicate 32 times the MSB of lo32
-	uint8_t mpyi3_overflow = ((lo32 >> 31) != hi32);
-	uint32_t mpyi3_result;
-	
-	if(cpu.GetST_OVM() && mpyi3_overflow)
-		mpyi3_result = (mpyi3_result64 < 0) ? 0x80000000 : 0x7fffffff; // Saturate the result
-	else
-		mpyi3_result = lo32;                                     // No saturation
-
-	// Compute the result of SUBI3
-	uint32_t subi3_result;      // the 32-bit result
-	uint8_t subi3_borrow_out;   // the borrow out (0 or 1)
-	uint8_t subi3_overflow;     // the overflow (0 or 1)
-	uint8_t subi3_sign;         // the sign (0 or 1)
-
-	// Depending on overflow mode do signed saturation or not 
-	if(cpu.GetST_OVM())
-		SignedSatSub32(subi3_result, subi3_borrow_out, subi3_overflow, subi3_sign, srcD_value, srcC_value, 0);
-	else
-		Sub32(subi3_result, subi3_borrow_out, subi3_overflow, subi3_sign, srcD_value, srcC_value, 0);
-
-	// Summarize overflow bit of MPYI3 and SUBI3
-	uint8_t overflow = mpyi3_overflow | subi3_overflow;
-
-	// Write back 'dst1' register operand
-	unsigned int dst1 = d1;
-	cpu.SetReg(dst1, mpyi3_result);
-
-	// Write back 'dst2' register operand
-	unsigned int dst2 = d2 + 2;
-	cpu.SetReg(dst2, subi3_result);
-
-	// FIXME: Don't known how to generate the underflow flag
-
-	// Generate flags (into ST)
-	cpu.GenFlags(
-		0,
-		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-		M_ST_LV | M_ST_UF | M_ST_V,  // or mask
+		M_ST_LV | M_ST_V,  // or mask
 		0,
 		0,
 		overflow
