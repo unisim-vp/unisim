@@ -1044,10 +1044,6 @@ namespace tms320 {
 				if (((int32_t)(int8_t)this->GetHi() + 1) > 127) 
 				{
 					overflow = 1;
-					std::cerr 
-					<< "o- setting overflow" << std::endl
-					<< "   hi = " << (int)((int32_t)this->GetHi()) << " (" << (int)(((int32_t)(this->GetHi())) + 1) << ")" << std::endl
-					<< "   ext_lo_c = 0x" << std::hex << (unsigned long long int)ext_lo_c << std::dec << std::endl;
 					this->SetHi((uint8_t)0x7f);
 				}
 				else
