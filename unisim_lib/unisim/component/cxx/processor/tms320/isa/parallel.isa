@@ -871,7 +871,7 @@ AND3_STI.execute = {
 	// Generate flags (into ST)
 	cpu.GenFlags(
 		result,
-		M_ST_UF | M_ST_V,  // reset mask
+		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
 		M_ST_N | M_ST_Z,    // or mask
 		sign
 	);
@@ -925,7 +925,7 @@ AND3_STI_ext.execute = {
 	// Generate flags (into ST)
 	cpu.GenFlags(
 		result,
-		M_ST_UF | M_ST_V,  // reset mask
+		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
 		M_ST_N | M_ST_Z,    // or mask
 		sign
 	);
@@ -1011,22 +1011,27 @@ ASH3_STI.execute = {
 	uint8_t carry_out;
 	uint32_t result;
 	uint8_t sign;
+	uint8_t overflow;
 
 	if(count_value == 0)
 	{
 		result = src2_value;
 		carry_out = 0;
+		overflow = 0;
 	}
 	else if(count_value >= 0)
 	{
 		if(count_value >= 32)
 		{
 			result = 0;
-			carry_out = 0;
+			carry_out = (src2_value & 1); // last shifted out bit
+			overflow = src2_value != 0;   // any lost "one" is an overflow
 		}
 		else
 		{
 			result = ShiftLeft(src2_value, count_value, carry_out);
+			uint32_t shifted_out_mask = ((int32_t) 0x80000000UL >> count_value);  // mask lost bits
+			overflow = ((src2_value & shifted_out_mask) ? (src2_value & shifted_out_mask) != shifted_out_mask : (src2_value & shifted_out_mask) != 0);   // overflow = whether lost bits are significative or not
 		}
 	}
 	else
@@ -1034,12 +1039,14 @@ ASH3_STI.execute = {
 		count_value = -count_value;
 		if(count_value >= 32)
 		{
-			result = 0;
-			carry_out = 0;
+			result = (src2_value & 0x80000000UL) ? 0xffffffffUL : 0;
+			carry_out = src2_value >> 31; // last shifted out bit
+			overflow = 0; // no overflow
 		}
 		else
 		{
 			result = ShiftArithmeticRight(src2_value, count_value, carry_out);
+			overflow = 0; // no overflow
 		}
 	}
 
@@ -1071,9 +1078,10 @@ ASH3_STI.execute = {
 	cpu.GenFlags(
 		result,
 		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
-		M_ST_N | M_ST_Z | M_ST_C,  // or mask
+		M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
 		sign,
-		carry_out
+		carry_out,
+		overflow
 	);
 }
 
@@ -1110,22 +1118,27 @@ ASH3_STI_ext.execute = {
 	uint8_t carry_out;
 	uint32_t result;
 	uint8_t sign;
+	uint8_t overflow;
 
 	if(count_value == 0)
 	{
 		result = src2_value;
 		carry_out = 0;
+		overflow = 0;
 	}
 	else if(count_value >= 0)
 	{
 		if(count_value >= 32)
 		{
 			result = 0;
-			carry_out = 0;
+			carry_out = (src2_value & 1); // last shifted out bit
+			overflow = src2_value != 0;   // any lost "one" is an overflow
 		}
 		else
 		{
 			result = ShiftLeft(src2_value, count_value, carry_out);
+			uint32_t shifted_out_mask = ((int32_t) 0x80000000UL >> count_value);  // mask lost bits
+			overflow = ((src2_value & shifted_out_mask) ? (src2_value & shifted_out_mask) != shifted_out_mask : (src2_value & shifted_out_mask) != 0);   // overflow = whether lost bits are significative or not
 		}
 	}
 	else
@@ -1133,12 +1146,14 @@ ASH3_STI_ext.execute = {
 		count_value = -count_value;
 		if(count_value >= 32)
 		{
-			result = 0;
-			carry_out = 0;
+			result = (src2_value & 0x80000000UL) ? 0xffffffffUL : 0;
+			carry_out = src2_value >> 31; // last shifted out bit
+			overflow = 0; // no overflow
 		}
 		else
 		{
 			result = ShiftArithmeticRight(src2_value, count_value, carry_out);
+			overflow = 0; // no overflow
 		}
 	}
 
@@ -1160,9 +1175,10 @@ ASH3_STI_ext.execute = {
 	cpu.GenFlags(
 		result,
 		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
-		M_ST_N | M_ST_Z | M_ST_C,  // or mask
+		M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
 		sign,
-		carry_out
+		carry_out,
+		overflow
 	);
 }
 
@@ -1834,7 +1850,7 @@ LSH3_STI.execute = {
 		if(count_value >= 32)
 		{
 			result = 0;
-			carry_out = 0;
+			carry_out = (src2_value & 1); // last shifted out bit
 		}
 		else
 		{
@@ -1847,7 +1863,7 @@ LSH3_STI.execute = {
 		if(count_value >= 32)
 		{
 			result = 0;
-			carry_out = 0;
+			carry_out = (count_value == 32) ? (src2_value >> 31) : 0; // last shifted out bit
 		}
 		else
 		{
@@ -1933,7 +1949,7 @@ LSH3_STI_ext.execute = {
 		if(count_value >= 32)
 		{
 			result = 0;
-			carry_out = 0;
+			carry_out = (src2_value & 1); // last shifted out bit
 		}
 		else
 		{
@@ -1946,7 +1962,7 @@ LSH3_STI_ext.execute = {
 		if(count_value >= 32)
 		{
 			result = 0;
-			carry_out = 0;
+			carry_out = (count_value == 32) ? (src2_value >> 31) : 0; // last shifted out bit
 		}
 		else
 		{
@@ -4536,6 +4552,8 @@ MPYI3_ADDI3.disasm = {
 	const char *dst2_name = REG_NAME[d2 + 2];
 	const char *src1_name = REG_NAME[src1];
 	const char *src2_name = REG_NAME[src2];
+	const char *src3_name;
+	const char *src4_name;
 	string disasm_src3_indir;
 	string disasm_src4_indir;
 	const char *srcA_name = 0;
@@ -4546,15 +4564,26 @@ MPYI3_ADDI3.disasm = {
 	if(s3_mod1 != 0x07)
 	{
 		if(!cpu.DisasmIndir(disasm_src3_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, (s3_mod1 << 2) + s3_mod2, s3_ar)) return false;
+		src3_name = disasm_src3_indir.c_str();
+	}
+	else
+	{
+		unsigned int s3_reg = (s3_mod2 << 3) + s3_ar;
+		if(unlikely(!cpu.HasReg(s3_reg))) return false;
+		src3_name = REG_NAME[s3_reg];
 	}
 
 	if(s4_mod1 != 0x07)
 	{
 		if(!cpu.DisasmIndir(disasm_src4_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, (s4_mod1 << 2) + s4_mod2, s4_ar)) return false;
+		src4_name = disasm_src4_indir.c_str();
 	}
-	
-	const char *src3_name = (s3_mod1 == 0x07) ? REG_NAME[(s3_mod2 << 3) + s3_ar] : disasm_src3_indir.c_str();
-	const char *src4_name = (s4_mod1 == 0x07) ? REG_NAME[(s4_mod2 << 3) + s4_ar] : disasm_src4_indir.c_str();
+	else
+	{
+		unsigned int s4_reg = (s4_mod2 << 3) + s4_ar;
+		if(unlikely(!cpu.HasReg(s4_reg))) return false;
+		src4_name = REG_NAME[s4_reg];
+	}
 	
 	switch(p)
 	{
@@ -4602,6 +4631,7 @@ MPYI3_ADDI3.execute = {
 	bool s3_update_ar;                       // Whether to update ARn
 	typename CONFIG::address_t s3_output_ar; // New value of ARn if it is updated
 	typename CONFIG::address_t s3_ea;        // The effective address
+	unsigned int s3_reg;                     // The register number if src3 is a register operand
 
 	if(s3_mod1 != 0x7)
 	{
@@ -4615,11 +4645,18 @@ MPYI3_ADDI3.execute = {
 	else
 	{
 		s3_update_ar = false;
+		s3_reg = (s3_mod2 << 3) + s3_ar;
+		// Check whether src3 register operands is valid
+		if(unlikely(!cpu.HasReg(s3_reg)))
+		{
+			throw BogusOpcodeException<CONFIG, DEBUG>(this);
+		}
 	}
 
 	bool s4_update_ar;                       // Whether to update ARn
 	typename CONFIG::address_t s4_output_ar; // New value of ARn if it is updated
 	typename CONFIG::address_t s4_ea;        // The effective address
+	unsigned int s4_reg;                     // The register number if src4 is a register operand
 
 	if(s4_mod1 != 0x7)
 	{
@@ -4633,13 +4670,19 @@ MPYI3_ADDI3.execute = {
 	else
 	{
 		s4_update_ar = false;
+		s4_reg = (s4_mod2 << 3) + s4_ar;
+		// Check whether src4 register operands is valid
+		if(unlikely(!cpu.HasReg(s4_reg)))
+		{
+			throw BogusOpcodeException<CONFIG, DEBUG>(this);
+		}
 	}
 
 	// Load 'src3' operand from memory or register
-	uint32_t src3_value = (s3_mod1 != 0x7) ? cpu.IntLoad(s3_ea) : cpu.GetReg((s3_mod2 << 3) + s3_ar);
+	uint32_t src3_value = (s3_mod1 != 0x7) ? cpu.IntLoad(s3_ea) : cpu.GetReg(s3_reg);
 
 	// Load 'src4' operand from memory or register
-	uint32_t src4_value = (s4_mod1 != 0x7) ? cpu.IntLoad(s4_ea) : cpu.GetReg((s4_mod2 << 3) + s4_ar);
+	uint32_t src4_value = (s4_mod1 != 0x7) ? cpu.IntLoad(s4_ea) : cpu.GetReg(s4_reg);
 
 	// Map 'src1', 'src2', 'src3', and 'src4' to 'srcA', 'srcB', 'srcC', and 'srcD'
 	// depending on the parallel addressing mode used
@@ -4756,6 +4799,8 @@ MPYI3_SUBI3.disasm = {
 	const char *dst2_name = REG_NAME[d2 + 2];
 	const char *src1_name = REG_NAME[src1];
 	const char *src2_name = REG_NAME[src2];
+	const char *src3_name;
+	const char *src4_name;
 	string disasm_src3_indir;
 	string disasm_src4_indir;
 	const char *srcA_name = 0;
@@ -4766,15 +4811,26 @@ MPYI3_SUBI3.disasm = {
 	if(s3_mod1 != 0x07)
 	{
 		if(!cpu.DisasmIndir(disasm_src3_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, (s3_mod1 << 2) + s3_mod2, s3_ar)) return false;
+		src3_name = disasm_src3_indir.c_str();
+	}
+	else
+	{
+		unsigned int s3_reg = (s3_mod2 << 3) + s3_ar;
+		if(unlikely(!cpu.HasReg(s3_reg))) return false;
+		src3_name = REG_NAME[s3_reg];
 	}
 
 	if(s4_mod1 != 0x07)
 	{
 		if(!cpu.DisasmIndir(disasm_src4_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, (s4_mod1 << 2) + s4_mod2, s4_ar)) return false;
+		src4_name = disasm_src4_indir.c_str();
 	}
-	
-	const char *src3_name = (s3_mod1 == 0x07) ? REG_NAME[(s3_mod2 << 3) + s3_ar] : disasm_src3_indir.c_str();
-	const char *src4_name = (s4_mod1 == 0x07) ? REG_NAME[(s4_mod2 << 3) + s4_ar] : disasm_src4_indir.c_str();
+	else
+	{
+		unsigned int s4_reg = (s4_mod2 << 3) + s4_ar;
+		if(unlikely(!cpu.HasReg(s4_reg))) return false;
+		src4_name = REG_NAME[s4_reg];
+	}
 	
 	switch(p)
 	{
@@ -4822,6 +4878,7 @@ MPYI3_SUBI3.execute = {
 	bool s3_update_ar;                       // Whether to update ARn
 	typename CONFIG::address_t s3_output_ar; // New value of ARn if it is updated
 	typename CONFIG::address_t s3_ea;        // The effective address
+	unsigned int s3_reg;                     // The register number if src3 is a register operand
 
 	if(s3_mod1 != 0x7)
 	{
@@ -4835,11 +4892,18 @@ MPYI3_SUBI3.execute = {
 	else
 	{
 		s3_update_ar = false;
+		s3_reg = (s3_mod2 << 3) + s3_ar;
+		// Check whether src3 register operands is valid
+		if(unlikely(!cpu.HasReg(s3_reg)))
+		{
+			throw BogusOpcodeException<CONFIG, DEBUG>(this);
+		}
 	}
 
 	bool s4_update_ar;                       // Whether to update ARn
 	typename CONFIG::address_t s4_output_ar; // New value of ARn if it is updated
 	typename CONFIG::address_t s4_ea;        // The effective address
+	unsigned int s4_reg;                     // The register number if src4 is a register operand
 
 	if(s4_mod1 != 0x7)
 	{
@@ -4853,13 +4917,19 @@ MPYI3_SUBI3.execute = {
 	else
 	{
 		s4_update_ar = false;
+		s4_reg = (s4_mod2 << 3) + s4_ar;
+		// Check whether src4 register operands is valid
+		if(unlikely(!cpu.HasReg(s4_reg)))
+		{
+			throw BogusOpcodeException<CONFIG, DEBUG>(this);
+		}
 	}
 
 	// Load 'src3' operand from memory or register
-	uint32_t src3_value = (s3_mod1 != 0x7) ? cpu.IntLoad(s3_ea) : cpu.GetReg((s3_mod2 << 3) + s3_ar);
+	uint32_t src3_value = (s3_mod1 != 0x7) ? cpu.IntLoad(s3_ea) : cpu.GetReg(s3_reg);
 
 	// Load 'src4' operand from memory or register
-	uint32_t src4_value = (s4_mod1 != 0x7) ? cpu.IntLoad(s4_ea) : cpu.GetReg((s4_mod2 << 3) + s4_ar);
+	uint32_t src4_value = (s4_mod1 != 0x7) ? cpu.IntLoad(s4_ea) : cpu.GetReg(s4_reg);
 
 	// Map 'src1', 'src2', 'src3', and 'src4' to 'srcA', 'srcB', 'srcC', and 'srcD'
 	// depending on the parallel addressing mode used
