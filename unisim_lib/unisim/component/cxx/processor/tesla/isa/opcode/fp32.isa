@@ -509,8 +509,9 @@ fsmul_halfimm.execute = {
 
 // TODO: forbid immediate?
 // TODO: setcond > 7 (or flag??)
+// abs_sat??
 op fsset_full( \
-	/*subop*/3[3]:/*?*/0[1]:src3_neg[1]:0[1]:/*const seg*/?[4]:/*src1_sh*/?[1]:src1_abs[1]:0[2]:setcond[4]\
+	/*subop*/3[3]:/*?*/0[1]:src3_neg[1]:0[1]:/*const seg*/?[4]:/*src1_sh*/?[1]:src1_abs[1]:src2_abs[1]:0[1]:setcond[4]\
 	:/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output_reg*/?[1]:/*addr_hi*/?[1]:/*marker*/?[2]: \
 	0xb[4]:?[26]:0[1]:/*IWidth*/1[1]\
 )
@@ -550,7 +551,13 @@ fsset.disasm = {
 	}
 	
 	buffer << ", ";
+	if(src2_abs) {
+		buffer << "|";
+	}
 	insn->DisasmSrc2(buffer);
+	if(src2_abs) {
+		buffer << "|";
+	}
 	
 }
 
@@ -566,7 +573,7 @@ fsset.execute = {
 	reg_t output;
 	VectorFlags<CONFIG> vf;
 
-	vf = CONFIG::vfp32::ComputePredSetFP32(output, a, b, SetCond(setcond), src1_abs);
+	vf = CONFIG::vfp32::ComputePredSetFP32(output, a, b, SetCond(setcond), src1_abs, src2_abs);
 	
 	insn->SetDest(output);
 	insn->SetPred(vf);

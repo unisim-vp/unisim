@@ -1381,6 +1381,8 @@ set_full.disasm = {
 set_full.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 	
+	assert(abs_sat == 0);
+	
 	// dest = cond(a, b)
 	reg_t & a = insn->GetSrc1();
 	reg_t & b = insn->GetSrc2();

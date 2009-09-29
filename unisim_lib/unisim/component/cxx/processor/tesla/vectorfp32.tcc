@@ -451,7 +451,8 @@ VectorFlags<CONFIG> VectorFP32Base<CONFIG>::ComputePredSetFP32(VectorRegister<CO
 	VectorRegister<CONFIG> const & a,
 	VectorRegister<CONFIG> const & b,
 	SetCond sc,
-	bool a_abs)
+	bool a_abs,
+	bool b_abs)
 {
 	// TODO: check it only outputs boolean values
 	// input:
@@ -485,10 +486,15 @@ VectorFlags<CONFIG> VectorFP32Base<CONFIG>::ComputePredSetFP32(VectorRegister<CO
 	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i)
 	{
 		typename CONFIG::float_t fa = a.ReadSimfloat(i);
+		typename CONFIG::float_t fb = b.ReadSimfloat(i);
+		
 		if(a_abs) {
 			fa.setPositive();
 		}
-		uint8_t cond = Compare(fa, b.ReadSimfloat(i));
+		if(b_abs) {
+			fb.setPositive();
+		}
+		uint8_t cond = Compare(fa, fb);
 		// cond in [0,4[
 		assert(cond < 4);
 
@@ -714,10 +720,11 @@ uint32_t VectorFP32Base<CONFIG>::FPToFX(float f, bool noovf)
 		f = fmod(f, float(1 << 7));
 		
 	uint32_t r = uint32_t(lrint(fabs(ldexp(f, 23))));	// Round to nearest
+	r &= 0x3fffffff;
 	if(!(fabs(f) < float(1 << 7))) {
 		// overflow
-		assert(!noovf);
-		r |= 0x40800000;
+		if(!noovf)
+			r |= 0x40800000;
 	}
 
 	if(isnan(f)) {

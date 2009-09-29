@@ -61,13 +61,6 @@ struct VectorFP32Base
 		uint32_t rounding_mode, uint32_t sat = 0);
 	static VectorRegister<CONFIG> & Mov(VectorRegister<CONFIG> & a, bool do_neg);
 
-	static VectorFlags<CONFIG> ComputePredSetFP32(VectorRegister<CONFIG> & output,
-		VectorRegister<CONFIG> const & a,
-		VectorRegister<CONFIG> const & b,
-		SetCond sc,
-		bool is_signed,
-		bool b32);
-
 	static VectorRegister<CONFIG> ConvertI2F(VectorRegister<CONFIG> const & a, uint32_t cvt_round, uint32_t cvt_type, bool b32);
 
 	// In-place
@@ -84,7 +77,8 @@ struct VectorFP32Base
 		VectorRegister<CONFIG> const & a,
 		VectorRegister<CONFIG> const & b,
 		SetCond sc,
-		bool a_abs);
+		bool a_abs,
+		bool b_abs);
 
 	static VectorFlags<CONFIG> ComputePredFP32(VectorRegister<CONFIG> const & output,
 		std::bitset<CONFIG::WARP_SIZE> mask);
