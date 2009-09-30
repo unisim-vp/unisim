@@ -1161,9 +1161,12 @@ protected:
 	Parameter<bool> param_enable_parallel_load_bug;
 	bool enable_rnd_bug;
 	Parameter<bool> param_enable_rnd_bug;
+	bool enable_parallel_store_bug;
+	Parameter<bool> param_enable_parallel_store_bug;
 public:
 	inline INLINE bool EnableParallelLoadBug();
 	inline INLINE bool EnableRndBug();
+	inline INLINE bool EnableParallelStoreBug();
 	
 protected:
 	bool verbose_all;

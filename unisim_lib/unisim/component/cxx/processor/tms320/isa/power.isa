@@ -82,7 +82,7 @@ LOPOWER.disasm = {
 }
 
 LOPOWER.execute = {
-	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+	/* this instruction has no effect */
 }
 
 /* end of LOPOWER (divide clock by 16)
@@ -101,7 +101,7 @@ MAXSPEED.disasm = {
 }
 
 MAXSPEED.execute = {
-	throw UnimplementedOpcodeException<CONFIG, DEBUG>(this);
+	/* this instruction has no effect */
 }
 
 /* end of MAXSPEED (restore clock to regular speed)

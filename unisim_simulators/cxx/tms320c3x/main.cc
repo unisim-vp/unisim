@@ -142,6 +142,9 @@ void help(char *prog_name) {
 	cerr << " --inline-debugger" << endl;
 	cerr << " -i" << endl;
 	cerr << "            activate the inline debugger (only active if logger option used)" << endl << endl;
+	cerr << " --rom" << endl;
+	cerr << " -r" << endl;
+	cerr << "            specify ROM filename (i.e. the boot loader in the TMS320C3X)" << endl << endl;
 }
 
 int main(int argc, char *argv[]) {
@@ -166,6 +169,7 @@ int main(int argc, char *argv[]) {
 		{"xml-gdb", required_argument, 0, 'x'},
 		{"gdb-server", required_argument, 0, 'd'},
 		{"inline-debugger", no_argument, 0, 'i'},
+		{"boot-loader", required_argument, 0, 'b'},
 		{0, 0, 0, 0}
 	};
 
@@ -173,6 +177,7 @@ int main(int argc, char *argv[]) {
 	char const *get_config_name = "default_parameters.xml";
 	char const *get_variables_name = "default_variables.xml";
 	char *filename = 0;
+	char *rom_filename = 0;
 	bool get_variables = false;
 	bool get_config = false;
 	bool set_config = false;
@@ -185,7 +190,7 @@ int main(int argc, char *argv[]) {
 
 	// Parse the command line arguments
 	int c;
-	while((c = getopt_long (argc, argv, "hv:g:c:ld:x:i", long_options, 0)) != -1) {
+	while((c = getopt_long (argc, argv, "hv:g:c:ld:x:ir:", long_options, 0)) != -1) {
 		switch(c) {
 		case 'h':
 			help(argv[0]);
@@ -216,6 +221,9 @@ int main(int argc, char *argv[]) {
 		case 'i':
 			use_inline_debugger = true;
 			break;
+		case 'r':
+			rom_filename = optarg;
+			break;
 		}
 	}
 
@@ -237,15 +245,17 @@ int main(int argc, char *argv[]) {
 	HOST_TIME *host_time = new HOST_TIME("host-time");
 	
 	LOADER *loader = 0;
+	LOADER *rom_loader = 0;
 	TI_C_IO *ti_c_io = 0;
 	MEMORY *memory = new MEMORY("memory");
 	GDB_SERVER *gdb_server = (use_gdb_server || get_config) ? new GDB_SERVER("gdb-server") : 0;
 	INLINE_DEBUGGER *inline_debugger = (use_inline_debugger || get_config) ? new INLINE_DEBUGGER("inline-debugger") : 0;
 	CPU *cpu = new CPU("cpu"); 
 
-	// Instanciate an COFF loader
+	// Instanciate COFF loaders
 	loader = new LOADER("loader");
-	
+	rom_loader = new LOADER("rom-loader");
+
 	ti_c_io = new TI_C_IO("ti-c-io");
 
 	// Connect the CPU to the memory
@@ -276,6 +286,7 @@ int main(int argc, char *argv[]) {
 
 	// Connect everything
 	loader->memory_import >> memory->memory_export;
+	rom_loader->memory_import >> memory->memory_export;
 
 	cpu->symbol_table_lookup_import >> loader->symbol_table_lookup_export;
 
@@ -321,6 +332,13 @@ int main(int argc, char *argv[]) {
 		VariableBase *var = ServiceManager::GetParameter("loader.filename");
 		cerr << "Using " << var->GetName() << " = " << filename << endl;
 		*var = filename;
+	}
+
+	if(rom_filename)
+	{
+		VariableBase *var = ServiceManager::GetParameter("rom-loader.filename");
+		cerr << "Using " << var->GetName() << " = " << rom_filename << endl;
+		*var = rom_filename;
 	}
 	
 	if(ServiceManager::Setup())
@@ -379,6 +397,7 @@ int main(int argc, char *argv[]) {
 	}
 
 
+	if(rom_loader) delete rom_loader;
 	if(loader) delete loader;
 	if(memory) delete memory;
 	if(gdb_server) delete gdb_server;

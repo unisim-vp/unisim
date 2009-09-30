@@ -1052,7 +1052,7 @@ RPTS_indir.execute = {
 op RPTS_imm  (0b000[3]:0b100111[6]:0b11[2]:0b11011[5]:imm[16])
 
 RPTS_imm.disasm = {
-	os << "RPTS @0x" << hex << imm << dec;
+	os << "RPTS 0x" << hex << imm << dec;
 	return true;
 }
 

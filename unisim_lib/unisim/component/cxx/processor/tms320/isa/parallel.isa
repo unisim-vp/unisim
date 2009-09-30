@@ -3130,8 +3130,15 @@ STF_STF_ext.execute = {
 	// Store the 'src1' register value into memory
 	cpu.IntStore(d1_ea, src1_value);
 
-	// Copy the 'src2' register to 'dst2' register
-	cpu.GetExtReg(dst2) = cpu.GetExtReg(src2);
+	if(unlikely(cpu.EnableParallelStoreBug()))
+	{
+		// For an obscure reason, on our development board, the first store is like a "nop", so do it that way.
+	}
+	else
+	{
+		// Copy the 'src2' register to 'dst2' register
+		cpu.GetExtReg(dst2) = cpu.GetExtReg(src2);
+	}
 	
 	if(d1_update_ar)
 	{
@@ -3264,8 +3271,15 @@ STI_STI_ext.execute = {
 	// Store the word into memory
 	cpu.IntStore(d1_ea, src1_value);
 
-	// Write back 'src2' into 'dst2' register
-	cpu.SetReg(dst2, src2_value);
+	if(unlikely(cpu.EnableParallelStoreBug()))
+	{
+		// For an obscure reason, on our development board, the first store is like a "nop", so do it that way.
+	}
+	else
+	{
+		// Write back 'src2' into 'dst2' register
+		cpu.SetReg(dst2, src2_value);
+	}
 
 	if(d1_update_ar)
 	{
