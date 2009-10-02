@@ -1368,6 +1368,27 @@ The following document has been used for selecting these floating-point benchmar
 
 These benchmarks have been run into the UNISIM TMS320C3X simulator using the application profiling capability of the inline debugger:
 \begin{verbatim}
+$ tms320c3x -i -c sim_config.xml
+Loading xml parameters from: sim_config.xml
+Parameters set using file "sim_config.xml"
+....
+
+....
+loader: Loading symbol table
+loader: Loading string table
+ti-c-io: TI C I/O support is enabled
+ti-c-io: Using __CIOBUF_ at 0xeac00 as I/O buffer
+ti-c-io: Installing emulator breakpoint (SWI) for I/O at 0x2003c34 (symbol C$$IO$$)
+ti-c-io: Installing emulator breakpoint (SWI) for EXIT at 0x20001cc (symbol C$$EXIT)
+Starting simulation at system privilege level
+0x00800048 <_c_int00>:
+0x00800048:0x08700080 LDP @0x800000
+inline-debugger> break C$$EXIT
+inline-debugger> continue
+inline-debugger> profile program
+\end{verbatim}
+
+\begin{verbatim}
 $ printf "break C\$\$EXIT\ncontinue\nprofile program\nquit\n" | \
   tms320c3x -i -c sim_config.xml | \
   cut -f 3 -d ":" | \
@@ -1375,8 +1396,13 @@ $ printf "break C\$\$EXIT\ncontinue\nprofile program\nquit\n" | \
   sort -u
 \end{verbatim}
 
-We extracted the instruction coverage from these applications profiles.
-Table below shows the instruction coverage for each benchmark:
+We extracted the instruction coverage from these applications profiles. Table below shows the instruction coverage for each benchmark.
+
+Although the integer benchmarks (written in C) have been selected to address the digital signal processing application domain, they have only validated the general operations of the simulator: basic integer computation, control flow instructions, basic addressing modes \ldots
+The reason of that limited validation scope is that the compiler does not generate many different instructions and addressing modes among the integer benchmarks.
+For instance, unusual addressing modes as the indirect addressing with circular modify and indirect addressing with bit reversed modify were not generated at all by the compiler. 
+Thus running these integer benchmarks for testing integer computation would have resulted in quite poor instruction coverage.
+
 
 \begin{center}
 \tablehead{\hline
@@ -2325,8 +2351,6 @@ Table below shows the instruction coverage for each benchmark:
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{maxspeed}} & \multicolumn{1}{p{0.35cm}|}{} & \multicolumn{1}{p{0.35cm}|}{} & \multicolumn{1}{p{0.35cm}|}{} & \multicolumn{1}{p{0.35cm}|}{} & \multicolumn{1}{p{0.35cm}|}{} & \multicolumn{1}{p{0.35cm}|}{} & \multicolumn{1}{p{0.35cm}|}{} & \multicolumn{1}{p{0.35cm}|}{} & \multicolumn{1}{p{0.35cm}|}{} & \multicolumn{1}{p{0.35cm}|}{} & \multicolumn{1}{p{0.35cm}|}{} & \multicolumn{1}{p{0.35cm}|}{}\\
 \end{supertabular}
 \end{center}
-
-The next sections present the benchmarks.
 
 \subsubsection{Fibonacci}
 
