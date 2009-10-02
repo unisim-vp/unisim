@@ -4148,8 +4148,8 @@ MPYF3_ADDF3.disasm = {
 		if (!cpu.DisasmIndir(disasm_src4_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, (s4_mod1 << 2) + s4_mod2, s4_ar))
 			return false;
 			
-	const char *src3_name = (s3_mod1 == 0x07)?REG_NAME[(s3_mod2 << 3) + s3_ar]:disasm_src3_indir.c_str();
-	const char *src4_name = (s4_mod1 == 0x07)?REG_NAME[(s4_mod2 << 3) + s4_ar]:disasm_src4_indir.c_str();
+	const char *src3_name = (s3_mod1 == 0x07)?REG_NAME[s3_ar]:disasm_src3_indir.c_str();
+	const char *src4_name = (s4_mod1 == 0x07)?REG_NAME[s4_ar]:disasm_src4_indir.c_str();
 	
 	switch(p)
 	{
@@ -4165,13 +4165,13 @@ MPYF3_ADDF3.disasm = {
 			srcD_name = src4_name;
 			srcC_name = src2_name;
 			break;
-		case 3:
+		case 2:
 			srcA_name = src1_name;
 			srcB_name = src2_name;
 			srcD_name = src3_name;
 			srcC_name = src4_name;
 			break;
-		case 4:
+		case 3:
 			srcA_name = src3_name;
 			srcB_name = src1_name;
 			srcD_name = src2_name;
@@ -4200,7 +4200,7 @@ MPYF3_ADDF3.execute = {
 	if (s3_mod1 == 0x07) // src3 is a register
 	{
 		// Read the 'src3' register operand
-		src3_reg = cpu.GetExtReg((s3_mod2 << 3) + s3_ar);
+		src3_reg = cpu.GetExtReg(s3_ar);
 		is_src3_reg = true;
 	}
 	else // src3 is a memory location memory
@@ -4226,7 +4226,7 @@ MPYF3_ADDF3.execute = {
 	if (s4_mod1 == 0x07) // src4 is a register
 	{
 		// Read the 'src4' register operand
-		src4_reg = cpu.GetExtReg((s4_mod2 << 3) + s4_ar);
+		src4_reg = cpu.GetExtReg(s4_ar);
 		is_src4_reg = true;
 	}
 	else
@@ -4362,8 +4362,8 @@ MPYF3_SUBF3.disasm = {
 		if (!cpu.DisasmIndir(disasm_src4_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, (s4_mod1 << 2) + s4_mod2, s4_ar))
 			return false;
 	
-	const char *src3_name = (s3_mod1 == 0x07)?REG_NAME[(s3_mod2 << 3) + s3_ar]:disasm_src3_indir.c_str();
-	const char *src4_name = (s4_mod1 == 0x07)?REG_NAME[(s4_mod2 << 3) + s4_ar]:disasm_src4_indir.c_str();
+	const char *src3_name = (s3_mod1 == 0x07)?REG_NAME[s3_ar]:disasm_src3_indir.c_str();
+	const char *src4_name = (s4_mod1 == 0x07)?REG_NAME[s4_ar]:disasm_src4_indir.c_str();
 	
 	switch(p)
 	{
@@ -4379,13 +4379,13 @@ MPYF3_SUBF3.disasm = {
 			srcD_name = src4_name;
 			srcC_name = src2_name;
 			break;
-		case 3:
+		case 2:
 			srcA_name = src1_name;
 			srcB_name = src2_name;
 			srcD_name = src3_name;
 			srcC_name = src4_name;
 			break;
-		case 4:
+		case 3:
 			srcA_name = src3_name;
 			srcB_name = src1_name;
 			srcD_name = src2_name;
@@ -4414,7 +4414,7 @@ MPYF3_SUBF3.execute = {
 	if (s3_mod1 == 0x07) // src3 is a register
 	{
 		// Read the 'src3' register operand
-		src3_reg = cpu.GetExtReg((s3_mod2 << 3) + s3_ar);
+		src3_reg = cpu.GetExtReg(s3_ar);
 		is_src3_reg = true;
 	}
 	else // src3 is a memory location memory
@@ -4440,7 +4440,7 @@ MPYF3_SUBF3.execute = {
 	if (s4_mod1 == 0x07) // src4 is a register
 	{
 		// Read the 'src4' register operand
-		src4_reg = cpu.GetExtReg((s4_mod2 << 3) + s4_ar);
+		src4_reg = cpu.GetExtReg(s4_ar);
 		is_src4_reg = true;
 	}
 	else
@@ -4613,13 +4613,13 @@ MPYI3_ADDI3.disasm = {
 			srcD_name = src4_name;
 			srcC_name = src2_name;
 			break;
-		case 3:
+		case 2:
 			srcA_name = src1_name;
 			srcB_name = src2_name;
 			srcD_name = src3_name;
 			srcC_name = src4_name;
 			break;
-		case 4:
+		case 3:
 			srcA_name = src3_name;
 			srcB_name = src1_name;
 			srcD_name = src2_name;
@@ -4860,13 +4860,13 @@ MPYI3_SUBI3.disasm = {
 			srcD_name = src4_name;
 			srcC_name = src2_name;
 			break;
-		case 3:
+		case 2:
 			srcA_name = src1_name;
 			srcB_name = src2_name;
 			srcD_name = src3_name;
 			srcC_name = src4_name;
 			break;
-		case 4:
+		case 3:
 			srcA_name = src3_name;
 			srcB_name = src1_name;
 			srcD_name = src2_name;
