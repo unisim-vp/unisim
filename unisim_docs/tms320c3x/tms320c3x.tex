@@ -2443,7 +2443,7 @@ A simulation configuration (\texttt{sim\_config.xml}) for this simulator is also
 This benchmark is based on CRC32 benchmark from MiBench Version 1.0 (\url{http://www.eecs.umich.edu/mibench}).
 It performs a 32-bit Cyclic Redundancy Check (CRC) on a file. CRC checks are often used to detect errors in data transmission.
 This benchmark has been selected because of its sensitivity to simulator failures.
-The benchmark reads file \texttt{large.pcm} and print the check sum on the screen
+The benchmark reads file \texttt{small.pcm} and print the check sum on the screen
 
 This benchmark requires TI C I/O service enabled to run in the TMS320C3X simulator.
 A precompiled binary is provided together with a GNU Make compatible Makefile.
@@ -2457,9 +2457,10 @@ $ tms320c3x -c sim_config.xml
 
 \begin{verbatim}
 32 BIT ANSI X3.66 CRC checksum:
-Opening input file "large.pcm"
-Total number of bytes read: 26611200
-CRC32: dc8b7c2a
+Opening input file "small.pcm"
+....................................................................................
+Total number of bytes read: 1368864
+CRC32: 6da5b639
 \end{verbatim}
 
 \subsubsection{Rijndael (encryption/decryption)}
@@ -2474,8 +2475,8 @@ The benchmark uses this hexadecimal encryption key:
 \begin{verbatim}
 1234567890abcdeffedcba09876543211234567890abcdeffedcba0987654321
 \end{verbatim}
-The benchmark reads file \texttt{input\_large.asc}, and encrypt it into file \texttt{output\_large.sim.enc}.
-It decrypts \texttt{output\_large.sim.enc} into file \texttt{output\_large.sim.dec}.
+The benchmark reads file \texttt{input\_small.asc}, and encrypt it into file \texttt{output\_small.sim.enc}.
+It decrypts \texttt{output\_small.sim.enc} into file \texttt{output\_small.sim.dec}.
 
 This benchmark requires TI C I/O service enabled to run in the TMS320C3X simulator.
 A precompiled binary (\texttt{rijndael.out}) is provided together with a GNU Make compatible Makefile.
@@ -2485,7 +2486,7 @@ A simulation configuration (\texttt{sim\_config.xml}) for this simulator is also
 $ tms320c3x -c sim_config.xml
 \end{verbatim}
 
-It is expected that files \texttt{input\_large.asc} and \texttt{output\_large.sim.dec} be identical after the benchmark run.
+It is expected that files \texttt{input\_small.asc} and \texttt{output\_small.sim.dec} be identical after the benchmark run.
 
 \subsubsection{Sha (encryption/decryption)}
 
@@ -2495,7 +2496,7 @@ used in the secure exchange of cryptographic keys and for generating digital sig
 well-known MD4 and MD5 hashing functions.
 This benchmark has been selected because of its sensitivity to simulator failures.
 
-The benchmark its input data set from file \texttt{input\_large.asc} and prints the SHA digest on the screen.
+The benchmark reads its input data set from file \texttt{input\_small.asc} and prints the SHA digest on the screen.
 
 A precompiled binary (\texttt{sha.out}) is provided together with a GNU Make compatible Makefile.
 A simulation configuration (\texttt{sim\_config.xml}) for this simulator is also provided, so that simulator can run the benchmark:
@@ -2508,9 +2509,10 @@ The expected output on the screen of the benchmark is in file ref.txt:
 
 \begin{verbatim}
 NIST Secure Hash Algorithm:
-Opening input file "input_large.asc"
+Opening input file "input_small.asc"
+Computing SHA digest
 SHA digest:
-fbac40bd cb5fff1d bf7fda22 b3b7af61 278263fc
+320c22e9 7b1ed440 77d2e55a bbe2481a 2b24a55b
 \end{verbatim}
 
 \subsubsection{ADPCM (sound encoding/decoding)}
@@ -2518,11 +2520,10 @@ fbac40bd cb5fff1d bf7fda22 b3b7af61 278263fc
 This benchmark is based on ADPCM benchmark from MiBench Version 1.0 (\url{http://www.eecs.umich.edu/mibench}).
 It performs ADPCM encoding/decoding. Adaptive Differential Pulse Code Modulation (ADPCM) is a variation
 of the well-known standard Pulse Code Modulation (PCM). A common implementation takes 16-bit linear
-PCM samples and converts them to 4-bit samples, yielding a compression rate of 4:1. The input data are
-small and large speech samples.
+PCM samples and converts them to 4-bit samples, yielding a compression rate of 4:1. The input data are speech samples.
 This benchmark has been selected because it is a typical application in digital signal processing.
-The ADPCM coder benchmark reads file \texttt{large.pcm} and writes the compressed data in file \texttt{output\_large.sim.adpcm}.
-The ADPCM decoder benchmark reads file \texttt{large.adpcm} and writes the uncompressed data in file \texttt{output\_large.sim.pcm}.
+The ADPCM coder benchmark reads file \texttt{small.pcm} and writes the compressed data in file \texttt{output\_small.sim.adpcm}.
+The ADPCM decoder benchmark reads file \texttt{small.adpcm} and writes the uncompressed data in file \texttt{output\_small.sim.pcm}.
 
 This benchmark requires TI C I/O service enabled to run in the TMS320C3X simulator.
 Precompiled binaries (\texttt{coder.out} and \texttt{decoder.out}) are provided together with a GNU Make compatible Makefile.
@@ -2533,8 +2534,8 @@ $ tms320c3x -c coder_sim_config.xml
 $ tms320c3x -c decoder_sim_config.xml
 \end{verbatim}
 
-The expected output data set of the ADPCM coder benchmark is in file \texttt{output\_large.ref.adpcm}.
-The expected output data set of the ADPCM decoder benchmark is in file \texttt{output\_large.ref.pcm}.
+The expected output data set of the ADPCM coder benchmark is in file \texttt{output\_small.ref.adpcm}.
+The expected output data set of the ADPCM decoder benchmark is in file \texttt{output\_small.ref.pcm}.
 
 \subsubsection{DCT/Quantization (image processing)}
 
@@ -2614,7 +2615,7 @@ All of the 26 indirect addressing modes have been tested for load/store instruct
 Only one (\texttt{*ar$_n$}) of the 26 indirect addressing modes have been tested for the other instructions, such as three operands instructions and parallel instructions because they would have resulted in an unreasonable number of unit tests.
 The rational behind this choice is that the instructions implementations in the UNISIM TMS320C3X simulator share the same source code for the indirect addressing modes.
 
-Two operands instruction with register addressing have been tested 100 times with random inputs.
+Two operands instruction with register addressing have been tested 10000 times with random inputs.
 Other instructions and other addressing modes but immediate addressing have been tested 100 times with random inputs.
 
 \subsubsection{Testing status}
