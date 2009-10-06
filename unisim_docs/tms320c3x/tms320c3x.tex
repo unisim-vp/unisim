@@ -35,7 +35,7 @@ The UNISIM TMS320C3X has been developed using the following documentation:
 
 Current implementation of the simulator completely decodes the TMS320C3X instruction set.
 All registers are present but no on-chip devices are implemented.
-The simulator is supposed to have a complete support for:
+The simulator has complete support for:
 \begin{itemize}
 \item integer instructions (2-ops, 3-ops, parallel ops, load/store)
 \item floating point instructions (2-ops, 3-ops, parallel ops, load/store)
@@ -45,7 +45,14 @@ The simulator is supposed to have a complete support for:
 \item interrupt handling
 \end{itemize}
 
-The current status of the simulator should allow to run any integer or floating-point benchmark.
+The current status of the simulator allows to run any integer or floating-point benchmark.
+However, during the validation process of the UNISIM TMS320C3X simulator, four hardware bugs have been found on our development board, and one software bug in Code Composer. The UNISIM TMS320C3X simulator can emulate these bugs (see Section~\ref{tms320c3x_configuration}) if they are enabled:
+\begin{itemize}
+\item \texttt{LDF || LDF} bug: From our experiments on the development board, uncomprehensibly \texttt{src1} is not correctly transformed to a valid \texttt{0.0} when the \texttt{src1} exponent is \texttt{0x80}. Simulator parameter \texttt{cpu.enable-parallel-load-bug} enables this bug
+\item \texttt{STF || STF} and \texttt{STI || STI} bugs: From our experiments on the development board, first store is never performed. Simulator parameter \texttt{cpu.enable-parallel-store-bug} enables these bugs
+\item \texttt{RND} bug: TMS320C3x User’s Guide says that the rnd instruction does not affect the \texttt{Z} flag however the real hardware systematically sets \texttt{Z} to 0. Simulator parameter \texttt{cpu.enable-rnd-bug} enables this bug
+\item \texttt{lseek} bug: From our experiments on the development board, function \texttt{lseek} from \texttt{RTS30.LIB} has a 32-bit return value truncated to 16 bits. Simulator parameter \texttt{ti-c-io.enable-lseek-bug} enables this bug
+\end{itemize}
 
 \subsection{Compiling the simulator}
 
@@ -1385,20 +1392,22 @@ Starting simulation at system privilege level
 0x00800048:0x08700080 LDP @0x800000
 inline-debugger> break C$$EXIT
 inline-debugger> continue
+...
+0x00800073 <C$$EXIT>:
+0x00800073:0x66000000 SWI
 inline-debugger> profile program
-\end{verbatim}
-
-\begin{verbatim}
-$ printf "break C\$\$EXIT\ncontinue\nprofile program\nquit\n" | \
-  tms320c3x -i -c sim_config.xml | \
-  cut -f 3 -d ":" | \
-  sed -e 's/^0x[0-9a-z]*\ //' -e 's/<.*>//g' | \
-  sort -u
+0x00800000 <_enable_insn_cache>:1 times:0x08750800 LDI 2048, ST                                                                                                                                      
+0x00800001 <.firm+0x1>:1 times:0x78800000 RETSU <@0x8012a9>                                                                                                                                          
+....
+0x00801279 <_fclose()+0x39>:3 times:0x0e240000 POP R4
+0x0080127a <_fclose()+0x3a>:3 times:0x18740002 SUBI 2, SP
+0x0080127b <_fclose()+0x3b>:3 times:0x68000001 BU R1 <_exit()+0x12>
+inline-debugger> quit
 \end{verbatim}
 
 We extracted the instruction coverage from these applications profiles. Table below shows the instruction coverage for each benchmark.
 
-Although the integer benchmarks (written in C) have been selected to address the digital signal processing application domain, they have only validated the general operations of the simulator: basic integer computation, control flow instructions, basic addressing modes \ldots
+Although the integer benchmarks (written in C) have been selected to address the digital signal processing application domain, they have only validated the general operations of the simulator: program loading, program debugging, basic integer computation, control flow instructions, basic addressing modes \ldots
 The reason of that limited validation scope is that the compiler does not generate many different instructions and addressing modes among the integer benchmarks.
 For instance, unusual addressing modes as the indirect addressing with circular modify and indirect addressing with bit reversed modify were not generated at all by the compiler. 
 Thus running these integer benchmarks for testing integer computation would have resulted in quite poor instruction coverage.
@@ -2363,6 +2372,8 @@ This benchmarks recursively (and quite inefficiently) computes the Fibonacci num
 \indent $F_n = F_{n - 2} + F_{n - 1}$ where $n > 2$
 \newline
 
+It has validated general simulator operations such as program loading, stack management and function calls.
+
 This benchmark requires TI C I/O service enabled to run in the TMS320C3X simulator.
 A precompiled binary (\texttt{fibo.out}) is provided together with a GNU Make compatible \texttt{Makefile}.
 A simulation configuration (\texttt{sim\_config.xml}) for this simulator is also provided, so that simulator can run the benchmark:
@@ -2413,6 +2424,7 @@ Fibo(34)=5702887 (0x5704e7)
 \subsubsection{Quick sort}
 
 This benchmark sorts 65536 integer numbers using the quick sort recursive algorithm.
+It has validated general simulator operations such as program loading, stack management, function calls, comparisons, arrays, and file I/O.
 The input data set is in file \texttt{random.txt} that contains random generated integer numbers.
 The output data set after the benchmark run is in file \texttt{sort.sim.txt}.
 
@@ -2430,6 +2442,7 @@ A simulation configuration (\texttt{sim\_config.xml}) for this simulator is also
 
 This benchmark is based on CRC32 benchmark from MiBench Version 1.0 (\url{http://www.eecs.umich.edu/mibench}).
 It performs a 32-bit Cyclic Redundancy Check (CRC) on a file. CRC checks are often used to detect errors in data transmission.
+This benchmark has been selected because of its sensitivity to simulator failures.
 The benchmark reads file \texttt{large.pcm} and print the check sum on the screen
 
 This benchmark requires TI C I/O service enabled to run in the TMS320C3X simulator.
@@ -2454,6 +2467,7 @@ CRC32: dc8b7c2a
 This benchmark is based on Rijndael benchmark from MiBench Version 1.0 (\url{http://www.eecs.umich.edu/mibench}).
 Rijndael was selected as the National Institute of Standards and Technologies Advanced Encryption Standard (AES).
 It is a block cipher with the option of 128-, 192-, and 256-bit keys and blocks.
+This benchmark has been selected because of its sensitivity to simulator failures.
 
 In this benchmark, encryption is followed by decryption so that input data set and output data set should be identical.
 The benchmark uses this hexadecimal encryption key:
@@ -2479,6 +2493,7 @@ This benchmark is based on SHA benchmark from MiBench Version 1.0 (\url{http://w
 SHA is the secure hash algorithm that produces a 160-bit message digest for a given input. It is often
 used in the secure exchange of cryptographic keys and for generating digital signatures. It is also used in the
 well-known MD4 and MD5 hashing functions.
+This benchmark has been selected because of its sensitivity to simulator failures.
 
 The benchmark its input data set from file \texttt{input\_large.asc} and prints the SHA digest on the screen.
 
@@ -2505,6 +2520,7 @@ It performs ADPCM encoding/decoding. Adaptive Differential Pulse Code Modulation
 of the well-known standard Pulse Code Modulation (PCM). A common implementation takes 16-bit linear
 PCM samples and converts them to 4-bit samples, yielding a compression rate of 4:1. The input data are
 small and large speech samples.
+This benchmark has been selected because it is a typical application in digital signal processing.
 The ADPCM coder benchmark reads file \texttt{large.pcm} and writes the compressed data in file \texttt{output\_large.sim.adpcm}.
 The ADPCM decoder benchmark reads file \texttt{large.adpcm} and writes the uncompressed data in file \texttt{output\_large.sim.pcm}.
 
@@ -2535,6 +2551,7 @@ The benchmarks has the following steps that are the base of the JPEG lossy image
 \item Save the resulting Windows 24-bit RGB bitmap into a .bmp file
 \end{enumerate}
 
+This benchmark has been selected because it is a typical application in imaging and digital signal processing.
 The benchmark reads the input image from file \texttt{image.bmp} and the quantization matrix from file \texttt{quant\_mat.txt}.
 It save the resulting image in file \texttt{output\_image.sim.bmp}
 
