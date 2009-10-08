@@ -140,16 +140,16 @@ LDE_indir.execute = {
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 	
-	// Read the source operand from memory
-	uint32_t src_value = cpu.IntLoad(ea);
-	
-	dst_reg.LoadExp32(src_value);
-	
 	if(update_ar)
 	{
 		// Write back ARn
 		cpu.SetAR23_0(ar, output_ar);
 	}
+
+	// Read the source operand from memory
+	uint32_t src_value = cpu.IntLoad(ea);
+	
+	dst_reg.LoadExp32(src_value);
 	
 	// no flags to generate
 }
@@ -271,16 +271,16 @@ LDF_indir.execute = {
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 	
-	// Read the source operand from memory
-	uint32_t src_value = cpu.IntLoad(ea);
-	
-	dst_reg.SetFromSinglePrecisionFPFormat(src_value);
-	
 	if(update_ar)
 	{
 		// Write back ARn
 		cpu.SetAR23_0(ar, output_ar);
 	}
+
+	// Read the source operand from memory
+	uint32_t src_value = cpu.IntLoad(ea);
+	
+	dst_reg.SetFromSinglePrecisionFPFormat(src_value);
 	
 	// Generate flags (into ST)
 	cpu.GenFlags(dst_reg,
@@ -417,11 +417,11 @@ LDFcond_indir.execute = {
 		cpu.SetAR23_0(ar, output_ar);
 	}
 	
-	// Read the source operand from memory
-	uint32_t src_value = cpu.IntLoad(ea);
-	
 	// Check the condition
 	if(!cpu.CheckCondition(cond)) return;
+	
+	// Read the source operand from memory
+	uint32_t src_value = cpu.IntLoad(ea);
 	
 	dst_reg.SetFromSinglePrecisionFPFormat(src_value);
 }
@@ -554,18 +554,18 @@ LDI_indir.execute = {
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar, output_ar);
+	}
+
 	// Load the word from memory
 	uint32_t result = cpu.IntLoad(ea);
 	uint8_t sign = (int32_t) result < 0;
 
 	// Write back result
 	cpu.SetReg(dst, result);
-
-	if(update_ar)
-	{
-		// Write back ARn
-		cpu.SetAR23_0(ar, output_ar);
-	}
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -861,16 +861,16 @@ LDM_indir.execute = {
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 	
-	// Read the source operand from memory
-	uint32_t src_value = cpu.IntLoad(ea);
-	
-	dst_reg.LoadMan32(src_value);
-	
 	if(update_ar)
 	{
 		// Write back ARn
 		cpu.SetAR23_0(ar, output_ar);
 	}
+	
+	// Read the source operand from memory
+	uint32_t src_value = cpu.IntLoad(ea);
+	
+	dst_reg.LoadMan32(src_value);
 	
 	// no flags to generate
 }
@@ -1143,9 +1143,6 @@ STF_dir.execute = {
 STF_indir.execute = {
 	// no need to check the operands, they must be valid
 	
-	// get source register
-	Register& src_reg = cpu.GetExtReg(src);
-
 	// Check that indirect addressing mode is valid and compute the effective address
 	typename CONFIG::address_t ea;        // The effective address
 	bool update_ar;                       // Whether to update ARn
@@ -1156,17 +1153,20 @@ STF_indir.execute = {
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 	
-	// get a 32bits version of the source register (containing a float)
-	uint32_t result = src_reg.GetSinglePrecisionFPFormat();
-	
-	// Store the word into memory
-	cpu.IntStore(ea, result);
-	
 	if(update_ar)
 	{
 		// Write back ARn
 		cpu.SetAR23_0(ar, output_ar);
 	}
+
+	// get source register
+	Register& src_reg = cpu.GetExtReg(src);
+
+	// get a 32bits version of the source register (containing a float)
+	uint32_t result = src_reg.GetSinglePrecisionFPFormat();
+	
+	// Store the word into memory
+	cpu.IntStore(ea, result);
 }
 
 /* end of STF (store floating-point value)
@@ -1224,9 +1224,6 @@ STI_indir.execute = {
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 
-	// Read the source operand
-	uint32_t result = cpu.GetReg(src);
-
 	// Check that indirect addressing mode is valid and compute the effective address
 	typename CONFIG::address_t ea;        // The effective address
 	bool update_ar;                       // Whether to update ARn
@@ -1237,14 +1234,17 @@ STI_indir.execute = {
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 
-	// Store the word into memory
-	cpu.IntStore(ea, result);
-
 	if(update_ar)
 	{
 		// Write back ARn
 		cpu.SetAR23_0(ar, output_ar);
 	}
+
+	// Read the source operand
+	uint32_t result = cpu.GetReg(src);
+
+	// Store the word into memory
+	cpu.IntStore(ea, result);
 }
 
 /* end of STI (store integer)

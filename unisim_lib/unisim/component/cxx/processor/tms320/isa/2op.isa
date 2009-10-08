@@ -391,6 +391,12 @@ ABSI_indir.execute = {
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar, output_ar);
+	}
+
 	// Read the source operand from memory
 	uint32_t src_value = cpu.IntLoad(ea);
 
@@ -412,12 +418,6 @@ ABSI_indir.execute = {
 
 	// Write back result
 	cpu.SetReg(dst, result);
-
-	if(update_ar)
-	{
-		// Write back ARn
-		cpu.SetAR23_0(ar, output_ar);
-	}
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -647,9 +647,6 @@ ADDC_indir.execute = {
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 
-	// Read destination operand
-	uint32_t dst_value = cpu.GetReg(dst);
-
 	// Check that indirect addressing mode is valid and compute the effective address of the source operand
 	typename CONFIG::address_t ea;        // The effective address
 	bool update_ar;                       // Whether to update ARn
@@ -659,6 +656,15 @@ ADDC_indir.execute = {
 	{
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
+
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar, output_ar);
+	}
+
+	// Read destination operand
+	uint32_t dst_value = cpu.GetReg(dst);
 
 	// Read the source operand from memory
 	uint32_t src_value = cpu.IntLoad(ea);
@@ -685,12 +691,6 @@ ADDC_indir.execute = {
 
 	// Write back result
 	cpu.SetReg(dst, result);
-
-	if(update_ar)
-	{
-		// Write back ARn
-		cpu.SetAR23_0(ar, output_ar);
-	}
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -1086,9 +1086,6 @@ ADDI_indir.execute = {
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 
-	// Read destination operand
-	uint32_t dst_value = cpu.GetReg(dst);
-
 	// Check that indirect addressing mode is valid and compute the effective address of the source operand
 	typename CONFIG::address_t ea;        // The effective address
 	bool update_ar;                       // Whether to update ARn
@@ -1098,6 +1095,15 @@ ADDI_indir.execute = {
 	{
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
+
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar, output_ar);
+	}
+
+	// Read destination operand
+	uint32_t dst_value = cpu.GetReg(dst);
 
 	// Read the source operand from memory
 	uint32_t src_value = cpu.IntLoad(ea);
@@ -1116,16 +1122,11 @@ ADDI_indir.execute = {
 	else
 	{
 		Add32(result, carry_out, overflow, sign, dst_value, src_value, 0);
+		sign = sign ^ overflow;
 	}
 
 	// Write back result
 	cpu.SetReg(dst, result);
-
-	if(update_ar)
-	{
-		// Write back ARn
-		cpu.SetAR23_0(ar, output_ar);
-	}
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -1320,9 +1321,6 @@ AND_indir.execute = {
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 
-	// Read destination operand
-	uint32_t dst_value = cpu.GetReg(dst);
-
 	// Check that indirect addressing mode is valid and compute the effective address of the source operand
 	typename CONFIG::address_t ea;        // The effective address
 	bool update_ar;                       // Whether to update ARn
@@ -1333,6 +1331,15 @@ AND_indir.execute = {
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar, output_ar);
+	}
+
+	// Read destination operand
+	uint32_t dst_value = cpu.GetReg(dst);
+
 	// Read the source operand from memory
 	uint32_t src_value = cpu.IntLoad(ea);
 
@@ -1342,12 +1349,6 @@ AND_indir.execute = {
 
 	// Write back result
 	cpu.SetReg(dst, result);
-
-	if(update_ar)
-	{
-		// Write back ARn
-		cpu.SetAR23_0(ar, output_ar);
-	}
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -1525,9 +1526,6 @@ ANDN_indir.execute = {
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 
-	// Read destination operand
-	uint32_t dst_value = cpu.GetReg(dst);
-
 	// Check that indirect addressing mode is valid and compute the effective address of the source operand
 	typename CONFIG::address_t ea;        // The effective address
 	bool update_ar;                       // Whether to update ARn
@@ -1538,6 +1536,15 @@ ANDN_indir.execute = {
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar, output_ar);
+	}
+
+	// Read destination operand
+	uint32_t dst_value = cpu.GetReg(dst);
+
 	// Read the source operand from memory
 	uint32_t src_value = cpu.IntLoad(ea);
 
@@ -1547,12 +1554,6 @@ ANDN_indir.execute = {
 
 	// Write back result
 	cpu.SetReg(dst, result);
-
-	if(update_ar)
-	{
-		// Write back ARn
-		cpu.SetAR23_0(ar, output_ar);
-	}
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -1821,9 +1822,6 @@ ASH_indir.execute = {
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 
-	// Read the destination operand
-	uint32_t dst_value = cpu.GetReg(dst);
-
 	// Check that indirect addressing mode is valid and compute the effective address of the source operand
 	typename CONFIG::address_t ea;        // The effective address
 	bool update_ar;                       // Whether to update ARn
@@ -1833,6 +1831,15 @@ ASH_indir.execute = {
 	{
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
+
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar, output_ar);
+	}
+
+	// Read the destination operand
+	uint32_t dst_value = cpu.GetReg(dst);
 
 	// Read the source operand from memory
 	uint32_t src_value = cpu.IntLoad(ea);
@@ -1887,12 +1894,6 @@ ASH_indir.execute = {
 
 	// Write back result
 	cpu.SetReg(dst, result);
-
-	if(update_ar)
-	{
-		// Write back ARn
-		cpu.SetAR23_0(ar, output_ar);
-	}
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -2294,9 +2295,6 @@ CMPI_indir.execute = {
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 
-	// Read destination operand
-	uint32_t dst_value = cpu.GetReg(dst);
-
 	// Check that indirect addressing mode is valid and compute the effective address of the source operand
 	typename CONFIG::address_t ea;        // The effective address
 	bool update_ar;                       // Whether to update ARn
@@ -2306,6 +2304,15 @@ CMPI_indir.execute = {
 	{
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
+
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar, output_ar);
+	}
+
+	// Read destination operand
+	uint32_t dst_value = cpu.GetReg(dst);
 
 	// Read the source operand from memory
 	uint32_t src_value = cpu.IntLoad(ea);
@@ -2318,12 +2325,6 @@ CMPI_indir.execute = {
 
 	Sub32(result, borrow_out, overflow, sign, dst_value, src_value, 0);
 	sign = sign ^ overflow;
-
-	if(update_ar)
-	{
-		// Write back ARn
-		cpu.SetAR23_0(ar, output_ar);
-	}
 
 	// Generate flags (into ST)
 	cpu.GenFlags(
@@ -2948,9 +2949,6 @@ LSH_indir.execute = {
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 
-	// Read the destination operand
-	uint32_t dst_value = cpu.GetReg(dst);
-
 	// Check that indirect addressing mode is valid and compute the effective address of the source operand
 	typename CONFIG::address_t ea;        // The effective address
 	bool update_ar;                       // Whether to update ARn
@@ -2960,6 +2958,15 @@ LSH_indir.execute = {
 	{
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
+
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar, output_ar);
+	}
+
+	// Read the destination operand
+	uint32_t dst_value = cpu.GetReg(dst);
 
 	// Read the source operand from memory
 	uint32_t src_value = cpu.IntLoad(ea);
@@ -3007,12 +3014,6 @@ LSH_indir.execute = {
 
 	// Write back result
 	cpu.SetReg(dst, result);
-
-	if(update_ar)
-	{
-		// Write back ARn
-		cpu.SetAR23_0(ar, output_ar);
-	}
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -3427,9 +3428,6 @@ MPYI_indir.execute = {
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 
-	// Read destination operand and sign extend value from 24 bits to 64 bits
-	int64_t dst_value = SignExtend((uint64_t)(cpu.GetReg(dst) & 0xffffff), 24);
-
 	// Check that indirect addressing mode is valid and compute the effective address of the source operand
 	typename CONFIG::address_t ea;        // The effective address
 	bool update_ar;                       // Whether to update ARn
@@ -3439,6 +3437,15 @@ MPYI_indir.execute = {
 	{
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
+
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar, output_ar);
+	}
+
+	// Read destination operand and sign extend value from 24 bits to 64 bits
+	int64_t dst_value = SignExtend((uint64_t)(cpu.GetReg(dst) & 0xffffff), 24);
 
 	// Read the source operand from memory and sign extend value from 24 bits to 64 bits
 	int64_t src_value = SignExtend((uint64_t)(cpu.IntLoad(ea) & 0xffffff), 24);
@@ -3461,11 +3468,11 @@ MPYI_indir.execute = {
 	// Write back result
 	cpu.SetReg(dst, result);
 
-	if(update_ar)
-	{
-		// Write back ARn
-		cpu.SetAR23_0(ar, output_ar);
-	}
+// 	if(update_ar)
+// 	{
+// 		// Write back ARn
+// 		cpu.SetAR23_0(ar, output_ar);
+// 	}
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -3699,6 +3706,12 @@ NEGB_indir.execute = {
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar, output_ar);
+	}
+
 	// Read the source operand from memory
 	uint32_t src_value = cpu.IntLoad(ea);
 
@@ -3724,12 +3737,6 @@ NEGB_indir.execute = {
 
 	// Write back result
 	cpu.SetReg(dst, result);
-
-	if(update_ar)
-	{
-		// Write back ARn
-		cpu.SetAR23_0(ar, output_ar);
-	}
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -4121,6 +4128,12 @@ NEGI_indir.execute = {
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar, output_ar);
+	}
+
 	// Read the source operand from memory
 	uint32_t src_value = cpu.IntLoad(ea);
 
@@ -4143,12 +4156,6 @@ NEGI_indir.execute = {
 
 	// Write back result
 	cpu.SetReg(dst, result);
-
-	if(update_ar)
-	{
-		// Write back ARn
-		cpu.SetAR23_0(ar, output_ar);
-	}
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -4542,6 +4549,12 @@ NOT_indir.execute = {
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar, output_ar);
+	}
+
 	// Read the source operand from memory
 	uint32_t src_value = cpu.IntLoad(ea);
 
@@ -4551,12 +4564,6 @@ NOT_indir.execute = {
 
 	// Write back result
 	cpu.SetReg(dst, result);
-
-	if(update_ar)
-	{
-		// Write back ARn
-		cpu.SetAR23_0(ar, output_ar);
-	}
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -4733,9 +4740,6 @@ OR_indir.execute = {
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 
-	// Read destination operand
-	uint32_t dst_value = cpu.GetReg(dst);
-
 	// Check that indirect addressing mode is valid and compute the effective address of the source operand
 	typename CONFIG::address_t ea;        // The effective address
 	bool update_ar;                       // Whether to update ARn
@@ -4746,6 +4750,15 @@ OR_indir.execute = {
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar, output_ar);
+	}
+
+	// Read destination operand
+	uint32_t dst_value = cpu.GetReg(dst);
+
 	// Read the source operand from memory
 	uint32_t src_value = cpu.IntLoad(ea);
 
@@ -4755,12 +4768,6 @@ OR_indir.execute = {
 
 	// Write back result
 	cpu.SetReg(dst, result);
-
-	if(update_ar)
-	{
-		// Write back ARn
-		cpu.SetAR23_0(ar, output_ar);
-	}
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -5396,9 +5403,6 @@ SUBB_indir.execute = {
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 
-	// Read destination operand
-	uint32_t dst_value = cpu.GetReg(dst);
-
 	// Check that indirect addressing mode is valid and compute the effective address of the source operand
 	typename CONFIG::address_t ea;        // The effective address
 	bool update_ar;                       // Whether to update ARn
@@ -5408,6 +5412,15 @@ SUBB_indir.execute = {
 	{
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
+
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar, output_ar);
+	}
+
+	// Read destination operand
+	uint32_t dst_value = cpu.GetReg(dst);
 
 	// Read the source operand from memory
 	uint32_t src_value = cpu.IntLoad(ea);
@@ -5434,12 +5447,6 @@ SUBB_indir.execute = {
 
 	// Write back result
 	cpu.SetReg(dst, result);
-
-	if(update_ar)
-	{
-		// Write back ARn
-		cpu.SetAR23_0(ar, output_ar);
-	}
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -5618,9 +5625,6 @@ SUBC_indir.execute = {
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 
-	// Read destination operand
-	uint32_t dst_value = cpu.GetReg(dst);
-
 	// Check that indirect addressing mode is valid and compute the effective address of the source operand
 	typename CONFIG::address_t ea;        // The effective address
 	bool update_ar;                       // Whether to update ARn
@@ -5630,6 +5634,15 @@ SUBC_indir.execute = {
 	{
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
+
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar, output_ar);
+	}
+
+	// Read destination operand
+	uint32_t dst_value = cpu.GetReg(dst);
 
 	// Read the source operand from memory
 	uint32_t src_value = cpu.IntLoad(ea);
@@ -5643,12 +5656,6 @@ SUBC_indir.execute = {
 	
 	// Write back result
 	cpu.SetReg(dst, result);
-
-	if(update_ar)
-	{
-		// Write back ARn
-		cpu.SetAR23_0(ar, output_ar);
-	}
 }
 
 SUBC_imm.execute = {
@@ -6003,9 +6010,6 @@ SUBI_indir.execute = {
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 
-	// Read destination operand
-	uint32_t dst_value = cpu.GetReg(dst);
-
 	// Check that indirect addressing mode is valid and compute the effective address of the source operand
 	typename CONFIG::address_t ea;        // The effective address
 	bool update_ar;                       // Whether to update ARn
@@ -6015,6 +6019,15 @@ SUBI_indir.execute = {
 	{
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
+
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar, output_ar);
+	}
+
+	// Read destination operand
+	uint32_t dst_value = cpu.GetReg(dst);
 
 	// Read the source operand from memory
 	uint32_t src_value = cpu.IntLoad(ea);
@@ -6038,12 +6051,6 @@ SUBI_indir.execute = {
 
 	// Write back result
 	cpu.SetReg(dst, result);
-
-	if(update_ar)
-	{
-		// Write back ARn
-		cpu.SetAR23_0(ar, output_ar);
-	}
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -6274,9 +6281,6 @@ SUBRB_indir.execute = {
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 
-	// Read destination operand
-	uint32_t dst_value = cpu.GetReg(dst);
-
 	// Check that indirect addressing mode is valid and compute the effective address of the source operand
 	typename CONFIG::address_t ea;        // The effective address
 	bool update_ar;                       // Whether to update ARn
@@ -6286,6 +6290,15 @@ SUBRB_indir.execute = {
 	{
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
+
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar, output_ar);
+	}
+
+	// Read destination operand
+	uint32_t dst_value = cpu.GetReg(dst);
 
 	// Read the source operand from memory
 	uint32_t src_value = cpu.IntLoad(ea);
@@ -6312,12 +6325,6 @@ SUBRB_indir.execute = {
 
 	// Write back result
 	cpu.SetReg(dst, result);
-
-	if(update_ar)
-	{
-		// Write back ARn
-		cpu.SetAR23_0(ar, output_ar);
-	}
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -6713,9 +6720,6 @@ SUBRI_indir.execute = {
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 
-	// Read destination operand
-	uint32_t dst_value = cpu.GetReg(dst);
-
 	// Check that indirect addressing mode is valid and compute the effective address of the source operand
 	typename CONFIG::address_t ea;        // The effective address
 	bool update_ar;                       // Whether to update ARn
@@ -6725,6 +6729,15 @@ SUBRI_indir.execute = {
 	{
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
+
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar, output_ar);
+	}
+
+	// Read destination operand
+	uint32_t dst_value = cpu.GetReg(dst);
 
 	// Read the source operand from memory
 	uint32_t src_value = cpu.IntLoad(ea);
@@ -6748,12 +6761,6 @@ SUBRI_indir.execute = {
 
 	// Write back result
 	cpu.SetReg(dst, result);
-
-	if(update_ar)
-	{
-		// Write back ARn
-		cpu.SetAR23_0(ar, output_ar);
-	}
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -6933,9 +6940,6 @@ TSTB_indir.execute = {
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 
-	// Read destination operand
-	uint32_t dst_value = cpu.GetReg(dst);
-
 	// Check that indirect addressing mode is valid and compute the effective address of the source operand
 	typename CONFIG::address_t ea;        // The effective address
 	bool update_ar;                       // Whether to update ARn
@@ -6946,18 +6950,21 @@ TSTB_indir.execute = {
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar, output_ar);
+	}
+
+	// Read destination operand
+	uint32_t dst_value = cpu.GetReg(dst);
+
 	// Read the source operand from memory
 	uint32_t src_value = cpu.IntLoad(ea);
 
 	// Compute the result
 	uint32_t result = src_value & dst_value;
 	uint8_t sign = (int32_t) result < 0;
-
-	if(update_ar)
-	{
-		// Write back ARn
-		cpu.SetAR23_0(ar, output_ar);
-	}
 
 	// Generate flags (into ST)
 	cpu.GenFlags(
@@ -7123,9 +7130,6 @@ XOR_indir.execute = {
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 
-	// Read destination operand
-	uint32_t dst_value = cpu.GetReg(dst);
-
 	// Check that indirect addressing mode is valid and compute the effective address of the source operand
 	typename CONFIG::address_t ea;        // The effective address
 	bool update_ar;                       // Whether to update ARn
@@ -7136,6 +7140,15 @@ XOR_indir.execute = {
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar, output_ar);
+	}
+
+	// Read destination operand
+	uint32_t dst_value = cpu.GetReg(dst);
+
 	// Read the source operand from memory
 	uint32_t src_value = cpu.IntLoad(ea);
 
@@ -7145,12 +7158,6 @@ XOR_indir.execute = {
 
 	// Write back result
 	cpu.SetReg(dst, result);
-
-	if(update_ar)
-	{
-		// Write back ARn
-		cpu.SetAR23_0(ar, output_ar);
-	}
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))

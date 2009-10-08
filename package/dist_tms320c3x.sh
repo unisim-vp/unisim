@@ -243,7 +243,44 @@ UNISIM_SIMULATORS_TMS320C3X_HEADER_FILES=
 UNISIM_SIMULATORS_TMS320C3X_TEMPLATE_FILES=
 UNISIM_SIMULATORS_TMS320C3X_DATA_FILES="COPYING INSTALL NEWS README AUTHORS ChangeLog"
 
-UNISIM_DOCS_FILES="genisslib_manual.pdf tms320c3x_manual.pdf"
+UNISIM_DOCS_FILES="\
+genisslib_manual.pdf \
+tms320c3x_manual.pdf \
+genisslib_manual.tex \
+genisslib/genisslib.tex \
+tms320c3x_manual.tex \
+tms320c3x/tms320c3x.tex \
+tms320c3x/service_instanciation.tex \
+tms320c3x/service_connection.tex \
+tms320c3x/simple_service.tex \
+tms320c3x/simple_client.tex \
+tms320c3x/run_time_parameter.tex \
+tms320c3x/debug_control_interface.tex \
+tms320c3x/disassembly_interface.tex \
+tms320c3x/loader_interface.tex \
+tms320c3x/memory_access_reporting_control_interface.tex \
+tms320c3x/memory_access_reporting_interface.tex \
+tms320c3x/memory_injection_interface.tex \
+tms320c3x/memory_interface.tex \
+tms320c3x/registers_interface.tex \
+tms320c3x/symbol_table_lookup_interface.tex \
+tms320c3x/ti_c_io_interface.tex \
+tms320c3x/time_interface.tex \
+tms320c3x/trap_reporting_interface.tex \
+tms320c3x/including_logger.tex \
+tms320c3x/deriving_from_object.tex \
+tms320c3x/binding_logger.tex \
+tms320c3x/using_logger.tex \
+tms320c3x/register_interface.tex \
+tms320c3x/assembly_pattern.tex \
+tms320c3x/fig_tms320c3x.pdf \
+tms320c3x/fig_object_hierarchy.pdf \
+tms320c3x/fig_code_composer.jpg \
+tms320c3x/fig_tms320c3x_board.jpg \
+tms320c3x/fig_tms320c3x_dev_kit.jpg \
+tms320c3x/fig_unit_test_generator.pdf \
+tms320c3x/fig_unit_test.pdf \
+tms320c3x/fig_driver_error.jpg"
 
 has_to_build_configure=no
 has_to_build_genisslib_configure=no
@@ -321,18 +358,18 @@ for file in ${UNISIM_SIMULATORS_TMS320C3X_DATA_FILES}; do
 done
 
 for file in ${UNISIM_DOCS_FILES}; do
-	mkdir -p "${DEST_DIR}/`dirname ${file}`"
+	mkdir -p "${DEST_DIR}/docs/`dirname ${file}`"
 	has_to_copy=no
-	if [ -e "${DEST_DIR}/${file}" ]; then
-		if [ "${UNISIM_DOCS_DIR}/${file}" -nt "${DEST_DIR}/${file}" ]; then
+	if [ -e "${DEST_DIR}/docs/${file}" ]; then
+		if [ "${UNISIM_DOCS_DIR}/${file}" -nt "${DEST_DIR}/docs/${file}" ]; then
 			has_to_copy=yes
 		fi
 	else
 		has_to_copy=yes
 	fi
 	if [ "${has_to_copy}" = "yes" ]; then
-		echo "${UNISIM_DOCS_DIR}/${file} ==> ${DEST_DIR}/${file}"
-		cp -f "${UNISIM_DOCS_DIR}/${file}" "${DEST_DIR}/${file}" || exit
+		echo "${UNISIM_DOCS_DIR}/${file} ==> ${DEST_DIR}/docs/${file}"
+		cp -f "${UNISIM_DOCS_DIR}/${file}" "${DEST_DIR}/docs/${file}" || exit
 	fi
 done
 
