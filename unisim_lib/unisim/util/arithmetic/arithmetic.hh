@@ -444,7 +444,7 @@ inline uint16_t RotateLeft(uint16_t v, unsigned int n)
 
 inline uint32_t RotateLeft(uint32_t v, unsigned int n)
 {
-#if defined(__GNUC__) && defined(__i386)
+#if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
 	__asm__ ("rol %%cl, %0" : "=r" (v) : "0" (v), "c" (n) : "cc");
 	return v;
 #else
@@ -473,7 +473,7 @@ inline uint16_t RotateRight(uint16_t v, unsigned int n)
 
 inline uint32_t RotateRight(uint32_t v, unsigned int n)
 {
-#if defined(__GNUC__) && defined(__i386)
+#if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
 	__asm__ ("ror %%cl, %0" : "=r" (v) : "0" (v), "c" (n) : "cc");
 	return v;
 #else
@@ -500,7 +500,7 @@ inline int64_t RotateRight(int64_t v, unsigned int n) { return RotateRight((uint
 // WARNING! bit_out value is undefined when rotating of 0 bits
 inline uint32_t RotateLeft(uint32_t v, unsigned int n, uint8_t& bit_out)
 {
-#if defined(__GNUC__) && (__GNUC__ >= 3) && defined(__i386)
+#if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
 	__asm__ ("rol %%cl, %0\nsetc %1" : "=r" (v), "=qQ" (bit_out) : "0" (v), "c" (n) : "cc");	
 	return v;
 #else
@@ -512,7 +512,7 @@ inline uint32_t RotateLeft(uint32_t v, unsigned int n, uint8_t& bit_out)
 
 inline uint32_t RotateRight(uint32_t v, unsigned int n, uint8_t& bit_out)
 {
-#if defined(__GNUC__) && (__GNUC__ >= 3) && defined(__i386)
+#if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
 	__asm__ ("ror %%cl, %0\nsetc %1" : "=r" (v), "=qQ" (bit_out) : "0" (v), "c" (n) : "cc");	
 	return v;
 #else
@@ -524,7 +524,7 @@ inline uint32_t RotateRight(uint32_t v, unsigned int n, uint8_t& bit_out)
 
 inline uint32_t RotateLeft(uint32_t v, unsigned int n, uint8_t bit_in, uint8_t& bit_out)
 {
-#if defined(__GNUC__) && (__GNUC__ >= 3) && defined(__i386)
+#if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
 	if(bit_in)
 	{
 		__asm__ ("stc\nrcl %%cl, %0\nsetc %1" : "=r" (v), "=qQ" (bit_out) : "0" (v), "c" (n) : "cc");	
@@ -543,7 +543,7 @@ inline uint32_t RotateLeft(uint32_t v, unsigned int n, uint8_t bit_in, uint8_t& 
 
 inline uint32_t RotateRight(uint32_t v, unsigned int n, uint8_t bit_in, uint8_t& bit_out)
 {
-#if defined(__GNUC__) && (__GNUC__ >= 3) && defined(__i386)
+#if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
 	if(bit_in)
 	{
 		__asm__ ("stc\nrcr %%cl, %0\nsetc %1" : "=r" (v), "=qQ" (bit_out) : "0" (v), "c" (n) : "cc");	
@@ -566,7 +566,7 @@ inline uint32_t RotateRight(uint32_t v, unsigned int n, uint8_t bit_in, uint8_t&
 
 inline uint32_t ShiftLeft(uint32_t v, unsigned int n)
 {
-#if defined(__GNUC__) && (__GNUC__ >= 3) && defined(__i386)
+#if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
 	__asm__ ("shl %%cl, %0" : "=r" (v) : "0" (v), "c" (n) : "cc");	
 	return v;
 #else
@@ -577,7 +577,7 @@ inline uint32_t ShiftLeft(uint32_t v, unsigned int n)
 
 inline uint32_t ShiftLeft(uint32_t v, unsigned int n, uint8_t& bit_out)
 {
-#if defined(__GNUC__) && (__GNUC__ >= 3) && defined(__i386)
+#if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
 	__asm__ ("shl %%cl, %0\nsetc %1" : "=r" (v), "=qQ" (bit_out): "0" (v), "c" (n) : "cc");	
 	return v;
 #else
@@ -589,7 +589,7 @@ inline uint32_t ShiftLeft(uint32_t v, unsigned int n, uint8_t& bit_out)
 
 inline uint32_t ShiftRight(uint32_t v, unsigned int n)
 {
-#if defined(__GNUC__) && (__GNUC__ >= 3) && defined(__i386)
+#if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
 	__asm__ ("shr %%cl, %0" : "=r" (v) : "0" (v), "c" (n) : "cc");
 	return v;
 #else
@@ -600,7 +600,7 @@ inline uint32_t ShiftRight(uint32_t v, unsigned int n)
 
 inline uint32_t ShiftRight(uint32_t v, unsigned int n, uint8_t& bit_out)
 {
-#if defined(__GNUC__) && (__GNUC__ >= 3) && defined(__i386)
+#if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
 	__asm__ ("shr %%cl, %0\nsetc %1" : "=r" (v), "=qQ" (bit_out) : "0" (v), "c" (n) : "cc");	
 	return v;
 #else
@@ -616,7 +616,7 @@ inline uint32_t ShiftRight(uint32_t v, unsigned int n, uint8_t& bit_out)
 
 inline uint32_t ShiftArithmeticRight(uint32_t v, unsigned int n)
 {
-#if defined(__GNUC__) && (__GNUC__ >= 3) && defined(__i386)
+#if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
 	__asm__ ("sar %%cl, %0" : "=r" (v) : "0" (v), "c" (n) : "cc");	
 	return v;
 #else
@@ -627,7 +627,7 @@ inline uint32_t ShiftArithmeticRight(uint32_t v, unsigned int n)
 
 inline uint32_t ShiftArithmeticRight(uint32_t v, unsigned int n, uint8_t& bit_out)
 {
-#if defined(__GNUC__) && (__GNUC__ >= 3) && defined(__i386)
+#if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
 	__asm__ ("sar %%cl, %0\nsetc %1" : "=r" (v), "=qQ" (bit_out) : "0" (v), "c" (n) : "cc");	
 	return v;
 #else
@@ -643,7 +643,7 @@ inline uint32_t ShiftArithmeticRight(uint32_t v, unsigned int n, uint8_t& bit_ou
 
 inline bool BitScanForward(unsigned int& n, uint32_t v)
 {
-#if defined(__GNUC__) && (__GNUC__ >= 3) && defined(__i386)
+#if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
 	bool notfound;
 	asm("bsf %2, %0\nsetz %1" : "=r" (n), "=qQ" (notfound) : "r" (v) : "cc");
 	return !notfound;
@@ -682,7 +682,7 @@ inline bool BitScanForward(unsigned int& n, uint64_t v)
 
 inline bool BitScanReverse(unsigned int& n, uint32_t v)
 {
-#if defined(__GNUC__) && (__GNUC__ >= 3) && defined(__i386)
+#if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
 	bool notfound;
 	asm("bsr %2, %0\nsetz %1" : "=r" (n), "=qQ" (notfound) : "r" (v) : "cc");
 	return !notfound;

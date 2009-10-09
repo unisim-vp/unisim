@@ -75,9 +75,6 @@ LDFI_dir.execute = {
 LDFI_indir.execute = {
 	// no need to check the operands, they must be valid
 	
-	// get destination register
-	Register& dst_reg = cpu.GetExtReg(dst);
-	
 	// Check that indirect addressing mode is valid and compute the effective address of the source operand
 	typename CONFIG::address_t ea;        // The effective address
 	bool update_ar;                       // Whether to update ARn
@@ -88,16 +85,19 @@ LDFI_indir.execute = {
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 	
-	// Read the source operand from memory
-	uint32_t src_value = cpu.IntLoad(ea, true /* interlocked */);
-	
-	dst_reg.SetFromSinglePrecisionFPFormat(src_value);
-	
 	if(update_ar)
 	{
 		// Write back ARn
 		cpu.SetAR23_0(ar, output_ar);
 	}
+	
+	// get destination register
+	Register& dst_reg = cpu.GetExtReg(dst);
+	
+	// Read the source operand from memory
+	uint32_t src_value = cpu.IntLoad(ea, true /* interlocked */);
+	
+	dst_reg.SetFromSinglePrecisionFPFormat(src_value);
 	
 	// Generate flags (into ST)
 	cpu.GenFlags(dst_reg,
@@ -165,18 +165,18 @@ LDII_indir.execute = {
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar, output_ar);
+	}
+
 	// Load the word from memory
 	uint32_t result = cpu.IntLoad(ea, true /* interlocked */);
 	uint8_t sign = (int32_t) result < 0;
 
 	// Write back result
 	cpu.SetReg(dst, result);
-
-	if(update_ar)
-	{
-		// Write back ARn
-		cpu.SetAR23_0(ar, output_ar);
-	}
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -237,9 +237,6 @@ STFI_dir.execute = {
 STFI_indir.execute = {
 	// no need to check the operands, they must be valid
 	
-	// get source register
-	Register& src_reg = cpu.GetExtReg(src);
-
 	// Check that indirect addressing mode is valid and compute the effective address
 	typename CONFIG::address_t ea;        // The effective address
 	bool update_ar;                       // Whether to update ARn
@@ -250,17 +247,20 @@ STFI_indir.execute = {
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 	
-	// get a 32bits version of the source register (containing a float)
-	uint32_t result = src_reg.GetSinglePrecisionFPFormat();
-	
-	// Store the word into memory
-	cpu.IntStore(ea, result, true /* interlocked */);
-	
 	if(update_ar)
 	{
 		// Write back ARn
 		cpu.SetAR23_0(ar, output_ar);
 	}
+	
+	// get source register
+	Register& src_reg = cpu.GetExtReg(src);
+
+	// get a 32bits version of the source register (containing a float)
+	uint32_t result = src_reg.GetSinglePrecisionFPFormat();
+	
+	// Store the word into memory
+	cpu.IntStore(ea, result, true /* interlocked */);
 }
 
 /* end of STFI (store floating-point value, interlocked)
@@ -298,9 +298,6 @@ STII_indir.execute = {
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 
-	// Read the source operand
-	uint32_t result = cpu.GetReg(src);
-
 	// Check that indirect addressing mode is valid and compute the effective address
 	typename CONFIG::address_t ea;        // The effective address
 	bool update_ar;                       // Whether to update ARn
@@ -311,14 +308,17 @@ STII_indir.execute = {
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 
-	// Store the word into memory
-	cpu.IntStore(ea, result, true /* interlocked */);
-
 	if(update_ar)
 	{
 		// Write back ARn
 		cpu.SetAR23_0(ar, output_ar);
 	}
+
+	// Read the source operand
+	uint32_t result = cpu.GetReg(src);
+
+	// Store the word into memory
+	cpu.IntStore(ea, result, true /* interlocked */);
 }
 
 /* end of STII (store integer, interflocked)
