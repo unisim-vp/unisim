@@ -189,7 +189,7 @@ private:
 	void ComputeInternalTime();
 
 	tlm_quantumkeeper quantumkeeper;
-	peq_with_get<ATD_Payload<ATD_SIZE> > input_payload_queue;
+	peq_with_get<ATD_Payload<ATD_SIZE> > input_anx_payload_queue;
 
 	PayloadFabric<XINT_Payload> xint_payload_fabric;
 
@@ -205,6 +205,13 @@ private:
 
 	sc_event scan_event;
 	sc_event trigger_event;
+
+	bool conversionStop;
+	bool abortSequence;
+	uint8_t resultIndex;
+
+	bool isTriggerModeRunning;
+	bool isATDON;
 
 	address_t	baseAddress;
 	Parameter<address_t>   param_baseAddress;
@@ -236,11 +243,7 @@ private:
 	// Registers map
 	map<string, Register *> registers_registry;
 
-	bool conversionStop;
-	bool abortSequence;
-	uint8_t resultIndex;
-
-	void Input(double anValue[ATD_SIZE]);
+	void InputANx(double anValue[ATD_SIZE]);
 	void abortConversion();
 	void abortAndStartNewConversion();
 	void sequenceComplete();

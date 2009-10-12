@@ -57,7 +57,7 @@ ATD10B<ATD_SIZE>::ATD10B(const sc_module_name& name, Object *parent) :
 	anx_socket("anx_socket"),
 	slave_socket("slave_socket"),
 
-	input_payload_queue("input_payload_queue"),
+	input_anx_payload_queue("input_anx_payload_queue"),
 
 	memory_export("memory_export", this),
 	memory_import("memory_import", this),
@@ -85,6 +85,9 @@ ATD10B<ATD_SIZE>::ATD10B(const sc_module_name& name, Object *parent) :
 	param_hasExternalTrigger("Has-External-Trigger", this, hasExternalTrigger),
 	conversionStop(false),
 	abortSequence(false),
+	isTriggerModeRunning(false),
+	isATDON(false),
+
 	resultIndex(0)
 
 {
@@ -93,7 +96,7 @@ ATD10B<ATD_SIZE>::ATD10B(const sc_module_name& name, Object *parent) :
 	interrupt_request(*this);
 	slave_socket.register_b_transport(this, &ATD10B::read_write);
 	bus_clock_socket.register_b_transport(this, &ATD10B::UpdateBusClock);
-	
+
 	SC_HAS_PROCESS(ATD10B);
 
 	SC_THREAD(Process);
@@ -137,7 +140,7 @@ unsigned int ATD10B<ATD_SIZE>::transport_dbg(ATD_Payload<ATD_SIZE>& payload)
 
 template <uint8_t ATD_SIZE>
 void ATD10B<ATD_SIZE>::b_transport(ATD_Payload<ATD_SIZE>& payload, sc_core::sc_time& t) {
-	input_payload_queue.notify(payload, t);
+	input_anx_payload_queue.notify(payload, t);
 }
 
 template <uint8_t ATD_SIZE>
@@ -159,7 +162,7 @@ tlm_sync_enum ATD10B<ATD_SIZE>::nb_transport_fw(ATD_Payload<ATD_SIZE>& payload, 
 		case BEGIN_REQ:
 			// accepts analog signals modeled by payload
 			phase = END_REQ; // update the phase
-			input_payload_queue.notify(payload, t); // queue the payload and the associative time
+			input_anx_payload_queue.notify(payload, t); // queue the payload and the associative time
 
 			return TLM_UPDATED;
 		case END_REQ:
@@ -193,9 +196,9 @@ void ATD10B<ATD_SIZE>::Process()
 	while(1)
 	{
 		quantumkeeper.sync();
-		wait(input_payload_queue.get_event());
+		wait(input_anx_payload_queue.get_event());
 
-		Input(analog_signal);
+		InputANx(analog_signal);
 
 		// TODO: see in details how to use quantumkeeper in the case of ATD
 
@@ -212,7 +215,7 @@ void ATD10B<ATD_SIZE>::Process()
  */
 
 template <uint8_t ATD_SIZE>
-void ATD10B<ATD_SIZE>::Input(double anValue[ATD_SIZE])
+void ATD10B<ATD_SIZE>::InputANx(double anValue[ATD_SIZE])
 {
 	ATD_Payload<ATD_SIZE> *last_payload = NULL;
 	ATD_Payload<ATD_SIZE> *payload = NULL;
@@ -220,7 +223,7 @@ void ATD10B<ATD_SIZE>::Input(double anValue[ATD_SIZE])
 	do
 	{
 		last_payload = payload;
-		payload = input_payload_queue.get_next_transaction();
+		payload = input_anx_payload_queue.get_next_transaction();
 
 		if (debug_enabled && payload) {
 			cout << name() << ":: Receive " << payload->serialize() << " - " << sc_time_stamp() << endl;
@@ -322,23 +325,21 @@ void ATD10B<ATD_SIZE>::RunScanMode()
 	uint8_t currentChannel = atdctl5_register & 0x0F; // get CD/CC/CB/CA;
 	conversionStop = false;
 
+	/**
+	 *  check is FIFO mode
+	 *  FIFO = 0 : Conversion results are placed in the corresponding result register up to the selected sequence length
+	 *  FIFO = 1 : Conversion results are placed in consecutive result registers (wrap around at end)
+	 */
+	bool isFIFO = ((atdctl3_register & 0x04) != 0);
+
 	do
 	{
-
-		/**
-		 *  check is FIFO mode
-		 *  if (fifo == 0) reset the result index at the start of a sequence
-		 *  else the result index will wrap when it rich the last result register
-		 */
-		if ((atdctl3_register & 0x04) == 0) {
-			resultIndex = 0;
-		}
 
 		// Store the result of conversion
 		uint8_t sequenceIndex = 0;
 		abortSequence = false;
 
-		while ((sequenceIndex < sequenceLength) /* && !abortSequence */ ) {
+		while ((sequenceIndex < sequenceLength)  && !abortSequence ) {
 
 			// set the conversion counter ATDSTAT0::CC (result register which will receive the current conversion)
 			atdstat0_register = (atdstat0_register & 0xF0) | (resultIndex & 0x0F);
@@ -376,12 +377,20 @@ void ATD10B<ATD_SIZE>::RunScanMode()
 				atdstat0_register = atdstat0_register | 0x10;
 			}
 
+			if (!isFIFO) {
+				resultIndex = currentChannel;
+			}
+
 			atddrhl_register[resultIndex] = digitalToken;
 			// set the ATDSTAT1 & ATDSTAT2 CCFx flags
 			if (resultIndex < 8) {
 				atdstat1_register = atdstat1_register | (0x01 < resultIndex);
 			} else {
 				atdstat2_register = atdstat2_register | (0x01 < (resultIndex-8));
+			}
+
+			if (isFIFO) {
+				resultIndex = (resultIndex + 1) % ATD_SIZE;
 			}
 
 			// - if Multi-channel then select next channel else keep the same channel
@@ -397,11 +406,9 @@ void ATD10B<ATD_SIZE>::RunScanMode()
 				}
 			}
 
-			resultIndex = (resultIndex + 1) % ATD_SIZE;
 			sequenceIndex++;
+			wait(first_phase_clock + second_phase_clock);
 		}
-
-		wait((first_phase_clock + second_phase_clock) * sequenceLength);
 
 		// The abordSequence flag can be set during the wait state by writing to any control register
 		if (!abortSequence) {
@@ -494,6 +501,8 @@ void ATD10B<ATD_SIZE>::abortConversion() {
 	// Clear ATDSTAT0::ETORF and ATDSTAT0::CC
 	atdstat0_register = atdstat0_register & 0xD0;
 
+	resultIndex = 0;
+
 }
 
 template <uint8_t ATD_SIZE>
@@ -506,6 +515,21 @@ void ATD10B<ATD_SIZE>::abortAndStartNewConversion() {
 	atdstat0_register = 0;
 	atdstat1_register = 0;
 	atdstat2_register = 0;
+
+	resultIndex = 0;
+
+//	/**
+//	 *  if external trigger is enabled (ETRIGE=1) an initial write to ATDCTL5 is required to allow
+//	 *  starting of conversion sequence which will then occur on each trigger event.
+//	 */
+//	if ((atdctl2_register & 0x04) != 0) {
+//		if (!isTriggerModeRunning) {
+//			isTriggerModeRunning = true;
+//			RunTriggerMode();
+//		}
+//	} else {
+//		isTriggerModeRunning = false;
+//	}
 }
 
 template <uint8_t ATD_SIZE>
@@ -515,22 +539,15 @@ void ATD10B<ATD_SIZE>::setATDClock() {
 	uint8_t smpValue = (atdctl4_register & smpMask) >> 5;
 	uint8_t prsMask = 0x1F;
 	uint8_t prsValue = atdctl4_register & prsMask;
-	if ((bus_cycle_time_int < busClockRange[prsValue].minBusClock) ||
-			(bus_cycle_time_int > busClockRange[prsValue].maxBusClock)) {
 
-		if (debug_enabled) {
-			cerr << "Warning : " << name() << ": unallowed prescaler value" << std::endl;
-		}
-	}
-
-	atd_clock = bus_cycle_time / prsValue;
+	atd_clock = bus_cycle_time / (prsValue + 1) * 0.5;
 	first_phase_clock = atd_clock * 2;
-	second_phase_clock = first_phase_clock * (1 << smpValue);
+	second_phase_clock = atd_clock * 2 * (1 << smpValue);
 }
 
 /*	===========================
  * ATD Reference
- *  - Input : input signal. Values are between [Vrl = 0 Volts , Vrh = 5.12 Volts]
+ *  - InputANx : input signal. Values are between [Vrl = 0 Volts , Vrh = 5.12 Volts]
  *  - Output Code: depend on
  *       ATDCTL4::SRES (resolution 8/10),
  *       ATDCTL5::DJM (justification left/right),
@@ -745,10 +762,7 @@ bool ATD10B<ATD_SIZE>::write(uint8_t offset, const void *buffer) {
 		} break;
 		case UNIMPL0007: break;
 		case ATDTEST0:
-			// atdtest0_register = *((uint8_t *) buffer);
-			if (debug_enabled) {
-				cerr << "Warning: " << name() << " => Not implemented yet. Write to ATDTEST0 in special modes can alter functionality.\n";
-			}
+			// ATDTEST0 is intended for factory test purposes only.
 
 			break;
 		case ATDTEST1: {
