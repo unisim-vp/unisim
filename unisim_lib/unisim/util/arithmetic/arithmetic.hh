@@ -505,7 +505,7 @@ inline uint32_t RotateLeft(uint32_t v, unsigned int n, uint8_t& bit_out)
 	return v;
 #else
 	n &= 31;
-	bit_out = (v >> (31 - n)) & 1;
+	bit_out = (v >> (32 - n)) & 1;
 	return (v << n) | (v >> (32 - n));
 #endif
 }
@@ -536,7 +536,7 @@ inline uint32_t RotateLeft(uint32_t v, unsigned int n, uint8_t bit_in, uint8_t& 
 	return v;
 #else
 	n &= 31;
-	bit_out = (v >> (31 - n)) & 1;
+	bit_out = (v >> (32 - n)) & 1;
 	return (uint32_t) (((uint64_t) v << n) | ((uint64_t) bit_in << (n - 1)) | ((uint64_t) v >> (33 - n)));
 #endif
 }
@@ -582,7 +582,7 @@ inline uint32_t ShiftLeft(uint32_t v, unsigned int n, uint8_t& bit_out)
 	return v;
 #else
 	n &= 31;
-	bit_out = (v >> (31 - n)) & 1;
+	bit_out = (v >> (32 - n)) & 1;
 	return v << n;
 #endif
 }
