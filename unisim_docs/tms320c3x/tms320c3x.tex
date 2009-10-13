@@ -1555,7 +1555,7 @@ Thus running these integer benchmarks for testing integer computation would have
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{br src}} & \multicolumn{1}{p{0.35cm}|}{} & \multicolumn{1}{p{0.35cm}|}{} & \multicolumn{1}{p{0.35cm}|}{} & \multicolumn{1}{p{0.35cm}|}{} & \multicolumn{1}{p{0.35cm}|}{} & \multicolumn{1}{p{0.35cm}|}{} & \multicolumn{1}{p{0.35cm}|}{} & \multicolumn{1}{p{0.35cm}|}{} & \multicolumn{1}{p{0.35cm}|}{} & \multicolumn{1}{p{0.35cm}|}{} & \multicolumn{1}{p{0.35cm}|}{} & \multicolumn{1}{p{0.35cm}|}{}\\
 \hline
-\multicolumn{13}{|c|}{\textbf{br}}\\
+\multicolumn{13}{|c|}{\textbf{brd}}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{brd src}} & \multicolumn{1}{p{0.35cm}|}{} & \multicolumn{1}{p{0.35cm}|}{} & \multicolumn{1}{p{0.35cm}|}{} & \multicolumn{1}{p{0.35cm}|}{} & \multicolumn{1}{p{0.35cm}|}{} & \multicolumn{1}{p{0.35cm}|}{} & \multicolumn{1}{p{0.35cm}|}{} & \multicolumn{1}{p{0.35cm}|}{} & \multicolumn{1}{p{0.35cm}|}{} & \multicolumn{1}{p{0.35cm}|}{} & \multicolumn{1}{p{0.35cm}|}{} & \multicolumn{1}{p{0.35cm}|}{}\\
 \hline
@@ -2587,46 +2587,487 @@ The next sections present the validation process and the provided testing enviro
 
 For the purpose of validating the UNISIM TMS320C3X simulator, a factorial plan has been established. The factorial plan parameters are:
 \begin{itemize}
-\item The general instruction under test, e.g. \texttt{ldf}
-\item The condition code, e.g. \texttt{z} in \texttt{ldfz}
-\item The addressing mode, e.g. \texttt{indir} in \texttt{ldfz indir, reg}
-\item The input value set of the instruction, e.g. the value of \texttt{indir} operand in \texttt{ldfz indir, reg}
+\item The general instruction under test, e.g. \texttt{ldf}, see Tables~\ref{table:tms320c3x_load_store_instructions}, \ref{table:tms320c3x_interlocked_instructions},  \ref{table:tms320c3x_control_instructions}, \ref{table:tms320c3x_2ops_instructions}, \ref{table:tms320c3x_3ops_instructions}, \ref{table:tms320c3x_parallel_instructions} and \ref{table:tms320c3x_power_instructions}
+\item The condition code, e.g. \texttt{z} in \texttt{ldfz}, see Table~\ref{table:tms320c3x_condition_codes}
+\item The general addressing mode (e.g. \texttt{indir} in \texttt{ldfz indir, reg}), see Table~\ref{table:tms320c3x_general_addressing_modes}:
+	\begin{itemize}
+		\item For an immediate addressing mode, the immediate value
+		\item For an indirect addressing mode, one of 26 available addressing, see Table~\ref{table:tms320c3x_indir_addressing_modes}
+	\end{itemize}
+\item The input value set of the instruction, e.g. the value of \texttt{indir} memory operand in \texttt{ldfz indir, reg}
 \end{itemize}
 
-This plan results in lot of instruction alternatives being tested (several condition codes and addressing modes).
+\begin{table}[!p]
+\begin{center}
+	\begin{tabular}{|p{3.0cm}|p{10.0cm}|}
+	\hline
+	\textbf{Instructions} & \textbf{Description}\\
+	\hline
+	\textbf{lde} & Load Floating-Point Exponent\\
+	\hline
+	\textbf{ldf} & Load Floating-Point Value\\
+	\hline
+	\textbf{ldf\textit{cond}} & Load Floating-point Value Conditionally\\
+	\hline
+	\textbf{ldi} & Load Integer\\
+	\hline
+	\textbf{ldi\textit{cond}} & Load Integer Conditionally\\
+	\hline
+	\textbf{ldm} & Load Floating-Point Mantissa\\
+	\hline
+	\textbf{ldp} & Load Data-Page Pointer\\
+	\hline
+	\textbf{pop} & Pop Integer\\
+	\hline
+	\textbf{popf} & Pop Floating-Point Value\\
+	\hline
+	\textbf{push} & Push Integer\\
+	\hline
+	\textbf{pushf} & Push Floating-Point Value\\
+	\hline
+	\textbf{stf} & Store Floating-Point Value\\
+	\hline
+	\textbf{sti} & Store Integer\\
+	\hline
+	\end{tabular}
+	\caption{\label{table:tms320c3x_load_store_instructions} TMS320C3X Load/Store Instructions.}
+\end{center}
+\end{table}
 
-\noindent The conditional instructions have 20 possible conditions:\\
-\texttt{u}, \texttt{lo}, \texttt{ls}, \texttt{hi}, \texttt{hs}, \texttt{eq}, \texttt{ne}, \texttt{lt}, \texttt{le}, \texttt{gt}, \texttt{ge}, \texttt{nv}, \texttt{v}, \texttt{nuf}, \texttt{uf}, \texttt{nlv}, \texttt{lv}, \texttt{nluf}, \texttt{luf}, \texttt{zuf}.\\
+\begin{table}[!p]
+\begin{center}
+	\begin{tabular}{|p{3.0cm}|p{10.0cm}|}
+	\hline
+	\textbf{Instructions} & \textbf{Description}\\
+	\hline
+	\textbf{ldfi} & Load Floating-Point Value, Interlocked\\
+	\hline
+	\textbf{ldii} & Load Integer, Interlocked\\
+	\hline
+	\textbf{sigi} & Singal, Interlocked\\
+	\hline
+	\textbf{stfi} & Store Floating-Point Value, Interlocked\\
+	\hline
+	\textbf{stii} & Store Integer, Interlocked\\
+	\hline
+	\end{tabular}
+	\caption{\label{table:tms320c3x_interlocked_instructions} TMS320C3X Interlocked Instructions.}
+\end{center}
+\end{table}
 
-\noindent The four possible general addressing modes are: register, immediate, direct, and indirect addressing modes.
+\begin{table}[!p]
+\begin{center}
+	\begin{tabular}{|p{3.0cm}|p{10.0cm}|}
+	\hline
+	\textbf{Instructions} & \textbf{Description}\\
+	\hline
+	\textbf{b\textit{cond}} & Branch Conditionally (Standard)\\
+	\hline
+	\textbf{b\textit{cond}d} & Branch Conditionally (Delayed)\\
+	\hline
+	\textbf{br} & Branch Unconditionally (Standard)\\
+	\hline
+	\textbf{brd} & Branch Unconditionally (Delayed)\\
+	\hline
+	\textbf{call} & Call Subroutine\\
+	\hline
+	\textbf{call\textit{cond}} & Call Subroutine Conditionally\\
+	\hline
+	\textbf{db\textit{cond}} & Decrement and Branch Conditionally (Standard)\\
+	\hline
+	\textbf{db\textit{cond}d} & Decrement and Branch Conditionally (Delayed)\\
+	\hline
+	\textbf{iack} & Interrupt Acknowledge\\
+	\hline
+	\textbf{idle} & Idle Until Interrupt\\
+	\hline
+	\textbf{nop} & No Operation\\
+	\hline
+	\textbf{reti\textit{cond}} & Return From Interrupt Conditionally\\
+	\hline
+	\textbf{rets\textit{cond}} & Return From Subroutine Conditionally\\
+	\hline
+	\textbf{rptb} & Repeat Block\\
+	\hline
+	\textbf{rpts} & Repeat Single Instruction\\
+	\hline
+	\textbf{swi} & Software Interrupt\\
+	\hline
+	\textbf{trap\textit{cond}} & Trap Conditionally\\
+	\hline
+	\end{tabular}
+	\caption{\label{table:tms320c3x_control_instructions} TMS320C3X Control Instructions.}
+\end{center}
+\end{table}
 
-\noindent Instructions with indirect addressing mode have 26 alternatives for each indirect operand:\\
-\texttt{*+ar$_n$(disp)}, \texttt{*-ar$_n$(disp)}, \texttt{*++ar$_n$(disp)}, \texttt{*--ar$_n$(disp)}, \texttt{*ar$_n$++(disp)}, \texttt{*ar$_n$--(disp)}, \texttt{*ar$_n$++(disp)\%}, \texttt{*ar$_n$(disp)\%}, \texttt{*+ar$_n$(ir0)}, \texttt{*-ar$_n$(ir0)}, \texttt{*++ar$_n$(ir0)}, \texttt{*--ar$_n$(ir0)}, \texttt{*ar$_n$++(ir0)}, \texttt{*ar$_n$--(ir0)}, \texttt{*ar$_n$++(ir0)\%}, \texttt{*ar$_n$(ir0)\%}, \texttt{*+ar$_n$(ir1)}, \texttt{*-ar$_n$(ir1)}, \texttt{*++ar$_n$(ir1)}, \texttt{*--ar$_n$(ir1)}, \texttt{*ar$_n$++(ir1)}, \texttt{*ar$_n$--(ir1)}, \texttt{*ar$_n$++(ir1)\%}, \texttt{*ar$_n$(ir1)\%}, \texttt{*ar$_n$}, \texttt{*ar$_n$++(ir0)b}.\\
+\begin{table}[!p]
+\begin{center}
+	\begin{tabular}{|p{3.0cm}|p{10.0cm}|}
+	\hline
+	\textbf{Instructions} & \textbf{Description}\\
+	\hline
+	\textbf{absf} & Absolute Value of Floating-Point\\
+	\hline
+	\textbf{absi} & Absolute Value of Integer\\
+	\hline
+	\textbf{addc} & Add Integer With Carry\\
+	\hline
+	\textbf{addf} & Add Floating-Point Values\\
+	\hline
+	\textbf{addi} & Add Integer\\
+	\hline
+	\textbf{and} & Bitwise-Logical AND\\
+	\hline
+	\textbf{andn} & Bitwise-Logical AND With Complement\\
+	\hline
+	\textbf{ash} & Arithmetic Shift\\
+	\hline
+	\textbf{cmpf} & Compare Floating-Point Value\\
+	\hline
+	\textbf{cmpi} & Compare Integer\\
+	\hline
+	\textbf{fix} & Floating-Point-to-Integer Conversion\\
+	\hline
+	\textbf{float} & Integer-to-Floating-Point Conversion\\
+	\hline
+	\textbf{lsh} & Logical Shift\\
+	\hline
+	\textbf{mpyf} & Multiply Floating-Point Value\\
+	\hline
+	\textbf{mpyi} & Multiply Integer\\
+	\hline
+	\textbf{negb} & Negative Integer With Borrow\\
+	\hline
+	\textbf{negf} & Negative Floating-Point Value\\
+	\hline
+	\textbf{negi} & Negate Integer\\
+	\hline
+	\textbf{norm} & Normalize\\
+	\hline
+	\textbf{not} & Bitwise-Logical Complement\\
+	\hline
+	\textbf{or} & Bitwise-Logical OR\\
+	\hline
+	\textbf{rnd} & Round Floating-Point Value\\
+	\hline
+	\textbf{rol} & Rotate Left\\
+	\hline
+	\textbf{rolc} & Rotate Left Through Carry\\
+	\hline
+	\textbf{ror} & Rotate Right\\
+	\hline
+	\textbf{rorc} & Rotate Right Through Carry\\
+	\hline
+	\textbf{subb} & Substract Integer With Borrow\\
+	\hline
+	\textbf{subc} & Substract Integer Conditionally\\
+	\hline
+	\textbf{subf} & Substract Floating-Point Value\\
+	\hline
+	\textbf{subi} & Substract Integer\\
+	\hline
+	\textbf{subrb} & Substract Reverse Integer With Borrow\\
+	\hline
+	\textbf{subrf} & Substract Reverse Floating-Point Value\\
+	\hline
+	\textbf{subri} & Substract Reverse Integer\\
+	\hline
+	\textbf{tstb} & Test Bit Fields\\
+	\hline
+	\textbf{xor} & Bitwise-Exclusive OR\\
+	\hline
+	\end{tabular}
+	\caption{\label{table:tms320c3x_2ops_instructions} TMS320C3X 2-operand Instructions.}
+\end{center}
+\end{table}
 
-\noindent Immediate adressing was tested with the following values: \texttt{0}, \texttt{-1}, \texttt{+1}, \texttt{-32768}, and \texttt{+32767}.
+\begin{table}[!p]
+\begin{center}
+	\begin{tabular}{|p{3.0cm}|p{10.0cm}|}
+	\hline
+	\textbf{Instructions} & \textbf{Description}\\
+	\hline
+	\textbf{addc3} & Add Integer With Carry, 3-Operand\\
+	\hline
+	\textbf{addf3} & Add Floating-Point, 3-Operand\\
+	\hline
+	\textbf{addi3} & Add Integer, 3-Operand\\
+	\hline
+	\textbf{and3} & Bitwise-Logical AND, 3-Operand\\
+	\hline
+	\textbf{andn3} & Bitwise-Logical AND With Complement, 3-Operand\\
+	\hline
+	\textbf{ash3} & Arithmetic Shift, 3-Operand\\
+	\hline
+	\textbf{cmpf3} & Compare Floating-Point Value, 3-Operand\\
+	\hline
+	\textbf{cmpi3} & Compare Integer, 3-Operand\\
+	\hline
+	\textbf{lsh3} & Logical Shift, 3-Operand\\
+	\hline
+	\textbf{mpyf3} & Multiply Floating-Point Value, 3-Operand\\
+	\hline
+	\textbf{mpyi3} & Multiply Integer, 3-Operand\\
+	\hline
+	\textbf{or3} & Bitwise-Logical OR, 3-Operand\\
+	\hline
+	\textbf{subb3} & Substract Integer With Borrow, 3-Operand\\
+	\hline
+	\textbf{subf3} & Substract Floating-Point Value, 3-Operand\\
+	\hline
+	\textbf{subi3} & Substract Integer, 3-Operand\\
+	\hline
+	\textbf{tstb3} & Test Bit Fields, 3-Operand\\
+	\hline
+	\textbf{xor3} & Bitwise-Exclusive OR, 3-Operand\\
+	\hline
+	\end{tabular}
+	\caption{\label{table:tms320c3x_3ops_instructions} TMS320C3X 3-operand Instructions.}
+\end{center}
+\end{table}
 
-\noindent The amount of immediate addressing have been limited because each unit test of immediate addressing results in one program.
+\begin{table}[!p]
+\begin{center}
+	\begin{tabular}{|p{3.0cm}|p{10.0cm}|}
+	\hline
+	\textbf{Instructions} & \textbf{Description}\\
+	\hline
+	\textbf{absf}\texttt{~||~}\textbf{stf} & Parallel absf and stf\\
+	\hline
+	\textbf{absi}\texttt{~||~}\textbf{sti} & Parallel absi and sti\\
+	\hline
+	\textbf{addf3}\texttt{~||~}\textbf{stf} & Parallel addf3 and stf\\
+	\hline
+	\textbf{addi3}\texttt{~||~}\textbf{sti} & Parallel addi3 and sti\\
+	\hline
+	\textbf{and3}\texttt{~||~}\textbf{sti} & Parallel and3 and sti\\
+	\hline
+	\textbf{ash3}\texttt{~||~}\textbf{sti} & Parallel ash3 and sti\\
+	\hline
+	\textbf{fix}\texttt{~||~}\textbf{sti} & Parallel fix and sti\\
+	\hline
+	\textbf{float}\texttt{~||~}\textbf{sti} & Parallel float and stf\\
+	\hline
+	\textbf{ldf}\texttt{~||~}\textbf{ldf} & Parallel ldf and ldf\\
+	\hline
+	\textbf{ldf}\texttt{~||~}\textbf{stf} & Parallel ldf and stf\\
+	\hline
+	\textbf{ldi}\texttt{~||~}\textbf{ldi} & Parallel ldi and ldi\\
+	\hline
+	\textbf{ldi}\texttt{~||~}\textbf{sti} & Parallel ldi and sti\\
+	\hline
+	\textbf{lsh3}\texttt{~||~}\textbf{sti} & Parallel lsh3 and sti\\
+	\hline
+	\textbf{mpyf3}\texttt{~||~}\textbf{addf3} & Parallel mpyf3 and addf3\\
+	\hline
+	\textbf{mpyf3}\texttt{~||~}\textbf{stf} & Parallel mpyf3 and stf\\
+	\hline
+	\textbf{mpyf3}\texttt{~||~}\textbf{subf3} & Parallel mpyf3 and subf3\\
+	\hline
+	\textbf{mpyi3}\texttt{~||~}\textbf{addi3} & Parallel mpyi3 and addi3\\
+	\hline
+	\textbf{mpyi3}\texttt{~||~}\textbf{sti} & Parallel mpyi3 and sti\\
+	\hline
+	\textbf{mpyi3}\texttt{~||~}\textbf{subi3} & Parallel mpyi3 and subi3\\
+	\hline
+	\textbf{negf}\texttt{~||~}\textbf{stf} & Parallel negf and stf\\
+	\hline
+	\textbf{negi}\texttt{~||~}\textbf{sti} & Parallel negi and sti\\
+	\hline
+	\textbf{not}\texttt{~||~}\textbf{sti} & Parallel not and sti\\
+	\hline
+	\textbf{or3}\texttt{~||~}\textbf{sti} & Parallel or3 and sti\\
+	\hline
+	\textbf{stf}\texttt{~||~}\textbf{stf} & Parallel Store Floating-Point Value\\
+	\hline
+	\textbf{sti}\texttt{~||~}\textbf{sti} & Parallel sti and sti\\
+	\hline
+	\textbf{subf3}\texttt{~||~}\textbf{stf} & Parallel subf3 and stf\\
+	\hline
+	\textbf{subi3}\texttt{~||~}\textbf{sti} & Parallel subi3 and sti\\
+	\hline
+	\textbf{xor3}\texttt{~||~}\textbf{sti} & Parallel xor3 and sti\\
+	\hline
+	\end{tabular}
+	\caption{\label{table:tms320c3x_parallel_instructions} TMS320C3X Parallel Instructions.}
+\end{center}
+\end{table}
 
-Condition code have been varied exhaustively for conditional instructions: \texttt{ldf\textit{cond}}, \texttt{ldi\textit{cond}}, \texttt{b\textit{cond}}, \texttt{b\textit{cond}d}, \texttt{call\textit{cond}}, \texttt{db\textit{cond}}, \texttt{db\textit{cond}d}, \texttt{reti\textit{cond}}, \texttt{rets\textit{cond}}, and \texttt{trap\textit{cond}}.
+\begin{table}[!p]
+\begin{center}
+	\begin{tabular}{|p{3.0cm}|p{10.0cm}|}
+	\hline
+	\textbf{Instructions} & \textbf{Description}\\
+	\hline
+	\textbf{idle2} & Low-Power Idle\\
+	\hline
+	\textbf{lopower} & Divide Clock by 16\\
+	\hline
+	\textbf{maxspeed} & Restore Clock to Regular Speed\\
+	\hline
+	\end{tabular}
+	\caption{\label{table:tms320c3x_power_instructions} TMS320C3X Parallel Instructions.}
+\end{center}
+\end{table}
 
-Each general addressing mode (register, immediate, direct, indir) have been tried for all instructions.
-All of the 26 indirect addressing modes have been tested for load/store instructions and instructions with two operands: \texttt{lde}, \texttt{ldf}, \texttt{ldi}, \texttt{ldm}, \texttt{stf}, \texttt{sti}, \texttt{absf}, \texttt{absi}, \texttt{addc}, \texttt{addf}, \texttt{addi}, \texttt{addc}, \texttt{and}, \texttt{andn}, \texttt{ash}, \texttt{cmpf}, \texttt{cmpi}, \texttt{fix}, \texttt{float}, \texttt{lsh}, \texttt{mpyf}, \texttt{mpyi}, \texttt{negb}, \texttt{negf}, \texttt{negi}, \texttt{norm}, \texttt{not}, \texttt{or}, \texttt{rnd}, \texttt{rol}, \texttt{rolc}, \texttt{ror}, \texttt{rorc}, \texttt{subb}, \texttt{subc}, \texttt{subf}, \texttt{subi}, \texttt{subrb}, \texttt{subrf}, \texttt{subri}, \texttt{tstb},  and \texttt{xor}.
+\begin{table}[!p]
+\begin{center}
+	\begin{tabular}{|p{3.0cm}|p{10.0cm}|}
+	\hline
+	\textbf{Condition codes (20)} & \textbf{Description}\\
+	\hline
+	\texttt{u} & unconditional \\
+	\hline
+	\texttt{lo} & lower than\\
+	\hline
+	\texttt{ls} & lower than or same as\\
+	\hline
+	\texttt{hi} & higher than\\
+	\hline
+	\texttt{hs} & higher than or same as\\
+	\hline
+	\texttt{eq} & equal\\
+	\hline
+	\texttt{ne} & not equal\\
+	\hline
+	\texttt{lt} & less than\\
+	\hline
+	\texttt{le} & less than or equal\\
+	\hline
+	\texttt{gt} & greater than\\
+	\hline
+	\texttt{ge} & greater than or equal\\
+	\hline
+	\texttt{nv} & no overflow\\
+	\hline
+	\texttt{v} & overflow\\
+	\hline
+	\texttt{nuf} & no floating-point underflow\\
+	\hline
+	\texttt{uf} & floating-point underflow\\
+	\hline
+	\texttt{nlv} & no overflow\\
+	\hline
+	\texttt{lv} & overflow\\
+	\hline
+	\texttt{nluf} & no latched floating-point underflow\\
+	\hline
+	\texttt{luf} & latched floating-point underflow\\
+	\hline
+	\texttt{zuf} & zero or floating-point underflow\\
+	\hline
+	\end{tabular}
+	\caption{\label{table:tms320c3x_condition_codes} Condition codes.}
+\end{center}
+\end{table}
 
-Only one (\texttt{*ar$_n$}) of the 26 indirect addressing modes have been tested for the other instructions, such as three operands instructions and parallel instructions because they would have resulted in an unreasonable number of unit tests.
+\begin{table}[!p]
+\begin{center}
+	\begin{tabular}{|p{3.0cm}|p{12.0cm}|}
+	\hline
+	\textbf{General\newline Addressing \newline Modes (4)} & \textbf{Description}\\
+	\hline
+	reg & register addressing mode\\
+	\hline
+	dir & direct addressing mode\\
+	\hline
+	imm & immediate addressing mode\\
+	\hline
+	indir & indirect addressing mode (see table)\\
+	\hline
+	\end{tabular}
+	\caption{\label{table:tms320c3x_general_addressing_modes} General addressing modes.}
+\end{center}
+\end{table}
+
+\begin{table}[!p]
+\begin{center}
+	\small
+	\begin{tabular}{|p{2.3cm}|p{2.3cm}|p{11.0cm}|}
+	\hline
+	\textbf{Indirect\newline Addressing \newline Modes (26)} & \textbf{Tests} & \textbf{Description}\\
+	\hline
+	\texttt{*+ar$_n$(disp)} & \texttt{*+ar$_n$(1)} & indirect addressing with predisplacement add\\
+	\hline
+	\texttt{*-ar$_n$(disp)} & \texttt{*-ar$_n$(1)} & indirect addressing with predisplacement subtract\\
+	\hline
+	\texttt{*++ar$_n$(disp)} & \texttt{*++ar$_n$(1)} & indirect addressing with predisplacement add and modify\\
+	\hline
+	\texttt{*--ar$_n$(disp)} & \texttt{*--ar$_n$(1)} & indirect addressing with predisplacement substract and modify\\
+	\hline
+	\texttt{*ar$_n$++(disp)} & \texttt{*ar$_n$++(1)} & indirect addressing with postdisplacement add and modify\\
+	\hline
+	\texttt{*ar$_n$--(disp)} & \texttt{*ar$_n$--(1)} & indirect addressing with postdisplacement substract and modify\\
+	\hline
+	\texttt{*ar$_n$++(disp)\%} & \texttt{*ar$_n$++(1)\%} \newline \texttt{bk} $\in$ \{4,5\} & indirect addressing with postdisplacement add and circular modify\\
+	\hline
+	\texttt{*ar$_n$(disp)\%} & \texttt{*ar$_n$(disp)\%} \newline \texttt{bk} $\in$ \{4,5\} & indirect addressing with postdisplacement substract and circular modify\\
+	\hline
+	\texttt{*+ar$_n$(ir0)} & \texttt{*+ar$_n$(ir0)} \newline \texttt{ir0} $\in$ [0,15] & indirect addressing with preindex (ir0) add\\
+	\hline
+	\texttt{*-ar$_n$(ir0)} & \texttt{*-ar$_n$(ir0)} \newline \texttt{ir0} $\in$ [0,15] & indirect addressing with preindex (ir0) substract\\
+	\hline
+	\texttt{*++ar$_n$(ir0)} & \texttt{*++ar$_n$(ir0)} \newline \texttt{ir0} $\in$ [0,15] & indirect addressing with preindex (ir0) add and modify\\
+	\hline
+	\texttt{*--ar$_n$(ir0)} & \texttt{*--ar$_n$(ir0)} \newline \texttt{ir0} $\in$ [0,15] & indirect addressing with preindex (ir0) substract and modify\\
+	\hline
+	\texttt{*ar$_n$++(ir0)} & \texttt{*ar$_n$++(ir0)} \newline \texttt{ir0} $\in$ [0,15] & indirect addressing with postindex (ir0) add and modify\\
+	\hline
+	\texttt{*ar$_n$--(ir0)} & \texttt{*ar$_n$--(ir0)} \newline \texttt{ir0} $\in$ [0,15] & indirect addressing with postindex (ir0) substract and modify\\
+	\hline
+	\texttt{*ar$_n$++(ir0)\%} & \texttt{*ar$_n$++(ir0)\%} \newline \texttt{ir0} $\in$ [0,15] \newline \texttt{bk} $\in$ \{4,5\} & indirect addressing with postindex (ir0) add and circular modify\\
+	\hline
+	\texttt{*ar$_n$--(ir0)\%} & \texttt{*ar$_n$--(ir0)\%} \newline \texttt{ir0} $\in$ [0,15] \newline \texttt{bk} $\in$ \{4,5\} & indirect addressing with postindex (ir0) substract and circular modify\\
+	\hline
+	\texttt{*+ar$_n$(ir1)} & \texttt{*+ar$_n$(ir1)} \newline \texttt{ir1} $\in$ [0,15] & indirect addressing with preindex (ir1) add\\
+	\hline
+	\texttt{*-ar$_n$(ir1)} & \texttt{*-ar$_n$(ir1)} \newline \texttt{ir1} $\in$ [0,15] & indirect addressing with preindex (ir1) substract\\
+	\hline
+	\texttt{*++ar$_n$(ir1)} & \texttt{*++ar$_n$(ir1)} \newline \texttt{ir1} $\in$ [0,15] & indirect addressing with preindex (ir1) add and modify\\
+	\hline
+	\texttt{*--ar$_n$(ir1)} & \texttt{*--ar$_n$(ir1)} \newline \texttt{ir1} $\in$ [0,15] & indirect addressing with preindex (ir1) substract and modify\\
+	\hline
+	\texttt{*ar$_n$++(ir1)} & \texttt{*ar$_n$++(ir1)} \newline \texttt{ir1} $\in$ [0,15] & indirect addressing with postindex (ir1) add and modify\\
+	\hline
+	\texttt{*ar$_n$--(ir1)} & \texttt{*ar$_n$--(ir1)} \newline \texttt{ir1} $\in$ [0,15] & indirect addressing with postindex (ir1) substract and modify\\
+	\hline
+	\texttt{*ar$_n$++(ir1)\%} & \texttt{*ar$_n$++(ir1)\%} \newline \texttt{ir1} $\in$ [0,15] \newline \texttt{bk} $\in$ \{4,5\} & indirect addressing with postindex (ir1) add and circular modify\\
+	\hline
+	\texttt{*ar$_n$--(ir1)\%} & \texttt{*ar$_n$--(ir1)\%} \newline \texttt{ir1} $\in$ [0,15] \newline \texttt{bk} $\in$ \{4,5\} & indirect addressing with postindex (ir1) substract and circular modify\\
+	\hline
+	\texttt{*ar$_n$} & \texttt{*ar$_n$} & indirect addressing\\
+	\hline
+	\texttt{*ar$_n$++(ir0)b} & \texttt{*ar$_n$++(ir0)b} \newline \texttt{ir1} $\in$ [0,15] & indirect addressing with postindex (ir0) add and bit-reversed modify\\
+	\hline
+	\end{tabular}
+	\caption{\label{table:tms320c3x_indir_addressing_modes} Indirect addressing modes.}
+\end{center}
+\end{table}
+
+\FloatBarrier
+
+This plan results in lot of instruction alternatives being tested (several condition codes and addressing modes). A full exploration of the factorial plan would have resulted in an unreasonable number of unit tests. To limit the number of unit tests and to still achieve a good testing status, the following choices have been done:
+\begin{itemize}
+\item The amount of immediate addressing have been limited because each unit test of immediate addressing results in one program. The following values have been tested: \texttt{0}, \texttt{-1}, \texttt{+1}, \texttt{-32768}, or \texttt{+32767}. These values have special role in most computations (neutral element, bound of integer immediate value \ldots)
+\item Condition codes have been varied exhaustively for conditional load/store and Control instructions.
+\item Each general addressing mode has been tested for load/store, control, 2-operand, 3-operand, and parallel instructions (note: some instructions allow only few of them).
+\item All of the 26 indirect addressing modes have been tested for load/store instructions and 2-operand instructions (28 tests per instructions).
+\item Only one (\texttt{*ar$_n$}) of the 26 indirect addressing modes have been tested for 3-operand instructions and parallel instructions because testing all combinations of the 26 indirect addressing modes they would have resulted in an unreasonable number of unit tests.
 The rational behind this choice is that the instructions implementations in the UNISIM TMS320C3X simulator share the same source code for the indirect addressing modes.
-
-Two operands instruction with register addressing have been tested 10000 times with random inputs.
-Other instructions and other addressing modes but immediate addressing have been tested 100 times with random inputs.
+\item 2-Operand instructions with register addressing have been tested 10000 times with random inputs.
+\item 3-Operand instructions, load/store instructions, and parallel instructions with register, direct and indirect addressing modes have been tested 100 times with random inputs.
+\item Additional tests have been written to check \texttt{ar$_n$} update ordering when instruction has several operands with indirect addressing mode, or when \texttt{ar$_n$} is both updated by an indirect addressing mode and the instruction itself.
+\end{itemize}
 
 \subsubsection{Testing status}
 
-\noindent Table below summarizes the testing status of all instructions. The total number of unit tests is shown and the detail for the computation of that number is explained between parenthesis. $100_{rand}$ means 100 tests with random inputs. $5_{imm}$ means 5 tests with immediate addressing. $20_{cond}$ means 20 tests for each condition codes. $26_{indir}$ means 26 tests for each indirect addressing mode. $1_{indir}$ means only one indirect addressing mode tested. $28_{isr}$ means 28 interrupt service routines tested.
+\noindent Table below summarizes the testing status of all instructions. The total number of unit tests is shown and the detail for the computation of that number is explained between parenthesis. $100_{rand}$ means 100 tests with random inputs. $5_{imm}$ means 5 tests with immediate addressing. $20_{cond}$ means 20 tests for each condition codes. $28_{indir}$ means 28 tests for each 26 indirect addressing mode. $1_{indir}$ means only \texttt{ar$_n$} indirect addressing mode tested. $28_{isr}$ means 28 interrupt service routines tested. $1_{ar}$ means one test for \texttt{ar$_n$} update ordering.
 
 \newpage
 
 \begin{center}
 \tablehead{\hline
-\multicolumn{1}{|c|}{\textbf{Instruction}} & \multicolumn{1}{|c|}{\textbf{Tested?}} & \multicolumn{1}{|c|}{\textbf{Testing method(s)/Description}}\\
+\multicolumn{1}{|c|}{\textbf{Instruction}} & \multicolumn{1}{|c|}{\textbf{Tested?}} & \multicolumn{1}{|c|}{\textbf{Number of unit tests}}\\
 \hline}
 \tabletail{\hline}
 \begin{supertabular}{|p{7.0cm}|p{1.0cm}|p{7.0cm}|}
@@ -2636,9 +3077,9 @@ Other instructions and other addressing modes but immediate addressing have been
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{lde dir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{lde indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{lde indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2800 unit tests ($(28_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{lde imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{lde imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests ($5_{imm}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{ldf}}\\
 \hline
@@ -2646,9 +3087,9 @@ Other instructions and other addressing modes but immediate addressing have been
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldf dir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldf indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldf indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2800 unit tests ($28_{indir} \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldf imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldf imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests ($5_{imm}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{ldf\textit{cond}}}\\
 \hline
@@ -2656,7 +3097,7 @@ Other instructions and other addressing modes but immediate addressing have been
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldf\textit{cond} dir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2000 unit tests ($20_{cond} \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldf\textit{cond} indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{52K unit tests ($26_{indir} \times 20_{cond} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldf\textit{cond} indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{56K unit tests ($28_{indir} \times 20_{cond} \times 100_{rand}$)}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldf\textit{cond} imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
@@ -2666,9 +3107,9 @@ Other instructions and other addressing modes but immediate addressing have been
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldi dir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldi indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldi indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2800 unit tests ($(28_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldi imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldi imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests ($5_{imm}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{ldi\textit{cond}}}\\
 \hline
@@ -2676,7 +3117,7 @@ Other instructions and other addressing modes but immediate addressing have been
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldi\textit{cond} dir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2000 unit tests ($20_{cond} \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldi\textit{cond} indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{52K unit tests ($26_{indir} \times 20_{cond} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldi\textit{cond} indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{56K unit tests ($(28_{indir} + 1_{ar}) \times 20_{cond} \times 100_{rand}$)}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldi\textit{cond} imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
@@ -2686,9 +3127,9 @@ Other instructions and other addressing modes but immediate addressing have been
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldm dir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldm indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldm indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2800 unit tests ($28_{indir} \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldm imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldm imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests ($5_{imm}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{ldp}}\\
 \hline
@@ -2714,13 +3155,13 @@ Other instructions and other addressing modes but immediate addressing have been
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{stf reg, dir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{stf reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{stf reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2900 unit tests ($28_{indir} \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{sti}}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{sti reg, dir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2900 unit tests ($(28_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{ldfi}}\\
 \hline
@@ -2766,7 +3207,7 @@ Other instructions and other addressing modes but immediate addressing have been
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{br src}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
-\multicolumn{3}{|c|}{\textbf{br}}\\
+\multicolumn{3}{|c|}{\textbf{brd}}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{brd src}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
@@ -2844,9 +3285,9 @@ Other instructions and other addressing modes but immediate addressing have been
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{absf dir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{absf indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{absf indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2800 unit tests ($28_{indir} \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{absf imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{absf imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests ($5_{imm}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{absi}}\\
 \hline
@@ -2854,9 +3295,9 @@ Other instructions and other addressing modes but immediate addressing have been
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{absi dir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{absi indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{absi indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2900 unit tests ($(28_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{absi imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{absi imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests ($5_{imm}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{addc}}\\
 \hline
@@ -2864,9 +3305,9 @@ Other instructions and other addressing modes but immediate addressing have been
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addc dir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addc indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addc indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2900 unit tests ($(28_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addc imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addc imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests ($5_{imm}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{addf}}\\
 \hline
@@ -2874,9 +3315,9 @@ Other instructions and other addressing modes but immediate addressing have been
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addf dir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addf indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addf indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2800 unit tests ($28_{indir} \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addf imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addf imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests ($5_{imm}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{addi}}\\
 \hline
@@ -2884,9 +3325,9 @@ Other instructions and other addressing modes but immediate addressing have been
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addi dir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addi indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addi indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2900 unit tests ($(28_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addi imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addi imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests ($5_{imm}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{and}}\\
 \hline
@@ -2894,9 +3335,9 @@ Other instructions and other addressing modes but immediate addressing have been
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{and dir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{and indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{and indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2900 unit tests ($(28_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{and imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{and imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests ($5_{imm}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{andn}}\\
 \hline
@@ -2904,9 +3345,9 @@ Other instructions and other addressing modes but immediate addressing have been
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{andn dir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{andn indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{andn indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2900 unit tests ($(28_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{andn imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{andn imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests ($5_{imm}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{ash}}\\
 \hline
@@ -2914,9 +3355,9 @@ Other instructions and other addressing modes but immediate addressing have been
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ash dir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ash indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ash indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2900 unit tests ($(28_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ash imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ash imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests ($5_{imm}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{cmpf}}\\
 \hline
@@ -2924,9 +3365,9 @@ Other instructions and other addressing modes but immediate addressing have been
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{cmpf dir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{cmpf indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{cmpf indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2800 unit tests ($28_{indir} \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{cmpf imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{cmpf imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests ($5_{imm}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{cmpi}}\\
 \hline
@@ -2934,9 +3375,9 @@ Other instructions and other addressing modes but immediate addressing have been
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{cmpi dir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{cmpi indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{cmpi indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2900 unit tests ($(28_{indir} + 1_{ar})  \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{cmpi imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{cmpi imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests ($5_{imm}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{fix}}\\
 \hline
@@ -2944,9 +3385,9 @@ Other instructions and other addressing modes but immediate addressing have been
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{fix dir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{fix indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{fix indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2800 unit tests ($28_{indir} \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{fix imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{fix imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests ($5_{imm}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{float}}\\
 \hline
@@ -2954,9 +3395,9 @@ Other instructions and other addressing modes but immediate addressing have been
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{float dir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{float indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{float indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2800 unit tests ($28_{indir} \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{float imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{float imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests ($5_{imm}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{lsh}}\\
 \hline
@@ -2964,9 +3405,9 @@ Other instructions and other addressing modes but immediate addressing have been
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{lsh dir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{lsh indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{lsh indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2900 unit tests ($(28_{indir} + 1_{ar})  \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{lsh imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{lsh imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests ($5_{imm}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{mpyf}}\\
 \hline
@@ -2974,9 +3415,9 @@ Other instructions and other addressing modes but immediate addressing have been
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyf dir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyf indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyf indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2800 unit tests ($28_{indir} \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyf imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyf imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests ($5_{imm}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{mpyi}}\\
 \hline
@@ -2984,9 +3425,9 @@ Other instructions and other addressing modes but immediate addressing have been
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi dir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2900 unit tests ($(28_{indir} + 1_{ar})  \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests ($5_{imm}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{negb}}\\
 \hline
@@ -2994,9 +3435,9 @@ Other instructions and other addressing modes but immediate addressing have been
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{negb dir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{negb indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{negb indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2900 unit tests ($(28_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{negb imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{negb imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests ($5_{imm}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{negf}}\\
 \hline
@@ -3004,9 +3445,9 @@ Other instructions and other addressing modes but immediate addressing have been
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{negf dir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{negf indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{negf indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2800 unit tests ($28_{indir} \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{negf imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{negf imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests ($5_{imm}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{negi}}\\
 \hline
@@ -3014,9 +3455,9 @@ Other instructions and other addressing modes but immediate addressing have been
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{negi dir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{negi indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{negi indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2900 unit tests ($(28_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{negi imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{negi imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests ($5_{imm}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{norm}}\\
 \hline
@@ -3024,9 +3465,9 @@ Other instructions and other addressing modes but immediate addressing have been
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{norm dir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{norm indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{norm indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2800 unit tests ($28_{indir} \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{norm imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{norm imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests ($5_{imm}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{not}}\\
 \hline
@@ -3034,9 +3475,9 @@ Other instructions and other addressing modes but immediate addressing have been
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{not dir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{not indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{not indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2900 unit tests ($(28_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{not imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{not imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests ($5_{imm}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{or}}\\
 \hline
@@ -3044,9 +3485,9 @@ Other instructions and other addressing modes but immediate addressing have been
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{or dir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{or indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{or indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2900 unit tests ($(28_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{or imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{or imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests ($5_{imm}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{rnd}}\\
 \hline
@@ -3054,9 +3495,9 @@ Other instructions and other addressing modes but immediate addressing have been
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{rnd dir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{rnd indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{rnd indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2800 unit tests ($28_{indir} \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{rnd imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{rnd imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests ($5_{imm}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{rol}}\\
 \hline
@@ -3080,9 +3521,9 @@ Other instructions and other addressing modes but immediate addressing have been
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subb dir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subb indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subb indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2900 unit tests ($(28_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subb imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subb imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests ($5_{imm}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{subc}}\\
 \hline
@@ -3090,9 +3531,9 @@ Other instructions and other addressing modes but immediate addressing have been
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subc dir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subc indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subc indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2900 unit tests ($(28_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subc imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subc imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests ($5_{imm}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{subf}}\\
 \hline
@@ -3100,9 +3541,9 @@ Other instructions and other addressing modes but immediate addressing have been
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subf dir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subf indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subf indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2900 unit tests ($(28_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subf imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subf imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests ($5_{imm}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{subi}}\\
 \hline
@@ -3110,9 +3551,9 @@ Other instructions and other addressing modes but immediate addressing have been
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subi dir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subi indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subi indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2900 unit tests ($(28_{indir} + 1_{ar})  \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subi imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subi imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests ($5_{imm}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{subrb}}\\
 \hline
@@ -3120,9 +3561,9 @@ Other instructions and other addressing modes but immediate addressing have been
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subrb dir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subrb indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subrb indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2900 unit tests ($(28_{indir} + 1_{ar})  \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subrb imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subrb imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests ($5_{imm}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{subrf}}\\
 \hline
@@ -3130,9 +3571,9 @@ Other instructions and other addressing modes but immediate addressing have been
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subrf dir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subrf indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subrf indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2800 unit tests ($28_{indir} \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subrf imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subrf imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests ($5_{imm}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{subri}}\\
 \hline
@@ -3140,9 +3581,9 @@ Other instructions and other addressing modes but immediate addressing have been
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subri dir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subri indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subri indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2900 unit tests ($(28_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subri imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subri imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests ($5_{imm}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{tstb}}\\
 \hline
@@ -3150,9 +3591,9 @@ Other instructions and other addressing modes but immediate addressing have been
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{tstb dir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{tstb indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{tstb indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2900 unit tests ($(28_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{tstb imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{tstb imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests ($5_{imm}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{xor}}\\
 \hline
@@ -3160,19 +3601,19 @@ Other instructions and other addressing modes but immediate addressing have been
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{xor dir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{xor indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2600 unit tests (26$_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{xor indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2900 unit tests ($(28_{indir} + 1_{ar})  \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{xor imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests (5$_{imm}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{xor imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests ($5_{imm}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{addc3}}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addc3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addc3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addc3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addc3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addc3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addc3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addc3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar})  \times 1_{indir} \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{addf3}}\\
 \hline
@@ -3188,41 +3629,41 @@ Other instructions and other addressing modes but immediate addressing have been
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addi3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addi3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addi3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addi3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addi3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addi3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addi3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{and3}}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{and3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{and3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{and3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{and3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{and3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{and3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{and3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{andn3}}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{andn3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{andn3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{andn3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{andn3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{andn3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{andn3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{andn3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{ash3}}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ash3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ash3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ash3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ash3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ash3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ash3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ash3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{cmpf3}}\\
 \hline
@@ -3238,21 +3679,21 @@ Other instructions and other addressing modes but immediate addressing have been
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{cmpi3 reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{cmpi3 indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{cmpi3 indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{cmpi3 reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{cmpi3 reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{cmpi3 indir, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{cmpi3 indir, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{lsh3}}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{lsh3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{lsh3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{lsh3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{lsh3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{lsh3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{lsh3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{lsh3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{mpyf3}}\\
 \hline
@@ -3262,37 +3703,37 @@ Other instructions and other addressing modes but immediate addressing have been
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyf3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyf3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyf3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{mpyi3}}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests (200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{or3}}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{or3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{or3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{or3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{or3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{or3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{or3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{or3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{subb3}}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subb3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subb3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subb3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subb3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subb3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subb3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subb3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{subf3}}\\
 \hline
@@ -3302,37 +3743,37 @@ Other instructions and other addressing modes but immediate addressing have been
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subf3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subf3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subf3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{subi3}}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subi3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subi3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subi3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subi3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subi3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subi3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subi3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{tstb3}}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{tstb3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{tstb3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{tstb3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{tstb3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{tstb3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{tstb3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{tstb3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{xor3}}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{xor3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{xor3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{xor3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{xor3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{xor3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{xor3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{xor3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{absf}\texttt{~||~}\textbf{stf}}\\
 \hline
@@ -3342,9 +3783,9 @@ Other instructions and other addressing modes but immediate addressing have been
 \hline
 \multicolumn{3}{|c|}{\textbf{absi}\texttt{~||~}\textbf{sti}}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{absi indir, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{absi indir, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{absi reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{absi reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{addf3}\texttt{~||~}\textbf{stf}}\\
 \hline
@@ -3354,21 +3795,21 @@ Other instructions and other addressing modes but immediate addressing have been
 \hline
 \multicolumn{3}{|c|}{\textbf{addi3}\texttt{~||~}\textbf{sti}}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addi3 reg, indir, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addi3 reg, indir, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addi3 reg, reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addi3 reg, reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{and3}\texttt{~||~}\textbf{sti}}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{and3 reg, indir, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{and3 reg, indir, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{and3 reg, reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{and3 reg, reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{ash3}\texttt{~||~}\textbf{sti}}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ash3 count, indir, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ash3 count, indir, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ash3 count, reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ash3 count, reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{fix}\texttt{~||~}\textbf{sti}}\\
 \hline
@@ -3384,7 +3825,7 @@ Other instructions and other addressing modes but immediate addressing have been
 \hline
 \multicolumn{3}{|c|}{\textbf{ldf}\texttt{~||~}\textbf{ldf}}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldf indir, reg || ldf indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldf indir, reg || ldf indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldf reg, reg || ldf indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
 \hline
@@ -3396,25 +3837,25 @@ Other instructions and other addressing modes but immediate addressing have been
 \hline
 \multicolumn{3}{|c|}{\textbf{ldi}\texttt{~||~}\textbf{ldi}}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldi indir, reg || ldi indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldi indir, reg || ldi indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldi reg, reg || ldi indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldi reg, reg || ldi indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{ldi}\texttt{~||~}\textbf{sti}}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldi indir, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldi indir, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldi reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldi reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{lsh3}\texttt{~||~}\textbf{sti}}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{lsh3 count, indir, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{lsh3 count, indir, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{lsh3 count, reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{lsh3 count, reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{mpyf3}\texttt{~||~}\textbf{addf3}}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyf3 indir, indir, reg || addf3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyf3 indir, indir, reg || addf3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyf3 indir, reg, reg || addf3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
 \hline
@@ -3422,15 +3863,15 @@ Other instructions and other addressing modes but immediate addressing have been
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyf3 reg, reg, reg || addf3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyf3 indir, reg, reg || addf3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyf3 indir, reg, reg || addf3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyf3 reg, reg, reg || addf3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyf3 reg, reg, reg || addf3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyf3 reg, reg, reg || addf3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyf3 reg, reg, reg || addf3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyf3 indir, reg, reg || addf3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyf3 indir, reg, reg || addf3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{mpyf3}\texttt{~||~}\textbf{stf}}\\
 \hline
@@ -3440,7 +3881,7 @@ Other instructions and other addressing modes but immediate addressing have been
 \hline
 \multicolumn{3}{|c|}{\textbf{mpyf3}\texttt{~||~}\textbf{subf3}}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyf3 indir, indir, reg || subf3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyf3 indir, indir, reg || subf3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyf3 indir, reg, reg || subf3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
 \hline
@@ -3448,61 +3889,61 @@ Other instructions and other addressing modes but immediate addressing have been
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyf3 reg, reg, reg || subf3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyf3 indir, reg, reg || subf3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyf3 indir, reg, reg || subf3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyf3 reg, reg, reg || subf3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyf3 reg, reg, reg || subf3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyf3 reg, reg, reg || subf3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyf3 reg, reg, reg || subf3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyf3 indir, reg, reg || subf3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyf3 indir, reg, reg || subf3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{mpyi3}\texttt{~||~}\textbf{addi3}}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 indir, indir, reg || addi3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 indir, indir, reg || addi3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 indir, reg, reg || addi3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 indir, reg, reg || addi3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 reg, indir, reg || addi3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 reg, indir, reg || addi3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 reg, reg, reg || addi3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{Yes}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 indir, reg, reg || addi3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 indir, reg, reg || addi3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 reg, reg, reg || addi3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 reg, reg, reg || addi3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 reg, reg, reg || addi3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 reg, reg, reg || addi3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 reg, reg, reg || addi3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 reg, reg, reg || addi3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 indir, reg, reg || addi3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 indir, reg, reg || addi3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{mpyi3}\texttt{~||~}\textbf{sti}}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 indir, reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 indir, reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 reg, reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 reg, reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{mpyi3}\texttt{~||~}\textbf{subi3}}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 indir, indir, reg || subi3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 indir, indir, reg || subi3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 indir, reg, reg || subi3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 indir, reg, reg || subi3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 reg, indir, reg || subi3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 reg, indir, reg || subi3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 reg, reg, reg || subi3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 indir, reg, reg || subi3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 indir, reg, reg || subi3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 reg, reg, reg || subi3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 reg, reg, reg || subi3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 reg, reg, reg || subi3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 reg, reg, reg || subi3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 reg, reg, reg || subi3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 reg, reg, reg || subi3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 indir, reg, reg || subi3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 indir, reg, reg || subi3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{negf}\texttt{~||~}\textbf{stf}}\\
 \hline
@@ -3512,33 +3953,33 @@ Other instructions and other addressing modes but immediate addressing have been
 \hline
 \multicolumn{3}{|c|}{\textbf{negi}\texttt{~||~}\textbf{sti}}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{negi indir, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{negi indir, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{negi reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{negi reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{not}\texttt{~||~}\textbf{sti}}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{not indir, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{not indir, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{not reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{not reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{or3}\texttt{~||~}\textbf{sti}}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{or3 reg, indir, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{or3 reg, indir, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{or3 reg, reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{or3 reg, reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{stf}\texttt{~||~}\textbf{stf}}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{stf reg, indir || stf reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{stf reg, indir || stf reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{stf reg, reg || stf reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{sti}\texttt{~||~}\textbf{sti}}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{sti reg, indir || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{sti reg, indir || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{sti reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{sti reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{subf3}\texttt{~||~}\textbf{stf}}\\
 \hline
@@ -3548,15 +3989,15 @@ Other instructions and other addressing modes but immediate addressing have been
 \hline
 \multicolumn{3}{|c|}{\textbf{subi3}\texttt{~||~}\textbf{sti}}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subi3 reg, indir, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subi3 reg, indir, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subi3 reg, reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subi3 reg, reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{xor3}\texttt{~||~}\textbf{sti}}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{xor3 indir, reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{xor3 indir, reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{xor3 reg, reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{xor3 reg, reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{idle2}}\\
 \hline
