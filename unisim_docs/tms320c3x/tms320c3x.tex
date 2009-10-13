@@ -3046,18 +3046,20 @@ For the purpose of validating the UNISIM TMS320C3X simulator, a factorial plan h
 
 \FloatBarrier
 
-This plan results in lot of instruction alternatives being tested (several condition codes and addressing modes). A full exploration of the factorial plan would have resulted in an unreasonable number of unit tests. To limit the number of unit tests and to still achieve a good testing status, the following choices have been done:
+This plan results in lot of instruction alternatives being tested (several condition codes and addressing modes).  A full exploration of the factorial plan would have resulted in an unreasonable number of unit tests. To limit the number of unit tests and to still achieve a good testing status, the following choices have been done:
 \begin{itemize}
 \item The amount of immediate addressing have been limited because each unit test of immediate addressing results in one program. The following values have been tested: \texttt{0}, \texttt{-1}, \texttt{+1}, \texttt{-32768}, or \texttt{+32767}. These values have special role in most computations (neutral element, bound of integer immediate value \ldots)
 \item Condition codes have been varied exhaustively for conditional load/store and Control instructions.
 \item Each general addressing mode has been tested for load/store, control, 2-operand, 3-operand, and parallel instructions (note: some instructions allow only few of them).
 \item All of the 26 indirect addressing modes have been tested for load/store instructions and 2-operand instructions (28 tests per instructions).
-\item Only one (\texttt{*ar$_n$}) of the 26 indirect addressing modes have been tested for 3-operand instructions and parallel instructions because testing all combinations of the 26 indirect addressing modes they would have resulted in an unreasonable number of unit tests.
+\item Only one (\texttt{*ar$_n$}) of the 26 indirect addressing modes have been tested for 3-operand instructions and parallel instructions because testing all combinations of the 26 indirect addressing modes would have resulted in an unreasonable number of unit tests.
 The rational behind this choice is that the instructions implementations in the UNISIM TMS320C3X simulator share the same source code for the indirect addressing modes.
 \item 2-Operand instructions with register addressing have been tested 10000 times with random inputs.
 \item 3-Operand instructions, load/store instructions, and parallel instructions with register, direct and indirect addressing modes have been tested 100 times with random inputs.
 \item Additional tests have been written to check \texttt{ar$_n$} update ordering when instruction has several operands with indirect addressing mode, or when \texttt{ar$_n$} is both updated by an indirect addressing mode and the instruction itself.
 \end{itemize}
+
+These choices still have resulted in 3612 unit tests programs for a total of 690870 unit tests.
 
 \subsubsection{Testing status}
 
@@ -3067,17 +3069,17 @@ The rational behind this choice is that the instructions implementations in the 
 
 \begin{center}
 \tablehead{\hline
-\multicolumn{1}{|c|}{\textbf{Instruction}} & \multicolumn{1}{|c|}{\textbf{Tested?}} & \multicolumn{1}{|c|}{\textbf{Number of unit tests}}\\
+\multicolumn{1}{|c|}{\textbf{Instruction}} & \multicolumn{1}{|c|}{\textbf{Tested?}} & \multicolumn{1}{|c|}{\textbf{Description}}\\
 \hline}
 \tabletail{\hline}
 \begin{supertabular}{|p{7.0cm}|p{1.0cm}|p{7.0cm}|}
 \multicolumn{3}{|c|}{\textbf{lde}}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{lde reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
+\multicolumn{1}{|p{7.0 cm}|}{\scriptsize \texttt{lde reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{lde dir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{lde indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2800 unit tests ($(28_{indir} + 1_{ar}) \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{lde indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2800 unit tests ($28_{indir} \times 100_{rand}$)}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{lde imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests ($5_{imm}$)}\\
 \hline
@@ -3107,7 +3109,7 @@ The rational behind this choice is that the instructions implementations in the 
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldi dir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldi indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2800 unit tests ($(28_{indir} + 1_{ar}) \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldi indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2900 unit tests ($(28_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldi imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests ($5_{imm}$)}\\
 \hline
@@ -3155,7 +3157,7 @@ The rational behind this choice is that the instructions implementations in the 
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{stf reg, dir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{stf reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2900 unit tests ($28_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{stf reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2800 unit tests ($28_{indir} \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{sti}}\\
 \hline
@@ -3541,7 +3543,7 @@ The rational behind this choice is that the instructions implementations in the 
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subf dir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subf indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2900 unit tests ($(28_{indir} + 1_{ar}) \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subf indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2800 unit tests ($28_{indir} \times 100_{rand}$)}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subf imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests ($5_{imm}$)}\\
 \hline
@@ -3613,7 +3615,7 @@ The rational behind this choice is that the instructions implementations in the 
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addc3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addc3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar})  \times 1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addc3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{addf3}}\\
 \hline
@@ -3623,7 +3625,7 @@ The rational behind this choice is that the instructions implementations in the 
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addf3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addf3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addf3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{addi3}}\\
 \hline
@@ -3633,7 +3635,7 @@ The rational behind this choice is that the instructions implementations in the 
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addi3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addi3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addi3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{and3}}\\
 \hline
@@ -3643,7 +3645,7 @@ The rational behind this choice is that the instructions implementations in the 
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{and3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{and3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{and3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{andn3}}\\
 \hline
@@ -3653,7 +3655,7 @@ The rational behind this choice is that the instructions implementations in the 
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{andn3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{andn3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{andn3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{ash3}}\\
 \hline
@@ -3663,7 +3665,7 @@ The rational behind this choice is that the instructions implementations in the 
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ash3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ash3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ash3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{cmpf3}}\\
 \hline
@@ -3673,7 +3675,7 @@ The rational behind this choice is that the instructions implementations in the 
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{cmpf3 reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{cmpf3 indir, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{cmpf3 indir, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar} ) \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{cmpi3}}\\
 \hline
@@ -3683,7 +3685,7 @@ The rational behind this choice is that the instructions implementations in the 
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{cmpi3 reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{cmpi3 indir, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{cmpi3 indir, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{lsh3}}\\
 \hline
@@ -3693,7 +3695,7 @@ The rational behind this choice is that the instructions implementations in the 
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{lsh3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{lsh3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{lsh3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{mpyf3}}\\
 \hline
@@ -3703,17 +3705,17 @@ The rational behind this choice is that the instructions implementations in the 
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyf3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyf3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyf3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{mpyi3}}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests (200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{or3}}\\
 \hline
@@ -3723,7 +3725,7 @@ The rational behind this choice is that the instructions implementations in the 
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{or3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{or3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{or3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{subb3}}\\
 \hline
@@ -3733,7 +3735,7 @@ The rational behind this choice is that the instructions implementations in the 
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subb3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subb3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subb3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{subf3}}\\
 \hline
@@ -3743,7 +3745,7 @@ The rational behind this choice is that the instructions implementations in the 
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subf3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subf3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subf3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{subi3}}\\
 \hline
@@ -3753,7 +3755,7 @@ The rational behind this choice is that the instructions implementations in the 
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subi3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subi3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subi3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{tstb3}}\\
 \hline
@@ -3763,7 +3765,7 @@ The rational behind this choice is that the instructions implementations in the 
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{tstb3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{tstb3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{tstb3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{xor3}}\\
 \hline
@@ -3773,7 +3775,7 @@ The rational behind this choice is that the instructions implementations in the 
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{xor3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{xor3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{xor3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{absf}\texttt{~||~}\textbf{stf}}\\
 \hline
@@ -3783,7 +3785,7 @@ The rational behind this choice is that the instructions implementations in the 
 \hline
 \multicolumn{3}{|c|}{\textbf{absi}\texttt{~||~}\textbf{sti}}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{absi indir, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{absi indir, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{absi reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
@@ -3795,19 +3797,19 @@ The rational behind this choice is that the instructions implementations in the 
 \hline
 \multicolumn{3}{|c|}{\textbf{addi3}\texttt{~||~}\textbf{sti}}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addi3 reg, indir, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addi3 reg, indir, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addi3 reg, reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{and3}\texttt{~||~}\textbf{sti}}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{and3 reg, indir, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{and3 reg, indir, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{and3 reg, reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{ash3}\texttt{~||~}\textbf{sti}}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ash3 count, indir, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ash3 count, indir, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ash3 count, reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
@@ -3825,7 +3827,7 @@ The rational behind this choice is that the instructions implementations in the 
 \hline
 \multicolumn{3}{|c|}{\textbf{ldf}\texttt{~||~}\textbf{ldf}}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldf indir, reg || ldf indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldf indir, reg || ldf indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldf reg, reg || ldf indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
 \hline
@@ -3837,19 +3839,19 @@ The rational behind this choice is that the instructions implementations in the 
 \hline
 \multicolumn{3}{|c|}{\textbf{ldi}\texttt{~||~}\textbf{ldi}}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldi indir, reg || ldi indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldi indir, reg || ldi indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldi reg, reg || ldi indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{ldi}\texttt{~||~}\textbf{sti}}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldi indir, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldi indir, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldi reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{lsh3}\texttt{~||~}\textbf{sti}}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{lsh3 count, indir, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{lsh3 count, indir, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{lsh3 count, reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
@@ -3903,25 +3905,25 @@ The rational behind this choice is that the instructions implementations in the 
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 indir, indir, reg || addi3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 indir, reg, reg || addi3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 indir, reg, reg || addi3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 reg, indir, reg || addi3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 reg, indir, reg || addi3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 reg, reg, reg || addi3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{Yes}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 reg, reg, reg || addi3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 indir, reg, reg || addi3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 reg, reg, reg || addi3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 reg, reg, reg || addi3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 reg, reg, reg || addi3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 reg, reg, reg || addi3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 reg, reg, reg || addi3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 indir, reg, reg || addi3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{mpyi3}\texttt{~||~}\textbf{sti}}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 indir, reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 indir, reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 reg, reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
@@ -3929,19 +3931,19 @@ The rational behind this choice is that the instructions implementations in the 
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 indir, indir, reg || subi3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 indir, reg, reg || subi3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 indir, reg, reg || subi3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 reg, indir, reg || subi3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 reg, indir, reg || subi3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 reg, reg, reg || subi3 reg, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 indir, reg, reg || subi3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 reg, reg, reg || subi3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 reg, reg, reg || subi3 indir, reg, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 reg, reg, reg || subi3 indir, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 reg, reg, reg || subi3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 reg, reg, reg || subi3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyi3 indir, reg, reg || subi3 reg, indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
@@ -3953,31 +3955,31 @@ The rational behind this choice is that the instructions implementations in the 
 \hline
 \multicolumn{3}{|c|}{\textbf{negi}\texttt{~||~}\textbf{sti}}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{negi indir, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{negi indir, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{negi reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{not}\texttt{~||~}\textbf{sti}}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{not indir, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{not indir, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{not reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{or3}\texttt{~||~}\textbf{sti}}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{or3 reg, indir, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{or3 reg, indir, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{or3 reg, reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{stf}\texttt{~||~}\textbf{stf}}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{stf reg, indir || stf reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{stf reg, indir || stf reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{stf reg, reg || stf reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{sti}\texttt{~||~}\textbf{sti}}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{sti reg, indir || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{sti reg, indir || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{sti reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
@@ -3989,13 +3991,13 @@ The rational behind this choice is that the instructions implementations in the 
 \hline
 \multicolumn{3}{|c|}{\textbf{subi3}\texttt{~||~}\textbf{sti}}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subi3 reg, indir, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subi3 reg, indir, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subi3 reg, reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{xor3}\texttt{~||~}\textbf{sti}}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{xor3 indir, reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{xor3 indir, reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{xor3 reg, reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
@@ -4005,11 +4007,11 @@ The rational behind this choice is that the instructions implementations in the 
 \hline
 \multicolumn{3}{|c|}{\textbf{lopower}}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{lowpower}} & \multicolumn{1}{p{1.0cm}|}{No} & \multicolumn{1}{p{7.0cm}|}{TODO}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{lowpower}} & \multicolumn{1}{p{1.0cm}|}{No} & \multicolumn{1}{p{7.0cm}|}{No effect on machine state.}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{maxspeed}}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{maxspeed}} & \multicolumn{1}{p{1.0cm}|}{No} & \multicolumn{1}{p{7.0cm}|}{TODO}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{maxspeed}} & \multicolumn{1}{p{1.0cm}|}{No} & \multicolumn{1}{p{7.0cm}|}{No effect on machine state.}\\
 \end{supertabular}
 \end{center}
 
@@ -4282,10 +4284,20 @@ $ make simulate SIMULATE=path-to-tms320c3x
 \subsubsection{Regression tests}
 
 The testing environment also acts as a regression test for UNISIM TMS320C3X simulator as the expected results (\texttt{output.ref}) are already provided in the testing environment.
-To check that all unit tests successfully run on the UNISIM TMS320C3X simulator, do the following at the command prompt:
+
+To cross-compile the unit tests programs, do the following at the command prompt on the cross-compilation host:
+\begin{verbatim}
+$ make generator
+$ make compile
+\end{verbatim}
+
+Then to check that all unit tests successfully run on the UNISIM TMS320C3X simulator, do the following at the command prompt on the simulation host:
 \begin{verbatim}
 $ make generator
 $ make regression-test SIMULATE=path-to-tms320c3x
 \end{verbatim}
 
 \noindent The result for each unit test is either \texttt{PASSED} or \texttt{FAILED}.\\
+
+\textit{Note: At most one instance of the Texas Instrument Cross-compiler can be run at a time (at least on a Windows host and Wine).
+Using \texttt{flag -j} of GNU Make when compiling the unit tests programs results in unexpected behaviors.}
