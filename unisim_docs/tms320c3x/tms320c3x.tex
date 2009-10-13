@@ -3048,18 +3048,19 @@ For the purpose of validating the UNISIM TMS320C3X simulator, a factorial plan h
 
 This plan results in lot of instruction alternatives being tested (several condition codes and addressing modes).  A full exploration of the factorial plan would have resulted in an unreasonable number of unit tests. To limit the number of unit tests and to still achieve a good testing status, the following choices have been done:
 \begin{itemize}
-\item The amount of immediate addressing have been limited because each unit test of immediate addressing results in one program. The following values have been tested: \texttt{0}, \texttt{-1}, \texttt{+1}, \texttt{-32768}, or \texttt{+32767}. These values have special role in most computations (neutral element, bound of integer immediate value \ldots)
-\item Condition codes have been varied exhaustively for conditional load/store and Control instructions.
-\item Each general addressing mode has been tested for load/store, control, 2-operand, 3-operand, and parallel instructions (note: some instructions allow only few of them).
-\item All of the 26 indirect addressing modes have been tested for load/store instructions and 2-operand instructions (28 tests per instructions).
+\item The amount of immediate addressing have been limited because each unit test of immediate addressing results in one program. The following integer values have been tested: \texttt{0}, \texttt{-1}, \texttt{+1}, \texttt{-32768}, or \texttt{+32767}. These integer values have a special role in most integer computations (neutral element, bound of integer immediate value \ldots). The following floating-point values have been tested: \texttt{0.0}, \texttt{1.0}, \texttt{-1.0}, \texttt{1.5}, \texttt{-1.5}, \texttt{$2.5594 \cdot 10^2$}, \texttt{$7.8125 \cdot 10^{-3}$}, \texttt{$-7.8163 \cdot 10^{-3}$}, \texttt{$-2.56 \cdot 10^2$}. These floating-point value have a special role in most floating-point computations (neutral element, smallest/largest positive/negative immediate floating-point values \ldots).
+\item Condition codes have been varied exhaustively for conditional load/store and Control instructions, see Table~\ref{table:tms320c3x_condition_codes}.
+\item Each general addressing mode has been tested for load/store, control, 2-operand, 3-operand, and parallel instructions (note: some instructions allow only few of them), see Table~\ref{table:tms320c3x_general_addressing_modes}.
+\item All of the 26 indirect addressing modes have been tested for load/store instructions and 2-operand instructions (28 tests per instructions), see Table~\ref{table:tms320c3x_indir_addressing_modes}.
 \item Only one (\texttt{*ar$_n$}) of the 26 indirect addressing modes have been tested for 3-operand instructions and parallel instructions because testing all combinations of the 26 indirect addressing modes would have resulted in an unreasonable number of unit tests.
 The rational behind this choice is that the instructions implementations in the UNISIM TMS320C3X simulator share the same source code for the indirect addressing modes.
-\item 2-Operand instructions with register addressing have been tested 10000 times with random inputs.
-\item 3-Operand instructions, load/store instructions, and parallel instructions with register, direct and indirect addressing modes have been tested 100 times with random inputs.
+\item 2-operand instructions with register addressing have been tested 10000 times with random inputs.
+\item 3-operand instructions, load/store instructions, and parallel instructions with register, direct and indirect addressing modes have been tested 100 times with random inputs.
 \item Additional tests have been written to check \texttt{ar$_n$} update ordering when instruction has several operands with indirect addressing mode, or when \texttt{ar$_n$} is both updated by an indirect addressing mode and the instruction itself.
+\item Random input integer values have a uniform distribution. Table~\ref{table:tms320c3x_unit_test_float_distribution} shows the distribution for the floating point numbers. Some remarkable values (neutral, smallest/largest positive/negative floating-point values \ldots) have non-null probability of occurrence.
 \end{itemize}
 
-These choices still have resulted in 3612 unit tests programs for a total of 690870 unit tests.
+These choices still have resulted in 3757 unit tests programs for a total of 694282 unit tests.
 
 \subsubsection{Testing status}
 
@@ -3387,7 +3388,7 @@ These choices still have resulted in 3612 unit tests programs for a total of 690
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{fix dir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{fix indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2800 unit tests ($28_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{fix indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2900 unit tests ($(28_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{fix imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests ($5_{imm}$)}\\
 \hline
@@ -3779,7 +3780,7 @@ These choices still have resulted in 3612 unit tests programs for a total of 690
 \hline
 \multicolumn{3}{|c|}{\textbf{absf}\texttt{~||~}\textbf{stf}}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{absf indir, reg || stf reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{absf indir, reg || stf reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{absf reg, reg || stf reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
 \hline
@@ -3791,7 +3792,7 @@ These choices still have resulted in 3612 unit tests programs for a total of 690
 \hline
 \multicolumn{3}{|c|}{\textbf{addf3}\texttt{~||~}\textbf{stf}}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addf3 reg, indir, reg || stf reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addf3 reg, indir, reg || stf reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{addf3 reg, reg, reg || stf reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
 \hline
@@ -3815,13 +3816,13 @@ These choices still have resulted in 3612 unit tests programs for a total of 690
 \hline
 \multicolumn{3}{|c|}{\textbf{fix}\texttt{~||~}\textbf{sti}}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{fix indir, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{fix indir, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{fix reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
 \hline
 \multicolumn{3}{|c|}{\textbf{float}\texttt{~||~}\textbf{sti}}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{float indir, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{float indir, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{float reg, reg || sti reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
 \hline
@@ -3833,7 +3834,7 @@ These choices still have resulted in 3612 unit tests programs for a total of 690
 \hline
 \multicolumn{3}{|c|}{\textbf{ldf}\texttt{~||~}\textbf{stf}}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldf indir, reg || stf reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldf indir, reg || stf reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{ldf reg, reg || stf reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
 \hline
@@ -3877,7 +3878,7 @@ These choices still have resulted in 3612 unit tests programs for a total of 690
 \hline
 \multicolumn{3}{|c|}{\textbf{mpyf3}\texttt{~||~}\textbf{stf}}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyf3 indir, reg, reg || stf reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyf3 indir, reg, reg || stf reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{mpyf3 reg, reg, reg || stf reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
 \hline
@@ -3949,7 +3950,7 @@ These choices still have resulted in 3612 unit tests programs for a total of 690
 \hline
 \multicolumn{3}{|c|}{\textbf{negf}\texttt{~||~}\textbf{stf}}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{negf indir, reg || stf reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{negf indir, reg || stf reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{negf reg, reg || stf reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
 \hline
@@ -3985,7 +3986,7 @@ These choices still have resulted in 3612 unit tests programs for a total of 690
 \hline
 \multicolumn{3}{|c|}{\textbf{subf3}\texttt{~||~}\textbf{stf}}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subf3 reg, indir, reg || stf reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 1_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subf3 reg, indir, reg || stf reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{200 unit tests ($(1_{indir} \times 1_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{subf3 reg, reg, reg || stf reg, indir}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($1_{indir} \times 100_{rand}$)}\\
 \hline
