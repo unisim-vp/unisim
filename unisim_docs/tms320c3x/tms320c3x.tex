@@ -1353,7 +1353,7 @@ Note that the UNISIM TMS320C3X has also been run under the control of \texttt{va
 The following developement board (see Figures~\ref{fig:tms320c3x_board}~and~\ref{fig:tms320c3x_jtag_emu}) has been used to compare the simulator results against a real TMS320C3X DSP:
 \begin{itemize}
 \item A D.SignT DK.VC33-150-S2 development board
-\item A D.SignT D.Module.VC33-150-S2 module including a TI TMS320VC33PGE at 150 Mhz
+\item A D.SignT D.Module.VC33-150-S2 module including a TI TMS320VC33PGE (150 MFLOPS)
 \item A 256K 32 bits SRAM with 1 Wait state
 \item A 512K 8 bits Flash Memory
 \item A Spectrum Digital XDS510USB JTAG Emulator
@@ -1405,12 +1405,12 @@ inline-debugger> profile program
 inline-debugger> quit
 \end{verbatim}
 
-We extracted the instruction coverage from these applications profiles. Table below shows the instruction coverage for each benchmark.
+We extracted the instruction coverage from these applications profiles. Table below shows the instruction coverage for each benchmark. A tick into a cell at the intersection of a row and a column indicates that instruction of that row is covered by a benchmark of that column.
 
 Although the integer benchmarks (written in C) have been selected to address the digital signal processing application domain, they have only validated the general operations of the simulator: program loading, program debugging, basic integer computation, control flow instructions, basic addressing modes \ldots
 The reason of that limited validation scope is that the compiler does not generate many different instructions and addressing modes among the integer benchmarks.
 For instance, unusual addressing modes as the indirect addressing with circular modify and indirect addressing with bit reversed modify were not generated at all by the compiler. 
-Thus running these integer benchmarks for testing integer computation would have resulted in quite poor instruction coverage.
+Thus solely relying on these integer benchmarks for testing integer computation would have resulted in quite poor instruction coverage.
 
 
 \begin{center}
@@ -2364,16 +2364,17 @@ Thus running these integer benchmarks for testing integer computation would have
 \subsubsection{Fibonacci}
 
 This benchmarks recursively (and quite inefficiently) computes the Fibonacci numbers:
-
-\indent $F_1=1$
-\newline
-\indent $F_2=1$
-\newline
-\indent $F_n = F_{n - 2} + F_{n - 1}$ where $n > 2$
-\newline
-
+~\vspace{0.2cm}\\
+$
+\left\{\begin{array}{ll}
+F_1=1 & \\
+F_2=1 & \\
+F_n = F_{n - 2} + F_{n - 1} & \mbox{where } n > 2 \\
+\end{array}
+\right.
+$
+~\vspace{0.2cm}\\
 It has validated general simulator operations such as program loading, stack management and function calls.
-
 This benchmark requires TI C I/O service enabled to run in the TMS320C3X simulator.
 A precompiled binary (\texttt{fibo.out}) is provided together with a GNU Make compatible \texttt{Makefile}.
 A simulation configuration (\texttt{sim\_config.xml}) for this simulator is also provided, so that simulator can run the benchmark:
@@ -2603,6 +2604,7 @@ For the purpose of validating the UNISIM TMS320C3X simulator, a factorial plan h
 
 \begin{table}[!p]
 \begin{center}
+	\small
 	\begin{tabular}{|p{3.0cm}|p{10.0cm}|}
 	\hline
 	\textbf{Instructions} & \textbf{Description}\\
@@ -2640,6 +2642,7 @@ For the purpose of validating the UNISIM TMS320C3X simulator, a factorial plan h
 
 \begin{table}[!p]
 \begin{center}
+	\small
 	\begin{tabular}{|p{3.0cm}|p{10.0cm}|}
 	\hline
 	\textbf{Instructions} & \textbf{Description}\\
@@ -2661,6 +2664,7 @@ For the purpose of validating the UNISIM TMS320C3X simulator, a factorial plan h
 
 \begin{table}[!p]
 \begin{center}
+	\small
 	\begin{tabular}{|p{3.0cm}|p{10.0cm}|}
 	\hline
 	\textbf{Instructions} & \textbf{Description}\\
@@ -2706,6 +2710,7 @@ For the purpose of validating the UNISIM TMS320C3X simulator, a factorial plan h
 
 \begin{table}[!p]
 \begin{center}
+	\small
 	\begin{tabular}{|p{3.0cm}|p{10.0cm}|}
 	\hline
 	\textbf{Instructions} & \textbf{Description}\\
@@ -2787,6 +2792,7 @@ For the purpose of validating the UNISIM TMS320C3X simulator, a factorial plan h
 
 \begin{table}[!p]
 \begin{center}
+	\small
 	\begin{tabular}{|p{3.0cm}|p{10.0cm}|}
 	\hline
 	\textbf{Instructions} & \textbf{Description}\\
@@ -2832,6 +2838,7 @@ For the purpose of validating the UNISIM TMS320C3X simulator, a factorial plan h
 
 \begin{table}[!p]
 \begin{center}
+	\small
 	\begin{tabular}{|p{3.0cm}|p{10.0cm}|}
 	\hline
 	\textbf{Instructions} & \textbf{Description}\\
@@ -2899,6 +2906,7 @@ For the purpose of validating the UNISIM TMS320C3X simulator, a factorial plan h
 
 \begin{table}[!p]
 \begin{center}
+	\small
 	\begin{tabular}{|p{3.0cm}|p{10.0cm}|}
 	\hline
 	\textbf{Instructions} & \textbf{Description}\\
@@ -2916,6 +2924,7 @@ For the purpose of validating the UNISIM TMS320C3X simulator, a factorial plan h
 
 \begin{table}[!p]
 \begin{center}
+	\small
 	\begin{tabular}{|p{3.0cm}|p{10.0cm}|}
 	\hline
 	\textbf{Condition codes (20)} & \textbf{Description}\\
@@ -2967,6 +2976,7 @@ For the purpose of validating the UNISIM TMS320C3X simulator, a factorial plan h
 
 \begin{table}[!p]
 \begin{center}
+	\small
 	\begin{tabular}{|p{3.0cm}|p{12.0cm}|}
 	\hline
 	\textbf{General\newline Addressing \newline Modes (4)} & \textbf{Description}\\
@@ -4233,7 +4243,7 @@ To clearly distinguish simulation results from real execution results, file \tex
 \item \texttt{regression-test}: launch a regression test of the UNISIM TMS320C3X simulator
 \item \texttt{doc}: generate unit tests documentation (\texttt{unit\_tests.pdf})
 \item \texttt{dist}: distribute the testing environment together with reference outputs (\texttt{output.ref})
-\item \texttt{clean}: clean everything
+\item \texttt{clean}: clean everything (but execution results, use \texttt{cleanref} for that)
 \item \texttt{cleangen}: clean generator executable (\texttt{generator(.exe)})
 \item \texttt{cleansrc}: clean TMS320C3X generated source files (\texttt{test.asm} and \texttt{main.c})
 \item \texttt{cleanrnd}: clean generated random input files (\texttt{random.txt})
