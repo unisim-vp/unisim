@@ -174,9 +174,6 @@ ABSF_dir.execute = {
 ABSF_indir.execute = {
 	// no need to check dst register
 	
-	// Read destination register 
-	Register& dst_reg = cpu.GetExtReg(dst);
-	
 	// Check that indirect addressing mode is valid and compute the effective address of the source operand
 	typename CONFIG::address_t ea;        // The effective address
 	bool update_ar;                       // Whether to update ARn
@@ -187,6 +184,15 @@ ABSF_indir.execute = {
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 	
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar, output_ar);
+	}
+	
+	// Read destination register 
+	Register& dst_reg = cpu.GetExtReg(dst);
+	
 	// Read the source operand from memory
 	uint32_t src_value = cpu.IntLoad(ea);
 	
@@ -194,12 +200,6 @@ ABSF_indir.execute = {
 	uint32_t overflow;
 	
 	dst_reg.Absf32(src_value, overflow);
-	
-	if(update_ar)
-	{
-		// Write back ARn
-		cpu.SetAR23_0(ar, output_ar);
-	}
 	
 	// Generate flags (into ST)
 	cpu.GenFlags(dst_reg,
@@ -865,9 +865,6 @@ ADDF_dir.execute = {
 ADDF_indir.execute = {
 	// no need to check the operands, they must be valid
 	
-	// get destination register
-	Register& dst_reg = cpu.GetExtReg(dst);
-
 	// Check that indirect addressing mode is valid and compute the effective address of the source operand
 	typename CONFIG::address_t ea;        // The effective address
 	bool update_ar;                       // Whether to update ARn
@@ -878,6 +875,15 @@ ADDF_indir.execute = {
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar, output_ar);
+	}
+	
+	// get destination register
+	Register& dst_reg = cpu.GetExtReg(dst);
+
 	// Read the source operand from memory
 	uint32_t src_value = cpu.IntLoad(ea);
 
@@ -887,12 +893,6 @@ ADDF_indir.execute = {
 	uint32_t neg;
 	dst_reg.Addf32(src_value, overflow, underflow, neg);
 
-	if(update_ar)
-	{
-		// Write back ARn
-		cpu.SetAR23_0(ar, output_ar);
-	}
-	
 	// Generate flags (into ST)
 	cpu.GenFlags(
 		dst_reg,
@@ -2100,12 +2100,6 @@ CMPF_dir.execute = {
 CMPF_indir.execute = {
 	// no need to check the operands, they must be valid
 	
-	// get destination register
-	Register& dst_reg = cpu.GetExtReg(dst);
-	
-	// a fake register is needed to keep the compare result
-	Register result_reg;
-	
 	// Check that indirect addressing mode is valid and compute the effective address of the source operand
 	typename CONFIG::address_t ea;        // The effective address
 	bool update_ar;                       // Whether to update ARn
@@ -2116,6 +2110,18 @@ CMPF_indir.execute = {
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 	
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar, output_ar);
+	}
+	
+	// get destination register
+	Register& dst_reg = cpu.GetExtReg(dst);
+	
+	// a fake register is needed to keep the compare result
+	Register result_reg;
+	
 	// Read the source operand from memory
 	uint32_t src_value = cpu.IntLoad(ea);
 	
@@ -2124,12 +2130,6 @@ CMPF_indir.execute = {
 	uint32_t overflow;
 	uint32_t neg;
 	result_reg.Subf32(dst_reg, src_value, overflow, underflow, neg);
-	
-	if(update_ar)
-	{
-		// Write back ARn
-		cpu.SetAR23_0(ar, output_ar);
-	}
 	
 	// Generate flags (into ST)
 	cpu.GenFlags(result_reg,
@@ -2505,6 +2505,13 @@ FIX_indir.execute = {
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 
+	// Update AR if necessary
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar, output_ar);
+	}
+
 	// Read the source operand from memory
 	uint32_t src_value = cpu.IntLoad(ea);
 
@@ -2519,13 +2526,6 @@ FIX_indir.execute = {
 
 	// Set destination register
 	cpu.SetReg(dst, result);
-
-	// Update AR if necessary
-	if(update_ar)
-	{
-		// Write back ARn
-		cpu.SetAR23_0(ar, output_ar);
-	}
 
 	// Generate flags (into ST)
 	cpu.GenFlags(
@@ -2694,6 +2694,13 @@ FLOAT_indir.execute = {
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 
+	// Update AR if necessary
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar, output_ar);
+	}
+
 	// Read the source operand from memory
 	uint32_t src_value = cpu.IntLoad(ea);
 
@@ -2702,13 +2709,6 @@ FLOAT_indir.execute = {
 	// Perform the conversion
 	uint32_t neg;
 	dst_reg.Float((uint32_t)src_value, neg);
-
-	// Update AR if necessary
-	if(update_ar)
-	{
-		// Write back ARn
-		cpu.SetAR23_0(ar, output_ar);
-	}
 
 	// Generate flags (into ST)
 	cpu.GenFlags(
@@ -3219,6 +3219,12 @@ MPYF_indir.execute = {
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar, output_ar);
+	}
+
 	// Read the source operand from memory
 	uint32_t src_value = cpu.IntLoad(ea);
 
@@ -3232,12 +3238,6 @@ MPYF_indir.execute = {
 	uint32_t neg;
 	dst_reg.Mpyf32(src_value, overflow, underflow, neg);
 	
-	if(update_ar)
-	{
-		// Write back ARn
-		cpu.SetAR23_0(ar, output_ar);
-	}
-
 	// Generate flags (into ST)
 	cpu.GenFlags(
 		dst_reg,
@@ -3467,12 +3467,6 @@ MPYI_indir.execute = {
 
 	// Write back result
 	cpu.SetReg(dst, result);
-
-// 	if(update_ar)
-// 	{
-// 		// Write back ARn
-// 		cpu.SetAR23_0(ar, output_ar);
-// 	}
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -3906,9 +3900,6 @@ NEGF_dir.execute = {
 NEGF_indir.execute = {
 	// no need to check the operands, they must be valid
 	
-	// get destination register
-	Register& dst_reg = cpu.GetExtReg(dst);
-	
 	// Check that indirect addressing mode is valid and compute the effective address of the source operand
 	typename CONFIG::address_t ea;        // The effective address
 	bool update_ar;                       // Whether to update ARn
@@ -3919,6 +3910,15 @@ NEGF_indir.execute = {
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 	
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar, output_ar);
+	}
+	
+	// get destination register
+	Register& dst_reg = cpu.GetExtReg(dst);
+	
 	// Read the source operand from memory
 	uint32_t src_value = cpu.IntLoad(ea);
 	
@@ -3927,12 +3927,6 @@ NEGF_indir.execute = {
 	uint32_t overflow;
 	uint32_t neg;
 	dst_reg.Negf32(src_value, overflow, underflow, neg);
-	
-	if(update_ar)
-	{
-		// Write back ARn
-		cpu.SetAR23_0(ar, output_ar);
-	}
 	
 	// Generate flags (into ST)
 	cpu.GenFlags(dst_reg,
@@ -4348,9 +4342,6 @@ NORM_dir.execute = {
 NORM_indir.execute = {
 	// no need to check the operands, they must be valid
 	
-	// get destination register
-	Register& dst_reg = cpu.GetExtReg(dst);
-	
 	// Check that indirect addressing mode is valid and compute the effective address of the source operand
 	typename CONFIG::address_t ea;        // The effective address
 	bool update_ar;                       // Whether to update ARn
@@ -4361,6 +4352,15 @@ NORM_indir.execute = {
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 	
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar, output_ar);
+	}
+	
+	// get destination register
+	Register& dst_reg = cpu.GetExtReg(dst);
+	
 	// Read the source operand from memory
 	uint32_t src_value = cpu.IntLoad(ea);
 	
@@ -4368,12 +4368,6 @@ NORM_indir.execute = {
 	uint32_t underflow;
 	uint32_t neg;
 	dst_reg.Normf32(src_value, underflow, neg);
-	
-	if(update_ar)
-	{
-		// Write back ARn
-		cpu.SetAR23_0(ar, output_ar);
-	}
 	
 	// Generate flags (into ST)
 	cpu.GenFlags(dst_reg,
@@ -4942,9 +4936,6 @@ RND_dir.execute = {
 RND_indir.execute = {
 	// no need to check the operands, they must be valid
 	
-	// get destination register
-	Register& dst_reg = cpu.GetExtReg(dst);
-	
 	// Check that indirect addressing mode is valid and compute the effective address of the source operand
 	typename CONFIG::address_t ea;        // The effective address
 	bool update_ar;                       // Whether to update ARn
@@ -4955,6 +4946,15 @@ RND_indir.execute = {
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 	
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar, output_ar);
+	}
+	
+	// get destination register
+	Register& dst_reg = cpu.GetExtReg(dst);
+	
 	// Read the source operand from memory
 	uint32_t src_value = cpu.IntLoad(ea);
 	
@@ -4963,12 +4963,6 @@ RND_indir.execute = {
 	uint32_t overflow;
 	uint32_t neg;
 	dst_reg.Rndf32(src_value, overflow, underflow, neg);
-	
-	if(update_ar)
-	{
-		// Write back ARn
-		cpu.SetAR23_0(ar, output_ar);
-	}
 	
 	// Generate flags (into ST)
 	// the documentation says that the rnd instruction doesn't touch the Z flag
@@ -5789,9 +5783,6 @@ SUBF_dir.execute = {
 SUBF_indir.execute = {
 	// no need to check the operands, they must be valid
 	
-	// get destination register
-	Register& dst_reg = cpu.GetExtReg(dst);
-
 	// Check that indirect addressing mode is valid and compute the effective address of the source operand
 	typename CONFIG::address_t ea;        // The effective address
 	bool update_ar;                       // Whether to update ARn
@@ -5802,6 +5793,15 @@ SUBF_indir.execute = {
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar, output_ar);
+	}
+	
+	// get destination register
+	Register& dst_reg = cpu.GetExtReg(dst);
+
 	// Read the source operand from memory
 	uint32_t src_value = cpu.IntLoad(ea);
 
@@ -5811,12 +5811,6 @@ SUBF_indir.execute = {
 	uint32_t neg;
 	dst_reg.Subf32(src_value, overflow, underflow, neg);
 
-	if(update_ar)
-	{
-		// Write back ARn
-		cpu.SetAR23_0(ar, output_ar);
-	}
-	
 	// Generate flags (into ST)
 	cpu.GenFlags(
 		dst_reg,
@@ -6499,9 +6493,6 @@ SUBRF_dir.execute = {
 SUBRF_indir.execute = {
 	// no need to check the operands, they must be valid
 	
-	// get destination register
-	Register& dst_reg = cpu.GetExtReg(dst);
-
 	// Check that indirect addressing mode is valid and compute the effective address of the source operand
 	typename CONFIG::address_t ea;        // The effective address
 	bool update_ar;                       // Whether to update ARn
@@ -6512,6 +6503,15 @@ SUBRF_indir.execute = {
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR23_0(ar, output_ar);
+	}
+	
+	// get destination register
+	Register& dst_reg = cpu.GetExtReg(dst);
+
 	// Read the source operand from memory
 	uint32_t src_value = cpu.IntLoad(ea);
 
@@ -6521,12 +6521,6 @@ SUBRF_indir.execute = {
 	uint32_t neg;
 	dst_reg.Subf32(src_value, dst_reg, overflow, underflow, neg);
 
-	if(update_ar)
-	{
-		// Write back ARn
-		cpu.SetAR23_0(ar, output_ar);
-	}
-	
 	// Generate flags (into ST)
 	cpu.GenFlags(
 		dst_reg,

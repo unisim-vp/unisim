@@ -2577,24 +2577,28 @@ The expected output image is in file \texttt{output\_image.ref.bmp}.
 \subsection{Instruction level unit tests}
 
 This section presents the validation process of UNISIM TMS320C3X simulator at the instruction level.
-For that purpose, a testing environment has been developped to allow testing individual instructions.
-Testing an instruction involves writing some "glue" code around the instruction under test to provide it with the input operands read from the host filesystem.
-Additionally the "glue" code has to save instruction output operands into a file on the host filesystem, so that results of instruction under test can be observed.
+A unit testing environment, in the form of a Makefile for GNU Make, has been developed to allow testing individual instructions for the UNISIM TMS320C3X simulator.
+Testing an instruction involves writing some "glue" code (C and Assembly) around the instruction under test to provide it with the input operands read from the host filesystem, and to save instruction output operands into a file on the host filesystem, so that results of instruction under test can be observed and compared.
 A unit test generator that is part of the testing environment, automatically generates that "glue" code, making writing and maintaining the instruction level unit test easier.
-The next sections present the validation process and the provided testing environment.
+
+Section~\ref{tms320c3x_validation_process} presents the validation process and the test plan.
+Section~\ref{tms320c3x_testing_status} contains the testing status at instruction level of UNISIM TMS320C3X simulator.
+Section~\ref{tms320c3x_unit_tests_generator} presents the unit tests generator flow.
+Section~\ref{tms320c3x_testing_environment} presents the testing environment and Section~\ref{tms320c3x_regression_tests} shows how to use it as a regression test for the UNISIM TMS320C3X simulator.
 
 \subsubsection{Validation process}
+\label{tms320c3x_validation_process}
 
 For the purpose of validating the UNISIM TMS320C3X simulator, a factorial plan has been established. The factorial plan parameters are:
 \begin{itemize}
 \item The general instruction under test, e.g. \texttt{ldf}, see Tables~\ref{table:tms320c3x_load_store_instructions}, \ref{table:tms320c3x_interlocked_instructions},  \ref{table:tms320c3x_control_instructions}, \ref{table:tms320c3x_2ops_instructions}, \ref{table:tms320c3x_3ops_instructions}, \ref{table:tms320c3x_parallel_instructions} and \ref{table:tms320c3x_power_instructions}
-\item The condition code, e.g. \texttt{z} in \texttt{ldfz}, see Table~\ref{table:tms320c3x_condition_codes}
-\item The general addressing mode (e.g. \texttt{indir} in \texttt{ldfz indir, reg}), see Table~\ref{table:tms320c3x_general_addressing_modes}:
+\item The condition code, e.g. \texttt{eq} in \texttt{ldfeq}, see Table~\ref{table:tms320c3x_condition_codes}
+\item The general addressing mode (e.g. \texttt{indir} in \texttt{ldfeq indir, reg}), see Table~\ref{table:tms320c3x_general_addressing_modes}:
 	\begin{itemize}
 		\item For an immediate addressing mode, the immediate value
-		\item For an indirect addressing mode, one of 26 available addressing, see Table~\ref{table:tms320c3x_indir_addressing_modes}
+		\item For an indirect addressing mode, one of 26 available indirect addressing modes, see Table~\ref{table:tms320c3x_indir_addressing_modes}
 	\end{itemize}
-\item The input value set of the instruction, e.g. the value of \texttt{indir} memory operand in \texttt{ldfz indir, reg}
+\item The input value set of the instruction, e.g. the value of \texttt{indir} memory operand in \texttt{ldfeq indir, reg}
 \end{itemize}
 
 \begin{table}[!p]
@@ -2644,7 +2648,7 @@ For the purpose of validating the UNISIM TMS320C3X simulator, a factorial plan h
 	\hline
 	\textbf{ldii} & Load Integer, Interlocked\\
 	\hline
-	\textbf{sigi} & Singal, Interlocked\\
+	\textbf{sigi} & Signal, Interlocked\\
 	\hline
 	\textbf{stfi} & Store Floating-Point Value, Interlocked\\
 	\hline
@@ -3060,9 +3064,10 @@ The rational behind this choice is that the instructions implementations in the 
 \item Random input integer values have a uniform distribution. Table~\ref{table:tms320c3x_unit_test_float_distribution} shows the distribution for the floating point numbers. Some remarkable values (neutral, smallest/largest positive/negative floating-point values \ldots) have non-null probability of occurrence.
 \end{itemize}
 
-These choices still have resulted in 3757 unit tests programs for a total of 694282 unit tests.
+These choices still have resulted in 3758 unit tests programs for a total of 694382 unit tests.
 
 \subsubsection{Testing status}
+\label{tms320c3x_testing_status}
 
 \noindent Table below summarizes the testing status of all instructions. The total number of unit tests is shown and the detail for the computation of that number is explained between parenthesis. $100_{rand}$ means 100 tests with random inputs. $5_{imm}$ means 5 tests with immediate addressing. $20_{cond}$ means 20 tests for each condition codes. $28_{indir}$ means 28 tests for each 26 indirect addressing mode. $1_{indir}$ means only \texttt{ar$_n$} indirect addressing mode tested. $28_{isr}$ means 28 interrupt service routines tested. $1_{ar}$ means one test for \texttt{ar$_n$} update ordering.
 
@@ -3398,7 +3403,7 @@ These choices still have resulted in 3757 unit tests programs for a total of 694
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{float dir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{100 unit tests ($100_{rand}$)}\\
 \hline
-\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{float indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2800 unit tests ($28_{indir} \times 100_{rand}$)}\\
+\multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{float indir, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{2900 unit tests ($(28_{indir} + 1_{ar}) \times 100_{rand}$)}\\
 \hline
 \multicolumn{1}{|p{7.0cm}|}{\scriptsize \texttt{float imm, reg}} & \multicolumn{1}{p{1.0cm}|}{Yes} & \multicolumn{1}{p{7.0cm}|}{5 unit tests ($5_{imm}$)}\\
 \hline
@@ -4016,7 +4021,8 @@ These choices still have resulted in 3757 unit tests programs for a total of 694
 \end{supertabular}
 \end{center}
 
-\subsubsection{Unit test generator}
+\subsubsection{Unit tests generator}
+\label{tms320c3x_unit_tests_generator}
 
 To ease writing each unit test of the above test plan, a unit test generator has been developped, see Figure~\ref{fig:tms320c3x_unit_test_generator}.
 
@@ -4200,10 +4206,19 @@ A unit test reads manually selected inputs from file \texttt{input.txt} and some
 
 \newpage
 \subsubsection{The testing environment}
+\label{tms320c3x_testing_environment}
 
 A testing environment has been set up using the unit test generator and assembly patterns.
 A GNU Makefile is provided to run the unit tests on both the development board (our reference) and the UNISIM TMS320C3X simulator.
-File \texttt{output.txt} (the unit test output) is renamed \texttt{output.ref} when run on the development board or \texttt{output.sim} when run on the UNISIM TMS320C3X simulator.
+The test plan is located in companion GNU bash script 'factorial.sh', and more precisely in function 'factorial'.
+The goal of that function is to generate an auxiliary Makefile (Makefile.aux) that contains building rules of planned unit tests. A companion C++ program, 
+'generator' is driven by this auxiliary Makefile to generate the actual unit tests source code.
+The generated source code is then compiled for the simulated target using the Texas Instruction cross-compilation tool chain.
+The resulting cross-compiled binaries are executed on both a real TMS320C3X DSP using 'Code Composer', and the UNISIM TMS320C3X simulator. The real/reference execution
+results and the simulation results are compared, and a failure diagnostic (PASSED or FAILED) is established for each generated unit test program.
+
+As explained in Section~\ref{tms320c3x_unit_tests_generator}, the unit test program output is in file \texttt{output.txt}.
+To clearly distinguish simulation results from real execution results, file \texttt{output.txt} (the unit test output) is renamed \texttt{output.ref} when run on the development board or \texttt{output.sim} when run on the UNISIM TMS320C3X simulator.
 
 \noindent The list of supported Makefile targets is the following:
 
@@ -4283,6 +4298,7 @@ $ make simulate SIMULATE=path-to-tms320c3x
 \end{verbatim}
 
 \subsubsection{Regression tests}
+\label{tms320c3x_regression_tests}
 
 The testing environment also acts as a regression test for UNISIM TMS320C3X simulator as the expected results (\texttt{output.ref}) are already provided in the testing environment.
 
