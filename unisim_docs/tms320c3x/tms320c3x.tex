@@ -2553,7 +2553,7 @@ The benchmarks has the following steps that are the base of the JPEG lossy image
 \item Save the resulting Windows 24-bit RGB bitmap into a .bmp file
 \end{enumerate}
 
-This benchmark has been selected because it is a typical application in imaging and digital signal processing.
+This benchmark has been selectedd because it is a typical application in imaging and digital signal processing.
 The benchmark reads the input image from file \texttt{image.bmp} and the quantization matrix from file \texttt{quant\_mat.txt}.
 It save the resulting image in file \texttt{output\_image.sim.bmp}
 
@@ -2574,6 +2574,41 @@ The expected output image is in file \texttt{output\_image.ref.bmp}.
 \subsubsection{IIR (Biquad Infinite Filter)}
 
 \subsubsection{FFT (Fast Fourier Transform)}
+
+This benchmark simply computes a 512 point FFT (Fast Fourier Transform) using a Complex Radix 2 given a signal input.
+It is based on the FFT codes provided by the TI DSK 3 for the TMS320c3x, modified to accept an input signal described as frequency and amplitude in two different input files: \textit{freq\_input.txt} (for the frequency) and \textit{ampl\_input.txt} (for the amplitude).
+The benchmarks performs ten FFT iterations over the input signal and generates an output file for each of the iterations (\textit{output*.txt}, where ``*'' is the iteration number).
+
+The FFT benchmark has been selected for the following reasons:
+\begin{enumerate}
+	\item As for the other floating point benchmarks it serves to check the correct sequential behavior of programs with an important use of floating point computations.
+	\item Most of the program is written in assembler, using parallel float instructions that would otherwise have not been tested by the compiler.
+	\item The used FFT assembler implementation uses the bit reverse addressing mode, which is particularly well suited for FFT computations.
+\end{enumerate} 
+
+This benchmark requires the TI C I/O service enabled to run in the TMS320C3X simulator.
+A precompiled binary (\texttt{fft.out}) is provided together with a GNU Make compatible Makefile.
+A simulation configure file (\texttt{sim\_config.xml}) for this benchmark is also provided, so that the simulator can run the benchmark with the following command:
+
+\begin{verbatim}
+$ tms320c3x -c sim_config.xml
+\end{verbatim}
+
+The expected output data set is in the following files: \texttt{output0.ref.txt}, \texttt{output1.ref.txt}, \texttt{output2.ref.txt}, \texttt{output3.ref.txt}, \texttt{output4.ref.txt}, \texttt{output5.ref.txt}, \texttt{output6.ref.txt}, \texttt{output7.ref.txt}, \texttt{output8.ref.txt}, and \texttt{output9.ref.txt}.
+You can use plotting tools like \textit{gnuplot} plot the generated outputs. 
+
+\begin{figure}[!h]
+	\begin{center}
+		\includegraphics[width=.8\textwidth]{tms320c3x/fig_fft512_output0.pdf}
+		\caption{\label{fig:tms320c3x_manual_fft_output0}Plot of the FFT512 program first iteration using \textit{gnuplot}.}
+	\end{center}
+\end{figure}
+
+Figure~\ref{fig:tms320c3x_manual_fft_output0} shows the plot of \texttt{output0.txt} using the following command under \textit{gnuplot}:
+
+\begin{verbatim}
+gnuplot > plot './output0.txt' with lines
+\end{verbatim}
 
 \subsection{Instruction level unit tests}
 
