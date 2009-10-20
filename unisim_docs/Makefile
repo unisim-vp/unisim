@@ -145,7 +145,9 @@ tms320c3x/fig_unit_test_generator.pdf \
 tms320c3x/fig_unit_test.pdf \
 tms320c3x/fig_driver_error.jpg \
 tms320c3x/fig_fft512_output0.pdf \
-tms320c3x/fig_iir_output.pdf
+tms320c3x/fig_iir_output.pdf \
+tms320c3x/fig_lp_output.pdf \
+tms320c3x/fig_bp_output.pdf
 
 TMS320C3X_GENERATED_LATEX=$(patsubst %.cpp,%.tex,$(TMS320C3X_CPP_SOURCES))
 
