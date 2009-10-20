@@ -783,23 +783,24 @@ bool Section<MEMORY_ADDR>::LoadSpecificContent(OutputInterface<MEMORY_ADDR> *out
 		uint32_t value;
 		int state = 0;
 
+		// Note: Section .cinit has endianness of the target (i.e. little endian), not the endianness of the headers (little endian or big endian)
 		while(nrecords > 0)
 		{
 			switch(state)
 			{
 				case 0:
-					nwords = unisim::util::endian::Target2Host(header_endianness, *record++);
+					nwords = unisim::util::endian::LittleEndian2Host(*record++);
 					nrecords--;
 					state = 1;
 					break;
 				case 1:
-					addr = *record++;
+					addr = unisim::util::endian::LittleEndian2Host(*record++);
 					nrecords--;
 					state = 2;
 					break;
 				case 2:
-					value = *record++;
-					if(!output->Write(addr++, &value, 1)) return false;
+					// Do a bare copy of the record into memory, as the record has already the endianness of the target
+					if(!output->Write(addr++, record++, 1)) return false;
 					nrecords--;
 					if(--nwords == 0) state = 0;
 					break;
