@@ -883,6 +883,7 @@ bool CPU::Setup()
 
 	char buf[80];
 
+/*
 	sprintf(buf, "%s.A", GetName());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &regA);
 
@@ -915,6 +916,41 @@ bool CPU::Setup()
 	unisim::util::debug::Register *ccrh = ccr->GetHighRegister();
 	sprintf(buf, "%s.%s", GetName(), ccrh->GetName());
 	registers_registry[buf] = ccrh;
+*/
+
+	sprintf(buf, "A");
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &regA);
+
+	sprintf(buf, "B");
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &regB);
+
+	sprintf(buf, "D");
+	registers_registry[buf] = new ConcatenatedRegister<uint16_t,uint8_t>(buf, &regA, &regB);
+
+	sprintf(buf, "X");
+	registers_registry[buf] = new SimpleRegister<address_t>(buf, &regX);
+
+	sprintf(buf, "Y");
+	registers_registry[buf] = new SimpleRegister<address_t>(buf, &regY);
+
+	sprintf(buf, "SP");
+	registers_registry[buf] = new SimpleRegister<address_t>(buf, &regSP);
+
+	sprintf(buf, "PC");
+	registers_registry[buf] = new SimpleRegister<address_t>(buf, &regPC);
+
+	sprintf(buf, "%s", ccr->GetName());
+	registers_registry[buf] = ccr;
+
+	unisim::util::debug::Register *ccrl = ccr->GetLowRegister();
+	sprintf(buf, "%s", ccrl->GetName());
+	registers_registry[buf] = ccrl;
+
+
+	unisim::util::debug::Register *ccrh = ccr->GetHighRegister();
+	sprintf(buf, "%s", ccrh->GetName());
+	registers_registry[buf] = ccrh;
+
 
 	if(!memory_access_reporting_import) {
 		requires_memory_access_reporting = false;
