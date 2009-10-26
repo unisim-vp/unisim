@@ -5,7 +5,7 @@
 The TMS320C3X is a 32-bit floating-point DSP from Texas Instrument.
 The UNISIM TMS320C3X simulator features:
 \begin{itemize}
-\item Simulation of the TMS320C3X Instruction set
+\item Simulation of the TMS320C3X instruction set
 \item A simulation speed average around 10 MIPS and up to 28 MIPS on a 2.4 Ghz Core2 Duo machine under Linux
 \item Support for instruction cache
 \item Support for TI COFF v0, v1, and v2 (either with big-endian or little-endian headers)
@@ -14,7 +14,7 @@ The UNISIM TMS320C3X simulator features:
 \item Support for TI C I/O
 \end{itemize}
 
-\textit{Note: Support for the GDB serial remote protocol is experimental in the sense that although some GDB versions supported the TMS320C3X target (see~\url{http://www.elec.canterbury.ac.nz/c4x/doc/c4x-tools.html}), these versions are no longer available on the web. As a consequence this simulator functionality could not be tested and validated for the TMS320C3X target but only for arM7/9, PowerPC and HCS12X targets.}
+\textit{Note: Support for the GDB serial remote protocol is experimental in the sense that although some GDB versions supported the TMS320C3X target (see~\url{http://www.elec.canterbury.ac.nz/c4x/doc/c4x-tools.html}), these versions are no longer available on the web. As a consequence this simulator functionality could not be tested and validated for the TMS320C3X target but only for ARM7/9, PowerPC and HCS12X targets.}
 
 \begin{figure}[!h]
 	\begin{center}
@@ -33,14 +33,14 @@ The UNISIM TMS320C3X has been developed using the following documentation:
 \item TMS320C3x/C4x Optimizing C Compiler User’s Guide (SPRU034H, June 1998)
 \end{itemize}
 
-Current implementation of the simulator completely decodes the TMS320C3X instruction set.
+The simulator current implementation completely decodes the TMS320C3X instruction set.
 All registers are present but no on-chip devices are implemented.
 The simulator has complete support for:
 \begin{itemize}
 \item integer instructions (2-ops, 3-ops, parallel ops, load/store)
 \item floating point instructions (2-ops, 3-ops, parallel ops, load/store)
-\item control instructions (branches, delayed branches, RPTS, RPTB) but instructions \texttt{iack} and \texttt{swi}
-\item interlocked instructions but instruction \texttt{sigi}
+\item control instructions (branches, delayed branches, RPTS, RPTB), but \texttt{iack} and \texttt{swi} instructions
+\item interlocked instructions, but \texttt{sigi} instruction
 \item power instructions
 \item interrupt handling
 \end{itemize}
@@ -48,15 +48,15 @@ The simulator has complete support for:
 The current status of the simulator allows to run any integer or floating-point benchmark.
 However, during the validation process of the UNISIM TMS320C3X simulator, four hardware bugs have been found on our development board, and one software bug in Code Composer. The UNISIM TMS320C3X simulator can emulate these bugs (see Section~\ref{tms320c3x_configuration}) if they are enabled:
 \begin{itemize}
-\item \texttt{LDF || LDF} bug: From our experiments on the development board, uncomprehensibly \texttt{src1} is not correctly transformed to a valid \texttt{0.0} when the \texttt{src1} exponent is \texttt{0x80}. Simulator parameter \texttt{cpu.enable-parallel-load-bug} enables this bug
-\item \texttt{STF || STF} and \texttt{STI || STI} bugs: From our experiments on the development board, first store is never performed. Simulator parameter \texttt{cpu.enable-parallel-store-bug} enables these bugs
-\item \texttt{RND} bug: TMS320C3x User’s Guide says that the rnd instruction does not affect the \texttt{Z} flag however the real hardware systematically sets \texttt{Z} to 0. Simulator parameter \texttt{cpu.enable-rnd-bug} enables this bug
+\item \texttt{LDF || LDF} bug: From our experiments on the development board, uncomprehensibly \texttt{src1} is not correctly transformed to a valid \texttt{0.0} when the \texttt{src1} exponent is \texttt{0x80}. Simulator parameter \texttt{cpu.enable-parallel-load-bug} enables this bug.
+\item \texttt{STF || STF} and \texttt{STI || STI} bugs: From our experiments on the development board, the first store is never performed. Simulator parameter \texttt{cpu.enable-parallel-store-bug} enables these bugs.
+\item \texttt{RND} bug: TMS320C3x User’s Guide says that the \texttt{rnd} instruction does not affect the \texttt{Z} flag however the real hardware systematically sets \texttt{Z} to 0. Simulator parameter \texttt{cpu.enable-rnd-bug} enables this bug
 \item \texttt{lseek} bug: From our experiments on the development board, function \texttt{lseek} from \texttt{RTS30.LIB} has a 32-bit return value truncated to 16 bits. Simulator parameter \texttt{ti-c-io.enable-lseek-bug} enables this bug
 \end{itemize}
 
 \subsection{Compiling the simulator}
 
-Up-to-date instructions for compiling the simulator are available in file \texttt{INSTALL}.
+Up-to-date instructions for compiling the simulator are available in the \texttt{INSTALL} file.
 
 \subsection{Invoking the simulator}
 
@@ -71,15 +71,15 @@ tms320c3x [<options>] <binary to simulate>
 \noindent The command line options of the simulator are:
 
 \begin{itemize}
-\item \texttt{--help} or \texttt{-h}: print integrated help message on the screen.
-\item \texttt{--get-variables <XML file>} or \texttt{-v <XML file>}: Get the simulation variables (parameters, statistics, \ldots) into a XML file
-\item \texttt{--config <XML file>} or \texttt{-c <XML file>}: configures the simulator with the given XML configuration file.
+\item \texttt{--help} or \texttt{-h}: Print integrated help message on the screen.
+\item \texttt{--get-variables <XML file>} or \texttt{-v <XML file>}: Get the simulation variables (parameters, statistics, \ldots) into a XML file.
+\item \texttt{--config <XML file>} or \texttt{-c <XML file>}: Configure the simulator with the given XML configuration file.
 \item \texttt{--get-config <XML file>} or \texttt{-g <XML file>}: Get the simulator default configuration XML file (you can use it to create your own configuration). This option can be combined with option \texttt{-c} to get a new configuration file with existing variables from another file.
 \item \texttt{--logger} or \texttt{-l}: Enable the logger.
-\item \texttt{--xml-gdb <file>} or \texttt{-x <file>}: processor XML description file for GDB server.
+\item \texttt{--xml-gdb <file>} or \texttt{-x <file>}: Processor XML description file for GDB server.
 \item \texttt{--gdb-server <port\_number>} or \texttt{-d <port\_number>}: Enable the GDB server and use the given TCP/IP port for communicating with a GDB client.
 \item \texttt{--inline-debugger} or \texttt{-i}: Enable the inline debugger (only active if logger option used).
-\item \texttt{--rom} or \texttt{-r}: specify ROM filename (i.e. the boot loader in the TMS320C3X)
+\item \texttt{--rom} or \texttt{-r}: Specify ROM filename (i.e., the boot loader in the TMS320C3X).
 \end{itemize}
 
 \subsection{The Texas Instrument cross-compiler for TMS320C3X}
@@ -92,7 +92,7 @@ This cross-compiler also runs under other x86 operating systems such as Linux or
 Moreover, any call to I/O functions (open, close, read, write, printf, \ldots) requires TI C I/O support enabled in the TMS320C3X simulator.}
 
 The cross-compiler tool chain (\texttt{CL30.EXE, LNK30.EXE, ASM30.EXE, MK30.EXE, ar30.EXE, \ldots}) should be in your \texttt{PATH}.
-The shell variable \texttt{C\_DIR} points to the location where cross-compiler should search for the standard C headers and libraries.
+The shell variable \texttt{C\_DIR} points to the location where the cross-compiler should search for the standard C headers and libraries.
 Suppose the tool chain is installed in \texttt{C:{\textbackslash}TI}.
 Windows users should add the following in their \texttt{AUTOEXEC.BAT}:
 \begin{verbatim}
@@ -107,7 +107,7 @@ export C_DIR=C:\\TI\\TIC3X4X\\INCLUDE\;C:\\TI\\TIC3X4X\\LIB
 
 \subsection{The GNU binutils}
 
-The GNU binutils is a set of open source tools to manipulate binaries. They provide an assembler, a linker, and an object dump utility among others.
+The GNU binutils are a set of open source tools to manipulate binaries. They provide an assembler, a linker, and an object dump utility among others.
 The last version, at the time of writing this document, is available at: \url{ftp://ftp.gnu.org/gnu/binutils/binutils-2.19.1.tar.gz}
 The GNU binutils support TI COFF v0, v1 and v2 binary files for both TMS320C3X and TMS320C4X targets.
 
@@ -119,7 +119,7 @@ $ make
 $ make install
 \end{verbatim}
 
-A key feature we're interested on is the ability of \texttt{objdump} to dump/disassemble a TI COFF binary for the TMS320C3X.
+A key feature of the GNU binutils is the ability of \texttt{objdump} to dump/disassemble a TI COFF binary for the TMS320C3X.
 For instance, the following command will dump file \texttt{test.out} into file \texttt{dump.txt}:
 
 \begin{verbatim}
@@ -137,13 +137,13 @@ $ /opt/c4x-coff/bin/c4x-unknown-coff-objdump -D test.out > dump.txt
 $ tms320c3x -g default_sim_config.xml
 \end{verbatim}
 
-\noindent The simulator can loads a XML configuration file with option \texttt{-c}:
+\noindent The simulator can load a XML configuration file with option \texttt{-c}:
 
 \begin{verbatim}
 $ tms320c3x -c sim_config.xml
 \end{verbatim}
 
-\noindent \textit{Note: Although it's not strictly necessary, Parameter \texttt{inline-debugger.memory-atom-size} should be set to value 4 as the TMS320C3X memory is not byte-addressable. If this parameter is not set to 4, presentation of the memory content and disassembly may seem unconventional in the inline debugger.}
+\noindent \textit{Note: Although it's not strictly necessary, parameter \texttt{inline-debugger.memory-atom-size} should be set to value 4 as the TMS320C3X memory is not byte-addressable. If this parameter is not set to 4, presentation of the memory content and disassembly may seem unconventional in the inline debugger.}
 
 \noindent The available parameters are summarized in table below:
 
@@ -177,12 +177,12 @@ $ tms320c3x -c sim_config.xml
 	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.enable-parallel-load-bug}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
 	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{true}}\\
 	\multicolumn{2}{|l|}{}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline When using parallel loads (\texttt{LDF src2, dst2 || LDF src1, dst1}) the src1 load doesn't transform incorrect zero values to valid zero representation, instead they copy the contents of the memory to the register. Set this parameter to false to transform incorrect zero values.}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline When using parallel loads (\texttt{LDF src2, dst2 || LDF src1, dst1}) the \texttt{src1} load doesn't transform incorrect zero values to valid zero representation, instead they copy the contents of the memory to the register. Set this parameter to false to transform incorrect zero values.}\\
 	\hline
 	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.enable-rnd-bug}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
 	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{true}}\\
 	\multicolumn{2}{|l|}{}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline If enabled the `rnd` instruction sets the Z flag to 0 systematically, as it is done in the evaluation board. Otherwise, Z is unchanged as it is written in the documentation.}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline If enabled the \texttt{rnd} instruction sets the Z flag to 0 systematically, as it is done in the evaluation board. Otherwise, Z is unchanged as it is written in the documentation.}\\
 	\hline
 	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.enable-parallel-store-bug}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
 	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{true}}\\
@@ -200,7 +200,7 @@ $ tms320c3x -c sim_config.xml
 	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{gdb-server.architecture-}\newline$\hookrightarrow$\texttt{description-filename}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
 	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{empty string}}\\
 	\multicolumn{2}{|l|}{}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Filename of an XML description of the connected processor.}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Filename of a XML description of the connected processor.}\\
 	\hline
 	\hline
 	\multicolumn{2}{|c|}{\textbf{\large Inline Debugger run-time parameters}}\\
@@ -209,6 +209,7 @@ $ tms320c3x -c sim_config.xml
 	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{1}}\\
 	\multicolumn{2}{|l|}{}\\
 	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Size of the smallest addressable element in memory.}\\
+	\hline
 	\hline
 	\multicolumn{2}{|c|}{\textbf{\large Kernel Service Logger run-time parameters}}\\
 	\hline
@@ -225,12 +226,12 @@ $ tms320c3x -c sim_config.xml
 	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{kernel\_logger.std\_err\_color}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
 	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
 	\multicolumn{2}{|l|}{}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline If true, colorize logger output through the standard error output (only works if std\_err is active).}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline If true, colorize logger output through the standard error output (only works if \texttt{kernel\_logger.std\_err} is active).}\\
 	\hline
 	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{kernel\_logger.std\_out\_color}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
 	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
 	\multicolumn{2}{|l|}{}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline If true, colorize logger output through the standard output (only works if std\_out is active).}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline If true, colorize logger output through the standard output (only works if \texttt{kernel\_logger.std\_out} is active).}\\
 	\hline
 	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{kernel\_logger.file}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
 	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
@@ -240,7 +241,7 @@ $ tms320c3x -c sim_config.xml
 	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{kernel\_logger.filename}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
 	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{empty string}}\\
 	\multicolumn{2}{|l|}{}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Filename to keep logger output (the option \texttt{file} must be activated).}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Filename to keep logger output (the option \texttt{kernel\_logger.file} must be activated).}\\
 	\hline
 	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{kernel\_logger.xml\_file}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
 	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
@@ -250,12 +251,12 @@ $ tms320c3x -c sim_config.xml
 	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{kernel\_logger.xml\_filename}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
 	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{empty string}}\\
 	\multicolumn{2}{|l|}{}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Filename to keep logger XML output (the option \texttt{xml\_file} must be activated).}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Filename to keep logger XML output (the option \texttt{kernel\_logger.xml\_file} must be activated).}\\
 	\hline
 	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{kernel\_logger.xml\_file\_gzipped}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
 	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
 	\multicolumn{2}{|l|}{}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline If the \texttt{xml\_file} option is active, the output file will be compressed (a .gz extension will be automatically added to the \texttt{xml\_filename} option.}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline If the \texttt{kernel\_logger.xml\_file} option is active, the output file will be compressed (a .gz extension will be automatically added to the \texttt{kernel\_logger.xml\_filename} option.}\\
 	\hline
 	\multicolumn{2}{|c|}{\textbf{\large Service COFF Loader run-time parameters}}\\
 	\hline
@@ -269,6 +270,7 @@ $ tms320c3x -c sim_config.xml
 	\multicolumn{2}{|l|}{}\\
 	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline If true this parameter makes the COFF loader print the file headers on the screen (file header, section headers, symbol table \ldots) while loading the program.}\\
 	\hline
+	\hline
 	\multicolumn{2}{|c|}{\textbf{\large Service ROM COFF Loader run-time parameters}}\\
 	\hline
 	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{rom-loader.filename}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
@@ -280,6 +282,7 @@ $ tms320c3x -c sim_config.xml
 	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{empty string}}\\
 	\multicolumn{2}{|l|}{}\\
 	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline If true this parameter makes the COFF loader print the file headers on the screen (file header, section headers, symbol table \ldots) while loading the program.}\\
+	\hline
 	\hline
 	\multicolumn{2}{|c|}{\textbf{\large Memory run-time parameters}}\\
 	\hline
@@ -299,7 +302,7 @@ $ tms320c3x -c sim_config.xml
 	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{ti\_c\_io.enable}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
 	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
 	\multicolumn{2}{|l|}{}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/Disable TI C I/O support.}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/disable TI C I/O support.}\\
 	\hline
 	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{ti-c-io.warning-as-error}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
 	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
@@ -347,53 +350,53 @@ $ tms320c3x -c sim_config.xml
 \subsection{Debugging the target program}
 \label{tms320c3x_inline_debug}
 
-Command line option \texttt{-i} enables the inline debugger. The inline debugger has support for controlling the program execution, inspecting the program and its data, and putting breakpoints and watchpoints. The user can interact with the debugger using the following commands:
+The command line option \texttt{-i} enables the inline debugger. The inline debugger has support for controlling the program execution, inspecting the program and its data, and putting breakpoints and watchpoints. The user can interact with the debugger using the following commands:
 \begin{itemize}
 \item Execution commands:
 	\begin{itemize}
 	\item \texttt{<c | cont | continue> [<symbol | *address>]}: \newline
-	continue to execute instructions until program reaches a breakpoint, a watchpoint, 'symbol' or 'address'
+	Continue to execute instructions until program reaches a breakpoint, a watchpoint, a `symbol' or an `address'.
 	\item \texttt{<s | si | step | stepi>}: \newline
-	execute one instruction
+	Execute one instruction.
 	\item \texttt{<n | ni | next | nexti>}: \newline
-	continue to execute instructions until the processor reaches next contiguous instruction, a breakpoint or a watchpoint
+	Continue to execute instructions until the processor reaches next contiguous instruction, a breakpoint or a watchpoint.
 	\item \texttt{<r | run>}: \newline
-	restart the simulation from the beginning (not yet supported)
+	Restart the simulation from the beginning (not yet supported).
 	\end{itemize}
 \item Inspection commands:
 	\begin{itemize}
 	\item \texttt{<dis | disasm | disassemble> [<symbol | *address>]}: \newline
-	continue to disassemble starting from 'symbol', 'address', or after the previous disassembly
+	Continue to disassemble starting from `symbol', `address', or after the previous disassembly.
 	\item \texttt{<d | dump> [<symbol | *address>]}: \newline
-	dump memory starting from 'symbol', 'address', or after the previous dump
+	Dump memory starting from `symbol', `address', or after the previous dump.
 	\item \texttt{<register name>}: \newline
-	display the register value
+	Display the register value.
 	\item \texttt{<m | monitor> [<variable name>]}: \newline
-	display the given simulator variable (displays all variable names if none is given)
+	Display the given simulator variable (displays all variable names if none is given).
 	\item \texttt{<p | prof | profile>} \newline
 	\texttt{<p | prof | profile> program} \newline
 	\texttt{<p | prof | profile> data} \newline
 	\texttt{<p | prof | profile> data read} \newline
 	\texttt{<p | prof | profile> data write}: \newline
-	display the program/data profile
+	Display the program/data profile.
 	\end{itemize}
 \item Breakpoints/Watchpoints commands:
 	\begin{itemize}
 	\item \texttt{<b | break> [<symbol | *address>]}: \newline
-	set a breakpoint at 'symbol' or 'address'. If 'symbol' or 'address' are not specified, display the breakpoint list
+	Set a breakpoint at `symbol' or `address'. If `symbol' or `address' are not specified, display the breakpoint list.
 	\item \texttt{<w | watch> [<symbol | *address[:<size>]>] [<read | write>]}: \newline
-	set a watchpoint at 'symbol' or 'address'. When using 'continue' and 'next' commands, the debugger will spy CPU loads and store. The debugger will return to command line prompt once a load, or a store will access to 'symbol' or 'address'.
+	Set a watchpoint at `symbol' or `address'. When using `continue' and `next' commands, the debugger will spy CPU loads and stores. The debugger will return to the command line prompt once a load or a store accesses to the given `symbol' or `address'.
 	\item \texttt{<del | delete> <symbol | *address>}: \newline
-	delete the breakpoint at 'symbol' or 'address'
+	Delete the breakpoint at `symbol' or `address'.
 	\item \texttt{<delw | delwatch> <symbol | *address> [<read | write>] [<size>]}: \newline
-	delete the watchpoint at 'symbol' or 'address'
+	Delete the watchpoint at 'symbol' or 'address'.
 	\end{itemize}
 \item Miscellaneous commands:
 	\begin{itemize}
 	\item \texttt{<h | ? | help>}: \newline
-	display the help
+	Display the integrated help.
 	\item \texttt{<quit | q>}: \newline
-	quit the built-in debugger
+	Quit the built-in debugger.
 	\end{itemize}
 \end{itemize}
 
@@ -402,16 +405,16 @@ Command line option \texttt{-i} enables the inline debugger. The inline debugger
 
 The TMS320C3X simulator is the combination of several software components:
 \begin{itemize}
-\item A service infrastructure in \texttt{unisim/kernel/service} (see ~\ref{tms320c3x_service_infrastructure})
-\item A built-in logger in \texttt{unisim/kernel/logger} (see ~\ref{tms320c3x_logger})
-\item Several small utility classes in \texttt{unisim/util} (see ~\ref{tms320c3x_utils})
-\item A TMS320C3X instruction set simulator in \texttt{unisim/component/cxx/processor/tms320} (see ~\ref{tms320c3x_iss})
-\item A memory in \texttt{unisim/component/cxx/memory/ram} (see ~\ref{tms320c3x_memory})
-\item Service interface definitions in \texttt{unisim/service/interfaces} (see ~\ref{tms320c3x_interfaces})
-\item A COFF loader service in \texttt{unisim/service/loader/coff\_loader} (see ~\ref{tms320c3x_coff_loader})
-\item A TI C I/O service in \texttt{unisim/service/os/ti\_c\_io} (see ~\ref{tms320c3x_ti_c_io})
-\item An inline debugger service in \texttt{unisim/service/debug/inline\_debugger} (see ~\ref{tms320c3x_inline_debugger})
-\item A GDB server service in \texttt{unisim/service/debug/gdb\_server} (see ~\ref{tms320c3x_gdb_server})
+\item A service infrastructure in \texttt{unisim/kernel/service} (see Section~\ref{tms320c3x_service_infrastructure}).
+\item A built-in logger in \texttt{unisim/kernel/logger} (see Section~\ref{tms320c3x_logger}).
+\item Several small utility classes in \texttt{unisim/util} (see Section~\ref{tms320c3x_utils}).
+\item A TMS320C3X instruction set simulator in \texttt{unisim/component/cxx/processor/tms320} (see Section~\ref{tms320c3x_iss}).
+\item A memory in \texttt{unisim/component/cxx/memory/ram} (see Section~\ref{tms320c3x_memory}).
+\item Service interface definitions in \texttt{unisim/service/interfaces} (see Section~\ref{tms320c3x_interfaces}).
+\item A COFF loader service in \texttt{unisim/service/loader/coff\_loader} (see Section~\ref{tms320c3x_coff_loader}).
+\item A TI C I/O service in \texttt{unisim/service/os/ti\_c\_io} (see Section~\ref{tms320c3x_ti_c_io}).
+\item An inline debugger service in \texttt{unisim/service/debug/inline\_debugger} (see Section~\ref{tms320c3x_inline_debugger}).
+\item A GDB server service in \texttt{unisim/service/debug/gdb\_server} (see Section~\ref{tms320c3x_gdb_server}).
 \end{itemize}
 
 \subsection{Simulation Components}
@@ -422,18 +425,18 @@ The TMS320C3X simulator is the combination of several software components:
 The instruction set simulator source code is located in directory: \newline \texttt{unisim/component/cxx/processor/tms320}.\newline
 The UNISIM TMS320C3X instruction set simulator uses an instruction set simulator generator, GenISSLib.
 GenISSLib uses an instruction set description (\texttt{.isa} files) located in sub-directory \texttt{isa} of the instruction set simulator source code directory.
-Most computations (e.g. integer computation) are directly performed in these description file.
+Most computations (e.g., integer computation) are directly performed in these description files.
 See the GenISSLib manual for additional informations about the GenISSLib instruction set description language.
-The simulator is implemented in class \texttt{unisim::component::cxx::processor::tms320::CPU} which main methods are:
+The simulator is implemented in class \texttt{unisim::component::cxx::processor::tms320::CPU}, and its main methods are:
 \begin{itemize}
-\item \texttt{StepInstruction}: executes one instruction
-\item \texttt{PrWrite}: Write a word into memory using service import \texttt{memory\_import} (see ~\ref{tms320c3x_service_infrastructure} for details about services). This methods is virtual so that it can be reimplemented into a derived class.
-\item \texttt{PrRead}: Read a word from memory using service import \texttt{memory\_import} (see ~\ref{tms320c3x_service_infrastructure} for details about services). This methods is virtual so that it can be reimplemented into a derived class.
+\item \texttt{StepInstruction}: Executes one instruction.
+\item \texttt{PrWrite}: Write a word into memory using service import \texttt{memory\_import} (see Section~\ref{tms320c3x_service_infrastructure} for details about services). This method is virtual so that it can be reimplemented into a derived class.
+\item \texttt{PrRead}: Read a word from memory using service import \texttt{memory\_import} (see Section~\ref{tms320c3x_service_infrastructure} for details about services). This method is virtual so that it can be reimplemented into a derived class.
 \item \texttt{SetIRQLevel}: Set level (0/1, true/false) of an IRQ. IRQ numbering is same as register \texttt{IF} bit numbering.
 \item \texttt{ComputeIndirEA}: Compute the effective address for indirect addressing modes.
 \item \texttt{ComputeDirEA}: Compute the effective address for direct addressing modes.
 \end{itemize}
-This class is a client and a service (see ~\ref{tms320c3x_service_infrastructure} for details) that can be connected to a debugger, a loader, and a memory.
+This class is a client and a service (see Section~\ref{tms320c3x_service_infrastructure} for details) that can be connected to a debugger, a loader, and a memory.
 
 Each register (R0, R1, R2, R3, R4, R5, R6, R7, ar0, ar1, ar2, ar3, ar4, ar5, ar6, ar7, DP, IR0, IR1, BK, SP, ST, IE, IF, IOF, RS, RE, and RC) is implemented by an instance of class \texttt{unisim::component::cxx::processor::tms320::Register}.
 This class has methods to get/set value of a register and to perform floating point computations.
@@ -449,7 +452,7 @@ This class has methods to get/set value of a register and to perform floating po
 		\hline
 		\multicolumn{1}{|p{7.5cm}}{\textbf{Class Name:} \newline \texttt{unisim::component::cxx::processor}\newline$\hookrightarrow$\texttt{::tms320::CPU}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Header:} \newline \texttt{unisim/component/cxx/processor}\newline$\hookrightarrow$\texttt{/tms320/cpu.hh}}\\
 		\multicolumn{2}{|l|}{}\\
-		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline This C++ class is TMS320C3X instruction set simulator.}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline This C++ class implements the TMS320C3X instruction set simulator.}\\
 		\hline
 		\hline
 		\multicolumn{2}{|c|}{\textbf{\large Template Parameters}}\\
@@ -462,7 +465,7 @@ This class has methods to get/set value of a register and to perform floating po
 		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{DEBUG}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
 		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
 		\multicolumn{2}{|l|}{}\\
-		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/Disable debug.}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/disable debug.}\\
 		\hline
 		\hline
 		\multicolumn{2}{|c|}{\textbf{\large Run-Time Parameters}}\\
@@ -475,12 +478,12 @@ This class has methods to get/set value of a register and to perform floating po
 		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{trap-on-instruction-counter}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{uint64\_t}}\\
 		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{$2^{64} - 1$}}\\
 		\multicolumn{2}{|l|}{}\\
-		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Number of instructions to simulate before trapping, i.e. calling \texttt{ReportTrap} through service import \texttt{trap\_import}. This is useful to inform debugger that CPU has simulated a certain amount of instructions, so that user can take control of the simulation at this point.}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Number of instructions to simulate before trapping, i.e., calling \texttt{ReportTrap} through service import \texttt{trap\_import}. This is useful to inform the debugger that the CPU has simulated a certain amount of instructions, so that user can take control of the simulation at this point.}\\
 		\hline
 		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{verbose-setup}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
 		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
 		\multicolumn{2}{|l|}{}\\
-		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/disable verbosity of CPU while setup.}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/disable verbosity of the CPU while setup.}\\
 		\hline
 		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{verbose-all}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
 		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
@@ -490,12 +493,12 @@ This class has methods to get/set value of a register and to perform floating po
 		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{enable-parallel-load-bug}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
 		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{true}}\\
 		\multicolumn{2}{|l|}{}\\
-		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline When using parallel loads (\texttt{LDF src2, dst2 || LDF src1, dst1}) the src1 load doesn't transform incorrect zero values to valid zero representation, instead they copy the contents of the memory to the register. Set this parameter to false to transform incorrect zero values.}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline When using parallel loads (\texttt{LDF src2, dst2 || LDF src1, dst1}) the \texttt{src1} load doesn't transform incorrect zero values to valid zero representation, instead they copy the contents of the memory to the register. Set this parameter to false to transform incorrect zero values.}\\
 		\hline
 		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{enable-rnd-bug}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
 		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{true}}\\
 		\multicolumn{2}{|l|}{}\\
-		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline If enabled the `rnd` instruction sets the Z flag to 0 systematically, as it is done in the evaluation board. Otherwise, Z is unchanged as it is written in the documentation.}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline If enabled the \texttt{rnd} instruction sets the Z flag to 0 systematically, as it is done in the evaluation board. Otherwise, Z is unchanged as described in the TMS320C3X documentation.}\\
 		\hline
 		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{enable-parallel-store-bug}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
 		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{true}}\\
@@ -519,7 +522,7 @@ This class has methods to get/set value of a register and to perform floating po
 		\hline
 		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{memory\_injection\_export}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces} \newline$\hookrightarrow$\texttt{::MemoryInjection}}\\
 		\multicolumn{2}{|l|}{}\\
-		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The CPU provides clients (e.g debuggers) with an access to memory space through this service export. Accesses to memory space are intrusive, i.e. they affect timing or data placement (e.g. in caches or TLBs).}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The CPU provides clients (e.g debuggers) with an access to memory space through this service export. Accesses to memory space are intrusive, i.e., they affect timing and data placement (e.g., in caches or TLBs).}\\
 		\hline
 		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{memory\_access\_reporting\_control}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces} \newline$\hookrightarrow$\texttt{::MemoryAccessReportingControl}}\\
 		\multicolumn{2}{|l|}{}\\
@@ -530,7 +533,7 @@ This class has methods to get/set value of a register and to perform floating po
 		\hline
 		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{debug\_control\_import} \newline \textbf{Mandatory connected:} no} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces} \newline$\hookrightarrow$\texttt{::DebugControl}}\\
 		\multicolumn{2}{|l|}{}\\
-		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline This service import allow to interactively control the CPU. Method \texttt{FetchDebugCommand} of the service import interface returns command for CPU: either execute one instruction or stop simulation.}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline This service import allows to interactively control the CPU. Method \texttt{FetchDebugCommand} of the service import interface returns the control command for CPU: either execute one instruction or stop simulation.}\\
 		\hline
 		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{memory\_access\_reporting\_import} \newline \textbf{Mandatory connected:} no} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces} \newline$\hookrightarrow$\texttt{::MemoryAccessReporting}}\\
 		\multicolumn{2}{|l|}{}\\
@@ -550,7 +553,7 @@ This class has methods to get/set value of a register and to perform floating po
 		\hline
 		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{ti\_c\_io\_import} \newline \textbf{Mandatory connected:} yes} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces} \newline$\hookrightarrow$\texttt{::TI\_C\_IO}}\\
 		\multicolumn{2}{|l|}{}\\
-		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The CPU allow a remote service (e.g. TI C I/O service) to capture \texttt{SWI} instructions. Such service should translate target program I/Os to host I/Os.}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The CPU allows a remote service (e.g. TI C I/O service) to capture \texttt{SWI} instructions. Such service should translate target program I/Os to host I/Os.}\\
 		\hline
 	\end{supertabular}
 \end{center}
@@ -562,7 +565,7 @@ This class has methods to get/set value of a register and to perform floating po
 The source of class \texttt{unisim::component::cxx::memory::ram::Memory} is in directory: \newline
 \texttt{unisim/component/cxx/memory/ram}.\newline
 Methods \texttt{ReadMemory} and \texttt{WriteMemory} respectively implement read and write memory accesses.
-This simulation components provides interface \texttt{unisim::service::interfaces::Memory} to other simulation components (e.g. CPU) or services (e.g. the COFF loader).
+This simulation component provides the interface \texttt{unisim::service::interfaces::Memory} to other simulation components (e.g. CPU) or services (e.g. the COFF loader).
 
 \noindent The table below summarizes the API of the memory:
 
@@ -616,16 +619,16 @@ This simulation components provides interface \texttt{unisim::service::interface
 \subsection{Service infrastructure}
 \label{tms320c3x_service_infrastructure}
 
-Designing a new emulator, and particularly for a research purpose, means implementing an instruction set emulator but also involves several software components not directly related to pure instruction set execution.
-The most obvious needed software components are memories, debuggers, loaders, but components such as chipsets and peripherals are still mandatory to enable running real unmodified applications.
+Designing a new emulator, and particularly for a research purposes, means implementing an instruction set emulator but also involves several software components not directly related to pure instruction set execution.
+The most obvious needed software components are memories, debuggers, loaders, but components such as chipsets and peripherals are still mandatory to enable running unmodified real world applications.
 Abstracting the underlying host hardware is also something useful to emulators.
 Making all these components running together requires programming interfaces as much standard as possible.
 
 Usually the programmer faces to the problems of sharing source codes among several emulators, reusing existing source codes, and building a fully functional emulator from all these heterogeneous pieces of source codes.
-Most of the time, the software components are strongly dependent for each other: components are statically linked together through explicit function calls and adhoc interfaces.
+Most of the time, the software components are strongly dependent of each other: components are statically linked together through explicit function calls and adhoc interfaces.
 Replacing these adhoc interfaces with C++ pure interfaces (C++ classes with only unimplemented virtual methods, see your C++ manual for more details) and linking the components through pointers is a step toward avoiding such strong dependencies between the components. But still finding a standard manner to initialize those pointers is necessary. This can be done either by directly writing in those pointers or calling special functions to do the job.
 
-Another problem with heterogeneous software components is the manner to instantiate and parameterize those components in a standard way, so that it is easier for the component's user to use a new component.
+Another problem with heterogeneous software components is the manner to instantiate and parameterize them in a standard way, so that it is easier for the component's user to use a new component.
 Usually, parameterizing a component means passing arguments to an initialization function or a class constructor. It implies that the programmers agree on using only one of these two solutions or both.
 Still the programmers must know the setup order of these components: it is an error prone process because determining a correct order from the components documentation will likely fail the first times.
 
@@ -636,12 +639,23 @@ The parameterization have been standardized (class \texttt{Parameter}) and the f
 
 \subsubsection{Class hierarchy}
 
-Each software component of the UNISIM TMS320C3X simulator is an object (a client and/or a service). The term \texttt{Client} refers to an object that calls methods of a \texttt{Service} through a \texttt{ServiceImport}. The term \texttt{Service} refers to an object that exposes its interface to client through a \texttt{ServiceExport}. \texttt{ServiceImport} acts as gate for a client to call remote methods of a service. \texttt{ServiceExport} is a mean for a service to export its interface, so that a client \texttt{ServiceImport} can be bound to it.
+Each software component of the UNISIM TMS320C3X simulator is an object (a client and/or a service). 
+The term \texttt{Client} refers to an object that calls methods of a \texttt{Service} through a \texttt{ServiceImport}. 
+The term \texttt{Service} refers to an object that exposes its interface to client through a \texttt{ServiceExport}. 
+\texttt{ServiceImport} acts as gate for a client to call remote methods of a service. \texttt{ServiceExport} is a mean for a service to export its interface, so that a client \texttt{ServiceImport} can be bound to it.
 
-Figure~\ref{fig:tms320c3x_object_hierarchy} presents the object/class hierarchy of the service infrastructure. This class hierarchy allows the \texttt{ServiceManager} to see clients and services as a service graph. The base class of the class hierarchy is \texttt{class Object}. It provides composition (it's a container) and naming of objects. Template class \texttt{Service<SERVICE\_IF>} represents a service implementing interface \texttt{SERVICE\_IF} while template class \texttt{Client<SERVICE\_IF>} represents a client using a service implementing interface \texttt{SERVICE\_IF}. On figure~\ref{fig:tms320c3x_object_hierarchy}, classes \texttt{MyService} and \texttt{MyClient} are respectively examples of a service and a client with interface \texttt{SERVICE\_IF}. Example class \texttt{MyService} has a member of type \texttt{ServiceExport<SERVICE\_IF>} to export \texttt{SERVICE\_IF} to the outside world. Example class \texttt{MyClient} has a member of type \texttt{ServiceImport<SERVICE\_IF>} to import interface \texttt{SERVICE\_IF} from a remote service.
+Figure~\ref{fig:tms320c3x_object_hierarchy} presents the object/class hierarchy of the service infrastructure.
+This class hierarchy allows the \texttt{ServiceManager} to see clients and services as a service graph. 
+The base class of the class hierarchy is \texttt{class Object}. 
+It provides composition (it's a container) and naming of objects.
+Template class \texttt{Service<SERVICE\_IF>} represents a service implementing interface \texttt{SERVICE\_IF} while template class \texttt{Client<SERVICE\_IF>} represents a client using a service implementing interface \texttt{SERVICE\_IF}.
+On Figure~\ref{fig:tms320c3x_object_hierarchy}, classes \texttt{MyService} and \texttt{MyClient} are respectively examples of a service and a client with interface \texttt{SERVICE\_IF}.
+Example class \texttt{MyService} has a member of type \texttt{ServiceExport<SERVICE\_IF>} to export \texttt{SERVICE\_IF} to the outside world.
+Example class \texttt{MyClient} has a member of type \texttt{ServiceImport<SERVICE\_IF>} to import interface \texttt{SERVICE\_IF} from a remote service.
 
-Classes \texttt{ServiceImport<SERVICE\_IF>} and \texttt{ServiceExport<SERVICE\_IF>} provides a C++ operator \texttt{>>} to allow binding a service import to a service export, so that client is bound to a service. In the example of Figure~\ref{fig:tms320c3x_object_hierarchy}, class \texttt{MyClient} would use service \texttt{MyService} as soon as \texttt{ServiceImport} of class \texttt{MyClient} is bound to \texttt{ServiceExport} of class \texttt{MyService}.
-A Concrete use of service binding import and service is provided in the next section.
+Classes \texttt{ServiceImport<SERVICE\_IF>} and \texttt{ServiceExport<SERVICE\_IF>} provide a C++ operator \texttt{>>} to allow binding a service import to a service export, so that client is bound to a service.
+In the example of Figure~\ref{fig:tms320c3x_object_hierarchy}, class \texttt{MyClient} would use service \texttt{MyService} as soon as \texttt{ServiceImport} of class \texttt{MyClient} is bound to \texttt{ServiceExport} of class \texttt{MyService}.
+A concrete use of service binding import and service is provided in the next section.
 
 \begin{figure}[!h]
 	\begin{center}
@@ -677,14 +691,14 @@ The programmer connects the loader to the memory using \texttt{loader.memory\_im
 \end{figure}
 
 Once \hfill the \hfill programmer \hfill has \hfill created \hfill a \hfill service \hfill graph, \hfill he \hfill must \hfill perform \hfill a \hfill call \hfill to \hfill \texttt{ServiceManager::Setup()}.
-\texttt{ServiceManager::Setup()} returns \texttt{true} if setup of each service and client in the graph has been successful, other it returns \texttt{false}.
+\texttt{ServiceManager::Setup()} returns \texttt{true} if setup of each service and client in the graph has been successful, otherwise it returns \texttt{false}.
 
 \subsubsection{Designing a service}
 
 A service is a C++ object inheriting from template class \texttt{Service<SERVICE\_INTERFACE>} \ding{202}, see Figure~\ref{fig:tms320c3x_simple_service}.
 \texttt{SERVICE\_INTERFACE} is a C++ abstract class defining the virtual methods implemented by the service.
 To export its interface, a service must have a member of type \texttt{ServiceExport<SERVICE\_INTERFACE>} \ding{203}.
-For normalization purposes, the service constructor should take only two parameters \ding{204}: the service name and the pointer to the parent (a container service).
+For normalization purposes, the service constructor should only take two parameters \ding{204}: the service name and the pointer to the parent (a container service).
 The pointer to the parent is \texttt{null} if the service is a top level service (no parent).
 The base \texttt{Object} constructor \ding{205} and the base \texttt{Service} constructor \ding{206} must be called with the name and the pointer to the parent.
 \texttt{ServiceExport} member constructor must be called with the export name and a pointer to the owner, i.e. the service itself \ding{207}.
@@ -701,7 +715,7 @@ The base \texttt{Object} constructor \ding{205} and the base \texttt{Service} co
 A client is a C++ object inheriting from template class \texttt{Client<SERVICE\_INTERFACE>} \ding{202}, see Figure~\ref{fig:tms320c3x_simple_client}.
 \texttt{SERVICE\_INTERFACE} is a C++ abstract class defining the virtual methods implemented by the service the client can call.
 To import an interface, a client must have a member of type \texttt{ServiceImport<SERVICE\_INTERFACE>} \ding{203}.
-For normalization purposes, the client constructor should take only two parameters \ding{204}: the client name and the pointer to the parent (a container client).
+For normalization purposes, the client constructor should only take two parameters \ding{204}: the client name and the pointer to the parent (a container client).
 The pointer to the parent is \texttt{null} if the client is a top level client (no parent).
 The base \texttt{Object} constructor \ding{205} and the base \texttt{Client} constructor \ding{206} must be called with the name and the pointer to the parent.
 \texttt{ServiceImport} member constructor must be called with the import name and a pointer to the owner, i.e. the client itself \ding{207}.
@@ -716,8 +730,13 @@ The base \texttt{Object} constructor \ding{205} and the base \texttt{Client} con
 
 \subsubsection{Run-time parameters}
 
-Run-time parameterization can be added to a service or a client. "Run-time parameterization" means that the service and/or client can be reconfigured at run-time. It is opposed to "Static parameterization or template parameterization" which allows configuring a service and/or client at compilation-time.
-To expose a member variable as a run-time parameter, a client/service must have member variable of type \texttt{Parameter<TYPE>}, where \texttt{TYPE} is the C++ type of the exposed member variable, see Figure~\ref{fig:tms320c3x_run_time_parameter}. Consider that a service would expose a member variable \texttt{x} \ding{202}. An instance of class \texttt{Parameter} is defined as a member of the service \ding{203}. 
+Run-time parameterization can be added to a service or a client.
+``Run-time parameterization'' means that the service and/or client can be reconfigured at run-time.
+It is opposed to ``Static parameterization'' or ``template parameterization'' which allows configuring a service and/or client at compilation-time.
+To expose a member variable as a run-time parameter, a client/service must have a member variable of type \texttt{Parameter<TYPE>}, where \texttt{TYPE} is the C++ type of the exposed member variable, see Figure~\ref{fig:tms320c3x_run_time_parameter}.
+Multiple \texttt{Parameter} variables with different \texttt{TYPE}s can be defined within a clien/service.
+Consider that a service would expose a member variable \texttt{x} \ding{202}.
+An instance of class \texttt{Parameter} is defined as a member of the service \ding{203}. 
 The parameter is bound to the exposed variable \ding{204} in the service/client constructor.
 
 \begin{figure}[h]
@@ -729,7 +748,11 @@ The parameter is bound to the exposed variable \ding{204} in the service/client 
 
 \subsubsection{Setup Order}
 
-As explained in section~\ref{tms320c3x_building_a_service_graph}, Method \texttt{Setup} of class \texttt{ServiceManager} calls all \texttt{Setup} methods in the simulator. A problem may occur if setup order is important. For instance, consider two services: service \texttt{A} and \texttt{B}. \texttt{A::Setup()} uses service \texttt{B}. A correct setup order consist to first setup service \texttt{B} and then service \texttt{A}.
+As explained in section~\ref{tms320c3x_building_a_service_graph}, method \texttt{Setup} of class \texttt{ServiceManager} calls all \texttt{Setup} methods in the simulator. 
+A problem may occur if setup order is important.
+For instance, consider two services: service \texttt{A} and \texttt{B}. 
+\texttt{A::Setup()} uses service \texttt{B}.
+A correct setup order consist to first setup service \texttt{B} and then service \texttt{A}.
 To solve such setup dependency, programmer should call method \texttt{Object::SetupDependsOn} (e.g. in the class constructor) so that the service manager can ensure correct setup order.
 If the service manager finds a cyclic dependency, \texttt{ServiceManager::Setup()} fails: it generally means that clients and services have been badly designed.
 
