@@ -7,7 +7,17 @@ AC_DEFUN([UNISIM_CHECK_RTBCOB], [
 	AS_HELP_STRING([--with-rtbcob=<path>], [RTBuilder Cob library to use (will be completed with /include)]))
 	if test "x$with_rtbcob" != "x"; then
 		AC_MSG_NOTICE([using RTBuilder Cob at $with_rtbcob])
+		LDFLAGS=${LDFLAGS}" -L$with_rtbcob/rtbuilderLibrary/clib/msw"
 		CPPFLAGS=${CPPFLAGS}" -I$with_rtbcob/include"
+	fi
+
+	# Check for function 'init_network' in libcob.a
+	AC_CHECK_LIB(cob,init_network,broken_rtbcob=no,broken_rtbcob=yes)
+
+	if test "$broken_rtbcob" == "yes"; then
+		AC_MSG_ERROR([installed RTBuilder COB is broken. Please install the RTBuilder Cob library. Use --with-rtbcob=<path> to overload default includes search path.])
+	else
+		LIBS="-lcob ${LIBS}"
 	fi
 
 ])
