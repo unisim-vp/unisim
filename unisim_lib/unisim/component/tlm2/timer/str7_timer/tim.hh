@@ -48,6 +48,7 @@
 #include "unisim/kernel/logger/logger.hh"
 #include "unisim/component/tlm2/interrupt/types.hh"
 #include "unisim/service/interfaces/trap_reporting.hh"
+#include <inttypes.h>
 
 namespace unisim {
 namespace component {
