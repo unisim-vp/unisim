@@ -38,8 +38,9 @@
 #include <unisim/component/cxx/isa/types.hh>
 #include <unisim/service/interfaces/keyboard.hh>
 #include <unisim/kernel/service/service.hh>
-#include <unisim/service/interfaces/logger.hh>
+#include <unisim/kernel/logger/logger.hh>
 #include <queue>
+#include <vector>
 
 namespace unisim {
 namespace component {
@@ -48,6 +49,7 @@ namespace isa {
 namespace i8042 {
 
 using std::queue;
+using std::vector;
 using unisim::component::cxx::isa::isa_address_t;
 
 using unisim::kernel::service::Service;
@@ -57,12 +59,10 @@ using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Parameter;
 
-using unisim::service::interfaces::Logger;
 using unisim::service::interfaces::Keyboard;
 
 class I8042 :
-	public Client<Keyboard>,
-	public Client<Logger>
+	public Client<Keyboard>
 {
 public:
 	static const unsigned int KBD_INDEX = 0;
@@ -109,16 +109,35 @@ public:
 	                                                        // 3 or 4 if there is a stuck data line. Results come back in port 60h.
 
 	static const uint8_t I8042_CMD_AUX_LOOP = 0xd3;
+	static const uint8_t I8042_CMD_AUX_WRITE = 0xd4;
 	// more commands to be added...
 
-	// TODO: keyboard microcontroller commands (port 60h)
-
-	// command results
+	// i8042 command results
 	static const uint8_t I8042_RET_CTL_TEST = 0x55; // self test okay
 	static const uint8_t I8042_RET_AUX_TEST_OK = 0x00; // aux test okay
 
+	// keyboard microcontroller commands (port 60h)
+	static const uint8_t KBD_CMD_SET_LEDS      = 0xed;    // set keyboard leds
+	static const uint8_t KBD_CMD_ECHO          = 0xee;     // echo
+	static const uint8_t KBD_CMD_GET_ID        = 0xf2;    // get keyboard ID
+	static const uint8_t KBD_CMD_SET_RATE      = 0xf3;    // Set typematic rate
+	static const uint8_t KBD_CMD_ENABLE        = 0xf4;    // Enable scanning
+	static const uint8_t KBD_CMD_RESET_DISABLE = 0xf5;    // reset and disable scanning
+	static const uint8_t KBD_CMD_RESET_ENABLE  = 0xf6;    // reset and enable scanning
+	static const uint8_t KBD_CMD_RESET         = 0xff;    // reset
+
+	// Status of keyboard LEDs
+	static const uint8_t KBD_LED_SCROLL_LOCK   = 0x01;    // scroll lock (1=on, 0=off)
+	static const uint8_t KBD_LED_NUM_LOCK      = 0x02;    // Num lock (1=on, 0=off)
+	static const uint8_t KBD_LED_CAPS_LOCK     = 0x04;    // Caps lock (1=on, 0=off)
+
+	// Keyboard command results
+	static const uint8_t KBD_RET_ACK           = 0xfa;    // keyboard command acknowledge
+	static const uint8_t KBD_RET_PWR_ON_RESET  = 0xaa;    // Power on reset
+	
+	static const bool enable_aux = false;
+
 	ServiceImport<Keyboard> keyboard_import;
-	ServiceImport<Logger> logger_import;
 	
 	I8042(const char *name, Object *parent = 0);
 	virtual ~I8042();
@@ -127,41 +146,92 @@ public:
 	
 	bool WriteIO(isa_address_t addr, const void *buffer, uint32_t size);
 	bool ReadIO(isa_address_t addr, void *buffer, uint32_t size);
-	virtual void TriggerInterrupt(unsigned int index, bool in_level);
-	void CaptureKey();
+	virtual void TriggerKbdInterrupt(bool level);
+	virtual void TriggerAuxInterrupt(bool level);
+	bool CaptureKey();
+	bool RepeatKey();
+	virtual void Stop();
+	virtual void Reset();
+	virtual void Lock();
+	virtual void Unlock();
 protected:
-	double typematic_rate; // scancodes per second
-private:
-	// i8042 registers
-	uint8_t input_buffer; // write-only, port 60h (keyboard controller)/ 64h (on-board i8042 microcontroller)
-	queue<uint8_t> output_buffer[2]; // read-only, port 60h (on-board i8042 microcontroller)
-	uint8_t status; // read-only, port 64h (on-board i8042 microcontroller)
-
-	// some internal registers
-	uint8_t control; // on-board i8042 keyboard microcontroller control register
-
-	uint8_t write_command;
-
+	double typematic_rate;  // Aka key per second
+	double typematic_delay; // Aka key repeat delay
+	double speed_boost;     // speed boost factor
 	unsigned int isa_bus_frequency;
 	unsigned int fsb_frequency;
+	bool verbose;
+
+	// the kernel logger
+	unisim::kernel::logger::Logger logger;
+private:
+	// Keyboard IDs
+	uint8_t kbd_id[2];    // Keyboard ID
+
+	uint8_t status; // read-only, port 64h (on-board i8042 microcontroller)
+	uint8_t control; // on-board i8042 keyboard microcontroller control register
+
+	// internals
+	struct
+	{
+		bool pending;
+		uint8_t cmd;
+	} i8042_command; // pending i8042 command waiting additional bytes
+
+	struct
+	{
+		bool pending;
+		uint8_t cmd;
+	} kbd_command; // pending keyboard command waiting additional bytes
+
+	struct
+	{
+		bool caps_lock;
+		bool scroll_lock;
+		bool num_lock;
+	} kbd_leds; // keyboard LEDs status
+
+	queue<uint8_t> kbd_out;
+	queue<uint8_t> aux_out;
+	bool kbd_irq_level;
+	bool aux_irq_level;
+	bool kbd_scanning;
+
+	// Translation of key # to PS/2 raw set 2 scancodes
+	vector<uint8_t> key_num_down_to_ps2_raw_set2[256];
+	vector<uint8_t> key_num_up_to_ps2_raw_set2[256];
+
+	// Whether key # should be repeated after typematic delay
+	bool key_num_repeat[256];
+
+	unisim::service::interfaces::Keyboard::KeyAction last_key_action;
 
 	Parameter<unsigned int> param_isa_bus_frequency;
 	Parameter<unsigned int> param_fsb_frequency;
 	Parameter<double> param_typematic_rate;
+	Parameter<double> param_typematic_delay;
+	Parameter<double> param_speed_boost;
+	Parameter<bool> param_verbose;
 
-	uint8_t ReadInputBuffer();
-	void WriteInputBuffer(uint8_t value);
-	bool IsInputBufferFull();
-	bool IsOutputBufferFull(unsigned int index);
-	uint8_t ReadOutputBuffer(unsigned int index);
-	void WriteOutputBuffer(unsigned int index, uint8_t value);
+	void WriteData(uint8_t data);     // Write on port 60h
+	void ReadData(uint8_t& data);     // Read on port 60h
+	void ReadStatus(uint8_t& value);   // Read on port 64h
+	void WriteCommand(uint8_t& cmd); // Write on port 64h
 	void WriteControl(uint8_t value);
-	void HandleCommand();
-	void HandleWriteCommand();
-	void HandleKeyboardCommand();
-	void SelfTest();
-/*	void AuxTest();
-	void AuxLoopback();*/
+	void WriteKbd(uint8_t data);
+	void WriteAux(uint8_t data);
+	bool HasKbdData();
+	bool HasAuxData();
+	void KbdDequeue(uint8_t& data);
+	void AuxDequeue(uint8_t& data);
+	void KbdEnqueue(uint8_t data);
+	void AuxEnqueue(uint8_t data);
+	void EnqueueScancodes(const vector<uint8_t>& scancodes);
+	void UpdateStatus();
+	void UpdateIRQ();
+	void KbdResetQueue();
+	void SetTypematicRate(double rate);
+	void SetTypematicDelay(double delay);
 };
 
 } // end of namespace i8042

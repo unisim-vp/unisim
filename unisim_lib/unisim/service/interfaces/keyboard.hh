@@ -44,7 +44,17 @@ namespace interfaces {
 class Keyboard
 {
 public:
-	virtual bool GetScancode(uint8_t& scancode) = 0;
+	typedef struct
+	{
+		enum
+		{
+			KEY_UP,
+			KEY_DOWN
+		} action;
+		uint8_t key_num;
+	} KeyAction;
+
+	virtual bool GetKeyAction(KeyAction& key_action) = 0;
 };
 
 } // end of namespace interfaces

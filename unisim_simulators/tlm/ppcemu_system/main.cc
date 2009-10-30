@@ -289,6 +289,7 @@ int sc_main(int argc, char *argv[])
 	{"screen-width", required_argument, 0, 'x'},
 	{"screen-height", required_argument, 0, 'y'},
 	{"capture", required_argument, 0, 'u'},
+	{"keymap", required_argument, 0, 'k'},
 	{0, 0, 0, 0}
 	};
 
@@ -304,6 +305,7 @@ int sc_main(int argc, char *argv[])
 	const char *ramdisk_filename = "";
 	const char *image0_filename = "";
 	const char *bmp_out_filename = "";
+	const char *keymap_filename = "";
 	uint64_t maxinst = 0; // maximum number of instruction to simulate
 	char *logger_filename = 0;
 	bool logger_zip = false;
@@ -329,7 +331,7 @@ int sc_main(int argc, char *argv[])
 
 	
 	// Parse the command line arguments
-	while((c = getopt_long (argc, argv, "dg:a:t:f:r:c:hi:pl:zeomnx:y:u:", long_options, 0)) != -1)
+	while((c = getopt_long (argc, argv, "dg:a:t:f:r:c:hi:pl:zeomnx:y:u:k:", long_options, 0)) != -1)
 	{
 		switch(c)
 		{
@@ -390,6 +392,9 @@ int sc_main(int argc, char *argv[])
 				break;
 			case 'u':
 				bmp_out_filename = optarg;
+				break;
+			case 'k':
+				keymap_filename = optarg;
 				break;
 		}
 	}
@@ -722,6 +727,7 @@ int sc_main(int argc, char *argv[])
 	//  - SDL run-time configuration
 	(*sdl)["refresh-period"] = video_refresh_period;
 	(*sdl)["bmp-out-filename"] = bmp_out_filename;	
+	(*sdl)["keymap-filename"] = keymap_filename;	
 
 	//  - Kernel loader configuration
 	(*kloader)["pmac-bootx.device-tree-filename"] = device_tree_filename;
@@ -1105,7 +1111,6 @@ int sc_main(int argc, char *argv[])
 		mpc107->atu_logger_import >> *logger->logger_export[logger_index++];
 		sdl->logger_import >> *logger->logger_export[logger_index++];
 		pci_isa_bridge->logger_import >> *logger->logger_export[logger_index++];
-		i8042->logger_import >> *logger->logger_export[logger_index++];
 		if(gdb_server) gdb_server->logger_import >> *logger->logger_export[logger_index++];
 		for(unsigned int i = 0; i < MAX_BUS_TRANSACTION_SPY; i++)
 			if(bus_msg_spy[i] != NULL)

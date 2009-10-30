@@ -64,7 +64,6 @@ using unisim::util::garbage_collector::Pointer;
 using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::ServiceImport;
 using unisim::component::tlm::message::InterruptRequest;
-using unisim::service::interfaces::Logger;
 
 template <uint32_t MAX_DATA_SIZE>
 class I8042 :
@@ -90,16 +89,26 @@ public:
 	void KbdIrqMaster();
 	void AuxIrqMaster();
 	void Capture();
+	void Repeat();
 	virtual bool Setup();
 	virtual bool Send(const Pointer<TlmMessage<ISAReq, ISARsp> > &message);
-	virtual void TriggerInterrupt(unsigned int index, bool in_level);
+	virtual void TriggerKbdInterrupt(bool level);
+	virtual void TriggerAuxInterrupt(bool level);
+	virtual void Stop();
+	virtual void Reset();
+	virtual void Lock();
+	virtual void Unlock();
 private:
 	
-	bool irq_level[2];
+	bool kbd_irq_level;
+	bool aux_irq_level;
 	
 	sc_time isa_bus_cycle_time;
 	sc_time bus_cycle_time;
-	sc_event set_irq_ev[2];
+	sc_event set_kbd_irq_ev;
+	sc_event set_aux_irq_ev;
+	sc_mutex mutex;
+	sc_event ev_repeat;
 };
 
 } // end of namespace i8042

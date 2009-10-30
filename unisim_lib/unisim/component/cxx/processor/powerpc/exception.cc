@@ -32,7 +32,7 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#include <powerpc.hh>
+#include <unisim/component/cxx/processor/powerpc/powerpc.hh>
 #include <unistd.h>
 
 namespace full_system {

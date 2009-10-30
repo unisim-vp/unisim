@@ -49,17 +49,12 @@ using unisim::component::cxx::isa::SP_MEM;
 using unisim::component::cxx::isa::TT_WRITE;
 using unisim::component::cxx::isa::TT_READ;
 
-//using unisim::service::interfaces::operator<<;
-using unisim::service::interfaces::Hex;
-using unisim::service::interfaces::Dec;
-using unisim::service::interfaces::Endl;
-using unisim::service::interfaces::Endl;
-using unisim::service::interfaces::DebugInfo;
-using unisim::service::interfaces::DebugWarning;
-using unisim::service::interfaces::DebugError;
-using unisim::service::interfaces::EndDebugInfo;
-using unisim::service::interfaces::EndDebugWarning;
-using unisim::service::interfaces::EndDebugError;
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugInfo;
+using unisim::kernel::logger::EndDebugWarning;
+using unisim::kernel::logger::EndDebugError;
 
 
 template <uint32_t MAX_DATA_SIZE>
@@ -70,8 +65,8 @@ I8042<MAX_DATA_SIZE>::I8042(const sc_module_name& name, Object *parent) :
 	isa_bus_cycle_time(),
 	bus_cycle_time()
 {
-	irq_level[inherited::KBD_INDEX] = false;
-	irq_level[inherited::AUX_INDEX] = false;
+	kbd_irq_level = false;
+	aux_irq_level = false;
 
 	SC_HAS_PROCESS(I8042);
 	
@@ -81,6 +76,8 @@ I8042<MAX_DATA_SIZE>::I8042(const sc_module_name& name, Object *parent) :
 	SC_THREAD(AuxIrqMaster);
 
 	SC_THREAD(Capture);
+
+	SC_THREAD(Repeat);
 }
 
 template <uint32_t MAX_DATA_SIZE>
@@ -94,8 +91,8 @@ bool I8042<MAX_DATA_SIZE>::Setup()
 	if(!inherited::Setup()) return false;
 	isa_bus_cycle_time = sc_time(1.0 / (double) (*this)["isa-bus-frequency"], SC_US);
 	bus_cycle_time = sc_time(1.0 / (double) (*this)["fsb-frequency"], SC_US);
-	irq_level[inherited::KBD_INDEX] = false;
-	irq_level[inherited::AUX_INDEX] = false;
+	kbd_irq_level = false;
+	aux_irq_level = false;
 	return true;
 }
 
@@ -150,18 +147,23 @@ void I8042<MAX_DATA_SIZE>::KbdIrqMaster()
 {
 	while(1)
 	{
-		wait(set_irq_ev[inherited::KBD_INDEX]);
+		wait(set_kbd_irq_ev);
 		
 		Pointer<TlmMessage<InterruptRequest> > message = new(message) TlmMessage<InterruptRequest>();
 		Pointer<InterruptRequest> irq = new (irq) InterruptRequest();
-		irq->level = irq_level[inherited::KBD_INDEX];
-		irq->serial_id = 0;
 		message->req = irq;
 		
+		irq->level = kbd_irq_level;
+		irq->serial_id = 0;
+		if(inherited::verbose)
+		{
+			inherited::logger << DebugInfo << "KBD interrupt level " << irq->level << EndDebugInfo;
+		}
 		while(!kbd_irq_port->Send(message))
 		{
 			wait(bus_cycle_time);
 		}
+		wait(bus_cycle_time);
 	}
 }
 
@@ -170,18 +172,23 @@ void I8042<MAX_DATA_SIZE>::AuxIrqMaster()
 {
 	while(1)
 	{
-		wait(set_irq_ev[inherited::AUX_INDEX]);
+		wait(set_aux_irq_ev);
 		
 		Pointer<TlmMessage<InterruptRequest> > message = new(message) TlmMessage<InterruptRequest>();
 		Pointer<InterruptRequest> irq = new (irq) InterruptRequest();
-		irq->level = irq_level[inherited::AUX_INDEX];
-		irq->serial_id = 0;
 		message->req = irq;
 		
+		irq->level = aux_irq_level;
+		irq->serial_id = 0;
+		if(inherited::verbose)
+		{
+			inherited::logger << DebugInfo << "AUX interrupt level " << irq->level << EndDebugInfo;
+		}
 		while(!aux_irq_port->Send(message))
 		{
 			wait(bus_cycle_time);
 		}
+		wait(bus_cycle_time);
 	}
 }
 
@@ -190,16 +197,81 @@ void I8042<MAX_DATA_SIZE>::Capture()
 {
 	while(1)
 	{
-		inherited::CaptureKey();
-		wait(sc_time(1.0 / inherited::typematic_rate, SC_SEC));
+		if(inherited::CaptureKey())
+		{
+			ev_repeat.cancel();
+			ev_repeat.notify(sc_time(inherited::typematic_delay / inherited::speed_boost, SC_SEC));
+		}
+		wait(sc_time(1.0 / (inherited::typematic_rate * inherited::speed_boost), SC_SEC));
 	}
 }
 
 template <uint32_t MAX_DATA_SIZE>
-void I8042<MAX_DATA_SIZE>::TriggerInterrupt(unsigned int index, bool level)
+void I8042<MAX_DATA_SIZE>::Repeat()
 {
-	this->irq_level[index] = level;
-	set_irq_ev[index].notify(SC_ZERO_TIME);
+	while(1)
+	{
+		wait(ev_repeat);
+		if(inherited::RepeatKey())
+		{
+			ev_repeat.notify(sc_time(inherited::typematic_delay / inherited::speed_boost, SC_SEC));
+		}
+	}
+}
+
+template <uint32_t MAX_DATA_SIZE>
+void I8042<MAX_DATA_SIZE>::TriggerKbdInterrupt(bool level)
+{
+	if(kbd_irq_level != level)
+	{
+		wait(bus_cycle_time);
+		kbd_irq_level = level;
+		set_kbd_irq_ev.notify(SC_ZERO_TIME);
+		if(inherited::verbose)
+		{
+			inherited::logger << DebugInfo << "Trigger KBD interrupt level " << level << EndDebugInfo;
+		}
+	}
+}
+
+template <uint32_t MAX_DATA_SIZE>
+void I8042<MAX_DATA_SIZE>::TriggerAuxInterrupt(bool level)
+{
+	if(aux_irq_level != level)
+	{
+		wait(bus_cycle_time);
+		aux_irq_level = level;
+		set_aux_irq_ev.notify(SC_ZERO_TIME);
+		if(inherited::verbose)
+ 		{
+			inherited::logger << DebugInfo << "Trigger AUX interrupt level " << level << EndDebugInfo;
+		}
+	}
+}
+
+template <uint32_t MAX_DATA_SIZE>
+void I8042<MAX_DATA_SIZE>::Stop()
+{
+	sc_stop();
+	wait();
+}
+
+template <uint32_t MAX_DATA_SIZE>
+void I8042<MAX_DATA_SIZE>::Reset()
+{
+	inherited::Reset();
+}
+
+template <uint32_t MAX_DATA_SIZE>
+void I8042<MAX_DATA_SIZE>::Lock()
+{
+	mutex.lock();
+}
+
+template <uint32_t MAX_DATA_SIZE>
+void I8042<MAX_DATA_SIZE>::Unlock()
+{
+	mutex.unlock();
 }
 
 } // end of namespace i8042

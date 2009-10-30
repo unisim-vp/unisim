@@ -199,6 +199,8 @@ unisim/component/cxx/processor/tms320/exception.tcc \
 unisim/component/cxx/memory/ram/memory.tcc"
 
 UNISIM_LIB_TMS320C3X_M4_FILES="\
+m4/endian.m4 \
+m4/times.m4 \
 m4/cxxabi.m4 \
 m4/libxml2.m4 \
 m4/zlib.m4 \
@@ -210,7 +212,6 @@ m4/with_boost.m4"
 
 TMS320C3X_EXTERNAL_HEADERS="\
 assert.h \
-endian.h \
 errno.h \
 fcntl.h \
 fstream \
@@ -231,7 +232,6 @@ stdlib.h \
 string \
 string.h \
 sys/stat.h \
-sys/times.h \
 sys/types.h \
 time.h \
 unistd.h \
@@ -563,6 +563,8 @@ if [ "${has_to_build_tms320c3x_configure}" = "yes" ]; then
 	echo "AC_PROG_LN_S" >> "${TMS320C3X_CONFIGURE_AC}"
 	echo "AC_LANG([C++])" >> "${TMS320C3X_CONFIGURE_AC}"
 	echo "AC_CHECK_HEADERS([${TMS320C3X_EXTERNAL_HEADERS}],, AC_MSG_ERROR([Some external headers are missing.]))" >> "${TMS320C3X_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_ENDIAN" >> "${TMS320C3X_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_TIMES" >> "${TMS320C3X_CONFIGURE_AC}"
 	echo "UNISIM_WITH_BOOST" >> "${TMS320C3X_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_CURSES" >> "${TMS320C3X_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_LIBEDIT" >> "${TMS320C3X_CONFIGURE_AC}"

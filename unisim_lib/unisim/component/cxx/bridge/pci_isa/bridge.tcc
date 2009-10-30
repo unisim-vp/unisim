@@ -87,8 +87,8 @@ Bridge<ADDRESS>::Bridge(const char *name, Object *parent) :
 	pci_conf_subsystem_id("pci_conf_subsystem_id", "PCI Config Subsystem ID", 0x0, 0x0),
 	pci_conf_subsystem_vendor_id("pci_conf_subsystem_vendor_id", "PCI Config Subsystem Vendor ID", 0x0, 0x0),
 
-	pci_conf_interrupt_line("pci_conf_interrupt_line", "PCI Config Interrupt Line", 0x0, 0),
-	pci_conf_interrupt_pin("pci_conf_interrupt_pin", "PCI Config Interrupt Pin", 0x0, 0),
+	pci_conf_interrupt_line("pci_conf_interrupt_line", "PCI Config Interrupt Line", 0xff, 0),
+	pci_conf_interrupt_pin("pci_conf_interrupt_pin", "PCI Config Interrupt Pin", 0x0, 0x0),
 	
 	// Parameters initialization
 	param_initial_base_addr("initial-base-addr", this, initial_base_addr),
@@ -321,8 +321,8 @@ template <class ADDRESS>
 bool Bridge<ADDRESS>::Setup()
 {
 	// PCI configuration registers initialization	
-	pci_conf_base_addr[IO_SPACE_BAR_NUM].Initialize("pci_conf_base_addr[IO_SPACE_BAR_NUM]", "PCI Config Base Address (I/O)", 0xfffffffcUL, initial_io_base_addr | 0x1); // ISA I/O space
-	pci_conf_base_addr[MEMORY_SPACE_BAR_NUM].Initialize("pci_conf_base[MEMORY_SPACE_BAR_NUM]", "PCI Config Base Address (Memory)", 0xfffffff0UL, initial_base_addr); // ISA Memory space
+	pci_conf_base_addr[IO_SPACE_BAR_NUM].Initialize("pci_conf_base_addr[IO_SPACE_BAR_NUM]", "PCI Config Base Address (I/O)", 0, 0); // ISA I/O space is not configurable
+	pci_conf_base_addr[MEMORY_SPACE_BAR_NUM].Initialize("pci_conf_base[MEMORY_SPACE_BAR_NUM]", "PCI Config Base Address (Memory)", 0, 0); // ISA Memory space is not configurable
 
 	pci_conf_command = pci_conf_command | 0x3; // active memory space & I/O space
 	return true;

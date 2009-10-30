@@ -45,16 +45,18 @@
 #include <unisim/service/interfaces/keyboard.hh>
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/util/endian/endian.hh>
+#include <unisim/kernel/logger/logger.hh>
 
 #include <inttypes.h>
 
 #if defined(HAVE_SDL)
-#include <SDL/SDL.h>
-#include <SDL/SDL_thread.h>
+#include <SDL.h>
+#include <SDL_thread.h>
 #endif
 
 #include <list>
 #include <string>
+#include <map>
 
 namespace unisim {
 namespace service {
@@ -62,6 +64,7 @@ namespace sdl {
 
 using std::list;
 using std::string;
+using std::map;
 using namespace unisim::util::endian;
 using unisim::kernel::service::Service;
 using unisim::kernel::service::Client;
@@ -69,23 +72,34 @@ using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Parameter;
-using unisim::service::interfaces::Logger;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Video;
 using unisim::service::interfaces::Keyboard;
 
 template <class ADDRESS>
+class VideoMode
+{
+public:
+	VideoMode();
+	VideoMode(ADDRESS fb_addr, uint32_t width, uint32_t height, uint32_t depth, uint32_t fb_bytes_per_line);
+
+	ADDRESS fb_addr;
+	uint32_t width;
+	uint32_t height;
+	uint32_t depth;
+	uint32_t fb_bytes_per_line;
+};
+
+template <class ADDRESS>
 class SDL :
 	public Service<Video<ADDRESS> >,
 	public Client<Memory<ADDRESS> >,
-	public Service<Keyboard>,
-	public Client<Logger>
+	public Service<Keyboard>
 {
 public:
 	ServiceExport<Video<ADDRESS> > video_export;
 	ServiceImport<Memory<ADDRESS> > memory_import;
 	ServiceExport<Keyboard> keyboard_export;
-	ServiceImport<Logger> logger_import;
 	
 	SDL(const char *name, Object *parent = 0);
 	virtual ~SDL();
@@ -95,9 +109,15 @@ public:
 
 	virtual bool SetVideoMode(ADDRESS fb_addr, uint32_t width, uint32_t height, uint32_t depth, uint32_t fb_bytes_per_line);
 	virtual void RefreshDisplay();
-	virtual bool GetScancode(uint8_t& scancode);
+	virtual bool GetKeyAction(unisim::service::interfaces::Keyboard::KeyAction& key_action);
 	
 private:
+	enum
+	{
+		EV_NOTHING = 0,
+		EV_SET_VIDEO_MODE = 1,
+		EV_BLIT = 2
+	};
 #if defined(HAVE_SDL)
 	SDL_Surface *surface;
 	SDL_Surface *screen;
@@ -106,30 +126,41 @@ private:
 	SDL_mutex *sdl_mutex;
 	SDL_mutex *kbd_mutex;
 
-	uint8_t Translate(SDLKey keysym);
+	map<string, SDLKey> sdlk_string_map;
+	map<SDLKey, uint8_t> keymap;
+
 	void ProcessKeyboardEvent(SDL_KeyboardEvent& key);
 	void RefreshLoop();
 	void EventLoop();
 	void Blit();
 	static int RefreshThread(SDL<ADDRESS> *sdl);
 	static int EventHandlingThread(SDL<ADDRESS> *sdl);
+	bool HandleSetVideoMode(const VideoMode<ADDRESS>& video_mode);
+	void HandleBlit();
+	void LearnKeyboard();
 #endif
 	bool mode_set;
 	bool alive;
 	bool refresh;
 	uint32_t refresh_period;
-	ADDRESS fb_addr;
-	uint32_t width;
-	uint32_t height;
-	uint32_t depth;
-	uint32_t fb_bytes_per_line;
+	VideoMode<ADDRESS> video_mode;
 	unsigned int bmp_out_file_number;
 	string bmp_out_filename;
-	list<uint8_t> kbd_scancode_fifo;
+	string keymap_filename;
+	string learn_keymap_filename;
+	bool verbose_setup;
+	bool verbose_run;
+
+	unisim::kernel::logger::Logger logger;
+
+	list<unisim::service::interfaces::Keyboard::KeyAction> kbd_key_action_fifo;
 	Parameter<uint32_t> param_refresh_period;
 	Parameter<string> param_bmp_out_filename;
+	Parameter<string> param_keymap_filename;
+	Parameter<bool> param_verbose_setup;
+	Parameter<bool> param_verbose_run;
 
-	void PushScancode(uint8_t scancode);
+	void PushKeyAction(const unisim::service::interfaces::Keyboard::KeyAction& key_action);
 };
 
 } // end of namespace sdl

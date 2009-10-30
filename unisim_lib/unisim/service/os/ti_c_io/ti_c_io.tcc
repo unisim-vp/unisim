@@ -49,11 +49,6 @@
 #include <time.h>
 #include <string.h>
 
-#ifdef WIN32
-#include <windows.h>
-#else
-#include <sys/times.h>
-#endif
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger.hh"
 #include "unisim/service/interfaces/memory_injection.hh"
