@@ -180,6 +180,7 @@ void XML_ATD_PWM_STUB::Process()
 	LoadXmlData<ATD0_SIZE>(atd0_anx_stimulus_file.c_str(), atd0_vect);
 	LoadXmlData<ATD1_SIZE>(atd1_anx_stimulus_file.c_str(), atd1_vect);
 
+
 	atd0_data_size = atd0_vect.size();
 	atd1_data_size = atd1_vect.size();
 
@@ -226,33 +227,37 @@ void XML_ATD_PWM_STUB::Process()
 			atd1_start = 0;
 		}
 
-		data_t<ATD0_SIZE> atd0_data = atd0_vect.at(atd0_data_index);
-		atd0_data_index = (atd0_data_index + 1) % atd0_data_size;
+		if (atd0_data_size > 0) {
+			atd0_data_index = (atd0_data_index + 1) % atd0_data_size;
+		}
 
 		uint8_t j = 0;
 		for (uint8_t i=0; i < ATD0_SIZE; i++) {
-			if (atd0_data_size == 0) {
-				atd0_anValue[i] = 5.2 * ((double) rand() / (double) RAND_MAX); // Compute a random value: 0 Volts <= anValue[i] < 5 Volts
-			} else
-			if ((i < atd0_start) || (i > atd0_wrap_around)) {
-				atd0_anValue[i] = 0;
+			if (atd0_data_size > 0) {
+				if ((i < atd0_start) || (i > atd0_wrap_around)) {
+					atd0_anValue[i] = 0;
+				} else {
+					atd0_anValue[i] = atd0_vect.at(atd0_data_index).volte[j++];
+				}
 			} else {
-				atd0_anValue[i] = atd0_data.volte[j++];
+				atd0_anValue[i] = 5.2 * ((double) rand() / (double) RAND_MAX); // Compute a random value: 0 Volts <= anValue[i] < 5 Volts
 			}
 		}
 
-		data_t<ATD1_SIZE> atd1_data = atd1_vect.at(atd1_data_index);
-		atd1_data_index = (atd1_data_index + 1) % atd1_data_size;
+		if (atd1_data_size > 0) {
+			atd1_data_index = (atd1_data_index + 1) % atd1_data_size;
+		}
 
 		j = 0;
 		for (uint8_t i=0; i < ATD1_SIZE; i++) {
-			if (atd1_data_size == 0) {
-				atd1_anValue[i] = 5.2 * ((double) rand() / (double) RAND_MAX); // Compute a random value: 0 Volts <= anValue[i] < 5 Volts
-			} else
-			if ((i < atd1_start) || (i > atd1_wrap_around)) {
-				atd1_anValue[i] = 0;
+			if (atd1_data_size > 0) {
+				if ((i < atd1_start) || (i > atd1_wrap_around)) {
+					atd1_anValue[i] = 0;
+				} else {
+					atd1_anValue[i] = atd1_vect.at(atd1_data_index).volte[j++];
+				}
 			} else {
-				atd1_anValue[i] = atd1_data.volte[j++];
+				atd1_anValue[i] = 5.2 * ((double) rand() / (double) RAND_MAX); // Compute a random value: 0 Volts <= anValue[i] < 5 Volts
 			}
 		}
 
