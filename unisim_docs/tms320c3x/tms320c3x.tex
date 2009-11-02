@@ -1138,7 +1138,6 @@ The inline debugger service is a built-in debugger with a text-based user interf
 	\end{supertabular}
 \end{center}
 
-\newpage
 \subsubsection{GDB server}
 \label{tms320c3x_gdb_server}
 
@@ -1388,6 +1387,7 @@ The UNISIM TMS320C3X has been validated using integer benchmarks, floating point
 The next sections provide details about the validation process.
 
 \subsection{Benchmarks}
+\label{tms320c3x_benchmarks}
 
 This section presents the validation process of UNISIM TMS320C3X simulator using some application benchmarks.
 For that purpose, several integer benchmarks have been ported from the MiBench benchmark suite to the TMS320C3X compiler tool chain.
@@ -1429,13 +1429,21 @@ inline-debugger> profile program
 inline-debugger> quit
 \end{verbatim}
 
-We extracted the instruction coverage from these applications profiles. Table below shows the instruction coverage for each benchmark. A tick into a cell at the intersection of a row and a column indicates that instruction of that row is covered by a benchmark of that column.
+We extracted the instruction coverage from these applications profiles. Table below shows the instruction coverage for each benchmark.
+Benchmarks \texttt{Fibo}, \texttt{Quick sort}, \texttt{CRC32}, \texttt{Rijndael}, \texttt{Sha}, and \texttt{ADPCM} are integer benchmarks written in C.
+Benchmarks \texttt{LP}, \texttt{BP}, \texttt{IIR}, and \texttt{FFT} are floating-point benchmarks written in C and assembly.
+Each general addressing mode (see Table~\ref{table:tms320c3x_general_addressing_modes}) of each TMS320C3X instruction (see Tables~\ref{table:tms320c3x_load_store_instructions}, \ref{table:tms320c3x_interlocked_instructions},  \ref{table:tms320c3x_control_instructions}, \ref{table:tms320c3x_2ops_instructions}, \ref{table:tms320c3x_3ops_instructions}, \ref{table:tms320c3x_parallel_instructions} and \ref{table:tms320c3x_power_instructions}), actually has a row in the table.
+A tick into a cell at the intersection of a row and a column indicates that the instruction of that row is covered by the benchmark of that column.
 
 Although the integer benchmarks (written in C) have been selected to address the digital signal processing application domain, they have only validated the general operations of the simulator: program loading, program debugging, basic integer computation, control flow instructions, basic addressing modes \ldots
-The reason of that limited validation scope is that the compiler does not generate many different instructions and addressing modes among the integer benchmarks.
-For instance, unusual addressing modes as the indirect addressing with circular modify and indirect addressing with bit reversed modify were not generated at all by the compiler. 
+The reason of that limited validation scope is that the C compiler does not generate many different instructions and addressing modes among the integer benchmarks.
+For instance, unusual addressing modes as the indirect addressing with circular modify and indirect addressing with bit reversed modify were not generated at all by the C compiler. 
 Thus solely relying on these integer benchmarks for testing integer computation would have resulted in quite poor instruction coverage.
-
+For instance, Instructions \texttt{addc}, \texttt{negb}, \texttt{rol}, \texttt{rolc}, \texttt{ror}, \texttt{rorc}, \texttt{subrb}, \texttt{addc3}, \texttt{subb3}, and most of parallel instructions but \texttt{ldi || ldi}, \texttt{ldi || sti}, and \texttt{sti || sti} were not covered at all.
+Although the case of floating point benchmarks (written in C and assembly) is similar with an incomplete instruction coverage, the use of assembly have improved coverage of addressing modes and parallel instructions.
+For instance, Benchmarks \texttt{IIR} and \texttt{FFT} cover indirect addressing with circular modify and indirect addressing with bit reversed modify.
+Nevertheless floating-point benchmarks insufficiently cover parallel instructions.
+Particularly, Instructions \texttt{absf || stf}, \texttt{fix || sti}, \texttt{float || sti}, \texttt{negf || stf} were not covered at all.
 
 \begin{center}
 \tablehead{\hline
@@ -2594,6 +2602,13 @@ The expected output image is in file \texttt{output\_image.ref.bmp}.
 \subsubsection{LP (Lowpass Finite Filter)}
 \label{tms320c3x_sec:benchmarks_lp}
 
+\begin{figure}[!h]
+	\begin{center}
+		\includegraphics[width=.8\textwidth]{tms320c3x/fig_lp_output.pdf}
+		\caption{\label{fig:tms320c3x_manual_lp_output} LP (Lowpass Finite Filter) output plot.}
+	\end{center}
+\end{figure}
+
 This benchmark performs the computation of a LowPass Finite (LP) Filter over a digital signal.
 The LP Filter is programmed in assembler using the \textit{z-transform}, which is widely utilized for the analysis of discrete-time signals, simular to the Laplace transform for continuous-time signals.
 The implementation is based on the algorithm description provided in ``\textit{Digital Signal Processing: Laboratory Experiments Using C and the TMS320C31 DSK}'' book by Rulph Chassaing (1999, John Wiley \& Sons, Inc.).
@@ -2603,8 +2618,8 @@ The benchmark is mainly written in assembler, and it has been modified to accept
 This benchmark has been selected to globally check the sequential behavior of floating point instructions and the parallel floating point instructions.
 
 This benchmark requires the TI C I/O service enabled to run in the TMS320C3X simulator.
-A precompiled binary (\texttt{bp45.out} is provided together with a GNU Make compatible Makefile.
-A simulation configure file (\texttt{sim\_config.xml}) for this benchmark is also provided, so that the simulator can run the benchmark with the following command:
+A precompiled binary (\texttt{bp45.out}) is provided together with a GNU Make compatible Makefile.
+A simulation configuration file (\texttt{sim\_config.xml}) for this benchmark is also provided, so that the simulator can run the benchmark with the following command:
   
 \begin{verbatim}
 $ tms320c3x -c sim_config.xml
@@ -2612,27 +2627,6 @@ $ tms320c3x -c sim_config.xml
 
 The expected output data set is in the \texttt{output.ref.txt} file.
 You can use plotting tools like \textit{gnuplot} to plot the generated output. 
-
-\begin{figure}[!h]
-	\begin{center}
-		\begin{minipage}{\textwidth}
-			\begin{center}
-			\begin{minipage}{.45\textwidth}
-				\begin{center}
-					\includegraphics[width=\textwidth]{tms320c3x/fig_lp_output.pdf}
-					\caption{\label{fig:tms320c3x_manual_lp_output} LowPass Filter output plot.}
-				\end{center}
-			\end{minipage}
-			\begin{minipage}{.45\textwidth}
-				\begin{center}
-					\includegraphics[width=\textwidth]{tms320c3x/fig_bp_output.pdf}
-		\caption{\label{fig:tms320c3x_manual_bp_output} BandPass Filter output plot.}
-				\end{center}
-			\end{minipage}
-			\end{center}
-		\end{minipage}
-	\end{center}
-\end{figure}
 
 Figure~\ref{fig:tms320c3x_manual_lp_output} shows the plot of \texttt{output.txt} using the following command under \textit{gnuplot}:
 
@@ -2643,6 +2637,13 @@ gnuplot > plot './output.txt' with lines
 \subsubsection{BP (Bandpass Finite Filter)}
 \label{tms320c3x_sec:benchmarks_bp}
 
+\begin{figure}[!h]
+	\begin{center}
+		\includegraphics[width=.8\textwidth]{tms320c3x/fig_bp_output.pdf}
+		\caption{\label{fig:tms320c3x_manual_bp_output} BP (Bandpass Finite Filter) output plot.}
+	\end{center}
+\end{figure}
+
 This benchmark performs the computation of a BandPass Finite (LP) Filter over a digital signal.
 The LP Filter is programmed in assembler using the \textit{z-transform}, which is widely utilized for the analysis of discrete-time signals, simular to the Laplace transform for continuous-time signals.
 The implementation is based on the algorithm description provided in ``\textit{Digital Signal Processing: Laboratory Experiments Using C and the TMS320C31 DSK}'' book by Rulph Chassaing (1999, John Wiley \& Sons, Inc.).
@@ -2651,8 +2652,8 @@ The benchmark is mainly written in assembler, and it has been modified to accept
 As for the LowPass filter benchmark, this benchmark has been selected to globally check the sequential behavior of floating point instructions and some parallel floating point instructions.
 
 This benchmark requires the TI C I/O service enabled to run in the TMS320C3X simulator.
-A precompiled binary (\texttt{bp45.out} is provided together with a GNU Make compatible Makefile.
-A simulation configure file (\texttt{sim\_config.xml}) for this benchmark is also provided, so that the simulator can run the benchmark with the following command:
+A precompiled binary (\texttt{bp45.out}) is provided together with a GNU Make compatible Makefile.
+A simulation configuration file (\texttt{sim\_config.xml}) for this benchmark is also provided, so that the simulator can run the benchmark with the following command:
   
 \begin{verbatim}
 $ tms320c3x -c sim_config.xml
@@ -2669,27 +2670,34 @@ gnuplot > plot './output.txt' with lines
 
 \subsubsection{IIR (Biquad Infinite Filter)}
 
+\begin{figure}[!h]
+	\begin{center}
+		\includegraphics[width=.8\textwidth]{tms320c3x/fig_iir_output.pdf}
+		\caption{\label{fig:tms320c3x_manual_iir_output}Plot of the IIR program using \textit{gnuplot}.}
+	\end{center}
+\end{figure}
+
 This benchmarks performs the computation of an Infinite Impulse Response (IIR) Filter.
-The previous filter benchmarks (see Sections~\ref{tms320c3x_sec:benchmarks_lp} and~\ref{tms320c3x_sec:benchmarks_bp}) do not have analog analog counterpart.
+The previous filter benchmarks (see Sections~\ref{tms320c3x_sec:benchmarks_lp} and~\ref{tms320c3x_sec:benchmarks_bp}) do not have analog counterpart.
 This filter benchmark makes use of the vast knowledge already acquired with analog filters.
 The design procedure involves the conversion of an analog filter to an equivalent discrete filter using the bilinear transformation (BLT) technique.
 As such, the BLT procedure converts a transfer function of an analog filter in the \textit{s}-domain into an equivalent discrete-time transfer function in the \textit{z}-domain.
 
-This benchmark is based in two implementations of the biquad algorithm of the filter provided by the TI DSK 3 for the TMS320c3x.
+This benchmark is based on two implementations of the biquad algorithm provided by the TI DSK 3 for the TMS320C3x.
 The first implementation is done in pure C and uses floating point computation, and the second one is a fast version of the biquad algorithm programmed in assembler.
-The benchmark provides at the end two different outputs, \texttt{b\_output.txt} for the C implementation and \texttt{fb\_output.txt} for the implementation in assembleer.
+The benchmark provides at the end two different outputs, \texttt{b\_output.txt} for the C implementation and \texttt{fb\_output.txt} for the implementation in assembler.
 Both outputs should be the same.
 
 The IIR benchmark has been selected for the following reasons:
 \begin{enumerate}
 	\item It serves to check the correct sequential behavior of programs with an important use of floating point computations.
-	\item It tests both floating point computations as generated by the TI compiler and assembler code, which uses specialized instructions as parallel float computations.
+	\item It tests both floating point computations as generated by the TI C compiler and assembler code, which uses specialized instructions as parallel float computations.
 	\item It tests complex addressing modes and specially the fast biquad implementation uses bit reverse addressing mode.
 \end{enumerate}
 
 This benchmark requires the TI C I/O service enabled to run in the TMS320C3X simulator.
-A precompiled binary (\texttt{biquad4.out} is provided together with a GNU Make compatible Makefile.
-A simulation configure file (\texttt{sim\_config.xml}) for this benchmark is also provided, so that the simulator can run the benchmark with the following command:
+A precompiled binary (\texttt{biquad4.out}) is provided together with a GNU Make compatible Makefile.
+A simulation configuration file (\texttt{sim\_config.xml}) for this benchmark is also provided, so that the simulator can run the benchmark with the following command:
   
 \begin{verbatim}
 $ tms320c3x -c sim_config.xml
@@ -2697,13 +2705,6 @@ $ tms320c3x -c sim_config.xml
 
 The expected output data set is in the \texttt{b\_output.ref.txt} and \texttt{fb\_output.ref.txt} files.
 You can use plotting tools like \textit{gnuplot} to plot the generated outputs. 
-
-\begin{figure}[!h]
-	\begin{center}
-		\includegraphics[width=.8\textwidth]{tms320c3x/fig_iir_output.pdf}
-		\caption{\label{fig:tms320c3x_manual_iir_output}Plot of the IIR program using \textit{gnuplot}.}
-	\end{center}
-\end{figure}
 
 Figure~\ref{fig:tms320c3x_manual_iir_output} shows the plot of \texttt{b\_output.txt} using the following command under \textit{gnuplot}:
 
@@ -2713,20 +2714,27 @@ gnuplot > plot './b_output.txt' with lines
 
 \subsubsection{FFT (Fast Fourier Transform)}
 
-This benchmark simply computes a 512 point FFT (Fast Fourier Transform) using a Complex Radix 2 given a signal input.
-It is based on the FFT codes provided by the TI DSK 3 for the TMS320c3x, modified to accept an input signal described as frequency and amplitude in two different input files: \textit{freq\_input.txt} (for the frequency) and \textit{ampl\_input.txt} (for the amplitude).
+\begin{figure}[!h]
+	\begin{center}
+		\includegraphics[width=.8\textwidth]{tms320c3x/fig_fft512_output0.pdf}
+		\caption{\label{fig:tms320c3x_manual_fft_output0}Plot of the FFT512 program first iteration using \textit{gnuplot}.}
+	\end{center}
+\end{figure}
+
+This benchmark simply computes a 512-point FFT (Fast Fourier Transform) using a Complex Radix 2 given a signal input.
+It is based on the FFT codes provided by the TI DSK 3 for the TMS320C3x, modified to accept an input signal described as frequency and amplitude in two different input files: \textit{freq\_input.txt} (for the frequency) and \textit{ampl\_input.txt} (for the amplitude).
 The benchmarks performs ten FFT iterations over the input signal and generates an output file for each of the iterations (\textit{output*.txt}, where ``*'' is the iteration number).
 
 The FFT benchmark has been selected for the following reasons:
 \begin{enumerate}
 	\item As for the other floating point benchmarks it serves to check the correct sequential behavior of programs with an important use of floating point computations.
-	\item Most of the program is written in assembler, using parallel float instructions that would otherwise have not been tested by the compiler.
+	\item Most of the program is written in assembler, using parallel float instructions that would otherwise have not been tested by the C compiler.
 	\item The used FFT assembler implementation uses the bit reverse addressing mode, which is particularly well suited for FFT computations.
 \end{enumerate} 
 
 This benchmark requires the TI C I/O service enabled to run in the TMS320C3X simulator.
 A precompiled binary (\texttt{fft.out}) is provided together with a GNU Make compatible Makefile.
-A simulation configure file (\texttt{sim\_config.xml}) for this benchmark is also provided, so that the simulator can run the benchmark with the following command:
+A simulation configuration file (\texttt{sim\_config.xml}) for this benchmark is also provided, so that the simulator can run the benchmark with the following command:
 
 \begin{verbatim}
 $ tms320c3x -c sim_config.xml
@@ -2734,13 +2742,6 @@ $ tms320c3x -c sim_config.xml
 
 The expected output data set is in the following files: \texttt{output0.ref.txt}, \texttt{output1.ref.txt}, \texttt{output2.ref.txt}, \texttt{output3.ref.txt}, \texttt{output4.ref.txt}, \texttt{output5.ref.txt}, \texttt{output6.ref.txt}, \texttt{output7.ref.txt}, \texttt{output8.ref.txt}, and \texttt{output9.ref.txt}.
 You can use plotting tools like \textit{gnuplot} to plot the generated outputs. 
-
-\begin{figure}[!h]
-	\begin{center}
-		\includegraphics[width=.8\textwidth]{tms320c3x/fig_fft512_output0.pdf}
-		\caption{\label{fig:tms320c3x_manual_fft_output0}Plot of the FFT512 program first iteration using \textit{gnuplot}.}
-	\end{center}
-\end{figure}
 
 Figure~\ref{fig:tms320c3x_manual_fft_output0} shows the plot of \texttt{output0.txt} using the following command under \textit{gnuplot}:
 
@@ -2750,6 +2751,8 @@ gnuplot > plot './output0.txt' with lines
 
 \subsection{Instruction level unit tests}
 
+As explained in Section~\ref{tms320c3x_benchmarks}, althrough they have validated general operations of the UNISIM TMS320C3X simulator, both the integer and floating-point benchmarks have insufficiently covered the TMS320C3X instructions.
+Extensive testings at the instruction level are essential to gain greater confidence in the UNISIM TMS320C3X simulator representativity.
 This section presents the validation process of UNISIM TMS320C3X simulator at the instruction level.
 A unit testing environment, in the form of a Makefile for GNU Make, has been developed to allow testing individual instructions for the UNISIM TMS320C3X simulator.
 Testing an instruction involves writing some "glue" code (C and Assembly) around the instruction under test to provide it with the input operands read from the host filesystem, and to save instruction output operands into a file on the host filesystem, so that results of instruction under test can be observed and compared.
