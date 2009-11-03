@@ -2425,7 +2425,7 @@ FIX_imm.disasm = {
 
 FIX_reg.execute = {
 	// Check that destination register is valid
-	if(unlikely(!cpu.HasReg(dst)))
+	if (unlikely(!cpu.HasReg(dst)))
 	{
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
@@ -2441,15 +2441,16 @@ FIX_reg.execute = {
 	// Set destination register
 	cpu.SetReg(dst, result);
 
-	// Generate flags (into ST)
-	cpu.GenFlags(
-		result,
-		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-		M_ST_LV | M_ST_N | M_ST_Z | M_ST_V, // or mask
-		neg,
-		0, // carry
-		overflow
-	);
+	// Generate flags (into ST) only if destination register is R0-R7
+	if (cpu.IsExtReg(dst))
+		cpu.GenFlags(
+			result,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+			M_ST_LV | M_ST_N | M_ST_Z | M_ST_V, // or mask
+			neg,
+			0, // carry
+			overflow
+		);
 }
 
 FIX_dir.execute = {
@@ -2477,15 +2478,16 @@ FIX_dir.execute = {
 	// Set destination register
 	cpu.SetReg(dst, result);
 
-	// Generate flags (into ST)
-	cpu.GenFlags(
-		result,
-		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-		M_ST_LV | M_ST_N | M_ST_Z | M_ST_V, // or mask
-		neg,
-		0, // carry
-		overflow
-	);
+	// Generate flags (into ST) only if destination register is R0-R7
+	if (cpu.IsExtReg(dst))
+		cpu.GenFlags(
+			result,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+			M_ST_LV | M_ST_N | M_ST_Z | M_ST_V, // or mask
+			neg,
+			0, // carry
+			overflow
+		);
 }
 
 FIX_indir.execute = {
@@ -2527,15 +2529,16 @@ FIX_indir.execute = {
 	// Set destination register
 	cpu.SetReg(dst, result);
 
-	// Generate flags (into ST)
-	cpu.GenFlags(
-		result,
-		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-		M_ST_LV | M_ST_N | M_ST_Z | M_ST_V, // or mask
-		neg,
-		0, // carry
-		overflow
-	);
+	// Generate flags (into ST) only if destination register is R0-R7
+	if (cpu.IsExtReg(dst))
+		cpu.GenFlags(
+			result,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+			M_ST_LV | M_ST_N | M_ST_Z | M_ST_V, // or mask
+			neg,
+			0, // carry
+			overflow
+		);
 }
 
 FIX_imm.execute = {
@@ -2557,15 +2560,16 @@ FIX_imm.execute = {
 	// Set destination register
 	cpu.SetReg(dst, result);
 
-	// Generate flags (into ST)
-	cpu.GenFlags(
-		result,
-		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-		M_ST_LV | M_ST_N | M_ST_Z | M_ST_V, // or mask
-		neg,
-		0, // carry
-		overflow
-	);
+	// Generate flags (into ST) only if destination register is R0-R7
+	if (cpu.IsExtReg(dst))
+		cpu.GenFlags(
+			result,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+			M_ST_LV | M_ST_N | M_ST_Z | M_ST_V, // or mask
+			neg,
+			0, // carry
+			overflow
+		);
 }
 
 /* end of FIX (convert floating-point value to integer)
