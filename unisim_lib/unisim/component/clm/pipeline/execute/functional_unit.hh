@@ -48,6 +48,7 @@
 //#include <systemc.h>
 #include <unisim/component/cxx/processor/powerpc/exception.hh>
 #include <unisim/component/cxx/processor/powerpc/floating.hh>
+#include <unisim/util/simfloat/floating.tcc>
 
 #include <unisim/component/clm/processor/ooosim/parameters.hh>
 #include <unisim/component/clm/interfaces/instruction_interface.hh>
