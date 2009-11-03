@@ -617,7 +617,7 @@ if [ "${has_to_build_hcs12x_configure}" = "yes" ]; then
 	printf "\t" >> "${HCS12X_MAKEFILE_AM}"
 	echo "cd \$(top_srcdir)/unisim/component/cxx/processor/hcs12x; \$(GENISSLIB_PATH) -o xb -w 32 -I . xb.isa" >> "${HCS12X_MAKEFILE_AM}"
 	echo "\$(top_srcdir)/unisim/component/cxx/processor/hcs12x/hcs12x.cc: \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/hcs12x.hh" >> "${HCS12X_MAKEFILE_AM}"
-	echo "\$(top_srcdir)/unisim/component/cxx/processor/hcs12x/hcs12x.hh: \${UNISIM_LIB_HCS12X_ISA_FILES} \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/xb_sub.isa" >> "${HCS12X_MAKEFILE_AM}"
+	echo "\$(top_srcdir)/unisim/component/cxx/processor/hcs12x/hcs12x.hh: ${UNISIM_LIB_HCS12X_ISA_FILES} \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/xb_sub.isa" >> "${HCS12X_MAKEFILE_AM}"
 	printf "\t" >> "${HCS12X_MAKEFILE_AM}"
 	echo "cd \$(top_srcdir)/unisim/component/cxx/processor/hcs12x; \$(GENISSLIB_PATH) -o hcs12x -w 32 -I . hcs12x.isa" >> "${HCS12X_MAKEFILE_AM}"
 
