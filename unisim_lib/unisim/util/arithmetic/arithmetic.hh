@@ -405,7 +405,6 @@ inline uint32_t ReverseCarryPropagationAdd(uint32_t x, uint32_t y)
 	// Compute the bit index of the first carry generation to save time
 	if(!BitScanReverse(n, x_and_y)) return r;
 
-	unsigned int i;
 	uint32_t mask = (1 << n);
 	uint32_t c = 0;
 	uint32_t x_or_y = x | y;

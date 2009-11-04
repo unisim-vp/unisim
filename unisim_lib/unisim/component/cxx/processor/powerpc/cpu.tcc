@@ -314,6 +314,43 @@ CPU<CONFIG>::~CPU()
 }
 
 template <class CONFIG>
+bool CPU<CONFIG>::FloatingPointSelfTest()
+{
+	// Compute 1.0/sqrt(3.0)
+	SoftDouble b(0x4008000000000000ULL); // 3.0
+	
+	Flags flags;
+	flags.setRoundingMode(RN_NEAREST);
+	// First estimation of 1/sqrt(b), seed of Newton-Raphson algorithm 
+	// see http://www.mceniry.net/papers/Fast%20Inverse%20Square%20Root.pdf
+	SoftDouble u((0xbfcdd6a18f6a6f55ULL - b.queryValue()) >> 1);
+
+	// Newton-Raphson method
+	SoftDouble half(0x3fe0000000000000ULL); // 0.5
+	SoftDouble three(0x4008000000000000ULL); // 3.0
+
+	unsigned int i;
+	for(i = 0; i < 5; i++)
+	{
+		// Newton-Raphson iteration
+		// w = b * u * u
+		SoftDouble w(b);
+		w.multAssign(u, flags);
+		w.multAssign(u, flags);
+		// v = 3.0 - w
+		SoftDouble v(three);
+		v.minusAssign(w, flags);
+		// u = 0.5 * u * v
+		u.multAssign(half, flags);
+		u.multAssign(v, flags);
+	}
+	
+	const uint64_t reciprocal_sqrt_3 = 0x3fe279a74590331cULL;
+	
+	return u.queryValue() == reciprocal_sqrt_3;
+}
+
+template <class CONFIG>
 bool CPU<CONFIG>::Setup()
 {
 	unsigned int min_cycle_time = 0;
@@ -465,6 +502,17 @@ bool CPU<CONFIG>::Setup()
 	num_dl1_misses = 0;
 	num_l2_accesses = 0;
 	num_l2_misses = 0;
+	
+	if(!FloatingPointSelfTest())
+	{
+		if(logger_import)
+		{
+			(*logger_import) << DebugError;
+			(*logger_import) << "Floating-point self test failed !" << Endl;
+			(*logger_import) << EndDebugError;
+		}
+		return false;
+	}
 
 	return true;
 }
@@ -497,7 +545,7 @@ void CPU<CONFIG>::OnDisconnect()
 template <class CONFIG>
 void CPU<CONFIG>::Reset()
 {
-	int i;
+	unsigned int i;
 
 	bus_cycle = 0;
 	cpu_cycle = 0;
@@ -4119,7 +4167,7 @@ void CPU<CONFIG>::LookupBAT(MMUAccess<CONFIG>& mmu_access)
 	typename CONFIG::MemoryType memory_type = mmu_access.memory_type;
 	uint32_t bat_num;						// BAT register number
 	uint32_t bepi;							// BEPI bit field
-	uint32_t sr_num;						// Segment register number
+/*	uint32_t sr_num;						// Segment register number
 	uint32_t virtual_segment_id;			// Virtual segment id
 	uint32_t sr_ks;							// Supervisor key of a segment register
 	uint32_t sr_kp;							// User key of a segment register
@@ -4134,7 +4182,7 @@ void CPU<CONFIG>::LookupBAT(MMUAccess<CONFIG>& mmu_access)
 	uint32_t pteg_select;
 	physical_address_t pte_addr;			// a page table entry address
 	uint32_t pte_num;
-	bool key;
+	bool key;*/
 	WIMG wimg;
 	
 	//------------------------------
@@ -4419,7 +4467,7 @@ template <class CONFIG>
 void CPU<CONFIG>::ChooseEntryToEvictITLB(MMUAccess<CONFIG>& mmu_access)
 {
 	uint32_t way = 0;
-	uint32_t i;
+	uint32_t i = 0;
 	uint32_t n;
 	uint32_t plru_bits = mmu_access.itlb_set->status.plru_bits;
 
@@ -4438,7 +4486,7 @@ template <class CONFIG>
 void CPU<CONFIG>::ChooseEntryToEvictDTLB(MMUAccess<CONFIG>& mmu_access)
 {
 	uint32_t way = 0;
-	uint32_t i;
+	uint32_t i = 0;
 	uint32_t n;
 	uint32_t plru_bits = mmu_access.dtlb_set->status.plru_bits;
 
@@ -4461,8 +4509,8 @@ void CPU<CONFIG>::AccessTLB(MMUAccess<CONFIG>& mmu_access)
 	typename CONFIG::PrivilegeLevel privilege_level = mmu_access.privilege_level;
 	typename CONFIG::MemoryAccessType memory_access_type = mmu_access.memory_access_type;
 	typename CONFIG::MemoryType memory_type = mmu_access.memory_type;
-	uint32_t bat_num;						// BAT register number
-	uint32_t bepi;							// BEPI bit field
+/*	uint32_t bat_num;						// BAT register number
+	uint32_t bepi;							// BEPI bit field*/
 	uint32_t sr_num;						// Segment register number
 	uint32_t virtual_segment_id;			// Virtual segment id
 	uint32_t sr_ks;							// Supervisor key of a segment register
@@ -4470,18 +4518,18 @@ void CPU<CONFIG>::AccessTLB(MMUAccess<CONFIG>& mmu_access)
 	uint32_t sr_noexecute;					// No-execute bit of a segment register
 	virtual_address_t virtual_addr;			// Virtual address
 	virtual_address_t base_virtual_addr;	// Base virtual address
-	uint32_t tlb_index;						// An index in DTLB/ITLB
-	uint32_t h;
-	uint32_t page_index;					// page index
-	uint32_t api;							// Abreviated page index
-	uint32_t hash;							// hash key
+/*	uint32_t tlb_index;						// An index in DTLB/ITLB
+	uint32_t h;*/
+/*	uint32_t page_index;					// page index
+	uint32_t api;							// Abreviated page index*/
+/*	uint32_t hash;							// hash key
 	uint32_t pteg_select;
 	physical_address_t pte_addr;			// a page table entry address
-	uint32_t pte_num;
+	uint32_t pte_num;*/
 	bool key;
 	WIMG wimg;
-	TLBSet<typename CONFIG::ITLB_CONFIG> *tlb_set;
-	TLBEntry<typename CONFIG::ITLB_CONFIG> *tlb_entry;
+// 	TLBSet<typename CONFIG::ITLB_CONFIG> *tlb_set;
+// 	TLBEntry<typename CONFIG::ITLB_CONFIG> *tlb_entry;
 
 	// Compute the protection boundary
 	mmu_access.protection_boundary = (addr + (MEMORY_PAGE_SIZE)) & ~(MEMORY_PAGE_SIZE - 1);
@@ -4625,9 +4673,9 @@ void CPU<CONFIG>::EmuHardwarePageTableSearch(MMUAccess<CONFIG>& mmu_access)
 	typename CONFIG::MemoryType memory_type = mmu_access.memory_type;
 	uint32_t sr_num = mmu_access.sr_num;						// Segment register number
 	uint32_t virtual_segment_id = mmu_access.virtual_segment_id;			// Virtual segment id
-	virtual_address_t virtual_addr = mmu_access.virtual_addr;			// Virtual address
+//	virtual_address_t virtual_addr = mmu_access.virtual_addr;			// Virtual address
 	virtual_address_t base_virtual_addr = mmu_access.base_virtual_addr;	// Base virtual address
-	uint32_t tlb_index = mmu_access.tlb_index;						// An index in DTLB/ITLB
+//	uint32_t tlb_index = mmu_access.tlb_index;						// An index in DTLB/ITLB
 	uint32_t h;
 	uint32_t page_index;					// page index
 	uint32_t api;							// Abreviated page index
@@ -4873,7 +4921,6 @@ void CPU<CONFIG>::DumpPageTable(ostream& os)
 					uint64_t pte_value;
 					virtual_address_t base_virtual_addr;
 					uint32_t pte_valid, pte_h, pte_virtual_segment_id, pte_api, pte_pp, pte_r, pte_c, pte_wimg;
-					uint32_t page_index, api;
 					address_t base_paddr;
 
 					ReadMemory(pte_addr, &pte_value, 8, CONFIG::MT_DATA, false);
@@ -5788,7 +5835,6 @@ void CPU<CONFIG>::LoadITLBEntry(address_t addr, uint32_t way, uint32_t pte_hi, u
 {
 	if(CONFIG::ITLB_CONFIG::ENABLE)
 	{
-		PTE *pte;
 		uint32_t index = addr / MEMORY_PAGE_SIZE;
 		uint32_t virtual_segment_id = (pte_hi >> 7) & 0xffffffUL;
 		address_t base_physical_addr = pte_lo & ~(MEMORY_PAGE_SIZE - 1);
@@ -5810,7 +5856,6 @@ void CPU<CONFIG>::LoadDTLBEntry(address_t addr, uint32_t way, uint32_t pte_hi, u
 {
 	if(CONFIG::DTLB_CONFIG::ENABLE)
 	{
-		PTE *pte;
 		uint32_t index = addr / MEMORY_PAGE_SIZE;
 		uint32_t virtual_segment_id = (pte_hi >> 7) & 0xffffffUL;
 		address_t base_physical_addr = pte_lo & ~(MEMORY_PAGE_SIZE - 1);
@@ -6285,7 +6330,7 @@ void CPU<CONFIG>::DecodeDispatch()
 {
 	if(iq.Empty()) return;
 
-	int num_load_stores = 0;
+	unsigned int num_load_stores = 0;
 	unsigned int i, j;
 	for(i = 0; i < DECODE_WIDTH; i++)
 	{
@@ -6631,7 +6676,7 @@ void CPU<CONFIG>::VRIssue()
 template <class CONFIG>
 void CPU<CONFIG>::IU1Execute()
 {
-	unsigned int i, j;
+	unsigned int i;
 	for(i = 0; i < NUM_IU1; i++)
 	{
 		if(!iu1_reservation_station[i].Empty())
@@ -6652,7 +6697,7 @@ void CPU<CONFIG>::IU1Execute()
 template <class CONFIG>
 void CPU<CONFIG>::IU2Execute()
 {
-	unsigned int i, j;
+	unsigned int i;
 	for(i = 0; i < NUM_IU2; i++)
 	{
 		if(!iu2_reservation_station[i].Empty())
@@ -6677,7 +6722,6 @@ void CPU<CONFIG>::FPUExecute()
 template <class CONFIG>
 void CPU<CONFIG>::LSUExecute1()
 {
-	unsigned int i, j;
 	if(!lsu_reservation_station.Empty())
 	{
 		Instruction<CONFIG> *instruction = lsu_reservation_station.Front();
@@ -7034,6 +7078,8 @@ void CPU<CONFIG>::ScheduleEvents()
 
 		switch(ev->type)
 		{
+			case Event<CONFIG>::EV_NULL:
+				break;
 			case Event<CONFIG>::EV_FINISHED_INSN:     // an instruction is finished
 				{
 					Instruction<CONFIG> *instruction = ev->object.instruction;
@@ -7443,7 +7489,7 @@ void CPU<CONFIG>::Complete()
 {
 	if(cq.Empty()) return;
 
-	unsigned int i, j;
+	unsigned int i;
 	unsigned int num_gpr_wb_ports = 0;
 	unsigned int num_fpr_wb_ports = 0;
 	unsigned int num_cr_wb_ports = 0;
@@ -7512,7 +7558,6 @@ void CPU<CONFIG>::WriteBack0()
 			if(wb1.Full()) return;
 		}
 
-		Operand<CONFIG> *operand;
 		unsigned int num_output_operands = instruction->output_operands.Size();
 		unsigned int j;
 
@@ -8201,7 +8246,7 @@ MappingTable<CONFIG>::MappingTable()
 	// WARNING! tags are negative integers (2's complement)
 	// WARNING! tag 0 is unused as it refers to logical register 0
 	// WARNING! 'tag' refers to rename register number '~tag'
-	for(tag = -1; tag >= -CONFIG::NUM_RENAME_REGISTERS; tag--)
+	for(tag = -1; tag >= -((int) CONFIG::NUM_RENAME_REGISTERS); tag--)
 	{
 		free_list.Push(tag);
 	}

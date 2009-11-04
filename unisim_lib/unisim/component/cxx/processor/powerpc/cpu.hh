@@ -1432,7 +1432,7 @@ public:
 	bool ProcessCustomDebugCommand(const char *custom_debug_command);
 	inline void MonitorLoad(address_t ea, uint32_t size);
 	inline void MonitorStore(address_t ea, uint32_t size);
-
+	bool FloatingPointSelfTest();
 
 	//=====================================================================
 	//=               Hardware check/acknowledgement methods              =

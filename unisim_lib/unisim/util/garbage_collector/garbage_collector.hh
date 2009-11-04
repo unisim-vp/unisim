@@ -251,6 +251,8 @@ inline Pointer<T>& Pointer<T>::operator = (T *_obj)
 	
 	if(obj)
 		GarbageCollector::Catch(obj);
+	
+	return *this;
 }
 
 template <class T>
@@ -266,6 +268,8 @@ inline Pointer<T>& Pointer<T>::operator = (const Pointer<T>& ptr)
 	
 	if(obj)
 		GarbageCollector::Catch(obj);
+	
+	return *this;
 }
 
 template <class T>

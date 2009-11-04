@@ -236,11 +236,11 @@ template <class CONFIG>
 inline void GenFPSCR_FEX(uint32_t& fpscr)
 {
 	fpscr = (fpscr & ~CONFIG::FPSCR_FEX_MASK) |
-	         (((fpscr & CONFIG::FPSCR_VX_MASK) && (fpscr & CONFIG::FPSCR_VE_MASK) ||
-	           (fpscr & CONFIG::FPSCR_OX_MASK) && (fpscr & CONFIG::FPSCR_OE_MASK) ||
-	           (fpscr & CONFIG::FPSCR_UX_MASK) && (fpscr & CONFIG::FPSCR_UE_MASK) ||
-	           (fpscr & CONFIG::FPSCR_ZX_MASK) && (fpscr & CONFIG::FPSCR_ZE_MASK) ||
-	           (fpscr & CONFIG::FPSCR_XX_MASK) && (fpscr & CONFIG::FPSCR_XE_MASK)) ? CONFIG::FPSCR_FEX_MASK : 0);
+	         ((((fpscr & CONFIG::FPSCR_VX_MASK) && (fpscr & CONFIG::FPSCR_VE_MASK)) ||
+	           ((fpscr & CONFIG::FPSCR_OX_MASK) && (fpscr & CONFIG::FPSCR_OE_MASK)) ||
+	           ((fpscr & CONFIG::FPSCR_UX_MASK) && (fpscr & CONFIG::FPSCR_UE_MASK)) ||
+	           ((fpscr & CONFIG::FPSCR_ZX_MASK) && (fpscr & CONFIG::FPSCR_ZE_MASK)) ||
+	           ((fpscr & CONFIG::FPSCR_XX_MASK) && (fpscr & CONFIG::FPSCR_XE_MASK))) ? CONFIG::FPSCR_FEX_MASK : 0);
 }
 
 } // end of namespace powerpc

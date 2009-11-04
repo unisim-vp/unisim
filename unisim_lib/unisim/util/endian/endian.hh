@@ -137,7 +137,7 @@ inline void BSwap(uint16_t& value)
 inline void BSwap(uint32_t& value)
 {
 #if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
-	__asm__ __volatile__("bswap %0" : "=r" (value) : "0" (value));
+	__asm__ __volatile__("bswapl %0" : "=r" (value) : "0" (value));
 #else
 	value = (value >> 24) | ((value >> 8) & 0x0000ff00UL) | ((value << 8) & 0x00ff0000UL) | (value << 24);
 #endif
@@ -145,8 +145,10 @@ inline void BSwap(uint32_t& value)
 
 inline void BSwap(uint64_t& value)
 {
-#if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
-	__asm__ __volatile__("bswap %%eax; bswap %%edx; xchg %%eax, %%edx" : "=&A" (value) : "0" (value));
+#if defined(__GNUC__) && (__GNUC__ >= 3) && defined(__i386)
+	__asm__ __volatile__("bswapl %%eax; bswapl %%edx; xchg %%eax, %%edx" : "=&A" (value) : "0" (value));
+#elif defined(__GNUC__) && (__GNUC__ >= 3) && defined(__x86_64)
+	__asm__ __volatile__("bswapq %0" : "=r" (value) : "0" (value));
 #else
 	value = (value >> 56) | ((value & 0x00ff000000000000ULL) >> 40) |
 	        ((value & 0x0000ff0000000000ULL) >> 24) | ((value & 0x000000ff00000000ULL) >> 8) |
