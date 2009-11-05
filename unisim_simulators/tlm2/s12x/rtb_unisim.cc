@@ -8,6 +8,7 @@ RTBStub::RTBStub(const sc_module_name& name, Object *parent) :
 	ATD_PWM_STUB(name, parent)
 
 {
+	init_client();
 
 }
 
@@ -133,22 +134,25 @@ void RTBStub::exchange(){
 }
 
 
-void RTBStub::Process() {
-	unsigned long num_cycles;
+void RTBStub::ProcessATD() {
+
+	double atd1_anValue[ATD1_SIZE];
+	double atd0_anValue[ATD0_SIZE];
 
 	srand(12345);
 
 	sc_time delay(anx_stimulus_period, SC_PS);
 
-	init_client();
-	
+	int atd0_data_index = 0;
+	int atd1_data_index = 0;
+
+	/**
+	 * Note: The Software sample the ATDDRx every 20ms. As well as for the first sampling
+	 */
+	wait(sc_time(20, SC_MS));
+
 	while(1)
 	{
-		double atd1_anValue[ATD1_SIZE];
-		double atd0_anValue[ATD0_SIZE];
-		bool pwmValue[PWM_SIZE];
-
-
 		for (uint8_t i=0; i < ATD0_SIZE; i++) {
 			atd0_anValue[i] = 5.2 * ((double) rand() / (double) RAND_MAX); // Compute a random value: 0 Volts <= anValue[i] < 5 Volts
 		}
@@ -157,15 +161,42 @@ void RTBStub::Process() {
 			atd1_anValue[i] = 5.2 * ((double) rand() / (double) RAND_MAX); // Compute a random value: 0 Volts <= anValue[i] < 5 Volts
 		}
 
+		/**
+		 * TODO: Note: I think that the exchange() method has to be split into two parts:
+		 *  - the first once, used at ProcessATD(), is for reading ATD_Voltage from RTBuilder which are then forwarded to UNISIM simulator "Output() methods"
+		 *  - the second once, used at ProcessPWM(), is for forwarding data received from the UNISIM simulator "Input() method)" to RTBuilder
+		 */
 		exchange();
-		wait(input_payload_queue.get_event());
-
-		Input(pwmValue);
 
 		Output_ATD1(atd1_anValue);
 		Output_ATD0(atd0_anValue);
 
+		wait(delay);
+
 		quantumkeeper.inc(delay);
+		quantumkeeper.sync();
+
+	}
+
+}
+
+void RTBStub::ProcessPWM() {
+
+	bool pwmValue[PWM_SIZE];
+
+	while(1)
+	{
+		wait(input_payload_queue.get_event());
+
+		Input(pwmValue);
+
+		/**
+		 * TODO: Note: I think that the exchange() method has to be split into two parts:
+		 *  - the first once, used at ProcessATD(), is for reading ATD_Voltage from RTBuilder which are then forwarded to UNISIM simulator "Output() methods"
+		 *  - the second once, used at ProcessPWM(), is for forwarding data received from the UNISIM simulator "Input() method)" to RTBuilder
+		 */
+		exchange();
+
 		quantumkeeper.sync();
 	}
 

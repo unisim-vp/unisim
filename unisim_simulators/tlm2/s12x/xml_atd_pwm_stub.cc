@@ -164,10 +164,8 @@ template <int SIZE> int XML_ATD_PWM_STUB::LoadXmlData(const char *filename, std:
 	return (result);
 }
 
-void XML_ATD_PWM_STUB::Process()
+void XML_ATD_PWM_STUB::ProcessATD()
 {
-	unsigned long num_cycles;
-
 	srand(12345);
 
 	sc_time delay(anx_stimulus_period, SC_PS);
@@ -176,7 +174,6 @@ void XML_ATD_PWM_STUB::Process()
 	int atd1_data_size, atd1_data_index = 0;
 
 
-//	LoadXmlData("/export/is010125/rnouacer/SharedVirBox/TraReda/Projects/Hecosim/Binaire_Autosar_20090702/Mesure/ATD.xml", "//Row", vect);
 	LoadXmlData<ATD0_SIZE>(atd0_anx_stimulus_file.c_str(), atd0_vect);
 	LoadXmlData<ATD1_SIZE>(atd1_anx_stimulus_file.c_str(), atd1_vect);
 
@@ -190,6 +187,11 @@ void XML_ATD_PWM_STUB::Process()
 	if (atd1_data_size == 0) {
 		cerr << name() << " Warning: ATD1 random inputs values will be used during simulation !" << endl;
 	}
+
+	/**
+	 * Note: The Software sample the ATDDRx every 20ms. As well as for the first sampling
+	 */
+	wait(sc_time(20, SC_MS));
 
 	while(1)
 	{
@@ -261,18 +263,28 @@ void XML_ATD_PWM_STUB::Process()
 			}
 		}
 
-		wait(input_payload_queue.get_event());
-
-		/**
-		 * Note:
-		 *  - the Software sample the ATDDRx every 20ms
-		 */
-		Input(pwmValue);
-
 		Output_ATD1(atd1_anValue);
 		Output_ATD0(atd0_anValue);
 
+		wait(delay);
+
 		quantumkeeper.inc(delay);
+		quantumkeeper.sync();
+	}
+
+}
+
+void XML_ATD_PWM_STUB::ProcessPWM()
+{
+
+	bool pwmValue[PWM_SIZE];
+
+	while(1)
+	{
+		wait(input_payload_queue.get_event());
+
+		Input(pwmValue);
+
 		quantumkeeper.sync();
 	}
 

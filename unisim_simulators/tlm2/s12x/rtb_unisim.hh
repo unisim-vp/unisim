@@ -44,7 +44,8 @@ public:
 	RTBStub(const sc_module_name& name, Object *parent = 0);
 	~RTBStub();
 
-	virtual void Process();
+	virtual void ProcessATD();
+	virtual void ProcessPWM();
 
 private:
 

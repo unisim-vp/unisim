@@ -56,7 +56,8 @@ ATD_PWM_STUB::ATD_PWM_STUB(const sc_module_name& name, Object *parent) :
 
 	SC_HAS_PROCESS(ATD_PWM_STUB);
 
-	SC_THREAD(Process);
+	SC_THREAD(ProcessATD);
+	SC_THREAD(ProcessPWM);
 
 	atd0_output_file.open ("atd0_output.txt");
 	atd1_output_file.open ("atd1_output.txt");
@@ -224,8 +225,10 @@ void ATD_PWM_STUB::Output_ATD0(double anValue[ATD0_SIZE])
 	}
 }
 
-void ATD_PWM_STUB::Process() {
-	unsigned long num_cycles;
+void ATD_PWM_STUB::ProcessATD() {
+
+	double atd1_anValue[ATD1_SIZE];
+	double atd0_anValue[ATD0_SIZE];
 
 	srand(12345);
 
@@ -234,13 +237,13 @@ void ATD_PWM_STUB::Process() {
 	int atd0_data_index = 0;
 	int atd1_data_index = 0;
 
+	/**
+	 * Note: The Software sample the ATDDRx every 20ms. As well as for the first sampling
+	 */
+	wait(sc_time(20, SC_MS));
+
 	while(1)
 	{
-		double atd1_anValue[ATD1_SIZE];
-		double atd0_anValue[ATD0_SIZE];
-		bool pwmValue[PWM_SIZE];
-
-
 		for (uint8_t i=0; i < ATD0_SIZE; i++) {
 			atd0_anValue[i] = 5.2 * ((double) rand() / (double) RAND_MAX); // Compute a random value: 0 Volts <= anValue[i] < 5 Volts
 		}
@@ -249,14 +252,28 @@ void ATD_PWM_STUB::Process() {
 			atd1_anValue[i] = 5.2 * ((double) rand() / (double) RAND_MAX); // Compute a random value: 0 Volts <= anValue[i] < 5 Volts
 		}
 
+		Output_ATD1(atd1_anValue);
+		Output_ATD0(atd0_anValue);
+
+		wait(delay);
+
+		quantumkeeper.inc(delay);
+		quantumkeeper.sync();
+
+	}
+
+}
+
+void ATD_PWM_STUB::ProcessPWM() {
+
+	bool pwmValue[PWM_SIZE];
+
+	while(1)
+	{
 		wait(input_payload_queue.get_event());
 
 		Input(pwmValue);
 
-		Output_ATD1(atd1_anValue);
-		Output_ATD0(atd0_anValue);
-
-		quantumkeeper.inc(delay);
 		quantumkeeper.sync();
 	}
 
