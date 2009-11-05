@@ -889,6 +889,7 @@ template <class T> void PWM<PWM_SIZE>::Channel_t::checkChangeStateAndWait(const 
 
 	if (period == 0x00) 	// Counter = 0x00 and does not count
 	{
+
 		setPwmcnt_register(0);
 		if (isPolarityHigh) {
 				output = true;
@@ -905,6 +906,7 @@ template <class T> void PWM<PWM_SIZE>::Channel_t::checkChangeStateAndWait(const 
 	if (((dty == 0x00) && (period > 0x00) && !isPolarityHigh) ||
 			((dty >= period) && isPolarityHigh))
 	{
+
 		output = true;
 
 		pwmParent->refresh_channel(channel_number);
@@ -915,6 +917,7 @@ template <class T> void PWM<PWM_SIZE>::Channel_t::checkChangeStateAndWait(const 
 	} else if (((dty == 0x00) && (period > 0x00) && isPolarityHigh) ||
 			((dty >= period) && !isPolarityHigh))
 	{
+
 		output = false;
 
 		pwmParent->refresh_channel(channel_number);

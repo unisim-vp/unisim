@@ -193,6 +193,9 @@ public:
     bool read(uint8_t offset, uint8_t &value);
     bool write(uint8_t offset, uint8_t val);
 
+	bool	debug_enabled;
+	Parameter<bool>	param_debug_enabled;
+
 private:
 	void ComputeInternalTime();
 
@@ -212,8 +215,8 @@ private:
 	uint8_t interruptOffset;
 	Parameter<uint8_t> param_interruptOffset;
 
-	bool	debug_enabled;
-	Parameter<bool>	param_debug_enabled;
+//	bool	debug_enabled;
+//	Parameter<bool>	param_debug_enabled;
 
 	// Registers map
 	map<string, Register *> registers_registry;
