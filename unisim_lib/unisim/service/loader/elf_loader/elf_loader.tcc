@@ -806,6 +806,7 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 	os << (phdr->p_flags & PF_R ? "r" : "-");
 	os << (phdr->p_flags & PF_W ? "w" : "-");
 	os << (phdr->p_flags & PF_X ? "x" : "-");
+	os << std::hex << " (0x" << phdr->p_flags << ")" << std::dec;
 //	os << (phdr->p_flags & PF_MASKOS ? " [OS-specific flags]" : "");
 //	os << (phdr->p_flags & PF_MASKPROC ? " [Processor-specific flags]" : "");
 
