@@ -216,8 +216,8 @@ public:
 			SetupDependsOn(*memory_import[i]);
 		}
 		
-		for (int i = 0; i < NUM_TARGETS; i++) {
-			for (int j = 0; j < NUM_BARS; j++) {
+		for (unsigned int i = 0; i < NUM_TARGETS; i++) {
+			for (unsigned int j = 0; j < NUM_BARS; j++) {
 				devmap[i][j] = NULL;
 			}
 		}

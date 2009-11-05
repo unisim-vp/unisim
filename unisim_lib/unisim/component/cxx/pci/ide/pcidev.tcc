@@ -5,7 +5,7 @@
  *
  *  This file was created by Paula Casero and Alejandro Schenzle based on m5 simulator and therefore
 retaining the original license:
-/*
+ *
  * Copyright (c) 2004, 2005
  * The Regents of The University of Michigan
  * All Rights Reserved
@@ -104,6 +104,7 @@ bool PciDev<ADDRESS_TYPE>::dmaRead(ADDRESS_TYPE addr, int len, uint8_t *data) {
 		soft_panic("PCIMaster not set, not using dma");
 		return false;
 	}
+	return true;
 }
 
 template<class ADDRESS_TYPE>
@@ -114,6 +115,7 @@ bool PciDev<ADDRESS_TYPE>::dmaWrite(ADDRESS_TYPE addr, int len, const uint8_t *d
 		soft_panic("PCIMaster not set, not using dma");
 		return false;
 	}
+	return true;
 }
 
 template<class ADDRESS_TYPE>
@@ -137,6 +139,7 @@ bool PciDev<ADDRESS_TYPE>::writeMem(ADDRESS_TYPE addr, int size, const uint8_t *
 		cerr << "  (" << __FUNCTION__ << ":"
 		<< __FILE__ << ":"
 		<< __LINE__ << ")" << endl;
+	return false;
 }
 
 template<class ADDRESS_TYPE>
@@ -145,6 +148,7 @@ bool PciDev<ADDRESS_TYPE>::readIO(ADDRESS_TYPE addr, int size, uint8_t *data) {
 		cerr << "  (" << __FUNCTION__ << ":"
 		<< __FILE__ << ":"
 		<< __LINE__ << ")" << endl;
+	return false;
 }
 
 template<class ADDRESS_TYPE>
@@ -153,6 +157,7 @@ bool PciDev<ADDRESS_TYPE>::writeIO(ADDRESS_TYPE addr, int size, const uint8_t *d
 		cerr << "  (" << __FUNCTION__ << ":"
 		<< __FILE__ << ":"
 		<< __LINE__ << ")" << endl;
+	return false;
 }
 
 template<class ADDRESS_TYPE>

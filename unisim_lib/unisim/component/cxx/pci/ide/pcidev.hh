@@ -5,7 +5,7 @@
  *
  *  This file was created by Paula Casero and Alejandro Schenzle based on m5 simulator and therefore
 retaining the original license:
-/*
+ *
  * Copyright (c) 2004, 2005
  * The Regents of The University of Michigan
  * All Rights Reserved

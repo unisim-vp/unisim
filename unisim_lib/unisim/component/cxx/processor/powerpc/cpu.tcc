@@ -86,6 +86,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	, memory_export("memory-export",  this)
 	, memory_injection_export("memory-injection-export",  this)
 	, cpu_linux_os_export("cpu-linux-os-export",  this)
+	, synchronizable_export("synchronizable-export",  this)
 	, memory_access_reporting_control_export("memory_access_reporting_control_export",  this)
 	, kernel_loader_import("kernel-loader-import",  this)
 	, debug_control_import("debug-control-import",  this)
@@ -105,45 +106,10 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	, il1_power_mode_import("il1-power-mode-import",  this)
 	, dl1_power_mode_import("dl1-power-mode-import",  this)
 	, l2_power_mode_import("l2-power-mode-import",  this)
-	, itlb_power_mode_import("itlb-power-mode-import",  this)
 	, dtlb_power_mode_import("dtlb-power-mode-import",  this)
-	, synchronizable_export("synchronizable-export",  this)
-	, requires_memory_access_reporting(true)
-	, requires_finished_instruction_reporting(true)
-	, dl1()
-	, il1()
-	, l2()
-	, itlb()
-	, dtlb()
-	, cpu_cycle_time(0)
-	, voltage(0)
-	, bus_cycle_time(0)
-	, max_inst(0xffffffffffffffffULL)
-	, num_insn_in_prefetch_buffer(0)
-	, cur_insn_in_prefetch_buffer(0)
+	, itlb_power_mode_import("itlb-power-mode-import",  this)
 	, fp32_estimate_inv_warning(false)
 	, fp64_estimate_inv_sqrt_warning(false)
-	, verbose_all(false)
-	, verbose_step(false)
-	, verbose_dtlb(false)
-	, verbose_dl1(false)
-	, verbose_il1(false)
-	, verbose_l2(false)
-	, verbose_load(false)
-	, verbose_store(false)
-	, verbose_read_memory(false)
-	, verbose_write_memory(false)
-	, verbose_exception(false)
-	, verbose_set_msr(false)
-	, verbose_set_hid0(false)
-	, verbose_set_hid1(false)
-	, verbose_set_hid2(false)
-	, verbose_set_l2cr(false)
-	, trap_on_instruction_counter(0xffffffffffffffffULL)
-	, param_cpu_cycle_time("cpu-cycle-time",  this,  cpu_cycle_time)
-	, param_voltage("voltage",  this,  voltage)
-	, param_bus_cycle_time("bus-cycle-time",  this,  bus_cycle_time)
-	, param_max_inst("max-inst",  this,  max_inst)
 	, param_verbose_all("verbose-all",  this,  verbose_all)
 	, param_verbose_step("verbose-step",  this,  verbose_step)
 	, param_verbose_dtlb("verbose-dtlb",  this,  verbose_dtlb)
@@ -161,9 +127,45 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	, param_verbose_set_hid2("verbose-set-hid2",  this,  verbose_set_hid2)
 	, param_verbose_set_l2cr("verbose-set-l2cr",  this,  verbose_set_l2cr)
 	, param_trap_on_instruction_counter("trap-on-instruction-counter",  this,  trap_on_instruction_counter)
+	, il1()
+	, dl1()
+	, l2()
+	, dtlb()
+	, itlb()
+	, num_insn_in_prefetch_buffer(0)
+	, cur_insn_in_prefetch_buffer(0)
+	, verbose_all(false)
+	, verbose_step(false)
+	, verbose_dtlb(false)
+	, verbose_dl1(false)
+	, verbose_il1(false)
+	, verbose_l2(false)
+	, verbose_load(false)
+	, verbose_store(false)
+	, verbose_read_memory(false)
+	, verbose_write_memory(false)
+	, verbose_exception(false)
+	, verbose_set_msr(false)
+	, verbose_set_hid0(false)
+	, verbose_set_hid1(false)
+	, verbose_set_hid2(false)
+	, verbose_set_l2cr(false)
+	, trap_on_instruction_counter(0xffffffffffffffffULL)
+	, max_inst(0xffffffffffffffffULL)
+	, param_cpu_cycle_time("cpu-cycle-time",  this,  cpu_cycle_time)
+	, param_voltage("voltage",  this,  voltage)
+	, param_bus_cycle_time("bus-cycle-time",  this,  bus_cycle_time)
+	, param_max_inst("max-inst",  this,  max_inst)
 	, stat_instruction_counter("instruction-counter",  this,  instruction_counter)
-	, stat_bus_cycle("bus-cycle",  this,  bus_cycle)
 	, stat_cpu_cycle("cpu-cycle",  this,  cpu_cycle)
+	, stat_bus_cycle("bus-cycle",  this,  bus_cycle)
+	, requires_memory_access_reporting(true)
+	, requires_finished_instruction_reporting(true)
+	, cpu_cycle_time(0)
+	, voltage(0)
+	, bus_cycle_time(0)
+	, cpu_cycle(0)
+	, bus_cycle(0)
 {
 	Object::SetupDependsOn(logger_import);
 
@@ -6464,6 +6466,13 @@ void CPU<CONFIG>::DecodeDispatch()
 							operand = (ctr_tag >= 0) ? arch_ctr : rename_ctr[~ctr_tag];
 						}
 						break;
+
+					default:
+						if(logger_import)
+						{
+							(*logger_import) << DebugError << "Unhandled operand type" << EndDebugError;
+							Stop(-1);
+						}
 				}
 
 				AcquireOperand(operand);
@@ -6542,6 +6551,13 @@ void CPU<CONFIG>::DecodeDispatch()
 							operand->reg_num = 0;
 						}
 						break;
+
+					default:
+						if(logger_import)
+						{
+							(*logger_import) << DebugError << "Unhandled operand type" << EndDebugError;
+							Stop(-1);
+						}
 				}
 
 				instruction->output_operands.Push(operand);
@@ -6659,6 +6675,14 @@ void CPU<CONFIG>::GPRIssue()
 					}
 				}
 				break;
+
+			default:
+				if(logger_import)
+				{
+					(*logger_import) << DebugError << "Unhandled execution unit type" << EndDebugError;
+					Stop(-1);
+				}
+
 		}
 	}
 }
@@ -6981,6 +7005,13 @@ void CPU<CONFIG>::LSUExecute2()
 						}
 				}
 				break;
+
+			default:
+				if(logger_import)
+				{
+					(*logger_import) << DebugError << "Unhandled load/store access type" << EndDebugError;
+					Stop(-1);
+				}
 		}
 
 		if(!(load_store_access->mmu_access.wimg & CONFIG::WIMG_CACHE_INHIBITED) && IsDataCacheEnabled())
@@ -7301,6 +7332,12 @@ void CPU<CONFIG>::OnFinishedBusAccess(BusAccess<CONFIG> *bus_access)
 			FreeInstruction(load_store_access->instruction);
 			bsq.Pop();
 			break;
+		default:
+			if(logger_import)
+			{
+				(*logger_import) << DebugError << "Unhandled bus access type" << EndDebugError;
+				Stop(-1);
+			}
 	}
 
 	// Finalize cache refills
@@ -7323,6 +7360,12 @@ void CPU<CONFIG>::OnFinishedBusAccess(BusAccess<CONFIG> *bus_access)
 			load_store_access->l1_access.block->status.valid = true;
 			load_store_access->l1_access.block->status.dirty = false;
 			break;
+		default:
+			if(logger_import)
+			{
+				(*logger_import) << DebugError << "Unhandled bus access type" << EndDebugError;
+				Stop(-1);
+			}
 	}
 
 	// Finalize Load/Store access
@@ -7344,6 +7387,12 @@ void CPU<CONFIG>::OnFinishedBusAccess(BusAccess<CONFIG> *bus_access)
 			UpdateReplacementPolicyDL1(load_store_access->l1_access);
 			bsq.Pop();
 			break;
+		default:
+			if(logger_import)
+			{
+				(*logger_import) << DebugError << "Unhandled bus access type" << EndDebugError;
+				Stop(-1);
+			}
 	}
 }
 
@@ -7405,25 +7454,29 @@ void CPU<CONFIG>::NotifyLoadResultAvailability(LoadStoreAccess<CONFIG> *load_sto
 			break;
 		case LoadStoreAccess<CONFIG>::INT16_LOAD:
 			{
-				uint16_t value = *(uint16_t *) data;
+				uint16_t value;
+				memcpy(&value, data, sizeof(value));
 				load_store_access->instruction->SetGPR(load_store_access->reg_num, (uint32_t) BigEndian2Host(value), latency); // 16-bit to 32-bit zero extension
 			}
 			break;
 		case LoadStoreAccess<CONFIG>::SINT16_LOAD:
 			{
-				uint16_t value = *(uint16_t *) data;
+				uint16_t value;
+				memcpy(&value, data, sizeof(value));
 				load_store_access->instruction->SetGPR(load_store_access->reg_num, (uint32_t) (int16_t) BigEndian2Host(value), latency); // 16-bit to 32-bit sign extension
 			}
 			break;
 		case LoadStoreAccess<CONFIG>::INT32_LOAD:
 			{
-				uint32_t value = *(uint32_t *) data;
+				uint32_t value;
+				memcpy(&value, data, sizeof(value));
 				load_store_access->instruction->SetGPR(load_store_access->reg_num, BigEndian2Host(value), latency);
 			}
 			break;
 		case LoadStoreAccess<CONFIG>::FP32_LOAD:
 			{
-				uint32_t value = *(uint32_t *) data;
+				uint32_t value;
+				memcpy(&value, data, sizeof(value));
 				Flags flags;
 				flags.setRoundingMode(RN_ZERO);
 				load_store_access->instruction->SetFPR(load_store_access->reg_num, SoftDouble(SoftFloat(BigEndian2Host(value)), flags), latency);
@@ -7431,19 +7484,22 @@ void CPU<CONFIG>::NotifyLoadResultAvailability(LoadStoreAccess<CONFIG> *load_sto
 			break;
 		case LoadStoreAccess<CONFIG>::FP64_LOAD:
 			{
-				uint64_t value = *(uint64_t *) data;
+				uint64_t value;
+				memcpy(&value, data, sizeof(value));
 				load_store_access->instruction->SetFPR(load_store_access->reg_num, SoftDouble(BigEndian2Host(value)), latency);
 			}
 			break;
 		case LoadStoreAccess<CONFIG>::INT16_LOAD_BYTE_REVERSE:
 			{
-				uint16_t value = *(uint16_t *) data;
+				uint16_t value;
+				memcpy(&value, data, sizeof(value));
 				load_store_access->instruction->SetGPR(load_store_access->reg_num, (uint32_t) LittleEndian2Host(value), latency); // reverse bytes and 16-bit to 32-bit zero extension
 			}
 			break;
 		case LoadStoreAccess<CONFIG>::INT32_LOAD_BYTE_REVERSE:
 			{
-				uint32_t value = *(uint32_t *) data;
+				uint32_t value;
+				memcpy(&value, data, sizeof(value));
 				load_store_access->instruction->SetGPR(load_store_access->reg_num, (uint32_t) LittleEndian2Host(value), latency); // reverse bytes
 			}
 			break;
@@ -7452,33 +7508,41 @@ void CPU<CONFIG>::NotifyLoadResultAvailability(LoadStoreAccess<CONFIG> *load_sto
 			{
 				case 1:
 				{
-					uint8_t value = *(uint8_t *) data;
+					uint8_t value = *data;
 					load_store_access->instruction->SetGPR(load_store_access->reg_num, (uint32_t) value << 24, latency);
 					break;
 				}
 		
 				case 2:
 				{
-					uint16_t value = *(uint16_t *) data;
+					uint16_t value;
+					memcpy(&value, data, sizeof(value));
 					load_store_access->instruction->SetGPR(load_store_access->reg_num, (uint32_t) BigEndian2Host(value) << 16, latency);
 					break;
 				}
 		
 				case 3:
 				{
-					uint8_t *buffer = (uint8_t *) data;
+					uint8_t *buffer = data;
 					load_store_access->instruction->SetGPR(load_store_access->reg_num, ((uint32_t) buffer[0] << 24) | ((uint32_t) buffer[1] << 16) | ((uint32_t) buffer[2] << 8), latency);
 					break;
 				}
 		
 				case 4:
 				{
-					uint32_t value = *(uint32_t *) data;
+					uint32_t value;
+					memcpy(&value, data, sizeof(value));
 					load_store_access->instruction->SetGPR(load_store_access->reg_num, BigEndian2Host(value), latency);
 					break;
 				}
 			}
 			break;
+		default:
+			if(logger_import)
+			{
+				(*logger_import) << DebugError << "Unhandled load/store access type" << EndDebugError;
+				Stop(-1);
+			}
 	}
 
 	NotifyFinishedInstruction(load_store_access->instruction, 1);
@@ -7738,7 +7802,7 @@ void CPU<CONFIG>::Flush()
 	{
 		do
 		{
-			Instruction<CONFIG> *instruction = cq.Front();
+			//Instruction<CONFIG> *instruction = cq.Front();
 
 			cq.Pop();
 		} while(!cq.Empty());

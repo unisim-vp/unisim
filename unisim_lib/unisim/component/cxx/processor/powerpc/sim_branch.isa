@@ -78,7 +78,7 @@ bc.branch_statically_predicted_taken = {
   // bd represent the displacement
   // bo represent the behavior of the branch
   // See PowerPC manual, p186 (4.2.4.2. Conditional Branch Control)
-  return (bo & 0x10) != ((bo & 0x01) && (bo & 0x04) || (bd < 0));
+  return (bo & 0x10) != (((bo & 0x01) && (bo & 0x04)) || (bd < 0));
 }
 
 bcctr.branch_statically_predicted_taken = { 

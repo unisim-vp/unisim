@@ -124,7 +124,7 @@ IdeController<ADDRESS_TYPE>::IdeController(IdeController<ADDRESS_TYPE>::Params *
         soft_panic("IDE controllers support a maximum of 4 devices attached!\n");
         
     } else {
-    	for (int i = 0; i < params()->disks.size(); i++) {
+    	for (unsigned int i = 0; i < params()->disks.size(); i++) {
         	disks[i] = params()->disks[i]; //[pau] comment la siguiente linea en caso de usar wrappers
 			//disks[i]->setController(this, dmaInterface);
 			disks[i]->setController(this);//, NULL);
@@ -759,7 +759,7 @@ uint8_t IdeController<ADDRESS_TYPE>::interruptLine() {
 template <class ADDRESS_TYPE>
 void IdeController<ADDRESS_TYPE>::SetPCIMaster(PCIMaster<ADDRESS_TYPE> *p) {
   		PciDev<ADDRESS_TYPE>::pciMaster = p;
-		for (int i = 0; i < params()->disks.size(); i++) {
+		for (unsigned int i = 0; i < params()->disks.size(); i++) {
 			disks[i]->SetPCIMaster(p);	
 		}
 }

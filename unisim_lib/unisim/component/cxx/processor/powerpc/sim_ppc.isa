@@ -165,7 +165,7 @@ mftb.initialize_function =    { Operation<CONFIG>::function = FnSysRegister; }
 mtmsr.initialize_function =   { Operation<CONFIG>::function = FnSysRegisterSerial; }
 mtspr.initialize_function = {
 	Operation<CONFIG>::function = FnSysRegisterSerial;
-	uint32_t d = ((spr & 0x1f) << 5) | ((spr >> 5) & 0x1f);
+	//uint32_t d = ((spr & 0x1f) << 5) | ((spr >> 5) & 0x1f);
 	//	registers_written = ((d == 8) ? RegLR : RegNone) | ((d == 9) ? RegCTR : RegNone);
 }
 mtsr.initialize_function =    { Operation<CONFIG>::function = FnSysRegisterSerial; }
