@@ -265,7 +265,8 @@ m4/libedit.m4 \
 m4/systemc.m4 \
 m4/tlm20.m4 \
 m4/with_boost.m4 \
-m4/rtbcob.m4"
+m4/rtbcob.m4 \
+m4/check_lib.m4"
 
 UNISIM_LIB_HCS12X_DATA_FILES="\
 unisim/service/debug/gdb_server/gdb_hcs12x.xml \
