@@ -3,52 +3,52 @@
 ## Does not take parameters
 #####################################################
 AC_DEFUN([UNISIM_CHECK_SYSTEMC], [
-    # Mimics the behavior of SystemC configure to guess where libsystemc.a is installed (e.g. lib-linux)
-    CXX_COMP=`basename $CXX`
-    case "$host" in
-	*powerpc*macosx* | *powerpc*darwin*)
-	    SYSTEMC_TARGET_ARCH="macosx"
-	;;
-	*86*macosx* | *86*darwin*)
-	    SYSTEMC_TARGET_ARCH="macosx-x86"
-	;;
-	sparc-sun-solaris*)
-	    case "$CXX_COMP" in
-	    CC)
-		SYSTEMC_TARGET_ARCH="sparcOS5"
-        	;;
-	    c++ | g++)
-		SYSTEMC_TARGET_ARCH="gccsparcOS5"
-		;;
-	    esac
-	    ;;
-	x86_64*linux*)
-	    SYSTEMC_TARGET_ARCH="linux64"
-    	    ;;
-	*linux*)
-    	    SYSTEMC_TARGET_ARCH="linux"
-    	    ;;
-        *cygwin*)
-    	    SYSTEMC_TARGET_ARCH="cygwin"
-    	    ;;
-	*hpux11*)
-    	    case "$CXX_COMP" in
-        	aCC)
-            	    SYSTEMC_TARGET_ARCH="hpux11"
-            	    ;;
-        	c++ | g++)
-            	    SYSTEMC_TARGET_ARCH="gcchpux11"
-            	    ;;
-    	    esac
-    	    ;;
-	*mingw32*)
-    	    SYSTEMC_TARGET_ARCH="mingw32"
-    	    ;;
-    esac
+	# Mimics the behavior of SystemC configure to guess where libsystemc.a is installed (e.g. lib-linux)
+	CXX_COMP=`basename $CXX`
+	case "$host" in
+		*powerpc*macosx* | *powerpc*darwin*)
+			SYSTEMC_TARGET_ARCH="macosx"
+			;;
+		*86*macosx* | *86*darwin*)
+			SYSTEMC_TARGET_ARCH="macosx-x86"
+			;;
+		sparc-sun-solaris*)
+			case "$CXX_COMP" in
+				CC)
+				SYSTEMC_TARGET_ARCH="sparcOS5"
+				;;
+				c++ | g++)
+				SYSTEMC_TARGET_ARCH="gccsparcOS5"
+				;;
+			esac
+			;;
+		x86_64*linux*)
+			SYSTEMC_TARGET_ARCH="linux64"
+			;;
+		*linux*)
+			SYSTEMC_TARGET_ARCH="linux"
+			;;
+		*cygwin*)
+			SYSTEMC_TARGET_ARCH="cygwin"
+			;;
+		*hpux11*)
+			case "$CXX_COMP" in
+			aCC)
+				SYSTEMC_TARGET_ARCH="hpux11"
+				;;
+			c++ | g++)
+				SYSTEMC_TARGET_ARCH="gcchpux11"
+				;;
+			esac
+			;;
+		*mingw32*)
+			SYSTEMC_TARGET_ARCH="mingw32"
+			;;
+	esac
 
     # Check if SystemC path has been overloaded
     AC_ARG_WITH(systemc,
-	AS_HELP_STRING([--with-systemc=<path>], [systemc library to use (will be completed with /include and /lib-${SYSTEMC_TARGET_ARCH})]))
+	AS_HELP_STRING([--with-systemc=<path>], [SystemC library to use (will be completed with /include and /lib-${SYSTEMC_TARGET_ARCH})]))
     if test "x$with_systemc" != "x"; then
 	AC_MSG_NOTICE([using SystemC at $with_systemc])
 	LDFLAGS=${LDFLAGS}" -L$with_systemc/lib-${SYSTEMC_TARGET_ARCH}"
@@ -57,13 +57,27 @@ AC_DEFUN([UNISIM_CHECK_SYSTEMC], [
 	CPPFLAGS=${CPPFLAGS}" -DSC_INCLUDE_DYNAMIC_PROCESSES"
 
     # Check for systemc.h
-    AC_CHECK_HEADER(systemc.h,, AC_MSG_ERROR([systemc.h not found. Please install the SystemC library (version >= 2.1). Use --with-systemc=<path> to overload default includes search path.]))
+    AC_CHECK_HEADER(systemc.h,, AC_MSG_ERROR([systemc.h not found. Please install the SystemC library (version >= 2.1). Use --with-systemc=<path> to overload default search path.]))
 
-    # Check for function 'main' in libsystemc.a
-    AC_CHECK_LIB(systemc,main,broken_systemc=no,broken_system=yes)
+    # Check for function 'sc_start' in libsystemc.a
+	unisim_check_systemc_save_LIBS="${LIBS}"
+	LIBS="-lsystemc ${LIBS}"
+	AC_MSG_CHECKING([for sc_start in -lsystemc])
+	AC_LINK_IFELSE(
+		[[
+#include <systemc.h>
+int sc_main(int argc, char **argv)
+{
+	sc_start();
+	return 0;
+}]],
+		LIBS="${unisim_check_systemc_save_LIBS}"; AC_MSG_RESULT([yes]); [broken_systemc=no],
+		LIBS="${unisim_check_systemc_save_LIBS}"; AC_MSG_RESULT([no]); [broken_systemc=yes])
+
+    #AC_CHECK_LIB(systemc,main,broken_systemc=no,broken_systemc=yes)
 
     if test "$broken_systemc" == "yes"; then
-	AC_MSG_ERROR([installed SystemC is broken. Please install the SystemC library (version > 2.1). Use --with-systemc=<path> to overload default includes search path.])
+	AC_MSG_ERROR([installed SystemC is broken. Please install the SystemC library (version > 2.1). Use --with-systemc=<path> to overload default search path.])
     else
 	LIBS="-lsystemc ${LIBS}"
     fi
