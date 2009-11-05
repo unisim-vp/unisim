@@ -1457,10 +1457,11 @@ rol_ext.disasm = {
 rol_ext.execute = {
 	physical_address_t addr = opr16a;	
 	uint8_t val = cpu->memRead8(addr);
+	uint8_t oldCarry = cpu->ccr->getC();
 	
 	uint8_t carry = 0;
 	if ((val & 0x80) == 0x80) { carry = 1; }	
-	val = (val << 1) | carry;
+	val = (val << 1) | oldCarry;
 	cpu->memWrite8(addr, val);
 
 	if (carry) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 
@@ -1499,10 +1500,11 @@ rol_idx.execute = {
 
 	physical_address_t addr = xb->getEAddr(cpu);		
 	uint8_t val = cpu->memRead8(addr);
+	uint8_t oldCarry = cpu->ccr->getC();
 	
 	uint8_t carry = 0;
 	if ((val & 0x80) == 0x80) { carry = 1; }	
-	val = (val << 1) | carry;
+	val = (val << 1) | oldCarry;
 	cpu->memWrite8(addr, val);
 
 	if (carry) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 
@@ -1526,10 +1528,11 @@ rola.disasm = {
 
 rola.execute = {
 	uint8_t val = cpu->getRegA();
+	uint8_t oldCarry = cpu->ccr->getC();
 	
 	uint8_t carry = 0;
 	if ((val & 0x80) == 0x80) { carry = 1; }	
-	val = (val << 1) | carry;
+	val = (val << 1) | oldCarry;
 	cpu->setRegA(val);
 
 	if (carry) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 	
@@ -1553,10 +1556,11 @@ rolb.disasm = {
 
 rolb.execute = {
 	uint8_t val = cpu->getRegB();
+	uint8_t oldCarry = cpu->ccr->getC();
 	
 	uint8_t carry = 0;
 	if ((val & 0x80) == 0x80) { carry = 1; }
-	val = (val << 1) | carry;
+	val = (val << 1) | oldCarry;
 	cpu->setRegB(val);
 
 	if (carry) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 	
@@ -1583,10 +1587,11 @@ rolw_ext.disasm = {
 rolw_ext.execute = {
 	physical_address_t addr = opr16a;	
 	uint16_t val = cpu->memRead16(addr);
+	uint16_t oldCarry = cpu->ccr->getC();
 	
 	uint16_t carry = 0;
 	if ((val & 0x8000) == 0x8000) { carry = 1; }	
-	val = (val << 1) | carry;
+	val = (val << 1) | oldCarry;
 	cpu->memWrite16(addr, val);
 
 	if (carry) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 
@@ -1625,10 +1630,11 @@ rolw_idx.execute = {
 
 	physical_address_t addr = xb->getEAddr(cpu);		
 	uint16_t val = cpu->memRead16(addr);
+	uint16_t oldCarry = cpu->ccr->getC();
 	
 	uint16_t carry = 0;
 	if ((val & 0x8000) == 0x8000) { carry = 1; }	
-	val = (val << 1) | carry;
+	val = (val << 1) | oldCarry;
 	cpu->memWrite16(addr, val);
 
 	if (carry) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 
@@ -1652,10 +1658,11 @@ rolx.disasm = {
 
 rolx.execute = {
 	uint16_t val = cpu->getRegX();
+	uint16_t oldCarry = cpu->ccr->getC();
 	
 	uint16_t carry = 0;
 	if ((val & 0x8000) == 0x8000) { carry = 1; }	
-	val = (val << 1) | carry;
+	val = (val << 1) | oldCarry;
 	cpu->setRegX(val);
 
 	if (carry) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 	
@@ -1679,10 +1686,11 @@ roly.disasm = {
 
 roly.execute = {
 	uint16_t val = cpu->getRegY();
+	uint16_t oldCarry = cpu->ccr->getC();
 	
 	uint16_t carry = 0;
 	if ((val & 0x8000) == 0x8000) { carry = 1; }
-	val = (val << 1) | carry;
+	val = (val << 1) | oldCarry;
 	cpu->setRegY(val);
 
 	if (carry) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 	
@@ -1976,10 +1984,11 @@ ror_ext.disasm = {
 ror_ext.execute = {
 	physical_address_t addr = opr16a;	
 	uint8_t val = cpu->memRead8(addr);
+	uint8_t oldCarry = cpu->ccr->getC();
 	
 	uint8_t carry = 0;
 	if ((val & 0x01) == 0x01) { carry = 1; }	
-	val = (carry << 7) | (val >> 1);
+	val = (oldCarry << 7) | (val >> 1);
 	cpu->memWrite8(addr, val);
 
 	if (carry) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
@@ -2018,10 +2027,11 @@ ror_idx.execute = {
 
 	physical_address_t addr = xb->getEAddr(cpu);		
 	uint8_t val = cpu->memRead8(addr);
+	uint8_t oldCarry = cpu->ccr->getC();
 	
 	uint8_t carry = 0;
 	if ((val & 0x01) == 0x01) { carry = 1; }	
-	val = (carry << 7) | (val >> 1);
+	val = (oldCarry << 7) | (val >> 1);
 	cpu->memWrite8(addr, val);
 
 	if (carry) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
@@ -2045,10 +2055,11 @@ rora.disasm = {
 
 rora.execute = {
 	uint8_t val = cpu->getRegA();
+	uint8_t oldCarry = cpu->ccr->getC();
 	
 	uint8_t carry = 0;
 	if ((val & 0x01) == 0x01) { carry = 1; }	
-	val = (carry << 7) | (val >> 1);
+	val = (oldCarry << 7) | (val >> 1);
 	cpu->setRegA(val);
 
 	if (carry) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
@@ -2072,10 +2083,11 @@ rorb.disasm = {
 
 rorb.execute = {
 	uint8_t val = cpu->getRegB();
+	uint8_t oldCarry = cpu->ccr->getC();
 	
 	uint8_t carry = 0;
 	if ((val & 0x01) == 0x01) { carry = 1; }
-	val = (carry << 7) | (val >> 1);
+	val = (oldCarry << 7) | (val >> 1);
 	cpu->setRegB(val);
 
 	if (carry) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
@@ -2102,10 +2114,11 @@ rorw_ext.disasm = {
 rorw_ext.execute = {
 	physical_address_t addr = opr16a;	
 	uint16_t val = cpu->memRead16(addr);
+	uint16_t oldCarry = cpu->ccr->getC();
 	
 	uint16_t carry = 0;
 	if ((val & 0x0001) == 0x0001) { carry = 1; }	
-	val = (carry << 15) | (val >> 1);
+	val = (oldCarry << 15) | (val >> 1);
 	cpu->memWrite16(addr, val);
 
 	if (carry) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
@@ -2144,10 +2157,11 @@ rorw_idx.execute = {
 
 	physical_address_t addr = xb->getEAddr(cpu);		
 	uint16_t val = cpu->memRead16(addr);
+	uint16_t oldCarry = cpu->ccr->getC();
 	
 	uint16_t carry = 0;
 	if ((val & 0x0001) == 0x0001) { carry = 1; }	
-	val = (carry << 15) | (val >> 1);
+	val = (oldCarry << 15) | (val >> 1);
 	cpu->memWrite16(addr, val);
 
 	if (carry) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
@@ -2171,10 +2185,11 @@ rorx.disasm = {
 
 rorx.execute = {
 	uint16_t val = cpu->getRegX();
+	uint16_t oldCarry = cpu->ccr->getC();
 	
 	uint16_t carry = 0;
 	if ((val & 0x0001) == 0x0001) { carry = 1; }	
-	val = (carry << 15) | (val >> 1);
+	val = (oldCarry << 15) | (val >> 1);
 	cpu->setRegX(val);
 
 	if (carry) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
@@ -2198,10 +2213,11 @@ rory.disasm = {
 
 rory.execute = {
 	uint16_t val = cpu->getRegY();
+	uint16_t oldCarry = cpu->ccr->getC();
 	
 	uint16_t carry = 0;
 	if ((val & 0x0001) == 0x0001) { carry = 1; }
-	val = (carry << 15) | (val >> 1);
+	val = (oldCarry << 15) | (val >> 1);
 	cpu->setRegY(val);
 
 	if (carry) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
