@@ -263,6 +263,10 @@ void XML_ATD_PWM_STUB::Process()
 
 		wait(input_payload_queue.get_event());
 
+		/**
+		 * Note:
+		 *  - the Software sample the ATDDRx every 20ms
+		 */
 		Input(pwmValue);
 
 		Output_ATD1(atd1_anValue);
