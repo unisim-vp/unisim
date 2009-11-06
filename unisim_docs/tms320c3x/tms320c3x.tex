@@ -734,7 +734,7 @@ Run-time parameterization can be added to a service or a client.
 ``Run-time parameterization'' means that the service and/or client can be reconfigured at run-time.
 It is opposed to ``Static parameterization'' or ``template parameterization'' which allows configuring a service and/or client at compilation-time.
 To expose a member variable as a run-time parameter, a client/service must have a member variable of type \texttt{Parameter<TYPE>}, where \texttt{TYPE} is the C++ type of the exposed member variable, see Figure~\ref{fig:tms320c3x_run_time_parameter}.
-Multiple \texttt{Parameter} variables with different \texttt{TYPE}s can be defined within a clien/service.
+Multiple \texttt{Parameter} variables with different \texttt{TYPE}s can be defined within a client/service.
 Consider that a service would expose a member variable \texttt{x} \ding{202}.
 An instance of class \texttt{Parameter} is defined as a member of the service \ding{203}. 
 The parameter is bound to the exposed variable \ding{204} in the service/client constructor.
@@ -764,10 +764,10 @@ All service interfaces are declared in namespace \texttt{unisim::service::interf
 
 \subsubsection{Memory Interfaces}
 
-These interfaces allows reading and writing to memory space. The memory interfaces comes in two flavors:
+These interfaces allow reading/writing from/to memory space. The memory interfaces comes in two flavors:
 \begin{itemize}
-\item non-intrusive memory access (\texttt{unisim::service::interfaces::Memory}); It should not affect timing and data placement (e.g. in caches and TLBs).
-\item intrusive memory access (\texttt{unisim::service::interfaces::MemoryInjection}); It can affect timing and data placement.
+\item Non-intrusive memory access (\texttt{unisim::service::interfaces::Memory}): It should not affect timing and data placement (e.g. in caches and TLBs).
+\item Intrusive memory access (\texttt{unisim::service::interfaces::MemoryInjection}): It can affect timing and data placement.
 \end{itemize}
 
 \noindent The two C++ interfaces are:
@@ -789,9 +789,9 @@ These interfaces allows reading and writing to memory space. The memory interfac
 
 \subsubsection{Debugging Interfaces}
 
-These interfaces are intended for interfacing simulation components (e.g. CPU, memory, devices, \ldots) with a debugger (e.g. inline-debugger, GDB server, \ldots).
+These interfaces are intended for the connection of the simulation components (e.g. CPU, memory, devices, \ldots) with a debugger (e.g. inline-debugger, GDB server, \ldots).
 
-\textbf{Instruction disassembly}. A CPU components provides a debugger with a disassembly capability of the instruction set using interface \texttt{unisim::service::interfaces::Disassembly}.
+\textbf{Instruction disassembly}. CPU components provide a disassembly capability of the instruction set using the \texttt{unisim::service::interfaces::Disassembly} interface for the debbuger.
 
 \begin{center}
 	\input{tms320c3x/disassembly_interface}
@@ -804,7 +804,7 @@ These interfaces are intended for interfacing simulation components (e.g. CPU, m
 \end{itemize}
 \noindent and returns a string with the disassembly of the instruction.
 
-\textbf{Register access}. A CPU or a device provides a debugger with an access to its registers using interface \texttt{unisim::service::interfaces::Registers}.
+\textbf{Register access}. A CPU or a device provides an access to its registers using the \texttt{unisim::service::interfaces::Registers} interface for the debugger.
 
 \begin{center}
 	\input{tms320c3x/registers_interface}
@@ -812,9 +812,9 @@ These interfaces are intended for interfacing simulation components (e.g. CPU, m
 
 \noindent Method \texttt{GetRegister} arguments are:
 \begin{itemize}
-\item \texttt{name}: the name of the register to retrieve interface
+\item \texttt{name}: the name of the register to retrieve the register interface
 \end{itemize}
-\noindent and returns a pointer to an interface \texttt{unisim::util::debug::Register}.
+\noindent and returns a pointer to an \texttt{unisim::util::debug::Register} interface.
 
 \begin{center}
 	\input{tms320c3x/register_interface}
@@ -825,26 +825,26 @@ These interfaces are intended for interfacing simulation components (e.g. CPU, m
 \noindent Method \texttt{SetValue} sets the register value from a buffer.
 \noindent Method \texttt{GetSize} returns the register size in bytes.
 
-\textbf{Step by step execution}. A simulation component (e.g. a CPU) leaves control to a debugger with interface \texttt{unisim::service::interfaces::DebugControl}.
+\textbf{Step by step execution}. A simulation component (e.g. a CPU) leaves control to a debugger with the \texttt{unisim::service::interfaces::DebugControl} interface.
 
 \begin{center}
 	\input{tms320c3x/debug_control_interface}
 \end{center}
 
-Method \texttt{FetchDebugCommand} takes the current program counter as arguments and returns a command for the simulation component: either finish the simulation or execute one instruction.
+Method \texttt{FetchDebugCommand} takes the current program counter as argument and returns a command for the simulation component: either finish the simulation or execute one instruction.
 
-\textbf{Monitoring memory accesses}. An instrumented simulation component provides a memory access trace using interface \texttt{unisim::service::interfaces::MemoryAccessReporting}.
+\textbf{Monitoring memory accesses}. An instrumented simulation component provides a memory access trace using the \texttt{unisim::service::interfaces::MemoryAccessReporting} interface.
 Such memory trace is useful for a debugger to monitor memory access.
 
 \begin{center}
 	\input{tms320c3x/memory_access_reporting_interface}
 \end{center}
 
-Method \texttt{ReportMemoryAccess} takes as argument the memory access type (either read or write), the memory type (either data or instruction memory), the address of the access, and the size of the memory access.
+Method \texttt{ReportMemoryAccess} takes as arguments the memory access type (either read or write), the memory type (either data or instruction memory), the address of the access, and the size of the memory access.
 Method \texttt{ReportFinishedInstruction} takes as argument the address of next instruction to be executed.
 
-\textbf{Trap reporting}. An instrumented simulation component informs a debugger about an important event using interface \texttt{unisim::service::interfaces::TrapReporting}.
-Such event is useful for a debugger to pause simulation once such event occurs.
+\textbf{Trap reporting}. An instrumented simulation component informs a debugger about an important event using the \texttt{unisim::service::interfaces::TrapReporting} interface.
+Such event is useful for a debugger to pause simulation when such event occurs.
 
 \begin{center}
 	\input{tms320c3x/trap_reporting_interface}
@@ -852,14 +852,14 @@ Such event is useful for a debugger to pause simulation once such event occurs.
 
 Method \texttt{ReportTrap} takes no arguments.
 
-\textbf{Symbol}. A service (e.g. a loader) provides lookup to the symbol table using interface \texttt{unisim::service::interfaces::SymbolTableLookup}.
+\textbf{Symbol}. A service (e.g. a loader) provides lookup to the symbol table using the \texttt{unisim::service::interfaces::SymbolTableLookup} interface.
 This interface is useful for translating addresses to symbol names, and vice-versa.
 
 \begin{center}
 	\input{tms320c3x/symbol_table_lookup_interface}
 \end{center}
 
-\textbf{Efficient instrumentation.} To limit the impact on simulation performance of memory access instrumentation in the simulation components, such instrumentation can be enable or disable at run-time using interface \texttt{unisim::service::interfaces::MemoryAccessReportingControl}.
+\textbf{Efficient instrumentation.} To limit the impact on simulation performance of memory access instrumentation in the simulation components, such instrumentation can be enabled or disabled at run-time using interface \texttt{unisim::service::interfaces::MemoryAccessReportingControl}.
 
 \begin{center}
 	\input{tms320c3x/memory_access_reporting_control_interface}
@@ -875,7 +875,8 @@ This interface provides basic informations about the loaded program.
 
 \subsubsection{Time Interface}
 
-This interface provides reading of the current time.
+This interface provides the current simulation time of the component using it.
+
 
 \begin{center}
 	\input{tms320c3x/time_interface}
@@ -883,7 +884,7 @@ This interface provides reading of the current time.
 
 \subsubsection{TI C I/O Interface}
 
-An instrumented TMS320C3X instruction set simulator provides a trace of \texttt{SWI} instructions using interface \texttt{unisim::service::interfaces::ti\_c\_io}.
+An instrumented TMS320C3X instruction set simulator provides a trace of \texttt{SWI} instructions using the \texttt{unisim::service::interfaces::ti\_c\_io} interface.
 This interface is useful for the TI C I/O service to capture target program I/Os and translate them to host I/Os.
 
 \begin{center}
@@ -895,10 +896,12 @@ This interface is useful for the TI C I/O service to capture target program I/Os
 \subsubsection{COFF loader service}
 \label{tms320c3x_coff_loader}
 
-This service provides UNISIM TMS320C3X simulator with a support for TI COFF v0, v1, and v2 binary files  either with little-endian or big-endian headers (see TMS320C3x/C4x Assembly Language Tools User’s Guide, Appendix A). The COFF loader service loads the programs into memory while setup (simulator initialization). The loader can interpret \texttt{.cinit} section if option \texttt{-cr} of TI C cross-compiler has been used while building the target program (see TMS320C3x/C4x Optimizing C Compiler User’s Guide, section 4.8.1: Autoinitialization of variables and constants).
-To configure the COFF loader service see section~\ref{tms320c3x_configuration}.
+This service provides UNISIM TMS320C3X simulator with a support for TI COFF v0, v1, and v2 binary files  either with little-endian or big-endian headers (see TMS320C3x/C4x Assembly Language Tools User’s Guide, Appendix A). 
+The COFF loader service loads the programs into memory while setup (simulator initialization).
+The loader can interpret \texttt{.cinit} section if option \texttt{-cr} of TI C cross-compiler has been used while building the target program (see \textit{TMS320C3x/C4x Optimizing C Compiler User’s Guide}, section 4.8.1: \textit{Autoinitialization of variables and constants}).
+To configure the COFF loader service see Section~\ref{tms320c3x_configuration}.
 The source code of COFF loader service is located in directory \texttt{unisim/service/loader/coff\_loader}.
-\noindent Table below summarizes the COFF Loader service API:
+\noindent The table below summarizes the COFF Loader service API:
 
 \begin{center}
 	\tablehead{\hline}
@@ -957,13 +960,15 @@ The source code of COFF loader service is located in directory \texttt{unisim/se
 \subsubsection{TI C I/O service}
 \label{tms320c3x_ti_c_io}
 
-This service provides target programs with a support for low level I/O (open, read, write, close, \ldots) on the host machine.
-The TI Run-time support libraries (\texttt{RTS*.lib}) implements a software stack for standard C I/Os (see TMS320C3x/C4x Optimizing C Compiler User’s Guide (SPRU034H, June 1998), Appendix B).
-A development board debugger captures target program I/Os at \texttt{C\$\$IO\$\$}. The Run-time support library puts the I/Os in a communication buffer (\texttt{\_\_CIOBUF\_}) that the development board debugger translates to host I/Os. The debugger also captures target program termination at \texttt{C\$\$EXIT}.
-The UNISIM TI C I/O service captures and translates target program I/Os and termination in same manner as a development board built-in debugger.
-To configure the TI C I/O service see section~\ref{tms320c3x_configuration}.
-The source code of COFF loader service is located in directory \texttt{unisim/service/os/ti\_c\_io}.
-\noindent Table below summarizes the TI C I/O service API:
+This service provides low level I/O (open, read, write, close, \ldots) support on the host machine for target programs.
+The TI Run-time support libraries (\texttt{RTS*.lib}) implement a software stack for standard C I/Os (see \textit{TMS320C3x/C4x Optimizing C Compiler User’s Guide} (SPRU034H, June 1998), Appendix B).
+A development board debugger captures target program I/Os at \texttt{C\$\$IO\$\$}.
+The Run-time support library puts the I/Os in a communication buffer (\texttt{\_\_CIOBUF\_}) that the development board debugger translates to host I/Os.
+The debugger also captures target program termination at \texttt{C\$\$EXIT}.
+The UNISIM TI C I/O service captures and translates target program I/Os and termination in the same manner as a development board built-in debugger.
+To configure the TI C I/O service see Section~\ref{tms320c3x_configuration}.
+The source code of the COFF loader service is located in directory \texttt{unisim/service/os/ti\_c\_io}.
+\noindent The table below summarizes the TI C I/O service API:
 
 \begin{center}
 	\tablehead{\hline}
@@ -974,7 +979,7 @@ The source code of COFF loader service is located in directory \texttt{unisim/se
 		\hline
 		\multicolumn{1}{|p{7.5cm}}{\textbf{Class Name:} \newline \texttt{unisim::service::os::ti\_c\_io}\newline$\hookrightarrow$\texttt{::TI\_C\_IO}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Header:} \newline \texttt{unisim/service/os/ti\_c\_io}\newline$\hookrightarrow$\texttt{/ti\_c\_io.hh}}\\
 		\multicolumn{2}{|l|}{}\\
-		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The TI C I/O service provides target programs with a support for low level I/O (open, read, write, close, \ldots) on the host machine.}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The TI C I/O service provides low level I/O (open, read, write, close, \ldots) support on the host machine for target programs.}\\
 		\hline
 		\hline
 		\multicolumn{2}{|c|}{\textbf{\large Template Parameters}}\\
@@ -990,7 +995,7 @@ The source code of COFF loader service is located in directory \texttt{unisim/se
 		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{ti\_c\_io.enable}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
 		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
 		\multicolumn{2}{|l|}{}\\
-		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/Disable TI C I/O support.}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/disable TI C I/O support.}\\
 		\hline
 		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{ti-c-io.warning-as-error}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
 		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
@@ -1010,12 +1015,12 @@ The source code of COFF loader service is located in directory \texttt{unisim/se
 		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{ti-c-io.c-io-breakpoint-}\newline$\hookrightarrow$\texttt{symbol-name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
 		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{"C\$\$IO\$\$"}}\\
 		\multicolumn{2}{|l|}{}\\
-		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline C I/O breakpoint symbol name. The TI C I/O service installs an \texttt{SWI} instruction at this point to capture target program I/O.}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline C I/O breakpoint symbol name. The TI C I/O service installs a \texttt{SWI} instruction at this point to capture target program I/O.}\\
 		\hline
 		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{ti-c-io.c-exit-breakpoint-}\newline$\hookrightarrow$\texttt{symbol-name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
 		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{"C\$\$EXIT"}}\\
 		\multicolumn{2}{|l|}{}\\
-		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline C EXIT breakpoint symbol name. The TI C I/O service installs an \texttt{SWI} instruction at this point to capture target program exit.}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline C EXIT breakpoint symbol name. The TI C I/O service installs a \texttt{SWI} instruction at this point to capture target program exit.}\\
 		\hline
 		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{ti-c-io.verbose-all}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
 		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
@@ -1025,7 +1030,7 @@ The source code of COFF loader service is located in directory \texttt{unisim/se
 		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{ti-c-io.verbose-io}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
 		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
 		\multicolumn{2}{|l|}{}\\
-		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/disable verbosity of TI C I/O service while I/Os.}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/disable verbosity of TI C I/O service while performing I/Os.}\\
 		\hline
 		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{ti-c-io.verbose-setup}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
 		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
@@ -1045,7 +1050,7 @@ The source code of COFF loader service is located in directory \texttt{unisim/se
 		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{memory\_import}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces::} \newline$\hookrightarrow$\texttt{Memory<MEMORY\_ADDR>}}\\
 		\multicolumn{2}{|p{15cm}|}{\textbf{Mandatory connected:} no}\\
 		\multicolumn{2}{|l|}{}\\
-		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The TI C I/O service accesses to the memory while setup through this import. While setup it installs a two \texttt{SWI} instructions to capture both target I/O and program exit.}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The TI C I/O service accesses to the memory while setup through this import. While in setup it installs two \texttt{SWI} instructions to capture both target I/O and program exit.}\\
 		\hline
 		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{memory\_injection\_import}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces::} \newline$\hookrightarrow$\texttt{MemoryInjection<MEMORY\_ADDR>}}\\
 		\multicolumn{2}{|p{15cm}|}{\textbf{Mandatory connected:} no}\\
@@ -1058,7 +1063,7 @@ The source code of COFF loader service is located in directory \texttt{unisim/se
 		\hline
 		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{symbol\_table\_lookup\_import} \newline \textbf{Mandatory connected:} yes} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces} \newline$\hookrightarrow$\texttt{::SymbolTableLookup<MEMORY\_ADDR>}}\\
 		\multicolumn{2}{|l|}{}\\
-		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The TI C I/O service uses this service import get the address of the breakpoints and I/O buffer from their symbol name.}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The TI C I/O service uses this service import to get the address of the breakpoints and I/O buffer from their symbol name.}\\
 		\hline
 	\end{supertabular}
 \end{center}
@@ -1067,7 +1072,8 @@ The source code of COFF loader service is located in directory \texttt{unisim/se
 \subsubsection{Inline debugger}
 \label{tms320c3x_inline_debugger}
 
-The inline debugger service is a built-in debugger with a text-based user interface, see~\ref{tms320c3x_inline_debug}. It provides instruction level debugging of the target program.
+The inline debugger service is a built-in debugger with a text-based user interface, see~\ref{tms320c3x_inline_debug}. 
+It provides instruction level debugging of the target program.
 \noindent Table below summarizes the inline debugger service API:
 
 \begin{center}
@@ -1079,7 +1085,7 @@ The inline debugger service is a built-in debugger with a text-based user interf
 		\hline
 		\multicolumn{1}{|p{7.5cm}}{\textbf{Class Name:} \newline \texttt{unisim::service::debug}\newline$\hookrightarrow$\texttt{::inline\_debugger::InlineDebugger}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Header:} \newline \texttt{unisim/service/debug}\newline$\hookrightarrow$\texttt{/inline\_debugger/inline\_debugger.hh}}\\
 		\multicolumn{2}{|l|}{}\\
-		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The inline debugger service provides the user with a simple text-based interface to interactively debug a target application running on a CPU module. The debug is at the instruction level. The inline debugger may be connected to a CPU module.}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The inline debugger service provides a simple text-based interface to interactively debug a target application running on a CPU module for the user. The debug is at the instruction level. The inline debugger may be connected to a CPU module.}\\
 		\hline
 		\hline
 		\multicolumn{2}{|c|}{\textbf{\large Template Parameters}}\\
@@ -1117,7 +1123,7 @@ The inline debugger service is a built-in debugger with a text-based user interf
 		\hline
 		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{disasm\_import} \newline \textbf{Mandatory connected:} yes} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces} \newline$\hookrightarrow$\texttt{::Disassembly<ADDRESS>}}\\
 		\multicolumn{2}{|l|}{}\\
-		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline This service import should be connected to a CPU module. The CPU module should implements method \texttt{Disassemble} which provides the debugger with disassembling of the instructions.}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline This service import should be connected to a CPU module. The CPU module should implement method \texttt{Disassemble} which provides disassembling of the instructions for the debugger.}\\
 		\hline
 		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{memory\_import} \newline \textbf{Mandatory connected:} yes} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces} \newline$\hookrightarrow$\texttt{::Memory<ADDRESS>}}\\
 		\multicolumn{2}{|l|}{}\\
@@ -1133,7 +1139,7 @@ The inline debugger service is a built-in debugger with a text-based user interf
 		\hline
 		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{symbol\_table\_lookup\_import} \newline \textbf{Mandatory connected:} no} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces} \newline$\hookrightarrow$\texttt{::SymbolTableLookup}}\\
 		\multicolumn{2}{|l|}{}\\
-		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline This service import should be connected to a symbol table. The debugger calls method \texttt{FindSymbol}, \texttt{FindSymbolByAddr}, \texttt{FindSymbolByName} through this service import to translate address to symbol and vice-versa.}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline This service import should be connected to a symbol table. The debugger calls method \texttt{FindSymbol}, \texttt{FindSymbolByAddr}, \texttt{FindSymbolByName} through this service import to translate addresses to symbols and vice-versa.}\\
 		\hline
 	\end{supertabular}
 \end{center}
@@ -1141,7 +1147,7 @@ The inline debugger service is a built-in debugger with a text-based user interf
 \subsubsection{GDB server}
 \label{tms320c3x_gdb_server}
 
-The GDB server service emulates the GDB remote serial protocol over TCP/IP (see Debugging with GDB, Appendix D. GDB Remote serial protocol), so that a GDB client can connect to the simulator and debug the target program as if it were run on the real hardware.
+The GDB server service emulates the GDB remote serial protocol over TCP/IP (see \textit{Debugging with GDB}, Appendix D. \textit{GDB Remote serial protocol}), so that a GDB client can connect to the simulator and debug the target program as if it were run on the real hardware.
 This service uses an architecture XML description file defined by the \texttt{architecture-description-filename} run-time parameter (see table below).
 A sample configuration file for a dummy \texttt{XYZ} big-endian architecture, with four 32-bit general purpose registers named \texttt{r0}, \texttt{r1}, \texttt{r2}, \texttt{r3} and a program counter named \texttt{pc} would be the following:
 \begin{verbatim}
@@ -1165,7 +1171,7 @@ A sample configuration file for a dummy \texttt{XYZ} big-endian architecture, wi
 		\hline
 		\multicolumn{1}{|p{7.5cm}}{\textbf{Class Name:} \newline \texttt{unisim::service::debug}\newline$\hookrightarrow$\texttt{::gdb\_server::GDBServer}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Header:} \newline \texttt{unisim/service/debug}\newline$\hookrightarrow$\texttt{/gdb\_server/gdb\_server.hh}}\\
 		\multicolumn{2}{|l|}{}\\
-		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The GDB server service allows debugging a software running on a simulated hardware by connecting (over TCP/IP) a GDB client to it (and thus to the simulator). The GDB client can be either the standard text based client (i.e. command \texttt{gdb}), a graphical front-end to GDB (e.g. \texttt{ddd}), or even Eclipse CDT. The GDB server service directly speaks the GDB serial remote protocol (over TCP/IP), so that a GDB client can connect (over TCP/IP) to the simulator using GDB command \texttt{target remote}. The GDB server service may be connected to a CPU module.}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The GDB server service allows debugging a software running on a simulated hardware by connecting (over TCP/IP) a GDB client to it (and thus to the simulator). The GDB client can be either the standard text based client (i.e. command \texttt{gdb}), a graphical front-end to GDB (e.g. \texttt{ddd}), or even Eclipse CDT. The GDB server service directly speaks to the GDB serial remote protocol (over TCP/IP), so that a GDB client can connect (over TCP/IP) to the simulator using GDB command \texttt{target remote}. The GDB server service may be connected to a CPU module.}\\
 		\hline
 		\hline
 		\multicolumn{2}{|c|}{\textbf{\large Template Parameters}}\\
@@ -1186,7 +1192,7 @@ A sample configuration file for a dummy \texttt{XYZ} big-endian architecture, wi
 		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{architecture-description\newline$\hookrightarrow$-filename}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
 		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} empty string}\\
 		\multicolumn{2}{|l|}{}\\
-		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The path to the architecture description file that the GDB server service must use. The description file provides retargetability to the GDB server service. The following files brings support of the arM, PowerPC and HCS12X processors to the GDB server service: 
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The path to the architecture description file that the GDB server service must use. The description file provides retargetability to the GDB server service. The following files brings support of the ARM, PowerPC and HCS12X processors to the GDB server service: 
 		\begin{itemize}
 			\item \texttt{unisim/service/debug/gdb\_server/gdb\_armv4l.xml}
 			\item \texttt{unisim/service/debug/gdb\_server/gdb\_armv5b.xml}
@@ -1208,7 +1214,7 @@ A sample configuration file for a dummy \texttt{XYZ} big-endian architecture, wi
 		\hline
 		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{trap\_reporting\_export}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces} \newline$\hookrightarrow$\texttt{::TrapReporting}}\\
 		\multicolumn{2}{|l|}{}\\
-		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline This service export should be connected to a CPU module. A CPU module calls method \texttt{ReportTrap} through its service import. This allows the debugger to break execution on the simulated CPU once a trap condition is detected by the CPU module.}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline This service export should be connected to a CPU module. A CPU module calls method \texttt{ReportTrap} through its service import. This allows the debugger to break execution on the simulated CPU when a trap condition is detected by the CPU module.}\\
 		\hline
 		\hline
 		\multicolumn{2}{|c|}{\textbf{\large Service Imports}}\\
@@ -1254,28 +1260,35 @@ To use the UNISIM logger you need to include “unisim/kernel/logger/logger.hh�
 	\input{tms320c3x/including_logger}
 \end{center}
 
-The logger can only be used by UNISIM Objects, that is, classes that inherit from \newline
-\texttt{unisim::kernel::service::Object}. So if you want to use the UNISIM log system your class must inherit from a UNISIM Object.
+The logger can only be used by UNISIM objects, that is, classes that inherit from \newline
+\texttt{unisim::kernel::service::Object}. 
+So if you want to use the UNISIM log system your class must inherit from a UNISIM object.
 
 \begin{center}
 	\input{tms320c3x/deriving_from_object}
 \end{center}
 
-You will need to create a member variable of the \texttt{unisim::kernel::logger::Logger} type. And at the construction of your object use its default constructor \newline
+You will need to create a member variable of the \texttt{unisim::kernel::logger::Logger} type. 
+And at the construction of your object use its default constructor \newline
 \texttt{Logger(const unisim::kernel::service::Object \&obj)}. For example:
 
 \begin{center}
 	\input{tms320c3x/binding_logger}
 \end{center}
 
-Once you have initialized your member logger variable you can start using it in your class methods. Basically it works like an standard C++ output stream, with the \texttt{<<} operator. However, it requires that you indicate when a message starts and ends, and its category (information, warning or error) with the following keywords:
+Once you have initialized your member logger variable you can start using it in your class methods.
+Basically it works like an standard C++ output stream, with the \texttt{<<} operator. 
+However, it requires that you indicate when a message starts and ends, and its category (information, warning or error) with the following keywords:
 \begin{itemize}
 \item \texttt{DebugInfo} and \texttt{EndDebugInfo} to start and end an information message
 \item \texttt{DebugWarning} and \texttt{EndDebugWarning} to start and end a warning message
 \item \texttt{DebugError} and \texttt{EndDebugError} to start and end an error message
 \end{itemize}
 
-You can use the keyword \texttt{EndDebug} instead of \texttt{EndDebugInfo}, \texttt{EndDebugWarning} or \texttt{EndDebugWarning} to indicate that a message ends. The log system will automatically decide which kind of message are you ending. Between the start and the end of a message you can use the logger as a normal C++ output stream. Some of examples of its use:
+You can use the keyword \texttt{EndDebug} instead of \texttt{EndDebugInfo}, \texttt{EndDebugWarning} or \texttt{EndDebugWarning} to indicate that a message ends.
+The log system will automatically decide which kind of message you are ending. 
+Between the start and the end of a message you can use the logger as a normal C++ output stream.
+Some of examples of its use:
 \begin{center}
 	\input{tms320c3x/using_logger}
 \end{center}
@@ -1305,11 +1318,11 @@ These functions located in \texttt{unisim/util/arithmetic} implement fast intege
 
 \subsubsection{Debugging support}
 
-Directory \texttt{unisim/util/debug} provides several C++ classes that supports:
+Directory \texttt{unisim/util/debug} provides several C++ classes that support:
 \begin{itemize}
 \item Symbol management (symbol table)
 \item Profile to keep software activity during a run (e.g. in inline debugger service)
-\item Breakpoint/Watchpoint registry
+\item Breakpoint/watchpoint registry
 \item Register debugging support
 \item Network stub for implementing a fake device, remotely control the simulator, and cosimulate with another external simulation environment
 \end{itemize}
@@ -1320,11 +1333,11 @@ Directory \texttt{unisim/util/endian} provides support for fast endian conversio
 
 \subsubsection{Hash Table}
 
-Directory \texttt{unisim/util/hash\_table} provides support for fast table lookup (e.g. for memory)
+Directory \texttt{unisim/util/hash\_table} provides support for fast table lookup (e.g. for memory).
 
 \subsubsection{XML}
 
-Directory \texttt{unisim/util/xml} provides support for bare XML file (e.g. for GDB server service)
+Directory \texttt{unisim/util/xml} provides support for bare XML file (e.g. for GDB server service).
 
 \newpage
 \section{Validation guide}
@@ -1350,7 +1363,7 @@ Directory \texttt{unisim/util/xml} provides support for bare XML file (e.g. for 
 	\end{center}
 \end{figure}
 
-The simulator validation involved using the TI C cross-compiler for Windows (see section~\ref{tms320c3x_cross_compiler}) with the following versions:
+The simulator validation involved using the TI C cross-compiler for Windows (see Section~\ref{tms320c3x_cross_compiler}) with the following versions:
 \begin{itemize}
 \item TMS320C3x/4x ANSI C Compiler Version 5.11
 \item TMS320C3x/4x ANSI C Optimizer Version 5.13
@@ -1359,7 +1372,7 @@ The simulator validation involved using the TI C cross-compiler for Windows (see
 \item TMS320C3x/4x COFF Linker Version 5.11
 \end{itemize}
 
-The cross-compiler has generated COFF v2 files for TMS320C3X/C4X with little-endian headers matching the endianness of our building host machine (Windows XP x86)
+The cross-compiler has generated COFF v2 files for TMS320C3X/C4X with little-endian headers matching the endianness of our building host machine (Windows XP x86).
 
 \noindent The host machine configurations used to test both compilation and run of the simulator are:
 \begin{itemize}
@@ -1394,7 +1407,7 @@ For that purpose, several integer benchmarks have been ported from the MiBench b
 The floating-point benchmarks have been extracted from the TMS320C3x DSK Software.
 The following document has been used for selecting these floating-point benchmarks:
 \begin{itemize}
-\item TMS320C3x General Purpose Applications User's Guide (SPRU194, January 1998)
+\item \textit{TMS320C3x General Purpose Applications User's Guide} (SPRU194, January 1998)
 \end{itemize}
 
 These benchmarks have been run into the UNISIM TMS320C3X simulator using the application profiling capability of the inline debugger:
@@ -1429,7 +1442,8 @@ inline-debugger> profile program
 inline-debugger> quit
 \end{verbatim}
 
-We extracted the instruction coverage from these applications profiles. Table below shows the instruction coverage for each benchmark.
+We extracted the instruction coverage from these applications profiles.
+The table below shows the instruction coverage for each benchmark.
 Benchmarks \texttt{Fibo}, \texttt{Quick sort}, \texttt{CRC32}, \texttt{Rijndael}, \texttt{Sha}, and \texttt{ADPCM} are integer benchmarks written in C.
 Benchmarks \texttt{LP}, \texttt{BP}, \texttt{IIR}, and \texttt{FFT} are floating-point benchmarks written in C and assembly.
 Each general addressing mode (see Table~\ref{table:tms320c3x_general_addressing_modes}) of each TMS320C3X instruction (see Tables~\ref{table:tms320c3x_load_store_instructions}, \ref{table:tms320c3x_interlocked_instructions},  \ref{table:tms320c3x_control_instructions}, \ref{table:tms320c3x_2ops_instructions}, \ref{table:tms320c3x_3ops_instructions}, \ref{table:tms320c3x_parallel_instructions} and \ref{table:tms320c3x_power_instructions}), actually has a row in the table.
@@ -1440,10 +1454,10 @@ The reason of that limited validation scope is that the C compiler does not gene
 For instance, unusual addressing modes as the indirect addressing with circular modify and indirect addressing with bit reversed modify were not generated at all by the C compiler. 
 Thus solely relying on these integer benchmarks for testing integer computation would have resulted in quite poor instruction coverage.
 For instance, Instructions \texttt{addc}, \texttt{negb}, \texttt{rol}, \texttt{rolc}, \texttt{ror}, \texttt{rorc}, \texttt{subrb}, \texttt{addc3}, \texttt{subb3}, and most of parallel instructions but \texttt{ldi || ldi}, \texttt{ldi || sti}, and \texttt{sti || sti} were not covered at all.
-Although the case of floating point benchmarks (written in C and assembly) is similar with an incomplete instruction coverage, the use of assembly have improved coverage of addressing modes and parallel instructions.
-For instance, Benchmarks \texttt{IIR} and \texttt{FFT} cover indirect addressing with circular modify and indirect addressing with bit reversed modify.
+Although the case of floating point benchmarks (written in C and assembly) is similar with an incomplete instruction coverage, the use of assembly has improved coverage of addressing modes and parallel instructions.
+For instance, benchmarks \texttt{IIR} and \texttt{FFT} cover indirect addressing with circular modify and indirect addressing with bit reversed modify.
 Nevertheless floating-point benchmarks insufficiently cover parallel instructions.
-Particularly, Instructions \texttt{absf || stf}, \texttt{fix || sti}, \texttt{float || sti}, \texttt{negf || stf} were not covered at all.
+Particularly, instructions \texttt{absf || stf}, \texttt{fix || sti}, \texttt{float || sti}, \texttt{negf || stf} were not covered at all.
 
 \begin{center}
 \tablehead{\hline
@@ -2395,7 +2409,7 @@ Particularly, Instructions \texttt{absf || stf}, \texttt{fix || sti}, \texttt{fl
 
 \subsubsection{Fibonacci}
 
-This benchmarks recursively (and quite inefficiently) computes the Fibonacci numbers:
+This benchmark recursively (and quite inefficiently) computes the Fibonacci numbers:
 ~\vspace{0.2cm}\\
 $
 \left\{\begin{array}{ll}
@@ -2407,9 +2421,9 @@ F_n = F_{n - 2} + F_{n - 1} & \mbox{where } n > 2 \\
 $
 ~\vspace{0.2cm}\\
 It has validated general simulator operations such as program loading, stack management and function calls.
-This benchmark requires TI C I/O service enabled to run in the TMS320C3X simulator.
+This benchmark requires the TI C I/O service enabled to run in the TMS320C3X simulator.
 A precompiled binary (\texttt{fibo.out}) is provided together with a GNU Make compatible \texttt{Makefile}.
-A simulation configuration (\texttt{sim\_config.xml}) for this simulator is also provided, so that simulator can run the benchmark:
+A simulation configuration (\texttt{sim\_config.xml}) for this simulator is also provided, so that the simulator can run the benchmark using the following command:
 
 \begin{verbatim}
 $ tms320c3x -c sim_config.xml
@@ -2461,9 +2475,9 @@ It has validated general simulator operations such as program loading, stack man
 The input data set is in file \texttt{random.txt} that contains random generated integer numbers.
 The output data set after the benchmark run is in file \texttt{sort.sim.txt}.
 
-This benchmark requires TI C I/O service enabled to run in the TMS320C3X simulator.
+This benchmark requires the TI C I/O service enabled to run in the TMS320C3X simulator.
 A precompiled binary (\texttt{quicksort.out}) is provided together with a GNU Make compatible \texttt{Makefile}.
-A simulation configuration (\texttt{sim\_config.xml}) for this simulator is also provided, so that simulator can run the benchmark:
+A simulation configuration (\texttt{sim\_config.xml}) for this simulator is also provided, so that the simulator can run the benchmark using the following command:
 
 \begin{verbatim}
  $ tms320c3x -c sim_config.xml
@@ -2474,19 +2488,20 @@ A simulation configuration (\texttt{sim\_config.xml}) for this simulator is also
 \subsubsection{CRC32 (check sum)}
 
 This benchmark is based on CRC32 benchmark from MiBench Version 1.0 (\url{http://www.eecs.umich.edu/mibench}).
-It performs a 32-bit Cyclic Redundancy Check (CRC) on a file. CRC checks are often used to detect errors in data transmission.
+It performs a 32-bit Cyclic Redundancy Check (CRC) on a file. 
+CRC checks are often used to detect errors in data transmission.
 This benchmark has been selected because of its sensitivity to simulator failures.
-The benchmark reads file \texttt{small.pcm} and print the check sum on the screen
+The benchmark reads file \texttt{small.pcm} and prints the check sum on the screen
 
-This benchmark requires TI C I/O service enabled to run in the TMS320C3X simulator.
-A precompiled binary is provided together with a GNU Make compatible Makefile.
-A simulation configuration (\texttt{sim\_config.xml}) for this simulator is also provided, so that simulator can run the benchmark:
+This benchmark requires the TI C I/O service enabled to run in the TMS320C3X simulator.
+A precompiled binary is provided together with a GNU Make compatible \texttt{Makefile}.
+A simulation configuration (\texttt{sim\_config.xml}) for this simulator is also provided, so that the simulator can run the benchmark using the following command:
 
 \begin{verbatim}
 $ tms320c3x -c sim_config.xml
 \end{verbatim}
 
-\noindent The expected output on the screen of the benchmarks is in file ref.txt:
+\noindent The expected output on the screen of the benchmarks is in file \texttt{ref.txt}:
 
 \begin{verbatim}
 32 BIT ANSI X3.66 CRC checksum:
@@ -2511,9 +2526,9 @@ The benchmark uses this hexadecimal encryption key:
 The benchmark reads file \texttt{input\_small.asc}, and encrypt it into file \texttt{output\_small.sim.enc}.
 It decrypts \texttt{output\_small.sim.enc} into file \texttt{output\_small.sim.dec}.
 
-This benchmark requires TI C I/O service enabled to run in the TMS320C3X simulator.
-A precompiled binary (\texttt{rijndael.out}) is provided together with a GNU Make compatible Makefile.
-A simulation configuration (\texttt{sim\_config.xml}) for this simulator is also provided, so that simulator can run the benchmark:
+This benchmark requires the TI C I/O service enabled to run in the TMS320C3X simulator.
+A precompiled binary (\texttt{rijndael.out}) is provided together with a GNU Make compatible \texttt{Makefile}.
+A simulation configuration (\texttt{sim\_config.xml}) for this simulator is also provided, so that the simulator can run the benchmark using the following command:
 
 \begin{verbatim}
 $ tms320c3x -c sim_config.xml
@@ -2524,21 +2539,21 @@ It is expected that files \texttt{input\_small.asc} and \texttt{output\_small.si
 \subsubsection{Sha (encryption/decryption)}
 
 This benchmark is based on SHA benchmark from MiBench Version 1.0 (\url{http://www.eecs.umich.edu/mibench}).
-SHA is the secure hash algorithm that produces a 160-bit message digest for a given input. It is often
-used in the secure exchange of cryptographic keys and for generating digital signatures. It is also used in the
-well-known MD4 and MD5 hashing functions.
+SHA is the secure hash algorithm that produces a 160-bit message digest from a given input.
+It is often used in the secure exchange of cryptographic keys and for generating digital signatures.
+It is also used in the well-known MD4 and MD5 hashing functions.
 This benchmark has been selected because of its sensitivity to simulator failures.
 
 The benchmark reads its input data set from file \texttt{input\_small.asc} and prints the SHA digest on the screen.
 
-A precompiled binary (\texttt{sha.out}) is provided together with a GNU Make compatible Makefile.
-A simulation configuration (\texttt{sim\_config.xml}) for this simulator is also provided, so that simulator can run the benchmark:
+A precompiled binary (\texttt{sha.out}) is provided together with a GNU Make compatible \texttt{Makefile}.
+A simulation configuration (\texttt{sim\_config.xml}) for this simulator is also provided, so that the simulator can run the benchmark using the following command:
 
 \begin{verbatim}
 $ tms320c3x -c sim_config.xml
 \end{verbatim}
 
-The expected output on the screen of the benchmark is in file ref.txt:
+The expected output on the screen of the benchmark is in file \texttt{ref.txt}:
 
 \begin{verbatim}
 NIST Secure Hash Algorithm:
@@ -2551,16 +2566,17 @@ SHA digest:
 \subsubsection{ADPCM (sound encoding/decoding)}
 
 This benchmark is based on ADPCM benchmark from MiBench Version 1.0 (\url{http://www.eecs.umich.edu/mibench}).
-It performs ADPCM encoding/decoding. Adaptive Differential Pulse Code Modulation (ADPCM) is a variation
-of the well-known standard Pulse Code Modulation (PCM). A common implementation takes 16-bit linear
-PCM samples and converts them to 4-bit samples, yielding a compression rate of 4:1. The input data are speech samples.
+It performs ADPCM encoding/decoding. 
+Adaptive Differential Pulse Code Modulation (ADPCM) is a variation of the well-known standard Pulse Code Modulation (PCM). 
+A common implementation takes 16-bit linear PCM samples and converts them to 4-bit samples, yielding a compression rate of 4:1. 
+The input data are speech samples.
 This benchmark has been selected because it is a typical application in digital signal processing.
 The ADPCM coder benchmark reads file \texttt{small.pcm} and writes the compressed data in file \texttt{output\_small.sim.adpcm}.
 The ADPCM decoder benchmark reads file \texttt{small.adpcm} and writes the uncompressed data in file \texttt{output\_small.sim.pcm}.
 
-This benchmark requires TI C I/O service enabled to run in the TMS320C3X simulator.
-Precompiled binaries (\texttt{coder.out} and \texttt{decoder.out}) are provided together with a GNU Make compatible Makefile.
-Simulation configurations (\texttt{coder\_sim\_config.xml} and \texttt{decoder\_sim\_config.xml})) for this simulator are also provided, so that simulator can run the benchmarks:
+This benchmark requires the TI C I/O service enabled to run in the TMS320C3X simulator.
+Precompiled binaries (\texttt{coder.out} and \texttt{decoder.out}) are provided together with a GNU Make compatible \texttt{Makefile}.
+Simulation configurations (\texttt{coder\_sim\_config.xml} and \texttt{decoder\_sim\_config.xml})) for this simulator are also provided, so that the simulator can run the benchmarks using the following command:
 
 \begin{verbatim}
 $ tms320c3x -c coder_sim_config.xml
@@ -2575,23 +2591,23 @@ The expected output data set of the ADPCM decoder benchmark is in file \texttt{o
 This benchmark is based on XVID video codec (\url{http://www.xvid.org}).
 The benchmarks has the following steps that are the base of the JPEG lossy image compression standard:
 \begin{enumerate}
-\item Load a Windows 24-bit RGB Bitmap from a .bmp file;
+\item Load a Windows 24-bit RGB Bitmap from a \texttt{.bmp} file;
 \item Convert from RGB to YUV 4:4:4 for each 8x8 pixel blocks;
 \item Compute a DCT on each 8x8 pixel blocks;
 \item Quantize each 8x8 pixels blocks;
 \item Dequantize each 8x8 pixels blocks;
 \item Compute an iDCT on each 8x8 pixel blocks;
-\item Convert from YUV 4:4:4 to RGB each 8x8 pixel blocks
-\item Save the resulting Windows 24-bit RGB bitmap into a .bmp file
+\item Convert from YUV 4:4:4 to RGB each 8x8 pixel blocks;
+\item Save the resulting Windows 24-bit RGB bitmap into a \texttt{.bmp} file.
 \end{enumerate}
 
 This benchmark has been selectedd because it is a typical application in imaging and digital signal processing.
 The benchmark reads the input image from file \texttt{image.bmp} and the quantization matrix from file \texttt{quant\_mat.txt}.
-It save the resulting image in file \texttt{output\_image.sim.bmp}
+It save the resulting image in file \texttt{output\_image.sim.bmp}.
 
-This benchmark requires TI C I/O service enabled to run in the TMS320C3X simulator.
-A precompiled binary (\texttt{dct\_quant.out}) is provided together with a GNU Make compatible Makefile.
-A simulation configuration (\texttt{sim\_config.xml}) for this simulator is also provided, so that simulator can run the benchmark:
+This benchmark requires the TI C I/O service enabled to run in the TMS320C3X simulator.
+A precompiled binary (\texttt{dct\_quant.out}) is provided together with a GNU Make compatible \texttt{Makefile}.
+A simulation configuration (\texttt{sim\_config.xml}) for this simulator is also provided, so that simulator can run the benchmark using the following command:
 
 \begin{verbatim}
 $ tms320c3x -c sim_config.xml
@@ -2751,12 +2767,12 @@ gnuplot > plot './output0.txt' with lines
 
 \subsection{Instruction level unit tests}
 
-As explained in Section~\ref{tms320c3x_benchmarks}, althrough they have validated general operations of the UNISIM TMS320C3X simulator, both the integer and floating-point benchmarks have insufficiently covered the TMS320C3X instructions.
+As explained in Section~\ref{tms320c3x_benchmarks}, although they have validated general operations of the UNISIM TMS320C3X simulator, both the integer and floating-point benchmarks have insufficiently covered the TMS320C3X instructions.
 Extensive testings at the instruction level are essential to gain greater confidence in the UNISIM TMS320C3X simulator representativity.
 This section presents the validation process of UNISIM TMS320C3X simulator at the instruction level.
 A unit testing environment, in the form of a Makefile for GNU Make, has been developed to allow testing individual instructions for the UNISIM TMS320C3X simulator.
 Testing an instruction involves writing some "glue" code (C and Assembly) around the instruction under test to provide it with the input operands read from the host filesystem, and to save instruction output operands into a file on the host filesystem, so that results of instruction under test can be observed and compared.
-A unit test generator that is part of the testing environment, automatically generates that "glue" code, making writing and maintaining the instruction level unit test easier.
+A unit test generator, that is part of the testing environment, automatically generates that "glue" code, making writing and maintaining the instruction level unit tests easier.
 
 Section~\ref{tms320c3x_validation_process} presents the validation process and the test plan.
 Section~\ref{tms320c3x_testing_status} contains the testing status at instruction level of UNISIM TMS320C3X simulator.
@@ -2766,7 +2782,8 @@ Section~\ref{tms320c3x_testing_environment} presents the testing environment and
 \subsubsection{Validation process}
 \label{tms320c3x_validation_process}
 
-For the purpose of validating the UNISIM TMS320C3X simulator, a factorial plan has been established. The factorial plan parameters are:
+For the purpose of validating the UNISIM TMS320C3X simulator, a factorial plan has been established. 
+The factorial plan parameters are:
 \begin{itemize}
 \item The general instruction under test, e.g. \texttt{ldf}, see Tables~\ref{table:tms320c3x_load_store_instructions}, \ref{table:tms320c3x_interlocked_instructions},  \ref{table:tms320c3x_control_instructions}, \ref{table:tms320c3x_2ops_instructions}, \ref{table:tms320c3x_3ops_instructions}, \ref{table:tms320c3x_parallel_instructions} and \ref{table:tms320c3x_power_instructions}
 \item The condition code, e.g. \texttt{eq} in \texttt{ldfeq}, see Table~\ref{table:tms320c3x_condition_codes}
@@ -3236,10 +3253,12 @@ For the purpose of validating the UNISIM TMS320C3X simulator, a factorial plan h
 
 \FloatBarrier
 
-This plan results in lot of instruction alternatives being tested (several condition codes and addressing modes).  A full exploration of the factorial plan would have resulted in an unreasonable number of unit tests. To limit the number of unit tests and to still achieve a good testing status, the following choices have been done:
+This plan results in lot of instruction alternatives being tested (several condition codes and addressing modes).
+A full exploration of the factorial plan would have resulted in an unreasonable number of unit tests.
+To limit the number of unit tests and to still achieve a good testing status, the following choices have been done:
 \begin{itemize}
 \item The amount of immediate addressing have been limited because each unit test of immediate addressing results in one program. The following integer values have been tested: \texttt{0}, \texttt{-1}, \texttt{+1}, \texttt{-32768}, or \texttt{+32767}. These integer values have a special role in most integer computations (neutral element, bound of integer immediate value \ldots). The following floating-point values have been tested: \texttt{0.0}, \texttt{1.0}, \texttt{-1.0}, \texttt{1.5}, \texttt{-1.5}, \texttt{$2.5594 \cdot 10^2$}, \texttt{$7.8125 \cdot 10^{-3}$}, \texttt{$-7.8163 \cdot 10^{-3}$}, \texttt{$-2.56 \cdot 10^2$}. These floating-point value have a special role in most floating-point computations (neutral element, smallest/largest positive/negative immediate floating-point values \ldots).
-\item Condition codes have been varied exhaustively for conditional load/store and Control instructions, see Table~\ref{table:tms320c3x_condition_codes}.
+\item Condition codes have been varied exhaustively for conditional load/store and control instructions, see Table~\ref{table:tms320c3x_condition_codes}.
 \item Each general addressing mode has been tested for load/store, control, 2-operand, 3-operand, and parallel instructions (note: some instructions allow only few of them), see Table~\ref{table:tms320c3x_general_addressing_modes}.
 \item All of the 26 indirect addressing modes have been tested for load/store instructions and 2-operand instructions (28 tests per instructions), see Table~\ref{table:tms320c3x_indir_addressing_modes}.
 \item Only one (\texttt{*ar$_n$}) of the 26 indirect addressing modes have been tested for 3-operand instructions and parallel instructions because testing all combinations of the 26 indirect addressing modes would have resulted in an unreasonable number of unit tests.
@@ -3247,15 +3266,23 @@ The rational behind this choice is that the instructions implementations in the 
 \item 2-operand instructions with register addressing have been tested 10000 times with random inputs.
 \item 3-operand instructions, load/store instructions, and parallel instructions with register, direct and indirect addressing modes have been tested 100 times with random inputs.
 \item Additional tests have been written to check \texttt{ar$_n$} update ordering when instruction has several operands with indirect addressing mode, or when \texttt{ar$_n$} is both updated by an indirect addressing mode and the instruction itself.
-\item Random input integer values have a uniform distribution. Table~\ref{table:tms320c3x_unit_test_float_distribution} shows the distribution for the floating point numbers. Some remarkable values (neutral, smallest/largest positive/negative floating-point values \ldots) have non-null probability of occurrence.
+\item Random input integer values have an uniform distribution. Table~\ref{table:tms320c3x_unit_test_float_distribution} shows the distribution for the floating point numbers. Some remarkable values (neutral, smallest/largest positive/negative floating-point values \ldots) have non-null probability of occurrence.
 \end{itemize}
 
-These choices still have resulted in 3758 unit tests programs for a total of 694382 unit tests.
+These choices still have resulted in 3758 unit test programs for a total of 694382 unit tests.
 
 \subsubsection{Testing status}
 \label{tms320c3x_testing_status}
 
-\noindent Table below summarizes the testing status of all instructions. The total number of unit tests is shown and the detail for the computation of that number is explained between parenthesis. $100_{rand}$ means 100 tests with random inputs. $5_{imm}$ means 5 tests with immediate addressing. $20_{cond}$ means 20 tests for each condition codes. $28_{indir}$ means 28 tests for each 26 indirect addressing mode. $1_{indir}$ means only \texttt{ar$_n$} indirect addressing mode tested. $28_{isr}$ means 28 interrupt service routines tested. $1_{ar}$ means one test for \texttt{ar$_n$} update ordering.
+\noindent The table below summarizes the testing status of all instructions. 
+The total number of unit tests is shown and the detail for the computation of that number is explained between parenthesis.
+$100_{rand}$ means 100 tests with random inputs.
+$5_{imm}$ means 5 tests with immediate addressing. 
+$20_{cond}$ means 20 tests for each condition codes. 
+$28_{indir}$ means 28 tests for each 26 indirect addressing mode. 
+$1_{indir}$ means only \texttt{ar$_n$} indirect addressing mode tested. 
+$28_{isr}$ means 28 interrupt service routines tested. 
+$1_{ar}$ means one test for \texttt{ar$_n$} update ordering.
 
 \newpage
 
@@ -4210,7 +4237,7 @@ These choices still have resulted in 3758 unit tests programs for a total of 694
 \subsubsection{Unit tests generator}
 \label{tms320c3x_unit_tests_generator}
 
-To ease writing each unit test of the above test plan, a unit test generator has been developped, see Figure~\ref{fig:tms320c3x_unit_test_generator}.
+To ease the writing of each unit test of the above test plan, a unit test generator has been developped, see Figure~\ref{fig:tms320c3x_unit_test_generator}.
 
 \begin{figure}[!p]
 	\begin{center}
@@ -4269,12 +4296,15 @@ To ease writing each unit test of the above test plan, a unit test generator has
 
 The generator needs an assembly pattern and some substitution strings to generate the unit test source code, that is:
 \begin{itemize}
-\item an assembly function \texttt{unit\_test} (in file \texttt{test.asm}) with the C calling convention and stack parameter passing convention
-\item some random inputs for function \texttt{unit\_test} (\texttt{random.txt}).
-\item a testbench written in C (\texttt{main.c}) that in a loop, reads inputs, calls function \texttt{unit\_test}, and write outputs.
+\item an assembly function \texttt{unit\_test} (in file \texttt{test.asm}) with the C calling convention and stack parameter passing convention,
+\item some random inputs for function \texttt{unit\_test} (\texttt{random.txt}),
+\item and a testbench written in C (\texttt{main.c}) that in a loop, reads inputs, calls function \texttt{unit\_test}, and write outputs.
 \end{itemize}
 
-An Assembly pattern is an assembly source code with special tags. These tags start with character \texttt{\%}. Most of them represent input/outputs that are substituted by real processor registers during assembly source code generation. Tag \texttt{\%subst} is substituted by a substitution string passed as command line argument to the generator.
+An assembly pattern is an assembly source code with special tags. 
+These tags start with character \texttt{\%}. 
+Most of them represent input/outputs that are substituted by real processor registers during assembly source code generation. 
+Tag \texttt{\%subst} is substituted by a substitution string passed as a command line argument to the generator.
 Tag \texttt{\%clobber} says to the generator that assembly pattern explicitely clobber register following that tag and that the generator should not allocate that register while substituing inputs and outputs.
 Table~\ref{table:tms320c3x_assembly_patterns_tags} lists the available tags.
 
@@ -4332,20 +4362,23 @@ Table~\ref{table:tms320c3x_assembly_patterns_tags} lists the available tags.
 \end{center}
 \end{table}
 
-Figure~\ref{fig:tms320c3x_assembly_pattern} shows an example of assembly pattern while Figure~\ref{fig:tms320c3x_generated_assembly} shows the core of generated assembly. During the generation process, each assembly pattern tag are substituted with real processor registers or substitution strings:
+Figure~\ref{fig:tms320c3x_assembly_pattern} shows an example of assembly pattern and Figure~\ref{fig:tms320c3x_generated_assembly} shows the core of generated assembly. 
+During the generation process, each assembly pattern tag is replaced by real processor registers or substitution strings:
 \begin{enumerate}
 \item[{\large \ding{202}}] \texttt{\%subst} is substituted by integer constant \texttt{5} passed as command line argument of the generator;
 \item[{\large \ding{203}}] \texttt{\%0} is substituted as in {\large \ding{202}}, while \texttt{\%src\_int\_reg} is substituted with register \texttt{r0};
-\item[{\large \ding{204}}] \texttt{\%clobber ir0} is substituted with register \texttt{ir0} and register ir0 is marked as clobbered;
+\item[{\large \ding{204}}] \texttt{\%clobber ir0} is substituted with register \texttt{ir0} and register \texttt{ir0} is marked as clobbered;
 \item[{\large \ding{205}}] \texttt{\%src\_float\_buf[16]} is substituted with register \texttt{ar2} that points to an array of 16 32-bit floating-point values allocated on the stack; \texttt{\%dst\_aux\_reg} is substituted with register \texttt{ar4};
 \item[{\large \ding{206}}] \texttt{\%subst} is substituted with integer constant \texttt{7} passed as command line argument to the generator; \texttt{\%6} is substituted as \texttt{\%dst\_aux\_reg} in {\large \ding{205}};
 \item[{\large \ding{207}}] \texttt{\%7} is substituted as \texttt{\%subst} in {\large \ding{206}} and \texttt{\%6} is substituted as \texttt{\%dst\_aux\_reg} in {\large \ding{205}};
 \item[{\large \ding{208}}] \texttt{\%st\_in} is substituted with register \texttt{r1} and register \texttt{r1} is marked as containing state of register st to enable pretty printing of its content, while \texttt{\%clobber st} is substituted by register \texttt{st} and register \texttt{st} is marked as clobbered;
 \item[{\large \ding{209}}] \texttt{\%6} is substituted as \texttt{\%dst\_aux\_reg} in {\large \ding{205}}; \texttt{\%\%} is substituted with \texttt{\%}; \texttt{\%src\_dst\_float\_reg} is substituted with register \texttt{r2};
-\item[{\large \ding{210}}] \texttt{\%st\_out} is substituted with register \texttt{r3} and register \texttt{r3} is marked as containing state of register st to enable pretty printing of its content.
+\item[{\large \ding{210}}] \texttt{\%st\_out} is substituted with register \texttt{r3} and register \texttt{r3} is marked as containing state of register \texttt{st} to enable pretty printing of its content.
 \end{enumerate}
 
-The random inputs are obtained with a KISS (Keep It Simple Stupid) random number generator (see \url{http://www.math.niu.edu/\~rusin/known-math/99/RNG}) embedded in the unit tests generator. The generator generates a uniform distribution for integer numbers. Table~\ref{table:tms320c3x_unit_test_float_distribution} shows the distribution for the floating point numbers.
+The random inputs are obtained with a KISS (Keep It Simple Stupid) random number generator (see \url{http://www.math.niu.edu/\~rusin/known-math/99/RNG}) embedded in the unit tests generator.
+The generator creates a uniform distribution for integer numbers. 
+Table~\ref{table:tms320c3x_unit_test_float_distribution} shows the distribution for the floating point numbers.
 
 \begin{table}[p]
 \begin{center}
@@ -4386,9 +4419,11 @@ fully random & 10/37\\
 \end{table}
 
 The unit test source code can be compiled for the development board, and run on both the development board and the UNISIM TMS320C3X simulator.
-As a unit test uses the TI C I/O functions, it can reads inputs and write outputs from/to files of the host file system, see Figure~\ref{fig:tms320c3x_unit_test}. Such a capability has considerably reduced the complexity of testing the assembly pattern under test on both the development board and the UNISIM TMS320C3X simulator.
+As a unit test uses the TI C I/O functions, it can reads inputs and write outputs from/to files of the host file system, see Figure~\ref{fig:tms320c3x_unit_test}. 
+Such capability has considerably reduced the complexity of testing the assembly pattern under test on both the development board and the UNISIM TMS320C3X simulator.
 
-A unit test reads manually selected inputs from file \texttt{input.txt} and some random generated inputs from file \texttt{random.txt}. It writes outputs into file \texttt{output.txt}.
+A unit test reads manually selected inputs from file \texttt{input.txt} and some random generated inputs from file \texttt{random.txt}.
+It writes outputs into file \texttt{output.txt}.
 
 \newpage
 \subsubsection{The testing environment}
@@ -4396,17 +4431,17 @@ A unit test reads manually selected inputs from file \texttt{input.txt} and some
 
 A testing environment has been set up using the unit test generator and assembly patterns.
 A GNU Makefile is provided to run the unit tests on both the development board (our reference) and the UNISIM TMS320C3X simulator.
-The test plan is located in companion GNU bash script 'factorial.sh', and more precisely in function 'factorial'.
-The goal of that function is to generate an auxiliary Makefile (Makefile.aux) that contains building rules of planned unit tests. A companion C++ program, 
-'generator' is driven by this auxiliary Makefile to generate the actual unit tests source code.
+The test plan is located in the companion GNU bash script \texttt{factorial.sh}, and more precisely in function '\texttt{factorial}'.
+The goal of this function is to generate an auxiliary \texttt{Makefile} (\texttt{Makefile.aux}) that contains building rules of planned unit tests.
+A companion C++ program, \texttt{generator} is driven by this auxiliary Makefile to generate the actual unit tests source code.
 The generated source code is then compiled for the simulated target using the Texas Instruction cross-compilation tool chain.
-The resulting cross-compiled binaries are executed on both a real TMS320C3X DSP using 'Code Composer', and the UNISIM TMS320C3X simulator. The real/reference execution
-results and the simulation results are compared, and a failure diagnostic (PASSED or FAILED) is established for each generated unit test program.
+The resulting cross-compiled binaries are executed on both a real TMS320C3X DSP using 'Code Composer', and the UNISIM TMS320C3X simulator.
+The real/reference execution results and the simulation results are compared, and a failure diagnostic (PASSED or FAILED) is established for each generated unit test program.
 
 As explained in Section~\ref{tms320c3x_unit_tests_generator}, the unit test program output is in file \texttt{output.txt}.
 To clearly distinguish simulation results from real execution results, file \texttt{output.txt} (the unit test output) is renamed \texttt{output.ref} when run on the development board or \texttt{output.sim} when run on the UNISIM TMS320C3X simulator.
 
-\noindent The list of supported Makefile targets is the following:
+\noindent The list of supported \texttt{Makefile} targets is the following:
 
 \begin{itemize}
 \item \texttt{generator(.exe)}: compile the unit tests generator (\texttt{generator(.exe)})
@@ -4433,7 +4468,7 @@ To clearly distinguish simulation results from real execution results, file \tex
 \item \texttt{cleandoc}: clean latex files (\texttt{test.tex})
 \end{itemize}
 
-\noindent The following Makefile variables are available for tuning the Makefile:
+\noindent The following \texttt{Makefile} variables are available for tuning the \texttt{Makefile}:
 \begin{itemize}
 \item Mandatory:
 	\begin{itemize}
@@ -4443,12 +4478,12 @@ To clearly distinguish simulation results from real execution results, file \tex
 	\end{itemize}
 \item Optional:
 	\begin{itemize}
-	\item \texttt{COMPILER\_PREFIX}: prefix to add before to the compiler tools executables (default: empty)
+	\item \texttt{COMPILER\_PREFIX}: prefix to add before the compiler tools executables names (default: empty)
 	\end{itemize}
 \end{itemize}
 
-The provided Makefile uses a GNU bash script \texttt{factorial.sh}, that contains a factorial plan, to generate most of the Makefile rules in file \texttt{Makefile.aux}.
-To obtain reference outputs from the developement board, do the following at the command prompt:
+The provided \texttt{Makefile} uses a GNU bash script \texttt{factorial.sh}, that contains a factorial plan, to generate most of the \texttt{Makefile} rules in file \texttt{Makefile.aux}.
+To obtain the reference outputs from the developement board, do the following at the command prompt:
 \begin{verbatim}
 $ make execute EXECUTE=cc_app.exe
 \end{verbatim}
@@ -4478,7 +4513,7 @@ Figure~\ref{fig:tms320c3x_cc} shows the testing environment running on Windows a
 
 \vspace{0.5cm}
 
-To obtain simulation outputs from the UNISIM TMS320C3X simulator, do the following at the command prompt:
+To obtain the simulation outputs from the UNISIM TMS320C3X simulator, do the following at the command prompt:
 \begin{verbatim}
 $ make simulate SIMULATE=path-to-tms320c3x
 \end{verbatim}
