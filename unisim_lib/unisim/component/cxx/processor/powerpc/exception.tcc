@@ -479,7 +479,7 @@ void CPU<CONFIG>::HandleException(const SystemResetException<CONFIG>& exc)
 	SetNIA(EXC_SYSTEM_RESET_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	
 	if(IsVerboseException())
-		(*logger_import) << DebugInfo << exc.what() << Endl << EndDebugInfo;
+		logger << DebugInfo << exc.what() << endl << EndDebugInfo;
 }
 
 /* Machine check exception */
@@ -513,7 +513,7 @@ void CPU<CONFIG>::HandleException(const MachineCheckException<CONFIG>& exc)
 	SetNIA(EXC_MACHINE_CHECK_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	
 	if(IsVerboseException())
-		(*logger_import) << DebugInfo << exc.what() << Endl << EndDebugInfo;
+		logger << DebugInfo << exc.what() << endl << EndDebugInfo;
 }
 
 /* Decrementer exception */
@@ -535,7 +535,7 @@ void CPU<CONFIG>::HandleException(const DecrementerException<CONFIG>& exc)
 	SetNIA(EXC_DECREMENTER_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	
 	if(IsVerboseException())
-		(*logger_import) << DebugInfo << "bus cycle " << bus_cycle << ": " << exc.what() << Endl << EndDebugInfo;
+		logger << DebugInfo << "bus cycle " << bus_cycle << ": " << exc.what() << endl << EndDebugInfo;
 	
 	AckDecrementerOverflow();
 }
@@ -558,7 +558,7 @@ void CPU<CONFIG>::HandleException(const ExternalInterruptException<CONFIG>& exc)
 	SetNIA(EXC_EXTERNAL_INTERRUPT_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	
 	if(IsVerboseException())
-		(*logger_import) << DebugInfo << exc.what() << Endl << EndDebugInfo;
+		logger << DebugInfo << exc.what() << endl << EndDebugInfo;
 
 	AckExternalInterrupt();
 }
@@ -582,7 +582,7 @@ void CPU<CONFIG>::HandleException(const PerformanceMonitorInterruptException<CON
 	AckPerformanceMonitorInterrupt();
 	
 	if(IsVerboseException())
-		(*logger_import) << DebugInfo << exc.what() << Endl << EndDebugInfo;
+		logger << DebugInfo << exc.what() << endl << EndDebugInfo;
 }
 
 /* System management interrupt exception */
@@ -605,7 +605,7 @@ void CPU<CONFIG>::HandleException(const SystemManagementInterruptException<CONFI
 	AckSMI();
 
 	if(IsVerboseException())
-		(*logger_import) << DebugInfo << exc.what() << Endl << EndDebugInfo;
+		logger << DebugInfo << exc.what() << endl << EndDebugInfo;
 }
 
 /* Thermal management interrupt exception */
@@ -628,7 +628,7 @@ void CPU<CONFIG>::HandleException(const ThermalManagementInterruptException<CONF
 	AckThermalManagementInterrupt();
 	
 	if(IsVerboseException())
-		(*logger_import) << DebugInfo << exc.what() << Endl << EndDebugInfo;
+		logger << DebugInfo << exc.what() << endl << EndDebugInfo;
 }
 
 /* ISI exception */
@@ -665,12 +665,12 @@ void CPU<CONFIG>::HandleException(const ISIProtectionViolationException<CONFIG>&
 
 	if(IsVerboseException())
 	{
-		(*logger_import) << DebugInfo;
-		(*logger_import) << "At 0x" << Hex << GetCIA() << Dec;
+		logger << DebugInfo;
+		logger << "At 0x" << std::hex << GetCIA() << std::dec;
 		const Symbol<address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<address_t>::SYM_FUNC) : 0;
-		if(symbol) (*logger_import) << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
-		(*logger_import) << ":" << exc.what() << Endl;
-		(*logger_import) << EndDebugInfo;
+		if(symbol) logger << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
+		logger << ":" << exc.what() << endl;
+		logger << EndDebugInfo;
 	}
 }
 
@@ -692,12 +692,12 @@ void CPU<CONFIG>::HandleException(const ISINoExecuteException<CONFIG>& exc)
 	
 	if(IsVerboseException())
 	{
-		(*logger_import) << DebugInfo;
-		(*logger_import) << "At 0x" << Hex << GetCIA() << Dec;
+		logger << DebugInfo;
+		logger << "At 0x" << std::hex << GetCIA() << std::dec;
 		const Symbol<address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<address_t>::SYM_FUNC) : 0;
-		if(symbol) (*logger_import) << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
-		(*logger_import) << ":" << exc.what() << Endl;
-		(*logger_import) << EndDebugInfo;
+		if(symbol) logger << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
+		logger << ":" << exc.what() << endl;
+		logger << EndDebugInfo;
 	}
 }
 
@@ -719,12 +719,12 @@ void CPU<CONFIG>::HandleException(const ISIDirectStoreException<CONFIG>& exc)
 	
 	if(IsVerboseException())
 	{
-		(*logger_import) << DebugInfo;
-		(*logger_import) << "At 0x" << Hex << GetCIA() << Dec;
+		logger << DebugInfo;
+		logger << "At 0x" << std::hex << GetCIA() << std::dec;
 		const Symbol<address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<address_t>::SYM_FUNC) : 0;
-		if(symbol) (*logger_import) << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
-		(*logger_import) << ":" << exc.what() << Endl;
-		(*logger_import) << EndDebugInfo;
+		if(symbol) logger << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
+		logger << ":" << exc.what() << endl;
+		logger << EndDebugInfo;
 	}
 }
 
@@ -746,12 +746,12 @@ void CPU<CONFIG>::HandleException(const ISIPageFaultException<CONFIG>& exc)
 	
 	if(IsVerboseException())
 	{
-		(*logger_import) << DebugInfo;
-		(*logger_import) << "At 0x" << Hex << GetCIA() << Dec;
+		logger << DebugInfo;
+		logger << "At 0x" << std::hex << GetCIA() << std::dec;
 		const Symbol<address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<address_t>::SYM_FUNC) : 0;
-		if(symbol) (*logger_import) << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
-		(*logger_import) << ":" << exc.what() << Endl;
-		(*logger_import) << EndDebugInfo;
+		if(symbol) logger << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
+		logger << ":" << exc.what() << endl;
+		logger << EndDebugInfo;
 	}
 }
 
@@ -773,12 +773,12 @@ void CPU<CONFIG>::HandleException(const ISIGuardedMemoryException<CONFIG>& exc)
 	
 	if(IsVerboseException())
 	{
-		(*logger_import) << DebugInfo;
-		(*logger_import) << "At 0x" << Hex << GetCIA() << Dec;
+		logger << DebugInfo;
+		logger << "At 0x" << std::hex << GetCIA() << std::dec;
 		const Symbol<address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<address_t>::SYM_FUNC) : 0;
-		if(symbol) (*logger_import) << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
-		(*logger_import) << ":" << exc.what() << Endl;
-		(*logger_import) << EndDebugInfo;
+		if(symbol) logger << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
+		logger << ":" << exc.what() << endl;
+		logger << EndDebugInfo;
 	}
 }
 
@@ -829,16 +829,16 @@ void CPU<CONFIG>::HandleException(const DSIDirectStoreException<CONFIG>& exc)
 	
 	if(IsVerboseException())
 	{
-		(*logger_import) << DebugInfo;
-		(*logger_import) << "At 0x" << Hex << GetCIA() << Dec;
+		logger << DebugInfo;
+		logger << "At 0x" << std::hex << GetCIA() << std::dec;
 		const Symbol<address_t> *func_symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<address_t>::SYM_FUNC) : 0;
-		if(func_symbol) (*logger_import) << " (" << func_symbol->GetFriendlyName(GetCIA()) << ")";
-		(*logger_import) << ":" << exc.what() << " while " << (exc.GetAccessType() == CONFIG::MAT_WRITE ? "writing" : "reading")
-				<< " data at 0x" << Hex << exc.GetAddress() << Dec;
+		if(func_symbol) logger << " (" << func_symbol->GetFriendlyName(GetCIA()) << ")";
+		logger << ":" << exc.what() << " while " << (exc.GetAccessType() == CONFIG::MAT_WRITE ? "writing" : "reading")
+				<< " data at 0x" << std::hex << exc.GetAddress() << std::dec;
 		const Symbol<address_t> *obj_symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<address_t>::SYM_OBJECT) : 0;
-		if(obj_symbol) (*logger_import) << " (" << obj_symbol->GetFriendlyName(exc.GetAddress()) << ")";
-		(*logger_import) << Endl;
-		(*logger_import) << EndDebugInfo;
+		if(obj_symbol) logger << " (" << obj_symbol->GetFriendlyName(exc.GetAddress()) << ")";
+		logger << endl;
+		logger << EndDebugInfo;
 	}
 }
 
@@ -867,16 +867,16 @@ void CPU<CONFIG>::HandleException(const DSIProtectionViolationException<CONFIG>&
 	
 	if(IsVerboseException())
 	{
-		(*logger_import) << DebugInfo;
-		(*logger_import) << "At 0x" << Hex << GetCIA() << Dec;
+		logger << DebugInfo;
+		logger << "At 0x" << std::hex << GetCIA() << std::dec;
 		const Symbol<address_t> *func_symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<address_t>::SYM_FUNC) : 0;
-		if(func_symbol) (*logger_import) << " (" << func_symbol->GetFriendlyName(GetCIA()) << ")";
-		(*logger_import) << ":" << exc.what() << " while " << (exc.GetAccessType() == CONFIG::MAT_WRITE ? "writing" : "reading")
-				<< " data at 0x" << Hex << exc.GetAddress() << Dec;
+		if(func_symbol) logger << " (" << func_symbol->GetFriendlyName(GetCIA()) << ")";
+		logger << ":" << exc.what() << " while " << (exc.GetAccessType() == CONFIG::MAT_WRITE ? "writing" : "reading")
+				<< " data at 0x" << std::hex << exc.GetAddress() << std::dec;
 		const Symbol<address_t> *obj_symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<address_t>::SYM_OBJECT) : 0;
-		if(obj_symbol) (*logger_import) << " (" << obj_symbol->GetFriendlyName(exc.GetAddress()) << ")";
-		(*logger_import) << Endl;
-		(*logger_import) << EndDebugInfo;
+		if(obj_symbol) logger << " (" << obj_symbol->GetFriendlyName(exc.GetAddress()) << ")";
+		logger << endl;
+		logger << EndDebugInfo;
 	}
 }
 
@@ -905,16 +905,16 @@ void CPU<CONFIG>::HandleException(const DSIPageFaultException<CONFIG>& exc)
 	
 	if(IsVerboseException())
 	{
-		(*logger_import) << DebugInfo;
-		(*logger_import) << "At 0x" << Hex << GetCIA() << Dec;
+		logger << DebugInfo;
+		logger << "At 0x" << std::hex << GetCIA() << std::dec;
 		const Symbol<address_t> *func_symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<address_t>::SYM_FUNC) : 0;
-		if(func_symbol) (*logger_import) << " (" << func_symbol->GetFriendlyName(GetCIA()) << ")";
-		(*logger_import) << ":" << exc.what() << " while " << (exc.GetAccessType() == CONFIG::MAT_WRITE ? "writing" : "reading")
-				<< " data at 0x" << Hex << exc.GetAddress() << Dec;
+		if(func_symbol) logger << " (" << func_symbol->GetFriendlyName(GetCIA()) << ")";
+		logger << ":" << exc.what() << " while " << (exc.GetAccessType() == CONFIG::MAT_WRITE ? "writing" : "reading")
+				<< " data at 0x" << std::hex << exc.GetAddress() << std::dec;
 		const Symbol<address_t> *obj_symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<address_t>::SYM_OBJECT) : 0;
-		if(obj_symbol) (*logger_import) << " (" << obj_symbol->GetFriendlyName(exc.GetAddress()) << ")";
-		(*logger_import) << Endl;
-		(*logger_import) << EndDebugInfo;
+		if(obj_symbol) logger << " (" << obj_symbol->GetFriendlyName(exc.GetAddress()) << ")";
+		logger << endl;
+		logger << EndDebugInfo;
 	}
 }
 
@@ -943,16 +943,16 @@ void CPU<CONFIG>::HandleException(const DSIDataAddressBreakpointException<CONFIG
 	
 	if(IsVerboseException())
 	{
-		(*logger_import) << DebugInfo;
-		(*logger_import) << ":" << "At 0x" << Hex << GetCIA() << Dec;
+		logger << DebugInfo;
+		logger << ":" << "At 0x" << std::hex << GetCIA() << std::dec;
 		const Symbol<address_t> *func_symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<address_t>::SYM_FUNC) : 0;
-		if(func_symbol) (*logger_import) << " (" << func_symbol->GetFriendlyName(GetCIA()) << ")";
-		(*logger_import) << exc.what() << " while " << (exc.GetAccessType() == CONFIG::MAT_WRITE ? "writing" : "reading")
-				<< " data at 0x" << Hex << exc.GetAddress() << Dec;
+		if(func_symbol) logger << " (" << func_symbol->GetFriendlyName(GetCIA()) << ")";
+		logger << exc.what() << " while " << (exc.GetAccessType() == CONFIG::MAT_WRITE ? "writing" : "reading")
+				<< " data at 0x" << std::hex << exc.GetAddress() << std::dec;
 		const Symbol<address_t> *obj_symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<address_t>::SYM_OBJECT) : 0;
-		if(obj_symbol) (*logger_import) << " (" << obj_symbol->GetFriendlyName(exc.GetAddress()) << ")";
-		(*logger_import) << Endl;
-		(*logger_import) << EndDebugInfo;
+		if(obj_symbol) logger << " (" << obj_symbol->GetFriendlyName(exc.GetAddress()) << ")";
+		logger << endl;
+		logger << EndDebugInfo;
 	}
 }
 
@@ -981,16 +981,16 @@ void CPU<CONFIG>::HandleException(const DSIExternalAccessDisabledException<CONFI
 	
 	if(IsVerboseException())
 	{
-		(*logger_import) << DebugInfo;
-		(*logger_import) << "At 0x" << Hex << GetCIA() << Dec;
+		logger << DebugInfo;
+		logger << "At 0x" << std::hex << GetCIA() << std::dec;
 		const Symbol<address_t> *func_symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<address_t>::SYM_FUNC) : 0;
-		if(func_symbol) (*logger_import) << " (" << func_symbol->GetFriendlyName(GetCIA()) << ")";
-		(*logger_import) << ":" << exc.what() << " while " << (exc.GetAccessType() == CONFIG::MAT_WRITE ? "writing" : "reading")
-				<< " data at 0x" << Hex << exc.GetAddress() << Dec;
+		if(func_symbol) logger << " (" << func_symbol->GetFriendlyName(GetCIA()) << ")";
+		logger << ":" << exc.what() << " while " << (exc.GetAccessType() == CONFIG::MAT_WRITE ? "writing" : "reading")
+				<< " data at 0x" << std::hex << exc.GetAddress() << std::dec;
 		const Symbol<address_t> *obj_symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<address_t>::SYM_OBJECT) : 0;
-		if(obj_symbol) (*logger_import) << " (" << obj_symbol->GetFriendlyName(exc.GetAddress()) << ")";
-		(*logger_import) << Endl;
-		(*logger_import) << EndDebugInfo;
+		if(obj_symbol) logger << " (" << obj_symbol->GetFriendlyName(exc.GetAddress()) << ")";
+		logger << endl;
+		logger << EndDebugInfo;
 	}
 }
 
@@ -1019,16 +1019,16 @@ void CPU<CONFIG>::HandleException(const DSIWriteThroughLinkedLoadStore<CONFIG>& 
 	
 	if(IsVerboseException())
 	{
-		(*logger_import) << DebugInfo;
-		(*logger_import) << "At 0x" << Hex << GetCIA() << Dec;
+		logger << DebugInfo;
+		logger << "At 0x" << std::hex << GetCIA() << std::dec;
 		const Symbol<address_t> *func_symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<address_t>::SYM_FUNC) : 0;
-		if(func_symbol) (*logger_import) << " (" << func_symbol->GetFriendlyName(GetCIA()) << ")";
-		(*logger_import) << ":" << exc.what() << " while " << (exc.GetAccessType() == CONFIG::MAT_WRITE ? "writing" : "reading")
-				<< " data at 0x" << Hex << exc.GetAddress() << Dec;
+		if(func_symbol) logger << " (" << func_symbol->GetFriendlyName(GetCIA()) << ")";
+		logger << ":" << exc.what() << " while " << (exc.GetAccessType() == CONFIG::MAT_WRITE ? "writing" : "reading")
+				<< " data at 0x" << std::hex << exc.GetAddress() << std::dec;
 		const Symbol<address_t> *obj_symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<address_t>::SYM_OBJECT) : 0;
-		if(obj_symbol) (*logger_import) << " (" << obj_symbol->GetFriendlyName(exc.GetAddress()) << ")";
-		(*logger_import) << Endl;
-		(*logger_import) << EndDebugInfo;
+		if(obj_symbol) logger << " (" << obj_symbol->GetFriendlyName(exc.GetAddress()) << ")";
+		logger << endl;
+		logger << EndDebugInfo;
 	}
 }
 
@@ -1114,15 +1114,15 @@ void CPU<CONFIG>::HandleException(const AlignmentException<CONFIG>& exc, uint32_
 	
 	if(IsVerboseException())
 	{
-		(*logger_import) << DebugInfo;
-		(*logger_import) << "At 0x" << Hex << GetCIA() << Dec;
+		logger << DebugInfo;
+		logger << "At 0x" << std::hex << GetCIA() << std::dec;
 		const Symbol<address_t> *func_symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<address_t>::SYM_FUNC) : 0;
-		if(func_symbol) (*logger_import) << " (" << func_symbol->GetFriendlyName(GetCIA()) << ")";
-		(*logger_import) << ":" << exc.what() << " while accessing data at 0x" << Hex << exc.GetAddress() << Dec;
+		if(func_symbol) logger << " (" << func_symbol->GetFriendlyName(GetCIA()) << ")";
+		logger << ":" << exc.what() << " while accessing data at 0x" << std::hex << exc.GetAddress() << std::dec;
 		const Symbol<address_t> *obj_symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<address_t>::SYM_OBJECT) : 0;
-		if(obj_symbol) (*logger_import) << " (" << obj_symbol->GetFriendlyName(exc.GetAddress()) << ")";
-		(*logger_import) << Endl;
-		(*logger_import) << EndDebugInfo;
+		if(obj_symbol) logger << " (" << obj_symbol->GetFriendlyName(exc.GetAddress()) << ")";
+		logger << endl;
+		logger << EndDebugInfo;
 	}
 }
 
@@ -1162,12 +1162,12 @@ void CPU<CONFIG>::HandleException(const IllegalInstructionException<CONFIG>& exc
 	
 	if(IsVerboseException())
 	{
-		(*logger_import) << DebugInfo;
-		(*logger_import) << "At 0x" << Hex << GetCIA() << Dec;
+		logger << DebugInfo;
+		logger << "At 0x" << std::hex << GetCIA() << std::dec;
 		const Symbol<address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<address_t>::SYM_FUNC) : 0;
-		if(symbol) (*logger_import) << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
-		(*logger_import) << ":" << exc.what() << Endl;
-		(*logger_import) << EndDebugInfo;
+		if(symbol) logger << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
+		logger << ":" << exc.what() << endl;
+		logger << EndDebugInfo;
 	}
 }
 
@@ -1189,12 +1189,12 @@ void CPU<CONFIG>::HandleException(const PrivilegeViolationException<CONFIG>& exc
 	
 	if(IsVerboseException())
 	{
-		(*logger_import) << DebugInfo;
-		(*logger_import) << "At 0x" << Hex << GetCIA() << Dec;
+		logger << DebugInfo;
+		logger << "At 0x" << std::hex << GetCIA() << std::dec;
 		const Symbol<address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<address_t>::SYM_FUNC) : 0;
-		if(symbol) (*logger_import) << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
-		(*logger_import) << ":" << exc.what() << Endl;
-		(*logger_import) << EndDebugInfo;
+		if(symbol) logger << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
+		logger << ":" << exc.what() << endl;
+		logger << EndDebugInfo;
 	}
 }
 
@@ -1216,12 +1216,12 @@ void CPU<CONFIG>::HandleException(const TrapException<CONFIG>& exc)
 	
 	if(IsVerboseException())
 	{
-		(*logger_import) << DebugInfo;
-		(*logger_import) << "At 0x" << Hex << GetCIA() << Dec;
+		logger << DebugInfo;
+		logger << "At 0x" << std::hex << GetCIA() << std::dec;
 		const Symbol<address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<address_t>::SYM_FUNC) : 0;
-		if(symbol) (*logger_import) << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
-		(*logger_import) << ":" << exc.what() << Endl;
-		(*logger_import) << EndDebugInfo;
+		if(symbol) logger << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
+		logger << ":" << exc.what() << endl;
+		logger << EndDebugInfo;
 	}
 }
 
@@ -1243,12 +1243,12 @@ void CPU<CONFIG>::HandleException(const FloatingPointException<CONFIG>& exc)
 	
 	if(IsVerboseException())
 	{
-		(*logger_import) << DebugInfo;
-		(*logger_import) << "At 0x" << Hex << GetCIA() << Dec;
+		logger << DebugInfo;
+		logger << "At 0x" << std::hex << GetCIA() << std::dec;
 		const Symbol<address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<address_t>::SYM_FUNC) : 0;
-		if(symbol) (*logger_import) << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
-		(*logger_import) << ":" << exc.what() << Endl;
-		(*logger_import) << EndDebugInfo;
+		if(symbol) logger << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
+		logger << ":" << exc.what() << endl;
+		logger << EndDebugInfo;
 	}
 }
 
@@ -1267,12 +1267,12 @@ void CPU<CONFIG>::HandleException(const FloatingPointUnavailableException<CONFIG
 	
 	if(IsVerboseException())
 	{
-		(*logger_import) << DebugInfo;
-		(*logger_import) << "At 0x" << Hex << GetCIA() << Dec;
+		logger << DebugInfo;
+		logger << "At 0x" << std::hex << GetCIA() << std::dec;
 		const Symbol<address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<address_t>::SYM_FUNC) : 0;
-		if(symbol) (*logger_import) << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
-		(*logger_import) << ":" << exc.what() << Endl;
-		(*logger_import) << EndDebugInfo;
+		if(symbol) logger << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
+		logger << ":" << exc.what() << endl;
+		logger << EndDebugInfo;
 	}
 }
 
@@ -1314,16 +1314,16 @@ void CPU<CONFIG>::HandleException(const SystemCallException<CONFIG>& exc)
 			switch(GetGPR(0))
 			{
 				case 1:
-					(*logger_import) << DebugInfo << "exit(0x" << Hex << GetGPR(3) << Dec << ");" << Endl << EndDebugInfo;
+					logger << DebugInfo << "exit(0x" << std::hex << GetGPR(3) << std::dec << ");" << endl << EndDebugInfo;
 					break;
 					
 				case 2:
-					(*logger_import) << DebugInfo << "fork()" << Endl << EndDebugInfo;
+					logger << DebugInfo << "fork()" << endl << EndDebugInfo;
 					break;
 			
 				case 3:
-					(*logger_import) << DebugInfo << "read(fd=" << (signed) GetGPR(3) << ", buf=0x" << Hex << GetGPR(4) << Dec
-							<< ", count=" << GetGPR(5) << ");" << Endl << EndDebugInfo;
+					logger << DebugInfo << "read(fd=" << (signed) GetGPR(3) << ", buf=0x" << std::hex << GetGPR(4) << std::dec
+							<< ", count=" << GetGPR(5) << ");" << endl << EndDebugInfo;
 					break;
 			
 				case 4:
@@ -1353,8 +1353,8 @@ void CPU<CONFIG>::HandleException(const SystemCallException<CONFIG>& exc)
 						}
 #endif
 						
-						(*logger_import) << DebugInfo << "write(fd=" << (signed) GetGPR(3) << ", buf=0x" << Hex << GetGPR(4) << Dec
-								<< ", count=" << GetGPR(5) << ");" << Endl << EndDebugInfo;
+						logger << DebugInfo << "write(fd=" << (signed) GetGPR(3) << ", buf=0x" << std::hex << GetGPR(4) << std::dec
+								<< ", count=" << GetGPR(5) << ");" << endl << EndDebugInfo;
 					}
 					break;
 					
@@ -1373,15 +1373,15 @@ void CPU<CONFIG>::HandleException(const SystemCallException<CONFIG>& exc)
 						flags = GetGPR(4);
 						mode = GetGPR(5);
 							
-						(*logger_import) << DebugInfo << "open(pathname=\"" << pathname << "\", flags=0x" << Hex << flags 
-								<< ", mode=0x" << mode << Dec << ");" << Endl << EndDebugInfo;
+						logger << DebugInfo << "open(pathname=\"" << pathname << "\", flags=0x" << std::hex << flags 
+								<< ", mode=0x" << mode << std::dec << ");" << endl << EndDebugInfo;
 							
 						free(pathname);
 					}
 					break;
 				
 				case 6:
-					(*logger_import) << DebugInfo << "close(fd=" << (signed) GetGPR(3) << ");" << Endl << EndDebugInfo;
+					logger << DebugInfo << "close(fd=" << (signed) GetGPR(3) << ");" << endl << EndDebugInfo;
 					break;
 					
 				case 11:
@@ -1392,7 +1392,7 @@ void CPU<CONFIG>::HandleException(const SystemCallException<CONFIG>& exc)
 						ReadMemory(filename_addr, filename, filenamelen + 1);
 						address_t argv_addr = GetGPR(4);
 						address_t envp_addr = GetGPR(5);
-						(*logger_import) << DebugInfo << "execve(filename=\"" << filename << "\", argv=0x" << Hex << argv_addr << ", envp=0x" << envp_addr << Dec << ");" << Endl << EndDebugInfo;
+						logger << DebugInfo << "execve(filename=\"" << filename << "\", argv=0x" << std::hex << argv_addr << ", envp=0x" << envp_addr << std::dec << ");" << endl << EndDebugInfo;
 						free(filename);
 					}
 					break;
@@ -1407,7 +1407,7 @@ void CPU<CONFIG>::HandleException(const SystemCallException<CONFIG>& exc)
 						uint32_t mode = GetGPR(4);
 						uint32_t dev = GetGPR(5);
 						
-						(*logger_import) << DebugInfo << "mknod(pathname=\"" << path << "\", mode=0x" << Hex << mode << ", dev=0x" << dev << Dec << ");" << Endl << EndDebugInfo;
+						logger << DebugInfo << "mknod(pathname=\"" << path << "\", mode=0x" << std::hex << mode << ", dev=0x" << dev << std::dec << ");" << endl << EndDebugInfo;
 						free(path);
 					}
 					break;
@@ -1421,13 +1421,13 @@ void CPU<CONFIG>::HandleException(const SystemCallException<CONFIG>& exc)
 							
 						uint32_t mode = GetGPR(4);
 							
-						(*logger_import) << DebugInfo << "chmod(pathname=\"" << path << "\", mode=0x" << Hex << mode << Dec << ");" << Endl << EndDebugInfo;
+						logger << DebugInfo << "chmod(pathname=\"" << path << "\", mode=0x" << std::hex << mode << std::dec << ");" << endl << EndDebugInfo;
 						free(path);
 					}
 					break;
 					
 				case 20:
-					(*logger_import) << DebugInfo << "getpid();" << Endl << EndDebugInfo;
+					logger << DebugInfo << "getpid();" << endl << EndDebugInfo;
 					break;
 					
 				case 21:
@@ -1450,9 +1450,9 @@ void CPU<CONFIG>::HandleException(const SystemCallException<CONFIG>& exc)
 						unsigned long mountflags = GetGPR(6);
 						address_t data_addr = GetGPR(7);
 							
-						(*logger_import) << DebugInfo << "mount(source=\"" << source << "\", target=\"" << target << "\", filesystemtype=\""
-								<< filesystemtype << "\", mountflags=0x" << Hex << mountflags << ", data=0x"
-								<< data_addr << Dec << ");" << Endl << EndDebugInfo;
+						logger << DebugInfo << "mount(source=\"" << source << "\", target=\"" << target << "\", filesystemtype=\""
+								<< filesystemtype << "\", mountflags=0x" << std::hex << mountflags << ", data=0x"
+								<< data_addr << std::dec << ");" << endl << EndDebugInfo;
 						free(source);
 						free(target);
 						free(filesystemtype);
@@ -1466,17 +1466,17 @@ void CPU<CONFIG>::HandleException(const SystemCallException<CONFIG>& exc)
 						char *target = (char *) malloc(targetlen + 1);
 						ReadMemory(target_addr, target, targetlen + 1);
 								
-						(*logger_import) << DebugInfo << "umount(target=\"" << target << "\");" << Endl << EndDebugInfo;
+						logger << DebugInfo << "umount(target=\"" << target << "\");" << endl << EndDebugInfo;
 						free(target);
 					}
 					break;
 					
 				case 23:
-					(*logger_import) << DebugInfo << "setuid(uid=0x" << Hex << GetGPR(3) << Dec << ");" << Endl << EndDebugInfo;
+					logger << DebugInfo << "setuid(uid=0x" << std::hex << GetGPR(3) << std::dec << ");" << endl << EndDebugInfo;
 					break;
 					
 				case 24:
-					(*logger_import) << DebugInfo << "getuid();" << Endl << EndDebugInfo;
+					logger << DebugInfo << "getuid();" << endl << EndDebugInfo;
 					break;
 				
 				case 33:
@@ -1491,8 +1491,8 @@ void CPU<CONFIG>::HandleException(const SystemCallException<CONFIG>& exc)
 						pathname = (char *) malloc(pathnamelen + 1);
 						ReadMemory(addr, pathname, pathnamelen + 1);
 						mode = GetGPR(4);
-						(*logger_import) << DebugInfo << "access(pathname=\"" << pathname 
-							<< "\", mode=0x" << Hex << mode << Dec << ");" << Endl << EndDebugInfo;
+						logger << DebugInfo << "access(pathname=\"" << pathname 
+							<< "\", mode=0x" << std::hex << mode << std::dec << ");" << endl << EndDebugInfo;
 						free(pathname);
 					}
 					break;
@@ -1506,47 +1506,47 @@ void CPU<CONFIG>::HandleException(const SystemCallException<CONFIG>& exc)
 					
 						uint32_t mode = GetGPR(4);
 					
-						(*logger_import) << DebugInfo << "mkdir(pathname=\"" << path << "\", mode=0x" << Hex << mode << Dec << ");" << Endl << EndDebugInfo;
+						logger << DebugInfo << "mkdir(pathname=\"" << path << "\", mode=0x" << std::hex << mode << std::dec << ");" << endl << EndDebugInfo;
 						free(path);
 					}
 					break;
 					
 				case 45:
-					(*logger_import) << DebugInfo << "brk(end_data_segment=0x" << Hex << GetGPR(3) << Dec << ");" << Endl << EndDebugInfo;
+					logger << DebugInfo << "brk(end_data_segment=0x" << std::hex << GetGPR(3) << std::dec << ");" << endl << EndDebugInfo;
 					break;
 					
 				case 46:
-					(*logger_import) << DebugInfo << "setgid(gid=0x" << Hex << GetGPR(3) << Dec << ");" << Endl << EndDebugInfo;
+					logger << DebugInfo << "setgid(gid=0x" << std::hex << GetGPR(3) << std::dec << ");" << endl << EndDebugInfo;
 					break;
 				
 				case 47:
-					(*logger_import) << DebugInfo << "getgid();" << Endl << EndDebugInfo;
+					logger << DebugInfo << "getgid();" << endl << EndDebugInfo;
 					break;
 					
 				case 49:
-					(*logger_import) << DebugInfo << "geteuid();" << Endl << EndDebugInfo;
+					logger << DebugInfo << "geteuid();" << endl << EndDebugInfo;
 					break;
 					
 				case 50:
-					(*logger_import) << DebugInfo << "getegid();" << Endl << EndDebugInfo;
+					logger << DebugInfo << "getegid();" << endl << EndDebugInfo;
 					break;
 				
 				case 60:
-					(*logger_import) << DebugInfo << "umask(mask=0x" << Hex << GetGPR(3) << Dec << ");" << Endl << EndDebugInfo;
+					logger << DebugInfo << "umask(mask=0x" << std::hex << GetGPR(3) << std::dec << ");" << endl << EndDebugInfo;
 					break;
 					
 				case 63:
-					(*logger_import) << DebugInfo << "dup2(old=" << GetGPR(3) << ", new=" << GetGPR(4) << ");" << Endl << EndDebugInfo;
+					logger << DebugInfo << "dup2(old=" << GetGPR(3) << ", new=" << GetGPR(4) << ");" << endl << EndDebugInfo;
 					break;
 					
 				case 64:
-					(*logger_import) << DebugInfo << "getppid();" << Endl << EndDebugInfo;
+					logger << DebugInfo << "getppid();" << endl << EndDebugInfo;
 					break;
 					
 				case 90:
-					(*logger_import) << DebugInfo << "mmap(start=0x" << Hex << GetGPR(3) << Dec << ", length=" << GetGPR(4) << ", prot=0x"
-							<< Hex << GetGPR(5) << ", flags=0x" << GetGPR(6) << Dec << ", fd=" << (signed) GetGPR(7)
-							<< ", offset=" << GetGPR(8) << ");" << Endl << EndDebugInfo;
+					logger << DebugInfo << "mmap(start=0x" << std::hex << GetGPR(3) << std::dec << ", length=" << GetGPR(4) << ", prot=0x"
+							<< std::hex << GetGPR(5) << ", flags=0x" << GetGPR(6) << std::dec << ", fd=" << (signed) GetGPR(7)
+							<< ", offset=" << GetGPR(8) << ");" << endl << EndDebugInfo;
 					break;
 					
 				case 106:
@@ -1558,13 +1558,13 @@ void CPU<CONFIG>::HandleException(const SystemCallException<CONFIG>& exc)
 						
 						address_t buf_addr = GetGPR(4);
 						
-						(*logger_import) << DebugInfo << "stat(path=\"" << path << "\", buf=0x" << Hex << buf_addr << Dec << ");" << Endl << EndDebugInfo;
+						logger << DebugInfo << "stat(path=\"" << path << "\", buf=0x" << std::hex << buf_addr << std::dec << ");" << endl << EndDebugInfo;
 						free(path);
 					}
 					break;
 					
 				case 114:
-					(*logger_import) << DebugInfo << "wait4(pid=" << GetGPR(3) << ", status=0x" << Hex << GetGPR(4) << ", options=0x" << GetGPR(5) << ", rusage=0x" << GetGPR(6) << Dec << ");" << Endl << EndDebugInfo;
+					logger << DebugInfo << "wait4(pid=" << GetGPR(3) << ", status=0x" << std::hex << GetGPR(4) << ", options=0x" << GetGPR(5) << ", rusage=0x" << GetGPR(6) << std::dec << ");" << endl << EndDebugInfo;
 					break;
 				
 				case 120:
@@ -1574,32 +1574,32 @@ void CPU<CONFIG>::HandleException(const SystemCallException<CONFIG>& exc)
 						int flags = GetGPR(5);
 						address_t arg = GetGPR(6);
 						
-						(*logger_import) << DebugInfo << "clone(fn=0x" << Hex << fn_addr << ", child_stack=0x" << child_stack << ", flags=0x" << flags << ", arg=0x" << arg << Dec << ");" << Endl << EndDebugInfo;
+						logger << DebugInfo << "clone(fn=0x" << std::hex << fn_addr << ", child_stack=0x" << child_stack << ", flags=0x" << flags << ", arg=0x" << arg << std::dec << ");" << endl << EndDebugInfo;
 					}
 					break;
 					
 				case 122:
-					(*logger_import) << DebugInfo << "uname(buf=0x" << Hex << GetGPR(3) << Dec << ");" << Endl << EndDebugInfo;
+					logger << DebugInfo << "uname(buf=0x" << std::hex << GetGPR(3) << std::dec << ");" << endl << EndDebugInfo;
 					break;
 					
 				case 141:
-					(*logger_import) << DebugInfo << "getdents(fd=" << (signed) GetGPR(3) << ", dirp=0x" << Hex << GetGPR(4) << Dec << ", count=" << GetGPR(5) << ");" << Endl << EndDebugInfo;
+					logger << DebugInfo << "getdents(fd=" << (signed) GetGPR(3) << ", dirp=0x" << std::hex << GetGPR(4) << std::dec << ", count=" << GetGPR(5) << ");" << endl << EndDebugInfo;
 					break;
 					
 				case 173:
-					(*logger_import) << DebugInfo << "rt_sigaction(" << GetGPR(3) << ", act=0x" << Hex << GetGPR(4) << ", oact=0x" << GetGPR(5) << Dec << ", sigsetsize=" << GetGPR(6) << ");" << Endl << EndDebugInfo;
+					logger << DebugInfo << "rt_sigaction(" << GetGPR(3) << ", act=0x" << std::hex << GetGPR(4) << ", oact=0x" << GetGPR(5) << std::dec << ", sigsetsize=" << GetGPR(6) << ");" << endl << EndDebugInfo;
 					break;
 					
 				case 182:
-					(*logger_import) << DebugInfo << "getcwd(buf=0x" << Hex << GetGPR(3) << Dec << ", size=" << GetGPR(4) << ");" << Endl << EndDebugInfo;
+					logger << DebugInfo << "getcwd(buf=0x" << std::hex << GetGPR(3) << std::dec << ", size=" << GetGPR(4) << ");" << endl << EndDebugInfo;
 					break;
 					
 				case 204:
-					(*logger_import) << DebugInfo << "fcntl64(fd=" << GetGPR(3) << ", cmd=0x" << Hex << GetGPR(4) << ", arg=0x" << GetGPR(5) << ");" << Endl << EndDebugInfo;
+					logger << DebugInfo << "fcntl64(fd=" << GetGPR(3) << ", cmd=0x" << std::hex << GetGPR(4) << ", arg=0x" << GetGPR(5) << ");" << endl << EndDebugInfo;
 					break;
 					
 				case 234:
-					(*logger_import) << DebugInfo << "exit_group(" << (signed) GetGPR(3) << ");" << Endl << EndDebugInfo;
+					logger << DebugInfo << "exit_group(" << (signed) GetGPR(3) << ");" << endl << EndDebugInfo;
 					break;
 			}
 		}
@@ -1615,12 +1615,12 @@ void CPU<CONFIG>::HandleException(const SystemCallException<CONFIG>& exc)
 		
 		if(IsVerboseException())
 		{
-			(*logger_import) << DebugInfo;
-			(*logger_import) << "At 0x" << Hex << GetCIA() << Dec;
+			logger << DebugInfo;
+			logger << "At 0x" << std::hex << GetCIA() << std::dec;
 			const Symbol<address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<address_t>::SYM_FUNC) : 0;
-			if(symbol) (*logger_import) << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
-			(*logger_import) << ":" << exc.what() << " (syscall #" << GetGPR(0) << ")" << Endl;
-			(*logger_import) << EndDebugInfo;
+			if(symbol) logger << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
+			logger << ":" << exc.what() << " (syscall #" << GetGPR(0) << ")" << endl;
+			logger << EndDebugInfo;
 		}
 	}
 }
@@ -1640,12 +1640,12 @@ void CPU<CONFIG>::HandleException(const TraceException<CONFIG>& exc)
 	
 	if(IsVerboseException())
 	{
-		(*logger_import) << DebugInfo;
-		(*logger_import) << "At 0x" << Hex << GetCIA() << Dec;
+		logger << DebugInfo;
+		logger << "At 0x" << std::hex << GetCIA() << std::dec;
 		const Symbol<address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<address_t>::SYM_FUNC) : 0;
-		if(symbol) (*logger_import) << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
-		(*logger_import) << ":" << exc.what() << Endl;
-		(*logger_import) << EndDebugInfo;
+		if(symbol) logger << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
+		logger << ":" << exc.what() << endl;
+		logger << EndDebugInfo;
 	}
 }
 
@@ -1664,12 +1664,12 @@ void CPU<CONFIG>::HandleException(const InstructionAddressBreakpointException<CO
 	
 	if(IsVerboseException())
 	{
-		(*logger_import) << DebugInfo;
-		(*logger_import) << "At 0x" << Hex << GetCIA() << Dec;
+		logger << DebugInfo;
+		logger << "At 0x" << std::hex << GetCIA() << std::dec;
 		const Symbol<address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<address_t>::SYM_FUNC) : 0;
-		if(symbol) (*logger_import) << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
-		(*logger_import) << ":" << exc.what() << Endl;
-		(*logger_import) << EndDebugInfo;
+		if(symbol) logger << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
+		logger << ":" << exc.what() << endl;
+		logger << EndDebugInfo;
 	}
 }
 
@@ -1712,12 +1712,12 @@ void CPU<CONFIG>::HandleException(const TLBMissException<CONFIG>& exc)
 	
 	if(IsVerboseException())
 	{
-		(*logger_import) << DebugInfo;
-		(*logger_import) << "At 0x" << Hex << GetCIA() << Dec;
+		logger << DebugInfo;
+		logger << "At 0x" << std::hex << GetCIA() << std::dec;
 		const Symbol<address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<address_t>::SYM_FUNC) : 0;
-		if(symbol) (*logger_import) << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
-		(*logger_import) << ":" << exc.what() << Endl;
-		(*logger_import) << EndDebugInfo;
+		if(symbol) logger << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
+		logger << ":" << exc.what() << endl;
+		logger << EndDebugInfo;
 	}
 }
 

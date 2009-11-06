@@ -43,6 +43,7 @@
 #define unlikely(x) (x)
 #endif
 
+#include <unisim/kernel/logger//logger.hh>
 #include <unisim/component/cxx/processor/powerpc/floating.hh>
 #include <unisim/component/cxx/processor/powerpc/powerpc.hh>
 #include <unisim/component/cxx/processor/powerpc/config.hh>
@@ -67,7 +68,6 @@
 #include <unisim/service/interfaces/cache_power_estimator.hh>
 #include <unisim/service/interfaces/power_mode.hh>
 #include <unisim/service/interfaces/synchronizable.hh>
-#include <unisim/service/interfaces/logger.hh>
 #include <unisim/service/interfaces/trap_reporting.hh>
 #include <unisim/service/interfaces/registers.hh>
 #include <unisim/util/queue/queue.hh>
@@ -119,17 +119,13 @@ using unisim::service::interfaces::TrapReporting;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::Statistic;
 using unisim::kernel::service::ParameterArray;
-using unisim::service::interfaces::Logger;
-//using unisim::service::interfaces::operator<<;
-using unisim::service::interfaces::Hex;
-using unisim::service::interfaces::Dec;
-using unisim::service::interfaces::Endl;
-using unisim::service::interfaces::DebugInfo;
-using unisim::service::interfaces::DebugWarning;
-using unisim::service::interfaces::DebugError;
-using unisim::service::interfaces::EndDebugInfo;
-using unisim::service::interfaces::EndDebugWarning;
-using unisim::service::interfaces::EndDebugError;
+using unisim::kernel::logger::Logger;
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugInfo;
+using unisim::kernel::logger::EndDebugWarning;
+using unisim::kernel::logger::EndDebugError;
 using namespace std;
 using unisim::util::queue::Queue;
 using unisim::component::cxx::cache::CacheBlock;
@@ -539,7 +535,6 @@ class CPU :
 	public Service<CPULinuxOS>,
 	public Client<Memory<typename CONFIG::address_t> >,
 	public Client<LinuxOS>,
-	public Client<Logger>,
 	public Client<CachePowerEstimator>,
 	public Client<PowerMode>,
 	public Service<Synchronizable>
@@ -700,9 +695,6 @@ public:
 	ServiceImport<Memory<physical_address_t> > memory_import;
 	ServiceImport<LinuxOS> linux_os_import;
 	ServiceImport<TrapReporting> trap_reporting_import;
-	ServiceImport<Logger> logger_import;
-	ServiceImport<Logger> fpu_logger_import;
-	ServiceImport<Logger> mmu_logger_import;
 	ServiceImport<CachePowerEstimator> il1_power_estimator_import;
 	ServiceImport<CachePowerEstimator> dl1_power_estimator_import;
 	ServiceImport<CachePowerEstimator> l2_power_estimator_import;
@@ -1407,6 +1399,7 @@ public:
 	address_t GetEA() { return effective_address; }
 	
 	Parameter<bool> param_verbose_all;
+	Parameter<bool> param_verbose_setup;
 	Parameter<bool> param_verbose_step;
 	Parameter<bool> param_verbose_dtlb;
 	Parameter<bool> param_verbose_dl1;
@@ -1682,6 +1675,7 @@ private:
         address_t effective_address;
 
 	bool verbose_all;
+	bool verbose_setup;
 	bool verbose_step;
 	bool verbose_dtlb;
 	bool verbose_dl1;
@@ -1703,22 +1697,24 @@ private:
 	uint64_t instruction_counter;                              //!< Number of executed instructions
 	uint64_t max_inst;                                         //!< Maximum number of instructions to execute
 	int StringLength(address_t addr);                          //!< Something to compute the length of a null-terminated string at an effective address
-	inline bool IsVerboseStep() const { return logger_import && CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_STEP_ENABLE && (verbose_all || verbose_step); }
-	inline bool IsVerboseDTLB() const { return logger_import && CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_DTLB_ENABLE && (verbose_all || verbose_dtlb); }
-	inline bool IsVerboseDL1() const { return logger_import && CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_DL1_ENABLE && (verbose_all || verbose_dl1); }
-	inline bool IsVerboseIL1() const { return logger_import && CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_IL1_ENABLE && (verbose_all || verbose_il1); }
-	inline bool IsVerboseL2() const { return logger_import && CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_L2_ENABLE && (verbose_all || verbose_l2); }
-	inline bool IsVerboseLoad() const { return logger_import && CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_LOAD_ENABLE && (verbose_all || verbose_load); }
-	inline bool IsVerboseStore() const { return logger_import && CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_STORE_ENABLE && (verbose_all || verbose_store); }
-	inline bool IsVerboseReadMemory() const { return logger_import && CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_READ_MEMORY_ENABLE && (verbose_all || verbose_read_memory); }
-	inline bool IsVerboseWriteMemory() const { return logger_import && CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_WRITE_MEMORY_ENABLE && (verbose_all || verbose_write_memory); }
-	inline bool IsVerboseException() const { return logger_import && CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_EXCEPTION_ENABLE && (verbose_all || verbose_exception); }
-	inline bool IsVerboseSetMSR() const { return logger_import && CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_SET_MSR_ENABLE && (verbose_all || verbose_set_msr); }
-	inline bool IsVerboseSetHID0() const { return logger_import && CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_SET_HID0_ENABLE && (verbose_all || verbose_set_hid0); }
-	inline bool IsVerboseSetHID1() const { return logger_import && CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_SET_HID1_ENABLE && (verbose_all || verbose_set_hid1); }
-	inline bool IsVerboseSetHID2() const { return logger_import && CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_SET_HID2_ENABLE && (verbose_all || verbose_set_hid2); }
-	inline bool IsVerboseSetL2CR() const { return logger_import && CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_SET_L2CR_ENABLE && (verbose_all || verbose_set_l2cr); }
-
+protected:
+	inline bool IsVerboseSetup() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_SETUP_ENABLE && (verbose_all || verbose_setup); }
+	inline bool IsVerboseStep() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_STEP_ENABLE && (verbose_all || verbose_step); }
+	inline bool IsVerboseDTLB() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_DTLB_ENABLE && (verbose_all || verbose_dtlb); }
+	inline bool IsVerboseDL1() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_DL1_ENABLE && (verbose_all || verbose_dl1); }
+	inline bool IsVerboseIL1() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_IL1_ENABLE && (verbose_all || verbose_il1); }
+	inline bool IsVerboseL2() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_L2_ENABLE && (verbose_all || verbose_l2); }
+	inline bool IsVerboseLoad() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_LOAD_ENABLE && (verbose_all || verbose_load); }
+	inline bool IsVerboseStore() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_STORE_ENABLE && (verbose_all || verbose_store); }
+	inline bool IsVerboseReadMemory() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_READ_MEMORY_ENABLE && (verbose_all || verbose_read_memory); }
+	inline bool IsVerboseWriteMemory() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_WRITE_MEMORY_ENABLE && (verbose_all || verbose_write_memory); }
+	inline bool IsVerboseException() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_EXCEPTION_ENABLE && (verbose_all || verbose_exception); }
+	inline bool IsVerboseSetMSR() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_SET_MSR_ENABLE && (verbose_all || verbose_set_msr); }
+	inline bool IsVerboseSetHID0() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_SET_HID0_ENABLE && (verbose_all || verbose_set_hid0); }
+	inline bool IsVerboseSetHID1() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_SET_HID1_ENABLE && (verbose_all || verbose_set_hid1); }
+	inline bool IsVerboseSetHID2() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_SET_HID2_ENABLE && (verbose_all || verbose_set_hid2); }
+	inline bool IsVerboseSetL2CR() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_SET_L2CR_ENABLE && (verbose_all || verbose_set_l2cr); }
+private:
 	//=====================================================================
 	//=                    CPU run-time parameters                        =
 	//=====================================================================
@@ -1848,6 +1844,8 @@ private:
 	void ComputeFPSCR_FR(const SoftDouble& result, const Flags& flags, Instruction<CONFIG> *insn = 0);
 
 protected:
+	Logger logger;
+	
 	//=====================================================================
 	//=              CPU Cycle Time/Voltage/Bus Cycle Time                =
 	//=====================================================================

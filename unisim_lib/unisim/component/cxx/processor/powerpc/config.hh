@@ -578,6 +578,7 @@ public:
 
 	// Debug stuff
 	static const bool DEBUG_ENABLE = false; // Debug is disabled by default
+	static const bool DEBUG_SETUP_ENABLE = false;
 	static const bool DEBUG_STEP_ENABLE = false;
 	static const bool DEBUG_DTLB_ENABLE = false;
 	static const bool DEBUG_DL1_ENABLE = false;
@@ -2053,6 +2054,7 @@ public:
 
 	// Debug stuff
 	static const bool DEBUG_ENABLE = true;
+	static const bool DEBUG_SETUP_ENABLE = true;
 	static const bool DEBUG_STEP_ENABLE = true;
 	static const bool DEBUG_DTLB_ENABLE = true;
 	static const bool DEBUG_DL1_ENABLE = true;
@@ -2077,6 +2079,7 @@ public:
 
 	// Debug stuff
 	static const bool DEBUG_ENABLE = true;
+	static const bool DEBUG_SETUP_ENABLE = true;
 	static const bool DEBUG_STEP_ENABLE = true;
 	static const bool DEBUG_DTLB_ENABLE = true;
 	static const bool DEBUG_DL1_ENABLE = true;

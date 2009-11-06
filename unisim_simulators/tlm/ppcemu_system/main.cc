@@ -1096,10 +1096,10 @@ int sc_main(int argc, char *argv[])
 	if(logger_on) {
 		unsigned int logger_index = 0;
 		logger->time_import >> time->time_export;
-		cpu->logger_import >> *logger->logger_export[logger_index++];
+/*		cpu->logger_import >> *logger->logger_export[logger_index++];
 		cpu->fpu_logger_import >> *logger->logger_export[logger_index++];
 		cpu->mmu_logger_import >> *logger->logger_export[logger_index++];
-/*		bus->logger_import >> *logger->logger_export[logger_index++];
+		bus->logger_import >> *logger->logger_export[logger_index++];
 		mpc107->logger_import >> *logger->logger_export[logger_index++];
 		pci_bus->logger_import >> *logger->logger_export[logger_index++];
 		heathrow->logger_import >> *logger->logger_export[logger_index++];

@@ -88,9 +88,9 @@ template <class CONFIG>
 void PowerPC<CONFIG>::Stop(int ret)
 {
 	// Call BusSynchronize to account for the remaining time spent in the cpu core
-	if(inherited::logger_import)
+	if(inherited::IsVerboseStep())
 	{
-		*inherited::logger_import << DebugInfo << "Program exited with status " << ret << Endl << EndDebugInfo;
+		inherited::logger << DebugInfo << "Program exited with status " << ret << EndDebugInfo;
 	}
 	BusSynchronize();
 	sc_stop();
