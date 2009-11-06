@@ -41,16 +41,25 @@ namespace tlm {
 namespace pci {
 namespace ide {
 
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugInfo;
+using unisim::kernel::logger::EndDebugWarning;
+using unisim::kernel::logger::EndDebugError;
+
 template<class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
 PCIDev<ADDRESS_TYPE, MAX_DATA_SIZE>::PCIDev(const sc_module_name &name, Object *parent):
 	sc_module(name),
 	Object(name, parent),
-	Client<Logger>(name, parent),
 	input_port("PCI_input_port"),
 	output_port("PCI_output_port"),
 	irq_port("irq_port"),
-	logger_import("logger-import", this),
-	intr_device_request() //,
+	intr_device_request(),
+	logger(*this),
+	verbose(false),
+	param_verbose("verbose", this, verbose)
+	//,
 	//Service<PCIInterface<ADDRESS_TYPE> >(name, parent),
 	//Client<PCIInterface<ADDRESS_TYPE> >(name, parent),
 	/*param_base_address("base-address", this, base_address),
@@ -98,20 +107,20 @@ bool PCIDev<ADDRESS_TYPE, MAX_DATA_SIZE>::Send (const PMsgType &message) {
 				ret = pciDev->readConfig(req->addr & 0xFF, req->size, res->read_data);
 				message->SetResponse(res);
 		
-				if(logger_import)
+				if(verbose)
 				{
-					(*logger_import) << DebugInfo
+					logger << DebugInfo
 					<< "(" << __FUNCTION__
 					<< ":" << __FILE__
 					<< ":" << __LINE__ << "): "
 					<< "read access to configuration register 0x"
-					<< Hex << req->addr << Dec 
+					<< std::hex << req->addr << std::dec 
 					<< " size = " << req->size
 					<< " data = 0x";
 					for(unsigned int i = 0; i < req->size - 1; i++)
-						(*logger_import) << Hex << (unsigned int)res->read_data[i] << Dec << " ";
-					(*logger_import) << Hex << (unsigned int)res->read_data[req->size - 1] << Dec << Endl;
-					(*logger_import) << EndDebugInfo;
+						logger << std::hex << (unsigned int)res->read_data[i] << std::dec << " ";
+					logger << std::hex << (unsigned int)res->read_data[req->size - 1] << std::dec << std::endl;
+					logger << EndDebugInfo;
 				}
 		
 				}
@@ -122,20 +131,20 @@ bool PCIDev<ADDRESS_TYPE, MAX_DATA_SIZE>::Send (const PMsgType &message) {
 				ret = pciDev->readMem(req->addr, req->size, res->read_data);
 				message->SetResponse(res);
 
-				if(logger_import)
+				if(verbose)
 				{
-					(*logger_import) << DebugInfo
+					logger << DebugInfo
 					<< "(" << __FUNCTION__
 					<< ":" << __FILE__
 					<< ":" << __LINE__ << "): "
 					<< "read access to MEM 0x"
-					<< Hex << req->addr << Dec 
+					<< std::hex << req->addr << std::dec 
 					<< " size = " << req->size
 					<< " data = 0x";
 					for(unsigned int i = 0; i < req->size - 1; i++)
-						(*logger_import) << Hex << (unsigned int)res->read_data[i] << Dec << " ";
-					(*logger_import) << Hex << (unsigned int)res->read_data[req->size - 1] << Dec << Endl;
-					(*logger_import) << EndDebugInfo;
+						logger << std::hex << (unsigned int)res->read_data[i] << std::dec << " ";
+					logger << std::hex << (unsigned int)res->read_data[req->size - 1] << std::dec << std::endl;
+					logger << EndDebugInfo;
 				}
 
 				}
@@ -160,19 +169,19 @@ bool PCIDev<ADDRESS_TYPE, MAX_DATA_SIZE>::Send (const PMsgType &message) {
 			case unisim::component::cxx::pci::SP_CONFIG: {
 				ret = pciDev->writeConfig(req->addr & 0xFF, req->size, req->write_data);
 				
-				if(logger_import)
+				if(verbose)
 				{
-					(*logger_import) << DebugInfo << "(" << __FUNCTION__
+					logger << DebugInfo << "(" << __FUNCTION__
 					<< ":" << __FILE__
 					<< ":" << __LINE__ << "): "
 					<< "write access to configuration register 0x"
-					<< Hex << req->addr << Dec 
+					<< std::hex << req->addr << std::dec 
 					<< " size = " << req->size
 					<< " data = 0x";
 					for(unsigned int i = 0; i < req->size - 1; i++)
-						(*logger_import) << Hex << (unsigned int)req->write_data[i] << Dec << " ";
-					(*logger_import) << Hex << (unsigned int)req->write_data[req->size - 1] << Dec << Endl;
-					(*logger_import) << EndDebugInfo;
+						logger << std::hex << (unsigned int)req->write_data[i] << std::dec << " ";
+					logger << std::hex << (unsigned int)req->write_data[req->size - 1] << std::dec << std::endl;
+					logger << EndDebugInfo;
 				}
 				
 			}
@@ -190,13 +199,13 @@ bool PCIDev<ADDRESS_TYPE, MAX_DATA_SIZE>::Send (const PMsgType &message) {
 		} 
 	default:
 		{
-			if(logger_import)
+			if(verbose)
 			{
-				(*logger_import) << DebugError << "No esta definido el codigo!" << Endl;
-				(*logger_import) << "  (" << __FUNCTION__ << ":"
+				logger << DebugError << "No esta definido el codigo!" << std::endl;
+				logger << "  (" << __FUNCTION__ << ":"
 					<< __FILE__ << ":"
-					<< __LINE__ << ")" << Endl;
-				(*logger_import) << EndDebugError;
+					<< __LINE__ << ")" << std::endl;
+				logger << EndDebugError;
 			}
 		ret = false;
 		}
@@ -238,8 +247,8 @@ bool PCIDev<ADDRESS_TYPE, MAX_DATA_SIZE>::dmaRead(ADDRESS_TYPE addr, int size, u
 
 template<class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
 bool PCIDev<ADDRESS_TYPE, MAX_DATA_SIZE>::dmaWrite(ADDRESS_TYPE addr, int size, const uint8_t *data) {
-	if(logger_import)
-		(*logger_import) << DebugInfo << "Doing dma write" << Endl << EndDebugInfo;
+	if(verbose)
+		logger << DebugInfo << "Doing dma write" << std::endl << EndDebugInfo;
 		
 	int size_done = 0;
 	

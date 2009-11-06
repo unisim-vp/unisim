@@ -36,8 +36,8 @@
 #define __UNISIM_COMPONENT_CXX_BRIDGE_PCI_ISA_BRIDGE_HH__
 
 #include <unisim/util/device/register.hh>
-#include <unisim/kernel/service//service.hh>
-#include <unisim/service/interfaces/logger.hh>
+#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/logger/logger.hh>
 #include <unisim/component/cxx/pci/types.hh>
 #include <unisim/component/cxx/isa/types.hh>
 
@@ -55,17 +55,14 @@ using unisim::kernel::service::Parameter;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::Object;
-using unisim::service::interfaces::Logger;
 using unisim::util::device::Register;
 
 
 template <class ADDRESS>
 class Bridge :
-	public Client<Logger>
+	virtual public Object
 {
 public:
-	ServiceImport<Logger> logger_import;
-	
 	typedef Register<uint32_t> reg32_t;
 	typedef Register<uint32_t> reg24_t;
 	typedef Register<uint16_t> reg16_t;
@@ -111,7 +108,15 @@ protected:
 	ADDRESS initial_io_base_addr;
 	unsigned int isa_bus_frequency; // in Mhz
 	unsigned int pci_bus_frequency; // in Mhz
+
+protected:
+	// debug stuf
+	unisim::kernel::logger::Logger logger;
+	bool verbose;
+	Parameter<bool> param_verbose;
 	
+private:
+	// parameterization
 	Parameter<ADDRESS> param_initial_base_addr;
 	Parameter<ADDRESS> param_initial_io_base_addr;
 	Parameter<uint32_t> param_pci_device_number;

@@ -52,14 +52,11 @@ using unisim::service::interfaces::DebugError;
 using unisim::service::interfaces::EndDebugInfo;
 using unisim::service::interfaces::EndDebugWarning;
 using unisim::service::interfaces::EndDebugError;
-using unisim::service::interfaces::Hex;
-using unisim::service::interfaces::Dec;
-using unisim::service::interfaces::Endl;
-using unisim::service::interfaces::File;
-using unisim::service::interfaces::Function;
-using unisim::service::interfaces::Line;
+using std::hex;
+using std::dec;
+using std::endl;
 
-#define LOCATION File << __FILE__ << Function << __FUNCTION__ << Line << __LINE__
+#define LOCATION "in file " << __FILE__ << ", function " << __FUNCTION__ << ", line #" << __LINE__
 
 /****************************************************/
 /* Bus request port controller implementation START */
@@ -102,15 +99,15 @@ Bus(const sc_module_name& module_name, Object *parent) :
 	Object(module_name, parent),
 	Service<Memory<ADDRESS_TYPE> >(module_name, parent),
 	Client<Memory<ADDRESS_TYPE> >(module_name, parent),
-	Client<Logger>(module_name, parent),
 	sc_module(module_name),
 	ResponseListener<ReqType, RspType>(),		
 	memory_export("memory-export", this),
 	memory_import("memory-import", this),
-	logger_import("logger-import", this),
 	cycle_time(),
 	cycle_time_int(0),
 	cycle_time_parameter("cycle-time", this, cycle_time_int),
+	logger(*this),
+	param_verbose("verbose", this, verbose),
 	bus_synchro_event(),
 	next_serviced(0),
 	chipset_req_fifo("chipset_req_fifo"),
@@ -119,7 +116,6 @@ Bus(const sc_module_name& module_name, Object *parent) :
 	cpu_snoop(false),
 	snoop_event(),
 	snoop_counter(0) {
-	Object::SetupDependsOn(logger_import);
 	/* create input ports and name them */
 	for(unsigned int i = 0; i < NUM_PROCS; i++) {
 		stringstream s;
@@ -176,9 +172,9 @@ bool
 Bus<ADDRESS_TYPE, DATA_SIZE, NUM_PROCS> :: 
 Setup() {
 	if(!memory_import) {
-		if(logger_import) {
-			(*logger_import) << DebugError << LOCATION
-				<< "No memory connected" << Endl
+		if(verbose) {
+			logger << DebugError << LOCATION
+				<< "No memory connected" << endl
 				<< EndDebugError;
 		} else 
 			cerr << Object::GetName() << ": No memory connected" << endl;
@@ -186,15 +182,15 @@ Setup() {
 	}
 
 	cerr << "cycle time of " << cycle_time_int << " microseconds" << endl;
-	if(logger_import) {
-		(*logger_import) << DebugInfo << LOCATION
-			<< "cycle time of " << cycle_time_int << " microseconds" << Endl
+	if(verbose) {
+		logger << DebugInfo << LOCATION
+			<< "cycle time of " << cycle_time_int << " microseconds" << endl
 			<< EndDebugInfo;
 	}
 	if(!cycle_time_int) {
-		if(logger_import) {
-			(*logger_import) << DebugError << LOCATION
-				<< "cycle_time should be bigger than 0" << Endl
+		if(verbose) {
+			logger << DebugError << LOCATION
+				<< "cycle_time should be bigger than 0" << endl
 				<< EndDebugInfo;
 		} else
 			cerr << "cycle_time should be bigger than 0" << endl;
@@ -248,20 +244,20 @@ template <class ADDRESS_TYPE, unsigned int DATA_SIZE,
 bool 
 Bus<ADDRESS_TYPE, DATA_SIZE, NUM_PROCS> :: 
 Send(const PTransactionMsgType &msg, unsigned int id) {
-	if(logger_import)
-		(*logger_import) << DebugInfo << LOCATION
-			<< "Request received on port " << id << Endl
+	if(verbose)
+		logger << DebugInfo << LOCATION
+			<< "Request received on port " << id << endl
 			<< EndDebugInfo;
 
 	/* check if the incomming request can be inserted in its
 	 *   request fifo, if no just return returning false, which
 	 *   means that the request could not be processed */
 	if(!req_fifo[id]->nb_write(msg)) {
-		if(logger_import) {
-			(*logger_import) << DebugWarning << LOCATION 
+		if(verbose) {
+			logger << DebugWarning << LOCATION 
 				<< "Could not accept incomming request on port " << id
 				<< " because fifo full"
-				<< Endl << EndDebugWarning;
+				<< endl << EndDebugWarning;
 		}
 		return false;
 	}
@@ -279,11 +275,11 @@ ResponseReceived(const PTransactionMsgType &msg,
 	/* check if the response comes from the chipset, if so
 	 *   put the response in the chipset fifo queue */
 	if(&port == chipset_outport) {
-		if(logger_import) {
-			(*logger_import) << DebugInfo << LOCATION
-				<< "Response received on chipset_outport." << Endl
-				<< "Request:" << Endl << (*(msg->req)) << Endl
-				<< "Response:" << Endl << (*(msg->rsp)) << Endl
+		if(verbose) {
+			logger << DebugInfo << LOCATION
+				<< "Response received on chipset_outport." << endl
+				<< "Request:" << endl << (*(msg->req)) << endl
+				<< "Response:" << endl << (*(msg->rsp)) << endl
 				<< EndDebugInfo;
 		}
 		chipset_rsp_fifo.write(msg);
@@ -309,29 +305,29 @@ BusSynchronize() {
 	sc_dt::uint64 cur_cycle = cur_time_int / cycle_time_int;
 	sc_dt::uint64 cur_cycle_init_int = cur_cycle * cycle_time_int;
 	if(cur_cycle_init_int > cur_time_int) {
-		if(logger_import)
-			(*logger_import) << DebugError << LOCATION
+		if(verbose)
+			logger << DebugError << LOCATION
 				<< "current cycle time is bigger than simulation time ("
 				<< "cur_cycle_init_int = " << cur_cycle_init_int << ", "
-				<< "cur_time_int = " << cur_time_int << ")" << Endl
+				<< "cur_time_int = " << cur_time_int << ")" << endl
 				<< EndDebugError;
 		sc_stop();
 		wait();
 	}
 	// check if a message can be send right now
 	if(cur_cycle_init_int == cur_time_int) {
-		if(logger_import)
-			(*logger_import) << DebugInfo << LOCATION
-				<< "bus synchronize in 0 time" << Endl
+		if(verbose)
+			logger << DebugInfo << LOCATION
+				<< "bus synchronize in 0 time" << endl
 				<< EndDebugInfo;
 		// yes a message can be sent right now
 		bus_synchro_event.notify(SC_ZERO_TIME);
 	} else {
-		if(logger_import)
-			(*logger_import) << DebugInfo << LOCATION
+		if(verbose)
+			logger << DebugInfo << LOCATION
 				<< "bus synchronize in " 
 				<< ((cycle_time * (cur_cycle + 1)) - cur_time).to_string() 
-				<< Endl
+				<< endl
 				<< EndDebugInfo;
 		//fprintf(stderr, "sending message in more time ");
 		//fprintf(stderr, ((cycle_time * (cur_cycle + 1)) - cur_time).to_string().c_str());
@@ -351,18 +347,18 @@ BusClock() {
 		wait(bus_synchro_event);
 		current_time = sc_time_stamp();
 		if(current_time <= last_serviced_time) {
-			if(logger_import)
-				(*logger_import) << DebugInfo << LOCATION
+			if(verbose)
+				logger << DebugInfo << LOCATION
 					<< "Delaying bus cycle execution"
-					<< Endl << EndDebugInfo;
+					<< endl << EndDebugInfo;
 			wait((last_serviced_time - current_time) + cycle_time);
 			last_serviced_time = sc_time_stamp();
 		} else
 			last_serviced_time = current_time;
 		last_serviced_time = sc_time_stamp();
-		if(logger_import) {
-			(*logger_import) << DebugInfo << LOCATION
-				<< "Executing bus cycle" << Endl
+		if(verbose) {
+			logger << DebugInfo << LOCATION
+				<< "Executing bus cycle" << endl
 				<< EndDebugInfo;
 		}
 		
@@ -390,10 +386,10 @@ BusClock() {
 		 * and go back to the beginning of the BusClock loop after indicating
 		 *   that there is no work in the bus */
 		if(counter == NUM_PROCS + 2) {
-			if(logger_import) {
-				(*logger_import) << DebugWarning << LOCATION
+			if(verbose) {
+				logger << DebugWarning << LOCATION
 					<< "Dispatch thread BusClock was requested when there was "
-					<< "no message to dispatch, this should never occur" << Endl
+					<< "no message to dispatch, this should never occur" << endl
 					<< EndDebugWarning;
 			}
 			continue;
@@ -413,51 +409,51 @@ BusClock() {
 		bool msg_found = false;
 		for(unsigned int i = 0; !msg_found && i < NUM_PROCS; i++) {
 			if(req_fifo[i]->num_available() != 0) {
-				if(logger_import)
-					(*logger_import) << DebugInfo << LOCATION
+				if(verbose)
+					logger << DebugInfo << LOCATION
 						<< req_fifo[i]->num_available()
 						<< " messages found in req_fifo[" << i << "]"
-						<< " at the end of bus cycle" << Endl
+						<< " at the end of bus cycle" << endl
 						<< EndDebugInfo;
 				msg_found = true;
 			}
 		}
 		if(!msg_found) {
 			if(chipset_req_fifo.num_available() != 0) {
-				if(logger_import)
-					(*logger_import) << DebugInfo << LOCATION
+				if(verbose)
+					logger << DebugInfo << LOCATION
 						<< chipset_req_fifo.num_available()
 						<< " messages found in chipset_req_fifo"
-						<< " at the end of bus cycle" << Endl
+						<< " at the end of bus cycle" << endl
 						<< EndDebugInfo;
 				msg_found = true;
 			}
 		}
 		if(!msg_found) {
 			if(chipset_rsp_fifo.num_available() != 0) {
-				if(logger_import)
-					(*logger_import) << DebugInfo << LOCATION
+				if(verbose)
+					logger << DebugInfo << LOCATION
 						<< chipset_rsp_fifo.num_available()
 						<< " messages found in chipset_rsp_fifo"
-						<< " at the end of bus cycle" << Endl
+						<< " at the end of bus cycle" << endl
 						<< EndDebugInfo;
 				msg_found = true;
 			}
 		}
 		if(msg_found) {
-			if(logger_import) {
-				(*logger_import) << DebugInfo << LOCATION
+			if(verbose) {
+				logger << DebugInfo << LOCATION
 					<< "Finished bus cycle but a message found in one of " 
-					<< "the fifos" << Endl
+					<< "the fifos" << endl
 					<< EndDebugInfo;
 			}
 			BusSynchronize();
 		} else {
 			/* unset the working boolean, there is nothing else to do */
-			if(logger_import) 
-				(*logger_import) << DebugInfo << LOCATION
+			if(verbose) 
+				logger << DebugInfo << LOCATION
 					<< "Finished bus cycle"
-					<< Endl << EndDebugInfo;
+					<< endl << EndDebugInfo;
 		}
 	}
 }
@@ -473,11 +469,11 @@ DispatchChipsetMessage() {
 	 * Check if a response is available if so, notify the message event. */
 	if(chipset_rsp_fifo.num_available() != 0) {
 		msg = chipset_rsp_fifo.read();
-		if(logger_import) 
-			(*logger_import) << DebugInfo << LOCATION
-				<< "Dispatching chipset_rsp_fifo message." << Endl
-				<< "Request:" << Endl << (*(msg->req)) << Endl 
-				<< "Response:" << Endl << (*(msg->rsp)) << Endl
+		if(verbose) 
+			logger << DebugInfo << LOCATION
+				<< "Dispatching chipset_rsp_fifo message." << endl
+				<< "Request:" << endl << (*(msg->req)) << endl 
+				<< "Response:" << endl << (*(msg->rsp)) << endl
 				<< EndDebugInfo;
 		msg->GetResponseEvent()->notify(SC_ZERO_TIME);
 		return;
@@ -487,29 +483,29 @@ DispatchChipsetMessage() {
 	 *   show a warning because the DispatchChipsetMessage method should not have
 	 *   been called */
 	if(chipset_req_fifo.num_available() == 0) {
-		if(logger_import) {
-			(*logger_import) << DebugWarning << LOCATION
+		if(verbose) {
+			logger << DebugWarning << LOCATION
 				<< "The DispatchChipsetMessage method was called when there were "
 				<< "no requests/responses available in the chipset fifos, this should "
-				<< "have never occurred" << Endl
+				<< "have never occurred" << endl
 				<< EndDebugWarning;
 		}
 		return;
 	}
 	msg = chipset_req_fifo.read();
-	if(logger_import) 
-		(*logger_import) << DebugInfo << LOCATION
-			<< "Dispatching chipset_rsp_fifo message." << Endl
-			<< "Request:" << Endl << (*(msg->req)) << Endl 
-			<< "Response:" << Endl << (*(msg->rsp)) << Endl
+	if(verbose) 
+		logger << DebugInfo << LOCATION
+			<< "Dispatching chipset_rsp_fifo message." << endl
+			<< "Request:" << endl << (*(msg->req)) << endl 
+			<< "Response:" << endl << (*(msg->rsp)) << endl
 			<< EndDebugInfo;
 	/* only two possible requests can arrive from the chipset for the moment,
 	 *   a write command, and a read with intent to modify command */
 	if(!(msg->req->type == ReqType::READ || msg->req->type == ReqType::READX || msg->req->type == ReqType::WRITE)) {
-		if(logger_import) {
-			(*logger_import) << DebugError << LOCATION
+		if(verbose) {
+			logger << DebugError << LOCATION
 				<< "The bus received a request from the chipset that is not "
-				<< "a READX, neither a WRITE. Stopping simulation" << Endl
+				<< "a READX, neither a WRITE. Stopping simulation" << endl
 				<< EndDebugError;
 		}
 		sc_stop();
@@ -561,10 +557,10 @@ DispatchCPUMessage() {
 	/* get the message */
 	PTransactionMsgType msg = req_fifo[next_serviced]->read();
 	
-	if(logger_import) 
-		(*logger_import) << DebugInfo << LOCATION
-			<< "Dispatching req_fifo[" << next_serviced << "] message." << Endl
-			<< "Request:" << Endl << (*(msg->req)) << Endl 
+	if(verbose) 
+		logger << DebugInfo << LOCATION
+			<< "Dispatching req_fifo[" << next_serviced << "] message." << endl
+			<< "Request:" << endl << (*(msg->req)) << endl 
 			<< EndDebugInfo;
 	/* if the message is not global it just needs to be send to the chipset */
 	if(!msg->req->global) {
@@ -605,9 +601,9 @@ DispatchCPUMessage() {
 	/* check that the request is a read or a readx */
 	if(msg->req->type != ReqType::READ &&
 		msg->req->type != ReqType::READX) {
-		if(logger_import) {
-			(*logger_import) << DebugError << LOCATION
-				<< "Unknown command received" << Endl
+		if(verbose) {
+			logger << DebugError << LOCATION
+				<< "Unknown command received" << endl
 				<< EndDebugError;
 		}
 		sc_stop();
@@ -667,9 +663,9 @@ void
 Bus<ADDRESS_TYPE, DATA_SIZE, NUM_PROCS> :: 
 ProcessSnoopingResponse(const PTransactionMsgType &msg) {
 	if(!chipset_snoop && !cpu_snoop) {
-		if(logger_import) {
-			(*logger_import) << DebugError << LOCATION
-				<< "Received a snoop response when nothing was expected" << Endl
+		if(verbose) {
+			logger << DebugError << LOCATION
+				<< "Received a snoop response when nothing was expected" << endl
 				<< EndDebugError;
 		}
 		sc_stop();

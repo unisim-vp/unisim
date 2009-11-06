@@ -41,7 +41,7 @@
 #include <unisim/component/cxx/pci/ide/pcidev.hh>
 #include <unisim/component/cxx/pci/ide/pci_master.hh>
 #include <unisim/component/tlm/message/interrupt.hh>
-#include <unisim/service/interfaces/logger.hh>
+#include <unisim/kernel/logger/logger.hh>
 
 namespace unisim {
 namespace component {
@@ -64,23 +64,11 @@ using unisim::kernel::service::Parameter;
 using unisim::kernel::service::ParameterArray;
 using unisim::util::endian::Host2LittleEndian;
 using unisim::component::tlm::message::InterruptRequest;
-using unisim::service::interfaces::Logger;
-//using unisim::service::interfaces::operator<<;
-using unisim::service::interfaces::Hex;
-using unisim::service::interfaces::Dec;
-using unisim::service::interfaces::Endl;
-using unisim::service::interfaces::Endl;
-using unisim::service::interfaces::DebugInfo;
-using unisim::service::interfaces::DebugWarning;
-using unisim::service::interfaces::DebugError;
-using unisim::service::interfaces::EndDebugInfo;
-using unisim::service::interfaces::EndDebugWarning;
-using unisim::service::interfaces::EndDebugError;
 
 template<class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE> 
 class PCIDev: public sc_module,
+		virtual public Object,
   		public TlmSendIf<PCIRequest<ADDRESS_TYPE, MAX_DATA_SIZE>, PCIResponse<MAX_DATA_SIZE> >,
-  		public Client<Logger>,
   		public virtual unisim::component::cxx::pci::ide::PCIMaster<ADDRESS_TYPE>,
   		public virtual unisim::component::cxx::pci::ide::EventManager
   		//public Service<PCIInterface<ADDRESS_TYPE> >,
@@ -118,14 +106,17 @@ private:
 protected:
 	// Pci device implementation
 	unisim::component::cxx::pci::ide::PciDev<ADDRESS_TYPE> *pciDev;
-	
+
+	// debug stuff
+	unisim::kernel::logger::Logger logger;
+	bool verbose;
+	Parameter<bool> param_verbose;
 public:
 	sc_export<TlmSendIfType> input_port;
 	sc_port<TlmSendIfType> output_port;
 	sc_port<TlmSendIf<InterruptRequest> > irq_port;
 	//ServiceExport<PCIInterface<ADDRESS_TYPE> > *exp;
 	//ServiceImport<PCIInterface<ADDRESS_TYPE> > *import[NUM_TARGETS];
-	ServiceImport<Logger> logger_import;
 
 	SC_HAS_PROCESS(PCIDev);
 

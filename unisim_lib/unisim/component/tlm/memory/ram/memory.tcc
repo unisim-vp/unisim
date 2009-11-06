@@ -35,7 +35,7 @@
 #ifndef __UNISIM_COMPONENT_TLM_MEMORY_RAM_MEMORY_TCC__
 #define __UNISIM_COMPONENT_TLM_MEMORY_RAM_MEMORY_TCC__
 
-#define LOCATION Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+#define LOCATION "in function " << __FUNCTION__ << ", file " << __FILE__ << ", line #" << __LINE__
 
 namespace unisim {
 namespace component {
@@ -43,35 +43,28 @@ namespace tlm {
 namespace memory {
 namespace ram {
 
-//using unisim::service::interfaces::operator<<;
-using unisim::service::interfaces::Hex;
-using unisim::service::interfaces::Dec;
-using unisim::service::interfaces::Endl;
-using unisim::service::interfaces::DebugInfo;
-using unisim::service::interfaces::DebugWarning;
-using unisim::service::interfaces::DebugError;
-using unisim::service::interfaces::EndDebugInfo;
-using unisim::service::interfaces::EndDebugWarning;
-using unisim::service::interfaces::EndDebugError;
-using unisim::service::interfaces::Function;
-using unisim::service::interfaces::File;
-using unisim::service::interfaces::Line;
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugInfo;
+using unisim::kernel::logger::EndDebugWarning;
+using unisim::kernel::logger::EndDebugError;
 
 /* Constructor */
 template <class PHYSICAL_ADDR, uint32_t DATA_SIZE, uint32_t PAGE_SIZE, bool DEBUG>
 Memory<PHYSICAL_ADDR, DATA_SIZE, PAGE_SIZE, DEBUG>::
 Memory(const sc_module_name& name, Object *parent) :
 	Object(name, parent),
-	Client<Logger>(name, parent),
 	sc_module(name),
 	unisim::component::cxx::memory::ram::Memory<PHYSICAL_ADDR, PAGE_SIZE>(name, parent),
 	slave_port("slave-port"),
 	cycle_time(0),
 	cycle_sctime(),
 	param_cycle_time("cycle-time", this, cycle_time),
-	logger_import("logger-import", this) {
+	verbose(false),
+	param_verbose("verbose", this, verbose),
+	logger(*this) {
 	slave_port(*this);
-	Object::SetupDependsOn(logger_import);
 }
 
 /* Destructor */
@@ -84,33 +77,14 @@ Memory<PHYSICAL_ADDR, DATA_SIZE, PAGE_SIZE, DEBUG>::
 template <class PHYSICAL_ADDR, uint32_t DATA_SIZE, uint32_t PAGE_SIZE, bool DEBUG>
 bool Memory<PHYSICAL_ADDR, DATA_SIZE, PAGE_SIZE, DEBUG>::
 Setup() {
-	if(!logger_import) {
-		if(DEBUG) 
-			cerr << "ERROR(";
-		else
-			cerr << "WARNING(";
-		cerr << __FUNCTION__ << ":"
-			 << __FILE__ << ":"
-			 << __LINE__ << "): "
-			 << "No Logger exists to generate the output messages" << endl;
-		if(DEBUG) return false;
-	} 
-	if(DEBUG && logger_import) 
-		(*logger_import) << DebugInfo << LOCATION
+	if(DEBUG && verbose) 
+		logger << DebugInfo << LOCATION
 			<< " cycle time of " << cycle_time << " ps" 
-			<< Endl << EndDebugInfo;
+			<< std::endl << EndDebugInfo;
 	if(!cycle_time) {
-		if(logger_import)
-			(*logger_import) << DebugError << LOCATION
-				<< "cycle time must be different than 0" << Endl
-				<< EndDebugError;
-		else
-			cerr << "ERROR("
-				<< Object::GetName() << "::"
-				<< __FUNCTION__ << ":"
-				<< __FILE__ << ":"
-				<< __LINE__ << "): "
-				<< "cycle time must be different than 0" << endl;  
+		logger << DebugError << LOCATION
+			<< "cycle time must be different than 0" << std::endl
+			<< EndDebugError;
 		return false;
 	}
 	cycle_sctime = sc_time(cycle_time, SC_PS);
@@ -130,10 +104,10 @@ Send(const Pointer<TlmMessage<MemoryRequest<PHYSICAL_ADDR, DATA_SIZE>,
 	switch(req->type)
 	{
 		case MemoryRequest<PHYSICAL_ADDR, DATA_SIZE>::READ: {
-				if(DEBUG && logger_import)
-					(*logger_import) << DebugInfo << LOCATION
+				if(DEBUG && verbose)
+					logger << DebugInfo << LOCATION
 						<< sc_time_stamp().to_string() 
-						<< " Send() received a READ request" << Endl
+						<< " Send() received a READ request" << std::endl
 						<< EndDebugInfo; 	
 				ReadMemory(req->addr, rsp->read_data, req->size);
 				sc_event *rsp_ev = message->GetResponseEvent();
@@ -142,10 +116,10 @@ Send(const Pointer<TlmMessage<MemoryRequest<PHYSICAL_ADDR, DATA_SIZE>,
 			break;
 			
 		case MemoryRequest<PHYSICAL_ADDR, DATA_SIZE>::WRITE:
-			if(DEBUG && logger_import)
-				(*logger_import) << DebugInfo << LOCATION
+			if(DEBUG && verbose)
+				logger << DebugInfo << LOCATION
 					<< sc_time_stamp().to_string() 
-					<< " Send() received a WRITE request" << Endl
+					<< " Send() received a WRITE request" << std::endl
 					<< EndDebugInfo; 	
 			WriteMemory(req->addr, req->write_data, req->size);
 			break;

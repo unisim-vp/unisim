@@ -50,25 +50,21 @@ using namespace std;
 using unisim::util::endian::E_LITTLE_ENDIAN;
 using unisim::util::endian::E_BIG_ENDIAN;
 using unisim::kernel::service::Object;
-using unisim::service::interfaces::Logger;
-//using unisim::service::interfaces::operator<<;
-using unisim::service::interfaces::Hex;
-using unisim::service::interfaces::Dec;
-using unisim::service::interfaces::Endl;
-using unisim::service::interfaces::DebugInfo;
-using unisim::service::interfaces::DebugWarning;
-using unisim::service::interfaces::DebugError;
-using unisim::service::interfaces::EndDebugInfo;
-using unisim::service::interfaces::EndDebugWarning;
-using unisim::service::interfaces::EndDebugError;
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugInfo;
+using unisim::kernel::logger::EndDebugWarning;
+using unisim::kernel::logger::EndDebugError;
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
 AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::AM29LV(const char *name, Object *parent) :
 	Object(name, parent),
-	Client<Logger>(name, parent),
 	Service<Memory<typename CONFIG::ADDRESS> >(name, parent),
-	logger_import("logger-import", this),
 	memory_export("memory-export", this),
+	logger(*this),
+	verbose(false),
+	param_verbose("verbose", this, verbose),
 	org(0),
 	bytesize(BYTESIZE),
 	endian(E_LITTLE_ENDIAN),
@@ -77,8 +73,6 @@ AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::AM29LV(const char *name, Object *parent) :
 	param_endian("endian", this, endian),
 	param_sector_protect("sector-protect", this, sector_protect, CONFIG::NUM_SECTORS)
 {
-	Object::SetupDependsOn(logger_import);
-
 	uint32_t chip_io_width;
 	for(config_addr_shift = 0, chip_io_width = CHIP_IO_WIDTH; chip_io_width > 1; chip_io_width >>= 1, config_addr_shift++);
 
@@ -123,22 +117,22 @@ bool AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::Setup()
 
 	if((IO_WIDTH / NUM_CHIPS) > CONFIG::MAX_IO_WIDTH)
 	{
-		if(logger_import)
+		if(verbose)
 		{
-			(*logger_import) << DebugError;
-			(*logger_import) << "bad I/O Width (currently: " << IO_WIDTH << ", suggested: " << (NUM_CHIPS * CONFIG::MAX_IO_WIDTH) << ")" << Endl;
-			(*logger_import) << EndDebugError;
+			logger << DebugError;
+			logger << "bad I/O Width (currently: " << IO_WIDTH << ", suggested: " << (NUM_CHIPS * CONFIG::MAX_IO_WIDTH) << ")" << std::endl;
+			logger << EndDebugError;
 		}
 		return false;
 	}
 	
 	if(!(CONFIG::MODE_SUPPORT & (IO_WIDTH / NUM_CHIPS)))
 	{
-		if(logger_import)
+		if(verbose)
 		{
-			(*logger_import) << DebugError;
-			(*logger_import) << "Chip does not support " << (IO_WIDTH / NUM_CHIPS) << " bits I/O. Decrease or increase either BYTESIZE or IO_WIDTH" << Endl;
-			(*logger_import) << EndDebugError;
+			logger << DebugError;
+			logger << "Chip does not support " << (IO_WIDTH / NUM_CHIPS) << " bits I/O.std::decrease or increase either BYTESIZE or IO_WIDTH" << std::endl;
+			logger << EndDebugError;
 		}
 		return false;
 	}
@@ -227,11 +221,11 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::FSM(unsigned int chip_num, COMMAND comm
 			}
 		}
 	}
-	if(logger_import)
+	if(verbose)
 	{
-		(*logger_import) << DebugError;
-		(*logger_import) << "No transition found. You should check the FSM" << Endl;
-		(*logger_import) << EndDebugError;
+		logger << DebugError;
+		logger << "No transition found. You should check the FSM" << std::endl;
+		logger << EndDebugError;
 	}
 }
 
@@ -240,22 +234,22 @@ bool AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::FSM(COMMAND command, typename CONFIG::A
 {
 	if(addr < org || (addr + size - 1) > (org + bytesize - 1) || (addr + size) < addr)
 	{
-		if(logger_import)
+		if(verbose)
 		{
-			(*logger_import) << DebugWarning;
-			(*logger_import) << "out of range address" << Endl;
-			(*logger_import) << EndDebugWarning;
+			logger << DebugWarning;
+			logger << "out of range address" << std::endl;
+			logger << EndDebugWarning;
 		}
 		return false;
 	}
 
 	if(size > IO_WIDTH)
 	{
-		if(logger_import)
+		if(verbose)
 		{
-			(*logger_import) << DebugWarning;
-			(*logger_import) << "invalid transfer size (" << size << " bytes). Transfer size should be <= " << IO_WIDTH << Endl;
-			(*logger_import) << EndDebugWarning;
+			logger << DebugWarning;
+			logger << "invalid transfer size (" << size << " bytes). Transfer size should be <= " << IO_WIDTH << std::endl;
+			logger << EndDebugWarning;
 		}
 		return false;
 	}
@@ -285,11 +279,11 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::ReadAutoselect(unsigned int chip_num, t
 	switch((chip_addr & 0xff) << config_addr_shift)
 	{
 		case CONFIG::MANUFACTURER_ID_ADDR:
-			if(logger_import)
+			if(verbose)
 			{
-				(*logger_import) << DebugInfo;
-				(*logger_import) << "Chip #" << chip_num << ": Reading Manufacturer ID" << Endl;
-				(*logger_import) << EndDebugInfo;
+				logger << DebugInfo;
+				logger << "Chip #" << chip_num << ": Reading Manufacturer ID" << std::endl;
+				logger << EndDebugInfo;
 			}
 			if(endian == E_LITTLE_ENDIAN)
 				memcpy(data, CONFIG::MANUFACTURER_ID, size > CHIP_IO_WIDTH ? CHIP_IO_WIDTH : size);
@@ -297,11 +291,11 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::ReadAutoselect(unsigned int chip_num, t
 				ReverseCopy(data, CONFIG::MANUFACTURER_ID, size > CHIP_IO_WIDTH ? CHIP_IO_WIDTH : size);
 			return;
 		case CONFIG::DEVICE_ID_ADDR:
-			if(logger_import)
+			if(verbose)
 			{
-				(*logger_import) << DebugInfo;
-				(*logger_import) << "Chip #" << chip_num << ": Reading Device ID" << Endl;
-				(*logger_import) << EndDebugInfo;
+				logger << DebugInfo;
+				logger << "Chip #" << chip_num << ": Reading Device ID" << std::endl;
+				logger << EndDebugInfo;
 			}
 			if(endian == E_LITTLE_ENDIAN)
 				memcpy(data, CONFIG::DEVICE_ID, size > CHIP_IO_WIDTH ? CHIP_IO_WIDTH : size);
@@ -310,11 +304,11 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::ReadAutoselect(unsigned int chip_num, t
 			return;
 		case CONFIG::SECTOR_PROTECT_VERIFY_ADDR:
 			{
-				if(logger_import)
+				if(verbose)
 				{
-					(*logger_import) << DebugInfo;
-					(*logger_import) << "Chip #" << chip_num << ": Sector protected verify" << Endl;
-					(*logger_import) << EndDebugInfo;
+					logger << DebugInfo;
+					logger << "Chip #" << chip_num << ": Sector protected verify" << std::endl;
+					logger << EndDebugInfo;
 				}
 				typename CONFIG::ADDRESS sector_addr = (chip_addr >> 8) << config_addr_shift;
 				int sector_num = GetSector(sector_addr);
@@ -348,33 +342,33 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::Program(unsigned int chip_num, typename
 
 	if(sector_num < 0)
 	{
-		(*logger_import) << DebugWarning;
-		(*logger_import) << "Chip #" << chip_num << ": Sector #" << sector_num << " does not exist" << Endl;
-		(*logger_import) << EndDebugWarning;
+		logger << DebugWarning;
+		logger << "Chip #" << chip_num << ": Sector #" << sector_num << " does not exist" << std::endl;
+		logger << EndDebugWarning;
 		return;
 	}
 
 	if(sector_protect[sector_num])
 	{
-		(*logger_import) << DebugWarning;
-		(*logger_import) << "Chip #" << chip_num << ", Sector #" << sector_num << ", Addr 0x" << Hex << chip_addr << Dec << ": Attempting to program at byte address 0x" << Hex << addr << Dec << " while sector is protected" << Endl;
-		(*logger_import) << EndDebugWarning;
+		logger << DebugWarning;
+		logger << "Chip #" << chip_num << ", Sector #" << sector_num << ", Addr 0x" << std::hex << chip_addr << std::dec << ": Attempting to program at byte address 0x" << std::hex << addr << std::dec << " while sector is protected" << std::endl;
+		logger << EndDebugWarning;
 		return;
 	}
 
-	if(logger_import)
+	if(verbose)
 	{
-		(*logger_import) << DebugInfo;
-		(*logger_import) << "Chip #" << chip_num << ", Sector #" << sector_num << ", Addr 0x" << Hex << chip_addr << ": Programming ";
+		logger << DebugInfo;
+		logger << "Chip #" << chip_num << ", Sector #" << sector_num << ", Addr 0x" << std::hex << chip_addr << ": Programming ";
 		uint32_t i;
 		uint32_t n = size > CHIP_IO_WIDTH ? CHIP_IO_WIDTH : size;
 		for(i = 0; i < n; i++)
 		{
-			(*logger_import) << "0x" << (unsigned int) data[i];
-			if(i < n - 1) (*logger_import) << " ";
+			logger << "0x" << (unsigned int) data[i];
+			if(i < n - 1) logger << " ";
 		}
-		(*logger_import) << Dec << Endl;
-		(*logger_import) << EndDebugInfo;
+		logger << std::dec << std::endl;
+		logger << EndDebugInfo;
 	}
 
 	memcpy(storage + addr, data, size > CHIP_IO_WIDTH ? CHIP_IO_WIDTH : size);
@@ -383,11 +377,11 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::Program(unsigned int chip_num, typename
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
 void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::ChipErase(unsigned int chip_num)
 {
-	if(logger_import)
+	if(verbose)
 	{
-		(*logger_import) << DebugInfo;
-		(*logger_import) << "Erasing Chip #" << chip_num << Endl;
-		(*logger_import) << EndDebugInfo;
+		logger << DebugInfo;
+		logger << "Erasing Chip #" << chip_num << std::endl;
+		logger << EndDebugInfo;
 	}
 
 	uint32_t addr;
@@ -406,25 +400,25 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::SectorErase(unsigned int chip_num, type
 
 	if(sector_num < 0)
 	{
-		(*logger_import) << DebugWarning;
-		(*logger_import) << "Sector #" << sector_num << " does not exist" << Endl;
-		(*logger_import) << EndDebugWarning;
+		logger << DebugWarning;
+		logger << "Sector #" << sector_num << " does not exist" << std::endl;
+		logger << EndDebugWarning;
 		return;
 	}
 
 	if(sector_protect[sector_num])
 	{
-		(*logger_import) << DebugWarning;
-		(*logger_import) << "Attempting to erase sector #" << sector_num << " at 0x" << Hex << addr << Dec << " while sector is protected" << Endl;
-		(*logger_import) << EndDebugWarning;
+		logger << DebugWarning;
+		logger << "Attempting to erase sector #" << sector_num << " at 0x" << std::hex << addr << std::dec << " while sector is protected" << std::endl;
+		logger << EndDebugWarning;
 		return;
 	}
 
-	if(logger_import)
+	if(verbose)
 	{
-		(*logger_import) << DebugInfo;
-		(*logger_import) << "Erasing sector at 0x" << Hex << addr << Dec << " of chip #" << chip_num << Endl;
-		(*logger_import) << EndDebugInfo;
+		logger << DebugInfo;
+		logger << "Erasing sector at 0x" << std::hex << addr << std::dec << " of chip #" << chip_num << std::endl;
+		logger << EndDebugInfo;
 	}
 
 	memset(&storage[CONFIG::SECTOR_MAP[sector_num].addr * IO_WIDTH], 0, IO_WIDTH * CONFIG::SECTOR_MAP[sector_num].size);
@@ -435,11 +429,11 @@ bool AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::WriteMemory(typename CONFIG::ADDRESS ad
 {
 	if(addr < org || (addr + size - 1) > (org + bytesize - 1) || (addr + size) < addr)
 	{
-		if(logger_import)
+		if(verbose)
 		{
-			(*logger_import) << DebugWarning;
-			(*logger_import) << "out of range address" << Endl;
-			(*logger_import) << EndDebugWarning;
+			logger << DebugWarning;
+			logger << "out of range address" << std::endl;
+			logger << EndDebugWarning;
 		}
 		return false;
 	}
@@ -455,11 +449,11 @@ bool AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::ReadMemory(typename CONFIG::ADDRESS add
 {
 	if(addr < org || (addr + size - 1) > (org + bytesize - 1) || (addr + size) < addr)
 	{
-		if(logger_import)
+		if(verbose)
 		{
-			(*logger_import) << DebugWarning;
-			(*logger_import) << "out of range address" << Endl;
-			(*logger_import) << EndDebugWarning;
+			logger << DebugWarning;
+			logger << "out of range address" << std::endl;
+			logger << EndDebugWarning;
 		}
 		return false;
 	}

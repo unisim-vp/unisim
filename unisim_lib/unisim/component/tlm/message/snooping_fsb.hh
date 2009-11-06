@@ -37,6 +37,7 @@
 #define __UNISIM_COMPONENT_TLM_MESSAGE_SNOOPINGFSB_HH__
 
 #include "unisim/service/interfaces/logger.hh"
+#include "unisim/kernel/logger/logger.hh"
 #include "unisim/util/garbage_collector/garbage_collector.hh"
 #include "unisim/component/tlm/debug/transaction_spy.hh"
 #include <inttypes.h>
@@ -54,6 +55,10 @@ template <class ADDRESS, unsigned int DATA_SIZE>
 unisim::service::interfaces::Logger& operator << (unisim::service::interfaces::Logger& os, const SnoopingFSBRequest<ADDRESS, DATA_SIZE>& req);
 template <unsigned int DATA_SIZE>
 unisim::service::interfaces::Logger& operator << (unisim::service::interfaces::Logger& os, const SnoopingFSBResponse<DATA_SIZE>& rsp);
+template <class ADDRESS, unsigned int DATA_SIZE>
+unisim::kernel::logger::Logger& operator << (unisim::kernel::logger::Logger& os, const SnoopingFSBRequest<ADDRESS, DATA_SIZE>& req);
+template <unsigned int DATA_SIZE>
+unisim::kernel::logger::Logger& operator << (unisim::kernel::logger::Logger& os, const SnoopingFSBResponse<DATA_SIZE>& rsp);
 
 template <class ADDRESS, unsigned int DATA_SIZE>
 class SnoopingFSBRequest {
@@ -76,6 +81,8 @@ public:
 
 	friend unisim::service::interfaces::Logger& operator << <ADDRESS, DATA_SIZE>(unisim::service::interfaces::Logger& os,
 			const SnoopingFSBRequest<ADDRESS, DATA_SIZE>& req);
+	friend unisim::kernel::logger::Logger& operator << <ADDRESS, DATA_SIZE>(unisim::kernel::logger::Logger& os,
+			const SnoopingFSBRequest<ADDRESS, DATA_SIZE>& req);
 };
 
 template <unsigned int DATA_SIZE>
@@ -93,6 +100,8 @@ public:
 	uint8_t read_data[DATA_SIZE]; // Data read from memory/target processor caches
 
 	friend unisim::service::interfaces::Logger& operator << <DATA_SIZE>(unisim::service::interfaces::Logger& os, 
+			const SnoopingFSBResponse<DATA_SIZE>& rsp);
+	friend unisim::kernel::logger::Logger& operator << <DATA_SIZE>(unisim::kernel::logger::Logger& os, 
 			const SnoopingFSBResponse<DATA_SIZE>& rsp);
 };
 
@@ -142,14 +151,54 @@ unisim::service::interfaces::Logger& operator << (unisim::service::interfaces::L
 	return os;
 }
 
+template <class ADDRESS, unsigned int DATA_SIZE>
+unisim::kernel::logger::Logger& operator << (unisim::kernel::logger::Logger& os, 
+		const SnoopingFSBRequest<ADDRESS, DATA_SIZE>& req) {
+	
+	typedef SnoopingFSBRequest<ADDRESS, DATA_SIZE> ReqType;
+	
+	os << "- type = ";
+	switch(req.type) {
+	case ReqType::READ:
+		os << "READ";
+		break;
+	case ReqType::READX:
+		os << "READX";
+		break;
+	case ReqType::WRITE:
+		os << "WRITE";
+		break;
+	case ReqType::INV_BLOCK:
+		os << "INV_BLOCK";
+		break;
+	case ReqType::FLUSH_BLOCK:
+		os << "FLUSH_BLOCK";
+		break;
+	case ReqType::ZERO_BLOCK:
+		os << "ZERO_BLOCK";
+		break;
+	}
+	os << std::endl;
+	os << "- global = " << (req.global?"TRUE":"FALSE") << std::endl;
+	os << "- address = 0x" << std::hex << req.addr << std::dec << std::endl;
+	os << "- size = " << req.size;
+	if(req.type == ReqType::WRITE) {
+		os << std::endl;
+		os << "- write_data(hex) =" << std::hex;
+		for(unsigned int i = 0; i < req.size; i++) {
+			os << " " << (unsigned int)req.write_data[i];
+		}
+		os << std::dec;
+	}
+	return os;
+}
+
 template <unsigned int DATA_SIZE>
 unisim::service::interfaces::Logger& operator << (unisim::service::interfaces::Logger& os, 
 		const SnoopingFSBResponse<DATA_SIZE>& rsp) {
-	//using unisim::service::interfaces::operator<<;
 	using unisim::service::interfaces::Endl;
 	using unisim::service::interfaces::Hex;
 	using unisim::service::interfaces::Dec;
-	
 	typedef SnoopingFSBResponse<DATA_SIZE> RspType;
 	
 	os << "- read_status = ";
@@ -165,6 +214,27 @@ unisim::service::interfaces::Logger& operator << (unisim::service::interfaces::L
 		os << " " << (unsigned int)rsp.read_data[i];
 	}
 	os << Dec;
+	return os;
+}
+
+template <unsigned int DATA_SIZE>
+unisim::kernel::logger::Logger& operator << (unisim::kernel::logger::Logger& os, 
+		const SnoopingFSBResponse<DATA_SIZE>& rsp) {
+	typedef SnoopingFSBResponse<DATA_SIZE> RspType;
+	
+	os << "- read_status = ";
+	switch(rsp.read_status) {
+	case RspType::RS_MISS: os << "RS_MISS"; break;
+	case RspType::RS_SHARED: os << "RS_SHARED"; break;
+	case RspType::RS_MODIFIED: os << "RS_MODIFIED"; break;
+	case RspType::RS_BUSY: os << "RS_BUSY"; break;
+	}
+	os << std::endl;
+	os << "- read_data(hex) =" << std::hex;
+	for(unsigned int i = 0; i < DATA_SIZE; i++) {
+		os << " " << (unsigned int)rsp.read_data[i];
+	}
+	os << std::dec;
 	return os;
 }
 
@@ -225,6 +295,43 @@ public:
 			os << Dec;
 		}
 	}
+
+	void Dump(unisim::kernel::logger::Logger &os, PReqType &req) {
+		os << "- type = ";
+		switch(req->type) {
+		case ReqType::READ:
+			os << "READ";
+			break;
+		case ReqType::READX:
+			os << "READX";
+			break;
+		case ReqType::WRITE:
+			os << "WRITE";
+			break;
+		case ReqType::INV_BLOCK:
+			os << "INV_BLOCK";
+			break;
+		case ReqType::FLUSH_BLOCK:
+			os << "FLUSH_BLOCK";
+			break;
+		case ReqType::ZERO_BLOCK:
+			os << "ZERO_BLOCK";
+			break;
+		}
+		os << std::endl;
+		os << "- global = " << (req->global?"TRUE":"FALSE") << std::endl;
+		os << "- address = 0x" << std::hex << req->addr << std::dec << std::endl;
+		os << "- size = " << req->size;
+		if(req->type == ReqType::WRITE) {
+			os << std::endl;
+			os << "- write_data(hex) =" << std::hex;
+			for(unsigned int i = 0; i < req->size; i++) {
+				os << " " << (unsigned int)req->write_data[i];
+			}
+			os << std::dec;
+		}
+	}
+
 };
 
 template <class ADDRESS, unsigned int DATA_SIZE>
@@ -252,6 +359,23 @@ public:
 			os << " " << (unsigned int)rsp->read_data[i];
 		}
 		os << Dec;
+	}
+
+	void Dump(unisim::kernel::logger::Logger &os, PRspType &rsp, 
+		PReqType &req) {
+		os << "- read_status = ";
+		switch(rsp->read_status) {
+		case RspType::RS_MISS: os << "RS_MISS"; break;
+		case RspType::RS_SHARED: os << "RS_SHARED"; break;
+		case RspType::RS_MODIFIED: os << "RS_MODIFIED"; break;
+		case RspType::RS_BUSY: os << "RS_BUSY"; break;
+		}
+		os << std::endl;
+		os << "- read_data(hex) =" << std::hex;
+		for(unsigned int i = 0; i < req->size; i++) {
+			os << " " << (unsigned int)rsp->read_data[i];
+		}
+		os << std::dec;
 	}
 };
 

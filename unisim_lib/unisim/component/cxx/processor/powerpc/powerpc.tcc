@@ -226,11 +226,11 @@ namespace unisim {
 					inline void GenFPSCR_FEX(uint32_t& fpscr)
 					{
 						fpscr = (fpscr & ~CONFIG::FPSCR_FEX_MASK) |
-						(((fpscr & CONFIG::FPSCR_VX_MASK) && (fpscr & CONFIG::FPSCR_VE_MASK) ||
-						(fpscr & CONFIG::FPSCR_OX_MASK) && (fpscr & CONFIG::FPSCR_OE_MASK) ||
-						(fpscr & CONFIG::FPSCR_UX_MASK) && (fpscr & CONFIG::FPSCR_UE_MASK) ||
-						(fpscr & CONFIG::FPSCR_ZX_MASK) && (fpscr & CONFIG::FPSCR_ZE_MASK) ||
-						(fpscr & CONFIG::FPSCR_XX_MASK) && (fpscr & CONFIG::FPSCR_XE_MASK)) ? CONFIG::FPSCR_FEX_MASK : 0);
+						((((fpscr & CONFIG::FPSCR_VX_MASK) && (fpscr & CONFIG::FPSCR_VE_MASK)) ||
+						((fpscr & CONFIG::FPSCR_OX_MASK) && (fpscr & CONFIG::FPSCR_OE_MASK)) ||
+						((fpscr & CONFIG::FPSCR_UX_MASK) && (fpscr & CONFIG::FPSCR_UE_MASK)) ||
+						((fpscr & CONFIG::FPSCR_ZX_MASK) && (fpscr & CONFIG::FPSCR_ZE_MASK)) ||
+						((fpscr & CONFIG::FPSCR_XX_MASK) && (fpscr & CONFIG::FPSCR_XE_MASK))) ? CONFIG::FPSCR_FEX_MASK : 0);
 					}
 
 				} // end of namespace powerpc
@@ -85703,7 +85703,7 @@ public:
 						// bd represent the displacement
 						// bo represent the behavior of the branch
 						// See PowerPC manual, p186 (4.2.4.2. Conditional Branch Control)
-						return (bo & 0x10) != ((bo & 0x01) && (bo & 0x04) || (bd < 0));
+						return (bo & 0x10) != (((bo & 0x01) && (bo & 0x04)) || (bd < 0));
 					}
 #line 85709 "powerpc.tcc"
 				}
@@ -115332,7 +115332,7 @@ public:
 #line 166 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_ppc.isa"
 					{
 						Operation<CONFIG>::function = FnSysRegisterSerial;
-						uint32_t d = ((spr & 0x1f) << 5) | ((spr >> 5) & 0x1f);
+						//uint32_t d = ((spr & 0x1f) << 5) | ((spr >> 5) & 0x1f);
 						//	registers_written = ((d == 8) ? RegLR : RegNone) | ((d == 9) ? RegCTR : RegNone);
 					}
 #line 115339 "powerpc.tcc"

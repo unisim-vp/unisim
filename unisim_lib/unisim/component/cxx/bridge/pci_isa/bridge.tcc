@@ -46,25 +46,17 @@ namespace bridge {
 namespace pci_isa {
 
 using namespace unisim::util::endian;
-// using std::stringstream;
 using namespace std;
-//using unisim::service::interfaces::operator<<;
-using unisim::service::interfaces::Hex;
-using unisim::service::interfaces::Dec;
-using unisim::service::interfaces::Endl;
-using unisim::service::interfaces::Endl;
-using unisim::service::interfaces::DebugInfo;
-using unisim::service::interfaces::DebugWarning;
-using unisim::service::interfaces::DebugError;
-using unisim::service::interfaces::EndDebugInfo;
-using unisim::service::interfaces::EndDebugWarning;
-using unisim::service::interfaces::EndDebugError;
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugInfo;
+using unisim::kernel::logger::EndDebugWarning;
+using unisim::kernel::logger::EndDebugError;
 
 template <class ADDRESS>
 Bridge<ADDRESS>::Bridge(const char *name, Object *parent) :
 	Object(name, parent),
-	Client<Logger>(name, parent),
-	logger_import("logger-import", this),
 	pci_device_number(0),
 	isa_bus_frequency(0),
 	pci_bus_frequency(33),
@@ -90,6 +82,11 @@ Bridge<ADDRESS>::Bridge(const char *name, Object *parent) :
 	pci_conf_interrupt_line("pci_conf_interrupt_line", "PCI Config Interrupt Line", 0xff, 0),
 	pci_conf_interrupt_pin("pci_conf_interrupt_pin", "PCI Config Interrupt Pin", 0x0, 0x0),
 	
+	// debug stuff
+	logger(*this),
+	verbose(false),
+	param_verbose("verbose", this, verbose),
+
 	// Parameters initialization
 	param_initial_base_addr("initial-base-addr", this, initial_base_addr),
 	param_initial_io_base_addr("initial-io-base-addr", this, initial_io_base_addr),

@@ -54,7 +54,6 @@ PCIDevIde<ADDRESS_TYPE, MAX_DATA_SIZE>::PCIDevIde(const sc_module_name &name, Ob
 	param_disk_channel("disk-channel", this, disk_channel, MAX_IMAGES),
 	param_disk_num("disk-num", this, disk_num, MAX_IMAGES)
 {
-	Object::SetupDependsOn(inherited::logger_import);
 }
 
 template<class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>

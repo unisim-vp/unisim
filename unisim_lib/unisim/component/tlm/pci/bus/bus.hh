@@ -37,10 +37,10 @@
 
 #include <list>
 #include <unisim/kernel/tlm/tlm.hh>
+#include <unisim/kernel/logger/logger.hh>
 #include <unisim/component/tlm/message/pci.hh>
 #include <unisim/kernel/service/service.hh>
 #include <unisim/util/endian/endian.hh>
-#include <unisim/service/interfaces/logger.hh>
 #include <unisim/service/interfaces/memory.hh>
 
 namespace unisim {
@@ -63,18 +63,12 @@ using unisim::kernel::service::Object;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::ParameterArray;
 using unisim::util::endian::Host2LittleEndian;
-using unisim::service::interfaces::Logger;
-//using unisim::service::interfaces::operator<<;
-using unisim::service::interfaces::Hex;
-using unisim::service::interfaces::Dec;
-using unisim::service::interfaces::Endl;
-using unisim::service::interfaces::Endl;
-using unisim::service::interfaces::DebugInfo;
-using unisim::service::interfaces::DebugWarning;
-using unisim::service::interfaces::DebugError;
-using unisim::service::interfaces::EndDebugInfo;
-using unisim::service::interfaces::EndDebugWarning;
-using unisim::service::interfaces::EndDebugError;
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugInfo;
+using unisim::kernel::logger::EndDebugWarning;
+using unisim::kernel::logger::EndDebugError;
 using unisim::component::cxx::pci::PCISpace;
 using unisim::component::cxx::pci::TransactionType;
 
@@ -88,8 +82,7 @@ class Bus:public sc_module,
   		public TlmSendIf<PCIRequest<ADDRESS_TYPE, MAX_DATA_SIZE>,
   						PCIResponse<MAX_DATA_SIZE> >,
   		public Service<unisim::service::interfaces::Memory<ADDRESS_TYPE> >,
-  		public Client<unisim::service::interfaces::Memory<ADDRESS_TYPE> >,
-  		public Client<Logger> {
+  		public Client<unisim::service::interfaces::Memory<ADDRESS_TYPE> > {
 public:
 	typedef PCIRequest < ADDRESS_TYPE, MAX_DATA_SIZE > ReqType;
 	typedef PCIResponse < MAX_DATA_SIZE > RspType;
@@ -141,7 +134,12 @@ private:
 	int findDeviceByAddRange (ADDRESS_TYPE addr, unisim::component::cxx::pci::PCISpace addr_type);
 	void updateDevMap (PReqType &req, PRspType &rsp);
 
-// routing stuff
+	// debug stuff
+	unisim::kernel::logger::Logger logger;
+	bool verbose;
+	Parameter<bool> param_verbose;
+	
+	// routing stuff
 	ADDRESS_TYPE base_address[NUM_MAPPINGS];
 	ADDRESS_TYPE size[NUM_MAPPINGS];
 	uint32_t device_number[NUM_MAPPINGS];
@@ -171,9 +169,6 @@ public:
 	ServiceExport<unisim::service::interfaces::Memory<ADDRESS_TYPE> > *memory_export[NUM_MASTERS];
 	ServiceImport<unisim::service::interfaces::Memory<ADDRESS_TYPE> > *memory_import[NUM_TARGETS];
 
-	/* logger service */
-	ServiceImport<Logger> logger_import;
-
 	SC_HAS_PROCESS(Bus);
 
 	Bus(const sc_module_name &name, Object *parent = 0):
@@ -181,7 +176,9 @@ public:
 		Object(name, parent),
 		Service<unisim::service::interfaces::Memory<ADDRESS_TYPE> >(name, parent),
 		Client<unisim::service::interfaces::Memory<ADDRESS_TYPE> >(name, parent),
-		Client<Logger>(name, parent),
+		logger(*this),
+		verbose(false),
+		param_verbose("verbose", this, verbose),
 		param_base_address("base-address", this, base_address, NUM_MAPPINGS),
 		param_size("size", this, size, NUM_MAPPINGS),
 		param_device_number("device-number", this, device_number, NUM_MAPPINGS),
@@ -191,9 +188,7 @@ public:
 		param_num_mappings("num-mappings", this, num_mappings),
 		frequency(0),
 		param_frequency("frequency", this, frequency),
-		logger_import("logger_import", this),
 		num_mappings(0) {
-		SetupDependsOn(logger_import);
 		for(unsigned int i = 0; i < NUM_MASTERS; i++){
 			stringstream s, r;
 	  		s << "input_port[" << i << "]";
@@ -260,25 +255,14 @@ public:
 	}
 
 	virtual bool Setup() {
-		if(!logger_import) {
-			if(DEBUG) 
-				cerr << "WARNING("
-					<< __FUNCTION__ << ":"
-				 	<< __FILE__ << ":"
-					<< __LINE__ << "): "
-			 		<< "No Logger exists to generate the output messages" << endl;
-//			if(logger_import.GetService() != 0) {
-//				cerr << " service = " << logger_import.GetService()->GetName() << endl;
-//			}
-		} 
 			
 		if(!frequency) {
-			if(logger_import)
-				(*logger_import) << DebugError << "SERVICE_SETUP_ERROR("
+			if(verbose)
+				logger << DebugError << "SERVICE_SETUP_ERROR("
 					<< __FUNCTION__ << ":"
 					<< __FILE__ << ":"
 					<< __LINE__ << "): frequency parameter has not been set" 
-					<< Endl << EndDebugError;
+					<< std::endl << EndDebugError;
 			return false;
 		}
 		cycle_time = sc_time(1.0 / (double) frequency, SC_US);
@@ -317,25 +301,25 @@ public:
 			devReg->end = devReg->orig + devReg->size -1;
 			devReg->addr_type = (unisim::component::cxx::pci::PCISpace) addr_type[i];
 
-			if(DEBUG && logger_import) {
-				(*logger_import) << DebugInfo
+			if(DEBUG && verbose) {
+				logger << DebugInfo
 												 << "Mapping " << target_port[i] << " with "
-												 << " orig = 0x" << Hex << devReg->orig << Dec
-												 << ", end = 0x" << Hex << devReg->end << Dec
+												 << " orig = 0x" << std::hex << devReg->orig << std::dec
+												 << ", end = 0x" << std::hex << devReg->end << std::dec
 												 << ", size = " << devReg->size
 												 << " and address type = ";
 				switch(devReg->addr_type) {
 				case unisim::component::cxx::pci::SP_MEM:
-					(*logger_import) << "SP_MEM";
+					logger << "SP_MEM";
 					break;
 				case unisim::component::cxx::pci::SP_IO:
-					(*logger_import) << "SP_IO";
+					logger << "SP_IO";
 					break;
 				case unisim::component::cxx::pci::SP_CONFIG:
-					(*logger_import) << "SP_CONFIG";
+					logger << "SP_CONFIG";
 					break;
 				}
-				(*logger_import) << "(" << devReg->addr_type << ")" << Endl << EndDebugInfo;
+				logger << "(" << devReg->addr_type << ")" << std::endl << EndDebugInfo;
 			}
 			portToDevNumberMap[target_port[i]] = device_number[i];
 			portToDevNumberMap[device_number[i]] = target_port[i];
@@ -359,10 +343,10 @@ public:
 		if(device >= NUM_TARGETS) {
 			if(req->type == unisim::component::cxx::pci::TT_READ) {
 				if(!message->HasResponseEvent()) {
-					if(logger_import)
-						(*logger_import) << DebugError
+					if(verbose)
+						logger << DebugError
 							<< "Received a read request without response event ("
-							<< __FUNCTION__ << ":"<< __FILE__ << ":" << __LINE__ << ")" << Endl
+							<< __FUNCTION__ << ":"<< __FILE__ << ":" << __LINE__ << ")" << std::endl
 							<< EndDebugError;
 					sc_stop();
 					wait();
@@ -375,12 +359,12 @@ public:
 					memcpy(res->read_data, &p, 4);
 					message->SetResponse(res);
 					message->GetResponseEvent()->notify(SC_ZERO_TIME);
-					if(DEBUG && logger_import)
-						(*logger_import) << DebugInfo
+					if(DEBUG && verbose)
+						logger << DebugInfo
 							<< "Answering 0xFFFFFFFF to addr: " 
-							<< Hex << req->addr << Dec
+							<< std::hex << req->addr << std::dec
 							<< " (device = " << device << ")"
-							<< Endl << EndDebugInfo;
+							<< std::endl << EndDebugInfo;
 		  			return true;
 		  			break;
 					}
@@ -389,12 +373,12 @@ public:
 					memcpy(res->read_data, &p, 2);
 					message->SetResponse(res);
 					message->GetResponseEvent()->notify(SC_ZERO_TIME);
-					if(DEBUG && logger_import)
-						(*logger_import) << DebugInfo
+					if(DEBUG && verbose)
+						logger << DebugInfo
 							<< "Answering 0xFFFF to addr: " 
-							<< Hex << req->addr << Dec
+							<< std::hex << req->addr << std::dec
 							<< " (device = " << device << ")"
-							<< Endl << EndDebugInfo;
+							<< std::endl << EndDebugInfo;
 		  			return true;
 		  			break;
 					}
@@ -403,20 +387,20 @@ public:
 					memcpy(res->read_data, &p, 1);
 					message->SetResponse(res);
 					message->GetResponseEvent()->notify(SC_ZERO_TIME);
-					if(DEBUG && logger_import)
-						(*logger_import) << DebugInfo
+					if(DEBUG && verbose)
+						logger << DebugInfo
 							<< "Answering 0xFF to addr: " 
-							<< Hex << req->addr << Dec
+							<< std::hex << req->addr << std::dec
 							<< " (device = " << device << ")"
-							<< Endl << EndDebugInfo;
+							<< std::endl << EndDebugInfo;
 		  			return true;
 		  			break;
 					}
 				default: {
-					if(logger_import)
-						(*logger_import) << DebugError
+					if(verbose)
+						logger << DebugError
 							<< "Invalid access size(?) for PCI configspace! ("
-							<< __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << ")" << Endl
+							<< __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << ")" << std::endl
 							<< EndDebugError;
 					sc_stop(); wait();
 					return true;
@@ -424,10 +408,10 @@ public:
 	      		}
 	  		}
       	} else {
-			if(DEBUG && logger_import)
-				(*logger_import) << DebugInfo
+			if(DEBUG && verbose)
+				logger << DebugInfo
 					<< "putting received message to device " << device
-					<< " in the message list to be sent" << Endl
+					<< " in the message list to be sent" << std::endl
 					<< EndDebugInfo;
 
       		DeviceRequest *device_request;
@@ -466,49 +450,49 @@ public:
   			PMsgType message = device_request->message;
 			sc_event bus_event;
 			int device = device_request->device;
-			if(DEBUG && logger_import)
-				(*logger_import) << DebugInfo
-					<< "sending message to device: " << device << Endl
+			if(DEBUG && verbose)
+				logger << DebugInfo
+					<< "sending message to device: " << device << std::endl
 					<< EndDebugInfo;
    			if(message->HasResponseEvent())
 				message->PushResponseEvent(bus_event);
 			
       		while(!(*output_port[device])->Send(message)) {
-      			if(DEBUG && logger_import)
-      				(*logger_import) << DebugInfo
+      			if(DEBUG && verbose)
+      				logger << DebugInfo
       					<< "message not accepted by device: " << device
-      					<< ", retrying later" << Endl
+      					<< ", retrying later" << std::endl
       					<< EndDebugInfo;
       			wait(cycle_time);
-      			if(DEBUG && logger_import)
-      				(*logger_import) << DebugInfo
-      					<< "retrying to send message to device: " << device << Endl
+      			if(DEBUG && verbose)
+      				logger << DebugInfo
+      					<< "retrying to send message to device: " << device << std::endl
       					<< EndDebugInfo;
       		}
       		
-      		if(DEBUG && logger_import)
-      			(*logger_import) << DebugInfo
+      		if(DEBUG && verbose)
+      			logger << DebugInfo
       				<< "message to device " << device
-      				<< " succesfully sent" << Endl
+      				<< " succesfully sent" << std::endl
       				<< EndDebugInfo;
  			sc_time delay;
       		if(message->HasResponseEvent()) {
       			
-      			if(DEBUG && logger_import)
-      				(*logger_import) << DebugInfo
-      					<< "waiting response from device: " << device << Endl
+      			if(DEBUG && verbose)
+      				logger << DebugInfo
+      					<< "waiting response from device: " << device << std::endl
       					<< EndDebugInfo;
       			wait(bus_event);
-      			if(DEBUG && logger_import)
-      				(*logger_import) << DebugInfo
-      					<< " received response from device: " << device << Endl
+      			if(DEBUG && verbose)
+      				logger << DebugInfo
+      					<< " received response from device: " << device << std::endl
       					<< EndDebugInfo;
     	  		//TODO: Pau I THINK WE SHOULd be adding another event to the event stack and wait on that event!
     	  		
 	 			if(!message->rsp) {
-	 				if(logger_import)
-	 					(*logger_import) << DebugError
-	 						<< "received a response for a pci message without response field" << Endl
+	 				if(verbose)
+	 					logger << DebugError
+	 						<< "received a response for a pci message without response field" << std::endl
 	 						<< EndDebugError;
 					sc_stop();
 					wait();
@@ -518,9 +502,9 @@ public:
 	 			updateDevMap(req, rsp);
 	 			
 	 			message->PopResponseEvent();
-	 			if(DEBUG && logger_import)
-	 				(*logger_import) << DebugInfo
-	 					<< "notifying response received from device: " << device << Endl
+	 			if(DEBUG && verbose)
+	 				logger << DebugInfo
+	 					<< "notifying response received from device: " << device << std::endl
 	 					<< EndDebugInfo;
 				sc_dt::uint64 ui_delay = sc_time_stamp().value();
 				ui_delay = ui_delay % cycle_time.value();
@@ -624,10 +608,10 @@ updateDevMap (PReqType &req, PRspType &res) {
 
 			if ((*(uint32_t *) req->write_data) == 0xffffffff) {
 				//requesting bar size
-				if(DEBUG && logger_import)
-					(*logger_import) << DebugInfo
+				if(DEBUG && verbose)
+					logger << DebugInfo
 						<< "requesting bar size dev " << device
-						<< " reg " << barNum << Endl
+						<< " reg " << barNum << std::endl
 						<< EndDebugInfo; 
 				reg->state = SIZE_REQUESTED;
 			} else if ((*(uint32_t *) req->write_data) != 0x00000000) {
@@ -647,11 +631,11 @@ updateDevMap (PReqType &req, PRspType &res) {
 						(Host2LittleEndian(reg->original_value) & bar_mask));
 
 				if (Host2LittleEndian (newValue) & ~bar_mask) {
-					if(DEBUG && logger_import)
-						(*logger_import) << DebugInfo
+					if(DEBUG && verbose)
+						logger << DebugInfo
 							<< "writing bar address dev " << device
 							<< " reg " << barNum << " data: "
-							<< Hex << *(uint32_t *)req->write_data << Dec << Endl
+							<< std::hex << *(uint32_t *)req->write_data << std::dec << std::endl
 							<< EndDebugInfo;
 
 					if (reg && reg->size > 1) {
@@ -672,10 +656,10 @@ updateDevMap (PReqType &req, PRspType &res) {
 				else
 					bar_mask = BAR_MEM_MASK;
 
-				if(DEBUG && logger_import)
-					(*logger_import) << DebugInfo
+				if(DEBUG && verbose)
+					logger << DebugInfo
 						<< "reading size dev " << device << " reg "
-						<< barNum << Endl
+						<< barNum << std::endl
 						<< EndDebugInfo;
 				reg->size = (~*(uint32_t *) res->read_data) + 1;
 				reg->state = SIZE_READ;
@@ -687,10 +671,10 @@ updateDevMap (PReqType &req, PRspType &res) {
 				}
 				if(reg->state == STABLE) {
 					//first step, reading original value of register
-					if(DEBUG && logger_import)
-						(*logger_import) << DebugInfo
+					if(DEBUG && verbose)
+						logger << DebugInfo
 							<< "reading original value dev " << device
-							<< " reg " << barNum << Endl
+							<< " reg " << barNum << std::endl
 							<< EndDebugInfo;
 					reg->original_value = *(uint32_t *) res->read_data;
 					reg->state = VALUE_READ;

@@ -39,7 +39,7 @@
 #include "unisim/kernel/tlm/tlm.hh"
 #include "unisim/component/tlm/message/memory.hh"
 #include "unisim/component/cxx/memory/ram/memory.hh"
-#include "unisim/service/interfaces/logger.hh"
+#include "unisim/kernel/logger/logger.hh"
 
 namespace unisim {
 namespace component {
@@ -56,7 +56,6 @@ using unisim::kernel::service::Object;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::ServiceImport;
-using unisim::service::interfaces::Logger;
 
 /**
  * Memory module for the simple bus.
@@ -67,7 +66,6 @@ template <class PHYSICAL_ADDR, uint32_t DATA_SIZE, uint32_t PAGE_SIZE = 1024 * 1
 class Memory :
 	public sc_module,
 	public unisim::component::cxx::memory::ram::Memory<PHYSICAL_ADDR, PAGE_SIZE>,
-	public Client<Logger>,
 	public TlmSendIf<MemoryRequest<PHYSICAL_ADDR, DATA_SIZE>, 
 					MemoryResponse<DATA_SIZE> > {
 public:
@@ -78,11 +76,6 @@ public:
 	sc_export<TlmSendIf<MemoryRequest<PHYSICAL_ADDR, DATA_SIZE>, 
 						MemoryResponse<DATA_SIZE> > > slave_port;
 
-	/**
-	 * Logger import for debugging
-	 */
-	ServiceImport<Logger> logger_import;
-	
 	/**
 	 * Constructor.
 	 * 
@@ -112,6 +105,12 @@ public:
 											MemoryResponse<DATA_SIZE> > >& message);
 	
 private:
+	/** The logger */
+	unisim::kernel::logger::Logger logger;
+	
+	bool verbose;
+	Parameter<bool> param_verbose;
+	
 	/** The cycle time in ps */
 	unsigned int cycle_time;
 	/** The frequency in sc_time format */

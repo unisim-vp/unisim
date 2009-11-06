@@ -58,17 +58,12 @@ using unisim::component::cxx::memory::flash::am29lv::CMD_WRITE;
 using unisim::component::tlm::message::MemoryRequest;
 using unisim::component::tlm::message::MemoryResponse;
 
-using unisim::service::interfaces::Logger;
-//using unisim::service::interfaces::operator<<;
-using unisim::service::interfaces::Hex;
-using unisim::service::interfaces::Dec;
-using unisim::service::interfaces::Endl;
-using unisim::service::interfaces::DebugInfo;
-using unisim::service::interfaces::DebugWarning;
-using unisim::service::interfaces::DebugError;
-using unisim::service::interfaces::EndDebugInfo;
-using unisim::service::interfaces::EndDebugWarning;
-using unisim::service::interfaces::EndDebugError;
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugInfo;
+using unisim::kernel::logger::EndDebugWarning;
+using unisim::kernel::logger::EndDebugError;
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH, uint32_t MAX_TRANSACTION_DATA_SIZE>
 AM29LV<CONFIG, BYTESIZE, IO_WIDTH, MAX_TRANSACTION_DATA_SIZE>::AM29LV(const sc_module_name& name, Object *parent) :
@@ -95,11 +90,11 @@ AM29LV<CONFIG, BYTESIZE, IO_WIDTH, MAX_TRANSACTION_DATA_SIZE>::~AM29LV()
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH, uint32_t MAX_TRANSACTION_DATA_SIZE>
 bool AM29LV<CONFIG, BYTESIZE, IO_WIDTH, MAX_TRANSACTION_DATA_SIZE>::Setup()
 {
-	if(inherited::logger_import)
+	if(inherited::verbose)
 	{
-		(*inherited::logger_import) << DebugInfo;
-		(*inherited::logger_import) << "cycle time of " << cycle_time << " ps" << Endl;
-		(*inherited::logger_import) << EndDebugInfo;
+		inherited::logger << DebugInfo;
+		inherited::logger << "cycle time of " << cycle_time << " ps" << std::endl;
+		inherited::logger << EndDebugInfo;
 	}
 	if(!cycle_time) return false;
 	cycle_sctime = sc_time(cycle_time, SC_PS);
@@ -129,11 +124,11 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH, MAX_TRANSACTION_DATA_SIZE>::Process()
 				{
 					if(!inherited::FSM(CMD_READ, req->addr, (uint8_t *) rsp->read_data, req->size))
 					{
-						if(inherited::logger_import)
+						if(inherited::verbose)
 						{
-							(*inherited::logger_import) << DebugWarning;
-							(*inherited::logger_import) << "Invalid read" << Endl;
-							(*inherited::logger_import) << EndDebugWarning;
+							inherited::logger << DebugWarning;
+							inherited::logger << "Invalid read" << std::endl;
+							inherited::logger << EndDebugWarning;
 						}
 						memset(rsp->read_data, 0, req->size);
 					}
@@ -145,11 +140,11 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH, MAX_TRANSACTION_DATA_SIZE>::Process()
 			case MemoryRequest<typename CONFIG::ADDRESS, IO_WIDTH>::WRITE:
 				if(!inherited::FSM(CMD_WRITE, req->addr, req->write_data, req->size))
 				{
-					if(inherited::logger_import)
+					if(inherited::verbose)
 					{
-						(*inherited::logger_import) << DebugWarning;
-						(*inherited::logger_import) << "Invalid write" << Endl;
-						(*inherited::logger_import) << EndDebugWarning;
+						inherited::logger << DebugWarning;
+						inherited::logger << "Invalid write" << std::endl;
+						inherited::logger << EndDebugWarning;
 					}
 				}
 				break;

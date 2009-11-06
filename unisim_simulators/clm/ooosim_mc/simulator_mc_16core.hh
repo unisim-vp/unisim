@@ -1013,9 +1013,9 @@ public:
 	if(logger_on) {
 		unsigned int logger_index = 0;
 		//		logger->time_import >> time->time_export;
-		cpu->logger_import >> *logger->logger_export[logger_index++];
-		cpu->fpu_logger_import >> *logger->logger_export[logger_index++];
-		cpu->mmu_logger_import >> *logger->logger_export[logger_index++];
+		
+		
+		
 		//		bus->logger_import >> *logger->logger_export[logger_index++];
 		//		fsb_to_mem_bridge->logger_import >> *logger->logger_export[logger_index++];
 		//		memory->logger_import >> *logger->logger_export[logger_index++];

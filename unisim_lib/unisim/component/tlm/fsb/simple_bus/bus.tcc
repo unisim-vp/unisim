@@ -43,23 +43,16 @@ namespace tlm {
 namespace fsb {
 namespace simple_bus {
 
-#define LOCATION File << __FILE__ << Function << __FUNCTION__ << Line << __LINE__
+#define LOCATION "in file " << __FILE__ << ", function " << __FUNCTION__ << ", line #" << __LINE__
 
 using std::stringstream;
 using unisim::kernel::service::Object;
-//using unisim::service::interfaces::operator<<;
-using unisim::service::interfaces::DebugInfo;
-using unisim::service::interfaces::DebugWarning;
-using unisim::service::interfaces::DebugError;
-using unisim::service::interfaces::EndDebugInfo;
-using unisim::service::interfaces::EndDebugWarning;
-using unisim::service::interfaces::EndDebugError;
-using unisim::service::interfaces::Hex;
-using unisim::service::interfaces::Dec;
-using unisim::service::interfaces::Endl;
-using unisim::service::interfaces::File;
-using unisim::service::interfaces::Function;
-using unisim::service::interfaces::Line;
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugInfo;
+using unisim::kernel::logger::EndDebugWarning;
+using unisim::kernel::logger::EndDebugError;
 	
 /****************************************************/
 /* Bus request port controller implementation START */
@@ -107,7 +100,9 @@ Bus(const sc_module_name& module_name, Object *parent) :
 	ResponseListener<ReqType, RspType>(),		
 	memory_export("memory-export", this),
 	memory_import("memory-import", this),
-	logger_import("logger-import", this),
+	logger(*this),
+	verbose(false),
+	param_verbose("verbose", this, verbose),
 	cycle_time(),
 	cycle_time_int(0),
 	cycle_time_parameter("cycle-time", this, cycle_time_int),
@@ -116,7 +111,6 @@ Bus(const sc_module_name& module_name, Object *parent) :
 	bus_synchro_event(),
 	next_serviced(0),
 	chipset_rsp_fifo("chipset_rsp_fifo") {
-	Object::SetupDependsOn(logger_import);
 	/* create input ports and name them */
 	for(unsigned int i = 0; i < NUM_PROCS; i++) {
 		stringstream s;
@@ -160,28 +154,22 @@ bool
 Bus<ADDRESS_TYPE, DATA_SIZE, NUM_PROCS, DEBUG> :: 
 Setup() {
 	if(!memory_import) {
-		if(logger_import) {
-			(*logger_import) << DebugError << LOCATION
-				<< "No memory connected" << Endl
+		logger << DebugError << LOCATION
+				<< "No memory connected" << std::endl
 				<< EndDebugError;
-		} else 
-			cerr << Object::GetName() << ": No memory connected" << endl;
 		return false;
 	}
 
-	cerr << "cycle time of " << cycle_time_int << " microseconds" << endl;
-	if(DEBUG && logger_import) {
-		(*logger_import) << DebugInfo << LOCATION
-			<< "cycle time of " << cycle_time_int << " microseconds" << Endl
+	logger << DebugInfo << "cycle time of " << cycle_time_int << " microseconds" << endl;
+	if(DEBUG && verbose) {
+		logger << DebugInfo << LOCATION
+			<< "cycle time of " << cycle_time_int << " microseconds" << std::endl
 			<< EndDebugInfo;
 	}
 	if(!cycle_time_int) {
-		if(logger_import) {
-			(*logger_import) << DebugError << LOCATION
-				<< "cycle_time should be bigger than 0" << Endl
-				<< EndDebugInfo;
-		} else
-			cerr << "cycle_time should be bigger than 0" << endl;
+		logger << DebugError << LOCATION
+			<< "cycle_time should be bigger than 0" << std::endl
+			<< EndDebugInfo;
 		return false;
 	}
 	cycle_time = sc_time((double)cycle_time_int, SC_PS);
@@ -217,20 +205,20 @@ template <class ADDRESS_TYPE, unsigned int DATA_SIZE,
 bool 
 Bus<ADDRESS_TYPE, DATA_SIZE, NUM_PROCS, DEBUG> :: 
 Send(const PTransactionMsgType &msg, unsigned int id) {
-	if(DEBUG && logger_import)
-		(*logger_import) << DebugInfo << LOCATION
-			<< "Request received on port " << id << Endl
+	if(DEBUG && verbose)
+		logger << DebugInfo << LOCATION
+			<< "Request received on port " << id << std::endl
 			<< EndDebugInfo;
 
 	/* check if the incomming request can be inserted in its
 	 *   request fifo, if no just return returning false, which
 	 *   means that the request could not be processed */
 	if(!req_fifo[id]->nb_write(msg)) {
-		if(logger_import) {
-			(*logger_import) << DebugWarning << LOCATION 
+		if(verbose) {
+			logger << DebugWarning << LOCATION 
 				<< "Could not accept incomming request on port " << id
 				<< " because fifo full"
-				<< Endl << EndDebugWarning;
+				<< std::endl << EndDebugWarning;
 		}
 		return false;
 	}
@@ -259,11 +247,11 @@ ResponseReceived(const PTransactionMsgType &msg,
 	/* check if the response comes from the chipset, if so
 	 *   put the response in the chipset fifo queue */
 	if(&port == chipset_outport) {
-		if(DEBUG && logger_import) {
-			(*logger_import) << DebugInfo << LOCATION
-				<< "Response received on chipset_outport." << Endl
-				<< "Request:" << Endl << (*(msg->req)) << Endl
-				<< "Response:" << Endl << (*(msg->rsp)) << Endl
+		if(DEBUG && verbose) {
+			logger << DebugInfo << LOCATION
+				<< "Response received on chipset_outport." << std::endl
+				<< "Request:" << std::endl << (*(msg->req)) << std::endl
+				<< "Response:" << std::endl << (*(msg->rsp)) << std::endl
 				<< EndDebugInfo;
 		}
 		chipset_rsp_fifo.write(msg);
@@ -296,29 +284,29 @@ BusSynchronize() {
 	sc_dt::uint64 cur_cycle = cur_time_int / cycle_time_int;
 	sc_dt::uint64 cur_cycle_init_int = cur_cycle * cycle_time_int;
 	if(cur_cycle_init_int > cur_time_int) {
-		if(logger_import)
-			(*logger_import) << DebugError << LOCATION
+		if(verbose)
+			logger << DebugError << LOCATION
 				<< "current cycle time is bigger than simulation time ("
 				<< "cur_cycle_init_int = " << cur_cycle_init_int << ", "
-				<< "cur_time_int = " << cur_time_int << ")" << Endl
+				<< "cur_time_int = " << cur_time_int << ")" << std::endl
 				<< EndDebugError;
 		sc_stop();
 		wait();
 	}
 	// check if a message can be send right now
 	if(cur_cycle_init_int == cur_time_int) {
-		if(DEBUG && logger_import)
-			(*logger_import) << DebugInfo << LOCATION
-				<< "bus synchronize in 0 time" << Endl
+		if(DEBUG && verbose)
+			logger << DebugInfo << LOCATION
+				<< "bus synchronize in 0 time" << std::endl
 				<< EndDebugInfo;
 		// yes a message can be sent right now
 		bus_synchro_event.notify(SC_ZERO_TIME);
 	} else {
-		if(DEBUG && logger_import)
-			(*logger_import) << DebugInfo << LOCATION
+		if(DEBUG && verbose)
+			logger << DebugInfo << LOCATION
 				<< "bus synchronize in " 
 				<< ((cycle_time * (cur_cycle + 1)) - cur_time).to_string() 
-				<< Endl
+				<< std::endl
 				<< EndDebugInfo;
 		bus_synchro_event.notify((cycle_time * (cur_cycle + 1)) - cur_time);
 	}
@@ -332,9 +320,9 @@ BusClock() {
 	while(1) {
 		wait(bus_synchro_event);
 		
-		if(DEBUG && logger_import) {
-			(*logger_import) << DebugInfo << LOCATION
-				<< "Executing bus cycle" << Endl
+		if(DEBUG && verbose) {
+			logger << DebugInfo << LOCATION
+				<< "Executing bus cycle" << std::endl
 				<< EndDebugInfo;
 		}
 		
@@ -361,10 +349,10 @@ BusClock() {
 		 * and go back to the beginning of the BusClock loop after indicating
 		 *   that there is no work in the bus */
 		if(counter == NUM_PROCS + 2) {
-			if(logger_import) {
-				(*logger_import) << DebugWarning << LOCATION
+			if(verbose) {
+				logger << DebugWarning << LOCATION
 					<< "Dispatch thread BusClock was requested when there was "
-					<< "no message to dispatch, this should never occur" << Endl
+					<< "no message to dispatch, this should never occur" << std::endl
 					<< EndDebugWarning;
 			}
 			working_mutex.lock();
@@ -385,9 +373,9 @@ BusClock() {
 		 *     again so it will be handled */
 		wait(cycle_time);
 		wait(SC_ZERO_TIME);
-		if(DEBUG && logger_import) {
-			(*logger_import) << DebugInfo << LOCATION
-				<< "Dispatch finished" << Endl
+		if(DEBUG && verbose) {
+			logger << DebugInfo << LOCATION
+				<< "Dispatch finished" << std::endl
 				<< EndDebugInfo;
 		}
 		next_serviced += 1;
@@ -395,31 +383,31 @@ BusClock() {
 		bool msg_found = false;
 		for(unsigned int i = 0; !msg_found && i < NUM_PROCS; i++) {
 			if(req_fifo[i]->num_available() != 0) {
-				if(DEBUG && logger_import)
-					(*logger_import) << DebugInfo << LOCATION
+				if(DEBUG && verbose)
+					logger << DebugInfo << LOCATION
 						<< req_fifo[i]->num_available()
 						<< " messages found in req_fifo[" << i << "]"
-						<< " at the end of bus cycle" << Endl
+						<< " at the end of bus cycle" << std::endl
 						<< EndDebugInfo;
 				msg_found = true;
 			}
 		}
 		if(!msg_found) {
 			if(chipset_rsp_fifo.num_available() != 0) {
-				if(DEBUG && logger_import)
-					(*logger_import) << DebugInfo << LOCATION
+				if(DEBUG && verbose)
+					logger << DebugInfo << LOCATION
 						<< chipset_rsp_fifo.num_available()
 						<< " messages found in chipset_rsp_fifo"
-						<< " at the end of bus cycle" << Endl
+						<< " at the end of bus cycle" << std::endl
 						<< EndDebugInfo;
 				msg_found = true;
 			}
 		}
 		if(msg_found) {
-			if(DEBUG && logger_import) {
-				(*logger_import) << DebugInfo << LOCATION
+			if(DEBUG && verbose) {
+				logger << DebugInfo << LOCATION
 					<< "Finished bus cycle but a message found in one of " 
-					<< "the fifos (working=" << working << ")" << Endl
+					<< "the fifos (working=" << working << ")" << std::endl
 					<< EndDebugInfo;
 			}
 			BusSynchronize();
@@ -443,11 +431,11 @@ DispatchChipsetMessage() {
 	 * Check if a response is available if so, notify the message event. */
 	if(chipset_rsp_fifo.num_available() != 0) {
 		msg = chipset_rsp_fifo.read();
-		if(DEBUG && logger_import) 
-			(*logger_import) << DebugInfo << LOCATION
-				<< "Dispatching chipset_rsp_fifo message." << Endl
-				<< "Request:" << Endl << (*(msg->req)) << Endl 
-				<< "Response:" << Endl << (*(msg->rsp)) << Endl
+		if(DEBUG && verbose) 
+			logger << DebugInfo << LOCATION
+				<< "Dispatching chipset_rsp_fifo message." << std::endl
+				<< "Request:" << std::endl << (*(msg->req)) << std::endl 
+				<< "Response:" << std::endl << (*(msg->rsp)) << std::endl
 				<< EndDebugInfo;
 		msg->GetResponseEvent()->notify(SC_ZERO_TIME);
 		return;
@@ -462,10 +450,10 @@ DispatchCPUMessage() {
 	/* get the message */
 	PTransactionMsgType msg = req_fifo[next_serviced]->read();
 	
-	if(DEBUG && logger_import) 
-		(*logger_import) << DebugInfo << LOCATION
-			<< "Dispatching req_fifo[" << next_serviced << "] message." << Endl
-			<< "Request:" << Endl << (*(msg->req)) << Endl 
+	if(DEBUG && verbose) 
+		logger << DebugInfo << LOCATION
+			<< "Dispatching req_fifo[" << next_serviced << "] message." << std::endl
+			<< "Request:" << std::endl << (*(msg->req)) << std::endl 
 			<< EndDebugInfo;
 	while(!inheritedRspListener::Send(msg, *chipset_outport))
 		wait(cycle_time);

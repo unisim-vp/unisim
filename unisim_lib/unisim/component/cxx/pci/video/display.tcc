@@ -44,26 +44,19 @@ namespace pci {
 namespace video {
 
 using namespace std;
-//using unisim::service::interfaces::operator<<;
-using unisim::service::interfaces::Hex;
-using unisim::service::interfaces::Dec;
-using unisim::service::interfaces::Endl;
-using unisim::service::interfaces::Endl;
-using unisim::service::interfaces::DebugInfo;
-using unisim::service::interfaces::DebugWarning;
-using unisim::service::interfaces::DebugError;
-using unisim::service::interfaces::EndDebugInfo;
-using unisim::service::interfaces::EndDebugWarning;
-using unisim::service::interfaces::EndDebugError;
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugInfo;
+using unisim::kernel::logger::EndDebugWarning;
+using unisim::kernel::logger::EndDebugError;
 	
 template <class ADDRESS>
 Display<ADDRESS>::Display(const char *name, Object *parent) :
 	Object(name, parent),
 	Service<Memory<ADDRESS> >(name, parent),
 	Client<Video<ADDRESS> >(name, parent),
-	Client<Logger>(name, parent),
 	memory_export("memory-export", this),
-	logger_import("logger-import", this),
 	video_import("video-import", this),
 	frame_buffer(0),
 	bytesize(0),
@@ -72,6 +65,9 @@ Display<ADDRESS>::Display(const char *name, Object *parent) :
 	depth(0),
 	bytes_per_pixels(0),
 	bytes_per_line(0),
+	logger(*this),
+	verbose(false),
+	param_verbose("verbose", this, verbose),
 	param_bytesize("bytesize", this, bytesize),
 	param_width("width", this, width),
 	param_height("height", this, height),
@@ -117,7 +113,7 @@ bool Display<ADDRESS>::Setup()
 	
 	if(bytes_per_line * height > bytesize)
 	{
-		cerr << Object::GetName() << ": Frame buffer is too small to handle video mode " << width << " pixels x " << height << " pixels x " << depth << " bits per pixel..." << endl;
+		logger << DebugError << ": Frame buffer is too small to handle video mode " << width << " pixels x " << height << " pixels x " << depth << " bits per pixel..." << EndDebugError;
 		return false;
 	}
 	
@@ -128,7 +124,7 @@ bool Display<ADDRESS>::Setup()
 	{
 		if(!video_import->SetVideoMode(pci_conf_base_addr, width, height, depth, bytes_per_line))
 		{
-			cerr << Object::GetName() << ": Can't set video mode" << endl;
+			logger << DebugError << ": Can't set video mode" << EndDebugError;
 		}
 	}
 	

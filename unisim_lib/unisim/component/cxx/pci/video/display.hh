@@ -42,7 +42,7 @@
 #include <unisim/kernel/service/service.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/device/register.hh>
-#include <unisim/service/interfaces/logger.hh>
+#include <unisim/kernel/logger/logger.hh>
 
 namespace unisim {
 namespace component {
@@ -62,12 +62,10 @@ using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Parameter;
-using unisim::service::interfaces::Logger;
 
 template <class ADDRESS>
 class Display :
 	public Service<Memory<ADDRESS> >,
-	public Client<Logger>,
 	public Client<Video<ADDRESS> >
 {
 public:
@@ -78,7 +76,6 @@ public:
 	
 	ServiceExport<Memory<ADDRESS> > memory_export;
 	ServiceImport<Video<ADDRESS> > video_import;
-	ServiceImport<Logger> logger_import;
 	
 	Display(const char *name, Object *parent = 0);
 	virtual ~Display();
@@ -111,6 +108,11 @@ private:
 	Parameter<unsigned int> param_pci_bus_frequency;
 
 protected:
+	// debug stuff
+	unisim::kernel::logger::Logger logger;
+	bool verbose;
+	Parameter<bool> param_verbose;
+	
 	// PCI configuration registers
 	reg16_t pci_conf_device_id;
 	reg16_t pci_conf_vendor_id;

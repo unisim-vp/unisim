@@ -46,25 +46,19 @@ namespace pci {
 namespace macio {
 
 using namespace unisim::util::endian;
-// using std::stringstream;
 using namespace std;
-//using unisim::service::interfaces::operator<<;
-using unisim::service::interfaces::Hex;
-using unisim::service::interfaces::Dec;
-using unisim::service::interfaces::Endl;
-using unisim::service::interfaces::Endl;
-using unisim::service::interfaces::DebugInfo;
-using unisim::service::interfaces::DebugWarning;
-using unisim::service::interfaces::DebugError;
-using unisim::service::interfaces::EndDebugInfo;
-using unisim::service::interfaces::EndDebugWarning;
-using unisim::service::interfaces::EndDebugError;
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugInfo;
+using unisim::kernel::logger::EndDebugWarning;
+using unisim::kernel::logger::EndDebugError;
 
 template <class ADDRESS>
 Heathrow<ADDRESS>::Heathrow(const char *name, Object *parent) :
 	Object(name, parent),
-	Client<Logger>(name, parent),
-	logger_import("logger-import", this),
+	logger(*this),
+	verbose(false),
 	pci_device_number(0),
 	bus_frequency(0),
 	pci_bus_frequency(33),
@@ -96,6 +90,7 @@ Heathrow<ADDRESS>::Heathrow(const char *name, Object *parent) :
 
 	
 	// Parameters initialization
+	param_verbose("verbose", this, verbose),
 	param_initial_base_addr("initial-base-addr", this, initial_base_addr),
 	param_pci_device_number("pci-device-number", this, pci_device_number),
 	param_bus_frequency("bus-frequency", this, bus_frequency),
@@ -336,8 +331,8 @@ void Heathrow<ADDRESS>::Read(ADDRESS addr, void *buffer, uint32_t size)
 {
 	if(!(pci_conf_command & 0x2))
 	{
-		if(logger_import)
-			(*logger_import) << DebugWarning << "Attempting to read from memory space while it is disabled !" << Endl << EndDebugWarning;
+		if(verbose)
+			logger << DebugWarning << "Attempting to read from memory space while it is disabled !" << std::endl << EndDebugWarning;
 		memset(buffer, 0, size);
 		return;
 	}
@@ -360,8 +355,8 @@ void Heathrow<ADDRESS>::Read(ADDRESS addr, void *buffer, uint32_t size)
 						break;
 					default:
 						read_data = 0;
-						if(logger_import)
-							(*logger_import) << DebugWarning << "reading an unmapped memory (offset 0x" << Hex << offset << Dec << ")" << Endl << EndDebugWarning;
+						if(verbose)
+							logger << DebugWarning << "reading an unmapped memory (offset 0x" << std::hex << offset << std::dec << ")" << std::endl << EndDebugWarning;
 				}
 				*(uint8_t *) buffer = read_data;
 			}
@@ -409,15 +404,15 @@ void Heathrow<ADDRESS>::Read(ADDRESS addr, void *buffer, uint32_t size)
 						
 					default:
 						read_data = 0;
-						if(logger_import)
-							(*logger_import) << DebugWarning << "reading an unmapped memory (offset 0x" << Hex << offset << Dec << ")" << Endl << EndDebugWarning;
+						if(verbose)
+							logger << DebugWarning << "reading an unmapped memory (offset 0x" << std::hex << offset << std::dec << ")" << std::endl << EndDebugWarning;
 				}
 				*(uint32_t *) buffer = read_data;
 			}
 			break;
 		default:
-			if(logger_import)
-				(*logger_import) << DebugWarning << "bad size while reading" << Endl << EndDebugWarning;
+			if(verbose)
+				logger << DebugWarning << "bad size while reading" << std::endl << EndDebugWarning;
 	}
 }
 
@@ -426,8 +421,8 @@ void Heathrow<ADDRESS>::Write(ADDRESS addr, const void *buffer, uint32_t size)
 {
 	if(!(pci_conf_command & 0x2))
 	{
-		if(logger_import)
-			(*logger_import) << DebugWarning << "Attempting to write into memory space while it is disabled !" << Endl << EndDebugWarning;
+		if(verbose)
+			logger << DebugWarning << "Attempting to write into memory space while it is disabled !" << std::endl << EndDebugWarning;
 		return;
 	}
 	
@@ -448,8 +443,8 @@ void Heathrow<ADDRESS>::Write(ADDRESS addr, const void *buffer, uint32_t size)
 						heathrow_contrast = write_data;
 						break;
 					default:
-						if(logger_import)
-							(*logger_import) << DebugWarning << "writing an unmapped memory (offset 0x" << Hex << offset << Dec << ")" << Endl << EndDebugWarning;
+						if(verbose)
+							logger << DebugWarning << "writing an unmapped memory (offset 0x" << std::hex << offset << std::dec << ")" << std::endl << EndDebugWarning;
 				}
 			}
 			break;
@@ -501,14 +496,14 @@ void Heathrow<ADDRESS>::Write(ADDRESS addr, const void *buffer, uint32_t size)
 						heathrow_aux_control = write_data;
 						break;
 					default:
-						if(logger_import)
-							(*logger_import) << DebugWarning << "writing an unmapped memory (offset 0x" << Hex << offset << Dec << ")" << Endl << EndDebugWarning;
+						if(verbose)
+							logger << DebugWarning << "writing an unmapped memory (offset 0x" << std::hex << offset << std::dec << ")" << std::endl << EndDebugWarning;
 				}
 			}
 			break;
 		default:
-			if(logger_import)
-				(*logger_import) << DebugWarning << "bad size while writing" << Endl << EndDebugWarning;
+			if(verbose)
+				logger << DebugWarning << "bad size while writing" << std::endl << EndDebugWarning;
 	}
 }
 	

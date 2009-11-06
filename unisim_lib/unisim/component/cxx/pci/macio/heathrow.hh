@@ -37,7 +37,7 @@
 
 #include <unisim/util/device/register.hh>
 #include <unisim/kernel/service/service.hh>
-#include <unisim/service/interfaces/logger.hh>
+#include <unisim/kernel/logger/logger.hh>
 
 namespace unisim {
 namespace component {
@@ -54,15 +54,11 @@ using unisim::util::device::Register;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::Object;
-using unisim::service::interfaces::Logger;
 
 template <class ADDRESS>
-class Heathrow :
-	public Client<Logger>
+class Heathrow : virtual public Object
 {
 public:
-	ServiceImport<Logger> logger_import;
-	
 	typedef Register<uint32_t> reg32_t;
 	typedef Register<uint32_t> reg24_t;
 	typedef Register<uint16_t> reg16_t;
@@ -85,6 +81,10 @@ public:
 	void SetIRQ(unsigned int int_num, bool level);
 	virtual bool Setup();
 protected:
+	// debug stuff
+	unisim::kernel::logger::Logger logger;
+	bool verbose;
+
 	// heathrow global registers
 	reg8_t heathrow_brightness;
 	reg8_t heathrow_contrast;
@@ -123,7 +123,8 @@ protected:
 	bool level;
 	
 	uint32_t pic_level_mask[NUM_PICS];
-			
+	
+	Parameter<bool> param_verbose;
 	Parameter<ADDRESS> param_initial_base_addr;
 	Parameter<uint32_t> param_pci_device_number;
 	Parameter<unsigned int> param_bus_frequency;

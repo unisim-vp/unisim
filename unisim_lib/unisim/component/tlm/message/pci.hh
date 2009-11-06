@@ -39,6 +39,7 @@
 
 #include "unisim/component/cxx/pci/types.hh"
 #include "unisim/service/interfaces/logger.hh"
+#include "unisim/kernel/logger/logger.hh"
 #include "unisim/util/garbage_collector/garbage_collector.hh"
 #include "unisim/component/tlm/debug/transaction_spy.hh"
 
@@ -56,6 +57,10 @@ template <class ADDRESS_TYPE, uint32_t MAX_SIZE>
 unisim::service::interfaces::Logger& operator << (unisim::service::interfaces::Logger& os, const PCIRequest<ADDRESS_TYPE, MAX_SIZE>& req);
 template <uint32_t MAX_SIZE>
 unisim::service::interfaces::Logger& operator << (unisim::service::interfaces::Logger& os, const PCIResponse<MAX_SIZE>& rsp);
+template <class ADDRESS_TYPE, uint32_t MAX_SIZE>
+unisim::kernel::logger::Logger& operator << (unisim::kernel::logger::Logger& os, const PCIRequest<ADDRESS_TYPE, MAX_SIZE>& req);
+template <uint32_t MAX_SIZE>
+unisim::kernel::logger::Logger& operator << (unisim::kernel::logger::Logger& os, const PCIResponse<MAX_SIZE>& rsp);
 
 template <class ADDRESS_TYPE, uint32_t MAX_SIZE>
 class PCIRequest {
@@ -68,6 +73,8 @@ public:
 
 	friend unisim::service::interfaces::Logger& operator << <ADDRESS_TYPE, MAX_SIZE>(unisim::service::interfaces::Logger& os, 
 			const PCIRequest<ADDRESS_TYPE, MAX_SIZE>& req);
+	friend unisim::kernel::logger::Logger& operator << <ADDRESS_TYPE, MAX_SIZE>(unisim::kernel::logger::Logger& os, 
+			const PCIRequest<ADDRESS_TYPE, MAX_SIZE>& req);
 };
 
 template <uint32_t MAX_SIZE>
@@ -76,6 +83,8 @@ public:
 	uint8_t read_data[MAX_SIZE];
 
 	friend unisim::service::interfaces::Logger& operator << <MAX_SIZE>(unisim::service::interfaces::Logger& os, 
+			const PCIResponse<MAX_SIZE>& rsp);
+	friend unisim::kernel::logger::Logger& operator << <MAX_SIZE>(unisim::kernel::logger::Logger& os, 
 			const PCIResponse<MAX_SIZE>& rsp);
 };
 
@@ -115,6 +124,38 @@ unisim::service::interfaces::Logger& operator << (unisim::service::interfaces::L
 	return os;
 }
 
+template <class ADDRESS_TYPE, uint32_t MAX_SIZE>
+unisim::kernel::logger::Logger& operator << (unisim::kernel::logger::Logger& os,
+		const PCIRequest<ADDRESS_TYPE, MAX_SIZE>& req) {
+	os << std::hex << "PCI-REQ(space=";
+	switch(req.space)
+	{
+		case unisim::component::cxx::pci::SP_IO: os << "I/O"; break;
+		case unisim::component::cxx::pci::SP_MEM: os << "MEM"; break;
+		case unisim::component::cxx::pci::SP_CONFIG: os << "CONFIG"; break;
+	}
+	os << ",type=";
+	switch(req.type)
+	{
+		case unisim::component::cxx::pci::TT_READ: os << "READ"; break;
+		case unisim::component::cxx::pci::TT_WRITE: os << "WRITE"; break;
+	}
+	os << ",addr=";
+	os << "0x" << req.addr;
+	if(req.type == unisim::component::cxx::pci::TT_WRITE)
+	{
+		os << ",write_data=";
+		uint32_t i;
+		for(i = 0; i < req.size; i++)
+		{
+			os << (unsigned int) req.write_data[i];
+			if(i < req.size - 1) os << ",";
+		}
+	}
+ 	os << ")" << std::dec;
+	return os;
+}
+
 template <uint32_t MAX_SIZE>
 unisim::service::interfaces::Logger& operator << (unisim::service::interfaces::Logger& os, 
 		const PCIResponse<MAX_SIZE>& rsp) {
@@ -130,6 +171,21 @@ unisim::service::interfaces::Logger& operator << (unisim::service::interfaces::L
 		if(i < MAX_SIZE - 1) os << ",";
 	}
  	os << ")" << Dec;
+	return os;
+}
+
+template <uint32_t MAX_SIZE>
+unisim::kernel::logger::Logger& operator << (unisim::kernel::logger::Logger& os, 
+		const PCIResponse<MAX_SIZE>& rsp) {
+	
+	os << std::hex << "PCI-RSP(read_data=";
+	uint32_t i;
+	for(i = 0; i < MAX_SIZE; i++)
+	{
+		os << (unsigned int) rsp.read_data[i];
+		if(i < MAX_SIZE - 1) os << ",";
+	}
+ 	os << ")" << std::dec;
 	return os;
 }
 
@@ -182,6 +238,36 @@ public:
 		}
 	 	os << ")" << Dec;
 	}
+
+	void Dump(unisim::kernel::logger::Logger &os, PReqType &req) {
+		
+		os << std::hex << "PCI-REQ(space=";
+		switch(req->space)
+		{
+			case unisim::component::cxx::pci::SP_IO: os << "I/O"; break;
+			case unisim::component::cxx::pci::SP_MEM: os << "MEM"; break;
+			case unisim::component::cxx::pci::SP_CONFIG: os << "CONFIG"; break;
+		}
+		os << ",type=";
+		switch(req->type)
+		{
+			case unisim::component::cxx::pci::TT_READ: os << "READ"; break;
+			case unisim::component::cxx::pci::TT_WRITE: os << "WRITE"; break;
+		}
+		os << ",addr=";
+		os << "0x" << req->addr;
+		if(req->type == unisim::component::cxx::pci::TT_WRITE)
+		{
+			os << ",write_data=";
+			uint32_t i;
+			for(i = 0; i < req->size; i++)
+			{
+				os << (unsigned int) req->write_data[i];
+				if(i < req->size - 1) os << ",";
+			}
+		}
+	 	os << ")" << std::dec;
+	}
 };
 
 template <class ADDRESS, unsigned int DATA_SIZE>
@@ -209,6 +295,20 @@ public:
 		}
 	 	os << ")" << Dec;
 	 	os << Endl;
+	}
+
+	void Dump(unisim::kernel::logger::Logger &os, PRspType &rsp, 
+		PReqType &req) {
+		
+		os << std::hex << "PCI-RSP(read_data=";
+		uint32_t i;
+		for(i = 0; i < req->size; i++)
+		{
+			os << (unsigned int) rsp->read_data[i];
+			if(i < req->size - 1) os << ",";
+		}
+	 	os << ")" << std::dec;
+	 	os << std::endl;
 	}
 };
 

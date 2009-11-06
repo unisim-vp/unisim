@@ -41,10 +41,10 @@
 #include <systemc.h>
 #include "unisim/kernel/tlm/tlm.hh"
 #include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/logger/logger.hh"
 #include "unisim/util/garbage_collector/garbage_collector.hh"
 #include "unisim/component/tlm/message/snooping_fsb.hh"
 #include "unisim/service/interfaces/memory.hh"
-#include "unisim/service/interfaces/logger.hh"
 
 namespace unisim {
 namespace component {
@@ -67,7 +67,7 @@ using unisim::util::garbage_collector::Pointer;
 using unisim::component::tlm::message::SnoopingFSBRequest;
 using unisim::component::tlm::message::SnoopingFSBResponse;
 using unisim::service::interfaces::Memory;
-using unisim::service::interfaces::Logger;
+using unisim::kernel::logger::Logger;
 	
 /* Forward declaration of classes defined in this file */
 template<class ADDRESS_TYPE, unsigned int DATA_SIZE, unsigned int NUM_PROCS>
@@ -120,8 +120,7 @@ class Bus :
 	public ResponseListener<SnoopingFSBRequest<ADDRESS_TYPE, DATA_SIZE>,
 		SnoopingFSBResponse<DATA_SIZE> >,
 	public Service<Memory<ADDRESS_TYPE> >,
-	public Client<Memory<ADDRESS_TYPE> >,
-	public Client<Logger> {
+	public Client<Memory<ADDRESS_TYPE> > {
 public:
 	typedef SnoopingFSBRequest<ADDRESS_TYPE, DATA_SIZE> ReqType;
 	typedef Pointer<ReqType> PReqType;
@@ -140,8 +139,6 @@ public:
 	/** Memory service required by the bus when it itself 
 	 * provides a memory service */
 	ServiceImport<Memory<ADDRESS_TYPE> > memory_import;
-	/** Logger service required to dump debug messages */
-	ServiceImport<Logger> logger_import;
 	
 	/***********************************
 	 *     ports declaration START     *
@@ -205,6 +202,12 @@ public:
 		sc_port<TransactionSendIf> &port);
 
 private:
+	/** The logger */
+	Logger logger;
+	
+	bool verbose;
+	Parameter<bool> param_verbose;
+	
 	/** Method to synchronize main dispatching thread with the bus cycle.
 	 * This method is responsible to compute how much time the main dispatching
 	 *   thread should wait before sending a request in one of its queues.

@@ -38,7 +38,7 @@
 #include <inttypes.h>
 #include "unisim/kernel/service/service.hh"
 #include "unisim/service/interfaces/memory.hh"
-#include "unisim/service/interfaces/logger.hh"
+#include "unisim/kernel/logger/logger.hh"
 #include "unisim/component/cxx/memory/flash/am29lv/types.hh"
 #include "unisim/component/cxx/memory/flash/am29lv/config.hh"
 #include "unisim/util/endian/endian.hh"
@@ -51,7 +51,8 @@ namespace flash {
 namespace am29lv {
 
 using unisim::service::interfaces::Memory;
-using unisim::service::interfaces::Logger;
+using unisim::kernel::logger::Logger;
+using unisim::kernel::service::Object;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::Service;
 using unisim::kernel::service::ServiceImport;
@@ -66,7 +67,6 @@ static const uint32_t G = 1024 * M;
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
 class AM29LV :
-	public Client<Logger>,
 	public Service<Memory<typename CONFIG::ADDRESS> >
 {
 public:
@@ -74,7 +74,6 @@ public:
 	static const unsigned int CHIP_IO_WIDTH = IO_WIDTH / NUM_CHIPS;
 	static const uint32_t ADDR_MASK = BYTESIZE - 1; // WARNING! BYTESIZE must be a power of two
 
-	ServiceImport<Logger> logger_import;
 	ServiceExport<Memory<typename CONFIG::ADDRESS> > memory_export;
 
 	AM29LV(const  char *name, Object *parent = 0);
@@ -86,6 +85,11 @@ public:
 	virtual bool ReadMemory(typename CONFIG::ADDRESS addr, void *buffer, uint32_t size);
 protected:
 	bool FSM(COMMAND command, typename CONFIG::ADDRESS addr, uint8_t *data, uint32_t size);
+	
+	// debug stuff
+	unisim::kernel::logger::Logger logger;
+	bool verbose;
+	Parameter<bool> param_verbose;
 private:
 	unsigned int config_addr_shift; // shift (right) amount to apply to addresses in CONFIG when matching addresses
 	unsigned int addr_shift;      // shift (right) amount to apply to a byte address in order to obtain the actual address provided to the flash chips

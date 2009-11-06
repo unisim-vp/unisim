@@ -1005,9 +1005,10 @@ int sc_main(int argc, char *argv[])
 		cpu->logger_import >> *logger->logger_export[logger_index++];
 		cpu->fpu_logger_import >> *logger->logger_export[logger_index++];
 		cpu->mmu_logger_import >> *logger->logger_export[logger_index++];
-		*/
 		bus->logger_import >> *logger->logger_export[logger_index++];
+		*/
 		mpc107->logger_import >> *logger->logger_export[logger_index++];
+		/*
 		pci_bus->logger_import >> *logger->logger_export[logger_index++];
 #ifdef WITH_PCI_STUB
 		pci_stub->logger_import >> *logger->logger_export[logger_index++];
@@ -1016,7 +1017,9 @@ int sc_main(int argc, char *argv[])
 		mpc107->addr_map_logger_import >> *logger->logger_export[logger_index++];
 		mpc107->epic_logger_import >> *logger->logger_export[logger_index++];
 		mpc107->atu_logger_import >> *logger->logger_export[logger_index++];
+		/*
 		flash->logger_import >> *logger->logger_export[logger_index++];
+		*/
 		// if(gdb_server) gdb_server->logger_import >> *logger->logger_export[logger_index++];
 		for(unsigned int i = 0; i < MAX_BUS_TRANSACTION_SPY; i++)
 			if(bus_msg_spy[i] != NULL)

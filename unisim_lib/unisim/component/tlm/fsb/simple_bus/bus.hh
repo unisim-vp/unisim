@@ -41,10 +41,10 @@
 #include <systemc.h>
 #include "unisim/kernel/tlm/tlm.hh"
 #include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/logger/logger.hh"
 #include "unisim/util/garbage_collector/garbage_collector.hh"
 #include "unisim/component/tlm/message/simple_fsb.hh"
 #include "unisim/service/interfaces/memory.hh"
-#include "unisim/service/interfaces/logger.hh"
 
 namespace unisim {
 namespace component {
@@ -139,8 +139,6 @@ public:
 	/** Memory service required by the bus when it itself 
 	 * provides a memory service */
 	ServiceImport<Memory<ADDRESS_TYPE> > memory_import;
-	/** Logger service required to dump debug messages */
-	ServiceImport<Logger> logger_import;
 	
 	/***********************************
 	 *     ports declaration START     *
@@ -191,6 +189,11 @@ public:
 	virtual void ResponseReceived(const PTransactionMsgType &msg,
 		sc_port<TransactionSendIf> &port);
 
+protected:
+	/** Debug stuff */
+	unisim::kernel::logger::Logger logger;
+	bool verbose;
+	Parameter<bool> param_verbose;
 private:
 	/** Method to synchronize main dispatching thread with the bus cycle.
 	 * This method is responsible to compute how much time the main dispatching

@@ -49,17 +49,12 @@ using unisim::component::cxx::pci::SP_MEM;
 using unisim::component::cxx::pci::SP_IO;
 using unisim::component::cxx::pci::SP_CONFIG;
 
-//using unisim::service::interfaces::operator<<;
-using unisim::service::interfaces::Hex;
-using unisim::service::interfaces::Dec;
-using unisim::service::interfaces::Endl;
-using unisim::service::interfaces::Endl;
-using unisim::service::interfaces::DebugInfo;
-using unisim::service::interfaces::DebugWarning;
-using unisim::service::interfaces::DebugError;
-using unisim::service::interfaces::EndDebugInfo;
-using unisim::service::interfaces::EndDebugWarning;
-using unisim::service::interfaces::EndDebugError;
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugInfo;
+using unisim::kernel::logger::EndDebugWarning;
+using unisim::kernel::logger::EndDebugError;
 
 template <class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
 Heathrow<ADDRESS_TYPE, MAX_DATA_SIZE>::Heathrow(const sc_module_name& name, Object *parent) :
@@ -127,19 +122,19 @@ bool Heathrow<ADDRESS_TYPE, MAX_DATA_SIZE>::Send(const Pointer<TlmMessage<PCIReq
 			}
 			break;
 		case SP_IO:
-			if(inherited::logger_import)
-				(*inherited::logger_import) << DebugWarning << "I don't have I/O space" << Endl << EndDebugWarning;
+			if(inherited::verbose)
+				inherited::logger << DebugWarning << "I don't have I/O space" << std::endl << EndDebugWarning;
 			break;
 		case SP_CONFIG:
 			if(((pci_addr >> 11) & 31) != inherited::pci_device_number)
 			{
-				if(inherited::logger_import)
+				if(inherited::verbose)
 				{
-					(*inherited::logger_import) << DebugWarning;
-					(*inherited::logger_import) << "out of range configuration space access\n" << Endl;
-					(*inherited::logger_import) << "PCI config base address is 0x" << Hex << (inherited::pci_device_number << 11) << Dec << Endl;
-					(*inherited::logger_import) << "Requested address is 0x" << Hex << pci_addr << Dec << Endl;
-					(*inherited::logger_import) << EndDebugWarning;
+					inherited::logger << DebugWarning;
+					inherited::logger << "out of range configuration space access\n" << std::endl;
+					inherited::logger << "PCI config base address is 0x" << std::hex << (inherited::pci_device_number << 11) << std::dec << std::endl;
+					inherited::logger << "Requested address is 0x" << std::hex << pci_addr << std::dec << std::endl;
+					inherited::logger << EndDebugWarning;
 				}
 			}
 			
@@ -153,8 +148,8 @@ bool Heathrow<ADDRESS_TYPE, MAX_DATA_SIZE>::Send(const Pointer<TlmMessage<PCIReq
 						for(byte_num = 0, pci_conf_offset = pci_addr & 0xff; byte_num < pci_req_size; byte_num++, pci_conf_offset++)
 						{
 							pci_rsp->read_data[byte_num] = inherited::ReadConfigByte(pci_conf_offset);
-							if(inherited::logger_import)
-								(*inherited::logger_import) << DebugInfo << "Reading PCI config at 0x" << Hex << pci_conf_offset << ": value=0x" << (unsigned int) pci_rsp->read_data[byte_num] << Dec << Endl << EndDebugInfo;
+							if(inherited::verbose)
+								inherited::logger << DebugInfo << "Reading PCI config at 0x" << std::hex << pci_conf_offset << ": value=0x" << (unsigned int) pci_rsp->read_data[byte_num] << std::dec << std::endl << EndDebugInfo;
 						}
 					
 						message->rsp = pci_rsp;
@@ -168,8 +163,8 @@ bool Heathrow<ADDRESS_TYPE, MAX_DATA_SIZE>::Send(const Pointer<TlmMessage<PCIReq
 						unsigned int pci_req_size = pci_req->size;
 						for(byte_num = 0, pci_conf_offset = pci_addr & 0xff; byte_num < pci_req_size; byte_num++, pci_conf_offset++)
 						{
-							if(inherited::logger_import)
-								(*inherited::logger_import) << DebugInfo << "Writing PCI config at 0x" << Hex << pci_conf_offset << ": value=0x" << (unsigned int) pci_req->write_data[byte_num] << Dec << Endl << EndDebugInfo;
+							if(inherited::verbose)
+								inherited::logger << DebugInfo << "Writing PCI config at 0x" << std::hex << pci_conf_offset << ": value=0x" << (unsigned int) pci_req->write_data[byte_num] << std::dec << std::endl << EndDebugInfo;
 							inherited::WriteConfigByte(pci_conf_offset, pci_req->write_data[byte_num]);
 						}
 					}
