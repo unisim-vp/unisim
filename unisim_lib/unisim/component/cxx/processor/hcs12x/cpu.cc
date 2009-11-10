@@ -346,11 +346,6 @@ uint8_t CPU::Step()
 
 		if(HasAsynchronousInterrupt())
 		{
-			if (debug_enabled) {
-				cout << "CPU: I Have detected Asynchronous Exception !" << std::endl;
-				ReportTrap();
-			}
-
 			throw AsynchronousException();
 		}
 
