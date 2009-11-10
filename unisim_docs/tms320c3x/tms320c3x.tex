@@ -46,12 +46,14 @@ The simulator has complete support for:
 \end{itemize}
 
 The current status of the simulator allows to run any integer or floating-point benchmark.
-However, during the validation process of the UNISIM TMS320C3X simulator, four hardware bugs have been found on our development board, and one software bug in Code Composer. The UNISIM TMS320C3X simulator can emulate these bugs (see Section~\ref{tms320c3x_configuration}) if they are enabled:
+However, during the validation process of the UNISIM TMS320C3X simulator, four hardware bugs have been found on our development board, and one software bug in Code Composer.
+The UNISIM TMS320C3X simulator can emulate these bugs (see Section~\ref{tms320c3x_configuration}) if they are enabled:
 \begin{itemize}
 \item \texttt{LDF || LDF} bug: From our experiments on the development board, uncomprehensibly \texttt{src1} is not correctly transformed to a valid \texttt{0.0} when the \texttt{src1} exponent is \texttt{0x80}. Simulator parameter \texttt{cpu.enable-parallel-load-bug} enables this bug.
 \item \texttt{STF || STF} and \texttt{STI || STI} bugs: From our experiments on the development board, the first store is never performed. Simulator parameter \texttt{cpu.enable-parallel-store-bug} enables these bugs.
-\item \texttt{RND} bug: TMS320C3x User’s Guide says that the \texttt{rnd} instruction does not affect the \texttt{Z} flag however the real hardware systematically sets \texttt{Z} to 0. Simulator parameter \texttt{cpu.enable-rnd-bug} enables this bug
-\item \texttt{lseek} bug: From our experiments on the development board, function \texttt{lseek} from \texttt{RTS30.LIB} has a 32-bit return value truncated to 16 bits. Simulator parameter \texttt{ti-c-io.enable-lseek-bug} enables this bug
+\item \texttt{RND} bug: TMS320C3x User’s Guide says that the \texttt{rnd} instruction does not affect the \texttt{Z} flag however the real hardware systematically sets \texttt{Z} to 0. Simulator parameter \texttt{cpu.enable-rnd-bug} enables this bug.
+\item \texttt{lseek} bug: From our experiments on the development board, function \texttt{lseek} from \texttt{RTS30.LIB} has a 32-bit return value truncated to 16 bits. Simulator parameter \texttt{ti-c-io.enable-lseek-bug} enables this bug.
+\item floating point instructions bug: All the float instructions can use non-extended registers (all the registers different than \texttt{R0-R7}). However their behavior when using non-extended registers is not documented, and from our experiments on the development board their behavior is unexpected. By default, the simulator does not allow the use of non-extended registers for float instructions (obviously with the exception of the \texttt{FIX} and \texttt{FLOAT} instructions when the use of non-extended registers is documented). Simulator parameter \texttt{cpu.enable-float-ops-with-non-ext-regs} allows the use of non-extended registers for float instructions. Note that the behavior of the instructions when using non-extended registers has been deduced from our experiments with the evaluation board, but that they can not be validated due to the lack of documentation and unexpected behavior.
 \end{itemize}
 
 \subsection{Compiling the simulator}
@@ -188,6 +190,11 @@ $ tms320c3x -c sim_config.xml
 	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{true}}\\
 	\multicolumn{2}{|l|}{}\\
 	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline If enabled, when using parallel stores (\texttt{STF src2, dst2 || STF src1, dst1} or \texttt{STI src2, dst2 || STI src1, dst1}) the first store is treated as a NOP.}\\
+	\hline
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.enable-float-ops-with-non-ext-regs}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
+	\multicolumn{2}{|l|}{}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline If enabled, float instructions can operate over non-extended registers. If disabled, the use of non-extended registers on float instructions will stop the program execution.}\\
 	\hline
 	\hline
 	\multicolumn{2}{|c|}{\textbf{\large Service GDB Server run-time parameters}}\\
@@ -504,6 +511,11 @@ This class has methods to get/set value of a register and to perform floating po
 		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{true}}\\
 		\multicolumn{2}{|l|}{}\\
 		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline If enabled, when using parallel stores (\texttt{STF src2, dst2 || STF src1, dst1} or \texttt{STI src2, dst2 || STI src1, dst1}) the first store is treated as a NOP.}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{enable-float-ops-with-non-ext-regs}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline If enabled, float instructions can operate over non-extended registers. If disabled, the use of non-extended registers on float instructions will stop the program execution.}\\
 		\hline
 		\hline
 		\multicolumn{2}{|c|}{\textbf{\large Service Exports}}\\
