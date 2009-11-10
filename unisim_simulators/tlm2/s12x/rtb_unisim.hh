@@ -28,9 +28,13 @@ private:
 	client_struct * client_in;
 	client_struct * client_out;
 
-	dataline_struct * dataline_in;
-	data_struct * data_in;
-	data_struct * data_out;
+	dataline_struct * atd0_dataline_in;
+	data_struct * atd0_data_in;
+
+	dataline_struct * atd1_dataline_in;
+	data_struct * atd1_data_in;
+
+	data_struct * pwm_data_out;
 
 
 public:
@@ -39,13 +43,16 @@ public:
 
 	int init_client();
 	void control();
-	void exchange();
+	void Input_Cob2ATD0(double atd0_anValue[ATD0_SIZE]);
+	void Input_Cob2ATD1(double atd1_anValue[ATD1_SIZE]);
+	void output_PWM2Cob(bool pwmValue[PWM_SIZE]);
 
 	RTBStub(const sc_module_name& name, Object *parent = 0);
 	~RTBStub();
 
-	virtual void ProcessATD();
-	virtual void ProcessPWM();
+	void ProcessATD0();
+	void ProcessATD1();
+	void ProcessPWM();
 
 private:
 

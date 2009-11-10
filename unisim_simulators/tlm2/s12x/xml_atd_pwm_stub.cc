@@ -55,6 +55,10 @@ XML_ATD_PWM_STUB::XML_ATD_PWM_STUB(const sc_module_name& name, Object *parent) :
 	param_atd1_anx_wrap_around_channel("atd1-anx-wrap-around-channel", this, atd1_anx_wrap_around_channel)
 
 {
+	SC_HAS_PROCESS(XML_ATD_PWM_STUB);
+
+	SC_THREAD(ProcessATD);
+	SC_THREAD(ProcessPWM);
 
 }
 

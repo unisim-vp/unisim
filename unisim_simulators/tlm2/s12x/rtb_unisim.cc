@@ -8,6 +8,13 @@ RTBStub::RTBStub(const sc_module_name& name, Object *parent) :
 	ATD_PWM_STUB(name, parent)
 
 {
+
+	SC_HAS_PROCESS(RTBStub);
+
+	SC_THREAD(ProcessATD0);
+	SC_THREAD(ProcessATD1);
+	SC_THREAD(ProcessPWM);
+
 	init_client();
 
 }
@@ -67,11 +74,37 @@ int RTBStub::init_client(){
 			return 0;
 		}
 
-		dataline_in = new_dataline(2, "integer,integer");
-		init_dataline(dataline_in, client_in->sockfd);
+		stringstream atd0_ststr;
+		for (int i=0; i<ATD0_SIZE; i++) {
+			atd0_ststr << "dreal";
+			if (i != (ATD0_SIZE -1)) {
+				atd0_ststr << ",";
+			}
+		}
+		atd0_dataline_in = new_dataline(ATD0_SIZE, atd0_ststr.str().c_str());
+		init_dataline(atd0_dataline_in, client_in->sockfd);
+		atd0_data_in = new_data(ATD0_SIZE, atd0_ststr.str().c_str(), TRUE);
 
-		data_in = new_data(2, "integer,integer", TRUE);
-		data_out = new_data(1, "integer", TRUE);
+		stringstream atd1_ststr;
+		for (int i=0; i<ATD1_SIZE; i++) {
+			atd1_ststr << "dreal";
+			if (i != (ATD1_SIZE -1)) {
+				atd1_ststr << ",";
+			}
+		}
+		atd1_dataline_in = new_dataline(ATD1_SIZE, atd1_ststr.str().c_str());
+		init_dataline(atd1_dataline_in, client_in->sockfd);
+		atd1_data_in = new_data(ATD1_SIZE, atd1_ststr.str().c_str(), TRUE);
+
+		stringstream pwm_ststr;
+		for (int i=0; i<PWM_SIZE; i++) {
+			pwm_ststr << "boolean";
+			if (i != (PWM_SIZE -1)) {
+				pwm_ststr << ",";
+			}
+		}
+
+		pwm_data_out = new_data(PWM_SIZE, pwm_ststr.str().c_str(), TRUE);
 	}
 }
 
@@ -80,95 +113,129 @@ Control
 */
 void RTBStub::control() {
 
-	if ( is_socket_ready_toread(client_ctl->sockfd, 0) ) {
-		command_enum command = COB_CONTINUE;
-		if ( receive_control(client_ctl->sockfd, &command) ) {
-			switch (command) {
-			case COB_PAUSE:
-				printf("--Command ---> COB_PAUSE received.\n");
-				send_ack(client_ctl->sockfd);
-				break;
+	bool isContinue = true;
+
+	do {
+		if ( is_socket_ready_toread(client_ctl->sockfd, 0) ) {
+			command_enum command = COB_CONTINUE;
+			if ( receive_control(client_ctl->sockfd, &command) ) {
+				switch (command) {
+				case COB_PAUSE:
+					printf("--Command ---> COB_PAUSE received.\n");
+					send_ack(client_ctl->sockfd);
+					isContinue = false;
+					break;
+
 				case COB_CONTINUE:
-				// do continue only if simulation is paused
-				printf("--Command ---> COB_CONTINUE received.\n");
-				send_ack(client_ctl->sockfd);
-				break;
-			case COB_STOP:
-				printf("--Command ---> COB_STOP received.\n");
-				// simulation is ended
-				//sends ack for stop
-				send_ack(client_ctl->sockfd);
-				//cout << "Press button for exiting the program" << endl ;
-				getchar();
-				exit(0);
-				break;
-			default:
-				printf("Controller: Unkwown command: %d.\n", command);
-				break;
+					// do continue only if simulation is paused
+					printf("--Command ---> COB_CONTINUE received.\n");
+					send_ack(client_ctl->sockfd);
+					isContinue = true;
+					break;
+
+				case COB_STOP:
+					printf("--Command ---> COB_STOP received.\n");
+					// simulation is ended
+					//sends ack for stop
+					send_ack(client_ctl->sockfd);
+					//cout << "Press button for exiting the program" << endl ;
+					getchar();
+	//				exit(0);
+					/**
+					 *  - Stop simulation and
+					 *  - Leave control to systemc kernel to gracefully clean the simulation context
+					 */
+					sc_stop();
+					wait();
+
+					break;
+				default:
+					printf("Controller: Unkwown command: %d.\n", command);
+					break;
+				}
 			}
 		}
-	}
+
+	} while (!isContinue);
+
 }
 
 /*
 This function can make the exchange process between RT-Builder and RTBstub
 */
-void RTBStub::exchange(){
+void RTBStub::Input_Cob2ATD0(double atd0_anValue[ATD0_SIZE])
+{
 	double current_time = sc_time_stamp().to_seconds() ;
-	/*********send data************/
-	if ( current_time > data_out->time ) {
-		data_out->time = current_time-(2*cycle_time.to_seconds());
-		data_out->validity = current_time ;
-		if ( !send_data(client_out->sockfd, data_out) ) {
-			cerr << "Cannot send data" << endl;
-			exit(1);
-		}
-	}
+
 	/*********get data************/
-	if ( !get_data_at_time(dataline_in, current_time, INFINITE, data_in) ) {
+	if ( !get_data_at_time(atd0_dataline_in, current_time, INFINITE, atd0_data_in) ) {
 		cerr << "error get data " << endl;
 		exit(1);
 	}
+
+	for (int i=0; i<ATD0_SIZE; i++) {
+		cob_dreal data = get_dreal(atd0_data_in, i);
+		atd0_anValue[i] = (double) data;
+	}
+
+	control();
+
+	cout << "current_time : " << current_time  <<" s "<<endl;
+}
+
+void RTBStub::Input_Cob2ATD1(double atd1_anValue[ATD1_SIZE])
+{
+	double current_time = sc_time_stamp().to_seconds() ;
+
+	/*********get data************/
+	if ( !get_data_at_time(atd1_dataline_in, current_time, INFINITE, atd1_data_in) ) {
+		cerr << "error get data " << endl;
+		exit(1);
+	}
+
+	for (int i=0; i<ATD1_SIZE; i++) {
+		cob_dreal data = get_dreal(atd1_data_in, i);
+		atd1_anValue[i] = (double) data;
+	}
+
 	control();
 	cout << "current_time : " << current_time  <<" s "<<endl;
 }
 
+void RTBStub::output_PWM2Cob(bool pwmValue[PWM_SIZE]){
+	double current_time = sc_time_stamp().to_seconds() ;
+	/*********send data************/
+	if ( current_time > pwm_data_out->time ) {
 
-void RTBStub::ProcessATD() {
+		for (int i=0; i<PWM_SIZE; i++) {
+			cob_boolean data = (cob_boolean) pwmValue[i];
+			set_boolean(pwm_data_out, i, data);
 
-	double atd1_anValue[ATD1_SIZE];
+		}
+
+		pwm_data_out->time = current_time;
+		pwm_data_out->validity = current_time ;
+		if ( !send_data(client_out->sockfd, pwm_data_out) ) {
+			cerr << "Cannot send data" << endl;
+			exit(1);
+		}
+	}
+
+	control();
+	cout << "current_time : " << current_time  <<" s "<<endl;
+}
+
+void RTBStub::ProcessATD0() {
+
 	double atd0_anValue[ATD0_SIZE];
-
-	srand(12345);
 
 	sc_time delay(anx_stimulus_period, SC_PS);
 
-	int atd0_data_index = 0;
-	int atd1_data_index = 0;
-
-	/**
-	 * Note: The Software sample the ATDDRx every 20ms. As well as for the first sampling
-	 */
-	wait(sc_time(20, SC_MS));
-
 	while(1)
 	{
-		for (uint8_t i=0; i < ATD0_SIZE; i++) {
-			atd0_anValue[i] = 5.2 * ((double) rand() / (double) RAND_MAX); // Compute a random value: 0 Volts <= anValue[i] < 5 Volts
-		}
 
-		for (uint8_t i=0; i < ATD1_SIZE; i++) {
-			atd1_anValue[i] = 5.2 * ((double) rand() / (double) RAND_MAX); // Compute a random value: 0 Volts <= anValue[i] < 5 Volts
-		}
+		Input_Cob2ATD0(atd0_anValue);
 
-		/**
-		 * TODO: Note: I think that the exchange() method has to be split into two parts:
-		 *  - the first once, used at ProcessATD(), is for reading ATD_Voltage from RTBuilder which are then forwarded to UNISIM simulator "Output() methods"
-		 *  - the second once, used at ProcessPWM(), is for forwarding data received from the UNISIM simulator "Input() method)" to RTBuilder
-		 */
-		exchange();
-
-		Output_ATD1(atd1_anValue);
 		Output_ATD0(atd0_anValue);
 
 		wait(delay);
@@ -180,6 +247,34 @@ void RTBStub::ProcessATD() {
 
 }
 
+void RTBStub::ProcessATD1() {
+
+	double atd1_anValue[ATD1_SIZE];
+
+	sc_time delay(anx_stimulus_period, SC_PS);
+
+//	/**
+//	 * Note: The Software sample the ATDDRx every 20ms. As well as for the first sampling
+//	 */
+//	wait(sc_time(20, SC_MS));
+
+	while(1)
+	{
+
+		Input_Cob2ATD1(atd1_anValue);
+
+		Output_ATD1(atd1_anValue);
+
+		wait(delay);
+
+		quantumkeeper.inc(delay);
+		quantumkeeper.sync();
+
+	}
+
+}
+
+
 void RTBStub::ProcessPWM() {
 
 	bool pwmValue[PWM_SIZE];
@@ -190,12 +285,7 @@ void RTBStub::ProcessPWM() {
 
 		Input(pwmValue);
 
-		/**
-		 * TODO: Note: I think that the exchange() method has to be split into two parts:
-		 *  - the first once, used at ProcessATD(), is for reading ATD_Voltage from RTBuilder which are then forwarded to UNISIM simulator "Output() methods"
-		 *  - the second once, used at ProcessPWM(), is for forwarding data received from the UNISIM simulator "Input() method)" to RTBuilder
-		 */
-		exchange();
+		output_PWM2Cob(pwmValue);
 
 		quantumkeeper.sync();
 	}
