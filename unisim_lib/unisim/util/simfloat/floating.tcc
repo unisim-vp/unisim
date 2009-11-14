@@ -3560,7 +3560,7 @@ TBuiltDouble<TypeTraits>::writeDecimal(std::ostream& osOut) const {
          register int uIndexExponent = 0;
          while (thisType(dSource).multAssign(vSuccessiveExponents[uIndexExponent], scfFlags)
                .queryBasicExponent() < TypeTraits::getZeroExponent(biExponent)) {
-            if (uIndexExponent < vSuccessiveExponents.size() - 1) {
+            if (uIndexExponent < (int) vSuccessiveExponents.size() - 1) {
                uExponentAdditional *= 2;
                ++uIndexExponent;
             }

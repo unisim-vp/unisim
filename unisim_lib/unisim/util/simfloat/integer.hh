@@ -477,6 +477,10 @@ class TBigCellInt : public Details::Access, protected IntegerTraits {
    void assertSize(int uNewSize) { inherited::assertSize(uNewSize); }
    
    class DivisionResult {
+     public:
+      typedef typename inherited::QuotientResult InheritedQuotientResult;
+      typedef typename inherited::RemainderResult InheritedRemainderResult;
+
      private:
       typename inherited::QuotientResult qrQuotient;
       typename inherited::RemainderResult rrRemainder;
@@ -1151,17 +1155,29 @@ class TIntegerTraits {
    static const int uCellSize = (uSize-1)/(8*sizeof(unsigned int))+1;
 #ifndef __BORLANDC__
    typedef TCellIntegerTraits<uCellSize> CellTraits;
+#if defined(__GNUC__) && GCC_VERSION >= 40401
+   typedef TBigCellInt<CellTraits> BigCellTraits;
+#endif
 #else
    typedef TCellIntegerTraits<(uSize-1)/(8*sizeof(unsigned int))+1> CellTraits;
 #endif
 
   private:
    typedef TIntegerTraits<uSize> thisType;
+#if defined(__GNUC__) && GCC_VERSION >= 40401
+   BigCellTraits ctTraits;
+#else
    CellTraits ctTraits;
+#endif
 
   protected:
+#if defined(__GNUC__) && GCC_VERSION >= 40401
+   BigCellTraits& cellTraits() { return ctTraits; }
+   const BigCellTraits& cellTraits() const { return ctTraits; }
+#else
    CellTraits& cellTraits() { return ctTraits; }
    const CellTraits& cellTraits() const { return ctTraits; }
+#endif
   public:
    TIntegerTraits() : ctTraits() {}
    TIntegerTraits(const thisType& itSource) : ctTraits(itSource.ctTraits) {}
@@ -1210,13 +1226,17 @@ class TBigInt : public Details::Access, protected IntegerTraits {
   private:
    typedef IntegerTraits inherited;
    typedef TBigInt<IntegerTraits> thisType;
+#if defined(__GNUC__) && GCC_VERSION >= 40401
+   typedef typename IntegerTraits::BigCellTraits ArrayCells;
+#else
    typedef TBigCellInt<typename IntegerTraits::CellTraits> ArrayCells;
+#endif
 
   protected:
    static int log_base_2(unsigned int uValue)
       {  return Details::Access::log_base_2(uValue); }
    ArrayCells& cells() { return (ArrayCells&) inherited::cellTraits(); }
-   const ArrayCells& cells() const { return (ArrayCells&) inherited::cellTraits(); }
+   const ArrayCells& cells() const { return (const ArrayCells&) inherited::cellTraits(); }
 
   public:
    typedef typename ArrayCells::MidArray MidArray;
@@ -1361,6 +1381,10 @@ class TBigInt : public Details::Access, protected IntegerTraits {
    typedef typename inherited::QuotientResult QuotientResult;
    typedef typename inherited::RemainderResult RemainderResult;
    class DivisionResult {
+     public:
+      typedef typename inherited::QuotientResult InheritedQuotientResult;
+      typedef typename inherited::RemainderResult InheritedRemainderResult;
+
      private:
       typename inherited::QuotientResult qrQuotient;
       typename inherited::RemainderResult rrRemainder;

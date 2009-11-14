@@ -1,7 +1,10 @@
-#include "../Floating.h"
+#include "../host_floating.hh"
 // #include "../Floating_gccopt.h"
 
-namespace Numerics {}
+#include "../host_floating.tcc"
+// #include "../Floating_gccopt.template"
+
+using namespace unisim::util::simfloat;
 
 #include <sstream>
 
@@ -76,7 +79,7 @@ int main(int argc, char** argv) {
       deThd.read(std::cin, drpParams);
    };
 
-   int uResult, uResultMax, uResultMin;
+   int uResult=0, uResultMax=0, uResultMin=0;
    Float::BuiltDouble bfFst, bfFstMin, bfFstMax;
    BuiltLongDouble bldFst, bldFstMin, bldFstMax;
 
@@ -315,7 +318,4 @@ int main(int argc, char** argv) {
    
    return 0;
 }
-
-#include "../Floating.template"
-// #include "../Floating_gccopt.template"
 

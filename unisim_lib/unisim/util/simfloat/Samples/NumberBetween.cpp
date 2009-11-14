@@ -1,9 +1,11 @@
-#include "../Floating.h"
+#include "../host_floating.hh"
 // #include "../Floating_gccopt.h"
-
-namespace Numerics {}
+#include "../host_floating.tcc"
+// #include "../Floating_gccopt.template"
 
 #include <sstream>
+
+using namespace unisim::util::simfloat;
 
 template class Numerics::Double::TDoubleElement<Numerics::Double::TFloatingBase<Numerics::Double::DoubleTraits> >;
 typedef Numerics::Double::TDoubleElement<Numerics::Double::TFloatingBase<Numerics::Double::DoubleTraits> > Double;
@@ -50,9 +52,9 @@ int main(int argc, char** argv) {
 
    Double deFst(dFst), deSnd(dSnd);
    Double::DiffDouble ddDiff = deFst.queryNumberOfFloatsBetween(deSnd);
-   call_print_built_double(&Double::BuiltDouble(deFst));
+   call_print_built_double((void*) &((const Double::BuiltDouble&) Double::BuiltDouble(deFst)));
    std::cout << std::endl;
-   call_print_built_double(&Double::BuiltDouble(deSnd));
+   call_print_built_double((void*) &((const Double::BuiltDouble&) Double::BuiltDouble(deSnd)));
    std::cout << std::endl << ddDiff << std::endl;
    ddDiff.write(std::cout, Double::DiffDouble::FormatParameters().setFullBinary(
             Double::DiffDouble().querySize()));
@@ -62,7 +64,7 @@ int main(int argc, char** argv) {
    std::cout << "\nEnter an intermediary double for asserting |d1,d2| = |d1,d3| = |d3,d2| : ";
    std::cin >> dInter;
    Double deInter(dInter);
-   call_print_built_double(&Double::BuiltDouble(deInter));
+   call_print_built_double((void*) &((const Double::BuiltDouble&) Double::BuiltDouble(deInter)));
 
    Double::DiffDouble ddDiff1 = deFst.queryNumberOfFloatsBetween(deInter);
    Double::DiffDouble ddDiff2 = deInter.queryNumberOfFloatsBetween(deSnd);
@@ -71,7 +73,4 @@ int main(int argc, char** argv) {
       std::cout << "The assertion was false" << std::endl;
    return 0;
 }
-
-#include "../Floating.template"
-// #include "../Floating_gccopt.template"
 

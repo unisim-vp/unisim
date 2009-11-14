@@ -1,7 +1,9 @@
-#include "../Floating.h"
+#include "../host_floating.hh"
 // #include "../Floating_gccopt.h"
+#include "../host_floating.tcc"
+// #include "../Floating_gccopt.template"
 
-namespace Numerics {}
+using namespace unisim::util::simfloat;
 
 #include <sstream>
 
@@ -95,6 +97,4 @@ int main(int argc, char** argv) {
    return 0;
 }
 
-#include "../Floating.template"
-// #include "../Floating_gccopt.template"
 

@@ -691,7 +691,7 @@ TBigCellInt<IntegerTraits>::writeCells(std::ostream& osOut, const FormatParamete
          osOut.put('1');
          uValue <<= 1;
          
-         while (++uBitIndex < sizeof(unsigned int)*8) {
+         while (++uBitIndex < (int) sizeof(unsigned int)*8) {
             osOut.put(((uValue & (1U << (sizeof(unsigned int)*8-1))) == 0) ? '0' : '1');
             uValue <<= 1;
          };
@@ -748,8 +748,8 @@ TBigCellInt<IntegerTraits>::read(std::istream& isIn, const FormatParameters& pPa
                while ((uChar == '0') || (uChar == '1')) {
                   uValue = ((uChar == '1') ? 1U : 0U);
                   register int uBitIndex = 0;
-                  while ((++uBitIndex < sizeof(unsigned int)*8)
-                           && ((uChar = isIn.get()) == '0') || (uChar == '1')) {
+                  while ((++uBitIndex < (int) sizeof(unsigned int)*8)
+                           && (((uChar = isIn.get()) == '0') || (uChar == '1'))) {
                      uValue <<= 1;
                      if (uChar == '1')
                         uValue |= 1U;
@@ -764,7 +764,7 @@ TBigCellInt<IntegerTraits>::read(std::istream& isIn, const FormatParameters& pPa
             while (hcHexaChars.acceptChar(uChar)) {
                uValue = hcHexaChars.queryValue(uChar);
                register int uHexaIndex = 0;
-               while ((++uHexaIndex < sizeof(unsigned int)*2)
+               while ((++uHexaIndex < (int) sizeof(unsigned int)*2)
                         && hcHexaChars.acceptChar(uChar = isIn.get())) {
                   uValue <<= 4;
                   uValue |= hcHexaChars.queryValue(uChar);
@@ -817,7 +817,9 @@ TBigInt<IntegerTraits>::div(const thisType& biSource, DivisionResult& drResult) 
    if (!drResult.quotient().isComplete()) {
       int uShift = (8*sizeof(unsigned int)-drResult.quotient().lastCellSize());
       unsigned int uDivLeft = adrResult.quotient()[0] & ~(~0U << uShift);
-      ((TBigCellInt<typename ArrayCells::QuotientResult>&) adrResult.quotient()) >>= uShift;
+      TBigCellInt<typename ArrayCells::QuotientResult> quotient;
+      memcpy((typename ArrayCells::DivisionResult::InheritedQuotientResult*) &quotient, &adrResult.quotient(), sizeof(typename ArrayCells::DivisionResult::InheritedQuotientResult));
+      quotient >>= uShift;
 
       ArrayCells acNewRemainder(biSource.cells());
       Carry cCarry = acNewRemainder.multAssign(uDivLeft);
@@ -828,7 +830,7 @@ TBigInt<IntegerTraits>::div(const thisType& biSource, DivisionResult& drResult) 
 #endif
       acNewRemainder >>= uShift;
       for (register int uQuotientIndex = 0; uQuotientIndex <= drResult.quotient().lastCellIndex(); ++uQuotientIndex)
-         drResult.quotient()[uQuotientIndex] = adrResult.quotient()[uQuotientIndex];
+         drResult.quotient()[uQuotientIndex] = quotient[uQuotientIndex];
       for (register int uRemainderIndex = 0; uRemainderIndex <= drResult.remainder().lastCellIndex(); ++uRemainderIndex)
          drResult.remainder()[uRemainderIndex] = acNewRemainder[uRemainderIndex];
       drResult.comma() = adrResult.comma();
@@ -860,7 +862,9 @@ TBigInt<IntegerTraits>::divNormalized(const thisType& biSource, NormalizedDivisi
       acThis.div(acSource, adrResult);
       int uShift = (8*sizeof(unsigned int)-drResult.quotient().lastCellSize());
       unsigned int uDivLeft = adrResult.quotient()[0] & ~(~0U << uShift);
-      ((TBigCellInt<typename ArrayCells::QuotientResult>&) adrResult.quotient()) >>= uShift;
+      TBigCellInt<typename ArrayCells::QuotientResult> quotient;
+      memcpy((typename ArrayCells::DivisionResult::InheritedQuotientResult*) &quotient, &adrResult.quotient(), sizeof(typename ArrayCells::DivisionResult::InheritedQuotientResult));
+      quotient >>= uShift;
 
       typename ArrayCells::Carry cMult = acSource.multAssign(uDivLeft);
       if (acSource.add((const ArrayCells&) adrResult.remainder()).hasCarry())
@@ -870,7 +874,7 @@ TBigInt<IntegerTraits>::divNormalized(const thisType& biSource, NormalizedDivisi
       if (cMult.hasCarry())
          acSource[acSource.querySize()-1] |= (cMult.carry() << biSource.lastCellSize());
       for (register int uQuotientIndex = 0; uQuotientIndex <= drResult.quotient().lastCellIndex(); ++uQuotientIndex)
-         drResult.quotient()[uQuotientIndex] = adrResult.quotient()[uQuotientIndex];
+         drResult.quotient()[uQuotientIndex] = quotient[uQuotientIndex];
       for (register int uRemainderIndex = 0; uRemainderIndex <= drResult.remainder().lastCellIndex(); ++uRemainderIndex)
          drResult.remainder()[uRemainderIndex] = acSource[uRemainderIndex];
       drResult.comma() = adrResult.comma();

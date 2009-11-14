@@ -1,5 +1,10 @@
-#include "../Integer.h"
+#include "../integer.hh"
 // #include "../Integer_gccopt.h"
+
+#include "../integer.tcc"
+// #include "../Integer_gccopt.template"
+
+using namespace unisim::util::simfloat;
 
 template class Numerics::Integer::TBigInt<Numerics::Integer::Details::TIntegerTraits<52> >;
 typedef Numerics::Integer::TBigInt<Numerics::Integer::Details::TIntegerTraits<52> > BigInt;
@@ -37,7 +42,4 @@ int main(int argc, char** argv) {
    int_write(&biFst);
    return 0;
 }
-
-#include "../Integer.template"
-// #include "../Integer_gccopt.template"
 
