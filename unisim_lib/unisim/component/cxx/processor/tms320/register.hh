@@ -122,19 +122,23 @@ namespace tms320 {
 		friend std::ostream& operator << (std::ostream& os, const Register& reg);
 		
 		void SetLoWriteMask(uint32_t lo_write_mask);
+		void SetHiWriteMask(uint8_t hi_write_mask, uint8_t init_value = 0);
+
+		static uint32_t GetLo16(uint16_t value) ;
+		static uint8_t GetHi16(uint16_t value) ;
+		static uint32_t GetLo32(uint32_t value) ;
+		static uint8_t GetHi32(uint32_t value) ;
+
 	private:
 		uint32_t lo_write_mask; // write mask for the 32 LSBs
 		uint32_t lo; // 32 LSB
+		uint8_t hi_write_mask; // write mask for the 8 MSBs
 		uint8_t hi;  // 8 MSB
 		
 		uint32_t GetLo(uint16_t value) ;
 		uint8_t GetHi(uint16_t value) ;
 		uint32_t GetLo(uint32_t value) ;
 		uint8_t GetHi(uint32_t value) ;
-		static uint32_t GetLo16(uint16_t value) ;
-		static uint8_t GetHi16(uint16_t value) ;
-		static uint32_t GetLo32(uint32_t value) ;
-		static uint8_t GetHi32(uint32_t value) ;
 		
 		void Absf(uint8_t hi_a, uint32_t lo_a, uint32_t& overflow);
 		void Addf(uint8_t hi_a, uint32_t lo_a, uint8_t hi_b, uint32_t lo_b, uint32_t& overflow, uint32_t& underflow, uint32_t& neg);
@@ -201,7 +205,7 @@ namespace tms320 {
 	
 	inline void Register::SetHi(uint8_t value)
 	{
-		hi = value;
+		hi = (hi & ~hi_write_mask) | (value & hi_write_mask);
 	}
 	
 	inline uint8_t Register::GetHi() const

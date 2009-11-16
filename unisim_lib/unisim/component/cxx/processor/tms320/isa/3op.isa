@@ -396,10 +396,10 @@ ADDC3_indir_indir.execute = {
  * op ADDF3(0b001[3]:0b000001[6]:t[2]:dst[5]:src1[8]:src2[8])
  */
 
-op ADDF3_reg_reg    (0b001[3]:0b000001[6]:0b0000[4]:dst[3]:0b00000[5]:src1[3]:0b00000[5]:src2[3])
-op ADDF3_indir_reg  (0b001[3]:0b000001[6]:0b0100[4]:dst[3]:mod1[5]:ar1[3]:0b00000[5]:src2[3])
-op ADDF3_reg_indir  (0b001[3]:0b000001[6]:0b1000[4]:dst[3]:0b00000[5]:src1[3]:mod2[5]:ar2[3])
-op ADDF3_indir_indir(0b001[3]:0b000001[6]:0b1100[4]:dst[3]:mod1[5]:ar1[3]:mod2[5]:ar2[3])
+op ADDF3_reg_reg    (0b001[3]:0b000001[6]:0b00[2]:dst[5]:0b000[3]:src1[5]:0b000[3]:src2[5])
+op ADDF3_indir_reg  (0b001[3]:0b000001[6]:0b01[2]:dst[5]:mod1[5]:ar1[3]:0b000[3]:src2[5])
+op ADDF3_reg_indir  (0b001[3]:0b000001[6]:0b10[2]:dst[5]:0b000[3]:src1[5]:mod2[5]:ar2[3])
+op ADDF3_indir_indir(0b001[3]:0b000001[6]:0b11[2]:dst[5]:mod1[5]:ar1[3]:mod2[5]:ar2[3])
 
 ADDF3_reg_reg.disasm = {
 	const char *dst_name = REG_NAME[dst];
@@ -450,7 +450,18 @@ ADDF3_indir_indir.disasm = {
 }
 
 ADDF3_reg_reg.execute = {
-	// No need to check for the operands
+	// Check that destination and source registers are valid
+	if (likely(!cpu.EnableFloatOpsWithNonExtRegs())) {
+		if (unlikely(!cpu.IsExtReg(dst) || !cpu.IsExtReg(src1) || !cpu.IsExtReg(src2)))
+			throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	} 
+	else
+	{
+		if(unlikely(!cpu.HasReg(dst) || !cpu.HasReg(src1) || !cpu.HasReg(src2)))
+		{
+			throw BogusOpcodeException<CONFIG, DEBUG>(this);
+		}
+	}
 
 	// Get the destination register
 	Register& dst_reg = cpu.GetExtReg(dst);
@@ -461,6 +472,11 @@ ADDF3_reg_reg.execute = {
 	// Get the 2nd source register
 	Register& src2_reg = cpu.GetExtReg(src2);
 
+	if (unlikely(!cpu.IsExtReg(src1)))
+		src1_reg.SetHiWriteMask(0, (uint8_t)0x0);
+	if (unlikely(!cpu.IsExtReg(src2)))
+		src2_reg.SetHiWriteMask(0, (uint8_t)0x10);
+
 	// Compute
 	uint32_t overflow;
 	uint32_t underflow;
@@ -468,17 +484,29 @@ ADDF3_reg_reg.execute = {
 	dst_reg.Addf(src1_reg, src2_reg, overflow, underflow, neg);
 
 	// Generate flags (into ST)
-	cpu.GenFlags(
-		dst_reg,
-		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-		M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
-		overflow, underflow, neg
-	);
+	if (likely(cpu.IsExtReg(dst)))
+		cpu.GenFlags(
+			dst_reg,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+			M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
+			overflow, underflow, neg
+		);
 }
 
 ADDF3_indir_reg.execute = {
-	// No need to check for the operands
-	
+	// Check that destination and source registers are valid
+	if (likely(!cpu.EnableFloatOpsWithNonExtRegs())) {
+		if (unlikely(!cpu.IsExtReg(dst) || !cpu.IsExtReg(src2)))
+			throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	} 
+	else
+	{
+		if(unlikely(!cpu.HasReg(dst) || !cpu.HasReg(src2)))
+		{
+			throw BogusOpcodeException<CONFIG, DEBUG>(this);
+		}
+	}
+
 	// Check that indirect addressing mode is valid and compute the effective address of the 1st source operand
 	typename CONFIG::address_t ea;        // The effective address
 	bool update_ar;                       // Whether to update ARn
@@ -505,6 +533,9 @@ ADDF3_indir_reg.execute = {
 	// Read 1st source operand from memory
 	uint32_t src1_value = cpu.IntLoad(ea);
 
+	if (unlikely(!cpu.IsExtReg(src2)))
+		src2_reg.SetHiWriteMask(0, (uint8_t)0x10);
+
 	// Compute
 	uint32_t overflow;
 	uint32_t underflow;
@@ -512,17 +543,29 @@ ADDF3_indir_reg.execute = {
 	dst_reg.Addf(src1_value, src2_reg, overflow, underflow, neg);
 
 	// Generate flags (into ST)
-	cpu.GenFlags(
-		dst_reg,
-		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-		M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
-		overflow, underflow, neg
-	);
+	if (likely(cpu.IsExtReg(dst)))
+		cpu.GenFlags(
+			dst_reg,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+			M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
+			overflow, underflow, neg
+		);
 }
 
 ADDF3_reg_indir.execute = {
-	// No need to check for the operands
-	
+	// Check that destination and source registers are valid
+	if (likely(!cpu.EnableFloatOpsWithNonExtRegs())) {
+		if (unlikely(!cpu.IsExtReg(dst) || !cpu.IsExtReg(src1)))
+			throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	} 
+	else
+	{
+		if(unlikely(!cpu.HasReg(dst) || !cpu.HasReg(src1)))
+		{
+			throw BogusOpcodeException<CONFIG, DEBUG>(this);
+		}
+	}
+
 	// Check that indirect addressing mode is valid and compute the effective address of the 2nd source operand
 	typename CONFIG::address_t ea;        // The effective address
 	bool update_ar;                       // Whether to update ARn
@@ -549,6 +592,9 @@ ADDF3_reg_indir.execute = {
 	// Read 2nd source operand from memory
 	uint32_t src2_value = cpu.IntLoad(ea);
 
+	if (unlikely(!cpu.IsExtReg(src1)))
+		src1_reg.SetHiWriteMask(0, (uint8_t)0x0);
+
 	// Compute
 	uint32_t overflow;
 	uint32_t underflow;
@@ -556,17 +602,29 @@ ADDF3_reg_indir.execute = {
 	dst_reg.Addf(src1_reg, src2_value, overflow, underflow, neg);
 
 	// Generate flags (into ST)
-	cpu.GenFlags(
-		dst_reg,
-		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-		M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
-		overflow, underflow, neg
-	);
+	if (likely(cpu.IsExtReg(dst)))
+		cpu.GenFlags(
+			dst_reg,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+			M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
+			overflow, underflow, neg
+		);
 }
 
 ADDF3_indir_indir.execute = {
-	// No need to check for the operands
-	
+	// Check that destination and source registers are valid
+	if (likely(!cpu.EnableFloatOpsWithNonExtRegs())) {
+		if (unlikely(!cpu.IsExtReg(dst)))
+			throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	} 
+	else
+	{
+		if(unlikely(!cpu.HasReg(dst)))
+		{
+			throw BogusOpcodeException<CONFIG, DEBUG>(this);
+		}
+	}
+
 	// Check that indirect addressing mode is valid and compute the effective address of the 1st source operand
 	typename CONFIG::address_t ea1;        // The effective address
 	bool update_ar1;                       // Whether to update ARn
@@ -622,12 +680,13 @@ ADDF3_indir_indir.execute = {
 	dst_reg.Addf(src1_value, src2_value, overflow, underflow, neg);
 
 	// Generate flags (into ST)
-	cpu.GenFlags(
-		dst_reg,
-		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-		M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
-		overflow, underflow, neg
-	);
+	if (likely(cpu.IsExtReg(dst)))
+		cpu.GenFlags(
+			dst_reg,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+			M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
+			overflow, underflow, neg
+		);
 }
 
 /* end of ADDF3 (add floating-point values)
@@ -1946,9 +2005,9 @@ ASH3_indir_indir.execute = {
  * op CMPF3(0b001[3]:0b000110[6]:t[2]:dst[5]:src1[8]:src2[8])
  */
 
-op CMPF3_reg_reg    (0b001[3]:0b000110[6]:0b00[2]:0b00000[5]:0b00000[5]:src1[3]:0b00000[5]:src2[3])
-op CMPF3_indir_reg  (0b001[3]:0b000110[6]:0b01[2]:0b00000[5]:mod1[5]:ar1[3]:0b00000[5]:src2[3])
-op CMPF3_reg_indir  (0b001[3]:0b000110[6]:0b10[2]:0b00000[5]:0b00000[5]:src1[3]:mod2[5]:ar2[3])
+op CMPF3_reg_reg    (0b001[3]:0b000110[6]:0b00[2]:0b00000[5]:0b000[3]:src1[5]:0b000[3]:src2[5])
+op CMPF3_indir_reg  (0b001[3]:0b000110[6]:0b01[2]:0b00000[5]:mod1[5]:ar1[3]:0b000[3]:src2[5])
+op CMPF3_reg_indir  (0b001[3]:0b000110[6]:0b10[2]:0b00000[5]:0b000[3]:src1[5]:mod2[5]:ar2[3])
 op CMPF3_indir_indir(0b001[3]:0b000110[6]:0b11[2]:0b00000[5]:mod1[5]:ar1[3]:mod2[5]:ar2[3])
 
 CMPF3_reg_reg.disasm = {
@@ -1996,7 +2055,18 @@ CMPF3_indir_indir.disasm = {
 }
 
 CMPF3_reg_reg.execute = {
-	// No need to check for the operands
+	// Check that destination and source registers are valid
+	if (likely(!cpu.EnableFloatOpsWithNonExtRegs())) {
+		if (unlikely(!cpu.IsExtReg(src1) || !cpu.IsExtReg(src2)))
+			throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	} 
+	else
+	{
+		if(unlikely(!cpu.HasReg(src1) || !cpu.HasReg(src2)))
+		{
+			throw BogusOpcodeException<CONFIG, DEBUG>(this);
+		}
+	}
 
 	// Create a fake register to store temporary result
 	Register res_reg;
@@ -2007,6 +2077,11 @@ CMPF3_reg_reg.execute = {
 	// Get the 2nd source register
 	Register& src2_reg = cpu.GetExtReg(src2);
 
+	if (unlikely(!cpu.IsExtReg(src1)))
+		src1_reg.SetHiWriteMask(0, (uint8_t)0x0);
+	if (unlikely(!cpu.IsExtReg(src2)))
+		src2_reg.SetHiWriteMask(0, (uint8_t)0x8);
+	
 	// Compute
 	uint32_t overflow;
 	uint32_t underflow;
@@ -2023,8 +2098,19 @@ CMPF3_reg_reg.execute = {
 }
 
 CMPF3_indir_reg.execute = {
-	// No need to check for the operands
-	
+	// Check that destination and source registers are valid
+	if (likely(!cpu.EnableFloatOpsWithNonExtRegs())) {
+		if (unlikely(!cpu.IsExtReg(src2)))
+			throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	} 
+	else
+	{
+		if (unlikely(!cpu.HasReg(src2)))
+		{
+			throw BogusOpcodeException<CONFIG, DEBUG>(this);
+		}
+	}
+
 	// Create a fake register to store temporary result
 	Register res_reg;
 
@@ -2051,6 +2137,9 @@ CMPF3_indir_reg.execute = {
 	// Get the 2nd source register
 	Register& src2_reg = cpu.GetExtReg(src2);
 	
+	if (unlikely(!cpu.IsExtReg(src2)))
+		src2_reg.SetHiWriteMask(0, (uint8_t)0x8);
+
 	// Compute
 	uint32_t overflow;
 	uint32_t underflow;
@@ -2067,8 +2156,19 @@ CMPF3_indir_reg.execute = {
 }
 
 CMPF3_reg_indir.execute = {
-	// No need to check for the operands
-	
+	// Check that destination and source registers are valid
+	if (likely(!cpu.EnableFloatOpsWithNonExtRegs())) {
+		if (unlikely(!cpu.IsExtReg(src1)))
+			throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	} 
+	else
+	{
+		if(unlikely(!cpu.HasReg(src1)))
+		{
+			throw BogusOpcodeException<CONFIG, DEBUG>(this);
+		}
+	}
+
 	// Create a fake register to store temporary result
 	Register res_reg;
 
@@ -2094,6 +2194,9 @@ CMPF3_reg_indir.execute = {
 
 	// Read 2nd source operand from memory
 	uint32_t src2_value = cpu.IntLoad(ea);
+
+	if (unlikely(!cpu.IsExtReg(src1)))
+		src1_reg.SetHiWriteMask(0, (uint8_t)0x0);
 
 	// Compute
 	uint32_t overflow;
@@ -2858,10 +2961,10 @@ LSH3_indir_indir.execute = {
  * op MPYF3(0b001[3]:0b001001[6]:t[2]:dst[5]:src1[8]:src2[8])
  */
 
-op MPYF3_reg_reg    (0b001[3]:0b001001[6]:0b0000[4]:dst[3]:0b00000[5]:src1[3]:0b00000[5]:src2[3])
-op MPYF3_indir_reg  (0b001[3]:0b001001[6]:0b0100[4]:dst[3]:mod1[5]:ar1[3]:0b00000[5]:src2[3])
-op MPYF3_reg_indir  (0b001[3]:0b001001[6]:0b1000[4]:dst[3]:0b00000[5]:src1[3]:mod2[5]:ar2[3])
-op MPYF3_indir_indir(0b001[3]:0b001001[6]:0b1100[4]:dst[3]:mod1[5]:ar1[3]:mod2[5]:ar2[3])
+op MPYF3_reg_reg    (0b001[3]:0b001001[6]:0b00[2]:dst[5]:0b000[3]:src1[5]:0b000[3]:src2[5])
+op MPYF3_indir_reg  (0b001[3]:0b001001[6]:0b01[2]:dst[5]:mod1[5]:ar1[3]:0b000[3]:src2[5])
+op MPYF3_reg_indir  (0b001[3]:0b001001[6]:0b10[2]:dst[5]:0b000[3]:src1[5]:mod2[5]:ar2[3])
+op MPYF3_indir_indir(0b001[3]:0b001001[6]:0b11[2]:dst[5]:mod1[5]:ar1[3]:mod2[5]:ar2[3])
 
 MPYF3_reg_reg.disasm = {
 	const char *dst_name = REG_NAME[dst];
@@ -2912,16 +3015,32 @@ MPYF3_indir_indir.disasm = {
 }
 
 MPYF3_reg_reg.execute = {
-	// No need to check for the operands
+	// Check that destination and source registers are valid
+	if (likely(!cpu.EnableFloatOpsWithNonExtRegs())) {
+		if (unlikely(!cpu.IsExtReg(dst) || !cpu.IsExtReg(src1) || !cpu.IsExtReg(src2)))
+			throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	} 
+	else
+	{
+		if(unlikely(!cpu.HasReg(dst) || !cpu.HasReg(src1) || !cpu.HasReg(src2)))
+		{
+			throw BogusOpcodeException<CONFIG, DEBUG>(this);
+		}
+	}
 
 	// Get the destination register
 	Register& dst_reg = cpu.GetExtReg(dst);
 
 	// Get the 1st source register
-	Register src1_reg = cpu.GetExtReg(src1);
+	Register& src1_reg = cpu.GetExtReg(src1);
 
 	// Get the 2nd source register
-	Register src2_reg = cpu.GetExtReg(src2);
+	Register& src2_reg = cpu.GetExtReg(src2);
+
+	if (unlikely(!cpu.IsExtReg(src1)))
+		src1_reg.SetHiWriteMask(0, (uint8_t)0x0);
+	if (unlikely(!cpu.IsExtReg(src2)))
+		src2_reg.SetHiWriteMask(0, (uint8_t)0x10);
 
 	// Compute
 	uint32_t overflow;
@@ -2930,17 +3049,29 @@ MPYF3_reg_reg.execute = {
 	dst_reg.Mpyf(src1_reg, src2_reg, overflow, underflow, neg);
 
 	// Generate flags (into ST)
-	cpu.GenFlags(
-		dst_reg,
-		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-		M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
-		overflow, underflow, neg
-	);
+	if (likely(cpu.IsExtReg(dst)))
+		cpu.GenFlags(
+			dst_reg,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+			M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
+			overflow, underflow, neg
+		);
 }
 
 MPYF3_indir_reg.execute = {
-	// No need to check for the operands
-	
+	// Check that destination and source registers are valid
+	if (likely(!cpu.EnableFloatOpsWithNonExtRegs())) {
+		if (unlikely(!cpu.IsExtReg(dst) || !cpu.IsExtReg(src2)))
+			throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	} 
+	else
+	{
+		if(unlikely(!cpu.HasReg(dst) || !cpu.HasReg(src2)))
+		{
+			throw BogusOpcodeException<CONFIG, DEBUG>(this);
+		}
+	}
+
 	// Check that indirect addressing mode is valid and compute the effective address of the 1st source operand
 	typename CONFIG::address_t ea;        // The effective address
 	bool update_ar;                       // Whether to update ARn
@@ -2967,6 +3098,9 @@ MPYF3_indir_reg.execute = {
 	// Read 1st source operand from memory
 	uint32_t src1_value = cpu.IntLoad(ea);
 
+	if (unlikely(!cpu.IsExtReg(src2)))
+		src2_reg.SetHiWriteMask(0, (uint8_t)0x10);
+
 	// Compute
 	uint32_t overflow;
 	uint32_t underflow;
@@ -2974,17 +3108,29 @@ MPYF3_indir_reg.execute = {
 	dst_reg.Mpyf(src1_value, src2_reg, overflow, underflow, neg);
 
 	// Generate flags (into ST)
-	cpu.GenFlags(
-		dst_reg,
-		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-		M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
-		overflow, underflow, neg
-	);
+	if (likely(cpu.IsExtReg(dst)))
+		cpu.GenFlags(
+			dst_reg,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+			M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
+			overflow, underflow, neg
+		);
 }
 
 MPYF3_reg_indir.execute = {
-	// No need to check for the operands
-	
+	// Check that destination and source registers are valid
+	if (likely(!cpu.EnableFloatOpsWithNonExtRegs())) {
+		if (unlikely(!cpu.IsExtReg(dst) || !cpu.IsExtReg(src1)))
+			throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	} 
+	else
+	{
+		if(unlikely(!cpu.HasReg(dst) || !cpu.HasReg(src1)))
+		{
+			throw BogusOpcodeException<CONFIG, DEBUG>(this);
+		}
+	}
+
 	// Check that indirect addressing mode is valid and compute the effective address of the 2nd source operand
 	typename CONFIG::address_t ea;        // The effective address
 	bool update_ar;                       // Whether to update ARn
@@ -3011,6 +3157,9 @@ MPYF3_reg_indir.execute = {
 	// Read 2nd source operand from memory
 	uint32_t src2_value = cpu.IntLoad(ea);
 
+	if (unlikely(!cpu.IsExtReg(src1)))
+		src1_reg.SetHiWriteMask(0, (uint8_t)0x0);
+
 	// Compute
 	uint32_t overflow;
 	uint32_t underflow;
@@ -3018,17 +3167,29 @@ MPYF3_reg_indir.execute = {
 	dst_reg.Mpyf(src1_reg, src2_value, overflow, underflow, neg);
 
 	// Generate flags (into ST)
-	cpu.GenFlags(
-		dst_reg,
-		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-		M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
-		overflow, underflow, neg
-	);
+	if (likely(cpu.IsExtReg(dst)))
+		cpu.GenFlags(
+			dst_reg,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+			M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
+			overflow, underflow, neg
+		);
 }
 
 MPYF3_indir_indir.execute = {
-	// No need to check for the operands
-	
+	// Check that destination and source registers are valid
+	if (likely(!cpu.EnableFloatOpsWithNonExtRegs())) {
+		if (unlikely(!cpu.IsExtReg(dst)))
+			throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	} 
+	else
+	{
+		if(unlikely(!cpu.HasReg(dst)))
+		{
+			throw BogusOpcodeException<CONFIG, DEBUG>(this);
+		}
+	}
+
 	// Check that indirect addressing mode is valid and compute the effective address of the 1st source operand
 	typename CONFIG::address_t ea1;        // The effective address
 	bool update_ar1;                       // Whether to update ARn
@@ -3084,12 +3245,13 @@ MPYF3_indir_indir.execute = {
 	}
 
 	// Generate flags (into ST)
-	cpu.GenFlags(
-		dst_reg,
-		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-		M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
-		overflow, underflow, neg
-	);
+	if (likely(cpu.IsExtReg(dst)))
+		cpu.GenFlags(
+			dst_reg,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+			M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
+			overflow, underflow, neg
+		);
 }
 
 /* end of MPYF3 (multiply floating-point values)
@@ -4023,10 +4185,10 @@ SUBB3_indir_indir.execute = {
  * op SUBF3(0b001[3]:0b001101[6]:t[2]:dst[5]:src1[8]:src2[8])
  */
 
-op SUBF3_reg_reg    (0b001[3]:0b001101[6]:0b00[2]:0b00[2]:dst[3]:0b000[3]:0b00[2]:src1[3]:0b000[3]:0b00[2]:src2[3])
-op SUBF3_indir_reg  (0b001[3]:0b001101[6]:0b01[2]:0b00[2]:dst[3]:mod1[5]:ar1[3]:0b000[3]:0b00[2]:src2[3])
-op SUBF3_reg_indir  (0b001[3]:0b001101[6]:0b10[2]:0b00[2]:dst[3]:0b000[3]:0b00[2]:src1[3]:mod2[5]:ar2[3])
-op SUBF3_indir_indir(0b001[3]:0b001101[6]:0b11[2]:0b00[2]:dst[3]:mod1[5]:ar1[3]:mod2[5]:ar2[3])
+op SUBF3_reg_reg    (0b001[3]:0b001101[6]:0b00[2]:dst[5]:0b000[3]:src1[5]:0b000[3]:src2[5])
+op SUBF3_indir_reg  (0b001[3]:0b001101[6]:0b01[2]:dst[5]:mod1[5]:ar1[3]:0b000[3]:src2[5])
+op SUBF3_reg_indir  (0b001[3]:0b001101[6]:0b10[2]:dst[5]:0b000[3]:src1[5]:mod2[5]:ar2[3])
+op SUBF3_indir_indir(0b001[3]:0b001101[6]:0b11[2]:dst[5]:mod1[5]:ar1[3]:mod2[5]:ar2[3])
 
 SUBF3_reg_reg.disasm = {
 	const char *dst_name = REG_NAME[dst];
@@ -4077,7 +4239,18 @@ SUBF3_indir_indir.disasm = {
 }
 
 SUBF3_reg_reg.execute = {
-	// No need to check for the operands
+	// Check that destination and source registers are valid
+	if (likely(!cpu.EnableFloatOpsWithNonExtRegs())) {
+		if (unlikely(!cpu.IsExtReg(dst) || !cpu.IsExtReg(src1) || !cpu.IsExtReg(src2)))
+			throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	} 
+	else
+	{
+		if(unlikely(!cpu.HasReg(dst) || !cpu.HasReg(src1) || !cpu.HasReg(src2)))
+		{
+			throw BogusOpcodeException<CONFIG, DEBUG>(this);
+		}
+	}
 
 	// Get the destination register
 	Register& dst_reg = cpu.GetExtReg(dst);
@@ -4088,6 +4261,11 @@ SUBF3_reg_reg.execute = {
 	// Get the 2nd source register
 	Register& src2_reg = cpu.GetExtReg(src2);
 
+	if (unlikely(!cpu.IsExtReg(src1)))
+		src1_reg.SetHiWriteMask(0, (uint8_t)0x0);
+	if (unlikely(!cpu.IsExtReg(src2)))
+		src2_reg.SetHiWriteMask(0, (uint8_t)0x10);
+
 	// Compute
 	uint32_t overflow;
 	uint32_t underflow;
@@ -4095,17 +4273,29 @@ SUBF3_reg_reg.execute = {
 	dst_reg.Subf(src1_reg, src2_reg, overflow, underflow, neg);
 
 	// Generate flags (into ST)
-	cpu.GenFlags(
-		dst_reg,
-		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-		M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
-		overflow, underflow, neg
-	);
+	if (likely(cpu.IsExtReg(dst)))
+		cpu.GenFlags(
+			dst_reg,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+			M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
+			overflow, underflow, neg
+		);
 }
 
 SUBF3_indir_reg.execute = {
-	// No need to check for the operands
-	
+	// Check that destination and source registers are valid
+	if (likely(!cpu.EnableFloatOpsWithNonExtRegs())) {
+		if (unlikely(!cpu.IsExtReg(dst) || !cpu.IsExtReg(src2)))
+			throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	} 
+	else
+	{
+		if(unlikely(!cpu.HasReg(dst) || !cpu.HasReg(src2)))
+		{
+			throw BogusOpcodeException<CONFIG, DEBUG>(this);
+		}
+	}
+
 	// Check that indirect addressing mode is valid and compute the effective address of the 1st source operand
 	typename CONFIG::address_t ea;        // The effective address
 	bool update_ar;                       // Whether to update ARn
@@ -4132,6 +4322,9 @@ SUBF3_indir_reg.execute = {
 	// Read 1st source operand from memory
 	uint32_t src1_value = cpu.IntLoad(ea);
 
+	if (unlikely(!cpu.IsExtReg(src2)))
+		src2_reg.SetHiWriteMask(0, (uint8_t)0x10);
+
 	// Compute
 	uint32_t overflow;
 	uint32_t underflow;
@@ -4139,17 +4332,29 @@ SUBF3_indir_reg.execute = {
 	dst_reg.Subf32(src1_value, src2_reg, overflow, underflow, neg);
 
 	// Generate flags (into ST)
-	cpu.GenFlags(
-		dst_reg,
-		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-		M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
-		overflow, underflow, neg
-	);
+	if (likely(cpu.IsExtReg(dst)))
+		cpu.GenFlags(
+			dst_reg,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+			M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
+			overflow, underflow, neg
+		);
 }
 
 SUBF3_reg_indir.execute = {
-	// No need to check for the operands
-	
+	// Check that destination and source registers are valid
+	if (likely(!cpu.EnableFloatOpsWithNonExtRegs())) {
+		if (unlikely(!cpu.IsExtReg(dst) || !cpu.IsExtReg(src1)))
+			throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	} 
+	else
+	{
+		if(unlikely(!cpu.HasReg(dst) || !cpu.HasReg(src1)))
+		{
+			throw BogusOpcodeException<CONFIG, DEBUG>(this);
+		}
+	}
+
 	// Check that indirect addressing mode is valid and compute the effective address of the 2nd source operand
 	typename CONFIG::address_t ea;        // The effective address
 	bool update_ar;                       // Whether to update ARn
@@ -4176,6 +4381,9 @@ SUBF3_reg_indir.execute = {
 	// Read 2nd source operand from memory
 	uint32_t src2_value = cpu.IntLoad(ea);
 
+	if (unlikely(!cpu.IsExtReg(src1)))
+		src1_reg.SetHiWriteMask(0, (uint8_t)0x0);
+
 	// Compute
 	uint32_t overflow;
 	uint32_t underflow;
@@ -4183,17 +4391,29 @@ SUBF3_reg_indir.execute = {
 	dst_reg.Subf32(src1_reg, src2_value, overflow, underflow, neg);
 
 	// Generate flags (into ST)
-	cpu.GenFlags(
-		dst_reg,
-		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-		M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
-		overflow, underflow, neg
-	);
+	if (likely(cpu.IsExtReg(dst)))
+		cpu.GenFlags(
+			dst_reg,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+			M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
+			overflow, underflow, neg
+		);
 }
 
 SUBF3_indir_indir.execute = {
-	// No need to check for the operands
-	
+	// Check that destination and source registers are valid
+	if (likely(!cpu.EnableFloatOpsWithNonExtRegs())) {
+		if (unlikely(!cpu.IsExtReg(dst)))
+			throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	} 
+	else
+	{
+		if(unlikely(!cpu.HasReg(dst)))
+		{
+			throw BogusOpcodeException<CONFIG, DEBUG>(this);
+		}
+	}
+
 	// Check that indirect addressing mode is valid and compute the effective address of the 1st source operand
 	typename CONFIG::address_t ea1;        // The effective address
 	bool update_ar1;                       // Whether to update ARn
@@ -4249,12 +4469,13 @@ SUBF3_indir_indir.execute = {
 	}
 
 	// Generate flags (into ST)
-	cpu.GenFlags(
-		dst_reg,
-		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-		M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
-		overflow, underflow, neg
-	);
+	if (likely(cpu.IsExtReg(dst)))
+		cpu.GenFlags(
+			dst_reg,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+			M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
+			overflow, underflow, neg
+		);
 }
 
 /* end of SUBF3 (subtract floating-point values)

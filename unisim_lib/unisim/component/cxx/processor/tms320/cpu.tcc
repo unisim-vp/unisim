@@ -122,7 +122,10 @@ CPU(const char *name,
 	param_enable_rnd_bug("enable-rnd-bug", this, enable_rnd_bug,
 		"If enabled the `rnd` instruction sets the Z flag to 0 systematically, as it is done in the evaluation board. Otherwise, Z is unchanged as it is written in the documentation."),
 	param_enable_parallel_store_bug("enable-parallel-store-bug", this, enable_parallel_store_bug,
-		"If enabled, when using parallel stores (STF src2, dst2 || STF src1, dst1) the first store is treated as a NOP"),
+		"If enabled, when using parallel stores (STF src2, dst2 || STF src1, dst1) the first store is treated as a NOP."),
+	enable_float_ops_with_non_ext_regs(false),
+	param_enable_float_ops_with_non_ext_regs("enable-float-ops-with-non-ext-regs", this, enable_float_ops_with_non_ext_regs,
+		"If enabled non extended registers can be used on all the float instructions, however the behavior is not documented and can differ between chips revision. If disabled, it stops simulation when using non extended registers on float instructions."),
 	verbose_all(false),
 	param_verbose_all("verbose-all", this, verbose_all),
 	verbose_setup(false),
@@ -159,6 +162,9 @@ CPU(const char *name,
 	registers_registry["PC"] = new unisim::util::debug::SimpleRegister<uint32_t>("PC", &reg_pc);
 
 	unsigned int i;
+	for (i = 8; i < 32; i++)
+		regs[i].SetHiWriteMask(0, (uint8_t)0x08);
+
 	for(i = 0; i < 8; i++)
 	{
 		stringstream sstr;
@@ -1495,6 +1501,15 @@ Stop(int ret)
 //===============================================================
 //= Verbose variables, parameters, and methods            START =
 //===============================================================
+
+template<class CONFIG, bool DEBUG>
+inline INLINE
+bool
+CPU<CONFIG, DEBUG> ::
+EnableFloatOpsWithNonExtRegs()
+{
+	return enable_float_ops_with_non_ext_regs;
+}
 
 template<class CONFIG, bool DEBUG>
 inline INLINE

@@ -70,7 +70,7 @@
  */
 
 op ABSF_STF    (0b11[2]:0b00100[5]:dst1[3]:0b000[3]:src3[3]:d2_mod[5]:d2_ar[3]:s2_mod[5]:s2_ar[3])
-op ABSF_STF_ext(0b11[2]:0b00100[5]:dst1[3]:0b000[3]:src3[3]:d2_mod[5]:d2_ar[3]:0b111[3]:0b00[2]:src2[3])
+op ABSF_STF_ext(0b11[2]:0b00100[5]:dst1[3]:0b000[3]:src3[3]:d2_mod[5]:d2_ar[3]:0b111[3]:src2[5])
 
 ABSF_STF.disasm = {
 	const char *dst1_name = REG_NAME[dst1];
@@ -159,16 +159,25 @@ ABSF_STF.execute = {
 
 	// Generate flags (into ST)
 	cpu.GenFlags(dst1_reg,
-				 M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-				 M_ST_LV | M_ST_Z | M_ST_V,    // or mask
-				 overflow, 0, 0
-				 );
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+			M_ST_LV | M_ST_Z | M_ST_V,    // or mask
+			overflow, 0, 0
+			);
 }
 
 ABSF_STF_ext.execute = {
-	// NOTE: the documentation says that the src2 register can be any cpu
-	// register, but tests with the assemble have shown that only extended
-	// registers can be used
+	// Check that destination register 1 (dst1) and source registers (src2 and src3) are valid
+	if (likely(!cpu.EnableFloatOpsWithNonExtRegs())) {
+		if (unlikely(!cpu.IsExtReg(src2)))
+			throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	} 
+	else
+	{
+		if (unlikely(!cpu.HasReg(src2)))
+		{
+			throw BogusOpcodeException<CONFIG, DEBUG>(this);
+		}
+	}
 
 	// Check that indirect addressing mode is valid and compute the effective address of 'dst2' operand
 	typename CONFIG::address_t d2_ea;        // The effective address
@@ -195,6 +204,9 @@ ABSF_STF_ext.execute = {
 	// Get the 'dst1' register (no need to initialize, as will be rewritten by the abs method)
 	Register dst1_reg;
 	
+	if (unlikely(!cpu.IsExtReg(src2)))
+		src2_reg.SetHiWriteMask(0, (uint8_t)0x09);
+
 	// Compute the result of ABSF
 	uint32_t overflow;      // the overflow (0 or 1)
 	dst1_reg.Absf(src2_reg, overflow);
@@ -207,10 +219,10 @@ ABSF_STF_ext.execute = {
 
 	// Generate flags (into ST)
 	cpu.GenFlags(dst1_reg,
-				 M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-				 M_ST_LV | M_ST_Z | M_ST_V,    // or mask
-				 overflow, 0, 0
-				 );
+		 M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+		 M_ST_LV | M_ST_Z | M_ST_V,    // or mask
+		 overflow, 0, 0
+		 );
 }
 
 /*
@@ -509,14 +521,18 @@ ADDF3_STF.execute = {
 }
 
 ADDF3_STF_ext.execute = {
-	// TODO: check if the src2 register must be an extended register or can 
-	//   really be any register of the cpu
-	
-	// Check that 'src2' register is valid
-//	if(unlikely(!cpu.HasReg(src2)))
-//	{
-//		throw BogusOpcodeException<CONFIG, DEBUG>(this);
-//	}
+	// Check that source register 2 (src2) is valid
+	if (likely(!cpu.EnableFloatOpsWithNonExtRegs())) {
+		if (unlikely(!cpu.IsExtReg(src2)))
+			throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	} 
+	else
+	{
+		if (unlikely(!cpu.HasReg(src2)))
+		{
+			throw BogusOpcodeException<CONFIG, DEBUG>(this);
+		}
+	}
 
 	// Check that indirect addressing mode is valid and compute the effective address of 'dst2' operand
 	typename CONFIG::address_t d2_ea;        // The effective address
@@ -546,6 +562,9 @@ ADDF3_STF_ext.execute = {
 	// Get the 'dst1' register (no need to initialize, as will be rewritten by the abs method)
 	Register dst1_reg;
 	
+	if (unlikely(!cpu.IsExtReg(src2)))
+		src2_reg.SetHiWriteMask(0, (uint8_t)0x09);
+
 	// Compute the result of ABSF
 	uint32_t overflow;      // the overflow (0 or 1)
 	uint32_t underflow;     // the underflow (0 or 1)
@@ -560,10 +579,10 @@ ADDF3_STF_ext.execute = {
 
 	// Generate flags (into ST)
 	cpu.GenFlags(dst1_reg,
-				 M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-				 M_ST_LUF | M_ST_LV | M_ST_UF| M_ST_N | M_ST_Z | M_ST_V,    // or mask
-				 overflow, underflow, neg
-				 );
+		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+		M_ST_LUF | M_ST_LV | M_ST_UF| M_ST_N | M_ST_Z | M_ST_V,    // or mask
+		overflow, underflow, neg
+		);
 }
 
 /*
@@ -1192,7 +1211,7 @@ ASH3_STI_ext.execute = {
  */
 
 op FIX_STI    (0b11[2]:0b01010[5]:dst1[3]:0b000[3]:src3[3]:d2_mod[5]:d2_ar[3]:s2_mod[5]:s2_ar[3])
-op FIX_STI_ext(0b11[2]:0b01010[5]:dst1[3]:0b000[3]:src3[3]:d2_mod[5]:d2_ar[3]:0b111[3]:0b00[2]:src2[3])
+op FIX_STI_ext(0b11[2]:0b01010[5]:dst1[3]:0b000[3]:src3[3]:d2_mod[5]:d2_ar[3]:0b111[3]:src2[5])
 
 FIX_STI.disasm = {
 	const char *dst1_name = REG_NAME[dst1];
@@ -1292,8 +1311,19 @@ FIX_STI.execute = {
 }
 
 FIX_STI_ext.execute = {
-	// TODO: check that the src2 register can only be an extended register
-	
+	// Check that source register 2 (src2) is valid
+	if (likely(!cpu.EnableFloatOpsWithNonExtRegs())) {
+		if (unlikely(!cpu.IsExtReg(src2)))
+			throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	} 
+	else
+	{
+		if (unlikely(!cpu.HasReg(src2)))
+		{
+			throw BogusOpcodeException<CONFIG, DEBUG>(this);
+		}
+	}
+
 	// Check that indirect addressing mode is valid and compute the effective address of 'dst2' operand
 	typename CONFIG::address_t d2_ea;        // The effective address
 	bool d2_update_ar;                       // Whether to update ARn
@@ -1315,6 +1345,9 @@ FIX_STI_ext.execute = {
 
 	// Read the 'src3' register operand
 	uint32_t src3_value = cpu.GetReg(src3);
+
+	if (unlikely(!cpu.IsExtReg(src2)))
+		src2_reg.SetHiWriteMask(0, (uint8_t)0x09);
 
 	// Compute the result of FIX
 	uint32_t result;  // the 32-bit result
@@ -1446,12 +1479,11 @@ FLOAT_STF.execute = {
 }
 
 FLOAT_STF_ext.execute = {
-	// Check whether the 'src2' register operand is valid
-	if(unlikely(!cpu.HasReg(src2)))
+	if (unlikely(!cpu.HasReg(src2)))
 	{
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
-	
+
 	// Check that indirect addressing mode is valid and compute the effective address of 'dst2' operand
 	typename CONFIG::address_t d2_ea;        // The effective address
 	bool d2_update_ar;                       // Whether to update ARn
@@ -1504,7 +1536,7 @@ FLOAT_STF_ext.execute = {
  */
 
 op LDF_STF    (0b11[2]:0b01100[5]:dst1[3]:0b000[3]:src3[3]:d2_mod[5]:d2_ar[3]:s2_mod[5]:s2_ar[3])
-op LDF_STF_ext(0b11[2]:0b01100[5]:dst1[3]:0b000[3]:src3[3]:d2_mod[5]:d2_ar[3]:0b111[3]:0b00[2]:src2[3])
+op LDF_STF_ext(0b11[2]:0b01100[5]:dst1[3]:0b000[3]:src3[3]:d2_mod[5]:d2_ar[3]:0b111[3]:src2[5])
 
 LDF_STF.disasm = {
 	const char *dst1_name = REG_NAME[dst1];
@@ -1592,6 +1624,19 @@ LDF_STF.execute = {
 }
 
 LDF_STF_ext.execute = {
+	// Check that source register 2 (src2) is valid
+	if (likely(!cpu.EnableFloatOpsWithNonExtRegs())) {
+		if (unlikely(!cpu.IsExtReg(src2)))
+			throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	} 
+	else
+	{
+		if (unlikely(!cpu.HasReg(src2)))
+		{
+			throw BogusOpcodeException<CONFIG, DEBUG>(this);
+		}
+	}
+
 	// Check that indirect addressing mode is valid and compute the effective address of 'dst2' operand
 	typename CONFIG::address_t d2_ea;        // The effective address
 	bool d2_update_ar;                       // Whether to update ARn
@@ -1621,6 +1666,9 @@ LDF_STF_ext.execute = {
 	// Get the 'dst1' register
 	Register& dst1_reg = cpu.GetExtReg(dst1);
 	
+	if (unlikely(!cpu.IsExtReg(src2)))
+		src2_reg.SetHiWriteMask(0, (uint8_t)0x09);
+
 	// Get the value to store from the 'src3' register
 	uint32_t src3_value = src3_reg.GetSinglePrecisionFPFormat();
 	
@@ -2105,15 +2153,19 @@ MPYF3_STF.execute = {
 }
 
 MPYF3_STF_ext.execute = {
-	// TODO: check if the src2 register must be an extended register or can 
-	//   really be any register of the cpu
-	
-	// Check that 'src2' register is valid
-	//	if(unlikely(!cpu.HasReg(src2)))
-	//	{
-	//		throw BogusOpcodeException<CONFIG, DEBUG>(this);
-	//	}
-	
+	// Check that source register 2 (src2) is valid
+	if (likely(!cpu.EnableFloatOpsWithNonExtRegs())) {
+		if (unlikely(!cpu.IsExtReg(src2)))
+			throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	} 
+	else
+	{
+		if (unlikely(!cpu.HasReg(src2)))
+		{
+			throw BogusOpcodeException<CONFIG, DEBUG>(this);
+		}
+	}
+
 	// Check that indirect addressing mode is valid and compute the effective address of 'dst2' operand
 	typename CONFIG::address_t d2_ea;        // The effective address
 	bool d2_update_ar;                       // Whether to update ARn
@@ -2142,6 +2194,9 @@ MPYF3_STF_ext.execute = {
 	// Get the 'dst1' register (no need to initialize, as will be rewritten by the abs method)
 	Register dst1_reg;
 	
+	if (unlikely(!cpu.IsExtReg(src2)))
+		src2_reg.SetHiWriteMask(0, (uint8_t)0x09);
+
 	// Compute the result of ABSF
 	uint32_t overflow;      // the overflow (0 or 1)
 	uint32_t underflow;     // the underflow (0 or 1)
@@ -2457,17 +2512,26 @@ NEGF_STF.execute = {
 	
 	// Generate flags (into ST)
 	cpu.GenFlags(dst1_reg,
-				 M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-				 M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
-				 overflow, underflow, neg
-				 );
+			 M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+			 M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
+			 overflow, underflow, neg
+			 );
 }
 
 NEGF_STF_ext.execute = {
-	// NOTE: the documentation says that the src2 register can be any cpu
-	// register, but tests with the assemble have shown that only extended
-	// registers can be used
-	
+	// Check that source registers (src2 and src3) are valid
+	if (likely(!cpu.EnableFloatOpsWithNonExtRegs())) {
+		if (unlikely(!cpu.IsExtReg(src2)))
+			throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	} 
+	else
+	{
+		if (unlikely(!cpu.HasReg(src2)))
+		{
+			throw BogusOpcodeException<CONFIG, DEBUG>(this);
+		}
+	}
+
 	// Check that indirect addressing mode is valid and compute the effective address of 'dst2' operand
 	typename CONFIG::address_t d2_ea;        // The effective address
 	bool d2_update_ar;                       // Whether to update ARn
@@ -2493,6 +2557,9 @@ NEGF_STF_ext.execute = {
 	// Get the 'dst1' register (no need to initialize, as will be rewritten by the abs method)
 	Register dst1_reg;
 	
+	if (unlikely(!cpu.IsExtReg(src2)))
+		src2_reg.SetHiWriteMask(0, (uint8_t)0x09);
+
 	// Compute the result of NEGF
 	uint32_t overflow;      // the overflow (0 or 1)
 	uint32_t underflow;		// the underflow (0 or 1)
@@ -2507,10 +2574,10 @@ NEGF_STF_ext.execute = {
 	
 	// Generate flags (into ST)
 	cpu.GenFlags(dst1_reg,
-				 M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-				 M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
-				 overflow, underflow, neg
-				 );
+			 M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+			 M_ST_LUF | M_ST_LV | M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // or mask
+			 overflow, underflow, neg
+			 );
 }
 
 /* end of NEGF || STF (negate floating-point value and store floating-point value)
@@ -3028,7 +3095,7 @@ OR3_STI_ext.execute = {
  */
 
 op STF_STF    (0b11[2]:0b00000[5]:src2[3]:0b000[3]:src1[3]:d1_mod[5]:d1_ar[3]:d2_mod[5]:d2_ar[3])
-op STF_STF_ext(0b11[2]:0b00000[5]:src2[3]:0b000[3]:src1[3]:d1_mod[5]:d1_ar[3]:0b111[3]:0b00[2]:dst2[3])
+op STF_STF_ext(0b11[2]:0b00000[5]:src2[3]:0b000[3]:src1[3]:d1_mod[5]:d1_ar[3]:0b111[3]:dst2[5])
 
 STF_STF.disasm = {
 	const char *src1_name = REG_NAME[src1];
@@ -3110,6 +3177,19 @@ STF_STF.execute = {
 }
 
 STF_STF_ext.execute = {
+	// Check that destination register 2 (dst2) is valid
+	if (likely(!cpu.EnableFloatOpsWithNonExtRegs())) {
+		if (unlikely(!cpu.IsExtReg(dst2)))
+			throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	} 
+	else
+	{
+		if (unlikely(!cpu.HasReg(dst2)))
+		{
+			throw BogusOpcodeException<CONFIG, DEBUG>(this);
+		}
+	}
+
 	// Check that indirect addressing mode is valid and compute the effective address of 'dst1' operand
 	typename CONFIG::address_t d1_ea;        // The effective address
 	bool d1_update_ar;                       // Whether to update ARn
@@ -3129,9 +3209,6 @@ STF_STF_ext.execute = {
 	// Read the 'src1' register uint32_t value
 	uint32_t src1_value = cpu.GetExtReg(src1).GetSinglePrecisionFPFormat();
 
-	// Read the 'src2' register uint32_t value
-	uint32_t src2_value = cpu.GetExtReg(src2).GetSinglePrecisionFPFormat();
-	
 	// Store the 'src1' register value into memory
 	cpu.IntStore(d1_ea, src1_value);
 
@@ -3142,6 +3219,10 @@ STF_STF_ext.execute = {
 	else
 	{
 		// Copy the 'src2' register to 'dst2' register
+		Register& dst2_reg = cpu.GetExtReg(dst2);
+		if (unlikely(!cpu.IsExtReg(dst2)))
+			dst2_reg.SetHiWriteMask(0, (uint8_t)0x0);
+				
 		cpu.GetExtReg(dst2) = cpu.GetExtReg(src2);
 	}
 }
@@ -3399,14 +3480,18 @@ SUBF3_STF.execute = {
 }
 
 SUBF3_STF_ext.execute = {
-	// TODO: check if the src2 register must be an extended register or can 
-	//   really be any register of the cpu
-	
-	// Check that 'src2' register is valid
-	//	if(unlikely(!cpu.HasReg(src2)))
-	//	{
-	//		throw BogusOpcodeException<CONFIG, DEBUG>(this);
-	//	}
+	// Check that source register 2 (src2) is valid
+	if (likely(!cpu.EnableFloatOpsWithNonExtRegs())) {
+		if (unlikely(!cpu.IsExtReg(src2)))
+			throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	} 
+	else
+	{
+		if (unlikely(!cpu.HasReg(src2)))
+		{
+			throw BogusOpcodeException<CONFIG, DEBUG>(this);
+		}
+	}
 	
 	// Check that indirect addressing mode is valid and compute the effective address of 'dst2' operand
 	typename CONFIG::address_t d2_ea;        // The effective address
@@ -3436,6 +3521,9 @@ SUBF3_STF_ext.execute = {
 	// Get the 'dst1' register (no need to initialize, as will be rewritten by the abs method)
 	Register dst1_reg;
 	
+	if (unlikely(!cpu.IsExtReg(src2)))
+		src2_reg.SetHiWriteMask(0, (uint8_t)0x09);
+
 	// Compute the result of SUBF3
 	uint32_t overflow;      // the overflow (0 or 1)
 	uint32_t underflow;     // the underflow (0 or 1)
@@ -3827,7 +3915,7 @@ XOR3_STI_ext.execute = {
  */
 
 op LDF_LDF    (0b11[2]:0b00010[5]:dst2[3]:dst1[3]:0b000[3]:s1_mod[5]:s1_ar[3]:s2_mod[5]:s2_ar[3])
-op LDF_LDF_ext(0b11[2]:0b00010[5]:dst2[3]:dst1[3]:0b000[3]:s1_mod[5]:s1_ar[3]:0b111[3]:0b00[2]:src2[3])
+op LDF_LDF_ext(0b11[2]:0b00010[5]:dst2[3]:dst1[3]:0b000[3]:s1_mod[5]:s1_ar[3]:0b111[3]:src2[5])
 
 LDF_LDF.disasm = {
 	const char *dst1_name = REG_NAME[dst1];
@@ -3928,8 +4016,19 @@ LDF_LDF.execute = {
 }
 
 LDF_LDF_ext.execute = {
-	// NOTE: no need to check for valid src2, the opcode already checks it
-	
+	// Check that source register 2 (src2) is valid
+	if (likely(!cpu.EnableFloatOpsWithNonExtRegs())) {
+		if (unlikely(!cpu.IsExtReg(src2)))
+			throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	} 
+	else
+	{
+		if (unlikely(!cpu.HasReg(src2)))
+		{
+			throw BogusOpcodeException<CONFIG, DEBUG>(this);
+		}
+	}
+
 	// Check that indirect addressing mode is valid and compute the effective address of 'src1' operand
 	typename CONFIG::address_t s1_ea;        // The effective address
 	bool s1_update_ar;                       // Whether to update ARn
@@ -3958,6 +4057,10 @@ LDF_LDF_ext.execute = {
 	
 	// Write back register operand 'dst2'
 	Register &dst2_reg = cpu.GetExtReg(dst2);
+	
+	if (unlikely(!cpu.IsExtReg(src2)))
+		src2_reg.SetHiWriteMask(0, (uint8_t)0x09);
+
 	dst2_reg = src2_reg;
 	
 	// Write back register operand 'dst1'

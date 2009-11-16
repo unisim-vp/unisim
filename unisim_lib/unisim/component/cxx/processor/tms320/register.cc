@@ -50,6 +50,7 @@ namespace tms320 {
 	Register::Register()
 	: lo_write_mask(0xffffffff)
 	, lo(0)
+	, hi_write_mask(0xff)
 	, hi(0)
 	{
 	}
@@ -57,6 +58,12 @@ namespace tms320 {
 	void Register::SetLoWriteMask(uint32_t _lo_write_mask)
 	{
 		lo_write_mask = _lo_write_mask;
+	}
+
+	void Register::SetHiWriteMask(uint8_t _hi_write_mask, uint8_t _init_value)
+	{
+		hi = _init_value;
+		hi_write_mask = _hi_write_mask;
 	}
 	
 	std::ostream& operator << (std::ostream& os, const Register& reg)
@@ -243,40 +250,41 @@ namespace tms320 {
 		
 	void Register::Float(uint32_t value, uint32_t& neg)
 	{
-		lo = value;
-		hi = 30;
+		uint32_t _lo = value;
+		uint32_t _hi = 30;
 		unsigned int count_nsb = 0; // counter of non significative bits
 		neg = 0;
-		if (lo)
+		if (_lo)
 		{
-			if (lo >= (uint32_t)0x80000000)
+			if (_lo >= (uint32_t)0x80000000)
 			{
 				neg = 1;
-				count_nsb = unisim::util::arithmetic::CountLeadingZeros(~lo) - 1;
+				count_nsb = unisim::util::arithmetic::CountLeadingZeros(~_lo) - 1;
 			}
 			else
 			{
-				count_nsb = unisim::util::arithmetic::CountLeadingZeros(lo) - 1;
+				count_nsb = unisim::util::arithmetic::CountLeadingZeros(_lo) - 1;
 			}
 			if (count_nsb == 31)
-				lo = 0;
+				_lo = 0;
 			else
-				lo = lo << (count_nsb + 1);
-			hi = 30 - count_nsb;
+				_lo = _lo << (count_nsb + 1);
+			_hi = 30 - count_nsb;
 			if (neg)
 			{
-				lo = lo | (uint32_t)0x80000000;
+				_lo = _lo | (uint32_t)0x80000000;
 			}
 			else
 			{
-				lo = lo & ~(uint32_t)0x80000000;
+				_lo = _lo & ~(uint32_t)0x80000000;
 			}
 		}
 		else
 		{
-			hi = (uint8_t)0x080;
+			_hi = (uint8_t)0x080;
 		}
-		
+		SetLo(_lo);
+		SetHi(_hi);
 	}
 	
 	uint32_t Register::Fix(uint32_t& overflow, uint32_t& neg)
@@ -296,7 +304,7 @@ namespace tms320 {
 			// check if the sign is positive or negative
 			// if positive return the biggest positive number
 			// if negative return the biggest negative number
-			if (lo & (uint32_t)0x80000000) // the sign is negative
+			if (GetLo() & (uint32_t)0x80000000) // the sign is negative
 			{
 				neg = 1;
 				return (uint32_t)0x80000000;
@@ -308,7 +316,7 @@ namespace tms320 {
 		}
 		
 		// comput the shift value
-		uint32_t shift = 31 - (int8_t)hi;
+		uint32_t shift = 31 - (int8_t)GetHi();
 		// to avoid circular shift trunk it to 32
 		if (shift > 32) shift = 32;
 		
@@ -316,11 +324,11 @@ namespace tms320 {
 		// convert mantissas to their full representation (33-bit)
 		if (lo & (uint32_t)0x80000000)
 		{
-			ext_lo = (int64_t)((int32_t)lo) & ~(uint64_t)0x80000000;
+			ext_lo = (int64_t)((int32_t)GetLo()) & ~(uint64_t)0x80000000;
 			neg = 1;
 		}
 		else
-			ext_lo = (uint64_t)(lo | (uint32_t)0x80000000);
+			ext_lo = (uint64_t)(GetLo() | (uint32_t)0x80000000);
 		
 		// perform the shift on the mantissa and return the lowest 32 bits
 		ext_lo = (int64_t)ext_lo >> shift;
@@ -360,7 +368,7 @@ namespace tms320 {
 	
 	void Register::Addf32(uint32_t imm, uint32_t& overflow, uint32_t& underflow, uint32_t& neg)
 	{
-		this->Addf(this->hi, this->lo, GetHi32(imm), GetLo32(imm), overflow, underflow, neg);
+		this->Addf(this->GetHi(), this->GetLo(), GetHi32(imm), GetLo32(imm), overflow, underflow, neg);
 	}
 	
 	void Register::Addf(const Register& reg_a, const Register& reg_b, uint32_t& overflow, uint32_t& underflow, uint32_t& neg)
@@ -460,27 +468,27 @@ namespace tms320 {
 	
 	void Register::Mpyf(const Register& reg, uint32_t& overflow, uint32_t& underflow, uint32_t& neg)
 	{
-		this->Mpyf(this->hi, this->lo, reg.GetHi(), reg.GetLo(), overflow, underflow, neg);
+		this->Mpyf(this->GetHi(), this->GetLo(), reg.GetHi(), reg.GetLo(), overflow, underflow, neg);
 	}
 	
 	void Register::Mpyf16(uint16_t imm, uint32_t& overflow, uint32_t& underflow, uint32_t& neg)
 	{
-		this->Mpyf(this->hi, this->lo, GetHi16(imm), GetLo16(imm), overflow, underflow, neg);
+		this->Mpyf(this->GetHi(), this->GetLo(), GetHi16(imm), GetLo16(imm), overflow, underflow, neg);
 	}
 	
 	void Register::Mpyf32(uint32_t imm, uint32_t& overflow, uint32_t& underflow, uint32_t& neg)
 	{
-		this->Mpyf(this->hi, this->lo, GetHi32(imm), GetLo32(imm), overflow, underflow, neg);
+		this->Mpyf(this->GetHi(), this->GetLo(), GetHi32(imm), GetLo32(imm), overflow, underflow, neg);
 	}
 	
 	void Register::Mpyf(const Register& reg_a, const Register& reg_b, uint32_t& overflow, uint32_t& underflow, uint32_t& neg)
 	{
-		this->Mpyf(reg_a.hi, reg_a.lo, reg_b.hi, reg_b.lo, overflow, underflow, neg);
+		this->Mpyf(reg_a.GetHi(), reg_a.GetLo(), reg_b.GetHi(), reg_b.GetLo(), overflow, underflow, neg);
 	}
 	
 	void Register::Mpyf(const Register& reg, uint32_t imm, uint32_t& overflow, uint32_t& underflow, uint32_t& neg)
 	{
-		this->Mpyf(reg.hi, reg.lo, GetHi32(imm), GetLo32(imm), overflow, underflow, neg);
+		this->Mpyf(reg.GetHi(), reg.GetLo(), GetHi32(imm), GetLo32(imm), overflow, underflow, neg);
 	}
 	
 	void Register::Mpyf(uint32_t imm, const Register& reg, uint32_t& overflow, uint32_t& underflow, uint32_t& neg)
@@ -561,6 +569,8 @@ namespace tms320 {
 	
 	void Register::AddfSubf(bool is_add, uint8_t hi_a, uint32_t lo_a, uint8_t hi_b, uint32_t lo_b, uint32_t& overflow, uint32_t& underflow, uint32_t& neg)
 	{
+		uint8_t r_hi = 0;
+		uint32_t r_lo = 0;
 		int64_t ext_lo_a = 0;
 		int64_t ext_lo_b = 0;
 		overflow = 0;
@@ -602,7 +612,7 @@ namespace tms320 {
 		uint32_t diff_exp;
 		if ((int8_t)hi_a <= (int8_t)hi_b)
 		{
-			this->hi = hi_b;
+			r_hi = hi_b;
 			diff_exp = (int32_t)(int8_t)hi_b - (int32_t)(int8_t)hi_a;
 			if (diff_exp >= 64)
 			{
@@ -614,7 +624,7 @@ namespace tms320 {
 		}
 		else
 		{
-			this->hi = hi_a;
+			r_hi = hi_a;
 			diff_exp = (int32_t)(int8_t)hi_a - (int32_t)(int8_t)hi_b;
 			if (diff_exp >= 64)
 			{
@@ -630,7 +640,7 @@ namespace tms320 {
 		<< "3- diff_exp = " << (int)diff_exp << std::endl << std::hex
 		<< "   hi_a = 0x" << (unsigned int)hi_a << "\t ext_lo_a = 0x" << (unsigned long long int)ext_lo_a << std::endl
 		<< "   hi_b = 0x" << (unsigned int)hi_b << "\t ext_lo_b = 0x" << (unsigned long long int)ext_lo_b << std::endl
-		<< "   hi   = 0x" << (unsigned int)this->GetHi() << std::dec << std::endl;
+		<< "   hi   = 0x" << (unsigned int)r_hi << std::dec << std::endl;
 #endif								
 		// add the mantissas
 		int64_t ext_lo_c = ext_lo_a;
@@ -645,13 +655,13 @@ namespace tms320 {
 		<< "4- diff_exp = " << (int)diff_exp << std::endl << std::hex
 		<< "   hi_a = 0x" << (unsigned int)hi_a          << "\t ext_lo_a = 0x" << (unsigned long long int)ext_lo_a << std::endl
 		<< "   hi_b = 0x" << (unsigned int)hi_b          << "\t ext_lo_b = 0x" << (unsigned long long int)ext_lo_b << std::endl
-		<< "   hi   = 0x" << (unsigned int)this->GetHi() << "\t ext_lo_c = 0x" << (unsigned long long int)ext_lo_c << std::dec << std::endl;
+		<< "   hi   = 0x" << (unsigned int)r_hi << "\t ext_lo_c = 0x" << (unsigned long long int)ext_lo_c << std::dec << std::endl;
 #endif										
 		// check for special cases of the result mantissa
 		// 1 - check mantissa is 0
 		if (ext_lo_c == 0)
 		{
-			this->SetHi((uint8_t)0x80);
+			r_hi = (uint8_t)0x80;
 		}
 		else
 		{
@@ -671,13 +681,13 @@ namespace tms320 {
 				// the mantissa is positive, check how many bits we have to shift it
 				//   to be an signed 33bits number
 				ext_lo_c = ext_lo_c >> 1;
-				if (((int32_t)(int8_t)this->GetHi()) + 1 > 127) 
+				if (((int32_t)(int8_t)r_hi) + 1 > 127) 
 				{
 					overflow = 1;
-					this->SetHi((uint8_t)0x7f);
+					r_hi = (uint8_t)0x7f;
 				}
 				else
-					this->SetHi(this->GetHi() + 1);
+					r_hi = r_hi + 1;
 			}
 			else
 			{
@@ -690,13 +700,13 @@ namespace tms320 {
 					// the mantissa is negative, check how many bits we have to shift it
 					//   to be a signed 33bits number
 					ext_lo_c = ext_lo_c >> 1;
-					if (((int32_t)(int8_t)this->GetHi()) + 1 > 127) 
+					if (((int32_t)(int8_t)r_hi) + 1 > 127) 
 					{
 						overflow = 1;
-						this->SetHi((uint8_t)0x7f);
+						r_hi = (uint8_t)0x7f;
 					}
 					else
-						this->SetHi(this->GetHi() + 1);
+						r_hi = r_hi + 1;
 				}
 				else
 				{
@@ -711,23 +721,23 @@ namespace tms320 {
 						ext_lo_c = ext_lo_c << count;
 #ifdef __DEBUG_TMS320C3X_REGISTER__
 						std::cerr << "8.1- normalizing pos" << std::endl
-						<< "  hi_c = " << (int)(int8_t)this->GetHi() << " (" << (int)(((int32_t)(int8_t)this->GetHi()) - count) << ")" << std::endl
+						<< "  hi_c = " << (int)(int8_t)r_hi << " (" << (int)(((int32_t)(int8_t)r_hi) - count) << ")" << std::endl
 						<< "  count = " << count << std::endl;
 #endif
-						if ((int32_t)(((int32_t)(int8_t)this->GetHi()) - count) <= -128)
+						if ((int32_t)(((int32_t)(int8_t)r_hi) - count) <= -128)
 						{
 							underflow = 1;
-							this->SetHi((uint8_t)0x80);
+							r_hi = (uint8_t)0x80;
 						}
 						else
-							this->SetHi(this->GetHi() - count);
+							r_hi = r_hi - count;
 					}
 					else
 					{
 #ifdef __DEBUG_TMS320C3X_REGISTER__
 						std::cerr 
 						<< "8.1- normalizing neg" << std::endl
-						<< "   hi   = 0x" << std::hex << (unsigned int)this->GetHi() << "\t ext_lo_c = 0x" << (unsigned long long)ext_lo_c << std::dec << std::endl
+						<< "   hi   = 0x" << std::hex << (unsigned int)r_hi << "\t ext_lo_c = 0x" << (unsigned long long)ext_lo_c << std::dec << std::endl
 						<< std::endl;
 #endif						
 						if (ext_lo_c < 0 && ((ext_lo_c & (uint64_t)0x80000000) != 0))
@@ -736,13 +746,13 @@ namespace tms320 {
 
 							count = count - 32;
 							ext_lo_c = ext_lo_c << count;
-							if ((int32_t)((int32_t)(int8_t)this->GetHi() - count) <= -128)
+							if ((int32_t)((int32_t)(int8_t)r_hi - count) <= -128)
 							{
 								underflow = 1;
-								this->SetHi((uint8_t)0x80);
+								r_hi = (uint8_t)0x80;
 							}
 							else
-								this->SetHi(this->GetHi() - count);
+								r_hi = r_hi - count;
 						}
 					}
 				}
@@ -781,10 +791,11 @@ namespace tms320 {
 		std::cerr << "  ext_lo_c = 0x" << std::hex << (unsigned long long)ext_lo_c << std::dec << std::endl;
 		
 #endif
-		// set the mantissa into the register
+		// set the mantissa and exponent into the register
 		this->SetLo((uint32_t)((ext_lo_c & ~(uint64_t)0x80000000) 
 							   | ((ext_lo_c >> 1) & 
 								  (uint64_t)0x80000000)));
+		this->SetHi(r_hi);
 	}
 	
 	void Register::Mpyf(uint8_t hi_a, uint32_t lo_a, uint8_t hi_b, uint32_t lo_b, uint32_t& overflow, uint32_t& underflow, uint32_t& neg)
@@ -856,25 +867,14 @@ namespace tms320 {
 		unsigned int shift = 0;
 		tmp = tmp >> 46;
 		if (ext_lo_c < 0) tmp = ~tmp;
-//		if (tmp > 0)
-//		{
-//			tmp = tmp >> 1;
-//			shift += 1;
-//		}
-//		if (tmp > 0)
-//		{
-//			shift += 1;
-//		}
 		if (tmp & 4) 
 		{
-//			tmp = tmp >> 2;
 			shift += 2;
 		}
 		else
 		{
 			if (tmp & 2) 
 			{
-//				tmp = tmp >> 1;
 				shift += 1;
 			}
 		}
@@ -974,6 +974,7 @@ namespace tms320 {
 	
 	void Register::Rndf(uint8_t hi_a, uint32_t lo_a, uint32_t& overflow, uint32_t& underflow, uint32_t& neg)
 	{
+		uint8_t r_hi = 0;
 		overflow = 0;
 		underflow = 0;
 		neg = 0;
@@ -1024,14 +1025,14 @@ namespace tms320 {
 		if (ext_lo_c < 0) neg = 1;
 		
 		// set the exponent result
-		this->SetHi(hi_a);
+		r_hi = hi_a;
 
 		// check for special cases of the result mantissa
 		// 1 - mantissa is 0
 		if (ext_lo_c == 0)
 		{
 			ext_lo_c = 0;
-			this->SetHi((uint8_t)0x80);
+			r_hi = (uint8_t)0x80;
 		}
 		else
 		{
@@ -1041,13 +1042,13 @@ namespace tms320 {
 				// the mantissa is possitive, check how many bits we have to shift it
 				//   to be a signed 33bits number
 				ext_lo_c = ext_lo_c >> 1;
-				if (((int32_t)(int8_t)this->GetHi() + 1) > 127) 
+				if (((int32_t)(int8_t)r_hi + 1) > 127) 
 				{
 					overflow = 1;
-					this->SetHi((uint8_t)0x7f);
+					r_hi = (uint8_t)0x7f;
 				}
 				else
-					this->SetHi(hi_a + 1);
+					r_hi = hi_a + 1;
 			}
 			else
 			{
@@ -1056,13 +1057,13 @@ namespace tms320 {
 					// the mantissa is negative, check how many bits we have to shift it
 					//   to be a signed 33bits number
 					ext_lo_c = (uint64_t)ext_lo_c >> 1;
-					if (((int32_t)(int8_t)this->GetHi() + 1) > 127) 
+					if (((int32_t)(int8_t)r_hi + 1) > 127) 
 					{
 						overflow = 1;
-						this->SetHi((uint8_t)0x7f);
+						r_hi = (uint8_t)0x7f;
 					}
 					else
-						this->SetHi(hi_a + 1);
+						r_hi = hi_a + 1;
 				}
 				else 
 				{
@@ -1072,13 +1073,13 @@ namespace tms320 {
 						uint32_t count = unisim::util::arithmetic::CountLeadingZeros((uint64_t)ext_lo_c);
 						count = count - 32;
 						ext_lo_c = ext_lo_c << count;
-						if ((int32_t)((int32_t)(int8_t)this->GetHi() - count) <= -128)
+						if ((int32_t)((int32_t)(int8_t)r_hi - count) <= -128)
 						{
 							underflow = 1;
-							this->SetHi((uint8_t)0x80);
+							r_hi = (uint8_t)0x80;
 						}
 						else
-							this->SetHi(this->GetHi() - count);
+							r_hi = r_hi - count;
 					}
 					else
 					{
@@ -1088,13 +1089,13 @@ namespace tms320 {
 							
 							count = count - 32;
 							ext_lo_c = ext_lo_c << count;
-							if ((int32_t)(((int32_t)(int8_t)this->hi) - count) <= -128)
+							if ((int32_t)(((int32_t)(int8_t)r_hi) - count) <= -128)
 							{
 								underflow = true;
-								this->SetHi((uint8_t)0x80);
+								r_hi = (uint8_t)0x80;
 							}
 							else
-								this->SetHi(this->GetHi() - count);
+								r_hi = r_hi - count;
 						}
 					}
 				}
@@ -1133,6 +1134,7 @@ namespace tms320 {
 							   | ((ext_lo_c >> 1) & 
 								  (uint64_t)0x80000000)));
 		this->SetLo(this->GetLo() & (uint32_t)0xffffff00);
+		this->SetHi(r_hi);
 	}
 	
 	void Register::LoadExp(const Register& reg)

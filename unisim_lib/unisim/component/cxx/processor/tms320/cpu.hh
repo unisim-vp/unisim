@@ -1155,10 +1155,13 @@ protected:
 	Parameter<bool> param_enable_rnd_bug;
 	bool enable_parallel_store_bug;
 	Parameter<bool> param_enable_parallel_store_bug;
+	bool enable_float_ops_with_non_ext_regs;
+	Parameter<bool> param_enable_float_ops_with_non_ext_regs;
 public:
 	inline INLINE bool EnableParallelLoadBug();
 	inline INLINE bool EnableRndBug();
 	inline INLINE bool EnableParallelStoreBug();
+	inline INLINE bool EnableFloatOpsWithNonExtRegs();
 	
 protected:
 	bool verbose_all;
