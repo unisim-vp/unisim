@@ -332,9 +332,9 @@ Reset()
 
 	if(loader_import && mimic_dev_board)
 	{
-		if(verbose_setup)
+		if(unlikely(verbose_setup))
 		{
-			logger << DebugInfo << "Minicing development board behavior after reset" << EndDebugInfo;
+			logger << DebugInfo << "Mimicing development board behavior after reset" << EndDebugInfo;
 		}
 		SetSP(loader_import->GetStackBase() / 4);
 		SetPC(loader_import->GetEntryPoint() / 4);
@@ -345,7 +345,7 @@ Reset()
 	}
 	else
 	{
-		if(verbose_setup)
+		if(unlikely(verbose_setup))
 		{
 			logger << DebugInfo << "Reseting" << EndDebugInfo;
 		}

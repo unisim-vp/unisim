@@ -478,7 +478,7 @@ void CPU<CONFIG>::HandleException(const SystemResetException<CONFIG>& exc)
 	
 	SetNIA(EXC_SYSTEM_RESET_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	
-	if(IsVerboseException())
+	if(unlikely(IsVerboseException()))
 		logger << DebugInfo << exc.what() << endl << EndDebugInfo;
 }
 
@@ -512,7 +512,7 @@ void CPU<CONFIG>::HandleException(const MachineCheckException<CONFIG>& exc)
 
 	SetNIA(EXC_MACHINE_CHECK_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	
-	if(IsVerboseException())
+	if(unlikely(IsVerboseException()))
 		logger << DebugInfo << exc.what() << endl << EndDebugInfo;
 }
 
@@ -534,7 +534,7 @@ void CPU<CONFIG>::HandleException(const DecrementerException<CONFIG>& exc)
 	
 	SetNIA(EXC_DECREMENTER_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	
-	if(IsVerboseException())
+	if(unlikely(IsVerboseException()))
 		logger << DebugInfo << "bus cycle " << bus_cycle << ": " << exc.what() << endl << EndDebugInfo;
 	
 	AckDecrementerOverflow();
@@ -557,7 +557,7 @@ void CPU<CONFIG>::HandleException(const ExternalInterruptException<CONFIG>& exc)
 	
 	SetNIA(EXC_EXTERNAL_INTERRUPT_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	
-	if(IsVerboseException())
+	if(unlikely(IsVerboseException()))
 		logger << DebugInfo << exc.what() << endl << EndDebugInfo;
 
 	AckExternalInterrupt();
@@ -581,7 +581,7 @@ void CPU<CONFIG>::HandleException(const PerformanceMonitorInterruptException<CON
 	
 	AckPerformanceMonitorInterrupt();
 	
-	if(IsVerboseException())
+	if(unlikely(IsVerboseException()))
 		logger << DebugInfo << exc.what() << endl << EndDebugInfo;
 }
 
@@ -604,7 +604,7 @@ void CPU<CONFIG>::HandleException(const SystemManagementInterruptException<CONFI
 	
 	AckSMI();
 
-	if(IsVerboseException())
+	if(unlikely(IsVerboseException()))
 		logger << DebugInfo << exc.what() << endl << EndDebugInfo;
 }
 
@@ -627,7 +627,7 @@ void CPU<CONFIG>::HandleException(const ThermalManagementInterruptException<CONF
 	
 	AckThermalManagementInterrupt();
 	
-	if(IsVerboseException())
+	if(unlikely(IsVerboseException()))
 		logger << DebugInfo << exc.what() << endl << EndDebugInfo;
 }
 
@@ -663,7 +663,7 @@ void CPU<CONFIG>::HandleException(const ISIProtectionViolationException<CONFIG>&
 		
 	SetNIA(EXC_ISI_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 
-	if(IsVerboseException())
+	if(unlikely(IsVerboseException()))
 	{
 		logger << DebugInfo;
 		logger << "At 0x" << std::hex << GetCIA() << std::dec;
@@ -690,7 +690,7 @@ void CPU<CONFIG>::HandleException(const ISINoExecuteException<CONFIG>& exc)
 		
 	SetNIA(EXC_ISI_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	
-	if(IsVerboseException())
+	if(unlikely(IsVerboseException()))
 	{
 		logger << DebugInfo;
 		logger << "At 0x" << std::hex << GetCIA() << std::dec;
@@ -717,7 +717,7 @@ void CPU<CONFIG>::HandleException(const ISIDirectStoreException<CONFIG>& exc)
 		
 	SetNIA(EXC_ISI_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	
-	if(IsVerboseException())
+	if(unlikely(IsVerboseException()))
 	{
 		logger << DebugInfo;
 		logger << "At 0x" << std::hex << GetCIA() << std::dec;
@@ -744,7 +744,7 @@ void CPU<CONFIG>::HandleException(const ISIPageFaultException<CONFIG>& exc)
 		
 	SetNIA(EXC_ISI_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	
-	if(IsVerboseException())
+	if(unlikely(IsVerboseException()))
 	{
 		logger << DebugInfo;
 		logger << "At 0x" << std::hex << GetCIA() << std::dec;
@@ -771,7 +771,7 @@ void CPU<CONFIG>::HandleException(const ISIGuardedMemoryException<CONFIG>& exc)
 		
 	SetNIA(EXC_ISI_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	
-	if(IsVerboseException())
+	if(unlikely(IsVerboseException()))
 	{
 		logger << DebugInfo;
 		logger << "At 0x" << std::hex << GetCIA() << std::dec;
@@ -827,7 +827,7 @@ void CPU<CONFIG>::HandleException(const DSIDirectStoreException<CONFIG>& exc)
 		
 	SetNIA(EXC_DSI_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	
-	if(IsVerboseException())
+	if(unlikely(IsVerboseException()))
 	{
 		logger << DebugInfo;
 		logger << "At 0x" << std::hex << GetCIA() << std::dec;
@@ -865,7 +865,7 @@ void CPU<CONFIG>::HandleException(const DSIProtectionViolationException<CONFIG>&
 		
 	SetNIA(EXC_DSI_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	
-	if(IsVerboseException())
+	if(unlikely(IsVerboseException()))
 	{
 		logger << DebugInfo;
 		logger << "At 0x" << std::hex << GetCIA() << std::dec;
@@ -903,7 +903,7 @@ void CPU<CONFIG>::HandleException(const DSIPageFaultException<CONFIG>& exc)
 		
 	SetNIA(EXC_DSI_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	
-	if(IsVerboseException())
+	if(unlikely(IsVerboseException()))
 	{
 		logger << DebugInfo;
 		logger << "At 0x" << std::hex << GetCIA() << std::dec;
@@ -941,7 +941,7 @@ void CPU<CONFIG>::HandleException(const DSIDataAddressBreakpointException<CONFIG
 		
 	SetNIA(EXC_DSI_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	
-	if(IsVerboseException())
+	if(unlikely(IsVerboseException()))
 	{
 		logger << DebugInfo;
 		logger << ":" << "At 0x" << std::hex << GetCIA() << std::dec;
@@ -979,7 +979,7 @@ void CPU<CONFIG>::HandleException(const DSIExternalAccessDisabledException<CONFI
 		
 	SetNIA(EXC_DSI_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	
-	if(IsVerboseException())
+	if(unlikely(IsVerboseException()))
 	{
 		logger << DebugInfo;
 		logger << "At 0x" << std::hex << GetCIA() << std::dec;
@@ -1017,7 +1017,7 @@ void CPU<CONFIG>::HandleException(const DSIWriteThroughLinkedLoadStore<CONFIG>& 
 		
 	SetNIA(EXC_DSI_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	
-	if(IsVerboseException())
+	if(unlikely(IsVerboseException()))
 	{
 		logger << DebugInfo;
 		logger << "At 0x" << std::hex << GetCIA() << std::dec;
@@ -1112,7 +1112,7 @@ void CPU<CONFIG>::HandleException(const AlignmentException<CONFIG>& exc, uint32_
 		
 	SetNIA(EXC_ALIGNMENT_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	
-	if(IsVerboseException())
+	if(unlikely(IsVerboseException()))
 	{
 		logger << DebugInfo;
 		logger << "At 0x" << std::hex << GetCIA() << std::dec;
@@ -1160,7 +1160,7 @@ void CPU<CONFIG>::HandleException(const IllegalInstructionException<CONFIG>& exc
 		
 	SetNIA(EXC_PROGRAM_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	
-	if(IsVerboseException())
+	if(unlikely(IsVerboseException()))
 	{
 		logger << DebugInfo;
 		logger << "At 0x" << std::hex << GetCIA() << std::dec;
@@ -1187,7 +1187,7 @@ void CPU<CONFIG>::HandleException(const PrivilegeViolationException<CONFIG>& exc
 		
 	SetNIA(EXC_PROGRAM_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	
-	if(IsVerboseException())
+	if(unlikely(IsVerboseException()))
 	{
 		logger << DebugInfo;
 		logger << "At 0x" << std::hex << GetCIA() << std::dec;
@@ -1214,7 +1214,7 @@ void CPU<CONFIG>::HandleException(const TrapException<CONFIG>& exc)
 		
 	SetNIA(EXC_PROGRAM_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	
-	if(IsVerboseException())
+	if(unlikely(IsVerboseException()))
 	{
 		logger << DebugInfo;
 		logger << "At 0x" << std::hex << GetCIA() << std::dec;
@@ -1241,7 +1241,7 @@ void CPU<CONFIG>::HandleException(const FloatingPointException<CONFIG>& exc)
 		
 	SetNIA(EXC_PROGRAM_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	
-	if(IsVerboseException())
+	if(unlikely(IsVerboseException()))
 	{
 		logger << DebugInfo;
 		logger << "At 0x" << std::hex << GetCIA() << std::dec;
@@ -1265,7 +1265,7 @@ void CPU<CONFIG>::HandleException(const FloatingPointUnavailableException<CONFIG
 	
 	SetNIA(EXC_FLOATING_POINT_UNAVAILABLE_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	
-	if(IsVerboseException())
+	if(unlikely(IsVerboseException()))
 	{
 		logger << DebugInfo;
 		logger << "At 0x" << std::hex << GetCIA() << std::dec;
@@ -1309,7 +1309,7 @@ void CPU<CONFIG>::HandleException(const SystemCallException<CONFIG>& exc)
 	else
 	{
 #if 1
-		if(IsVerboseException())
+		if(unlikely(IsVerboseException()))
 		{
 			switch(GetGPR(0))
 			{
@@ -1613,7 +1613,7 @@ void CPU<CONFIG>::HandleException(const SystemCallException<CONFIG>& exc)
 			
 		SetNIA(EXC_SYSTEM_CALL_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 		
-		if(IsVerboseException())
+		if(unlikely(IsVerboseException()))
 		{
 			logger << DebugInfo;
 			logger << "At 0x" << std::hex << GetCIA() << std::dec;
@@ -1638,7 +1638,7 @@ void CPU<CONFIG>::HandleException(const TraceException<CONFIG>& exc)
 	
 	SetNIA(EXC_TRACE_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	
-	if(IsVerboseException())
+	if(unlikely(IsVerboseException()))
 	{
 		logger << DebugInfo;
 		logger << "At 0x" << std::hex << GetCIA() << std::dec;
@@ -1662,7 +1662,7 @@ void CPU<CONFIG>::HandleException(const InstructionAddressBreakpointException<CO
 	
 	SetNIA(EXC_INSTRUCTION_ADDRESS_BREAKPOINT_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	
-	if(IsVerboseException())
+	if(unlikely(IsVerboseException()))
 	{
 		logger << DebugInfo;
 		logger << "At 0x" << std::hex << GetCIA() << std::dec;
@@ -1710,7 +1710,7 @@ void CPU<CONFIG>::HandleException(const TLBMissException<CONFIG>& exc)
 	SetHASH1(exc.GetPrimaryPTEG());
 	SetHASH2(exc.GetSecondaryPTEG());
 	
-	if(IsVerboseException())
+	if(unlikely(IsVerboseException()))
 	{
 		logger << DebugInfo;
 		logger << "At 0x" << std::hex << GetCIA() << std::dec;

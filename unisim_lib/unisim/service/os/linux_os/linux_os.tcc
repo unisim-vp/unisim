@@ -226,7 +226,7 @@ Setup()
 	{
 		if (!PPCSetup()) return false;
 	}
-	if (verbose)
+	if(unlikely(verbose))
 		logger << DebugInfo 
 			<< "Setup finished with success" << endl
 			<< LOCATION
@@ -347,7 +347,7 @@ ARMSetup()
 
 	// Set initial CPU registers
 	PARAMETER_TYPE pc = loader_import->GetEntryPoint();
-	if (verbose)
+	if(unlikely(verbose))
 		logger << DebugInfo
 			<< "Setting register \"" << arm_regs[15]->GetName() << "\""
 			<< " to value 0x" << hex << pc << dec << endl
@@ -355,7 +355,7 @@ ARMSetup()
 			<< EndDebugInfo;
 	arm_regs[15]->SetValue(&pc);
 	PARAMETER_TYPE st = loader_import->GetStackBase();
-	if (verbose)
+	if(unlikely(verbose))
 		logger << DebugInfo
 			<< "Setting register \"" << arm_regs[13]->GetName() << "\""
 			<< " to value 0x" << hex << st << dec << endl
@@ -472,7 +472,7 @@ LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 ReadMem(ADDRESS_TYPE addr, void *buffer, uint32_t size) 
 {
 	memory_injection_import->InjectReadMemory(addr, buffer, size);
-	if (verbose) 
+	if(unlikely(verbose)) 
 	{
 		logger << DebugInfo
 			<< "OS read memory: " << endl
@@ -492,7 +492,7 @@ bool
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 WriteMem(ADDRESS_TYPE addr, const void *buffer, uint32_t size) 
 {
-	if(verbose) 
+	if(unlikely(verbose)) 
 	{
 		logger << DebugInfo 
 			<< "OS write memory: " << endl
@@ -549,7 +549,7 @@ SetSyscallId(const string &syscall_name, int syscall_id)
 {
     syscall_t syscall_impl;
 
-	if (verbose)
+	if(unlikely(verbose))
 		logger << DebugInfo
 			<< "Associating syscall_name \"" << syscall_name << "\""
 			<< "to syscall_id number " << syscall_id << endl
@@ -591,7 +591,7 @@ ExecuteSystemCall(int id)
 	{
 		current_syscall_id = translated_id;
 		current_syscall_name = syscall_name_assoc_map[translated_id];
-		if (verbose)
+		if(unlikely(verbose))
 			logger << DebugInfo
 				<< "Executing syscall(name = " << current_syscall_name << ";"
 				<< " id = " << translated_id << ";"
@@ -673,7 +673,7 @@ template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_unknown() 
 {
-	if (verbose)
+	if(unlikely(verbose))
 		logger << DebugInfo
 			<< "Unimplemented system call #" << current_syscall_id << endl
 			<< LOCATION
@@ -690,7 +690,7 @@ LSC_exit()
 	int ret;
     
 	ret = GetSystemCallParam(0);
-	if (verbose)
+	if(unlikely(verbose))
 		logger << DebugInfo
 			<< "LSC_exit with ret = 0X" << hex << ret << dec
 			<< LOCATION
@@ -725,7 +725,7 @@ LSC_read()
 	else 
 		ret = (size_t)-1;
 		
-	if(verbose)
+	if(unlikely(verbose))
 		logger << DebugInfo
 			<< "read(fd=" << fd << ", buf=0x" << hex << buf_addr << dec 
 			<< ", count=" << count << ") return " << ret << endl 
@@ -774,7 +774,7 @@ LSC_write()
 	else 
 		ret = (size_t)-1;
 		
-	if (verbose) 
+	if(unlikely(verbose)) 
 		logger << DebugInfo
 			<< "write(fd=" << fd << ", buf=0x" << hex << buf_addr << dec 
 			<< ", count=" << count << ") return " << ret << endl 
@@ -833,7 +833,7 @@ LSC_open()
 	}
 #endif
 	
-	if (verbose)
+	if(unlikely(verbose))
 		logger << DebugInfo
 			<< "open(pathname=\"" << pathname << "\", flags=0x" << hex << flags 
 			<< ", mode=0x" << mode << dec << ") return " << ret << endl 
@@ -854,7 +854,7 @@ LSC_close()
    
 	fd = GetSystemCallParam(0);
 	ret = close(fd);
-	if (verbose)
+	if(unlikely(verbose))
 		logger << DebugInfo
 			<< "close(fd=" << fd << ") return " << ret << endl
 			<< LOCATION
@@ -877,7 +877,7 @@ LSC_lseek()
 	offset = GetSystemCallParam(1);
 	whence = GetSystemCallParam(2);
 	ret = lseek(fildes, offset, whence);
-	if (verbose)
+	if(unlikely(verbose))
 		logger << DebugInfo
 			<< "lseek(fildes=" << fildes << ", offset=" << offset 
 			<< ", whence=" << whence << ") return " << ret << endl
@@ -899,7 +899,7 @@ LSC_getpid()
 	pid_t ret;
     
 	ret = (pid_t) 1000;
-	if (verbose)
+	if(unlikely(verbose))
 		logger << DebugInfo
 			<< "getpid() return " << ret << endl
 			<< LOCATION
@@ -919,7 +919,7 @@ LSC_getuid()
     
 	ret = getuid();
 #endif
-	if (verbose)
+	if(unlikely(verbose))
 		logger << DebugInfo
 			<< "getuid() return " << ret << endl
 			<< LOCATION
@@ -950,7 +950,7 @@ LSC_access()
 #else
 	ret = access(pathname, mode);
 #endif
-	if (verbose)
+	if(unlikely(verbose))
 		logger << DebugInfo
 			<< "access(pathname=\"" << pathname 
 			<< "\", mode=0x" << hex << mode << dec << ") return " << ret << endl
@@ -991,7 +991,7 @@ LSC_times()
 	}
 	else ret = -1;
 
-	if (verbose)
+	if(unlikely(verbose))
 		logger << DebugInfo
 			<< "times(buf=0x" << hex << buf_addr << dec << ") return " << ret 
 			<< endl 
@@ -1012,7 +1012,7 @@ LSC_brk()
 	if (new_brk_point > GetBrkPoint())
 		SetBrkPoint(new_brk_point);      
 		
-	if (verbose)
+	if(unlikely(verbose))
 		logger << DebugInfo
 			<< "brk(new_brk_point=0x" << hex << new_brk_point 
 			<< ") return 0x" << GetBrkPoint() << dec << endl
@@ -1033,7 +1033,7 @@ LSC_getgid()
     
 	ret = getgid();
 #endif
-	if (verbose)
+	if(unlikely(verbose))
 		logger << DebugInfo
 			<< "getgid() return " << ret << endl
 			<< LOCATION
@@ -1053,7 +1053,7 @@ LSC_geteuid()
     
 	ret = geteuid();
 #endif
-	if (verbose)
+	if(unlikely(verbose))
 		logger << DebugInfo
 			<< "geteuid() return " << ret << endl 
 			<< LOCATION
@@ -1073,7 +1073,7 @@ LSC_getegid()
     
 	ret = getegid();
 #endif
-	if (verbose)
+	if(unlikely(verbose))
 		logger << DebugInfo
 			<< "getegid() return " << ret << endl
 			<< LOCATION
@@ -1092,7 +1092,7 @@ LSC_munmap()
 	if (GetMmapBrkPoint() - u > GetMmapBrkPoint()) 
 	{
 		SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL),true);
-		if (verbose)
+		if(unlikely(verbose))
 			logger << DebugInfo
 				<< "size = " << u 
 				<< ", ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec
@@ -1107,7 +1107,7 @@ LSC_munmap()
 	if (GetMmapBrkPoint() - u >= GetMmapBrkPoint()) 
 	{
 		SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL),true);
-		if (verbose)
+		if(unlikely(verbose))
 			logger << DebugInfo
 				<< "size = " << u 
 				<< ", ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec 
@@ -1117,7 +1117,7 @@ LSC_munmap()
 	}
 
 	SetSystemCallStatus((PARAMETER_TYPE)0,false);
-	if (verbose)
+	if(unlikely(verbose))
 		logger << DebugInfo
 			<< "size = " << u 
 			<< ", ret = 0x" << hex << 0 << dec 
@@ -1520,7 +1520,7 @@ LSC_fstat()
 	}
 	else ret = -1;
 
-	if (verbose)
+	if(unlikely(verbose))
 		logger << DebugInfo
 			<< "stat(fd=" << fd 
 			<< ", buf_addr=0x" << hex << buf_address << dec 
@@ -1541,7 +1541,7 @@ LSC_uname()
 // 	WriteMem(buf_addr, sysname, sizeof(sysname));
 // 	ret = 0;
 	ret = -1;
-	if (verbose)
+	if(unlikely(verbose))
 		logger << DebugInfo
 			<< "uname() return " << ret << endl
 			<< LOCATION << EndDebugInfo;
@@ -1568,7 +1568,7 @@ LSC_llseek()
 	offset_low = GetSystemCallParam(2);
 	result_addr = GetSystemCallParam(3);
 	whence = GetSystemCallParam(4);
-	if (verbose)
+	if(unlikely(verbose))
 		logger << DebugInfo
 			<< "llseek(fd=" << fd 
 			<< ", offset=" << (((int64_t) offset_high << 32) | (int64_t) offset_low)
@@ -1599,7 +1599,7 @@ void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 LSC_writev() 
 {
-	if(verbose) 
+	if(unlikely(verbose)) 
 		logger << DebugInfo
 			<< "ret = 0x" 
 			<< hex << ((PARAMETER_TYPE)(-EINVAL)) << dec << endl
@@ -1617,7 +1617,7 @@ LSC_mmap()
 	if (GetSystemCallParam(3) == 0x32) 
 	{ /* MAP_PRIVATE | MAP_ANONYMOUS */
 		SetSystemCallStatus(GetSystemCallParam(0),false);
-		if (verbose) 
+		if(unlikely(verbose)) 
 			logger << DebugInfo
 				<< "map_type = 0x" << hex << GetSystemCallParam(3) << dec 
 				<< ", size = " << GetSystemCallParam(1)
@@ -1629,7 +1629,7 @@ LSC_mmap()
 	if ((GetSystemCallParam(3)&0xFF) != 0x22) 
 	{ /* MAP_PRIVATE | MAP_ANONYMOUS */
 		SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL),true);
-		if(verbose) 
+		if(unlikely(verbose)) 
 			logger << DebugInfo
 				<< "map_type = 0x" << hex << GetSystemCallParam(3) << dec 
 				<< ", size = " << GetSystemCallParam(1)
@@ -1638,7 +1638,7 @@ LSC_mmap()
 		return;
 	}
 	SetSystemCallStatus(GetMmapBrkPoint(),false);
-	if(verbose) 
+	if(unlikely(verbose)) 
 		logger << DebugInfo
 			<< "map_type = 0x" << hex << GetSystemCallParam(3) << dec 
 			<< ", size = " << GetSystemCallParam(1)
@@ -1655,7 +1655,7 @@ LSC_mmap2()
 	if (GetSystemCallParam(3) != 0x22) 
 	{ /* MAP_PRIVATE | MAP_ANONYMOUS */
 		SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL),true);
-		if(verbose)    
+		if(unlikely(verbose))    
 			logger << DebugInfo 
 				<< "map_type = 0x" << hex << GetSystemCallParam(3) << dec 
 				<< ", size = " << GetSystemCallParam(1)
@@ -1667,7 +1667,7 @@ LSC_mmap2()
 	if (GetMmapBrkPoint() + GetSystemCallParam(1) > GetSystemCallParam(1)) 
 	{
 		SetSystemCallStatus(GetMmapBrkPoint(),false);
-		if (verbose) 
+		if(unlikely(verbose)) 
 			logger << DebugInfo
 				<< "map_type = 0x" << hex << GetSystemCallParam(3) << dec 
 				<< ", size = " << GetSystemCallParam(1)
@@ -1677,7 +1677,7 @@ LSC_mmap2()
 	} 
 	else 
 	{
-		if (verbose) 
+		if(unlikely(verbose)) 
 			logger << DebugInfo
 				<< "map_type = 0x" << hex << GetSystemCallParam(3) << dec 
 				<< ", size = " << GetSystemCallParam(1)
@@ -1712,7 +1712,7 @@ LSC_stat64()
 		WriteMem(buf_address, &target_stat, sizeof(target_stat));
 	}
 	else ret = -1;
-	if(verbose)     
+	if(unlikely(verbose))     
 		logger << DebugInfo
 			<< "fd = " << fd << ", buf_address = 0x" << hex << buf_address << dec 
 			<< ", ret = 0x" << hex << ret << dec 
@@ -1745,7 +1745,7 @@ LSC_fstat64()
 		WriteMem(buf_address, &target_stat, sizeof(target_stat));
 	}
 	else ret = -1;
-	if(verbose)     
+	if(unlikely(verbose))     
 		logger << DebugInfo
 			<< "fd = " << fd << ", buf_address = 0x" << hex << buf_address << dec 
 			<< ", ret = 0x" << hex << ret << dec 
@@ -1765,7 +1765,7 @@ LSC_getuid32()
 
 	ret = getuid();
 #endif
-	if (verbose) 
+	if(unlikely(verbose)) 
 		logger << DebugInfo
 			<< "ret = 0x" << hex << ((PARAMETER_TYPE)ret) << dec 
 			<< endl << LOCATION << EndDebugInfo;
@@ -1784,7 +1784,7 @@ LSC_getgid32()
     
 	ret = getgid();
 #endif
-	if (verbose) 
+	if(unlikely(verbose)) 
 		logger << DebugInfo
 			<< "ret = 0x" << hex << ((PARAMETER_TYPE)ret) << dec 
 			<< endl << LOCATION << EndDebugInfo;
@@ -1803,7 +1803,7 @@ LSC_geteuid32()
     
 	ret = geteuid();
 #endif
-	if (verbose) 
+	if(unlikely(verbose)) 
 		logger << DebugInfo
 			<< "ret = 0x" << hex << ((PARAMETER_TYPE)ret) << dec 
 			<< endl << LOCATION << EndDebugInfo;
@@ -1822,7 +1822,7 @@ LSC_getegid32()
     
 	ret = getegid();
 #endif
-	if (verbose) 
+	if(unlikely(verbose)) 
 		logger << DebugInfo
 			<< "ret = 0x" << hex << ((PARAMETER_TYPE)ret) << dec 
 			<< endl << LOCATION << EndDebugInfo;
@@ -1844,7 +1844,7 @@ void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 LSC_exit_group() 
 { 
-	if (verbose)  
+	if(unlikely(verbose))  
 		logger << DebugInfo
 			<< "ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec 
 			<< endl << LOCATION << EndDebugInfo;
@@ -1865,7 +1865,7 @@ LSC_fcntl()
 			GetSystemCallParam(1),
 			GetSystemCallParam(2));
 #endif
-	if (verbose) 
+	if(unlikely(verbose)) 
 		logger << DebugInfo
 			<< "ret = " <<  ((PARAMETER_TYPE)ret)  
 			<< endl << LOCATION << EndDebugInfo;
@@ -1877,7 +1877,7 @@ void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 LSC_fcntl64() 
 {
-	if (verbose)
+	if(unlikely(verbose))
 		logger << DebugInfo
 			<< "ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec 
 			<< endl << LOCATION << EndDebugInfo;
@@ -1893,7 +1893,7 @@ LSC_dup()
 	int oldfd = GetSystemCallParam(0);
     
 	ret = dup(oldfd);
-	if (verbose) 
+	if(unlikely(verbose)) 
 		logger << DebugInfo
 			<< "oldfd = " << oldfd << ", new fd = " << ((PARAMETER_TYPE)ret) 
 			<< endl << LOCATION << EndDebugInfo;
@@ -1905,7 +1905,7 @@ void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 LSC_ioctl() 
 {
-	if (verbose)  
+	if(unlikely(verbose))  
 		logger << DebugInfo
 			<< "ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec 
 			<< endl << LOCATION << EndDebugInfo;
@@ -1917,7 +1917,7 @@ void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 LSC_ugetrlimit() 
 {
-	if (verbose)
+	if(unlikely(verbose))
 		logger << DebugInfo
 			<< "ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec 
 			<< endl << LOCATION << EndDebugInfo;
@@ -1929,7 +1929,7 @@ void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 LSC_getrlimit() 
 {
-	if (verbose)
+	if(unlikely(verbose))
 		logger << DebugInfo
 			<< "ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec 
 			<< endl << LOCATION << EndDebugInfo;
@@ -1941,7 +1941,7 @@ void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 LSC_setrlimit() 
 {
-	if (verbose)
+	if(unlikely(verbose))
 		logger << DebugInfo
 			<< "ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec 
 			<< endl << LOCATION << EndDebugInfo;
@@ -1953,7 +1953,7 @@ void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 LSC_rt_sigaction() 
 {
-	if (verbose)
+	if(unlikely(verbose))
 		logger << DebugInfo
 			<< "ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec 
 			<< endl << LOCATION << EndDebugInfo;
@@ -1965,7 +1965,7 @@ void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 LSC_getrusage() 
 {
-	if (verbose)
+	if(unlikely(verbose))
 		logger << DebugInfo
 			<< "ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec 
 			<< endl << LOCATION << EndDebugInfo;
@@ -1977,7 +1977,7 @@ void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 LSC_unlink() 
 {
-	if (verbose)
+	if(unlikely(verbose))
 		logger << DebugInfo
 			<< "ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec 
 			<< endl << LOCATION << EndDebugInfo;
@@ -1989,7 +1989,7 @@ void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 LSC_rename() 
 {
-	if (verbose)
+	if(unlikely(verbose))
 		logger << DebugInfo
 			<< "ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec 
 			<< endl << LOCATION << EndDebugInfo;
@@ -2001,7 +2001,7 @@ void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 LSC_time() 
 {
-	if (verbose)
+	if(unlikely(verbose))
 		logger << DebugInfo
 			<< "ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec 
 			<< endl << LOCATION << EndDebugInfo;
@@ -2013,7 +2013,7 @@ void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 LSC_socketcall() 
 {
-	if (verbose)
+	if(unlikely(verbose))
 		logger << DebugInfo
 			<< "ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec 
 			<< endl << LOCATION << EndDebugInfo;
@@ -2025,7 +2025,7 @@ void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 LSC_rt_sigprocmask() 
 {
-	if (verbose)
+	if(unlikely(verbose))
 		logger << DebugInfo
 			<< "ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec 
 			<< endl << LOCATION << EndDebugInfo;
@@ -2037,7 +2037,7 @@ void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 LSC_kill() 
 {
-	if(verbose)
+	if(unlikely(verbose))
 		logger << DebugInfo
 			<< "ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec 
 			<< endl << LOCATION << EndDebugInfo;
@@ -2053,7 +2053,7 @@ LSC_ftruncate()
 	
 	ret = ftruncate(GetSystemCallParam(0), GetSystemCallParam(1));
 
-	if(verbose) 
+	if(unlikely(verbose)) 
 		logger << DebugInfo
 			<< "ret = 0x" << hex << ((PARAMETER_TYPE)ret) << dec 
 			<< endl << LOCATION << EndDebugInfo;

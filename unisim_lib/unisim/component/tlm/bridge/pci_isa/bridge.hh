@@ -70,7 +70,6 @@ using unisim::service::interfaces::Memory;
 using unisim::component::tlm::message::InterruptRequest;
 using unisim::component::cxx::pci::TransactionType;
 using unisim::component::cxx::pci::PCISpace;
-using unisim::service::interfaces::Logger;
 
 template <class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
 class Bridge :

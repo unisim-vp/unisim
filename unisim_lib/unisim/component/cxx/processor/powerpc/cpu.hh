@@ -35,15 +35,7 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_CPU_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_CPU_HH__
 
-#if defined(__GNUC__) && ((__GNUC__ >= 2 && __GNUC_MINOR__ >= 96) || __GNUC__ >= 3)
-#define likely(x)       __builtin_expect((x),1)
-#define unlikely(x)     __builtin_expect((x),0)
-#else
-#define likely(x) (x)
-#define unlikely(x) (x)
-#endif
-
-#include <unisim/kernel/logger//logger.hh>
+#include <unisim/kernel/logger/logger.hh>
 #include <unisim/component/cxx/processor/powerpc/floating.hh>
 #include <unisim/component/cxx/processor/powerpc/powerpc.hh>
 #include <unisim/component/cxx/processor/powerpc/config.hh>

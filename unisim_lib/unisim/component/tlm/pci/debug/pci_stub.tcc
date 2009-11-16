@@ -41,6 +41,13 @@ namespace tlm {
 namespace pci {
 namespace debug {
 
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugInfo;
+using unisim::kernel::logger::EndDebugWarning;
+using unisim::kernel::logger::EndDebugError;
+
 template <class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
 PCIStub<ADDRESS_TYPE, MAX_DATA_SIZE>::PCIStub(const sc_module_name& name, Object *parent) :
 	Object(name, parent),
@@ -174,11 +181,11 @@ void PCIStub<ADDRESS_TYPE, MAX_DATA_SIZE>::TriggerInterrupt()
 		irq->serial_id = 0;
 		message->req = irq;
 		
-		if(inherited::logger_import)
+		if(inherited::verbose)
 		{
-			(*inherited::logger_import) << DebugInfo;
-			(*inherited::logger_import) << "sending interrupt request (level = " << level << ") at " << sc_time_stamp().to_string() << Endl;
-			(*inherited::logger_import) << EndDebugInfo;
+			inherited::logger << DebugInfo;
+			inherited::logger << "sending interrupt request (level = " << level << ") at " << sc_time_stamp().to_string() << std::endl;
+			inherited::logger << EndDebugInfo;
 		}
 
 		while(!cpu_irq_port->Send(message))
@@ -186,11 +193,11 @@ void PCIStub<ADDRESS_TYPE, MAX_DATA_SIZE>::TriggerInterrupt()
 			wait(bus_cycle_time);
 		}
 
-		if(inherited::logger_import)
+		if(inherited::verbose)
 		{
-			(*inherited::logger_import) << DebugInfo;
-			(*inherited::logger_import) << "accepted interrupt request (level = " << level << ") at " << sc_time_stamp().to_string() << Endl;
-			(*inherited::logger_import) << EndDebugInfo;
+			inherited::logger << DebugInfo;
+			inherited::logger << "accepted interrupt request (level = " << level << ") at " << sc_time_stamp().to_string() << std::endl;
+			inherited::logger << EndDebugInfo;
 		}
 	}
 }

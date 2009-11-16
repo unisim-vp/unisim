@@ -47,6 +47,13 @@ namespace component {
 namespace tlm {
 namespace message {
 
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugInfo;
+using unisim::kernel::logger::EndDebugWarning;
+using unisim::kernel::logger::EndDebugError;
+
 template <class ADDRESS, unsigned int DATA_SIZE>
 class SnoopingFSBRequest;
 template <unsigned int DATA_SIZE>
@@ -346,6 +353,10 @@ private:
 public:
 	void Dump(unisim::service::interfaces::Logger &os, PRspType &rsp, 
 		PReqType &req) {
+		using unisim::service::interfaces::Hex;
+		using unisim::service::interfaces::Dec;
+		using unisim::service::interfaces::Endl;
+
 		os << "- read_status = ";
 		switch(rsp->read_status) {
 		case RspType::RS_MISS: os << "RS_MISS"; break;

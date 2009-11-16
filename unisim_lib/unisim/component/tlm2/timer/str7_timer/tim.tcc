@@ -271,7 +271,7 @@ Setup()
 		logger << DebugInfo << "Verbose options:" << endl
 			<< " - verbose-setup activated" << endl
 			<< " - verbose-run ";
-		if (verbose_run)
+		if(unlikely(verbose_run))
 			logger << "activated";
 		else
 			logger << "deactivated";
@@ -1994,7 +1994,7 @@ bool
 TIM<BUSWIDTH> ::
 VerboseRun()
 {
-	if (verbose_run)
+	if(unlikely(verbose_run))
 	{
 		if (trap_on_verbose_run && trap_reporting_import)
 			trap_reporting_import->ReportTrap();

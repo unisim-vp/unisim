@@ -38,7 +38,7 @@
 #include <inttypes.h>
 
 #include "unisim/kernel/service/service.hh"
-#include "unisim/service/interfaces/logger.hh"
+#include "unisim/kernel/logger/logger.hh"
 #include "unisim/component/cxx/chipset/mpc107/address_map_entry.hh"
 #include "unisim/component/cxx/chipset/mpc107/config_regs.hh"
 #include "unisim/component/cxx/chipset/mpc107/atu/atu.hh"
@@ -51,14 +51,13 @@ namespace mpc107 {
 
 using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::Object;
-using unisim::kernel::service::Client;
-using unisim::service::interfaces::Logger;
+using unisim::kernel::service::Parameter;
 using unisim::component::cxx::chipset::mpc107::ConfigurationRegisters;
 using unisim::component::cxx::chipset::mpc107::atu::ATU;
 
 template <class ADDRESS_TYPE, class PCI_ADDRESS_TYPE, bool DEBUG = false>
 class AddressMap :
-	public Client<Logger> {
+	virtual public Object {
 private:
 	typedef uint32_t address_t;
 
@@ -98,10 +97,12 @@ private:
 							
 	ConfigurationRegisters *config_regs;
 	ATU<ADDRESS_TYPE, PCI_ADDRESS_TYPE, DEBUG> *atu;
-							
+
+protected:
+	unisim::kernel::logger::Logger logger;
+	bool verbose;
+	Parameter<bool> param_verbose;
 public:
-	ServiceImport<Logger> logger_import;
-	
 	virtual bool Setup();
 	virtual void OnDisconnect();
 	

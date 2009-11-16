@@ -44,16 +44,12 @@ namespace pci {
 namespace debug {
 
 using namespace std;
-//using unisim::service::interfaces::operator<<;
-using unisim::service::interfaces::Hex;
-using unisim::service::interfaces::Dec;
-using unisim::service::interfaces::Endl;
-using unisim::service::interfaces::DebugInfo;
-using unisim::service::interfaces::DebugWarning;
-using unisim::service::interfaces::DebugError;
-using unisim::service::interfaces::EndDebugInfo;
-using unisim::service::interfaces::EndDebugWarning;
-using unisim::service::interfaces::EndDebugError;
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugInfo;
+using unisim::kernel::logger::EndDebugWarning;
+using unisim::kernel::logger::EndDebugError;
 
 using unisim::util::debug::Symbol;
 	
@@ -64,13 +60,11 @@ PCIStub<ADDRESS>::PCIStub(const char *name, Object *parent) :
 	Service<Memory<ADDRESS> >(name, parent),
 	Service<MemoryAccessReporting<ADDRESS> >(name, parent),
 	Client<MemoryAccessReportingControl>(name, parent),
-	Client<Logger>(name, parent),
 	Client<SymbolTableLookup<ADDRESS> >(name, parent),
 	Client<Synchronizable>(name, parent),
 	Client<Memory<ADDRESS> >(name, parent),
 	Client<Registers>(name, parent),
 	memory_export("memory_export", this),
-	logger_import("logger-import", this),
 	symbol_table_lookup_import("symbol-table-lookup-import", this),
 	memory_access_reporting_export("memory-access-reporting-export", this),
 	memory_access_reporting_control_import("memory-access-reporting-control-import", this),
@@ -82,7 +76,10 @@ PCIStub<ADDRESS>::PCIStub(const char *name, Object *parent) :
 	bus_frequency(0),
 	breakpoint_registry(),
 	watchpoint_registry(),
-
+	logger(*this),
+	verbose(false),
+	param_verbose("verbose", this, verbose),
+	
 	// PCI configuration registers initialization
 	pci_conf_device_id("pci_conf_device_id", "PCI config Device ID", 0x0, 0x0000), // TBD
 	pci_conf_vendor_id("pci_conf_vendor_id", "PCI config Vendor ID", 0x0, 0x0000), // TBD
@@ -112,7 +109,6 @@ PCIStub<ADDRESS>::PCIStub(const char *name, Object *parent) :
 	param_pci_bus_frequency("pci-bus-frequency", this, pci_bus_frequency),
 	param_bus_frequency("bus-frequency", this, bus_frequency)
 {
-	Object::SetupDependsOn(logger_import);
 	Object::SetupDependsOn(memory_access_reporting_control_import);
 	
 	unsigned num_region;
@@ -136,38 +132,38 @@ bool PCIStub<ADDRESS>::Setup()
 	
 	if(!memory_import)
 	{
-		if(logger_import)
+		if(unlikely(verbose))
 		{
-			(*logger_import) << DebugError;
-			(*logger_import) << memory_import.GetName() << " is not connected" << Endl;
-			(*logger_import) << EndDebugError;
+			logger << DebugError;
+			logger << memory_import.GetName() << " is not connected" << std::endl;
+			logger << EndDebugError;
 		}
 		return false;
 	}
 
 	if(!registers_import)
 	{
-		if(logger_import)
+		if(unlikely(verbose))
 		{
-			(*logger_import) << DebugError;
-			(*logger_import) << registers_import.GetName() << " is not connected" << Endl;
-			(*logger_import) << EndDebugError;
+			logger << DebugError;
+			logger << registers_import.GetName() << " is not connected" << std::endl;
+			logger << EndDebugError;
 		}
 		return false;
 	}
 
 	if(!synchronizable_import)
 	{
-		if(logger_import)
+		if(unlikely(verbose))
 		{
-			(*logger_import) << DebugError;
-			(*logger_import) << synchronizable_import.GetName() << " is not connected" << Endl;
-			(*logger_import) << EndDebugError;
+			logger << DebugError;
+			logger << synchronizable_import.GetName() << " is not connected" << std::endl;
+			logger << EndDebugError;
 		}
 		return false;
 	}
 
-	if(logger_import)
+	if(unlikely(verbose))
 	{
 		unsigned int num_region;
 
@@ -175,27 +171,27 @@ bool PCIStub<ADDRESS>::Setup()
 		{
 			if(region_size[num_region] > 0)
 			{
-				(*logger_import) << DebugInfo;
-				(*logger_import) << "Region #" << num_region << " : initial base address is 0x" << Hex << initial_base_addr[num_region] << Dec << ", region size is " << region_size[num_region] << " bytes, address space is ";
+				logger << DebugInfo;
+				logger << "Region #" << num_region << " : initial base address is 0x" << std::hex << initial_base_addr[num_region] << std::dec << ", region size is " << region_size[num_region] << " bytes, address space is ";
 				switch(address_space[num_region])
 				{
 					case unisim::component::cxx::pci::SP_MEM:
-						(*logger_import) << "mem";
+						logger << "mem";
 						break;
 					case unisim::component::cxx::pci::SP_IO:
-						(*logger_import) << "i/o";
+						logger << "i/o";
 						break;
 					case unisim::component::cxx::pci::SP_CONFIG:
-						(*logger_import) << "cfg";
+						logger << "cfg";
 				}
-				(*logger_import) << Endl;
-				(*logger_import) << EndDebugInfo;
+				logger << std::endl;
+				logger << EndDebugInfo;
 			}
 			else
 			{
-				(*logger_import) << DebugInfo;
-				(*logger_import) << "No region #" << num_region << Endl;
-				(*logger_import) << EndDebugInfo;
+				logger << DebugInfo;
+				logger << "No region #" << num_region << std::endl;
+				logger << EndDebugInfo;
 			}
 		}
 	}
@@ -223,11 +219,11 @@ bool PCIStub<ADDRESS>::Setup()
 					pci_conf_base_addr[num_region].Initialize(short_name.c_str(), long_name.c_str(), 0xfffffffcUL, initial_base_addr[num_region]);
 					break;
 				case unisim::component::cxx::pci::SP_CONFIG:
-					if(logger_import)
+					if(unlikely(verbose))
 					{
-						(*logger_import) << DebugInfo;
-						(*logger_import) << "ignoring region #" << num_region << " because it's configuration space" << Endl;
-						(*logger_import) << EndDebugInfo;
+						logger << DebugInfo;
+						logger << "ignoring region #" << num_region << " because it's configuration space" << std::endl;
+						logger << EndDebugInfo;
 					}
 					region_size[num_region] = 0;
 					continue;
@@ -282,11 +278,11 @@ bool PCIStub<ADDRESS>::Write(ADDRESS addr, const void *buffer, uint32_t size, PC
 			{
 				uint8_t value = *data;
 
-				if(logger_import)
+				if(unlikely(verbose))
 				{
-					(*logger_import) << DebugInfo;
-					(*logger_import) << "Writing 0x" << Hex << value << Dec << " in configuration space at 0x" << Hex << addr << Dec << Endl;
-					(*logger_import) << EndDebugInfo;
+					logger << DebugInfo;
+					logger << "Writing 0x" << std::hex << value << std::dec << " in configuration space at 0x" << std::hex << addr << std::dec << std::endl;
+					logger << EndDebugInfo;
 				}
 
 				switch(offset)
@@ -331,11 +327,11 @@ bool PCIStub<ADDRESS>::Write(ADDRESS addr, const void *buffer, uint32_t size, PC
 		if(address_space[num_region] != space) continue;
 		if(addr >= pci_conf_base_addr[num_region] && (addr + (size - 1)) < (pci_conf_base_addr[num_region] + region_size[num_region]) && (addr + size) >= addr)
 		{
-			if(logger_import)
+			if(unlikely(verbose))
 			{
-				(*logger_import) << DebugInfo;
-				(*logger_import) << "Writing " << size << " bytes at 0x" << Hex << addr << Dec << " (region #" << num_region << ")" << Endl;
-				(*logger_import) << EndDebugInfo;
+				logger << DebugInfo;
+				logger << "Writing " << size << " bytes at 0x" << std::hex << addr << std::dec << " (region #" << num_region << ")" << std::endl;
+				logger << EndDebugInfo;
 			}
 			memcpy(storage[num_region] + addr - pci_conf_base_addr[num_region], buffer, size);
 
@@ -416,11 +412,11 @@ bool PCIStub<ADDRESS>::Read(ADDRESS addr, void *buffer, uint32_t size, PCISpace 
 			
 				*data = 0x00;
 
-				if(logger_import)
+				if(unlikely(verbose))
 				{
-					(*logger_import) << DebugInfo;
-					(*logger_import) << "Reading 0x" << Hex << (*data) << Dec << " in configuration space at 0x" << Hex << addr << Dec << Endl;
-					(*logger_import) << EndDebugInfo;
+					logger << DebugInfo;
+					logger << "Reading 0x" << std::hex << (*data) << std::dec << " in configuration space at 0x" << std::hex << addr << std::dec << std::endl;
+					logger << EndDebugInfo;
 				}
 			} while(++offset, ++data, --size);
 		}
@@ -436,11 +432,11 @@ bool PCIStub<ADDRESS>::Read(ADDRESS addr, void *buffer, uint32_t size, PCISpace 
 		if(address_space[num_region] != space) continue;
 		if(addr >= pci_conf_base_addr[num_region] && (addr + (size - 1)) < (pci_conf_base_addr[num_region] + region_size[num_region]) && (addr + size) >= addr)
 		{
-			if(logger_import)
+			if(unlikely(verbose))
 			{
-				(*logger_import) << DebugInfo;
-				(*logger_import) << "Reading " << size << " bytes at 0x" << Hex << addr << Dec << " (region #" << num_region << ")" << Endl;
-				(*logger_import) << EndDebugInfo;
+				logger << DebugInfo;
+				logger << "Reading " << size << " bytes at 0x" << std::hex << addr << std::dec << " (region #" << num_region << ")" << std::endl;
+				logger << EndDebugInfo;
 			}
 			memcpy(buffer, storage[num_region] + addr - pci_conf_base_addr[num_region], size);
 
@@ -590,11 +586,11 @@ bool PCIStub<ADDRESS>::ServeSetBreakpoint(const char *symbol_name)
 {
 	if(!symbol_table_lookup_import)
 	{
-		if(logger_import)
+		if(unlikely(verbose))
 		{
-			(*logger_import) << DebugWarning;
-			(*logger_import) << "No symbol table connected. Can't lookup symbol \"" << symbol_name << "\"" << Endl;
-			(*logger_import) << EndDebugWarning;
+			logger << DebugWarning;
+			logger << "No symbol table connected. Can't lookup symbol \"" << symbol_name << "\"" << std::endl;
+			logger << EndDebugWarning;
 		}
 		return false;
 	}
@@ -603,11 +599,11 @@ bool PCIStub<ADDRESS>::ServeSetBreakpoint(const char *symbol_name)
 
 	if(!symbol)
 	{
-		if(logger_import)
+		if(unlikely(verbose))
 		{
-			(*logger_import) << DebugWarning;
-			(*logger_import) << "Symbol \"" << symbol_name << "\" not found" << Endl;
-			(*logger_import) << EndDebugWarning;
+			logger << DebugWarning;
+			logger << "Symbol \"" << symbol_name << "\" not found" << std::endl;
+			logger << EndDebugWarning;
 		}
 		return false;
 	}
@@ -657,11 +653,11 @@ bool PCIStub<ADDRESS>::ServeRemoveBreakpoint(const char *symbol_name)
 {
 	if(!symbol_table_lookup_import)
 	{
-		if(logger_import)
+		if(unlikely(verbose))
 		{
-			(*logger_import) << DebugWarning;
-			(*logger_import) << "No symbol table connected. Can't lookup symbol \"" << symbol_name << "\"" << Endl;
-			(*logger_import) << EndDebugWarning;
+			logger << DebugWarning;
+			logger << "No symbol table connected. Can't lookup symbol \"" << symbol_name << "\"" << std::endl;
+			logger << EndDebugWarning;
 		}
 		return false;
 	}
@@ -670,11 +666,11 @@ bool PCIStub<ADDRESS>::ServeRemoveBreakpoint(const char *symbol_name)
 
 	if(!symbol)
 	{
-		if(logger_import)
+		if(unlikely(verbose))
 		{
-			(*logger_import) << DebugWarning;
-			(*logger_import) << "Symbol \"" << symbol_name << "\" not found" << Endl;
-			(*logger_import) << EndDebugWarning;
+			logger << DebugWarning;
+			logger << "Symbol \"" << symbol_name << "\" not found" << std::endl;
+			logger << EndDebugWarning;
 		}
 		return false;
 	}

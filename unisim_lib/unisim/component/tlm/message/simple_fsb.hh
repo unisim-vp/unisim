@@ -265,6 +265,10 @@ private:
 public:
 	void Dump(unisim::service::interfaces::Logger &os, PRspType &rsp, 
 		PReqType &req) {
+		using unisim::service::interfaces::Endl;
+		using unisim::service::interfaces::Hex;
+		using unisim::service::interfaces::Dec;
+
 		os << "- read_data(hex) =" << Hex;
 		for(unsigned int i = 0; i < req->size; i++) {
 			os << " " << (unsigned int)rsp->read_data[i];

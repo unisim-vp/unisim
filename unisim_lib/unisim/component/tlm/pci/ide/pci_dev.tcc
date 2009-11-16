@@ -107,7 +107,7 @@ bool PCIDev<ADDRESS_TYPE, MAX_DATA_SIZE>::Send (const PMsgType &message) {
 				ret = pciDev->readConfig(req->addr & 0xFF, req->size, res->read_data);
 				message->SetResponse(res);
 		
-				if(verbose)
+				if(unlikely(verbose))
 				{
 					logger << DebugInfo
 					<< "(" << __FUNCTION__
@@ -131,7 +131,7 @@ bool PCIDev<ADDRESS_TYPE, MAX_DATA_SIZE>::Send (const PMsgType &message) {
 				ret = pciDev->readMem(req->addr, req->size, res->read_data);
 				message->SetResponse(res);
 
-				if(verbose)
+				if(unlikely(verbose))
 				{
 					logger << DebugInfo
 					<< "(" << __FUNCTION__
@@ -169,7 +169,7 @@ bool PCIDev<ADDRESS_TYPE, MAX_DATA_SIZE>::Send (const PMsgType &message) {
 			case unisim::component::cxx::pci::SP_CONFIG: {
 				ret = pciDev->writeConfig(req->addr & 0xFF, req->size, req->write_data);
 				
-				if(verbose)
+				if(unlikely(verbose))
 				{
 					logger << DebugInfo << "(" << __FUNCTION__
 					<< ":" << __FILE__
@@ -199,7 +199,7 @@ bool PCIDev<ADDRESS_TYPE, MAX_DATA_SIZE>::Send (const PMsgType &message) {
 		} 
 	default:
 		{
-			if(verbose)
+			if(unlikely(verbose))
 			{
 				logger << DebugError << "No esta definido el codigo!" << std::endl;
 				logger << "  (" << __FUNCTION__ << ":"
@@ -247,7 +247,7 @@ bool PCIDev<ADDRESS_TYPE, MAX_DATA_SIZE>::dmaRead(ADDRESS_TYPE addr, int size, u
 
 template<class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
 bool PCIDev<ADDRESS_TYPE, MAX_DATA_SIZE>::dmaWrite(ADDRESS_TYPE addr, int size, const uint8_t *data) {
-	if(verbose)
+	if(unlikely(verbose))
 		logger << DebugInfo << "Doing dma write" << std::endl << EndDebugInfo;
 		
 	int size_done = 0;

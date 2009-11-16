@@ -191,7 +191,7 @@ $ tms320c3x -c sim_config.xml
 	\multicolumn{2}{|l|}{}\\
 	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline If enabled, when using parallel stores (\texttt{STF src2, dst2 || STF src1, dst1} or \texttt{STI src2, dst2 || STI src1, dst1}) the first store is treated as a NOP.}\\
 	\hline
-	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.enable-float-ops-with-non-ext-regs}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.enable-float-ops-with-}\newline$\hookrightarrow$\texttt{non-ext-regs}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
 	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
 	\multicolumn{2}{|l|}{}\\
 	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline If enabled, float instructions can operate over non-extended registers. If disabled, the use of non-extended registers on float instructions will stop the program execution.}\\
@@ -512,7 +512,7 @@ This class has methods to get/set value of a register and to perform floating po
 		\multicolumn{2}{|l|}{}\\
 		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline If enabled, when using parallel stores (\texttt{STF src2, dst2 || STF src1, dst1} or \texttt{STI src2, dst2 || STI src1, dst1}) the first store is treated as a NOP.}\\
 		\hline
-		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{enable-float-ops-with-non-ext-regs}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{enable-float-ops-with-}\newline$\hookrightarrow$\texttt{non-ext-regs}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
 		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
 		\multicolumn{2}{|l|}{}\\
 		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline If enabled, float instructions can operate over non-extended registers. If disabled, the use of non-extended registers on float instructions will stop the program execution.}\\

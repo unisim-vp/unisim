@@ -41,6 +41,13 @@ namespace tlm {
 namespace pci {
 namespace video {
 
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugInfo;
+using unisim::kernel::logger::EndDebugWarning;
+using unisim::kernel::logger::EndDebugError;
+
 template <class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
 Display<ADDRESS_TYPE, MAX_DATA_SIZE>::Display(const sc_module_name& name, Object *parent) :
 	Object(name, parent),

@@ -285,6 +285,7 @@ public:
 		//using unisim::service::interfaces::operator<<;
 		using unisim::service::interfaces::Hex;
 		using unisim::service::interfaces::Dec;
+		using unisim::service::interfaces::Endl;
 		
 		os << Hex << "PCI-RSP(read_data=";
 		uint32_t i;

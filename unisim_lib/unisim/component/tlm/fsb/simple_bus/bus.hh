@@ -67,7 +67,6 @@ using unisim::util::garbage_collector::Pointer;
 using unisim::component::tlm::message::SimpleFSBRequest;
 using unisim::component::tlm::message::SimpleFSBResponse;
 using unisim::service::interfaces::Memory;
-using unisim::service::interfaces::Logger;
 	
 /* Forward declaration of classes defined in this file */
 template<class ADDRESS_TYPE, unsigned int DATA_SIZE, unsigned int NUM_PROCS, bool DEBUG>
@@ -119,8 +118,7 @@ class Bus :
 	public ResponseListener<SimpleFSBRequest<ADDRESS_TYPE, DATA_SIZE>,
 		SimpleFSBResponse<DATA_SIZE> >,
 	public Service<Memory<ADDRESS_TYPE> >,
-	public Client<Memory<ADDRESS_TYPE> >,
-	public Client<Logger> {
+	public Client<Memory<ADDRESS_TYPE> > {
 public:
 	typedef SimpleFSBRequest<ADDRESS_TYPE, DATA_SIZE> ReqType;
 	typedef Pointer<ReqType> PReqType;

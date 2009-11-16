@@ -41,6 +41,7 @@
 
 #include <unisim/util/xml/xml.hh>
 #include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/logger/logger.hh>
 
 #include <list>
 #include <string>
@@ -96,7 +97,7 @@ class BootInfos;
 class DeviceTree
 {
 public:
-	DeviceTree(BootInfos *boot_infos);
+	DeviceTree(BootInfos *boot_infos, unisim::kernel::logger::Logger& logger, bool verbose);
 	virtual ~DeviceTree();
 	bool Load(const string& filename);
 	uint32_t GetBase();
@@ -105,11 +106,13 @@ public:
 	uint8_t *GetProperty(DeviceNode *reloc_node, const char *name, int32_t& len);
 
 private:
+	unisim::kernel::logger::Logger& logger;
 	BootInfos *boot_infos;
 	DeviceNode *root_node;
 	DeviceNode *last_reloc_node;
 	uint32_t base;
 	uint32_t size;
+	bool verbose;
 
 	uint32_t Malloc(uint32_t size);
 	void *Relocate(uint32_t offset);
@@ -128,7 +131,7 @@ class BootInfos
 public:
 	static const uint32_t MAX_BOOT_INFOS_IMAGE_SIZE = 8 * 1024 * 1024; // 8 MB
 	
-	BootInfos();
+	BootInfos(unisim::kernel::logger::Logger& logger, bool verbose);
 	virtual ~BootInfos();
 
 	uint32_t Malloc(uint32_t size);
@@ -139,6 +142,8 @@ public:
 	const uint8_t *GetImage();
 	uint32_t GetImageSize();
 private:
+	unisim::kernel::logger::Logger& logger;
+	bool verbose;
 	uint32_t size;
 	uint32_t max_size;
 	uint8_t *image;
@@ -267,6 +272,7 @@ public:
 	virtual uint32_t GetStackBase() const;
 
 private:
+	unisim::kernel::logger::Logger logger;
 	string device_tree_filename;
 	string kernel_parms;
 	string ramdisk_filename;
@@ -276,12 +282,14 @@ private:
 	uint32_t r5_value;
 	unsigned int screen_width;
 	unsigned int screen_height;
+	bool verbose;
 	
 	Parameter<string> param_device_tree_filename;
 	Parameter<string> param_kernel_parms;
 	Parameter<string> param_ramdisk_filename;
 	Parameter<unsigned int> param_screen_width;
 	Parameter<unsigned int> param_screen_height;
+	Parameter<bool> param_verbose;
 
 	uint32_t stack_base;
 };

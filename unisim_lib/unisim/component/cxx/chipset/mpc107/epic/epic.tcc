@@ -44,22 +44,14 @@ namespace chipset {
 namespace mpc107 {
 namespace epic {
 
-using unisim::service::interfaces::Logger;
-//using unisim::service::interfaces::operator<<;
-using unisim::service::interfaces::Hex;
-using unisim::service::interfaces::Dec;
-using unisim::service::interfaces::Endl;
-using unisim::service::interfaces::DebugInfo;
-using unisim::service::interfaces::DebugWarning;
-using unisim::service::interfaces::DebugError;
-using unisim::service::interfaces::EndDebugInfo;
-using unisim::service::interfaces::EndDebugWarning;
-using unisim::service::interfaces::EndDebugError;
-using unisim::service::interfaces::Function;
-using unisim::service::interfaces::File;
-using unisim::service::interfaces::Line;
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugInfo;
+using unisim::kernel::logger::EndDebugWarning;
+using unisim::kernel::logger::EndDebugError;
 
-#define LOCATION File << __FILE__ << Function << __FUNCTION__ << Line << __LINE__
+#define LOCATION "In file " << __FILE__ << ", function " << __FUNCTION__ << ", line #" << __LINE__
 	
 template <class PHYSICAL_ADDR, 
 	bool DEBUG>
@@ -67,9 +59,10 @@ EPIC<PHYSICAL_ADDR, DEBUG> ::
 EPIC(const char *name, Object *parent) :
 	Object(name, parent),
 	Service<Memory<PHYSICAL_ADDR> >(name, parent),
-	Client<Logger>(name, parent),
+	logger(*this),
+	verbose(false),
+	param_verbose("verbose", this, verbose),
 	memory_export("memory_export", this),
-	logger_import("logger_import", this),
 	pending_reg(0),
 	regs(),
 	inservice_reg() {
@@ -390,10 +383,10 @@ ReadMemory(PHYSICAL_ADDR addr, void *buffer, uint32_t size) {
 		name = Registers::EOI_NAME; 
 		break;
 	default:
-		if(logger_import)
-			(*logger_import) << DebugWarning << LOCATION
-				<< "Trying to read EPIC register at reserved address 0x" << Hex << addr << Dec
-				<< ", reading 0" << Endl
+		if(unlikely(verbose))
+			logger << DebugWarning << LOCATION
+				<< "Trying to read EPIC register at reserved address 0x" << std::hex << addr << std::dec
+				<< ", reading 0" << std::endl
 				<< EndDebugWarning;
 		*(uint8_t *)buffer = 0;
 		return false;
@@ -402,22 +395,22 @@ ReadMemory(PHYSICAL_ADDR addr, void *buffer, uint32_t size) {
 	
 	if(handled) {
 		data = data >> (offset * 8);
-		if(DEBUG && logger_import) 
-			(*logger_import) << DebugInfo << LOCATION
+		if(unlikely(DEBUG && verbose)) 
+			logger << DebugInfo << LOCATION
 				<< "Reading register " << name << " (address = 0x"
-				<< Hex << addr << Dec
+				<< std::hex << addr << std::dec
 				<< ", size = " << size << " bytes"
 				<< ", data = " << data << ")"
-				<< Endl << EndDebugInfo;
+				<< std::endl << EndDebugInfo;
 		*(uint8_t *)buffer = (uint8_t)data;
 		return true;
 	}
-	if(DEBUG && logger_import)
-		(*logger_import) << DebugWarning << LOCATION
+	if(unlikely(DEBUG && verbose))
+		logger << DebugWarning << LOCATION
 			<< "TODO: trying to read register " << name << " (address 0x"
-			<< Hex << addr << Dec
+			<< std::hex << addr << std::dec
 			<< ") of " << size << " bytes"
-			<< Endl << EndDebugWarning;
+			<< std::endl << EndDebugWarning;
 	*(uint8_t *)buffer = 0;
 	return false;
 } 
@@ -427,10 +420,10 @@ template <class PHYSICAL_ADDR,
 void 
 EPIC<PHYSICAL_ADDR, DEBUG> ::
 WriteMemoryGCR(uint32_t data) {
-	if(logger_import)
-		(*logger_import) << DebugWarning << LOCATION
+	if(unlikely(verbose))
+		logger << DebugWarning << LOCATION
 			<< "Trying to modify register value through the memory interface, ignored"
-			<< Endl << EndDebugWarning;
+			<< std::endl << EndDebugWarning;
 }
 
 template <class PHYSICAL_ADDR, 
@@ -438,10 +431,10 @@ template <class PHYSICAL_ADDR,
 void 
 EPIC<PHYSICAL_ADDR, DEBUG> ::
 WriteMemoryEICR(uint32_t data) {
-	if(logger_import)
-		(*logger_import) << DebugWarning << LOCATION
+	if(unlikely(verbose))
+		logger << DebugWarning << LOCATION
 			<< "Trying to modify register value through the memory interface, ignored"
-			<< Endl << EndDebugWarning;
+			<< std::endl << EndDebugWarning;
 }
 
 template <class PHYSICAL_ADDR, 
@@ -449,10 +442,10 @@ template <class PHYSICAL_ADDR,
 void 
 EPIC<PHYSICAL_ADDR, DEBUG> ::
 WriteMemoryGTVPR(uint32_t data, unsigned int id) {
-	if(logger_import)
-		(*logger_import) << DebugWarning << LOCATION
+	if(unlikely(verbose))
+		logger << DebugWarning << LOCATION
 			<< "Trying to modify register value through the memory interface, ignored"
-			<< Endl << EndDebugWarning;
+			<< std::endl << EndDebugWarning;
 }
 
 template <class PHYSICAL_ADDR,
@@ -460,10 +453,10 @@ template <class PHYSICAL_ADDR,
 void
 EPIC<PHYSICAL_ADDR, DEBUG> ::
 WriteMemoryGTBCR(uint32_t data, unsigned int id) {
-	if(logger_import)
-		(*logger_import) << DebugWarning << LOCATION
+	if(unlikely(verbose))
+		logger << DebugWarning << LOCATION
 			<< "Trying to modify register value through the memory interface, ignored"
-			<< Endl << EndDebugWarning;
+			<< std::endl << EndDebugWarning;
 }
 
 template <class PHYSICAL_ADDR, 
@@ -471,10 +464,10 @@ template <class PHYSICAL_ADDR,
 void 
 EPIC<PHYSICAL_ADDR, DEBUG> ::
 WriteMemoryVPR(uint32_t data, unsigned int id) {
-	if(logger_import)
-		(*logger_import) << DebugWarning << LOCATION
+	if(unlikely(verbose))
+		logger << DebugWarning << LOCATION
 			<< "Trying to modify register value through the memory interface, ignored"
-			<< Endl << EndDebugWarning;
+			<< std::endl << EndDebugWarning;
 }
 
 template <class PHYSICAL_ADDR, 
@@ -482,10 +475,10 @@ template <class PHYSICAL_ADDR,
 void 
 EPIC<PHYSICAL_ADDR, DEBUG> ::
 WriteMemoryPCTPR(uint32_t data) {
-	if(logger_import)
-		(*logger_import) << DebugWarning << LOCATION
+	if(unlikely(verbose))
+		logger << DebugWarning << LOCATION
 			<< "Trying to modify register value through the memory interface, ignored"
-			<< Endl << EndDebugWarning;
+			<< std::endl << EndDebugWarning;
 }
 
 template <class PHYSICAL_ADDR, 
@@ -493,10 +486,10 @@ template <class PHYSICAL_ADDR,
 void 
 EPIC<PHYSICAL_ADDR, DEBUG> ::
 WriteMemoryIACK(uint32_t data) {
-	if(logger_import)
-		(*logger_import) << DebugWarning << LOCATION
+	if(unlikely(verbose))
+		logger << DebugWarning << LOCATION
 			<< "Trying to modify register value through the memory interface, ignored"
-			<< Endl << EndDebugWarning;
+			<< std::endl << EndDebugWarning;
 }
 
 template <class PHYSICAL_ADDR,
@@ -504,10 +497,10 @@ template <class PHYSICAL_ADDR,
 void
 EPIC<PHYSICAL_ADDR, DEBUG> ::
 WriteMemoryEOI(uint32_t data) {
-	if(logger_import)
-		(*logger_import) << DebugWarning << LOCATION
+	if(unlikely(verbose))
+		logger << DebugWarning << LOCATION
 			<< "Trying to modify register value through the memory interface, ignored"
-			<< Endl << EndDebugWarning;
+			<< std::endl << EndDebugWarning;
 }
 
 template <class PHYSICAL_ADDR, 
@@ -515,11 +508,11 @@ template <class PHYSICAL_ADDR,
 void 
 EPIC<PHYSICAL_ADDR, DEBUG> ::
 WriteMemoryEVI(uint32_t data) {
-	if(logger_import)
-		(*logger_import) << DebugWarning << LOCATION
+	if(unlikely(verbose))
+		logger << DebugWarning << LOCATION
 			<< "Trying to write read-only register EVI with data 0x" 
-			<< Hex << data << Dec << ", resetting it to 0x"
-			<< Hex << regs.evi << Dec << Endl << EndDebugWarning;
+			<< std::hex << data << std::dec << ", resetting it to 0x"
+			<< std::hex << regs.evi << std::dec << std::endl << EndDebugWarning;
 }
 
 template <class PHYSICAL_ADDR, 
@@ -527,10 +520,10 @@ template <class PHYSICAL_ADDR,
 void 
 EPIC<PHYSICAL_ADDR, DEBUG> ::
 WriteMemoryPI(uint32_t data) {
-	if(logger_import)
-		(*logger_import) << DebugWarning << LOCATION
+	if(unlikely(verbose))
+		logger << DebugWarning << LOCATION
 			<< "Trying to modify register value through the memory interface, ignored"
-			<< Endl << EndDebugWarning;
+			<< std::endl << EndDebugWarning;
 }
 
 template <class PHYSICAL_ADDR, 
@@ -538,10 +531,10 @@ template <class PHYSICAL_ADDR,
 void 
 EPIC<PHYSICAL_ADDR, DEBUG> ::
 WriteMemorySVR(uint32_t data) {
-	if(logger_import)
-		(*logger_import) << DebugWarning << LOCATION
+	if(unlikely(verbose))
+		logger << DebugWarning << LOCATION
 			<< "Trying to modify register value through the memory interface, ignored"
-			<< Endl << EndDebugWarning;
+			<< std::endl << EndDebugWarning;
 }
 
 template <class PHYSICAL_ADDR, 
@@ -549,10 +542,10 @@ template <class PHYSICAL_ADDR,
 void 
 EPIC<PHYSICAL_ADDR, DEBUG> ::
 WriteMemoryTFRR(uint32_t data) {
-	if(logger_import)
-		(*logger_import) << DebugWarning << LOCATION
+	if(unlikely(verbose))
+		logger << DebugWarning << LOCATION
 			<< "Trying to modify register value through the memory interface, ignored"
-			<< Endl << EndDebugWarning;
+			<< std::endl << EndDebugWarning;
 }
 
 template <class PHYSICAL_ADDR, 
@@ -560,10 +553,10 @@ template <class PHYSICAL_ADDR,
 void 
 EPIC<PHYSICAL_ADDR, DEBUG> ::
 WriteMemoryGTCCR(uint32_t data, unsigned int id) {
-	if(logger_import)
-		(*logger_import) << DebugWarning << LOCATION
+	if(unlikely(verbose))
+		logger << DebugWarning << LOCATION
 			<< "Trying to modify register value through the memory interface, ignored"
-			<< Endl << EndDebugWarning;
+			<< std::endl << EndDebugWarning;
 }
 
 template <class PHYSICAL_ADDR, 
@@ -571,10 +564,10 @@ template <class PHYSICAL_ADDR,
 void 
 EPIC<PHYSICAL_ADDR, DEBUG> ::
 WriteMemoryGTDR(uint32_t data, unsigned int id) {
-	if(logger_import)
-		(*logger_import) << DebugWarning << LOCATION
+	if(unlikely(verbose))
+		logger << DebugWarning << LOCATION
 			<< "Trying to modify register value through the memory interface, ignored"
-			<< Endl << EndDebugWarning;
+			<< std::endl << EndDebugWarning;
 }
 
 template <class PHYSICAL_ADDR, 
@@ -582,10 +575,10 @@ template <class PHYSICAL_ADDR,
 void 
 EPIC<PHYSICAL_ADDR, DEBUG> ::
 WriteMemoryDR(uint32_t data, unsigned int id) {
-	if(logger_import)
-		(*logger_import) << DebugWarning << LOCATION
+	if(unlikely(verbose))
+		logger << DebugWarning << LOCATION
 			<< "Trying to modify register value through the memory interface, ignored"
-			<< Endl << EndDebugWarning;
+			<< std::endl << EndDebugWarning;
 }
 
 template <class PHYSICAL_ADDR, 
@@ -593,10 +586,10 @@ template <class PHYSICAL_ADDR,
 void 
 EPIC<PHYSICAL_ADDR, DEBUG> ::
 WriteMemoryIIVPR(uint32_t data, unsigned int id) {
-	if(logger_import)
-		(*logger_import) << DebugWarning << LOCATION
+	if(unlikely(verbose))
+		logger << DebugWarning << LOCATION
 			<< "Trying to modify register value through the memory interface, ignored"
-			<< Endl << EndDebugWarning;
+			<< std::endl << EndDebugWarning;
 }
 
 template <class PHYSICAL_ADDR, 
@@ -604,10 +597,10 @@ template <class PHYSICAL_ADDR,
 void 
 EPIC<PHYSICAL_ADDR, DEBUG> ::
 WriteMemoryIIDR(uint32_t data, unsigned int id) {
-	if(logger_import)
-		(*logger_import) << DebugWarning << LOCATION
+	if(unlikely(verbose))
+		logger << DebugWarning << LOCATION
 			<< "Trying to modify register value through the memory interface, ignored"
-			<< Endl << EndDebugWarning;
+			<< std::endl << EndDebugWarning;
 }
 
 template <class PHYSICAL_ADDR,
@@ -882,12 +875,12 @@ WriteMemory(PHYSICAL_ADDR addr, uint32_t data) {
 	}
 
 	if(!handled) {
-		if(DEBUG && logger_import) {
-			(*logger_import) << DebugWarning << LOCATION
+		if(unlikely(DEBUG && verbose)) {
+			logger << DebugWarning << LOCATION
 				<< "TODO: trying to write address 0x"
-				<< Hex << addr << Dec
-				<< " with data 0x" << Hex << data << Dec
-				<< Endl << EndDebugWarning;
+				<< std::hex << addr << std::dec
+				<< " with data 0x" << std::hex << data << std::dec
+				<< std::endl << EndDebugWarning;
 		}
 	}
 
@@ -957,18 +950,18 @@ SetIRQ(unsigned int id, unsigned int serial_id) {
 	 *   if so, bypass the interrupt signal to the output directly
 	 *   without doing anything */
 	if(PassthroughMode()) {
-		if(DEBUG && logger_import) 
-			(*logger_import) << DebugInfo << LOCATION
+		if(unlikely(DEBUG && verbose)) 
+			logger << DebugInfo << LOCATION
 				<< "Received IRQ on port " << id
-				<< Endl << EndDebugInfo;
+				<< std::endl << EndDebugInfo;
 		if(id != 0) {
-			if(logger_import) {
-				(*logger_import) << DebugError
+			if(unlikely(verbose)) {
+				logger << DebugError
 					<< LOCATION
 					<< "Received a wrong irq id (id = " << id 
 					<< ", serial id = " << serial_id << ") when working in passthrough mode "
 					<< "(id should be 0), stopping simulation"
-					<< Endl << EndDebugError;
+					<< std::endl << EndDebugError;
 			}
 			StopSimulation();
 		}
@@ -982,40 +975,40 @@ SetIRQ(unsigned int id, unsigned int serial_id) {
 	 *   If in direct mode the serial_id will be ignored.
 	 */
 	if(DirectMode()) {
-		if(DEBUG && logger_import) 
-			(*logger_import) << DebugInfo << LOCATION
+		if(unlikely(DEBUG && verbose)) 
+			logger << DebugInfo << LOCATION
 				<< "Received IRQ on port " << id
-				<< Endl << EndDebugInfo;
+				<< std::endl << EndDebugInfo;
 		/* direct mode */
 		/* check that id isn't bigger than 3 (only 4 direct irqs) */
 		if(id > 3) {
-			if(logger_import) {
-				(*logger_import) << DebugError
+			if(unlikely(verbose)) {
+				logger << DebugError
 					<< LOCATION
 					<< "Received a wrong irq id (id = " << id << "), "
 					<< "stopping simulation"
-					<< Endl << EndDebugError;
+					<< std::endl << EndDebugError;
 			}
 			StopSimulation();
 			return;
 		}
 		SetDirectIRQ(id);
 	} else {
-		if(DEBUG && logger_import) 
-			(*logger_import) << DebugInfo << LOCATION
+		if(unlikely(DEBUG && verbose)) 
+			logger << DebugInfo << LOCATION
 				<< "Received IRQ on port " << id << " (serial_id = " << serial_id << ")"
-				<< Endl << EndDebugInfo;
+				<< std::endl << EndDebugInfo;
 		/* Serial mode */
 		/* check that id is 0 (only port for serial irqs), and serial_id
 		 *   is smaller than 16 */
 		if(id == 0 && serial_id > 15) {
-			if(logger_import) {
-				(*logger_import) << DebugError
+			if(unlikely(verbose)) {
+				logger << DebugError
 					<< LOCATION
 					<< "Received a wrong irq serial_id (serial_id = " 
 					<< serial_id << "), "
 					<< "stopping simulation"
-					<< Endl << EndDebugError;
+					<< std::endl << EndDebugError;
 			}
 			StopSimulation();
 			return;
@@ -1034,13 +1027,13 @@ UnsetIRQ(unsigned int id, unsigned int serial_id) {
 	 *   without doing anything */
 	if(PassthroughMode()) {
 		if(id != 0) {
-			if(logger_import) {
-				(*logger_import) << DebugError
+			if(unlikely(verbose)) {
+				logger << DebugError
 					<< LOCATION
 					<< "Received a wrong irq id (id = " 
 					<< serial_id << ") when working in passthrough mode "
 					<< "(id should be 0), stopping simulation"
-					<< Endl << EndDebugError;
+					<< std::endl << EndDebugError;
 			}
 			StopSimulation();
 		}
@@ -1057,12 +1050,12 @@ UnsetIRQ(unsigned int id, unsigned int serial_id) {
 		/* direct mode */
 		/* check that id isn't bigger than 3 (only 4 direct irqs) */
 		if(id > 3) {
-			if(logger_import) {
-				(*logger_import) << DebugError
+			if(unlikely(verbose)) {
+				logger << DebugError
 					<< LOCATION
 					<< "Received a wrong irq id (id = " << id << "), "
 					<< "stopping simulation"
-					<< Endl << EndDebugError;
+					<< std::endl << EndDebugError;
 			}
 			StopSimulation();
 			return;
@@ -1073,13 +1066,13 @@ UnsetIRQ(unsigned int id, unsigned int serial_id) {
 		/* check that id is 0 (only port for serial irqs), and serial_id
 		 *   is smaller than 16 */
 		if(id == 0 && serial_id > 15) {
-			if(logger_import) {
-				(*logger_import) << DebugError
+			if(unlikely(verbose)) {
+				logger << DebugError
 					<< LOCATION
 					<< "Received a wrong irq serial_id (serial_id = " 
 					<< serial_id << "), "
 					<< "stopping simulation"
-					<< Endl << EndDebugError;
+					<< std::endl << EndDebugError;
 			}
 			StopSimulation();
 			return;
@@ -1183,10 +1176,10 @@ GetVPRFromIRQMask(uint32_t mask) {
 		vpr = regs.svpr[15];
 		break;
 	default:
-		if(logger_import)
-			(*logger_import) << DebugError << LOCATION
-				<< "Unknown mask received (mask = 0x" << Hex << mask << Dec
-				<< Endl << DebugError;
+		if(unlikely(verbose))
+			logger << DebugError << LOCATION
+				<< "Unknown mask received (mask = 0x" << std::hex << mask << std::dec
+				<< std::endl << DebugError;
 		StopSimulation();
 	}
 	return vpr;
@@ -1265,12 +1258,12 @@ SetGlobalTimerIRQ(unsigned int id) {
 	}
 	SetActivity(vpr);
 	if(!GetActivity(vpr)) {
-		if(logger_import) {
-			(*logger_import) << DebugError
+		if(unlikely(verbose)) {
+			logger << DebugError
 				<< LOCATION
 				<< "Error while trying to set the activity bit of gtvpr["
 				<< id << "]"
-				<< Endl << EndDebugError;
+				<< std::endl << EndDebugError;
 		}
 		StopSimulation();
 		return;
@@ -1290,62 +1283,62 @@ EPIC<PHYSICAL_ADDR, DEBUG> ::
 SetDirectIRQ(unsigned int id) {
 	uint32_t vpr;
 
-	if(DEBUG && logger_import) 
-		(*logger_import) << DebugInfo << LOCATION
+	if(unlikely(DEBUG && verbose)) 
+		logger << DebugInfo << LOCATION
 			<< "Handling direct IRQ received on port " << id
-			<< Endl << EndDebugInfo;
+			<< std::endl << EndDebugInfo;
 
 	/* get the vpr */
 	vpr = regs.ivpr[id];
-	if(DEBUG && logger_import) 
-		(*logger_import) << DebugInfo << LOCATION
-			<< "ivpr[" << id << "] = 0x" << Hex << vpr << Dec
-			<< Endl << EndDebugInfo;
+	if(unlikely(DEBUG && verbose)) 
+		logger << DebugInfo << LOCATION
+			<< "ivpr[" << id << "] = 0x" << std::hex << vpr << std::dec
+			<< std::endl << EndDebugInfo;
 	/* set the activity bit */
 	if(GetActivity(vpr)) {
-		if(DEBUG && logger_import) 
-			(*logger_import) << DebugInfo << LOCATION
+		if(unlikely(DEBUG && verbose)) 
+			logger << DebugInfo << LOCATION
 				<< "nothing needs to be done, the irq was already set up"
-				<< Endl << EndDebugInfo;
+				<< std::endl << EndDebugInfo;
 		/* nothing needs to be done, the irq was already set up */
 		return;
 	}
 	SetActivity(vpr);
 	if(!GetActivity(vpr)) {
-		if(logger_import) {
-			(*logger_import) << DebugError
+		if(unlikely(verbose)) {
+			logger << DebugError
 				<< LOCATION
 				<< "Error while trying to set the activity bit of ivpr["
 				<< id << "]"
-				<< Endl << EndDebugError;
+				<< std::endl << EndDebugError;
 		}
 		StopSimulation();
 		return;
 	}
-	if(DEBUG && logger_import) 
-		(*logger_import) << DebugInfo << LOCATION
-			<< "activity bit set (ivpr[" << id << "] = 0x" << Hex << vpr << Dec << ")"
-			<< "(previous ivprt[" << id << "] = 0x" << Hex << regs.ivpr[id] << Dec << ")"
-			<< Endl << EndDebugInfo;
+	if(unlikely(DEBUG && verbose)) 
+		logger << DebugInfo << LOCATION
+			<< "activity bit set (ivpr[" << id << "] = 0x" << std::hex << vpr << std::dec << ")"
+			<< "(previous ivprt[" << id << "] = 0x" << std::hex << regs.ivpr[id] << std::dec << ")"
+			<< std::endl << EndDebugInfo;
 	regs.ivpr[id] = vpr;
 	/* set corresponding bit in the pending_reg register */
 	uint32_t mask = GetDirectIRQMask(id);
-	if(DEBUG && logger_import)
-		(*logger_import) << DebugInfo << LOCATION
+	if(unlikely(DEBUG && verbose))
+		logger << DebugInfo << LOCATION
 			<< "Updating pending register with the mask correspondent to ivpr[" << id << "] = 0x"
-			<< Hex << regs.ivpr[id] << Dec << ":" << Endl
-			<< "- mask = 0x" << Hex << mask << Dec << Endl
-			<< "- previous pending_reg = 0x" << Hex << pending_reg << Dec << Endl;
+			<< std::hex << regs.ivpr[id] << std::dec << ":" << std::endl
+			<< "- mask = 0x" << std::hex << mask << std::dec << std::endl
+			<< "- previous pending_reg = 0x" << std::hex << pending_reg << std::dec << std::endl;
 	pending_reg = pending_reg | mask;
-	if(DEBUG && logger_import)
-		(*logger_import)
-			<< "- new pending_reg = 0x" << Hex << pending_reg << Dec << Endl
+	if(unlikely(DEBUG && verbose))
+		logger
+			<< "- new pending_reg = 0x" << std::hex << pending_reg << std::dec << std::endl
 			<< EndDebugInfo;
 	CheckInterruptions();
-	if(DEBUG && logger_import) 
-		(*logger_import) << DebugInfo << LOCATION
+	if(unlikely(DEBUG && verbose)) 
+		logger << DebugInfo << LOCATION
 			<< "Finished handling direct IRQ received on port " << id
-			<< Endl << EndDebugInfo;
+			<< std::endl << EndDebugInfo;
 
 }
 
@@ -1356,62 +1349,62 @@ EPIC<PHYSICAL_ADDR, DEBUG> ::
 UnsetDirectIRQ(unsigned int id) {
 	uint32_t vpr;
 
-	if(DEBUG && logger_import) 
-		(*logger_import) << DebugInfo << LOCATION
+	if(unlikely(DEBUG && verbose)) 
+		logger << DebugInfo << LOCATION
 			<< "Handling direct unset IRQ received on port " << id
-			<< Endl << EndDebugInfo;
+			<< std::endl << EndDebugInfo;
 
 	/* get the vpr */
 	vpr = regs.ivpr[id];
-	if(DEBUG && logger_import) 
-		(*logger_import) << DebugInfo << LOCATION
-			<< "ivpr[" << id << "] = 0x" << Hex << vpr << Dec
-			<< Endl << EndDebugInfo;
+	if(unlikely(DEBUG && verbose)) 
+		logger << DebugInfo << LOCATION
+			<< "ivpr[" << id << "] = 0x" << std::hex << vpr << std::dec
+			<< std::endl << EndDebugInfo;
 	/* set the activity bit */
 	if(!GetActivity(vpr)) {
-		if(DEBUG && logger_import) 
-			(*logger_import) << DebugInfo << LOCATION
+		if(unlikely(DEBUG && verbose)) 
+			logger << DebugInfo << LOCATION
 				<< "nothing needs to be done, the irq wasn't set up"
-				<< Endl << EndDebugInfo;
+				<< std::endl << EndDebugInfo;
 		/* nothing needs to be done, the irq was already set up */
 		return;
 	}
 	UnsetActivity(vpr);
 	if(GetActivity(vpr)) {
-		if(logger_import) {
-			(*logger_import) << DebugError
+		if(unlikely(verbose)) {
+			logger << DebugError
 				<< LOCATION
 				<< "Error while trying to unset the activity bit of ivpr["
 				<< id << "]"
-				<< Endl << EndDebugError;
+				<< std::endl << EndDebugError;
 		}
 		StopSimulation();
 		return;
 	}
-	if(DEBUG && logger_import) 
-		(*logger_import) << DebugInfo << LOCATION
-			<< "activity bit unset (ivpr[" << id << "] = 0x" << Hex << vpr << Dec << ")"
-			<< "(previous ivprt[" << id << "] = 0x" << Hex << regs.ivpr[id] << Dec << ")"
-			<< Endl << EndDebugInfo;
+	if(unlikely(DEBUG && verbose)) 
+		logger << DebugInfo << LOCATION
+			<< "activity bit unset (ivpr[" << id << "] = 0x" << std::hex << vpr << std::dec << ")"
+			<< "(previous ivprt[" << id << "] = 0x" << std::hex << regs.ivpr[id] << std::dec << ")"
+			<< std::endl << EndDebugInfo;
 	regs.ivpr[id] = vpr;
 	/* set corresponding bit in the pending_reg register */
 	uint32_t mask = GetDirectIRQMask(id);
-	if(DEBUG && logger_import)
-		(*logger_import) << DebugInfo << LOCATION
+	if(unlikely(DEBUG && verbose))
+		logger << DebugInfo << LOCATION
 			<< "Updating pending register removing the mask correspondent to ivpr[" << id << "] = 0x"
-			<< Hex << regs.ivpr[id] << Dec << ":" << Endl
-			<< "- mask = 0x" << Hex << mask << Dec << Endl
-			<< "- previous pending_reg = 0x" << Hex << pending_reg << Dec << Endl;
+			<< std::hex << regs.ivpr[id] << std::dec << ":" << std::endl
+			<< "- mask = 0x" << std::hex << mask << std::dec << std::endl
+			<< "- previous pending_reg = 0x" << std::hex << pending_reg << std::dec << std::endl;
 	pending_reg = pending_reg & ~mask;
-	if(DEBUG && logger_import)
-		(*logger_import)
-			<< "- new pending_reg = 0x" << Hex << pending_reg << Dec << Endl
+	if(unlikely(DEBUG && verbose))
+		logger
+			<< "- new pending_reg = 0x" << std::hex << pending_reg << std::dec << std::endl
 			<< EndDebugInfo;
 	CheckInterruptions();
-	if(DEBUG && logger_import) 
-		(*logger_import) << DebugInfo << LOCATION
+	if(unlikely(DEBUG && verbose)) 
+		logger << DebugInfo << LOCATION
 			<< "Finished handling direct unset IRQ received on port " << id
-			<< Endl << EndDebugInfo;
+			<< std::endl << EndDebugInfo;
 
 }
 
@@ -1431,12 +1424,12 @@ SetSerialIRQ(unsigned int id) {
 	}
 	SetActivity(vpr);
 	if(!GetActivity(vpr)) {
-		if(logger_import) {
-			(*logger_import) << DebugError
+		if(unlikely(verbose)) {
+			logger << DebugError
 				<< LOCATION
 				<< "Error while trying to set the activity bit of ivpr["
 				<< id << "]"
-				<< Endl << EndDebugError;
+				<< std::endl << EndDebugError;
 		}
 		StopSimulation();
 		return;
@@ -1464,12 +1457,12 @@ UnsetSerialIRQ(unsigned int id) {
 	}
 	UnsetActivity(vpr);
 	if(GetActivity(vpr)) {
-		if(logger_import) {
-			(*logger_import) << DebugError
+		if(unlikely(verbose)) {
+			logger << DebugError
 				<< LOCATION
 				<< "Error while trying to unset the activity bit of ivpr["
 				<< id << "]"
-				<< Endl << EndDebugError;
+				<< std::endl << EndDebugError;
 		}
 		StopSimulation();
 		return;
@@ -1563,70 +1556,70 @@ template <class PHYSICAL_ADDR,
 void
 EPIC<PHYSICAL_ADDR, DEBUG> ::
 CheckInterruptions() {
-	if(DEBUG && logger_import)
-		(*logger_import) << DebugInfo << LOCATION
+	if(unlikely(DEBUG && verbose))
+		logger << DebugInfo << LOCATION
 			<< "Checking interruptions"
-			<< Endl << EndDebugInfo;
+			<< std::endl << EndDebugInfo;
 
 	uint32_t irq = GetHighestIRQ();
 	
-	if(DEBUG && logger_import)
-		(*logger_import) << DebugInfo << LOCATION
-			<< "Highest IRQ = 0x" << Hex << irq << Dec
-			<< Endl << EndDebugInfo;
+	if(unlikely(DEBUG && verbose))
+		logger << DebugInfo << LOCATION
+			<< "Highest IRQ = 0x" << std::hex << irq << std::dec
+			<< std::endl << EndDebugInfo;
 	
 	if(irq == 0) {
 		/* no interruption pending */
-		if(DEBUG && logger_import)
-			(*logger_import) << DebugInfo << LOCATION
+		if(unlikely(DEBUG && verbose))
+			logger << DebugInfo << LOCATION
 				<< "No interrupt pending, unsetting external interruptions to the processor"
-				<< Endl << EndDebugInfo;
+				<< std::endl << EndDebugInfo;
 		UnsetINT();
-		if(DEBUG && logger_import)
-			(*logger_import) << DebugInfo << LOCATION
+		if(unlikely(DEBUG && verbose))
+			logger << DebugInfo << LOCATION
 				<< "Finished checking interruptions"
-				<< Endl << EndDebugInfo;
+				<< std::endl << EndDebugInfo;
 		return;
 	}
 	
 	uint32_t vpr = GetVPRFromIRQMask(irq);
 	uint32_t prio = GetPriority(vpr);
-	if(DEBUG && logger_import)
-		(*logger_import) << DebugInfo << LOCATION
-			<< "vpr of irq mask (0x" << Hex << irq << Dec << ")"
-			<< " is 0x" << Hex << vpr << Dec << Endl
-			<< "- priority = 0x" << Hex << prio << Dec
-			<< Endl << EndDebugInfo;
+	if(unlikely(DEBUG && verbose))
+		logger << DebugInfo << LOCATION
+			<< "vpr of irq mask (0x" << std::hex << irq << std::dec << ")"
+			<< " is 0x" << std::hex << vpr << std::dec << std::endl
+			<< "- priority = 0x" << std::hex << prio << std::dec
+			<< std::endl << EndDebugInfo;
 	
 	if(prio == 0) {
 		/* if the highest irq has a priority of 0, the interruption
 		 *   is disabled, do nothing */
-		if(DEBUG && logger_import)
-			(*logger_import) << DebugInfo << LOCATION
+		if(unlikely(DEBUG && verbose))
+			logger << DebugInfo << LOCATION
 				<< "The highest irq has a priority of 0, the interruption is disabled"
-				<< Endl << EndDebugInfo;
+				<< std::endl << EndDebugInfo;
 		UnsetINT();
-		if(DEBUG && logger_import)
-			(*logger_import) << DebugInfo << LOCATION
+		if(unlikely(DEBUG && verbose))
+			logger << DebugInfo << LOCATION
 				<< "Finished checking interruptions"
-				<< Endl << EndDebugInfo;
+				<< std::endl << EndDebugInfo;
 		return;
 	}
 	
 	if(prio <= GetProcessorPriority()) {
 		/* the processor has more priority than the highest irq in the
 		 *   pending reg, do nothing */
-		if(DEBUG && logger_import)
-			(*logger_import) << DebugInfo << LOCATION
-				<< "processor priority (0x" << Hex << GetProcessorPriority() << Dec << ")"
-				<< " higher than the interruption priority (0x" << Hex << prio << Dec << ")"
+		if(unlikely(DEBUG && verbose))
+			logger << DebugInfo << LOCATION
+				<< "processor priority (0x" << std::hex << GetProcessorPriority() << std::dec << ")"
+				<< " higher than the interruption priority (0x" << std::hex << prio << std::dec << ")"
 				<< ", unsetting external interruptions to the processor"
-				<< Endl << EndDebugInfo;
+				<< std::endl << EndDebugInfo;
 		UnsetINT();
-		if(DEBUG && logger_import)
-			(*logger_import) << DebugInfo << LOCATION
+		if(unlikely(DEBUG && verbose))
+			logger << DebugInfo << LOCATION
 				<< "Finished checking interruptions"
-				<< Endl << EndDebugInfo;
+				<< std::endl << EndDebugInfo;
 		return;
 	}
 	
@@ -1634,34 +1627,34 @@ CheckInterruptions() {
 		(prio <= inservice_reg.Priority())) {
 		/* the current interruption in the inservice register has a higher
 		 *   priority than the highest irq in the pending reg, do nothing */
-		if(DEBUG && logger_import)
-			(*logger_import) << DebugInfo << LOCATION
+		if(unlikely(DEBUG && verbose))
+			logger << DebugInfo << LOCATION
 				<< "the current interruption in the inservice register has a higher priority "
-				<< "(0x" << Hex << inservice_reg.Priority() << Dec << ")"
+				<< "(0x" << std::hex << inservice_reg.Priority() << std::dec << ")"
 				<< " than the highest irq in the pending register "
-				<< "(max_prio = 0x" << Hex << prio << Dec << ")"
+				<< "(max_prio = 0x" << std::hex << prio << std::dec << ")"
 				<< ", unsetting external interruptions to the processor"
-				<< Endl << EndDebugInfo;
+				<< std::endl << EndDebugInfo;
 		UnsetINT();
-		if(DEBUG && logger_import)
-			(*logger_import) << DebugInfo << LOCATION
+		if(unlikely(DEBUG && verbose))
+			logger << DebugInfo << LOCATION
 				<< "Finished checking interruptions"
-				<< Endl << EndDebugInfo;
+				<< std::endl << EndDebugInfo;
 		return;
 	}
 	
 	/* an interruption needs to be notified to the processor */
-	if(DEBUG && logger_import)
-		(*logger_import) << DebugInfo << LOCATION
-			<< "interruption with mask 0x" << Hex << irq << Dec 
+	if(unlikely(DEBUG && verbose))
+		logger << DebugInfo << LOCATION
+			<< "interruption with mask 0x" << std::hex << irq << std::dec 
 			<< " needs to be notified to the processor"
 			<< ", setting external interruptions to the processor"
-			<< Endl << EndDebugInfo;
+			<< std::endl << EndDebugInfo;
 	SetINT();
-	if(DEBUG && logger_import)
-		(*logger_import) << DebugInfo << LOCATION
+	if(unlikely(DEBUG && verbose))
+		logger << DebugInfo << LOCATION
 			<< "Finished checking interruptions"
-			<< Endl << EndDebugInfo;
+			<< std::endl << EndDebugInfo;
 }
 
 template <class PHYSICAL_ADDR, 
@@ -1674,50 +1667,50 @@ WriteGCR(uint32_t data) {
 	/* check reserved bits */
 	if(data & (uint32_t)0x40000000) {
 		data = data & ~((uint32_t)0x40000000);
-		if(logger_import)
-			(*logger_import) << DebugWarning
+		if(unlikely(verbose))
+			logger << DebugWarning
 				<< LOCATION
 				<< "Trying to modify bit 30 of register GCR, resetting it to 0 (original value = 0x"
-				<< Hex << orig_data << Dec
-				<< ", new value = 0x" << Hex << data << Dec << ")"
-				<< Endl << EndDebugWarning;
+				<< std::hex << orig_data << std::dec
+				<< ", new value = 0x" << std::hex << data << std::dec << ")"
+				<< std::endl << EndDebugWarning;
 	}
 	if(data & (uint32_t)0x1fffffff) {
 		data = data & ~((uint32_t)0x1fffffff);
-		if(logger_import)
-			(*logger_import) << DebugWarning
+		if(unlikely(verbose))
+			logger << DebugWarning
 				<< LOCATION
 				<< "Trying to modify bits 28-0 of register GCR, resetting them to 0 (original value = 0x"
-				<< Hex << orig_data << Dec
-				<< ", new value = 0x" << Hex << data << Dec << ")"
-				<< Endl << EndDebugWarning;
+				<< std::hex << orig_data << std::dec
+				<< ", new value = 0x" << std::hex << data << std::dec << ")"
+				<< std::endl << EndDebugWarning;
 	}
 	
-	if(DEBUG && logger_import) {
-		(*logger_import) << DebugInfo << LOCATION
-			<< "Updating register GCR with value 0x" << Hex << data << Dec
-			<< " (previous value 0x" << Hex << regs.gcr << Dec << ")"
-			<< ", modified fields: " << Endl;
+	if(unlikely(DEBUG && verbose)) {
+		logger << DebugInfo << LOCATION
+			<< "Updating register GCR with value 0x" << std::hex << data << std::dec
+			<< " (previous value 0x" << std::hex << regs.gcr << std::dec << ")"
+			<< ", modified fields: " << std::endl;
 		if(data & (uint32_t)0x80000000)
-			(*logger_import) 
-				<< "   - setting (1) reset EPIC unit bit (bit 31), EPIC will be resetted and this bit put to 0 again" << Endl;
+			logger 
+				<< "   - setting (1) reset EPIC unit bit (bit 31), EPIC will be resetted and this bit put to 0 again" << std::endl;
 		else
-			(*logger_import)
-				<< "   - unsetting (0) reset EPIC unit bit (bit 31), does nothing" << Endl;
+			logger
+				<< "   - unsetting (0) reset EPIC unit bit (bit 31), does nothing" << std::endl;
 		if(data & (uint32_t)0x20000000)
-			(*logger_import)
-				<< "   - setting EPIC mixed-mode (bit 29 = 1)" << Endl;
+			logger
+				<< "   - setting EPIC mixed-mode (bit 29 = 1)" << std::endl;
 		else
-			(*logger_import)
-				<< "   - setting EPIC Pass-through mode (bit 29 = 0)" << Endl;
+			logger
+				<< "   - setting EPIC Pass-through mode (bit 29 = 0)" << std::endl;
 	}
 	if(data & (uint32_t)0x80000000)
 		ResetEPIC();
 	else
 		if(data & (uint32_t)0x20000000)
 			regs.gcr = data;
-	if(DEBUG && logger_import) 
-		(*logger_import) << "Checking GCR = 0x" << Hex << regs.gcr << Dec << Endl << EndDebugInfo;
+	if(unlikely(DEBUG && verbose)) 
+		logger << "Checking GCR = 0x" << std::hex << regs.gcr << std::dec << std::endl << EndDebugInfo;
 }
 
 template <class PHYSICAL_ADDR, 
@@ -1730,43 +1723,43 @@ WriteEICR(uint32_t data) {
 	/* checking reserved bits */
 	if(data & (uint32_t)0x80000000) {
 		data = data & ~((uint32_t)0x80000000);
-		if(logger_import)
-			(*logger_import) << DebugWarning
+		if(unlikely(verbose))
+			logger << DebugWarning
 				<< LOCATION
 				<< "Trying to modify bit 31 of register EICR, resetting it to 0 (original value = 0x"
-				<< Hex << orig_data << Dec
-				<< ", new value = 0x" << Hex << data << Dec << ")"
-				<< Endl << EndDebugWarning;
+				<< std::hex << orig_data << std::dec
+				<< ", new value = 0x" << std::hex << data << std::dec << ")"
+				<< std::endl << EndDebugWarning;
 	}
 	if(data & (uint32_t)0x07ffffff) {
 		data = data & ~((uint32_t)0x07ffffff);
-		if(logger_import)
-			(*logger_import) << DebugWarning
+		if(unlikely(verbose))
+			logger << DebugWarning
 				<< LOCATION
 				<< "Trying to modify bits 26-0 of register EICR, resetting it to 0 (original value = 0x"
-				<< Hex << orig_data << Dec
-				<< ", new value = 0x" << Hex << data << Dec << ")"
-				<< Endl << EndDebugWarning;
+				<< std::hex << orig_data << std::dec
+				<< ", new value = 0x" << std::hex << data << std::dec << ")"
+				<< std::endl << EndDebugWarning;
 	}
 	
-	if(DEBUG && logger_import) {
-		(*logger_import) << DebugInfo << LOCATION
-			<< "Updating register EICR with value 0x" << Hex << data << Dec
-			<< " (previous value 0x" << Hex << regs.eicr << Dec << ")"
-			<< ", modified fields: " << Endl;
+	if(unlikely(DEBUG && verbose)) {
+		logger << DebugInfo << LOCATION
+			<< "Updating register EICR with value 0x" << std::hex << data << std::dec
+			<< " (previous value 0x" << std::hex << regs.eicr << std::dec << ")"
+			<< ", modified fields: " << std::endl;
 		uint32_t val = (data >> 28) & (uint32_t)0x07;
-		(*logger_import) 
-			<< "   - setting clock ratio to 0x" << Hex << val << Dec << Endl;
+		logger 
+			<< "   - setting clock ratio to 0x" << std::hex << val << std::dec << std::endl;
 		if(data & (uint32_t)0x08000000)
-			(*logger_import)
-				<< "   - setting (1) serial interrupt bit (bit 27), serial interrupt mode" << Endl;
+			logger
+				<< "   - setting (1) serial interrupt bit (bit 27), serial interrupt mode" << std::endl;
 		else
-			(*logger_import)
-				<< "   - unsetting (0) serial interrupt bit (bit 27), direct interrupt mode" << Endl;
+			logger
+				<< "   - unsetting (0) serial interrupt bit (bit 27), direct interrupt mode" << std::endl;
 	}
 	regs.eicr = data;
-	if(DEBUG && logger_import) 
-		(*logger_import) << "Checking EICR = 0x" << Hex << regs.eicr << Dec << Endl << EndDebugInfo;
+	if(unlikely(DEBUG && verbose)) 
+		logger << "Checking EICR = 0x" << std::hex << regs.eicr << std::dec << std::endl << EndDebugInfo;
 }
 
 template <class PHYSICAL_ADDR, 
@@ -1790,57 +1783,57 @@ WriteGTVPR(uint32_t data, unsigned int id) {
 	/* cheking reserved bits */
 	if(data & (uint32_t)0x3ff00000) {
 		data = data & ~((uint32_t)0x3ff00000);
-		if(logger_import)
-			(*logger_import) << DebugWarning
+		if(unlikely(verbose))
+			logger << DebugWarning
 				<< LOCATION
 				<< "Trying to modify bits 29-20 of register " << name << ", resetting them to 0 (original value = 0x"
-				<< Hex << orig_data << Dec
-				<< ", new value = 0x" << Hex << data << Dec << ")"
-				<< Endl << EndDebugWarning;
+				<< std::hex << orig_data << std::dec
+				<< ", new value = 0x" << std::hex << data << std::dec << ")"
+				<< std::endl << EndDebugWarning;
 	}
 	if(data & (uint32_t)0x0000ff00) {
 		data = data & ~((uint32_t)0x0000ff00);
-		if(logger_import)
-			(*logger_import) << DebugWarning
+		if(unlikely(verbose))
+			logger << DebugWarning
 				<< LOCATION
 				<< "Trying to modify bits 15-8 of register " << name << ", resetting them to 0 (original value = 0x"
-				<< Hex << orig_data << Dec
-				<< ", new value = 0x" << Hex << data << Dec << ")"
-				<< Endl << EndDebugWarning;
+				<< std::hex << orig_data << std::dec
+				<< ", new value = 0x" << std::hex << data << std::dec << ")"
+				<< std::endl << EndDebugWarning;
 	}
 	/* keeping activity bit (bit 30) */
 	if((data & (uint32_t)0x40000000) != (*reg & (uint32_t)0x40000000)) {
 		data = (data & ~((uint32_t)0x40000000)) | (*reg & (uint32_t)0x40000000);
-		if(logger_import)
-			(*logger_import) << DebugWarning << LOCATION
+		if(unlikely(verbose))
+			logger << DebugWarning << LOCATION
 				<< "Trying to modify read-only bit 30 (activity bit) of register " << name << ", resetting it (original value = 0x"
-				<< Hex << orig_data << Dec
-				<< ", new value = 0x" << Hex << data << Dec << ")"
-				<< Endl << EndDebugWarning;
+				<< std::hex << orig_data << std::dec
+				<< ", new value = 0x" << std::hex << data << std::dec << ")"
+				<< std::endl << EndDebugWarning;
 	}
 	
-	if(DEBUG && logger_import) {
-		(*logger_import) << DebugInfo << LOCATION
-			<< "Updating register " << name << " with value 0x" << Hex << data << Dec
-			<< " (previous value 0x" << Hex << (*reg) << Dec << ")"
-			<< ", modified fields: " << Endl;
+	if(unlikely(DEBUG && verbose)) {
+		logger << DebugInfo << LOCATION
+			<< "Updating register " << name << " with value 0x" << std::hex << data << std::dec
+			<< " (previous value 0x" << std::hex << (*reg) << std::dec << ")"
+			<< ", modified fields: " << std::endl;
 		if(data & (uint32_t)0x80000000)
-			(*logger_import) 
-				<< "   - setting (1) mask bit (bit 31), interrupts from this source disabled" << Endl;
+			logger 
+				<< "   - setting (1) mask bit (bit 31), interrupts from this source disabled" << std::endl;
 		else
-			(*logger_import)
-				<< "   - unsetting (0) mask bit (bit 31), interrupts form this source enabled" << Endl;
+			logger
+				<< "   - unsetting (0) mask bit (bit 31), interrupts form this source enabled" << std::endl;
 		uint32_t val;
 		val = (data >> 16) & (uint32_t)0x0f;
-		(*logger_import)
-			<< "   - setting priority (bits 19-16) to 0x" << Hex << val << Dec << Endl;
+		logger
+			<< "   - setting priority (bits 19-16) to 0x" << std::hex << val << std::dec << std::endl;
 		val = data & (uint32_t)0xff;
-		(*logger_import)
-			<< "   - setting vector (bits 7-0) to 0x" << Hex << val << Dec << Endl;
+		logger
+			<< "   - setting vector (bits 7-0) to 0x" << std::hex << val << std::dec << std::endl;
 	}
 	*reg = data;
-	if(DEBUG && logger_import) 
-		(*logger_import) << "Checking " << name << " = 0x" << Hex << *reg << Dec << Endl << EndDebugInfo;
+	if(unlikely(DEBUG && verbose)) 
+		logger << "Checking " << name << " = 0x" << std::hex << *reg << std::dec << std::endl << EndDebugInfo;
 }
 
 template <class PHYSICAL_ADDR,
@@ -1949,89 +1942,89 @@ WriteVPR(uint32_t data, unsigned int id) {
 	/* cheking reserved bits */
 	if(data & (uint32_t)0x3f000000) {
 		data = data & ~((uint32_t)0x3f000000);
-		if(logger_import)
-			(*logger_import) << DebugWarning
+		if(unlikely(verbose))
+			logger << DebugWarning
 				<< LOCATION
 				<< "Trying to modify bits 29-24 of register " << name << ", resetting them to 0 (original value = 0x"
-				<< Hex << orig_data << Dec
-				<< ", new value = 0x" << Hex << data << Dec << ")"
-				<< Endl << EndDebugWarning;
+				<< std::hex << orig_data << std::dec
+				<< ", new value = 0x" << std::hex << data << std::dec << ")"
+				<< std::endl << EndDebugWarning;
 	}
 	if(data & (uint32_t)0x00300000) {
 		data = data & ~((uint32_t)0x00300000);
-		if(logger_import)
-			(*logger_import) << DebugWarning
+		if(unlikely(verbose))
+			logger << DebugWarning
 				<< LOCATION
 				<< "Trying to modify bits 21-20 of register " << name << ", resetting them to 0 (original value = 0x"
-				<< Hex << orig_data << Dec
-				<< ", new value = 0x" << Hex << data << Dec << ")"
-				<< Endl << EndDebugWarning;
+				<< std::hex << orig_data << std::dec
+				<< ", new value = 0x" << std::hex << data << std::dec << ")"
+				<< std::endl << EndDebugWarning;
 	}
 	if(data & (uint32_t)0x0000ff00) {
 		data = data & ~((uint32_t)0x0000ff00);
-		if(logger_import)
-			(*logger_import) << DebugWarning
+		if(unlikely(verbose))
+			logger << DebugWarning
 				<< LOCATION
 				<< "Trying to modify bits 15-8 of register " << name << ", resetting them to 0 (original value = 0x"
-				<< Hex << orig_data << Dec
-				<< ", new value = 0x" << Hex << data << Dec << ")"
-				<< Endl << EndDebugWarning;
+				<< std::hex << orig_data << std::dec
+				<< ", new value = 0x" << std::hex << data << std::dec << ")"
+				<< std::endl << EndDebugWarning;
 	}
 	/* keeping activity bit (bit 30) */
 	if((data & (uint32_t)0x40000000) != (*reg & (uint32_t)0x40000000)) {
 		data = (data & ~((uint32_t)0x40000000)) | (*reg & (uint32_t)0x40000000);
-		if(logger_import)
-			(*logger_import) << DebugWarning << LOCATION
+		if(unlikely(verbose))
+			logger << DebugWarning << LOCATION
 				<< "Trying to modify read-only bit 30 (activity bit) of register " << name << ", resetting it (original value = 0x"
-				<< Hex << orig_data << Dec
-				<< ", new value = 0x" << Hex << data << Dec << ")"
-				<< Endl << EndDebugWarning;
+				<< std::hex << orig_data << std::dec
+				<< ", new value = 0x" << std::hex << data << std::dec << ")"
+				<< std::endl << EndDebugWarning;
 	}
 	
-	if(DEBUG && logger_import) {
-		(*logger_import) << DebugInfo << LOCATION
-			<< "Updating register " << name << " with value 0x" << Hex << data << Dec
-			<< " (previous value 0x" << Hex << (*reg) << Dec << ")"
-			<< ", modified fields: " << Endl;
+	if(unlikely(DEBUG && verbose)) {
+		logger << DebugInfo << LOCATION
+			<< "Updating register " << name << " with value 0x" << std::hex << data << std::dec
+			<< " (previous value 0x" << std::hex << (*reg) << std::dec << ")"
+			<< ", modified fields: " << std::endl;
 		if(data & (uint32_t)0x80000000)
-			(*logger_import) 
-				<< "   - setting (1) mask bit (bit 31), interrupts from this source disabled" << Endl;
+			logger 
+				<< "   - setting (1) mask bit (bit 31), interrupts from this source disabled" << std::endl;
 		else
-			(*logger_import)
-				<< "   - unsetting (0) mask bit (bit 31), interrupts form this source enabled" << Endl;
+			logger
+				<< "   - unsetting (0) mask bit (bit 31), interrupts form this source enabled" << std::endl;
 		if(data & (uint32_t)0x00800000)
-			(*logger_import)
-				<< "   - setting (1) polarity (bit 23), polarity is active-high or positive-edge triggered" << Endl;
+			logger
+				<< "   - setting (1) polarity (bit 23), polarity is active-high or positive-edge triggered" << std::endl;
 		else
-			(*logger_import)
-				<< "   - unsetting (0) polarity (bit 23), polarity is active-low or negative-edge triggered" << Endl;
+			logger
+				<< "   - unsetting (0) polarity (bit 23), polarity is active-low or negative-edge triggered" << std::endl;
 		if(data & (uint32_t)0x00400000)
-			(*logger_import)
-				<< "   - setting (1) sense (bit 22), external interrupt is level-sensitive" << Endl;
+			logger
+				<< "   - setting (1) sense (bit 22), external interrupt is level-sensitive" << std::endl;
 		else
-			(*logger_import)
-				<< "   - unsetting (0) sense (bit 22), external interrupt is edge-sensitive" << Endl;
+			logger
+				<< "   - unsetting (0) sense (bit 22), external interrupt is edge-sensitive" << std::endl;
 		uint32_t val;
 		val = (data >> 16) & (uint32_t)0x0f;
-		(*logger_import)
-			<< "   - setting priority (bits 19-16) to 0x" << Hex << val << Dec << Endl;
+		logger
+			<< "   - setting priority (bits 19-16) to 0x" << std::hex << val << std::dec << std::endl;
 		val = data & (uint32_t)0xff;
-		(*logger_import)
-			<< "   - setting vector (bits 7-0) to 0x" << Hex << val << Dec << Endl;
+		logger
+			<< "   - setting vector (bits 7-0) to 0x" << std::hex << val << std::dec << std::endl;
 	}
 	*reg = data;
-	if(DEBUG && logger_import) 
-		(*logger_import) << "Checking " << name << " = 0x" << Hex << *reg << Dec << Endl << EndDebugInfo;
+	if(unlikely(DEBUG && verbose)) 
+		logger << "Checking " << name << " = 0x" << std::hex << *reg << std::dec << std::endl << EndDebugInfo;
 	// if the vpr activity bit is set and the previous mask was set and unset with the new data
 	//   then we need to check if a new interruption needs to be requested to the processor
 	if(GetActivity(data)) {
 		if(GetMask(prev_reg)) {
 			if(!GetMask(data)) {
-				if(DEBUG && logger_import) {
-					(*logger_import) << DebugInfo << LOCATION
+				if(unlikely(DEBUG && verbose)) {
+					logger << DebugInfo << LOCATION
 						<< "Mask bit of " << name << " changed from 1 (disable) to 0 (enable), "
 						<< "checking interruptions to check if the processor should be signaled with "
-						<< "an interruption" << Endl
+						<< "an interruption" << std::endl
 						<< EndDebugInfo;
 				}
 				CheckInterruptions();
@@ -2050,26 +2043,26 @@ WritePCTPR(uint32_t data) {
 	/* check reserved bits */
 	if(data & (uint32_t)0xfffffff0) {
 		data = data & (uint32_t)0x0f;
-		if(logger_import)
-			(*logger_import) << DebugWarning
+		if(unlikely(verbose))
+			logger << DebugWarning
 				<< LOCATION
 				<< "Trying to modify bits 31-4 of register PCTPR, resetting them to 0 (original value = 0x"
-				<< Hex << orig_data << Dec
-				<< ", new value = 0x" << Hex << data << Dec << ")"
-				<< Endl << EndDebugWarning;
+				<< std::hex << orig_data << std::dec
+				<< ", new value = 0x" << std::hex << data << std::dec << ")"
+				<< std::endl << EndDebugWarning;
 	}
 		
-	if(DEBUG && logger_import) {
-		(*logger_import) << DebugInfo << LOCATION
-			<< "Updating register PCTPR with value 0x" << Hex << data << Dec
-			<< " (previous value 0x" << Hex << regs.pctpr << Dec << ")"
-			<< ", modified fields: " << Endl;
-		(*logger_import)
-			<< "   - task priority (bits 3-0) to 0x" << Hex << data << Dec << Endl;
+	if(unlikely(DEBUG && verbose)) {
+		logger << DebugInfo << LOCATION
+			<< "Updating register PCTPR with value 0x" << std::hex << data << std::dec
+			<< " (previous value 0x" << std::hex << regs.pctpr << std::dec << ")"
+			<< ", modified fields: " << std::endl;
+		logger
+			<< "   - task priority (bits 3-0) to 0x" << std::hex << data << std::dec << std::endl;
 	}
 	regs.pctpr = data;
-	if(DEBUG && logger_import) 
-		(*logger_import) << "Checking PCTPR = 0x" << Hex << regs.pctpr << Dec << Endl << EndDebugInfo;
+	if(unlikely(DEBUG && verbose)) 
+		logger << "Checking PCTPR = 0x" << std::hex << regs.pctpr << std::dec << std::endl << EndDebugInfo;
 }
 
 template <class PHYSICAL_ADDR, 
@@ -2079,10 +2072,10 @@ EPIC<PHYSICAL_ADDR, DEBUG> ::
 WriteIACK(uint32_t data) {
 	uint32_t orig_data = data;
 	
-	if(logger_import) {
-		(*logger_import) << DebugWarning << LOCATION
-			<< "Trying to write read-only register IACK with value 0x" << Hex << data << Dec
-			<< ", ignoring write command" << Endl
+	if(unlikely(verbose)) {
+		logger << DebugWarning << LOCATION
+			<< "Trying to write read-only register IACK with value 0x" << std::hex << data << std::dec
+			<< ", ignoring write command" << std::endl
 			<< EndDebugWarning;
 	}
 }
@@ -2092,19 +2085,19 @@ template <class PHYSICAL_ADDR,
 void
 EPIC<PHYSICAL_ADDR, DEBUG> ::
 WriteEOI(uint32_t data) {
-	if(data != 0 && logger_import) {
-		(*logger_import) << DebugWarning << LOCATION
+	if(data != 0 && verbose) {
+		logger << DebugWarning << LOCATION
 			<< "Trying to write a value different than 0 (0x" 
-			<< Hex << data << Dec << ") in register EIO, resetting it to 0"
-			<< Endl << EndDebugWarning;
+			<< std::hex << data << std::dec << ") in register EIO, resetting it to 0"
+			<< std::endl << EndDebugWarning;
 	}
 	
 	/* Remove the highest irq in service (in inservice_reg) */
 	if(!inservice_reg.HasIRQ()) {
-		if(logger_import) 
-			(*logger_import) << DebugWarning << LOCATION
+		if(unlikely(verbose)) 
+			logger << DebugWarning << LOCATION
 				<< "Write EIO received when there is no interruption in the "
-				<< "inservice register" << Endl << EndDebugWarning;
+				<< "inservice register" << std::endl << EndDebugWarning;
 		return;
 	}
 	inservice_reg.RemoveIRQ();
@@ -2117,11 +2110,11 @@ template <class PHYSICAL_ADDR,
 void 
 EPIC<PHYSICAL_ADDR, DEBUG> ::
 WriteEVI(uint32_t data) {
-	if(logger_import)
-		(*logger_import) << DebugWarning << LOCATION
+	if(unlikely(verbose))
+		logger << DebugWarning << LOCATION
 			<< "Trying to write read-only register EVI with data 0x" 
-			<< Hex << data << Dec << ", resetting it to 0x"
-			<< Hex << regs.evi << Dec << Endl << EndDebugWarning;
+			<< std::hex << data << std::dec << ", resetting it to 0x"
+			<< std::hex << regs.evi << std::dec << std::endl << EndDebugWarning;
 }
 
 template <class PHYSICAL_ADDR, 
@@ -2130,26 +2123,26 @@ void
 EPIC<PHYSICAL_ADDR, DEBUG> ::
 WritePI(uint32_t data) {
 	if(data > 1) {
-		if(logger_import)
-			(*logger_import) << DebugWarning << LOCATION
+		if(unlikely(verbose))
+			logger << DebugWarning << LOCATION
 				<< "Writing reserved bits 31-1 of register PI with data 0x"
-				<< Hex << (data >> 1) << Dec << ", resetting them to 0 "
-				<< "(previous data = 0x" << Hex << data << Dec
-				<< ", new data = 0x" << Hex << (data & (uint32_t)0x1) << Dec << ")"
-				<< Endl << EndDebugWarning;
+				<< std::hex << (data >> 1) << std::dec << ", resetting them to 0 "
+				<< "(previous data = 0x" << std::hex << data << std::dec
+				<< ", new data = 0x" << std::hex << (data & (uint32_t)0x1) << std::dec << ")"
+				<< std::endl << EndDebugWarning;
 		data = data & (uint32_t)0x1; 
 	}
 	
 	if(data) {
-		if(DEBUG && logger_import)
-			(*logger_import) << DebugInfo << LOCATION
-				<< "Signaling a soft reset interrupt" << Endl
+		if(unlikely(DEBUG && verbose))
+			logger << DebugInfo << LOCATION
+				<< "Signaling a soft reset interrupt" << std::endl
 				<< EndDebugInfo;  
 		SetSoftReset();
 	} else {
-		if(DEBUG && logger_import)
-			(*logger_import) << DebugInfo << LOCATION
-				<< "Disabling the soft reset interrupt" << Endl
+		if(unlikely(DEBUG && verbose))
+			logger << DebugInfo << LOCATION
+				<< "Disabling the soft reset interrupt" << std::endl
 				<< EndDebugInfo;  
 		UnsetSoftReset();
 	}
@@ -2161,20 +2154,20 @@ void
 EPIC<PHYSICAL_ADDR, DEBUG> ::
 WriteSVR(uint32_t data) {
 	if(data & 0xffffff00) {
-		if(logger_import)
-			(*logger_import) << DebugWarning << LOCATION
+		if(unlikely(verbose))
+			logger << DebugWarning << LOCATION
 				<< "Writing reserved bits 31-8 of register SVR with data 0x"
-				<< Hex << (data >> 8) << Dec << ", resetting them to 0 "
-				<< "(previous data = 0x" << Hex << data << Dec
-				<< ", new data = 0x" << Hex << (data & (uint32_t)0x00ff) << Dec << ")"
-				<< Endl << EndDebugWarning;
+				<< std::hex << (data >> 8) << std::dec << ", resetting them to 0 "
+				<< "(previous data = 0x" << std::hex << data << std::dec
+				<< ", new data = 0x" << std::hex << (data & (uint32_t)0x00ff) << std::dec << ")"
+				<< std::endl << EndDebugWarning;
 		data = data & (uint32_t)0x0ff;
 	}
-	if(DEBUG && logger_import)
-		(*logger_import) << DebugInfo << LOCATION
+	if(unlikely(DEBUG && verbose))
+		logger << DebugInfo << LOCATION
 			<< "Setting Spurious Vector Register (SVR) to 0x"
-			<< Hex << data << Dec
-			<< Endl << EndDebugInfo;
+			<< std::hex << data << std::dec
+			<< std::endl << EndDebugInfo;
 	regs.svr = data;
 }
 
@@ -2183,12 +2176,12 @@ template <class PHYSICAL_ADDR,
 void 
 EPIC<PHYSICAL_ADDR, DEBUG> ::
 WriteTFRR(uint32_t data) {
-	if(DEBUG && logger_import)
-		(*logger_import) << DebugInfo << LOCATION
+	if(unlikely(DEBUG && verbose))
+		logger << DebugInfo << LOCATION
 			<< "Setting Timer Frequency Reporting Register (TFRR) to 0x"
-			<< Hex << data << Dec << " (previous value = 0x"
-			<< Hex << regs.tfrr << Dec << ")"
-			<< Endl << EndDebugInfo;
+			<< std::hex << data << std::dec << " (previous value = 0x"
+			<< std::hex << regs.tfrr << std::dec << ")"
+			<< std::endl << EndDebugInfo;
 	regs.tfrr = data;
 }
 
@@ -2197,11 +2190,11 @@ template <class PHYSICAL_ADDR,
 void 
 EPIC<PHYSICAL_ADDR, DEBUG> ::
 WriteGTCCR(uint32_t data, unsigned int id) {
-	if(logger_import)
-		(*logger_import) << DebugWarning << LOCATION
+	if(unlikely(verbose))
+		logger << DebugWarning << LOCATION
 			<< "Trying to write read-only register GTCCR[" << id << "] with value 0x"
-			<< Hex << data << Dec << ", ignoring write"
-			<< Endl << EndDebugWarning;
+			<< std::hex << data << std::dec << ", ignoring write"
+			<< std::endl << EndDebugWarning;
 }
 
 template <class PHYSICAL_ADDR, 
@@ -2209,11 +2202,11 @@ template <class PHYSICAL_ADDR,
 void 
 EPIC<PHYSICAL_ADDR, DEBUG> ::
 WriteGTDR(uint32_t data, unsigned int id) {
-	if(logger_import)
-		(*logger_import) << DebugWarning << LOCATION
+	if(unlikely(verbose))
+		logger << DebugWarning << LOCATION
 			<< "Trying to write read-only register GTDR[" << id << "] with value 0x"
-			<< Hex << data << Dec << ", ignoring write"
-			<< Endl << EndDebugWarning;
+			<< std::hex << data << std::dec << ", ignoring write"
+			<< std::endl << EndDebugWarning;
 }
 
 template <class PHYSICAL_ADDR, 
@@ -2223,7 +2216,7 @@ EPIC<PHYSICAL_ADDR, DEBUG> ::
 WriteDR(uint32_t data, unsigned int id) {
 	string name;
 
-	if(logger_import) {
+	if(unlikely(verbose)) {
 		/* check with register are we modifying IVPR or SVPR */
 		switch(id) {
 		case 0:
@@ -2273,10 +2266,10 @@ WriteDR(uint32_t data, unsigned int id) {
 		case 14: name = Registers::SVPR14_NAME;	break;
 		case 15: name = Registers::SVPR15_NAME;	break;
 		}
-		(*logger_import) << DebugWarning << LOCATION
+		logger << DebugWarning << LOCATION
 			<< "Trying to write read-only register " << name << " with value 0x"
-			<< Hex << data << Dec << ", ignoring write"
-			<< Endl << EndDebugWarning;
+			<< std::hex << data << std::dec << ", ignoring write"
+			<< std::endl << EndDebugWarning;
 	}
 }
 
@@ -2300,79 +2293,79 @@ WriteIIVPR(uint32_t data, unsigned int id) {
 	/* cheking reserved bits */
 	if(data & (uint32_t)0x3f000000) {
 		data = data & ~((uint32_t)0x3f000000);
-		if(logger_import)
-			(*logger_import) << DebugWarning
+		if(unlikely(verbose))
+			logger << DebugWarning
 				<< LOCATION
 				<< "Trying to modify bits 29-24 of register " << name << ", resetting them to 0 (original value = 0x"
-				<< Hex << orig_data << Dec
-				<< ", new value = 0x" << Hex << data << Dec << ")"
-				<< Endl << EndDebugWarning;
+				<< std::hex << orig_data << std::dec
+				<< ", new value = 0x" << std::hex << data << std::dec << ")"
+				<< std::endl << EndDebugWarning;
 	}
 	if(data & (uint32_t)0x00300000) {
 		data = data & ~((uint32_t)0x00300000);
-		if(logger_import)
-			(*logger_import) << DebugWarning
+		if(unlikely(verbose))
+			logger << DebugWarning
 				<< LOCATION
 				<< "Trying to modify bits 21-20 of register " << name << ", resetting them to 0 (original value = 0x"
-				<< Hex << orig_data << Dec
-				<< ", new value = 0x" << Hex << data << Dec << ")"
-				<< Endl << EndDebugWarning;
+				<< std::hex << orig_data << std::dec
+				<< ", new value = 0x" << std::hex << data << std::dec << ")"
+				<< std::endl << EndDebugWarning;
 	}
 	if(data & (uint32_t)0x0000ff00) {
 		data = data & ~((uint32_t)0x0000ff00);
-		if(logger_import)
-			(*logger_import) << DebugWarning
+		if(unlikely(verbose))
+			logger << DebugWarning
 				<< LOCATION
 				<< "Trying to modify bits 15-8 of register " << name << ", resetting them to 0 (original value = 0x"
-				<< Hex << orig_data << Dec
-				<< ", new value = 0x" << Hex << data << Dec << ")"
-				<< Endl << EndDebugWarning;
+				<< std::hex << orig_data << std::dec
+				<< ", new value = 0x" << std::hex << data << std::dec << ")"
+				<< std::endl << EndDebugWarning;
 	}
 	/* keeping activity bit (bit 30) */
 	if((data & (uint32_t)0x40000000) != (*reg & (uint32_t)0x40000000)) {
 		data = (data & ~((uint32_t)0x40000000)) | (*reg & (uint32_t)0x40000000);
-		if(logger_import)
-			(*logger_import) << DebugWarning << LOCATION
+		if(unlikely(verbose))
+			logger << DebugWarning << LOCATION
 				<< "Trying to modify read-only bit 30 (activity bit) of register " << name << ", resetting it (original value = 0x"
-				<< Hex << orig_data << Dec
-				<< ", new value = 0x" << Hex << data << Dec << ")"
-				<< Endl << EndDebugWarning;
+				<< std::hex << orig_data << std::dec
+				<< ", new value = 0x" << std::hex << data << std::dec << ")"
+				<< std::endl << EndDebugWarning;
 	}
 	
-	if(DEBUG && logger_import) {
-		(*logger_import) << DebugInfo << LOCATION
-			<< "Updating register " << name << " with value 0x" << Hex << data << Dec
-			<< " (previous value 0x" << Hex << (*reg) << Dec << ")"
-			<< ", modified fields: " << Endl;
+	if(unlikely(DEBUG && verbose)) {
+		logger << DebugInfo << LOCATION
+			<< "Updating register " << name << " with value 0x" << std::hex << data << std::dec
+			<< " (previous value 0x" << std::hex << (*reg) << std::dec << ")"
+			<< ", modified fields: " << std::endl;
 		if(data & (uint32_t)0x80000000)
-			(*logger_import) 
-				<< "   - setting (1) mask bit (bit 31), interrupts from this source disabled" << Endl;
+			logger 
+				<< "   - setting (1) mask bit (bit 31), interrupts from this source disabled" << std::endl;
 		else
-			(*logger_import)
-				<< "   - unsetting (0) mask bit (bit 31), interrupts form this source enabled" << Endl;
+			logger
+				<< "   - unsetting (0) mask bit (bit 31), interrupts form this source enabled" << std::endl;
 		if(data & (uint32_t)0x00800000)
-			(*logger_import)
-				<< "   - setting (1) polarity (bit 23), polarity is active-high or positive-edge triggered" << Endl;
+			logger
+				<< "   - setting (1) polarity (bit 23), polarity is active-high or positive-edge triggered" << std::endl;
 		else
-			(*logger_import)
-				<< "   - unsetting (0) polarity (bit 23), polarity is active-low or negative-edge triggered" << Endl;
+			logger
+				<< "   - unsetting (0) polarity (bit 23), polarity is active-low or negative-edge triggered" << std::endl;
 		if(data & (uint32_t)0x00400000)
-			(*logger_import)
-				<< "   - setting (1) sense (bit 22), external interrupt is level-sensitive" << Endl;
+			logger
+				<< "   - setting (1) sense (bit 22), external interrupt is level-sensitive" << std::endl;
 		else
-			(*logger_import)
-				<< "   - unsetting (0) sense (bit 22), external interrupt is edge-sensitive" << Endl;
+			logger
+				<< "   - unsetting (0) sense (bit 22), external interrupt is edge-sensitive" << std::endl;
 		uint32_t val;
 		val = (data >> 16) & (uint32_t)0x0f;
-		(*logger_import)
-			<< "   - setting priority (bits 19-16) to 0x" << Hex << val << Dec << Endl;
+		logger
+			<< "   - setting priority (bits 19-16) to 0x" << std::hex << val << std::dec << std::endl;
 		val = data & (uint32_t)0xff;
-		(*logger_import)
-			<< "   - setting vector (bits 7-0) to 0x" << Hex << val << Dec << Endl;
+		logger
+			<< "   - setting vector (bits 7-0) to 0x" << std::hex << val << std::dec << std::endl;
 	}
 	*reg = data;
-	if(DEBUG && logger_import) 
-		(*logger_import) << "Checking " << name << " = 0x" << Hex << *reg << Dec << Endl << EndDebugInfo;
+	if(unlikely(DEBUG && verbose)) 
+		logger << "Checking " << name << " = 0x" << std::hex << *reg << std::dec << std::endl << EndDebugInfo;
 }
 
 template <class PHYSICAL_ADDR, 
@@ -2380,11 +2373,11 @@ template <class PHYSICAL_ADDR,
 void 
 EPIC<PHYSICAL_ADDR, DEBUG> ::
 WriteIIDR(uint32_t data, unsigned int id) {
-	if(DEBUG && logger_import) {
-		(*logger_import) << DebugWarning << LOCATION
+	if(unlikely(DEBUG && verbose)) {
+		logger << DebugWarning << LOCATION
 			<< "Trying to write read-only register IIDR[" << id << "] with value 0x"
-			<< Hex << data << Dec << ", ignoring write"
-			<< Endl << EndDebugWarning;
+			<< std::hex << data << std::dec << ", ignoring write"
+			<< std::endl << EndDebugWarning;
 	}
 }
 
@@ -2396,10 +2389,10 @@ WriteRegister(PHYSICAL_ADDR addr, uint32_t data, uint32_t size) {
 	bool handled = false;
 
 	if(size != sizeof(uint32_t)) {
-		(*logger_import) << DebugWarning
-			<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
-			<< "Trying to write EPIC register at address 0x" << Hex << addr << Dec
-			<< " with an unaligned size (size = " << size << "), doing nothing" << Endl
+		logger << DebugWarning
+			<< LOCATION
+			<< "Trying to write EPIC register at address 0x" << std::hex << addr << std::dec
+			<< " with an unaligned size (size = " << size << "), doing nothing" << std::endl
 			<< EndDebugWarning;
 		return;
 	}
@@ -2668,14 +2661,14 @@ WriteRegister(PHYSICAL_ADDR addr, uint32_t data, uint32_t size) {
 	}
 
 	if(!handled) {
-		if(DEBUG && logger_import) {
-			(*logger_import) << DebugWarning
-				<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+		if(unlikely(DEBUG && verbose)) {
+			logger << DebugWarning
+				<< LOCATION
 				<< "TODO: trying to write address 0x"
-				<< Hex << addr << Dec
-				<< " with data 0x" << Hex << data << Dec
+				<< std::hex << addr << std::dec
+				<< " with data 0x" << std::hex << data << std::dec
 				<< " (" << size << " bytes)"
-				<< Endl << EndDebugWarning;
+				<< std::endl << EndDebugWarning;
 		}
 	}
 }
@@ -2692,11 +2685,11 @@ GetHighestIRQ() {
 	uint32_t max_prio = 0;
 	uint32_t irq = 0;
 
-	if(DEBUG && logger_import)
-		(*logger_import) << DebugInfo << LOCATION
-			<< "Checking the pending register for the highest present IRQ" << Endl
-			<< " - pending register = 0x" << Hex << pending_reg << Dec
-			<< Endl << EndDebugInfo;	
+	if(unlikely(DEBUG && verbose))
+		logger << DebugInfo << LOCATION
+			<< "Checking the pending register for the highest present IRQ" << std::endl
+			<< " - pending register = 0x" << std::hex << pending_reg << std::dec
+			<< std::endl << EndDebugInfo;	
 
 	for(uint32_t i = IRQ_T0; i <= IRQ_15; i = i << 1) {
 		if(pending_reg & i) {
@@ -2837,10 +2830,10 @@ ReadIACK() {
 	uint32_t irq;
 	uint32_t vpr;
 	
-	if(DEBUG && logger_import) {
-		(*logger_import) << DebugInfo << LOCATION
+	if(unlikely(DEBUG && verbose)) {
+		logger << DebugInfo << LOCATION
 			<< "Performing read on register IACK"
-			<< Endl << EndDebugInfo;
+			<< std::endl << EndDebugInfo;
 	}
 	/* Return the interrupt vector corresponding to the highest priority pending
 	 *   interrupt. Other actions:
@@ -2853,18 +2846,18 @@ ReadIACK() {
 	/* check if there is at least an interruption in the irq_pending_reg, if 
 	 *   not return the spurious vector */
 	if(pending_reg == 0) {
-		if(DEBUG && logger_import) {
-			(*logger_import) << DebugInfo << LOCATION
+		if(unlikely(DEBUG && verbose)) {
+			logger << DebugInfo << LOCATION
 				<< "No pending interruption found in the pending register (pending_reg = 0x0),"
-				<< " returning spurious vector (svr = 0x" << Hex << regs.svr << Dec << ")"
-				<< Endl << EndDebugInfo;
+				<< " returning spurious vector (svr = 0x" << std::hex << regs.svr << std::dec << ")"
+				<< std::endl << EndDebugInfo;
 		}
 		return regs.svr;
 	}
-	if(DEBUG && logger_import) {
-		(*logger_import) << DebugInfo << LOCATION
+	if(unlikely(DEBUG && verbose)) {
+		logger << DebugInfo << LOCATION
 			<< "Found interruptions pending in the pending register (pending_reg = 0x"
-			<< Hex << pending_reg << Dec << ")" << Endl
+			<< std::hex << pending_reg << std::dec << ")" << std::endl
 			<< EndDebugInfo;
 	}
 	/* get the irq from the irq_selector. if there is no irq the return the 
@@ -2872,19 +2865,19 @@ ReadIACK() {
 	//irq = irq_selector;
 	irq = GetHighestIRQ();
 	if(irq == 0) {
-		if(DEBUG && logger_import) {
-			(*logger_import) << DebugInfo << LOCATION
+		if(unlikely(DEBUG && verbose)) {
+			logger << DebugInfo << LOCATION
 				<< "No interruption active found from the pending register, returning"
-				<< " spurious vector (svr = 0x" << Hex << regs.svr << Dec << ")"
-				<< Endl << EndDebugInfo;
+				<< " spurious vector (svr = 0x" << std::hex << regs.svr << std::dec << ")"
+				<< std::endl << EndDebugInfo;
 		}
 		return regs.svr;
 	}
-	if(DEBUG && logger_import) {
-		(*logger_import) << DebugInfo << LOCATION
+	if(unlikely(DEBUG && verbose)) {
+		logger << DebugInfo << LOCATION
 			<< "Found the highest interruption active and non masked found in the pending register,"
-			<< " irq mask = 0x" << Hex << irq << Dec
-			<< Endl << EndDebugInfo;
+			<< " irq mask = 0x" << std::hex << irq << std::dec
+			<< std::endl << EndDebugInfo;
 	}
 	/* get the vpr from the corresponding irq */
 	vpr = GetVPRFromIRQMask(irq);
@@ -2892,80 +2885,80 @@ ReadIACK() {
 	 *   irq in the inservice_reg, return the spurious vector */
 	uint32_t prio = GetPriority(vpr);
 	if(prio <= GetProcessorPriority()) {
-		if(DEBUG && logger_import) {
-			(*logger_import) << DebugInfo << LOCATION
+		if(unlikely(DEBUG && verbose)) {
+			logger << DebugInfo << LOCATION
 				<< "Irq priority smaller than the processor priority, returning spurious vector (svr = 0x"
-				<< Hex << regs.svr << Dec << "):" << Endl
-				<< " - irq mask = 0x" << Hex << irq << Dec << Endl
-				<< " - vpr = 0x" << Hex << vpr << Dec << " (priority = " << prio << ")" << Endl
-				<< " - processor priority = " << GetProcessorPriority() << Endl
+				<< std::hex << regs.svr << std::dec << "):" << std::endl
+				<< " - irq mask = 0x" << std::hex << irq << std::dec << std::endl
+				<< " - vpr = 0x" << std::hex << vpr << std::dec << " (priority = " << prio << ")" << std::endl
+				<< " - processor priority = " << GetProcessorPriority() << std::endl
 				<< EndDebugInfo;
 		}
 		return regs.svr;
 	}
-	if(DEBUG && logger_import) {
-		if(DEBUG && logger_import) {
-			(*logger_import) << DebugInfo << LOCATION
-				<< "Irq priority higher than the processor priority:" << Endl
-				<< " - irq mask = 0x" << Hex << irq << Dec << Endl
-				<< " - vpr = 0x" << Hex << vpr << Dec << " (priority = " << prio << ")" << Endl
-				<< " - processor priority = " << GetProcessorPriority() << Endl
+	if(unlikely(DEBUG && verbose)) {
+		if(unlikely(DEBUG && verbose)) {
+			logger << DebugInfo << LOCATION
+				<< "Irq priority higher than the processor priority:" << std::endl
+				<< " - irq mask = 0x" << std::hex << irq << std::dec << std::endl
+				<< " - vpr = 0x" << std::hex << vpr << std::dec << " (priority = " << prio << ")" << std::endl
+				<< " - processor priority = " << GetProcessorPriority() << std::endl
 				<< EndDebugInfo;
 		}
 	}
 	if(inservice_reg.Priority()) {
 		if(prio <= inservice_reg.Priority()) {
-			if(DEBUG && logger_import) {
-				(*logger_import) << DebugInfo << LOCATION
+			if(unlikely(DEBUG && verbose)) {
+				logger << DebugInfo << LOCATION
 					<< "Irq priority smaller than the inservice irq priority, returning spurious vector (svr = 0x"
-					<< Hex << regs.svr << Dec << "):" << Endl
-					<< " - irq mask = 0x" << Hex << irq << Dec << Endl
-					<< " - vpr = 0x" << Hex << vpr << Dec << " (priority = " << prio << ")" << Endl
-					<< " - inservice irq priority = " << inservice_reg.Priority() << Endl
+					<< std::hex << regs.svr << std::dec << "):" << std::endl
+					<< " - irq mask = 0x" << std::hex << irq << std::dec << std::endl
+					<< " - vpr = 0x" << std::hex << vpr << std::dec << " (priority = " << prio << ")" << std::endl
+					<< " - inservice irq priority = " << inservice_reg.Priority() << std::endl
 					<< EndDebugInfo;
 			}
 			return regs.svr;
 		}
 	}
-	if(DEBUG && logger_import) {
-		(*logger_import) << DebugInfo << LOCATION
-			<< "Irq priority higher than the inservice irq priority:" << Endl
-			<< " - irq mask = 0x" << Hex << irq << Dec << Endl
-			<< " - vpr = 0x" << Hex << vpr << Dec << " (priority = " << prio << ")" << Endl
-			<< " - inservice irq priority = " << inservice_reg.Priority() << Endl
+	if(unlikely(DEBUG && verbose)) {
+		logger << DebugInfo << LOCATION
+			<< "Irq priority higher than the inservice irq priority:" << std::endl
+			<< " - irq mask = 0x" << std::hex << irq << std::dec << std::endl
+			<< " - vpr = 0x" << std::hex << vpr << std::dec << " (priority = " << prio << ")" << std::endl
+			<< " - inservice irq priority = " << inservice_reg.Priority() << std::endl
 			<< EndDebugInfo;
 	}
 	/* clear the corresponding pending register if configured as 
 	 *   edge-sensitive */
 	bool edge_sensitive = EdgeSensitive(irq, vpr);
 	if(edge_sensitive) {
-		if(DEBUG && logger_import) {
-			(*logger_import) << DebugInfo << LOCATION
-				<< "Clearing pending register from irq 0x" << Hex << irq << Dec
+		if(unlikely(DEBUG && verbose)) {
+			logger << DebugInfo << LOCATION
+				<< "Clearing pending register from irq 0x" << std::hex << irq << std::dec
 				<< ", because irq is edge sensitive"
-				<< Endl << EndDebugInfo;
+				<< std::endl << EndDebugInfo;
 		}
 		pending_reg = pending_reg & ~irq;
 	}
 	/* put the irq vector in the inservice_reg */
 	// TODO: inservice_reg = vpr;
-	if(DEBUG && logger_import) {
-		(*logger_import) << DebugInfo << LOCATION
-			<< "Putting irq 0x" << Hex << irq << Dec << " in the inservice register"
-			<< Endl << EndDebugInfo;
+	if(unlikely(DEBUG && verbose)) {
+		logger << DebugInfo << LOCATION
+			<< "Putting irq 0x" << std::hex << irq << std::dec << " in the inservice register"
+			<< std::endl << EndDebugInfo;
 	}
 	inservice_reg.PushIRQ(vpr, prio, irq);
 	/* disable the int signal */
-	if(DEBUG && logger_import) {
-		(*logger_import) << DebugInfo << LOCATION
+	if(unlikely(DEBUG && verbose)) {
+		logger << DebugInfo << LOCATION
 			<< "Unsetting interrupt signal"
-			<< Endl << EndDebugInfo;
+			<< std::endl << EndDebugInfo;
 	}
 	UnsetINT();
-	if(DEBUG && logger_import) {
-		(*logger_import) << DebugInfo << LOCATION
-			<< "Returning irq 0x" << Hex << irq << " vector (irq vector = 0x" << GetVector(vpr) << Dec << ")"
-			<< Endl << EndDebugInfo;
+	if(unlikely(DEBUG && verbose)) {
+		logger << DebugInfo << LOCATION
+			<< "Returning irq 0x" << std::hex << irq << " vector (irq vector = 0x" << GetVector(vpr) << std::dec << ")"
+			<< std::endl << EndDebugInfo;
 	}
 	return GetVector(vpr);
 }
@@ -2980,10 +2973,10 @@ ReadRegister(PHYSICAL_ADDR addr, uint32_t size) {
 	bool handled = false;
 	
 	if(size != sizeof(uint32_t)) {
-		(*logger_import) << DebugWarning
-			<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
-			<< "Trying to read EPIC register at address 0x" << Hex << addr << Dec
-			<< " with an unaligned size (size = " << size << "), reading 0" << Endl
+		logger << DebugWarning
+			<< LOCATION
+			<< "Trying to read EPIC register at address 0x" << std::hex << addr << std::dec
+			<< " with an unaligned size (size = " << size << "), reading 0" << std::endl
 			<< EndDebugWarning;
 		return data;
 	}
@@ -3223,34 +3216,34 @@ ReadRegister(PHYSICAL_ADDR addr, uint32_t size) {
 		name = Registers::EOI_NAME; 
 		break;
 	default:
-		if(logger_import)
-			(*logger_import) << DebugWarning
-				<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
-				<< "Trying to read EPIC register at reserved address 0x" << Hex << addr << Dec
-				<< ", reading 0" << Endl
+		if(unlikely(verbose))
+			logger << DebugWarning
+				<< LOCATION
+				<< "Trying to read EPIC register at reserved address 0x" << std::hex << addr << std::dec
+				<< ", reading 0" << std::endl
 				<< EndDebugWarning;
 		return 0;
 		break;
 	}
 	
 	if(handled) {
-		if(DEBUG && logger_import) 
-			(*logger_import) << DebugInfo 
-				<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+		if(unlikely(DEBUG && verbose)) 
+			logger << DebugInfo 
+				<< LOCATION
 				<< "Reading register " << name << " (address = 0x"
-				<< Hex << addr << Dec
+				<< std::hex << addr << std::dec
 				<< ", size = " << size << " bytes"
-				<< ", data = 0x" << Hex << data << Dec << ")"
-				<< Endl << EndDebugInfo;
+				<< ", data = 0x" << std::hex << data << std::dec << ")"
+				<< std::endl << EndDebugInfo;
 		return data;
 	}
-	if(DEBUG && logger_import)
-		(*logger_import) << DebugWarning 
-			<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+	if(unlikely(DEBUG && verbose))
+		logger << DebugWarning 
+			<< LOCATION
 			<< "TODO: trying to read register " << name << " (address 0x"
-			<< Hex << addr << Dec
+			<< std::hex << addr << std::dec
 			<< ") of " << size << " bytes"
-			<< Endl << EndDebugWarning;
+			<< std::endl << EndDebugWarning;
 	return 0;
 }
 

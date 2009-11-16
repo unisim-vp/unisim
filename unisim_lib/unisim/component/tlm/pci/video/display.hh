@@ -75,18 +75,6 @@ using unisim::service::interfaces::Memory;
 using unisim::component::tlm::message::InterruptRequest;
 using unisim::component::cxx::pci::TransactionType;
 using unisim::component::cxx::pci::PCISpace;
-using unisim::service::interfaces::Logger;
-//using unisim::service::interfaces::operator<<;
-using unisim::service::interfaces::Hex;
-using unisim::service::interfaces::Dec;
-using unisim::service::interfaces::Endl;
-using unisim::service::interfaces::Endl;
-using unisim::service::interfaces::DebugInfo;
-using unisim::service::interfaces::DebugWarning;
-using unisim::service::interfaces::DebugError;
-using unisim::service::interfaces::EndDebugInfo;
-using unisim::service::interfaces::EndDebugWarning;
-using unisim::service::interfaces::EndDebugError;
 
 template <class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
 class Display :

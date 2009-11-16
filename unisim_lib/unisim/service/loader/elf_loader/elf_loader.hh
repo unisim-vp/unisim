@@ -45,6 +45,7 @@
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/debug/symbol_table.hh>
 #include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/logger/logger.hh>
 
 #include <iosfwd>
 
@@ -103,10 +104,13 @@ private:
 	bool force_use_virtual_address;
 	bool dump_headers;
 	SymbolTable<MEMORY_ADDR> symbol_table;
+	unisim::kernel::logger::Logger logger;
+	bool verbose;
 	Parameter<string> param_filename;
 	Parameter<MEMORY_ADDR> param_base_addr;
 	Parameter<bool> param_force_use_virtual_address;
 	Parameter<bool> param_dump_headers;
+	Parameter<bool> param_verbose;
 
 	void SwapElfHeader(Elf_Ehdr *hdr);
 	void SwapProgramHeader(Elf_Phdr *phdr);

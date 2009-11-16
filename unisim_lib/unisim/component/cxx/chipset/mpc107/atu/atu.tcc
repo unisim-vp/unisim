@@ -42,27 +42,22 @@ namespace chipset {
 namespace mpc107 {
 namespace atu {
 
-using unisim::service::interfaces::File;
-using unisim::service::interfaces::Function;
-using unisim::service::interfaces::Line;
-using unisim::service::interfaces::DebugInfo;
-using unisim::service::interfaces::DebugWarning;
-using unisim::service::interfaces::DebugError;
-using unisim::service::interfaces::EndDebugInfo;
-using unisim::service::interfaces::EndDebugWarning;
-using unisim::service::interfaces::EndDebugError;
-using unisim::service::interfaces::Endl;
-using unisim::service::interfaces::Hex;
-using unisim::service::interfaces::Dec;
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugInfo;
+using unisim::kernel::logger::EndDebugWarning;
+using unisim::kernel::logger::EndDebugError;
 
-#define LOCATION File << __FILE__ << Function << __FUNCTION__ << Line << __LINE__
+#define LOCATION "In file " << __FILE__ << ", function " << __FUNCTION__ << ", line #" << __LINE__
 
 template<class ADDRESS_TYPE, class PCI_ADDRESS_TYPE, bool DEBUG>
 ATU<ADDRESS_TYPE, PCI_ADDRESS_TYPE, DEBUG> ::
 ATU(const char *name, Object *parent) :
 	Object(name, parent),
-	Client<Logger>(name, parent),
-	logger_import("logger_import", this) {
+	logger(*this),
+	verbose(false),
+	param_verbose("verbose", this, verbose) {
 }
 
 template<class ADDRESS_TYPE, class PCI_ADDRESS_TYPE, bool DEBUG>
@@ -71,23 +66,23 @@ ATU<ADDRESS_TYPE, PCI_ADDRESS_TYPE, DEBUG> ::
 MemWrite(ADDRESS_TYPE addr, uint8_t *write_data, unsigned int size) {
 	uint32_t data = 0;
 	
-	if(DEBUG && logger_import) {
-		(*logger_import) << DebugInfo << LOCATION
-			<< "System bus write access:" << Endl
-			<< " - addr = 0x" << Hex << addr << Dec << Endl
-			<< " - size = " << size << Endl
-			<< " - write_data =" << Hex;
+	if(unlikely(DEBUG && verbose)) {
+		logger << DebugInfo << LOCATION
+			<< "System bus write access:" << std::endl
+			<< " - addr = 0x" << std::hex << addr << std::dec << std::endl
+			<< " - size = " << size << std::endl
+			<< " - write_data =" << std::hex;
 		for(unsigned int i = 0; i < size; i++)
-			(*logger_import) << " " << (unsigned int)write_data[i];
-		(*logger_import) << Endl
+			logger << " " << (unsigned int)write_data[i];
+		logger << std::endl
 			<< EndDebugInfo;
 	}
 	/* check the incoming size */
 	if(size != 4) { // only 4 byte accesses allowed
-		if(DEBUG && logger_import) {
-			(*logger_import) << DebugError << LOCATION
+		if(unlikely(DEBUG && verbose)) {
+			logger << DebugError << LOCATION
 				<< "ATU accesses must be 4 bytes size, ignoring operation"
-				<< Endl << EndDebugError;
+				<< std::endl << EndDebugError;
 		}
 		return true; 
 	}
@@ -107,10 +102,10 @@ MemWrite(ADDRESS_TYPE addr, uint8_t *write_data, unsigned int size) {
 		return SetOTWR(data);
 		break;
 	default:
-		if(DEBUG && logger_import) {
-			(*logger_import) << DebugError << LOCATION
+		if(unlikely(DEBUG && verbose)) {
+			logger << DebugError << LOCATION
 				<< "Write access to unknown ATU register, ignoring operation"
-				<< Endl << EndDebugError;
+				<< std::endl << EndDebugError;
 		}
 		return true;
 		break;
@@ -123,19 +118,19 @@ ATU<ADDRESS_TYPE, PCI_ADDRESS_TYPE, DEBUG> ::
 MemRead(ADDRESS_TYPE addr, uint8_t *read_data, unsigned int size) {
 	uint32_t data = 0;
 	
-	if(DEBUG && logger_import) {
-		(*logger_import) << DebugInfo << LOCATION
-			<< "System bus read access:" << Endl
-			<< " - addr = 0x" << Hex << addr << Dec << Endl
-			<< " - size = " << size << Endl
+	if(unlikely(DEBUG && verbose)) {
+		logger << DebugInfo << LOCATION
+			<< "System bus read access:" << std::endl
+			<< " - addr = 0x" << std::hex << addr << std::dec << std::endl
+			<< " - size = " << size << std::endl
 			<< EndDebugInfo;
 	}
 	/* check the incoming size */
 	if(size != 4) { // only 4 byte accesses allowed
-		if(DEBUG && logger_import) {
-			(*logger_import) << DebugError << LOCATION
+		if(unlikely(DEBUG && verbose)) {
+			logger << DebugError << LOCATION
 				<< "ATU accesses must be 4 bytes size, ignoring operation"
-				<< Endl << EndDebugError;
+				<< std::endl << EndDebugError;
 		}
 		return true; 
 	}
@@ -152,10 +147,10 @@ MemRead(ADDRESS_TYPE addr, uint8_t *read_data, unsigned int size) {
 		data = GetOTWR();
 		break;
 	default:
-		if(DEBUG && logger_import) {
-			(*logger_import) << DebugError << LOCATION
+		if(unlikely(DEBUG && verbose)) {
+			logger << DebugError << LOCATION
 				<< "Read access to unknown ATU register, ignoring operation"
-				<< Endl << EndDebugError;
+				<< std::endl << EndDebugError;
 		}
 		return true;
 		break;
@@ -171,23 +166,23 @@ ATU<ADDRESS_TYPE, PCI_ADDRESS_TYPE, DEBUG> ::
 PCIWrite(PCI_ADDRESS_TYPE addr, uint8_t *write_data, unsigned int size) {
 	uint32_t data = 0;
 	
-	if(DEBUG && logger_import) {
-		(*logger_import) << DebugInfo << LOCATION
-			<< "PCI bus write access:" << Endl
-			<< " - addr = 0x" << Hex << addr << Dec << Endl
-			<< " - size = " << size << Endl
-			<< " - write_data =" << Hex;
+	if(unlikely(DEBUG && verbose)) {
+		logger << DebugInfo << LOCATION
+			<< "PCI bus write access:" << std::endl
+			<< " - addr = 0x" << std::hex << addr << std::dec << std::endl
+			<< " - size = " << size << std::endl
+			<< " - write_data =" << std::hex;
 		for(unsigned int i = 0; i < size; i++)
-			(*logger_import) << " " << (unsigned int)write_data[i];
-		(*logger_import) << Endl
+			logger << " " << (unsigned int)write_data[i];
+		logger << std::endl
 			<< EndDebugInfo;
 	}
 	/* check the incoming size */
 	if(size != 4) { // only 4 byte accesses allowed
-		if(DEBUG && logger_import) {
-			(*logger_import) << DebugError << LOCATION
+		if(unlikely(DEBUG && verbose)) {
+			logger << DebugError << LOCATION
 				<< "ATU accesses must be 4 bytes size, ignoring operation"
-				<< Endl << EndDebugError;
+				<< std::endl << EndDebugError;
 		}
 		return true; 
 	}
@@ -207,10 +202,10 @@ PCIWrite(PCI_ADDRESS_TYPE addr, uint8_t *write_data, unsigned int size) {
 		return SetOTWR(data);
 		break;
 	default:
-		if(DEBUG && logger_import) {
-			(*logger_import) << DebugError << LOCATION
+		if(unlikely(DEBUG && verbose)) {
+			logger << DebugError << LOCATION
 				<< "Write access to unknown ATU register, ignoring operation"
-				<< Endl << EndDebugError;
+				<< std::endl << EndDebugError;
 		}
 		return true;
 		break;
@@ -223,19 +218,19 @@ ATU<ADDRESS_TYPE, PCI_ADDRESS_TYPE, DEBUG> ::
 PCIRead(PCI_ADDRESS_TYPE addr, uint8_t *read_data, unsigned int size) {
 	uint32_t data = 0;
 	
-	if(DEBUG && logger_import) {
-		(*logger_import) << DebugInfo << LOCATION
-			<< "PCI bus read access:" << Endl
-			<< " - addr = 0x" << Hex << addr << Dec << Endl
-			<< " - size = " << size << Endl
+	if(unlikely(DEBUG && verbose)) {
+		logger << DebugInfo << LOCATION
+			<< "PCI bus read access:" << std::endl
+			<< " - addr = 0x" << std::hex << addr << std::dec << std::endl
+			<< " - size = " << size << std::endl
 			<< EndDebugInfo;
 	}
 	/* check the incoming size */
 	if(size != 4) { // only 4 byte accesses allowed
-		if(DEBUG && logger_import) {
-			(*logger_import) << DebugError << LOCATION
+		if(unlikely(DEBUG && verbose)) {
+			logger << DebugError << LOCATION
 				<< "ATU accesses must be 4 bytes size, ignoring operation"
-				<< Endl << EndDebugError;
+				<< std::endl << EndDebugError;
 		}
 		return true; 
 	}
@@ -252,10 +247,10 @@ PCIRead(PCI_ADDRESS_TYPE addr, uint8_t *read_data, unsigned int size) {
 		data = GetOTWR();
 		break;
 	default:
-		if(DEBUG && logger_import) {
-			(*logger_import) << DebugError << LOCATION
+		if(unlikely(DEBUG && verbose)) {
+			logger << DebugError << LOCATION
 				<< "Read access to unknown ATU register, ignoring operation"
-				<< Endl << EndDebugError;
+				<< std::endl << EndDebugError;
 		}
 		return true;
 		break;
@@ -295,11 +290,11 @@ SetITWR(uint32_t data) {
 	/* check reserved bits */
 	data = data & ~((uint32_t)0x80000fe0);
 	if(data != orig_data) {
-		if(DEBUG && logger_import) {
-			(*logger_import) << DebugWarning << LOCATION
-				<< "Trying to modify ITWR reserved bits, masking reserved bits:" << Endl
-				<< " - original value = 0x" << Hex << orig_data << Dec << Endl
-				<< " - masked value = 0x" << Hex << data << Dec << Endl
+		if(unlikely(DEBUG && verbose)) {
+			logger << DebugWarning << LOCATION
+				<< "Trying to modify ITWR reserved bits, masking reserved bits:" << std::endl
+				<< " - original value = 0x" << std::hex << orig_data << std::dec << std::endl
+				<< " - masked value = 0x" << std::hex << data << std::dec << std::endl
 				<< EndDebugWarning;
 		}
 	}
@@ -307,20 +302,20 @@ SetITWR(uint32_t data) {
 	uint32_t win_size = data & (uint32_t)0x01f;
 	if((win_size >= (uint32_t)0x01 && win_size <= (uint32_t)0x0a) ||
 			win_size >= (uint32_t)0x01e) {
-		if(DEBUG && logger_import) {
-			(*logger_import) << DebugError << LOCATION
+		if(unlikely(DEBUG && verbose)) {
+			logger << DebugError << LOCATION
 				<< "Trying to write ITWR with invalid window size (0x"
-				<< Hex << win_size << Dec << "), setting it to 0"
-				<< Endl << EndDebugError;
+				<< std::hex << win_size << std::dec << "), setting it to 0"
+				<< std::endl << EndDebugError;
 		}
 		data = data & ~((uint32_t)0x01f);
 	}
 	/* set register value */
-	if(DEBUG && logger_import) {
-		(*logger_import) << DebugInfo << LOCATION
-			<< "Modifying ITWR:" << Endl
-			<< " - previous value = 0x" << Hex << regs.itwr << Dec << Endl
-			<< " - new value = 0x" << Hex << data << Dec << Endl
+	if(unlikely(DEBUG && verbose)) {
+		logger << DebugInfo << LOCATION
+			<< "Modifying ITWR:" << std::endl
+			<< " - previous value = 0x" << std::hex << regs.itwr << std::dec << std::endl
+			<< " - new value = 0x" << std::hex << data << std::dec << std::endl
 			<< EndDebugInfo;
 	}
 	regs.itwr = data;
@@ -336,31 +331,31 @@ SetOMBAR(uint32_t data) {
 	/* check reserved bits */
 	data = data | (uint32_t)0x80000000;
 	if(data != orig_data) {
-		if(DEBUG && logger_import) {
-			(*logger_import) << DebugWarning << LOCATION
-				<< "Trying to modify OMBAR bit 31, resetting it to 1:" << Endl
-				<< " - original value = 0x" << Hex << orig_data << Dec << Endl
-				<< " - masked value = 0x" << Hex << data << Dec << Endl
+		if(unlikely(DEBUG && verbose)) {
+			logger << DebugWarning << LOCATION
+				<< "Trying to modify OMBAR bit 31, resetting it to 1:" << std::endl
+				<< " - original value = 0x" << std::hex << orig_data << std::dec << std::endl
+				<< " - masked value = 0x" << std::hex << data << std::dec << std::endl
 				<< EndDebugWarning;
 		}
 		orig_data = data;
 	}
 	data = data & ~((uint32_t)0x0fff);
 	if(data != orig_data) {
-		if(DEBUG && logger_import) {
-			(*logger_import) << DebugWarning << LOCATION
-				<< "Trying to modify OMBAR reserved bits, resetting them to 0:" << Endl
-				<< " - original value = 0x" << Hex << orig_data << Dec << Endl
-				<< " - masked value = 0x" << Hex << data << Dec << Endl
+		if(unlikely(DEBUG && verbose)) {
+			logger << DebugWarning << LOCATION
+				<< "Trying to modify OMBAR reserved bits, resetting them to 0:" << std::endl
+				<< " - original value = 0x" << std::hex << orig_data << std::dec << std::endl
+				<< " - masked value = 0x" << std::hex << data << std::dec << std::endl
 				<< EndDebugWarning;
 		}
 	}
 	/* set register value */
-	if(DEBUG && logger_import) {
-		(*logger_import) << DebugInfo << LOCATION
-			<< "Modifying OMBAR:" << Endl
-			<< " - previous value = 0x" << Hex << regs.ombar << Dec << Endl
-			<< " - new value = 0x" << Hex << data << Dec << Endl
+	if(unlikely(DEBUG && verbose)) {
+		logger << DebugInfo << LOCATION
+			<< "Modifying OMBAR:" << std::endl
+			<< " - previous value = 0x" << std::hex << regs.ombar << std::dec << std::endl
+			<< " - new value = 0x" << std::hex << data << std::dec << std::endl
 			<< EndDebugInfo;
 	}
 	regs.ombar = data;
@@ -376,11 +371,11 @@ SetOTWR(uint32_t data) {
 	/* check reserved bits */
 	data = data & ~((uint32_t)0x80000fe0);
 	if(data != orig_data) {
-		if(DEBUG && logger_import) {
-			(*logger_import) << DebugWarning << LOCATION
-				<< "Trying to modify OTWR reserved bits, masking reserved bits:" << Endl
-				<< " - original value = 0x" << Hex << orig_data << Dec << Endl
-				<< " - masked value = 0x" << Hex << data << Dec << Endl
+		if(unlikely(DEBUG && verbose)) {
+			logger << DebugWarning << LOCATION
+				<< "Trying to modify OTWR reserved bits, masking reserved bits:" << std::endl
+				<< " - original value = 0x" << std::hex << orig_data << std::dec << std::endl
+				<< " - masked value = 0x" << std::hex << data << std::dec << std::endl
 				<< EndDebugWarning;
 		}
 	}
@@ -388,20 +383,20 @@ SetOTWR(uint32_t data) {
 	uint32_t win_size = data & (uint32_t)0x01f;
 	if((win_size >= (uint32_t)0x01 && win_size <= (uint32_t)0x0a) ||
 			win_size >= (uint32_t)0x01e) {
-		if(DEBUG && logger_import) {
-			(*logger_import) << DebugError << LOCATION
+		if(unlikely(DEBUG && verbose)) {
+			logger << DebugError << LOCATION
 				<< "Trying to write 0TWR with invalid window size (0x"
-				<< Hex << win_size << Dec << "), setting it to 0"
-				<< Endl << EndDebugError;
+				<< std::hex << win_size << std::dec << "), setting it to 0"
+				<< std::endl << EndDebugError;
 		}
 		data = data & ~((uint32_t)0x01f);
 	}
 	/* set register value */
-	if(DEBUG && logger_import) {
-		(*logger_import) << DebugInfo << LOCATION
-			<< "Modifying OTWR:" << Endl
-			<< " - previous value = 0x" << Hex << regs.otwr << Dec << Endl
-			<< " - new value = 0x" << Hex << data << Dec << Endl
+	if(unlikely(DEBUG && verbose)) {
+		logger << DebugInfo << LOCATION
+			<< "Modifying OTWR:" << std::endl
+			<< " - previous value = 0x" << std::hex << regs.otwr << std::dec << std::endl
+			<< " - new value = 0x" << std::hex << data << std::dec << std::endl
 			<< EndDebugInfo;
 	}
 	regs.otwr = data;

@@ -40,7 +40,7 @@
 #include <unisim/kernel/service/service.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/device/register.hh>
-#include <unisim/service/interfaces/logger.hh>
+#include <unisim/kernel/logger/logger.hh>
 #include <string>
 #include <vector>
 #include <unisim/util/debug/netstub.hh>
@@ -79,7 +79,6 @@ using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::ParameterArray;
-using unisim::service::interfaces::Logger;
 using unisim::util::debug::NetStub;
 using unisim::service::interfaces::Synchronizable;
 using unisim::service::interfaces::Registers;
@@ -90,7 +89,6 @@ class PCIStub :
 	public Service<Memory<ADDRESS> >,
 	public Service<MemoryAccessReporting<ADDRESS> >,
 	public Client<MemoryAccessReportingControl>,
-	public Client<Logger>,
 	public Client<SymbolTableLookup<ADDRESS> >,
 	public Client<Synchronizable>,
 	public Client<Memory<ADDRESS> >,
@@ -108,7 +106,6 @@ public:
 	ServiceExport<Memory<ADDRESS> > memory_export;
 	ServiceExport<MemoryAccessReporting<ADDRESS> > memory_access_reporting_export;
 	ServiceImport<MemoryAccessReportingControl> memory_access_reporting_control_import;
-	ServiceImport<Logger> logger_import;
 	ServiceImport<SymbolTableLookup<ADDRESS> > symbol_table_lookup_import;
 	ServiceImport<Synchronizable> synchronizable_import;
 	ServiceImport<Memory<ADDRESS> > memory_import;
@@ -159,6 +156,11 @@ private:
 	WatchpointRegistry<ADDRESS> watchpoint_registry[3]; // one registry for each of the three address spaces
 
 protected:
+	// Debug stuff
+	unisim::kernel::logger::Logger logger;
+	bool verbose;
+	Parameter<bool> param_verbose;
+	
 	// PCI configuration registers
 	reg16_t pci_conf_device_id;
 	reg16_t pci_conf_vendor_id;

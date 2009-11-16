@@ -41,7 +41,7 @@
 #include "unisim/kernel/tlm/tlm.hh"
 #include "unisim/util/garbage_collector/garbage_collector.hh"
 #include "unisim/service/interfaces/memory.hh"
-#include "unisim/service/interfaces/logger.hh"
+#include "unisim/kernel/logger/logger.hh"
 #include <inttypes.h>
 
 namespace unisim {
@@ -64,7 +64,6 @@ using unisim::component::tlm::message::SnoopingFSBResponse;
 using unisim::component::tlm::message::MemoryRequest;
 using unisim::component::tlm::message::MemoryResponse;
 using unisim::service::interfaces::Memory;
-using unisim::service::interfaces::Logger;
 
 template <class CONFIG>
 class Bridge :
@@ -72,8 +71,7 @@ class Bridge :
 	public TlmSendIf<SnoopingFSBRequest<typename CONFIG::fsb_address_t, CONFIG::FSB_BURST_SIZE>,
 		SnoopingFSBResponse<CONFIG::FSB_BURST_SIZE> >,
 	public Service<Memory<typename CONFIG::fsb_address_t> >,
-	public Client<Memory<typename CONFIG::mem_address_t> >,
-	public Client<Logger> {
+	public Client<Memory<typename CONFIG::mem_address_t> > {
 private:
 	typedef typename CONFIG::fsb_address_t fsb_address_t;
 	typedef typename CONFIG::mem_address_t mem_address_t;
@@ -101,7 +99,6 @@ public:
 
 	ServiceExport<Memory<fsb_address_t> > memory_export;
 	ServiceImport<Memory<mem_address_t> > memory_import;
-	ServiceImport<Logger> logger_import;
 
 	Bridge(const sc_module_name& name, Object *parent = 0);
 	virtual ~Bridge();
@@ -115,6 +112,10 @@ public:
 	virtual bool ReadMemory(typename CONFIG::fsb_address_t addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(typename CONFIG::fsb_address_t addr, const void *buffer, uint32_t size);
 
+protected:
+	unisim::kernel::logger::Logger logger;
+	bool verbose_all;
+	Parameter<bool> param_verbose_all;
 private:
 	sc_fifo<p_fsb_msg_t> buffer_req;
 	sc_time fsb_cycle_sctime;
@@ -124,8 +125,6 @@ private:
 	Parameter<uint64_t> param_fsb_cycle_time;
 	uint64_t mem_cycle_time;
 	Parameter<uint64_t> param_mem_cycle_time;
-	bool verbose_all;
-	Parameter<bool> param_verbose_all;
 	
 	sc_event dispatch_mem_ev;
 	void DispatchMemory();

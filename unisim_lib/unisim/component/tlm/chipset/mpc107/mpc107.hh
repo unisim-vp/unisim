@@ -81,7 +81,7 @@
 #include "unisim/component/tlm/message/pci.hh"
 #include "unisim/component/tlm/message/interrupt.hh"
 #include "unisim/service/interfaces/memory.hh"
-#include "unisim/service/interfaces/logger.hh"
+#include "unisim/kernel/logger/logger.hh"
 #include "unisim/component/cxx/chipset/mpc107/address_maps.hh"
 #include "unisim/component/cxx/chipset/mpc107/address_map_entry.hh"
 #include "unisim/component/cxx/chipset/mpc107/config_regs.hh"
@@ -127,7 +127,6 @@ using unisim::component::cxx::chipset::mpc107::atu::ATU;
 using unisim::component::cxx::chipset::mpc107::dma::DMA;
 using unisim::component::cxx::chipset::mpc107::dma::DMAClientInterface;
 using unisim::component::tlm::chipset::mpc107::epic::EPIC;
-using unisim::service::interfaces::Logger;
 		
 template <class PHYSICAL_ADDR, 
 		uint32_t MAX_TRANSACTION_DATA_SIZE,
@@ -150,8 +149,7 @@ class MPC107 :
 							SnoopingFSBResponse<MAX_TRANSACTION_DATA_SIZE> >,
 	public DMAClientInterface<PHYSICAL_ADDR>,
 	public Service<Memory<PHYSICAL_ADDR> >,
-	public Client<Memory<PHYSICAL_ADDR> >,
-	public Client<Logger> {
+	public Client<Memory<PHYSICAL_ADDR> > {
 private:
 	typedef SnoopingFSBRequest<PHYSICAL_ADDR, MAX_TRANSACTION_DATA_SIZE> ReqType;
 	typedef Pointer<ReqType> PReqType;
@@ -210,12 +208,6 @@ public:
 	ServiceImport<Memory<PHYSICAL_ADDR> > rom_import;
 	ServiceImport<Memory<PHYSICAL_ADDR> > erom_import;
 	ServiceImport<Memory<PCI_ADDR> > pci_import;
-	/* logger service */
-	ServiceImport<Logger> logger_import;
-	ServiceImport<Logger> pci_logger_import;
-	ServiceImport<Logger> addr_map_logger_import;
-	ServiceImport<Logger> epic_logger_import;
-	ServiceImport<Logger> atu_logger_import;
 		
 	MPC107(const sc_module_name &name, Object *parent = 0);
 	virtual ~MPC107();
@@ -279,6 +271,10 @@ public:
 		unsigned int size,
 		unsigned int channel);
 
+protected:
+	unisim::kernel::logger::Logger logger;
+	bool verbose;
+	Parameter<bool> param_verbose;
 private:
 	/** DMA channels */
 	DMA<PHYSICAL_ADDR, DEBUG> dma;

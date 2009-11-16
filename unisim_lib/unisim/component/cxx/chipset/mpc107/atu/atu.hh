@@ -36,7 +36,7 @@
 #define __UNISIM_COMPONENT_CXX_CHIPSET_MPC107_ATU_ATU_HH__
 
 #include "unisim/kernel/service/service.hh"
-#include "unisim/service/interfaces/logger.hh"
+#include "unisim/kernel/logger/logger.hh"
 #include "unisim/component/cxx/chipset/mpc107/atu/register.hh"
 
 namespace unisim {
@@ -46,17 +46,15 @@ namespace chipset {
 namespace mpc107 {
 namespace atu {
 
-using unisim::kernel::service::Client;
+using unisim::kernel::service::Object;
 using unisim::kernel::service::ServiceImport;
-using unisim::service::interfaces::Logger;
+using unisim::kernel::service::Parameter;
 using unisim::component::cxx::chipset::mpc107::atu::Registers;
 
 template<class ADDRESS_TYPE, class PCI_ADDRESS_TYPE, bool DEBUG = false>
 class ATU :
-	Client<Logger> {
+	virtual public Object {
 public:
-	ServiceImport<Logger> logger_import;
-	
 	ATU(const char *name, Object *parent = 0);
 
 	bool MemWrite(ADDRESS_TYPE addr, uint8_t *write_data, unsigned int size);
@@ -78,6 +76,10 @@ public:
 	// note: the inbound memory base address can not be found in the ATU, but
 	//   in the LMBAR register of the MPC107
 
+protected:
+	unisim::kernel::logger::Logger logger;
+	bool verbose;
+	Parameter<bool> param_verbose;
 private:
 	Registers regs;
 	

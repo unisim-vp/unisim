@@ -257,7 +257,7 @@ public:
 	virtual bool Setup() {
 			
 		if(!frequency) {
-			if(verbose)
+			if(unlikely(verbose))
 				logger << DebugError << "SERVICE_SETUP_ERROR("
 					<< __FUNCTION__ << ":"
 					<< __FILE__ << ":"
@@ -301,7 +301,7 @@ public:
 			devReg->end = devReg->orig + devReg->size -1;
 			devReg->addr_type = (unisim::component::cxx::pci::PCISpace) addr_type[i];
 
-			if(DEBUG && verbose) {
+			if(unlikely(DEBUG && verbose)) {
 				logger << DebugInfo
 												 << "Mapping " << target_port[i] << " with "
 												 << " orig = 0x" << std::hex << devReg->orig << std::dec
@@ -343,7 +343,7 @@ public:
 		if(device >= NUM_TARGETS) {
 			if(req->type == unisim::component::cxx::pci::TT_READ) {
 				if(!message->HasResponseEvent()) {
-					if(verbose)
+					if(unlikely(verbose))
 						logger << DebugError
 							<< "Received a read request without response event ("
 							<< __FUNCTION__ << ":"<< __FILE__ << ":" << __LINE__ << ")" << std::endl
@@ -359,7 +359,7 @@ public:
 					memcpy(res->read_data, &p, 4);
 					message->SetResponse(res);
 					message->GetResponseEvent()->notify(SC_ZERO_TIME);
-					if(DEBUG && verbose)
+					if(unlikely(DEBUG && verbose))
 						logger << DebugInfo
 							<< "Answering 0xFFFFFFFF to addr: " 
 							<< std::hex << req->addr << std::dec
@@ -373,7 +373,7 @@ public:
 					memcpy(res->read_data, &p, 2);
 					message->SetResponse(res);
 					message->GetResponseEvent()->notify(SC_ZERO_TIME);
-					if(DEBUG && verbose)
+					if(unlikely(DEBUG && verbose))
 						logger << DebugInfo
 							<< "Answering 0xFFFF to addr: " 
 							<< std::hex << req->addr << std::dec
@@ -387,7 +387,7 @@ public:
 					memcpy(res->read_data, &p, 1);
 					message->SetResponse(res);
 					message->GetResponseEvent()->notify(SC_ZERO_TIME);
-					if(DEBUG && verbose)
+					if(unlikely(DEBUG && verbose))
 						logger << DebugInfo
 							<< "Answering 0xFF to addr: " 
 							<< std::hex << req->addr << std::dec
@@ -397,7 +397,7 @@ public:
 		  			break;
 					}
 				default: {
-					if(verbose)
+					if(unlikely(verbose))
 						logger << DebugError
 							<< "Invalid access size(?) for PCI configspace! ("
 							<< __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << ")" << std::endl
@@ -408,7 +408,7 @@ public:
 	      		}
 	  		}
       	} else {
-			if(DEBUG && verbose)
+			if(unlikely(DEBUG && verbose))
 				logger << DebugInfo
 					<< "putting received message to device " << device
 					<< " in the message list to be sent" << std::endl
@@ -450,7 +450,7 @@ public:
   			PMsgType message = device_request->message;
 			sc_event bus_event;
 			int device = device_request->device;
-			if(DEBUG && verbose)
+			if(unlikely(DEBUG && verbose))
 				logger << DebugInfo
 					<< "sending message to device: " << device << std::endl
 					<< EndDebugInfo;
@@ -458,19 +458,19 @@ public:
 				message->PushResponseEvent(bus_event);
 			
       		while(!(*output_port[device])->Send(message)) {
-      			if(DEBUG && verbose)
+      			if(unlikely(DEBUG && verbose))
       				logger << DebugInfo
       					<< "message not accepted by device: " << device
       					<< ", retrying later" << std::endl
       					<< EndDebugInfo;
       			wait(cycle_time);
-      			if(DEBUG && verbose)
+      			if(unlikely(DEBUG && verbose))
       				logger << DebugInfo
       					<< "retrying to send message to device: " << device << std::endl
       					<< EndDebugInfo;
       		}
       		
-      		if(DEBUG && verbose)
+      		if(unlikely(DEBUG && verbose))
       			logger << DebugInfo
       				<< "message to device " << device
       				<< " succesfully sent" << std::endl
@@ -478,19 +478,19 @@ public:
  			sc_time delay;
       		if(message->HasResponseEvent()) {
       			
-      			if(DEBUG && verbose)
+      			if(unlikely(DEBUG && verbose))
       				logger << DebugInfo
       					<< "waiting response from device: " << device << std::endl
       					<< EndDebugInfo;
       			wait(bus_event);
-      			if(DEBUG && verbose)
+      			if(unlikely(DEBUG && verbose))
       				logger << DebugInfo
       					<< " received response from device: " << device << std::endl
       					<< EndDebugInfo;
     	  		//TODO: Pau I THINK WE SHOULd be adding another event to the event stack and wait on that event!
     	  		
 	 			if(!message->rsp) {
-	 				if(verbose)
+	 				if(unlikely(verbose))
 	 					logger << DebugError
 	 						<< "received a response for a pci message without response field" << std::endl
 	 						<< EndDebugError;
@@ -502,7 +502,7 @@ public:
 	 			updateDevMap(req, rsp);
 	 			
 	 			message->PopResponseEvent();
-	 			if(DEBUG && verbose)
+	 			if(unlikely(DEBUG && verbose))
 	 				logger << DebugInfo
 	 					<< "notifying response received from device: " << device << std::endl
 	 					<< EndDebugInfo;
@@ -608,7 +608,7 @@ updateDevMap (PReqType &req, PRspType &res) {
 
 			if ((*(uint32_t *) req->write_data) == 0xffffffff) {
 				//requesting bar size
-				if(DEBUG && verbose)
+				if(unlikely(DEBUG && verbose))
 					logger << DebugInfo
 						<< "requesting bar size dev " << device
 						<< " reg " << barNum << std::endl
@@ -631,7 +631,7 @@ updateDevMap (PReqType &req, PRspType &res) {
 						(Host2LittleEndian(reg->original_value) & bar_mask));
 
 				if (Host2LittleEndian (newValue) & ~bar_mask) {
-					if(DEBUG && verbose)
+					if(unlikely(DEBUG && verbose))
 						logger << DebugInfo
 							<< "writing bar address dev " << device
 							<< " reg " << barNum << " data: "
@@ -656,7 +656,7 @@ updateDevMap (PReqType &req, PRspType &res) {
 				else
 					bar_mask = BAR_MEM_MASK;
 
-				if(DEBUG && verbose)
+				if(unlikely(DEBUG && verbose))
 					logger << DebugInfo
 						<< "reading size dev " << device << " reg "
 						<< barNum << std::endl
@@ -671,7 +671,7 @@ updateDevMap (PReqType &req, PRspType &res) {
 				}
 				if(reg->state == STABLE) {
 					//first step, reading original value of register
-					if(DEBUG && verbose)
+					if(unlikely(DEBUG && verbose))
 						logger << DebugInfo
 							<< "reading original value dev " << device
 							<< " reg " << barNum << std::endl

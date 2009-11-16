@@ -331,7 +331,7 @@ void Heathrow<ADDRESS>::Read(ADDRESS addr, void *buffer, uint32_t size)
 {
 	if(!(pci_conf_command & 0x2))
 	{
-		if(verbose)
+		if(unlikely(verbose))
 			logger << DebugWarning << "Attempting to read from memory space while it is disabled !" << std::endl << EndDebugWarning;
 		memset(buffer, 0, size);
 		return;
@@ -355,7 +355,7 @@ void Heathrow<ADDRESS>::Read(ADDRESS addr, void *buffer, uint32_t size)
 						break;
 					default:
 						read_data = 0;
-						if(verbose)
+						if(unlikely(verbose))
 							logger << DebugWarning << "reading an unmapped memory (offset 0x" << std::hex << offset << std::dec << ")" << std::endl << EndDebugWarning;
 				}
 				*(uint8_t *) buffer = read_data;
@@ -404,14 +404,14 @@ void Heathrow<ADDRESS>::Read(ADDRESS addr, void *buffer, uint32_t size)
 						
 					default:
 						read_data = 0;
-						if(verbose)
+						if(unlikely(verbose))
 							logger << DebugWarning << "reading an unmapped memory (offset 0x" << std::hex << offset << std::dec << ")" << std::endl << EndDebugWarning;
 				}
 				*(uint32_t *) buffer = read_data;
 			}
 			break;
 		default:
-			if(verbose)
+			if(unlikely(verbose))
 				logger << DebugWarning << "bad size while reading" << std::endl << EndDebugWarning;
 	}
 }
@@ -421,7 +421,7 @@ void Heathrow<ADDRESS>::Write(ADDRESS addr, const void *buffer, uint32_t size)
 {
 	if(!(pci_conf_command & 0x2))
 	{
-		if(verbose)
+		if(unlikely(verbose))
 			logger << DebugWarning << "Attempting to write into memory space while it is disabled !" << std::endl << EndDebugWarning;
 		return;
 	}
@@ -443,7 +443,7 @@ void Heathrow<ADDRESS>::Write(ADDRESS addr, const void *buffer, uint32_t size)
 						heathrow_contrast = write_data;
 						break;
 					default:
-						if(verbose)
+						if(unlikely(verbose))
 							logger << DebugWarning << "writing an unmapped memory (offset 0x" << std::hex << offset << std::dec << ")" << std::endl << EndDebugWarning;
 				}
 			}
@@ -496,13 +496,13 @@ void Heathrow<ADDRESS>::Write(ADDRESS addr, const void *buffer, uint32_t size)
 						heathrow_aux_control = write_data;
 						break;
 					default:
-						if(verbose)
+						if(unlikely(verbose))
 							logger << DebugWarning << "writing an unmapped memory (offset 0x" << std::hex << offset << std::dec << ")" << std::endl << EndDebugWarning;
 				}
 			}
 			break;
 		default:
-			if(verbose)
+			if(unlikely(verbose))
 				logger << DebugWarning << "bad size while writing" << std::endl << EndDebugWarning;
 	}
 }

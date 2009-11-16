@@ -131,7 +131,12 @@ namespace unisim {
 namespace service {
 namespace power {
 
-using std::cerr;
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugInfo;
+using unisim::kernel::logger::EndDebugWarning;
+using unisim::kernel::logger::EndDebugError;
 using std::endl;
 using std::string;
 
@@ -160,6 +165,9 @@ CachePowerEstimator::CachePowerEstimator(const char *name, Object *parent) :
 	power_estimator_export("power-estimator-export", this),
 	power_mode_export("power-mode-export", this),
 	time_import("time-import", this),
+	logger(*this),
+	verbose(false),
+	param_verbose("verbose", this, verbose),
 	current_profile(0),
 	p_cache_size(0),
 	p_line_size(0),
@@ -264,7 +272,7 @@ void CachePowerEstimator::SetPowerMode(unsigned int cycle_time, unsigned int vol
 	
 	if(cycle_time < min_cycle_time)
 	{
-		cerr << GetName() << ": WARNING! A cycle of " << cycle_time << " ps is too low for the simulated hardware !" << endl;
+		logger << DebugWarning << "A cycle of " << cycle_time << " ps is too low for the simulated hardware !" << EndDebugWarning;
 	}
 	
 	CacheProfile *prof = new CacheProfile(
@@ -360,30 +368,33 @@ bool CachePowerEstimator::Setup()
 #if defined(HAVE_CACTI4_2)
 	if(!time_import)
 	{
-		cerr << GetName() << ": ERROR! no time service is connected." << endl;
+		logger << DebugError << "no time service is connected." << EndDebugError;
 		return false;
 	}
 	int i, j;
-	cerr << GetName() << ": " << ((double) p_cache_size / 1024.0) << " KB cache" << endl;
-	cerr << GetName() << ": " << p_line_size << " bytes per line" << endl;
-	cerr << GetName() << ": " << p_associativity << " way/set associative" << endl;
-	cerr << GetName() << ": " << p_rw_ports << " read/write ports" << endl;
-	cerr << GetName() << ": " << p_excl_read_ports << " read-only ports" << endl;
-	cerr << GetName() << ": " << p_excl_write_ports << " write-only ports" << endl;
-	cerr << GetName() << ": " << p_single_ended_read_ports << " single-ended-read-ports" << endl;
-	cerr << GetName() << ": " << p_banks << " banks" << endl;
-	cerr << GetName() << ": " << p_tech_node << " nm tech-node" << endl;
-	cerr << GetName() << ": " << p_output_width << "-bit output" << endl;
-	if(p_tag_width) cerr << GetName() << ": " << p_tag_width << "-bit tag" << endl;
-	cerr << GetName() << ": ";
-	switch(p_access_mode)
+	if(verbose)
 	{
-		case ACCESS_MODE_NORMAL: cerr << "normal"; break;
-		case ACCESS_MODE_SEQUENTIAL: cerr << "sequential"; break;
-		case ACCESS_MODE_FAST: cerr << "fast"; break;
-		default: cerr << "?";
+		logger << DebugInfo << ((double) p_cache_size / 1024.0) << " KB cache" << EndDebugInfo;
+		logger << DebugInfo << p_line_size << " bytes per line" << EndDebugInfo;
+		logger << DebugInfo << p_associativity << " way/set associative" << EndDebugInfo;
+		logger << DebugInfo << p_rw_ports << " read/write ports" << EndDebugInfo;
+		logger << DebugInfo << p_excl_read_ports << " read-only ports" << EndDebugInfo;
+		logger << DebugInfo << p_excl_write_ports << " write-only ports" << EndDebugInfo;
+		logger << DebugInfo << p_single_ended_read_ports << " single-ended-read-ports" << EndDebugInfo;
+		logger << DebugInfo << p_banks << " banks" << EndDebugInfo;
+		logger << DebugInfo << p_tech_node << " nm tech-node" << EndDebugInfo;
+		logger << DebugInfo << p_output_width << "-bit output" << EndDebugInfo;
+		if(p_tag_width) logger  << p_tag_width << "-bit tag" << EndDebugInfo;
+		logger << DebugInfo;
+		switch(p_access_mode)
+		{
+			case ACCESS_MODE_NORMAL: logger << "normal"; break;
+			case ACCESS_MODE_SEQUENTIAL: logger << "sequential"; break;
+			case ACCESS_MODE_FAST: logger << "fast"; break;
+			default: logger << "?";
+		}
+		logger << " access mode" << EndDebugInfo;
 	}
-	cerr << " access mode" << endl;
 
 	Cacti4_2::total_result_type total_result;
 	double VddPow;
@@ -417,15 +428,17 @@ bool CachePowerEstimator::Setup()
 	min_cycle_time = (unsigned int)(total_result.result.cycle_time * 1e12);
 	default_voltage = (unsigned int) floor(VddPow * 1000.0);
 	
-	cerr << GetName() << ": Ndwl=" << Ndwl << ", Ndbl=" << Ndbl
-			<< ", Ntwl=" << Ntbl << ", Ntspd=" << Ntspd
-			<< ", Nspd=" << Nspd << ", min cycle time=" << min_cycle_time << " ps, default VddPow=" << VddPow << " V" << endl;
-
+	if(verbose)
+	{
+		logger << DebugInfo << "Ndwl=" << Ndwl << ", Ndbl=" << Ndbl
+				<< ", Ntwl=" << Ntbl << ", Ntspd=" << Ntspd
+				<< ", Nspd=" << Nspd << ", min cycle time=" << min_cycle_time << " ps, default VddPow=" << VddPow << " V" << EndDebugInfo;
+	}
 	
 	SetPowerMode(min_cycle_time, default_voltage);
 	return true;
 #else
-	cerr << GetName() << ": ERROR! Cacti 4.2 is not available." << endl;
+	logger << DebugError << "Cacti 4.2 is not available." << DebugError;
 	return false;
 #endif
 }

@@ -39,7 +39,7 @@
 
 #include "unisim/kernel/service/service.hh"
 #include "unisim/service/interfaces/memory.hh"
-#include "unisim/service/interfaces/logger.hh"
+#include "unisim/kernel/logger/logger.hh"
 #include "unisim/component/cxx/chipset/mpc107/epic/register.hh"
 #include "unisim/component/cxx/chipset/mpc107/epic/inservice_reg.hh"
 
@@ -57,20 +57,15 @@ using unisim::kernel::service::Parameter;
 using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::ServiceImport;
 using unisim::service::interfaces::Memory;
-using unisim::service::interfaces::Logger;
 
 template <class PHYSICAL_ADDR, 
 	bool DEBUG = false>
 class EPIC :
-	public Service<Memory<PHYSICAL_ADDR> >,
-	public Client<Logger> {
+	public Service<Memory<PHYSICAL_ADDR> > {
 public:
 	static const unsigned int NUM_IRQS = 4;
 	static const uint32_t ADDR_MASK = (uint32_t)0x0fffff;
 		
-	/* logger service */
-	ServiceImport<Logger> logger_import;
-	
 	/* memory service */
 	ServiceExport<Memory<PHYSICAL_ADDR> > memory_export;
 	
@@ -103,6 +98,9 @@ public:
 protected:
 	void ResetEPIC();
 
+	unisim::kernel::logger::Logger logger;
+	bool verbose;
+	Parameter<bool> param_verbose;
 private:
 	Registers regs;
 	/* how internal registers work for pending/service interruptions:

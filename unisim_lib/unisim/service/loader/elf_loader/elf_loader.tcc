@@ -45,6 +45,13 @@ namespace service {
 namespace loader {
 namespace elf_loader {
 
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugInfo;
+using unisim::kernel::logger::EndDebugWarning;
+using unisim::kernel::logger::EndDebugError;
+
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
 ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::ElfLoaderImpl(const char *name, Object *parent) :
 	Object(name, parent),
@@ -60,10 +67,13 @@ ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::El
 	top_addr(0),
 	force_use_virtual_address(false),
 	dump_headers(false),
+	logger(*this),
+	verbose(false),
 	param_filename("filename", this, filename),
 	param_base_addr("base-addr", this, base_addr),
 	param_force_use_virtual_address("force-use-virtual-address", this, force_use_virtual_address),
-	param_dump_headers("dump-headers", this, dump_headers)
+	param_dump_headers("dump-headers", this, dump_headers),
+	param_verbose("verbose", this, verbose)
 {
 	Object::SetupDependsOn(memory_import);
 }
@@ -117,26 +127,32 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 	ifstream is(filename.c_str(), ifstream::in | ifstream::binary);
 	if(is.fail())
 	{
-		cerr << Object::GetName() << ": ERROR! Can't open executable \"" << filename << "\"" << endl;
+		logger << DebugError << "Can't open executable \"" << filename << "\"" << EndDebugError;
 		return false;
 	}
 	
-	cerr << Object::GetName() << ": Opening \"" << filename << "\"" << endl;
+	if(unlikely(verbose))
+	{
+		logger << DebugInfo << "Opening \"" << filename << "\"" << EndDebugInfo;
+	}
 
 	hdr = ReadElfHeader(is);
 
 	if(!hdr)
 	{
-		cerr << Object::GetName() << ": ERROR! Could not read ELF header or \"" << filename << "\" is not an ELF file." << endl;
+		logger << DebugError << "Could not read ELF header or \"" << filename << "\" is not an ELF file." << EndDebugError;
 		return false;
 	}
 		
-	cerr << Object::GetName() << ": Reading ELF header" << endl;
-			
+	if(unlikely(verbose))
+	{
+		logger << DebugInfo << "Reading ELF header" << EndDebugInfo;
+	}
+
 	phdr = ReadProgramHeaders(hdr, is);
 	if(!phdr)
 	{
-		cerr << Object::GetName() << ": ERROR! Can't read program headers" << endl;
+		logger << DebugError << "Can't read program headers" << EndDebugError;
 		free(hdr);
 		return false;
 	}
@@ -146,28 +162,37 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 	shdr_table = ReadSectionHeaders(hdr, is);
 	if(!shdr_table)
 	{
-		cerr << Object::GetName() << ": WARNING! Can't read section headers" << endl;
+		logger << DebugWarning << "Can't read section headers" << EndDebugWarning;
 	}
 	else
 	{
-		cerr << Object::GetName() << ": Loading section header string table" << endl;
+		if(unlikely(verbose))
+		{
+			logger << DebugInfo << "Loading section header string table" << EndDebugInfo;
+		}
 		sh_string_table = LoadSectionHeaderStringTable(hdr, shdr_table, is);
 		if(!sh_string_table)
 		{
-			cerr << Object::GetName() << ": WARNING! Can't load section header string table" << endl;
+			logger << DebugWarning << "Can't load section header string table" << EndDebugWarning;
 		}
 	}
 
 	if(dump_headers)
 	{
-		DumpElfHeader(hdr, cerr);
+		stringstream hdr_sstr;
+		DumpElfHeader(hdr, hdr_sstr);
+		logger << DebugInfo << hdr_sstr.str() << EndDebugInfo;
 		for(i = 0; i < hdr->e_phnum; i++)
 		{
-			DumpProgramHeader(&phdr[i], cerr);
+			stringstream phdr_sstr;
+			DumpProgramHeader(&phdr[i], phdr_sstr);
+			logger << DebugInfo << phdr_sstr.str() << EndDebugInfo;
 		}
 		for(i = 0, shdr = shdr_table; i < hdr->e_shnum; shdr = GetNextSectionHeader(hdr, shdr),i++)
 		{
-			DumpSectionHeader(shdr, sh_string_table, cerr);
+			stringstream shdr_sstr;
+			DumpSectionHeader(shdr, sh_string_table, shdr_sstr);
+			logger << DebugInfo << shdr_sstr.str() << EndDebugInfo;
 		}
 	}
 
@@ -188,7 +213,7 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 			}
 			if(num_loadable_segment > 1)
 			{
-				cerr << Object::GetName() << ": WARNING! More than one loadable segments...ignoring specified base address" << endl;
+				logger << DebugWarning << "More than one loadable segments...ignoring specified base address" << EndDebugWarning;
 				base_addr = 0;
 			}
 			else
@@ -214,8 +239,11 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 				}
 				
 				segment_size = phdr[i].p_memsz;
-					
-				cerr << Object::GetName() << ": Loading segment at 0x" << hex << segment_addr << dec << " (" << phdr[i].p_filesz << " bytes) " << endl;
+				
+				if(unlikely(verbose))
+				{
+					logger << DebugInfo << "Loading segment at 0x" << hex << segment_addr << dec << " (" << phdr[i].p_filesz << " bytes) " << EndDebugInfo;
+				}
 				
 				if(segment_addr + segment_size > top_addr)
 				{
@@ -226,7 +254,7 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 				
 				if(!LoadSegment(hdr, &phdr[i], segment, is))
 				{
-					cerr << Object::GetName() << ": WARNING! Can't load segment " << endl;
+					logger << DebugError << "Can't load segment" << EndDebugError;
 					success = false;
 				}
 				else
@@ -235,32 +263,38 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 					{
 						if(!memory_import->WriteMemory(segment_addr, segment, segment_size))
 						{
-							cerr << Object::GetName() << ": Can't write into memory (@0x" << hex << segment_addr << " - @0x" << (segment_addr +  segment_size - 1) << dec << ")" << endl;
+							logger << DebugError << "Can't write into memory (@0x" << hex << segment_addr << " - @0x" << (segment_addr +  segment_size - 1) << dec << ")" << EndDebugError;
 							success = false;
 						}
 						else 
 						{
-							cerr << Object::GetName() << ": write into memory (@0x" << hex << segment_addr << " - @0x" << (segment_addr +  segment_size - 1) << dec << ")" << endl;
+							if(unlikely(verbose))
+							{
+								logger << DebugInfo << "Write into memory (@0x" << hex << segment_addr << " - @0x" << (segment_addr +  segment_size - 1) << dec << ")" << EndDebugInfo;
+							}
 						}
 					}
 				}
 
 				free(segment);
 
-				if(shdr_table && sh_string_table)
+				if(unlikely(verbose))
 				{
-					for(j = 0, shdr = shdr_table; j < hdr->e_shnum; shdr = GetNextSectionHeader(hdr, shdr),j++)
+					if(shdr_table && sh_string_table)
 					{
-						section_type = GetSectionType(shdr);
-						section_size = GetSectionSize(shdr);
-						section_vaddr = GetSectionAddr(shdr);
-						section_flags = GetSectionFlags(shdr);
-
-						if((section_flags & SHF_ALLOC))
+						for(j = 0, shdr = shdr_table; j < hdr->e_shnum; shdr = GetNextSectionHeader(hdr, shdr),j++)
 						{
-							if(section_vaddr >= phdr[i].p_vaddr && section_vaddr + section_size <= phdr[i].p_vaddr + segment_size)
+							section_type = GetSectionType(shdr);
+							section_size = GetSectionSize(shdr);
+							section_vaddr = GetSectionAddr(shdr);
+							section_flags = GetSectionFlags(shdr);
+
+							if((section_flags & SHF_ALLOC))
 							{
-								cerr << Object::GetName() << ": section " << GetSectionName(shdr, sh_string_table) << " loaded (" << section_size << " bytes) at 0x" << hex << (section_vaddr - phdr[i].p_vaddr + segment_addr) << dec << endl;
+								if(section_vaddr >= phdr[i].p_vaddr && section_vaddr + section_size <= phdr[i].p_vaddr + segment_size)
+								{
+									logger << DebugInfo << "Section " << GetSectionName(shdr, sh_string_table) << " loaded (" << section_size << " bytes) at 0x" << hex << (section_vaddr - phdr[i].p_vaddr + segment_addr) << dec << EndDebugInfo;
+								}
 							}
 						}
 					}
@@ -270,7 +304,10 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		}
 	}
 	
-	cerr << Object::GetName() << ": program entry point at 0x" << hex << entry_point << dec << endl;
+	if(unlikely(verbose))
+	{
+		logger << DebugInfo << "Program entry point at 0x" << hex << entry_point << dec << EndDebugInfo;
+	}
 	
 	if(shdr_table && sh_string_table)
 	{
@@ -292,23 +329,29 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 					section = malloc(section_size);
 					if(!LoadSection(hdr, shdr, section, is))
 					{
-						cerr << Object::GetName() << ": WARNING! Can't load section " << GetSectionName(shdr, sh_string_table) << endl;
+						logger << DebugWarning << "Can't load section " << GetSectionName(shdr, sh_string_table) << EndDebugWarning;
 					}
 					else
 					{
 						int strtab_size;
 						char *string_table;
-						cerr << Object::GetName() << ": Loading section " << GetSectionName(shdr, sh_string_table) << " (" << section_size << " bytes)" << endl;
+						if(unlikely(verbose))
+						{
+							logger << DebugInfo << "Loading section " << GetSectionName(shdr, sh_string_table) << " (" << section_size << " bytes)" << EndDebugInfo;
+						}
 						sh_strtab = (Elf_Shdr *)((char *) shdr_table + shdr->sh_link * hdr->e_shentsize);
 						strtab_size = GetSectionSize(sh_strtab);
 						string_table = (char *) malloc(strtab_size);
 						if(!LoadSection(hdr, sh_strtab, string_table, is))
 						{
-							cerr << Object::GetName() << ": WARNING! Can't load section " << GetSectionName(sh_strtab, sh_string_table) << endl;
+							logger << DebugWarning << "Can't load section " << GetSectionName(sh_strtab, sh_string_table) << EndDebugWarning;
 						}
 						else
 						{
-							cerr << Object::GetName() << ": Building symbol table from section " << GetSectionName(sh_strtab, sh_string_table) << endl;
+							if(unlikely(verbose))
+							{
+								logger << DebugInfo << "Building symbol table from section " << GetSectionName(sh_strtab, sh_string_table) << EndDebugInfo;
+							}
 							BuildSymbolTable(shdr, section, string_table);
 						}
 						free(string_table);

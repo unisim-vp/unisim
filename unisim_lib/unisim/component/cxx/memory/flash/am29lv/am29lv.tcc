@@ -117,7 +117,7 @@ bool AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::Setup()
 
 	if((IO_WIDTH / NUM_CHIPS) > CONFIG::MAX_IO_WIDTH)
 	{
-		if(verbose)
+		if(unlikely(verbose))
 		{
 			logger << DebugError;
 			logger << "bad I/O Width (currently: " << IO_WIDTH << ", suggested: " << (NUM_CHIPS * CONFIG::MAX_IO_WIDTH) << ")" << std::endl;
@@ -128,7 +128,7 @@ bool AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::Setup()
 	
 	if(!(CONFIG::MODE_SUPPORT & (IO_WIDTH / NUM_CHIPS)))
 	{
-		if(verbose)
+		if(unlikely(verbose))
 		{
 			logger << DebugError;
 			logger << "Chip does not support " << (IO_WIDTH / NUM_CHIPS) << " bits I/O.std::decrease or increase either BYTESIZE or IO_WIDTH" << std::endl;
@@ -221,7 +221,7 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::FSM(unsigned int chip_num, COMMAND comm
 			}
 		}
 	}
-	if(verbose)
+	if(unlikely(verbose))
 	{
 		logger << DebugError;
 		logger << "No transition found. You should check the FSM" << std::endl;
@@ -234,7 +234,7 @@ bool AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::FSM(COMMAND command, typename CONFIG::A
 {
 	if(addr < org || (addr + size - 1) > (org + bytesize - 1) || (addr + size) < addr)
 	{
-		if(verbose)
+		if(unlikely(verbose))
 		{
 			logger << DebugWarning;
 			logger << "out of range address" << std::endl;
@@ -245,7 +245,7 @@ bool AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::FSM(COMMAND command, typename CONFIG::A
 
 	if(size > IO_WIDTH)
 	{
-		if(verbose)
+		if(unlikely(verbose))
 		{
 			logger << DebugWarning;
 			logger << "invalid transfer size (" << size << " bytes). Transfer size should be <= " << IO_WIDTH << std::endl;
@@ -279,7 +279,7 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::ReadAutoselect(unsigned int chip_num, t
 	switch((chip_addr & 0xff) << config_addr_shift)
 	{
 		case CONFIG::MANUFACTURER_ID_ADDR:
-			if(verbose)
+			if(unlikely(verbose))
 			{
 				logger << DebugInfo;
 				logger << "Chip #" << chip_num << ": Reading Manufacturer ID" << std::endl;
@@ -291,7 +291,7 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::ReadAutoselect(unsigned int chip_num, t
 				ReverseCopy(data, CONFIG::MANUFACTURER_ID, size > CHIP_IO_WIDTH ? CHIP_IO_WIDTH : size);
 			return;
 		case CONFIG::DEVICE_ID_ADDR:
-			if(verbose)
+			if(unlikely(verbose))
 			{
 				logger << DebugInfo;
 				logger << "Chip #" << chip_num << ": Reading Device ID" << std::endl;
@@ -304,7 +304,7 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::ReadAutoselect(unsigned int chip_num, t
 			return;
 		case CONFIG::SECTOR_PROTECT_VERIFY_ADDR:
 			{
-				if(verbose)
+				if(unlikely(verbose))
 				{
 					logger << DebugInfo;
 					logger << "Chip #" << chip_num << ": Sector protected verify" << std::endl;
@@ -356,7 +356,7 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::Program(unsigned int chip_num, typename
 		return;
 	}
 
-	if(verbose)
+	if(unlikely(verbose))
 	{
 		logger << DebugInfo;
 		logger << "Chip #" << chip_num << ", Sector #" << sector_num << ", Addr 0x" << std::hex << chip_addr << ": Programming ";
@@ -377,7 +377,7 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::Program(unsigned int chip_num, typename
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
 void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::ChipErase(unsigned int chip_num)
 {
-	if(verbose)
+	if(unlikely(verbose))
 	{
 		logger << DebugInfo;
 		logger << "Erasing Chip #" << chip_num << std::endl;
@@ -414,7 +414,7 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::SectorErase(unsigned int chip_num, type
 		return;
 	}
 
-	if(verbose)
+	if(unlikely(verbose))
 	{
 		logger << DebugInfo;
 		logger << "Erasing sector at 0x" << std::hex << addr << std::dec << " of chip #" << chip_num << std::endl;
@@ -429,7 +429,7 @@ bool AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::WriteMemory(typename CONFIG::ADDRESS ad
 {
 	if(addr < org || (addr + size - 1) > (org + bytesize - 1) || (addr + size) < addr)
 	{
-		if(verbose)
+		if(unlikely(verbose))
 		{
 			logger << DebugWarning;
 			logger << "out of range address" << std::endl;
@@ -449,7 +449,7 @@ bool AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::ReadMemory(typename CONFIG::ADDRESS add
 {
 	if(addr < org || (addr + size - 1) > (org + bytesize - 1) || (addr + size) < addr)
 	{
-		if(verbose)
+		if(unlikely(verbose))
 		{
 			logger << DebugWarning;
 			logger << "out of range address" << std::endl;

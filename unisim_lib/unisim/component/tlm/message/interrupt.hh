@@ -48,6 +48,7 @@ namespace message {
 class InterruptRequest;
 
 unisim::service::interfaces::Logger& operator<< (unisim::service::interfaces::Logger& os, const InterruptRequest& req);
+unisim::kernel::logger::Logger& operator<< (unisim::kernel::logger::Logger& os, const InterruptRequest& req);
 
 class InterruptRequest {
 public:
@@ -55,6 +56,8 @@ public:
 	unsigned int serial_id;
 
 	friend unisim::service::interfaces::Logger& operator<< (unisim::service::interfaces::Logger& os, 
+			const InterruptRequest& req);
+	friend unisim::kernel::logger::Logger& operator<< (unisim::kernel::logger::Logger& os, 
 			const InterruptRequest& req);
 };
 
@@ -76,6 +79,7 @@ private:
 
 public:
 	void Dump(unisim::service::interfaces::Logger &os, PReqType &req);
+	void Dump(unisim::kernel::logger::Logger &os, PReqType &req);
 };
 
 } // end of namespace debug

@@ -36,7 +36,7 @@
 #define __UNISIM_COMPONENT_CXX_CHIPSET_MPC107_PCICONTROLLER_HH__
 
 #include "unisim/kernel/service/service.hh"
-#include "unisim/service/interfaces/logger.hh"
+#include "unisim/kernel/logger/logger.hh"
 #include "unisim/component/cxx/chipset/mpc107/config_regs.hh"
 #include "unisim/component/cxx/chipset/mpc107/address_maps.hh"
 #include "unisim/component/cxx/pci/types.hh"
@@ -53,7 +53,6 @@ using unisim::component::cxx::pci::TransactionType;
 using unisim::component::cxx::pci::PCISpace;
 using unisim::util::endian::Host2LittleEndian;
 using unisim::util::endian::LittleEndian2Host;
-using unisim::service::interfaces::Logger;
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Client;
 
@@ -63,10 +62,13 @@ template <class SYSTEM_BUS_PHYSICAL_ADDR,
 		uint32_t PCI_MAX_TRANSACTION_DATA_SIZE,
 		bool DEBUG = false>
 class PCIController :
-	public Client<Logger> {
+	virtual public Object {
 public:
-	ServiceImport<Logger> logger_import;
 
+protected:
+	unisim::kernel::logger::Logger logger;
+	bool verbose;
+	Parameter<bool> param_verbose;
 private:	
 	static const uint32_t LMBAR = 0x10;
 	static const uint32_t ITWR = 0x2310;

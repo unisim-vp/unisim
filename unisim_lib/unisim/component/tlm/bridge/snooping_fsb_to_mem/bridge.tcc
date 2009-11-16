@@ -44,21 +44,14 @@ namespace bridge {
 namespace snooping_fsb_to_mem {
 
 using unisim::kernel::service::Object;
-//using unisim::service::interfaces::operator<<;
-using unisim::service::interfaces::DebugInfo;
-using unisim::service::interfaces::DebugWarning;
-using unisim::service::interfaces::DebugError;
-using unisim::service::interfaces::EndDebugInfo;
-using unisim::service::interfaces::EndDebugWarning;
-using unisim::service::interfaces::EndDebugError;
-using unisim::service::interfaces::Hex;
-using unisim::service::interfaces::Dec;
-using unisim::service::interfaces::Endl;
-using unisim::service::interfaces::File;
-using unisim::service::interfaces::Function;
-using unisim::service::interfaces::Line;
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugInfo;
+using unisim::kernel::logger::EndDebugWarning;
+using unisim::kernel::logger::EndDebugError;
 
-#define LOCATION Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+#define LOCATION "In function " << __FUNCTION__ << ", file " << __FILE__ << " line #" << __LINE__
 
 template <class CONFIG>
 Bridge<CONFIG> ::
@@ -67,12 +60,11 @@ Bridge(const sc_module_name& name, Object *parent) :
 	sc_module(name),
 	Service<Memory<fsb_address_t> >(name, parent),
 	Client<Memory<mem_address_t> >(name, parent),
-	Client<Logger>(name, parent),
+	logger(*this),
 	master_port("master-port"),
 	slave_port("slave-port"),
 	memory_export("memory-export", this),
 	memory_import("memory-import", this),
-	logger_import("logger-import", this),
 	verbose_all(false),
 	param_verbose_all("verbose_all", this, verbose_all),
 	fsb_cycle_sctime(),
@@ -87,7 +79,6 @@ Bridge(const sc_module_name& name, Object *parent) :
 	SC_THREAD(DispatchMemory);
 	
 	Object::SetupDependsOn(memory_import);
-	Object::SetupDependsOn(logger_import);
 }
 
 template<class CONFIG>
@@ -100,39 +91,27 @@ template<class CONFIG>
 bool
 Bridge<CONFIG> ::
 Setup() {
-	if(!logger_import) {
-		if(CONFIG::DEBUG)
-			cerr << "WARNING("
-				<< __FUNCTION__ << ":"
-				<< __FILE__ << ":"
-				<< __LINE__ << "): "
-				<< "No Logger exists to generate the output messages" << endl;
-	}
-	
 	if(fsb_cycle_time == 0) {
-		if(logger_import)
-			(*logger_import) << DebugError << LOCATION
-				<< "fsb_cycle_time parameter should be set to a value bigger than 0"
-				<< Endl
-				<< EndDebugError;
+		logger << DebugError << LOCATION
+			<< "fsb_cycle_time parameter should be set to a value bigger than 0"
+			<< std::endl
+			<< EndDebugError;
 		return false;
 	}
 	
 	if(mem_cycle_time == 0) {
-		if(logger_import)
-			(*logger_import) << DebugError << LOCATION
-				<< "mem_cycle_time paramater should be set to a value bigger than 0"
-				<< Endl
-				<< EndDebugError;
+		logger << DebugError << LOCATION
+			<< "mem_cycle_time paramater should be set to a value bigger than 0"
+			<< std::endl
+			<< EndDebugError;
 		return false;
 	}
 	
 	if(CONFIG::FSB_BURST_SIZE != CONFIG::MEM_BURST_SIZE) {
-		if(logger_import)
-			(*logger_import) << DebugError << LOCATION
-				<< "the size of the two busses differ, they should be the same"
-				<< Endl
-				<< EndDebugError;
+		logger << DebugError << LOCATION
+			<< "the size of the two busses differ, they should be the same"
+			<< std::endl
+			<< EndDebugError;
 		return false;
 	}
 	
@@ -140,14 +119,12 @@ Setup() {
 	mem_cycle_sctime = sc_time((double)mem_cycle_time, SC_PS);
 	
 	if(CONFIG::DEBUG && verbose_all) {
-		if(logger_import) {
-			(*logger_import) << DebugInfo << LOCATION
-				<< "fsb_cycle_time = " << fsb_cycle_sctime.to_string()
-				<< Endl << EndDebugInfo;
-			(*logger_import) << DebugInfo << LOCATION
-				<< "mem_cycle_time = " << mem_cycle_sctime.to_string()
-				<< Endl << EndDebugInfo;
-		}
+		logger << DebugInfo << LOCATION
+			<< "fsb_cycle_time = " << fsb_cycle_sctime.to_string()
+			<< std::endl << EndDebugInfo;
+		logger << DebugInfo << LOCATION
+			<< "mem_cycle_time = " << mem_cycle_sctime.to_string()
+			<< std::endl << EndDebugInfo;
 	}
 	
 	return true;
@@ -185,11 +162,10 @@ DispatchMemory() {
 
 		wait(dispatch_mem_ev);
 		if(!buffer_req.nb_read(fsb_msg)) {
-			if(logger_import)
-				(*logger_import) << DebugError << LOCATION
-					<< "trying to dispatch a message to the memory bus when none is available" << Endl
-					<< "Stopping simulation"
-					<< Endl << EndDebugError;
+			logger << DebugError << LOCATION
+				<< "trying to dispatch a message to the memory bus when none is available" << std::endl
+				<< "Stopping simulation"
+				<< std::endl << EndDebugError;
 			sc_stop();
 			wait();
 		}
@@ -223,18 +199,16 @@ DispatchMemory() {
 				wait(mem_cycle_sctime);
 			break;
 		default:
-			if(logger_import) {
-				(*logger_import) << DebugWarning << LOCATION
-					<< "message ";
-				switch(fsb_req->type) {
-				case fsb_req_t::INV_BLOCK: (*logger_import) << "INV_BLOCK"; break;
-				case fsb_req_t::FLUSH_BLOCK: (*logger_import) << "FLUSH_BLOCK"; break;
-				case fsb_req_t::ZERO_BLOCK: (*logger_import) << "ZERO_BLOCK"; break;
-				case fsb_req_t::INV_TLB: (*logger_import) << "INV_TLB"; break;
-				}
-				(*logger_import) << " will be ignored (can not be handled by this module)"
-					<< Endl << EndDebugWarning;
+			logger << DebugWarning << LOCATION
+				<< "message ";
+			switch(fsb_req->type) {
+			case fsb_req_t::INV_BLOCK: logger << "INV_BLOCK"; break;
+			case fsb_req_t::FLUSH_BLOCK: logger << "FLUSH_BLOCK"; break;
+			case fsb_req_t::ZERO_BLOCK: logger << "ZERO_BLOCK"; break;
+			case fsb_req_t::INV_TLB: logger << "INV_TLB"; break;
 			}
+			logger << " will be ignored (can not be handled by this module)"
+				<< std::endl << EndDebugWarning;
 		}
 		
 		if(buffer_req.num_available() != 0) {

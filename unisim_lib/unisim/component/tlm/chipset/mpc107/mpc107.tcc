@@ -43,24 +43,17 @@ namespace tlm {
 namespace chipset {
 namespace mpc107 {
 
-//using unisim::service::interfaces::operator<<;
-using unisim::service::interfaces::DebugInfo;
-using unisim::service::interfaces::DebugWarning;
-using unisim::service::interfaces::DebugError;
-using unisim::service::interfaces::EndDebugInfo;
-using unisim::service::interfaces::EndDebugWarning;
-using unisim::service::interfaces::EndDebugError;
-using unisim::service::interfaces::Hex;
-using unisim::service::interfaces::Dec;
-using unisim::service::interfaces::Endl;
-using unisim::service::interfaces::File;
-using unisim::service::interfaces::Function;
-using unisim::service::interfaces::Line;
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugInfo;
+using unisim::kernel::logger::EndDebugWarning;
+using unisim::kernel::logger::EndDebugError;
 using unisim::kernel::service::Object;
 
 using std::stringstream;
 
-#define LOCATION	File << __FILE__ << Function << __FUNCTION__ << Line << __LINE__
+#define LOCATION	"In file " << __FILE__ << ", function " << __FUNCTION__ << ", line #" << __LINE__
 
 template <class PHYSICAL_ADDR, 
 		uint32_t MAX_TRANSACTION_DATA_SIZE,
@@ -73,7 +66,9 @@ MPC107(const sc_module_name &name, Object *parent) :
 	Object(name, parent),
 	Service<Memory<PHYSICAL_ADDR> >(name, parent),
 	Client<Memory<PHYSICAL_ADDR> >(name, parent),
-	Client<Logger>(name, parent),
+	logger(*this),
+	verbose(false),
+	param_verbose("verbose", this, verbose),
 	dma(this, "DMA", this),
 	epic("epic", this),
 	atu("atu", this),
@@ -95,11 +90,6 @@ MPC107(const sc_module_name &name, Object *parent) :
 	erom_import("erom_import", this),
 	epic_memory_import("epic_memory_import", this),
 	pci_import("pci_import", this),
-	logger_import("logger_import", this),
-	pci_logger_import("pci_logger_import", this),
-	addr_map_logger_import("addr_map_logger_import", this),
-	epic_logger_import("epic_logger_import", this),
-	atu_logger_import("atu_logger_import", this),
 	a_address_map(false),
 	host_mode(true),
 	memory_32bit_data_bus_size(true),
@@ -118,7 +108,6 @@ MPC107(const sc_module_name &name, Object *parent) :
 	config_regs(),
 	pci_controller(0, config_regs, addr_map, "pci_controller", this),
 	addr_map(config_regs, atu, "address_mapper", this) {
-	Object::SetupDependsOn(logger_import);
 	slave_port(*this);
 	pci_slave_port(*this);
 	
@@ -144,23 +133,12 @@ MPC107(const sc_module_name &name, Object *parent) :
 	sdram_master_port(sdram_to_epic_sig);
 	epic.sdram_slave_port(sdram_to_epic_sig);
 	
-	/* connect loggers */
-	pci_controller.logger_import >> pci_logger_import;
-	addr_map.logger_import >> addr_map_logger_import;
-	epic.logger_import >> epic_logger_import;
-	atu.logger_import >> atu_logger_import;
-	
 	epic_memory_import >> epic.memory_export;
 	
 	SC_THREAD(PCIDispatch);
 	SC_THREAD(DispatchPCIReq);
 	SC_THREAD(DispatchDMALocalMemoryAccess);
 	SC_THREAD(DispatchDMAPCIAccess);
-	
-	Object::SetupDependsOn(logger_import);
-	Object::SetupDependsOn(pci_logger_import);
-	Object::SetupDependsOn(addr_map_logger_import);
-	Object::SetupDependsOn(epic_logger_import);
 }
 
 template <class PHYSICAL_ADDR, 
@@ -181,15 +159,6 @@ bool
 MPC107<PHYSICAL_ADDR, MAX_TRANSACTION_DATA_SIZE,
 	PCI_ADDR, MAX_PCI_TRANSACTION_DATA_SIZE, DEBUG>::
 Setup() {
-	if(!logger_import) {
-		if(DEBUG)
-			cerr << "WARNING("
-				<< __FUNCTION__ << ":"
-				<< __FILE__ << ":"
-				<< __LINE__ << "): "
-				<< "No Logger exists to generate the output messages" << endl;
-	}
-
 	/* IMPORTANT: before initializing the different components the configuration
 	 *   registers must be set */
 	if(!config_regs.Reset(host_mode, 
@@ -197,11 +166,11 @@ Setup() {
 		memory_32bit_data_bus_size,
 		rom0_8bit_data_bus_size, 
 		rom1_8bit_data_bus_size)) {
-		if(logger_import) 
-			(*logger_import) << DebugError
+		if(unlikely(verbose)) 
+			logger << DebugError
 				<< LOCATION
 				<< "Error while initializing the configuration registers"
-				<< Endl << EndDebugError;
+				<< std::endl << EndDebugError;
 		else
 			cerr << "ERROR("
 				<< __FUNCTION__ << ":"
@@ -214,11 +183,11 @@ Setup() {
 
 	/* initialize the address map */
 	if(!addr_map.Reset()) {
-		if(logger_import)
-			(*logger_import) << DebugError
+		if(unlikely(verbose))
+			logger << DebugError
 				<< LOCATION
 				<< "Error while initializing the address map"
-				<< Endl << EndDebugError;
+				<< std::endl << EndDebugError;
 		else
 			cerr << "ERROR("
 				<< __FUNCTION__ << ":"
@@ -229,10 +198,10 @@ Setup() {
 	}
 	
 	if(!host_mode) {
-		if(logger_import)
-			(*logger_import) << DebugError 
+		if(unlikely(verbose))
+			logger << DebugError 
 				<< LOCATION << "SERVICE_SETUP_ERROR: Only host mode is supported (sorry)" 
-				<< Endl << EndDebugError;
+				<< std::endl << EndDebugError;
 		else
 			cerr << "ERROR("
 				<< __FUNCTION__ << ":"
@@ -244,11 +213,11 @@ Setup() {
 	}
 
 	if(!frequency) {
-		if(logger_import)
-			(*logger_import) << DebugError 
+		if(unlikely(verbose))
+			logger << DebugError 
 				<< LOCATION 
 				<< "SERVICE_SETUP_ERROR: frequency parameter has not been set" 
-				<< Endl << EndDebugError;
+				<< std::endl << EndDebugError;
 		else
 			cerr << "ERROR("
 				<< __FUNCTION__ << ":"
@@ -260,11 +229,11 @@ Setup() {
 	}
 	cycle_time = sc_time(1.0 / (double) frequency, SC_US);
 	if(!sdram_cycle_time) {
-		if(logger_import)
-			(*logger_import) << DebugError 
+		if(unlikely(verbose))
+			logger << DebugError 
 				<< LOCATION
 				<< "SERVICE_SETUP_ERROR: sdram_cycle_time parameter has not been set" 
-				<< Endl << EndDebugError;
+				<< std::endl << EndDebugError;
 		else
 			cerr << "ERROR("
 				<< __FUNCTION__ << ":"
@@ -278,10 +247,10 @@ Setup() {
 	sdram_master_port = sdram_cycle_time;
 
 	if(!rom_import) {
-		if(logger_import)
-			(*logger_import) << DebugError  << LOCATION
+		if(unlikely(verbose))
+			logger << DebugError  << LOCATION
 				<< "SERVICE_SETUP_ERROR: rom_import not connected" 
-				<< Endl << EndDebugError;
+				<< std::endl << EndDebugError;
 		else
 			cerr << "ERROR("
 				<< __FUNCTION__ << ":"
@@ -292,10 +261,10 @@ Setup() {
 		return false;
 	}
 	if(!ram_import) {
-		if(logger_import)
-			(*logger_import) << DebugError << LOCATION 
+		if(unlikely(verbose))
+			logger << DebugError << LOCATION 
 				<< "SERVICE_SETUP_ERROR: ram_import not connected" 
-				<< Endl << EndDebugError;
+				<< std::endl << EndDebugError;
 		else
 			cerr << "ERROR("
 				<< __FUNCTION__ << ":"
@@ -306,10 +275,10 @@ Setup() {
 		return false;
 	}
 	if(!erom_import) {
-		if(logger_import)
-			(*logger_import) << DebugError << LOCATION 
+		if(unlikely(verbose))
+			logger << DebugError << LOCATION 
 				<< "SERVICE_SETUP_ERROR: erom_import not connected" 
-				<< Endl << EndDebugError;
+				<< std::endl << EndDebugError;
 		else
 			cerr << "ERROR("
 				<< __FUNCTION__ << ":"
@@ -320,10 +289,10 @@ Setup() {
 		return false;
 	}
 	if(!pci_import) {
-		if(logger_import)
-			(*logger_import) << DebugError << LOCATION 
+		if(unlikely(verbose))
+			logger << DebugError << LOCATION 
 				<< "SERVICE_SETUP_ERROR: pci_import not connected" 
-				<< Endl << EndDebugError;
+				<< std::endl << EndDebugError;
 		else
 			cerr << "ERROR("
 				<< __FUNCTION__ << ":"
@@ -345,18 +314,18 @@ void
 MPC107<PHYSICAL_ADDR, MAX_TRANSACTION_DATA_SIZE,
 	PCI_ADDR, MAX_PCI_TRANSACTION_DATA_SIZE, DEBUG>::
 DEBUG_PCI_REQ(const PPCIReqType &req) {
-	(*logger_import) << "(addr = 0x" << Hex << req->addr << Dec << ", " 
+	logger << "(addr = 0x" << std::hex << req->addr << std::dec << ", " 
 		<< "type = " << ((req->type == unisim::component::cxx::pci::TT_READ) ? "READ" : "WRITE") << ", " 
 		<< "space = " << ((req->space == unisim::component::cxx::pci::SP_MEM) ? "MEMORY" : 
 							(req->space == unisim::component::cxx::pci::SP_IO) ? "I/O" : "CONFIG") << ", " 
 		<< "size = " << req->size;
 	if(req->type == unisim::component::cxx::pci::TT_WRITE) {
-		(*logger_import) << ", data = 0x";
+		logger << ", data = 0x";
 		for(unsigned int i = 0; i < req->size - 1; i++)
-			(*logger_import) << Hex << (unsigned int)req->write_data[i] << " ";
-		(*logger_import) << (unsigned int)req->write_data[req->size - 1] << Dec; 
+			logger << std::hex << (unsigned int)req->write_data[i] << " ";
+		logger << (unsigned int)req->write_data[req->size - 1] << std::dec; 
 	} 
-	(*logger_import) << ")";
+	logger << ")";
 }
 		
 template <class PHYSICAL_ADDR, 
@@ -371,24 +340,24 @@ Send(const PPCIMsgType &pci_message) {
 
 	/* check if the chipset can response to pci memory space requests */
 	/*if((config_regs.pci_command_reg.value & (1 << 1)) == 0) {
-		if(DEBUG && logger_import) {
-			(*logger_import) << DebugWarning
+		if(unlikely(DEBUG && verbose)) {
+			logger << DebugWarning
 				<< LOCATION
 				<< "Received pci request but the chipset is configured not to respond to pci memory space requests";
 			DEBUG_PCI_REQ(pci_req);
-			(*logger_import) << "THE REQUEST IS ACCEPTED BUT A REPLY WILL NOT BE SENT" << Endl << EndDebugWarning;
+			logger << "THE REQUEST IS ACCEPTED BUT A REPLY WILL NOT BE SENT" << std::endl << EndDebugWarning;
 		}
 		return true;
 	}*/
 	
 	AddressMapEntry *entry = addr_map.GetEntryProc(pci_req->addr);
 	if(entry == NULL) {
-		if(logger_import) {
-			(*logger_import) << DebugError
+		if(unlikely(verbose)) {
+			logger << DebugError
 				<< LOCATION
 				<< "Could not get an address map entry for address 0x"
-				<< Hex << pci_req->addr << Dec << " for a request comming from the pci bus"
-				<< Endl
+				<< std::hex << pci_req->addr << std::dec << " for a request comming from the pci bus"
+				<< std::endl
 				<< EndDebugError;
 		}
 		sc_stop();
@@ -399,12 +368,12 @@ Send(const PPCIMsgType &pci_message) {
 		return SendPCItoMemory(pci_message, ram_master_port);
 		break;
 	case AddressMapEntry::RESERVED:
-		if(logger_import) {
-			(*logger_import) << DebugError 
+		if(unlikely(verbose)) {
+			logger << DebugError 
 				<< LOCATION
 				<< " Send() from PCI bus accessing a reserved entry address ";
 			DEBUG_PCI_REQ(pci_req);
-			(*logger_import) << Endl << EndDebugError;
+			logger << std::endl << EndDebugError;
 		}
 		sc_stop();
 		wait();
@@ -419,13 +388,13 @@ Send(const PPCIMsgType &pci_message) {
 	case AddressMapEntry::PCI_MEMORY_SPACE:
 		/* The request should be simply ignored,
 		 * 	 even better it should be never received */
-		if(logger_import) {
-			(*logger_import) << DebugError
+		if(unlikely(verbose)) {
+			logger << DebugError
 				<< LOCATION
 				<< " Send() from PCI bus to PCI memory space ";
 			DEBUG_PCI_REQ(pci_req);
-			(*logger_import) << Endl
-				<< "This should never happen!!!!" << Endl 
+			logger << std::endl
+				<< "This should never happen!!!!" << std::endl 
 				<< EndDebugError;
 		}
 		sc_stop();
@@ -439,13 +408,13 @@ Send(const PPCIMsgType &pci_message) {
 		return SendPCItoMemory(pci_message, rom_master_port);
 		break;
 	default:
-		if(logger_import) {
-			(*logger_import) << DebugError
+		if(unlikely(verbose)) {
+			logger << DebugError
 				<< LOCATION
 				<< " Send() received a request to the pci memory space that is not a "
 				<< "read neither a write ";
 			DEBUG_PCI_REQ(pci_req);
-			(*logger_import) << Endl << EndDebugError;
+			logger << std::endl << EndDebugError;
 		}
 		sc_stop();
 		wait();
@@ -462,40 +431,40 @@ void
 MPC107<PHYSICAL_ADDR, MAX_TRANSACTION_DATA_SIZE,
 	PCI_ADDR, MAX_PCI_TRANSACTION_DATA_SIZE, DEBUG>::
 DEBUG_BUS_REQ(const PReqType &req) {
-	(*logger_import) << "(addr = 0x" << Hex << req->addr << Dec
+	logger << "(addr = 0x" << std::hex << req->addr << std::dec
 		<< ", type = ";
 	switch(req->type) {
 	case ReqType::READ:
-		(*logger_import) << "READ";
+		logger << "READ";
 		break;
 	case ReqType::READX:
-		(*logger_import) << "READX";
+		logger << "READX";
 		break;
 	case ReqType::WRITE:
-		(*logger_import) << "WRITE";
+		logger << "WRITE";
 		break;
 	case ReqType::INV_BLOCK:
-		(*logger_import) << "INV_BLOCK";
+		logger << "INV_BLOCK";
 		break;
 	case ReqType::FLUSH_BLOCK:
-		(*logger_import) << "FLUSH_BLOCK";
+		logger << "FLUSH_BLOCK";
 		break;
 	case ReqType::ZERO_BLOCK:
-		(*logger_import) << "ZERO_BLOCK";
+		logger << "ZERO_BLOCK";
 		break;
 	case ReqType::INV_TLB:
-		(*logger_import) << "INV_TLB";
+		logger << "INV_TLB";
 		break;
 	}
-	(*logger_import) << ", global = " << (req->global ? "TRUE" : "FALSE")
+	logger << ", global = " << (req->global ? "TRUE" : "FALSE")
 		<< ", size = " << req->size;
 	if(req->type == ReqType::WRITE) {
-		(*logger_import) << ", data = 0x" << Hex;
+		logger << ", data = 0x" << std::hex;
 		for(unsigned int i = 0; i < req->size - 1; i++) 
-			(*logger_import) << (unsigned int)req->write_data[i] << " ";
-		(*logger_import) << (unsigned int)req->write_data[req->size - 1];
+			logger << (unsigned int)req->write_data[i] << " ";
+		logger << (unsigned int)req->write_data[req->size - 1];
 	}
-	(*logger_import) << ")";
+	logger << ")";
 }
 
 template <class PHYSICAL_ADDR, 
@@ -512,12 +481,12 @@ Send(const PMsgType &message) {
 
 	AddressMapEntry *entry = addr_map.GetEntryProc(req->addr);
 	if(entry == NULL) {
-		if(logger_import) {
-			(*logger_import) << DebugError
+		if(unlikely(verbose)) {
+			logger << DebugError
 				<< LOCATION
 				<< "Could not get an address map entry for address 0x"
-				<< Hex << req->addr << Dec << " for a request comming from the system bus"
-				<< Endl
+				<< std::hex << req->addr << std::dec << " for a request comming from the system bus"
+				<< std::endl
 				<< EndDebugError;
 		}
 		sc_stop();
@@ -529,12 +498,12 @@ Send(const PMsgType &message) {
 		return SendFSBtoMemory(message, ram_master_port);
 		break;
 	case AddressMapEntry::RESERVED:
-		if(logger_import) {
-			(*logger_import) << DebugError
+		if(unlikely(verbose)) {
+			logger << DebugError
 				<< LOCATION
 				<< "Send() from system bus accessing a reserved entry address ";
 			DEBUG_BUS_REQ(req);
-			(*logger_import) << Endl << EndDebugInfo;
+			logger << std::endl << EndDebugInfo;
 		}
 		sc_stop();
 		wait();
@@ -556,24 +525,24 @@ Send(const PMsgType &message) {
 							pci_req->addr,
 							pci_req->space,
 							pci_req->size) ) {
-				if(logger_import) {
-					(*logger_import) << DebugError
+				if(unlikely(verbose)) {
+					logger << DebugError
 						<< sc_time_stamp().to_string()
 						<< "Send() from system bus received a bad read request from the system bus ";
 					DEBUG_BUS_REQ(req);
-					(*logger_import) << Endl << EndDebugError;
+					logger << std::endl << EndDebugError;
 				}
 				sc_stop();
 				wait(); 		
 			}
 			if(!message->HasResponseEvent()) {
-				if(logger_import) {
-					(*logger_import) << DebugError
+				if(unlikely(verbose)) {
+					logger << DebugError
 						<< sc_time_stamp().to_string()
 						<< LOCATION
 						<< "Send() from system bus received a read request without response event "; 
 					DEBUG_BUS_REQ(req);
-					(*logger_import) << Endl << EndDebugError;
+					logger << std::endl << EndDebugError;
 				}
 				sc_stop();
 				wait();
@@ -586,25 +555,25 @@ Send(const PMsgType &message) {
 								pci_req->space,
 								pci_req->write_data,
 								pci_req->size) ) {
-				if(logger_import) {
-					(*logger_import) << DebugError
+				if(unlikely(verbose)) {
+					logger << DebugError
 						<< LOCATION
 						<< "Send() from system bus received a bad write request from the system bus ";
 					DEBUG_BUS_REQ(req);
-					(*logger_import) << Endl << EndDebugError;
+					logger << std::endl << EndDebugError;
 				}
 				sc_stop();
 				wait();
 			}
 			break;
 		default:
-			if(logger_import) {
-				(*logger_import) << DebugError
-					<< Function << __FUNCTION__ << File << File << Line << __LINE__
+			if(unlikely(verbose)) {
+				logger << DebugError
+					<< LOCATION
 					<< "Send() from system bus received a request to the pci memory space that is not a "
 					<< "read neither a write "; 
 				DEBUG_BUS_REQ(req);
-				(*logger_import) << Endl << EndDebugError;
+				logger << std::endl << EndDebugError;
 			}
 			sc_stop();
 			wait();
@@ -628,24 +597,24 @@ Send(const PMsgType &message) {
 							pci_req->addr,
 							pci_req->space,
 							pci_req->size) ) {
-				if(logger_import) {
-					(*logger_import) << DebugError
+				if(unlikely(verbose)) {
+					logger << DebugError
 						<< sc_time_stamp().to_string()
 						<< LOCATION
 						<< "Send() from system bus received a bad PCI I/O read request from the system bus ";
 					DEBUG_BUS_REQ(req);
-					(*logger_import) << Endl << EndDebugError;
+					logger << std::endl << EndDebugError;
 				}
 				sc_stop();
 				wait(); 		
 			}
 			if(!message->HasResponseEvent()) {
-				if(logger_import) {
-					(*logger_import) << DebugError
+				if(unlikely(verbose)) {
+					logger << DebugError
 						<< LOCATION
 						<< "Send() from system bus received a PCI I/O read request without response event "; 
 					DEBUG_BUS_REQ(req);
-					(*logger_import) << Endl << EndDebugError;
+					logger << std::endl << EndDebugError;
 				}
 				sc_stop();
 				wait();
@@ -658,25 +627,25 @@ Send(const PMsgType &message) {
 								pci_req->space,
 								pci_req->write_data,
 								pci_req->size) ) {
-				if(logger_import) {
-					(*logger_import) << DebugError
+				if(unlikely(verbose)) {
+					logger << DebugError
 						<< LOCATION
 						<< "Send() from system bus received a bad PCI I/O write request from the system bus ";
 					DEBUG_BUS_REQ(req);
-					(*logger_import) << Endl << EndDebugError;
+					logger << std::endl << EndDebugError;
 				}
 				sc_stop();
 				wait();
 			}
 			break;
 		default:
-			if(logger_import) {
-				(*logger_import) << DebugError
+			if(unlikely(verbose)) {
+				logger << DebugError
 					<< LOCATION
 					<< "Send() from system bus received a request to the PCI I/O space that is not a "
 					<< "read neither a write request ";
 				DEBUG_BUS_REQ(req);
-				(*logger_import) << Endl << EndDebugError;
+				logger << std::endl << EndDebugError;
 			}
 			sc_stop();
 			wait();
@@ -691,12 +660,12 @@ Send(const PMsgType &message) {
 		return true;
 		break;
 	case AddressMapEntry::PCI_IO_SPACE_2:
-		if(DEBUG && logger_import) {
-			(*logger_import) << DebugWarning
+		if(unlikely(DEBUG && verbose)) {
+			logger << DebugWarning
 				<< LOCATION
 				<< " accessing the PCI I/O space 1 ";
 			DEBUG_BUS_REQ(req);
-			(*logger_import) << Endl << EndDebugWarning;
+			logger << std::endl << EndDebugWarning;
 		}
 		return false;
 		break;
@@ -706,21 +675,21 @@ Send(const PMsgType &message) {
 		case ReqType::READX: 
 			{
 				PRspType rsp = new(rsp) RspType();
-				if(logger_import) {
-					(*logger_import) << DebugWarning
+				if(unlikely(verbose)) {
+					logger << DebugWarning
 						<< LOCATION
 						<< "making a read to the pci config address register, "
 						<< "I am returning 0, but maybe something else should be done "; 
 					DEBUG_BUS_REQ(req);
-					(*logger_import) << Endl << EndDebugWarning;
+					logger << std::endl << EndDebugWarning;
 				}
 				if(!message->HasResponseEvent()) {
-					if(logger_import) {
-						(*logger_import) << DebugError
+					if(unlikely(verbose)) {
+						logger << DebugError
 							<< LOCATION
 							<< " received a read request without response event "; 
 						DEBUG_BUS_REQ(req);
-						(*logger_import) << Endl << EndDebugError;
+						logger << std::endl << EndDebugError;
 					}
 					sc_stop();
 					wait();
@@ -735,12 +704,12 @@ Send(const PMsgType &message) {
 			if(!pci_controller.SetConfigAddr(req->addr,
 								req->write_data,
 								req->size)) {
-				if(logger_import) {
-					(*logger_import) << DebugError
+				if(unlikely(verbose)) {
+					logger << DebugError
 						<< LOCATION
 						<< "bad write access to the configuration address register memory space ";
 					DEBUG_BUS_REQ(req);
-					(*logger_import) << Endl << EndDebugError;
+					logger << std::endl << EndDebugError;
 				}
 				sc_stop();
 				wait();
@@ -748,13 +717,13 @@ Send(const PMsgType &message) {
 			/* nothing else to do */
 			break;
 		default:
-			if(logger_import) {
-				(*logger_import) << DebugError
+			if(unlikely(verbose)) {
+				logger << DebugError
 					<< LOCATION
 					<< "Send() from system bus received a request to the pci config address register space that is not a "
 					<< "read neither a write request ";
 				DEBUG_BUS_REQ(req);
-				(*logger_import) << Endl << EndDebugError;
+				logger << std::endl << EndDebugError;
 			}
 			sc_stop();
 			wait();
@@ -771,12 +740,12 @@ Send(const PMsgType &message) {
 				PRspType rsp = new(rsp) RspType();
 				if(!pci_controller.LocalReadConfigRequest(req->addr, req->size,
 									rsp->read_data)) {
-					if(logger_import) {
-						(*logger_import) << DebugError
+					if(unlikely(verbose)) {
+						logger << DebugError
 							<< LOCATION
 							<< "Send() from system bus received a bad read for the pci configuration data register ";
 						DEBUG_BUS_REQ(req);
-						(*logger_import) << Endl << EndDebugError;
+						logger << std::endl << EndDebugError;
 					}
 					sc_stop();
 					wait(); 		
@@ -790,12 +759,12 @@ Send(const PMsgType &message) {
 									pci_req->addr,
 									pci_req->space,
 									pci_req->size) ) {
-					if(logger_import) {
-						(*logger_import) << DebugError
+					if(unlikely(verbose)) {
+						logger << DebugError
 							<< LOCATION
 							<< "Send() from system bus received a bad read for the PCI configuration data register ";
 						DEBUG_BUS_REQ(req);
-						(*logger_import) << Endl << EndDebugError;
+						logger << std::endl << EndDebugError;
 					}
 					sc_stop();
 					wait(); 		
@@ -805,12 +774,12 @@ Send(const PMsgType &message) {
 		case ReqType::WRITE:
 			if(pci_controller.IsLocalAccess()) {
 				if(!pci_controller.LocalWriteConfigRequest(req->addr, req->write_data, req->size)) {
-					if(logger_import) {
-						(*logger_import) << DebugError
+					if(unlikely(verbose)) {
+						logger << DebugError
 							<< LOCATION
 							<< "Send() from system bus received a bad write for the pci configuration data register ";
 						DEBUG_BUS_REQ(req);
-						(*logger_import) << Endl << EndDebugError;
+						logger << std::endl << EndDebugError;
 					}
 					sc_stop();
 					wait(); 		
@@ -823,12 +792,12 @@ Send(const PMsgType &message) {
 									pci_req->space,
 									pci_req->write_data,
 									pci_req->size) ) {
-					if(logger_import) {
-						(*logger_import) << DebugError
+					if(unlikely(verbose)) {
+						logger << DebugError
 							<< LOCATION
 							<< "Send() from system bus received a bad write request "; 
 						DEBUG_BUS_REQ(req);
-						(*logger_import) << Endl << EndDebugError;
+						logger << std::endl << EndDebugError;
 					}
 					sc_stop();
 					wait();
@@ -836,12 +805,12 @@ Send(const PMsgType &message) {
 			}
 			break;
 		default:
-			if(logger_import) {
-				(*logger_import) << DebugError
+			if(unlikely(verbose)) {
+				logger << DebugError
 					<< "Send() from system bus received a request to the pci config data register space that is not a "
 					<< "read neither a write "; 
 				DEBUG_BUS_REQ(req);
-				(*logger_import) << Endl << EndDebugError;
+				logger << std::endl << EndDebugError;
 			}
 			sc_stop();
 			wait();
@@ -857,12 +826,12 @@ Send(const PMsgType &message) {
 		return true;
 		break;
 	case AddressMapEntry::PCI_INT_ACK:
-		if(logger_import) {
-			(*logger_import) << DebugError
+		if(unlikely(verbose)) {
+			logger << DebugError
 				<< LOCATION
 				<< "Accessing the pci interruption acknowledgement ";
 			DEBUG_BUS_REQ(req);
-			(*logger_import) << Endl << EndDebugError;
+			logger << std::endl << EndDebugError;
 		}
 		sc_stop();
 		wait();
@@ -884,23 +853,23 @@ Send(const PMsgType &message) {
 	case AddressMapEntry::EUMB_DMA_SPACE:
 	case AddressMapEntry::EUMB_I2C_SPACE:
 	case AddressMapEntry::EUMB_DATA_PATH_DIAGNOSTICS_SPACE:
-		if(logger_import) {
-			(*logger_import) << DebugError
+		if(unlikely(verbose)) {
+			logger << DebugError
 				<< LOCATION
 				<< "TODO Embedded utilities block mapping not implemented ";
 			DEBUG_BUS_REQ(req);
-			(*logger_import) << Endl << EndDebugError;
+			logger << std::endl << EndDebugError;
 		}
 		sc_stop();
 		wait();
 		break;
 	default:
-		if(logger_import) {
-			(*logger_import) << DebugError
+		if(unlikely(verbose)) {
+			logger << DebugError
 				<< LOCATION
 				<< "Accessing an unmapped (or unhalded) memory space ";
 			DEBUG_BUS_REQ(req);
-			(*logger_import) << Endl << EndDebugError;
+			logger << std::endl << EndDebugError;
 		}
 		sc_stop();
 		wait();
@@ -935,128 +904,128 @@ ReadMemory(PHYSICAL_ADDR addr, void *buffer, uint32_t size) {
 	
 	AddressMapEntry *entry = addr_map.GetEntryProc(addr);
 	if(entry == NULL) {
-		if(logger_import) {
-			(*logger_import) << DebugError
+		if(unlikely(verbose)) {
+			logger << DebugError
 				<< LOCATION
 				<< "Could not get an address map entry for address 0x"
-				<< Hex << addr << Dec << " for a request comming from the system bus"
-				<< Endl
+				<< std::hex << addr << std::dec << " for a request comming from the system bus"
+				<< std::endl
 				<< EndDebugError;
 		}
 		return false;
 	}
 	switch(entry->type) {
 	case AddressMapEntry::LOCAL_MEMORY_SPACE:
-		if(DEBUG && logger_import)
-			(*logger_import) << DebugInfo
+		if(unlikely(DEBUG && verbose))
+			logger << DebugInfo
 				<< LOCATION
 				<< "ReadMemory() to extended ram (address = " 
-				<< Hex << addr << Dec << ")" << Endl
+				<< std::hex << addr << std::dec << ")" << std::endl
 				<< EndDebugInfo;
 		return ram_import->ReadMemory(addr, buffer, size);
 		break;
 	case AddressMapEntry::RESERVED:
-		if(DEBUG && logger_import)
-			(*logger_import) << DebugWarning
+		if(unlikely(DEBUG && verbose))
+			logger << DebugWarning
 				<< LOCATION
 				<< " accessing a reserved entry address (address = " 
-				<< Hex << addr << Dec << ")" << Endl
+				<< std::hex << addr << std::dec << ")" << std::endl
 				<< EndDebugWarning;
 		return false;
 		break;
 	case AddressMapEntry::EXTENDED_ROM_1:
-		if(DEBUG && logger_import)
-			(*logger_import) << DebugInfo
+		if(unlikely(DEBUG && verbose))
+			logger << DebugInfo
 				<< LOCATION
 				<< "ReadMemory() to extended rom 1 (address = " 
-				<< Hex << addr << Dec << ")" << Endl
+				<< std::hex << addr << std::dec << ")" << std::endl
 				<< EndDebugInfo;
 		return erom_import->ReadMemory(addr, buffer, size);
 		break;
 	case AddressMapEntry::EXTENDED_ROM_2:
-		if(DEBUG && logger_import)
-			(*logger_import) << DebugInfo
+		if(unlikely(DEBUG && verbose))
+			logger << DebugInfo
 				<< LOCATION
 				<< "ReadMemory() to extended rom 2 (address = " 
-				<< Hex << addr << Dec << ")" << Endl
+				<< std::hex << addr << std::dec << ")" << std::endl
 				<< EndDebugInfo;
 		return erom_import->ReadMemory(addr, buffer, size);
 		break;
 	case AddressMapEntry::PCI_MEMORY_SPACE:
-		if(DEBUG && logger_import)
-			(*logger_import) << DebugInfo << LOCATION
+		if(unlikely(DEBUG && verbose))
+			logger << DebugInfo << LOCATION
 				<< "ReadMemory() to the PCI memory space (address = "
-				<< Hex << addr << Dec << ")" << Endl
+				<< std::hex << addr << std::dec << ")" << std::endl
 				<< EndDebugInfo;
 		pci_controller.TranslateAddressSystemToPCIMem(addr, pci_addr);
 		return pci_import->ReadMemory(pci_addr, buffer, size);
 		break;
 	case AddressMapEntry::PCI_IO_SPACE_1:
-		if(DEBUG && logger_import)
-			(*logger_import) << DebugWarning
+		if(unlikely(DEBUG && verbose))
+			logger << DebugWarning
 				<< LOCATION
 				<< " accessing the PCI IO space 1 (address = " 
-				<< Hex << addr << Dec << ")" << Endl
+				<< std::hex << addr << std::dec << ")" << std::endl
 				<< EndDebugWarning;
 		return false;
 		break;
 	case AddressMapEntry::PCI_IO_SPACE_2:
-		if(DEBUG && logger_import)
-			(*logger_import) << DebugWarning
+		if(unlikely(DEBUG && verbose))
+			logger << DebugWarning
 				<< LOCATION
 				<< " accessing the PCI IO space 2 (address = " 
-				<< Hex << addr << Dec << ")" << Endl
+				<< std::hex << addr << std::dec << ")" << std::endl
 				<< EndDebugWarning;
 		return false;
 		break;
 	case AddressMapEntry::PCI_CONFIG_ADDRESS_REG:
-		if(DEBUG && logger_import)
-			(*logger_import) << DebugWarning
+		if(unlikely(DEBUG && verbose))
+			logger << DebugWarning
 				<< LOCATION
 				<< " accessing the PCI Config Address Reg (address = " 
-				<< Hex << addr << Dec << ")" << Endl
+				<< std::hex << addr << std::dec << ")" << std::endl
 				<< EndDebugWarning;
 		return false;
 		break;
 	case AddressMapEntry::PCI_CONFIG_DATA_REG:
-		if(DEBUG && logger_import)
-			(*logger_import) << DebugWarning
+		if(unlikely(DEBUG && verbose))
+			logger << DebugWarning
 				<< LOCATION
 				<< " accessing the PCI Config Data Reg (address = " 
-				<< Hex << addr << Dec << ")" << Endl
+				<< std::hex << addr << std::dec << ")" << std::endl
 				<< EndDebugWarning;
 		return false;
 		break;
 	case AddressMapEntry::PCI_INT_ACK:
-		if(DEBUG && logger_import)
-			(*logger_import) << DebugWarning
+		if(unlikely(DEBUG && verbose))
+			logger << DebugWarning
 				<< LOCATION
 				<< " accessing the pci interruption acknowledgement (address = " 
-				<< Hex << addr << Dec << ")" << Endl
+				<< std::hex << addr << std::dec << ")" << std::endl
 				<< EndDebugWarning;
 		return false;
 		break;
 	case AddressMapEntry::ROM_SPACE_1:
-		if(DEBUG && logger_import)
-			(*logger_import) << DebugInfo
+		if(unlikely(DEBUG && verbose))
+			logger << DebugInfo
 				<< LOCATION
-				<< "ReadMemory() to rom 1 (address = " << Hex << addr << Dec << ")" << Endl
+				<< "ReadMemory() to rom 1 (address = " << std::hex << addr << std::dec << ")" << std::endl
 				<< EndDebugInfo;
 		return rom_import->ReadMemory(addr, buffer, size);
 		break;
 	case AddressMapEntry::ROM_SPACE_2:
-		if(DEBUG && logger_import)
-			(*logger_import) << DebugInfo
+		if(unlikely(DEBUG && verbose))
+			logger << DebugInfo
 				<< LOCATION
-				<< "ReadMemory() to rom 2 (address = " << Hex << addr << Dec << ")"<< Endl
+				<< "ReadMemory() to rom 2 (address = " << std::hex << addr << std::dec << ")"<< std::endl
 				<< EndDebugInfo;
 		return rom_import->ReadMemory(addr, buffer, size);
 		break;
 	case AddressMapEntry::EUMB_EPIC_SPACE:
-		if(DEBUG && logger_import)
-			(*logger_import) << DebugInfo
+		if(unlikely(DEBUG && verbose))
+			logger << DebugInfo
 				<< LOCATION
-				<< "ReadMemory() to EPIC (address = " << Hex << addr << Dec << ")" << Endl
+				<< "ReadMemory() to EPIC (address = " << std::hex << addr << std::dec << ")" << std::endl
 				<< EndDebugInfo;
 		return epic_memory_import->ReadMemory(addr, buffer, size);
 		break;
@@ -1067,19 +1036,19 @@ ReadMemory(PHYSICAL_ADDR addr, void *buffer, uint32_t size) {
 	case AddressMapEntry::EUMB_DMA_SPACE:
 	case AddressMapEntry::EUMB_I2C_SPACE:
 	case AddressMapEntry::EUMB_DATA_PATH_DIAGNOSTICS_SPACE:
-		if(DEBUG && logger_import)
-			(*logger_import) << DebugWarning
+		if(unlikely(DEBUG && verbose))
+			logger << DebugWarning
 				<< LOCATION
-				<< " Embedded utilities block mapping not fully implemented" << Endl
+				<< " Embedded utilities block mapping not fully implemented" << std::endl
 				<< EndDebugWarning;
 		return false;
 		break;
 	default:
-		if(DEBUG && logger_import)
-			(*logger_import) << DebugWarning
+		if(unlikely(DEBUG && verbose))
+			logger << DebugWarning
 				<< LOCATION
 				<< " accessing an unmapped (or unhalded) memory space (address = "
-				<< Hex << addr << Dec << ")" << Endl
+				<< std::hex << addr << std::dec << ")" << std::endl
 				<< EndDebugWarning;
 		return false;
 		break;
@@ -1098,120 +1067,120 @@ WriteMemory(PHYSICAL_ADDR addr, const void *buffer, uint32_t size) {
 
 	AddressMapEntry *entry = addr_map.GetEntryProc(addr);
 	if(entry == NULL) {
-		if(logger_import) {
-			(*logger_import) << DebugError
+		if(unlikely(verbose)) {
+			logger << DebugError
 				<< LOCATION
 				<< "Could not get an address map entry for address 0x"
-				<< Hex << addr << Dec << " for a request comming from the system bus"
-				<< Endl
+				<< std::hex << addr << std::dec << " for a request comming from the system bus"
+				<< std::endl
 				<< EndDebugError;
 		}
 		return false;
 	}
 	switch(entry->type) {
 	case AddressMapEntry::LOCAL_MEMORY_SPACE:
-		if(DEBUG && logger_import)
-			(*logger_import) << DebugInfo
-				<< "Write to ram (addr = 0x" << Hex << addr << Dec
-				<< ", size = " << size << ")" << Endl
+		if(unlikely(DEBUG && verbose))
+			logger << DebugInfo
+				<< "Write to ram (addr = 0x" << std::hex << addr << std::dec
+				<< ", size = " << size << ")" << std::endl
 				<< EndDebugInfo;
 		return ram_import->WriteMemory(addr, buffer, size);
 		break;
 	case AddressMapEntry::RESERVED:
-		if(DEBUG && logger_import)
-			(*logger_import) << DebugWarning
+		if(unlikely(DEBUG && verbose))
+			logger << DebugWarning
 				<< LOCATION
-				<< " accessing a reserved entry address" << Endl
+				<< " accessing a reserved entry address" << std::endl
 				<< EndDebugWarning;
 		return false;
 		break;
 	case AddressMapEntry::EXTENDED_ROM_1:
-		if(DEBUG && logger_import)
-			(*logger_import) << DebugInfo
-				<< "WriteMemory() to extended rom 1" << Endl
+		if(unlikely(DEBUG && verbose))
+			logger << DebugInfo
+				<< "WriteMemory() to extended rom 1" << std::endl
 				<< EndDebugInfo;
 		return erom_import->WriteMemory(addr, buffer, size);
 		break;
 	case AddressMapEntry::EXTENDED_ROM_2:
-		if(DEBUG && logger_import)
-			(*logger_import) << DebugInfo
-				<< "WriteMemory() to extended rom 2" << Endl
+		if(unlikely(DEBUG && verbose))
+			logger << DebugInfo
+				<< "WriteMemory() to extended rom 2" << std::endl
 				<< EndDebugInfo;
 		return erom_import->WriteMemory(addr, buffer, size);
 		break;
 	case AddressMapEntry::PCI_MEMORY_SPACE:
-		if(DEBUG && logger_import)
-			(*logger_import) << DebugInfo << LOCATION
+		if(unlikely(DEBUG && verbose))
+			logger << DebugInfo << LOCATION
 				<< "WriteMemory() to the PCI memory space (address = "
-				<< Hex << addr << Dec << ")" << Endl
+				<< std::hex << addr << std::dec << ")" << std::endl
 				<< EndDebugInfo;
 		pci_controller.TranslateAddressSystemToPCIMem(addr, pci_addr);
 		return pci_import->WriteMemory(pci_addr, buffer, size);
 		break;
 	case AddressMapEntry::PCI_IO_SPACE_1:
-		if(DEBUG && logger_import)
-			(*logger_import) << DebugWarning
+		if(unlikely(DEBUG && verbose))
+			logger << DebugWarning
 				<< LOCATION
 				<< " accessing the PCI IO space 1 (address = " 
-				<< Hex << addr << Dec << ")" << Endl
+				<< std::hex << addr << std::dec << ")" << std::endl
 				<< EndDebugWarning;
 		return false;
 		break;
 	case AddressMapEntry::PCI_IO_SPACE_2:
-		if(DEBUG && logger_import)
-			(*logger_import) << DebugWarning
+		if(unlikely(DEBUG && verbose))
+			logger << DebugWarning
 				<< LOCATION
 				<< " accessing the PCI IO space 2 (address = " 
-				<< Hex << addr << Dec << ")" << Endl
+				<< std::hex << addr << std::dec << ")" << std::endl
 				<< EndDebugWarning;
 		return false;
 		break;
 	case AddressMapEntry::PCI_CONFIG_ADDRESS_REG:
-		if(DEBUG && logger_import)
-			(*logger_import) << DebugWarning
+		if(unlikely(DEBUG && verbose))
+			logger << DebugWarning
 				<< LOCATION
 				<< " accessing the PCI Config Address Reg (address = " 
-				<< Hex << addr << Dec << ")" << Endl
+				<< std::hex << addr << std::dec << ")" << std::endl
 				<< EndDebugWarning;
 		return false;
 		break;
 	case AddressMapEntry::PCI_CONFIG_DATA_REG:
-		if(DEBUG && logger_import)
-			(*logger_import) << DebugWarning
+		if(unlikely(DEBUG && verbose))
+			logger << DebugWarning
 				<< LOCATION
 				<< " accessing the PCI Config Data Reg (address = " 
-				<< Hex << addr << Dec << ")" << Endl
+				<< std::hex << addr << std::dec << ")" << std::endl
 				<< EndDebugWarning;
 		return false;
 		break;
 	case AddressMapEntry::PCI_INT_ACK:
-		if(DEBUG && logger_import)
-			(*logger_import) << DebugWarning
+		if(unlikely(DEBUG && verbose))
+			logger << DebugWarning
 				<< LOCATION
 				<< " accessing the pci interruption acknowledgement (address = " 
-				<< Hex << addr << Dec << ")" << Endl
+				<< std::hex << addr << std::dec << ")" << std::endl
 				<< EndDebugWarning;
 		return false;
 		break;
 	case AddressMapEntry::ROM_SPACE_1:
-		if(DEBUG && logger_import)
-			(*logger_import) << DebugInfo
-				<< "WriteMemory() to rom 1" << Endl
+		if(unlikely(DEBUG && verbose))
+			logger << DebugInfo
+				<< "WriteMemory() to rom 1" << std::endl
 				<< EndDebugInfo;
 		return rom_import->WriteMemory(addr, buffer, size);
 		break;
 	case AddressMapEntry::ROM_SPACE_2:
-		if(DEBUG && logger_import)
-			(*logger_import) << DebugInfo
-				<< "WriteMemory() to rom 2" << Endl
+		if(unlikely(DEBUG && verbose))
+			logger << DebugInfo
+				<< "WriteMemory() to rom 2" << std::endl
 				<< EndDebugInfo;
 		return rom_import->WriteMemory(addr, buffer, size);
 		break;
 	case AddressMapEntry::EUMB_EPIC_SPACE:
-		if(DEBUG && logger_import)
-			(*logger_import) << DebugInfo << LOCATION
-				<< "WriteMemory() to EPIC (address = 0x" << Hex << addr << Dec << ")"
-				<< Endl << EndDebugInfo;
+		if(unlikely(DEBUG && verbose))
+			logger << DebugInfo << LOCATION
+				<< "WriteMemory() to EPIC (address = 0x" << std::hex << addr << std::dec << ")"
+				<< std::endl << EndDebugInfo;
 		return epic_memory_import->WriteMemory(addr, buffer, size);
 		break;
 	case AddressMapEntry::EUMB_ATU_SPACE:
@@ -1221,17 +1190,17 @@ WriteMemory(PHYSICAL_ADDR addr, const void *buffer, uint32_t size) {
 	case AddressMapEntry::EUMB_DMA_SPACE:
 	case AddressMapEntry::EUMB_I2C_SPACE:
 	case AddressMapEntry::EUMB_DATA_PATH_DIAGNOSTICS_SPACE:
-		if(logger_import)
-			(*logger_import) << DebugWarning << LOCATION
-				<< "Embedded utilities block mapping not fully implemented" << Endl
+		if(unlikely(verbose))
+			logger << DebugWarning << LOCATION
+				<< "Embedded utilities block mapping not fully implemented" << std::endl
 				<< EndDebugWarning;
 		return false;
 		break;
 	default:
-		(*logger_import) << DebugError
+		logger << DebugError
 			<< "TODO(" << __FUNCTION__			<< ":" << __FILE__ << ":" << __LINE__ 
 			<< "): accessing an unmapped (or unhalded) memory space (address = "
-			<< Hex << addr << Dec << ")" << Endl
+			<< std::hex << addr << std::dec << ")" << std::endl
 			<< EndDebugError;
 		return false;
 		break;
@@ -1275,13 +1244,13 @@ PCIDispatch() {
 		msg = req_list.front();
 		pci_req = pci_msg->GetRequest();
 		if((config_regs.pci_command_reg.value & (1 << 2)) == 0) {
-			if(logger_import) {
-				(*logger_import) << DebugWarning
+			if(unlikely(verbose)) {
+				logger << DebugWarning
 						<< LOCATION
 						<< "A PCI request to send through the PCI bus is ready, but the chipset is configured not to send them (PCI command register bit Bus Master ";
 				DEBUG_PCI_REQ(pci_req);
-				(*logger_import) << Endl
-					<< "   TODO: if write held the request, if read rise an exception (if enabled)" << Endl
+				logger << std::endl
+					<< "   TODO: if write held the request, if read rise an exception (if enabled)" << std::endl
 					<< EndDebugWarning;					
 			}
 			continue; 
@@ -1294,42 +1263,42 @@ PCIDispatch() {
 			 * wait for the response
 			 * send the response to the source of the request */
 			pci_msg->PushResponseEvent(rsp_event);
-			if(DEBUG && logger_import)
-				(*logger_import) << DebugInfo
+			if(unlikely(DEBUG && verbose))
+				logger << DebugInfo
 					<< "Sending read message through the pci bus (addr = 0x" 
-					<< Hex << pci_req->addr << Dec << ")" << Endl
+					<< std::hex << pci_req->addr << std::dec << ")" << std::endl
 					<< EndDebugInfo;
 			while(!pci_master_port->Send(pci_msg)) {
-				if(DEBUG && logger_import)
-					(*logger_import) << DebugInfo
+				if(unlikely(DEBUG && verbose))
+					logger << DebugInfo
 						<< "could not send message through the pci bus (addr = 0x" 
-						<< Hex << pci_req->addr << Dec << ")" << Endl
+						<< std::hex << pci_req->addr << std::dec << ")" << std::endl
 						<< EndDebugInfo;
 				wait(cycle_time);
-				if(DEBUG && logger_import)
-					(*logger_import) << DebugInfo
+				if(unlikely(DEBUG && verbose))
+					logger << DebugInfo
 						<< "retrying to send message through the pci bus (addr = 0x" 
-						<< Hex << pci_req->addr << Dec << ")" << Endl
+						<< std::hex << pci_req->addr << std::dec << ")" << std::endl
 						<< EndDebugInfo;
 			}
 			wait(rsp_event);
 			PRspType rsp = new(rsp) RspType();
 			pci_req = pci_msg->req;
 			if(!pci_msg->req) {
-				if(DEBUG && logger_import)
-					(*logger_import) << DebugError
+				if(unlikely(DEBUG && verbose))
+					logger << DebugError
 						<< LOCATION
 						<< " received a response for a pci message without request field" 
-						<< Endl << EndDebugError;
+						<< std::endl << EndDebugError;
 				sc_stop();
 				wait();
 			}
 			if(!pci_msg->rsp) {
-				if(DEBUG && logger_import)
-					(*logger_import) << DebugError
+				if(unlikely(DEBUG && verbose))
+					logger << DebugError
 						<< LOCATION
 						<< " received a response for a pci message without response field" 
-						<< Endl << EndDebugError;
+						<< std::endl << EndDebugError;
 				sc_stop();
 				wait();
 			}
@@ -1340,34 +1309,34 @@ PCIDispatch() {
 			msg->GetResponseEvent()->notify(SC_ZERO_TIME); 
 		} else {
 			/* just send the message */
-			if(DEBUG && logger_import) {
-				(*logger_import) << DebugInfo
+			if(unlikely(DEBUG && verbose)) {
+				logger << DebugInfo
 					<< "Sending write message through the pci bus (addr = 0x" 
-					<< Hex << pci_req->addr << Dec << ", size = " << pci_req->size << ", data = ";
+					<< std::hex << pci_req->addr << std::dec << ", size = " << pci_req->size << ", data = ";
 				for(unsigned int i = 0; i < pci_req->size; i++) {
-					(*logger_import) << Hex << (unsigned int)pci_req->write_data[i] << Dec << " ";
+					logger << std::hex << (unsigned int)pci_req->write_data[i] << std::dec << " ";
 				}
-				(*logger_import) << ")" << Endl << EndDebugInfo;
+				logger << ")" << std::endl << EndDebugInfo;
 			}
 			while(!pci_master_port->Send(pci_msg)) {
-				if(DEBUG && logger_import) {
-					(*logger_import) << DebugInfo
+				if(unlikely(DEBUG && verbose)) {
+					logger << DebugInfo
 						<< "could not send write message through the pci bus (addr = 0x" 
-						<< Hex << pci_req->addr << Dec << ", size = " << pci_req->size << ", data = ";
+						<< std::hex << pci_req->addr << std::dec << ", size = " << pci_req->size << ", data = ";
 					for(unsigned int i = 0; i < pci_req->size; i++) {
-						(*logger_import) << Hex << (unsigned int)pci_req->write_data[i] << Dec << " ";
+						logger << std::hex << (unsigned int)pci_req->write_data[i] << std::dec << " ";
 					}
-					(*logger_import) << ")" << Endl << EndDebugInfo;
+					logger << ")" << std::endl << EndDebugInfo;
 				}
 				wait(cycle_time);
-				if(DEBUG && logger_import) {
-					(*logger_import) << DebugInfo
+				if(unlikely(DEBUG && verbose)) {
+					logger << DebugInfo
 						<< "retrying send write message through the pci bus (addr = 0x" 
-						<< Hex << pci_req->addr << Dec << ", size = " << pci_req->size << ", data = ";
+						<< std::hex << pci_req->addr << std::dec << ", size = " << pci_req->size << ", data = ";
 					for(unsigned int i = 0; i < pci_req->size; i++) {
-						(*logger_import) << Hex << (unsigned int)pci_req->write_data[i] << Dec << " ";
+						logger << std::hex << (unsigned int)pci_req->write_data[i] << std::dec << " ";
 					}
-					(*logger_import) << ")" << Endl << EndDebugInfo;
+					logger << ")" << std::endl << EndDebugInfo;
 				}
 			}
 		}
@@ -1401,9 +1370,9 @@ ConverttoFSBMsg(const PPCIMsgType &pci_msg, int size_done, int size) {
 		fsb_req->type = ReqType::WRITE;
 		break;
 	default:
-		if(logger_import)
-			(*logger_import) << DebugError
-				<< "Unknown pci request type" << Endl
+		if(unlikely(verbose))
+			logger << DebugError
+				<< "Unknown pci request type" << std::endl
 				<< EndDebugError;
 		sc_stop();
 		wait();
@@ -1436,9 +1405,9 @@ ConverttoMemMsg(const PPCIMsgType &pci_msg, int size_done, int size) {
 		mem_req->type = MemReqType::WRITE;
 		break;
 	default:
-		if(logger_import)
-			(*logger_import) << DebugError
-				<< "Unknown pci request type" << Endl
+		if(unlikely(verbose))
+			logger << DebugError
+				<< "Unknown pci request type" << std::endl
 				<< EndDebugError;
 		sc_stop();
 		wait();
@@ -1473,34 +1442,34 @@ ConverttoMemMsg(const PMsgType &fsb_msg) {
 		memcpy(mem_req->write_data, fsb_req->write_data, fsb_req->size);
 		break;
 	case ReqType::INV_BLOCK:    // Invalidate block
-		if(logger_import) 
-			(*logger_import) << DebugError << LOCATION
+		if(unlikely(verbose)) 
+			logger << DebugError << LOCATION
 				<< "Can not send INV_BLOCK request to the memory system"
-				<< Endl << EndDebugError;
+				<< std::endl << EndDebugError;
 		sc_stop();
 		wait();
 		break;
 	case ReqType::FLUSH_BLOCK:  // Flush block
-		if(logger_import) 
-			(*logger_import) << DebugError << LOCATION
+		if(unlikely(verbose)) 
+			logger << DebugError << LOCATION
 				<< "Can not send FLUSH_BLOCK request to the memory system"
-				<< Endl << EndDebugError;
+				<< std::endl << EndDebugError;
 		sc_stop();
 		wait();
 		break;
 	case ReqType::ZERO_BLOCK:   // Fill in block with zero
-		if(logger_import) 
-			(*logger_import) << DebugError << LOCATION
+		if(unlikely(verbose)) 
+			logger << DebugError << LOCATION
 				<< "Can not send ZERO_BLOCK request to the memory system"
-				<< Endl << EndDebugError;
+				<< std::endl << EndDebugError;
 		sc_stop();
 		wait();
 		break;
 	case ReqType::INV_TLB:      // Invalidate TLB set
-		if(logger_import) 
-			(*logger_import) << DebugError << LOCATION
+		if(unlikely(verbose)) 
+			logger << DebugError << LOCATION
 				<< "Can not send INV_TLB request to the memory system"
-				<< Endl << EndDebugError;
+				<< std::endl << EndDebugError;
 		sc_stop();
 		wait();
 		break;
@@ -1590,9 +1559,9 @@ DispatchPCIReq() {
 
 				/* send the message to the system bus */
 			while(!master_port->Send(fsb_msg)) {
-				if(logger_import)
-					(*logger_import) << DebugError
-					<< "Message was not accepted by the system bus, retrying" << Endl
+				if(unlikely(verbose))
+					logger << DebugError
+					<< "Message was not accepted by the system bus, retrying" << std::endl
 					<< EndDebugError;
 				wait(cycle_time);
 			}
@@ -1617,11 +1586,11 @@ DispatchPCIReq() {
 					size_done += mem_msg->req->size;
 				} else {					
 				
-					if(DEBUG && logger_import)
-						(*logger_import) << DebugInfo
+					if(unlikely(DEBUG && verbose))
+						logger << DebugInfo
 						<< sc_time_stamp().to_string()
 						<< " received response to a pci request from the memory system, "
-						<< " forwarding response to the PCI bus" << Endl
+						<< " forwarding response to the PCI bus" << std::endl
 						<< EndDebugInfo;
 					memcpy(pci_rsp->read_data + size_done, fsb_rsp->read_data + size_done,  fsb_msg->req->size);
 					size_done += fsb_msg->req->size;
@@ -1663,11 +1632,11 @@ ResponseReceived(const PMemMsgType &msg,
 	const PPCIReqType &pci_req = orig_pci_msg->GetRequest();
 	const PMemRspType &rsp = msg->GetResponse();
 	
-	if(DEBUG && logger_import)
-		(*logger_import) << DebugInfo
+	if(unlikely(DEBUG && verbose))
+		logger << DebugInfo
 			<< sc_time_stamp().to_string()
 			<< " received response to a pci request from the memory system, "
-			<< " forwarding response to the PCI bus" << Endl
+			<< " forwarding response to the PCI bus" << std::endl
 			<< EndDebugInfo;
 	
 	memcpy(pci_rsp->read_data, rsp->read_data,  pci_req->size);
@@ -1690,11 +1659,11 @@ ResponseReceived(const PMemMsgType &msg,
 	const PReqType &fsb_req = orig_fsb_msg->GetRequest();
 	const PMemRspType &rsp = msg->GetResponse();
 	
-	if(DEBUG && logger_import)
-		(*logger_import) << DebugInfo
+	if(unlikely(DEBUG && verbose))
+		logger << DebugInfo
 			<< sc_time_stamp().to_string()
 			<< " received response to a fsb request from the memory system, "
-			<< " forwarding response to the FSB bus" << Endl
+			<< " forwarding response to the FSB bus" << std::endl
 			<< EndDebugInfo;
 	
 	memcpy(fsb_rsp->read_data, rsp->read_data,  fsb_req->size);
@@ -1972,10 +1941,10 @@ SendFSBtoATU(const PMsgType &message) {
 	case ReqType::FLUSH_BLOCK:
 	case ReqType::ZERO_BLOCK:
 	case ReqType::INV_TLB:
-		if(logger_import) {
-			(*logger_import) << DebugError << LOCATION 
+		if(unlikely(verbose)) {
+			logger << DebugError << LOCATION 
 				<< "Invalid request type to send to the ATU controller"
-				<< Endl << EndDebugError;
+				<< std::endl << EndDebugError;
 		}
 		return true;
 		break;

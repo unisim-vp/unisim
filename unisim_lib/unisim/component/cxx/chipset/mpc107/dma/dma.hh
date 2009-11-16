@@ -38,7 +38,7 @@
 #include <inttypes.h>
 
 #include "unisim/kernel/service/service.hh"
-#include "unisim/service/interfaces/logger.hh"
+#include "unisim/kernel/logger/logger.hh"
 #include "unisim/component/cxx/chipset/mpc107/dma/buffer.hh"
 #include "unisim/component/cxx/chipset/mpc107/dma/register.hh"
 #include "unisim/component/cxx/chipset/mpc107/dma/dma_client_interface.hh"
@@ -55,19 +55,15 @@ using unisim::kernel::service::Service;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::ServiceImport;
-using unisim::service::interfaces::Logger;
 
 template <class PHYSICAL_ADDR, 
 	bool DEBUG = false>
 class DMA :
-	public Client<Logger> {
+	virtual public Object {
 public:
 	static const unsigned int NUM_IRQS = 4;
 	static const uint32_t ADDR_MASK = (uint32_t)0x0fffff;
 		
-	/* logger service */
-	ServiceImport<Logger> logger_import;
-
 	DMA(DMAClientInterface<PHYSICAL_ADDR> *_client, 
 		const char *name, Object *parent = 0);
 	virtual ~DMA();
@@ -88,6 +84,10 @@ public:
 					Pointer<uint8_t> &data,
 					unsigned int size);
 
+protected:
+	unisim::kernel::logger::Logger logger;
+	bool verbose;
+	Parameter<bool> param_verbose;
 private:
 	Registers reg;
 	Buffer<PHYSICAL_ADDR> buffer[2]; // one buffer for each of the dma channels

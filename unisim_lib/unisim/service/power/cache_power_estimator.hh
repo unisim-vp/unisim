@@ -36,7 +36,7 @@
 #define __UNISIM_SERVICE_POWER_CACHE_POWER_ESTIMATOR_HH__
 
 #include <unisim/kernel/service/service.hh>
-
+#include <unisim/kernel/logger/logger.hh>
 #include <unisim/service/interfaces/cache_power_estimator.hh>
 #include <unisim/service/interfaces/power_mode.hh>
 #include <unisim/service/interfaces/time.hh>
@@ -125,7 +125,9 @@ public:
 	virtual unsigned int GetDefaultVoltage();
 
 private:
-	
+	unisim::kernel::logger::Logger logger;
+	bool verbose;
+	Parameter<bool> param_verbose;
 	CacheProfile *current_profile;
 	map<CacheProfileKey, CacheProfile *> profiles;
 	

@@ -48,6 +48,12 @@ using namespace std;
 using namespace unisim::util::endian;
 using unisim::service::interfaces::Registers;
 using unisim::util::debug::Register;
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugInfo;
+using unisim::kernel::logger::EndDebugWarning;
+using unisim::kernel::logger::EndDebugError;
 
 static char Nibble2HexChar(uint8_t v)
 {
@@ -455,13 +461,15 @@ void DeviceTree::DumpDeviceNode(DeviceNode *reloc_node)
 }
 
 
-DeviceTree::DeviceTree(BootInfos *boot_infos)
+DeviceTree::DeviceTree(BootInfos *_boot_infos, unisim::kernel::logger::Logger& _logger, bool _verbose)
+	: logger(_logger)
+	, verbose(_verbose)
+	, root_node(0)
+	, last_reloc_node(0)
+	, boot_infos(_boot_infos)
+	, size(0)
+	, base(0)
 {
-	root_node = 0;
-	last_reloc_node = 0;
-	this->boot_infos = boot_infos;
-	size = 0;
-	base = 0;
 }
 
 DeviceTree::~DeviceTree()
@@ -558,10 +566,13 @@ uint8_t *DeviceTree::GetProperty(DeviceNode *reloc_node, const char *name, int32
 	return 0;
 }
 
-BootInfos::BootInfos()
+BootInfos::BootInfos(unisim::kernel::logger::Logger& _logger, bool _verbose)
+	: logger(_logger)
+	, verbose(_verbose)
+	, size(0)
+	, max_size(MAX_BOOT_INFOS_IMAGE_SIZE)
+	, image(0)
 {
-	size = 0;
-	max_size = MAX_BOOT_INFOS_IMAGE_SIZE;
 	image = (uint8_t *) malloc(max_size);
 }
 
@@ -579,7 +590,7 @@ uint32_t BootInfos::Malloc(uint32_t size)
 		size = (size + 3) & 0xfffffffcUL;
 		if(this->size + size > max_size)
 		{
-			cerr << "PANIC! Boot info image is too big: you should decrease the size of your initial ramdisk" << endl;
+			logger << DebugError << "PANIC! Boot info image is too big: you should decrease the size of your initial ramdisk" << EndDebugError;
 			abort();
 		}
 	/*	if(this->size + size > max_size)
@@ -612,7 +623,7 @@ uint32_t BootInfos::UnRelocate(void *p)
 bool BootInfos::Load(const string& device_tree_filename, const string& kernel_parms, const string& ramdisk_filename, unsigned int screen_width, unsigned int screen_height)
 {
 	int i;
-	DeviceTree device_tree(this);
+	DeviceTree device_tree(this, logger, verbose);
 	BootInfosImage *boot_infos;
 	//char *kernel_parms = "";
 
@@ -637,13 +648,16 @@ bool BootInfos::Load(const string& device_tree_filename, const string& kernel_pa
 		uint32_t size_to_align_on_page_boundary = ((ramdisk_offset + 4095) & 0xfffff000UL) - ramdisk_offset;
 		Malloc(size_to_align_on_page_boundary);
 		ramdisk_offset = Malloc(ramdisk_size);
-		cerr << "Loading ramdisk at offset " << hex << ramdisk_offset << dec << endl;
+		if(verbose)
+		{
+			logger << DebugInfo << "Loading ramdisk at offset " << hex << ramdisk_offset << dec << EndDebugInfo;
+		}
 		
 		char *ramdisk = (char *) Relocate(ramdisk_offset);
 		
 		if(f.read(ramdisk, ramdisk_size).fail())
 		{
-			cerr << "ERROR! Can't load ramdisk file \"" << ramdisk_filename << "\"" << endl;
+			logger << DebugError << "Can't load ramdisk file \"" << ramdisk_filename << "\"" << EndDebugError;
 			return false;
 		}
 	
@@ -671,7 +685,7 @@ bool BootInfos::Load(const string& device_tree_filename, const string& kernel_pa
 		}
 		else
 		{
-			cerr << "WARNING! Can't find display device address in device tree" << endl;
+			logger << DebugWarning << "Can't find display device address in device tree" << EndDebugWarning;
 		}
 
 		uint8_t *depth_prop = device_tree.GetProperty(display_device, "depth", len);
@@ -682,7 +696,7 @@ bool BootInfos::Load(const string& device_tree_filename, const string& kernel_pa
 		}
 		else
 		{
-			cerr << "WARNING! Can't find display device depth in device tree" << endl;
+			logger << DebugWarning << "Can't find display device depth in device tree" << EndDebugWarning;
 		}
 
 		if(screen_width)
@@ -699,7 +713,7 @@ bool BootInfos::Load(const string& device_tree_filename, const string& kernel_pa
 			}
 			else
 			{
-				cerr << "WARNING! Can't find display device width in device tree" << endl;
+				logger << DebugWarning << "Can't find display device width in device tree" << EndDebugWarning;
 			}
 		}
 
@@ -717,7 +731,7 @@ bool BootInfos::Load(const string& device_tree_filename, const string& kernel_pa
 			}
 			else
 			{
-				cerr << "WARNING! Can't find display device height in device tree" << endl;
+				logger << DebugWarning << "Can't find display device height in device tree" << EndDebugWarning;
 			}
 		}
 
@@ -735,13 +749,13 @@ bool BootInfos::Load(const string& device_tree_filename, const string& kernel_pa
 			}
 			else
 			{
-				cerr << "WARNING! Can't find display device bytes per scan line in device tree" << endl;
+				logger << DebugWarning << "Can't find display device bytes per scan line in device tree" << EndDebugWarning;
 			}
 		}
 	}
 	else
 	{
-		cerr << "WARNING! Can't find display device in device tree" << endl;
+		logger << DebugWarning << "Can't find display device in device tree" << EndDebugWarning;
 	}
 
 	boot_infos->version = Host2BigEndian(BOOT_INFO_VERSION);
@@ -786,6 +800,7 @@ PMACBootX::PMACBootX(const char *name, Object *parent) :
 	Client<Loader<uint32_t> >(name, parent),
 	Client<Memory<uint32_t> >(name, parent),
 	Client<Registers>(name, parent),
+	logger(*this),
 	loader_export("loader-export", this),
 	loader_import("loader-import", this),
 	memory_import("memory-import", this),
@@ -798,11 +813,13 @@ PMACBootX::PMACBootX(const char *name, Object *parent) :
 	r5_value(0),
 	screen_width(0),
 	screen_height(0),
+	verbose(false),
 	param_device_tree_filename("device-tree-filename", this, device_tree_filename),
 	param_kernel_parms("kernel-params", this, kernel_parms),
 	param_ramdisk_filename("ramdisk-filename", this, ramdisk_filename),
 	param_screen_width("screen-width", this, screen_width),
 	param_screen_height("screen-height", this, screen_height),
+	param_verbose("verbose", this, verbose),
 	stack_base(0)
 {
 	SetupDependsOn(loader_import);
@@ -818,23 +835,23 @@ bool PMACBootX::Setup()
 {
 	if(!loader_import)
 	{
-		cerr << Object::GetName() << ": ERROR! no loader connected" << endl;
+		logger << DebugError << "No loader connected" << EndDebugError;
 		return false;
 	}
 	
 	if(!memory_import)
 	{
-		cerr << Object::GetName() << ": ERROR! no memory connected" << endl;
+		logger << DebugError << "No memory connected" << EndDebugError;
 		return false;
 	}
 
 	if(!registers_import)
 	{
-		cerr << Object::GetName() << ": ERROR! no cpu connected" << endl;
+		logger << DebugError << "No CPU connected" << EndDebugError;
 		return false;
 	}
 		
-	BootInfos boot_infos;
+	BootInfos boot_infos(logger, verbose);
 	uint32_t kernel_top_addr, boot_infos_addr;
 
 	kernel_top_addr = loader_import->GetTopAddr();
@@ -849,22 +866,30 @@ bool PMACBootX::Setup()
 	r4_value = boot_infos_addr;
 	r5_value = 0; /* NULL */
 
-	if(!boot_infos.Load(device_tree_filename, kernel_parms, ramdisk_filename, screen_width, screen_height)) {
-		cerr << Object::GetName() << ": Error while loading kernel" << endl;
-		cerr << "   device_tree_filename = " << device_tree_filename << endl;
-		cerr << "   kernel_parms = " << kernel_parms << endl;
-		cerr << "   ramdisk_filename = " << ramdisk_filename << endl;
+	if(verbose)
+	{
+		logger << DebugInfo << "Using device tree from file \"" << device_tree_filename << "\"" << EndDebugInfo;
+		logger << DebugInfo << "Linux kernel parameters are \"" << kernel_parms << "\"" << EndDebugInfo;
+		logger << DebugInfo << "Using ramdisk from image \"" << ramdisk_filename << "\"" << EndDebugInfo;
+	}
+
+	if(!boot_infos.Load(device_tree_filename, kernel_parms, ramdisk_filename, screen_width, screen_height))
+	{
+		logger << DebugError << "Error while loading kernel" << EndDebugError;
 		return false;
 	}
 	
 	const uint8_t *boot_infos_image = boot_infos.GetImage();
 	uint32_t boot_infos_image_size = boot_infos.GetImageSize();
 
-	cerr << Object::GetName() << ": Writing boot infos at 0x" << hex << boot_infos_addr << dec << endl;
+	if(verbose)
+	{
+		logger << DebugInfo << "Writing boot infos at 0x" << hex << boot_infos_addr << dec << EndDebugInfo;
+	}
 	
 	if(!memory_import->WriteMemory(boot_infos_addr, boot_infos_image, boot_infos_image_size))
 	{
-		cerr << Object::GetName() << ": Can't write into memory (@0x" << hex << boot_infos_addr << " - @0x" << (boot_infos_addr +  boot_infos_image_size - 1) << dec << ")" << endl;
+		logger << DebugError << "Can't write into memory (@0x" << hex << boot_infos_addr << " - @0x" << (boot_infos_addr +  boot_infos_image_size - 1) << dec << ")" << EndDebugError;
 		return false;
 	}
 

@@ -41,22 +41,14 @@ namespace cxx {
 namespace chipset {
 namespace mpc107 {
 
-using unisim::service::interfaces::Logger;
-//using unisim::service::interfaces::operator<<;
-using unisim::service::interfaces::Hex;
-using unisim::service::interfaces::Dec;
-using unisim::service::interfaces::Endl;
-using unisim::service::interfaces::DebugInfo;
-using unisim::service::interfaces::DebugWarning;
-using unisim::service::interfaces::DebugError;
-using unisim::service::interfaces::EndDebugInfo;
-using unisim::service::interfaces::EndDebugWarning;
-using unisim::service::interfaces::EndDebugError;
-using unisim::service::interfaces::Function;
-using unisim::service::interfaces::File;
-using unisim::service::interfaces::Line;
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugInfo;
+using unisim::kernel::logger::EndDebugWarning;
+using unisim::kernel::logger::EndDebugError;
 
-#define LOCATION Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+#define LOCATION "In function " << __FUNCTION__ << "file " << __FILE__ << ", line #" << __LINE__
 
 template <class SYSTEM_BUS_PHYSICAL_ADDR,
 	uint32_t SYSTEM_MAX_TRANSACTION_DATA_SIZE,
@@ -74,12 +66,12 @@ PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	const char *name, 
 	Object *parent):
 	Object(name, parent),
-	Client<Logger>(name, parent),
-	logger_import("logger_import", this), 
+	logger(*this),
+	verbose(false),
+	param_verbose("verbose", this, verbose),
 	deviceNumber(_deviceNumber),
 	config_regs(&_config_regs), 
 	addr_map(&_addr_map){
-	Object::SetupDependsOn(logger_import);
 }
 	
 template <class SYSTEM_BUS_PHYSICAL_ADDR,
@@ -94,10 +86,10 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 		DEBUG>
 ::Setup() {
 	if (config_regs->picr1.value == 1) {
-		if(logger_import)
-			(*logger_import) << DebugError << LOCATION
+		if(unlikely(verbose))
+			logger << DebugError << LOCATION
 				<< "Little endian mode not supported" 
-				<< Endl << EndDebugError;
+				<< std::endl << EndDebugError;
 		return false;
 	}		
 	return true;
@@ -356,13 +348,13 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 				config_addr = LittleEndian2Host(config_addr);
 				// mask the two low bits of config_addr
 				if(config_addr & 0x03) {
-					if(logger_import)
-						(*logger_import) << DebugWarning << LOCATION
+					if(unlikely(verbose))
+						logger << DebugWarning << LOCATION
 							<< "address written in the configuration address register is not 32bit aligned (0x"
-							<< Hex << config_addr << Dec
-							<< "), aligning it (0x" << Hex 
-							<< (config_addr & ~((PCI_BUS_PHYSICAL_ADDR)0x03)) << Dec << ")"
-							<< Endl << EndDebugWarning;
+							<< std::hex << config_addr << std::dec
+							<< "), aligning it (0x" << std::hex 
+							<< (config_addr & ~((PCI_BUS_PHYSICAL_ADDR)0x03)) << std::dec << ")"
+							<< std::endl << EndDebugWarning;
 					config_addr = config_addr & ~((PCI_BUS_PHYSICAL_ADDR)0x03);
 				}
 			}
@@ -459,21 +451,21 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	if(creg == NULL) {
 		//I changed this to answer ffffff of the size of the request in this case
 		memset(data, 0xff, req_size);
-		if(logger_import)
-			(*logger_import) << DebugWarning << LOCATION
+		if(unlikely(verbose))
+			logger << DebugWarning << LOCATION
 				<< "trying to access configuration register 0x"
-				<< Hex << reg << Dec 
-				<< Endl << EndDebugWarning;
+				<< std::hex << reg << std::dec 
+				<< std::endl << EndDebugWarning;
 		return true;
 	}
 	//I could check if the size is ok, but i think it's not necesary
 	if(!creg->AllowedSize(req_size)) {
-		if(logger_import)
-			(*logger_import) << DebugError << LOCATION 
+		if(unlikely(verbose))
+			logger << DebugError << LOCATION 
 				<< "bad read size (received_size = " << req_size 
 				<< ", expected_size = 0x" 
-				<< Hex << creg->access_size << Dec << ")" 
-				<< Endl << EndDebugError;
+				<< std::hex << creg->access_size << std::dec << ")" 
+				<< std::endl << EndDebugError;
 		return false;		
 	}
 	switch(req_size) {
@@ -484,10 +476,10 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	case 2: {
 		switch(creg->byte_size) {
 		case 4: {
-			if(logger_import)
-				(*logger_import) << DebugError << LOCATION
+			if(unlikely(verbose))
+				logger << DebugError << LOCATION
 					<< "accessing a register of size 4 with size 2"
-					<< Endl << EndDebugError;
+					<< std::endl << EndDebugError;
 			return false;
 			break;}
 		case 2: {
@@ -513,23 +505,23 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	default:
 		break;
 	}
-	if(DEBUG && logger_import) {
-		(*logger_import) << DebugInfo
-			<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+	if(unlikely(DEBUG && verbose)) {
+		logger << DebugInfo
+			<< LOCATION
 			<< "Read access to register " << creg->name
-			<< " (contains value 0x" << Hex;
+			<< " (contains value 0x" << std::hex;
 		switch(req_size) {
 		case 4:
-			(*logger_import) << *(uint32_t *)data;
+			logger << *(uint32_t *)data;
 			break;
 		case 2:
-			(*logger_import) << *(uint16_t *)data;
+			logger << *(uint16_t *)data;
 			break;
 		case 1:
-			(*logger_import) << (unsigned int)*data;
+			logger << (unsigned int)*data;
 			break;
 		}
-		(*logger_import) << Dec << ")" << Endl << EndDebugInfo;
+		logger << std::dec << ")" << std::endl << EndDebugInfo;
 	}
 	return true;
 }
@@ -551,46 +543,46 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	int reg = (config_addr & 0xFF) + (req_addr & 0x3); // does not need to be 4 byte aligned (maybe it should be aligned to the size)
 	ConfigurationRegister *config_reg = config_regs->GetRegister(reg);
 	if(config_reg == NULL) {
-		if(logger_import)
-			(*logger_import) << DebugError << LOCATION
+		if(unlikely(verbose))
+			logger << DebugError << LOCATION
 				<< "error while trying to write configuration register 0x"
-				<< Hex << reg << Dec << Endl << EndDebugError;
+				<< std::hex << reg << std::dec << std::endl << EndDebugError;
 		return false;
 	}
 	//Check if it's writable, else quit
 	if (!(config_reg->permission & unisim::component::cxx::chipset::mpc107::ConfigurationRegister::WriteAccess)) {
-		if(DEBUG && logger_import) {
-			(*logger_import) << DebugInfo << LOCATION
+		if(unlikely(DEBUG && verbose)) {
+			logger << DebugInfo << LOCATION
 				<< "Write access to unwritable register " << config_reg->name
-				<< " with value = 0x" << Hex;
+				<< " with value = 0x" << std::hex;
 			for(unsigned int i = 0; i < req_size - 1; i++)
-				(*logger_import) << (unsigned int)req_data[i] << " ";
-			(*logger_import) << (unsigned int)req_data[req_size - 1] << Dec
-				<< Endl << EndDebugInfo;
+				logger << (unsigned int)req_data[i] << " ";
+			logger << (unsigned int)req_data[req_size - 1] << std::dec
+				<< std::endl << EndDebugInfo;
 		}
 		return true;
 	}
 	//Check the size
 	if (!config_reg->AllowedSize(req_size)) { // != config_reg->byte_size)	{
-		if(logger_import)
-			(*logger_import) << DebugError << LOCATION
-				<< "Not the right size:" << Endl
-				<< " - expected: " << config_reg->byte_size << Endl
-				<< " - received: " << req_size << Endl
-				<< " - config_addr = 0x" << Hex << config_addr << Dec << Endl
-				<< " - req_addr = 0x" << Hex << req_addr << Dec << Endl
-				<< " - reg = 0x" << Hex << reg << Dec << Endl
-				<< " - reg_name = " << config_reg->name << Endl
+		if(unlikely(verbose))
+			logger << DebugError << LOCATION
+				<< "Not the right size:" << std::endl
+				<< " - expected: " << config_reg->byte_size << std::endl
+				<< " - received: " << req_size << std::endl
+				<< " - config_addr = 0x" << std::hex << config_addr << std::dec << std::endl
+				<< " - req_addr = 0x" << std::hex << req_addr << std::dec << std::endl
+				<< " - reg = 0x" << std::hex << reg << std::dec << std::endl
+				<< " - reg_name = " << config_reg->name << std::endl
 				<< EndDebugError;
 		return false;
 	}
 	
 	//As we have only implemented host mode, i'll say i have no space to allocate in the bars
 	if (reg >= 0x10 && reg <= 0x24) {
-		if(logger_import)
-			(*logger_import) << DebugWarning << LOCATION
+		if(unlikely(verbose))
+			logger << DebugWarning << LOCATION
 				<< "Accessing bar registers in host mode (reg_name = " 
-			 	<< config_reg->name << ", reg_id = " << reg << ")" << Endl
+			 	<< config_reg->name << ", reg_id = " << reg << ")" << std::endl
 			 	<< EndDebugWarning;
 		uint32_t data;
 		memcpy(&data, req_data, 4);
@@ -706,12 +698,12 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	default: // Its a normal register, we just write it :)
 		//This is a caothic thing
 		config_regs->GetRegister(reg)->Write(reg, data, req_size);
-		if(logger_import)
-			(*logger_import) << DebugWarning << LOCATION
+		if(unlikely(verbose))
+			logger << DebugWarning << LOCATION
 				<< "TODO register " << config_regs->GetRegister(reg)->name 
 				<< "(" << config_regs->GetRegister(reg)->long_name 
-				<< ") written (register number id = 0x" << Hex << reg << Dec << ")" 
-				<< " with value = 0x" << Hex << data << Dec << Endl
+				<< ") written (register number id = 0x" << std::hex << reg << std::dec << ")" 
+				<< " with value = 0x" << std::hex << data << std::dec << std::endl
 				<< EndDebugWarning;
 		return true;
 	}
@@ -730,46 +722,46 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 ::WriteEUMBBAR(int reg, uint32_t data, uint32_t req_size) {
 	/* checking reserved bits */
 	if(data & (uint32_t)0x000fffff) {
-		if(logger_import)
-			(*logger_import) << DebugWarning << LOCATION
+		if(unlikely(verbose))
+			logger << DebugWarning << LOCATION
 				<< "Trying to write reserved bits 19-0 of the "
 				<< "Embedded Utilities Memory Block Base Address Register (EUMBBAR) to 0x"
-				<< Hex << (data & (uint32_t)0xfff00000) << Dec
+				<< std::hex << (data & (uint32_t)0xfff00000) << std::dec
 				<< ", setting it to 0x0" 
-				<< Endl << EndDebugWarning;
+				<< std::endl << EndDebugWarning;
 		data = data & (uint32_t)0x000fffff;
 	}
 	/* showing modified address and updating EUMBBAR */
 	uint32_t val;
 	val = (data >> 20) & (uint32_t)0x0fff;
-	if(DEBUG && logger_import) {
-		(*logger_import) << DebugInfo << LOCATION
+	if(unlikely(DEBUG && verbose)) {
+		logger << DebugInfo << LOCATION
 			<< "Writing the Embbeded Utilities Memory Block Base Address Register with value 0x"
-			<< Hex << data << Dec << " (previous value = 0x"
-			<< Hex << config_regs->GetRegister(reg)->value << Dec << "): " << Endl
+			<< std::hex << data << std::dec << " (previous value = 0x"
+			<< std::hex << config_regs->GetRegister(reg)->value << std::dec << "): " << std::endl
 			<< "   - setting base address (bits 31-20) to 0x"
-			<< Hex << val << Dec << " (";
+			<< std::hex << val << std::dec << " (";
 		if((val >= (uint32_t)0x800) && (val <= (uint32_t)0x0fdf))
-			(*logger_import) << "thus enabling the Embedded Utilities from address 0x"
-				<< Hex << (val << 20) << Dec << " to 0x"
-				<< Hex << ((val << 20) + (uint32_t)0xfffff) << Dec;
+			logger << "thus enabling the Embedded Utilities from address 0x"
+				<< std::hex << (val << 20) << std::dec << " to 0x"
+				<< std::hex << ((val << 20) + (uint32_t)0xfffff) << std::dec;
 		else
-			(*logger_import) << "thus disabling the Embedded Utilities";
-		(*logger_import) << ")" << Endl;
+			logger << "thus disabling the Embedded Utilities";
+		logger << ")" << std::endl;
 	}
 	config_regs->GetRegister(reg)->Write(reg, data, req_size);
-	if(DEBUG && logger_import) {
-		(*logger_import) << "checking Embedded Utilities Memory Block Base Address Register = 0x"
-			<< Hex << config_regs->GetRegister(reg)->value << Dec << Endl;
-		(*logger_import) << EndDebugInfo;	 
+	if(unlikely(DEBUG && verbose)) {
+		logger << "checking Embedded Utilities Memory Block Base Address Register = 0x"
+			<< std::hex << config_regs->GetRegister(reg)->value << std::dec << std::endl;
+		logger << EndDebugInfo;	 
 	}
 	/* updating the address map */
 	if(!addr_map->Reset()) {
-		if(logger_import)
-			(*logger_import) << DebugError << LOCATION
+		if(unlikely(verbose))
+			logger << DebugError << LOCATION
 				<< "Error while resetting the address map configuration when updating the "
 				<< "Embedded Utilities Memory Blocak Base Address Register with value = 0x"
-				<< Hex << config_regs->GetRegister(reg)->value << Dec << Endl			
+				<< std::hex << config_regs->GetRegister(reg)->value << std::dec << std::endl			
 				<< EndDebugError;
 		return false;
 	}
@@ -797,51 +789,51 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	for(unsigned int i = 10; i < 16; i++) {
 		if(data & (((uint32_t)1) << i)) {
 			data = data & ~(uint32_t)(((uint32_t)1) << i);
-			if(DEBUG && logger_import)
-				(*logger_import) << DebugWarning << LOCATION
+			if(unlikely(DEBUG && verbose))
+				logger << DebugWarning << LOCATION
 					<< "Trying to set reserved bit " << i << " of the PCI Command Register"
-					<< ", reseting it to 0" << Endl
+					<< ", reseting it to 0" << std::endl
 					<< EndDebugWarning;
 		}
 	}
 	if(data & (((uint32_t)1) << 9)) {
 		data = data & ~(uint32_t)(((uint32_t)1) << 9);
-		if(DEBUG && logger_import)
-			(*logger_import) << DebugWarning << LOCATION
+		if(unlikely(DEBUG && verbose))
+			logger << DebugWarning << LOCATION
 				<< "Trying to set fast back-to-back bit 9 of the PCI Command Register"
-				<< " which is hardwired to 0, reseting it to 0" << Endl
+				<< " which is hardwired to 0, reseting it to 0" << std::endl
 				<< EndDebugWarning;
 	}
 	if(data & (((uint32_t)1) << 7)) {
 		data = data & ~(uint32_t)(((uint32_t)1) << 7);
-		if(DEBUG && logger_import)
-			(*logger_import) << DebugWarning << LOCATION
+		if(unlikely(DEBUG && verbose))
+			logger << DebugWarning << LOCATION
 				<< "Trying to set reserved bit 7 of the PCI Command Register"
-				<< ", reseting it to 0" << Endl
+				<< ", reseting it to 0" << std::endl
 				<< EndDebugWarning;
 	}
 	if(data & (((uint32_t)1) << 5)) {
 		data = data & ~(uint32_t)(((uint32_t)1) << 5);
-		if(DEBUG && logger_import)
-			(*logger_import) << DebugWarning << LOCATION
+		if(unlikely(DEBUG && verbose))
+			logger << DebugWarning << LOCATION
 				<< "Trying to set reserved bit 5 of the PCI Command Register"
-				<< ", reseting it to 0" << Endl
+				<< ", reseting it to 0" << std::endl
 				<< EndDebugWarning;
 	}
 	if(data & (((uint32_t)1) << 3)) {
 		data = data & ~(uint32_t)(((uint32_t)1) << 3);
-		if(DEBUG && logger_import)
-			(*logger_import) << DebugWarning << LOCATION
+		if(unlikely(DEBUG && verbose))
+			logger << DebugWarning << LOCATION
 				<< "Trying to set special cycles bit 3 of the PCI Command Register"
-				<< " which is hardwired to 0, reseting it to 0" << Endl
+				<< " which is hardwired to 0, reseting it to 0" << std::endl
 				<< EndDebugWarning;
 	}
 	if(data & (uint32_t)1) {
 		data = data & ~(uint32_t)1;
-		if(DEBUG && logger_import)
-			(*logger_import) << DebugWarning << LOCATION
+		if(unlikely(DEBUG && verbose))
+			logger << DebugWarning << LOCATION
 				<< "Trying to set I/O space bit 0 of the PCI Command Register"
-				<< " which is hardwired to 0, reseting it to 0" << Endl
+				<< " which is hardwired to 0, reseting it to 0" << std::endl
 				<< EndDebugWarning;
 	}
 	/* showing the modified bits:
@@ -850,56 +842,56 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	 * - then bit 4 memory-write-and-invalidate
 	 * - then bit 2 bus master
 	 * - then bit 1 memory space */
-	if(DEBUG && logger_import) {
-		(*logger_import) << DebugInfo << LOCATION
+	if(unlikely(DEBUG && verbose)) {
+		logger << DebugInfo << LOCATION
 			<< "Writing the PCI Command Register with value 0x"
-			<< Hex << data << Dec << " (previous value = 0x"
-			<< Hex << config_regs->GetRegister(reg)->value << Dec << "), setting values: " << Endl;
+			<< std::hex << data << std::dec << " (previous value = 0x"
+			<< std::hex << config_regs->GetRegister(reg)->value << std::dec << "), setting values: " << std::endl;
 		if(data & (((uint32_t)1) << 8))
-			(*logger_import) << "   - setting";
+			logger << "   - setting";
 		else
-			(*logger_import) << "   - unsetting";
-		(*logger_import) << " bit 8 SERR"
-			<< " (enable on 1, disable on 1 SERR driver bit)" << Endl;
+			logger << "   - unsetting";
+		logger << " bit 8 SERR"
+			<< " (enable on 1, disable on 1 SERR driver bit)" << std::endl;
 		if(data & (((uint32_t)1) << 6))
-			(*logger_import) << "   - setting";
+			logger << "   - setting";
 		else
-			(*logger_import) << "   - unsetting";
-		(*logger_import) << " bit 6 parity errors response"
-			<< "(take on 1, not take actions 0 on parity errors)" << Endl;
+			logger << "   - unsetting";
+		logger << " bit 6 parity errors response"
+			<< "(take on 1, not take actions 0 on parity errors)" << std::endl;
 		if(data & (((uint32_t)1) << 4))
-			(*logger_import) << "   - setting";
+			logger << "   - setting";
 		else
-			(*logger_import) << "   - unsetting";
-		(*logger_import) << " bit 4 memory-write-and-invalidate"
-			<< " (memory-write on 0, memory-write-and-invalidate on 1)" << Endl;
+			logger << "   - unsetting";
+		logger << " bit 4 memory-write-and-invalidate"
+			<< " (memory-write on 0, memory-write-and-invalidate on 1)" << std::endl;
 		if(data & (((uint32_t)1) << 2))
-			(*logger_import) << "   - setting";
+			logger << "   - setting";
 		else
-			(*logger_import) << "   - unsetting";
-		(*logger_import) << " bit 2 bus master"
-			<< " (host on 1, agent on 0)" << Endl;
+			logger << "   - unsetting";
+		logger << " bit 2 bus master"
+			<< " (host on 1, agent on 0)" << std::endl;
 		if(data & (((uint32_t)1) << 1))
-			(*logger_import) << "   - setting";
+			logger << "   - setting";
 		else
-			(*logger_import) << "   - unsetting";
-		(*logger_import) << " bit 1 memory space"
+			logger << "   - unsetting";
+		logger << " bit 1 memory space"
 			<< " (chipset do not respond on 0, respond on 1 to PCI memory space accesses)" 
-			<< Endl;	 
+			<< std::endl;	 
 	}
 	config_regs->GetRegister(reg)->Write(reg, data, req_size);
-	if(DEBUG && logger_import) {
-		(*logger_import) << "checking PCI Command Register = 0x"
-			<< Hex << config_regs->GetRegister(reg)->value << Dec << Endl;
-		(*logger_import) << EndDebugInfo;	 
+	if(unlikely(DEBUG && verbose)) {
+		logger << "checking PCI Command Register = 0x"
+			<< std::hex << config_regs->GetRegister(reg)->value << std::dec << std::endl;
+		logger << EndDebugInfo;	 
 	}
 	/* updating the address map */
 	if(!addr_map->Reset()) {
-		if(logger_import)
-			(*logger_import) << DebugError << LOCATION
+		if(unlikely(verbose))
+			logger << DebugError << LOCATION
 				<< "Error while resetting the address map configuration when updating the "
 				<< "PCI Command Register with value = 0x"
-				<< Hex << config_regs->GetRegister(reg)->value << Dec << Endl			
+				<< std::hex << config_regs->GetRegister(reg)->value << std::dec << std::endl			
 				<< EndDebugError;
 		return false;
 	}
@@ -933,54 +925,54 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	for(unsigned int i = 24; i < 31; i++) {
 		if((data & (((uint32_t)1) << i)) == 0) {
 			data = data | (uint32_t)(((uint32_t)1) << i);
-			if(logger_import)
-				(*logger_import) << DebugWarning << LOCATION
+			if(unlikely(verbose))
+				logger << DebugWarning << LOCATION
 					<< "Trying to unset reserved bit " << i << " of the PICR1"
-					<< ", reseting it to 1" << Endl
+					<< ", reseting it to 1" << std::endl
 					<< EndDebugWarning;
 		}
 	}
 	if(data & (((uint32_t)1) << 21)) {
 		data = data & ~(uint32_t)(((uint32_t)1) << 21);
-		if(logger_import)
-			(*logger_import) << DebugWarning << LOCATION
+		if(unlikely(verbose))
+			logger << DebugWarning << LOCATION
 				<< "Trying to set reserved bit 21 of the PICR1"
-				<< ", reseting it to 0" << Endl
+				<< ", reseting it to 0" << std::endl
 				<< EndDebugWarning;
 	}
 	if((data & (((uint32_t)1) << 20)) != (config_regs->picr1.value & (((uint32_t)1) << 20))) {
 		if(config_regs->picr1.value & (((uint32_t)1) << 20)) {
 			data = data | (uint32_t)(((uint32_t)1) << 20);
-			if(logger_import)
-				(*logger_import) << DebugWarning << LOCATION
+			if(unlikely(verbose))
+				logger << DebugWarning << LOCATION
 					<< "Trying to unset read-only bit 20 (RCS0) of the PICR1"
-					<< ", reseting it to 1" << Endl
+					<< ", reseting it to 1" << std::endl
 					<< EndDebugWarning;
 		} else {
 			data = data & ~(uint32_t)(((uint32_t)1) << 20);
-			if(DEBUG && logger_import)
-				(*logger_import) << DebugWarning << LOCATION
+			if(unlikely(DEBUG && verbose))
+				logger << DebugWarning << LOCATION
 					<< "Trying to set read-only bit 20 (RCS0) of the PICR1"
-					<< ", reseting it to 0" << Endl
+					<< ", reseting it to 0" << std::endl
 					<< EndDebugWarning;
 		}
 	}
 	if(data & (((uint32_t)1) << 19)) {
 		data = data & ~(uint32_t)(((uint32_t)1) << 19);
-		if(logger_import)
-			(*logger_import) << DebugWarning << LOCATION
+		if(unlikely(verbose))
+			logger << DebugWarning << LOCATION
 				<< "Trying to set reserved bit 19 of the PICR1"
-				<< ", reseting it to 0" << Endl
+				<< ", reseting it to 0" << std::endl
 				<< EndDebugWarning;
 	}
 	if(((data & (((uint32_t)1) << 18)) == 0) && (data & (((uint32_t)1) << 17))) {
-		if(logger_import)
-			(*logger_import) << DebugWarning << LOCATION
+		if(unlikely(verbose))
+			logger << DebugWarning << LOCATION
 				<< "Trying to set bits 19-19 (processor type) of the PICR1 to "
 				<< ((data & (((uint32_t)1) << 18)) ? "1" : "0")
 				<< ((data & (((uint32_t)1) << 17)) ? "1" : "0")
 				<< " which is a reserved value"
-				<< ", resetting it to 10" << Endl
+				<< ", resetting it to 10" << std::endl
 				<< EndDebugWarning;
 		data = data | (uint32_t)(((uint32_t)1) << 18);
 		data = data & ~(uint32_t)(((uint32_t)1) << 17);
@@ -988,43 +980,43 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	if((data & (((uint32_t)1) << 16)) && 
 		((config_regs->pci_command_reg.value & (((uint32_t)1) << 2)) == 0)) {
 		data = data & (((uint32_t)1) << 16);
-		if(logger_import)
-			(*logger_import) << DebugWarning << LOCATION
+		if(unlikely(verbose))
+			logger << DebugWarning << LOCATION
 				<< "Trying to set bit 16 address map to 1 (address map A) while "
 				<< "chipset in agent mode (PCI command reg bit 2 is 0), "
-				<< "resetting it to 0" << Endl << EndDebugWarning;
+				<< "resetting it to 0" << std::endl << EndDebugWarning;
 	}
 	if(data & (((uint32_t)1) << 15)) {
-		if(logger_import)
-			(*logger_import) << DebugWarning << LOCATION
+		if(unlikely(verbose))
+			logger << DebugWarning << LOCATION
 				<< "Trying to set bits 15-14 (multiprocessor identifer) to "
 				<< ((data & (((uint32_t)1) << 15)) ? "1" : "0")
 				<< ((data & (((uint32_t)1) << 14)) ? "1" : "0")
 				<< " which is not an allowed value (00 and 01 are correct values)"
 				<< ", resetting it to default value 00"
-				<< Endl << EndDebugWarning;
+				<< std::endl << EndDebugWarning;
 		data = data & ~(uint32_t)(((uint32_t)1) << 15);
 		data = data & ~(uint32_t)(((uint32_t)1) << 14);
 	}
 	for(unsigned int i = 8; i < 9; i++) {
 		if(data & (((uint32_t)1) << i)) {
 			data = data & ~(((uint32_t)1) << i);
-			if(logger_import)
-				(*logger_import) << DebugWarning << LOCATION
+			if(unlikely(verbose))
+				logger << DebugWarning << LOCATION
 					<< "Trying to set reserved bit " << i << " of the PICR1"
-					<< ", reseting it to 0" << Endl
+					<< ", reseting it to 0" << std::endl
 					<< EndDebugWarning;
 		}
 	}
 	if(((data >> 1) & ((uint32_t)1)) != (data & ((uint32_t)1))) {
-		if(logger_import)
-			(*logger_import) << DebugWarning << LOCATION
+		if(unlikely(verbose))
+			logger << DebugWarning << LOCATION
 					<< "Trying to set bits 1-0 (multiprocessor config) of PICR1 to "
 					<< ((data & ((uint32_t)2)) ? "1" : "0")
 					<< ((data & ((uint32_t)1)) ? "1" : "0")
 					<< " which is a reserved value (only 00 = uniprocessor and 11 = 2-way MP) "
 					<< "are allowed values, resetting to default value 00" 
-					<< Endl << EndDebugWarning;
+					<< std::endl << EndDebugWarning;
 		data = data & ~(uint32_t)3;		
 	} 
 	/* showing the modified/set bits:
@@ -1044,97 +1036,97 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	 * - bit 2 speculative PCI reads (0 = disabled, 1 = enabled)
 	 * - bits 1-0 multiprocessor configuration (00 = uni, 11 = 2-way MP)
 	 */
-	if(DEBUG && logger_import) {
-		(*logger_import) << DebugInfo << LOCATION
+	if(unlikely(DEBUG && verbose)) {
+		logger << DebugInfo << LOCATION
 			<< "Writing the PICR1 with value 0x"
-			<< Hex << data << Dec << " (previous value = 0x"
-			<< Hex << config_regs->GetRegister(reg)->value << Dec << "), setting values: " << Endl;
-		(*logger_import) << "   - setting bits 23-22 burst read wait states (CF_BREAD_WS)"
-			<< " to " << (unsigned int)((data >> 22) & ((uint32_t)3)) << " wait states" << Endl;
+			<< std::hex << data << std::dec << " (previous value = 0x"
+			<< std::hex << config_regs->GetRegister(reg)->value << std::dec << "), setting values: " << std::endl;
+		logger << "   - setting bits 23-22 burst read wait states (CF_BREAD_WS)"
+			<< " to " << (unsigned int)((data >> 22) & ((uint32_t)3)) << " wait states" << std::endl;
 		if(data & (((uint32_t)1) << 16))
-			(*logger_import) << "   - setting (1) (address map A) bit 16 address map";
+			logger << "   - setting (1) (address map A) bit 16 address map";
 		else
-			(*logger_import) << "   - unsetting (0) (address map B) bit 16 address map";
-		(*logger_import) << Endl;
-		(*logger_import) << "   - setting multiprocessor identifier (bits 15-14) to ";
+			logger << "   - unsetting (0) (address map B) bit 16 address map";
+		logger << std::endl;
+		logger << "   - setting multiprocessor identifier (bits 15-14) to ";
 		if(data & (((uint32_t)1) << 14))
-			(*logger_import) << "processor 1 (1)";
+			logger << "processor 1 (1)";
 		else
-			(*logger_import) << "processor 0 (0)";
-		(*logger_import) << Endl;
+			logger << "processor 0 (0)";
+		logger << std::endl;
 		if(data & (((uint32_t)1) << 13))
-			(*logger_import) << "   - setting (1)";
+			logger << "   - setting (1)";
 		else
-			(*logger_import) << "   - unsetting (0)";
-		(*logger_import) << " local bus slave access (bit 13)" << Endl;
+			logger << "   - unsetting (0)";
+		logger << " local bus slave access (bit 13)" << std::endl;
 		if(data & (((uint32_t)1) << 12))
-			(*logger_import) << "   - setting (1)";
+			logger << "   - setting (1)";
 		else
-			(*logger_import) << "   - unsetting (0)";
-		(*logger_import) << " flash write (bit 12)" << Endl;
+			logger << "   - unsetting (0)";
+		logger << " flash write (bit 12)" << std::endl;
 		if(data & (((uint32_t)1) << 11))
-			(*logger_import) << "   - setting (1)";
+			logger << "   - setting (1)";
 		else
-			(*logger_import) << "   - unsetting (0)";
-		(*logger_import) << " machine check (bit 11)" << Endl;
+			logger << "   - unsetting (0)";
+		logger << " machine check (bit 11)" << std::endl;
 		if(data & (((uint32_t)1) << 10))
-			(*logger_import) << "   - setting (1)";
+			logger << "   - setting (1)";
 		else
-			(*logger_import) << "   - unsetting (0)";
-		(*logger_import) << " TEA (bit 10)" << Endl;
-		(*logger_import) << "   - flash ";
+			logger << "   - unsetting (0)";
+		logger << " TEA (bit 10)" << std::endl;
+		logger << "   - flash ";
 		if(data & (((uint32_t)1) << 7))
-			(*logger_import) << "not restricted (1)";
+			logger << "not restricted (1)";
 		else
-			(*logger_import) << "restricted (0)";
-		(*logger_import) << " to bus width writes (NO_BUS_WIDTH_CHECK, bit 7)" << Endl;
-		(*logger_import) << "   - store gathering (bit 6) is ";
+			logger << "restricted (0)";
+		logger << " to bus width writes (NO_BUS_WIDTH_CHECK, bit 7)" << std::endl;
+		logger << "   - store gathering (bit 6) is ";
 		if(data & (((uint32_t)1) << 6))
-			(*logger_import) << "enabled (1)";
+			logger << "enabled (1)";
 		else
-			(*logger_import) << "disabled (0)";
-		(*logger_import) << Endl;
-		(*logger_import) << "   - endian mode (bit 5) set to ";
+			logger << "disabled (0)";
+		logger << std::endl;
+		logger << "   - endian mode (bit 5) set to ";
 		if(data & (((uint32_t)1) << 5))
-			(*logger_import) << "little-endian (1)";
+			logger << "little-endian (1)";
 		else
-			(*logger_import) << "big-endian (0)";
-		(*logger_import) << Endl;
+			logger << "big-endian (0)";
+		logger << std::endl;
 		if(data & (((uint32_t)1) << 4))
-			(*logger_import) << "   - setting (1) (enabling) ";
+			logger << "   - setting (1) (enabling) ";
 		else
-			(*logger_import) << "   - unsetting (0) (disabling) ";
-		(*logger_import) << "snoop looping (bit 4)" << Endl;
+			logger << "   - unsetting (0) (disabling) ";
+		logger << "snoop looping (bit 4)" << std::endl;
 		if(data & (((uint32_t)1) << 3))
-			(*logger_import) << "   - setting (1)";
+			logger << "   - setting (1)";
 		else
-			(*logger_import) << "   - unsetting (0)";
-		(*logger_import) << " processor address bus park (bit 3)" << Endl;
+			logger << "   - unsetting (0)";
+		logger << " processor address bus park (bit 3)" << std::endl;
 		if(data & (((uint32_t)1) << 2))
-			(*logger_import) << "   - setting (1)";
+			logger << "   - setting (1)";
 		else
-			(*logger_import) << "   - unsetting (0)";
-		(*logger_import) << " speculative PCI reads (bit 2)" << Endl;
-		(*logger_import) << "   - multiprocessor configuration (bits 1-0) set to ";
+			logger << "   - unsetting (0)";
+		logger << " speculative PCI reads (bit 2)" << std::endl;
+		logger << "   - multiprocessor configuration (bits 1-0) set to ";
 		if(data & ((uint32_t)1))
-			(*logger_import) << "2-way multiprocessor (11)";
+			logger << "2-way multiprocessor (11)";
 		else
-			(*logger_import) << "uniprocessor (00)";
-		(*logger_import) << Endl;
+			logger << "uniprocessor (00)";
+		logger << std::endl;
 	}
 	config_regs->GetRegister(reg)->value = data;
-	if(DEBUG && logger_import) {
-		(*logger_import) << "checking PICR1 = 0x"
-			<< Hex << config_regs->GetRegister(reg)->value << Dec << Endl;
-		(*logger_import) << EndDebugInfo;	 
+	if(unlikely(DEBUG && verbose)) {
+		logger << "checking PICR1 = 0x"
+			<< std::hex << config_regs->GetRegister(reg)->value << std::dec << std::endl;
+		logger << EndDebugInfo;	 
 	}
 	/* updating the address map */
 	if(!addr_map->Reset()) {
-		if(logger_import)
-			(*logger_import) << DebugError << LOCATION
+		if(unlikely(verbose))
+			logger << DebugError << LOCATION
 				<< "Error while resetting the address map configuration when updating the "
 				<< "Processor Interface Configuration Register 1 with value = 0x"
-				<< Hex << config_regs->GetRegister(reg)->value << Dec << Endl			
+				<< std::hex << config_regs->GetRegister(reg)->value << std::dec << std::endl			
 				<< EndDebugError;
 		return false;
 	}
@@ -1166,10 +1158,10 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 		case 1:	case 0:
 			if(data & (((uint32_t)1) << i)) {
 				data = data & ~(((uint32_t)1) << i);
-				if(logger_import)
-					(*logger_import) << DebugWarning << LOCATION
+				if(unlikely(verbose))
+					logger << DebugWarning << LOCATION
 						<< "Trying to set reserved bit " << i << " of the PICR2"
-						<< ", reseting it to 0" << Endl
+						<< ", reseting it to 0" << std::endl
 						<< EndDebugWarning;
 			}
 			break;
@@ -1180,10 +1172,10 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	if(((data >> 9) & ((uint32_t)3)) == 0) {
 		data = data | (((uint32_t)1) << 10);
 		data = data | (((uint32_t)1) << 9);
-		if(logger_import)
-			(*logger_import) << DebugWarning << LOCATION
+		if(unlikely(verbose))
+			logger << DebugWarning << LOCATION
 				<< "Trying to set bits 10-9 (LBCLAIM wait states) of the PICR2 to 0b00"
-				<< ", reseting them to 0b11" << Endl
+				<< ", reseting them to 0b11" << std::endl
 				<< EndDebugWarning;
 	}
 	/* showing the modified/set bits:
@@ -1195,48 +1187,48 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	 * - bits 10-9 (CF_LBCLAIM_WS) LBCLAIM wait states
 	 * - bits 3-2 (CF_APHASE_WS) address phase wait states
 	 */
-	if(DEBUG && logger_import) {
-		(*logger_import) << DebugInfo << LOCATION
+	if(unlikely(DEBUG && verbose)) {
+		logger << DebugInfo << LOCATION
 			<< "Writing the PICR2 with value 0x"
-			<< Hex << data << Dec << " (previous value = 0x"
-			<< Hex << config_regs->GetRegister(reg)->value << Dec << "), setting values: " << Endl;
+			<< std::hex << data << std::dec << " (previous value = 0x"
+			<< std::hex << config_regs->GetRegister(reg)->value << std::dec << "), setting values: " << std::endl;
 		if(data & (((uint32_t)1) << 29))
-			(*logger_import) << "   - serializing ";
+			logger << "   - serializing ";
 		else
-			(*logger_import) << "   - not serializing ";
-		(*logger_import) << "configuration writes to PCI devices (bit 29, SERIALIZE_ON_CFG)" << Endl;
+			logger << "   - not serializing ";
+		logger << "configuration writes to PCI devices (bit 29, SERIALIZE_ON_CFG)" << std::endl;
 		if(data & (((uint32_t)1) << 27))
-			(*logger_import) << "   - setting bit 27 (NO_SNOOP_EN) disabling";
+			logger << "   - setting bit 27 (NO_SNOOP_EN) disabling";
 		else 
-			(*logger_import) << "   - unsetting bit 27 (NO_SNOOP_EN) enabling";
-		(*logger_import) << " snooping" << Endl;
+			logger << "   - unsetting bit 27 (NO_SNOOP_EN) enabling";
+		logger << " snooping" << std::endl;
 		if(data & (((uint32_t)1) << 26))
-			(*logger_import) << "   - enabling (1)";
+			logger << "   - enabling (1)";
 		else
-			(*logger_import) << "   - disabling (0)";
-		(*logger_import) << " rom remapping (bit 26, CF_FF0_LOCAL)" << Endl;
+			logger << "   - disabling (0)";
+		logger << " rom remapping (bit 26, CF_FF0_LOCAL)" << std::endl;
 		if(data & (((uint32_t)1) << 25))
-			(*logger_import) << "   - disabling (1)";
+			logger << "   - disabling (1)";
 		else
-			(*logger_import) << "   - enabling (0)";
-		(*logger_import) << " flash write lockout (bit 25, FLASH_WR_LOCKOUT)" << Endl;
-		(*logger_import) << "   - setting bits 19-18 (CF_SNOOP_WS) to 0x"
-			<< Hex << (unsigned int)((data >> 18) & ((uint32_t)3)) << Dec
-			<< ", which corresponds to " << (unsigned int)((data >> 18) & ((uint32_t)3)) << " snoop wait states" << Endl;
-		(*logger_import) << "   - setting bits 10-9 (CF_LBCLAIM_WS, LBCLAIM wait states) to 0x"
-			<< Hex << (unsigned int)((data >> 9) & ((uint32_t)3)) << Dec
-			<< ", which corresponds to " << (unsigned int)((data >> 18) & ((uint32_t)3)) << " clock cycles" << Endl;
-		(*logger_import) << "   - setting bits 3-2 (CF_APHASE_WS, address phase wait states) to 0x"
-			<< Hex << (unsigned int)((data >> 2) & ((uint32_t)3)) << Dec
+			logger << "   - enabling (0)";
+		logger << " flash write lockout (bit 25, FLASH_WR_LOCKOUT)" << std::endl;
+		logger << "   - setting bits 19-18 (CF_SNOOP_WS) to 0x"
+			<< std::hex << (unsigned int)((data >> 18) & ((uint32_t)3)) << std::dec
+			<< ", which corresponds to " << (unsigned int)((data >> 18) & ((uint32_t)3)) << " snoop wait states" << std::endl;
+		logger << "   - setting bits 10-9 (CF_LBCLAIM_WS, LBCLAIM wait states) to 0x"
+			<< std::hex << (unsigned int)((data >> 9) & ((uint32_t)3)) << std::dec
+			<< ", which corresponds to " << (unsigned int)((data >> 18) & ((uint32_t)3)) << " clock cycles" << std::endl;
+		logger << "   - setting bits 3-2 (CF_APHASE_WS, address phase wait states) to 0x"
+			<< std::hex << (unsigned int)((data >> 2) & ((uint32_t)3)) << std::dec
 			<< ", which corresponds to " << (unsigned int)((data >> 2) & ((uint32_t)3)) << " wait states" 
-			<< Endl;
+			<< std::endl;
 	}
 //	config_regs->GetRegister(reg)->Write(reg, data, req_size);
 	config_regs->GetRegister(reg)->value = data;
-	if(DEBUG && logger_import) {
-		(*logger_import) << "checking PICR2 = 0x"
-			<< Hex << config_regs->GetRegister(reg)->value << Dec << Endl;
-		(*logger_import) << EndDebugInfo;	 
+	if(unlikely(DEBUG && verbose)) {
+		logger << "checking PICR2 = 0x"
+			<< std::hex << config_regs->GetRegister(reg)->value << std::dec << std::endl;
+		logger << EndDebugInfo;	 
 	}
 	return true;	
 }
@@ -1254,8 +1246,8 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 ::WriteMCCR1(int reg, uint32_t data, uint32_t req_size) {
 	/* checking read-only bits 22-21 DBUS_SIZ[0-1] */
 	if(((data >> 21) & ((uint32_t)3)) != ((config_regs->mccr1.value >> 21) & ((uint32_t)3))) {
-		if(logger_import) {
-			(*logger_import) << DebugWarning << LOCATION
+		if(unlikely(verbose)) {
+			logger << DebugWarning << LOCATION
 				<< "Trying to modify (write) read-only bits 22-21 (DBUS_SIZ[0-1])"
 				<< " of MCCR1 (new value = "
 				<< (((data >> 22) & ((uint32_t)1)) ? "1" : "0")
@@ -1263,7 +1255,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 				<< ", orig value = "
 				<< (((config_regs->mccr1.value >> 22) & ((uint32_t)1)) ? "1" : "0")
 				<< (((config_regs->mccr1.value >> 21) & ((uint32_t)1)) ? "1" : "0")
-				<< "), unmodifying values" << Endl
+				<< "), unmodifying values" << std::endl
 				<< EndDebugWarning;
 		}
 		data = data & ~(((uint32_t)3) << 21);
@@ -1277,13 +1269,13 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 		&& (config_regs->mccr4.value & (((uint32_t)1) << 22))
 		&& ((config_regs->mccr4.value & (((uint32_t)1) << 20)) == 0)
 		&& (config_regs->mccr2.value & (((uint32_t)1) << 18))) {
-		if(logger_import) {
-			(*logger_import) << DebugWarning << LOCATION
+		if(unlikely(verbose)) {
+			logger << DebugWarning << LOCATION
 				<< "Setting bit 16 (PCKEN) of register MCCR1, when setting at the "
 				<< "same time the SDRAM memory option (bit 17 = 0) and operating"
 				<< " in in-line buffer mode and in-line parity/ECC enabled, "
 				<< "PCKEN should be unset (no action taken)" 
-				<< Endl << EndDebugWarning;
+				<< std::endl << EndDebugWarning;
 		}
 	}
 	/* showing the modified/set bits:
@@ -1307,67 +1299,67 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	 * - bit 3-2 bank 1 row
 	 * - bit 1-0 bank 0 row
 	 */
-	if(DEBUG && logger_import) {
-		(*logger_import) << DebugInfo << LOCATION
+	if(unlikely(DEBUG && verbose)) {
+		logger << DebugInfo << LOCATION
 			<< "Writing the MCCR1 with value 0x"
-			<< Hex << data << Dec << " (previous value = 0x"
-			<< Hex << config_regs->GetRegister(reg)->value << Dec << "), setting values: " 
-			<< Endl;
+			<< std::hex << data << std::dec << " (previous value = 0x"
+			<< std::hex << config_regs->GetRegister(reg)->value << std::dec << "), setting values: " 
+			<< std::endl;
 		uint32_t val;
 		val = (data >> 28) & (uint32_t)0xf;
-		(*logger_import) 
-			<< "   - setting ROMNAL (bits 31-28) to 0x" << Hex << val << Dec
-			<< Endl;
+		logger 
+			<< "   - setting ROMNAL (bits 31-28) to 0x" << std::hex << val << std::dec
+			<< std::endl;
 		val = (data >> 23) & (uint32_t)0x1f;
-		(*logger_import) 
-			<< "   - setting ROMFAL (bits 27-23) to 0x" << Hex << val << Dec
-			<< Endl;
-		(*logger_import)
+		logger 
+			<< "   - setting ROMFAL (bits 27-23) to 0x" << std::hex << val << std::dec
+			<< std::endl;
+		logger
 			<< "   - setting burst mode ROM timing control (bit 20, BURST) to ";
 		if((data >> 20) & ((uint32_t)1))
-			(*logger_import) << "1 (burst mode ROM access timing)";
+			logger << "1 (burst mode ROM access timing)";
 		else
-			(*logger_import) << "0 (standard (nonburst) ROM access timing)";
-		(*logger_import) << Endl;
+			logger << "0 (standard (nonburst) ROM access timing)";
+		logger << std::endl;
 		if((data >> 19) & ((uint32_t)1))
-			(*logger_import) << "   - enabling (1)";
+			logger << "   - enabling (1)";
 		else 
-			(*logger_import) << "   - disabling (0)";
-		(*logger_import) << " RAM interface logic (bit 19, MEMGO)" << Endl;
+			logger << "   - disabling (0)";
+		logger << " RAM interface logic (bit 19, MEMGO)" << std::endl;
 		if((data >> 18) & ((uint32_t)1))
-			(*logger_import) << "   - enabling (1)";
+			logger << "   - enabling (1)";
 		else
-			(*logger_import) << "   - disabling (0)";
-		(*logger_import) 
-			<< " (bit 18, SREN) the DRAM/EDO/SDRAM self refresh during sleep mode" << Endl;
-		(*logger_import)
+			logger << "   - disabling (0)";
+		logger 
+			<< " (bit 18, SREN) the DRAM/EDO/SDRAM self refresh during sleep mode" << std::endl;
+		logger
 			<< "   - setting RAM_TYPE (bit 17) to ";
 		if((data >> 17) & ((uint32_t)1))
-			(*logger_import) << "1, which indicates DRAM or EDO DRAM" << Endl;
+			logger << "1, which indicates DRAM or EDO DRAM" << std::endl;
 		else
-			(*logger_import) << "0, which indicates DRAM (SDRAM)" << Endl;
+			logger << "0, which indicates DRAM (SDRAM)" << std::endl;
 		if((data >> 16) & ((uint32_t)1))
-			(*logger_import) << "   - enabling (1)";
+			logger << "   - enabling (1)";
 		else
-			(*logger_import) << "   - disabling (0)";
-		(*logger_import)
-			<< " (bit 16, PCKEN) memory interface parity checking/generation" << Endl;
+			logger << "   - disabling (0)";
+		logger
+			<< " (bit 16, PCKEN) memory interface parity checking/generation" << std::endl;
 		for(unsigned int i = 8; i != 0; i--) {
 			val = (data >> ((i * 2) - 2)) & ((uint32_t)3);
-			(*logger_import) 
+			logger 
 				<< "   - setting bank "
 				<< (i - 1) << " row (bits "
 				<< ((i * 2) - 1) << "-" << ((i * 2) - 2)
 				<< ") to value 0b" << ((val & 2) >> ((uint32_t)1)) << (val & ((uint32_t)1))
-				<< Endl;
+				<< std::endl;
 		}
 	}
 //	config_regs->GetRegister(reg)->Write(reg, data, req_size);
 	config_regs->GetRegister(reg)->value = data;
-	if(DEBUG && logger_import) {
-		(*logger_import) << "checking MCCR1 = 0x"
-			<< Hex << config_regs->GetRegister(reg)->value << Dec << Endl;
-		(*logger_import) << EndDebugInfo;	 
+	if(unlikely(DEBUG && verbose)) {
+		logger << "checking MCCR1 = 0x"
+			<< std::hex << config_regs->GetRegister(reg)->value << std::dec << std::endl;
+		logger << EndDebugInfo;	 
 	}
 	return true;	
 }
@@ -1395,44 +1387,44 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	 */
 	if((config_regs->mccr1.value & (uint32_t)(((uint32_t)1) << 17)) &&
 		((data >> 29) & ((uint32_t)7))) {
-		if(logger_import) 
-			(*logger_import) << DebugWarning << LOCATION
+		if(unlikely(verbose)) 
+			logger << DebugWarning << LOCATION
 				<< "Trying to set bits 31-29 (TS_WAIT_TIMER) to value 0x"
-				<< Hex << ((data >> 19) & ((uint32_t)7)) << Dec
+				<< std::hex << ((data >> 19) & ((uint32_t)7)) << std::dec
 				<< " when using a ram type different than SDRAM (MCCR1[RAM_TYPE] == 1), "
 				<< "resetting it to value 000"
-				<< Endl << EndDebugWarning;		
+				<< std::endl << EndDebugWarning;		
 		data = data & ~(((uint32_t)7) << 29);
 	}
 	if((config_regs->mccr1.value & (((uint32_t)1) << 16)) &&
 		(data & (((uint32_t)1) << 18))) {
-		if(logger_import)
-			(*logger_import) << DebugWarning << LOCATION
+		if(unlikely(verbose))
+			logger << DebugWarning << LOCATION
 				<< "Trying to set bit 18 (INLINE_RD_EN) when MCCR1[PCKEN] is set, "
-				<< "resetting it to 0" << Endl << EndDebugWarning;
+				<< "resetting it to 0" << std::endl << EndDebugWarning;
 		data = data & ~(((uint32_t)1) << 18);
 	}
 	if(((config_regs->mccr1.value & (((uint32_t)1) << 17)) == 0) &&
 		(data & (((uint32_t)1) << 17))) {
-		if(logger_import)
-			(*logger_import) << DebugWarning << LOCATION
+		if(unlikely(verbose))
+			logger << DebugWarning << LOCATION
 				<< "Trying to set bit 17 (ECC_EN) when using SDRAM (MCCR1[RAM_TYPE] == 0), "
-				<< " resetting it to 0" << Endl << EndDebugWarning;
+				<< " resetting it to 0" << std::endl << EndDebugWarning;
 		data = data & ~(((uint32_t)1) << 17);
 	}
 	if((data & (((uint32_t)1) << 17)) && (data & ((uint32_t)1))) {
-		if(logger_import)
-			(*logger_import) << DebugWarning << LOCATION
+		if(unlikely(verbose))
+			logger << DebugWarning << LOCATION
 				<< "Trying to set bit 17 (ECC_EN) and bit 0 (RMW_PAR) at the same time, "
-				<< "resetting it (ECC_EN) to 0" << Endl << EndDebugWarning;
+				<< "resetting it (ECC_EN) to 0" << std::endl << EndDebugWarning;
 		data = data & ~(((uint32_t)1) << 17);
 	}
 	if((data & (((uint32_t)1) << 17)) && (data & (((uint32_t)1) << 16)) && 
 		(config_regs->mccr4.value & (((uint32_t)1) << 20))) {
-		if(logger_import)
-			(*logger_import) << DebugWarning << LOCATION
+		if(unlikely(verbose))
+			logger << DebugWarning << LOCATION
 				<< "Trying to set bit 17 (ECC_EN) and bit 16 (EDO) at the same time when "
-				<< "REGISTERED = 1, resetting ECC_EN to 0" << Endl << EndDebugWarning;
+				<< "REGISTERED = 1, resetting ECC_EN to 0" << std::endl << EndDebugWarning;
 		data = data & ~(((uint32_t)1) << 17);
 	}
 	/* showing the modified/set bits:
@@ -1448,75 +1440,75 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	 * - bit 1 (RSV_PG) reserve page register
 	 * - bit 0 (RMW_PAR) read-modify-write (RMW) parity
 	 */
-	if(DEBUG && logger_import) {
-		(*logger_import) << DebugInfo << LOCATION
+	if(unlikely(DEBUG && verbose)) {
+		logger << DebugInfo << LOCATION
 			<< "Writing the MCCR2 with value 0x"
-			<< Hex << data << Dec << " (previous value = 0x"
-			<< Hex << config_regs->GetRegister(reg)->value << Dec << "), setting values: " 
-			<< Endl;
+			<< std::hex << data << std::dec << " (previous value = 0x"
+			<< std::hex << config_regs->GetRegister(reg)->value << std::dec << "), setting values: " 
+			<< std::endl;
 		uint32_t val;
 		val = (data >> 29) & (uint32_t)7;
-		(*logger_import)
+		logger
 			<< "   - setting transaction start wait states timer (bits 31-29, TS_WAIT_TIMER) 0x"
-			<< Hex << val << Dec << Endl;
+			<< std::hex << val << std::dec << std::endl;
 		val = (data >> 25) & (uint32_t)0xf;
-		(*logger_import)
+		logger
 			<< "   - setting AS rise time (bits 28-25, ASRISE) to 0x"
-			<< Hex << val << Dec << Endl;
+			<< std::hex << val << std::dec << std::endl;
 		val = (data >> 21) & (uint32_t)0xf;
-		(*logger_import)
+		logger
 			<< "   - setting AS fall time (bits 24-21, ASFALL) to 0x"
-			<< Hex << val << Dec << Endl;
-		(*logger_import)
+			<< std::hex << val << std::dec << std::endl;
+		logger
 			<< "   - setting INLINE_PAR_NOT_ECC (bit 20) to ";
 		if(data & (((uint32_t)1) << 20))
-			(*logger_import) << "1 (use parity";
+			logger << "1 (use parity";
 		else
-			(*logger_import) << "0 (use ECC";
-		(*logger_import) << " on the memory data bus)" << Endl;
+			logger << "0 (use ECC";
+		logger << " on the memory data bus)" << std::endl;
 		if(data & (((uint32_t)1) << 19))
-			(*logger_import) << "   - enabling (1)";
+			logger << "   - enabling (1)";
 		else
-			(*logger_import) << "   - disabling (0)";
-		(*logger_import) << " (bit 19, INLINE_WR_EN) "
-			<< "bus parity error reporting" << Endl;
+			logger << "   - disabling (0)";
+		logger << " (bit 19, INLINE_WR_EN) "
+			<< "bus parity error reporting" << std::endl;
 		if(data & (((uint32_t)1) << 18))
-			(*logger_import) << "   - enabling (1)";
+			logger << "   - enabling (1)";
 		else
-			(*logger_import) << "   - disabling (0)";
-		(*logger_import) << " (bit 18, INLINE_RD_EN) "
-			<< "in-line read parity or ECC check/correction" << Endl;
+			logger << "   - disabling (0)";
+		logger << " (bit 18, INLINE_RD_EN) "
+			<< "in-line read parity or ECC check/correction" << std::endl;
 		if(data & (((uint32_t)1) << 17))
-			(*logger_import) << "   - enabling (1)";
+			logger << "   - enabling (1)";
 		else
-			(*logger_import) << "   - disabling (0)";
-		(*logger_import) << " (bit 17, ECC_EN) ECC" << Endl;
-		(*logger_import) << "   - setting bit 16 (EDO) to ";
+			logger << "   - disabling (0)";
+		logger << " (bit 17, ECC_EN) ECC" << std::endl;
+		logger << "   - setting bit 16 (EDO) to ";
 		if(data & (((uint32_t)1) << 16))
-			(*logger_import) << "1 (EDO DRAMs)" << Endl;
+			logger << "1 (EDO DRAMs)" << std::endl;
 		else
-			(*logger_import) << "0 (standard DRAMs)" << Endl;
-		(*logger_import) << "   - setting refresh interval (bits 15-2, REFINT) to 0x"
-			<< Hex << ((data >> 2) & (uint32_t)0x3fff) << Dec << Endl;
-		(*logger_import) << "   - setting to ";
+			logger << "0 (standard DRAMs)" << std::endl;
+		logger << "   - setting refresh interval (bits 15-2, REFINT) to 0x"
+			<< std::hex << ((data >> 2) & (uint32_t)0x3fff) << std::dec << std::endl;
+		logger << "   - setting to ";
 		if(data & (uint32_t)2)
-			(*logger_import) << "reserve one of the four page registers at all times" 
-				<< " (bit 1, RSV_PG = 1)" << Endl;
+			logger << "reserve one of the four page registers at all times" 
+				<< " (bit 1, RSV_PG = 1)" << std::endl;
 		else
-			(*logger_import) << "four open page mode (bit 1, RSV_PG = 0)" << Endl;
+			logger << "four open page mode (bit 1, RSV_PG = 0)" << std::endl;
 		if(data & (uint32_t)1)
-			(*logger_import) << "   - enabling (1)";
+			logger << "   - enabling (1)";
 		else 
-			(*logger_import) << "   - disabling (0)";
-		(*logger_import) << " read-modify-write (RMW) parity (bit 0, RMW_PAR)"
-			<< Endl;	
+			logger << "   - disabling (0)";
+		logger << " read-modify-write (RMW) parity (bit 0, RMW_PAR)"
+			<< std::endl;	
 	}	
 //	config_regs->GetRegister(reg)->Write(reg, data, req_size);
 	config_regs->GetRegister(reg)->value = data;
-	if(DEBUG && logger_import) {
-		(*logger_import) << "checking MCCR2 = 0x"
-			<< Hex << config_regs->GetRegister(reg)->value << Dec << Endl;
-		(*logger_import) << EndDebugInfo;	 
+	if(unlikely(DEBUG && verbose)) {
+		logger << "checking MCCR2 = 0x"
+			<< std::hex << config_regs->GetRegister(reg)->value << std::dec << std::endl;
+		logger << EndDebugInfo;	 
 	}
 	return true;	
 }
@@ -1543,34 +1535,34 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	uint32_t val;
 	val = ((data >> 20) & (uint32_t)0x0f);
 	if(val > 6) {
-		if(logger_import)
-			(*logger_import) << DebugWarning << LOCATION
+		if(unlikely(verbose))
+			logger << DebugWarning << LOCATION
 				<< "Register MCCR3 data latency from read command (bits 23-20, RDLAT) "
 				<< "can not be bigger than 0x6 (trying to set it to 0x"
-				<< Hex << val << Dec << "), resetting to default value 0x0"
-				<< Endl << EndDebugWarning;
+				<< std::hex << val << std::dec << "), resetting to default value 0x0"
+				<< std::endl << EndDebugWarning;
 		data = data & ~(((uint32_t)0x0f) << 20);
 	}
 	val = (data >> 9) & (uint32_t)7;
 	if((config_regs->mccr1.value & (((uint32_t)1) << 17)) &&
 		(val == 0)) {
-		if(logger_import)
-			(*logger_import) << DebugWarning << LOCATION
+		if(unlikely(verbose))
+			logger << DebugWarning << LOCATION
 				<< "Trying to set CAS precharge interval of MCCR3 (bits 11-9, CP4) "
 				<< "to reserved value 0x0 when using a DRAM/EDO memory "
 				<< "(MCCR1[RAM_TYPE] == 1), setting it to 0x1 (0x"
-				<< Hex << config_regs->mccr1.value << Dec << ")"
-				<< Endl << EndDebugWarning;
+				<< std::hex << config_regs->mccr1.value << std::dec << ")"
+				<< std::endl << EndDebugWarning;
 		data = data | (((uint32_t)1) << 9);			
 	}
 	if(val > 2) {
-		if(logger_import)
-			(*logger_import) << DebugWarning << LOCATION
+		if(unlikely(verbose))
+			logger << DebugWarning << LOCATION
 				<< "Register MCCR3 CAS precharge interval (bits 11-9, CP4) "
 				<< "can not be bigger than 0x2 (trying to set it to 0x"
-				<< Hex << val << Dec << "), resetting to default value 0x0 (or 0x1 "
+				<< std::hex << val << std::dec << "), resetting to default value 0x0 (or 0x1 "
 				<< "if using DRAM/EDO (MCCR1[RAM_TYPE] == 1)"
-				<< Endl << EndDebugWarning;
+				<< std::endl << EndDebugWarning;
 		if(config_regs->mccr1.value & (((uint32_t)1) << 17))
 			data = data | (((uint32_t)1) << 9);			
 		else
@@ -1578,84 +1570,84 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	}
 	val = (data >> 3) & (uint32_t)7;
 	if(val == 1) {
-		if(logger_import)
-			(*logger_import) << DebugWarning << LOCATION
+		if(unlikely(verbose))
+			logger << DebugWarning << LOCATION
 				<< "Trying to set MCCR3 RAS to CAS delay interval (bits 5-3, RCD2) "
 				<< "to reserved value 0x1, resetting it 0x0"
-				<< Endl << EndDebugWarning;
+				<< std::endl << EndDebugWarning;
 		data = data & ~(((uint32_t)7) << 3);
 	}
 	val = data & (uint32_t)7;
 	if((val != 2) && (val != 3) && (val != 6) && (val != 5) && (val != 0)) {
-		if(logger_import)
-			(*logger_import) << DebugWarning << LOCATION
+		if(unlikely(verbose))
+			logger << DebugWarning << LOCATION
 				<< "Trying to set MCCR3 RAS precharge interval (bits 2-0, RP1) "
 				<< "to reserved value 0x"
-				<< Hex << val << Dec << ", resetting it 0x0 (to 0x2 if MCCR1[RAM_TYPE] = 1)"
-				<< Endl << EndDebugWarning;
+				<< std::hex << val << std::dec << ", resetting it 0x0 (to 0x2 if MCCR1[RAM_TYPE] = 1)"
+				<< std::endl << EndDebugWarning;
 		if(config_regs->mccr1.value & (((uint32_t)1) << 17))
 			data = data & ~(uint32_t)5;
 		else
 			data = data & ~(uint32_t)7;
 	}
 	if((val == 0) && (config_regs->mccr1.value & (((uint32_t)1) << 17))) {
-		if(logger_import)
-			(*logger_import) << DebugWarning << LOCATION
+		if(unlikely(verbose))
+			logger << DebugWarning << LOCATION
 				<< "Trying to set MCCR3 RAS precharge interval (bits 2-0, RP1) "
 				<< "to reserved value 0x"
-				<< Hex << val << Dec << ", resetting it 0x2"
-				<< Endl << EndDebugWarning;
+				<< std::hex << val << std::dec << ", resetting it 0x2"
+				<< std::endl << EndDebugWarning;
 		data = data & ~(uint32_t)5;
 	}
 	/* showing the new register settings */
-	if(DEBUG && logger_import) {
-		(*logger_import) << DebugInfo << LOCATION
+	if(unlikely(DEBUG && verbose)) {
+		logger << DebugInfo << LOCATION
 			<< "Writing the MCCR3 with value 0x"
-			<< Hex << data << Dec << " (previous value = 0x"
-			<< Hex << config_regs->GetRegister(reg)->value << Dec << "), setting values: " 
-			<< Endl;
+			<< std::hex << data << std::dec << " (previous value = 0x"
+			<< std::hex << config_regs->GetRegister(reg)->value << std::dec << "), setting values: " 
+			<< std::endl;
 		val = (data >> 28) & (uint32_t)0x0f;
-		(*logger_import)
+		logger
 			<< "   - setting burst to precharge bits[2-5] (bits 31-28, BSTOPRE[2-5]) "
-			<< "to 0x" << Hex << val << Dec << Endl;
+			<< "to 0x" << std::hex << val << std::dec << std::endl;
 		val = (data >> 24) & (uint32_t)0x0f;
-		(*logger_import)
+		logger
 			<< "   - setting refresh to activate interval (bits 27-24, REFREC) "
-			<< "to 0x" << Hex << val << Dec << Endl;
+			<< "to 0x" << std::hex << val << std::dec << std::endl;
 		val = (data >> 20) & (uint32_t)0x0f;
-		(*logger_import)
+		logger
 			<< "   - setting data latency from read command (bits 23-20, RDLAT) "
-			<< "to 0x" << Hex << val << Dec << Endl;
+			<< "to 0x" << std::hex << val << std::dec << std::endl;
 		if((data >> 19) & (uint32_t)1)
-			(*logger_import) << "   - enabling (1)";
+			logger << "   - enabling (1)";
 		else
-			(*logger_import) << "   - disabling (0)";
-		(*logger_import) << " CAS write timing modifier (bit 19, CPX)" << Endl;
+			logger << "   - disabling (0)";
+		logger << " CAS write timing modifier (bit 19, CPX)" << std::endl;
 		val = (data >> 15) & (uint32_t)0x0f;
-		(*logger_import) << "   - setting RAS assertion interval for CBR refresh "
-			<< "(bits 18-15, RAS6P) to 0x" << Hex << val << Dec << Endl;
+		logger << "   - setting RAS assertion interval for CBR refresh "
+			<< "(bits 18-15, RAS6P) to 0x" << std::hex << val << std::dec << std::endl;
 		val = (data >> 12) & (uint32_t)7;
-		(*logger_import) << "   - setting CAS assertion interval for page mode access "
-			<< "(bits 14-12, CAS5) to 0x" << Hex << val << Dec << Endl;
+		logger << "   - setting CAS assertion interval for page mode access "
+			<< "(bits 14-12, CAS5) to 0x" << std::hex << val << std::dec << std::endl;
 		val = (data >> 9) & (uint32_t)7;
-		(*logger_import) << "   - setting CAS precharge interval (bits 11-9, CP4) "
-			<< "to 0x" << Hex << val << Dec << Endl;
+		logger << "   - setting CAS precharge interval (bits 11-9, CP4) "
+			<< "to 0x" << std::hex << val << std::dec << std::endl;
 		val = (data >> 6) & (uint32_t)7;
-		(*logger_import) << "   - setting CAS assertion interval for the first access "
-			<< "(bits 8-6, CAS3) to 0x" << Hex << val << Dec << Endl;
+		logger << "   - setting CAS assertion interval for the first access "
+			<< "(bits 8-6, CAS3) to 0x" << std::hex << val << std::dec << std::endl;
 		val = (data >> 3) & (uint32_t)7;
-		(*logger_import) << "   - setting RAS to CAS delay interval (bits 5-3, RCD2) "
-			<< "to 0x" << Hex << val << Dec << Endl;
+		logger << "   - setting RAS to CAS delay interval (bits 5-3, RCD2) "
+			<< "to 0x" << std::hex << val << std::dec << std::endl;
 		val = data & (uint32_t)7;
-		(*logger_import) << "   - setting RAS precharge interval (bits 2-0, RP1) "
-			<< "to 0x" << Hex << val << Dec << Endl;
+		logger << "   - setting RAS precharge interval (bits 2-0, RP1) "
+			<< "to 0x" << std::hex << val << std::dec << std::endl;
 	}
 //	config_regs->GetRegister(reg)->Write(reg, data, req_size);
 	config_regs->GetRegister(reg)->value = data;
-	if(DEBUG && logger_import) {
-		(*logger_import) << "checking MCCR3 = 0x"
-			<< Hex << config_regs->GetRegister(reg)->value << Dec << Endl;
-		(*logger_import) << EndDebugInfo;	 
+	if(unlikely(DEBUG && verbose)) {
+		logger << "checking MCCR3 = 0x"
+			<< std::hex << config_regs->GetRegister(reg)->value << std::dec << std::endl;
+		logger << EndDebugInfo;	 
 	}
 	return true;	
 }
@@ -1673,92 +1665,92 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 ::WriteMCCR4(int reg, uint32_t data, uint32_t req_size) {
 	/* checking reserved bit 16 */
 	if(data & (((uint32_t)1) << 16)) {
-		if(logger_import)
-			(*logger_import) << DebugWarning << LOCATION
+		if(unlikely(verbose))
+			logger << DebugWarning << LOCATION
 				<< "Trying to set reserved bit 16 of register MCCR4, resetting it to 0"
-				<< Endl << EndDebugWarning;
+				<< std::endl << EndDebugWarning;
 		data = data & ~(((uint32_t)1) << 16);
 	}
 	/* checking that bits 22 and 20 (BUF_TYPE[0] and BUF_TYPE[1]) are different */
 	if(((data >> 22) & ((uint32_t)1)) == ((data >> 20) & ((uint32_t)1))) {
-		if(logger_import)
-			(*logger_import) << DebugWarning << LOCATION
+		if(unlikely(verbose))
+			logger << DebugWarning << LOCATION
 				<< "Trying to set bits 22 and 20 (BUF_TYPE[0] and BUF_TYPE[1]) of MCCR4 to the "
 				<< "same value, resetting them to 01"
-				<< Endl << EndDebugWarning;
+				<< std::endl << EndDebugWarning;
 		data = data & ~(((uint32_t)1) << 22);
 		data = data | (((uint32_t)1) << 20);
 	}
 	/* checking that bits 7-4 (ACTORW) are not set to reserved values 0001 */
 	if(((data >> 4) & (uint32_t)0xf) == 1) {
-		(*logger_import) << DebugWarning << LOCATION
+		logger << DebugWarning << LOCATION
 			<< "Trying to set bits 7-4 (ACTORW) of MCCR4 to the reserved value 0x1, "
-			<< "resetting it to 0x0" << Endl << EndDebugWarning;
+			<< "resetting it to 0x0" << std::endl << EndDebugWarning;
 		data = data &  ~(((uint32_t)0x0f) << 4);
 	}
 	uint32_t val;
 	/* showing the new register settings */
-	if(DEBUG && logger_import) {
-		(*logger_import) << DebugInfo << LOCATION
+	if(unlikely(DEBUG && verbose)) {
+		logger << DebugInfo << LOCATION
 			<< "Writing the MCCR4 with value 0x"
-			<< Hex << data << Dec << " (previous value = 0x"
-			<< Hex << config_regs->GetRegister(reg)->value << Dec << "), setting values: " 
-			<< Endl;
+			<< std::hex << data << std::dec << " (previous value = 0x"
+			<< std::hex << config_regs->GetRegister(reg)->value << std::dec << "), setting values: " 
+			<< std::endl;
 		val = (data >> 28) & (uint32_t)0x0f;
-		(*logger_import) 
+		logger 
 			<< "   - setting precharge to activate interval (bits 31-28, PRETOACT) to 0x"
-			<< Hex << val << Dec << Endl;
+			<< std::hex << val << std::dec << std::endl;
 		val = (data >> 24) & (uint32_t)0x0f;
-		(*logger_import)
+		logger
 			<< "   - setting activate to precharge interval (bits 27-24, ACTTOPRE) to 0x"
-			<< Hex << val << Dec << Endl;
-		(*logger_import) << "   - setting length of burst for 32-bit data (bit 23, WMODE) to ";
+			<< std::hex << val << std::dec << std::endl;
+		logger << "   - setting length of burst for 32-bit data (bit 23, WMODE) to ";
 		if(data & (((uint32_t)1) << 23))
-			(*logger_import) << "(1) eight";
+			logger << "(1) eight";
 		else
-			(*logger_import) << "(0) four";
-		(*logger_import) << " beats per burst" << Endl;
-		(*logger_import) << "   - setting internal memory data path buffering scheme "
+			logger << "(0) four";
+		logger << " beats per burst" << std::endl;
+		logger << "   - setting internal memory data path buffering scheme "
 			<< "(bit 22 and bit 20, BUF_TYPE[0-1]) to ";
 		if(data & (((uint32_t)1) << 22))
-			(*logger_import) << "(10) in-line buffer mode (SDRAM only)" << Endl;
+			logger << "(10) in-line buffer mode (SDRAM only)" << std::endl;
 		else
-			(*logger_import) << "(01) registered buffer mode" << Endl;
+			logger << "(01) registered buffer mode" << std::endl;
 		if(data & (((uint32_t)1) << 21))
-			(*logger_import) << "   - enabling extended 128Mbytes of local ROM memory space (1)";
+			logger << "   - enabling extended 128Mbytes of local ROM memory space (1)";
 		else
-			(*logger_import) << "   - disabling extended ROM (0)";
-		(*logger_import) << " (bit 21, EXTROM)" << Endl;
+			logger << "   - disabling extended ROM (0)";
+		logger << " (bit 21, EXTROM)" << std::endl;
 		val = (data >> 18) & (uint32_t)3;
-		(*logger_import) 
+		logger 
 			<< "   - setting burst to precharge bits (bits 19-18, BSTOPRE[0-1]) "
-			<< "to 0x" << Hex << val << Dec;
-		(*logger_import)
-			<< "   - setting DBUS_SIZE[2] bit (bit 17) to " << ((data >> 17) & 1) << Endl;
-		(*logger_import)
+			<< "to 0x" << std::hex << val << std::dec;
+		logger
+			<< "   - setting DBUS_SIZE[2] bit (bit 17) to " << ((data >> 17) & 1) << std::endl;
+		logger
 			<< "   - setting registered DIMMs option (bit 15, REGDIMM) to ";
 		if(data & (((uint32_t)1) << 15))
-			(*logger_import) << "1, registered DIMMs" << Endl;
+			logger << "1, registered DIMMs" << std::endl;
 		else
-			(*logger_import) << "0, normal DIMMs" << Endl;
+			logger << "0, normal DIMMs" << std::endl;
 		val = (data >> 8) & (uint32_t)0x07f;
-		(*logger_import)
+		logger
 			<< "   - setting SDRAM mode register (bits 14-8, SDMODE) to 0x"
-			<< Hex << val << Dec << Endl;
+			<< std::hex << val << std::dec << std::endl;
 		val = (data >> 4) & (uint32_t)0x0f;
-		(*logger_import)
+		logger
 			<< "   - setting activate to read/write interval (bits 7-4, ACTORW) to 0x"
-			<< Hex << val << Dec << Endl;
+			<< std::hex << val << std::dec << std::endl;
 		val = data & (uint32_t)0x0f;
-		(*logger_import)
+		logger
 			<< "   - setting burst to precharge bits 6-9 (bits 3-0, BSTOPRE[6-9]) to 0x"
-			<< Hex << val << Dec << Endl;
+			<< std::hex << val << std::dec << std::endl;
 	}
 	config_regs->GetRegister(reg)->value = data;
-	if(DEBUG && logger_import) {
-		(*logger_import) << "checking MCCR3 = 0x"
-			<< Hex << config_regs->GetRegister(reg)->value << Dec << Endl;
-		(*logger_import) << EndDebugInfo;	 
+	if(unlikely(DEBUG && verbose)) {
+		logger << "checking MCCR3 = 0x"
+			<< std::hex << config_regs->GetRegister(reg)->value << std::dec << std::endl;
+		logger << EndDebugInfo;	 
 	}
 	return true;	
 }
@@ -1775,27 +1767,27 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 		DEBUG>
 ::WriteMemStartAddrReg1(int reg, uint32_t data, uint32_t req_size) {
 	/* showing the new register settings */
-	if(DEBUG && logger_import) {
-		(*logger_import) << DebugInfo << LOCATION
+	if(unlikely(DEBUG && verbose)) {
+		logger << DebugInfo << LOCATION
 			<< "Writing the Memory Starting Address Register 1 with value 0x"
-			<< Hex << data << Dec << " (previous value = 0x"
-			<< Hex << config_regs->GetRegister(reg)->value << Dec << "), setting values: " 
-			<< Endl;
+			<< std::hex << data << std::dec << " (previous value = 0x"
+			<< std::hex << config_regs->GetRegister(reg)->value << std::dec << "), setting values: " 
+			<< std::endl;
 		for(uint32_t i = 0; i < 4; i++) {
 			uint32_t val;
 			val = (data >> (i * 8)) & (uint32_t)0x0ff;
-			(*logger_import) 
+			logger 
 				<< "   - setting starting address for bank " << i
 				<< " (bits " << ((i * 8) + 7) << "-" <<  (i * 8) 
 				<< ", Starting address bank " << i << ") "
-				<< "to 0x" << Hex << val << Dec << Endl;
+				<< "to 0x" << std::hex << val << std::dec << std::endl;
 		}
 	}
 	config_regs->GetRegister(reg)->value = data;
-	if(DEBUG && logger_import) {
-		(*logger_import) << "checking Memory Starting Address Register 1 = 0x"
-			<< Hex << config_regs->GetRegister(reg)->value << Dec << Endl;
-		(*logger_import) << EndDebugInfo;	 
+	if(unlikely(DEBUG && verbose)) {
+		logger << "checking Memory Starting Address Register 1 = 0x"
+			<< std::hex << config_regs->GetRegister(reg)->value << std::dec << std::endl;
+		logger << EndDebugInfo;	 
 	}
 	return true;	
 }
@@ -1812,27 +1804,27 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 		DEBUG>
 ::WriteMemStartAddrReg2(int reg, uint32_t data, uint32_t req_size) {
 	/* showing the new register settings */
-	if(DEBUG && logger_import) {
-		(*logger_import) << DebugInfo << LOCATION
+	if(unlikely(DEBUG && verbose)) {
+		logger << DebugInfo << LOCATION
 			<< "Writing the Memory Starting Address Register 2 with value 0x"
-			<< Hex << data << Dec << " (previous value = 0x"
-			<< Hex << config_regs->GetRegister(reg)->value << Dec << "), setting values: " 
-			<< Endl;
+			<< std::hex << data << std::dec << " (previous value = 0x"
+			<< std::hex << config_regs->GetRegister(reg)->value << std::dec << "), setting values: " 
+			<< std::endl;
 		for(uint32_t i = 0; i < 4; i++) {
 			uint32_t val;
 			val = (data >> (i * 8)) & (uint32_t)0x0ff;
-			(*logger_import) 
+			logger 
 				<< "   - setting starting address for bank " << (i + 4)
 				<< " (bits " << ((i * 8) + 7) << "-" <<  (i * 8) 
 				<< ", Starting address bank " << (i + 4) << ") "
-				<< "to 0x" << Hex << val << Dec << Endl;
+				<< "to 0x" << std::hex << val << std::dec << std::endl;
 		}
 	}
 	config_regs->GetRegister(reg)->value = data;
-	if(DEBUG && logger_import) {
-		(*logger_import) << "checking Memory Starting Address Register 2 = 0x"
-			<< Hex << config_regs->GetRegister(reg)->value << Dec << Endl;
-		(*logger_import) << EndDebugInfo;	 
+	if(unlikely(DEBUG && verbose)) {
+		logger << "checking Memory Starting Address Register 2 = 0x"
+			<< std::hex << config_regs->GetRegister(reg)->value << std::dec << std::endl;
+		logger << EndDebugInfo;	 
 	}
 	return true;	
 }
@@ -1853,38 +1845,38 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 		uint32_t val;
 		val = (data >> ((i * 8) + 2)) & (uint32_t)0x03f;
 		if(val != 0) {
-			if(logger_import)
-				(*logger_import) << DebugWarning << LOCATION
+			if(unlikely(verbose))
+				logger << DebugWarning << LOCATION
 					<< "Trying to set reserved bits "
 					<< ((i * 8) + 7) << "-" << ((i * 8) + 2)
 					<< " of Extended Memory Starting Address Register 1 with value 0x"
-					<< Hex << val << Dec << ", resetting it to 0x0" 
-					<< Endl << EndDebugWarning;
+					<< std::hex << val << std::dec << ", resetting it to 0x0" 
+					<< std::endl << EndDebugWarning;
 			data = data & (((uint32_t)0x03f) << ((i * 8) + 2));
 		}
 	}
 	/* showing the new register settings */
-	if(DEBUG && logger_import) {
-		(*logger_import) << DebugInfo << LOCATION
+	if(unlikely(DEBUG && verbose)) {
+		logger << DebugInfo << LOCATION
 			<< "Writing the Extended Memory Starting Address Register 1 with value 0x"
-			<< Hex << data << Dec << " (previous value = 0x"
-			<< Hex << config_regs->GetRegister(reg)->value << Dec << "), setting values: " 
-			<< Endl;
+			<< std::hex << data << std::dec << " (previous value = 0x"
+			<< std::hex << config_regs->GetRegister(reg)->value << std::dec << "), setting values: " 
+			<< std::endl;
 		for(uint32_t i = 0; i < 4; i++) {
 			uint32_t val;
 			val = (data >> (i * 8)) & (uint32_t)0x0ff;
-			(*logger_import) 
+			logger 
 				<< "   - setting starting address for bank " << i
 				<< " (bits " << ((i * 8) + 7) << "-" <<  (i * 8) 
 				<< ", Starting address bank " << i << ") "
-				<< "to 0x" << Hex << val << Dec << Endl;
+				<< "to 0x" << std::hex << val << std::dec << std::endl;
 		}
 	}
 	config_regs->GetRegister(reg)->value = data;
-	if(DEBUG && logger_import) {
-		(*logger_import) << "checking Extended Memory Starting Address Register 1 = 0x"
-			<< Hex << config_regs->GetRegister(reg)->value << Dec << Endl;
-		(*logger_import) << EndDebugInfo;	 
+	if(unlikely(DEBUG && verbose)) {
+		logger << "checking Extended Memory Starting Address Register 1 = 0x"
+			<< std::hex << config_regs->GetRegister(reg)->value << std::dec << std::endl;
+		logger << EndDebugInfo;	 
 	}
 	return true;	
 }
@@ -1905,38 +1897,38 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 		uint32_t val;
 		val = (data >> ((i * 8) + 2)) & (uint32_t)0x03f;
 		if(val != 0) {
-			if(logger_import) 
-				(*logger_import) << DebugWarning << LOCATION
+			if(unlikely(verbose)) 
+				logger << DebugWarning << LOCATION
 					<< "Trying to set reserved bits "
 					<< ((i * 8) + 7) << "-" << ((i * 8) + 2)
 					<< " of Extended Memory Starting Address Register 2 with value 0x"
-					<< Hex << val << Dec << ", resetting it to 0x0" 
-					<< Endl << EndDebugWarning;
+					<< std::hex << val << std::dec << ", resetting it to 0x0" 
+					<< std::endl << EndDebugWarning;
 			data = data & (((uint32_t)0x03f) << ((i * 8) + 2));
 		}
 	}
 	/* showing the new register settings */
-	if(DEBUG && logger_import) {
-		(*logger_import) << DebugInfo << LOCATION
+	if(unlikely(DEBUG && verbose)) {
+		logger << DebugInfo << LOCATION
 			<< "Writing the Extended Memory Starting Address Register 2 with value 0x"
-			<< Hex << data << Dec << " (previous value = 0x"
-			<< Hex << config_regs->GetRegister(reg)->value << Dec << "), setting values: " 
-			<< Endl;
+			<< std::hex << data << std::dec << " (previous value = 0x"
+			<< std::hex << config_regs->GetRegister(reg)->value << std::dec << "), setting values: " 
+			<< std::endl;
 		for(uint32_t i = 0; i < 4; i++) {
 			uint32_t val;
 			val = (data >> (i * 8)) & (uint32_t)0x0ff;
-			(*logger_import) 
+			logger 
 				<< "   - setting starting address for bank " << (i + 4)
 				<< " (bits " << ((i * 8) + 7) << "-" <<  (i * 8) 
 				<< ", Starting address bank " << (i + 4) << ") "
-				<< "to 0x" << Hex << val << Dec << Endl;
+				<< "to 0x" << std::hex << val << std::dec << std::endl;
 		}
 	}
 	config_regs->GetRegister(reg)->value = data;
-	if(DEBUG && logger_import) {
-		(*logger_import) << "checking Extended Memory Starting Address Register 2 = 0x"
-			<< Hex << config_regs->GetRegister(reg)->value << Dec << Endl;
-		(*logger_import) << EndDebugInfo;	 
+	if(unlikely(DEBUG && verbose)) {
+		logger << "checking Extended Memory Starting Address Register 2 = 0x"
+			<< std::hex << config_regs->GetRegister(reg)->value << std::dec << std::endl;
+		logger << EndDebugInfo;	 
 	}
 	return true;	
 }
@@ -1953,27 +1945,27 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 		DEBUG>
 ::WriteMemEndAddrReg1(int reg, uint32_t data, uint32_t req_size) {
 	/* showing the new register settings */
-	if(DEBUG && logger_import) {
-		(*logger_import) << DebugInfo << LOCATION
+	if(unlikely(DEBUG && verbose)) {
+		logger << DebugInfo << LOCATION
 			<< "Writing the Memory Ending Address Register 1 with value 0x"
-			<< Hex << data << Dec << " (previous value = 0x"
-			<< Hex << config_regs->GetRegister(reg)->value << Dec << "), setting values: " 
-			<< Endl;
+			<< std::hex << data << std::dec << " (previous value = 0x"
+			<< std::hex << config_regs->GetRegister(reg)->value << std::dec << "), setting values: " 
+			<< std::endl;
 		for(uint32_t i = 0; i < 4; i++) {
 			uint32_t val;
 			val = (data >> (i * 8)) & (uint32_t)0x0ff;
-			(*logger_import) 
+			logger 
 				<< "   - setting ending address for bank " << i
 				<< " (bits " << ((i * 8) + 7) << "-" <<  (i * 8) 
 				<< ", Ending address bank " << i << ") "
-				<< "to 0x" << Hex << val << Dec << Endl;
+				<< "to 0x" << std::hex << val << std::dec << std::endl;
 		}
 	}
 	config_regs->GetRegister(reg)->value = data;
-	if(DEBUG && logger_import) {
-		(*logger_import) << "checking Memory Ending Address Register 1 = 0x"
-			<< Hex << config_regs->GetRegister(reg)->value << Dec << Endl;
-		(*logger_import) << EndDebugInfo;	 
+	if(unlikely(DEBUG && verbose)) {
+		logger << "checking Memory Ending Address Register 1 = 0x"
+			<< std::hex << config_regs->GetRegister(reg)->value << std::dec << std::endl;
+		logger << EndDebugInfo;	 
 	}
 	return true;	
 }
@@ -1990,27 +1982,27 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 		DEBUG>
 ::WriteMemEndAddrReg2(int reg, uint32_t data, uint32_t req_size) {
 	/* showing the new register settings */
-	if(DEBUG && logger_import) {
-		(*logger_import) << DebugInfo << LOCATION
+	if(unlikely(DEBUG && verbose)) {
+		logger << DebugInfo << LOCATION
 			<< "Writing the Memory Ending Address Register 2 with value 0x"
-			<< Hex << data << Dec << " (previous value = 0x"
-			<< Hex << config_regs->GetRegister(reg)->value << Dec << "), setting values: " 
-			<< Endl;
+			<< std::hex << data << std::dec << " (previous value = 0x"
+			<< std::hex << config_regs->GetRegister(reg)->value << std::dec << "), setting values: " 
+			<< std::endl;
 		for(uint32_t i = 0; i < 4; i++) {
 			uint32_t val;
 			val = (data >> (i * 8)) & (uint32_t)0x0ff;
-			(*logger_import) 
+			logger 
 				<< "   - setting starting address for bank " << (i + 4)
 				<< " (bits " << ((i * 8) + 7) << "-" <<  (i * 8) 
 				<< ", Ending address bank " << (i + 4) << ") "
-				<< "to 0x" << Hex << val << Dec << Endl;
+				<< "to 0x" << std::hex << val << std::dec << std::endl;
 		}
 	}
 	config_regs->GetRegister(reg)->value = data;
-	if(DEBUG && logger_import) {
-		(*logger_import) << "checking Memory Ending Address Register 2 = 0x"
-			<< Hex << config_regs->GetRegister(reg)->value << Dec << Endl;
-		(*logger_import) << EndDebugInfo;	 
+	if(unlikely(DEBUG && verbose)) {
+		logger << "checking Memory Ending Address Register 2 = 0x"
+			<< std::hex << config_regs->GetRegister(reg)->value << std::dec << std::endl;
+		logger << EndDebugInfo;	 
 	}
 	return true;	
 }
@@ -2031,38 +2023,38 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 		uint32_t val;
 		val = (data >> ((i * 8) + 2)) & (uint32_t)0x03f;
 		if(val != 0) {
-			if(logger_import)
-				(*logger_import) << DebugWarning << LOCATION
+			if(unlikely(verbose))
+				logger << DebugWarning << LOCATION
 					<< "Trying to set reserved bits "
 					<< ((i * 8) + 7) << "-" << ((i * 8) + 2)
 					<< " of Extended Memory Ending Address Register 1 with value 0x"
-					<< Hex << val << Dec << ", resetting it to 0x0" 
-					<< Endl << EndDebugWarning;
+					<< std::hex << val << std::dec << ", resetting it to 0x0" 
+					<< std::endl << EndDebugWarning;
 			data = data & (((uint32_t)0x03f) << ((i * 8) + 2));
 		}
 	}
 	/* showing the new register settings */
-	if(DEBUG && logger_import) {
-		(*logger_import) << DebugInfo << LOCATION
+	if(unlikely(DEBUG && verbose)) {
+		logger << DebugInfo << LOCATION
 			<< "Writing the Extended Memory Ending Address Register 1 with value 0x"
-			<< Hex << data << Dec << " (previous value = 0x"
-			<< Hex << config_regs->GetRegister(reg)->value << Dec << "), setting values: " 
-			<< Endl;
+			<< std::hex << data << std::dec << " (previous value = 0x"
+			<< std::hex << config_regs->GetRegister(reg)->value << std::dec << "), setting values: " 
+			<< std::endl;
 		for(uint32_t i = 0; i < 4; i++) {
 			uint32_t val;
 			val = (data >> (i * 8)) & (uint32_t)0x0ff;
-			(*logger_import) 
+			logger 
 				<< "   - setting starting address for bank " << i
 				<< " (bits " << ((i * 8) + 7) << "-" <<  (i * 8) 
 				<< ", Ending address bank " << i << ") "
-				<< "to 0x" << Hex << val << Dec << Endl;
+				<< "to 0x" << std::hex << val << std::dec << std::endl;
 		}
 	}
 	config_regs->GetRegister(reg)->value = data;
-	if(DEBUG && logger_import) {
-		(*logger_import) << "checking Extended Memory Ending Address Register 1 = 0x"
-			<< Hex << config_regs->GetRegister(reg)->value << Dec << Endl;
-		(*logger_import) << EndDebugInfo;	 
+	if(unlikely(DEBUG && verbose)) {
+		logger << "checking Extended Memory Ending Address Register 1 = 0x"
+			<< std::hex << config_regs->GetRegister(reg)->value << std::dec << std::endl;
+		logger << EndDebugInfo;	 
 	}
 	return true;	
 }
@@ -2083,38 +2075,38 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 		uint32_t val;
 		val = (data >> ((i * 8) + 2)) & (uint32_t)0x03f;
 		if(val != 0) {
-			if(logger_import) 
-				(*logger_import) << DebugWarning << LOCATION
+			if(unlikely(verbose)) 
+				logger << DebugWarning << LOCATION
 					<< "Trying to set reserved bits "
 					<< ((i * 8) + 7) << "-" << ((i * 8) + 2)
 					<< " of Extended Memory Ending Address Register 2 with value 0x"
-					<< Hex << val << Dec << ", resetting it to 0x0" 
-					<< Endl << EndDebugWarning;
+					<< std::hex << val << std::dec << ", resetting it to 0x0" 
+					<< std::endl << EndDebugWarning;
 			data = data & (((uint32_t)0x03f) << ((i * 8) + 2));
 		}
 	}
 	/* showing the new register settings */
-	if(DEBUG && logger_import) {
-		(*logger_import) << DebugInfo << LOCATION
+	if(unlikely(DEBUG && verbose)) {
+		logger << DebugInfo << LOCATION
 			<< "Writing the Extended Memory Ending Address Register 2 with value 0x"
-			<< Hex << data << Dec << " (previous value = 0x"
-			<< Hex << config_regs->GetRegister(reg)->value << Dec << "), setting values: " 
-			<< Endl;
+			<< std::hex << data << std::dec << " (previous value = 0x"
+			<< std::hex << config_regs->GetRegister(reg)->value << std::dec << "), setting values: " 
+			<< std::endl;
 		for(uint32_t i = 0; i < 4; i++) {
 			uint32_t val;
 			val = (data >> (i * 8)) & (uint32_t)0x0ff;
-			(*logger_import) 
+			logger 
 				<< "   - setting starting address for bank " << (i + 4)
 				<< " (bits " << ((i * 8) + 7) << "-" <<  (i * 8) 
 				<< ", Ending address bank " << (i + 4) << ") "
-				<< "to 0x" << Hex << val << Dec << Endl;
+				<< "to 0x" << std::hex << val << std::dec << std::endl;
 		}
 	}
 	config_regs->GetRegister(reg)->value = data;
-	if(DEBUG && logger_import) {
-		(*logger_import) << "checking Extended Memory Ending Address Register 2 = 0x"
-			<< Hex << config_regs->GetRegister(reg)->value << Dec << Endl;
-		(*logger_import) << EndDebugInfo;	 
+	if(unlikely(DEBUG && verbose)) {
+		logger << "checking Extended Memory Ending Address Register 2 = 0x"
+			<< std::hex << config_regs->GetRegister(reg)->value << std::dec << std::endl;
+		logger << EndDebugInfo;	 
 	}
 	return true;	
 }
@@ -2132,13 +2124,13 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 ::WriteMemBankEnableReg(int reg, uint32_t data, uint32_t req_size) {
 	/* checking request size */
 	if(req_size > 1) {
-		if(logger_import)
-			(*logger_import) << DebugWarning << LOCATION
+		if(unlikely(verbose))
+			logger << DebugWarning << LOCATION
 				<< "Trying to write Memory Bank Enable Register (0x"
-				<< Hex << MEM_BANK_EN_REG << Dec << ") "
+				<< std::hex << MEM_BANK_EN_REG << std::dec << ") "
 				<< "with a request of size " << req_size << "bytes, "
 				<< "only the first byte will be considered" 
-				<< Endl << EndDebugWarning;
+				<< std::endl << EndDebugWarning;
 	}
 	/* checking that enabled banks have an starting address smaller than
 	 *   the ending address */
@@ -2157,40 +2149,40 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 				end_address = (end_address >> ((i - 4) * 8)) & (uint32_t)0x0ff;
 			}
 			if(start_address >= end_address) {
-				if(logger_import) {
-					(*logger_import) << DebugWarning << LOCATION
+				if(unlikely(verbose)) {
+					logger << DebugWarning << LOCATION
 						<< "Trying to enable bank " << i << " on the Memory Bank Enable Register "
 						<< "when the start address of the bank is bigger or equal than the end address "
-						<< "(start_address = 0x" << Hex << start_address << Dec
-						<< ", end_address = 0x" << Hex << end_address << Dec << ")"
+						<< "(start_address = 0x" << std::hex << start_address << std::dec
+						<< ", end_address = 0x" << std::hex << end_address << std::dec << ")"
 						<< " (no action is taken)"
-						<< Endl << EndDebugWarning;
+						<< std::endl << EndDebugWarning;
 				}
 			}
 		}
 	}
 	/* showing enabled/disabled banks */ 
-	if(DEBUG && logger_import) {
-		(*logger_import) << DebugInfo << LOCATION
+	if(unlikely(DEBUG && verbose)) {
+		logger << DebugInfo << LOCATION
 			<< "Writing the Memory Bank Enable Register with value 0x"
-			<< Hex << data << Dec << " (previous value = 0x"
-			<< Hex << config_regs->GetRegister(reg)->value << Dec << "), setting values: " 
-			<< Endl;
+			<< std::hex << data << std::dec << " (previous value = 0x"
+			<< std::hex << config_regs->GetRegister(reg)->value << std::dec << "), setting values: " 
+			<< std::endl;
 		for(uint32_t i = 0; i < 8; i++) {
 			if(data & (((uint32_t)1) << i))
-				(*logger_import) << "   - enabling (1)"; 
+				logger << "   - enabling (1)"; 
 			else 
-				(*logger_import) << "   - disabling (0)";
-			(*logger_import) << " memory bank " << i 
+				logger << "   - disabling (0)";
+			logger << " memory bank " << i 
 				<< " (bit " << i << ", Bank " << i << ")"
-				<< Endl;
+				<< std::endl;
 		}
 	}
 	config_regs->GetRegister(reg)->value = data;
-	if(DEBUG && logger_import) {
-		(*logger_import) << "checking Memory Bank Enable Register = 0x"
-			<< Hex << config_regs->GetRegister(reg)->value << Dec << Endl;
-		(*logger_import) << EndDebugInfo;	 
+	if(unlikely(DEBUG && verbose)) {
+		logger << "checking Memory Bank Enable Register = 0x"
+			<< std::hex << config_regs->GetRegister(reg)->value << std::dec << std::endl;
+		logger << EndDebugInfo;	 
 	}
 	return true;	
 }
@@ -2208,35 +2200,35 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 ::WriteMemPageModeReg(int reg, uint32_t data, uint32_t req_size) {
 	/* checking request size */
 	if(req_size > 1) {
-		if(logger_import)
-			(*logger_import) << DebugWarning << LOCATION
+		if(unlikely(verbose))
+			logger << DebugWarning << LOCATION
 				<< "Trying to write Memory Page Mode Register (0x"
-				<< Hex << reg << Dec << ") "
+				<< std::hex << reg << std::dec << ") "
 				<< "with a request of size " << req_size << "bytes, "
 				<< "only the first byte will be considered" 
-				<< Endl << EndDebugWarning;
+				<< std::endl << EndDebugWarning;
 	}
 		
 	/* showing entered value */ 
-	if(DEBUG && logger_import) {
-		(*logger_import) << DebugInfo << LOCATION
+	if(unlikely(DEBUG && verbose)) {
+		logger << DebugInfo << LOCATION
 			<< "Writing the Memory Page Mode Register with value 0x"
-			<< Hex << data << Dec << " (previous value = 0x"
-			<< Hex << config_regs->GetRegister(reg)->value << Dec << "), setting values: " 
-			<< Endl;
+			<< std::hex << data << std::dec << " (previous value = 0x"
+			<< std::hex << config_regs->GetRegister(reg)->value << std::dec << "), setting values: " 
+			<< std::endl;
 		if(data & (uint32_t)0x0ff)
-			(*logger_import)
-				<< "   - page mode enabled with value to 0x" << Hex << (data & (uint32_t)0x0ff) << Dec;
+			logger
+				<< "   - page mode enabled with value to 0x" << std::hex << (data & (uint32_t)0x0ff) << std::dec;
 		else
-			(*logger_import)
+			logger
 				<< "   - page mode disabled (value = 0x0)";
-		(*logger_import) << Endl;
+		logger << std::endl;
 	}
 	config_regs->GetRegister(reg)->value = data & (uint32_t)0x0ff;
-	if(DEBUG && logger_import) {
-		(*logger_import) << "checking Memory Page Mode Register = 0x"
-			<< Hex << config_regs->GetRegister(reg)->value << Dec << Endl;
-		(*logger_import) << EndDebugInfo;	 
+	if(unlikely(DEBUG && verbose)) {
+		logger << "checking Memory Page Mode Register = 0x"
+			<< std::hex << config_regs->GetRegister(reg)->value << std::dec << std::endl;
+		logger << EndDebugInfo;	 
 	}
 	return true;	
 }

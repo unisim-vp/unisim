@@ -141,7 +141,7 @@ bool TI_C_IO<MEMORY_ADDR>::Setup()
 {
 	if(enable)
 	{
-		if(verbose_setup || verbose_all)
+		if(unlikely(verbose_setup || verbose_all))
 		{
 			logger << DebugInfo << "TI C I/O support is enabled" << EndDebugInfo;
 		}
@@ -212,7 +212,7 @@ bool TI_C_IO<MEMORY_ADDR>::Setup()
 
 		c_io_buffer_addr = c_io_buffer_symbol->GetAddress();
 
-		if(verbose_setup || verbose_all)
+		if(unlikely(verbose_setup || verbose_all))
 		{
 			logger << DebugInfo << "Using " << c_io_buffer_symbol->GetName() << " at 0x" << hex << c_io_buffer_addr << dec << " as I/O buffer" << EndDebugInfo;
 		}
@@ -222,7 +222,7 @@ bool TI_C_IO<MEMORY_ADDR>::Setup()
 
 		uint8_t swi[4] = { 0x00, 0x00, 0x00, 0x66 };
 
-		if(verbose_setup || verbose_all)
+		if(unlikely(verbose_setup || verbose_all))
 		{
 			logger << DebugInfo << "Installing emulator breakpoint (SWI) for I/O at 0x" << hex << c_io_breakpoint_addr << dec << " (symbol " << c_io_breakpoint_symbol->GetName() << ")" << EndDebugInfo;
 		}
@@ -234,7 +234,7 @@ bool TI_C_IO<MEMORY_ADDR>::Setup()
 			return !warning_as_error;
 		}
 
-		if(verbose_setup || verbose_all)
+		if(unlikely(verbose_setup || verbose_all))
 		{
 			logger << DebugInfo << "Installing emulator breakpoint (SWI) for EXIT at 0x" << hex << c_exit_breakpoint_addr << dec << " (symbol " << c_exit_breakpoint_symbol->GetName() << ")" << EndDebugInfo;
 		}
@@ -248,7 +248,7 @@ bool TI_C_IO<MEMORY_ADDR>::Setup()
 	}
 	else
 	{
-		if(verbose_setup || verbose_all)
+		if(unlikely(verbose_setup || verbose_all))
 		{
 			logger << DebugInfo << "TI C I/O support is disabled" << EndDebugInfo;
 		}
@@ -331,7 +331,7 @@ unisim::service::interfaces::TI_C_IO::Status TI_C_IO<MEMORY_ADDR>::HandleEmulato
 		if(!memory_injection_import->InjectReadMemory(addr, buffer, input_msg.length)) return unisim::service::interfaces::TI_C_IO::ERROR;
 	}
 
-	if((verbose_io || verbose_all))
+	if(unlikely(verbose_io || verbose_all))
 	{
 		logger << DebugInfo << "input msg:" << endl << "  - length=" << input_msg.length << endl << "  - command=0x" << hex << input_msg.command << dec << " (" << GetCommandFriendlyName(input_msg.command) << ")" << endl;
 
@@ -431,7 +431,7 @@ unisim::service::interfaces::TI_C_IO::Status TI_C_IO<MEMORY_ADDR>::HandleEmulato
 			break;
 	}
 
-	if((verbose_io || verbose_all))
+	if(unlikely(verbose_io || verbose_all))
 	{
 		logger << DebugInfo << "output msg:" << endl << "  - length=" << output_msg.length << endl;
 		for(i = 0; i < NUM_PARMS; i++)
@@ -493,7 +493,7 @@ int TI_C_IO<MEMORY_ADDR>::TranslateFileDescriptor(int16_t fno)
 template <class MEMORY_ADDR>
 int16_t TI_C_IO<MEMORY_ADDR>::c_io_open(const char *path, uint16_t c_io_flags, int16_t fno)
 {
-	if((verbose_io || verbose_all))
+	if(unlikely(verbose_io || verbose_all))
 	{
 		logger << DebugInfo << "open:" << endl << "  - path=\"" << path << "\"" << endl << "  - flags=0x" << hex
 		       << (c_io_flags & ~(C_IO_O_RDONLY | C_IO_O_WRONLY | C_IO_O_RDWR | C_IO_O_APPEND | C_IO_O_CREAT | C_IO_O_TRUNC | C_IO_O_BINARY)) << dec;
@@ -512,7 +512,7 @@ int16_t TI_C_IO<MEMORY_ADDR>::c_io_open(const char *path, uint16_t c_io_flags, i
 	map<int16_t, int>::iterator iter = target_to_host_fildes.find(fno);
 	if(iter != target_to_host_fildes.end())
 	{
-		if((verbose_io || verbose_all))
+		if(unlikely(verbose_io || verbose_all))
 		{
 			logger << DebugInfo << "File descriptor " << fno << " is already opened" << EndDebugInfo;
 		}
@@ -547,7 +547,7 @@ int16_t TI_C_IO<MEMORY_ADDR>::c_io_open(const char *path, uint16_t c_io_flags, i
 	// if an error occurs, report an error
 	if(fd == -1)
 	{
-		if((verbose_io || verbose_all))
+		if(unlikely(verbose_io || verbose_all))
 		{
 			logger << DebugInfo << "'open' reports an error (" << strerror(errno) << ")" << EndDebugInfo;
 		}
@@ -567,7 +567,7 @@ int16_t TI_C_IO<MEMORY_ADDR>::c_io_close(int16_t fno)
 {
 	int fd;      // the host file descriptor
 
-	if((verbose_io || verbose_all))
+	if(unlikely(verbose_io || verbose_all))
 	{
 		logger << DebugInfo << "close:" << endl << "  - fno=" << fno << EndDebugInfo;
 	}
@@ -594,7 +594,7 @@ int16_t TI_C_IO<MEMORY_ADDR>::c_io_close(int16_t fno)
 
 	int ret = close(fd);
 
-	if((verbose_io || verbose_all) && ret == -1)
+	if(unlikely((verbose_io || verbose_all) && ret == -1))
 	{
 		logger << DebugInfo << "'close' reports an error (" << strerror(errno) << ")" << EndDebugInfo;
 	}
@@ -607,7 +607,7 @@ int16_t TI_C_IO<MEMORY_ADDR>::c_io_read(int16_t fno, char *buf, uint16_t count)
 {
 	int fd;      // the host file descriptor
 
-	if((verbose_io || verbose_all))
+	if(unlikely(verbose_io || verbose_all))
 	{
 		logger << DebugInfo << "read:" << endl << "  - fno=" << fno << endl << "  - count=" << count << EndDebugInfo;
 	}
@@ -618,20 +618,20 @@ int16_t TI_C_IO<MEMORY_ADDR>::c_io_read(int16_t fno, char *buf, uint16_t count)
 	// Return an error if file descriptor does not exist
 	if(fd == -1) return -1;
 
-	if((verbose_io || verbose_all))
+	if(unlikely(verbose_io || verbose_all))
 	{
 		logger << DebugInfo << "file descriptor translation: fno=" << fno << " => fd=" << fd << EndDebugInfo;
 	}
 
 	ssize_t ret = read(fd, buf, count);
 
-	if((verbose_io || verbose_all) && ret == 0)
+	if(unlikely((verbose_io || verbose_all) && ret == 0))
 	{
 		off_t ofs = lseek(fd, 0, SEEK_CUR);
 		logger << DebugInfo << "End-of-File (EOF) at file offset " << ofs << EndDebugInfo;
 	}
 
-	if((verbose_io || verbose_all) && ret == -1)
+	if(unlikely((verbose_io || verbose_all) && ret == -1))
 	{
 		logger << DebugInfo << "'read' reports an error (" << strerror(errno) << ")" << EndDebugInfo;
 	}
@@ -644,7 +644,7 @@ int16_t TI_C_IO<MEMORY_ADDR>::c_io_write(int16_t fno, const char *buf, uint16_t 
 {
 	int fd;      // the host file descriptor
 
-	if((verbose_io || verbose_all))
+	if(unlikely(verbose_io || verbose_all))
 	{
 		logger << DebugInfo << "write:" << endl << "  - fno=" << fno << endl << "  - count=" << count << EndDebugInfo;
 	}
@@ -657,7 +657,7 @@ int16_t TI_C_IO<MEMORY_ADDR>::c_io_write(int16_t fno, const char *buf, uint16_t 
 
 	ssize_t ret = write(fd, buf, count);
 
-	if((verbose_io || verbose_all) && ret == -1)
+	if(unlikely((verbose_io || verbose_all) && ret == -1))
 	{
 		logger << DebugInfo << "'write' reports an error (" << strerror(errno) << ")" << EndDebugInfo;
 	}
@@ -670,7 +670,7 @@ int32_t TI_C_IO<MEMORY_ADDR>::c_io_lseek(int16_t fno, int32_t offset, int16_t or
 {
 	int fd;      // the host file descriptor
 
-	if((verbose_io || verbose_all))
+	if(unlikely(verbose_io || verbose_all))
 	{
 		logger << DebugInfo << "lseek:" << endl << "  - fno=" << fno << endl << "  - offset=" << offset << endl << "  - origin=" << origin << EndDebugInfo;
 	}
@@ -698,12 +698,12 @@ int32_t TI_C_IO<MEMORY_ADDR>::c_io_lseek(int16_t fno, int32_t offset, int16_t or
 
 	off_t ret = lseek(fd, offset, whence);
 
-	if((verbose_io || verbose_all) && ret == -1)
+	if(unlikely((verbose_io || verbose_all) && ret == -1))
 	{
 		logger << DebugInfo << "'lseek' reports an error (" << strerror(errno) << ")" << EndDebugInfo;
 	}
 
-	if(verbose_io || verbose_all)
+	if(unlikely(verbose_io || verbose_all))
 	{
 		logger << DebugInfo << "'lseek' returns " << ret << EndDebugInfo;
 	}
@@ -714,14 +714,14 @@ int32_t TI_C_IO<MEMORY_ADDR>::c_io_lseek(int16_t fno, int32_t offset, int16_t or
 template <class MEMORY_ADDR>
 int16_t TI_C_IO<MEMORY_ADDR>::c_io_unlink(const char *path)
 {
-	if((verbose_io || verbose_all))
+	if(unlikely(verbose_io || verbose_all))
 	{
 		logger << DebugInfo << "unlink:" << endl << "  - path=\"" << path << "\"" << EndDebugInfo;
 	}
 
 	int ret = unlink(path);
 
-	if((verbose_io || verbose_all) && ret == -1)
+	if(unlikely((verbose_io || verbose_all) && ret == -1))
 	{
 		logger << DebugInfo << "'unlink' reports an error (" << strerror(errno) << ")" << EndDebugInfo;
 	}
@@ -732,14 +732,14 @@ int16_t TI_C_IO<MEMORY_ADDR>::c_io_unlink(const char *path)
 template <class MEMORY_ADDR>
 const char *TI_C_IO<MEMORY_ADDR>::c_io_getenv(const char *name)
 {
-	if((verbose_io || verbose_all))
+	if(unlikely(verbose_io || verbose_all))
 	{
 		logger << DebugInfo << "getenv:" << endl << "  - name=\"" << name << "\"" << EndDebugInfo;
 	}
 
 	const char *ret = getenv(name);
 
-	if((verbose_io || verbose_all) && !ret)
+	if(unlikely((verbose_io || verbose_all) && !ret))
 	{
 		logger << DebugInfo << "'gentenv' reports an error (no match)" << EndDebugInfo;
 	}
@@ -751,14 +751,14 @@ const char *TI_C_IO<MEMORY_ADDR>::c_io_getenv(const char *name)
 template <class MEMORY_ADDR>
 int16_t TI_C_IO<MEMORY_ADDR>::c_io_rename(const char *oldpath, const char *newpath)
 {
-	if((verbose_io || verbose_all))
+	if(unlikely(verbose_io || verbose_all))
 	{
 		logger << DebugInfo << "rename:" << endl << "  - oldpath=\"" << oldpath << "\"" << endl << "  - newpath=\"" << newpath << "\"" << EndDebugInfo;
 	}
 
 	int ret = rename(oldpath, newpath);
 
-	if((verbose_io || verbose_all) && ret == -1)
+	if(unlikely((verbose_io || verbose_all) && ret == -1))
 	{
 		logger << DebugInfo << "'rename' reports an error (" << strerror(errno) << ")" << EndDebugInfo;
 	}
@@ -769,14 +769,14 @@ int16_t TI_C_IO<MEMORY_ADDR>::c_io_rename(const char *oldpath, const char *newpa
 template <class MEMORY_ADDR>
 uint32_t TI_C_IO<MEMORY_ADDR>::c_io_gettime()
 {
-	if((verbose_io || verbose_all))
+	if(unlikely(verbose_io || verbose_all))
 	{
 		logger << DebugInfo << "getime" << EndDebugInfo;
 	}
 
 	time_t ret = time(0);
 
-	if((verbose_io || verbose_all) && ret == -1)
+	if(unlikely((verbose_io || verbose_all) && ret == -1))
 	{
 		logger << DebugInfo << "'time' reports an error (" << strerror(errno) << ")" << EndDebugInfo;
 	}
@@ -787,14 +787,14 @@ uint32_t TI_C_IO<MEMORY_ADDR>::c_io_gettime()
 template <class MEMORY_ADDR>
 uint32_t TI_C_IO<MEMORY_ADDR>::c_io_getclock()
 {
-	if((verbose_io || verbose_all))
+	if(unlikely(verbose_io || verbose_all))
 	{
 		logger << DebugInfo << "getclock" << EndDebugInfo;
 	}
 
 	clock_t ret = clock();
 
-	if((verbose_io || verbose_all) && ret == -1)
+	if(unlikely((verbose_io || verbose_all) && ret == -1))
 	{
 		logger << DebugInfo << "'clock' reports an error (processor time used is not available or its value cannot be represented)" << EndDebugInfo;
 	}

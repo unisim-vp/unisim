@@ -77,7 +77,7 @@ Memory<PHYSICAL_ADDR, DATA_SIZE, PAGE_SIZE, DEBUG>::
 template <class PHYSICAL_ADDR, uint32_t DATA_SIZE, uint32_t PAGE_SIZE, bool DEBUG>
 bool Memory<PHYSICAL_ADDR, DATA_SIZE, PAGE_SIZE, DEBUG>::
 Setup() {
-	if(DEBUG && verbose) 
+	if(unlikely(DEBUG && verbose)) 
 		logger << DebugInfo << LOCATION
 			<< " cycle time of " << cycle_time << " ps" 
 			<< std::endl << EndDebugInfo;
@@ -104,7 +104,7 @@ Send(const Pointer<TlmMessage<MemoryRequest<PHYSICAL_ADDR, DATA_SIZE>,
 	switch(req->type)
 	{
 		case MemoryRequest<PHYSICAL_ADDR, DATA_SIZE>::READ: {
-				if(DEBUG && verbose)
+				if(unlikely(DEBUG && verbose))
 					logger << DebugInfo << LOCATION
 						<< sc_time_stamp().to_string() 
 						<< " Send() received a READ request" << std::endl
@@ -116,7 +116,7 @@ Send(const Pointer<TlmMessage<MemoryRequest<PHYSICAL_ADDR, DATA_SIZE>,
 			break;
 			
 		case MemoryRequest<PHYSICAL_ADDR, DATA_SIZE>::WRITE:
-			if(DEBUG && verbose)
+			if(unlikely(DEBUG && verbose))
 				logger << DebugInfo << LOCATION
 					<< sc_time_stamp().to_string() 
 					<< " Send() received a WRITE request" << std::endl

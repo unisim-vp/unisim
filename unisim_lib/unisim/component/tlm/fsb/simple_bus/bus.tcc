@@ -95,7 +95,6 @@ Bus(const sc_module_name& module_name, Object *parent) :
 	Object(module_name, parent),
 	Service<Memory<ADDRESS_TYPE> >(module_name, parent),
 	Client<Memory<ADDRESS_TYPE> >(module_name, parent),
-	Client<Logger>(module_name, parent),
 	sc_module(module_name),
 	ResponseListener<ReqType, RspType>(),		
 	memory_export("memory-export", this),
@@ -161,7 +160,7 @@ Setup() {
 	}
 
 	logger << DebugInfo << "cycle time of " << cycle_time_int << " microseconds" << endl;
-	if(DEBUG && verbose) {
+	if(unlikely(DEBUG && verbose)) {
 		logger << DebugInfo << LOCATION
 			<< "cycle time of " << cycle_time_int << " microseconds" << std::endl
 			<< EndDebugInfo;
@@ -205,7 +204,7 @@ template <class ADDRESS_TYPE, unsigned int DATA_SIZE,
 bool 
 Bus<ADDRESS_TYPE, DATA_SIZE, NUM_PROCS, DEBUG> :: 
 Send(const PTransactionMsgType &msg, unsigned int id) {
-	if(DEBUG && verbose)
+	if(unlikely(DEBUG && verbose))
 		logger << DebugInfo << LOCATION
 			<< "Request received on port " << id << std::endl
 			<< EndDebugInfo;
@@ -214,7 +213,7 @@ Send(const PTransactionMsgType &msg, unsigned int id) {
 	 *   request fifo, if no just return returning false, which
 	 *   means that the request could not be processed */
 	if(!req_fifo[id]->nb_write(msg)) {
-		if(verbose) {
+		if(unlikely(verbose)) {
 			logger << DebugWarning << LOCATION 
 				<< "Could not accept incomming request on port " << id
 				<< " because fifo full"
@@ -247,7 +246,7 @@ ResponseReceived(const PTransactionMsgType &msg,
 	/* check if the response comes from the chipset, if so
 	 *   put the response in the chipset fifo queue */
 	if(&port == chipset_outport) {
-		if(DEBUG && verbose) {
+		if(unlikely(DEBUG && verbose)) {
 			logger << DebugInfo << LOCATION
 				<< "Response received on chipset_outport." << std::endl
 				<< "Request:" << std::endl << (*(msg->req)) << std::endl
@@ -284,7 +283,7 @@ BusSynchronize() {
 	sc_dt::uint64 cur_cycle = cur_time_int / cycle_time_int;
 	sc_dt::uint64 cur_cycle_init_int = cur_cycle * cycle_time_int;
 	if(cur_cycle_init_int > cur_time_int) {
-		if(verbose)
+		if(unlikely(verbose))
 			logger << DebugError << LOCATION
 				<< "current cycle time is bigger than simulation time ("
 				<< "cur_cycle_init_int = " << cur_cycle_init_int << ", "
@@ -295,14 +294,14 @@ BusSynchronize() {
 	}
 	// check if a message can be send right now
 	if(cur_cycle_init_int == cur_time_int) {
-		if(DEBUG && verbose)
+		if(unlikely(DEBUG && verbose))
 			logger << DebugInfo << LOCATION
 				<< "bus synchronize in 0 time" << std::endl
 				<< EndDebugInfo;
 		// yes a message can be sent right now
 		bus_synchro_event.notify(SC_ZERO_TIME);
 	} else {
-		if(DEBUG && verbose)
+		if(unlikely(DEBUG && verbose))
 			logger << DebugInfo << LOCATION
 				<< "bus synchronize in " 
 				<< ((cycle_time * (cur_cycle + 1)) - cur_time).to_string() 
@@ -320,7 +319,7 @@ BusClock() {
 	while(1) {
 		wait(bus_synchro_event);
 		
-		if(DEBUG && verbose) {
+		if(unlikely(DEBUG && verbose)) {
 			logger << DebugInfo << LOCATION
 				<< "Executing bus cycle" << std::endl
 				<< EndDebugInfo;
@@ -349,7 +348,7 @@ BusClock() {
 		 * and go back to the beginning of the BusClock loop after indicating
 		 *   that there is no work in the bus */
 		if(counter == NUM_PROCS + 2) {
-			if(verbose) {
+			if(unlikely(verbose)) {
 				logger << DebugWarning << LOCATION
 					<< "Dispatch thread BusClock was requested when there was "
 					<< "no message to dispatch, this should never occur" << std::endl
@@ -373,7 +372,7 @@ BusClock() {
 		 *     again so it will be handled */
 		wait(cycle_time);
 		wait(SC_ZERO_TIME);
-		if(DEBUG && verbose) {
+		if(unlikely(DEBUG && verbose)) {
 			logger << DebugInfo << LOCATION
 				<< "Dispatch finished" << std::endl
 				<< EndDebugInfo;
@@ -383,7 +382,7 @@ BusClock() {
 		bool msg_found = false;
 		for(unsigned int i = 0; !msg_found && i < NUM_PROCS; i++) {
 			if(req_fifo[i]->num_available() != 0) {
-				if(DEBUG && verbose)
+				if(unlikely(DEBUG && verbose))
 					logger << DebugInfo << LOCATION
 						<< req_fifo[i]->num_available()
 						<< " messages found in req_fifo[" << i << "]"
@@ -394,7 +393,7 @@ BusClock() {
 		}
 		if(!msg_found) {
 			if(chipset_rsp_fifo.num_available() != 0) {
-				if(DEBUG && verbose)
+				if(unlikely(DEBUG && verbose))
 					logger << DebugInfo << LOCATION
 						<< chipset_rsp_fifo.num_available()
 						<< " messages found in chipset_rsp_fifo"
@@ -404,7 +403,7 @@ BusClock() {
 			}
 		}
 		if(msg_found) {
-			if(DEBUG && verbose) {
+			if(unlikely(DEBUG && verbose)) {
 				logger << DebugInfo << LOCATION
 					<< "Finished bus cycle but a message found in one of " 
 					<< "the fifos (working=" << working << ")" << std::endl
@@ -431,7 +430,7 @@ DispatchChipsetMessage() {
 	 * Check if a response is available if so, notify the message event. */
 	if(chipset_rsp_fifo.num_available() != 0) {
 		msg = chipset_rsp_fifo.read();
-		if(DEBUG && verbose) 
+		if(unlikely(DEBUG && verbose)) 
 			logger << DebugInfo << LOCATION
 				<< "Dispatching chipset_rsp_fifo message." << std::endl
 				<< "Request:" << std::endl << (*(msg->req)) << std::endl 
@@ -450,7 +449,7 @@ DispatchCPUMessage() {
 	/* get the message */
 	PTransactionMsgType msg = req_fifo[next_serviced]->read();
 	
-	if(DEBUG && verbose) 
+	if(unlikely(DEBUG && verbose)) 
 		logger << DebugInfo << LOCATION
 			<< "Dispatching req_fifo[" << next_serviced << "] message." << std::endl
 			<< "Request:" << std::endl << (*(msg->req)) << std::endl 

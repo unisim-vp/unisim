@@ -44,24 +44,16 @@ namespace chipset {
 namespace mpc107 {
 namespace epic {
 	
-using unisim::service::interfaces::Logger;
-//using unisim::service::interfaces::operator<<;
-using unisim::service::interfaces::Hex;
-using unisim::service::interfaces::Dec;
-using unisim::service::interfaces::Endl;
-using unisim::service::interfaces::DebugInfo;
-using unisim::service::interfaces::DebugWarning;
-using unisim::service::interfaces::DebugError;
-using unisim::service::interfaces::EndDebugInfo;
-using unisim::service::interfaces::EndDebugWarning;
-using unisim::service::interfaces::EndDebugError;
-using unisim::service::interfaces::Function;
-using unisim::service::interfaces::File;
-using unisim::service::interfaces::Line;
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugInfo;
+using unisim::kernel::logger::EndDebugWarning;
+using unisim::kernel::logger::EndDebugError;
 
 using std::stringstream;
 
-#define LOCATION File << __FILE__ << Function << __FUNCTION__ << Line << __LINE__
+#define LOCATION "In file " << __FILE__ << ", function " << __FUNCTION__ << ", line #" << __LINE__
 
 template <class PHYSICAL_ADDR, 
 		uint32_t MAX_TRANSACTION_DATA_SIZE,
@@ -117,11 +109,11 @@ Send(const PMsgType &message) {
 	switch(req->type) {
 	case ReqType::READ: 
 		{
-			if(inherited::logger_import)
-				(*inherited::logger_import) << DebugInfo
+			if(inherited::verbose)
+				inherited::logger << DebugInfo
 					<< LOCATION
-					<< "Read received at address 0x" << Hex << req->addr << Dec
-					<< Endl << EndDebugInfo;
+					<< "Read received at address 0x" << std::hex << req->addr << std::dec
+					<< std::endl << EndDebugInfo;
 			data = ReadRegister(req->addr, req->size);
 			PRspType rsp = new(rsp) RspType();
 			for(unsigned int i = 0; i < req->size; i ++) {
@@ -133,11 +125,11 @@ Send(const PMsgType &message) {
 		}
 		break;
 	case ReqType::WRITE:
-		if(inherited::logger_import)
-			(*inherited::logger_import) << DebugInfo
+		if(inherited::verbose)
+			inherited::logger << DebugInfo
 				<< LOCATION
-				<< "Write received at address 0x" << Hex << req->addr << Dec
-				<< Endl << EndDebugInfo;
+				<< "Write received at address 0x" << std::hex << req->addr << std::dec
+				<< std::endl << EndDebugInfo;
 		for(unsigned int i = 0; i < req->size; i++) {
 			data = data + (((uint32_t)(req->write_data[i])) << (i * 8));
 		}
@@ -176,11 +168,11 @@ SetINT() {
 	message->req = irq;
 	
 	if(!irq_master_port->Send(message)) {
-		if(inherited::logger_import)
-			(*inherited::logger_import) << DebugError
+		if(inherited::verbose)
+			inherited::logger << DebugError
 				<< LOCATION
 				<< "TODO: handle interrupt requests that could not be handled"
-				<< Endl << EndDebugError; 
+				<< std::endl << EndDebugError; 
 		else
 			cerr << "TODO("
 				<< __FILE__ << ":" << __FUNCTION__ << ":" << __LINE__ << "): "
@@ -207,11 +199,11 @@ UnsetINT() {
 	message->req = irq;
 	
 	if(!irq_master_port->Send(message)) {
-		if(inherited::logger_import)
-			(*inherited::logger_import) << DebugError
+		if(inherited::verbose)
+			inherited::logger << DebugError
 				<< LOCATION
 				<< "TODO: handle interrupt requests that could not be handled"
-				<< Endl << EndDebugError; 
+				<< std::endl << EndDebugError; 
 		else
 			cerr << "TODO("
 				<< __FILE__ << ":" << __FUNCTION__ << ":" << __LINE__ << "): "
@@ -238,11 +230,11 @@ SetSoftReset() {
 	message->req = irq;
 	
 	if(!soft_reset_master_port->Send(message)) {
-		if(inherited::logger_import)
-			(*inherited::logger_import) << DebugError
+		if(inherited::verbose)
+			inherited::logger << DebugError
 				<< LOCATION
 				<< "TODO: handle soft reset interrupt requests that could not be handled"
-				<< Endl << EndDebugError; 
+				<< std::endl << EndDebugError; 
 		else
 			cerr << "TODO("
 				<< __FILE__ << ":" << __FUNCTION__ << ":" << __LINE__ << "): "
@@ -269,11 +261,11 @@ UnsetSoftReset() {
 	message->req = irq;
 	
 	if(!soft_reset_master_port->Send(message)) {
-		if(inherited::logger_import)
-			(*inherited::logger_import) << DebugError
+		if(inherited::verbose)
+			inherited::logger << DebugError
 				<< LOCATION
 				<< "TODO: handle soft reset interrupt requests that could not be handled"
-				<< Endl << EndDebugError; 
+				<< std::endl << EndDebugError; 
 		else
 			cerr << "TODO("
 				<< __FILE__ << ":" << __FUNCTION__ << ":" << __LINE__ << "): "

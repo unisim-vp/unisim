@@ -42,22 +42,14 @@ namespace chipset {
 namespace mpc107 {
 namespace dma {
 
-using unisim::service::interfaces::Logger;
-//using unisim::service::interfaces::operator<<;
-using unisim::service::interfaces::Hex;
-using unisim::service::interfaces::Dec;
-using unisim::service::interfaces::Endl;
-using unisim::service::interfaces::DebugInfo;
-using unisim::service::interfaces::DebugWarning;
-using unisim::service::interfaces::DebugError;
-using unisim::service::interfaces::EndDebugInfo;
-using unisim::service::interfaces::EndDebugWarning;
-using unisim::service::interfaces::EndDebugError;
-using unisim::service::interfaces::Function;
-using unisim::service::interfaces::File;
-using unisim::service::interfaces::Line;
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugInfo;
+using unisim::kernel::logger::EndDebugWarning;
+using unisim::kernel::logger::EndDebugError;
 
-#define LOCATION File << __FILE__ <<  Function << __FUNCTION__ << Line << __LINE__
+#define LOCATION "In file " << __FILE__ << ", function " << __FUNCTION__ << ", line #" << __LINE__
 
 template <class PHYSICAL_ADDR,
 		 bool DEBUG>
@@ -65,9 +57,10 @@ DMA<PHYSICAL_ADDR, DEBUG> ::
 DMA(DMAClientInterface<PHYSICAL_ADDR> *_client,
 	const char *name, Object *parent) :
 	Object(name, parent),
-	Client<Logger>(name, parent),
+	logger(*this),
+	verbose(false),
+	param_verbose("verbose", this, verbose),
 	client(_client),
-	logger_import("logger_import", this),
 	reg() {
 }
 
@@ -145,11 +138,11 @@ ReadRegister(PHYSICAL_ADDR addr, uint32_t size, bool pci_access) {
  		val = GetNDAR(1, pci_access);
  		break;
  	default:
- 		if(logger_import) {
- 			(*logger_import) << DebugError << LOCATION
+ 		if(unlikely(verbose)) {
+ 			logger << DebugError << LOCATION
  				<< "Unknow address access (0x"
- 				<< Hex << addr << Dec << ")"
- 				<< Endl << EndDebugError;
+ 				<< std::hex << addr << std::dec << ")"
+ 				<< std::endl << EndDebugError;
  		}
  		break;
  	}
@@ -247,14 +240,14 @@ CheckReservedBits(string &reg_name,
 
 	if(data & mask) {
 		out_data = data & ~mask;
-		if(logger_import)
-			(*logger_import) 
+		if(unlikely(verbose))
+			logger 
 				<< DebugWarning << LOCATION
 				<< "Trying to write reserved bits of "
 				<< reg_name << " (original value = 0x"
-				<< Hex << data << Dec << ", modified value = 0x"
-				<< Hex << out_data << Dec << ")"
-				<< Endl << EndDebugWarning;
+				<< std::hex << data << std::dec << ", modified value = 0x"
+				<< std::hex << out_data << std::dec << ")"
+				<< std::endl << EndDebugWarning;
 	}
 	return out_data;
 }
@@ -298,13 +291,13 @@ LogRegFieldInfo(string &field_name,
 	value = data & mask;
 	value = value >> lbit;
 
-	(*logger_import) << Endl << " - " << field_name << "(bit";
+	logger << std::endl << " - " << field_name << "(bit";
 	if(hbit != lbit) 
-		(*logger_import) << "s " << hbit << "-" << lbit;
+		logger << "s " << hbit << "-" << lbit;
 	else
-		(*logger_import) << " " << hbit;
-	(*logger_import) 
-		<< ") = 0x" << Hex << value << Dec << Endl;
+		logger << " " << hbit;
+	logger 
+		<< ") = 0x" << std::hex << value << std::dec << std::endl;
 }
 
 template <class PHYSICAL_ADDR,
@@ -325,8 +318,8 @@ SetDMR(unsigned int channel, uint32_t data, bool pci_access) {
 	/* TODO: periodic DMA not supported, 
 	 *   needs to be implemented. */
 	if(data & Registers::DMR_PDE) {
-		if(logger_import)
-			(*logger_import)
+		if(unlikely(verbose))
+			logger
 				<< DebugWarning << LOCATION
 				<< "Periodic DMA not supported, setting PDE bit "
 				<< "(bit 18) back to 0"
@@ -337,8 +330,8 @@ SetDMR(unsigned int channel, uint32_t data, bool pci_access) {
 	/* TODO: chaining mode not supported,
 	 *   needs to be implemented. */
 	if(data & ~Registers::DMR_CTM) {
-		if(logger_import)
-			(*logger_import)
+		if(unlikely(verbose))
+			logger
 				<< DebugWarning << LOCATION
 				<< "Chaining mode not supported, setting CTM bit "
 				<< "(bit 2) to 1"
@@ -349,8 +342,8 @@ SetDMR(unsigned int channel, uint32_t data, bool pci_access) {
 	/* TODO: chaining mode not supported,
 	 *   needs to be implemented. */
 	if(data & Registers::DMR_CC) {
-		if(logger_import)
-			(*logger_import)
+		if(unlikely(verbose))
+			logger
 				<< DebugWarning << LOCATION
 				<< "Chaining mode not supported, setting CC bit "
 				<< "(bit 1) back to 0"
@@ -364,8 +357,8 @@ SetDMR(unsigned int channel, uint32_t data, bool pci_access) {
 	 *   no a correct solution, this situation should never
 	 *   occur) */
 	if((data & Registers::DMR_DAHE) && (data & Registers::DMR_SAHE)) {
-		if(logger_import) {
-			(*logger_import)
+		if(unlikely(verbose)) {
+			logger
 				<< DebugError << LOCATION
 				<< "Bits DMR[DAHE] and DMR[SAHE] are set at the same time, "
 				<< "resetting both bits to 0"
@@ -376,11 +369,11 @@ SetDMR(unsigned int channel, uint32_t data, bool pci_access) {
 	}
 
 	/* if DEBUG on then display bits that are set */
-	if(DEBUG && logger_import) {
-		(*logger_import)
+	if(unlikely(DEBUG && verbose)) {
+		logger
 			<< DebugInfo << LOCATION
 			<< "Setting register " << reg_name
-			<< " with value 0x" << Hex << data << Dec << ":";
+			<< " with value 0x" << std::hex << data << std::dec << ":";
 		LogRegFieldInfo(*new string("LMDC"), data, Registers::DMR_LMDC);
 		LogRegFieldInfo(*new string("IRQS"), data, Registers::DMR_IRQS);
 		LogRegFieldInfo(*new string("PDE"), data, Registers::DMR_PDE);
@@ -395,7 +388,7 @@ SetDMR(unsigned int channel, uint32_t data, bool pci_access) {
 		LogRegFieldInfo(*new string("CTM"), data, Registers::DMR_CTM);
 		LogRegFieldInfo(*new string("CC"), data, Registers::DMR_CC);
 		LogRegFieldInfo(*new string("CS"), data, Registers::DMR_CS);
-		(*logger_import) << EndDebugInfo;
+		logger << EndDebugInfo;
 	}
 
 	/* set register */
@@ -427,8 +420,8 @@ SetDSR(unsigned int channel, uint32_t data, bool pci_access) {
 
 	/* check that CB bit is not modified */
 	if((data & Registers::DSR_CB) != (reg.dsr[channel] & Registers::DSR_CB)) {
-		if(logger_import) 
-			(*logger_import)
+		if(unlikely(verbose)) 
+			logger
 				<< DebugWarning << LOCATION
 				<< "Trying to modify read-only register field DSR[CB],"
 				<< " setting it back to "
@@ -443,8 +436,8 @@ SetDSR(unsigned int channel, uint32_t data, bool pci_access) {
 	/* check the LME is removed only if set */
 	if((data & Registers::DSR_LME) && 
 		 (reg.dsr[channel] | ~Registers::DSR_LME)) {
-		if(logger_import)
-			(*logger_import)
+		if(unlikely(verbose))
+			logger
 				<< DebugWarning << LOCATION
 				<< "Trying to unset DSR[LME] when this is not set, "
 				<< "setting it to 0" << EndDebugWarning;
@@ -454,8 +447,8 @@ SetDSR(unsigned int channel, uint32_t data, bool pci_access) {
 	/* check the PE is removed only if set */
 	if((data & Registers::DSR_PE) && 
 		 (reg.dsr[channel] | ~Registers::DSR_PE)) {
-		if(logger_import)
-			(*logger_import)
+		if(unlikely(verbose))
+			logger
 				<< DebugWarning << LOCATION
 				<< "Trying to unset DSR[PE] when this is not set, "
 				<< "setting it to 0" << EndDebugWarning;
@@ -465,8 +458,8 @@ SetDSR(unsigned int channel, uint32_t data, bool pci_access) {
 	/* check the EOSI is removed only if set */
 	if((data & Registers::DSR_EOSI) && 
 		 (reg.dsr[channel] | ~Registers::DSR_EOSI)) {
-		if(logger_import)
-			(*logger_import)
+		if(unlikely(verbose))
+			logger
 				<< DebugWarning << LOCATION
 				<< "Trying to unset DSR[EOSI] when this is not set, "
 				<< "setting it to 0" << EndDebugWarning;
@@ -476,8 +469,8 @@ SetDSR(unsigned int channel, uint32_t data, bool pci_access) {
 	/* check the EOCAI is removed only if set */
 	if((data & Registers::DSR_EOCAI) && 
 		 (reg.dsr[channel] | ~Registers::DSR_EOCAI)) {
-		if(logger_import)
-			(*logger_import)
+		if(unlikely(verbose))
+			logger
 				<< DebugWarning << LOCATION
 				<< "Trying to unset DSR[EOCAI] when this is not set, "
 				<< "setting it to 0" << EndDebugWarning;
@@ -485,24 +478,24 @@ SetDSR(unsigned int channel, uint32_t data, bool pci_access) {
 	}
 
 	/* if DEBUG on then display bits that are set */
-	if(DEBUG && logger_import) {
-		(*logger_import)
+	if(unlikely(DEBUG && verbose)) {
+		logger
 			<< DebugInfo << LOCATION
 			<< "Setting register " << reg_name
-			<< " with value 0x" << Hex << data << Dec << ":";
+			<< " with value 0x" << std::hex << data << std::dec << ":";
 		LogRegFieldInfo(*new string("LME"), data, Registers::DSR_LME);
 		LogRegFieldInfo(*new string("PE"), data, Registers::DSR_PE);
 		LogRegFieldInfo(*new string("CB"), data, Registers::DSR_CB);
 		LogRegFieldInfo(*new string("EOSI"), data, Registers::DSR_EOSI);
 		LogRegFieldInfo(*new string("EOCAI"), data, Registers::DSR_EOCAI);
-		(*logger_import) << EndDebugInfo;
+		logger << EndDebugInfo;
 	}
 
 	/* START set register */
 	/* check if LME needs to be clearead */
 	if(data & Registers::DSR_LME) {
-		if(DEBUG && logger_import)
-			(*logger_import)
+		if(unlikely(DEBUG && verbose))
+			logger
 				<< DebugInfo << LOCATION
 				<< "Clearing DSR[LME]"
 				<< EndDebugInfo;
@@ -510,8 +503,8 @@ SetDSR(unsigned int channel, uint32_t data, bool pci_access) {
 	}
 	/* check if PE needs to be clearead */
 	if(data & Registers::DSR_PE) {
-		if(DEBUG && logger_import)
-			(*logger_import)
+		if(unlikely(DEBUG && verbose))
+			logger
 				<< DebugInfo << LOCATION
 				<< "Clearing DSR[PE]"
 				<< EndDebugInfo;
@@ -519,8 +512,8 @@ SetDSR(unsigned int channel, uint32_t data, bool pci_access) {
 	}
 	/* check if EOSI needs to be clearead */
 	if(data & Registers::DSR_EOSI) {
-		if(DEBUG && logger_import)
-			(*logger_import)
+		if(unlikely(DEBUG && verbose))
+			logger
 				<< DebugInfo << LOCATION
 				<< "Clearing DSR[EOSI]"
 				<< EndDebugInfo;
@@ -528,8 +521,8 @@ SetDSR(unsigned int channel, uint32_t data, bool pci_access) {
 	}
 	/* check if EOCAI needs to be clearead */
 	if(data & Registers::DSR_EOCAI) {
-		if(DEBUG && logger_import)
-			(*logger_import)
+		if(unlikely(DEBUG && verbose))
+			logger
 				<< DebugInfo << LOCATION
 				<< "Clearing DSR[EOCAI]"
 				<< EndDebugInfo;
@@ -555,8 +548,8 @@ SetCDAR(unsigned int channel, uint32_t data, bool pci_access) {
 	/* TODO: snooping not supported,
 	 *   needs to be implemented. */
 	if(data & Registers::CDAR_SNEN) {
-		if(logger_import)
-			(*logger_import)
+		if(unlikely(verbose))
+			logger
 				<< DebugWarning << LOCATION
 				<< "DMA snooping not supported, setting CDAR[SNEN] bit "
 				<< "(bit 4) to 0"
@@ -567,8 +560,8 @@ SetCDAR(unsigned int channel, uint32_t data, bool pci_access) {
 	/* TODO: channel mode not supported,
 	 *   needs to be implemented. */
 	if(data & Registers::CDAR_EOSIE) {
-		if(logger_import)
-			(*logger_import)
+		if(unlikely(verbose))
+			logger
 				<< DebugWarning << LOCATION
 				<< "Channel mode not supported, setting CDAR[EOSIE] bit "
 				<< "(bit 3) to 0"
@@ -577,16 +570,16 @@ SetCDAR(unsigned int channel, uint32_t data, bool pci_access) {
 	}
 
 	/* if DEBUG on then display bits that are set */
-	if(DEBUG && logger_import) {
-		(*logger_import)
+	if(unlikely(DEBUG && verbose)) {
+		logger
 			<< DebugInfo << LOCATION
 			<< "Setting register " << reg_name
-			<< " with value 0x" << Hex << data << Dec << ":";
+			<< " with value 0x" << std::hex << data << std::dec << ":";
 		LogRegFieldInfo(*new string("CDA"), data, Registers::CDAR_CDA);
 		LogRegFieldInfo(*new string("SNEN"), data, Registers::CDAR_SNEN);
 		LogRegFieldInfo(*new string("EOSIE"), data, Registers::CDAR_EOSIE);
 		LogRegFieldInfo(*new string("CTT"), data, Registers::CDAR_CTT);
-		(*logger_import) << EndDebugInfo;
+		logger << EndDebugInfo;
 	}
 
 	/* set register */
@@ -608,13 +601,13 @@ SetSAR(unsigned int channel, uint32_t data, bool pci_access) {
 													 Registers::SAR_RESERVED_MASK);
 
 	/* if DEBUG on then display bits that are set */
-	if(DEBUG && logger_import) {
-		(*logger_import)
+	if(unlikely(DEBUG && verbose)) {
+		logger
 			<< DebugInfo << LOCATION
 			<< "Setting register " << reg_name
-			<< " with value 0x" << Hex << data << Dec << ":";
+			<< " with value 0x" << std::hex << data << std::dec << ":";
 		LogRegFieldInfo(*new string("SAR"), data, Registers::SAR_SAR);
-		(*logger_import) << EndDebugInfo;
+		logger << EndDebugInfo;
 	}
 
 	/* set register */
@@ -636,13 +629,13 @@ SetDAR(unsigned int channel, uint32_t data, bool pci_access) {
 													 Registers::DAR_RESERVED_MASK);
 
 	/* if DEBUG on then display bits that are set */
-	if(DEBUG && logger_import) {
-		(*logger_import)
+	if(unlikely(DEBUG && verbose)) {
+		logger
 			<< DebugInfo << LOCATION
 			<< "Setting register " << reg_name
-			<< " with value 0x" << Hex << data << Dec << ":";
+			<< " with value 0x" << std::hex << data << std::dec << ":";
 		LogRegFieldInfo(*new string("DAR"), data, Registers::DAR_DAR);
-		(*logger_import) << EndDebugInfo;
+		logger << EndDebugInfo;
 	}
 
 	/* set register */
@@ -664,13 +657,13 @@ SetBCR(unsigned int channel, uint32_t data, bool pci_access) {
 													 Registers::BCR_RESERVED_MASK);
 
 	/* if DEBUG on then display bits that are set */
-	if(DEBUG && logger_import) {
-		(*logger_import)
+	if(unlikely(DEBUG && verbose)) {
+		logger
 			<< DebugInfo << LOCATION
 			<< "Setting register " << reg_name
-			<< " with value 0x" << Hex << data << Dec << ":";
+			<< " with value 0x" << std::hex << data << std::dec << ":";
 		LogRegFieldInfo(*new string("BCR"), data, Registers::BCR_BCR);
-		(*logger_import) << EndDebugInfo;
+		logger << EndDebugInfo;
 	}
 
 	/* set register */
@@ -694,8 +687,8 @@ SetNDAR(unsigned int channel, uint32_t data, bool pci_access) {
 	/* TODO: snooping not supported,
 	 *   needs to be implemented. */
 	if(data & Registers::NDAR_NDSNEN) {
-		if(logger_import)
-			(*logger_import)
+		if(unlikely(verbose))
+			logger
 				<< DebugWarning << LOCATION
 				<< "DMA snooping not supported, setting NDAR[NDSNEN] bit "
 				<< "(bit 4) to 0"
@@ -704,17 +697,17 @@ SetNDAR(unsigned int channel, uint32_t data, bool pci_access) {
 	}
 
 	/* if DEBUG on then display bits that are set */
-	if(DEBUG && logger_import) {
-		(*logger_import)
+	if(unlikely(DEBUG && verbose)) {
+		logger
 			<< DebugInfo << LOCATION
 			<< "Setting register " << reg_name
-			<< " with value 0x" << Hex << data << Dec << ":";
+			<< " with value 0x" << std::hex << data << std::dec << ":";
 		LogRegFieldInfo(*new string("NDA"), data, Registers::NDAR_NDA);
 		LogRegFieldInfo(*new string("NDSNEN"), data, Registers::NDAR_NDSNEN);
 		LogRegFieldInfo(*new string("NDEOSIE"), data, Registers::NDAR_NDEOSIE);
 		LogRegFieldInfo(*new string("NDCTT"), data, Registers::NDAR_NDCTT);
 		LogRegFieldInfo(*new string("EOTD"), data, Registers::NDAR_EOTD);
-		(*logger_import) << EndDebugInfo;
+		logger << EndDebugInfo;
 	}
 
 	/* set register */
@@ -900,8 +893,8 @@ SendWrite(unsigned int channel, bool last) {
 			buf_size = buffer[channel].Read(data, size);
 			/* size and tmp_size should be equal */
 			if(size != buf_size) {
-				if(logger_import)
-					(*logger_import) << DebugError << LOCATION
+				if(unlikely(verbose))
+					logger << DebugError << LOCATION
 						<< "Internal error, wrong number of bytes in the"
 						<< " DMA buffer (expected " << size << "bytes"
 						<< " and found only " << buf_size << "bytes)"
@@ -923,8 +916,8 @@ SendWrite(unsigned int channel, bool last) {
 			buf_size = buffer[channel].Read(data, size);
 			/* size and tmp_size should be equal */
 			if(size != buf_size) {
-				if(logger_import)
-					(*logger_import) << DebugError << LOCATION
+				if(unlikely(verbose))
+					logger << DebugError << LOCATION
 						<< "Internal error, wrong number of bytes in the"
 						<< " DMA buffer (expected " << size << "bytes"
 						<< " and found only " << buf_size << "bytes)"
@@ -950,8 +943,8 @@ SendWrite(unsigned int channel, bool last) {
 			buf_size = buffer[channel].Read(data, size);
 			/* size and tmp_size should be equal */
 			if(size != buf_size) {
-				if(logger_import)
-					(*logger_import) << DebugError << LOCATION
+				if(unlikely(verbose))
+					logger << DebugError << LOCATION
 						<< "Internal error, wrong number of bytes in the"
 						<< " DMA buffer (expected " << size << "bytes"
 						<< " and found only " << buf_size << "bytes)"
@@ -981,8 +974,8 @@ ChannelStart(unsigned int channel) {
 	PHYSICAL_ADDR destination_address = reg.dar[channel];
 	PHYSICAL_ADDR transfer_size = reg.bcr[channel];
 
-	if(logger_import)
-		(*logger_import)
+	if(unlikely(verbose))
+		logger
 			<< DebugError << LOCATION
 			<< "Channel start needs to be implemented"
 			<< EndDebugError;
@@ -1006,8 +999,8 @@ template <class PHYSICAL_ADDR,
 void
 DMA<PHYSICAL_ADDR, DEBUG> ::
 ChannelStop(unsigned int channel) {
-	if(logger_import)
-		(*logger_import)
+	if(unlikely(verbose))
+		logger
 			<< DebugError << LOCATION
 			<< "Channel stop needs to be implemented"
 			<< EndDebugError;

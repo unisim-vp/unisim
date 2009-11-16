@@ -373,7 +373,7 @@ bool SDL<ADDRESS>::Setup()
 {
 	if(!memory_import) return false;
 #if defined(HAVE_SDL)
-	if(verbose_setup)
+	if(unlikely(verbose_setup))
 	{
 		logger << DebugInfo << "Initializing SDL..." << EndDebugInfo;
 	}
@@ -382,7 +382,7 @@ bool SDL<ADDRESS>::Setup()
 		logger << DebugError << "Can't initialize SDL: " << SDL_GetError() << EndDebugError;
 		return false;
 	}
-	if(verbose_setup)
+	if(unlikely(verbose_setup))
 	{
 		logger << DebugInfo << "SDL initialized" << EndDebugInfo;
 	}
@@ -450,7 +450,7 @@ bool SDL<ADDRESS>::Setup()
 
 				if(sdlk != SDLK_UNKNOWN && loc != 0)
 				{
-					if(verbose_setup)
+					if(unlikely(verbose_setup))
 					{
 						logger << DebugInfo << "SDL Key \"" << sdlk_string << "\" -> Key #" << loc << endl;
 					}
@@ -560,7 +560,7 @@ void SDL<ADDRESS>::ProcessKeyboardEvent(SDL_KeyboardEvent& kbd_ev)
 {
 	if(kbd_ev.keysym.sym == SDLK_RCTRL)
 	{
-		if(verbose_run)
+		if(unlikely(verbose_run))
 		{
 			logger << DebugInfo << "Host key " << ((kbd_ev.type == SDL_KEYUP) ? "up" : "down") << EndDebugInfo;
 		}
@@ -578,7 +578,7 @@ void SDL<ADDRESS>::ProcessKeyboardEvent(SDL_KeyboardEvent& kbd_ev)
 		map<SDLKey, uint8_t>::iterator keymap_iter = keymap.find(kbd_ev.keysym.sym);
 		uint8_t key_num = (keymap_iter != keymap.end()) ? (*keymap_iter).second : 0;
 
-		if(verbose_run)
+		if(unlikely(verbose_run))
 		{
 			logger << DebugInfo << "Key #" << (unsigned int) key_num << " (" << (unsigned int) kbd_ev.keysym.sym << ")" << ((kbd_ev.type == SDL_KEYUP) ? "up" : "down") << EndDebugInfo;
 		}
@@ -597,7 +597,7 @@ template <class ADDRESS>
 void SDL<ADDRESS>::EventLoop()
 {
 	SDL_mutexP(sdl_mutex);
-	if(verbose_setup)
+	if(unlikely(verbose_setup))
 	{
 		logger << DebugInfo << "Initializing SDL Video subsystem..." << EndDebugInfo;
 	}
@@ -606,7 +606,7 @@ void SDL<ADDRESS>::EventLoop()
 		logger << DebugError << "Can't initialize SDL Video subsystem: " << SDL_GetError() << EndDebugError;
 		return;
 	}
-	if(verbose_setup)
+	if(unlikely(verbose_setup))
 	{
 		logger << DebugInfo << "SDL Video subsystem initialized" << EndDebugInfo;
 	}
@@ -711,7 +711,7 @@ bool SDL<ADDRESS>::HandleSetVideoMode(const VideoMode<ADDRESS>& _video_mode)
 	unsigned int blue_mask = ((1 << blue_bits) - 1) << blue_offset;
 	
 	// Initialize video display
-	if(verbose_run)
+	if(unlikely(verbose_run))
 	{
 		logger << DebugInfo << "Initializing video mode " << video_mode.width << " pixels x " << video_mode.height << " pixels x " << video_mode.depth << " bits per pixel..." << EndDebugInfo;
 	}
@@ -720,7 +720,7 @@ bool SDL<ADDRESS>::HandleSetVideoMode(const VideoMode<ADDRESS>& _video_mode)
 	screen = SDL_SetVideoMode(video_mode.width, video_mode.height, sdl_depth, SDL_SWSURFACE);
 	if(!screen)
 	{
-		if(verbose_run)
+		if(unlikely(verbose_run))
 		{
 			logger << DebugWarning << "Can't set video mode using a hardware surface: " << SDL_GetError() << EndDebugWarning;
 			logger << DebugInfo << "Trying with a software surface" << EndDebugWarning;
@@ -732,7 +732,7 @@ bool SDL<ADDRESS>::HandleSetVideoMode(const VideoMode<ADDRESS>& _video_mode)
 			return false;
 		}
 	}
-	if(verbose_run)
+	if(unlikely(verbose_run))
 	{
 		logger << DebugInfo << "Video mode set" << EndDebugInfo;
 	}

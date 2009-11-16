@@ -37,6 +37,7 @@
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
 #include <unisim/service/loader/pmac_linux_kernel_loader/pmac_linux_kernel_loader.hh>
 #include <iostream>
+#include <map>
 #include <getopt.h>
 #include <unisim/kernel/service/service.hh>
 #include <stdlib.h>
@@ -53,7 +54,6 @@
 #include <unisim/component/tlm/pci/ide/pci_ide_module.hh>
 #include <unisim/component/tlm/pci/macio/heathrow.hh>
 #include <unisim/component/cxx/pci/types.hh>
-#include <unisim/service/logger/logger_server.hh>
 #include <unisim/component/cxx/processor/powerpc/config.hh>
 #include <stdexcept>
 #include <unisim/service/sdl/sdl.hh>
@@ -104,66 +104,32 @@ using unisim::service::power::CachePowerEstimator;
 using unisim::util::garbage_collector::GarbageCollector;
 using unisim::component::cxx::pci::pci64_address_t;
 using unisim::component::cxx::pci::pci32_address_t;
-using unisim::service::logger::LoggerServer;
 using unisim::kernel::service::ServiceManager;
 
 void help(char *prog_name)
 {
-	cerr << "Usage: " << prog_name << " [<options>] <linux kernel> [linux kernel arguments]" << endl << endl;
+	cerr << "Usage: " << prog_name << " [<options>] [<linux kernel>] [linux kernel arguments]" << endl << endl;
 	cerr << "       'linux kernel' is an ELF32 uncompressed Linux kernel (vmlinux)" << endl;
 	cerr << "       A 'Mac OS BootX' loader is emulated instead of directly running an open firmware and a boot loader" << endl << endl;
 	cerr << "Options:" << endl;
 	cerr << "--inline-debugger" << endl;
-	cerr << "-d" << endl;
+	cerr << "-i" << endl;
 	cerr << "            starts the inline debugger" << endl;
 	cerr << "--gdb-server <TCP port>" << endl;
-	cerr << "-g <TCP port>" << endl;
-	cerr << "            starts a gdb server" << endl << endl;
-	cerr << "--screen-width <width>" << endl;
-	cerr << "-x <width>" << endl;
-	cerr << "            changes the horizontal screen resolution" << endl << endl;
-	cerr << "--screen-height <height>" << endl;
-	cerr << "-y <height>" << endl;
-	cerr << "            changes the vertical screen resolution" << endl << endl;
-	cerr << "--capture <bitmap out filename>" << endl;
-	cerr << "-u <bitmap out filename>" << endl;
-	cerr << "            capture video display in a bitmap image sequence (BMP format)" << endl << endl;
-	cerr << "--gdb-server-arch-file <arch file>" << endl;
-	cerr << "-a  <arch file>" << endl;
-	cerr << "            uses <arch file> as architecture description file for GDB server" << endl << endl;
-	cerr << "--device-tree" << endl;
-	cerr << "-t  <devtree file>" << endl;
-	cerr << "            uses <devtree file> as device tree for Linux kernel" << endl << endl;
-	cerr << "--video-refresh-period <period>" << endl;
-	cerr << "-f <period>" << endl;
-	cerr << "            refreshes video display every 'period' milliseconds" << endl << endl;
-	cerr << "--no-video" << endl;
-	cerr << "-n" << endl;
-	cerr << "            disable video output" << endl << endl;
-	cerr << "-i <count>" << endl;
-	cerr << "--max:inst <count>" << endl;
-	cerr << "            execute <count> instructions then exit" << endl << endl;
+	cerr << "-d <TCP port>" << endl;
 	cerr << "-p" << endl;
 	cerr << "--power" << endl;
 	cerr << "            estimate power consumption of caches and TLBs" << endl << endl;
-	cerr << "-r <file>" << endl;
-	cerr << "--ramdisk <file>" << endl;
-	cerr << "            use ramdisk image in <file>" << endl << endl;
-	cerr << "-c <file>" << endl;
-	cerr << "--disk:image0 <file,file,...>" << endl;
-	cerr << "            use disk image in <file> for ide0" << endl << endl;
-	cerr << "-l <file>" << endl;
-	cerr << "--logger:file <file>" << endl;
-	cerr << "            store log file in <file>" << endl << endl;
-	cerr << "-z" << endl;
-	cerr << "--logger:zip" << endl;
-	cerr << "            zip log file" << endl << endl;
-	cerr << "-e" << endl;
-	cerr << "--logger:error" << endl;
-	cerr << "            pipe the log into the standard error" << endl << endl;
-	cerr << "-o" << endl;
-	cerr << "--logger:out" << endl;
-	cerr << "            pipe the log into the standard output" << endl << endl;
+	cerr << "--message-spy" << endl;
+	cerr << "-m" << endl;
+	cerr << "            enable message spy" << endl << endl;
+	cerr << " --config <xml file>" << endl;
+	cerr << " -c <xml file>" << endl;
+	cerr << "            configures the simulator with the given xml configuration file" << endl << endl;
+	cerr << " --get-config <xml file>" << endl;
+	cerr << " -g <xml file>" << endl;
+	cerr << "            get the simulator default configuration xml file (you can use it to create your own configuration)" << endl;
+	cerr << "            This option can be combined with -c to get a new configuration file with existing variables from another file" << endl;
 	cerr << "--help" << endl;
 	cerr << "-h" << endl;
 	cerr << "            displays this help" << endl;
@@ -272,24 +238,14 @@ int sc_main(int argc, char *argv[])
 #endif
 
 	static struct option long_options[] = {
-	{"inline-debugger", no_argument, 0, 'd'},
-	{"gdb-server", required_argument, 0, 'g'},
-	{"gdb-server-arch-file", required_argument, 0, 'a'},
-	{"device-tree", required_argument, 0, 't'},
-	{"video-refresh-period", required_argument, 0, 'f'},
-	{"ramdisk", required_argument, 0, 'r'},
-	{"disk:image0", required_argument, 0, 'c'},
+	{"inline-debugger", no_argument, 0, 'i'},
+	{"gdb-server", required_argument, 0, 'd'},
 	{"help", no_argument, 0, 'h'},
-	{"max:inst", required_argument, 0, 'i'},
 	{"power", no_argument, 0, 'p'},
-	{"logger:file", required_argument, 0, 'l'},
-	{"logger:zip", no_argument, 0, 'z'},
-	{"logger:error", no_argument, 0, 'e'},
-	{"logger:out", no_argument, 0, 'o'},
-	{"screen-width", required_argument, 0, 'x'},
-	{"screen-height", required_argument, 0, 'y'},
-	{"capture", required_argument, 0, 'u'},
-	{"keymap", required_argument, 0, 'k'},
+	{"message-spy", no_argument, 0, 'm'},
+	{"get-config", required_argument, 0, 'g'},
+	{"config", required_argument, 0, 'c'},
+	{"set-variable", required_argument, 0, 's'},
 	{0, 0, 0, 0}
 	};
 
@@ -302,17 +258,16 @@ int sc_main(int argc, char *argv[])
 	int gdb_server_tcp_port = 0;
 	const char *device_tree_filename = "device_tree.xml";
 	const char *gdb_server_arch_filename = "gdb_powerpc.xml";
-	const char *ramdisk_filename = "";
-	const char *image0_filename = "";
-	const char *bmp_out_filename = "";
-	const char *keymap_filename = "";
+	const char *ramdisk_filename = "initrd.img.gz";
+	const char *image0_filename = "hd.img";
+	const char *bmp_out_filename = "capture";
+	const char *keymap_filename = "keymap.xml";
+	char const *set_config_name = "default_parameters.xml";
+	char const *get_config_name = "default_parameters.xml";
+	bool get_config = false;
+	bool set_config = false;
+	bool message_spy = false;
 	uint64_t maxinst = 0; // maximum number of instruction to simulate
-	char *logger_filename = 0;
-	bool logger_zip = false;
-	bool logger_error = false;
-	bool logger_out = false;
-	bool logger_on = false;
-	bool logger_messages = false;
 	uint32_t pci_bus_frequency = 33; // in Mhz
 	uint32_t isa_bus_frequency = 8; // in Mhz
 	double cpu_frequency = 300.0; // in Mhz
@@ -328,82 +283,54 @@ int sc_main(int argc, char *argv[])
 	uint64_t cpu_cycle_time = (uint64_t)(1e6 / cpu_frequency); // in picoseconds
 	uint64_t fsb_cycle_time = cpu_clock_multiplier * cpu_cycle_time;
 	uint32_t mem_cycle_time = fsb_cycle_time;
+	std::list<string> set_vars;
+	
+	// build the option string for getopt
+	char optstring[256];
+	struct option *long_opt;
+	char *optstring_p;
+	for(long_opt = long_options, optstring_p = optstring; long_opt->name; long_opt++)
+	{
+		*optstring_p++ = long_opt->val;
+		if(long_opt->has_arg == required_argument) *optstring_p++ = ':';
+		
+	}
+	*optstring_p = 0;
 
 	
 	// Parse the command line arguments
-	while((c = getopt_long (argc, argv, "dg:a:t:f:r:c:hi:pl:zeomnx:y:u:k:", long_options, 0)) != -1)
+	while((c = getopt_long (argc, argv, optstring, long_options, 0)) != -1)
 	{
 		switch(c)
 		{
-			case 'd':
+			case 'i':
 				use_inline_debugger = true;
 				break;
-			case 'g':
+			case 'd':
 				use_gdb_server = true;
 				gdb_server_tcp_port = atoi(optarg);
-				break;
-			case 't':
-				device_tree_filename = optarg;
-				break;
-			case 'f':
-				video_refresh_period = atoi(optarg);
-				break;
-			case 'a':
-				gdb_server_arch_filename = optarg;
 				break;
 			case 'h':
 				help(argv[0]);
 				return 0;
-			case 'i':
-				maxinst = strtoull(optarg, 0, 0);
-				break;
 			case 'p':
 				estimate_power = true;
 				break;
-			case 'r':
-				ramdisk_filename = optarg;
+			case 'm':
+				message_spy = true;
+				break;
+			case 'g':
+				get_config_name = optarg;
+				get_config = true;
 				break;
 			case 'c':
-				image0_filename = optarg;
+				set_config_name = optarg;
+				set_config = true;
 				break;
-			case 'l':
-				logger_filename = optarg;
-				break;
-			case 'z':
-				logger_zip = true;
-				break;
-			case 'e':
-				logger_error = true;
-				break;
-			case 'o':
-				logger_out = true;
-				break;
-			case 'm':
-				logger_messages = true;
-				break;
-			case 'n':
-				enable_video_output = false;
-				break;
-			case 'x':
-				display_width = atoi(optarg);
-				break;
-			case 'y':
-				display_height = atoi(optarg);
-				break;
-			case 'u':
-				bmp_out_filename = optarg;
-				break;
-			case 'k':
-				keymap_filename = optarg;
+			case 's':
+				set_vars.push_back(string(optarg));
 				break;
 		}
-	}
-	logger_on = logger_error || logger_out || (logger_filename != 0);
-
-	if(optind >= argc)
-	{
-		help(argv[0]);
-		return 0;
 	}
 
 	char *filename = argv[optind];
@@ -411,21 +338,18 @@ int sc_main(int argc, char *argv[])
 	char **sim_argv = argv + optind;
 	char **sim_envp = environ;
 
-	// If no filename has been specified then display the help
-	if(!filename)
-	{
-		help(argv[0]);
-		return 0;
-	}
-	
 	// Build the kernel parameters string from the command line arguments
 	string kernel_params;
-	int i;
-
-	for(i = 1; i < sim_argc; i++)
+	
+	if(filename)
 	{
-		kernel_params += sim_argv[i];
-		if(i < sim_argc - 1) kernel_params += " ";
+		int i;
+
+		for(i = 1; i < sim_argc; i++)
+		{
+			kernel_params += sim_argv[i];
+			if(i < sim_argc - 1) kernel_params += " ";
+		}
 	}
 	
 	//=========================================================================
@@ -464,7 +388,7 @@ int sc_main(int argc, char *argv[])
 	PCIMsgSpyType *pci_msg_spy[MAX_PCI_TRANSACTION_SPY];
 	IRQMsgSpyType *irq_msg_spy[MAX_IRQ_TRANSACTION_SPY];
 
-	if(logger_on && logger_messages)
+	if(message_spy)
 	{
 		for(unsigned int i = 0; i < MAX_BUS_TRANSACTION_SPY; i++)
 		{
@@ -512,157 +436,172 @@ int sc_main(int argc, char *argv[])
 	//    A Linux kernel loader acting as a firmware and a bootloader of a real PowerMac machine
 	PMACLinuxKernelLoader *kloader = new PMACLinuxKernelLoader("pmac-linux-kernel-loader");
 	//  - GDB server
-	GDBServer<CPU_ADDRESS_TYPE> *gdb_server = use_gdb_server ? new GDBServer<CPU_ADDRESS_TYPE>("gdb-server") : 0;
+	GDBServer<CPU_ADDRESS_TYPE> *gdb_server = (use_gdb_server || get_config) ? new GDBServer<CPU_ADDRESS_TYPE>("gdb-server") : 0;
 	//  - Inline debugger
-	InlineDebugger<CPU_ADDRESS_TYPE> *inline_debugger = use_inline_debugger ? new InlineDebugger<CPU_ADDRESS_TYPE>("inline-debugger") : 0;
+	InlineDebugger<CPU_ADDRESS_TYPE> *inline_debugger = (use_inline_debugger || get_config) ? new InlineDebugger<CPU_ADDRESS_TYPE>("inline-debugger") : 0;
 	//  - SystemC Time
 	unisim::service::time::sc_time::ScTime *time = new unisim::service::time::sc_time::ScTime("time");
 	//  - Host Time
 	unisim::service::time::host_time::HostTime *host_time = new unisim::service::time::host_time::HostTime("host-time");
 	//  - the optional power estimators
-	CachePowerEstimator *il1_power_estimator = estimate_power ? new CachePowerEstimator("il1-power-estimator") : 0;
-	CachePowerEstimator *dl1_power_estimator = estimate_power ? new CachePowerEstimator("dl1-power-estimator") : 0;
-	CachePowerEstimator *l2_power_estimator = estimate_power ? new CachePowerEstimator("l2-power-estimator") : 0;
-	CachePowerEstimator *itlb_power_estimator = estimate_power ? new CachePowerEstimator("itlb-power-estimator") : 0;
-	CachePowerEstimator *dtlb_power_estimator = estimate_power ? new CachePowerEstimator("dtlb-power-estimator") : 0;
-	//  - Logger
-	LoggerServer *logger = logger_on ? new LoggerServer("logger") : 0;
+	CachePowerEstimator *il1_power_estimator = (estimate_power || get_config) ? new CachePowerEstimator("il1-power-estimator") : 0;
+	CachePowerEstimator *dl1_power_estimator = (estimate_power || get_config) ? new CachePowerEstimator("dl1-power-estimator") : 0;
+	CachePowerEstimator *l2_power_estimator = (estimate_power || get_config) ? new CachePowerEstimator("l2-power-estimator") : 0;
+	CachePowerEstimator *itlb_power_estimator = (estimate_power || get_config) ? new CachePowerEstimator("itlb-power-estimator") : 0;
+	CachePowerEstimator *dtlb_power_estimator = (estimate_power || get_config) ? new CachePowerEstimator("dtlb-power-estimator") : 0;
 
 	//=========================================================================
-	//===                     Component run-time configuration              ===
+	//===                        Run-time configuration                     ===
 	//=========================================================================
+
+	if(set_config)
+	{
+		ServiceManager::LoadXmlParameters(set_config_name);
+		cerr << "Parameters set using file \"" << set_config_name << "\"" << endl;
+	}
+	if(get_config)
+	{
+		ServiceManager::XmlfyParameters(get_config_name);
+		cerr << "Parameters saved on file \"" << get_config_name << "\"" << endl;
+		return 0;
+	}
+	if(!set_config)
+	{
+		if (!get_config) help(argv[0]);
+		return 0;
+	}
 
 	//  - Front Side Bus
-	(*bus)["cycle-time"] = fsb_cycle_time;
+// 	(*bus)["cycle-time"] = fsb_cycle_time;
 
 	//  - PowerPC processor
 	// if the following line ("cpu-cycle-time") is commented, the cpu will use the power estimators to find min cpu cycle time
-	(*cpu)["cpu-cycle-time"] = cpu_cycle_time;
-	(*cpu)["bus-cycle-time"] = fsb_cycle_time;
-	(*cpu)["voltage"] = 1.3 * 1e3; // mV
-	(*cpu)["nice-time"] = 1000000000; // 1 ms
-	if(maxinst)
-	{
-		(*cpu)["max-inst"] = maxinst;
-	}
-	(*cpu)["ipc"] = cpu_ipc;
+// 	(*cpu)["cpu-cycle-time"] = cpu_cycle_time;
+// 	(*cpu)["bus-cycle-time"] = fsb_cycle_time;
+// 	(*cpu)["voltage"] = 1.3 * 1e3; // mV
+// 	(*cpu)["nice-time"] = 1000000000; // 1 ms
+// 	if(maxinst)
+// 	{
+// 		(*cpu)["max-inst"] = maxinst;
+// 	}
+// 	(*cpu)["ipc"] = cpu_ipc;
 
 	//  - RAM
-	(*memory)["cycle-time"] = mem_cycle_time;
-	(*memory)["org"] = 0x00000000UL;
-	(*memory)["bytesize"] = memory_size;
+// 	(*memory)["cycle-time"] = mem_cycle_time;
+// 	(*memory)["org"] = 0x00000000UL;
+// 	(*memory)["bytesize"] = memory_size;
 
 	// MPC107 run-time configuration
-	(*mpc107)["a_address_map"] = false;
-	(*mpc107)["host_mode"] = true;
-	(*mpc107)["memory_32bit_data_bus_size"] = true;
-	(*mpc107)["rom0_8bit_data_bus_size"] = false;
-	(*mpc107)["rom1_8bit_data_bus_size"] = false;
-	(*mpc107)["frequency"] = fsb_frequency;
-	(*mpc107)["sdram_cycle_time"] = mem_cycle_time;
+// 	(*mpc107)["a_address_map"] = false;
+// 	(*mpc107)["host_mode"] = true;
+// 	(*mpc107)["memory_32bit_data_bus_size"] = true;
+// 	(*mpc107)["rom0_8bit_data_bus_size"] = false;
+// 	(*mpc107)["rom1_8bit_data_bus_size"] = false;
+// 	(*mpc107)["frequency"] = fsb_frequency;
+// 	(*mpc107)["sdram_cycle_time"] = mem_cycle_time;
 
 	//  - EROM run-time configuration
-	(*erom)["org"] =  0x78000000UL;
+/*	(*erom)["org"] =  0x78000000UL;
 	(*erom)["bytesize"] = 2 * 8 * 1024 * 1024;
-	(*erom)["cycle-time"] = mem_cycle_time;
+	(*erom)["cycle-time"] = mem_cycle_time;*/
 	
 	//  - Flash memory run-time configuration
-    (*flash)["org"] = 0xff800000UL; //0xff000000UL;
-    (*flash)["bytesize"] = 8 * 1024 * 1024;
-    (*flash)["cycle-time"] = mem_cycle_time;
-	(*flash)["endian"] = "big-endian";
+//     (*flash)["org"] = 0xff800000UL; //0xff000000UL;
+//     (*flash)["bytesize"] = 8 * 1024 * 1024;
+//     (*flash)["cycle-time"] = mem_cycle_time;
+// 	(*flash)["endian"] = "big-endian";
 
 	// PCI Bus run-time configuration
-	unsigned int mapping_index = 0;
-	(*pci_bus)["frequency"] = pci_bus_frequency;
-
-	(*pci_bus)["base-address"][mapping_index] = 0;
-	(*pci_bus)["size"][mapping_index] = 1024 * 1024 * 1024;
-	(*pci_bus)["device-number"][mapping_index] = PCI_MPC107_DEV_NUM;
-	(*pci_bus)["target-port"][mapping_index] = PCI_MPC107_SLAVE_PORT;
-	(*pci_bus)["register-number"][mapping_index] = 0x10;
-	(*pci_bus)["addr-type"][mapping_index] = "mem";
-	(*pci_bus)["num-mappings"] = ++mapping_index;
-	
-	(*pci_bus)["base-address"][mapping_index] = 0xf3000000UL;
-	(*pci_bus)["size"][mapping_index] = 0x80000;
-	(*pci_bus)["device-number"][mapping_index] = PCI_HEATHROW_DEV_NUM;
-	(*pci_bus)["target-port"][mapping_index] = PCI_HEATHROW_SLAVE_PORT;
-	(*pci_bus)["register-number"][mapping_index] = 0x10UL;
-	(*pci_bus)["addr-type"][mapping_index] = "mem";
-	(*pci_bus)["num-mappings"] = ++mapping_index;
-	
-	(*pci_bus)["base-address"][mapping_index] = 0x18100UL;
-	(*pci_bus)["size"][mapping_index] = 8;
-	(*pci_bus)["device-number"][mapping_index] = PCI_IDE_DEV_NUM;
-	(*pci_bus)["target-port"][mapping_index] = PCI_IDE_SLAVE_PORT;
-	(*pci_bus)["register-number"][mapping_index] = 0x10UL;
-	(*pci_bus)["addr-type"][mapping_index] = "i/o";
-	(*pci_bus)["num-mappings"] = ++mapping_index;
-	
-	(*pci_bus)["base-address"][mapping_index] = 0x18108UL;
-	(*pci_bus)["size"][mapping_index] = 4;
-	(*pci_bus)["device-number"][mapping_index] = PCI_IDE_DEV_NUM;
-	(*pci_bus)["target-port"][mapping_index] = PCI_IDE_SLAVE_PORT;
-	(*pci_bus)["register-number"][mapping_index] = 0x14UL;
-	(*pci_bus)["addr-type"][mapping_index] = "i/o";
-	(*pci_bus)["num-mappings"] = ++mapping_index;
-	
-	(*pci_bus)["base-address"][mapping_index] = 0x4UL;
-	(*pci_bus)["size"][mapping_index] = 8;
-	(*pci_bus)["device-number"][mapping_index] = PCI_IDE_DEV_NUM;
-	(*pci_bus)["target-port"][mapping_index] = PCI_IDE_SLAVE_PORT;
-	(*pci_bus)["register-number"][mapping_index] = 0x18UL;
-	(*pci_bus)["addr-type"][mapping_index] = "i/o";
-	(*pci_bus)["num-mappings"] = ++mapping_index;
-	
-	(*pci_bus)["base-address"][mapping_index] = 0xcUL;
-	(*pci_bus)["size"][mapping_index] = 4;
-	(*pci_bus)["device-number"][mapping_index] = PCI_IDE_DEV_NUM;
-	(*pci_bus)["target-port"][mapping_index] = PCI_IDE_SLAVE_PORT;
-	(*pci_bus)["register-number"][mapping_index] = 0x1cUL;
-	(*pci_bus)["addr-type"][mapping_index] = "i/o";
-	(*pci_bus)["num-mappings"] = ++mapping_index;
-	
-	(*pci_bus)["base-address"][mapping_index] = 0x18118UL;
-	(*pci_bus)["size"][6] = 16;
-	(*pci_bus)["device-number"][mapping_index] = PCI_IDE_DEV_NUM;
-	(*pci_bus)["target-port"][mapping_index] = PCI_IDE_SLAVE_PORT;
-	(*pci_bus)["register-number"][mapping_index] = 0x20UL;
-	(*pci_bus)["addr-type"][mapping_index] = "i/o";
-	(*pci_bus)["num-mappings"] = ++mapping_index;
-
-	(*pci_bus)["base-address"][mapping_index] = 0xa0000000UL;
-	(*pci_bus)["size"][mapping_index] = 0x800000;
-	(*pci_bus)["device-number"][mapping_index] = PCI_DISPLAY_DEV_NUM;
-	(*pci_bus)["target-port"][mapping_index] = PCI_DISPLAY_SLAVE_PORT;
-	(*pci_bus)["register-number"][mapping_index] = 0x10UL;
-	(*pci_bus)["addr-type"][mapping_index] = "mem";
-	(*pci_bus)["num-mappings"] = ++mapping_index;
-	
-	(*pci_bus)["base-address"][mapping_index] = 0; //0xfe000000UL; // ISA I/O is at the very beginning of PCI I/O space
-	(*pci_bus)["size"][mapping_index] = 0x10000; // 64 KB
-	(*pci_bus)["device-number"][mapping_index] = PCI_ISA_BRIDGE_DEV_NUM;
-	(*pci_bus)["target-port"][mapping_index] = PCI_ISA_BRIDGE_SLAVE_PORT;
-	(*pci_bus)["register-number"][mapping_index] = 0x10UL; // ISA I/O space mapped by BAR0
-	(*pci_bus)["addr-type"][mapping_index] = "i/o";
-	(*pci_bus)["num-mappings"] = ++mapping_index;
-
-	(*pci_bus)["base-address"][mapping_index] = 0x000a0000UL; // ISA Memory is at the very beginning of compatibility hole
-	(*pci_bus)["size"][mapping_index] = 0x60000; // 384 KB
-	(*pci_bus)["device-number"][mapping_index] = PCI_ISA_BRIDGE_DEV_NUM;
-	(*pci_bus)["target-port"][mapping_index] = PCI_ISA_BRIDGE_SLAVE_PORT;
-	(*pci_bus)["register-number"][mapping_index] = 0x14UL; // ISA Memory space mapped by BAR1
-	(*pci_bus)["addr-type"][mapping_index] = "mem";
-	(*pci_bus)["num-mappings"] = ++mapping_index;
+// 	unsigned int mapping_index = 0;
+// 	(*pci_bus)["frequency"] = pci_bus_frequency;
+// 
+// 	(*pci_bus)["base-address"][mapping_index] = 0;
+// 	(*pci_bus)["size"][mapping_index] = 1024 * 1024 * 1024;
+// 	(*pci_bus)["device-number"][mapping_index] = PCI_MPC107_DEV_NUM;
+// 	(*pci_bus)["target-port"][mapping_index] = PCI_MPC107_SLAVE_PORT;
+// 	(*pci_bus)["register-number"][mapping_index] = 0x10;
+// 	(*pci_bus)["addr-type"][mapping_index] = "mem";
+// 	(*pci_bus)["num-mappings"] = ++mapping_index;
+// 	
+// 	(*pci_bus)["base-address"][mapping_index] = 0xf3000000UL;
+// 	(*pci_bus)["size"][mapping_index] = 0x80000;
+// 	(*pci_bus)["device-number"][mapping_index] = PCI_HEATHROW_DEV_NUM;
+// 	(*pci_bus)["target-port"][mapping_index] = PCI_HEATHROW_SLAVE_PORT;
+// 	(*pci_bus)["register-number"][mapping_index] = 0x10UL;
+// 	(*pci_bus)["addr-type"][mapping_index] = "mem";
+// 	(*pci_bus)["num-mappings"] = ++mapping_index;
+// 	
+// 	(*pci_bus)["base-address"][mapping_index] = 0x18100UL;
+// 	(*pci_bus)["size"][mapping_index] = 8;
+// 	(*pci_bus)["device-number"][mapping_index] = PCI_IDE_DEV_NUM;
+// 	(*pci_bus)["target-port"][mapping_index] = PCI_IDE_SLAVE_PORT;
+// 	(*pci_bus)["register-number"][mapping_index] = 0x10UL;
+// 	(*pci_bus)["addr-type"][mapping_index] = "i/o";
+// 	(*pci_bus)["num-mappings"] = ++mapping_index;
+// 	
+// 	(*pci_bus)["base-address"][mapping_index] = 0x18108UL;
+// 	(*pci_bus)["size"][mapping_index] = 4;
+// 	(*pci_bus)["device-number"][mapping_index] = PCI_IDE_DEV_NUM;
+// 	(*pci_bus)["target-port"][mapping_index] = PCI_IDE_SLAVE_PORT;
+// 	(*pci_bus)["register-number"][mapping_index] = 0x14UL;
+// 	(*pci_bus)["addr-type"][mapping_index] = "i/o";
+// 	(*pci_bus)["num-mappings"] = ++mapping_index;
+// 	
+// 	(*pci_bus)["base-address"][mapping_index] = 0x4UL;
+// 	(*pci_bus)["size"][mapping_index] = 8;
+// 	(*pci_bus)["device-number"][mapping_index] = PCI_IDE_DEV_NUM;
+// 	(*pci_bus)["target-port"][mapping_index] = PCI_IDE_SLAVE_PORT;
+// 	(*pci_bus)["register-number"][mapping_index] = 0x18UL;
+// 	(*pci_bus)["addr-type"][mapping_index] = "i/o";
+// 	(*pci_bus)["num-mappings"] = ++mapping_index;
+// 	
+// 	(*pci_bus)["base-address"][mapping_index] = 0xcUL;
+// 	(*pci_bus)["size"][mapping_index] = 4;
+// 	(*pci_bus)["device-number"][mapping_index] = PCI_IDE_DEV_NUM;
+// 	(*pci_bus)["target-port"][mapping_index] = PCI_IDE_SLAVE_PORT;
+// 	(*pci_bus)["register-number"][mapping_index] = 0x1cUL;
+// 	(*pci_bus)["addr-type"][mapping_index] = "i/o";
+// 	(*pci_bus)["num-mappings"] = ++mapping_index;
+// 	
+// 	(*pci_bus)["base-address"][mapping_index] = 0x18118UL;
+// 	(*pci_bus)["size"][6] = 16;
+// 	(*pci_bus)["device-number"][mapping_index] = PCI_IDE_DEV_NUM;
+// 	(*pci_bus)["target-port"][mapping_index] = PCI_IDE_SLAVE_PORT;
+// 	(*pci_bus)["register-number"][mapping_index] = 0x20UL;
+// 	(*pci_bus)["addr-type"][mapping_index] = "i/o";
+// 	(*pci_bus)["num-mappings"] = ++mapping_index;
+// 
+// 	(*pci_bus)["base-address"][mapping_index] = 0xa0000000UL;
+// 	(*pci_bus)["size"][mapping_index] = 0x800000;
+// 	(*pci_bus)["device-number"][mapping_index] = PCI_DISPLAY_DEV_NUM;
+// 	(*pci_bus)["target-port"][mapping_index] = PCI_DISPLAY_SLAVE_PORT;
+// 	(*pci_bus)["register-number"][mapping_index] = 0x10UL;
+// 	(*pci_bus)["addr-type"][mapping_index] = "mem";
+// 	(*pci_bus)["num-mappings"] = ++mapping_index;
+// 	
+// 	(*pci_bus)["base-address"][mapping_index] = 0; //0xfe000000UL; // ISA I/O is at the very beginning of PCI I/O space
+// 	(*pci_bus)["size"][mapping_index] = 0x10000; // 64 KB
+// 	(*pci_bus)["device-number"][mapping_index] = PCI_ISA_BRIDGE_DEV_NUM;
+// 	(*pci_bus)["target-port"][mapping_index] = PCI_ISA_BRIDGE_SLAVE_PORT;
+// 	(*pci_bus)["register-number"][mapping_index] = 0x10UL; // ISA I/O space mapped by BAR0
+// 	(*pci_bus)["addr-type"][mapping_index] = "i/o";
+// 	(*pci_bus)["num-mappings"] = ++mapping_index;
+// 
+// 	(*pci_bus)["base-address"][mapping_index] = 0x000a0000UL; // ISA Memory is at the very beginning of compatibility hole
+// 	(*pci_bus)["size"][mapping_index] = 0x60000; // 384 KB
+// 	(*pci_bus)["device-number"][mapping_index] = PCI_ISA_BRIDGE_DEV_NUM;
+// 	(*pci_bus)["target-port"][mapping_index] = PCI_ISA_BRIDGE_SLAVE_PORT;
+// 	(*pci_bus)["register-number"][mapping_index] = 0x14UL; // ISA Memory space mapped by BAR1
+// 	(*pci_bus)["addr-type"][mapping_index] = "mem";
+// 	(*pci_bus)["num-mappings"] = ++mapping_index;
 
 	//  - PCI MAC I/O Heathrow run-time configuration
-	(*heathrow)["initial-base-addr"] = 0xf3000000UL;
+/*	(*heathrow)["initial-base-addr"] = 0xf3000000UL;
 	(*heathrow)["pci-device-number"] = PCI_HEATHROW_DEV_NUM;
-	(*heathrow)["bus-frequency"] = pci_bus_frequency;
+	(*heathrow)["bus-frequency"] = pci_bus_frequency;*/
 	
 	//  - PCI IDE run-time configuration
-	(*pci_ide)["device-number"] = PCI_IDE_DEV_NUM;
+/*	(*pci_ide)["device-number"] = PCI_IDE_DEV_NUM;
 	if (strcmp(image0_filename, "") != 0) {
 		char *_image0_filename = strdup(image0_filename);
 		char delims[] = ",";
@@ -677,41 +616,41 @@ int sc_main(int argc, char *argv[])
 			result = strtok( NULL, delims );
 		}
 		free(_image0_filename);
-	}
-	(*pci_ide)["base-address"][0] = 0x18101;
-	(*pci_ide)["size"][0] = 8;
-	(*pci_ide)["register-number"][0] = 0x10;
-	(*pci_ide)["base-address"][1] = 0x18109;
-	(*pci_ide)["size"][1] = 4;
-	(*pci_ide)["register-number"][1] = 0x14;
-	(*pci_ide)["base-address"][2] = 0x5;
-	(*pci_ide)["size"][2] = 8;
-	(*pci_ide)["register-number"][2] = 0x18;
-	(*pci_ide)["base-address"][3] = 0xd;
-	(*pci_ide)["size"][3] = 4;
-	(*pci_ide)["register-number"][3] = 0x1c;
-	(*pci_ide)["base-address"][4] = 0x18119;
-	(*pci_ide)["size"][4] = 16;
-	(*pci_ide)["register-number"][4] = 0x20;
+	}*/
+// 	(*pci_ide)["base-address"][0] = 0x18101;
+// 	(*pci_ide)["size"][0] = 8;
+// 	(*pci_ide)["register-number"][0] = 0x10;
+// 	(*pci_ide)["base-address"][1] = 0x18109;
+// 	(*pci_ide)["size"][1] = 4;
+// 	(*pci_ide)["register-number"][1] = 0x14;
+// 	(*pci_ide)["base-address"][2] = 0x5;
+// 	(*pci_ide)["size"][2] = 8;
+// 	(*pci_ide)["register-number"][2] = 0x18;
+// 	(*pci_ide)["base-address"][3] = 0xd;
+// 	(*pci_ide)["size"][3] = 4;
+// 	(*pci_ide)["register-number"][3] = 0x1c;
+// 	(*pci_ide)["base-address"][4] = 0x18119;
+// 	(*pci_ide)["size"][4] = 16;
+// 	(*pci_ide)["register-number"][4] = 0x20;
 
 	//  - Display run-time configuration
-	(*pci_display)["initial-base-addr"] = 0xa0000000UL;
+/*	(*pci_display)["initial-base-addr"] = 0xa0000000UL;
 	(*pci_display)["bytesize"] = display_vfb_size; 
 	(*pci_display)["width"] = display_width;
 	(*pci_display)["height"] = display_height;
 	(*pci_display)["depth"] = display_depth;
-	(*pci_display)["pci-bus-frequency"] = pci_bus_frequency;
+	(*pci_display)["pci-bus-frequency"] = pci_bus_frequency;*/
 	
 	// - PCI-ISA Bridge run-time configuration
-	(*pci_isa_bridge)["initial-base-addr"] = 0x000a0000UL;
-	(*pci_isa_bridge)["initial-io-base-addr"] = 0; //0xfe000000UL;
-	(*pci_isa_bridge)["pci-bus-frequency"] = pci_bus_frequency;
-	(*pci_isa_bridge)["isa-bus-frequency"] = isa_bus_frequency;
-	(*pci_isa_bridge)["pci-device-number"] = PCI_ISA_BRIDGE_DEV_NUM;
+// 	(*pci_isa_bridge)["initial-base-addr"] = 0x000a0000UL;
+// 	(*pci_isa_bridge)["initial-io-base-addr"] = 0; //0xfe000000UL;
+// 	(*pci_isa_bridge)["pci-bus-frequency"] = pci_bus_frequency;
+// 	(*pci_isa_bridge)["isa-bus-frequency"] = isa_bus_frequency;
+// 	(*pci_isa_bridge)["pci-device-number"] = PCI_ISA_BRIDGE_DEV_NUM;
 
 	//  - i8042 run-time configuration
-	(*i8042)["fsb-frequency"] = fsb_frequency;
-	(*i8042)["isa-bus-frequency"] = isa_bus_frequency;
+// 	(*i8042)["fsb-frequency"] = fsb_frequency;
+// 	(*i8042)["isa-bus-frequency"] = isa_bus_frequency;
 
 	//=========================================================================
 	//===                      Service run-time configuration               ===
@@ -720,12 +659,13 @@ int sc_main(int argc, char *argv[])
 	//  - GDB Server run-time configuration
 	if(gdb_server)
 	{
+		cerr << "Using " << (*gdb_server)["tcp-port"].GetName() << " = " << gdb_server_tcp_port << endl;
 		(*gdb_server)["tcp-port"] = gdb_server_tcp_port;
-		(*gdb_server)["architecture-description-filename"] = gdb_server_arch_filename;
+// 		(*gdb_server)["architecture-description-filename"] = gdb_server_arch_filename;
 	}
 
 	//  - SDL run-time configuration
-	(*sdl)["refresh-period"] = video_refresh_period;
+/*	(*sdl)["refresh-period"] = video_refresh_period;
 	(*sdl)["bmp-out-filename"] = bmp_out_filename;	
 	(*sdl)["keymap-filename"] = keymap_filename;	
 
@@ -734,120 +674,111 @@ int sc_main(int argc, char *argv[])
 	(*kloader)["pmac-bootx.kernel-params"] = kernel_params.c_str();
 	(*kloader)["pmac-bootx.ramdisk-filename"] = ramdisk_filename;
 	(*kloader)["pmac-bootx.screen-width"] = display_width;
-	(*kloader)["pmac-bootx.screen-height"] = display_height;
-	(*kloader)["elf32-loader.filename"] = filename;
-	(*kloader)["elf32-loader.base-addr"] = 0x00400000UL;
+	(*kloader)["pmac-bootx.screen-height"] = display_height;*/
+	
+	if(filename)
+	{
+		cerr << "Using " << (*kloader)["filename"].GetName() << " = " << filename << endl;
+		(*kloader)["elf32-loader.filename"] = filename;
+	}
+	
+// 	(*kloader)["elf32-loader.base-addr"] = 0x00400000UL;
 
 	//  - Transaction Spies
-	if(logger_on && logger_messages)
-	{
-		(*bus_msg_spy[0])["source_module_name"] = cpu->name();
-		(*bus_msg_spy[0])["source_port_name"] = cpu->bus_port.name();
-		(*bus_msg_spy[0])["target_module_name"] = bus->name();
-		(*bus_msg_spy[0])["target_port_name"] = bus->inport[0]->name();
-		(*bus_msg_spy[1])["source_module_name"] = bus->name();
-		(*bus_msg_spy[1])["source_port_name"] = bus->outport[0]->name();
-		(*bus_msg_spy[1])["target_module_name"] = cpu->name();
-		(*bus_msg_spy[1])["target_port_name"] = cpu->snoop_port.name();
-		(*bus_msg_spy[2])["source_module_name"] = bus->name();
-		(*bus_msg_spy[2])["source_port_name"] = bus->chipset_outport->name();
-		(*bus_msg_spy[2])["target_module_name"] = mpc107->name();
-		(*bus_msg_spy[2])["target_port_name"] = mpc107->slave_port.name();
-		(*bus_msg_spy[3])["source_module_name"] = mpc107->name();
-		(*bus_msg_spy[3])["source_port_name"] = mpc107->master_port.name();
-		(*bus_msg_spy[3])["target_module_name"] = bus->name();
-		(*bus_msg_spy[3])["target_port_name"] = bus->chipset_inport->name();
-	}
-
-	//  - Loggers
-	if(logger_on)
-	{
-		if(logger_filename)
-		{
-			(*logger)["filename"] = logger_filename;
-			(*logger)["zip"] = logger_zip;
-		}
-		(*logger)["std_out"] = logger_out;
-		(*logger)["std_err"] = logger_error;
-		(*logger)["show-file"] = true;
-		(*logger)["show-function"] = true;
-		(*logger)["show-line"] = true;
-	}
+// 	if(message_spy)
+// 	{
+// 		(*bus_msg_spy[0])["source_module_name"] = cpu->name();
+// 		(*bus_msg_spy[0])["source_port_name"] = cpu->bus_port.name();
+// 		(*bus_msg_spy[0])["target_module_name"] = bus->name();
+// 		(*bus_msg_spy[0])["target_port_name"] = bus->inport[0]->name();
+// 		(*bus_msg_spy[1])["source_module_name"] = bus->name();
+// 		(*bus_msg_spy[1])["source_port_name"] = bus->outport[0]->name();
+// 		(*bus_msg_spy[1])["target_module_name"] = cpu->name();
+// 		(*bus_msg_spy[1])["target_port_name"] = cpu->snoop_port.name();
+// 		(*bus_msg_spy[2])["source_module_name"] = bus->name();
+// 		(*bus_msg_spy[2])["source_port_name"] = bus->chipset_outport->name();
+// 		(*bus_msg_spy[2])["target_module_name"] = mpc107->name();
+// 		(*bus_msg_spy[2])["target_port_name"] = mpc107->slave_port.name();
+// 		(*bus_msg_spy[3])["source_module_name"] = mpc107->name();
+// 		(*bus_msg_spy[3])["source_port_name"] = mpc107->master_port.name();
+// 		(*bus_msg_spy[3])["target_module_name"] = bus->name();
+// 		(*bus_msg_spy[3])["target_port_name"] = bus->chipset_inport->name();
+// 	}
 
 	//  - Cache/TLB power estimators run-time configuration
-	if(estimate_power)
-	{
-		(*il1_power_estimator)["cache-size"] = 32 * 1024;
-		(*il1_power_estimator)["line-size"] = 32;
-		(*il1_power_estimator)["associativity"] = 8;
-		(*il1_power_estimator)["rw-ports"] = 0;
-		(*il1_power_estimator)["excl-read-ports"] = 1;
-		(*il1_power_estimator)["excl-write-ports"] = 0;
-		(*il1_power_estimator)["single-ended-read-ports"] = 0;
-		(*il1_power_estimator)["banks"] = 4;
-		(*il1_power_estimator)["tech-node"] = tech_node;
-		(*il1_power_estimator)["output-width"] = 128;
-		(*il1_power_estimator)["tag-width"] = 64;
-		(*il1_power_estimator)["access-mode"] = "fast";
-	
-		(*dl1_power_estimator)["cache-size"] = 32 * 1024;
-		(*dl1_power_estimator)["line-size"] = 32;
-		(*dl1_power_estimator)["associativity"] = 8;
-		(*dl1_power_estimator)["rw-ports"] = 1;
-		(*dl1_power_estimator)["excl-read-ports"] = 0;
-		(*dl1_power_estimator)["excl-write-ports"] = 0;
-		(*dl1_power_estimator)["single-ended-read-ports"] = 0;
-		(*dl1_power_estimator)["banks"] = 4;
-		(*dl1_power_estimator)["tech-node"] = tech_node;
-		(*dl1_power_estimator)["output-width"] = 64;
-		(*dl1_power_estimator)["tag-width"] = 64;
-		(*dl1_power_estimator)["access-mode"] = "fast";
-	
-		(*l2_power_estimator)["cache-size"] = 512 * 1024;
-		(*l2_power_estimator)["line-size"] = 32;
-		(*l2_power_estimator)["associativity"] = 8;
-		(*l2_power_estimator)["rw-ports"] = 1;
-		(*l2_power_estimator)["excl-read-ports"] = 0;
-		(*l2_power_estimator)["excl-write-ports"] = 0;
-		(*l2_power_estimator)["single-ended-read-ports"] = 0;
-		(*l2_power_estimator)["banks"] = 4;
-		(*l2_power_estimator)["tech-node"] = tech_node;
-		(*l2_power_estimator)["output-width"] = 256;
-		(*l2_power_estimator)["tag-width"] = 64;
-		(*l2_power_estimator)["access-mode"] = "fast";
-	
-		(*itlb_power_estimator)["cache-size"] = 128 * 2 * 4;
-		(*itlb_power_estimator)["line-size"] = 4;
-		(*itlb_power_estimator)["associativity"] = 2;
-		(*itlb_power_estimator)["rw-ports"] = 1;
-		(*itlb_power_estimator)["excl-read-ports"] = 0;
-		(*itlb_power_estimator)["excl-write-ports"] = 0;
-		(*itlb_power_estimator)["single-ended-read-ports"] = 0;
-		(*itlb_power_estimator)["banks"] = 4;
-		(*itlb_power_estimator)["tech-node"] = tech_node;
-		(*itlb_power_estimator)["output-width"] = 32;
-		(*itlb_power_estimator)["tag-width"] = 64;
-		(*itlb_power_estimator)["access-mode"] = "fast";
-	
-		(*dtlb_power_estimator)["cache-size"] = 128 * 2 * 4;
-		(*dtlb_power_estimator)["line-size"] = 4;
-		(*dtlb_power_estimator)["associativity"] = 2;
-		(*dtlb_power_estimator)["rw-ports"] = 1;
-		(*dtlb_power_estimator)["excl-read-ports"] = 0;
-		(*dtlb_power_estimator)["excl-write-ports"] = 0;
-		(*dtlb_power_estimator)["single-ended-read-ports"] = 0;
-		(*dtlb_power_estimator)["banks"] = 4;
-		(*dtlb_power_estimator)["tech-node"] = tech_node;
-		(*dtlb_power_estimator)["output-width"] = 32;
-		(*dtlb_power_estimator)["tag-width"] = 64;
-		(*dtlb_power_estimator)["access-mode"] = "fast";
-	}
+// 	if(estimate_power || get_config)
+// 	{
+// 		(*il1_power_estimator)["cache-size"] = 32 * 1024;
+// 		(*il1_power_estimator)["line-size"] = 32;
+// 		(*il1_power_estimator)["associativity"] = 8;
+// 		(*il1_power_estimator)["rw-ports"] = 0;
+// 		(*il1_power_estimator)["excl-read-ports"] = 1;
+// 		(*il1_power_estimator)["excl-write-ports"] = 0;
+// 		(*il1_power_estimator)["single-ended-read-ports"] = 0;
+// 		(*il1_power_estimator)["banks"] = 4;
+// 		(*il1_power_estimator)["tech-node"] = tech_node;
+// 		(*il1_power_estimator)["output-width"] = 128;
+// 		(*il1_power_estimator)["tag-width"] = 64;
+// 		(*il1_power_estimator)["access-mode"] = "fast";
+// 	
+// 		(*dl1_power_estimator)["cache-size"] = 32 * 1024;
+// 		(*dl1_power_estimator)["line-size"] = 32;
+// 		(*dl1_power_estimator)["associativity"] = 8;
+// 		(*dl1_power_estimator)["rw-ports"] = 1;
+// 		(*dl1_power_estimator)["excl-read-ports"] = 0;
+// 		(*dl1_power_estimator)["excl-write-ports"] = 0;
+// 		(*dl1_power_estimator)["single-ended-read-ports"] = 0;
+// 		(*dl1_power_estimator)["banks"] = 4;
+// 		(*dl1_power_estimator)["tech-node"] = tech_node;
+// 		(*dl1_power_estimator)["output-width"] = 64;
+// 		(*dl1_power_estimator)["tag-width"] = 64;
+// 		(*dl1_power_estimator)["access-mode"] = "fast";
+// 	
+// 		(*l2_power_estimator)["cache-size"] = 512 * 1024;
+// 		(*l2_power_estimator)["line-size"] = 32;
+// 		(*l2_power_estimator)["associativity"] = 8;
+// 		(*l2_power_estimator)["rw-ports"] = 1;
+// 		(*l2_power_estimator)["excl-read-ports"] = 0;
+// 		(*l2_power_estimator)["excl-write-ports"] = 0;
+// 		(*l2_power_estimator)["single-ended-read-ports"] = 0;
+// 		(*l2_power_estimator)["banks"] = 4;
+// 		(*l2_power_estimator)["tech-node"] = tech_node;
+// 		(*l2_power_estimator)["output-width"] = 256;
+// 		(*l2_power_estimator)["tag-width"] = 64;
+// 		(*l2_power_estimator)["access-mode"] = "fast";
+// 	
+// 		(*itlb_power_estimator)["cache-size"] = 128 * 2 * 4;
+// 		(*itlb_power_estimator)["line-size"] = 4;
+// 		(*itlb_power_estimator)["associativity"] = 2;
+// 		(*itlb_power_estimator)["rw-ports"] = 1;
+// 		(*itlb_power_estimator)["excl-read-ports"] = 0;
+// 		(*itlb_power_estimator)["excl-write-ports"] = 0;
+// 		(*itlb_power_estimator)["single-ended-read-ports"] = 0;
+// 		(*itlb_power_estimator)["banks"] = 4;
+// 		(*itlb_power_estimator)["tech-node"] = tech_node;
+// 		(*itlb_power_estimator)["output-width"] = 32;
+// 		(*itlb_power_estimator)["tag-width"] = 64;
+// 		(*itlb_power_estimator)["access-mode"] = "fast";
+// 	
+// 		(*dtlb_power_estimator)["cache-size"] = 128 * 2 * 4;
+// 		(*dtlb_power_estimator)["line-size"] = 4;
+// 		(*dtlb_power_estimator)["associativity"] = 2;
+// 		(*dtlb_power_estimator)["rw-ports"] = 1;
+// 		(*dtlb_power_estimator)["excl-read-ports"] = 0;
+// 		(*dtlb_power_estimator)["excl-write-ports"] = 0;
+// 		(*dtlb_power_estimator)["single-ended-read-ports"] = 0;
+// 		(*dtlb_power_estimator)["banks"] = 4;
+// 		(*dtlb_power_estimator)["tech-node"] = tech_node;
+// 		(*dtlb_power_estimator)["output-width"] = 32;
+// 		(*dtlb_power_estimator)["tag-width"] = 64;
+// 		(*dtlb_power_estimator)["access-mode"] = "fast";
+// 	}
 
 	//=========================================================================
 	//===                        Components connection                      ===
 	//=========================================================================
 
-	if(logger_on && logger_messages)
+	if(message_spy)
 	{
 		unsigned bus_msg_spy_index = 0;
 		unsigned mem_msg_spy_index = 0;
@@ -1091,40 +1022,6 @@ int sc_main(int argc, char *argv[])
 	{
 		inline_debugger->symbol_table_lookup_import >> kloader->symbol_table_lookup_export;
 	}
-	
-	/* logger connections */
-	if(logger_on) {
-		unsigned int logger_index = 0;
-		logger->time_import >> time->time_export;
-/*		cpu->logger_import >> *logger->logger_export[logger_index++];
-		cpu->fpu_logger_import >> *logger->logger_export[logger_index++];
-		cpu->mmu_logger_import >> *logger->logger_export[logger_index++];
-		bus->logger_import >> *logger->logger_export[logger_index++];
-		mpc107->logger_import >> *logger->logger_export[logger_index++];
-		pci_bus->logger_import >> *logger->logger_export[logger_index++];
-		heathrow->logger_import >> *logger->logger_export[logger_index++];
-		pci_ide->logger_import >> *logger->logger_export[logger_index++];
-		pci_display->logger_import >> *logger->logger_export[logger_index++];
-		mpc107->pci_logger_import >> *logger->logger_export[logger_index++];
-		mpc107->addr_map_logger_import >> *logger->logger_export[logger_index++];
-		mpc107->epic_logger_import >> *logger->logger_export[logger_index++];
-		mpc107->atu_logger_import >> *logger->logger_export[logger_index++];
-		sdl->logger_import >> *logger->logger_export[logger_index++];
-		pci_isa_bridge->logger_import >> *logger->logger_export[logger_index++];
-		if(gdb_server) gdb_server->logger_import >> *logger->logger_export[logger_index++];
-		for(unsigned int i = 0; i < MAX_BUS_TRANSACTION_SPY; i++)
-			if(bus_msg_spy[i] != NULL)
-				bus_msg_spy[i]->logger_import >> *logger->logger_export[logger_index++];
-		for(unsigned int i = 0; i < MAX_MEM_TRANSACTION_SPY; i++)
-			if(mem_msg_spy[i] != NULL)
-				mem_msg_spy[i]->logger_import >> *logger->logger_export[logger_index++];
-		for(unsigned int i = 0; i < MAX_PCI_TRANSACTION_SPY; i++)
-			if(pci_msg_spy[i] != NULL)
-				pci_msg_spy[i]->logger_import >> *logger->logger_export[logger_index++];
-		for(unsigned int i = 0; i < MAX_IRQ_TRANSACTION_SPY; i++)
-			if(irq_msg_spy[i] != NULL)
-				irq_msg_spy[i]->logger_import >> *logger->logger_export[logger_index++];*/
-	}
 
 #ifdef DEBUG_SERVICE
 	ServiceManager::Dump(cerr);
@@ -1236,7 +1133,6 @@ int sc_main(int argc, char *argv[])
 	if(dtlb_power_estimator) delete dtlb_power_estimator;
 	if(time) delete time;
 	if(host_time) delete host_time;
-	if(logger) delete logger;
 	if(flash) delete flash;
 	if(erom) delete erom;
 	if(pci_display) delete pci_display;

@@ -33,7 +33,7 @@
  */
  
 #include "unisim/kernel/service/service.hh"
-#include "unisim/service/interfaces/logger.hh"
+#include "unisim/kernel/logger/logger.hh"
 #include "unisim/component/cxx/chipset/mpc107/config_regs.hh"
 
 namespace unisim {
@@ -42,30 +42,23 @@ namespace cxx {
 namespace chipset {
 namespace mpc107 {
 
-using unisim::service::interfaces::Logger;
-//using unisim::service::interfaces::operator<<;
-using unisim::service::interfaces::Hex;
-using unisim::service::interfaces::Dec;
-using unisim::service::interfaces::Endl;
-using unisim::service::interfaces::DebugInfo;
-using unisim::service::interfaces::DebugWarning;
-using unisim::service::interfaces::DebugError;
-using unisim::service::interfaces::EndDebugInfo;
-using unisim::service::interfaces::EndDebugWarning;
-using unisim::service::interfaces::EndDebugError;
-using unisim::service::interfaces::Function;
-using unisim::service::interfaces::File;
-using unisim::service::interfaces::Line;
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugInfo;
+using unisim::kernel::logger::EndDebugWarning;
+using unisim::kernel::logger::EndDebugError;
 
-#define LOCATION Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__ 
+#define LOCATION "In function " << __FUNCTION__ << ", file " << __FILE__ << ", line #" << __LINE__ 
 
 template <class ADDRESS_TYPE, class PCI_ADDRESS_TYPE, bool DEBUG>
 AddressMap<ADDRESS_TYPE, PCI_ADDRESS_TYPE, DEBUG>::AddressMap(ConfigurationRegisters &_config_regs,
 	ATU<ADDRESS_TYPE, PCI_ADDRESS_TYPE, DEBUG> &_atu,
 	const char *name, Object *parent) :
 	Object(name, parent),
-	Client<Logger>(name, parent),
-	logger_import("logger_import", this), 
+	logger(*this),
+	verbose(false),
+	param_verbose("verbose", this, verbose),
 	proc_list(NULL), pci_list(NULL),
 	config_regs(&_config_regs),
 	atu(&_atu) {
@@ -480,12 +473,12 @@ CreateProcessorPCIView() {
 //	/* getting base address */
 //	eu_addr = config_regs->eumbbar.value;
 //
-//	if(DEBUG && logger_import) 
-//		(*logger_import) << DebugInfo
+//	if(unlikely(DEBUG && verbose)) 
+//		logger << DebugInfo
 //			<< LOCATION
 //			<< "Setting the embedded utilities at address 0x"
-//			<< Hex << eu_addr << Dec 
-//			<< Endl
+//			<< std::hex << eu_addr << std::dec 
+//			<< std::endl
 //			<< EndDebugInfo;
 //
 //	CreateAddressMapEntry(&proc_list,
@@ -586,11 +579,11 @@ CreateProcessorPCIView() {
 template <class ADDRESS_TYPE, class PCI_ADDRESS_TYPE, bool DEBUG>
 bool 
 AddressMap<ADDRESS_TYPE, PCI_ADDRESS_TYPE, DEBUG>::SetAddressMapA() {
-	if(logger_import) {
-		(*logger_import) << DebugError
+	if(unlikely(verbose)) {
+		logger << DebugError
 			<< LOCATION
 			<< "Address map A not implemented" 
-			<< Endl
+			<< std::endl
 			<< EndDebugError;
 	}
 	return false;
@@ -817,11 +810,11 @@ AddressMap<ADDRESS_TYPE, PCI_ADDRESS_TYPE, DEBUG>::SetAddressMapB() {
 	if((val >= 0x80000000) && (val <= 0xfdf00000))
 		eu_addr = val;
 	
-	if(DEBUG && logger_import) 
-		(*logger_import) << DebugInfo
+	if(unlikely(DEBUG && verbose)) 
+		logger << DebugInfo
 			<< LOCATION
 			<< "Setting address map B" 
-			<< Endl
+			<< std::endl
 			<< EndDebugInfo;
 
 	/* Create the processor view */
@@ -923,12 +916,12 @@ AddressMap<ADDRESS_TYPE, PCI_ADDRESS_TYPE, DEBUG>::GetEntry(AddressMapEntryNode 
 	/* this condition is only needed for debugging,
 	 *   it should be removed later */
 	if(list == NULL) {
-		if(logger_import)
-			(*logger_import) << DebugError
+		if(unlikely(verbose))
+			logger << DebugError
 				<< LOCATION
 				<< "Something went wrong, the " << list_name
 				<< " address map doesn't exist"
-				<< Endl
+				<< std::endl
 				<< EndDebugError;
 		return NULL;
 	}
@@ -941,13 +934,13 @@ AddressMap<ADDRESS_TYPE, PCI_ADDRESS_TYPE, DEBUG>::GetEntry(AddressMapEntryNode 
 		(entry != NULL) && ((entry->entry->orig > addr) || entry->entry->end < addr); 
 		entry = entry->next);
 	if(entry == NULL) {
-		if(logger_import)
-			(*logger_import) << DebugError
+		if(unlikely(verbose))
+			logger << DebugError
 				<< LOCATION
-				<< "Something went wrong, address 0x" << Hex << addr << Dec 
+				<< "Something went wrong, address 0x" << std::hex << addr << std::dec 
 				<< " was not find in the " << list_name
 				<< " address table"
-				<< Endl
+				<< std::endl
 				<< EndDebugError;
 		return NULL;
 	}

@@ -394,7 +394,7 @@ bool CPU<CONFIG>::Setup()
 		{
 			if(cpu_cycle_time < min_cycle_time)
 			{
-				if(IsVerboseSetup())
+				if(unlikely(IsVerboseSetup()))
 				{
 					logger << DebugWarning;
 					logger << "A cycle time of " << cpu_cycle_time << " ps is too low for the simulated hardware !" << endl;
@@ -413,31 +413,25 @@ bool CPU<CONFIG>::Setup()
 		if(cpu_cycle_time <= 0)
 		{
 			// We can't provide a valid configuration automatically
-			if(IsVerboseSetup())
-			{
-				logger << DebugError;
-				logger << "user must provide a cpu cycle time > 0" << endl;
-				logger << EndDebugError;
-			}
+			logger << DebugError;
+			logger << "user must provide a cpu cycle time > 0" << endl;
+			logger << EndDebugError;
 			return false;
 		}
 	}
 
-	if(IsVerboseSetup())
+	if(unlikely(IsVerboseSetup()))
 	{
 		logger << DebugInfo << "cpu cycle time of " << cpu_cycle_time << " ps" << endl << EndDebugInfo;
 	}
 
 	if(voltage <= 0)
 	{
-		if(IsVerboseSetup())
-		{
-			logger << DebugError << "user must provide a voltage > 0" << endl << EndDebugError;
-		}
+		logger << DebugError << "user must provide a voltage > 0" << endl << EndDebugError;
 		return false;
 	}
 
-	if(IsVerboseSetup())
+	if(unlikely(IsVerboseSetup()))
 	{
 		logger << DebugInfo;
 		
@@ -453,6 +447,7 @@ bool CPU<CONFIG>::Setup()
 			logger << DebugError;
 			logger << "bus cycle time must be > 0" << endl;
 			logger << EndDebugError;
+			return false;
 		}
 	}
 
@@ -498,12 +493,9 @@ bool CPU<CONFIG>::Setup()
 	
 	if(!FloatingPointSelfTest())
 	{
-		if(IsVerboseSetup())
-		{
-			logger << DebugError;
-			logger << "Floating-point self test failed !" << endl;
-			logger << EndDebugError;
-		}
+		logger << DebugError;
+		logger << "Floating-point self test failed !" << endl;
+		logger << EndDebugError;
 		return false;
 	}
 
@@ -2081,7 +2073,7 @@ void CPU<CONFIG>::StepOneInstruction()
 	catch(TLBMissException<CONFIG>& exc) { HandleException(exc); }
 	catch(Exception& e)
 	{
-		if(IsVerboseStep())
+		if(unlikely(IsVerboseStep()))
 			logger << DebugError << "uncaught processor exception :" << e.what() << endl << EndDebugError;
 		Stop(1);
 	}
@@ -2211,13 +2203,13 @@ void CPU<CONFIG>::SetHID0(uint32_t value)
 	{
 		if(!old_hid0_ice && GetHID0_ICE())
 		{
-			if(IsVerboseSetHID0())
+			if(unlikely(IsVerboseSetHID0()))
 				logger << DebugInfo << "Enabling L1 Insn Cache" << endl << EndDebugInfo;
 		}
 		
 		if(old_hid0_ice && !GetHID0_ICE())
 		{
-			if(IsVerboseSetHID0())
+			if(unlikely(IsVerboseSetHID0()))
 				logger << DebugInfo << "Disabling L1 Insn Cache" << endl << EndDebugInfo;
 		}
 	}
@@ -2226,13 +2218,13 @@ void CPU<CONFIG>::SetHID0(uint32_t value)
 	{
 		if(!old_hid0_dce && GetHID0_DCE())
 		{
-			if(IsVerboseSetHID0())
+			if(unlikely(IsVerboseSetHID0()))
 				logger << DebugInfo << "Enabling L1 Data Cache" << endl << EndDebugInfo;
 		}
 		
 		if(old_hid0_dce && !GetHID0_DCE())
 		{
-			if(IsVerboseSetHID0())
+			if(unlikely(IsVerboseSetHID0()))
 				logger << DebugInfo << "Disabling L1 Data Cache" << endl << EndDebugInfo;
 		}
 	}
@@ -2243,7 +2235,7 @@ void CPU<CONFIG>::SetHID0(uint32_t value)
 		{
 			if(CONFIG::IL1_CONFIG::ENABLE)
 			{
-				if(IsVerboseSetHID0())
+				if(unlikely(IsVerboseSetHID0()))
 					logger << DebugInfo << "Flash Invalidating L1 Insn Cache" << endl << EndDebugInfo;
 				InvalidateIL1();
 			}
@@ -2258,7 +2250,7 @@ void CPU<CONFIG>::SetHID0(uint32_t value)
 		{
 			if(CONFIG::DL1_CONFIG::ENABLE)
 			{
-				if(IsVerboseSetHID0())
+				if(unlikely(IsVerboseSetHID0()))
 					logger << DebugInfo << "Flash Invalidating L1 Data Cache" << endl << EndDebugInfo;
 				InvalidateDL1();
 			}
@@ -2270,13 +2262,13 @@ void CPU<CONFIG>::SetHID0(uint32_t value)
 	{
 		if(!old_hid0_abe && GetHID0_ABE())
 		{
-			if(IsVerboseSetHID0())
+			if(unlikely(IsVerboseSetHID0()))
 				logger << DebugInfo << "Enabling Address Only broadcast" << endl << EndDebugInfo;
 		}
 
 		if(old_hid0_abe && !GetHID0_ABE())
 		{
-			if(IsVerboseSetHID0())
+			if(unlikely(IsVerboseSetHID0()))
 				logger << DebugInfo << "Disabling Address Only broadcast" << endl << EndDebugInfo;
 		}
 	}
@@ -2293,13 +2285,13 @@ void CPU<CONFIG>::SetHID1(uint32_t value)
 	{
 		if(!old_hid1_abe && GetHID1_ABE())
 		{
-			if(IsVerboseSetHID1())
+			if(unlikely(IsVerboseSetHID1()))
 				logger << DebugInfo << "Enabling Address Only broadcast" << endl << EndDebugInfo;
 		}
 
 		if(old_hid1_abe && !GetHID1_ABE())
 		{
-			if(IsVerboseSetHID1())
+			if(unlikely(IsVerboseSetHID1()))
 				logger << DebugInfo << "Disabling Address Only broadcast" << endl << EndDebugInfo;
 		}
 	}
@@ -2317,13 +2309,13 @@ void CPU<CONFIG>::SetHID2(uint32_t value)
 	{
 		if(!old_hid2_swt_en && GetHID2_SWT_EN())
 		{
-			if(IsVerboseSetHID2())
+			if(unlikely(IsVerboseSetHID2()))
 				logger << DebugInfo << "Enabling Software Table Search" << endl << EndDebugInfo;
 		}
 	
 		if(old_hid2_swt_en && !GetHID2_SWT_EN())
 		{
-			if(IsVerboseSetHID2())
+			if(unlikely(IsVerboseSetHID2()))
 				logger << DebugInfo << "Disabling Software Table Search" << endl << EndDebugInfo;
 		}
 	}
@@ -2332,13 +2324,13 @@ void CPU<CONFIG>::SetHID2(uint32_t value)
 	{
 		if(!old_hid2_high_bat_en && GetHID2_HIGH_BAT_EN())
 		{
-			if(IsVerboseSetHID2())
+			if(unlikely(IsVerboseSetHID2()))
 				logger << DebugInfo << "Enabling IBAT[4-7] and DBAT[4-7]" << endl << EndDebugInfo;
 		}
 		
 		if(old_hid2_high_bat_en && !GetHID2_HIGH_BAT_EN())
 		{
-			if(IsVerboseSetHID2())
+			if(unlikely(IsVerboseSetHID2()))
 				logger << DebugInfo << "Disabling IBAT[4-7] and DBAT[4-7]" << endl << EndDebugInfo;
 		}
 	}
@@ -2468,13 +2460,13 @@ void CPU<CONFIG>::SetL2CR(uint32_t value)
 	{
 		if(!old_l2cr_l2e && GetL2CR_L2E())
 		{
-			if(IsVerboseSetL2CR())
+			if(unlikely(IsVerboseSetL2CR()))
 				logger << DebugInfo << "Enabling L2 Cache" << endl << EndDebugInfo;
 		}
 		
 		if(old_l2cr_l2e && !GetL2CR_L2E())
 		{
-			if(IsVerboseSetL2CR())
+			if(unlikely(IsVerboseSetL2CR()))
 				logger << DebugInfo << "Disabling L2 Cache" << endl << EndDebugInfo;
 		}
 	}
@@ -2485,11 +2477,11 @@ void CPU<CONFIG>::SetL2CR(uint32_t value)
 		{
 			if(old_l2cr_l2e)
 			{
-				if(IsVerboseSetL2CR())
+				if(unlikely(IsVerboseSetL2CR()))
 					logger << DebugWarning << "L2 Cache should be disabled prior a flash invalidation" << endl << EndDebugWarning;
 			}
 			
-			if(IsVerboseSetL2CR())
+			if(unlikely(IsVerboseSetL2CR()))
 				logger << DebugInfo << "Flash Invalidating L2 Cache" << endl << EndDebugInfo;
 			Decoder<CONFIG>::InvalidateDecodingCache();
 			if(CONFIG::L2_CONFIG::ENABLE)
@@ -2524,13 +2516,13 @@ void CPU<CONFIG>::SetMSR(uint32_t value)
 	{
 		if(!old_msr_ir && GetMSR_IR())
 		{
-			if(IsVerboseSetMSR())
+			if(unlikely(IsVerboseSetMSR()))
 				logger << DebugInfo << "Enabling IMMU" << endl << EndDebugInfo;
 		}
 	
 		if(old_msr_ir && !GetMSR_IR())
 		{
-			if(IsVerboseSetMSR())
+			if(unlikely(IsVerboseSetMSR()))
 				logger << DebugInfo << "Disabling IMMU" << endl << EndDebugInfo;
 		}
 	}
@@ -2539,13 +2531,13 @@ void CPU<CONFIG>::SetMSR(uint32_t value)
 	{
 		if(!old_msr_dr && GetMSR_DR())
 		{
-			if(IsVerboseSetMSR())
+			if(unlikely(IsVerboseSetMSR()))
 				logger << DebugInfo << "Enabling DMMU" << endl << EndDebugInfo;
 		}
 		
 		if(old_msr_dr && !GetMSR_DR())	
 		{
-			if(IsVerboseSetMSR())
+			if(unlikely(IsVerboseSetMSR()))
 				logger << DebugInfo << "Disabling DMMU" << endl << EndDebugInfo;
 		}
 	}
@@ -2554,13 +2546,13 @@ void CPU<CONFIG>::SetMSR(uint32_t value)
 	{
 		if(!old_msr_fp && GetMSR_FP())
 		{
-			if(IsVerboseSetMSR())
+			if(unlikely(IsVerboseSetMSR()))
 				logger << DebugInfo << "Enabling FPU" << endl << EndDebugInfo;
 		}
 	
 		if(old_msr_fp && !GetMSR_FP())
 		{
-			if(IsVerboseSetMSR())
+			if(unlikely(IsVerboseSetMSR()))
 				logger << DebugInfo << "Disabling FPU" << endl << EndDebugInfo;
 		}
 	}
@@ -2570,13 +2562,13 @@ void CPU<CONFIG>::SetMSR(uint32_t value)
 		uint32_t msr_fe = (CONFIG::HAS_MSR_FE0 ? GetMSR_FE0() : 0) | (CONFIG::HAS_MSR_FE1 ? GetMSR_FE1() : 0);
 		if(!old_msr_fe && msr_fe)
 		{
-			if(IsVerboseSetMSR())
+			if(unlikely(IsVerboseSetMSR()))
 				logger << DebugInfo << "Enabling FPU exception" << endl << EndDebugInfo;
 		}
 	
 		if(old_msr_fe && !msr_fe)
 		{
-			if(IsVerboseSetMSR())
+			if(unlikely(IsVerboseSetMSR()))
 				logger << DebugInfo << "Disabling FPU exception" << endl << EndDebugInfo;
 		}
 	}
@@ -2585,13 +2577,13 @@ void CPU<CONFIG>::SetMSR(uint32_t value)
 	{
 		if(!old_msr_pr && GetMSR_PR())
 		{
-			if(IsVerboseSetMSR())
+			if(unlikely(IsVerboseSetMSR()))
 				logger << DebugInfo << "Switching to user privilege level" << endl << EndDebugInfo;
 		}
 	
 		if(old_msr_pr && !GetMSR_PR())
 		{
-			if(IsVerboseSetMSR())
+			if(unlikely(IsVerboseSetMSR()))
 				logger << DebugInfo << "Switching to supervisor privilege level" << endl << EndDebugInfo;
 		}
 	}
@@ -2600,13 +2592,13 @@ void CPU<CONFIG>::SetMSR(uint32_t value)
 	{
 		if(!old_msr_le && GetMSR_LE())
 		{
-			if(IsVerboseSetMSR())
+			if(unlikely(IsVerboseSetMSR()))
 				logger << DebugInfo << "Switching to little endian" << endl << EndDebugInfo;
 		}
 	
 		if(old_msr_le && !GetMSR_LE())
 		{
-			if(IsVerboseSetMSR())
+			if(unlikely(IsVerboseSetMSR()))
 				logger << DebugInfo << "Switching to big endian" << endl << EndDebugInfo;
 		}
 	}
@@ -2725,7 +2717,7 @@ void CPU<CONFIG>::InvalidateDL1Set(uint32_t index)
 template <class CONFIG>
 void CPU<CONFIG>::InvalidateDL1()
 {
-	if(IsVerboseDL1())
+	if(unlikely(IsVerboseDL1()))
 	{
 		logger << DebugInfo << "Invalidating DL1" << endl << EndDebugInfo;
 	}
@@ -2765,7 +2757,7 @@ void CPU<CONFIG>::InvalidateIL1Set(uint32_t index)
 template <class CONFIG>
 void CPU<CONFIG>::InvalidateIL1()
 {
-	if(IsVerboseIL1())
+	if(unlikely(IsVerboseIL1()))
 	{
 		logger << DebugInfo << "Invalidating IL1" << endl << EndDebugInfo;
 	}
@@ -2806,7 +2798,7 @@ void CPU<CONFIG>::InvalidateL2Set(uint32_t index)
 template <class CONFIG>
 void CPU<CONFIG>::InvalidateL2()
 {
-	if(IsVerboseL2())
+	if(unlikely(IsVerboseL2()))
 	{
 		logger << DebugInfo << "Invalidating L2" << endl << EndDebugInfo;
 	}
@@ -2887,7 +2879,7 @@ inline void CPU<CONFIG>::LookupDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_
 	num_dl1_accesses++;
 	// Decode the address
 	dl1.DecodeAddress(addr, line_base_addr, block_base_addr, index, sector, offset, size_to_block_boundary);
-	if(IsVerboseDL1())
+	if(unlikely(IsVerboseDL1()))
 	{
 		logger << DebugInfo << "DL1 Lookup at 0x";
 		logger << std::hex << addr << std::dec << " : ";
@@ -2912,7 +2904,7 @@ inline void CPU<CONFIG>::LookupDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_
 		line = &(*set)[way];
 		if(line->status.valid && line->GetBaseAddr() == line_base_addr)
 		{
-			if(IsVerboseDL1())
+			if(unlikely(IsVerboseDL1()))
 			{
 				logger << DebugInfo << "DL1 Line hit: way=" << way << endl << EndDebugInfo;
 			}
@@ -2922,7 +2914,7 @@ inline void CPU<CONFIG>::LookupDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_
 			l1_access.way = way;
 			block = &(*line)[sector];
 			l1_access.block = block->status.valid ? block : 0;
-			if(IsVerboseDL1())
+			if(unlikely(IsVerboseDL1()))
 			{
 				logger << DebugInfo << "DL1 block " << (block->status.valid ? "hit" : "miss") << endl << EndDebugInfo;
 			}
@@ -2954,7 +2946,7 @@ inline void CPU<CONFIG>::LookupIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_
 	num_il1_accesses++;
 	// Decode the address
 	il1.DecodeAddress(addr, line_base_addr, block_base_addr, index, sector, offset, size_to_block_boundary);
-	if(IsVerboseIL1())
+	if(unlikely(IsVerboseIL1()))
 	{
 		logger << DebugInfo << "IL1 Lookup at 0x";
 		logger << std::hex << addr << std::dec << " : ";
@@ -2979,7 +2971,7 @@ inline void CPU<CONFIG>::LookupIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_
 		line = &(*set)[way];
 		if(line->status.valid && line->GetBaseAddr() == line_base_addr)
 		{
-			if(IsVerboseIL1())
+			if(unlikely(IsVerboseIL1()))
 			{
 				logger << DebugInfo << "IL1 Line hit: way=" << way << endl << EndDebugInfo;
 			}
@@ -2989,7 +2981,7 @@ inline void CPU<CONFIG>::LookupIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_
 			l1_access.way = way;
 			block = &(*line)[sector];
 			l1_access.block = block->status.valid ? block : 0;
-			if(IsVerboseIL1())
+			if(unlikely(IsVerboseIL1()))
 			{
 				logger << DebugInfo << "IL1 block " << (block->status.valid ? "hit" : "miss") << endl << EndDebugInfo;
 			}
@@ -3021,7 +3013,7 @@ void CPU<CONFIG>::LookupL2(CacheAccess<typename CONFIG::L2_CONFIG>& l2_access)
 	num_l2_accesses++;
 	// Decode the address
 	l2.DecodeAddress(addr, line_base_addr, block_base_addr, index, sector, offset, size_to_block_boundary);
-	if(IsVerboseL2())
+	if(unlikely(IsVerboseL2()))
 	{
 		logger << DebugInfo << "L2 Lookup at 0x";
 		logger << std::hex << addr << std::dec << " : ";
@@ -3046,7 +3038,7 @@ void CPU<CONFIG>::LookupL2(CacheAccess<typename CONFIG::L2_CONFIG>& l2_access)
 		line = &(*set)[way];
 		if(line->status.valid && line->GetBaseAddr() == line_base_addr)
 		{
-			if(IsVerboseL2())
+			if(unlikely(IsVerboseL2()))
 			{
 				logger << DebugInfo << "L2 Line hit: way=" << way << endl << EndDebugInfo;
 			}
@@ -3056,7 +3048,7 @@ void CPU<CONFIG>::LookupL2(CacheAccess<typename CONFIG::L2_CONFIG>& l2_access)
 			l2_access.way = way;
 			block = &(*line)[sector];
 			l2_access.block = block->status.valid ? block : 0;
-			if(IsVerboseL2())
+			if(unlikely(IsVerboseL2()))
 			{
 				logger << DebugInfo << "L2 block " << (block->status.valid ? "hit" : "miss") << endl << EndDebugInfo;
 			}
@@ -3073,7 +3065,7 @@ void CPU<CONFIG>::LookupL2(CacheAccess<typename CONFIG::L2_CONFIG>& l2_access)
 template <class CONFIG>
 inline void CPU<CONFIG>::EmuEvictDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_access)
 {
-	if(IsVerboseDL1())
+	if(unlikely(IsVerboseDL1()))
 	{
 		logger << DebugInfo << "DL1: evicting line at 0x" << std::hex << l1_access.addr << std::dec << endl << EndDebugInfo;
 	}
@@ -3098,7 +3090,7 @@ inline void CPU<CONFIG>::EmuEvictDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l
 
 					if(l2_access.block)
 					{
-						if(IsVerboseDL1())
+						if(unlikely(IsVerboseDL1()))
 						{
 							logger << DebugInfo << "DL1: evicting dirty block at 0x" << std::hex << l1_block_to_evict.GetBaseAddr() << std::dec << " into L2" << endl << EndDebugInfo;
 						}
@@ -3111,7 +3103,7 @@ inline void CPU<CONFIG>::EmuEvictDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l
 					}
 					else
 					{
-						if(IsVerboseDL1())
+						if(unlikely(IsVerboseDL1()))
 						{
 							logger << DebugInfo << "DL1: evicting dirty block at 0x" << std::hex << l1_block_to_evict.GetBaseAddr() << std::dec << " into memory" << endl << EndDebugInfo;
 						}
@@ -3122,7 +3114,7 @@ inline void CPU<CONFIG>::EmuEvictDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l
 				}
 				else
 				{
-					if(IsVerboseDL1())
+					if(unlikely(IsVerboseDL1()))
 					{
 						logger << DebugInfo << "DL1: evicting dirty block at 0x" << std::hex << l1_block_to_evict.GetBaseAddr() << std::dec << " into memory" << endl << EndDebugInfo;
 					}
@@ -3144,7 +3136,7 @@ inline void CPU<CONFIG>::EmuEvictDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l
 template <class CONFIG>
 inline void CPU<CONFIG>::EmuEvictIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_access)
 {
-	if(IsVerboseIL1())
+	if(unlikely(IsVerboseIL1()))
 	{
 		logger << DebugInfo << "IL1: evicting line at 0x" << std::hex << l1_access.addr << std::dec << endl << EndDebugInfo;
 	}
@@ -3168,7 +3160,7 @@ inline void CPU<CONFIG>::EmuEvictIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l
 template <class CONFIG>
 void CPU<CONFIG>::EmuEvictL2(CacheAccess<typename CONFIG::L2_CONFIG>& l2_access)
 {
-	if(IsVerboseL2())
+	if(unlikely(IsVerboseL2()))
 	{
 		logger << DebugInfo << "L2: evicting line at 0x" << std::hex << l2_access.addr << std::dec << endl << EndDebugInfo;
 	}
@@ -3184,7 +3176,7 @@ void CPU<CONFIG>::EmuEvictL2(CacheAccess<typename CONFIG::L2_CONFIG>& l2_access)
 			{
 				// dirty L2 block eviction into memory
 				// MPC7450UM, Rev. 5, paragraphe 3.8.3, p3-91: Because cache block castouts and snoop pushes do not require snooping, the GBL signal is not asserted for these operations.
-				if(IsVerboseL2())
+				if(unlikely(IsVerboseL2()))
 				{
 					logger << DebugInfo << "L2: evicting dirty block at 0x" << std::hex << l2_block_to_evict.GetBaseAddr() << std::dec << " into memory" << endl << EndDebugInfo;
 				}
@@ -3208,7 +3200,7 @@ inline void CPU<CONFIG>::ChooseLineToEvictDL1(CacheAccess<typename CONFIG::DL1_C
 	uint32_t n;
 	uint32_t plru_bits = l1_access.set->status.plru_bits;
 
-	if(IsVerboseDL1())
+	if(unlikely(IsVerboseDL1()))
 	{
 		logger << DebugInfo << "DL1 PLRU bits:";
 		for(i = 0; i < CONFIG::DL1_CONFIG::CACHE_ASSOCIATIVITY - 1; i++)
@@ -3237,7 +3229,7 @@ inline void CPU<CONFIG>::ChooseLineToEvictIL1(CacheAccess<typename CONFIG::IL1_C
 	uint32_t n;
 	uint32_t plru_bits = l1_access.set->status.plru_bits;
 
-	if(IsVerboseIL1())
+	if(unlikely(IsVerboseIL1()))
 	{
 		logger << DebugInfo << "IL1 PLRU bits:";
 		for(i = 0; i < CONFIG::IL1_CONFIG::CACHE_ASSOCIATIVITY - 1; i++)
@@ -3266,7 +3258,7 @@ void CPU<CONFIG>::ChooseLineToEvictL2(CacheAccess<typename CONFIG::L2_CONFIG>& l
 	uint32_t n;
 	uint32_t plru_bits = l2_access.set->status.plru_bits;
 
-	if(IsVerboseL2())
+	if(unlikely(IsVerboseL2()))
 	{
 		logger << DebugInfo << "L2 PLRU bits:";
 		for(i = 0; i < CONFIG::L2_CONFIG::CACHE_ASSOCIATIVITY - 1; i++)
@@ -3345,7 +3337,7 @@ template <class CONFIG>
 inline void CPU<CONFIG>::EmuFillDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_access, WIMG wimg, bool rwitm)
 {
 	l1_access.block = &(*l1_access.line)[l1_access.sector];
-	if(unlikely(IsVerboseDL1()))
+	if(unlikely(unlikely(IsVerboseDL1())))
 	{
 		logger << DebugInfo << "DL1: filling block at 0x" << std::hex << l1_access.block_base_addr << std::dec << endl << EndDebugInfo;
 	}
@@ -5007,7 +4999,7 @@ bool CPU<CONFIG>::ReadMemory(address_t addr, void *buffer, uint32_t size, typena
 		{
 			uint32_t sz = 0;
 
-			if(IsVerboseReadMemory())
+			if(unlikely(IsVerboseReadMemory()))
 			{
 				logger << DebugInfo << "0x" << std::hex << addr << std::dec << ":";
 			}
@@ -5029,7 +5021,7 @@ bool CPU<CONFIG>::ReadMemory(address_t addr, void *buffer, uint32_t size, typena
 							uint32_t l1_sz = (l1_access.size_to_block_boundary > size) ? size : l1_access.size_to_block_boundary;
 							memcpy((uint8_t *) buffer + read_offset, &(*l1_access.block)[l1_access.offset], l1_sz);
 							sz = l1_sz;
-							if(IsVerboseReadMemory())
+							if(unlikely(IsVerboseReadMemory()))
 							{
 								logger << "DL1: ";
 							}
@@ -5051,7 +5043,7 @@ bool CPU<CONFIG>::ReadMemory(address_t addr, void *buffer, uint32_t size, typena
 							uint32_t l1_sz = (l1_access.size_to_block_boundary > size) ? size : l1_access.size_to_block_boundary;
 							memcpy((uint8_t *) buffer + read_offset, &(*l1_access.block)[l1_access.offset], l1_sz);
 							sz = l1_sz;
-							if(IsVerboseReadMemory())
+							if(unlikely(IsVerboseReadMemory()))
 							{
 								logger << "IL1: ";
 							}
@@ -5073,7 +5065,7 @@ bool CPU<CONFIG>::ReadMemory(address_t addr, void *buffer, uint32_t size, typena
 					uint32_t l2_sz = (l2_access.size_to_block_boundary > size) ? size : l2_access.size_to_block_boundary;
 					memcpy((uint8_t *) buffer + read_offset, &(*l2_access.block)[l2_access.offset], l2_sz);
 					sz = l2_sz;
-					if(IsVerboseReadMemory())
+					if(unlikely(IsVerboseReadMemory()))
 					{
 						logger << "L2: ";
 					}
@@ -5084,13 +5076,13 @@ bool CPU<CONFIG>::ReadMemory(address_t addr, void *buffer, uint32_t size, typena
 			{
 				sz = (size_to_protection_boundary > size) ? size : size_to_protection_boundary;
 				if(!memory_import->ReadMemory(physical_addr, (uint8_t *) buffer + read_offset, sz)) return false;
-				if(IsVerboseReadMemory())
+				if(unlikely(IsVerboseReadMemory()))
 				{
 					logger << "MEM: ";
 				}
 			}
 
-			if(IsVerboseReadMemory())
+			if(unlikely(IsVerboseReadMemory()))
 			{
 				uint32_t i;
 				for(i = 0; i < sz; i++)
@@ -5153,7 +5145,7 @@ bool CPU<CONFIG>::WriteMemory(address_t addr, const void *buffer, uint32_t size,
 		{
 			uint32_t sz = 0;
 
-			if(IsVerboseWriteMemory())
+			if(unlikely(IsVerboseWriteMemory()))
 			{
 				logger << DebugInfo << "0x" << std::hex << addr << std::dec << ":";
 			}
@@ -5175,7 +5167,7 @@ bool CPU<CONFIG>::WriteMemory(address_t addr, const void *buffer, uint32_t size,
 							uint32_t l1_sz = (l1_access.size_to_block_boundary > size) ? size : l1_access.size_to_block_boundary;
 							memcpy(&(*l1_access.block)[l1_access.offset], (uint8_t *) buffer + write_offset, l1_sz);
 							sz = l1_sz;
-							if(IsVerboseWriteMemory())
+							if(unlikely(IsVerboseWriteMemory()))
 							{
 								logger << "DL1: ";
 							}
@@ -5197,7 +5189,7 @@ bool CPU<CONFIG>::WriteMemory(address_t addr, const void *buffer, uint32_t size,
 							uint32_t l1_sz = (l1_access.size_to_block_boundary > size) ? size : l1_access.size_to_block_boundary;
 							memcpy(&l1_access.block[l1_access.offset], (uint8_t *) buffer + write_offset, l1_sz);
 							sz = l1_sz;
-							if(IsVerboseWriteMemory())
+							if(unlikely(IsVerboseWriteMemory()))
 							{
 								logger << "IL1: ";
 							}
@@ -5219,7 +5211,7 @@ bool CPU<CONFIG>::WriteMemory(address_t addr, const void *buffer, uint32_t size,
 					uint32_t l2_sz = (l2_access.size_to_block_boundary > size) ? size : l2_access.size_to_block_boundary;
 					memcpy(&(*l2_access.block)[l2_access.offset], (uint8_t *) buffer + write_offset, l2_sz);
 					sz = l2_sz;
-					if(IsVerboseWriteMemory())
+					if(unlikely(IsVerboseWriteMemory()))
 					{
 						logger << "L2: ";
 					}
@@ -5230,13 +5222,13 @@ bool CPU<CONFIG>::WriteMemory(address_t addr, const void *buffer, uint32_t size,
 			{
 				sz = (size_to_protection_boundary > size) ? size : size_to_protection_boundary;
 				if(!memory_import->WriteMemory(physical_addr, (uint8_t *) buffer + write_offset, sz)) return false;
-				if(IsVerboseWriteMemory())
+				if(unlikely(IsVerboseWriteMemory()))
 				{
 					logger << "MEM: ";
 				}
 			}
 
-			if(IsVerboseWriteMemory())
+			if(unlikely(IsVerboseWriteMemory()))
 			{
 				uint32_t i;
 				for(i = 0; i < sz; i++)
@@ -5401,7 +5393,7 @@ string CPU<CONFIG>::Disasm(address_t addr, address_t& next_addr)
 template <class CONFIG>
 void CPU<CONFIG>::PerformExit(int ret)
 {
-	if(IsVerboseStep())
+	if(unlikely(IsVerboseStep()))
 		logger << DebugInfo << "Program exited with code " << ret << endl << EndDebugInfo;
 	Stop(ret);
 }
@@ -5492,7 +5484,7 @@ void CPU<CONFIG>::Dcbi(address_t addr)
 				}
 				else
 				{
-					if(IsVerboseDL1())
+					if(unlikely(IsVerboseDL1()))
 					{
 						logger << DebugInfo << "DL1: flushing/invalidating dirty block at 0x" << std::hex << l1_block_to_flush.GetBaseAddr() << std::dec << " into memory" << endl;
 					}
@@ -5522,7 +5514,7 @@ void CPU<CONFIG>::Dcbi(address_t addr)
 			if(l2_block_to_flush.status.valid && l2_block_to_flush.status.dirty)
 			{
 				dirty = true;
-				if(IsVerboseL2())
+				if(unlikely(IsVerboseL2()))
 				{
 					logger << DebugInfo << "L2: flushing/invalidating dirty block at 0x" << std::hex << l2_block_to_flush.GetBaseAddr() << std::dec << " into memory" << endl;
 				}
@@ -5605,7 +5597,7 @@ void CPU<CONFIG>::Dcbst(address_t addr)
 				}
 				else
 				{
-					if(IsVerboseDL1())
+					if(unlikely(IsVerboseDL1()))
 					{
 						logger << DebugInfo << "DL1: flushing/invalidating dirty block at 0x" << std::hex << l1_block_to_flush.GetBaseAddr() << std::dec << " into memory" << endl;
 					}
@@ -5635,7 +5627,7 @@ void CPU<CONFIG>::Dcbst(address_t addr)
 			if(l2_block_to_flush.status.valid && l2_block_to_flush.status.dirty)
 			{
 				dirty = true;
-				if(IsVerboseL2())
+				if(unlikely(IsVerboseL2()))
 				{
 					logger << DebugInfo << "L2: flushing/invalidating dirty block at 0x" << std::hex << l2_block_to_flush.GetBaseAddr() << std::dec << " into memory" << endl;
 				}
@@ -5706,7 +5698,7 @@ void CPU<CONFIG>::Dcbz(address_t addr)
 		if(!l1_access.line)
 		{
 			ChooseLineToEvictDL1(l1_access);
-			if(IsVerboseDL1())
+			if(unlikely(IsVerboseDL1()))
 			{
 				logger << DebugInfo << "DL1 line miss: choosen way=" << l1_access.way << endl << EndDebugInfo;
 			}
@@ -5739,7 +5731,7 @@ void CPU<CONFIG>::Dcbz(address_t addr)
 			if(!l2_access.line)
 			{
 				ChooseLineToEvictL2(l2_access);
-				if(IsVerboseL2())
+				if(unlikely(IsVerboseL2()))
 				{
 					logger << DebugInfo << "L2 line miss: choosen way=" << l2_access.way << endl << EndDebugInfo;
 				}
@@ -5984,7 +5976,7 @@ void CPU<CONFIG>::AckDecrementerOverflow()
 template <class CONFIG>
 void CPU<CONFIG>::ReqExternalInterrupt()
 {
-	if(IsVerboseException()) {
+	if(unlikely(IsVerboseException())) {
 		logger << DebugInfo << "Received external interrupt" << EndDebugInfo;
 	}
 	external_interrupt = true;
