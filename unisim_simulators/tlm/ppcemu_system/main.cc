@@ -224,6 +224,398 @@ typedef unisim::component::tlm::debug::TransactionSpy<IRQReqSpyType> IRQMsgSpyTy
 
 extern char **environ;
 
+//=========================================================================
+//===                             Components                            ===
+//=========================================================================
+//  - PowerPC processor
+CPU *cpu = 0;
+//  - Front side bus
+FRONT_SIDE_BUS *bus = 0;
+//  - MPC107 chipset
+MPC107 *mpc107 = 0;
+//  - RAM
+MEMORY *memory = 0;
+//  - EROM
+MEMORY *erom = 0;
+//  - Flash memory
+FLASH *flash = 0;
+//  - PCI Bus
+PCI_BUS *pci_bus = 0;
+//  - PCI PIIX4 IDE controller
+PCI_IDE *pci_ide = 0;
+//  - PCI Heathrow PIC controller
+HEATHROW *heathrow = 0;
+//  - PCI Display (just a frame buffer for now)
+PCI_DISPLAY *pci_display = 0;
+//  - PCI to ISA Bridge
+PCI_ISA_BRIDGE *pci_isa_bridge = 0;
+//  - i8042 keyboard controller
+I8042 *i8042 = 0;
+
+//=========================================================================
+//===            Debugging stuff: Transaction spy instantiations        ===
+//=========================================================================
+BusMsgSpyType *bus_msg_spy[MAX_BUS_TRANSACTION_SPY];
+MemMsgSpyType *mem_msg_spy[MAX_MEM_TRANSACTION_SPY];
+PCIMsgSpyType *pci_msg_spy[MAX_PCI_TRANSACTION_SPY];
+IRQMsgSpyType *irq_msg_spy[MAX_IRQ_TRANSACTION_SPY];
+
+//=========================================================================
+//===                            Services                               ===
+//=========================================================================
+//  - Simple Direct Media Layer (www.libsdl.org)
+unisim::service::sdl::SDL<PCI_ADDRESS_TYPE> *sdl = 0;
+//  - PowerMac Linux kernel loader
+//    A Linux kernel loader acting as a firmware and a bootloader of a real PowerMac machine
+PMACLinuxKernelLoader *kloader = 0;
+//  - GDB server
+GDBServer<CPU_ADDRESS_TYPE> *gdb_server = 0;
+//  - Inline debugger
+InlineDebugger<CPU_ADDRESS_TYPE> *inline_debugger = 0;
+//  - SystemC Time
+unisim::service::time::sc_time::ScTime *sim_time = 0;
+//  - Host Time
+unisim::service::time::host_time::HostTime *host_time = 0;
+//  - the optional power estimators
+CachePowerEstimator *il1_power_estimator = 0;
+CachePowerEstimator *dl1_power_estimator = 0;
+CachePowerEstimator *l2_power_estimator = 0;
+CachePowerEstimator *itlb_power_estimator = 0;
+CachePowerEstimator *dtlb_power_estimator = 0;
+
+void LoadDefaultRunTimeConfiguration()
+{
+	// Default run-time configuration
+	int gdb_server_tcp_port = 1234;
+	const char *device_tree_filename = "device_tree.xml";
+	const char *gdb_server_arch_filename = "gdb_powerpc.xml";
+	const char *ramdisk_filename = "initrd.img.gz";
+	const char *bmp_out_filename = "capture";
+	const char *keymap_filename = "keymap.xml";
+	uint64_t max_inst = 0xffffffffffffffffULL; // maximum number of instruction to simulate
+	uint32_t pci_bus_frequency = 33; // in Mhz
+	uint32_t isa_bus_frequency = 8; // in Mhz
+	double cpu_frequency = 300.0; // in Mhz
+	uint32_t cpu_clock_multiplier = 4;
+	double fsb_frequency = cpu_frequency / cpu_clock_multiplier; // FIXME: to be removed
+	uint32_t tech_node = 130; // in nm
+	uint32_t display_width = 640; // in pixels
+	uint32_t display_height = 480; // in pixels
+	uint32_t display_depth = 15; // in bits per pixel
+	uint32_t display_vfb_size = 8 * 1024 * 1024; // 8 MB
+	uint32_t video_refresh_period = 40; // every 40 ms (25 fps)
+	uint32_t memory_size = 256 * 1024 * 1024; // 256 MB
+	double cpu_ipc = 1.0; // in instructions per cycle
+	uint64_t cpu_cycle_time = (uint64_t)(1e6 / cpu_frequency); // in picoseconds
+	uint64_t fsb_cycle_time = cpu_clock_multiplier * cpu_cycle_time;
+	uint32_t mem_cycle_time = fsb_cycle_time;
+
+	//  - Front Side Bus
+	if(bus)
+	{
+		(*bus)["cycle-time"] = fsb_cycle_time;
+	}
+
+	//	- PowerPC processor
+	// if the following line ("cpu-cycle-time") is commented, the cpu will use the power estimators to find min cpu cycle time
+	if(cpu)
+	{
+		(*cpu)["cpu-cycle-time"] = cpu_cycle_time;
+		(*cpu)["bus-cycle-time"] = fsb_cycle_time;
+		(*cpu)["voltage"] = 1.3 * 1e3; // mV
+		(*cpu)["nice-time"] = 1000000000; // 1 ms
+		(*cpu)["max-inst"] = max_inst;
+		(*cpu)["ipc"] = cpu_ipc;
+	}
+
+	//  - RAM
+	if(memory)
+	{
+		(*memory)["cycle-time"] = mem_cycle_time;
+		(*memory)["org"] = 0x00000000UL;
+		(*memory)["bytesize"] = memory_size;
+	}
+
+	// MPC107 run-time configuration
+	if(mpc107)
+	{
+		(*mpc107)["a_address_map"] = false;
+		(*mpc107)["host_mode"] = true;
+		(*mpc107)["memory_32bit_data_bus_size"] = true;
+		(*mpc107)["rom0_8bit_data_bus_size"] = false;
+		(*mpc107)["rom1_8bit_data_bus_size"] = false;
+		(*mpc107)["frequency"] = fsb_frequency;
+		(*mpc107)["sdram_cycle_time"] = mem_cycle_time;
+	}
+
+	//  - EROM run-time configuration
+	if(erom)
+	{
+		(*erom)["org"] =  0x78000000UL;
+		(*erom)["bytesize"] = 2 * 8 * 1024 * 1024;
+		(*erom)["cycle-time"] = mem_cycle_time;
+	}
+
+	//  - Flash memory run-time configuration
+	if(flash)
+	{
+		(*flash)["org"] = 0xff800000UL; //0xff000000UL;
+		(*flash)["bytesize"] = 8 * 1024 * 1024;
+		(*flash)["cycle-time"] = mem_cycle_time;
+		(*flash)["endian"] = "big-endian";
+	}
+
+	// PCI Bus run-time configuration
+	if(pci_bus)
+	{
+		unsigned int mapping_index = 0;
+		(*pci_bus)["frequency"] = pci_bus_frequency;
+
+		(*pci_bus)["base-address"][mapping_index] = 0;
+		(*pci_bus)["size"][mapping_index] = 1024 * 1024 * 1024;
+		(*pci_bus)["device-number"][mapping_index] = PCI_MPC107_DEV_NUM;
+		(*pci_bus)["target-port"][mapping_index] = PCI_MPC107_SLAVE_PORT;
+		(*pci_bus)["register-number"][mapping_index] = 0x10;
+		(*pci_bus)["addr-type"][mapping_index] = "mem";
+		(*pci_bus)["num-mappings"] = ++mapping_index;
+
+		(*pci_bus)["base-address"][mapping_index] = 0xf3000000UL;
+		(*pci_bus)["size"][mapping_index] = 0x80000;
+		(*pci_bus)["device-number"][mapping_index] = PCI_HEATHROW_DEV_NUM;
+		(*pci_bus)["target-port"][mapping_index] = PCI_HEATHROW_SLAVE_PORT;
+		(*pci_bus)["register-number"][mapping_index] = 0x10UL;
+		(*pci_bus)["addr-type"][mapping_index] = "mem";
+		(*pci_bus)["num-mappings"] = ++mapping_index;
+		
+		(*pci_bus)["base-address"][mapping_index] = 0x18100UL;
+		(*pci_bus)["size"][mapping_index] = 8;
+		(*pci_bus)["device-number"][mapping_index] = PCI_IDE_DEV_NUM;
+		(*pci_bus)["target-port"][mapping_index] = PCI_IDE_SLAVE_PORT;
+		(*pci_bus)["register-number"][mapping_index] = 0x10UL;
+		(*pci_bus)["addr-type"][mapping_index] = "i/o";
+		(*pci_bus)["num-mappings"] = ++mapping_index;
+		
+		(*pci_bus)["base-address"][mapping_index] = 0x18108UL;
+		(*pci_bus)["size"][mapping_index] = 4;
+		(*pci_bus)["device-number"][mapping_index] = PCI_IDE_DEV_NUM;
+		(*pci_bus)["target-port"][mapping_index] = PCI_IDE_SLAVE_PORT;
+		(*pci_bus)["register-number"][mapping_index] = 0x14UL;
+		(*pci_bus)["addr-type"][mapping_index] = "i/o";
+		(*pci_bus)["num-mappings"] = ++mapping_index;
+		
+		(*pci_bus)["base-address"][mapping_index] = 0x4UL;
+		(*pci_bus)["size"][mapping_index] = 8;
+		(*pci_bus)["device-number"][mapping_index] = PCI_IDE_DEV_NUM;
+		(*pci_bus)["target-port"][mapping_index] = PCI_IDE_SLAVE_PORT;
+		(*pci_bus)["register-number"][mapping_index] = 0x18UL;
+		(*pci_bus)["addr-type"][mapping_index] = "i/o";
+		(*pci_bus)["num-mappings"] = ++mapping_index;
+		
+		(*pci_bus)["base-address"][mapping_index] = 0xcUL;
+		(*pci_bus)["size"][mapping_index] = 4;
+		(*pci_bus)["device-number"][mapping_index] = PCI_IDE_DEV_NUM;
+		(*pci_bus)["target-port"][mapping_index] = PCI_IDE_SLAVE_PORT;
+		(*pci_bus)["register-number"][mapping_index] = 0x1cUL;
+		(*pci_bus)["addr-type"][mapping_index] = "i/o";
+		(*pci_bus)["num-mappings"] = ++mapping_index;
+		
+		(*pci_bus)["base-address"][mapping_index] = 0x18118UL;
+		(*pci_bus)["size"][6] = 16;
+		(*pci_bus)["device-number"][mapping_index] = PCI_IDE_DEV_NUM;
+		(*pci_bus)["target-port"][mapping_index] = PCI_IDE_SLAVE_PORT;
+		(*pci_bus)["register-number"][mapping_index] = 0x20UL;
+		(*pci_bus)["addr-type"][mapping_index] = "i/o";
+		(*pci_bus)["num-mappings"] = ++mapping_index;
+
+		(*pci_bus)["base-address"][mapping_index] = 0xa0000000UL;
+		(*pci_bus)["size"][mapping_index] = 0x800000;
+		(*pci_bus)["device-number"][mapping_index] = PCI_DISPLAY_DEV_NUM;
+		(*pci_bus)["target-port"][mapping_index] = PCI_DISPLAY_SLAVE_PORT;
+		(*pci_bus)["register-number"][mapping_index] = 0x10UL;
+		(*pci_bus)["addr-type"][mapping_index] = "mem";
+		(*pci_bus)["num-mappings"] = ++mapping_index;
+		
+		(*pci_bus)["base-address"][mapping_index] = 0; //0xfe000000UL; // ISA I/O is at the very beginning of PCI I/O space
+		(*pci_bus)["size"][mapping_index] = 0x10000; // 64 KB
+		(*pci_bus)["device-number"][mapping_index] = PCI_ISA_BRIDGE_DEV_NUM;
+		(*pci_bus)["target-port"][mapping_index] = PCI_ISA_BRIDGE_SLAVE_PORT;
+		(*pci_bus)["register-number"][mapping_index] = 0x10UL; // ISA I/O space mapped by BAR0
+		(*pci_bus)["addr-type"][mapping_index] = "i/o";
+		(*pci_bus)["num-mappings"] = ++mapping_index;
+
+		(*pci_bus)["base-address"][mapping_index] = 0x000a0000UL; // ISA Memory is at the very beginning of compatibility hole
+		(*pci_bus)["size"][mapping_index] = 0x60000; // 384 KB
+		(*pci_bus)["device-number"][mapping_index] = PCI_ISA_BRIDGE_DEV_NUM;
+		(*pci_bus)["target-port"][mapping_index] = PCI_ISA_BRIDGE_SLAVE_PORT;
+		(*pci_bus)["register-number"][mapping_index] = 0x14UL; // ISA Memory space mapped by BAR1
+		(*pci_bus)["addr-type"][mapping_index] = "mem";
+		(*pci_bus)["num-mappings"] = ++mapping_index;
+	}
+
+	//  - PCI MAC I/O Heathrow run-time configuration
+	if(heathrow)
+	{
+		(*heathrow)["initial-base-addr"] = 0xf3000000UL;
+		(*heathrow)["pci-device-number"] = PCI_HEATHROW_DEV_NUM;
+		(*heathrow)["bus-frequency"] = pci_bus_frequency;
+	}
+
+	//  - PCI IDE run-time configuration
+	if(pci_ide)
+	{
+		(*pci_ide)["device-number"] = PCI_IDE_DEV_NUM;
+		(*pci_ide)["base-address"][0] = 0x18101;
+		(*pci_ide)["size"][0] = 8;
+		(*pci_ide)["register-number"][0] = 0x10;
+		(*pci_ide)["base-address"][1] = 0x18109;
+		(*pci_ide)["size"][1] = 4;
+		(*pci_ide)["register-number"][1] = 0x14;
+		(*pci_ide)["base-address"][2] = 0x5;
+		(*pci_ide)["size"][2] = 8;
+		(*pci_ide)["register-number"][2] = 0x18;
+		(*pci_ide)["base-address"][3] = 0xd;
+		(*pci_ide)["size"][3] = 4;
+		(*pci_ide)["register-number"][3] = 0x1c;
+		(*pci_ide)["base-address"][4] = 0x18119;
+		(*pci_ide)["size"][4] = 16;
+		(*pci_ide)["register-number"][4] = 0x20;
+	}
+
+	//  - Display run-time configuration
+	if(pci_display)
+	{
+		(*pci_display)["initial-base-addr"] = 0xa0000000UL;
+		(*pci_display)["bytesize"] = display_vfb_size; 
+		(*pci_display)["width"] = display_width;
+		(*pci_display)["height"] = display_height;
+		(*pci_display)["depth"] = display_depth;
+		(*pci_display)["pci-bus-frequency"] = pci_bus_frequency;
+	}
+
+	// - PCI-ISA Bridge run-time configuration
+	if(pci_isa_bridge)
+	{
+		(*pci_isa_bridge)["initial-base-addr"] = 0x000a0000UL;
+		(*pci_isa_bridge)["initial-io-base-addr"] = 0; //0xfe000000UL;
+		(*pci_isa_bridge)["pci-bus-frequency"] = pci_bus_frequency;
+		(*pci_isa_bridge)["isa-bus-frequency"] = isa_bus_frequency;
+		(*pci_isa_bridge)["pci-device-number"] = PCI_ISA_BRIDGE_DEV_NUM;
+	}
+
+	//  - i8042 run-time configuration
+	if(i8042)
+	{
+		(*i8042)["fsb-frequency"] = fsb_frequency;
+		(*i8042)["isa-bus-frequency"] = isa_bus_frequency;
+	}
+	
+	// - Cache/TLB power estimators run-time configuration
+	if(il1_power_estimator)
+	{
+		(*il1_power_estimator)["cache-size"] = 32 * 1024;
+		(*il1_power_estimator)["line-size"] = 32;
+		(*il1_power_estimator)["associativity"] = 8;
+		(*il1_power_estimator)["rw-ports"] = 0;
+		(*il1_power_estimator)["excl-read-ports"] = 1;
+		(*il1_power_estimator)["excl-write-ports"] = 0;
+		(*il1_power_estimator)["single-ended-read-ports"] = 0;
+		(*il1_power_estimator)["banks"] = 4;
+		(*il1_power_estimator)["tech-node"] = tech_node;
+		(*il1_power_estimator)["output-width"] = 128;
+		(*il1_power_estimator)["tag-width"] = 64;
+		(*il1_power_estimator)["access-mode"] = "fast";
+	}
+	
+	if(dl1_power_estimator)
+	{
+		(*dl1_power_estimator)["cache-size"] = 32 * 1024;
+		(*dl1_power_estimator)["line-size"] = 32;
+		(*dl1_power_estimator)["associativity"] = 8;
+		(*dl1_power_estimator)["rw-ports"] = 1;
+		(*dl1_power_estimator)["excl-read-ports"] = 0;
+		(*dl1_power_estimator)["excl-write-ports"] = 0;
+		(*dl1_power_estimator)["single-ended-read-ports"] = 0;
+		(*dl1_power_estimator)["banks"] = 4;
+		(*dl1_power_estimator)["tech-node"] = tech_node;
+		(*dl1_power_estimator)["output-width"] = 64;
+		(*dl1_power_estimator)["tag-width"] = 64;
+		(*dl1_power_estimator)["access-mode"] = "fast";
+	}
+	
+	if(l2_power_estimator)
+	{
+		(*l2_power_estimator)["cache-size"] = 512 * 1024;
+		(*l2_power_estimator)["line-size"] = 32;
+		(*l2_power_estimator)["associativity"] = 8;
+		(*l2_power_estimator)["rw-ports"] = 1;
+		(*l2_power_estimator)["excl-read-ports"] = 0;
+		(*l2_power_estimator)["excl-write-ports"] = 0;
+		(*l2_power_estimator)["single-ended-read-ports"] = 0;
+		(*l2_power_estimator)["banks"] = 4;
+		(*l2_power_estimator)["tech-node"] = tech_node;
+		(*l2_power_estimator)["output-width"] = 256;
+		(*l2_power_estimator)["tag-width"] = 64;
+		(*l2_power_estimator)["access-mode"] = "fast";
+	}
+	
+	if(itlb_power_estimator)
+	{
+		(*itlb_power_estimator)["cache-size"] = 128 * 2 * 4;
+		(*itlb_power_estimator)["line-size"] = 4;
+		(*itlb_power_estimator)["associativity"] = 2;
+		(*itlb_power_estimator)["rw-ports"] = 1;
+		(*itlb_power_estimator)["excl-read-ports"] = 0;
+		(*itlb_power_estimator)["excl-write-ports"] = 0;
+		(*itlb_power_estimator)["single-ended-read-ports"] = 0;
+		(*itlb_power_estimator)["banks"] = 4;
+		(*itlb_power_estimator)["tech-node"] = tech_node;
+		(*itlb_power_estimator)["output-width"] = 32;
+		(*itlb_power_estimator)["tag-width"] = 64;
+		(*itlb_power_estimator)["access-mode"] = "fast";
+	}
+	
+	if(dtlb_power_estimator)
+	{
+		(*dtlb_power_estimator)["cache-size"] = 128 * 2 * 4;
+		(*dtlb_power_estimator)["line-size"] = 4;
+		(*dtlb_power_estimator)["associativity"] = 2;
+		(*dtlb_power_estimator)["rw-ports"] = 1;
+		(*dtlb_power_estimator)["excl-read-ports"] = 0;
+		(*dtlb_power_estimator)["excl-write-ports"] = 0;
+		(*dtlb_power_estimator)["single-ended-read-ports"] = 0;
+		(*dtlb_power_estimator)["banks"] = 4;
+		(*dtlb_power_estimator)["tech-node"] = tech_node;
+		(*dtlb_power_estimator)["output-width"] = 32;
+		(*dtlb_power_estimator)["tag-width"] = 64;
+		(*dtlb_power_estimator)["access-mode"] = "fast";
+	}
+
+	if(gdb_server)
+	{
+		(*gdb_server)["tcp-port"] = gdb_server_tcp_port;
+		(*gdb_server)["architecture-description-filename"] = gdb_server_arch_filename;
+	}
+
+	//  - SDL run-time configuration
+	if(sdl)
+	{
+		(*sdl)["refresh-period"] = video_refresh_period;
+		(*sdl)["bmp-out-filename"] = bmp_out_filename;	
+		(*sdl)["keymap-filename"] = keymap_filename;	
+	}
+
+	// - Kernel loader configuration
+	if(kloader)
+	{
+		(*kloader)["pmac-bootx.device-tree-filename"] = device_tree_filename;
+		(*kloader)["pmac-bootx.kernel-params"] = ""; // no kernel parameters
+		(*kloader)["pmac-bootx.ramdisk-filename"] = ramdisk_filename;
+		(*kloader)["pmac-bootx.screen-width"] = display_width;
+		(*kloader)["pmac-bootx.screen-height"] = display_height;
+		(*kloader)["elf32-loader.base-addr"] = 0x00400000UL;
+	}
+}
+
 int sc_main(int argc, char *argv[])
 {
 #ifdef WIN32
@@ -253,36 +645,12 @@ int sc_main(int argc, char *argv[])
 	bool use_gdb_server = false;
 	bool use_inline_debugger = false;
 	bool estimate_power = false;
-	bool enable_video_output = true;
-	uint32_t video_refresh_period = 1000; // every 1 second
 	int gdb_server_tcp_port = 0;
-	const char *device_tree_filename = "device_tree.xml";
-	const char *gdb_server_arch_filename = "gdb_powerpc.xml";
-	const char *ramdisk_filename = "initrd.img.gz";
-	const char *image0_filename = "hd.img";
-	const char *bmp_out_filename = "capture";
-	const char *keymap_filename = "keymap.xml";
-	char const *set_config_name = "default_parameters.xml";
-	char const *get_config_name = "default_parameters.xml";
+	char const *set_config_name = "default_config.xml";
+	char const *get_config_name = "default_config.xml";
 	bool get_config = false;
 	bool set_config = false;
 	bool message_spy = false;
-	uint64_t maxinst = 0; // maximum number of instruction to simulate
-	uint32_t pci_bus_frequency = 33; // in Mhz
-	uint32_t isa_bus_frequency = 8; // in Mhz
-	double cpu_frequency = 300.0; // in Mhz
-	uint32_t cpu_clock_multiplier = 4;
-	double fsb_frequency = cpu_frequency / cpu_clock_multiplier; // FIXME: to be removed
-	uint32_t tech_node = 130; // in nm
-	uint32_t display_width = 800; // in pixels
-	uint32_t display_height = 600; // in pixels
-	uint32_t display_depth = 15; // in bits per pixel
-	uint32_t display_vfb_size = 8 * 1024 * 1024; // 8 MB
-	uint32_t memory_size = 256 * 1024 * 1024; // 256 MB
-	double cpu_ipc = 1.0; // in instructions per cycle
-	uint64_t cpu_cycle_time = (uint64_t)(1e6 / cpu_frequency); // in picoseconds
-	uint64_t fsb_cycle_time = cpu_clock_multiplier * cpu_cycle_time;
-	uint32_t mem_cycle_time = fsb_cycle_time;
 	std::list<string> set_vars;
 	
 	// build the option string for getopt
@@ -356,37 +724,33 @@ int sc_main(int argc, char *argv[])
 	//===                     Component instantiations                      ===
 	//=========================================================================
 	//  - PowerPC processor
-	CPU *cpu =new CPU("cpu");
+	cpu =new CPU("cpu");
 	//  - Front side bus
-	FRONT_SIDE_BUS *bus = new FRONT_SIDE_BUS("bus");
+	bus = new FRONT_SIDE_BUS("bus");
 	//  - MPC107 chipset
-	MPC107 *mpc107 = new MPC107("mpc107");
+	mpc107 = new MPC107("mpc107");
 	//  - RAM
-	MEMORY *memory = new MEMORY("memory");
+	memory = new MEMORY("memory");
 	//  - EROM
-	MEMORY *erom = new MEMORY("erom");
+	erom = new MEMORY("erom");
 	//  - Flash memory
-	FLASH *flash = new FLASH("flash");
+	flash = new FLASH("flash");
 	//  - PCI Bus
-	PCI_BUS *pci_bus = new PCI_BUS("pci-bus");
+	pci_bus = new PCI_BUS("pci-bus");
 	//  - PCI PIIX4 IDE controller
-	PCI_IDE *pci_ide = new PCI_IDE("pci-ide");
+	pci_ide = new PCI_IDE("pci-ide");
 	//  - PCI Heathrow PIC controller
-	HEATHROW *heathrow = new HEATHROW("heathrow");
+	heathrow = new HEATHROW("heathrow");
 	//  - PCI Display (just a frame buffer for now)
-	PCI_DISPLAY *pci_display = new PCI_DISPLAY("pci-display");
+	pci_display = new PCI_DISPLAY("pci-display");
 	//  - PCI to ISA Bridge
-	PCI_ISA_BRIDGE *pci_isa_bridge = new PCI_ISA_BRIDGE("pci-isa-bridge");
+	pci_isa_bridge = new PCI_ISA_BRIDGE("pci-isa-bridge");
 	//  - i8042 keyboard controller
-	I8042 *i8042 = new I8042("i8042");
+	i8042 = new I8042("i8042");
 
 	//=========================================================================
 	//===            Debugging stuff: Transaction spy instantiations        ===
 	//=========================================================================
-	BusMsgSpyType *bus_msg_spy[MAX_BUS_TRANSACTION_SPY];
-	MemMsgSpyType *mem_msg_spy[MAX_MEM_TRANSACTION_SPY];
-	PCIMsgSpyType *pci_msg_spy[MAX_PCI_TRANSACTION_SPY];
-	IRQMsgSpyType *irq_msg_spy[MAX_IRQ_TRANSACTION_SPY];
 
 	if(message_spy)
 	{
@@ -431,348 +795,73 @@ int sc_main(int argc, char *argv[])
 	//===                         Service instantiations                    ===
 	//=========================================================================
 	//  - Simple Direct Media Layer (www.libsdl.org)
-	unisim::service::sdl::SDL<PCI_ADDRESS_TYPE> *sdl = new unisim::service::sdl::SDL<PCI_ADDRESS_TYPE>("sdl");
+	sdl = new unisim::service::sdl::SDL<PCI_ADDRESS_TYPE>("sdl");
 	//  - PowerMac Linux kernel loader
 	//    A Linux kernel loader acting as a firmware and a bootloader of a real PowerMac machine
-	PMACLinuxKernelLoader *kloader = new PMACLinuxKernelLoader("pmac-linux-kernel-loader");
+	kloader = new PMACLinuxKernelLoader("pmac-linux-kernel-loader");
 	//  - GDB server
-	GDBServer<CPU_ADDRESS_TYPE> *gdb_server = (use_gdb_server || get_config) ? new GDBServer<CPU_ADDRESS_TYPE>("gdb-server") : 0;
+	gdb_server = (use_gdb_server || get_config) ? new GDBServer<CPU_ADDRESS_TYPE>("gdb-server") : 0;
 	//  - Inline debugger
-	InlineDebugger<CPU_ADDRESS_TYPE> *inline_debugger = (use_inline_debugger || get_config) ? new InlineDebugger<CPU_ADDRESS_TYPE>("inline-debugger") : 0;
+	inline_debugger = (use_inline_debugger || get_config) ? new InlineDebugger<CPU_ADDRESS_TYPE>("inline-debugger") : 0;
 	//  - SystemC Time
-	unisim::service::time::sc_time::ScTime *time = new unisim::service::time::sc_time::ScTime("time");
+	sim_time = new unisim::service::time::sc_time::ScTime("time");
 	//  - Host Time
-	unisim::service::time::host_time::HostTime *host_time = new unisim::service::time::host_time::HostTime("host-time");
+	host_time = new unisim::service::time::host_time::HostTime("host-time");
 	//  - the optional power estimators
-	CachePowerEstimator *il1_power_estimator = (estimate_power || get_config) ? new CachePowerEstimator("il1-power-estimator") : 0;
-	CachePowerEstimator *dl1_power_estimator = (estimate_power || get_config) ? new CachePowerEstimator("dl1-power-estimator") : 0;
-	CachePowerEstimator *l2_power_estimator = (estimate_power || get_config) ? new CachePowerEstimator("l2-power-estimator") : 0;
-	CachePowerEstimator *itlb_power_estimator = (estimate_power || get_config) ? new CachePowerEstimator("itlb-power-estimator") : 0;
-	CachePowerEstimator *dtlb_power_estimator = (estimate_power || get_config) ? new CachePowerEstimator("dtlb-power-estimator") : 0;
+	il1_power_estimator = (estimate_power || get_config) ? new CachePowerEstimator("il1-power-estimator") : 0;
+	dl1_power_estimator = (estimate_power || get_config) ? new CachePowerEstimator("dl1-power-estimator") : 0;
+	l2_power_estimator = (estimate_power || get_config) ? new CachePowerEstimator("l2-power-estimator") : 0;
+	itlb_power_estimator = (estimate_power || get_config) ? new CachePowerEstimator("itlb-power-estimator") : 0;
+	dtlb_power_estimator = (estimate_power || get_config) ? new CachePowerEstimator("dtlb-power-estimator") : 0;
 
 	//=========================================================================
 	//===                        Run-time configuration                     ===
 	//=========================================================================
 
+	// From the default set of parameters
+	LoadDefaultRunTimeConfiguration();
+	
+	//=========================================================================
+	//===                    Overload of run-time configuration             ===
+	//=========================================================================
+
+	// From a configuration file
 	if(set_config)
 	{
 		ServiceManager::LoadXmlParameters(set_config_name);
 		cerr << "Parameters set using file \"" << set_config_name << "\"" << endl;
 	}
-	if(get_config)
-	{
-		ServiceManager::XmlfyParameters(get_config_name);
-		cerr << "Parameters saved on file \"" << get_config_name << "\"" << endl;
-		return 0;
-	}
-	if(!set_config)
-	{
-		if (!get_config) help(argv[0]);
-		return 0;
-	}
-
-	//  - Front Side Bus
-// 	(*bus)["cycle-time"] = fsb_cycle_time;
-
-	//  - PowerPC processor
-	// if the following line ("cpu-cycle-time") is commented, the cpu will use the power estimators to find min cpu cycle time
-// 	(*cpu)["cpu-cycle-time"] = cpu_cycle_time;
-// 	(*cpu)["bus-cycle-time"] = fsb_cycle_time;
-// 	(*cpu)["voltage"] = 1.3 * 1e3; // mV
-// 	(*cpu)["nice-time"] = 1000000000; // 1 ms
-// 	if(maxinst)
-// 	{
-// 		(*cpu)["max-inst"] = maxinst;
-// 	}
-// 	(*cpu)["ipc"] = cpu_ipc;
-
-	//  - RAM
-// 	(*memory)["cycle-time"] = mem_cycle_time;
-// 	(*memory)["org"] = 0x00000000UL;
-// 	(*memory)["bytesize"] = memory_size;
-
-	// MPC107 run-time configuration
-// 	(*mpc107)["a_address_map"] = false;
-// 	(*mpc107)["host_mode"] = true;
-// 	(*mpc107)["memory_32bit_data_bus_size"] = true;
-// 	(*mpc107)["rom0_8bit_data_bus_size"] = false;
-// 	(*mpc107)["rom1_8bit_data_bus_size"] = false;
-// 	(*mpc107)["frequency"] = fsb_frequency;
-// 	(*mpc107)["sdram_cycle_time"] = mem_cycle_time;
-
-	//  - EROM run-time configuration
-/*	(*erom)["org"] =  0x78000000UL;
-	(*erom)["bytesize"] = 2 * 8 * 1024 * 1024;
-	(*erom)["cycle-time"] = mem_cycle_time;*/
-	
-	//  - Flash memory run-time configuration
-//     (*flash)["org"] = 0xff800000UL; //0xff000000UL;
-//     (*flash)["bytesize"] = 8 * 1024 * 1024;
-//     (*flash)["cycle-time"] = mem_cycle_time;
-// 	(*flash)["endian"] = "big-endian";
-
-	// PCI Bus run-time configuration
-// 	unsigned int mapping_index = 0;
-// 	(*pci_bus)["frequency"] = pci_bus_frequency;
-// 
-// 	(*pci_bus)["base-address"][mapping_index] = 0;
-// 	(*pci_bus)["size"][mapping_index] = 1024 * 1024 * 1024;
-// 	(*pci_bus)["device-number"][mapping_index] = PCI_MPC107_DEV_NUM;
-// 	(*pci_bus)["target-port"][mapping_index] = PCI_MPC107_SLAVE_PORT;
-// 	(*pci_bus)["register-number"][mapping_index] = 0x10;
-// 	(*pci_bus)["addr-type"][mapping_index] = "mem";
-// 	(*pci_bus)["num-mappings"] = ++mapping_index;
-// 	
-// 	(*pci_bus)["base-address"][mapping_index] = 0xf3000000UL;
-// 	(*pci_bus)["size"][mapping_index] = 0x80000;
-// 	(*pci_bus)["device-number"][mapping_index] = PCI_HEATHROW_DEV_NUM;
-// 	(*pci_bus)["target-port"][mapping_index] = PCI_HEATHROW_SLAVE_PORT;
-// 	(*pci_bus)["register-number"][mapping_index] = 0x10UL;
-// 	(*pci_bus)["addr-type"][mapping_index] = "mem";
-// 	(*pci_bus)["num-mappings"] = ++mapping_index;
-// 	
-// 	(*pci_bus)["base-address"][mapping_index] = 0x18100UL;
-// 	(*pci_bus)["size"][mapping_index] = 8;
-// 	(*pci_bus)["device-number"][mapping_index] = PCI_IDE_DEV_NUM;
-// 	(*pci_bus)["target-port"][mapping_index] = PCI_IDE_SLAVE_PORT;
-// 	(*pci_bus)["register-number"][mapping_index] = 0x10UL;
-// 	(*pci_bus)["addr-type"][mapping_index] = "i/o";
-// 	(*pci_bus)["num-mappings"] = ++mapping_index;
-// 	
-// 	(*pci_bus)["base-address"][mapping_index] = 0x18108UL;
-// 	(*pci_bus)["size"][mapping_index] = 4;
-// 	(*pci_bus)["device-number"][mapping_index] = PCI_IDE_DEV_NUM;
-// 	(*pci_bus)["target-port"][mapping_index] = PCI_IDE_SLAVE_PORT;
-// 	(*pci_bus)["register-number"][mapping_index] = 0x14UL;
-// 	(*pci_bus)["addr-type"][mapping_index] = "i/o";
-// 	(*pci_bus)["num-mappings"] = ++mapping_index;
-// 	
-// 	(*pci_bus)["base-address"][mapping_index] = 0x4UL;
-// 	(*pci_bus)["size"][mapping_index] = 8;
-// 	(*pci_bus)["device-number"][mapping_index] = PCI_IDE_DEV_NUM;
-// 	(*pci_bus)["target-port"][mapping_index] = PCI_IDE_SLAVE_PORT;
-// 	(*pci_bus)["register-number"][mapping_index] = 0x18UL;
-// 	(*pci_bus)["addr-type"][mapping_index] = "i/o";
-// 	(*pci_bus)["num-mappings"] = ++mapping_index;
-// 	
-// 	(*pci_bus)["base-address"][mapping_index] = 0xcUL;
-// 	(*pci_bus)["size"][mapping_index] = 4;
-// 	(*pci_bus)["device-number"][mapping_index] = PCI_IDE_DEV_NUM;
-// 	(*pci_bus)["target-port"][mapping_index] = PCI_IDE_SLAVE_PORT;
-// 	(*pci_bus)["register-number"][mapping_index] = 0x1cUL;
-// 	(*pci_bus)["addr-type"][mapping_index] = "i/o";
-// 	(*pci_bus)["num-mappings"] = ++mapping_index;
-// 	
-// 	(*pci_bus)["base-address"][mapping_index] = 0x18118UL;
-// 	(*pci_bus)["size"][6] = 16;
-// 	(*pci_bus)["device-number"][mapping_index] = PCI_IDE_DEV_NUM;
-// 	(*pci_bus)["target-port"][mapping_index] = PCI_IDE_SLAVE_PORT;
-// 	(*pci_bus)["register-number"][mapping_index] = 0x20UL;
-// 	(*pci_bus)["addr-type"][mapping_index] = "i/o";
-// 	(*pci_bus)["num-mappings"] = ++mapping_index;
-// 
-// 	(*pci_bus)["base-address"][mapping_index] = 0xa0000000UL;
-// 	(*pci_bus)["size"][mapping_index] = 0x800000;
-// 	(*pci_bus)["device-number"][mapping_index] = PCI_DISPLAY_DEV_NUM;
-// 	(*pci_bus)["target-port"][mapping_index] = PCI_DISPLAY_SLAVE_PORT;
-// 	(*pci_bus)["register-number"][mapping_index] = 0x10UL;
-// 	(*pci_bus)["addr-type"][mapping_index] = "mem";
-// 	(*pci_bus)["num-mappings"] = ++mapping_index;
-// 	
-// 	(*pci_bus)["base-address"][mapping_index] = 0; //0xfe000000UL; // ISA I/O is at the very beginning of PCI I/O space
-// 	(*pci_bus)["size"][mapping_index] = 0x10000; // 64 KB
-// 	(*pci_bus)["device-number"][mapping_index] = PCI_ISA_BRIDGE_DEV_NUM;
-// 	(*pci_bus)["target-port"][mapping_index] = PCI_ISA_BRIDGE_SLAVE_PORT;
-// 	(*pci_bus)["register-number"][mapping_index] = 0x10UL; // ISA I/O space mapped by BAR0
-// 	(*pci_bus)["addr-type"][mapping_index] = "i/o";
-// 	(*pci_bus)["num-mappings"] = ++mapping_index;
-// 
-// 	(*pci_bus)["base-address"][mapping_index] = 0x000a0000UL; // ISA Memory is at the very beginning of compatibility hole
-// 	(*pci_bus)["size"][mapping_index] = 0x60000; // 384 KB
-// 	(*pci_bus)["device-number"][mapping_index] = PCI_ISA_BRIDGE_DEV_NUM;
-// 	(*pci_bus)["target-port"][mapping_index] = PCI_ISA_BRIDGE_SLAVE_PORT;
-// 	(*pci_bus)["register-number"][mapping_index] = 0x14UL; // ISA Memory space mapped by BAR1
-// 	(*pci_bus)["addr-type"][mapping_index] = "mem";
-// 	(*pci_bus)["num-mappings"] = ++mapping_index;
-
-	//  - PCI MAC I/O Heathrow run-time configuration
-/*	(*heathrow)["initial-base-addr"] = 0xf3000000UL;
-	(*heathrow)["pci-device-number"] = PCI_HEATHROW_DEV_NUM;
-	(*heathrow)["bus-frequency"] = pci_bus_frequency;*/
-	
-	//  - PCI IDE run-time configuration
-/*	(*pci_ide)["device-number"] = PCI_IDE_DEV_NUM;
-	if (strcmp(image0_filename, "") != 0) {
-		char *_image0_filename = strdup(image0_filename);
-		char delims[] = ",";
-		char *result = NULL;
-		result = strtok( _image0_filename, delims );
-		int i = 0;
-		while( result != NULL ) {
-			(*pci_ide)["disk-image"][i] = result;
-			(*pci_ide)["disk-channel"][i] = i/2;
-			(*pci_ide)["disk-num"][i] = i%2;
-			i++;
-			result = strtok( NULL, delims );
-		}
-		free(_image0_filename);
-	}*/
-// 	(*pci_ide)["base-address"][0] = 0x18101;
-// 	(*pci_ide)["size"][0] = 8;
-// 	(*pci_ide)["register-number"][0] = 0x10;
-// 	(*pci_ide)["base-address"][1] = 0x18109;
-// 	(*pci_ide)["size"][1] = 4;
-// 	(*pci_ide)["register-number"][1] = 0x14;
-// 	(*pci_ide)["base-address"][2] = 0x5;
-// 	(*pci_ide)["size"][2] = 8;
-// 	(*pci_ide)["register-number"][2] = 0x18;
-// 	(*pci_ide)["base-address"][3] = 0xd;
-// 	(*pci_ide)["size"][3] = 4;
-// 	(*pci_ide)["register-number"][3] = 0x1c;
-// 	(*pci_ide)["base-address"][4] = 0x18119;
-// 	(*pci_ide)["size"][4] = 16;
-// 	(*pci_ide)["register-number"][4] = 0x20;
-
-	//  - Display run-time configuration
-/*	(*pci_display)["initial-base-addr"] = 0xa0000000UL;
-	(*pci_display)["bytesize"] = display_vfb_size; 
-	(*pci_display)["width"] = display_width;
-	(*pci_display)["height"] = display_height;
-	(*pci_display)["depth"] = display_depth;
-	(*pci_display)["pci-bus-frequency"] = pci_bus_frequency;*/
-	
-	// - PCI-ISA Bridge run-time configuration
-// 	(*pci_isa_bridge)["initial-base-addr"] = 0x000a0000UL;
-// 	(*pci_isa_bridge)["initial-io-base-addr"] = 0; //0xfe000000UL;
-// 	(*pci_isa_bridge)["pci-bus-frequency"] = pci_bus_frequency;
-// 	(*pci_isa_bridge)["isa-bus-frequency"] = isa_bus_frequency;
-// 	(*pci_isa_bridge)["pci-device-number"] = PCI_ISA_BRIDGE_DEV_NUM;
-
-	//  - i8042 run-time configuration
-// 	(*i8042)["fsb-frequency"] = fsb_frequency;
-// 	(*i8042)["isa-bus-frequency"] = isa_bus_frequency;
-
-	//=========================================================================
-	//===                      Service run-time configuration               ===
-	//=========================================================================
 
 	//  - GDB Server run-time configuration
 	if(gdb_server)
 	{
 		cerr << "Using " << (*gdb_server)["tcp-port"].GetName() << " = " << gdb_server_tcp_port << endl;
 		(*gdb_server)["tcp-port"] = gdb_server_tcp_port;
-// 		(*gdb_server)["architecture-description-filename"] = gdb_server_arch_filename;
 	}
 
-	//  - SDL run-time configuration
-/*	(*sdl)["refresh-period"] = video_refresh_period;
-	(*sdl)["bmp-out-filename"] = bmp_out_filename;	
-	(*sdl)["keymap-filename"] = keymap_filename;	
-
-	//  - Kernel loader configuration
-	(*kloader)["pmac-bootx.device-tree-filename"] = device_tree_filename;
-	(*kloader)["pmac-bootx.kernel-params"] = kernel_params.c_str();
-	(*kloader)["pmac-bootx.ramdisk-filename"] = ramdisk_filename;
-	(*kloader)["pmac-bootx.screen-width"] = display_width;
-	(*kloader)["pmac-bootx.screen-height"] = display_height;*/
-	
+	//  - Loader run-time configuration
 	if(filename)
 	{
-		cerr << "Using " << (*kloader)["filename"].GetName() << " = " << filename << endl;
+		cerr << "Using " << (*kloader)["elf32-loader.filename"].GetName() << " = \"" << filename << "\"" << endl;
 		(*kloader)["elf32-loader.filename"] = filename;
 	}
-	
-// 	(*kloader)["elf32-loader.base-addr"] = 0x00400000UL;
 
-	//  - Transaction Spies
-// 	if(message_spy)
-// 	{
-// 		(*bus_msg_spy[0])["source_module_name"] = cpu->name();
-// 		(*bus_msg_spy[0])["source_port_name"] = cpu->bus_port.name();
-// 		(*bus_msg_spy[0])["target_module_name"] = bus->name();
-// 		(*bus_msg_spy[0])["target_port_name"] = bus->inport[0]->name();
-// 		(*bus_msg_spy[1])["source_module_name"] = bus->name();
-// 		(*bus_msg_spy[1])["source_port_name"] = bus->outport[0]->name();
-// 		(*bus_msg_spy[1])["target_module_name"] = cpu->name();
-// 		(*bus_msg_spy[1])["target_port_name"] = cpu->snoop_port.name();
-// 		(*bus_msg_spy[2])["source_module_name"] = bus->name();
-// 		(*bus_msg_spy[2])["source_port_name"] = bus->chipset_outport->name();
-// 		(*bus_msg_spy[2])["target_module_name"] = mpc107->name();
-// 		(*bus_msg_spy[2])["target_port_name"] = mpc107->slave_port.name();
-// 		(*bus_msg_spy[3])["source_module_name"] = mpc107->name();
-// 		(*bus_msg_spy[3])["source_port_name"] = mpc107->master_port.name();
-// 		(*bus_msg_spy[3])["target_module_name"] = bus->name();
-// 		(*bus_msg_spy[3])["target_port_name"] = bus->chipset_inport->name();
-// 	}
+	if(!kernel_params.empty())
+	{
+		cerr << "Using " << (*kloader)["pmac-bootx.kernel-params"].GetName() << " = \"" << kernel_params << "\"" << endl;
+		(*kloader)["pmac-bootx.kernel-params"] = kernel_params.c_str();
+	}
 
-	//  - Cache/TLB power estimators run-time configuration
-// 	if(estimate_power || get_config)
-// 	{
-// 		(*il1_power_estimator)["cache-size"] = 32 * 1024;
-// 		(*il1_power_estimator)["line-size"] = 32;
-// 		(*il1_power_estimator)["associativity"] = 8;
-// 		(*il1_power_estimator)["rw-ports"] = 0;
-// 		(*il1_power_estimator)["excl-read-ports"] = 1;
-// 		(*il1_power_estimator)["excl-write-ports"] = 0;
-// 		(*il1_power_estimator)["single-ended-read-ports"] = 0;
-// 		(*il1_power_estimator)["banks"] = 4;
-// 		(*il1_power_estimator)["tech-node"] = tech_node;
-// 		(*il1_power_estimator)["output-width"] = 128;
-// 		(*il1_power_estimator)["tag-width"] = 64;
-// 		(*il1_power_estimator)["access-mode"] = "fast";
-// 	
-// 		(*dl1_power_estimator)["cache-size"] = 32 * 1024;
-// 		(*dl1_power_estimator)["line-size"] = 32;
-// 		(*dl1_power_estimator)["associativity"] = 8;
-// 		(*dl1_power_estimator)["rw-ports"] = 1;
-// 		(*dl1_power_estimator)["excl-read-ports"] = 0;
-// 		(*dl1_power_estimator)["excl-write-ports"] = 0;
-// 		(*dl1_power_estimator)["single-ended-read-ports"] = 0;
-// 		(*dl1_power_estimator)["banks"] = 4;
-// 		(*dl1_power_estimator)["tech-node"] = tech_node;
-// 		(*dl1_power_estimator)["output-width"] = 64;
-// 		(*dl1_power_estimator)["tag-width"] = 64;
-// 		(*dl1_power_estimator)["access-mode"] = "fast";
-// 	
-// 		(*l2_power_estimator)["cache-size"] = 512 * 1024;
-// 		(*l2_power_estimator)["line-size"] = 32;
-// 		(*l2_power_estimator)["associativity"] = 8;
-// 		(*l2_power_estimator)["rw-ports"] = 1;
-// 		(*l2_power_estimator)["excl-read-ports"] = 0;
-// 		(*l2_power_estimator)["excl-write-ports"] = 0;
-// 		(*l2_power_estimator)["single-ended-read-ports"] = 0;
-// 		(*l2_power_estimator)["banks"] = 4;
-// 		(*l2_power_estimator)["tech-node"] = tech_node;
-// 		(*l2_power_estimator)["output-width"] = 256;
-// 		(*l2_power_estimator)["tag-width"] = 64;
-// 		(*l2_power_estimator)["access-mode"] = "fast";
-// 	
-// 		(*itlb_power_estimator)["cache-size"] = 128 * 2 * 4;
-// 		(*itlb_power_estimator)["line-size"] = 4;
-// 		(*itlb_power_estimator)["associativity"] = 2;
-// 		(*itlb_power_estimator)["rw-ports"] = 1;
-// 		(*itlb_power_estimator)["excl-read-ports"] = 0;
-// 		(*itlb_power_estimator)["excl-write-ports"] = 0;
-// 		(*itlb_power_estimator)["single-ended-read-ports"] = 0;
-// 		(*itlb_power_estimator)["banks"] = 4;
-// 		(*itlb_power_estimator)["tech-node"] = tech_node;
-// 		(*itlb_power_estimator)["output-width"] = 32;
-// 		(*itlb_power_estimator)["tag-width"] = 64;
-// 		(*itlb_power_estimator)["access-mode"] = "fast";
-// 	
-// 		(*dtlb_power_estimator)["cache-size"] = 128 * 2 * 4;
-// 		(*dtlb_power_estimator)["line-size"] = 4;
-// 		(*dtlb_power_estimator)["associativity"] = 2;
-// 		(*dtlb_power_estimator)["rw-ports"] = 1;
-// 		(*dtlb_power_estimator)["excl-read-ports"] = 0;
-// 		(*dtlb_power_estimator)["excl-write-ports"] = 0;
-// 		(*dtlb_power_estimator)["single-ended-read-ports"] = 0;
-// 		(*dtlb_power_estimator)["banks"] = 4;
-// 		(*dtlb_power_estimator)["tech-node"] = tech_node;
-// 		(*dtlb_power_estimator)["output-width"] = 32;
-// 		(*dtlb_power_estimator)["tag-width"] = 64;
-// 		(*dtlb_power_estimator)["access-mode"] = "fast";
-// 	}
+	//=========================================================================
+	//===                      Save run-time configuration                  ===
+	//=========================================================================
+
+	if(get_config)
+	{
+		ServiceManager::XmlfyParameters(get_config_name);
+		cerr << "Parameters saved on file \"" << get_config_name << "\"" << endl;
+		return 0;
+	}
 
 	//=========================================================================
 	//===                        Components connection                      ===
@@ -998,11 +1087,11 @@ int sc_main(int argc, char *argv[])
 		cpu->dtlb_power_estimator_import >> dtlb_power_estimator->power_estimator_export;
 		cpu->dtlb_power_mode_import >> dtlb_power_estimator->power_mode_export;
 
-		il1_power_estimator->time_import >> time->time_export;
-		dl1_power_estimator->time_import >> time->time_export;
-		l2_power_estimator->time_import >> time->time_export;
-		itlb_power_estimator->time_import >> time->time_export;
-		dtlb_power_estimator->time_import >> time->time_export;
+		il1_power_estimator->time_import >> sim_time->time_export;
+		dl1_power_estimator->time_import >> sim_time->time_export;
+		l2_power_estimator->time_import >> sim_time->time_export;
+		itlb_power_estimator->time_import >> sim_time->time_export;
+		dtlb_power_estimator->time_import >> sim_time->time_export;
 	}
 
 	kloader->memory_import >> memory->memory_export;
@@ -1131,7 +1220,7 @@ int sc_main(int argc, char *argv[])
 	if(l2_power_estimator) delete l2_power_estimator;
 	if(itlb_power_estimator) delete itlb_power_estimator;
 	if(dtlb_power_estimator) delete dtlb_power_estimator;
-	if(time) delete time;
+	if(sim_time) delete sim_time;
 	if(host_time) delete host_time;
 	if(flash) delete flash;
 	if(erom) delete erom;
