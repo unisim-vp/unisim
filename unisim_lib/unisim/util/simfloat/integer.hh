@@ -1155,7 +1155,7 @@ class TIntegerTraits {
    static const int uCellSize = (uSize-1)/(8*sizeof(unsigned int))+1;
 #ifndef __BORLANDC__
    typedef TCellIntegerTraits<uCellSize> CellTraits;
-#if defined(__GNUC__) && GCC_VERSION >= 40401
+#if defined(__GNUC__) && GCC_VERSION >= 40400
    typedef TBigCellInt<CellTraits> BigCellTraits;
 #endif
 #else
@@ -1164,14 +1164,14 @@ class TIntegerTraits {
 
   private:
    typedef TIntegerTraits<uSize> thisType;
-#if defined(__GNUC__) && GCC_VERSION >= 40401
+#if defined(__GNUC__) && GCC_VERSION >= 40400
    BigCellTraits ctTraits;
 #else
    CellTraits ctTraits;
 #endif
 
   protected:
-#if defined(__GNUC__) && GCC_VERSION >= 40401
+#if defined(__GNUC__) && GCC_VERSION >= 40400
    BigCellTraits& cellTraits() { return ctTraits; }
    const BigCellTraits& cellTraits() const { return ctTraits; }
 #else
@@ -1226,7 +1226,7 @@ class TBigInt : public Details::Access, protected IntegerTraits {
   private:
    typedef IntegerTraits inherited;
    typedef TBigInt<IntegerTraits> thisType;
-#if defined(__GNUC__) && GCC_VERSION >= 40401
+#if defined(__GNUC__) && GCC_VERSION >= 40400
    typedef typename IntegerTraits::BigCellTraits ArrayCells;
 #else
    typedef TBigCellInt<typename IntegerTraits::CellTraits> ArrayCells;
