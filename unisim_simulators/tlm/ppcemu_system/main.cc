@@ -112,26 +112,33 @@ void help(char *prog_name)
 	cerr << "       'linux kernel' is an ELF32 uncompressed Linux kernel (vmlinux)" << endl;
 	cerr << "       A 'Mac OS BootX' loader is emulated instead of directly running an open firmware and a boot loader" << endl << endl;
 	cerr << "Options:" << endl;
-	cerr << "--inline-debugger" << endl;
-	cerr << "-i" << endl;
-	cerr << "            starts the inline debugger" << endl;
-	cerr << "--gdb-server <TCP port>" << endl;
-	cerr << "-d <TCP port>" << endl;
-	cerr << "-p" << endl;
-	cerr << "--power" << endl;
+	cerr << " --inline-debugger" << endl;
+	cerr << " -i" << endl;
+	cerr << "            starts the inline debugger" << endl << endl;
+	cerr << " --gdb-server <TCP port>" << endl;
+	cerr << " -d <TCP port>" << endl;
+	cerr << "            starts GDB server" << endl << endl;
+	cerr << " --power" << endl;
+	cerr << " -p" << endl;
 	cerr << "            estimate power consumption of caches and TLBs" << endl << endl;
-	cerr << "--message-spy" << endl;
-	cerr << "-m" << endl;
+	cerr << " --message-spy" << endl;
+	cerr << " -m" << endl;
 	cerr << "            enable message spy" << endl << endl;
-	cerr << " --config <xml file>" << endl;
-	cerr << " -c <xml file>" << endl;
-	cerr << "            configures the simulator with the given xml configuration file" << endl << endl;
-	cerr << " --get-config <xml file>" << endl;
-	cerr << " -g <xml file>" << endl;
-	cerr << "            get the simulator default configuration xml file (you can use it to create your own configuration)" << endl;
-	cerr << "            This option can be combined with -c to get a new configuration file with existing variables from another file" << endl;
-	cerr << "--help" << endl;
-	cerr << "-h" << endl;
+	cerr << " --config <XML file>" << endl;
+	cerr << " -c <XML file>" << endl;
+	cerr << "            configures the simulator with the given XML configuration file" << endl << endl;
+	cerr << " --get-config <XML file>" << endl;
+	cerr << " -g <XML file>" << endl;
+	cerr << "            get the simulator default configuration XML file (you can use it to create your own configuration)" << endl;
+	cerr << "            This option can be combined with -c to get a new configuration file with existing variables from another file" << endl << endl;
+	cerr << " --set <param=value>" << endl;
+	cerr << " -s <param=value>" << endl;
+	cerr << "            set value of parameter 'param' to 'value'" << endl << endl;
+	cerr << " --list" << endl;
+	cerr << " -l" << endl;
+	cerr << "            lists all available parameters, their type, and their current value" << endl << endl;
+	cerr << " --help" << endl;
+	cerr << " -h" << endl;
 	cerr << "            displays this help" << endl;
 }
 
@@ -637,7 +644,8 @@ int sc_main(int argc, char *argv[])
 	{"message-spy", no_argument, 0, 'm'},
 	{"get-config", required_argument, 0, 'g'},
 	{"config", required_argument, 0, 'c'},
-	{"set-variable", required_argument, 0, 's'},
+	{"set", required_argument, 0, 's'},
+	{"list", no_argument, 0, 'l'},
 	{0, 0, 0, 0}
 	};
 
@@ -650,6 +658,7 @@ int sc_main(int argc, char *argv[])
 	char const *get_config_name = "default_config.xml";
 	bool get_config = false;
 	bool set_config = false;
+	bool list_parms = false;
 	bool message_spy = false;
 	std::list<string> set_vars;
 	
@@ -697,6 +706,9 @@ int sc_main(int argc, char *argv[])
 				break;
 			case 's':
 				set_vars.push_back(string(optarg));
+				break;
+			case 'l':
+				list_parms = true;
 				break;
 		}
 	}
@@ -831,6 +843,50 @@ int sc_main(int argc, char *argv[])
 		ServiceManager::LoadXmlParameters(set_config_name);
 		cerr << "Parameters set using file \"" << set_config_name << "\"" << endl;
 	}
+	
+	// From command line arguments "-s varname=value"
+	std::list<string>::iterator set_vars_it;
+	for(set_vars_it = set_vars.begin(); set_vars_it != set_vars.end(); set_vars_it++)
+	{
+		stringstream varname_sstr;
+		stringstream value_sstr;
+		
+		unsigned int pos = 0;
+		unsigned int len = set_vars_it->length();
+		
+		for(pos = 0; pos < len; pos++)
+		{
+			char c = (*set_vars_it)[pos];
+			if(c == '=') break;
+			varname_sstr << c;
+		}
+		
+		if((*set_vars_it)[pos] != '=')
+		{
+			cerr << "Ignoring " << *set_vars_it << endl;
+			continue;
+		}
+		
+		for(pos++; pos < len; pos++)
+		{
+			char c = (*set_vars_it)[pos];
+			value_sstr << c;
+		}
+		
+		const char *varname = varname_sstr.str().c_str();
+		unisim::kernel::service::VariableBase *var = ServiceManager::GetVariable(varname_sstr.str().c_str(), unisim::kernel::service::VariableBase::VAR_PARAMETER);
+		
+		if(var == &ServiceManager::void_variable)
+		{
+			cerr << "WARNING! variable \"" << varname_sstr.str() << "\" does not exist" << endl;
+			continue;
+		}
+		
+		const char *value = value_sstr.str().c_str();
+		
+		cerr << "Using " << var->GetName() << " = \"" << value << "\"" << endl;
+		*var = value;
+	}
 
 	//  - GDB Server run-time configuration
 	if(gdb_server)
@@ -850,6 +906,15 @@ int sc_main(int argc, char *argv[])
 	{
 		cerr << "Using " << (*kloader)["pmac-bootx.kernel-params"].GetName() << " = \"" << kernel_params << "\"" << endl;
 		(*kloader)["pmac-bootx.kernel-params"] = kernel_params.c_str();
+	}
+
+	//=========================================================================
+	//===                      Dump run-time configuration                  ===
+	//=========================================================================
+
+	if(list_parms)
+	{
+		ServiceManager::DumpVariables(cerr, unisim::kernel::service::VariableBase::VAR_PARAMETER);
 	}
 
 	//=========================================================================

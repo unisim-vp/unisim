@@ -846,10 +846,26 @@ void ServiceManager::DumpVariables(ostream &os, VariableBase::Type filter_type) 
 
 	for(variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
 	{
-		VariableBase::Type var_type = (*variable_iter).second->GetType();
-		if(var_type == VariableBase::VAR_VOID || var_type == filter_type)
+		VariableBase *var = (*variable_iter).second;
+		VariableBase::Type var_type = var->GetType();
+		if(filter_type == VariableBase::VAR_VOID || var_type == filter_type)
 		{
-			os << (*variable_iter).second->GetName() << " = \"" << ((string) *(*variable_iter).second) << "\"" << endl;
+			const char *name = var->GetName();
+			string value = (string) *var;
+			const char *dt = var->GetDataTypeName();
+			const char *desc = (*variable_iter).second->GetDescription();
+			
+			if(strlen(dt) != 0)
+			{
+				os << dt << " ";
+			}
+			os << name << " = \"" << value << "\"";
+			if(strlen(desc) != 0)
+			{
+				os << " (" << (*variable_iter).second->GetDescription() << ")";
+			}
+			
+			os << endl;
 		}
 	}
 	os << endl;
