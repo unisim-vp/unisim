@@ -319,6 +319,11 @@ I8042::I8042(const char *name, Object *parent) :
 	key_num_up_to_ps2_raw_set2[41].push_back(0x52);
 	key_num_repeat[41] = true;
 
+	// KEY #42
+	key_num_down_to_ps2_raw_set2[42].push_back(0x5d);
+	key_num_up_to_ps2_raw_set2[42].push_back(0xf0);
+	key_num_up_to_ps2_raw_set2[42].push_back(0x5d);
+	key_num_repeat[42] = true;
 	// Note: no key #42
 
 	// KEY #43

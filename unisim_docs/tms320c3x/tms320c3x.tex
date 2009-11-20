@@ -1390,9 +1390,10 @@ The cross-compiler has generated COFF v2 files for TMS320C3X/C4X with little-end
 \begin{itemize}
 \item Redhat Linux RHEL4 x86/gcc 3.4.6 (32-bit little-endian machine)
 \item Mandriva Linux 2009.1 x86/gcc 4.3.2 (32-bit little-endian machine)
+\item Mandriva Linux 2010.0 x86/gcc 4.4.1 (32-bit little-endian machine)
 \item Ubuntu Linux 7.04 powerpc/gcc 4.1.2 (32-bit big-endian machine)
 \item Ubuntu Linux 9.04 AMD64/x86\_64/gcc 4.3.3 (64-bit little-endian machine)
-\item Mac OS X Leopard v10.5 x86/gcc 4.3.3 (32-bit little-endian machine)
+\item Mac OS X Leopard v10.5 x86/gcc 4.3.3 and gcc 4.4.2 (32-bit little-endian machine)
 \item Windows XP x86/gcc mingw32 4.4.0 (32 bit little-endian machine)
 \end{itemize}
 
@@ -1469,7 +1470,7 @@ For instance, Instructions \texttt{addc}, \texttt{negb}, \texttt{rol}, \texttt{r
 Although the case of floating point benchmarks (written in C and assembly) is similar with an incomplete instruction coverage, the use of assembly has improved coverage of addressing modes and parallel instructions.
 For instance, benchmarks \texttt{IIR} and \texttt{FFT} cover indirect addressing with circular modify and indirect addressing with bit reversed modify.
 Nevertheless floating-point benchmarks insufficiently cover parallel instructions.
-Particularly, instructions \texttt{absf || stf}, \texttt{fix || sti}, \texttt{float || sti}, \texttt{negf || stf} were not covered at all.
+Particularly, Instructions \texttt{absf || stf}, \texttt{fix || sti}, \texttt{float || sti}, \texttt{negf || stf} were not covered at all.
 
 \begin{center}
 \tablehead{\hline
@@ -3281,7 +3282,7 @@ The rational behind this choice is that the instructions implementations in the 
 \item Random input integer values have an uniform distribution. Table~\ref{table:tms320c3x_unit_test_float_distribution} shows the distribution for the floating point numbers. Some remarkable values (neutral, smallest/largest positive/negative floating-point values \ldots) have non-null probability of occurrence.
 \end{itemize}
 
-These choices still have resulted in 3758 unit test programs for a total of 694382 unit tests.
+These choices still have resulted in 3757 unit test programs for a total of 694282 unit tests.
 
 \subsubsection{Testing status}
 \label{tms320c3x_testing_status}
@@ -4539,15 +4540,19 @@ To cross-compile the unit tests programs, do the following at the command prompt
 \begin{verbatim}
 $ make generator
 $ make compile
+$ make c31boot.out
 \end{verbatim}
 
 Then to check that all unit tests successfully run on the UNISIM TMS320C3X simulator, do the following at the command prompt on the simulation host:
 \begin{verbatim}
+$ make cleangen
 $ make generator
 $ make regression-test SIMULATE=path-to-tms320c3x
 \end{verbatim}
 
-\noindent The result for each unit test is either \texttt{PASSED} or \texttt{FAILED}.\\
+\noindent The result for each unit test program is either \texttt{PASSED} or \texttt{FAILED}.\\
 
 \textit{Note: At most one instance of the Texas Instrument Cross-compiler can be run at a time (at least on a Windows host and Wine).
 Using \texttt{flag -j} of GNU Make when compiling the unit tests programs results in unexpected behaviors.}
+
+\textit{Note: Unit test program \texttt{parallel\_float/stf\_stf/reg\_buf} will likely fail because of a bug in instruction \texttt{STF || STF} in the TMS320VC33 of our development board.}

@@ -297,7 +297,7 @@ void LoadDefaultRunTimeConfiguration()
 	const char *device_tree_filename = "device_tree.xml";
 	const char *gdb_server_arch_filename = "gdb_powerpc.xml";
 	const char *ramdisk_filename = "initrd.img.gz";
-	const char *bmp_out_filename = "capture";
+	const char *bmp_out_filename = "";
 	const char *keymap_filename = "keymap.xml";
 	uint64_t max_inst = 0xffffffffffffffffULL; // maximum number of instruction to simulate
 	uint32_t pci_bus_frequency = 33; // in Mhz
