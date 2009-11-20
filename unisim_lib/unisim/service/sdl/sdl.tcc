@@ -893,7 +893,6 @@ void SDL<ADDRESS>::LearnKeyboard()
 	        << "Click on window to give it the keyboard focus, then press the asked keys on your keyboard." << endl
 	        << "A key is automatically skipped after 10 seconds." << endl;
 	cout.flush();
-	SDL_Delay(10000);
 
 	ofstream file(learn_keymap_filename.c_str(), ofstream::out);
 
@@ -907,14 +906,16 @@ void SDL<ADDRESS>::LearnKeyboard()
 
 	SDL_Event sdl_ev;
 	unsigned int loc;
+	bool done = false;
 	
-	for(loc = 1; loc < 127; loc++)
+	while(!done)
 	{
-		cout << "KBD Learn: Press Key #" << loc; cout.flush();
+		cout << "Click on graphical window to give it the keyboard focus, and press a key please..." << endl;
+		cout.flush();
 		bool pressed = false;
-		unsigned int t = 0;
+		SDLKey sdlk;
 
-		while(!pressed && t < 1000)
+		while(!pressed)
 		{
 			if(SDL_PollEvent(&sdl_ev))
 			{
@@ -922,19 +923,8 @@ void SDL<ADDRESS>::LearnKeyboard()
 				{
 					case SDL_KEYDOWN:
 						{
-							if(sdl_ev.key.keysym.sym == SDLK_UNKNOWN) break;
-							map<string, SDLKey>::iterator sdlk_iter;
-
-							for(sdlk_iter = sdlk_string_map.begin(); sdlk_iter != sdlk_string_map.end(); sdlk_iter++)
-							{
-								if((*sdlk_iter).second == sdl_ev.key.keysym.sym)
-								{
-									string sdlk_string = (*sdlk_iter).first;
-									file << "<key sdlk=\"" << sdlk_string << "\" loc=\"" << loc << "\"/>" << endl;
-									cout << " " << sdlk_string << endl; cout.flush();
-									pressed = true;
-								}
-							}
+							sdlk = sdl_ev.key.keysym.sym;
+							pressed = true;
 							break;
 						}
 					case SDL_QUIT:
@@ -942,13 +932,36 @@ void SDL<ADDRESS>::LearnKeyboard()
 				}
 			}
 			SDL_Delay(10);
-			t++;
 		}
-		if(!pressed)
+
+		if(sdlk == SDLK_UNKNOWN) break;
+		map<string, SDLKey>::iterator sdlk_iter;
+		string sdlk_string;
+
+		for(sdlk_iter = sdlk_string_map.begin(); sdlk_iter != sdlk_string_map.end(); sdlk_iter++)
 		{
-			cout << " skipping..." << endl;
-			cout.flush();
+			if((*sdlk_iter).second == sdlk)
+			{
+				sdlk_string = (*sdlk_iter).first;
+			}
 		}
+		cout << "Got " << sdlk_string << endl;
+
+		cout << "Go back on console window, and tell me which key number did you pressed?" << endl;
+		cout << "Press Ctrl+D to stop learning." << endl;
+		cout.flush();
+		if(!(cin >> loc).fail())
+		{
+			file << "<key sdlk=\"" << sdlk_string << "\" loc=\"" << loc << "\"/>" << endl;
+			cout << "Mapping " << sdlk_string << " to key #" << loc << endl; cout.flush();
+		}
+		else
+		{
+			cout << "Learning is finished" << endl;
+			done = true;
+		}
+		while(SDL_PollEvent(&sdl_ev)); // flush event queue
+
 	}
 
 	file << "</keymap>" << endl;
