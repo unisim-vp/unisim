@@ -54,7 +54,7 @@
 /**
  * CUDA API version number
  */
-#define CUDA_VERSION 2020 /* 2.2 */
+#define CUDA_VERSION 3000 /* 3.0 */
 
 #ifdef __cplusplus
 extern "C" {
@@ -69,6 +69,7 @@ extern "C" {
     typedef struct CUtexref_st *CUtexref;   ///< CUDA texture reference
     typedef struct CUevent_st *CUevent;     ///< CUDA event
     typedef struct CUstream_st *CUstream;   ///< CUDA stream
+    typedef struct CUgraphicsResource_st *CUgraphicsResource; ///< CUDA graphics interop resource
 
 /************************************
  **
@@ -86,7 +87,8 @@ typedef enum CUctx_flags_enum {
     CU_CTX_SCHED_MASK  = 0x3,
     CU_CTX_BLOCKING_SYNC = 4,   ///< Use blocking synchronization
     CU_CTX_MAP_HOST = 8,        ///< Support mapped pinned allocations
-    CU_CTX_FLAGS_MASK  = 0xf,
+    CU_CTX_LMEM_RESIZE_TO_MAX = 16, ///< Keep local memory allocation after launch
+    CU_CTX_FLAGS_MASK  = 0x1f,
 } CUctx_flags;
 
 /**
@@ -154,7 +156,16 @@ typedef enum CUdevice_attribute_enum {
     CU_DEVICE_ATTRIBUTE_KERNEL_EXEC_TIMEOUT = 17,   ///< Specifies whether there is a run time limit on kernels
     CU_DEVICE_ATTRIBUTE_INTEGRATED = 18,            ///< Device is integrated with host memory
     CU_DEVICE_ATTRIBUTE_CAN_MAP_HOST_MEMORY = 19,   ///< Device can map host memory into CUDA address space
-    CU_DEVICE_ATTRIBUTE_COMPUTE_MODE = 20           ///< Compute mode (See ::CUcomputemode for details)
+    CU_DEVICE_ATTRIBUTE_COMPUTE_MODE = 20,           ///< Compute mode (See ::CUcomputemode for details)
+    CU_DEVICE_ATTRIBUTE_MAXIMUM_TEXTURE1D_WIDTH = 21, ///< Maximum 1D texture width
+    CU_DEVICE_ATTRIBUTE_MAXIMUM_TEXTURE2D_WIDTH = 22, ///< Maximum 2D texture width
+    CU_DEVICE_ATTRIBUTE_MAXIMUM_TEXTURE2D_HEIGHT = 23,///< Maximum 2D texture height
+    CU_DEVICE_ATTRIBUTE_MAXIMUM_TEXTURE3D_WIDTH = 24, ///< Maximum 3D texture width
+    CU_DEVICE_ATTRIBUTE_MAXIMUM_TEXTURE3D_HEIGHT = 25,///< Maximum 3D texture height
+    CU_DEVICE_ATTRIBUTE_MAXIMUM_TEXTURE3D_DEPTH = 26, ///< Maximum 3D texture depth
+    CU_DEVICE_ATTRIBUTE_MAXIMUM_TEXTURE2D_ARRAY_WIDTH = 27, ///< Maximum texture array width
+    CU_DEVICE_ATTRIBUTE_MAXIMUM_TEXTURE2D_ARRAY_HEIGHT = 28,///< Maximum texture array height
+    CU_DEVICE_ATTRIBUTE_MAXIMUM_TEXTURE2D_ARRAY_NUMSLICES = 29, ///< Maximum slices in a texture array
 } CUdevice_attribute;
 
 /**
@@ -315,7 +326,8 @@ typedef enum CUjit_target_enum
     CU_TARGET_COMPUTE_10            = 0,    ///< Compute device class 1.0
     CU_TARGET_COMPUTE_11,                   ///< Compute device class 1.1
     CU_TARGET_COMPUTE_12,                   ///< Compute device class 1.2
-    CU_TARGET_COMPUTE_13                    ///< Compute device class 1.3
+    CU_TARGET_COMPUTE_13,                    ///< Compute device class 1.3
+    CU_TARGET_COMPUTE_20                    ///< Compute device class 2.0
 } CUjit_target;
 
 /**
@@ -330,6 +342,35 @@ typedef enum CUjit_fallback_enum
     CU_PREFER_BINARY
 
 } CUjit_fallback;
+
+/**
+ * Flags to register a graphics resource
+ */
+typedef enum CUgraphicsRegisterFlags_enum {
+    CU_GRAPHICS_REGISTER_FLAGS_NONE  = 0x00,
+} CUgraphicsRegisterFlags;
+
+/**
+ * Flags for mapping and unmapping interop resources
+ */
+typedef enum CUgraphicsMapResourceFlags_enum {
+    CU_GRAPHICS_MAP_RESOURCE_FLAGS_NONE          = 0x00,
+    CU_GRAPHICS_MAP_RESOURCE_FLAGS_READ_ONLY     = 0x01,
+    CU_GRAPHICS_MAP_RESOURCE_FLAGS_WRITE_DISCARD = 0x02,    
+} CUgraphicsMapResourceFlags;
+
+/**
+ * Array indices for cube faces
+ */
+typedef enum CUarray_cubemap_face_enum {
+    CU_CUBEMAP_FACE_POSITIVE_X  = 0x00, ///< Positive X face of cubemap
+    CU_CUBEMAP_FACE_NEGATIVE_X  = 0x01, ///< Negative X face of cubemap
+    CU_CUBEMAP_FACE_POSITIVE_Y  = 0x02, ///< Positive Y face of cubemap
+    CU_CUBEMAP_FACE_NEGATIVE_Y  = 0x03, ///< Negative Y face of cubemap
+    CU_CUBEMAP_FACE_POSITIVE_Z  = 0x04, ///< Positive Z face of cubemap
+    CU_CUBEMAP_FACE_NEGATIVE_Z  = 0x05, ///< Negative Z face of cubemap
+} CUarray_cubemap_face;
+
 
 /************************************
  **
@@ -375,6 +416,9 @@ typedef enum cudaError_enum {
     CUDA_ERROR_LAUNCH_OUT_OF_RESOURCES = 701,   ///< Launch exceeded resources
     CUDA_ERROR_LAUNCH_TIMEOUT       = 702,      ///< Launch exceeded timeout
     CUDA_ERROR_LAUNCH_INCOMPATIBLE_TEXTURING = 703, ///< Launch with incompatible texturing
+
+    CUDA_ERROR_POINTER_IS_64BIT     = 800,      ///< Attempted to retrieve 64-bit pointer via 32-bit API function
+    CUDA_ERROR_SIZE_IS_64BIT        = 801,      ///< Attempted to retrieve 64-bit size via 32-bit API function
 
     CUDA_ERROR_UNKNOWN              = 999       ///< Unknown error
 } CUresult;

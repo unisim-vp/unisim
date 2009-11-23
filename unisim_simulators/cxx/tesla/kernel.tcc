@@ -131,6 +131,14 @@ Kernel<CONFIG>::Kernel(Module<CONFIG> * module, std::istream & is) :
 							getline(is, line);
 						}
 					}
+					else if(cmd == "params_SMEM")
+					{
+					    // Parameter offsets
+					    // Can be safely ignored except for debug (?)
+						while(find(line.begin(), line.end(), '}') == line.end()) {
+							getline(is, line);
+						}
+					}
 					else
 					{
 						throw ParsingException("Unknown multi-line field : ", cmd);
@@ -209,6 +217,11 @@ void Kernel<CONFIG>::SetAttribute(std::string const & attrname, std::string cons
 	else if(attrname == "bar")
 	{
 		bar = atoi(value.c_str());
+	}
+	else if(attrname == "ctaidZUsed")
+	{
+	    ctaidZUsed = atoi(value.c_str());
+	    assert(ctaidZUsed == 0);    // Not supported in Tesla
 	}
 	else
 	{

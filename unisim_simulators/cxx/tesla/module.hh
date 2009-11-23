@@ -171,6 +171,8 @@ private:
 	std::string architecture;
 	std::string abiversion;
 	std::string modname;
+	std::string cubinversion;
+	std::string texmode;
 	
 	typedef std::map<std::string, Kernel<CONFIG> > KernelMap;
 	KernelMap kernels;

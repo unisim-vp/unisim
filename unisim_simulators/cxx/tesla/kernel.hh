@@ -130,6 +130,7 @@ private:
 	int smem;
 	int reg;
 	int bar;
+	int ctaidZUsed;
 	std::vector<uint32_t> bincode;
 	//std::vector<uint32_t> const_mem;
 	typedef std::list<MemSegment<CONFIG> > ConstList;

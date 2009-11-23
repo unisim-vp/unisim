@@ -581,6 +581,14 @@ void Module<CONFIG>::SetField(std::string const & attrname, std::string const & 
 	{
 		modname = value;
 	}
+	else if(attrname == "cubinversion")
+	{
+		cubinversion = value;
+	}
+	else if(attrname == "texmode")
+	{
+		texmode = value;
+	}
 	else
 	{
 		throw ParsingException("Unknown in-line field : ", attrname);

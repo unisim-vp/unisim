@@ -1,5 +1,6 @@
 See unisim_lib/unisim/component/cxx/processor/tesla/ChangeLog for the simulator changelog.
 
+* CUDA 3.0 Beta support, no ELF yet
 * Events support (still synchronous)
 
 Version 0.3, 16 June 2009

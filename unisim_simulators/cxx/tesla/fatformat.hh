@@ -59,6 +59,13 @@ struct cudaFatDebugEntry
 	char * debug;
 };
 
+struct cudaFatElfEntry {
+    char * gpuProfileName;            
+    char * elf;
+    cudaFatElfEntry * next;
+    unsigned int size;
+};
+
 enum cudaFatCudaBinaryFlag
 {
 	cudaFatDontSearchFlag = (1 << 0),
@@ -66,19 +73,28 @@ enum cudaFatCudaBinaryFlag
 	cudaFatSassDebugFlag  = (1 << 2)
 };
 
+struct cudaFatSymbol {
+    char* name;
+};
+
 struct cudaFatCudaBinary
 {
-	unsigned long     magic;
-	unsigned long     version;
-	unsigned long     gpuInfoVersion;
-	char*            key;
-	char*            ident;
-	char*            usageMode;
-	cudaFatPtxEntry      *ptx;
-	cudaFatCubinEntry    *cubin;
-	cudaFatDebugEntry    *debug;
-	void*           debugInfo;
-	unsigned int            flags;
+	unsigned long magic;
+	unsigned long version;
+	unsigned long gpuInfoVersion;
+	char * key;
+	char * ident;
+	char * usageMode;
+	cudaFatPtxEntry * ptx;
+	cudaFatCubinEntry * cubin;
+	cudaFatDebugEntry * debug;
+    void * debugInfo;
+    unsigned int flags;
+    cudaFatSymbol * exported;
+    cudaFatSymbol * imported;
+    cudaFatCudaBinary * dependends;
+    unsigned int characteristic;
+    cudaFatElfEntry * elf;
 };
 
 

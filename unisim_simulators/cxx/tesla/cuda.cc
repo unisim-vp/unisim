@@ -103,6 +103,16 @@ CUresult  CUDAAPI cuInit(unsigned int Flags)
 	driver = mysystem.GetDriver();
 	return driver->cuInit(Flags);
 }
+
+
+CUresult  CUDAAPI cuDriverGetVersion(int *driverVersion)
+{
+	if(verbose) cerr << "cuDriverGetVersion()" << endl;
+	*driverVersion = CUDA_VERSION;
+	return CUDA_SUCCESS;
+}
+
+
 /************************************
  **
  **    Device management

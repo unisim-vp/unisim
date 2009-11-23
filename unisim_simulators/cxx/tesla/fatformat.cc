@@ -50,6 +50,7 @@ FatFormat::FatFormat(void const *fatCubin) :
 
 char const * FatFormat::GetCubin(char const * gpuname)
 {
+    // TODO: fallback to ELF if Cubin not found
 	assert(fcb->cubin[0].cubin != 0 && fcb->cubin[0].gpuProfileName != 0);
 	if(verbose) {
 		cerr << "Fat: using cubin profile " << fcb->cubin[0].gpuProfileName << endl;
