@@ -37,9 +37,10 @@
 
 #include <unisim/component/cxx/isa/types.hh>
 #include <unisim/service/interfaces/keyboard.hh>
+#include <unisim/service/interfaces/mouse.hh>
 #include <unisim/kernel/service/service.hh>
 #include <unisim/kernel/logger/logger.hh>
-#include <queue>
+#include <list>
 #include <vector>
 
 namespace unisim {
@@ -48,7 +49,7 @@ namespace cxx {
 namespace isa {
 namespace i8042 {
 
-using std::queue;
+using std::list;
 using std::vector;
 using unisim::component::cxx::isa::isa_address_t;
 
@@ -60,9 +61,11 @@ using unisim::kernel::service::Object;
 using unisim::kernel::service::Parameter;
 
 using unisim::service::interfaces::Keyboard;
+using unisim::service::interfaces::Mouse;
 
 class I8042 :
-	public Client<Keyboard>
+	public Client<Keyboard>,
+	public Client<Mouse>
 {
 public:
 	static const unsigned int KBD_INDEX = 0;
@@ -118,13 +121,14 @@ public:
 
 	// keyboard microcontroller commands (port 60h)
 	static const uint8_t KBD_CMD_SET_LEDS      = 0xed;    // set keyboard leds
-	static const uint8_t KBD_CMD_ECHO          = 0xee;     // echo
+	static const uint8_t KBD_CMD_ECHO          = 0xee;    // echo
 	static const uint8_t KBD_CMD_GET_ID        = 0xf2;    // get keyboard ID
 	static const uint8_t KBD_CMD_SET_RATE      = 0xf3;    // Set typematic rate
 	static const uint8_t KBD_CMD_ENABLE        = 0xf4;    // Enable scanning
 	static const uint8_t KBD_CMD_RESET_DISABLE = 0xf5;    // reset and disable scanning
 	static const uint8_t KBD_CMD_RESET_ENABLE  = 0xf6;    // reset and enable scanning
 	static const uint8_t KBD_CMD_RESET         = 0xff;    // reset
+	static const uint8_t KBD_CMD_RESEND        = 0xfe;    // resend last byte
 
 	// Status of keyboard LEDs
 	static const uint8_t KBD_LED_SCROLL_LOCK   = 0x01;    // scroll lock (1=on, 0=off)
@@ -133,11 +137,55 @@ public:
 
 	// Keyboard command results
 	static const uint8_t KBD_RET_ACK           = 0xfa;    // keyboard command acknowledge
+	static const uint8_t KBD_RET_NACK          = 0xfe;    // keyboard command acknowledge with error
 	static const uint8_t KBD_RET_PWR_ON_RESET  = 0xaa;    // Power on reset
+
+	// Aux/Mouse microcontroller commands (port 60h)
+	static const uint8_t AUX_CMD_SET_SCALING11   = 0xe6;   // set scaling 1:1
+	static const uint8_t AUX_CMD_SET_SCALING21   = 0xe7;   // set scaling 2:1
+	static const uint8_t AUX_CMD_SET_RESOLUTION  = 0xe8;   // set resolution
+	static const uint8_t AUX_CMD_GET_STATUS      = 0xe9;    // get aux/mouse status
+	static const uint8_t AUX_CMD_READ_DATA       = 0xeb;    // read data
+	static const uint8_t AUX_CMD_GET_ID          = 0xf2;    // get aux/mouse ID
+	static const uint8_t AUX_CMD_SET_SAMPLE_RATE = 0xf3;  // set sample rate
+	static const uint8_t AUX_CMD_ENABLE          = 0xf4;    // enable aux
+	static const uint8_t AUX_CMD_DISABLE         = 0xf5;    // disable aux
+	static const uint8_t AUX_CMD_SET_DEFAULTS    = 0xf6;    // set defaults
+	static const uint8_t AUX_CMD_RESET           = 0xff;    // reset
+	static const uint8_t AUX_CMD_RESEND          = 0xfe;    // resend last packet
+	static const uint8_t AUX_CMD_SET_REMOTE_MODE = 0xf0;  // enter remote mode
+	static const uint8_t AUX_CMD_SET_WRAP_MODE   = 0xee;    // enter wrap mode
+	static const uint8_t AUX_CMD_RESET_WRAP_MODE = 0xec;  // leave wrap mode
+	static const uint8_t AUX_CMD_SET_STREAM_MODE = 0xea;  // enter stream mode
 	
-	static const bool enable_aux = false;
+	// Aux/Mouse command results
+	static const uint8_t AUX_RET_ACK           = 0xfa;    // Aux/Mouse command acknowledge
+	static const uint8_t AUX_RET_NACK          = 0xfe;    // Aux/Mouse command acknowledge with error
+	static const uint8_t AUX_RET_ERROR         = 0xfc;    // Aux/Mouse error
+	static const uint8_t AUX_RET_PWR_ON_RESET  = 0xaa;    // Power on reset (self test ok)
+
+	// Aux/Mouse status register bits
+	static const uint8_t AUX_STR_MODE          = 0x40;    // Aux mode (0=stream, 1=remote)
+	static const uint8_t AUX_STR_ENABLE        = 0x20;    // Aux active (0=disabled, 1=enabled)
+	static const uint8_t AUX_STR_SCALING       = 0x10;    // Aux scaling (0=1:1 1=2:1)
+	static const uint8_t AUX_STR_LBUTTON       = 0x04;    // left mouse button status (0=released, 1=pressed)
+	static const uint8_t AUX_STR_MBUTTON       = 0x02;    // middle mouse button status (0=released, 1=pressed)
+	static const uint8_t AUX_STR_RBUTTON       = 0x01;    // right mouse button status (0=released, 1=pressed)
+	
+	// Aux/Mouse byte 1 bits
+	static const uint8_t AUX_BYTE1_Y_OVERFLOW   = 0x80;
+	static const uint8_t AUX_BYTE1_X_OVERFLOW   = 0x40;
+	static const uint8_t AUX_BYTE1_Y_SIGN       = 0x20;
+	static const uint8_t AUX_BYTE1_X_SIGN       = 0x10;
+	static const uint8_t AUX_BYTE1_ALWAYS_1     = 0x08;
+	static const uint8_t AUX_BYTE1_MBUTTON      = 0x04;
+	static const uint8_t AUX_BYTE1_RBUTTON      = 0x02;
+	static const uint8_t AUX_BYTE1_LBUTTON      = 0x01;
+	
+	static const bool enable_aux = true;
 
 	ServiceImport<Keyboard> keyboard_import;
+	ServiceImport<Mouse> mouse_import;
 	
 	I8042(const char *name, Object *parent = 0);
 	virtual ~I8042();
@@ -150,23 +198,36 @@ public:
 	virtual void TriggerAuxInterrupt(bool level);
 	bool CaptureKey();
 	bool RepeatKey();
+	void CaptureMouse();
 	virtual void Stop();
 	virtual void Reset();
 	virtual void Lock();
 	virtual void Unlock();
 protected:
+	// PS/2 keyboard
 	double typematic_rate;  // Aka key per second
 	double typematic_delay; // Aka key repeat delay
 	double speed_boost;     // speed boost factor
-	unsigned int isa_bus_frequency;
-	unsigned int fsb_frequency;
-	bool verbose;
-
+	
+	// AUX / PS/2 MOUSE
+	uint8_t aux_status;            // Aux status byte
+	uint8_t aux_log2_resolution;   // log2(resolution) where resolution is either 1, 2, 4, or 8 count/mm
+	unsigned int aux_sample_rate;        // Aka mouse sample per second
+	bool aux_wrap;                 // wrap mode
+	
 	// the kernel logger
 	unisim::kernel::logger::Logger logger;
+	bool verbose;
+
+	// Bus frequencies
+	unsigned int isa_bus_frequency;
+	unsigned int fsb_frequency;
 private:
 	// Keyboard IDs
 	uint8_t kbd_id[2];    // Keyboard ID
+
+	// Aux IDs
+	uint8_t aux_id[1];    // Aux ID
 
 	uint8_t status; // read-only, port 64h (on-board i8042 microcontroller)
 	uint8_t control; // on-board i8042 keyboard microcontroller control register
@@ -186,13 +247,19 @@ private:
 
 	struct
 	{
+		bool pending;
+		uint8_t cmd;
+	} aux_command; // pending Aux command waiting additional bytes
+
+	struct
+	{
 		bool caps_lock;
 		bool scroll_lock;
 		bool num_lock;
 	} kbd_leds; // keyboard LEDs status
 
-	queue<uint8_t> kbd_out;
-	queue<uint8_t> aux_out;
+	list<uint8_t> kbd_out;
+	list<uint8_t> aux_out;
 	bool kbd_irq_level;
 	bool aux_irq_level;
 	bool kbd_scanning;
@@ -205,6 +272,9 @@ private:
 	bool key_num_repeat[256];
 
 	unisim::service::interfaces::Keyboard::KeyAction last_key_action;
+	uint8_t kbd_last_byte;
+	unisim::service::interfaces::Mouse::MouseState mouse_state;
+	uint8_t aux_packet[3];
 
 	Parameter<unsigned int> param_isa_bus_frequency;
 	Parameter<unsigned int> param_fsb_frequency;
@@ -213,6 +283,8 @@ private:
 	Parameter<double> param_speed_boost;
 	Parameter<bool> param_verbose;
 
+	void KbdReset();
+	void AuxReset();
 	void WriteData(uint8_t data);     // Write on port 60h
 	void ReadData(uint8_t& data);     // Read on port 60h
 	void ReadStatus(uint8_t& value);   // Read on port 64h
@@ -225,13 +297,18 @@ private:
 	void KbdDequeue(uint8_t& data);
 	void AuxDequeue(uint8_t& data);
 	void KbdEnqueue(uint8_t data);
+	void KbdResend();
 	void AuxEnqueue(uint8_t data);
 	void EnqueueScancodes(const vector<uint8_t>& scancodes);
+	void AuxResendPacket();
+	void AuxSendPacket(bool& overflow);
 	void UpdateStatus();
 	void UpdateIRQ();
 	void KbdResetQueue();
 	void SetTypematicRate(double rate);
 	void SetTypematicDelay(double delay);
+	bool SetAuxSampleRate(unsigned int rate);
+	bool SetAuxResolution(unsigned int log2_resolution);
 };
 
 } // end of namespace i8042

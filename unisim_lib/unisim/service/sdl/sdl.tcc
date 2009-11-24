@@ -53,6 +53,7 @@ using unisim::kernel::logger::EndDebugInfo;
 using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 
+#if defined(HAVE_SDL)
 template <class ADDRESS>
 VideoMode<ADDRESS>::VideoMode()
 	: fb_addr(0)
@@ -72,39 +73,57 @@ VideoMode<ADDRESS>::VideoMode(ADDRESS _fb_addr, uint32_t _width, uint32_t _heigh
 	, fb_bytes_per_line(_fb_bytes_per_line)
 {
 }
+#endif
 
 template <class ADDRESS>
-SDL<ADDRESS>::SDL(const char *name, Object *parent) :
-	Object(name, parent),
-	Service<Video<ADDRESS> >(name, parent),
-	Client<Memory<ADDRESS> >(name, parent),
-	Service<Keyboard>(name, parent),
-	logger(*this),
-	video_export("video-export", this),
-	memory_import("memory-import", this),
-	keyboard_export("keyboard-export", this),
+SDL<ADDRESS>::SDL(const char *name, Object *parent)
+	: Object(name, parent)
+	, Service<Video<ADDRESS> >(name, parent)
+	, Client<Memory<ADDRESS> >(name, parent)
+	, Service<Keyboard>(name, parent)
+	, Service<Mouse>(name, parent)
+	, video_export("video-export", this)
+	, memory_import("memory-import", this)
+	, keyboard_export("keyboard-export", this)
+	, mouse_export("mouse-export", this)
+	, logger(*this)
+	, verbose_setup(false)
+	, verbose_run(false)
+	, mouse_state_updated(false)
+	, bmp_out_filename()
+	, keymap_filename()
+	, host_key_name("rctrl")
+	, refresh_period(40)  // 25 fps
+	, param_verbose_setup("verbose-setup", this, verbose_setup)
+	, param_verbose_run("verbose-run", this, verbose_run)
+	, param_refresh_period("refresh-period", this, refresh_period)
+	, param_bmp_out_filename("bmp-out-filename", this, bmp_out_filename)
+	, param_keymap_filename("keymap-filename", this, keymap_filename)
+	, param_host_key_name("host-key-name", this, host_key_name)
 #if defined(HAVE_SDL)
-	sdl_mutex(0),
-	kbd_mutex(0),
-	surface(0),
-	screen(0),
+	, surface(0)
+	, screen(0)
+//	, refresh_thread(0)
+	, event_handling_thread(0)
+	, sdl_mutex(0)
+	, host_key_down(false)
+	, grab_input(false)
+	, full_screen(false)
+	, host_key(SDLK_RCTRL)
+	, mode_set(false)
+	, alive(false)
+	, refresh(false)
+	, bmp_out_file_number(0)
+	, learn_keymap_filename("learned_keymap.xml")
 #endif
-	refresh_period(0),
-	alive(false),
-	refresh(false),
-	mode_set(false),
-	bmp_out_filename(),
-	keymap_filename(),
-	learn_keymap_filename("learned_keymap.xml"),
-	bmp_out_file_number(0),
-	verbose_setup(false),
-	verbose_run(false),
-	param_refresh_period("refresh-period", this, refresh_period),
-	param_bmp_out_filename("bmp-out-filename", this, bmp_out_filename),
-	param_keymap_filename("keymap-filename", this, keymap_filename),
-	param_verbose_setup("verbose-setup", this, verbose_setup),
-	param_verbose_run("verbose-run", this, verbose_run)
 {
+	mouse_state.dx = 0;
+	mouse_state.dy = 0;
+	mouse_state.left_button = false;
+	mouse_state.middle_button = false;
+	mouse_state.right_button = false;
+	mouse_state_updated = true;
+	
 #if defined(HAVE_SDL)
 	sdlk_string_map["backspace"] = SDLK_BACKSPACE;
 	sdlk_string_map["tab"] = SDLK_TAB;
@@ -343,22 +362,20 @@ SDL<ADDRESS>::SDL(const char *name, Object *parent) :
 template <class ADDRESS>
 SDL<ADDRESS>::~SDL()
 {
+#if defined(HAVE_SDL)
 	if(alive)
 	{
 		alive = false;
-#if defined(HAVE_SDL)
-		SDL_WaitThread(refresh_thread, 0);
+		//SDL_WaitThread(refresh_thread, 0);
 		SDL_WaitThread(event_handling_thread, 0);
-#endif
 	}
-#if defined(HAVE_SDL)
 	if(surface)
 	{
 		SDL_FreeSurface(surface);
 		surface = 0;
 	}
 	SDL_DestroyMutex(sdl_mutex);
-	SDL_DestroyMutex(kbd_mutex);
+	SDL_RemoveTimer(refresh_timer);
 	SDL_Quit();
 #endif
 }
@@ -377,7 +394,7 @@ bool SDL<ADDRESS>::Setup()
 	{
 		logger << DebugInfo << "Initializing SDL..." << EndDebugInfo;
 	}
-	if(SDL_Init(0) < 0)
+	if(SDL_Init(SDL_INIT_TIMER) < 0)
 	{
 		logger << DebugError << "Can't initialize SDL: " << SDL_GetError() << EndDebugError;
 		return false;
@@ -478,361 +495,46 @@ bool SDL<ADDRESS>::Setup()
 
 	delete xml_node;
 
+	map<string, SDLKey>::iterator sdlk_iter = sdlk_string_map.find(string(host_key_name));
+	if(sdlk_iter != sdlk_string_map.end())
+	{
+		if(verbose_setup)
+		{
+			logger << DebugInfo << "Using key \"" << host_key_name << "\" as host key" << EndDebugInfo;
+		}
+		host_key = (*sdlk_iter).second;
+	}
+	else
+	{
+		logger << DebugWarning << "Unknown key \"" << host_key_name << "\"... Using instead [Right Ctrl] as host key" << EndDebugWarning;
+		host_key = SDLK_RCTRL;
+	}
+	
 	sdl_mutex = SDL_CreateMutex();
-	kbd_mutex = SDL_CreateMutex();
-#else
-	logger << DebugWarning << "No host video output nor input devices available" << EndDebugWarning;
-#endif
 	
 	bmp_out_file_number = 0;
 	alive = true;
 	refresh = false;
 
-#if defined(HAVE_SDL)
 	// create a thread for refreshing display on screen
-	if(!(refresh_thread = SDL_CreateThread((int (*)(void *)) RefreshThread, this)))
-	{
-		alive = false;
-		return false;
-	}
+// 	if(!(refresh_thread = SDL_CreateThread((int (*)(void *)) RefreshThread, this)))
+// 	{
+// 		alive = false;
+// 		return false;
+// 	}
+	refresh_timer = SDL_AddTimer(refresh_period, RefreshTimer, this);
 
 	if(!(event_handling_thread = SDL_CreateThread((int (*)(void *)) EventHandlingThread, this)))
 	{
 		alive = false;
 		return false;
 	}
+#else
+	logger << DebugWarning << "No host video output nor input devices available" << EndDebugWarning;
 #endif
 
 	return true;
 }
-
-#if defined(HAVE_SDL)
-template <class ADDRESS>
-int SDL<ADDRESS>::RefreshThread(SDL<ADDRESS> *sdl)
-{
-	sdl->RefreshLoop();
-	return 0;
-}
-
-template <class ADDRESS>
-int SDL<ADDRESS>::EventHandlingThread(SDL<ADDRESS> *sdl)
-{
-	sdl->EventLoop();
-	return 0;
-}
-#endif
-
-template <class ADDRESS>
-bool SDL<ADDRESS>::GetKeyAction(unisim::service::interfaces::Keyboard::KeyAction& key_action)
-{
-	bool ret = false;
-#if defined(HAVE_SDL)
-	SDL_mutexP(kbd_mutex);
-#endif
-	if(!kbd_key_action_fifo.empty())
-	{
-		key_action = kbd_key_action_fifo.front();
-		kbd_key_action_fifo.pop_front();
-		ret = true;
-	}
-#if defined(HAVE_SDL)
-	SDL_mutexV(kbd_mutex);
-#endif
-	return ret;
-}
-
-template <class ADDRESS>
-void SDL<ADDRESS>::PushKeyAction(const unisim::service::interfaces::Keyboard::KeyAction& key_action)
-{
-#if defined(HAVE_SDL)
-	SDL_mutexP(kbd_mutex);
-#endif
-	kbd_key_action_fifo.push_back(key_action);
-#if defined(HAVE_SDL)
-	SDL_mutexV(kbd_mutex);
-#endif
-}
-
-#if defined(HAVE_SDL)
-
-template <class ADDRESS>
-void SDL<ADDRESS>::ProcessKeyboardEvent(SDL_KeyboardEvent& kbd_ev)
-{
-	if(kbd_ev.keysym.sym == SDLK_RCTRL)
-	{
-		if(unlikely(verbose_run))
-		{
-			logger << DebugInfo << "Host key " << ((kbd_ev.type == SDL_KEYUP) ? "up" : "down") << EndDebugInfo;
-		}
-		KeyAction key_action;
-
-		key_action.action = (kbd_ev.type == SDL_KEYUP) ? unisim::service::interfaces::Keyboard::KeyAction::KEY_UP : unisim::service::interfaces::Keyboard::KeyAction::KEY_DOWN;
-
-		key_action.key_num = 58; // Left Control
-		PushKeyAction(key_action);
-		key_action.key_num = 60; // Left Alt
-		PushKeyAction(key_action);
-	}
-	else
-	{
-		map<SDLKey, uint8_t>::iterator keymap_iter = keymap.find(kbd_ev.keysym.sym);
-		uint8_t key_num = (keymap_iter != keymap.end()) ? (*keymap_iter).second : 0;
-
-		if(unlikely(verbose_run))
-		{
-			logger << DebugInfo << "Key #" << (unsigned int) key_num << " (" << (unsigned int) kbd_ev.keysym.sym << ")" << ((kbd_ev.type == SDL_KEYUP) ? "up" : "down") << EndDebugInfo;
-		}
-
-		if(key_num)
-		{
-			KeyAction key_action;
-			key_action.key_num = key_num;
-			key_action.action = (kbd_ev.type == SDL_KEYUP) ? unisim::service::interfaces::Keyboard::KeyAction::KEY_UP : unisim::service::interfaces::Keyboard::KeyAction::KEY_DOWN;
-			PushKeyAction(key_action);
-		}
-	}
-}
-
-template <class ADDRESS>
-void SDL<ADDRESS>::EventLoop()
-{
-	SDL_mutexP(sdl_mutex);
-	if(unlikely(verbose_setup))
-	{
-		logger << DebugInfo << "Initializing SDL Video subsystem..." << EndDebugInfo;
-	}
-	if(SDL_InitSubSystem(SDL_INIT_VIDEO) < 0)
-	{
-		logger << DebugError << "Can't initialize SDL Video subsystem: " << SDL_GetError() << EndDebugError;
-		return;
-	}
-	if(unlikely(verbose_setup))
-	{
-		logger << DebugInfo << "SDL Video subsystem initialized" << EndDebugInfo;
-	}
-	SDL_mutexV(sdl_mutex);
-
-	SDL_Event sdl_ev;
-	
-	while(alive)
-	{
-		SDL_Delay(10);
-		SDL_mutexP(sdl_mutex);
-		if(SDL_PollEvent(&sdl_ev))
-		{
-			switch(sdl_ev.type)
-			{
-				case SDL_USEREVENT:
-					switch(sdl_ev.user.code)
-					{
-						case EV_SET_VIDEO_MODE:
-							HandleSetVideoMode(*(const VideoMode<ADDRESS> *) sdl_ev.user.data1);
-							break;
-						case EV_BLIT:
-							HandleBlit();
-							break;
-					}
-					break;
-				case SDL_VIDEOEXPOSE:
-					refresh = true;
-					break;
-				case SDL_KEYDOWN:
-				case SDL_KEYUP:
-					ProcessKeyboardEvent(sdl_ev.key);
-					break;
-				case SDL_QUIT:
-					exit(0); // TO IMPROVE!
-			}
-		}
-		SDL_mutexV(sdl_mutex);
-	}
-}
-
-template <class ADDRESS>
-void SDL<ADDRESS>::RefreshLoop()
-{
-	while(alive)
-	{
-		if(refresh)
-		{
-			refresh = false;
-			Blit();
-		}
-		SDL_Delay(refresh_period);
-	}
-}
-
-template <class ADDRESS>
-bool SDL<ADDRESS>::HandleSetVideoMode(const VideoMode<ADDRESS>& _video_mode)
-{
-	video_mode = _video_mode;
-
-	unsigned int red_offset;
-	unsigned int green_offset;
-	unsigned int blue_offset;
-	unsigned int red_bits;
-	unsigned int green_bits;
-	unsigned int blue_bits;
-	
-	switch(video_mode.depth)
-	{
-		case 15:
-			red_offset = 10;
-			green_offset = 5;
-			blue_offset = 0;
-			red_bits = 5;
-			green_bits = 5;
-			blue_bits = 5;
-			break;
-		case 16:
-			red_offset = 11;
-			green_offset = 5;
-			blue_offset = 0;
-			red_bits = 5;
-			green_bits = 6;
-			blue_bits = 5;
-			break;
-		case 24:
-		case 32:
-			red_offset = 16;
-			green_offset = 8;
-			blue_offset = 0;
-			red_bits = 8;
-			green_bits = 8;
-			blue_bits = 8;
-			break;
-		default:
-			logger << DebugError << "Unsupported pixel depth " << video_mode.depth << "(you should try 15, 16 or 24)" << EndDebugError;
-			return false;
-	}
-	
-	unsigned int red_mask = ((1 << red_bits) - 1) << red_offset;
-	unsigned int green_mask = ((1 << green_bits) - 1) << green_offset;
-	unsigned int blue_mask = ((1 << blue_bits) - 1) << blue_offset;
-	
-	// Initialize video display
-	if(unlikely(verbose_run))
-	{
-		logger << DebugInfo << "Initializing video mode " << video_mode.width << " pixels x " << video_mode.height << " pixels x " << video_mode.depth << " bits per pixel..." << EndDebugInfo;
-	}
-
-	unsigned int sdl_depth = (video_mode.depth + 7) & ~7;
-	screen = SDL_SetVideoMode(video_mode.width, video_mode.height, sdl_depth, SDL_SWSURFACE);
-	if(!screen)
-	{
-		if(unlikely(verbose_run))
-		{
-			logger << DebugWarning << "Can't set video mode using a hardware surface: " << SDL_GetError() << EndDebugWarning;
-			logger << DebugInfo << "Trying with a software surface" << EndDebugWarning;
-		}
-		screen = SDL_SetVideoMode(video_mode.width, video_mode.height, sdl_depth, SDL_SWSURFACE);
-		if(!screen)
-		{
-			logger << DebugError << "Still can't set video mode using a software surface: " << SDL_GetError() << EndDebugError;
-			return false;
-		}
-	}
-	if(unlikely(verbose_run))
-	{
-		logger << DebugInfo << "Video mode set" << EndDebugInfo;
-	}
-
-	stringstream sstr;
-	sstr << Object::GetName() << " [" << video_mode.width << "x" << video_mode.height << "x" << video_mode.depth << "]";
-	string title = sstr.str();
-	SDL_WM_SetCaption(title.c_str(), title.c_str());
-	
-	if(surface)
-	{
-		SDL_FreeSurface(surface);
-		surface = 0;
-	}
-	surface = SDL_CreateRGBSurface(SDL_SWSURFACE, video_mode.width, video_mode.height, sdl_depth, red_mask, green_mask, blue_mask, 0);
-	if(!surface)
-	{
-		logger << DebugError << "Can't create SW surface" << EndDebugError;
-		return false;
-	}
-
-	//SDL_WM_SetIcon(SDL_LoadBMP("icon.bmp"), NULL);
-	
-	mode_set = true;
-
-	return true;
-}
-
-template <class ADDRESS>
-void SDL<ADDRESS>::HandleBlit()
-{
-	SDL_mutexP(sdl_mutex);
-	
-	uint32_t line;
-	uint8_t *dst;
-	uint8_t *src;
-	ADDRESS scan_line_addr;
-	
-	if(SDL_LockSurface(surface) < 0) return;
-	
-	switch(video_mode.depth)
-	{
-		case 15:
-		case 16:
-		{
-			uint32_t width = video_mode.width;
-			uint16_t scan_line[width];
-			
-			for(line = 0, dst = (uint8_t *) surface->pixels, scan_line_addr = video_mode.fb_addr; line < video_mode.height; line++, dst += surface->pitch, scan_line_addr += video_mode.fb_bytes_per_line)
-			{
-				if(memory_import->ReadMemory(scan_line_addr, scan_line, 2 * video_mode.width))
-				{
-					BigEndian2Host((uint16_t *) dst, (uint16_t *) scan_line, video_mode.width);
-				}
-			}
-			break;
-		}
-			
-		case 24:
-		case 32:
-		{
-			uint32_t width = video_mode.width;
-			uint32_t scan_line[width];
-			
-			for(line = 0, dst = (uint8_t *) surface->pixels, scan_line_addr = video_mode.fb_addr; line < video_mode.height; line++, dst += surface->pitch, scan_line_addr += video_mode.fb_bytes_per_line)
-			{
-				if(memory_import->ReadMemory(scan_line_addr, scan_line, 4 * video_mode.width))
-				{
-					BigEndian2Host((uint32_t *) dst, (uint32_t *) scan_line, video_mode.width);
-				}
-			}
-			break;
-		}
-	}
-	SDL_UnlockSurface(surface);
-			
-	if(SDL_BlitSurface(surface, 0, screen, 0) != 0)
-	{
-		logger << DebugWarning << "Can't blit surface" << EndDebugWarning;
-	}
-	SDL_UpdateRect(screen, 0, 0, video_mode.width, video_mode.height);
-	
-	if(!bmp_out_filename.empty())
-	{
-		char filename[bmp_out_filename.length() + 12];
-		sprintf(filename, "%s - %04u.bmp", bmp_out_filename.c_str(), bmp_out_file_number);
-		if(SDL_SaveBMP(surface, filename) != 0)
-		{
-			logger << DebugWarning << "Can't save bitmap into file " << (const char *) filename << EndDebugWarning;
-		}
-		else
-		{
-			bmp_out_file_number++;
-		}
-	}
-
-	SDL_mutexV(sdl_mutex);
-}
-#endif // HAVE_SDL
-
 
 template <class ADDRESS>
 bool SDL<ADDRESS>::SetVideoMode(ADDRESS fb_addr, uint32_t width, uint32_t height, uint32_t depth, uint32_t fb_bytes_per_line)
@@ -848,7 +550,6 @@ bool SDL<ADDRESS>::SetVideoMode(ADDRESS fb_addr, uint32_t width, uint32_t height
 	user_event.user.data2 = 0;
 	
 	status = (SDL_PushEvent(&user_event) == 0);
-
 	SDL_mutexV(sdl_mutex);
 #endif
 
@@ -856,30 +557,89 @@ bool SDL<ADDRESS>::SetVideoMode(ADDRESS fb_addr, uint32_t width, uint32_t height
 }
 
 template <class ADDRESS>
-void SDL<ADDRESS>::Blit()
+void SDL<ADDRESS>::RefreshDisplay()
 {
 #if defined(HAVE_SDL)
-	if(!mode_set) return;
+	refresh = true;
+#endif
+}
 
+template <class ADDRESS>
+void SDL<ADDRESS>::ResetKeyboard()
+{
+#if defined(HAVE_SDL)
 	SDL_mutexP(sdl_mutex);
-
-	SDL_Event user_event;
-	user_event.type = SDL_USEREVENT;
-	user_event.user.code = EV_BLIT;
-	user_event.user.data1 = 0;
-	user_event.user.data2 = 0;
-	
-	SDL_PushEvent(&user_event);
-
+#endif
+	kbd_key_action_fifo.clear();
+#if defined(HAVE_SDL)
 	SDL_mutexV(sdl_mutex);
 #endif
 }
 
 template <class ADDRESS>
-void SDL<ADDRESS>::RefreshDisplay()
+bool SDL<ADDRESS>::GetKeyAction(unisim::service::interfaces::Keyboard::KeyAction& key_action)
 {
-	refresh = true;
+	bool ret = false;
+#if defined(HAVE_SDL)
+	SDL_mutexP(sdl_mutex);
+#endif
+	if(!kbd_key_action_fifo.empty())
+	{
+		key_action = kbd_key_action_fifo.front();
+		kbd_key_action_fifo.pop_front();
+		ret = true;
+	}
+#if defined(HAVE_SDL)
+	SDL_mutexV(sdl_mutex);
+#endif
+	return ret;
 }
+
+template <class ADDRESS>
+void SDL<ADDRESS>::ResetMouse()
+{
+#if defined(HAVE_SDL)
+	SDL_mutexP(sdl_mutex);
+#endif
+	mouse_state.dx = 0;
+	mouse_state.dy = 0;
+	mouse_state.left_button = false;
+	mouse_state.middle_button = false;
+	mouse_state.right_button = false;
+	mouse_state_updated = true;
+#if defined(HAVE_SDL)
+	SDL_mutexV(sdl_mutex);
+#endif
+}
+
+template <class ADDRESS>
+bool SDL<ADDRESS>::GetMouseState(unisim::service::interfaces::Mouse::MouseState& mouse_state)
+{
+	bool ret = false;
+#if defined(HAVE_SDL)
+	SDL_mutexP(sdl_mutex);
+#endif
+	if(mouse_state_updated)
+	{
+		mouse_state = this->mouse_state;
+		this->mouse_state.dx = 0;
+		this->mouse_state.dy = 0;
+		ret = true;
+		mouse_state_updated = false;
+	}
+#if defined(HAVE_SDL)
+	SDL_mutexV(sdl_mutex);
+#endif
+	return ret;
+}
+
+template <class ADDRESS>
+void SDL<ADDRESS>::PushKeyAction(const unisim::service::interfaces::Keyboard::KeyAction& key_action)
+{
+	kbd_key_action_fifo.push_back(key_action);
+}
+
+//---------------------------------- SDL stuff below this line ------------------------------------------
 
 #if defined(HAVE_SDL)
 template <class ADDRESS>
@@ -889,9 +649,6 @@ void SDL<ADDRESS>::LearnKeyboard()
 			<< "The following links should help you understanding the key numbering:" << endl
 			<< "  - http://download.microsoft.com/download/1/6/1/161ba512-40e2-4cc9-843a-923143f3456c/scancode.doc" << endl
 			<< "  - http://www.barcodeman.com/altek/mule/kbemulator" << endl;
-	cout << "Learning will start in 10 seconds." << endl
-	        << "Click on window to give it the keyboard focus, then press the asked keys on your keyboard." << endl
-	        << "A key is automatically skipped after 10 seconds." << endl;
 	cout.flush();
 
 	ofstream file(learn_keymap_filename.c_str(), ofstream::out);
@@ -968,6 +725,527 @@ void SDL<ADDRESS>::LearnKeyboard()
 
 	cout << "You keymap is in file \"" << learn_keymap_filename << "\"" << endl;
 }
+
+// template <class ADDRESS>
+// int SDL<ADDRESS>::RefreshThread(SDL<ADDRESS> *sdl)
+// {
+// 	sdl->RefreshLoop();
+// 	return 0;
+// }
+
+template <class ADDRESS>
+int SDL<ADDRESS>::EventHandlingThread(SDL<ADDRESS> *sdl)
+{
+	sdl->EventLoop();
+	return 0;
+}
+
+template <class ADDRESS>
+void SDL<ADDRESS>::ProcessKeyboardEvent(SDL_KeyboardEvent& kbd_ev)
+{
+	if(kbd_ev.keysym.sym == host_key)
+	{
+		if(unlikely(verbose_run))
+		{
+			logger << DebugInfo << "Host key " << ((kbd_ev.type == SDL_KEYUP) ? "up" : "down") << EndDebugInfo;
+		}
+		
+		switch(kbd_ev.type)
+		{
+			case SDL_KEYDOWN:
+				host_key_down = true;
+				break;
+			case SDL_KEYUP:
+				if(host_key_down)
+				{
+					ToggleGrabInput();
+				}
+				else if(grab_input)
+				{
+					KeyAction key_action;
+					key_action.action = unisim::service::interfaces::Keyboard::KeyAction::KEY_UP;
+
+					key_action.key_num = 58; // Left Control
+					PushKeyAction(key_action);
+					key_action.key_num = 60; // Left Alt
+					PushKeyAction(key_action);
+				}
+				break;
+		}
+		return;
+	}
+			
+	switch(kbd_ev.keysym.sym)
+	{
+		case SDLK_f:
+			if(host_key_down && kbd_ev.type == SDL_KEYDOWN)
+			{
+				host_key_down = false;
+				ToggleFullScreen();
+			}
+			return;
+	}
+
+	if(grab_input)
+	{
+		if(host_key_down)
+		{
+			host_key_down = false;
+			
+			KeyAction key_action;
+			key_action.action = unisim::service::interfaces::Keyboard::KeyAction::KEY_UP;
+
+			key_action.key_num = 58; // Left Control
+			PushKeyAction(key_action);
+			key_action.key_num = 60; // Left Alt
+			PushKeyAction(key_action);
+		}
+
+		map<SDLKey, uint8_t>::iterator keymap_iter = keymap.find(kbd_ev.keysym.sym);
+		uint8_t key_num = (keymap_iter != keymap.end()) ? (*keymap_iter).second : 0;
+
+		if(unlikely(verbose_run))
+		{
+			logger << DebugInfo << "Key #" << (unsigned int) key_num << " (" << (unsigned int) kbd_ev.keysym.sym << ")" << ((kbd_ev.type == SDL_KEYUP) ? "up" : "down") << EndDebugInfo;
+		}
+
+		if(key_num)
+		{
+			KeyAction key_action;
+			key_action.key_num = key_num;
+			key_action.action = (kbd_ev.type == SDL_KEYUP) ? unisim::service::interfaces::Keyboard::KeyAction::KEY_UP : unisim::service::interfaces::Keyboard::KeyAction::KEY_DOWN;
+			PushKeyAction(key_action);
+		}
+	}
+}
+
+template <class ADDRESS>
+void SDL<ADDRESS>::ProcessMouseButtonEvent(SDL_MouseButtonEvent& mouse_button_ev)
+{
+	if(mouse_button_ev.which != 0) return; // ignore event
+	
+	if(unlikely(verbose_run))
+	{
+		logger << DebugInfo << "Mouse button #" << (unsigned int) mouse_button_ev.button << " " << ((mouse_button_ev.state == SDL_PRESSED) ? "pressed" : "released") << EndDebugInfo;
+	}
+
+	if(grab_input)
+	{
+		switch(mouse_button_ev.button)
+		{
+			case SDL_BUTTON_LEFT:
+				mouse_state.left_button = (mouse_button_ev.state == SDL_PRESSED);
+				break;
+			case SDL_BUTTON_MIDDLE:
+				mouse_state.middle_button = (mouse_button_ev.state == SDL_PRESSED);
+				break;
+			case SDL_BUTTON_RIGHT:
+				mouse_state.right_button = (mouse_button_ev.state == SDL_PRESSED);
+				break;
+		}
+		mouse_state_updated = true;
+	}
+	else
+	{
+		if(mouse_button_ev.button == SDL_BUTTON_LEFT && mouse_button_ev.state == SDL_RELEASED)
+		{
+			GrabInput();
+		}
+	}
+}
+
+template <class ADDRESS>
+void SDL<ADDRESS>::ProcessMouseMotionEvent(SDL_MouseMotionEvent& mouse_motion_ev)
+{
+	if(grab_input && mouse_motion_ev.which == 0 && (mouse_motion_ev.xrel != 0 || mouse_motion_ev.yrel != 0))
+	{
+		mouse_state.left_button = ((mouse_motion_ev.state & SDL_BUTTON(SDL_BUTTON_LEFT)) != 0);
+		mouse_state.middle_button = ((mouse_motion_ev.state & SDL_BUTTON(SDL_BUTTON_MIDDLE)) != 0);
+		mouse_state.right_button = ((mouse_motion_ev.state & SDL_BUTTON(SDL_BUTTON_RIGHT)) != 0);
+		mouse_state.dx += mouse_motion_ev.xrel;
+		mouse_state.dy -= mouse_motion_ev.yrel; // SDL Y Axis is inverted
+		if(unlikely(verbose_run))
+		{
+			logger << DebugInfo << "Mouse move " << mouse_state.dx << ", " << mouse_state.dy << EndDebugInfo;
+		}
+		mouse_state_updated = true;
+	}
+}
+
+template <class ADDRESS>
+void SDL<ADDRESS>::EventLoop()
+{
+	SDL_mutexP(sdl_mutex);
+	if(unlikely(verbose_setup))
+	{
+		logger << DebugInfo << "Initializing SDL Video subsystem..." << EndDebugInfo;
+	}
+	if(SDL_InitSubSystem(SDL_INIT_VIDEO) < 0)
+	{
+		logger << DebugError << "Can't initialize SDL Video subsystem: " << SDL_GetError() << EndDebugError;
+		return;
+	}
+	if(unlikely(verbose_setup))
+	{
+		logger << DebugInfo << "SDL Video subsystem initialized" << EndDebugInfo;
+	}
+	SDL_mutexV(sdl_mutex);
+
+	SDL_Event sdl_ev;
+	
+	while(alive)
+	{
+		SDL_Delay(10);
+		SDL_mutexP(sdl_mutex);
+		if(SDL_PollEvent(&sdl_ev))
+		{
+			switch(sdl_ev.type)
+			{
+				case SDL_USEREVENT:
+					switch(sdl_ev.user.code)
+					{
+						case EV_SET_VIDEO_MODE:
+							HandleSetVideoMode((const VideoMode<ADDRESS> *) sdl_ev.user.data1);
+							break;
+						case EV_BLIT:
+							HandleBlit();
+							break;
+					}
+					break;
+				case SDL_VIDEOEXPOSE:
+					refresh = true;
+					break;
+				case SDL_KEYDOWN:
+				case SDL_KEYUP:
+					ProcessKeyboardEvent(sdl_ev.key);
+					break;
+				case SDL_MOUSEBUTTONDOWN:
+				case SDL_MOUSEBUTTONUP:
+					ProcessMouseButtonEvent(sdl_ev.button);
+					break;
+				case SDL_MOUSEMOTION:
+					ProcessMouseMotionEvent(sdl_ev.motion);
+					break;
+				case SDL_QUIT:
+					exit(0); // TO IMPROVE!
+			}
+		}
+		SDL_mutexV(sdl_mutex);
+	}
+}
+
+template <class ADDRESS>
+bool SDL<ADDRESS>::HandleSetVideoMode(const VideoMode<ADDRESS> *_video_mode)
+{
+	if(_video_mode)
+		video_mode = *_video_mode;
+
+	int flags = full_screen ? SDL_FULLSCREEN : 0;
+	unsigned int red_offset;
+	unsigned int green_offset;
+	unsigned int blue_offset;
+	unsigned int red_bits;
+	unsigned int green_bits;
+	unsigned int blue_bits;
+	
+	switch(video_mode.depth)
+	{
+		case 15:
+			red_offset = 10;
+			green_offset = 5;
+			blue_offset = 0;
+			red_bits = 5;
+			green_bits = 5;
+			blue_bits = 5;
+			break;
+		case 16:
+			red_offset = 11;
+			green_offset = 5;
+			blue_offset = 0;
+			red_bits = 5;
+			green_bits = 6;
+			blue_bits = 5;
+			break;
+		case 24:
+		case 32:
+			red_offset = 16;
+			green_offset = 8;
+			blue_offset = 0;
+			red_bits = 8;
+			green_bits = 8;
+			blue_bits = 8;
+			break;
+		default:
+			logger << DebugError << "Unsupported pixel depth " << video_mode.depth << "(you should try 15, 16 or 24)" << EndDebugError;
+			return false;
+	}
+	
+	unsigned int red_mask = ((1 << red_bits) - 1) << red_offset;
+	unsigned int green_mask = ((1 << green_bits) - 1) << green_offset;
+	unsigned int blue_mask = ((1 << blue_bits) - 1) << blue_offset;
+
+	// Creating icon
+	SDL_Surface *icon = SDL_CreateRGBSurface(SDL_SWSURFACE, 16, 16, 32, 0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000);
+	if(!icon)
+	{
+		logger << DebugError << "Can't create SW surface for icon" << EndDebugError;
+		return false;
+	}
+	
+	// Icon is a "U" like UNISIM (RGBA)
+	// Note: A component must be either 0 or 255
+	char icon_pixel_data[16 * 16 * 4 + 1] =
+		"\0\0\0\0\324\0\0\377\324\0\0\377\324\0\0\377\324\0\0\377\0\0\0\0\0\0\0\0"
+		"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\324\0\0\377\324\0\0\377\324\0\0\377\324"
+		"\0\0\377\0\0\0\0\0\0\0\0\324\0\0\377\324\0\0\377\324\0\0\377\324\0\0\377"
+		"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\324\0\0\377\324\0\0\377"
+		"\324\0\0\377\324\0\0\377\0\0\0\0\0\0\0\0\324\0\0\377\324\0\0\377\324\0\0"
+		"\377\324\0\0\377\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\324\0\0"
+		"\377\324\0\0\377\324\0\0\377\324\0\0\377\0\0\0\0\0\0\0\0\324\0\0\377\324"
+		"\0\0\377\324\0\0\377\324\0\0\377\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
+		"\0\0\0\0\324\0\0\377\324\0\0\377\324\0\0\377\324\0\0\377\0\0\0\0\0\0\0\0"
+		"\324\0\0\377\324\0\0\377\324\0\0\377\324\0\0\377\0\0\0\0\0\0\0\0\0\0\0\0"
+		"\0\0\0\0\0\0\0\0\0\0\0\0\324\0\0\377\324\0\0\377\324\0\0\377\324\0\0\377"
+		"\0\0\0\0\0\0\0\0\324\0\0\377\324\0\0\377\324\0\0\377\324\0\0\377\0\0\0\0"
+		"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\324\0\0\377\324\0\0\377\324\0\0"
+		"\377\324\0\0\377\0\0\0\0\0\0\0\0\324\0\0\377\324\0\0\377\324\0\0\377\324"
+		"\0\0\377\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\324\0\0\377\324"
+		"\0\0\377\324\0\0\377\324\0\0\377\0\0\0\0\0\0\0\0\324\0\0\377\324\0\0\377"
+		"\324\0\0\377\324\0\0\377\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
+		"\324\0\0\377\324\0\0\377\324\0\0\377\324\0\0\377\0\0\0\0\0\0\0\0\324\0\0"
+		"\377\324\0\0\377\324\0\0\377\324\0\0\377\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
+		"\0\0\0\0\0\0\0\0\324\0\0\377\324\0\0\377\324\0\0\377\324\0\0\377\0\0\0\0"
+		"\0\0\0\0\324\0\0\377\324\0\0\377\324\0\0\377\324\0\0\377\0\0\0\0\0\0\0\0"
+		"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\324\0\0\377\324\0\0\377\324\0\0\377\324"
+		"\0\0\377\0\0\0\0\0\0\0\0\324\0\0\377\324\0\0\377\324\0\0\377\324\0\0\377"
+		"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\324\0\0\377\324\0\0\377"
+		"\324\0\0\377\324\0\0\377\0\0\0\0\0\0\0\0\324\0\0\377\324\0\0\377\324\0\0"
+		"\377\324\0\0\377\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\324\0\0"
+		"\377\324\0\0\377\324\0\0\377\324\0\0\377\0\0\0\0\0\0\0\0\0\0\0\0\324\0\0"
+		"\377\324\0\0\377\324\0\0\377\324\0\0\377\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
+		"\324\0\0\377\324\0\0\377\324\0\0\377\324\0\0\377\0\0\0\0\0\0\0\0\0\0\0\0"
+		"\0\0\0\0\324\0\0\377\324\0\0\377\324\0\0\377\324\0\0\377\324\0\0\377\324"
+		"\0\0\377\324\0\0\377\324\0\0\377\324\0\0\377\324\0\0\377\324\0\0\377\324"
+		"\0\0\377\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\324\0\0\377\324\0\0\377"
+		"\324\0\0\377\324\0\0\377\324\0\0\377\324\0\0\377\324\0\0\377\324\0\0\377"
+		"\324\0\0\377\324\0\0\377\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
+		"\0\0\0\0\0\0\0\0\324\0\0\377\324\0\0\377\324\0\0\377\324\0\0\377\324\0\0"
+		"\377\324\0\0\377\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
+
+	if(SDL_LockSurface(icon) < 0) return false;
+	memcpy(icon->pixels, icon_pixel_data, 16 * 16 * 4);
+	SDL_UnlockSurface(icon);
+	
+	SDL_WM_SetIcon(icon, 0);
+
+	SDL_FreeSurface(icon);
+	
+	// Initialize video display
+	if(unlikely(verbose_run))
+	{
+		logger << DebugInfo << "Initializing video mode " << video_mode.width << " pixels x " << video_mode.height << " pixels x " << video_mode.depth << " bits per pixel..." << EndDebugInfo;
+	}
+
+	unsigned int sdl_depth = (video_mode.depth + 7) & ~7;
+	screen = SDL_SetVideoMode(video_mode.width, video_mode.height, sdl_depth, SDL_HWSURFACE | flags);
+	if(!screen)
+	{
+		if(unlikely(verbose_run))
+		{
+			logger << DebugWarning << "Can't set video mode using a hardware surface: " << SDL_GetError() << EndDebugWarning;
+			logger << DebugInfo << "Trying with a software surface" << EndDebugWarning;
+		}
+		screen = SDL_SetVideoMode(video_mode.width, video_mode.height, sdl_depth, SDL_SWSURFACE | flags);
+		if(!screen)
+		{
+			logger << DebugError << "Still can't set video mode using a software surface: " << SDL_GetError() << EndDebugError;
+			return false;
+		}
+	}
+	if(unlikely(verbose_run))
+	{
+		logger << DebugInfo << "Video mode set" << EndDebugInfo;
+	}
+
+	UpdateWindowCaption();
+
+	if(surface)
+	{
+		SDL_FreeSurface(surface);
+		surface = 0;
+	}
+	surface = SDL_CreateRGBSurface(SDL_SWSURFACE, video_mode.width, video_mode.height, sdl_depth, red_mask, green_mask, blue_mask, 0);
+	if(!surface)
+	{
+		logger << DebugError << "Can't create SW surface" << EndDebugError;
+		return false;
+	}
+
+	mode_set = true;
+	HandleBlit();
+
+	return true;
+}
+
+template <class ADDRESS>
+void SDL<ADDRESS>::HandleBlit()
+{
+	if(!mode_set) return;
+	
+	uint32_t line;
+	uint8_t *dst;
+	uint8_t *src;
+	ADDRESS scan_line_addr;
+	
+	if(SDL_LockSurface(surface) < 0) return;
+	
+	switch(video_mode.depth)
+	{
+		case 15:
+		case 16:
+		{
+			uint32_t width = video_mode.width;
+			uint16_t scan_line[width];
+			
+			for(line = 0, dst = (uint8_t *) surface->pixels, scan_line_addr = video_mode.fb_addr; line < video_mode.height; line++, dst += surface->pitch, scan_line_addr += video_mode.fb_bytes_per_line)
+			{
+				if(memory_import->ReadMemory(scan_line_addr, scan_line, 2 * video_mode.width))
+				{
+					BigEndian2Host((uint16_t *) dst, (uint16_t *) scan_line, video_mode.width);
+				}
+			}
+			break;
+		}
+			
+		case 24:
+		case 32:
+		{
+			uint32_t width = video_mode.width;
+			uint32_t scan_line[width];
+			
+			for(line = 0, dst = (uint8_t *) surface->pixels, scan_line_addr = video_mode.fb_addr; line < video_mode.height; line++, dst += surface->pitch, scan_line_addr += video_mode.fb_bytes_per_line)
+			{
+				if(memory_import->ReadMemory(scan_line_addr, scan_line, 4 * video_mode.width))
+				{
+					BigEndian2Host((uint32_t *) dst, (uint32_t *) scan_line, video_mode.width);
+				}
+			}
+			break;
+		}
+	}
+	SDL_UnlockSurface(surface);
+			
+	if(SDL_BlitSurface(surface, 0, screen, 0) != 0)
+	{
+		logger << DebugWarning << "Can't blit surface" << EndDebugWarning;
+	}
+	SDL_UpdateRect(screen, 0, 0, video_mode.width, video_mode.height);
+	
+	if(!bmp_out_filename.empty())
+	{
+		char filename[bmp_out_filename.length() + 12];
+		sprintf(filename, "%s - %04u.bmp", bmp_out_filename.c_str(), bmp_out_file_number);
+		if(SDL_SaveBMP(surface, filename) != 0)
+		{
+			logger << DebugWarning << "Can't save bitmap into file " << (const char *) filename << EndDebugWarning;
+		}
+		else
+		{
+			bmp_out_file_number++;
+		}
+	}
+}
+
+template <class ADDRESS>
+void SDL<ADDRESS>::GrabInput()
+{
+	if(!grab_input)
+	{
+		if(verbose_run)
+		{
+			logger << DebugInfo << "Grabbing input" << EndDebugInfo;
+		}
+		SDL_ShowCursor(0);
+		SDL_WM_GrabInput(SDL_GRAB_ON);
+		grab_input = true;
+		UpdateWindowCaption();
+	}
+}
+
+template <class ADDRESS>
+void SDL<ADDRESS>::UngrabInput()
+{
+	if(grab_input)
+	{
+		if(verbose_run)
+		{
+			logger << DebugInfo << "Ungrabbing input" << EndDebugInfo;
+		}
+		SDL_ShowCursor(1);
+		SDL_WM_GrabInput(SDL_GRAB_OFF);
+		grab_input = false;
+		UpdateWindowCaption();
+	}
+}
+
+template <class ADDRESS>
+void SDL<ADDRESS>::ToggleGrabInput()
+{
+	if(grab_input)
+		UngrabInput();
+	else
+		GrabInput();
+}
+
+template <class ADDRESS>
+void SDL<ADDRESS>::UpdateWindowCaption()
+{
+	stringstream sstr;
+	sstr << "UNISIM - ";
+	if(grab_input)
+	{
+		sstr << "Press [" << host_key_name << "] to release";
+	}
+	else
+	{
+		sstr << "Click into window or Press [" << host_key_name << "] to grab";
+	}
+	sstr << " keyboard and mouse";
+	string title = sstr.str();
+	SDL_WM_SetCaption(title.c_str(), title.c_str());
+}
+
+template <class ADDRESS>
+void SDL<ADDRESS>::ToggleFullScreen()
+{
+	full_screen = !full_screen;
+	HandleSetVideoMode();
+}
+
+template <class ADDRESS>
+Uint32 SDL<ADDRESS>::RefreshTimer(Uint32 interval, void *param)
+{
+	SDL<ADDRESS> *sdl = reinterpret_cast<SDL<ADDRESS> *>(param);
+	if(sdl->refresh)
+	{
+		sdl->Blit();
+		sdl->refresh = false;
+	}
+	return sdl->refresh_period;
+}
+
+template <class ADDRESS>
+void SDL<ADDRESS>::Blit()
+{
+	SDL_Event user_event;
+	user_event.type = SDL_USEREVENT;
+	user_event.user.code = EV_BLIT;
+	user_event.user.data1 = 0;
+	user_event.user.data2 = 0;
+	
+	SDL_PushEvent(&user_event);
+}
+
 #endif
 
 } // end of namespace sdl

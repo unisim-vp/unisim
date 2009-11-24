@@ -78,6 +78,8 @@ I8042<MAX_DATA_SIZE>::I8042(const sc_module_name& name, Object *parent) :
 	SC_THREAD(Capture);
 
 	SC_THREAD(Repeat);
+
+	SC_THREAD(CaptureMouse);
 }
 
 template <uint32_t MAX_DATA_SIZE>
@@ -216,6 +218,16 @@ void I8042<MAX_DATA_SIZE>::Repeat()
 		{
 			ev_repeat.notify(sc_time(inherited::typematic_delay / inherited::speed_boost, SC_SEC));
 		}
+	}
+}
+
+template <uint32_t MAX_DATA_SIZE>
+void I8042<MAX_DATA_SIZE>::CaptureMouse()
+{
+	while(1)
+	{
+		inherited::CaptureMouse();
+		wait(sc_time(1.0 / (inherited::aux_sample_rate) /* * inherited::speed_boost)*/, SC_SEC));
 	}
 }
 

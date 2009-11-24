@@ -32,8 +32,8 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __UNISIM_SERVICE_INTERFACES_KEYBOARD_HH__
-#define __UNISIM_SERVICE_INTERFACES_KEYBOARD_HH__
+#ifndef __UNISIM_SERVICE_INTERFACES_MOUSE_HH__
+#define __UNISIM_SERVICE_INTERFACES_MOUSE_HH__
 
 #include <inttypes.h>
 
@@ -41,21 +41,20 @@ namespace unisim {
 namespace service {
 namespace interfaces {
 
-class Keyboard
+class Mouse
 {
 public:
 	typedef struct
 	{
-		enum
-		{
-			KEY_UP,
-			KEY_DOWN
-		} action;
-		uint8_t key_num;
-	} KeyAction;
+		bool left_button;
+		bool middle_button;
+		bool right_button;
+		int dx;
+		int dy;
+	} MouseState;
 
-	virtual void ResetKeyboard() = 0;
-	virtual bool GetKeyAction(KeyAction& key_action) = 0;
+	virtual void ResetMouse() = 0;
+	virtual bool GetMouseState(MouseState& mouse_state) = 0;
 };
 
 } // end of namespace interfaces

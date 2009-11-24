@@ -54,7 +54,9 @@ using std::dec;
 I8042::I8042(const char *name, Object *parent) :
 	Object(name, parent),
 	Client<Keyboard>(name, parent),
+	Client<Mouse>(name, parent),
 	keyboard_import("keyboard-import", this),
+	mouse_import("mouse-import", this),
 	logger(*this),
 	status(0),
 	control(0),
@@ -63,6 +65,10 @@ I8042::I8042(const char *name, Object *parent) :
 	typematic_rate(30.0),
 	typematic_delay(0.250),
 	speed_boost(30.0),
+	aux_status(0),
+	aux_log2_resolution(2),
+	aux_sample_rate(100),
+	aux_wrap(false),
 	verbose(false),
 	param_fsb_frequency("fsb-frequency", this, fsb_frequency),
 	param_isa_bus_frequency("isa-bus-frequency", this, isa_bus_frequency),
@@ -74,6 +80,11 @@ I8042::I8042(const char *name, Object *parent) :
 	// PS/2 set 2 keyboard ID
 	kbd_id[0] = 0xab;
 	kbd_id[1] = 0x83;
+
+	// PS/2 mouse ID
+	aux_id[0] = 0x00;
+	
+	memset(aux_packet, 0, sizeof(aux_packet));
 
 	// Do not repeat key # by default
 	memset(key_num_repeat, 0, sizeof(key_num_repeat));
@@ -740,26 +751,57 @@ I8042::~I8042()
 
 bool I8042::Setup()
 {
+	if(!keyboard_import)
+	{
+		logger << DebugWarning << "No keyboard service connected" << EndDebugWarning;
+	}
+	if(!mouse_import)
+	{
+		logger << DebugWarning << "No mouse service connected" << EndDebugWarning;
+	}
 	Reset();
 	return true;
 }
 
-void I8042::Reset()
+void I8042::KbdReset()
 {
-	while(!kbd_out.empty()) kbd_out.pop();
-	while(!aux_out.empty()) aux_out.pop();
-	status = I8042_STR_KEYLOCK | I8042_STR_CMDDAT;
-	control = I8042_CTR_KBDINT | (enable_aux ? I8042_CTR_AUXINT : 0) | (!enable_aux ? I8042_CTR_AUXDIS : 0);
+	kbd_out.clear();
 	kbd_command.pending = false;
-	i8042_command.pending = false;
 	kbd_leds.num_lock = false;
 	kbd_leds.scroll_lock = false;
 	kbd_leds.caps_lock = false;
 	kbd_irq_level = false;
-	aux_irq_level = false;
 	kbd_scanning = false;
 	last_key_action.key_num = 0;
-	last_key_action.action = unisim::service::interfaces::Keyboard::KeyAction::KEY_UP;	
+	last_key_action.action = unisim::service::interfaces::Keyboard::KeyAction::KEY_UP;
+	kbd_last_byte = 0;
+	if(keyboard_import) keyboard_import->ResetKeyboard();
+}
+
+void I8042::AuxReset()
+{
+	aux_out.clear();
+	aux_irq_level = false;
+	aux_command.pending = false;
+	aux_status = 0; // stream mode, disabled, all mouse buttons released
+	aux_log2_resolution = 2; // 4 count/mm
+	aux_sample_rate = 100; // 100 sample/seconds
+	mouse_state.dx = 0;
+	mouse_state.dy = 0;
+	mouse_state.left_button = false;
+	mouse_state.middle_button = false;
+	mouse_state.right_button = false;
+	aux_wrap = false;
+	if(mouse_import) mouse_import->ResetMouse();
+}
+
+void I8042::Reset()
+{
+	KbdReset();
+	AuxReset();
+	status = I8042_STR_KEYLOCK | I8042_STR_CMDDAT;
+	control = I8042_CTR_KBDINT | (enable_aux ? I8042_CTR_AUXINT : 0) | (!enable_aux ? I8042_CTR_AUXDIS : 0);
+	i8042_command.pending = false;
 }
 
 bool I8042::WriteIO(isa_address_t addr, const void *buffer, uint32_t size)
@@ -848,11 +890,13 @@ void I8042::WriteKbd(uint8_t data)
 				KbdEnqueue(KBD_RET_ACK);
 				kbd_command.pending = false;
 				break;
+				
 			case KBD_CMD_SET_RATE:
 				SetTypematicDelay((1 + ((data >> 5) & 3)) * 0.250);
 				SetTypematicRate(1.0 / ((8 + (data & 7)) * (1 << ((data >> 3) & 3)) * 0.00417));
 				KbdEnqueue(KBD_RET_ACK);
 				kbd_command.pending = false;
+				break;
 		}
 	}
 	else
@@ -891,7 +935,7 @@ void I8042::WriteKbd(uint8_t data)
 				{
 					logger << DebugInfo << "Keyboard reset" << EndDebugInfo;
 				}
-				Reset();
+				KbdReset();
 				// self test is okay
 				if(verbose)
 				{
@@ -919,6 +963,9 @@ void I8042::WriteKbd(uint8_t data)
 				KbdEnqueue(KBD_RET_ACK);
 				kbd_scanning = true;
 				break;
+			case KBD_CMD_RESEND:
+				KbdResend();
+				break;
 			default:
 				if(verbose)
 				{
@@ -930,6 +977,189 @@ void I8042::WriteKbd(uint8_t data)
 
 void I8042::WriteAux(uint8_t data)
 {
+	if(aux_command.pending)
+	{
+		switch(aux_command.cmd)
+		{
+			case AUX_CMD_SET_RESOLUTION:
+				if(SetAuxResolution(data))
+					AuxEnqueue(AUX_RET_ACK);
+				else
+					AuxEnqueue(AUX_RET_NACK);
+				aux_command.pending = false;
+				break;
+			case AUX_CMD_SET_SAMPLE_RATE:
+				if(SetAuxSampleRate(data))
+					AuxEnqueue(AUX_RET_ACK);
+				else
+					AuxEnqueue(AUX_RET_NACK);
+				aux_command.pending = false;
+				break;
+		}
+	}
+	else
+	{
+		if(aux_wrap && data != AUX_CMD_RESET && data != AUX_CMD_RESET_WRAP_MODE)
+		{
+			// In wrap mode every byte received by the mouse is sent back to the host
+			AuxEnqueue(data);
+		}
+		else
+		{
+			switch(data)
+			{
+				case AUX_CMD_SET_SCALING11:
+					if(verbose)
+					{
+						logger << DebugInfo << "Handling Aux command AUX_CMD_SET_SCALING11" << EndDebugInfo;
+					}
+					aux_status = aux_status & ~AUX_STR_SCALING;
+					AuxEnqueue(AUX_RET_ACK);
+					break;
+				case AUX_CMD_SET_SCALING21:
+					if(verbose)
+					{
+						logger << DebugInfo << "Handling Aux command AUX_CMD_SET_SCALING21" << EndDebugInfo;
+					}
+					aux_status = aux_status | AUX_STR_SCALING;
+					AuxEnqueue(AUX_RET_ACK);
+					break;
+				case AUX_CMD_SET_RESOLUTION:
+					if(verbose)
+					{
+						logger << DebugInfo << "Handling Aux command AUX_CMD_SET_RESOLUTION" << EndDebugInfo;
+					}
+					aux_command.cmd = data;
+					aux_command.pending = true;
+					AuxEnqueue(AUX_RET_ACK);
+					break;
+				case AUX_CMD_SET_SAMPLE_RATE:
+					if(verbose)
+					{
+						logger << DebugInfo << "Handling Aux command AUX_CMD_SET_SAMPLE_RATE" << EndDebugInfo;
+					}
+					aux_command.cmd = data;
+					aux_command.pending = true;
+					AuxEnqueue(AUX_RET_ACK);
+					break;
+				case AUX_CMD_SET_DEFAULTS:
+					if(verbose)
+					{
+						logger << DebugInfo << "Handling Aux command AUX_CMD_SET_DEFAULTS" << EndDebugInfo;
+					}
+					AuxReset();
+					AuxEnqueue(AUX_RET_ACK);
+					break;
+				case AUX_CMD_GET_STATUS:
+					if(verbose)
+					{
+						logger << DebugInfo << "Handling Aux command AUX_CMD_GET_STATUS" << EndDebugInfo;
+					}
+					AuxEnqueue(AUX_RET_ACK);
+					AuxEnqueue(aux_status);
+					AuxEnqueue(aux_log2_resolution);
+					AuxEnqueue(aux_sample_rate);
+					break;
+				case AUX_CMD_ENABLE:
+					if(verbose)
+					{
+						logger << DebugInfo << "Handling Aux command AUX_CMD_ENABLE" << EndDebugInfo;
+					}
+					aux_status = (aux_status | AUX_STR_ENABLE) & ~AUX_STR_MODE;
+					AuxEnqueue(AUX_RET_ACK);
+					break;
+				case AUX_CMD_DISABLE:
+					if(verbose)
+					{
+						logger << DebugInfo << "Handling Aux command AUX_CMD_DISABLE" << EndDebugInfo;
+					}
+					aux_status = aux_status & ~AUX_STR_ENABLE & ~AUX_STR_MODE;
+					AuxEnqueue(AUX_RET_ACK);
+					break;
+				case AUX_CMD_RESET:
+					if(verbose)
+					{
+						logger << DebugInfo << "Mouse reset" << EndDebugInfo;
+					}
+					AuxReset();
+					// self test is okay
+					if(verbose)
+					{
+						logger << DebugInfo << "Self Test" << EndDebugInfo;
+					}
+					AuxEnqueue(AUX_RET_ACK);
+					AuxEnqueue(AUX_RET_PWR_ON_RESET);
+					break;
+				case AUX_CMD_GET_ID:
+					{
+						if(verbose)
+						{
+							logger << DebugInfo << "Handling Aux command AUX_CMD_GET_ID" << EndDebugInfo;
+						}
+						AuxEnqueue(AUX_RET_ACK);
+						if(verbose)
+						{
+							logger << DebugInfo << "Indentifying Mouse" << EndDebugInfo;
+						}
+						unsigned int i;
+						for(i = 0; i < sizeof(aux_id) / sizeof(aux_id[0]); i++)
+						{
+							AuxEnqueue(aux_id[i]);
+						}
+						break;
+					}
+					
+				case AUX_CMD_READ_DATA:
+					{
+						bool overflow;
+						AuxEnqueue(AUX_RET_ACK);
+						AuxSendPacket(overflow);
+						break;
+					}
+				case AUX_CMD_RESEND:
+					// Note: no ACK is needed for this command
+					AuxResendPacket();
+					break;
+				case AUX_CMD_SET_REMOTE_MODE:
+					if(verbose)
+					{
+						logger << DebugInfo << "Handling Aux command AUX_CMD_SET_REMOTE_MODE" << EndDebugInfo;
+					}
+					aux_status = aux_status | AUX_STR_MODE;
+					AuxEnqueue(AUX_RET_ACK);
+					break;
+				case AUX_CMD_SET_WRAP_MODE:
+					if(verbose)
+					{
+						logger << DebugInfo << "Handling Aux command AUX_CMD_SET_WRAP_MODE" << EndDebugInfo;
+					}
+					aux_wrap = true;
+					AuxEnqueue(AUX_RET_ACK);
+					break;
+				case AUX_CMD_RESET_WRAP_MODE:
+					if(verbose)
+					{
+						logger << DebugInfo << "Handling Aux command AUX_CMD_SET_WRAP_MODE" << EndDebugInfo;
+					}
+					aux_wrap = false;
+					AuxEnqueue(AUX_RET_ACK);
+					break;
+				case AUX_CMD_SET_STREAM_MODE:
+					if(verbose)
+					{
+						logger << DebugInfo << "Handling Aux command AUX_CMD_SET_STREAM_MODE" << EndDebugInfo;
+					}
+					aux_status = aux_status & ~AUX_STR_MODE;
+					AuxEnqueue(AUX_RET_ACK);
+					break;
+				default:
+					if(verbose)
+					{
+						logger << DebugInfo << "Unknown Aux command 0x" << hex << (unsigned int) data << dec << EndDebugInfo;	
+					}
+			}
+		}
+	}
 }
 
 void I8042::WriteCommand(uint8_t& cmd)
@@ -1083,7 +1313,19 @@ bool I8042::HasKbdData()
 
 void I8042::KbdResetQueue()
 {
-	while(!kbd_out.empty()) kbd_out.pop();
+	kbd_last_byte = 0;
+	kbd_out.clear();
+	UpdateStatus();
+	UpdateIRQ();
+}
+
+void I8042::KbdResend()
+{
+	if(verbose)
+	{
+		logger << DebugInfo << "Enqueuing 0x" << hex << (unsigned int) kbd_last_byte << dec << " from KBD" << EndDebugInfo;
+	}
+	kbd_out.push_back(kbd_last_byte);
 	UpdateStatus();
 	UpdateIRQ();
 }
@@ -1094,7 +1336,8 @@ void I8042::KbdEnqueue(uint8_t data)
 	{
 		logger << DebugInfo << "Enqueuing 0x" << hex << (unsigned int) data << dec << " from KBD" << EndDebugInfo;
 	}
-	kbd_out.push(data);
+	if(data != KBD_CMD_RESEND) kbd_last_byte = data;
+	kbd_out.push_back(data);
 	UpdateStatus();
 	UpdateIRQ();
 }
@@ -1104,7 +1347,7 @@ void I8042::KbdDequeue(uint8_t& data)
 	if(!kbd_out.empty())
 	{
 		data = kbd_out.front();
-		kbd_out.pop();
+		kbd_out.pop_front();
 
 		if(verbose)
 		{
@@ -1128,7 +1371,7 @@ void I8042::AuxEnqueue(uint8_t data)
 	{
 		logger << DebugInfo << "Enqueuing 0x" << hex << (unsigned int) data << dec << " from AUX" << EndDebugInfo;
 	}
-	aux_out.push(data);
+	aux_out.push_back(data);
 	UpdateStatus();
 	UpdateIRQ();
 }
@@ -1138,7 +1381,7 @@ void I8042::AuxDequeue(uint8_t& data)
 	if(!aux_out.empty())
 	{
 		data = aux_out.front();
-		aux_out.pop();
+		aux_out.pop_front();
 
 		if(verbose)
 		{
@@ -1206,7 +1449,7 @@ bool I8042::CaptureKey()
 	{
 		unisim::service::interfaces::Keyboard::KeyAction key_action;
 		// get a scancode from the keyboard
-		if(keyboard_import->GetKeyAction(key_action))
+		if(keyboard_import && keyboard_import->GetKeyAction(key_action))
 		{
 			vector<uint8_t>& scancodes = (key_action.action == unisim::service::interfaces::Keyboard::KeyAction::KEY_UP) ? key_num_up_to_ps2_raw_set2[key_action.key_num] : key_num_down_to_ps2_raw_set2[key_action.key_num];
 
@@ -1235,6 +1478,97 @@ bool I8042::RepeatKey()
 	}
 	Unlock();
 	return ret;
+}
+
+void I8042::AuxResendPacket()
+{
+	AuxEnqueue(aux_packet[0]);
+	AuxEnqueue(aux_packet[1]);
+	AuxEnqueue(aux_packet[2]);
+}
+
+void I8042::AuxSendPacket(bool& overflow)
+{
+	aux_packet[0] = AUX_BYTE1_ALWAYS_1;
+	aux_packet[1] = 0;
+	aux_packet[2] = 0;
+	
+	int dx9;
+	int dy9;
+	
+	overflow = false;
+	
+	if(mouse_state.dx <= -256)
+	{
+		// overflow on X
+		aux_packet[0] = aux_packet[0] | AUX_BYTE1_X_OVERFLOW;
+		overflow = true;
+		dx9 = -255;
+	}
+	else if(mouse_state.dx >= 256)
+	{
+		// overflow on X
+		aux_packet[0] = aux_packet[0] | AUX_BYTE1_X_OVERFLOW;
+		overflow = true;
+		dx9 = +255;
+	}
+	else
+	{
+		dx9 = mouse_state.dx;
+	}
+
+	if(mouse_state.dy <= -256)
+	{
+		// overflow on Y
+		aux_packet[0] = aux_packet[0] | AUX_BYTE1_Y_OVERFLOW;
+		overflow = true;
+		dy9 = -255;
+	}
+	else if(mouse_state.dy >= 256)
+	{
+		// overflow on Y
+		aux_packet[0] = aux_packet[0] | AUX_BYTE1_Y_OVERFLOW;
+		overflow = true;
+		dy9 = +255;
+	}
+	else
+	{
+		dy9 = mouse_state.dy;
+	}
+
+	mouse_state.dx -= dx9;
+	mouse_state.dy -= dy9;
+	aux_packet[0] = aux_packet[0] | ((dx9 < 0) ? AUX_BYTE1_X_SIGN : 0);
+	aux_packet[0] = aux_packet[0] | ((dy9 < 0) ? AUX_BYTE1_Y_SIGN : 0);
+
+	aux_packet[1] = dx9 & 0xff;
+	aux_packet[2] = dy9 & 0xff;
+	
+	if(mouse_state.left_button) aux_packet[0] = aux_packet[0] | AUX_BYTE1_LBUTTON;
+	if(mouse_state.middle_button) aux_packet[0] = aux_packet[0] | AUX_BYTE1_MBUTTON;
+	if(mouse_state.right_button) aux_packet[0] = aux_packet[0] | AUX_BYTE1_RBUTTON;
+	AuxEnqueue(aux_packet[0]);
+	AuxEnqueue(aux_packet[1]);
+	AuxEnqueue(aux_packet[2]);
+}
+
+void I8042::CaptureMouse()
+{
+	Lock();
+	if((aux_status & AUX_STR_ENABLE) && !i8042_command.pending && !aux_command.pending && !(control & I8042_CTR_AUXDIS) && !HasAuxData())
+	{
+		// update the state of the mouse
+		if(mouse_import && mouse_import->GetMouseState(mouse_state))
+		{
+			bool overflow;
+			
+			do
+			{
+				AuxSendPacket(overflow);
+			} while(overflow);
+		}
+	}
+	Unlock();
 }
 
 void I8042::TriggerKbdInterrupt(bool level)
@@ -1278,6 +1612,46 @@ void I8042::SetTypematicDelay(double delay)
 		logger << DebugInfo << "Setting typematic delay to " << delay << " seconds" << EndDebugInfo;
 	}
 	typematic_delay = delay;
+}
+
+bool I8042::SetAuxSampleRate(unsigned int rate)
+{
+	if(verbose)
+	{
+		logger << DebugInfo << "Setting AUX sample rate to " << rate << " samples/second" << EndDebugInfo;
+	}
+	
+	if(rate != 10 && rate != 20 && rate != 40 && rate != 60 && rate != 80 && rate != 100 && rate != 200)
+	{
+		if(verbose)
+		{
+			logger << DebugInfo << "Invalid AUX sample" << EndDebugInfo;
+		}
+		return false;
+	}
+	
+	aux_sample_rate = rate;
+	return true;
+}
+
+bool I8042::SetAuxResolution(unsigned int log2_resolution)
+{
+	if(verbose)
+	{
+		logger << DebugInfo << "Setting AUX resolution to " << (1 << log2_resolution) << " counts/millimeter" << EndDebugInfo;
+	}
+	
+	if(log2_resolution >= 4)
+	{
+		if(verbose)
+		{
+			logger << DebugInfo << "Invalid AUX resolution" << EndDebugInfo;
+		}
+		return false;
+	}
+	
+	aux_log2_resolution = log2_resolution;
+	return true;
 }
 
 } // end of namespace i8042

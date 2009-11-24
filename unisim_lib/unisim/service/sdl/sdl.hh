@@ -43,6 +43,7 @@
 #include <unisim/service/interfaces/logger.hh>
 #include <unisim/service/interfaces/video.hh>
 #include <unisim/service/interfaces/keyboard.hh>
+#include <unisim/service/interfaces/mouse.hh>
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/kernel/logger/logger.hh>
@@ -75,7 +76,111 @@ using unisim::kernel::service::Parameter;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Video;
 using unisim::service::interfaces::Keyboard;
+using unisim::service::interfaces::Mouse;
 
+#if defined(HAVE_SDL)
+template <class ADDRESS> class VideoMode;
+#endif
+
+template <class ADDRESS>
+class SDL :
+	public Service<Video<ADDRESS> >,
+	public Client<Memory<ADDRESS> >,
+	public Service<Keyboard>,
+	public Service<Mouse>
+{
+public:
+	ServiceExport<Video<ADDRESS> > video_export;
+	ServiceImport<Memory<ADDRESS> > memory_import;
+	ServiceExport<Keyboard> keyboard_export;
+	ServiceExport<Mouse> mouse_export;
+	
+	SDL(const char *name, Object *parent = 0);
+	virtual ~SDL();
+
+	virtual void OnDisconnect();
+	virtual bool Setup();
+
+	virtual bool SetVideoMode(ADDRESS fb_addr, uint32_t width, uint32_t height, uint32_t depth, uint32_t fb_bytes_per_line);
+	virtual void RefreshDisplay();
+	virtual void ResetKeyboard();
+	virtual bool GetKeyAction(unisim::service::interfaces::Keyboard::KeyAction& key_action);
+	virtual void ResetMouse();
+	virtual bool GetMouseState(unisim::service::interfaces::Mouse::MouseState& mouse_state);
+	
+private:
+	unisim::kernel::logger::Logger logger;
+	bool verbose_setup;
+	bool verbose_run;
+	list<unisim::service::interfaces::Keyboard::KeyAction> kbd_key_action_fifo;
+	unisim::service::interfaces::Mouse::MouseState mouse_state;
+	bool mouse_state_updated;
+	string bmp_out_filename;
+	string keymap_filename;
+	string host_key_name;
+	uint32_t refresh_period;
+	Parameter<bool> param_verbose_setup;
+	Parameter<bool> param_verbose_run;
+	Parameter<uint32_t> param_refresh_period;
+	Parameter<string> param_bmp_out_filename;
+	Parameter<string> param_keymap_filename;
+	Parameter<string> param_host_key_name;
+
+	void PushKeyAction(const unisim::service::interfaces::Keyboard::KeyAction& key_action);
+
+#if defined(HAVE_SDL)
+	enum
+	{
+		EV_NOTHING = 0,
+		EV_SET_VIDEO_MODE = 1,
+		EV_BLIT = 2
+	};
+
+	SDL_Surface *surface;
+	SDL_Surface *screen;
+	SDL_Thread *refresh_thread;
+	SDL_Thread *event_handling_thread;
+	SDL_mutex *sdl_mutex;
+	SDL_TimerID refresh_timer;
+	bool host_key_down;
+	bool grab_input;
+	bool full_screen;
+	SDLKey host_key;
+	bool mode_set;
+	bool alive;
+	bool refresh;
+	VideoMode<ADDRESS> video_mode;
+	unsigned int bmp_out_file_number;
+	string learn_keymap_filename;
+	map<string, SDLKey> sdlk_string_map;
+	map<SDLKey, uint8_t> keymap;
+
+	// Keyboard learning is executed in main thread
+	void LearnKeyboard();
+
+	// Event loop thread entry point
+	static int EventHandlingThread(SDL<ADDRESS> *sdl);
+
+	// Refresh timer hook
+	static Uint32 RefreshTimer(Uint32 interval, void *param);
+	void Blit();
+	
+	// Methods below can be run only within event handling thread
+	void ProcessKeyboardEvent(SDL_KeyboardEvent& key);
+	void ProcessMouseButtonEvent(SDL_MouseButtonEvent& mouse_button_ev);
+	void ProcessMouseMotionEvent(SDL_MouseMotionEvent& mouse_motion_ev);
+	void EventLoop();
+	bool HandleSetVideoMode(const VideoMode<ADDRESS> *video_mode = 0);
+	void HandleBlit();
+	void GrabInput();
+	void UngrabInput();
+	void ToggleGrabInput();
+	void UpdateWindowCaption();
+	void ToggleFullScreen();
+#endif
+};
+
+#if defined(HAVE_SDL)
 template <class ADDRESS>
 class VideoMode
 {
@@ -89,79 +194,7 @@ public:
 	uint32_t depth;
 	uint32_t fb_bytes_per_line;
 };
-
-template <class ADDRESS>
-class SDL :
-	public Service<Video<ADDRESS> >,
-	public Client<Memory<ADDRESS> >,
-	public Service<Keyboard>
-{
-public:
-	ServiceExport<Video<ADDRESS> > video_export;
-	ServiceImport<Memory<ADDRESS> > memory_import;
-	ServiceExport<Keyboard> keyboard_export;
-	
-	SDL(const char *name, Object *parent = 0);
-	virtual ~SDL();
-
-	virtual void OnDisconnect();
-	virtual bool Setup();
-
-	virtual bool SetVideoMode(ADDRESS fb_addr, uint32_t width, uint32_t height, uint32_t depth, uint32_t fb_bytes_per_line);
-	virtual void RefreshDisplay();
-	virtual bool GetKeyAction(unisim::service::interfaces::Keyboard::KeyAction& key_action);
-	
-private:
-	enum
-	{
-		EV_NOTHING = 0,
-		EV_SET_VIDEO_MODE = 1,
-		EV_BLIT = 2
-	};
-#if defined(HAVE_SDL)
-	SDL_Surface *surface;
-	SDL_Surface *screen;
-	SDL_Thread *refresh_thread;
-	SDL_Thread *event_handling_thread;
-	SDL_mutex *sdl_mutex;
-	SDL_mutex *kbd_mutex;
-
-	map<string, SDLKey> sdlk_string_map;
-	map<SDLKey, uint8_t> keymap;
-
-	void ProcessKeyboardEvent(SDL_KeyboardEvent& key);
-	void RefreshLoop();
-	void EventLoop();
-	void Blit();
-	static int RefreshThread(SDL<ADDRESS> *sdl);
-	static int EventHandlingThread(SDL<ADDRESS> *sdl);
-	bool HandleSetVideoMode(const VideoMode<ADDRESS>& video_mode);
-	void HandleBlit();
-	void LearnKeyboard();
 #endif
-	bool mode_set;
-	bool alive;
-	bool refresh;
-	uint32_t refresh_period;
-	VideoMode<ADDRESS> video_mode;
-	unsigned int bmp_out_file_number;
-	string bmp_out_filename;
-	string keymap_filename;
-	string learn_keymap_filename;
-	bool verbose_setup;
-	bool verbose_run;
-
-	unisim::kernel::logger::Logger logger;
-
-	list<unisim::service::interfaces::Keyboard::KeyAction> kbd_key_action_fifo;
-	Parameter<uint32_t> param_refresh_period;
-	Parameter<string> param_bmp_out_filename;
-	Parameter<string> param_keymap_filename;
-	Parameter<bool> param_verbose_setup;
-	Parameter<bool> param_verbose_run;
-
-	void PushKeyAction(const unisim::service::interfaces::Keyboard::KeyAction& key_action);
-};
 
 } // end of namespace sdl
 } // end of namespace service
