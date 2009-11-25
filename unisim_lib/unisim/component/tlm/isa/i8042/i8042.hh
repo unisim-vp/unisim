@@ -88,8 +88,8 @@ public:
 	virtual ~I8042();
 	void KbdIrqMaster();
 	void AuxIrqMaster();
-	void Capture();
-	void Repeat();
+	void CaptureKey();
+	void RepeatKey();
 	void CaptureMouse();
 	virtual bool Setup();
 	virtual bool Send(const Pointer<TlmMessage<ISAReq, ISARsp> > &message);

@@ -75,9 +75,9 @@ I8042<MAX_DATA_SIZE>::I8042(const sc_module_name& name, Object *parent) :
 	SC_THREAD(KbdIrqMaster);
 	SC_THREAD(AuxIrqMaster);
 
-	SC_THREAD(Capture);
+	SC_THREAD(CaptureKey);
 
-	SC_THREAD(Repeat);
+	SC_THREAD(RepeatKey);
 
 	SC_THREAD(CaptureMouse);
 }
@@ -195,7 +195,7 @@ void I8042<MAX_DATA_SIZE>::AuxIrqMaster()
 }
 
 template <uint32_t MAX_DATA_SIZE>
-void I8042<MAX_DATA_SIZE>::Capture()
+void I8042<MAX_DATA_SIZE>::CaptureKey()
 {
 	while(1)
 	{
@@ -209,7 +209,7 @@ void I8042<MAX_DATA_SIZE>::Capture()
 }
 
 template <uint32_t MAX_DATA_SIZE>
-void I8042<MAX_DATA_SIZE>::Repeat()
+void I8042<MAX_DATA_SIZE>::RepeatKey()
 {
 	while(1)
 	{
@@ -227,7 +227,7 @@ void I8042<MAX_DATA_SIZE>::CaptureMouse()
 	while(1)
 	{
 		inherited::CaptureMouse();
-		wait(sc_time(1.0 / (inherited::aux_sample_rate) /* * inherited::speed_boost)*/, SC_SEC));
+		wait(sc_time(1.0 / (inherited::aux_sample_rate * inherited::speed_boost), SC_SEC));
 	}
 }
 

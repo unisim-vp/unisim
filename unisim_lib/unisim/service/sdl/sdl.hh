@@ -115,16 +115,8 @@ private:
 	list<unisim::service::interfaces::Keyboard::KeyAction> kbd_key_action_fifo;
 	unisim::service::interfaces::Mouse::MouseState mouse_state;
 	bool mouse_state_updated;
-	string bmp_out_filename;
-	string keymap_filename;
-	string host_key_name;
-	uint32_t refresh_period;
 	Parameter<bool> param_verbose_setup;
 	Parameter<bool> param_verbose_run;
-	Parameter<uint32_t> param_refresh_period;
-	Parameter<string> param_bmp_out_filename;
-	Parameter<string> param_keymap_filename;
-	Parameter<string> param_host_key_name;
 
 	void PushKeyAction(const unisim::service::interfaces::Keyboard::KeyAction& key_action);
 
@@ -154,6 +146,18 @@ private:
 	string learn_keymap_filename;
 	map<string, SDLKey> sdlk_string_map;
 	map<SDLKey, uint8_t> keymap;
+	string bmp_out_filename;
+	string keymap_filename;
+	string host_key_name;
+	uint32_t refresh_period;
+	Parameter<uint32_t> param_refresh_period;
+	Parameter<string> param_bmp_out_filename;
+	Parameter<string> param_keymap_filename;
+	Parameter<string> param_host_key_name;
+#ifdef WIN32
+	bool work_around_sdl_mouse_motion_coordinates_bug;
+	Parameter<bool> param_work_around_sdl_mouse_motion_coordinates_bug;
+#endif
 
 	// Keyboard learning is executed in main thread
 	void LearnKeyboard();
