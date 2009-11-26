@@ -28,7 +28,8 @@ include_HEADERS = \
 	instruction_stats.hh \
 	scheduler.hh \
 	memory_direct_access.hh \
-	allocator.hh
+	allocator.hh \
+	mouse.hh
 
 dist_share_DATA = COPYING
 
