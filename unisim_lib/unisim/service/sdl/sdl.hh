@@ -133,6 +133,7 @@ private:
 	SDL_Thread *refresh_thread;
 	SDL_Thread *event_handling_thread;
 	SDL_mutex *sdl_mutex;
+	SDL_mutex *logger_mutex;
 	SDL_TimerID refresh_timer;
 	bool host_key_down;
 	bool grab_input;
@@ -141,6 +142,7 @@ private:
 	bool mode_set;
 	bool alive;
 	bool refresh;
+	bool force_refresh;
 	VideoMode<ADDRESS> video_mode;
 	unsigned int bmp_out_file_number;
 	string learn_keymap_filename;
@@ -154,6 +156,7 @@ private:
 	Parameter<string> param_bmp_out_filename;
 	Parameter<string> param_keymap_filename;
 	Parameter<string> param_host_key_name;
+	Parameter<bool> param_force_refresh;
 #ifdef WIN32
 	bool work_around_sdl_mouse_motion_coordinates_bug;
 	Parameter<bool> param_work_around_sdl_mouse_motion_coordinates_bug;

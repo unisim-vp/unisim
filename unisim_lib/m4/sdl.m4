@@ -9,26 +9,19 @@ AC_DEFUN([UNISIM_CHECK_SDL], [
 
     if test "x$with_sdl" != "x"; then
 		AC_MSG_NOTICE([using SDL at $with_sdl])
-		if test $host = $build; then
-			# We are not crosscompiling so we can execute sdl-config on 'build' machine
-			AC_CHECK_PROG(sdl_config_installed, sdl-config, yes, no, $with_sdl/bin)
-			if test "x$sdl_config_installed" != "xyes"; then
-					AC_MSG_ERROR([sdl-config not found. Please install SDL development library.])
-			fi
-			AC_MSG_NOTICE([sdl-config found])
-			sdl_cflags="`$with_sdl/bin/sdl-config --cflags`"
-			sdl_libs="`$with_sdl/bin/sdl-config --libs`"
-			AC_MSG_NOTICE([sdl-config says compiler needs option ${sdl_cflags} ${sdl_libs} to compile and link with SDL])
-			CPPFLAGS=${CPPFLAGS}" ${sdl_cflags}"
-			LDFLAGS=${LDFLAGS}" ${sdl_libs}"
-		else
-			AC_MSG_NOTICE([using SDL at $with_sdl])
-			CPPFLAGS=${CPPFLAGS}" -I$with_sdl/include"
-			LDFLAGS=${LDFLAGS}" -L$with_sdl/lib"
+		AC_CHECK_PROG(sdl_config_installed, sdl-config, yes, no, $with_sdl/bin)
+		if test "x$sdl_config_installed" != "xyes"; then
+				AC_MSG_ERROR([sdl-config not found. Please install SDL development library.])
 		fi
+		AC_MSG_NOTICE([sdl-config found])
+		sdl_cflags="`$with_sdl/bin/sdl-config --cflags`"
+		sdl_libs="`$with_sdl/bin/sdl-config --libs`"
+		AC_MSG_NOTICE([sdl-config says compiler needs option ${sdl_cflags} ${sdl_libs} to compile and link with SDL])
+		CPPFLAGS=${CPPFLAGS}" ${sdl_cflags}"
+		LDFLAGS=${LDFLAGS}" ${sdl_libs}"
     else
 		if test $host = $build; then
-			# We are not crosscompiling so we can execute sdl-config on 'build' machine
+			# We are not crosscompiling so we can execute sdl-config in the PATH on the 'build' machine
 			AC_CHECK_PROG(sdl_config_installed, sdl-config, yes, no)
 			if test "x$sdl_config_installed" != "xyes"; then
 					AC_MSG_ERROR([sdl-config not found. Please install SDL development library.])
@@ -40,6 +33,7 @@ AC_DEFUN([UNISIM_CHECK_SDL], [
 			CPPFLAGS=${CPPFLAGS}" ${sdl_cflags}"
 			LDFLAGS=${LDFLAGS}" ${sdl_libs}"
 		else
+			# We are crosscompiling and we can't use sdl-config of the 'build' machine.
 			sdl_cflags="-I/usr/include"
 			sdl_libs="-L/usr/lib"
 			AC_MSG_NOTICE([Trying with compiler option ${sdl_cflags} ${sdl_libs} to compile and link with SDL.])

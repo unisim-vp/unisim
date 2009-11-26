@@ -97,6 +97,7 @@ SDL<ADDRESS>::SDL(const char *name, Object *parent)
 	, screen(0)
 	, event_handling_thread(0)
 	, sdl_mutex(0)
+	, logger_mutex(0)
 	, host_key_down(false)
 	, grab_input(false)
 	, full_screen(false)
@@ -104,6 +105,7 @@ SDL<ADDRESS>::SDL(const char *name, Object *parent)
 	, mode_set(false)
 	, alive(false)
 	, refresh(false)
+	, force_refresh(false)
 	, bmp_out_file_number(0)
 	, learn_keymap_filename("learned_keymap.xml")
 	, bmp_out_filename()
@@ -114,6 +116,7 @@ SDL<ADDRESS>::SDL(const char *name, Object *parent)
 	, param_bmp_out_filename("bmp-out-filename", this, bmp_out_filename)
 	, param_keymap_filename("keymap-filename", this, keymap_filename)
 	, param_host_key_name("host-key-name", this, host_key_name)
+	, param_force_refresh("force-refresh", this, force_refresh)
 #ifdef WIN32
 	, work_around_sdl_mouse_motion_coordinates_bug(false)
 	, param_work_around_sdl_mouse_motion_coordinates_bug("work-around-sdl-mouse-motion-coordinates-bug", this, work_around_sdl_mouse_motion_coordinates_bug)
@@ -368,6 +371,11 @@ SDL<ADDRESS>::~SDL()
 #if defined(HAVE_SDL)
 	if(alive)
 	{
+		SDL_Event quit_event;
+		quit_event.type = SDL_QUIT;
+		
+		SDL_PushEvent(&quit_event);
+
 		alive = false;
 		SDL_WaitThread(event_handling_thread, 0);
 	}
@@ -376,8 +384,9 @@ SDL<ADDRESS>::~SDL()
 		SDL_FreeSurface(surface);
 		surface = 0;
 	}
-	SDL_DestroyMutex(sdl_mutex);
-	SDL_RemoveTimer(refresh_timer);
+	if(sdl_mutex) SDL_DestroyMutex(sdl_mutex);
+	if(logger_mutex) SDL_DestroyMutex(logger_mutex);
+	if(refresh_timer) SDL_RemoveTimer(refresh_timer);
 	SDL_Quit();
 #endif
 }
@@ -499,6 +508,7 @@ bool SDL<ADDRESS>::Setup()
 	}
 	
 	sdl_mutex = SDL_CreateMutex();
+	logger_mutex = SDL_CreateMutex();
 	
 	bmp_out_file_number = 0;
 	alive = true;
@@ -710,6 +720,7 @@ template <class ADDRESS>
 int SDL<ADDRESS>::EventHandlingThread(SDL<ADDRESS> *sdl)
 {
 	sdl->EventLoop();
+	sdl->alive = false;
 	return 0;
 }
 
@@ -720,7 +731,9 @@ void SDL<ADDRESS>::ProcessKeyboardEvent(SDL_KeyboardEvent& kbd_ev)
 	{
 		if(unlikely(verbose_run))
 		{
+			SDL_mutexP(logger_mutex);
 			logger << DebugInfo << "Host key " << ((kbd_ev.type == SDL_KEYUP) ? "up" : "down") << EndDebugInfo;
+			SDL_mutexV(logger_mutex);
 		}
 		
 		switch(kbd_ev.type)
@@ -779,7 +792,9 @@ void SDL<ADDRESS>::ProcessKeyboardEvent(SDL_KeyboardEvent& kbd_ev)
 
 		if(unlikely(verbose_run))
 		{
+			SDL_mutexP(logger_mutex);
 			logger << DebugInfo << "Key #" << (unsigned int) key_num << " (" << (unsigned int) kbd_ev.keysym.sym << ")" << ((kbd_ev.type == SDL_KEYUP) ? "up" : "down") << EndDebugInfo;
+			SDL_mutexV(logger_mutex);
 		}
 
 		if(key_num)
@@ -799,7 +814,9 @@ void SDL<ADDRESS>::ProcessMouseButtonEvent(SDL_MouseButtonEvent& mouse_button_ev
 	
 	if(unlikely(verbose_run))
 	{
+		SDL_mutexP(logger_mutex);
 		logger << DebugInfo << "Mouse button #" << (unsigned int) mouse_button_ev.button << " " << ((mouse_button_ev.state == SDL_PRESSED) ? "pressed" : "released") << EndDebugInfo;
+		SDL_mutexV(logger_mutex);
 	}
 
 	if(grab_input)
@@ -850,7 +867,9 @@ void SDL<ADDRESS>::ProcessMouseMotionEvent(SDL_MouseMotionEvent& mouse_motion_ev
 #endif
 		if(unlikely(verbose_run))
 		{
+			SDL_mutexP(logger_mutex);
 			logger << DebugInfo << "Mouse move " << mouse_state.dx << ", " << mouse_state.dy << EndDebugInfo;
+			SDL_mutexV(logger_mutex);
 		}
 		mouse_state_updated = true;
 	}
@@ -863,16 +882,22 @@ void SDL<ADDRESS>::EventLoop()
 
 	if(unlikely(verbose_setup))
 	{
+		SDL_mutexP(logger_mutex);
 		logger << DebugInfo << "Initializing SDL..." << EndDebugInfo;
+		SDL_mutexV(logger_mutex);
 	}
 	if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) < 0)
 	{
+		SDL_mutexP(logger_mutex);
 		logger << DebugError << "Can't initialize SDL: " << SDL_GetError() << EndDebugError;
+		SDL_mutexV(logger_mutex);
 		return;
 	}
 	if(unlikely(verbose_setup))
 	{
+		SDL_mutexP(logger_mutex);
 		logger << DebugInfo << "SDL initialized" << EndDebugInfo;
+		SDL_mutexV(logger_mutex);
 	}
 
 	SDL_mutexV(sdl_mutex);
@@ -964,7 +989,9 @@ bool SDL<ADDRESS>::HandleSetVideoMode(const VideoMode<ADDRESS> *_video_mode)
 			blue_bits = 8;
 			break;
 		default:
+			SDL_mutexP(logger_mutex);
 			logger << DebugError << "Unsupported pixel depth " << video_mode.depth << "(you should try 15, 16 or 24)" << EndDebugError;
+			SDL_mutexV(logger_mutex);
 			return false;
 	}
 	
@@ -981,7 +1008,9 @@ bool SDL<ADDRESS>::HandleSetVideoMode(const VideoMode<ADDRESS> *_video_mode)
 #endif
 	if(!icon)
 	{
+		SDL_mutexP(logger_mutex);
 		logger << DebugError << "Can't create SW surface for icon" << EndDebugError;
+		SDL_mutexV(logger_mutex);
 		return false;
 	}
 	
@@ -1032,7 +1061,9 @@ bool SDL<ADDRESS>::HandleSetVideoMode(const VideoMode<ADDRESS> *_video_mode)
 	// Initialize video display
 	if(unlikely(verbose_run))
 	{
+		SDL_mutexP(logger_mutex);
 		logger << DebugInfo << "Initializing video mode " << video_mode.width << " pixels x " << video_mode.height << " pixels x " << video_mode.depth << " bits per pixel..." << EndDebugInfo;
+		SDL_mutexV(logger_mutex);
 	}
 
 	unsigned int sdl_depth = (video_mode.depth + 7) & ~7;
@@ -1041,19 +1072,25 @@ bool SDL<ADDRESS>::HandleSetVideoMode(const VideoMode<ADDRESS> *_video_mode)
 	{
 		if(unlikely(verbose_run))
 		{
+			SDL_mutexP(logger_mutex);
 			logger << DebugWarning << "Can't set video mode using a hardware surface: " << SDL_GetError() << EndDebugWarning;
 			logger << DebugInfo << "Trying with a software surface" << EndDebugWarning;
+			SDL_mutexV(logger_mutex);
 		}
 		screen = SDL_SetVideoMode(video_mode.width, video_mode.height, sdl_depth, SDL_SWSURFACE | flags);
 		if(!screen)
 		{
+			SDL_mutexP(logger_mutex);
 			logger << DebugError << "Still can't set video mode using a software surface: " << SDL_GetError() << EndDebugError;
+			SDL_mutexV(logger_mutex);
 			return false;
 		}
 	}
 	if(unlikely(verbose_run))
 	{
+		SDL_mutexP(logger_mutex);
 		logger << DebugInfo << "Video mode set" << EndDebugInfo;
+		SDL_mutexV(logger_mutex);
 	}
 
 	UpdateWindowCaption();
@@ -1066,7 +1103,9 @@ bool SDL<ADDRESS>::HandleSetVideoMode(const VideoMode<ADDRESS> *_video_mode)
 	surface = SDL_CreateRGBSurface(SDL_SWSURFACE, video_mode.width, video_mode.height, sdl_depth, red_mask, green_mask, blue_mask, 0);
 	if(!surface)
 	{
+		SDL_mutexP(logger_mutex);
 		logger << DebugError << "Can't create SW surface" << EndDebugError;
+		SDL_mutexV(logger_mutex);
 		return false;
 	}
 
@@ -1126,7 +1165,9 @@ void SDL<ADDRESS>::HandleBlit()
 			
 	if(SDL_BlitSurface(surface, 0, screen, 0) != 0)
 	{
+		SDL_mutexP(logger_mutex);
 		logger << DebugWarning << "Can't blit surface" << EndDebugWarning;
+		SDL_mutexV(logger_mutex);
 	}
 	SDL_UpdateRect(screen, 0, 0, video_mode.width, video_mode.height);
 	
@@ -1136,7 +1177,9 @@ void SDL<ADDRESS>::HandleBlit()
 		sprintf(filename, "%s - %04u.bmp", bmp_out_filename.c_str(), bmp_out_file_number);
 		if(SDL_SaveBMP(surface, filename) != 0)
 		{
+			SDL_mutexP(logger_mutex);
 			logger << DebugWarning << "Can't save bitmap into file " << (const char *) filename << EndDebugWarning;
+			SDL_mutexV(logger_mutex);
 		}
 		else
 		{
@@ -1152,7 +1195,9 @@ void SDL<ADDRESS>::GrabInput()
 	{
 		if(verbose_run)
 		{
+			SDL_mutexP(logger_mutex);
 			logger << DebugInfo << "Grabbing input" << EndDebugInfo;
+			SDL_mutexV(logger_mutex);
 		}
 		SDL_ShowCursor(0);
 		SDL_WM_GrabInput(SDL_GRAB_ON);
@@ -1169,7 +1214,9 @@ void SDL<ADDRESS>::UngrabInput()
 	{
 		if(verbose_run)
 		{
+			SDL_mutexP(logger_mutex);
 			logger << DebugInfo << "Ungrabbing input" << EndDebugInfo;
+			SDL_mutexV(logger_mutex);
 		}
 		SDL_ShowCursor(1);
 		SDL_WM_GrabInput(SDL_GRAB_OFF);
@@ -1216,7 +1263,7 @@ template <class ADDRESS>
 Uint32 SDL<ADDRESS>::RefreshTimer(Uint32 interval, void *param)
 {
 	SDL<ADDRESS> *sdl = reinterpret_cast<SDL<ADDRESS> *>(param);
-	if(sdl->refresh)
+	if(sdl->force_refresh || sdl->refresh)
 	{
 		sdl->Blit();
 		sdl->refresh = false;
