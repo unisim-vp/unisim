@@ -1471,19 +1471,24 @@ template <class ADDRESS>
 bool InlineDebugger<ADDRESS>::GetLine(char *line, int size)
 {
 #if defined(HAVE_LIBEDIT)
-	char *line_read = readline(prompt.c_str());
+	char *line_read;
+	do
+	{
+		line_read = readline(prompt.c_str());
+		if(!line_read)
+		{
+			rl_redisplay(); // work around when terminal size changes
+		}
+			
+	} while(!line_read);
 
   /* If the line has any text in it,
      save it on the history. */
-	if(line_read)
-	{
-		if(*line_read) add_history(line_read);
+	if(*line_read) add_history(line_read);
 
-		strcpy(line, line_read);
+	strcpy(line, line_read);
 
-		return true;
-	}
-	return false;
+	return true;
 #else
 	cout << prompt;
 	cin.getline(line, size);
