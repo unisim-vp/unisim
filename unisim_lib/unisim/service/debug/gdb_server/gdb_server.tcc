@@ -39,6 +39,7 @@
 #include <unisim/util/xml/xml.hh>
 
 #include <iostream>
+#include <sstream>
 #include <list>
 
 #include <string.h>
@@ -282,11 +283,11 @@ bool GDBServer<ADDRESS>::Setup()
 
 						if(cpu_has_reg && cpu_has_right_reg_size)
 						{
-							gdb_registers.push_back(GDBRegister(reg, endian));
+							gdb_registers.push_back(GDBRegister(reg, endian, gdb_registers.size()));
 						}
 						else
 						{
-							gdb_registers.push_back(GDBRegister(reg_name, reg_size, endian));
+							gdb_registers.push_back(GDBRegister(reg_name, reg_size, endian, gdb_registers.size()));
 						}
 					}
 					else
@@ -1200,7 +1201,25 @@ bool GDBServer<ADDRESS>::ReportSignal(unsigned int signum)
 template <class ADDRESS>
 bool GDBServer<ADDRESS>::ReportTracePointTrap()
 {
-	return PutPacket("T05");
+	uint8_t reg_num;
+	
+	string packet("T05");
+	vector<GDBRegister>::const_iterator gdb_reg;
+
+	if(gdb_pc)
+	{
+		std::stringstream sstr;
+		string hex;
+		unsigned int reg_num = gdb_pc->GetRegNum();
+		gdb_pc->GetValue(hex);
+		sstr << std::hex << reg_num;
+		packet += sstr.str();
+		packet += ":";
+		packet += hex;
+		packet += ";";
+	}
+
+	return PutPacket(packet);
 }
 
 template <class ADDRESS>

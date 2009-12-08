@@ -109,8 +109,8 @@ inline bool IsHexChar(char ch)
 class GDBRegister
 {
 public:
-	GDBRegister(const string& reg_name, int reg_size, GDBEndian endian);
-	GDBRegister(unisim::util::debug::Register *reg, GDBEndian endian);
+	GDBRegister(const string& reg_name, int reg_size, GDBEndian endian, unsigned int reg_num);
+	GDBRegister(unisim::util::debug::Register *reg, GDBEndian endian, unsigned int reg_num);
 	inline const char *GetName() const { return name.c_str(); }
 	inline int GetSize() const { return size; }
 	bool SetValue(const string& hex);
@@ -121,11 +121,13 @@ public:
 	inline unisim::util::debug::Register *GetRegisterInterface() { return reg; }
 	inline void SetRegisterInterface(unisim::util::debug::Register *reg) { this->reg = reg; }
 	inline GDBEndian GetEndian() const { return endian; }
+	unsigned int GetRegNum() const { return reg_num; }
 private:
 	string name;
 	int size;
 	unisim::util::debug::Register *reg;
 	GDBEndian endian;
+	unsigned int reg_num;
 };
 
 template <class ADDRESS>

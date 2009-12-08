@@ -39,20 +39,22 @@ namespace service {
 namespace debug {
 namespace gdb_server {
 
-GDBRegister::GDBRegister(const string& reg_name, int reg_size, GDBEndian endian)
+GDBRegister::GDBRegister(const string& reg_name, int reg_size, GDBEndian endian, unsigned int reg_num)
 {
 	this->name = reg_name;
 	this->size = reg_size;
 	this->endian = endian;
 	this->reg = 0;
+	this->reg_num = reg_num;
 }
 
-GDBRegister::GDBRegister(unisim::util::debug::Register *reg, GDBEndian endian)
+GDBRegister::GDBRegister(unisim::util::debug::Register *reg, GDBEndian endian, unsigned int reg_num)
 {
 	this->name = reg->GetName();
 	this->size = reg->GetSize();
 	this->endian = endian;
 	this->reg = reg;
+	this->reg_num = reg_num;
 }
 
 bool GDBRegister::SetValue(const string& hex)
