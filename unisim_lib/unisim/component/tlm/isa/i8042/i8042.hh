@@ -89,7 +89,6 @@ public:
 	void KbdIrqMaster();
 	void AuxIrqMaster();
 	void CaptureKey();
-	void RepeatKey();
 	void CaptureMouse();
 	virtual bool Setup();
 	virtual bool Send(const Pointer<TlmMessage<ISAReq, ISARsp> > &message);

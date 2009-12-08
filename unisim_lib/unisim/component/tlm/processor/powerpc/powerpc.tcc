@@ -35,6 +35,8 @@
 #ifndef __UNISIM_COMPONENT_TLM_PROCESSOR_POWERPC_POWERPC_TCC__
 #define __UNISIM_COMPONENT_TLM_PROCESSOR_POWERPC_POWERPC_TCC__
 
+#include <unistd.h>
+
 namespace unisim {
 namespace component {
 namespace tlm {
@@ -57,14 +59,14 @@ PowerPC<CONFIG>::PowerPC(const sc_module_name& name, Object *parent) :
 	param_ipc("ipc", this, ipc),
 	cpu_sctime(),
 	bus_sctime(),
-	last_cpu_sctime(),
+	last_sync_sctime(),
 	ipc(1.0),
-	external_interrupt_listener("external_interrupt_listener",this),
-	hard_reset_listener("hard_reset_listener",this),
-	soft_reset_listener("soft_reset_listener",this),
-	mcp_listener("mcp_listener",this),
-	tea_listener("tea_listener",this),
-	smi_listener("smi_listener",this)
+	external_interrupt_listener("external_interrupt_listener",this, &ev_interrupt),
+	hard_reset_listener("hard_reset_listener",this, &ev_interrupt),
+	soft_reset_listener("soft_reset_listener",this, &ev_interrupt),
+	mcp_listener("mcp_listener",this, &ev_interrupt),
+	tea_listener("tea_listener",this, &ev_interrupt),
+	smi_listener("smi_listener",this, &ev_interrupt)
 {
 	SC_HAS_PROCESS(PowerPC);
 	
@@ -100,10 +102,11 @@ void PowerPC<CONFIG>::Stop(int ret)
 template <class CONFIG>
 void PowerPC<CONFIG>::Synchronize()
 {
-	sc_time time_spent = cpu_sctime - last_cpu_sctime;
-	last_cpu_sctime = cpu_sctime;
+	sc_time time_spent = cpu_sctime - last_sync_sctime;
 	wait(time_spent);
-	next_nice_sctime = sc_time_stamp() + nice_sctime;
+	last_sync_sctime = sc_time_stamp();
+	next_nice_sctime = last_sync_sctime + nice_sctime;
+	UpdateTime(last_sync_sctime - cpu_sctime);
 }
 
 	
@@ -113,15 +116,28 @@ bool PowerPC<CONFIG>::Setup()
 	if(!CPU<CONFIG>::Setup()) return false;
 	cpu_cycle_sctime = sc_time((double) inherited::cpu_cycle_time, SC_PS);
 	bus_cycle_sctime = sc_time((double) inherited::bus_cycle_time, SC_PS);
-	nice_sctime = sc_time((double) nice_time, SC_PS);
+	nice_sctime = sc_time((double) nice_time, SC_PS); // 10000 * cpu_cycle_sctime;//
 	return true;
 }
 
 template <class CONFIG>
 void PowerPC<CONFIG>::BusSynchronize()
 {
-	sc_time time_spent = cpu_sctime - last_cpu_sctime;
-	last_cpu_sctime = cpu_sctime;
+	while(cpu_sctime > bus_sctime)
+	{
+		bus_sctime += bus_cycle_sctime;
+		CPU<CONFIG>::OnBusCycle();
+	}
+	
+	cpu_sctime = bus_sctime;
+	
+	Synchronize();
+}
+
+/*template <class CONFIG>
+void PowerPC<CONFIG>::BusSynchronize()
+{
+	sc_time time_spent = cpu_sctime - bus_sctime;
 
 #ifdef DEBUG_POWERPC
 	if(DebugEnabled())
@@ -159,10 +175,67 @@ void PowerPC<CONFIG>::BusSynchronize()
 		if(DebugEnabled())
 			cerr << "PPC: delay_tu = " << delay_tu << endl;
 #endif
-		wait(sc_time(delay_tu, false));
+		UpdateTime(sc_time(delay_tu, false));
+		Synchronize();
+//		wait(sc_time(delay_tu, false));
+//		cpu_sctime = bus_sctime = sc_time_stamp();
+	}
+}*/
+	
+// template <class CONFIG>
+// void PowerPC<CONFIG>::Run()
+// {
+// 	sc_time time_per_instruction = cpu_cycle_sctime * ipc;
+// 	
+// 	while(1)
+// 	{
+// 		if(cpu_sctime >= bus_sctime)
+// 		{
+// 			bus_sctime += bus_cycle_sctime;
+// 			CPU<CONFIG>::OnBusCycle();
+// 			if(cpu_sctime >= next_nice_sctime)
+// 			{
+// 				Synchronize();
+// 			}
+// 		}
+// 		CPU<CONFIG>::StepOneInstruction();
+// 		cpu_sctime += time_per_instruction;
+// 	}
+// }
+
+template <class CONFIG>
+void PowerPC<CONFIG>::Idle()
+{
+	UpdateTime(SC_ZERO_TIME);
+	sc_time max_idle_time(CPU<CONFIG>::GetDEC() * 4 * bus_cycle_sctime);
+	usleep(max_idle_time.to_seconds() * 1.0e6);
+	ev_max_idle.notify(max_idle_time);
+	wait(ev_max_idle | ev_interrupt);
+	last_sync_sctime = sc_time_stamp();
+	ev_max_idle.cancel();
+	//UpdateTime(sc_time_stamp() - cpu_sctime);
+	while(!CPU<CONFIG>::HasAsynchronousInterrupt())
+	{
+		UpdateTime(bus_cycle_sctime);
 	}
 }
+
+template <class CONFIG>
+inline void PowerPC<CONFIG>::UpdateTime(const sc_time& delta)
+{
+	cpu_sctime += delta;
+	while(cpu_sctime > bus_sctime)
+	{
+		bus_sctime += bus_cycle_sctime;
+		CPU<CONFIG>::OnBusCycle();
+	}
 	
+	if(cpu_sctime > next_nice_sctime)
+	{
+		Synchronize();
+	}
+}
+
 template <class CONFIG>
 void PowerPC<CONFIG>::Run()
 {
@@ -170,19 +243,8 @@ void PowerPC<CONFIG>::Run()
 	
 	while(1)
 	{
-		if(cpu_sctime >= bus_sctime)
-		{
-			bus_sctime += bus_cycle_sctime;
-			CPU<CONFIG>::OnBusCycle();
-			if(cpu_sctime >= next_nice_sctime)
-			{
-				Synchronize();
-				//next_nice_sctime += nice_sctime;
-				//wait(SC_ZERO_TIME); // be nice with other threads: leave host execution resources
-			}
-		}
 		CPU<CONFIG>::StepOneInstruction();
-		cpu_sctime += time_per_instruction;
+		UpdateTime(time_per_instruction);
 	}
 }
 
@@ -235,7 +297,9 @@ void PowerPC<CONFIG>::BusRead(physical_address_t physical_addr, void *buffer, ui
 		while(!bus_port->Send(msg))
 		{
 			// if bus transaction request is not accepted then retry later
-			wait(bus_cycle_sctime);
+			UpdateTime(bus_cycle_sctime);
+			BusSynchronize();
+//			wait(bus_cycle_sctime);
 #ifdef DEBUG_POWERPC
 			if(DebugEnabled())
 				cerr << sc_time_stamp() << " PPC::BusRead: retry transaction request" << endl;
@@ -252,6 +316,7 @@ void PowerPC<CONFIG>::BusRead(physical_address_t physical_addr, void *buffer, ui
 #endif
 		// wait for the bus transaction response
 		wait(rsp_ev);
+		UpdateTime(sc_time_stamp() - cpu_sctime);
 		rsp = msg->GetResponse();
 #ifdef DEBUG_POWERPC
 		if(DebugEnabled())
@@ -314,7 +379,9 @@ void PowerPC<CONFIG>::BusWrite(physical_address_t physical_addr, const void *buf
 	while(!bus_port->Send(msg))
 	{
 		// if bus transaction request is not accepted then retry later
-		wait(bus_cycle_sctime);
+		UpdateTime(bus_cycle_sctime);
+		BusSynchronize();
+//		wait(bus_cycle_sctime);
 #ifdef DEBUG_POWERPC
 		if(DebugEnabled())
 			cerr << sc_time_stamp() << " PPC::BusWrite: retry transaction request" << endl;
@@ -354,7 +421,9 @@ void PowerPC<CONFIG>::BusZeroBlock(physical_address_t physical_addr)
 	while(!bus_port->Send(msg))
 	{
 		// if bus transaction request is not accepted then retry later
-		wait(bus_cycle_sctime);
+		UpdateTime(bus_cycle_sctime);
+		BusSynchronize();
+//		wait(bus_cycle_sctime);
 #ifdef DEBUG_POWERPC
 		if(DebugEnabled())
 			cerr << sc_time_stamp() << " PPC::BusZeroBlock: retry transaction request" << endl;
@@ -394,7 +463,9 @@ void PowerPC<CONFIG>::BusFlushBlock(physical_address_t physical_addr)
 	while(!bus_port->Send(msg))
 	{
 		// if bus transaction request is not accepted then retry later
-		wait(bus_cycle_sctime);
+		UpdateTime(bus_cycle_sctime);
+		BusSynchronize();
+//		wait(bus_cycle_sctime);
 #ifdef DEBUG_POWERPC
 		if(DebugEnabled())
 			cerr << sc_time_stamp() << " PPC::BusFlushBlock: retry transaction request" << endl;
@@ -409,9 +480,10 @@ void PowerPC<CONFIG>::BusFlushBlock(physical_address_t physical_addr)
 
 
 template <class CONFIG>
-PowerPC<CONFIG>::ExternalInterruptListener::ExternalInterruptListener(const sc_module_name& name, unisim::component::cxx::processor::powerpc::CPU<CONFIG> *_cpu) :
+PowerPC<CONFIG>::ExternalInterruptListener::ExternalInterruptListener(const sc_module_name& name, unisim::component::cxx::processor::powerpc::CPU<CONFIG> *_cpu, sc_event *_ev) :
 	sc_module(name),
-	cpu(_cpu)
+	cpu(_cpu),
+	ev(_ev)
 {
 }
 	
@@ -423,13 +495,15 @@ bool PowerPC<CONFIG>::ExternalInterruptListener::Send(const Pointer<TlmMessage<I
 	else
 		cpu->AckExternalInterrupt();
 	
+	ev->notify(SC_ZERO_TIME);
 	return true;
 }
 
 template <class CONFIG>
-PowerPC<CONFIG>::HardResetListener::HardResetListener(const sc_module_name& name, unisim::component::cxx::processor::powerpc::CPU<CONFIG> *_cpu) :
+PowerPC<CONFIG>::HardResetListener::HardResetListener(const sc_module_name& name, unisim::component::cxx::processor::powerpc::CPU<CONFIG> *_cpu, sc_event *_ev) :
 	sc_module(name),
-	cpu(_cpu)
+	cpu(_cpu),
+	ev(_ev)
 {
 }
 	
@@ -441,13 +515,15 @@ bool PowerPC<CONFIG>::HardResetListener::Send(const Pointer<TlmMessage<Interrupt
 	else
 		cpu->AckHardReset();
 	
+	ev->notify(SC_ZERO_TIME);
 	return true;
 }
 
 template <class CONFIG>
-PowerPC<CONFIG>::SoftResetListener::SoftResetListener(const sc_module_name& name, unisim::component::cxx::processor::powerpc::CPU<CONFIG> *_cpu) :
+PowerPC<CONFIG>::SoftResetListener::SoftResetListener(const sc_module_name& name, unisim::component::cxx::processor::powerpc::CPU<CONFIG> *_cpu, sc_event *_ev) :
 	sc_module(name),
-	cpu(_cpu)
+	cpu(_cpu),
+	ev(_ev)
 {
 }
 
@@ -459,13 +535,15 @@ bool PowerPC<CONFIG>::SoftResetListener::Send(const Pointer<TlmMessage<Interrupt
 	else
 		cpu->AckSoftReset();
 	
+	ev->notify(SC_ZERO_TIME);
 	return true;
 }
 
 template <class CONFIG>
-PowerPC<CONFIG>::MCPListener::MCPListener(const sc_module_name& name, unisim::component::cxx::processor::powerpc::CPU<CONFIG> *_cpu) :
+PowerPC<CONFIG>::MCPListener::MCPListener(const sc_module_name& name, unisim::component::cxx::processor::powerpc::CPU<CONFIG> *_cpu, sc_event *_ev) :
 	sc_module(name),
-	cpu(_cpu)
+	cpu(_cpu),
+	ev(_ev)
 {
 }
 
@@ -477,13 +555,15 @@ bool PowerPC<CONFIG>::MCPListener::Send(const Pointer<TlmMessage<InterruptReques
 	else
 		cpu->AckMCP();
 	
+	ev->notify(SC_ZERO_TIME);
 	return true;
 }
 
 template <class CONFIG>
-PowerPC<CONFIG>::TEAListener::TEAListener(const sc_module_name& name, unisim::component::cxx::processor::powerpc::CPU<CONFIG> *_cpu) :
+PowerPC<CONFIG>::TEAListener::TEAListener(const sc_module_name& name, unisim::component::cxx::processor::powerpc::CPU<CONFIG> *_cpu, sc_event *_ev) :
 	sc_module(name),
-	cpu(_cpu)
+	cpu(_cpu),
+	ev(_ev)
 {
 }
 
@@ -495,13 +575,15 @@ bool PowerPC<CONFIG>::TEAListener::Send(const Pointer<TlmMessage<InterruptReques
 	else
 		cpu->AckTEA();
 	
+	ev->notify(SC_ZERO_TIME);
 	return true;
 }
 
 template <class CONFIG>
-PowerPC<CONFIG>::SMIListener::SMIListener(const sc_module_name& name, unisim::component::cxx::processor::powerpc::CPU<CONFIG> *_cpu) :
+PowerPC<CONFIG>::SMIListener::SMIListener(const sc_module_name& name, unisim::component::cxx::processor::powerpc::CPU<CONFIG> *_cpu, sc_event *_ev) :
 	sc_module(name),
-	cpu(_cpu)
+	cpu(_cpu),
+	ev(_ev)
 {
 }
 
@@ -513,6 +595,7 @@ bool PowerPC<CONFIG>::SMIListener::Send(const Pointer<TlmMessage<InterruptReques
 	else
 		cpu->AckSMI();
 	
+	ev->notify(SC_ZERO_TIME);
 	return true;
 }
 

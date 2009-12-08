@@ -559,11 +559,20 @@ void SDL<ADDRESS>::ResetKeyboard()
 {
 #if defined(HAVE_SDL)
 	SDL_mutexP(sdl_mutex);
+	SetTypematicDelay(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
 #endif
 	kbd_key_action_fifo.clear();
 #if defined(HAVE_SDL)
 	SDL_mutexV(sdl_mutex);
 #endif
+}
+
+template <class ADDRESS>
+void SDL<ADDRESS>::SetTypematicDelay(unsigned int delay_us, unsigned int interval_us)
+{
+	if(delay_us) typematic_delay_us = delay_us;
+	if(interval_us) typematic_interval_us = interval_us;
+	SDL_EnableKeyRepeat(typematic_delay_us, typematic_interval_us);
 }
 
 template <class ADDRESS>
@@ -768,8 +777,9 @@ void SDL<ADDRESS>::ProcessKeyboardEvent(SDL_KeyboardEvent& kbd_ev)
 			{
 				host_key_down = false;
 				ToggleFullScreen();
+				return;
 			}
-			return;
+			break;
 	}
 
 	if(grab_input)
@@ -905,7 +915,7 @@ void SDL<ADDRESS>::EventLoop()
 	SDL_Event sdl_ev;
 
 	refresh_timer = SDL_AddTimer(refresh_period, RefreshTimer, this);
-
+	
 	while(alive)
 	{
 		if(SDL_WaitEvent(&sdl_ev))

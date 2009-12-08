@@ -534,6 +534,7 @@ void CPU<CONFIG>::Reset()
 
 	bus_cycle = 0;
 	cpu_cycle = 0;
+	dec_bus_cycle = 0;
 	instruction_counter = 0;
 
 	dec = 0;
@@ -2193,9 +2194,12 @@ void CPU<CONFIG>::Run()
 template <class CONFIG>
 void CPU<CONFIG>::SetHID0(uint32_t value)
 {
+	if(unlikely(IsVerboseSetHID0()))
+		logger << DebugInfo << "Writing 0x" << std::hex << value << std::dec << " into HID0" << endl << EndDebugInfo;
 	uint32_t old_hid0_ice = GetHID0_ICE();
 	uint32_t old_hid0_dce = GetHID0_DCE();
 	uint32_t old_hid0_abe = GetHID0_ABE();
+	uint32_t old_hid0_nap = GetHID0_NAP();
 
 	hid0 = (hid0 & ~HID0_MASK) | (value & HID0_MASK);
 
@@ -2270,6 +2274,40 @@ void CPU<CONFIG>::SetHID0(uint32_t value)
 		{
 			if(unlikely(IsVerboseSetHID0()))
 				logger << DebugInfo << "Disabling Address Only broadcast" << endl << EndDebugInfo;
+		}
+	}
+
+	if(CONFIG::HAS_HID0_NAP)
+	{
+		if(!old_hid0_nap && GetHID0_NAP())
+		{
+			if(unlikely(IsVerboseSetHID0()))
+				logger << DebugInfo << "Enabling NAP mode" << endl << EndDebugInfo;
+			if(GetMSR_POW())
+			{
+				if(unlikely(IsVerboseSetHID0()))
+				{
+					logger << DebugInfo << "Entering NAP mode" << endl << EndDebugInfo;
+				}
+				if(GetMSR_EE())
+				{
+					Idle();
+				}
+				//CPU<CONFIG>::ResetMSR_POW();
+			}
+		}
+
+		if(old_hid0_nap && !GetHID0_NAP())
+		{
+			if(unlikely(IsVerboseSetHID0()))
+				logger << DebugInfo << "Disabling NAP mode" << endl << EndDebugInfo;
+			if(GetMSR_POW())
+			{
+				if(unlikely(IsVerboseSetHID0()))
+				{
+					logger << DebugInfo << "Leaving NAP mode" << endl << EndDebugInfo;
+				}
+			}
 		}
 	}
 }
@@ -2509,6 +2547,7 @@ void CPU<CONFIG>::SetMSR(uint32_t value)
 	uint32_t old_msr_pr = GetMSR_PR();
 	uint32_t old_msr_le = GetMSR_LE();
 	uint32_t old_msr_fe = (CONFIG::HAS_MSR_FE0 ? GetMSR_FE0() : 0) | (CONFIG::HAS_MSR_FE1 ? GetMSR_FE1() : 0);
+	uint32_t old_msr_pow = GetMSR_POW();
 
 	msr = (msr & ~CONFIG::MSR_MASK) | (value & CONFIG::MSR_MASK);
 
@@ -2600,6 +2639,38 @@ void CPU<CONFIG>::SetMSR(uint32_t value)
 		{
 			if(unlikely(IsVerboseSetMSR()))
 				logger << DebugInfo << "Switching to big endian" << endl << EndDebugInfo;
+		}
+	}
+	
+	if(!old_msr_pow && GetMSR_POW())
+	{
+		if(unlikely(IsVerboseSetMSR()))
+			logger << DebugInfo << "Enabling power management" << endl << EndDebugInfo;
+		if(CONFIG::HAS_HID0_NAP && GetHID0_NAP())
+		{
+			if(unlikely(IsVerboseSetMSR()))
+			{
+				logger << DebugInfo << "Entering NAP mode" << endl << EndDebugInfo;
+			}
+			if(GetMSR_EE())
+			{
+				Idle();
+			}
+			//CPU<CONFIG>::ResetMSR_POW();
+		}
+	}
+
+	if(old_msr_pow && !GetMSR_POW())
+	{
+		if(unlikely(IsVerboseSetMSR()))
+			logger << DebugInfo << "Disabling power management" << endl << EndDebugInfo;
+
+		if(CONFIG::HAS_HID0_NAP && GetHID0_NAP())
+		{
+			if(unlikely(IsVerboseSetMSR()))
+			{
+				logger << DebugInfo << "Leaving NAP mode" << endl << EndDebugInfo;
+			}
 		}
 	}
 }
@@ -6026,6 +6097,11 @@ void CPU<CONFIG>::Stop(int ret)
 
 template <class CONFIG>
 void CPU<CONFIG>::Synchronize()
+{
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::Idle()
 {
 }
 

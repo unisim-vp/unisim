@@ -722,6 +722,7 @@ public:
 	virtual void Stop(int ret);
 	virtual void Synchronize();
 	virtual void Reset();
+	virtual void Idle();
 
 	//=====================================================================
 	//=                     CPU control handling methods                  =
@@ -1735,6 +1736,7 @@ private:
 	//=                    Interface with outside                         =
 	//=====================================================================
 	
+protected:
 	inline bool HasDecrementerOverflow() const { return decrementer_overflow; }
 	inline bool HasExternalInterrupt() const { return external_interrupt; }
 	inline bool HasHardReset() const { return hard_reset; }
@@ -1745,6 +1747,7 @@ private:
 	inline bool HasSMI() const { return smi; }
 	inline bool HasPerformanceMonitorInterrupt() const { return performance_monitor_interrupt; }
 	inline bool HasAsynchronousInterrupt() const { return asynchronous_interrupt; }
+private:
 
 	//=====================================================================
 	//=                    Exception handling methods                     =
@@ -1847,6 +1850,7 @@ protected:
 	uint64_t bus_cycle_time; //!< Front side bus cycle time in ps
 	uint64_t cpu_cycle;      //!< Number of cpu cycles
 	uint64_t bus_cycle;      //!< Number of front side bus cycles
+	uint64_t dec_bus_cycle;  //!< Last bus cycle DEC register has been decremented
 
 	//=====================================================================
 	//=                       Performance model                           =

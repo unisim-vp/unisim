@@ -100,29 +100,35 @@ public:
 	virtual void BusWrite(physical_address_t physical_addr, const void *buffer, uint32_t size, typename CONFIG::WIMG wimg = CONFIG::WIMG_DEFAULT);
 	virtual void BusZeroBlock(physical_address_t physical_addr);
 	virtual void BusFlushBlock(physical_address_t physical_addr);
+	virtual void Idle();
 private:
 	sc_time cpu_cycle_sctime;
 	sc_time bus_cycle_sctime;
 	sc_time cpu_sctime;
 	sc_time bus_sctime;
-	sc_time last_cpu_sctime;
+	sc_time last_sync_sctime;
 	sc_time nice_sctime;
 	sc_time next_nice_sctime;
 	uint64_t nice_time;
 	double ipc;
+	sc_event ev_max_idle;
+	sc_event ev_interrupt;
 	
 	Parameter<uint64_t> param_nice_time;
 	Parameter<double> param_ipc;
 
+	inline void UpdateTime(const sc_time& delta);
+	
 	class ExternalInterruptListener :
 		public sc_module,
 		public TlmSendIf<InterruptRequest>
 	{
 	public:
-		ExternalInterruptListener(const sc_module_name& name, unisim::component::cxx::processor::powerpc::CPU<CONFIG> *_cpu);
+		ExternalInterruptListener(const sc_module_name& name, unisim::component::cxx::processor::powerpc::CPU<CONFIG> *_cpu, sc_event *ev);
 		virtual bool Send(const Pointer<TlmMessage<InterruptRequest> >& message);
 	private:
 		unisim::component::cxx::processor::powerpc::CPU<CONFIG> *cpu;
+		sc_event *ev;
 	};
 	
 	class HardResetListener :
@@ -130,10 +136,11 @@ private:
 		public TlmSendIf<InterruptRequest>
 	{
 	public:
-		HardResetListener(const sc_module_name& name, unisim::component::cxx::processor::powerpc::CPU<CONFIG> *_cpu);
+		HardResetListener(const sc_module_name& name, unisim::component::cxx::processor::powerpc::CPU<CONFIG> *_cpu, sc_event *ev);
 		virtual bool Send(const Pointer<TlmMessage<InterruptRequest> >& message);
 	private:
 		unisim::component::cxx::processor::powerpc::CPU<CONFIG> *cpu;
+		sc_event *ev;
 	};
 	
 	class SoftResetListener :
@@ -141,10 +148,11 @@ private:
 		public TlmSendIf<InterruptRequest>
 	{
 	public:
-		SoftResetListener(const sc_module_name& name, unisim::component::cxx::processor::powerpc::CPU<CONFIG> *_cpu);
+		SoftResetListener(const sc_module_name& name, unisim::component::cxx::processor::powerpc::CPU<CONFIG> *_cpu, sc_event *ev);
 		virtual bool Send(const Pointer<TlmMessage<InterruptRequest> >& message);
 	private:
 		unisim::component::cxx::processor::powerpc::CPU<CONFIG> *cpu;
+		sc_event *ev;
 	};
 	
 	class MCPListener :
@@ -152,10 +160,11 @@ private:
 		public TlmSendIf<InterruptRequest>
 	{
 	public:
-		MCPListener(const sc_module_name& name, unisim::component::cxx::processor::powerpc::CPU<CONFIG> *_cpu);
+		MCPListener(const sc_module_name& name, unisim::component::cxx::processor::powerpc::CPU<CONFIG> *_cpu, sc_event *ev);
 		virtual bool Send(const Pointer<TlmMessage<InterruptRequest> >& message);
 	private:
 		unisim::component::cxx::processor::powerpc::CPU<CONFIG> *cpu;
+		sc_event *ev;
 	};
 	
 	class TEAListener :
@@ -163,10 +172,11 @@ private:
 		public TlmSendIf<InterruptRequest>
 	{
 	public:
-		TEAListener(const sc_module_name& name, unisim::component::cxx::processor::powerpc::CPU<CONFIG> *_cpu);
+		TEAListener(const sc_module_name& name, unisim::component::cxx::processor::powerpc::CPU<CONFIG> *_cpu, sc_event *ev);
 		virtual bool Send(const Pointer<TlmMessage<InterruptRequest> >& message);
 	private:
 		unisim::component::cxx::processor::powerpc::CPU<CONFIG> *cpu;
+		sc_event *ev;
 	};
 	
 	class SMIListener :
@@ -174,10 +184,11 @@ private:
 		public TlmSendIf<InterruptRequest>
 	{
 	public:
-		SMIListener(const sc_module_name& name, unisim::component::cxx::processor::powerpc::CPU<CONFIG> *_cpu);
+		SMIListener(const sc_module_name& name, unisim::component::cxx::processor::powerpc::CPU<CONFIG> *_cpu, sc_event *ev);
 		virtual bool Send(const Pointer<TlmMessage<InterruptRequest> >& message);
 	private:
 		unisim::component::cxx::processor::powerpc::CPU<CONFIG> *cpu;
+		sc_event *ev;
 	};
 
 	ExternalInterruptListener external_interrupt_listener;

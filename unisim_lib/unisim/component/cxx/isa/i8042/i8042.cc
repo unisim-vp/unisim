@@ -1463,23 +1463,6 @@ bool I8042::CaptureKey()
 	return ret;
 }
 
-bool I8042::RepeatKey()
-{
-	bool ret = false;
-	Lock();
-	if(last_key_action.action == unisim::service::interfaces::Keyboard::KeyAction::KEY_DOWN && key_num_repeat[last_key_action.key_num])
-	{
-		vector<uint8_t>& up_scancodes = key_num_up_to_ps2_raw_set2[last_key_action.key_num];
-		EnqueueScancodes(up_scancodes);
-
-		vector<uint8_t>& down_scancodes = key_num_down_to_ps2_raw_set2[last_key_action.key_num];
-		EnqueueScancodes(down_scancodes);
-		ret = true;
-	}
-	Unlock();
-	return ret;
-}
-
 void I8042::AuxResendPacket()
 {
 	AuxEnqueue(aux_packet[0]);
@@ -1603,6 +1586,7 @@ void I8042::SetTypematicRate(double rate)
 		logger << DebugInfo << "Setting typematic rate to " << rate << " scancodes/second" << EndDebugInfo;
 	}
 	typematic_rate = rate;
+	keyboard_import->SetTypematicDelay(0, (unsigned int)((1.0 / typematic_rate) * 1000.0)); // in ms
 }
 
 void I8042::SetTypematicDelay(double delay)
@@ -1612,6 +1596,7 @@ void I8042::SetTypematicDelay(double delay)
 		logger << DebugInfo << "Setting typematic delay to " << delay << " seconds" << EndDebugInfo;
 	}
 	typematic_delay = delay;
+	keyboard_import->SetTypematicDelay((unsigned int)(typematic_delay * 1000.0), 0);
 }
 
 bool I8042::SetAuxSampleRate(unsigned int rate)

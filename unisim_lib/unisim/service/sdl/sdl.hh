@@ -104,6 +104,7 @@ public:
 	virtual bool SetVideoMode(ADDRESS fb_addr, uint32_t width, uint32_t height, uint32_t depth, uint32_t fb_bytes_per_line);
 	virtual void RefreshDisplay();
 	virtual void ResetKeyboard();
+	virtual void SetTypematicDelay(unsigned int delay_us, unsigned int interval_us);
 	virtual bool GetKeyAction(unisim::service::interfaces::Keyboard::KeyAction& key_action);
 	virtual void ResetMouse();
 	virtual bool GetMouseState(unisim::service::interfaces::Mouse::MouseState& mouse_state);
@@ -143,6 +144,8 @@ private:
 	bool alive;
 	bool refresh;
 	bool force_refresh;
+	unsigned int typematic_delay_us;
+	unsigned int typematic_interval_us;
 	VideoMode<ADDRESS> video_mode;
 	unsigned int bmp_out_file_number;
 	string learn_keymap_filename;

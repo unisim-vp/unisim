@@ -55,6 +55,7 @@ public:
 	} KeyAction;
 
 	virtual void ResetKeyboard() = 0;
+	virtual void SetTypematicDelay(unsigned int delay_us, unsigned int interval_us) = 0;
 	virtual bool GetKeyAction(KeyAction& key_action) = 0;
 };
 

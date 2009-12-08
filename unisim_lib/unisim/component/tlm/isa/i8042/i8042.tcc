@@ -77,8 +77,6 @@ I8042<MAX_DATA_SIZE>::I8042(const sc_module_name& name, Object *parent) :
 
 	SC_THREAD(CaptureKey);
 
-	SC_THREAD(RepeatKey);
-
 	SC_THREAD(CaptureMouse);
 }
 
@@ -205,19 +203,6 @@ void I8042<MAX_DATA_SIZE>::CaptureKey()
 			ev_repeat.notify(sc_time(inherited::typematic_delay / inherited::speed_boost, SC_SEC));
 		}
 		wait(sc_time(1.0 / (inherited::typematic_rate * inherited::speed_boost), SC_SEC));
-	}
-}
-
-template <uint32_t MAX_DATA_SIZE>
-void I8042<MAX_DATA_SIZE>::RepeatKey()
-{
-	while(1)
-	{
-		wait(ev_repeat);
-		if(inherited::RepeatKey())
-		{
-			ev_repeat.notify(sc_time(inherited::typematic_delay / inherited::speed_boost, SC_SEC));
-		}
 	}
 }
 

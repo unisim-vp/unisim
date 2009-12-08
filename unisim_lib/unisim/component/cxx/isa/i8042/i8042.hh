@@ -197,7 +197,6 @@ public:
 	virtual void TriggerKbdInterrupt(bool level);
 	virtual void TriggerAuxInterrupt(bool level);
 	bool CaptureKey();
-	bool RepeatKey();
 	void CaptureMouse();
 	virtual void Stop();
 	virtual void Reset();
