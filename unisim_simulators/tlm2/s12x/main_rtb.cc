@@ -475,6 +475,15 @@ int sc_main(int argc, char *argv[])
 
 	mmc->external_memory_import >> external_memory->memory_export;
 
+	*(registersTee->registers_import[0]) >> cpu->registers_export;
+	*(registersTee->registers_import[1]) >> mmc->registers_export;
+	*(registersTee->registers_import[2]) >> s12xint->registers_export;
+	*(registersTee->registers_import[3]) >> crg->registers_export;
+	*(registersTee->registers_import[4]) >> atd1->registers_export;
+	*(registersTee->registers_import[5]) >> atd0->registers_export;
+	*(registersTee->registers_import[6]) >> pwm->registers_export;
+	*(registersTee->registers_import[7]) >> ect->registers_export;
+
 	if(inline_debugger)
 	{
 		// Connect inline-debugger to CPU
@@ -491,16 +500,6 @@ int sc_main(int argc, char *argv[])
 		inline_debugger->disasm_import >> cpu->disasm_export;
 		inline_debugger->memory_import >> cpu->memory_export;
 
-		*(registersTee->registers_import[0]) >> cpu->registers_export;
-		*(registersTee->registers_import[1]) >> mmc->registers_export;
-		*(registersTee->registers_import[2]) >> s12xint->registers_export;
-		*(registersTee->registers_import[3]) >> crg->registers_export;
-		*(registersTee->registers_import[4]) >> atd1->registers_export;
-		*(registersTee->registers_import[5]) >> atd0->registers_export;
-		*(registersTee->registers_import[6]) >> pwm->registers_export;
-		*(registersTee->registers_import[7]) >> ect->registers_export;
-
-//		inline_debugger->registers_import >> cpu->registers_export;
 		inline_debugger->registers_import >> registersTee->registers_export;
 
 		inline_debugger->memory_access_reporting_control_import >> cpu->memory_access_reporting_control_export;
@@ -518,8 +517,11 @@ int sc_main(int argc, char *argv[])
 
 		mmc->trap_reporting_import >> gdb_server->trap_reporting_export;
 
+		gdb_server->disasm_import >> cpu->disasm_export;
 		gdb_server->memory_import >> cpu->memory_export;
-		gdb_server->registers_import >> cpu->registers_export;
+
+		gdb_server->registers_import >> registersTee->registers_export;
+//		gdb_server->registers_import >> cpu->registers_export;
 		gdb_server->memory_access_reporting_control_import >> cpu->memory_access_reporting_control_export;
 	}
 
