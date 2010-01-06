@@ -414,14 +414,6 @@ int sc_main(int argc, char *argv[])
 	//===                        Components connection                      ===
 	//=========================================================================
 
-	/*
-	 * TODO:
-	 *  - One of the output of the CRG is the BusClock (hereafter fsb_cycle_time).
-	 *  - In fact I have to connect all the others component to the CRG::BusClock output.
-	 *  - If (PLLSEL == 1) the BusClock = PLLCLK / 2; else BusClock = OSCCLK / 2;
-	 *  - PLLCLK = 2 * OSCCLK * (SYNR + 1) / (REFDV + 1)
-	 */
-
 	cpu->socket(mmc->cpu_socket);
 	cpu->toXINT(s12xint->fromCPU_Target);
 
@@ -534,12 +526,12 @@ int sc_main(int argc, char *argv[])
 
 	if (loaderELF) {
 		cpu->symbol_table_lookup_import >> ((Elf32Loader *) loaderELF)->symbol_table_lookup_export;
-	}
-
-	if(inline_debugger)
-	{
-		if (symbol_filename != NULL) {
+		if(inline_debugger)
+		{
 			inline_debugger->symbol_table_lookup_import >> ((Elf32Loader *) loaderELF)->symbol_table_lookup_export;
+		} else if(gdb_server)
+		{
+			gdb_server->symbol_table_lookup_import >> ((Elf32Loader *) loaderELF)->symbol_table_lookup_export;
 		}
 	}
 
