@@ -76,6 +76,12 @@ void SymbolTable<T>::Reset()
 }
 
 template <class T>
+const list<unisim::util::debug::Symbol<T> *> *SymbolTable<T>::GetSymbols() const
+{
+	return symbol_registries;
+}
+
+template <class T>
 const typename unisim::util::debug::Symbol<T> *SymbolTable<T>::FindSymbol(const char *name, T addr, typename unisim::util::debug::Symbol<T>::Type type) const
 {
 	typename list<Symbol<T> *>::const_iterator symbol_iter;

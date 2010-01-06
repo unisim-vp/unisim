@@ -53,6 +53,7 @@ public:
 	SymbolTable();
 	virtual ~SymbolTable();
 	void Reset();
+	const list<unisim::util::debug::Symbol<T> *> *GetSymbols() const;
 	const typename unisim::util::debug::Symbol<T> *FindSymbol(const char *name, T addr, typename unisim::util::debug::Symbol<T>::Type type) const;
 	const typename unisim::util::debug::Symbol<T> *FindSymbolByAddr(T addr) const;
 	const typename unisim::util::debug::Symbol<T> *FindSymbolByName(const char *name) const;
