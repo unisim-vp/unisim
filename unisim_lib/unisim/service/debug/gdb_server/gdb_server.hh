@@ -193,7 +193,9 @@ private:
 	bool SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, uint32_t size);
 	bool RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr, uint32_t size);
 
-	void Disasm(ADDRESS addr, int count);
+	void HandleQRcmd(string command);
+
+	std::string Disasm(ADDRESS addr, int count);
 
 	unisim::kernel::logger::Logger logger;
 

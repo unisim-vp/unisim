@@ -798,70 +798,72 @@ typename DebugControl<ADDRESS>::DebugCommand GDBServer<ADDRESS>::FetchDebugComma
 				}
 				else if(packet.substr(0, 6) == "qRcmd,")
 				{
-					pos += 5;
-					if(pos < len)
-					{
-						char ch[2];
-						string variable_name;
-						string variable_value;
-						ch[1] = 0;
-						// skip white characters
-						do
-						{
-							ch[0] = (HexChar2Nibble(packet[pos]) << 4) | HexChar2Nibble(packet[pos + 1]);
-							if(ch[0] != ' ') break;
-							pos += 2;
-						} while(pos < len);
+					HandleQRcmd(packet.substr(6));
 
-						if(pos < len)
-						{
-							unisim::kernel::service::VariableBase *variable = 0;
-
-							// fill-in parameter name
-							do
-							{
-								ch[0] = (HexChar2Nibble(packet[pos]) << 4) | HexChar2Nibble(packet[pos + 1]);
-								pos += 2;
-								if(ch[0] == '=') break;
-								variable_name += ch;
-							} while(pos < len);
-
-							variable = unisim::kernel::service::ServiceManager::GetVariable(variable_name.c_str());
-							if(variable == &unisim::kernel::service::ServiceManager::void_variable)
-							{
-								string msg("unknown variable\n");
-								OutputText(msg.c_str(), msg.length());
-								PutPacket("OK");
-								break;
-							}
-
-							if(pos >= len)
-							{
-								// it's a get!
-								string msg(variable_name + "=" + ((string) *variable) + "\n");
-								OutputText(msg.c_str(), msg.length());
-								PutPacket("OK");
-								break;
-							}
-
-							// fill-in parameter value and remove trailing space
-							while(pos < len)
-							{
-								ch[0] = (HexChar2Nibble(packet[pos]) << 4) | HexChar2Nibble(packet[pos + 1]);
-								if(ch[0] == ' ') break;
-								pos += 2;
-								variable_value += ch;
-							}
-
-							string msg(variable_name + "<-" + variable_value + "\n");
-							OutputText(msg.c_str(), msg.length());
-							*variable = variable_value.c_str();
-							PutPacket("OK");
-							break;
-						}
-					}
-
-					PutPacket("E00");
+//					pos += 5;
+//					if(pos < len)
+//					{
+//						char ch[2];
+//						string variable_name;
+//						string variable_value;
+//						ch[1] = 0;
+//						// skip white characters
+//						do
+//						{
+//							ch[0] = (HexChar2Nibble(packet[pos]) << 4) | HexChar2Nibble(packet[pos + 1]);
+//							if(ch[0] != ' ') break;
+//							pos += 2;
+//						} while(pos < len);
+//
+//						if(pos < len)
+//						{
+//							unisim::kernel::service::VariableBase *variable = 0;
+//
+//							// fill-in parameter name
+//							do
+//							{
+//								ch[0] = (HexChar2Nibble(packet[pos]) << 4) | HexChar2Nibble(packet[pos + 1]);
+//								pos += 2;
+//								if(ch[0] == '=') break;
+//								variable_name += ch;
+//							} while(pos < len);
+//
+//							variable = unisim::kernel::service::ServiceManager::GetVariable(variable_name.c_str());
+//							if(variable == &unisim::kernel::service::ServiceManager::void_variable)
+//							{
+//								string msg("unknown variable\n");
+//								OutputText(msg.c_str(), msg.length());
+//								PutPacket("OK");
+//								break;
+//							}
+//
+//							if(pos >= len)
+//							{
+//								// it's a get!
+//								string msg(variable_name + "=" + ((string) *variable) + "\n");
+//								OutputText(msg.c_str(), msg.length());
+//								PutPacket("OK");
+//								break;
+//							}
+//
+//							// fill-in parameter value and remove trailing space
+//							while(pos < len)
+//							{
+//								ch[0] = (HexChar2Nibble(packet[pos]) << 4) | HexChar2Nibble(packet[pos + 1]);
+//								if(ch[0] == ' ') break;
+//								pos += 2;
+//								variable_value += ch;
+//							}
+//
+//							string msg(variable_name + "<-" + variable_value + "\n");
+//							OutputText(msg.c_str(), msg.length());
+//							*variable = variable_value.c_str();
+//							PutPacket("OK");
+//							break;
+//						}
+//					}
+//
+//					PutPacket("E00");
 				}
 				else
 				{
@@ -1369,8 +1371,88 @@ bool GDBServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr,
 	return false;
 }
 
+// *** Start ************ REDA ADDED CODE ****************
+
 template <class ADDRESS>
-void GDBServer<ADDRESS>::Disasm(ADDRESS addr, int count)
+void GDBServer<ADDRESS>::HandleQRcmd(string command) {
+
+	std::cout << "qRcmd " << command << endl;
+	size_t separator_index = command.find_first_of(':');
+	string cmdPrefix;
+	if (separator_index == string::npos) {
+		cmdPrefix = command;
+	} else {
+		cmdPrefix = command.substr(0, separator_index);
+	}
+
+	if (cmdPrefix.compare("symboles") == 0) {
+
+		/**
+		 * return "symbName:symbAddress:symbSize:symbType"
+		 *
+		 * with: symbType in {"FUNCTION", "VARIABLE"}
+		 */
+		const list<Symbol<ADDRESS> *> *symbol_registries = symbol_table_lookup_import ? symbol_table_lookup_import->GetSymbols() : 0;
+		if (symbol_registries == 0) {
+			std::cout << "symbol_registries empty" << endl;
+		}
+		else {
+			std::cout << "symbol_registries full" << endl;
+
+			typename list<Symbol<ADDRESS> *>::const_iterator symbol_iter;
+			std::stringstream strstm;
+
+			for(symbol_iter = symbol_registries[Symbol<ADDRESS>::SYM_FUNC].begin(); symbol_iter != symbol_registries[Symbol<ADDRESS>::SYM_FUNC].end(); symbol_iter++)
+			{
+				strstm << "O";
+				strstm << (*symbol_iter)->GetName();
+
+				strstm << ":" << std::hex;
+				strstm.width(8);
+				strstm << (*symbol_iter)->GetAddress();
+
+				strstm << ":" << std::dec << (*symbol_iter)->GetSize();
+
+				strstm << ":" << "FUNCTION";
+
+				PutPacket(strstm.str());
+
+				strstm.str(std::string());
+			}
+
+			for(symbol_iter = symbol_registries[Symbol<ADDRESS>::SYM_OBJECT].begin(); symbol_iter != symbol_registries[Symbol<ADDRESS>::SYM_OBJECT].end(); symbol_iter++)
+			{
+				std::stringstream strstm;
+				strstm << "O";
+				strstm << (*symbol_iter)->GetName();
+
+				strstm << ":" << std::hex;
+				strstm.width(8);
+				strstm << (*symbol_iter)->GetAddress();
+
+				strstm << ":" << std::dec << (*symbol_iter)->GetSize();
+
+				strstm << ":" << "VARIABLE";
+
+				PutPacket(strstm.str());
+			}
+
+		}
+
+	}
+	else if (cmdPrefix.compare("disasm") == 0) {
+
+	}
+	else {
+		PutPacket("E00");
+	}
+
+	PutPacket("OK");
+
+}
+
+template <class ADDRESS>
+std::string GDBServer<ADDRESS>::Disasm(ADDRESS addr, int count)
 {
 	std::stringstream strm;
 
@@ -1407,13 +1489,17 @@ void GDBServer<ADDRESS>::Disasm(ADDRESS addr, int count)
 					last_symbol = symbol;
 				}
 			}
-			strm << "0x" << hex;
+			strm << "0$x" << hex;
 			strm.width(8);
-			strm << (addr / memory_atom_size) << ":" << dec << s << endl;
+			strm << (addr / memory_atom_size) << ":$" << dec << s << endl;
 			strm.fill(' ');
 		} while(addr = next_addr, --count > 0);
 	}
+
+	return strm.str();
 }
+
+// *** End ************ REDA ADDED CODE ****************
 
 
 } // end of namespace gdb_server
