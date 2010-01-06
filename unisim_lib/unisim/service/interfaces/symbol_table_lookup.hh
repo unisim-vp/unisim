@@ -35,6 +35,7 @@
 #ifndef __UNISIM_SERVICE_INTERFACES_SYMBOL_TABLE_LOOKUP_HH__
 #define __UNISIM_SERVICE_INTERFACES_SYMBOL_TABLE_LOOKUP_HH__
 
+#include <list>
 #include <unisim/util/debug/symbol.hh>
 
 namespace unisim {
@@ -45,6 +46,7 @@ template <class T>
 class SymbolTableLookup
 {
 public:
+	virtual const typename std::list<unisim::util::debug::Symbol<T> *> *GetSymbols() const = 0;
 	virtual const typename unisim::util::debug::Symbol<T> *FindSymbol(const char *name, T addr, typename unisim::util::debug::Symbol<T>::Type type) const = 0;
 	virtual const typename unisim::util::debug::Symbol<T> *FindSymbolByAddr(T addr) const = 0;
 	virtual const typename unisim::util::debug::Symbol<T> *FindSymbolByName(const char *name) const = 0;
