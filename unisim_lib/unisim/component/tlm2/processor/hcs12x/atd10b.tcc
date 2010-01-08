@@ -686,8 +686,8 @@ bool ATD10B<ATD_SIZE>::read(uint8_t offset, void *buffer) {
 		} break;
 
 		default: if ((offset >= ATDDR0H) && (offset <= ATDDR15L)) {
-			*((uint16_t *) buffer) = atddrhl_register[offset] & 0xFFC0;
-			uint8_t index = offset - ATDDR0H;
+			*((uint16_t *) buffer) = atddrhl_register[(offset-ATDDR0H)/2] & 0xFFC0;
+			uint8_t index = (offset - ATDDR0H)/2;
 			uint8_t clearMask = 0xFF;
 
 			if (index < 8) {
@@ -967,7 +967,62 @@ bool ATD10B<ATD_SIZE>::ReadMemory(service_address_t addr, void *buffer, uint32_t
 	service_address_t offset = addr-baseAddress;
 
 	if (offset <= ATDDR15L) {
-		return read(offset, buffer);
+
+		switch (offset) {
+			case ATDCTL0: *((uint8_t *) buffer) = atdctl0_register; break;
+			case ATDCTL1: *((uint8_t *) buffer) = atdctl1_register; break;
+			case ATDCTL2: *((uint8_t *) buffer) = atdctl2_register; break;
+			case ATDCTL3: *((uint8_t *) buffer) = atdctl3_register; break;
+			case ATDCTL4: *((uint8_t *) buffer) = atdctl4_register; break;
+			case ATDCTL5: *((uint8_t *) buffer) = atdctl5_register; break;
+			case ATDSTAT0: *((uint8_t *) buffer) = atdstat0_register; break;
+			case UNIMPL0007: *((uint8_t *) buffer) = 0x00; break;
+			case ATDTEST0: *((uint8_t *) buffer) = atdtest0_register; break;
+			case ATDTEST1: *((uint8_t *) buffer) = atdtest1_register; break;
+			case ATDSTAT2: *((uint8_t *) buffer) = atdstat2_register; break;
+			case ATDSTAT1: *((uint8_t *) buffer) = atdstat1_register; break;
+			case ATDDIEN0: {
+				if (size == sizeof(uint8_t)) {
+					*((uint8_t *) buffer) = atddien0_register;
+				} else {
+					uint16_t val = ((uint16_t) atddien0_register << 8) & atddien1_register;
+					*((uint16_t *) buffer) = val;
+				}
+			} break;
+
+			case ATDDIEN1: *((uint8_t *) buffer) = atddien1_register; break;
+			case PORTAD0: {
+				if (size == sizeof(uint8_t)) {
+					*((uint8_t *) buffer) = portad0_register;
+				} else {
+					uint16_t val = ((uint16_t) portad0_register << 8) & portad1_register;
+					*((uint16_t *) buffer) = val;
+				}
+
+
+			} break;
+			case PORTAD1: *((uint8_t *) buffer) = portad1_register; break;
+
+			default: if ((offset >= ATDDR0H) && (offset <= ATDDR15L)) {
+				if (size == sizeof(uint8_t)) {
+
+					if (((offset-ATDDR0H) % 2) == 0) {
+						*((uint8_t *) buffer) = (uint8_t) ((atddrhl_register[(offset-ATDDR0H)/2] & 0xFF00) >> 8);
+					} else {
+						*((uint8_t *) buffer) = (uint8_t) (atddrhl_register[(offset-ATDDR0H)/2] & 0x00FF);
+					}
+
+				} else {
+					*((uint16_t *) buffer) = atddrhl_register[(offset-ATDDR0H)/2];
+				}
+
+			} else {
+				return false;
+			}
+		}
+
+		return true;
+
 	}
 
 	return false;
