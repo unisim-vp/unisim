@@ -1376,7 +1376,6 @@ bool GDBServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr,
 template <class ADDRESS>
 void GDBServer<ADDRESS>::HandleQRcmd(string command) {
 
-	std::cout << "qRcmd " << command << endl;
 	size_t separator_index = command.find_first_of(':');
 	string cmdPrefix;
 	if (separator_index == string::npos) {
@@ -1393,11 +1392,8 @@ void GDBServer<ADDRESS>::HandleQRcmd(string command) {
 		 * with: symbType in {"FUNCTION", "VARIABLE"}
 		 */
 		const list<Symbol<ADDRESS> *> *symbol_registries = symbol_table_lookup_import ? symbol_table_lookup_import->GetSymbols() : 0;
-		if (symbol_registries == 0) {
-			std::cout << "symbol_registries empty" << endl;
-		}
-		else {
-			std::cout << "symbol_registries full" << endl;
+
+		if (symbol_registries != 0) {
 
 			typename list<Symbol<ADDRESS> *>::const_iterator symbol_iter;
 			std::stringstream strstm;
