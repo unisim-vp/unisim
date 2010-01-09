@@ -75,6 +75,25 @@ Tee<ADDRESS, MAX_IMPORTS>::~Tee()
 }
 
 template <class ADDRESS, unsigned int MAX_IMPORTS>
+const std::list<unisim::util::debug::Symbol<ADDRESS> *> *Tee<ADDRESS, MAX_IMPORTS>::GetSymbols() const {
+
+	unsigned int i;
+	for(i = 0; i < MAX_IMPORTS; i++)
+	{
+		if(out[i])
+		{
+			if(*out[i])
+			{
+				const std::list<unisim::util::debug::Symbol<ADDRESS> *> *symbolList = (*out[i])->GetSymbols();
+				if(symbolList) return symbolList;
+			}
+		}
+	}
+
+	return 0;
+}
+
+template <class ADDRESS, unsigned int MAX_IMPORTS>
 const typename unisim::util::debug::Symbol<ADDRESS> *Tee<ADDRESS, MAX_IMPORTS>::FindSymbol(const char *name, ADDRESS addr, typename unisim::util::debug::Symbol<ADDRESS>::Type type) const
 {
 	unsigned int i;
