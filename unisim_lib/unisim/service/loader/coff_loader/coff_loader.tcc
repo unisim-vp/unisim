@@ -766,6 +766,11 @@ bool CoffLoader<MEMORY_ADDR>::ParseSymbolTable(syment *symtab, unsigned long nsy
 }
 
 template <class MEMORY_ADDR>
+const list<unisim::util::debug::Symbol<MEMORY_ADDR> *> *CoffLoader<MEMORY_ADDR>::GetSymbols() const {
+	return symbol_table.GetSymbols();
+}
+
+template <class MEMORY_ADDR>
 const typename unisim::util::debug::Symbol<MEMORY_ADDR> *CoffLoader<MEMORY_ADDR>::FindSymbol(const char *name, MEMORY_ADDR addr, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const
 {
 	return symbol_table.FindSymbol(name, addr, type);

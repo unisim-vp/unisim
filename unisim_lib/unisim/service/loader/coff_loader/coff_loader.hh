@@ -214,6 +214,7 @@ public:
 	virtual MEMORY_ADDR GetTopAddr() const;
 	virtual MEMORY_ADDR GetStackBase() const;
 
+	virtual const list<unisim::util::debug::Symbol<MEMORY_ADDR> *> *GetSymbols() const;
 	virtual const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbol(const char *name, MEMORY_ADDR addr, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
 	virtual const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByAddr(MEMORY_ADDR addr) const;
 	virtual const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByName(const char *name) const;
