@@ -195,7 +195,7 @@ private:
 
 	void HandleQRcmd(string command);
 
-	std::string Disasm(ADDRESS addr, int count);
+	void Disasm(ADDRESS addr, int size);
 
 	unisim::kernel::logger::Logger logger;
 

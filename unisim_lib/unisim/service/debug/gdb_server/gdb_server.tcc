@@ -1387,6 +1387,7 @@ void GDBServer<ADDRESS>::HandleQRcmd(string command) {
 	if (cmdPrefix.compare("symboles") == 0) {
 
 		/**
+		 * command: qRcmd, symboles
 		 * return "symbName:symbAddress:symbSize:symbType"
 		 *
 		 * with: symbType in {"FUNCTION", "VARIABLE"}
@@ -1418,7 +1419,7 @@ void GDBServer<ADDRESS>::HandleQRcmd(string command) {
 
 			for(symbol_iter = symbol_registries[Symbol<ADDRESS>::SYM_OBJECT].begin(); symbol_iter != symbol_registries[Symbol<ADDRESS>::SYM_OBJECT].end(); symbol_iter++)
 			{
-				std::stringstream strstm;
+
 				strstm << "O";
 				strstm << (*symbol_iter)->GetName();
 
@@ -1431,12 +1432,43 @@ void GDBServer<ADDRESS>::HandleQRcmd(string command) {
 				strstm << ":" << "VARIABLE";
 
 				PutPacket(strstm.str());
+
+				strstm.str(std::string());
+
 			}
 
 		}
 
 	}
 	else if (cmdPrefix.compare("disasm") == 0) {
+		/**
+		 * command: qRcmd, disasm:address:size
+		 *
+		 * return "O<next_address>
+         *        "O<disassembled code>"
+         *        "OK"
+		 *
+		 */
+
+		if (separator_index == string::npos) {
+			PutPacket("E00");
+		} else {
+			separator_index++;
+			ADDRESS symbol_address;
+			ADDRESS symbol_size;
+			if(!ParseHex(command, separator_index, symbol_address)) {
+				PutPacket("E00");
+			} else if(command[separator_index++] != ':') {
+				PutPacket("E00");
+			} else if(!ParseHex(command, separator_index, symbol_size)) {
+				PutPacket("E00");
+			} else if(separator_index != command.length()) {
+				PutPacket("E00");
+			}
+
+			Disasm(symbol_address, symbol_size);
+
+		}
 
 	}
 	else {
@@ -1448,51 +1480,59 @@ void GDBServer<ADDRESS>::HandleQRcmd(string command) {
 }
 
 template <class ADDRESS>
-std::string GDBServer<ADDRESS>::Disasm(ADDRESS addr, int count)
+void GDBServer<ADDRESS>::Disasm(ADDRESS symbol_address, int symbol_size)
 {
-	std::stringstream strm;
 
-	if(count > 0)
-	{
-		const Symbol<ADDRESS> *last_symbol = 0;
-		ADDRESS next_addr;
-		do
-		{
-			strm.fill('0');
-			const Symbol<ADDRESS> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(addr) : 0;
-			string s = disasm_import->Disasm(addr, next_addr);
+	ADDRESS current_address = symbol_address;
+	ADDRESS next_address = symbol_address;
+	ADDRESS disassembled_size = 0;
+	std::stringstream strstm;
+	const Symbol<ADDRESS> *last_symbol = 0;
 
-			if(symbol)
-			{
-				if(symbol != last_symbol)
-				{
-					strm << "0x" << hex;
-					strm.width(8);
-					strm << (addr / memory_atom_size) << dec;
-					strm << " <";
-					strm << symbol->GetFriendlyName(addr);
+	while (disassembled_size < symbol_size) {
 
-					strm << ">:" << endl;
+		strstm.str(std::string());
 
-					last_symbol = symbol;
-				}
-			}
-			else
-			{
-				if(symbol != last_symbol)
-				{
-					strm << "?";
-					last_symbol = symbol;
-				}
-			}
-			strm << "0$x" << hex;
-			strm.width(8);
-			strm << (addr / memory_atom_size) << ":$" << dec << s << endl;
-			strm.fill(' ');
-		} while(addr = next_addr, --count > 0);
+//		const Symbol<ADDRESS> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(current_address) : 0;
+		std::string dis = disasm_import->Disasm(current_address, next_address);
+
+		strstm << "O" << hex << current_address << ":";
+
+//		if(symbol)
+//		{
+//			if(symbol != last_symbol)
+//			{
+//				strstm << "0x" << hex;
+//				strstm.width(8);
+//				strstm << (current_address / memory_atom_size) << dec;
+//				strstm << " <";
+//				strstm << symbol->GetFriendlyName(current_address);
+//
+//				strstm << ">:" << endl;
+//
+//				last_symbol = symbol;
+//			}
+//		}
+//		else
+//		{
+//			if(symbol != last_symbol)
+//			{
+//				strstm << "?";
+//				last_symbol = symbol;
+//			}
+//		}
+		strstm << "0x" << hex;
+		strstm.width(8);
+		strstm << (current_address / memory_atom_size) << ":" << dec << dis << endl;
+		strstm.fill(' ');
+
+		PutPacket(strstm.str());
+
+		disassembled_size += next_address - current_address;
+		current_address = next_address;
+
 	}
 
-	return strm.str();
 }
 
 // *** End ************ REDA ADDED CODE ****************
