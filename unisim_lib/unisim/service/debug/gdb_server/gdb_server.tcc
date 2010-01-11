@@ -1521,7 +1521,7 @@ void GDBServer<ADDRESS>::Disasm(ADDRESS symbol_address, int symbol_size)
 //				last_symbol = symbol;
 //			}
 //		}
-		strstm << "0x" << hex;
+		strstm << hex;
 		strstm.width(8);
 		strstm << (current_address / memory_atom_size) << ":" << dec << dis << endl;
 		strstm.fill(' ');
