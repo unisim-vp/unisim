@@ -1493,34 +1493,10 @@ void GDBServer<ADDRESS>::Disasm(ADDRESS symbol_address, int symbol_size)
 
 		strstm.str(std::string());
 
-//		const Symbol<ADDRESS> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(current_address) : 0;
 		std::string dis = disasm_import->Disasm(current_address, next_address);
 
 		strstm << "O" << hex << current_address << ":";
 
-//		if(symbol)
-//		{
-//			if(symbol != last_symbol)
-//			{
-//				strstm << "0x" << hex;
-//				strstm.width(8);
-//				strstm << (current_address / memory_atom_size) << dec;
-//				strstm << " <";
-//				strstm << symbol->GetFriendlyName(current_address);
-//
-//				strstm << ">:" << endl;
-//
-//				last_symbol = symbol;
-//			}
-//		}
-//		else
-//		{
-//			if(symbol != last_symbol)
-//			{
-//				strstm << "?";
-//				last_symbol = symbol;
-//			}
-//		}
 		strstm << hex;
 		strstm.width(8);
 		strstm << (current_address / memory_atom_size) << ":" << dec << dis << endl;
