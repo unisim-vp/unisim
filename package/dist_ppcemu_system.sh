@@ -126,6 +126,7 @@ unisim/component/cxx/processor/powerpc/cpu.cc \
 unisim/component/cxx/processor/powerpc/exception.cc \
 unisim/component/cxx/processor/powerpc/config.cc \
 unisim/component/cxx/processor/powerpc/mpc7447a.cc \
+unisim/component/cxx/processor/powerpc/mpc7447a_debug.cc \
 unisim/component/cxx/memory/ram/memory_32.cc \
 unisim/component/cxx/pci/video/display_32.cc \
 unisim/component/cxx/pci/macio/heathrow_32.cc \
@@ -136,7 +137,9 @@ unisim/component/cxx/memory/flash/am29lv/config.cc \
 unisim/component/cxx/chipset/mpc107/address_map_entry.cc \
 unisim/component/cxx/chipset/mpc107/config_regs.cc \
 unisim/component/cxx/chipset/mpc107/address_maps.cc \
+unisim/component/cxx/chipset/mpc107/address_maps_debug.cc \
 unisim/component/cxx/chipset/mpc107/pci_controller.cc \
+unisim/component/cxx/chipset/mpc107/pci_controller_debug.cc \
 unisim/component/cxx/chipset/mpc107/atu/atu.cc \
 unisim/component/cxx/chipset/mpc107/atu/atu_debug.cc \
 unisim/component/cxx/chipset/mpc107/atu/register.cc \
@@ -144,6 +147,7 @@ unisim/component/cxx/chipset/mpc107/dma/buffer_32.cc \
 unisim/component/cxx/chipset/mpc107/dma/dma_32_debug.cc \
 unisim/component/cxx/chipset/mpc107/dma/register.cc \
 unisim/component/cxx/chipset/mpc107/dma/dma_32.cc \
+unisim/component/cxx/chipset/mpc107/dma/dma_32_debug.cc \
 unisim/component/cxx/chipset/mpc107/epic/epic_32.cc \
 unisim/component/cxx/chipset/mpc107/epic/epic_32_debug.cc \
 unisim/component/cxx/chipset/mpc107/epic/inservice_reg.cc \
@@ -154,6 +158,7 @@ unisim/component/cxx/pci/ide/ide_disk.cc \
 unisim/component/cxx/pci/types.cc \
 unisim/component/tlm/isa/i8042/i8042.cc \
 unisim/component/tlm/processor/powerpc/mpc7447a.cc \
+unisim/component/tlm/processor/powerpc/mpc7447a_debug.cc \
 unisim/component/tlm/bridge/pci_isa/bridge_32.cc \
 unisim/component/tlm/pci/ide/pci_dev_32.cc \
 unisim/component/tlm/pci/ide/pci_ide_module_32.cc \
@@ -161,11 +166,13 @@ unisim/component/tlm/pci/video/display_32.cc \
 unisim/component/tlm/pci/macio/heathrow_32.cc \
 unisim/component/tlm/message/interrupt.cc \
 unisim/component/tlm/chipset/mpc107/epic/epic_32.cc \
-unisim/component/tlm/chipset/mpc107/epic/timer.cc \
 unisim/component/tlm/chipset/mpc107/epic/epic_32_debug.cc \
+unisim/component/tlm/chipset/mpc107/epic/timer.cc \
 unisim/component/tlm/chipset/mpc107/mpc107_fsb32_pci32.cc \
+unisim/component/tlm/chipset/mpc107/mpc107_fsb32_pci32_debug.cc \
 unisim/component/tlm/fsb/snooping_bus/bus_addr32_size32_procs1.cc \
 unisim/component/tlm/memory/ram/memory_32.cc \
+unisim/component/tlm/memory/ram/memory_32_debug.cc \
 unisim/component/tlm/memory/flash/am29lv/am29lv.cc"
 
 UNISIM_LIB_PPCEMU_SYSTEM_ISA_FILES="\
@@ -716,9 +723,11 @@ if [ "${has_to_build_ppcemu_system_configure}" = "yes" ]; then
 	echo "Generating ppcemu_system Makefile.am"
 	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${PPCEMU_SYSTEM_MAKEFILE_AM}"
 	echo "PPCEMU_SYSTEM_INCLUDES=-I\$(top_srcdir) -I\$(top_builddir)" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
-	echo "bin_PROGRAMS = ppcemu-system" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
-#	echo "ppcemu_system_SOURCES = ${UNISIM_LIB_PPCEMU_SYSTEM_SOURCE_FILES} ${UNISIM_SIMULATORS_PPCEMU_SYSTEM_SOURCE_FILES} unisim/component/cxx/processor/powerpc/cpu.cc unisim/component/cxx/processor/powerpc/exception.cc unisim/component/cxx/processor/powerpc/mpc7447a.cc" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
+	echo "PPCEMU_SYSTEM_DEBUG_INCLUDES=-I\$(top_srcdir) -I\$(top_builddir)" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
+	echo "bin_PROGRAMS = ppcemu-system ppcemu-system-debug" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
 	echo "ppcemu_system_SOURCES = ${UNISIM_LIB_PPCEMU_SYSTEM_SOURCE_FILES} ${UNISIM_SIMULATORS_PPCEMU_SYSTEM_SOURCE_FILES}" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
+	echo "ppcemu_system_debug_SOURCES = ${UNISIM_LIB_PPCEMU_SYSTEM_SOURCE_FILES} ${UNISIM_SIMULATORS_PPCEMU_SYSTEM_SOURCE_FILES}" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
+	echo "ppcemu_system_debug_CPPFLAGS = -DDEBUG_PPCEMU_SYSTEM" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
 	echo "noinst_HEADERS = ${UNISIM_TOOLS_PPCEMU_SYSTEM_HEADER_FILES} ${UNISIM_LIB_PPCEMU_SYSTEM_HEADER_FILES} ${UNISIM_LIB_PPCEMU_SYSTEM_TEMPLATE_FILES} ${UNISIM_SIMULATORS_PPCEMU_SYSTEM_HEADER_FILES} ${UNISIM_SIMULATORS_PPCEMU_SYSTEM_TEMPLATE_FILES}" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
 	echo "EXTRA_DIST = ${UNISIM_LIB_PPCEMU_SYSTEM_M4_FILES}" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
 
