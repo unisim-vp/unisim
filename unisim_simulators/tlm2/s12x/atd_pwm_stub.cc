@@ -45,6 +45,9 @@ ATD_PWM_STUB::ATD_PWM_STUB(const sc_module_name& name, Object *parent) :
 	slave_sock("slave_sock"),
 	input_payload_queue("input_payload_queue"),
 
+	trace_enable(false),
+	param_trace_enable("trace-enable", this, trace_enable),
+
 	anx_stimulus_period(80000000), // 80 us
 	param_anx_stimulus_period("anx-stimulus-period", this, anx_stimulus_period)
 
@@ -59,18 +62,21 @@ ATD_PWM_STUB::ATD_PWM_STUB(const sc_module_name& name, Object *parent) :
 //	SC_THREAD(ProcessATD);
 //	SC_THREAD(ProcessPWM);
 //
-	atd0_output_file.open ("atd0_output.txt");
-	atd1_output_file.open ("atd1_output.txt");
-	pwm_output_file.open ("pwm_output.txt");
-
+	if (trace_enable) {
+		atd0_output_file.open ("atd0_output.txt");
+		atd1_output_file.open ("atd1_output.txt");
+		pwm_output_file.open ("pwm_output.txt");
+	}
 
 }
 
 ATD_PWM_STUB::~ATD_PWM_STUB() {
 
-	atd0_output_file.close();
-	atd1_output_file.close();
-	pwm_output_file.close();
+	if (trace_enable) {
+		atd0_output_file.close();
+		atd1_output_file.close();
+		pwm_output_file.close();
+	}
 
 }
 
@@ -141,12 +147,16 @@ void ATD_PWM_STUB::Input(bool pwmValue[PWM_SIZE])
 		last_payload = payload;
 		payload = input_payload_queue.get_next_transaction();
 
+//		if (trace_enable) {
 //				pwm_output_file <<  "[" << name() << "::PWM::Receive] " << payload->serialize() << " " << sc_time_stamp() << endl;
+//		}
 	} while(payload);
 
 	payload = last_payload;
 
-	pwm_output_file <<  "[" << name() << "::PWM::Receive] " << payload->serialize() << " " << sc_time_stamp() << endl;
+	if (trace_enable) {
+		pwm_output_file <<  "[" << name() << "::PWM::Receive] " << payload->serialize() << " " << sc_time_stamp() << endl;
+	}
 
 	for (int i=0; i<PWM_SIZE; i++) {
 		pwmValue[i] = payload->pwmChannel[i];
@@ -164,7 +174,9 @@ void ATD_PWM_STUB::Output_ATD1(double anValue[ATD1_SIZE])
 		payload->anPort[i] = anValue[i];
 	}
 
-	atd1_output_file << "[" << name() << "::ATD1::send]" << payload->serialize() << " " << sc_time_stamp() << endl;
+	if (trace_enable) {
+		atd1_output_file << "[" << name() << "::ATD1::send]" << payload->serialize() << " " << sc_time_stamp() << endl;
+	}
 
 	sc_time local_time = quantumkeeper.get_local_time();
 
@@ -199,7 +211,9 @@ void ATD_PWM_STUB::Output_ATD0(double anValue[ATD0_SIZE])
 		payload->anPort[i] = anValue[i];
 	}
 
-	atd0_output_file << "[" << name() << "::ATD0::send]" << payload->serialize() << " " << sc_time_stamp() << endl;
+	if (trace_enable) {
+		atd0_output_file << "[" << name() << "::ATD0::send]" << payload->serialize() << " " << sc_time_stamp() << endl;
+	}
 
 	sc_time local_time = quantumkeeper.get_local_time();
 

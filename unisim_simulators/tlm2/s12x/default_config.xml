@@ -45,6 +45,12 @@
 			<value>0</value>
 			<description></description>
 		</variable>
+		<variable name="RTBStub.trace-enable">
+			<type>parameter</type>
+			<data_type>bool</data_type>
+			<value>false</value>
+			<description></description>
+		</variable>
 		
 	</object>
 	<object name="ATD0">
@@ -163,7 +169,7 @@
 		<variable name="CPU.trace-enable">
 			<type>parameter</type>
 			<data_type>bool</data_type>
-			<value>true</value>
+			<value>false</value>
 			<description></description>
 		</variable>
 		<variable name="CPU.verbose-all">
@@ -205,13 +211,13 @@
 		<variable name="CPU.requires-memory-access-reporting">
 			<type>parameter</type>
 			<data_type>bool</data_type>
-			<value>true</value>
+			<value>false</value>
 			<description></description>
 		</variable>
 		<variable name="CPU.requires-finished-instruction-reporting">
 			<type>parameter</type>
 			<data_type>bool</data_type>
-			<value>true</value>
+			<value>false</value>
 			<description></description>
 		</variable>
 		<variable name="CPU.debug-enabled">
@@ -223,10 +229,11 @@
 		<variable name="CPU.max-inst">
 			<type>parameter</type>
 			<data_type>unsigned long long</data_type>
-			<value>1000000</value>
 <!--
-			<value>0xffffffffffffffff</value>
+			<value>1000000</value>
 -->
+			<value>0xffffffffffffffff</value>
+
 			<description></description>
 		</variable>
 		<variable name="CPU.nice-time">

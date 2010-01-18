@@ -127,6 +127,9 @@ public:
 protected:
 	double	anx_stimulus_period;
 
+	bool trace_enable;
+	Parameter<bool> param_trace_enable;
+
 private:
 	Parameter<double>	param_anx_stimulus_period;
 
