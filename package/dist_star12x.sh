@@ -256,6 +256,8 @@ unisim/component/tlm2/processor/hcs12x/atd10b.tcc"
 
 UNISIM_LIB_HCS12X_M4_FILES="\
 m4/cxxabi.m4 \
+m4/endian.m4 \
+m4/times.m4 \
 m4/libxml2.m4 \
 m4/zlib.m4 \
 m4/boost_graph.m4 \
@@ -273,7 +275,6 @@ unisim/service/debug/gdb_server/gdb_hcs12x.xml \
 
 HCS12X_EXTERNAL_HEADERS="\
 assert.h \
-endian.h \
 errno.h \
 fcntl.h \
 fstream \
@@ -296,7 +297,6 @@ string.h \
 sys/stat.h \
 sys/times.h \
 sys/types.h \
-time.h \
 unistd.h \
 vector \
 "
