@@ -89,7 +89,7 @@ public:
 		std::stringstream os;
 
 		for (int i=0; i<PWM_SIZE; i++) {
-			os << " " << this->pwmChannel[i] << " ;";
+			os << this->pwmChannel[i] << " ";
 		}
 
 		return os.str();
@@ -117,7 +117,7 @@ public:
 		os.precision(3);
 
 		for (int i=0; i<ATD_SIZE; i++) {
-			os << " " << fixed << this->anPort[i] << " ;";
+			os << fixed << this->anPort[i] << " ";
 		}
 
 		os << std::dec;
