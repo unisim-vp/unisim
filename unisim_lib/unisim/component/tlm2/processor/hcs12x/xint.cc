@@ -541,12 +541,17 @@ void XINT::write_INT_CFDATA(uint8_t index, uint8_t value)
 
 bool XINT::ReadMemory(service_address_t addr, void *buffer, uint32_t size) {
 
-	for (uint8_t i=0; i<XINT_MEMMAP_SIZE; i++) {
-		if (XINT_REGS_ADDRESSES[i] == addr) {
-			read(addr, *(uint8_t *) buffer);
-			return true;
-		}
-	}
+	if ((address_t) addr == XINT_REGS_ADDRESSES[IVBR]) { *(uint8_t *) buffer = getIVBR(); return true; }
+	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_XGPRIO]) { *(uint8_t *) buffer = getINT_XGPRIO(); return true; }
+	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFADDR]) { *(uint8_t *) buffer = getINT_CFADDR(); return true; }
+	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA0]) { *(uint8_t *) buffer = int_cfdata[0]; return true; }
+	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA1]) { *(uint8_t *) buffer = int_cfdata[1]; return true; }
+	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA2]) { *(uint8_t *) buffer = int_cfdata[2]; return true; }
+	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA3]) { *(uint8_t *) buffer = int_cfdata[3]; return true; }
+	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA4]) { *(uint8_t *) buffer = int_cfdata[4]; return true; }
+	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA5]) { *(uint8_t *) buffer = int_cfdata[5]; return true; }
+	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA6]) { *(uint8_t *) buffer = int_cfdata[6]; return true; }
+	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA7]) { *(uint8_t *) buffer = int_cfdata[7]; return true; }
 
 	return false;
 }

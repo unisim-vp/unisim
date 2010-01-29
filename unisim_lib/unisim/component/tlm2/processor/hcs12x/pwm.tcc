@@ -1055,7 +1055,37 @@ bool PWM<PWM_SIZE>::ReadMemory(service_address_t addr, void *buffer, uint32_t si
 	service_address_t offset = addr-baseAddress;
 
 	if (offset <= PWMSDN) {
-		return read(offset, *((uint8_t *)buffer));
+		switch (offset) {
+			case PWME: *((uint8_t *)buffer) = pwme_register; break;
+			case PWMPOL: *((uint8_t *)buffer) = pwmpol_register; break;
+			case PWMCLK: *((uint8_t *)buffer) = pwmclk_register; break;
+			case PWMPRCLK: *((uint8_t *)buffer) = pwmprclk_register; break;
+			case PWMCAE: *((uint8_t *)buffer) = pwmcae_register; break;
+			case PWMCTL: *((uint8_t *)buffer) =	pwmctl_register; break;
+			case PWMTST: *((uint8_t *)buffer) = pwmtst_register; break;
+			case PWMPRSC: *((uint8_t *)buffer) = pwmprsc_register; break;
+			case PWMSCLA: *((uint8_t *)buffer) = pwmscla_register; break;
+			case PWMSCLB: *((uint8_t *)buffer) = pwmsclb_register; break;
+			case PWMSCNTA: *((uint8_t *)buffer) = pwmscnta_register; break;
+			case PWMSCNTB: *((uint8_t *)buffer) = pwmscntb_register; break;
+			case PWMSDN: *((uint8_t *)buffer) = pwmsdn_register; break;
+			default: {
+				// PWMCNTx
+				if ((offset >= PWMCNT0) && (offset <= PWMCNT7)) {
+					*((uint8_t *)buffer) = channel[offset-PWMCNT0]->getPwmcnt_register();
+				} else	// PWMPERx
+				if ((offset >= PWMPER0) && (offset <= PWMPER7)) {
+					*((uint8_t *)buffer) = channel[offset-PWMPER0]->getPWMPERValue();
+				} else	// PWMDTYx
+				if ((offset >= PWMDTY0) && (offset <= PWMDTY7)) {
+					*((uint8_t *)buffer) = channel[offset-PWMDTY0]->getPWMDTYValue();
+				} else {
+					return false;
+				}
+			}
+		}
+
+		return true;
 	}
 
 	return false;

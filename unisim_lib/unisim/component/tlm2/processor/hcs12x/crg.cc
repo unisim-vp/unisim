@@ -494,7 +494,23 @@ bool CRG::ReadMemory(service_address_t addr, void *buffer, uint32_t size) {
 	service_address_t offset = addr-baseAddress;
 
 	if (offset <= ARMCOP) {
-		return read(offset, *(uint8_t *) buffer);
+		switch (offset) {
+			case SYNR: *(uint8_t *) buffer = synr_register; break;
+			case REFDV: *(uint8_t *) buffer = refdv_register; break;
+			case CTFLG: *(uint8_t *) buffer = ctflg_register; break;
+			case CRGFLG: *(uint8_t *) buffer = crgflg_register; break;
+			case CRGINT: *(uint8_t *) buffer = crgint_register; break;
+			case CLKSEL: *(uint8_t *) buffer = clksel_register; break;
+			case PLLCTL: *(uint8_t *) buffer = pllctl_register; break;
+			case RTICTL: *(uint8_t *) buffer = rtictl_register; break;
+			case COPCTL: *(uint8_t *) buffer = copctl_register; break;
+			case FORBYP: *(uint8_t *) buffer = forbyp_register; break;
+			case CTCTL: *(uint8_t *) buffer = ctctl_register; break;
+			case ARMCOP: *(uint8_t *) buffer = armcop_register; break;
+			default: return false;
+		}
+
+		return true;
 	}
 
 	return false;
