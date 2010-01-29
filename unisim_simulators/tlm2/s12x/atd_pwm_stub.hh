@@ -105,6 +105,8 @@ public:
 	ATD_PWM_STUB(const sc_module_name& name, Object *parent = 0);
 	~ATD_PWM_STUB();
 
+	virtual bool Setup();
+
 	// Slave methods
 	virtual bool get_direct_mem_ptr( PWM_Payload<PWM_SIZE>& payload, tlm_dmi&  dmi_data);
 	virtual unsigned int transport_dbg( PWM_Payload<PWM_SIZE>& payload);
