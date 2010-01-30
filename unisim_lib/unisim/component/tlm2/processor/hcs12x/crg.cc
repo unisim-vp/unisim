@@ -85,7 +85,6 @@ CRG::CRG(const sc_module_name& name, Object *parent) :
 
 	SC_THREAD(RunRTI);
 
-	SC_THREAD(UpdateBusClock);
 }
 
 CRG::~CRG() {
