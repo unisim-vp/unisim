@@ -295,11 +295,13 @@ stdlib.h \
 string \
 string.h \
 sys/stat.h \
-sys/times.h \
 sys/types.h \
 unistd.h \
 vector \
 "
+
+#sys/times.h \
+
 
 UNISIM_SIMULATORS_HCS12X_SOURCE_FILES="\
 main.cc \
