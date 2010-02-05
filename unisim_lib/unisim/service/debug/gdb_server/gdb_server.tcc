@@ -135,6 +135,8 @@ GDBServer<ADDRESS>::~GDBServer()
 {
 	if(sock >= 0)
 	{
+		string packet("W00");
+		PutPacket(packet);
 #ifdef WIN32
 		closesocket(sock);
 #else
