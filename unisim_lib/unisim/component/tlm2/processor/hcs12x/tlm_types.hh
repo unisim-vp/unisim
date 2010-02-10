@@ -84,16 +84,15 @@ class PWM_Payload : public ManagedPayload
 public:
 	bool pwmChannel[PWM_SIZE];
 
-	std::string serialize() {
-
-		std::stringstream os;
+	friend std::ostream& operator << (std::ostream& os, const PWM_Payload& payload) {
 
 		for (int i=0; i<PWM_SIZE; i++) {
-			os << this->pwmChannel[i] << " ";
+			os << payload.pwmChannel[i] << " ";
 		}
 
-		return os.str();
+		return os;
 	}
+
 };
 
 template <uint8_t PWM_SIZE>
@@ -110,21 +109,19 @@ class ATD_Payload : public ManagedPayload
 public:
 	double anPort[ATD_SIZE];
 
-	string serialize() {
-
-		stringstream os;
+	friend std::ostream& operator << (std::ostream& os, const ATD_Payload& payload) {
 
 		os.precision(3);
 
 		for (int i=0; i<ATD_SIZE; i++) {
-			os << fixed << this->anPort[i] << " ";
+			os << fixed << payload.anPort[i] << " ";
 		}
 
 		os << std::dec;
 
-		return os.str();
-
+		return os;
 	}
+
 };
 
 template <uint8_t ATD_SIZE>

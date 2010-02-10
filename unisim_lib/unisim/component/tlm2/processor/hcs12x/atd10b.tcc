@@ -226,7 +226,7 @@ void ATD10B<ATD_SIZE>::InputANx(double anValue[ATD_SIZE])
 		payload = input_anx_payload_queue.get_next_transaction();
 
 		if (debug_enabled && payload) {
-			cout << name() << ":: Receive " << payload->serialize() << " - " << sc_time_stamp() << endl;
+			cout << name() << ":: Receive " << *payload << " - " << sc_time_stamp() << endl;
 		}
 
 	} while(payload);
@@ -234,7 +234,7 @@ void ATD10B<ATD_SIZE>::InputANx(double anValue[ATD_SIZE])
 	payload = last_payload;
 
 	if (debug_enabled) {
-		cout << name() << ":: Last Receive " << payload->serialize() << " - " << sc_time_stamp() << endl;
+		cout << name() << ":: Last Receive " << *payload << " - " << sc_time_stamp() << endl;
 	}
 
 	if ((atdctl2_register & 0x80) != 0) // is ATD power ON (enabled)
