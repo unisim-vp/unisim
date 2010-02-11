@@ -174,16 +174,16 @@ void help(char *prog_name)
 	cerr << "       For using ElfLoader, 'program' is statically linked ELF32 HCS12X Linux program" << endl << endl;
 	cerr << "Options:" << endl;
 	cerr << "--inline-debugger" << endl;
-	cerr << "-d" << endl;
+	cerr << "-i" << endl;
 	cerr << "            starts the inline debugger" << endl;
 	cerr << "--gdb-server <TCP port>" << endl;
-	cerr << "-g <TCP port>" << endl;
+	cerr << "-d <TCP port>" << endl;
 	cerr << "            starts a gdb server" << endl << endl;
 	cerr << "--gdb-server-arch-file <arch file>" << endl;
 	cerr << "-a  <arch file>" << endl;
 	cerr << "            uses <arch file> as architecture description file for GDB server" << endl << endl;
-	cerr << "-c <mode>" << endl;
-	cerr << "--compiler-memory-modele <mode>" << endl;
+	cerr << "-m <mode>" << endl;
+	cerr << "--memory-modele <mode>" << endl;
 	cerr << "            indicate the memory map modele to use for interpreting addresses" << endl;
 	cerr << "            0: banked modele (default)" << endl;
 	cerr << "            1: linear modele (recommended by Motorola/Freescale)" << endl;
@@ -194,11 +194,11 @@ void help(char *prog_name)
 	cerr << "-f" << endl;
 	cerr << "--force-use-virtual-address" << endl;
 	cerr << "            force the ELF Loader to use segment virtual address instead of segment physical address" << endl << endl;
-	cerr << " --parameters-filename <xml file>" << endl;
-	cerr << " -p <xml file>" << endl;
+	cerr << " --config <xml file>" << endl;
+	cerr << " -c <xml file>" << endl;
 	cerr << "            configures the simulator with the given xml configuration file" << endl << endl;
-	cerr << " --extract-parameters-filename <xml file>" << endl;
-	cerr << " -x <xml file>" << endl;
+	cerr << " --get-config <xml file>" << endl;
+	cerr << " -g <xml file>" << endl;
 	cerr << "            get the simulator default configuration xml file (you can use it to create your own configuration)" << endl;
 	cerr << "            This option can be combined with -p to get a new configuration file with existing variables from another file" << endl;
 	cerr << "--help" << endl;
@@ -222,15 +222,15 @@ int sc_main(int argc, char *argv[])
 #endif
 
 	static struct option long_options[] = {
-	{"inline-debugger", no_argument, 0, 'd'},
-	{"gdb-server", required_argument, 0, 'g'},
+	{"inline-debugger", no_argument, 0, 'i'},
+	{"gdb-server", required_argument, 0, 'd'},
 	{"gdb-server-arch-file", required_argument, 0, 'a'},
 	{"help", no_argument, 0, 'h'},
-	{"compiler-memory-modele", required_argument, 0, 'c'},
+	{"memory-modele", required_argument, 0, 'm'},
 	{"symbol-filename", required_argument, 0, 's'},
 	{"force-use-virtual-address", no_argument, 0, 'f'},
-	{"parameters-filename", required_argument, 0, 'p'},
-	{"extract-parameters-filename", required_argument, 0, 'x'},
+	{"config", required_argument, 0, 'c'},
+	{"get-config", required_argument, 0, 'g'},
 	{0, 0, 0, 0}
 	};
 
@@ -259,14 +259,14 @@ int sc_main(int argc, char *argv[])
 	ADDRESS::ENCODING address_encoding = ADDRESS::BANKED;
 
 	// Parse the command line arguments
-	while((c = getopt_long (argc, argv, "x:p:c:s:dg:a:hf", long_options, 0)) != -1)
+	while((c = getopt_long (argc, argv, "g:c:m:s:id:a:hf", long_options, 0)) != -1)
 	{
 		switch(c)
 		{
-			case 'd':
+			case 'i':
 				use_inline_debugger = true;
 				break;
-			case 'g':
+			case 'd':
 				use_gdb_server = true;
 				gdb_server_tcp_port = atoi(optarg);
 				break;
@@ -276,7 +276,7 @@ int sc_main(int argc, char *argv[])
 			case 'h':
 				help(argv[0]);
 				return 0;
-			case 'c':
+			case 'm':
 				address_encoding = (ADDRESS::ENCODING) atoi(optarg);
 				break;
 			case 's':
@@ -285,11 +285,11 @@ int sc_main(int argc, char *argv[])
 			case 'f':
 				force_use_virtual_address = true;
 				break;
-			case 'p':
+			case 'c':
 				parameter_filename = optarg;
 				set_parameter = true;
 				break;
-			case 'x':
+			case 'g':
 				extracted_parameter_file = optarg;
 				get_parameter = true;
 				break;
