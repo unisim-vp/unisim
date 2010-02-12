@@ -1147,6 +1147,7 @@ int sc_main(int argc, char *argv[])
 		cpu->debug_control_import >> gdb_server->debug_control_export;
 		cpu->memory_access_reporting_import >> gdb_server->memory_access_reporting_export;
 		cpu->trap_reporting_import >> gdb_server->trap_reporting_export;
+		gdb_server->disasm_import >> cpu->disasm_export;
 		gdb_server->memory_import >> cpu->memory_export;
 		gdb_server->registers_import >> cpu->registers_export;
 	}
@@ -1189,6 +1190,9 @@ int sc_main(int argc, char *argv[])
 	if(inline_debugger)
 	{
 		inline_debugger->symbol_table_lookup_import >> kloader->symbol_table_lookup_export;
+	} else if(gdb_server)
+	{
+		gdb_server->symbol_table_lookup_import >> kloader->symbol_table_lookup_export;
 	}
 
 #ifdef DEBUG_SERVICE
