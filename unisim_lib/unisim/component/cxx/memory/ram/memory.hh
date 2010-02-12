@@ -53,6 +53,7 @@ using unisim::kernel::service::Service;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::Parameter;
+using unisim::kernel::service::Statistic;
 
 /* forward declaration */
 template <class PHYSICAL_ADDR, uint32_t PAGE_SIZE> class Memory;
@@ -97,12 +98,14 @@ protected:
 	uint32_t bytesize;
 	PHYSICAL_ADDR lo_addr;
 	PHYSICAL_ADDR hi_addr;
+	uint32_t memory_usage;
 	
 private:
 	HashTable<PHYSICAL_ADDR, MemoryPage<PHYSICAL_ADDR, PAGE_SIZE> > hash_table;
 	
 	Parameter<PHYSICAL_ADDR> param_org;
 	Parameter<uint32_t> param_bytesize;
+	Statistic<uint32_t> stat_memory_usage;
 };
 
 } // end of namespace ram

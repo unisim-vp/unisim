@@ -32,6 +32,7 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
+
 var num_uops : {unsigned int} = {1}
 var num_insn_operands : {unsigned int} = {0}
 var insn_operands : {typename CONFIG::operands_t}
@@ -48,6 +49,7 @@ action {void} uop_execute({typename CONFIG::STATE *} {cpu}, {unsigned int} {uop_
 	assert(uop_num == 0);
 	execute(cpu);
 }
+
 
 constructor action initialize_unit() {}
 

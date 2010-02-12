@@ -1308,7 +1308,7 @@ void CPU<CONFIG>::HandleException(const SystemCallException<CONFIG>& exc)
 	}
 	else
 	{
-#if 1
+#if 0
 		if(unlikely(IsVerboseException()))
 		{
 			switch(GetGPR(0))
@@ -1364,7 +1364,7 @@ void CPU<CONFIG>::HandleException(const SystemCallException<CONFIG>& exc)
 						int pathnamelen;
 						char *pathname;
 						int flags;
-						mode_t mode;
+						uint32_t mode;
 						
 						addr = GetGPR(3);
 						pathnamelen = StringLength(addr);
@@ -1484,7 +1484,7 @@ void CPU<CONFIG>::HandleException(const SystemCallException<CONFIG>& exc)
 						address_t addr;
 						int pathnamelen;
 						char *pathname;
-						mode_t mode;
+						uint32_t mode;
 		
 						addr = GetGPR(3);
 						pathnamelen = StringLength(addr);

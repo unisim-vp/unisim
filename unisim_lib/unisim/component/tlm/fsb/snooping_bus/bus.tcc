@@ -104,9 +104,9 @@ Bus(const sc_module_name& module_name, Object *parent) :
 	memory_import("memory-import", this),
 	cycle_time(),
 	cycle_time_int(0),
-	cycle_time_parameter("cycle-time", this, cycle_time_int),
+	cycle_time_parameter("cycle-time", this, cycle_time_int, "cycle time in picoseconds"),
 	logger(*this),
-	param_verbose("verbose", this, verbose),
+	param_verbose("verbose", this, verbose, "enable/disable verbosity"),
 	bus_synchro_event(),
 	next_serviced(0),
 	chipset_req_fifo("chipset_req_fifo"),
@@ -114,7 +114,10 @@ Bus(const sc_module_name& module_name, Object *parent) :
 	chipset_snoop(false),
 	cpu_snoop(false),
 	snoop_event(),
-	snoop_counter(0) {
+	snoop_counter(0)
+{
+	cycle_time_parameter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	
 	/* create input ports and name them */
 	for(unsigned int i = 0; i < NUM_PROCS; i++) {
 		stringstream s;
@@ -544,7 +547,9 @@ void
 Bus<ADDRESS_TYPE, DATA_SIZE, NUM_PROCS> :: 
 DispatchCPUMessage() {
 	/* get the message */
-	PTransactionMsgType msg = req_fifo[next_serviced]->read();
+	PTransactionMsgType msg;
+	
+	msg = req_fifo[next_serviced]->read();
 	
 	if(unlikely(verbose)) 
 		logger << DebugInfo << LOCATION

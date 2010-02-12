@@ -89,6 +89,12 @@ Heathrow<ADDRESS_TYPE, MAX_DATA_SIZE>::Heathrow(const sc_module_name& name, Obje
 template <class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
 Heathrow<ADDRESS_TYPE, MAX_DATA_SIZE>::~Heathrow()
 {
+	for(unsigned int i = 0; i < unisim::component::cxx::pci::macio::Heathrow<ADDRESS_TYPE>::NUM_IRQS; i++) {
+		delete irq_port[i];
+		irq_port[i] = 0;
+		delete irq_listener[i];
+		irq_listener[i] = 0;
+	}
 }
 
 template <class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>

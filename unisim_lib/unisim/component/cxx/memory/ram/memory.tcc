@@ -74,9 +74,13 @@ Memory<PHYSICAL_ADDR, PAGE_SIZE>::Memory(const  char *name, Object *parent) :
 	bytesize(0),
 	lo_addr(0),
 	hi_addr(0),
-	param_org("org", this, org),
-	param_bytesize("bytesize", this, bytesize)
+	memory_usage(0),
+	param_org("org", this, org, "memory origin/base address"),
+	stat_memory_usage("memory-usage", this, memory_usage, "host memory usage in bytes of simulated memory"),
+	param_bytesize("bytesize", this, bytesize, "memory size in bytes")
 {
+	stat_memory_usage.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_bytesize.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 }
 
 template <class PHYSICAL_ADDR, uint32_t PAGE_SIZE>
@@ -94,6 +98,7 @@ bool Memory<PHYSICAL_ADDR, PAGE_SIZE>::Setup()
 {
 	lo_addr = org;
 	hi_addr = org + (bytesize - 1);
+	Reset();
 	return true;
 }
 
@@ -101,6 +106,7 @@ template <class PHYSICAL_ADDR, uint32_t PAGE_SIZE>
 void Memory<PHYSICAL_ADDR, PAGE_SIZE>::Reset()
 {
 	hash_table.Reset();
+	memory_usage = 0;
 }
 
 template <class PHYSICAL_ADDR, uint32_t PAGE_SIZE>
@@ -128,6 +134,7 @@ bool Memory<PHYSICAL_ADDR, PAGE_SIZE>::WriteMemory(PHYSICAL_ADDR physical_addr, 
 		{
 			page = new MemoryPage<PHYSICAL_ADDR, PAGE_SIZE>(key);
 			hash_table.Insert(page);
+			memory_usage += PAGE_SIZE;
 		}
 	
 		max_copy_size = PAGE_SIZE - ((addr + copied) & (PAGE_SIZE - 1));
@@ -172,6 +179,7 @@ bool Memory<PHYSICAL_ADDR, PAGE_SIZE>::ReadMemory(PHYSICAL_ADDR physical_addr, v
 		{
 			page = new MemoryPage<PHYSICAL_ADDR, PAGE_SIZE>(key);
 			hash_table.Insert(page);
+			memory_usage += PAGE_SIZE;
 		}
 	
 		max_copy_size = PAGE_SIZE - ((addr + copied) & (PAGE_SIZE - 1));
@@ -222,6 +230,7 @@ bool Memory<PHYSICAL_ADDR, PAGE_SIZE>::WriteMemory(PHYSICAL_ADDR physical_addr, 
 		{
 			page = new MemoryPage<PHYSICAL_ADDR, PAGE_SIZE>(key);
 			hash_table.Insert(page);
+			memory_usage += PAGE_SIZE;
 		}
 	
 		max_page_copy_size = PAGE_SIZE - ((addr + offset) & (PAGE_SIZE - 1));
@@ -315,6 +324,7 @@ bool Memory<PHYSICAL_ADDR, PAGE_SIZE>::ReadMemory(PHYSICAL_ADDR physical_addr, v
 		{
 			page = new MemoryPage<PHYSICAL_ADDR, PAGE_SIZE>(key);
 			hash_table.Insert(page);
+			memory_usage += PAGE_SIZE;
 		}
 	
 		max_page_copy_size = PAGE_SIZE - ((addr + offset) & (PAGE_SIZE - 1));
@@ -394,6 +404,7 @@ void *Memory<PHYSICAL_ADDR, PAGE_SIZE>::GetDirectAccess(PHYSICAL_ADDR physical_a
 	{
 		page = new MemoryPage<PHYSICAL_ADDR, PAGE_SIZE>(key);
 		hash_table.Insert(page);
+		memory_usage += PAGE_SIZE;
 	}
 	
 	physical_start_addr = key * PAGE_SIZE;

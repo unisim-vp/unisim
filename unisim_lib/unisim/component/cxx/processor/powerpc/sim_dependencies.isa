@@ -95,7 +95,6 @@ using std::string;
     operand_type_t type;
     operand_direction_t dir;
     int value;
-    struct operand_t *next;
   } operand_t;
 
 

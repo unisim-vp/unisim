@@ -61,7 +61,7 @@ EPIC(const char *name, Object *parent) :
 	Service<Memory<PHYSICAL_ADDR> >(name, parent),
 	logger(*this),
 	verbose(false),
-	param_verbose("verbose", this, verbose),
+	param_verbose("verbose", this, verbose, "enable/disable verbosity"),
 	memory_export("memory_export", this),
 	pending_reg(0),
 	regs(),

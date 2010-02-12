@@ -36,6 +36,9 @@
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger_server.hh"
 #include <fstream>
+#include <sstream>
+#include <iostream>
+#include <iomanip>
 #include <stdlib.h>
 
 #include <boost/graph/adjacency_list.hpp>
@@ -44,12 +47,40 @@
 #include <boost/graph/graphviz.hpp>
 
 #include "unisim/kernel/service/xml_helper.hh"
+#include <unisim/kernel/debug/debug.hh>
+
+#ifdef DEBUG_MEMORY_ALLOCATION
+void *operator new(std::size_t size)
+{
+	std::cerr << "malloc(" << size << ")" << std::endl;
+	std::cerr << unisim::kernel::debug::BackTrace() << std::endl;
+	return malloc(size);
+}
+
+void *operator new[](std::size_t size)
+{
+	std::cerr << "malloc(" << size << ")" << std::endl;
+	std::cerr << unisim::kernel::debug::BackTrace() << std::endl;
+	return malloc(size);
+}
+
+void operator delete(void *storage, std::size_t size)
+{
+	free(storage);
+}
+
+void operator delete[](void *storage, std::size_t size)
+{
+	free(storage);
+}
+#endif
 
 namespace unisim {
 namespace kernel {
 namespace service {
 
 using std::hex;
+using std::dec;
 using std::cerr;
 using std::endl;
 using std::stringstream;
@@ -67,7 +98,8 @@ VariableBase::VariableBase(const char *_name, Object *_owner, Type _type, const 
 	container(0),
 	description(_description ? _description : ""),
 	enumerated_values(),
-	type(_type)
+	type(_type),
+	fmt(FMT_DEFAULT)
 {
 	_owner->Add(*this);
 	ServiceManager::Register(this);
@@ -80,13 +112,14 @@ VariableBase::VariableBase(const char *_name, VariableBase *_container, Type _ty
 	container(_container),
 	description(_description ? _description : ""),
 	enumerated_values(),
-	type(_type)
+	type(_type),
+	fmt(FMT_DEFAULT)
 {
 	ServiceManager::Register(this);
 }
 
 VariableBase::VariableBase() :
-	name(), owner(0), container(0), description(), type(VAR_VOID)
+	name(), owner(0), container(0), description(), type(VAR_VOID), fmt(FMT_DEFAULT)
 {
 }
 
@@ -124,6 +157,11 @@ const char *VariableBase::GetDescription() const
 VariableBase::Type VariableBase::GetType() const
 {
 	return type;
+}
+
+VariableBase::Format VariableBase::GetFormat() const
+{
+	return fmt;
 }
 
 const char *VariableBase::GetDataTypeName() const
@@ -168,6 +206,11 @@ bool VariableBase::RemoveEnumeratedValue(const char *value) {
 		}
 	}
 	return false;
+}
+
+void VariableBase::SetFormat(Format _fmt)
+{
+	fmt = _fmt;
 }
 
 VariableBase::operator bool () const { return false; }
@@ -223,7 +266,21 @@ template <class TYPE> Variable<TYPE>::operator bool () const { return (*storage)
 template <class TYPE> Variable<TYPE>::operator long long () const { return (long long) *storage; }
 template <class TYPE> Variable<TYPE>::operator unsigned long long () const { return (unsigned long long) *storage; }
 template <class TYPE> Variable<TYPE>::operator double () const { return (double) *storage; }
-template <class TYPE> Variable<TYPE>::operator string () const { stringstream sstr; sstr << "0x" << hex << (unsigned long long) *storage; return sstr.str(); }
+template <class TYPE> Variable<TYPE>::operator string () const
+{
+	stringstream sstr;
+	switch(GetFormat())
+	{
+		case FMT_DEFAULT:
+		case FMT_HEX:
+			sstr << "0x" << hex << (unsigned long long) *storage;
+			break;
+		case FMT_DEC:
+			sstr << dec << (unsigned long long) *storage;
+			break;
+	}
+	return sstr.str();
+}
 
 template <class TYPE> VariableBase& Variable<TYPE>::operator = (bool value) { *storage = value ? 1 : 0; return *this; }
 template <class TYPE> VariableBase& Variable<TYPE>::operator = (long long value) { *storage = value;	return *this; }
@@ -239,6 +296,32 @@ template <class TYPE> VariableBase& Variable<TYPE>::operator = (double value) { 
 //=                         specialized Variable<>                           =
 //=============================================================================
 
+template <typename T>
+static const char *GetSignedDataTypeName(const T *p = 0)
+{
+	switch(sizeof(T))
+	{
+		case 1: return "signed 8-bit integer";
+		case 2: return "signed 16-bit integer";
+		case 4: return "signed 32-bit integer";
+		case 8: return "signed 64-bit integer";
+	}
+	return "?";
+}
+
+template <typename T>
+static const char *GetUnsignedDataTypeName(const T *p = 0)
+{
+	switch(sizeof(T))
+	{
+		case 1: return "unsigned 8-bit integer";
+		case 2: return "unsigned 16-bit integer";
+		case 4: return "unsigned 32-bit integer";
+		case 8: return "unsigned 64-bit integer";
+	}
+	return "?";
+}
+
 template <>
 Variable<bool>::Variable(const char *_name, Object *_owner, bool& _storage, Type type, const char *_description) :
 	VariableBase(_name, _owner, type,  _description), storage(&_storage)
@@ -247,7 +330,7 @@ Variable<bool>::Variable(const char *_name, Object *_owner, bool& _storage, Type
 template <>
 const char *Variable<bool>::GetDataTypeName() const
 {
-	return "bool";
+	return "boolean";
 }
 
 template <>
@@ -258,7 +341,7 @@ Variable<char>::Variable(const char *_name, Object *_owner, char& _storage, Type
 template <>
 const char *Variable<char>::GetDataTypeName() const
 {
-	return "char";
+	return GetSignedDataTypeName<char>(); //"char";
 }
 
 template <>
@@ -269,7 +352,7 @@ Variable<short>::Variable(const char *_name, Object *_owner, short& _storage, Ty
 template <>
 const char *Variable<short>::GetDataTypeName() const
 {
-	return "short";
+	return GetSignedDataTypeName<short>(); //"short";
 }
 
 template <>
@@ -280,7 +363,7 @@ Variable<int>::Variable(const char *_name, Object *_owner, int& _storage, Type t
 template <>
 const char *Variable<int>::GetDataTypeName() const
 {
-	return "int";
+	return GetSignedDataTypeName<int>(); //"int";
 }
 
 template <>
@@ -291,7 +374,7 @@ Variable<long>::Variable(const char *_name, Object *_owner, long& _storage, Type
 template <>
 const char *Variable<long>::GetDataTypeName() const
 {
-	return "long";
+	return GetSignedDataTypeName<long>(); //"long";
 }
 
 template <>
@@ -302,7 +385,7 @@ Variable<long long>::Variable(const char *_name, Object *_owner, long long& _sto
 template <>
 const char *Variable<long long>::GetDataTypeName() const
 {
-	return "long long";
+	return GetSignedDataTypeName<long long>(); //"long long";
 }
 
 
@@ -314,7 +397,7 @@ Variable<unsigned char>::Variable(const char *_name, Object *_owner, unsigned ch
 template <>
 const char *Variable<unsigned char>::GetDataTypeName() const
 {
-	return "unsigned char";
+	return GetUnsignedDataTypeName<unsigned char>(); //"unsigned char";
 }
 
 template <>
@@ -325,7 +408,7 @@ Variable<unsigned short>::Variable(const char *_name, Object *_owner, unsigned s
 template <>
 const char *Variable<unsigned short>::GetDataTypeName() const
 {
-	return "unsigned short";
+	return GetUnsignedDataTypeName<unsigned short>(); //"unsigned short";
 }
 
 template <>
@@ -336,7 +419,7 @@ Variable<unsigned int>::Variable(const char *_name, Object *_owner, unsigned int
 template <>
 const char *Variable<unsigned int>::GetDataTypeName() const
 {
-	return "unsigned int";
+	return GetUnsignedDataTypeName<unsigned int>(); //"unsigned int";
 }
 
 template <>
@@ -347,7 +430,7 @@ Variable<unsigned long>::Variable(const char *_name, Object *_owner, unsigned lo
 template <>
 const char *Variable<unsigned long>::GetDataTypeName() const
 {
-	return "unsigned long";
+	return GetUnsignedDataTypeName<unsigned long>(); //"unsigned long";
 }
 
 template <>
@@ -358,7 +441,7 @@ Variable<unsigned long long>::Variable(const char *_name, Object *_owner, unsign
 template <>
 const char *Variable<unsigned long long>::GetDataTypeName() const
 {
-	return "unsigned long long";
+	return GetUnsignedDataTypeName<unsigned long long>(); //"unsigned long long";
 }
 
 template <> 
@@ -369,7 +452,15 @@ Variable<double>::Variable(const char *_name, Object *_owner, double& _storage, 
 template <>
 const char *Variable<double>::GetDataTypeName() const
 {
-	return "double";
+	return "double precision floating-point";
+}
+
+template <>
+Variable<double>::operator string () const
+{
+	stringstream sstr;
+	sstr << *storage;
+	return sstr.str();
 }
 
 template <> 
@@ -380,7 +471,15 @@ Variable<float>::Variable(const char *_name, Object *_owner, float& _storage, Ty
 template <>
 const char *Variable<float>::GetDataTypeName() const
 {
-	return "float";
+	return "single precision floating-point";
+}
+
+template <>
+Variable<float>::operator string () const
+{
+	stringstream sstr;
+	sstr << *storage;
+	return sstr.str();
 }
 
 template <> 
@@ -394,9 +493,25 @@ const char *Variable<string>::GetDataTypeName() const
 	return "string";
 }
 
-template <> Variable<bool>::operator string () const { stringstream sstr; sstr << (*storage?"true":"false"); return sstr.str(); }
+template <> Variable<bool>::operator string () const
+{
+	stringstream sstr;
+	switch(GetFormat())
+	{
+		case FMT_DEFAULT:
+			sstr << (*storage ? "true" : "false");
+			break;
+		case FMT_HEX:
+			sstr << (*storage ? "0x1" : "0x0");
+			break;
+		case FMT_DEC:
+			sstr << (*storage ? "1" : "0");
+			break;
+	}
+	return sstr.str();
+}
 
-template <> VariableBase& Variable<bool>::operator = (const char *value) { *storage = strcmp(value, "true") == 0; return *this; }
+template <> VariableBase& Variable<bool>::operator = (const char *value) { *storage = (strcmp(value, "true") == 0) || (strcmp(value, "0x1") == 0) || (strcmp(value, "1") == 0); return *this; }
 template <> VariableBase& Variable<char>::operator = (const char *value) { *storage = strtoll(value, 0, 0); return *this; }
 template <> VariableBase& Variable<short>::operator = (const char *value) { *storage = strtoll(value, 0, 0); return *this; }
 template <> VariableBase& Variable<int>::operator = (const char *value) {	*storage = strtoll(value, 0, 0); return *this; }
@@ -824,24 +939,28 @@ void ServiceManager::Dump(ostream& os)
 }
 
 void ServiceManager::DumpVariables(ostream &os, VariableBase::Type filter_type) {
-	switch(filter_type)
+/*	switch(filter_type)
 	{
 		case VariableBase::VAR_VOID:
-			os << "VARIABLES:" << endl;
+			os << "Variables:" << endl;
 			break;
 		case VariableBase::VAR_ARRAY:
-			os << "VARIABLES ARRAYS:" << endl;
+			os << "Arrays of variables:" << endl;
 			break;
 		case VariableBase::VAR_PARAMETER:
-			os << "PARAMETERS:" << endl;
+			os << "Parameters:" << endl;
 			break;
 		case VariableBase::VAR_STATISTIC:
-			os << "STATISTICS:" << endl;
+			os << "Statistics:" << endl;
 			break;
 		case VariableBase::VAR_REGISTER:
-			os << "REGISTERS:" << endl;
+			os << "Registers:" << endl;
 			break;
-	}
+	}*/
+	
+	unsigned int max_variable_name_length = 0;
+	unsigned int max_variable_value_length = 0;
+	
 	map<const char *, VariableBase *, ltstr>::iterator variable_iter;
 
 	for(variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
@@ -852,23 +971,47 @@ void ServiceManager::DumpVariables(ostream &os, VariableBase::Type filter_type) 
 		{
 			const char *name = var->GetName();
 			string value = (string) *var;
+			
+			unsigned int variable_name_length = strlen(name);
+			unsigned int variable_value_length = value.length();
+			
+			if(variable_name_length > max_variable_name_length) max_variable_name_length = variable_name_length;
+			if(variable_value_length > max_variable_value_length) max_variable_value_length = variable_value_length;
+		}
+	}
+
+	for(variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
+	{
+		VariableBase *var = (*variable_iter).second;
+		VariableBase::Type var_type = var->GetType();
+		if(filter_type == VariableBase::VAR_VOID || var_type == filter_type)
+		{
+			std::stringstream sstr_name;
+			std::stringstream sstr_value;
+			const char *name = var->GetName();
+			string value = (string) *var;
 			const char *dt = var->GetDataTypeName();
 			const char *desc = (*variable_iter).second->GetDescription();
 			
-			if(strlen(dt) != 0)
-			{
-				os << dt << " ";
-			}
-			os << name << " = \"" << value << "\"";
+			sstr_name.width(max_variable_name_length);
+			sstr_name.setf(std::ios::left);
+			sstr_name << name;
+			sstr_value.width(max_variable_value_length);
+			sstr_value.setf(std::ios::left);
+			sstr_value << value;
+			os << sstr_name.str() << " " << sstr_value.str();
 			if(strlen(desc) != 0)
 			{
-				os << " (" << (*variable_iter).second->GetDescription() << ")";
+				os << " # " << (*variable_iter).second->GetDescription();
 			}
+// 			if(strlen(dt) != 0)
+// 			{
+// 				os << dt;
+// 			}
 			
 			os << endl;
 		}
 	}
-	os << endl;
 }
 
 void ServiceManager::DumpStatistics(ostream &os)

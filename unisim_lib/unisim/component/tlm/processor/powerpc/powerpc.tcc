@@ -55,8 +55,8 @@ PowerPC<CONFIG>::PowerPC(const sc_module_name& name, Object *parent) :
 	nice_sctime(),
 	next_nice_sctime(),
 	nice_time(100000000000ULL), // leave at least 10 times per simulated seconds the host processor to the SystemC simulation kernel 
-	param_nice_time("nice-time", this, nice_time),
-	param_ipc("ipc", this, ipc),
+	param_nice_time("nice-time", this, nice_time, "maximum time in picoseconds between synchonizations"),
+	param_ipc("ipc", this, ipc, "targeted average instructions per second"),
 	cpu_sctime(),
 	bus_sctime(),
 	last_sync_sctime(),
@@ -68,6 +68,9 @@ PowerPC<CONFIG>::PowerPC(const sc_module_name& name, Object *parent) :
 	tea_listener("tea_listener",this, &ev_interrupt),
 	smi_listener("smi_listener",this, &ev_interrupt)
 {
+	param_nice_time.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_ipc.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	
 	SC_HAS_PROCESS(PowerPC);
 	
 	snoop_port(*this);
@@ -79,6 +82,8 @@ PowerPC<CONFIG>::PowerPC(const sc_module_name& name, Object *parent) :
 	smi_port(smi_listener);
 
 	SC_THREAD(Run);
+	
+	SC_THREAD(BusMaster);
 }
 
 template <class CONFIG>
@@ -102,11 +107,13 @@ void PowerPC<CONFIG>::Stop(int ret)
 template <class CONFIG>
 void PowerPC<CONFIG>::Synchronize()
 {
-	sc_time time_spent = cpu_sctime - last_sync_sctime;
-	wait(time_spent);
-	last_sync_sctime = sc_time_stamp();
-	next_nice_sctime = last_sync_sctime + nice_sctime;
-	UpdateTime(last_sync_sctime - cpu_sctime);
+	sc_dt::uint64 cpu_time_tu = cpu_sctime.value();
+	sc_dt::uint64 last_sync_time_tu = last_sync_sctime.value();
+	wait(cpu_time_tu - last_sync_time_tu, SC_PS);
+//	cpu_sctime = sc_time_stamp();
+	last_sync_sctime = cpu_sctime;
+	next_nice_sctime = last_sync_sctime;
+	next_nice_sctime += nice_sctime;
 }
 
 	
@@ -123,13 +130,15 @@ bool PowerPC<CONFIG>::Setup()
 template <class CONFIG>
 void PowerPC<CONFIG>::BusSynchronize()
 {
-	while(cpu_sctime > bus_sctime)
+	if(unlikely(cpu_sctime > bus_sctime))
 	{
-		bus_sctime += bus_cycle_sctime;
-		CPU<CONFIG>::OnBusCycle();
+		//cout << "Time: " << ((cpu_sctime - bus_sctime + bus_cycle_sctime) / bus_cycle_sctime) << endl;
+		do
+		{
+			bus_sctime += bus_cycle_sctime;
+			CPU<CONFIG>::OnBusCycle();
+		} while(unlikely(cpu_sctime > bus_sctime));
 	}
-	
-	cpu_sctime = bus_sctime;
 	
 	Synchronize();
 }
@@ -206,45 +215,89 @@ void PowerPC<CONFIG>::BusSynchronize()
 template <class CONFIG>
 void PowerPC<CONFIG>::Idle()
 {
-	UpdateTime(SC_ZERO_TIME);
-	sc_time max_idle_time(CPU<CONFIG>::GetDEC() * 4 * bus_cycle_sctime);
+	UpdateBusTime();
+	max_idle_time = bus_cycle_sctime;
+	max_idle_time *= CPU<CONFIG>::GetDEC() * 4;
+#if 0
 	usleep(max_idle_time.to_seconds() * 1.0e6);
+#endif
 	ev_max_idle.notify(max_idle_time);
 	wait(ev_max_idle | ev_interrupt);
-	last_sync_sctime = sc_time_stamp();
 	ev_max_idle.cancel();
-	//UpdateTime(sc_time_stamp() - cpu_sctime);
-	while(!CPU<CONFIG>::HasAsynchronousInterrupt())
+	cpu_sctime = sc_time_stamp();
+	last_sync_sctime = cpu_sctime;
+	UpdateBusTime();
+	while(likely(!CPU<CONFIG>::HasAsynchronousInterrupt()))
 	{
-		UpdateTime(bus_cycle_sctime);
+		cpu_sctime += cpu_cycle_sctime;
+		UpdateBusTime();
 	}
 }
 
 template <class CONFIG>
-inline void PowerPC<CONFIG>::UpdateTime(const sc_time& delta)
+inline void PowerPC<CONFIG>::UpdateBusTime()
 {
-	cpu_sctime += delta;
-	while(cpu_sctime > bus_sctime)
+	if(unlikely(cpu_sctime > bus_sctime))
 	{
-		bus_sctime += bus_cycle_sctime;
-		CPU<CONFIG>::OnBusCycle();
-	}
-	
-	if(cpu_sctime > next_nice_sctime)
-	{
-		Synchronize();
+		do
+		{
+			bus_sctime += bus_cycle_sctime;
+			CPU<CONFIG>::OnBusCycle();
+		}
+		while(unlikely(cpu_sctime > bus_sctime));
+
+		if(unlikely(cpu_sctime > next_nice_sctime))
+		{
+			Synchronize();
+		}
 	}
 }
 
 template <class CONFIG>
 void PowerPC<CONFIG>::Run()
 {
+#if 1
 	sc_time time_per_instruction = cpu_cycle_sctime * ipc;
 	
 	while(1)
 	{
 		CPU<CONFIG>::StepOneInstruction();
-		UpdateTime(time_per_instruction);
+		cpu_sctime += time_per_instruction;
+		UpdateBusTime();
+	}
+#else
+	while(1)
+	{
+		CPU<CONFIG>::StepOneCycle();
+		UpdateTime(cpu_cycle_sctime);
+	}
+#endif
+}
+
+template <class CONFIG>
+void PowerPC<CONFIG>::BusMaster()
+{
+	while(1)
+	{
+		BusAccess<CONFIG> *bus_access;
+		bus_access_queue.read(bus_access); // blocking read
+		
+		inherited::logger << DebugInfo << "BusMaster" << EndDebugInfo;
+		switch(bus_access->type)
+		{
+			case BusAccess<CONFIG>::LOAD:
+			case BusAccess<CONFIG>::REFILL:
+			case BusAccess<CONFIG>::REFILLX:
+				BusRead(bus_access->addr, bus_access->storage, bus_access->size, bus_access->wimg, bus_access->rwitm);
+				inherited::logger << DebugInfo << "BusMaster: finished bus access" << EndDebugInfo;
+				OnFinishedBusAccess(bus_access);
+				break;
+			case BusAccess<CONFIG>::STORE:
+			case BusAccess<CONFIG>::EVICTION:
+				BusWrite(bus_access->addr, bus_access->storage, bus_access->size, bus_access->wimg);
+				OnFinishedBusAccess(bus_access);
+				break;
+		}
 	}
 }
 
@@ -297,9 +350,11 @@ void PowerPC<CONFIG>::BusRead(physical_address_t physical_addr, void *buffer, ui
 		while(!bus_port->Send(msg))
 		{
 			// if bus transaction request is not accepted then retry later
-			UpdateTime(bus_cycle_sctime);
-			BusSynchronize();
-//			wait(bus_cycle_sctime);
+			wait(bus_cycle_sctime);
+			//cpu_sctime = sc_time_stamp();
+			cpu_sctime += bus_cycle_sctime;
+			last_sync_sctime = cpu_sctime;
+			UpdateBusTime();
 #ifdef DEBUG_POWERPC
 			if(DebugEnabled())
 				cerr << sc_time_stamp() << " PPC::BusRead: retry transaction request" << endl;
@@ -316,7 +371,9 @@ void PowerPC<CONFIG>::BusRead(physical_address_t physical_addr, void *buffer, ui
 #endif
 		// wait for the bus transaction response
 		wait(rsp_ev);
-		UpdateTime(sc_time_stamp() - cpu_sctime);
+		cpu_sctime = sc_time_stamp();
+		last_sync_sctime = cpu_sctime;
+		UpdateBusTime();
 		rsp = msg->GetResponse();
 #ifdef DEBUG_POWERPC
 		if(DebugEnabled())
@@ -379,9 +436,11 @@ void PowerPC<CONFIG>::BusWrite(physical_address_t physical_addr, const void *buf
 	while(!bus_port->Send(msg))
 	{
 		// if bus transaction request is not accepted then retry later
-		UpdateTime(bus_cycle_sctime);
-		BusSynchronize();
-//		wait(bus_cycle_sctime);
+		wait(bus_cycle_sctime);
+		//cpu_sctime = sc_time_stamp();
+		cpu_sctime += bus_cycle_sctime;
+		last_sync_sctime = cpu_sctime;
+		UpdateBusTime();
 #ifdef DEBUG_POWERPC
 		if(DebugEnabled())
 			cerr << sc_time_stamp() << " PPC::BusWrite: retry transaction request" << endl;
@@ -392,6 +451,8 @@ void PowerPC<CONFIG>::BusWrite(physical_address_t physical_addr, const void *buf
 	if(DebugEnabled())
 		cerr << sc_time_stamp() << " PPC::BusWrite: transaction request accepted" << endl;
 #endif
+	req = 0;
+	msg = 0;
 }
 
 template <class CONFIG>
@@ -421,9 +482,11 @@ void PowerPC<CONFIG>::BusZeroBlock(physical_address_t physical_addr)
 	while(!bus_port->Send(msg))
 	{
 		// if bus transaction request is not accepted then retry later
-		UpdateTime(bus_cycle_sctime);
-		BusSynchronize();
-//		wait(bus_cycle_sctime);
+		wait(bus_cycle_sctime);
+		//cpu_sctime = sc_time_stamp();
+		cpu_sctime += bus_cycle_sctime;
+		last_sync_sctime = cpu_sctime;
+		UpdateBusTime();
 #ifdef DEBUG_POWERPC
 		if(DebugEnabled())
 			cerr << sc_time_stamp() << " PPC::BusZeroBlock: retry transaction request" << endl;
@@ -463,9 +526,11 @@ void PowerPC<CONFIG>::BusFlushBlock(physical_address_t physical_addr)
 	while(!bus_port->Send(msg))
 	{
 		// if bus transaction request is not accepted then retry later
-		UpdateTime(bus_cycle_sctime);
-		BusSynchronize();
-//		wait(bus_cycle_sctime);
+		wait(bus_cycle_sctime);
+		//cpu_sctime = sc_time_stamp();
+		cpu_sctime += bus_cycle_sctime;
+		last_sync_sctime = cpu_sctime;
+		UpdateBusTime();
 #ifdef DEBUG_POWERPC
 		if(DebugEnabled())
 			cerr << sc_time_stamp() << " PPC::BusFlushBlock: retry transaction request" << endl;
@@ -478,6 +543,17 @@ void PowerPC<CONFIG>::BusFlushBlock(physical_address_t physical_addr)
 #endif
 }
 
+template <class CONFIG>
+void PowerPC<CONFIG>::DoBusAccess(BusAccess<CONFIG> *bus_access)
+{
+	inherited::logger << DebugInfo << "DoBusAccess" << EndDebugInfo;
+	if(!bus_access_queue.nb_write(bus_access))
+	{
+		inherited::logger << DebugInfo << "DoBusAccess failed" << EndDebugInfo;
+		sc_stop();
+		wait();
+	}
+}
 
 template <class CONFIG>
 PowerPC<CONFIG>::ExternalInterruptListener::ExternalInterruptListener(const sc_module_name& name, unisim::component::cxx::processor::powerpc::CPU<CONFIG> *_cpu, sc_event *_ev) :

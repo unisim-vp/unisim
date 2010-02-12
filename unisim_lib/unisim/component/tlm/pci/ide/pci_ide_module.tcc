@@ -46,13 +46,13 @@ namespace ide {
 template<class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
 PCIDevIde<ADDRESS_TYPE, MAX_DATA_SIZE>::PCIDevIde(const sc_module_name &name, Object *parent): Object(name, parent),
 	PCIDev<ADDRESS_TYPE, MAX_DATA_SIZE>(name, parent),
-	param_base_address("base-address", this, base_address, NUM_MAPPINGS),
-	param_size("size", this, size, NUM_MAPPINGS),
-	param_register_number("register-number", this, register_number, NUM_MAPPINGS),
-	param_device_number("device-number", this, device_number),
-	param_disk_image("disk-image", this, disk_image, MAX_IMAGES),
-	param_disk_channel("disk-channel", this, disk_channel, MAX_IMAGES),
-	param_disk_num("disk-num", this, disk_num, MAX_IMAGES)
+	param_base_address("base-address", this, base_address, NUM_MAPPINGS, "initial base address of memory space"),
+	param_size("size", this, size, NUM_MAPPINGS, "size in bytes of memory space"),
+	param_register_number("register-number", this, register_number, NUM_MAPPINGS, "BAR offset in PCI configuration space"),
+	param_device_number("device-number", this, device_number, "PCI device number"),
+	param_disk_image("disk-image", this, disk_image, MAX_IMAGES, "Raw disk image filename"),
+	param_disk_channel("disk-channel", this, disk_channel, MAX_IMAGES, "disk channel"),
+	param_disk_num("disk-num", this, disk_num, MAX_IMAGES, "disk number (0=master 1=slave)")
 {
 }
 

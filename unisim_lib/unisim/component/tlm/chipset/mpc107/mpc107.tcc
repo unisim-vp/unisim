@@ -68,7 +68,7 @@ MPC107(const sc_module_name &name, Object *parent) :
 	Client<Memory<PHYSICAL_ADDR> >(name, parent),
 	logger(*this),
 	verbose(false),
-	param_verbose("verbose", this, verbose),
+	param_verbose("verbose", this, verbose, "enable/disable verbosity"),
 	dma(this, "DMA", this),
 	epic("epic", this),
 	atu("atu", this),
@@ -97,17 +97,21 @@ MPC107(const sc_module_name &name, Object *parent) :
 	rom1_8bit_data_bus_size(false),
 	frequency(0),
 	sdram_cycle_time(0),
-	param_a_address_map("a_address_map", this, a_address_map),
-	param_host_mode("host_mode", this, host_mode),
-	param_memory_32bit_data_bus_size("memory_32bit_data_bus_size", this, memory_32bit_data_bus_size),
-	param_rom0_8bit_data_bus_size("rom0_8bit_data_bus_size", this, rom0_8bit_data_bus_size),
-	param_rom1_8bit_data_bus_size("rom1_8bit_data_bus_size", this, rom1_8bit_data_bus_size),
-	param_frequency("frequency", this, frequency),
-	param_sdram_cycle_time("sdram_cycle_time", this, sdram_cycle_time),
+	param_a_address_map("a_address_map", this, a_address_map, "enable/disable address map A"),
+	param_host_mode("host_mode", this, host_mode, "enable/disable host mode"),
+	param_memory_32bit_data_bus_size("memory_32bit_data_bus_size", this, memory_32bit_data_bus_size, "enable/disable 32-bit data bus width"),
+	param_rom0_8bit_data_bus_size("rom0_8bit_data_bus_size", this, rom0_8bit_data_bus_size, "enable/disable rom #0 8-bit data bus width"),
+	param_rom1_8bit_data_bus_size("rom1_8bit_data_bus_size", this, rom1_8bit_data_bus_size, "enable/disable rom #1 8-bit data bus width"),
+	param_frequency("frequency", this, frequency, "frequency in Mhz"),
+	param_sdram_cycle_time("sdram_cycle_time", this, sdram_cycle_time, "SDRAM cycle time in picoseconds"),
 	config_addr(0),
 	config_regs(),
 	pci_controller(0, config_regs, addr_map, "pci_controller", this),
-	addr_map(config_regs, atu, "address_mapper", this) {
+	addr_map(config_regs, atu, "address_mapper", this)
+{
+	param_frequency.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_sdram_cycle_time.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	
 	slave_port(*this);
 	pci_slave_port(*this);
 	
@@ -1425,9 +1429,12 @@ Pointer<TlmMessage<MemoryRequest<PHYSICAL_ADDR, MAX_TRANSACTION_DATA_SIZE>, Memo
 MPC107<PHYSICAL_ADDR, MAX_TRANSACTION_DATA_SIZE,
 	PCI_ADDR, MAX_PCI_TRANSACTION_DATA_SIZE, DEBUG>::
 ConverttoMemMsg(const PMsgType &fsb_msg) {
+	//std::cerr << "new MemMsgType" << std::endl;
 	PMemMsgType mem_msg = new(mem_msg) MemMsgType();
+	//std::cerr << "new MemReqType" << std::endl;
 	PMemReqType mem_req = new(mem_req) MemReqType();
 	const PReqType &fsb_req = fsb_msg->req;
+	//std::cerr << "Copy mem_req into mem_msg" << std::endl;
 	mem_msg->req = mem_req;
 	
 	mem_req->addr = fsb_req->addr;
@@ -1475,6 +1482,7 @@ ConverttoMemMsg(const PMsgType &fsb_msg) {
 		break;
 	}
 
+	//std::cerr << "returning mem_msg" << std::endl;
 	return mem_msg;
 }
 
@@ -1514,7 +1522,9 @@ MPC107<PHYSICAL_ADDR, MAX_TRANSACTION_DATA_SIZE,
 	PCI_ADDR, MAX_PCI_TRANSACTION_DATA_SIZE, DEBUG>::
 SendFSBtoMemory(const PMsgType &fsb_msg, sc_port<TlmSendIf<MemReqType, MemRspType> > &out_port) {
 	/* Convert the fsb message to a memory message */
-	PMemMsgType mem_msg = ConverttoMemMsg(fsb_msg);
+	PMemMsgType mem_msg = PMemMsgType();
+	
+	mem_msg = ConverttoMemMsg(fsb_msg);
 
 	/* Effectively end the message to the memory system */
 	if(fsb_msg->HasResponseEvent()) {
@@ -1551,7 +1561,9 @@ DispatchPCIReq() {
 		
             			
 			/* prepare a request (and message) for the system bus */
-			PMsgType fsb_msg = ConverttoFSBMsg(item->pci_msg, size_done, item->pci_msg->req->size - size_done);
+			PMsgType fsb_msg = PMsgType();
+			
+			fsb_msg = ConverttoFSBMsg(item->pci_msg, size_done, item->pci_msg->req->size - size_done);
 			sc_event fsb_msg_ev;
 			
 			if(item->pci_msg->HasResponseEvent())
@@ -1579,7 +1591,9 @@ DispatchPCIReq() {
 					fsb_rsp->read_status == RspType::RS_MODIFIED)) {
 					// the response was not received from the system bus,
 					//   it needs to be sent to the memory system
-					PMemMsgType mem_msg = ConverttoMemMsg(item->pci_msg, size_done, item->pci_msg->req->size - size_done); 
+					PMemMsgType mem_msg = PMemMsgType();
+				
+					mem_msg = ConverttoMemMsg(item->pci_msg, size_done, item->pci_msg->req->size - size_done); 
 					while(!(*(item->out_port))->Send(mem_msg))
 						wait(cycle_time);
 					memcpy(pci_rsp->read_data + size_done, mem_msg->rsp->read_data + size_done,  mem_msg->req->size);	
@@ -1598,7 +1612,9 @@ DispatchPCIReq() {
 			} else { /* the request is a write request, no reply expected */
 				/* if the request was a write then the request needs to be sent also to the
 			 	*   memory system */
-				PMemMsgType mem_msg = ConverttoMemMsg(item->pci_msg, size_done, item->pci_msg->req->size - size_done);
+				PMemMsgType mem_msg = PMemMsgType();
+				
+				mem_msg = ConverttoMemMsg(item->pci_msg, size_done, item->pci_msg->req->size - size_done);
 				while(!(*(item->out_port))->Send(mem_msg))
 					wait(cycle_time);
 				size_done += mem_msg->req->size;
@@ -1611,6 +1627,7 @@ DispatchPCIReq() {
             item->pci_msg->GetResponseEvent()->notify(SC_ZERO_TIME);
         }
 		
+		item->pci_msg = 0;
 		pci_req_list.pop_front();
 	    free_pci_req_list.push_back(item);
         if(!pci_req_list.empty()) dispatch_pci_req_ev.notify_delayed();

@@ -57,7 +57,7 @@ ATU(const char *name, Object *parent) :
 	Object(name, parent),
 	logger(*this),
 	verbose(false),
-	param_verbose("verbose", this, verbose) {
+	param_verbose("verbose", this, verbose, "enable/disable verbosity") {
 }
 
 template<class ADDRESS_TYPE, class PCI_ADDRESS_TYPE, bool DEBUG>

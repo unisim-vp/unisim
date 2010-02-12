@@ -137,11 +137,14 @@ private:
 	SDL_mutex *logger_mutex;
 	SDL_TimerID refresh_timer;
 	bool host_key_down;
+	bool host_cmd;
 	bool grab_input;
 	bool full_screen;
 	SDLKey host_key;
 	bool mode_set;
 	bool alive;
+	SDL_cond *video_subsystem_initialized_cond;
+	SDL_mutex *video_subsystem_initialized_mutex;
 	bool refresh;
 	bool force_refresh;
 	unsigned int typematic_delay_us;
@@ -160,10 +163,8 @@ private:
 	Parameter<string> param_keymap_filename;
 	Parameter<string> param_host_key_name;
 	Parameter<bool> param_force_refresh;
-#ifdef WIN32
 	bool work_around_sdl_mouse_motion_coordinates_bug;
 	Parameter<bool> param_work_around_sdl_mouse_motion_coordinates_bug;
-#endif
 
 	// Keyboard learning is executed in main thread
 	void LearnKeyboard();

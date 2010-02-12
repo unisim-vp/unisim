@@ -85,15 +85,17 @@ Bridge<ADDRESS>::Bridge(const char *name, Object *parent) :
 	// debug stuff
 	logger(*this),
 	verbose(false),
-	param_verbose("verbose", this, verbose),
+	param_verbose("verbose", this, verbose, "enable/disable verbosity"),
 
 	// Parameters initialization
-	param_initial_base_addr("initial-base-addr", this, initial_base_addr),
-	param_initial_io_base_addr("initial-io-base-addr", this, initial_io_base_addr),
-	param_pci_device_number("pci-device-number", this, pci_device_number),
-	param_isa_bus_frequency("isa-bus-frequency", this, isa_bus_frequency),
-	param_pci_bus_frequency("pci-bus-frequency", this, pci_bus_frequency)
+	param_initial_base_addr("initial-base-addr", this, initial_base_addr, "intial base address of memory space"),
+	param_initial_io_base_addr("initial-io-base-addr", this, initial_io_base_addr, "initial base address of I/O space"),
+	param_pci_device_number("pci-device-number", this, pci_device_number, "PCI device number"),
+	param_isa_bus_frequency("isa-bus-frequency", this, isa_bus_frequency, "ISA bus frequency in Mhz"),
+	param_pci_bus_frequency("pci-bus-frequency", this, pci_bus_frequency, "PCI bus frequency in Mhz")
 {
+	param_isa_bus_frequency.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_pci_bus_frequency.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 }
 	
 template <class ADDRESS>

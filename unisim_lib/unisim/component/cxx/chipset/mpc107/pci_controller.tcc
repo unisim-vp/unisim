@@ -68,7 +68,7 @@ PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	Object(name, parent),
 	logger(*this),
 	verbose(false),
-	param_verbose("verbose", this, verbose),
+	param_verbose("verbose", this, verbose, "enable/disable verbosity"),
 	deviceNumber(_deviceNumber),
 	config_regs(&_config_regs), 
 	addr_map(&_addr_map){

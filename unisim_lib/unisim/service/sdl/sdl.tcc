@@ -40,6 +40,9 @@
 #include <sstream>
 #include <string>
 #include <unisim/util/xml/xml.hh>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <signal.h>
 
 namespace unisim {
 namespace service {
@@ -90,8 +93,8 @@ SDL<ADDRESS>::SDL(const char *name, Object *parent)
 	, verbose_setup(false)
 	, verbose_run(false)
 	, mouse_state_updated(false)
-	, param_verbose_setup("verbose-setup", this, verbose_setup)
-	, param_verbose_run("verbose-run", this, verbose_run)
+	, param_verbose_setup("verbose-setup", this, verbose_setup, "enable/disable verbosity while setup")
+	, param_verbose_run("verbose-run", this, verbose_run, "enable/disable verbosity while simulation")
 #if defined(HAVE_SDL)
 	, surface(0)
 	, screen(0)
@@ -102,6 +105,7 @@ SDL<ADDRESS>::SDL(const char *name, Object *parent)
 	, grab_input(false)
 	, full_screen(false)
 	, host_key(SDLK_RCTRL)
+	, host_cmd(false)
 	, mode_set(false)
 	, alive(false)
 	, refresh(false)
@@ -112,17 +116,17 @@ SDL<ADDRESS>::SDL(const char *name, Object *parent)
 	, keymap_filename()
 	, host_key_name("rctrl")
 	, refresh_period(40)  // 25 fps
-	, param_refresh_period("refresh-period", this, refresh_period)
-	, param_bmp_out_filename("bmp-out-filename", this, bmp_out_filename)
-	, param_keymap_filename("keymap-filename", this, keymap_filename)
-	, param_host_key_name("host-key-name", this, host_key_name)
-	, param_force_refresh("force-refresh", this, force_refresh)
-#ifdef WIN32
+	, param_refresh_period("refresh-period", this, refresh_period, "screen refresh period in milliseconds")
+	, param_bmp_out_filename("bmp-out-filename", this, bmp_out_filename, "if not empty implicitely enable screen capture and specify prefix of captured bitmaps (Windows DIB .bmp format)")
+	, param_keymap_filename("keymap-filename", this, keymap_filename, "host keymap filename")
+	, param_host_key_name("host-key-name", this, host_key_name, "host key to toggle mouse and keyboard grab")
+	, param_force_refresh("force-refresh", this, force_refresh, "force screen refresh every refresh period")
 	, work_around_sdl_mouse_motion_coordinates_bug(false)
-	, param_work_around_sdl_mouse_motion_coordinates_bug("work-around-sdl-mouse-motion-coordinates-bug", this, work_around_sdl_mouse_motion_coordinates_bug)
-#endif
+	, param_work_around_sdl_mouse_motion_coordinates_bug("work-around-sdl-mouse-motion-coordinates-bug", this, work_around_sdl_mouse_motion_coordinates_bug, "enable/disable work around SDL mouse motion coordinates bug")
 #endif
 {
+	param_refresh_period.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	
 	mouse_state.dx = 0;
 	mouse_state.dy = 0;
 	mouse_state.left_button = false;
@@ -386,6 +390,8 @@ SDL<ADDRESS>::~SDL()
 	}
 	if(sdl_mutex) SDL_DestroyMutex(sdl_mutex);
 	if(logger_mutex) SDL_DestroyMutex(logger_mutex);
+	if(video_subsystem_initialized_cond) SDL_DestroyCond(video_subsystem_initialized_cond);
+	if(video_subsystem_initialized_mutex) SDL_DestroyMutex(video_subsystem_initialized_mutex);
 	if(refresh_timer) SDL_RemoveTimer(refresh_timer);
 	SDL_Quit();
 #endif
@@ -401,6 +407,17 @@ bool SDL<ADDRESS>::Setup()
 {
 	if(!memory_import) return false;
 #if defined(HAVE_SDL)
+	if(unlikely(verbose_setup))
+	{
+		logger << DebugInfo << "Initializing SDL..." << EndDebugInfo;
+	}
+	if(SDL_Init(0) < 0)
+	{
+		logger << DebugError << "Can't initialize SDL: " << SDL_GetError() << EndDebugError;
+		alive = false;
+		return false;
+	}
+
 	// Keyboard keymap
 	unisim::util::xml::Node *xml_node = 0;
 	if(!keymap_filename.empty())
@@ -507,22 +524,36 @@ bool SDL<ADDRESS>::Setup()
 		host_key = SDLK_RCTRL;
 	}
 	
+	SDL_putenv((char *) "SDL_VIDEO_X11_DGAMOUSE=0"); // workaround for mouse motion event bug under X11
+
 	sdl_mutex = SDL_CreateMutex();
 	logger_mutex = SDL_CreateMutex();
+	video_subsystem_initialized_cond = SDL_CreateCond();
+	video_subsystem_initialized_mutex = SDL_CreateMutex();
 	
 	bmp_out_file_number = 0;
 	alive = true;
 	refresh = false;
 
+	SDL_mutexP(video_subsystem_initialized_mutex);
+
 	if(!(event_handling_thread = SDL_CreateThread((int (*)(void *)) EventHandlingThread, this)))
 	{
+		logger << DebugError << "Can't create event handling thread: " << SDL_GetError() << EndDebugError;
+		alive = false;
+		return false;
+	}
+	
+	if(SDL_CondWait(video_subsystem_initialized_cond, video_subsystem_initialized_mutex) != 0)
+	{
+		logger << DebugError << "Can't wait video and timer subsystems initialization: " << SDL_GetError() << EndDebugError;
 		alive = false;
 		return false;
 	}
 #else
 	logger << DebugWarning << "No host video output nor input devices available" << EndDebugWarning;
 #endif
-
+	
 	return true;
 }
 
@@ -685,9 +716,11 @@ void SDL<ADDRESS>::LearnKeyboard()
 						}
 					case SDL_QUIT:
 						return;
+						break;
 				}
 			}
 			SDL_Delay(10);
+			SDL_PumpEvents();
 		}
 
 		if(sdlk == SDLK_UNKNOWN) break;
@@ -749,22 +782,28 @@ void SDL<ADDRESS>::ProcessKeyboardEvent(SDL_KeyboardEvent& kbd_ev)
 		{
 			case SDL_KEYDOWN:
 				host_key_down = true;
+				host_cmd = true;
 				break;
 			case SDL_KEYUP:
 				if(host_key_down)
 				{
-					ToggleGrabInput();
-				}
-				else if(grab_input)
-				{
-					KeyAction key_action;
-					key_action.action = unisim::service::interfaces::Keyboard::KeyAction::KEY_UP;
+					if(host_cmd)
+					{
+						ToggleGrabInput();
+					}
+					else
+					{
+						KeyAction key_action;
+						key_action.action = unisim::service::interfaces::Keyboard::KeyAction::KEY_UP;
 
-					key_action.key_num = 58; // Left Control
-					PushKeyAction(key_action);
-					key_action.key_num = 60; // Left Alt
-					PushKeyAction(key_action);
+						key_action.key_num = 58; // Left Control
+						PushKeyAction(key_action);
+						key_action.key_num = 60; // Left Alt
+						PushKeyAction(key_action);
+					}
 				}
+				host_key_down = false;
+				host_cmd = false;
 				break;
 		}
 		return;
@@ -773,9 +812,8 @@ void SDL<ADDRESS>::ProcessKeyboardEvent(SDL_KeyboardEvent& kbd_ev)
 	switch(kbd_ev.keysym.sym)
 	{
 		case SDLK_f:
-			if(host_key_down && kbd_ev.type == SDL_KEYDOWN)
+			if(host_cmd && kbd_ev.type == SDL_KEYDOWN)
 			{
-				host_key_down = false;
 				ToggleFullScreen();
 				return;
 			}
@@ -786,10 +824,10 @@ void SDL<ADDRESS>::ProcessKeyboardEvent(SDL_KeyboardEvent& kbd_ev)
 	{
 		if(host_key_down)
 		{
-			host_key_down = false;
+			host_cmd = false;
 			
 			KeyAction key_action;
-			key_action.action = unisim::service::interfaces::Keyboard::KeyAction::KEY_UP;
+			key_action.action = unisim::service::interfaces::Keyboard::KeyAction::KEY_DOWN;
 
 			key_action.key_num = 58; // Left Control
 			PushKeyAction(key_action);
@@ -864,7 +902,6 @@ void SDL<ADDRESS>::ProcessMouseMotionEvent(SDL_MouseMotionEvent& mouse_motion_ev
 		mouse_state.right_button = ((mouse_motion_ev.state & SDL_BUTTON(SDL_BUTTON_RIGHT)) != 0);
 		mouse_state.dx += mouse_motion_ev.xrel;
 		mouse_state.dy -= mouse_motion_ev.yrel; // SDL Y Axis is inverted
-#ifdef WIN32
 		static int lx = 0, ly = 0;
 		if(work_around_sdl_mouse_motion_coordinates_bug)
 		{
@@ -874,7 +911,6 @@ void SDL<ADDRESS>::ProcessMouseMotionEvent(SDL_MouseMotionEvent& mouse_motion_ev
 			lx = mouse_motion_ev.xrel;
 			ly = mouse_motion_ev.yrel;
 		}
-#endif
 		if(unlikely(verbose_run))
 		{
 			SDL_mutexP(logger_mutex);
@@ -896,18 +932,25 @@ void SDL<ADDRESS>::EventLoop()
 		logger << DebugInfo << "Initializing SDL..." << EndDebugInfo;
 		SDL_mutexV(logger_mutex);
 	}
-	if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) < 0)
+	if(SDL_InitSubSystem(SDL_INIT_VIDEO | SDL_INIT_TIMER) < 0)
 	{
 		SDL_mutexP(logger_mutex);
-		logger << DebugError << "Can't initialize SDL: " << SDL_GetError() << EndDebugError;
+		logger << DebugError << "Can't initialize video and timer subsystems: " << SDL_GetError() << EndDebugError;
 		SDL_mutexV(logger_mutex);
+		alive = false;
 		return;
 	}
 	if(unlikely(verbose_setup))
 	{
 		SDL_mutexP(logger_mutex);
-		logger << DebugInfo << "SDL initialized" << EndDebugInfo;
+		logger << DebugInfo << "Video and timer subsystems initialized" << EndDebugInfo;
 		SDL_mutexV(logger_mutex);
+	}
+
+	if(SDL_CondSignal(video_subsystem_initialized_cond) != 0)
+	{
+		alive = false;
+		return;
 	}
 
 	SDL_mutexV(sdl_mutex);
@@ -950,7 +993,12 @@ void SDL<ADDRESS>::EventLoop()
 					break;
 				case SDL_QUIT:
 					SDL_mutexV(sdl_mutex);
-					exit(0); // TO IMPROVE!
+#ifdef WIN32
+					raise(SIGINT);
+#else
+					kill(getpid(), SIGINT);
+#endif
+					break;
 			}
 			SDL_mutexV(sdl_mutex);
 		}
@@ -1273,12 +1321,16 @@ template <class ADDRESS>
 Uint32 SDL<ADDRESS>::RefreshTimer(Uint32 interval, void *param)
 {
 	SDL<ADDRESS> *sdl = reinterpret_cast<SDL<ADDRESS> *>(param);
-	if(sdl->force_refresh || sdl->refresh)
+	if(sdl->alive)
 	{
-		sdl->Blit();
-		sdl->refresh = false;
+		if(sdl->force_refresh || sdl->refresh)
+		{
+			sdl->Blit();
+			sdl->refresh = false;
+		}
+		return sdl->refresh_period;
 	}
-	return sdl->refresh_period;
+	return 0;
 }
 
 template <class ADDRESS>

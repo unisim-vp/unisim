@@ -90,12 +90,15 @@ Heathrow<ADDRESS>::Heathrow(const char *name, Object *parent) :
 
 	
 	// Parameters initialization
-	param_verbose("verbose", this, verbose),
-	param_initial_base_addr("initial-base-addr", this, initial_base_addr),
-	param_pci_device_number("pci-device-number", this, pci_device_number),
-	param_bus_frequency("bus-frequency", this, bus_frequency),
-	param_pci_bus_frequency("pci-bus-frequency", this, pci_bus_frequency)
+	param_verbose("verbose", this, verbose, "enable/disable verbosity"),
+	param_initial_base_addr("initial-base-addr", this, initial_base_addr, "initial base address of memory space"),
+	param_pci_device_number("pci-device-number", this, pci_device_number, "PCI device number"),
+	param_bus_frequency("bus-frequency", this, bus_frequency, "bus frequency in Mhz"),
+	param_pci_bus_frequency("pci-bus-frequency", this, pci_bus_frequency, "PCI bus frequency in Mhz")
 {
+	param_bus_frequency.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_pci_bus_frequency.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	
 	unsigned int i;
 	
 	// Heathrow PIC registers initialization

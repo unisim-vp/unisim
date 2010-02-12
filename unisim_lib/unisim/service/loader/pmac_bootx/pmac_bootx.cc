@@ -638,11 +638,25 @@ bool BootInfos::Load(const string& device_tree_filename, const string& kernel_pa
 	{
 		ifstream f(ramdisk_filename.c_str(), ifstream::in | ifstream::binary);
 		
-		if(f.seekg(0, ios::end).fail()) return false;
+		if(f.fail())
+		{
+			logger << DebugError << "Can't load initial ramdisk from file \"" << ramdisk_filename << "\"" << EndDebugError;
+			return false;
+		}
+		
+		if(f.seekg(0, ios::end).fail())
+		{
+			logger << DebugError << "Can't seek into file \"" << ramdisk_filename << "\"" << EndDebugError;
+			return false;
+		}
 
 		uint32_t ramdisk_size = f.tellg();
 		
-		if(f.seekg(0, ios::beg).fail()) return false;
+		if(f.seekg(0, ios::beg).fail())
+		{
+			logger << DebugError << "Can't seek into file \"" << ramdisk_filename << "\"" << EndDebugError;
+			return false;
+		}
 
 		uint32_t ramdisk_offset = Malloc(0);
 		uint32_t size_to_align_on_page_boundary = ((ramdisk_offset + 4095) & 0xfffff000UL) - ramdisk_offset;
@@ -670,7 +684,11 @@ bool BootInfos::Load(const string& device_tree_filename, const string& kernel_pa
 		boot_infos->ramDiskSize = 0;
 	}
 
-	if(!device_tree.Load(device_tree_filename)) return false;
+	if(!device_tree.Load(device_tree_filename))
+	{
+		logger << DebugError << "Can't load device tree from file \"" << device_tree_filename << "\"" << EndDebugError;
+		return false;
+	}
 
 	DeviceNode *display_device = device_tree.FindDevice("device_type", "display");
 
@@ -814,12 +832,12 @@ PMACBootX::PMACBootX(const char *name, Object *parent) :
 	screen_width(0),
 	screen_height(0),
 	verbose(false),
-	param_device_tree_filename("device-tree-filename", this, device_tree_filename),
-	param_kernel_parms("kernel-params", this, kernel_parms),
-	param_ramdisk_filename("ramdisk-filename", this, ramdisk_filename),
-	param_screen_width("screen-width", this, screen_width),
-	param_screen_height("screen-height", this, screen_height),
-	param_verbose("verbose", this, verbose),
+	param_device_tree_filename("device-tree-filename", this, device_tree_filename, "device tree file name of simulated PowerMac machine"),
+	param_kernel_parms("kernel-params", this, kernel_parms, "Linux kernel parameters"),
+	param_ramdisk_filename("ramdisk-filename", this, ramdisk_filename, "initial ramdisk filename (either compressed with gzip or uncompressed)"),
+	param_screen_width("screen-width", this, screen_width, "screen width in pixels"),
+	param_screen_height("screen-height", this, screen_height, "screen height in pixels"),
+	param_verbose("verbose", this, verbose, "enable/disable verbosity"),
 	stack_base(0)
 {
 	SetupDependsOn(loader_import);
@@ -875,10 +893,10 @@ bool PMACBootX::Setup()
 
 	if(!boot_infos.Load(device_tree_filename, kernel_parms, ramdisk_filename, screen_width, screen_height))
 	{
-		logger << DebugError << "Error while loading kernel" << EndDebugError;
+		logger << DebugError << "Error while bootloading kernel, initial ramdisk and device tree" << EndDebugError;
 		return false;
 	}
-	
+
 	const uint8_t *boot_infos_image = boot_infos.GetImage();
 	uint32_t boot_infos_image_size = boot_infos.GetImageSize();
 
@@ -896,19 +914,43 @@ bool PMACBootX::Setup()
 	uint32_t entry_point = loader_import->GetEntryPoint();
 		
 	Register *pc = registers_import->GetRegister("cia");
-	if(!pc) return false;
+	if(!pc)
+	{
+		logger << DebugError << "Register \"pc\" does not exist" << EndDebugError;
+		return false;
+	}
 	pc->SetValue(&entry_point);
+	
 	Register *r1 = registers_import->GetRegister("r1");
-	if(!r1) return false;
+	if(!r1)
+	{
+		logger << DebugError << "Register \"r1\" does not exist" << EndDebugError;
+		return false;
+	}
 	r1->SetValue(&r1_value);
+	
 	Register *r3 = registers_import->GetRegister("r3");
-	if(!r3) return false;
+	if(!r3)
+	{
+		logger << DebugError << "Register \"r3\" does not exist" << EndDebugError;
+		return false;
+	}
 	r3->SetValue(&r3_value);
+	
 	Register *r4 = registers_import->GetRegister("r4");
-	if(!r4) return false;
+	if(!r4)
+	{
+		logger << DebugError << "Register \"r4\" does not exist" << EndDebugError;
+		return false;
+	}
 	r4->SetValue(&r4_value);
+	
 	Register *r5 = registers_import->GetRegister("r5");
-	if(!r5) return false;
+	if(!r5)
+	{
+		logger << DebugError << "Register \"r5\" does not exist" << EndDebugError;
+		return false;
+	}
 	r5->SetValue(&r5_value);
 	
 	return true;

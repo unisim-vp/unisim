@@ -64,14 +64,14 @@ AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::AM29LV(const char *name, Object *parent) :
 	memory_export("memory-export", this),
 	logger(*this),
 	verbose(false),
-	param_verbose("verbose", this, verbose),
+	param_verbose("verbose", this, verbose, "enable/disable verbosity"),
 	org(0),
 	bytesize(BYTESIZE),
 	endian(E_LITTLE_ENDIAN),
-	param_org("org", this, org),
-	param_bytesize("bytesize", this, bytesize),
-	param_endian("endian", this, endian),
-	param_sector_protect("sector-protect", this, sector_protect, CONFIG::NUM_SECTORS)
+	param_org("org", this, org, "flash memory base address"),
+	param_bytesize("bytesize", this, bytesize, "flash memory size in bytes"),
+	param_endian("endian", this, endian, "endianness of flash memory"),
+	param_sector_protect("sector-protect", this, sector_protect, CONFIG::NUM_SECTORS, "enable/disable sector write protection")
 {
 	uint32_t chip_io_width;
 	for(config_addr_shift = 0, chip_io_width = CHIP_IO_WIDTH; chip_io_width > 1; chip_io_width >>= 1, config_addr_shift++);

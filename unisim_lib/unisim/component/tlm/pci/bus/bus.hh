@@ -178,18 +178,24 @@ public:
 		Client<unisim::service::interfaces::Memory<ADDRESS_TYPE> >(name, parent),
 		logger(*this),
 		verbose(false),
-		param_verbose("verbose", this, verbose),
-		param_base_address("base-address", this, base_address, NUM_MAPPINGS),
-		param_size("size", this, size, NUM_MAPPINGS),
-		param_device_number("device-number", this, device_number, NUM_MAPPINGS),
-		param_target_port("target-port", this, target_port, NUM_MAPPINGS),
-		param_register_number("register-number", this, register_number, NUM_MAPPINGS),
-		param_addr_type("addr-type", this, addr_type, NUM_MAPPINGS),
-		param_num_mappings("num-mappings", this, num_mappings),
+		param_verbose("verbose", this, verbose, "enable/disable verbosity"),
+		param_base_address("base-address", this, base_address, NUM_MAPPINGS, "mapping: base address of mapped device"),
+		param_size("size", this, size, NUM_MAPPINGS, "mapping: size in bytes of mapped device"),
+		param_device_number("device-number", this, device_number, NUM_MAPPINGS, "mapping: device number"),
+		param_target_port("target-port", this, target_port, NUM_MAPPINGS, "mapping: target port number"),
+		param_register_number("register-number", this, register_number, NUM_MAPPINGS, "mapping: BAR offset in PCI device configuration space"),
+		param_addr_type("addr-type", this, addr_type, NUM_MAPPINGS, "mapping: address space type"),
+		param_num_mappings("num-mappings", this, num_mappings, "total number of address mappings"),
 		frequency(0),
-		param_frequency("frequency", this, frequency),
-		num_mappings(0) {
-		for(unsigned int i = 0; i < NUM_MASTERS; i++){
+		param_frequency("frequency", this, frequency, "frequency in Mhz"),
+		num_mappings(0)
+{
+		param_size.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+		param_target_port.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+		param_num_mappings.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+		param_frequency.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+
+	for(unsigned int i = 0; i < NUM_MASTERS; i++){
 			stringstream s, r;
 	  		s << "input_port[" << i << "]";
 	  		input_port[i] =
@@ -330,7 +336,7 @@ public:
     }
 
 	virtual bool Send (const PMsgType &message) {
-		PReqType req = message->req;
+		const PReqType& req = message->req;
 		int device;
 		bool ret = true;
 
@@ -430,9 +436,11 @@ public:
 				ui_delay = ui_delay % cycle_time.value();
 				delay = sc_time(ui_delay, false);
 	   			device_dispatch_event.notify(delay);
+				//std::cerr << "Send: delay= " << delay << ")" << endl;
 			}
 	   		
 	   		device_request_list.push_back(device_request);
+			//std::cerr << "Send: queue size= " << device_request_list.size() << ")" << endl;
    			
    			return true;		
 	   	}
@@ -447,7 +455,7 @@ public:
   			if(device_request_list.empty()) continue;
   			device_request = device_request_list.front();
   			
-  			PMsgType message = device_request->message;
+  			PMsgType& message = device_request->message;
 			sc_event bus_event;
 			int device = device_request->device;
 			if(unlikely(DEBUG && verbose))
@@ -497,8 +505,8 @@ public:
 					sc_stop();
 					wait();
 		 		}
-		 		PReqType req = message->req;
-	 			PRspType rsp = message->rsp;
+		 		PReqType& req = message->req;
+	 			PRspType& rsp = message->rsp;
 	 			updateDevMap(req, rsp);
 	 			
 	 			message->PopResponseEvent();
@@ -515,9 +523,14 @@ public:
       			delay = cycle_time;
       		}
       		device_request_list.pop_front();
+			//std::cerr << "Disp: before device_request->message = 0 (queue size= " << device_request_list.size() << ")" << endl;
+			device_request->message = 0;
       		device_request_free_list.push_back(device_request);
       		if(!device_request_list.empty())
+			{
+				//std::cerr << "Disp: delay=" << delay << endl;
       			device_dispatch_event.notify(delay);
+			}
   		}
   	}
 

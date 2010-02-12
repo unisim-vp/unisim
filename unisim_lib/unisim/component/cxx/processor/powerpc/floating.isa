@@ -1527,8 +1527,7 @@ fcmpo.execute = {
 		case SoftDouble::CREqual: c = 2; break;
 		case SoftDouble::CRGreater: c = 4; break;
 		default:
-			std::cerr << "Internal error" << std::endl;
-			abort();
+			throw "Internal error";
 	}
 
 	// Generate FPCC
@@ -1596,8 +1595,7 @@ fcmpu.execute = {
 		case SoftDouble::CREqual: c = 2; break;
 		case SoftDouble::CRGreater: c = 4; break;
 		default:
-			std::cerr << "Internal error" << std::endl;
-			abort();
+			throw "Internal error";
 	}
 
 	// Generate FPCC

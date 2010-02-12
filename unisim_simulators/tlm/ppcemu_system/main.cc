@@ -71,11 +71,12 @@
 
 #ifdef DEBUG_PPCEMU_SYSTEM
 typedef unisim::component::cxx::processor::powerpc::MPC7447ADebugConfig CPU_CONFIG;
+static const bool DEBUG_INFORMATION = true;
 #else
 typedef unisim::component::cxx::processor::powerpc::MPC7447AConfig CPU_CONFIG;
+static const bool DEBUG_INFORMATION = false;
 #endif
 
-static const bool DEBUG_INFORMATION = false;
 
 bool debug_enabled;
 
@@ -294,9 +295,11 @@ void LoadDefaultRunTimeConfiguration()
 {
 	// Default run-time configuration
 	int gdb_server_tcp_port = 1234;
+	const char *filename = "vmlinux";
+	const char *kernel_params = "/dev/ram0 rw";
 	const char *device_tree_filename = "device_tree.xml";
 	const char *gdb_server_arch_filename = "gdb_powerpc.xml";
-	const char *ramdisk_filename = "initrd.img.gz";
+	const char *ramdisk_filename = "initrd.img";
 	const char *bmp_out_filename = "";
 	const char *keymap_filename = "keymap.xml";
 	uint64_t max_inst = 0xffffffffffffffffULL; // maximum number of instruction to simulate
@@ -615,12 +618,16 @@ void LoadDefaultRunTimeConfiguration()
 	if(kloader)
 	{
 		(*kloader)["pmac-bootx.device-tree-filename"] = device_tree_filename;
-		(*kloader)["pmac-bootx.kernel-params"] = ""; // no kernel parameters
+		(*kloader)["pmac-bootx.kernel-params"] = kernel_params; // no kernel parameters
 		(*kloader)["pmac-bootx.ramdisk-filename"] = ramdisk_filename;
 		(*kloader)["pmac-bootx.screen-width"] = display_width;
 		(*kloader)["pmac-bootx.screen-height"] = display_height;
+		(*kloader)["elf32-loader.filename"] = filename;
 		(*kloader)["elf32-loader.base-addr"] = 0x00400000UL;
 	}
+	
+	// - kernel logger
+	*ServiceManager::GetParameter("kernel_logger.std_out") = true;
 }
 
 int sc_main(int argc, char *argv[])
@@ -713,7 +720,7 @@ int sc_main(int argc, char *argv[])
 		}
 	}
 
-	char *filename = argv[optind];
+	const char *filename = argv[optind];
 	int sim_argc = argc - optind;
 	char **sim_argv = argv + optind;
 	char **sim_envp = environ;
@@ -840,8 +847,14 @@ int sc_main(int argc, char *argv[])
 	// From a configuration file
 	if(set_config)
 	{
-		ServiceManager::LoadXmlParameters(set_config_name);
-		cerr << "Parameters set using file \"" << set_config_name << "\"" << endl;
+		if(ServiceManager::LoadXmlParameters(set_config_name))
+		{
+			cerr << "Parameters set using file \"" << set_config_name << "\"" << endl;
+		}
+		else
+		{
+			cerr << "WARNING! Loading parameters set from file \"" << set_config_name << "\" failed" << endl;
+		}
 	}
 	
 	// From command line arguments "-s varname=value"
@@ -1212,15 +1225,19 @@ int sc_main(int argc, char *argv[])
 		}
 
 		cerr << "Simulation finished" << endl;
-		cerr << "Simulation statistics:" << endl;
 
 		double time_stop = host_time->GetTime();
 		double spent_time = time_stop - time_start;
 
+		cerr << "Simulation run-time parameters:" << endl;
+		ServiceManager::DumpParameters(cerr);
+		cerr << endl;
+		cerr << "Simulation statistics:" << endl;
+		ServiceManager::DumpStatistics(cerr);
+		cerr << endl;
 		cerr << "simulation time: " << spent_time << " seconds" << endl;
 		cerr << "simulated time : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;
-		cerr << "simulated instructions : " << cpu->GetInstructionCounter() << " instructions" << endl;
-		cerr << "host simulation speed: " << ((double) cpu->GetInstructionCounter() / spent_time / 1000000.0) << " MIPS" << endl;
+		cerr << "host simulation speed: " << ((double) (*cpu)["instruction-counter"] / spent_time / 1000000.0) << " MIPS" << endl;
 		cerr << "time dilatation: " << spent_time / sc_time_stamp().to_seconds() << " times slower than target machine" << endl;
 		if(estimate_power)
 		{

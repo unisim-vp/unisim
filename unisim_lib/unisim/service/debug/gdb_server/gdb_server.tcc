@@ -120,9 +120,9 @@ GDBServer<ADDRESS>::GDBServer(const char *_name, Object *_parent) :
 	output_buffer_size(0),
 	logger(*this),
 	memory_atom_size(1),
-	param_memory_atom_size("memory-atom-size", this, memory_atom_size),
-	param_tcp_port("tcp-port", this, tcp_port),
-	param_architecture_description_filename("architecture-description-filename", this, architecture_description_filename)
+	param_memory_atom_size("memory-atom-size", this, memory_atom_size, "size of the smallest addressable element in memory"),
+	param_tcp_port("tcp-port", this, tcp_port, "TCP/IP port to listen waiting for a GDB client connection"),
+	param_architecture_description_filename("architecture-description-filename", this, architecture_description_filename, "filename of a XML description of the connected processor")
 {
 	Object::SetupDependsOn(registers_import);
 	Object::SetupDependsOn(memory_access_reporting_control_import);

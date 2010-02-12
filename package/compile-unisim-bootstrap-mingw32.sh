@@ -1,8 +1,8 @@
 #!/usr/bin/make -f
 SHELL=/bin/bash
 BUILD=i686-pc-linux-gnu
-HOST=i586-mingw32msvc
-CROSS_COMPILE=i586-mingw32msvc-
+HOST=i586-pc-mingw32
+CROSS_COMPILE=i586-pc-mingw32-
 CXX=$(CROSS_COMPILE)g++
 CC=$(CROSS_COMPILE)gcc
 AS=$(CROSS_COMPILE)as

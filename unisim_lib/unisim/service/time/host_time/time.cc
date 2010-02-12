@@ -34,15 +34,7 @@
  
 #include <unisim/service/time/host_time/time.hh>
 
-#ifdef WIN32
-
-#include <windows.h>
-
-#else
-
-#include <sys/times.h>
-
-#endif
+#include <sys/time.h>
 
 namespace unisim {
 namespace service {
@@ -64,6 +56,33 @@ bool HostTime::Setup()
 {
 	return true;
 }
+
+double HostTime::GetTime()
+{
+	double t = 0.0;
+	
+	struct timeval tv;
+	
+	if(gettimeofday(&tv, 0) == 0)
+	{
+		t = (double) tv.tv_sec + ((double) tv.tv_usec / 1.0e6);
+	}
+	
+	return t;
+}
+
+// Code below was for reading host CPU usage
+// I prefer to read real time because CPU usage is not really suitable in multiprocessor/multithread host machines
+#if 0
+#ifdef WIN32
+
+#include <windows.h>
+
+#else
+
+#include <sys/times.h>
+
+#endif
 
 double HostTime::GetTime()
 {
@@ -90,6 +109,7 @@ double HostTime::GetTime()
 #endif
 	return t;
 }
+#endif
 
 } // end of namespace host_time
 } // end of namespace time

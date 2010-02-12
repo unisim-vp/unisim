@@ -79,7 +79,7 @@ InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent) :
 	Client<Registers>(_name, _parent),
 	Client<SymbolTableLookup<ADDRESS> >(_name, _parent),
 	memory_atom_size(1),
-	param_memory_atom_size("memory-atom-size", this, memory_atom_size),
+	param_memory_atom_size("memory-atom-size", this, memory_atom_size, "size of the smallest addressable element in memory"),
 	debug_control_export("debug-control-export", this),
 	memory_access_reporting_export("memory-access-reporting-export", this),
 	trap_reporting_export("trap-reporting-export", this),

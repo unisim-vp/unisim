@@ -69,11 +69,11 @@ ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::El
 	dump_headers(false),
 	logger(*this),
 	verbose(false),
-	param_filename("filename", this, filename),
-	param_base_addr("base-addr", this, base_addr),
-	param_force_use_virtual_address("force-use-virtual-address", this, force_use_virtual_address),
-	param_dump_headers("dump-headers", this, dump_headers),
-	param_verbose("verbose", this, verbose)
+	param_filename("filename", this, filename, "the ELF filename to load into memory"),
+	param_base_addr("base-addr", this, base_addr, "if not null, a forced base address for a unique program segment"),
+	param_force_use_virtual_address("force-use-virtual-address", this, force_use_virtual_address, "force use of virtual addresses instead of physical addresses"),
+	param_dump_headers("dump-headers", this, dump_headers, "dump headers while loading ELF file"),
+	param_verbose("verbose", this, verbose, "enable/disable verbosity")
 {
 	Object::SetupDependsOn(memory_import);
 }

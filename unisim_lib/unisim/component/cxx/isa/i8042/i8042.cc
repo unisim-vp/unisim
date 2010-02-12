@@ -70,13 +70,19 @@ I8042::I8042(const char *name, Object *parent) :
 	aux_sample_rate(100),
 	aux_wrap(false),
 	verbose(false),
-	param_fsb_frequency("fsb-frequency", this, fsb_frequency),
-	param_isa_bus_frequency("isa-bus-frequency", this, isa_bus_frequency),
-	param_typematic_rate("typematic-rate", this, typematic_rate),
-	param_typematic_delay("typematic-delay", this, typematic_delay),
-	param_speed_boost("speed-boost", this, speed_boost),
-	param_verbose("verbose", this, verbose)
+	param_fsb_frequency("fsb-frequency", this, fsb_frequency, "front side bus frequency in Mhz"),
+	param_isa_bus_frequency("isa-bus-frequency", this, isa_bus_frequency, "ISA bus frequency in Mhz"),
+	param_typematic_rate("typematic-rate", this, typematic_rate, "typematic rate (key strokes per second)"),
+	param_typematic_delay("typematic-delay", this, typematic_delay, "typematic delay (key repeat delay in seconds)"),
+	param_speed_boost("speed-boost", this, speed_boost, "speed-boost factor"),
+	param_verbose("verbose", this, verbose, "enable/disable verbosity")
 {
+	param_fsb_frequency.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_isa_bus_frequency.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_typematic_rate.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_typematic_delay.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_speed_boost.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+
 	// PS/2 set 2 keyboard ID
 	kbd_id[0] = 0xab;
 	kbd_id[1] = 0x83;

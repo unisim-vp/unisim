@@ -101,24 +101,24 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	, itlb_power_mode_import("itlb-power-mode-import",  this)
 	, fp32_estimate_inv_warning(false)
 	, fp64_estimate_inv_sqrt_warning(false)
-	, param_verbose_all("verbose-all",  this,  verbose_all)
-	, param_verbose_setup("verbose-setup",  this,  verbose_setup)
-	, param_verbose_step("verbose-step",  this,  verbose_step)
-	, param_verbose_dtlb("verbose-dtlb",  this,  verbose_dtlb)
-	, param_verbose_dl1("verbose-dl1",  this,  verbose_dl1)
-	, param_verbose_il1("verbose-il1",  this,  verbose_il1)
-	, param_verbose_l2("verbose-l2",  this,  verbose_l2)
-	, param_verbose_load("verbose-load",  this,  verbose_load)
-	, param_verbose_store("verbose-store",  this,  verbose_store)
-	, param_verbose_read_memory("verbose-read-memory",  this,  verbose_read_memory)
-	, param_verbose_write_memory("verbose-write-memory",  this,  verbose_write_memory)
-	, param_verbose_exception("verbose-exception",  this,  verbose_exception)
-	, param_verbose_set_msr("verbose-set-msr",  this,  verbose_set_msr)
-	, param_verbose_set_hid0("verbose-set-hid0",  this,  verbose_set_hid0)
-	, param_verbose_set_hid1("verbose-set-hid1",  this,  verbose_set_hid1)
-	, param_verbose_set_hid2("verbose-set-hid2",  this,  verbose_set_hid2)
-	, param_verbose_set_l2cr("verbose-set-l2cr",  this,  verbose_set_l2cr)
-	, param_trap_on_instruction_counter("trap-on-instruction-counter",  this,  trap_on_instruction_counter)
+	, param_verbose_all("verbose-all",  this,  verbose_all, "globally enable/disable verbosity")
+	, param_verbose_setup("verbose-setup",  this,  verbose_setup, "enable/disable verbosity while setup")
+	, param_verbose_step("verbose-step",  this,  verbose_step, "enable/disable verbosity when simulating an instruction")
+	, param_verbose_dtlb("verbose-dtlb",  this,  verbose_dtlb, "enable/disable verbosity when accessing data translation lookahead buffer")
+	, param_verbose_dl1("verbose-dl1",  this,  verbose_dl1, "enable/disable verbosity when accessing L1 data cache")
+	, param_verbose_il1("verbose-il1",  this,  verbose_il1, "enable/disable verbosity when accessing L1 instruction cache")
+	, param_verbose_l2("verbose-l2",  this,  verbose_l2, "enable/disable verbosity when accessing L2 unified cache")
+	, param_verbose_load("verbose-load",  this,  verbose_load, "enable/disable verbosity when simulating a load")
+	, param_verbose_store("verbose-store",  this,  verbose_store, "enable/disable verbosity when simulating a store")
+	, param_verbose_read_memory("verbose-read-memory",  this,  verbose_read_memory, "enable/disable verbosity when reading memory for a debug purpose")
+	, param_verbose_write_memory("verbose-write-memory",  this,  verbose_write_memory, "enable/disable verbosity when writing memory for a debug purpose")
+	, param_verbose_exception("verbose-exception",  this,  verbose_exception, "enable/disable verbosity when handling exceptions")
+	, param_verbose_set_msr("verbose-set-msr",  this,  verbose_set_msr, "enable/disable verbosity when setting MSR")
+	, param_verbose_set_hid0("verbose-set-hid0",  this,  verbose_set_hid0, "enable/disable verbosity when setting HID0")
+	, param_verbose_set_hid1("verbose-set-hid1",  this,  verbose_set_hid1, "enable/disable verbosity when setting HID1")
+	, param_verbose_set_hid2("verbose-set-hid2",  this,  verbose_set_hid2, "enable/disable verbosity when setting HID2")
+	, param_verbose_set_l2cr("verbose-set-l2cr",  this,  verbose_set_l2cr, "enable/disable verbosity when setting L2CR")
+	, param_trap_on_instruction_counter("trap-on-instruction-counter",  this,  trap_on_instruction_counter, "number of simulated instruction before traping")
 	, il1()
 	, dl1()
 	, l2()
@@ -145,13 +145,13 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	, verbose_set_l2cr(false)
 	, trap_on_instruction_counter(0xffffffffffffffffULL)
 	, max_inst(0xffffffffffffffffULL)
-	, param_cpu_cycle_time("cpu-cycle-time",  this,  cpu_cycle_time)
-	, param_voltage("voltage",  this,  voltage)
-	, param_bus_cycle_time("bus-cycle-time",  this,  bus_cycle_time)
-	, param_max_inst("max-inst",  this,  max_inst)
-	, stat_instruction_counter("instruction-counter",  this,  instruction_counter)
-	, stat_cpu_cycle("cpu-cycle",  this,  cpu_cycle)
-	, stat_bus_cycle("bus-cycle",  this,  bus_cycle)
+	, param_cpu_cycle_time("cpu-cycle-time",  this,  cpu_cycle_time, "CPU cycle time in picoseconds")
+	, param_voltage("voltage",  this,  voltage, "CPU voltage in mV")
+	, param_bus_cycle_time("bus-cycle-time",  this,  bus_cycle_time, "bus cycle time in picoseconds")
+	, param_max_inst("max-inst",  this,  max_inst, "maximum number of instructions to simulate")
+	, stat_instruction_counter("instruction-counter",  this,  instruction_counter, "number of simulated instructions")
+	, stat_cpu_cycle("cpu-cycle",  this,  cpu_cycle, "number of simulated CPU cycles")
+	, stat_bus_cycle("bus-cycle",  this,  bus_cycle, "number of simulated bus cycles")
 	, requires_memory_access_reporting(true)
 	, requires_finished_instruction_reporting(true)
 	, logger(*this)
@@ -160,7 +160,29 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	, bus_cycle_time(0)
 	, cpu_cycle(0)
 	, bus_cycle(0)
+	, event_free_list(0)
+	, insn_free_list(0)
+	, operand_free_list(0)
+	, bus_access_free_list(0)
+	, load_store_access_free_list(0)
+	, fetch_access_free_list(0)
+	, num_outstanding_l1_fetch_miss(0)
+	, num_outstanding_l1_load_miss(0)
+	, num_outstanding_l1_store_miss(0)
+	, num_outstanding_l2_load_miss(0)
+	, num_outstanding_l2_store_miss(0)
+	, dispatch_uop_num(0)
+	, load_store_access_num(0)
 {
+	param_trap_on_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_cpu_cycle_time.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_voltage.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_bus_cycle_time.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_max_inst.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	stat_bus_cycle.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	stat_cpu_cycle.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	stat_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	
 	unsigned int i;
 
 	for(i = 0; i < 32; i++)
@@ -1932,7 +1954,7 @@ void CPU<CONFIG>::SetSPR(unsigned int n, uint32_t value)
 template <class CONFIG>
 void CPU<CONFIG>::StepOneInstruction()
 {
-	if(debug_control_import)
+	if(unlikely(debug_control_import != 0))
 	{
 		do
 		{
@@ -2118,6 +2140,9 @@ void CPU<CONFIG>::StepOneInstruction()
 template <class CONFIG>
 void CPU<CONFIG>::StepOneCycle()
 {
+	DumpPipeline();
+	DumpSchedule();
+	//logger << DebugInfo << "Cycle #" << cpu_cycle << EndDebugInfo;
 	ScheduleEvents();
 
 	// Complete
@@ -2147,17 +2172,14 @@ void CPU<CONFIG>::OnBusCycle()
 	bus_cycle++;
 	
 	// Time Base registers and DEC register are updated at one fourth the bus clock rate
-	if((bus_cycle % 4) == 0)
+	if(unlikely((bus_cycle % 4) == 0))
 	{
 		/* Update Time base counters */
-/*		SetTBL(GetTBL() + 1);
-		if(GetTBL() == 0) SetTBU(GetTBU() + 1);*/
 		if(CONFIG::HAS_TBU) SetTBU((bus_cycle >> 34) & 0xffffffffUL);
 		if(CONFIG::HAS_TBL) SetTBL((bus_cycle >> 2) & 0xffffffffUL);
 		
 		/* std::decrement the decrementer */
 		if(CONFIG::HAS_DEC) SetDEC(GetDEC() - 1);
-		//cerr << "DEC = " << GetDEC() << endl;
 	}
 }
 
@@ -6201,6 +6223,7 @@ Event<CONFIG> *CPU<CONFIG>::AllocateEvent()
 	if(!event_free_list)
 	{
 		event_free_list = new Event<CONFIG>();
+		event_free_list->next_free = 0;
 	}
 
 	Event<CONFIG> *ev = event_free_list;
@@ -6217,6 +6240,7 @@ Instruction<CONFIG> *CPU<CONFIG>::AllocateInstruction()
 	if(!insn_free_list)
 	{
 		insn_free_list = new Instruction<CONFIG>();
+		insn_free_list->next_free = 0;
 	}
 
 	Instruction<CONFIG> *instruction = insn_free_list;
@@ -6231,6 +6255,7 @@ Operand<CONFIG> *CPU<CONFIG>::AllocateOperand()
 	if(!operand_free_list)
 	{
 		operand_free_list = new Operand<CONFIG>();
+		operand_free_list->next_free = 0;
 	}
 
 	Operand<CONFIG> *operand = operand_free_list;
@@ -6252,6 +6277,7 @@ LoadStoreAccess<CONFIG> *CPU<CONFIG>::AllocateLoadStoreAccess()
 	if(!load_store_access_free_list)
 	{
 		load_store_access_free_list = new LoadStoreAccess<CONFIG>();
+		load_store_access_free_list->next_free = 0;
 	}
 
 	LoadStoreAccess<CONFIG> *load_store_access = load_store_access_free_list;
@@ -6307,12 +6333,28 @@ BusAccess<CONFIG> *CPU<CONFIG>::AllocateBusAccess()
 	if(!bus_access_free_list)
 	{
 		bus_access_free_list = new BusAccess<CONFIG>();
+		bus_access_free_list->next_free = 0;
 	}
 
 	BusAccess<CONFIG> *bus_access = bus_access_free_list;
 	bus_access_free_list = bus_access->next_free;
 	bus_access->next_free = 0;	
 	return bus_access;
+}
+
+template <class CONFIG>
+FetchAccess<CONFIG> *CPU<CONFIG>::AllocateFetchAccess()
+{
+	if(!fetch_access_free_list)
+	{
+		fetch_access_free_list = new FetchAccess<CONFIG>();
+		fetch_access_free_list->next_free = 0;
+	}
+
+	FetchAccess<CONFIG> *fetch_access = fetch_access_free_list;
+	fetch_access_free_list = fetch_access->next_free;
+	fetch_access->next_free = 0;	
+	return fetch_access;
 }
 
 template <class CONFIG>
@@ -6325,6 +6367,7 @@ void CPU<CONFIG>::FreeEvent(Event<CONFIG> *ev)
 template <class CONFIG>
 void CPU<CONFIG>::FreeInstruction(Instruction<CONFIG> *instruction)
 {
+	abort();
 	unsigned int num_operands = instruction->input_operands.Size();
 	unsigned int i;
 
@@ -6362,14 +6405,153 @@ void CPU<CONFIG>::FreeBusAccess(BusAccess<CONFIG> *bus_access)
 	bus_access_free_list = bus_access;
 }
 
+template <class CONFIG>
+void CPU<CONFIG>::FreeFetchAccess(FetchAccess<CONFIG> *fetch_access)
+{
+	fetch_access->next_free = fetch_access_free_list;
+	fetch_access_free_list = fetch_access;
+}
+
 
 template <class CONFIG>
 void CPU<CONFIG>::Fetch()
 {
 	// Stall if IQ is full
 	if(iq.Full()) return;
-	// Send a request to IMMU
+	
+	FetchAccess<CONFIG> *fetch_access = AllocateFetchAccess();
+	unsigned int lat = 0;
+	
 	uint32_t size_to_block_boundary = CONFIG::IL1_CONFIG::CACHE_BLOCK_SIZE - (cia & (CONFIG::IL1_CONFIG::CACHE_BLOCK_SIZE - 1));
+	uint32_t fetch_width = Max(iq.Size(), CONFIG::FETCH_WIDTH);
+	fetch_access->cia = seq_cia;
+	fetch_access->size = Max(fetch_width * sizeof(uint32_t), size_to_block_boundary);
+	fetch_access->mmu_access.addr = seq_cia;
+	fetch_access->mmu_access.privilege_level = GetPrivilegeLevel();
+	fetch_access->mmu_access.memory_type = CONFIG::MT_INSN;
+	fetch_access->mmu_access.memory_access_type = CONFIG::MAT_READ;
+
+	// Check wether IMMU is enabled
+	if(GetMSR_IR())
+	{
+		// BATs and TLB Lookup
+		LookupBAT<false>(fetch_access->mmu_access);
+		if(!fetch_access->mmu_access.bat_hit)
+		{
+			AccessTLB<false>(fetch_access->mmu_access);
+				
+			if(!fetch_access->mmu_access.tlb_hit)
+			{
+				// BAT/TLB Miss
+				abort(); // Hardware page table search should start at commit
+			}
+		}
+	}
+	else
+	{
+		// W=0: Write through disabled
+		// I=0: Cache not inhibited
+		// M=1: Memory coherency enforced
+		// G=1: Guarded memory access (speculative fetch forbidden)
+		fetch_access->mmu_access.wimg = (WIMG)(CONFIG::WIMG_MEMORY_COHERENCY_ENFORCED | CONFIG::WIMG_GUARDED_MEMORY);
+		fetch_access->mmu_access.physical_addr = fetch_access->mmu_access.addr;
+	}
+
+	logger << DebugInfo << *fetch_access << EndDebugInfo;
+
+	if(!(fetch_access->mmu_access.wimg & CONFIG::WIMG_CACHE_INHIBITED) && IsInsnCacheEnabled())
+	{
+		ClearAccessIL1(fetch_access->l1_access); // TO BE REMOVED
+		// IL1 Access
+		fetch_access->l1_access.addr = fetch_access->mmu_access.physical_addr;
+		LookupIL1(fetch_access->l1_access);
+		lat += CONFIG::IL1_LATENCY;
+
+		if(fetch_access->l1_access.block)
+		{
+			// Fetch hit in IL1
+			memcpy(fetch_access->data, &fetch_access->l1_access.block[fetch_access->l1_access.offset], fetch_access->size);
+			UpdateReplacementPolicyIL1(fetch_access->l1_access);
+			NotifyFinishedFetch(fetch_access, lat);
+		}
+		else
+		{
+			// Fetch miss in IL1
+			if(num_outstanding_l1_fetch_miss >= CONFIG::MAX_OUTSTANDING_L1_FETCH_MISS) return;
+			num_outstanding_l1_fetch_miss++;
+
+			if(IsL2CacheEnabled())
+			{
+				ClearAccessL2(fetch_access->l2_access); // TO BE REMOVED
+				// DL1 block fill from L2
+				fetch_access->l2_access.addr = fetch_access->l1_access.block_base_addr;
+			
+				LookupL2(fetch_access->l2_access);
+				lat += CONFIG::L2_LATENCY;
+
+				if(fetch_access->l2_access.block)
+				{
+					// IL1 block fill hit in L2
+					memcpy(&(*fetch_access->l1_access.block)[0], &(*fetch_access->l2_access.block)[fetch_access->l2_access.offset], CacheBlock<class CONFIG::IL1_CONFIG>::SIZE);
+					UpdateReplacementPolicyL2(fetch_access->l2_access);
+					memcpy(fetch_access->data, &(*fetch_access->l1_access.block)[fetch_access->l1_access.offset], fetch_access->size);
+					UpdateReplacementPolicyIL1(fetch_access->l1_access);
+					NotifyFinishedFetch(fetch_access, lat);
+				}
+				else
+				{
+					// Load miss in L2
+					if(num_outstanding_l2_load_miss >= CONFIG::MAX_OUTSTANDING_L2_LOAD_MISS) return;
+
+					// L2 block fill from bus
+					fetch_access->l2_access.block = &(*fetch_access->l2_access.line)[fetch_access->l2_access.sector];
+
+					BusAccess<CONFIG> *bus_access = AllocateBusAccess();
+					bus_access->issued = false;
+					bus_access->type = BusAccess<CONFIG>::REFILL;
+					bus_access->addr = fetch_access->l2_access.block_base_addr;
+					bus_access->size = CacheBlock<class CONFIG::L2_CONFIG>::SIZE;
+					bus_access->load_store_access = 0;
+					bus_access->fetch_access = fetch_access;
+					bus_access->wimg = fetch_access->mmu_access.wimg;
+					bus_access->rwitm = false;
+					NotifyBusAccess(bus_access, lat);
+				}
+			}
+			else
+			{
+				// DL1 block fill from bus
+				BusAccess<CONFIG> *bus_access = AllocateBusAccess();
+				bus_access->issued = false;
+				bus_access->type = BusAccess<CONFIG>::REFILL;
+				bus_access->addr = fetch_access->l1_access.block_base_addr;
+				bus_access->size = CacheBlock<class CONFIG::IL1_CONFIG>::SIZE;
+				bus_access->load_store_access = 0;
+				bus_access->fetch_access = fetch_access;
+				bus_access->wimg = fetch_access->mmu_access.wimg;
+				bus_access->rwitm = false;
+				NotifyBusAccess(bus_access, lat);
+			}
+		}
+	}
+	else
+	{
+		// Caching is either disabled or inhibited
+		BusAccess<CONFIG> *bus_access = AllocateBusAccess();
+		bus_access->issued = false;
+		bus_access->type = BusAccess<CONFIG>::LOAD;
+		bus_access->addr = fetch_access->mmu_access.physical_addr;
+		bus_access->size = fetch_access->size;
+		bus_access->load_store_access = 0;
+		bus_access->fetch_access = fetch_access;
+		bus_access->wimg = fetch_access->mmu_access.wimg;
+		bus_access->rwitm = false;
+		NotifyBusAccess(bus_access, lat);
+	}
+
+	seq_cia += fetch_access->size;
+	// Send a request to IMMU
+/*	uint32_t size_to_block_boundary = CONFIG::IL1_CONFIG::CACHE_BLOCK_SIZE - (cia & (CONFIG::IL1_CONFIG::CACHE_BLOCK_SIZE - 1));
 	uint32_t fetch_width = Max(iq.Size(), FETCH_WIDTH);
 	uint32_t fetch_size = Max(fetch_width * sizeof(uint32_t), size_to_block_boundary);
 	uint8_t prefetch_buffer[fetch_size];
@@ -6381,7 +6563,7 @@ void CPU<CONFIG>::Fetch()
 		Instruction<CONFIG> *instruction = AllocateInstruction();
 		instruction->Initialize(this, cia, insn);
 		iq.Push(instruction);
-	}
+	}*/
 }
 
 template <class CONFIG>
@@ -6391,7 +6573,7 @@ void CPU<CONFIG>::DecodeDispatch()
 
 	unsigned int num_load_stores = 0;
 	unsigned int i, j;
-	for(i = 0; i < DECODE_WIDTH; i++)
+	for(i = 0; i < CONFIG::DECODE_WIDTH; i++)
 	{
 		// Check for completion queue availability
 		if(cq.Full()) return;
@@ -6407,7 +6589,7 @@ void CPU<CONFIG>::DecodeDispatch()
 			case CONFIG::NO_UNIT_T: // No Unit
 				break;
 			case CONFIG::LSU_T:     // Load/Store Unit
-				if(num_load_stores >= MAX_DISPATCHED_LOAD_STORES_PER_CYCLE) return;
+				if(num_load_stores >= CONFIG::MAX_DISPATCHED_LOAD_STORES_PER_CYCLE) return;
 			case CONFIG::IU1_T:     // Simple Integer Unit
 			case CONFIG::IU2_T:     // Complex Integer Unit
 				break;
@@ -6660,7 +6842,7 @@ void CPU<CONFIG>::GPRIssue()
 {
 	// Issue is Out-of-order
 	unsigned int i, j, k;
-	for(i = k = 0; i < GPR_ISSUE_WIDTH; i++)
+	for(i = k = 0; i < CONFIG::GPR_ISSUE_WIDTH; i++)
 	{
 		if(k >= giq.Size()) return;
 		Instruction<CONFIG> *instruction = giq[k];
@@ -6683,7 +6865,7 @@ void CPU<CONFIG>::GPRIssue()
 			case CONFIG::IU1_T:     // Simple Integer Unit
 				{
 					bool found_iu1 = false;
-					for(j = 0; j < NUM_IU1; j++)
+					for(j = 0; j < CONFIG::NUM_IU1; j++)
 					{
 						if(!iu1_reservation_station[j].Full())
 						{
@@ -6706,7 +6888,7 @@ void CPU<CONFIG>::GPRIssue()
 			case CONFIG::IU2_T:     // Complex Integer Unit
 				{
 					bool found_iu2 = false;
-					for(j = 0; j < NUM_IU2; j++)
+					for(j = 0; j < CONFIG::NUM_IU2; j++)
 					{
 						if(!iu2_reservation_station[j].Full())
 						{
@@ -6749,7 +6931,7 @@ template <class CONFIG>
 void CPU<CONFIG>::IU1Execute()
 {
 	unsigned int i;
-	for(i = 0; i < NUM_IU1; i++)
+	for(i = 0; i < CONFIG::NUM_IU1; i++)
 	{
 		if(!iu1_reservation_station[i].Empty())
 		{
@@ -6770,7 +6952,7 @@ template <class CONFIG>
 void CPU<CONFIG>::IU2Execute()
 {
 	unsigned int i;
-	for(i = 0; i < NUM_IU2; i++)
+	for(i = 0; i < CONFIG::NUM_IU2; i++)
 	{
 		if(!iu2_reservation_station[i].Empty())
 		{
@@ -6867,7 +7049,7 @@ void CPU<CONFIG>::LSUExecute2()
 				// DL1 Access
 				load_store_access->l1_access.addr = load_store_access->mmu_access.physical_addr;
 				LookupDL1(load_store_access->l1_access);
-				lat += DL1_LATENCY;
+				lat += CONFIG::DL1_LATENCY;
 	
 				if(load_store_access->l1_access.block)
 				{
@@ -6879,7 +7061,7 @@ void CPU<CONFIG>::LSUExecute2()
 				else
 				{
 					// Load miss in DL1
-					if(num_outstanding_l1_load_miss >= MAX_OUTSTANDING_L1_LOAD_MISS) return;
+					if(num_outstanding_l1_load_miss >= CONFIG::MAX_OUTSTANDING_L1_LOAD_MISS) return;
 		
 					if(IsL2CacheEnabled())
 					{
@@ -6887,7 +7069,7 @@ void CPU<CONFIG>::LSUExecute2()
 						load_store_access->l2_access.addr = load_store_access->l1_access.block_base_addr;
 					
 						LookupL2(load_store_access->l2_access);
-						lat += L2_LATENCY;
+						lat += CONFIG::L2_LATENCY;
 	
 						if(load_store_access->l2_access.block)
 						{
@@ -6901,16 +7083,18 @@ void CPU<CONFIG>::LSUExecute2()
 						else
 						{
 							// Load miss in L2
-							if(num_outstanding_l2_load_miss >= MAX_OUTSTANDING_L2_LOAD_MISS) return;
+							if(num_outstanding_l2_load_miss >= CONFIG::MAX_OUTSTANDING_L2_LOAD_MISS) return;
 	
 							// L2 block fill from bus
 							load_store_access->l2_access.block = &(*load_store_access->l2_access.line)[load_store_access->l2_access.sector];
 		
 							BusAccess<CONFIG> *bus_access = AllocateBusAccess();
+							bus_access->issued = false;
 							bus_access->type = BusAccess<CONFIG>::REFILL;
 							bus_access->addr = load_store_access->l2_access.block_base_addr;
 							bus_access->size = CacheBlock<class CONFIG::L2_CONFIG>::SIZE;
 							bus_access->load_store_access = load_store_access;
+							bus_access->fetch_access = 0;
 							bus_access->wimg = load_store_access->mmu_access.wimg;
 							bus_access->rwitm = false;
 							NotifyBusAccess(bus_access, lat);
@@ -6920,10 +7104,12 @@ void CPU<CONFIG>::LSUExecute2()
 					{
 						// DL1 block fill from bus
 						BusAccess<CONFIG> *bus_access = AllocateBusAccess();
+						bus_access->issued = false;
 						bus_access->type = BusAccess<CONFIG>::REFILL;
 						bus_access->addr = load_store_access->l1_access.block_base_addr;
 						bus_access->size = CacheBlock<class CONFIG::DL1_CONFIG>::SIZE;
 						bus_access->load_store_access = load_store_access;
+						bus_access->fetch_access = 0;
 						bus_access->wimg = load_store_access->mmu_access.wimg;
 						bus_access->rwitm = false;
 						NotifyBusAccess(bus_access, lat);
@@ -6934,10 +7120,12 @@ void CPU<CONFIG>::LSUExecute2()
 			{
 				// Caching is either disabled or inhibited
 				BusAccess<CONFIG> *bus_access = AllocateBusAccess();
+				bus_access->issued = false;
 				bus_access->type = BusAccess<CONFIG>::LOAD;
 				bus_access->addr = load_store_access->mmu_access.physical_addr;
 				bus_access->size = load_store_access->size;
 				bus_access->load_store_access = load_store_access;
+				bus_access->fetch_access = 0;
 				bus_access->wimg = load_store_access->mmu_access.wimg;
 				bus_access->rwitm = false;
 				NotifyBusAccess(bus_access, lat);
@@ -7064,7 +7252,7 @@ void CPU<CONFIG>::LSUExecute2()
 			// DL1 Access
 			load_store_access->l1_access.addr = load_store_access->mmu_access.physical_addr;
 			LookupDL1(load_store_access->l1_access);
-			lat += DL1_LATENCY;
+			lat += CONFIG::DL1_LATENCY;
 
 			if(load_store_access->l1_access.block)
 			{
@@ -7076,7 +7264,7 @@ void CPU<CONFIG>::LSUExecute2()
 			else
 			{
 				// Store miss in DL1
-				if(num_outstanding_l1_store_miss >= MAX_OUTSTANDING_L1_STORE_MISS) return;
+				if(num_outstanding_l1_store_miss >= CONFIG::MAX_OUTSTANDING_L1_STORE_MISS) return;
 	
 				if(IsL2CacheEnabled())
 				{
@@ -7084,7 +7272,7 @@ void CPU<CONFIG>::LSUExecute2()
 					load_store_access->l2_access.addr = load_store_access->l1_access.block_base_addr;
 				
 					LookupL2(load_store_access->l2_access);
-					lat += L2_LATENCY;
+					lat += CONFIG::L2_LATENCY;
 	
 					if(load_store_access->l2_access.block)
 					{
@@ -7097,16 +7285,18 @@ void CPU<CONFIG>::LSUExecute2()
 					else
 					{
 						// Store miss in L2
-						if(num_outstanding_l2_store_miss >= MAX_OUTSTANDING_L2_STORE_MISS) return;
+						if(num_outstanding_l2_store_miss >= CONFIG::MAX_OUTSTANDING_L2_STORE_MISS) return;
 	
 						// L2 block fill from bus
 						load_store_access->l2_access.block = &(*load_store_access->l2_access.line)[load_store_access->l2_access.sector];
 	
 						BusAccess<CONFIG> *bus_access = AllocateBusAccess();
+						bus_access->issued = false;
 						bus_access->type = BusAccess<CONFIG>::REFILLX;
 						bus_access->addr = load_store_access->l2_access.block_base_addr;
 						bus_access->size = CacheBlock<class CONFIG::L2_CONFIG>::SIZE;
 						bus_access->load_store_access = load_store_access;
+						bus_access->fetch_access = 0;
 						bus_access->wimg = load_store_access->mmu_access.wimg;
 						bus_access->rwitm = false;
 						NotifyBusAccess(bus_access, lat);
@@ -7116,10 +7306,12 @@ void CPU<CONFIG>::LSUExecute2()
 				{
 					// DL1 block fill from bus
 					BusAccess<CONFIG> *bus_access = AllocateBusAccess();
+					bus_access->issued = false;
 					bus_access->type = BusAccess<CONFIG>::REFILLX;
 					bus_access->addr = load_store_access->l1_access.block_base_addr;
 					bus_access->size = CacheBlock<class CONFIG::DL1_CONFIG>::SIZE;
 					bus_access->load_store_access = load_store_access;
+					bus_access->fetch_access = 0;
 					bus_access->wimg = load_store_access->mmu_access.wimg;
 					bus_access->rwitm = false;
 					NotifyBusAccess(bus_access, lat);
@@ -7130,10 +7322,12 @@ void CPU<CONFIG>::LSUExecute2()
 		{
 			// Caching is either disabled or inhibited
 			BusAccess<CONFIG> *bus_access = AllocateBusAccess();
+			bus_access->issued = false;
 			bus_access->type = BusAccess<CONFIG>::STORE;
 			bus_access->addr = load_store_access->mmu_access.physical_addr;
 			bus_access->size = load_store_access->size;
 			bus_access->load_store_access = load_store_access;
+			bus_access->fetch_access = 0;
 			bus_access->wimg = load_store_access->mmu_access.wimg;
 			bus_access->rwitm = false;
 			NotifyBusAccess(bus_access, lat);
@@ -7219,10 +7413,77 @@ void CPU<CONFIG>::ScheduleEvents()
 					}
 				}
 				break;
+				
+			case Event<CONFIG>::EV_FINISHED_FETCH:     // a fetch has finished
+				{
+					FetchAccess<CONFIG> *fetch_access = ev->object.fetch_access;
+					unsigned int offset;
+					unsigned int i;
+					
+					for(offset = 0, i = 0; !iq.Full() && offset < fetch_access->size; offset += 4, i++)
+					{
+						uint32_t insn = Host2BigEndian(*(uint32_t *) &fetch_access->data[offset]);
+						Instruction<CONFIG> *instruction = AllocateInstruction();
+						instruction->Initialize(this, fetch_access->cia + i, insn);
+						iq.Push(instruction);
+					}
+					FreeFetchAccess(fetch_access);
+				}
+				break;
 		}
 
 		schedule.erase(it);
 	}
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::DumpSchedule()
+{
+	stringstream sstr;
+	typename std::multimap<uint64_t, Event<CONFIG> *>::iterator it;
+	
+	for(it = schedule.begin(); it != schedule.end(); it++)
+	{
+		Event<CONFIG> *ev = it->second;
+		
+		sstr << "EVENT(time=" << it->first << ",";
+		
+		switch(ev->type)
+		{
+			case Event<CONFIG>::EV_NULL:
+				sstr << "null";
+				break;
+/*			case Event<CONFIG>::EV_FINISHED_INSN:     // an instruction is finished
+				{
+					Instruction<CONFIG> *instruction = ev->object.instruction;
+
+					sstr << *instruction;
+				}
+				break;
+			case Event<CONFIG>::EV_AVAILABLE_OPERAND: // an operand is available
+				{
+					Operand<CONFIG> *operand = ev->object.operand;
+
+					sstr << *operand;
+				}
+				break;
+			case Event<CONFIG>::EV_BUS_ACCESS:        // a cache miss causes a bus access
+				{
+					sstr << *bus_access;
+				}
+				break;*/
+				
+			case Event<CONFIG>::EV_FINISHED_FETCH:     // a fetch has finished
+				{
+					FetchAccess<CONFIG> *fetch_access = ev->object.fetch_access;
+					sstr << *fetch_access;
+				}
+				break;
+		}
+		sstr << ")" << endl;
+	}
+	
+	logger << sstr.str();
 }
 
 template <class CONFIG>
@@ -7245,8 +7506,9 @@ void CPU<CONFIG>::BIU()
 	if(!blq.Empty())
 	{
 		BusAccess<CONFIG> *bus_access = blq.Front();
-		if(!HasPipelineCollision(bus_access))
+		if(!bus_access->issued && !HasPipelineCollision(bus_access))
 		{
+			bus_access->issued = true;
 			DoBusAccess(bus_access);
 			return;
 		}
@@ -7255,7 +7517,11 @@ void CPU<CONFIG>::BIU()
 	if(!bsq.Empty())
 	{
 		BusAccess<CONFIG> *bus_access = bsq.Front();
-		DoBusAccess(bus_access);
+		if(!bus_access->issued)
+		{
+			bus_access->issued = true;
+			DoBusAccess(bus_access);
+		}
 	}
 }
 
@@ -7263,172 +7529,295 @@ void CPU<CONFIG>::BIU()
 template <class CONFIG>
 void CPU<CONFIG>::OnFinishedBusAccess(BusAccess<CONFIG> *bus_access)
 {
-	LoadStoreAccess<CONFIG> *load_store_access = bus_access->load_store_access;
-	unsigned int lat = 0;
-
-	switch(bus_access->type)
+	if(bus_access->fetch_access)
 	{
-		case BusAccess<CONFIG>::REFILL:
-		case BusAccess<CONFIG>::REFILLX:
-			if(!load_store_access->l1_access.line)
-			{
-				// DL1 Line miss
-				ChooseLineToEvictDL1(load_store_access->l1_access);
-				
-				if(load_store_access->l1_access.line_to_evict->status.valid)
+		FetchAccess<CONFIG> *fetch_access = bus_access->fetch_access;
+		unsigned int lat = 0;
+		
+		switch(bus_access->type)
+		{
+			case BusAccess<CONFIG>::REFILL:
+				if(likely(IsInsnCacheEnabled()) && !fetch_access->l1_access.line)
 				{
-					// DL1 Line eviction
+					// IL1 Line miss
+					ChooseLineToEvictIL1(fetch_access->l1_access);
+					
 					uint32_t l1_sector;
-				
-					for(l1_sector = 0; l1_sector < CacheLine<class CONFIG::DL1_CONFIG>::BLOCKS_PER_LINE; l1_sector++)
+					
+					for(l1_sector = 0; l1_sector < CacheLine<class CONFIG::IL1_CONFIG>::BLOCKS_PER_LINE; l1_sector++)
 					{
-						CacheBlock<class CONFIG::DL1_CONFIG>& l1_block_to_evict = (*load_store_access->l1_access.line_to_evict)[l1_sector];
-				
-						if(l1_block_to_evict.status.valid && l1_block_to_evict.status.dirty)
-						{
-							// dirty DL1 block eviction
-							if(IsL2CacheEnabled())
-							{
-								// DL1 block eviction into L2
-								CacheAccess<class CONFIG::L2_CONFIG> l2_access;
-								l2_access.addr = l1_block_to_evict.GetBaseAddr();
-								LookupL2(l2_access);
-								lat += L2_LATENCY;
-			
-								if(l2_access.block)
-								{
-									// DL1 block eviction hit in L2
-									memcpy(&(*l2_access.block)[l2_access.offset], &l1_block_to_evict[0], CacheBlock<typename CONFIG::DL1_CONFIG>::SIZE);
-									l2_access.block->status.dirty = true;
-				
-									UpdateReplacementPolicyL2(l2_access);
-								}
-								else
-								{
-									// dirty DL1 block eviction miss in L2
-									// MPC7450UM, Rev. 5, paragraphe 3.8.3, p3-91: Because cache block castouts and snoop pushes do not require snooping, the GBL signal is not asserted for these operations.
-									BusAccess<CONFIG> *bus_access = AllocateBusAccess();
-									bus_access->type = BusAccess<CONFIG>::EVICTION;
-									bus_access->addr = l1_block_to_evict.GetBaseAddr();
-									bus_access->size = CacheBlock<class CONFIG::DL1_CONFIG>::SIZE;
-									memcpy(bus_access->storage, &l1_block_to_evict[0], CacheBlock<class CONFIG::DL1_CONFIG>::SIZE);
-									bus_access->load_store_access = load_store_access;
-									NotifyBusAccess(bus_access, lat);
-								}
-							}
-							else
-							{
-								// dirty DL1 block eviction into memory
-								// MPC7450UM, Rev. 5, paragraphe 3.8.3, p3-91: Because cache block castouts and snoop pushes do not require snooping, the GBL signal is not asserted for these operations.
-								BusAccess<CONFIG> *bus_access = AllocateBusAccess();
-								bus_access->type = BusAccess<CONFIG>::EVICTION;
-								bus_access->addr = l1_block_to_evict.GetBaseAddr();
-								bus_access->size = CacheBlock<class CONFIG::DL1_CONFIG>::SIZE;
-								memcpy(bus_access->storage, &l1_block_to_evict[0], CacheBlock<class CONFIG::DL1_CONFIG>::SIZE);
-								bus_access->load_store_access = load_store_access;
-								NotifyBusAccess(bus_access, lat);
-							}
-						}
+						CacheBlock<class CONFIG::IL1_CONFIG>& l1_block_to_evict = (*fetch_access->l1_access.line_to_evict)[l1_sector];
 						l1_block_to_evict.status.valid = false;
-						l1_block_to_evict.status.dirty = false;
 					}
-					load_store_access->l1_access.line_to_evict->status.valid = false;
+					
+					fetch_access->l1_access.line_to_evict->status.valid = false;
+					fetch_access->l1_access.line = fetch_access->l1_access.line_to_evict;
+					fetch_access->l1_access.line_to_evict = 0;
+					fetch_access->l1_access.block = &(*fetch_access->l1_access.line)[fetch_access->l1_access.sector];				
 				}
-				load_store_access->l1_access.line = load_store_access->l1_access.line_to_evict;
-				load_store_access->l1_access.line_to_evict = 0;
-			}
 
-			if(!load_store_access->l2_access.line)
-			{
-				if(load_store_access->l2_access.line_to_evict->status.valid)
+				if(likely(IsL2CacheEnabled()) && !fetch_access->l2_access.line)
 				{
+					// IL1 Line miss
+					ChooseLineToEvictL2(fetch_access->l2_access);
 					// L2 Line eviction
 					uint32_t l2_sector;
 				
 					for(l2_sector = 0; l2_sector < CacheLine<class CONFIG::L2_CONFIG>::BLOCKS_PER_LINE; l2_sector++)
 					{
-						CacheBlock<class CONFIG::L2_CONFIG>& l2_block_to_evict = (*load_store_access->l2_access.line_to_evict)[l2_sector];
+						CacheBlock<class CONFIG::L2_CONFIG>& l2_block_to_evict = (*fetch_access->l2_access.line_to_evict)[l2_sector];
 				
-						if(l2_block_to_evict.status.valid && l2_block_to_evict.status.dirty)
-						{
-							// dirty L2 block eviction into memory
-							// MPC7450UM, Rev. 5, paragraphe 3.8.3, p3-91: Because cache block castouts and snoop pushes do not require snooping, the GBL signal is not asserted for these operations.
-							BusAccess<CONFIG> *bus_access = AllocateBusAccess();
-							bus_access->type = BusAccess<CONFIG>::EVICTION;
-							bus_access->addr = l2_block_to_evict.GetBaseAddr();
-							bus_access->size = CacheBlock<class CONFIG::L2_CONFIG>::SIZE;
-							memcpy(bus_access->storage, &l2_block_to_evict[0], CacheBlock<class CONFIG::L2_CONFIG>::SIZE);
-							bus_access->load_store_access = load_store_access;
-							NotifyBusAccess(bus_access, lat);
-						}
 						l2_block_to_evict.status.valid = false;
 						l2_block_to_evict.status.dirty = false;
 					}
-				
-					load_store_access->l2_access.line_to_evict->status.valid = false;
+					
+					fetch_access->l2_access.line_to_evict->status.valid = false;
+					fetch_access->l2_access.line = fetch_access->l2_access.line_to_evict;
+					fetch_access->l2_access.line_to_evict = 0;
+					fetch_access->l2_access.block = &(*fetch_access->l2_access.line)[fetch_access->l2_access.sector];				
 				}
-				load_store_access->l2_access.line = load_store_access->l2_access.line_to_evict;
-				load_store_access->l2_access.line_to_evict = 0;
-			}
+				
+				num_outstanding_l1_fetch_miss--;
+				break;
 
-			break;
-		case BusAccess<CONFIG>::STORE:
-		case BusAccess<CONFIG>::EVICTION:
-			FreeInstruction(load_store_access->instruction);
-			bsq.Pop();
-			break;
-		default:
-			logger << DebugError << "Unhandled bus access type" << EndDebugError;
-			Stop(-1);
+			default:
+				logger << DebugError << "Unhandled bus access type" << EndDebugError;
+				Stop(-1);
+		}
+
+		// Finalize cache refills
+		switch(bus_access->type)
+		{
+			case BusAccess<CONFIG>::REFILL:
+				if(likely(IsL2CacheEnabled()) && fetch_access->l2_access.line)
+				{
+					if(!fetch_access->l2_access.block)
+					{
+						logger << DebugError << "PANIC ! null block" << EndDebugError;
+						Stop(-1);
+					}
+					logger << DebugInfo << "block=0x" << std::hex << fetch_access->l2_access.block << std::dec << EndDebugInfo;
+					// Finalize L2 Refill
+					memcpy(&(*fetch_access->l2_access.block)[0], bus_access->storage, CacheBlock<class CONFIG::L2_CONFIG>::SIZE);
+					fetch_access->l2_access.line->status.valid = true;
+					fetch_access->l2_access.line->SetBaseAddr(fetch_access->l2_access.line_base_addr);
+					fetch_access->l2_access.block->status.valid = true;
+					fetch_access->l2_access.block->status.dirty = false;
+				}
+
+				if(likely(IsInsnCacheEnabled()) && fetch_access->l1_access.line)
+				{
+					// Finalize IL1 refill
+					memcpy(&(*fetch_access->l1_access.block)[0], &(*fetch_access->l2_access.block)[fetch_access->l2_access.offset], CacheBlock<class CONFIG::IL1_CONFIG>::SIZE);
+					UpdateReplacementPolicyL2(fetch_access->l2_access);
+					fetch_access->l1_access.line->status.valid = true;
+					fetch_access->l1_access.line->SetBaseAddr(fetch_access->l1_access.line_base_addr);
+					fetch_access->l1_access.block->status.valid = true;
+				}
+				break;
+			default:
+				logger << DebugError << "Unhandled bus access type" << EndDebugError;
+				Stop(-1);
+		}
+
+		// Finalize Fetch access
+		switch(bus_access->type)
+		{
+			case BusAccess<CONFIG>::LOAD:
+				// Finalize fetch from bus and forward raw data to IQ
+				memcpy(fetch_access->data, bus_access->storage, fetch_access->size);
+				NotifyFinishedFetch(fetch_access, lat);
+				break;
+			case BusAccess<CONFIG>::REFILL:
+				if(likely(IsInsnCacheEnabled()) && fetch_access->l1_access.line)
+				{
+					// Finalize fetch from IL1 and forward raw data to IQ
+					memcpy(fetch_access->data, &(*fetch_access->l1_access.block)[fetch_access->l1_access.offset], fetch_access->size);
+					UpdateReplacementPolicyIL1(fetch_access->l1_access);
+					NotifyFinishedFetch(fetch_access, lat);
+				}
+				break;
+			default:
+				logger << DebugError << "Unhandled bus access type" << EndDebugError;
+				Stop(-1);
+		}
 	}
-
-	// Finalize cache refills
-	switch(bus_access->type)
+	
+	if(bus_access->load_store_access)
 	{
-		case BusAccess<CONFIG>::REFILL:
-		case BusAccess<CONFIG>::REFILLX:
-			// Finalize L2 Refill
-			memcpy(&(*load_store_access->l2_access.block)[0], bus_access->storage, CacheBlock<class CONFIG::L2_CONFIG>::SIZE);
-			load_store_access->l2_access.line->status.valid = true;
-			load_store_access->l2_access.line->SetBaseAddr(load_store_access->l2_access.line_base_addr);
-			load_store_access->l2_access.block->status.valid = true;
-			load_store_access->l2_access.block->status.dirty = false;
+		LoadStoreAccess<CONFIG> *load_store_access = bus_access->load_store_access;
+		unsigned int lat = 0;
 
-			// Finalize DL1 refill
-			memcpy(&(*load_store_access->l1_access.block)[0], &(*load_store_access->l2_access.block)[load_store_access->l2_access.offset], CacheBlock<class CONFIG::DL1_CONFIG>::SIZE);
-			UpdateReplacementPolicyL2(load_store_access->l2_access);
-			load_store_access->l1_access.line->status.valid = true;
-			load_store_access->l1_access.line->SetBaseAddr(load_store_access->l1_access.line_base_addr);
-			load_store_access->l1_access.block->status.valid = true;
-			load_store_access->l1_access.block->status.dirty = false;
-			break;
-		default:
-			logger << DebugError << "Unhandled bus access type" << EndDebugError;
-			Stop(-1);
-	}
+		switch(bus_access->type)
+		{
+			case BusAccess<CONFIG>::REFILL:
+			case BusAccess<CONFIG>::REFILLX:
+				if(!load_store_access->l1_access.line)
+				{
+					// DL1 Line miss
+					ChooseLineToEvictDL1(load_store_access->l1_access);
+					
+					if(load_store_access->l1_access.line_to_evict->status.valid)
+					{
+						// DL1 Line eviction
+						uint32_t l1_sector;
+					
+						for(l1_sector = 0; l1_sector < CacheLine<class CONFIG::DL1_CONFIG>::BLOCKS_PER_LINE; l1_sector++)
+						{
+							CacheBlock<class CONFIG::DL1_CONFIG>& l1_block_to_evict = (*load_store_access->l1_access.line_to_evict)[l1_sector];
+					
+							if(l1_block_to_evict.status.valid && l1_block_to_evict.status.dirty)
+							{
+								// dirty DL1 block eviction
+								if(IsL2CacheEnabled())
+								{
+									// DL1 block eviction into L2
+									CacheAccess<class CONFIG::L2_CONFIG> l2_access;
+									l2_access.addr = l1_block_to_evict.GetBaseAddr();
+									LookupL2(l2_access);
+									lat += CONFIG::L2_LATENCY;
+				
+									if(l2_access.block)
+									{
+										// DL1 block eviction hit in L2
+										memcpy(&(*l2_access.block)[l2_access.offset], &l1_block_to_evict[0], CacheBlock<typename CONFIG::DL1_CONFIG>::SIZE);
+										l2_access.block->status.dirty = true;
+					
+										UpdateReplacementPolicyL2(l2_access);
+									}
+									else
+									{
+										// dirty DL1 block eviction miss in L2
+										// MPC7450UM, Rev. 5, paragraphe 3.8.3, p3-91: Because cache block castouts and snoop pushes do not require snooping, the GBL signal is not asserted for these operations.
+										BusAccess<CONFIG> *bus_access = AllocateBusAccess();
+										bus_access->issued = false;
+										bus_access->type = BusAccess<CONFIG>::EVICTION;
+										bus_access->addr = l1_block_to_evict.GetBaseAddr();
+										bus_access->size = CacheBlock<class CONFIG::DL1_CONFIG>::SIZE;
+										memcpy(bus_access->storage, &l1_block_to_evict[0], CacheBlock<class CONFIG::DL1_CONFIG>::SIZE);
+										bus_access->load_store_access = load_store_access;
+										bus_access->fetch_access = 0;
+										NotifyBusAccess(bus_access, lat);
+									}
+								}
+								else
+								{
+									// dirty DL1 block eviction into memory
+									// MPC7450UM, Rev. 5, paragraphe 3.8.3, p3-91: Because cache block castouts and snoop pushes do not require snooping, the GBL signal is not asserted for these operations.
+									BusAccess<CONFIG> *bus_access = AllocateBusAccess();
+									bus_access->issued = false;
+									bus_access->type = BusAccess<CONFIG>::EVICTION;
+									bus_access->addr = l1_block_to_evict.GetBaseAddr();
+									bus_access->size = CacheBlock<class CONFIG::DL1_CONFIG>::SIZE;
+									memcpy(bus_access->storage, &l1_block_to_evict[0], CacheBlock<class CONFIG::DL1_CONFIG>::SIZE);
+									bus_access->load_store_access = load_store_access;
+									bus_access->fetch_access = 0;
+									NotifyBusAccess(bus_access, lat);
+								}
+							}
+							l1_block_to_evict.status.valid = false;
+							l1_block_to_evict.status.dirty = false;
+						}
+						load_store_access->l1_access.line_to_evict->status.valid = false;
+					}
+					load_store_access->l1_access.line = load_store_access->l1_access.line_to_evict;
+					load_store_access->l1_access.line_to_evict = 0;
+				}
 
-	// Finalize Load/Store access
-	switch(bus_access->type)
-	{
-		case BusAccess<CONFIG>::LOAD:
-		case BusAccess<CONFIG>::REFILL:
-			// Finalize load in DL1 and forward load result
-			memcpy(load_store_access->data, &(*load_store_access->l1_access.block)[load_store_access->l1_access.offset], load_store_access->size);
-			UpdateReplacementPolicyDL1(load_store_access->l1_access);
-			NotifyLoadResultAvailability(load_store_access, lat);
-			NotifyFinishedInstruction(load_store_access->instruction, lat);
-			blq.Pop();
-			break;
-		case BusAccess<CONFIG>::REFILLX:
-		case BusAccess<CONFIG>::STORE:
-			// Finalize store in DL1
-			memcpy(&(*load_store_access->l1_access.block)[load_store_access->l1_access.offset], load_store_access->data, load_store_access->size);
-			UpdateReplacementPolicyDL1(load_store_access->l1_access);
-			bsq.Pop();
-			break;
-		default:
-			logger << DebugError << "Unhandled bus access type" << EndDebugError;
-			Stop(-1);
+				if(!load_store_access->l2_access.line)
+				{
+					if(load_store_access->l2_access.line_to_evict->status.valid)
+					{
+						// L2 Line eviction
+						uint32_t l2_sector;
+					
+						for(l2_sector = 0; l2_sector < CacheLine<class CONFIG::L2_CONFIG>::BLOCKS_PER_LINE; l2_sector++)
+						{
+							CacheBlock<class CONFIG::L2_CONFIG>& l2_block_to_evict = (*load_store_access->l2_access.line_to_evict)[l2_sector];
+					
+							if(l2_block_to_evict.status.valid && l2_block_to_evict.status.dirty)
+							{
+								// dirty L2 block eviction into memory
+								// MPC7450UM, Rev. 5, paragraphe 3.8.3, p3-91: Because cache block castouts and snoop pushes do not require snooping, the GBL signal is not asserted for these operations.
+								BusAccess<CONFIG> *bus_access = AllocateBusAccess();
+								bus_access->issued = false;
+								bus_access->type = BusAccess<CONFIG>::EVICTION;
+								bus_access->addr = l2_block_to_evict.GetBaseAddr();
+								bus_access->size = CacheBlock<class CONFIG::L2_CONFIG>::SIZE;
+								memcpy(bus_access->storage, &l2_block_to_evict[0], CacheBlock<class CONFIG::L2_CONFIG>::SIZE);
+								bus_access->load_store_access = load_store_access;
+								bus_access->fetch_access = 0;
+								NotifyBusAccess(bus_access, lat);
+							}
+							l2_block_to_evict.status.valid = false;
+							l2_block_to_evict.status.dirty = false;
+						}
+					
+						load_store_access->l2_access.line_to_evict->status.valid = false;
+					}
+					load_store_access->l2_access.line = load_store_access->l2_access.line_to_evict;
+					load_store_access->l2_access.line_to_evict = 0;
+				}
+
+				break;
+			case BusAccess<CONFIG>::STORE:
+			case BusAccess<CONFIG>::EVICTION:
+				FreeInstruction(load_store_access->instruction);
+				bsq.Pop();
+				break;
+			default:
+				logger << DebugError << "Unhandled bus access type" << EndDebugError;
+				Stop(-1);
+		}
+
+		// Finalize cache refills
+		switch(bus_access->type)
+		{
+			case BusAccess<CONFIG>::REFILL:
+			case BusAccess<CONFIG>::REFILLX:
+				// Finalize L2 Refill
+				memcpy(&(*load_store_access->l2_access.block)[0], bus_access->storage, CacheBlock<class CONFIG::L2_CONFIG>::SIZE);
+				load_store_access->l2_access.line->status.valid = true;
+				load_store_access->l2_access.line->SetBaseAddr(load_store_access->l2_access.line_base_addr);
+				load_store_access->l2_access.block->status.valid = true;
+				load_store_access->l2_access.block->status.dirty = false;
+
+				// Finalize DL1 refill
+				memcpy(&(*load_store_access->l1_access.block)[0], &(*load_store_access->l2_access.block)[load_store_access->l2_access.offset], CacheBlock<class CONFIG::DL1_CONFIG>::SIZE);
+				UpdateReplacementPolicyL2(load_store_access->l2_access);
+				load_store_access->l1_access.line->status.valid = true;
+				load_store_access->l1_access.line->SetBaseAddr(load_store_access->l1_access.line_base_addr);
+				load_store_access->l1_access.block->status.valid = true;
+				load_store_access->l1_access.block->status.dirty = false;
+				break;
+			default:
+				logger << DebugError << "Unhandled bus access type" << EndDebugError;
+				Stop(-1);
+		}
+
+		// Finalize Load/Store access
+		switch(bus_access->type)
+		{
+			case BusAccess<CONFIG>::LOAD:
+			case BusAccess<CONFIG>::REFILL:
+				// Finalize load in DL1 and forward load result
+				memcpy(load_store_access->data, &(*load_store_access->l1_access.block)[load_store_access->l1_access.offset], load_store_access->size);
+				UpdateReplacementPolicyDL1(load_store_access->l1_access);
+				NotifyLoadResultAvailability(load_store_access, lat);
+				NotifyFinishedInstruction(load_store_access->instruction, lat);
+				blq.Pop();
+				break;
+			case BusAccess<CONFIG>::REFILLX:
+			case BusAccess<CONFIG>::STORE:
+				// Finalize store in DL1
+				memcpy(&(*load_store_access->l1_access.block)[load_store_access->l1_access.offset], load_store_access->data, load_store_access->size);
+				UpdateReplacementPolicyDL1(load_store_access->l1_access);
+				bsq.Pop();
+				break;
+			default:
+				logger << DebugError << "Unhandled bus access type" << EndDebugError;
+				Stop(-1);
+		}
 	}
 }
 
@@ -7462,6 +7851,15 @@ void CPU<CONFIG>::NotifyOperandAvailability(Operand<CONFIG> *operand, uint64_t l
 	Event<CONFIG> *ev = AllocateEvent();
 	ev->type = Event<CONFIG>::EV_AVAILABLE_OPERAND;
 	ev->object.operand = operand;
+	NotifyEvent(ev, latency);
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::NotifyFinishedFetch(FetchAccess<CONFIG> *fetch_access, uint64_t latency)
+{
+	Event<CONFIG> *ev = AllocateEvent();
+	ev->type = Event<CONFIG>::EV_FINISHED_FETCH;
+	ev->object.fetch_access = fetch_access;
 	NotifyEvent(ev, latency);
 }
 
@@ -7592,7 +7990,7 @@ void CPU<CONFIG>::Complete()
 	unsigned int num_cr_wb_ports = 0;
 	unsigned int num_lr_wb_ports = 0;
 	unsigned int num_ctr_wb_ports = 0;
-	for(i = 0; i < COMPLETE_WIDTH; i++)
+	for(i = 0; i < CONFIG::COMPLETE_WIDTH; i++)
 	{
 		// Lookup the last instruction from the instruction queue
 		Instruction<CONFIG> *instruction = cq.Front();
@@ -7619,23 +8017,23 @@ void CPU<CONFIG>::Complete()
 
 		unsigned int num_output_gpr = instruction->GetNumOutputGPR();
 		num_gpr_wb_ports += num_output_gpr;
-		if(num_gpr_wb_ports > MAX_GPR_WB_PER_CYCLE) return;
+		if(num_gpr_wb_ports > CONFIG::MAX_GPR_WB_PER_CYCLE) return;
 
 		unsigned int num_output_fpr = instruction->GetNumOutputFPR();
 		num_fpr_wb_ports += num_output_fpr;
-		if(num_fpr_wb_ports > MAX_FPR_WB_PER_CYCLE) return;
+		if(num_fpr_wb_ports > CONFIG::MAX_FPR_WB_PER_CYCLE) return;
 
 		unsigned int num_output_cr = instruction->GetNumOutputCR();
 		num_cr_wb_ports += num_output_cr;
-		if(num_cr_wb_ports > MAX_CR_WB_PER_CYCLE) return;
+		if(num_cr_wb_ports > CONFIG::MAX_CR_WB_PER_CYCLE) return;
 
 		unsigned int num_output_lr = instruction->GetNumOutputLR();
 		num_lr_wb_ports += num_output_lr;
-		if(num_lr_wb_ports > MAX_LR_WB_PER_CYCLE) return;
+		if(num_lr_wb_ports > CONFIG::MAX_LR_WB_PER_CYCLE) return;
 
 		unsigned int num_output_ctr = instruction->GetNumOutputCTR();
 		num_ctr_wb_ports += num_output_ctr;
-		if(num_ctr_wb_ports > MAX_CTR_WB_PER_CYCLE) return;
+		if(num_ctr_wb_ports > CONFIG::MAX_CTR_WB_PER_CYCLE) return;
 	
 		// Instruction Retire
 		wb0.Push(instruction);
@@ -7782,7 +8180,7 @@ void CPU<CONFIG>::Flush()
 		} while(!viq.Empty());
 	}
 
-	for(i = 0; i < NUM_IU1; i++)
+	for(i = 0; i < CONFIG::NUM_IU1; i++)
 	{
 		if(!iu1_reservation_station[i].Empty())
 		{
@@ -7795,7 +8193,7 @@ void CPU<CONFIG>::Flush()
 		}
 	}
 
-	for(i = 0; i < NUM_IU2; i++)
+	for(i = 0; i < CONFIG::NUM_IU2; i++)
 	{
 		if(!iu2_reservation_station[i].Empty())
 		{
@@ -7808,7 +8206,7 @@ void CPU<CONFIG>::Flush()
 		}
 	}
 
-	for(i = 0; i < NUM_FPU; i++)
+	for(i = 0; i < CONFIG::NUM_FPU; i++)
 	{
 		if(!fpu_reservation_station[i].Empty())
 		{
@@ -7843,6 +8241,19 @@ void CPU<CONFIG>::Flush()
 }
 
 template <class CONFIG>
+void CPU<CONFIG>::DumpPipeline()
+{
+	stringstream sstr;
+	
+	sstr << iq;
+	
+	logger << DebugInfo;
+	logger << sstr.str();
+	logger << EndDebugInfo;
+}
+
+
+template <class CONFIG>
 void Instruction<CONFIG>::Initialize(CPU<CONFIG> *cpu, typename CONFIG::address_t cia, uint32_t encoding)
 {
 	this->operation = cpu->Decode(cia, encoding);
@@ -7851,6 +8262,12 @@ void Instruction<CONFIG>::Initialize(CPU<CONFIG> *cpu, typename CONFIG::address_
 	serialization = operation->serialization;
 	num_uops = operation->num_uops;
 	this->uop_num = 0;
+	Instruction<CONFIG> *macro_op;
+	num_input_gpr = 0;
+	num_input_fpr = 0;
+	num_input_cr = 0;
+	num_input_lr = 0;
+	num_input_ctr = 0;
 	input_operands.Clear();
 	forwarding.Clear();
 	output_operands.Clear();
@@ -8388,6 +8805,206 @@ unsigned int MappingTable<CONFIG>::GetNumFreeRenameRegisters() const
 	return free_list.Size();
 }
 
+template <class CONFIG>
+ostream& operator << (ostream& os, const FetchAccess<CONFIG>& fetch_access)
+{
+	os << "FETCH_ACCESS(";
+	os << "cia=0x" << std::hex << fetch_access.cia << std::dec;
+	os << ", size=" << fetch_access.size;
+	os << ", " << fetch_access.mmu_access;
+	os << ", L1_" << fetch_access.l1_access;
+	os << ", L2_" << fetch_access.l2_access;
+	os << ")";
+	return os;
+}
+
+template <class CONFIG>
+ostream& operator << (ostream& os, const MMUAccess<CONFIG>& mmu_access)
+{
+	os << "MMU_ACCESS(";
+	os << "addr=0x" << std::hex << mmu_access.addr << std::dec;
+	os << ", privilege_level=";
+	switch(mmu_access.privilege_level)
+	{
+		case CONFIG::PR_SUPERVISOR:
+			os << "supervisor";
+			break;
+		case CONFIG::PR_USER:
+			os << "user";
+			break;
+	}
+	os << ", memory_access_type=";
+	switch(mmu_access.memory_access_type)
+	{
+		case CONFIG::MAT_READ:
+			os << "read";
+			break;
+		case CONFIG::MAT_WRITE:
+			os << "write";
+			break;
+	}
+	os << ", memory_type=";
+	switch(mmu_access.memory_type)
+	{
+		case CONFIG::MT_INSN:
+			os << "insn";
+			break;
+		case CONFIG::MT_DATA:
+			os << "data";
+			break;
+	}
+	os << ", bepi=" << std::hex << mmu_access.bepi << std::dec;
+	os << ", sr_num=" << mmu_access.sr_num;
+	os << ", virtual_segment_id=" << mmu_access.virtual_segment_id;
+	os << ", sr_ks=" << mmu_access.sr_ks;
+	os << ", sr_kp=" << mmu_access.sr_kp;
+	os << ", sr_noexecute=" << mmu_access.sr_noexecute;
+	os << ", virtual_addr=0x" << std::hex << mmu_access.virtual_addr << std::dec;
+	os << ", base_virtual_addr=0x" << std::hex << mmu_access.base_virtual_addr << std::dec;
+	os << ", tlb_index=" << mmu_access.tlb_index;
+	os << ", tlb_way=" << mmu_access.tlb_way;
+	os << ", key=" << mmu_access.key;
+	os << ", force_page_table_walk=" << mmu_access.force_page_table_walk;
+	os << ", page_index=0x" << std::hex << mmu_access.page_index << std::dec;
+	os << ", api=0x" << std::hex << mmu_access.api << std::dec;
+	os << ", bat_hit=" << mmu_access.bat_hit;
+	os << ", tlb_hit=" << mmu_access.tlb_hit;
+	os << ", physical_addr=0x" << std::hex << mmu_access.physical_addr << std::dec;
+	os << ", protection_boundary=0x" << std::hex << mmu_access.protection_boundary << std::dec;
+	os << ", wimg=";
+	os << ((mmu_access.wimg & CONFIG::WIMG_WRITE_THROUGH) ? "W" : "x");
+	os << ((mmu_access.wimg & CONFIG::WIMG_CACHE_INHIBITED) ? "I" : "x");
+	os << ((mmu_access.wimg & CONFIG::WIMG_MEMORY_COHERENCY_ENFORCED) ? "M" : "x");
+	os << ((mmu_access.wimg & CONFIG::WIMG_GUARDED_MEMORY) ? "G" : "x");
+	os << ")";
+	return os;
+}
+
+template <class CONFIG>
+ostream& operator << (ostream& os, const CacheAccess<CONFIG>& cache_access)
+{
+	os << "CACHE_ACCESS(";
+	os << "addr=0x" << std::hex << cache_access.addr << std::dec;
+	os << ",line_base_addr=0x" << std::hex << cache_access.line_base_addr << std::dec;
+	os << ",block_base_addr=0x" << std::hex << cache_access.block_base_addr << std::dec;
+	os << ", way=" << cache_access.way;
+	os << ", sector=" << cache_access.sector;
+	os << ", offset=" << cache_access.offset;
+	os << ", size_to_block_boundary=" << cache_access.size_to_block_boundary;
+	os << ")";
+	return os;
+}
+
+template <class CONFIG>
+ostream& operator << (ostream& os, const LoadStoreAccess<CONFIG>& load_store_access)
+{
+	os << "LOAD_STORE_ACCESS(";
+	os << "type=";
+	switch(load_store_access.type)
+	{
+		case LoadStoreAccess<CONFIG>::INT8_LOAD: os << "int8_load"; break;
+		case LoadStoreAccess<CONFIG>::INT16_LOAD: os << "int16_load"; break;
+		case LoadStoreAccess<CONFIG>::SINT16_LOAD: os << "sint16_load"; break;
+		case LoadStoreAccess<CONFIG>::INT32_LOAD: os << "int32_load"; break;
+		case LoadStoreAccess<CONFIG>::FP32_LOAD: os << "fp32_load"; break;
+		case LoadStoreAccess<CONFIG>::FP64_LOAD: os << "fp64_load"; break;
+		case LoadStoreAccess<CONFIG>::INT16_LOAD_BYTE_REVERSE: os << "int16_load_byte_reverse"; break;
+		case LoadStoreAccess<CONFIG>::INT32_LOAD_BYTE_REVERSE: os << "int32_load_byte_reverse"; break;
+		case LoadStoreAccess<CONFIG>::INT_LOAD_MSB: os << "int_load_msb"; break;
+		case LoadStoreAccess<CONFIG>::INT8_STORE: os << "int8_store"; break;
+		case LoadStoreAccess<CONFIG>::INT16_STORE: os << "int16_store"; break;
+		case LoadStoreAccess<CONFIG>::INT32_STORE: os << "int32_store"; break;
+		case LoadStoreAccess<CONFIG>::FP32_STORE: os << "fp32_store"; break;
+		case LoadStoreAccess<CONFIG>::FP64_STORE: os << "fp64_store"; break;
+		case LoadStoreAccess<CONFIG>::FP_STORE_LSW: os << "fp_store_lsw"; break;
+		case LoadStoreAccess<CONFIG>::INT16_STORE_BYTE_REVERSE: os << "int16_store_byte_reverse"; break;
+		case LoadStoreAccess<CONFIG>::INT32_STORE_BYTE_REVERSE: os << "int32_store_byte_reverse"; break;
+		case LoadStoreAccess<CONFIG>::INT_STORE_MSB: os << "int_store_msb"; break;
+	}
+	os << ", reg_num=" << load_store_access.reg_num;
+	os << ", munged_ea=0x" << std::hex << load_store_access.munged_ea << std::dec;
+	os << ", offset=" << load_store_access.offset;
+	os << ", size=" << load_store_access.size;
+	os << ", valid=" << load_store_access.valid;
+	os << ", data=[" << std::hex;
+	int i;
+	for(i = 0; i < sizeof(load_store_access.data); i++)
+	{
+		if(i != 0) os << " ";
+		os << "0x" << (unsigned int) load_store_access.data[i];
+	}
+	os << "]" << std::dec;
+	os << ", " << load_store_access.mmu_access;
+	os << ", L1_" << load_store_access.l1_access;
+	os << ", L2_" << load_store_access.l2_access;
+	os << ")";
+	return os;
+}
+
+template <class CONFIG>
+ostream& operator << (ostream& os, const BusAccess<CONFIG>& bus_access)
+{
+	os << "BUS_ACCESS(";
+	os << "issued=" << bus_access.issued;
+	os << ", type=";
+	switch(bus_access.type)
+	{
+		case BusAccess<CONFIG>::LOAD: os << "load"; break;
+		case BusAccess<CONFIG>::REFILL: os << "refill"; break;
+		case BusAccess<CONFIG>::REFILLX: os << "refillx"; break;
+		case BusAccess<CONFIG>::STORE: os << "store"; break;
+		case BusAccess<CONFIG>::EVICTION: os << "eviction"; break;
+	}
+	os << ", addr=0x" << std::hex << bus_access.addr << std::dec;
+	os << ", size=" << bus_access.size;
+	os << ", storage=[";
+	int i;
+	for(i = 0; i < bus_access.size; i++)
+	{
+		if(i != 0) os << " ";
+		os << "0x" << std::hex << (unsigned int) bus_access.storage[i] << std::dec;
+	}
+	os << "]";
+	os << ", wimg=";
+	os << ((bus_access.wimg & CONFIG::WIMG_WRITE_THROUGH) ? "W" : "x");
+	os << ((bus_access.wimg & CONFIG::WIMG_CACHE_INHIBITED) ? "I" : "x");
+	os << ((bus_access.wimg & CONFIG::WIMG_MEMORY_COHERENCY_ENFORCED) ? "M" : "x");
+	os << ((bus_access.wimg & CONFIG::WIMG_GUARDED_MEMORY) ? "G" : "x");
+	os << ", rwitm=" << bus_access.rwitm;
+	return os;
+}
+
+template <class CONFIG>
+ostream& operator << (ostream& os, const Operand<CONFIG>& operand)
+{
+	os << "OPERAND(";
+	os << "type=";
+	switch(operand.type)
+	{
+		case Operand<CONFIG>::GPR: os << "GPR"; break;
+		case Operand<CONFIG>::FPR: os << "FPR"; break;
+		case Operand<CONFIG>::CR: os << "CR"; break;
+		case Operand<CONFIG>::LR: os << "LR"; break;
+		case Operand<CONFIG>::CTR: os << "CTR"; break;
+		case Operand<CONFIG>::XER: os << "XER"; break;
+		case Operand<CONFIG>::FPSCR: os << "FPSCR"; break;
+	}
+	os << ", valid=" << operand.valid;
+	os << ", reg_num=" << operand.reg_num;
+	os << ", tag=" << operand.tag;
+	os << ", int_value=0x" << std::hex << operand.int_value << std::dec;
+	os << ", float_value=0x" << operand.float_value;
+	os << ", ref_count=" << operand.ref_count;
+	return os;
+}
+
+template <class CONFIG>
+ostream& operator << (ostream& os, const Instruction<CONFIG>& instruction)
+{
+	os << "INSTRUCTION(";
+	os << ")";
+	return os;
+}
 
 } // end of namespace powerpc
 } // end of namespace processor

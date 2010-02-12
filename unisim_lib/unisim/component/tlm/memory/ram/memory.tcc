@@ -60,10 +60,12 @@ Memory(const sc_module_name& name, Object *parent) :
 	slave_port("slave-port"),
 	cycle_time(0),
 	cycle_sctime(),
-	param_cycle_time("cycle-time", this, cycle_time),
+	param_cycle_time("cycle-time", this, cycle_time, "RAM memory cycle time in picoseconds"),
 	verbose(false),
-	param_verbose("verbose", this, verbose),
-	logger(*this) {
+	param_verbose("verbose", this, verbose, "enable/disable verbosity"),
+	logger(*this)
+{
+	param_cycle_time.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	slave_port(*this);
 }
 

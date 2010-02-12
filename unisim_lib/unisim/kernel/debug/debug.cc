@@ -36,6 +36,10 @@
 #include <stdlib.h>
 #include <iostream>
 
+#if defined(HAVE_CONFIG_H)
+#include <config.h>
+#endif
+
 #if defined(__GNUC__) && (__GNUC__ >= 3) && defined(HAVE_CXXABI)
 #include <execinfo.h>
 #include <cxxabi.h>
@@ -50,8 +54,8 @@ BackTrace::BackTrace(unsigned int max_depth) :
 	stack_addrs(0)
 {
 #if defined(__GNUC__) && (__GNUC__ >= 3) && defined(HAVE_CXXABI)
-	stack_addrs = (void **) malloc(max_depth * sizeof(void *));
-	stack_depth = backtrace(stack_addrs, max_depth);
+	stack_addrs = (void **) malloc((max_depth + 1) * sizeof(void *));
+	stack_depth = backtrace(stack_addrs, max_depth + 1);
 	stack_addrs = (void **) realloc(stack_addrs, stack_depth * sizeof(void *));
 #endif
 }

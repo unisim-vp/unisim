@@ -73,8 +73,10 @@ AM29LV<CONFIG, BYTESIZE, IO_WIDTH, MAX_TRANSACTION_DATA_SIZE>::AM29LV(const sc_m
 	slave_port("slave-port"),
 	cycle_time(0),
 	cycle_sctime(),
-	param_cycle_time("cycle-time", this, cycle_time)
+	param_cycle_time("cycle-time", this, cycle_time, "flash memory cycle time in picoseconds")
 {
+	param_cycle_time.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	
 	SC_HAS_PROCESS(AM29LV);
 
 	slave_port(*this);

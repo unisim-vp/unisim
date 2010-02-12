@@ -57,6 +57,18 @@ namespace util {
 namespace garbage_collector {
 
 bool GarbageCollector::done_setup = GarbageCollector::Setup();
+#if DEBUG_GC >= 1
+unsigned long long GarbageCollector::num_catches = 0;
+unsigned long long GarbageCollector::num_collects = 0;
+unsigned long long GarbageCollector::num_allocs = 0;
+unsigned long long GarbageCollector::num_reuse = 0;
+unsigned long long GarbageCollector::num_free = 0;
+unsigned long long GarbageCollector::memory_usage = 0;
+#endif
+
+#if DEBUG_GC >= 2
+static const unsigned long long ABNORMAL_ALLOC_THRESHOLD = 0xffffffffffffffffULL;
+#endif
 
 MemoryBlock *GarbageCollector::free_blocks[GarbageCollector::MAX_MEMORY_BLOCK_SIZE / GarbageCollector::MIN_MEMORY_BLOCK_SIZE];
 
@@ -77,7 +89,10 @@ bool GarbageCollector::Setup()
 void GarbageCollector::Reset()
 {
 	unsigned int i;
-//	cerr << "GarbageCollector::Reset()" << endl;
+#if DEBUG_GC >= 1
+	std::cerr << "GC: usage=" << memory_usage << " bytes ("<< (memory_usage / 1024) <<" KB), alloc=" << num_allocs << " blocks, reuse=" << num_reuse << " blocks, free=" << num_free << " blocks, catch=" << num_catches << " blocks, collect=" << num_collects << " blocks, catch-collect=" << (num_catches - num_collects) << " blocks" << std::endl;
+#endif
+	//	cerr << "GarbageCollector::Reset()" << endl;
 	for(i = 0; i < MAX_MEMORY_BLOCK_SIZE / MIN_MEMORY_BLOCK_SIZE; i++)
 	{
 		MemoryBlock * block = free_blocks[i];
@@ -87,12 +102,19 @@ void GarbageCollector::Reset()
 			do
 			{
 				next_block = block->next;
-				//cerr << "GarbageCollector::Reset() free" << endl;
 				free(block);
 			} while((block = next_block) != 0);
 		}
 		free_blocks[i] = 0;
 	}
+#if DEBUG_GC >= 1
+	num_catches = 0;
+	num_collects = 0;
+	num_allocs = 0;
+	num_reuse = 0;
+	num_free = 0;
+	memory_usage = 0;
+#endif
 }
 
 void *GarbageCollector::Allocate(unsigned int size)
@@ -105,20 +127,40 @@ void *GarbageCollector::Allocate(unsigned int size)
 		block->magic = MAGIC;
 		block->refcount = 0;
 		block->size = size;
-		
 //		cerr << "GarbageCollector::Allocate(" << size << ") on big blocks: " << block << endl;
-
+#if DEBUG_GC >= 1
+		num_allocs++;
+		memory_usage += sizeof(MemoryBlock) + size;
+#endif
+#if DEBUG_GC >= 2
+		if(num_allocs >= ABNORMAL_ALLOC_THRESHOLD)
+		{
+			std::cerr << "Alloc(" << block << ") of size " << block->size << ":" << std::endl;
+			std::cerr << unisim::kernel::debug::BackTrace() << std::endl;
+		}
+#endif
  		return block + 1;
 	}
-		
+
 	if(free_blocks[index])
 	{
 		block = free_blocks[index];
 		free_blocks[index] = block->next;
 		
 //		cerr << "GarbageCollector::Allocate(" << size << ") on free blocks: " << block << endl;		
+#if DEBUG_GC >= 1
+		num_reuse++;
+#endif
+#if DEBUG_GC >= 2
+		if(num_allocs >= ABNORMAL_ALLOC_THRESHOLD)
+		{
+			std::cerr << "Reuse(" << block << ") of size " << block->size << ":" << std::endl;
+			std::cerr << unisim::kernel::debug::BackTrace() << std::endl;
+		}
+#endif
  		return block + 1;
 	}
+	
 //		(index + 1) * MIN_MEMORY_BLOCK_SIZE
 	block = (MemoryBlock *) malloc(sizeof(MemoryBlock) + ((index + 1) * MIN_MEMORY_BLOCK_SIZE));
 //	block = (MemoryBlock *) malloc(sizeof(MemoryBlock) + ((size + MIN_MEMORY_BLOCK_SIZE - 1) & ~(MIN_MEMORY_BLOCK_SIZE - 1)));
@@ -126,6 +168,17 @@ void *GarbageCollector::Allocate(unsigned int size)
 	block->refcount = 0;
 	block->size = size;
 //	cerr << "GarbageCollector::Allocate(" << size << ") on a new block: " << block << endl;
+#if DEBUG_GC >= 1
+	num_allocs++;
+	memory_usage += sizeof(MemoryBlock) + ((index + 1) * MIN_MEMORY_BLOCK_SIZE);
+#endif
+#if DEBUG_GC >= 2
+	if(num_allocs >= ABNORMAL_ALLOC_THRESHOLD)
+	{
+		std::cerr << "Alloc(" << block << ") of size " << block->size << ":" << std::endl;
+		std::cerr << unisim::kernel::debug::BackTrace() << std::endl;
+	}
+#endif
 	
 	return block + 1;
 }
@@ -133,6 +186,16 @@ void *GarbageCollector::Allocate(unsigned int size)
 bool GarbageCollector::Collect(void *p)
 {
 	MemoryBlock *block = (MemoryBlock *) p - 1;
+#if DEBUG_GC >= 1
+	num_collects++;
+#endif
+#if DEBUG_GC >= 2
+	if(num_allocs >= ABNORMAL_ALLOC_THRESHOLD)
+	{
+		std::cerr << "Collect(" << block << ") of size " << block->size << ":" << std::endl;
+		std::cerr << unisim::kernel::debug::BackTrace() << std::endl;
+	}
+#endif
 	if(block->magic != MAGIC)
 	{
 		cerr << "WARNING! Doing collect on unmanaged block" << endl;
@@ -140,9 +203,20 @@ bool GarbageCollector::Collect(void *p)
 	}
 	//cerr << "GarbageCollector::Collect(0x" << p << "): refcount=" << block->refcount << endl;
 	if(--block->refcount != 0) return false;
+
 	unsigned int index = block->size/ MIN_MEMORY_BLOCK_SIZE;
 	if(index >= MAX_MEMORY_BLOCK_SIZE / MIN_MEMORY_BLOCK_SIZE)
 	{
+#if DEBUG_GC >= 1
+		num_free++;
+#endif
+#if DEBUG_GC >= 2
+		if(num_allocs >= ABNORMAL_ALLOC_THRESHOLD)
+		{
+			std::cerr << "free(" << block << ") of size " << block->size << ":" << std::endl;
+			std::cerr << unisim::kernel::debug::BackTrace() << std::endl;
+		}
+#endif
 		free(block);
 	}
 	else
@@ -150,12 +224,23 @@ bool GarbageCollector::Collect(void *p)
 		block->next = free_blocks[index];
 		free_blocks[index] = block;
 	}
+
 	return true;
 }
 
 void GarbageCollector::Catch(void *p)
 {
 	MemoryBlock *block = (MemoryBlock *) p - 1;
+#if DEBUG_GC >= 1
+	num_catches++;
+#endif
+#if DEBUG_GC >= 2
+	if(num_allocs >= ABNORMAL_ALLOC_THRESHOLD)
+	{
+		std::cerr << "Catch(" << block << ") of size " << block->size << ":" << std::endl;
+		std::cerr << unisim::kernel::debug::BackTrace() << std::endl;
+	}
+#endif
 	if(block->magic != MAGIC)
 	{
 		cerr << "WARNING! Doing catch on unmanaged block" << endl;

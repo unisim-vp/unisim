@@ -61,6 +61,13 @@
 #define unlikely(x) (x)
 #endif
 
+// #ifdef DEBUG_MEMORY_ALLOCATION
+// void *operator new(std::size_t size);
+// void *operator new[](std::size_t size);
+// void operator delete(void *p, std::size_t size);
+// void operator delete[](void *p, std::size_t size);
+// #endif
+
 namespace unisim {
 namespace kernel {
 namespace service {
@@ -117,6 +124,7 @@ class VariableBase
 {
 public:
 	typedef enum { VAR_VOID, VAR_ARRAY, VAR_PARAMETER, VAR_STATISTIC, VAR_REGISTER } Type;
+	typedef enum { FMT_DEFAULT, FMT_HEX, FMT_DEC } Format;
 
 	VariableBase();
 	VariableBase(const char *name, Object *owner, Type type, const char *description);
@@ -129,12 +137,14 @@ public:
 	const char *GetVarName() const;
 	const char *GetDescription() const;
 	Type GetType() const;
+	Format GetFormat() const;
 	virtual const char *GetDataTypeName() const;
 	bool HasEnumeratedValues() const;
 	bool HasEnumeratedValue(const char *value) const;
 	void GetEnumeratedValues(vector<string> &values) const;
 	bool AddEnumeratedValue(const char *value);
 	bool RemoveEnumeratedValue(const char *value);
+	void SetFormat(Format fmt);
 
 	virtual operator bool () const;
 	operator char () const;
@@ -174,6 +184,7 @@ private:
 	string description;
 	vector<string> enumerated_values;
 	Type type;
+	Format fmt;
 };
 
 //=============================================================================
@@ -245,7 +256,6 @@ private:
 	static map<const char *, ServiceImportBase *, ltstr> imports;
 	static map<const char *, ServiceExportBase *, ltstr> exports;
 	static map<const char *, VariableBase *, ltstr> variables;
-
 //
 //	static void ProcessXmlVariableNode(xmlTextReaderPtr reader);
 };
@@ -311,6 +321,7 @@ public:
 	virtual ~VariableArray();
 
 	virtual VariableBase& operator [] (unsigned int index);
+	void SetFormat(Format fmt);
 private:
 	vector<VariableBase *> variables;
 };
@@ -353,6 +364,16 @@ VariableBase& VariableArray<TYPE>::operator [] (unsigned int index)
 	return *variables[index];
 }
 
+template <class TYPE>
+void VariableArray<TYPE>::SetFormat(Format fmt)
+{
+	typename vector<VariableBase *>::iterator variable_iter;
+	
+	for(variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
+	{
+		(*variable_iter)->SetFormat(fmt);
+	}
+}
 
 template <class TYPE>
 class ParameterArray : public VariableArray<TYPE>

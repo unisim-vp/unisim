@@ -162,9 +162,6 @@ void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 OnDisconnect() 
 {
-	logger << DebugWarning << LOCATION << endl
-			<< "TODO"
-			<< EndDebugWarning;
 }
 
 /** Method to setup the service */

@@ -875,6 +875,51 @@ public:
 	static const unsigned int MAX_OPERANDS = 8;
 
 	typedef operand_t operands_t[MAX_OPERANDS];
+	
+	static const uint32_t IQ_SIZE = 12;
+	static const uint32_t VIQ_SIZE = 4;
+	static const uint32_t GIQ_SIZE = 6;
+	static const uint32_t FIQ_SIZE = 2;
+	static const uint32_t CQ_SIZE = 16;
+	static const uint32_t NUM_GPR_RENAME_REGISTERS = 16;
+	static const uint32_t NUM_FPR_RENAME_REGISTERS = 16;
+	static const uint32_t IU1_RS_SIZE = 1;
+	static const uint32_t IU2_RS_SIZE = 2;
+	static const uint32_t FPU_RS_SIZE = 2;
+	static const uint32_t LSU_RS_SIZE = 2;
+	static const uint32_t FSQ_SIZE = 3;
+	static const uint32_t CSQ_SIZE = 5;
+	static const uint32_t BSQ_SIZE = 10;
+	static const uint32_t FETCH_WIDTH = 4;
+	static const uint32_t DECODE_WIDTH = 3;
+	static const uint32_t MAX_DISPATCHED_LOAD_STORES_PER_CYCLE = 1;
+	static const uint32_t MAX_GPR_RENAMES_PER_CYCLE = 4;
+	static const uint32_t MAX_FPR_RENAMES_PER_CYCLE = 2;
+	static const uint32_t MAX_VPR_RENAMES_PER_CYCLE = 3;
+	static const uint32_t VR_ISSUE_WIDTH = 2;
+	static const uint32_t GPR_ISSUE_WIDTH = 3;
+	static const uint32_t FPR_ISSUE_WIDTH = 1;
+	static const uint32_t NUM_IU1 = 3;
+	static const uint32_t IU1_PIPELINE_DEPTH = 1;
+	static const uint32_t NUM_IU2 = 1;
+	static const uint32_t IU2_PIPELINE_DEPTH = 3;
+	static const uint32_t NUM_FPU = 1;
+	static const uint32_t FPU_PIPELINE_DEPTH = 5;
+	static const uint32_t COMPLETE_WIDTH = 3;
+	static const uint32_t MAX_GPR_WB_PER_CYCLE = 3;
+	static const uint32_t MAX_FPR_WB_PER_CYCLE = 3;
+	static const uint32_t MAX_CR_WB_PER_CYCLE = 3;
+	static const uint32_t MAX_LR_WB_PER_CYCLE = 1;
+	static const uint32_t MAX_CTR_WB_PER_CYCLE = 1;
+	static const uint32_t IL1_LATENCY = 2;
+	static const uint32_t DL1_LATENCY = 2;
+	static const uint32_t L2_LATENCY = 2;
+	static const uint32_t MAX_OUTSTANDING_L1_FETCH_MISS = 5;
+	static const uint32_t MAX_OUTSTANDING_L1_LOAD_MISS = 5;
+	static const uint32_t MAX_OUTSTANDING_L2_LOAD_MISS = 11;
+	static const uint32_t MAX_OUTSTANDING_L1_STORE_MISS = 1;
+	static const uint32_t MAX_OUTSTANDING_L2_STORE_MISS = 9;
+	static const uint32_t STORE_WB_LATENCY = 2;
 };
 
 //=====================================================================

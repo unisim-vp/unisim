@@ -58,7 +58,7 @@ AddressMap<ADDRESS_TYPE, PCI_ADDRESS_TYPE, DEBUG>::AddressMap(ConfigurationRegis
 	Object(name, parent),
 	logger(*this),
 	verbose(false),
-	param_verbose("verbose", this, verbose),
+	param_verbose("verbose", this, verbose, "enable/disable verbosity"),
 	proc_list(NULL), pci_list(NULL),
 	config_regs(&_config_regs),
 	atu(&_atu) {

@@ -36,6 +36,7 @@
 #define __UNISIM_UTIL_GARBAGE_COLLECTOR_GARBAGE_COLLECTOR_HH__
 
 #include <cstddef>
+#include <unisim/kernel/debug/debug.hh>
 
 namespace unisim {
 namespace util {
@@ -54,9 +55,6 @@ namespace unisim {
 namespace util {
 namespace garbage_collector {
 
-//using std::cerr;
-//using std::endl;	
-	
 struct MemoryBlock
 {
 	unsigned int magic;
@@ -70,23 +68,11 @@ class GarbageCollector
 public:
 	static void Reset();
 
-	static /* inline */ bool Collect(void *p)
-#if 0 // defined(__GNUC__) && (__GNUC__ >= 3)
-__attribute__((always_inline))
-#endif
-	;
+	static bool Collect(void *p);
 
-	static /* inline */ void *Allocate(unsigned int size)
-#if 0 // defined(__GNUC__) && (__GNUC__ >= 3)
-__attribute__((always_inline))
-#endif
-	;
+	static void *Allocate(unsigned int size);
 
-	static /* inline */ void Catch(void *p)
-#if 0 // defined(__GNUC__) && (__GNUC__ >= 3)
-__attribute__((always_inline))
-#endif
-	;
+	static void Catch(void *p);
 	
 private:
 	static bool Setup();
@@ -96,6 +82,14 @@ private:
 	static const unsigned int MAGIC = 0x5f47435f; // '_GC_';
 	static bool done_setup;
 	
+#if DEBUG_GC >= 1
+	static unsigned long long num_catches;
+	static unsigned long long num_collects;
+	static unsigned long long num_allocs;
+	static unsigned long long num_reuse;
+	static unsigned long long num_free;
+	static unsigned long long memory_usage;
+#endif
 	static MemoryBlock *free_blocks[MAX_MEMORY_BLOCK_SIZE / MIN_MEMORY_BLOCK_SIZE];
 };
 
@@ -132,18 +126,6 @@ __attribute__((always_inline))
 __attribute__((always_inline))
 #endif
 	;
-
-// 	inline operator void * () const
-// #if defined(__GNUC__) && (__GNUC__ >= 3)
-// __attribute__((always_inline))
-// #endif
-// 	;
-
-// 	inline T* operator * () const
-// #if defined(__GNUC__) && (__GNUC__ >= 3)
-// __attribute__((always_inline))
-// #endif
-// 	;
 
 	inline operator T * () const
 #if defined(__GNUC__) && (__GNUC__ >= 3)
@@ -204,7 +186,9 @@ inline Pointer<T>::~Pointer()
 	if(obj)
 	{
 		if(GarbageCollector::Collect(obj))
+		{
 			obj->~T();
+		}
 	}
 }
 
@@ -213,18 +197,6 @@ inline bool Pointer<T>::operator == (const Pointer<T>& p) const
 {
 	return obj == p.obj;
 }
-
-// template <class T>
-// inline Pointer<T>::operator void * () const
-// {
-// 	return obj;
-// }
-
-// template <class T>
-// inline T* Pointer<T>::operator * () const
-// {
-// 	return obj;
-// }
 
 template <class T>
 inline Pointer<T>::operator T * () const

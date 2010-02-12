@@ -129,7 +129,7 @@ private:
 class BootInfos
 {
 public:
-	static const uint32_t MAX_BOOT_INFOS_IMAGE_SIZE = 8 * 1024 * 1024; // 8 MB
+	static const uint32_t MAX_BOOT_INFOS_IMAGE_SIZE = 32 * 1024 * 1024; // 32 MB
 	
 	BootInfos(unisim::kernel::logger::Logger& logger, bool verbose);
 	virtual ~BootInfos();

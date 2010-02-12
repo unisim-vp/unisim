@@ -373,6 +373,7 @@ LoadXmlVariables(const char *filename, VariableBase::Type type)
 			cerr << filename << ": failed to parse" << endl;
 			return false;
 		}
+		return true;
 	} else {
 		cerr << "Unable to open " << filename << endl;
 		return false;

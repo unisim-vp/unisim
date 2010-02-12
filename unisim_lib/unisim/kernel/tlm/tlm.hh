@@ -39,6 +39,7 @@
 #include <systemc.h>
 #include <unisim/util/garbage_collector/garbage_collector.hh>
 #include <list>
+#include <vector>
 #include <stack>
 #include <string>
 
@@ -57,6 +58,7 @@ namespace tlm {
 
 using std::stack;
 using std::list;
+using std::vector;
 using unisim::util::garbage_collector::Pointer;
 using std::string;
 
@@ -75,8 +77,7 @@ private:
 template <typename REQ, typename RSP = TlmNoResponse>
 class TlmMessage {
 private:
-	stack<sc_event *> event_stack;
-    
+	stack<sc_event *, vector<sc_event *> > event_stack; // Gilles: this implementation is faster and consumes less memory than using stack<sc_event *>
 public:
 	Pointer<REQ> req;
 	Pointer<RSP> rsp;
@@ -93,7 +94,7 @@ public:
 	TlmMessage(const Pointer<REQ>& _req, sc_event& ev) : req(_req), rsp(0), event_stack() {
 			event_stack.push(&ev);
 	}
-    
+	
 	TlmMessage<REQ, RSP> &
 	operator =(const TlmMessage<REQ, RSP> &m) {
 		req = m.req;
@@ -143,7 +144,7 @@ public:
 				event_stack.pop();
     }
 };
-  
+
 //=============================================================================
 //=                           TlmSendIf<REQ, RSP>                             =
 //=============================================================================
@@ -211,6 +212,7 @@ public:
 			return true;
 		} else {
 			msg->PopResponseEvent();
+			handler->msg = 0;
 			free_handlers.push_back(handler);
 			return false;
 		}
@@ -223,6 +225,7 @@ private:
 			wait(handler->event);
 			handler->msg->PopResponseEvent();
 			ResponseReceived(handler->msg, *(handler->port));
+			handler->msg = 0;
 			free_handlers.push_back(handler);
 		}
 	}

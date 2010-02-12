@@ -92,8 +92,14 @@ public:
 	virtual void Stop(int ret);
 	virtual void Synchronize();
 	virtual bool Setup();
-	void BusSynchronize();
+	inline void BusSynchronize()
+#if defined(__GNUC__) && (__GNUC__ >= 3)
+	__attribute__((always_inline))
+#endif
+	;
+
 	void Run();
+	void BusMaster();
 	virtual bool Send(const Pointer<TlmMessage<FSBReq, FSBRsp> >& message);
 	virtual void Reset();
 	virtual void BusRead(physical_address_t physical_addr, void *buffer, uint32_t size, typename CONFIG::WIMG wimg = CONFIG::WIMG_DEFAULT, bool rwitm = false);
@@ -101,6 +107,8 @@ public:
 	virtual void BusZeroBlock(physical_address_t physical_addr);
 	virtual void BusFlushBlock(physical_address_t physical_addr);
 	virtual void Idle();
+protected:
+	virtual void DoBusAccess(BusAccess<CONFIG> *bus_access);
 private:
 	sc_time cpu_cycle_sctime;
 	sc_time bus_cycle_sctime;
@@ -113,11 +121,17 @@ private:
 	double ipc;
 	sc_event ev_max_idle;
 	sc_event ev_interrupt;
+	sc_time max_idle_time;
+	sc_fifo<BusAccess<CONFIG> *> bus_access_queue;
 	
 	Parameter<uint64_t> param_nice_time;
 	Parameter<double> param_ipc;
 
-	inline void UpdateTime(const sc_time& delta);
+	inline void UpdateBusTime()
+#if defined(__GNUC__) && (__GNUC__ >= 3)
+	__attribute__((always_inline))
+#endif
+	;
 	
 	class ExternalInterruptListener :
 		public sc_module,

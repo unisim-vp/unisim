@@ -87,6 +87,17 @@ function Package {
 	rm -f ${ISS_FILENAME}
 }
 
+function Patch
+{
+	NAME=$1
+	PATCH=$2
+	echo "========================================="
+	echo "=              Patching                 ="
+	echo "========================================="
+	cd ${TMP_DIR}/${NAME}
+	patch -p1 < ${PATCH} || exit 
+}
+
 function Configure
 {
 	NAME=$1

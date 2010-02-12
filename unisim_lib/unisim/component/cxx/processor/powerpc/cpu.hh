@@ -152,6 +152,12 @@ template <class CONFIG>
 class Instruction;
 
 template <class CONFIG>
+class CacheAccess;
+
+template <class CONFIG>
+ostream& operator << (ostream& os, const CacheAccess<CONFIG>& cache_access);
+
+template <class CONFIG>
 class CacheAccess
 {
 public:
@@ -167,7 +173,15 @@ public:
 	CacheLine<CONFIG> *line;
 	CacheLine<CONFIG> *line_to_evict;
 	CacheBlock<CONFIG> *block;
+
+	friend ostream& operator << <CONFIG> (ostream& os, const CacheAccess<CONFIG>& cache_access);
 };
+
+template <class CONFIG>
+class MMUAccess;
+
+template <class CONFIG>
+ostream& operator << (ostream& os, const MMUAccess<CONFIG>& mmu_access);
 
 template <class CONFIG>
 class MMUAccess
@@ -210,7 +224,36 @@ public:
 	typename CONFIG::physical_address_t physical_addr;
 	typename CONFIG::address_t protection_boundary;
 	typename CONFIG::WIMG wimg;
+
+	friend ostream& operator << <CONFIG> (ostream& os, const MMUAccess<CONFIG>& mmu_access);
 };
+
+template <class CONFIG>
+class FetchAccess;
+
+template <class CONFIG>
+ostream& operator << (ostream& os, const FetchAccess<CONFIG>& fetch_access);
+
+template <class CONFIG>
+class FetchAccess
+{
+public:
+	typename CONFIG::address_t cia;                      // current instruction address
+	uint32_t size;                                       // size in byte of the access
+	uint32_t data[CONFIG::FETCH_WIDTH];                  // loaded raw data
+	MMUAccess<CONFIG> mmu_access;                        // MMU access
+	CacheAccess<typename CONFIG::IL1_CONFIG> l1_access;  // L1 Cache access
+	CacheAccess<typename CONFIG::L2_CONFIG> l2_access;   // L2 Cache access
+	FetchAccess<CONFIG> *next_free;                      // next free element in the free list
+	
+	friend ostream& operator << <CONFIG> (ostream& os, const FetchAccess<CONFIG>& fetch_access);
+};
+
+template <class CONFIG>
+class LoadStoreAccess;
+
+template <class CONFIG>
+ostream& operator << (ostream& os, const LoadStoreAccess<CONFIG>& load_store_access);
 
 template <class CONFIG>
 class LoadStoreAccess
@@ -252,7 +295,15 @@ public:
 	CacheAccess<typename CONFIG::DL1_CONFIG> l1_access;  // L1 Cache access
 	CacheAccess<typename CONFIG::L2_CONFIG> l2_access;   // L2 Cache access
 	LoadStoreAccess<CONFIG> *next_free;                  // next free element in the free list
+
+	friend ostream& operator << <CONFIG> (ostream& os, const LoadStoreAccess<CONFIG>& load_store_access);
 };
+
+template <class CONFIG>
+class BusAccess;
+
+template <class CONFIG>
+ostream& operator << (ostream& os, const BusAccess<CONFIG>& bus_access);
 
 template <class CONFIG>
 class BusAccess
@@ -267,15 +318,25 @@ public:
 		EVICTION  // block eviction
 	} Type;
 
+	bool issued;
 	Type type;
 	LoadStoreAccess<CONFIG> *load_store_access;
+	FetchAccess<CONFIG> *fetch_access;
 	typename CONFIG::physical_address_t addr;
 	uint32_t size;
 	uint8_t storage[CONFIG::FSB_BURST_SIZE];
 	typename CONFIG::WIMG wimg;
 	bool rwitm;
 	BusAccess<CONFIG> *next_free;
+	
+	friend ostream& operator << <CONFIG> (ostream& os, const BusAccess<CONFIG>& bus_access);
 };
+
+template <class CONFIG>
+class Operand;
+
+template <class CONFIG>
+ostream& operator << (ostream& os, const Operand<CONFIG>& operand);
 
 template <class CONFIG>
 class Operand
@@ -303,7 +364,15 @@ public:
 	Operand<CONFIG> *next_free;
 
 	CPU<CONFIG> *cpu;
+
+	friend ostream& operator << <CONFIG> (ostream& os, const Operand<CONFIG>& operand);
 };
+
+template <class CONFIG>
+class Instruction;
+
+template <class CONFIG>
+ostream& operator << (ostream& os, const Instruction<CONFIG>& instruction);
 
 template <class CONFIG>
 class Instruction
@@ -456,6 +525,8 @@ public:
 	void Initialize(CPU<CONFIG> *cpu, unsigned int uop_num);
 
 	Instruction<CONFIG> *next_free;
+
+	friend ostream& operator << <CONFIG> (ostream& os, const Instruction<CONFIG>& instruction);
 };
 
 template <class CONFIG>
@@ -472,16 +543,18 @@ public:
 		EV_NULL,              // null event
 		EV_FINISHED_INSN,     // an instruction is finished
 		EV_AVAILABLE_OPERAND, // an operand is available
-		EV_BUS_ACCESS         // a cache miss causes a bus access
+		EV_BUS_ACCESS,        // a cache miss causes a bus access
+		EV_FINISHED_FETCH     // an instruction fetch is finished
 	} Type;
 
 	Type type;
 	union
 	{
-		Instruction<CONFIG> *instruction; // used if type is EV_FINISHED_INSN
-		Operand<CONFIG> *operand;         // used if type is either EV_AVAILABLE_OPERAND or EV_OPERAND_WB
-		BusAccess<CONFIG> *bus_access;    // used if type is EV_BUS_ACCESS
-		void *null;                       // used if null event. Should be 0
+		Instruction<CONFIG> *instruction;   // used if type is EV_FINISHED_INSN
+		Operand<CONFIG> *operand;           // used if type is either EV_AVAILABLE_OPERAND or EV_OPERAND_WB
+		BusAccess<CONFIG> *bus_access;      // used if type is EV_BUS_ACCESS
+		FetchAccess<CONFIG> *fetch_access;  // used if type is EV_FINISHED_FETCH
+		void *null;                         // used if null event. Should be 0
 	} object;
 
 	Event<CONFIG> *next_free;
@@ -891,7 +964,7 @@ public:
 	//=====================================================================
 	
 	inline uint32_t GetCIA() const { return cia; }
-	inline void SetCIA(uint32_t value) { cia = value; }
+	inline void SetCIA(uint32_t value) { cia = value; seq_cia = value; }
 	inline uint32_t GetNIA() const { return nia; }
 	inline void SetNIA(uint32_t value) { nia = value; }
 
@@ -1856,35 +1929,6 @@ protected:
 	//=                       Performance model                           =
 	//=====================================================================
 
-	static const uint32_t FETCH_WIDTH = 4;
-	static const uint32_t DECODE_WIDTH = 3;
-	static const uint32_t MAX_DISPATCHED_LOAD_STORES_PER_CYCLE = 1;
-	static const uint32_t MAX_GPR_RENAMES_PER_CYCLE = 4;
-	static const uint32_t MAX_FPR_RENAMES_PER_CYCLE = 2;
-	static const uint32_t MAX_VPR_RENAMES_PER_CYCLE = 3;
-	static const uint32_t VR_ISSUE_WIDTH = 2;
-	static const uint32_t GPR_ISSUE_WIDTH = 3;
-	static const uint32_t FPR_ISSUE_WIDTH = 1;
-	static const uint32_t NUM_IU1 = 3;
-	static const uint32_t IU1_PIPELINE_DEPTH = 1;
-	static const uint32_t NUM_IU2 = 1;
-	static const uint32_t IU2_PIPELINE_DEPTH = 3;
-	static const uint32_t NUM_FPU = 1;
-	static const uint32_t FPU_PIPELINE_DEPTH = 5;
-	static const uint32_t COMPLETE_WIDTH = 3;
-	static const uint32_t MAX_GPR_WB_PER_CYCLE = 3;
-	static const uint32_t MAX_FPR_WB_PER_CYCLE = 3;
-	static const uint32_t MAX_CR_WB_PER_CYCLE = 3;
-	static const uint32_t MAX_LR_WB_PER_CYCLE = 1;
-	static const uint32_t MAX_CTR_WB_PER_CYCLE = 1;
-	static const uint32_t DL1_LATENCY = 2;
-	static const uint32_t L2_LATENCY = 2;
-	static const uint32_t MAX_OUTSTANDING_L1_LOAD_MISS = 5;
-	static const uint32_t MAX_OUTSTANDING_L2_LOAD_MISS = 11;
-	static const uint32_t MAX_OUTSTANDING_L1_STORE_MISS = 1;
-	static const uint32_t MAX_OUTSTANDING_L2_STORE_MISS = 9;
-	static const uint32_t STORE_WB_LATENCY = 2;
-
 	class InstructionFreeListConfig
 	{
 	public:
@@ -1922,7 +1966,7 @@ protected:
 	public:
 		static const bool DEBUG = true;
 		typedef Instruction<CONFIG> *ELEMENT;
-		static const unsigned int SIZE = 12;
+		static const unsigned int SIZE = CONFIG::IQ_SIZE;
 	};
 	
 	class VRIssueQueueConfig
@@ -1930,7 +1974,7 @@ protected:
 	public:
 		static const bool DEBUG = true;
 		typedef Instruction<CONFIG> *ELEMENT;
-		static const unsigned int SIZE = 4;
+		static const unsigned int SIZE = CONFIG::VIQ_SIZE;
 	};
 	
 	class GPRIssueQueueConfig
@@ -1938,7 +1982,7 @@ protected:
 	public:
 		static const bool DEBUG = true;
 		typedef  Instruction<CONFIG> *ELEMENT;
-		static const unsigned int SIZE = 6;
+		static const unsigned int SIZE = CONFIG::GIQ_SIZE;
 	};
 	
 	class FPRIssueQueueConfig
@@ -1946,7 +1990,7 @@ protected:
 	public:
 		static const bool DEBUG = true;
 		typedef  Instruction<CONFIG> *ELEMENT;
-		static const unsigned int SIZE = 2;
+		static const unsigned int SIZE = CONFIG::FIQ_SIZE;
 	};
 	
 	class CompletionQueueConfig
@@ -1954,7 +1998,7 @@ protected:
 	public:
 		static const bool DEBUG = true;
 		typedef  Instruction<CONFIG> *ELEMENT;
-		static const unsigned int SIZE = 16;
+		static const unsigned int SIZE = CONFIG::CQ_SIZE;
 	};
 
 	class GPRMappingTableConfig
@@ -1962,7 +2006,7 @@ protected:
 	public:
 		static const bool DEBUG = true;
 		static const unsigned int NUM_LOGICAL_REGISTERS = 32;
-		static const unsigned int NUM_RENAME_REGISTERS = 16;
+		static const unsigned int NUM_RENAME_REGISTERS = CONFIG::NUM_GPR_RENAME_REGISTERS;
 	};
 	
 	class FPRMappingTableConfig
@@ -1970,7 +2014,7 @@ protected:
 	public:
 		static const bool DEBUG = true;
 		static const unsigned int NUM_LOGICAL_REGISTERS = 32;
-		static const unsigned int NUM_RENAME_REGISTERS = 16;
+		static const unsigned int NUM_RENAME_REGISTERS = CONFIG::NUM_FPR_RENAME_REGISTERS;
 	};
 
 	class CRMappingTableConfig
@@ -2002,7 +2046,7 @@ protected:
 	public:
 		static const bool DEBUG = true;
 		typedef  Instruction<CONFIG> *ELEMENT;
-		static const unsigned int SIZE = 1;
+		static const unsigned int SIZE = CONFIG::IU1_RS_SIZE;
 	};
 
 	class IU1PipelineConfig
@@ -2010,7 +2054,7 @@ protected:
 	public:
 		static const bool DEBUG = true;
 		typedef  Instruction<CONFIG> *ELEMENT;
-		static const unsigned int SIZE = IU1_PIPELINE_DEPTH > 1 ? IU1_PIPELINE_DEPTH - 1 : 1;
+		static const unsigned int SIZE = CONFIG::IU1_PIPELINE_DEPTH > 1 ? CONFIG::IU1_PIPELINE_DEPTH - 1 : 1;
 	};
 
 	class IU2ReservationStationConfig
@@ -2018,7 +2062,7 @@ protected:
 	public:
 		static const bool DEBUG = true;
 		typedef  Instruction<CONFIG> *ELEMENT;
-		static const unsigned int SIZE = 2;
+		static const unsigned int SIZE = CONFIG::IU2_RS_SIZE;
 	};
 
 	class IU2PipelineConfig
@@ -2026,7 +2070,7 @@ protected:
 	public:
 		static const bool DEBUG = true;
 		typedef  Instruction<CONFIG> *ELEMENT;
-		static const unsigned int SIZE = IU2_PIPELINE_DEPTH > 1 ? IU2_PIPELINE_DEPTH - 1 : 1;
+		static const unsigned int SIZE = CONFIG::IU2_PIPELINE_DEPTH > 1 ? CONFIG::IU2_PIPELINE_DEPTH - 1 : 1;
 	};
 
 	class FPUReservationStationConfig
@@ -2034,7 +2078,7 @@ protected:
 	public:
 		static const bool DEBUG = true;
 		typedef  Instruction<CONFIG> *ELEMENT;
-		static const unsigned int SIZE = 2;
+		static const unsigned int SIZE = CONFIG::FPU_RS_SIZE;
 	};
 
 	class FPUPipelineConfig
@@ -2042,7 +2086,7 @@ protected:
 	public:
 		static const bool DEBUG = true;
 		typedef  Instruction<CONFIG> *ELEMENT;
-		static const unsigned int SIZE = FPU_PIPELINE_DEPTH > 1 ? FPU_PIPELINE_DEPTH - 1 : 1;
+		static const unsigned int SIZE = CONFIG::FPU_PIPELINE_DEPTH > 1 ? CONFIG::FPU_PIPELINE_DEPTH - 1 : 1;
 	};
 
 	class LSUReservationStationConfig
@@ -2050,7 +2094,7 @@ protected:
 	public:
 		static const bool DEBUG = true;
 		typedef Instruction<CONFIG> *ELEMENT;
-		static const unsigned int SIZE = 2;
+		static const unsigned int SIZE = CONFIG::LSU_RS_SIZE;
 	};
 
 	class FinishedStoreQueueConfig
@@ -2058,7 +2102,7 @@ protected:
 	public:
 		static const bool DEBUG = true;
 		typedef Instruction<CONFIG> *ELEMENT;
-		static const unsigned int SIZE = 3;
+		static const unsigned int SIZE = CONFIG::FSQ_SIZE;
 	};
 
 	class CommittedStoreQueueConfig
@@ -2066,7 +2110,7 @@ protected:
 	public:
 		static const bool DEBUG = true;
 		typedef Instruction<CONFIG> *ELEMENT;
-		static const unsigned int SIZE = 5;
+		static const unsigned int SIZE = CONFIG::CSQ_SIZE;
 	};
 
 	class RequiredEffectiveAddressConfig
@@ -2082,7 +2126,7 @@ protected:
 	public:
 		static const bool DEBUG = true;
 		typedef BusAccess<CONFIG> *ELEMENT;
-		static const unsigned int SIZE = 10;
+		static const unsigned int SIZE = CONFIG::BSQ_SIZE;
 	};
 
 	class BusLoadQueueConfig
@@ -2090,7 +2134,7 @@ protected:
 	public:
 		static const bool DEBUG = true;
 		typedef BusAccess<CONFIG> *ELEMENT;
-		static const unsigned int SIZE = MAX_OUTSTANDING_L2_LOAD_MISS;
+		static const unsigned int SIZE = CONFIG::MAX_OUTSTANDING_L2_LOAD_MISS;
 	};
 
 	class WriteBackQueueConfig
@@ -2098,7 +2142,7 @@ protected:
 	public:
 		static const bool DEBUG = true;
 		typedef Instruction<CONFIG> *ELEMENT;
-		static const unsigned int SIZE = COMPLETE_WIDTH;
+		static const unsigned int SIZE = CONFIG::COMPLETE_WIDTH;
 	};
 
 	// Instruction Queue
@@ -2124,15 +2168,15 @@ protected:
 	MappingTable<CTRMappingTableConfig> ctr_mapping_table;
 
 	// Reservation stations
-	Queue<IU1ReservationStationConfig> iu1_reservation_station[NUM_IU1];
-	Queue<IU2ReservationStationConfig> iu2_reservation_station[NUM_IU2];
-	Queue<FPUReservationStationConfig> fpu_reservation_station[NUM_FPU];
+	Queue<IU1ReservationStationConfig> iu1_reservation_station[CONFIG::NUM_IU1];
+	Queue<IU2ReservationStationConfig> iu2_reservation_station[CONFIG::NUM_IU2];
+	Queue<FPUReservationStationConfig> fpu_reservation_station[CONFIG::NUM_FPU];
 	Queue<LSUReservationStationConfig> lsu_reservation_station;
 
 	// Integer/Floating Units Pipelines
-	Queue<IU1PipelineConfig> iu1_pipeline[NUM_IU1];
-	Queue<IU2PipelineConfig> iu2_pipeline[NUM_IU2];
-	Queue<FPUPipelineConfig> fpu_pipeline[NUM_FPU];
+	Queue<IU1PipelineConfig> iu1_pipeline[CONFIG::NUM_IU1];
+	Queue<IU2PipelineConfig> iu2_pipeline[CONFIG::NUM_IU2];
+	Queue<FPUPipelineConfig> fpu_pipeline[CONFIG::NUM_FPU];
 
 	// Effective Address
 	Queue<RequiredEffectiveAddressConfig> required_ea;
@@ -2163,6 +2207,7 @@ protected:
 	Operand<CONFIG> *operand_free_list;
 	BusAccess<CONFIG> *bus_access_free_list;
 	LoadStoreAccess<CONFIG> *load_store_access_free_list;
+	FetchAccess<CONFIG> *fetch_access_free_list;
 
 	Event<CONFIG> *AllocateEvent();
 	Instruction<CONFIG> *AllocateInstruction();
@@ -2170,13 +2215,18 @@ protected:
 	LoadStoreAccess<CONFIG> *AllocateLoadStoreAccess();
 	void GenLoadStoreAccess(typename LoadStoreAccess<CONFIG>::Type type, unsigned int reg_num, address_t munged_ea, uint32_t size, Instruction<CONFIG> *instruction);
 	BusAccess<CONFIG> *AllocateBusAccess();
+	FetchAccess<CONFIG> *AllocateFetchAccess();
 	void AcquireOperand(Operand<CONFIG> *operand);
 	void FreeEvent(Event<CONFIG> *ev);
 	void FreeInstruction(Instruction<CONFIG> *instruction);
 	void FreeOperand(Operand<CONFIG> *operand);
 	void FreeLoadStoreAccess(LoadStoreAccess<CONFIG> *load_store_access);
 	void FreeBusAccess(BusAccess<CONFIG> *bus_access);
+	void FreeFetchAccess(FetchAccess<CONFIG> *fetch_access);
 
+	// Sequential CIA
+	uint32_t seq_cia;
+	
 	// Architectural registers
 	Operand<CONFIG> *arch_gpr[GPRMappingTableConfig::NUM_LOGICAL_REGISTERS];
 	Operand<CONFIG> *arch_fpr[FPRMappingTableConfig::NUM_LOGICAL_REGISTERS];
@@ -2193,6 +2243,7 @@ protected:
 	Operand<CONFIG> *rename_lr[LRMappingTableConfig::NUM_RENAME_REGISTERS];
 	Operand<CONFIG> *rename_ctr[CTRMappingTableConfig::NUM_RENAME_REGISTERS];
 
+	uint32_t num_outstanding_l1_fetch_miss;
 	uint32_t num_outstanding_l1_load_miss;
 	uint32_t num_outstanding_l1_store_miss;
 	uint32_t num_outstanding_l2_load_miss;
@@ -2221,6 +2272,7 @@ protected:
 
 	void NotifyEvent(Event<CONFIG> *ev, uint64_t latency);
 	void NotifyLoadResultAvailability(LoadStoreAccess<CONFIG> *load_store_access, uint64_t latency);
+	void NotifyFinishedFetch(FetchAccess<CONFIG> *fetch_access, uint64_t latency);
 	void NotifyOperandAvailability(Operand<CONFIG> *operand, uint64_t latency);
 	void NotifyFinishedInstruction(Instruction<CONFIG> *operand, uint64_t latency);
 	void NotifyBusAccess(BusAccess<CONFIG> *bus_access, uint64_t latency);
@@ -2230,6 +2282,9 @@ protected:
 	void OnFinishedBusAccess(BusAccess<CONFIG> *bus_access);
 	virtual void DoBusAccess(BusAccess<CONFIG> *bus_access) {}
 
+	void DumpPipeline();
+	void DumpSchedule();
+	
 	friend class Instruction<CONFIG>;
 };
 

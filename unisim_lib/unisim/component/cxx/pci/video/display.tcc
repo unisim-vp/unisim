@@ -67,11 +67,11 @@ Display<ADDRESS>::Display(const char *name, Object *parent) :
 	bytes_per_line(0),
 	logger(*this),
 	verbose(false),
-	param_verbose("verbose", this, verbose),
-	param_bytesize("bytesize", this, bytesize),
-	param_width("width", this, width),
-	param_height("height", this, height),
-	param_depth("depth", this, depth),
+	param_verbose("verbose", this, verbose, "enable/disable verbosity"),
+	param_bytesize("bytesize", this, bytesize, "frame buffer size in bytes"),
+	param_width("width", this, width, "screen width in pixels"),
+	param_height("height", this, height, "screen height in pixels"),
+	param_depth("depth", this, depth, "screen depth in bits per pixel"),
 	pci_device_number(0),
 	pci_bus_frequency(33),
 	initial_base_addr(0),
@@ -93,10 +93,15 @@ Display<ADDRESS>::Display(const char *name, Object *parent) :
 	pci_conf_subsystem_vendor_id("pci_conf_subsystem_vendor_id", "PCI Config Subsystem Vendor ID", 0x0, 0x0),
 
 	// Parameters initialization
-	param_initial_base_addr("initial-base-addr", this, initial_base_addr),
-	param_pci_device_number("pci-device-number", this, pci_device_number),
-	param_pci_bus_frequency("pci-bus-frequency", this, pci_bus_frequency)
+	param_initial_base_addr("initial-base-addr", this, initial_base_addr, "initial base address of memory space"),
+	param_pci_device_number("pci-device-number", this, pci_device_number, "PCI device number"),
+	param_pci_bus_frequency("pci-bus-frequency", this, pci_bus_frequency, "PCI bus frequency")
 {
+	param_bytesize.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_width.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_height.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_depth.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	
 	Object::SetupDependsOn(video_import);
 }
 
@@ -125,6 +130,7 @@ bool Display<ADDRESS>::Setup()
 		if(!video_import->SetVideoMode(pci_conf_base_addr, width, height, depth, bytes_per_line))
 		{
 			logger << DebugError << ": Can't set video mode" << EndDebugError;
+			return false;
 		}
 	}
 	
