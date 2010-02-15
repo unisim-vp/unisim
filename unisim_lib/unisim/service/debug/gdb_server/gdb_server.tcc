@@ -1498,6 +1498,10 @@ void GDBServer<ADDRESS>::Disasm(ADDRESS symbol_address, int symbol_size)
 
 		std::string dis = disasm_import->Disasm(current_address, next_address);
 
+		if (current_address == next_address) {
+			break;
+		}
+
 		strstm << "O" << hex << current_address << ":";
 
 		strstm << hex;
