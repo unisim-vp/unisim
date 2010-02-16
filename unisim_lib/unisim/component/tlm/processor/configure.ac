@@ -46,8 +46,6 @@ AC_CONFIG_FILES([Makefile])
 
 UNISIM_CONFIG_SUBDIR(unisim-component-tlm-processor-arm, arm)
 UNISIM_CONFIG_SUBDIR(unisim-component-tlm-processor-powerpc, powerpc)
-#UNISIM_CONFIG_SUBDIR(unisim-component-tlm-processor-hcs12x, hcs12x)
-
 
 # launch the generation of makefiles
 #   this must be the last command of configure.ac
