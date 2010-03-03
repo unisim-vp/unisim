@@ -5,6 +5,7 @@ DEFAULT_THEME=softy
 rm -rf site
 mkdir -p site
 mkdir -p site/images
+mkdir -p site/downloads
 
 THEMES=`cd themes; ls --color=never`
 
@@ -18,24 +19,17 @@ for THEME in ${THEMES}; do
 		fi
 
 		mkdir -p site/${THEME_ROOT}/style
-		mkdir -p site/${THEME_ROOT}/images
 
 		echo "Building stylesheet for theme ${THEME}"
 		cpp -P -Itemplate -Ithemes/${THEME} template/template.css > site/${THEME_ROOT}/style/style.css || exit 1
 		cp themes/${THEME}/*.png site/${THEME_ROOT}/style
 
 
-		CONTENTS=`cd content; find . -name "*.html"`
+		CONTENTS=`cd content; ls */*.html`
 
 		for CONTENT in ${CONTENTS}; do
 			CONTENT_DIR=`dirname ${CONTENT}`
 			echo "Building ${CONTENT_DIR}.html for theme ${THEME}..."
-
-			if [ "${THEME}" = "${DEFAULT_THEME}" ]; then
-				SITE_ROOT=
-			else
-				SITE_ROOT="../"
-			fi
 
 			THEME_NAV=
 			for THEME2 in ${THEMES}; do
@@ -54,7 +48,13 @@ for THEME in ${THEMES}; do
 				fi
 			done
 
-			cpp "-DTHEME_NAV=${THEME_NAV}" "-DSITE_ROOT=${SITE_ROOT}" -P -Itemplate -Icontent/${CONTENT_DIR} template/template.html > site/${ROOT}/${CONTENT_DIR}.html || exit -1
+			if [ "${THEME}" = "${DEFAULT_THEME}" ]; then
+				SITE_PREFIX=
+			else
+				SITE_PREFIX="../"
+			fi
+
+			cpp "-DTHEME_NAV=${THEME_NAV}" "-DIMAGES=${SITE_PREFIX}images" "-DDOWNLOADS=${SITE_PREFIX}downloads" -P -Itemplate -Icontent/${CONTENT_DIR} template/template.html > site/${THEME_ROOT}/${CONTENT_DIR}.html || exit -1
 		done
 	fi
 done
