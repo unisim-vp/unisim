@@ -51,7 +51,7 @@ li
 }
 
 /* page position and size */
- 
+
 .page
 {
 	margin-left: auto; 
@@ -122,10 +122,30 @@ td.menu-item:hover
 	width:640px;
 }
 
+.aside-item-body a, .content-item-body a
+{
+	color:gray
+}
+
+.aside-item-body a:hover, .content-item-body a:hover
+{
+	color:blue
+}
+
 .aside-item, .content-item
 {
-	margin: 0 auto; /* center for now */
+	margin: 0 auto;
 	font-size: 100%;
+}
+
+.aside-item
+{
+	background: url(red-sbbody-r.png) no-repeat bottom right;
+}
+
+.content-item
+{
+	background: url(blue-sbbody-r.png) no-repeat bottom right;
 }
 
 .aside-item-title, .content-item-title
@@ -135,21 +155,52 @@ td.menu-item:hover
 	text-align: center;
 }
 
+.aside-item-title
+{
+	background: url(red-sbhead-r.png) no-repeat top right;
+}
+
+.content-item-title
+{
+	background: url(blue-sbhead-r.png) no-repeat top right;
+}
+
 .aside-item-title h2, .content-item-title h2
 {
 	text-align:center;
 	margin: 0;
 	padding: 20px 30px 5px;
-	color: black; 
+	color: white; 
 	font-weight: bold; 
 	font-size: 1.2em; 
 	line-height: 1em;
+	text-shadow: rgba(0,0,0,.4) 0px 2px 5px;
+}
+
+.aside-item-title h2
+{
+	background: url(red-sbhead-l.png) no-repeat top left;
+}
+
+.content-item-title h2
+{
+	background: url(blue-sbhead-l.png) no-repeat top left;
 }
 
 .aside-item-body, .content-item-body
 {
 	margin: 0;
 	padding: 5px 30px 31px;
+}
+
+.aside-item-body
+{
+	background: url(red-sbbody-l.png) no-repeat bottom left;
+}
+
+.content-item-body
+{
+	background: url(blue-sbbody-l.png) no-repeat bottom left;
 }
 
 .aside .aside-item, .aside .content-item
@@ -168,21 +219,41 @@ td.menu-item:hover
 {
 	width:100%;
 	height:3px;
-	background-color:black;
+}
+
+/* bullets in lists */
+
+.content-item-body li
+{
+	list-style-image: url(blue-bullet.png);
+}
+
+.aside-item-body li
+{
+	list-style-image: url(red-bullet.png);
 }
 
 /* download */
 
 .download-file a
 {
+	background: url(file_icon.png) no-repeat center left;
+	padding-left: 18px;
+	height:16px;
 }
 
 .download-pdf a
 {
+	background: url(pdf_icon.png) no-repeat center left;
+	padding-left: 18px;
+	height:16px;
 }
 
 .download-video a
 {
+	background: url(video_icon.png) no-repeat center left;
+	padding-left: 18px;
+	height:16px;
 }
 
 /* page footer */
