@@ -11,18 +11,18 @@ THEMES=`cd themes; ls --color=never`
 for THEME in ${THEMES}; do
 	if [ -d "themes/${THEME}" ]; then
 		if [ "${THEME}" = "${DEFAULT_THEME}" ]; then
-			ROOT=
+			THEME_ROOT=
 		else
-			ROOT="${THEME}"
+			THEME_ROOT="${THEME}"
 			mkdir -p site/${THEME}
 		fi
 
-		mkdir -p site/${ROOT}/theme
-		mkdir -p site/${ROOT}/images
+		mkdir -p site/${THEME_ROOT}/style
+		mkdir -p site/${THEME_ROOT}/images
 
 		echo "Building stylesheet for theme ${THEME}"
-		cpp -P -Itemplate -Ithemes/${THEME} template/template.css > site/${ROOT}/theme/style.css || exit 1
-		cp themes/${THEME}/*.png site/${ROOT}/theme
+		cpp -P -Itemplate -Ithemes/${THEME} template/template.css > site/${THEME_ROOT}/style/style.css || exit 1
+		cp themes/${THEME}/*.png site/${THEME_ROOT}/style
 
 
 		CONTENTS=`cd content; find . -name "*.html"`
@@ -30,6 +30,12 @@ for THEME in ${THEMES}; do
 		for CONTENT in ${CONTENTS}; do
 			CONTENT_DIR=`dirname ${CONTENT}`
 			echo "Building ${CONTENT_DIR}.html for theme ${THEME}..."
+
+			if [ "${THEME}" = "${DEFAULT_THEME}" ]; then
+				SITE_ROOT=
+			else
+				SITE_ROOT="../"
+			fi
 
 			THEME_NAV=
 			for THEME2 in ${THEMES}; do
@@ -48,18 +54,18 @@ for THEME in ${THEMES}; do
 				fi
 			done
 
-			cpp "-DTHEME_NAV=${THEME_NAV}" -P -Itemplate -Icontent/${CONTENT_DIR} template/template.html > site/${ROOT}/${CONTENT_DIR}.html || exit -1
+			cpp "-DTHEME_NAV=${THEME_NAV}" "-DSITE_ROOT=${SITE_ROOT}" -P -Itemplate -Icontent/${CONTENT_DIR} template/template.html > site/${ROOT}/${CONTENT_DIR}.html || exit -1
 		done
+	fi
+done
 
-		IMAGES=`cd images; find . -name "*.png"`
+IMAGES=`cd images; find . -name "*.png"`
 
-		for IMAGE in ${IMAGES}; do
-			if [ -f "images/${IMAGE}" ]; then
-				echo "Copying images/${IMAGE} for theme ${THEME}"
-				mkdir -p site/${THEME}/images/`dirname "${IMAGE}"`
-				cp "images/${IMAGE}" "site/${ROOT}/images/${IMAGE}"
-			fi
-		done
+for IMAGE in ${IMAGES}; do
+	if [ -f "images/${IMAGE}" ]; then
+		echo "Copying images/${IMAGE}"
+		mkdir -p site/images/`dirname "${IMAGE}"`
+		cp "images/${IMAGE}" "site/images/${IMAGE}"
 	fi
 done
 
