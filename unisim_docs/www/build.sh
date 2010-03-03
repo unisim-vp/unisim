@@ -10,23 +10,6 @@ THEMES=`cd themes; ls --color=never`
 
 for THEME in ${THEMES}; do
 	if [ -d "themes/${THEME}" ]; then
-		THEME_NAV=
-		for THEME2 in ${THEMES}; do
-			if [ "${THEME}" = "${DEFAULT_THEME}" ]; then
-				if [ "${THEME2}" = "${DEFAULT_THEME}" ]; then
-					THEME_NAV="${THEME_NAV} <a href=\"index.html\">${THEME2}</a>"
-				else
-					THEME_NAV="${THEME_NAV} <a href=\"${THEME2}/index.html\">${THEME2}</a>"
-				fi
-			else
-				if [ "${THEME2}" = "${DEFAULT_THEME}" ]; then
-					THEME_NAV="${THEME_NAV} <a href=\"../index.html\">${THEME2}</a>"
-				else
-					THEME_NAV="${THEME_NAV} <a href=\"../${THEME2}/index.html\">${THEME2}</a>"
-				fi
-			fi
-		done
-
 		if [ "${THEME}" = "${DEFAULT_THEME}" ]; then
 			ROOT=
 		else
@@ -47,6 +30,24 @@ for THEME in ${THEMES}; do
 		for CONTENT in ${CONTENTS}; do
 			CONTENT_DIR=`dirname ${CONTENT}`
 			echo "Building ${CONTENT_DIR}.html for theme ${THEME}..."
+
+			THEME_NAV=
+			for THEME2 in ${THEMES}; do
+				if [ "${THEME}" = "${DEFAULT_THEME}" ]; then
+					if [ "${THEME2}" = "${DEFAULT_THEME}" ]; then
+						THEME_NAV="${THEME_NAV} <a href=\"${CONTENT_DIR}.html\">${THEME2}</a>"
+					else
+						THEME_NAV="${THEME_NAV} <a href=\"${THEME2}/${CONTENT_DIR}.html\">${THEME2}</a>"
+					fi
+				else
+					if [ "${THEME2}" = "${DEFAULT_THEME}" ]; then
+						THEME_NAV="${THEME_NAV} <a href=\"../${CONTENT_DIR}.html\">${THEME2}</a>"
+					else
+						THEME_NAV="${THEME_NAV} <a href=\"../${THEME2}/${CONTENT_DIR}.html\">${THEME2}</a>"
+					fi
+				fi
+			done
+
 			cpp "-DTHEME_NAV=${THEME_NAV}" -P -Itemplate -Icontent/${CONTENT_DIR} template/template.html > site/${ROOT}/${CONTENT_DIR}.html || exit -1
 		done
 
@@ -61,14 +62,5 @@ for THEME in ${THEMES}; do
 		done
 	fi
 done
-
-
-# CONTENTS=`cd content; find . -name "*.html"`
-# 
-# for CONTENT in ${CONTENTS}; do
-# 	CONTENT_DIR=`dirname ${CONTENT}`
-# 	echo "Building ${CONTENT_DIR}.html..."
-# 	cpp -DSTYLESHEET=\"themes/${STYLE}/style.css\" -P -Itemplate -Icontent/${CONTENT_DIR} template/template.html > site/${CONTENT_DIR}.html || exit -1
-# done
 
 echo "The web site is in ${PWD}/site"
