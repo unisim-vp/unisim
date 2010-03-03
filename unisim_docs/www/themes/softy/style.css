@@ -1,126 +1,4 @@
-/* text style */
-
-h1
-{
-	font-family:"sans serif";
-	font-style:normal;
-	font-size:24px;
-	text-align:left;
-	font-weight:bold;
-	color:black;
-}
-
-h2
-{
-	font-family:"sans serif";
-	font-style:normal;
-	font-size:20px;
-	text-align:left;
-	font-weight:bold;
-	color:black;
-}
-
-h3
-{
-	font-family:"sans serif";
-	font-style:normal;
-	font-size:16px;
-	text-align:left;
-	font-weight:normal;
-	color:black;
-}
-
-p
-{
-	font-family:"sans serif";
-	font-style:normal;
-	font-size:14px;
-	text-align:left;
-	font-weight:normal;
-	color:black;
-}
-
-li
-{
-	font-family:"sans serif";
-	font-style:normal;
-	font-size:14px;
-	text-align:left;
-	font-weight:normal;
-	color:black;
-}
-
-/* page position and size */
-
-.page
-{
-	margin-left: auto; 
-	margin-right: auto; 
-	width:1024px;
-}
-
-/* page header */
-
-.header
-{
-	background: url(unisim.png) no-repeat top left;
-	height:144px;
-}
-
-/* navigation menu */
-
-.menu
-{
-	width:100%;
-	background-color:black;
-	color:white;
-}
-
-.menu-item
-{
-	font-family:"sans serif";
-	font-style:normal;
-	font-size:14px;
-	text-align:center;
-	font-weight:bold;
-	background-color:black;
-	color:white;
-	text-decoration:none;
-	border-width:0;
-}
-
-table.menu td
-{
-	width:25%;
-}
-
-td.menu-item a
-{
-	display:block;
-	width:100%;
-	height:100%;
-	color:white;
-	text-decoration:none;
-}
-
-td.menu-item:hover
-{
-	background-color:#aa0000;
-}
-
 /* left side (content) and right side (aside) of the page */
-
-.aside
-{
-	float:right;
-	width:380px;
-}
-
-.content
-{
-	float:left;
-	width:640px;
-}
 
 .aside-item-body a, .content-item-body a
 {
@@ -132,12 +10,6 @@ td.menu-item:hover
 	color:blue
 }
 
-.aside-item, .content-item
-{
-	margin: 0 auto;
-	font-size: 100%;
-}
-
 .aside-item
 {
 	background: url(red-sbbody-r.png) no-repeat bottom right;
@@ -146,13 +18,6 @@ td.menu-item:hover
 .content-item
 {
 	background: url(blue-sbbody-r.png) no-repeat bottom right;
-}
-
-.aside-item-title, .content-item-title
-{
-	margin: 0;
-	padding: 0;
-	text-align: center;
 }
 
 .aside-item-title
@@ -167,13 +32,7 @@ td.menu-item:hover
 
 .aside-item-title h2, .content-item-title h2
 {
-	text-align:center;
-	margin: 0;
-	padding: 20px 30px 5px;
 	color: white; 
-	font-weight: bold; 
-	font-size: 1.2em; 
-	line-height: 1em;
 	text-shadow: rgba(0,0,0,.4) 0px 2px 5px;
 }
 
@@ -185,12 +44,6 @@ td.menu-item:hover
 .content-item-title h2
 {
 	background: url(blue-sbhead-l.png) no-repeat top left;
-}
-
-.aside-item-body, .content-item-body
-{
-	margin: 0;
-	padding: 5px 30px 31px;
 }
 
 .aside-item-body
@@ -219,6 +72,7 @@ td.menu-item:hover
 {
 	width:100%;
 	height:3px;
+	background-color:white;
 }
 
 /* bullets in lists */
@@ -257,16 +111,3 @@ td.menu-item:hover
 }
 
 /* page footer */
-
-.footer
-{
-	clear:both;
-	width:100%;
-	font-family:"sans serif";
-	font-style:normal;
-	font-size:10px;
-	text-align:center;
-	font-weight:normal;
-	background-color:black;
-	color:white;
-}
