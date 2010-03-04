@@ -113,7 +113,7 @@ td.menu-item:hover
 .aside
 {
 	float:right;
-	width:380px;
+	width:384px;
 }
 
 .content
@@ -154,12 +154,12 @@ td.menu-item:hover
 
 .aside .aside-item, .aside .content-item
 {
-	width:380px;
+	width:384px;
 }
 
 .content .aside-item, .content .content-item
 {
-	width:628px;
+	width:640px;
 }
 
 /* separator */

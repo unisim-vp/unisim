@@ -56,16 +56,6 @@
 	background: url(blue-sbbody-l.png) no-repeat bottom left;
 }
 
-.aside .aside-item, .aside .content-item
-{
-	width:380px;
-}
-
-.content .aside-item, .content .content-item
-{
-	width:628px;
-}
-
 /* separator */
 
 .separator
