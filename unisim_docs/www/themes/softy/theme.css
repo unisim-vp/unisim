@@ -67,37 +67,27 @@
 
 /* bullets in lists */
 
+.content-item-body ul, .aside-item-body ul
+{
+	padding-left: 24px;
+}
+
+.content-item-body li, .aside-item-body li
+{
+	padding-left: 16px;
+	list-style-type: none;
+	background-repeat:no-repeat;
+ 	background-position: -0 .45em;
+}
+
 .content-item-body li
 {
-	list-style-image: url(blue-bullet.png);
+	background-image:url(blue-bullet.png);
 }
 
 .aside-item-body li
 {
-	list-style-image: url(red-bullet.png);
-}
-
-/* download */
-
-.download-file a
-{
-	background: url(file_icon.png) no-repeat center left;
-	padding-left: 18px;
-	height:16px;
-}
-
-.download-pdf a
-{
-	background: url(pdf_icon.png) no-repeat center left;
-	padding-left: 18px;
-	height:16px;
-}
-
-.download-video a
-{
-	background: url(video_icon.png) no-repeat center left;
-	padding-left: 18px;
-	height:16px;
+	background-image:url(red-bullet.png);
 }
 
 /* page footer */

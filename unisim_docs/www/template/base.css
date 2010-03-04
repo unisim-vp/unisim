@@ -82,7 +82,7 @@ li
 	border-width:0;
 }
 
-.nav .nav-table
+.nav-table
 {
 	width:100%;
 	border-spacing:0px 0px;
@@ -95,7 +95,7 @@ li
 	width:25%;
 }
 
-.nav .nav-table a
+.nav-table a
 {
 	display:block;
 	width:100%;
@@ -104,10 +104,12 @@ li
 	text-decoration:none;
 }
 
-.nav .nav-table td a:hover
+.nav-table td a:hover
 {
 	background-color:#aa0000;
 }
+
+/* navigation markers */
 
 .nav-markers
 {
@@ -115,9 +117,8 @@ li
 	border-spacing:0px 0px;
 }
 
-.nav-marker
+.nav-markers td
 {
-	width:100%;
 	height:6px;
 }
 
@@ -184,18 +185,35 @@ li
 	background-color:black;
 }
 
+/* bullets in lists */
+
+.content-item-body li, .aside-item-body li
+{
+/*	padding-left: 0px;*/
+	line-height:1.4em;
+}
+
 /* download */
 
 .download-file a
 {
+	background: url(file_icon.png) no-repeat center left;
+	padding-left: 18px;
+	height:16px;
 }
 
 .download-pdf a
 {
+	background: url(pdf_icon.png) no-repeat center left;
+	padding-left: 18px;
+	height:16px;
 }
 
 .download-video a
 {
+	background: url(video_icon.png) no-repeat center left;
+	padding-left: 18px;
+	height:16px;
 }
 
 /* theme switch */
