@@ -1,6 +1,20 @@
 #!/bin/bash
 
-DEFAULT_THEME=softy
+if [ "$1" = "--help" ]; then
+	echo "Usage: `basename $0` [theme]"
+	THEMES=`cd themes; ls --color=never`
+	echo "theme can be one of the followings:"
+	echo "${THEMES}"
+	exit 0
+fi
+
+if [ -z "$1" ]; then
+	DEFAULT_THEME=softy
+else
+	DEFAULT_THEME="$1"
+fi
+
+echo "Using theme ${DEFAULT_THEME} as default theme"
 
 rm -rf site
 mkdir -p site
@@ -66,6 +80,16 @@ for IMAGE in ${IMAGES}; do
 		echo "Copying images/${IMAGE}"
 		mkdir -p site/images/`dirname "${IMAGE}"`
 		cp "images/${IMAGE}" "site/images/${IMAGE}"
+	fi
+done
+
+DOWNLOADS=`cd downloads; find . \( -name "*.tar.gz" -o -name "*.tar.bz2" -o -name "*.zip" -o -name "*.exe" -o -name "*.pdf" \)`
+
+for DOWNLOAD in ${DOWNLOAD}; do
+	if [ -f "downloads/${DOWNLOAD}" ]; then
+		echo "Copying downloads/${DOWNLOAD}"
+		mkdir -p site/download/`dirname "${DOWNLOAD}"`
+		cp "downloads/${DOWNLOAD}" "site/downloads/${DOWNLOAD}"
 	fi
 done
 
