@@ -89,6 +89,11 @@ li
 	border-width:0;
 }
 
+table.menu
+{
+	border-spacing:0px 0px;
+}
+
 table.menu td
 {
 	width:25%;
