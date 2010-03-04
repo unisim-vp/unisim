@@ -2,7 +2,7 @@
 
 if [ "$1" = "--help" ]; then
 	echo "Usage: `basename $0` [theme]"
-	THEMES=`cd themes; ls --color=never`
+	THEMES=`cd themes; ls` # --color=never`
 	echo "theme can be one of the followings:"
 	echo "${THEMES}"
 	exit 0
@@ -21,7 +21,7 @@ mkdir -p site
 mkdir -p site/images
 mkdir -p site/downloads
 
-THEMES=`cd themes; ls --color=never`
+THEMES=`cd themes; ls` # --color=never`
 
 for THEME in ${THEMES}; do
 	if [ -d "themes/${THEME}" ]; then
