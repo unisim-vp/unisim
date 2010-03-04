@@ -4,7 +4,9 @@
 		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 		<title>UNISIM Virtual Platforms</title>
 		
-		<link rel="stylesheet" href="style/style.css" type="text/css" />
+		BASE_STYLE
+		THEME_STYLE
+		CONTENT_STYLE
 	</head>
 
 	<body>
@@ -13,14 +15,12 @@
 #include "header.html"
 			</div>
 
-			<table class="menu">
-				<tr>
+			<div class="nav">
 #include "nav.html"
-				</tr>
-			</table>
+			</div>
 
 			<div class="theme-switcher">
-				Themes:THEME_NAV<br>
+#include "theme_switch.html"
 			</div>
 
 			<div class="content">

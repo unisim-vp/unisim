@@ -2,7 +2,7 @@
 
 if [ "$1" = "--help" ]; then
 	echo "Usage: `basename $0` [theme]"
-	THEMES=`cd themes; ls` # --color=never`
+	THEMES=`cd themes; ls`
 	echo "theme can be one of the followings:"
 	echo "${THEMES}"
 	exit 0
@@ -21,7 +21,7 @@ mkdir -p site
 mkdir -p site/images
 mkdir -p site/downloads
 
-THEMES=`cd themes; ls` # --color=never`
+THEMES=`cd themes; ls`
 
 for THEME in ${THEMES}; do
 	if [ -d "themes/${THEME}" ]; then
@@ -34,15 +34,29 @@ for THEME in ${THEMES}; do
 
 		mkdir -p site/${THEME_ROOT}/style
 
-		echo "Building stylesheet for theme ${THEME}"
-		cpp -P -Itemplate -Ithemes/${THEME} template/template.css > site/${THEME_ROOT}/style/style.css || exit 1
-		cp themes/${THEME}/*.png site/${THEME_ROOT}/style
+		THEME_STYLE=
+		CONTENT_STYLE=
 
+		if [ -f "themes/${THEME}/theme.css" ]; then
+			echo "Copying stylesheet for theme ${THEME}"
+			cp "themes/${THEME}/theme.css" "site/${THEME_ROOT}/style/theme.css" || exit 1
+			THEME_STYLE="<link rel=\"stylesheet\" href=\"style/theme.css\" type=\"text/css\" />"
+		fi
+
+		cp themes/${THEME}/*.png site/${THEME_ROOT}/style
 
 		CONTENTS=`cd content; ls */*.html`
 
 		for CONTENT in ${CONTENTS}; do
 			CONTENT_DIR=`dirname ${CONTENT}`
+
+			if [ -f "content/${CONTENT_DIR}/style.css" ]; then
+				echo "Copying stylesheet for ${CONTENT_DIR}.html..."
+				mkdir -p "site/${THEME_ROOT}/style/${CONTENT_DIR}"
+				cp "content/${CONTENT_DIR}/style.css" "site/${THEME_ROOT}/style/${CONTENT_DIR}/style.css" || exit 1
+				CONTENT_STYLE="<link rel=\"stylesheet\" href=\"style/${CONTENT_DIR}/style.css\" type=\"text/css\" />"
+			fi
+
 			echo "Building ${CONTENT_DIR}.html for theme ${THEME}..."
 
 			THEME_NAV=
@@ -67,11 +81,24 @@ for THEME in ${THEMES}; do
 			else
 				SITE_PREFIX="../"
 			fi
-
-			cpp "-DTHEME_NAV=${THEME_NAV}" "-DIMAGES=${SITE_PREFIX}images" "-DDOWNLOADS=${SITE_PREFIX}downloads" -P -Itemplate -Icontent/${CONTENT_DIR} template/template.html > site/${THEME_ROOT}/${CONTENT_DIR}.html || exit -1
+			
+			cpp \
+				"-DBASE_STYLE=<link rel=\"stylesheet\" href=\"${SITE_PREFIX}style/base.css\" type=\"text/css\" />" \
+				"-DTHEME_STYLE=${THEME_STYLE}" \
+				"-DCONTENT_STYLE=${CONTENT_STYLE}" \
+				"-DTHEME_NAV=${THEME_NAV}" \
+				"-DIMAGES=${SITE_PREFIX}images" \
+				"-DDOWNLOADS=${SITE_PREFIX}downloads" \
+				-P \
+				-Itemplate \
+				-Icontent/${CONTENT_DIR} \
+				template/template.html > site/${THEME_ROOT}/${CONTENT_DIR}.html || exit -1
 		done
 	fi
 done
+
+echo "Copying base stylesheet..."
+cp template/base.css site/style/base.css || exit 1
 
 IMAGES=`cd images; find . -name "*.png"`
 
