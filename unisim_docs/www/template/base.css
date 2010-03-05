@@ -57,13 +57,13 @@ li
 	margin-left: auto; 
 	margin-right: auto; 
 	width:1024px;
+	background-color:white;
 }
 
 /* page header */
 
 .header
 {
-	background: url(unisim.png) no-repeat top left;
 	height:144px;
 }
 

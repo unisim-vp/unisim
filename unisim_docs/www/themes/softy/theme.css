@@ -1,3 +1,10 @@
+/* page header */
+
+.header
+{
+	background: url(unisim.png) no-repeat top left;
+}
+
 /* left side (content) and right side (aside) of the page */
 
 .aside-item-body a, .content-item-body a
