@@ -67,6 +67,20 @@ li
 	height:144px;
 }
 
+/* an area that make visitors to know more about */
+
+.beyond
+{
+}
+
+.beyond a
+{
+	display:block;
+	width:100%;
+	height:100%;
+	text-decoration:none;
+}
+
 /* navigation menu */
 
 .nav

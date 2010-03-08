@@ -4,3 +4,10 @@
 {
 	background: url(unisim.png) no-repeat top left;
 }
+
+/* an area that make visitors to know more about */
+
+.beyond
+{
+	display:none;
+}

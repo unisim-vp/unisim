@@ -5,6 +5,17 @@
 	background: url(unisim.png) no-repeat top left;
 }
 
+/* an area that make visitors to know more about */
+
+.beyond
+{
+	position: relative;
+	left:968px;
+	top:42px;
+	width:54px;
+	height:44px;
+}
+
 /* left side (content) and right side (aside) of the page */
 
 .aside-item-body a, .content-item-body a
