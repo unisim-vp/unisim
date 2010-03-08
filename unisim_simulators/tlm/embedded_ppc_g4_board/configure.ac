@@ -88,6 +88,7 @@ UNISIM_RELEASE
 UNISIM_LINK(unisim_kernel_logger)
 UNISIM_LINK(unisim_kernel_service)
 UNISIM_LINK(unisim_kernel_debug)
+UNISIM_LINK(unisim_kernel_tlm)
 
 UNISIM_LINK(unisim_util_xml)
 UNISIM_LINK(unisim_util_debug)

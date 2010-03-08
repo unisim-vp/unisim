@@ -117,14 +117,15 @@ private:
 	sc_time last_sync_sctime;
 	sc_time nice_sctime;
 	sc_time next_nice_sctime;
-	uint64_t nice_time;
+	//uint64_t nice_time;
 	double ipc;
 	sc_event ev_max_idle;
 	sc_event ev_interrupt;
 	sc_time max_idle_time;
 	sc_fifo<BusAccess<CONFIG> *> bus_access_queue;
 	
-	Parameter<uint64_t> param_nice_time;
+	Parameter<sc_time> param_bus_cycle_time;
+	Parameter<sc_time> param_nice_time;
 	Parameter<double> param_ipc;
 
 	inline void UpdateBusTime()

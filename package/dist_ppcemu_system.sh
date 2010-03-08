@@ -97,6 +97,7 @@ vector"
 UNISIM_LIB_PPCEMU_SYSTEM_SOURCE_FILES="\
 unisim/kernel/service/service.cc \
 unisim/kernel/service/xml_helper.cc \
+unisim/kernel/tlm/tlm.cc \
 unisim/kernel/logger/logger.cc \
 unisim/kernel/logger/logger_server.cc \
 unisim/kernel/debug/debug.cc \

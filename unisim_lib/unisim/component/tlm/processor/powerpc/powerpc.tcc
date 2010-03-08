@@ -52,10 +52,11 @@ PowerPC<CONFIG>::PowerPC(const sc_module_name& name, Object *parent) :
 	snoop_port("snoop-port"),
 	cpu_cycle_sctime(),
 	bus_cycle_sctime(),
-	nice_sctime(),
+	nice_sctime(100.0, SC_MS),
 	next_nice_sctime(),
-	nice_time(100000000000ULL), // leave at least 10 times per simulated seconds the host processor to the SystemC simulation kernel 
-	param_nice_time("nice-time", this, nice_time, "maximum time in picoseconds between synchonizations"),
+	//nice_time(100000000000ULL), // leave at least 10 times per simulated seconds the host processor to the SystemC simulation kernel 
+	param_bus_cycle_time("bus-cycle-time", this, bus_cycle_sctime, "bus cycle time"),
+	param_nice_time("nice-time", this, nice_sctime, "maximum time between synchonizations"),
 	param_ipc("ipc", this, ipc, "targeted average instructions per second"),
 	cpu_sctime(),
 	bus_sctime(),
@@ -68,7 +69,7 @@ PowerPC<CONFIG>::PowerPC(const sc_module_name& name, Object *parent) :
 	tea_listener("tea_listener",this, &ev_interrupt),
 	smi_listener("smi_listener",this, &ev_interrupt)
 {
-	param_nice_time.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	//param_nice_time.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	param_ipc.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	
 	SC_HAS_PROCESS(PowerPC);
@@ -122,8 +123,8 @@ bool PowerPC<CONFIG>::Setup()
 {
 	if(!CPU<CONFIG>::Setup()) return false;
 	cpu_cycle_sctime = sc_time((double) inherited::cpu_cycle_time, SC_PS);
-	bus_cycle_sctime = sc_time((double) inherited::bus_cycle_time, SC_PS);
-	nice_sctime = sc_time((double) nice_time, SC_PS); // 10000 * cpu_cycle_sctime;//
+	//bus_cycle_sctime = sc_time((double) inherited::bus_cycle_time, SC_PS);
+	//nice_sctime = sc_time((double) nice_time, SC_PS); // 10000 * cpu_cycle_sctime;//
 	return true;
 }
 

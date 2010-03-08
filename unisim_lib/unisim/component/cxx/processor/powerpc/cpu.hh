@@ -1787,7 +1787,7 @@ private:
 	
 	Parameter<uint64_t> param_cpu_cycle_time;             //!< linked to member cpu_cycle_time
 	Parameter<uint64_t> param_voltage;                    //!< linked to member voltage
-	Parameter<uint64_t> param_bus_cycle_time;             //!< linked to member bus_cycle_time
+	//Parameter<uint64_t> param_bus_cycle_time;             //!< linked to member bus_cycle_time
 	Parameter<uint64_t> param_max_inst;                   //!< linked to member max_inst
 
 	//=====================================================================

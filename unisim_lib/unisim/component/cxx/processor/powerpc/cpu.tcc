@@ -147,7 +147,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	, max_inst(0xffffffffffffffffULL)
 	, param_cpu_cycle_time("cpu-cycle-time",  this,  cpu_cycle_time, "CPU cycle time in picoseconds")
 	, param_voltage("voltage",  this,  voltage, "CPU voltage in mV")
-	, param_bus_cycle_time("bus-cycle-time",  this,  bus_cycle_time, "bus cycle time in picoseconds")
+//	, param_bus_cycle_time("bus-cycle-time",  this,  bus_cycle_time, "bus cycle time in picoseconds")
 	, param_max_inst("max-inst",  this,  max_inst, "maximum number of instructions to simulate")
 	, stat_instruction_counter("instruction-counter",  this,  instruction_counter, "number of simulated instructions")
 	, stat_cpu_cycle("cpu-cycle",  this,  cpu_cycle, "number of simulated CPU cycles")
@@ -157,7 +157,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	, logger(*this)
 	, cpu_cycle_time(0)
 	, voltage(0)
-	, bus_cycle_time(0)
+	//, bus_cycle_time(0)
 	, cpu_cycle(0)
 	, bus_cycle(0)
 	, event_free_list(0)
@@ -177,7 +177,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	param_trap_on_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	param_cpu_cycle_time.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	param_voltage.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_bus_cycle_time.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	//param_bus_cycle_time.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	param_max_inst.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	stat_bus_cycle.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	stat_cpu_cycle.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
@@ -459,18 +459,18 @@ bool CPU<CONFIG>::Setup()
 		
 		logger << "voltage of " << ((double) voltage / 1e3) << " V" << endl;
 
-		if(bus_cycle_time > 0)
-			logger << "bus cycle time of " << bus_cycle_time << " ps" << endl;
+/*		if(bus_cycle_time > 0)
+			logger << "bus cycle time of " << bus_cycle_time << " ps" << endl;*/
 		
 		logger << EndDebugInfo;
 		
-		if(bus_cycle_time <= 0)
+/*		if(bus_cycle_time <= 0)
 		{
 			logger << DebugError;
 			logger << "bus cycle time must be > 0" << endl;
 			logger << EndDebugError;
 			return false;
-		}
+		}*/
 	}
 
 	if(il1_power_mode_import)
