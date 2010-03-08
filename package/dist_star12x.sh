@@ -97,6 +97,7 @@ vector"
 UNISIM_LIB_HCS12X_SOURCE_FILES="\
 unisim/kernel/service/service.cc \
 unisim/kernel/service/xml_helper.cc \
+unisim/kernel/tlm2/tlm.cc \
 unisim/kernel/logger/logger.cc \
 unisim/kernel/logger/logger_server.cc \
 unisim/kernel/debug/debug.cc \
