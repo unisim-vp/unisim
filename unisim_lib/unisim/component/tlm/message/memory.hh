@@ -43,7 +43,6 @@
 #define __UNISIM_COMPONENT_TLM_MESSAGE_MEMORY_HH__
 
 #include "unisim/component/tlm/debug/transaction_spy.hh"
-#include "unisim/service/interfaces/logger.hh"
 #include "unisim/kernel/logger/logger.hh"
 #include "unisim/util/garbage_collector/garbage_collector.hh"
 
@@ -58,11 +57,6 @@ template <class ADDRESS, unsigned int DATA_SIZE>
 class MemoryRequest;
 template <unsigned int DATA_SIZE>
 class MemoryResponse;
-
-template <class ADDRESS, unsigned int DATA_SIZE>
-unisim::service::interfaces::Logger& operator << (unisim::service::interfaces::Logger& os, const MemoryRequest<ADDRESS, DATA_SIZE>& req);
-template <unsigned int DATA_SIZE>
-unisim::service::interfaces::Logger& operator << (unisim::service::interfaces::Logger& os, const MemoryResponse<DATA_SIZE>& rsp);
 
 template <class ADDRESS, unsigned int DATA_SIZE>
 unisim::kernel::logger::Logger& operator << (unisim::kernel::logger::Logger& os, const MemoryRequest<ADDRESS, DATA_SIZE>& req);
@@ -83,8 +77,6 @@ public:
 	unsigned int size;              // Size of bus transfer (<= DATA_SIZE)
 	uint8_t write_data[DATA_SIZE];  // Data to write into memory
 
-	friend unisim::service::interfaces::Logger& operator << <ADDRESS, DATA_SIZE>(unisim::service::interfaces::Logger& os, 
-			const MemoryRequest<ADDRESS, DATA_SIZE>& req);
 	friend unisim::kernel::logger::Logger& operator << <ADDRESS, DATA_SIZE>(unisim::kernel::logger::Logger& os, 
 			const MemoryRequest<ADDRESS, DATA_SIZE>& req);
 };
@@ -94,43 +86,9 @@ class MemoryResponse {
 public:
 	uint8_t read_data[DATA_SIZE]; // Data read from memory/target processor caches
 
-	friend unisim::service::interfaces::Logger& operator<< <DATA_SIZE>(unisim::service::interfaces::Logger& os, 
-			const MemoryResponse<DATA_SIZE>& rsp);
 	friend unisim::kernel::logger::Logger& operator<< <DATA_SIZE>(unisim::kernel::logger::Logger& os, 
 			const MemoryResponse<DATA_SIZE>& rsp);
 };
-
-template <class ADDRESS, unsigned int DATA_SIZE>
-unisim::service::interfaces::Logger& operator << (unisim::service::interfaces::Logger& os, const MemoryRequest<ADDRESS, DATA_SIZE>& req) {
-	typedef MemoryRequest<ADDRESS, DATA_SIZE> ReqType;
-	
-	//using unisim::service::interfaces::operator<<;
-	using unisim::service::interfaces::Hex;
-	using unisim::service::interfaces::Dec;
-	using unisim::service::interfaces::Endl;
-	
-	os << "- type = ";
-	switch(req.type) {
-	case ReqType::READ:
-		os << "READ";
-		break;
-	case ReqType::WRITE:
-		os << "WRITE";
-		break;
-	}
-	os << Endl;
-	os << "- address = 0x" << Hex << req.addr << Dec << Endl;
-	os << "- size = " << req.size;
-	if(req.type == ReqType::WRITE) {
-		os << Endl;
-		os << "- write_data(hex) =" << Hex;
-		for(unsigned int i = 0; i < req.size; i++) {
-			os << " " << (unsigned int)req.write_data[i];
-		}
-		os << Dec;
-	}
-	return os;
-}
 
 template <class ADDRESS, unsigned int DATA_SIZE>
 unisim::kernel::logger::Logger& operator << (unisim::kernel::logger::Logger& os, const MemoryRequest<ADDRESS, DATA_SIZE>& req) {
@@ -156,23 +114,6 @@ unisim::kernel::logger::Logger& operator << (unisim::kernel::logger::Logger& os,
 		}
 		os << std::dec;
 	}
-	return os;
-}
-
-template <unsigned int DATA_SIZE>
-unisim::service::interfaces::Logger& operator << (unisim::service::interfaces::Logger& os, const MemoryResponse<DATA_SIZE>& rsp) {
-	typedef MemoryResponse<DATA_SIZE> RspType;
-	
-	//using unisim::service::interfaces::operator<<;
-	using unisim::service::interfaces::Hex;
-	using unisim::service::interfaces::Dec;
-	using unisim::service::interfaces::Endl;
-	
-	os << "- read_data(hex) =" << Hex;
-	for(unsigned int i = 0; i < DATA_SIZE; i++) {
-		os << " " << (unsigned int)rsp.read_data[i];
-	}
-	os << Dec;
 	return os;
 }
 
@@ -205,34 +146,6 @@ private:
 	typedef unisim::util::garbage_collector::Pointer<ReqType> PReqType;
 
 public:
-	void Dump(unisim::service::interfaces::Logger &os, PReqType &req) {
-		//using unisim::service::interfaces::operator<<;
-		using unisim::service::interfaces::Hex;
-		using unisim::service::interfaces::Dec;
-		using unisim::service::interfaces::Endl;
-
-		os << "- type = ";
-		switch(req->type) {
-		case ReqType::READ:
-			os << "READ";
-			break;
-		case ReqType::WRITE:
-			os << "WRITE";
-			break;
-		}
-		os << Endl;
-		os << "- address = 0x" << Hex << req->addr << Dec << Endl;
-		os << "- size = " << req->size;
-		if(req->type == ReqType::WRITE) {
-			os << Endl;
-			os << "- write_data(hex) =" << Hex;
-			for(unsigned int i = 0; i < req->size; i++) {
-				os << " " << (unsigned int)req->write_data[i];
-			}
-			os << Dec;
-		}
-	}
-
 	void Dump(unisim::kernel::logger::Logger &os, PReqType &req) {
 		os << "- type = ";
 		switch(req->type) {
@@ -267,20 +180,6 @@ private:
 	typedef unisim::util::garbage_collector::Pointer<RspType> PRspType;
 
 public:
-	void Dump(unisim::service::interfaces::Logger &os, PRspType &rsp, 
-		PReqType &req) {
-
-		//using unisim::service::interfaces::operator<<;
-		using unisim::service::interfaces::Hex;
-		using unisim::service::interfaces::Dec;
-
-		os << "- read_data(hex) =" << Hex;
-		for(unsigned int i = 0; i < req->size; i++) {
-			os << " " << (unsigned int)rsp->read_data[i];
-		}
-		os << Dec;
-	}
-
 	void Dump(unisim::kernel::logger::Logger &os, PRspType &rsp, 
 		PReqType &req) {
 		os << "- read_data(hex) =" << std::hex;

@@ -45,7 +45,6 @@ AC_PROG_INSTALL
 AC_CONFIG_FILES([Makefile])
 
 UNISIM_CONFIG_SUBDIR(unisim-service-interfaces, interfaces)
-UNISIM_CONFIG_SUBDIR(unisim-service-logger, logger)
 UNISIM_CONFIG_SUBDIR(unisim-service-os, os)
 UNISIM_CONFIG_SUBDIR(unisim-service-debug, debug)
 UNISIM_CONFIG_SUBDIR(unisim-service-loader, loader)

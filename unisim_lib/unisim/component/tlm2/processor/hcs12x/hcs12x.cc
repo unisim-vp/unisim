@@ -36,7 +36,6 @@
 
 #include <systemc.h>
 #include "unisim/kernel/tlm2/tlm.hh"
-#include "unisim/service/interfaces/logger.hh"
 #include "unisim/component/tlm2/processor/hcs12x/hcs12x.hh"
 #include "unisim/component/tlm2/processor/hcs12x/xint.hh"
 

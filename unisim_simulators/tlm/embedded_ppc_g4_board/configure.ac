@@ -102,7 +102,7 @@ UNISIM_LINK(unisim_service_power)
 UNISIM_LINK(unisim_service_debug_gdb_server)
 UNISIM_LINK(unisim_service_debug_inline_debugger)
 UNISIM_LINK(unisim_service_loader_elf_loader)
-UNISIM_LINK(unisim_service_logger)
+
 UNISIM_LINK(unisim_service_tee_memory_access_reporting)
 UNISIM_LINK(unisim_service_tee_symbol_table_lookup)
 

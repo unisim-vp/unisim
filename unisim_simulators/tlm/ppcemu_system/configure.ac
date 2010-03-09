@@ -108,7 +108,7 @@ UNISIM_LINK(unisim_service_loader_elf_loader)
 UNISIM_LINK(unisim_service_loader_pmac_bootx)
 UNISIM_LINK(unisim_service_loader_pmac_linux_kernel_loader)
 UNISIM_LINK(unisim_service_loader_linux_loader)
-UNISIM_LINK(unisim_service_logger)
+
 UNISIM_LINK(unisim_service_sdl)
 
 UNISIM_LINK(unisim_component_cxx_processor_powerpc)

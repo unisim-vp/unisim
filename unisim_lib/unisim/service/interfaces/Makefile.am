@@ -5,7 +5,6 @@ include_HEADERS = \
 	cpu_os.hh \
 	disassembly.hh \
 	linux_os.hh \
-	logger.hh \
 	memory.hh \
 	memory_injection.hh \
 	registers.hh \

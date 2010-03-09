@@ -48,7 +48,7 @@
 #include <unisim/util/garbage_collector/garbage_collector.hh>
 #include <unisim/service/time/sc_time/time.hh>
 #include <unisim/service/time/host_time/time.hh>
-#include <unisim/service/logger/logger_server.hh>
+
 #include <unisim/component/cxx/processor/powerpc/config.hh>
 #include <stdexcept>
 #include <unisim/component/tlm/debug/transaction_spy.hh>
@@ -99,7 +99,6 @@ using unisim::service::debug::gdb_server::GDBServer;
 using unisim::service::debug::inline_debugger::InlineDebugger;
 using unisim::service::power::CachePowerEstimator;
 using unisim::util::garbage_collector::GarbageCollector;
-using unisim::service::logger::LoggerServer;
 using unisim::kernel::service::ServiceManager;
 
 void help(char *prog_name)
@@ -352,8 +351,6 @@ int sc_main(int argc, char *argv[])
 	CachePowerEstimator *l2_power_estimator = estimate_power ? new CachePowerEstimator("l2-power-estimator") : 0;
 	CachePowerEstimator *itlb_power_estimator = estimate_power ? new CachePowerEstimator("itlb-power-estimator") : 0;
 	CachePowerEstimator *dtlb_power_estimator = estimate_power ? new CachePowerEstimator("dtlb-power-estimator") : 0;
-	//  - Logger
-	LoggerServer *logger = logger_on ? new LoggerServer("logger") : 0;
 
 	//=========================================================================
 	//===                     Component run-time configuration              ===
@@ -409,22 +406,6 @@ int sc_main(int argc, char *argv[])
 	(*linux_os)["system"] = "powerpc";
 	(*linux_os)["endianess"] = E_BIG_ENDIAN;
 	(*linux_os)["verbose"] = true;//false;
-
-	//  - Loggers
-	if(logger_on)
-	{
-		if(logger_filename)
-		{
-			(*logger)["filename"] = logger_filename;
-			(*logger)["zip"] = logger_zip;
-		}
-		(*logger)["std_out"] = logger_out;
-		(*logger)["std_err"] = logger_error;
-		(*logger)["show-file"] = true;
-		(*logger)["show-function"] = true;
-		(*logger)["show-line"] = true;
-		(*logger)["show-time"] = true;
-	}
 
 	//  - Cache/TLB power estimators run-time configuration
 	if(estimate_power)
@@ -613,26 +594,6 @@ int sc_main(int argc, char *argv[])
 		inline_debugger->symbol_table_lookup_import >> elf32_loader->symbol_table_lookup_export;
 	}
 	
-	/* logger connections */
-	if(logger_on) {
-		unsigned int logger_index = 0;
-		logger->time_import >> time->time_export;
-/*		cpu->logger_import >> *logger->logger_export[logger_index++];
-		cpu->fpu_logger_import >> *logger->logger_export[logger_index++];
-		cpu->mmu_logger_import >> *logger->logger_export[logger_index++];
-		bus->logger_import >> *logger->logger_export[logger_index++];
-		fsb_to_mem_bridge->logger_import >> *logger->logger_export[logger_index++];
-		memory->logger_import >> *logger->logger_export[logger_index++];
-		if(gdb_server) gdb_server->logger_import >> *logger->logger_export[logger_index++];*/
-//		linux_os->logger_import >> *logger->logger_export[logger_index++];
-/*		for(unsigned int i = 0; i < MAX_BUS_TRANSACTION_SPY; i++)
-			if(bus_msg_spy[i] != NULL)
-				bus_msg_spy[i]->logger_import >> *logger->logger_export[logger_index++];
-		for(unsigned int i = 0; i < MAX_MEM_TRANSACTION_SPY; i++)
-			if(mem_msg_spy[i] != NULL)
-				mem_msg_spy[i]->logger_import >> *logger->logger_export[logger_index++];*/
-	}
-
 #ifdef DEBUG_SERVICE
 	ServiceManager::Dump(cerr);
 #endif
@@ -741,7 +702,6 @@ int sc_main(int argc, char *argv[])
 	if(itlb_power_estimator) delete itlb_power_estimator;
 	if(dtlb_power_estimator) delete dtlb_power_estimator;
 	if(time) delete time;
-	if(logger) delete logger;
 	if(linux_os) delete linux_os;
 	if(elf32_loader) delete elf32_loader;
 	if(linux_loader) delete linux_loader;

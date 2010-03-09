@@ -109,7 +109,7 @@ UNISIM_LINK(unisim_service_power)
 UNISIM_LINK(unisim_service_os_linux_os)
 UNISIM_LINK(unisim_service_loader_elf_loader)
 UNISIM_LINK(unisim_service_loader_linux_loader)
-UNISIM_LINK(unisim_service_logger)
+
 
 UNISIM_LINK(unisim_component_cxx_processor_powerpc)
 UNISIM_LINK(unisim_component_cxx_memory_ram)

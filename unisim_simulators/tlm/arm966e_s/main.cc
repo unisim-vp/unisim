@@ -53,7 +53,7 @@
 #include "unisim/service/debug/gdb_server/gdb_server.hh"
 #include "unisim/service/debug/inline_debugger/inline_debugger.hh"
 #include "unisim/service/loader/elf_loader/elf32_loader.hh"
-#include "unisim/service/logger/logger_server.hh"
+
 
 #ifdef WIN32
 

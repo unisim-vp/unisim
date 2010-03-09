@@ -173,7 +173,7 @@
 
 #include <unisim/service/power/cache_power_estimator.hh>
 #include <unisim/util/garbage_collector/garbage_collector.hh>
-#include <unisim/service/logger/logger_server.hh>
+
 
 /* Following includes have been moved into cpu_emulator.hh */
 /*
@@ -268,7 +268,6 @@ using unisim::service::os::linux_os::LinuxOS;
 
 using unisim::service::power::CachePowerEstimator;
 using unisim::util::garbage_collector::GarbageCollector;
-using unisim::service::logger::LoggerServer;
 using unisim::kernel::service::ServiceManager;
 
 
@@ -694,9 +693,6 @@ public:
 	CachePowerEstimator *itlb_power_estimator = estimate_power ? new CachePowerEstimator("itlb-power-estimator") : 0;
 	CachePowerEstimator *dtlb_power_estimator = estimate_power ? new CachePowerEstimator("dtlb-power-estimator") : 0;
 	
-	//  - Logger
-	LoggerServer *logger = logger_on ? new LoggerServer("logger") : 0;
-
 	//=========================================================================
 	//===                     Component run-time configuration              ===
 	//=========================================================================
@@ -765,21 +761,6 @@ public:
 	    (*linux_os[cfg])["endianess"] = E_BIG_ENDIAN;
 	    (*linux_os[cfg])["verbose"] = false;
 	  }
-	//  - Loggers
-	if(logger_on)
-	{
-		if(logger_filename)
-		{
-			(*logger)["filename"] = logger_filename;
-			(*logger)["zip"] = logger_zip;
-		}
-		(*logger)["std_out"] = logger_out;
-		(*logger)["std_err"] = logger_error;
-		(*logger)["show-file"] = true;
-		(*logger)["show-function"] = true;
-		(*logger)["show-line"] = true;
-		(*logger)["show-time"] = true;
-	}
 
 	//  - Cache/TLB power estimators run-time configuration
 	/*

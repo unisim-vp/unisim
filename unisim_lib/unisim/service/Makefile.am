@@ -9,11 +9,6 @@ SUBDIRS += interfaces
 INCLUDE_SUBDIRS += interfaces
 endif
 
-if COND_logger
-SUBDIRS += logger
-INCLUDE_SUBDIRS += logger
-endif
-
 if COND_os
 SUBDIRS += os
 INCLUDE_SUBDIRS += os

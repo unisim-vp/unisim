@@ -186,7 +186,7 @@
 
 #include <unisim/service/power/cache_power_estimator.hh>
 #include <unisim/util/garbage_collector/garbage_collector.hh>
-#include <unisim/service/logger/logger_server.hh>
+
 
 /* Following includes have been moved into cpu_emulator.hh */
 /*
@@ -283,7 +283,6 @@ using unisim::service::os::linux_os::LinuxOS;
 
 using unisim::service::power::CachePowerEstimator;
 using unisim::util::garbage_collector::GarbageCollector;
-using unisim::service::logger::LoggerServer;
 using unisim::kernel::service::ServiceManager;
 
 
@@ -586,12 +585,6 @@ public:
 
 
 	uint64_t maxinst = 0; // maximum number of instruction to simulate
-	char *logger_filename = 0;
-	bool logger_zip = false;
-	bool logger_error = false;
-	bool logger_out = false;
-	bool logger_on = false;
-	bool logger_messages = false;
 	double cpu_frequency = 300.0; // in Mhz
 	uint32_t cpu_clock_multiplier = 4;
 	uint32_t tech_node = 130; // in nm
@@ -706,9 +699,6 @@ public:
 	CachePowerEstimator *itlb_power_estimator = estimate_power ? new CachePowerEstimator("itlb-power-estimator") : 0;
 	CachePowerEstimator *dtlb_power_estimator = estimate_power ? new CachePowerEstimator("dtlb-power-estimator") : 0;
 	
-	//  - Logger
-	LoggerServer *logger = logger_on ? new LoggerServer("logger") : 0;
-
 	//=========================================================================
 	//===                     Component run-time configuration              ===
 	//=========================================================================
@@ -803,22 +793,6 @@ public:
 	(*fetch_linux_os)["endianess"] = E_BIG_ENDIAN;
 	(*fetch_linux_os)["verbose"] = false;
 #endif
-
-	//  - Loggers
-	if(logger_on)
-	{
-		if(logger_filename)
-		{
-			(*logger)["filename"] = logger_filename;
-			(*logger)["zip"] = logger_zip;
-		}
-		(*logger)["std_out"] = logger_out;
-		(*logger)["std_err"] = logger_error;
-		(*logger)["show-file"] = true;
-		(*logger)["show-function"] = true;
-		(*logger)["show-line"] = true;
-		(*logger)["show-time"] = true;
-	}
 
 	//  - Cache/TLB power estimators run-time configuration
 	/*
@@ -1048,29 +1022,6 @@ public:
 
 	}
 	
-	/* logger connections */
-	if(logger_on) {
-		unsigned int logger_index = 0;
-		//		logger->time_import >> time->time_export;
-		
-		
-		
-		//		bus->logger_import >> *logger->logger_export[logger_index++];
-		//		fsb_to_mem_bridge->logger_import >> *logger->logger_export[logger_index++];
-		//		memory->logger_import >> *logger->logger_export[logger_index++];
-
-
-		//		linux_os->logger_import >> *logger->logger_export[logger_index++];
-		/*
-		for(unsigned int i = 0; i < MAX_BUS_TRANSACTION_SPY; i++)
-			if(bus_msg_spy[i] != NULL)
-				bus_msg_spy[i]->logger_import >> *logger->logger_export[logger_index++];
-		for(unsigned int i = 0; i < MAX_MEM_TRANSACTION_SPY; i++)
-			if(mem_msg_spy[i] != NULL)
-				mem_msg_spy[i]->logger_import >> *logger->logger_export[logger_index++];
-		*/
-	}
-
 #ifdef DEBUG_SERVICE
 	ServiceManager::Dump(cerr);
 #endif

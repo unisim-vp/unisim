@@ -627,7 +627,7 @@ void LoadDefaultRunTimeConfiguration()
 	}
 	
 	// - kernel logger
-	*ServiceManager::GetParameter("kernel_logger.std_out") = true;
+	*ServiceManager::GetParameter("kernel_logger.std_err") = true;
 }
 
 int sc_main(int argc, char *argv[])

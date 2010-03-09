@@ -111,7 +111,7 @@ UNISIM_LINK(unisim_kernel_service)
 #UNISIM_LINK(unisim_service_debug_gdb_server)
 #UNISIM_LINK(unisim_service_debug_inline_debugger)
 #UNISIM_LINK(unisim_service_debug_symbol_table)
-#UNISIM_LINK(unisim_service_logger)
+#
 
 UNISIM_LINK(unisim_component_cxx_processor_tesla)
 UNISIM_LINK(unisim_component_cxx_memory_ram)

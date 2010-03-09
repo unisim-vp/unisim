@@ -240,8 +240,7 @@ private:
 	sc_event snoop_event;
 	unsigned int snoop_counter;
 	sc_time cycle_time;
-	uint64_t cycle_time_int;
-	Parameter<uint64_t> cycle_time_parameter;
+	Parameter<sc_time> cycle_time_parameter;
 };
 
 } // end of namespace snooping_bus

@@ -992,12 +992,15 @@ void SDL<ADDRESS>::EventLoop()
 					ProcessMouseMotionEvent(sdl_ev.motion);
 					break;
 				case SDL_QUIT:
-					SDL_mutexV(sdl_mutex);
+					if(alive)
+					{
+						SDL_mutexV(sdl_mutex);
 #ifdef WIN32
-					raise(SIGINT);
+						raise(SIGINT);
 #else
-					kill(getpid(), SIGINT);
+						kill(getpid(), SIGINT);
 #endif
+					}
 					break;
 			}
 			SDL_mutexV(sdl_mutex);
@@ -1177,6 +1180,7 @@ template <class ADDRESS>
 void SDL<ADDRESS>::HandleBlit()
 {
 	if(!mode_set) return;
+	if(!memory_import) return;
 	
 	uint32_t line;
 	uint8_t *dst;

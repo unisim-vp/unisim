@@ -40,17 +40,6 @@ namespace component {
 namespace tlm {
 namespace message {
 
-unisim::service::interfaces::Logger& operator << (unisim::service::interfaces::Logger& os, const InterruptRequest& req) {
-	typedef InterruptRequest ReqType;
-	
-	//using unisim::service::interfaces::operator<<;
-	using unisim::service::interfaces::Endl;
-	
-	os << "- level = " << req.level << Endl;
-	os << "- serial_id = " << req.serial_id;
-	return os;
-}
-
 unisim::kernel::logger::Logger& operator << (unisim::kernel::logger::Logger& os, const InterruptRequest& req) {
 	typedef InterruptRequest ReqType;
 	
@@ -68,16 +57,6 @@ namespace unisim {
 namespace component {
 namespace tlm {
 namespace debug {
-
-void 
-RequestSpy<unisim::component::tlm::message::InterruptRequest>::
-Dump(unisim::service::interfaces::Logger &os, PReqType &req) {
-	//using unisim::service::interfaces::operator<<;
-	using unisim::service::interfaces::Endl;
-
-	os << "- level = " << req->level << Endl;
-	os << "- serial_id = " << req->serial_id;
-}
 
 void 
 RequestSpy<unisim::component::tlm::message::InterruptRequest>::

@@ -114,8 +114,6 @@ unisim/service/debug/inline_debugger/inline_debugger.cc \
 unisim/service/debug/inline_debugger/inline_debugger_32.cc \
 unisim/service/debug/gdb_server/gdb_server_32.cc \
 unisim/service/debug/gdb_server/gdb_server.cc \
-unisim/service/logger/logger_server.cc \
-unisim/service/logger/logger.cc \
 unisim/service/time/host_time/time.cc \
 unisim/service/time/sc_time/time.cc \
 unisim/service/power/cache_power_estimator.cc \
@@ -223,7 +221,6 @@ unisim/service/interfaces/debug_control.hh \
 unisim/service/interfaces/memory_access_reporting.hh \
 unisim/service/interfaces/disassembly.hh \
 unisim/service/interfaces/loader.hh \
-unisim/service/interfaces/logger.hh \
 unisim/service/interfaces/memory.hh \
 unisim/service/interfaces/symbol_table_lookup.hh \
 unisim/service/interfaces/time.hh \
@@ -242,9 +239,6 @@ unisim/service/interfaces/keyboard.hh \
 unisim/service/interfaces/mouse.hh \
 unisim/service/debug/inline_debugger/inline_debugger.hh \
 unisim/service/debug/gdb_server/gdb_server.hh \
-unisim/service/logger/logger_server.hh \
-unisim/service/logger/logger.hh \
-unisim/service/logger/logger_server_interface.hh \
 unisim/service/loader/elf_loader/elf_common.h \
 unisim/service/loader/elf_loader/elf_loader.hh \
 unisim/service/loader/elf_loader/elf32.h \

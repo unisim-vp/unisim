@@ -172,7 +172,7 @@
 
 #include <unisim/service/power/cache_power_estimator.hh>
 #include <unisim/util/garbage_collector/garbage_collector.hh>
-#include <unisim/service/logger/logger_server.hh>
+
 
 /* Following includes have been moved into cpu_emulator.hh */
 /*

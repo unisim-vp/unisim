@@ -37,7 +37,6 @@
 #define __UNISIM_COMPONENT_TLM_MESSAGE_INTERRUPT_HH__
 
 #include "unisim/component/tlm/debug/transaction_spy.hh"
-#include "unisim/service/interfaces/logger.hh"
 #include "unisim/util/garbage_collector/garbage_collector.hh"
 
 namespace unisim {
@@ -47,7 +46,6 @@ namespace message {
 
 class InterruptRequest;
 
-unisim::service::interfaces::Logger& operator<< (unisim::service::interfaces::Logger& os, const InterruptRequest& req);
 unisim::kernel::logger::Logger& operator<< (unisim::kernel::logger::Logger& os, const InterruptRequest& req);
 
 class InterruptRequest {
@@ -55,8 +53,6 @@ public:
 	bool level;
 	unsigned int serial_id;
 
-	friend unisim::service::interfaces::Logger& operator<< (unisim::service::interfaces::Logger& os, 
-			const InterruptRequest& req);
 	friend unisim::kernel::logger::Logger& operator<< (unisim::kernel::logger::Logger& os, 
 			const InterruptRequest& req);
 };
@@ -78,7 +74,6 @@ private:
 	typedef unisim::util::garbage_collector::Pointer<ReqType> PReqType;
 
 public:
-	void Dump(unisim::service::interfaces::Logger &os, PReqType &req);
 	void Dump(unisim::kernel::logger::Logger &os, PReqType &req);
 };
 

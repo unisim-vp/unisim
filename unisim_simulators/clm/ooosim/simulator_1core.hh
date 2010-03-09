@@ -165,7 +165,7 @@
 
 #include <unisim/service/power/cache_power_estimator.hh>
 #include <unisim/util/garbage_collector/garbage_collector.hh>
-#include <unisim/service/logger/logger_server.hh>
+
 
 //#include <unisim/component/clm/interfaces/memreq.hh>
 
@@ -263,7 +263,6 @@ using unisim::service::os::linux_os::LinuxOS;
 
 using unisim::service::power::CachePowerEstimator;
 using unisim::util::garbage_collector::GarbageCollector;
-using unisim::service::logger::LoggerServer;
 using unisim::kernel::service::ServiceManager;
 
 
@@ -590,12 +589,6 @@ public:
 
 
 	uint64_t maxinst = 0; // maximum number of instruction to simulate
-	char *logger_filename = 0;
-	bool logger_zip = false;
-	bool logger_error = false;
-	bool logger_out = false;
-	bool logger_on = false;
-	bool logger_messages = false;
 	double cpu_frequency = 1000.0; // in Mhz
 	uint32_t cpu_clock_multiplier = 4;
 	uint32_t tech_node = 130; // in nm
@@ -626,37 +619,6 @@ public:
 
 
 	//=========================================================================
-	//===            Debugging stuff: Transaction spy instantiations        ===
-	//=========================================================================
-	//	BusMsgSpyType *bus_msg_spy[MAX_BUS_TRANSACTION_SPY];
-	//	MemMsgSpyType *mem_msg_spy[MAX_MEM_TRANSACTION_SPY];
-
-	/*
-	if(logger_on && logger_messages)
-	{
-		for(unsigned int i = 0; i < MAX_BUS_TRANSACTION_SPY; i++)
-		{
-			stringstream sstr;
-			sstr << "bus_msg_spy[" << i << "]";
-			string name = sstr.str();
-			bus_msg_spy[i] = new BusMsgSpyType(name.c_str());
-		}
-		for(unsigned int i = 0; i < MAX_MEM_TRANSACTION_SPY; i++)
-		{
-			stringstream sstr;
-			sstr << "mem_msg_spy[" << i << "]";
-			string name = sstr.str();
-			mem_msg_spy[i] = new MemMsgSpyType(name.c_str());
-		}
-	}
-	else
-	{
-		for(unsigned int i = 0; i < MAX_BUS_TRANSACTION_SPY; i++) bus_msg_spy[i] = 0;
-		for(unsigned int i = 0; i < MAX_MEM_TRANSACTION_SPY; i++) mem_msg_spy[i] = 0;
-	}
-	*/
-
-	//=========================================================================
 	//===                         Service instantiations                    ===
 	//=========================================================================
 	//  - ELF32 loader
@@ -682,9 +644,6 @@ public:
 	CachePowerEstimator *itlb_power_estimator = estimate_power ? new CachePowerEstimator("itlb-power-estimator") : 0;
 	CachePowerEstimator *dtlb_power_estimator = estimate_power ? new CachePowerEstimator("dtlb-power-estimator") : 0;
 	
-	//  - Logger
-	LoggerServer *logger = logger_on ? new LoggerServer("logger") : 0;
-
 	//=========================================================================
 	//===                     Component run-time configuration              ===
 	//=========================================================================
@@ -755,22 +714,6 @@ public:
 	(*linux_os)["system"] = "powerpc";
 	(*linux_os)["endianess"] = E_BIG_ENDIAN;
 	(*linux_os)["verbose"] = false;
-
-	//  - Loggers
-	if(logger_on)
-	{
-		if(logger_filename)
-		{
-			(*logger)["filename"] = logger_filename;
-			(*logger)["zip"] = logger_zip;
-		}
-		(*logger)["std_out"] = logger_out;
-		(*logger)["std_err"] = logger_error;
-		(*logger)["show-file"] = true;
-		(*logger)["show-function"] = true;
-		(*logger)["show-line"] = true;
-		(*logger)["show-time"] = true;
-	}
 
 	//  - Cache/TLB power estimators run-time configuration
 	/*
@@ -845,53 +788,6 @@ public:
 	//=========================================================================
 	//===                        Components connection                      ===
 	//=========================================================================
-
-	/*
-	if(logger_on && logger_messages)
-	{
-		unsigned bus_msg_spy_index = 0;
-		unsigned mem_msg_spy_index = 0;
-
-		cpu->bus_port(bus_msg_spy[bus_msg_spy_index]->slave_port);
-		(*bus_msg_spy[bus_msg_spy_index])["source_module_name"] = cpu->name();
-		(*bus_msg_spy[bus_msg_spy_index])["source_port_name"] = cpu->bus_port.name();
-		bus_msg_spy[bus_msg_spy_index]->master_port(*bus->inport[0]);
-		(*bus_msg_spy[bus_msg_spy_index])["target_module_name"] = bus->name();
-		(*bus_msg_spy[bus_msg_spy_index])["target_port_name"] = bus->inport[0]->name();
-		bus_msg_spy_index++;
-
-		(*bus->outport[0])(bus_msg_spy[bus_msg_spy_index]->slave_port);
-		(*bus_msg_spy[bus_msg_spy_index])["source_module_name"] = bus->name();
-		(*bus_msg_spy[bus_msg_spy_index])["source_port_name"] = bus->outport[0]->name();
-		bus_msg_spy[bus_msg_spy_index]->master_port(cpu->snoop_port);
-		(*bus_msg_spy[bus_msg_spy_index])["target_module_name"] = cpu->name();
-		(*bus_msg_spy[bus_msg_spy_index])["target_port_name"] = cpu->snoop_port.name();
-		bus_msg_spy_index++;
-
-		(*bus->chipset_outport)(bus_msg_spy[bus_msg_spy_index]->slave_port);
-		(*bus_msg_spy[bus_msg_spy_index])["source_module_name"] = bus->name();
-		(*bus_msg_spy[bus_msg_spy_index])["source_port_name"] = bus->chipset_outport->name();
-		bus_msg_spy[bus_msg_spy_index]->master_port(fsb_to_mem_bridge->slave_port);
-		(*bus_msg_spy[bus_msg_spy_index])["target_module_name"] = fsb_to_mem_bridge->name();
-		(*bus_msg_spy[bus_msg_spy_index])["target_port_name"] = fsb_to_mem_bridge->slave_port.name();
-		bus_msg_spy_index++;
-
-		fsb_to_mem_bridge->master_port(mem_msg_spy[mem_msg_spy_index]->slave_port);
-		(*mem_msg_spy[mem_msg_spy_index])["source_module_name"] = fsb_to_mem_bridge->name();
-		(*mem_msg_spy[mem_msg_spy_index])["source_port_name"] = fsb_to_mem_bridge->master_port.name();
-		mem_msg_spy[mem_msg_spy_index]->master_port(memory->slave_port);
-		(*mem_msg_spy[mem_msg_spy_index])["target_module_name"] = memory->name();
-		(*mem_msg_spy[mem_msg_spy_index])["target_port_name"] = memory->slave_port.name();
-		mem_msg_spy_index++;
-	}
-	else
-	{
-		cpu->bus_port(*bus->inport[0]);
-		(*bus->outport[0])(cpu->snoop_port);
-		(*bus->chipset_outport)(fsb_to_mem_bridge->slave_port);
-		fsb_to_mem_bridge->master_port(memory->slave_port);
-	}
-	*/
 
 	//=========================================================================
 	//===                        Clients/Services connection                ===
@@ -975,27 +871,6 @@ public:
 	//	fsb_to_mem_bridge->memory_import >> memory->memory_export;
 
 
-	/* logger connections */
-	if(logger_on) {
-		unsigned int logger_index = 0;
-		//		logger->time_import >> time->time_export;
-		
-		
-		
-		//		bus->logger_import >> *logger->logger_export[logger_index++];
-		//		fsb_to_mem_bridge->logger_import >> *logger->logger_export[logger_index++];
-		//		memory->logger_import >> *logger->logger_export[logger_index++];
-
-		// linux_os->logger_import >> *logger->logger_export[logger_index++];
-		/*
-		for(unsigned int i = 0; i < MAX_BUS_TRANSACTION_SPY; i++)
-			if(bus_msg_spy[i] != NULL)
-				bus_msg_spy[i]->logger_import >> *logger->logger_export[logger_index++];
-		for(unsigned int i = 0; i < MAX_MEM_TRANSACTION_SPY; i++)
-			if(mem_msg_spy[i] != NULL)
-				mem_msg_spy[i]->logger_import >> *logger->logger_export[logger_index++];
-		*/
-	}
 
 	//#define DEBUG_SERVICE
 #ifdef DEBUG_SERVICE

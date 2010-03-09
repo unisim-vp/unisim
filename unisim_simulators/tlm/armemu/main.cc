@@ -55,7 +55,7 @@
 #include "unisim/service/loader/elf_loader/elf_loader.hh"
 #include "unisim/service/loader/linux_loader/linux_loader.hh"
 #include "unisim/service/os/linux_os/linux_os.hh"
-#include "unisim/service/logger/logger_server.hh"
+
 
 
 #ifdef ARMEMU_DEBUG

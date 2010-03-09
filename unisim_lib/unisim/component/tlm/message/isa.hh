@@ -51,12 +51,6 @@ template <uint32_t MAX_SIZE>
 class ISAResponse;
 
 template <uint32_t MAX_SIZE>
-unisim::service::interfaces::Logger& operator << (unisim::service::interfaces::Logger& os, const ISARequest<MAX_SIZE>& req);
-
-template <uint32_t MAX_SIZE>
-unisim::service::interfaces::Logger& operator << (unisim::service::interfaces::Logger& os, const ISAResponse<MAX_SIZE>& req);
-
-template <uint32_t MAX_SIZE>
 unisim::kernel::logger::Logger& operator << (unisim::kernel::logger::Logger& os, const ISARequest<MAX_SIZE>& req);
 
 template <uint32_t MAX_SIZE>
@@ -72,7 +66,6 @@ public:
 	uint32_t size;
 	uint8_t write_data[MAX_SIZE];
 
-	friend unisim::service::interfaces::Logger& operator << <MAX_SIZE>(unisim::service::interfaces::Logger& os, const ISARequest<MAX_SIZE>& req);
 	friend unisim::kernel::logger::Logger& operator << <MAX_SIZE>(unisim::kernel::logger::Logger& os, const ISARequest<MAX_SIZE>& req);
 };
 
@@ -81,40 +74,8 @@ class ISAResponse {
 public:
 	uint8_t read_data[MAX_SIZE];
 
-	friend unisim::service::interfaces::Logger& operator << <MAX_SIZE>(unisim::service::interfaces::Logger& os, const ISARequest<MAX_SIZE>& req);
 	friend unisim::kernel::logger::Logger& operator << <MAX_SIZE>(unisim::kernel::logger::Logger& os, const ISARequest<MAX_SIZE>& req);
 };
-
-template <uint32_t MAX_SIZE>
-unisim::service::interfaces::Logger& operator << (unisim::service::interfaces::Logger& os, const ISARequest<MAX_SIZE>& req)
-{
-	os << unisim::service::interfaces::Hex << "ISA-REQ(space=";
-	switch(req.space)
-	{
-		case unisim::component::cxx::isa::SP_IO: os << "I/O"; break;
-		case unisim::component::cxx::isa::SP_MEM: os << "MEM"; break;
-	}
-	os << ",type=";
-	switch(req.type)
-	{
-		case unisim::component::cxx::isa::TT_READ: os << "READ"; break;
-		case unisim::component::cxx::isa::TT_WRITE: os << "WRITE"; break;
-	}
-	os << ",addr=";
-	os << "0x" << req.addr;
-	if(req.type == unisim::component::cxx::isa::TT_WRITE)
-	{
-		os << ",write_data=";
-		uint32_t i;
-		for(i = 0; i < req.size && i < MAX_SIZE; i++)
-		{
-			os << (unsigned int) req.write_data[i];
-			if(i < req.size - 1) os << ",";
-		}
-	}
- 	os << ")" << unisim::service::interfaces::Dec;
-	return os;
-}
 
 template <uint32_t MAX_SIZE>
 unisim::kernel::logger::Logger& operator << (unisim::kernel::logger::Logger& os, const ISARequest<MAX_SIZE>& req)
@@ -142,20 +103,6 @@ unisim::kernel::logger::Logger& operator << (unisim::kernel::logger::Logger& os,
 			os << (unsigned int) req.write_data[i];
 			if(i < req.size - 1) os << ",";
 		}
-	}
- 	os << ")" << std::dec;
-	return os;
-}
-
-template <uint32_t MAX_SIZE>
-unisim::service::interfaces::Logger& operator << (unisim::service::interfaces::Logger& os, const ISAResponse<MAX_SIZE>& rsp)
-{
-	os << std::hex << "ISA-RSP(read_data=";
-	uint32_t i;
-	for(i = 0; i < MAX_SIZE; i++)
-	{
-		os << (unsigned int) rsp.read_data[i];
-		if(i < MAX_SIZE - 1) os << ",";
 	}
  	os << ")" << std::dec;
 	return os;

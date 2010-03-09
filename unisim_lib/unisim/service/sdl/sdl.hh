@@ -40,7 +40,6 @@
 #endif
 
 #include <unisim/kernel/service/service.hh>
-#include <unisim/service/interfaces/logger.hh>
 #include <unisim/service/interfaces/video.hh>
 #include <unisim/service/interfaces/keyboard.hh>
 #include <unisim/service/interfaces/mouse.hh>
