@@ -5,9 +5,21 @@
 	background: url(unisim.png) no-repeat top left;
 }
 
+/* area of the unisim icon */
+
+.logo-sensitive-area
+{
+	float:left;
+	position: relative;
+	left:0px;
+	top:0px;
+	width:152px;
+	height:132px;
+}
+
 /* an area that make visitors to know more about */
 
-.beyond
+.beyond-sensitive-area
 {
 	display:none;
 }

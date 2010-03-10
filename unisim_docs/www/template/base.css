@@ -67,13 +67,19 @@ li
 	height:144px;
 }
 
-/* an area that make visitors to know more about */
+/* area of the unisim icon */
 
-.beyond
+.logo-sensitive-area
 {
 }
 
-.beyond a
+/* an area that make visitors know more about */
+
+.beyond-sensitive-area
+{
+}
+
+.logo-sensitive-area a, .beyond-sensitive-area a
 {
 	display:block;
 	width:100%;
