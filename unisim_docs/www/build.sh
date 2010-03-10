@@ -100,7 +100,7 @@ done
 echo "Copying base stylesheet..."
 cp template/base.css site/style/base.css || exit 1
 
-IMAGES=`cd images; find . -name "*.png"`
+IMAGES=`cd images; find . \( -name "*.png" -o -name "*.ico" \)`
 
 for IMAGE in ${IMAGES}; do
 	if [ -f "images/${IMAGE}" ]; then
