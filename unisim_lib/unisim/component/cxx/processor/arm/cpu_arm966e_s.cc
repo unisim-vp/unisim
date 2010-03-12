@@ -32,6 +32,7 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
+#define __STDC_CONSTANT_MACROS
 #include "unisim/component/cxx/processor/arm/cpu.hh"
 #include "unisim/component/cxx/processor/arm/cpu.tcc"
 #include "unisim/component/cxx/processor/arm/config.hh"
