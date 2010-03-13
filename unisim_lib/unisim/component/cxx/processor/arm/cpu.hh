@@ -35,30 +35,6 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CPU_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CPU_HH__
 
-#ifdef SOCLIB
-
-#include "unisim/util/arithmetic/arithmetic.hh"
-#include "unisim/component/cxx/processor/arm/memory_op.hh"
-#include "unisim/component/cxx/processor/arm/exception.hh"
-#include "unisim/component/cxx/processor/arm/cache_interface.hh"
-#include "unisim/component/cxx/processor/arm/cache/cache.hh"
-#include "unisim/component/cxx/processor/arm/coprocessor_interface.hh"
-#include "unisim/component/cxx/processor/arm/coprocessor/arm966e_s/cp15.hh"
-#include "unisim/component/cxx/processor/arm/tcm/tcm.hh"
-#include "unisim/component/cxx/processor/arm/isa_arm32.hh"
-#include "unisim/component/cxx/processor/arm/isa_thumb.hh"
-#include "unisim/component/cxx/processor/arm/instruction.hh"
-#include "unisim/util/endian/endian.hh"
-#include <string>
-#include <sstream>
-#include <iostream>
-#include <vector>
-#include <queue>
-#include <map>
-#include <inttypes.h>
-
-#else // SOCLIB
-
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger.hh"
 #include "unisim/service/interfaces/loader.hh"
@@ -77,9 +53,11 @@
 #include "unisim/component/cxx/processor/arm/memory_op.hh"
 #include "unisim/component/cxx/processor/arm/exception.hh"
 #include "unisim/component/cxx/processor/arm/cache_interface.hh"
-#include "unisim/component/cxx/processor/arm/cache/cache.hh"
 #include "unisim/component/cxx/processor/arm/coprocessor_interface.hh"
 #include "unisim/component/cxx/processor/arm/coprocessor/arm966e_s/cp15.hh"
+#include "unisim/component/cxx/processor/arm/arm926ejs/cache.hh"
+#include "unisim/component/cxx/processor/arm/arm926ejs/tcm.hh"
+#include "unisim/component/cxx/processor/arm/arm926ejs/write_buffer.hh"
 #include "unisim/component/cxx/processor/arm/tcm/tcm.hh"
 #include "unisim/component/cxx/processor/arm/isa_arm32.hh"
 #include "unisim/component/cxx/processor/arm/isa_thumb.hh"
@@ -92,8 +70,6 @@
 #include <queue>
 #include <map>
 #include <inttypes.h>
-
-#endif // SOCLIB
 
 #ifdef GCC_INLINE
 #undef GCC_INLINE
@@ -111,30 +87,6 @@ namespace cxx {
 namespace processor {
 namespace arm {
 
-#ifdef SOCLIB
-	
-	using std::string;
-	using std::stringstream;
-	using std::map;
-	using std::ostream;
-	using std::vector;
-	using std::queue;
-	
-#ifdef PROFILE_ARM966
-	class insn_profile_t {
-	public:
-		uint64_t ex_time;
-		uint64_t num_times_executed;
-	};
-	class mem_profile_t {
-	public:
-		uint64_t num_read;
-		uint64_t num_write;
-	};
-#endif // PROFILE_ARM966
-	
-#else
-	
 	using unisim::kernel::service::Object;
 	using unisim::kernel::service::Client;
 	using unisim::kernel::service::Service;
@@ -157,7 +109,7 @@ namespace arm {
 	using unisim::util::arithmetic::Add32;
 	using unisim::component::cxx::processor::arm::CacheInterface;
 	using unisim::component::cxx::processor::arm::CacheInterfaceWithMemoryService;
-	using unisim::component::cxx::processor::arm::cache::Cache;
+	// using unisim::component::cxx::processor::arm::cache::Cache;
 	using unisim::component::cxx::processor::arm::Instruction;
 	using unisim::util::endian::endian_type;
 	using std::string;
@@ -167,15 +119,8 @@ namespace arm {
 	using std::vector;
 	using std::queue;
 	
-#endif // SOCLIB
 	template<class CONFIG>
 	class CPU :
-#ifdef SOCLIB
-	
-	public CPUCPInterface
-	
-#else
-	
 	public CPUCPInterface,
 	// public Client<Loader<typename CONFIG::address_t> >,
     public Client<LinuxOS>,
@@ -188,12 +133,7 @@ namespace arm {
 	public Service<Disassembly<uint64_t> >,
     public Service<Registers>,
 	public Service<Memory<uint64_t> > 
-	
-#endif // SOCLIB
-	
 	{
-		
-#ifndef SOCLIB
 		
 		/* profiling methods          START */
 	private:
@@ -201,8 +141,6 @@ namespace arm {
 	public:
 		void DumpInstructionProfile(ostream *output);
 		/* profiling methods          END */
-		
-#endif // SOCLIB
 		
 	private:
 		typedef typename CONFIG::address_t address_t;
@@ -226,8 +164,6 @@ namespace arm {
 		//=                  public service imports/exports                   =
 		//=====================================================================
 		
-#ifndef SOCLIB
-		
 		ServiceExport<Disassembly<uint64_t> > disasm_export;
 		ServiceExport<Registers> registers_export;
 		ServiceExport<MemoryInjection<uint64_t> > memory_injection_export;
@@ -244,82 +180,23 @@ namespace arm {
 		// the kernel logger
 		unisim::kernel::logger::Logger logger;
 		
-#endif // SOCLIB
-		
 		//=====================================================================
 		//=                    Constructor/Destructor                         =
 		//=====================================================================
 		
-#ifdef SOCLIB
-		
-		CPU(CacheInterface<address_t> *memory_interface);
-		~CPU();
-#ifdef PROFILE_ARM966
-		void EndProfile();
-#endif // PROFILE_ARM966
-		
-#else
-		
 		CPU(const char *name, CacheInterface<address_t> *memory_interface, Object *parent = 0);
 		virtual ~CPU();
-		
-#endif // SOCLIB
 		
 		//=====================================================================
 		//=                  Client/Service setup methods                     =
 		//=====================================================================
 		
-#ifndef SOCLIB
-		
 		virtual bool Setup();
 		virtual void OnDisconnect();
-		
-#endif // SOCLIB
 		
 		//=====================================================================
 		//=                    execution handling methods                     =
 		//=====================================================================
-		
-#ifdef SOCLIB
-		
-		void SetEndianness(endian_type type);
-		
-		virtual void Stop(int ret);
-		
-		void Reset();
-		
-		uint32_t IsBusy();
-		void Step();
-		void StepCycle();
-		void NullStep(uint32_t time_passed = 1);
-		
-		void GetInstructionRequest(bool &req, uint32_t &addr) const;
-		void SetInstruction(bool error, uint32_t val);
-		
-		void GetDataRequest(bool &reg, bool &is_read, int &size, uint32_t &addr,
-							uint32_t &data) const;
-		void SetDataResponse(bool error, uint32_t rdata);
-		void SetWriteBerr();
-		
-		void SetIrq(uint32_t irq);
-		
-		// processor internal registers access API, used by
-		// debugger. Register numbering must match gdb packet order.
-		
-		unsigned int GetDebugRegisterCount() const;
-		uint32_t GetDebugRegisterValue(unsigned int reg) const;
-		void SetDebugRegisterValue(unsigned int reg, uint32_t value);
-		size_t GetDebugRegisterSize(unsigned int reg) const;
-		
-		uint32_t GetDebugPC() const;
-		void SetDebugPC(uint32_t);
-		
-	private:
-		void StepExecute();
-		void FlushPipeline();
-		
-	public:
-#else // SOCLIB
 		
 		void OnBusCycle();
 		/** Execute one complete instruction
@@ -340,15 +217,11 @@ namespace arm {
 		virtual void Stop(int ret);
 		virtual void Sync();
 		
-#endif // SOCLIB
-		
 		// methods required by coprocessors
 		virtual void CoprocessorStop(unsigned int cp_id, int ret);
 		virtual endian_type CoprocessorGetEndianness();
 		virtual bool CoprocessorGetVinithi();
 		virtual bool CoprocessorGetInitram();
-		
-#ifndef SOCLIB
 		
 		//=====================================================================
 		//=             memory injection interface methods                    =
@@ -408,8 +281,6 @@ namespace arm {
 		{ return instruction_counter; }
 		string GetObjectFriendlyName(uint64_t addr);
 		string GetFunctionFriendlyName(uint64_t addr);
-		
-#endif // SOCLIB
 		
 		/**************************************************************/
 		/* Operand decoding methods     START                         */
@@ -586,12 +457,8 @@ namespace arm {
 		/* Disassembling methods     END                              */
 		/**************************************************************/
 		
-#ifndef SOCLIB
-		
 		// Linux OS Interface
 		virtual void PerformExit(int ret);
-		
-#endif // SOCLIB
 		
 		// Endian interface
 		virtual endian_type GetEndianness();
@@ -729,15 +596,6 @@ namespace arm {
 		 * @param val the buffer to fill with the read data
 		 */
 		inline void ReadInsn(address_t address, uint32_t &val) GCC_INLINE;
-		/** reads a complete cache line from the memory system
-		 * This method reads a full cache line of processor instructions from the
-		 *   memory system (accessing the pertinent cache levels as necessary)
-		 * 
-		 * @param address the base address to read the data from
-		 * @param val an array of bytes containing the instructions
-		 * @param size the number of bytes to read
-		 */
-		inline void ReadInsnLine(address_t address, uint8_t *val, uint32_t size) GCC_INLINE;
 		/** Memory prefetch instruction.
 		 * This method is used to make memory prefetches into the caches (if available),
 		 *   that is it sends a memory read that doesn't keep the request result.
@@ -967,15 +825,7 @@ namespace arm {
 			IRQ_EXCEPTION = 32,
 			FIQ_EXCEPTION = 64
 		};
-#ifdef SOCLIB
-		/** Handles possible exceptions
-		 * This method checks if there is any pending exception and handles it.
-		 * Returns true if the pipeline needs to be flushed.
-		 * 
-		 * @return true if the pipeline needs to be flushed.
-		 */
-		inline bool HandleExceptions() GCC_INLINE;
-#endif
+		
 		/** Sets the given exception in the pending status
 		 *
 		 * @param exception the exception to set
@@ -1121,12 +971,8 @@ namespace arm {
 		/** itcm for the arm966e_s */
 		itcm_t *itcm;
 		
-#ifndef SOCLIB
-		
 		/** The registers interface for debugging purpose */
 		map<string, Register *> registers_registry;
-		
-#endif // SOCLIB
 		
 		/* gpr organization per running mode:
 		 * - user:           0-14 (R0-R14),                  15 (PC)
@@ -1276,11 +1122,6 @@ namespace arm {
 		 * @param memop the memory operation containing the read access
 		 * */
 		void PerformReadToPCUpdateTAccess(MemoryOp<CONFIG> *memop);
-#ifdef SOCLIB
-	protected:
-		/** defines if the first request in the lsQueue is an external access or not */
-		bool external_memory_request;
-#endif // SOCLIB
 	public:
 		/** action to perform (execute) when an unpredictable behavior instruction
 		 *  is found */
@@ -1307,8 +1148,6 @@ namespace arm {
 		bool trap_on_exception;
 		uint64_t trap_on_instruction_counter;
 		
-#ifndef SOCLIB
-		
 		unisim::kernel::service::Parameter<endian_type> param_default_endianness;
 		unisim::kernel::service::Parameter<bool> param_arm966es_initram;
 		unisim::kernel::service::Parameter<bool> param_arm966es_vinithi;
@@ -1330,9 +1169,32 @@ namespace arm {
 		unisim::kernel::service::Register<uint32_t> reg_pc; // alias of reg_gpr[15]
 		unisim::kernel::service::Register<uint32_t> reg_cpsr;
 		unisim::kernel::service::Register<uint32_t> *reg_spsr[5];
+
 		
-#endif // SOCLIB
+		/************************************************************/
+		/** ARM926EJ-S specific variables, functions and parameters */
+		/** START ***************************************************/
+
+		arm926ejs::Cache arm926ejs_icache;
+		arm926ejs::Cache arm926ejs_dcache;
+		arm926ejs::ITCM arm926ejs_itcm;
+		arm926ejs::DTCM arm926ejs_dtcm;
+		arm926ejs::WriteBuffer arm926ejs_wb;
+		arm926ejs::WriteBackBuffer arm926ejs_wbb;
+			
+		uint32_t arm926ejs_icache_size;
+		uint32_t arm926ejs_dcache_size;
+		bool arm926ejs_enable_write_buffer;
+		bool arm926ejs_enable_writeback_buffer;
+		unisim::kernel::service::Parameter<uint32_t> *param_arm926ejs_icache_size;
+		unisim::kernel::service::Parameter<uint32_t> *param_arm926ejs_dcache_size;
+		unisim::kernel::service::Parameter<bool> *param_arm926ejs_enable_wb;
+		unisim::kernel::service::Parameter<bool> *param_arm926ejs_enable_wbb;
 		
+		/** END *****************************************************/
+		/** ARM926EJ-S specific variables, functions and parameters */
+		/************************************************************/
+
 		// verbose methods
 		inline bool VerboseSetup() GCC_INLINE;
 		inline bool VerboseStep() GCC_INLINE;
@@ -1342,15 +1204,6 @@ namespace arm {
 		inline void VerboseDumpRegsEnd() GCC_INLINE;
 		inline bool TrapOnException() GCC_INLINE;
 		
-#ifdef SOCLIB
-#ifdef PROFILE_ARM966
-	private:
-		map<uint32_t, insn_profile_t *> insn_profile;
-		map<uint32_t, mem_profile_t *> mem_profile;
-		
-		void MemProfile(bool read, uint32_t addr, uint32_t size);
-#endif // PROFILE_ARM966
-#endif // SOCLIB
 	};
 	
 } // end of namespace arm

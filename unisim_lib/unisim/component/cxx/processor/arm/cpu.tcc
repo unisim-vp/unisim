@@ -45,13 +45,11 @@
 #include "unisim/component/cxx/processor/arm/isa_thumb.tcc"
 #include "unisim/component/cxx/processor/arm/instruction.tcc"
 #include "unisim/component/cxx/processor/arm/exception.tcc"
-
-#ifndef SOCLIB
-
 #include "unisim/util/debug/simple_register.hh"
-#include "unisim/util/debug/symbol.hh"
-
-#endif // SOCLIB
+#ifndef __STDC_CONSTANT_MACROS
+#define __STDC_CONSTANT_MACROS
+#endif // __STDC_CONSTANT_MACROS
+#include <stdint.h>
 
 #if (defined(__GNUC__) && (__GNUC__ >= 3))
 #define INLINE __attribute__((always_inline))
@@ -80,141 +78,9 @@ namespace arm {
 	using std::hex;
 	using std::dec;
 	using std::ostringstream;
-	
-#ifndef SOCLIB
-	
 	using unisim::util::debug::SimpleRegister;
 	using unisim::util::debug::Symbol;
 	using namespace unisim::kernel::logger;
-	
-#endif // SOCLIB
-	
-#ifdef SOCLIB
-	
-	template<class CONFIG>
-	CPU<CONFIG> ::
-	CPU(CacheInterface<typename CONFIG::address_t> *_memory_interface) :
-	exception(0),
-	insn_cache_line_address(0),
-	memory_interface(_memory_interface),
-	running(true),
-	cache_l1(0),
-	cache_il1(0),
-	cache_l2(0),
-	fetchQueue(),
-	decodeQueue(),
-	executeQueue(),
-	lsQueue(),
-	firstLS(0),
-	hasSentFirstLS(false),
-	freeLSQueue(),
-	external_memory_request(false),
-	instruction_counter(0),
-	default_endianness(E_BIG_ENDIAN),
-	/* initialization of parameters for the 966es  START*/
-	arm966es_initram(false),
-	arm966es_vinithi(false),
-	/* initialization of parameters for the 966es  END */
-	verbose_all(false),
-	verbose_setup(false),
-	verbose_step(false),
-	verbose_exception(false),
-	verbose_dump_regs_start(false),
-	verbose_dump_regs_end(false),
-	trap_on_exception(false)
-#ifdef PROFILE_ARM966
-	, insn_profile()
-#endif //PROFILE_ARM966
-	{
-		/* Reset all the registers */
-		InitGPR();
-		
-		
-		/* we are running in system mode */
-		/* currently supported: arm966e_s
-		 * if different report error */
-		if(CONFIG::MODEL != ARM966E_S && CONFIG::MODEL != ARM7TDMI) {
-			cerr << DebugError
-			<< "Running arm in system mode. Only arm966e_s and arm7tdmi can run under this mode" << endl
-			<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << endl;
-			exit(-1);
-		}
-		// set CPSR to system mode
-		cpsr = 0;
-		for(unsigned int i = 0; i < num_phys_spsrs; i++) {
-			spsr[i] = 0;
-		}
-		for(unsigned int i = 0; i < 8; i++) {
-			fake_fpr[i] = 0;
-		}
-		fake_fps = 0;
-		SetCPSR_Mode(SYSTEM_MODE);
-		// set initial pc
-		/* Depending on the configuration being used set the initial pc */
-		if(CONFIG::MODEL == ARM966E_S) {
-			if(arm966es_vinithi)
-				SetGPR(PC_reg, (address_t)UINT32_C(0xffff0000));
-			else
-				SetGPR(PC_reg, (address_t)UINT32_C(0x00000000));
-			/* disable normal and fast interruptions */
-			SetCPSR_F();
-			SetCPSR_I();
-		}
-		if(CONFIG::MODEL == ARM7TDMI) {
-			SetGPR(PC_reg, (address_t)UINT32_C(0x00000000));
-			/* disable normal and fast interruptions */
-			SetCPSR_F();
-			SetCPSR_I();
-		}
-		
-		// initialize the variables to compute the final address on memory 
-		//   accesses
-		if(GetEndianness() == E_BIG_ENDIAN) {
-			munged_address_mask8 = (typename CONFIG::address_t)0x03;;
-			munged_address_mask16 = (typename CONFIG::address_t)0x02;
-		} else {
-			munged_address_mask8 = 0;
-			munged_address_mask16 = 0;
-		}
-		
-		/* initialize the check condition table */
-		InitializeCheckConditionTable();
-		
-		CreateTCMSystem();
-		
-		CreateCpSystem();
-		
-		CreateMemorySystem();
-		
-#ifdef PROFILE_ARM966
-		
-		
-		
-#endif // PROFILE_ARM966
-	}
-	
-	// Destructor
-	template<class CONFIG> 
-	CPU<CONFIG> ::
-	~CPU() {
-#ifdef PROFILE_ARM966
-		map<uint32_t, insn_profile_t *>::iterator i_iter;
-		map<uint32_t, mem_profile_t *>::iterator m_iter;
-		
-		cerr << "Execution trace =============================================================== START" << endl;
-		for(i_iter = insn_profile.begin(); i_iter != insn_profile.end(); i_iter++) {
-			cerr << "0x" << hex << i_iter->first << dec << " " << i_iter->second->ex_time << " " << i_iter->second->num_times_executed << endl;
-		}
-		cerr << "Execution trace ===============================================================   END" << endl;
-		cerr << "Memory trace =============================================================== START" << endl;
-		for(m_iter = mem_profile.begin(); m_iter != mem_profile.end(); m_iter++) {
-			cerr << "0x" << hex << m_iter->first << dec << " " << m_iter->second->num_read << " " << m_iter->second->num_write << endl;
-		}
-		cerr << "Memory trace ===============================================================   END" << endl;
-#endif // PROFILE_ARM966
-	}
-	
-#else // SOCLIB
 	
 	// Constructor
 	template<class CONFIG>
@@ -226,58 +92,68 @@ namespace arm {
 	// Client<Loader<typename CONFIG::address_t> >(name, parent),
 	Client<LinuxOS>(name, parent),
 	Service<CPULinuxOS>(name, parent),
+	Service<MemoryInjection<uint64_t> >(name, parent),
 	Client<DebugControl<uint64_t> >(name, parent),
 	Client<MemoryAccessReporting<uint64_t> >(name, parent),
 	Client<TrapReporting>(name, parent),
 	Service<MemoryAccessReportingControl>(name, parent),
 	Service<Disassembly<uint64_t> >(name, parent),
 	Service<Registers>(name, parent),
-	Service<MemoryInjection<uint64_t> >(name, parent),
 	Service<Memory<uint64_t> >(name, parent),
 	disasm_export("disasm_export", this),
 	registers_export("registers_export", this),
 	memory_injection_export("memory_injection_export", this),
+	memory_export("memory_export", this),
+	cpu_linux_os_export("cpu_linux_os_export", this),
 	memory_access_reporting_control_export(
 										   "memory_access_reporting_control_export", 
 										   this),
-	memory_export("memory_export", this),
-	cpu_linux_os_export("cpu_linux_os_export", this),
 	debug_control_import("debug_control_import", this),
 	memory_access_reporting_import("memory_access_reporting_import", this),
 	symbol_table_lookup_import("symbol_table_lookup_import", this),
 	linux_os_import("linux_os_import", this),
 	trap_reporting_import("trap_reporting_import", this),
 	logger(*this),
-	//	logger_import("logger_import", this),
-	//	cache_l1_logger_import("cache_l1_logger_import", this),
-	//	cache_il1_logger_import("cache_il1_logger_import", this),
-	//	cache_l2_logger_import("cache_l2_logger_import", this),
-	//	cp15_logger_import("cp15_logger_import", this),
-	//	itcm_logger_import("itcm_logger_import", this),
-	//	dtcm_logger_import("dtcm_logger_import", this),
+	insn_cache_line_address(0),
+	memory_interface(_memory_interface),
+	running(true),
+	cache_l1(0),
+	cache_il1(0),
+	cache_l2(0),
 	requires_memory_access_reporting(true),
 	requires_finished_instruction_reporting(true),
+	fetchQueue(),
+	decodeQueue(),
+	executeQueue(),
+	lsQueue(),
+	firstLS(0),
+	freeLSQueue(),
+	instruction_counter(0),
 	default_endianness(E_BIG_ENDIAN),
-	param_default_endianness("default-endianness", this, default_endianness),
+	arm966es_initram(false),
+	arm966es_vinithi(false),
 	verbose_all(false),
+	verbose_setup(false),
+	verbose_step(false),
+	verbose_exception(false),
+	verbose_dump_regs_start(false),
+	verbose_dump_regs_end(false),
+	trap_on_exception(false),
+	trap_on_instruction_counter(0),
+	param_default_endianness("default-endianness", this, default_endianness),
+	param_arm966es_initram("arm966es-initram", this, arm966es_initram),
+	param_arm966es_vinithi("arm966es-vinithi", this, arm966es_vinithi),
 	param_verbose_all("verbose-all", this, verbose_all,
 					  "Activate all the verbose option"),
-	verbose_setup(false),
 	param_verbose_setup("verbose-setup", this, verbose_setup,
 						"Display setup information"),
-	verbose_step(false),
 	param_verbose_step("verbose-step", this, verbose_step,
 					   "Display instruction step information"),
-	verbose_exception(false),
 	param_verbose_exception("verbose-exception", this, verbose_exception),
-	verbose_dump_regs_start(false),
 	param_verbose_dump_regs_start("verbose-dump-regs-start", this, verbose_dump_regs_start),
-	verbose_dump_regs_end(false),
 	param_verbose_dump_regs_end("verbose-dump-regs-end", this, verbose_dump_regs_end),
-	trap_on_exception(false),
 	param_trap_on_exception("trap-on-exception", this, trap_on_exception,
 							"Produce a trap when an exception occurs"),
-	trap_on_instruction_counter(0),
 	param_trap_on_instruction_counter("trap-on-instruction-counter", this, trap_on_instruction_counter,
 									  "Produce a trap when the instruction counter is reached"),
 	stat_instruction_counter("instruction-counter", this, instruction_counter,
@@ -290,27 +166,48 @@ namespace arm {
 		   "The program counter (PC) register (alias of GPR[15]"),
 	reg_cpsr("CPSR", this, cpsr,
 			 "The CPSR register"),
-	memory_interface(_memory_interface),
-	instruction_counter(0),
-	insn_cache_line_address(0),
-	cache_l1(0),
-	cache_il1(0),
-	cache_l2(0),
-	running(true),
-	lsQueue(),
-	firstLS(0),
-	freeLSQueue(),
-	fetchQueue(),
-	decodeQueue(),
-	executeQueue(),
-	/* initialization of parameters for the 966es  START*/
-	arm966es_initram(false),
-	param_arm966es_initram("arm966es-initram", this, arm966es_initram),
-	arm966es_vinithi(false),
-	param_arm966es_vinithi("arm966es-vinithi", this, arm966es_vinithi) 
-	/* initialization of parameters for the 966es  END */
+	/* initialization of ARM926EJS variables START */
+	arm926ejs_icache(),
+	arm926ejs_dcache(),
+	arm926ejs_itcm(),
+	arm926ejs_dtcm(),
+	arm926ejs_wb(),
+	arm926ejs_wbb(),
+	arm926ejs_icache_size(0x01000), // 4KB
+	arm926ejs_dcache_size(0x01000), // 4KB
+	arm926ejs_enable_write_buffer(true),
+	arm926ejs_enable_writeback_buffer(true)
+	/* initialization of ARM926EJS variables   END */
 	{
-		
+	
+		/* create ARM926EJS parameters if the CONFIG::MODEL is ARM926EJS */
+		if (CONFIG::MODEL == ARM926EJS)
+		{
+			param_arm926ejs_icache_size = new
+				unisim::kernel::service::Parameter<uint32_t>("icache-size",
+						this,
+						arm926ejs_icache_size,
+						"Instruction cache size in KB (available sizes are 4KB, 8KB, 16KB,"
+						" 32KB, 64KB, and 128KB). It can be desactivated setting it to 0.");
+			param_arm926ejs_dcache_size = new
+				unisim::kernel::service::Parameter<uint32_t>("dcache-size",
+						this,
+						arm926ejs_dcache_size,
+						"Data cache size in KB (available sizes are 4KB, 8KB, 16KB, 32KB,"
+						" 64KB, and 128KB). It can be desactivated setting it to 0.");
+			param_arm926ejs_enable_wb = new
+				unisim::kernel::service::Parameter<bool>("enable-wb",
+						this,
+						arm926ejs_enable_write_buffer,
+						"Activate the processor write buffer (only considered in user mode)");
+			param_arm926ejs_enable_wbb = new
+				unisim::kernel::service::Parameter<bool>("enable-wbb",
+						this,
+						arm926ejs_enable_writeback_buffer,
+						"Activate the processor write-back buffer (only considered in user"
+						" mode)");
+		}
+
 		/* Reset all the registers */
 		InitGPR();
 		
@@ -400,10 +297,6 @@ namespace arm {
 			if (reg_spsr[i]) delete reg_spsr[i];
 	}
 	
-#endif // SOCLIB
-	
-#ifndef SOCLIB
-	
 	//=====================================================================
 	//=                  Client/Service setup methods               START =
 	//=====================================================================
@@ -413,25 +306,23 @@ namespace arm {
 	CPU<CONFIG> ::
 	Setup() {
 		/* check verbose settings */
-		if (CONFIG::DEBUG_ENABLE && verbose_all) {
+		if (verbose_all) {
 			verbose_setup = true;
 			verbose_step = true;
 			verbose_dump_regs_start = true;
 			verbose_dump_regs_end = true;
 		}
-		if( CONFIG::DEBUG_ENABLE && verbose_all) {
+		if(verbose_all) {
 			logger << DebugInfo << "- verbose-all = true";
 		} else {
-			if (CONFIG::DEBUG_ENABLE) {
-				if (verbose_setup) 
-					logger << DebugInfo << "- verbose-setup = true" << EndDebug;
-				if (verbose_step)
-					logger << DebugInfo << "- verbose-step = true" << EndDebug;
-				if (verbose_dump_regs_start)
-					logger << DebugInfo << "- verbose-dump-regs-start = true" << EndDebug;
-				if (verbose_dump_regs_end)
-					logger << DebugInfo << "- verbose-dump-regs-end = true" << EndDebug;
-			}
+			if (verbose_setup) 
+				logger << DebugInfo << "- verbose-setup = true" << EndDebug;
+			if (verbose_step)
+				logger << DebugInfo << "- verbose-step = true" << EndDebug;
+			if (verbose_dump_regs_start)
+				logger << DebugInfo << "- verbose-dump-regs-start = true" << EndDebug;
+			if (verbose_dump_regs_end)
+				logger << DebugInfo << "- verbose-dump-regs-end = true" << EndDebug;
 		}
 		
 		if (verbose_setup)
@@ -463,10 +354,41 @@ namespace arm {
 				logger << DebugInfo << "Running \"" << GetName() << "\" in user mode"
 				<< EndDebugInfo;
 			}
-			// initialize the cache system
-			if(cache_l1 != 0) cache_l1->Enable();
-			if(cache_il1 != 0) cache_il1->Enable();
-			if(cache_l2 != 0) cache_l2->Enable();
+			// TO REMOVE (START)
+			// // initialize the cache system
+			// if(cache_l1 != 0) cache_l1->Enable();
+			// if(cache_il1 != 0) cache_il1->Enable();
+			// if(cache_l2 != 0) cache_l2->Enable();
+			// TO REMOVE (END)
+
+			/* models not specified will use no caches at all */
+			if ( CONFIG::MODEL == ARM926EJS )
+			{
+				if ( arm926ejs_icache_size != 0 )
+				{
+					if ( !arm926ejs_icache.SetSize(arm926ejs_icache_size) )
+					{
+						logger << DebugError
+							<< "Invalid instruction cache size (" 
+							<< (unsigned int)arm926ejs_icache_size
+							<< ")" 
+							<< EndDebug;
+						return false;
+					}
+				}
+				if ( arm926ejs_dcache_size != 0 )
+				{
+					if ( !arm926ejs_dcache.SetSize(arm926ejs_dcache_size) )
+					{
+						logger << DebugError
+							<< "Invalid data cache size ("
+							<< (unsigned int)arm926ejs_dcache_size
+							<< ")"
+							<< EndDebug;
+						return false;
+					}
+				}
+			}
 			
 			// initialize the variables to compute the final address on memory 
 			//   accesses
@@ -474,13 +396,13 @@ namespace arm {
 			munged_address_mask16 = 0;
 		} else {
 			/* we are running in system mode */
-			/* currently supported: arm966e_s
-			 * if different report error */
+			/* check that the processor model is supported */
 			if(CONFIG::MODEL != ARM966E_S &&
-			   CONFIG::MODEL != ARM7TDMI) {
+			   CONFIG::MODEL != ARM7TDMI &&
+			   CONFIG::MODEL != ARM926EJS) {
 				logger << DebugError
 				<< "Running \"" << GetName() << "\" in system mode. "
-				<< "Only arm966e_s and arm7tdmi can run under this mode."
+				<< "Only arm926ej_s, arm966e_s, arm7tdmi can run under this mode."
 				<< EndDebug;
 				return false;
 			}
@@ -488,8 +410,9 @@ namespace arm {
 			SetCPSR_Mode(SYSTEM_MODE);
 			// set initial pc
 			/* Depending on the configuration being used set the initial pc */
-			if(CONFIG::MODEL == ARM966E_S) {
-				if(arm966es_vinithi)
+			if (CONFIG::MODEL == ARM966E_S) 
+			{
+				if (arm966es_vinithi)
 					SetGPR(PC_reg, (address_t)0xffff0000);
 				else
 					SetGPR(PC_reg, (address_t)0x00000000);
@@ -497,11 +420,60 @@ namespace arm {
 				SetCPSR_F();
 				SetCPSR_I();
 			}
-			if(CONFIG::MODEL == ARM7TDMI) {
+			if (CONFIG::MODEL == ARM7TDMI) 
+			{
 				SetGPR(PC_reg, (address_t)0x0);
 				/* disable normal and fast interruptions */
 				SetCPSR_F();
 				SetCPSR_I();
+			}
+			if (CONFIG::MODEL == ARM926EJS) 
+			{
+				SetGPR(PC_reg, (address_t)0x0);
+				/* disable normal and fast interruptions */
+				SetCPSR_F();
+				SetCPSR_I();
+
+				// Set the cache sizes
+				if (arm926ejs_icache_size)
+				{
+					if (!arm926ejs_icache.SetSize(arm926ejs_icache_size))
+					{
+						logger << DebugError
+							<< "Invalid instruction cache size (" << arm926ejs_icache_size
+							<< ")"
+							<< EndDebug;
+						return false;
+					}
+				}
+				else
+				{
+					logger << DebugError
+						<< "Invalid instruction cache size (" << arm926ejs_icache_size
+						<< ")"
+						<< EndDebug;
+					return false;
+				}
+
+				if (arm926ejs_dcache_size)
+				{
+					if (!arm926ejs_dcache.SetSize(arm926ejs_dcache_size))
+					{
+						logger << DebugError
+							<< "Invalid data cache size (" << arm926ejs_dcache_size
+							<< ")"
+							<< EndDebug;
+						return false;
+					}
+				}
+				else
+				{
+					logger << DebugError
+						<< "Invalid data cache size (" << arm926ejs_dcache_size
+						<< ")"
+						<< EndDebug;
+					return false;
+				}
 			}
 			
 			// initialize the variables to compute the final address on memory 
@@ -550,36 +522,62 @@ namespace arm {
 	//=                  Client/Service setup methods               END   =
 	//=====================================================================
 	
-#endif // SOCLIB
-	
-#ifndef SOCLIB
-	
 	//=====================================================================
 	//=             memory injection interface methods              START =
 	//=====================================================================
+
 	template<class CONFIG>
 	bool 
 	CPU<CONFIG> :: 
-	InjectReadMemory(uint64_t addr, void *buffer, uint32_t size) {
+	InjectReadMemory(uint64_t addr, void *buffer, uint32_t size) 
+	{
 		uint32_t index = 0;
-		typename CONFIG::address_t ef_address;
-		
-		while(size != 0) {
-			ef_address = addr + index;
-			if(CONFIG::MODEL == ARM966E_S) {
-				cp15_966es->PrRead(ef_address, &(((uint8_t *)buffer)[index]), 1);
-			} else {
-				if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
-					cache_l1->PrRead(ef_address, &(((uint8_t *)buffer)[index]), 1);
-				} else
-					memory_interface->PrRead(ef_address, 
-											 &(((uint8_t *)buffer)[index]), 
+		uint32_t base_addr = (uint32_t)addr;
+		uint32_t ef_addr;
+		if ( (CONFIG::MODEL == ARM926EJS) && linux_os_import)
+		{
+			// access memory while using the linux_os_import
+			//   tcm is ignored
+			while (size != 0)
+			{
+				// need to access the data cache before accessing the main memory
+				ef_addr = base_addr + index;
+				
+				uint32_t cache_tag = arm926ejs_dcache.GetTag(ef_addr);
+				uint32_t cache_set = arm926ejs_dcache.GetSet(ef_addr);
+				uint32_t cache_way;
+				bool cache_hit = false;
+				if ( arm926ejs_dcache.GetWay(cache_tag, cache_set, &cache_way) )
+				{
+					if ( arm926ejs_dcache.GetValid(cache_set, cache_way))
+					{
+						// the cache access is a hit, data can be simply read from the cache
+						uint32_t cache_index = arm926ejs_dcache.GetIndex(ef_addr);
+						uint32_t read_data_size = 
+							arm926ejs_dcache.GetDataCopy(cache_set, cache_way, cache_index, size, &(((uint8_t *)buffer)[index]));
+						index += read_data_size;
+						size -= read_data_size;
+						cache_hit = true;
+					}
+				}
+				if ( !cache_hit )
+				{
+					memory_interface->PrRead(ef_addr,
+											 &(((uint8_t *)buffer)[index]),
 											 1);
+					index++;
+					size--;
+				}
 			}
-			index++;
-			size--;
+			return true;
 		}
-		return true;
+		if ( (CONFIG::MODEL == ARM926EJS) && !linux_os_import)
+		{
+			// access memory while simulating full system
+			// TODO
+			return false;
+		}
+		return false;
 	}
 	
 	template<class CONFIG>
@@ -589,33 +587,58 @@ namespace arm {
 					  const void *buffer, 
 					  uint32_t size) {
 		uint32_t index = 0;
-		typename CONFIG::address_t ef_address;
-		
-		while(size != 0) {
-			ef_address = addr + index;
-			if(CONFIG::MODEL == ARM966E_S) {
-				cp15_966es->PrWrite(ef_address, &(((uint8_t *)buffer)[index]), 1);
-			} else {
-				if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
-					cache_l1->PrWrite(ef_address, &(((uint8_t *)buffer)[index]), 1);
-				} else
-					memory_interface->PrWrite(ef_address, 
-											  &(((uint8_t *)buffer)[index]), 1);
+		uint32_t base_addr = (uint32_t)addr;
+		uint32_t ef_addr;
+		if ( (CONFIG::MODEL == ARM926EJS) && linux_os_import)
+		{
+			// access memory while using the linux_os_import
+			//   tcm is ignored
+			while (size != 0)
+			{
+				// need to access the data cache before accessing the main memory
+				ef_addr = base_addr + index;
+				
+				uint32_t cache_tag = arm926ejs_dcache.GetTag(ef_addr);
+				uint32_t cache_set = arm926ejs_dcache.GetSet(ef_addr);
+				uint32_t cache_way;
+				bool cache_hit = false;
+				if ( arm926ejs_dcache.GetWay(cache_tag, cache_set, &cache_way) )
+				{
+					if ( arm926ejs_dcache.GetValid(cache_set, cache_way) )
+					{
+						// the cache access is a hit, data can be simply read from the cache
+						uint32_t cache_index = arm926ejs_dcache.GetIndex(ef_addr);
+						uint32_t write_data_size = 
+							arm926ejs_dcache.SetData(cache_set, cache_way, cache_index, size, &(((uint8_t *)buffer)[index]));
+						arm926ejs_dcache.SetDirty(cache_set, cache_way, 1);
+						index += write_data_size;
+						size -= write_data_size;
+						cache_hit = true;
+					}
+				}
+				if ( !cache_hit )
+				{
+					memory_interface->PrWrite(ef_addr,
+							&(((uint8_t *)buffer)[index]),
+							1);
+					index++;
+					size--;
+				}
 			}
-			
-			index++;
-			size--;
+			return true;
 		}
-		return true;
+		if ( (CONFIG::MODEL == ARM926EJS) && !linux_os_import)
+		{
+			// access memory while simulating full system
+			// TODO
+			return false;
+		}
+		return false;
 	}
 	
 	//=====================================================================
 	//=             memory injection interface methods              END   =
 	//=====================================================================
-	
-#endif // SOCLIB
-	
-#ifndef SOCLIB
 	
 	//=====================================================================
 	//=         memory access reporting control interface methods   START =
@@ -639,26 +662,73 @@ namespace arm {
 	//=         memory access reporting control interface methods   END   =
 	//=====================================================================
 	
-#endif // SOCLIB
-	
-#ifndef SOCLIB
-	
 	//=====================================================================
 	//=         non intrusive memory methods                        START =
 	//=====================================================================
 	
+	// Non intrusive memory read
 	template<class CONFIG>
 	bool 
 	CPU<CONFIG> :: 
 	ReadMemory(uint64_t addr, void *buffer, uint32_t size) 
 	{
-		//	if(memory_import) 
-		//		return memory_import->ReadMemory(addr, buffer, size);
-		if (CONFIG::MODEL == ARM966E_S)
+		bool status = true;
+		uint32_t index = 0;
+		uint32_t base_addr = (uint32_t)addr;
+		uint32_t ef_addr;
+		
+		if (CONFIG::MODEL == ARM926EJS && linux_os_import)
 		{
-			return cp15_966es->ReadMemory(addr, buffer, size);
+			// non intrusive access with linux support
+			//   tcm is ignored
+			while (size != 0 && status)
+			{
+				// need to access the data cache before accessing the main
+				//   memory
+				ef_addr = base_addr + index;
+				
+				uint32_t cache_tag = arm926ejs_dcache.GetTag(ef_addr);
+				uint32_t cache_set = arm926ejs_dcache.GetSet(ef_addr);
+				uint32_t cache_way;
+				bool cache_hit = false;
+				if ( arm926ejs_dcache.GetWay(cache_tag, cache_set, &cache_way) )
+				{
+					if ( arm926ejs_dcache.GetValid(cache_set, cache_way) )
+					{
+						// the cache access is a hit, data can be simply read
+						//   from the cache
+						uint32_t cache_index =
+								arm926ejs_dcache.GetIndex(ef_addr);
+						uint32_t data_read_size =
+								arm926ejs_dcache.GetDataCopy(cache_set,
+										cache_way, cache_index, size,
+										&(((uint8_t *)buffer)[index]));
+						index += data_read_size;
+						size -= data_read_size;
+						cache_hit = true;
+					}
+				}
+				if ( !cache_hit )
+				{
+					status = status &&
+						ExternalReadMemory(ef_addr,
+										   &(((uint8_t *)buffer)[index]),
+										   1);
+					index++;
+					size--;
+				}
+			}
+			return status;
 		}
-		return ExternalReadMemory(addr, buffer, size);
+		
+		if (CONFIG::MODEL == ARM926EJS && !linux_os_import)
+		{
+			// non intrusive access running on full-system mode
+			// TODO
+			return false;
+		}
+		
+		return false;
 	}
 	
 	template<class CONFIG>
@@ -667,13 +737,59 @@ namespace arm {
 	WriteMemory(uint64_t addr, 
 				const void *buffer, uint32_t size) 
 	{
-		//	if(memory_import)
-		//		return memory_import->WriteMemory(addr, buffer, size);
-		if (CONFIG::MODEL == ARM966E_S)
+		bool status = true;
+		uint32_t index = 0;
+		uint32_t base_addr = (uint32_t)addr;
+		uint32_t ef_addr;
+		
+		if (CONFIG::MODEL == ARM926EJS && linux_os_import)
 		{
-			return cp15_966es->WriteMemory(addr, buffer, size);
+			// non intrusive access with linux support
+			//   tcm is ignored
+			while (size != 0 && status)
+			{
+				// need to access the data cache before accessing the main memory
+				ef_addr = base_addr + index;
+				
+				uint32_t cache_tag = arm926ejs_dcache.GetTag(ef_addr);
+				uint32_t cache_set = arm926ejs_dcache.GetSet(ef_addr);
+				uint32_t cache_way;
+				bool cache_hit = false;
+				if ( arm926ejs_dcache.GetWay(cache_tag, cache_set, &cache_way) )
+				{
+					if ( arm926ejs_dcache.GetValid(cache_set, cache_way) )
+					{
+						// the cache access is a hit, data can be simply written to the cache
+						uint32_t cache_index = arm926ejs_dcache.GetIndex(ef_addr);
+						uint32_t data_read_size =
+							arm926ejs_dcache.SetData(cache_set, cache_way, cache_index, size, &(((uint8_t *)buffer)[index]));
+						arm926ejs_dcache.SetDirty(cache_set, cache_way, 1);
+						index += data_read_size;
+						size -= data_read_size;
+						cache_hit = true;
+					}
+				}
+				if ( !cache_hit )
+				{
+					status = status &&
+						ExternalWriteMemory(ef_addr,
+											&(((uint8_t *)buffer)[index]),
+											1);
+					index++;
+					size--;
+				}
+			}
+			return status;
 		}
-		return ExternalWriteMemory(addr, buffer, size);
+				
+		if (CONFIG::MODEL == ARM926EJS && !linux_os_import)
+		{
+			// non intrusive access running on full-system mode
+			// TODO
+			return false;
+		}
+		
+		return false;
 	}
 	
 	template<class CONFIG>
@@ -698,7 +814,10 @@ namespace arm {
 	bool
 	CPU<CONFIG> ::
 	ExternalReadMemory(uint64_t addr,
-					   void *buffer, uint32_t size) {
+					   void *buffer, uint32_t size)
+	{
+		// this method should be implemented by the super class, that should
+		//   provide access to the external memory
 		return false;
 	}
 	
@@ -706,17 +825,16 @@ namespace arm {
 	bool
 	CPU<CONFIG> ::
 	ExternalWriteMemory(uint64_t addr,
-						const void *buffer, uint32_t size) {
+						const void *buffer, uint32_t size) 
+	{
+		// this method should be implemented by the super class, that shoul
+		//   provide access to the external memory
 		return false;
 	}
 	
 	//=====================================================================
 	//=             memory interface methods                        END   =
 	//=====================================================================
-	
-#endif // SOCLIB
-	
-#ifndef SOCLIB
 	
 	//=====================================================================
 	//=             Registers interface methods                    START  =
@@ -736,9 +854,6 @@ namespace arm {
 	//=             CPURegistersInterface interface methods         END  ==
 	//=====================================================================
 	
-#endif // SOCLIB
-	
-#ifndef SOCLIB
 	//=====================================================================
 	//=                   Disassembly methods                      START  =
 	//=====================================================================
@@ -783,10 +898,6 @@ namespace arm {
 	//=                   DebugDisasmInterface methods              END   =
 	//=====================================================================
 	
-#endif // SOCLIB
-	
-#ifndef SOCLIB
-	
 	//=====================================================================
 	//=                   Debugging methods                        START  =
 	//=====================================================================
@@ -794,12 +905,13 @@ namespace arm {
 	template<class CONFIG>
 	string 
 	CPU<CONFIG> ::
-	GetObjectFriendlyName(uint64_t addr) {
+	GetObjectFriendlyName(uint64_t addr)
+	{
 		stringstream sstr;
 		
 		const Symbol<uint64_t> *symbol = 
-		symbol_table_lookup_import->FindSymbolByAddr(addr, 
-													 Symbol<uint64_t>::SYM_OBJECT);
+				symbol_table_lookup_import->FindSymbolByAddr(addr,
+						Symbol<uint64_t>::SYM_OBJECT);
 		if(symbol)
 			sstr << symbol->GetFriendlyName(addr);
 		else
@@ -811,13 +923,14 @@ namespace arm {
 	template<class CONFIG>
 	string
 	CPU<CONFIG> ::
-	GetFunctionFriendlyName(uint64_t addr) {
+	GetFunctionFriendlyName(uint64_t addr)
+	{
 		stringstream sstr;
 		
 		const Symbol<uint64_t> *symbol = 
-		symbol_table_lookup_import->FindSymbolByAddr(addr, 
-													 Symbol<uint64_t>::SYM_FUNC);
-		if(symbol)
+				symbol_table_lookup_import->FindSymbolByAddr(addr,
+						Symbol<uint64_t>::SYM_FUNC);
+		if ( symbol )
 			sstr << symbol->GetFriendlyName(addr);
 		else
 			sstr << "0x" << std::hex << addr << std::dec;
@@ -829,8 +942,6 @@ namespace arm {
 	//=                   Debugging methods                         END   =
 	//=====================================================================
 	
-#endif // SOCLIB
-	
 	//=====================================================================
 	//=                    execution handling methods              START  =
 	//=====================================================================
@@ -841,8 +952,6 @@ namespace arm {
 	Stop(int ret) {
 		exit(ret);
 	}
-	
-#ifndef SOCLIB
 	
 	template<class CONFIG>
 	void
@@ -864,8 +973,6 @@ namespace arm {
 	Sync() {
 		
 	}
-	
-#endif // SOCLIB
 	
 	template<class CONFIG>
 	void
@@ -984,10 +1091,6 @@ namespace arm {
 						if(shift == 0x03) { /* ROR */
 							if(shift_imm == 0) {
 								shifter_operand = 0;
-								//							if(GetCPSR_C()) {
-								//								shifter_operand = ((typename CONFIG::reg_t)1) << 31;
-								//							}
-								//							shifter_operand |= (val_reg >> 1);
 								shifter_operand = ((GetCPSR_C()?1:0) << 31) | (val_reg >> 1);
 							} else {
 								shifter_operand = RotateRight(val_reg, shift_imm);
@@ -1278,19 +1381,10 @@ namespace arm {
 				}
 				break;
 			default:
-#ifdef SOCLIB
-				
-				cerr << "Error(" << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__
-				<< "): unknow shift value (" << shift << ")" << endl;
-				
-#else // SOCLIB
-				
 				logger << DebugError
 				<< "(" << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << "): "
 				<< "unknown shift value (" << shift << ")"
 				<< EndDebugError;
-				
-#endif // SOCLIB
 				Stop(-1);
 		}
 		return val_rn + (((u << 1) - 1) * index);
@@ -2680,30 +2774,18 @@ namespace arm {
 		
 		switch(cpsr & CPSR_RUNNING_MODE_MASK) {
 			case USER_MODE:
-#ifdef SOCLIB
-				cerr << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << ": "
-				<< "Trying to modify SPSR under USER_MODE" << endl;
-				Stop(-1);
-#else // SOCLIB
 				logger << DebugError
 				<< "Trying to modify SPSR under USER_MODE" << endl
 				<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << ": "
 				<< EndDebugError;
 				Stop(-1);
-#endif // SOCLIB
 				break;
 			case SYSTEM_MODE:
-#ifdef SOCLIB
-				cerr << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << ": "
-				<< "Trying to modify SPSR under SYSTEM_MODE" << endl;
-				Stop(-1);
-#else // ifndef SOCLIB
 				logger << DebugError
 				<< "Trying to modify SPSR under SYSTEM_MODE" << endl
 				<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << ": "
 				<< EndDebugError;
 				Stop(-1);
-#endif // SOCLIB
 				break;
 			case SUPERVISOR_MODE:
 				rm = 0;
@@ -2721,17 +2803,11 @@ namespace arm {
 				rm = 4;
 				break;
 			default:
-#ifdef SOCLIB
-				cerr << "ERROR(" << __FUNCTION__ << "): ";
-				cerr << "unknown running mode." << endl;
-				Stop(-1);
-#else // SOCLIB
 				logger << DebugError
 				<< "unkonwn running mode." << endl
 				<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << ": "
 				<< EndDebugError;
 				Stop(-1);
-#endif // SOCLIB
 				break;
 		}
 		
@@ -2841,754 +2917,390 @@ namespace arm {
 	template<class CONFIG> 
 	void 
 	CPU<CONFIG> ::
-	ReadInsn(address_t address, uint16_t &val) {
-		if(CONFIG::MODEL == ARM966E_S) {
-			cp15_966es->PrRead(address, (uint8_t *)&val, 2);
+	ReadInsn(address_t address, uint16_t &val) 
+	{
+		if ( CONFIG::MODEL == ARM926EJS && linux_os_import )
+		{
+			// we are running simulation the linux OS
+			//   tcm memories are ignored on this mode
+			// check the instruction cache
+			uint32_t cache_tag = arm926ejs_icache.GetTag(address);
+			uint32_t cache_set = arm926ejs_icache.GetSet(address);
+			uint32_t cache_way;
+			bool cache_hit = false;
+			if ( arm926ejs_icache.GetWay(cache_tag, cache_set, &cache_way) )
+			{
+				if ( arm926ejs_icache.GetValid(cache_set, cache_way) )
+				{
+					// the data is in the cache, just read it
+					uint32_t cache_index =
+						arm926ejs_icache.GetIndex(address);
+					uint32_t read_data_size =
+						arm926ejs_icache.GetDataCopy(cache_set, cache_way, cache_index, 2, (uint8_t *)&val);
+					cache_hit = true;
+					if ( unlikely(read_data_size != 2 ) )
+					{
+						logger << DebugWarning
+							<< "While reading instruction cache, only " << (unsigned int)read_data_size
+							<< " byte(s) could be read, instead of the 2 that were requested (base address = 0x"
+							<< (unsigned int)address << ")"
+							<< EndDebugWarning;
+					}
+				}
+			}
+			if ( unlikely(!cache_hit) )
+			{
+				memory_interface->PrRead(address, (uint8_t *)&val, 2);
+			}
 			return;
 		}
-		
-		if(CONFIG::HAS_INSN_CACHE_L1) {
-			cache_il1->PrRead(address, (uint8_t *)&val, 2);
-			return;
+		if ( CONFIG::MODEL == ARM926EJS && !linux_os_import )
+		{
+			// TODO
 		}
-		
-		if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
-			cache_l1->PrRead(address, (uint8_t *)&val, 2);
-			return;
-		}
-		
 		memory_interface->PrRead(address, (uint8_t *)&val, 2);
 	}
 	
 	template<class CONFIG> 
 	void 
 	CPU<CONFIG> ::
-	ReadInsn(address_t address, uint32_t &val) {
-		if(CONFIG::MODEL == ARM966E_S) {
-			cp15_966es->PrRead(address, (uint8_t *)&val, 4);
+	ReadInsn(address_t address, uint32_t &val) 
+	{
+		if ( CONFIG::MODEL == ARM926EJS && linux_os_import )
+		{
+			logger << DebugInfo
+					<< "Fetching 0x" << hex << address << dec
+					<< EndDebugInfo;
+			// we are running simulation the linux OS
+			//   tcm memories are ignored on this mode
+			// check the instruction cache
+			uint32_t cache_tag = arm926ejs_icache.GetTag(address);
+			uint32_t cache_set = arm926ejs_icache.GetSet(address);
+			uint32_t cache_way;
+			bool cache_hit = false;
+			if ( arm926ejs_icache.GetWay(cache_tag, cache_set, &cache_way) )
+			{
+				if ( arm926ejs_icache.GetValid(cache_set, cache_way) )
+				{
+					// the data is in the cache, just read it
+					uint32_t cache_index =
+						arm926ejs_icache.GetIndex(address);
+					uint32_t read_data_size =
+						arm926ejs_icache.GetDataCopy(cache_set, cache_way, cache_index, 4, (uint8_t *)&val);
+					cache_hit = true;
+					if ( unlikely(read_data_size != 4 ) )
+					{
+						logger << DebugWarning
+						<< "While reading instruction cache, only " << (unsigned int)read_data_size
+						<< " byte(s) could be read, instead of the 4 that were requested (base address = 0x"
+						<< (unsigned int)address << ")"
+						<< EndDebugWarning;
+					}
+				}
+			}
+			if ( unlikely(!cache_hit) )
+			{
+				memory_interface->PrRead(address, (uint8_t *)&val, 4);
+			}
 			return;
 		}
 		
-		if(CONFIG::HAS_INSN_CACHE_L1) {
-			cache_il1->PrRead(address, (uint8_t *)&val, 4);
-			return;
-		}
-		
-		if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
-			cache_l1->PrRead(address, (uint8_t *)&val, 4);
-			return;
+		if ( CONFIG::MODEL == ARM926EJS && !linux_os_import )
+		{
+			// TODO
 		}
 		
 		memory_interface->PrRead(address, (uint8_t *)&val, 4);
 	}
-	
+		
 	template<class CONFIG> 
 	void 
 	CPU<CONFIG> ::
-	ReadInsnLine(address_t address, uint8_t *val, uint32_t size) {
-		if(CONFIG::HAS_INSN_CACHE_L1) {
-			cache_il1->PrRead(address, val, size);
-		} else {
-			if(CONFIG::HAS_DATA_CACHE_L1) {
-				cache_l1->PrRead(address, val, size);
-			} else {
-				if(CONFIG::HAS_CACHE_L2) {
-					cache_l2->PrRead(address, val, size);
-				} else {
-					if(CONFIG::MODEL == ARM966E_S) {
-						cp15_966es->PrRead(address, val, size);
-					} else {
-						for(uint32_t i = 0; i < size; i += CONFIG::FSB_BURST_SIZE) {
-							if((i - size) < CONFIG::FSB_BURST_SIZE) 
-								memory_interface->PrRead(address, val, size);
-							else
-								memory_interface->PrRead(address, val, size);
-						}
-					}
-				}
-			}
-		}
-	}
-	
-	template<class CONFIG> 
-	void 
-	CPU<CONFIG> ::
-	ReadPrefetch(address_t address) {
+	ReadPrefetch(address_t address) 
+	{
 		address = address & ~(0x3);
 		MemoryOp<CONFIG> *memop;
 		
-		if(freeLSQueue.empty())
+		if ( freeLSQueue.empty() )
 			memop = new MemoryOp<CONFIG>();
-		else {
+		else 
+		{
 			memop = freeLSQueue.front();
 			freeLSQueue.pop();
 		}
 		memop->SetPrefetch(address);
 		lsQueue.push(memop);
-		
-#if 0
-		if(CONFIG::MODEL == ARM966E_S) {
-			cp15_966es->PrRead(read_address, (uint8_t *)&value, 4);
-		} else {
-			if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
-				cache_l1->PrRead(read_address, (uint8_t *)&value, 4);
-			} else
-				memory_interface->PrRead(read_address, (uint8_t *)&value, 4);
-		}
-		
-		value = BigEndian2Host(value);
-		
-		/* should we report a memory access for a prefetch???? */
-		if(requires_memory_access_reporting)
-			if(memory_access_reporting_import) 
-				memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_READ,
-																   MemoryAccessReporting<address_t>::MT_DATA,
-																   read_address, 4);
-#endif
 	}
 	
 	template<class CONFIG> 
 	void 
 	CPU<CONFIG> ::
-	Read32toPCUpdateT(address_t address) {
+	Read32toPCUpdateT(address_t address) 
+	{
 		MemoryOp<CONFIG> *memop;
 		
-		if(freeLSQueue.empty())
+		if ( freeLSQueue.empty() )
 			memop = new MemoryOp<CONFIG>();
-		else {
+		else 
+		{
 			memop = freeLSQueue.front();
 			freeLSQueue.pop();
 		}
 		memop->SetReadToPCUpdateT(address);
 		lsQueue.push(memop);
 		
-#ifndef SOCLIB
-		
-		if(requires_memory_access_reporting)
-			if(memory_access_reporting_import) 
-				memory_access_reporting_import->ReportMemoryAccess(
-																   MemoryAccessReporting<uint64_t>::MAT_READ,
+		if (requires_memory_access_reporting )
+			if ( memory_access_reporting_import ) 
+				memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<uint64_t>::MAT_READ,
 																   MemoryAccessReporting<uint64_t>::MT_DATA,
 																   address & ~((address_t)0x3), 4);
-		
-#endif // SOCLIB
-		
-#if 0
-		typename CONFIG::reg_t value;
-		typename CONFIG::reg_t value_l, value_r;
-		address_t read_address = address & ~(0x3);
-		
-		if(CONFIG::MODEL == ARM966E_S) {
-			cp15_966es->PrRead(read_address, (uint8_t *)&value, 4);
-		} else {
-			if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
-				cache_l1->PrRead(read_address, (uint8_t *)&value, 4);
-			} else
-				memory_interface->PrRead(read_address, (uint8_t *)&value, 4);
-		}
-		
-		value = BigEndian2Host(value);
-		
-		if(requires_memory_access_reporting)
-			if(memory_access_reporting_import) 
-				memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_READ,
-																   MemoryAccessReporting<address_t>::MT_DATA,
-																   read_address, 4);
-		
-		switch(address & 0x03) {
-			case 0x00:
-				// nothing to do
-				break;
-			case 0x01:
-				value_l = (value << 8) & ~((typename CONFIG::reg_t)0x0FF);
-				value_r = (value >> 24) & ((typename CONFIG::reg_t)0x0FF);
-				value = value_l + value_r;
-				break;
-			case 0x02:
-				value_l = (value << 16) & ~((typename CONFIG::reg_t)0x0FFFF);
-				value_r = (value >> 16) & ((typename CONFIG::reg_t)0x0FFFF);
-				value = value_l + value_r;
-				break;
-			case 0x03:
-				value_l = (value << 24) & ~((typename CONFIG::reg_t)0x0FFFFFF);
-				value_r = (value >> 8) & ((typename CONFIG::reg_t)0x0FFFFFF);
-				value = value_l + value_r;
-				break;
-		}
-		
-		// code valid for version 5 and above
-		SetGPR(PC_reg, value & (typename CONFIG::reg_t)0xFFFFFFFE);
-		if(CONFIG::ARCHITECTURE == ARMV5T ||
-		   CONFIG::ARCHITECTURE == ARMV5TXM ||
-		   CONFIG::ARCHITECTURE == ARMV5TE ||
-		   CONFIG::ARCHITECTURE == ARMV5TEXP) {
-			SetCPSR_T((value & 0x01) == 1);
-		}
-#endif
 	}
 	
 	template<class CONFIG> 
 	void 
 	CPU<CONFIG> ::
-	Read32toPC(address_t address) {
+	Read32toPC(address_t address) 
+	{
 		MemoryOp<CONFIG> *memop;
 		
-		if(freeLSQueue.empty())
+		if ( freeLSQueue.empty() )
 			memop = new MemoryOp<CONFIG>();
-		else {
+		else 
+		{
 			memop = freeLSQueue.front();
 			freeLSQueue.pop();
 		}
 		memop->SetReadToPC(address);
 		lsQueue.push(memop);
 		
-#ifndef SOCLIB
-		
-		if(requires_memory_access_reporting)
-			if(memory_access_reporting_import) 
-				memory_access_reporting_import->ReportMemoryAccess(
-																   MemoryAccessReporting<uint64_t>::MAT_READ,
+		if ( requires_memory_access_reporting )
+			if ( memory_access_reporting_import ) 
+				memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<uint64_t>::MAT_READ,
 																   MemoryAccessReporting<uint64_t>::MT_DATA,
 																   address & ~((address_t)0x3), 4);
-		
-#endif // SOCLIB
-		
-#if 0
-		typename CONFIG::reg_t value;
-		typename CONFIG::reg_t value_l, value_r;
-		address_t read_address = address & ~(0x3);
-		
-		if(CONFIG::MODEL == ARM966E_S) {
-			cp15_966es->PrRead(read_address, (uint8_t *)&value, 4);
-		} else {
-			if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
-				cache_l1->PrRead(read_address, (uint8_t *)&value, 4);
-			} else
-				memory_interface->PrRead(read_address, (uint8_t *)&value, 4);
-		}
-		
-		value = BigEndian2Host(value);
-		
-		if(requires_memory_access_reporting)
-			if(memory_access_reporting_import) 
-				memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_READ,
-																   MemoryAccessReporting<address_t>::MT_DATA,
-																   read_address, 4);
-		
-		switch(address & 0x03) {
-			case 0x00:
-				// nothing to do
-				break;
-			case 0x01:
-				value_l = (value << 8) & ~((typename CONFIG::reg_t)0x0FF);
-				value_r = (value >> 24) & ((typename CONFIG::reg_t)0x0FF);
-				value = value_l + value_r;
-				break;
-			case 0x02:
-				value_l = (value << 16) & ~((typename CONFIG::reg_t)0x0FFFF);
-				value_r = (value >> 16) & ((typename CONFIG::reg_t)0x0FFFF);
-				value = value_l + value_r;
-				break;
-			case 0x03:
-				value_l = (value << 24) & ~((typename CONFIG::reg_t)0x0FFFFFF);
-				value_r = (value >> 8) & ((typename CONFIG::reg_t)0x0FFFFFF);
-				value = value_l + value_r;
-				break;
-		}
-		
-		SetGPR(PC_reg, value & (typename CONFIG::reg_t)0xFFFFFFFE);
-#endif
 	}
 	
 	template<class CONFIG> 
 	void 
 	CPU<CONFIG> ::
-	Read32toGPR(address_t address, uint32_t reg) {
+	Read32toGPR(address_t address, uint32_t reg) 
+	{
 		MemoryOp<CONFIG> *memop;
 		
-		if(freeLSQueue.empty())
+		if ( freeLSQueue.empty() )
 			memop = new MemoryOp<CONFIG>();
-		else {
+		else 
+		{
 			memop = freeLSQueue.front();
 			freeLSQueue.pop();
 		}
 		memop->SetRead(address, 4, reg, false, false);
 		lsQueue.push(memop);
 		
-#ifndef SOCLIB
-		
-		if(requires_memory_access_reporting)
-			if(memory_access_reporting_import) 
-				memory_access_reporting_import->ReportMemoryAccess(
-																   MemoryAccessReporting<uint64_t>::MAT_READ,
+		if ( requires_memory_access_reporting )
+			if ( memory_access_reporting_import ) 
+				memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<uint64_t>::MAT_READ,
 																   MemoryAccessReporting<uint64_t>::MT_DATA,
 																   address & ~((address_t)0x3), 4);
-		
-#endif // SOCLIB
-		
-#if 0
-		typename CONFIG::reg_t value;
-		typename CONFIG::reg_t value_l, value_r;
-		address_t read_address = address & ~(0x3);
-		
-		if(CONFIG::MODEL == ARM966E_S) {
-			cp15_966es->PrRead(read_address, (uint8_t *)&value, 4);
-		} else {
-			if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
-				cache_l1->PrRead(read_address, (uint8_t *)&value, 4);
-			} else
-				memory_interface->PrRead(read_address, (uint8_t *)&value, 4);
-		}
-		
-		value = BigEndian2Host(value);
-		
-		if(requires_memory_access_reporting)
-			if(memory_access_reporting_import) 
-				memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_READ,
-																   MemoryAccessReporting<address_t>::MT_DATA,
-																   read_address, 4);
-		
-		switch(address & 0x03) {
-			case 0x00:
-				// nothing to do
-				break;
-			case 0x01:
-				value_l = (value << 8) & ~((typename CONFIG::reg_t)0x0FF);
-				value_r = (value >> 24) & ((typename CONFIG::reg_t)0x0FF);
-				value = value_l + value_r;
-				break;
-			case 0x02:
-				value_l = (value << 16) & ~((typename CONFIG::reg_t)0x0FFFF);
-				value_r = (value >> 16) & ((typename CONFIG::reg_t)0x0FFFF);
-				value = value_l + value_r;
-				break;
-			case 0x03:
-				value_l = (value << 24) & ~((typename CONFIG::reg_t)0x0FFFFFF);
-				value_r = (value >> 8) & ((typename CONFIG::reg_t)0x0FFFFFF);
-				value = value_l + value_r;
-				break;
-		}
-		
-		SetGPR(reg, value);
-#endif
 	}
 	
 	template<class CONFIG> 
 	void 
 	CPU<CONFIG> ::
-	Read32toGPRAligned(address_t address, uint32_t reg) {
+	Read32toGPRAligned(address_t address, uint32_t reg) 
+	{
 		MemoryOp<CONFIG> *memop;
 		
 		address = address & ~((address_t)0x3);
 		
-		if(freeLSQueue.empty())
+		if ( freeLSQueue.empty() )
 			memop = new MemoryOp<CONFIG>();
-		else {
+		else 
+		{
 			memop = freeLSQueue.front();
 			freeLSQueue.pop();
 		}
 		memop->SetRead(address, 4, reg, true, false);
 		lsQueue.push(memop);
 		
-#ifndef SOCLIB
-		
-		if(requires_memory_access_reporting)
-			if(memory_access_reporting_import) 
-				memory_access_reporting_import->ReportMemoryAccess(
-																   MemoryAccessReporting<uint64_t>::MAT_READ,
+		if ( requires_memory_access_reporting )
+			if ( memory_access_reporting_import ) 
+				memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<uint64_t>::MAT_READ,
 																   MemoryAccessReporting<uint64_t>::MT_DATA,
 																   address, 4);
-		
-#endif // SOCLIB
-		
-#if 0
-		typename CONFIG::reg_t value;
-		address_t read_address = address & ~(0x3);
-		
-		if(CONFIG::MODEL == ARM966E_S) {
-			cp15_966es->PrRead(read_address, (uint8_t *)&value, 4);
-		} else {
-			if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
-				cache_l1->PrRead(read_address, (uint8_t *)&value, 4);
-			} else
-				memory_interface->PrRead(read_address, (uint8_t *)&value, 4);
-		}
-		
-		value = BigEndian2Host(value);
-		
-		if(requires_memory_access_reporting)
-			if(memory_access_reporting_import) 
-				memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_READ,
-																   MemoryAccessReporting<address_t>::MT_DATA,
-																   read_address, 4);
-		
-		SetGPR(reg, value);
-#endif
 	}
 	
 	template<class CONFIG> 
 	void 
 	CPU<CONFIG> ::
-	Read16toGPRAligned(address_t address, uint32_t reg) {
+	Read16toGPRAligned(address_t address, uint32_t reg) 
+	{
 		MemoryOp<CONFIG> *memop;
 		
 		address = address & ~((address_t)0x1);
 		
-		if(freeLSQueue.empty())
+		if ( freeLSQueue.empty() )
 			memop = new MemoryOp<CONFIG>();
-		else {
+		else 
+		{
 			memop = freeLSQueue.front();
 			freeLSQueue.pop();
 		}
 		memop->SetRead(address, 2, reg, true, false);
 		lsQueue.push(memop);
 		
-#ifndef SOCLIB
-		
-		if(requires_memory_access_reporting)
-			if(memory_access_reporting_import) 
-				memory_access_reporting_import->ReportMemoryAccess(
-																   MemoryAccessReporting<uint64_t>::MAT_READ,
+		if ( requires_memory_access_reporting )
+			if ( memory_access_reporting_import ) 
+				memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<uint64_t>::MAT_READ,
 																   MemoryAccessReporting<uint64_t>::MT_DATA,
 																   address, 2);
-		
-#endif // SOCLIB
-		
-#if 0
-		uint16_t val16;
-		typename CONFIG::reg_t value;
-		address_t read_address = address & ~(0x1);
-		
-		read_address = read_address ^ munged_address_mask16;
-		
-		if(CONFIG::MODEL == ARM966E_S) {
-			cp15_966es->PrRead(read_address, (uint8_t *)&val16, 2);
-		} else {
-			if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
-				cache_l1->PrRead(read_address, (uint8_t *)&val16, 2);
-			} else 
-				memory_interface->PrRead(read_address, (uint8_t *)&val16, 2);
-		}
-		
-		val16 = BigEndian2Host(val16);
-		
-		if(requires_memory_access_reporting)
-			if(memory_access_reporting_import) 
-				memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_READ,
-																   MemoryAccessReporting<address_t>::MT_DATA,
-																   address, 2);
-		
-		value = val16;
-		
-		SetGPR(reg, value);
-#endif
 	}
 	
 	template<class CONFIG> 
 	void 
 	CPU<CONFIG> ::
-	ReadS16toGPRAligned(address_t address, uint32_t reg) {
+	ReadS16toGPRAligned(address_t address, uint32_t reg) 
+	{
 		MemoryOp<CONFIG> *memop;
 		
 		address = address & ~((address_t)0x1);
-		if(freeLSQueue.empty())
+		if ( freeLSQueue.empty() )
 			memop = new MemoryOp<CONFIG>();
-		else {
+		else 
+		{
 			memop = freeLSQueue.front();
 			freeLSQueue.pop();
 		}
 		memop->SetRead(address, 2, reg, /* aligned */true, /* signed */true);
 		lsQueue.push(memop);
 		
-#ifndef SOCLIB
-		
-		if(requires_memory_access_reporting)
-			if(memory_access_reporting_import) 
-				memory_access_reporting_import->ReportMemoryAccess(
-																   MemoryAccessReporting<uint64_t>::MAT_READ,
+		if ( requires_memory_access_reporting )
+			if ( memory_access_reporting_import ) 
+				memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<uint64_t>::MAT_READ,
 																   MemoryAccessReporting<uint64_t>::MT_DATA,
 																   address, 2);
-		
-#endif // SOCLIB
-		
-#if 0
-		int16_t val16;
-		typename CONFIG::reg_t value;
-		address_t read_address = address & ~(0x1);
-		
-		read_address = read_address ^ munged_address_mask16;
-		
-		if(CONFIG::MODEL == ARM966E_S) {
-			cp15_966es->PrRead(read_address, (uint8_t *)&val16, 2);
-		} else {
-			if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
-				cache_l1->PrRead(read_address, (uint8_t *)&val16, 2);
-			} else 
-				memory_interface->PrRead(read_address, (uint8_t *)&val16, 2);
-		}
-		
-		val16 = BigEndian2Host(val16);
-		
-		if(requires_memory_access_reporting)
-			if(memory_access_reporting_import) 
-				memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_READ,
-																   MemoryAccessReporting<address_t>::MT_DATA,
-																   address, 2);
-		
-		value = (typename CONFIG::sreg_t)val16;
-		
-		SetGPR(reg, value);
-#endif
 	}
 	
 	template<class CONFIG> 
 	void 
 	CPU<CONFIG> ::
-	ReadS8toGPR(address_t address, uint32_t reg) {
+	ReadS8toGPR(address_t address, uint32_t reg) 
+	{
 		MemoryOp<CONFIG> *memop;
 		
-		if(freeLSQueue.empty())
+		if ( freeLSQueue.empty() )
 			memop = new MemoryOp<CONFIG>();
-		else {
+		else 
+		{
 			memop = freeLSQueue.front();
 			freeLSQueue.pop();
 		}
 		memop->SetRead(address, 1, reg, /* aligned */true, /* signed */true);
 		lsQueue.push(memop);
 		
-#ifndef SOCLIB
-		
-		if(requires_memory_access_reporting)
-			if(memory_access_reporting_import)
-				memory_access_reporting_import->ReportMemoryAccess(
-																   MemoryAccessReporting<uint64_t>::MAT_READ,
+		if ( requires_memory_access_reporting )
+			if ( memory_access_reporting_import )
+				memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<uint64_t>::MAT_READ,
 																   MemoryAccessReporting<uint64_t>::MT_DATA,
 																   address, 1);
-		
-#endif // SOCLIB
-		
-#if 0
-		typename CONFIG::reg_t value;
-		int8_t val8;
-		address_t read_address;
-		
-		read_address = address ^ munged_address_mask8;
-		
-		if(CONFIG::MODEL == ARM966E_S) {
-			cp15_966es->PrRead(read_address, (uint8_t *)&val8, 1);
-		} else {
-			if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
-				cache_l1->PrRead(read_address, (uint8_t *)&val8, 1);
-			} else
-				memory_interface->PrRead(read_address, (uint8_t *)&val8, 1);
-		}
-		
-		if(requires_memory_access_reporting)
-			if(memory_access_reporting_import)
-				memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_READ,
-																   MemoryAccessReporting<address_t>::MT_DATA,
-																   address, 1);
-		
-		value = (typename CONFIG::sreg_t)val8;
-		SetGPR(reg, value);
-#endif
 	}
 	
 	template<class CONFIG> 
 	void 
 	CPU<CONFIG> ::
-	Read8toGPR(address_t address, uint32_t reg) {
+	Read8toGPR(address_t address, uint32_t reg) 
+	{
 		MemoryOp<CONFIG> *memop;
 		
-		if(freeLSQueue.empty())
+		if ( freeLSQueue.empty() )
 			memop = new MemoryOp<CONFIG>();
-		else {
+		else 
+		{
 			memop = freeLSQueue.front();
 			freeLSQueue.pop();
 		}
 		memop->SetRead(address, 1, reg, /* aligned */true, /* signed */false);
 		lsQueue.push(memop);
 		
-#ifndef SOCLIB
-		
-		if(requires_memory_access_reporting)
-			if(memory_access_reporting_import)
-				memory_access_reporting_import->ReportMemoryAccess(
-																   MemoryAccessReporting<uint64_t>::MAT_READ,
+		if ( requires_memory_access_reporting )
+			if ( memory_access_reporting_import )
+				memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<uint64_t>::MAT_READ,
 																   MemoryAccessReporting<uint64_t>::MT_DATA,
 																   address, 1);
-		
-#endif // SOCLIB
-		
-#if 0
-		typename CONFIG::reg_t value;
-		uint8_t val8;
-		address_t read_address;
-		
-		read_address = address ^ munged_address_mask8;
-		
-		if(CONFIG::MODEL == ARM966E_S) {
-			cp15_966es->PrRead(read_address, &val8, 1);
-		} else {
-			if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
-				cache_l1->PrRead(read_address, &val8, 1);
-			} else
-				memory_interface->PrRead(read_address, &val8, 1);
-		}
-		
-		if(requires_memory_access_reporting)
-			if(memory_access_reporting_import)
-				memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_READ,
-																   MemoryAccessReporting<address_t>::MT_DATA,
-																   address, 1);
-		
-		value = val8;
-		SetGPR(reg, value);
-#endif
 	}
 	
 	template<class CONFIG> 
 	void 
 	CPU<CONFIG> ::
-	Write32(address_t address, uint32_t value) {
+	Write32(address_t address, uint32_t value) 
+	{
 		MemoryOp<CONFIG> *memop;
 		
 		address = address & ~((address_t)0x3);
-		if(freeLSQueue.empty())
+		if ( freeLSQueue.empty() )
 			memop = new MemoryOp<CONFIG>();
-		else {
+		else 
+		{
 			memop = freeLSQueue.front();
 			freeLSQueue.pop();
 		}
 		memop->SetWrite(address, 4, value);
 		lsQueue.push(memop);
 		
-#ifndef SOCLIB
-		
-		if(requires_memory_access_reporting)
-			if(memory_access_reporting_import) 
-				memory_access_reporting_import->ReportMemoryAccess(
-																   MemoryAccessReporting<uint64_t>::MAT_WRITE,
+		if ( requires_memory_access_reporting )
+			if ( memory_access_reporting_import ) 
+				memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<uint64_t>::MAT_WRITE,
 																   MemoryAccessReporting<uint64_t>::MT_DATA,
 																   address, 4);
-		
-#endif // SOCLIB
-		
-#if 0
-		uint32_t val32;
-		address_t write_address = address & ~((address_t)0x3);
-		
-		val32 = Host2BigEndian(value);
-		
-		if(CONFIG::MODEL == ARM966E_S) {
-			cp15_966es->PrWrite(write_address, (uint8_t *)&val32, 4);
-		} else {
-			if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
-				cache_l1->PrWrite(write_address, (uint8_t *)&val32, 4);
-			} else
-				memory_interface->PrWrite(write_address, (uint8_t *)&val32, 4);
-		}
-		
-		if(requires_memory_access_reporting)
-			if(memory_access_reporting_import) 
-				memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_WRITE,
-																   MemoryAccessReporting<address_t>::MT_DATA,
-																   address, 4);
-#endif
 	}
 	
 	template<class CONFIG> 
 	void 
 	CPU<CONFIG> ::
-	Write16(address_t address, uint16_t value) {
+	Write16(address_t address, uint16_t value) 
+	{
 		address = address & ~((address_t)0x1);
 		MemoryOp<CONFIG> *memop;
 		
-		if(freeLSQueue.empty())
+		if ( freeLSQueue.empty() )
 			memop = new MemoryOp<CONFIG>();
-		else {
+		else 
+		{
 			memop = freeLSQueue.front();
 			freeLSQueue.pop();
 		}
 		memop->SetWrite(address, 2, value);
 		lsQueue.push(memop);
 		
-#ifndef SOCLIB
-		
-		if(requires_memory_access_reporting)
-			if(memory_access_reporting_import) 
-				memory_access_reporting_import->ReportMemoryAccess(
-																   MemoryAccessReporting<uint64_t>::MAT_WRITE,
+		if ( requires_memory_access_reporting )
+			if ( memory_access_reporting_import ) 
+				memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<uint64_t>::MAT_WRITE,
 																   MemoryAccessReporting<uint64_t>::MT_DATA,
 																   address, 2);
-		
-#endif // SOCLIB
-		
-#if 0
-		uint16_t val16;
-		address_t write_address = address & ~((address_t)0x1);
-		
-		val16 = Host2BigEndian(value);
-		
-		if(CONFIG::MODEL == ARM966E_S) {
-			cp15_966es->PrWrite(write_address, (uint8_t *)&val16, 2);
-		} else {
-			if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
-				cache_l1->PrWrite(write_address, (uint8_t *)&val16, 2);
-			} else
-				memory_interface->PrWrite(write_address, (uint8_t *)&val16, 2);
-		}
-		
-		if(requires_memory_access_reporting)
-			if(memory_access_reporting_import) 
-				memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_WRITE,
-																   MemoryAccessReporting<address_t>::MT_DATA,
-																   address, 2);
-#endif
 	}
 	
 	template<class CONFIG> 
 	void 
 	CPU<CONFIG> ::
-	Write8(address_t address, uint8_t value) {
+	Write8(address_t address, uint8_t value) 
+	{
 		MemoryOp<CONFIG> *memop;
 		
-		if(freeLSQueue.empty())
+		if ( freeLSQueue.empty() )
 			memop = new MemoryOp<CONFIG>();
-		else {
+		else 
+		{
 			memop = freeLSQueue.front();
 			freeLSQueue.pop();
 		}
 		memop->SetWrite(address, 1, value);
 		lsQueue.push(memop);
 		
-#ifndef SOCLIB
-		
-		if(requires_memory_access_reporting)
-			if(memory_access_reporting_import) 
-				memory_access_reporting_import->ReportMemoryAccess(
-																   MemoryAccessReporting<uint64_t>::MAT_WRITE,
+		if ( requires_memory_access_reporting )
+			if ( memory_access_reporting_import ) 
+				memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<uint64_t>::MAT_WRITE,
 																   MemoryAccessReporting<uint64_t>::MT_DATA,
 																   address, 1);
-		
-#endif // SOCLIB
-		
-#if 0
-		if(CONFIG::MODEL == ARM966E_S) {
-			cp15_966es->PrWrite(address, &value, 1);
-		} else {
-			if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
-				cache_l1->PrWrite(address, &value, 1);
-			} else
-				memory_interface->PrWrite(address, &value, 1);
-		}
-		
-		if(requires_memory_access_reporting)
-			if(memory_access_reporting_import) 
-				memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_WRITE,
-																   MemoryAccessReporting<address_t>::MT_DATA,
-																   address, 1);
-#endif
 	}
 	
 	/**************************************************************/
@@ -3604,13 +3316,10 @@ namespace arm {
 	CPU<CONFIG> ::
 	CoprocessorLoad(uint32_t cp_num, address_t address) {
 		
-#ifndef SOCLIB
 		logger << DebugError
 		<< "TODO" << endl
 		<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << ": "
 		<< EndDebugError;
-		
-#endif // SOCLIB
 		
 		Stop(-1);
 		
@@ -3622,14 +3331,10 @@ namespace arm {
 	CPU<CONFIG> ::
 	CoprocessorLoad(uint32_t cp_num, address_t address, uint32_t option) {
 		
-#ifndef SOCLIB
-		
 		logger << DebugError
 		<< "TODO" << endl
 		<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << ": "
 		<< EndDebugError;
-		
-#endif // SOCLIB
 		
 		Stop(-1);
 		
@@ -3641,14 +3346,10 @@ namespace arm {
 	CPU<CONFIG> ::
 	CoprocessorStore(uint32_t cp_num, address_t address) {
 		
-#ifndef SOCLIB
-		
 		logger << DebugError
 		<< "TODO" << endl
 		<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << ": "
 		<< EndDebugError;
-		
-#endif // SOCLIB
 		
 		Stop(-1);
 		
@@ -3660,14 +3361,11 @@ namespace arm {
 	CPU<CONFIG> ::
 	CoprocessorStore(uint32_t cp_num, address_t address, uint32_t option) {
 		
-#ifndef SOCLIB
-		
 		logger << DebugError
 		<< "TODO" << endl
 		<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << ": "
 		<< EndDebugError;
 		
-#endif // SOCLIB
 		
 		Stop(-1);
 		
@@ -3680,14 +3378,10 @@ namespace arm {
 	CoprocessorDataProcess(uint32_t cp_num, uint32_t op1, uint32_t op2,
 						   uint32_t crd, uint32_t crn, uint32_t crm) {
 		
-#ifndef SOCLIB
-		
 		logger << DebugError
 		<< "TODO" << endl
 		<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << ": "
 		<< EndDebugError;
-		
-#endif // SOCLIB
 		
 		Stop(-1);
 	}
@@ -3699,14 +3393,11 @@ namespace arm {
 					  uint32_t rd, uint32_t crn, uint32_t crm) {
 		if(cp[cp_num] == 0) {
 			
-#ifndef SOCLIB
-			
 			logger << DebugError
 			<< "TODO" << endl
 			<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << ": "
 			<< EndDebugError;
 			
-#endif // SOCLIB
 			Stop(-1);
 		}
 		cp[cp_num]->WriteRegister(op1, op2, crn, crm, GetGPR(rd));
@@ -3718,15 +3409,10 @@ namespace arm {
 	MoveFromCoprocessor(uint32_t cp_num, uint32_t op1, uint32_t op2, 
 						uint32_t rd, uint32_t crn, uint32_t crm) {
 		if(cp[cp_num] == 0) {
-			
-#ifndef SOCLIB
-			
 			logger << DebugError
 			<< "TODO" << endl
 			<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << ": "
 			<< EndDebugError;
-			
-#endif // SOCLIB
 			
 			Stop(-1);
 		}
@@ -3910,24 +3596,14 @@ namespace arm {
 		if(CONFIG::MODEL == ARM7TDMI)
 			return 0x0;
 		
-#ifdef SOCLIB
-		
-		cerr << "TODO(" << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__
-		<< "): " << endl
-		<< "exception vector address reporting is not implemented "
-		<< "for this architecture" << endl;
-		
-#else // SOCLIB
-		
 		logger << DebugError
 		<< "TODO: exception vector address reporting is not implemented "
 		<< "for this architecture" << endl
 		<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << ": "
 		<< EndDebugError;
 		
-#endif // SOCLIB
-		
 		Stop(-1);
+		return 0;
 	}
 	
 	template<class CONFIG>
@@ -4155,8 +3831,6 @@ namespace arm {
 	/* Alignment checking methods  END                            */
 	/**************************************************************/
 	
-#ifndef SOCLIB
-	
 	/**************************************************************/
 	/* CPUARMLinuxOSInterface methods                       START */
 	/**************************************************************/
@@ -4172,8 +3846,6 @@ namespace arm {
 	/**************************************************************/
 	/* CPUARMLinuxOSInterface methods                         END */
 	/**************************************************************/
-	
-#endif // SOCLIB
 	
 	/* endianness methods */
 	template<class CONFIG>
@@ -4197,18 +3869,8 @@ namespace arm {
 			cp[i] = 0;
 		
 		if(CONFIG::MODEL == ARM966E_S) {
-#ifdef SOCLIB
-			
-			cp15_966es = new cp15_966es_t(15, this, dtcm, itcm, memory_interface);
-			
-#else // SOCLIB
-			
 			cp15_966es = new cp15_966es_t("cp15", 15, this, dtcm, itcm, memory_interface, this);
-			
-#endif // SOCLIB
-			
 			cp[15] = cp15_966es;
-			
 		}
 	}
 	
@@ -4230,29 +3892,11 @@ namespace arm {
 		
 		if(CONFIG::HAS_DTCM) {
 			
-#ifdef SOCLIB
-			
-			dtcm = new dtcm_t();
-			
-#else // SOCLIB
-			
 			dtcm = new dtcm_t("dtcm", this);
-			
-#endif // SOCLIB
-			
 		}
 		
 		if(CONFIG::HAS_ITCM) {
-#ifdef SOCLIB
-			
-			itcm = new itcm_t();
-			
-#else // SOCLIB
-			
 			itcm = new itcm_t("itcm", this);
-			
-#endif // SOCLIB
-			
 		}
 	}
 	
@@ -4269,9 +3913,8 @@ namespace arm {
 	void 
 	CPU<CONFIG> ::
 	CreateMemorySystem() {
-		
-#ifndef SOCLIB
-		/* TODO: remake all the memory system for the different components without using the memory_interface */	
+#if 0
+		/* TODO: remake all the memory system for the different components without using the memory_interface */
 		if(CONFIG::HAS_CACHE_L2) {
 			cerr << "Configuring cache level 2" << endl;
 			cache_l2 = new Cache<typename CONFIG::cache_l2_t>("cache_l2", memory_interface, this);
@@ -4321,9 +3964,7 @@ namespace arm {
 				}
 			}
 		}
-		
-#endif // SOCLIB
-		
+#endif 
 	}
 	
 	/**************************************************************/
@@ -4334,13 +3975,12 @@ namespace arm {
 	/* Memory system methods (private)                      START */
 	/**************************************************************/
 	
-#ifndef SOCLIB
-	
 	template<class CONFIG>
 	inline INLINE
 	void
 	CPU<CONFIG> ::
-	PerformLoadStoreAccesses() {
+	PerformLoadStoreAccesses()
+	{
 		// while the lsQueue is not empty process entries
 		while(!lsQueue.empty()) {
 			MemoryOp<CONFIG> *memop = lsQueue.front();
@@ -4370,171 +4010,356 @@ namespace arm {
 	inline INLINE
 	void
 	CPU<CONFIG> ::
-	PerformPrefetchAccess(MemoryOp<CONFIG> *memop) {
-		address_t read_address = memop->GetAddress();
-		uint32_t value;
+	PerformPrefetchAccess(MemoryOp<CONFIG> *memop)
+	{
+		uint32_t addr = memop->GetAddress();
+		uint32_t value = 0;
 		
-		if(CONFIG::MODEL == ARM966E_S) {
-			cp15_966es->PrRead(read_address, (uint8_t *)&value, 4);
-		} else {
-			if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
-				cache_l1->PrRead(read_address, (uint8_t *)&value, 4);
-			} else
-				memory_interface->PrRead(read_address, (uint8_t *)&value, 4);
+		if ( CONFIG::MODEL == ARM926EJS && linux_os_import )
+		{
+			// running arm926ejs with linux simulation
+			//   tcm are ignored
+			uint32_t cache_tag = arm926ejs_dcache.GetTag(addr);
+			uint32_t cache_set = arm926ejs_dcache.GetSet(addr);
+			uint32_t cache_way;
+			bool cache_hit = false;
+			if ( arm926ejs_dcache.GetWay(cache_tag, cache_set, &cache_way) )
+			{
+				if ( arm926ejs_dcache.GetValid(cache_set, cache_way) )
+				{
+					// the access is a hit, nothing needs to be done
+					cache_hit = true;
+				}
+			}
+			// if the access was a miss, data needs to be fetched from main
+			//   memory and placed into the cache
+			if ( !cache_hit )
+			{
+				// get a way to replace
+				cache_way = arm926ejs_dcache.GetNewWay(cache_set);
+				// get the valid and dirty bits from the way to replace
+				bool cache_valid = arm926ejs_dcache.GetValid(cache_set,
+						cache_way);
+				bool cache_dirty = arm926ejs_dcache.GetDirty(cache_set,
+						cache_way);
+				if ( cache_valid & cache_dirty )
+				{
+					// the cache line to replace is valid and dirty so it needs
+					//   to be sent to the main memory
+					uint8_t *rep_cache_data = 0;
+					uint32_t rep_cache_address =
+							arm926ejs_dcache.GetBaseAddress(cache_set,
+									cache_way);
+					arm926ejs_dcache.GetData(cache_set, cache_way,
+							&rep_cache_data);
+					memory_interface->PrWrite(rep_cache_address, rep_cache_data,
+							arm926ejs_dcache.LINE_SIZE);
+				}
+				// the new data can be requested
+				uint8_t *cache_data = 0;
+				uint32_t cache_address =
+						arm926ejs_dcache.GetBaseAddressFromAddress(addr);
+				// when getting the data we get the pointer to the cache line
+				//   containing the data, so no need to write the cache
+				//   afterwards
+				uint32_t cache_line_size = arm926ejs_dcache.GetData(cache_set,
+						cache_way, &cache_data);
+				memory_interface->PrRead(cache_address, cache_data,
+						cache_line_size);
+				arm926ejs_dcache.SetTag(cache_set, cache_way, cache_tag);
+				arm926ejs_dcache.SetValid(cache_set, cache_way, 1);
+				arm926ejs_dcache.SetDirty(cache_set, cache_way, 0);
+			}
 		}
-		
+		if ( CONFIG::MODEL == ARM926EJS && !linux_os_import )
+		{
+			// TODO
+		}
+
 		/* should we report a memory access for a prefetch???? */
 		
-		if(requires_memory_access_reporting)
-			if(memory_access_reporting_import)
+		if ( requires_memory_access_reporting )
+			if ( memory_access_reporting_import )
 				memory_access_reporting_import->ReportMemoryAccess(
-																   MemoryAccessReporting<uint64_t>::MAT_READ,
-																   MemoryAccessReporting<uint64_t>::MT_DATA,
-																   read_address, 4);
-		
+						MemoryAccessReporting<uint64_t>::MAT_READ,
+						MemoryAccessReporting<uint64_t>::MT_DATA,
+						addr, 4);
 	}
 	
 	template<class CONFIG>
 	inline INLINE
 	void
 	CPU<CONFIG> ::
-	PerformWriteAccess(MemoryOp<CONFIG> *memop) {
-		address_t address = memop->GetAddress();
-		uint8_t val8;
-		uint16_t val16;
-		uint32_t val32;
-		
-		switch(memop->GetSize()) {
-			case 1:
-				address = address ^ munged_address_mask8;
-				
-				val8 = (uint8_t)memop->GetWriteValue();
-				if(CONFIG::MODEL == ARM966E_S) {
-					cp15_966es->PrWrite(address, &val8, 1);
-				} else {
-					if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
-						cache_l1->PrWrite(address, &val8, 1);
-					} else
-						memory_interface->PrWrite(address, &val8, 1);
-				}
-				break;
-			case 2:
-				val16 = (uint16_t)memop->GetWriteValue();
-				val16 = Host2Target(GetEndianness(), val16);
-				
-				address = address ^ munged_address_mask16;
-				
-				if(CONFIG::MODEL == ARM966E_S) {
-					cp15_966es->PrWrite(address, (uint8_t *)&val16, 2);
-				} else {
-					if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
-						cache_l1->PrWrite(address, (uint8_t *)&val16, 2);
-					} else
-						memory_interface->PrWrite(address, (uint8_t *)&val16, 2);
-				}
-				break;
-			case 4:
-				val32 = memop->GetWriteValue();
-				val32 = Host2Target(GetEndianness(), val32);
-				
-				if(CONFIG::MODEL == ARM966E_S) {
-					cp15_966es->PrWrite(address, (uint8_t *)&val32, 4);
-				} else {
-					if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
-						cache_l1->PrWrite(address, (uint8_t *)&val32, 4);
-					} else
-						memory_interface->PrWrite(address, (uint8_t *)&val32, 4);
-				}
-				break;
-		}
-	}
-	
-	template<class CONFIG>
-	inline INLINE
-	void
-	CPU<CONFIG> ::
-	PerformReadAccess(MemoryOp<CONFIG> *memop) {
-		typename CONFIG::reg_t val32, val32_l, val32_r;
-		uint16_t val16; // , val16_l, val16_r;
-		uint8_t val8;
-		typename CONFIG::reg_t value = 0;
-		address_t address = memop->GetAddress();
+	PerformWriteAccess(MemoryOp<CONFIG> *memop)
+	{
+		uint32_t addr = memop->GetAddress();
 		uint32_t size = memop->GetSize();
-		address_t read_address = address & ~(address_t)(size - 1); 
-		
-		switch(size) {
-			case 1:
-				read_address = read_address ^ munged_address_mask8;
-				
-				if(CONFIG::MODEL == ARM966E_S) {
-					cp15_966es->PrRead(read_address, &val8, 1);
-				} else {
-					if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
-						cache_l1->PrRead(read_address, &val8, 1);
-					} else
-						memory_interface->PrRead(read_address, &val8, 1);
+		uint32_t write_addr = addr;
+		uint8_t val8 = 0;
+		uint16_t val16 = 0;
+		uint32_t val32 = 0;
+		uint8_t *data;
+
+		logger << DebugInfo << "Perform write (addr = 0x" << hex
+				<< addr << dec << ", size = " << size << ")" << EndDebugInfo;
+
+		// fix the write address depending on the request size and endianess
+		//   and prepare the data to write
+		switch(size)
+		{
+		case 1:
+			write_addr = write_addr ^ munged_address_mask8;
+			val8 = (uint8_t)memop->GetWriteValue();
+			data = &val8;
+			break;
+		case 2:
+			write_addr = write_addr ^ munged_address_mask16;
+			val16 = (uint16_t)memop->GetWriteValue();
+			val16 = Host2Target(GetEndianness(), val16);
+			data = (uint8_t *)&val16;
+			break;
+		case 4:
+			val32 = memop->GetWriteValue();
+			val32 = Host2Target(GetEndianness(), val32);
+			data = (uint8_t *)&val32;
+			break;
+		default: // should never happen
+			break;
+		}
+
+		if ( (CONFIG::MODEL == ARM926EJS) && linux_os_import )
+		{
+			// running arm926ejs with linux simulation
+			//   tcm are ignored
+			uint32_t cache_tag = arm926ejs_dcache.GetTag(write_addr);
+			uint32_t cache_set = arm926ejs_dcache.GetSet(write_addr);
+			uint32_t cache_way;
+			logger << DebugInfo << "addr = 0x" << hex << addr << endl
+					<< "write_addr = 0x" << write_addr << endl
+					<< "cache_tag = 0x" << cache_tag << endl
+					<< "cache_set = 0x" << cache_set << dec << EndDebugInfo;
+			bool cache_hit = false;
+			if ( arm926ejs_dcache.GetWay(cache_tag, cache_set, &cache_way) )
+			{
+				if ( arm926ejs_dcache.GetValid(cache_set, cache_way) != 0 )
+				{
+					// the access is a hit
+					cache_hit = true;
 				}
-				if(memop->IsSigned()) {
-					value = (typename CONFIG::sreg_t)(int8_t)val8;
-				} else
+			}
+			// if the access was a hit the data needs to be written into
+			//   the cache, if the access was a miss the data needs to be
+			//   written into memory, but the cache doesn't need to be updated
+			if ( cache_hit )
+			{
+				uint32_t cache_index = arm926ejs_dcache.GetIndex(write_addr);
+				arm926ejs_dcache.SetData(cache_set, cache_way, cache_index,
+						size, data);
+				arm926ejs_dcache.SetDirty(cache_set, cache_way, 1);
+			}
+			else
+			{
+				memory_interface->PrWrite(write_addr, data, size);
+			}
+		}
+		if ( (CONFIG::MODEL == ARM926EJS) && !linux_os_import )
+		{
+			// TODO
+		}
+
+		/* report read memory access if necessary */
+		if ( requires_memory_access_reporting )
+			if ( memory_access_reporting_import )
+				memory_access_reporting_import->ReportMemoryAccess(
+						MemoryAccessReporting<uint64_t>::MAT_WRITE,
+						MemoryAccessReporting<uint64_t>::MT_DATA,
+						addr, size);
+	}
+	
+	template<class CONFIG>
+	inline INLINE
+	void
+	CPU<CONFIG> ::
+	PerformReadAccess(MemoryOp<CONFIG> *memop)
+	{
+		uint32_t addr = memop->GetAddress();
+		uint32_t size = memop->GetSize();
+		uint32_t read_addr = addr & ~(uint32_t)(size - 1);
+		uint8_t *data;
+
+		logger << DebugInfo << "Perform read (addr = 0x" << hex
+				<< addr << dec << ", size = " << size << ")" << EndDebugInfo;
+
+		// fix the read address depending on the request size and endianess
+		switch(size)
+		{
+		case 1: read_addr = read_addr ^ munged_address_mask8; break;
+		case 2: read_addr = read_addr ^ munged_address_mask16; break;
+		case 4: // nothing to do
+		default: // nothing to do
+			break;
+		}
+
+		if ( (CONFIG::MODEL == ARM926EJS) && linux_os_import )
+		{
+			// running arm926ejs with linux simulation
+			//   tcm are ignored
+			uint32_t cache_tag = arm926ejs_dcache.GetTag(read_addr);
+			uint32_t cache_set = arm926ejs_dcache.GetSet(read_addr);
+			uint32_t cache_way;
+			bool cache_hit = false;
+			logger << DebugInfo << "addr = 0x" << hex << addr << endl
+					<< "read_addr = 0x" << read_addr << endl
+					<< "cache_tag = 0x" << cache_tag << endl
+					<< "cache_set = 0x" << cache_set << dec << EndDebugInfo;
+			if ( arm926ejs_dcache.GetWay(cache_tag, cache_set, &cache_way) )
+			{
+				if ( arm926ejs_dcache.GetValid(cache_set, cache_way) )
+				{
+					// the access is a hit, nothing needs to be done
+					cache_hit = true;
+				}
+			}
+			// if the access was a miss, data needs to be fetched from main
+			//   memory and placed into the cache
+			if ( !cache_hit )
+			{
+				logger << DebugInfo << "Cache miss" << EndDebugInfo;
+				// get a way to replace
+				cache_way = arm926ejs_dcache.GetNewWay(cache_set);
+				logger << DebugInfo << "cahe_way = 0x"
+						<< hex << cache_way << dec << EndDebugInfo;
+				// get the valid and dirty bits from the way to replace
+				uint8_t cache_valid = arm926ejs_dcache.GetValid(cache_set,
+						cache_way);
+				uint8_t cache_dirty = arm926ejs_dcache.GetDirty(cache_set,
+						cache_way);
+				logger << DebugInfo << "cache_valid = " << (int)cache_valid
+						<< endl
+						<< "cache_dirty = " << (int)cache_dirty
+						<< EndDebugInfo;
+
+				if ( (cache_valid != 0) & (cache_dirty != 0) )
+				{
+					// the cache line to replace is valid and dirty so it needs
+					//   to be sent to the main memory
+					uint8_t *rep_cache_data = 0;
+					uint32_t rep_cache_address =
+							arm926ejs_dcache.GetBaseAddress(cache_set,
+									cache_way);
+					arm926ejs_dcache.GetData(cache_set, cache_way,
+							&rep_cache_data);
+					memory_interface->PrWrite(rep_cache_address, rep_cache_data,
+							arm926ejs_dcache.LINE_SIZE);
+				}
+				// the new data can be requested
+				uint8_t *cache_data = 0;
+				uint32_t cache_address =
+						arm926ejs_dcache.GetBaseAddressFromAddress(read_addr);
+				logger << DebugInfo << "cache_address = 0x"
+						<< hex << (unsigned int)cache_address << dec
+						<< EndDebugInfo;
+				// when getting the data we get the pointer to the cache line
+				//   containing the data, so no need to write the cache
+				//   afterwards
+				uint32_t cache_line_size = arm926ejs_dcache.GetData(cache_set,
+						cache_way, &cache_data);
+				logger << DebugInfo << "cache_line_size = "
+						<< (unsigned int)cache_line_size
+						<< EndDebugInfo;
+				logger << DebugInfo << "cache_data ("
+						<< (unsigned int)cache_line_size << ") = "
+						<< hex;
+				for (unsigned int k = 0; k != cache_line_size; k++)
+				{
+					logger << " " << (unsigned short int)cache_data[k];
+				}
+				logger << dec << EndDebugInfo;
+				logger << DebugInfo << "Requesting data ..." << EndDebugInfo;
+				memory_interface->PrRead(cache_address, cache_data,
+						cache_line_size);
+				logger << DebugInfo << "... data received" << EndDebugInfo;
+				logger << DebugInfo << "cache_line_size = "
+						<< (unsigned int)cache_line_size
+						<< EndDebugInfo;
+				logger << DebugInfo << "cache_data ("
+						<< (unsigned int)cache_line_size << ") = "
+						<< hex;
+				for (unsigned int k = 0; k != cache_line_size; k++)
+				{
+					logger << " " << (unsigned short int)cache_data[k];
+				}
+				logger << dec << EndDebugInfo;
+				arm926ejs_dcache.SetTag(cache_set, cache_way, cache_tag);
+				arm926ejs_dcache.SetValid(cache_set, cache_way, 1);
+				arm926ejs_dcache.SetDirty(cache_set, cache_way, 0);
+			}
+
+			// at this point the data is in the cache, we can read it from the
+			//   cache
+			uint32_t cache_index = arm926ejs_dcache.GetIndex(read_addr);
+			logger << DebugInfo << "cache_index = "
+					<< (unsigned int)cache_index << EndDebugInfo;
+			(void)arm926ejs_dcache.GetData(cache_set, cache_way, cache_index,
+					size, &data);
+			// fix the data depending on its size
+			uint32_t value;
+			if (size == 1)
+			{
+				uint8_t val8 = *data;
+				if (memop->IsSigned())
+					value = (int32_t)(int8_t)val8;
+				else
 					value = val8;
-				break;
-			case 2:
-				/* NOTE: 16bits reads are always aligned */
-				read_address = read_address ^ munged_address_mask16;
-				
-				if(CONFIG::MODEL == ARM966E_S) {
-					cp15_966es->PrRead(read_address, (uint8_t *)&val16, 2);
-				} else {
-					if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
-						cache_l1->PrRead(read_address, (uint8_t *)&val16, 2);
-					} else 
-						memory_interface->PrRead(read_address, (uint8_t *)&val16, 2);
-				}
-				
-				val16 = Target2Host(GetEndianness(), val16);
-				
-				if(memop->IsSigned()) {
-					value = (typename CONFIG::sreg_t)(int16_t)val16;
-				} else
+			}
+			else if (size == 2)
+			{
+				uint16_t val16 =
+						Target2Host(GetEndianness(), *((uint16_t *)data));
+				if (memop->IsSigned())
+					value = (int32_t)(int16_t)val16;
+				else
 					value = val16;
-				break;
-			case 4:
-				if(CONFIG::MODEL == ARM966E_S) {
-					cp15_966es->PrRead(read_address, (uint8_t *)&val32, 4);
-				} else {
-					if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
-						cache_l1->PrRead(read_address, (uint8_t *)&val32, 4);
-					} else
-						memory_interface->PrRead(read_address, (uint8_t *)&val32, 4);
-				}
-				
-				val32 = Target2Host(GetEndianness(), val32);
-				
-				switch(address & 0x03) {
-					case 0x00:
-						// nothing to do
-						break;
-					case 0x01:
-						val32_l = (val32 << 8) & ~((typename CONFIG::reg_t)0x0FF);
-						val32_r = (val32 >> 24) & ((typename CONFIG::reg_t)0x0FF);
-						val32 = val32_l + val32_r;
-						break;
-					case 0x02:
-						val32_l = (val32 << 16) & ~((typename CONFIG::reg_t)0x0FFFF);
-						val32_r = (val32 >> 16) & ((typename CONFIG::reg_t)0x0FFFF);
-						val32 = val32_l + val32_r;
-						break;
-					case 0x03:
-						val32_l = (val32 << 24) & ~((typename CONFIG::reg_t)0x0FFFFFF);
-						val32_r = (val32 >> 8) & ((typename CONFIG::reg_t)0x0FFFFFF);
-						val32 = val32_l + val32_r;
-						break;
+			}
+			else if (size == 4)
+			{
+				uint32_t val32;
+				uint32_t val32_l, val32_r;
+				uint32_t mask32_l, mask32_r;
+				uint32_t align;
+
+				val32 = Target2Host(GetEndianness(), *((uint32_t *)data));
+				// we need to check alignment
+				align = addr & 0x03;
+				if (align != 0)
+				{
+					val32_l = (val32 << (align*8)) &
+							((~((uint32_t)0)) << (align*8));
+					val32_r = (val32 >> ((4 - align) * 8)) &
+							((~((uint32_t)0)) >> ((4 - align) * 8));
+					val32 = val32_l + val32_r;
 				}
 				value = val32;
-				break;
+			}
+			logger << DebugInfo << "Setting r"
+					<< (unsigned int)memop->GetTargetReg()
+					<< " to 0x" << hex << value << dec
+					<< EndDebugInfo;
+			SetGPR(memop->GetTargetReg(), value);
 		}
-		SetGPR(memop->GetTargetReg(), value);
+		if ( CONFIG::MODEL == ARM926EJS && !linux_os_import )
+		{
+			// TODO
+		}
+
+		/* report read memory access if necessary */
+		if ( requires_memory_access_reporting )
+			if ( memory_access_reporting_import )
+				memory_access_reporting_import->ReportMemoryAccess(
+						MemoryAccessReporting<uint64_t>::MAT_READ,
+						MemoryAccessReporting<uint64_t>::MT_DATA,
+						addr, size);
+		logger << DebugInfo << "Reported memory access" << EndDebugInfo;
 	}
 	
 	template<class CONFIG>
@@ -4542,44 +4367,115 @@ namespace arm {
 	void
 	CPU<CONFIG> ::
 	PerformReadToPCAccess(MemoryOp<CONFIG> *memop) {
-		typename CONFIG::reg_t value;
-		typename CONFIG::reg_t value_l, value_r;
-		address_t address = memop->GetAddress();
-		address_t read_address = address & ~(0x3);
-		
-		if(CONFIG::MODEL == ARM966E_S) {
-			cp15_966es->PrRead(read_address, (uint8_t *)&value, 4);
-		} else {
-			if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
-				cache_l1->PrRead(read_address, (uint8_t *)&value, 4);
-			} else
-				memory_interface->PrRead(read_address, (uint8_t *)&value, 4);
+		uint32_t addr = memop->GetAddress();
+		const uint32_t size = 4;
+		uint32_t read_addr = addr & ~(uint32_t)0x03;
+		uint8_t *data;
+
+		logger << DebugInfo << "Perform read to PC (addr = 0x" << hex
+				<< addr << dec << ", size = " << size << ")" << EndDebugInfo;
+
+		if ( (CONFIG::MODEL == ARM926EJS) && linux_os_import )
+		{
+			// running arm926ejs with linux simulation
+			//   tcm are ignored
+			uint32_t cache_tag = arm926ejs_dcache.GetTag(read_addr);
+			uint32_t cache_set = arm926ejs_dcache.GetSet(read_addr);
+			uint32_t cache_way;
+			bool cache_hit = false;
+
+			logger << DebugInfo << "addr = 0x" << hex << addr << endl
+					<< "read_addr = 0x" << read_addr << endl
+					<< "cache_tag = 0x" << cache_tag << endl
+					<< "cache_set = 0x" << cache_set << dec << EndDebugInfo;
+
+			if ( arm926ejs_dcache.GetWay(cache_tag, cache_set, &cache_way) )
+			{
+				if ( arm926ejs_dcache.GetValid(cache_set, cache_way) )
+				{
+					// the access is a hit, nothing needs to be done
+					cache_hit = true;
+				}
+			}
+			// if the access was a miss, data needs to be fetched from main
+			//   memory and placed into the cache
+			if ( !cache_hit )
+			{
+				// get a way to replace
+				cache_way = arm926ejs_dcache.GetNewWay(cache_set);
+				// get the valid and dirty bits from the way to replace
+				uint8_t cache_valid = arm926ejs_dcache.GetValid(cache_set,
+						cache_way);
+				uint8_t cache_dirty = arm926ejs_dcache.GetDirty(cache_set,
+						cache_way);
+				if ( (cache_valid != 0) && (cache_dirty != 0) )
+				{
+					// the cache line to replace is valid and dirty so it needs
+					//   to be sent to the main memory
+					uint8_t *rep_cache_data = 0;
+					uint32_t rep_cache_address =
+							arm926ejs_dcache.GetBaseAddress(cache_set,
+									cache_way);
+					arm926ejs_dcache.GetData(cache_set, cache_way,
+							&rep_cache_data);
+					memory_interface->PrWrite(rep_cache_address, rep_cache_data,
+							arm926ejs_dcache.LINE_SIZE);
+				}
+				// the new data can be requested
+				uint8_t *cache_data = 0;
+				uint32_t cache_address =
+						arm926ejs_dcache.GetBaseAddressFromAddress(read_addr);
+				// when getting the data we get the pointer to the cache line
+				//   containing the data, so no need to write the cache
+				//   afterwards
+				uint32_t cache_line_size = arm926ejs_dcache.GetData(cache_set,
+						cache_way, &cache_data);
+				memory_interface->PrRead(cache_address, cache_data,
+						cache_line_size);
+				arm926ejs_dcache.SetTag(cache_set, cache_way, cache_tag);
+				arm926ejs_dcache.SetValid(cache_set, cache_way, 1);
+				arm926ejs_dcache.SetDirty(cache_set, cache_way, 0);
+			}
+
+			// at this point the data is in the cache, we can read it from the
+			//   cache
+			uint32_t cache_index = arm926ejs_dcache.GetIndex(read_addr);
+			(void)arm926ejs_dcache.GetData(cache_set, cache_way, cache_index,
+					size, &data);
+			// fix the data depending on its size
+			uint32_t value;
+			uint32_t val32;
+			uint32_t val32_l, val32_r;
+			uint32_t mask32_l, mask32_r;
+			uint32_t align;
+
+			val32 = Target2Host(GetEndianness(), *((uint32_t *)data));
+			// we need to check alignment
+			align = addr & 0x03;
+			if (align != 0)
+			{
+				val32_l = (val32 << (align*8)) &
+						((~((uint32_t)0)) << (align*8));
+				val32_r = (val32 >> ((4 - align) * 8)) &
+						((~((uint32_t)0)) >> ((4 - align) * 8));
+				val32 = val32_l + val32_r;
+			}
+			value = val32;
+
+			SetGPR(PC_reg, value & ~(uint32_t)0x01);
 		}
-		
-		value = Target2Host(GetEndianness(), value);
-		
-		switch(address & 0x03) {
-			case 0x00:
-				// nothing to do
-				break;
-			case 0x01:
-				value_l = (value << 8) & ~((typename CONFIG::reg_t)0x0FF);
-				value_r = (value >> 24) & ((typename CONFIG::reg_t)0x0FF);
-				value = value_l + value_r;
-				break;
-			case 0x02:
-				value_l = (value << 16) & ~((typename CONFIG::reg_t)0x0FFFF);
-				value_r = (value >> 16) & ((typename CONFIG::reg_t)0x0FFFF);
-				value = value_l + value_r;
-				break;
-			case 0x03:
-				value_l = (value << 24) & ~((typename CONFIG::reg_t)0x0FFFFFF);
-				value_r = (value >> 8) & ((typename CONFIG::reg_t)0x0FFFFFF);
-				value = value_l + value_r;
-				break;
+		if ( (CONFIG::MODEL == ARM926EJS) && !linux_os_import )
+		{
+			// TODO
 		}
-		
-		SetGPR(PC_reg, value & (typename CONFIG::reg_t)0xFFFFFFFE);
+
+		/* report read memory access if necessary */
+		if ( requires_memory_access_reporting )
+			if ( memory_access_reporting_import )
+				memory_access_reporting_import->ReportMemoryAccess(
+						MemoryAccessReporting<uint64_t>::MAT_READ,
+						MemoryAccessReporting<uint64_t>::MT_DATA,
+						addr, size);
 	}
 	
 	template<class CONFIG>
@@ -4587,54 +4483,117 @@ namespace arm {
 	void
 	CPU<CONFIG> ::
 	PerformReadToPCUpdateTAccess(MemoryOp<CONFIG> *memop) {
-		typename CONFIG::reg_t value;
-		typename CONFIG::reg_t value_l, value_r;
-		address_t address = memop->GetAddress();
-		address_t read_address = address & ~(0x3);
-		
-		if(CONFIG::MODEL == ARM966E_S) {
-			cp15_966es->PrRead(read_address, (uint8_t *)&value, 4);
-		} else {
-			if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
-				cache_l1->PrRead(read_address, (uint8_t *)&value, 4);
-			} else
-				memory_interface->PrRead(read_address, (uint8_t *)&value, 4);
+		uint32_t addr = memop->GetAddress();
+		const uint32_t size = 4;
+		uint32_t read_addr = addr & ~(uint32_t)0x03;
+		uint8_t *data;
+
+		logger << DebugInfo << "Perform read to PC update T (addr = 0x" << hex
+				<< addr << dec << ", size = " << size << ")" << EndDebugInfo;
+
+		if ( (CONFIG::MODEL == ARM926EJS) && linux_os_import )
+		{
+			// running arm926ejs with linux simulation
+			//   tcm are ignored
+			uint32_t cache_tag = arm926ejs_dcache.GetTag(read_addr);
+			uint32_t cache_set = arm926ejs_dcache.GetSet(read_addr);
+			uint32_t cache_way;
+			bool cache_hit = false;
+
+			logger << DebugInfo << "addr = 0x" << hex << addr << endl
+					<< "read_addr = 0x" << read_addr << endl
+					<< "cache_tag = 0x" << cache_tag << endl
+					<< "cache_set = 0x" << cache_set << dec << EndDebugInfo;
+
+			if ( arm926ejs_dcache.GetWay(cache_tag, cache_set, &cache_way) )
+			{
+				if ( arm926ejs_dcache.GetValid(cache_set, cache_way) )
+				{
+					// the access is a hit, nothing needs to be done
+					cache_hit = true;
+				}
+			}
+			// if the access was a miss, data needs to be fetched from main
+			//   memory and placed into the cache
+			if ( !cache_hit )
+			{
+				// get a way to replace
+				cache_way = arm926ejs_dcache.GetNewWay(cache_set);
+				// get the valid and dirty bits from the way to replace
+				bool cache_valid = arm926ejs_dcache.GetValid(cache_set,
+						cache_way);
+				bool cache_dirty = arm926ejs_dcache.GetDirty(cache_set,
+						cache_way);
+				if ( cache_valid & cache_dirty )
+				{
+					// the cache line to replace is valid and dirty so it needs
+					//   to be sent to the main memory
+					uint8_t *rep_cache_data = 0;
+					uint32_t rep_cache_address =
+							arm926ejs_dcache.GetBaseAddress(cache_set,
+									cache_way);
+					arm926ejs_dcache.GetData(cache_set, cache_way,
+							&rep_cache_data);
+					memory_interface->PrWrite(rep_cache_address, rep_cache_data,
+							arm926ejs_dcache.LINE_SIZE);
+				}
+				// the new data can be requested
+				uint8_t *cache_data = 0;
+				uint32_t cache_address =
+						arm926ejs_dcache.GetBaseAddressFromAddress(read_addr);
+				// when getting the data we get the pointer to the cache line
+				//   containing the data, so no need to write the cache
+				//   afterwards
+				uint32_t cache_line_size = arm926ejs_dcache.GetData(cache_set,
+						cache_way, &cache_data);
+				memory_interface->PrRead(cache_address, cache_data,
+						cache_line_size);
+				arm926ejs_dcache.SetTag(cache_set, cache_way, cache_tag);
+				arm926ejs_dcache.SetValid(cache_set, cache_way, 1);
+				arm926ejs_dcache.SetDirty(cache_set, cache_way, 0);
+			}
+
+			// at this point the data is in the cache, we can read it from the
+			//   cache
+			uint32_t cache_index = arm926ejs_dcache.GetIndex(read_addr);
+			(void)arm926ejs_dcache.GetData(cache_set, cache_way, cache_index,
+					size, &data);
+			// fix the data depending on its size
+			uint32_t value;
+			uint32_t val32;
+			uint32_t val32_l, val32_r;
+			uint32_t mask32_l, mask32_r;
+			uint32_t align;
+
+			val32 = Target2Host(GetEndianness(), *((uint32_t *)data));
+			// we need to check alignment
+			align = addr & 0x03;
+			if (align != 0)
+			{
+				val32_l = (val32 << (align*8)) &
+						((~((uint32_t)0)) << (align*8));
+				val32_r = (val32 >> ((4 - align) * 8)) &
+						((~((uint32_t)0)) >> ((4 - align) * 8));
+				val32 = val32_l + val32_r;
+			}
+			value = val32;
+
+			SetGPR(PC_reg, value & ~(uint32_t)0x01);
+			SetCPSR_T((value & (uint32_t)0x01) == 0x01);
 		}
-		
-		value = Target2Host(GetEndianness(), value);
-		
-		switch(address & 0x03) {
-			case 0x00:
-				// nothing to do
-				break;
-			case 0x01:
-				value_l = (value << 8) & ~((typename CONFIG::reg_t)0x0FF);
-				value_r = (value >> 24) & ((typename CONFIG::reg_t)0x0FF);
-				value = value_l + value_r;
-				break;
-			case 0x02:
-				value_l = (value << 16) & ~((typename CONFIG::reg_t)0x0FFFF);
-				value_r = (value >> 16) & ((typename CONFIG::reg_t)0x0FFFF);
-				value = value_l + value_r;
-				break;
-			case 0x03:
-				value_l = (value << 24) & ~((typename CONFIG::reg_t)0x0FFFFFF);
-				value_r = (value >> 8) & ((typename CONFIG::reg_t)0x0FFFFFF);
-				value = value_l + value_r;
-				break;
+		if ( (CONFIG::MODEL == ARM926EJS) && !linux_os_import )
+		{
+			// TODO
 		}
-		
-		SetGPR(PC_reg, value & (typename CONFIG::reg_t)0xFFFFFFFE);
-		// code valid for version 5 and above
-		if(CONFIG::ARCHITECTURE == ARMV5T ||
-		   CONFIG::ARCHITECTURE == ARMV5TXM ||
-		   CONFIG::ARCHITECTURE == ARMV5TE ||
-		   CONFIG::ARCHITECTURE == ARMV5TEXP) {
-			SetCPSR_T((value & 0x01) == 1);
-		}
+
+		/* report read memory access if necessary */
+		if ( requires_memory_access_reporting )
+			if ( memory_access_reporting_import )
+				memory_access_reporting_import->ReportMemoryAccess(
+						MemoryAccessReporting<uint64_t>::MAT_READ,
+						MemoryAccessReporting<uint64_t>::MT_DATA,
+						addr, size);
 	}
-	
-#endif // SOCLIB
 	
 	/**************************************************************/
 	/* Memory system methods (private)                        END */
@@ -4649,22 +4608,10 @@ namespace arm {
 	void
 	CPU<CONFIG> ::
 	Unpredictable() {
-		
-#ifdef SOCLIB
-		
-		cerr << "Error(" << __FUNCTION__ << ":" << __FUNCTION__ << ":" << __LINE__
-		<< "):" << endl
-		<< "Trying to execute unpredictable behavior instruction"
-		<< endl;
-		
-#else // SOCLIB
-		
 		logger << DebugError
 		<< "Trying to execute unpredictable behavior instruction"
 		<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << ": "
 		<< EndDebugError;
-		
-#endif // SOCLIB
 	}
 	/**************************************************************/
 	/* Unpredictable instruction behavior (private)           END */
@@ -4711,24 +4658,6 @@ namespace arm {
 	CPU<CONFIG> ::
 	VerboseDumpRegs() {
 		
-#ifdef SOCLIB
-		
-		for(unsigned int i = 0; i < 4; i++) {
-			for(unsigned int j = 0; j < 4; j++)
-				cerr
-				<< "\t- r" << ((i*4) + j) << " = 0x" << hex << GetGPR((i*4) + j) << dec;
-			cerr << endl;
-		}
-		cerr << "\t- cpsr = (" << hex << GetCPSR() << dec << ") ";
-		typename CONFIG::reg_t mask;
-		for(mask = 0x80000000; mask != 0; mask = mask >> 1) {
-			if((mask & GetCPSR()) != 0) cerr << "1";
-			else cerr << "0";
-		}
-		cerr << endl;
-		
-#else // SOCLIB
-		
 		for(unsigned int i = 0; i < 4; i++) {
 			for(unsigned int j = 0; j < 4; j++)
 				logger
@@ -4742,8 +4671,6 @@ namespace arm {
 			else logger << "0";
 		}
 		logger << endl;
-		
-#endif // SOCLIB
 	}
 	
 	template<class CONFIG>
@@ -4751,26 +4678,12 @@ namespace arm {
 	void
 	CPU<CONFIG> ::
 	VerboseDumpRegsStart() {
-		
-#ifdef SOCLIB
-		
-		if(CONFIG::DEBUG_ENABLE && verbose_dump_regs_start) {
-			cerr << "Info(" << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ 
-			<< "):" << endl
-			<< "Register dump before starting instruction execution: " << endl;
-			VerboseDumpRegs();
-		}
-		
-#else // SOCLIB
-		
 		if(CONFIG::DEBUG_ENABLE && verbose_dump_regs_start) {
 			logger << DebugInfo
 			<< "Register dump before starting instruction execution: " << endl;
 			VerboseDumpRegs();
 			logger << EndDebugInfo;
 		}
-		
-#endif // SOCLIB
 	}
 	
 	template<class CONFIG>
@@ -4778,26 +4691,12 @@ namespace arm {
 	void
 	CPU<CONFIG> ::
 	VerboseDumpRegsEnd() {
-		
-#ifdef SOCLIB
-		
-		if(CONFIG::DEBUG_ENABLE && verbose_dump_regs_end) {
-			cerr << "Info(" << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ 
-			<< "):" << endl
-			<< "Register dump at the end of instruction execution: " << endl;
-			VerboseDumpRegs();
-		}
-		
-#else // SOCLIB
-		
 		if(CONFIG::DEBUG_ENABLE && verbose_dump_regs_end) {
 			logger << DebugInfo
 			<< "Register dump at the end of instruction execution: " << endl;
 			VerboseDumpRegs();
 			logger << EndDebugInfo;
 		}
-		
-#endif // SOCLIB
 	}
 	
 	template<class CONFIG>
@@ -4816,8 +4715,6 @@ namespace arm {
 	/**************************************************************/
 	/* Verbose methods (protected)                          START */
 	/**************************************************************/
-	
-#ifndef SOCLIB
 	
 	template<class CONFIG>
 	void
@@ -4876,8 +4773,6 @@ namespace arm {
 		}
 	}
 	
-#endif // SOCLIB 
-	
 	/**************************************************************/
 	/* Verbose methods (protected)                            END */
 	/**************************************************************/
@@ -4888,11 +4783,7 @@ namespace arm {
 } // end of namespace component
 } // end of namespace unisim
 
-#ifndef SOCLIB
-
 #undef LOCATION
-
-#endif // SOCLIB  
 
 #undef INLINE
 

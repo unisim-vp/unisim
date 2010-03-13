@@ -1,0 +1,31 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<package>
+	<unit>
+		<name>unisim::service::loader::coff_loader</name>
+		<files>
+			<file>unisim/service/loader/coff_loader/coff_loader.hh</file>
+			<file>unisim/service/loader/coff_loader/coff_loader.tcc</file>
+			<file>unisim/service/loader/coff_loader/coff_loader.cc</file>
+			<file>unisim/service/loader/coff_loader/ti/ti.hh</file>
+			<file>unisim/service/loader/coff_loader/ti/ti.tcc</file>
+		</files>
+		<depends>
+			<dep>unisim::service::interfaces::memory</dep>
+			<dep>unisim::service::interfaces::loader</dep>
+			<dep>unisim::service::interfaces::symbol_table_lookup</dep>
+			<dep>unisim::util::endian</dep>
+			<dep>unisim::util::debug</dep>
+			<dep>unisim::kernel::service</dep>
+			<dep>unisim::kernel::logger</dep>
+			<dep>stl_iosfwd</dep>
+			<dep>clib_inttypes_h</dep>
+			<dep>stl_vector</dep>
+			<dep>stl_map</dep>
+		</depends>
+		<autotools>
+			<automake>unisim/service/loader/coff_loader/meta/coff_loader.am</automake>
+		</autotools>
+		<!-- <cmake>unisim/service/loader/coff_loader/meta/coff_loader.cmake</cmake> -->
+		<cmake>unisim/service/loader/coff_loader/CMakeLists.txt</cmake>
+	</unit>
+</package>

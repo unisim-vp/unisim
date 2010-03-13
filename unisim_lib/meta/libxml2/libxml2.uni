@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<package>
+	<unit>
+		<name>libxml2</name>
+		<cmake>meta/libxml2/libxml2.cmake</cmake>
+		<autotools>
+			<autoconf>meta/libxml2/libxml2.ac</autoconf>
+		</autotools>
+		<depends>
+			<dep>zlib</dep>
+		</depends>
+	</unit>
+</package>

@@ -96,17 +96,17 @@ TCM<CONFIG, DATA_TCM> ::
 TCM(const char *name,
 		Object *parent) :
 	Object(name, parent),
-	logger(*this),
-	param_verbose_all("verbose-all", this, verbose_all),
 	verbose_all(false),
-	param_verbose_pr_read("verbose-pr-read", this, verbose_pr_read),
 	verbose_pr_read(false),
-	param_verbose_pr_write("verbose-pr-write", this, verbose_pr_write),
 	verbose_pr_write(false),
-	param_verbose_debug_read("verbose-debug-read", this, verbose_debug_read),
 	verbose_debug_read(false),
+	verbose_debug_write(false),
+	param_verbose_all("verbose-all", this, verbose_all),
+	param_verbose_pr_read("verbose-pr-read", this, verbose_pr_read),
+	param_verbose_pr_write("verbose-pr-write", this, verbose_pr_write),
+	param_verbose_debug_read("verbose-debug-read", this, verbose_debug_read),
 	param_verbose_debug_write("verbose-debug-write", this, verbose_debug_write),
-	verbose_debug_write(false) {
+	logger(*this) {
 	/* initialize the memory to 0 */
 	memset(data, 0, SIZE);
 }

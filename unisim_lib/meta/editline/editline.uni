@@ -1,0 +1,10 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<package>
+	<unit>
+		<name>editline_readline_h</name>
+		<autotools>
+			<autoconf>meta/editline/readline.ac</autoconf>
+		</autotools>
+		<cmake>meta/editline/readline.cmake</cmake>
+	</unit>
+</package>

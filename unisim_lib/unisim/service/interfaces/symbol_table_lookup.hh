@@ -46,6 +46,7 @@ template <class T>
 class SymbolTableLookup
 {
 public:
+	virtual ~SymbolTableLookup() {}
 	virtual const typename std::list<unisim::util::debug::Symbol<T> *> *GetSymbols() const = 0;
 	virtual const typename unisim::util::debug::Symbol<T> *FindSymbol(const char *name, T addr, typename unisim::util::debug::Symbol<T>::Type type) const = 0;
 	virtual const typename unisim::util::debug::Symbol<T> *FindSymbolByAddr(T addr) const = 0;

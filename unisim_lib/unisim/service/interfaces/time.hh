@@ -45,6 +45,7 @@ namespace interfaces {
 class Time
 {
 public:
+	virtual ~Time() {}
 	virtual double GetTime() = 0; // in seconds
 };
 

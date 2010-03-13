@@ -242,6 +242,8 @@ template<class CONFIG>
 uint32_t
 CPU<CONFIG> ::
 StepCycle(uint32_t max_num_cycles) {
+	// TODO
+	return 0;
 }
 
 } // end of namespace arm

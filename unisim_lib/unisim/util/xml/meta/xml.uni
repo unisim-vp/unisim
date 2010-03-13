@@ -1,0 +1,22 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<package>
+	<unit>
+		<name>unisim::util::xml</name>
+		<files>
+			<file>unisim/util/xml/xml.hh</file>
+			<file>unisim/util/xml/xml.cc</file>
+		</files>
+		<depends>
+			<dep>stl_list</dep>
+			<dep>stl_string</dep>
+			<dep>stl_iosfwd</dep>
+			<dep>clib_stdarg_h</dep>
+		</depends>
+		<autotools>
+			<automake>unisim/util/xml/meta/xml.am</automake>
+		</autotools>
+		<!-- <cmake>unisim/util/xml/meta/xml.cmake</cmake> -->
+		<cmake>unisim/util/xml/CMakeLists.txt</cmake>
+	</unit>
+</package>
+

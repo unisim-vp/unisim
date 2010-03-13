@@ -42,6 +42,8 @@ namespace interfaces {
   template <class ADDRESS_TYPE, class PARAMETER_TYPE>
   class CPUOS {
   public:
+	CPUOS() {}
+	virtual ~CPUOS() {}
     virtual int GetSystemCallNumber() = 0;
     virtual ADDRESS_TYPE GetMmapBase() const = 0;
     virtual void SetMmapBase(ADDRESS_TYPE base) = 0;

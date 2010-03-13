@@ -39,6 +39,7 @@
 #include "unisim/util/endian/endian.hh"
 #include "unisim/service/interfaces/loader.hh"
 #include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/logger/logger.hh"
 
 #include <string>
 
@@ -47,73 +48,82 @@ namespace service {
 namespace loader {
 namespace linux_loader {
 
-  using std::string;
-  using unisim::service::interfaces::Memory;
-  using unisim::service::interfaces::Loader;
-  using namespace unisim::util::endian;
-  using unisim::kernel::service::Service;
-  using unisim::kernel::service::Client;
-  using unisim::kernel::service::Object;
-  using unisim::kernel::service::ServiceImport;
-  using unisim::kernel::service::ServiceExport;
-  using unisim::kernel::service::Parameter;
-  using unisim::kernel::service::ParameterArray;
+using std::string;
+using unisim::service::interfaces::Memory;
+using unisim::service::interfaces::Loader;
+using namespace unisim::util::endian;
+using unisim::kernel::service::Service;
+using unisim::kernel::service::Client;
+using unisim::kernel::service::Object;
+using unisim::kernel::service::ServiceImport;
+using unisim::kernel::service::ServiceExport;
+using unisim::kernel::service::Parameter;
+using unisim::kernel::service::ParameterArray;
+using unisim::kernel::logger::Logger;
 
-  template<class T>
-  class LinuxLoader :
-    public Client<Loader<T> >,
-    public Client<Memory<T> >,
-    public Service<Loader<T> > {
-  public:
-    /* Import of the different services */
-    ServiceImport<Loader<T> > loader_import;
-    ServiceImport<Memory<T> > memory_import;
-    /* Exported services */
-    ServiceExport<Loader<T> > loader_export;
-    
-    /* Constructor/Destructor */
-    LinuxLoader(const char *name, Object *parent = 0);
-    virtual ~LinuxLoader();
-    
-    /* Service methods */
-    virtual void OnDisconnect();
-    virtual bool Setup();
-//    virtual bool ClientIndependentSetup();
-//    virtual bool ClientDependentSetup();
-    
-    /* Service interface methods */
-    virtual void Reset();
-    virtual T GetEntryPoint() const;
-    virtual T GetTopAddr() const;
-    virtual T GetStackBase() const;
+template<class T>
+class LinuxLoader :
+public Client<Loader<T> >,
+public Client<Memory<T> >,
+public Service<Loader<T> >
+{
+public:
+	/* Import of the different services */
+	ServiceImport<Loader<T> > loader_import;
+	ServiceImport<Memory<T> > memory_import;
+	/* Exported services */
+	ServiceExport<Loader<T> > loader_export;
 
-  private:
-    static const int MAX_ARGC = 256;
-    static const int MAX_ENVC = 256;
+	/* Constructor/Destructor */
+	LinuxLoader(const char *name, Object *parent = 0);
+	virtual ~LinuxLoader();
 
-  protected:
-    endian_type endianess;
-    T stack_base;
-    T max_environ;
-    int argc;
-    string argv[MAX_ARGC];
-    int envc;
-    string envp[MAX_ENVC];
-    
-    T stack_address;
-    T arg_address;
-    
-  private:
-    static const int size = sizeof(T);
+	/* Service methods */
+	virtual void OnDisconnect();
+	virtual bool Setup();
+	//    virtual bool ClientIndependentSetup();
+	//    virtual bool ClientDependentSetup();
 
-    Parameter<endian_type> param_endian;
-    Parameter<T> param_stack_base;
-    Parameter<T> param_max_environ;
-    Parameter<int> param_argc;
-    ParameterArray<string> param_argv;
-    Parameter<int> param_envc;
-    ParameterArray<string> param_envp;
-  };
+	/* Service interface methods */
+	virtual void Reset();
+	virtual T GetEntryPoint() const;
+	virtual T GetTopAddr() const;
+	virtual T GetStackBase() const;
+
+private:
+	static const int MAX_ARGC = 10;
+	static const int MAX_ENVC = 10;
+
+protected:
+	endian_type endianess;
+	T stack_base;
+	T max_environ;
+	int argc;
+	string argv[MAX_ARGC];
+	int envc;
+	string envp[MAX_ENVC];
+
+	T stack_address;
+	T arg_address;
+
+	bool verbose;
+
+private:
+	static const int size = sizeof(T);
+
+	Parameter<endian_type> param_endian;
+	Parameter<T> param_stack_base;
+	Parameter<T> param_max_environ;
+	Parameter<int> param_argc;
+	ParameterArray<string> param_argv;
+	Parameter<int> param_envc;
+	ParameterArray<string> param_envp;
+
+	Parameter<bool> param_verbose;
+	Logger logger;
+
+	void Log(T addr, const uint8_t *value, uint32_t size);
+};
 
 } // end of linux_loader
 } // end of loader namespace

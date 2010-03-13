@@ -32,6 +32,7 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
+#define SC_INCLUDE_DYNAMIC_PROCESSES
 #include "unisim/component/tlm2/interrupt/slave_stub.hh"
 
 using unisim::component::tlm2::interrupt::InterruptSlaveStub;

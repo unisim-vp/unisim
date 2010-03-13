@@ -1,0 +1,42 @@
+function (bsd_sockets)
+	if (UNIX AND NOT WIN32 )
+		include (CheckIncludeFile)
+
+		check_include_file (sys/socket.h HAVE_SYS_SOCKET_H)
+		if (NOT ${HAVE_SYS_SOCKET_H})
+			message (SEND_ERROR "Could not find bsd sockets. Missing \"sys/socket.h\".")
+		endif (NOT ${HAVE_SYS_SOCKET_H})
+
+		check_include_file (sys/un.h HAVE_SYS_UN_H)
+		if (NOT ${HAVE_SYS_UN_H})
+			message (SEND_ERROR "Could not find bsd_sockets. Missing \"sys/un.h\".")
+		endif (NOT ${HAVE_SYS_UN_H})
+
+		check_include_file (netinet/in.h HAVE_NETINET_IN_H)
+		if (NOT ${HAVE_NETINET_IN_H})
+			message (SEND_ERROR "Could not find bsd_sockets. Missing \"netinet/in.h\".")
+		endif (NOT ${HAVE_NETINET_IN_H})
+
+		check_include_file (arpa/inet.h HAVE_ARPA_INET_H)
+		if (NOT ${HAVE_ARPA_INET_H})
+			message (SEND_ERROR "Could not find bsd_sockets. Missing \"arpa/inet.h\".")
+		endif (NOT ${HAVE_ARPA_INET_H})
+
+		check_include_file (netinet/tcp.h HAVE_NETINET_TCP_H)
+		if (NOT ${HAVE_NETINET_TCP_H})
+			message (SEND_ERROR "Could not find bsd_sockets. Missing \"netinet/tcp.h\".")
+		endif (NOT ${HAVE_NETINET_TCP_H})
+
+		check_include_file (netdb.h HAVE_NETDB_H)
+		if (NOT ${HAVE_NETDB_H})
+			message (SEND_ERROR "Could not find bsd_sockets. Missing \"netdb.h\".")
+		endif (NOT ${HAVE_NETDB_H})
+	endif (UNIX AND NOT WIN32)
+
+	if (WIN32)
+		find_library (WSOCK32_LIB wsock32)
+		if (NOT ${WSOCK32_LIB})
+			message (SEND_ERROR "Could not find bsd sockets. Missing library \"wsock32\".")
+		endif (NOT ${WSOCK32_LIB})
+	endif (WIN32)
+endfunction (bsd_sockets)

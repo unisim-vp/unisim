@@ -39,7 +39,7 @@ namespace unisim {
 namespace kernel {
 namespace logger {
 
-Logger::Logger(const unisim::kernel::service::Object &_obj) : obj(_obj), buffer(), mode(NO_MODE) {
+Logger::Logger(const unisim::kernel::service::Object &_obj) : buffer(), obj(_obj), mode(NO_MODE) {
 	server = LoggerServer::GetInstance(obj);
 }
 
@@ -131,6 +131,9 @@ Logger::EndDebugError() {
 void
 Logger::EndDebug() {
 	switch(mode) {
+	case NO_MODE:
+		/* nothing to do */
+		break;
 	case INFO_MODE:
 		EndDebugInfo();
 		break;

@@ -16,7 +16,7 @@ nobase_include_HEADERS = cpu.hh cpu.tcc config.hh disasm.hh exec.hh exec.tcc \
 	interfaces.hh register_interface.hh register_interface.tcc \
 	isa/opcode/tesla.isa isa/src1/src1.isa isa/src2/src2.isa isa/src3/src3.isa \
 	isa/dest/dest.isa isa/control/control.isa \
-	isa/opcode/mov.isa isa/opcode/integer.isa isa/opcode/fp32.isa isa/opcode/fp32.isa \
+	isa/opcode/mov.isa isa/opcode/integer.isa isa/opcode/fp32.isa \
 	isa/opcode/branch.isa isa/opcode/fp64.isa \
 	hostfloat/hostfloat.hh hostfloat/hostfloat.tcc hostfloat/rounding.hh hostfloat/rounding.tcc \
 	hostfloat/denormals.hh hostfloat/c99_rounding.hh hostfloat/msvc_rounding.hh \

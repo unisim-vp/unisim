@@ -67,6 +67,7 @@ using namespace std;
 
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Parameter;
+using unisim::kernel::service::Statistic;
 using unisim::kernel::service::Service;
 using unisim::kernel::service::Client;
 using unisim::service::interfaces::Memory;
@@ -76,98 +77,112 @@ using unisim::service::interfaces::Memory;
 template <class CONFIG>
 class Cache : 
 	public CacheInterfaceWithMemoryService<typename CONFIG::address_t> {
-public:
-	typedef typename CONFIG::address_t address_t;
-	typedef CacheInterfaceWithMemoryService<address_t> inherited;
-
+	public:
+		typedef typename CONFIG::address_t address_t;
+		typedef CacheInterfaceWithMemoryService<address_t> inherited;
+		
 #ifdef SOCLIB
-	Cache(CacheInterface<address_t> *_next_mem_level);
-	
+		Cache(CacheInterface<address_t> *_next_mem_level);
+		
 #else // SOCLIB
-	
-	Cache(const char* name,
-			CacheInterface<address_t> *_next_mem_level,
-			Object* parent = 0);
-	
+		
+		Cache(const char* name,
+			  CacheInterface<address_t> *_next_mem_level,
+			  Object* parent = 0);
+		
 #endif // SOCLIB
-
-	virtual ~Cache();
-
-	virtual bool Setup();
-	virtual void OnDisconnect();
-
-	virtual void SetLock(uint32_t lock, uint32_t index);
-
-	// Proccessor -> Cache Interface
-	virtual void PrReset();
-	virtual void PrInvalidate();
-	virtual void PrInvalidateSet(uint32_t index);
-	virtual void PrInvalidateBlock(address_t addr);
-	virtual void PrInvalidateBlock(uint32_t index, uint32_t way);   //add for Arm Cache
-	virtual void PrFlushBlock(address_t addr);
-	virtual void PrFlushBlock(uint32_t index, uint32_t way);   //add for Arm Cache
-	virtual void PrCleanBlock(address_t addr);
-	virtual void PrCleanBlock(uint32_t index, uint32_t way);   //add for Arm Cache
-	virtual void PrZeroBlock(address_t addr);
-	virtual void PrWrite(address_t addr, const uint8_t *buffer, uint32_t size);
-	virtual void PrRead(address_t addr, uint8_t *buffer, uint32_t size);
-	
+		
+		virtual ~Cache();
+		
+		virtual bool Setup();
+		virtual void OnDisconnect();
+		
+		virtual void SetLock(uint32_t lock, uint32_t index);
+		
+		// Proccessor -> Cache Interface
+		virtual void PrReset();
+		virtual void PrInvalidate();
+		virtual void PrInvalidateSet(uint32_t index);
+		virtual void PrInvalidateBlock(address_t addr);
+		virtual void PrInvalidateBlock(uint32_t index, uint32_t way);   //add for Arm Cache
+		virtual void PrFlushBlock(address_t addr);
+		virtual void PrFlushBlock(uint32_t index, uint32_t way);   //add for Arm Cache
+		virtual void PrCleanBlock(address_t addr);
+		virtual void PrCleanBlock(uint32_t index, uint32_t way);   //add for Arm Cache
+		virtual void PrZeroBlock(address_t addr);
+		virtual void PrWrite(address_t addr, const uint8_t *buffer, uint32_t size);
+		virtual void PrRead(address_t addr, uint8_t *buffer, uint32_t size);
+		
 #ifndef SOCLIB
-	
-	// Cache -> Memory Interface (debug device)
-	virtual void Reset();
-	virtual bool ReadMemory(uint64_t addr, void *buffer, uint32_t size);
-	virtual bool WriteMemory(uint64_t addr, const void *buffer, uint32_t size);
-	
+		
+		// Cache -> Memory Interface (debug device)
+		virtual void Reset();
+		virtual bool ReadMemory(uint64_t addr, void *buffer, uint32_t size);
+		virtual bool WriteMemory(uint64_t addr, const void *buffer, uint32_t size);
+		
 #endif // SOCLIB
-	
-
-private:
-	bool        enabled;
-	uint32_t       lock;
-	uint32_t lock_index;
-	
-	CacheInterface<address_t> *next_mem_level;
-
-	/* Cache blocks */
-	Set<CONFIG> cache[CONFIG::NSETS];
-
-	void DecodeAddress(address_t addr, address_t& tag, address_t& index, address_t& offset);
-	address_t CodeAddress(address_t tag, address_t index);
-	
-	uint32_t GetCacheSize();
-	uint32_t GetCacheAssociativity();
-	uint32_t GetCacheLineSize();
-	void Enable();
-	void Disable();
-	bool IsEnabled();
-
-	void LoadDataFromMem(address_t add, uint8_t* buffer, uint32_t size);
-	void StoreDataInMem(address_t add, const uint8_t* buffer, uint32_t size);
-
-protected:
-	/* verbose options */
-	bool verbose_all;
-	bool verbose_pr_read;
-	bool verbose_pr_write;
-	bool verbose_read_memory;
-	bool verbose_write_memory;
-	
+		
+		
+	private:
+		bool        enabled;
+		uint32_t       lock;
+		uint32_t lock_index;
+		
+		CacheInterface<address_t> *next_mem_level;
+		
+		/* Cache blocks */
+		Set<CONFIG> cache[CONFIG::NSETS];
+		
+		void DecodeAddress(address_t addr, address_t& tag, address_t& index, address_t& offset);
+		address_t CodeAddress(address_t tag, address_t index);
+		
+		uint32_t GetCacheSize();
+		uint32_t GetCacheAssociativity();
+		uint32_t GetCacheLineSize();
+		void Enable();
+		void Disable();
+		bool IsEnabled();
+		
+		void LoadDataFromMem(address_t add, uint8_t* buffer, uint32_t size);
+		void StoreDataInMem(address_t add, const uint8_t* buffer, uint32_t size);
+		
+	protected:
+		/* verbose options */
+		bool verbose_all;
+		bool verbose_pr_read;
+		bool verbose_pr_write;
+		bool verbose_read_memory;
+		bool verbose_write_memory;
+		
+		uint64_t num_read_accesses;
+		uint64_t num_read_hits;
+		uint64_t num_read_misses;
+		uint64_t num_write_accesses;
+		uint64_t num_write_hits;
+		uint64_t num_write_misses;
+		
 #ifndef SOCLIB
-	
-	Parameter<bool> param_verbose_all;
-	Parameter<bool> param_verbose_pr_read;
-	Parameter<bool> param_verbose_pr_write;
-	Parameter<bool> param_verbose_read_memory;
-	Parameter<bool> param_verbose_write_memory;
-	
+		
+		Parameter<bool> param_verbose_all;
+		Parameter<bool> param_verbose_pr_read;
+		Parameter<bool> param_verbose_pr_write;
+		Parameter<bool> param_verbose_read_memory;
+		Parameter<bool> param_verbose_write_memory;
+		
+		Statistic<uint64_t> stat_num_read_accesses;
+		Statistic<uint64_t> stat_num_read_hits;
+		Statistic<uint64_t> stat_num_read_misses;
+		Statistic<uint64_t> stat_num_write_accesses;
+		Statistic<uint64_t> stat_num_write_hits;
+		Statistic<uint64_t> stat_num_write_misses;
+		
 #endif // SOCLIB
-	
-	bool VerbosePrRead();
-	bool VerbosePrWrite();
-	bool VerboseReadMemory();
-	bool VerboseWriteMemory();
-	bool HasVerbose();
+		
+		bool VerbosePrRead();
+		bool VerbosePrWrite();
+		bool VerboseReadMemory();
+		bool VerboseWriteMemory();
+		bool HasVerbose();
 };
 
 } // end of namespace cache

@@ -1,0 +1,20 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<package>
+	<unit>
+		<name>unisim::util::hash_table</name>
+		<files>
+			<file>unisim/util/hash_table/hash_table.hh</file>
+		</files>
+		<depends>
+			<dep>clib_string_h</dep>
+			<dep>stl_map</dep>
+		</depends>
+		<autotools>
+			<automake>unisim/util/hash_table/meta/hash_table.am</automake>
+		</autotools>
+		<!-- <cmake>unisim/util/hash_table/meta/hash_table.cmake</cmake> -->
+		<cmake>unisim/util/hash_table/CMakeLists.txt</cmake>
+	</unit>
+</package>
+
+

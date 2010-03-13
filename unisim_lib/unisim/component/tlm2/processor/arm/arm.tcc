@@ -39,7 +39,7 @@
 #include <tlm.h>
 #include "unisim/kernel/tlm2/tlm.hh"
 #include "unisim/kernel/logger/logger.hh"
-#include "unisim/component/cxx/processor/arm/cpu.tcc"
+// #include "unisim/component/cxx/processor/arm/cpu.tcc"
 
 #define LOCATION 	" - location = " << __FUNCTION__ << ":unisim_lib/unisim/component/tlm2/processor/arm/arm.tcc:" << __LINE__
 #define TIME(X) 	" - time = " << sc_time_stamp() + (X) << " (current time = " << sc_time_stamp() << ")"
@@ -196,8 +196,9 @@ Setup()
 	cerr << "verbose_tlm_irq = " << verbose_tlm_irq << endl;
 	if (!inherited::Setup()) 
 	{
-		inherited::logger << DebugError << LOCATION
-			<< "Error while trying to set up the ARM cpu"
+		inherited::logger << DebugError
+			<< "Error while trying to set up the ARM cpu" << endl
+			<< LOCATION
 			<< EndDebugError;
 		return false;
 	}
@@ -1054,7 +1055,7 @@ GetCacheSize() {
 //	sc_stop();
 //	wait();
 	
-//	return 0;
+	return 0;
 }
 
 template<class CONFIG, bool BLOCKING>
@@ -1068,7 +1069,7 @@ GetCacheAssociativity() {
 //	sc_stop();
 //	wait();
 	
-//	return 0;
+	return 0;
 }
 
 template<class CONFIG, bool BLOCKING>
@@ -1082,7 +1083,7 @@ GetCacheBlockSize() {
 //	sc_stop();
 //	wait();
 	
-//	return 0;
+	return 0;
 }
 
 template<class CONFIG, bool BLOCKING>
@@ -1120,7 +1121,7 @@ IsEnabled() {
 //	sc_stop();
 //	wait();
 	
-//	return false;
+	return false;
 }
 
 template<class CONFIG, bool BLOCKING>

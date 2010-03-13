@@ -1,0 +1,10 @@
+function (win_winsock2_h)
+	if (WIN32)
+		include (CheckIncludeFiles)
+		check_include_files (winsock2.h HAVE_WINSOCK2_H)
+		if (NOT ${HAVE_WINSOCK2_H})
+			message (SEND_ERROR "Could not find \"winsock2.h\".")
+		endif (NOT ${HAVE_WINSOCK2_H})
+	endif (WIN32)
+endfunction (win_winsock2_h)
+

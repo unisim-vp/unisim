@@ -44,6 +44,8 @@ namespace interfaces {
 
 class LinuxOS {
 public:
+	LinuxOS() {}
+	virtual ~LinuxOS() {}
 	/**
      * Executes a system call based on the binding done with the SetSyscallId
      *   method.

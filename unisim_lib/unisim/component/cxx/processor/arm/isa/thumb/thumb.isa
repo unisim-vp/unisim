@@ -44,6 +44,9 @@ set addressclass {typename CONFIG::address_t}
 template <{class} {CONFIG}>
 
 decl {
+#ifndef __STDC_CONSTANT_MACROS
+#define __STDC_CONSTANT_MACROS
+#endif // __STDC_CONSTANT_MACROS
 #include <sstream>
 #include <iostream>
 #include <stdexcept>
@@ -76,6 +79,7 @@ impl {
 #include "unisim/util/arithmetic/arithmetic.hh"
 #include "unisim/component/cxx/processor/arm/exception.hh"
 #include "unisim/kernel/logger/logger.hh"
+#include <stdint.h>
 	
 using unisim::component::cxx::processor::arm::UndefinedInstructionException;
 using unisim::util::arithmetic::Add32;

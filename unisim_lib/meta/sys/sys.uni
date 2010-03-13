@@ -1,0 +1,31 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<package>
+	<unit>
+		<name>sys_times_h</name>
+		<autotools>
+			<autoconf>meta/sys/times.ac</autoconf>
+		</autotools>
+		<cmake>meta/sys/times.cmake</cmake>
+	</unit>
+	<unit>
+		<name>sys_types_h</name>
+		<autotools>
+			<autoconf>meta/sys/types.ac</autoconf>
+		</autotools>
+		<cmake>meta/sys/types.cmake</cmake>
+	</unit>
+	<unit>
+		<name>sys_stat_h</name>
+		<autotools>
+			<autoconf>meta/sys/stat.ac</autoconf>
+		</autotools>
+		<cmake>meta/sys/stat.cmake</cmake>
+	</unit>
+	<unit>
+		<name>fcntl_h</name>
+		<autotools>
+			<autoconf>meta/sys/fcntl.ac</autoconf>
+		</autotools>
+		<cmake>meta/sys/fcntl.cmake</cmake>
+	</unit>
+</package>

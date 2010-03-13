@@ -85,6 +85,12 @@ Cache(const char *name,
 	verbose_pr_write(false),
 	verbose_read_memory(false),
 	verbose_write_memory(false),
+	num_read_accesses(0),
+	num_read_hits(0),
+	num_read_misses(0),
+	num_write_accesses(0),
+	num_write_hits(0),
+	num_write_misses(0),
 	next_mem_level(_next_mem_level),
 	lock(0),
 	lock_index(0) {
@@ -110,6 +116,18 @@ Cache(const char *name,
 	param_verbose_read_memory("verbose-read-memory", this, verbose_read_memory),
 	verbose_write_memory(false),
 	param_verbose_write_memory("verbose-write-memory", this, verbose_write_memory),
+	num_read_accesses(0),
+	stat_num_read_accesses("number-of-read-accesses", this, num_read_accesses, "Number of read accesses to the cache"),
+	num_read_hits(0),
+	stat_num_read_hits("number-of-read-hits", this, num_read_hits, "Number of read hits to the cache"),
+	num_read_misses(0),
+	stat_num_read_misses("number-of-read-misses", this, num_read_misses, "Number of read misses to the cache"),
+	num_write_accesses(0),
+	stat_num_write_accesses("number-of-write-accesses", this, num_write_accesses, "Number of write accesses to the cache"),
+	num_write_hits(0),
+	stat_num_write_hits("number-of-write-hits", this, num_write_hits, "Number of write hits to the cache"),
+	num_write_misses(0),
+	stat_num_write_misses("number-of-write-misses", this, num_write_misses, "Number of write misses to the cache"),
 	next_mem_level(_next_mem_level),
 	lock(0),
 	lock_index(0) {
@@ -595,6 +613,8 @@ PrWrite(address_t addr, const uint8_t *data, uint32_t size) {
 	address_t way;
 	bool hit;
 	
+	num_write_accesses++;
+	
 	if(enabled) {
 		DecodeAddress(addr, tag, set, pos);
 		if(VerbosePrWrite()) {
@@ -664,6 +684,10 @@ PrWrite(address_t addr, const uint8_t *data, uint32_t size) {
 			exit(-1);
 		}
 		cache[set].GetLine(tag, way, hit);
+		
+		if (hit) num_write_hits++;
+		else num_write_misses++;
+		
 		if(!hit) { // miss
 			if(CONFIG::ALLOCATION_POLICY == READ_ALLOCATE) {
 				if(VerbosePrWrite())
@@ -965,6 +989,8 @@ PrRead(address_t addr, uint8_t *data, uint32_t size) {
 	address_t way;
 	bool hit;
 	
+	num_read_accesses++;
+	
 	if(enabled) {
 		DecodeAddress(addr, tag, set, pos);
 		if(VerbosePrRead()) {
@@ -1026,7 +1052,12 @@ PrRead(address_t addr, uint8_t *data, uint32_t size) {
 
 			exit(-1);
 		}
+		
 		cache[set].GetLine(tag, way, hit);
+		
+		if (hit) num_read_hits++;
+		else num_read_misses++;
+		
 		if(!hit) { // miss
 			if(VerbosePrRead())
 				

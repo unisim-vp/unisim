@@ -40,29 +40,29 @@ using unisim::component::cxx::processor::arm::tcm::TCM;
 using unisim::component::cxx::processor::arm::tcm::DTCM;
 using unisim::component::cxx::processor::arm::tcm::ITCM;
 using unisim::component::cxx::processor::arm::ARM966E_S_Config;
-using unisim::component::cxx::processor::arm::ARM966E_S_DebugConfig;
+// using unisim::component::cxx::processor::arm::ARM966E_S_DebugConfig;
 
 template
 class TCM<ARM966E_S_Config, true>;
 
-template
-class TCM<ARM966E_S_DebugConfig, true>;
+// template
+// class TCM<ARM966E_S_DebugConfig, true>;
 
 template
 class TCM<ARM966E_S_Config, false>;
 
-template
-class TCM<ARM966E_S_DebugConfig, false>;
+// template
+// class TCM<ARM966E_S_DebugConfig, false>;
 
 template
 class DTCM<ARM966E_S_Config>;
 
-template
-class DTCM<ARM966E_S_DebugConfig>;
+// template
+// class DTCM<ARM966E_S_DebugConfig>;
 
 template
 class ITCM<ARM966E_S_Config>;
 
-template
-class ITCM<ARM966E_S_DebugConfig>;
+// template
+// class ITCM<ARM966E_S_DebugConfig>;
 

@@ -85,7 +85,7 @@ typedef enum {
 	/* ARM9E-S and ARM9EJ-S Families */
 	ARM9E_S,
 	ARM9EJ_S,
-	ARM926EJ_S,
+	ARM926EJS,
 	ARM946E_S,
 	ARM966E_S,
 	/* ARM10 Family */
@@ -144,7 +144,7 @@ class ARMBase {
 public:
 //	static const endian_type ENDIANESS = E_BIG_ENDIAN;
 
-	static const bool DEBUG_ENABLE = false;
+	static const bool DEBUG_ENABLE = true;
 	
 	static const bool HAS_LOAD_STORE_V4 = false;
 	static const bool HAS_LOAD_STORE_V5E = false;
@@ -170,15 +170,6 @@ public:
 	static const bool HAS_INSN_ARITH_MULT_SMLAWY = false;
 	static const bool HAS_INSN_ARITH_MULT_SMLALWY = false;
 	
-	static const bool HAS_INSN_CACHE_L1 = false;
-	static const bool HAS_DATA_CACHE_L1 = false;
-	static const bool HAS_UNIFIED_CACHE_L1 = false;
-	static const bool HAS_CACHE_L2 = false;
-	
-	typedef ARMCache512bDMWT8bls_Config cache_l1_t;
-	typedef ARMCache512bDMWT8bls_Config insn_cache_l1_t;
-	typedef ARMCache512bDMWT8bls_Config cache_l2_t;
-
 	static const bool HAS_ITCM = false;
 	static const bool HAS_DTCM = false;
 	
@@ -229,19 +220,6 @@ public:
 	static const bool HAS_INSN_ARITH_MULT_SMLAXY = false;
 	static const bool HAS_INSN_ARITH_MULT_SMLAWY = false;
 	static const bool HAS_INSN_ARITH_MULT_SMLALXY = false;
-	
-	static const bool HAS_INSN_CACHE_L1 = false;
-	static const bool HAS_DATA_CACHE_L1 = false;
-	static const bool HAS_CACHE_L2 = false;
-	
-	typedef ARMCache32KBDMWB32bls_Config cache_l1_t;
-	typedef ARMCache32KBDMWB32bls_Config insn_cache_l1_t;
-	typedef ARMCache96KBDMWB32bls_Config cache_l2_t;
-};
-
-class ARM7TDMI_DebugConfig : public ARM7TDMI_Config {
-public:
-	static const bool DEBUG_ENABLE = true;
 };
 
 /**
@@ -287,37 +265,53 @@ public:
 	static const bool HAS_INSN_ARITH_MULT_SMLAXY = false;
 	static const bool HAS_INSN_ARITH_MULT_SMLAWY = false;
 	static const bool HAS_INSN_ARITH_MULT_SMLALXY = false;
+};
+
+/**
+ * Describes the configuration of the ARM926EJ-S processor
+ */
+class ARM926EJS_Config : 
+	public ARMBase {
+public:
+	typedef uint32_t address_t;             // 32-bit effective address
+	typedef uint32_t reg_t;                 // register type
+	typedef int32_t sreg_t;                 // signed register type   
+	typedef uint32_t insn_t;                // instruction type
+	typedef uint16_t thumb_insn_t;          // thumb instruction type
+
+	static const Model MODEL = ARM926EJS; // !< the model definition
+	static const uint32_t PROCESSOR_VERSION = 0; // !< the processor id
+	static const Architecture ARCHITECTURE = ARMV5; // !< the processor architecture
 	
-	static const bool HAS_INSN_CACHE_L1 = true;
-	static const bool HAS_DATA_CACHE_L1 = true;
-	static const bool HAS_CACHE_L2 = true;
+	static const InsnSetVersion INSN_SET_VERSION = V5; // !< the supported instruction set version
+	static const THUMBInsnSetVersion THUMB_INSN_SET_VERSION = V2; // !< the supported thumb instruction set
 	
-	typedef ARMCache32KBDMWB32bls_Config cache_l1_t;
-	typedef ARMCache32KBDMWB32bls_Config insn_cache_l1_t;
-	typedef ARMCache96KBDMWB32bls_Config cache_l2_t;
+	static const uint32_t FSB_BURST_SIZE = 32; // !< Front side bus parameters
+	
+	static const bool HAS_LOAD_STORE_V4 = true;
+	static const bool HAS_LOAD_STORE_V5E = true;
+	static const bool HAS_INSN_BX = true;
+	static const bool HAS_INSN_BLX = true;
+	static const bool HAS_INSN_COPROCESSOR_ALTER_MOVES = true;
+	static const bool HAS_INSN_COPROCESSOR_ALTER_LOADS = true;
+	static const bool HAS_INSN_COPROCESSOR_ALTER_STORES = true;
+	static const bool HAS_INSN_COPROCESSOR_ALTER_OPS = true;
+	static const bool HAS_INSN_ARITH_CLZ = true;
+	static const bool HAS_INSN_ARITH_QADD = false;
+	static const bool HAS_INSN_ARITH_QDADD = false;
+	static const bool HAS_INSN_ARITH_QSUB = false;
+	static const bool HAS_INSN_ARITH_QDSUB = false;
+	static const bool HAS_INSN_ARITH_MULT_UMULL = true;
+	static const bool HAS_INSN_ARITH_MULT_UMLAL = true;
+	static const bool HAS_INSN_ARITH_MULT_SMULL = true;
+	static const bool HAS_INSN_ARITH_MULT_SMLAL = true;
+	static const bool HAS_INSN_ARITH_MULT_SMULXY = false;
+	static const bool HAS_INSN_ARITH_MULT_SMULWY = false;
+	static const bool HAS_INSN_ARITH_MULT_SMLAXY = false;
+	static const bool HAS_INSN_ARITH_MULT_SMLAWY = false;
+	static const bool HAS_INSN_ARITH_MULT_SMLALXY = false;
+
 };
-
-class ARM9TDMI_DebugConfig : public ARM9TDMI_Config {
-public:
-	static const bool DEBUG_ENABLE = true;
-
-	typedef ARMCache32KBDMWB32bls_DebugConfig cache_l1_t;
-	typedef ARMCache32KBDMWB32bls_DebugConfig insn_cache_l1_t;
-	typedef ARMCache96KBDMWB32bls_DebugConfig cache_l2_t;
-};
-
-class ARM9TDMI_NoCache_Config : public ARM9TDMI_Config {
-public:
-	static const bool HAS_INSN_CACHE_L1 = false;
-	static const bool HAS_DATA_CACHE_L1 = false;
-	static const bool HAS_CACHE_L2 = false;
-};
-
-class ARM9TDMI_NoCache_DebugConfig : public ARM9TDMI_NoCache_Config {
-public:
-	static const bool DEBUG_ENABLE = true;
-};
-
 
 /**
  * Describes the configuration of the ARM966E-S processor
@@ -369,12 +363,6 @@ public:
 	
 	static const uint32_t ITCM_SIZE = (uint32_t)0x011;
 	static const uint32_t DTCM_SIZE = (uint32_t)0x011;
-};
-
-class ARM966E_S_DebugConfig :
-	public ARM966E_S_Config {
-public:
-	static const bool DEBUG_ENABLE = true;
 };
 
 } // end of namespace arm

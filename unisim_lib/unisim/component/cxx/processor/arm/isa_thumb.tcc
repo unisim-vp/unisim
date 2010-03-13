@@ -1,10 +1,11 @@
 #include "isa_thumb.hh"
 #include <cassert>
-#line 75 "isa/thumb/thumb.isa"
+#line 78 "isa/thumb/thumb.isa"
 
 #include "unisim/util/arithmetic/arithmetic.hh"
 #include "unisim/component/cxx/processor/arm/exception.hh"
 #include "unisim/kernel/logger/logger.hh"
+#include <stdint.h>
 
 using unisim::component::cxx::processor::arm::UndefinedInstructionException;
 using unisim::util::arithmetic::Add32;
@@ -14,20 +15,20 @@ using unisim::kernel::logger::DebugWarning;
 using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::DebugError;
 using unisim::kernel::logger::EndDebugError;
-#line 18 "isa_thumb.tcc"
+#line 19 "isa_thumb.tcc"
 namespace unisim { namespace component { namespace cxx { namespace processor { namespace arm { namespace isa { namespace thumb {
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 23 "isa_thumb.tcc"
+#line 24 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 26 "isa_thumb.tcc"
+#line 27 "isa_thumb.tcc"
 >
 Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 31 "isa_thumb.tcc"
+#line 32 "isa_thumb.tcc"
 >::Operation(CodeType _code, typename CONFIG::address_t _addr, const char *_name)
 :
 encoding(_code),
@@ -39,15 +40,15 @@ name(_name)
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 43 "isa_thumb.tcc"
+#line 44 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 46 "isa_thumb.tcc"
+#line 47 "isa_thumb.tcc"
 >
 Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 51 "isa_thumb.tcc"
+#line 52 "isa_thumb.tcc"
 >::~Operation()
 {
 }
@@ -55,25 +56,25 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 59 "isa_thumb.tcc"
+#line 60 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 62 "isa_thumb.tcc"
+#line 63 "isa_thumb.tcc"
 >
 #line 53 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/profiling.isa"
 void
-#line 66 "isa_thumb.tcc"
+#line 67 "isa_thumb.tcc"
 Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 70 "isa_thumb.tcc"
+#line 71 "isa_thumb.tcc"
 >::profile(
 #line 53 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/profiling.isa"
 map<uint64_t, uint32_t> &
-#line 74 "isa_thumb.tcc"
+#line 75 "isa_thumb.tcc"
 #line 53 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/profiling.isa"
 prof
-#line 77 "isa_thumb.tcc"
+#line 78 "isa_thumb.tcc"
 )
 {
 #line 53 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/profiling.isa"
@@ -87,329 +88,329 @@ prof
 			prof[val] = 1;
 		}
 	}
-#line 91 "isa_thumb.tcc"
+#line 92 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 96 "isa_thumb.tcc"
+#line 97 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 99 "isa_thumb.tcc"
+#line 100 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 103 "isa_thumb.tcc"
+#line 104 "isa_thumb.tcc"
 Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 107 "isa_thumb.tcc"
+#line 108 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 111 "isa_thumb.tcc"
+#line 112 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 114 "isa_thumb.tcc"
+#line 115 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 118 "isa_thumb.tcc"
+#line 119 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 121 "isa_thumb.tcc"
+#line 122 "isa_thumb.tcc"
 )
 {
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	{
 		buffer << "Unknown instruction";
 	}
-#line 128 "isa_thumb.tcc"
+#line 129 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 133 "isa_thumb.tcc"
+#line 134 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 136 "isa_thumb.tcc"
+#line 137 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 140 "isa_thumb.tcc"
+#line 141 "isa_thumb.tcc"
 Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 144 "isa_thumb.tcc"
+#line 145 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 148 "isa_thumb.tcc"
+#line 149 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 151 "isa_thumb.tcc"
+#line 152 "isa_thumb.tcc"
 )
 {
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	{
 		throw UndefinedInstructionException<CONFIG>();
 	}
-#line 158 "isa_thumb.tcc"
+#line 159 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 163 "isa_thumb.tcc"
+#line 164 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 166 "isa_thumb.tcc"
+#line 167 "isa_thumb.tcc"
 >
 
 void
 Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 173 "isa_thumb.tcc"
+#line 174 "isa_thumb.tcc"
 >::initialize_rd_index()
 {
 #line 89 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/constructors_dec.isa"
 	{
 		rd_index = 0;
 	}
-#line 180 "isa_thumb.tcc"
+#line 181 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 185 "isa_thumb.tcc"
+#line 186 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 188 "isa_thumb.tcc"
+#line 189 "isa_thumb.tcc"
 >
 
 void
 Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 195 "isa_thumb.tcc"
+#line 196 "isa_thumb.tcc"
 >::initialize_rn_index()
 {
 #line 85 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/constructors_dec.isa"
 	{
 		rn_index = 0;
 	}
-#line 202 "isa_thumb.tcc"
+#line 203 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 207 "isa_thumb.tcc"
+#line 208 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 210 "isa_thumb.tcc"
+#line 211 "isa_thumb.tcc"
 >
 
 void
 Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 217 "isa_thumb.tcc"
+#line 218 "isa_thumb.tcc"
 >::initialize_rm_index()
 {
 #line 81 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/constructors_dec.isa"
 	{
 		rm_index = 0;
 	}
-#line 224 "isa_thumb.tcc"
+#line 225 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 229 "isa_thumb.tcc"
+#line 230 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 232 "isa_thumb.tcc"
+#line 233 "isa_thumb.tcc"
 >
 
 void
 Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 239 "isa_thumb.tcc"
+#line 240 "isa_thumb.tcc"
 >::initialize_rdp1_init()
 {
 #line 73 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/constructors_dec.isa"
 	{
 		rdp1_init = 0;
 	}
-#line 246 "isa_thumb.tcc"
+#line 247 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 251 "isa_thumb.tcc"
+#line 252 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 254 "isa_thumb.tcc"
+#line 255 "isa_thumb.tcc"
 >
 
 void
 Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 261 "isa_thumb.tcc"
+#line 262 "isa_thumb.tcc"
 >::initialize_rdlo_init()
 {
 #line 69 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/constructors_dec.isa"
 	{
 		rdlo_init = 0;
 	}
-#line 268 "isa_thumb.tcc"
+#line 269 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 273 "isa_thumb.tcc"
+#line 274 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 276 "isa_thumb.tcc"
+#line 277 "isa_thumb.tcc"
 >
 
 void
 Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 283 "isa_thumb.tcc"
+#line 284 "isa_thumb.tcc"
 >::initialize_rdhi_init()
 {
 #line 65 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/constructors_dec.isa"
 	{
 		rdhi_init = 0;
 	}
-#line 290 "isa_thumb.tcc"
+#line 291 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 295 "isa_thumb.tcc"
+#line 296 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 298 "isa_thumb.tcc"
+#line 299 "isa_thumb.tcc"
 >
 
 void
 Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 305 "isa_thumb.tcc"
+#line 306 "isa_thumb.tcc"
 >::initialize_rs_init()
 {
 #line 61 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/constructors_dec.isa"
 	{
 		rs_init = 0;
 	}
-#line 312 "isa_thumb.tcc"
+#line 313 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 317 "isa_thumb.tcc"
+#line 318 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 320 "isa_thumb.tcc"
+#line 321 "isa_thumb.tcc"
 >
 
 void
 Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 327 "isa_thumb.tcc"
+#line 328 "isa_thumb.tcc"
 >::initialize_rd_init()
 {
 #line 57 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/constructors_dec.isa"
 	{
 		rd_init = 0;
 	}
-#line 334 "isa_thumb.tcc"
+#line 335 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 339 "isa_thumb.tcc"
+#line 340 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 342 "isa_thumb.tcc"
+#line 343 "isa_thumb.tcc"
 >
 
 void
 Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 349 "isa_thumb.tcc"
+#line 350 "isa_thumb.tcc"
 >::initialize_rm_init()
 {
 #line 53 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/constructors_dec.isa"
 	{
 		rm_init = 0;
 	}
-#line 356 "isa_thumb.tcc"
+#line 357 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 361 "isa_thumb.tcc"
+#line 362 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 364 "isa_thumb.tcc"
+#line 365 "isa_thumb.tcc"
 >
 
 void
 Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 371 "isa_thumb.tcc"
+#line 372 "isa_thumb.tcc"
 >::initialize_rn_init()
 {
 #line 49 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/constructors_dec.isa"
 	{
 		rn_init = 0;
 	}
-#line 378 "isa_thumb.tcc"
+#line 379 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 383 "isa_thumb.tcc"
+#line 384 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 386 "isa_thumb.tcc"
+#line 387 "isa_thumb.tcc"
 >
 
 void
 Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 393 "isa_thumb.tcc"
+#line 394 "isa_thumb.tcc"
 >::initialize_cond_init()
 {
 #line 37 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/constructors_dec.isa"
 	{
 		cond_init = 0;
 	}
-#line 400 "isa_thumb.tcc"
+#line 401 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 405 "isa_thumb.tcc"
+#line 406 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 408 "isa_thumb.tcc"
+#line 409 "isa_thumb.tcc"
 >
 class OpB_1_0xxx : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 413 "isa_thumb.tcc"
+#line 414 "isa_thumb.tcc"
 >
 {
 public:
@@ -494,21 +495,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 498 "isa_thumb.tcc"
+#line 499 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 502 "isa_thumb.tcc"
+#line 503 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 505 "isa_thumb.tcc"
+#line 506 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 509 "isa_thumb.tcc"
+#line 510 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 512 "isa_thumb.tcc"
+#line 513 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -546,14 +547,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 550 "isa_thumb.tcc"
+#line 551 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 554 "isa_thumb.tcc"
+#line 555 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 557 "isa_thumb.tcc"
+#line 558 "isa_thumb.tcc"
 	);
 private:
 };
@@ -561,15 +562,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 565 "isa_thumb.tcc"
+#line 566 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 568 "isa_thumb.tcc"
+#line 569 "isa_thumb.tcc"
 >
 class OpB_1_10xx : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 573 "isa_thumb.tcc"
+#line 574 "isa_thumb.tcc"
 >
 {
 public:
@@ -654,21 +655,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 658 "isa_thumb.tcc"
+#line 659 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 662 "isa_thumb.tcc"
+#line 663 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 665 "isa_thumb.tcc"
+#line 666 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 669 "isa_thumb.tcc"
+#line 670 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 672 "isa_thumb.tcc"
+#line 673 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -706,14 +707,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 710 "isa_thumb.tcc"
+#line 711 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 714 "isa_thumb.tcc"
+#line 715 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 717 "isa_thumb.tcc"
+#line 718 "isa_thumb.tcc"
 	);
 private:
 };
@@ -721,15 +722,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 725 "isa_thumb.tcc"
+#line 726 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 728 "isa_thumb.tcc"
+#line 729 "isa_thumb.tcc"
 >
 class OpB_1_110x : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 733 "isa_thumb.tcc"
+#line 734 "isa_thumb.tcc"
 >
 {
 public:
@@ -814,21 +815,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 818 "isa_thumb.tcc"
+#line 819 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 822 "isa_thumb.tcc"
+#line 823 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 825 "isa_thumb.tcc"
+#line 826 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 829 "isa_thumb.tcc"
+#line 830 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 832 "isa_thumb.tcc"
+#line 833 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -866,14 +867,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 870 "isa_thumb.tcc"
+#line 871 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 874 "isa_thumb.tcc"
+#line 875 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 877 "isa_thumb.tcc"
+#line 878 "isa_thumb.tcc"
 	);
 private:
 };
@@ -881,15 +882,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 885 "isa_thumb.tcc"
+#line 886 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 888 "isa_thumb.tcc"
+#line 889 "isa_thumb.tcc"
 >
 class OpB_2 : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 893 "isa_thumb.tcc"
+#line 894 "isa_thumb.tcc"
 >
 {
 public:
@@ -898,21 +899,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 902 "isa_thumb.tcc"
+#line 903 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 906 "isa_thumb.tcc"
+#line 907 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 909 "isa_thumb.tcc"
+#line 910 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 913 "isa_thumb.tcc"
+#line 914 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 916 "isa_thumb.tcc"
+#line 917 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -950,14 +951,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 954 "isa_thumb.tcc"
+#line 955 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 958 "isa_thumb.tcc"
+#line 959 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 961 "isa_thumb.tcc"
+#line 962 "isa_thumb.tcc"
 	);
 private:
 };
@@ -965,15 +966,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 969 "isa_thumb.tcc"
+#line 970 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 972 "isa_thumb.tcc"
+#line 973 "isa_thumb.tcc"
 >
 class OpBl : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 977 "isa_thumb.tcc"
+#line 978 "isa_thumb.tcc"
 >
 {
 public:
@@ -983,21 +984,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 987 "isa_thumb.tcc"
+#line 988 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 991 "isa_thumb.tcc"
+#line 992 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 994 "isa_thumb.tcc"
+#line 995 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 998 "isa_thumb.tcc"
+#line 999 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 1001 "isa_thumb.tcc"
+#line 1002 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -1035,14 +1036,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 1039 "isa_thumb.tcc"
+#line 1040 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 1043 "isa_thumb.tcc"
+#line 1044 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 1046 "isa_thumb.tcc"
+#line 1047 "isa_thumb.tcc"
 	);
 private:
 };
@@ -1050,15 +1051,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 1054 "isa_thumb.tcc"
+#line 1055 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 1057 "isa_thumb.tcc"
+#line 1058 "isa_thumb.tcc"
 >
 class OpBx : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 1062 "isa_thumb.tcc"
+#line 1063 "isa_thumb.tcc"
 >
 {
 public:
@@ -1069,21 +1070,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 1073 "isa_thumb.tcc"
+#line 1074 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 1077 "isa_thumb.tcc"
+#line 1078 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 1080 "isa_thumb.tcc"
+#line 1081 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 1084 "isa_thumb.tcc"
+#line 1085 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 1087 "isa_thumb.tcc"
+#line 1088 "isa_thumb.tcc"
 	);
 	virtual
 	void
@@ -1127,14 +1128,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 1131 "isa_thumb.tcc"
+#line 1132 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 1135 "isa_thumb.tcc"
+#line 1136 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 1138 "isa_thumb.tcc"
+#line 1139 "isa_thumb.tcc"
 	);
 private:
 };
@@ -1142,15 +1143,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 1146 "isa_thumb.tcc"
+#line 1147 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 1149 "isa_thumb.tcc"
+#line 1150 "isa_thumb.tcc"
 >
 class OpBlx_1 : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 1154 "isa_thumb.tcc"
+#line 1155 "isa_thumb.tcc"
 >
 {
 public:
@@ -1159,21 +1160,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 1163 "isa_thumb.tcc"
+#line 1164 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 1167 "isa_thumb.tcc"
+#line 1168 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 1170 "isa_thumb.tcc"
+#line 1171 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 1174 "isa_thumb.tcc"
+#line 1175 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 1177 "isa_thumb.tcc"
+#line 1178 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -1211,14 +1212,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 1215 "isa_thumb.tcc"
+#line 1216 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 1219 "isa_thumb.tcc"
+#line 1220 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 1222 "isa_thumb.tcc"
+#line 1223 "isa_thumb.tcc"
 	);
 private:
 };
@@ -1226,15 +1227,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 1230 "isa_thumb.tcc"
+#line 1231 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 1233 "isa_thumb.tcc"
+#line 1234 "isa_thumb.tcc"
 >
 class OpBlx_2 : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 1238 "isa_thumb.tcc"
+#line 1239 "isa_thumb.tcc"
 >
 {
 public:
@@ -1251,21 +1252,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 1255 "isa_thumb.tcc"
+#line 1256 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 1259 "isa_thumb.tcc"
+#line 1260 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 1262 "isa_thumb.tcc"
+#line 1263 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 1266 "isa_thumb.tcc"
+#line 1267 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 1269 "isa_thumb.tcc"
+#line 1270 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -1303,14 +1304,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 1307 "isa_thumb.tcc"
+#line 1308 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 1311 "isa_thumb.tcc"
+#line 1312 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 1314 "isa_thumb.tcc"
+#line 1315 "isa_thumb.tcc"
 	);
 private:
 };
@@ -1318,15 +1319,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 1322 "isa_thumb.tcc"
+#line 1323 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 1325 "isa_thumb.tcc"
+#line 1326 "isa_thumb.tcc"
 >
 class OpAdc : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 1330 "isa_thumb.tcc"
+#line 1331 "isa_thumb.tcc"
 >
 {
 public:
@@ -1336,21 +1337,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 1340 "isa_thumb.tcc"
+#line 1341 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 1344 "isa_thumb.tcc"
+#line 1345 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 1347 "isa_thumb.tcc"
+#line 1348 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 1351 "isa_thumb.tcc"
+#line 1352 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 1354 "isa_thumb.tcc"
+#line 1355 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -1388,14 +1389,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 1392 "isa_thumb.tcc"
+#line 1393 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 1396 "isa_thumb.tcc"
+#line 1397 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 1399 "isa_thumb.tcc"
+#line 1400 "isa_thumb.tcc"
 	);
 private:
 };
@@ -1403,15 +1404,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 1407 "isa_thumb.tcc"
+#line 1408 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 1410 "isa_thumb.tcc"
+#line 1411 "isa_thumb.tcc"
 >
 class OpAdd_1 : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 1415 "isa_thumb.tcc"
+#line 1416 "isa_thumb.tcc"
 >
 {
 public:
@@ -1422,21 +1423,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 1426 "isa_thumb.tcc"
+#line 1427 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 1430 "isa_thumb.tcc"
+#line 1431 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 1433 "isa_thumb.tcc"
+#line 1434 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 1437 "isa_thumb.tcc"
+#line 1438 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 1440 "isa_thumb.tcc"
+#line 1441 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -1474,14 +1475,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 1478 "isa_thumb.tcc"
+#line 1479 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 1482 "isa_thumb.tcc"
+#line 1483 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 1485 "isa_thumb.tcc"
+#line 1486 "isa_thumb.tcc"
 	);
 private:
 };
@@ -1489,15 +1490,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 1493 "isa_thumb.tcc"
+#line 1494 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 1496 "isa_thumb.tcc"
+#line 1497 "isa_thumb.tcc"
 >
 class OpAdd_2 : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 1501 "isa_thumb.tcc"
+#line 1502 "isa_thumb.tcc"
 >
 {
 public:
@@ -1507,21 +1508,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 1511 "isa_thumb.tcc"
+#line 1512 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 1515 "isa_thumb.tcc"
+#line 1516 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 1518 "isa_thumb.tcc"
+#line 1519 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 1522 "isa_thumb.tcc"
+#line 1523 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 1525 "isa_thumb.tcc"
+#line 1526 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -1559,14 +1560,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 1563 "isa_thumb.tcc"
+#line 1564 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 1567 "isa_thumb.tcc"
+#line 1568 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 1570 "isa_thumb.tcc"
+#line 1571 "isa_thumb.tcc"
 	);
 private:
 };
@@ -1574,15 +1575,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 1578 "isa_thumb.tcc"
+#line 1579 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 1581 "isa_thumb.tcc"
+#line 1582 "isa_thumb.tcc"
 >
 class OpAdd_3 : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 1586 "isa_thumb.tcc"
+#line 1587 "isa_thumb.tcc"
 >
 {
 public:
@@ -1593,21 +1594,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 1597 "isa_thumb.tcc"
+#line 1598 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 1601 "isa_thumb.tcc"
+#line 1602 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 1604 "isa_thumb.tcc"
+#line 1605 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 1608 "isa_thumb.tcc"
+#line 1609 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 1611 "isa_thumb.tcc"
+#line 1612 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -1645,14 +1646,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 1649 "isa_thumb.tcc"
+#line 1650 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 1653 "isa_thumb.tcc"
+#line 1654 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 1656 "isa_thumb.tcc"
+#line 1657 "isa_thumb.tcc"
 	);
 private:
 };
@@ -1660,15 +1661,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 1664 "isa_thumb.tcc"
+#line 1665 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 1667 "isa_thumb.tcc"
+#line 1668 "isa_thumb.tcc"
 >
 class OpAdd_4 : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 1672 "isa_thumb.tcc"
+#line 1673 "isa_thumb.tcc"
 >
 {
 public:
@@ -1692,21 +1693,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 1696 "isa_thumb.tcc"
+#line 1697 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 1700 "isa_thumb.tcc"
+#line 1701 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 1703 "isa_thumb.tcc"
+#line 1704 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 1707 "isa_thumb.tcc"
+#line 1708 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 1710 "isa_thumb.tcc"
+#line 1711 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -1744,14 +1745,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 1748 "isa_thumb.tcc"
+#line 1749 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 1752 "isa_thumb.tcc"
+#line 1753 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 1755 "isa_thumb.tcc"
+#line 1756 "isa_thumb.tcc"
 	);
 private:
 };
@@ -1759,15 +1760,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 1763 "isa_thumb.tcc"
+#line 1764 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 1766 "isa_thumb.tcc"
+#line 1767 "isa_thumb.tcc"
 >
 class OpAdd_5 : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 1771 "isa_thumb.tcc"
+#line 1772 "isa_thumb.tcc"
 >
 {
 public:
@@ -1777,21 +1778,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 1781 "isa_thumb.tcc"
+#line 1782 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 1785 "isa_thumb.tcc"
+#line 1786 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 1788 "isa_thumb.tcc"
+#line 1789 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 1792 "isa_thumb.tcc"
+#line 1793 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 1795 "isa_thumb.tcc"
+#line 1796 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -1829,14 +1830,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 1833 "isa_thumb.tcc"
+#line 1834 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 1837 "isa_thumb.tcc"
+#line 1838 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 1840 "isa_thumb.tcc"
+#line 1841 "isa_thumb.tcc"
 	);
 private:
 };
@@ -1844,15 +1845,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 1848 "isa_thumb.tcc"
+#line 1849 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 1851 "isa_thumb.tcc"
+#line 1852 "isa_thumb.tcc"
 >
 class OpAdd_6 : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 1856 "isa_thumb.tcc"
+#line 1857 "isa_thumb.tcc"
 >
 {
 public:
@@ -1862,21 +1863,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 1866 "isa_thumb.tcc"
+#line 1867 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 1870 "isa_thumb.tcc"
+#line 1871 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 1873 "isa_thumb.tcc"
+#line 1874 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 1877 "isa_thumb.tcc"
+#line 1878 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 1880 "isa_thumb.tcc"
+#line 1881 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -1914,14 +1915,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 1918 "isa_thumb.tcc"
+#line 1919 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 1922 "isa_thumb.tcc"
+#line 1923 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 1925 "isa_thumb.tcc"
+#line 1926 "isa_thumb.tcc"
 	);
 private:
 };
@@ -1929,15 +1930,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 1933 "isa_thumb.tcc"
+#line 1934 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 1936 "isa_thumb.tcc"
+#line 1937 "isa_thumb.tcc"
 >
 class OpAdd_7 : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 1941 "isa_thumb.tcc"
+#line 1942 "isa_thumb.tcc"
 >
 {
 public:
@@ -1946,21 +1947,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 1950 "isa_thumb.tcc"
+#line 1951 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 1954 "isa_thumb.tcc"
+#line 1955 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 1957 "isa_thumb.tcc"
+#line 1958 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 1961 "isa_thumb.tcc"
+#line 1962 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 1964 "isa_thumb.tcc"
+#line 1965 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -1998,14 +1999,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 2002 "isa_thumb.tcc"
+#line 2003 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 2006 "isa_thumb.tcc"
+#line 2007 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 2009 "isa_thumb.tcc"
+#line 2010 "isa_thumb.tcc"
 	);
 private:
 };
@@ -2013,15 +2014,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 2017 "isa_thumb.tcc"
+#line 2018 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 2020 "isa_thumb.tcc"
+#line 2021 "isa_thumb.tcc"
 >
 class OpAnd : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 2025 "isa_thumb.tcc"
+#line 2026 "isa_thumb.tcc"
 >
 {
 public:
@@ -2031,21 +2032,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 2035 "isa_thumb.tcc"
+#line 2036 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 2039 "isa_thumb.tcc"
+#line 2040 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 2042 "isa_thumb.tcc"
+#line 2043 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 2046 "isa_thumb.tcc"
+#line 2047 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 2049 "isa_thumb.tcc"
+#line 2050 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -2083,14 +2084,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 2087 "isa_thumb.tcc"
+#line 2088 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 2091 "isa_thumb.tcc"
+#line 2092 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 2094 "isa_thumb.tcc"
+#line 2095 "isa_thumb.tcc"
 	);
 private:
 };
@@ -2098,15 +2099,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 2102 "isa_thumb.tcc"
+#line 2103 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 2105 "isa_thumb.tcc"
+#line 2106 "isa_thumb.tcc"
 >
 class OpAsr_1 : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 2110 "isa_thumb.tcc"
+#line 2111 "isa_thumb.tcc"
 >
 {
 public:
@@ -2117,21 +2118,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 2121 "isa_thumb.tcc"
+#line 2122 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 2125 "isa_thumb.tcc"
+#line 2126 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 2128 "isa_thumb.tcc"
+#line 2129 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 2132 "isa_thumb.tcc"
+#line 2133 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 2135 "isa_thumb.tcc"
+#line 2136 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -2169,14 +2170,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 2173 "isa_thumb.tcc"
+#line 2174 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 2177 "isa_thumb.tcc"
+#line 2178 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 2180 "isa_thumb.tcc"
+#line 2181 "isa_thumb.tcc"
 	);
 private:
 };
@@ -2184,15 +2185,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 2188 "isa_thumb.tcc"
+#line 2189 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 2191 "isa_thumb.tcc"
+#line 2192 "isa_thumb.tcc"
 >
 class OpAsr_2 : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 2196 "isa_thumb.tcc"
+#line 2197 "isa_thumb.tcc"
 >
 {
 public:
@@ -2202,21 +2203,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 2206 "isa_thumb.tcc"
+#line 2207 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 2210 "isa_thumb.tcc"
+#line 2211 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 2213 "isa_thumb.tcc"
+#line 2214 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 2217 "isa_thumb.tcc"
+#line 2218 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 2220 "isa_thumb.tcc"
+#line 2221 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -2254,14 +2255,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 2258 "isa_thumb.tcc"
+#line 2259 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 2262 "isa_thumb.tcc"
+#line 2263 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 2265 "isa_thumb.tcc"
+#line 2266 "isa_thumb.tcc"
 	);
 private:
 };
@@ -2269,15 +2270,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 2273 "isa_thumb.tcc"
+#line 2274 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 2276 "isa_thumb.tcc"
+#line 2277 "isa_thumb.tcc"
 >
 class OpBic : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 2281 "isa_thumb.tcc"
+#line 2282 "isa_thumb.tcc"
 >
 {
 public:
@@ -2287,21 +2288,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 2291 "isa_thumb.tcc"
+#line 2292 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 2295 "isa_thumb.tcc"
+#line 2296 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 2298 "isa_thumb.tcc"
+#line 2299 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 2302 "isa_thumb.tcc"
+#line 2303 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 2305 "isa_thumb.tcc"
+#line 2306 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -2339,14 +2340,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 2343 "isa_thumb.tcc"
+#line 2344 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 2347 "isa_thumb.tcc"
+#line 2348 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 2350 "isa_thumb.tcc"
+#line 2351 "isa_thumb.tcc"
 	);
 private:
 };
@@ -2354,15 +2355,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 2358 "isa_thumb.tcc"
+#line 2359 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 2361 "isa_thumb.tcc"
+#line 2362 "isa_thumb.tcc"
 >
 class OpCmn : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 2366 "isa_thumb.tcc"
+#line 2367 "isa_thumb.tcc"
 >
 {
 public:
@@ -2372,21 +2373,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 2376 "isa_thumb.tcc"
+#line 2377 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 2380 "isa_thumb.tcc"
+#line 2381 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 2383 "isa_thumb.tcc"
+#line 2384 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 2387 "isa_thumb.tcc"
+#line 2388 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 2390 "isa_thumb.tcc"
+#line 2391 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -2424,14 +2425,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 2428 "isa_thumb.tcc"
+#line 2429 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 2432 "isa_thumb.tcc"
+#line 2433 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 2435 "isa_thumb.tcc"
+#line 2436 "isa_thumb.tcc"
 	);
 private:
 };
@@ -2439,15 +2440,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 2443 "isa_thumb.tcc"
+#line 2444 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 2446 "isa_thumb.tcc"
+#line 2447 "isa_thumb.tcc"
 >
 class OpCmp_1 : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 2451 "isa_thumb.tcc"
+#line 2452 "isa_thumb.tcc"
 >
 {
 public:
@@ -2457,21 +2458,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 2461 "isa_thumb.tcc"
+#line 2462 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 2465 "isa_thumb.tcc"
+#line 2466 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 2468 "isa_thumb.tcc"
+#line 2469 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 2472 "isa_thumb.tcc"
+#line 2473 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 2475 "isa_thumb.tcc"
+#line 2476 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -2509,14 +2510,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 2513 "isa_thumb.tcc"
+#line 2514 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 2517 "isa_thumb.tcc"
+#line 2518 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 2520 "isa_thumb.tcc"
+#line 2521 "isa_thumb.tcc"
 	);
 private:
 };
@@ -2524,15 +2525,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 2528 "isa_thumb.tcc"
+#line 2529 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 2531 "isa_thumb.tcc"
+#line 2532 "isa_thumb.tcc"
 >
 class OpCmp_2 : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 2536 "isa_thumb.tcc"
+#line 2537 "isa_thumb.tcc"
 >
 {
 public:
@@ -2542,21 +2543,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 2546 "isa_thumb.tcc"
+#line 2547 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 2550 "isa_thumb.tcc"
+#line 2551 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 2553 "isa_thumb.tcc"
+#line 2554 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 2557 "isa_thumb.tcc"
+#line 2558 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 2560 "isa_thumb.tcc"
+#line 2561 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -2594,14 +2595,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 2598 "isa_thumb.tcc"
+#line 2599 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 2602 "isa_thumb.tcc"
+#line 2603 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 2605 "isa_thumb.tcc"
+#line 2606 "isa_thumb.tcc"
 	);
 private:
 };
@@ -2609,15 +2610,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 2613 "isa_thumb.tcc"
+#line 2614 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 2616 "isa_thumb.tcc"
+#line 2617 "isa_thumb.tcc"
 >
 class OpCmp_3 : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 2621 "isa_thumb.tcc"
+#line 2622 "isa_thumb.tcc"
 >
 {
 public:
@@ -2641,21 +2642,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 2645 "isa_thumb.tcc"
+#line 2646 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 2649 "isa_thumb.tcc"
+#line 2650 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 2652 "isa_thumb.tcc"
+#line 2653 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 2656 "isa_thumb.tcc"
+#line 2657 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 2659 "isa_thumb.tcc"
+#line 2660 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -2693,14 +2694,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 2697 "isa_thumb.tcc"
+#line 2698 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 2701 "isa_thumb.tcc"
+#line 2702 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 2704 "isa_thumb.tcc"
+#line 2705 "isa_thumb.tcc"
 	);
 private:
 };
@@ -2708,15 +2709,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 2712 "isa_thumb.tcc"
+#line 2713 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 2715 "isa_thumb.tcc"
+#line 2716 "isa_thumb.tcc"
 >
 class OpEor : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 2720 "isa_thumb.tcc"
+#line 2721 "isa_thumb.tcc"
 >
 {
 public:
@@ -2726,21 +2727,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 2730 "isa_thumb.tcc"
+#line 2731 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 2734 "isa_thumb.tcc"
+#line 2735 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 2737 "isa_thumb.tcc"
+#line 2738 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 2741 "isa_thumb.tcc"
+#line 2742 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 2744 "isa_thumb.tcc"
+#line 2745 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -2778,14 +2779,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 2782 "isa_thumb.tcc"
+#line 2783 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 2786 "isa_thumb.tcc"
+#line 2787 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 2789 "isa_thumb.tcc"
+#line 2790 "isa_thumb.tcc"
 	);
 private:
 };
@@ -2793,15 +2794,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 2797 "isa_thumb.tcc"
+#line 2798 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 2800 "isa_thumb.tcc"
+#line 2801 "isa_thumb.tcc"
 >
 class OpLsl_1 : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 2805 "isa_thumb.tcc"
+#line 2806 "isa_thumb.tcc"
 >
 {
 public:
@@ -2812,21 +2813,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 2816 "isa_thumb.tcc"
+#line 2817 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 2820 "isa_thumb.tcc"
+#line 2821 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 2823 "isa_thumb.tcc"
+#line 2824 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 2827 "isa_thumb.tcc"
+#line 2828 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 2830 "isa_thumb.tcc"
+#line 2831 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -2864,14 +2865,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 2868 "isa_thumb.tcc"
+#line 2869 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 2872 "isa_thumb.tcc"
+#line 2873 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 2875 "isa_thumb.tcc"
+#line 2876 "isa_thumb.tcc"
 	);
 private:
 };
@@ -2879,15 +2880,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 2883 "isa_thumb.tcc"
+#line 2884 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 2886 "isa_thumb.tcc"
+#line 2887 "isa_thumb.tcc"
 >
 class OpLsl_2 : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 2891 "isa_thumb.tcc"
+#line 2892 "isa_thumb.tcc"
 >
 {
 public:
@@ -2897,21 +2898,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 2901 "isa_thumb.tcc"
+#line 2902 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 2905 "isa_thumb.tcc"
+#line 2906 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 2908 "isa_thumb.tcc"
+#line 2909 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 2912 "isa_thumb.tcc"
+#line 2913 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 2915 "isa_thumb.tcc"
+#line 2916 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -2949,14 +2950,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 2953 "isa_thumb.tcc"
+#line 2954 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 2957 "isa_thumb.tcc"
+#line 2958 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 2960 "isa_thumb.tcc"
+#line 2961 "isa_thumb.tcc"
 	);
 private:
 };
@@ -2964,15 +2965,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 2968 "isa_thumb.tcc"
+#line 2969 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 2971 "isa_thumb.tcc"
+#line 2972 "isa_thumb.tcc"
 >
 class OpLsr_1 : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 2976 "isa_thumb.tcc"
+#line 2977 "isa_thumb.tcc"
 >
 {
 public:
@@ -2983,21 +2984,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 2987 "isa_thumb.tcc"
+#line 2988 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 2991 "isa_thumb.tcc"
+#line 2992 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 2994 "isa_thumb.tcc"
+#line 2995 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 2998 "isa_thumb.tcc"
+#line 2999 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 3001 "isa_thumb.tcc"
+#line 3002 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -3035,14 +3036,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 3039 "isa_thumb.tcc"
+#line 3040 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 3043 "isa_thumb.tcc"
+#line 3044 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 3046 "isa_thumb.tcc"
+#line 3047 "isa_thumb.tcc"
 	);
 private:
 };
@@ -3050,15 +3051,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 3054 "isa_thumb.tcc"
+#line 3055 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 3057 "isa_thumb.tcc"
+#line 3058 "isa_thumb.tcc"
 >
 class OpLsr_2 : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 3062 "isa_thumb.tcc"
+#line 3063 "isa_thumb.tcc"
 >
 {
 public:
@@ -3068,21 +3069,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 3072 "isa_thumb.tcc"
+#line 3073 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 3076 "isa_thumb.tcc"
+#line 3077 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 3079 "isa_thumb.tcc"
+#line 3080 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 3083 "isa_thumb.tcc"
+#line 3084 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 3086 "isa_thumb.tcc"
+#line 3087 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -3120,14 +3121,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 3124 "isa_thumb.tcc"
+#line 3125 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 3128 "isa_thumb.tcc"
+#line 3129 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 3131 "isa_thumb.tcc"
+#line 3132 "isa_thumb.tcc"
 	);
 private:
 };
@@ -3135,15 +3136,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 3139 "isa_thumb.tcc"
+#line 3140 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 3142 "isa_thumb.tcc"
+#line 3143 "isa_thumb.tcc"
 >
 class OpMov_1 : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 3147 "isa_thumb.tcc"
+#line 3148 "isa_thumb.tcc"
 >
 {
 public:
@@ -3153,21 +3154,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 3157 "isa_thumb.tcc"
+#line 3158 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 3161 "isa_thumb.tcc"
+#line 3162 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 3164 "isa_thumb.tcc"
+#line 3165 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 3168 "isa_thumb.tcc"
+#line 3169 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 3171 "isa_thumb.tcc"
+#line 3172 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -3205,14 +3206,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 3209 "isa_thumb.tcc"
+#line 3210 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 3213 "isa_thumb.tcc"
+#line 3214 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 3216 "isa_thumb.tcc"
+#line 3217 "isa_thumb.tcc"
 	);
 private:
 };
@@ -3220,15 +3221,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 3224 "isa_thumb.tcc"
+#line 3225 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 3227 "isa_thumb.tcc"
+#line 3228 "isa_thumb.tcc"
 >
 class OpMov_3 : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 3232 "isa_thumb.tcc"
+#line 3233 "isa_thumb.tcc"
 >
 {
 public:
@@ -3249,21 +3250,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 3253 "isa_thumb.tcc"
+#line 3254 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 3257 "isa_thumb.tcc"
+#line 3258 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 3260 "isa_thumb.tcc"
+#line 3261 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 3264 "isa_thumb.tcc"
+#line 3265 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 3267 "isa_thumb.tcc"
+#line 3268 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -3301,14 +3302,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 3305 "isa_thumb.tcc"
+#line 3306 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 3309 "isa_thumb.tcc"
+#line 3310 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 3312 "isa_thumb.tcc"
+#line 3313 "isa_thumb.tcc"
 	);
 private:
 };
@@ -3316,15 +3317,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 3320 "isa_thumb.tcc"
+#line 3321 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 3323 "isa_thumb.tcc"
+#line 3324 "isa_thumb.tcc"
 >
 class OpMul : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 3328 "isa_thumb.tcc"
+#line 3329 "isa_thumb.tcc"
 >
 {
 public:
@@ -3334,21 +3335,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 3338 "isa_thumb.tcc"
+#line 3339 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 3342 "isa_thumb.tcc"
+#line 3343 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 3345 "isa_thumb.tcc"
+#line 3346 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 3349 "isa_thumb.tcc"
+#line 3350 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 3352 "isa_thumb.tcc"
+#line 3353 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -3386,14 +3387,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 3390 "isa_thumb.tcc"
+#line 3391 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 3394 "isa_thumb.tcc"
+#line 3395 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 3397 "isa_thumb.tcc"
+#line 3398 "isa_thumb.tcc"
 	);
 private:
 };
@@ -3401,15 +3402,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 3405 "isa_thumb.tcc"
+#line 3406 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 3408 "isa_thumb.tcc"
+#line 3409 "isa_thumb.tcc"
 >
 class OpMvn : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 3413 "isa_thumb.tcc"
+#line 3414 "isa_thumb.tcc"
 >
 {
 public:
@@ -3419,21 +3420,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 3423 "isa_thumb.tcc"
+#line 3424 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 3427 "isa_thumb.tcc"
+#line 3428 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 3430 "isa_thumb.tcc"
+#line 3431 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 3434 "isa_thumb.tcc"
+#line 3435 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 3437 "isa_thumb.tcc"
+#line 3438 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -3471,14 +3472,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 3475 "isa_thumb.tcc"
+#line 3476 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 3479 "isa_thumb.tcc"
+#line 3480 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 3482 "isa_thumb.tcc"
+#line 3483 "isa_thumb.tcc"
 	);
 private:
 };
@@ -3486,15 +3487,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 3490 "isa_thumb.tcc"
+#line 3491 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 3493 "isa_thumb.tcc"
+#line 3494 "isa_thumb.tcc"
 >
 class OpNeg : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 3498 "isa_thumb.tcc"
+#line 3499 "isa_thumb.tcc"
 >
 {
 public:
@@ -3504,21 +3505,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 3508 "isa_thumb.tcc"
+#line 3509 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 3512 "isa_thumb.tcc"
+#line 3513 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 3515 "isa_thumb.tcc"
+#line 3516 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 3519 "isa_thumb.tcc"
+#line 3520 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 3522 "isa_thumb.tcc"
+#line 3523 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -3556,14 +3557,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 3560 "isa_thumb.tcc"
+#line 3561 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 3564 "isa_thumb.tcc"
+#line 3565 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 3567 "isa_thumb.tcc"
+#line 3568 "isa_thumb.tcc"
 	);
 private:
 };
@@ -3571,15 +3572,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 3575 "isa_thumb.tcc"
+#line 3576 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 3578 "isa_thumb.tcc"
+#line 3579 "isa_thumb.tcc"
 >
 class OpOrr : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 3583 "isa_thumb.tcc"
+#line 3584 "isa_thumb.tcc"
 >
 {
 public:
@@ -3589,21 +3590,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 3593 "isa_thumb.tcc"
+#line 3594 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 3597 "isa_thumb.tcc"
+#line 3598 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 3600 "isa_thumb.tcc"
+#line 3601 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 3604 "isa_thumb.tcc"
+#line 3605 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 3607 "isa_thumb.tcc"
+#line 3608 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -3641,14 +3642,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 3645 "isa_thumb.tcc"
+#line 3646 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 3649 "isa_thumb.tcc"
+#line 3650 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 3652 "isa_thumb.tcc"
+#line 3653 "isa_thumb.tcc"
 	);
 private:
 };
@@ -3656,15 +3657,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 3660 "isa_thumb.tcc"
+#line 3661 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 3663 "isa_thumb.tcc"
+#line 3664 "isa_thumb.tcc"
 >
 class OpRor : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 3668 "isa_thumb.tcc"
+#line 3669 "isa_thumb.tcc"
 >
 {
 public:
@@ -3674,21 +3675,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 3678 "isa_thumb.tcc"
+#line 3679 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 3682 "isa_thumb.tcc"
+#line 3683 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 3685 "isa_thumb.tcc"
+#line 3686 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 3689 "isa_thumb.tcc"
+#line 3690 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 3692 "isa_thumb.tcc"
+#line 3693 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -3726,14 +3727,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 3730 "isa_thumb.tcc"
+#line 3731 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 3734 "isa_thumb.tcc"
+#line 3735 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 3737 "isa_thumb.tcc"
+#line 3738 "isa_thumb.tcc"
 	);
 private:
 };
@@ -3741,15 +3742,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 3745 "isa_thumb.tcc"
+#line 3746 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 3748 "isa_thumb.tcc"
+#line 3749 "isa_thumb.tcc"
 >
 class OpSbc : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 3753 "isa_thumb.tcc"
+#line 3754 "isa_thumb.tcc"
 >
 {
 public:
@@ -3759,21 +3760,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 3763 "isa_thumb.tcc"
+#line 3764 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 3767 "isa_thumb.tcc"
+#line 3768 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 3770 "isa_thumb.tcc"
+#line 3771 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 3774 "isa_thumb.tcc"
+#line 3775 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 3777 "isa_thumb.tcc"
+#line 3778 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -3811,14 +3812,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 3815 "isa_thumb.tcc"
+#line 3816 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 3819 "isa_thumb.tcc"
+#line 3820 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 3822 "isa_thumb.tcc"
+#line 3823 "isa_thumb.tcc"
 	);
 private:
 };
@@ -3826,15 +3827,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 3830 "isa_thumb.tcc"
+#line 3831 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 3833 "isa_thumb.tcc"
+#line 3834 "isa_thumb.tcc"
 >
 class OpSub_1 : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 3838 "isa_thumb.tcc"
+#line 3839 "isa_thumb.tcc"
 >
 {
 public:
@@ -3845,21 +3846,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 3849 "isa_thumb.tcc"
+#line 3850 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 3853 "isa_thumb.tcc"
+#line 3854 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 3856 "isa_thumb.tcc"
+#line 3857 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 3860 "isa_thumb.tcc"
+#line 3861 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 3863 "isa_thumb.tcc"
+#line 3864 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -3897,14 +3898,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 3901 "isa_thumb.tcc"
+#line 3902 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 3905 "isa_thumb.tcc"
+#line 3906 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 3908 "isa_thumb.tcc"
+#line 3909 "isa_thumb.tcc"
 	);
 private:
 };
@@ -3912,15 +3913,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 3916 "isa_thumb.tcc"
+#line 3917 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 3919 "isa_thumb.tcc"
+#line 3920 "isa_thumb.tcc"
 >
 class OpSub_2 : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 3924 "isa_thumb.tcc"
+#line 3925 "isa_thumb.tcc"
 >
 {
 public:
@@ -3930,21 +3931,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 3934 "isa_thumb.tcc"
+#line 3935 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 3938 "isa_thumb.tcc"
+#line 3939 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 3941 "isa_thumb.tcc"
+#line 3942 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 3945 "isa_thumb.tcc"
+#line 3946 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 3948 "isa_thumb.tcc"
+#line 3949 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -3982,14 +3983,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 3986 "isa_thumb.tcc"
+#line 3987 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 3990 "isa_thumb.tcc"
+#line 3991 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 3993 "isa_thumb.tcc"
+#line 3994 "isa_thumb.tcc"
 	);
 private:
 };
@@ -3997,15 +3998,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 4001 "isa_thumb.tcc"
+#line 4002 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 4004 "isa_thumb.tcc"
+#line 4005 "isa_thumb.tcc"
 >
 class OpSub_3 : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 4009 "isa_thumb.tcc"
+#line 4010 "isa_thumb.tcc"
 >
 {
 public:
@@ -4016,21 +4017,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 4020 "isa_thumb.tcc"
+#line 4021 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 4024 "isa_thumb.tcc"
+#line 4025 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 4027 "isa_thumb.tcc"
+#line 4028 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 4031 "isa_thumb.tcc"
+#line 4032 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 4034 "isa_thumb.tcc"
+#line 4035 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -4068,14 +4069,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 4072 "isa_thumb.tcc"
+#line 4073 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 4076 "isa_thumb.tcc"
+#line 4077 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 4079 "isa_thumb.tcc"
+#line 4080 "isa_thumb.tcc"
 	);
 private:
 };
@@ -4083,15 +4084,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 4087 "isa_thumb.tcc"
+#line 4088 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 4090 "isa_thumb.tcc"
+#line 4091 "isa_thumb.tcc"
 >
 class OpSub_4 : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 4095 "isa_thumb.tcc"
+#line 4096 "isa_thumb.tcc"
 >
 {
 public:
@@ -4100,21 +4101,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 4104 "isa_thumb.tcc"
+#line 4105 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 4108 "isa_thumb.tcc"
+#line 4109 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 4111 "isa_thumb.tcc"
+#line 4112 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 4115 "isa_thumb.tcc"
+#line 4116 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 4118 "isa_thumb.tcc"
+#line 4119 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -4152,14 +4153,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 4156 "isa_thumb.tcc"
+#line 4157 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 4160 "isa_thumb.tcc"
+#line 4161 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 4163 "isa_thumb.tcc"
+#line 4164 "isa_thumb.tcc"
 	);
 private:
 };
@@ -4167,15 +4168,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 4171 "isa_thumb.tcc"
+#line 4172 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 4174 "isa_thumb.tcc"
+#line 4175 "isa_thumb.tcc"
 >
 class OpTst : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 4179 "isa_thumb.tcc"
+#line 4180 "isa_thumb.tcc"
 >
 {
 public:
@@ -4185,21 +4186,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 4189 "isa_thumb.tcc"
+#line 4190 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 4193 "isa_thumb.tcc"
+#line 4194 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 4196 "isa_thumb.tcc"
+#line 4197 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 4200 "isa_thumb.tcc"
+#line 4201 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 4203 "isa_thumb.tcc"
+#line 4204 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -4237,14 +4238,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 4241 "isa_thumb.tcc"
+#line 4242 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 4245 "isa_thumb.tcc"
+#line 4246 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 4248 "isa_thumb.tcc"
+#line 4249 "isa_thumb.tcc"
 	);
 private:
 };
@@ -4252,15 +4253,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 4256 "isa_thumb.tcc"
+#line 4257 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 4259 "isa_thumb.tcc"
+#line 4260 "isa_thumb.tcc"
 >
 class OpLdr_1 : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 4264 "isa_thumb.tcc"
+#line 4265 "isa_thumb.tcc"
 >
 {
 public:
@@ -4271,21 +4272,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 4275 "isa_thumb.tcc"
+#line 4276 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 4279 "isa_thumb.tcc"
+#line 4280 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 4282 "isa_thumb.tcc"
+#line 4283 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 4286 "isa_thumb.tcc"
+#line 4287 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 4289 "isa_thumb.tcc"
+#line 4290 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -4323,14 +4324,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 4327 "isa_thumb.tcc"
+#line 4328 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 4331 "isa_thumb.tcc"
+#line 4332 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 4334 "isa_thumb.tcc"
+#line 4335 "isa_thumb.tcc"
 	);
 private:
 };
@@ -4338,15 +4339,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 4342 "isa_thumb.tcc"
+#line 4343 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 4345 "isa_thumb.tcc"
+#line 4346 "isa_thumb.tcc"
 >
 class OpLdr_2 : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 4350 "isa_thumb.tcc"
+#line 4351 "isa_thumb.tcc"
 >
 {
 public:
@@ -4357,21 +4358,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 4361 "isa_thumb.tcc"
+#line 4362 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 4365 "isa_thumb.tcc"
+#line 4366 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 4368 "isa_thumb.tcc"
+#line 4369 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 4372 "isa_thumb.tcc"
+#line 4373 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 4375 "isa_thumb.tcc"
+#line 4376 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -4409,14 +4410,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 4413 "isa_thumb.tcc"
+#line 4414 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 4417 "isa_thumb.tcc"
+#line 4418 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 4420 "isa_thumb.tcc"
+#line 4421 "isa_thumb.tcc"
 	);
 private:
 };
@@ -4424,15 +4425,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 4428 "isa_thumb.tcc"
+#line 4429 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 4431 "isa_thumb.tcc"
+#line 4432 "isa_thumb.tcc"
 >
 class OpLdr_3 : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 4436 "isa_thumb.tcc"
+#line 4437 "isa_thumb.tcc"
 >
 {
 public:
@@ -4442,21 +4443,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 4446 "isa_thumb.tcc"
+#line 4447 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 4450 "isa_thumb.tcc"
+#line 4451 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 4453 "isa_thumb.tcc"
+#line 4454 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 4457 "isa_thumb.tcc"
+#line 4458 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 4460 "isa_thumb.tcc"
+#line 4461 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -4494,14 +4495,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 4498 "isa_thumb.tcc"
+#line 4499 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 4502 "isa_thumb.tcc"
+#line 4503 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 4505 "isa_thumb.tcc"
+#line 4506 "isa_thumb.tcc"
 	);
 private:
 };
@@ -4509,15 +4510,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 4513 "isa_thumb.tcc"
+#line 4514 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 4516 "isa_thumb.tcc"
+#line 4517 "isa_thumb.tcc"
 >
 class OpLdr_4 : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 4521 "isa_thumb.tcc"
+#line 4522 "isa_thumb.tcc"
 >
 {
 public:
@@ -4527,21 +4528,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 4531 "isa_thumb.tcc"
+#line 4532 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 4535 "isa_thumb.tcc"
+#line 4536 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 4538 "isa_thumb.tcc"
+#line 4539 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 4542 "isa_thumb.tcc"
+#line 4543 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 4545 "isa_thumb.tcc"
+#line 4546 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -4579,14 +4580,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 4583 "isa_thumb.tcc"
+#line 4584 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 4587 "isa_thumb.tcc"
+#line 4588 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 4590 "isa_thumb.tcc"
+#line 4591 "isa_thumb.tcc"
 	);
 private:
 };
@@ -4594,15 +4595,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 4598 "isa_thumb.tcc"
+#line 4599 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 4601 "isa_thumb.tcc"
+#line 4602 "isa_thumb.tcc"
 >
 class OpLdrb_1 : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 4606 "isa_thumb.tcc"
+#line 4607 "isa_thumb.tcc"
 >
 {
 public:
@@ -4613,21 +4614,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 4617 "isa_thumb.tcc"
+#line 4618 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 4621 "isa_thumb.tcc"
+#line 4622 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 4624 "isa_thumb.tcc"
+#line 4625 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 4628 "isa_thumb.tcc"
+#line 4629 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 4631 "isa_thumb.tcc"
+#line 4632 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -4665,14 +4666,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 4669 "isa_thumb.tcc"
+#line 4670 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 4673 "isa_thumb.tcc"
+#line 4674 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 4676 "isa_thumb.tcc"
+#line 4677 "isa_thumb.tcc"
 	);
 private:
 };
@@ -4680,15 +4681,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 4684 "isa_thumb.tcc"
+#line 4685 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 4687 "isa_thumb.tcc"
+#line 4688 "isa_thumb.tcc"
 >
 class OpLdrb_2 : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 4692 "isa_thumb.tcc"
+#line 4693 "isa_thumb.tcc"
 >
 {
 public:
@@ -4699,21 +4700,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 4703 "isa_thumb.tcc"
+#line 4704 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 4707 "isa_thumb.tcc"
+#line 4708 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 4710 "isa_thumb.tcc"
+#line 4711 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 4714 "isa_thumb.tcc"
+#line 4715 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 4717 "isa_thumb.tcc"
+#line 4718 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -4751,14 +4752,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 4755 "isa_thumb.tcc"
+#line 4756 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 4759 "isa_thumb.tcc"
+#line 4760 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 4762 "isa_thumb.tcc"
+#line 4763 "isa_thumb.tcc"
 	);
 private:
 };
@@ -4766,15 +4767,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 4770 "isa_thumb.tcc"
+#line 4771 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 4773 "isa_thumb.tcc"
+#line 4774 "isa_thumb.tcc"
 >
 class OpLdrh_1 : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 4778 "isa_thumb.tcc"
+#line 4779 "isa_thumb.tcc"
 >
 {
 public:
@@ -4785,21 +4786,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 4789 "isa_thumb.tcc"
+#line 4790 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 4793 "isa_thumb.tcc"
+#line 4794 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 4796 "isa_thumb.tcc"
+#line 4797 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 4800 "isa_thumb.tcc"
+#line 4801 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 4803 "isa_thumb.tcc"
+#line 4804 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -4837,14 +4838,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 4841 "isa_thumb.tcc"
+#line 4842 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 4845 "isa_thumb.tcc"
+#line 4846 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 4848 "isa_thumb.tcc"
+#line 4849 "isa_thumb.tcc"
 	);
 private:
 };
@@ -4852,15 +4853,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 4856 "isa_thumb.tcc"
+#line 4857 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 4859 "isa_thumb.tcc"
+#line 4860 "isa_thumb.tcc"
 >
 class OpLdrh_2 : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 4864 "isa_thumb.tcc"
+#line 4865 "isa_thumb.tcc"
 >
 {
 public:
@@ -4871,21 +4872,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 4875 "isa_thumb.tcc"
+#line 4876 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 4879 "isa_thumb.tcc"
+#line 4880 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 4882 "isa_thumb.tcc"
+#line 4883 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 4886 "isa_thumb.tcc"
+#line 4887 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 4889 "isa_thumb.tcc"
+#line 4890 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -4923,14 +4924,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 4927 "isa_thumb.tcc"
+#line 4928 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 4931 "isa_thumb.tcc"
+#line 4932 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 4934 "isa_thumb.tcc"
+#line 4935 "isa_thumb.tcc"
 	);
 private:
 };
@@ -4938,15 +4939,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 4942 "isa_thumb.tcc"
+#line 4943 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 4945 "isa_thumb.tcc"
+#line 4946 "isa_thumb.tcc"
 >
 class OpLdrsb : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 4950 "isa_thumb.tcc"
+#line 4951 "isa_thumb.tcc"
 >
 {
 public:
@@ -4957,21 +4958,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 4961 "isa_thumb.tcc"
+#line 4962 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 4965 "isa_thumb.tcc"
+#line 4966 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 4968 "isa_thumb.tcc"
+#line 4969 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 4972 "isa_thumb.tcc"
+#line 4973 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 4975 "isa_thumb.tcc"
+#line 4976 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -5009,14 +5010,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 5013 "isa_thumb.tcc"
+#line 5014 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 5017 "isa_thumb.tcc"
+#line 5018 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 5020 "isa_thumb.tcc"
+#line 5021 "isa_thumb.tcc"
 	);
 private:
 };
@@ -5024,15 +5025,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 5028 "isa_thumb.tcc"
+#line 5029 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 5031 "isa_thumb.tcc"
+#line 5032 "isa_thumb.tcc"
 >
 class OpLdrsh : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 5036 "isa_thumb.tcc"
+#line 5037 "isa_thumb.tcc"
 >
 {
 public:
@@ -5043,21 +5044,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 5047 "isa_thumb.tcc"
+#line 5048 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 5051 "isa_thumb.tcc"
+#line 5052 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 5054 "isa_thumb.tcc"
+#line 5055 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 5058 "isa_thumb.tcc"
+#line 5059 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 5061 "isa_thumb.tcc"
+#line 5062 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -5095,14 +5096,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 5099 "isa_thumb.tcc"
+#line 5100 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 5103 "isa_thumb.tcc"
+#line 5104 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 5106 "isa_thumb.tcc"
+#line 5107 "isa_thumb.tcc"
 	);
 private:
 };
@@ -5110,15 +5111,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 5114 "isa_thumb.tcc"
+#line 5115 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 5117 "isa_thumb.tcc"
+#line 5118 "isa_thumb.tcc"
 >
 class OpStr_1 : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 5122 "isa_thumb.tcc"
+#line 5123 "isa_thumb.tcc"
 >
 {
 public:
@@ -5129,21 +5130,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 5133 "isa_thumb.tcc"
+#line 5134 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 5137 "isa_thumb.tcc"
+#line 5138 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 5140 "isa_thumb.tcc"
+#line 5141 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 5144 "isa_thumb.tcc"
+#line 5145 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 5147 "isa_thumb.tcc"
+#line 5148 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -5181,14 +5182,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 5185 "isa_thumb.tcc"
+#line 5186 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 5189 "isa_thumb.tcc"
+#line 5190 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 5192 "isa_thumb.tcc"
+#line 5193 "isa_thumb.tcc"
 	);
 private:
 };
@@ -5196,15 +5197,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 5200 "isa_thumb.tcc"
+#line 5201 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 5203 "isa_thumb.tcc"
+#line 5204 "isa_thumb.tcc"
 >
 class OpStr_2 : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 5208 "isa_thumb.tcc"
+#line 5209 "isa_thumb.tcc"
 >
 {
 public:
@@ -5215,21 +5216,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 5219 "isa_thumb.tcc"
+#line 5220 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 5223 "isa_thumb.tcc"
+#line 5224 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 5226 "isa_thumb.tcc"
+#line 5227 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 5230 "isa_thumb.tcc"
+#line 5231 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 5233 "isa_thumb.tcc"
+#line 5234 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -5267,14 +5268,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 5271 "isa_thumb.tcc"
+#line 5272 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 5275 "isa_thumb.tcc"
+#line 5276 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 5278 "isa_thumb.tcc"
+#line 5279 "isa_thumb.tcc"
 	);
 private:
 };
@@ -5282,15 +5283,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 5286 "isa_thumb.tcc"
+#line 5287 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 5289 "isa_thumb.tcc"
+#line 5290 "isa_thumb.tcc"
 >
 class OpStr_3 : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 5294 "isa_thumb.tcc"
+#line 5295 "isa_thumb.tcc"
 >
 {
 public:
@@ -5300,21 +5301,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 5304 "isa_thumb.tcc"
+#line 5305 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 5308 "isa_thumb.tcc"
+#line 5309 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 5311 "isa_thumb.tcc"
+#line 5312 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 5315 "isa_thumb.tcc"
+#line 5316 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 5318 "isa_thumb.tcc"
+#line 5319 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -5352,14 +5353,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 5356 "isa_thumb.tcc"
+#line 5357 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 5360 "isa_thumb.tcc"
+#line 5361 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 5363 "isa_thumb.tcc"
+#line 5364 "isa_thumb.tcc"
 	);
 private:
 };
@@ -5367,15 +5368,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 5371 "isa_thumb.tcc"
+#line 5372 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 5374 "isa_thumb.tcc"
+#line 5375 "isa_thumb.tcc"
 >
 class OpStrb_1 : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 5379 "isa_thumb.tcc"
+#line 5380 "isa_thumb.tcc"
 >
 {
 public:
@@ -5386,21 +5387,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 5390 "isa_thumb.tcc"
+#line 5391 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 5394 "isa_thumb.tcc"
+#line 5395 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 5397 "isa_thumb.tcc"
+#line 5398 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 5401 "isa_thumb.tcc"
+#line 5402 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 5404 "isa_thumb.tcc"
+#line 5405 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -5438,14 +5439,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 5442 "isa_thumb.tcc"
+#line 5443 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 5446 "isa_thumb.tcc"
+#line 5447 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 5449 "isa_thumb.tcc"
+#line 5450 "isa_thumb.tcc"
 	);
 private:
 };
@@ -5453,15 +5454,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 5457 "isa_thumb.tcc"
+#line 5458 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 5460 "isa_thumb.tcc"
+#line 5461 "isa_thumb.tcc"
 >
 class OpStrb_2 : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 5465 "isa_thumb.tcc"
+#line 5466 "isa_thumb.tcc"
 >
 {
 public:
@@ -5472,21 +5473,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 5476 "isa_thumb.tcc"
+#line 5477 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 5480 "isa_thumb.tcc"
+#line 5481 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 5483 "isa_thumb.tcc"
+#line 5484 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 5487 "isa_thumb.tcc"
+#line 5488 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 5490 "isa_thumb.tcc"
+#line 5491 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -5524,14 +5525,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 5528 "isa_thumb.tcc"
+#line 5529 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 5532 "isa_thumb.tcc"
+#line 5533 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 5535 "isa_thumb.tcc"
+#line 5536 "isa_thumb.tcc"
 	);
 private:
 };
@@ -5539,15 +5540,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 5543 "isa_thumb.tcc"
+#line 5544 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 5546 "isa_thumb.tcc"
+#line 5547 "isa_thumb.tcc"
 >
 class OpStrh_1 : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 5551 "isa_thumb.tcc"
+#line 5552 "isa_thumb.tcc"
 >
 {
 public:
@@ -5558,21 +5559,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 5562 "isa_thumb.tcc"
+#line 5563 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 5566 "isa_thumb.tcc"
+#line 5567 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 5569 "isa_thumb.tcc"
+#line 5570 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 5573 "isa_thumb.tcc"
+#line 5574 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 5576 "isa_thumb.tcc"
+#line 5577 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -5610,14 +5611,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 5614 "isa_thumb.tcc"
+#line 5615 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 5618 "isa_thumb.tcc"
+#line 5619 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 5621 "isa_thumb.tcc"
+#line 5622 "isa_thumb.tcc"
 	);
 private:
 };
@@ -5625,15 +5626,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 5629 "isa_thumb.tcc"
+#line 5630 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 5632 "isa_thumb.tcc"
+#line 5633 "isa_thumb.tcc"
 >
 class OpStrh_2 : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 5637 "isa_thumb.tcc"
+#line 5638 "isa_thumb.tcc"
 >
 {
 public:
@@ -5644,21 +5645,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 5648 "isa_thumb.tcc"
+#line 5649 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 5652 "isa_thumb.tcc"
+#line 5653 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 5655 "isa_thumb.tcc"
+#line 5656 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 5659 "isa_thumb.tcc"
+#line 5660 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 5662 "isa_thumb.tcc"
+#line 5663 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -5696,14 +5697,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 5700 "isa_thumb.tcc"
+#line 5701 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 5704 "isa_thumb.tcc"
+#line 5705 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 5707 "isa_thumb.tcc"
+#line 5708 "isa_thumb.tcc"
 	);
 private:
 };
@@ -5711,15 +5712,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 5715 "isa_thumb.tcc"
+#line 5716 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 5718 "isa_thumb.tcc"
+#line 5719 "isa_thumb.tcc"
 >
 class OpLdmia : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 5723 "isa_thumb.tcc"
+#line 5724 "isa_thumb.tcc"
 >
 {
 public:
@@ -5729,21 +5730,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 5733 "isa_thumb.tcc"
+#line 5734 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 5737 "isa_thumb.tcc"
+#line 5738 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 5740 "isa_thumb.tcc"
+#line 5741 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 5744 "isa_thumb.tcc"
+#line 5745 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 5747 "isa_thumb.tcc"
+#line 5748 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -5781,14 +5782,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 5785 "isa_thumb.tcc"
+#line 5786 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 5789 "isa_thumb.tcc"
+#line 5790 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 5792 "isa_thumb.tcc"
+#line 5793 "isa_thumb.tcc"
 	);
 private:
 };
@@ -5796,15 +5797,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 5800 "isa_thumb.tcc"
+#line 5801 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 5803 "isa_thumb.tcc"
+#line 5804 "isa_thumb.tcc"
 >
 class OpPop : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 5808 "isa_thumb.tcc"
+#line 5809 "isa_thumb.tcc"
 >
 {
 public:
@@ -5814,21 +5815,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 5818 "isa_thumb.tcc"
+#line 5819 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 5822 "isa_thumb.tcc"
+#line 5823 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 5825 "isa_thumb.tcc"
+#line 5826 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 5829 "isa_thumb.tcc"
+#line 5830 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 5832 "isa_thumb.tcc"
+#line 5833 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -5866,14 +5867,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 5870 "isa_thumb.tcc"
+#line 5871 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 5874 "isa_thumb.tcc"
+#line 5875 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 5877 "isa_thumb.tcc"
+#line 5878 "isa_thumb.tcc"
 	);
 private:
 };
@@ -5881,15 +5882,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 5885 "isa_thumb.tcc"
+#line 5886 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 5888 "isa_thumb.tcc"
+#line 5889 "isa_thumb.tcc"
 >
 class OpPush : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 5893 "isa_thumb.tcc"
+#line 5894 "isa_thumb.tcc"
 >
 {
 public:
@@ -5899,21 +5900,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 5903 "isa_thumb.tcc"
+#line 5904 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 5907 "isa_thumb.tcc"
+#line 5908 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 5910 "isa_thumb.tcc"
+#line 5911 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 5914 "isa_thumb.tcc"
+#line 5915 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 5917 "isa_thumb.tcc"
+#line 5918 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -5951,14 +5952,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 5955 "isa_thumb.tcc"
+#line 5956 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 5959 "isa_thumb.tcc"
+#line 5960 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 5962 "isa_thumb.tcc"
+#line 5963 "isa_thumb.tcc"
 	);
 private:
 };
@@ -5966,15 +5967,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 5970 "isa_thumb.tcc"
+#line 5971 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 5973 "isa_thumb.tcc"
+#line 5974 "isa_thumb.tcc"
 >
 class OpStmia : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 5978 "isa_thumb.tcc"
+#line 5979 "isa_thumb.tcc"
 >
 {
 public:
@@ -5984,21 +5985,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 5988 "isa_thumb.tcc"
+#line 5989 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 5992 "isa_thumb.tcc"
+#line 5993 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 5995 "isa_thumb.tcc"
+#line 5996 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 5999 "isa_thumb.tcc"
+#line 6000 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 6002 "isa_thumb.tcc"
+#line 6003 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -6036,14 +6037,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 6040 "isa_thumb.tcc"
+#line 6041 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 6044 "isa_thumb.tcc"
+#line 6045 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 6047 "isa_thumb.tcc"
+#line 6048 "isa_thumb.tcc"
 	);
 private:
 };
@@ -6051,15 +6052,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 6055 "isa_thumb.tcc"
+#line 6056 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 6058 "isa_thumb.tcc"
+#line 6059 "isa_thumb.tcc"
 >
 class OpBkpt : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 6063 "isa_thumb.tcc"
+#line 6064 "isa_thumb.tcc"
 >
 {
 public:
@@ -6068,21 +6069,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 6072 "isa_thumb.tcc"
+#line 6073 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 6076 "isa_thumb.tcc"
+#line 6077 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 6079 "isa_thumb.tcc"
+#line 6080 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 6083 "isa_thumb.tcc"
+#line 6084 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 6086 "isa_thumb.tcc"
+#line 6087 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -6120,14 +6121,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 6124 "isa_thumb.tcc"
+#line 6125 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 6128 "isa_thumb.tcc"
+#line 6129 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 6131 "isa_thumb.tcc"
+#line 6132 "isa_thumb.tcc"
 	);
 private:
 };
@@ -6135,15 +6136,15 @@ private:
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 6139 "isa_thumb.tcc"
+#line 6140 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 6142 "isa_thumb.tcc"
+#line 6143 "isa_thumb.tcc"
 >
 class OpSwi : public Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 6147 "isa_thumb.tcc"
+#line 6148 "isa_thumb.tcc"
 >
 {
 public:
@@ -6152,21 +6153,21 @@ public:
 	virtual
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 6156 "isa_thumb.tcc"
+#line 6157 "isa_thumb.tcc"
 	disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 6160 "isa_thumb.tcc"
+#line 6161 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 6163 "isa_thumb.tcc"
+#line 6164 "isa_thumb.tcc"
 	,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	stringstream &
-#line 6167 "isa_thumb.tcc"
+#line 6168 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	buffer
-#line 6170 "isa_thumb.tcc"
+#line 6171 "isa_thumb.tcc"
 	);
 	/*
 	*  Copyright (c) 2007,
@@ -6204,14 +6205,14 @@ public:
 	virtual
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	void
-#line 6208 "isa_thumb.tcc"
+#line 6209 "isa_thumb.tcc"
 	execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	CPU<CONFIG> &
-#line 6212 "isa_thumb.tcc"
+#line 6213 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 	cpu
-#line 6215 "isa_thumb.tcc"
+#line 6216 "isa_thumb.tcc"
 	);
 private:
 };
@@ -6261,17 +6262,17 @@ THUMB BRANCH INSTRUCTIONS
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 6265 "isa_thumb.tcc"
+#line 6266 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 6268 "isa_thumb.tcc"
+#line 6269 "isa_thumb.tcc"
 >
 
 void
 OpB_1_0xxx<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 6275 "isa_thumb.tcc"
+#line 6276 "isa_thumb.tcc"
 >::initialize_cond_init()
 {
 #line 50 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/branch.isa"
@@ -6280,37 +6281,37 @@ CONFIG
 
 		inherited::cond_init = sub_cond;
 	}
-#line 6284 "isa_thumb.tcc"
+#line 6285 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 6289 "isa_thumb.tcc"
+#line 6290 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 6292 "isa_thumb.tcc"
+#line 6293 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 6296 "isa_thumb.tcc"
+#line 6297 "isa_thumb.tcc"
 OpB_1_0xxx<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 6300 "isa_thumb.tcc"
+#line 6301 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 6304 "isa_thumb.tcc"
+#line 6305 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 6307 "isa_thumb.tcc"
+#line 6308 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 6311 "isa_thumb.tcc"
+#line 6312 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 6314 "isa_thumb.tcc"
+#line 6315 "isa_thumb.tcc"
 )
 {
 #line 70 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/branch.isa"
@@ -6320,30 +6321,30 @@ buffer
 		cpu.DisasmCondition(inherited::cond_init, buffer);
 		buffer << " 0x" << hex << cpu.GetGPR(cpu.PC_reg) + 4 + (imm << 1) << dec;
 	}
-#line 6324 "isa_thumb.tcc"
+#line 6325 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 6329 "isa_thumb.tcc"
+#line 6330 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 6332 "isa_thumb.tcc"
+#line 6333 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 6336 "isa_thumb.tcc"
+#line 6337 "isa_thumb.tcc"
 OpB_1_0xxx<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 6340 "isa_thumb.tcc"
+#line 6341 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 6344 "isa_thumb.tcc"
+#line 6345 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 6347 "isa_thumb.tcc"
+#line 6348 "isa_thumb.tcc"
 )
 {
 #line 77 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/branch.isa"
@@ -6360,44 +6361,44 @@ cpu
 		new_PC = cpu.GetGPR(cpu.PC_reg) + 4 + (imm << 1);
 		cpu.SetGPR(cpu.PC_reg, new_PC);
 	}
-#line 6364 "isa_thumb.tcc"
+#line 6365 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 6370 "isa_thumb.tcc"
+#line 6371 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 6373 "isa_thumb.tcc"
+#line 6374 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 6378 "isa_thumb.tcc"
+#line 6379 "isa_thumb.tcc"
 > *DecodeOpB_1_0xxx(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpB_1_0xxx<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 6384 "isa_thumb.tcc"
+#line 6385 "isa_thumb.tcc"
 	>(code, addr);
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 6391 "isa_thumb.tcc"
+#line 6392 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 6394 "isa_thumb.tcc"
+#line 6395 "isa_thumb.tcc"
 >
 
 void
 OpB_1_10xx<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 6401 "isa_thumb.tcc"
+#line 6402 "isa_thumb.tcc"
 >::initialize_cond_init()
 {
 #line 56 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/branch.isa"
@@ -6406,37 +6407,37 @@ CONFIG
 
 		inherited::cond_init = sub_cond + 8;
 	}
-#line 6410 "isa_thumb.tcc"
+#line 6411 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 6415 "isa_thumb.tcc"
+#line 6416 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 6418 "isa_thumb.tcc"
+#line 6419 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 6422 "isa_thumb.tcc"
+#line 6423 "isa_thumb.tcc"
 OpB_1_10xx<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 6426 "isa_thumb.tcc"
+#line 6427 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 6430 "isa_thumb.tcc"
+#line 6431 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 6433 "isa_thumb.tcc"
+#line 6434 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 6437 "isa_thumb.tcc"
+#line 6438 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 6440 "isa_thumb.tcc"
+#line 6441 "isa_thumb.tcc"
 )
 {
 #line 70 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/branch.isa"
@@ -6446,30 +6447,30 @@ buffer
 		cpu.DisasmCondition(inherited::cond_init, buffer);
 		buffer << " 0x" << hex << cpu.GetGPR(cpu.PC_reg) + 4 + (imm << 1) << dec;
 	}
-#line 6450 "isa_thumb.tcc"
+#line 6451 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 6455 "isa_thumb.tcc"
+#line 6456 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 6458 "isa_thumb.tcc"
+#line 6459 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 6462 "isa_thumb.tcc"
+#line 6463 "isa_thumb.tcc"
 OpB_1_10xx<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 6466 "isa_thumb.tcc"
+#line 6467 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 6470 "isa_thumb.tcc"
+#line 6471 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 6473 "isa_thumb.tcc"
+#line 6474 "isa_thumb.tcc"
 )
 {
 #line 77 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/branch.isa"
@@ -6486,44 +6487,44 @@ cpu
 		new_PC = cpu.GetGPR(cpu.PC_reg) + 4 + (imm << 1);
 		cpu.SetGPR(cpu.PC_reg, new_PC);
 	}
-#line 6490 "isa_thumb.tcc"
+#line 6491 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 6496 "isa_thumb.tcc"
+#line 6497 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 6499 "isa_thumb.tcc"
+#line 6500 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 6504 "isa_thumb.tcc"
+#line 6505 "isa_thumb.tcc"
 > *DecodeOpB_1_10xx(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpB_1_10xx<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 6510 "isa_thumb.tcc"
+#line 6511 "isa_thumb.tcc"
 	>(code, addr);
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 6517 "isa_thumb.tcc"
+#line 6518 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 6520 "isa_thumb.tcc"
+#line 6521 "isa_thumb.tcc"
 >
 
 void
 OpB_1_110x<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 6527 "isa_thumb.tcc"
+#line 6528 "isa_thumb.tcc"
 >::initialize_cond_init()
 {
 #line 62 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/branch.isa"
@@ -6532,37 +6533,37 @@ CONFIG
 
 		inherited::cond_init = sub_cond + 12;
 	}
-#line 6536 "isa_thumb.tcc"
+#line 6537 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 6541 "isa_thumb.tcc"
+#line 6542 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 6544 "isa_thumb.tcc"
+#line 6545 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 6548 "isa_thumb.tcc"
+#line 6549 "isa_thumb.tcc"
 OpB_1_110x<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 6552 "isa_thumb.tcc"
+#line 6553 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 6556 "isa_thumb.tcc"
+#line 6557 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 6559 "isa_thumb.tcc"
+#line 6560 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 6563 "isa_thumb.tcc"
+#line 6564 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 6566 "isa_thumb.tcc"
+#line 6567 "isa_thumb.tcc"
 )
 {
 #line 70 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/branch.isa"
@@ -6572,30 +6573,30 @@ buffer
 		cpu.DisasmCondition(inherited::cond_init, buffer);
 		buffer << " 0x" << hex << cpu.GetGPR(cpu.PC_reg) + 4 + (imm << 1) << dec;
 	}
-#line 6576 "isa_thumb.tcc"
+#line 6577 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 6581 "isa_thumb.tcc"
+#line 6582 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 6584 "isa_thumb.tcc"
+#line 6585 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 6588 "isa_thumb.tcc"
+#line 6589 "isa_thumb.tcc"
 OpB_1_110x<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 6592 "isa_thumb.tcc"
+#line 6593 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 6596 "isa_thumb.tcc"
+#line 6597 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 6599 "isa_thumb.tcc"
+#line 6600 "isa_thumb.tcc"
 )
 {
 #line 77 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/branch.isa"
@@ -6612,27 +6613,27 @@ cpu
 		new_PC = cpu.GetGPR(cpu.PC_reg) + 4 + (imm << 1);
 		cpu.SetGPR(cpu.PC_reg, new_PC);
 	}
-#line 6616 "isa_thumb.tcc"
+#line 6617 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 6622 "isa_thumb.tcc"
+#line 6623 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 6625 "isa_thumb.tcc"
+#line 6626 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 6630 "isa_thumb.tcc"
+#line 6631 "isa_thumb.tcc"
 > *DecodeOpB_1_110x(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpB_1_110x<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 6636 "isa_thumb.tcc"
+#line 6637 "isa_thumb.tcc"
 	>(code, addr);
 }
 
@@ -6646,32 +6647,32 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 6650 "isa_thumb.tcc"
+#line 6651 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 6653 "isa_thumb.tcc"
+#line 6654 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 6657 "isa_thumb.tcc"
+#line 6658 "isa_thumb.tcc"
 OpB_2<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 6661 "isa_thumb.tcc"
+#line 6662 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 6665 "isa_thumb.tcc"
+#line 6666 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 6668 "isa_thumb.tcc"
+#line 6669 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 6672 "isa_thumb.tcc"
+#line 6673 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 6675 "isa_thumb.tcc"
+#line 6676 "isa_thumb.tcc"
 )
 {
 #line 102 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/branch.isa"
@@ -6681,30 +6682,30 @@ buffer
 		buffer << "b";
 		buffer << " 0x" << hex << cpu.GetGPR(cpu.PC_reg) + 4 + (imm << 1) << dec;
 	}
-#line 6685 "isa_thumb.tcc"
+#line 6686 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 6690 "isa_thumb.tcc"
+#line 6691 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 6693 "isa_thumb.tcc"
+#line 6694 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 6697 "isa_thumb.tcc"
+#line 6698 "isa_thumb.tcc"
 OpB_2<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 6701 "isa_thumb.tcc"
+#line 6702 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 6705 "isa_thumb.tcc"
+#line 6706 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 6708 "isa_thumb.tcc"
+#line 6709 "isa_thumb.tcc"
 )
 {
 #line 109 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/branch.isa"
@@ -6716,27 +6717,27 @@ cpu
 		new_PC = cpu.GetGPR(cpu.PC_reg) + 4 + (imm << 1);
 		cpu.SetGPR(cpu.PC_reg, new_PC);
 	}
-#line 6720 "isa_thumb.tcc"
+#line 6721 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 6726 "isa_thumb.tcc"
+#line 6727 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 6729 "isa_thumb.tcc"
+#line 6730 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 6734 "isa_thumb.tcc"
+#line 6735 "isa_thumb.tcc"
 > *DecodeOpB_2(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpB_2<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 6740 "isa_thumb.tcc"
+#line 6741 "isa_thumb.tcc"
 	>(code, addr);
 }
 
@@ -6750,32 +6751,32 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 6754 "isa_thumb.tcc"
+#line 6755 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 6757 "isa_thumb.tcc"
+#line 6758 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 6761 "isa_thumb.tcc"
+#line 6762 "isa_thumb.tcc"
 OpBl<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 6765 "isa_thumb.tcc"
+#line 6766 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 6769 "isa_thumb.tcc"
+#line 6770 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 6772 "isa_thumb.tcc"
+#line 6773 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 6776 "isa_thumb.tcc"
+#line 6777 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 6779 "isa_thumb.tcc"
+#line 6780 "isa_thumb.tcc"
 )
 {
 #line 129 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/branch.isa"
@@ -6793,30 +6794,30 @@ buffer
 			buffer << "0x" << hex << bl_soffset << dec;
 		}
 	}
-#line 6797 "isa_thumb.tcc"
+#line 6798 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 6802 "isa_thumb.tcc"
+#line 6803 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 6805 "isa_thumb.tcc"
+#line 6806 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 6809 "isa_thumb.tcc"
+#line 6810 "isa_thumb.tcc"
 OpBl<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 6813 "isa_thumb.tcc"
+#line 6814 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 6817 "isa_thumb.tcc"
+#line 6818 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 6820 "isa_thumb.tcc"
+#line 6821 "isa_thumb.tcc"
 )
 {
 #line 144 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/branch.isa"
@@ -6841,27 +6842,27 @@ cpu
 			cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 		}
 	}
-#line 6845 "isa_thumb.tcc"
+#line 6846 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 6851 "isa_thumb.tcc"
+#line 6852 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 6854 "isa_thumb.tcc"
+#line 6855 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 6859 "isa_thumb.tcc"
+#line 6860 "isa_thumb.tcc"
 > *DecodeOpBl(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpBl<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 6865 "isa_thumb.tcc"
+#line 6866 "isa_thumb.tcc"
 	>(code, addr);
 }
 
@@ -6875,32 +6876,32 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 6879 "isa_thumb.tcc"
+#line 6880 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 6882 "isa_thumb.tcc"
+#line 6883 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 6886 "isa_thumb.tcc"
+#line 6887 "isa_thumb.tcc"
 OpBx<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 6890 "isa_thumb.tcc"
+#line 6891 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 6894 "isa_thumb.tcc"
+#line 6895 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 6897 "isa_thumb.tcc"
+#line 6898 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 6901 "isa_thumb.tcc"
+#line 6902 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 6904 "isa_thumb.tcc"
+#line 6905 "isa_thumb.tcc"
 )
 {
 #line 177 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/branch.isa"
@@ -6910,22 +6911,22 @@ buffer
 		buffer << "bx "
 		<< "r" << inherited::rm_index << endl;
 	}
-#line 6914 "isa_thumb.tcc"
+#line 6915 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 6919 "isa_thumb.tcc"
+#line 6920 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 6922 "isa_thumb.tcc"
+#line 6923 "isa_thumb.tcc"
 >
 
 void
 OpBx<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 6929 "isa_thumb.tcc"
+#line 6930 "isa_thumb.tcc"
 >::initialize_rm_init()
 {
 #line 184 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/branch.isa"
@@ -6937,22 +6938,22 @@ CONFIG
 		else
 		inherited::rm_init = 0;
 	}
-#line 6941 "isa_thumb.tcc"
+#line 6942 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 6946 "isa_thumb.tcc"
+#line 6947 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 6949 "isa_thumb.tcc"
+#line 6950 "isa_thumb.tcc"
 >
 
 void
 OpBx<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 6956 "isa_thumb.tcc"
+#line 6957 "isa_thumb.tcc"
 >::initialize_rm_index()
 {
 #line 193 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/branch.isa"
@@ -6961,30 +6962,30 @@ CONFIG
 
 		inherited::rm_index = (h2 << 3) + rm;
 	}
-#line 6965 "isa_thumb.tcc"
+#line 6966 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 6970 "isa_thumb.tcc"
+#line 6971 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 6973 "isa_thumb.tcc"
+#line 6974 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 6977 "isa_thumb.tcc"
+#line 6978 "isa_thumb.tcc"
 OpBx<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 6981 "isa_thumb.tcc"
+#line 6982 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 6985 "isa_thumb.tcc"
+#line 6986 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 6988 "isa_thumb.tcc"
+#line 6989 "isa_thumb.tcc"
 )
 {
 #line 199 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/branch.isa"
@@ -7003,27 +7004,27 @@ cpu
 
 		cpu.SetGPR(cpu.PC_reg, rm_value & ~(typename CONFIG::reg_t)1);
 	}
-#line 7007 "isa_thumb.tcc"
+#line 7008 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 7013 "isa_thumb.tcc"
+#line 7014 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 7016 "isa_thumb.tcc"
+#line 7017 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 7021 "isa_thumb.tcc"
+#line 7022 "isa_thumb.tcc"
 > *DecodeOpBx(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpBx<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 7027 "isa_thumb.tcc"
+#line 7028 "isa_thumb.tcc"
 	>(code, addr);
 }
 
@@ -7037,32 +7038,32 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 7041 "isa_thumb.tcc"
+#line 7042 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 7044 "isa_thumb.tcc"
+#line 7045 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 7048 "isa_thumb.tcc"
+#line 7049 "isa_thumb.tcc"
 OpBlx_1<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 7052 "isa_thumb.tcc"
+#line 7053 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 7056 "isa_thumb.tcc"
+#line 7057 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 7059 "isa_thumb.tcc"
+#line 7060 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 7063 "isa_thumb.tcc"
+#line 7064 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 7066 "isa_thumb.tcc"
+#line 7067 "isa_thumb.tcc"
 )
 {
 #line 226 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/branch.isa"
@@ -7081,30 +7082,30 @@ buffer
 		<< ((blx_soffset << 12) + cpu.GetGPR(cpu.PC_reg) + 4 + (offset << 1))
 		<< dec;
 	}
-#line 7085 "isa_thumb.tcc"
+#line 7086 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 7090 "isa_thumb.tcc"
+#line 7091 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 7093 "isa_thumb.tcc"
+#line 7094 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 7097 "isa_thumb.tcc"
+#line 7098 "isa_thumb.tcc"
 OpBlx_1<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 7101 "isa_thumb.tcc"
+#line 7102 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 7105 "isa_thumb.tcc"
+#line 7106 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 7108 "isa_thumb.tcc"
+#line 7109 "isa_thumb.tcc"
 )
 {
 #line 242 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/branch.isa"
@@ -7115,27 +7116,27 @@ cpu
 		cpu.SetGPR(cpu.LR_reg, cpu.GetGPR(cpu.PC_reg) + 3);
 		cpu.SetGPR(cpu.PC_reg, new_PC);
 	}
-#line 7119 "isa_thumb.tcc"
+#line 7120 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 7125 "isa_thumb.tcc"
+#line 7126 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 7128 "isa_thumb.tcc"
+#line 7129 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 7133 "isa_thumb.tcc"
+#line 7134 "isa_thumb.tcc"
 > *DecodeOpBlx_1(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpBlx_1<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 7139 "isa_thumb.tcc"
+#line 7140 "isa_thumb.tcc"
 	>(code, addr);
 }
 
@@ -7149,17 +7150,17 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 7153 "isa_thumb.tcc"
+#line 7154 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 7156 "isa_thumb.tcc"
+#line 7157 "isa_thumb.tcc"
 >
 
 void
 OpBlx_2<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 7163 "isa_thumb.tcc"
+#line 7164 "isa_thumb.tcc"
 >::initialize_rm_init()
 {
 #line 261 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/branch.isa"
@@ -7171,22 +7172,22 @@ CONFIG
 		else
 		inherited::rm_init = 0;
 	}
-#line 7175 "isa_thumb.tcc"
+#line 7176 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 7180 "isa_thumb.tcc"
+#line 7181 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 7183 "isa_thumb.tcc"
+#line 7184 "isa_thumb.tcc"
 >
 
 void
 OpBlx_2<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 7190 "isa_thumb.tcc"
+#line 7191 "isa_thumb.tcc"
 >::initialize_rm_index()
 {
 #line 270 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/branch.isa"
@@ -7195,37 +7196,37 @@ CONFIG
 
 		inherited::rm_index = (h2 << 3) + rm;
 	}
-#line 7199 "isa_thumb.tcc"
+#line 7200 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 7204 "isa_thumb.tcc"
+#line 7205 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 7207 "isa_thumb.tcc"
+#line 7208 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 7211 "isa_thumb.tcc"
+#line 7212 "isa_thumb.tcc"
 OpBlx_2<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 7215 "isa_thumb.tcc"
+#line 7216 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 7219 "isa_thumb.tcc"
+#line 7220 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 7222 "isa_thumb.tcc"
+#line 7223 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 7226 "isa_thumb.tcc"
+#line 7227 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 7229 "isa_thumb.tcc"
+#line 7230 "isa_thumb.tcc"
 )
 {
 #line 276 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/branch.isa"
@@ -7234,30 +7235,30 @@ buffer
 
 		buffer << "blx r" << inherited::rm_index;
 	}
-#line 7238 "isa_thumb.tcc"
+#line 7239 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 7243 "isa_thumb.tcc"
+#line 7244 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 7246 "isa_thumb.tcc"
+#line 7247 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 7250 "isa_thumb.tcc"
+#line 7251 "isa_thumb.tcc"
 OpBlx_2<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 7254 "isa_thumb.tcc"
+#line 7255 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 7258 "isa_thumb.tcc"
+#line 7259 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 7261 "isa_thumb.tcc"
+#line 7262 "isa_thumb.tcc"
 )
 {
 #line 282 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/branch.isa"
@@ -7276,27 +7277,27 @@ cpu
 
 		cpu.SetGPR(cpu.PC_reg, rm_value & ~(typename CONFIG::reg_t)1);
 	}
-#line 7280 "isa_thumb.tcc"
+#line 7281 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 7286 "isa_thumb.tcc"
+#line 7287 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 7289 "isa_thumb.tcc"
+#line 7290 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 7294 "isa_thumb.tcc"
+#line 7295 "isa_thumb.tcc"
 > *DecodeOpBlx_2(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpBlx_2<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 7300 "isa_thumb.tcc"
+#line 7301 "isa_thumb.tcc"
 	>(code, addr);
 }
 
@@ -7347,62 +7348,62 @@ THUMB DATA PROCESSING INSTRUCTIONS
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 7351 "isa_thumb.tcc"
+#line 7352 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 7354 "isa_thumb.tcc"
+#line 7355 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 7358 "isa_thumb.tcc"
+#line 7359 "isa_thumb.tcc"
 OpAdc<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 7362 "isa_thumb.tcc"
+#line 7363 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 7366 "isa_thumb.tcc"
+#line 7367 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 7369 "isa_thumb.tcc"
+#line 7370 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 7373 "isa_thumb.tcc"
+#line 7374 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 7376 "isa_thumb.tcc"
+#line 7377 "isa_thumb.tcc"
 )
 {
 #line 48 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
 	{
 		buffer << "adc r" << rd << ", r" << rm;
 	}
-#line 7383 "isa_thumb.tcc"
+#line 7384 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 7388 "isa_thumb.tcc"
+#line 7389 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 7391 "isa_thumb.tcc"
+#line 7392 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 7395 "isa_thumb.tcc"
+#line 7396 "isa_thumb.tcc"
 OpAdc<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 7399 "isa_thumb.tcc"
+#line 7400 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 7403 "isa_thumb.tcc"
+#line 7404 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 7406 "isa_thumb.tcc"
+#line 7407 "isa_thumb.tcc"
 )
 {
 #line 52 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
@@ -7425,27 +7426,27 @@ cpu
 		cpu.SetCPSR_C(carry_out); // to check
 		cpu.SetCPSR_V(overflow_out); // to check
 	}
-#line 7429 "isa_thumb.tcc"
+#line 7430 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 7435 "isa_thumb.tcc"
+#line 7436 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 7438 "isa_thumb.tcc"
+#line 7439 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 7443 "isa_thumb.tcc"
+#line 7444 "isa_thumb.tcc"
 > *DecodeOpAdc(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpAdc<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 7449 "isa_thumb.tcc"
+#line 7450 "isa_thumb.tcc"
 	>(code, addr);
 }
 
@@ -7459,62 +7460,62 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 7463 "isa_thumb.tcc"
+#line 7464 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 7466 "isa_thumb.tcc"
+#line 7467 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 7470 "isa_thumb.tcc"
+#line 7471 "isa_thumb.tcc"
 OpAdd_1<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 7474 "isa_thumb.tcc"
+#line 7475 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 7478 "isa_thumb.tcc"
+#line 7479 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 7481 "isa_thumb.tcc"
+#line 7482 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 7485 "isa_thumb.tcc"
+#line 7486 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 7488 "isa_thumb.tcc"
+#line 7489 "isa_thumb.tcc"
 )
 {
 #line 83 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
 	{
 		buffer << "add r" << rd << ", r" << rn << ", #" << dec << imm;
 	}
-#line 7495 "isa_thumb.tcc"
+#line 7496 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 7500 "isa_thumb.tcc"
+#line 7501 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 7503 "isa_thumb.tcc"
+#line 7504 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 7507 "isa_thumb.tcc"
+#line 7508 "isa_thumb.tcc"
 OpAdd_1<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 7511 "isa_thumb.tcc"
+#line 7512 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 7515 "isa_thumb.tcc"
+#line 7516 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 7518 "isa_thumb.tcc"
+#line 7519 "isa_thumb.tcc"
 )
 {
 #line 87 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
@@ -7536,27 +7537,27 @@ cpu
 		cpu.SetCPSR_C(carry_out); // to check
 		cpu.SetCPSR_V(overflow_out); // to check
 	}
-#line 7540 "isa_thumb.tcc"
+#line 7541 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 7546 "isa_thumb.tcc"
+#line 7547 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 7549 "isa_thumb.tcc"
+#line 7550 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 7554 "isa_thumb.tcc"
+#line 7555 "isa_thumb.tcc"
 > *DecodeOpAdd_1(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpAdd_1<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 7560 "isa_thumb.tcc"
+#line 7561 "isa_thumb.tcc"
 	>(code, addr);
 }
 
@@ -7569,62 +7570,62 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 7573 "isa_thumb.tcc"
+#line 7574 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 7576 "isa_thumb.tcc"
+#line 7577 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 7580 "isa_thumb.tcc"
+#line 7581 "isa_thumb.tcc"
 OpAdd_2<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 7584 "isa_thumb.tcc"
+#line 7585 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 7588 "isa_thumb.tcc"
+#line 7589 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 7591 "isa_thumb.tcc"
+#line 7592 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 7595 "isa_thumb.tcc"
+#line 7596 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 7598 "isa_thumb.tcc"
+#line 7599 "isa_thumb.tcc"
 )
 {
 #line 116 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
 	{
 		buffer << "add r" << rd << ", #" << dec << imm;
 	}
-#line 7605 "isa_thumb.tcc"
+#line 7606 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 7610 "isa_thumb.tcc"
+#line 7611 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 7613 "isa_thumb.tcc"
+#line 7614 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 7617 "isa_thumb.tcc"
+#line 7618 "isa_thumb.tcc"
 OpAdd_2<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 7621 "isa_thumb.tcc"
+#line 7622 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 7625 "isa_thumb.tcc"
+#line 7626 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 7628 "isa_thumb.tcc"
+#line 7629 "isa_thumb.tcc"
 )
 {
 #line 120 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
@@ -7646,27 +7647,27 @@ cpu
 		cpu.SetCPSR_C(carry_out); // to check
 		cpu.SetCPSR_V(overflow_out); // to check
 	}
-#line 7650 "isa_thumb.tcc"
+#line 7651 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 7656 "isa_thumb.tcc"
+#line 7657 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 7659 "isa_thumb.tcc"
+#line 7660 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 7664 "isa_thumb.tcc"
+#line 7665 "isa_thumb.tcc"
 > *DecodeOpAdd_2(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpAdd_2<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 7670 "isa_thumb.tcc"
+#line 7671 "isa_thumb.tcc"
 	>(code, addr);
 }
 
@@ -7679,62 +7680,62 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 7683 "isa_thumb.tcc"
+#line 7684 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 7686 "isa_thumb.tcc"
+#line 7687 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 7690 "isa_thumb.tcc"
+#line 7691 "isa_thumb.tcc"
 OpAdd_3<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 7694 "isa_thumb.tcc"
+#line 7695 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 7698 "isa_thumb.tcc"
+#line 7699 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 7701 "isa_thumb.tcc"
+#line 7702 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 7705 "isa_thumb.tcc"
+#line 7706 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 7708 "isa_thumb.tcc"
+#line 7709 "isa_thumb.tcc"
 )
 {
 #line 149 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
 	{
 		buffer << "add r" << rd << ", r" << rn << ", r" << rm;
 	}
-#line 7715 "isa_thumb.tcc"
+#line 7716 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 7720 "isa_thumb.tcc"
+#line 7721 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 7723 "isa_thumb.tcc"
+#line 7724 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 7727 "isa_thumb.tcc"
+#line 7728 "isa_thumb.tcc"
 OpAdd_3<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 7731 "isa_thumb.tcc"
+#line 7732 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 7735 "isa_thumb.tcc"
+#line 7736 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 7738 "isa_thumb.tcc"
+#line 7739 "isa_thumb.tcc"
 )
 {
 #line 153 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
@@ -7758,27 +7759,27 @@ cpu
 		cpu.SetCPSR_C(carry_out); // to check
 		cpu.SetCPSR_V(overflow_out); // to check
 	}
-#line 7762 "isa_thumb.tcc"
+#line 7763 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 7768 "isa_thumb.tcc"
+#line 7769 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 7771 "isa_thumb.tcc"
+#line 7772 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 7776 "isa_thumb.tcc"
+#line 7777 "isa_thumb.tcc"
 > *DecodeOpAdd_3(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpAdd_3<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 7782 "isa_thumb.tcc"
+#line 7783 "isa_thumb.tcc"
 	>(code, addr);
 }
 
@@ -7791,17 +7792,17 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 7795 "isa_thumb.tcc"
+#line 7796 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 7798 "isa_thumb.tcc"
+#line 7799 "isa_thumb.tcc"
 >
 
 void
 OpAdd_4<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 7805 "isa_thumb.tcc"
+#line 7806 "isa_thumb.tcc"
 >::initialize_rm_index()
 {
 #line 184 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
@@ -7810,22 +7811,22 @@ CONFIG
 
 		inherited::rm_index = (h2 << 3) + rm;
 	}
-#line 7814 "isa_thumb.tcc"
+#line 7815 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 7819 "isa_thumb.tcc"
+#line 7820 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 7822 "isa_thumb.tcc"
+#line 7823 "isa_thumb.tcc"
 >
 
 void
 OpAdd_4<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 7829 "isa_thumb.tcc"
+#line 7830 "isa_thumb.tcc"
 >::initialize_rd_index()
 {
 #line 190 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
@@ -7834,22 +7835,22 @@ CONFIG
 
 		inherited::rd_index = (h1 << 3) + rd;
 	}
-#line 7838 "isa_thumb.tcc"
+#line 7839 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 7843 "isa_thumb.tcc"
+#line 7844 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 7846 "isa_thumb.tcc"
+#line 7847 "isa_thumb.tcc"
 >
 
 void
 OpAdd_4<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 7853 "isa_thumb.tcc"
+#line 7854 "isa_thumb.tcc"
 >::initialize_rm_init()
 {
 #line 196 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
@@ -7859,22 +7860,22 @@ CONFIG
 		if((h2 << 3) + rm == CPU<CONFIG>::PC_reg)
 		inherited::rm_init = 4;
 	}
-#line 7863 "isa_thumb.tcc"
+#line 7864 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 7868 "isa_thumb.tcc"
+#line 7869 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 7871 "isa_thumb.tcc"
+#line 7872 "isa_thumb.tcc"
 >
 
 void
 OpAdd_4<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 7878 "isa_thumb.tcc"
+#line 7879 "isa_thumb.tcc"
 >::initialize_rd_init()
 {
 #line 203 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
@@ -7884,37 +7885,37 @@ CONFIG
 		if((h1 << 3) + rd == CPU<CONFIG>::PC_reg)
 		inherited::rd_init = 4;
 	}
-#line 7888 "isa_thumb.tcc"
+#line 7889 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 7893 "isa_thumb.tcc"
+#line 7894 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 7896 "isa_thumb.tcc"
+#line 7897 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 7900 "isa_thumb.tcc"
+#line 7901 "isa_thumb.tcc"
 OpAdd_4<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 7904 "isa_thumb.tcc"
+#line 7905 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 7908 "isa_thumb.tcc"
+#line 7909 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 7911 "isa_thumb.tcc"
+#line 7912 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 7915 "isa_thumb.tcc"
+#line 7916 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 7918 "isa_thumb.tcc"
+#line 7919 "isa_thumb.tcc"
 )
 {
 #line 210 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
@@ -7923,30 +7924,30 @@ buffer
 
 		buffer << "add r" << inherited::rd_index << ", r" << inherited::rm_index;
 	}
-#line 7927 "isa_thumb.tcc"
+#line 7928 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 7932 "isa_thumb.tcc"
+#line 7933 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 7935 "isa_thumb.tcc"
+#line 7936 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 7939 "isa_thumb.tcc"
+#line 7940 "isa_thumb.tcc"
 OpAdd_4<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 7943 "isa_thumb.tcc"
+#line 7944 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 7947 "isa_thumb.tcc"
+#line 7948 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 7950 "isa_thumb.tcc"
+#line 7951 "isa_thumb.tcc"
 )
 {
 #line 216 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
@@ -7962,27 +7963,27 @@ cpu
 		res = s1 + s2;
 		cpu.SetGPR(inherited::rd_index, res);
 	}
-#line 7966 "isa_thumb.tcc"
+#line 7967 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 7972 "isa_thumb.tcc"
+#line 7973 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 7975 "isa_thumb.tcc"
+#line 7976 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 7980 "isa_thumb.tcc"
+#line 7981 "isa_thumb.tcc"
 > *DecodeOpAdd_4(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpAdd_4<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 7986 "isa_thumb.tcc"
+#line 7987 "isa_thumb.tcc"
 	>(code, addr);
 }
 
@@ -7995,62 +7996,62 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 7999 "isa_thumb.tcc"
+#line 8000 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 8002 "isa_thumb.tcc"
+#line 8003 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 8006 "isa_thumb.tcc"
+#line 8007 "isa_thumb.tcc"
 OpAdd_5<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 8010 "isa_thumb.tcc"
+#line 8011 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 8014 "isa_thumb.tcc"
+#line 8015 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 8017 "isa_thumb.tcc"
+#line 8018 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 8021 "isa_thumb.tcc"
+#line 8022 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 8024 "isa_thumb.tcc"
+#line 8025 "isa_thumb.tcc"
 )
 {
 #line 239 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
 	{
 		buffer << "add r" << rd << ", PC, #" << dec << ((unsigned int)imm * 4);
 	}
-#line 8031 "isa_thumb.tcc"
+#line 8032 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 8036 "isa_thumb.tcc"
+#line 8037 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 8039 "isa_thumb.tcc"
+#line 8040 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 8043 "isa_thumb.tcc"
+#line 8044 "isa_thumb.tcc"
 OpAdd_5<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 8047 "isa_thumb.tcc"
+#line 8048 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 8051 "isa_thumb.tcc"
+#line 8052 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 8054 "isa_thumb.tcc"
+#line 8055 "isa_thumb.tcc"
 )
 {
 #line 243 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
@@ -8067,27 +8068,27 @@ cpu
 
 		cpu.SetGPR(rd, res);
 	}
-#line 8071 "isa_thumb.tcc"
+#line 8072 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 8077 "isa_thumb.tcc"
+#line 8078 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 8080 "isa_thumb.tcc"
+#line 8081 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 8085 "isa_thumb.tcc"
+#line 8086 "isa_thumb.tcc"
 > *DecodeOpAdd_5(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpAdd_5<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 8091 "isa_thumb.tcc"
+#line 8092 "isa_thumb.tcc"
 	>(code, addr);
 }
 
@@ -8100,62 +8101,62 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 8104 "isa_thumb.tcc"
+#line 8105 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 8107 "isa_thumb.tcc"
+#line 8108 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 8111 "isa_thumb.tcc"
+#line 8112 "isa_thumb.tcc"
 OpAdd_6<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 8115 "isa_thumb.tcc"
+#line 8116 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 8119 "isa_thumb.tcc"
+#line 8120 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 8122 "isa_thumb.tcc"
+#line 8123 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 8126 "isa_thumb.tcc"
+#line 8127 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 8129 "isa_thumb.tcc"
+#line 8130 "isa_thumb.tcc"
 )
 {
 #line 267 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
 	{
 		buffer << "add r" << rd << ", SP, #" << dec << ((unsigned int)imm * 4);
 	}
-#line 8136 "isa_thumb.tcc"
+#line 8137 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 8141 "isa_thumb.tcc"
+#line 8142 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 8144 "isa_thumb.tcc"
+#line 8145 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 8148 "isa_thumb.tcc"
+#line 8149 "isa_thumb.tcc"
 OpAdd_6<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 8152 "isa_thumb.tcc"
+#line 8153 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 8156 "isa_thumb.tcc"
+#line 8157 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 8159 "isa_thumb.tcc"
+#line 8160 "isa_thumb.tcc"
 )
 {
 #line 271 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
@@ -8170,27 +8171,27 @@ cpu
 
 		cpu.SetGPR(rd, res);
 	}
-#line 8174 "isa_thumb.tcc"
+#line 8175 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 8180 "isa_thumb.tcc"
+#line 8181 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 8183 "isa_thumb.tcc"
+#line 8184 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 8188 "isa_thumb.tcc"
+#line 8189 "isa_thumb.tcc"
 > *DecodeOpAdd_6(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpAdd_6<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 8194 "isa_thumb.tcc"
+#line 8195 "isa_thumb.tcc"
 	>(code, addr);
 }
 
@@ -8203,62 +8204,62 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 8207 "isa_thumb.tcc"
+#line 8208 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 8210 "isa_thumb.tcc"
+#line 8211 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 8214 "isa_thumb.tcc"
+#line 8215 "isa_thumb.tcc"
 OpAdd_7<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 8218 "isa_thumb.tcc"
+#line 8219 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 8222 "isa_thumb.tcc"
+#line 8223 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 8225 "isa_thumb.tcc"
+#line 8226 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 8229 "isa_thumb.tcc"
+#line 8230 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 8232 "isa_thumb.tcc"
+#line 8233 "isa_thumb.tcc"
 )
 {
 #line 293 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
 	{
 		buffer << "add SP, #" << (unsigned int)imm * 4;
 	}
-#line 8239 "isa_thumb.tcc"
+#line 8240 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 8244 "isa_thumb.tcc"
+#line 8245 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 8247 "isa_thumb.tcc"
+#line 8248 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 8251 "isa_thumb.tcc"
+#line 8252 "isa_thumb.tcc"
 OpAdd_7<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 8255 "isa_thumb.tcc"
+#line 8256 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 8259 "isa_thumb.tcc"
+#line 8260 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 8262 "isa_thumb.tcc"
+#line 8263 "isa_thumb.tcc"
 )
 {
 #line 297 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
@@ -8267,27 +8268,27 @@ cpu
 
 		cpu.SetGPR(cpu.SP_reg, cpu.GetGPR(cpu.SP_reg) + ((typename CONFIG::reg_t)imm * 4));
 	}
-#line 8271 "isa_thumb.tcc"
+#line 8272 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 8277 "isa_thumb.tcc"
+#line 8278 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 8280 "isa_thumb.tcc"
+#line 8281 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 8285 "isa_thumb.tcc"
+#line 8286 "isa_thumb.tcc"
 > *DecodeOpAdd_7(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpAdd_7<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 8291 "isa_thumb.tcc"
+#line 8292 "isa_thumb.tcc"
 	>(code, addr);
 }
 
@@ -8300,62 +8301,62 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 8304 "isa_thumb.tcc"
+#line 8305 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 8307 "isa_thumb.tcc"
+#line 8308 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 8311 "isa_thumb.tcc"
+#line 8312 "isa_thumb.tcc"
 OpAnd<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 8315 "isa_thumb.tcc"
+#line 8316 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 8319 "isa_thumb.tcc"
+#line 8320 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 8322 "isa_thumb.tcc"
+#line 8323 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 8326 "isa_thumb.tcc"
+#line 8327 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 8329 "isa_thumb.tcc"
+#line 8330 "isa_thumb.tcc"
 )
 {
 #line 313 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
 	{
 		buffer << "and r" << rd << ", r" << rm;
 	}
-#line 8336 "isa_thumb.tcc"
+#line 8337 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 8341 "isa_thumb.tcc"
+#line 8342 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 8344 "isa_thumb.tcc"
+#line 8345 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 8348 "isa_thumb.tcc"
+#line 8349 "isa_thumb.tcc"
 OpAnd<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 8352 "isa_thumb.tcc"
+#line 8353 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 8356 "isa_thumb.tcc"
+#line 8357 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 8359 "isa_thumb.tcc"
+#line 8360 "isa_thumb.tcc"
 )
 {
 #line 317 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
@@ -8370,27 +8371,27 @@ cpu
 		cpu.SetCPSR_N(res & (typename CONFIG::reg_t)0x80000000);
 		cpu.SetCPSR_Z(res == 0);
 	}
-#line 8374 "isa_thumb.tcc"
+#line 8375 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 8380 "isa_thumb.tcc"
+#line 8381 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 8383 "isa_thumb.tcc"
+#line 8384 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 8388 "isa_thumb.tcc"
+#line 8389 "isa_thumb.tcc"
 > *DecodeOpAnd(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpAnd<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 8394 "isa_thumb.tcc"
+#line 8395 "isa_thumb.tcc"
 	>(code, addr);
 }
 
@@ -8403,62 +8404,62 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 8407 "isa_thumb.tcc"
+#line 8408 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 8410 "isa_thumb.tcc"
+#line 8411 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 8414 "isa_thumb.tcc"
+#line 8415 "isa_thumb.tcc"
 OpAsr_1<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 8418 "isa_thumb.tcc"
+#line 8419 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 8422 "isa_thumb.tcc"
+#line 8423 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 8425 "isa_thumb.tcc"
+#line 8426 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 8429 "isa_thumb.tcc"
+#line 8430 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 8432 "isa_thumb.tcc"
+#line 8433 "isa_thumb.tcc"
 )
 {
 #line 339 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
 	{
 		buffer << "asr r" << rd << ", r" << rm << ", #" << dec << imm;
 	}
-#line 8439 "isa_thumb.tcc"
+#line 8440 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 8444 "isa_thumb.tcc"
+#line 8445 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 8447 "isa_thumb.tcc"
+#line 8448 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 8451 "isa_thumb.tcc"
+#line 8452 "isa_thumb.tcc"
 OpAsr_1<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 8455 "isa_thumb.tcc"
+#line 8456 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 8459 "isa_thumb.tcc"
+#line 8460 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 8462 "isa_thumb.tcc"
+#line 8463 "isa_thumb.tcc"
 )
 {
 #line 343 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
@@ -8486,27 +8487,27 @@ cpu
 		cpu.SetCPSR_N(res & (typename CONFIG::reg_t)0x80000000);
 		cpu.SetCPSR_Z(res == 0);
 	}
-#line 8490 "isa_thumb.tcc"
+#line 8491 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 8496 "isa_thumb.tcc"
+#line 8497 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 8499 "isa_thumb.tcc"
+#line 8500 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 8504 "isa_thumb.tcc"
+#line 8505 "isa_thumb.tcc"
 > *DecodeOpAsr_1(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpAsr_1<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 8510 "isa_thumb.tcc"
+#line 8511 "isa_thumb.tcc"
 	>(code, addr);
 }
 
@@ -8519,62 +8520,62 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 8523 "isa_thumb.tcc"
+#line 8524 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 8526 "isa_thumb.tcc"
+#line 8527 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 8530 "isa_thumb.tcc"
+#line 8531 "isa_thumb.tcc"
 OpAsr_2<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 8534 "isa_thumb.tcc"
+#line 8535 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 8538 "isa_thumb.tcc"
+#line 8539 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 8541 "isa_thumb.tcc"
+#line 8542 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 8545 "isa_thumb.tcc"
+#line 8546 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 8548 "isa_thumb.tcc"
+#line 8549 "isa_thumb.tcc"
 )
 {
 #line 378 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
 	{
 		buffer << "asr r" << rd << ", r" << rs;
 	}
-#line 8555 "isa_thumb.tcc"
+#line 8556 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 8560 "isa_thumb.tcc"
+#line 8561 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 8563 "isa_thumb.tcc"
+#line 8564 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 8567 "isa_thumb.tcc"
+#line 8568 "isa_thumb.tcc"
 OpAsr_2<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 8571 "isa_thumb.tcc"
+#line 8572 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 8575 "isa_thumb.tcc"
+#line 8576 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 8578 "isa_thumb.tcc"
+#line 8579 "isa_thumb.tcc"
 )
 {
 #line 382 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
@@ -8606,27 +8607,27 @@ cpu
 		cpu.SetCPSR_N(res & (typename CONFIG::reg_t)0x80000000);
 		cpu.SetCPSR_Z(res == 0);
 	}
-#line 8610 "isa_thumb.tcc"
+#line 8611 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 8616 "isa_thumb.tcc"
+#line 8617 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 8619 "isa_thumb.tcc"
+#line 8620 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 8624 "isa_thumb.tcc"
+#line 8625 "isa_thumb.tcc"
 > *DecodeOpAsr_2(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpAsr_2<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 8630 "isa_thumb.tcc"
+#line 8631 "isa_thumb.tcc"
 	>(code, addr);
 }
 
@@ -8639,62 +8640,62 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 8643 "isa_thumb.tcc"
+#line 8644 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 8646 "isa_thumb.tcc"
+#line 8647 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 8650 "isa_thumb.tcc"
+#line 8651 "isa_thumb.tcc"
 OpBic<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 8654 "isa_thumb.tcc"
+#line 8655 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 8658 "isa_thumb.tcc"
+#line 8659 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 8661 "isa_thumb.tcc"
+#line 8662 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 8665 "isa_thumb.tcc"
+#line 8666 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 8668 "isa_thumb.tcc"
+#line 8669 "isa_thumb.tcc"
 )
 {
 #line 421 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
 	{
 		buffer << "bic r" << rd << ", r" << rm;
 	}
-#line 8675 "isa_thumb.tcc"
+#line 8676 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 8680 "isa_thumb.tcc"
+#line 8681 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 8683 "isa_thumb.tcc"
+#line 8684 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 8687 "isa_thumb.tcc"
+#line 8688 "isa_thumb.tcc"
 OpBic<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 8691 "isa_thumb.tcc"
+#line 8692 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 8695 "isa_thumb.tcc"
+#line 8696 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 8698 "isa_thumb.tcc"
+#line 8699 "isa_thumb.tcc"
 )
 {
 #line 425 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
@@ -8710,27 +8711,27 @@ cpu
 		cpu.SetCPSR_N(res & (typename CONFIG::reg_t)0x80000000);
 		cpu.SetCPSR_Z(res == 0);
 	}
-#line 8714 "isa_thumb.tcc"
+#line 8715 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 8720 "isa_thumb.tcc"
+#line 8721 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 8723 "isa_thumb.tcc"
+#line 8724 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 8728 "isa_thumb.tcc"
+#line 8729 "isa_thumb.tcc"
 > *DecodeOpBic(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpBic<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 8734 "isa_thumb.tcc"
+#line 8735 "isa_thumb.tcc"
 	>(code, addr);
 }
 
@@ -8743,62 +8744,62 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 8747 "isa_thumb.tcc"
+#line 8748 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 8750 "isa_thumb.tcc"
+#line 8751 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 8754 "isa_thumb.tcc"
+#line 8755 "isa_thumb.tcc"
 OpCmn<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 8758 "isa_thumb.tcc"
+#line 8759 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 8762 "isa_thumb.tcc"
+#line 8763 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 8765 "isa_thumb.tcc"
+#line 8766 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 8769 "isa_thumb.tcc"
+#line 8770 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 8772 "isa_thumb.tcc"
+#line 8773 "isa_thumb.tcc"
 )
 {
 #line 448 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
 	{
 		buffer << "cmn r" << rn << ", r" << rm;
 	}
-#line 8779 "isa_thumb.tcc"
+#line 8780 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 8784 "isa_thumb.tcc"
+#line 8785 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 8787 "isa_thumb.tcc"
+#line 8788 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 8791 "isa_thumb.tcc"
+#line 8792 "isa_thumb.tcc"
 OpCmn<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 8795 "isa_thumb.tcc"
+#line 8796 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 8799 "isa_thumb.tcc"
+#line 8800 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 8802 "isa_thumb.tcc"
+#line 8803 "isa_thumb.tcc"
 )
 {
 #line 452 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
@@ -8819,27 +8820,27 @@ cpu
 		cpu.SetCPSR_C(carry_out); // to check
 		cpu.SetCPSR_V(overflow_out); // to check
 	}
-#line 8823 "isa_thumb.tcc"
+#line 8824 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 8829 "isa_thumb.tcc"
+#line 8830 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 8832 "isa_thumb.tcc"
+#line 8833 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 8837 "isa_thumb.tcc"
+#line 8838 "isa_thumb.tcc"
 > *DecodeOpCmn(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpCmn<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 8843 "isa_thumb.tcc"
+#line 8844 "isa_thumb.tcc"
 	>(code, addr);
 }
 
@@ -8852,62 +8853,62 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 8856 "isa_thumb.tcc"
+#line 8857 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 8859 "isa_thumb.tcc"
+#line 8860 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 8863 "isa_thumb.tcc"
+#line 8864 "isa_thumb.tcc"
 OpCmp_1<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 8867 "isa_thumb.tcc"
+#line 8868 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 8871 "isa_thumb.tcc"
+#line 8872 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 8874 "isa_thumb.tcc"
+#line 8875 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 8878 "isa_thumb.tcc"
+#line 8879 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 8881 "isa_thumb.tcc"
+#line 8882 "isa_thumb.tcc"
 )
 {
 #line 479 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
 	{
 		buffer << "cmp r" << rn << ", #" << dec << imm;
 	}
-#line 8888 "isa_thumb.tcc"
+#line 8889 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 8893 "isa_thumb.tcc"
+#line 8894 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 8896 "isa_thumb.tcc"
+#line 8897 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 8900 "isa_thumb.tcc"
+#line 8901 "isa_thumb.tcc"
 OpCmp_1<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 8904 "isa_thumb.tcc"
+#line 8905 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 8908 "isa_thumb.tcc"
+#line 8909 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 8911 "isa_thumb.tcc"
+#line 8912 "isa_thumb.tcc"
 )
 {
 #line 483 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
@@ -8925,27 +8926,27 @@ cpu
 		cpu.SetCPSR_C(!cpu.BorrowFrom(res, s1, s2));
 		cpu.SetCPSR_V(cpu.SubtractionOverflowFrom(res, s1, s2));
 	}
-#line 8929 "isa_thumb.tcc"
+#line 8930 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 8935 "isa_thumb.tcc"
+#line 8936 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 8938 "isa_thumb.tcc"
+#line 8939 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 8943 "isa_thumb.tcc"
+#line 8944 "isa_thumb.tcc"
 > *DecodeOpCmp_1(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpCmp_1<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 8949 "isa_thumb.tcc"
+#line 8950 "isa_thumb.tcc"
 	>(code, addr);
 }
 
@@ -8958,62 +8959,62 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 8962 "isa_thumb.tcc"
+#line 8963 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 8965 "isa_thumb.tcc"
+#line 8966 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 8969 "isa_thumb.tcc"
+#line 8970 "isa_thumb.tcc"
 OpCmp_2<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 8973 "isa_thumb.tcc"
+#line 8974 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 8977 "isa_thumb.tcc"
+#line 8978 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 8980 "isa_thumb.tcc"
+#line 8981 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 8984 "isa_thumb.tcc"
+#line 8985 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 8987 "isa_thumb.tcc"
+#line 8988 "isa_thumb.tcc"
 )
 {
 #line 507 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
 	{
 		buffer << "cmp r" << rn << ", r" << rm;
 	}
-#line 8994 "isa_thumb.tcc"
+#line 8995 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 8999 "isa_thumb.tcc"
+#line 9000 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 9002 "isa_thumb.tcc"
+#line 9003 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 9006 "isa_thumb.tcc"
+#line 9007 "isa_thumb.tcc"
 OpCmp_2<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 9010 "isa_thumb.tcc"
+#line 9011 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 9014 "isa_thumb.tcc"
+#line 9015 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 9017 "isa_thumb.tcc"
+#line 9018 "isa_thumb.tcc"
 )
 {
 #line 511 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
@@ -9031,27 +9032,27 @@ cpu
 		cpu.SetCPSR_C(!cpu.BorrowFrom(res, s1, s2));
 		cpu.SetCPSR_V(cpu.SubtractionOverflowFrom(res, s1, s2));
 	}
-#line 9035 "isa_thumb.tcc"
+#line 9036 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 9041 "isa_thumb.tcc"
+#line 9042 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 9044 "isa_thumb.tcc"
+#line 9045 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 9049 "isa_thumb.tcc"
+#line 9050 "isa_thumb.tcc"
 > *DecodeOpCmp_2(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpCmp_2<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 9055 "isa_thumb.tcc"
+#line 9056 "isa_thumb.tcc"
 	>(code, addr);
 }
 
@@ -9064,17 +9065,17 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 9068 "isa_thumb.tcc"
+#line 9069 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 9071 "isa_thumb.tcc"
+#line 9072 "isa_thumb.tcc"
 >
 
 void
 OpCmp_3<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 9078 "isa_thumb.tcc"
+#line 9079 "isa_thumb.tcc"
 >::initialize_rm_index()
 {
 #line 536 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
@@ -9083,22 +9084,22 @@ CONFIG
 
 		inherited::rm_index = (h2 << 3) + rm;
 	}
-#line 9087 "isa_thumb.tcc"
+#line 9088 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 9092 "isa_thumb.tcc"
+#line 9093 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 9095 "isa_thumb.tcc"
+#line 9096 "isa_thumb.tcc"
 >
 
 void
 OpCmp_3<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 9102 "isa_thumb.tcc"
+#line 9103 "isa_thumb.tcc"
 >::initialize_rn_index()
 {
 #line 542 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
@@ -9107,22 +9108,22 @@ CONFIG
 
 		inherited::rn_index = (h1 << 3) + rn;
 	}
-#line 9111 "isa_thumb.tcc"
+#line 9112 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 9116 "isa_thumb.tcc"
+#line 9117 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 9119 "isa_thumb.tcc"
+#line 9120 "isa_thumb.tcc"
 >
 
 void
 OpCmp_3<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 9126 "isa_thumb.tcc"
+#line 9127 "isa_thumb.tcc"
 >::initialize_rm_init()
 {
 #line 548 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
@@ -9134,22 +9135,22 @@ CONFIG
 		else
 		inherited::rm_init = 0;
 	}
-#line 9138 "isa_thumb.tcc"
+#line 9139 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 9143 "isa_thumb.tcc"
+#line 9144 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 9146 "isa_thumb.tcc"
+#line 9147 "isa_thumb.tcc"
 >
 
 void
 OpCmp_3<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 9153 "isa_thumb.tcc"
+#line 9154 "isa_thumb.tcc"
 >::initialize_rn_init()
 {
 #line 557 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
@@ -9161,37 +9162,37 @@ CONFIG
 		else
 		inherited::rn_init = 0;
 	}
-#line 9165 "isa_thumb.tcc"
+#line 9166 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 9170 "isa_thumb.tcc"
+#line 9171 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 9173 "isa_thumb.tcc"
+#line 9174 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 9177 "isa_thumb.tcc"
+#line 9178 "isa_thumb.tcc"
 OpCmp_3<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 9181 "isa_thumb.tcc"
+#line 9182 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 9185 "isa_thumb.tcc"
+#line 9186 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 9188 "isa_thumb.tcc"
+#line 9189 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 9192 "isa_thumb.tcc"
+#line 9193 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 9195 "isa_thumb.tcc"
+#line 9196 "isa_thumb.tcc"
 )
 {
 #line 566 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
@@ -9200,30 +9201,30 @@ buffer
 
 		buffer << "cmp r" << inherited::rn_index << ", r" << inherited::rm_index;
 	}
-#line 9204 "isa_thumb.tcc"
+#line 9205 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 9209 "isa_thumb.tcc"
+#line 9210 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 9212 "isa_thumb.tcc"
+#line 9213 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 9216 "isa_thumb.tcc"
+#line 9217 "isa_thumb.tcc"
 OpCmp_3<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 9220 "isa_thumb.tcc"
+#line 9221 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 9224 "isa_thumb.tcc"
+#line 9225 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 9227 "isa_thumb.tcc"
+#line 9228 "isa_thumb.tcc"
 )
 {
 #line 572 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
@@ -9242,27 +9243,27 @@ cpu
 		cpu.SetCPSR_C(!cpu.BorrowFrom(res, s1, s2));
 		cpu.SetCPSR_V(cpu.SubtractionOverflowFrom(res, s1, s2));
 	}
-#line 9246 "isa_thumb.tcc"
+#line 9247 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 9252 "isa_thumb.tcc"
+#line 9253 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 9255 "isa_thumb.tcc"
+#line 9256 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 9260 "isa_thumb.tcc"
+#line 9261 "isa_thumb.tcc"
 > *DecodeOpCmp_3(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpCmp_3<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 9266 "isa_thumb.tcc"
+#line 9267 "isa_thumb.tcc"
 	>(code, addr);
 }
 
@@ -9275,62 +9276,62 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 9279 "isa_thumb.tcc"
+#line 9280 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 9282 "isa_thumb.tcc"
+#line 9283 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 9286 "isa_thumb.tcc"
+#line 9287 "isa_thumb.tcc"
 OpEor<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 9290 "isa_thumb.tcc"
+#line 9291 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 9294 "isa_thumb.tcc"
+#line 9295 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 9297 "isa_thumb.tcc"
+#line 9298 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 9301 "isa_thumb.tcc"
+#line 9302 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 9304 "isa_thumb.tcc"
+#line 9305 "isa_thumb.tcc"
 )
 {
 #line 598 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
 	{
 		buffer << "eor r" << rd << ", r" << rm;
 	}
-#line 9311 "isa_thumb.tcc"
+#line 9312 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 9316 "isa_thumb.tcc"
+#line 9317 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 9319 "isa_thumb.tcc"
+#line 9320 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 9323 "isa_thumb.tcc"
+#line 9324 "isa_thumb.tcc"
 OpEor<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 9327 "isa_thumb.tcc"
+#line 9328 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 9331 "isa_thumb.tcc"
+#line 9332 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 9334 "isa_thumb.tcc"
+#line 9335 "isa_thumb.tcc"
 )
 {
 #line 602 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
@@ -9346,27 +9347,27 @@ cpu
 		cpu.SetCPSR_N(res & (typename CONFIG::reg_t)0x80000000);
 		cpu.SetCPSR_Z(res == 0);
 	}
-#line 9350 "isa_thumb.tcc"
+#line 9351 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 9356 "isa_thumb.tcc"
+#line 9357 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 9359 "isa_thumb.tcc"
+#line 9360 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 9364 "isa_thumb.tcc"
+#line 9365 "isa_thumb.tcc"
 > *DecodeOpEor(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpEor<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 9370 "isa_thumb.tcc"
+#line 9371 "isa_thumb.tcc"
 	>(code, addr);
 }
 
@@ -9379,62 +9380,62 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 9383 "isa_thumb.tcc"
+#line 9384 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 9386 "isa_thumb.tcc"
+#line 9387 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 9390 "isa_thumb.tcc"
+#line 9391 "isa_thumb.tcc"
 OpLsl_1<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 9394 "isa_thumb.tcc"
+#line 9395 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 9398 "isa_thumb.tcc"
+#line 9399 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 9401 "isa_thumb.tcc"
+#line 9402 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 9405 "isa_thumb.tcc"
+#line 9406 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 9408 "isa_thumb.tcc"
+#line 9409 "isa_thumb.tcc"
 )
 {
 #line 624 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
 	{
 		buffer << "lsl r" << rd << ", r" << rm << ", #" << dec << imm;
 	}
-#line 9415 "isa_thumb.tcc"
+#line 9416 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 9420 "isa_thumb.tcc"
+#line 9421 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 9423 "isa_thumb.tcc"
+#line 9424 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 9427 "isa_thumb.tcc"
+#line 9428 "isa_thumb.tcc"
 OpLsl_1<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 9431 "isa_thumb.tcc"
+#line 9432 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 9435 "isa_thumb.tcc"
+#line 9436 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 9438 "isa_thumb.tcc"
+#line 9439 "isa_thumb.tcc"
 )
 {
 #line 628 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
@@ -9454,27 +9455,27 @@ cpu
 		cpu.SetCPSR_N(res & (typename CONFIG::reg_t)0x80000000);
 		cpu.SetCPSR_Z(res == 0);
 	}
-#line 9458 "isa_thumb.tcc"
+#line 9459 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 9464 "isa_thumb.tcc"
+#line 9465 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 9467 "isa_thumb.tcc"
+#line 9468 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 9472 "isa_thumb.tcc"
+#line 9473 "isa_thumb.tcc"
 > *DecodeOpLsl_1(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpLsl_1<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 9478 "isa_thumb.tcc"
+#line 9479 "isa_thumb.tcc"
 	>(code, addr);
 }
 
@@ -9487,62 +9488,62 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 9491 "isa_thumb.tcc"
+#line 9492 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 9494 "isa_thumb.tcc"
+#line 9495 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 9498 "isa_thumb.tcc"
+#line 9499 "isa_thumb.tcc"
 OpLsl_2<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 9502 "isa_thumb.tcc"
+#line 9503 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 9506 "isa_thumb.tcc"
+#line 9507 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 9509 "isa_thumb.tcc"
+#line 9510 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 9513 "isa_thumb.tcc"
+#line 9514 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 9516 "isa_thumb.tcc"
+#line 9517 "isa_thumb.tcc"
 )
 {
 #line 655 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
 	{
 		buffer << "lsl r" << rd << ", r" << rs;
 	}
-#line 9523 "isa_thumb.tcc"
+#line 9524 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 9528 "isa_thumb.tcc"
+#line 9529 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 9531 "isa_thumb.tcc"
+#line 9532 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 9535 "isa_thumb.tcc"
+#line 9536 "isa_thumb.tcc"
 OpLsl_2<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 9539 "isa_thumb.tcc"
+#line 9540 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 9543 "isa_thumb.tcc"
+#line 9544 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 9546 "isa_thumb.tcc"
+#line 9547 "isa_thumb.tcc"
 )
 {
 #line 659 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
@@ -9568,27 +9569,27 @@ cpu
 		cpu.SetCPSR_N(res & (typename CONFIG::reg_t)0x80000000);
 		cpu.SetCPSR_Z(res == 0);
 	}
-#line 9572 "isa_thumb.tcc"
+#line 9573 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 9578 "isa_thumb.tcc"
+#line 9579 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 9581 "isa_thumb.tcc"
+#line 9582 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 9586 "isa_thumb.tcc"
+#line 9587 "isa_thumb.tcc"
 > *DecodeOpLsl_2(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpLsl_2<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 9592 "isa_thumb.tcc"
+#line 9593 "isa_thumb.tcc"
 	>(code, addr);
 }
 
@@ -9601,62 +9602,62 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 9605 "isa_thumb.tcc"
+#line 9606 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 9608 "isa_thumb.tcc"
+#line 9609 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 9612 "isa_thumb.tcc"
+#line 9613 "isa_thumb.tcc"
 OpLsr_1<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 9616 "isa_thumb.tcc"
+#line 9617 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 9620 "isa_thumb.tcc"
+#line 9621 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 9623 "isa_thumb.tcc"
+#line 9624 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 9627 "isa_thumb.tcc"
+#line 9628 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 9630 "isa_thumb.tcc"
+#line 9631 "isa_thumb.tcc"
 )
 {
 #line 692 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
 	{
 		buffer << "lsr r" << rd << ", r" << rm << ", #" << dec << imm;
 	}
-#line 9637 "isa_thumb.tcc"
+#line 9638 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 9642 "isa_thumb.tcc"
+#line 9643 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 9645 "isa_thumb.tcc"
+#line 9646 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 9649 "isa_thumb.tcc"
+#line 9650 "isa_thumb.tcc"
 OpLsr_1<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 9653 "isa_thumb.tcc"
+#line 9654 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 9657 "isa_thumb.tcc"
+#line 9658 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 9660 "isa_thumb.tcc"
+#line 9661 "isa_thumb.tcc"
 )
 {
 #line 696 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
@@ -9677,27 +9678,27 @@ cpu
 		cpu.SetCPSR_N(false);
 		cpu.SetCPSR_Z(res == 0);
 	}
-#line 9681 "isa_thumb.tcc"
+#line 9682 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 9687 "isa_thumb.tcc"
+#line 9688 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 9690 "isa_thumb.tcc"
+#line 9691 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 9695 "isa_thumb.tcc"
+#line 9696 "isa_thumb.tcc"
 > *DecodeOpLsr_1(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpLsr_1<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 9701 "isa_thumb.tcc"
+#line 9702 "isa_thumb.tcc"
 	>(code, addr);
 }
 
@@ -9710,62 +9711,62 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 9714 "isa_thumb.tcc"
+#line 9715 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 9717 "isa_thumb.tcc"
+#line 9718 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 9721 "isa_thumb.tcc"
+#line 9722 "isa_thumb.tcc"
 OpLsr_2<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 9725 "isa_thumb.tcc"
+#line 9726 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 9729 "isa_thumb.tcc"
+#line 9730 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 9732 "isa_thumb.tcc"
+#line 9733 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 9736 "isa_thumb.tcc"
+#line 9737 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 9739 "isa_thumb.tcc"
+#line 9740 "isa_thumb.tcc"
 )
 {
 #line 724 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
 	{
 		buffer << "lsr r" << rd << ", r" << rs;
 	}
-#line 9746 "isa_thumb.tcc"
+#line 9747 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 9751 "isa_thumb.tcc"
+#line 9752 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 9754 "isa_thumb.tcc"
+#line 9755 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 9758 "isa_thumb.tcc"
+#line 9759 "isa_thumb.tcc"
 OpLsr_2<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 9762 "isa_thumb.tcc"
+#line 9763 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 9766 "isa_thumb.tcc"
+#line 9767 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 9769 "isa_thumb.tcc"
+#line 9770 "isa_thumb.tcc"
 )
 {
 #line 728 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
@@ -9793,27 +9794,27 @@ cpu
 		cpu.SetCPSR_N(res & (typename CONFIG::reg_t)0x80000000);
 		cpu.SetCPSR_Z(res == 0);
 	}
-#line 9797 "isa_thumb.tcc"
+#line 9798 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 9803 "isa_thumb.tcc"
+#line 9804 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 9806 "isa_thumb.tcc"
+#line 9807 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 9811 "isa_thumb.tcc"
+#line 9812 "isa_thumb.tcc"
 > *DecodeOpLsr_2(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpLsr_2<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 9817 "isa_thumb.tcc"
+#line 9818 "isa_thumb.tcc"
 	>(code, addr);
 }
 
@@ -9826,62 +9827,62 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 9830 "isa_thumb.tcc"
+#line 9831 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 9833 "isa_thumb.tcc"
+#line 9834 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 9837 "isa_thumb.tcc"
+#line 9838 "isa_thumb.tcc"
 OpMov_1<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 9841 "isa_thumb.tcc"
+#line 9842 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 9845 "isa_thumb.tcc"
+#line 9846 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 9848 "isa_thumb.tcc"
+#line 9849 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 9852 "isa_thumb.tcc"
+#line 9853 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 9855 "isa_thumb.tcc"
+#line 9856 "isa_thumb.tcc"
 )
 {
 #line 763 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
 	{
 		buffer << "mov r" << rd << ", #" << dec << imm;
 	}
-#line 9862 "isa_thumb.tcc"
+#line 9863 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 9867 "isa_thumb.tcc"
+#line 9868 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 9870 "isa_thumb.tcc"
+#line 9871 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 9874 "isa_thumb.tcc"
+#line 9875 "isa_thumb.tcc"
 OpMov_1<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 9878 "isa_thumb.tcc"
+#line 9879 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 9882 "isa_thumb.tcc"
+#line 9883 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 9885 "isa_thumb.tcc"
+#line 9886 "isa_thumb.tcc"
 )
 {
 #line 767 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
@@ -9896,27 +9897,27 @@ cpu
 		cpu.SetCPSR_N(false);
 		cpu.SetCPSR_Z(res == 0);
 	}
-#line 9900 "isa_thumb.tcc"
+#line 9901 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 9906 "isa_thumb.tcc"
+#line 9907 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 9909 "isa_thumb.tcc"
+#line 9910 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 9914 "isa_thumb.tcc"
+#line 9915 "isa_thumb.tcc"
 > *DecodeOpMov_1(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpMov_1<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 9920 "isa_thumb.tcc"
+#line 9921 "isa_thumb.tcc"
 	>(code, addr);
 }
 
@@ -9938,17 +9939,17 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 9942 "isa_thumb.tcc"
+#line 9943 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 9945 "isa_thumb.tcc"
+#line 9946 "isa_thumb.tcc"
 >
 
 void
 OpMov_3<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 9952 "isa_thumb.tcc"
+#line 9953 "isa_thumb.tcc"
 >::initialize_rm_index()
 {
 #line 799 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
@@ -9957,22 +9958,22 @@ CONFIG
 
 		inherited::rm_index = (h2 << 3) + rm;
 	}
-#line 9961 "isa_thumb.tcc"
+#line 9962 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 9966 "isa_thumb.tcc"
+#line 9967 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 9969 "isa_thumb.tcc"
+#line 9970 "isa_thumb.tcc"
 >
 
 void
 OpMov_3<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 9976 "isa_thumb.tcc"
+#line 9977 "isa_thumb.tcc"
 >::initialize_rd_index()
 {
 #line 805 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
@@ -9981,22 +9982,22 @@ CONFIG
 
 		inherited::rd_index = (h1 << 3) + rd;
 	}
-#line 9985 "isa_thumb.tcc"
+#line 9986 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 9990 "isa_thumb.tcc"
+#line 9991 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 9993 "isa_thumb.tcc"
+#line 9994 "isa_thumb.tcc"
 >
 
 void
 OpMov_3<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 10000 "isa_thumb.tcc"
+#line 10001 "isa_thumb.tcc"
 >::initialize_rm_init()
 {
 #line 811 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
@@ -10008,37 +10009,37 @@ CONFIG
 		else
 		inherited::rm_init = 0;
 	}
-#line 10012 "isa_thumb.tcc"
+#line 10013 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 10017 "isa_thumb.tcc"
+#line 10018 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 10020 "isa_thumb.tcc"
+#line 10021 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 10024 "isa_thumb.tcc"
+#line 10025 "isa_thumb.tcc"
 OpMov_3<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 10028 "isa_thumb.tcc"
+#line 10029 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 10032 "isa_thumb.tcc"
+#line 10033 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 10035 "isa_thumb.tcc"
+#line 10036 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 10039 "isa_thumb.tcc"
+#line 10040 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 10042 "isa_thumb.tcc"
+#line 10043 "isa_thumb.tcc"
 )
 {
 #line 820 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
@@ -10047,30 +10048,30 @@ buffer
 
 		buffer << "mov r" << inherited::rd_index << ", r" << inherited::rm_index;
 	}
-#line 10051 "isa_thumb.tcc"
+#line 10052 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 10056 "isa_thumb.tcc"
+#line 10057 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 10059 "isa_thumb.tcc"
+#line 10060 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 10063 "isa_thumb.tcc"
+#line 10064 "isa_thumb.tcc"
 OpMov_3<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 10067 "isa_thumb.tcc"
+#line 10068 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 10071 "isa_thumb.tcc"
+#line 10072 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 10074 "isa_thumb.tcc"
+#line 10075 "isa_thumb.tcc"
 )
 {
 #line 826 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
@@ -10084,27 +10085,27 @@ cpu
 
 		cpu.SetGPR(inherited::rd_index, res);
 	}
-#line 10088 "isa_thumb.tcc"
+#line 10089 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 10094 "isa_thumb.tcc"
+#line 10095 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 10097 "isa_thumb.tcc"
+#line 10098 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 10102 "isa_thumb.tcc"
+#line 10103 "isa_thumb.tcc"
 > *DecodeOpMov_3(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpMov_3<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 10108 "isa_thumb.tcc"
+#line 10109 "isa_thumb.tcc"
 	>(code, addr);
 }
 
@@ -10117,62 +10118,62 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 10121 "isa_thumb.tcc"
+#line 10122 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 10124 "isa_thumb.tcc"
+#line 10125 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 10128 "isa_thumb.tcc"
+#line 10129 "isa_thumb.tcc"
 OpMul<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 10132 "isa_thumb.tcc"
+#line 10133 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 10136 "isa_thumb.tcc"
+#line 10137 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 10139 "isa_thumb.tcc"
+#line 10140 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 10143 "isa_thumb.tcc"
+#line 10144 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 10146 "isa_thumb.tcc"
+#line 10147 "isa_thumb.tcc"
 )
 {
 #line 846 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
 	{
 		buffer << "mul r" << rd << ", r" << rm;
 	}
-#line 10153 "isa_thumb.tcc"
+#line 10154 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 10158 "isa_thumb.tcc"
+#line 10159 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 10161 "isa_thumb.tcc"
+#line 10162 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 10165 "isa_thumb.tcc"
+#line 10166 "isa_thumb.tcc"
 OpMul<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 10169 "isa_thumb.tcc"
+#line 10170 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 10173 "isa_thumb.tcc"
+#line 10174 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 10176 "isa_thumb.tcc"
+#line 10177 "isa_thumb.tcc"
 )
 {
 #line 850 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
@@ -10186,27 +10187,27 @@ cpu
 		cpu.SetCPSR_N(res & (typename CONFIG::reg_t)0x80000000);
 		cpu.SetCPSR_Z(res == 0);
 	}
-#line 10190 "isa_thumb.tcc"
+#line 10191 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 10196 "isa_thumb.tcc"
+#line 10197 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 10199 "isa_thumb.tcc"
+#line 10200 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 10204 "isa_thumb.tcc"
+#line 10205 "isa_thumb.tcc"
 > *DecodeOpMul(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpMul<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 10210 "isa_thumb.tcc"
+#line 10211 "isa_thumb.tcc"
 	>(code, addr);
 }
 
@@ -10219,62 +10220,62 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 10223 "isa_thumb.tcc"
+#line 10224 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 10226 "isa_thumb.tcc"
+#line 10227 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 10230 "isa_thumb.tcc"
+#line 10231 "isa_thumb.tcc"
 OpMvn<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 10234 "isa_thumb.tcc"
+#line 10235 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 10238 "isa_thumb.tcc"
+#line 10239 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 10241 "isa_thumb.tcc"
+#line 10242 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 10245 "isa_thumb.tcc"
+#line 10246 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 10248 "isa_thumb.tcc"
+#line 10249 "isa_thumb.tcc"
 )
 {
 #line 871 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
 	{
 		buffer << "mvn r" << rd << ", r" << rm;
 	}
-#line 10255 "isa_thumb.tcc"
+#line 10256 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 10260 "isa_thumb.tcc"
+#line 10261 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 10263 "isa_thumb.tcc"
+#line 10264 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 10267 "isa_thumb.tcc"
+#line 10268 "isa_thumb.tcc"
 OpMvn<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 10271 "isa_thumb.tcc"
+#line 10272 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 10275 "isa_thumb.tcc"
+#line 10276 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 10278 "isa_thumb.tcc"
+#line 10279 "isa_thumb.tcc"
 )
 {
 #line 875 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
@@ -10288,27 +10289,27 @@ cpu
 		cpu.SetCPSR_N(res & (typename CONFIG::reg_t)0x80000000);
 		cpu.SetCPSR_Z(res == 0);
 	}
-#line 10292 "isa_thumb.tcc"
+#line 10293 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 10298 "isa_thumb.tcc"
+#line 10299 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 10301 "isa_thumb.tcc"
+#line 10302 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 10306 "isa_thumb.tcc"
+#line 10307 "isa_thumb.tcc"
 > *DecodeOpMvn(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpMvn<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 10312 "isa_thumb.tcc"
+#line 10313 "isa_thumb.tcc"
 	>(code, addr);
 }
 
@@ -10321,62 +10322,62 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 10325 "isa_thumb.tcc"
+#line 10326 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 10328 "isa_thumb.tcc"
+#line 10329 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 10332 "isa_thumb.tcc"
+#line 10333 "isa_thumb.tcc"
 OpNeg<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 10336 "isa_thumb.tcc"
+#line 10337 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 10340 "isa_thumb.tcc"
+#line 10341 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 10343 "isa_thumb.tcc"
+#line 10344 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 10347 "isa_thumb.tcc"
+#line 10348 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 10350 "isa_thumb.tcc"
+#line 10351 "isa_thumb.tcc"
 )
 {
 #line 896 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
 	{
 		buffer << "neg r" << rd << ", r" << rm;
 	}
-#line 10357 "isa_thumb.tcc"
+#line 10358 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 10362 "isa_thumb.tcc"
+#line 10363 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 10365 "isa_thumb.tcc"
+#line 10366 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 10369 "isa_thumb.tcc"
+#line 10370 "isa_thumb.tcc"
 OpNeg<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 10373 "isa_thumb.tcc"
+#line 10374 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 10377 "isa_thumb.tcc"
+#line 10378 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 10380 "isa_thumb.tcc"
+#line 10381 "isa_thumb.tcc"
 )
 {
 #line 900 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
@@ -10394,27 +10395,27 @@ cpu
 		cpu.SetCPSR_C(!cpu.BorrowFrom(res, s1, s2));
 		cpu.SetCPSR_V(cpu.SubtractionOverflowFrom(res, s1, s2));
 	}
-#line 10398 "isa_thumb.tcc"
+#line 10399 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 10404 "isa_thumb.tcc"
+#line 10405 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 10407 "isa_thumb.tcc"
+#line 10408 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 10412 "isa_thumb.tcc"
+#line 10413 "isa_thumb.tcc"
 > *DecodeOpNeg(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpNeg<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 10418 "isa_thumb.tcc"
+#line 10419 "isa_thumb.tcc"
 	>(code, addr);
 }
 
@@ -10427,62 +10428,62 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 10431 "isa_thumb.tcc"
+#line 10432 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 10434 "isa_thumb.tcc"
+#line 10435 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 10438 "isa_thumb.tcc"
+#line 10439 "isa_thumb.tcc"
 OpOrr<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 10442 "isa_thumb.tcc"
+#line 10443 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 10446 "isa_thumb.tcc"
+#line 10447 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 10449 "isa_thumb.tcc"
+#line 10450 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 10453 "isa_thumb.tcc"
+#line 10454 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 10456 "isa_thumb.tcc"
+#line 10457 "isa_thumb.tcc"
 )
 {
 #line 925 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
 	{
 		buffer << "orr r" << rd << ", r" << rm;
 	}
-#line 10463 "isa_thumb.tcc"
+#line 10464 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 10468 "isa_thumb.tcc"
+#line 10469 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 10471 "isa_thumb.tcc"
+#line 10472 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 10475 "isa_thumb.tcc"
+#line 10476 "isa_thumb.tcc"
 OpOrr<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 10479 "isa_thumb.tcc"
+#line 10480 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 10483 "isa_thumb.tcc"
+#line 10484 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 10486 "isa_thumb.tcc"
+#line 10487 "isa_thumb.tcc"
 )
 {
 #line 929 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
@@ -10498,27 +10499,27 @@ cpu
 		cpu.SetCPSR_N(res & (typename CONFIG::reg_t)0x80000000);
 		cpu.SetCPSR_Z(res == 0);
 	}
-#line 10502 "isa_thumb.tcc"
+#line 10503 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 10508 "isa_thumb.tcc"
+#line 10509 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 10511 "isa_thumb.tcc"
+#line 10512 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 10516 "isa_thumb.tcc"
+#line 10517 "isa_thumb.tcc"
 > *DecodeOpOrr(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpOrr<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 10522 "isa_thumb.tcc"
+#line 10523 "isa_thumb.tcc"
 	>(code, addr);
 }
 
@@ -10531,62 +10532,62 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 10535 "isa_thumb.tcc"
+#line 10536 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 10538 "isa_thumb.tcc"
+#line 10539 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 10542 "isa_thumb.tcc"
+#line 10543 "isa_thumb.tcc"
 OpRor<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 10546 "isa_thumb.tcc"
+#line 10547 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 10550 "isa_thumb.tcc"
+#line 10551 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 10553 "isa_thumb.tcc"
+#line 10554 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 10557 "isa_thumb.tcc"
+#line 10558 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 10560 "isa_thumb.tcc"
+#line 10561 "isa_thumb.tcc"
 )
 {
 #line 952 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
 	{
 		buffer << "ror r" << rd << ", r" << rs;
 	}
-#line 10567 "isa_thumb.tcc"
+#line 10568 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 10572 "isa_thumb.tcc"
+#line 10573 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 10575 "isa_thumb.tcc"
+#line 10576 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 10579 "isa_thumb.tcc"
+#line 10580 "isa_thumb.tcc"
 OpRor<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 10583 "isa_thumb.tcc"
+#line 10584 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 10587 "isa_thumb.tcc"
+#line 10588 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 10590 "isa_thumb.tcc"
+#line 10591 "isa_thumb.tcc"
 )
 {
 #line 956 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
@@ -10611,27 +10612,27 @@ cpu
 		cpu.SetCPSR_N(res & (typename CONFIG::reg_t)0x80000000);
 		cpu.SetCPSR_Z(res == 0);
 	}
-#line 10615 "isa_thumb.tcc"
+#line 10616 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 10621 "isa_thumb.tcc"
+#line 10622 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 10624 "isa_thumb.tcc"
+#line 10625 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 10629 "isa_thumb.tcc"
+#line 10630 "isa_thumb.tcc"
 > *DecodeOpRor(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpRor<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 10635 "isa_thumb.tcc"
+#line 10636 "isa_thumb.tcc"
 	>(code, addr);
 }
 
@@ -10644,62 +10645,62 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 10648 "isa_thumb.tcc"
+#line 10649 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 10651 "isa_thumb.tcc"
+#line 10652 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 10655 "isa_thumb.tcc"
+#line 10656 "isa_thumb.tcc"
 OpSbc<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 10659 "isa_thumb.tcc"
+#line 10660 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 10663 "isa_thumb.tcc"
+#line 10664 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 10666 "isa_thumb.tcc"
+#line 10667 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 10670 "isa_thumb.tcc"
+#line 10671 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 10673 "isa_thumb.tcc"
+#line 10674 "isa_thumb.tcc"
 )
 {
 #line 988 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
 	{
 		buffer << "sbc r" << rd << ", r" << rm;
 	}
-#line 10680 "isa_thumb.tcc"
+#line 10681 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 10685 "isa_thumb.tcc"
+#line 10686 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 10688 "isa_thumb.tcc"
+#line 10689 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 10692 "isa_thumb.tcc"
+#line 10693 "isa_thumb.tcc"
 OpSbc<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 10696 "isa_thumb.tcc"
+#line 10697 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 10700 "isa_thumb.tcc"
+#line 10701 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 10703 "isa_thumb.tcc"
+#line 10704 "isa_thumb.tcc"
 )
 {
 #line 992 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
@@ -10721,27 +10722,27 @@ cpu
 		cpu.SetCPSR_C(!cpu.BorrowFrom(res, s1, s2, in_neg_carry));
 		cpu.SetCPSR_V(cpu.SubtractionOverflowFrom(res, s1, s2, in_neg_carry));
 	}
-#line 10725 "isa_thumb.tcc"
+#line 10726 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 10731 "isa_thumb.tcc"
+#line 10732 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 10734 "isa_thumb.tcc"
+#line 10735 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 10739 "isa_thumb.tcc"
+#line 10740 "isa_thumb.tcc"
 > *DecodeOpSbc(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpSbc<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 10745 "isa_thumb.tcc"
+#line 10746 "isa_thumb.tcc"
 	>(code, addr);
 }
 
@@ -10754,62 +10755,62 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 10758 "isa_thumb.tcc"
+#line 10759 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 10761 "isa_thumb.tcc"
+#line 10762 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 10765 "isa_thumb.tcc"
+#line 10766 "isa_thumb.tcc"
 OpSub_1<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 10769 "isa_thumb.tcc"
+#line 10770 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 10773 "isa_thumb.tcc"
+#line 10774 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 10776 "isa_thumb.tcc"
+#line 10777 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 10780 "isa_thumb.tcc"
+#line 10781 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 10783 "isa_thumb.tcc"
+#line 10784 "isa_thumb.tcc"
 )
 {
 #line 1021 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
 	{
 		buffer << "sub r" << rd << ", r" << rn << ", #" << dec << imm;
 	}
-#line 10790 "isa_thumb.tcc"
+#line 10791 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 10795 "isa_thumb.tcc"
+#line 10796 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 10798 "isa_thumb.tcc"
+#line 10799 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 10802 "isa_thumb.tcc"
+#line 10803 "isa_thumb.tcc"
 OpSub_1<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 10806 "isa_thumb.tcc"
+#line 10807 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 10810 "isa_thumb.tcc"
+#line 10811 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 10813 "isa_thumb.tcc"
+#line 10814 "isa_thumb.tcc"
 )
 {
 #line 1025 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
@@ -10829,27 +10830,27 @@ cpu
 		cpu.SetCPSR_C(!cpu.BorrowFrom(res, s1, s2));
 		cpu.SetCPSR_V(cpu.SubtractionOverflowFrom(res, s1, s2));
 	}
-#line 10833 "isa_thumb.tcc"
+#line 10834 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 10839 "isa_thumb.tcc"
+#line 10840 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 10842 "isa_thumb.tcc"
+#line 10843 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 10847 "isa_thumb.tcc"
+#line 10848 "isa_thumb.tcc"
 > *DecodeOpSub_1(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpSub_1<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 10853 "isa_thumb.tcc"
+#line 10854 "isa_thumb.tcc"
 	>(code, addr);
 }
 
@@ -10862,62 +10863,62 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 10866 "isa_thumb.tcc"
+#line 10867 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 10869 "isa_thumb.tcc"
+#line 10870 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 10873 "isa_thumb.tcc"
+#line 10874 "isa_thumb.tcc"
 OpSub_2<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 10877 "isa_thumb.tcc"
+#line 10878 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 10881 "isa_thumb.tcc"
+#line 10882 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 10884 "isa_thumb.tcc"
+#line 10885 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 10888 "isa_thumb.tcc"
+#line 10889 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 10891 "isa_thumb.tcc"
+#line 10892 "isa_thumb.tcc"
 )
 {
 #line 1052 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
 	{
 		buffer << "sub r" << rd << ", #" << dec << imm;
 	}
-#line 10898 "isa_thumb.tcc"
+#line 10899 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 10903 "isa_thumb.tcc"
+#line 10904 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 10906 "isa_thumb.tcc"
+#line 10907 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 10910 "isa_thumb.tcc"
+#line 10911 "isa_thumb.tcc"
 OpSub_2<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 10914 "isa_thumb.tcc"
+#line 10915 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 10918 "isa_thumb.tcc"
+#line 10919 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 10921 "isa_thumb.tcc"
+#line 10922 "isa_thumb.tcc"
 )
 {
 #line 1056 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
@@ -10939,27 +10940,27 @@ cpu
 		cpu.SetCPSR_C(!cpu.BorrowFrom(res, s1, s2));
 		cpu.SetCPSR_V(cpu.SubtractionOverflowFrom(res, s1, s2));
 	}
-#line 10943 "isa_thumb.tcc"
+#line 10944 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 10949 "isa_thumb.tcc"
+#line 10950 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 10952 "isa_thumb.tcc"
+#line 10953 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 10957 "isa_thumb.tcc"
+#line 10958 "isa_thumb.tcc"
 > *DecodeOpSub_2(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpSub_2<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 10963 "isa_thumb.tcc"
+#line 10964 "isa_thumb.tcc"
 	>(code, addr);
 }
 
@@ -10972,62 +10973,62 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 10976 "isa_thumb.tcc"
+#line 10977 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 10979 "isa_thumb.tcc"
+#line 10980 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 10983 "isa_thumb.tcc"
+#line 10984 "isa_thumb.tcc"
 OpSub_3<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 10987 "isa_thumb.tcc"
+#line 10988 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 10991 "isa_thumb.tcc"
+#line 10992 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 10994 "isa_thumb.tcc"
+#line 10995 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 10998 "isa_thumb.tcc"
+#line 10999 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 11001 "isa_thumb.tcc"
+#line 11002 "isa_thumb.tcc"
 )
 {
 #line 1085 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
 	{
 		buffer << "sub r" << rd << ", r" << rn << ", r" << rm;
 	}
-#line 11008 "isa_thumb.tcc"
+#line 11009 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 11013 "isa_thumb.tcc"
+#line 11014 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 11016 "isa_thumb.tcc"
+#line 11017 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 11020 "isa_thumb.tcc"
+#line 11021 "isa_thumb.tcc"
 OpSub_3<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 11024 "isa_thumb.tcc"
+#line 11025 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 11028 "isa_thumb.tcc"
+#line 11029 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 11031 "isa_thumb.tcc"
+#line 11032 "isa_thumb.tcc"
 )
 {
 #line 1089 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
@@ -11047,27 +11048,27 @@ cpu
 		cpu.SetCPSR_C(!cpu.BorrowFrom(res, s1, s2));
 		cpu.SetCPSR_V(cpu.SubtractionOverflowFrom(res, s1, s2));
 	}
-#line 11051 "isa_thumb.tcc"
+#line 11052 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 11057 "isa_thumb.tcc"
+#line 11058 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 11060 "isa_thumb.tcc"
+#line 11061 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 11065 "isa_thumb.tcc"
+#line 11066 "isa_thumb.tcc"
 > *DecodeOpSub_3(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpSub_3<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 11071 "isa_thumb.tcc"
+#line 11072 "isa_thumb.tcc"
 	>(code, addr);
 }
 
@@ -11080,62 +11081,62 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 11084 "isa_thumb.tcc"
+#line 11085 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 11087 "isa_thumb.tcc"
+#line 11088 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 11091 "isa_thumb.tcc"
+#line 11092 "isa_thumb.tcc"
 OpSub_4<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 11095 "isa_thumb.tcc"
+#line 11096 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 11099 "isa_thumb.tcc"
+#line 11100 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 11102 "isa_thumb.tcc"
+#line 11103 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 11106 "isa_thumb.tcc"
+#line 11107 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 11109 "isa_thumb.tcc"
+#line 11110 "isa_thumb.tcc"
 )
 {
 #line 1116 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
 	{
 		buffer << "sub sp, #" << (imm * 4);
 	}
-#line 11116 "isa_thumb.tcc"
+#line 11117 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 11121 "isa_thumb.tcc"
+#line 11122 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 11124 "isa_thumb.tcc"
+#line 11125 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 11128 "isa_thumb.tcc"
+#line 11129 "isa_thumb.tcc"
 OpSub_4<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 11132 "isa_thumb.tcc"
+#line 11133 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 11136 "isa_thumb.tcc"
+#line 11137 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 11139 "isa_thumb.tcc"
+#line 11140 "isa_thumb.tcc"
 )
 {
 #line 1120 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
@@ -11150,27 +11151,27 @@ cpu
 		res = s1 - s2;
 		cpu.SetGPR(cpu.SP_reg, res);
 	}
-#line 11154 "isa_thumb.tcc"
+#line 11155 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 11160 "isa_thumb.tcc"
+#line 11161 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 11163 "isa_thumb.tcc"
+#line 11164 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 11168 "isa_thumb.tcc"
+#line 11169 "isa_thumb.tcc"
 > *DecodeOpSub_4(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpSub_4<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 11174 "isa_thumb.tcc"
+#line 11175 "isa_thumb.tcc"
 	>(code, addr);
 }
 
@@ -11183,62 +11184,62 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 11187 "isa_thumb.tcc"
+#line 11188 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 11190 "isa_thumb.tcc"
+#line 11191 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 11194 "isa_thumb.tcc"
+#line 11195 "isa_thumb.tcc"
 OpTst<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 11198 "isa_thumb.tcc"
+#line 11199 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 11202 "isa_thumb.tcc"
+#line 11203 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 11205 "isa_thumb.tcc"
+#line 11206 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 11209 "isa_thumb.tcc"
+#line 11210 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 11212 "isa_thumb.tcc"
+#line 11213 "isa_thumb.tcc"
 )
 {
 #line 1142 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
 	{
 		buffer << "tst r" << rn << ", r" << rm;
 	}
-#line 11219 "isa_thumb.tcc"
+#line 11220 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 11224 "isa_thumb.tcc"
+#line 11225 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 11227 "isa_thumb.tcc"
+#line 11228 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 11231 "isa_thumb.tcc"
+#line 11232 "isa_thumb.tcc"
 OpTst<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 11235 "isa_thumb.tcc"
+#line 11236 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 11239 "isa_thumb.tcc"
+#line 11240 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 11242 "isa_thumb.tcc"
+#line 11243 "isa_thumb.tcc"
 )
 {
 #line 1146 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
@@ -11254,27 +11255,27 @@ cpu
 		cpu.SetCPSR_N(res & (typename CONFIG::reg_t)0x80000000);
 		cpu.SetCPSR_Z(res == 0);
 	}
-#line 11258 "isa_thumb.tcc"
+#line 11259 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 11264 "isa_thumb.tcc"
+#line 11265 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 11267 "isa_thumb.tcc"
+#line 11268 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 11272 "isa_thumb.tcc"
+#line 11273 "isa_thumb.tcc"
 > *DecodeOpTst(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpTst<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 11278 "isa_thumb.tcc"
+#line 11279 "isa_thumb.tcc"
 	>(code, addr);
 }
 
@@ -11325,62 +11326,62 @@ THUMB LOAD STORE REGISTER INSTRUCTIONS
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 11329 "isa_thumb.tcc"
+#line 11330 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 11332 "isa_thumb.tcc"
+#line 11333 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 11336 "isa_thumb.tcc"
+#line 11337 "isa_thumb.tcc"
 OpLdr_1<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 11340 "isa_thumb.tcc"
+#line 11341 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 11344 "isa_thumb.tcc"
+#line 11345 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 11347 "isa_thumb.tcc"
+#line 11348 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 11351 "isa_thumb.tcc"
+#line 11352 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 11354 "isa_thumb.tcc"
+#line 11355 "isa_thumb.tcc"
 )
 {
 #line 47 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/load_store_reg.isa"
 	{
 		buffer << "ldr r" << rd << ", [r" << rn << ", #" << dec << (imm * 4) << "]";
 	}
-#line 11361 "isa_thumb.tcc"
+#line 11362 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 11366 "isa_thumb.tcc"
+#line 11367 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 11369 "isa_thumb.tcc"
+#line 11370 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 11373 "isa_thumb.tcc"
+#line 11374 "isa_thumb.tcc"
 OpLdr_1<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 11377 "isa_thumb.tcc"
+#line 11378 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 11381 "isa_thumb.tcc"
+#line 11382 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 11384 "isa_thumb.tcc"
+#line 11385 "isa_thumb.tcc"
 )
 {
 #line 51 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/load_store_reg.isa"
@@ -11395,27 +11396,27 @@ cpu
 		value = 0;
 		cpu.Read32toGPRAligned(addr, rd);
 	}
-#line 11399 "isa_thumb.tcc"
+#line 11400 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 11405 "isa_thumb.tcc"
+#line 11406 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 11408 "isa_thumb.tcc"
+#line 11409 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 11413 "isa_thumb.tcc"
+#line 11414 "isa_thumb.tcc"
 > *DecodeOpLdr_1(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpLdr_1<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 11419 "isa_thumb.tcc"
+#line 11420 "isa_thumb.tcc"
 	>(code, addr);
 }
 
@@ -11428,62 +11429,62 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 11432 "isa_thumb.tcc"
+#line 11433 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 11435 "isa_thumb.tcc"
+#line 11436 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 11439 "isa_thumb.tcc"
+#line 11440 "isa_thumb.tcc"
 OpLdr_2<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 11443 "isa_thumb.tcc"
+#line 11444 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 11447 "isa_thumb.tcc"
+#line 11448 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 11450 "isa_thumb.tcc"
+#line 11451 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 11454 "isa_thumb.tcc"
+#line 11455 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 11457 "isa_thumb.tcc"
+#line 11458 "isa_thumb.tcc"
 )
 {
 #line 73 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/load_store_reg.isa"
 	{
 		buffer << "ldr r" << rd << ", [r" << rn << ", r" << rm << "]";
 	}
-#line 11464 "isa_thumb.tcc"
+#line 11465 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 11469 "isa_thumb.tcc"
+#line 11470 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 11472 "isa_thumb.tcc"
+#line 11473 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 11476 "isa_thumb.tcc"
+#line 11477 "isa_thumb.tcc"
 OpLdr_2<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 11480 "isa_thumb.tcc"
+#line 11481 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 11484 "isa_thumb.tcc"
+#line 11485 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 11487 "isa_thumb.tcc"
+#line 11488 "isa_thumb.tcc"
 )
 {
 #line 77 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/load_store_reg.isa"
@@ -11499,27 +11500,27 @@ cpu
 		value = 0;
 		cpu.Read32toGPRAligned(addr, rd);
 	}
-#line 11503 "isa_thumb.tcc"
+#line 11504 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 11509 "isa_thumb.tcc"
+#line 11510 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 11512 "isa_thumb.tcc"
+#line 11513 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 11517 "isa_thumb.tcc"
+#line 11518 "isa_thumb.tcc"
 > *DecodeOpLdr_2(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpLdr_2<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 11523 "isa_thumb.tcc"
+#line 11524 "isa_thumb.tcc"
 	>(code, addr);
 }
 
@@ -11532,62 +11533,62 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 11536 "isa_thumb.tcc"
+#line 11537 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 11539 "isa_thumb.tcc"
+#line 11540 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 11543 "isa_thumb.tcc"
+#line 11544 "isa_thumb.tcc"
 OpLdr_3<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 11547 "isa_thumb.tcc"
+#line 11548 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 11551 "isa_thumb.tcc"
+#line 11552 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 11554 "isa_thumb.tcc"
+#line 11555 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 11558 "isa_thumb.tcc"
+#line 11559 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 11561 "isa_thumb.tcc"
+#line 11562 "isa_thumb.tcc"
 )
 {
 #line 100 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/load_store_reg.isa"
 	{
 		buffer << "ldr r" << rd << ", [pc, #" << dec << (imm * 4) << "]";
 	}
-#line 11568 "isa_thumb.tcc"
+#line 11569 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 11573 "isa_thumb.tcc"
+#line 11574 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 11576 "isa_thumb.tcc"
+#line 11577 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 11580 "isa_thumb.tcc"
+#line 11581 "isa_thumb.tcc"
 OpLdr_3<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 11584 "isa_thumb.tcc"
+#line 11585 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 11588 "isa_thumb.tcc"
+#line 11589 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 11591 "isa_thumb.tcc"
+#line 11592 "isa_thumb.tcc"
 )
 {
 #line 104 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/load_store_reg.isa"
@@ -11603,27 +11604,27 @@ cpu
 		value = 0;
 		cpu.Read32toGPRAligned(addr, rd);
 	}
-#line 11607 "isa_thumb.tcc"
+#line 11608 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 11613 "isa_thumb.tcc"
+#line 11614 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 11616 "isa_thumb.tcc"
+#line 11617 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 11621 "isa_thumb.tcc"
+#line 11622 "isa_thumb.tcc"
 > *DecodeOpLdr_3(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpLdr_3<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 11627 "isa_thumb.tcc"
+#line 11628 "isa_thumb.tcc"
 	>(code, addr);
 }
 
@@ -11636,62 +11637,62 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 11640 "isa_thumb.tcc"
+#line 11641 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 11643 "isa_thumb.tcc"
+#line 11644 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 11647 "isa_thumb.tcc"
+#line 11648 "isa_thumb.tcc"
 OpLdr_4<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 11651 "isa_thumb.tcc"
+#line 11652 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 11655 "isa_thumb.tcc"
+#line 11656 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 11658 "isa_thumb.tcc"
+#line 11659 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 11662 "isa_thumb.tcc"
+#line 11663 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 11665 "isa_thumb.tcc"
+#line 11666 "isa_thumb.tcc"
 )
 {
 #line 127 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/load_store_reg.isa"
 	{
 		buffer << "ldr r" << rd << ", [sp, #" << dec << (imm * 4) << "]";
 	}
-#line 11672 "isa_thumb.tcc"
+#line 11673 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 11677 "isa_thumb.tcc"
+#line 11678 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 11680 "isa_thumb.tcc"
+#line 11681 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 11684 "isa_thumb.tcc"
+#line 11685 "isa_thumb.tcc"
 OpLdr_4<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 11688 "isa_thumb.tcc"
+#line 11689 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 11692 "isa_thumb.tcc"
+#line 11693 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 11695 "isa_thumb.tcc"
+#line 11696 "isa_thumb.tcc"
 )
 {
 #line 131 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/load_store_reg.isa"
@@ -11706,27 +11707,27 @@ cpu
 		value = 0;
 		cpu.Read32toGPRAligned(addr, rd);
 	}
-#line 11710 "isa_thumb.tcc"
+#line 11711 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 11716 "isa_thumb.tcc"
+#line 11717 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 11719 "isa_thumb.tcc"
+#line 11720 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 11724 "isa_thumb.tcc"
+#line 11725 "isa_thumb.tcc"
 > *DecodeOpLdr_4(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpLdr_4<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 11730 "isa_thumb.tcc"
+#line 11731 "isa_thumb.tcc"
 	>(code, addr);
 }
 
@@ -11739,62 +11740,62 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 11743 "isa_thumb.tcc"
+#line 11744 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 11746 "isa_thumb.tcc"
+#line 11747 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 11750 "isa_thumb.tcc"
+#line 11751 "isa_thumb.tcc"
 OpLdrb_1<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 11754 "isa_thumb.tcc"
+#line 11755 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 11758 "isa_thumb.tcc"
+#line 11759 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 11761 "isa_thumb.tcc"
+#line 11762 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 11765 "isa_thumb.tcc"
+#line 11766 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 11768 "isa_thumb.tcc"
+#line 11769 "isa_thumb.tcc"
 )
 {
 #line 153 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/load_store_reg.isa"
 	{
 		buffer << "ldrb r" << rd << ", [r" << rn << ", #" << dec << imm << "]";
 	}
-#line 11775 "isa_thumb.tcc"
+#line 11776 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 11780 "isa_thumb.tcc"
+#line 11781 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 11783 "isa_thumb.tcc"
+#line 11784 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 11787 "isa_thumb.tcc"
+#line 11788 "isa_thumb.tcc"
 OpLdrb_1<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 11791 "isa_thumb.tcc"
+#line 11792 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 11795 "isa_thumb.tcc"
+#line 11796 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 11798 "isa_thumb.tcc"
+#line 11799 "isa_thumb.tcc"
 )
 {
 #line 157 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/load_store_reg.isa"
@@ -11810,27 +11811,27 @@ cpu
 		val8 = 0;
 		cpu.Read8toGPR(addr, rd);
 	}
-#line 11814 "isa_thumb.tcc"
+#line 11815 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 11820 "isa_thumb.tcc"
+#line 11821 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 11823 "isa_thumb.tcc"
+#line 11824 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 11828 "isa_thumb.tcc"
+#line 11829 "isa_thumb.tcc"
 > *DecodeOpLdrb_1(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpLdrb_1<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 11834 "isa_thumb.tcc"
+#line 11835 "isa_thumb.tcc"
 	>(code, addr);
 }
 
@@ -11843,62 +11844,62 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 11847 "isa_thumb.tcc"
+#line 11848 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 11850 "isa_thumb.tcc"
+#line 11851 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 11854 "isa_thumb.tcc"
+#line 11855 "isa_thumb.tcc"
 OpLdrb_2<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 11858 "isa_thumb.tcc"
+#line 11859 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 11862 "isa_thumb.tcc"
+#line 11863 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 11865 "isa_thumb.tcc"
+#line 11866 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 11869 "isa_thumb.tcc"
+#line 11870 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 11872 "isa_thumb.tcc"
+#line 11873 "isa_thumb.tcc"
 )
 {
 #line 180 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/load_store_reg.isa"
 	{
 		buffer << "ldrb r" << rd << ", [r" << rn << ", r" << rm << "]";
 	}
-#line 11879 "isa_thumb.tcc"
+#line 11880 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 11884 "isa_thumb.tcc"
+#line 11885 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 11887 "isa_thumb.tcc"
+#line 11888 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 11891 "isa_thumb.tcc"
+#line 11892 "isa_thumb.tcc"
 OpLdrb_2<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 11895 "isa_thumb.tcc"
+#line 11896 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 11899 "isa_thumb.tcc"
+#line 11900 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 11902 "isa_thumb.tcc"
+#line 11903 "isa_thumb.tcc"
 )
 {
 #line 184 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/load_store_reg.isa"
@@ -11915,27 +11916,27 @@ cpu
 		val8 = 0;
 		cpu.Read8toGPR(addr, rd);
 	}
-#line 11919 "isa_thumb.tcc"
+#line 11920 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 11925 "isa_thumb.tcc"
+#line 11926 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 11928 "isa_thumb.tcc"
+#line 11929 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 11933 "isa_thumb.tcc"
+#line 11934 "isa_thumb.tcc"
 > *DecodeOpLdrb_2(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpLdrb_2<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 11939 "isa_thumb.tcc"
+#line 11940 "isa_thumb.tcc"
 	>(code, addr);
 }
 
@@ -11948,62 +11949,62 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 11952 "isa_thumb.tcc"
+#line 11953 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 11955 "isa_thumb.tcc"
+#line 11956 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 11959 "isa_thumb.tcc"
+#line 11960 "isa_thumb.tcc"
 OpLdrh_1<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 11963 "isa_thumb.tcc"
+#line 11964 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 11967 "isa_thumb.tcc"
+#line 11968 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 11970 "isa_thumb.tcc"
+#line 11971 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 11974 "isa_thumb.tcc"
+#line 11975 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 11977 "isa_thumb.tcc"
+#line 11978 "isa_thumb.tcc"
 )
 {
 #line 208 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/load_store_reg.isa"
 	{
 		buffer << "ldrh r" << rd << ", [r" << rn << ", #" << dec << (imm * 2) << "]";
 	}
-#line 11984 "isa_thumb.tcc"
+#line 11985 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 11989 "isa_thumb.tcc"
+#line 11990 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 11992 "isa_thumb.tcc"
+#line 11993 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 11996 "isa_thumb.tcc"
+#line 11997 "isa_thumb.tcc"
 OpLdrh_1<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 12000 "isa_thumb.tcc"
+#line 12001 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 12004 "isa_thumb.tcc"
+#line 12005 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 12007 "isa_thumb.tcc"
+#line 12008 "isa_thumb.tcc"
 )
 {
 #line 212 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/load_store_reg.isa"
@@ -12019,27 +12020,27 @@ cpu
 		val16 = 0;
 		cpu.Read16toGPRAligned(addr, rd);
 	}
-#line 12023 "isa_thumb.tcc"
+#line 12024 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 12029 "isa_thumb.tcc"
+#line 12030 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 12032 "isa_thumb.tcc"
+#line 12033 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 12037 "isa_thumb.tcc"
+#line 12038 "isa_thumb.tcc"
 > *DecodeOpLdrh_1(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpLdrh_1<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 12043 "isa_thumb.tcc"
+#line 12044 "isa_thumb.tcc"
 	>(code, addr);
 }
 
@@ -12052,62 +12053,62 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 12056 "isa_thumb.tcc"
+#line 12057 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 12059 "isa_thumb.tcc"
+#line 12060 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 12063 "isa_thumb.tcc"
+#line 12064 "isa_thumb.tcc"
 OpLdrh_2<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 12067 "isa_thumb.tcc"
+#line 12068 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 12071 "isa_thumb.tcc"
+#line 12072 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 12074 "isa_thumb.tcc"
+#line 12075 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 12078 "isa_thumb.tcc"
+#line 12079 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 12081 "isa_thumb.tcc"
+#line 12082 "isa_thumb.tcc"
 )
 {
 #line 235 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/load_store_reg.isa"
 	{
 		buffer << "ldrh r" << rd << ", [r" << rn << ", r" << rm << "]";
 	}
-#line 12088 "isa_thumb.tcc"
+#line 12089 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 12093 "isa_thumb.tcc"
+#line 12094 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 12096 "isa_thumb.tcc"
+#line 12097 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 12100 "isa_thumb.tcc"
+#line 12101 "isa_thumb.tcc"
 OpLdrh_2<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 12104 "isa_thumb.tcc"
+#line 12105 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 12108 "isa_thumb.tcc"
+#line 12109 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 12111 "isa_thumb.tcc"
+#line 12112 "isa_thumb.tcc"
 )
 {
 #line 239 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/load_store_reg.isa"
@@ -12124,27 +12125,27 @@ cpu
 		val16 = 0;
 		cpu.Read16toGPRAligned(addr, rd);
 	}
-#line 12128 "isa_thumb.tcc"
+#line 12129 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 12134 "isa_thumb.tcc"
+#line 12135 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 12137 "isa_thumb.tcc"
+#line 12138 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 12142 "isa_thumb.tcc"
+#line 12143 "isa_thumb.tcc"
 > *DecodeOpLdrh_2(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpLdrh_2<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 12148 "isa_thumb.tcc"
+#line 12149 "isa_thumb.tcc"
 	>(code, addr);
 }
 
@@ -12157,62 +12158,62 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 12161 "isa_thumb.tcc"
+#line 12162 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 12164 "isa_thumb.tcc"
+#line 12165 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 12168 "isa_thumb.tcc"
+#line 12169 "isa_thumb.tcc"
 OpLdrsb<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 12172 "isa_thumb.tcc"
+#line 12173 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 12176 "isa_thumb.tcc"
+#line 12177 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 12179 "isa_thumb.tcc"
+#line 12180 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 12183 "isa_thumb.tcc"
+#line 12184 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 12186 "isa_thumb.tcc"
+#line 12187 "isa_thumb.tcc"
 )
 {
 #line 263 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/load_store_reg.isa"
 	{
 		buffer << "ldrsb r" << rd << ", [r" << rn << ", r" << rm << "]";
 	}
-#line 12193 "isa_thumb.tcc"
+#line 12194 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 12198 "isa_thumb.tcc"
+#line 12199 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 12201 "isa_thumb.tcc"
+#line 12202 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 12205 "isa_thumb.tcc"
+#line 12206 "isa_thumb.tcc"
 OpLdrsb<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 12209 "isa_thumb.tcc"
+#line 12210 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 12213 "isa_thumb.tcc"
+#line 12214 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 12216 "isa_thumb.tcc"
+#line 12217 "isa_thumb.tcc"
 )
 {
 #line 267 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/load_store_reg.isa"
@@ -12229,27 +12230,27 @@ cpu
 		val8 = 0;
 		cpu.ReadS8toGPR(addr, rd);
 	}
-#line 12233 "isa_thumb.tcc"
+#line 12234 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 12239 "isa_thumb.tcc"
+#line 12240 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 12242 "isa_thumb.tcc"
+#line 12243 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 12247 "isa_thumb.tcc"
+#line 12248 "isa_thumb.tcc"
 > *DecodeOpLdrsb(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpLdrsb<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 12253 "isa_thumb.tcc"
+#line 12254 "isa_thumb.tcc"
 	>(code, addr);
 }
 
@@ -12262,62 +12263,62 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 12266 "isa_thumb.tcc"
+#line 12267 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 12269 "isa_thumb.tcc"
+#line 12270 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 12273 "isa_thumb.tcc"
+#line 12274 "isa_thumb.tcc"
 OpLdrsh<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 12277 "isa_thumb.tcc"
+#line 12278 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 12281 "isa_thumb.tcc"
+#line 12282 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 12284 "isa_thumb.tcc"
+#line 12285 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 12288 "isa_thumb.tcc"
+#line 12289 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 12291 "isa_thumb.tcc"
+#line 12292 "isa_thumb.tcc"
 )
 {
 #line 291 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/load_store_reg.isa"
 	{
 		buffer << "ldrsh r" << rd << ", [r" << rn << ", r" << rm << "]";
 	}
-#line 12298 "isa_thumb.tcc"
+#line 12299 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 12303 "isa_thumb.tcc"
+#line 12304 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 12306 "isa_thumb.tcc"
+#line 12307 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 12310 "isa_thumb.tcc"
+#line 12311 "isa_thumb.tcc"
 OpLdrsh<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 12314 "isa_thumb.tcc"
+#line 12315 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 12318 "isa_thumb.tcc"
+#line 12319 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 12321 "isa_thumb.tcc"
+#line 12322 "isa_thumb.tcc"
 )
 {
 #line 295 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/load_store_reg.isa"
@@ -12334,27 +12335,27 @@ cpu
 		val16 = 0;
 		cpu.ReadS16toGPRAligned(addr, rd);
 	}
-#line 12338 "isa_thumb.tcc"
+#line 12339 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 12344 "isa_thumb.tcc"
+#line 12345 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 12347 "isa_thumb.tcc"
+#line 12348 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 12352 "isa_thumb.tcc"
+#line 12353 "isa_thumb.tcc"
 > *DecodeOpLdrsh(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpLdrsh<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 12358 "isa_thumb.tcc"
+#line 12359 "isa_thumb.tcc"
 	>(code, addr);
 }
 
@@ -12367,62 +12368,62 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 12371 "isa_thumb.tcc"
+#line 12372 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 12374 "isa_thumb.tcc"
+#line 12375 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 12378 "isa_thumb.tcc"
+#line 12379 "isa_thumb.tcc"
 OpStr_1<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 12382 "isa_thumb.tcc"
+#line 12383 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 12386 "isa_thumb.tcc"
+#line 12387 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 12389 "isa_thumb.tcc"
+#line 12390 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 12393 "isa_thumb.tcc"
+#line 12394 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 12396 "isa_thumb.tcc"
+#line 12397 "isa_thumb.tcc"
 )
 {
 #line 319 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/load_store_reg.isa"
 	{
 		buffer << "str r" << rd << ", [r" << rn << ", #" << (imm * 4) << "]";
 	}
-#line 12403 "isa_thumb.tcc"
+#line 12404 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 12408 "isa_thumb.tcc"
+#line 12409 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 12411 "isa_thumb.tcc"
+#line 12412 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 12415 "isa_thumb.tcc"
+#line 12416 "isa_thumb.tcc"
 OpStr_1<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 12419 "isa_thumb.tcc"
+#line 12420 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 12423 "isa_thumb.tcc"
+#line 12424 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 12426 "isa_thumb.tcc"
+#line 12427 "isa_thumb.tcc"
 )
 {
 #line 323 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/load_store_reg.isa"
@@ -12437,27 +12438,27 @@ cpu
 		rd_value = cpu.GetGPR(rd);
 		cpu.Write32(addr, rd_value);
 	}
-#line 12441 "isa_thumb.tcc"
+#line 12442 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 12447 "isa_thumb.tcc"
+#line 12448 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 12450 "isa_thumb.tcc"
+#line 12451 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 12455 "isa_thumb.tcc"
+#line 12456 "isa_thumb.tcc"
 > *DecodeOpStr_1(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpStr_1<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 12461 "isa_thumb.tcc"
+#line 12462 "isa_thumb.tcc"
 	>(code, addr);
 }
 
@@ -12470,62 +12471,62 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 12474 "isa_thumb.tcc"
+#line 12475 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 12477 "isa_thumb.tcc"
+#line 12478 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 12481 "isa_thumb.tcc"
+#line 12482 "isa_thumb.tcc"
 OpStr_2<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 12485 "isa_thumb.tcc"
+#line 12486 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 12489 "isa_thumb.tcc"
+#line 12490 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 12492 "isa_thumb.tcc"
+#line 12493 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 12496 "isa_thumb.tcc"
+#line 12497 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 12499 "isa_thumb.tcc"
+#line 12500 "isa_thumb.tcc"
 )
 {
 #line 345 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/load_store_reg.isa"
 	{
 		buffer << "str r" << rd << ", [r" << rn << ", r" << rm << "]";
 	}
-#line 12506 "isa_thumb.tcc"
+#line 12507 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 12511 "isa_thumb.tcc"
+#line 12512 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 12514 "isa_thumb.tcc"
+#line 12515 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 12518 "isa_thumb.tcc"
+#line 12519 "isa_thumb.tcc"
 OpStr_2<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 12522 "isa_thumb.tcc"
+#line 12523 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 12526 "isa_thumb.tcc"
+#line 12527 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 12529 "isa_thumb.tcc"
+#line 12530 "isa_thumb.tcc"
 )
 {
 #line 349 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/load_store_reg.isa"
@@ -12541,27 +12542,27 @@ cpu
 		rd_value = cpu.GetGPR(rd);
 		cpu.Write32(addr, rd_value);
 	}
-#line 12545 "isa_thumb.tcc"
+#line 12546 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 12551 "isa_thumb.tcc"
+#line 12552 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 12554 "isa_thumb.tcc"
+#line 12555 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 12559 "isa_thumb.tcc"
+#line 12560 "isa_thumb.tcc"
 > *DecodeOpStr_2(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpStr_2<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 12565 "isa_thumb.tcc"
+#line 12566 "isa_thumb.tcc"
 	>(code, addr);
 }
 
@@ -12574,62 +12575,62 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 12578 "isa_thumb.tcc"
+#line 12579 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 12581 "isa_thumb.tcc"
+#line 12582 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 12585 "isa_thumb.tcc"
+#line 12586 "isa_thumb.tcc"
 OpStr_3<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 12589 "isa_thumb.tcc"
+#line 12590 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 12593 "isa_thumb.tcc"
+#line 12594 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 12596 "isa_thumb.tcc"
+#line 12597 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 12600 "isa_thumb.tcc"
+#line 12601 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 12603 "isa_thumb.tcc"
+#line 12604 "isa_thumb.tcc"
 )
 {
 #line 372 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/load_store_reg.isa"
 	{
 		buffer << "str r" << rd << ", [sp, #" << (imm * 4) << "]";
 	}
-#line 12610 "isa_thumb.tcc"
+#line 12611 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 12615 "isa_thumb.tcc"
+#line 12616 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 12618 "isa_thumb.tcc"
+#line 12619 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 12622 "isa_thumb.tcc"
+#line 12623 "isa_thumb.tcc"
 OpStr_3<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 12626 "isa_thumb.tcc"
+#line 12627 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 12630 "isa_thumb.tcc"
+#line 12631 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 12633 "isa_thumb.tcc"
+#line 12634 "isa_thumb.tcc"
 )
 {
 #line 376 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/load_store_reg.isa"
@@ -12644,27 +12645,27 @@ cpu
 		rd_value = cpu.GetGPR(rd);
 		cpu.Write32(addr, rd_value);
 	}
-#line 12648 "isa_thumb.tcc"
+#line 12649 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 12654 "isa_thumb.tcc"
+#line 12655 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 12657 "isa_thumb.tcc"
+#line 12658 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 12662 "isa_thumb.tcc"
+#line 12663 "isa_thumb.tcc"
 > *DecodeOpStr_3(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpStr_3<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 12668 "isa_thumb.tcc"
+#line 12669 "isa_thumb.tcc"
 	>(code, addr);
 }
 
@@ -12677,62 +12678,62 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 12681 "isa_thumb.tcc"
+#line 12682 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 12684 "isa_thumb.tcc"
+#line 12685 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 12688 "isa_thumb.tcc"
+#line 12689 "isa_thumb.tcc"
 OpStrb_1<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 12692 "isa_thumb.tcc"
+#line 12693 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 12696 "isa_thumb.tcc"
+#line 12697 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 12699 "isa_thumb.tcc"
+#line 12700 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 12703 "isa_thumb.tcc"
+#line 12704 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 12706 "isa_thumb.tcc"
+#line 12707 "isa_thumb.tcc"
 )
 {
 #line 398 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/load_store_reg.isa"
 	{
 		buffer << "strb r" << rd << ", [r" << rn << ", #" << dec << imm << "]";
 	}
-#line 12713 "isa_thumb.tcc"
+#line 12714 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 12718 "isa_thumb.tcc"
+#line 12719 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 12721 "isa_thumb.tcc"
+#line 12722 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 12725 "isa_thumb.tcc"
+#line 12726 "isa_thumb.tcc"
 OpStrb_1<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 12729 "isa_thumb.tcc"
+#line 12730 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 12733 "isa_thumb.tcc"
+#line 12734 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 12736 "isa_thumb.tcc"
+#line 12737 "isa_thumb.tcc"
 )
 {
 #line 402 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/load_store_reg.isa"
@@ -12749,27 +12750,27 @@ cpu
 		data = rd_value & (typename CONFIG::reg_t)0x0ff;
 		cpu.Write8(addr, data);
 	}
-#line 12753 "isa_thumb.tcc"
+#line 12754 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 12759 "isa_thumb.tcc"
+#line 12760 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 12762 "isa_thumb.tcc"
+#line 12763 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 12767 "isa_thumb.tcc"
+#line 12768 "isa_thumb.tcc"
 > *DecodeOpStrb_1(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpStrb_1<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 12773 "isa_thumb.tcc"
+#line 12774 "isa_thumb.tcc"
 	>(code, addr);
 }
 
@@ -12782,62 +12783,62 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 12786 "isa_thumb.tcc"
+#line 12787 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 12789 "isa_thumb.tcc"
+#line 12790 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 12793 "isa_thumb.tcc"
+#line 12794 "isa_thumb.tcc"
 OpStrb_2<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 12797 "isa_thumb.tcc"
+#line 12798 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 12801 "isa_thumb.tcc"
+#line 12802 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 12804 "isa_thumb.tcc"
+#line 12805 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 12808 "isa_thumb.tcc"
+#line 12809 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 12811 "isa_thumb.tcc"
+#line 12812 "isa_thumb.tcc"
 )
 {
 #line 426 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/load_store_reg.isa"
 	{
 		buffer << "strb r" << rd << ", [r" << rn << ", r" << rm << "]";
 	}
-#line 12818 "isa_thumb.tcc"
+#line 12819 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 12823 "isa_thumb.tcc"
+#line 12824 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 12826 "isa_thumb.tcc"
+#line 12827 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 12830 "isa_thumb.tcc"
+#line 12831 "isa_thumb.tcc"
 OpStrb_2<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 12834 "isa_thumb.tcc"
+#line 12835 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 12838 "isa_thumb.tcc"
+#line 12839 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 12841 "isa_thumb.tcc"
+#line 12842 "isa_thumb.tcc"
 )
 {
 #line 430 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/load_store_reg.isa"
@@ -12855,27 +12856,27 @@ cpu
 		data = rd_value & (typename CONFIG::reg_t)0x0ff;
 		cpu.Write8(addr, data);
 	}
-#line 12859 "isa_thumb.tcc"
+#line 12860 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 12865 "isa_thumb.tcc"
+#line 12866 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 12868 "isa_thumb.tcc"
+#line 12869 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 12873 "isa_thumb.tcc"
+#line 12874 "isa_thumb.tcc"
 > *DecodeOpStrb_2(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpStrb_2<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 12879 "isa_thumb.tcc"
+#line 12880 "isa_thumb.tcc"
 	>(code, addr);
 }
 
@@ -12888,62 +12889,62 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 12892 "isa_thumb.tcc"
+#line 12893 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 12895 "isa_thumb.tcc"
+#line 12896 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 12899 "isa_thumb.tcc"
+#line 12900 "isa_thumb.tcc"
 OpStrh_1<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 12903 "isa_thumb.tcc"
+#line 12904 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 12907 "isa_thumb.tcc"
+#line 12908 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 12910 "isa_thumb.tcc"
+#line 12911 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 12914 "isa_thumb.tcc"
+#line 12915 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 12917 "isa_thumb.tcc"
+#line 12918 "isa_thumb.tcc"
 )
 {
 #line 455 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/load_store_reg.isa"
 	{
 		buffer << "strh r" << rd << ", [r" << rn << ", #" << dec << (imm * 2) << "]";
 	}
-#line 12924 "isa_thumb.tcc"
+#line 12925 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 12929 "isa_thumb.tcc"
+#line 12930 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 12932 "isa_thumb.tcc"
+#line 12933 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 12936 "isa_thumb.tcc"
+#line 12937 "isa_thumb.tcc"
 OpStrh_1<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 12940 "isa_thumb.tcc"
+#line 12941 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 12944 "isa_thumb.tcc"
+#line 12945 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 12947 "isa_thumb.tcc"
+#line 12948 "isa_thumb.tcc"
 )
 {
 #line 459 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/load_store_reg.isa"
@@ -12960,27 +12961,27 @@ cpu
 		data = rd_value & (typename CONFIG::reg_t)0x0ffff;
 		cpu.Write16(addr, data);
 	}
-#line 12964 "isa_thumb.tcc"
+#line 12965 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 12970 "isa_thumb.tcc"
+#line 12971 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 12973 "isa_thumb.tcc"
+#line 12974 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 12978 "isa_thumb.tcc"
+#line 12979 "isa_thumb.tcc"
 > *DecodeOpStrh_1(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpStrh_1<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 12984 "isa_thumb.tcc"
+#line 12985 "isa_thumb.tcc"
 	>(code, addr);
 }
 
@@ -12993,62 +12994,62 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 12997 "isa_thumb.tcc"
+#line 12998 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 13000 "isa_thumb.tcc"
+#line 13001 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 13004 "isa_thumb.tcc"
+#line 13005 "isa_thumb.tcc"
 OpStrh_2<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 13008 "isa_thumb.tcc"
+#line 13009 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 13012 "isa_thumb.tcc"
+#line 13013 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 13015 "isa_thumb.tcc"
+#line 13016 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 13019 "isa_thumb.tcc"
+#line 13020 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 13022 "isa_thumb.tcc"
+#line 13023 "isa_thumb.tcc"
 )
 {
 #line 483 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/load_store_reg.isa"
 	{
 		buffer << "strh r" << rd << ", [r" << rn << ", r" << rm << "]";
 	}
-#line 13029 "isa_thumb.tcc"
+#line 13030 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 13034 "isa_thumb.tcc"
+#line 13035 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 13037 "isa_thumb.tcc"
+#line 13038 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 13041 "isa_thumb.tcc"
+#line 13042 "isa_thumb.tcc"
 OpStrh_2<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 13045 "isa_thumb.tcc"
+#line 13046 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 13049 "isa_thumb.tcc"
+#line 13050 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 13052 "isa_thumb.tcc"
+#line 13053 "isa_thumb.tcc"
 )
 {
 #line 487 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/load_store_reg.isa"
@@ -13066,27 +13067,27 @@ cpu
 		data = rd_value & (typename CONFIG::reg_t)0x0ff;
 		cpu.Write16(addr, data);
 	}
-#line 13070 "isa_thumb.tcc"
+#line 13071 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 13076 "isa_thumb.tcc"
+#line 13077 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 13079 "isa_thumb.tcc"
+#line 13080 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 13084 "isa_thumb.tcc"
+#line 13085 "isa_thumb.tcc"
 > *DecodeOpStrh_2(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpStrh_2<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 13090 "isa_thumb.tcc"
+#line 13091 "isa_thumb.tcc"
 	>(code, addr);
 }
 
@@ -13137,32 +13138,32 @@ THUMB LOAD STORE MULTIPLE INSTRUCTIONS
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 13141 "isa_thumb.tcc"
+#line 13142 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 13144 "isa_thumb.tcc"
+#line 13145 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 13148 "isa_thumb.tcc"
+#line 13149 "isa_thumb.tcc"
 OpLdmia<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 13152 "isa_thumb.tcc"
+#line 13153 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 13156 "isa_thumb.tcc"
+#line 13157 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 13159 "isa_thumb.tcc"
+#line 13160 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 13163 "isa_thumb.tcc"
+#line 13164 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 13166 "isa_thumb.tcc"
+#line 13167 "isa_thumb.tcc"
 )
 {
 #line 47 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/load_store_multiple.isa"
@@ -13181,30 +13182,30 @@ buffer
 			}
 			buffer << "}";
 	}
-#line 13185 "isa_thumb.tcc"
+#line 13186 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 13190 "isa_thumb.tcc"
+#line 13191 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 13193 "isa_thumb.tcc"
+#line 13194 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 13197 "isa_thumb.tcc"
+#line 13198 "isa_thumb.tcc"
 OpLdmia<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 13201 "isa_thumb.tcc"
+#line 13202 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 13205 "isa_thumb.tcc"
+#line 13206 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 13208 "isa_thumb.tcc"
+#line 13209 "isa_thumb.tcc"
 )
 {
 #line 63 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/load_store_multiple.isa"
@@ -13234,27 +13235,27 @@ cpu
 			mask = mask << 1;
 		}
 	}
-#line 13238 "isa_thumb.tcc"
+#line 13239 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 13244 "isa_thumb.tcc"
+#line 13245 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 13247 "isa_thumb.tcc"
+#line 13248 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 13252 "isa_thumb.tcc"
+#line 13253 "isa_thumb.tcc"
 > *DecodeOpLdmia(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpLdmia<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 13258 "isa_thumb.tcc"
+#line 13259 "isa_thumb.tcc"
 	>(code, addr);
 }
 
@@ -13267,32 +13268,32 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 13271 "isa_thumb.tcc"
+#line 13272 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 13274 "isa_thumb.tcc"
+#line 13275 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 13278 "isa_thumb.tcc"
+#line 13279 "isa_thumb.tcc"
 OpPop<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 13282 "isa_thumb.tcc"
+#line 13283 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 13286 "isa_thumb.tcc"
+#line 13287 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 13289 "isa_thumb.tcc"
+#line 13290 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 13293 "isa_thumb.tcc"
+#line 13294 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 13296 "isa_thumb.tcc"
+#line 13297 "isa_thumb.tcc"
 )
 {
 #line 100 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/load_store_multiple.isa"
@@ -13311,30 +13312,30 @@ buffer
 			}
 			buffer << "}";
 	}
-#line 13315 "isa_thumb.tcc"
+#line 13316 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 13320 "isa_thumb.tcc"
+#line 13321 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 13323 "isa_thumb.tcc"
+#line 13324 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 13327 "isa_thumb.tcc"
+#line 13328 "isa_thumb.tcc"
 OpPop<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 13331 "isa_thumb.tcc"
+#line 13332 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 13335 "isa_thumb.tcc"
+#line 13336 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 13338 "isa_thumb.tcc"
+#line 13339 "isa_thumb.tcc"
 )
 {
 #line 116 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/load_store_multiple.isa"
@@ -13370,27 +13371,27 @@ cpu
 
 		cpu.SetGPR(cpu.SP_reg, cur_address);
 	}
-#line 13374 "isa_thumb.tcc"
+#line 13375 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 13380 "isa_thumb.tcc"
+#line 13381 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 13383 "isa_thumb.tcc"
+#line 13384 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 13388 "isa_thumb.tcc"
+#line 13389 "isa_thumb.tcc"
 > *DecodeOpPop(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpPop<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 13394 "isa_thumb.tcc"
+#line 13395 "isa_thumb.tcc"
 	>(code, addr);
 }
 
@@ -13403,32 +13404,32 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 13407 "isa_thumb.tcc"
+#line 13408 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 13410 "isa_thumb.tcc"
+#line 13411 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 13414 "isa_thumb.tcc"
+#line 13415 "isa_thumb.tcc"
 OpPush<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 13418 "isa_thumb.tcc"
+#line 13419 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 13422 "isa_thumb.tcc"
+#line 13423 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 13425 "isa_thumb.tcc"
+#line 13426 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 13429 "isa_thumb.tcc"
+#line 13430 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 13432 "isa_thumb.tcc"
+#line 13433 "isa_thumb.tcc"
 )
 {
 #line 159 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/load_store_multiple.isa"
@@ -13451,30 +13452,30 @@ buffer
 			}
 			buffer << "}";
 	}
-#line 13455 "isa_thumb.tcc"
+#line 13456 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 13460 "isa_thumb.tcc"
+#line 13461 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 13463 "isa_thumb.tcc"
+#line 13464 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 13467 "isa_thumb.tcc"
+#line 13468 "isa_thumb.tcc"
 OpPush<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 13471 "isa_thumb.tcc"
+#line 13472 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 13475 "isa_thumb.tcc"
+#line 13476 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 13478 "isa_thumb.tcc"
+#line 13479 "isa_thumb.tcc"
 )
 {
 #line 179 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/load_store_multiple.isa"
@@ -13513,27 +13514,27 @@ cpu
 
 		cpu.SetGPR(cpu.SP_reg, start_address);
 	}
-#line 13517 "isa_thumb.tcc"
+#line 13518 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 13523 "isa_thumb.tcc"
+#line 13524 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 13526 "isa_thumb.tcc"
+#line 13527 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 13531 "isa_thumb.tcc"
+#line 13532 "isa_thumb.tcc"
 > *DecodeOpPush(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpPush<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 13537 "isa_thumb.tcc"
+#line 13538 "isa_thumb.tcc"
 	>(code, addr);
 }
 
@@ -13546,32 +13547,32 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 13550 "isa_thumb.tcc"
+#line 13551 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 13553 "isa_thumb.tcc"
+#line 13554 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 13557 "isa_thumb.tcc"
+#line 13558 "isa_thumb.tcc"
 OpStmia<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 13561 "isa_thumb.tcc"
+#line 13562 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 13565 "isa_thumb.tcc"
+#line 13566 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 13568 "isa_thumb.tcc"
+#line 13569 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 13572 "isa_thumb.tcc"
+#line 13573 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 13575 "isa_thumb.tcc"
+#line 13576 "isa_thumb.tcc"
 )
 {
 #line 225 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/load_store_multiple.isa"
@@ -13590,30 +13591,30 @@ buffer
 			}
 			buffer << "}";
 	}
-#line 13594 "isa_thumb.tcc"
+#line 13595 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 13599 "isa_thumb.tcc"
+#line 13600 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 13602 "isa_thumb.tcc"
+#line 13603 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 13606 "isa_thumb.tcc"
+#line 13607 "isa_thumb.tcc"
 OpStmia<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 13610 "isa_thumb.tcc"
+#line 13611 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 13614 "isa_thumb.tcc"
+#line 13615 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 13617 "isa_thumb.tcc"
+#line 13618 "isa_thumb.tcc"
 )
 {
 #line 241 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/load_store_multiple.isa"
@@ -13644,27 +13645,27 @@ cpu
 
 		cpu.SetGPR(rn, end_address + 4);
 	}
-#line 13648 "isa_thumb.tcc"
+#line 13649 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 13654 "isa_thumb.tcc"
+#line 13655 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 13657 "isa_thumb.tcc"
+#line 13658 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 13662 "isa_thumb.tcc"
+#line 13663 "isa_thumb.tcc"
 > *DecodeOpStmia(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpStmia<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 13668 "isa_thumb.tcc"
+#line 13669 "isa_thumb.tcc"
 	>(code, addr);
 }
 
@@ -13715,62 +13716,62 @@ THUMB EXCEPTION INSTRUCTIONS
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 13719 "isa_thumb.tcc"
+#line 13720 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 13722 "isa_thumb.tcc"
+#line 13723 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 13726 "isa_thumb.tcc"
+#line 13727 "isa_thumb.tcc"
 OpBkpt<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 13730 "isa_thumb.tcc"
+#line 13731 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 13734 "isa_thumb.tcc"
+#line 13735 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 13737 "isa_thumb.tcc"
+#line 13738 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 13741 "isa_thumb.tcc"
+#line 13742 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 13744 "isa_thumb.tcc"
+#line 13745 "isa_thumb.tcc"
 )
 {
 #line 47 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/exception.isa"
 	{
 		buffer << "bkpt #" << dec << imm;
 	}
-#line 13751 "isa_thumb.tcc"
+#line 13752 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 13756 "isa_thumb.tcc"
+#line 13757 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 13759 "isa_thumb.tcc"
+#line 13760 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 13763 "isa_thumb.tcc"
+#line 13764 "isa_thumb.tcc"
 OpBkpt<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 13767 "isa_thumb.tcc"
+#line 13768 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 13771 "isa_thumb.tcc"
+#line 13772 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 13774 "isa_thumb.tcc"
+#line 13775 "isa_thumb.tcc"
 )
 {
 #line 51 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/exception.isa"
@@ -13794,27 +13795,27 @@ cpu
 #endif // SOCLIB
 
 	}
-#line 13798 "isa_thumb.tcc"
+#line 13799 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 13804 "isa_thumb.tcc"
+#line 13805 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 13807 "isa_thumb.tcc"
+#line 13808 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 13812 "isa_thumb.tcc"
+#line 13813 "isa_thumb.tcc"
 > *DecodeOpBkpt(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpBkpt<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 13818 "isa_thumb.tcc"
+#line 13819 "isa_thumb.tcc"
 	>(code, addr);
 }
 
@@ -13827,62 +13828,62 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 13831 "isa_thumb.tcc"
+#line 13832 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 13834 "isa_thumb.tcc"
+#line 13835 "isa_thumb.tcc"
 >
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 13838 "isa_thumb.tcc"
+#line 13839 "isa_thumb.tcc"
 OpSwi<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 13842 "isa_thumb.tcc"
+#line 13843 "isa_thumb.tcc"
 >::disasm(
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 13846 "isa_thumb.tcc"
+#line 13847 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 13849 "isa_thumb.tcc"
+#line 13850 "isa_thumb.tcc"
 ,
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 stringstream &
-#line 13853 "isa_thumb.tcc"
+#line 13854 "isa_thumb.tcc"
 #line 39 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 buffer
-#line 13856 "isa_thumb.tcc"
+#line 13857 "isa_thumb.tcc"
 )
 {
 #line 82 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/exception.isa"
 	{
 		buffer << "swi #" << dec << imm;
 	}
-#line 13863 "isa_thumb.tcc"
+#line 13864 "isa_thumb.tcc"
 }
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 13868 "isa_thumb.tcc"
+#line 13869 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 13871 "isa_thumb.tcc"
+#line 13872 "isa_thumb.tcc"
 >
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 void
-#line 13875 "isa_thumb.tcc"
+#line 13876 "isa_thumb.tcc"
 OpSwi<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 13879 "isa_thumb.tcc"
+#line 13880 "isa_thumb.tcc"
 >::execute(
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 CPU<CONFIG> &
-#line 13883 "isa_thumb.tcc"
+#line 13884 "isa_thumb.tcc"
 #line 35 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa"
 cpu
-#line 13886 "isa_thumb.tcc"
+#line 13887 "isa_thumb.tcc"
 )
 {
 #line 86 "/Users/gracia/Developer/svn/unisim/unisim_lib/unisim/component/cxx/processor/arm/isa/thumb/exception.isa"
@@ -13911,46 +13912,46 @@ cpu
 #endif // SOCLIB
 
 	}
-#line 13915 "isa_thumb.tcc"
+#line 13916 "isa_thumb.tcc"
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 13921 "isa_thumb.tcc"
+#line 13922 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 13924 "isa_thumb.tcc"
+#line 13925 "isa_thumb.tcc"
 >
 static Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 13929 "isa_thumb.tcc"
+#line 13930 "isa_thumb.tcc"
 > *DecodeOpSwi(CodeType code, typename CONFIG::address_t addr)
 {
 	return new OpSwi<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 13935 "isa_thumb.tcc"
+#line 13936 "isa_thumb.tcc"
 	>(code, addr);
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 13942 "isa_thumb.tcc"
+#line 13943 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 13945 "isa_thumb.tcc"
+#line 13946 "isa_thumb.tcc"
 >
 OpB_1_0xxx<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 13950 "isa_thumb.tcc"
+#line 13951 "isa_thumb.tcc"
 >::OpB_1_0xxx(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 13954 "isa_thumb.tcc"
+#line 13955 "isa_thumb.tcc"
 >(code, addr, "b_1_0xxx")
 {
 	sub_cond = ((code >> 8) & 0x7);
@@ -13960,19 +13961,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 13964 "isa_thumb.tcc"
+#line 13965 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 13967 "isa_thumb.tcc"
+#line 13968 "isa_thumb.tcc"
 >
 OpB_1_10xx<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 13972 "isa_thumb.tcc"
+#line 13973 "isa_thumb.tcc"
 >::OpB_1_10xx(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 13976 "isa_thumb.tcc"
+#line 13977 "isa_thumb.tcc"
 >(code, addr, "b_1_10xx")
 {
 	sub_cond = ((code >> 8) & 0x3);
@@ -13982,19 +13983,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 13986 "isa_thumb.tcc"
+#line 13987 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 13989 "isa_thumb.tcc"
+#line 13990 "isa_thumb.tcc"
 >
 OpB_1_110x<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 13994 "isa_thumb.tcc"
+#line 13995 "isa_thumb.tcc"
 >::OpB_1_110x(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 13998 "isa_thumb.tcc"
+#line 13999 "isa_thumb.tcc"
 >(code, addr, "b_1_110x")
 {
 	sub_cond = ((code >> 8) & 0x1);
@@ -14004,19 +14005,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 14008 "isa_thumb.tcc"
+#line 14009 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14011 "isa_thumb.tcc"
+#line 14012 "isa_thumb.tcc"
 >
 OpB_2<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14016 "isa_thumb.tcc"
+#line 14017 "isa_thumb.tcc"
 >::OpB_2(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14020 "isa_thumb.tcc"
+#line 14021 "isa_thumb.tcc"
 >(code, addr, "b_2")
 {
 	imm = (((((int32_t)(code >> 0)) & 0x7ff) << 21) >> 21);
@@ -14025,19 +14026,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 14029 "isa_thumb.tcc"
+#line 14030 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14032 "isa_thumb.tcc"
+#line 14033 "isa_thumb.tcc"
 >
 OpBl<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14037 "isa_thumb.tcc"
+#line 14038 "isa_thumb.tcc"
 >::OpBl(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14041 "isa_thumb.tcc"
+#line 14042 "isa_thumb.tcc"
 >(code, addr, "bl")
 {
 	h2 = ((code >> 11) & 0x1);
@@ -14047,19 +14048,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 14051 "isa_thumb.tcc"
+#line 14052 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14054 "isa_thumb.tcc"
+#line 14055 "isa_thumb.tcc"
 >
 OpBx<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14059 "isa_thumb.tcc"
+#line 14060 "isa_thumb.tcc"
 >::OpBx(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14063 "isa_thumb.tcc"
+#line 14064 "isa_thumb.tcc"
 >(code, addr, "bx")
 {
 	h2 = ((code >> 6) & 0x1);
@@ -14070,19 +14071,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 14074 "isa_thumb.tcc"
+#line 14075 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14077 "isa_thumb.tcc"
+#line 14078 "isa_thumb.tcc"
 >
 OpBlx_1<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14082 "isa_thumb.tcc"
+#line 14083 "isa_thumb.tcc"
 >::OpBlx_1(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14086 "isa_thumb.tcc"
+#line 14087 "isa_thumb.tcc"
 >(code, addr, "blx_1")
 {
 	offset = ((code >> 0) & 0x7ff);
@@ -14091,19 +14092,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 14095 "isa_thumb.tcc"
+#line 14096 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14098 "isa_thumb.tcc"
+#line 14099 "isa_thumb.tcc"
 >
 OpBlx_2<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14103 "isa_thumb.tcc"
+#line 14104 "isa_thumb.tcc"
 >::OpBlx_2(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14107 "isa_thumb.tcc"
+#line 14108 "isa_thumb.tcc"
 >(code, addr, "blx_2")
 {
 	h2 = ((code >> 6) & 0x1);
@@ -14114,19 +14115,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 14118 "isa_thumb.tcc"
+#line 14119 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14121 "isa_thumb.tcc"
+#line 14122 "isa_thumb.tcc"
 >
 OpAdc<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14126 "isa_thumb.tcc"
+#line 14127 "isa_thumb.tcc"
 >::OpAdc(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14130 "isa_thumb.tcc"
+#line 14131 "isa_thumb.tcc"
 >(code, addr, "adc")
 {
 	rm = ((code >> 3) & 0x7);
@@ -14136,19 +14137,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 14140 "isa_thumb.tcc"
+#line 14141 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14143 "isa_thumb.tcc"
+#line 14144 "isa_thumb.tcc"
 >
 OpAdd_1<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14148 "isa_thumb.tcc"
+#line 14149 "isa_thumb.tcc"
 >::OpAdd_1(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14152 "isa_thumb.tcc"
+#line 14153 "isa_thumb.tcc"
 >(code, addr, "add_1")
 {
 	imm = ((code >> 6) & 0x7);
@@ -14159,19 +14160,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 14163 "isa_thumb.tcc"
+#line 14164 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14166 "isa_thumb.tcc"
+#line 14167 "isa_thumb.tcc"
 >
 OpAdd_2<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14171 "isa_thumb.tcc"
+#line 14172 "isa_thumb.tcc"
 >::OpAdd_2(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14175 "isa_thumb.tcc"
+#line 14176 "isa_thumb.tcc"
 >(code, addr, "add_2")
 {
 	rd = ((code >> 8) & 0x7);
@@ -14181,19 +14182,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 14185 "isa_thumb.tcc"
+#line 14186 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14188 "isa_thumb.tcc"
+#line 14189 "isa_thumb.tcc"
 >
 OpAdd_3<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14193 "isa_thumb.tcc"
+#line 14194 "isa_thumb.tcc"
 >::OpAdd_3(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14197 "isa_thumb.tcc"
+#line 14198 "isa_thumb.tcc"
 >(code, addr, "add_3")
 {
 	rm = ((code >> 6) & 0x7);
@@ -14204,19 +14205,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 14208 "isa_thumb.tcc"
+#line 14209 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14211 "isa_thumb.tcc"
+#line 14212 "isa_thumb.tcc"
 >
 OpAdd_4<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14216 "isa_thumb.tcc"
+#line 14217 "isa_thumb.tcc"
 >::OpAdd_4(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14220 "isa_thumb.tcc"
+#line 14221 "isa_thumb.tcc"
 >(code, addr, "add_4")
 {
 	h1 = ((code >> 7) & 0x1);
@@ -14228,19 +14229,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 14232 "isa_thumb.tcc"
+#line 14233 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14235 "isa_thumb.tcc"
+#line 14236 "isa_thumb.tcc"
 >
 OpAdd_5<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14240 "isa_thumb.tcc"
+#line 14241 "isa_thumb.tcc"
 >::OpAdd_5(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14244 "isa_thumb.tcc"
+#line 14245 "isa_thumb.tcc"
 >(code, addr, "add_5")
 {
 	rd = ((code >> 8) & 0x7);
@@ -14250,19 +14251,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 14254 "isa_thumb.tcc"
+#line 14255 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14257 "isa_thumb.tcc"
+#line 14258 "isa_thumb.tcc"
 >
 OpAdd_6<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14262 "isa_thumb.tcc"
+#line 14263 "isa_thumb.tcc"
 >::OpAdd_6(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14266 "isa_thumb.tcc"
+#line 14267 "isa_thumb.tcc"
 >(code, addr, "add_6")
 {
 	rd = ((code >> 8) & 0x7);
@@ -14272,19 +14273,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 14276 "isa_thumb.tcc"
+#line 14277 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14279 "isa_thumb.tcc"
+#line 14280 "isa_thumb.tcc"
 >
 OpAdd_7<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14284 "isa_thumb.tcc"
+#line 14285 "isa_thumb.tcc"
 >::OpAdd_7(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14288 "isa_thumb.tcc"
+#line 14289 "isa_thumb.tcc"
 >(code, addr, "add_7")
 {
 	imm = ((code >> 0) & 0x7f);
@@ -14293,19 +14294,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 14297 "isa_thumb.tcc"
+#line 14298 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14300 "isa_thumb.tcc"
+#line 14301 "isa_thumb.tcc"
 >
 OpAnd<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14305 "isa_thumb.tcc"
+#line 14306 "isa_thumb.tcc"
 >::OpAnd(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14309 "isa_thumb.tcc"
+#line 14310 "isa_thumb.tcc"
 >(code, addr, "and")
 {
 	rm = ((code >> 3) & 0x7);
@@ -14315,19 +14316,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 14319 "isa_thumb.tcc"
+#line 14320 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14322 "isa_thumb.tcc"
+#line 14323 "isa_thumb.tcc"
 >
 OpAsr_1<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14327 "isa_thumb.tcc"
+#line 14328 "isa_thumb.tcc"
 >::OpAsr_1(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14331 "isa_thumb.tcc"
+#line 14332 "isa_thumb.tcc"
 >(code, addr, "asr_1")
 {
 	imm = ((code >> 6) & 0x1f);
@@ -14338,19 +14339,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 14342 "isa_thumb.tcc"
+#line 14343 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14345 "isa_thumb.tcc"
+#line 14346 "isa_thumb.tcc"
 >
 OpAsr_2<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14350 "isa_thumb.tcc"
+#line 14351 "isa_thumb.tcc"
 >::OpAsr_2(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14354 "isa_thumb.tcc"
+#line 14355 "isa_thumb.tcc"
 >(code, addr, "asr_2")
 {
 	rs = ((code >> 3) & 0x7);
@@ -14360,19 +14361,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 14364 "isa_thumb.tcc"
+#line 14365 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14367 "isa_thumb.tcc"
+#line 14368 "isa_thumb.tcc"
 >
 OpBic<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14372 "isa_thumb.tcc"
+#line 14373 "isa_thumb.tcc"
 >::OpBic(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14376 "isa_thumb.tcc"
+#line 14377 "isa_thumb.tcc"
 >(code, addr, "bic")
 {
 	rm = ((code >> 3) & 0x7);
@@ -14382,19 +14383,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 14386 "isa_thumb.tcc"
+#line 14387 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14389 "isa_thumb.tcc"
+#line 14390 "isa_thumb.tcc"
 >
 OpCmn<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14394 "isa_thumb.tcc"
+#line 14395 "isa_thumb.tcc"
 >::OpCmn(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14398 "isa_thumb.tcc"
+#line 14399 "isa_thumb.tcc"
 >(code, addr, "cmn")
 {
 	rm = ((code >> 3) & 0x7);
@@ -14404,19 +14405,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 14408 "isa_thumb.tcc"
+#line 14409 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14411 "isa_thumb.tcc"
+#line 14412 "isa_thumb.tcc"
 >
 OpCmp_1<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14416 "isa_thumb.tcc"
+#line 14417 "isa_thumb.tcc"
 >::OpCmp_1(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14420 "isa_thumb.tcc"
+#line 14421 "isa_thumb.tcc"
 >(code, addr, "cmp_1")
 {
 	rn = ((code >> 8) & 0x7);
@@ -14426,19 +14427,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 14430 "isa_thumb.tcc"
+#line 14431 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14433 "isa_thumb.tcc"
+#line 14434 "isa_thumb.tcc"
 >
 OpCmp_2<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14438 "isa_thumb.tcc"
+#line 14439 "isa_thumb.tcc"
 >::OpCmp_2(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14442 "isa_thumb.tcc"
+#line 14443 "isa_thumb.tcc"
 >(code, addr, "cmp_2")
 {
 	rm = ((code >> 3) & 0x7);
@@ -14448,19 +14449,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 14452 "isa_thumb.tcc"
+#line 14453 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14455 "isa_thumb.tcc"
+#line 14456 "isa_thumb.tcc"
 >
 OpCmp_3<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14460 "isa_thumb.tcc"
+#line 14461 "isa_thumb.tcc"
 >::OpCmp_3(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14464 "isa_thumb.tcc"
+#line 14465 "isa_thumb.tcc"
 >(code, addr, "cmp_3")
 {
 	h1 = ((code >> 7) & 0x1);
@@ -14472,19 +14473,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 14476 "isa_thumb.tcc"
+#line 14477 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14479 "isa_thumb.tcc"
+#line 14480 "isa_thumb.tcc"
 >
 OpEor<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14484 "isa_thumb.tcc"
+#line 14485 "isa_thumb.tcc"
 >::OpEor(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14488 "isa_thumb.tcc"
+#line 14489 "isa_thumb.tcc"
 >(code, addr, "eor")
 {
 	rm = ((code >> 3) & 0x7);
@@ -14494,19 +14495,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 14498 "isa_thumb.tcc"
+#line 14499 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14501 "isa_thumb.tcc"
+#line 14502 "isa_thumb.tcc"
 >
 OpLsl_1<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14506 "isa_thumb.tcc"
+#line 14507 "isa_thumb.tcc"
 >::OpLsl_1(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14510 "isa_thumb.tcc"
+#line 14511 "isa_thumb.tcc"
 >(code, addr, "lsl_1")
 {
 	imm = ((code >> 6) & 0x1f);
@@ -14517,19 +14518,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 14521 "isa_thumb.tcc"
+#line 14522 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14524 "isa_thumb.tcc"
+#line 14525 "isa_thumb.tcc"
 >
 OpLsl_2<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14529 "isa_thumb.tcc"
+#line 14530 "isa_thumb.tcc"
 >::OpLsl_2(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14533 "isa_thumb.tcc"
+#line 14534 "isa_thumb.tcc"
 >(code, addr, "lsl_2")
 {
 	rs = ((code >> 3) & 0x7);
@@ -14539,19 +14540,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 14543 "isa_thumb.tcc"
+#line 14544 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14546 "isa_thumb.tcc"
+#line 14547 "isa_thumb.tcc"
 >
 OpLsr_1<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14551 "isa_thumb.tcc"
+#line 14552 "isa_thumb.tcc"
 >::OpLsr_1(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14555 "isa_thumb.tcc"
+#line 14556 "isa_thumb.tcc"
 >(code, addr, "lsr_1")
 {
 	imm = ((code >> 6) & 0x1f);
@@ -14562,19 +14563,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 14566 "isa_thumb.tcc"
+#line 14567 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14569 "isa_thumb.tcc"
+#line 14570 "isa_thumb.tcc"
 >
 OpLsr_2<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14574 "isa_thumb.tcc"
+#line 14575 "isa_thumb.tcc"
 >::OpLsr_2(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14578 "isa_thumb.tcc"
+#line 14579 "isa_thumb.tcc"
 >(code, addr, "lsr_2")
 {
 	rs = ((code >> 3) & 0x7);
@@ -14584,19 +14585,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 14588 "isa_thumb.tcc"
+#line 14589 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14591 "isa_thumb.tcc"
+#line 14592 "isa_thumb.tcc"
 >
 OpMov_1<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14596 "isa_thumb.tcc"
+#line 14597 "isa_thumb.tcc"
 >::OpMov_1(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14600 "isa_thumb.tcc"
+#line 14601 "isa_thumb.tcc"
 >(code, addr, "mov_1")
 {
 	rd = ((code >> 8) & 0x7);
@@ -14606,19 +14607,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 14610 "isa_thumb.tcc"
+#line 14611 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14613 "isa_thumb.tcc"
+#line 14614 "isa_thumb.tcc"
 >
 OpMov_3<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14618 "isa_thumb.tcc"
+#line 14619 "isa_thumb.tcc"
 >::OpMov_3(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14622 "isa_thumb.tcc"
+#line 14623 "isa_thumb.tcc"
 >(code, addr, "mov_3")
 {
 	h1 = ((code >> 7) & 0x1);
@@ -14630,19 +14631,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 14634 "isa_thumb.tcc"
+#line 14635 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14637 "isa_thumb.tcc"
+#line 14638 "isa_thumb.tcc"
 >
 OpMul<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14642 "isa_thumb.tcc"
+#line 14643 "isa_thumb.tcc"
 >::OpMul(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14646 "isa_thumb.tcc"
+#line 14647 "isa_thumb.tcc"
 >(code, addr, "mul")
 {
 	rm = ((code >> 3) & 0x7);
@@ -14652,19 +14653,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 14656 "isa_thumb.tcc"
+#line 14657 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14659 "isa_thumb.tcc"
+#line 14660 "isa_thumb.tcc"
 >
 OpMvn<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14664 "isa_thumb.tcc"
+#line 14665 "isa_thumb.tcc"
 >::OpMvn(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14668 "isa_thumb.tcc"
+#line 14669 "isa_thumb.tcc"
 >(code, addr, "mvn")
 {
 	rm = ((code >> 3) & 0x7);
@@ -14674,19 +14675,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 14678 "isa_thumb.tcc"
+#line 14679 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14681 "isa_thumb.tcc"
+#line 14682 "isa_thumb.tcc"
 >
 OpNeg<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14686 "isa_thumb.tcc"
+#line 14687 "isa_thumb.tcc"
 >::OpNeg(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14690 "isa_thumb.tcc"
+#line 14691 "isa_thumb.tcc"
 >(code, addr, "neg")
 {
 	rm = ((code >> 3) & 0x7);
@@ -14696,19 +14697,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 14700 "isa_thumb.tcc"
+#line 14701 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14703 "isa_thumb.tcc"
+#line 14704 "isa_thumb.tcc"
 >
 OpOrr<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14708 "isa_thumb.tcc"
+#line 14709 "isa_thumb.tcc"
 >::OpOrr(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14712 "isa_thumb.tcc"
+#line 14713 "isa_thumb.tcc"
 >(code, addr, "orr")
 {
 	rm = ((code >> 3) & 0x7);
@@ -14718,19 +14719,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 14722 "isa_thumb.tcc"
+#line 14723 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14725 "isa_thumb.tcc"
+#line 14726 "isa_thumb.tcc"
 >
 OpRor<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14730 "isa_thumb.tcc"
+#line 14731 "isa_thumb.tcc"
 >::OpRor(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14734 "isa_thumb.tcc"
+#line 14735 "isa_thumb.tcc"
 >(code, addr, "ror")
 {
 	rs = ((code >> 3) & 0x7);
@@ -14740,19 +14741,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 14744 "isa_thumb.tcc"
+#line 14745 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14747 "isa_thumb.tcc"
+#line 14748 "isa_thumb.tcc"
 >
 OpSbc<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14752 "isa_thumb.tcc"
+#line 14753 "isa_thumb.tcc"
 >::OpSbc(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14756 "isa_thumb.tcc"
+#line 14757 "isa_thumb.tcc"
 >(code, addr, "sbc")
 {
 	rm = ((code >> 3) & 0x7);
@@ -14762,19 +14763,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 14766 "isa_thumb.tcc"
+#line 14767 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14769 "isa_thumb.tcc"
+#line 14770 "isa_thumb.tcc"
 >
 OpSub_1<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14774 "isa_thumb.tcc"
+#line 14775 "isa_thumb.tcc"
 >::OpSub_1(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14778 "isa_thumb.tcc"
+#line 14779 "isa_thumb.tcc"
 >(code, addr, "sub_1")
 {
 	imm = ((code >> 6) & 0x7);
@@ -14785,19 +14786,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 14789 "isa_thumb.tcc"
+#line 14790 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14792 "isa_thumb.tcc"
+#line 14793 "isa_thumb.tcc"
 >
 OpSub_2<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14797 "isa_thumb.tcc"
+#line 14798 "isa_thumb.tcc"
 >::OpSub_2(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14801 "isa_thumb.tcc"
+#line 14802 "isa_thumb.tcc"
 >(code, addr, "sub_2")
 {
 	rd = ((code >> 8) & 0x7);
@@ -14807,19 +14808,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 14811 "isa_thumb.tcc"
+#line 14812 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14814 "isa_thumb.tcc"
+#line 14815 "isa_thumb.tcc"
 >
 OpSub_3<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14819 "isa_thumb.tcc"
+#line 14820 "isa_thumb.tcc"
 >::OpSub_3(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14823 "isa_thumb.tcc"
+#line 14824 "isa_thumb.tcc"
 >(code, addr, "sub_3")
 {
 	rm = ((code >> 6) & 0x7);
@@ -14830,19 +14831,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 14834 "isa_thumb.tcc"
+#line 14835 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14837 "isa_thumb.tcc"
+#line 14838 "isa_thumb.tcc"
 >
 OpSub_4<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14842 "isa_thumb.tcc"
+#line 14843 "isa_thumb.tcc"
 >::OpSub_4(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14846 "isa_thumb.tcc"
+#line 14847 "isa_thumb.tcc"
 >(code, addr, "sub_4")
 {
 	imm = ((code >> 0) & 0x7f);
@@ -14851,19 +14852,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 14855 "isa_thumb.tcc"
+#line 14856 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14858 "isa_thumb.tcc"
+#line 14859 "isa_thumb.tcc"
 >
 OpTst<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14863 "isa_thumb.tcc"
+#line 14864 "isa_thumb.tcc"
 >::OpTst(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14867 "isa_thumb.tcc"
+#line 14868 "isa_thumb.tcc"
 >(code, addr, "tst")
 {
 	rm = ((code >> 3) & 0x7);
@@ -14873,19 +14874,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 14877 "isa_thumb.tcc"
+#line 14878 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14880 "isa_thumb.tcc"
+#line 14881 "isa_thumb.tcc"
 >
 OpLdr_1<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14885 "isa_thumb.tcc"
+#line 14886 "isa_thumb.tcc"
 >::OpLdr_1(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14889 "isa_thumb.tcc"
+#line 14890 "isa_thumb.tcc"
 >(code, addr, "ldr_1")
 {
 	imm = ((code >> 6) & 0x1f);
@@ -14896,19 +14897,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 14900 "isa_thumb.tcc"
+#line 14901 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14903 "isa_thumb.tcc"
+#line 14904 "isa_thumb.tcc"
 >
 OpLdr_2<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14908 "isa_thumb.tcc"
+#line 14909 "isa_thumb.tcc"
 >::OpLdr_2(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14912 "isa_thumb.tcc"
+#line 14913 "isa_thumb.tcc"
 >(code, addr, "ldr_2")
 {
 	rm = ((code >> 6) & 0x7);
@@ -14919,19 +14920,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 14923 "isa_thumb.tcc"
+#line 14924 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14926 "isa_thumb.tcc"
+#line 14927 "isa_thumb.tcc"
 >
 OpLdr_3<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14931 "isa_thumb.tcc"
+#line 14932 "isa_thumb.tcc"
 >::OpLdr_3(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14935 "isa_thumb.tcc"
+#line 14936 "isa_thumb.tcc"
 >(code, addr, "ldr_3")
 {
 	rd = ((code >> 8) & 0x7);
@@ -14941,19 +14942,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 14945 "isa_thumb.tcc"
+#line 14946 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14948 "isa_thumb.tcc"
+#line 14949 "isa_thumb.tcc"
 >
 OpLdr_4<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14953 "isa_thumb.tcc"
+#line 14954 "isa_thumb.tcc"
 >::OpLdr_4(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14957 "isa_thumb.tcc"
+#line 14958 "isa_thumb.tcc"
 >(code, addr, "ldr_4")
 {
 	rd = ((code >> 8) & 0x7);
@@ -14963,19 +14964,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 14967 "isa_thumb.tcc"
+#line 14968 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14970 "isa_thumb.tcc"
+#line 14971 "isa_thumb.tcc"
 >
 OpLdrb_1<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14975 "isa_thumb.tcc"
+#line 14976 "isa_thumb.tcc"
 >::OpLdrb_1(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14979 "isa_thumb.tcc"
+#line 14980 "isa_thumb.tcc"
 >(code, addr, "ldrb_1")
 {
 	imm = ((code >> 6) & 0x1f);
@@ -14986,19 +14987,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 14990 "isa_thumb.tcc"
+#line 14991 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14993 "isa_thumb.tcc"
+#line 14994 "isa_thumb.tcc"
 >
 OpLdrb_2<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 14998 "isa_thumb.tcc"
+#line 14999 "isa_thumb.tcc"
 >::OpLdrb_2(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 15002 "isa_thumb.tcc"
+#line 15003 "isa_thumb.tcc"
 >(code, addr, "ldrb_2")
 {
 	rm = ((code >> 6) & 0x7);
@@ -15009,19 +15010,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 15013 "isa_thumb.tcc"
+#line 15014 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 15016 "isa_thumb.tcc"
+#line 15017 "isa_thumb.tcc"
 >
 OpLdrh_1<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 15021 "isa_thumb.tcc"
+#line 15022 "isa_thumb.tcc"
 >::OpLdrh_1(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 15025 "isa_thumb.tcc"
+#line 15026 "isa_thumb.tcc"
 >(code, addr, "ldrh_1")
 {
 	imm = ((code >> 6) & 0x1f);
@@ -15032,19 +15033,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 15036 "isa_thumb.tcc"
+#line 15037 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 15039 "isa_thumb.tcc"
+#line 15040 "isa_thumb.tcc"
 >
 OpLdrh_2<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 15044 "isa_thumb.tcc"
+#line 15045 "isa_thumb.tcc"
 >::OpLdrh_2(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 15048 "isa_thumb.tcc"
+#line 15049 "isa_thumb.tcc"
 >(code, addr, "ldrh_2")
 {
 	rm = ((code >> 6) & 0x7);
@@ -15055,19 +15056,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 15059 "isa_thumb.tcc"
+#line 15060 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 15062 "isa_thumb.tcc"
+#line 15063 "isa_thumb.tcc"
 >
 OpLdrsb<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 15067 "isa_thumb.tcc"
+#line 15068 "isa_thumb.tcc"
 >::OpLdrsb(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 15071 "isa_thumb.tcc"
+#line 15072 "isa_thumb.tcc"
 >(code, addr, "ldrsb")
 {
 	rm = ((code >> 6) & 0x7);
@@ -15078,19 +15079,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 15082 "isa_thumb.tcc"
+#line 15083 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 15085 "isa_thumb.tcc"
+#line 15086 "isa_thumb.tcc"
 >
 OpLdrsh<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 15090 "isa_thumb.tcc"
+#line 15091 "isa_thumb.tcc"
 >::OpLdrsh(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 15094 "isa_thumb.tcc"
+#line 15095 "isa_thumb.tcc"
 >(code, addr, "ldrsh")
 {
 	rm = ((code >> 6) & 0x7);
@@ -15101,19 +15102,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 15105 "isa_thumb.tcc"
+#line 15106 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 15108 "isa_thumb.tcc"
+#line 15109 "isa_thumb.tcc"
 >
 OpStr_1<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 15113 "isa_thumb.tcc"
+#line 15114 "isa_thumb.tcc"
 >::OpStr_1(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 15117 "isa_thumb.tcc"
+#line 15118 "isa_thumb.tcc"
 >(code, addr, "str_1")
 {
 	imm = ((code >> 6) & 0x1f);
@@ -15124,19 +15125,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 15128 "isa_thumb.tcc"
+#line 15129 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 15131 "isa_thumb.tcc"
+#line 15132 "isa_thumb.tcc"
 >
 OpStr_2<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 15136 "isa_thumb.tcc"
+#line 15137 "isa_thumb.tcc"
 >::OpStr_2(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 15140 "isa_thumb.tcc"
+#line 15141 "isa_thumb.tcc"
 >(code, addr, "str_2")
 {
 	rm = ((code >> 6) & 0x7);
@@ -15147,19 +15148,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 15151 "isa_thumb.tcc"
+#line 15152 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 15154 "isa_thumb.tcc"
+#line 15155 "isa_thumb.tcc"
 >
 OpStr_3<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 15159 "isa_thumb.tcc"
+#line 15160 "isa_thumb.tcc"
 >::OpStr_3(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 15163 "isa_thumb.tcc"
+#line 15164 "isa_thumb.tcc"
 >(code, addr, "str_3")
 {
 	rd = ((code >> 8) & 0x7);
@@ -15169,19 +15170,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 15173 "isa_thumb.tcc"
+#line 15174 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 15176 "isa_thumb.tcc"
+#line 15177 "isa_thumb.tcc"
 >
 OpStrb_1<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 15181 "isa_thumb.tcc"
+#line 15182 "isa_thumb.tcc"
 >::OpStrb_1(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 15185 "isa_thumb.tcc"
+#line 15186 "isa_thumb.tcc"
 >(code, addr, "strb_1")
 {
 	imm = ((code >> 6) & 0x1f);
@@ -15192,19 +15193,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 15196 "isa_thumb.tcc"
+#line 15197 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 15199 "isa_thumb.tcc"
+#line 15200 "isa_thumb.tcc"
 >
 OpStrb_2<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 15204 "isa_thumb.tcc"
+#line 15205 "isa_thumb.tcc"
 >::OpStrb_2(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 15208 "isa_thumb.tcc"
+#line 15209 "isa_thumb.tcc"
 >(code, addr, "strb_2")
 {
 	rm = ((code >> 6) & 0x7);
@@ -15215,19 +15216,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 15219 "isa_thumb.tcc"
+#line 15220 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 15222 "isa_thumb.tcc"
+#line 15223 "isa_thumb.tcc"
 >
 OpStrh_1<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 15227 "isa_thumb.tcc"
+#line 15228 "isa_thumb.tcc"
 >::OpStrh_1(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 15231 "isa_thumb.tcc"
+#line 15232 "isa_thumb.tcc"
 >(code, addr, "strh_1")
 {
 	imm = ((code >> 6) & 0x1f);
@@ -15238,19 +15239,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 15242 "isa_thumb.tcc"
+#line 15243 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 15245 "isa_thumb.tcc"
+#line 15246 "isa_thumb.tcc"
 >
 OpStrh_2<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 15250 "isa_thumb.tcc"
+#line 15251 "isa_thumb.tcc"
 >::OpStrh_2(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 15254 "isa_thumb.tcc"
+#line 15255 "isa_thumb.tcc"
 >(code, addr, "strh_2")
 {
 	rm = ((code >> 6) & 0x7);
@@ -15261,19 +15262,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 15265 "isa_thumb.tcc"
+#line 15266 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 15268 "isa_thumb.tcc"
+#line 15269 "isa_thumb.tcc"
 >
 OpLdmia<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 15273 "isa_thumb.tcc"
+#line 15274 "isa_thumb.tcc"
 >::OpLdmia(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 15277 "isa_thumb.tcc"
+#line 15278 "isa_thumb.tcc"
 >(code, addr, "ldmia")
 {
 	rn = ((code >> 8) & 0x7);
@@ -15283,19 +15284,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 15287 "isa_thumb.tcc"
+#line 15288 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 15290 "isa_thumb.tcc"
+#line 15291 "isa_thumb.tcc"
 >
 OpPop<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 15295 "isa_thumb.tcc"
+#line 15296 "isa_thumb.tcc"
 >::OpPop(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 15299 "isa_thumb.tcc"
+#line 15300 "isa_thumb.tcc"
 >(code, addr, "pop")
 {
 	r = ((code >> 8) & 0x1);
@@ -15305,19 +15306,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 15309 "isa_thumb.tcc"
+#line 15310 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 15312 "isa_thumb.tcc"
+#line 15313 "isa_thumb.tcc"
 >
 OpPush<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 15317 "isa_thumb.tcc"
+#line 15318 "isa_thumb.tcc"
 >::OpPush(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 15321 "isa_thumb.tcc"
+#line 15322 "isa_thumb.tcc"
 >(code, addr, "push")
 {
 	r = ((code >> 8) & 0x1);
@@ -15327,19 +15328,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 15331 "isa_thumb.tcc"
+#line 15332 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 15334 "isa_thumb.tcc"
+#line 15335 "isa_thumb.tcc"
 >
 OpStmia<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 15339 "isa_thumb.tcc"
+#line 15340 "isa_thumb.tcc"
 >::OpStmia(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 15343 "isa_thumb.tcc"
+#line 15344 "isa_thumb.tcc"
 >(code, addr, "stmia")
 {
 	rn = ((code >> 8) & 0x7);
@@ -15349,19 +15350,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 15353 "isa_thumb.tcc"
+#line 15354 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 15356 "isa_thumb.tcc"
+#line 15357 "isa_thumb.tcc"
 >
 OpBkpt<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 15361 "isa_thumb.tcc"
+#line 15362 "isa_thumb.tcc"
 >::OpBkpt(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 15365 "isa_thumb.tcc"
+#line 15366 "isa_thumb.tcc"
 >(code, addr, "bkpt")
 {
 	imm = ((code >> 0) & 0xff);
@@ -15370,19 +15371,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 15374 "isa_thumb.tcc"
+#line 15375 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 15377 "isa_thumb.tcc"
+#line 15378 "isa_thumb.tcc"
 >
 OpSwi<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 15382 "isa_thumb.tcc"
+#line 15383 "isa_thumb.tcc"
 >::OpSwi(CodeType code, typename CONFIG::address_t addr) : Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 15386 "isa_thumb.tcc"
+#line 15387 "isa_thumb.tcc"
 >(code, addr, "swi")
 {
 	imm = ((code >> 0) & 0xff);
@@ -15391,15 +15392,15 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 15395 "isa_thumb.tcc"
+#line 15396 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 15398 "isa_thumb.tcc"
+#line 15399 "isa_thumb.tcc"
 >
 DecodeMapPage<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 15403 "isa_thumb.tcc"
+#line 15404 "isa_thumb.tcc"
 >::DecodeMapPage(typename CONFIG::address_t key)
 {
 	this->key = key;
@@ -15410,15 +15411,15 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 15414 "isa_thumb.tcc"
+#line 15415 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 15417 "isa_thumb.tcc"
+#line 15418 "isa_thumb.tcc"
 >
 DecodeMapPage<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 15422 "isa_thumb.tcc"
+#line 15423 "isa_thumb.tcc"
 >::~DecodeMapPage()
 {
 	unsigned int idx;
@@ -15429,19 +15430,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 15433 "isa_thumb.tcc"
+#line 15434 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 15436 "isa_thumb.tcc"
+#line 15437 "isa_thumb.tcc"
 >
 DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 15441 "isa_thumb.tcc"
+#line 15442 "isa_thumb.tcc"
 >::DecodeTableEntry(CodeType opcode, CodeType opcode_mask, Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 15445 "isa_thumb.tcc"
+#line 15446 "isa_thumb.tcc"
 > *(*decode)(CodeType, typename CONFIG::address_t))
 {
 	this->opcode = opcode;
@@ -15452,15 +15453,15 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 15456 "isa_thumb.tcc"
+#line 15457 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 15459 "isa_thumb.tcc"
+#line 15460 "isa_thumb.tcc"
 >
 Decoder<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 15464 "isa_thumb.tcc"
+#line 15465 "isa_thumb.tcc"
 >::Decoder()
 : is_little_endian( false ), mru_page( 0 )
 {
@@ -15468,602 +15469,602 @@ CONFIG
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15472 "isa_thumb.tcc"
+#line 15473 "isa_thumb.tcc"
 	>(0xdf00U, 0xff00U, DecodeOpSwi<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15476 "isa_thumb.tcc"
+#line 15477 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15481 "isa_thumb.tcc"
+#line 15482 "isa_thumb.tcc"
 	>(0xbe00U, 0xff00U, DecodeOpBkpt<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15485 "isa_thumb.tcc"
+#line 15486 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15490 "isa_thumb.tcc"
+#line 15491 "isa_thumb.tcc"
 	>(0xc000U, 0xf800U, DecodeOpStmia<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15494 "isa_thumb.tcc"
+#line 15495 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15499 "isa_thumb.tcc"
+#line 15500 "isa_thumb.tcc"
 	>(0xb400U, 0xfe00U, DecodeOpPush<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15503 "isa_thumb.tcc"
+#line 15504 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15508 "isa_thumb.tcc"
+#line 15509 "isa_thumb.tcc"
 	>(0xbc00U, 0xfe00U, DecodeOpPop<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15512 "isa_thumb.tcc"
+#line 15513 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15517 "isa_thumb.tcc"
+#line 15518 "isa_thumb.tcc"
 	>(0xc800U, 0xf800U, DecodeOpLdmia<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15521 "isa_thumb.tcc"
+#line 15522 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15526 "isa_thumb.tcc"
+#line 15527 "isa_thumb.tcc"
 	>(0x5200U, 0xfe00U, DecodeOpStrh_2<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15530 "isa_thumb.tcc"
+#line 15531 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15535 "isa_thumb.tcc"
+#line 15536 "isa_thumb.tcc"
 	>(0x8000U, 0xf800U, DecodeOpStrh_1<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15539 "isa_thumb.tcc"
+#line 15540 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15544 "isa_thumb.tcc"
+#line 15545 "isa_thumb.tcc"
 	>(0x5400U, 0xfe00U, DecodeOpStrb_2<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15548 "isa_thumb.tcc"
+#line 15549 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15553 "isa_thumb.tcc"
+#line 15554 "isa_thumb.tcc"
 	>(0x7000U, 0xf800U, DecodeOpStrb_1<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15557 "isa_thumb.tcc"
+#line 15558 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15562 "isa_thumb.tcc"
+#line 15563 "isa_thumb.tcc"
 	>(0x9000U, 0xf800U, DecodeOpStr_3<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15566 "isa_thumb.tcc"
+#line 15567 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15571 "isa_thumb.tcc"
+#line 15572 "isa_thumb.tcc"
 	>(0x5000U, 0xfe00U, DecodeOpStr_2<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15575 "isa_thumb.tcc"
+#line 15576 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15580 "isa_thumb.tcc"
+#line 15581 "isa_thumb.tcc"
 	>(0x6000U, 0xf800U, DecodeOpStr_1<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15584 "isa_thumb.tcc"
+#line 15585 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15589 "isa_thumb.tcc"
+#line 15590 "isa_thumb.tcc"
 	>(0x5e00U, 0xfe00U, DecodeOpLdrsh<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15593 "isa_thumb.tcc"
+#line 15594 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15598 "isa_thumb.tcc"
+#line 15599 "isa_thumb.tcc"
 	>(0x5600U, 0xfe00U, DecodeOpLdrsb<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15602 "isa_thumb.tcc"
+#line 15603 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15607 "isa_thumb.tcc"
+#line 15608 "isa_thumb.tcc"
 	>(0x5a00U, 0xfe00U, DecodeOpLdrh_2<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15611 "isa_thumb.tcc"
+#line 15612 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15616 "isa_thumb.tcc"
+#line 15617 "isa_thumb.tcc"
 	>(0x8800U, 0xf800U, DecodeOpLdrh_1<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15620 "isa_thumb.tcc"
+#line 15621 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15625 "isa_thumb.tcc"
+#line 15626 "isa_thumb.tcc"
 	>(0x5c00U, 0xfe00U, DecodeOpLdrb_2<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15629 "isa_thumb.tcc"
+#line 15630 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15634 "isa_thumb.tcc"
+#line 15635 "isa_thumb.tcc"
 	>(0x7800U, 0xf800U, DecodeOpLdrb_1<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15638 "isa_thumb.tcc"
+#line 15639 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15643 "isa_thumb.tcc"
+#line 15644 "isa_thumb.tcc"
 	>(0x9800U, 0xf800U, DecodeOpLdr_4<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15647 "isa_thumb.tcc"
+#line 15648 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15652 "isa_thumb.tcc"
+#line 15653 "isa_thumb.tcc"
 	>(0x4800U, 0xf800U, DecodeOpLdr_3<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15656 "isa_thumb.tcc"
+#line 15657 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15661 "isa_thumb.tcc"
+#line 15662 "isa_thumb.tcc"
 	>(0x5800U, 0xfe00U, DecodeOpLdr_2<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15665 "isa_thumb.tcc"
+#line 15666 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15670 "isa_thumb.tcc"
+#line 15671 "isa_thumb.tcc"
 	>(0x6800U, 0xf800U, DecodeOpLdr_1<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15674 "isa_thumb.tcc"
+#line 15675 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15679 "isa_thumb.tcc"
+#line 15680 "isa_thumb.tcc"
 	>(0x4200U, 0xffc0U, DecodeOpTst<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15683 "isa_thumb.tcc"
+#line 15684 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15688 "isa_thumb.tcc"
+#line 15689 "isa_thumb.tcc"
 	>(0xb080U, 0xff80U, DecodeOpSub_4<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15692 "isa_thumb.tcc"
+#line 15693 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15697 "isa_thumb.tcc"
+#line 15698 "isa_thumb.tcc"
 	>(0x1a00U, 0xfe00U, DecodeOpSub_3<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15701 "isa_thumb.tcc"
+#line 15702 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15706 "isa_thumb.tcc"
+#line 15707 "isa_thumb.tcc"
 	>(0x3800U, 0xf800U, DecodeOpSub_2<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15710 "isa_thumb.tcc"
+#line 15711 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15715 "isa_thumb.tcc"
+#line 15716 "isa_thumb.tcc"
 	>(0x1e00U, 0xfe00U, DecodeOpSub_1<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15719 "isa_thumb.tcc"
+#line 15720 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15724 "isa_thumb.tcc"
+#line 15725 "isa_thumb.tcc"
 	>(0x4180U, 0xffc0U, DecodeOpSbc<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15728 "isa_thumb.tcc"
+#line 15729 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15733 "isa_thumb.tcc"
+#line 15734 "isa_thumb.tcc"
 	>(0x41c0U, 0xffc0U, DecodeOpRor<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15737 "isa_thumb.tcc"
+#line 15738 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15742 "isa_thumb.tcc"
+#line 15743 "isa_thumb.tcc"
 	>(0x4300U, 0xffc0U, DecodeOpOrr<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15746 "isa_thumb.tcc"
+#line 15747 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15751 "isa_thumb.tcc"
+#line 15752 "isa_thumb.tcc"
 	>(0x4240U, 0xffc0U, DecodeOpNeg<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15755 "isa_thumb.tcc"
+#line 15756 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15760 "isa_thumb.tcc"
+#line 15761 "isa_thumb.tcc"
 	>(0x43c0U, 0xffc0U, DecodeOpMvn<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15764 "isa_thumb.tcc"
+#line 15765 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15769 "isa_thumb.tcc"
+#line 15770 "isa_thumb.tcc"
 	>(0x4340U, 0xffc0U, DecodeOpMul<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15773 "isa_thumb.tcc"
+#line 15774 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15778 "isa_thumb.tcc"
+#line 15779 "isa_thumb.tcc"
 	>(0x4600U, 0xff00U, DecodeOpMov_3<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15782 "isa_thumb.tcc"
+#line 15783 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15787 "isa_thumb.tcc"
+#line 15788 "isa_thumb.tcc"
 	>(0x2000U, 0xf800U, DecodeOpMov_1<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15791 "isa_thumb.tcc"
+#line 15792 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15796 "isa_thumb.tcc"
+#line 15797 "isa_thumb.tcc"
 	>(0x40c0U, 0xffc0U, DecodeOpLsr_2<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15800 "isa_thumb.tcc"
+#line 15801 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15805 "isa_thumb.tcc"
+#line 15806 "isa_thumb.tcc"
 	>(0x800U, 0xf800U, DecodeOpLsr_1<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15809 "isa_thumb.tcc"
+#line 15810 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15814 "isa_thumb.tcc"
+#line 15815 "isa_thumb.tcc"
 	>(0x4080U, 0xffc0U, DecodeOpLsl_2<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15818 "isa_thumb.tcc"
+#line 15819 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15823 "isa_thumb.tcc"
+#line 15824 "isa_thumb.tcc"
 	>(0x0U, 0xf800U, DecodeOpLsl_1<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15827 "isa_thumb.tcc"
+#line 15828 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15832 "isa_thumb.tcc"
+#line 15833 "isa_thumb.tcc"
 	>(0x4040U, 0xffc0U, DecodeOpEor<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15836 "isa_thumb.tcc"
+#line 15837 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15841 "isa_thumb.tcc"
+#line 15842 "isa_thumb.tcc"
 	>(0x4500U, 0xff00U, DecodeOpCmp_3<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15845 "isa_thumb.tcc"
+#line 15846 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15850 "isa_thumb.tcc"
+#line 15851 "isa_thumb.tcc"
 	>(0x4280U, 0xffc0U, DecodeOpCmp_2<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15854 "isa_thumb.tcc"
+#line 15855 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15859 "isa_thumb.tcc"
+#line 15860 "isa_thumb.tcc"
 	>(0x2800U, 0xf800U, DecodeOpCmp_1<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15863 "isa_thumb.tcc"
+#line 15864 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15868 "isa_thumb.tcc"
+#line 15869 "isa_thumb.tcc"
 	>(0x42c0U, 0xffc0U, DecodeOpCmn<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15872 "isa_thumb.tcc"
+#line 15873 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15877 "isa_thumb.tcc"
+#line 15878 "isa_thumb.tcc"
 	>(0x4380U, 0xffc0U, DecodeOpBic<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15881 "isa_thumb.tcc"
+#line 15882 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15886 "isa_thumb.tcc"
+#line 15887 "isa_thumb.tcc"
 	>(0x4100U, 0xffc0U, DecodeOpAsr_2<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15890 "isa_thumb.tcc"
+#line 15891 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15895 "isa_thumb.tcc"
+#line 15896 "isa_thumb.tcc"
 	>(0x1000U, 0xf800U, DecodeOpAsr_1<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15899 "isa_thumb.tcc"
+#line 15900 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15904 "isa_thumb.tcc"
+#line 15905 "isa_thumb.tcc"
 	>(0x4000U, 0xffc0U, DecodeOpAnd<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15908 "isa_thumb.tcc"
+#line 15909 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15913 "isa_thumb.tcc"
+#line 15914 "isa_thumb.tcc"
 	>(0xb000U, 0xff80U, DecodeOpAdd_7<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15917 "isa_thumb.tcc"
+#line 15918 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15922 "isa_thumb.tcc"
+#line 15923 "isa_thumb.tcc"
 	>(0xa800U, 0xf800U, DecodeOpAdd_6<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15926 "isa_thumb.tcc"
+#line 15927 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15931 "isa_thumb.tcc"
+#line 15932 "isa_thumb.tcc"
 	>(0xa000U, 0xf800U, DecodeOpAdd_5<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15935 "isa_thumb.tcc"
+#line 15936 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15940 "isa_thumb.tcc"
+#line 15941 "isa_thumb.tcc"
 	>(0x4400U, 0xff00U, DecodeOpAdd_4<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15944 "isa_thumb.tcc"
+#line 15945 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15949 "isa_thumb.tcc"
+#line 15950 "isa_thumb.tcc"
 	>(0x1800U, 0xfe00U, DecodeOpAdd_3<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15953 "isa_thumb.tcc"
+#line 15954 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15958 "isa_thumb.tcc"
+#line 15959 "isa_thumb.tcc"
 	>(0x3000U, 0xf800U, DecodeOpAdd_2<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15962 "isa_thumb.tcc"
+#line 15963 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15967 "isa_thumb.tcc"
+#line 15968 "isa_thumb.tcc"
 	>(0x1c00U, 0xfe00U, DecodeOpAdd_1<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15971 "isa_thumb.tcc"
+#line 15972 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15976 "isa_thumb.tcc"
+#line 15977 "isa_thumb.tcc"
 	>(0x4140U, 0xffc0U, DecodeOpAdc<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15980 "isa_thumb.tcc"
+#line 15981 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15985 "isa_thumb.tcc"
+#line 15986 "isa_thumb.tcc"
 	>(0x4780U, 0xff80U, DecodeOpBlx_2<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15989 "isa_thumb.tcc"
+#line 15990 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15994 "isa_thumb.tcc"
+#line 15995 "isa_thumb.tcc"
 	>(0xe800U, 0xf800U, DecodeOpBlx_1<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 15998 "isa_thumb.tcc"
+#line 15999 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 16003 "isa_thumb.tcc"
+#line 16004 "isa_thumb.tcc"
 	>(0x4700U, 0xff80U, DecodeOpBx<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 16007 "isa_thumb.tcc"
+#line 16008 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 16012 "isa_thumb.tcc"
+#line 16013 "isa_thumb.tcc"
 	>(0xf000U, 0xf000U, DecodeOpBl<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 16016 "isa_thumb.tcc"
+#line 16017 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 16021 "isa_thumb.tcc"
+#line 16022 "isa_thumb.tcc"
 	>(0xe000U, 0xf800U, DecodeOpB_2<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 16025 "isa_thumb.tcc"
+#line 16026 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 16030 "isa_thumb.tcc"
+#line 16031 "isa_thumb.tcc"
 	>(0xdc00U, 0xfe00U, DecodeOpB_1_110x<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 16034 "isa_thumb.tcc"
+#line 16035 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 16039 "isa_thumb.tcc"
+#line 16040 "isa_thumb.tcc"
 	>(0xd800U, 0xfc00U, DecodeOpB_1_10xx<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 16043 "isa_thumb.tcc"
+#line 16044 "isa_thumb.tcc"
 	>));
 	decode_table.push_back(DecodeTableEntry<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 16048 "isa_thumb.tcc"
+#line 16049 "isa_thumb.tcc"
 	>(0xd000U, 0xf800U, DecodeOpB_1_0xxx<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 16052 "isa_thumb.tcc"
+#line 16053 "isa_thumb.tcc"
 	>));
 }
 
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 16059 "isa_thumb.tcc"
+#line 16060 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 16062 "isa_thumb.tcc"
+#line 16063 "isa_thumb.tcc"
 >
 Decoder<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 16067 "isa_thumb.tcc"
+#line 16068 "isa_thumb.tcc"
 >::~Decoder()
 {
 	InvalidateDecodingCache();
@@ -16072,25 +16073,25 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 16076 "isa_thumb.tcc"
+#line 16077 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 16079 "isa_thumb.tcc"
+#line 16080 "isa_thumb.tcc"
 >
 Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 16084 "isa_thumb.tcc"
+#line 16085 "isa_thumb.tcc"
 > *Decoder<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 16088 "isa_thumb.tcc"
+#line 16089 "isa_thumb.tcc"
 >::NCDecode(typename CONFIG::address_t addr, CodeType code)
 {
 	Operation<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 16094 "isa_thumb.tcc"
+#line 16095 "isa_thumb.tcc"
 	> *operation;
 	unsigned int count = decode_table.size();
 	unsigned int idx;
@@ -16116,7 +16117,7 @@ CONFIG
 	operation = new Operation<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 16120 "isa_thumb.tcc"
+#line 16121 "isa_thumb.tcc"
 	>(code, addr, "???");
 	operation->initialize_rd_index();
 	operation->initialize_rn_index();
@@ -16135,15 +16136,15 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 16139 "isa_thumb.tcc"
+#line 16140 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 16142 "isa_thumb.tcc"
+#line 16143 "isa_thumb.tcc"
 >
 void Decoder<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 16147 "isa_thumb.tcc"
+#line 16148 "isa_thumb.tcc"
 >::InvalidateDecodingCache()
 {
 	uint32_t index;
@@ -16153,7 +16154,7 @@ CONFIG
 		DecodeMapPage<
 #line 44 "isa/thumb/thumb.isa"
 		CONFIG
-#line 16157 "isa_thumb.tcc"
+#line 16158 "isa_thumb.tcc"
 		> *page, *next_page;
 		page = decode_hash_table[index];
 		if(page)
@@ -16172,15 +16173,15 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 16176 "isa_thumb.tcc"
+#line 16177 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 16179 "isa_thumb.tcc"
+#line 16180 "isa_thumb.tcc"
 >
 void Decoder<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 16184 "isa_thumb.tcc"
+#line 16185 "isa_thumb.tcc"
 >::InvalidateDecodingCacheEntry(typename CONFIG::address_t addr)
 {
 	typename CONFIG::address_t page_key = addr / 2 / NUM_OPERATIONS_PER_PAGE;
@@ -16189,7 +16190,7 @@ CONFIG
 	DecodeMapPage<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 16193 "isa_thumb.tcc"
+#line 16194 "isa_thumb.tcc"
 	> *prev, *cur;
 	cur = decode_hash_table[index];
 	if(cur)
@@ -16222,19 +16223,19 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 16226 "isa_thumb.tcc"
+#line 16227 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 16229 "isa_thumb.tcc"
+#line 16230 "isa_thumb.tcc"
 >
 inline DecodeMapPage<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 16234 "isa_thumb.tcc"
+#line 16235 "isa_thumb.tcc"
 > *Decoder<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 16238 "isa_thumb.tcc"
+#line 16239 "isa_thumb.tcc"
 >::FindPage(typename CONFIG::address_t page_key)
 {
 	if(mru_page && mru_page->key == page_key) return mru_page;
@@ -16242,7 +16243,7 @@ CONFIG
 	DecodeMapPage<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 16246 "isa_thumb.tcc"
+#line 16247 "isa_thumb.tcc"
 	> *prev, *cur;
 	cur = decode_hash_table[index];
 	if(cur)
@@ -16276,31 +16277,31 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 16280 "isa_thumb.tcc"
+#line 16281 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 16283 "isa_thumb.tcc"
+#line 16284 "isa_thumb.tcc"
 >
 Operation<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 16288 "isa_thumb.tcc"
+#line 16289 "isa_thumb.tcc"
 > *Decoder<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 16292 "isa_thumb.tcc"
+#line 16293 "isa_thumb.tcc"
 >::Decode(typename CONFIG::address_t addr, CodeType insn)
 {
 	Operation<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 16298 "isa_thumb.tcc"
+#line 16299 "isa_thumb.tcc"
 	> *operation;
 	typename CONFIG::address_t page_key = addr / 2 / NUM_OPERATIONS_PER_PAGE;
 	DecodeMapPage<
 #line 44 "isa/thumb/thumb.isa"
 	CONFIG
-#line 16304 "isa_thumb.tcc"
+#line 16305 "isa_thumb.tcc"
 	> *page;
 	page = FindPage(page_key);
 	if(!page)
@@ -16308,7 +16309,7 @@ CONFIG
 		page = new DecodeMapPage<
 #line 44 "isa/thumb/thumb.isa"
 		CONFIG
-#line 16312 "isa_thumb.tcc"
+#line 16313 "isa_thumb.tcc"
 		> (page_key);
 		uint32_t index = page_key % NUM_DECODE_HASH_TABLE_ENTRIES; // hash the key
 		page->next = decode_hash_table[index];
@@ -16330,15 +16331,15 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 16334 "isa_thumb.tcc"
+#line 16335 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 16337 "isa_thumb.tcc"
+#line 16338 "isa_thumb.tcc"
 >
 void Decoder<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 16342 "isa_thumb.tcc"
+#line 16343 "isa_thumb.tcc"
 >::SetLittleEndian()
 {
 	is_little_endian = true;
@@ -16347,15 +16348,15 @@ CONFIG
 template <
 #line 44 "isa/thumb/thumb.isa"
 class
-#line 16351 "isa_thumb.tcc"
+#line 16352 "isa_thumb.tcc"
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 16354 "isa_thumb.tcc"
+#line 16355 "isa_thumb.tcc"
 >
 void Decoder<
 #line 44 "isa/thumb/thumb.isa"
 CONFIG
-#line 16359 "isa_thumb.tcc"
+#line 16360 "isa_thumb.tcc"
 >::SetBigEndian()
 {
 	is_little_endian = false;

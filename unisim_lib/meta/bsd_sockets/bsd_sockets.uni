@@ -1,0 +1,10 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<package>
+	<unit>
+		<name>bsd_sockets</name>
+		<cmake>meta/bsd_sockets/bsd_sockets.cmake</cmake>
+		<autotools>
+			<autoconf>meta/bsd_sockets/bsd_sockets.cmake</autoconf>
+		</autotools>
+	</unit>
+</package>

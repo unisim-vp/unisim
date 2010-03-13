@@ -89,7 +89,7 @@ void
 CPU<CONFIG> ::
 StepInstruction() {
 	reg_t current_pc;
-	reg_t next_pc;
+	// reg_t next_pc;
 
 	current_pc = GetGPR(PC_reg);
 

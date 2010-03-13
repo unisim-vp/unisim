@@ -38,10 +38,10 @@
 
 using unisim::component::cxx::processor::arm::coprocessor::arm966e_s::CP15;
 using unisim::component::cxx::processor::arm::ARM966E_S_Config;
-using unisim::component::cxx::processor::arm::ARM966E_S_DebugConfig;
+// using unisim::component::cxx::processor::arm::ARM966E_S_DebugConfig;
 
 template
 class CP15<ARM966E_S_Config>;
 
-template
-class CP15<ARM966E_S_DebugConfig>;
+// template
+// class CP15<ARM966E_S_DebugConfig>;

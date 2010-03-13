@@ -1,0 +1,17 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<package>
+	<unit>
+		<name>win_windows_h</name>
+		<autotools>
+			<autoconf>meta/win/windows.ac</autoconf>
+		</autotools>
+		<cmake>meta/win/windows.cmake</cmake>
+	</unit>
+	<unit>
+		<name>win_winsock2_h</name>
+		<autotools>
+			<autoconf>meta/win/winsock2.ac</autoconf>
+		</autotools>
+		<cmake>meta/win/winsock2.cmake</cmake>
+	</unit>
+</package>

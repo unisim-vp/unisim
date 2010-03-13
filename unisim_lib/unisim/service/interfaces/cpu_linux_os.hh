@@ -43,6 +43,8 @@ namespace interfaces {
 
 class CPULinuxOS {
 public:
+	CPULinuxOS() {}
+	virtual ~CPULinuxOS() {}
     virtual void PerformExit(int ret) = 0;
 };
 

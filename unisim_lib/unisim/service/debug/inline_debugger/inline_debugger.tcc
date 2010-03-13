@@ -78,16 +78,17 @@ InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent) :
 	Client<Memory<ADDRESS> >(_name, _parent),
 	Client<Registers>(_name, _parent),
 	Client<SymbolTableLookup<ADDRESS> >(_name, _parent),
-	memory_atom_size(1),
-	param_memory_atom_size("memory-atom-size", this, memory_atom_size, "size of the smallest addressable element in memory"),
+	InlineDebuggerBase(),
 	debug_control_export("debug-control-export", this),
 	memory_access_reporting_export("memory-access-reporting-export", this),
 	trap_reporting_export("trap-reporting-export", this),
-	memory_access_reporting_control_import("memory-access-reporting-control-import", this),
 	disasm_import("disasm-import", this),
 	memory_import("memory-import", this),
+	memory_access_reporting_control_import("memory-access-reporting-control-import", this),
 	registers_import("registers-import", this),
-	symbol_table_lookup_import("symbol-table-lookup-import", this)
+	symbol_table_lookup_import("symbol-table-lookup-import", this),
+	memory_atom_size(1),
+	param_memory_atom_size("memory-atom-size", this, memory_atom_size)
 {
 	trap = false;
 	strcpy(last_line, "");
@@ -227,7 +228,7 @@ ReportTrap(const unisim::kernel::service::Object &obj,
 template <class ADDRESS>
 typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebugCommand(ADDRESS cia)
 {
-	int count;
+	// int count;
 	bool recognized = false;
 	ADDRESS addr;
 	ADDRESS cont_addr;
@@ -648,7 +649,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 			{
 				recognized = true;
 				std::stringstream str;
-				for (unsigned int i = 2; i < nparms; i++)
+				for (unsigned int i = 2; i < (unsigned int)nparms; i++)
 				{
 					if (i > 2) str << " ";
 						str << parm[i];
@@ -660,7 +661,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 		if(!recognized)
 		{
 			cout << "Unrecognized command.  Try \"help\"." << endl;
-			for (unsigned int i = 0; i < nparms; i++)
+			for (unsigned int i = 0; i < (unsigned int)nparms; i++)
 				cout << parm[i] << " ";
 			cout << endl;
 		}
@@ -942,6 +943,9 @@ void InlineDebugger<ADDRESS>::DumpWatchpoints()
 			case MemoryAccessReporting<ADDRESS>::MAT_WRITE:
 				cout << "write";
 				break;
+			case MemoryAccessReporting<ADDRESS>::MAT_NONE:
+				cout << " NONE";
+				break;
 		}
 		cout << " ";
 		
@@ -975,10 +979,10 @@ void InlineDebugger<ADDRESS>::DumpMemory(ADDRESS addr)
 	cout.width(2 * sizeof(addr));
 	cout << "address" << hex;
 	cout.width(0);
-	for(i = 0; i < 16 / memory_atom_size; i++)
+	for(i = 0; (unsigned int)i < 16 / memory_atom_size; i++)
 	{
 		cout << "  " << i;
-		for(j = 1; j < memory_atom_size; j++) cout << "   ";
+		for(j = 1; (unsigned int)j < memory_atom_size; j++) cout << "   ";
 	}
 	cout << endl;
 	for(i = 0; i < 16; i++)
@@ -1033,6 +1037,9 @@ void InlineDebugger<ADDRESS>::DumpVariables()
 					break;
 				case VariableBase::VAR_REGISTER:
 					cout << " R";
+					break;
+				case VariableBase::VAR_ARRAY:
+					cout << " A"; // TOCHECK
 					break;
 			}
 			cout << "\t" << (*iter)->GetName() << endl;
@@ -1251,6 +1258,9 @@ void InlineDebugger<ADDRESS>::DumpVariable(const char *cmd, const char *name)
 		case VariableBase::VAR_REGISTER:
 			cout << " R";
 			break;
+		case VariableBase::VAR_ARRAY:
+			cout << " A"; // TOCHECK
+			break;
 	}
 
 	cout << "\t";
@@ -1365,7 +1375,7 @@ void InlineDebugger<ADDRESS>::DumpDataProfile(bool write)
 	{
 		ADDRESS addr = (*iter).first;
 		const Symbol<ADDRESS> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(addr) : 0;
-		ADDRESS next_addr;
+		// ADDRESS next_addr;
 
 		cout << "0x" << hex;
 		cout.fill('0');

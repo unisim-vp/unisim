@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<package>
+	<unit>
+		<name>osci_systemc</name>
+		<cmake>cmake/FindOSCISystemC.cmake</cmake>
+	</unit>
+	<unit>
+		<name>osci_tlm2</name>
+		<cmake>cmake/FindOSCITLM2.cmake</cmake>
+	</unit>
+</package>
+
+

@@ -1,0 +1,21 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<package>
+	<unit>
+		<name>unisim::service::time::sc_time</name>
+		<files>
+			<file>unisim/service/time/sc_time/time.hh</file>
+			<file>unisim/service/time/sc_time/time.cc</file>
+		</files>
+		<depends>
+			<dep>unisim::service::interfaces::time</dep>
+			<dep>unisim::kernel::service</dep>
+			<dep>osci_systemc</dep>
+		</depends>
+		<autotools>
+			<automake>unisim/service/time/sc_time/meta/sc_time.am</automake>
+		</autotools>
+		<cmake>unisim/service/time/sc_time/CMakeLists.txt</cmake>
+	</unit>
+</package>
+
+

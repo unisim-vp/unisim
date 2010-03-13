@@ -41,6 +41,8 @@ namespace interfaces {
   
   class OS {
   public:
+	OS() {}
+	virtual ~OS() {}
     /**
      * Execute an os system call.
      */

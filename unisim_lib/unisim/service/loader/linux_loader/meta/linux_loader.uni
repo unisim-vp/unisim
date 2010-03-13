@@ -1,0 +1,28 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<package>
+	<unit>
+		<name>unisim::service::loader::linux_loader</name>
+		<files>
+			<file>unisim/service/loader/linux_loader/linux_loader.hh</file>
+			<file>unisim/service/loader/linux_loader/linux_loader.tcc</file>
+			<file>unisim/service/loader/linux_loader/linux32_loader.cc</file>
+			<file>unisim/service/loader/linux_loader/linux64_loader.cc</file>
+		</files>
+		<depends>
+			<dep>unisim::kernel::service</dep>
+			<dep>unisim::service::interfaces::memory</dep>
+			<dep>unisim::service::interfaces::loader</dep>
+			<dep>unisim::util::endian</dep>
+			<dep>stl_string</dep>
+			<dep>stl_iostream</dep>
+			<dep>clib_stdlib_h</dep>
+		</depends>
+		<autotools>
+			<automake>unisim/service/loader/linux_loader/meta/linux_loader.am</automake>
+		</autotools>
+		<!-- <cmake>unisim/service/loader/linux_loader/meta/linux_loader.cmake</cmake> -->
+		<cmake>unisim/service/loader/linux_loader/CMakeLists.txt</cmake>
+	</unit>
+</package>
+
+

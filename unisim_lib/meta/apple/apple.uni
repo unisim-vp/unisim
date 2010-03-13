@@ -1,0 +1,10 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<package>
+	<unit>
+		<name>apple_sys_types_h</name>
+		<autotools>
+			<automake>meta/apple/apple_sys_types_h.am</automake>
+		</autotools>
+		<cmake>meta/apple/apple_sys_types_h.cmake</cmake>
+	</unit>
+</package>

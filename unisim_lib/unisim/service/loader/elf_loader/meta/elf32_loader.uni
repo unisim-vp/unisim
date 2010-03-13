@@ -1,0 +1,37 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<package>
+	<unit>
+		<name>unisim::service::loader::elf_loader</name>
+		<files>
+			<file>unisim/service/loader/elf_loader/elf_common.h</file>
+			<file>unisim/service/loader/elf_loader/elf32.h</file>
+			<file>unisim/service/loader/elf_loader/elf64.h</file>
+			<file>unisim/service/loader/elf_loader/elf_loader.hh</file>
+			<file>unisim/service/loader/elf_loader/elf32_loader.hh</file>
+			<file>unisim/service/loader/elf_loader/elf64_loader.hh</file>
+			<file>unisim/service/loader/elf_loader/elf_loader.tcc</file>
+			<file>unisim/service/loader/elf_loader/elf32_loader.cc</file>
+			<file>unisim/service/loader/elf_loader/elf64_loader.cc</file>
+		</files>
+		<depends>
+			<dep>unisim::kernel::service</dep>
+			<dep>unisim::kernel::logger</dep>
+			<dep>unisim::service::interfaces::memory</dep>
+			<dep>unisim::service::interfaces::loader</dep>
+			<dep>unisim::service::interfaces::symbol_table_lookup</dep>
+			<dep>unisim::util::endian</dep>
+			<dep>unisim::util::debug</dep>
+			<dep>stl_iosfwd</dep>
+			<dep>stl_iostream</dep>
+			<dep>stl_fstream</dep>
+			<dep>clib_inttypes_h</dep>
+			<dep>clib_stdlib_h</dep>
+		</depends>
+		<autotools>
+			<automake>unisim/service/loader/elf_loader/meta/elf_loader.am</automake>
+		</autotools>
+		<!-- <cmake>unisim/service/loader/elf_loader/meta/elf_loader.cmake</cmake> -->
+		<cmake>unisim/service/loader/elf_loader/CMakeLists.txt</cmake>
+	</unit>
+</package>
+

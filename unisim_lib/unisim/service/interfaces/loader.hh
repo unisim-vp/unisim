@@ -43,6 +43,9 @@ template <class T>
 class Loader
 {
 public:
+	Loader() {}
+	virtual ~Loader() {}
+	
 	virtual void Reset() = 0;
 	virtual T GetEntryPoint() const = 0;
 	virtual T GetTopAddr() const = 0;

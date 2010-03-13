@@ -44,6 +44,8 @@ namespace interfaces {
 class Registers
 {
 public:
+	Registers() {}
+	virtual ~Registers() {}
 	virtual unisim::util::debug::Register *GetRegister(const char *name) = 0;
 };
 

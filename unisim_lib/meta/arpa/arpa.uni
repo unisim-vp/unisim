@@ -1,0 +1,10 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<package>
+	<unit>
+		<name>arpa_inet_h</name>
+		<autotools>
+			<autoconf>meta/arpa/inet.ac</autoconf>
+		</autotools>
+		<cmake>meta/arpa/inet.cmake</cmake>
+	</unit>
+</package>

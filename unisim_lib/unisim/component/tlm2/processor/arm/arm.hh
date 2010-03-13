@@ -42,7 +42,6 @@
 #include "unisim/component/cxx/processor/arm/cpu.hh"
 #include "unisim/component/cxx/processor/arm/cache_interface.hh"
 #include "unisim/kernel/tlm2/tlm.hh"
-// #include "unisim/kernel/logger/logger.hh"
 #include "unisim/component/tlm2/interrupt/types.hh"
 #include <inttypes.h>
 #include <string>

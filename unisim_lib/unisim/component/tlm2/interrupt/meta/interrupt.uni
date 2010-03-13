@@ -1,0 +1,24 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<package>
+	<unit>
+		<name>unisim::component::tlm2::interrupt</name>
+		<files>
+			<file>unisim/component/tlm2/interrupt/types.hh</file>
+			<file>unisim/component/tlm2/interrupt/master_stub.hh</file>
+			<file>unisim/component/tlm2/interrupt/master_stub.cc</file>
+			<file>unisim/component/tlm2/interrupt/slave_stub.hh</file>
+			<file>unisim/component/tlm2/interrupt/slave_stub.cc</file>
+		</files>
+		<depends>
+			<dep>osci_systemc</dep>
+			<dep>osci_tlm2</dep>
+			<dep>unisim::kernel::service</dep>
+			<dep>unisim::kernel::tlm2</dep>
+		</depends>
+		<autotools>
+			<automake>unisim/component/tlm2/interrupt/interrupt.am</automake>
+			<autoconf>unisim/component/tlm2/interrupt/interrupt.ac</autoconf>
+		</autotools>
+		<cmake>unisim/component/tlm2/interrupt/CMakeLists.txt</cmake>
+	</unit>
+</package>

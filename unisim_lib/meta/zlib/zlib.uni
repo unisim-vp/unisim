@@ -1,0 +1,10 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<package>
+	<unit>
+		<name>zlib</name>
+		<cmake>meta/zlib/zlib.cmake</cmake>
+		<autotools>
+			<autoconf>meta/zlib/zlib.ac</autoconf>
+		</autotools>
+	</unit>
+</package>

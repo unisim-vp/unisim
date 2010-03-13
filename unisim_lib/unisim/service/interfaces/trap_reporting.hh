@@ -45,6 +45,7 @@ namespace interfaces {
 class TrapReporting
 {
 public:
+	virtual ~TrapReporting() {};
 	virtual void ReportTrap() = 0;
 	virtual void ReportTrap(const unisim::kernel::service::Object &obj) = 0;
 	virtual void ReportTrap(const unisim::kernel::service::Object &obj,

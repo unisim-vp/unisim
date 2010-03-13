@@ -36,11 +36,12 @@
 #define __UNISIM_COMPONENT_TLM2_MEMORY_RAM_MEMORY_HH__
 
 #include <systemc.h>
+#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/logger/logger.hh"
 #include "unisim/kernel/tlm2/tlm.hh"
 #include <tlm_utils/tlm_quantumkeeper.h>
 #include <tlm_utils/peq_with_get.h>
 #include "unisim/component/cxx/memory/ram/memory.hh"
-#include "unisim/kernel/logger/logger.hh"
 #include <inttypes.h>
 
 namespace unisim {

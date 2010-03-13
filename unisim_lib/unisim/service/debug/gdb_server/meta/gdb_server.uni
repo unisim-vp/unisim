@@ -1,0 +1,49 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<package>
+	<unit>
+		<name>unisim::service::debug::gdb_server</name>
+		<files>
+			<file>unisim/service/debug/gdb_server/gdb_server.hh</file>
+			<file>unisim/service/debug/gdb_server/gdb_server.tcc</file>
+			<file>unisim/service/debug/gdb_server/gdb_server.cc</file>
+			<file>unisim/service/debug/gdb_server/gdb_server_32.cc</file>
+			<file>unisim/service/debug/gdb_server/gdb_server_64.cc</file>
+			<file>unisim/service/debug/gdb_server/gdb_armv4l.xml</file>
+			<file>unisim/service/debug/gdb_server/gdb_armv5b.xml</file>
+			<file>unisim/service/debug/gdb_server/gdb_hcs12x.xml</file>
+			<file>unisim/service/debug/gdb_server/gdb_powerpc.xml</file>
+		</files>
+		<depends>
+			<dep>unisim::util::endian</dep>
+			<dep>unisim::service::interfaces::memory_access_reporting</dep>
+			<dep>unisim::service::interfaces::debug_control</dep>
+			<dep>unisim::service::interfaces::registers</dep>
+			<dep>unisim::service::interfaces::memory</dep>
+			<dep>unisim::service::interfaces::trap_reporting</dep>
+			<dep>unisim::kernel::service</dep>
+			<dep>unisim::kernel::logger</dep>
+			<dep>unisim::util::debug</dep>
+			<dep>stl_string</dep>
+			<dep>stl_vector</dep>
+			<dep>clib_inttypes_h</dep>
+			<dep>unisim::util::xml</dep>
+			<dep>stl_iostream</dep>
+			<dep>stl_list</dep>
+			<dep>clib_string_h</dep>
+			<dep>clib_unistd_h</dep>
+			<dep>sys_types_h</dep>
+			<dep>clib_errno_h</dep>
+			<dep>clib_stdlib_h</dep>
+			<dep>win_winsock2_h</dep>
+			<dep>bsd_sockets</dep>
+			<dep>sys_times_h</dep>
+			<dep>fcntl_h</dep>
+		</depends>
+		<autotools>
+			<automake>unisim/service/debug/gdb_server/meta/gdb_server.am</automake>
+		</autotools>
+		<!-- <cmake>unisim/service/debug/gdb_server/meta/gdb_server.cmake</cmake> -->
+		<cmake>unisim/service/debug/gdb_server/CMakeLists.txt</cmake>
+	</unit>
+</package>
+

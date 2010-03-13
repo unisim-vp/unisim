@@ -46,6 +46,7 @@ template <class ADDRESS>
 class MemoryAccessReporting
 {
 public:
+	virtual ~MemoryAccessReporting() {}
 	typedef enum { MAT_NONE = 0, MAT_READ = 1, MAT_WRITE = 2 } MemoryAccessType;
 	typedef enum { MT_DATA = 0, MT_INSN = 1 } MemoryType;
 
@@ -56,6 +57,7 @@ public:
 class MemoryAccessReportingControl
 {
 public:
+	virtual ~MemoryAccessReportingControl() {}
 	virtual void RequiresMemoryAccessReporting(bool report) = 0;
 	virtual void RequiresFinishedInstructionReporting(bool report) = 0;
 };

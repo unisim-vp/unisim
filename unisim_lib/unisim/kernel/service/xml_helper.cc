@@ -261,6 +261,12 @@ XmlfyVariable(xmlTextWriterPtr writer,
 		case VariableBase::VAR_REGISTER:
 			rc = xmlTextWriterWriteFormatString(writer, "register");
 			break;
+		case VariableBase::VAR_VOID:
+		case VariableBase::VAR_ARRAY:
+			rc = -1;
+			cerr << "ERROR(xml_helper:XmlfyVariable): unexpected variable type (VAR_VOID or VAR_ARRAY)"
+			<< endl;
+			break;
 	}
 	if(rc < 0) return rc;
 	rc = xmlTextWriterEndElement(writer);
@@ -373,11 +379,11 @@ LoadXmlVariables(const char *filename, VariableBase::Type type)
 			cerr << filename << ": failed to parse" << endl;
 			return false;
 		}
-		return true;
 	} else {
 		cerr << "Unable to open " << filename << endl;
 		return false;
 	}
+	return ret;
 }
 
 bool 

@@ -60,12 +60,12 @@ Memory(const sc_module_name& name, Object *parent) :
 	sc_module(name),
 	unisim::component::cxx::memory::ram::Memory<uint64_t, PAGE_SIZE>(name, parent),
 	slave_sock("slave-sock"),
+	logger(*this),
 	verbose(false),
 	cycle_time(0),
 	cycle_sctime(),
 	param_cycle_time("cycle-time", this, cycle_time, "memory cycle time in picoseconds"),
-	param_verbose("verbose", this, verbose),
-	logger(*this)
+	param_verbose("verbose", this, verbose)
 {
 	slave_sock(*this);
 }
@@ -98,7 +98,7 @@ Setup() {
 template <unsigned int BUSWIDTH, uint32_t PAGE_SIZE, bool DEBUG>
 bool Memory<BUSWIDTH, PAGE_SIZE, DEBUG>::get_direct_mem_ptr(tlm::tlm_generic_payload& payload, tlm::tlm_dmi& dmi_data)
 {
-	tlm::tlm_command cmd = payload.get_command();
+	// tlm::tlm_command cmd = payload.get_command();
 	uint64_t addr = payload.get_address();
 	uint64_t dmi_start_addr;
 	uint64_t dmi_end_addr;

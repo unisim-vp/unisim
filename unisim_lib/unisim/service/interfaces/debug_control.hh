@@ -45,6 +45,8 @@ template <class ADDRESS>
 class DebugControl
 {
 public:
+	DebugControl() {}
+	virtual ~DebugControl() {}
 	typedef enum { DBG_STEP, DBG_SYNC, DBG_KILL, DBG_RESET } DebugCommand;
 
 	virtual DebugCommand FetchDebugCommand(ADDRESS cia) = 0;
