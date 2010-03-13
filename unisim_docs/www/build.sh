@@ -40,7 +40,7 @@ for THEME in ${THEMES}; do
 		if [ -f "themes/${THEME}/theme.css" ]; then
 			echo "Copying stylesheet for theme ${THEME}"
 			cp "themes/${THEME}/theme.css" "site/${THEME_ROOT}/style/theme.css" || exit 1
-			THEME_STYLE="<link rel=\"stylesheet\" href=\"style/theme.css\" type=\"text/css\" />"
+			THEME_STYLE="<link rel=\"stylesheet\" href=\"style/theme.css\" type=\"text/css\">"
 		fi
 
 		cp themes/${THEME}/*.png site/${THEME_ROOT}/style
@@ -54,7 +54,7 @@ for THEME in ${THEMES}; do
 				echo "Copying stylesheet for ${CONTENT_DIR}.html..."
 				mkdir -p "site/${THEME_ROOT}/style/${CONTENT_DIR}"
 				cp "content/${CONTENT_DIR}/style.css" "site/${THEME_ROOT}/style/${CONTENT_DIR}/style.css" || exit 1
-				CONTENT_STYLE="<link rel=\"stylesheet\" href=\"style/${CONTENT_DIR}/style.css\" type=\"text/css\" />"
+				CONTENT_STYLE="<link rel=\"stylesheet\" href=\"style/${CONTENT_DIR}/style.css\" type=\"text/css\">"
 			fi
 
 			echo "Building ${CONTENT_DIR}.html for theme ${THEME}..."
@@ -83,7 +83,7 @@ for THEME in ${THEMES}; do
 			fi
 			
 			cpp \
-				"-DBASE_STYLE=<link rel=\"stylesheet\" href=\"${SITE_PREFIX}style/base.css\" type=\"text/css\" />" \
+				"-DBASE_STYLE=<link rel=\"stylesheet\" href=\"${SITE_PREFIX}style/base.css\" type=\"text/css\">" \
 				"-DTHEME_STYLE=${THEME_STYLE}" \
 				"-DCONTENT_STYLE=${CONTENT_STYLE}" \
 				"-DTHEME_NAV=${THEME_NAV}" \
@@ -92,7 +92,7 @@ for THEME in ${THEMES}; do
 				-P \
 				-Itemplate \
 				-Icontent/${CONTENT_DIR} \
-				template/template.html > site/${THEME_ROOT}/${CONTENT_DIR}.html || exit -1
+				template/template.html | sed 's/`/\"/g'> site/${THEME_ROOT}/${CONTENT_DIR}.html || exit -1
 		done
 	fi
 done

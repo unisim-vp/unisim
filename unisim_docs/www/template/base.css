@@ -225,28 +225,28 @@ li
 	color:black;
 }
 
-.download-file a
+.download-file
 {
 	background: url(file_icon.png) no-repeat center left;
 	padding-left: 18px;
 	height:16px;
 }
 
-.download-pdf a
+.download-pdf
 {
 	background: url(pdf_icon.png) no-repeat center left;
 	padding-left: 18px;
 	height:16px;
 }
 
-.download-video a
+.download-video
 {
 	background: url(video_icon.png) no-repeat center left;
 	padding-left: 18px;
 	height:16px;
 }
 
-.online-document a
+.online-document
 {
 	background: url(online_document_icon.png) no-repeat center left;
 	padding-left: 18px;
