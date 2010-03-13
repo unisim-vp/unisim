@@ -40,7 +40,7 @@
 #include "unisim/kernel/service/service.hh"
 
 #include "unisim/component/cxx/processor/arm/config.hh"
-#include "unisim/component/tlm2/processor/arm/arm7tdmi.hh"
+#include "unisim/component/tlm2/processor/arm/arm7tdmi/arm7tdmi.hh"
 #include "unisim/component/tlm2/memory/ram/memory.hh"
 
 #include "unisim/service/time/sc_time/time.hh"

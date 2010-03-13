@@ -40,7 +40,7 @@
 #include "unisim/kernel/service/service.hh"
 
 #include "unisim/component/cxx/processor/arm/config.hh"
-#include "unisim/component/tlm2/processor/arm/arm7tdmi.hh"
+#include "unisim/component/tlm2/processor/arm/arm7tdmi/arm7tdmi.hh"
 #include "unisim/component/tlm2/memory/ram/memory.hh"
 #include "unisim/component/tlm2/interconnect/generic_router/router.hh"
 #include "router_config.hh"
@@ -147,7 +147,6 @@ void help(char *prog_name) {
 }
 
 int sc_main(int argc, char *argv[]) {
-
 #ifdef WIN32
 	// Loads the winsock2 dll
 	WORD wVersionRequested = MAKEWORD( 2, 2 );
@@ -437,6 +436,9 @@ int sc_main(int argc, char *argv[]) {
 		gdb_server->memory_import >> cpu->memory_export;
 		gdb_server->registers_import >> cpu->registers_export;
 		gdb_server->memory_access_reporting_control_import >> cpu->memory_access_reporting_control_export;
+		gdb_server->disasm_import >> cpu->disasm_export;
+		gdb_server->symbol_table_lookup_import >> 
+			elf_loader->symbol_table_lookup_export;
 	}
 
 	if (use_inline_debugger)

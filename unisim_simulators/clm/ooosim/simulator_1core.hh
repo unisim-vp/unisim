@@ -628,7 +628,7 @@ public:
 	//  - Symbol table
 	
 	//  - Linux OS
-	LinuxOS<CPU_ADDRESS_TYPE, CPU_REG_TYPE> *linux_os = new LinuxOS<CPU_ADDRESS_TYPE, CPU_REG_TYPE>("linux_os");
+	LinuxOS<CPU_REG_TYPE> *linux_os = new LinuxOS<CPU_REG_TYPE>("linux_os");
 	//  - GDB server
 
 	//  - Inline debugger
