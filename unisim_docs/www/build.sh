@@ -81,8 +81,11 @@ for THEME in ${THEMES}; do
 			else
 				SITE_PREFIX="../"
 			fi
+
+			PAGE_TITLE=`cat content/${CONTENT_DIR}/title.txt`
 			
 			cpp \
+				"-DPAGE_TITLE=${PAGE_TITLE}" \
 				"-DBASE_STYLE=<link rel=\"stylesheet\" href=\"${SITE_PREFIX}style/base.css\" type=\"text/css\">" \
 				"-DTHEME_STYLE=${THEME_STYLE}" \
 				"-DCONTENT_STYLE=${CONTENT_STYLE}" \
