@@ -6,39 +6,12 @@ import os
 import os.path
 import shutil
 
-class SimulatorClass:
-	def __init__(self, filename, repository):
-		self._status = True
-		self._filename = filename
-		self._unit_list = []
-		xml = ET.parse(filename)
-		root = xml.getroot()
-		name = root.find("./name")
-		self._name = name.text
-		version = root.find("./version")
-		self._version = version.text
-		authors = root.findall("./authors/author")
-		self._authors = []
-		if authors:
-			for author in authors:
-				self._authors.append(author.text)
-		files = root.findall("./files/file")
-		self._files = []
-		if files:
-			for file in files:
-				self._files.append(file.text)
-		deps = root.findall("./depends/dep")
+class Builder:
+	def __init__(self, root, repository):
+		self._root = root
 		self._units = dict()
-		if deps:
-			for dep in deps:
-				# print("---> simulator")
-				self._status = self._scanDependency(dep.text, repository)
-				if not self._status:
-					return
-		self._cmake = None
-		cmake = root.find("./cmake")
-		if cmake is not None:
-			self._cmake = cmake.text
+		self._status = self._scanDependency(root, repository)
+			
 
 	def getStatus(self):
 		return self._status
@@ -89,21 +62,6 @@ class SimulatorClass:
 					os.symlink(abs_filename, abs_out_filename)
 				else:
 					shutil.copyfile(abs_filename, abs_out_filename)
-		abs_path = os.path.dirname(self._filename)
-		for file in self._files:
-			abs_filename = os.path.join(abs_path, file)
-			abs_out_filename = os.path.join(output_path, file)
-			abs_out_path = os.path.dirname(abs_out_filename)
-			if not os.path.exists(abs_out_path):
-				os.makedirs(abs_out_path)
-			if not os.path.exists(abs_filename):
-				print("ERROR: '%s' does not exists" % (abs_filename))
-				self._status = False
-				return
-			if config.doLink():
-				os.symlink(abs_filename, abs_out_filename)
-			else:
-				shutil.copyfile(abs_filename, abs_out_filename)
 		return
 	
 	def _generateCopyCMakes(self, config, output_path):
@@ -127,22 +85,6 @@ class SimulatorClass:
 						shutil.copyfile(abs_filename, abs_out_filename)
 					print ('')
 		print (" * simulator", end = '')
-		if self._cmake is None:
-			print (' (no cmake defined)')
-		else:
-			abs_filename = os.path.join(os.path.dirname(self._filename), self._cmake)
-			if not os.path.exists(abs_filename):
-				print (' (cmake file does not exists)')
-			else:
-				abs_out_filename = os.path.join(output_path, self._cmake)
-				if not os.path.exists(os.path.dirname(abs_out_filename)):
-					os.makedirs(os.path.dirname(abs_out_filename))
-				if config.doLink():
-					os.symlink(abs_filename, abs_out_filename)
-				else:
-					shutil.copyfile(abs_filename, abs_out_filename)
-				print('')
-				
 
 	def _generateCmake(self, config, output_path):
 		# copy cmake header
@@ -215,17 +157,8 @@ class SimulatorClass:
 		file.close()
 
 	def dump(self, pre):
-		print('%sName: %s' % (pre, self._name))
-		print('%sVersion: %s' % (pre, self._version))
-		if len(self._authors) is not 0:
-			if len(self._authors) is 1:
-				print('%sAuthor:' % (pre), end = '')
-			else:
-				print('%sAuthors:' % (pre), end = '')
-			for i in range(0, len(self._authors) - 1):
-				print(' %s,' % (self._authors[i]), end = '')
-			print(' %s' % (self._authors[len(self._authors) - 1]))
-		print('%sFilename: %s' % (pre, self._filename))
-		print('%sUnits:' % (pre))
+		print("%sRoot: %s" % (pre, self._root))
+		print("%sUnits:" % (pre))
 		for unit in self._units.keys():
-			print('%s  %s' % (pre, unit))
+			print("%s  %s" % (pre, unit))
+
