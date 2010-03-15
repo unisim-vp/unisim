@@ -21,6 +21,36 @@ mkdir -p site
 mkdir -p site/images
 mkdir -p site/downloads
 
+
+OVERALL_NEWS=content/index/news.html
+WHATS_NEW=template/whats_new.html
+NEWS_LIST=`cd news; ls *.html`
+
+declare -a MONTH=("January" "February" "March" "April" "May" "June" "July" "August" "September" "October" "November" "December")
+
+echo "Building ${OVERALL_NEWS} and ${WHATS_NEW}..."
+
+printf "" > ${OVERALL_NEWS}
+
+for NEWS in ${NEWS_LIST}; do
+	printf "\t<tr>\n" >> ${OVERALL_NEWS}
+	printf "\t\t<td class=\"news-date\">\n" >> ${OVERALL_NEWS}
+	YEAR=`printf ${NEWS} | cut -f 1 -d -`
+	MONTH_NUMBER=`printf ${NEWS} | cut -f 2 -d - | sed 's/0*//'`
+	MONTH_NUMBER=$((${MONTH_NUMBER} - 1))
+	MONTH_NAME=${MONTH[${MONTH_NUMBER}]}
+	DAY_NUMBER=`printf ${NEWS} | cut -f 3 -d - | cut -f 1 -d .`
+	printf "\t\t\t${MONTH_NAME} ${DAY_NUMBER}, ${YEAR}\n" >> ${OVERALL_NEWS}
+	printf "\t\t</td>\n" >> ${OVERALL_NEWS}
+	printf "\t\t<td class=\"news-description\">\n" >> ${OVERALL_NEWS}
+	printf "\t\t\t" >> ${OVERALL_NEWS}
+	cat news/${NEWS} >> ${OVERALL_NEWS}
+	printf "\n\t\t</td>\n" >> ${OVERALL_NEWS}
+	printf "\t</tr>\n" >> ${OVERALL_NEWS}
+	cat news/${NEWS} > ${WHATS_NEW}
+done
+
+
 THEMES=`cd themes; ls`
 
 for THEME in ${THEMES}; do
@@ -95,7 +125,7 @@ for THEME in ${THEMES}; do
 				-P \
 				-Itemplate \
 				-Icontent/${CONTENT_DIR} \
-				template/template.html | sed 's/`/\"/g'> site/${THEME_ROOT}/${CONTENT_DIR}.html || exit -1
+				template/template.html | sed "s/\`/\'/g"> site/${THEME_ROOT}/${CONTENT_DIR}.html || exit -1
 		done
 	fi
 done

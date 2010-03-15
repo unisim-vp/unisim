@@ -1,18 +1,14 @@
+/* font family for everything */
+
+body
+{
+	font-family:"Arial", "Helvetica", "sans-serif";
+}
+
 /* text style */
 
 h1
 {
-	font-family:"Arial", "Helvetica", "sans serif";
-	font-style:normal;
-	font-size:24px;
-	text-align:left;
-	font-weight:bold;
-	color:black;
-}
-
-h2
-{
-	font-family:"Arial", "Helvetica", "sans serif";
 	font-style:normal;
 	font-size:20px;
 	text-align:left;
@@ -20,19 +16,27 @@ h2
 	color:black;
 }
 
+h2
+{
+	font-style:normal;
+	font-size:18px;
+	text-align:left;
+	font-weight:bold;
+	color:black;
+}
+
 h3
 {
-	font-family:"Arial", "Helvetica", "sans serif";
 	font-style:normal;
 	font-size:16px;
 	text-align:left;
-	font-weight:normal;
+	font-weight:bold;
 	color:black;
+	/*text-decoration: underline;*/
 }
 
 p
 {
-	font-family:"Arial", "Helvetica", "sans serif";
 	font-style:normal;
 	font-size:14px;
 	text-align:left;
@@ -42,7 +46,6 @@ p
 
 li
 {
-	font-family:"Arial", "Helvetica", "sans serif";
 	font-style:normal;
 	font-size:14px;
 	text-align:left;
@@ -93,9 +96,8 @@ li
 {
 	width:100%;
 	color:white;
-	font-family:"Arial", "Helvetica", "sans serif";
 	font-style:normal;
-	font-size:16px;
+	font-size:20px;
 	text-align:center;
 	font-weight:bold;
 	text-decoration:none;
@@ -139,14 +141,33 @@ li
 
 .nav-markers td
 {
-	height:6px;
+	height:7px;
 }
 
 /* navigation markers are hidden by default */
 #nav-marker1, #nav-marker2, #nav-marker3, #nav-marker4
 {
-	background:url(nav-marker.png) no-repeat top center;
+	background:url(nav-marker.png) no-repeat bottom center;
 	visibility:hidden;
+}
+
+/* theme switch */
+
+.theme-switcher
+{
+	clear:both;
+	width:100%;
+	background-color:white;
+	color:black;
+	font-style:normal;
+	font-size:10px;
+	text-align:left;
+	font-weight:normal;
+}
+
+.theme-switcher a
+{
+	text-decoration:none;
 }
 
 /* left side (content) and right side (aside) of the page */
@@ -183,14 +204,19 @@ li
 	padding: 20px 30px 5px;
 	color: black; 
 	font-weight: bold; 
-	font-size: 1.2em; 
-	line-height: 1em;
+	/*font-size: 1.2em; */
+	/*line-height: 1em; */
 }
 
 .aside-item-body, .content-item-body
 {
 	margin: 0;
 	padding: 5px 30px 31px;
+}
+
+.aside-item-body p, .content-item-body p
+{
+	text-align:justify;
 }
 
 .aside .aside-item, .aside .content-item
@@ -201,6 +227,117 @@ li
 .content .aside-item, .content .content-item
 {
 	width:640px;
+}
+
+/* unvisited link */
+.aside-item-body a:link, .content-item-body a:link
+{
+	color:blue;
+}
+
+/* visited link */ 
+.aside-item-body a:visited, .content-item-body a:visited
+{
+	color:blue;
+}
+
+/* mouse over link */  
+.aside-item-body a:hover, .content-item-body a:hover
+{
+	color:red;
+}
+
+/* selected link */
+.aside-item-body a:active, .content-item-body a:active
+{
+	color:red;
+}
+
+/* news table */
+
+.news-table
+{
+	width:100%;
+	font-style:normal;
+	font-weight:normal;
+	font-size:14px;
+}
+
+.news-table td
+{
+	padding:14px 0px 14px 0px;
+	color:black;
+}
+
+.news-date
+{
+	width:25%;
+	text-align:left;
+}
+
+.content .news-date
+{
+	width:25%;
+}
+
+.aside .news-date
+{
+	width:42%;
+}
+
+.news-description
+{
+	text-align:justify;
+}
+
+.content .news-description
+{
+	width:75%;
+}
+
+.aside .news-description
+{
+	width:58%;
+}
+
+/* directory table */
+
+.directory-table
+{
+	width:100%;
+}
+
+.directory-table td
+{
+	padding:14px 0px 14px 0px;
+}
+
+.directory-link a
+{
+	display:block;
+	width:100%;
+	height:100%;
+	text-decoration:none;
+}
+
+.directory-link
+{
+	width:25%;
+	font-style:normal;
+	font-size:18px;
+	text-align:center;
+	font-weight:bold;
+	color:black;
+}
+
+.directory-description
+{
+	width:75%;
+	font-style:normal;
+	font-size:14px;
+	text-align:justify;
+	font-weight:normal;
+	color:black;
 }
 
 /* separator */
@@ -216,7 +353,6 @@ li
 
 .content-item-body li, .aside-item-body li
 {
-/*	padding-left: 0px;*/
 	line-height:1.4em;
 }
 
@@ -224,7 +360,6 @@ li
 
 .download-file, .download-pdf, .download-video, .online-document
 {
-	font-family:"Arial", "Helvetica", "sans serif";
 	font-style:normal;
 	font-size:14px;
 	text-align:left;
@@ -260,33 +395,12 @@ li
 	height:16px;
 }
 
-/* theme switch */
-
-.theme-switcher
-{
-	clear:both;
-	width:100%;
-	background-color:white;
-	color:black;
-	font-family:"Arial", "Helvetica", "sans serif";
-	font-style:normal;
-	font-size:10px;
-	text-align:left;
-	font-weight:normal;
-}
-
-.theme-switcher a
-{
-	text-decoration:none;
-}
-
 /* page footer */
 
 .footer
 {
 	clear:both;
 	width:100%;
-	font-family:"Arial", "Helvetica", "sans serif";
 	font-style:normal;
 	font-size:10px;
 	text-align:center;
@@ -299,4 +413,11 @@ li
 {
 	color:white;
 	text-decoration:none;
+}
+
+/* thumbnail */
+
+.thumbnail
+{
+	width:158px;
 }
