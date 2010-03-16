@@ -2,6 +2,7 @@ cmake_minimum_required ( VERSION 2.8 )
 project ( unisim_arm926ejs )
 include ( CheckIncludeFileCXX )
 include ( CheckIncludeFile )
+set ( CMAKE_BINARY_DIR ${CMAKE_BINARY_DIR}/build )
 include ( ${CMAKE_SOURCE_DIR}/cmake/FindOSCISystemC.cmake )
 include ( ${CMAKE_SOURCE_DIR}/cmake/UnisimInclude.cmake )
 
@@ -42,7 +43,12 @@ endforeach ( dir )
 
 include_directories ( ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR} ${OSCI_SYSTEMC_INCLUDE_DIR} ${OSCI_TLM2_INCLUDE_DIR})
 
-file ( MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/bin )
+file ( MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/../bin )
+file ( MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/../resources/gdb_server )
+file ( 
+	COPY 
+		${CMAKE_SOURCE_DIR}/unisim/service/debug/gdb_server/gdb_armv4l.xml 
+	DESTINATION ${CMAKE_BINARY_DIR}/../resources/gdb_server )
 
 add_executable ( arm926ejs_emu 
 	${CMAKE_SOURCE_DIR}/main.cc )
@@ -63,15 +69,13 @@ target_link_libraries ( arm926ejs_emu
 	)
 set_target_properties ( arm926ejs_emu
 	PROPERTIES
-		RUNTIME_OUTPUT_DIRECTORY bin )
-
-file ( MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/resources )
+		RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/../bin )
 
 add_custom_command (
 	OUTPUT
-		${CMAKE_BINARY_DIR}/resources/default-config.xml
+		${CMAKE_BINARY_DIR}/../resources/default-config.xml
 	COMMAND
-		bin/arm926ejs_emu -g ${CMAKE_BINARY_DIR}/resources/default-config.xml
+		${CMAKE_BINARY_DIR}/../bin/arm926ejs_emu -g ${CMAKE_BINARY_DIR}/../resources/default-config.xml
 	COMMENT
 		"Creating simulator default configuration in \"resources/default-config.xml\""
 	)
@@ -79,7 +83,7 @@ add_custom_command (
 add_custom_target ( arm926ejs_emu__resources
 	ALL
 	DEPENDS
-		${CMAKE_BINARY_DIR}/resources/default-config.xml
+		${CMAKE_BINARY_DIR}/../resources/default-config.xml
 	)
 
 add_dependencies ( arm926ejs_emu__resources

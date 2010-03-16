@@ -62,14 +62,14 @@ set_source_files_properties (
 		HEADER_FILE_ONLY TRUE
 	)
 
-file ( MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/resources/gdb_server )
-file ( 
-	COPY 
-		${CMAKE_SOURCE_DIR}/unisim/service/debug/gdb_server/gdb_armv5b.xml 
-		${CMAKE_SOURCE_DIR}/unisim/service/debug/gdb_server/gdb_armv4l.xml 
-		${CMAKE_SOURCE_DIR}/unisim/service/debug/gdb_server/gdb_hcs12x.xml 
-		${CMAKE_SOURCE_DIR}/unisim/service/debug/gdb_server/gdb_powerpc.xml 
-	DESTINATION ${CMAKE_BINARY_DIR}/resources/gdb_server )
+# file ( MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/resources/gdb_server )
+# file ( 
+# 	COPY 
+# 		${CMAKE_SOURCE_DIR}/unisim/service/debug/gdb_server/gdb_armv5b.xml 
+# 		${CMAKE_SOURCE_DIR}/unisim/service/debug/gdb_server/gdb_armv4l.xml 
+# 		${CMAKE_SOURCE_DIR}/unisim/service/debug/gdb_server/gdb_hcs12x.xml 
+# 		${CMAKE_SOURCE_DIR}/unisim/service/debug/gdb_server/gdb_powerpc.xml 
+# 	DESTINATION ${CMAKE_BINARY_DIR}/resources/gdb_server )
 	
 message ( STATUS "Checking unisim::service::debug::gdb_server - done" )
 
