@@ -19,6 +19,8 @@ echo "Using theme ${DEFAULT_THEME} as default theme"
 rm -rf site
 mkdir -p site
 mkdir -p site/images
+mkdir -p site/thumbs
+mkdir -p site/glyph
 mkdir -p site/downloads
 
 
@@ -50,6 +52,89 @@ for NEWS in ${NEWS_LIST}; do
 	cat news/${NEWS} > ${WHATS_NEW}
 done
 
+GLYPHES=`cd glyph; ls *.png *.ico`
+
+for GLYPH in ${GLYPHES}; do
+	if [ -f "glyph/${GLYPH}" ]; then
+		echo "Copying glyph/${GLYPH}"
+		cp "glyph/${GLYPH}" "site/glyph/${GLYPH}"
+	fi
+done
+
+IMAGES=`cd images; ls *.png`
+
+GALLERY=content/gallery/gallery.html
+
+printf "" > ${GALLERY}
+
+for IMAGE in ${IMAGES}; do
+	if [ -f "images/${IMAGE}" ]; then
+		echo "Copying images/${IMAGE}"
+		cp "images/${IMAGE}" "site/images/${IMAGE}"
+		convert -thumbnail 158 "site/images/${IMAGE}" "site/thumbs/${IMAGE}"
+		printf "<a href=\`IMAGES/${IMAGE}\`><img class=\"thumbnail\" src=\`THUMBS/${IMAGE}\` alt=\"${IMAGE} thumbnail\"></a>" >> ${GALLERY}
+	fi
+done
+
+IMAGES_GALLERY=content/gallery/gallery.html
+IMAGES_GALLERY_COL=1
+
+echo "Generating image gallery in ${IMAGE_GALLERY}..."
+
+printf "<table class=\"images-gallery\">\n" > ${IMAGES_GALLERY}
+
+for IMAGE in ${IMAGES}; do
+	if [ -f "images/${IMAGE}" ]; then
+		echo "Copying images/${IMAGE}"
+		mkdir -p site/images/`dirname "${IMAGE}"`
+		cp "images/${IMAGE}" "site/images/${IMAGE}"
+
+		echo "Generating gallery for image ${IMAGE}..."
+		IMAGE_NAME=`echo ${IMAGE} | sed -e 's/\..*$//g'`
+		CONTENT_DIR=content/gallery-${IMAGE_NAME}
+ 		mkdir -p "${CONTENT_DIR}"
+		printf "Screenshot [${IMAGE}]" > "${CONTENT_DIR}/title.txt"
+ 		printf "\t<div class=\"image\">" > "${CONTENT_DIR}/content.html"
+ 		printf "\t\t\t<a href=\"gallery.html\"><img src=\`IMAGES/${IMAGE}\`></a>\n" >> "${CONTENT_DIR}/content.html"
+ 		printf "\t\t</div>" >> "${CONTENT_DIR}/content.html"
+
+		printf ".aside\n" > "${CONTENT_DIR}/style.css"
+		printf "{\n" >> "${CONTENT_DIR}/style.css"
+		printf "\tdisplay:none;\n" >> "${CONTENT_DIR}/style.css"
+		printf "}\n" >> "${CONTENT_DIR}/style.css"
+
+		echo "Generating thumbnail for image ${IMAGE}..."
+		convert -thumbnail 158 "site/images/${IMAGE}" "site/thumbs/${IMAGE}"
+		if [ ${IMAGES_GALLERY_COL} -eq 1 ]; then
+			printf "\t<tr>\n" >> ${IMAGES_GALLERY}
+		fi
+		printf "\t\t<td>\n" >> ${IMAGES_GALLERY} 
+		printf "\t\t\t<a href=\"gallery-${IMAGE_NAME}.html\"><img src=\`THUMBS/${IMAGE}\` alt=\"${IMAGE} thumbnail\"></a>\n" >> ${IMAGES_GALLERY}
+		printf "\t\t\t<p>${IMAGE}</p>\n" >> ${IMAGES_GALLERY}
+		printf "\t\t</td>\n" >> ${IMAGES_GALLERY} 
+		IMAGES_GALLERY_COL=$((${IMAGES_GALLERY_COL} + 1))
+		if [ ${IMAGES_GALLERY_COL} -gt 3 ]; then
+			IMAGES_GALLERY_COL=1
+			printf "\t\t</td>\n" >> ${IMAGES_GALLERY} 
+		fi
+	fi
+done
+
+if [ ${IMAGES_GALLERY_COL} -le 3 ]; then
+	printf "\t\t</td>\n" >> ${IMAGES_GALLERY} 
+fi
+printf "</table>\n" >> ${IMAGES_GALLERY}
+
+
+DOWNLOADS=`cd downloads; find . \( -name "*.tar.gz" -o -name "*.tar.bz2" -o -name "*.zip" -o -name "*.exe" -o -name "*.pdf" \)`
+
+for DOWNLOAD in ${DOWNLOAD}; do
+	if [ -f "downloads/${DOWNLOAD}" ]; then
+		echo "Copying downloads/${DOWNLOAD}"
+		mkdir -p site/download/`dirname "${DOWNLOAD}"`
+		cp "downloads/${DOWNLOAD}" "site/downloads/${DOWNLOAD}"
+	fi
+done
 
 THEMES=`cd themes; ls`
 
@@ -113,7 +198,7 @@ for THEME in ${THEMES}; do
 			fi
 
 			PAGE_TITLE=`cat content/${CONTENT_DIR}/title.txt`
-			
+
 			cpp \
 				"-DPAGE_TITLE=${PAGE_TITLE}" \
 				"-DBASE_STYLE=<link rel=\"stylesheet\" href=\"${SITE_PREFIX}style/base.css\" type=\"text/css\">" \
@@ -121,6 +206,8 @@ for THEME in ${THEMES}; do
 				"-DCONTENT_STYLE=${CONTENT_STYLE}" \
 				"-DTHEME_NAV=${THEME_NAV}" \
 				"-DIMAGES=${SITE_PREFIX}images" \
+				"-DGLYPH=${SITE_PREFIX}glyph" \
+				"-DTHUMBS=${SITE_PREFIX}thumbs" \
 				"-DDOWNLOADS=${SITE_PREFIX}downloads" \
 				-P \
 				-Itemplate \
@@ -132,25 +219,5 @@ done
 
 echo "Copying base stylesheet..."
 cp template/base.css site/style/base.css || exit 1
-
-IMAGES=`cd images; find . \( -name "*.png" -o -name "*.ico" \)`
-
-for IMAGE in ${IMAGES}; do
-	if [ -f "images/${IMAGE}" ]; then
-		echo "Copying images/${IMAGE}"
-		mkdir -p site/images/`dirname "${IMAGE}"`
-		cp "images/${IMAGE}" "site/images/${IMAGE}"
-	fi
-done
-
-DOWNLOADS=`cd downloads; find . \( -name "*.tar.gz" -o -name "*.tar.bz2" -o -name "*.zip" -o -name "*.exe" -o -name "*.pdf" \)`
-
-for DOWNLOAD in ${DOWNLOAD}; do
-	if [ -f "downloads/${DOWNLOAD}" ]; then
-		echo "Copying downloads/${DOWNLOAD}"
-		mkdir -p site/download/`dirname "${DOWNLOAD}"`
-		cp "downloads/${DOWNLOAD}" "site/downloads/${DOWNLOAD}"
-	fi
-done
 
 echo "The web site is in ${PWD}/site"

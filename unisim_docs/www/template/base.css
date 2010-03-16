@@ -415,6 +415,54 @@ li
 	text-decoration:none;
 }
 
+/* images gallery */
+
+.images-gallery
+{
+	width:100%;
+}
+
+.images-gallery td
+{
+	padding:20px 0px 0px 0px;
+	width:33%;
+}
+
+.images-gallery a
+{
+	display:block;
+	width:100%;
+	height:100%;
+	text-decoration:none;
+}
+
+.images-gallery img
+{
+	width:158px;
+	border:0;
+}
+
+.images-gallery p
+{
+	text-align:center;
+}
+
+/* image */
+
+.image a
+{
+	display:block;
+	width:100%;
+	height:100%;
+	text-decoration:none;
+}
+
+.image img
+{
+	width:1024px;
+	border:0;
+}
+
 /* thumbnail */
 
 .thumbnail
