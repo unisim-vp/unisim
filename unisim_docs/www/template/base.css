@@ -402,9 +402,9 @@ li
 	clear:both;
 	width:100%;
 	font-style:normal;
-	font-size:10px;
+	font-size:12px;
 	text-align:center;
-	font-weight:normal;
+	font-weight:bold;
 	background-color:black;
 	color:white;
 }
@@ -413,6 +413,11 @@ li
 {
 	color:white;
 	text-decoration:none;
+}
+
+.footer a:hover
+{
+	background-color:#aa0000;
 }
 
 /* images gallery */
@@ -461,11 +466,4 @@ li
 {
 	width:1024px;
 	border:0;
-}
-
-/* thumbnail */
-
-.thumbnail
-{
-	width:158px;
 }
