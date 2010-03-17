@@ -467,3 +467,11 @@ li
 	width:1024px;
 	border:0;
 }
+
+/* address */
+
+.address
+{
+    margin: 0em 0em 0em 2em;
+    padding: 0;
+}

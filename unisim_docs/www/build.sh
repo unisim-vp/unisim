@@ -72,7 +72,7 @@ for IMAGE in ${IMAGES}; do
 		echo "Copying images/${IMAGE}"
 		cp "images/${IMAGE}" "site/images/${IMAGE}"
 		convert -thumbnail 158 "site/images/${IMAGE}" "site/thumbs/${IMAGE}"
-		printf "<a href=\`IMAGES/${IMAGE}\`><img class=\"thumbnail\" src=\`THUMBS/${IMAGE}\` alt=\"${IMAGE} thumbnail\"></a>" >> ${GALLERY}
+		printf "<a href=\`\`IMAGES/${IMAGE}\`\`><img src=\`\`THUMBS/${IMAGE}\`\` alt=\"${IMAGE} thumbnail\"></a>" >> ${GALLERY}
 	fi
 done
 
@@ -95,7 +95,7 @@ for IMAGE in ${IMAGES}; do
  		mkdir -p "${CONTENT_DIR}"
 		printf "Screenshot [${IMAGE}]" > "${CONTENT_DIR}/title.txt"
  		printf "\t<div class=\"image\">" > "${CONTENT_DIR}/content.html"
- 		printf "\t\t\t<a href=\"gallery.html\"><img src=\`IMAGES/${IMAGE}\`></a>\n" >> "${CONTENT_DIR}/content.html"
+ 		printf "\t\t\t<a href=\"gallery.html\"><img src=\`\`IMAGES/${IMAGE}\`\` alt=\"${IMAGE}\"></a>\n" >> "${CONTENT_DIR}/content.html"
  		printf "\t\t</div>" >> "${CONTENT_DIR}/content.html"
 
 		printf ".aside\n" > "${CONTENT_DIR}/style.css"
@@ -109,19 +109,21 @@ for IMAGE in ${IMAGES}; do
 			printf "\t<tr>\n" >> ${IMAGES_GALLERY}
 		fi
 		printf "\t\t<td>\n" >> ${IMAGES_GALLERY} 
-		printf "\t\t\t<a href=\"gallery-${IMAGE_NAME}.html\"><img src=\`THUMBS/${IMAGE}\` alt=\"${IMAGE} thumbnail\"></a>\n" >> ${IMAGES_GALLERY}
+		printf "\t\t\t<a href=\"gallery-${IMAGE_NAME}.html\"><img src=\`\`THUMBS/${IMAGE}\`\` alt=\"${IMAGE} thumbnail\"></a>\n" >> ${IMAGES_GALLERY}
 		printf "\t\t\t<p>${IMAGE}</p>\n" >> ${IMAGES_GALLERY}
 		printf "\t\t</td>\n" >> ${IMAGES_GALLERY} 
 		IMAGES_GALLERY_COL=$((${IMAGES_GALLERY_COL} + 1))
 		if [ ${IMAGES_GALLERY_COL} -gt 3 ]; then
 			IMAGES_GALLERY_COL=1
-			printf "\t\t</td>\n" >> ${IMAGES_GALLERY} 
+			printf "\t\t</tr>\n" >> ${IMAGES_GALLERY} 
 		fi
 	fi
 done
 
-if [ ${IMAGES_GALLERY_COL} -le 3 ]; then
-	printf "\t\t</td>\n" >> ${IMAGES_GALLERY} 
+if ! [ ${IMAGES_GALLERY_COL} -eq 1 ]; then
+	if [ ${IMAGES_GALLERY_COL} -le 3 ]; then
+		printf "\t\t</tr>\n" >> ${IMAGES_GALLERY} 
+	fi
 fi
 printf "</table>\n" >> ${IMAGES_GALLERY}
 
@@ -212,12 +214,15 @@ for THEME in ${THEMES}; do
 				-P \
 				-Itemplate \
 				-Icontent/${CONTENT_DIR} \
-				template/template.html | sed "s/\`/\'/g"> site/${THEME_ROOT}/${CONTENT_DIR}.html || exit -1
+				template/template.html | sed -e "s/\`\`/\"/g" -e "s/\`/\'/g" > site/${THEME_ROOT}/${CONTENT_DIR}.html || exit -1
 		done
 	fi
 done
 
 echo "Copying base stylesheet..."
 cp template/base.css site/style/base.css || exit 1
+
+echo "Installing .htaccess..."
+echo "deny from all" > site/.htaccess
 
 echo "The web site is in ${PWD}/site"
