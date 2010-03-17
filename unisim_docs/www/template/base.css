@@ -2,7 +2,12 @@
 
 body
 {
-	font-family:"Arial", "Helvetica", "sans-serif";
+	font-family: Arial, Helvetica, sans-serif;
+	font-style:normal;
+	font-size:14px;
+	text-align:left;
+	font-weight:normal;
+	color:black;
 }
 
 /* text style */
@@ -32,11 +37,20 @@ h3
 	text-align:left;
 	font-weight:bold;
 	color:black;
-	/*text-decoration: underline;*/
 }
 
 p
 {
+	font-style:normal;
+	font-size:14px;
+	text-align:left;
+	font-weight:normal;
+	color:black;
+}
+
+pre
+{
+	font-family:Courier, monospace;
 	font-style:normal;
 	font-size:14px;
 	text-align:left;
@@ -358,7 +372,7 @@ li
 
 /* download */
 
-.download-file, .download-pdf, .download-video, .online-document
+.download-file, .download-pdf, .download-video, .online-document, .download-win, .download-linux, .download-macosx
 {
 	font-style:normal;
 	font-size:14px;
@@ -391,6 +405,27 @@ li
 .online-document
 {
 	background: url(online_document_icon.png) no-repeat center left;
+	padding-left: 18px;
+	height:16px;
+}
+
+.download-win
+{
+	background: url(win.png) no-repeat center left;
+	padding-left: 18px;
+	height:16px;
+}
+
+.download-linux
+{
+	background: url(tux.png) no-repeat center left;
+	padding-left: 18px;
+	height:16px;
+}
+
+.download-macosx
+{
+	background: url(macosx.png) no-repeat center left;
 	padding-left: 18px;
 	height:16px;
 }
@@ -468,10 +503,24 @@ li
 	border:0;
 }
 
-/* address */
+/* addresses */
 
 .address
 {
-    margin: 0em 0em 0em 2em;
-    padding: 0;
+	font-style:italic;
+}
+
+.address-block
+{
+    margin:0em 0em 0em 2em;
+    padding:0;
+	font-style:italic;
+}
+
+/* glyph */
+
+.glyph
+{ 
+    vertical-align: bottom; 
+    margin-left: 1px; 
 }

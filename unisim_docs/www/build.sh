@@ -115,14 +115,14 @@ for IMAGE in ${IMAGES}; do
 		IMAGES_GALLERY_COL=$((${IMAGES_GALLERY_COL} + 1))
 		if [ ${IMAGES_GALLERY_COL} -gt 3 ]; then
 			IMAGES_GALLERY_COL=1
-			printf "\t\t</tr>\n" >> ${IMAGES_GALLERY} 
+			printf "\t</tr>\n" >> ${IMAGES_GALLERY} 
 		fi
 	fi
 done
 
 if ! [ ${IMAGES_GALLERY_COL} -eq 1 ]; then
 	if [ ${IMAGES_GALLERY_COL} -le 3 ]; then
-		printf "\t\t</tr>\n" >> ${IMAGES_GALLERY} 
+		printf "\t</tr>\n" >> ${IMAGES_GALLERY} 
 	fi
 fi
 printf "</table>\n" >> ${IMAGES_GALLERY}
@@ -214,7 +214,7 @@ for THEME in ${THEMES}; do
 				-P \
 				-Itemplate \
 				-Icontent/${CONTENT_DIR} \
-				template/template.html | sed -e "s/\`\`/\"/g" -e "s/\`/\'/g" > site/${THEME_ROOT}/${CONTENT_DIR}.html || exit -1
+				template/template.html | sed -e "s/\\\\doubleshash/\/\//g" -e "s/\`\`/\"/g" -e "s/\`/\'/g" > site/${THEME_ROOT}/${CONTENT_DIR}.html || exit -1
 		done
 	fi
 done
