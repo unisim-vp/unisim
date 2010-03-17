@@ -54,6 +54,7 @@
 #include "unisim/service/loader/elf_loader/elf_loader.tcc"
 #include "unisim/service/loader/linux_loader/linux_loader.hh"
 #include "unisim/service/os/linux_os/linux_os_32/linux_os_32.hh"
+#include "config.hh"
 
 /* possible configurations for the arm9tdmi:
 - unisim::component::cxx::processor::arm::ARM9TDMI_NoCache_DebugConfig
@@ -171,7 +172,18 @@ void help(char *prog_name) {
 // 	
 // }
 
+void ShowVersion()
+{
+	cerr << "UNISIM ARM926EJS User Level Simulator "
+		<< "v" << SIM_VERSION_MAJOR
+		<< "." << SIM_VERSION_MINOR
+		<< "-" << SIM_VERSION_PATCH
+		<< " (" << SIM_VERSION_CODENAME << ")" << endl;
+	cerr << "Author: " << SIM_AUTHOR << endl;
+}
+
 int main(int argc, char *argv[], char **envp) {
+	ShowVersion();
 //	LaunchPython();
 
 #ifdef WIN32

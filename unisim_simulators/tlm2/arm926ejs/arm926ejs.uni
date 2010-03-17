@@ -5,6 +5,7 @@
 		<path>tlm2/arm926ejs</path>
 		<files>
 			<file>main.cc</file>
+			<file>config.hh.in</file>
 			<file>CMakeLists.txt</file>
 		</files>
 		<depends>
