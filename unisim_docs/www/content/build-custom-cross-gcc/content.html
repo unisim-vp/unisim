@@ -1,0 +1,21 @@
+<div class="content-item">
+	<div class="content-item-title"><h2>Build a custom GCC cross compiler using crosstool-NG</h2></div>
+	<div class="content-item-body">
+		<p>
+			Prerequisite: crosstool-NG should be preliminarly installed, see tutorial <a class="online-document" href="how-to-build-cross-gcc.html">How to build a GCC cross compiler ?</a>.
+		</p>
+		<h3>1. Customize your own gcc cross compiler build</h3>
+		<pre>
+			$ ./ct-ng menuconfig
+		</pre>
+
+		<p>
+			This will create a file named ".config" within the crosstool-NG directory.
+		</p>
+
+		<h3>2. Build your custom gcc cross compiler</h3>
+		<pre>
+			$ ./ct-ng build
+		</pre>
+	</div>
+</div>

@@ -211,6 +211,7 @@ for THEME in ${THEMES}; do
 				"-DGLYPH=${SITE_PREFIX}glyph" \
 				"-DTHUMBS=${SITE_PREFIX}thumbs" \
 				"-DDOWNLOADS=${SITE_PREFIX}downloads" \
+				-undef \
 				-P \
 				-Itemplate \
 				-Icontent/${CONTENT_DIR} \
