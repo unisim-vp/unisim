@@ -427,8 +427,9 @@ li
 
 .gallery td
 {
-	padding:10px 10px 10px 10px;
+	/*padding:2px 2px 2px 2px;*/
 	width:33%;
+	text-align:center;
 }
 
 .gallery a
@@ -441,7 +442,7 @@ li
 
 .gallery img
 {
-	width:144px;
+	width:158px;
 	border:0;
 }
 
