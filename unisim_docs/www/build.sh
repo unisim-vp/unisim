@@ -16,41 +16,88 @@ fi
 
 echo "Using theme ${DEFAULT_THEME} as default theme"
 
+# clean everything before starting
 rm -rf site
+rm -rf content/*-view-*
+
+# create web site directory structure
 mkdir -p site
+mkdir -p site/style
 mkdir -p site/images
 mkdir -p site/thumbs
 mkdir -p site/glyph
 mkdir -p site/downloads
 
+###############################################################################
+#                                     NEWS                                    #
+###############################################################################
 
-OVERALL_NEWS=content/index/news.html
+MAX_HOME_NEWS=10
+
+# list all materials
+NEWS_LIST=`cd news; ls -r *.html`
+
+# define generated files
+HOME_NEWS=content/index/news.html
+ALL_NEWS=content/news/news.html
 WHATS_NEW=template/whats_new.html
-NEWS_LIST=`cd news; ls *.html`
+rm -f ${HOME_NEWS}
+rm -f ${ALL_NEWS}
+rm -f ${WHATS_NEW}
 
 declare -a MONTH=("January" "February" "March" "April" "May" "June" "July" "August" "September" "October" "November" "December")
 
-echo "Building ${OVERALL_NEWS} and ${WHATS_NEW}..."
+echo "Building ${ALL_NEWS} and ${WHATS_NEW}..."
 
-printf "" > ${OVERALL_NEWS}
+printf "" > ${ALL_NEWS}
 
+NUM_NEWS=0
 for NEWS in ${NEWS_LIST}; do
-	printf "\t<tr>\n" >> ${OVERALL_NEWS}
-	printf "\t\t<td class=\"news-date\">\n" >> ${OVERALL_NEWS}
+	printf '\t<tr>\n' >> ${ALL_NEWS}
+	printf '\t\t<td class="news-date">\n' >> ${ALL_NEWS}
 	YEAR=`printf ${NEWS} | cut -f 1 -d -`
 	MONTH_NUMBER=`printf ${NEWS} | cut -f 2 -d - | sed 's/0*//'`
 	MONTH_NUMBER=$((${MONTH_NUMBER} - 1))
 	MONTH_NAME=${MONTH[${MONTH_NUMBER}]}
 	DAY_NUMBER=`printf ${NEWS} | cut -f 3 -d - | cut -f 1 -d .`
-	printf "\t\t\t${MONTH_NAME} ${DAY_NUMBER}, ${YEAR}\n" >> ${OVERALL_NEWS}
-	printf "\t\t</td>\n" >> ${OVERALL_NEWS}
-	printf "\t\t<td class=\"news-description\">\n" >> ${OVERALL_NEWS}
-	printf "\t\t\t" >> ${OVERALL_NEWS}
-	cat news/${NEWS} >> ${OVERALL_NEWS}
-	printf "\n\t\t</td>\n" >> ${OVERALL_NEWS}
-	printf "\t</tr>\n" >> ${OVERALL_NEWS}
-	cat news/${NEWS} > ${WHATS_NEW}
+	printf "\t\t\t${MONTH_NAME} ${DAY_NUMBER}, ${YEAR}\n" >> ${ALL_NEWS}
+	printf "\t\t</td>\n" >> ${ALL_NEWS}
+	printf "\t\t<td class=\"news-description\">\n" >> ${ALL_NEWS}
+	printf "\t\t\t" >> ${ALL_NEWS}
+	cat news/${NEWS} >> ${ALL_NEWS}
+	printf "\n\t\t</td>\n" >> ${ALL_NEWS}
+	printf "\t</tr>\n" >> ${ALL_NEWS}
+	if ! [ -f ${WHATS_NEW} ]; then
+		cp news/${NEWS} ${WHATS_NEW}
+	fi
+	NUM_NEWS=$((${NUM_NEWS} + 1))
+	if [ ${NUM_NEWS} -eq ${MAX_HOME_NEWS} ]; then
+		cp ${ALL_NEWS} ${HOME_NEWS}
+	fi
 done
+
+if [ ${NUM_NEWS} -lt ${MAX_HOME_NEWS} ]; then
+	cp ${ALL_NEWS} ${HOME_NEWS}
+fi
+
+###############################################################################
+#                                    Site map                                 #
+###############################################################################
+
+CONTENTS=`cd content; ls`
+SITE_MAP=content/sitemap/sitemap.html
+
+printf "" > ${SITE_MAP}
+for CONTENT_DIR in ${CONTENTS}; do
+	CONTENT_TITLE="`cat content/${CONTENT_DIR}/title.txt`"
+	if ! [ "${CONTENT_DIR}" = "sitemap" ]; then
+		printf "<p><a class=\"online-document\" href=${CONTENT_DIR}.html>${CONTENT_TITLE}</a></p>\n" >> ${SITE_MAP}
+	fi
+done
+
+###############################################################################
+#                                    GLYPHES                                  #
+###############################################################################
 
 GLYPHES=`cd glyph; ls *.png *.ico`
 
@@ -61,72 +108,119 @@ for GLYPH in ${GLYPHES}; do
 	fi
 done
 
+###############################################################################
+#                                   IMAGES                                    #
+###############################################################################
+
+# list all materials
 IMAGES=`cd images; ls *.png`
-
-GALLERY=content/gallery/gallery.html
-
-printf "" > ${GALLERY}
-
-for IMAGE in ${IMAGES}; do
-	if [ -f "images/${IMAGE}" ]; then
-		echo "Copying images/${IMAGE}"
-		cp "images/${IMAGE}" "site/images/${IMAGE}"
-		convert -thumbnail 158 "site/images/${IMAGE}" "site/thumbs/${IMAGE}"
-		printf "<a href=\`\`IMAGES/${IMAGE}\`\`><img src=\`\`THUMBS/${IMAGE}\`\` alt=\"${IMAGE} thumbnail\"></a>" >> ${GALLERY}
-	fi
-done
-
-IMAGES_GALLERY=content/gallery/gallery.html
-IMAGES_GALLERY_COL=1
-
-echo "Generating image gallery in ${IMAGE_GALLERY}..."
-
-printf "<table class=\"images-gallery\">\n" > ${IMAGES_GALLERY}
 
 for IMAGE in ${IMAGES}; do
 	if [ -f "images/${IMAGE}" ]; then
 		echo "Copying images/${IMAGE}"
 		mkdir -p site/images/`dirname "${IMAGE}"`
 		cp "images/${IMAGE}" "site/images/${IMAGE}"
+	fi
+done
 
-		echo "Generating gallery for image ${IMAGE}..."
-		IMAGE_NAME=`echo ${IMAGE} | sed -e 's/\..*$//g'`
-		CONTENT_DIR=content/gallery-${IMAGE_NAME}
- 		mkdir -p "${CONTENT_DIR}"
-		printf "Screenshot [${IMAGE}]" > "${CONTENT_DIR}/title.txt"
- 		printf "\t<div class=\"image\">" > "${CONTENT_DIR}/content.html"
- 		printf "\t\t\t<a href=\"gallery.html\"><img src=\`\`IMAGES/${IMAGE}\`\` alt=\"${IMAGE}\"></a>\n" >> "${CONTENT_DIR}/content.html"
- 		printf "\t\t</div>" >> "${CONTENT_DIR}/content.html"
+###############################################################################
+#                                    THUMBS                                   #
+###############################################################################
 
-		printf ".aside\n" > "${CONTENT_DIR}/style.css"
-		printf "{\n" >> "${CONTENT_DIR}/style.css"
-		printf "\tdisplay:none;\n" >> "${CONTENT_DIR}/style.css"
-		printf "}\n" >> "${CONTENT_DIR}/style.css"
-
+for IMAGE in ${IMAGES}; do
+	if [ -f "images/${IMAGE}" ]; then
 		echo "Generating thumbnail for image ${IMAGE}..."
-		convert -thumbnail 158 "site/images/${IMAGE}" "site/thumbs/${IMAGE}"
-		if [ ${IMAGES_GALLERY_COL} -eq 1 ]; then
-			printf "\t<tr>\n" >> ${IMAGES_GALLERY}
+		convert -thumbnail 256 "images/${IMAGE}" "site/thumbs/${IMAGE}"
+	fi
+done
+
+###############################################################################
+#                                    GALLERY                                  #
+###############################################################################
+
+GALLERY=content/gallery/gallery.html
+rm -f ${GALLERY}
+
+echo "Generating image gallery in ${GALLERY}..."
+
+printf "" > ${GALLERY}
+printf "<table class=\"gallery\">\n" > ${GALLERY}
+
+GALLERY_COL=1
+for IMAGE in ${IMAGES}; do
+	if [ -f "images/${IMAGE}" ]; then
+		echo "Adding image ${IMAGE} to gallery..."
+		IMAGE_NAME=`echo ${IMAGE} | sed -e 's/\..*$//g'`
+
+		if [ ${GALLERY_COL} -eq 1 ]; then
+			printf "\t<tr>\n" >> ${GALLERY}
 		fi
-		printf "\t\t<td>\n" >> ${IMAGES_GALLERY} 
-		printf "\t\t\t<a href=\"gallery-${IMAGE_NAME}.html\"><img src=\`\`THUMBS/${IMAGE}\`\` alt=\"${IMAGE} thumbnail\"></a>\n" >> ${IMAGES_GALLERY}
-		printf "\t\t\t<p>${IMAGE}</p>\n" >> ${IMAGES_GALLERY}
-		printf "\t\t</td>\n" >> ${IMAGES_GALLERY} 
-		IMAGES_GALLERY_COL=$((${IMAGES_GALLERY_COL} + 1))
-		if [ ${IMAGES_GALLERY_COL} -gt 3 ]; then
-			IMAGES_GALLERY_COL=1
-			printf "\t</tr>\n" >> ${IMAGES_GALLERY} 
+		printf "\t\t<td>\n" >> ${GALLERY} 
+		printf "\t\t\t<a href=\"gallery-view-${IMAGE_NAME}.html\"><img src=\`\`THUMBS/${IMAGE}\`\` alt=\"${IMAGE} thumbnail\"></a>\n" >> ${GALLERY}
+		printf "\t\t</td>\n" >> ${GALLERY} 
+		GALLERY_COL=$((${GALLERY_COL} + 1))
+		if [ ${GALLERY_COL} -gt 3 ]; then
+			GALLERY_COL=1
+			printf "\t</tr>\n" >> ${GALLERY} 
 		fi
 	fi
 done
 
-if ! [ ${IMAGES_GALLERY_COL} -eq 1 ]; then
-	if [ ${IMAGES_GALLERY_COL} -le 3 ]; then
-		printf "\t</tr>\n" >> ${IMAGES_GALLERY} 
+if ! [ ${GALLERY_COL} -eq 1 ]; then
+	if [ ${GALLERY_COL} -le 3 ]; then
+		printf "\t</tr>\n" >> ${GALLERY} 
 	fi
 fi
-printf "</table>\n" >> ${IMAGES_GALLERY}
+printf "</table>\n" >> ${GALLERY}
 
+###############################################################################
+#                                 IMAGE VIEW                                  #
+###############################################################################
+
+rm -rf content/*-view-*
+
+CONTENTS=`cd content; ls`
+for CONTENT_DIR in ${CONTENTS}; do
+	CONTENT_TITLE="`cat content/${CONTENT_DIR}/title.txt`"
+	IMAGES=`cat content/${CONTENT_DIR}/*.html | sed -n 's/.*src=\`\`.*\/\(.*\)\`\`.*/\1/Ip' | sort -u`
+
+	for IMAGE in ${IMAGES}; do
+		if [ -f "images/${IMAGE}" ]; then
+			echo "Generating view for image ${IMAGE}..."
+			IMAGE_NAME=`echo ${IMAGE} | sed -e 's/\..*$//g'`
+			VIEW_DIR=content/${CONTENT_DIR}-view-${IMAGE_NAME}
+			mkdir -p "${VIEW_DIR}"
+			printf "<div class=\"image-view\">\n" > "${VIEW_DIR}/content.html"
+			if [ -f "images/${IMAGE_NAME}.txt" ]; then
+				printf "<h1>" >> "${VIEW_DIR}/content.html"
+				cat "images/${IMAGE_NAME}.txt" >> "${VIEW_DIR}/content.html"
+				printf "</h1>\n" >> "${VIEW_DIR}/content.html"
+				cp "images/${IMAGE_NAME}.txt" "${VIEW_DIR}/title.txt"
+			else
+				printf "<h1>${IMAGE}</h1>\n" >> "${VIEW_DIR}/content.html"
+				printf "${IMAGE}" > "${VIEW_DIR}/title.txt"
+			fi
+			printf "<table>\n" >> "${VIEW_DIR}/content.html"
+			printf "\t<tr>\n" >> "${VIEW_DIR}/content.html"
+			printf "\t\t<td>Download <a class=\"download-file\" href=\`\`IMAGES/${IMAGE}\`\`>${IMAGE}</a></td>\n" >> "${VIEW_DIR}/content.html"
+			printf "\t\t<td>Enter <a class=\"online-document\" href=\"gallery.html\">Gallery</a></td>\n" >> "${VIEW_DIR}/content.html"
+			printf "\t\t<td>Back to <a class=\"online-document\" href=\"${CONTENT_DIR}.html\">${CONTENT_TITLE}</a></td>\n" >> "${VIEW_DIR}/content.html"
+			printf "\t</tr>\n" >> "${VIEW_DIR}/content.html"
+			printf "</table>\n" >> "${VIEW_DIR}/content.html"
+			printf "\t<a href=\"${CONTENT_DIR}.html\"><img src=\`\`IMAGES/${IMAGE}\`\` alt=\"${IMAGE}\"></a>\n" >> "${VIEW_DIR}/content.html"
+			printf "\t</div>\n" >> "${VIEW_DIR}/content.html"
+
+			printf ".aside\n" > "${VIEW_DIR}/style.css"
+			printf "{\n" >> "${VIEW_DIR}/style.css"
+			printf "\tdisplay:none;\n" >> "${VIEW_DIR}/style.css"
+			printf "}\n" >> "${VIEW_DIR}/style.css"
+		fi
+	done
+done
+
+###############################################################################
+#                                DOWNLOADS                                    #
+###############################################################################
 
 DOWNLOADS=`cd downloads; find . \( -name "*.tar.gz" -o -name "*.tar.bz2" -o -name "*.zip" -o -name "*.exe" -o -name "*.pdf" \)`
 
@@ -138,7 +232,16 @@ for DOWNLOAD in ${DOWNLOAD}; do
 	fi
 done
 
+###############################################################################
+#                           CONTENT and STYLESHEET                            #
+###############################################################################
+
+# list all materials
 THEMES=`cd themes; ls`
+CONTENTS=`cd content; ls`
+
+echo "Copying base stylesheet..."
+cp template/base.css site/style/base.css || exit 1
 
 for THEME in ${THEMES}; do
 	if [ -d "themes/${THEME}" ]; then
@@ -157,21 +260,17 @@ for THEME in ${THEMES}; do
 		if [ -f "themes/${THEME}/theme.css" ]; then
 			echo "Copying stylesheet for theme ${THEME}"
 			cp "themes/${THEME}/theme.css" "site/${THEME_ROOT}/style/theme.css" || exit 1
-			THEME_STYLE="<link rel=\"stylesheet\" href=\"style/theme.css\" type=\"text/css\">"
+			THEME_STYLE="style/theme.css"
 		fi
 
 		cp themes/${THEME}/*.png site/${THEME_ROOT}/style
 
-		CONTENTS=`cd content; ls */*.html`
-
-		for CONTENT in ${CONTENTS}; do
-			CONTENT_DIR=`dirname ${CONTENT}`
-
+		for CONTENT_DIR in ${CONTENTS}; do
 			if [ -f "content/${CONTENT_DIR}/style.css" ]; then
 				echo "Copying stylesheet for ${CONTENT_DIR}.html..."
 				mkdir -p "site/${THEME_ROOT}/style/${CONTENT_DIR}"
 				cp "content/${CONTENT_DIR}/style.css" "site/${THEME_ROOT}/style/${CONTENT_DIR}/style.css" || exit 1
-				CONTENT_STYLE="<link rel=\"stylesheet\" href=\"style/${CONTENT_DIR}/style.css\" type=\"text/css\">"
+				CONTENT_STYLE="style/${CONTENT_DIR}/style.css"
 			fi
 
 			echo "Building ${CONTENT_DIR}.html for theme ${THEME}..."
@@ -199,12 +298,70 @@ for THEME in ${THEMES}; do
 				SITE_PREFIX="../"
 			fi
 
-			PAGE_TITLE=`cat content/${CONTENT_DIR}/title.txt`
+			PAGE_TITLE="`cat content/${CONTENT_DIR}/title.txt`"
+
+			if [ -f "content/${CONTENT_DIR}/description.txt" ]; then
+				META_DESCRIPTION="`cat content/${CONTENT_DIR}/description.txt`"
+			else
+				META_DESCRIPTION=
+			fi
+
+			if [ -f "content/${CONTENT_DIR}/keywords.txt" ]; then
+				META_KEYWORDS="`cat content/${CONTENT_DIR}/keywords.txt`"
+			else
+				META_KEYWORDS=
+			fi
+
+			BASE_STYLE="${SITE_PREFIX}style/base.css"
+
+			if ! [ -z PAGE_TITLE ]; then
+				HAVE_PAGE_TITLE=1
+			else
+				HAVE_PAGE_TITLE=0
+			fi
+
+			if ! [ -z META_DESCRIPTION ]; then
+				HAVE_META_DESCRIPTION=1
+			else
+				HAVE_META_DESCRIPTION=0
+			fi
+
+			if ! [ -z META_KEYWORDS ]; then
+				HAVE_META_KEYWORDS=1
+			else
+				HAVE_META_KEYWORDS=0
+			fi
+
+			if ! [ -z BASE_STYLE ]; then
+				HAVE_BASE_STYLE=1
+			else
+				HAVE_BASE_STYLE=0
+			fi
+
+			if ! [ -z THEME_STYLE ]; then
+				HAVE_THEME_STYLE=1
+			else
+				HAVE_THEME_STYLE=0
+			fi
+
+			if ! [ -z CONTENT_STYLE ]; then
+				HAVE_CONTENT_STYLE=1
+			else
+				HAVE_CONTENT_STYLE=0
+			fi
 
 			cpp \
+				"-DHAVE_PAGE_TITLE=${HAVE_PAGE_TITLE}" \
 				"-DPAGE_TITLE=${PAGE_TITLE}" \
-				"-DBASE_STYLE=<link rel=\"stylesheet\" href=\"${SITE_PREFIX}style/base.css\" type=\"text/css\">" \
+				"-DHAVE_META_DESCRIPTION=${HAVE_META_DESCRIPTION}" \
+				"-DMETA_DESCRIPTION=${META_DESCRIPTION}" \
+				"-DHAVE_META_KEYWORDS=${HAVE_META_KEYWORDS}" \
+				"-DMETA_KEYWORDS=${META_KEYWORDS}" \
+				"-DHAVE_BASE_STYLE=${HAVE_BASE_STYLE}" \
+				"-DBASE_STYLE=${BASE_STYLE}" \
+				"-DHAVE_THEME_STYLE=${HAVE_THEME_STYLE}" \
 				"-DTHEME_STYLE=${THEME_STYLE}" \
+				"-DHAVE_CONTENT_STYLE=${HAVE_CONTENT_STYLE}" \
 				"-DCONTENT_STYLE=${CONTENT_STYLE}" \
 				"-DTHEME_NAV=${THEME_NAV}" \
 				"-DIMAGES=${SITE_PREFIX}images" \
@@ -219,9 +376,6 @@ for THEME in ${THEMES}; do
 		done
 	fi
 done
-
-echo "Copying base stylesheet..."
-cp template/base.css site/style/base.css || exit 1
 
 echo "Installing .htaccess..."
 echo "deny from all" > site/.htaccess

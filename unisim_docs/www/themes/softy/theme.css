@@ -87,25 +87,25 @@
 }
 
 /* unvisited link */
-.aside-item-body a:link, .content-item-body a:link
+.aside a:link, .content a:link
 {
 	color:#40519c;
 }
 
 /* visited link */ 
-.aside-item-body a:visited, .content-item-body a:visited
+.aside a:visited, .content a:visited
 {
 	color:#40519c;
 }
 
 /* mouse over link */  
-.aside-item-body a:hover, .content-item-body a:hover
+.aside a:hover, .content a:hover
 {
 	color:#b12c30;
 }
 
 /* selected link */
-.aside-item-body a:active, .content-item-body a:active
+.aside a:active, .content a:active
 {
 	color:#b12c30;
 }

@@ -14,57 +14,33 @@ body
 
 h1
 {
-	font-style:normal;
 	font-size:20px;
-	text-align:left;
 	font-weight:bold;
-	color:black;
 }
 
 h2
 {
-	font-style:normal;
 	font-size:18px;
-	text-align:left;
 	font-weight:bold;
-	color:black;
 }
 
 h3
 {
-	font-style:normal;
 	font-size:16px;
-	text-align:left;
 	font-weight:bold;
-	color:black;
 }
 
 p
 {
-	font-style:normal;
-	font-size:14px;
-	text-align:left;
-	font-weight:normal;
-	color:black;
 }
 
 pre
 {
 	font-family:Courier, monospace;
-	font-style:normal;
-	font-size:14px;
-	text-align:left;
-	font-weight:normal;
-	color:black;
 }
 
 li
 {
-	font-style:normal;
-	font-size:14px;
-	text-align:left;
-	font-weight:normal;
-	color:black;
 }
 
 /* page position and size */
@@ -165,9 +141,9 @@ li
 	visibility:hidden;
 }
 
-/* theme switch */
+/* extra small navigation bar */
 
-.theme-switcher
+.extra-nav
 {
 	clear:both;
 	width:100%;
@@ -179,7 +155,7 @@ li
 	font-weight:normal;
 }
 
-.theme-switcher a
+.extra-nav a
 {
 	text-decoration:none;
 }
@@ -244,25 +220,25 @@ li
 }
 
 /* unvisited link */
-.aside-item-body a:link, .content-item-body a:link
+.aside a:link, .content a:link
 {
 	color:blue;
 }
 
 /* visited link */ 
-.aside-item-body a:visited, .content-item-body a:visited
+.aside a:visited, .content a:visited
 {
 	color:blue;
 }
 
 /* mouse over link */  
-.aside-item-body a:hover, .content-item-body a:hover
+.aside a:hover, .content a:hover
 {
 	color:red;
 }
 
 /* selected link */
-.aside-item-body a:active, .content-item-body a:active
+.aside a:active, .content a:active
 {
 	color:red;
 }
@@ -272,15 +248,11 @@ li
 .news-table
 {
 	width:100%;
-	font-style:normal;
-	font-weight:normal;
-	font-size:14px;
 }
 
 .news-table td
 {
 	padding:14px 0px 14px 0px;
-	color:black;
 }
 
 .news-date
@@ -347,11 +319,7 @@ li
 .directory-description
 {
 	width:75%;
-	font-style:normal;
-	font-size:14px;
 	text-align:justify;
-	font-weight:normal;
-	color:black;
 }
 
 /* separator */
@@ -374,11 +342,6 @@ li
 
 .download-file, .download-pdf, .download-video, .online-document, .download-win, .download-linux, .download-macosx
 {
-	font-style:normal;
-	font-size:14px;
-	text-align:left;
-	font-weight:normal;
-	color:black;
 }
 
 .download-file
@@ -457,18 +420,18 @@ li
 
 /* images gallery */
 
-.images-gallery
+.gallery
 {
 	width:100%;
 }
 
-.images-gallery td
+.gallery td
 {
-	padding:20px 0px 0px 0px;
+	padding:10px 10px 10px 10px;
 	width:33%;
 }
 
-.images-gallery a
+.gallery a
 {
 	display:block;
 	width:100%;
@@ -476,32 +439,46 @@ li
 	text-decoration:none;
 }
 
-.images-gallery img
+.gallery img
 {
-	width:158px;
+	width:144px;
 	border:0;
 }
 
-.images-gallery p
+.gallery p
 {
 	text-align:center;
 }
 
-/* image */
+/* image view */
 
-.image a
+.image-view
 {
-	display:block;
-	width:100%;
-	height:100%;
-	text-decoration:none;
+	width:1024px;
 }
 
-.image img
+.image-view h1
+{
+	text-align:center;
+}
+
+.image-view img
 {
 	width:1024px;
 	border:0;
 }
+
+.image-view table
+{
+	width:1024px;
+}
+
+.image-view td
+{
+	width:33%;
+	text-align:center;
+}
+
 
 /* addresses */
 
