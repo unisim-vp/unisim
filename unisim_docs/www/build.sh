@@ -29,14 +29,23 @@ mkdir -p site/thumbs
 mkdir -p site/glyph
 mkdir -p site/downloads
 
+# list all news materials
+NEWS_LIST=`cd news; ls -r *.html`
+
+# list all image materials
+IMAGES=`cd images; ls *.png`
+
+# list all video materials
+VIDEOS=`cd videos; ls *.avi`
+
+# list all glyph materials
+GLYPHES=`cd glyph; ls *.png *.ico`
+
 ###############################################################################
 #                                     NEWS                                    #
 ###############################################################################
 
 MAX_HOME_NEWS=10
-
-# list all materials
-NEWS_LIST=`cd news; ls -r *.html`
 
 # define generated files
 HOME_NEWS=content/index/news.html
@@ -88,19 +97,54 @@ fi
 CONTENTS=`cd content; ls`
 SITE_MAP=content/sitemap/sitemap.html
 
-printf "" > ${SITE_MAP}
+# list all contents
+printf "<h3>Contents</h3>" > ${SITE_MAP}
+printf "<ul>" >> ${SITE_MAP}
 for CONTENT_DIR in ${CONTENTS}; do
 	CONTENT_TITLE="`cat content/${CONTENT_DIR}/title.txt`"
 	if ! [ "${CONTENT_DIR}" = "sitemap" ]; then
-		printf "<p><a class=\"online-document\" href=${CONTENT_DIR}.html>${CONTENT_TITLE}</a></p>\n" >> ${SITE_MAP}
+		printf "<li>${CONTENT_TITLE}: <a class=\"online-document\" href=${CONTENT_DIR}.html>view</a></li>\n" >> ${SITE_MAP}
 	fi
 done
+printf "</ul>" >> ${SITE_MAP}
+
+# list all image views
+printf "<h3>Screenshots</h3>" >> ${SITE_MAP}
+printf "<ul>" >> ${SITE_MAP}
+for IMAGE in ${IMAGES}; do
+	if [ -f "images/${IMAGE}" ]; then
+		IMAGE_NAME=`echo ${IMAGE} | sed -e 's/\..*$//g'`
+		printf "<li>" >> ${SITE_MAP}
+		if [ -f "images/${IMAGE_NAME}.txt" ]; then
+			cat "images/${IMAGE_NAME}.txt" >> ${SITE_MAP}
+		else
+			printf "${IMAGE}"
+		fi
+		printf ": <a class=\"online-document\" href=sitemap-view-${IMAGE_NAME}.html>view</a></li>\n" >> ${SITE_MAP}
+	fi
+done
+printf "</ul>" >> ${SITE_MAP}
+
+# list all video views
+printf "<h3>Videos</h3>" >> ${SITE_MAP}
+printf "<ul>" >> ${SITE_MAP}
+for VIDEO in ${VIDEOS}; do
+	if [ -f "videos/${VIDEO}" ]; then
+		VIDEO_NAME=`echo ${VIDEO} | sed -e 's/\..*$//g'`
+		printf "<li>" >> ${SITE_MAP}
+		if [ -f "videos/${VIDEO_NAME}.txt" ]; then
+			cat "videos/${VIDEO_NAME}.txt" >> ${SITE_MAP}
+		else
+			printf "${VIDEO}"
+		fi
+		printf ": <a class=\"online-document\" href=sitemap-view-${VIDEO_NAME}.html>view</a></li>\n" >> ${SITE_MAP}
+	fi
+done
+printf "</ul>" >> ${SITE_MAP}
 
 ###############################################################################
 #                                    GLYPHES                                  #
 ###############################################################################
-
-GLYPHES=`cd glyph; ls *.png *.ico`
 
 for GLYPH in ${GLYPHES}; do
 	if [ -f "glyph/${GLYPH}" ]; then
@@ -113,9 +157,6 @@ done
 #                                   IMAGES                                    #
 ###############################################################################
 
-# list all materials
-IMAGES=`cd images; ls *.png`
-
 for IMAGE in ${IMAGES}; do
 	if [ -f "images/${IMAGE}" ]; then
 		echo "Copying images/${IMAGE}"
@@ -126,9 +167,6 @@ done
 ###############################################################################
 #                                  VIDEOS                                     #
 ###############################################################################
-
-# list all materials
-VIDEOS=`cd videos; ls *.avi`
 
 for VIDEO in ${VIDEOS}; do
 	if [ -f "videos/${VIDEO}" ]; then
@@ -247,10 +285,15 @@ printf "</table>\n" >> ${VIDEO_GALLERY}
 
 rm -rf content/*-view-*
 
-CONTENTS=`cd content; ls`
+CONTENTS="`cd content; ls` sitemap"
 for CONTENT_DIR in ${CONTENTS}; do
-	CONTENT_TITLE="`cat content/${CONTENT_DIR}/title.txt`"
-	IMAGE_NAMES=`cat content/${CONTENT_DIR}/*.html | sed -n "s/.*href=\"${CONTENT_DIR}-view-\(.*\)\.html.*/\1/Ip" | sort -u`
+	if [ "${CONTENT_DIR}" = "sitemap" ]; then
+		CONTENT_TITLE="Site map"
+		IMAGE_NAMES=`echo "${IMAGES}" | sed -e 's/\..*$//g'`
+	else
+		CONTENT_TITLE="`cat content/${CONTENT_DIR}/title.txt`"
+		IMAGE_NAMES=`cat content/${CONTENT_DIR}/*.html | sed -n "s/.*href=\"${CONTENT_DIR}-view-\(.*\)\.html.*/\1/Ip" | sort -u`
+	fi
 
 	for IMAGE_NAME in ${IMAGE_NAMES}; do
 		IMAGE="${IMAGE_NAME}.png"
@@ -263,10 +306,11 @@ for CONTENT_DIR in ${CONTENTS}; do
 				printf "<h1>" >> "${VIEW_DIR}/content.html"
 				cat "images/${IMAGE_NAME}.txt" >> "${VIEW_DIR}/content.html"
 				printf "</h1>\n" >> "${VIEW_DIR}/content.html"
-				cp "images/${IMAGE_NAME}.txt" "${VIEW_DIR}/title.txt"
+				printf "Screenshot: " > "${VIEW_DIR}/title.txt"
+				cat "images/${IMAGE_NAME}.txt" >> "${VIEW_DIR}/title.txt"
 			else
 				printf "<h1>${IMAGE}</h1>\n" >> "${VIEW_DIR}/content.html"
-				printf "${IMAGE}" > "${VIEW_DIR}/title.txt"
+				printf "Screenshot: ${IMAGE}" > "${VIEW_DIR}/title.txt"
 			fi
 			printf "<table>\n" >> "${VIEW_DIR}/content.html"
 			printf "\t<tr>\n" >> "${VIEW_DIR}/content.html"
@@ -290,10 +334,15 @@ done
 #                                 VIDEO VIEW                                  #
 ###############################################################################
 
-CONTENTS=`cd content; ls`
+CONTENTS="`cd content; ls` sitemap"
 for CONTENT_DIR in ${CONTENTS}; do
-	CONTENT_TITLE="`cat content/${CONTENT_DIR}/title.txt`"
-	VIDEO_NAMES=`cat content/${CONTENT_DIR}/*.html | sed -n "s/.*href=\"${CONTENT_DIR}-view-\(.*\)\.html.*/\1/Ip" | sort -u`
+	if [ "${CONTENT_DIR}" = "sitemap" ]; then
+		CONTENT_TITLE="Site map"
+		VIDEO_NAMES=`echo "${VIDEOS}" | sed -e 's/\..*$//g'`
+	else
+		CONTENT_TITLE="`cat content/${CONTENT_DIR}/title.txt`"
+		VIDEO_NAMES=`cat content/${CONTENT_DIR}/*.html | sed -n "s/.*href=\"${CONTENT_DIR}-view-\(.*\)\.html.*/\1/Ip" | sort -u`
+	fi
 
 	for VIDEO_NAME in ${VIDEO_NAMES}; do
 		VIDEO="${VIDEO_NAME}.avi"
@@ -306,10 +355,11 @@ for CONTENT_DIR in ${CONTENTS}; do
 				printf "<h1>" >> "${VIEW_DIR}/content.html"
 				cat "videos/${VIDEO_NAME}.txt" >> "${VIEW_DIR}/content.html"
 				printf "</h1>\n" >> "${VIEW_DIR}/content.html"
-				cp "videos/${VIDEO_NAME}.txt" "${VIEW_DIR}/title.txt"
+				printf "Video: " > "${VIEW_DIR}/title.txt"
+				cat "videos/${VIDEO_NAME}.txt" >> "${VIEW_DIR}/title.txt"
 			else
 				printf "<h1>${VIDEO_NAME}</h1>\n" >> "${VIEW_DIR}/content.html"
-				printf "${VIDEO_NAME}" > "${VIEW_DIR}/title.txt"
+				printf "Video: ${VIDEO_NAME}" > "${VIEW_DIR}/title.txt"
 			fi
 			printf "<table>\n" >> "${VIEW_DIR}/content.html"
 			printf "\t<tr>\n" >> "${VIEW_DIR}/content.html"
@@ -326,7 +376,6 @@ for CONTENT_DIR in ${CONTENTS}; do
 			printf "\t<p>Please install appropriate plugin for mime type video/x-msvideo</p>\n" >> "${VIEW_DIR}/content.html"
 			printf "</object>\n" >> "${VIEW_DIR}/content.html"
 			printf "\t</div>\n" >> "${VIEW_DIR}/content.html"
-#video/x-msvideo
 			printf ".aside\n" > "${VIEW_DIR}/style.css"
 			printf "{\n" >> "${VIEW_DIR}/style.css"
 			printf "\tdisplay:none;\n" >> "${VIEW_DIR}/style.css"
@@ -334,7 +383,6 @@ for CONTENT_DIR in ${CONTENTS}; do
 		fi
 	done
 done
-
 
 ###############################################################################
 #                                DOWNLOADS                                    #
@@ -353,7 +401,7 @@ done
 #                           CONTENT and STYLESHEET                            #
 ###############################################################################
 
-# list all materials
+# list all content materials (do not move above since some contents have been generated for news and image/video galleries/views)
 THEMES=`cd themes; ls`
 CONTENTS=`cd content; ls`
 
