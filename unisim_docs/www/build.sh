@@ -290,13 +290,6 @@ done
 #                                 VIDEO VIEW                                  #
 ###############################################################################
 
-# 			<object type="video/x-msvideo" data=``VIDEOS/unisim_debugger_demo.avi`` width="576" height="458">
-# 				<param name="src" value=``VIDEOS/unisim_debugger_demo.avi``>
-# 				<param name="autoplay" value="false">
-# 				<param name="autoStart" value="0">
-# 				<a class="download-video" href=``VIDEOS/unisim_debugger_demo.avi``>unisim_debugger_demo.avi</a>
-# 			</object>
-
 CONTENTS=`cd content; ls`
 for CONTENT_DIR in ${CONTENTS}; do
 	CONTENT_TITLE="`cat content/${CONTENT_DIR}/title.txt`"
@@ -326,13 +319,14 @@ for CONTENT_DIR in ${CONTENTS}; do
 			printf "\t</tr>\n" >> "${VIEW_DIR}/content.html"
 			printf "</table>\n" >> "${VIEW_DIR}/content.html"
 			printf "<object type=\"video/x-msvideo\" data=\`\`VIDEOS/${VIDEO}\`\` width=\"1024\" height=\"792\">\n" >> "${VIEW_DIR}/content.html"
-			printf "\t<param name=\"src\" value=\`\`VIDEOS/${VIDEO}\`\`>\n" >> "${VIEW_DIR}/content.html"
+			# I use "SRC" instead of "src" because firefox under Windows does not like when "src" has a value
+			printf "\t<param name=\"SRC\" value=\`\`VIDEOS/${VIDEO}\`\`>\n" >> "${VIEW_DIR}/content.html"
 			printf "\t<param name=\"autoplay\" value=\"true\">\n" >> "${VIEW_DIR}/content.html"
 			printf "\t<param name=\"autoStart\" value=\"1\">\n" >> "${VIEW_DIR}/content.html"
-			printf "\t<a class=\"download-video\" href=\`\`VIDEOS/${VIDEO}\`\`>${VIDEO}</a>\n" >> "${VIEW_DIR}/content.html"
+			printf "\t<p>Please install appropriate plugin for mime type video/x-msvideo</p>\n" >> "${VIEW_DIR}/content.html"
 			printf "</object>\n" >> "${VIEW_DIR}/content.html"
 			printf "\t</div>\n" >> "${VIEW_DIR}/content.html"
-
+#video/x-msvideo
 			printf ".aside\n" > "${VIEW_DIR}/style.css"
 			printf "{\n" >> "${VIEW_DIR}/style.css"
 			printf "\tdisplay:none;\n" >> "${VIEW_DIR}/style.css"
