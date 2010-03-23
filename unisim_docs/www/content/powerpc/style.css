@@ -3,7 +3,12 @@
 	visibility:visible;
 }
 
-.content .images-gallery img
+.content .gallery img
 {
 	width:256px;
+}
+
+.content .gallery p
+{
+	font-size:12px;
 }

@@ -157,6 +157,9 @@ for IMAGE in ${IMAGES}; do
 		fi
 		printf "\t\t<td>\n" >> ${GALLERY} 
 		printf "\t\t\t<a href=\"gallery-view-${IMAGE_NAME}.html\"><img src=\`\`THUMBS/${IMAGE}\`\` alt=\"${IMAGE} thumbnail\"></a>\n" >> ${GALLERY}
+		printf "\t\t\t<p>\n" >> ${GALLERY}
+		cat "images/${IMAGE_NAME}.txt" >> ${GALLERY}
+		printf "\t\t\t</p>\n" >> ${GALLERY}
 		printf "\t\t</td>\n" >> ${GALLERY} 
 		GALLERY_COL=$((${GALLERY_COL} + 1))
 		if [ ${GALLERY_COL} -gt 3 ]; then
@@ -370,6 +373,7 @@ for THEME in ${THEMES}; do
 				"-DDOWNLOADS=${SITE_PREFIX}downloads" \
 				-undef \
 				-P \
+				-I. \
 				-Itemplate \
 				-Icontent/${CONTENT_DIR} \
 				template/template.html | sed -e "s/\\\\doubleshash/\/\//g" -e "s/\`\`/\"/g" -e "s/\`/\'/g" > site/${THEME_ROOT}/${CONTENT_DIR}.html || exit -1

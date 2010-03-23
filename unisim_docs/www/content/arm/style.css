@@ -2,3 +2,13 @@
 {
 	visibility:visible;
 }
+
+.content .gallery img
+{
+	width:256px;
+}
+
+.content .gallery p
+{
+	font-size:12px;
+}

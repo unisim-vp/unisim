@@ -427,7 +427,7 @@ li
 
 .gallery td
 {
-	/*padding:2px 2px 2px 2px;*/
+	padding:2px 2px 16px 2px;
 	width:33%;
 	text-align:center;
 }
@@ -448,6 +448,8 @@ li
 
 .gallery p
 {
+	margin:4px 0px 0px 0px;
+	font-size:10px;
 	text-align:center;
 }
 
@@ -476,10 +478,10 @@ li
 
 .image-view td
 {
+	padding:2px 2px 4px 2px;
 	width:33%;
 	text-align:center;
 }
-
 
 /* addresses */
 
