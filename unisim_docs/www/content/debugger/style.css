@@ -2,3 +2,9 @@
 {
 	visibility:visible;
 }
+
+.content embed
+{
+	width:576px;
+	height:458px;
+}

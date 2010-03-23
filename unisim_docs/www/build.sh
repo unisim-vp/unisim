@@ -24,6 +24,7 @@ rm -rf content/*-view-*
 mkdir -p site
 mkdir -p site/style
 mkdir -p site/images
+mkdir -p site/videos
 mkdir -p site/thumbs
 mkdir -p site/glyph
 mkdir -p site/downloads
@@ -118,8 +119,21 @@ IMAGES=`cd images; ls *.png`
 for IMAGE in ${IMAGES}; do
 	if [ -f "images/${IMAGE}" ]; then
 		echo "Copying images/${IMAGE}"
-		mkdir -p site/images/`dirname "${IMAGE}"`
 		cp "images/${IMAGE}" "site/images/${IMAGE}"
+	fi
+done
+
+###############################################################################
+#                                  VIDEOS                                     #
+###############################################################################
+
+# list all materials
+VIDEOS=`cd videos; ls *.avi`
+
+for VIDEO in ${VIDEOS}; do
+	if [ -f "videos/${VIDEO}" ]; then
+		echo "Copying videos/${VIDEO}"
+		cp "videos/${VIDEO}" "site/videos/${VIDEO}"
 	fi
 done
 
@@ -134,47 +148,98 @@ for IMAGE in ${IMAGES}; do
 	fi
 done
 
+for VIDEO in ${VIDEOS}; do
+	if [ -f "videos/${VIDEO}" ]; then
+		echo "Generating thumbnail for video ${VIDEO}..."
+		VIDEO_NAME=`echo ${VIDEO} | sed -e 's/\..*$//g'`
+		mplayer -frames 1 -vo png -zoom -xy 256 "videos/${VIDEO}" &> /dev/null
+		mv 00000001.png "site/thumbs/${VIDEO_NAME}.png"
+	fi
+done
+
 ###############################################################################
-#                                    GALLERY                                  #
+#                                 IMAGE GALLERY                               #
 ###############################################################################
 
-GALLERY=content/gallery/gallery.html
-rm -f ${GALLERY}
+IMAGE_GALLERY=content/image-gallery/image-gallery.html
+rm -f ${IMAGE_GALLERY}
 
-echo "Generating image gallery in ${GALLERY}..."
+echo "Generating image gallery in ${IMAGE_GALLERY}..."
 
-printf "" > ${GALLERY}
-printf "<table class=\"gallery\">\n" > ${GALLERY}
+printf "" > ${IMAGE_GALLERY}
+printf "<table class=\"image-gallery\">\n" > ${IMAGE_GALLERY}
 
-GALLERY_COL=1
+IMAGE_GALLERY_COL=1
 for IMAGE in ${IMAGES}; do
 	if [ -f "images/${IMAGE}" ]; then
-		echo "Adding image ${IMAGE} to gallery..."
+		echo "Adding image ${IMAGE} to image gallery..."
 		IMAGE_NAME=`echo ${IMAGE} | sed -e 's/\..*$//g'`
 
-		if [ ${GALLERY_COL} -eq 1 ]; then
-			printf "\t<tr>\n" >> ${GALLERY}
+		if [ ${IMAGE_GALLERY_COL} -eq 1 ]; then
+			printf "\t<tr>\n" >> ${IMAGE_GALLERY}
 		fi
-		printf "\t\t<td>\n" >> ${GALLERY} 
-		printf "\t\t\t<a href=\"gallery-view-${IMAGE_NAME}.html\"><img src=\`\`THUMBS/${IMAGE}\`\` alt=\"${IMAGE} thumbnail\"></a>\n" >> ${GALLERY}
-		printf "\t\t\t<p>\n" >> ${GALLERY}
-		cat "images/${IMAGE_NAME}.txt" >> ${GALLERY}
-		printf "\t\t\t</p>\n" >> ${GALLERY}
-		printf "\t\t</td>\n" >> ${GALLERY} 
-		GALLERY_COL=$((${GALLERY_COL} + 1))
-		if [ ${GALLERY_COL} -gt 3 ]; then
-			GALLERY_COL=1
-			printf "\t</tr>\n" >> ${GALLERY} 
+		printf "\t\t<td>\n" >> ${IMAGE_GALLERY} 
+		printf "\t\t\t<a href=\"image-gallery-view-${IMAGE_NAME}.html\"><img src=\`\`THUMBS/${IMAGE}\`\` alt=\"${IMAGE} thumbnail\"></a>\n" >> ${IMAGE_GALLERY}
+		printf "\t\t\t<p>\n" >> ${IMAGE_GALLERY}
+		cat "images/${IMAGE_NAME}.txt" >> ${IMAGE_GALLERY}
+		printf "\t\t\t</p>\n" >> ${IMAGE_GALLERY}
+		printf "\t\t</td>\n" >> ${IMAGE_GALLERY} 
+		IMAGE_GALLERY_COL=$((${IMAGE_GALLERY_COL} + 1))
+		if [ ${IMAGE_GALLERY_COL} -gt 3 ]; then
+			IMAGE_GALLERY_COL=1
+			printf "\t</tr>\n" >> ${IMAGE_GALLERY} 
 		fi
 	fi
 done
 
-if ! [ ${GALLERY_COL} -eq 1 ]; then
-	if [ ${GALLERY_COL} -le 3 ]; then
-		printf "\t</tr>\n" >> ${GALLERY} 
+if ! [ ${IMAGE_GALLERY_COL} -eq 1 ]; then
+	if [ ${IMAGE_GALLERY_COL} -le 3 ]; then
+		printf "\t</tr>\n" >> ${IMAGE_GALLERY} 
 	fi
 fi
-printf "</table>\n" >> ${GALLERY}
+printf "</table>\n" >> ${IMAGE_GALLERY}
+
+###############################################################################
+#                              VIDEO GALLERY                                  #
+###############################################################################
+
+VIDEO_GALLERY=content/video-gallery/video-gallery.html
+rm -f ${VIDEO_GALLERY}
+
+echo "Generating video gallery in ${VIDEO_GALLERY}..."
+
+printf "" > ${VIDEO_GALLERY}
+printf "<table class=\"video-gallery\">\n" > ${VIDEO_GALLERY}
+
+VIDEO_GALLERY_COL=1
+for VIDEO in ${VIDEOS}; do
+	if [ -f "videos/${VIDEO}" ]; then
+		echo "Adding video ${VIDEO} to video gallery..."
+		VIDEO_NAME=`echo ${VIDEO} | sed -e 's/\..*$//g'`
+
+		if [ ${VIDEO_GALLERY_COL} -eq 1 ]; then
+			printf "\t<tr>\n" >> ${VIDEO_GALLERY}
+		fi
+		printf "\t\t<td>\n" >> ${VIDEO_GALLERY} 
+		printf "\t\t\t<a href=\"video-gallery-view-${VIDEO_NAME}.html\"><img src=\`\`THUMBS/${VIDEO_NAME}.png\`\` alt=\"${VIDEO} thumbnail\"></a>\n" >> ${VIDEO_GALLERY}
+		printf "\t\t\t<p>\n" >> ${VIDEO_GALLERY}
+		cat "videos/${VIDEO_NAME}.txt" >> ${VIDEO_GALLERY}
+		printf "\t\t\t</p>\n" >> ${VIDEO_GALLERY}
+		printf "\t\t</td>\n" >> ${VIDEO_GALLERY} 
+		VIDEO_GALLERY_COL=$((${VIDEO_GALLERY_COL} + 1))
+		if [ ${VIDEO_GALLERY_COL} -gt 3 ]; then
+			VIDEO_GALLERY_COL=1
+			printf "\t</tr>\n" >> ${VIDEO_GALLERY} 
+		fi
+	fi
+done
+
+if ! [ ${VIDEO_GALLERY_COL} -eq 1 ]; then
+	if [ ${VIDEO_GALLERY_COL} -le 3 ]; then
+		printf "\t</tr>\n" >> ${VIDEO_GALLERY} 
+	fi
+fi
+printf "</table>\n" >> ${VIDEO_GALLERY}
 
 ###############################################################################
 #                                 IMAGE VIEW                                  #
@@ -185,12 +250,12 @@ rm -rf content/*-view-*
 CONTENTS=`cd content; ls`
 for CONTENT_DIR in ${CONTENTS}; do
 	CONTENT_TITLE="`cat content/${CONTENT_DIR}/title.txt`"
-	IMAGES=`cat content/${CONTENT_DIR}/*.html | sed -n 's/.*src=\`\`.*\/\(.*\)\`\`.*/\1/Ip' | sort -u`
+	IMAGE_NAMES=`cat content/${CONTENT_DIR}/*.html | sed -n "s/.*href=\"${CONTENT_DIR}-view-\(.*\)\.html.*/\1/Ip" | sort -u`
 
-	for IMAGE in ${IMAGES}; do
+	for IMAGE_NAME in ${IMAGE_NAMES}; do
+		IMAGE="${IMAGE_NAME}.png"
 		if [ -f "images/${IMAGE}" ]; then
 			echo "Generating view for image ${IMAGE}..."
-			IMAGE_NAME=`echo ${IMAGE} | sed -e 's/\..*$//g'`
 			VIEW_DIR=content/${CONTENT_DIR}-view-${IMAGE_NAME}
 			mkdir -p "${VIEW_DIR}"
 			printf "<div class=\"image-view\">\n" > "${VIEW_DIR}/content.html"
@@ -206,7 +271,7 @@ for CONTENT_DIR in ${CONTENTS}; do
 			printf "<table>\n" >> "${VIEW_DIR}/content.html"
 			printf "\t<tr>\n" >> "${VIEW_DIR}/content.html"
 			printf "\t\t<td>Download <a class=\"download-file\" href=\`\`IMAGES/${IMAGE}\`\`>${IMAGE}</a></td>\n" >> "${VIEW_DIR}/content.html"
-			printf "\t\t<td>Enter <a class=\"online-document\" href=\"gallery.html\">Gallery</a></td>\n" >> "${VIEW_DIR}/content.html"
+			printf "\t\t<td>Enter <a class=\"online-document\" href=\"image-gallery.html\">Screenshot Gallery</a></td>\n" >> "${VIEW_DIR}/content.html"
 			printf "\t\t<td>Back to <a class=\"online-document\" href=\"${CONTENT_DIR}.html\">${CONTENT_TITLE}</a></td>\n" >> "${VIEW_DIR}/content.html"
 			printf "\t</tr>\n" >> "${VIEW_DIR}/content.html"
 			printf "</table>\n" >> "${VIEW_DIR}/content.html"
@@ -222,15 +287,70 @@ for CONTENT_DIR in ${CONTENTS}; do
 done
 
 ###############################################################################
+#                                 VIDEO VIEW                                  #
+###############################################################################
+
+# 			<object type="video/x-msvideo" data=``VIDEOS/unisim_debugger_demo.avi`` width="576" height="458">
+# 				<param name="src" value=``VIDEOS/unisim_debugger_demo.avi``>
+# 				<param name="autoplay" value="false">
+# 				<param name="autoStart" value="0">
+# 				<a class="download-video" href=``VIDEOS/unisim_debugger_demo.avi``>unisim_debugger_demo.avi</a>
+# 			</object>
+
+CONTENTS=`cd content; ls`
+for CONTENT_DIR in ${CONTENTS}; do
+	CONTENT_TITLE="`cat content/${CONTENT_DIR}/title.txt`"
+	VIDEO_NAMES=`cat content/${CONTENT_DIR}/*.html | sed -n "s/.*href=\"${CONTENT_DIR}-view-\(.*\)\.html.*/\1/Ip" | sort -u`
+
+	for VIDEO_NAME in ${VIDEO_NAMES}; do
+		VIDEO="${VIDEO_NAME}.avi"
+		if [ -f "videos/${VIDEO}" ]; then
+			echo "Generating view for video ${VIDEO}..."
+			VIEW_DIR=content/${CONTENT_DIR}-view-${VIDEO_NAME}
+			mkdir -p "${VIEW_DIR}"
+			printf "<div class=\"video-view\">\n" > "${VIEW_DIR}/content.html"
+			if [ -f "videos/${VIDEO_NAME}.txt" ]; then
+				printf "<h1>" >> "${VIEW_DIR}/content.html"
+				cat "videos/${VIDEO_NAME}.txt" >> "${VIEW_DIR}/content.html"
+				printf "</h1>\n" >> "${VIEW_DIR}/content.html"
+				cp "videos/${VIDEO_NAME}.txt" "${VIEW_DIR}/title.txt"
+			else
+				printf "<h1>${VIDEO_NAME}</h1>\n" >> "${VIEW_DIR}/content.html"
+				printf "${VIDEO_NAME}" > "${VIEW_DIR}/title.txt"
+			fi
+			printf "<table>\n" >> "${VIEW_DIR}/content.html"
+			printf "\t<tr>\n" >> "${VIEW_DIR}/content.html"
+			printf "\t\t<td>Download <a class=\"download-video\" href=\`\`VIDEOS/${VIDEO}\`\`>${VIDEO}</a></td>\n" >> "${VIEW_DIR}/content.html"
+			printf "\t\t<td>Enter <a class=\"online-document\" href=\"video-gallery.html\">Video Gallery</a></td>\n" >> "${VIEW_DIR}/content.html"
+			printf "\t\t<td>Back to <a class=\"online-document\" href=\"${CONTENT_DIR}.html\">${CONTENT_TITLE}</a></td>\n" >> "${VIEW_DIR}/content.html"
+			printf "\t</tr>\n" >> "${VIEW_DIR}/content.html"
+			printf "</table>\n" >> "${VIEW_DIR}/content.html"
+			printf "<object type=\"video/x-msvideo\" data=\`\`VIDEOS/${VIDEO}\`\` width=\"1024\" height=\"792\">\n" >> "${VIEW_DIR}/content.html"
+			printf "\t<param name=\"src\" value=\`\`VIDEOS/${VIDEO}\`\`>\n" >> "${VIEW_DIR}/content.html"
+			printf "\t<param name=\"autoplay\" value=\"true\">\n" >> "${VIEW_DIR}/content.html"
+			printf "\t<param name=\"autoStart\" value=\"1\">\n" >> "${VIEW_DIR}/content.html"
+			printf "\t<a class=\"download-video\" href=\`\`VIDEOS/${VIDEO}\`\`>${VIDEO}</a>\n" >> "${VIEW_DIR}/content.html"
+			printf "</object>\n" >> "${VIEW_DIR}/content.html"
+			printf "\t</div>\n" >> "${VIEW_DIR}/content.html"
+
+			printf ".aside\n" > "${VIEW_DIR}/style.css"
+			printf "{\n" >> "${VIEW_DIR}/style.css"
+			printf "\tdisplay:none;\n" >> "${VIEW_DIR}/style.css"
+			printf "}\n" >> "${VIEW_DIR}/style.css"
+		fi
+	done
+done
+
+
+###############################################################################
 #                                DOWNLOADS                                    #
 ###############################################################################
 
-DOWNLOADS=`cd downloads; find . \( -name "*.tar.gz" -o -name "*.tar.bz2" -o -name "*.zip" -o -name "*.exe" -o -name "*.pdf" \)`
+DOWNLOADS=`cd downloads; ls *.tar.gz *.tar.bz2 *.zip *.exe *.pdf`
 
-for DOWNLOAD in ${DOWNLOAD}; do
+for DOWNLOAD in ${DOWNLOADS}; do
 	if [ -f "downloads/${DOWNLOAD}" ]; then
 		echo "Copying downloads/${DOWNLOAD}"
-		mkdir -p site/download/`dirname "${DOWNLOAD}"`
 		cp "downloads/${DOWNLOAD}" "site/downloads/${DOWNLOAD}"
 	fi
 done
@@ -368,6 +488,7 @@ for THEME in ${THEMES}; do
 				"-DCONTENT_STYLE=${CONTENT_STYLE}" \
 				"-DTHEME_NAV=${THEME_NAV}" \
 				"-DIMAGES=${SITE_PREFIX}images" \
+				"-DVIDEOS=${SITE_PREFIX}videos" \
 				"-DGLYPH=${SITE_PREFIX}glyph" \
 				"-DTHUMBS=${SITE_PREFIX}thumbs" \
 				"-DDOWNLOADS=${SITE_PREFIX}downloads" \
