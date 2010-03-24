@@ -32,16 +32,16 @@ mkdir -p site/glyphes
 mkdir -p site/downloads
 
 # list all news materials
-NEWS_LIST=`cd news; ls -r *.html`
+NEWS_LIST=`cd news; ls -r *.html 2> /dev/null`
 
 # list all image materials
-IMAGES=`cd images; ls *.png`
+IMAGES=`cd images; ls *.png 2> /dev/null`
 
 # list all video materials
-VIDEOS=`cd videos; ls *.avi`
+VIDEOS=`cd videos; ls *.avi 2> /dev/null`
 
 # list all glyph materials
-GLYPHES=`cd glyphes; ls *.png *.ico`
+GLYPHES=`cd glyphes; ls *.png *.ico 2> /dev/null`
 
 ###############################################################################
 #                                     NEWS                                    #
@@ -384,7 +384,7 @@ done
 #                                DOWNLOADS                                    #
 ###############################################################################
 
-DOWNLOADS=`cd downloads; ls *.tar.gz *.tar.bz2 *.zip *.exe *.pdf`
+DOWNLOADS=`cd downloads; ls *.tar.gz *.tar.bz2 *.zip *.exe *.pdf 2> /dev/null`
 
 for DOWNLOAD in ${DOWNLOADS}; do
 	if [ -f "downloads/${DOWNLOAD}" ]; then
