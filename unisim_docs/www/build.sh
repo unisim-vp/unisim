@@ -18,15 +18,17 @@ echo "Using theme ${DEFAULT_THEME} as default theme"
 
 # clean everything before starting
 rm -rf site
-rm -rf content/*-view-*
+rm -rf content/*-view-video-*
+rm -rf content/*-view-image-*
 
 # create web site directory structure
 mkdir -p site
 mkdir -p site/style
 mkdir -p site/images
 mkdir -p site/videos
-mkdir -p site/thumbs
-mkdir -p site/glyph
+mkdir -p site/images/thumbs
+mkdir -p site/videos/thumbs
+mkdir -p site/glyphes
 mkdir -p site/downloads
 
 # list all news materials
@@ -39,7 +41,7 @@ IMAGES=`cd images; ls *.png`
 VIDEOS=`cd videos; ls *.avi`
 
 # list all glyph materials
-GLYPHES=`cd glyph; ls *.png *.ico`
+GLYPHES=`cd glyphes; ls *.png *.ico`
 
 ###############################################################################
 #                                     NEWS                                    #
@@ -103,7 +105,7 @@ printf "<ul>" >> ${SITE_MAP}
 for CONTENT_DIR in ${CONTENTS}; do
 	CONTENT_TITLE="`cat content/${CONTENT_DIR}/title.txt`"
 	if ! [ "${CONTENT_DIR}" = "sitemap" ]; then
-		printf "<li>${CONTENT_TITLE}: <a class=\"online-document\" href=${CONTENT_DIR}.html>view</a></li>\n" >> ${SITE_MAP}
+		printf "<li>${CONTENT_TITLE}: <a class=\"online-document\" href=\"${CONTENT_DIR}.html\">view</a></li>\n" >> ${SITE_MAP}
 	fi
 done
 printf "</ul>" >> ${SITE_MAP}
@@ -120,7 +122,7 @@ for IMAGE in ${IMAGES}; do
 		else
 			printf "${IMAGE}"
 		fi
-		printf ": <a class=\"online-document\" href=sitemap-view-${IMAGE_NAME}.html>view</a></li>\n" >> ${SITE_MAP}
+		printf ": <a class=\"online-document\" href=\"sitemap-view-image-${IMAGE_NAME}.html\">view</a></li>\n" >> ${SITE_MAP}
 	fi
 done
 printf "</ul>" >> ${SITE_MAP}
@@ -137,7 +139,7 @@ for VIDEO in ${VIDEOS}; do
 		else
 			printf "${VIDEO}"
 		fi
-		printf ": <a class=\"online-document\" href=sitemap-view-${VIDEO_NAME}.html>view</a></li>\n" >> ${SITE_MAP}
+		printf ": <a class=\"online-document\" href=\"sitemap-view-video-${VIDEO_NAME}.html\">view</a></li>\n" >> ${SITE_MAP}
 	fi
 done
 printf "</ul>" >> ${SITE_MAP}
@@ -147,9 +149,9 @@ printf "</ul>" >> ${SITE_MAP}
 ###############################################################################
 
 for GLYPH in ${GLYPHES}; do
-	if [ -f "glyph/${GLYPH}" ]; then
-		echo "Copying glyph/${GLYPH}"
-		cp "glyph/${GLYPH}" "site/glyph/${GLYPH}"
+	if [ -f "glyphes/${GLYPH}" ]; then
+		echo "Copying glyphes/${GLYPH}"
+		cp "glyphes/${GLYPH}" "site/glyphes/${GLYPH}"
 	fi
 done
 
@@ -176,22 +178,26 @@ for VIDEO in ${VIDEOS}; do
 done
 
 ###############################################################################
-#                                    THUMBS                                   #
+#                                IMAGE THUMBS                                 #
 ###############################################################################
 
 for IMAGE in ${IMAGES}; do
 	if [ -f "images/${IMAGE}" ]; then
 		echo "Generating thumbnail for image ${IMAGE}..."
-		convert -thumbnail 256 "images/${IMAGE}" "site/thumbs/${IMAGE}"
+		convert -thumbnail 256 "images/${IMAGE}" "site/images/thumbs/${IMAGE}"
 	fi
 done
+
+###############################################################################
+#                                VIDEO THUMBS                                 #
+###############################################################################
 
 for VIDEO in ${VIDEOS}; do
 	if [ -f "videos/${VIDEO}" ]; then
 		echo "Generating thumbnail for video ${VIDEO}..."
 		VIDEO_NAME=`echo ${VIDEO} | sed -e 's/\..*$//g'`
-		mplayer -frames 1 -vo png -zoom -xy 256 "videos/${VIDEO}" &> /dev/null
-		mv 00000001.png "site/thumbs/${VIDEO_NAME}.png"
+		mplayer -frames 1 -vo png:z=5 -zoom -xy 256 "videos/${VIDEO}" &> /dev/null
+		mv 00000001.png "site/videos/thumbs/${VIDEO_NAME}.png"
 	fi
 done
 
@@ -217,7 +223,7 @@ for IMAGE in ${IMAGES}; do
 			printf "\t<tr>\n" >> ${IMAGE_GALLERY}
 		fi
 		printf "\t\t<td>\n" >> ${IMAGE_GALLERY} 
-		printf "\t\t\t<a href=\"image-gallery-view-${IMAGE_NAME}.html\"><img src=\`\`THUMBS/${IMAGE}\`\` alt=\"${IMAGE} thumbnail\"></a>\n" >> ${IMAGE_GALLERY}
+		printf "\t\t\t<a href=\"image-gallery-view-image-${IMAGE_NAME}.html\"><img src=\`\`IMAGE_THUMBS/${IMAGE}\`\` alt=\"${IMAGE} thumbnail\"></a>\n" >> ${IMAGE_GALLERY}
 		printf "\t\t\t<p>\n" >> ${IMAGE_GALLERY}
 		cat "images/${IMAGE_NAME}.txt" >> ${IMAGE_GALLERY}
 		printf "\t\t\t</p>\n" >> ${IMAGE_GALLERY}
@@ -259,7 +265,7 @@ for VIDEO in ${VIDEOS}; do
 			printf "\t<tr>\n" >> ${VIDEO_GALLERY}
 		fi
 		printf "\t\t<td>\n" >> ${VIDEO_GALLERY} 
-		printf "\t\t\t<a href=\"video-gallery-view-${VIDEO_NAME}.html\"><img src=\`\`THUMBS/${VIDEO_NAME}.png\`\` alt=\"${VIDEO} thumbnail\"></a>\n" >> ${VIDEO_GALLERY}
+		printf "\t\t\t<a href=\"video-gallery-view-video-${VIDEO_NAME}.html\"><img src=\`\`VIDEO_THUMBS/${VIDEO_NAME}.png\`\` alt=\"${VIDEO} thumbnail\"></a>\n" >> ${VIDEO_GALLERY}
 		printf "\t\t\t<p>\n" >> ${VIDEO_GALLERY}
 		cat "videos/${VIDEO_NAME}.txt" >> ${VIDEO_GALLERY}
 		printf "\t\t\t</p>\n" >> ${VIDEO_GALLERY}
@@ -283,23 +289,18 @@ printf "</table>\n" >> ${VIDEO_GALLERY}
 #                                 IMAGE VIEW                                  #
 ###############################################################################
 
-rm -rf content/*-view-*
+rm -rf content/*-view-image-*
 
-CONTENTS="`cd content; ls` sitemap"
+CONTENTS="`cd content; ls`"
 for CONTENT_DIR in ${CONTENTS}; do
-	if [ "${CONTENT_DIR}" = "sitemap" ]; then
-		CONTENT_TITLE="Site map"
-		IMAGE_NAMES=`echo "${IMAGES}" | sed -e 's/\..*$//g'`
-	else
-		CONTENT_TITLE="`cat content/${CONTENT_DIR}/title.txt`"
-		IMAGE_NAMES=`cat content/${CONTENT_DIR}/*.html | sed -n "s/.*href=\"${CONTENT_DIR}-view-\(.*\)\.html.*/\1/Ip" | sort -u`
-	fi
+	CONTENT_TITLE="`cat content/${CONTENT_DIR}/title.txt`"
+	IMAGE_NAMES=`cat content/${CONTENT_DIR}/*.html | sed -n "s/.*href=\"${CONTENT_DIR}-view-image-\(.*\)\.html.*/\1/Ip" | sort -u`
 
 	for IMAGE_NAME in ${IMAGE_NAMES}; do
 		IMAGE="${IMAGE_NAME}.png"
 		if [ -f "images/${IMAGE}" ]; then
-			echo "Generating view for image ${IMAGE}..."
-			VIEW_DIR=content/${CONTENT_DIR}-view-${IMAGE_NAME}
+			echo "Generating view for image ${IMAGE} from ${CONTENT_DIR}.html..."
+			VIEW_DIR=content/${CONTENT_DIR}-view-image-${IMAGE_NAME}
 			mkdir -p "${VIEW_DIR}"
 			printf "<div class=\"image-view\">\n" > "${VIEW_DIR}/content.html"
 			if [ -f "images/${IMAGE_NAME}.txt" ]; then
@@ -334,21 +335,16 @@ done
 #                                 VIDEO VIEW                                  #
 ###############################################################################
 
-CONTENTS="`cd content; ls` sitemap"
+CONTENTS="`cd content; ls`"
 for CONTENT_DIR in ${CONTENTS}; do
-	if [ "${CONTENT_DIR}" = "sitemap" ]; then
-		CONTENT_TITLE="Site map"
-		VIDEO_NAMES=`echo "${VIDEOS}" | sed -e 's/\..*$//g'`
-	else
-		CONTENT_TITLE="`cat content/${CONTENT_DIR}/title.txt`"
-		VIDEO_NAMES=`cat content/${CONTENT_DIR}/*.html | sed -n "s/.*href=\"${CONTENT_DIR}-view-\(.*\)\.html.*/\1/Ip" | sort -u`
-	fi
+	CONTENT_TITLE="`cat content/${CONTENT_DIR}/title.txt`"
+	VIDEO_NAMES=`cat content/${CONTENT_DIR}/*.html | sed -n "s/.*href=\"${CONTENT_DIR}-view-video-\(.*\)\.html.*/\1/Ip" | sort -u`
 
 	for VIDEO_NAME in ${VIDEO_NAMES}; do
 		VIDEO="${VIDEO_NAME}.avi"
 		if [ -f "videos/${VIDEO}" ]; then
-			echo "Generating view for video ${VIDEO}..."
-			VIEW_DIR=content/${CONTENT_DIR}-view-${VIDEO_NAME}
+			echo "Generating view for video ${VIDEO} from ${CONTENT_DIR}.html..."
+			VIEW_DIR=content/${CONTENT_DIR}-view-video-${VIDEO_NAME}
 			mkdir -p "${VIEW_DIR}"
 			printf "<div class=\"video-view\">\n" > "${VIEW_DIR}/content.html"
 			if [ -f "videos/${VIDEO_NAME}.txt" ]; then
@@ -531,8 +527,9 @@ for THEME in ${THEMES}; do
 				"-DTHEME_NAV=${THEME_NAV}" \
 				"-DIMAGES=${SITE_PREFIX}images" \
 				"-DVIDEOS=${SITE_PREFIX}videos" \
-				"-DGLYPH=${SITE_PREFIX}glyph" \
-				"-DTHUMBS=${SITE_PREFIX}thumbs" \
+				"-DGLYPHES=${SITE_PREFIX}glyphes" \
+				"-DIMAGE_THUMBS=${SITE_PREFIX}images/thumbs" \
+				"-DVIDEO_THUMBS=${SITE_PREFIX}videos/thumbs" \
 				"-DDOWNLOADS=${SITE_PREFIX}downloads" \
 				-undef \
 				-P \
