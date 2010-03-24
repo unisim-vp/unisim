@@ -3,8 +3,12 @@
 	visibility:visible;
 }
 
-.content embed
+.content .video-gallery img, .content .image-gallery img
 {
-	width:576px;
-	height:458px;
+	width:256px;
+}
+
+.content .video-gallery p, .content .image-gallery p
+{
+	font-size:12px;
 }

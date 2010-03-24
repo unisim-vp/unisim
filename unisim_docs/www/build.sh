@@ -103,9 +103,13 @@ SITE_MAP=content/sitemap/sitemap.html
 printf "<h3>Contents</h3>" > ${SITE_MAP}
 printf "<ul>" >> ${SITE_MAP}
 for CONTENT_DIR in ${CONTENTS}; do
-	CONTENT_TITLE="`cat content/${CONTENT_DIR}/title.txt`"
-	if ! [ "${CONTENT_DIR}" = "sitemap" ]; then
-		printf "<li>${CONTENT_TITLE}: <a class=\"online-document\" href=\"${CONTENT_DIR}.html\">view</a></li>\n" >> ${SITE_MAP}
+	regex="^[0-9][0-9]*.*"   # filter error pages (e.g. 404.html)
+	if ! [[ ${CONTENT_DIR} =~ ${regex} ]]; then
+		if ! [ "${CONTENT_DIR}" = "sitemap" ]; then
+			echo "Adding ${CONTENT_DIR}.html to site map..."
+			CONTENT_TITLE="`cat content/${CONTENT_DIR}/title.txt`"
+			printf "<li>${CONTENT_TITLE}: <a class=\"online-document\" href=\"${CONTENT_DIR}.html\">view</a></li>\n" >> ${SITE_MAP}
+		fi
 	fi
 done
 printf "</ul>" >> ${SITE_MAP}
@@ -384,7 +388,7 @@ done
 #                                DOWNLOADS                                    #
 ###############################################################################
 
-DOWNLOADS=`cd downloads; ls *.tar.gz *.tar.bz2 *.zip *.exe *.pdf 2> /dev/null`
+DOWNLOADS=`cd downloads; ls *.tar.gz *.tar.bz2 *.zip *.exe *.deb *.rpm *.pdf 2> /dev/null`
 
 for DOWNLOAD in ${DOWNLOADS}; do
 	if [ -f "downloads/${DOWNLOAD}" ]; then
@@ -543,5 +547,6 @@ done
 
 echo "Installing .htaccess..."
 echo "deny from all" > site/.htaccess
+echo "ErrorDocument 404 404.html" >> site/.htaccess
 
 echo "The web site is in ${PWD}/site"
