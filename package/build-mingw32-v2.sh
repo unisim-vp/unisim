@@ -36,14 +36,14 @@ function Package {
 	echo "AppName=${PACKAGE_NAME}" >> ${ISS_FILENAME}
 	echo "AppVerName=${PACKAGE_NAME}-${VERSION}" >> ${ISS_FILENAME}
 	echo "AppPublisher=CEA" >> ${ISS_FILENAME}
-	echo "AppPublisherURL=http://www.unisim.org" >> ${ISS_FILENAME}
-	echo "AppSupportURL=http://www.unisim.org" >> ${ISS_FILENAME}
-	echo "AppUpdatesURL=http://www.unisim.org" >> ${ISS_FILENAME}
+	echo "AppPublisherURL=http://www.unisim-vp.com" >> ${ISS_FILENAME}
+	echo "AppSupportURL=http://www.unisim-vp.com/support.html" >> ${ISS_FILENAME}
+	echo "AppUpdatesURL=http://www.unisim-vp.com/mingw.html" >> ${ISS_FILENAME}
 	echo "DefaultDirName={sd}\\${PACKAGE_NAME}-${VERSION}" >> ${ISS_FILENAME}
 	echo "DefaultGroupName=${PACKAGE_NAME}-${VERSION}" >> ${ISS_FILENAME}
 	echo "AllowNoIcons=yes" >> ${ISS_FILENAME}
 	echo "OutputDir=dist" >> ${ISS_FILENAME}
-	echo "OutputBaseFilename=${PACKAGE_NAME}-${VERSION}" >> ${ISS_FILENAME}
+	echo "OutputBaseFilename=setup-${PACKAGE_NAME}-${VERSION}" >> ${ISS_FILENAME}
 	echo "Compression=lzma" >> ${ISS_FILENAME}
 	echo "SolidCompression=yes" >> ${ISS_FILENAME}
 	echo "" >> ${ISS_FILENAME}
@@ -82,7 +82,7 @@ function Package {
 	echo "========================================="
 
 	wine ~/.wine/drive_c/Program\ Files/Inno\ Setup\ 5/ISCC.exe ${ISS_FILENAME} || exit
-	cp -f ${INSTALL_DIR}/dist/${PACKAGE_NAME}-${VERSION}.exe ${HERE}
+	cp -f ${INSTALL_DIR}/dist/setup-${PACKAGE_NAME}-${VERSION}.exe ${HERE}
 	rm -rf ${INSTALL_DIR}/dist
 	rm -f ${ISS_FILENAME}
 }
@@ -518,6 +518,11 @@ InstallBinArchive wget-bin.zip http://gnuwin32.sourceforge.net/downlinks/wget-bi
 InstallBinArchive svn-win32-1.3.2.zip http://subversion.tigris.org/files/documents/15/32473/svn-win32-1.3.2.zip
 cp -rf ${INSTALL_DIR}/svn-win32-1.3.2/* ${INSTALL_DIR}/.
 rm -rf ${INSTALL_DIR}/svn-win32-1.3.2
+
+# Install cmake
+InstallBinArchive cmake-2.8.1-win32-x86.zip http://www.cmake.org/files/v2.8/cmake-2.8.1-win32-x86.zip
+cp -rf ${INSTALL_DIR}/cmake-2.8.1-win32-x86/* ${INSTALL_DIR}/.
+rm -rf ${INSTALL_DIR}/cmake-2.8.1-win32-x86
 
 # Package everything into a single .EXE installer
 Package mingw32-unisim-pack msys.bat m.ico "--norxvt"
