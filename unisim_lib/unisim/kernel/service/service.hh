@@ -123,7 +123,7 @@ ServiceExport<SERVICE_IF>& operator << (ServiceExport<SERVICE_IF>& lhs, ServiceE
 class VariableBase
 {
 public:
-	typedef enum { VAR_VOID, VAR_ARRAY, VAR_PARAMETER, VAR_STATISTIC, VAR_REGISTER } Type;
+	typedef enum { VAR_VOID, VAR_ARRAY, VAR_PARAMETER, VAR_STATISTIC, VAR_REGISTER, VAR_FORMULA } Type;
 	typedef enum { FMT_DEFAULT, FMT_HEX, FMT_DEC } Format;
 
 	VariableBase();
@@ -209,14 +209,17 @@ public:
 	static void DumpStatistics(ostream& os);
 	static void DumpParameters(ostream& os);
 	static void DumpRegisters(ostream& os);
+	static void DumpFormulas(ostream& os);
 
 	static bool XmlfyParameters(const char *filename);
 	static bool XmlfyStatistics(const char *filename);
 	static bool XmlfyRegisters(const char *filename);
+	static bool XmlfyFormulas(const char *filename);
 
 	static bool LoadXmlParameters(const char *filename);
 	static bool LoadXmlStatistics(const char *filename);
 	static bool LoadXmlRegisters(const char *filename);
+	static bool LoadXmlFormulas(const char *filename);
 
 	static bool XmlfyVariables(const char *filename);
 	static bool LoadXmlVariables(const char *filename);
@@ -228,12 +231,14 @@ public:
 	static VariableBase *GetParameter(const char *name);
 	static VariableBase *GetRegister(const char *name);
 	static VariableBase *GetStatistic(const char *name);
+	static VariableBase *GetFormula(const char *name);
 
 	static void GetVariables(list<VariableBase *>& lst, VariableBase::Type type = VariableBase::VAR_VOID);
 	static void GetArrays(list<VariableBase *>& lst);
 	static void GetParameters(list<VariableBase *>& lst);
 	static void GetRegisters(list<VariableBase *>& lst);
 	static void GetStatistics(list<VariableBase *>& lst);
+	static void GetFormulas(list<VariableBase *>& lst);
 
 	static VariableBase void_variable;
 
@@ -307,6 +312,82 @@ public:
 	Register(const char *name, Object *owner, TYPE& storage, const char *description = NULL) : Variable<TYPE>(name, owner, storage, VariableBase::VAR_REGISTER, description) {}
 };
 
+template <class TYPE>
+class Formula : public VariableBase
+{
+public:
+	typedef VariableBase::Type Type;
+	typedef enum
+	{
+		OP_NOP,
+		OP_ADD,
+		OP_SUB,
+		OP_MUL,
+		OP_DIV,
+		OP_LT,
+		OP_LTE,
+		OP_GT,
+		OP_GTE,
+		OP_EQ,
+		OP_SEL,
+		OP_NEG,
+		OP_ABS,
+		OP_MIN,
+		OP_MAX,
+		OP_AND,
+		OP_OR,
+		OP_XOR,
+		OP_NOT,
+		OP_EVAL
+	} Operator;
+	
+	Formula(const char *name, Object *owner, Operator op, VariableBase *child1, VariableBase *child2 = 0, VariableBase *child3 = 0, const char *description = 0);
+	
+#if 0
+	Formula(const char *name, Object *owner, const char *math_formula, const char *description = 0);
+#endif
+
+	virtual const char *GetDataTypeName() const;
+	virtual operator bool () const;
+	virtual operator long long () const;
+	virtual operator unsigned long long () const;
+	virtual operator double () const;
+	virtual operator string () const;
+	virtual VariableBase& operator = (bool value);
+	virtual VariableBase& operator = (long long value);
+	virtual VariableBase& operator = (unsigned long long value);
+	virtual VariableBase& operator = (double value);
+	virtual VariableBase& operator = (const char * value);
+private:
+	TYPE Compute() const;
+
+	Operator op;
+	VariableBase *childs[3];
+
+#if 0
+	static const unsigned int TOK_EOF   = 256;
+	static const unsigned int TOK_ERROR = 257;
+	static const unsigned int TOK_LTE   = 258;
+	static const unsigned int TOK_GTE   = 259;
+	static const unsigned int TOK_ABS   = 260;
+	static const unsigned int TOK_MIN   = 261;
+	static const unsigned int TOK_MAX   = 262;
+	static const unsigned int TOK_IDENT = 263;
+	static const unsigned int TOK_EXPR  = 264;
+
+	static const unsigned int PEEK_TOK  = 0;
+	static const unsigned int GET_TOK   = 1;
+	
+	unsigned int look_ahead_token;
+	VariableBase *look_ahead_lval;
+
+	const char *GetTokenName(unsigned int token) const;
+	unsigned int ReadToken(const char *math_formula, unsigned int& pos, unsigned int mode, VariableBase **lval = 0);
+	unsigned int Parse(const char *math_formula, unsigned int& pos, VariableBase **lval);
+	void Initialize(Operator op, VariableBase *child1, VariableBase *child2 = 0, VariableBase *child3 = 0);
+	Formula(Operator op, VariableBase *child1, VariableBase *child2 = 0, VariableBase *child3 = 0);
+#endif
+};
 
 //=============================================================================
 //=                           VariableArray<TYPE>                            =

@@ -58,9 +58,8 @@ Memory(const sc_module_name& name, Object *parent) :
 	sc_module(name),
 	unisim::component::cxx::memory::ram::Memory<PHYSICAL_ADDR, PAGE_SIZE>(name, parent),
 	slave_port("slave-port"),
-	cycle_time(0),
 	cycle_sctime(),
-	param_cycle_time("cycle-time", this, cycle_time, "RAM memory cycle time in picoseconds"),
+	param_cycle_time("cycle-time", this, cycle_sctime, "RAM memory cycle time"),
 	verbose(false),
 	param_verbose("verbose", this, verbose, "enable/disable verbosity"),
 	logger(*this)
@@ -81,15 +80,14 @@ bool Memory<PHYSICAL_ADDR, DATA_SIZE, PAGE_SIZE, DEBUG>::
 Setup() {
 	if(unlikely(DEBUG && verbose)) 
 		logger << DebugInfo << LOCATION
-			<< " cycle time of " << cycle_time << " ps" 
+			<< " cycle time of " << cycle_sctime 
 			<< std::endl << EndDebugInfo;
-	if(!cycle_time) {
+	if(cycle_sctime == SC_ZERO_TIME) {
 		logger << DebugError << LOCATION
 			<< "cycle time must be different than 0" << std::endl
 			<< EndDebugError;
 		return false;
 	}
-	cycle_sctime = sc_time(cycle_time, SC_PS);
 	return unisim::component::cxx::memory::ram::Memory<PHYSICAL_ADDR, PAGE_SIZE>::Setup();
 }
 

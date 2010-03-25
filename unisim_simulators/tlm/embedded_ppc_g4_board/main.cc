@@ -46,7 +46,6 @@
 #include "unisim/component/tlm/processor/powerpc/powerpc.hh"
 #include "unisim/component/tlm/memory/ram/memory.hh"
 #include "unisim/component/tlm/memory/flash/am29lv/am29lv.hh"
-#include "unisim/component/tlm/pci/video/display.hh"
 #include "unisim/component/tlm/fsb/snooping_bus/bus.hh"
 #include "unisim/component/tlm/chipset/mpc107/mpc107.hh"
 #include "unisim/component/tlm/pci/bus/bus.hh"
@@ -76,7 +75,7 @@
 #endif
 
 
-#ifdef EMBEDDED_PPC_G4_BOARD_DEBUG
+#ifdef DEBUG_EMBEDDED_PPC_G4_BOARD
 	static const bool DEBUG_INFORMATION = true;
 #else
 	static const bool DEBUG_INFORMATION = false;
@@ -167,7 +166,7 @@ void help(char *prog_name)
 //=========================================================================
 
 // CPU parameters
-#ifdef EMBEDDED_PPC_G4_BOARD_DEBUG
+#ifdef DEBUG_EMBEDDED_PPC_G4_BOARD
 typedef unisim::component::cxx::processor::powerpc::MPC7447ADebugConfig CPU_CONFIG;
 #else
 typedef unisim::component::cxx::processor::powerpc::MPC7447AConfig CPU_CONFIG;

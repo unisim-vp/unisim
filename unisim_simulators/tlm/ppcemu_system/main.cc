@@ -1236,9 +1236,13 @@ int sc_main(int argc, char *argv[])
 		cerr << "Simulation run-time parameters:" << endl;
 		ServiceManager::DumpParameters(cerr);
 		cerr << endl;
+		cerr << "Simulation formulas:" << endl;
+		ServiceManager::DumpFormulas(cerr);
+		cerr << endl;
 		cerr << "Simulation statistics:" << endl;
 		ServiceManager::DumpStatistics(cerr);
 		cerr << endl;
+	
 		cerr << "simulation time: " << spent_time << " seconds" << endl;
 		cerr << "simulated time : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;
 		cerr << "host simulation speed: " << ((double) (*cpu)["instruction-counter"] / spent_time / 1000000.0) << " MIPS" << endl;

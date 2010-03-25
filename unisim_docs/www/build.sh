@@ -155,9 +155,10 @@ done
 #                                 IMAGE GALLERY                               #
 ###############################################################################
 
-NUM_IMAGES_PER_PAGE=15
+IMAGE_GALLERY_NUM_IMAGES_PER_PAGE=15
+IMAGE_GALLERY_NUM_IMAGES_PER_ROW=3
 NUM_IMAGES=`echo "${IMAGES}" | wc -w`
-NUM_IMAGE_GALLERY_PAGES=$(((${NUM_IMAGES} + ${NUM_IMAGES_PER_PAGE} - 1) / ${NUM_IMAGES_PER_PAGE}))
+NUM_IMAGE_GALLERY_PAGES=$(((${NUM_IMAGES} + ${IMAGE_GALLERY_NUM_IMAGES_PER_PAGE} - 1) / ${IMAGE_GALLERY_NUM_IMAGES_PER_PAGE}))
 
 if [ ${NUM_IMAGE_GALLERY_PAGES} -le 7 ]; then
 	STRING_PAGE="Page "
@@ -176,28 +177,32 @@ for IMAGE in ${IMAGES}; do
 		IMAGE_NAME=`echo ${IMAGE} | sed -e 's/\..*$//g'`
 
 		if [ ${IMAGE_GALLERY_NUM_IMAGE_WITHIN_PAGE} -eq 1 ]; then
-			# build a navigation bar (in reverse order)
-			PAGE_NUM=${NUM_IMAGE_GALLERY_PAGES}
-			IMAGE_GALLERY_NAV="</td></tr></table>";
-			if ! [ ${IMAGE_GALLERY_PAGE_NUM} -eq ${NUM_IMAGE_GALLERY_PAGES} ]; then
-				NEXT_PAGE_NUM=$((${IMAGE_GALLERY_PAGE_NUM} + 1))
-				IMAGE_GALLERY_NAV="<a href=\"image-gallery-${NEXT_PAGE_NUM}.html\"><img src=\`\`THEME/nav-next.png\`\` alt=\"&gt;\"></a>${IMAGE_GALLERY_NAV}"
-			fi
-			IMAGE_GALLERY_NAV="<td id=\"image-gallery-nav-next\">${IMAGE_GALLERY_NAV}"
-			while [ ${PAGE_NUM} -gt 0 ]; do
-				if [ ${PAGE_NUM} -eq ${IMAGE_GALLERY_PAGE_NUM} ]; then
-					IMAGE_GALLERY_NAV="<td>${STRING_PAGE}${PAGE_NUM}</td>${IMAGE_GALLERY_NAV}"
-				else
-					IMAGE_GALLERY_NAV="<td><a href=\"image-gallery-${PAGE_NUM}.html\">${STRING_PAGE}${PAGE_NUM}</a></td>${IMAGE_GALLERY_NAV}"
+			if [ ${NUM_IMAGE_GALLERY_PAGES} -gt 1 ]; then
+				# build a navigation bar (in reverse order)
+				PAGE_NUM=${NUM_IMAGE_GALLERY_PAGES}
+				IMAGE_GALLERY_NAV="</td></tr></table>";
+				if ! [ ${IMAGE_GALLERY_PAGE_NUM} -eq ${NUM_IMAGE_GALLERY_PAGES} ]; then
+					NEXT_PAGE_NUM=$((${IMAGE_GALLERY_PAGE_NUM} + 1))
+					IMAGE_GALLERY_NAV="<a href=\"image-gallery-${NEXT_PAGE_NUM}.html\"><img src=\`\`THEME/nav-next.png\`\` alt=\"&gt;\"></a>${IMAGE_GALLERY_NAV}"
 				fi
-				PAGE_NUM=$((${PAGE_NUM} - 1))
-			done
-			IMAGE_GALLERY_NAV="</td>${IMAGE_GALLERY_NAV}"
-			if ! [ ${IMAGE_GALLERY_PAGE_NUM} -eq 1 ]; then
-				PREV_PAGE_NUM=$((${IMAGE_GALLERY_PAGE_NUM} - 1))
-				IMAGE_GALLERY_NAV="<a href=\"image-gallery-${PREV_PAGE_NUM}.html\"><img src=\`\`THEME/nav-prev.png\`\` alt=\"&lt;\"></a>${IMAGE_GALLERY_NAV}"
+				IMAGE_GALLERY_NAV="<td id=\"image-gallery-nav-next\">${IMAGE_GALLERY_NAV}"
+				while [ ${PAGE_NUM} -gt 0 ]; do
+					if [ ${PAGE_NUM} -eq ${IMAGE_GALLERY_PAGE_NUM} ]; then
+						IMAGE_GALLERY_NAV="<td>${STRING_PAGE}${PAGE_NUM}</td>${IMAGE_GALLERY_NAV}"
+					else
+						IMAGE_GALLERY_NAV="<td><a href=\"image-gallery-${PAGE_NUM}.html\">${STRING_PAGE}${PAGE_NUM}</a></td>${IMAGE_GALLERY_NAV}"
+					fi
+					PAGE_NUM=$((${PAGE_NUM} - 1))
+				done
+				IMAGE_GALLERY_NAV="</td>${IMAGE_GALLERY_NAV}"
+				if ! [ ${IMAGE_GALLERY_PAGE_NUM} -eq 1 ]; then
+					PREV_PAGE_NUM=$((${IMAGE_GALLERY_PAGE_NUM} - 1))
+					IMAGE_GALLERY_NAV="<a href=\"image-gallery-${PREV_PAGE_NUM}.html\"><img src=\`\`THEME/nav-prev.png\`\` alt=\"&lt;\"></a>${IMAGE_GALLERY_NAV}"
+				fi
+				IMAGE_GALLERY_NAV="<table class=\"image-gallery-nav\"><tr><td id=\"image-gallery-nav-prev\">${IMAGE_GALLERY_NAV}"
+			else
+				IMAGE_GALLERY_NAV=
 			fi
-			IMAGE_GALLERY_NAV="<table class=\"image-gallery-nav\"><tr><td id=\"image-gallery-nav-prev\">${IMAGE_GALLERY_NAV}"
 
 			IMAGE_GALLERY_DIR=content/image-gallery-${IMAGE_GALLERY_PAGE_NUM}
 			rm -rf ${IMAGE_GALLERY_DIR}
@@ -206,7 +211,10 @@ for IMAGE in ${IMAGES}; do
 			IMAGE_GALLERY_STYLE=${IMAGE_GALLERY_DIR}/style.css
 			echo "Generating image gallery in ${IMAGE_GALLERY}..."
 
-			printf "Screenshot gallery - Page ${IMAGE_GALLERY_PAGE_NUM} of ${NUM_IMAGE_GALLERY_PAGES}" > ${IMAGE_GALLERY_DIR}/title.txt
+			printf "Screenshot gallery" > ${IMAGE_GALLERY_DIR}/title.txt
+			if [ ${NUM_IMAGE_GALLERY_PAGES} -gt 1 ]; then
+				printf " - Page ${IMAGE_GALLERY_PAGE_NUM} of ${NUM_IMAGE_GALLERY_PAGES}" >> ${IMAGE_GALLERY_DIR}/title.txt
+			fi
 
 			printf "<div class=\"content-item\">\n" > ${IMAGE_GALLERY}
 			printf "<div class=\"content-item-title\">\n" >> ${IMAGE_GALLERY}
@@ -223,13 +231,13 @@ for IMAGE in ${IMAGES}; do
 			printf "\t<tr>\n" >> ${IMAGE_GALLERY}
 		fi
 		printf "\t\t<td>\n" >> ${IMAGE_GALLERY} 
-		printf "\t\t\t<a href=\"image-gallery-view-image-${IMAGE_NAME}.html\"><img src=\`\`IMAGE_THUMBS/${IMAGE}\`\` alt=\"${IMAGE} thumbnail\"></a>\n" >> ${IMAGE_GALLERY}
+		printf "\t\t\t<a href=\"image-gallery-${IMAGE_GALLERY_PAGE_NUM}-view-image-${IMAGE_NAME}.html\"><img src=\`\`IMAGE_THUMBS/${IMAGE}\`\` alt=\"${IMAGE} thumbnail\"></a>\n" >> ${IMAGE_GALLERY}
 		printf "\t\t\t<p>\n" >> ${IMAGE_GALLERY}
 		cat "images/${IMAGE_NAME}.txt" >> ${IMAGE_GALLERY}
 		printf "\t\t\t</p>\n" >> ${IMAGE_GALLERY}
 		printf "\t\t</td>\n" >> ${IMAGE_GALLERY} 
 		IMAGE_GALLERY_NUM_IMAGE_WITHIN_PAGE=$((${IMAGE_GALLERY_NUM_IMAGE_WITHIN_PAGE} + 1))
-		if [ ${IMAGE_GALLERY_NUM_IMAGE_WITHIN_PAGE} -gt ${NUM_IMAGES_PER_PAGE} ]; then
+		if [ ${IMAGE_GALLERY_NUM_IMAGE_WITHIN_PAGE} -gt ${IMAGE_GALLERY_NUM_IMAGES_PER_PAGE} ]; then
 			IMAGE_GALLERY_COL=1
 			IMAGE_GALLERY_NUM_IMAGE_WITHIN_PAGE=1
 			IMAGE_GALLERY_PAGE_NUM=$((${IMAGE_GALLERY_PAGE_NUM} + 1))
@@ -241,7 +249,7 @@ for IMAGE in ${IMAGES}; do
 		fi
 
 		IMAGE_GALLERY_COL=$((${IMAGE_GALLERY_COL} + 1))
-		if [ ${IMAGE_GALLERY_COL} -gt 3 ]; then
+		if [ ${IMAGE_GALLERY_COL} -gt ${IMAGE_GALLERY_NUM_IMAGES_PER_ROW} ]; then
 			IMAGE_GALLERY_COL=1
 			printf "\t</tr>\n" >> ${IMAGE_GALLERY}
 			continue
@@ -250,13 +258,13 @@ for IMAGE in ${IMAGES}; do
 done
 
 if ! [ ${IMAGE_GALLERY_COL} -eq 1 ]; then
-	if [ ${IMAGE_GALLERY_COL} -le 3 ]; then
+	if [ ${IMAGE_GALLERY_COL} -le ${IMAGE_GALLERY_NUM_IMAGES_PER_ROW} ]; then
 		printf "\t</tr>\n" >> ${IMAGE_GALLERY} 
 	fi
 fi
 
 if ! [ ${IMAGE_GALLERY_NUM_IMAGE_WITHIN_PAGE} -eq 1 ]; then
-	if [ ${IMAGE_GALLERY_NUM_IMAGE_WITHIN_PAGE} -le ${NUM_IMAGES_PER_PAGE} ]; then
+	if [ ${IMAGE_GALLERY_NUM_IMAGE_WITHIN_PAGE} -le ${IMAGE_GALLERY_NUM_IMAGES_PER_PAGE} ]; then
 		printf "</table>\n" >> ${IMAGE_GALLERY}
 		printf "</div>\n" >> ${IMAGE_GALLERY} 
 		printf "</div>\n" >> ${IMAGE_GALLERY} 
@@ -267,9 +275,10 @@ fi
 #                              VIDEO GALLERY                                  #
 ###############################################################################
 
-NUM_VIDEOS_PER_PAGE=15
+VIDEO_GALLERY_NUM_VIDEOS_PER_PAGE=15
+VIDEO_GALLERY_NUM_VIDEOS_PER_ROW=3
 NUM_VIDEOS=`echo "${VIDEOS}" | wc -w`
-NUM_VIDEO_GALLERY_PAGES=$(((${NUM_VIDEOS} + ${NUM_VIDEOS_PER_PAGE} - 1) / ${NUM_VIDEOS_PER_PAGE}))
+NUM_VIDEO_GALLERY_PAGES=$(((${NUM_VIDEOS} + ${VIDEO_GALLERY_NUM_VIDEOS_PER_PAGE} - 1) / ${VIDEO_GALLERY_NUM_VIDEOS_PER_PAGE}))
 
 if [ ${NUM_VIDEO_GALLERY_PAGES} -le 7 ]; then
 	STRING_PAGE="Page "
@@ -288,28 +297,32 @@ for VIDEO in ${VIDEOS}; do
 		VIDEO_NAME=`echo ${VIDEO} | sed -e 's/\..*$//g'`
 
 		if [ ${VIDEO_GALLERY_NUM_VIDEO_WITHIN_PAGE} -eq 1 ]; then
-			# build a navigation bar (in reverse order)
-			PAGE_NUM=${NUM_VIDEO_GALLERY_PAGES}
-			VIDEO_GALLERY_NAV="</td></tr></table>";
-			if ! [ ${VIDEO_GALLERY_PAGE_NUM} -eq ${NUM_VIDEO_GALLERY_PAGES} ]; then
-				NEXT_PAGE_NUM=$((${VIDEO_GALLERY_PAGE_NUM} + 1))
-				VIDEO_GALLERY_NAV="<a href=\"video-gallery-${NEXT_PAGE_NUM}.html\"><img src=\`\`THEME/nav-next.png\`\`></a>${VIDEO_GALLERY_NAV}"
-			fi
-			VIDEO_GALLERY_NAV="<td id=\"video-gallery-nav-next\">${VIDEO_GALLERY_NAV}"
-			while [ ${PAGE_NUM} -gt 0 ]; do
-				if [ ${PAGE_NUM} -eq ${VIDEO_GALLERY_PAGE_NUM} ]; then
-					VIDEO_GALLERY_NAV="<td>${STRING_PAGE}${PAGE_NUM}</td>${VIDEO_GALLERY_NAV}"
-				else
-					VIDEO_GALLERY_NAV="<td><a href=\"video-gallery-${PAGE_NUM}.html\">${STRING_PAGE}${PAGE_NUM}</a></td>${VIDEO_GALLERY_NAV}"
+			if [ ${NUM_VIDEO_GALLERY_PAGES} -gt 1 ]; then
+				# build a navigation bar (in reverse order)
+				PAGE_NUM=${NUM_VIDEO_GALLERY_PAGES}
+				VIDEO_GALLERY_NAV="</td></tr></table>";
+				if ! [ ${VIDEO_GALLERY_PAGE_NUM} -eq ${NUM_VIDEO_GALLERY_PAGES} ]; then
+					NEXT_PAGE_NUM=$((${VIDEO_GALLERY_PAGE_NUM} + 1))
+					VIDEO_GALLERY_NAV="<a href=\"video-gallery-${NEXT_PAGE_NUM}.html\"><img src=\`\`THEME/nav-next.png\`\`></a>${VIDEO_GALLERY_NAV}"
 				fi
-				PAGE_NUM=$((${PAGE_NUM} - 1))
-			done
-			VIDEO_GALLERY_NAV="</td>${VIDEO_GALLERY_NAV}"
-			if ! [ ${VIDEO_GALLERY_PAGE_NUM} -eq 1 ]; then
-				PREV_PAGE_NUM=$((${VIDEO_GALLERY_PAGE_NUM} - 1))
-				VIDEO_GALLERY_NAV="<a href=\"video-gallery-${PREV_PAGE_NUM}.html\"><img src=\`\`THEME/nav-prev.png\`\`></a>${VIDEO_GALLERY_NAV}"
+				VIDEO_GALLERY_NAV="<td id=\"video-gallery-nav-next\">${VIDEO_GALLERY_NAV}"
+				while [ ${PAGE_NUM} -gt 0 ]; do
+					if [ ${PAGE_NUM} -eq ${VIDEO_GALLERY_PAGE_NUM} ]; then
+						VIDEO_GALLERY_NAV="<td>${STRING_PAGE}${PAGE_NUM}</td>${VIDEO_GALLERY_NAV}"
+					else
+						VIDEO_GALLERY_NAV="<td><a href=\"video-gallery-${PAGE_NUM}.html\">${STRING_PAGE}${PAGE_NUM}</a></td>${VIDEO_GALLERY_NAV}"
+					fi
+					PAGE_NUM=$((${PAGE_NUM} - 1))
+				done
+				VIDEO_GALLERY_NAV="</td>${VIDEO_GALLERY_NAV}"
+				if ! [ ${VIDEO_GALLERY_PAGE_NUM} -eq 1 ]; then
+					PREV_PAGE_NUM=$((${VIDEO_GALLERY_PAGE_NUM} - 1))
+					VIDEO_GALLERY_NAV="<a href=\"video-gallery-${PREV_PAGE_NUM}.html\"><img src=\`\`THEME/nav-prev.png\`\`></a>${VIDEO_GALLERY_NAV}"
+				fi
+				VIDEO_GALLERY_NAV="<table class=\"video-gallery-nav\"><tr><td id=\"video-gallery-nav-prev\">${VIDEO_GALLERY_NAV}"
+			else
+				VIDEO_GALLERY_NAV=
 			fi
-			VIDEO_GALLERY_NAV="<table class=\"video-gallery-nav\"><tr><td id=\"video-gallery-nav-prev\">${VIDEO_GALLERY_NAV}"
 
 			VIDEO_GALLERY_DIR=content/video-gallery-${VIDEO_GALLERY_PAGE_NUM}
 			rm -rf ${VIDEO_GALLERY_DIR}
@@ -318,7 +331,10 @@ for VIDEO in ${VIDEOS}; do
 			VIDEO_GALLERY_STYLE=${VIDEO_GALLERY_DIR}/style.css
 			echo "Generating video gallery in ${VIDEO_GALLERY}..."
 
-			printf "Video gallery - Page ${VIDEO_GALLERY_PAGE_NUM} of ${NUM_VIDEO_GALLERY_PAGES}" > ${VIDEO_GALLERY_DIR}/title.txt
+			printf "Video gallery" > ${VIDEO_GALLERY_DIR}/title.txt
+			if [ ${NUM_VIDEO_GALLERY_PAGES} -gt 1 ]; then
+				printf " - Page ${VIDEO_GALLERY_PAGE_NUM} of ${NUM_VIDEO_GALLERY_PAGES}" >> ${VIDEO_GALLERY_DIR}/title.txt
+			fi
 
 			printf "<div class=\"content-item\">\n" > ${VIDEO_GALLERY}
 			printf "<div class=\"content-item-title\">\n" >> ${VIDEO_GALLERY}
@@ -335,13 +351,13 @@ for VIDEO in ${VIDEOS}; do
 			printf "\t<tr>\n" >> ${VIDEO_GALLERY}
 		fi
 		printf "\t\t<td>\n" >> ${VIDEO_GALLERY} 
-		printf "\t\t\t<a href=\"video-gallery-view-video-${VIDEO_NAME}.html\"><img src=\`\`VIDEO_THUMBS/${VIDEO_NAME}.png\`\` alt=\"${VIDEO} thumbnail\"></a>\n" >> ${VIDEO_GALLERY}
+		printf "\t\t\t<a href=\"video-gallery-${VIDEO_GALLERY_PAGE_NUM}-view-video-${VIDEO_NAME}.html\"><img src=\`\`VIDEO_THUMBS/${VIDEO_NAME}.png\`\` alt=\"${VIDEO} thumbnail\"></a>\n" >> ${VIDEO_GALLERY}
 		printf "\t\t\t<p>\n" >> ${VIDEO_GALLERY}
 		cat "videos/${VIDEO_NAME}.txt" >> ${VIDEO_GALLERY}
 		printf "\t\t\t</p>\n" >> ${VIDEO_GALLERY}
 		printf "\t\t</td>\n" >> ${VIDEO_GALLERY} 
 		VIDEO_GALLERY_NUM_VIDEO_WITHIN_PAGE=$((${VIDEO_GALLERY_NUM_VIDEO_WITHIN_PAGE} + 1))
-		if [ ${VIDEO_GALLERY_NUM_VIDEO_WITHIN_PAGE} -gt ${NUM_VIDEOS_PER_PAGE} ]; then
+		if [ ${VIDEO_GALLERY_NUM_VIDEO_WITHIN_PAGE} -gt ${VIDEO_GALLERY_NUM_VIDEOS_PER_PAGE} ]; then
 			VIDEO_GALLERY_COL=1
 			VIDEO_GALLERY_NUM_VIDEO_WITHIN_PAGE=1
 			VIDEO_GALLERY_PAGE_NUM=$((${VIDEO_GALLERY_PAGE_NUM} + 1))
@@ -353,7 +369,7 @@ for VIDEO in ${VIDEOS}; do
 		fi
 
 		VIDEO_GALLERY_COL=$((${VIDEO_GALLERY_COL} + 1))
-		if [ ${VIDEO_GALLERY_COL} -gt 3 ]; then
+		if [ ${VIDEO_GALLERY_COL} -gt ${VIDEO_GALLERY_NUM_VIDEOS_PER_ROW} ]; then
 			VIDEO_GALLERY_COL=1
 			printf "\t</tr>\n" >> ${VIDEO_GALLERY}
 			continue
@@ -362,58 +378,18 @@ for VIDEO in ${VIDEOS}; do
 done
 
 if ! [ ${VIDEO_GALLERY_COL} -eq 1 ]; then
-	if [ ${VIDEO_GALLERY_COL} -le 3 ]; then
+	if [ ${VIDEO_GALLERY_COL} -le ${VIDEO_GALLERY_NUM_VIDEOS_PER_ROW} ]; then
 		printf "\t</tr>\n" >> ${VIDEO_GALLERY} 
 	fi
 fi
 
 if ! [ ${VIDEO_GALLERY_NUM_VIDEO_WITHIN_PAGE} -eq 1 ]; then
-	if [ ${VIDEO_GALLERY_NUM_VIDEO_WITHIN_PAGE} -le ${NUM_VIDEOS_PER_PAGE} ]; then
+	if [ ${VIDEO_GALLERY_NUM_VIDEO_WITHIN_PAGE} -le ${VIDEO_GALLERY_NUM_VIDEOS_PER_PAGE} ]; then
 		printf "</table>\n" >> ${VIDEO_GALLERY}
 		printf "</div>\n" >> ${VIDEO_GALLERY} 
 		printf "</div>\n" >> ${VIDEO_GALLERY} 
 	fi
 fi
-
-
-
-# VIDEO_GALLERY=content/video-gallery/video-gallery.html
-# rm -f ${VIDEO_GALLERY}
-# 
-# echo "Generating video gallery in ${VIDEO_GALLERY}..."
-# 
-# printf "" > ${VIDEO_GALLERY}
-# printf "<table class=\"video-gallery\">\n" > ${VIDEO_GALLERY}
-# 
-# VIDEO_GALLERY_COL=1
-# for VIDEO in ${VIDEOS}; do
-# 	if [ -f "videos/${VIDEO}" ]; then
-# 		echo "Adding video ${VIDEO} to video gallery..."
-# 		VIDEO_NAME=`echo ${VIDEO} | sed -e 's/\..*$//g'`
-# 
-# 		if [ ${VIDEO_GALLERY_COL} -eq 1 ]; then
-# 			printf "\t<tr>\n" >> ${VIDEO_GALLERY}
-# 		fi
-# 		printf "\t\t<td>\n" >> ${VIDEO_GALLERY} 
-# 		printf "\t\t\t<a href=\"video-gallery-view-video-${VIDEO_NAME}.html\"><img src=\`\`VIDEO_THUMBS/${VIDEO_NAME}.png\`\` alt=\"${VIDEO} thumbnail\"></a>\n" >> ${VIDEO_GALLERY}
-# 		printf "\t\t\t<p>\n" >> ${VIDEO_GALLERY}
-# 		cat "videos/${VIDEO_NAME}.txt" >> ${VIDEO_GALLERY}
-# 		printf "\t\t\t</p>\n" >> ${VIDEO_GALLERY}
-# 		printf "\t\t</td>\n" >> ${VIDEO_GALLERY} 
-# 		VIDEO_GALLERY_COL=$((${VIDEO_GALLERY_COL} + 1))
-# 		if [ ${VIDEO_GALLERY_COL} -gt 3 ]; then
-# 			VIDEO_GALLERY_COL=1
-# 			printf "\t</tr>\n" >> ${VIDEO_GALLERY} 
-# 		fi
-# 	fi
-# done
-# 
-# if ! [ ${VIDEO_GALLERY_COL} -eq 1 ]; then
-# 	if [ ${VIDEO_GALLERY_COL} -le 3 ]; then
-# 		printf "\t</tr>\n" >> ${VIDEO_GALLERY} 
-# 	fi
-# fi
-# printf "</table>\n" >> ${VIDEO_GALLERY}
 
 ###############################################################################
 #                                    Site map                                 #
@@ -570,11 +546,12 @@ done
 #                                DOWNLOADS                                    #
 ###############################################################################
 
-DOWNLOADS=`cd downloads; ls *.tar.gz *.tar.bz2 *.zip *.exe *.deb *.rpm *.pdf 2> /dev/null`
+DOWNLOADS=`cd downloads; find . \( -name "*.tar.gz" -o -name "*.tar.bz2" -o -name "*.zip" -o -name "*.exe" -o -name "*.deb" -o -name "*.rpm" -o -name "*.pdf" \) 2> /dev/null`
 
 for DOWNLOAD in ${DOWNLOADS}; do
 	if [ -f "downloads/${DOWNLOAD}" ]; then
 		echo "Copying downloads/${DOWNLOAD}"
+		mkdir -p `dirname "site/downloads/${DOWNLOAD}"`
 		cp "downloads/${DOWNLOAD}" "site/downloads/${DOWNLOAD}"
 	fi
 done

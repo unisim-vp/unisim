@@ -111,6 +111,7 @@ using unisim::service::interfaces::TrapReporting;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::Statistic;
 using unisim::kernel::service::ParameterArray;
+using unisim::kernel::service::Formula;
 using unisim::kernel::logger::Logger;
 using unisim::kernel::logger::DebugInfo;
 using unisim::kernel::logger::DebugWarning;
@@ -1797,6 +1798,9 @@ private:
 	Statistic<uint64_t> stat_instruction_counter;
 	Statistic<uint64_t> stat_cpu_cycle;                   //!< Number of cpu cycles
 	Statistic<uint64_t> stat_bus_cycle;                   //!< Number of front side bus cycles
+#if 0
+	Formula<double> formula_insn_per_bus_cycle;
+#endif
 
 	//=====================================================================
 	//=                   lwarx/stwcx. reservation                        =

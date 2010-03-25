@@ -291,6 +291,576 @@ template <class TYPE> VariableBase& Variable<TYPE>::operator = (double value) { 
 //=                           VariableArray<TYPE>                            =
 //=============================================================================
 
+//=============================================================================
+//=                             Formula<TYPE>                                 =
+//=============================================================================
+
+static unsigned int auto_formula_id = 0;
+static string auto_formula_id_string;
+
+template <class TYPE>
+Formula<TYPE>::Formula(const char *_name, Object *_owner, Operator _op, VariableBase *child1, VariableBase *child2, VariableBase *child3, const char *_description)
+	: VariableBase(_name, _owner, VAR_FORMULA, _description)
+	, op(_op)
+{
+	childs[0] = child1;
+	childs[1] = child2;
+	childs[2] = child3;
+}
+
+#if 0
+template <class TYPE>
+Formula<TYPE>::Formula(const char *_name, Object *_owner, const char *math_formula, const char *_description)
+	: VariableBase(_name, _owner, VAR_FORMULA, _description)
+	, op(OP_NOP)
+{
+	VariableBase *expr = 0;
+	unsigned int pos = 0;
+	look_ahead_token = 0;
+	look_ahead_lval = 0;
+	unsigned int tok = Parse(math_formula, pos, &expr);
+	if(tok == TOK_EXPR)
+		Initialize(OP_EVAL, expr);
+}
+
+template <class TYPE>
+Formula<TYPE>::Formula(Operator _op, VariableBase *child1, VariableBase *child2, VariableBase *child3)
+	: VariableBase(auto_formula_id ? auto_formula_id_string.c_str() : "0", (Object *) 0, VAR_FORMULA, 0)
+	, op(_op)
+{
+	childs[0] = child1;
+	childs[1] = child2;
+	childs[2] = child3;
+	stringstream sstr;
+	sstr << (++auto_formula_id);
+	auto_formula_id_string = sstr.str();
+}
+
+template <class TYPE>
+const char *Formula<TYPE>::GetTokenName(unsigned int token) const
+{
+	static char token_name[2];
+	
+	switch(token)
+	{
+		
+		TOK_EOF: return "end-of-file";
+		TOK_ERROR: return "error";
+		TOK_LTE: return "<=";
+		TOK_GTE: return ">=";
+		TOK_ABS: return "abs";
+		TOK_MIN: return "min";
+		TOK_MAX: return "max";
+		TOK_IDENT: return "identifier";
+		TOK_EXPR: return "expression";
+		default:
+			token_name[0] = token;
+			token_name[1] = 0;
+			return token_name;
+	}
+	return 0;
+}
+
+template <class TYPE>
+unsigned int Formula<TYPE>::ReadToken(const char *math_formula, unsigned int& pos, unsigned int mode, VariableBase **lval)
+{
+	unsigned int token;
+	
+	if(look_ahead_token)
+	{
+		if(mode == GET_TOK)
+		{
+			*lval = look_ahead_lval;
+			token = look_ahead_token;
+			look_ahead_token = 0;
+			return token;
+		}
+		if(mode == PEEK_TOK)
+		{
+			*lval = look_ahead_lval;
+			return look_ahead_token;
+		}
+		return TOK_ERROR;
+	}
+
+	do
+	{
+		switch(math_formula[pos])
+		{
+			case 0:
+				token = TOK_EOF;
+				break;
+			case '+':
+			case '-':
+			case '*':
+			case '/':
+			case '=':
+			case '?':
+			case ':':
+			case '(':
+			case ')':
+			case '&':
+			case '|':
+			case '^':
+			case '!':
+				pos++;
+				token = math_formula[pos];
+				break;
+			case '<':
+				if(math_formula[pos + 1] == '=')
+				{
+					pos += 2;
+					token = TOK_LTE;
+				}
+				else
+				{
+					pos++;
+					token = '<';
+				}
+				break;
+			case '>':
+				if(math_formula[pos + 1] == '=')
+				{
+					pos += 2;
+					token = TOK_GTE;
+				}
+				else
+				{
+					pos++;
+					token = '>';
+				}
+				break;
+			case 'a':
+				if(math_formula[pos + 1] == 'b' && math_formula[pos + 2] == 's')
+				{
+					pos += 3;
+					token = TOK_ABS;
+				}
+				else
+				{
+					token = TOK_ERROR;
+				}
+				break;
+			case 'm':
+				if(math_formula[pos + 1] == 'i' && math_formula[pos + 2] == 'n')
+				{
+					pos += 3;
+					token = TOK_MIN;
+				}
+				else if(math_formula[pos + 1] == 'a' && math_formula[pos + 2] == 'x')
+				{
+					pos += 3;
+					token = TOK_MAX;
+				}
+				else
+				{
+					token = TOK_ERROR;
+				}
+				break;
+			case ' ':
+			case '\t':
+				break;
+			case '$':
+				if(math_formula[pos + 1] == '{')
+				{
+					string ident;
+					int i = 2;
+					while(math_formula[pos + i] && math_formula[pos + i] != '}')
+					{
+						ident += math_formula[pos + i];
+						i++;
+					}
+					
+					if(math_formula[pos + i] != '}') return TOK_ERROR;
+					
+					pos += i;
+					*lval = &(*GetOwner())[ident.c_str()];
+					token = TOK_IDENT;
+				}
+				break;
+			default:
+				token = TOK_ERROR;
+		}
+	} while(!token);
+	
+	if(mode == PEEK_TOK)
+	{
+		look_ahead_token = token; // save token
+		look_ahead_lval = *lval;
+		return token;
+	}
+	
+	if(mode == GET_TOK)
+	{
+		return token;
+	}
+}
+
+template <class TYPE>
+unsigned int Formula<TYPE>::Parse(const char *math_formula, unsigned int& pos, VariableBase **lval)
+{
+	VariableBase *expr1 = 0;
+	VariableBase *expr2 = 0;
+	VariableBase *expr3 = 0;
+	VariableBase *expr = 0;
+	unsigned int tok = ReadToken(math_formula, pos, GET_TOK, &expr);
+	
+	switch(tok)
+	{
+		case TOK_ERROR:
+			return TOK_ERROR;
+		case '-':
+			tok = Parse(math_formula, pos, &expr);
+			if(tok != TOK_EXPR)
+			{
+				std::cerr << "unexpected " << GetTokenName(tok) << std::endl;
+				return TOK_ERROR;
+			}
+			*lval = new Formula<TYPE>(OP_NEG, expr);
+			return TOK_EXPR;
+		case '!':
+			tok = Parse(math_formula, pos, &expr);
+			if(tok != TOK_EXPR)
+			{
+				std::cerr << "unexpected " << GetTokenName(tok) << std::endl;
+				return TOK_ERROR;
+			}
+			*lval = new Formula<TYPE>(OP_NOT, expr);
+			return TOK_EXPR;
+		case '(':
+			tok = Parse(math_formula, pos, &expr);
+			if(tok != TOK_EXPR)
+			{
+				std::cerr << "unexpected " << GetTokenName(tok) << std::endl;
+				return TOK_ERROR;
+			}
+			tok = ReadToken(math_formula, pos, GET_TOK);
+			if(tok != ')') return TOK_ERROR; // should free expr
+			*lval = expr;
+			return TOK_EXPR;
+		case TOK_ABS:
+			tok = ReadToken(math_formula, pos, GET_TOK);
+			if(tok != '(')
+			{
+				std::cerr << "unexpected " << GetTokenName(tok) << std::endl;
+				return TOK_ERROR;
+			}
+			tok = Parse(math_formula, pos, &expr);
+			if(tok != TOK_EXPR)
+			{
+				std::cerr << "unexpected " << GetTokenName(tok) << std::endl;
+				return TOK_ERROR;
+			}
+			tok = ReadToken(math_formula, pos, GET_TOK);
+			if(tok != ')')
+			{
+				std::cerr << "unexpected " << GetTokenName(tok) << std::endl;
+				return TOK_ERROR;
+			}
+			*lval = new Formula<TYPE>(OP_ABS, expr);
+			return TOK_EXPR;
+		case TOK_MIN:
+			tok = ReadToken(math_formula, pos, GET_TOK);
+			if(tok != '(')
+			{
+				std::cerr << "unexpected " << GetTokenName(tok) << std::endl;
+				return TOK_ERROR;
+			}
+			tok = Parse(math_formula, pos, &expr);
+			if(tok != TOK_EXPR)
+			{
+				std::cerr << "unexpected " << GetTokenName(tok) << std::endl;
+				return TOK_ERROR;
+			}
+			tok = ReadToken(math_formula, pos, GET_TOK);
+			if(tok != ')')
+			{
+				std::cerr << "unexpected " << GetTokenName(tok) << std::endl;
+				return TOK_ERROR;
+			}
+			*lval = new Formula<TYPE>(OP_MIN, expr);
+			return TOK_EXPR;
+		case TOK_MAX:
+			tok = ReadToken(math_formula, pos, GET_TOK);
+			if(tok != '(')
+			{
+				std::cerr << "unexpected " << GetTokenName(tok) << std::endl;
+				return TOK_ERROR;
+			}
+			tok = Parse(math_formula, pos, &expr);
+			if(tok != TOK_EXPR)
+			{
+				std::cerr << "unexpected " << GetTokenName(tok) << std::endl;
+				return TOK_ERROR;
+			}
+			tok = ReadToken(math_formula, pos, GET_TOK);
+			if(tok != ')')
+			{
+				std::cerr << "unexpected " << GetTokenName(tok) << std::endl;
+				return TOK_ERROR;
+			}
+			*lval = new Formula<TYPE>(OP_MAX, expr);
+			return TOK_EXPR;
+		case TOK_IDENT:
+		case TOK_EXPR:
+			*lval = expr;
+			tok = ReadToken(math_formula, pos, PEEK_TOK, &expr);
+			switch(tok)
+			{
+				case '+':
+				case '-':
+				case '*':
+				case '/':
+				case '<':
+				case TOK_LTE:
+				case '>':
+				case TOK_GTE:
+				case '?':
+				case '&':
+				case '|':
+				case '^':
+					break;
+				case TOK_EOF:
+					return TOK_EXPR;
+				default:
+					std::cerr << "unexpected " << GetTokenName(tok) << std::endl;
+					return TOK_ERROR;
+			}
+			return TOK_ERROR;
+		default:
+			std::cerr << "unexpected " << GetTokenName(tok) << std::endl;
+			return TOK_ERROR;
+	}
+	
+	tok = ReadToken(math_formula, pos, GET_TOK, &expr);
+	
+	Operator op;
+	switch(tok)
+	{
+		case '+':
+			op = OP_ADD;
+			break;
+		case '-':
+			op = OP_SUB;
+			break;
+		case '*':
+			op = OP_MUL;
+			break;
+		case '/':
+			op = OP_DIV;
+			break;
+		case '<':
+			op = OP_LT;
+			break;
+		case TOK_LTE:
+			op = OP_LTE;
+			break;
+		case '>':
+			op = OP_GT;
+			break;
+		case TOK_GTE:
+			op = OP_GTE;
+			break;
+		case '?':
+			op = OP_SEL;
+			break;
+		case '&':
+			op = OP_AND;
+			break;
+		case '|':
+			op = OP_OR;
+			break;
+		case '^':
+			op = OP_XOR;
+			break;
+		default:
+			std::cerr << "unexpected " << GetTokenName(tok) << std::endl;
+			return TOK_ERROR;
+	}
+	
+	tok = ReadToken(math_formula, pos, GET_TOK, &expr);
+
+	switch(op)
+	{
+		case OP_ADD:
+		case OP_SUB:
+		case OP_MUL:
+		case OP_DIV:
+		case OP_LT:
+		case OP_LTE:
+		case OP_GT:
+		case OP_GTE:
+		case OP_EQ:
+		case OP_SEL:
+		case OP_AND:
+		case OP_OR:
+		case OP_XOR:
+			expr2 = expr;
+		default:
+			std::cerr << "internal error" << std::endl;
+			return TOK_ERROR;
+	}
+
+	switch(op)
+	{
+		case OP_ADD:
+			*lval = new Formula(OP_ADD, expr1, expr2);
+			return TOK_EXPR;
+		case OP_SUB:
+			*lval = new Formula(OP_SUB, expr1, expr2);
+			return TOK_EXPR;
+		case OP_MUL:
+			*lval = new Formula(OP_MUL, expr1, expr2);
+			return TOK_EXPR;
+		case OP_DIV:
+			*lval = new Formula(OP_DIV, expr1, expr2);
+			return TOK_EXPR;
+		case OP_LT:
+			*lval = new Formula(OP_LT, expr1, expr2);
+			return TOK_EXPR;
+		case OP_LTE:
+			*lval = new Formula(OP_LTE, expr1, expr2);
+			return TOK_EXPR;
+		case OP_GT:
+			*lval = new Formula(OP_GT, expr1, expr2);
+			return TOK_EXPR;
+		case OP_GTE:
+			*lval = new Formula(OP_GTE, expr1, expr2);
+			return TOK_EXPR;
+		case OP_EQ:
+			*lval = new Formula(OP_EQ, expr1, expr2);
+			return TOK_EXPR;
+		case OP_SEL:
+			break;
+		case OP_AND:
+			if(tok != TOK_EXPR)
+			{
+				std::cerr << "unexpected " << GetTokenName(tok) << std::endl;
+				return TOK_ERROR;
+			}
+			*lval = new Formula(OP_AND, expr1, expr2);
+			return TOK_EXPR;
+		case OP_OR:
+			if(tok != TOK_EXPR)
+			{
+				std::cerr << "unexpected " << GetTokenName(tok) << std::endl;
+				return TOK_ERROR;
+			}
+			*lval = new Formula(OP_OR, expr1, expr2);
+			return TOK_EXPR;
+		case OP_XOR:
+			if(tok != TOK_EXPR)
+			{
+				std::cerr << "unexpected " << GetTokenName(tok) << std::endl;
+				return TOK_ERROR;
+			}
+			*lval = new Formula(OP_XOR, expr1, expr2);
+			return TOK_EXPR;
+		default:
+			std::cerr << "internal error" << std::endl;
+			return TOK_ERROR;
+	}
+
+	tok = ReadToken(math_formula, pos, GET_TOK, &expr);
+	switch(op)
+	{
+		case OP_SEL:
+			if(tok != ':')
+			{
+				std::cerr << "unexpected " << GetTokenName(tok) << std::endl;
+				return TOK_ERROR;
+			}
+			break;
+		default:
+			std::cerr << "unexpected " << GetTokenName(tok) << std::endl;
+			return TOK_ERROR;
+	}
+
+	tok = ReadToken(math_formula, pos, GET_TOK, &expr);
+	switch(op)
+	{
+		case OP_SEL:
+			if(tok != TOK_EXPR)
+			{
+				std::cerr << "unexpected " << GetTokenName(tok) << std::endl;
+				return TOK_ERROR;
+			}
+			expr3 = expr;
+			break;
+		default:
+			std::cerr << "unexpected " << GetTokenName(tok) << std::endl;
+			return TOK_ERROR;
+	}
+
+	switch(op)
+	{
+		case OP_SEL:
+			*lval = new Formula(OP_SEL, expr1, expr2, expr3);
+			return TOK_EXPR;
+		default:
+			std::cerr << "internal error" << std::endl;
+			return TOK_ERROR;
+	}
+	
+	std::cerr << "internal error" << std::endl;
+	return TOK_ERROR;
+}
+#endif
+
+template <class TYPE> Formula<TYPE>::operator bool () const { return Compute() ? true : false; }
+template <class TYPE> Formula<TYPE>::operator long long () const { return (long long) Compute(); }
+template <class TYPE> Formula<TYPE>::operator unsigned long long () const { return (unsigned long long) Compute(); }
+template <class TYPE> Formula<TYPE>::operator double () const { return (double) Compute(); }
+template <class TYPE> Formula<TYPE>::operator string () const
+{
+	stringstream sstr;
+	switch(GetFormat())
+	{
+		case FMT_DEFAULT:
+		case FMT_HEX:
+			sstr << "0x" << hex << (unsigned long long) Compute();
+			break;
+		case FMT_DEC:
+			sstr << dec << (unsigned long long) Compute();
+			break;
+	}
+	return sstr.str();
+}
+
+/* Note: assigning a formula has no effect */
+template <class TYPE> VariableBase& Formula<TYPE>::operator = (bool value) { return *this; }
+template <class TYPE> VariableBase& Formula<TYPE>::operator = (long long value) { return *this; }
+template <class TYPE> VariableBase& Formula<TYPE>::operator = (unsigned long long value) { return *this; }
+template <class TYPE> VariableBase& Formula<TYPE>::operator = (double value) { return *this; }
+template <class TYPE> VariableBase& Formula<TYPE>::operator = (const char *value) { return *this; }
+
+template <class TYPE>
+TYPE Formula<TYPE>::Compute() const
+{
+	switch(op)
+	{
+		case OP_ADD: return (TYPE)(*childs[0]) + (TYPE)(*childs[1]);
+		case OP_SUB: return (TYPE)(*childs[0]) - (TYPE)(*childs[1]);
+		case OP_MUL: return (TYPE)(*childs[0]) * (TYPE)(*childs[1]);
+		case OP_DIV: return (TYPE)(*childs[0]) / (TYPE)(*childs[1]);
+		case OP_LT: return (TYPE)(*childs[0]) < (TYPE)(*childs[1]);
+		case OP_LTE: return (TYPE)(*childs[0]) <= (TYPE)(*childs[1]);
+		case OP_GT: return (TYPE)(*childs[0]) > (TYPE)(*childs[1]);
+		case OP_GTE: return (TYPE)(*childs[0]) >= (TYPE)(*childs[1]);
+		case OP_EQ: return (TYPE)(*childs[0]) == (TYPE)(*childs[1]);
+		case OP_SEL: return (TYPE)(*childs[0]) ? (TYPE)(*childs[1]) : (TYPE)(*childs[1]);
+		case OP_NEG: return -(TYPE)(*childs[0]);
+		case OP_ABS: return (TYPE)(*childs[0]) >= 0 ? (TYPE)(*childs[0]) : -(TYPE)(*childs[0]);
+		case OP_MIN: return (TYPE)(*childs[0]) < (TYPE)(*childs[1]) ? (TYPE)(*childs[0]) : (TYPE)(*childs[1]);
+		case OP_MAX: return (TYPE)(*childs[0]) > (TYPE)(*childs[1]) ? (TYPE)(*childs[0]) : (TYPE)(*childs[1]);
+		case OP_AND: return (TYPE)(*childs[0]) && (TYPE)(*childs[1]);
+		case OP_OR: return (TYPE)(*childs[0]) || (TYPE)(*childs[1]);
+		case OP_NOT: return !(TYPE)(*childs[0]);
+		case OP_EVAL: return (TYPE)(*childs[0]);
+		default: return 0;
+	}
+	return 0;
+}
 
 //=============================================================================
 //=                         specialized Variable<>                           =
@@ -538,6 +1108,96 @@ template <> VariableBase& Variable<string>::operator = (double value) { stringst
 template <> VariableBase& Variable<string>::operator = (const char *value) { *storage = value; return *this; }
 
 //=============================================================================
+//=                         specialized Formula<>                             =
+//=============================================================================
+
+template <>
+Formula<double>::operator string () const
+{
+	stringstream sstr;
+	sstr << Compute();
+	return sstr.str();
+}
+
+template <>
+const char *Formula<bool>::GetDataTypeName() const
+{
+	return "boolean";
+}
+
+template <>
+const char *Formula<char>::GetDataTypeName() const
+{
+	return GetSignedDataTypeName<char>();
+}
+
+template <>
+const char *Formula<unsigned char>::GetDataTypeName() const
+{
+	return GetSignedDataTypeName<unsigned char>();
+}
+
+template <>
+const char *Formula<short>::GetDataTypeName() const
+{
+	return GetSignedDataTypeName<short>();
+}
+
+template <>
+const char *Formula<unsigned short>::GetDataTypeName() const
+{
+	return GetSignedDataTypeName<unsigned short>();
+}
+
+template <>
+const char *Formula<int>::GetDataTypeName() const
+{
+	return GetSignedDataTypeName<int>();
+}
+
+template <>
+const char *Formula<unsigned int>::GetDataTypeName() const
+{
+	return GetSignedDataTypeName<unsigned int>();
+}
+
+template <>
+const char *Formula<long>::GetDataTypeName() const
+{
+	return GetSignedDataTypeName<long>();
+}
+
+template <>
+const char *Formula<unsigned long>::GetDataTypeName() const
+{
+	return GetSignedDataTypeName<unsigned long>();
+}
+
+template <>
+const char *Formula<long long>::GetDataTypeName() const
+{
+	return GetSignedDataTypeName<long long>();
+}
+
+template <>
+const char *Formula<unsigned long long>::GetDataTypeName() const
+{
+	return GetSignedDataTypeName<unsigned long long>();
+}
+
+template <>
+const char *Formula<float>::GetDataTypeName() const
+{
+	return "single precision floating-point";
+}
+
+template <>
+const char *Formula<double>::GetDataTypeName() const
+{
+	return "double precision floating-point";
+}
+
+//=============================================================================
 //=                       template instanciations                             =
 //=============================================================================
 
@@ -570,6 +1230,20 @@ template class VariableArray<unsigned long long>;
 template class VariableArray<float>;
 template class VariableArray<double>;
 template class VariableArray<string>;
+
+template class Formula<bool>;
+template class Formula<char>;
+template class Formula<short>;
+template class Formula<int>;
+template class Formula<long>;
+template class Formula<long long>;
+template class Formula<unsigned char>;
+template class Formula<unsigned short>;
+template class Formula<unsigned int>;
+template class Formula<unsigned long>;
+template class Formula<unsigned long long>;
+template class Formula<float>;
+template class Formula<double>;
 
 //=============================================================================
 //=                                 Object                                    =
@@ -1029,52 +1703,79 @@ void ServiceManager::DumpRegisters(ostream &os)
 	DumpVariables(os, VariableBase::VAR_REGISTER);
 }
 
-bool ServiceManager::XmlfyVariables(const char *filename) {
+void ServiceManager::DumpFormulas(ostream &os)
+{
+	DumpVariables(os, VariableBase::VAR_FORMULA);
+}
+
+bool ServiceManager::XmlfyVariables(const char *filename)
+{
 	XMLHelper xml_helper;
 	
 	return xml_helper.XmlfyVariables(filename);
 }
 
-bool ServiceManager::LoadXmlVariables(const char *filename) {
+bool ServiceManager::LoadXmlVariables(const char *filename)
+{
 	XMLHelper xml_helper;
 	
 	return xml_helper.LoadXmlVariables(filename);
 }
 
-bool ServiceManager::XmlfyParameters(const char *filename) {
+bool ServiceManager::XmlfyParameters(const char *filename)
+{
 	XMLHelper xml_helper;
 	
 	return xml_helper.XmlfyVariables(filename, VariableBase::VAR_PARAMETER);
 }
 
-bool ServiceManager::LoadXmlParameters(const char *filename) {
+bool ServiceManager::LoadXmlParameters(const char *filename)
+{
 	XMLHelper xml_helper;
 	
 	return xml_helper.LoadXmlVariables(filename, VariableBase::VAR_PARAMETER);
 }
 
-bool ServiceManager::XmlfyStatistics(const char *filename) {
+bool ServiceManager::XmlfyStatistics(const char *filename)
+{
 	XMLHelper xml_helper;
 	
 	return xml_helper.XmlfyVariables(filename, VariableBase::VAR_STATISTIC);
 }
 
-bool ServiceManager::LoadXmlStatistics(const char *filename) {
+bool ServiceManager::LoadXmlStatistics(const char *filename)
+{
 	XMLHelper xml_helper;
 	
 	return xml_helper.LoadXmlVariables(filename, VariableBase::VAR_STATISTIC);
 }
 
-bool ServiceManager::XmlfyRegisters(const char *filename) {
+bool ServiceManager::XmlfyRegisters(const char *filename)
+{
 	XMLHelper xml_helper;
 	
 	return xml_helper.XmlfyVariables(filename, VariableBase::VAR_REGISTER);
 }
 
-bool ServiceManager::LoadXmlRegisters(const char *filename) {
+bool ServiceManager::LoadXmlRegisters(const char *filename)
+{
 	XMLHelper xml_helper;
 	
 	return xml_helper.LoadXmlVariables(filename, VariableBase::VAR_REGISTER);
+}
+
+bool ServiceManager::XmlfyFormulas(const char *filename)
+{
+	XMLHelper xml_helper;
+	
+	return xml_helper.XmlfyVariables(filename, VariableBase::VAR_FORMULA);
+}
+
+bool ServiceManager::LoadXmlFormulas(const char *filename)
+{
+	XMLHelper xml_helper;
+	
+	return xml_helper.LoadXmlVariables(filename, VariableBase::VAR_FORMULA);
 }
 
 struct MyVertexProperty
@@ -1198,6 +1899,11 @@ VariableBase *ServiceManager::GetStatistic(const char *name)
 	return GetVariable(name, VariableBase::VAR_STATISTIC);
 }
 
+VariableBase *ServiceManager::GetFormula(const char *name)
+{
+	return GetVariable(name, VariableBase::VAR_FORMULA);
+}
+
 void ServiceManager::GetVariables(list<VariableBase *>& lst, VariableBase::Type type)
 {
 	map<const char *, VariableBase *, ltstr>::iterator variable_iter;
@@ -1231,6 +1937,11 @@ void ServiceManager::GetRegisters(list<VariableBase *>& lst)
 void ServiceManager::GetStatistics(list<VariableBase *>& lst)
 {
 	GetVariables(lst, VariableBase::VAR_STATISTIC);
+}
+
+void ServiceManager::GetFormulas(list<VariableBase *>& lst)
+{
+	GetVariables(lst, VariableBase::VAR_FORMULA);
 }
 
 void ServiceManager::GetRootObjects(list<Object *>& lst)

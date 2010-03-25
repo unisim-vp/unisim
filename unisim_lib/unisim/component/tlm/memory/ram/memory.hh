@@ -111,12 +111,10 @@ private:
 	bool verbose;
 	Parameter<bool> param_verbose;
 	
-	/** The cycle time in ps */
-	unsigned int cycle_time;
 	/** The frequency in sc_time format */
 	sc_time cycle_sctime;
 	/** The parameter to set frequency */
-	Parameter<unsigned int> param_cycle_time;
+	Parameter<sc_time> param_cycle_time;
 };
 
 } // end of namespace unisim
