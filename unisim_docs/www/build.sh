@@ -20,6 +20,8 @@ echo "Using theme ${DEFAULT_THEME} as default theme"
 rm -rf site
 rm -rf content/*-view-video-*
 rm -rf content/*-view-image-*
+rm -rf content/video-gallery-*
+rm -rf content/image-gallery-*
 
 # create web site directory structure
 mkdir -p site
@@ -93,62 +95,6 @@ if [ ${NUM_NEWS} -lt ${MAX_HOME_NEWS} ]; then
 fi
 
 ###############################################################################
-#                                    Site map                                 #
-###############################################################################
-
-CONTENTS=`cd content; ls`
-SITE_MAP=content/sitemap/sitemap.html
-
-# list all contents
-printf "<h3>Contents</h3>" > ${SITE_MAP}
-printf "<ul>" >> ${SITE_MAP}
-for CONTENT_DIR in ${CONTENTS}; do
-	regex="^[0-9][0-9]*.*"   # filter error pages (e.g. 404.html)
-	if ! [[ ${CONTENT_DIR} =~ ${regex} ]]; then
-		if ! [ "${CONTENT_DIR}" = "sitemap" ]; then
-			echo "Adding ${CONTENT_DIR}.html to site map..."
-			CONTENT_TITLE="`cat content/${CONTENT_DIR}/title.txt`"
-			printf "<li>${CONTENT_TITLE}: <a class=\"online-document\" href=\"${CONTENT_DIR}.html\">view</a></li>\n" >> ${SITE_MAP}
-		fi
-	fi
-done
-printf "</ul>" >> ${SITE_MAP}
-
-# list all image views
-printf "<h3>Screenshots</h3>" >> ${SITE_MAP}
-printf "<ul>" >> ${SITE_MAP}
-for IMAGE in ${IMAGES}; do
-	if [ -f "images/${IMAGE}" ]; then
-		IMAGE_NAME=`echo ${IMAGE} | sed -e 's/\..*$//g'`
-		printf "<li>" >> ${SITE_MAP}
-		if [ -f "images/${IMAGE_NAME}.txt" ]; then
-			cat "images/${IMAGE_NAME}.txt" >> ${SITE_MAP}
-		else
-			printf "${IMAGE}"
-		fi
-		printf ": <a class=\"online-document\" href=\"sitemap-view-image-${IMAGE_NAME}.html\">view</a></li>\n" >> ${SITE_MAP}
-	fi
-done
-printf "</ul>" >> ${SITE_MAP}
-
-# list all video views
-printf "<h3>Videos</h3>" >> ${SITE_MAP}
-printf "<ul>" >> ${SITE_MAP}
-for VIDEO in ${VIDEOS}; do
-	if [ -f "videos/${VIDEO}" ]; then
-		VIDEO_NAME=`echo ${VIDEO} | sed -e 's/\..*$//g'`
-		printf "<li>" >> ${SITE_MAP}
-		if [ -f "videos/${VIDEO_NAME}.txt" ]; then
-			cat "videos/${VIDEO_NAME}.txt" >> ${SITE_MAP}
-		else
-			printf "${VIDEO}"
-		fi
-		printf ": <a class=\"online-document\" href=\"sitemap-view-video-${VIDEO_NAME}.html\">view</a></li>\n" >> ${SITE_MAP}
-	fi
-done
-printf "</ul>" >> ${SITE_MAP}
-
-###############################################################################
 #                                    GLYPHES                                  #
 ###############################################################################
 
@@ -209,19 +155,69 @@ done
 #                                 IMAGE GALLERY                               #
 ###############################################################################
 
-IMAGE_GALLERY=content/image-gallery/image-gallery.html
-rm -f ${IMAGE_GALLERY}
+NUM_IMAGES_PER_PAGE=15
+NUM_IMAGES=`echo "${IMAGES}" | wc -w`
+NUM_IMAGE_GALLERY_PAGES=$(((${NUM_IMAGES} + ${NUM_IMAGES_PER_PAGE} - 1) / ${NUM_IMAGES_PER_PAGE}))
 
-echo "Generating image gallery in ${IMAGE_GALLERY}..."
-
-printf "" > ${IMAGE_GALLERY}
-printf "<table class=\"image-gallery\">\n" > ${IMAGE_GALLERY}
+if [ ${NUM_IMAGE_GALLERY_PAGES} -le 7 ]; then
+	STRING_PAGE="Page "
+elif [ ${NUM_IMAGE_GALLERY_PAGES} -le 15 ]; then
+	STRING_PAGE="P. "
+else
+	STRING_PAGE=""
+fi
 
 IMAGE_GALLERY_COL=1
+IMAGE_GALLERY_PAGE_NUM=1
+IMAGE_GALLERY_NUM_IMAGE_WITHIN_PAGE=1
 for IMAGE in ${IMAGES}; do
 	if [ -f "images/${IMAGE}" ]; then
 		echo "Adding image ${IMAGE} to image gallery..."
 		IMAGE_NAME=`echo ${IMAGE} | sed -e 's/\..*$//g'`
+
+		if [ ${IMAGE_GALLERY_NUM_IMAGE_WITHIN_PAGE} -eq 1 ]; then
+			# build a navigation bar (in reverse order)
+			PAGE_NUM=${NUM_IMAGE_GALLERY_PAGES}
+			IMAGE_GALLERY_NAV="</td></tr></table>";
+			if ! [ ${IMAGE_GALLERY_PAGE_NUM} -eq ${NUM_IMAGE_GALLERY_PAGES} ]; then
+				NEXT_PAGE_NUM=$((${IMAGE_GALLERY_PAGE_NUM} + 1))
+				IMAGE_GALLERY_NAV="<a href=\"image-gallery-${NEXT_PAGE_NUM}.html\"><img src=\`\`THEME/nav-next.png\`\` alt=\"&gt;\"></a>${IMAGE_GALLERY_NAV}"
+			fi
+			IMAGE_GALLERY_NAV="<td id=\"image-gallery-nav-next\">${IMAGE_GALLERY_NAV}"
+			while [ ${PAGE_NUM} -gt 0 ]; do
+				if [ ${PAGE_NUM} -eq ${IMAGE_GALLERY_PAGE_NUM} ]; then
+					IMAGE_GALLERY_NAV="<td>${STRING_PAGE}${PAGE_NUM}</td>${IMAGE_GALLERY_NAV}"
+				else
+					IMAGE_GALLERY_NAV="<td><a href=\"image-gallery-${PAGE_NUM}.html\">${STRING_PAGE}${PAGE_NUM}</a></td>${IMAGE_GALLERY_NAV}"
+				fi
+				PAGE_NUM=$((${PAGE_NUM} - 1))
+			done
+			IMAGE_GALLERY_NAV="</td>${IMAGE_GALLERY_NAV}"
+			if ! [ ${IMAGE_GALLERY_PAGE_NUM} -eq 1 ]; then
+				PREV_PAGE_NUM=$((${IMAGE_GALLERY_PAGE_NUM} - 1))
+				IMAGE_GALLERY_NAV="<a href=\"image-gallery-${PREV_PAGE_NUM}.html\"><img src=\`\`THEME/nav-prev.png\`\` alt=\"&lt;\"></a>${IMAGE_GALLERY_NAV}"
+			fi
+			IMAGE_GALLERY_NAV="<table class=\"image-gallery-nav\"><tr><td id=\"image-gallery-nav-prev\">${IMAGE_GALLERY_NAV}"
+
+			IMAGE_GALLERY_DIR=content/image-gallery-${IMAGE_GALLERY_PAGE_NUM}
+			rm -rf ${IMAGE_GALLERY_DIR}
+			mkdir -p ${IMAGE_GALLERY_DIR}
+			IMAGE_GALLERY=${IMAGE_GALLERY_DIR}/content.html
+			IMAGE_GALLERY_STYLE=${IMAGE_GALLERY_DIR}/style.css
+			echo "Generating image gallery in ${IMAGE_GALLERY}..."
+
+			printf "Screenshot gallery - Page ${IMAGE_GALLERY_PAGE_NUM} of ${NUM_IMAGE_GALLERY_PAGES}" > ${IMAGE_GALLERY_DIR}/title.txt
+
+			printf "<div class=\"content-item\">\n" > ${IMAGE_GALLERY}
+			printf "<div class=\"content-item-title\">\n" >> ${IMAGE_GALLERY}
+			printf "<h2>\n" >> ${IMAGE_GALLERY}
+			printf "#include \"title.txt\"\n" >> ${IMAGE_GALLERY}
+			printf "</h2>\n" >> ${IMAGE_GALLERY}
+			printf "</div>\n" >> ${IMAGE_GALLERY}
+			printf "<div class=\"content-item-body\">" >> ${IMAGE_GALLERY}
+			printf "${IMAGE_GALLERY_NAV}\n" >> ${IMAGE_GALLERY} 
+			printf "<table class=\"image-gallery\">\n" >> ${IMAGE_GALLERY}
+		fi
 
 		if [ ${IMAGE_GALLERY_COL} -eq 1 ]; then
 			printf "\t<tr>\n" >> ${IMAGE_GALLERY}
@@ -232,10 +228,23 @@ for IMAGE in ${IMAGES}; do
 		cat "images/${IMAGE_NAME}.txt" >> ${IMAGE_GALLERY}
 		printf "\t\t\t</p>\n" >> ${IMAGE_GALLERY}
 		printf "\t\t</td>\n" >> ${IMAGE_GALLERY} 
+		IMAGE_GALLERY_NUM_IMAGE_WITHIN_PAGE=$((${IMAGE_GALLERY_NUM_IMAGE_WITHIN_PAGE} + 1))
+		if [ ${IMAGE_GALLERY_NUM_IMAGE_WITHIN_PAGE} -gt ${NUM_IMAGES_PER_PAGE} ]; then
+			IMAGE_GALLERY_COL=1
+			IMAGE_GALLERY_NUM_IMAGE_WITHIN_PAGE=1
+			IMAGE_GALLERY_PAGE_NUM=$((${IMAGE_GALLERY_PAGE_NUM} + 1))
+			printf "\t</tr>\n" >> ${IMAGE_GALLERY} 
+			printf "</table>\n" >> ${IMAGE_GALLERY} 
+			printf "</div>\n" >> ${IMAGE_GALLERY} 
+			printf "</div>\n" >> ${IMAGE_GALLERY} 
+			continue
+		fi
+
 		IMAGE_GALLERY_COL=$((${IMAGE_GALLERY_COL} + 1))
 		if [ ${IMAGE_GALLERY_COL} -gt 3 ]; then
 			IMAGE_GALLERY_COL=1
-			printf "\t</tr>\n" >> ${IMAGE_GALLERY} 
+			printf "\t</tr>\n" >> ${IMAGE_GALLERY}
+			continue
 		fi
 	fi
 done
@@ -245,25 +254,82 @@ if ! [ ${IMAGE_GALLERY_COL} -eq 1 ]; then
 		printf "\t</tr>\n" >> ${IMAGE_GALLERY} 
 	fi
 fi
-printf "</table>\n" >> ${IMAGE_GALLERY}
+
+if ! [ ${IMAGE_GALLERY_NUM_IMAGE_WITHIN_PAGE} -eq 1 ]; then
+	if [ ${IMAGE_GALLERY_NUM_IMAGE_WITHIN_PAGE} -le ${NUM_IMAGES_PER_PAGE} ]; then
+		printf "</table>\n" >> ${IMAGE_GALLERY}
+		printf "</div>\n" >> ${IMAGE_GALLERY} 
+		printf "</div>\n" >> ${IMAGE_GALLERY} 
+	fi
+fi
 
 ###############################################################################
 #                              VIDEO GALLERY                                  #
 ###############################################################################
 
-VIDEO_GALLERY=content/video-gallery/video-gallery.html
-rm -f ${VIDEO_GALLERY}
+NUM_VIDEOS_PER_PAGE=15
+NUM_VIDEOS=`echo "${VIDEOS}" | wc -w`
+NUM_VIDEO_GALLERY_PAGES=$(((${NUM_VIDEOS} + ${NUM_VIDEOS_PER_PAGE} - 1) / ${NUM_VIDEOS_PER_PAGE}))
 
-echo "Generating video gallery in ${VIDEO_GALLERY}..."
-
-printf "" > ${VIDEO_GALLERY}
-printf "<table class=\"video-gallery\">\n" > ${VIDEO_GALLERY}
+if [ ${NUM_VIDEO_GALLERY_PAGES} -le 7 ]; then
+	STRING_PAGE="Page "
+elif [ ${NUM_VIDEO_GALLERY_PAGES} -le 15 ]; then
+	STRING_PAGE="P. "
+else
+	STRING_PAGE=""
+fi
 
 VIDEO_GALLERY_COL=1
+VIDEO_GALLERY_PAGE_NUM=1
+VIDEO_GALLERY_NUM_VIDEO_WITHIN_PAGE=1
 for VIDEO in ${VIDEOS}; do
 	if [ -f "videos/${VIDEO}" ]; then
 		echo "Adding video ${VIDEO} to video gallery..."
 		VIDEO_NAME=`echo ${VIDEO} | sed -e 's/\..*$//g'`
+
+		if [ ${VIDEO_GALLERY_NUM_VIDEO_WITHIN_PAGE} -eq 1 ]; then
+			# build a navigation bar (in reverse order)
+			PAGE_NUM=${NUM_VIDEO_GALLERY_PAGES}
+			VIDEO_GALLERY_NAV="</td></tr></table>";
+			if ! [ ${VIDEO_GALLERY_PAGE_NUM} -eq ${NUM_VIDEO_GALLERY_PAGES} ]; then
+				NEXT_PAGE_NUM=$((${VIDEO_GALLERY_PAGE_NUM} + 1))
+				VIDEO_GALLERY_NAV="<a href=\"video-gallery-${NEXT_PAGE_NUM}.html\"><img src=\`\`THEME/nav-next.png\`\`></a>${VIDEO_GALLERY_NAV}"
+			fi
+			VIDEO_GALLERY_NAV="<td id=\"video-gallery-nav-next\">${VIDEO_GALLERY_NAV}"
+			while [ ${PAGE_NUM} -gt 0 ]; do
+				if [ ${PAGE_NUM} -eq ${VIDEO_GALLERY_PAGE_NUM} ]; then
+					VIDEO_GALLERY_NAV="<td>${STRING_PAGE}${PAGE_NUM}</td>${VIDEO_GALLERY_NAV}"
+				else
+					VIDEO_GALLERY_NAV="<td><a href=\"video-gallery-${PAGE_NUM}.html\">${STRING_PAGE}${PAGE_NUM}</a></td>${VIDEO_GALLERY_NAV}"
+				fi
+				PAGE_NUM=$((${PAGE_NUM} - 1))
+			done
+			VIDEO_GALLERY_NAV="</td>${VIDEO_GALLERY_NAV}"
+			if ! [ ${VIDEO_GALLERY_PAGE_NUM} -eq 1 ]; then
+				PREV_PAGE_NUM=$((${VIDEO_GALLERY_PAGE_NUM} - 1))
+				VIDEO_GALLERY_NAV="<a href=\"video-gallery-${PREV_PAGE_NUM}.html\"><img src=\`\`THEME/nav-prev.png\`\`></a>${VIDEO_GALLERY_NAV}"
+			fi
+			VIDEO_GALLERY_NAV="<table class=\"video-gallery-nav\"><tr><td id=\"video-gallery-nav-prev\">${VIDEO_GALLERY_NAV}"
+
+			VIDEO_GALLERY_DIR=content/video-gallery-${VIDEO_GALLERY_PAGE_NUM}
+			rm -rf ${VIDEO_GALLERY_DIR}
+			mkdir -p ${VIDEO_GALLERY_DIR}
+			VIDEO_GALLERY=${VIDEO_GALLERY_DIR}/content.html
+			VIDEO_GALLERY_STYLE=${VIDEO_GALLERY_DIR}/style.css
+			echo "Generating video gallery in ${VIDEO_GALLERY}..."
+
+			printf "Video gallery - Page ${VIDEO_GALLERY_PAGE_NUM} of ${NUM_VIDEO_GALLERY_PAGES}" > ${VIDEO_GALLERY_DIR}/title.txt
+
+			printf "<div class=\"content-item\">\n" > ${VIDEO_GALLERY}
+			printf "<div class=\"content-item-title\">\n" >> ${VIDEO_GALLERY}
+			printf "<h2>\n" >> ${VIDEO_GALLERY}
+			printf "#include \"title.txt\"\n" >> ${VIDEO_GALLERY}
+			printf "</h2>\n" >> ${VIDEO_GALLERY}
+			printf "</div>\n" >> ${VIDEO_GALLERY}
+			printf "<div class=\"content-item-body\">" >> ${VIDEO_GALLERY}
+			printf "${VIDEO_GALLERY_NAV}\n" >> ${VIDEO_GALLERY} 
+			printf "<table class=\"video-gallery\">\n" >> ${VIDEO_GALLERY}
+		fi
 
 		if [ ${VIDEO_GALLERY_COL} -eq 1 ]; then
 			printf "\t<tr>\n" >> ${VIDEO_GALLERY}
@@ -274,10 +340,23 @@ for VIDEO in ${VIDEOS}; do
 		cat "videos/${VIDEO_NAME}.txt" >> ${VIDEO_GALLERY}
 		printf "\t\t\t</p>\n" >> ${VIDEO_GALLERY}
 		printf "\t\t</td>\n" >> ${VIDEO_GALLERY} 
+		VIDEO_GALLERY_NUM_VIDEO_WITHIN_PAGE=$((${VIDEO_GALLERY_NUM_VIDEO_WITHIN_PAGE} + 1))
+		if [ ${VIDEO_GALLERY_NUM_VIDEO_WITHIN_PAGE} -gt ${NUM_VIDEOS_PER_PAGE} ]; then
+			VIDEO_GALLERY_COL=1
+			VIDEO_GALLERY_NUM_VIDEO_WITHIN_PAGE=1
+			VIDEO_GALLERY_PAGE_NUM=$((${VIDEO_GALLERY_PAGE_NUM} + 1))
+			printf "\t</tr>\n" >> ${VIDEO_GALLERY} 
+			printf "</table>\n" >> ${VIDEO_GALLERY} 
+			printf "</div>\n" >> ${VIDEO_GALLERY} 
+			printf "</div>\n" >> ${VIDEO_GALLERY} 
+			continue
+		fi
+
 		VIDEO_GALLERY_COL=$((${VIDEO_GALLERY_COL} + 1))
 		if [ ${VIDEO_GALLERY_COL} -gt 3 ]; then
 			VIDEO_GALLERY_COL=1
-			printf "\t</tr>\n" >> ${VIDEO_GALLERY} 
+			printf "\t</tr>\n" >> ${VIDEO_GALLERY}
+			continue
 		fi
 	fi
 done
@@ -287,7 +366,110 @@ if ! [ ${VIDEO_GALLERY_COL} -eq 1 ]; then
 		printf "\t</tr>\n" >> ${VIDEO_GALLERY} 
 	fi
 fi
-printf "</table>\n" >> ${VIDEO_GALLERY}
+
+if ! [ ${VIDEO_GALLERY_NUM_VIDEO_WITHIN_PAGE} -eq 1 ]; then
+	if [ ${VIDEO_GALLERY_NUM_VIDEO_WITHIN_PAGE} -le ${NUM_VIDEOS_PER_PAGE} ]; then
+		printf "</table>\n" >> ${VIDEO_GALLERY}
+		printf "</div>\n" >> ${VIDEO_GALLERY} 
+		printf "</div>\n" >> ${VIDEO_GALLERY} 
+	fi
+fi
+
+
+
+# VIDEO_GALLERY=content/video-gallery/video-gallery.html
+# rm -f ${VIDEO_GALLERY}
+# 
+# echo "Generating video gallery in ${VIDEO_GALLERY}..."
+# 
+# printf "" > ${VIDEO_GALLERY}
+# printf "<table class=\"video-gallery\">\n" > ${VIDEO_GALLERY}
+# 
+# VIDEO_GALLERY_COL=1
+# for VIDEO in ${VIDEOS}; do
+# 	if [ -f "videos/${VIDEO}" ]; then
+# 		echo "Adding video ${VIDEO} to video gallery..."
+# 		VIDEO_NAME=`echo ${VIDEO} | sed -e 's/\..*$//g'`
+# 
+# 		if [ ${VIDEO_GALLERY_COL} -eq 1 ]; then
+# 			printf "\t<tr>\n" >> ${VIDEO_GALLERY}
+# 		fi
+# 		printf "\t\t<td>\n" >> ${VIDEO_GALLERY} 
+# 		printf "\t\t\t<a href=\"video-gallery-view-video-${VIDEO_NAME}.html\"><img src=\`\`VIDEO_THUMBS/${VIDEO_NAME}.png\`\` alt=\"${VIDEO} thumbnail\"></a>\n" >> ${VIDEO_GALLERY}
+# 		printf "\t\t\t<p>\n" >> ${VIDEO_GALLERY}
+# 		cat "videos/${VIDEO_NAME}.txt" >> ${VIDEO_GALLERY}
+# 		printf "\t\t\t</p>\n" >> ${VIDEO_GALLERY}
+# 		printf "\t\t</td>\n" >> ${VIDEO_GALLERY} 
+# 		VIDEO_GALLERY_COL=$((${VIDEO_GALLERY_COL} + 1))
+# 		if [ ${VIDEO_GALLERY_COL} -gt 3 ]; then
+# 			VIDEO_GALLERY_COL=1
+# 			printf "\t</tr>\n" >> ${VIDEO_GALLERY} 
+# 		fi
+# 	fi
+# done
+# 
+# if ! [ ${VIDEO_GALLERY_COL} -eq 1 ]; then
+# 	if [ ${VIDEO_GALLERY_COL} -le 3 ]; then
+# 		printf "\t</tr>\n" >> ${VIDEO_GALLERY} 
+# 	fi
+# fi
+# printf "</table>\n" >> ${VIDEO_GALLERY}
+
+###############################################################################
+#                                    Site map                                 #
+###############################################################################
+
+CONTENTS=`cd content; ls`
+SITE_MAP=content/sitemap/sitemap.html
+
+# list all contents
+printf "<h3>Contents</h3>" > ${SITE_MAP}
+printf "<ul>" >> ${SITE_MAP}
+for CONTENT_DIR in ${CONTENTS}; do
+	regex="^[0-9][0-9]*.*"   # filter error pages (e.g. 404.html)
+	if ! [[ ${CONTENT_DIR} =~ ${regex} ]]; then
+		if ! [ "${CONTENT_DIR}" = "sitemap" ]; then
+			echo "Adding ${CONTENT_DIR}.html to site map..."
+			CONTENT_TITLE="`cat content/${CONTENT_DIR}/title.txt`"
+			printf "<li>${CONTENT_TITLE}: <a class=\"online-document\" href=\"${CONTENT_DIR}.html\">view</a></li>\n" >> ${SITE_MAP}
+		fi
+	fi
+done
+printf "</ul>" >> ${SITE_MAP}
+
+# list all image views
+printf "<h3>Screenshots</h3>" >> ${SITE_MAP}
+printf "<ul>" >> ${SITE_MAP}
+for IMAGE in ${IMAGES}; do
+	if [ -f "images/${IMAGE}" ]; then
+		IMAGE_NAME=`echo ${IMAGE} | sed -e 's/\..*$//g'`
+		printf "<li>" >> ${SITE_MAP}
+		if [ -f "images/${IMAGE_NAME}.txt" ]; then
+			cat "images/${IMAGE_NAME}.txt" >> ${SITE_MAP}
+		else
+			printf "${IMAGE}"
+		fi
+		printf ": <a class=\"online-document\" href=\"sitemap-view-image-${IMAGE_NAME}.html\">view</a></li>\n" >> ${SITE_MAP}
+	fi
+done
+printf "</ul>" >> ${SITE_MAP}
+
+# list all video views
+printf "<h3>Videos</h3>" >> ${SITE_MAP}
+printf "<ul>" >> ${SITE_MAP}
+for VIDEO in ${VIDEOS}; do
+	if [ -f "videos/${VIDEO}" ]; then
+		VIDEO_NAME=`echo ${VIDEO} | sed -e 's/\..*$//g'`
+		printf "<li>" >> ${SITE_MAP}
+		if [ -f "videos/${VIDEO_NAME}.txt" ]; then
+			cat "videos/${VIDEO_NAME}.txt" >> ${SITE_MAP}
+		else
+			printf "${VIDEO}"
+		fi
+		printf ": <a class=\"online-document\" href=\"sitemap-view-video-${VIDEO_NAME}.html\">view</a></li>\n" >> ${SITE_MAP}
+	fi
+done
+printf "</ul>" >> ${SITE_MAP}
 
 ###############################################################################
 #                                 IMAGE VIEW                                  #
@@ -535,6 +717,7 @@ for THEME in ${THEMES}; do
 				"-DIMAGE_THUMBS=${SITE_PREFIX}images/thumbs" \
 				"-DVIDEO_THUMBS=${SITE_PREFIX}videos/thumbs" \
 				"-DDOWNLOADS=${SITE_PREFIX}downloads" \
+				"-DTHEME=${SITE_PREFIX}style" \
 				-undef \
 				-P \
 				-I. \
