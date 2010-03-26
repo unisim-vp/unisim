@@ -49,6 +49,7 @@ add_library ( unisim__service__os__linux_os
 		${CMAKE_SOURCE_DIR}/unisim/service/os/linux_os/linux_os_exception.hh
 		${CMAKE_SOURCE_DIR}/unisim/service/os/linux_os/linux_os.tcc
 		${CMAKE_SOURCE_DIR}/unisim/service/os/linux_os/linux_os_exception.cc
+		${CMAKE_SOURCE_DIR}/unisim/service/os/linux_os/linux_os_32.cc
 	)
 
 target_link_libraries ( unisim__service__os__linux_os

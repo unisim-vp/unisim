@@ -1,0 +1,12 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<package>
+	<unit>
+		<name>unisim::component::cxx::cache</name>
+		<files>
+			<file>unisim/component/cxx/cache/cache.hh</file>
+			<file>unisim/component/cxx/cache/cache.tcc</file>
+			<file>unisim/component/cxx/cache/cache_interface.hh</file>
+			<file>unisim/component/cxx/cache/CMakeLists.txt</file>
+		</files>
+	</unit>
+</package>

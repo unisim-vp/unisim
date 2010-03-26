@@ -52,7 +52,7 @@ LoggerServer::
 LoggerServer() :
 	Object(LoggerServer::name, 0),
 	xml_writer(0),
-	opt_std_err(false),
+	opt_std_err(true),
 	param_std_err("std_err", this, opt_std_err, "Show logger output through the standard error output"),
 	opt_std_out(false),
 	param_std_out("std_out", this, opt_std_out, "Show logger output through the standard output"),

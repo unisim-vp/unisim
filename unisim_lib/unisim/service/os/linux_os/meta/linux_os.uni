@@ -7,6 +7,7 @@
 			<file>unisim/service/os/linux_os/linux_os_exception.hh</file>
 			<file>unisim/service/os/linux_os/linux_os.tcc</file>
 			<file>unisim/service/os/linux_os/linux_os_exception.cc</file>
+			<file>unisim/service/os/linux_os/linux_os_32.cc</file>
 		</files>
 		<depends>
 			<dep>unisim::kernel::service</dep>

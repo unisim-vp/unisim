@@ -1,0 +1,17 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<package>
+	<unit>
+		<name>unisim::component::tlm::debug</name>
+		<files>
+			<file>unisim/component/tlm/debug/transaction_spy.hh</file>
+			<file>unisim/component/tlm/debug/CMakeLists.txt</file>
+		</files>
+		<depends>
+			<dep>unisim::kernel::tlm</dep>
+			<dep>unisim::kernel::service</dep>
+			<dep>unisim::kernel::logger</dep>
+			<dep>unisim::util::garbage_collector</dep>
+		</depends>
+	</unit>
+</package>
+

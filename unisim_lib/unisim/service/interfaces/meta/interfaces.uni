@@ -11,7 +11,6 @@
 		<autotools>
 			<automake>unisim/service/interfaces/meta/debug_control.am</automake>
 		</autotools>
-		<!-- <cmake>unisim/service/interfaces/meta/debug_control.cmake</cmake> -->
 		<cmake>unisim/service/interfaces/debug_control/CMakeLists.txt</cmake>
 	</unit>
 	<unit>
@@ -25,7 +24,6 @@
 		<autotools>
 			<automake>unisim/service/interfaces/meta/disassembly.am</automake>
 		</autotools>
-		<!-- <cmake>unisim/service/interfaces/meta/disassembly.cmake</cmake> -->
 		<cmake>unisim/service/interfaces/disassembly/CMakeLists.txt</cmake>
 	</unit>
 	<unit>
@@ -39,7 +37,6 @@
 		<autotools>
 			<automake>unisim/service/interfaces/meta/memory_access_reporting.am</automake>
 		</autotools>
-		<!-- <cmake>unisim/service/interfaces/meta/memory_access_reporting.cmake</cmake> -->
 		<cmake>unisim/service/interfaces/memory_access_reporting/CMakeLists.txt</cmake>
 	</unit>
 	<unit>
@@ -53,7 +50,6 @@
 		<autotools>
 			<automake>unisim/service/interfaces/meta/memory.am</automake>
 		</autotools>
-		<!-- <cmake>unisim/service/interfaces/meta/memory.cmake</cmake> -->
 		<cmake>unisim/service/interfaces/memory/CMakeLists.txt</cmake>
 	</unit>
 	<unit>
@@ -67,7 +63,6 @@
 		<autotools>
 			<automake>unisim/service/interfaces/meta/memory_injection.am</automake>
 		</autotools>
-		<!-- <cmake>unisim/service/interfaces/meta/memory_injection.cmake</cmake> -->
 		<cmake>unisim/service/interfaces/memory_injection/CMakeLists.txt</cmake>
 	</unit>
 	<unit>
@@ -81,7 +76,6 @@
 		<autotools>
 			<automake>unisim/service/interfaces/meta/trap_reporting.am</automake>
 		</autotools>
-		<!-- <cmake>unisim/service/interfaces/meta/trap_reporting.cmake</cmake> -->
 		<cmake>unisim/service/interfaces/trap_reporting/CMakeLists.txt</cmake>
 	</unit>
 	<unit>
@@ -95,7 +89,6 @@
 		<autotools>
 			<automake>unisim/service/interfaces/meta/registers.am</automake>
 		</autotools>
-		<!-- <cmake>unisim/service/interfaces/meta/registers.cmake</cmake> -->
 		<cmake>unisim/service/interfaces/registers/CMakeLists.txt</cmake>
 	</unit>
 	<unit>
@@ -109,7 +102,6 @@
 		<autotools>
 			<automake>unisim/service/interfaces/meta/symbol_table_lookup.am</automake>
 		</autotools>
-		<!-- <cmake>unisim/service/interfaces/meta/symbol_table_lookup.cmake</cmake> -->
 		<cmake>unisim/service/interfaces/symbol_table_lookup/CMakeLists.txt</cmake>
 	</unit>
 	<unit>
@@ -120,7 +112,6 @@
 		<autotools>
 			<automake>unisim/service/interfaces/meta/ti_c_io.am</automake>
 		</autotools>
-		<!-- <cmake>unisim/service/interfaces/meta/ti_c_io.cmake</cmake> -->
 		<cmake>unisim/service/interfaces/ti_c_io/CMakeLists.txt</cmake>
 	</unit>
 	<unit>
@@ -131,7 +122,6 @@
 		<autotools>
 			<automake>unisim/service/interfaces/meta/loader.am</automake>
 		</autotools>
-		<!-- <cmake>unisim/service/interfaces/meta/loader.cmake</cmake> -->
 		<cmake>unisim/service/interfaces/loader/CMakeLists.txt</cmake>
 	</unit>
 	<unit>
@@ -192,8 +182,28 @@
 		<autotools>
 			<automake>unisim/service/interfaces/meta/time.am</automake>
 		</autotools>
-		<!-- <cmake>unisim/service/interfaces/meta/time.cmake</cmake> -->
 		<cmake>unisim/service/interfaces/time/CMakeLists.txt</cmake>
+	</unit>
+	<unit>
+		<name>unisim::service::interfaces::cache_power_estimator</name>
+		<files>
+			<file>unisim/service/interfaces/cache_power_estimator.hh</file>
+			<file>unisim/service/interfaces/cache_power_estimator/CMakeLists.txt</file>
+		</files>
+	</unit>
+	<unit>
+		<name>unisim::service::interfaces::power_mode</name>
+		<files>
+			<file>unisim/service/interfaces/power_mode.hh</file>
+			<file>unisim/service/interfaces/power_mode/CMakeLists.txt</file>
+		</files>
+	</unit>
+	<unit>
+		<name>unisim::service::interfaces::synchronizable</name>
+		<files>
+			<file>unisim/service/interfaces/synchronizable.hh</file>
+			<file>unisim/service/interfaces/synchronizable/CMakeLists.txt</file>
+		</files>
 	</unit>
 </package>
 

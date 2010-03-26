@@ -405,7 +405,12 @@ int sc_main(int argc, char *argv[])
 	//  - Linux OS run-time configuration
 	(*linux_os)["system"] = "powerpc";
 	(*linux_os)["endianess"] = E_BIG_ENDIAN;
-	(*linux_os)["verbose"] = true;//false;
+	(*linux_os)["utsname-sysname"] = "Linux";
+	(*linux_os)["utsname-nodename"] = "localhost";
+	(*linux_os)["utsname-release"] = "2.6.27.35";
+	(*linux_os)["utsname-version"] = "#UNISIM SMP Fri Mar 12 05:23:09 UTC 2010";
+	(*linux_os)["utsname-machine"] = "powerpc";
+	(*linux_os)["verbose"] = false;
 
 	//  - Cache/TLB power estimators run-time configuration
 	if(estimate_power)

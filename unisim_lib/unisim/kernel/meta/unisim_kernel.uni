@@ -23,7 +23,6 @@
 			<dep>libxml2</dep>
 			<dep>unisim::kernel::logger</dep>
 		</depends>
-		<!-- <cmake>unisim/kernel/meta/service.cmake</cmake> -->
 		<cmake>unisim/kernel/service/CMakeLists.txt</cmake>
 		<autotools>
 			<automake>unisim/kernel/meta/service.am</automake>
@@ -47,7 +46,6 @@
 			<dep>libxml2</dep>
 			<!-- <dep>unisim::kernel::service</dep> -->
 		</depends>
-		<!-- <cmake>unisim/kernel/meta/logger.cmake</cmake> -->
 		<cmake>unisim/kernel/logger/CMakeLists.txt</cmake>
 		<autotools>
 			<automake>unisim/kernel/meta/logger.am</automake>
@@ -70,6 +68,19 @@
 			<automake>unisim/kernel/tlm2/meta/tlm2.am</automake>
 			<autoconf>unisim/kernel/tlm2/meta/tlm2.ac</autoconf>
 		</autotools>
+	</unit>
+	<unit>
+		<name>unisim::kernel::tlm</name>
+		<files>
+			<file>unisim/kernel/tlm/tlm.hh</file>
+			<file>unisim/kernel/tlm/tlm.cc</file>
+			<file>unisim/kernel/tlm/CMakeLists.txt</file>
+		</files>
+		<depends>
+			<dep>osci_systemc</dep>
+			<dep>unisim::util::garbage_collector</dep>
+			<dep>unisim::kernel::service</dep>
+		</depends>
 	</unit>
 	<unit>
 		<name>unisim::kernel::debug</name>

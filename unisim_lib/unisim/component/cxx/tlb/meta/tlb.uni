@@ -1,0 +1,12 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<package>
+	<unit>
+		<name>unisim::component::cxx::tlb</name>
+		<files>
+			<file>unisim/component/cxx/tlb/tlb.hh</file>
+			<file>unisim/component/cxx/tlb/tlb.tcc</file>
+			<file>unisim/component/cxx/tlb/CMakeLists.txt</file>
+		</files>
+	</unit>
+</package>
+

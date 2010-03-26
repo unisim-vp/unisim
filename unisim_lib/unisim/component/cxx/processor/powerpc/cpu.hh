@@ -52,7 +52,6 @@
 #include <unisim/component/cxx/processor/powerpc/exception.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/kernel/service/service.hh>
-#include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/loader.hh>
 #include <unisim/service/interfaces/linux_os.hh>
 #include <unisim/service/interfaces/cpu_linux_os.hh>

@@ -1,0 +1,16 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<package>
+	<unit>
+		<name>unisim::util::simfloat</name>
+		<files>
+			<file>unisim/util/simfloat/floating.hh</file>
+			<file>unisim/util/simfloat/floating.tcc</file>
+			<file>unisim/util/simfloat/host_floating.hh</file>
+			<file>unisim/util/simfloat/host_floating.tcc</file>
+			<file>unisim/util/simfloat/integer.hh</file>
+			<file>unisim/util/simfloat/integer.tcc</file>
+			<file>unisim/util/simfloat/CMakeLists.txt</file>
+		</files>
+	</unit>
+</package>
+

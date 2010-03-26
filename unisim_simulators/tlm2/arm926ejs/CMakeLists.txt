@@ -2,7 +2,6 @@ cmake_minimum_required ( VERSION 2.8 )
 project ( unisim_arm926ejs )
 include ( CheckIncludeFileCXX )
 include ( CheckIncludeFile )
-# set ( CMAKE_BINARY_DIR ${CMAKE_BINARY_DIR}/build )
 include ( ${CMAKE_SOURCE_DIR}/cmake/FindOSCISystemC.cmake )
 include ( ${CMAKE_SOURCE_DIR}/cmake/UnisimInclude.cmake )
 
@@ -43,12 +42,12 @@ endforeach ( dir )
 
 include_directories ( ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR} ${OSCI_SYSTEMC_INCLUDE_DIR} ${OSCI_TLM2_INCLUDE_DIR})
 
-# file ( MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/../bin )
 file ( MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/resources/gdb_server )
 file ( 
 	COPY 
 		${CMAKE_SOURCE_DIR}/unisim/service/debug/gdb_server/gdb_armv4l.xml 
-	DESTINATION ${CMAKE_BINARY_DIR}/resources/gdb_server )
+	DESTINATION 
+		${CMAKE_BINARY_DIR}/resources/gdb_server )
 
 add_executable ( arm926ejs_emu 
 	${CMAKE_SOURCE_DIR}/main.cc )
@@ -89,13 +88,24 @@ add_custom_target ( arm926ejs_emu__resources
 add_dependencies ( arm926ejs_emu__resources
 	arm926ejs_emu )
 
-# set_source_files_properties (
-#	${CMAKE_SOURCE_DIR}/main.cc
-#	PROPERTIES
-#		COMPILE_FLAGS "-I${OSCI_SYSTEMC_INCLUDE_DIR} -I${OSCI_TLM2_INCLUDE_DIR}"
-#	)
+add_custom_target ( check
+	COMMAND
+		${CMAKE_CTEST_COMMAND}
+	DEPENDS
+		arm926ejs_emu )
 
-# set ( CMAKE_BINARY_DIR ${CMAKE_BINARY_DIR}/.. )
+add_custom_target ( prepare_check
+	COMMAND
+		touch done_prepare_check.txt
+	COMMENT
+		"Preparing tests"
+	)
+
+add_dependencies ( check
+	prepare_check )
+
+enable_testing()
+
 set ( SIM_VERSION_MAJOR 0 )
 set ( SIM_VERSION_MINOR 1 )
 set ( SIM_VERSION_PATCH 0 )

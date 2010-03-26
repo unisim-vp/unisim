@@ -8,6 +8,7 @@
 			<file>unisim/service/debug/inline_debugger/inline_debugger.cc</file>
 			<file>unisim/service/debug/inline_debugger/inline_debugger_32.cc</file>
 			<file>unisim/service/debug/inline_debugger/inline_debugger_64.cc</file>
+			<file>unisim/service/debug/inline_debugger/CMakeLists.txt</file>
 		</files>
 		<depends>
 			<dep>unisim::service::interfaces::memory_access_reporting</dep>
@@ -33,7 +34,5 @@
 		<autotools>
 			<automake>unisim/service/debug/inline_debugger/meta/inline_debugger.am</automake>
 		</autotools>
-		<!-- <cmake>unisim/service/debug/inline_debugger/meta/inline_debugger.cmake</cmake> -->
-		<cmake>unisim/service/debug/inline_debugger/CMakeLists.txt</cmake>
 	</unit>
 </package>

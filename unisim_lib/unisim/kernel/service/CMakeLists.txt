@@ -1,6 +1,5 @@
 message ( STATUS "Checking unisim::kernel::service" )
 
-# set_property ( GLOBAL PROPERTY UNISIM__KERNEL__SERVICE TRUE )
 include ( CheckIncludeFileCXX )
 include ( CheckIncludeFile )
 include ( ${CMAKE_SOURCE_DIR}/cmake/UnisimInclude.cmake )
@@ -30,10 +29,6 @@ include ( FindBoost )
 find_package ( Boost COMPONENTS graph )
 
 unisim_include ( unisim/kernel/logger )
-# add_subdirectory ( 
-# 	${CMAKE_SOURCE_DIR}/unisim/kernel/logger 
-# 	${CMAKE_BINARY_DIR}/unisim/kernel/logger
-# 	)
 
 include_directories ( ${CMAKE_SOURCE_DIR} ${LIBXML2_INCLUDE_DIR} ${Boost_INCLUDE_DIRS} )
 add_library ( unisim__kernel__service

@@ -1,0 +1,23 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<package>
+	<unit>
+		<name>unisim::component::tlm::bridge::snooping_fsb_to_mem</name>
+		<files>
+			<file>unisim/component/tlm/bridge/snooping_fsb_to_mem/bridge.hh</file>
+			<file>unisim/component/tlm/bridge/snooping_fsb_to_mem/bridge.tcc</file>
+			<file>unisim/component/tlm/bridge/snooping_fsb_to_mem/config.hh</file>
+			<file>unisim/component/tlm/bridge/snooping_fsb_to_mem/addr32_burstsize32.cc</file>
+			<file>unisim/component/tlm/bridge/snooping_fsb_to_mem/addr32_burstsize32_debug.cc</file>
+			<file>unisim/component/tlm/bridge/snooping_fsb_to_mem/CMakeLists.txt</file>
+		</files>
+		<depends>
+			<dep>unisim::kernel::tlm</dep>
+			<dep>unisim::kernel::logger</dep>
+			<dep>unisim::component::tlm::message::snooping_fsb</dep>
+			<dep>unisim::component::tlm::message::memory</dep>
+			<dep>unisim::service::interfaces::memory</dep>
+			<dep>unisim::util::garbage_collector</dep>
+		</depends>
+	</unit>
+</package>
+

@@ -167,6 +167,26 @@ private:
     Parameter<endian_type> param_endian;
     PARAMETER_TYPE memory_page_size;
     Parameter<PARAMETER_TYPE> param_memory_page_size;
+
+    /* linux kernel parameter */
+    string linux_kernel;
+    Parameter<string> param_linux_kernel;
+
+    /* uname parameters */
+    string utsname_sysname;
+    Parameter<string> param_utsname_sysname;
+    string utsname_nodename;
+    Parameter<string> param_utsname_nodename;
+    string utsname_release;
+    Parameter<string> param_utsname_release;
+    string utsname_version;
+    Parameter<string> param_utsname_version;
+    string utsname_machine;
+    Parameter<string> param_utsname_machine;
+    string utsname_domainname;
+    Parameter<string> param_utsname_domainname;
+
+    /* the logger and its verbose option */
 	Logger logger;
     bool verbose;
     Parameter<bool> param_verbose;
@@ -219,6 +239,11 @@ private:
 	void LSC_rt_sigprocmask();
 	void LSC_kill();
 	void LSC_ftruncate();
+	void LSC_arm_breakpoint();
+	void LSC_arm_cacheflush();
+	void LSC_arm_usr26();
+	void LSC_arm_usr32();
+	void LSC_arm_set_tls();
 	void SetSyscallNameMap();
 
     // state shared by all the systems
@@ -233,6 +258,14 @@ private:
     Register *ppc_cr;
     Register *ppc_regs[31];
     
+    // uname structure
+    struct utsname_t {
+    	char sysname[65];
+    	char nodename[65];
+    	char release[65];
+    	char version[65];
+    	char machine[65];
+    };
     /*****************************************************************************
      * ARM structures START                                                      *
      *****************************************************************************/

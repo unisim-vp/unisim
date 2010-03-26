@@ -13,7 +13,10 @@ foreach ( dir ${sc_time_subdirs} )
 	unisim_include ( ${dir} )
 endforeach ( dir )
 
-include_directories ( ${CMAKE_SOURCE_DIR} )
+include_directories ( 
+	${CMAKE_SOURCE_DIR} 
+	${OSCI_SYSTEMC_INCLUDE_DIR} 
+	)
 
 add_library ( unisim__service__time__sc_time
 	STATIC
@@ -21,10 +24,14 @@ add_library ( unisim__service__time__sc_time
 		${CMAKE_SOURCE_DIR}/unisim/service/time/sc_time/time.cc
 	)
 
-set_source_files_properties (
-	${CMAKE_SOURCE_DIR}/unisim/service/time/sc_time/time.cc
-	PROPERTIES
-		COMPILE_FLAGS "-I${OSCI_SYSTEMC_INCLUDE_DIR} -I${OSCI_TLM2_INCLUDE_DIR}"
+target_link_libraries ( unisim__service__time__sc_time
+	${OSCI_SYSTEMC_LIB}
+	unisim__kernel__service
+	)
+
+add_dependencies ( unisim__service__time__sc_time
+	unisim__service__interfaces__time
+	unisim__kernel__service
 	)
 
 message ( STATUS "Checking unisim::service::time::sc_time - done" )

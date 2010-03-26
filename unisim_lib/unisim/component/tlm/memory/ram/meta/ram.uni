@@ -1,0 +1,23 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<package>
+	<unit>
+		<name>unisim::component::tlm::memory::ram</name>
+		<files>
+			<file>unisim/component/tlm/memory/ram/memory.hh</file>
+			<file>unisim/component/tlm/memory/ram/memory.tcc</file>
+			<file>unisim/component/tlm/memory/ram/memory_32.cc</file>
+			<file>unisim/component/tlm/memory/ram/memory_32_debug.cc</file>
+			<file>unisim/component/tlm/memory/ram/memory_64.cc</file>
+			<file>unisim/component/tlm/memory/ram/memory_64_debug.cc</file>
+			<file>unisim/component/tlm/memory/ram/CMakeLists.txt</file>
+		</files>
+		<depends>
+			<dep>osci_systemc</dep>
+			<dep>unisim::kernel::tlm</dep>
+			<dep>unisim::kernel::logger</dep>
+			<dep>unisim::component::tlm::message::memory</dep>
+			<dep>unisim::component::cxx::memory::ram</dep>
+		</depends>
+	</unit>
+</package>
+

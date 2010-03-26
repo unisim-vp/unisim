@@ -1,0 +1,19 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<package>
+	<unit>
+		<name>unisim::service::power</name>
+		<files>
+			<file>unisim/service/power/cache_power_estimator.hh</file>
+			<file>unisim/service/power/cache_power_estimator.cc</file>
+			<file>unisim/service/power/CMakeLists.txt</file>
+		</files>
+		<depends>
+			<dep>unisim::kernel::service</dep>
+			<dep>unisim::kernel::logger</dep>
+			<dep>unisim::service::interfaces::cache_power_estimator</dep>
+			<dep>unisim::service::interfaces::power_mode</dep>
+			<dep>unisim::service::interfaces::time</dep>
+		</depends>
+	</unit>
+</package>
+

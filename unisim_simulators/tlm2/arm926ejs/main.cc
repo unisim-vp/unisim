@@ -34,6 +34,7 @@
 
 // #include <Python.h>
 #include <iostream>
+#include <sstream>
 #include <list>
 #include <string>
 #include <getopt.h>
@@ -129,7 +130,8 @@ void help(char *prog_name) {
 	cerr << "            configures the simulator with the given xml configuration file" << endl << endl;
 	cerr << " --get-config <xml file>" << endl;
 	cerr << " -g <xml file>" << endl;
-	cerr << "            get the simulator default configuration xml file (you can use it to create your own configuration)" << endl << endl;
+	cerr << "            get the simulator default configuration xml file (you "
+			<< "can use it to create your own configuration)" << endl << endl;
 	cerr << " --debug-gdb-server" << endl;
 	cerr << " -d" << endl;
 	cerr << "            enable debugging of the simulator using the gdb_server (if the inline debugger is used at the same time, this option will be ignored)" << endl << endl;
@@ -180,6 +182,8 @@ void ShowVersion()
 		<< "-" << SIM_VERSION_PATCH
 		<< " (" << SIM_VERSION_CODENAME << ")" << endl;
 	cerr << "Author: " << SIM_AUTHOR << endl;
+	cerr << "================================================" << endl;
+	cerr << "================================================" << endl;
 }
 
 int main(int argc, char *argv[], char **envp) {
@@ -289,6 +293,41 @@ int main(int argc, char *argv[], char **envp) {
 
 	// now that all the components have been created, we can set the config and/or
 	//   save it as required
+
+	// First set the default configuration
+	{
+		unisim::kernel::service::VariableBase *var =
+				ServiceManager::GetVariable("memory.bytesize",
+						unisim::kernel::service::VariableBase::VAR_PARAMETER);
+		*var = 0xffffffffUL;
+		var = ServiceManager::GetVariable("memory.cycle-time",
+				unisim::kernel::service::VariableBase::VAR_PARAMETER);
+		*var = 1000000UL;
+		var = ServiceManager::GetVariable("linux-loader.stack-base",
+				unisim::kernel::service::VariableBase::VAR_PARAMETER);
+		*var = 0xC0000000UL;
+		var = ServiceManager::GetVariable("linux-loader.max-environ",
+				unisim::kernel::service::VariableBase::VAR_PARAMETER);
+		*var = 0x4000UL;
+		var = ServiceManager::GetVariable("cpu.default-endianness",
+				unisim::kernel::service::VariableBase::VAR_PARAMETER);
+		*var = "little-endian";
+		/* TODO REMOVE */
+		var = ServiceManager::GetVariable("elf-loader.filename",
+				unisim::kernel::service::VariableBase::VAR_PARAMETER);
+		*var = "test";
+		var = ServiceManager::GetVariable("linux-loader.argc",
+				unisim::kernel::service::VariableBase::VAR_PARAMETER);
+		*var = 1;
+		var = ServiceManager::GetVariable("linux-loader.argv[0]",
+				unisim::kernel::service::VariableBase::VAR_PARAMETER);
+		*var = "test";
+		var = ServiceManager::GetVariable("linux-os.system",
+				unisim::kernel::service::VariableBase::VAR_PARAMETER);
+		*var = "arm";
+		/* END TODO */
+	}
+
 	// First use the passed configuration file to set the configuration
 	if (set_config)
 	{
@@ -315,7 +354,9 @@ int main(int argc, char *argv[], char **envp) {
 		varname_sstr = set_vars_it->substr(0, pos);
 		value_sstr = set_vars_it->substr(pos + 1);
 		
-		unisim::kernel::service::VariableBase *var = ServiceManager::GetVariable(varname_sstr.c_str(), unisim::kernel::service::VariableBase::VAR_PARAMETER);
+		unisim::kernel::service::VariableBase *var =
+				ServiceManager::GetVariable(varname_sstr.c_str(),
+						unisim::kernel::service::VariableBase::VAR_PARAMETER);
 		
 		if (var == &ServiceManager::void_variable)
 		{

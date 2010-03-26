@@ -127,21 +127,53 @@ LinuxOS(const char *name, Object *parent) :
 	loader_import("loader-import", this),
 	cpu_linux_os_import("cpu-linux-os-import", this),
 	system(""),
-	param_system("system", this, system),
+	param_system("system", this, system, "Emulated system architecture "
+			"available values are \"arm\" and \"powerpc\""),
     endianess(E_LITTLE_ENDIAN),
     param_endian("endianess", this, endianess),
+	memory_page_size(4096),
+	param_memory_page_size("memory-page-size", this, memory_page_size),
+	linux_kernel("2.6.27.35"),
+	param_linux_kernel("linux-kernel", this, linux_kernel, "A string containing"
+			" the linux kernel version that the program emulated was compiled"
+			" for. Currently only version 2.6.27.35 is supported"),
+	utsname_sysname("Linux"),
+	param_utsname_sysname("utsname-sysname", this, utsname_sysname,
+			"The value that the uname system call should return. As this"
+			" service is providing linux emulation supoort its value should"
+			" be 'Linux', so you should not modify it."),
+	utsname_nodename("localhost"),
+	param_utsname_nodename("utsname-nodename", this, utsname_nodename,
+			"The network node hostname that the uname system call should"
+			" return. Default value is localhost, but you could write whatever"
+			" name you want."),
+	utsname_release("2.6.27.35"),
+	param_utsname_release("utsname-release", this, utsname_release,
+			"The kernel realese information that the uname system call should"
+			" return. This should usually match the linux-kernel parameter."),
+	utsname_version("#UNISIM SMP Fri Mar 12 05:23:09 UTC 2010"),
+	param_utsname_version("utsname-version", this, utsname_version,
+			"The kernel version information that the uname system call should"
+			" return."),
+	utsname_machine("armv5"),
+	param_utsname_machine("utsname-machine", this, utsname_machine,
+			"The machine information that the uname system call should"
+			" return. This should be one of the supported architectures (the"
+			" system parameter, that is, arm or powerpc) or a specific model "
+			" derived from it (i.e., arm926ejs)."),
+	utsname_domainname("localhost"),
+	param_utsname_domainname("utsname-domainname", this, utsname_domainname,
+			"The domain name information that the uname system call should"
+			" return."),
 	logger(*this),
     verbose(false),
     param_verbose("verbose", this, verbose),
-	memory_page_size(4096),
-	param_memory_page_size("memory-page-size", this, memory_page_size),
 	mmap_base(0xd4000000),
 	current_syscall_id(0),
     current_syscall_name(""),
 	osrelease_filename("/proc/sys/kernel/osrelease"),
 	fake_osrelease_filename("osrelease"),
 	fake_osrelease("2.6.8")
-	
 {
 	SetSyscallNameMap();
 
@@ -283,6 +315,12 @@ ARMSetup()
 	SetSyscallId(string("getegid32"), 202);
 	SetSyscallId(string("flistxattr"), 234);
 	SetSyscallId(string("exit_group"), 248);
+	// the following are private to the arm
+	SetSyscallId(string("breakpoint"), 983041);
+	SetSyscallId(string("cacheflush"), 983042);
+	SetSyscallId(string("usr26"), 983043);
+	SetSyscallId(string("usr32"), 983044);
+	SetSyscallId(string("set_tls"), 983045);
 
 	// Set mmap_brk_point and brk_point
 	mmap_brk_point = mmap_base;
@@ -360,6 +398,84 @@ ARMSetup()
 			<< EndDebugInfo;
 	arm_regs[13]->SetValue(&st);
 	
+	if ( utsname_machine.compare("armv5") == 0 )
+	{
+		// TODO: Check that the program/stack is not in conflict with the
+		//   tls and cmpxchg interfaces
+		// Set the tls interface, this requires a write into the memory
+		//   system
+		// The following instructions need to be added to memory:
+		// 0xffff0fe0:	e59f0008	ldr r0, [pc, #(16 - 8)] 	@ TLS stored
+		// 														@ at 0xffff0ff0
+		// 0xffff0fe4:	e1a0f00e	mov pc, lr
+		// 0xffff0fe8: 	0
+		// 0xffff0fec: 	0
+		// 0xffff0ff0: 	0
+		// 0xffff0ff4: 	0
+		// 0xffff0ff8: 	0
+		uint32_t tls_base_addr = 0xffff0fe0UL;
+		uint32_t tls_buf[7] = {0xe59f0008UL, 0xe1a0f00eUL, 0, 0, 0, 0, 0};
+		if ( unlikely(verbose) )
+		{
+			logger << DebugInfo
+				<< "Setting TLS handling:" << endl;
+			for ( unsigned int i = 0; i < 7; i++ )
+			{
+				logger << endl;
+				logger << " - 0x" << hex << (tls_base_addr + (i * 4)) << " = "
+						<< "0x" << (unsigned int)tls_buf[i] << dec;
+			}
+			logger << EndDebugInfo;
+		}
+		for ( unsigned int i = 0; i < 7; i++ )
+		{
+			memory_import->WriteMemory(tls_base_addr + (i*4),
+					(void *)&(tls_buf[i]), 4);
+		}
+		if ( unlikely(verbose) )
+		{
+			logger << DebugInfo
+					<< "TLS handler configured." << EndDebugInfo;
+		}
+		// Set the cmpxchg (atomic compare and exchange) interface, the
+		//   following instructions need to be added to memory:
+		// 0xffff0fc0:	e5923000	ldr	r3, [r2]
+		// 0xffff0fc4:	e0533000	subs	r3, r3, r0
+		// 0xffff0fc8:	05821000 	streq	r1, [r2]
+		// 0xffff0fcc:	e2730000 	rsbs	r0, r3, #0	; 0x0
+		// 0xffff0fd0:	e1a0f00e 	mov	pc, lr
+		uint32_t cmpxchg_base_addr = 0xffff0fc0UL;
+		uint32_t cmpxchg_buf[5] = {
+				0xe5923000UL,
+				0xe0533000UL,
+				0x05821000UL,
+				0xe2730000UL,
+				0xe1a0f00eUL
+		};
+		if ( unlikely(verbose) )
+		{
+			logger << DebugInfo
+					<< "Setting cmpxchg handling:" << endl;
+			for ( unsigned int i = 0; i < 5; i++ )
+			{
+				logger << endl;
+				logger << " - 0x" << hex << (cmpxchg_base_addr + (i * 4))
+						<< " = " << "0x" << (unsigned int)cmpxchg_buf[i] << dec;
+			}
+			logger << EndDebugInfo;
+		}
+		for ( unsigned int i = 0; i < 5; i++ )
+		{
+			memory_import->WriteMemory(cmpxchg_base_addr + (i * 4),
+					(void *)&(cmpxchg_buf[i]), 4);
+		}
+		if ( unlikely(verbose) )
+		{
+			logger << DebugInfo
+					<< "cmpxchg handler configured." << EndDebugInfo;
+		}
+	}
+
 	return true;
 }
 
@@ -1533,15 +1649,21 @@ LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 LSC_uname() 
 {
 	int ret;
-// 	static const char sysname[] = "Linux\0localhost\0""2.6.8\0#1 SMP Tue Feb 12 07:42:25 UTC 2008\0armv5teb\0(none)\0";
-// 	ADDRESS_TYPE buf_addr = GetSystemCallParam(0);
-// 	WriteMem(buf_addr, sysname, sizeof(sysname));
-// 	ret = 0;
-	ret = -1;
-	if(unlikely(verbose))
-		logger << DebugInfo
-			<< "uname() return " << ret << endl
-			<< LOCATION << EndDebugInfo;
+ 	ADDRESS_TYPE buf_addr = GetSystemCallParam(0);
+ 	struct utsname_t value;
+ 	memset(&value, 0, sizeof(value));
+ 	memcpy(&(value.sysname),
+ 			utsname_sysname.c_str(), utsname_sysname.length() + 1);
+ 	memcpy(&(value.nodename),
+ 			utsname_nodename.c_str(), utsname_nodename.length() + 1);
+ 	memcpy(&(value.release),
+ 			utsname_release.c_str(), utsname_release.length() + 1);
+ 	memcpy(&(value.version),
+ 			utsname_version.c_str(), utsname_version.length() + 1);
+ 	memcpy(&(value.machine),
+ 			utsname_machine.c_str(), utsname_machine.length() + 1);
+ 	WriteMem(buf_addr, &value, sizeof(value));
+ 	ret = 0;
 	SetSystemCallStatus((PARAMETER_TYPE) ret, ret < 0);
 }
 	
@@ -2059,6 +2181,69 @@ LSC_ftruncate()
 }
 	
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+void
+LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
+LSC_arm_breakpoint()
+{
+	if(unlikely(verbose))
+		logger << DebugInfo
+			<< "ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec
+			<< endl << LOCATION << EndDebugInfo;
+	SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL), true);
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+void
+LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
+LSC_arm_cacheflush()
+{
+	if(unlikely(verbose))
+		logger << DebugInfo
+			<< "ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec
+			<< endl << LOCATION << EndDebugInfo;
+	SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL), true);
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+void
+LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
+LSC_arm_usr26()
+{
+	if(unlikely(verbose))
+		logger << DebugInfo
+			<< "ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec
+			<< endl << LOCATION << EndDebugInfo;
+	SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL), true);
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+void
+LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
+LSC_arm_usr32()
+{
+	if(unlikely(verbose))
+		logger << DebugInfo
+			<< "ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec
+			<< endl << LOCATION << EndDebugInfo;
+	SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL), true);
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+void
+LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
+LSC_arm_set_tls()
+{
+	uint32_t r0 = GetSystemCallParam(0);
+	memory_injection_import->InjectWriteMemory(0xffff0ff0UL,
+			(void *)&(r0), 4);
+	if(unlikely(verbose))
+		logger << DebugInfo
+			<< "ret = 0x" << hex << ((PARAMETER_TYPE)0) << dec
+			<< endl << LOCATION << EndDebugInfo;
+	SetSystemCallStatus((PARAMETER_TYPE)0, true);
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void 
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 SetSyscallNameMap()
@@ -2110,6 +2295,15 @@ SetSyscallNameMap()
 	syscall_name_map[string("rt_sigprocmask")] = &thistype::LSC_rt_sigprocmask;
 	syscall_name_map[string("kill")] = &thistype::LSC_kill;
 	syscall_name_map[string("ftruncate")] = &thistype::LSC_ftruncate;
+	// the following are arm private system calls
+	if (utsname_machine.compare("armv5") == 0)
+	{
+		syscall_name_map[string("breakpoint")] = &thistype::LSC_arm_breakpoint;
+		syscall_name_map[string("cacheflush")] = &thistype::LSC_arm_cacheflush;
+		syscall_name_map[string("usr26")] = &thistype::LSC_arm_usr26;
+		syscall_name_map[string("usr32")] = &thistype::LSC_arm_usr32;
+		syscall_name_map[string("set_tls")] = &thistype::LSC_arm_set_tls;
+	}
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>

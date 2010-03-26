@@ -15,6 +15,8 @@ set_source_files_properties (
 	PROPERTIES
 		HEADER_FILE_ONLY TRUE )
 
+include_directories ( ${CMAKE_SOURCE_DIR} )
+
 add_custom_target ( unisim__service__interfaces__disassembly
 	SOURCES
 		${CMAKE_SOURCE_DIR}/unisim/service/interfaces/disassembly.hh

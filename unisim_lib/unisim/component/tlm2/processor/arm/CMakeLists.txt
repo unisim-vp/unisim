@@ -39,6 +39,7 @@ endforeach ( dir )
 include_directories (
 	${CMAKE_SOURCE_DIR}
 	${CMAKE_BINARY_DIR}
+	${OSCI_SYSTEMC_INCLUDE_DIR}
 	)
 
 add_custom_target ( unisim__component__tlm2__processor__arm
@@ -53,6 +54,10 @@ add_dependencies ( unisim__component__tlm2__processor__arm
 	unisim__kernel__tlm2
 	unisim__component__cxx__processor__arm
 	unisim__component__tlm2__interrupt
+	)
+
+target_link_libraries ( unisim__component__tlm2__processor__arm
+	${OSCI_SYSTEMC_LIBRARIES}
 	)
 
 message ( STATUS "Checking unisim::component::tlm2::processor::arm - done" )
