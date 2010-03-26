@@ -9,7 +9,7 @@ fi
 
 function usage
 {
-	echo "Usage: `basename $0` <images> <videos> [theme]"
+	echo "Usage: `basename $0` <images> <videos> <downloads> [theme]"
 	THEMES=`cd ${MY_DIR}/themes; ls`
 	echo "theme can be one of the followings:"
 	echo "${THEMES}"
@@ -20,18 +20,19 @@ if [ "$1" = "--help" ]; then
 	exit 0
 fi
 
-if [ -z "$1" ] || [ -z "$2" ]; then
+if [ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ]; then
 	usage
 	exit -1
 fi
 
 IMAGES_DIR="$1"
 VIDEOS_DIR="$2"
+DOWNLOADS_DIR="$3"
 
-if [ -z "$3" ]; then
+if [ -z "$4" ]; then
 	DEFAULT_THEME=softy
 else
-	DEFAULT_THEME="$3"
+	DEFAULT_THEME="$4"
 fi
 
 echo "Using theme ${DEFAULT_THEME} as default theme"
@@ -46,12 +47,12 @@ rm -rf ${MY_DIR}/content/image-gallery-*
 # create web site directory structure
 mkdir -p ${HERE}/site
 mkdir -p ${HERE}/site/style
-# mkdir -p ${HERE}/site/images
-# mkdir -p ${HERE}/site/videos
+mkdir -p ${HERE}/site/images
+mkdir -p ${HERE}/site/videos
 mkdir -p ${HERE}/site/images_thumbs
 mkdir -p ${HERE}/site/videos_thumbs
 mkdir -p ${HERE}/site/glyphes
-#mkdir -p ${HERE}/site/downloads
+mkdir -p ${HERE}/site/downloads
 
 # list all news materials
 NEWS_LIST=`cd ${MY_DIR}/news; ls -r *.html 2> /dev/null`
@@ -129,23 +130,23 @@ done
 #                                   IMAGES                                    #
 ###############################################################################
 
-# for IMAGE in ${IMAGES}; do
-# 	if [ -f "${IMAGES_DIR}/${IMAGE}" ]; then
-# 		echo "Copying images/${IMAGE}"
-# 		cp "${IMAGES_DIR}/${IMAGE}" "site/images/${IMAGE}"
-# 	fi
-# done
+for IMAGE in ${IMAGES}; do
+	if [ -f "${IMAGES_DIR}/${IMAGE}" ]; then
+		echo "Copying images/${IMAGE}"
+		cp "${IMAGES_DIR}/${IMAGE}" "${HERE}/site/images/${IMAGE}"
+	fi
+done
 
 ###############################################################################
 #                                  VIDEOS                                     #
 ###############################################################################
 
-# for VIDEO in ${VIDEOS}; do
-# 	if [ -f "${VIDEOS_DIR}/${VIDEO}" ]; then
-# 		echo "Copying videos/${VIDEO}"
-# 		cp "${VIDEOS_DIR}/${VIDEO}" "site/videos/${VIDEO}"
-# 	fi
-# done
+for VIDEO in ${VIDEOS}; do
+	if [ -f "${VIDEOS_DIR}/${VIDEO}" ]; then
+		echo "Copying videos/${VIDEO}"
+		cp "${VIDEOS_DIR}/${VIDEO}" "${HERE}/site/videos/${VIDEO}"
+	fi
+done
 
 ###############################################################################
 #                                IMAGE THUMBS                                 #
@@ -566,15 +567,15 @@ done
 #                                DOWNLOADS                                    #
 ###############################################################################
 
-# DOWNLOADS=`cd ${DOWNLOADS_DIR}; find . \( -name "*.tar.gz" -o -name "*.tar.bz2" -o -name "*.zip" -o -name "*.exe" -o -name "*.deb" -o -name "*.rpm" -o -name "*.pdf" \) 2> /dev/null`
+DOWNLOADS=`cd ${DOWNLOADS_DIR}; find . \( -name "*.tar.gz" -o -name "*.tar.bz2" -o -name "*.zip" -o -name "*.exe" -o -name "*.deb" -o -name "*.rpm" -o -name "*.pdf" \) 2> /dev/null`
 
-# for DOWNLOAD in ${DOWNLOADS}; do
-# 	if [ -f "${DOWNLOADS_DIR}/${DOWNLOAD}" ]; then
-# 		echo "Copying downloads/${DOWNLOAD}"
-# 		mkdir -p `dirname "site/downloads/${DOWNLOAD}"`
-# 		cp "${DOWNLOADS_DIR}/${DOWNLOAD}" "site/downloads/${DOWNLOAD}"
-# 	fi
-# done
+for DOWNLOAD in ${DOWNLOADS}; do
+	if [ -f "${DOWNLOADS_DIR}/${DOWNLOAD}" ]; then
+		echo "Copying downloads/${DOWNLOAD}"
+		mkdir -p `dirname "${HERE}/site/downloads/${DOWNLOAD}"`
+		cp "${DOWNLOADS_DIR}/${DOWNLOAD}" "${HERE}/site/downloads/${DOWNLOAD}"
+	fi
+done
 
 ###############################################################################
 #                           CONTENT and STYLESHEET                            #
