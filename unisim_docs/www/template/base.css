@@ -393,6 +393,31 @@ li
 	height:16px;
 }
 
+.download-table
+{
+}
+
+.download-table-head td
+{
+	font-weight:bold;
+	text-align:center;
+	vertical-align:bottom;
+	padding:8px 8px 0px 8px;
+}
+
+.download-table-description
+{
+	text-align:justify;
+	padding:8px 8px 8px 8px;
+}
+
+.download-table-link
+{
+	text-align:center;
+	padding:8px 8px 8px 8px;
+	line-height:20px;
+}
+
 /* page footer */
 
 .footer
