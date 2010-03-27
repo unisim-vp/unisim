@@ -2,19 +2,20 @@
 function Usage
 {
 	echo "Usage:"
-	echo "  $0 <destination directory> <unisim_tools directory> <unisim_lib directory> <unisim_simulators directory>"
+	echo "  $0 <version> <destination directory> <unisim_tools directory> <unisim_lib directory> <unisim_simulators directory>"
 }
 
-if test "x$1" = x || test "x$2" = x || test "x$3" = x || test "x$4" = x; then
+if test "x$1" = x || test "x$2" = x || test "x$3" = x || test "x$4" = x || test "x$5" = x; then
 	Usage
-	exit
+	exit -1
 fi
 
 HERE=`pwd`
-DEST_DIR=$1
-UNISIM_TOOLS_DIR=$2
-UNISIM_LIB_DIR=$3
-UNISIM_SIMULATORS_DIR=$4/tlm/ppcemu_system
+VERSION=$1
+DEST_DIR=$2
+UNISIM_TOOLS_DIR=$3
+UNISIM_LIB_DIR=$4
+UNISIM_SIMULATORS_DIR=$5/tlm/ppcemu_system
 
 UNISIM_TOOLS_GENISSLIB_HEADER_FILES="\
 action.hh \
@@ -594,12 +595,12 @@ fi
 
 if [ "${has_to_build_configure}" = "yes" ]; then
 	echo "Generating configure.ac"
-	echo "AC_INIT([UNISIM PowerMAC G4 PCI Standalone simulator], [0.1], [Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Perez <daniel.gracia-perez@cea.fr>, Reda Nouacer <reda.nouacer@cea.fr>], [ppcemu_system])" > "${DEST_DIR}/configure.ac"
+	echo "AC_INIT([UNISIM PowerMAC G4 PCI Standalone simulator], [${VERSION}], [Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Perez <daniel.gracia-perez@cea.fr>, Reda Nouacer <reda.nouacer@cea.fr>], [ppcemu_system])" > "${DEST_DIR}/configure.ac"
 	echo "AC_CONFIG_AUX_DIR(config)" >> "${CONFIGURE_AC}"
 	echo "AC_CANONICAL_BUILD" >> "${CONFIGURE_AC}"
 	echo "AC_CANONICAL_HOST" >> "${CONFIGURE_AC}"
 	echo "AC_CANONICAL_TARGET" >> "${CONFIGURE_AC}"
-	echo "AM_INIT_AUTOMAKE" >> "${CONFIGURE_AC}"
+	echo "AM_INIT_AUTOMAKE([subdir-objects tar-pax])" >> "${CONFIGURE_AC}"
 	echo "AC_PATH_PROGS(SH, sh)" >> "${CONFIGURE_AC}"
 	echo "AC_PROG_INSTALL" >> "${CONFIGURE_AC}"
 	echo "AC_PROG_LN_S" >> "${CONFIGURE_AC}"
@@ -631,14 +632,14 @@ fi
 
 if [ "${has_to_build_genisslib_configure}" = "yes" ]; then
 	echo "Generating GENISSLIB configure.ac"
-	echo "AC_INIT([UNISIM GENISSLIB], [0.1], [Gilles Mouchard <gilles.mouchard@cea.fr>, Yves  Lhuillier <yves.lhuillier@cea.fr>], [genisslib])" > "${GENISSLIB_CONFIGURE_AC}"
+	echo "AC_INIT([UNISIM GENISSLIB], [${VERSION}], [Gilles Mouchard <gilles.mouchard@cea.fr>, Yves  Lhuillier <yves.lhuillier@cea.fr>], [genisslib])" > "${GENISSLIB_CONFIGURE_AC}"
 	echo "AC_CONFIG_MACRO_DIR([m4])" >> "${GENISSLIB_CONFIGURE_AC}"
 	echo "AC_CONFIG_AUX_DIR(config)" >> "${GENISSLIB_CONFIGURE_AC}"
 	echo "AC_CONFIG_HEADERS([config.h])" >> "${GENISSLIB_CONFIGURE_AC}"
 	echo "AC_CANONICAL_BUILD" >> "${GENISSLIB_CONFIGURE_AC}"
 	echo "AC_CANONICAL_HOST" >> "${GENISSLIB_CONFIGURE_AC}"
 	echo "AC_CANONICAL_TARGET" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "AM_INIT_AUTOMAKE" >> "${GENISSLIB_CONFIGURE_AC}"
+	echo "AM_INIT_AUTOMAKE([subdir-objects tar-pax])" >> "${GENISSLIB_CONFIGURE_AC}"
 	echo "AC_PATH_PROGS(SH, sh)" >> "${GENISSLIB_CONFIGURE_AC}"
 	echo "AC_PROG_CXX" >> "${GENISSLIB_CONFIGURE_AC}"
 	echo "AC_PROG_INSTALL" >> "${GENISSLIB_CONFIGURE_AC}"
@@ -683,14 +684,14 @@ fi
 
 if [ "${has_to_build_ppcemu_system_configure}" = "yes" ]; then
 	echo "Generating ppcemu_system configure.ac"
-	echo "AC_INIT([UNISIM PowerMac G4 PCI C++ simulator], [0.1], [Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Perez <daniel.gracia-perez@cea.fr>, Reda Nouacer <reda.nouacer@cea.fr>], [ppcemu_system])" > "${PPCEMU_SYSTEM_CONFIGURE_AC}"
+	echo "AC_INIT([UNISIM PowerMac G4 PCI C++ simulator], [${VERSION}], [Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Perez <daniel.gracia-perez@cea.fr>, Reda Nouacer <reda.nouacer@cea.fr>], [ppcemu_system])" > "${PPCEMU_SYSTEM_CONFIGURE_AC}"
 	echo "AC_CONFIG_MACRO_DIR([m4])" >> "${PPCEMU_SYSTEM_CONFIGURE_AC}"
 	echo "AC_CONFIG_AUX_DIR(config)" >> "${PPCEMU_SYSTEM_CONFIGURE_AC}"
 	echo "AC_CONFIG_HEADERS([config.h])" >> "${PPCEMU_SYSTEM_CONFIGURE_AC}"
 	echo "AC_CANONICAL_BUILD" >> "${PPCEMU_SYSTEM_CONFIGURE_AC}"
 	echo "AC_CANONICAL_HOST" >> "${PPCEMU_SYSTEM_CONFIGURE_AC}"
 	echo "AC_CANONICAL_TARGET" >> "${PPCEMU_SYSTEM_CONFIGURE_AC}"
-	echo "AM_INIT_AUTOMAKE([subdir-objects])" >> "${PPCEMU_SYSTEM_CONFIGURE_AC}"
+	echo "AM_INIT_AUTOMAKE([subdir-objects tar-pax])" >> "${PPCEMU_SYSTEM_CONFIGURE_AC}"
 	echo "AC_PATH_PROGS(SH, sh)" >> "${PPCEMU_SYSTEM_CONFIGURE_AC}"
 	echo "AC_PROG_CXX" >> "${PPCEMU_SYSTEM_CONFIGURE_AC}"
 	echo "AC_PROG_INSTALL" >> "${PPCEMU_SYSTEM_CONFIGURE_AC}"
