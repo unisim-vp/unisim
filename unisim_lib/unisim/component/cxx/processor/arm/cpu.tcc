@@ -100,6 +100,8 @@ namespace arm {
 	Service<Disassembly<uint64_t> >(name, parent),
 	Service<Registers>(name, parent),
 	Service<Memory<uint64_t> >(name, parent),
+	Client<CachePowerEstimator>(name,  parent),
+	Client<PowerMode>(name,  parent),
 	disasm_export("disasm_export", this),
 	registers_export("registers_export", this),
 	memory_injection_export("memory_injection_export", this),
@@ -113,6 +115,10 @@ namespace arm {
 	symbol_table_lookup_import("symbol_table_lookup_import", this),
 	linux_os_import("linux_os_import", this),
 	trap_reporting_import("trap_reporting_import", this),
+	il1_power_estimator_import("il1-power-estimator-import",  this),
+	dl1_power_estimator_import("dl1-power-estimator-import",  this),
+	il1_power_mode_import("il1-power-mode-import",  this),
+	dl1_power_mode_import("dl1-power-mode-import",  this),
 	logger(*this),
 	insn_cache_line_address(0),
 	memory_interface(_memory_interface),
@@ -132,17 +138,25 @@ namespace arm {
 	default_endianness(E_BIG_ENDIAN),
 	arm966es_initram(false),
 	arm966es_vinithi(false),
+	cpu_cycle_time(0),
+	voltage(0),
+	cpu_cycle(0),
+	bus_cycle(0),
 	verbose_all(false),
 	verbose_setup(false),
 	verbose_step(false),
 	verbose_exception(false),
 	verbose_dump_regs_start(false),
 	verbose_dump_regs_end(false),
+	verbose_memory(false),
 	trap_on_exception(false),
 	trap_on_instruction_counter(0),
 	param_default_endianness("default-endianness", this, default_endianness),
 	param_arm966es_initram("arm966es-initram", this, arm966es_initram),
 	param_arm966es_vinithi("arm966es-vinithi", this, arm966es_vinithi),
+	param_cpu_cycle_time("cpu-cycle-time", this, cpu_cycle_time,
+			"CPU cycle time in ps"),
+	param_voltage("voltage",  this,  voltage, "CPU voltage in mV"),
 	param_verbose_all("verbose-all", this, verbose_all,
 					  "Activate all the verbose option"),
 	param_verbose_setup("verbose-setup", this, verbose_setup,
@@ -152,6 +166,8 @@ namespace arm {
 	param_verbose_exception("verbose-exception", this, verbose_exception),
 	param_verbose_dump_regs_start("verbose-dump-regs-start", this, verbose_dump_regs_start),
 	param_verbose_dump_regs_end("verbose-dump-regs-end", this, verbose_dump_regs_end),
+	param_verbose_memory("verbose-memory", this, verbose_memory,
+			"Dump detailed memory operations"),
 	param_trap_on_exception("trap-on-exception", this, trap_on_exception,
 							"Produce a trap when an exception occurs"),
 	param_trap_on_instruction_counter("trap-on-instruction-counter", this, trap_on_instruction_counter,
@@ -311,29 +327,19 @@ namespace arm {
 			verbose_step = true;
 			verbose_dump_regs_start = true;
 			verbose_dump_regs_end = true;
+			verbose_memory = true;
 		}
-		if(verbose_all) {
-			logger << DebugInfo << "- verbose-all = true";
-		} else {
-			if (verbose_setup) 
-				logger << DebugInfo << "- verbose-setup = true" << EndDebug;
-			if (verbose_step)
-				logger << DebugInfo << "- verbose-step = true" << EndDebug;
-			if (verbose_dump_regs_start)
-				logger << DebugInfo << "- verbose-dump-regs-start = true" << EndDebug;
-			if (verbose_dump_regs_end)
-				logger << DebugInfo << "- verbose-dump-regs-end = true" << EndDebug;
-		}
-		
-		if (verbose_setup)
+		if ( verbose_setup )
 		{
 			logger << DebugInfo;
-			logger << "Service imports connected:" << endl;
-			logger << " - debug_control = ";
-			if (debug_control_import)
-				logger << "ON";
-			else
-				logger << "OFF";
+			logger << " - verbose-all = " << verbose_all << endl;
+			logger << " - verbose-setup = " << verbose_setup << endl;
+			logger << " - verbose-step = " << verbose_step << endl;
+			logger << " - verbose-dump-regs-start = " << verbose_dump_regs_start
+					<< endl;
+			logger << " - verbose-dump-regs-end = " << verbose_dump_regs_end
+					<< endl;
+			logger << " - verbose-memory = " << verbose_memory;
 			logger << EndDebugInfo;
 		}
 		
@@ -364,6 +370,7 @@ namespace arm {
 			/* models not specified will use no caches at all */
 			if ( CONFIG::MODEL == ARM926EJS )
 			{
+				unsigned int min_cycle_time = 0;
 				if ( arm926ejs_icache_size != 0 )
 				{
 					if ( !arm926ejs_icache.SetSize(arm926ejs_icache_size) )
@@ -374,6 +381,18 @@ namespace arm {
 							<< ")" 
 							<< EndDebug;
 						return false;
+					}
+					if ( il1_power_mode_import )
+					{
+						unsigned int il1_min_cycle_time =
+								il1_power_mode_import->GetMinCycleTime();
+						if ( il1_min_cycle_time > 0 &&
+								il1_min_cycle_time > min_cycle_time )
+							min_cycle_time = il1_min_cycle_time;
+						unsigned int il1_default_voltage =
+								il1_power_mode_import->GetDefaultVoltage();
+						if ( voltage <= 0 )
+							voltage = il1_default_voltage;
 					}
 				}
 				if ( arm926ejs_dcache_size != 0 )
@@ -387,6 +406,54 @@ namespace arm {
 							<< EndDebug;
 						return false;
 					}
+					if ( dl1_power_mode_import )
+					{
+						unsigned int dl1_min_cycle_time =
+								dl1_power_mode_import->GetMinCycleTime();
+						if ( dl1_min_cycle_time > 0 &&
+								dl1_min_cycle_time > min_cycle_time )
+							min_cycle_time = dl1_min_cycle_time;
+						unsigned int dl1_default_voltage =
+								dl1_power_mode_import->GetDefaultVoltage();
+						if ( voltage <= 0 )
+							voltage = dl1_default_voltage;
+					}
+				}
+
+				if ( min_cycle_time > 0 )
+				{
+					if ( cpu_cycle_time > 0 )
+					{
+						if ( cpu_cycle_time < min_cycle_time )
+						{
+							if ( unlikely(verbose_setup) )
+							{
+								logger << DebugWarning;
+								logger << "A cycle time of " << cpu_cycle_time
+										<< " ps is too low for the simulated"
+										<< " hardware !" << endl;
+								logger << "cpu cycle time should be >= "
+										<< min_cycle_time << " ps." << endl;
+								logger << EndDebugWarning;
+							}
+						}
+					}
+					else
+					{
+						cpu_cycle_time = min_cycle_time;
+					}
+				}
+				else
+				{
+					if ( cpu_cycle_time <= 0 )
+					{
+						// we can't provide a valid cpu cycle time configuration
+						//   automatically
+						logger << DebugError
+								<< "cpu-cycle-time should be bigger than 0"
+								<< EndDebugError;
+						return false;
+					}
 				}
 			}
 			
@@ -394,6 +461,50 @@ namespace arm {
 			//   accesses
 			munged_address_mask8 = 0;
 			munged_address_mask16 = 0;
+
+			if (verbose_setup)
+			{
+				logger << DebugInfo;
+				logger << "Setup information:" << endl;
+				logger << " - debug_control service ";
+				if (debug_control_import)
+					logger << "CONNECTED";
+				else
+					logger << "DISCONNECTED";
+				logger << endl;
+				logger << " - cpu cycle time = " << cpu_cycle_time << " ps"
+						<< endl;
+				if ( arm926ejs_icache_size != 0 )
+				{
+					logger << " - instruction cache size = "
+							<< arm926ejs_icache_size << " bytes" << endl;
+					logger << " - instruction cache power mode service ";
+					if ( il1_power_mode_import )
+						logger << "CONNECTED";
+					else
+						logger << "DISCONNECTED";
+				}
+				logger << endl;
+				if ( arm926ejs_dcache_size != 0 )
+				{
+					logger << " - data cache size = "
+							<< arm926ejs_dcache_size << " bytes" << endl;
+					logger << " - data cache power mode service ";
+					if ( dl1_power_mode_import )
+						logger << "CONNECTED";
+					else
+						logger << "DISCONNECTED";
+				}
+				logger << endl;
+				if ( (arm926ejs_icache_size != 0) ||
+						(arm926ejs_dcache_size != 0) )
+				{
+					if ( il1_power_mode_import || dl1_power_mode_import )
+						logger << " - voltage = " << voltage << "mV" << endl;
+				}
+				logger << EndDebugInfo;
+			}
+
 		} else {
 			/* we are running in system mode */
 			/* check that the processor model is supported */
@@ -2952,6 +3063,10 @@ namespace arm {
 			{
 				memory_interface->PrRead(address, (uint8_t *)&val, 2);
 			}
+
+			if ( unlikely(il1_power_estimator_import != 0) )
+				il1_power_estimator_import->ReportReadAccess();
+
 			return;
 		}
 		if ( CONFIG::MODEL == ARM926EJS && !linux_os_import )
@@ -2968,7 +3083,8 @@ namespace arm {
 	{
 		if ( CONFIG::MODEL == ARM926EJS && linux_os_import )
 		{
-			logger << DebugInfo
+			if ( unlikely(verbose_memory) )
+				logger << DebugInfo
 					<< "Fetching 0x" << hex << address << dec
 					<< EndDebugInfo;
 			// we are running simulation the linux OS
@@ -2991,10 +3107,12 @@ namespace arm {
 					if ( unlikely(read_data_size != 4 ) )
 					{
 						logger << DebugWarning
-						<< "While reading instruction cache, only " << (unsigned int)read_data_size
-						<< " byte(s) could be read, instead of the 4 that were requested (base address = 0x"
-						<< (unsigned int)address << ")"
-						<< EndDebugWarning;
+								<< "While reading instruction cache, only "
+								<< (unsigned int)read_data_size
+								<< " byte(s) could be read, instead of the 4 "
+								<< " that were requested (base address = 0x"
+								<< (unsigned int)address << ")"
+								<< EndDebugWarning;
 					}
 				}
 			}
@@ -3002,6 +3120,8 @@ namespace arm {
 			{
 				memory_interface->PrRead(address, (uint8_t *)&val, 4);
 			}
+			if ( unlikely(il1_power_estimator_import != 0) )
+				il1_power_estimator_import->ReportReadAccess();
 			return;
 		}
 		
@@ -4070,6 +4190,8 @@ namespace arm {
 				arm926ejs_dcache.SetValid(cache_set, cache_way, 1);
 				arm926ejs_dcache.SetDirty(cache_set, cache_way, 0);
 			}
+			if ( unlikely(dl1_power_estimator_import != 0) )
+				dl1_power_estimator_import->ReportReadAccess();
 		}
 		if ( CONFIG::MODEL == ARM926EJS && !linux_os_import )
 		{
@@ -4100,7 +4222,8 @@ namespace arm {
 		uint32_t val32 = 0;
 		uint8_t *data;
 
-		logger << DebugInfo << "Perform write (addr = 0x" << hex
+		if ( unlikely(verbose_memory) )
+			logger << DebugInfo << "Perform write (addr = 0x" << hex
 				<< addr << dec << ", size = " << size << ")" << EndDebugInfo;
 
 		// fix the write address depending on the request size and endianess
@@ -4134,10 +4257,6 @@ namespace arm {
 			uint32_t cache_tag = arm926ejs_dcache.GetTag(write_addr);
 			uint32_t cache_set = arm926ejs_dcache.GetSet(write_addr);
 			uint32_t cache_way;
-			logger << DebugInfo << "addr = 0x" << hex << addr << endl
-					<< "write_addr = 0x" << write_addr << endl
-					<< "cache_tag = 0x" << cache_tag << endl
-					<< "cache_set = 0x" << cache_set << dec << EndDebugInfo;
 			bool cache_hit = false;
 			if ( arm926ejs_dcache.GetWay(cache_tag, cache_set, &cache_way) )
 			{
@@ -4152,6 +4271,9 @@ namespace arm {
 			//   written into memory, but the cache doesn't need to be updated
 			if ( cache_hit )
 			{
+				if ( unlikely(verbose_memory) )
+					logger << DebugInfo << "Cache hit, updating cache."
+						<< EndDebugInfo;
 				uint32_t cache_index = arm926ejs_dcache.GetIndex(write_addr);
 				arm926ejs_dcache.SetData(cache_set, cache_way, cache_index,
 						size, data);
@@ -4159,8 +4281,19 @@ namespace arm {
 			}
 			else
 			{
+				if ( unlikely(verbose_memory) )
+					logger << DebugInfo << "Cache miss" << EndDebugInfo;
+				if ( unlikely(verbose_memory) )
+					logger << DebugInfo << "Performing write-through ..."
+						<< EndDebugInfo;
 				memory_interface->PrWrite(write_addr, data, size);
+				if ( unlikely(verbose_memory) )
+					logger << DebugInfo << "... write-through finished."
+						<< EndDebugInfo;
 			}
+
+			if ( unlikely(dl1_power_estimator_import != 0) )
+				dl1_power_estimator_import->ReportWriteAccess();
 		}
 		if ( (CONFIG::MODEL == ARM926EJS) && !linux_os_import )
 		{
@@ -4187,7 +4320,8 @@ namespace arm {
 		uint32_t read_addr = addr & ~(uint32_t)(size - 1);
 		uint8_t *data;
 
-		logger << DebugInfo << "Perform read (addr = 0x" << hex
+		if ( unlikely(verbose_memory) )
+			logger << DebugInfo << "Perform read (addr = 0x" << hex
 				<< addr << dec << ", size = " << size << ")" << EndDebugInfo;
 
 		// fix the read address depending on the request size and endianess
@@ -4208,10 +4342,6 @@ namespace arm {
 			uint32_t cache_set = arm926ejs_dcache.GetSet(read_addr);
 			uint32_t cache_way;
 			bool cache_hit = false;
-			logger << DebugInfo << "addr = 0x" << hex << addr << endl
-					<< "read_addr = 0x" << read_addr << endl
-					<< "cache_tag = 0x" << cache_tag << endl
-					<< "cache_set = 0x" << cache_set << dec << EndDebugInfo;
 			if ( arm926ejs_dcache.GetWay(cache_tag, cache_set, &cache_way) )
 			{
 				if ( arm926ejs_dcache.GetValid(cache_set, cache_way) )
@@ -4224,20 +4354,15 @@ namespace arm {
 			//   memory and placed into the cache
 			if ( !cache_hit )
 			{
-				logger << DebugInfo << "Cache miss" << EndDebugInfo;
+				if ( unlikely(verbose_memory) )
+					logger << DebugInfo << "Cache miss" << EndDebugInfo;
 				// get a way to replace
 				cache_way = arm926ejs_dcache.GetNewWay(cache_set);
-				logger << DebugInfo << "cahe_way = 0x"
-						<< hex << cache_way << dec << EndDebugInfo;
 				// get the valid and dirty bits from the way to replace
 				uint8_t cache_valid = arm926ejs_dcache.GetValid(cache_set,
 						cache_way);
 				uint8_t cache_dirty = arm926ejs_dcache.GetDirty(cache_set,
 						cache_way);
-				logger << DebugInfo << "cache_valid = " << (int)cache_valid
-						<< endl
-						<< "cache_dirty = " << (int)cache_dirty
-						<< EndDebugInfo;
 
 				if ( (cache_valid != 0) & (cache_dirty != 0) )
 				{
@@ -4249,57 +4374,44 @@ namespace arm {
 									cache_way);
 					arm926ejs_dcache.GetData(cache_set, cache_way,
 							&rep_cache_data);
+					if ( unlikely(verbose_memory) )
+						logger << DebugInfo << "Performing writeback ..."
+							<< EndDebugInfo;
 					memory_interface->PrWrite(rep_cache_address, rep_cache_data,
 							arm926ejs_dcache.LINE_SIZE);
+					if ( unlikely(verbose_memory) )
+						logger << DebugInfo << "... writeback performed."
+							<< EndDebugInfo;
 				}
 				// the new data can be requested
 				uint8_t *cache_data = 0;
 				uint32_t cache_address =
 						arm926ejs_dcache.GetBaseAddressFromAddress(read_addr);
-				logger << DebugInfo << "cache_address = 0x"
-						<< hex << (unsigned int)cache_address << dec
-						<< EndDebugInfo;
 				// when getting the data we get the pointer to the cache line
 				//   containing the data, so no need to write the cache
 				//   afterwards
 				uint32_t cache_line_size = arm926ejs_dcache.GetData(cache_set,
 						cache_way, &cache_data);
-				logger << DebugInfo << "cache_line_size = "
-						<< (unsigned int)cache_line_size
+				if ( unlikely(verbose_memory) )
+					logger << DebugInfo << "Requesting data ..."
 						<< EndDebugInfo;
-				logger << DebugInfo << "cache_data ("
-						<< (unsigned int)cache_line_size << ") = "
-						<< hex;
-				for (unsigned int k = 0; k != cache_line_size; k++)
-				{
-					logger << " " << (unsigned short int)cache_data[k];
-				}
-				logger << dec << EndDebugInfo;
-				logger << DebugInfo << "Requesting data ..." << EndDebugInfo;
 				memory_interface->PrRead(cache_address, cache_data,
 						cache_line_size);
-				logger << DebugInfo << "... data received" << EndDebugInfo;
-				logger << DebugInfo << "cache_line_size = "
-						<< (unsigned int)cache_line_size
-						<< EndDebugInfo;
-				logger << DebugInfo << "cache_data ("
-						<< (unsigned int)cache_line_size << ") = "
-						<< hex;
-				for (unsigned int k = 0; k != cache_line_size; k++)
-				{
-					logger << " " << (unsigned short int)cache_data[k];
-				}
-				logger << dec << EndDebugInfo;
+				if ( unlikely(verbose_memory) )
+					logger << DebugInfo << "... data received" << EndDebugInfo;
 				arm926ejs_dcache.SetTag(cache_set, cache_way, cache_tag);
 				arm926ejs_dcache.SetValid(cache_set, cache_way, 1);
 				arm926ejs_dcache.SetDirty(cache_set, cache_way, 0);
+			}
+			else
+			{
+				if ( unlikely(verbose_memory) )
+					logger << DebugInfo << "Cache hit" << EndDebugInfo;
 			}
 
 			// at this point the data is in the cache, we can read it from the
 			//   cache
 			uint32_t cache_index = arm926ejs_dcache.GetIndex(read_addr);
-			logger << DebugInfo << "cache_index = "
-					<< (unsigned int)cache_index << EndDebugInfo;
 			(void)arm926ejs_dcache.GetData(cache_set, cache_way, cache_index,
 					size, &data);
 			// fix the data depending on its size
@@ -4341,11 +4453,16 @@ namespace arm {
 				}
 				value = val32;
 			}
-			logger << DebugInfo << "Setting r"
+
+			if ( unlikely(verbose_memory) )
+				logger << DebugInfo << "Setting r"
 					<< (unsigned int)memop->GetTargetReg()
 					<< " to 0x" << hex << value << dec
 					<< EndDebugInfo;
 			SetGPR(memop->GetTargetReg(), value);
+
+			if ( unlikely(dl1_power_estimator_import != 0) )
+				dl1_power_estimator_import->ReportReadAccess();
 		}
 		if ( CONFIG::MODEL == ARM926EJS && !linux_os_import )
 		{
@@ -4359,7 +4476,6 @@ namespace arm {
 						MemoryAccessReporting<uint64_t>::MAT_READ,
 						MemoryAccessReporting<uint64_t>::MT_DATA,
 						addr, size);
-		logger << DebugInfo << "Reported memory access" << EndDebugInfo;
 	}
 	
 	template<class CONFIG>
@@ -4372,7 +4488,8 @@ namespace arm {
 		uint32_t read_addr = addr & ~(uint32_t)0x03;
 		uint8_t *data;
 
-		logger << DebugInfo << "Perform read to PC (addr = 0x" << hex
+		if ( unlikely(verbose_memory) )
+			logger << DebugInfo << "Perform read to PC (addr = 0x" << hex
 				<< addr << dec << ", size = " << size << ")" << EndDebugInfo;
 
 		if ( (CONFIG::MODEL == ARM926EJS) && linux_os_import )
@@ -4383,11 +4500,6 @@ namespace arm {
 			uint32_t cache_set = arm926ejs_dcache.GetSet(read_addr);
 			uint32_t cache_way;
 			bool cache_hit = false;
-
-			logger << DebugInfo << "addr = 0x" << hex << addr << endl
-					<< "read_addr = 0x" << read_addr << endl
-					<< "cache_tag = 0x" << cache_tag << endl
-					<< "cache_set = 0x" << cache_set << dec << EndDebugInfo;
 
 			if ( arm926ejs_dcache.GetWay(cache_tag, cache_set, &cache_way) )
 			{
@@ -4401,6 +4513,8 @@ namespace arm {
 			//   memory and placed into the cache
 			if ( !cache_hit )
 			{
+				if ( unlikely(verbose_memory) )
+					logger << DebugInfo << "Cache miss" << EndDebugInfo;
 				// get a way to replace
 				cache_way = arm926ejs_dcache.GetNewWay(cache_set);
 				// get the valid and dirty bits from the way to replace
@@ -4408,6 +4522,7 @@ namespace arm {
 						cache_way);
 				uint8_t cache_dirty = arm926ejs_dcache.GetDirty(cache_set,
 						cache_way);
+
 				if ( (cache_valid != 0) && (cache_dirty != 0) )
 				{
 					// the cache line to replace is valid and dirty so it needs
@@ -4418,8 +4533,14 @@ namespace arm {
 									cache_way);
 					arm926ejs_dcache.GetData(cache_set, cache_way,
 							&rep_cache_data);
+					if ( unlikely(verbose_memory) )
+						logger << DebugInfo << "Performing writeback ..."
+							<< EndDebugInfo;
 					memory_interface->PrWrite(rep_cache_address, rep_cache_data,
 							arm926ejs_dcache.LINE_SIZE);
+					if ( unlikely(verbose_memory) )
+						logger << DebugInfo << "... writeback performed."
+							<< EndDebugInfo;
 				}
 				// the new data can be requested
 				uint8_t *cache_data = 0;
@@ -4430,11 +4551,21 @@ namespace arm {
 				//   afterwards
 				uint32_t cache_line_size = arm926ejs_dcache.GetData(cache_set,
 						cache_way, &cache_data);
+				if ( unlikely(verbose_memory) )
+					logger << DebugInfo << "Requesting data ..."
+						<< EndDebugInfo;
 				memory_interface->PrRead(cache_address, cache_data,
 						cache_line_size);
+				if ( unlikely(verbose_memory) )
+					logger << DebugInfo << "... data received" << EndDebugInfo;
 				arm926ejs_dcache.SetTag(cache_set, cache_way, cache_tag);
 				arm926ejs_dcache.SetValid(cache_set, cache_way, 1);
 				arm926ejs_dcache.SetDirty(cache_set, cache_way, 0);
+			}
+			else
+			{
+				if ( unlikely(verbose_memory) )
+					logger << DebugInfo << "Cache hit" << EndDebugInfo;
 			}
 
 			// at this point the data is in the cache, we can read it from the
@@ -4462,7 +4593,15 @@ namespace arm {
 			}
 			value = val32;
 
+			if ( unlikely(verbose_memory) )
+				logger << DebugInfo << "Setting r"
+					<< (unsigned int)PC_reg
+					<< " to 0x" << hex << value << dec
+					<< EndDebugInfo;
 			SetGPR(PC_reg, value & ~(uint32_t)0x01);
+
+			if ( unlikely(dl1_power_estimator_import != 0) )
+				dl1_power_estimator_import->ReportReadAccess();
 		}
 		if ( (CONFIG::MODEL == ARM926EJS) && !linux_os_import )
 		{
@@ -4488,8 +4627,10 @@ namespace arm {
 		uint32_t read_addr = addr & ~(uint32_t)0x03;
 		uint8_t *data;
 
-		logger << DebugInfo << "Perform read to PC update T (addr = 0x" << hex
-				<< addr << dec << ", size = " << size << ")" << EndDebugInfo;
+		if ( unlikely(verbose_memory) )
+			logger << DebugInfo << "Perform read to PC update T (addr = 0x"
+				<< hex << addr << dec << ", size = " << size << ")"
+				<< EndDebugInfo;
 
 		if ( (CONFIG::MODEL == ARM926EJS) && linux_os_import )
 		{
@@ -4499,11 +4640,6 @@ namespace arm {
 			uint32_t cache_set = arm926ejs_dcache.GetSet(read_addr);
 			uint32_t cache_way;
 			bool cache_hit = false;
-
-			logger << DebugInfo << "addr = 0x" << hex << addr << endl
-					<< "read_addr = 0x" << read_addr << endl
-					<< "cache_tag = 0x" << cache_tag << endl
-					<< "cache_set = 0x" << cache_set << dec << EndDebugInfo;
 
 			if ( arm926ejs_dcache.GetWay(cache_tag, cache_set, &cache_way) )
 			{
@@ -4517,6 +4653,8 @@ namespace arm {
 			//   memory and placed into the cache
 			if ( !cache_hit )
 			{
+				if ( unlikely(verbose_memory) )
+					logger << DebugInfo << "Cache miss" << EndDebugInfo;
 				// get a way to replace
 				cache_way = arm926ejs_dcache.GetNewWay(cache_set);
 				// get the valid and dirty bits from the way to replace
@@ -4534,8 +4672,14 @@ namespace arm {
 									cache_way);
 					arm926ejs_dcache.GetData(cache_set, cache_way,
 							&rep_cache_data);
+					if ( unlikely(verbose_memory) )
+						logger << DebugInfo << "Performing writeback ..."
+							<< EndDebugInfo;
 					memory_interface->PrWrite(rep_cache_address, rep_cache_data,
 							arm926ejs_dcache.LINE_SIZE);
+					if ( unlikely(verbose_memory) )
+						logger << DebugInfo << "... writeback performed."
+							<< EndDebugInfo;
 				}
 				// the new data can be requested
 				uint8_t *cache_data = 0;
@@ -4546,11 +4690,21 @@ namespace arm {
 				//   afterwards
 				uint32_t cache_line_size = arm926ejs_dcache.GetData(cache_set,
 						cache_way, &cache_data);
+				if ( unlikely(verbose_memory) )
+					logger << DebugInfo << "Requesting data ..."
+						<< EndDebugInfo;
 				memory_interface->PrRead(cache_address, cache_data,
 						cache_line_size);
+				if ( unlikely(verbose_memory) )
+					logger << DebugInfo << "... data received" << EndDebugInfo;
 				arm926ejs_dcache.SetTag(cache_set, cache_way, cache_tag);
 				arm926ejs_dcache.SetValid(cache_set, cache_way, 1);
 				arm926ejs_dcache.SetDirty(cache_set, cache_way, 0);
+			}
+			else
+			{
+				if ( unlikely(verbose_memory) )
+					logger << DebugInfo << "Cache hit" << EndDebugInfo;
 			}
 
 			// at this point the data is in the cache, we can read it from the
@@ -4578,8 +4732,18 @@ namespace arm {
 			}
 			value = val32;
 
+			if ( unlikely(verbose_memory) )
+				logger << DebugInfo << "Setting r"
+					<< (unsigned int)memop->GetTargetReg()
+					<< " to 0x" << hex << value << dec
+					<< ", and setting CPSR[T] to "
+					<< (unsigned int)(value & (uint32_t)0x01)
+					<< EndDebugInfo;
 			SetGPR(PC_reg, value & ~(uint32_t)0x01);
 			SetCPSR_T((value & (uint32_t)0x01) == 0x01);
+
+			if ( unlikely(dl1_power_estimator_import != 0) )
+				dl1_power_estimator_import->ReportReadAccess();
 		}
 		if ( (CONFIG::MODEL == ARM926EJS) && !linux_os_import )
 		{

@@ -133,11 +133,11 @@ ARM(const sc_module_name& name, Object *parent) :
 	next_nice_time(),
 	nice_time_int(10),
 	ipc(1.0),
-	cpu_cycle_time_int(0),
+//	cpu_cycle_time_int(0),
 	bus_cycle_time_int(0),
 	param_nice_time("nice-time", this, nice_time_int),
 	param_ipc("ipc", this, ipc),
-	param_cpu_cycle_time("cpu-cycle-time", this, cpu_cycle_time_int),
+//	param_cpu_cycle_time("cpu-cycle-time", this, cpu_cycle_time_int),
 	param_bus_cycle_time("bus-cycle-time", this, bus_cycle_time_int),
 //	inherited::logger(*this),
 	verbose_all(false),
@@ -230,7 +230,8 @@ Setup()
 				<< EndDebugInfo;		
 	}
 	
-	cpu_cycle_time = sc_time((double)cpu_cycle_time_int, SC_PS);
+//	cpu_cycle_time = sc_time((double)cpu_cycle_time_int, SC_PS);
+	cpu_cycle_time = sc_time((double)inherited::cpu_cycle_time, SC_PS);
 	bus_cycle_time = sc_time((double)bus_cycle_time_int, SC_PS);
 	nice_time = sc_time((double)nice_time_int, SC_PS);
 	if(CONFIG::DEBUG_ENABLE && inherited::verbose_setup) {

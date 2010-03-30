@@ -193,6 +193,8 @@
 			<dep>unisim::service::interfaces::memory_injection</dep>
 			<dep>unisim::service::interfaces::registers</dep>
 			<dep>unisim::service::interfaces::trap_reporting</dep>
+			<dep>unisim::service::interfaces::cache_power_estimator</dep>
+			<dep>unisim::service::interfaces::power_mode</dep>
 			<dep>unisim_tools::genisslib</dep>
 		</depends>
 		<autotools>

@@ -37,6 +37,8 @@ set ( cxx_arm_subdirs
 	unisim/service/interfaces/memory_injection
 	unisim/service/interfaces/registers
 	unisim/service/interfaces/trap_reporting
+	unisim/service/interfaces/cache_power_estimator
+	unisim/service/interfaces/power_mode
 	genisslib
 	)
 
@@ -187,6 +189,32 @@ add_dependencies ( unisim__component__cxx__processor__arm
 	unisim__component__cxx__processor__arm_generated_files
 	unisim__component__cxx__processor__arm__arm32_isa
 	unisim__component__cxx__processor__arm__thumb_isa
+	unisim__kernel__service
+	unisim__kernel__logger
+	unisim__util__endian
+	unisim__util__arithmetic
+	unisim__util__debug
+	unisim__service__interfaces__memory
+	unisim__service__interfaces__loader
+	unisim__service__interfaces__linux_os
+	unisim__service__interfaces__cpu_linux_os
+	unisim__service__interfaces__debug_control
+	unisim__service__interfaces__disassembly
+	unisim__service__interfaces__memory_access_reporting
+	unisim__service__interfaces__symbol_table_lookup
+	unisim__service__interfaces__memory_injection
+	unisim__service__interfaces__registers
+	unisim__service__interfaces__trap_reporting
+	unisim__service__interfaces__cache_power_estimator
+	unisim__service__interfaces__power_mode
+	genisslib
+	)
+	
+target_link_libraries ( unisim__component__cxx__processor__arm
+	unisim__kernel__service
+	unisim__kernel__logger
+	unisim__util__endian
+	unisim__util__debug
 	)
 
 message ( STATUS "Checking unisim::component::cxx::processor::arm - done" )

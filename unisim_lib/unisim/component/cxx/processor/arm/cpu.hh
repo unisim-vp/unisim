@@ -48,6 +48,8 @@
 #include "unisim/service/interfaces/memory_injection.hh"
 #include "unisim/service/interfaces/registers.hh"
 #include "unisim/service/interfaces/trap_reporting.hh"
+#include <unisim/service/interfaces/cache_power_estimator.hh>
+#include <unisim/service/interfaces/power_mode.hh>
 #include "unisim/util/debug/register.hh"
 #include "unisim/util/arithmetic/arithmetic.hh"
 #include "unisim/component/cxx/processor/arm/memory_op.hh"
@@ -105,6 +107,8 @@ namespace arm {
 	using unisim::service::interfaces::MemoryInjection;
 	using unisim::service::interfaces::Registers;
 	using unisim::service::interfaces::TrapReporting;
+	using unisim::service::interfaces::CachePowerEstimator;
+	using unisim::service::interfaces::PowerMode;
 	using unisim::util::debug::Register;
 	using unisim::util::arithmetic::Add32;
 	using unisim::component::cxx::processor::arm::CacheInterface;
@@ -132,7 +136,9 @@ namespace arm {
 	public Service<MemoryAccessReportingControl>,
 	public Service<Disassembly<uint64_t> >,
     public Service<Registers>,
-	public Service<Memory<uint64_t> > 
+	public Service<Memory<uint64_t> >,
+	public Client<CachePowerEstimator>,
+	public Client<PowerMode>
 	{
 		
 		/* profiling methods          START */
@@ -176,7 +182,12 @@ namespace arm {
 		ServiceImport<SymbolTableLookup<uint64_t> > symbol_table_lookup_import;
 		ServiceImport<LinuxOS> linux_os_import;
 		ServiceImport<TrapReporting> trap_reporting_import;
-		
+
+		ServiceImport<CachePowerEstimator> il1_power_estimator_import;
+		ServiceImport<CachePowerEstimator> dl1_power_estimator_import;
+		ServiceImport<PowerMode> il1_power_mode_import;
+		ServiceImport<PowerMode> dl1_power_mode_import;
+
 		// the kernel logger
 		unisim::kernel::logger::Logger logger;
 		
@@ -1137,6 +1148,18 @@ namespace arm {
 		// parameters for the 966E_S configuration
 		bool arm966es_initram;
 		bool arm966es_vinithi;
+		/**********************************************************************/
+		/** CPU Cycle Time/Voltage/Bus Cycle Time                             */
+		/** START *************************************************************/
+
+		uint64_t cpu_cycle_time; //!< CPU cycle time in ps
+		uint64_t voltage;        //!< CPU voltage in mV
+		uint64_t cpu_cycle;      //!< Number of cpu cycles
+		uint64_t bus_cycle;      //!< Number of front side bus cycles
+
+		/** END ***************************************************************/
+		/** CPU Cycle Time/Voltage/Bus Cycle Time                             */
+		/**********************************************************************/
 		// verbose parameters
 		bool verbose_all;
 		bool verbose_setup;
@@ -1144,6 +1167,7 @@ namespace arm {
 		bool verbose_exception;
 		bool verbose_dump_regs_start;
 		bool verbose_dump_regs_end;
+		bool verbose_memory;
 		// trap parameters
 		bool trap_on_exception;
 		uint64_t trap_on_instruction_counter;
@@ -1151,12 +1175,15 @@ namespace arm {
 		unisim::kernel::service::Parameter<endian_type> param_default_endianness;
 		unisim::kernel::service::Parameter<bool> param_arm966es_initram;
 		unisim::kernel::service::Parameter<bool> param_arm966es_vinithi;
+		unisim::kernel::service::Parameter<uint64_t> param_cpu_cycle_time;
+		unisim::kernel::service::Parameter<uint64_t> param_voltage;
 		unisim::kernel::service::Parameter<bool> param_verbose_all;
 		unisim::kernel::service::Parameter<bool> param_verbose_setup;
 		unisim::kernel::service::Parameter<bool> param_verbose_step;
 		unisim::kernel::service::Parameter<bool> param_verbose_exception;
 		unisim::kernel::service::Parameter<bool> param_verbose_dump_regs_start;
 		unisim::kernel::service::Parameter<bool> param_verbose_dump_regs_end;
+		unisim::kernel::service::Parameter<bool> param_verbose_memory;
 		unisim::kernel::service::Parameter<bool> param_trap_on_exception;
 		unisim::kernel::service::Parameter<uint64_t> param_trap_on_instruction_counter;
 		
@@ -1171,9 +1198,9 @@ namespace arm {
 		unisim::kernel::service::Register<uint32_t> *reg_spsr[5];
 
 		
-		/************************************************************/
-		/** ARM926EJ-S specific variables, functions and parameters */
-		/** START ***************************************************/
+		/**********************************************************************/
+		/** ARM926EJ-S specific variables, functions and parameters           */
+		/** START *************************************************************/
 
 		arm926ejs::Cache arm926ejs_icache;
 		arm926ejs::Cache arm926ejs_dcache;
@@ -1181,19 +1208,21 @@ namespace arm {
 		arm926ejs::DTCM arm926ejs_dtcm;
 		arm926ejs::WriteBuffer arm926ejs_wb;
 		arm926ejs::WriteBackBuffer arm926ejs_wbb;
-			
+
 		uint32_t arm926ejs_icache_size;
 		uint32_t arm926ejs_dcache_size;
 		bool arm926ejs_enable_write_buffer;
 		bool arm926ejs_enable_writeback_buffer;
-		unisim::kernel::service::Parameter<uint32_t> *param_arm926ejs_icache_size;
-		unisim::kernel::service::Parameter<uint32_t> *param_arm926ejs_dcache_size;
+		unisim::kernel::service::Parameter<uint32_t>
+			*param_arm926ejs_icache_size;
+		unisim::kernel::service::Parameter<uint32_t>
+			*param_arm926ejs_dcache_size;
 		unisim::kernel::service::Parameter<bool> *param_arm926ejs_enable_wb;
 		unisim::kernel::service::Parameter<bool> *param_arm926ejs_enable_wbb;
 		
-		/** END *****************************************************/
-		/** ARM926EJ-S specific variables, functions and parameters */
-		/************************************************************/
+		/** END ***************************************************************/
+		/** ARM926EJ-S specific variables, functions and parameters           */
+		/**********************************************************************/
 
 		// verbose methods
 		inline bool VerboseSetup() GCC_INLINE;
