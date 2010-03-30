@@ -23,6 +23,12 @@ foreach ( C_INCLUDE ${C_INCLUDES} )
 	endif ( NOT HAVE_${C_INCLUDE}_H )
 endforeach ( C_INCLUDE )
 
+set ( SIM_VERSION_MAJOR 0 )
+set ( SIM_VERSION_MINOR 1 )
+set ( SIM_VERSION_PATCH 0 )
+set ( SIM_VERSION_CODENAME "\"Sagrera\"" )
+set ( SIM_AUTHOR "\"Daniel Gracia Perez (daniel.gracia-perez@cea.fr)\"" )
+
 set ( arm926ejs_emu_subdirs
 	unisim/kernel/service
 	unisim/component/tlm2/processor/arm/arm926ejs
@@ -35,12 +41,22 @@ set ( arm926ejs_emu_subdirs
 	unisim/service/loader/elf_loader
 	unisim/service/loader/linux_loader
 	unisim/service/os/linux_os/linux_os_32
+	unisim/service/power
 	)
 foreach ( dir ${arm926ejs_emu_subdirs} )
 	unisim_include ( ${dir} )
 endforeach ( dir )
 
 include_directories ( ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR} ${OSCI_SYSTEMC_INCLUDE_DIR} ${OSCI_TLM2_INCLUDE_DIR})
+
+if ( UNISIM__SERVICE__POWER__SUPPORT )
+	set ( SIM_POWER_ESTIMATOR_SUPPORT TRUE )
+else ( UNISIM__SERVICE__POWER__SUPPORT )
+	set ( SIM_POWER_ESTIMATOR_SUPPORT FALSE )
+endif ( UNISIM__SERVICE__POWER__SUPPORT )
+configure_file ( 
+	${CMAKE_SOURCE_DIR}/config.hh.in 
+	${CMAKE_BINARY_DIR}/config.hh )
 
 file ( MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/resources/gdb_server )
 file ( 
@@ -50,8 +66,10 @@ file (
 		${CMAKE_BINARY_DIR}/resources/gdb_server )
 
 add_executable ( arm926ejs_emu 
-	${CMAKE_SOURCE_DIR}/main.cc )
-target_link_libraries ( arm926ejs_emu
+	${CMAKE_SOURCE_DIR}/main.cc 
+	${CMAKE_BINARY_DIR}/config.hh
+	)
+set ( arm926ejs_emu_libraries
 	${OSCI_SYSTEMC_LIBRARIES}
 	unisim__kernel__service
 	unisim__component__cxx__processor__arm
@@ -66,6 +84,37 @@ target_link_libraries ( arm926ejs_emu
 	unisim__service__debug__gdb_server
 	unisim__service__debug__inline_debugger
 	)
+if ( UNISIM__SERVICE__POWER__SUPPORT )
+	list ( APPEND arm926ejs_emu_libraries
+		unisim__service__power )
+endif ( UNISIM__SERVICE__POWER__SUPPORT )
+
+target_link_libraries ( arm926ejs_emu
+	${arm926ejs_emu_libraries}
+	)
+
+set ( arm926ejs_emu_deps
+	unisim__kernel__service
+	unisim__component__tlm2__processor__arm__arm926ejs
+	unisim__component__tlm2__interrupt
+	unisim__component__tlm2__memory__ram
+	unisim__service__time__sc_time
+	unisim__service__time__host_time
+	unisim__service__debug__gdb_server
+	unisim__service__debug__inline_debugger
+	unisim__service__loader__elf_loader
+	unisim__service__loader__linux_loader
+	unisim__service__os__linux_os__linux_os_32
+	)
+if ( UNISIM__SERVICE__POWER__SUPPORT )
+	list ( APPEND arm926ejs_emu_deps
+		unisim__service__power
+		)
+endif ( UNISIM__SERVICE__POWER__SUPPORT )
+add_dependencies ( arm926ejs_emu
+	${arm926ejs_emu_deps}
+	)
+
 set_target_properties ( arm926ejs_emu
 	PROPERTIES
 		RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin )
@@ -75,6 +124,8 @@ add_custom_command (
 		${CMAKE_BINARY_DIR}/resources/default-config.xml
 	COMMAND
 		${CMAKE_BINARY_DIR}/bin/arm926ejs_emu -g ${CMAKE_BINARY_DIR}/resources/default-config.xml
+	DEPENDS
+		${CMAKE_BINARY_DIR}/bin/arm926ejs_emu
 	COMMENT
 		"Creating simulator default configuration in \"resources/default-config.xml\""
 	)
@@ -106,18 +157,9 @@ add_dependencies ( check
 
 enable_testing()
 
-set ( SIM_VERSION_MAJOR 0 )
-set ( SIM_VERSION_MINOR 1 )
-set ( SIM_VERSION_PATCH 0 )
-set ( SIM_VERSION_CODENAME "\"Sagrera\"" )
-set ( SIM_AUTHOR "\"Daniel Gracia Perez (daniel.gracia-perez@cea.fr)\"" )
-configure_file ( 
-	${CMAKE_SOURCE_DIR}/config.hh.in 
-	${CMAKE_BINARY_DIR}/config.hh )
-
-set(CPACK_PACKAGE_VERSION_MAJOR "0")
-set(CPACK_PACKAGE_VERSION_MINOR "2")
-set(CPACK_PACKAGE_VERSION_PATCH "3")
+set(CPACK_PACKAGE_VERSION_MAJOR ${SIM_VERSION_MAJOR})
+set(CPACK_PACKAGE_VERSION_MINOR ${SIM_VERSION_MINOR})
+set(CPACK_PACKAGE_VERSION_PATCH ${SIM_VERSION_PATCH})
 set(CPACK_SOURCE_GENERATOR "TBZ2")
 include ( CPack )
 

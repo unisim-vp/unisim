@@ -56,6 +56,9 @@
 #include "unisim/service/loader/linux_loader/linux_loader.hh"
 #include "unisim/service/os/linux_os/linux_os_32/linux_os_32.hh"
 #include "config.hh"
+#ifdef SIM_POWER_ESTIMATOR_SUPPORT
+#include "unisim/service/power/cache_power_estimator.hh"
+#endif // SIM_POWER_ESTIMATOR_SUPPORT
 
 /* possible configurations for the arm9tdmi:
 - unisim::component::cxx::processor::arm::ARM9TDMI_NoCache_DebugConfig
@@ -112,6 +115,9 @@ typedef unisim::service::debug::inline_debugger::InlineDebugger<uint64_t> INLINE
 typedef unisim::service::loader::linux_loader::LinuxLoader<uint64_t> LINUX_LOADER;
 typedef unisim::service::loader::elf_loader::ElfLoaderImpl<uint64_t, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym> ELF32_LOADER;
 typedef unisim::service::os::linux_os::linux_os_32::LinuxOS32 LINUX_OS;
+#ifdef SIM_POWER_ESTIMATOR_SUPPORT
+typedef unisim::service::power::CachePowerEstimator POWER_ESTIMATOR;
+#endif // SIM_POWER_ESTIMATOR_SUPPORT
 using unisim::service::time::sc_time::ScTime;
 using unisim::service::time::host_time::HostTime;
 using unisim::kernel::service::ServiceManager;
@@ -290,6 +296,12 @@ int main(int argc, char *argv[], char **envp) {
 	INLINE_DEBUGGER *inline_debugger = 0;
 	if (use_inline_debugger || get_config)
 		inline_debugger = new INLINE_DEBUGGER("inline-debugger");
+#ifdef SIM_POWER_ESTIMATOR_SUPPORT
+	POWER_ESTIMATOR *il1_power_estimator =
+			new POWER_ESTIMATOR("il1-power-estimator");
+	POWER_ESTIMATOR *dl1_power_estimator =
+			new POWER_ESTIMATOR("dl1-power-estimator");
+#endif // SIM_POWER_ESTIMATOR_SUPPORT
 
 	// now that all the components have been created, we can set the config and/or
 	//   save it as required
@@ -297,35 +309,86 @@ int main(int argc, char *argv[], char **envp) {
 	// First set the default configuration
 	{
 		unisim::kernel::service::VariableBase *var =
-				ServiceManager::GetVariable("memory.bytesize",
+				ServiceManager::GetVariable("kernel_logger.std_err",
 						unisim::kernel::service::VariableBase::VAR_PARAMETER);
-		*var = 0xffffffffUL;
-		var = ServiceManager::GetVariable("memory.cycle-time",
+		*var = true;
+		var = ServiceManager::GetVariable("kernel_logger.std_err_color",
 				unisim::kernel::service::VariableBase::VAR_PARAMETER);
-		*var = 1000000UL;
-		var = ServiceManager::GetVariable("linux-loader.stack-base",
-				unisim::kernel::service::VariableBase::VAR_PARAMETER);
-		*var = 0xC0000000UL;
-		var = ServiceManager::GetVariable("linux-loader.max-environ",
-				unisim::kernel::service::VariableBase::VAR_PARAMETER);
-		*var = 0x4000UL;
-		var = ServiceManager::GetVariable("cpu.default-endianness",
-				unisim::kernel::service::VariableBase::VAR_PARAMETER);
-		*var = "little-endian";
+		*var = true;
+
+		(*cpu)["default-endianness"] = "little-endian";
+		(*memory)["bytesize"] = 0xffffffffUL;
+		(*memory)["cycle-time"] = 1000000UL;
+		(*linux_loader)["stack-base"] = 0xc0000000UL;
+		(*linux_loader)["max-environ"] = 0x4000UL;
+		(*linux_loader)["default-endianess"] = "little-endian";
+
+#ifdef SIM_POWER_ESTIMATOR_SUPPORT
+		(*il1_power_estimator)["cache-size"] = 32 * 128;
+		(*il1_power_estimator)["line-size"] = 32;
+		(*il1_power_estimator)["associativity"] = 4;
+		(*il1_power_estimator)["rw-ports"] = 0;
+		(*il1_power_estimator)["excl-read-ports"] = 1;
+		(*il1_power_estimator)["excl-write-ports"] = 0;
+		(*il1_power_estimator)["single-ended-read-ports"] = 0;
+		(*il1_power_estimator)["banks"] = 1;
+		(*il1_power_estimator)["tech-node"] = 130; // in nm
+		(*il1_power_estimator)["output-width"] = 32 * 8;
+		(*il1_power_estimator)["tag-width"] = 32; // to fix
+		(*il1_power_estimator)["access-mode"] = "fast";
+		(*il1_power_estimator)["verbose"] = true;
+
+		(*dl1_power_estimator)["cache-size"] = 32 * 128;
+		(*dl1_power_estimator)["line-size"] = 32;
+		(*dl1_power_estimator)["associativity"] = 4;
+		(*dl1_power_estimator)["rw-ports"] = 1;
+		(*dl1_power_estimator)["excl-read-ports"] = 0;
+		(*dl1_power_estimator)["excl-write-ports"] = 0;
+		(*dl1_power_estimator)["single-ended-read-ports"] = 0;
+		(*dl1_power_estimator)["banks"] = 1;
+		(*dl1_power_estimator)["tech-node"] = 130; // in nm
+		(*dl1_power_estimator)["output-width"] = 32 * 8;
+		(*dl1_power_estimator)["tag-width"] = 32; // to fix
+		(*dl1_power_estimator)["access-mode"] = "fast";
+		(*dl1_power_estimator)["verbose"] = true;
+#endif // SIM_POWER_ESTIMATOR_SUPPORT
+
 		/* TODO REMOVE */
-		var = ServiceManager::GetVariable("elf-loader.filename",
-				unisim::kernel::service::VariableBase::VAR_PARAMETER);
-		*var = "test";
-		var = ServiceManager::GetVariable("linux-loader.argc",
-				unisim::kernel::service::VariableBase::VAR_PARAMETER);
-		*var = 1;
-		var = ServiceManager::GetVariable("linux-loader.argv[0]",
-				unisim::kernel::service::VariableBase::VAR_PARAMETER);
-		*var = "test";
-		var = ServiceManager::GetVariable("linux-os.system",
-				unisim::kernel::service::VariableBase::VAR_PARAMETER);
-		*var = "arm";
+		(*elf32_loader)["filename"] = "test";
+		(*linux_loader)["argc"] = 1;
+		(*linux_loader)["argv[0]"] = "test";
+		(*linux_os)["system"] = "arm";
 		/* END TODO */
+//		unisim::kernel::service::VariableBase *var =
+//				ServiceManager::GetVariable("memory.bytesize",
+//						unisim::kernel::service::VariableBase::VAR_PARAMETER);
+//		*var = 0xffffffffUL;
+//		var = ServiceManager::GetVariable("memory.cycle-time",
+//				unisim::kernel::service::VariableBase::VAR_PARAMETER);
+//		*var = 1000000UL;
+//		var = ServiceManager::GetVariable("linux-loader.stack-base",
+//				unisim::kernel::service::VariableBase::VAR_PARAMETER);
+//		*var = 0xC0000000UL;
+//		var = ServiceManager::GetVariable("linux-loader.max-environ",
+//				unisim::kernel::service::VariableBase::VAR_PARAMETER);
+//		*var = 0x4000UL;
+//		var = ServiceManager::GetVariable("cpu.default-endianness",
+//				unisim::kernel::service::VariableBase::VAR_PARAMETER);
+//		*var = "little-endian";
+//		/* TODO REMOVE */
+//		var = ServiceManager::GetVariable("elf-loader.filename",
+//				unisim::kernel::service::VariableBase::VAR_PARAMETER);
+//		*var = "test";
+//		var = ServiceManager::GetVariable("linux-loader.argc",
+//				unisim::kernel::service::VariableBase::VAR_PARAMETER);
+//		*var = 1;
+//		var = ServiceManager::GetVariable("linux-loader.argv[0]",
+//				unisim::kernel::service::VariableBase::VAR_PARAMETER);
+//		*var = "test";
+//		var = ServiceManager::GetVariable("linux-os.system",
+//				unisim::kernel::service::VariableBase::VAR_PARAMETER);
+//		*var = "arm";
+//		/* END TODO */
 	}
 
 	// First use the passed configuration file to set the configuration
@@ -459,6 +522,16 @@ int main(int argc, char *argv[], char **envp) {
 	linux_os->memory_injection_import >> cpu->memory_injection_export;
 	linux_os->registers_import >> cpu->registers_export;
 	linux_os->loader_import >> linux_loader->loader_export;
+#ifdef SIM_POWER_ESTIMATOR_SUPPORT
+	// connecting power estimator
+	cpu->il1_power_estimator_import >> il1_power_estimator->power_estimator_export;
+	cpu->il1_power_mode_import >> il1_power_estimator->power_mode_export;
+	cpu->dl1_power_estimator_import >> dl1_power_estimator->power_estimator_export;
+	cpu->dl1_power_mode_import >> dl1_power_estimator->power_mode_export;
+
+	il1_power_estimator->time_import >> time->time_export;
+	dl1_power_estimator->time_import >> time->time_export;
+#endif // SIM_POWER_ESTIMATOR_SUPPORT
 
 	cpu->symbol_table_lookup_import >> elf32_loader->symbol_table_lookup_export;
 	// bridge->memory_import >> memory->memory_export;
@@ -529,6 +602,10 @@ int main(int argc, char *argv[], char **envp) {
 	if(cpu) delete cpu;
 	if(time) delete time;
 	// if(logger) delete logger;
+#ifdef SIM_POWER_ESTIMATOR_SUPPORT
+	if (il1_power_estimator) delete il1_power_estimator;
+	if (dl1_power_estimator) delete dl1_power_estimator;
+#endif // SIM_POWER_ESTIMATOR_SUPPORT
 
 	return 0;
 }

@@ -21,6 +21,7 @@
 			<dep>unisim::service::loader::elf_loader</dep>
 			<dep>unisim::service::loader::linux_loader</dep>
 			<dep>unisim::service::os::linux_os::linux_os_32</dep>
+			<dep>unisim::service::power</dep>
 		</depends>
 		<cmake>CMakeLists.txt</cmake>
 		<autotools>
