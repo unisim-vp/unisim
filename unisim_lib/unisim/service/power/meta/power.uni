@@ -5,6 +5,7 @@
 		<files>
 			<file>unisim/service/power/cache_power_estimator.hh</file>
 			<file>unisim/service/power/cache_power_estimator.cc</file>
+			<file>unisim/service/power/config.hh.in</file>
 			<file>unisim/service/power/CMakeLists.txt</file>
 		</files>
 		<depends>

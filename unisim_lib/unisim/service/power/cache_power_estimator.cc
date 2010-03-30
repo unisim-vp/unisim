@@ -34,6 +34,10 @@
 
 #if defined(HAVE_CONFIG_H)
 #include "config.h"
+#else
+#if defined(HAVE_CONFIG_HH)
+#include "unisim/service/power/config.hh"
+#endif
 #endif
 
 #if defined(HAVE_CACTI4_2)
@@ -438,7 +442,7 @@ bool CachePowerEstimator::Setup()
 	SetPowerMode(min_cycle_time, default_voltage);
 	return true;
 #else
-	logger << DebugError << "Cacti 4.2 is not available." << DebugError;
+	logger << DebugError << "Cacti 4.2 is not available." << EndDebugError;
 	return false;
 #endif
 }
