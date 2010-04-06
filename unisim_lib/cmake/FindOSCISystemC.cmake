@@ -13,6 +13,9 @@ ENDIF ( APPLE )
 # 	ENDIF ( NOT build_osci_systemc_src )
 # ENDIF ( build_osci_systemc )
 
+set ( with_osci_systemc "" CACHE FILEPATH 
+	"Path to the SystemC 2 installation." ) 
+
 IF ( with_osci_systemc )
 	SET ( OSCI_SYSTEMC_INCLUDE_HINT ${with_osci_systemc}/include )
 	SET ( OSCI_SYSTEMC_LIB_HINT ${with_osci_systemc}/lib-${TARGET_ARCH} )
