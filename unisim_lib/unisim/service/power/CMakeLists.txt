@@ -1,5 +1,7 @@
 message ( STATUS "Checking unisim::service::power" )
 
+set ( with_cacti_4_2 "" CACHE FILEPATH "Path to Cacti 4.2 installation." )
+
 if ( with_cacti_4_2 )
 	SET ( CACTI_4_2_INCLUDE_HINT ${with_cacti_4_2}/include )
 	SET ( CACTI_4_2_LIB_HINT ${with_cacti_4_2}/lib )
@@ -36,7 +38,7 @@ if ( NOT CACTI4_2_FOUND )
 			" (${with_cacti_4_2}). Please check that the cacti library was"
 			" correctly installed.")
 	else ( with_cacti_4_2 )
-		message ( WARNING
+		message (
 			"Compiling the unisim::service::power service without cacti"
 			" support. To provide full power/consumption support,"
 			" install cacti 4.2 and indicate the"

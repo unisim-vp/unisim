@@ -12,6 +12,7 @@
 			<file>unisim/service/debug/gdb_server/gdb_armv5b.xml</file>
 			<file>unisim/service/debug/gdb_server/gdb_hcs12x.xml</file>
 			<file>unisim/service/debug/gdb_server/gdb_powerpc.xml</file>
+			<file>unisim/service/debug/gdb_server/gdb_armv5l.xml</file>
 		</files>
 		<depends>
 			<dep>unisim::util::endian</dep>
