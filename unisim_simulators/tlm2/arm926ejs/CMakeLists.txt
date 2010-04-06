@@ -25,7 +25,7 @@ endforeach ( C_INCLUDE )
 
 set ( SIM_VERSION_MAJOR 0 )
 set ( SIM_VERSION_MINOR 1 )
-set ( SIM_VERSION_PATCH 0 )
+set ( SIM_VERSION_PATCH 1 )
 set ( SIM_VERSION_CODENAME "\"Sagrera\"" )
 set ( SIM_AUTHOR "\"Daniel Gracia Perez (daniel.gracia-perez@cea.fr)\"" )
 
@@ -58,12 +58,44 @@ configure_file (
 	${CMAKE_SOURCE_DIR}/config.hh.in 
 	${CMAKE_BINARY_DIR}/config.hh )
 
-file ( MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/resources/gdb_server )
-file ( 
-	COPY 
-		${CMAKE_SOURCE_DIR}/unisim/service/debug/gdb_server/gdb_armv4l.xml 
-	DESTINATION 
-		${CMAKE_BINARY_DIR}/resources/gdb_server )
+set ( RELATIVE_SHARE_DIRECTORY "share/arm926ejs_emu" )
+set ( SHARE_DIRECTORY "${CMAKE_BINARY_DIR}/${RELATIVE_SHARE_DIRECTORY}" )
+
+add_custom_target ( arm926ejs_emu__share_gdb
+	ALL
+	COMMAND
+		${CMAKE_COMMAND} -E make_directory ${SHARE_DIRECTORY}/gdb_server
+	COMMAND
+		${CMAKE_COMMAND} -E create_symlink
+			${CMAKE_SOURCE_DIR}/unisim/service/debug/gdb_server/gdb_armv5l.xml
+			${SHARE_DIRECTORY}/gdb_server/gdb_armv5l.xml
+	COMMENT
+		"Setting GDB resource files"
+	)
+
+add_custom_target ( arm926ejs_emu__share_test
+	ALL
+	COMMAND
+		${CMAKE_COMMAND} -E make_directory ${SHARE_DIRECTORY}/test/src
+	COMMAND
+		${CMAKE_COMMAND} -E make_directory ${SHARE_DIRECTORY}/test/build
+	COMMAND
+		${CMAKE_COMMAND} -E make_directory ${SHARE_DIRECTORY}/test/install
+	COMMAND
+		${CMAKE_COMMAND} -E create_symlink
+			${CMAKE_SOURCE_DIR}/share/test/src/main.c
+			${SHARE_DIRECTORY}/test/src/main.c
+	COMMAND
+		${CMAKE_COMMAND} -E create_symlink
+			${CMAKE_SOURCE_DIR}/share/test/src/CMakeLists.txt
+			${SHARE_DIRECTORY}/test/src/CMakeLists.txt
+	COMMAND
+		${CMAKE_COMMAND} -E create_symlink 
+			${CMAKE_SOURCE_DIR}/share/test/src/toolchain-armv5l.cmake 
+			${SHARE_DIRECTORY}/test/src/toolchain-armv5l.cmake
+	COMMENT
+		"Setting test program source files"
+	)
 
 add_executable ( arm926ejs_emu 
 	${CMAKE_SOURCE_DIR}/main.cc 
@@ -121,19 +153,53 @@ set_target_properties ( arm926ejs_emu
 
 add_custom_command (
 	OUTPUT
-		${CMAKE_BINARY_DIR}/resources/default-config.xml
+		${SHARE_DIRECTORY}/default-config.xml
 	COMMAND
-		${CMAKE_BINARY_DIR}/bin/arm926ejs_emu -g ${CMAKE_BINARY_DIR}/resources/default-config.xml
+		${CMAKE_COMMAND} -E make_directory ${SHARE_DIRECTORY}
+	COMMAND
+		${CMAKE_BINARY_DIR}/bin/arm926ejs_emu -g ${SHARE_DIRECTORY}/default-config.xml
 	DEPENDS
 		${CMAKE_BINARY_DIR}/bin/arm926ejs_emu
 	COMMENT
-		"Creating simulator default configuration in \"resources/default-config.xml\""
+		"Creating simulator default configuration in \"${RELATIVE_SHARE_DIRECTORY}/default-config.xml\""
 	)
 
+install ( TARGETS arm926ejs_emu
+	RUNTIME DESTINATION bin
+	)
+install ( 
+	FILES
+		${SHARE_DIRECTORY}/default-config.xml
+	DESTINATION
+		${RELATIVE_SHARE_DIRECTORY}
+	)
+install ( 
+	FILES
+		${CMAKE_SOURCE_DIR}/unisim/service/debug/gdb_server/gdb_armv5l.xml
+	DESTINATION
+		${RELATIVE_SHARE_DIRECTORY}/gdb_server
+	)
+install ( 
+	FILES 
+		${CMAKE_SOURCE_DIR}/share/test/src/main.c
+		${CMAKE_SOURCE_DIR}/share/test/src/CMakeLists.txt
+		${CMAKE_SOURCE_DIR}/share/test/src/toolchain-armv5l.cmake
+	DESTINATION
+		${RELATIVE_SHARE_DIRECTORY}/test/src
+	)
+# the test programs will be installed if they are compiled
+install (
+	PROGRAMS
+		${SHARE_DIRECTORY}/test/install/test.armv5l
+	DESTINATION
+		${RELATIVE_SHARE_DIRECTORY}/test/
+	OPTIONAL
+	)	
+	
 add_custom_target ( arm926ejs_emu__resources
 	ALL
 	DEPENDS
-		${CMAKE_BINARY_DIR}/resources/default-config.xml
+		${SHARE_DIRECTORY}/default-config.xml
 	)
 
 add_dependencies ( arm926ejs_emu__resources
@@ -146,8 +212,6 @@ add_custom_target ( check
 		arm926ejs_emu )
 
 add_custom_target ( prepare_check
-	COMMAND
-		touch done_prepare_check.txt
 	COMMENT
 		"Preparing tests"
 	)
@@ -157,9 +221,10 @@ add_dependencies ( check
 
 enable_testing()
 
-set(CPACK_PACKAGE_VERSION_MAJOR ${SIM_VERSION_MAJOR})
-set(CPACK_PACKAGE_VERSION_MINOR ${SIM_VERSION_MINOR})
-set(CPACK_PACKAGE_VERSION_PATCH ${SIM_VERSION_PATCH})
-set(CPACK_SOURCE_GENERATOR "TBZ2")
+set ( CPACK_PACKAGE_VERSION_MAJOR ${SIM_VERSION_MAJOR} )
+set ( CPACK_PACKAGE_VERSION_MINOR ${SIM_VERSION_MINOR} )
+set ( CPACK_PACKAGE_VERSION_PATCH ${SIM_VERSION_PATCH} )
+set ( CPACK_SOURCE_GENERATOR "TBZ2" )
+set ( CPACK_GENERATOR "TBZ2" )
 include ( CPack )
 

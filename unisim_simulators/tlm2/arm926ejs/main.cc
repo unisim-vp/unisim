@@ -359,36 +359,6 @@ int main(int argc, char *argv[], char **envp) {
 		(*linux_loader)["argv[0]"] = "test";
 		(*linux_os)["system"] = "arm";
 		/* END TODO */
-//		unisim::kernel::service::VariableBase *var =
-//				ServiceManager::GetVariable("memory.bytesize",
-//						unisim::kernel::service::VariableBase::VAR_PARAMETER);
-//		*var = 0xffffffffUL;
-//		var = ServiceManager::GetVariable("memory.cycle-time",
-//				unisim::kernel::service::VariableBase::VAR_PARAMETER);
-//		*var = 1000000UL;
-//		var = ServiceManager::GetVariable("linux-loader.stack-base",
-//				unisim::kernel::service::VariableBase::VAR_PARAMETER);
-//		*var = 0xC0000000UL;
-//		var = ServiceManager::GetVariable("linux-loader.max-environ",
-//				unisim::kernel::service::VariableBase::VAR_PARAMETER);
-//		*var = 0x4000UL;
-//		var = ServiceManager::GetVariable("cpu.default-endianness",
-//				unisim::kernel::service::VariableBase::VAR_PARAMETER);
-//		*var = "little-endian";
-//		/* TODO REMOVE */
-//		var = ServiceManager::GetVariable("elf-loader.filename",
-//				unisim::kernel::service::VariableBase::VAR_PARAMETER);
-//		*var = "test";
-//		var = ServiceManager::GetVariable("linux-loader.argc",
-//				unisim::kernel::service::VariableBase::VAR_PARAMETER);
-//		*var = 1;
-//		var = ServiceManager::GetVariable("linux-loader.argv[0]",
-//				unisim::kernel::service::VariableBase::VAR_PARAMETER);
-//		*var = "test";
-//		var = ServiceManager::GetVariable("linux-os.system",
-//				unisim::kernel::service::VariableBase::VAR_PARAMETER);
-//		*var = "arm";
-//		/* END TODO */
 	}
 
 	// First use the passed configuration file to set the configuration

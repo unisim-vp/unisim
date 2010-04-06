@@ -7,6 +7,9 @@
 			<file>main.cc</file>
 			<file>config.hh.in</file>
 			<file>CMakeLists.txt</file>
+			<file>share/test/src/main.c</file>
+			<file>share/test/src/CMakeLists.txt</file>
+			<file>share/test/src/toolchain-armv5l.cmake</file>
 		</files>
 		<depends>
 			<dep>unisim</dep>
