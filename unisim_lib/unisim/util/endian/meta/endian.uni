@@ -5,6 +5,7 @@
 		<files>
 			<file>unisim/util/endian/endian.hh</file>
 			<file>unisim/util/endian/endian.cc</file>
+			<file>unisim/util/endian/CMakeLists.txt</file>
 		</files>
 		<depends>
 			<dep>clib_inttypes_h</dep>
@@ -14,6 +15,5 @@
 		<autotools>
 			<automake>unisim/util/endian/meta/endian.am</automake>
 		</autotools>
-		<cmake>unisim/util/endian/CMakeLists.txt</cmake>
 	</unit>
 </package>

@@ -5,6 +5,7 @@
 		<files>
 			<file>unisim/service/time/sc_time/time.hh</file>
 			<file>unisim/service/time/sc_time/time.cc</file>
+			<file>unisim/service/time/sc_time/CMakeLists.txt</file>
 		</files>
 		<depends>
 			<dep>unisim::service::interfaces::time</dep>
@@ -14,7 +15,6 @@
 		<autotools>
 			<automake>unisim/service/time/sc_time/meta/sc_time.am</automake>
 		</autotools>
-		<cmake>unisim/service/time/sc_time/CMakeLists.txt</cmake>
 	</unit>
 </package>
 

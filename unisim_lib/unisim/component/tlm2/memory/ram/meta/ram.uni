@@ -7,6 +7,7 @@
 			<file>unisim/component/tlm2/memory/ram/memory.tcc</file>
 			<file>unisim/component/tlm2/memory/ram/memory.cc</file>
 			<file>unisim/component/tlm2/memory/ram/memory_debug.cc</file>
+			<file>unisim/component/tlm2/memory/ram/CMakeLists.txt</file>
 		</files>
 		<depends>
 			<dep>osci_systemc</dep>
@@ -20,8 +21,6 @@
 		<autotools>
 			<automake>unisim/component/tlm2/memory/ram/meta/ram.am</automake>
 		</autotools>
-		<!-- <cmake>unisim/component/cxx/memory/ram/meta/ram.cmake</cmake> -->
-		<cmake>unisim/component/tlm2/memory/ram/CMakeLists.txt</cmake>
 	</unit>
 </package>
 

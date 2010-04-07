@@ -5,6 +5,7 @@
 		<files>
 			<file>unisim/service/time/host_time/time.hh</file>
 			<file>unisim/service/time/host_time/time.cc</file>
+			<file>unisim/service/time/host_time/CMakeLists.txt</file>
 		</files>
 		<depends>
 			<dep>unisim::service::interfaces::time</dep>
@@ -15,8 +16,6 @@
 		<autotools>
 			<automake>unisim/service/time/host_time/meta/host_time.am</automake>
 		</autotools>
-		<!-- <cmake>unisim/service/time/host_time/meta/host_time.cmake</cmake> -->
-		<cmake>unisim/service/time/host_time/CMakeLists.txt</cmake>
 	</unit>
 </package>
 

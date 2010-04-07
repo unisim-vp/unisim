@@ -5,6 +5,7 @@
 		<files>
 			<file>unisim/component/tlm2/processor/arm/arm.hh</file>
 			<file>unisim/component/tlm2/processor/arm/arm.tcc</file>
+			<file>unisim/component/tlm2/processor/arm/CMakeLists.txt</file>
 		</files>
 		<depends>
 			<dep>osci_systemc</dep>
@@ -21,13 +22,13 @@
 			<automake>unisim/component/tlm2/processor/arm/arm.am</automake>
 			<autoconf>unisim/component/tlm2/processor/arm/arm.ac</autoconf>
 		</autotools>
-		<cmake>unisim/component/tlm2/processor/arm/CMakeLists.txt</cmake>
 	</unit>
 	<unit>
 		<name>unisim::component::tlm2::processor::arm::arm9tdmi</name>
 		<files>
 			<file>unisim/component/tlm2/processor/arm/arm9tdmi/arm9tdmi.hh</file>
 			<file>unisim/component/tlm2/processor/arm/arm9tdmi/arm9tdmi.cc</file>
+			<file>unisim/component/tlm2/processor/arm/arm9tdmi/CMakeLists.txt</file>
 		</files>
 		<depends>
 			<dep>unisim::component::cxx::processor::arm</dep>
@@ -37,13 +38,13 @@
 			<automake>unisim/component/tlm2/processor/arm/arm9tdmi/arm9tdmi.am</automake>
 			<autoconf>unisim/component/tlm2/processor/arm/arm9tdmi/arm9tdmi.ac</autoconf>
 		</autotools>
-		<cmake>unisim/component/tlm2/processor/arm/arm9tdmi/CMakeLists.txt</cmake>
 	</unit>
 	<unit>
 		<name>unisim::component::tlm2::processor::arm::arm926ejs</name>
 		<files>
 			<file>unisim/component/tlm2/processor/arm/arm926ejs/arm926ejs.hh</file>
 			<file>unisim/component/tlm2/processor/arm/arm926ejs/arm926ejs.cc</file>
+			<file>unisim/component/tlm2/processor/arm/arm926ejs/CMakeLists.txt</file>
 		</files>
 		<depends>
 			<dep>unisim::component::cxx::processor::arm</dep>
@@ -53,7 +54,6 @@
 			<automake>unisim/component/tlm2/processor/arm/arm926ejs/arm926ejs.am</automake>
 			<autoconf>unisim/component/tlm2/processor/arm/arm926ejs/arm926ejs.ac</autoconf>
 		</autotools>
-		<cmake>unisim/component/tlm2/processor/arm/arm926ejs/CMakeLists.txt</cmake>
 	</unit>
 </package>
 

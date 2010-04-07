@@ -67,8 +67,10 @@ class Builder:
 			rep_location = config.getRepositoryLocationFromName(unit.getRepositoryName())
 			rel_filename = unit.getCmake()
 			if rel_filename is None:
-				print (' (no cmake defined)')
+				# print ( '+ %s (no cmake defined)' % (unit.getName()) )
+				rel_filename = None
 			else:
+				print ( '- %s (cmake defined)' % (unit.getName()) )
 				abs_filename = os.path.join(rep_location, rel_filename)
 				if not os.path.exists(abs_filename):
 					print ('WARNING: %s (cmake file does not exists)' % (unit.getName()))

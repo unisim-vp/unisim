@@ -7,6 +7,7 @@
 			<file>unisim/service/loader/linux_loader/linux_loader.tcc</file>
 			<file>unisim/service/loader/linux_loader/linux32_loader.cc</file>
 			<file>unisim/service/loader/linux_loader/linux64_loader.cc</file>
+			<file>unisim/service/loader/linux_loader/CMakeLists.txt</file>
 		</files>
 		<depends>
 			<dep>unisim::kernel::service</dep>
@@ -20,8 +21,6 @@
 		<autotools>
 			<automake>unisim/service/loader/linux_loader/meta/linux_loader.am</automake>
 		</autotools>
-		<!-- <cmake>unisim/service/loader/linux_loader/meta/linux_loader.cmake</cmake> -->
-		<cmake>unisim/service/loader/linux_loader/CMakeLists.txt</cmake>
 	</unit>
 </package>
 

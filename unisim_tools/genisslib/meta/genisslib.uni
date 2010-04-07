@@ -47,6 +47,7 @@
 			<file>genisslib/specialization.cc</file>
 			<file>genisslib/parser.yy</file>
 			<file>genisslib/scanner.ll</file>
+			<file>genisslib/CMakeLists.txt</file>
 		</files>
 		<depends>
 		</depends>
@@ -54,8 +55,6 @@
 			<automake>genisslib/meta/genisslib.am</automake>
 			<autoconfig>genisslib/meta/genisslib.ac</autoconfig>
 		</autotools>
-		<!-- <cmake>genisslib/meta/genisslib.cmake</cmake> -->
-		<cmake>genisslib/CMakeLists.txt</cmake>
 	</unit>
 </package>
 

@@ -30,6 +30,7 @@
 			<file>unisim/util/debug/symbol_table_64.cc</file>
 			<file>unisim/util/debug/watchpoint_registry_32.cc</file>
 			<file>unisim/util/debug/watchpoint_registry_64.cc</file>
+			<file>unisim/util/debug/CMakeLists.txt</file>
 		</files>
 		<depends>
 			<dep>clib_inttypes_h</dep>
@@ -46,8 +47,6 @@
 		<autotools>
 			<automake>unisim/util/debug/meta/debug.am</automake>
 		</autotools>
-		<!-- <cmake>unisim/util/debug/meta/debug.cmake</cmake> -->
-		<cmake>unisim/util/debug/CMakeLists.txt</cmake>
 	</unit>
 </package>
 

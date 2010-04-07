@@ -72,12 +72,7 @@
 			<file>unisim/component/cxx/processor/arm/cache/line.tcc</file>
 			<file>unisim/component/cxx/processor/arm/cache/types.hh</file>
 			<!-- end of TODO -->
-			<!-- Those files are generated so they could be removed
-			<file>unisim/component/cxx/processor/arm/isa_arm32.hh</file>
-			<file>unisim/component/cxx/processor/arm/isa_arm32.tcc</file>
-			<file>unisim/component/cxx/processor/arm/isa_thumb.hh</file>
-			<file>unisim/component/cxx/processor/arm/isa_thumb.tcc</file>
-			-->
+			<file>unisim/component/cxx/processor/arm/CMakeLists.txt</file>
 <!--			<file>unisim/component/cxx/processor/arm/cache_interface.hh</file>
 			<file>unisim/component/cxx/processor/arm/cpu_arm9tdmi_debug.cc</file>
 			<file>unisim/component/cxx/processor/arm/config.hh</file>
@@ -201,6 +196,5 @@
 			<automake>unisim/component/cxx/processor/arm/arm.am</automake>
 			<autoconf>unisim/component/cxx/processor/arm/arm.ac</autoconf>
 		</autotools>
-		<cmake>unisim/component/cxx/processor/arm/CMakeLists.txt</cmake>
 	</unit>
 </package>

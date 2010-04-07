@@ -8,6 +8,7 @@
 			<file>unisim/component/tlm2/interrupt/master_stub.cc</file>
 			<file>unisim/component/tlm2/interrupt/slave_stub.hh</file>
 			<file>unisim/component/tlm2/interrupt/slave_stub.cc</file>
+			<file>unisim/component/tlm2/interrupt/CMakeLists.txt</file>
 		</files>
 		<depends>
 			<dep>osci_systemc</dep>
@@ -19,6 +20,5 @@
 			<automake>unisim/component/tlm2/interrupt/interrupt.am</automake>
 			<autoconf>unisim/component/tlm2/interrupt/interrupt.ac</autoconf>
 		</autotools>
-		<cmake>unisim/component/tlm2/interrupt/CMakeLists.txt</cmake>
 	</unit>
 </package>

@@ -13,6 +13,7 @@
 			<file>unisim/service/debug/gdb_server/gdb_hcs12x.xml</file>
 			<file>unisim/service/debug/gdb_server/gdb_powerpc.xml</file>
 			<file>unisim/service/debug/gdb_server/gdb_armv5l.xml</file>
+			<file>unisim/service/debug/gdb_server/CMakeLists.txt</file>
 		</files>
 		<depends>
 			<dep>unisim::util::endian</dep>
@@ -42,7 +43,6 @@
 		<autotools>
 			<automake>unisim/service/debug/gdb_server/meta/gdb_server.am</automake>
 		</autotools>
-		<cmake>unisim/service/debug/gdb_server/CMakeLists.txt</cmake>
 	</unit>
 </package>
 

@@ -7,6 +7,7 @@
 			<file>unisim/kernel/service/service.hh</file>
 			<file>unisim/kernel/service/xml_helper.cc</file>
 			<file>unisim/kernel/service/xml_helper.hh</file>
+			<file>unisim/kernel/service/CMakeLists.txt</file>
 		</files>
 		<depends>
 			<dep>stl_iostream</dep>
@@ -22,7 +23,6 @@
 			<dep>libxml2</dep>
 			<dep>unisim::kernel::logger</dep>
 		</depends>
-		<cmake>unisim/kernel/service/CMakeLists.txt</cmake>
 		<autotools>
 			<automake>unisim/kernel/meta/service.am</automake>
 			<autoconf>unisim/kernel/meta/service.ac</autoconf>
@@ -35,6 +35,7 @@
 			<file>unisim/kernel/logger/logger.hh</file>
 			<file>unisim/kernel/logger/logger_server.cc</file>
 			<file>unisim/kernel/logger/logger_server.hh</file>
+			<file>unisim/kernel/logger/CMakeLists.txt</file>
 		</files>
 		<depends>
 			<dep>stl_sstream</dep>
@@ -43,9 +44,7 @@
 			<dep>stl_fstream</dep>
 			<dep>stl_vector</dep>
 			<dep>libxml2</dep>
-			<!-- <dep>unisim::kernel::service</dep> -->
 		</depends>
-		<cmake>unisim/kernel/logger/CMakeLists.txt</cmake>
 		<autotools>
 			<automake>unisim/kernel/meta/logger.am</automake>
 			<autoconf>unisim/kernel/meta/logger.ac</autoconf>
@@ -55,6 +54,7 @@
 		<name>unisim::kernel::tlm2</name>
 		<files>
 			<file>unisim/kernel/tlm2/tlm.hh</file>
+			<file>unisim/kernel/tlm2/CMakeLists.txt</file>
 		</files>
 		<depends>
 			<dep>unisim::kernel::debug</dep>
@@ -62,7 +62,6 @@
 			<dep>stl_iostream</dep>
 			<dep>osci_tlm2</dep>
 		</depends>
-		<cmake>unisim/kernel/tlm2/CMakeLists.txt</cmake>
 		<autotools>
 			<automake>unisim/kernel/tlm2/meta/tlm2.am</automake>
 			<autoconf>unisim/kernel/tlm2/meta/tlm2.ac</autoconf>
@@ -86,13 +85,13 @@
 		<files>
 			<file>unisim/kernel/debug/debug.hh</file>
 			<file>unisim/kernel/debug/debug.cc</file>
+			<file>unisim/kernel/debug/CMakeLists.txt</file>
 		</files>
 		<depends>
 			<dep>stl_iosfwd</dep>
 			<dep>clib_stdlib_h</dep>
 			<dep>stl_iostream</dep>
 		</depends>
-		<cmake>unisim/kernel/debug/CMakeLists.txt</cmake>
 		<autotools>
 			<automake>unisim/kernel/debug/meta/debug.am</automake>
 			<autoconf>unisim/kernel/debug/meta/debug.ac</autoconf>

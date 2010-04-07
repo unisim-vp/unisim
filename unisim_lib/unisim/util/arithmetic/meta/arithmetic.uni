@@ -4,6 +4,7 @@
 		<name>unisim::util::arithmetic</name>
 		<files>
 			<file>unisim/util/arithmetic/arithmetic.hh</file>
+			<file>unisim/util/arithmetic/CMakeLists.txt</file>
 		</files>
 		<depends>
 			<dep>clib_inttypes_h</dep>
@@ -11,7 +12,5 @@
 		<autotools>
 			<automake>unisim/util/arithmetic/meta/arithmetic.am</automake>
 		</autotools>
-		<!-- <cmake>unisim/util/arithmetic/meta/arithmetic.cmake</cmake> -->
-		<cmake>unisim/util/arithmetic/CMakeLists.txt</cmake>
 	</unit>
 </package>

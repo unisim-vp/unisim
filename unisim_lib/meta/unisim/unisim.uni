@@ -2,7 +2,9 @@
 <package>
 	<unit>
 		<name>unisim</name>
-		<cmake>cmake/UnisimInclude.cmake</cmake>
+		<files>
+			<file>cmake/UnisimInclude.cmake</file>
+		</files>
 	</unit>
 </package>
 

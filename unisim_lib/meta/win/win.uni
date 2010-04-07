@@ -8,9 +8,11 @@
 	</unit>
 	<unit>
 		<name>win_winsock2_h</name>
+		<files>
+			<file>meta/win/winsock2.cmake</file>
+		</files>
 		<autotools>
 			<autoconf>meta/win/winsock2.ac</autoconf>
 		</autotools>
-		<cmake>meta/win/winsock2.cmake</cmake>
 	</unit>
 </package>

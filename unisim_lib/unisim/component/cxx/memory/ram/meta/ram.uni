@@ -7,6 +7,7 @@
 			<file>unisim/component/cxx/memory/ram/memory.tcc</file>
 			<file>unisim/component/cxx/memory/ram/memory_32.cc</file>
 			<file>unisim/component/cxx/memory/ram/memory_64.cc</file>
+			<file>unisim/component/cxx/memory/ram/CMakeLists.txt</file>
 		</files>
 		<depends>
 			<dep>clib_inttypes_h</dep>
@@ -17,8 +18,6 @@
 		<autotools>
 			<automake>unisim/component/cxx/memory/ram/meta/ram.am</automake>
 		</autotools>
-		<!-- <cmake>unisim/component/cxx/memory/ram/meta/ram.cmake</cmake> -->
-		<cmake>unisim/component/cxx/memory/ram/CMakeLists.txt</cmake>
 	</unit>
 </package>
 

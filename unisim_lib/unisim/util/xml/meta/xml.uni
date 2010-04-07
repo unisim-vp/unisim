@@ -5,6 +5,7 @@
 		<files>
 			<file>unisim/util/xml/xml.hh</file>
 			<file>unisim/util/xml/xml.cc</file>
+			<file>unisim/util/xml/CMakeLists.txt</file>
 		</files>
 		<depends>
 			<dep>stl_list</dep>
@@ -15,8 +16,6 @@
 		<autotools>
 			<automake>unisim/util/xml/meta/xml.am</automake>
 		</autotools>
-		<!-- <cmake>unisim/util/xml/meta/xml.cmake</cmake> -->
-		<cmake>unisim/util/xml/CMakeLists.txt</cmake>
 	</unit>
 </package>
 

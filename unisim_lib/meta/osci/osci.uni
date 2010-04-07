@@ -2,11 +2,15 @@
 <package>
 	<unit>
 		<name>osci_systemc</name>
-		<cmake>cmake/FindOSCISystemC.cmake</cmake>
+		<files>
+			<file>cmake/FindOSCISystemC.cmake</file>
+		</files>
 	</unit>
 	<unit>
 		<name>osci_tlm2</name>
-		<cmake>cmake/FindOSCITLM2.cmake</cmake>
+		<files>
+			<file>cmake/FindOSCITLM2.cmake</file>
+		</files>
 	</unit>
 </package>
 

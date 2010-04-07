@@ -2,7 +2,9 @@
 <package>
 	<unit>
 		<name>bsd_sockets</name>
-		<cmake>meta/bsd_sockets/bsd_sockets.cmake</cmake>
+		<files>
+			<file>meta/bsd_sockets/bsd_sockets.cmake</file>
+		</files>
 		<autotools>
 			<autoconf>meta/bsd_sockets/bsd_sockets.cmake</autoconf>
 		</autotools>

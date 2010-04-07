@@ -8,6 +8,7 @@
 			<file>unisim/service/os/linux_os/linux_os.tcc</file>
 			<file>unisim/service/os/linux_os/linux_os_exception.cc</file>
 			<file>unisim/service/os/linux_os/linux_os_32.cc</file>
+			<file>unisim/service/os/linux_os/CMakeLists.txt</file>
 		</files>
 		<depends>
 			<dep>unisim::kernel::service</dep>
@@ -39,13 +40,13 @@
 		<autotools>
 			<automake>unisim/service/os/linux_os/meta/linux_os.am</automake>
 		</autotools>
-		<cmake>unisim/service/os/linux_os/CMakeLists.txt</cmake>
 	</unit>
 	<unit>
 		<name>unisim::service::os::linux_os::linux_os_32</name>
 		<files>
 			<file>unisim/service/os/linux_os/linux_os_32/linux_os_32.hh</file>
 			<file>unisim/service/os/linux_os/linux_os_32/linux_os_32.cc</file>
+			<file>unisim/service/os/linux_os/linux_os_32/CMakeLists.txt</file>
 		</files>
 		<depends>
 			<dep>unisim::service::os::linux_os</dep>
@@ -54,13 +55,13 @@
 		<autotools>
 			<automake>unisim/service/os/linux_os/meta/linux_os_32.am</automake>
 		</autotools>
-		<cmake>unisim/service/os/linux_os/linux_os_32/CMakeLists.txt</cmake>
 	</unit>
 	<unit>
 		<name>unisim::service::os::linux_os::linux_os_64</name>
 		<files>
 			<file>unisim/service/os/linux_os/linux_os_64/linux_os_64.hh</file>
 			<file>unisim/service/os/linux_os/linux_os_64/linux_os_64.cc</file>
+			<file>unisim/service/os/linux_os/linux_os_64/CMakeLists.txt</file>
 		</files>
 		<depends>
 			<dep>unisim::service::os::linux_os</dep>
@@ -69,7 +70,6 @@
 		<autotools>
 			<automake>unisim/service/os/linux_os/meta/linux_os_64.am</automake>
 		</autotools>
-		<cmake>unisim/service/os/linux_os/linux_os_64/CMakeLists.txt</cmake>
 	</unit>
 </package>
 
