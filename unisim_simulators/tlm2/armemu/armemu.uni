@@ -1,8 +1,8 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <package>
 	<unit>
-		<name>unisim_simulator::tlm2::arm926ejs</name>
-		<path>tlm2/arm926ejs</path>
+		<name>unisim_simulator::tlm2::armemu</name>
+		<path>tlm2/armemu</path>
 		<files>
 			<file>main.cc</file>
 			<file>config.hh.in</file>
@@ -28,8 +28,8 @@
 		</depends>
 		<cmake>CMakeLists.txt</cmake>
 		<autotools>
-			<automake>arm926ejs.am</automake>
-			<autoconf>arm926ejs.ac</autoconf>
+			<automake>armemu.am</automake>
+			<autoconf>armemu.ac</autoconf>
 		</autotools>
 	</unit>
 </package>
