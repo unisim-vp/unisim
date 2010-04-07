@@ -2,98 +2,84 @@
 <package>
 	<unit>
 		<name>stl_iostream</name>
-		<cmake>meta/stl/iostream.cmake</cmake>
 		<autotools>
 			<autoconf>meta/stl/iostream.ac</autoconf>
 		</autotools>
 	</unit>
 	<unit>
 		<name>stl_stdexcept</name>
-		<cmake>meta/stl/stdexcept.cmake</cmake>
 		<autotools>
 			<autoconf>meta/stl/stdexcept.ac</autoconf>
 		</autotools>
 	</unit>
 	<unit>
 		<name>stl_string</name>
-		<cmake>meta/stl/string.cmake</cmake>
 		<autotools>
 			<autoconf>meta/stl/string.ac</autoconf>
 		</autotools>
 	</unit>
 	<unit>
 		<name>stl_list</name>
-		<cmake>meta/stl/list.cmake</cmake>
 		<autotools>
 			<autoconf>meta/stl/list.ac</autoconf>
 		</autotools>
 	</unit>
 	<unit>
 		<name>stl_queue</name>
-		<cmake>meta/stl/queue.cmake</cmake>
 		<autotools>
 			<autoconf>meta/stl/queue.ac</autoconf>
 		</autotools>
 	</unit>
 	<unit>
 		<name>stl_map</name>
-		<cmake>meta/stl/map.cmake</cmake>
 		<autotools>
 			<autoconf>meta/stl/map.ac</autoconf>
 		</autotools>
 	</unit>
 	<unit>
 		<name>stl_vector</name>
-		<cmake>meta/stl/vector.cmake</cmake>
 		<autotools>
 			<autoconf>meta/stl/vector.ac</autoconf>
 		</autotools>
 	</unit>
 	<unit>
 		<name>stl_sstream</name>
-		<cmake>meta/stl/sstream.cmake</cmake>
 		<autotools>
 			<autoconf>meta/stl/sstream.ac</autoconf>
 		</autotools>
 	</unit>
 	<unit>
 		<name>stl_fstream</name>
-		<cmake>meta/stl/fstream.cmake</cmake>
 		<autotools>
 			<autoconf>meta/stl/fstream.ac</autoconf>
 		</autotools>
 	</unit>
 	<unit>
 		<name>stl_iosfwd</name>
-		<cmake>meta/stl/iosfwd.cmake</cmake>
 		<autotools>
 			<autoconf>meta/stl/iosfwd.ac</autoconf>
 		</autotools>
 	</unit>
 	<unit>
 		<name>stl_cstring</name>
-		<cmake>meta/stl/cstring.cmake</cmake>
 		<autotools>
 			<autoconf>meta/stl/cstring.ac</autoconf>
 		</autotools>
 	</unit>
 	<unit>
 		<name>stl_iomanip</name>
-		<cmake>meta/stl/iomanip.cmake</cmake>
 		<autotools>
 			<autoconf>meta/stl/iomanip.ac</autoconf>
 		</autotools>
 	</unit>
 	<unit>
 		<name>stl_cassert</name>
-		<cmake>meta/stl/cassert.cmake</cmake>
 		<autotools>
 			<autoconf>meta/stl/cassert.ac</autoconf>
 		</autotools>
 	</unit>
 	<unit>
 		<name>stl_ostream</name>
-		<cmake>meta/stl/ostream.cmake</cmake>
 		<autotools>
 			<autoconf>meta/stl/ostream.ac</autoconf>
 		</autotools>

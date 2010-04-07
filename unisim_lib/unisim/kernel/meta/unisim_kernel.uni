@@ -19,7 +19,6 @@
 			<dep>clib_string_h</dep>
 			<dep>stl_fstream</dep>
 			<dep>clib_stdlib_h</dep>
-			<dep>boost_graph</dep>
 			<dep>libxml2</dep>
 			<dep>unisim::kernel::logger</dep>
 		</depends>

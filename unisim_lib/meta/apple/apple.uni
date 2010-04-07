@@ -5,6 +5,5 @@
 		<autotools>
 			<automake>meta/apple/apple_sys_types_h.am</automake>
 		</autotools>
-		<cmake>meta/apple/apple_sys_types_h.cmake</cmake>
 	</unit>
 </package>

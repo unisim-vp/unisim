@@ -2,35 +2,30 @@
 <package>
 	<unit>
 		<name>clib_fcntl_h</name>
-		<cmake>meta/clib/fcntl.cmake</cmake>
 		<autotools>
 			<autoconf>meta/clib/fcntl.ac</autoconf>
 		</autotools>
 	</unit>
 	<unit>
 		<name>clib_process_h</name>
-		<cmake>meta/clib/process.cmake</cmake>
 		<autotools>
 			<autoconf>meta/clib/process.ac</autoconf>
 		</autotools>
 	</unit>
 	<unit>
 		<name>clib_time_h</name>
-		<cmake>meta/clib/time.cmake</cmake>
 		<autotools>
 			<autoconf>meta/clib/time.ac</autoconf>
 		</autotools>
 	</unit>
 	<unit>
 		<name>clib_getopt_h</name>
-		<cmake>meta/clib/getopt.cmake</cmake>
 		<autotools>
 			<autoconf>meta/clib/getopt.ac</autoconf>
 		</autotools>
 	</unit>
 	<unit>
 		<name>clib_stdlib_h</name>
-		<cmake>meta/clib/stdlib.cmake</cmake>
 		<autotools>
 			<autoconf>meta/clib/stdlib.ac</autoconf>
 		</autotools>
@@ -40,32 +35,27 @@
 		<autotools>
 			<autoconf>meta/clib/stdio.ac</autoconf>
 		</autotools>
-		<cmake>meta/clib/stdio.cmake</cmake>
 	</unit>
 	<unit>
 		<name>clib_signal_h</name>
-		<cmake>meta/clib/signal.cmake</cmake>
 		<autotools>
 			<autoconf>meta/clib/signal.ac</autoconf>
 		</autotools>
 	</unit>
 	<unit>
 		<name>clib_string_h</name>
-		<cmake>meta/clib/string.cmake</cmake>
 		<autotools>
 			<autoconf>meta/clib/string.ac</autoconf>
 		</autotools>
 	</unit>
 	<unit>
 		<name>clib_inttypes_h</name>
-		<cmake>meta/clib/inttypes.cmake</cmake>
 		<autotools>
 			<autoconf>meta/clib/inttypes.ac</autoconf>
 		</autotools>
 	</unit>
 	<unit>
 		<name>clib_assert_h</name>
-		<cmake>meta/clib/assert.cmake</cmake>
 		<autotools>
 			<autoconf>meta/clib/assert.ac</autoconf>
 		</autotools>
@@ -75,21 +65,18 @@
 		<autotools>
 			<autoconf>meta/clib/stdarg.ac</autoconf>
 		</autotools>
-		<cmake>meta/clib/stdarg.cmake</cmake>
 	</unit>
 	<unit>
 		<name>clib_unistd_h</name>
 		<autotools>
 			<autoconf>meta/clib/unistd.ac</autoconf>
 		</autotools>
-		<cmake>meta/clib/unistd.cmake</cmake>
 	</unit>
 	<unit>
 		<name>clib_errno_h</name>
 		<autotools>
 			<autoconf>meta/clib/errno.ac</autoconf>
 		</autotools>
-		<cmake>meta/clib/errno.cmake</cmake>
 	</unit>
 </package>
 

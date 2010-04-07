@@ -9,14 +9,11 @@
 		<depends>
 			<dep>clib_inttypes_h</dep>
 			<dep>clib_string_h</dep>
-			<dep>apple_sys_types_h</dep>
-			<dep>linux_endian_h</dep>
 			<dep>unisim::kernel::service</dep>
 		</depends>
 		<autotools>
 			<automake>unisim/util/endian/meta/endian.am</automake>
 		</autotools>
-		<!-- <cmake>unisim/util/endian/meta/endian.cmake</cmake> -->
 		<cmake>unisim/util/endian/CMakeLists.txt</cmake>
 	</unit>
 </package>

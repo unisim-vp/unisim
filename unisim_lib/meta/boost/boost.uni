@@ -2,14 +2,12 @@
 <package>
 	<unit>
 		<name>boost</name>
-		<cmake>meta/boost/boost.cmake</cmake>
 		<autotools>
 			<autoconf>meta/boost/boost.ac</autoconf>
 		</autotools>
 	</unit>
 	<unit>
 		<name>boost_graph</name>
-		<cmake>meta/boost/boost_graph.cmake</cmake>
 		<autotools>
 			<autoconf>meta/boost/boost_graph.ac</autoconf>
 		</autotools>

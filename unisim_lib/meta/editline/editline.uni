@@ -5,6 +5,5 @@
 		<autotools>
 			<autoconf>meta/editline/readline.ac</autoconf>
 		</autotools>
-		<cmake>meta/editline/readline.cmake</cmake>
 	</unit>
 </package>

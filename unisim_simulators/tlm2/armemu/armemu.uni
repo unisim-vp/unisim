@@ -26,7 +26,6 @@
 			<dep>unisim::service::os::linux_os::linux_os_32</dep>
 			<dep>unisim::service::power</dep>
 		</depends>
-		<cmake>CMakeLists.txt</cmake>
 		<autotools>
 			<automake>armemu.am</automake>
 			<autoconf>armemu.ac</autoconf>

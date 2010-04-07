@@ -38,12 +38,10 @@
 			<dep>win_winsock2_h</dep>
 			<dep>bsd_sockets</dep>
 			<dep>sys_times_h</dep>
-			<dep>fcntl_h</dep>
 		</depends>
 		<autotools>
 			<automake>unisim/service/debug/gdb_server/meta/gdb_server.am</automake>
 		</autotools>
-		<!-- <cmake>unisim/service/debug/gdb_server/meta/gdb_server.cmake</cmake> -->
 		<cmake>unisim/service/debug/gdb_server/CMakeLists.txt</cmake>
 	</unit>
 </package>

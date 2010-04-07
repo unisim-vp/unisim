@@ -35,7 +35,6 @@
 			<dep>sys_types_h</dep>
 			<dep>sys_stat_h</dep>
 			<dep>sys_times_h</dep>
-			<dep>win_windows_h</dep>
 		</depends>
 		<autotools>
 			<automake>unisim/service/os/linux_os/meta/linux_os.am</automake>

@@ -5,7 +5,6 @@
 		<autotools>
 			<autoconf>meta/win/windows.ac</autoconf>
 		</autotools>
-		<cmake>meta/win/windows.cmake</cmake>
 	</unit>
 	<unit>
 		<name>win_winsock2_h</name>

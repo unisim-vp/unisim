@@ -13,7 +13,6 @@
 			<dep>clib_unistd_h</dep>
 			<dep>sys_types_h</dep>
 			<dep>sys_stat_h</dep>
-			<dep>fcntl_h</dep>
 			<dep>clib_errno_h</dep>
 			<dep>stl_fstream</dep>
 			<dep>stl_sstream</dep>
@@ -28,7 +27,6 @@
 		<autotools>
 			<automake>unisim/service/os/ti_c_io/meta/ti_c_io.am</automake>
 		</autotools>
-		<!-- <cmake>unisim/service/os/ti_c_io/meta/ti_c_io.cmake</cmake>-->
 		<cmake>unisim/service/os/ti_c_io/CMakeLists.txt</cmake>
 	</unit>
 </package>
