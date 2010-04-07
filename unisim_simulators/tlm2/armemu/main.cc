@@ -32,6 +32,7 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
+// #include <Python.h>
 #include <iostream>
 #include <sstream>
 #include <list>
@@ -154,11 +155,34 @@ void help(char *prog_name) {
 	cerr << " --no-run" << endl;
 	cerr << " -n" << endl;
 	cerr << "            do not launch the simulator, only apply the options" << endl << endl;
+	cerr << " --python-debugger" << endl;
+	cerr << " -p" << endl;
+	cerr << "            run in python mode" << endl;
 }
+
+// void LaunchPython()
+// {
+// 	int argc = 1;
+// 	wchar_t *argv[3];
+// 	const char *p1 = "python";
+// 	const char *p2 = "-i";
+// 	argv[0] = (wchar_t *)malloc(1000 * sizeof(wchar_t));
+// 	argv[1] = 0; // (wchar_t *)malloc(1000 * sizeof(wchar_t));
+// 	argv[2] = 0;
+// 	mbsrtowcs(argv[0], &p1, 1000, 0);
+// 	mbsrtowcs(argv[1], &p2, 1000, 0);
+// 	
+// 	Py_Initialize();
+// 	PyRun_SimpleString("from time import time,ctime\n"
+// 					   "print('Today is', ctime(time()))\n");
+// 	Py_Main(argc, argv);
+// 	Py_Finalize();
+// 	
+// }
 
 void ShowVersion()
 {
-	cerr << "UNISIM ARM926EJS User Level Simulator "
+	cerr << "UNISIM ARMv5 User Level Simulator "
 		<< "v" << SIM_VERSION_MAJOR
 		<< "." << SIM_VERSION_MINOR
 		<< "-" << SIM_VERSION_PATCH

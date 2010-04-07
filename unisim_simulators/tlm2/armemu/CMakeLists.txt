@@ -1,5 +1,5 @@
 cmake_minimum_required ( VERSION 2.8 )
-project ( unisim_arm926ejs )
+project ( unisim_armemu )
 include ( CheckIncludeFileCXX )
 include ( CheckIncludeFile )
 include ( ${CMAKE_SOURCE_DIR}/cmake/FindOSCISystemC.cmake )
@@ -25,11 +25,11 @@ endforeach ( C_INCLUDE )
 
 set ( SIM_VERSION_MAJOR 0 )
 set ( SIM_VERSION_MINOR 1 )
-set ( SIM_VERSION_PATCH 1 )
+set ( SIM_VERSION_PATCH 0 )
 set ( SIM_VERSION_CODENAME "\"Sagrera\"" )
 set ( SIM_AUTHOR "\"Daniel Gracia Perez (daniel.gracia-perez@cea.fr)\"" )
 
-set ( arm926ejs_emu_subdirs
+set ( armemu_subdirs
 	unisim/kernel/service
 	unisim/component/tlm2/processor/arm/arm926ejs
 	unisim/component/tlm2/interrupt
@@ -43,7 +43,7 @@ set ( arm926ejs_emu_subdirs
 	unisim/service/os/linux_os/linux_os_32
 	unisim/service/power
 	)
-foreach ( dir ${arm926ejs_emu_subdirs} )
+foreach ( dir ${armemu_subdirs} )
 	unisim_include ( ${dir} )
 endforeach ( dir )
 
@@ -58,10 +58,10 @@ configure_file (
 	${CMAKE_SOURCE_DIR}/config.hh.in 
 	${CMAKE_BINARY_DIR}/config.hh )
 
-set ( RELATIVE_SHARE_DIRECTORY "share/arm926ejs_emu" )
+set ( RELATIVE_SHARE_DIRECTORY "share/armemu" )
 set ( SHARE_DIRECTORY "${CMAKE_BINARY_DIR}/${RELATIVE_SHARE_DIRECTORY}" )
 
-add_custom_target ( arm926ejs_emu__share_gdb
+add_custom_target ( armemu__share_gdb
 	ALL
 	COMMAND
 		${CMAKE_COMMAND} -E make_directory ${SHARE_DIRECTORY}/gdb_server
@@ -73,7 +73,7 @@ add_custom_target ( arm926ejs_emu__share_gdb
 		"Setting GDB resource files"
 	)
 
-add_custom_target ( arm926ejs_emu__share_test
+add_custom_target ( armemu__share_test
 	ALL
 	COMMAND
 		${CMAKE_COMMAND} -E make_directory ${SHARE_DIRECTORY}/test/src
@@ -97,11 +97,11 @@ add_custom_target ( arm926ejs_emu__share_test
 		"Setting test program source files"
 	)
 
-add_executable ( arm926ejs_emu 
+add_executable ( armemu 
 	${CMAKE_SOURCE_DIR}/main.cc 
 	${CMAKE_BINARY_DIR}/config.hh
 	)
-set ( arm926ejs_emu_libraries
+set ( armemu__libraries
 	${OSCI_SYSTEMC_LIBRARIES}
 	unisim__kernel__service
 	unisim__component__cxx__processor__arm
@@ -117,15 +117,15 @@ set ( arm926ejs_emu_libraries
 	unisim__service__debug__inline_debugger
 	)
 if ( UNISIM__SERVICE__POWER__SUPPORT )
-	list ( APPEND arm926ejs_emu_libraries
+	list ( APPEND armemu__libraries
 		unisim__service__power )
 endif ( UNISIM__SERVICE__POWER__SUPPORT )
 
-target_link_libraries ( arm926ejs_emu
-	${arm926ejs_emu_libraries}
+target_link_libraries ( armemu
+	${armemu__libraries}
 	)
 
-set ( arm926ejs_emu_deps
+set ( armemu__deps
 	unisim__kernel__service
 	unisim__component__tlm2__processor__arm__arm926ejs
 	unisim__component__tlm2__interrupt
@@ -139,15 +139,15 @@ set ( arm926ejs_emu_deps
 	unisim__service__os__linux_os__linux_os_32
 	)
 if ( UNISIM__SERVICE__POWER__SUPPORT )
-	list ( APPEND arm926ejs_emu_deps
+	list ( APPEND armemu__deps
 		unisim__service__power
 		)
 endif ( UNISIM__SERVICE__POWER__SUPPORT )
-add_dependencies ( arm926ejs_emu
-	${arm926ejs_emu_deps}
+add_dependencies ( armemu
+	${armemu__deps}
 	)
 
-set_target_properties ( arm926ejs_emu
+set_target_properties ( armemu
 	PROPERTIES
 		RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin )
 
@@ -157,14 +157,14 @@ add_custom_command (
 	COMMAND
 		${CMAKE_COMMAND} -E make_directory ${SHARE_DIRECTORY}
 	COMMAND
-		${CMAKE_BINARY_DIR}/bin/arm926ejs_emu -g ${SHARE_DIRECTORY}/default-config.xml
+		${CMAKE_BINARY_DIR}/bin/armemu -g ${SHARE_DIRECTORY}/default-config.xml
 	DEPENDS
-		${CMAKE_BINARY_DIR}/bin/arm926ejs_emu
+		${CMAKE_BINARY_DIR}/bin/armemu
 	COMMENT
 		"Creating simulator default configuration in \"${RELATIVE_SHARE_DIRECTORY}/default-config.xml\""
 	)
 
-install ( TARGETS arm926ejs_emu
+install ( TARGETS armemu
 	RUNTIME DESTINATION bin
 	)
 install ( 
@@ -196,20 +196,20 @@ install (
 	OPTIONAL
 	)	
 	
-add_custom_target ( arm926ejs_emu__resources
+add_custom_target ( armemu__resources
 	ALL
 	DEPENDS
 		${SHARE_DIRECTORY}/default-config.xml
 	)
 
-add_dependencies ( arm926ejs_emu__resources
-	arm926ejs_emu )
+add_dependencies ( armemu__resources
+	armemu )
 
 add_custom_target ( check
 	COMMAND
 		${CMAKE_CTEST_COMMAND}
 	DEPENDS
-		arm926ejs_emu )
+		armemu )
 
 add_custom_target ( prepare_check
 	COMMENT
