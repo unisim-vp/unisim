@@ -45,7 +45,6 @@ class Builder:
 		for unit in self._units.values():
 			rep_location = config.getRepositoryLocationFromName(unit.getRepositoryName())
 			src_path = unit.getFilesPath()
-			print("+ %s %s" % (rep_location, src_path,))
 			rep_location = os.path.join(rep_location, src_path)
 			for file in unit.getFiles():
 				abs_filename = os.path.join(rep_location, file)
@@ -58,7 +57,6 @@ class Builder:
 					self._status = False
 					return
 				if config.doLink():
-					print ("%s %s" % (abs_filename, abs_out_filename,))
 					os.symlink(abs_filename, abs_out_filename)
 				else:
 					shutil.copyfile(abs_filename, abs_out_filename)
@@ -66,7 +64,6 @@ class Builder:
 	
 	def _generateCopyCMakes(self, config, output_path):
 		for unit in self._units.values():
-			print (" + %s" % (unit.getName()), end='')
 			rep_location = config.getRepositoryLocationFromName(unit.getRepositoryName())
 			rel_filename = unit.getCmake()
 			if rel_filename is None:
@@ -74,7 +71,7 @@ class Builder:
 			else:
 				abs_filename = os.path.join(rep_location, rel_filename)
 				if not os.path.exists(abs_filename):
-					print (' (cmake file does not exists)')
+					print ('WARNING: %s (cmake file does not exists)' % (unit.getName()))
 				else:
 					abs_out_filename = os.path.join(output_path, rel_filename)
 					if not os.path.exists(os.path.dirname(abs_out_filename)):
@@ -83,8 +80,6 @@ class Builder:
 						os.symlink(abs_filename, abs_out_filename)
 					else:
 						shutil.copyfile(abs_filename, abs_out_filename)
-					print ('')
-		print (" * simulator", end = '')
 
 	def _generateCmake(self, config, output_path):
 		# copy cmake header

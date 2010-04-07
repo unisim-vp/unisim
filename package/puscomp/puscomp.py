@@ -50,10 +50,10 @@ if len(args) != 1:
 
 # read configuration
 
-print("Reading configuration file...", end = "")
+print("Reading configuration file...")
 config = ConfigClass(options.config_filename, options.do_link)
 if config.getStatus():
-	print("DONE")
+	print("... DONE reading configuration file.")
 else:
 	print("Stopping puscomp.")
 	sys.exit()
@@ -62,10 +62,10 @@ if options.verbose:
 	print("Configuration:")
 	config.dump(" + ")
 	print("============================")
-print("Populating repository...", end = "")
+print("Populating repository...")
 rep = RepositoryClass(config)
 if rep.getStatus():
-	print("DONE")
+	print("... DONE populating repository.")
 else:
 	print("Stopping puscomp.")
 	sys.exit()
@@ -74,10 +74,10 @@ if options.verbose:
 	print("Repository:")
 	rep.dump(" + ")
 	print("============================")
-print("Building ...", end = "")
+print("Building ...")
 build = Builder(args[0], rep)
 if build.getStatus():
-	print("DONE")
+	print("... DONE building.")
 else:
 	print("Stopping puscomp.")
 	sys.exit()
@@ -86,10 +86,10 @@ if options.verbose:
 	print("Builder:")
 	build.dump(" + ")
 	print("============================")
-print("Generating output...", end = "")
+print("Generating output...")
 build.generate(config, options.output_path)
 if build.getStatus():
-	print("DONE")
+	print("... DONE generating output.")
 else:
 	print("Stopping puscomp.")
 	sys.exit()
