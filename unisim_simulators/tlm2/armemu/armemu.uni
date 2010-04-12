@@ -10,6 +10,11 @@
 			<file>share/test/src/main.c</file>
 			<file>share/test/src/CMakeLists.txt</file>
 			<file>share/test/src/toolchain-armv5l.cmake</file>
+			<file>AUTHORS</file>
+			<file>COPYING</file>
+			<file>INSTALL</file>
+			<file>NEWS</file>
+			<file>README</file>
 		</files>
 		<depends>
 			<dep>unisim</dep>
