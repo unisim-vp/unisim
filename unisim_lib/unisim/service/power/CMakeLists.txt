@@ -93,7 +93,6 @@ configure_file (
 	${CMAKE_BINARY_DIR}/unisim/service/power/config.hh )
 	
 add_library ( unisim__service__power
-	STATIC 
 		${CMAKE_SOURCE_DIR}/unisim/service/power/cache_power_estimator.hh
 		${CMAKE_SOURCE_DIR}/unisim/service/power/cache_power_estimator.cc
 		${CMAKE_BINARY_DIR}/unisim/service/power/config.hh

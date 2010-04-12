@@ -32,7 +32,6 @@ unisim_include ( unisim/kernel/logger )
 
 include_directories ( ${CMAKE_SOURCE_DIR} ${LIBXML2_INCLUDE_DIR} ${Boost_INCLUDE_DIRS} )
 add_library ( unisim__kernel__service
-	STATIC 
 		${CMAKE_SOURCE_DIR}/unisim/kernel/service/service.cc
 		${CMAKE_SOURCE_DIR}/unisim/kernel/service/service.hh
 		${CMAKE_SOURCE_DIR}/unisim/kernel/service/xml_helper.cc

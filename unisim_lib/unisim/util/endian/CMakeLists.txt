@@ -32,7 +32,6 @@ endif ( APPLE )
 unisim_include ( unisim/kernel/service )
 
 add_library ( unisim__util__endian
-	STATIC 
 		${CMAKE_SOURCE_DIR}/unisim/util/endian/endian.hh
 		${CMAKE_SOURCE_DIR}/unisim/util/endian/endian.cc
 	)

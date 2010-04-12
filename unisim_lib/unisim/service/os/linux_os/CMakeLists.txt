@@ -44,7 +44,6 @@ endforeach ( dir )
 
 include_directories ( ${CMAKE_SOURCE_DIR} )
 add_library ( unisim__service__os__linux_os
-	STATIC 
 		${CMAKE_SOURCE_DIR}/unisim/service/os/linux_os/linux_os.hh
 		${CMAKE_SOURCE_DIR}/unisim/service/os/linux_os/linux_os_exception.hh
 		${CMAKE_SOURCE_DIR}/unisim/service/os/linux_os/linux_os.tcc

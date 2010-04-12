@@ -28,7 +28,6 @@ endforeach ( dir )
 include_directories ( ${CMAKE_SOURCE_DIR} )
 
 add_library ( unisim__service__time__host_time
-	STATIC
 		${CMAKE_SOURCE_DIR}/unisim/service/time/host_time/time.hh
 		${CMAKE_SOURCE_DIR}/unisim/service/time/host_time/time.cc
 	)

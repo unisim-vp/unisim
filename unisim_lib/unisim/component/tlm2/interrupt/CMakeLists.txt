@@ -16,7 +16,6 @@ endforeach ( dir )
 
 include_directories ( ${CMAKE_SOURCE_DIR} )
 add_library ( unisim__component__tlm2__interrupt
-	STATIC 
 		${CMAKE_SOURCE_DIR}/unisim/component/tlm2/interrupt/types.hh
 		${CMAKE_SOURCE_DIR}/unisim/component/tlm2/interrupt/master_stub.hh
 		${CMAKE_SOURCE_DIR}/unisim/component/tlm2/interrupt/master_stub.cc

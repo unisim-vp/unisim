@@ -78,7 +78,6 @@ include_directories (
 	)
 
 add_library ( unisim__util__debug
-	STATIC
 		${debug_files}
 	)
 

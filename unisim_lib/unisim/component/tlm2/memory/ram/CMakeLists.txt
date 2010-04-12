@@ -25,7 +25,6 @@ endforeach ( dir )
 
 include_directories ( ${CMAKE_SOURCE_DIR} )
 add_library ( unisim__component__tlm2__memory__ram
-	STATIC 
 		${CMAKE_SOURCE_DIR}/unisim/component/tlm2/memory/ram/memory.hh
 		${CMAKE_SOURCE_DIR}/unisim/component/tlm2/memory/ram/memory.tcc
 		${CMAKE_SOURCE_DIR}/unisim/component/tlm2/memory/ram/memory.cc

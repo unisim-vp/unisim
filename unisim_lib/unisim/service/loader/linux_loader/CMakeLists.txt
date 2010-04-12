@@ -33,7 +33,6 @@ endforeach ( dir )
 
 include_directories ( ${CMAKE_SOURCE_DIR} )
 add_library ( unisim__service__loader__linux_loader
-	STATIC 
 		${CMAKE_SOURCE_DIR}/unisim/service/loader/linux_loader/linux_loader.hh
 		${CMAKE_SOURCE_DIR}/unisim/service/loader/linux_loader/linux_loader.tcc
 		${CMAKE_SOURCE_DIR}/unisim/service/loader/linux_loader/linux32_loader.cc

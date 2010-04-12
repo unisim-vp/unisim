@@ -44,7 +44,6 @@ endforeach ( dir )
 
 include_directories ( ${CMAKE_SOURCE_DIR} )
 add_library ( unisim__service__debug__gdb_server
-	STATIC 
 		${CMAKE_SOURCE_DIR}/unisim/service/debug/gdb_server/gdb_server.hh
 		${CMAKE_SOURCE_DIR}/unisim/service/debug/gdb_server/gdb_server.tcc
 		${CMAKE_SOURCE_DIR}/unisim/service/debug/gdb_server/gdb_server.cc

@@ -19,7 +19,6 @@ include_directories (
 	)
 
 add_library ( unisim__service__time__sc_time
-	STATIC
 		${CMAKE_SOURCE_DIR}/unisim/service/time/sc_time/time.hh
 		${CMAKE_SOURCE_DIR}/unisim/service/time/sc_time/time.cc
 	)
