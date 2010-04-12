@@ -181,7 +181,6 @@ include_directories (
 	)
 
 add_library ( unisim__component__cxx__processor__arm
-	STATIC
 		${cxx_arm_srcs}
 	)
 

@@ -15,7 +15,6 @@ unisim_include ( unisim/kernel/service )
 
 include_directories ( ${CMAKE_SOURCE_DIR} )
 add_library ( unisim__component__cxx__memory__ram
-	STATIC 
 		memory.hh
 		memory.tcc
 		memory_32.cc

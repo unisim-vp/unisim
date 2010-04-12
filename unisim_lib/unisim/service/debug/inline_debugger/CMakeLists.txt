@@ -38,7 +38,6 @@ endforeach ( dir )
 
 include_directories ( ${CMAKE_SOURCE_DIR} )
 add_library ( unisim__service__debug__inline_debugger
-	STATIC 
 		${CMAKE_SOURCE_DIR}/unisim/service/debug/inline_debugger/inline_debugger.hh
 		${CMAKE_SOURCE_DIR}/unisim/service/debug/inline_debugger/inline_debugger.tcc
 		${CMAKE_SOURCE_DIR}/unisim/service/debug/inline_debugger/inline_debugger.cc

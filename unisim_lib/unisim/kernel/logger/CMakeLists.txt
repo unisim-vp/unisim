@@ -15,8 +15,7 @@ if ( NOT LIBXML2_FOUND )
 endif ( NOT LIBXML2_FOUND )
 
 include_directories ( ${CMAKE_SOURCE_DIR} ${LIBXML2_INCLUDE_DIR} )
-add_library ( unisim__kernel__logger 
-	STATIC 
+add_library ( unisim__kernel__logger  
 		logger.cc
 		logger.hh
 		logger_server.cc

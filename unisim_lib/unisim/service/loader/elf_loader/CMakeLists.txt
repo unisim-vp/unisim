@@ -35,7 +35,6 @@ endforeach ( dir )
 
 include_directories ( ${CMAKE_SOURCE_DIR} )
 add_library ( unisim__service__loader__elf_loader
-	STATIC 
 		${CMAKE_SOURCE_DIR}/unisim/service/loader/elf_loader/elf_common.h
 		${CMAKE_SOURCE_DIR}/unisim/service/loader/elf_loader/elf32.h
 		${CMAKE_SOURCE_DIR}/unisim/service/loader/elf_loader/elf64.h
