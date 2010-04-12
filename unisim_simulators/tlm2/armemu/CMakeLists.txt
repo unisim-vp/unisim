@@ -205,20 +205,31 @@ add_custom_target ( armemu__resources
 add_dependencies ( armemu__resources
 	armemu )
 
-add_custom_target ( check
+add_test ( working_test
+	bin/armemu -c default_config.xml
+	)
+	
+add_custom_target ( prepare_check
+	COMMENT
+		"Preparing tests"
+	)
+	
+add_custom_target ( calling_ctest
 	COMMAND
 		${CMAKE_CTEST_COMMAND}
 	DEPENDS
 		armemu )
 
-add_custom_target ( prepare_check
+add_custom_target ( check
 	COMMENT
-		"Preparing tests"
+		"Tests finished"
 	)
 
 add_dependencies ( check
-	prepare_check )
-
+	prepare_check
+	calling_ctest
+	)
+	
 enable_testing()
 
 set ( CPACK_PACKAGE_VERSION_MAJOR ${SIM_VERSION_MAJOR} )

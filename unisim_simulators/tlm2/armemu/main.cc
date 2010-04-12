@@ -365,7 +365,10 @@ int main(int argc, char *argv[], char **envp) {
 	if (set_config)
 	{
 		cerr << "Setting simulator configuration in \"" << set_config_name << "\"." << endl;
-		ServiceManager::LoadXmlParameters(set_config_name);
+		if (!ServiceManager::LoadXmlParameters(set_config_name))
+		{
+			return -1;
+		}
 	}
 	
 	// Second overload the passed configuration with the command line arguments "-s param=value"
