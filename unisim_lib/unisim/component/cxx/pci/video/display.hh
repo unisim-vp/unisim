@@ -99,14 +99,6 @@ private:
 	uint32_t bytes_per_pixels;
 	uint32_t bytes_per_line;
 
-	Parameter<uint32_t> param_width;
-	Parameter<uint32_t> param_height;
-	Parameter<uint32_t> param_depth;
-	Parameter<uint32_t> param_bytesize;
-	Parameter<ADDRESS> param_initial_base_addr;
-	Parameter<uint32_t> param_pci_device_number;
-	Parameter<unsigned int> param_pci_bus_frequency;
-
 protected:
 	// debug stuff
 	unisim::kernel::logger::Logger logger;
@@ -133,6 +125,14 @@ protected:
 	uint32_t pci_device_number;
 	ADDRESS initial_base_addr;
 	unsigned int pci_bus_frequency; // in Mhz
+private:
+	Parameter<uint32_t> param_width;
+	Parameter<uint32_t> param_height;
+	Parameter<uint32_t> param_depth;
+	Parameter<uint32_t> param_bytesize;
+	Parameter<ADDRESS> param_initial_base_addr;
+	Parameter<uint32_t> param_pci_device_number;
+	Parameter<unsigned int> param_pci_bus_frequency;
 };
 
 } // end of namespace video

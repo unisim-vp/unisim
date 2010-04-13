@@ -86,10 +86,11 @@ using std::vector;
 
 class EmptyClientInterface {};
 class Object;
-class Object;
 class VariableBase;
 template <class TYPE> class Variable;
+template <class TYPE> class Parameter;
 template <class TYPE> class VariableArray;
+template <class TYPE> class ParameterArray;
 template <class SERVICE_IF> class Client;
 template <class SERVICE_IF> class Service;
 class ServiceImportBase;
@@ -145,6 +146,7 @@ public:
 	bool AddEnumeratedValue(const char *value);
 	bool RemoveEnumeratedValue(const char *value);
 	void SetFormat(Format fmt);
+	bool IsVoid() const;
 
 	virtual operator bool () const;
 	operator char () const;
@@ -176,6 +178,7 @@ public:
 	virtual VariableBase& operator = (const char * value);
 
 	virtual VariableBase& operator [] (unsigned int index);
+	virtual unsigned int GetLength() const;
 private:
 	string name;
 	string var_name;
@@ -188,66 +191,87 @@ private:
 };
 
 //=============================================================================
-//=                             ServiceManager                                =
+//=                                 Simulator                                 =
 //=============================================================================
 
-class ServiceManager
+class Simulator
 {
 public:
-	static void Register(Object *object);
-	static void Register(ServiceImportBase *srv_import);
-	static void Register(ServiceExportBase *srv_export);
-	static void Register(VariableBase *variable);
+	static Simulator *simulator;
+	VariableBase *void_variable;
 
-	static void Unregister(Object *object);
-	static void Unregister(ServiceImportBase *srv_import);
-	static void Unregister(ServiceExportBase *srv_export);
-	static void Unregister(VariableBase *variable);
+	Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator *simulator) = 0);
+	virtual ~Simulator();
+	bool Setup();
 
-	static void Dump(ostream& os);
-	static void DumpVariables(ostream& os, VariableBase::Type filter_type = VariableBase::VAR_VOID);
-	static void DumpStatistics(ostream& os);
-	static void DumpParameters(ostream& os);
-	static void DumpRegisters(ostream& os);
-	static void DumpFormulas(ostream& os);
+	VariableBase *GetVariable(const char *name, VariableBase::Type type = VariableBase::VAR_VOID);
+	VariableBase *GetArray(const char *name);
+	VariableBase *GetParameter(const char *name);
+	VariableBase *GetRegister(const char *name);
+	VariableBase *GetStatistic(const char *name);
+	VariableBase *GetFormula(const char *name);
 
-	static bool XmlfyParameters(const char *filename);
-	static bool XmlfyStatistics(const char *filename);
-	static bool XmlfyRegisters(const char *filename);
-	static bool XmlfyFormulas(const char *filename);
+	void GetVariables(list<VariableBase *>& lst, VariableBase::Type type = VariableBase::VAR_VOID);
+	void GetArrays(list<VariableBase *>& lst);
+	void GetParameters(list<VariableBase *>& lst);
+	void GetRegisters(list<VariableBase *>& lst);
+	void GetStatistics(list<VariableBase *>& lst);
+	void GetFormulas(list<VariableBase *>& lst);
 
-	static bool LoadXmlParameters(const char *filename);
-	static bool LoadXmlStatistics(const char *filename);
-	static bool LoadXmlRegisters(const char *filename);
-	static bool LoadXmlFormulas(const char *filename);
+	void Dump(ostream& os);
+	void DumpVariables(ostream& os, VariableBase::Type filter_type = VariableBase::VAR_VOID);
+	void DumpStatistics(ostream& os);
+	void DumpParameters(ostream& os);
+	void DumpRegisters(ostream& os);
+	void DumpFormulas(ostream& os);
 
-	static bool XmlfyVariables(const char *filename);
-	static bool LoadXmlVariables(const char *filename);
-
-	static bool Setup();
-
-	static VariableBase *GetVariable(const char *name, VariableBase::Type type = VariableBase::VAR_VOID);
-	static VariableBase *GetArray(const char *name);
-	static VariableBase *GetParameter(const char *name);
-	static VariableBase *GetRegister(const char *name);
-	static VariableBase *GetStatistic(const char *name);
-	static VariableBase *GetFormula(const char *name);
-
-	static void GetVariables(list<VariableBase *>& lst, VariableBase::Type type = VariableBase::VAR_VOID);
-	static void GetArrays(list<VariableBase *>& lst);
-	static void GetParameters(list<VariableBase *>& lst);
-	static void GetRegisters(list<VariableBase *>& lst);
-	static void GetStatistics(list<VariableBase *>& lst);
-	static void GetFormulas(list<VariableBase *>& lst);
-
-	static VariableBase void_variable;
-
-	static void GetRootObjects(list<Object *>& lst);
+	string SearchSharedDataFile(const char *filename) const;
 
 private:
 	friend class Object;
 	friend class VariableBase;
+	template <class TYPE> friend class Variable;
 	friend class XMLHelper;
+	friend class ServiceImportBase;
+	friend class ServiceExportBase;
+
+	int argc;
+	char **argv;
+	string shared_data_dir;
+	std::map<string, string> set_vars;
+	string get_config_filename;
+	bool list_parms;
+	bool get_config;
+	Parameter<bool> *param_get_config;
+	
+	void Register(Object *object);
+	void Register(ServiceImportBase *srv_import);
+	void Register(ServiceExportBase *srv_export);
+	void Register(VariableBase *variable);
+
+	void Unregister(Object *object);
+	void Unregister(ServiceImportBase *srv_import);
+	void Unregister(ServiceExportBase *srv_export);
+	void Unregister(VariableBase *variable);
+	
+	void Initialize(VariableBase *variable);
+
+	bool XmlfyParameters(const char *filename);
+	bool XmlfyStatistics(const char *filename);
+	bool XmlfyRegisters(const char *filename);
+	bool XmlfyFormulas(const char *filename);
+
+	bool LoadXmlParameters(const char *filename);
+	bool LoadXmlStatistics(const char *filename);
+	bool LoadXmlRegisters(const char *filename);
+	bool LoadXmlFormulas(const char *filename);
+
+	bool XmlfyVariables(const char *filename);
+	bool LoadXmlVariables(const char *filename);
+
+	void GetRootObjects(list<Object *>& lst);
+	
+
 
 	struct ltstr
 	{
@@ -257,12 +281,29 @@ private:
 		}
 	};
 
-	static map<const char *, Object *, ltstr> objects;
-	static map<const char *, ServiceImportBase *, ltstr> imports;
-	static map<const char *, ServiceExportBase *, ltstr> exports;
-	static map<const char *, VariableBase *, ltstr> variables;
-//
-//	static void ProcessXmlVariableNode(xmlTextReaderPtr reader);
+	map<const char *, Object *, ltstr> objects;
+	map<const char *, ServiceImportBase *, ltstr> imports;
+	map<const char *, ServiceExportBase *, ltstr> exports;
+	map<const char *, VariableBase *, ltstr> variables;
+	
+	string *cmd_args;
+	ParameterArray<string> *param_cmd_args;
+	
+public:
+	void SetVariable(const char *variable_name, const char *variable_value);
+	void SetVariable(const char *variable_name, bool variable_value);
+	void SetVariable(const char *variable_name, char variable_value);
+	void SetVariable(const char *variable_name, unsigned char variable_value);
+	void SetVariable(const char *variable_name, short variable_value);
+	void SetVariable(const char *variable_name, unsigned short variable_value);
+	void SetVariable(const char *variable_name, int variable_value);
+	void SetVariable(const char *variable_name, unsigned int variable_value);
+	void SetVariable(const char *variable_name, long variable_value);
+	void SetVariable(const char *variable_name, unsigned long variable_value);
+	void SetVariable(const char *variable_name, unsigned long long variable_value);
+	void SetVariable(const char *variable_name, long long variable_value);
+	void SetVariable(const char *variable_name, float variable_value);
+	void SetVariable(const char *variable_name, double variable_value);
 };
 
 //=============================================================================
@@ -403,6 +444,8 @@ public:
 
 	virtual VariableBase& operator [] (unsigned int index);
 	void SetFormat(Format fmt);
+	virtual unsigned int GetLength() const;
+
 private:
 	vector<VariableBase *> variables;
 };
@@ -440,9 +483,15 @@ VariableBase& VariableArray<TYPE>::operator [] (unsigned int index)
 	if(index >= variables.size())
 	{
 		cerr << "Subscript out of range" << endl;
-		return ServiceManager::void_variable;
+		return *Simulator::simulator->void_variable;
 	}
 	return *variables[index];
+}
+
+template <class TYPE>
+unsigned int VariableArray<TYPE>::GetLength() const
+{
+	return variables.size();
 }
 
 template <class TYPE>
@@ -509,6 +558,7 @@ public:
 	VariableBase& operator [] (const char *name);
 	list<ServiceImportBase *>& GetSetupDependencies();
 	void SetupDependsOn(ServiceImportBase& srv_import);
+	Simulator *GetSimulator() const;
 private:
 	string object_name;
 	Object *parent;

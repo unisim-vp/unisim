@@ -46,6 +46,7 @@ template <>
 Variable<sc_time>::Variable(const char *_name, Object *_object, sc_time& _storage, Type type, const char *_description)
 	: VariableBase(_name, _object, type, _description), storage(&_storage)
 {
+	Simulator::simulator->Initialize(this);
 }
 
 template <>

@@ -47,7 +47,9 @@ using std::map;
 const char *XMLHelper::XML_ENCODING = "UTF-8"; 
 
 XMLHelper::
-XMLHelper() {}
+XMLHelper(Simulator *_simulator) :
+	simulator(_simulator) {
+}
 
 XMLHelper::
 ~XMLHelper() {}
@@ -59,46 +61,46 @@ XmlfyVariables(const char *filename, VariableBase::Type type) {
 
 	writer = xmlNewTextWriterFilename(filename, 0);
 	if(writer == NULL) {
-		cerr << "Error(ServiceManager::XmlfyVariables): "
+		cerr << "Error(Simulator::XmlfyVariables): "
 			<< "could not open output file (" 
 			<< filename << ")" << endl;
 		return false;
 	}
 	int rc = xmlTextWriterSetIndent(writer, 1);
 	if(rc < 0) {
-		cerr << "Warning(ServiceManager::XmlfyVariables): "
+		cerr << "Warning(Simulator::XmlfyVariables): "
 			<< "could not set indentation" << endl;
 	} else {
 		rc = xmlTextWriterSetIndentString(writer, (xmlChar*)"\t");
 		if (rc < 0) {
-			cerr << "Warning(ServiceManager::XmlfyVariables): "
+			cerr << "Warning(Simulator::XmlfyVariables): "
 				<< "could not set indentation string" << endl;
 		}
 	}
 	rc = xmlTextWriterStartDocument(writer, NULL,
 			XML_ENCODING, NULL);
 	if(rc < 0) {
-		cerr << "Error(ServiceManager::XmlfyVariables): "
+		cerr << "Error(Simulator::XmlfyVariables): "
 			<< "error starting the xml document" << endl;
 		return false;
 	}
 	// rc = xmlTextWriterStartElement(writer, BAD_CAST "VARIABLES");
 	rc = xmlTextWriterStartElement(writer, BAD_CAST "variables");
 	if(rc < 0) {
-		cerr << "Error(ServiceManager::XmlfyVariables): "
+		cerr << "Error(Simulator::XmlfyVariables): "
 			<< "error starting the xml document" << endl;
 		return false;
 	}
 
 //	list<VariableBase *> var_list;
 //	list<VariableBase *>::iterator var_iter;
-//	ServiceManager::GetVariables(var_list, type);
+//	Simulator::GetVariables(var_list, type);
 //	for(var_iter = var_list.begin();
 //			var_iter != var_list.end();
 //			var_iter++) {
 //		rc = XmlfyVariable(writer, *var_iter);
 //		if(rc < 0) {
-//			cerr << "Error(ServiceManager::XmlfyVariables): "
+//			cerr << "Error(Simulator::XmlfyVariables): "
 //				<< "error writing variable"
 //				<< endl;
 //			return false;
@@ -106,7 +108,7 @@ XmlfyVariables(const char *filename, VariableBase::Type type) {
 //	}
 	list<Object *> obj_list;
 	list<Object *>::iterator obj_iter;
-	ServiceManager::GetRootObjects(obj_list);
+	Simulator::simulator->GetRootObjects(obj_list);
 	for (obj_iter = obj_list.begin();
 			obj_iter != obj_list.end();
 			obj_iter++)
@@ -126,13 +128,13 @@ XmlfyVariables(const char *filename, VariableBase::Type type) {
 
 	rc = xmlTextWriterEndElement(writer);
 	if(rc < 0) {
-		cerr << "Error(ServiceManager::XmlfyVariables): "
+		cerr << "Error(Simulator::XmlfyVariables): "
 			<< "could not close the root element" << endl;
 		return false;
 	}
 	rc = xmlTextWriterEndDocument(writer);
 	if(rc < 0) {
-		cerr << "Warning(ServiceManager::XmlfyVariables): "
+		cerr << "Warning(Simulator::XmlfyVariables): "
 			<< "could not correctly close the XMLWriter"
 			<< endl;
 	}
@@ -220,7 +222,7 @@ XmlfyVariables(xmlTextWriterPtr writer,
 		{
 			rc = XmlfyVariable(writer, *var_iter);
 			if(rc < 0) {
-				cerr << "Error(ServiceManager::XmlfyVariables): "
+				cerr << "Error(Simulator::XmlfyVariables): "
 					<< "error writing variable"
 					<< endl;
 				return rc;
@@ -260,12 +262,6 @@ XmlfyVariable(xmlTextWriterPtr writer,
 			break;
 		case VariableBase::VAR_REGISTER:
 			rc = xmlTextWriterWriteFormatString(writer, "register");
-			break;
-		case VariableBase::VAR_VOID:
-		case VariableBase::VAR_ARRAY:
-			rc = -1;
-			cerr << "ERROR(xml_helper:XmlfyVariable): unexpected variable type (VAR_VOID or VAR_ARRAY)"
-			<< endl;
 			break;
 	}
 	if(rc < 0) return rc;
@@ -352,8 +348,10 @@ XmlfyVariable(xmlTextWriterPtr writer,
 
 bool
 XMLHelper::
-LoadXmlVariables(const char *filename, VariableBase::Type type)
+LoadXmlVariables(const char *_filename, VariableBase::Type type)
 {
+	string filename = simulator->SearchSharedDataFile(_filename);
+	
 	xmlTextReaderPtr reader;
 	int ret;
 
@@ -363,7 +361,7 @@ LoadXmlVariables(const char *filename, VariableBase::Type type)
 	 * Pass some special parsing options to activate DTD attribute defaulting,
 	 * entities substitution and DTD validation
 	 */
-	reader = xmlReaderForFile(filename, NULL, 0);
+	reader = xmlReaderForFile(filename.c_str(), NULL, 0);
 	if (reader != NULL) {
 		cur_status = NONE;
 		cur_var = NULL;
@@ -379,11 +377,11 @@ LoadXmlVariables(const char *filename, VariableBase::Type type)
 			cerr << filename << ": failed to parse" << endl;
 			return false;
 		}
+		return true;
 	} else {
 		cerr << "Unable to open " << filename << endl;
 		return false;
 	}
-	return ret;
 }
 
 bool 
@@ -459,15 +457,7 @@ ProcessXmlVariableNode(xmlTextReaderPtr reader, VariableBase::Type type)
 				(type == VariableBase::VAR_REGISTER && cur_var->type.str().compare("register") == 0) ||
 				(type == VariableBase::VAR_STATISTIC && cur_var->type.str().compare("statistic") == 0);
 			if(modify) {
-				VariableBase *variable = ServiceManager::GetParameter(cur_var->name.str().c_str());
-				if(variable == NULL) {
-					cerr << "    !! could not get variable '" << cur_var->name.str() << "'" << endl;
-					return false;
-				}
-//				cerr << "updating(" << (string)*variable << " -> ";
-				*variable = cur_var->value.str().c_str();
-//				cerr << (string)*variable << ")" << endl;
-				
+				simulator->SetVariable(cur_var->name.str().c_str(), cur_var->value.str().c_str());
 			}
 			delete cur_var;
 		}

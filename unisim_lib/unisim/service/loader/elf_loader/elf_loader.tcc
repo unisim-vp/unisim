@@ -56,24 +56,24 @@ template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_P
 ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::ElfLoaderImpl(const char *name, Object *parent) :
 	Object(name, parent),
 	Client<Memory<MEMORY_ADDR> >(name, parent),
-	Service<Loader<MEMORY_ADDR> >(name, parent),
 	Service<SymbolTableLookup<MEMORY_ADDR> >(name, parent),
+	Service<Loader<MEMORY_ADDR> >(name, parent),
 	memory_import("memory-import", this),
 	symbol_table_lookup_export("symbol-table-lookup-export", this),
 	loader_export("loader-export", this),
 	filename(),
 	entry_point(0),
-	top_addr(0),
 	base_addr(0),
+	top_addr(0),
 	force_use_virtual_address(false),
 	dump_headers(false),
 	logger(*this),
 	verbose(false),
-	param_filename("filename", this, filename),
-	param_base_addr("base-addr", this, base_addr),
-	param_force_use_virtual_address("force-use-virtual-address", this, force_use_virtual_address),
-	param_dump_headers("dump-headers", this, dump_headers),
-	param_verbose("verbose", this, verbose)
+	param_filename("filename", this, filename, "the ELF filename to load into memory"),
+	param_base_addr("base-addr", this, base_addr, "if not null, a forced base address for a unique program segment"),
+	param_force_use_virtual_address("force-use-virtual-address", this, force_use_virtual_address, "force use of virtual addresses instead of physical addresses"),
+	param_dump_headers("dump-headers", this, dump_headers, "dump headers while loading ELF file"),
+	param_verbose("verbose", this, verbose, "enable/disable verbosity")
 {
 	Object::SetupDependsOn(memory_import);
 }
@@ -124,7 +124,7 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 
 	if(filename.empty()) return true;
 	
-	ifstream is(filename.c_str(), ifstream::in | ifstream::binary);
+	ifstream is(Object::GetSimulator()->SearchSharedDataFile(filename.c_str()).c_str(), ifstream::in | ifstream::binary);
 	if(is.fail())
 	{
 		logger << DebugError << "Can't open executable \"" << filename << "\"" << EndDebugError;

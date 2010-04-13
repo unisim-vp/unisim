@@ -46,6 +46,7 @@ using namespace unisim::component::cxx::pci;
 template <> Variable<PCISpace>::Variable(const char *_name, Object *_object, PCISpace& _storage, Type type, const char *_description) :
 	VariableBase(_name, _object, type, _description), storage(&_storage)
 {
+	Simulator::simulator->Initialize(this);
 	AddEnumeratedValue("mem");
 	AddEnumeratedValue("i/o");
 	AddEnumeratedValue("cfg");
