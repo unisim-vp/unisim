@@ -20,6 +20,23 @@ foreach ( C_INCLUDE ${C_INCLUDES} )
 	endif ( NOT HAVE_${C_INCLUDE}_H )
 endforeach ( C_INCLUDE )
 
+get_property ( BIN_TO_SHARED_DATA_PATH_SET
+	GLOBAL
+	PROPERTY UNISIM_KERNEL_BIN_TO_SHARED_DATA_PATH
+	SET
+	)
+get_property ( BIN_TO_SHARED_DATA_PATH
+	GLOBAL
+	PROPERTY UNISIM_KERNEL_BIN_TO_SHARED_DATA_PATH
+	)
+if ( NOT ${BIN_TO_SHARED_DATA_PATH_SET} )
+	message ( FATAL_ERROR "Relative path to shared directory has not been set.")
+endif ( NOT ${BIN_TO_SHARED_DATA_PATH_SET} )
+configure_file (
+	${CMAKE_SOURCE_DIR}/unisim/kernel/service/config.hh.in
+	${CMAKE_BINARY_DIR}/unisim/kernel/service/config.hh
+	)
+
 include ( FindLibXml2 )
 if ( NOT LIBXML2_FOUND )
 	message ( SEND_ERROR "Could not find the libxml2 library." )
@@ -30,12 +47,20 @@ find_package ( Boost COMPONENTS graph )
 
 unisim_include ( unisim/kernel/logger )
 
-include_directories ( ${CMAKE_SOURCE_DIR} ${LIBXML2_INCLUDE_DIR} ${Boost_INCLUDE_DIRS} )
+include_directories ( ${CMAKE_SOURCE_DIR} 
+	${LIBXML2_INCLUDE_DIR} 
+	${Boost_INCLUDE_DIRS} 
+	${CMAKE_BINARY_DIR} )
 add_library ( unisim__kernel__service
 		${CMAKE_SOURCE_DIR}/unisim/kernel/service/service.cc
 		${CMAKE_SOURCE_DIR}/unisim/kernel/service/service.hh
 		${CMAKE_SOURCE_DIR}/unisim/kernel/service/xml_helper.cc
 		${CMAKE_SOURCE_DIR}/unisim/kernel/service/xml_helper.hh
+		${CMAKE_BINARY_DIR}/unisim/kernel/service/config.hh
+	)
+set_source_files_properties ( ${CMAKE_SOURCE_DIR}/unisim/kernel/service/service.cc
+	PROPERTIES
+		COMPILE_DEFINITIONS HAVE_UNISIM__KERNEL__SERVICE__CONFIG_HH
 	)
 
 target_link_libraries ( unisim__kernel__service

@@ -29,6 +29,12 @@ set ( SIM_VERSION_PATCH 0 )
 set ( SIM_VERSION_CODENAME "\"Sagrera\"" )
 set ( SIM_AUTHOR "\"Daniel Gracia Perez (daniel.gracia-perez@cea.fr)\"" )
 
+set ( RELATIVE_SHARE_DIRECTORY "share/armemu" )
+set ( SHARE_DIRECTORY "${CMAKE_BINARY_DIR}/${RELATIVE_SHARE_DIRECTORY}" )
+set_property ( GLOBAL 
+	PROPERTY
+		UNISIM_KERNEL_BIN_TO_SHARED_DATA_PATH "../share/armemu" )
+
 set ( armemu_subdirs
 	unisim/kernel/service
 	unisim/component/tlm2/processor/arm/arm926ejs
@@ -57,9 +63,6 @@ endif ( UNISIM__SERVICE__POWER__SUPPORT )
 configure_file ( 
 	${CMAKE_SOURCE_DIR}/config.hh.in 
 	${CMAKE_BINARY_DIR}/config.hh )
-
-set ( RELATIVE_SHARE_DIRECTORY "share/armemu" )
-set ( SHARE_DIRECTORY "${CMAKE_BINARY_DIR}/${RELATIVE_SHARE_DIRECTORY}" )
 
 add_custom_target ( armemu__share_gdb
 	ALL
