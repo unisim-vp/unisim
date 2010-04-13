@@ -52,6 +52,7 @@
 #include <unisim/component/cxx/processor/powerpc/exception.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/kernel/service/service.hh>
+#include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/loader.hh>
 #include <unisim/service/interfaces/linux_os.hh>
 #include <unisim/service/interfaces/cpu_linux_os.hh>
@@ -1782,26 +1783,6 @@ protected:
 	inline bool IsVerboseSetL2CR() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_SET_L2CR_ENABLE && (verbose_all || verbose_set_l2cr); }
 private:
 	//=====================================================================
-	//=                    CPU run-time parameters                        =
-	//=====================================================================
-	
-	Parameter<uint64_t> param_cpu_cycle_time;             //!< linked to member cpu_cycle_time
-	Parameter<uint64_t> param_voltage;                    //!< linked to member voltage
-	//Parameter<uint64_t> param_bus_cycle_time;             //!< linked to member bus_cycle_time
-	Parameter<uint64_t> param_max_inst;                   //!< linked to member max_inst
-
-	//=====================================================================
-	//=                    CPU run-time statistics                        =
-	//=====================================================================
-
-	Statistic<uint64_t> stat_instruction_counter;
-	Statistic<uint64_t> stat_cpu_cycle;                   //!< Number of cpu cycles
-	Statistic<uint64_t> stat_bus_cycle;                   //!< Number of front side bus cycles
-#if 0
-	Formula<double> formula_insn_per_bus_cycle;
-#endif
-
-	//=====================================================================
 	//=                   lwarx/stwcx. reservation                        =
 	//=====================================================================
 	
@@ -1928,6 +1909,28 @@ protected:
 	uint64_t bus_cycle;      //!< Number of front side bus cycles
 	uint64_t dec_bus_cycle;  //!< Last bus cycle DEC register has been decremented
 
+private:
+	//=====================================================================
+	//=                    CPU run-time parameters                        =
+	//=====================================================================
+	
+	Parameter<uint64_t> param_cpu_cycle_time;             //!< linked to member cpu_cycle_time
+	Parameter<uint64_t> param_voltage;                    //!< linked to member voltage
+	//Parameter<uint64_t> param_bus_cycle_time;             //!< linked to member bus_cycle_time
+	Parameter<uint64_t> param_max_inst;                   //!< linked to member max_inst
+
+	//=====================================================================
+	//=                    CPU run-time statistics                        =
+	//=====================================================================
+
+	Statistic<uint64_t> stat_instruction_counter;
+	Statistic<uint64_t> stat_cpu_cycle;                   //!< Number of cpu cycles
+	Statistic<uint64_t> stat_bus_cycle;                   //!< Number of front side bus cycles
+#if 0
+	Formula<double> formula_insn_per_bus_cycle;
+#endif
+
+protected:
 	//=====================================================================
 	//=                       Performance model                           =
 	//=====================================================================

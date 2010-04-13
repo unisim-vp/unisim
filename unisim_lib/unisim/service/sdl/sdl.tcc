@@ -101,6 +101,7 @@ SDL<ADDRESS>::SDL(const char *name, Object *parent)
 	, event_handling_thread(0)
 	, sdl_mutex(0)
 	, logger_mutex(0)
+	, refresh_timer(0)
 	, host_key_down(false)
 	, grab_input(false)
 	, full_screen(false)
@@ -108,6 +109,8 @@ SDL<ADDRESS>::SDL(const char *name, Object *parent)
 	, host_cmd(false)
 	, mode_set(false)
 	, alive(false)
+	, video_subsystem_initialized_cond(false)
+	, video_subsystem_initialized_mutex(false)
 	, refresh(false)
 	, force_refresh(false)
 	, bmp_out_file_number(0)
@@ -418,12 +421,13 @@ bool SDL<ADDRESS>::Setup()
 		return false;
 	}
 
+	cerr << "keymap_filename=" << keymap_filename << endl;
 	// Keyboard keymap
 	unisim::util::xml::Node *xml_node = 0;
 	if(!keymap_filename.empty())
 	{
 		unisim::util::xml::Parser *parser = new unisim::util::xml::Parser();
-		xml_node = parser->Parse(keymap_filename);
+		xml_node = parser->Parse(GetSimulator()->SearchSharedDataFile(keymap_filename.c_str()));
 		delete parser;
 	}
 

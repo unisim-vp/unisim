@@ -45,7 +45,7 @@ namespace service {
 
 class XMLHelper {
 public:
-	XMLHelper();
+	XMLHelper(Simulator *simulator);
 	~XMLHelper();
 	
 	bool XmlfyVariables(const char *filename, VariableBase::Type type = VariableBase::VAR_VOID);
@@ -64,7 +64,7 @@ private:
 	int XmlfyVariable(xmlTextWriterPtr writer, 
 			const VariableBase *var);
 	
-	ServiceManager *manager;
+	Simulator *simulator;
 	
 	bool ProcessXmlVariableNode(xmlTextReaderPtr reader,
 			VariableBase::Type type = VariableBase::VAR_VOID);

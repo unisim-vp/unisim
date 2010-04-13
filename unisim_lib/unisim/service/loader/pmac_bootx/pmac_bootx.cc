@@ -891,7 +891,7 @@ bool PMACBootX::Setup()
 		logger << DebugInfo << "Using ramdisk from image \"" << ramdisk_filename << "\"" << EndDebugInfo;
 	}
 
-	if(!boot_infos.Load(device_tree_filename, kernel_parms, ramdisk_filename, screen_width, screen_height))
+	if(!boot_infos.Load(GetSimulator()->SearchSharedDataFile(device_tree_filename.c_str()).c_str(), kernel_parms, GetSimulator()->SearchSharedDataFile(ramdisk_filename.c_str()).c_str(), screen_width, screen_height))
 	{
 		logger << DebugError << "Error while bootloading kernel, initial ramdisk and device tree" << EndDebugError;
 		return false;

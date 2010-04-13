@@ -56,6 +56,7 @@ PCIDev<ADDRESS_TYPE, MAX_DATA_SIZE>::PCIDev(const sc_module_name &name, Object *
 	output_port("PCI_output_port"),
 	irq_port("irq_port"),
 	intr_device_request(),
+	pciDev(0),
 	logger(*this),
 	verbose(false),
 	param_verbose("verbose", this, verbose)

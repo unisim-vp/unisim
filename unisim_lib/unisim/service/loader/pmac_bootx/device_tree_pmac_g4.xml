@@ -46,8 +46,8 @@
 			<string_property name="external-control" value=""/>
 			<string_property name="performance-monitor" value=""/>
 			<hex_property name="clock-frequency" value="11ec2a50"/>      <!-- 300,690,000 Hz -->
-			<hex_property name="bus-frequency" value="03fb97a0"/>        <!--  66,820,000 Hz -->
-			<hex_property name="timebase-frequency" value="00fee5e8"/>   <!--  16,705,000 Hz -->
+			<hex_property name="bus-frequency" value="47b0a94"/>        <!-- 03fb97a0  66,820,000 Hz -->
+			<hex_property name="timebase-frequency" value="011ec2a5"/>   <!-- 00fee5e8 16,705,000 Hz -->
 			<string_property name="tlb-split" value=""/>
 			<hex_property name="d-tlb-sets" value="00000040"/>
 			<hex_property name="d-tlb-size" value="00000080"/>
@@ -156,12 +156,14 @@
 			<string_property name="device_type" value="display"/>
 			<hex_property name="vendor-id" value="00001002"/>
 			<hex_property name="device-id" value="00004758"/>
-			<hex_property name="width" value="00000320"/>
-			<hex_property name="height" value="00000258"/>
-			<hex_property name="depth" value="00000010"/>  <!-- report 16 like MacOS but actually it is 15 -->
-			<hex_property name="linebytes" value="00000640"/>
+			<hex_property name="width" value="00000280"/>
+			<hex_property name="height" value="000001e0"/>
+			<hex_property name="depth" value="0000000f"/>  <!-- report 16 like MacOS but actually it is 15 -->
+			<hex_property name="linebytes" value="00000500"/>
 			<!-- the unisim-display is inside the pci memory space -->
 			<hex_property name="address" value="a0000000"/>
+<!--			<string_property name="linux,boot-display" value=""/>
+			<string_property name="linux,opened" value=""/> -->
 		</devnode>
 
 		<devnode>
@@ -320,6 +322,7 @@
 	
 	<devnode>
 		<string_property name="name" value="chosen"/>
+		<!-- <string_property name="linux,bootx-noscreen" value=""/> -->
 	</devnode>
 	   		
 </devnode>

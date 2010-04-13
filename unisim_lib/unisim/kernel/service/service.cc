@@ -32,7 +32,11 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  *          Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
- 
+
+#if defined(HAVE_CONFIG_H)
+#include "config.h"
+#endif
+
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger_server.hh"
 #include <fstream>
@@ -101,8 +105,11 @@ VariableBase::VariableBase(const char *_name, Object *_owner, Type _type, const 
 	type(_type),
 	fmt(FMT_DEFAULT)
 {
-	_owner->Add(*this);
-	ServiceManager::Register(this);
+	if(_owner)
+	{
+		_owner->Add(*this);
+	}
+	Simulator::simulator->Register(this);
 }
 
 VariableBase::VariableBase(const char *_name, VariableBase *_container, Type _type, const char *_description) :
@@ -115,7 +122,7 @@ VariableBase::VariableBase(const char *_name, VariableBase *_container, Type _ty
 	type(_type),
 	fmt(FMT_DEFAULT)
 {
-	ServiceManager::Register(this);
+	Simulator::simulator->Register(this);
 }
 
 VariableBase::VariableBase() :
@@ -125,8 +132,9 @@ VariableBase::VariableBase() :
 
 VariableBase::~VariableBase()
 {
+	cerr.flush();
 	if(owner) owner->Remove(*this);
-	ServiceManager::Unregister(this);
+	Simulator::simulator->Unregister(this);
 }
 
 Object *VariableBase::GetOwner() const
@@ -213,6 +221,12 @@ void VariableBase::SetFormat(Format _fmt)
 	fmt = _fmt;
 }
 
+bool VariableBase::IsVoid() const
+{
+	return this == Simulator::simulator->void_variable;
+}
+
+
 VariableBase::operator bool () const { return false; }
 VariableBase::operator char () const { return (long long) *this; }
 VariableBase::operator short () const { return (long long) *this; }
@@ -248,10 +262,16 @@ VariableBase& VariableBase::operator [] (unsigned int index)
 	if(index >= 0)
 	{
 		cerr << "Subscript out of range" << endl;
-		return ServiceManager::void_variable;
+		return *Simulator::simulator->void_variable;
 	}
 	return *this;
 }
+
+unsigned int VariableBase::GetLength() const
+{
+	return 0;
+}
+
 
 //=============================================================================
 //=                            Variable<TYPE>                                =
@@ -260,7 +280,9 @@ VariableBase& VariableBase::operator [] (unsigned int index)
 template <class TYPE>
 Variable<TYPE>::Variable(const char *_name, Object *_owner, TYPE& _storage, Type type, const char *_description) :
 	VariableBase(_name, _owner, "string", type, _description), storage(&_storage)
-{}
+{
+	Simulator::simulator->Initialize(this);
+}
 
 template <class TYPE> Variable<TYPE>::operator bool () const { return (*storage) ? true : false; }
 template <class TYPE> Variable<TYPE>::operator long long () const { return (long long) *storage; }
@@ -895,7 +917,9 @@ static const char *GetUnsignedDataTypeName(const T *p = 0)
 template <>
 Variable<bool>::Variable(const char *_name, Object *_owner, bool& _storage, Type type, const char *_description) :
 	VariableBase(_name, _owner, type,  _description), storage(&_storage)
-{}
+{
+	Simulator::simulator->Initialize(this);
+}
 
 template <>
 const char *Variable<bool>::GetDataTypeName() const
@@ -906,7 +930,9 @@ const char *Variable<bool>::GetDataTypeName() const
 template <>
 Variable<char>::Variable(const char *_name, Object *_owner, char& _storage, Type type, const char *_description) :
 	VariableBase(_name, _owner, type, _description), storage(&_storage)
-{}
+{
+	Simulator::simulator->Initialize(this);
+}
 
 template <>
 const char *Variable<char>::GetDataTypeName() const
@@ -917,7 +943,9 @@ const char *Variable<char>::GetDataTypeName() const
 template <>
 Variable<short>::Variable(const char *_name, Object *_owner, short& _storage, Type type, const char *_description) :
 	VariableBase(_name, _owner, type, _description), storage(&_storage)
-{}
+{
+	Simulator::simulator->Initialize(this);
+}
 
 template <>
 const char *Variable<short>::GetDataTypeName() const
@@ -928,7 +956,9 @@ const char *Variable<short>::GetDataTypeName() const
 template <>
 Variable<int>::Variable(const char *_name, Object *_owner, int& _storage, Type type, const char *_description) :
 	VariableBase(_name, _owner, type, _description), storage(&_storage)
-{}
+{
+	Simulator::simulator->Initialize(this);
+}
 
 template <>
 const char *Variable<int>::GetDataTypeName() const
@@ -939,7 +969,9 @@ const char *Variable<int>::GetDataTypeName() const
 template <>
 Variable<long>::Variable(const char *_name, Object *_owner, long& _storage, Type type, const char *_description) :
 	VariableBase(_name, _owner, type, _description), storage(&_storage)
-{}
+{
+	Simulator::simulator->Initialize(this);
+}
 
 template <>
 const char *Variable<long>::GetDataTypeName() const
@@ -950,7 +982,9 @@ const char *Variable<long>::GetDataTypeName() const
 template <>
 Variable<long long>::Variable(const char *_name, Object *_owner, long long& _storage, Type type, const char *_description) :
 	VariableBase(_name, _owner, type, _description), storage(&_storage)
-{}
+{
+	Simulator::simulator->Initialize(this);
+}
 
 template <>
 const char *Variable<long long>::GetDataTypeName() const
@@ -962,7 +996,9 @@ const char *Variable<long long>::GetDataTypeName() const
 template <>
 Variable<unsigned char>::Variable(const char *_name, Object *_owner, unsigned char& _storage, Type type, const char *_description) :
 	VariableBase(_name, _owner, type, _description), storage(&_storage)
-{}
+{
+	Simulator::simulator->Initialize(this);
+}
 
 template <>
 const char *Variable<unsigned char>::GetDataTypeName() const
@@ -973,7 +1009,9 @@ const char *Variable<unsigned char>::GetDataTypeName() const
 template <>
 Variable<unsigned short>::Variable(const char *_name, Object *_owner, unsigned short& _storage, Type type, const char *_description) :
 	VariableBase(_name, _owner, type, _description), storage(&_storage)
-{}
+{
+	Simulator::simulator->Initialize(this);
+}
 
 template <>
 const char *Variable<unsigned short>::GetDataTypeName() const
@@ -984,7 +1022,9 @@ const char *Variable<unsigned short>::GetDataTypeName() const
 template <>
 Variable<unsigned int>::Variable(const char *_name, Object *_owner, unsigned int& _storage, Type type, const char *_description) :
 	VariableBase(_name, _owner, type, _description), storage(&_storage)
-{}
+{
+	Simulator::simulator->Initialize(this);
+}
 
 template <>
 const char *Variable<unsigned int>::GetDataTypeName() const
@@ -995,7 +1035,9 @@ const char *Variable<unsigned int>::GetDataTypeName() const
 template <>
 Variable<unsigned long>::Variable(const char *_name, Object *_owner, unsigned long& _storage, Type type, const char *_description) :
 	VariableBase(_name, _owner, type, _description), storage(&_storage)
-{}
+{
+	Simulator::simulator->Initialize(this);
+}
 
 template <>
 const char *Variable<unsigned long>::GetDataTypeName() const
@@ -1006,7 +1048,9 @@ const char *Variable<unsigned long>::GetDataTypeName() const
 template <>
 Variable<unsigned long long>::Variable(const char *_name, Object *_owner, unsigned long long& _storage, Type type, const char *_description) :
 	VariableBase(_name, _owner, type, _description), storage(&_storage)
-{}
+{
+	Simulator::simulator->Initialize(this);
+}
 
 template <>
 const char *Variable<unsigned long long>::GetDataTypeName() const
@@ -1017,7 +1061,9 @@ const char *Variable<unsigned long long>::GetDataTypeName() const
 template <> 
 Variable<double>::Variable(const char *_name, Object *_owner, double& _storage, Type type, const char *_description) :
 	VariableBase(_name, _owner, type, _description), storage(&_storage)
-{}
+{
+	Simulator::simulator->Initialize(this);
+}
 
 template <>
 const char *Variable<double>::GetDataTypeName() const
@@ -1036,7 +1082,9 @@ Variable<double>::operator string () const
 template <> 
 Variable<float>::Variable(const char *_name, Object *_owner, float& _storage, Type type, const char *_description) :
 	VariableBase(_name, _owner, type, _description), storage(&_storage)
-{}
+{
+	Simulator::simulator->Initialize(this);
+}
 
 template <>
 const char *Variable<float>::GetDataTypeName() const
@@ -1055,7 +1103,9 @@ Variable<float>::operator string () const
 template <> 
 Variable<string>::Variable(const char *_name, Object *_owner, string& _storage, Type type, const char *_description) :
 	VariableBase(_name, _owner, type, _description), storage(&_storage)
-{}
+{
+	Simulator::simulator->Initialize(this);
+}
 
 template <>
 const char *Variable<string>::GetDataTypeName() const
@@ -1257,13 +1307,13 @@ Object::Object(const char *_name, Object *_parent) :
 	leaf_objects()
 {
 	if(_parent) _parent->Add(*this);
-	ServiceManager::Register(this);
+	Simulator::simulator->Register(this);
 }
 
 Object::~Object()
 {
 	if(parent) parent->Remove(*this);
-	ServiceManager::Unregister(this);
+	Simulator::simulator->Unregister(this);
 }
 
 const char *Object::GetName() const
@@ -1408,7 +1458,7 @@ void Object::OnDisconnect()
 VariableBase& Object::operator [] (const char *name)
 {
 	string fullname = GetName() + string(".") + string(name);
-	VariableBase *variable = ServiceManager::GetVariable(fullname.c_str());
+	VariableBase *variable = Simulator::simulator->GetVariable(fullname.c_str());
 	return *variable;
 }
 
@@ -1422,6 +1472,11 @@ list<ServiceImportBase *>& Object::GetSetupDependencies()
 	return setup_dependencies;
 }
 
+Simulator *Object::GetSimulator() const
+{
+	return Simulator::simulator;
+}
+
 //=============================================================================
 //=                           ServiceImportBase                               =
 //=============================================================================
@@ -1431,13 +1486,13 @@ ServiceImportBase::ServiceImportBase(const char *_name, Object *_owner) :
 	owner(_owner)
 {
 	_owner->Add(*this);
-	ServiceManager::Register(this);
+	Simulator::simulator->Register(this);
 }
 
 ServiceImportBase::~ServiceImportBase()
 {
 	if(owner) owner->Remove(*this);
-	ServiceManager::Unregister(this);
+	Simulator::simulator->Unregister(this);
 }
 
 const char *ServiceImportBase::GetName() const
@@ -1454,13 +1509,13 @@ ServiceExportBase::ServiceExportBase(const char *_name, Object *_owner) :
 	owner(_owner)
 {
 	_owner->Add(*this);
-	ServiceManager::Register(this);
+	Simulator::simulator->Register(this);
 }
 
 ServiceExportBase::~ServiceExportBase()
 {
 	if(owner) owner->Remove(*this);
-	ServiceManager::Unregister(this);
+	Simulator::simulator->Unregister(this);
 }
 
 const char *ServiceExportBase::GetName() const
@@ -1469,16 +1524,186 @@ const char *ServiceExportBase::GetName() const
 }
 
 //=============================================================================
-//=                             ServiceManager                                =
+//=                                Simulator                                  =
 //=============================================================================
 
-map<const char *, Object *, ServiceManager::ltstr> ServiceManager::objects;
-map<const char *, ServiceImportBase *, ServiceManager::ltstr> ServiceManager::imports;
-map<const char *, ServiceExportBase *, ServiceManager::ltstr> ServiceManager::exports;
-map<const char *, VariableBase *, ServiceManager::ltstr> ServiceManager::variables;
-VariableBase ServiceManager::void_variable;
+Simulator *Simulator::simulator = 0;
 
-void ServiceManager::Register(Object *object)
+Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator *simulator))
+	: argc(0)
+	, argv(0)
+	, list_parms(false)
+	, get_config(false)
+	, param_get_config(0)
+	, cmd_args(0)
+	, param_cmd_args(0)
+	, void_variable(0)
+{
+	if(LoadBuiltInConfig)
+	{
+		LoadBuiltInConfig(this);
+		cerr << "Built-in parameters set loaded" << endl;
+	}
+	
+	simulator = this;
+	void_variable = new VariableBase("void", (Object *) 0, VariableBase::VAR_VOID, "unknown variable");
+	param_get_config = new Parameter<bool>("get-config", 0, get_config, "Enable/Disable saving configuration at setup");
+	
+	// compute bin dirname
+	char *end = argv[0] + strlen(argv[0]) - 1;
+	while(end != (argv[0] - 1) && 
+#ifdef WIN32
+	      (*end != '\\') &&
+#endif
+	      (*end != '/'))
+	{
+		end--;
+	}
+
+	char *p = argv[0];
+	while(p != end)
+	{
+		shared_data_dir += *p;
+		p++;
+	}
+	
+	// append path of shared data relative to bin directory
+	shared_data_dir += '/';
+	shared_data_dir += BIN_TO_SHARED_DATA_PATH;
+	
+	// Load default configuration
+	if(LoadXmlParameters("default_config.xml"))
+	{
+		cerr << "Default parameters set loaded from file \"default_config.xml\"" << endl;
+	}
+	else
+	{
+		cerr << "WARNING! Loading default parameters set from file \"default_config.xml\" failed" << endl;
+	}
+	
+	// parse command line arguments
+	int state = 0;
+	char **arg;
+	for(arg = argv + 1; *arg != 0 && state != -1;)
+	{
+		switch(state)
+		{
+			case 0:
+				if(strcmp(*arg, "-s") == 0 || strcmp(*arg, "--set") == 0)
+				{
+					arg++;
+					state = 1;
+				}
+				else if(strcmp(*arg, "-c") == 0 || strcmp(*arg, "--config") == 0)
+				{
+					arg++;
+					state = 2;
+				}
+				else if(strcmp(*arg, "-g") == 0 || strcmp(*arg, "--get-config") == 0)
+				{
+					arg++;
+					state = 3;
+				}
+				else if(strcmp(*arg, "-l") == 0 || strcmp(*arg, "--list") == 0)
+				{
+					arg++;
+					state = 4;
+				}
+				else
+				{
+					state = -1;
+				}
+				break;
+			case 1:
+				{
+					string variable_name;
+					
+					char *p;
+					for(p = *arg; *p != 0 && *p != '='; p++)
+					{
+						variable_name += *p;
+					}
+					if(*p == '=')
+					{
+						char *variable_value = ++p;
+						
+						SetVariable(variable_name.c_str(), variable_value);
+						arg++;
+					}
+					else
+					{
+						cerr << "Ignoring " << *arg << endl;
+					}
+				}
+				state = 0;
+				break;
+			case 2:
+				if(LoadXmlParameters(*arg))
+				{
+					cerr << "Parameters set using file \"" << (*arg) << "\"" << endl;
+				}
+				else
+				{
+					cerr << "WARNING! Loading parameters set from file \"" << (*arg) << "\" failed" << endl;
+				}
+				arg++;
+				state = 0;
+				break;
+			case 3:
+				get_config = true;
+				get_config_filename = *arg;
+				arg++;
+				state = 0;
+				break;
+			case 4:
+				list_parms = true;
+				arg++;
+				state = 0;
+				break;
+		}
+	}
+	
+	// create on the fly parameters cmd-args[*] that are the remaining parameters
+	int cmd_args_dim = argc - (arg - argv);
+	if(cmd_args_dim > 0)
+	{
+		cmd_args = new string[cmd_args_dim];
+		param_cmd_args = new ParameterArray<string>("cmd-args", 0, cmd_args, cmd_args_dim);
+		int i;
+		for(i = 0; *arg != 0; arg++, i++)
+		{
+			(*param_cmd_args)[i] = *arg;
+		}
+	}
+	else
+	{
+		param_cmd_args = new ParameterArray<string>("cmd-args", 0, 0, 0);
+	}
+}
+
+Simulator::~Simulator()
+{
+	if(void_variable)
+	{
+		delete void_variable;
+	}
+	
+	if(param_get_config)
+	{
+		delete param_get_config;
+	}
+	if(param_cmd_args)
+	{
+		delete param_cmd_args;
+	}
+	
+	if(cmd_args)
+	{
+		delete[] cmd_args;
+	}
+}
+
+void Simulator::Register(Object *object)
 {
 	if(objects.find(object->GetName()) != objects.end())
 	{
@@ -1490,7 +1715,7 @@ void ServiceManager::Register(Object *object)
 	objects[object->GetName()] = object;
 }
 
-void ServiceManager::Register(VariableBase *variable)
+void Simulator::Register(VariableBase *variable)
 {
 	if(variables.find(variable->GetName()) != variables.end())
 	{
@@ -1501,7 +1726,24 @@ void ServiceManager::Register(VariableBase *variable)
 	variables[variable->GetName()] = variable;
 }
 
-void ServiceManager::Register(ServiceImportBase *srv_import)
+void Simulator::Initialize(VariableBase *variable)
+{
+	// initialize variable from command line
+	std::map<string, string>::iterator set_var_iter = set_vars.find(variable->GetName());
+	
+	if(set_var_iter != set_vars.end())
+	{
+		*variable = (*set_var_iter).second.c_str();
+		cerr << variable->GetName() << " <- " << ((string) *variable) << endl;
+		set_vars.erase(set_var_iter);
+	}
+	else
+	{
+		cerr << variable->GetName() << " <- ??? " << endl;
+	}
+}
+
+void Simulator::Register(ServiceImportBase *srv_import)
 {
 	if(imports.find(srv_import->GetName()) != imports.end())
 	{
@@ -1512,7 +1754,7 @@ void ServiceManager::Register(ServiceImportBase *srv_import)
 	imports[srv_import->GetName()] = srv_import;
 }
 
-void ServiceManager::Register(ServiceExportBase *srv_export)
+void Simulator::Register(ServiceExportBase *srv_export)
 {
 	if(exports.find(srv_export->GetName()) != exports.end())
 	{
@@ -1523,7 +1765,7 @@ void ServiceManager::Register(ServiceExportBase *srv_export)
 	exports[srv_export->GetName()] = srv_export;
 }
 
-void ServiceManager::Unregister(Object *object)
+void Simulator::Unregister(Object *object)
 {
 	map<const char *, Object *, ltstr>::iterator object_iter;
 	object_iter = objects.find(object->GetName());
@@ -1533,28 +1775,28 @@ void ServiceManager::Unregister(Object *object)
 	}
 }
 
-void ServiceManager::Unregister(VariableBase *variable)
+void Simulator::Unregister(VariableBase *variable)
 {
 	map<const char *, VariableBase *, ltstr>::iterator variable_iter;
 	variable_iter = variables.find(variable->GetName());
 	if(variable_iter != variables.end()) variables.erase(variable_iter);
 }
 
-void ServiceManager::Unregister(ServiceImportBase *srv_import)
+void Simulator::Unregister(ServiceImportBase *srv_import)
 {
 	map<const char *, ServiceImportBase *, ltstr>::iterator import_iter;
 	import_iter = imports.find(srv_import->GetName());
 	if(import_iter != imports.end()) imports.erase(import_iter);
 }
 
-void ServiceManager::Unregister(ServiceExportBase *srv_export)
+void Simulator::Unregister(ServiceExportBase *srv_export)
 {
 	map<const char *, ServiceExportBase *, ltstr>::iterator export_iter;
 	export_iter = exports.find(srv_export->GetName());
 	if(export_iter != exports.end()) exports.erase(export_iter);
 }
 
-void ServiceManager::Dump(ostream& os)
+void Simulator::Dump(ostream& os)
 {
 	os << "OBJECTS:" << endl;
 
@@ -1612,7 +1854,7 @@ void ServiceManager::Dump(ostream& os)
 	}
 }
 
-void ServiceManager::DumpVariables(ostream &os, VariableBase::Type filter_type) {
+void Simulator::DumpVariables(ostream &os, VariableBase::Type filter_type) {
 /*	switch(filter_type)
 	{
 		case VariableBase::VAR_VOID:
@@ -1688,92 +1930,92 @@ void ServiceManager::DumpVariables(ostream &os, VariableBase::Type filter_type) 
 	}
 }
 
-void ServiceManager::DumpStatistics(ostream &os)
+void Simulator::DumpStatistics(ostream &os)
 {
 	DumpVariables(os, VariableBase::VAR_STATISTIC);
 }
 
-void ServiceManager::DumpParameters(ostream &os)
+void Simulator::DumpParameters(ostream &os)
 {
 	DumpVariables(os, VariableBase::VAR_PARAMETER);
 }
 
-void ServiceManager::DumpRegisters(ostream &os)
+void Simulator::DumpRegisters(ostream &os)
 {
 	DumpVariables(os, VariableBase::VAR_REGISTER);
 }
 
-void ServiceManager::DumpFormulas(ostream &os)
+void Simulator::DumpFormulas(ostream &os)
 {
 	DumpVariables(os, VariableBase::VAR_FORMULA);
 }
 
-bool ServiceManager::XmlfyVariables(const char *filename)
+bool Simulator::XmlfyVariables(const char *filename)
 {
-	XMLHelper xml_helper;
+	XMLHelper xml_helper(this);
 	
 	return xml_helper.XmlfyVariables(filename);
 }
 
-bool ServiceManager::LoadXmlVariables(const char *filename)
+bool Simulator::LoadXmlVariables(const char *filename)
 {
-	XMLHelper xml_helper;
+	XMLHelper xml_helper(this);
 	
 	return xml_helper.LoadXmlVariables(filename);
 }
 
-bool ServiceManager::XmlfyParameters(const char *filename)
+bool Simulator::XmlfyParameters(const char *filename)
 {
-	XMLHelper xml_helper;
+	XMLHelper xml_helper(this);
 	
 	return xml_helper.XmlfyVariables(filename, VariableBase::VAR_PARAMETER);
 }
 
-bool ServiceManager::LoadXmlParameters(const char *filename)
+bool Simulator::LoadXmlParameters(const char *filename)
 {
-	XMLHelper xml_helper;
+	XMLHelper xml_helper(this);
 	
 	return xml_helper.LoadXmlVariables(filename, VariableBase::VAR_PARAMETER);
 }
 
-bool ServiceManager::XmlfyStatistics(const char *filename)
+bool Simulator::XmlfyStatistics(const char *filename)
 {
-	XMLHelper xml_helper;
+	XMLHelper xml_helper(this);
 	
 	return xml_helper.XmlfyVariables(filename, VariableBase::VAR_STATISTIC);
 }
 
-bool ServiceManager::LoadXmlStatistics(const char *filename)
+bool Simulator::LoadXmlStatistics(const char *filename)
 {
-	XMLHelper xml_helper;
+	XMLHelper xml_helper(this);
 	
 	return xml_helper.LoadXmlVariables(filename, VariableBase::VAR_STATISTIC);
 }
 
-bool ServiceManager::XmlfyRegisters(const char *filename)
+bool Simulator::XmlfyRegisters(const char *filename)
 {
-	XMLHelper xml_helper;
+	XMLHelper xml_helper(this);
 	
 	return xml_helper.XmlfyVariables(filename, VariableBase::VAR_REGISTER);
 }
 
-bool ServiceManager::LoadXmlRegisters(const char *filename)
+bool Simulator::LoadXmlRegisters(const char *filename)
 {
-	XMLHelper xml_helper;
+	XMLHelper xml_helper(this);
 	
 	return xml_helper.LoadXmlVariables(filename, VariableBase::VAR_REGISTER);
 }
 
-bool ServiceManager::XmlfyFormulas(const char *filename)
+bool Simulator::XmlfyFormulas(const char *filename)
 {
-	XMLHelper xml_helper;
+	XMLHelper xml_helper(this);
 	
 	return xml_helper.XmlfyVariables(filename, VariableBase::VAR_FORMULA);
 }
 
-bool ServiceManager::LoadXmlFormulas(const char *filename)
+bool Simulator::LoadXmlFormulas(const char *filename)
 {
-	XMLHelper xml_helper;
+	XMLHelper xml_helper(this);
 	
 	return xml_helper.LoadXmlVariables(filename, VariableBase::VAR_FORMULA);
 }
@@ -1801,8 +2043,34 @@ protected:
 	bool& has_cycle;
 };
 
-bool ServiceManager::Setup()
+bool Simulator::Setup()
 {
+	// display a warning if some variable values are unused
+	std::map<string, string>::iterator set_var_iter;
+	
+	for(set_var_iter = set_vars.begin(); set_var_iter != set_vars.end(); set_var_iter++)
+	{
+		cerr << "WARNING! value \"" << (*set_var_iter).second << "\" for variable \"" << (*set_var_iter).first << "\" is unused." << endl;
+	}
+	set_vars.clear();
+	
+	if(list_parms)
+	{
+		cerr << "Listing parameters..." << endl;
+		DumpVariables(cerr, unisim::kernel::service::VariableBase::VAR_PARAMETER);
+		cerr << "Aborting simulation" << endl;
+		return false;
+	}
+
+	if(!get_config_filename.empty() > 0)
+	{
+		XmlfyParameters(get_config_filename.c_str());
+		cerr << "Parameters saved on file \"" << get_config_filename << "\"" << endl;
+		cerr << "Aborting simulation" << endl;
+		return false;
+	}
+
+	// Build a dependency graph of methods "Setup"
 	map<const char *, Object *, ltstr>::iterator object_iter;
 	map<Object *, unsigned int> id_lookup;
 	DependencyGraph dependency_graph(objects.size());
@@ -1837,29 +2105,32 @@ bool ServiceManager::Setup()
 // 	ofstream of("deps.dot");
 // 	boost::write_graphviz(of, dependency_graph);
 
+	// Detect cycles in dependency graph
 	bool has_cycle = false;
 	CycleDetector vis(has_cycle);
 	boost::depth_first_search(dependency_graph, visitor(vis));
 
 	if(has_cycle)
 	{
-		cerr << "ServiceManager: ERROR! cyclic setup dependency graph" << endl;
+		cerr << "Simulator: ERROR! cyclic setup dependency graph" << endl;
 		return false;
 	}
 
+	// Compute a topological order of methods "Setup"
 	typedef list<Vertex> SetupOrder;
 	SetupOrder setup_order;
 	topological_sort(dependency_graph, std::front_inserter(setup_order));
 
+	// Call methods "Setup" in a topological order
 	unisim::kernel::logger::LoggerServer::GetInstanceWithoutCountingReference()->Setup();
 	
 	list<Vertex>::iterator vertex_iter;
 	for(vertex_iter = setup_order.begin(); vertex_iter != setup_order.end(); vertex_iter++)
 	{
-//		cerr << "ServiceManager:" <<  dependency_graph[*vertex_iter].obj->GetName() << "::Setup()" << endl;
+//		cerr << "Simulator:" <<  dependency_graph[*vertex_iter].obj->GetName() << "::Setup()" << endl;
 		if(!dependency_graph[*vertex_iter].obj->Setup())
 		{
-			cerr << "ServiceManager: " << dependency_graph[*vertex_iter].obj->GetName() << " setup failed" << endl;
+			cerr << "Simulator: " << dependency_graph[*vertex_iter].obj->GetName() << " setup failed" << endl;
 			return false;
 		}
 	}
@@ -1867,7 +2138,7 @@ bool ServiceManager::Setup()
 	return true;
 }
 
-VariableBase *ServiceManager::GetVariable(const char *name, VariableBase::Type type)
+VariableBase *Simulator::GetVariable(const char *name, VariableBase::Type type)
 {
 	map<const char *, VariableBase *, ltstr>::iterator variable_iter;
 	
@@ -1875,36 +2146,36 @@ VariableBase *ServiceManager::GetVariable(const char *name, VariableBase::Type t
 	
 	if(variable_iter != variables.end() && (type == VariableBase::VAR_VOID || (*variable_iter).second->GetType() == type)) return (*variable_iter).second;
 	
-	// cerr << "ConfigManager: unknown variable \"" << name << "\"" << endl;
-	return &void_variable;
+	 cerr << "ConfigManager: unknown variable \"" << name << "\"" << endl;
+	return void_variable;
 }
 
-VariableBase *ServiceManager::GetArray(const char *name)
+VariableBase *Simulator::GetArray(const char *name)
 {
 	return GetVariable(name, VariableBase::VAR_ARRAY);
 }
 
-VariableBase *ServiceManager::GetParameter(const char *name)
+VariableBase *Simulator::GetParameter(const char *name)
 {
 	return GetVariable(name, VariableBase::VAR_PARAMETER);
 }
 
-VariableBase *ServiceManager::GetRegister(const char *name)
+VariableBase *Simulator::GetRegister(const char *name)
 {
 	return GetVariable(name, VariableBase::VAR_REGISTER);
 }
 
-VariableBase *ServiceManager::GetStatistic(const char *name)
+VariableBase *Simulator::GetStatistic(const char *name)
 {
 	return GetVariable(name, VariableBase::VAR_STATISTIC);
 }
 
-VariableBase *ServiceManager::GetFormula(const char *name)
+VariableBase *Simulator::GetFormula(const char *name)
 {
 	return GetVariable(name, VariableBase::VAR_FORMULA);
 }
 
-void ServiceManager::GetVariables(list<VariableBase *>& lst, VariableBase::Type type)
+void Simulator::GetVariables(list<VariableBase *>& lst, VariableBase::Type type)
 {
 	map<const char *, VariableBase *, ltstr>::iterator variable_iter;
 
@@ -1919,32 +2190,32 @@ void ServiceManager::GetVariables(list<VariableBase *>& lst, VariableBase::Type 
 	}
 }
 
-void ServiceManager::GetArrays(list<VariableBase *>& lst)
+void Simulator::GetArrays(list<VariableBase *>& lst)
 {
 	GetVariables(lst, VariableBase::VAR_ARRAY);
 }
 
-void ServiceManager::GetParameters(list<VariableBase *>& lst)
+void Simulator::GetParameters(list<VariableBase *>& lst)
 {
 	GetVariables(lst, VariableBase::VAR_PARAMETER);
 }
 
-void ServiceManager::GetRegisters(list<VariableBase *>& lst)
+void Simulator::GetRegisters(list<VariableBase *>& lst)
 {
 	GetVariables(lst, VariableBase::VAR_REGISTER);
 }
 
-void ServiceManager::GetStatistics(list<VariableBase *>& lst)
+void Simulator::GetStatistics(list<VariableBase *>& lst)
 {
 	GetVariables(lst, VariableBase::VAR_STATISTIC);
 }
 
-void ServiceManager::GetFormulas(list<VariableBase *>& lst)
+void Simulator::GetFormulas(list<VariableBase *>& lst)
 {
 	GetVariables(lst, VariableBase::VAR_FORMULA);
 }
 
-void ServiceManager::GetRootObjects(list<Object *>& lst)
+void Simulator::GetRootObjects(list<Object *>& lst)
 {
 	map<const char *, Object *, ltstr>::iterator object_iter;
 
@@ -1961,6 +2232,106 @@ void ServiceManager::GetRootObjects(list<Object *>& lst)
 	}
 }
 
+string Simulator::SearchSharedDataFile(const char *filename) const
+{
+	string s(filename);
+	if(access(s.c_str(), F_OK) == 0)
+	{
+		return s;
+	}
+
+	stringstream sstr;
+	sstr << shared_data_dir << "/" << filename;
+	s = sstr.str();
+	if(access(s.c_str(), F_OK) == 0)
+	{
+		return s;
+	}
+	
+	return string(filename);
+}
+
+void Simulator::SetVariable(const char *variable_name, const char *variable_value)
+{
+	std::map<string, string>::iterator set_vars_it = set_vars.find(string(variable_name));
+	
+	if(set_vars_it != set_vars.end())
+	{
+		set_vars.erase(set_vars_it);
+	}
+	set_vars.insert(std::pair<string, string>(string(variable_name), string(variable_value)));
+}
+
+void Simulator::SetVariable(const char *variable_name, bool variable_value)
+{
+	SetVariable(variable_name, variable_value ? "true" : "false");
+}
+
+void Simulator::SetVariable(const char *variable_name, char variable_value)
+{
+	SetVariable(variable_name, (long long) variable_value);
+}
+
+void Simulator::SetVariable(const char *variable_name, unsigned char variable_value)
+{
+	SetVariable(variable_name, (unsigned long long) variable_value);
+}
+
+void Simulator::SetVariable(const char *variable_name, short variable_value)
+{
+	SetVariable(variable_name, (long long) variable_value);
+}
+
+void Simulator::SetVariable(const char *variable_name, unsigned short variable_value)
+{
+	SetVariable(variable_name, (unsigned long long) variable_value);
+}
+
+void Simulator::SetVariable(const char *variable_name, int variable_value)
+{
+	SetVariable(variable_name, (long long) variable_value);
+}
+
+void Simulator::SetVariable(const char *variable_name, unsigned int variable_value)
+{
+	SetVariable(variable_name, (unsigned long long) variable_value);
+}
+
+void Simulator::SetVariable(const char *variable_name, long variable_value)
+{
+	SetVariable(variable_name, (long long) variable_value);
+}
+
+void Simulator::SetVariable(const char *variable_name, unsigned long variable_value)
+{
+	SetVariable(variable_name, (unsigned long long) variable_value);
+}
+
+void Simulator::SetVariable(const char *variable_name, unsigned long long variable_value)
+{
+	stringstream sstr;
+	sstr << variable_value;
+	SetVariable(variable_name, sstr.str().c_str());
+}
+
+void Simulator::SetVariable(const char *variable_name, long long variable_value)
+{
+	stringstream sstr;
+	sstr << variable_value;
+	SetVariable(variable_name, sstr.str().c_str());
+}
+
+void Simulator::SetVariable(const char *variable_name, float variable_value)
+{
+	SetVariable(variable_name, (double) variable_value);
+}
+
+void Simulator::SetVariable(const char *variable_name, double variable_value)
+{
+	stringstream sstr;
+	sstr << variable_value;
+	SetVariable(variable_name, sstr.str().c_str());
+}
 
 } // end of namespace service
 } // end of namespace kernel
