@@ -248,6 +248,7 @@ private:
 	bool enable_warning;
 	bool enable_version;
 	bool enable_help;
+	string program_binary;
 	string program_name;
 	string authors;
 	string copyright;

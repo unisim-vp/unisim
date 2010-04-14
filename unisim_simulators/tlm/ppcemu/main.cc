@@ -231,13 +231,6 @@ Simulator::Simulator(int argc, char **argv)
 	, param_estimate_power("estimate-power", 0, estimate_power, "Enable/Disable power estimators instantiation")
 	, param_message_spy("message-spy", 0, message_spy, "Enable/Disable message spies instantiation")
 {
-	// meta information
-	*GetVariable("copyright") = "Copyright (C) 2007-2010, Commissariat a l'Energie Atomique (CEA)";
-	*GetVariable("license") = "BSD (see file COPYING)";
-	*GetVariable("authors") = "Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Pérez <daniel.gracia-perez@cea.fr>";
-	*GetVariable("version") = VERSION;
-	*GetVariable("description") = "UNISIM ppcemu, user level PowerPC simulator with support of ELF32 binaries and Linux system call translation";
-	
 	//=========================================================================
 	//===                     Component instantiations                      ===
 	//=========================================================================
@@ -456,6 +449,14 @@ Simulator::~Simulator()
 
 void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 {
+	// meta information
+	simulator->SetVariable("program-name", "UNISIM ppcemu");
+	simulator->SetVariable("copyright", "Copyright (C) 2007-2010, Commissariat a l'Energie Atomique (CEA)");
+	simulator->SetVariable("license", "BSD (see file COPYING)");
+	simulator->SetVariable("authors", "Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Pérez <daniel.gracia-perez@cea.fr>");
+	simulator->SetVariable("version", VERSION);
+	simulator->SetVariable("description", "UNISIM ppcemu, user level PowerPC simulator with support of ELF32 binaries and Linux system call translation");
+
 	const char *filename = "a.out";
 	bool use_gdb_server = false;
 	bool use_inline_debugger = false;

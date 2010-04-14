@@ -312,13 +312,6 @@ Simulator::Simulator(int argc, char **argv)
 	, param_estimate_power("estimate-power", 0, estimate_power, "Enable/Disable power estimators instantiation")
 	, param_message_spy("message-spy", 0, message_spy, "Enable/Disable message spies instantiation")
 {
-	// meta information
-	*GetVariable("copyright") = "Copyright (C) 2007-2010, Commissariat a l'Energie Atomique (CEA)";
-	*GetVariable("license") = "BSD (see file COPYING)";
-	*GetVariable("authors") = "Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Pérez <daniel.gracia-perez@cea.fr>";
-	*GetVariable("version") = VERSION;
-	*GetVariable("description") = "UNISIM ppcemu-system, a Full system \"PowerMac G4 PCI\" like machine simulator (MPC7447A/MPC107) with Linux boot support";
-	
 	// Build the kernel parameters string from the command line arguments
 	string filename;
 	string kernel_params;
@@ -733,6 +726,14 @@ Simulator::~Simulator()
 
 void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 {
+	// meta information
+	simulator->SetVariable("program-name", "UNISIM ppcemu-system");
+	simulator->SetVariable("copyright", "Copyright (C) 2007-2010, Commissariat a l'Energie Atomique (CEA)");
+	simulator->SetVariable("license", "BSD (see file COPYING)");
+	simulator->SetVariable("authors", "Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Pérez <daniel.gracia-perez@cea.fr>");
+	simulator->SetVariable("version", VERSION);
+	simulator->SetVariable("description", "UNISIM ppcemu-system, a Full system \"PowerMac G4 PCI\" like machine simulator (MPC7447A/MPC107) with Linux boot support");
+
 	// Default run-time configuration
 	int gdb_server_tcp_port = 1234;
 	const char *filename = "vmlinux";

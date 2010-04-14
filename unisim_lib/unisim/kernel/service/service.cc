@@ -1600,11 +1600,11 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 		// append path of shared data relative to bin directory
 		shared_data_dir += '/';
 		
-		program_name = end + 1;
+		program_binary = end + 1;
 	}
 	else
 	{
-		program_name = argv[0];
+		program_binary = argv[0];
 	}
 	shared_data_dir += BIN_TO_SHARED_DATA_PATH;
 	
@@ -1778,14 +1778,16 @@ Simulator::~Simulator()
 
 void Simulator::Version()
 {
-	cerr << program_name << " " << version << " " << copyright << endl;
+	cerr << program_name << " " << version << endl;
+	cerr << copyright << endl;
 	cerr << "License: " << license << endl;
+	cerr << "Authors: " << authors << endl;
 }
 
 void Simulator::Help()
 {
 	cerr << description << endl << endl;
-	cerr << "Usage: " << program_name << " [<options>] [...]" << endl << endl;
+	cerr << "Usage: " << program_binary << " [<options>] [...]" << endl << endl;
 	cerr << "Options:" << endl;
 	cerr << " --config <XML file>" << endl;
 	cerr << " -c <XML file>" << endl;
@@ -1803,6 +1805,9 @@ void Simulator::Help()
 	cerr << " --warn" << endl;
 	cerr << " -w" << endl;
 	cerr << "            enable printing of kernel warnings" << endl << endl;
+	cerr << " --version" << endl;
+	cerr << " -v" << endl;
+	cerr << "            displays the program version information" << endl;
 	cerr << " --help" << endl;
 	cerr << " -h" << endl;
 	cerr << "            displays this help" << endl;
