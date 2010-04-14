@@ -110,12 +110,14 @@ add_custom_target ( armemu__share_test
 	)
 
 set ( armemu__sources
-	${CMAKE_SOURCE_DIR}/main.cc 
+	${CMAKE_SOURCE_DIR}/simulator.cc
+	${CMAKE_SOURCE_DIR}/simulator.hh
 	${CMAKE_BINARY_DIR}/config.hh
 	)
 	
 add_executable ( ${ARMEMU_EXEC_TARGET}
 	${armemu__sources}
+	${CMAKE_SOURCE_DIR}/main.cc
 	)
 add_library ( ${ARMEMU_LIB_TARGET}
 	MODULE
