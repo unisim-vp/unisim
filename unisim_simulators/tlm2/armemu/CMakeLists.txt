@@ -1,5 +1,12 @@
 cmake_minimum_required ( VERSION 2.8 )
-project ( unisim_armemu )
+
+set ( SIM_VERSION_MAJOR 0 )
+set ( SIM_VERSION_MINOR 1 )
+set ( SIM_VERSION_PATCH 0 )
+set ( SIM_VERSION_CODENAME "\"Sagrera\"" )
+set ( SIM_AUTHOR "\"Daniel Gracia Perez (daniel.gracia-perez@cea.fr)\"" )
+
+project ( unisim_armemu_v${SIM_VERSION_MAJOR}.${SIM_VERSION_MINOR}.${SIM_VERSION_PATCH} )
 include ( CheckIncludeFileCXX )
 include ( CheckIncludeFile )
 include ( ${CMAKE_SOURCE_DIR}/cmake/FindOSCISystemC.cmake )
@@ -23,17 +30,12 @@ foreach ( C_INCLUDE ${C_INCLUDES} )
 	endif ( NOT HAVE_${C_INCLUDE}_H )
 endforeach ( C_INCLUDE )
 
-set ( SIM_VERSION_MAJOR 0 )
-set ( SIM_VERSION_MINOR 1 )
-set ( SIM_VERSION_PATCH 0 )
-set ( SIM_VERSION_CODENAME "\"Sagrera\"" )
-set ( SIM_AUTHOR "\"Daniel Gracia Perez (daniel.gracia-perez@cea.fr)\"" )
-
-set ( RELATIVE_SHARE_DIRECTORY "share/armemu" )
+set ( ARMEMU_EXEC_NAME armemu_v${SIM_VERSION_MAJOR}.${SIM_VERSION_MINOR}.${SIM_VERSION_PATCH} ) 
+set ( RELATIVE_SHARE_DIRECTORY "share/${ARMEMU_EXEC_NAME}" )
 set ( SHARE_DIRECTORY "${CMAKE_BINARY_DIR}/${RELATIVE_SHARE_DIRECTORY}" )
 set_property ( GLOBAL 
 	PROPERTY
-		UNISIM_KERNEL_BIN_TO_SHARED_DATA_PATH "../share/armemu" )
+		UNISIM_KERNEL_BIN_TO_SHARED_DATA_PATH "../share/${ARMEMU_EXEC_NAME}" )
 
 set ( armemu_subdirs
 	unisim/kernel/service
@@ -100,7 +102,7 @@ add_custom_target ( armemu__share_test
 		"Setting test program source files"
 	)
 
-add_executable ( armemu 
+add_executable ( ${ARMEMU_EXEC_NAME}
 	${CMAKE_SOURCE_DIR}/main.cc 
 	${CMAKE_BINARY_DIR}/config.hh
 	)
@@ -124,7 +126,7 @@ if ( UNISIM__SERVICE__POWER__SUPPORT )
 		unisim__service__power )
 endif ( UNISIM__SERVICE__POWER__SUPPORT )
 
-target_link_libraries ( armemu
+target_link_libraries ( ${ARMEMU_EXEC_NAME}
 	${armemu__libraries}
 	)
 
@@ -146,28 +148,28 @@ if ( UNISIM__SERVICE__POWER__SUPPORT )
 		unisim__service__power
 		)
 endif ( UNISIM__SERVICE__POWER__SUPPORT )
-add_dependencies ( armemu
+add_dependencies ( ${ARMEMU_EXEC_NAME}
 	${armemu__deps}
 	)
 
-set_target_properties ( armemu
+set_target_properties ( ${ARMEMU_EXEC_NAME}
 	PROPERTIES
 		RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin )
 
 add_custom_command (
 	OUTPUT
-		${SHARE_DIRECTORY}/default-config.xml
+		${SHARE_DIRECTORY}/template-default-config.xml
 	COMMAND
 		${CMAKE_COMMAND} -E make_directory ${SHARE_DIRECTORY}
 	COMMAND
-		${CMAKE_BINARY_DIR}/bin/armemu -g ${SHARE_DIRECTORY}/default-config.xml
+		${CMAKE_BINARY_DIR}/bin/${ARMEMU_EXEC_NAME} -g ${SHARE_DIRECTORY}/template-default-config.xml
 	DEPENDS
-		${CMAKE_BINARY_DIR}/bin/armemu
+		${CMAKE_BINARY_DIR}/bin/${ARMEMU_EXEC_NAME}
 	COMMENT
-		"Creating simulator default configuration in \"${RELATIVE_SHARE_DIRECTORY}/default-config.xml\""
+		"Creating simulator default configuration in \"${RELATIVE_SHARE_DIRECTORY}/template-default-config.xml\""
 	)
 
-install ( TARGETS armemu
+install ( TARGETS ${ARMEMU_EXEC_NAME}
 	RUNTIME DESTINATION bin
 	)
 install (
@@ -182,7 +184,7 @@ install (
 	)
 install ( 
 	FILES
-		${SHARE_DIRECTORY}/default-config.xml
+		${SHARE_DIRECTORY}/template-default-config.xml
 	DESTINATION
 		${RELATIVE_SHARE_DIRECTORY}
 	)
@@ -205,21 +207,21 @@ install (
 	PROGRAMS
 		${SHARE_DIRECTORY}/test/install/test.armv5l
 	DESTINATION
-		${RELATIVE_SHARE_DIRECTORY}/test/
+		${RELATIVE_SHARE_DIRECTORY}/test/install
 	OPTIONAL
 	)	
 	
 add_custom_target ( armemu__resources
 	ALL
 	DEPENDS
-		${SHARE_DIRECTORY}/default-config.xml
+		${SHARE_DIRECTORY}/template-default-config.xml
 	)
 
 add_dependencies ( armemu__resources
-	armemu )
+	${ARMEMU_EXEC_NAME} )
 
 add_test ( working_test
-	bin/armemu -c default_config.xml
+	bin/${ARMEMU_EXEC_NAME}
 	)
 	
 add_custom_target ( prepare_check
@@ -231,7 +233,7 @@ add_custom_target ( calling_ctest
 	COMMAND
 		${CMAKE_CTEST_COMMAND}
 	DEPENDS
-		armemu )
+		${ARMEMU_EXEC_NAME} )
 
 add_custom_target ( check
 	COMMENT
