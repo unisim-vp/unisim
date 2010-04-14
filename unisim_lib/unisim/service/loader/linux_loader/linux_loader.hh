@@ -81,8 +81,6 @@ public:
 	/* Service methods */
 	virtual void OnDisconnect();
 	virtual bool Setup();
-	//    virtual bool ClientIndependentSetup();
-	//    virtual bool ClientDependentSetup();
 
 	/* Service interface methods */
 	virtual void Reset();
@@ -95,7 +93,7 @@ private:
 	static const int MAX_ENVC = 10;
 
 protected:
-	endian_type endianess;
+	endian_type endianness;
 	T stack_base;
 	T max_environ;
 	int argc;
@@ -111,7 +109,8 @@ protected:
 private:
 	static const int size = sizeof(T);
 
-	Parameter<endian_type> param_endian;
+	string endianness_string;
+	Parameter<string> param_endian;
 	Parameter<T> param_stack_base;
 	Parameter<T> param_max_environ;
 	Parameter<int> param_argc;

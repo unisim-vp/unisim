@@ -361,13 +361,14 @@ static void DefaultConfiguration(unisim::kernel::service::Simulator *sim)
 	sim->SetVariable("memory.cycle-time", 1000000UL);
 	sim->SetVariable("linux-loader.stack-base", 0xc0000000UL);
 	sim->SetVariable("linux-loader.max-environ", 0x4000UL);
-	sim->SetVariable("linux-loader.endianess", "little-endian");
-	sim->SetVariable("gdb-server.architecture-description-filename",
-			"gdb_server.gdb_armv5l.xml");
-	sim->SetVariable("elf-loader.filename", "test/install/test.armv5l");
+	sim->SetVariable("linux-loader.endianness", "little-endian");
 	sim->SetVariable("linux-loader.argc", 1);
 	sim->SetVariable("linux-loader.argv[0]", "test/install/test.armv5l");
 	sim->SetVariable("linux-os.system", "arm");
+	sim->SetVariable("linux-os.endianness", "little-endian");
+	sim->SetVariable("elf-loader.filename", "test/install/test.armv5l");
+	sim->SetVariable("gdb-server.architecture-description-filename",
+			"gdb_server/gdb_armv5l.xml");
 
 
 #ifdef SIM_POWER_ESTIMATOR_SUPPORT

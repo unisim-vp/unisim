@@ -55,11 +55,12 @@ Service<Loader<T> >(name, parent),
 loader_import("loader_import", this),
 memory_import("memory_import", this),
 loader_export("loader_export", this),
-endianess(E_LITTLE_ENDIAN),
+endianness(E_LITTLE_ENDIAN),
 stack_base(0),
 max_environ(0),
 argc(0),
-param_endian("endianess", this, endianess),
+endianness_string("little-endian"),
+param_endian("endianness", this, endianness_string, "The endianness of the binary loaded. Available values are: little-endian and big-endian."),
 param_stack_base("stack-base", this, stack_base),
 param_max_environ("max-environ", this, max_environ),
 param_argc("argc", this, argc),
@@ -103,6 +104,26 @@ LinuxLoader<T>::Setup() {
 		return false;
 	}
 
+	/* set the endianness depending on the endian parameter */
+	if ( (endianness_string.compare("little-endian") != 0) &&
+			(endianness_string.compare("big-endian") != 0) )
+	{
+		logger << DebugError
+				<< "Error while setting the endianness."
+				<< " '" << endianness_string << "' is not a correct"
+				<< " value."
+				<< " Available values are: little-endian and big-endian."
+				<< EndDebugError;
+		return false;
+	}
+	else
+	{
+		if ( endianness_string.compare("little-endian") == 0 )
+			endianness = E_LITTLE_ENDIAN;
+		else
+			endianness = E_BIG_ENDIAN;
+	}
+
 	/* perform the initialization of the linuxloader */
 	T stack_ptr;
 
@@ -110,7 +131,7 @@ LinuxLoader<T>::Setup() {
 	stack_ptr = stack_base - max_environ - (2 * sizeof(T));
 	/* write argc to stack */
 	stack_address = stack_ptr;
-	T target_argc = Host2Target(endianess, (T)argc);
+	T target_argc = Host2Target(endianness, (T)argc);
 	memory_import->WriteMemory(stack_ptr, &target_argc, size);
 	if ( verbose ) Log(stack_ptr, (uint8_t *)&target_argc, size);
 
@@ -131,7 +152,7 @@ LinuxLoader<T>::Setup() {
 
 	/* write argv to stack */
 	for(unsigned int i = 0; i < argc; i++) {
-		T target_argv = Host2Target(endianess, stack_ptr);
+		T target_argv = Host2Target(endianness, stack_ptr);
 		memory_import->WriteMemory(arg_address + i * size, &target_argv, size);
 		memory_import->WriteMemory(stack_ptr, argv[i].c_str(), argv[i].length());
 		if ( verbose )
@@ -144,7 +165,7 @@ LinuxLoader<T>::Setup() {
 
 	/* write env to stack */
 	for(unsigned int i = 0; i < envc; i++) {
-		T target_envp = Host2Target(endianess, stack_ptr);
+		T target_envp = Host2Target(endianness, stack_ptr);
 		memory_import->WriteMemory(env_address + i * size, &target_envp, size);
 		memory_import->WriteMemory(stack_ptr, envp[i].c_str(), envp[i].length());
 		if ( verbose )
@@ -157,11 +178,11 @@ LinuxLoader<T>::Setup() {
 
 	/* The following two words on the stack are needed on Linux for IA64 !!!! */
 	/* This is filling in the AUX_VECTOR */
-	T target_at_pagesz = Host2Target(endianess, (T)6); /* AT_PAGESZ */
+	T target_at_pagesz = Host2Target(endianness, (T)6); /* AT_PAGESZ */
 	memory_import->WriteMemory(aux_v_address, &target_at_pagesz, size);
 	if ( verbose )
 		Log(aux_v_address, (uint8_t *)&target_at_pagesz, size);
-	T target_page_size = Host2Target(endianess, (T)0x4000ULL); /* PAGE_SIZE */
+	T target_page_size = Host2Target(endianness, (T)0x4000ULL); /* PAGE_SIZE */
 	memory_import->WriteMemory(aux_v_address + size, &target_page_size, size);
 	if ( verbose )
 		Log(aux_v_address + size, (uint8_t *)&target_page_size, size);
