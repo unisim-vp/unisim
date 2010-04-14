@@ -338,20 +338,20 @@ int Simulator::Run()
 	return 0;
 }
 
-void ShowVersion()
-{
-	cerr << "UNISIM ARMv5 User Level Simulator "
-		<< "v" << SIM_VERSION_MAJOR
-		<< "." << SIM_VERSION_MINOR
-		<< "-" << SIM_VERSION_PATCH
-		<< " (" << SIM_VERSION_CODENAME << ")" << endl;
-	cerr << "Author: " << SIM_AUTHOR << endl;
-	cerr << "================================================" << endl;
-	cerr << "================================================" << endl;
-}
-
 static void DefaultConfiguration(unisim::kernel::service::Simulator *sim)
 {
+	stringstream version;
+	version		<< SIM_VERSION_MAJOR
+			<< "." << SIM_VERSION_MINOR
+			<< "." << SIM_VERSION_PATCH
+			<< " (" << SIM_VERSION_CODENAME << ")";
+	sim->SetVariable("program-name", SIM_PROGRAM_NAME);
+	sim->SetVariable("authors", SIM_AUTHOR);
+	sim->SetVariable("version", version.str().c_str());
+	sim->SetVariable("copyright", SIM_COPYRIGHT);
+	sim->SetVariable("license", SIM_LICENSE);
+	sim->SetVariable("description", SIM_DESCRIPTION);
+
 	sim->SetVariable("kernel_logger.std_err", true);
 	sim->SetVariable("kernel_logger.std_err_color", true);
 
@@ -404,8 +404,6 @@ static void DefaultConfiguration(unisim::kernel::service::Simulator *sim)
 
 int sc_main(int argc, char *argv[]) {
 	int ret = 0;
-
-	ShowVersion();
 
 #ifdef WIN32
 	// Loads the winsock2 dll

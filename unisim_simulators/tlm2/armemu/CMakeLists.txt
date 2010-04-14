@@ -1,10 +1,14 @@
 cmake_minimum_required ( VERSION 2.8 )
 
 set ( SIM_VERSION_MAJOR 0 )
-set ( SIM_VERSION_MINOR 1 )
+set ( SIM_VERSION_MINOR 2 )
 set ( SIM_VERSION_PATCH 0 )
 set ( SIM_VERSION_CODENAME "\"Sagrera\"" )
 set ( SIM_AUTHOR "\"Daniel Gracia Perez (daniel.gracia-perez@cea.fr)\"" )
+set ( SIM_PROGRAM_NAME "\"UNISIM armemu\"" )
+set ( SIM_COPYRIGHT "\"Copyright (C) 2007-2010, Comissariat a l'Energie Atomique\"")
+set ( SIM_LICENSE "\"BSD (See file COPYING)\"" )
+set ( SIM_DESCRIPTION "\"UNISIM ARMv5 User Level Simulator\"" )
 
 project ( unisim_armemu_v${SIM_VERSION_MAJOR}_${SIM_VERSION_MINOR}_${SIM_VERSION_PATCH} )
 include ( CheckIncludeFileCXX )
