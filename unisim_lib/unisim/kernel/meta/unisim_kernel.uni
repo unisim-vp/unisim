@@ -7,6 +7,7 @@
 			<file>unisim/kernel/service/service.hh</file>
 			<file>unisim/kernel/service/xml_helper.cc</file>
 			<file>unisim/kernel/service/xml_helper.hh</file>
+			<file>unisim/kernel/service/config.hh.in</file>
 			<file>unisim/kernel/service/CMakeLists.txt</file>
 		</files>
 		<depends>

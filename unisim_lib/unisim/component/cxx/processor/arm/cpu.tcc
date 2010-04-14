@@ -136,6 +136,7 @@ namespace arm {
 	freeLSQueue(),
 	instruction_counter(0),
 	default_endianness(E_BIG_ENDIAN),
+	default_endianness_string("big-endian"),
 	arm966es_initram(false),
 	arm966es_vinithi(false),
 	cpu_cycle_time(0),
@@ -151,7 +152,7 @@ namespace arm {
 	verbose_memory(false),
 	trap_on_exception(false),
 	trap_on_instruction_counter(0),
-	param_default_endianness("default-endianness", this, default_endianness),
+	param_default_endianness("default-endianness", this, default_endianness_string, "The processor default/boot endianness. Available values are: little-endian and big-endian."),
 	param_arm966es_initram("arm966es-initram", this, arm966es_initram),
 	param_arm966es_vinithi("arm966es-vinithi", this, arm966es_vinithi),
 	param_cpu_cycle_time("cpu-cycle-time", this, cpu_cycle_time,
@@ -343,6 +344,25 @@ namespace arm {
 			logger << EndDebugInfo;
 		}
 		
+		/* fix the endianness depending on the endianness parameter */
+		if ( (default_endianness_string.compare("little-endian") != 0) &&
+				(default_endianness_string.compare("big-endian") != 0) )
+		{
+			logger << DebugError
+					<< "Error while setting the default endianness."
+					<< " '" << default_endianness_string << "' is not a correct"
+					<< " value."
+					<< " Available values are: little-endian and big-endian."
+					<< EndDebugError;
+			return false;
+		}
+		else
+		{
+			if ( default_endianness_string.compare("little-endian") == 0 )
+				default_endianness = E_LITTLE_ENDIAN;
+			else
+				default_endianness = E_BIG_ENDIAN;
+		}
 		/* check if the emulator is running in user or system mode and perform
 		 *   the corresponding initialization
 		 * if linux_os_import is connected then we are running in user mode,

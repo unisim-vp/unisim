@@ -36,6 +36,9 @@
 #if defined(HAVE_CONFIG_H)
 #include "config.h"
 #endif
+#if defined(HAVE_UNISIM__KERNEL__SERVICE__CONFIG_HH)
+#include "unisim/kernel/service/config.hh"
+#endif
 
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger_server.hh"
