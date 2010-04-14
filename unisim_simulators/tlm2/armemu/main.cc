@@ -356,11 +356,19 @@ static void DefaultConfiguration(unisim::kernel::service::Simulator *sim)
 	sim->SetVariable("kernel_logger.std_err_color", true);
 
 	sim->SetVariable("cpu.default-endianness", "little-endian");
+	sim->SetVariable("cpu.cpu-cycle-time", 1000UL);
 	sim->SetVariable("memory.bytesize", 0xffffffffUL);
 	sim->SetVariable("memory.cycle-time", 1000000UL);
 	sim->SetVariable("linux-loader.stack-base", 0xc0000000UL);
 	sim->SetVariable("linux-loader.max-environ", 0x4000UL);
 	sim->SetVariable("linux-loader.endianess", "little-endian");
+	sim->SetVariable("gdb-server.architecture-description-filename",
+			"gdb_server.gdb_armv5l.xml");
+	sim->SetVariable("elf-loader.filename", "test/install/test.armv5l");
+	sim->SetVariable("linux-loader.argc", 1);
+	sim->SetVariable("linux-loader.argv[0]", "test/install/test.armv5l");
+	sim->SetVariable("linux-os.system", "arm");
+
 
 #ifdef SIM_POWER_ESTIMATOR_SUPPORT
 	sim->SetVariable("il1-power-estimator.cache-size", 32 * 128);
@@ -392,14 +400,6 @@ static void DefaultConfiguration(unisim::kernel::service::Simulator *sim)
 	sim->SetVariable("dl1-power-estimator.verbose", true);
 #endif // SIM_POWER_ESTIMATOR_SUPPORT
 
-	/* TODO REMOVE */
-	sim->SetVariable("elf-loader.filename", "test");
-	sim->SetVariable("linux-loader.argc", 1);
-	sim->SetVariable("linux-loader.argv[0]", "test");
-	sim->SetVariable("linux-os.system", "arm");
-	/* END TODO */
-
-}
 
 int sc_main(int argc, char *argv[]) {
 	int ret = 0;
