@@ -513,7 +513,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("elf32-loader.filename", filename);
 
 	//  - Linux loader run-time configuration
-	simulator->SetVariable("linux-loader.endianess", "big-endian");
+	simulator->SetVariable("linux-loader.endianness", "big-endian");
 	simulator->SetVariable("linux-loader.stack-base", 0xc0000000);
 	simulator->SetVariable("linux-loader.max-environ", 16 * 1024);
 	simulator->SetVariable("linux-loader.argc", 1);
@@ -522,7 +522,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 
 	//  - Linux OS run-time configuration
 	simulator->SetVariable("linux-os.system", "powerpc");
-	simulator->SetVariable("linux-os.endianess", "big-endian");
+	simulator->SetVariable("linux-os.endianness", "big-endian");
 	simulator->SetVariable("linux-os.utsname-sysname", "Linux");
 	simulator->SetVariable("linux-os.utsname-nodename", "localhost");
 	simulator->SetVariable("linux-os.utsname-release", "2.6.27.35");
