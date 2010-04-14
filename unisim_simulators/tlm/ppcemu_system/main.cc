@@ -31,7 +31,11 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
- 
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <unisim/component/tlm/processor/powerpc/powerpc.hh>
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
@@ -107,47 +111,6 @@ using unisim::component::cxx::pci::pci64_address_t;
 using unisim::component::cxx::pci::pci32_address_t;
 using unisim::kernel::service::VariableBase;
 using unisim::kernel::service::Parameter;
-
-void help(char *prog_name)
-{
-	cerr << "Usage: " << prog_name << " [<options>] [<linux kernel>] [linux kernel arguments]" << endl << endl;
-	cerr << "       'linux kernel' is an ELF32 uncompressed Linux kernel (vmlinux)" << endl;
-	cerr << "       A 'Mac OS BootX' loader is emulated instead of directly running an open firmware and a boot loader" << endl << endl;
-	cerr << "Options:" << endl;
-	cerr << " --inline-debugger" << endl;
-	cerr << " -i" << endl;
-	cerr << "            starts the inline debugger" << endl << endl;
-	cerr << " --gdb-server <TCP port>" << endl;
-	cerr << " -d <TCP port>" << endl;
-	cerr << "            starts GDB server" << endl << endl;
-	cerr << " --power" << endl;
-	cerr << " -p" << endl;
-	cerr << "            estimate power consumption of caches and TLBs" << endl << endl;
-	cerr << " --message-spy" << endl;
-	cerr << " -m" << endl;
-	cerr << "            enable message spy" << endl << endl;
-	cerr << " --config <XML file>" << endl;
-	cerr << " -c <XML file>" << endl;
-	cerr << "            configures the simulator with the given XML configuration file" << endl << endl;
-	cerr << " --get-config <XML file>" << endl;
-	cerr << " -g <XML file>" << endl;
-	cerr << "            get the simulator default configuration XML file (you can use it to create your own configuration)" << endl;
-	cerr << "            This option can be combined with -c to get a new configuration file with existing variables from another file" << endl << endl;
-	cerr << " --set <param=value>" << endl;
-	cerr << " -s <param=value>" << endl;
-	cerr << "            set value of parameter 'param' to 'value'" << endl << endl;
-	cerr << " --list" << endl;
-	cerr << " -l" << endl;
-	cerr << "            lists all available parameters, their type, and their current value" << endl << endl;
-	cerr << " --help" << endl;
-	cerr << " -h" << endl;
-	cerr << "            displays this help" << endl;
-}
-
-extern char **environ;
-
-
-
 
 class Simulator : public unisim::kernel::service::Simulator
 {
@@ -349,6 +312,13 @@ Simulator::Simulator(int argc, char **argv)
 	, param_estimate_power("estimate-power", 0, estimate_power, "Enable/Disable power estimators instantiation")
 	, param_message_spy("message-spy", 0, message_spy, "Enable/Disable message spies instantiation")
 {
+	// meta information
+	*GetVariable("copyright") = "Copyright (C) 2007-2010, Commissariat a l'Energie Atomique (CEA)";
+	*GetVariable("license") = "BSD (see file COPYING)";
+	*GetVariable("authors") = "Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Pérez <daniel.gracia-perez@cea.fr>";
+	*GetVariable("version") = VERSION;
+	*GetVariable("description") = "UNISIM ppcemu-system, a Full system \"PowerMac G4 PCI\" like machine simulator (MPC7447A/MPC107) with Linux boot support";
+	
 	// Build the kernel parameters string from the command line arguments
 	string filename;
 	string kernel_params;
@@ -726,10 +696,6 @@ Simulator::Simulator(int argc, char **argv)
 	{
 		gdb_server->symbol_table_lookup_import >> kloader->symbol_table_lookup_export;
 	}
-
-	*GetParameter("kernel_logger.std_err") = true;
-	
-	DumpParameters(cerr);
 }
 
 Simulator::~Simulator()
