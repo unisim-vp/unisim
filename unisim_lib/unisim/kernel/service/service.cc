@@ -270,11 +270,26 @@ VariableBase& VariableBase::operator [] (unsigned int index)
 	return *this;
 }
 
+const VariableBase& VariableBase::operator [] (unsigned int index) const
+{
+	if(index >= 0)
+	{
+		cerr << "Subscript out of range" << endl;
+		return *Simulator::simulator->void_variable;
+	}
+	return *this;
+}
+
 unsigned int VariableBase::GetLength() const
 {
 	return 0;
 }
 
+VariableBase& VariableBase::operator = (const VariableBase& variable)
+{
+	string variable_value = (string) variable;
+	return *this = variable_value.c_str();
+}
 
 //=============================================================================
 //=                            Variable<TYPE>                                =
@@ -1537,20 +1552,33 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	, argv(0)
 	, list_parms(false)
 	, get_config(false)
+	, enable_version(false)
+	, enable_help(false)
+	, enable_warning(false)
 	, param_get_config(0)
 	, cmd_args(0)
 	, param_cmd_args(0)
 	, void_variable(0)
+	, var_program_name(0)
+	, var_authors(0)
+	, var_copyright(0)
+	, var_version(0)
+	, var_license(0)
 {
 	if(LoadBuiltInConfig)
 	{
 		LoadBuiltInConfig(this);
-		cerr << "Built-in parameters set loaded" << endl;
 	}
 	
 	simulator = this;
 	void_variable = new VariableBase("void", (Object *) 0, VariableBase::VAR_VOID, "unknown variable");
 	param_get_config = new Parameter<bool>("get-config", 0, get_config, "Enable/Disable saving configuration at setup");
+	var_program_name = new Parameter<string>("program-name", 0, program_name, "Program name");
+	var_authors = new Parameter<string>("authors", 0, authors, "Authors");
+	var_copyright = new Parameter<string>("copyright", 0, copyright, "Copyright");
+	var_version = new Parameter<string>("version", 0, version, "Version");
+	var_description = new Parameter<string>("description", 0, description, "Description");
+	var_license = new Parameter<string>("license", 0, license, "License");
 	
 	// compute bin dirname
 	char *end = argv[0] + strlen(argv[0]) - 1;
@@ -1562,27 +1590,26 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	{
 		end--;
 	}
-
-	char *p = argv[0];
-	while(p != end)
-	{
-		shared_data_dir += *p;
-		p++;
-	}
 	
-	// append path of shared data relative to bin directory
-	shared_data_dir += '/';
-	shared_data_dir += BIN_TO_SHARED_DATA_PATH;
-	
-	// Load default configuration
-	if(LoadXmlParameters("default_config.xml"))
+	if(end != (argv[0] - 1))
 	{
-		cerr << "Default parameters set loaded from file \"default_config.xml\"" << endl;
+		char *p = argv[0];
+		while(p != end)
+		{
+			shared_data_dir += *p;
+			p++;
+		}
+		
+		// append path of shared data relative to bin directory
+		shared_data_dir += '/';
+		
+		program_name = end + 1;
 	}
 	else
 	{
-		cerr << "WARNING! Loading default parameters set from file \"default_config.xml\" failed" << endl;
+		program_name = argv[0];
 	}
+	shared_data_dir += BIN_TO_SHARED_DATA_PATH;
 	
 	// parse command line arguments
 	int state = 0;
@@ -1612,6 +1639,25 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 					arg++;
 					state = 4;
 				}
+				else if(strcmp(*arg, "-v") == 0 || strcmp(*arg, "--version") == 0)
+				{
+					arg++;
+					enable_version = true;
+				}
+				else if(strcmp(*arg, "-h") == 0 || strcmp(*arg, "--help") == 0)
+				{
+					arg++;
+					enable_help = true;
+				}
+				else if(strcmp(*arg, "-w") == 0 || strcmp(*arg, "--warn") == 0)
+				{
+					arg++;
+					enable_warning = true;
+					if(!LoadBuiltInConfig)
+					{
+						cerr << "WARNING! No built-in parameters set loaded" << endl;
+					}
+				}
 				else
 				{
 					state = -1;
@@ -1631,12 +1677,12 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 						char *variable_value = ++p;
 						
 						SetVariable(variable_name.c_str(), variable_value);
-						arg++;
 					}
-					else
+					else if(enable_warning)
 					{
-						cerr << "Ignoring " << *arg << endl;
+						cerr << "WARNING! Ignoring " << *arg << endl;
 					}
+					arg++;
 				}
 				state = 0;
 				break;
@@ -1645,8 +1691,9 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 				{
 					cerr << "Parameters set using file \"" << (*arg) << "\"" << endl;
 				}
-				else
+				else if(enable_warning)
 				{
+					
 					cerr << "WARNING! Loading parameters set from file \"" << (*arg) << "\" failed" << endl;
 				}
 				arg++;
@@ -1695,15 +1742,73 @@ Simulator::~Simulator()
 	{
 		delete param_get_config;
 	}
+	
 	if(param_cmd_args)
 	{
 		delete param_cmd_args;
+	}
+	
+	if(var_program_name)
+	{
+		delete var_program_name;
+	}
+	
+	if(var_authors)
+	{
+		delete var_authors;
+	}
+	
+	if(var_copyright)
+	{
+		delete var_copyright;
+	}
+	
+	if(var_version)
+	{
+		delete var_version;
+	}
+	
+	if(var_license)
+	{
+		delete var_license;
 	}
 	
 	if(cmd_args)
 	{
 		delete[] cmd_args;
 	}
+}
+
+void Simulator::Version()
+{
+	cerr << program_name << " " << version << " " << copyright << endl;
+	cerr << "License: " << license << endl;
+}
+
+void Simulator::Help()
+{
+	cerr << description << endl << endl;
+	cerr << "Usage: " << program_name << " [<options>] [...]" << endl << endl;
+	cerr << "Options:" << endl;
+	cerr << " --config <XML file>" << endl;
+	cerr << " -c <XML file>" << endl;
+	cerr << "            configures the simulator with the given XML configuration file" << endl << endl;
+	cerr << " --get-config <XML file>" << endl;
+	cerr << " -g <XML file>" << endl;
+	cerr << "            get the simulator default configuration XML file (you can use it to create your own configuration)" << endl;
+	cerr << "            This option can be combined with -c to get a new configuration file with existing variables from another file" << endl << endl;
+	cerr << " --set <param=value>" << endl;
+	cerr << " -s <param=value>" << endl;
+	cerr << "            set value of parameter 'param' to 'value'" << endl << endl;
+	cerr << " --list" << endl;
+	cerr << " -l" << endl;
+	cerr << "            lists all available parameters, their type, and their current value" << endl << endl;
+	cerr << " --warn" << endl;
+	cerr << " -w" << endl;
+	cerr << "            enable printing of kernel warnings" << endl << endl;
+	cerr << " --help" << endl;
+	cerr << " -h" << endl;
+	cerr << "            displays this help" << endl;
 }
 
 void Simulator::Register(Object *object)
@@ -1737,12 +1842,7 @@ void Simulator::Initialize(VariableBase *variable)
 	if(set_var_iter != set_vars.end())
 	{
 		*variable = (*set_var_iter).second.c_str();
-		cerr << variable->GetName() << " <- " << ((string) *variable) << endl;
 		set_vars.erase(set_var_iter);
-	}
-	else
-	{
-		cerr << variable->GetName() << " <- ??? " << endl;
 	}
 }
 
@@ -2048,12 +2148,26 @@ protected:
 
 bool Simulator::Setup()
 {
-	// display a warning if some variable values are unused
-	std::map<string, string>::iterator set_var_iter;
-	
-	for(set_var_iter = set_vars.begin(); set_var_iter != set_vars.end(); set_var_iter++)
+	if(enable_version)
 	{
-		cerr << "WARNING! value \"" << (*set_var_iter).second << "\" for variable \"" << (*set_var_iter).first << "\" is unused." << endl;
+		Version();
+		return false;
+	}
+	if(enable_help)
+	{
+		Help();
+		return false;
+	}
+	
+	if(enable_warning)
+	{
+		// display a warning if some variable values are unused
+		std::map<string, string>::iterator set_var_iter;
+		
+		for(set_var_iter = set_vars.begin(); set_var_iter != set_vars.end(); set_var_iter++)
+		{
+			cerr << "WARNING! value \"" << (*set_var_iter).second << "\" for variable \"" << (*set_var_iter).first << "\" is unused." << endl;
+		}
 	}
 	set_vars.clear();
 	

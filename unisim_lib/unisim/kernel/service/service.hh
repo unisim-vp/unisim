@@ -178,7 +178,10 @@ public:
 	virtual VariableBase& operator = (const char * value);
 
 	virtual VariableBase& operator [] (unsigned int index);
+	virtual const VariableBase& operator [] (unsigned int index) const;
 	virtual unsigned int GetLength() const;
+	
+	virtual VariableBase& operator = (const VariableBase& variable);
 private:
 	string name;
 	string var_name;
@@ -242,7 +245,25 @@ private:
 	string get_config_filename;
 	bool list_parms;
 	bool get_config;
+	bool enable_warning;
+	bool enable_version;
+	bool enable_help;
+	string program_name;
+	string authors;
+	string copyright;
+	string description;
+	string version;
+	string license;
 	Parameter<bool> *param_get_config;
+	Parameter<string> *var_program_name;
+	Parameter<string> *var_authors;
+	Parameter<string> *var_copyright;
+	Parameter<string> *var_description;
+	Parameter<string> *var_version;
+	Parameter<string> *var_license;
+	
+	void Version();
+	void Help();
 	
 	void Register(Object *object);
 	void Register(ServiceImportBase *srv_import);
@@ -443,8 +464,10 @@ public:
 	virtual ~VariableArray();
 
 	virtual VariableBase& operator [] (unsigned int index);
+	virtual const VariableBase& operator [] (unsigned int index) const;
 	void SetFormat(Format fmt);
 	virtual unsigned int GetLength() const;
+	virtual VariableBase& operator = (const VariableBase& variable);
 
 private:
 	vector<VariableBase *> variables;
@@ -489,9 +512,32 @@ VariableBase& VariableArray<TYPE>::operator [] (unsigned int index)
 }
 
 template <class TYPE>
+const VariableBase& VariableArray<TYPE>::operator [] (unsigned int index) const
+{
+	if(index >= variables.size())
+	{
+		cerr << "Subscript out of range" << endl;
+		return *Simulator::simulator->void_variable;
+	}
+	return *variables[index];
+}
+
+template <class TYPE>
 unsigned int VariableArray<TYPE>::GetLength() const
 {
 	return variables.size();
+}
+
+template <class TYPE>
+VariableBase& VariableArray<TYPE>::operator = (const VariableBase& variable)
+{
+	unsigned int index;
+	unsigned int length = variable.GetLength();
+	for(index = 0; index < length && index < variables.size(); index++)
+	{
+		*variables[index] = variable[index];
+	}
+	return *this;
 }
 
 template <class TYPE>

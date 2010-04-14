@@ -477,10 +477,18 @@ MAKEFILE_AM="${DEST_DIR}/Makefile.am"
 
 if [ ! -e "${CONFIGURE_AC}" ]; then
 	has_to_build_configure=yes
+else
+	if [ "$0" -nt "${CONFIGURE_AC}" ]; then
+		has_to_build_configure=yes
+	fi
 fi
 
 if [ ! -e "${MAKEFILE_AM}" ]; then
 	has_to_build_configure=yes
+else
+	if [ "$0" -nt "${MAKEFILE_AM}" ]; then
+		has_to_build_configure=yes
+	fi
 fi
 
 if [ "${has_to_build_configure}" = "yes" ]; then
@@ -514,10 +522,18 @@ GENISSLIB_MAKEFILE_AM="${DEST_DIR}/genisslib/Makefile.am"
 
 if [ ! -e "${GENISSLIB_CONFIGURE_AC}" ]; then
 	has_to_build_genisslib_configure=yes
+else
+	if [ "$0" -nt "${GENISSLIB_CONFIGURE_AC}" ]; then
+		has_to_build_genisslib_configure=yes
+	fi
 fi
 
 if [ ! -e "${GENISSLIB_MAKEFILE_AM}" ]; then
 	has_to_build_genisslib_configure=yes
+else
+	if [ "$0" -nt "${GENISSLIB_MAKEFILE_AM}" ]; then
+		has_to_build_genisslib_configure=yes
+	fi
 fi
 
 if [ "${has_to_build_genisslib_configure}" = "yes" ]; then
@@ -566,10 +582,18 @@ PPCEMU_MAKEFILE_AM="${DEST_DIR}/ppcemu/Makefile.am"
 
 if [ ! -e "${PPCEMU_CONFIGURE_AC}" ]; then
 	has_to_build_ppcemu_configure=yes
+else
+	if [ "$0" -nt "${PPCEMU_CONFIGURE_AC}" ]; then
+		has_to_build_ppcemu_configure=yes
+	fi
 fi
 
 if [ ! -e "${PPCEMU_MAKEFILE_AM}" ]; then
 	has_to_build_ppcemu_configure=yes
+else
+	if [ "$0" -nt "${PPCEMU_MAKEFILE_AM}" ]; then
+		has_to_build_ppcemu_configure=yes
+	fi
 fi
 
 if [ "${has_to_build_ppcemu_configure}" = "yes" ]; then
@@ -602,7 +626,7 @@ if [ "${has_to_build_ppcemu_configure}" = "yes" ]; then
 	echo "UNISIM_CHECK_BOOST_GRAPH" >> "${PPCEMU_CONFIGURE_AC}"
 	echo "GENISSLIB_PATH=\`pwd\`/../genisslib/genisslib" >> "${PPCEMU_CONFIGURE_AC}"
 	echo "AC_SUBST(GENISSLIB_PATH)" >> "${PPCEMU_CONFIGURE_AC}"
-	echo "AC_DEFINE([BIN_TO_SHARED_DATA_PATH], [../share/ppcemu], [path of shared data relative to bin directory])" >> "${PPCEMU_CONFIGURE_AC}"
+	echo "AC_DEFINE([BIN_TO_SHARED_DATA_PATH], [\"../share/ppcemu\"], [path of shared data relative to bin directory])" >> "${PPCEMU_CONFIGURE_AC}"
 	echo "AC_CONFIG_FILES([Makefile])" >> "${PPCEMU_CONFIGURE_AC}"
 	echo "AC_OUTPUT" >> "${PPCEMU_CONFIGURE_AC}"
 
@@ -625,6 +649,31 @@ if [ "${has_to_build_ppcemu_configure}" = "yes" ]; then
 	echo "\$(top_srcdir)/unisim/component/cxx/processor/powerpc/powerpc.hh: ${UNISIM_LIB_PPCEMU_ISA_FILES}" >> "${PPCEMU_MAKEFILE_AM}"
 	printf "\t" >> "${PPCEMU_MAKEFILE_AM}"
 	echo "cd \$(top_srcdir)/unisim/component/cxx/processor/powerpc; \$(GENISSLIB_PATH) -o powerpc -w 32 -I . ppc.isa" >> "${PPCEMU_MAKEFILE_AM}"
+
+	echo "all-local: all-local-bin all-local-share" >> "${PPCEMU_MAKEFILE_AM}"
+	echo "clean-local: clean-local-bin clean-local-share" >> "${PPCEMU_MAKEFILE_AM}"
+	echo "all-local-bin: \$(bin_PROGRAMS)" >> "${PPCEMU_MAKEFILE_AM}"
+	printf "\t@PROGRAMS='\$(bin_PROGRAMS)'; \\\\\n" >> "${PPCEMU_MAKEFILE_AM}"
+	printf "\tfor PROGRAM in \$\${PROGRAMS}; do \\\\\n" >> "${PPCEMU_MAKEFILE_AM}"
+	printf "\trm -f \"\$(top_builddir)/bin/\`basename \$\${PROGRAM}\`\"; \\\\\n" >> "${PPCEMU_MAKEFILE_AM}"
+	printf "\tmkdir -p '\$(top_builddir)/bin'; \\\\\n" >> "${PPCEMU_MAKEFILE_AM}"
+	printf "\t(cd '\$(top_builddir)/bin' && \$(LN_S) \"\$(abs_top_builddir)/\$\${PROGRAM}\" \`basename \"\$\${PROGRAM}\"\`); \\\\\n" >> "${PPCEMU_MAKEFILE_AM}"
+	printf "\tdone\n" >> "${PPCEMU_MAKEFILE_AM}"
+	echo "clean-local-bin:" >> "${PPCEMU_MAKEFILE_AM}"
+	printf "\t@if [ ! -z '\$(bin_PROGRAMS)' ]; then \\\\\n" >> "${PPCEMU_MAKEFILE_AM}"
+	printf "\trm -rf '\$(top_builddir)/bin'; \\\\\n" >> "${PPCEMU_MAKEFILE_AM}"
+	printf "\tfi\n" >> "${PPCEMU_MAKEFILE_AM}"
+	echo "all-local-share: \$(dist_share_DATA)" >> "${PPCEMU_MAKEFILE_AM}"
+	printf "\t@SHARED_DATAS='\$(dist_share_DATA)'; \\\\\n" >> "${PPCEMU_MAKEFILE_AM}"
+	printf "\tfor SHARED_DATA in \$\${SHARED_DATAS}; do \\\\\n" >> "${PPCEMU_MAKEFILE_AM}"
+	printf "\trm -f \"\$(top_builddir)/share/ppcemu/\`basename \$\${SHARED_DATA}\`\"; \\\\\n" >> "${PPCEMU_MAKEFILE_AM}"
+	printf "\tmkdir -p '\$(top_builddir)/share/ppcemu'; \\\\\n" >> "${PPCEMU_MAKEFILE_AM}"
+	printf "\t(cd '\$(top_builddir)/share/ppcemu' && \$(LN_S) \"\$(abs_top_builddir)/\$\${SHARED_DATA}\" \`basename \"\$\${SHARED_DATA}\"\`); \\\\\n" >> "${PPCEMU_MAKEFILE_AM}"
+	printf "\tdone\n" >> "${PPCEMU_MAKEFILE_AM}"
+	echo "clean-local-share:" >> "${PPCEMU_MAKEFILE_AM}"
+	printf "\t@if [ ! -z '\$(dist_share_DATA)' ]; then \\\\\n" >> "${PPCEMU_MAKEFILE_AM}"
+	printf "\trm -rf '\$(top_builddir)/share'; \\\\\n" >> "${PPCEMU_MAKEFILE_AM}"
+	printf "\tfi\n" >> "${PPCEMU_MAKEFILE_AM}"
 
 	echo "Building powerpc configure"
 	${SHELL} -c "cd ${DEST_DIR}/ppcemu && aclocal -I m4 && autoconf --force && autoheader && automake -ac"

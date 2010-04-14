@@ -31,7 +31,11 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
- 
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <unisim/component/tlm/processor/powerpc/powerpc.hh>
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
@@ -99,205 +103,66 @@ using unisim::service::debug::gdb_server::GDBServer;
 using unisim::service::debug::inline_debugger::InlineDebugger;
 using unisim::service::power::CachePowerEstimator;
 using unisim::util::garbage_collector::GarbageCollector;
-using unisim::kernel::service::ServiceManager;
+using unisim::kernel::service::Parameter;
+using unisim::kernel::service::Variable;
+using unisim::kernel::service::VariableBase;
 
-void help(char *prog_name)
+class Simulator : public unisim::kernel::service::Simulator
 {
-	cerr << "Usage: " << prog_name << " [<options>] <program> [program arguments]" << endl << endl;
-	cerr << "       'program' is statically linked ELF32 PowerPC Linux program" << endl << endl;
-	cerr << "Options:" << endl;
-	cerr << "--inline-debugger" << endl;
-	cerr << "-d" << endl;
-	cerr << "            starts the inline debugger" << endl;
-	cerr << "--gdb-server <TCP port>" << endl;
-	cerr << "-g <TCP port>" << endl;
-	cerr << "            starts a gdb server" << endl << endl;
-	cerr << "--gdb-server-arch-file <arch file>" << endl;
-	cerr << "-a  <arch file>" << endl;
-	cerr << "            uses <arch file> as architecture description file for GDB server" << endl << endl;
-	cerr << "-i <count>" << endl;
-	cerr << "--max:inst <count>" << endl;
-	cerr << "            execute <count> instructions then exit" << endl << endl;
-	cerr << "-p" << endl;
-	cerr << "--power" << endl;
-	cerr << "            estimate power consumption of caches and TLBs" << endl << endl;
-	cerr << "-l <file>" << endl;
-	cerr << "--logger:file <file>" << endl;
-	cerr << "            store log file in <file>" << endl << endl;
-	cerr << "-z" << endl;
-	cerr << "--logger:zip" << endl;
-	cerr << "            zip log file" << endl << endl;
-	cerr << "-e" << endl;
-	cerr << "--logger:error" << endl;
-	cerr << "            pipe the log into the standard error" << endl << endl;
-	cerr << "-o" << endl;
-	cerr << "--logger:out" << endl;
-	cerr << "            pipe the log into the standard output" << endl << endl;
-	cerr << "--help" << endl;
-	cerr << "-h" << endl;
-	cerr << "            displays this help" << endl;
-}
+public:
+	Simulator(int argc, char **argv);
+	virtual ~Simulator();
+	void Run();
+protected:
+private:
 
-//=========================================================================
-//===                       Constants definitions                       ===
-//=========================================================================
+	//=========================================================================
+	//===                       Constants definitions                       ===
+	//=========================================================================
 
-// Front Side Bus template parameters
-typedef CPU_CONFIG::address_t CPU_ADDRESS_TYPE;
-typedef CPU_ADDRESS_TYPE FSB_ADDRESS_TYPE;
-typedef CPU_ADDRESS_TYPE MEMORY_ADDRESS_TYPE;
-typedef CPU_CONFIG::reg_t CPU_REG_TYPE;
-const uint32_t FSB_MAX_DATA_SIZE = 32;        // in bytes
-const uint32_t FSB_NUM_PROCS = 1;
+	// Front Side Bus template parameters
+	typedef CPU_CONFIG::address_t CPU_ADDRESS_TYPE;
+	typedef CPU_ADDRESS_TYPE FSB_ADDRESS_TYPE;
+	typedef CPU_ADDRESS_TYPE MEMORY_ADDRESS_TYPE;
+	typedef CPU_CONFIG::reg_t CPU_REG_TYPE;
+	static const uint32_t FSB_MAX_DATA_SIZE = 32;        // in bytes
+	static const uint32_t FSB_NUM_PROCS = 1;
 
-// the maximum number of transaction spies (per type of message)
-const unsigned int MAX_BUS_TRANSACTION_SPY = 3;
-const unsigned int MAX_MEM_TRANSACTION_SPY = 1;
+	// the maximum number of transaction spies (per type of message)
+	static const unsigned int MAX_BUS_TRANSACTION_SPY = 3;
+	static const unsigned int MAX_MEM_TRANSACTION_SPY = 1;
 
-//=========================================================================
-//===                     Aliases for components classes                ===
-//=========================================================================
+	//=========================================================================
+	//===                     Aliases for components classes                ===
+	//=========================================================================
 
-typedef unisim::component::tlm::fsb::snooping_bus::Bus<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE, 1> FRONT_SIDE_BUS;
-typedef unisim::component::tlm::bridge::snooping_fsb_to_mem::Bridge<unisim::component::tlm::bridge::snooping_fsb_to_mem::Addr32BurstSize32_Config> FSB_TO_MEM_BRIDGE;
-typedef unisim::component::tlm::memory::ram::Memory<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE> MEMORY;
-typedef unisim::component::tlm::processor::powerpc::PowerPC<CPU_CONFIG> CPU;
+	typedef unisim::component::tlm::fsb::snooping_bus::Bus<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE, 1> FRONT_SIDE_BUS;
+	typedef unisim::component::tlm::bridge::snooping_fsb_to_mem::Bridge<unisim::component::tlm::bridge::snooping_fsb_to_mem::Addr32BurstSize32_Config> FSB_TO_MEM_BRIDGE;
+	typedef unisim::component::tlm::memory::ram::Memory<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE> MEMORY;
+	typedef unisim::component::tlm::processor::powerpc::PowerPC<CPU_CONFIG> CPU;
 
-//=========================================================================
-//===               Aliases for transaction Spies classes               ===
-//=========================================================================
+	//=========================================================================
+	//===               Aliases for transaction Spies classes               ===
+	//=========================================================================
 
-typedef unisim::component::tlm::fsb::snooping_bus::Bus<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE, 1>::ReqType BusMsgReqType;
-typedef unisim::component::tlm::fsb::snooping_bus::Bus<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE, 1>::RspType BusMsgRspType;
-typedef unisim::component::tlm::debug::TransactionSpy<BusMsgReqType, BusMsgRspType> BusMsgSpyType;
-typedef unisim::component::tlm::message::MemoryRequest<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE> MemMsgReqType;
-typedef unisim::component::tlm::message::MemoryResponse<FSB_MAX_DATA_SIZE> MemMsgRspType;
-typedef unisim::component::tlm::debug::TransactionSpy<MemMsgReqType, MemMsgRspType> MemMsgSpyType;
+	typedef unisim::component::tlm::fsb::snooping_bus::Bus<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE, 1>::ReqType BusMsgReqType;
+	typedef unisim::component::tlm::fsb::snooping_bus::Bus<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE, 1>::RspType BusMsgRspType;
+	typedef unisim::component::tlm::debug::TransactionSpy<BusMsgReqType, BusMsgRspType> BusMsgSpyType;
+	typedef unisim::component::tlm::message::MemoryRequest<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE> MemMsgReqType;
+	typedef unisim::component::tlm::message::MemoryResponse<FSB_MAX_DATA_SIZE> MemMsgRspType;
+	typedef unisim::component::tlm::debug::TransactionSpy<MemMsgReqType, MemMsgRspType> MemMsgSpyType;
 
-extern char **environ;
-
-int sc_main(int argc, char *argv[])
-{
-#ifdef WIN32
-	// Loads the winsock2 dll
-	WORD wVersionRequested = MAKEWORD( 2, 2 );
-	WSADATA wsaData;
-	if(WSAStartup(wVersionRequested, &wsaData) != 0)
-	{
-		cerr << "WSAStartup failed" << endl;
-		return -1;
-	}
-#endif
-
-	static struct option long_options[] = {
-	{"inline-debugger", no_argument, 0, 'd'},
-	{"gdb-server", required_argument, 0, 'g'},
-	{"gdb-server-arch-file", required_argument, 0, 'a'},
-	{"help", no_argument, 0, 'h'},
-	{"max:inst", required_argument, 0, 'i'},
-	{"power", no_argument, 0, 'p'},
-	{"logger:file", required_argument, 0, 'l'},
-	{"logger:zip", no_argument, 0, 'z'},
-	{"logger:error", no_argument, 0, 'e'},
-	{"logger:out", no_argument, 0, 'o'},
-	{"logger:message_spy", no_argument, 0, 'm'},
-	{0, 0, 0, 0}
-	};
-
-	int c;
-	bool use_gdb_server = false;
-	bool use_inline_debugger = false;
-	bool estimate_power = false;
-	int gdb_server_tcp_port = 0;
-	const char *gdb_server_arch_filename = "gdb_powerpc.xml";
-	uint64_t maxinst = 0; // maximum number of instruction to simulate
-	char *logger_filename = 0;
-	bool logger_zip = false;
-	bool logger_error = false;
-	bool logger_out = false;
-	bool logger_on = false;
-	bool logger_messages = false;
-	double cpu_frequency = 300.0; // in Mhz
-	uint32_t cpu_clock_multiplier = 4;
-	uint32_t tech_node = 130; // in nm
-	double cpu_ipc = 1.0; // in instructions per cycle
-	uint64_t cpu_cycle_time = (uint64_t)(1e6 / cpu_frequency); // in picoseconds
-	uint64_t fsb_cycle_time = cpu_clock_multiplier * cpu_cycle_time;
-	uint32_t mem_cycle_time = fsb_cycle_time;
-
-	
-	// Parse the command line arguments
-	while((c = getopt_long (argc, argv, "dg:a:hi:pl:zeom", long_options, 0)) != -1)
-	{
-		switch(c)
-		{
-			case 'd':
-				use_inline_debugger = true;
-				break;
-			case 'g':
-				use_gdb_server = true;
-				gdb_server_tcp_port = atoi(optarg);
-				break;
-			case 'a':
-				gdb_server_arch_filename = optarg;
-				break;
-			case 'h':
-				help(argv[0]);
-				return 0;
-			case 'i':
-				maxinst = strtoull(optarg, 0, 0);
-				break;
-			case 'p':
-				estimate_power = true;
-				break;
-			case 'l':
-				logger_filename = optarg;
-				break;
-			case 'z':
-				logger_zip = true;
-				break;
-			case 'e':
-				logger_error = true;
-				break;
-			case 'o':
-				logger_out = true;
-				break;
-			case 'm':
-				logger_messages = true;
-				break;
-		}
-	}
-	logger_on = logger_error || logger_out || (logger_filename != 0);
-
-	if(optind >= argc)
-	{
-		help(argv[0]);
-		return 0;
-	}
-
-	char *filename = argv[optind];
-	int sim_argc = argc - optind;
-	char **sim_argv = argv + optind;
-	char **sim_envp = environ;
-
-	// If no filename has been specified then display the help
-	if(!filename)
-	{
-		help(argv[0]);
-		return 0;
-	}
-	
 	//=========================================================================
 	//===                     Component instantiations                      ===
 	//=========================================================================
 	//  - PowerPC processor
-	CPU *cpu =new CPU("cpu");
+	CPU *cpu;
 	//  - Front side bus
-	FRONT_SIDE_BUS *bus = new FRONT_SIDE_BUS("bus");
+	FRONT_SIDE_BUS *bus;
 	//  - Front side bus to memory bridge
-	FSB_TO_MEM_BRIDGE *fsb_to_mem_bridge = new FSB_TO_MEM_BRIDGE("fsb-to-mem-bridge");
+	FSB_TO_MEM_BRIDGE *fsb_to_mem_bridge;
 	//  - RAM
-	MEMORY *memory = new MEMORY("memory");
+	MEMORY *memory;
 
 	//=========================================================================
 	//===            Debugging stuff: Transaction spy instantiations        ===
@@ -305,7 +170,91 @@ int sc_main(int argc, char *argv[])
 	BusMsgSpyType *bus_msg_spy[MAX_BUS_TRANSACTION_SPY];
 	MemMsgSpyType *mem_msg_spy[MAX_MEM_TRANSACTION_SPY];
 
-	if(logger_on && logger_messages)
+	//=========================================================================
+	//===                         Service instantiations                    ===
+	//=========================================================================
+	//  - ELF32 loader
+	Elf32Loader *elf32_loader;
+	//  - Linux loader
+	LinuxLoader<FSB_ADDRESS_TYPE> *linux_loader;
+	//  - Linux OS
+	LinuxOS<CPU_ADDRESS_TYPE, CPU_REG_TYPE> *linux_os;
+	//  - GDB server
+	GDBServer<CPU_ADDRESS_TYPE> *gdb_server;
+	//  - Inline debugger
+	InlineDebugger<CPU_ADDRESS_TYPE> *inline_debugger;
+	//  - SystemC Time
+	unisim::service::time::sc_time::ScTime *sim_time;
+	//  - Host Time
+	unisim::service::time::host_time::HostTime *host_time;
+	//  - the optional power estimators
+	CachePowerEstimator *il1_power_estimator;
+	CachePowerEstimator *dl1_power_estimator;
+	CachePowerEstimator *l2_power_estimator;
+	CachePowerEstimator *itlb_power_estimator;
+	CachePowerEstimator *dtlb_power_estimator;
+
+	bool use_gdb_server;
+	bool use_inline_debugger;
+	bool estimate_power;
+	bool message_spy;
+	Parameter<bool> param_use_gdb_server;
+	Parameter<bool> param_use_inline_debugger;
+	Parameter<bool> param_estimate_power;
+	Parameter<bool> param_message_spy;
+
+	static void LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator);
+};
+
+
+
+Simulator::Simulator(int argc, char **argv)
+	: unisim::kernel::service::Simulator(argc, argv, LoadBuiltInConfig)
+	, cpu(0)
+	, bus(0)
+	, memory(0)
+	, gdb_server(0)
+	, inline_debugger(0)
+	, sim_time(0)
+	, host_time(0)
+	, il1_power_estimator(0)
+	, dl1_power_estimator(0)
+	, l2_power_estimator(0)
+	, itlb_power_estimator(0)
+	, dtlb_power_estimator(0)
+	, use_gdb_server(false)
+	, use_inline_debugger(false)
+	, estimate_power(false)
+	, message_spy(false)
+	, param_use_gdb_server("use-gdb-server", 0, use_gdb_server, "Enable/Disable GDB server instantiation")
+	, param_use_inline_debugger("use-inline-debugger", 0, use_inline_debugger, "Enable/Disable inline debugger instantiation")
+	, param_estimate_power("estimate-power", 0, estimate_power, "Enable/Disable power estimators instantiation")
+	, param_message_spy("message-spy", 0, message_spy, "Enable/Disable message spies instantiation")
+{
+	// meta information
+	*GetVariable("copyright") = "Copyright (C) 2007-2010, Commissariat a l'Energie Atomique (CEA)";
+	*GetVariable("license") = "BSD (see file COPYING)";
+	*GetVariable("authors") = "Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Pérez <daniel.gracia-perez@cea.fr>";
+	*GetVariable("version") = VERSION;
+	*GetVariable("description") = "UNISIM ppcemu, user level PowerPC simulator with support of ELF32 binaries and Linux system call translation";
+	
+	//=========================================================================
+	//===                     Component instantiations                      ===
+	//=========================================================================
+	//  - PowerPC processor
+	cpu = new CPU("cpu");
+	//  - Front side bus
+	bus = new FRONT_SIDE_BUS("bus");
+	//  - Front side bus to memory bridge
+	fsb_to_mem_bridge = new FSB_TO_MEM_BRIDGE("fsb-to-mem-bridge");
+	//  - RAM
+	memory = new MEMORY("memory");
+
+	//=========================================================================
+	//===            Debugging stuff: Transaction spy instantiations        ===
+	//=========================================================================
+
+	if(message_spy)
 	{
 		for(unsigned int i = 0; i < MAX_BUS_TRANSACTION_SPY; i++)
 		{
@@ -332,160 +281,42 @@ int sc_main(int argc, char *argv[])
 	//===                         Service instantiations                    ===
 	//=========================================================================
 	//  - ELF32 loader
-	Elf32Loader *elf32_loader = new Elf32Loader("elf32-loader");
+	elf32_loader = new Elf32Loader("elf32-loader");
 	//  - Linux loader
-	LinuxLoader<FSB_ADDRESS_TYPE> *linux_loader = new LinuxLoader<FSB_ADDRESS_TYPE>("linux-loader");
+	linux_loader = new LinuxLoader<FSB_ADDRESS_TYPE>("linux-loader");
 	//  - Linux OS
-	LinuxOS<CPU_ADDRESS_TYPE, CPU_REG_TYPE> *linux_os = new LinuxOS<CPU_ADDRESS_TYPE, CPU_REG_TYPE>("linux_os");
+	linux_os = new LinuxOS<CPU_ADDRESS_TYPE, CPU_REG_TYPE>("linux-os");
 	//  - GDB server
-	GDBServer<CPU_ADDRESS_TYPE> *gdb_server = use_gdb_server ? new GDBServer<CPU_ADDRESS_TYPE>("gdb-server") : 0;
+	gdb_server = use_gdb_server ? new GDBServer<CPU_ADDRESS_TYPE>("gdb-server") : 0;
 	//  - Inline debugger
-	InlineDebugger<CPU_ADDRESS_TYPE> *inline_debugger = use_inline_debugger ? new InlineDebugger<CPU_ADDRESS_TYPE>("inline-debugger") : 0;
+	inline_debugger = use_inline_debugger ? new InlineDebugger<CPU_ADDRESS_TYPE>("inline-debugger") : 0;
 	//  - SystemC Time
-	unisim::service::time::sc_time::ScTime *time = new unisim::service::time::sc_time::ScTime("time");
+	sim_time = new unisim::service::time::sc_time::ScTime("time");
 	//  - Host Time
-	unisim::service::time::host_time::HostTime *host_time = new unisim::service::time::host_time::HostTime("host-time");
+	host_time = new unisim::service::time::host_time::HostTime("host-time");
 	//  - the optional power estimators
-	CachePowerEstimator *il1_power_estimator = estimate_power ? new CachePowerEstimator("il1-power-estimator") : 0;
-	CachePowerEstimator *dl1_power_estimator = estimate_power ? new CachePowerEstimator("dl1-power-estimator") : 0;
-	CachePowerEstimator *l2_power_estimator = estimate_power ? new CachePowerEstimator("l2-power-estimator") : 0;
-	CachePowerEstimator *itlb_power_estimator = estimate_power ? new CachePowerEstimator("itlb-power-estimator") : 0;
-	CachePowerEstimator *dtlb_power_estimator = estimate_power ? new CachePowerEstimator("dtlb-power-estimator") : 0;
+	il1_power_estimator = estimate_power ? new CachePowerEstimator("il1-power-estimator") : 0;
+	dl1_power_estimator = estimate_power ? new CachePowerEstimator("dl1-power-estimator") : 0;
+	l2_power_estimator = estimate_power ? new CachePowerEstimator("l2-power-estimator") : 0;
+	itlb_power_estimator = estimate_power ? new CachePowerEstimator("itlb-power-estimator") : 0;
+	dtlb_power_estimator = estimate_power ? new CachePowerEstimator("dtlb-power-estimator") : 0;
 
-	//=========================================================================
-	//===                     Component run-time configuration              ===
-	//=========================================================================
-
-	//  - Front Side Bus
-	(*bus)["cycle-time"] = fsb_cycle_time;
-
-	//  - PowerPC processor
-	// if the following line ("cpu-cycle-time") is commented, the cpu will use the power estimators to find min cpu cycle time
-	(*cpu)["cpu-cycle-time"] = cpu_cycle_time;
-	(*cpu)["bus-cycle-time"] = fsb_cycle_time;
-	(*cpu)["voltage"] = 1.3 * 1e3; // mV
-	if(maxinst)
-	{
-		(*cpu)["max-inst"] = maxinst;
-	}
-	(*cpu)["ipc"] = cpu_ipc;
-
-	//  - Front side bus to memory bridge
-	(*fsb_to_mem_bridge)["fsb-cycle-time"] = fsb_cycle_time;
-	(*fsb_to_mem_bridge)["mem-cycle-time"] = mem_cycle_time;
-	//  - RAM
-	(*memory)["cycle-time"] = mem_cycle_time;
-	(*memory)["org"] = 0x00000000UL;
-	(*memory)["bytesize"] = (uint32_t)-1;
-
-	//=========================================================================
-	//===                      Service run-time configuration               ===
-	//=========================================================================
-
-	//  - GDB Server run-time configuration
-	if(gdb_server)
-	{
-		(*gdb_server)["tcp-port"] = gdb_server_tcp_port;
-		(*gdb_server)["architecture-description-filename"] = gdb_server_arch_filename;
-	}
-	//  - ELF32 Loader run-time configuration
-	(*elf32_loader)["filename"] = filename;
-
-	//  - Linux loader run-time configuration
-	(*linux_loader)["endianess"] = E_BIG_ENDIAN;
-	(*linux_loader)["stack-base"] = 0xc0000000;
-	(*linux_loader)["max-environ"] = 16 * 1024;
-	(*linux_loader)["argc"] = sim_argc;
-	for(unsigned int i = 0; i < sim_argc; i++)
-	{
-		(*linux_loader)["argv"][i] = sim_argv[i];
-	}
-	(*linux_loader)["envc"] = 0;
-
-	//  - Linux OS run-time configuration
-	(*linux_os)["system"] = "powerpc";
-	(*linux_os)["endianess"] = E_BIG_ENDIAN;
-	(*linux_os)["utsname-sysname"] = "Linux";
-	(*linux_os)["utsname-nodename"] = "localhost";
-	(*linux_os)["utsname-release"] = "2.6.27.35";
-	(*linux_os)["utsname-version"] = "#UNISIM SMP Fri Mar 12 05:23:09 UTC 2010";
-	(*linux_os)["utsname-machine"] = "powerpc";
-	(*linux_os)["verbose"] = false;
-
-	//  - Cache/TLB power estimators run-time configuration
-	if(estimate_power)
-	{
-		(*il1_power_estimator)["cache-size"] = 32 * 1024;
-		(*il1_power_estimator)["line-size"] = 32;
-		(*il1_power_estimator)["associativity"] = 8;
-		(*il1_power_estimator)["rw-ports"] = 0;
-		(*il1_power_estimator)["excl-read-ports"] = 1;
-		(*il1_power_estimator)["excl-write-ports"] = 0;
-		(*il1_power_estimator)["single-ended-read-ports"] = 0;
-		(*il1_power_estimator)["banks"] = 4;
-		(*il1_power_estimator)["tech-node"] = tech_node;
-		(*il1_power_estimator)["output-width"] = 128;
-		(*il1_power_estimator)["tag-width"] = 64;
-		(*il1_power_estimator)["access-mode"] = "fast";
+	// Build the Linux OS arguments from the command line arguments
 	
-		(*dl1_power_estimator)["cache-size"] = 32 * 1024;
-		(*dl1_power_estimator)["line-size"] = 32;
-		(*dl1_power_estimator)["associativity"] = 8;
-		(*dl1_power_estimator)["rw-ports"] = 1;
-		(*dl1_power_estimator)["excl-read-ports"] = 0;
-		(*dl1_power_estimator)["excl-write-ports"] = 0;
-		(*dl1_power_estimator)["single-ended-read-ports"] = 0;
-		(*dl1_power_estimator)["banks"] = 4;
-		(*dl1_power_estimator)["tech-node"] = tech_node;
-		(*dl1_power_estimator)["output-width"] = 64;
-		(*dl1_power_estimator)["tag-width"] = 64;
-		(*dl1_power_estimator)["access-mode"] = "fast";
-	
-		(*l2_power_estimator)["cache-size"] = 512 * 1024;
-		(*l2_power_estimator)["line-size"] = 32;
-		(*l2_power_estimator)["associativity"] = 8;
-		(*l2_power_estimator)["rw-ports"] = 1;
-		(*l2_power_estimator)["excl-read-ports"] = 0;
-		(*l2_power_estimator)["excl-write-ports"] = 0;
-		(*l2_power_estimator)["single-ended-read-ports"] = 0;
-		(*l2_power_estimator)["banks"] = 4;
-		(*l2_power_estimator)["tech-node"] = tech_node;
-		(*l2_power_estimator)["output-width"] = 256;
-		(*l2_power_estimator)["tag-width"] = 64;
-		(*l2_power_estimator)["access-mode"] = "fast";
-	
-		(*itlb_power_estimator)["cache-size"] = 128 * 2 * 4;
-		(*itlb_power_estimator)["line-size"] = 4;
-		(*itlb_power_estimator)["associativity"] = 2;
-		(*itlb_power_estimator)["rw-ports"] = 1;
-		(*itlb_power_estimator)["excl-read-ports"] = 0;
-		(*itlb_power_estimator)["excl-write-ports"] = 0;
-		(*itlb_power_estimator)["single-ended-read-ports"] = 0;
-		(*itlb_power_estimator)["banks"] = 4;
-		(*itlb_power_estimator)["tech-node"] = tech_node;
-		(*itlb_power_estimator)["output-width"] = 32;
-		(*itlb_power_estimator)["tag-width"] = 64;
-		(*itlb_power_estimator)["access-mode"] = "fast";
-	
-		(*dtlb_power_estimator)["cache-size"] = 128 * 2 * 4;
-		(*dtlb_power_estimator)["line-size"] = 4;
-		(*dtlb_power_estimator)["associativity"] = 2;
-		(*dtlb_power_estimator)["rw-ports"] = 1;
-		(*dtlb_power_estimator)["excl-read-ports"] = 0;
-		(*dtlb_power_estimator)["excl-write-ports"] = 0;
-		(*dtlb_power_estimator)["single-ended-read-ports"] = 0;
-		(*dtlb_power_estimator)["banks"] = 4;
-		(*dtlb_power_estimator)["tech-node"] = tech_node;
-		(*dtlb_power_estimator)["output-width"] = 32;
-		(*dtlb_power_estimator)["tag-width"] = 64;
-		(*dtlb_power_estimator)["access-mode"] = "fast";
+	VariableBase *cmd_args = GetVariable("cmd-args");
+	unsigned int cmd_args_length = cmd_args->GetLength();
+	if(cmd_args_length > 0)
+	{
+		(*elf32_loader)["filename"] = (*cmd_args)[0];
+		(*linux_loader)["argv"] = *cmd_args;
+		(*linux_loader)["argc"] = cmd_args_length;
 	}
 
 	//=========================================================================
 	//===                        Components connection                      ===
 	//=========================================================================
 
-	if(logger_on && logger_messages)
+	if(message_spy)
 	{
 		unsigned bus_msg_spy_index = 0;
 		unsigned mem_msg_spy_index = 0;
@@ -536,7 +367,7 @@ int sc_main(int argc, char *argv[])
 
 	cpu->memory_import >> bus->memory_export;
 	
-	if(inline_debugger)
+	if(use_inline_debugger)
 	{
 		// Connect inline-debugger to CPU
 		cpu->debug_control_import >> inline_debugger->debug_control_export;
@@ -548,7 +379,7 @@ int sc_main(int argc, char *argv[])
 		inline_debugger->memory_access_reporting_control_import >>
 			cpu->memory_access_reporting_control_export;
 	}
-	else if(gdb_server)
+	else if(use_gdb_server)
 	{
 		// Connect gdb-server to CPU
 		cpu->debug_control_import >> gdb_server->debug_control_export;
@@ -574,11 +405,11 @@ int sc_main(int argc, char *argv[])
 		cpu->dtlb_power_estimator_import >> dtlb_power_estimator->power_estimator_export;
 		cpu->dtlb_power_mode_import >> dtlb_power_estimator->power_mode_export;
 
-		il1_power_estimator->time_import >> time->time_export;
-		dl1_power_estimator->time_import >> time->time_export;
-		l2_power_estimator->time_import >> time->time_export;
-		itlb_power_estimator->time_import >> time->time_export;
-		dtlb_power_estimator->time_import >> time->time_export;
+		il1_power_estimator->time_import >> sim_time->time_export;
+		dl1_power_estimator->time_import >> sim_time->time_export;
+		l2_power_estimator->time_import >> sim_time->time_export;
+		itlb_power_estimator->time_import >> sim_time->time_export;
+		dtlb_power_estimator->time_import >> sim_time->time_export;
 	}
 
 	elf32_loader->memory_import >> memory->memory_export;
@@ -598,99 +429,10 @@ int sc_main(int argc, char *argv[])
 	{
 		inline_debugger->symbol_table_lookup_import >> elf32_loader->symbol_table_lookup_export;
 	}
-	
-#ifdef DEBUG_SERVICE
-	ServiceManager::Dump(cerr);
-#endif
+}
 
-	if(ServiceManager::Setup())
-	{
-		cerr << "Starting simulation at user privilege level (Linux system calls translation enabled)" << endl;
-
-		double time_start = host_time->GetTime();
-
-		EnableDebug();
-		void (*prev_sig_int_handler)(int);
-
-		if(!inline_debugger)
-		{
-			prev_sig_int_handler = signal(SIGINT, SigIntHandler);
-		}
-
-		try
-		{
-			sc_start();
-		}
-		catch(std::runtime_error& e)
-		{
-			cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << endl;
-			cerr << e.what() << endl;
-		}
-
-		if(!inline_debugger)
-		{
-			signal(SIGINT, prev_sig_int_handler);
-		}
-
-		cerr << "Simulation finished" << endl;
-		cerr << "Simulation statistics:" << endl;
-
-		double time_stop = host_time->GetTime();
-		double spent_time = time_stop - time_start;
-
-		cerr << "simulation time: " << spent_time << " seconds" << endl;
-		cerr << "simulated time : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;
-		cerr << "simulated instructions : " << cpu->GetInstructionCounter() << " instructions" << endl;
-		cerr << "host simulation speed: " << ((double) cpu->GetInstructionCounter() / spent_time / 1000000.0) << " MIPS" << endl;
-		cerr << "time dilatation: " << spent_time / sc_time_stamp().to_seconds() << " times slower than target machine" << endl;
-		if(estimate_power)
-		{
-			double total_dynamic_energy = il1_power_estimator->GetDynamicEnergy()
-				+ dl1_power_estimator->GetDynamicEnergy()
-				+ l2_power_estimator->GetDynamicEnergy()
-				+ itlb_power_estimator->GetDynamicEnergy()
-				+ dtlb_power_estimator->GetDynamicEnergy();
-	
-			double total_dynamic_power = il1_power_estimator->GetDynamicPower()
-				+ dl1_power_estimator->GetDynamicPower()
-				+ l2_power_estimator->GetDynamicPower()
-				+ itlb_power_estimator->GetDynamicPower()
-				+ dtlb_power_estimator->GetDynamicPower();
-	
-			double total_leakage_power = il1_power_estimator->GetLeakagePower()
-				+ dl1_power_estimator->GetLeakagePower()
-				+ l2_power_estimator->GetLeakagePower()
-				+ itlb_power_estimator->GetLeakagePower()
-				+ dtlb_power_estimator->GetLeakagePower();
-	
-			double total_power = total_dynamic_power + total_leakage_power;
-
-			cerr << "L1 instruction cache dynamic energy: " << il1_power_estimator->GetDynamicEnergy() << " J" << endl;
-			cerr << "L1 data cache dynamic energy: " << dl1_power_estimator->GetDynamicEnergy() << " J" << endl;
-			cerr << "L2 cache dynamic energy: " << l2_power_estimator->GetDynamicEnergy() << " J" << endl;
-			cerr << "Instruction TLB dynamic energy: " << itlb_power_estimator->GetDynamicEnergy() << " J" << endl;
-			cerr << "Data TLB dynamic energy: " << dtlb_power_estimator->GetDynamicEnergy() << " J" << endl;
-			cerr << "L1 instruction cache dynamic power: " << il1_power_estimator->GetDynamicPower() << " W" << endl;
-			cerr << "L1 data cache dynamic power: " << dl1_power_estimator->GetDynamicPower() << " W" << endl;
-			cerr << "L2 cache dynamic power: " << l2_power_estimator->GetDynamicPower() << " W" << endl;
-			cerr << "Instruction TLB dynamic power: " << itlb_power_estimator->GetDynamicPower() << " W" << endl;
-			cerr << "Data TLB dynamic power: " << dtlb_power_estimator->GetDynamicPower() << " W" << endl;
-			cerr << "L1 instruction cache leakage power: " << il1_power_estimator->GetLeakagePower() << " W" << endl;
-			cerr << "L1 data cache leakage power: " << dl1_power_estimator->GetLeakagePower() << " W" << endl;
-			cerr << "L2 cache leakage power: " << l2_power_estimator->GetLeakagePower() << " W" << endl;
-			cerr << "Instruction TLB leakage power: " << itlb_power_estimator->GetLeakagePower() << " W" << endl;
-			cerr << "Data TLB leakage power: " << dtlb_power_estimator->GetLeakagePower() << " W" << endl;
-	
-			cerr << "Total dynamic energy: " << total_dynamic_energy << " J" << endl;
-			cerr << "Total dynamic power: " << total_dynamic_power << " W" << endl;
-			cerr << "Total leakage power: " << total_leakage_power << " W" << endl;
-			cerr << "Total power (dynamic+leakage): " << total_power << " W" << endl;
-		}
-	}
-	else
-	{
-		cerr << "Can't start simulation because of previous errors" << endl;
-	}
+Simulator::~Simulator()
+{
 
 	for(unsigned int i = 0; i < MAX_BUS_TRANSACTION_SPY; i++) if(bus_msg_spy[i]) delete bus_msg_spy[i];
 	for(unsigned int i = 0; i < MAX_MEM_TRANSACTION_SPY; i++) if(mem_msg_spy[i]) delete mem_msg_spy[i];
@@ -706,11 +448,271 @@ int sc_main(int argc, char *argv[])
 	if(l2_power_estimator) delete l2_power_estimator;
 	if(itlb_power_estimator) delete itlb_power_estimator;
 	if(dtlb_power_estimator) delete dtlb_power_estimator;
-	if(time) delete time;
+	if(sim_time) delete sim_time;
 	if(linux_os) delete linux_os;
 	if(elf32_loader) delete elf32_loader;
 	if(linux_loader) delete linux_loader;
+}
 
+void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
+{
+	const char *filename = "a.out";
+	bool use_gdb_server = false;
+	bool use_inline_debugger = false;
+	bool estimate_power = false;
+	int gdb_server_tcp_port = 0;
+	const char *gdb_server_arch_filename = "gdb_powerpc.xml";
+	uint64_t maxinst = 0xffffffffffffffffULL; // maximum number of instruction to simulate
+	char *logger_filename = 0;
+	bool logger_zip = false;
+	bool logger_error = false;
+	bool logger_out = false;
+	bool logger_on = false;
+	bool logger_messages = false;
+	double cpu_frequency = 300.0; // in Mhz
+	uint32_t cpu_clock_multiplier = 4;
+	uint32_t tech_node = 130; // in nm
+	double cpu_ipc = 1.0; // in instructions per cycle
+	double cpu_cycle_time = (double)(1.0e6 / cpu_frequency); // in picoseconds
+	double fsb_cycle_time = cpu_clock_multiplier * cpu_cycle_time;
+	double mem_cycle_time = fsb_cycle_time;
+
+	//=========================================================================
+	//===                     Component run-time configuration              ===
+	//=========================================================================
+
+	//  - Front Side Bus
+	simulator->SetVariable("bus.cycle-time", sc_time(fsb_cycle_time, SC_PS).to_string().c_str());
+
+	//  - PowerPC processor
+	// if the following line ("cpu-cycle-time") is commented, the cpu will use the power estimators to find min cpu cycle time
+	simulator->SetVariable("cpu.cpu-cycle-time", cpu_cycle_time);
+	simulator->SetVariable("cpu.bus-cycle-time", sc_time(fsb_cycle_time, SC_PS).to_string().c_str());
+	simulator->SetVariable("cpu.voltage", 1.3 * 1e3); // mV
+	simulator->SetVariable("cpu.max-inst", maxinst);
+	simulator->SetVariable("cpu.nice-time", "1 ms"); // 1 ms
+	simulator->SetVariable("cpu.ipc", cpu_ipc);
+
+	//  - Front side bus to memory bridge
+	simulator->SetVariable("fsb-to-mem-bridge.fsb-cycle-time", fsb_cycle_time);
+	simulator->SetVariable("fsb-to-mem-bridge.mem-cycle-time", mem_cycle_time);
+	//  - RAM
+	simulator->SetVariable("memory.cycle-time", sc_time(mem_cycle_time, SC_PS).to_string().c_str());
+	simulator->SetVariable("memory.org", 0x00000000UL);
+	simulator->SetVariable("memory.bytesize", (uint32_t) -1);
+
+	//=========================================================================
+	//===                      Service run-time configuration               ===
+	//=========================================================================
+
+	//  - GDB Server run-time configuration
+	simulator->SetVariable("gdb-server.tcp-port", gdb_server_tcp_port);
+	simulator->SetVariable("gdb-server.architecture-description-filename", gdb_server_arch_filename);
+	//  - ELF32 Loader run-time configuration
+	simulator->SetVariable("elf32-loader.filename", filename);
+
+	//  - Linux loader run-time configuration
+	simulator->SetVariable("linux-loader.endianess", "big-endian");
+	simulator->SetVariable("linux-loader.stack-base", 0xc0000000);
+	simulator->SetVariable("linux-loader.max-environ", 16 * 1024);
+	simulator->SetVariable("linux-loader.argc", 1);
+	simulator->SetVariable("linux-loader.argv[0]", filename);
+	simulator->SetVariable("linux-loader.envc", 0);
+
+	//  - Linux OS run-time configuration
+	simulator->SetVariable("linux-os.system", "powerpc");
+	simulator->SetVariable("linux-os.endianess", "big-endian");
+	simulator->SetVariable("linux-os.utsname-sysname", "Linux");
+	simulator->SetVariable("linux-os.utsname-nodename", "localhost");
+	simulator->SetVariable("linux-os.utsname-release", "2.6.27.35");
+	simulator->SetVariable("linux-os.utsname-version", "#UNISIM SMP Fri Mar 12 05:23:09 UTC 2010");
+	simulator->SetVariable("linux-os.utsname-machine", "powerpc");
+	simulator->SetVariable("linux-os.verbose", false);
+
+	//  - Cache/TLB power estimators run-time configuration
+	simulator->SetVariable("il1-power-estimator.cache-size", 32 * 1024);
+	simulator->SetVariable("il1-power-estimator.line-size", 32);
+	simulator->SetVariable("il1-power-estimator.associativity", 8);
+	simulator->SetVariable("il1-power-estimator.rw-ports", 0);
+	simulator->SetVariable("il1-power-estimator.excl-read-ports", 1);
+	simulator->SetVariable("il1-power-estimator.excl-write-ports", 0);
+	simulator->SetVariable("il1-power-estimator.single-ended-read-ports", 0);
+	simulator->SetVariable("il1-power-estimator.banks", 4);
+	simulator->SetVariable("il1-power-estimator.tech-node", tech_node);
+	simulator->SetVariable("il1-power-estimator.output-width", 128);
+	simulator->SetVariable("il1-power-estimator.tag-width", 64);
+	simulator->SetVariable("il1-power-estimator.access-mode", "fast");
+
+	simulator->SetVariable("dl1-power-estimator.cache-size", 32 * 1024);
+	simulator->SetVariable("dl1-power-estimator.line-size", 32);
+	simulator->SetVariable("dl1-power-estimator.associativity", 8);
+	simulator->SetVariable("dl1-power-estimator.rw-ports", 1);
+	simulator->SetVariable("dl1-power-estimator.excl-read-ports", 0);
+	simulator->SetVariable("dl1-power-estimator.excl-write-ports", 0);
+	simulator->SetVariable("dl1-power-estimator.single-ended-read-ports", 0);
+	simulator->SetVariable("dl1-power-estimator.banks", 4);
+	simulator->SetVariable("dl1-power-estimator.tech-node", tech_node);
+	simulator->SetVariable("dl1-power-estimator.output-width", 64);
+	simulator->SetVariable("dl1-power-estimator.tag-width", 64);
+	simulator->SetVariable("dl1-power-estimator.access-mode", "fast");
+
+	simulator->SetVariable("l2-power-estimator.cache-size", 512 * 1024);
+	simulator->SetVariable("l2-power-estimator.line-size", 32);
+	simulator->SetVariable("l2-power-estimator.associativity", 8);
+	simulator->SetVariable("l2-power-estimator.rw-ports", 1);
+	simulator->SetVariable("l2-power-estimator.excl-read-ports", 0);
+	simulator->SetVariable("l2-power-estimator.excl-write-ports", 0);
+	simulator->SetVariable("l2-power-estimator.single-ended-read-ports", 0);
+	simulator->SetVariable("l2-power-estimator.banks", 4);
+	simulator->SetVariable("l2-power-estimator.tech-node", tech_node);
+	simulator->SetVariable("l2-power-estimator.output-width", 256);
+	simulator->SetVariable("l2-power-estimator.tag-width", 64);
+	simulator->SetVariable("l2-power-estimator.access-mode", "fast");
+
+	simulator->SetVariable("itlb-power-estimator.cache-size", 128 * 2 * 4);
+	simulator->SetVariable("itlb-power-estimator.line-size", 4);
+	simulator->SetVariable("itlb-power-estimator.associativity", 2);
+	simulator->SetVariable("itlb-power-estimator.rw-ports", 1);
+	simulator->SetVariable("itlb-power-estimator.excl-read-ports", 0);
+	simulator->SetVariable("itlb-power-estimator.excl-write-ports", 0);
+	simulator->SetVariable("itlb-power-estimator.single-ended-read-ports", 0);
+	simulator->SetVariable("itlb-power-estimator.banks", 4);
+	simulator->SetVariable("itlb-power-estimator.tech-node", tech_node);
+	simulator->SetVariable("itlb-power-estimator.output-width", 32);
+	simulator->SetVariable("itlb-power-estimator.tag-width", 64);
+	simulator->SetVariable("itlb-power-estimator.access-mode", "fast");
+
+	simulator->SetVariable("dtlb-power-estimator.cache-size", 128 * 2 * 4);
+	simulator->SetVariable("dtlb-power-estimator.line-size", 4);
+	simulator->SetVariable("dtlb-power-estimator.associativity", 2);
+	simulator->SetVariable("dtlb-power-estimator.rw-ports", 1);
+	simulator->SetVariable("dtlb-power-estimator.excl-read-ports", 0);
+	simulator->SetVariable("dtlb-power-estimator.excl-write-ports", 0);
+	simulator->SetVariable("dtlb-power-estimator.single-ended-read-ports", 0);
+	simulator->SetVariable("dtlb-power-estimator.banks", 4);
+	simulator->SetVariable("dtlb-power-estimator.tech-node", tech_node);
+	simulator->SetVariable("dtlb-power-estimator.output-width", 32);
+	simulator->SetVariable("dtlb-power-estimator.tag-width", 64);
+	simulator->SetVariable("dtlb-power-estimator.access-mode", "fast");
+}
+
+void Simulator::Run()
+{
+	double time_start = host_time->GetTime();
+
+	EnableDebug();
+	void (*prev_sig_int_handler)(int);
+
+	if(!inline_debugger)
+	{
+		prev_sig_int_handler = signal(SIGINT, SigIntHandler);
+	}
+
+	try
+	{
+		sc_start();
+	}
+	catch(std::runtime_error& e)
+	{
+		cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << endl;
+		cerr << e.what() << endl;
+	}
+
+	if(!inline_debugger)
+	{
+		signal(SIGINT, prev_sig_int_handler);
+	}
+
+	cerr << "Simulation finished" << endl;
+
+	double time_stop = host_time->GetTime();
+	double spent_time = time_stop - time_start;
+
+	cerr << "Simulation run-time parameters:" << endl;
+	DumpParameters(cerr);
+	cerr << endl;
+	cerr << "Simulation formulas:" << endl;
+	DumpFormulas(cerr);
+	cerr << endl;
+	cerr << "Simulation statistics:" << endl;
+	DumpStatistics(cerr);
+	cerr << endl;
+
+	cerr << "simulation time: " << spent_time << " seconds" << endl;
+	cerr << "simulated time : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;
+	cerr << "host simulation speed: " << ((double) (*cpu)["instruction-counter"] / spent_time / 1000000.0) << " MIPS" << endl;
+	cerr << "time dilatation: " << spent_time / sc_time_stamp().to_seconds() << " times slower than target machine" << endl;
+	if(estimate_power)
+	{
+		double total_dynamic_energy = il1_power_estimator->GetDynamicEnergy()
+			+ dl1_power_estimator->GetDynamicEnergy()
+			+ l2_power_estimator->GetDynamicEnergy()
+			+ itlb_power_estimator->GetDynamicEnergy()
+			+ dtlb_power_estimator->GetDynamicEnergy();
+
+		double total_dynamic_power = il1_power_estimator->GetDynamicPower()
+			+ dl1_power_estimator->GetDynamicPower()
+			+ l2_power_estimator->GetDynamicPower()
+			+ itlb_power_estimator->GetDynamicPower()
+			+ dtlb_power_estimator->GetDynamicPower();
+
+		double total_leakage_power = il1_power_estimator->GetLeakagePower()
+			+ dl1_power_estimator->GetLeakagePower()
+			+ l2_power_estimator->GetLeakagePower()
+			+ itlb_power_estimator->GetLeakagePower()
+			+ dtlb_power_estimator->GetLeakagePower();
+
+		double total_power = total_dynamic_power + total_leakage_power;
+
+		cerr << "L1 instruction cache dynamic energy: " << il1_power_estimator->GetDynamicEnergy() << " J" << endl;
+		cerr << "L1 data cache dynamic energy: " << dl1_power_estimator->GetDynamicEnergy() << " J" << endl;
+		cerr << "L2 cache dynamic energy: " << l2_power_estimator->GetDynamicEnergy() << " J" << endl;
+		cerr << "Instruction TLB dynamic energy: " << itlb_power_estimator->GetDynamicEnergy() << " J" << endl;
+		cerr << "Data TLB dynamic energy: " << dtlb_power_estimator->GetDynamicEnergy() << " J" << endl;
+		cerr << "L1 instruction cache dynamic power: " << il1_power_estimator->GetDynamicPower() << " W" << endl;
+		cerr << "L1 data cache dynamic power: " << dl1_power_estimator->GetDynamicPower() << " W" << endl;
+		cerr << "L2 cache dynamic power: " << l2_power_estimator->GetDynamicPower() << " W" << endl;
+		cerr << "Instruction TLB dynamic power: " << itlb_power_estimator->GetDynamicPower() << " W" << endl;
+		cerr << "Data TLB dynamic power: " << dtlb_power_estimator->GetDynamicPower() << " W" << endl;
+		cerr << "L1 instruction cache leakage power: " << il1_power_estimator->GetLeakagePower() << " W" << endl;
+		cerr << "L1 data cache leakage power: " << dl1_power_estimator->GetLeakagePower() << " W" << endl;
+		cerr << "L2 cache leakage power: " << l2_power_estimator->GetLeakagePower() << " W" << endl;
+		cerr << "Instruction TLB leakage power: " << itlb_power_estimator->GetLeakagePower() << " W" << endl;
+		cerr << "Data TLB leakage power: " << dtlb_power_estimator->GetLeakagePower() << " W" << endl;
+
+		cerr << "Total dynamic energy: " << total_dynamic_energy << " J" << endl;
+		cerr << "Total dynamic power: " << total_dynamic_power << " W" << endl;
+		cerr << "Total leakage power: " << total_leakage_power << " W" << endl;
+		cerr << "Total power (dynamic+leakage): " << total_power << " W" << endl;
+	}
+}
+
+int sc_main(int argc, char *argv[])
+{
+#ifdef WIN32
+	// Loads the winsock2 dll
+	WORD wVersionRequested = MAKEWORD( 2, 2 );
+	WSADATA wsaData;
+	if(WSAStartup(wVersionRequested, &wsaData) != 0)
+	{
+		cerr << "WSAStartup failed" << endl;
+		return -1;
+	}
+#endif
+	Simulator *simulator = new Simulator(argc, argv);
+
+	if(simulator->Setup())
+	{
+		cerr << "Starting simulation at supervisor privilege level (kernel mode)" << endl;
+
+		simulator->Run();
+	}
+	else
+	{
+		cerr << "Can't start simulation because of previous errors" << endl;
+	}
+
+	if(simulator) delete simulator;
 #ifdef WIN32
 	// releases the winsock2 resources
 	WSACleanup();
