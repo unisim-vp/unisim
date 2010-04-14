@@ -399,7 +399,7 @@ static void DefaultConfiguration(unisim::kernel::service::Simulator *sim)
 	sim->SetVariable("dl1-power-estimator.access-mode", "fast");
 	sim->SetVariable("dl1-power-estimator.verbose", true);
 #endif // SIM_POWER_ESTIMATOR_SUPPORT
-
+}
 
 int sc_main(int argc, char *argv[]) {
 	int ret = 0;
@@ -426,8 +426,13 @@ int sc_main(int argc, char *argv[]) {
 	}
 	else
 	{
-		cerr << "Can't start simulation because of previous errors" << endl;
-		ret = 0;
+		if ( (bool)(*simulator->GetVariable("get-config")) )
+			ret = 0;
+		else
+		{
+			cerr << "Can't start simulation because of previous errors" << endl;
+			ret = -1;
+		}
 	}
 
 	if (simulator) delete simulator;
