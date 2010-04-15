@@ -540,10 +540,18 @@ MAKEFILE_AM="${DEST_DIR}/Makefile.am"
 
 if [ ! -e "${CONFIGURE_AC}" ]; then
 	has_to_build_configure=yes
+else
+	if [ "$0" -nt "${CONFIGURE_AC}" ]; then
+		has_to_build_configure=yes
+	fi
 fi
 
 if [ ! -e "${MAKEFILE_AM}" ]; then
 	has_to_build_configure=yes
+else
+	if [ "$0" -nt "${MAKEFILE_AM}" ]; then
+		has_to_build_configure=yes
+	fi
 fi
 
 if [ "${has_to_build_configure}" = "yes" ]; then
@@ -577,10 +585,18 @@ GENISSLIB_MAKEFILE_AM="${DEST_DIR}/genisslib/Makefile.am"
 
 if [ ! -e "${GENISSLIB_CONFIGURE_AC}" ]; then
 	has_to_build_genisslib_configure=yes
+else
+	if [ "$0" -nt "${GENISSLIB_CONFIGURE_AC}" ]; then
+		has_to_build_genisslib_configure=yes
+	fi
 fi
 
 if [ ! -e "${GENISSLIB_MAKEFILE_AM}" ]; then
 	has_to_build_genisslib_configure=yes
+else
+	if [ "$0" -nt "${GENISSLIB_MAKEFILE_AM}" ]; then
+		has_to_build_genisslib_configure=yes
+	fi
 fi
 
 if [ "${has_to_build_genisslib_configure}" = "yes" ]; then
@@ -629,10 +645,18 @@ EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM="${DEST_DIR}/embedded_ppc_g4_board/Makefile.am
 
 if [ ! -e "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}" ]; then
 	has_to_build_embedded_ppc_g4_board_configure=yes
+else
+	if [ "$0" -nt "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}" ]; then
+		has_to_build_embedded_ppc_g4_board_configure=yes
+	fi
 fi
 
 if [ ! -e "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}" ]; then
 	has_to_build_embedded_ppc_g4_board_configure=yes
+else
+	if [ "$0" -nt "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}" ]; then
+		has_to_build_embedded_ppc_g4_board_configure=yes
+	fi
 fi
 
 if [ "${has_to_build_embedded_ppc_g4_board_configure}" = "yes" ]; then
@@ -673,10 +697,15 @@ if [ "${has_to_build_embedded_ppc_g4_board_configure}" = "yes" ]; then
 	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
 	echo "EMBEDDED_PPC_G4_BOARD_INCLUDES=-I\$(top_srcdir) -I\$(top_builddir)" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
 	echo "EMBEDDED_PPC_G4_BOARD_DEBUG_INCLUDES=-I\$(top_srcdir) -I\$(top_builddir)" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	echo "bin_PROGRAMS = embedded-ppc-g4-board embedded-ppc-g4-board-debug" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
+	echo "bin_PROGRAMS = embedded-ppc-g4-board embedded-ppc-g4-board-debug embedded-ppc-g4-board-no-pci-stub embedded-ppc-g4-board-no-pci-stub-debug" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
 	echo "embedded_ppc_g4_board_SOURCES = ${UNISIM_LIB_EMBEDDED_PPC_G4_BOARD_SOURCE_FILES} ${UNISIM_SIMULATORS_EMBEDDED_PPC_G4_BOARD_SOURCE_FILES}" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
 	echo "embedded_ppc_g4_board_debug_SOURCES = ${UNISIM_LIB_EMBEDDED_PPC_G4_BOARD_SOURCE_FILES} ${UNISIM_SIMULATORS_EMBEDDED_PPC_G4_BOARD_SOURCE_FILES}" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	echo "embedded_ppc_g4_board_debug_CPPFLAGS = -DDEBUG_EMBEDDED_PPC_G4_BOARD" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
+	echo "embedded_ppc_g4_board_no_pci_stub_SOURCES = ${UNISIM_LIB_EMBEDDED_PPC_G4_BOARD_SOURCE_FILES} ${UNISIM_SIMULATORS_EMBEDDED_PPC_G4_BOARD_SOURCE_FILES}" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
+	echo "embedded_ppc_g4_board_no_pci_stub_debug_SOURCES = ${UNISIM_LIB_EMBEDDED_PPC_G4_BOARD_SOURCE_FILES} ${UNISIM_SIMULATORS_EMBEDDED_PPC_G4_BOARD_SOURCE_FILES}" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
+	echo "embedded_ppc_g4_board_CPPFLAGS = -DWITH_PCI_STUB" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
+	echo "embedded_ppc_g4_board_debug_CPPFLAGS = -DWITH_PCI_STUB -DDEBUG_EMBEDDED_PPC_G4_BOARD" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
+	echo "embedded_ppc_g4_board_no_pci_stub_CPPFLAGS = " >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
+	echo "embedded_ppc_g4_board_no_pci_stub_debug_CPPFLAGS = -DDEBUG_EMBEDDED_PPC_G4_BOARD" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
 	echo "noinst_HEADERS = ${UNISIM_TOOLS_EMBEDDED_PPC_G4_BOARD_HEADER_FILES} ${UNISIM_LIB_EMBEDDED_PPC_G4_BOARD_HEADER_FILES} ${UNISIM_LIB_EMBEDDED_PPC_G4_BOARD_TEMPLATE_FILES} ${UNISIM_SIMULATORS_EMBEDDED_PPC_G4_BOARD_HEADER_FILES} ${UNISIM_SIMULATORS_EMBEDDED_PPC_G4_BOARD_TEMPLATE_FILES}" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
 	echo "EXTRA_DIST = ${UNISIM_LIB_EMBEDDED_PPC_G4_BOARD_M4_FILES}" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
 	echo "sharedir = \$(prefix)/share/embedded-ppc-g4-board" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"

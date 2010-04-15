@@ -110,14 +110,6 @@ PCIStub<ADDRESS>::PCIStub(const char *name, Object *parent) :
 	param_bus_frequency("bus-frequency", this, bus_frequency)
 {
 	Object::SetupDependsOn(memory_access_reporting_control_import);
-	
-	unsigned num_region;
-	for(num_region = 0; num_region < NUM_REGIONS; num_region++)
-	{
-		initial_base_addr[num_region] = 0;
-		address_space[num_region] = unisim::component::cxx::pci::SP_MEM;
-		region_size[num_region] = 0;
-	}
 }
 
 template <class ADDRESS>
