@@ -40,6 +40,10 @@
 #include "unisim/kernel/service/config.hh"
 #endif
 
+#ifndef BIN_TO_SHARED_DATA_PATH
+#error "BIN_TO_SHARED_DATA_PATH is undefined"
+#endif
+
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger_server.hh"
 #include <fstream>
@@ -47,6 +51,16 @@
 #include <iostream>
 #include <iomanip>
 #include <stdlib.h>
+#include <unistd.h>
+#include <limits.h>
+
+#if defined(WIN32)
+#include <windows.h>
+#endif
+
+#if defined(__APPLE_CC__)
+#include <mach-o/dyld.h>
+#endif
 
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/topological_sort.hpp>
@@ -145,7 +159,7 @@ Object *VariableBase::GetOwner() const
 	return owner;
 }
 
-VariableBase *VariableBase::GetObject() const
+VariableBase *VariableBase::GetContainer() const
 {
 	return container;
 }
@@ -1555,6 +1569,8 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	, enable_version(false)
 	, enable_help(false)
 	, enable_warning(false)
+	, warn_get_bin_path(false)
+	, warn_get_share_path(false)
 	, param_get_config(0)
 	, cmd_args(0)
 	, param_cmd_args(0)
@@ -1580,36 +1596,25 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	var_description = new Parameter<string>("description", 0, description, "Description");
 	var_license = new Parameter<string>("license", 0, license, "License");
 	
-	// compute bin dirname
-	char *end = argv[0] + strlen(argv[0]) - 1;
-	while(end != (argv[0] - 1) && 
-#ifdef WIN32
-	      (*end != '\\') &&
-#endif
-	      (*end != '/'))
+	if(GetBinPath(argv[0], bin_dir, program_binary))
 	{
-		end--;
-	}
-	
-	if(end != (argv[0] - 1))
-	{
-		char *p = argv[0];
-		while(p != end)
+		std::cerr << "bin_dir=\"" << bin_dir << "\"" << std::endl;
+		std::cerr << "program_binary=\"" << program_binary << "\"" << std::endl;
+
+		if(GetSharePath(bin_dir, shared_data_dir))
 		{
-			shared_data_dir += *p;
-			p++;
+			std::cerr << "shared_data_dir=\"" << shared_data_dir << "\"" << std::endl;
 		}
-		
-		// append path of shared data relative to bin directory
-		shared_data_dir += '/';
-		
-		program_binary = end + 1;
+		else
+		{
+			warn_get_share_path = true;
+		}
 	}
 	else
 	{
-		program_binary = argv[0];
+		warn_get_bin_path = true;
+		warn_get_share_path = true;
 	}
-	shared_data_dir += BIN_TO_SHARED_DATA_PATH;
 	
 	// parse command line arguments
 	int state = 0;
@@ -1657,6 +1662,14 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 					{
 						cerr << "WARNING! No built-in parameters set loaded" << endl;
 					}
+					if(warn_get_bin_path)
+					{
+						cerr << "WARNING! Can't determine binary directory" << endl;
+					}
+					if(warn_get_share_path)
+					{
+						cerr << "WARNING! Can't determine share directory" << endl;
+					}
 				}
 				else
 				{
@@ -1693,7 +1706,6 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 				}
 				else if(enable_warning)
 				{
-					
 					cerr << "WARNING! Loading parameters set from file \"" << (*arg) << "\" failed" << endl;
 				}
 				arg++;
@@ -2352,6 +2364,140 @@ void Simulator::GetRootObjects(list<Object *>& lst)
 			}
 		}
 	}
+}
+
+bool Simulator::GetExecutablePath(const char *argv0, std::string& out_executable_path) const
+{
+#if defined(linux)
+	char bin_path_buf[PATH_MAX + 1];
+	ssize_t bin_path_length;
+	bin_path_length = readlink("/proc/self/exe", bin_path_buf, sizeof(bin_path_buf));
+	if(bin_path_length >= 0)
+	{
+		bin_path_buf[bin_path_length] = 0;
+		out_executable_path = std::string(bin_path_buf);
+		return true;
+	}
+#elif defined(WIN32)
+	char bin_path_buf[PATH_MAX + 1];
+	DWORD bin_path_length;
+	bin_path_length = GetModuleFileName(NULL, bin_path_buf, sizeof(bin_path_buf));
+	if(bin_path_length > 0)
+	{
+		bin_path_buf[bin_path_length] = 0;
+		out_executable_path = std::string(bin_path_buf);
+		return true;
+	}
+#elif defined(__APPLE_CC__)
+	uint32_t bin_path_buf_size = 0;
+	_NSGetExecutablePath(0, &bin_path_buf_size);
+	char bin_path_buf[bin_path_buf_size];
+	if(_NSGetExecutablePath(bin_path_buf, &bin_path_buf_size) == 0)
+	{
+		out_executable_path = std::string(bin_path_buf);
+		return true;
+	}
+#endif
+	char *path_buf = getenv("PATH");
+	if(path_buf)
+	{
+		// environment variable PATH is set
+		std::string path(path_buf);
+		
+		size_t pos = 0;
+		size_t next_pos = 0;
+		do
+		{
+			next_pos = path.find(':', pos);
+			if(next_pos != std::string::npos)
+			{
+				if(pos != next_pos)
+				{
+					std::string dir(path.substr(pos, next_pos - pos));
+					std::string filename(dir + "/" + argv0);
+					if(access(filename.c_str(), X_OK) == 0)
+					{
+						out_executable_path = filename;
+						return true;
+					}
+				}
+				pos = next_pos + 1;
+			}
+		} while(next_pos != std::string::npos);
+		
+		char cwd_path_buf[PATH_MAX];
+		if(getcwd(cwd_path_buf, sizeof(cwd_path_buf)))
+		{
+			out_executable_path = std::string(cwd_path_buf) + "/" + argv0;
+			return true;
+		}
+	}
+	if(access(argv0, X_OK) == 0)
+	{
+		out_executable_path = std::string(argv0);
+		return true;
+	}
+	return false;
+}
+
+bool Simulator::GetBinPath(const char *argv0, std::string& out_bin_dir, std::string& out_bin_program) const
+{
+	std::string executable_path;
+	
+	if(!GetExecutablePath(argv0, executable_path)) return false;
+	std::cerr << "executable_path=\"" << executable_path << "\"" << std::endl;
+	// compute bin dirname
+	const char *start = executable_path.c_str();
+	const char *end = start + executable_path.length() - 1;
+	while(end != (start - 1) && 
+#ifdef WIN32
+	      (*end != '\\') &&
+#endif
+	      (*end != '/'))
+	{
+		end--;
+	}
+	
+	if(end != (start - 1))
+	{
+		out_bin_dir.clear();
+		const char *p = start;
+		while(p != end)
+		{
+			out_bin_dir += *p;
+			p++;
+		}
+		
+		out_bin_program = end + 1;
+		return true;
+	}
+	return false;
+}
+
+bool Simulator::GetSharePath(const std::string& bin_dir, std::string& out_share_dir) const
+{
+	// append path of shared data relative to bin directory
+	std::string unresolved_shared_data_dir = bin_dir;
+	unresolved_shared_data_dir += '/';
+	unresolved_shared_data_dir += BIN_TO_SHARED_DATA_PATH;
+	char resolved_shared_data_dir_buf[PATH_MAX + 1];
+		
+#if defined(unix)
+	if(realpath(unresolved_shared_data_dir.c_str(), resolved_shared_data_dir_buf))
+	{
+		out_share_dir = resolved_shared_data_dir_buf;
+		return true;
+	}
+#elif defined(WIN32)
+	DWORD length = GetFullPathName(unresolved_shared_data_dir.c_str(), PATH_MAX + 1, resolved_shared_data_dir_buf, 0);
+	if(length > 0)
+	{
+		resolved_shared_data_dir_buf[length] = 0;
+		out_share_dir = resolved_shared_data_dir_buf;
+		return true;
+	}
+#endif
+	return false;
 }
 
 string Simulator::SearchSharedDataFile(const char *filename) const

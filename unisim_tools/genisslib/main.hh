@@ -19,10 +19,14 @@
 #define __MAIN_HH__
 
 #define GENISSLIB "GenISSLib"
-#define GENISSLIB_VERSION "2.1"
+
+#ifndef GENISSLIB_VERSION
+#define GENISSLIB_VERSION "???"
+#endif
+
 #define AUTHORS "Gilles Mouchard, Yves Lhuillier"
 #define EMAILS "gilles.mouchard@cea.fr, yves.lhuillier@cea.fr"
-#define COPYRIGHT "Copyright (c) 2003-2007 CEA and Universite Paris Sud"
+#define COPYRIGHT "Copyright (c) 2003-2010 Commissariat a l'Energie Atomique (CEA) and Universite Paris Sud"
 
 struct Opts {
   Opts();

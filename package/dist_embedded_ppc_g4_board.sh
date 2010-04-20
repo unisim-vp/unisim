@@ -2,21 +2,21 @@
 function Usage
 {
 	echo "Usage:"
-	echo "  $0 <genisslib version> <embedded-ppc-g4-board version> <destination directory> <unisim_tools directory> <unisim_lib directory> <unisim_simulators directory>"
+	echo "  $0 <genisslib version> <embedded-ppc-g4-board version> <destination directory> <unisim repository>"
 }
 
-if [ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ] || [ -z "$4" ] || [ -z "$5" ] || [ -z "$6" ]; then
+if [ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ] || [ -z "$4" ]; then
 	Usage
 	exit -1
 fi
 
 HERE=`pwd`
-GENISSLIB_VERSION=$1
 EMBEDDED_PPC_G4_BOARD_VERSION=$2
+GENISSLIB_VERSION=$1-embedded_ppc_g4_board-${EMBEDDED_PPC_G4_BOARD_VERSION}
 DEST_DIR=$3
-UNISIM_TOOLS_DIR=$4
-UNISIM_LIB_DIR=$5
-UNISIM_SIMULATORS_DIR=$6/tlm/embedded_ppc_g4_board
+UNISIM_TOOLS_DIR=$4/unisim_tools
+UNISIM_LIB_DIR=$4/unisim_lib
+UNISIM_SIMULATORS_DIR=$4/unisim_simulators/tlm/embedded_ppc_g4_board
 
 UNISIM_TOOLS_GENISSLIB_HEADER_FILES="\
 action.hh \
@@ -327,7 +327,10 @@ m4/bsd_sockets.m4 \
 m4/curses.m4 \
 m4/libedit.m4 \
 m4/systemc.m4 \
-m4/with_boost.m4"
+m4/with_boost.m4 \
+m4/check_lib.m4 \
+m4/get_exec_path.m4 \
+m4/real_path.m4"
 
 UNISIM_LIB_EMBEDDED_PPC_G4_BOARD_DATA_FILES="\
 unisim/service/debug/gdb_server/gdb_powerpc.xml"
@@ -385,6 +388,7 @@ NEWS \
 README \
 AUTHORS \
 ChangeLog \
+template_default_config.xml \
 unisim.ico"
 
 UNISIM_SIMULATORS_EMBEDDED_PPC_G4_BOARD_TESTBENCH_FILES=""
@@ -556,7 +560,7 @@ fi
 
 if [ "${has_to_build_configure}" = "yes" ]; then
 	echo "Generating configure.ac"
-	echo "AC_INIT([UNISIM PowerMAC G4 PCI Standalone simulator], [${EMBEDDED_PPC_G4_BOARD_VERSION}], [Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Perez <daniel.gracia-perez@cea.fr>, Reda Nouacer <reda.nouacer@cea.fr>], [embedded_ppc_g4_board])" > "${DEST_DIR}/configure.ac"
+	echo "AC_INIT([UNISIM PowerMAC G4 PCI Standalone simulator], [${EMBEDDED_PPC_G4_BOARD_VERSION}], [Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Perez <daniel.gracia-perez@cea.fr>, Reda Nouacer <reda.nouacer@cea.fr>], [embedded-ppc-g4-board])" > "${DEST_DIR}/configure.ac"
 	echo "AC_CONFIG_AUX_DIR(config)" >> "${CONFIGURE_AC}"
 	echo "AC_CANONICAL_BUILD" >> "${CONFIGURE_AC}"
 	echo "AC_CANONICAL_HOST" >> "${CONFIGURE_AC}"
@@ -620,6 +624,7 @@ if [ "${has_to_build_genisslib_configure}" = "yes" ]; then
 	echo "AC_CONFIG_FILES([Makefile])" >> "${GENISSLIB_CONFIGURE_AC}"
 	echo "AC_OUTPUT" >> "${GENISSLIB_CONFIGURE_AC}"
 
+	AM_GENISSLIB_VERSION=`printf ${GENISSLIB_VERSION} | sed -e 's/\./_/g'`
 	echo "Generating GENISSLIB Makefile.am"
 	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${GENISSLIB_MAKEFILE_AM}"
 	echo "BUILT_SOURCES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
@@ -629,6 +634,7 @@ if [ "${has_to_build_genisslib_configure}" = "yes" ]; then
 	echo "genisslib_INCLUDES=-I\$(top_srcdir) -I\$(top_builddir)" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "noinst_PROGRAMS = genisslib" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "genisslib_SOURCES = ${UNISIM_TOOLS_GENISSLIB_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
+	echo "genisslib_CPPFLAGS = -DGENISSLIB_VERSION=\\\"${GENISSLIB_VERSION}\\\"" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "noinst_HEADERS= ${UNISIM_TOOLS_GENISSLIB_HEADER_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "EXTRA_DIST = ${UNISIM_TOOLS_GENISSLIB_M4_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 
@@ -661,7 +667,7 @@ fi
 
 if [ "${has_to_build_embedded_ppc_g4_board_configure}" = "yes" ]; then
 	echo "Generating embedded_ppc_g4_board configure.ac"
-	echo "AC_INIT([UNISIM PowerMac G4 PCI C++ simulator], [${EMBEDDED_PPC_G4_BOARD_VERSION}], [Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Perez <daniel.gracia-perez@cea.fr>, Reda Nouacer <reda.nouacer@cea.fr>], [embedded_ppc_g4_board])" > "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
+	echo "AC_INIT([UNISIM PowerMac G4 PCI C++ simulator], [${EMBEDDED_PPC_G4_BOARD_VERSION}], [Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Perez <daniel.gracia-perez@cea.fr>, Reda Nouacer <reda.nouacer@cea.fr>], [embedded-ppc-g4-board-core])" > "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
 	echo "AC_CONFIG_MACRO_DIR([m4])" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
 	echo "AC_CONFIG_AUX_DIR(config)" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
 	echo "AC_CONFIG_HEADERS([config.h])" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
@@ -687,28 +693,30 @@ if [ "${has_to_build_embedded_ppc_g4_board_configure}" = "yes" ]; then
 	echo "UNISIM_CHECK_SYSTEMC" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
 	echo "UNISIM_WITH_BOOST" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_BOOST_GRAPH" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_GET_EXECUTABLE_PATH" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_REAL_PATH" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
 	echo "GENISSLIB_PATH=\`pwd\`/../genisslib/genisslib" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
 	echo "AC_SUBST(GENISSLIB_PATH)" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
-	echo "AC_DEFINE([BIN_TO_SHARED_DATA_PATH], [\"../share/embedded-ppc-g4-board\"], [path of shared data relative to bin directory])" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
+	echo "AC_DEFINE([BIN_TO_SHARED_DATA_PATH], [\"../share/embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}\"], [path of shared data relative to bin directory])" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
 	echo "AC_CONFIG_FILES([Makefile])" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
 	echo "AC_OUTPUT" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
 
+	AM_EMBEDDED_PPC_G4_BOARD_VERSION=`printf ${EMBEDDED_PPC_G4_BOARD_VERSION} | sed -e 's/\./_/g'`
 	echo "Generating embedded_ppc_g4_board Makefile.am"
 	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	echo "EMBEDDED_PPC_G4_BOARD_INCLUDES=-I\$(top_srcdir) -I\$(top_builddir)" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	echo "EMBEDDED_PPC_G4_BOARD_DEBUG_INCLUDES=-I\$(top_srcdir) -I\$(top_builddir)" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	echo "bin_PROGRAMS = embedded-ppc-g4-board embedded-ppc-g4-board-debug embedded-ppc-g4-board-no-pci-stub embedded-ppc-g4-board-no-pci-stub-debug" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	echo "embedded_ppc_g4_board_SOURCES = ${UNISIM_LIB_EMBEDDED_PPC_G4_BOARD_SOURCE_FILES} ${UNISIM_SIMULATORS_EMBEDDED_PPC_G4_BOARD_SOURCE_FILES}" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	echo "embedded_ppc_g4_board_debug_SOURCES = ${UNISIM_LIB_EMBEDDED_PPC_G4_BOARD_SOURCE_FILES} ${UNISIM_SIMULATORS_EMBEDDED_PPC_G4_BOARD_SOURCE_FILES}" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	echo "embedded_ppc_g4_board_no_pci_stub_SOURCES = ${UNISIM_LIB_EMBEDDED_PPC_G4_BOARD_SOURCE_FILES} ${UNISIM_SIMULATORS_EMBEDDED_PPC_G4_BOARD_SOURCE_FILES}" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	echo "embedded_ppc_g4_board_no_pci_stub_debug_SOURCES = ${UNISIM_LIB_EMBEDDED_PPC_G4_BOARD_SOURCE_FILES} ${UNISIM_SIMULATORS_EMBEDDED_PPC_G4_BOARD_SOURCE_FILES}" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	echo "embedded_ppc_g4_board_CPPFLAGS = -DWITH_PCI_STUB" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	echo "embedded_ppc_g4_board_debug_CPPFLAGS = -DWITH_PCI_STUB -DDEBUG_EMBEDDED_PPC_G4_BOARD" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	echo "embedded_ppc_g4_board_no_pci_stub_CPPFLAGS = " >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	echo "embedded_ppc_g4_board_no_pci_stub_debug_CPPFLAGS = -DDEBUG_EMBEDDED_PPC_G4_BOARD" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
+	echo "INCLUDES=-I\$(top_srcdir) -I\$(top_builddir)" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
+	echo "bin_PROGRAMS = embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION} embedded-ppc-g4-board-debug-${EMBEDDED_PPC_G4_BOARD_VERSION} embedded-ppc-g4-board-no-pci-stub-${EMBEDDED_PPC_G4_BOARD_VERSION} embedded-ppc-g4-board-no-pci-stub-debug-${EMBEDDED_PPC_G4_BOARD_VERSION}" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
+	echo "embedded_ppc_g4_board_${AM_EMBEDDED_PPC_G4_BOARD_VERSION}_SOURCES = ${UNISIM_LIB_EMBEDDED_PPC_G4_BOARD_SOURCE_FILES} ${UNISIM_SIMULATORS_EMBEDDED_PPC_G4_BOARD_SOURCE_FILES}" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
+	echo "embedded_ppc_g4_board_debug_${AM_EMBEDDED_PPC_G4_BOARD_VERSION}_SOURCES = ${UNISIM_LIB_EMBEDDED_PPC_G4_BOARD_SOURCE_FILES} ${UNISIM_SIMULATORS_EMBEDDED_PPC_G4_BOARD_SOURCE_FILES}" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
+	echo "embedded_ppc_g4_board_no_pci_stub_${AM_EMBEDDED_PPC_G4_BOARD_VERSION}_SOURCES = ${UNISIM_LIB_EMBEDDED_PPC_G4_BOARD_SOURCE_FILES} ${UNISIM_SIMULATORS_EMBEDDED_PPC_G4_BOARD_SOURCE_FILES}" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
+	echo "embedded_ppc_g4_board_no_pci_stub_debug_${AM_EMBEDDED_PPC_G4_BOARD_VERSION}_SOURCES = ${UNISIM_LIB_EMBEDDED_PPC_G4_BOARD_SOURCE_FILES} ${UNISIM_SIMULATORS_EMBEDDED_PPC_G4_BOARD_SOURCE_FILES}" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
+	echo "embedded_ppc_g4_board_${AM_EMBEDDED_PPC_G4_BOARD_VERSION}_CPPFLAGS = -DWITH_PCI_STUB" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
+	echo "embedded_ppc_g4_board_debug_${AM_EMBEDDED_PPC_G4_BOARD_VERSION}_CPPFLAGS = -DWITH_PCI_STUB -DDEBUG_EMBEDDED_PPC_G4_BOARD" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
+	echo "embedded_ppc_g4_board_no_pci_stub_${AM_EMBEDDED_PPC_G4_BOARD_VERSION}_CPPFLAGS = " >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
+	echo "embedded_ppc_g4_board_no_pci_stub_${AM_EMBEDDED_PPC_G4_BOARD_VERSION}_debug_CPPFLAGS = -DDEBUG_EMBEDDED_PPC_G4_BOARD" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
 	echo "noinst_HEADERS = ${UNISIM_TOOLS_EMBEDDED_PPC_G4_BOARD_HEADER_FILES} ${UNISIM_LIB_EMBEDDED_PPC_G4_BOARD_HEADER_FILES} ${UNISIM_LIB_EMBEDDED_PPC_G4_BOARD_TEMPLATE_FILES} ${UNISIM_SIMULATORS_EMBEDDED_PPC_G4_BOARD_HEADER_FILES} ${UNISIM_SIMULATORS_EMBEDDED_PPC_G4_BOARD_TEMPLATE_FILES}" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
 	echo "EXTRA_DIST = ${UNISIM_LIB_EMBEDDED_PPC_G4_BOARD_M4_FILES}" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	echo "sharedir = \$(prefix)/share/embedded-ppc-g4-board" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
+	echo "sharedir = \$(prefix)/share/embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
 	echo "dist_share_DATA = ${UNISIM_LIB_EMBEDDED_PPC_G4_BOARD_DATA_FILES} ${UNISIM_SIMULATORS_EMBEDDED_PPC_G4_BOARD_DATA_FILES}" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
 
 	echo "BUILT_SOURCES=\$(top_srcdir)/unisim/component/cxx/processor/powerpc/powerpc.hh \$(top_srcdir)/unisim/component/cxx/processor/powerpc/powerpc.tcc" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
@@ -725,7 +733,7 @@ if [ "${has_to_build_embedded_ppc_g4_board_configure}" = "yes" ]; then
 	printf "\tfor PROGRAM in \$\${PROGRAMS}; do \\\\\n" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
 	printf "\trm -f \"\$(top_builddir)/bin/\`basename \$\${PROGRAM}\`\"; \\\\\n" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
 	printf "\tmkdir -p '\$(top_builddir)/bin'; \\\\\n" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	printf "\t(cd '\$(top_builddir)/bin' && \$(LN_S) \"\$(abs_top_builddir)/\$\${PROGRAM}\" \`basename \"\$\${PROGRAM}\"\`); \\\\\n" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
+	printf "\t(cd '\$(top_builddir)/bin' && cp -f \"\$(abs_top_builddir)/\$\${PROGRAM}\" \`basename \"\$\${PROGRAM}\"\`); \\\\\n" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
 	printf "\tdone\n" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
 	echo "clean-local-bin:" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
 	printf "\t@if [ ! -z '\$(bin_PROGRAMS)' ]; then \\\\\n" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
@@ -734,9 +742,9 @@ if [ "${has_to_build_embedded_ppc_g4_board_configure}" = "yes" ]; then
 	echo "all-local-share: \$(dist_share_DATA)" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
 	printf "\t@SHARED_DATAS='\$(dist_share_DATA)'; \\\\\n" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
 	printf "\tfor SHARED_DATA in \$\${SHARED_DATAS}; do \\\\\n" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	printf "\trm -f \"\$(top_builddir)/share/ppcemu/\`basename \$\${SHARED_DATA}\`\"; \\\\\n" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	printf "\tmkdir -p '\$(top_builddir)/share/ppcemu'; \\\\\n" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	printf "\t(cd '\$(top_builddir)/share/ppcemu' && \$(LN_S) \"\$(abs_top_builddir)/\$\${SHARED_DATA}\" \`basename \"\$\${SHARED_DATA}\"\`); \\\\\n" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
+	printf "\trm -f \"\$(top_builddir)/share/embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/\`basename \$\${SHARED_DATA}\`\"; \\\\\n" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
+	printf "\tmkdir -p '\$(top_builddir)/share/embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}'; \\\\\n" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
+	printf "\t(cd '\$(top_builddir)/share/embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}' && cp -f \"\$(abs_top_builddir)/\$\${SHARED_DATA}\" \`basename \"\$\${SHARED_DATA}\"\`); \\\\\n" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
 	printf "\tdone\n" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
 	echo "clean-local-share:" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
 	printf "\t@if [ ! -z '\$(dist_share_DATA)' ]; then \\\\\n" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"

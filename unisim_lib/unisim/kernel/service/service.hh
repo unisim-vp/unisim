@@ -133,7 +133,7 @@ public:
 	virtual ~VariableBase();
 
 	Object *GetOwner() const;
-	VariableBase *GetObject() const;
+	VariableBase *GetContainer() const;
 	const char *GetName() const;
 	const char *GetVarName() const;
 	const char *GetDescription() const;
@@ -228,6 +228,9 @@ public:
 	void DumpRegisters(ostream& os);
 	void DumpFormulas(ostream& os);
 
+	bool GetExecutablePath(const char *argv0, std::string& out_execute_path) const;
+	bool GetBinPath(const char *argv0, std::string& out_bin_dir, std::string& out_bin_program) const;
+	bool GetSharePath(const std::string& bin_dir, std::string& out_share_dir) const;
 	string SearchSharedDataFile(const char *filename) const;
 
 private:
@@ -248,6 +251,9 @@ private:
 	bool enable_warning;
 	bool enable_version;
 	bool enable_help;
+	bool warn_get_bin_path;
+	bool warn_get_share_path;
+	string bin_dir;
 	string program_binary;
 	string program_name;
 	string authors;

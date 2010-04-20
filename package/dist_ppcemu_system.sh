@@ -2,21 +2,21 @@
 function Usage
 {
 	echo "Usage:"
-	echo "  $0 <genisslib version> <ppcemu-system version> <destination directory> <unisim_tools directory> <unisim_lib directory> <unisim_simulators directory>"
+	echo "  $0 <genisslib version> <ppcemu-system version> <destination directory> <unisim repository>"
 }
 
-if [ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ] || [ -z "$4" ] || [ -z "$5" ] || [ -z "$6" ]; then
+if [ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ] || [ -z "$4" ]; then
 	Usage
 	exit -1
 fi
 
 HERE=`pwd`
-GENISSLIB_VERSION=$1
 PPCEMU_SYSTEM_VERSION=$2
+GENISSLIB_VERSION=$1-ppcemu_system-${PPCEMU_SYSTEM_VERSION}
 DEST_DIR=$3
-UNISIM_TOOLS_DIR=$4
-UNISIM_LIB_DIR=$5
-UNISIM_SIMULATORS_DIR=$6/tlm/ppcemu_system
+UNISIM_TOOLS_DIR=$4/unisim_tools
+UNISIM_LIB_DIR=$4/unisim_lib
+UNISIM_SIMULATORS_DIR=$4/unisim_simulators/tlm/ppcemu_system
 
 UNISIM_TOOLS_GENISSLIB_HEADER_FILES="\
 action.hh \
@@ -370,7 +370,9 @@ m4/libedit.m4 \
 m4/systemc.m4 \
 m4/with_boost.m4 \
 m4/sdl.m4 \
-m4/check_lib.m4"
+m4/check_lib.m4 \
+m4/get_exec_path.m4 \
+m4/real_path.m4"
 
 UNISIM_LIB_PPCEMU_SYSTEM_DATA_FILES="\
 unisim/service/debug/gdb_server/gdb_powerpc.xml \
@@ -434,7 +436,7 @@ README \
 AUTHORS \
 ChangeLog \
 unisim.ico \
-default_config.xml \
+template_default_config.xml \
 vmlinux \
 initrd.img"
 
@@ -608,7 +610,7 @@ fi
 
 if [ "${has_to_build_configure}" = "yes" ]; then
 	echo "Generating configure.ac"
-	echo "AC_INIT([UNISIM PowerMAC G4 PCI Standalone simulator], [${PPCEMU_SYSTEM_VERSION}], [Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Perez <daniel.gracia-perez@cea.fr>, Reda Nouacer <reda.nouacer@cea.fr>], [ppcemu_system])" > "${DEST_DIR}/configure.ac"
+	echo "AC_INIT([UNISIM PowerMAC G4 PCI Standalone simulator], [${PPCEMU_SYSTEM_VERSION}], [Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Perez <daniel.gracia-perez@cea.fr>, Reda Nouacer <reda.nouacer@cea.fr>], [ppcemu-system])" > "${DEST_DIR}/configure.ac"
 	echo "AC_CONFIG_AUX_DIR(config)" >> "${CONFIGURE_AC}"
 	echo "AC_CANONICAL_BUILD" >> "${CONFIGURE_AC}"
 	echo "AC_CANONICAL_HOST" >> "${CONFIGURE_AC}"
@@ -672,6 +674,7 @@ if [ "${has_to_build_genisslib_configure}" = "yes" ]; then
 	echo "AC_CONFIG_FILES([Makefile])" >> "${GENISSLIB_CONFIGURE_AC}"
 	echo "AC_OUTPUT" >> "${GENISSLIB_CONFIGURE_AC}"
 
+	AM_GENISSLIB_VERSION=`printf ${GENISSLIB_VERSION} | sed -e 's/\./_/g'`
 	echo "Generating GENISSLIB Makefile.am"
 	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${GENISSLIB_MAKEFILE_AM}"
 	echo "BUILT_SOURCES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
@@ -681,6 +684,7 @@ if [ "${has_to_build_genisslib_configure}" = "yes" ]; then
 	echo "genisslib_INCLUDES=-I\$(top_srcdir) -I\$(top_builddir)" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "noinst_PROGRAMS = genisslib" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "genisslib_SOURCES = ${UNISIM_TOOLS_GENISSLIB_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
+	echo "genisslib_CPPFLAGS = -DGENISSLIB_VERSION=\\\"${GENISSLIB_VERSION}\\\"" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "noinst_HEADERS= ${UNISIM_TOOLS_GENISSLIB_HEADER_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "EXTRA_DIST = ${UNISIM_TOOLS_GENISSLIB_M4_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 
@@ -713,7 +717,7 @@ fi
 
 if [ "${has_to_build_ppcemu_system_configure}" = "yes" ]; then
 	echo "Generating ppcemu_system configure.ac"
-	echo "AC_INIT([UNISIM PowerMac G4 PCI C++ simulator], [${PPCEMU_SYSTEM_VERSION}], [Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Perez <daniel.gracia-perez@cea.fr>, Reda Nouacer <reda.nouacer@cea.fr>], [ppcemu_system])" > "${PPCEMU_SYSTEM_CONFIGURE_AC}"
+	echo "AC_INIT([UNISIM PowerMac G4 PCI C++ simulator], [${PPCEMU_SYSTEM_VERSION}], [Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Perez <daniel.gracia-perez@cea.fr>, Reda Nouacer <reda.nouacer@cea.fr>], [ppcemu-system-core])" > "${PPCEMU_SYSTEM_CONFIGURE_AC}"
 	echo "AC_CONFIG_MACRO_DIR([m4])" >> "${PPCEMU_SYSTEM_CONFIGURE_AC}"
 	echo "AC_CONFIG_AUX_DIR(config)" >> "${PPCEMU_SYSTEM_CONFIGURE_AC}"
 	echo "AC_CONFIG_HEADERS([config.h])" >> "${PPCEMU_SYSTEM_CONFIGURE_AC}"
@@ -740,23 +744,25 @@ if [ "${has_to_build_ppcemu_system_configure}" = "yes" ]; then
 	echo "UNISIM_CHECK_SYSTEMC" >> "${PPCEMU_SYSTEM_CONFIGURE_AC}"
 	echo "UNISIM_WITH_BOOST" >> "${PPCEMU_SYSTEM_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_BOOST_GRAPH" >> "${PPCEMU_SYSTEM_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_GET_EXECUTABLE_PATH" >> "${PPCEMU_SYSTEM_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_REAL_PATH" >> "${PPCEMU_SYSTEM_CONFIGURE_AC}"
 	echo "GENISSLIB_PATH=\`pwd\`/../genisslib/genisslib" >> "${PPCEMU_SYSTEM_CONFIGURE_AC}"
 	echo "AC_SUBST(GENISSLIB_PATH)" >> "${PPCEMU_SYSTEM_CONFIGURE_AC}"
-	echo "AC_DEFINE([BIN_TO_SHARED_DATA_PATH], [\"../share/ppcemu-system\"], [path of shared data relative to bin directory])" >> "${PPCEMU_SYSTEM_CONFIGURE_AC}"
+	echo "AC_DEFINE([BIN_TO_SHARED_DATA_PATH], [\"../share/ppcemu-system-${PPCEMU_SYSTEM_VERSION}\"], [path of shared data relative to bin directory])" >> "${PPCEMU_SYSTEM_CONFIGURE_AC}"
 	echo "AC_CONFIG_FILES([Makefile])" >> "${PPCEMU_SYSTEM_CONFIGURE_AC}"
 	echo "AC_OUTPUT" >> "${PPCEMU_SYSTEM_CONFIGURE_AC}"
 
+	AM_PPCEMU_SYSTEM_VERSION=`printf ${PPCEMU_SYSTEM_VERSION} | sed -e 's/\./_/g'`
 	echo "Generating ppcemu_system Makefile.am"
 	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${PPCEMU_SYSTEM_MAKEFILE_AM}"
-	echo "PPCEMU_SYSTEM_INCLUDES=-I\$(top_srcdir) -I\$(top_builddir)" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
-	echo "PPCEMU_SYSTEM_DEBUG_INCLUDES=-I\$(top_srcdir) -I\$(top_builddir)" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
-	echo "bin_PROGRAMS = ppcemu-system ppcemu-system-debug" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
-	echo "ppcemu_system_SOURCES = ${UNISIM_LIB_PPCEMU_SYSTEM_SOURCE_FILES} ${UNISIM_SIMULATORS_PPCEMU_SYSTEM_SOURCE_FILES}" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
-	echo "ppcemu_system_debug_SOURCES = ${UNISIM_LIB_PPCEMU_SYSTEM_SOURCE_FILES} ${UNISIM_SIMULATORS_PPCEMU_SYSTEM_SOURCE_FILES}" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
-	echo "ppcemu_system_debug_CPPFLAGS = -DDEBUG_PPCEMU_SYSTEM" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
+	echo "INCLUDES=-I\$(top_srcdir) -I\$(top_builddir)" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
+	echo "bin_PROGRAMS = ppcemu-system-${PPCEMU_SYSTEM_VERSION} ppcemu-system-debug-${PPCEMU_SYSTEM_VERSION}" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
+	echo "ppcemu_system_${AM_PPCEMU_SYSTEM_VERSION}_SOURCES = ${UNISIM_LIB_PPCEMU_SYSTEM_SOURCE_FILES} ${UNISIM_SIMULATORS_PPCEMU_SYSTEM_SOURCE_FILES}" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
+	echo "ppcemu_system_debug_${AM_PPCEMU_SYSTEM_VERSION}_SOURCES = ${UNISIM_LIB_PPCEMU_SYSTEM_SOURCE_FILES} ${UNISIM_SIMULATORS_PPCEMU_SYSTEM_SOURCE_FILES}" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
+	echo "ppcemu_system_debug_${AM_PPCEMU_SYSTEM_VERSION}_CPPFLAGS = -DDEBUG_PPCEMU_SYSTEM" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
 	echo "noinst_HEADERS = ${UNISIM_TOOLS_PPCEMU_SYSTEM_HEADER_FILES} ${UNISIM_LIB_PPCEMU_SYSTEM_HEADER_FILES} ${UNISIM_LIB_PPCEMU_SYSTEM_TEMPLATE_FILES} ${UNISIM_SIMULATORS_PPCEMU_SYSTEM_HEADER_FILES} ${UNISIM_SIMULATORS_PPCEMU_SYSTEM_TEMPLATE_FILES}" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
 	echo "EXTRA_DIST = ${UNISIM_LIB_PPCEMU_SYSTEM_M4_FILES}" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
-	echo "sharedir = \$(prefix)/share/ppcemu-system" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
+	echo "sharedir = \$(prefix)/share/ppcemu-system-${PPCEMU_SYSTEM_VERSION}" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
 	echo "dist_share_DATA = ${UNISIM_LIB_PPCEMU_SYSTEM_DATA_FILES} ${UNISIM_SIMULATORS_PPCEMU_SYSTEM_DATA_FILES}" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
 
 	echo "BUILT_SOURCES=\$(top_srcdir)/unisim/component/cxx/processor/powerpc/powerpc.hh \$(top_srcdir)/unisim/component/cxx/processor/powerpc/powerpc.tcc" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
@@ -772,7 +778,7 @@ if [ "${has_to_build_ppcemu_system_configure}" = "yes" ]; then
 	printf "\tfor PROGRAM in \$\${PROGRAMS}; do \\\\\n" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
 	printf "\trm -f \"\$(top_builddir)/bin/\`basename \$\${PROGRAM}\`\"; \\\\\n" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
 	printf "\tmkdir -p '\$(top_builddir)/bin'; \\\\\n" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
-	printf "\t(cd '\$(top_builddir)/bin' && \$(LN_S) \"\$(abs_top_builddir)/\$\${PROGRAM}\" \`basename \"\$\${PROGRAM}\"\`); \\\\\n" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
+	printf "\t(cd '\$(top_builddir)/bin' && cp -f \"\$(abs_top_builddir)/\$\${PROGRAM}\" \`basename \"\$\${PROGRAM}\"\`); \\\\\n" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
 	printf "\tdone\n" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
 	echo "clean-local-bin:" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
 	printf "\t@if [ ! -z '\$(bin_PROGRAMS)' ]; then \\\\\n" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
@@ -781,9 +787,9 @@ if [ "${has_to_build_ppcemu_system_configure}" = "yes" ]; then
 	echo "all-local-share: \$(dist_share_DATA)" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
 	printf "\t@SHARED_DATAS='\$(dist_share_DATA)'; \\\\\n" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
 	printf "\tfor SHARED_DATA in \$\${SHARED_DATAS}; do \\\\\n" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
-	printf "\trm -f \"\$(top_builddir)/share/ppcemu-system/\`basename \$\${SHARED_DATA}\`\"; \\\\\n" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
-	printf "\tmkdir -p '\$(top_builddir)/share/ppcemu-system'; \\\\\n" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
-	printf "\t(cd '\$(top_builddir)/share/ppcemu-system' && \$(LN_S) \"\$(abs_top_builddir)/\$\${SHARED_DATA}\" \`basename \"\$\${SHARED_DATA}\"\`); \\\\\n" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
+	printf "\trm -f \"\$(top_builddir)/share/ppcemu-system-${PPCEMU_SYSTEM_VERSION}/\`basename \$\${SHARED_DATA}\`\"; \\\\\n" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
+	printf "\tmkdir -p '\$(top_builddir)/share/ppcemu-system-${PPCEMU_SYSTEM_VERSION}'; \\\\\n" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
+	printf "\t(cd '\$(top_builddir)/share/ppcemu-system-${PPCEMU_SYSTEM_VERSION}' && cp -f \"\$(abs_top_builddir)/\$\${SHARED_DATA}\" \`basename \"\$\${SHARED_DATA}\"\`); \\\\\n" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
 	printf "\tdone\n" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
 	echo "clean-local-share:" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
 	printf "\t@if [ ! -z '\$(dist_share_DATA)' ]; then \\\\\n" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"

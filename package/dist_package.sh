@@ -42,6 +42,8 @@ function BuildRPM
 	shift
 	GROUP="$1"
 	shift
+	CATEGORIES="$1"
+	shift
 	MAINTAINER="$1"
 	shift
 	FILES=`printf "$1" | sed -e 's/ /\n/g'`
@@ -82,6 +84,9 @@ function BuildRPM
 	echo "Source:    %{name}-%{version}.tar.gz" >> "${SPEC}"
 	echo "Group:     ${GROUP}" >> "${SPEC}"
 	echo "URL:       ${URL}" >> "${SPEC}"
+	if ! [ -z "${START_PROGRAM}" ] && ! [ -z "${START_ICON}" ]; then
+		echo "BuildRequires: desktop-file-utils" >> "${SPEC}"
+	fi
 
 	echo "%description" >> "${SPEC}"
 	echo "${DESCRIPTION}" >> "${SPEC}"
@@ -100,13 +105,31 @@ function BuildRPM
 
 	echo "%install" >> "${SPEC}"
 	echo "echo \"prefix is: %{_prefix}\"" >> "${SPEC}"
-	echo "make install prefix=\$RPM_BUILD_ROOT%{_prefix}" >> "${SPEC}"
+	echo "make install prefix=%{buildroot}%{_prefix}" >> "${SPEC}"
+
+	if ! [ -z "${START_PROGRAM}" ] && ! [ -z "${START_ICON}" ]; then
+		echo "mkdir -p %{buildroot}%{_datadir}/applications" >> "${SPEC}"
+		DESKTOP_ENTRY_FILE="%{buildroot}%{_datadir}/applications/${NAME}-${VERSION}.desktop"
+		echo "echo '[Desktop Entry]' > \"${DESKTOP_ENTRY_FILE}\"" >> "${SPEC}"
+		echo "echo 'Type=Application' >> \"${DESKTOP_ENTRY_FILE}\"" >> "${SPEC}"
+		echo "echo 'Name=${NAME}' >> \"${DESKTOP_ENTRY_FILE}\"" >> "${SPEC}"
+		echo "echo 'Comment=${DESCRIPTION}' >> \"${DESKTOP_ENTRY_FILE}\"" >> "${SPEC}"
+		echo "echo 'Icon=%{_prefix}/${START_ICON}' >> \"${DESKTOP_ENTRY_FILE}\"" >> "${SPEC}"
+		echo "echo 'Exec=%{_prefix}/${START_PROGRAM} ${START_PARAMS}' >> \"${DESKTOP_ENTRY_FILE}\"" >> "${SPEC}"
+		echo "echo 'Categories=${CATEGORIES};' >> \"${DESKTOP_ENTRY_FILE}\"" >> "${SPEC}"
+		echo "echo 'Terminal=true' >> \"${DESKTOP_ENTRY_FILE}\"" >> "${SPEC}"
+		echo "desktop-file-install --dir=%{buildroot}%{_datadir}/applications %{buildroot}%{_datadir}/applications/${NAME}-${VERSION}.desktop" >> "${SPEC}"
+	fi
 
 	echo "%files" >> "${SPEC}"
 	echo "%defattr(-,root,root)" >> "${SPEC}"
 	for FILE in ${FILES}; do
 		echo "%{_prefix}/${FILE}" >> "${SPEC}"
 	done
+
+	if ! [ -z "${START_PROGRAM}" ] && ! [ -z "${START_ICON}" ]; then
+		echo "%{_datadir}/applications/${NAME}-${VERSION}.desktop" >> "${SPEC}"
+	fi
 
 	rpmbuild -v -bb --clean "${SPEC}" || exit -1
 
@@ -167,6 +190,8 @@ function BuildDEB
 	shift
 	GROUP="$1"
 	shift
+	CATEGORIES="$1"
+	shift
 	MAINTAINER="$1"
 	shift
 	FILES=`printf "$1" | sed -e 's/ /\n/g'`
@@ -211,6 +236,21 @@ function BuildDEB
 
 	# install
 	fakeroot make install prefix=${INSTALL_DIR}${PREFIX} || exit -1
+
+	if ! [ -z "${START_PROGRAM}" ] && ! [ -z "${START_ICON}" ]; then
+		mkdir -p "${INSTALL_DIR}${PREFIX}/share/applications"
+		DESKTOP_ENTRY_FILE="${INSTALL_DIR}${PREFIX}/share/applications/${NAME}-${VERSION}.desktop"
+		echo '[Desktop Entry]' > "${DESKTOP_ENTRY_FILE}"
+		echo 'Type=Application' >> "${DESKTOP_ENTRY_FILE}"
+		echo "Name=${NAME}" >> "${DESKTOP_ENTRY_FILE}"
+		echo "Comment=${DESCRIPTION}" >> "${DESKTOP_ENTRY_FILE}"
+		echo "Icon=${PREFIX}/${START_ICON}" >> "${DESKTOP_ENTRY_FILE}"
+		echo "Exec=${PREFIX}/${START_PROGRAM} ${START_PARAMS}" >> "${DESKTOP_ENTRY_FILE}"
+		echo "Categories=${CATEGORIES};" >> "${DESKTOP_ENTRY_FILE}"
+		echo 'Terminal=true' >> "${DESKTOP_ENTRY_FILE}"
+		desktop-file-install --dir=${INSTALL_DIR}${PREFIX}/share/applications ${INSTALL_DIR}${PREFIX}/share/applications/${NAME}-${VERSION}.desktop
+		FILES="${FILES} share/applications/${NAME}-${VERSION}.desktop"
+	fi
 
 	local CONTROL_FILE="${INSTALL_DIR}/DEBIAN/control"
 	local PREINST_FILE="${INSTALL_DIR}/DEBIAN/preinst"
@@ -294,6 +334,8 @@ function BuildWinInstaller
 	shift
 	GROUP="$1"
 	shift
+	CATEGORIES="$1"
+	shift
 	MAINTAINER="$1"
 	shift
 	FILES="$1"
@@ -360,7 +402,7 @@ function BuildWinInstaller
 	echo "Name: \"english\"; MessagesFile: \"compiler:Default.isl\"" >> ${ISS_FILENAME}
 	echo "" >> ${ISS_FILENAME}
 	echo "[Tasks]" >> ${ISS_FILENAME}
-	if ! [ -z "${START}" ] && ! [ -z "${START_ICON}" ]; then
+	if ! [ -z "${START_PROGRAM}" ] && ! [ -z "${START_ICON}" ]; then
 		echo "Name: \"desktopicon\"; Description: \"{cm:CreateDesktopIcon}\"; GroupDescription: \"{cm:AdditionalIcons}\"; Flags: unchecked" >> ${ISS_FILENAME}
 		echo "Name: \"quicklaunchicon\"; Description: \"{cm:CreateQuickLaunchIcon}\"; GroupDescription: \"{cm:AdditionalIcons}\"; Flags: unchecked" >> ${ISS_FILENAME}
 	fi
@@ -383,12 +425,12 @@ function BuildWinInstaller
 	done
 	cd "${HERE}"
 
-	if ! [ -z "${START}" ] && ! [ -z "${START_ICON}" ]; then
+	if ! [ -z "${START_PROGRAM}" ] && ! [ -z "${START_ICON}" ]; then
 		echo "" >> ${ISS_FILENAME}
 		echo "[Icons]" >> ${ISS_FILENAME}
-		echo "Name: \"{group}\\${NAME}\"; Filename: \"{app}\\${START}\"; IconFilename: \"{app}\\${START_ICON}\"; Parameters: \"${START_PARAMS}\"" >> ${ISS_FILENAME}
-		echo "Name: \"{commondesktop}\\${NAME}\"; Filename: \"{app}\\${START}\"; IconFilename: \"{app}\\${START_ICON}\"; Parameters: \"${START_PARAMS}\"; Tasks: desktopicon" >> ${ISS_FILENAME}
-		echo "Name: \"{userappdata}\\${NAME}\"; Filename: \"{app}\\${START}\"; IconFilename: \"{app}\\${START_ICON}\"; Tasks: quicklaunchicon" >> ${ISS_FILENAME}
+		echo "Name: \"{group}\\${NAME}\"; Filename: \"{app}\\${START_PROGRAM}\"; IconFilename: \"{app}\\${START_ICON}\"; Parameters: \"${START_PARAMS}\"" >> ${ISS_FILENAME}
+		echo "Name: \"{commondesktop}\\${NAME}\"; Filename: \"{app}\\${START_PROGRAM}\"; IconFilename: \"{app}\\${START_ICON}\"; Parameters: \"${START_PARAMS}\"; Tasks: desktopicon" >> ${ISS_FILENAME}
+		echo "Name: \"{userappdata}\\${NAME}\"; Filename: \"{app}\\${START_PROGRAM}\"; IconFilename: \"{app}\\${START_ICON}\"; Tasks: quicklaunchicon" >> ${ISS_FILENAME}
 	fi
 	
 	echo "========================================="
@@ -443,23 +485,24 @@ SYSTEMC="$6"
 SYSTEMC_SDL="$7"
 TLM20="$8"
 
-# BuildPackage \
-# 	"${OS}" \
-# 	"genisslib" \
-# 	"${GENISSLIB_VERSION}" \
-# 	"1" \
-# 	"http://www.unisim-vp.com" \
-# 	"GPL" \
-# 	"UNISIM genisslib" \
-# 	"UNISIM Instruction set simulator generator" \
-# 	"Development/Tools" \
-# 	"Gilles Mouchard <gilles.mouchard@cea.fr>" \
-# 	"bin/genisslib${EXE_SUFFIX}" \
-#     "/bin/libgcc_s_dw2-1.dll" \
-# 	"" \
-# 	"" \
-# 	"" \
-# 	"CXXFLAGS=-O3 -g"
+BuildPackage \
+	"${OS}" \
+	"genisslib" \
+	"${GENISSLIB_VERSION}" \
+	"1" \
+	"http://www.unisim-vp.com" \
+	"GPL" \
+	"UNISIM genisslib" \
+	"UNISIM Instruction set simulator generator" \
+	"Development/Tools" \
+	"Development" \
+	"Gilles Mouchard <gilles.mouchard@cea.fr>" \
+	"bin/genisslib-${GENISSLIB_VERSION}${EXE_SUFFIX}" \
+    "/bin/libgcc_s_dw2-1.dll" \
+	"" \
+	"" \
+	"" \
+	"CXXFLAGS=-O3 -g"
 
 BuildPackage \
 	"${OS}" \
@@ -470,80 +513,91 @@ BuildPackage \
 	"BSD" \
 	"UNISIM ppcemu" \
 	"UNISIM ppcemu is user level PowerPC simulator with support of ELF32 binaries and Linux system call translation." \
-	"Development/Tools" \
+	"Emulators" \
+	"Development;Emulator;ConsoleOnly" \
 	"Gilles Mouchard <gilles.mouchard@cea.fr>" \
-	"bin/ppcemu${EXE_SUFFIX} \
-	bin/ppcemu-debug${EXE_SUFFIX} \
-	share/ppcemu/AUTHORS \
-	share/ppcemu/COPYING \
-	share/ppcemu/ChangeLog \
-	share/ppcemu/INSTALL \
-	share/ppcemu/NEWS \
-	share/ppcemu/README \
-	share/ppcemu/gdb_powerpc.xml" \
+	"bin/ppcemu-${PPCEMU_VERSION}${EXE_SUFFIX} \
+	bin/ppcemu-debug-${PPCEMU_VERSION}${EXE_SUFFIX} \
+	share/ppcemu-${PPCEMU_VERSION}/AUTHORS \
+	share/ppcemu-${PPCEMU_VERSION}/COPYING \
+	share/ppcemu-${PPCEMU_VERSION}/ChangeLog \
+	share/ppcemu-${PPCEMU_VERSION}/INSTALL \
+	share/ppcemu-${PPCEMU_VERSION}/NEWS \
+	share/ppcemu-${PPCEMU_VERSION}/README \
+	share/ppcemu-${PPCEMU_VERSION}/gdb_powerpc.xml \
+	share/ppcemu-${PPCEMU_VERSION}/template_default_config.xml \
+	share/ppcemu-${PPCEMU_VERSION}/unisim.ico" \
     "/bin/libgcc_s_dw2-1.dll /bin/libxml2-2.dll" \
-	"share/ppcemu/unisim.ico" \
+	"share/ppcemu-${PPCEMU_VERSION}/unisim.ico" \
 	"bin/ppcemu${EXE_SUFFIX}" \
-	"-c %prefix%share/ppcemu/sim_config.xml" \
+	"" \
 	"--with-systemc=${SYSTEMC}" \
 	"CXXFLAGS=-O3 -g"
 
-exit
-
 BuildPackage \
 	"${OS}" \
-	"ppcemu_system" \
+	"ppcemu-system" \
 	"${PPCEMU_SYSTEM_VERSION}" \
 	"1" \
 	"http://www.unisim-vp.com" \
 	"BSD" \
 	"UNISIM ppcemu-system" \
 	"UNISIM ppcemu-system is a full system simulator of a \"PowerMac G4 PCI\" like machine (MPC7447A/MPC107) with Linux boot support." \
-	"Development/Tools" \
+	"Emulators" \
+	"Development;Emulator;ConsoleOnly" \
 	"Gilles Mouchard <gilles.mouchard@cea.fr>" \
-	"bin/ppcemu-system${EXE_SUFFIX} \
-	bin/ppcemu-system-debug${EXE_SUFFIX} \
-	share/ppcemu-system/AUTHORS \
-	share/ppcemu-system/COPYING \
-	share/ppcemu-system/ChangeLog \
-	share/ppcemu-system/INSTALL \
-	share/ppcemu-system/NEWS \
-	share/ppcemu-system/README \
-	share/ppcemu-system/gdb_powerpc.xml \
-	share/ppcemu-system/device_tree_pmac_g4.xml \
-	share/ppcemu-system/pc_linux_fr_keymap.xml \
-	share/ppcemu-system/pc_linux_us_keymap.xml \
-	share/ppcemu-system/pc_windows_keymap.xml" \
+	"bin/ppcemu-system-${PPCEMU_SYSTEM_VERSION}${EXE_SUFFIX} \
+	bin/ppcemu-system-debug-${PPCEMU_SYSTEM_VERSION}${EXE_SUFFIX} \
+	share/ppcemu-system-${PPCEMU_SYSTEM_VERSION}/AUTHORS \
+	share/ppcemu-system-${PPCEMU_SYSTEM_VERSION}/COPYING \
+	share/ppcemu-system-${PPCEMU_SYSTEM_VERSION}/ChangeLog \
+	share/ppcemu-system-${PPCEMU_SYSTEM_VERSION}/INSTALL \
+	share/ppcemu-system-${PPCEMU_SYSTEM_VERSION}/NEWS \
+	share/ppcemu-system-${PPCEMU_SYSTEM_VERSION}/README \
+	share/ppcemu-system-${PPCEMU_SYSTEM_VERSION}/gdb_powerpc.xml \
+	share/ppcemu-system-${PPCEMU_SYSTEM_VERSION}/device_tree_pmac_g4.xml \
+	share/ppcemu-system-${PPCEMU_SYSTEM_VERSION}/pc_linux_fr_keymap.xml \
+	share/ppcemu-system-${PPCEMU_SYSTEM_VERSION}/pc_linux_us_keymap.xml \
+	share/ppcemu-system-${PPCEMU_SYSTEM_VERSION}/pc_windows_keymap.xml \
+	share/ppcemu-system-${PPCEMU_SYSTEM_VERSION}/vmlinux \
+	share/ppcemu-system-${PPCEMU_SYSTEM_VERSION}/initrd.img \
+	share/ppcemu-system-${PPCEMU_SYSTEM_VERSION}/template_default_config.xml \
+	share/ppcemu-system-${PPCEMU_SYSTEM_VERSION}/unisim.ico" \
     "/bin/libgcc_s_dw2-1.dll /bin/libxml2-2.dll /bin/SDL.dll" \
-	"share/ppcemu-system/unisim.ico" \
-	"bin/ppcemu-system${EXE_SUFFIX}" \
-	"-c %prefix%share/ppcemu-system/sim_config.xml" \
+	"share/ppcemu-system-${PPCEMU_SYSTEM_VERSION}/unisim.ico" \
+	"bin/ppcemu-system-${PPCEMU_SYSTEM_VERSION}${EXE_SUFFIX}" \
+	"" \
 	"--with-systemc=${SYSTEMC_SDL}" \
 	"CXXFLAGS=-O3 -g"
 
 BuildPackage \
 	"${OS}" \
-	"embedded_ppc_g4_board" \
+	"embedded-ppc-g4-board" \
 	"${EMBEDDED_PPC_G4_BOARD_VERSION}" \
 	"1" \
 	"http://www.unisim-vp.com" \
 	"BSD" \
 	"UNISIM embedded-ppc-g4-board" \
 	"UNISIM embedded-ppc-g4-board is a full system simulator of an MPC7447A/MPC107 board with support of ELF32 binaries and targeted for industrial applications." \
-	"Development/Tools" \
+	"Emulators" \
+	"Development;Emulator;ConsoleOnly" \
 	"Gilles Mouchard <gilles.mouchard@cea.fr>" \
-	"bin/embedded-ppc-g4-board${EXE_SUFFIX} \
-	bin/embedded-ppc-g4-board-debug${EXE_SUFFIX} \
-	share/embedded-ppc-g4-board/AUTHORS \
-	share/embedded-ppc-g4-board/COPYING \
-	share/embedded-ppc-g4-board/ChangeLog \
-	share/embedded-ppc-g4-board/INSTALL \
-	share/embedded-ppc-g4-board/NEWS \
-	share/embedded-ppc-g4-board/README \
-	share/embedded-ppc-g4-board/gdb_powerpc.xml" \
+	"bin/embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}${EXE_SUFFIX} \
+	bin/embedded-ppc-g4-board-debug-${EMBEDDED_PPC_G4_BOARD_VERSION}${EXE_SUFFIX} \
+	bin/embedded-ppc-g4-board-no-pci-stub-${EMBEDDED_PPC_G4_BOARD_VERSION}${EXE_SUFFIX} \
+	bin/embedded-ppc-g4-board-no-pci-stub-debug-${EMBEDDED_PPC_G4_BOARD_VERSION}${EXE_SUFFIX} \
+	share/embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/AUTHORS \
+	share/embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/COPYING \
+	share/embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/ChangeLog \
+	share/embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/INSTALL \
+	share/embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/NEWS \
+	share/embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/README \
+	share/embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/gdb_powerpc.xml \
+	share/embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/template_default_config.xml \
+	share/embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/unisim.ico" \
     "/bin/libgcc_s_dw2-1.dll /bin/libxml2-2.dll" \
-	"share/embedded-ppc-g4-board/unisim.ico" \
-	"bin/embedded-ppc-g4-board${EXE_SUFFIX}" \
-	"-c %prefix%share/embedded-ppc-g4-board/sim_config.xml" \
+	"share/embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/unisim.ico" \
+	"bin/embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}${EXE_SUFFIX}" \
+	"" \
 	"--with-systemc=${SYSTEMC}" \
 	"CXXFLAGS=-O3 -g"

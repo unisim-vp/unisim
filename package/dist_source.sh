@@ -33,10 +33,10 @@ UNISIM_GENISSLIB_SOURCE=${WORKING_DIR}/genisslib
 #svn --username guest --password "" export https://unisim.org/svn/devel ${UNISIM_REPO} || exit -1
 
 # Extract sources
-${UNISIM_REPO}/package/dist_genisslib.sh ${GENISSLIB_VERSION} ${UNISIM_GENISSLIB_SOURCE} ${UNISIM_REPO}/unisim_tools || exit -1
-${UNISIM_REPO}/package/dist_ppcemu.sh ${GENISSLIB_VERSION} ${PPCEMU_VERSION} ${UNISIM_PPCEMU_SOURCE} ${UNISIM_REPO}/unisim_tools ${UNISIM_REPO}/unisim_lib ${UNISIM_REPO}/unisim_simulators || exit -1
-${UNISIM_REPO}/package/dist_ppcemu_system.sh ${GENISSLIB_VERSION} ${PPCEMU_SYSTEM_VERSION} ${UNISIM_PPCEMU_SYSTEM_SOURCE} ${UNISIM_REPO}/unisim_tools ${UNISIM_REPO}/unisim_lib ${UNISIM_REPO}/unisim_simulators || exit -1
-${UNISIM_REPO}/package/dist_embedded_ppc_g4_board.sh ${GENISSLIB_VERSION} ${EMBEDDED_PPC_G4_BOARD_VERSION} ${UNISIM_EMBEDDED_PPC_G4_BOARD_SOURCE} ${UNISIM_REPO}/unisim_tools ${UNISIM_REPO}/unisim_lib ${UNISIM_REPO}/unisim_simulators || exit -1
+${UNISIM_REPO}/package/dist_genisslib.sh ${GENISSLIB_VERSION} ${UNISIM_GENISSLIB_SOURCE} ${UNISIM_REPO} || exit -1
+${UNISIM_REPO}/package/dist_ppcemu.sh ${GENISSLIB_VERSION} ${PPCEMU_VERSION} ${UNISIM_PPCEMU_SOURCE} ${UNISIM_REPO} || exit -1
+${UNISIM_REPO}/package/dist_ppcemu_system.sh ${GENISSLIB_VERSION} ${PPCEMU_SYSTEM_VERSION} ${UNISIM_PPCEMU_SYSTEM_SOURCE} ${UNISIM_REPO} || exit -1
+${UNISIM_REPO}/package/dist_embedded_ppc_g4_board.sh ${GENISSLIB_VERSION} ${EMBEDDED_PPC_G4_BOARD_VERSION} ${UNISIM_EMBEDDED_PPC_G4_BOARD_SOURCE} ${UNISIM_REPO} || exit -1
 
 # Build source tar.bz2 and zip
 cd ${UNISIM_GENISSLIB_SOURCE}

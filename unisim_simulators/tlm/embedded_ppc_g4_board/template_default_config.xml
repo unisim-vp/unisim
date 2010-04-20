@@ -1,0 +1,1076 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<variables>
+	<object name="bus">
+		<variable name="bus.verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>enable/disable verbosity</description>
+		</variable>
+		<variable name="bus.cycle-time">
+			<type>parameter</type>
+			<data_type>sc_time</data_type>
+			<value>13332 ps</value>
+			<description>cycle time</description>
+		</variable>
+	</object>
+	<object name="cpu">
+		<variable name="cpu.verbose-all">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>globally enable/disable verbosity</description>
+		</variable>
+		<variable name="cpu.verbose-setup">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>enable/disable verbosity while setup</description>
+		</variable>
+		<variable name="cpu.verbose-step">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>enable/disable verbosity when simulating an instruction</description>
+		</variable>
+		<variable name="cpu.verbose-dtlb">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>enable/disable verbosity when accessing data translation lookahead buffer</description>
+		</variable>
+		<variable name="cpu.verbose-dl1">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>enable/disable verbosity when accessing L1 data cache</description>
+		</variable>
+		<variable name="cpu.verbose-il1">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>enable/disable verbosity when accessing L1 instruction cache</description>
+		</variable>
+		<variable name="cpu.verbose-l2">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>enable/disable verbosity when accessing L2 unified cache</description>
+		</variable>
+		<variable name="cpu.verbose-load">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>enable/disable verbosity when simulating a load</description>
+		</variable>
+		<variable name="cpu.verbose-store">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>enable/disable verbosity when simulating a store</description>
+		</variable>
+		<variable name="cpu.verbose-read-memory">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>enable/disable verbosity when reading memory for a debug purpose</description>
+		</variable>
+		<variable name="cpu.verbose-write-memory">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>enable/disable verbosity when writing memory for a debug purpose</description>
+		</variable>
+		<variable name="cpu.verbose-exception">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>enable/disable verbosity when handling exceptions</description>
+		</variable>
+		<variable name="cpu.verbose-set-msr">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>enable/disable verbosity when setting MSR</description>
+		</variable>
+		<variable name="cpu.verbose-set-hid0">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>enable/disable verbosity when setting HID0</description>
+		</variable>
+		<variable name="cpu.verbose-set-hid1">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>enable/disable verbosity when setting HID1</description>
+		</variable>
+		<variable name="cpu.verbose-set-hid2">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>enable/disable verbosity when setting HID2</description>
+		</variable>
+		<variable name="cpu.verbose-set-l2cr">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>enable/disable verbosity when setting L2CR</description>
+		</variable>
+		<variable name="cpu.trap-on-instruction-counter">
+			<type>parameter</type>
+			<data_type>unsigned 64-bit integer</data_type>
+			<value>18446744073709551615</value>
+			<description>number of simulated instruction before traping</description>
+		</variable>
+		<variable name="cpu.cpu-cycle-time">
+			<type>parameter</type>
+			<data_type>unsigned 64-bit integer</data_type>
+			<value>3333</value>
+			<description>CPU cycle time in picoseconds</description>
+		</variable>
+		<variable name="cpu.voltage">
+			<type>parameter</type>
+			<data_type>unsigned 64-bit integer</data_type>
+			<value>1300</value>
+			<description>CPU voltage in mV</description>
+		</variable>
+		<variable name="cpu.max-inst">
+			<type>parameter</type>
+			<data_type>unsigned 64-bit integer</data_type>
+			<value>18446744073709551615</value>
+			<description>maximum number of instructions to simulate</description>
+		</variable>
+		<variable name="cpu.bus-cycle-time">
+			<type>parameter</type>
+			<data_type>sc_time</data_type>
+			<value>13332 ps</value>
+			<description>bus cycle time</description>
+		</variable>
+		<variable name="cpu.nice-time">
+			<type>parameter</type>
+			<data_type>sc_time</data_type>
+			<value>1 ms</value>
+			<description>maximum time between synchonizations</description>
+		</variable>
+		<variable name="cpu.ipc">
+			<type>parameter</type>
+			<data_type>double precision floating-point</data_type>
+			<value>1</value>
+			<description>targeted average instructions per second</description>
+		</variable>
+	</object>
+	<object name="elf32-loader[0]">
+		<variable name="elf32-loader[0].filename">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value>program0.elf</value>
+			<description>the ELF filename to load into memory</description>
+		</variable>
+		<variable name="elf32-loader[0].base-addr">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x0</value>
+			<description>if not null, a forced base address for a unique program segment</description>
+		</variable>
+		<variable name="elf32-loader[0].force-use-virtual-address">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>true</value>
+			<description>force use of virtual addresses instead of physical addresses</description>
+		</variable>
+		<variable name="elf32-loader[0].dump-headers">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>dump headers while loading ELF file</description>
+		</variable>
+		<variable name="elf32-loader[0].verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>enable/disable verbosity</description>
+		</variable>
+	</object>
+	<object name="elf32-loader[1]">
+		<variable name="elf32-loader[1].filename">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value>program1.elf</value>
+			<description>the ELF filename to load into memory</description>
+		</variable>
+		<variable name="elf32-loader[1].base-addr">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x0</value>
+			<description>if not null, a forced base address for a unique program segment</description>
+		</variable>
+		<variable name="elf32-loader[1].force-use-virtual-address">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>true</value>
+			<description>force use of virtual addresses instead of physical addresses</description>
+		</variable>
+		<variable name="elf32-loader[1].dump-headers">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>dump headers while loading ELF file</description>
+		</variable>
+		<variable name="elf32-loader[1].verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>enable/disable verbosity</description>
+		</variable>
+	</object>
+	<object name="erom">
+		<variable name="erom.org">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x78000000</value>
+			<description>memory origin/base address</description>
+		</variable>
+		<variable name="erom.bytesize">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>16777216</value>
+			<description>memory size in bytes</description>
+		</variable>
+		<variable name="erom.verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>enable/disable verbosity</description>
+		</variable>
+		<variable name="erom.cycle-time">
+			<type>parameter</type>
+			<data_type>sc_time</data_type>
+			<value>13332 s</value>
+			<description>RAM memory cycle time</description>
+		</variable>
+	</object>
+	<object name="flash">
+		<variable name="flash.verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>enable/disable verbosity</description>
+		</variable>
+		<variable name="flash.org">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0xff800000</value>
+			<description>flash memory base address</description>
+		</variable>
+		<variable name="flash.bytesize">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x800000</value>
+			<description>flash memory size in bytes</description>
+		</variable>
+		<variable name="flash.endian">
+			<type>parameter</type>
+			<data_type>endianess</data_type>
+			<value>big-endian</value>
+			<description>endianness of flash memory</description>
+			<enumeration>
+				<item>little-endian</item>
+				<item>big-endian</item>
+			</enumeration>
+		</variable>
+		<variable name="flash.sector-protect[0]">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>enable/disable sector write protection</description>
+		</variable>
+		<variable name="flash.sector-protect[1]">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>enable/disable sector write protection</description>
+		</variable>
+		<variable name="flash.sector-protect[2]">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>enable/disable sector write protection</description>
+		</variable>
+		<variable name="flash.sector-protect[3]">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>enable/disable sector write protection</description>
+		</variable>
+		<variable name="flash.sector-protect[4]">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>enable/disable sector write protection</description>
+		</variable>
+		<variable name="flash.sector-protect[5]">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>enable/disable sector write protection</description>
+		</variable>
+		<variable name="flash.sector-protect[6]">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>enable/disable sector write protection</description>
+		</variable>
+		<variable name="flash.sector-protect[7]">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>enable/disable sector write protection</description>
+		</variable>
+		<variable name="flash.sector-protect[8]">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>enable/disable sector write protection</description>
+		</variable>
+		<variable name="flash.sector-protect[9]">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>enable/disable sector write protection</description>
+		</variable>
+		<variable name="flash.sector-protect[10]">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>enable/disable sector write protection</description>
+		</variable>
+		<variable name="flash.sector-protect[11]">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>enable/disable sector write protection</description>
+		</variable>
+		<variable name="flash.sector-protect[12]">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>enable/disable sector write protection</description>
+		</variable>
+		<variable name="flash.sector-protect[13]">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>enable/disable sector write protection</description>
+		</variable>
+		<variable name="flash.sector-protect[14]">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>enable/disable sector write protection</description>
+		</variable>
+		<variable name="flash.sector-protect[15]">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>enable/disable sector write protection</description>
+		</variable>
+		<variable name="flash.sector-protect[16]">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>enable/disable sector write protection</description>
+		</variable>
+		<variable name="flash.sector-protect[17]">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>enable/disable sector write protection</description>
+		</variable>
+		<variable name="flash.sector-protect[18]">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>enable/disable sector write protection</description>
+		</variable>
+		<variable name="flash.cycle-time">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>13332</value>
+			<description>flash memory cycle time in picoseconds</description>
+		</variable>
+	</object>
+	<object name="kernel_logger">
+		<variable name="kernel_logger.std_err">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>true</value>
+			<description>Show logger output through the standard error output</description>
+		</variable>
+		<variable name="kernel_logger.std_out">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Show logger output through the standard output</description>
+		</variable>
+		<variable name="kernel_logger.std_err_color">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Colorize logger output through the standard error output (only works if std_err is active)</description>
+		</variable>
+		<variable name="kernel_logger.std_out_color">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Colorize logger output through the standard output (only works if std_out is active)</description>
+		</variable>
+		<variable name="kernel_logger.file">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Keep logger output in a file</description>
+		</variable>
+		<variable name="kernel_logger.filename">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value>logger_output.txt</value>
+			<description>Filename to keep logger output (the option file must be activated)</description>
+		</variable>
+		<variable name="kernel_logger.xml_file">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Keep logger output in a file xml formatted</description>
+		</variable>
+		<variable name="kernel_logger.xml_filename">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value>logger_output.xml</value>
+			<description>Filename to keep logger xml output (the option xml_file must be activated)</description>
+		</variable>
+		<variable name="kernel_logger.xml_file_gzipped">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>If the xml_file option is active, the output file will be compressed (a .gz extension will be automatically added to the xml_filename option</description>
+		</variable>
+	</object>
+	<object name="memory">
+		<variable name="memory.org">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x0</value>
+			<description>memory origin/base address</description>
+		</variable>
+		<variable name="memory.bytesize">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>268435456</value>
+			<description>memory size in bytes</description>
+		</variable>
+		<variable name="memory.verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>enable/disable verbosity</description>
+		</variable>
+		<variable name="memory.cycle-time">
+			<type>parameter</type>
+			<data_type>sc_time</data_type>
+			<value>13332 s</value>
+			<description>RAM memory cycle time</description>
+		</variable>
+	</object>
+	<object name="mpc107">
+		<object name="mpc107.DMA">
+			<variable name="mpc107.DMA.verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description></description>
+			</variable>
+		</object>
+		<object name="mpc107.atu">
+			<variable name="mpc107.atu.verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+			</variable>
+		</object>
+		<object name="mpc107.epic">
+			<variable name="mpc107.epic.verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+			</variable>
+		</object>
+		<object name="mpc107.pci_controller">
+			<variable name="mpc107.pci_controller.verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+			</variable>
+		</object>
+		<object name="mpc107.address_mapper">
+			<variable name="mpc107.address_mapper.verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+			</variable>
+		</object>
+		<variable name="mpc107.verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>enable/disable verbosity</description>
+		</variable>
+		<variable name="mpc107.host_mode">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>true</value>
+			<description>enable/disable host mode</description>
+		</variable>
+		<variable name="mpc107.a_address_map">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>enable/disable address map A</description>
+		</variable>
+		<variable name="mpc107.memory_32bit_data_bus_size">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>true</value>
+			<description>enable/disable 32-bit data bus width</description>
+		</variable>
+		<variable name="mpc107.rom0_8bit_data_bus_size">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>enable/disable rom #0 8-bit data bus width</description>
+		</variable>
+		<variable name="mpc107.rom1_8bit_data_bus_size">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>enable/disable rom #1 8-bit data bus width</description>
+		</variable>
+		<variable name="mpc107.frequency">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>75</value>
+			<description>frequency in Mhz</description>
+		</variable>
+		<variable name="mpc107.sdram_cycle_time">
+			<type>parameter</type>
+			<data_type>unsigned 64-bit integer</data_type>
+			<value>13332</value>
+			<description>SDRAM cycle time in picoseconds</description>
+		</variable>
+	</object>
+	<object name="pci-bus">
+		<variable name="pci-bus.verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>enable/disable verbosity</description>
+		</variable>
+		<variable name="pci-bus.num-mappings">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>1</value>
+			<description>total number of address mappings</description>
+		</variable>
+		<variable name="pci-bus.base-address[0]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x0</value>
+			<description>mapping: base address of mapped device</description>
+		</variable>
+		<variable name="pci-bus.base-address[1]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x0</value>
+			<description>mapping: base address of mapped device</description>
+		</variable>
+		<variable name="pci-bus.base-address[2]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x0</value>
+			<description>mapping: base address of mapped device</description>
+		</variable>
+		<variable name="pci-bus.base-address[3]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x0</value>
+			<description>mapping: base address of mapped device</description>
+		</variable>
+		<variable name="pci-bus.base-address[4]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x0</value>
+			<description>mapping: base address of mapped device</description>
+		</variable>
+		<variable name="pci-bus.base-address[5]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x0</value>
+			<description>mapping: base address of mapped device</description>
+		</variable>
+		<variable name="pci-bus.base-address[6]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x0</value>
+			<description>mapping: base address of mapped device</description>
+		</variable>
+		<variable name="pci-bus.size[0]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>1073741824</value>
+			<description>mapping: size in bytes of mapped device</description>
+		</variable>
+		<variable name="pci-bus.size[1]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0</value>
+			<description>mapping: size in bytes of mapped device</description>
+		</variable>
+		<variable name="pci-bus.size[2]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0</value>
+			<description>mapping: size in bytes of mapped device</description>
+		</variable>
+		<variable name="pci-bus.size[3]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0</value>
+			<description>mapping: size in bytes of mapped device</description>
+		</variable>
+		<variable name="pci-bus.size[4]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0</value>
+			<description>mapping: size in bytes of mapped device</description>
+		</variable>
+		<variable name="pci-bus.size[5]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0</value>
+			<description>mapping: size in bytes of mapped device</description>
+		</variable>
+		<variable name="pci-bus.size[6]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0</value>
+			<description>mapping: size in bytes of mapped device</description>
+		</variable>
+		<variable name="pci-bus.device-number[0]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x0</value>
+			<description>mapping: device number</description>
+		</variable>
+		<variable name="pci-bus.device-number[1]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x0</value>
+			<description>mapping: device number</description>
+		</variable>
+		<variable name="pci-bus.device-number[2]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x0</value>
+			<description>mapping: device number</description>
+		</variable>
+		<variable name="pci-bus.device-number[3]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x0</value>
+			<description>mapping: device number</description>
+		</variable>
+		<variable name="pci-bus.device-number[4]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x0</value>
+			<description>mapping: device number</description>
+		</variable>
+		<variable name="pci-bus.device-number[5]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x0</value>
+			<description>mapping: device number</description>
+		</variable>
+		<variable name="pci-bus.device-number[6]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x0</value>
+			<description>mapping: device number</description>
+		</variable>
+		<variable name="pci-bus.target-port[0]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0</value>
+			<description>mapping: target port number</description>
+		</variable>
+		<variable name="pci-bus.target-port[1]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0</value>
+			<description>mapping: target port number</description>
+		</variable>
+		<variable name="pci-bus.target-port[2]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0</value>
+			<description>mapping: target port number</description>
+		</variable>
+		<variable name="pci-bus.target-port[3]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0</value>
+			<description>mapping: target port number</description>
+		</variable>
+		<variable name="pci-bus.target-port[4]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0</value>
+			<description>mapping: target port number</description>
+		</variable>
+		<variable name="pci-bus.target-port[5]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0</value>
+			<description>mapping: target port number</description>
+		</variable>
+		<variable name="pci-bus.target-port[6]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0</value>
+			<description>mapping: target port number</description>
+		</variable>
+		<variable name="pci-bus.register-number[0]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x10</value>
+			<description>mapping: BAR offset in PCI device configuration space</description>
+		</variable>
+		<variable name="pci-bus.register-number[1]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x0</value>
+			<description>mapping: BAR offset in PCI device configuration space</description>
+		</variable>
+		<variable name="pci-bus.register-number[2]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x0</value>
+			<description>mapping: BAR offset in PCI device configuration space</description>
+		</variable>
+		<variable name="pci-bus.register-number[3]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x0</value>
+			<description>mapping: BAR offset in PCI device configuration space</description>
+		</variable>
+		<variable name="pci-bus.register-number[4]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x0</value>
+			<description>mapping: BAR offset in PCI device configuration space</description>
+		</variable>
+		<variable name="pci-bus.register-number[5]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x0</value>
+			<description>mapping: BAR offset in PCI device configuration space</description>
+		</variable>
+		<variable name="pci-bus.register-number[6]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x0</value>
+			<description>mapping: BAR offset in PCI device configuration space</description>
+		</variable>
+		<variable name="pci-bus.addr-type[0]">
+			<type>parameter</type>
+			<data_type>pci space</data_type>
+			<value>mem</value>
+			<description>mapping: address space type</description>
+			<enumeration>
+				<item>mem</item>
+				<item>i/o</item>
+				<item>cfg</item>
+			</enumeration>
+		</variable>
+		<variable name="pci-bus.addr-type[1]">
+			<type>parameter</type>
+			<data_type>pci space</data_type>
+			<value>mem</value>
+			<description>mapping: address space type</description>
+			<enumeration>
+				<item>mem</item>
+				<item>i/o</item>
+				<item>cfg</item>
+			</enumeration>
+		</variable>
+		<variable name="pci-bus.addr-type[2]">
+			<type>parameter</type>
+			<data_type>pci space</data_type>
+			<value>mem</value>
+			<description>mapping: address space type</description>
+			<enumeration>
+				<item>mem</item>
+				<item>i/o</item>
+				<item>cfg</item>
+			</enumeration>
+		</variable>
+		<variable name="pci-bus.addr-type[3]">
+			<type>parameter</type>
+			<data_type>pci space</data_type>
+			<value>mem</value>
+			<description>mapping: address space type</description>
+			<enumeration>
+				<item>mem</item>
+				<item>i/o</item>
+				<item>cfg</item>
+			</enumeration>
+		</variable>
+		<variable name="pci-bus.addr-type[4]">
+			<type>parameter</type>
+			<data_type>pci space</data_type>
+			<value>mem</value>
+			<description>mapping: address space type</description>
+			<enumeration>
+				<item>mem</item>
+				<item>i/o</item>
+				<item>cfg</item>
+			</enumeration>
+		</variable>
+		<variable name="pci-bus.addr-type[5]">
+			<type>parameter</type>
+			<data_type>pci space</data_type>
+			<value>mem</value>
+			<description>mapping: address space type</description>
+			<enumeration>
+				<item>mem</item>
+				<item>i/o</item>
+				<item>cfg</item>
+			</enumeration>
+		</variable>
+		<variable name="pci-bus.addr-type[6]">
+			<type>parameter</type>
+			<data_type>pci space</data_type>
+			<value>mem</value>
+			<description>mapping: address space type</description>
+			<enumeration>
+				<item>mem</item>
+				<item>i/o</item>
+				<item>cfg</item>
+			</enumeration>
+		</variable>
+		<variable name="pci-bus.frequency">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>33</value>
+			<description>frequency in Mhz</description>
+		</variable>
+	</object>
+	<object name="pci-stub">
+		<variable name="pci-stub.is-server">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+		</variable>
+		<variable name="pci-stub.protocol">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x0</value>
+			<description></description>
+		</variable>
+		<variable name="pci-stub.pipe-name">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value>pipe</value>
+			<description></description>
+		</variable>
+		<variable name="pci-stub.server-name">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value>localhost</value>
+			<description></description>
+		</variable>
+		<variable name="pci-stub.tcp-port">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x3039</value>
+			<description></description>
+		</variable>
+		<variable name="pci-stub.initial-base-addr[0]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x0</value>
+			<description></description>
+		</variable>
+		<variable name="pci-stub.initial-base-addr[1]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x0</value>
+			<description></description>
+		</variable>
+		<variable name="pci-stub.initial-base-addr[2]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x0</value>
+			<description></description>
+		</variable>
+		<variable name="pci-stub.initial-base-addr[3]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x0</value>
+			<description></description>
+		</variable>
+		<variable name="pci-stub.initial-base-addr[4]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x0</value>
+			<description></description>
+		</variable>
+		<variable name="pci-stub.initial-base-addr[5]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x0</value>
+			<description></description>
+		</variable>
+		<variable name="pci-stub.address-space[0]">
+			<type>parameter</type>
+			<data_type>pci space</data_type>
+			<value>mem</value>
+			<description></description>
+			<enumeration>
+				<item>mem</item>
+				<item>i/o</item>
+				<item>cfg</item>
+			</enumeration>
+		</variable>
+		<variable name="pci-stub.address-space[1]">
+			<type>parameter</type>
+			<data_type>pci space</data_type>
+			<value>mem</value>
+			<description></description>
+			<enumeration>
+				<item>mem</item>
+				<item>i/o</item>
+				<item>cfg</item>
+			</enumeration>
+		</variable>
+		<variable name="pci-stub.address-space[2]">
+			<type>parameter</type>
+			<data_type>pci space</data_type>
+			<value>mem</value>
+			<description></description>
+			<enumeration>
+				<item>mem</item>
+				<item>i/o</item>
+				<item>cfg</item>
+			</enumeration>
+		</variable>
+		<variable name="pci-stub.address-space[3]">
+			<type>parameter</type>
+			<data_type>pci space</data_type>
+			<value>mem</value>
+			<description></description>
+			<enumeration>
+				<item>mem</item>
+				<item>i/o</item>
+				<item>cfg</item>
+			</enumeration>
+		</variable>
+		<variable name="pci-stub.address-space[4]">
+			<type>parameter</type>
+			<data_type>pci space</data_type>
+			<value>mem</value>
+			<description></description>
+			<enumeration>
+				<item>mem</item>
+				<item>i/o</item>
+				<item>cfg</item>
+			</enumeration>
+		</variable>
+		<variable name="pci-stub.address-space[5]">
+			<type>parameter</type>
+			<data_type>pci space</data_type>
+			<value>mem</value>
+			<description></description>
+			<enumeration>
+				<item>mem</item>
+				<item>i/o</item>
+				<item>cfg</item>
+			</enumeration>
+		</variable>
+		<variable name="pci-stub.region-size[0]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x0</value>
+			<description></description>
+		</variable>
+		<variable name="pci-stub.region-size[1]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x0</value>
+			<description></description>
+		</variable>
+		<variable name="pci-stub.region-size[2]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x0</value>
+			<description></description>
+		</variable>
+		<variable name="pci-stub.region-size[3]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x0</value>
+			<description></description>
+		</variable>
+		<variable name="pci-stub.region-size[4]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x0</value>
+			<description></description>
+		</variable>
+		<variable name="pci-stub.region-size[5]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x0</value>
+			<description></description>
+		</variable>
+		<variable name="pci-stub.pci-device-number">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x0</value>
+			<description></description>
+		</variable>
+		<variable name="pci-stub.pci-bus-frequency">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x21</value>
+			<description></description>
+		</variable>
+		<variable name="pci-stub.bus-frequency">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x0</value>
+			<description></description>
+		</variable>
+		<variable name="pci-stub.verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+		</variable>
+	</object>
+</variables>

@@ -2,7 +2,7 @@
 function Usage
 {
 	echo "Usage:"
-	echo "  $0 <genisslib version> <destination directory> <unisim_tools directory>"
+	echo "  $0 <genisslib version> <destination directory> <unisim repository>"
 }
 
 if [ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ]; then
@@ -13,7 +13,7 @@ fi
 HERE=`pwd`
 GENISSLIB_VERSION=$1
 DEST_DIR=$2
-UNISIM_TOOLS_DIR=$3
+UNISIM_TOOLS_DIR=$3/unisim_tools
 
 UNISIM_TOOLS_GENISSLIB_HEADER_FILES="\
 action.hh \
@@ -138,13 +138,20 @@ done
 GENISSLIB_CONFIGURE_AC="${DEST_DIR}/configure.ac"
 GENISSLIB_MAKEFILE_AM="${DEST_DIR}/Makefile.am"
 
-
 if [ ! -e "${GENISSLIB_CONFIGURE_AC}" ]; then
 	has_to_build_genisslib_configure=yes
+else
+	if [ "$0" -nt "${GENISSLIB_CONFIGURE_AC}" ]; then
+		has_to_build_genisslib_configure=yes
+	fi
 fi
 
 if [ ! -e "${GENISSLIB_MAKEFILE_AM}" ]; then
 	has_to_build_genisslib_configure=yes
+else
+	if [ "$0" -nt "${GENISSLIB_MAKEFILE_AM}" ]; then
+		has_to_build_genisslib_configure=yes
+	fi
 fi
 
 if [ "${has_to_build_genisslib_configure}" = "yes" ]; then
@@ -168,6 +175,7 @@ if [ "${has_to_build_genisslib_configure}" = "yes" ]; then
 	echo "AC_CONFIG_FILES([Makefile])" >> "${GENISSLIB_CONFIGURE_AC}"
 	echo "AC_OUTPUT" >> "${GENISSLIB_CONFIGURE_AC}"
 
+	AM_GENISSLIB_VERSION=`printf ${GENISSLIB_VERSION} | sed -e 's/\./_/g'`
 	echo "Generating GENISSLIB Makefile.am"
 	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${GENISSLIB_MAKEFILE_AM}"
 	echo "BUILT_SOURCES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
@@ -175,8 +183,9 @@ if [ "${has_to_build_genisslib_configure}" = "yes" ]; then
 	echo "AM_YFLAGS = -d -p yy" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "AM_LFLAGS = -l" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "genisslib_INCLUDES=-I\$(top_srcdir) -I\$(top_builddir)" >> "${GENISSLIB_MAKEFILE_AM}"
-	echo "bin_PROGRAMS = genisslib" >> "${GENISSLIB_MAKEFILE_AM}"
-	echo "genisslib_SOURCES = ${UNISIM_TOOLS_GENISSLIB_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
+	echo "bin_PROGRAMS = genisslib-${GENISSLIB_VERSION}" >> "${GENISSLIB_MAKEFILE_AM}"
+	echo "genisslib_${AM_GENISSLIB_VERSION}_SOURCES = ${UNISIM_TOOLS_GENISSLIB_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
+	echo "genisslib_${AM_GENISSLIB_VERSION}_CPPFLAGS = -DGENISSLIB_VERSION=\\\"${GENISSLIB_VERSION}\\\"" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "noinst_HEADERS= ${UNISIM_TOOLS_GENISSLIB_HEADER_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "EXTRA_DIST = ${UNISIM_TOOLS_GENISSLIB_M4_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 
