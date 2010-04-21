@@ -278,7 +278,8 @@ function BuildDEB
 
 	# Finding package dependencies
 	printf "Searching dependencies..."
-	local DEPS=`find_deb_dependencies ${file_list}`
+	cd "${INSTALL_DIR}${PREFIX}"
+	local DEPS=`find_deb_dependencies ${FILES}`
 	printf "Done\n"
 	
 	ARCH=i386
@@ -487,7 +488,7 @@ TLM20="$8"
 
 BuildPackage \
 	"${OS}" \
-	"genisslib" \
+	"unisim-genisslib" \
 	"${GENISSLIB_VERSION}" \
 	"1" \
 	"http://www.unisim-vp.com" \
@@ -497,7 +498,7 @@ BuildPackage \
 	"Development/Tools" \
 	"Development" \
 	"Gilles Mouchard <gilles.mouchard@cea.fr>" \
-	"bin/genisslib-${GENISSLIB_VERSION}${EXE_SUFFIX}" \
+	"bin/unisim-genisslib-${GENISSLIB_VERSION}${EXE_SUFFIX}" \
     "/bin/libgcc_s_dw2-1.dll" \
 	"" \
 	"" \
@@ -506,7 +507,7 @@ BuildPackage \
 
 BuildPackage \
 	"${OS}" \
-	"ppcemu" \
+	"unisim-ppcemu" \
 	"${PPCEMU_VERSION}" \
 	"1" \
 	"http://www.unisim-vp.com" \
@@ -516,27 +517,27 @@ BuildPackage \
 	"Emulators" \
 	"Development;Emulator;ConsoleOnly" \
 	"Gilles Mouchard <gilles.mouchard@cea.fr>" \
-	"bin/ppcemu-${PPCEMU_VERSION}${EXE_SUFFIX} \
-	bin/ppcemu-debug-${PPCEMU_VERSION}${EXE_SUFFIX} \
-	share/ppcemu-${PPCEMU_VERSION}/AUTHORS \
-	share/ppcemu-${PPCEMU_VERSION}/COPYING \
-	share/ppcemu-${PPCEMU_VERSION}/ChangeLog \
-	share/ppcemu-${PPCEMU_VERSION}/INSTALL \
-	share/ppcemu-${PPCEMU_VERSION}/NEWS \
-	share/ppcemu-${PPCEMU_VERSION}/README \
-	share/ppcemu-${PPCEMU_VERSION}/gdb_powerpc.xml \
-	share/ppcemu-${PPCEMU_VERSION}/template_default_config.xml \
-	share/ppcemu-${PPCEMU_VERSION}/unisim.ico" \
+	"bin/unisim-ppcemu-${PPCEMU_VERSION}${EXE_SUFFIX} \
+	bin/unisim-ppcemu-debug-${PPCEMU_VERSION}${EXE_SUFFIX} \
+	share/unisim-ppcemu-${PPCEMU_VERSION}/AUTHORS \
+	share/unisim-ppcemu-${PPCEMU_VERSION}/COPYING \
+	share/unisim-ppcemu-${PPCEMU_VERSION}/ChangeLog \
+	share/unisim-ppcemu-${PPCEMU_VERSION}/INSTALL \
+	share/unisim-ppcemu-${PPCEMU_VERSION}/NEWS \
+	share/unisim-ppcemu-${PPCEMU_VERSION}/README \
+	share/unisim-ppcemu-${PPCEMU_VERSION}/gdb_powerpc.xml \
+	share/unisim-ppcemu-${PPCEMU_VERSION}/template_default_config.xml \
+	share/unisim-ppcemu-${PPCEMU_VERSION}/unisim.ico" \
     "/bin/libgcc_s_dw2-1.dll /bin/libxml2-2.dll" \
-	"share/ppcemu-${PPCEMU_VERSION}/unisim.ico" \
-	"bin/ppcemu${EXE_SUFFIX}" \
+	"share/unisim-ppcemu-${PPCEMU_VERSION}/unisim.ico" \
+	"bin/unisim-ppcemu-${PPCEMU_VERSION}${EXE_SUFFIX}" \
 	"" \
 	"--with-systemc=${SYSTEMC}" \
 	"CXXFLAGS=-O3 -g"
 
 BuildPackage \
 	"${OS}" \
-	"ppcemu-system" \
+	"unisim-ppcemu-system" \
 	"${PPCEMU_SYSTEM_VERSION}" \
 	"1" \
 	"http://www.unisim-vp.com" \
@@ -546,33 +547,33 @@ BuildPackage \
 	"Emulators" \
 	"Development;Emulator;ConsoleOnly" \
 	"Gilles Mouchard <gilles.mouchard@cea.fr>" \
-	"bin/ppcemu-system-${PPCEMU_SYSTEM_VERSION}${EXE_SUFFIX} \
-	bin/ppcemu-system-debug-${PPCEMU_SYSTEM_VERSION}${EXE_SUFFIX} \
-	share/ppcemu-system-${PPCEMU_SYSTEM_VERSION}/AUTHORS \
-	share/ppcemu-system-${PPCEMU_SYSTEM_VERSION}/COPYING \
-	share/ppcemu-system-${PPCEMU_SYSTEM_VERSION}/ChangeLog \
-	share/ppcemu-system-${PPCEMU_SYSTEM_VERSION}/INSTALL \
-	share/ppcemu-system-${PPCEMU_SYSTEM_VERSION}/NEWS \
-	share/ppcemu-system-${PPCEMU_SYSTEM_VERSION}/README \
-	share/ppcemu-system-${PPCEMU_SYSTEM_VERSION}/gdb_powerpc.xml \
-	share/ppcemu-system-${PPCEMU_SYSTEM_VERSION}/device_tree_pmac_g4.xml \
-	share/ppcemu-system-${PPCEMU_SYSTEM_VERSION}/pc_linux_fr_keymap.xml \
-	share/ppcemu-system-${PPCEMU_SYSTEM_VERSION}/pc_linux_us_keymap.xml \
-	share/ppcemu-system-${PPCEMU_SYSTEM_VERSION}/pc_windows_keymap.xml \
-	share/ppcemu-system-${PPCEMU_SYSTEM_VERSION}/vmlinux \
-	share/ppcemu-system-${PPCEMU_SYSTEM_VERSION}/initrd.img \
-	share/ppcemu-system-${PPCEMU_SYSTEM_VERSION}/template_default_config.xml \
-	share/ppcemu-system-${PPCEMU_SYSTEM_VERSION}/unisim.ico" \
+	"bin/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}${EXE_SUFFIX} \
+	bin/unisim-ppcemu-system-debug-${PPCEMU_SYSTEM_VERSION}${EXE_SUFFIX} \
+	share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/AUTHORS \
+	share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/COPYING \
+	share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/ChangeLog \
+	share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/INSTALL \
+	share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/NEWS \
+	share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/README \
+	share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/gdb_powerpc.xml \
+	share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/device_tree_pmac_g4.xml \
+	share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/pc_linux_fr_keymap.xml \
+	share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/pc_linux_us_keymap.xml \
+	share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/pc_windows_keymap.xml \
+	share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/vmlinux \
+	share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/initrd.img \
+	share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/template_default_config.xml \
+	share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/unisim.ico" \
     "/bin/libgcc_s_dw2-1.dll /bin/libxml2-2.dll /bin/SDL.dll" \
-	"share/ppcemu-system-${PPCEMU_SYSTEM_VERSION}/unisim.ico" \
-	"bin/ppcemu-system-${PPCEMU_SYSTEM_VERSION}${EXE_SUFFIX}" \
+	"share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/unisim.ico" \
+	"bin/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}${EXE_SUFFIX}" \
 	"" \
 	"--with-systemc=${SYSTEMC_SDL}" \
 	"CXXFLAGS=-O3 -g"
 
 BuildPackage \
 	"${OS}" \
-	"embedded-ppc-g4-board" \
+	"unisim-embedded-ppc-g4-board" \
 	"${EMBEDDED_PPC_G4_BOARD_VERSION}" \
 	"1" \
 	"http://www.unisim-vp.com" \
@@ -582,22 +583,22 @@ BuildPackage \
 	"Emulators" \
 	"Development;Emulator;ConsoleOnly" \
 	"Gilles Mouchard <gilles.mouchard@cea.fr>" \
-	"bin/embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}${EXE_SUFFIX} \
-	bin/embedded-ppc-g4-board-debug-${EMBEDDED_PPC_G4_BOARD_VERSION}${EXE_SUFFIX} \
-	bin/embedded-ppc-g4-board-no-pci-stub-${EMBEDDED_PPC_G4_BOARD_VERSION}${EXE_SUFFIX} \
-	bin/embedded-ppc-g4-board-no-pci-stub-debug-${EMBEDDED_PPC_G4_BOARD_VERSION}${EXE_SUFFIX} \
-	share/embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/AUTHORS \
-	share/embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/COPYING \
-	share/embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/ChangeLog \
-	share/embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/INSTALL \
-	share/embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/NEWS \
-	share/embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/README \
-	share/embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/gdb_powerpc.xml \
-	share/embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/template_default_config.xml \
-	share/embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/unisim.ico" \
+	"bin/unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}${EXE_SUFFIX} \
+	bin/unisim-embedded-ppc-g4-board-debug-${EMBEDDED_PPC_G4_BOARD_VERSION}${EXE_SUFFIX} \
+	bin/unisim-embedded-ppc-g4-board-no-pci-stub-${EMBEDDED_PPC_G4_BOARD_VERSION}${EXE_SUFFIX} \
+	bin/unisim-embedded-ppc-g4-board-no-pci-stub-debug-${EMBEDDED_PPC_G4_BOARD_VERSION}${EXE_SUFFIX} \
+	share/unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/AUTHORS \
+	share/unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/COPYING \
+	share/unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/ChangeLog \
+	share/unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/INSTALL \
+	share/unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/NEWS \
+	share/unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/README \
+	share/unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/gdb_powerpc.xml \
+	share/unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/template_default_config.xml \
+	share/unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/unisim.ico" \
     "/bin/libgcc_s_dw2-1.dll /bin/libxml2-2.dll" \
-	"share/embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/unisim.ico" \
-	"bin/embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}${EXE_SUFFIX}" \
+	"share/unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/unisim.ico" \
+	"bin/unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}${EXE_SUFFIX}" \
 	"" \
 	"--with-systemc=${SYSTEMC}" \
 	"CXXFLAGS=-O3 -g"
