@@ -1598,12 +1598,12 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	
 	if(GetBinPath(argv[0], bin_dir, program_binary))
 	{
-		std::cerr << "bin_dir=\"" << bin_dir << "\"" << std::endl;
-		std::cerr << "program_binary=\"" << program_binary << "\"" << std::endl;
+		//std::cerr << "bin_dir=\"" << bin_dir << "\"" << std::endl;
+		//std::cerr << "program_binary=\"" << program_binary << "\"" << std::endl;
 
 		if(GetSharePath(bin_dir, shared_data_dir))
 		{
-			std::cerr << "shared_data_dir=\"" << shared_data_dir << "\"" << std::endl;
+			//std::cerr << "shared_data_dir=\"" << shared_data_dir << "\"" << std::endl;
 		}
 		else
 		{
@@ -2445,7 +2445,7 @@ bool Simulator::GetBinPath(const char *argv0, std::string& out_bin_dir, std::str
 	std::string executable_path;
 	
 	if(!GetExecutablePath(argv0, executable_path)) return false;
-	std::cerr << "executable_path=\"" << executable_path << "\"" << std::endl;
+	//std::cerr << "executable_path=\"" << executable_path << "\"" << std::endl;
 	// compute bin dirname
 	const char *start = executable_path.c_str();
 	const char *end = start + executable_path.length() - 1;
