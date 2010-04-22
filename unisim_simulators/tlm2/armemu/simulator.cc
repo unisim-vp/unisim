@@ -263,14 +263,9 @@ int Simulator::Run()
 
 void Simulator::DefaultConfiguration(unisim::kernel::service::Simulator *sim)
 {
-	stringstream version;
-	version		<< SIM_VERSION_MAJOR
-			<< "." << SIM_VERSION_MINOR
-			<< "." << SIM_VERSION_PATCH
-			<< " (" << SIM_VERSION_CODENAME << ")";
 	sim->SetVariable("program-name", SIM_PROGRAM_NAME);
 	sim->SetVariable("authors", SIM_AUTHOR);
-	sim->SetVariable("version", version.str().c_str());
+	sim->SetVariable("version", SIM_VERSION);
 	sim->SetVariable("copyright", SIM_COPYRIGHT);
 	sim->SetVariable("license", SIM_LICENSE);
 	sim->SetVariable("description", SIM_DESCRIPTION);

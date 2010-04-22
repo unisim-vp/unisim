@@ -12,6 +12,8 @@
 			<file>share/test/src/main.c</file>
 			<file>share/test/src/CMakeLists.txt</file>
 			<file>share/test/src/toolchain-armv5l.cmake</file>
+			<file>python_lib.cc</file>
+			<file>setup.py</file>
 			<file>AUTHORS</file>
 			<file>COPYING</file>
 			<file>INSTALL</file>
