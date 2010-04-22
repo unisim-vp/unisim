@@ -3,7 +3,7 @@ cmake_minimum_required ( VERSION 2.8 )
 set ( SIM_VERSION_MAJOR 0 )
 set ( SIM_VERSION_MINOR 2 )
 set ( SIM_VERSION_PATCH 0 )
-set ( SIM_VERSION_CODENAME "\"Sagrera\"" )
+set ( SIM_VERSION_CODENAME "\"Pacifico\"" )
 set ( SIM_AUTHOR "\"Daniel Gracia Perez (daniel.gracia-perez@cea.fr)\"" )
 set ( SIM_PROGRAM_NAME "\"UNISIM armemu\"" )
 set ( SIM_COPYRIGHT "\"Copyright (C) 2007-2010, Comissariat a l'Energie Atomique\"")
@@ -15,6 +15,13 @@ include ( CheckIncludeFileCXX )
 include ( CheckIncludeFile )
 include ( ${CMAKE_SOURCE_DIR}/cmake/FindOSCISystemC.cmake )
 include ( ${CMAKE_SOURCE_DIR}/cmake/UnisimInclude.cmake )
+set ( PYTHON_DEBUG_LIBRARY "/opt/local/Library/Frameworks/Python.framework/Versions/3.1/lib/libpython3.1.dylib" )                                                                                                    
+set ( PYTHON_EXECUTABLE "/opt/local/bin/python" )                                                                                                
+set ( PYTHON_INCLUDE_DIR "/opt/local/Library/Frameworks/Python.framework/Headers" )                                                               
+set ( PYTHON_LIBRARY "/opt/local/Library/Frameworks/Python.framework/Versions/3.1/lib/libpython3.1.dylib")
+message ( "Python executable: ${PYTHON_EXECUTABLE}" )
+message ( "Python includes path: ${PYTHON_INCLUDE_PATH}" )
+message ( "Python lib path: ${PYTHON_LIBRARIES}" )
 
 set ( CMAKE_CXX_SOURCE_FILE_EXTENSIONS *.cc *.tcc *.hh CACHE STRING "Extensions of the source files" )
 	
@@ -115,13 +122,16 @@ set ( armemu__sources
 	${CMAKE_BINARY_DIR}/config.hh
 	)
 	
+add_library ( ${ARMEMU_LIB_TARGET}
+		${armemu__sources}
+	)
 add_executable ( ${ARMEMU_EXEC_TARGET}
 	${armemu__sources}
 	${CMAKE_SOURCE_DIR}/main.cc
 	)
-add_library ( ${ARMEMU_LIB_TARGET}
-	MODULE
-		${armemu__sources}
+set_source_files_properties ( ${CMAKE_SOURCE_DIR}/python_lib.cc
+	PROPERTIES
+		COMPILE_FLAGS -I${PYTHON_INCLUDE_PATH}
 	)
 set ( armemu__libraries
 	${OSCI_SYSTEMC_LIBRARIES}
@@ -148,6 +158,7 @@ target_link_libraries ( ${ARMEMU_EXEC_TARGET}
 	)
 target_link_libraries ( ${ARMEMU_LIB_TARGET}
 	${armemu__libraries}
+	${PYTHON_LIBRARY}
 	)
 
 set ( armemu__deps
