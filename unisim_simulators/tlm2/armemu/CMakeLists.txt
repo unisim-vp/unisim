@@ -3,28 +3,33 @@ cmake_minimum_required ( VERSION 2.8 )
 set ( SIM_VERSION_MAJOR 0 )
 set ( SIM_VERSION_MINOR 2 )
 set ( SIM_VERSION_PATCH 0 )
-set ( SIM_VERSION "\"${SIM_VERSION_MAJOR}.${SIM_VERSION_MINOR}.${SIM_VERSION_PATH}\"" )
+set ( SIM_VERSION "\"${SIM_VERSION_MAJOR}.${SIM_VERSION_MINOR}.${SIM_VERSION_PATCH}\"" )
 set ( SIM_VERSION_CODENAME "\"Pacifico\"" )
 set ( SIM_AUTHOR "\"Daniel Gracia Perez (daniel.gracia-perez@cea.fr)\"" )
 set ( SIM_PROGRAM_NAME "\"UNISIM armemu\"" )
 set ( SIM_COPYRIGHT "\"Copyright (C) 2007-2010, Comissariat a l'Energie Atomique\"")
 set ( SIM_LICENSE "\"BSD (See file COPYING)\"" )
 set ( SIM_DESCRIPTION "\"UNISIM ARMv5 User Level Simulator\"" )
+set ( SIM_PYTHON_MODULE_NAME "\"armemu\"" )
+set ( SIM_PYTHON_IMPORT_NAME "\"armemu${SIM_VERSION_MAJOR}${SIM_VERSION_MINOR}${SIM_VERSION_PATCH}\"")
 
 project ( unisim_armemu_v${SIM_VERSION_MAJOR}_${SIM_VERSION_MINOR}_${SIM_VERSION_PATCH} )
 include ( CheckIncludeFileCXX )
 include ( CheckIncludeFile )
 include ( ${CMAKE_SOURCE_DIR}/cmake/FindOSCISystemC.cmake )
 include ( ${CMAKE_SOURCE_DIR}/cmake/UnisimInclude.cmake )
-set ( PYTHON_DEBUG_LIBRARY "/opt/local/Library/Frameworks/Python.framework/Versions/3.1/lib/libpython3.1.dylib" )                                                                                                    
-set ( PYTHON_EXECUTABLE "/opt/local/bin/python" )                                                                                                
-set ( PYTHON_INCLUDE_DIR "/opt/local/Library/Frameworks/Python.framework/Headers" )                                                               
-set ( PYTHON_LIBRARY "/opt/local/Library/Frameworks/Python.framework/Versions/3.1/lib/libpython3.1.dylib")
+include ( FindPythonInterp )
+# set ( PYTHON_DEBUG_LIBRARY "/opt/local/Library/Frameworks/Python.framework/Versions/3.1/lib/libpython3.1.dylib" )                                                                                                    
+# set ( PYTHON_EXECUTABLE "/opt/local/bin/python" )                                                                                                
+# set ( PYTHON_INCLUDE_DIR "/opt/local/Library/Frameworks/Python.framework/Headers" )                                                               
+# set ( PYTHON_LIBRARY "/opt/local/Library/Frameworks/Python.framework/Versions/3.1/lib/libpython3.1.dylib")
 message ( "Python executable: ${PYTHON_EXECUTABLE}" )
-message ( "Python includes path: ${PYTHON_INCLUDE_PATH}" )
-message ( "Python lib path: ${PYTHON_LIBRARIES}" )
+# message ( "Python includes path: ${PYTHON_INCLUDE_PATH}" )
+# message ( "Python lib path: ${PYTHON_LIBRARIES}" )
 
 set ( CMAKE_CXX_SOURCE_FILE_EXTENSIONS *.cc *.tcc *.hh CACHE STRING "Extensions of the source files" )
+set ( CMAKE_CXX_FLAGS -fPIC )
+# set ( BUILD_SHARED_LIBS ON )
 	
 set ( CXX_INCLUDES iostream list string )
 foreach ( CXX_INCLUDE ${CXX_INCLUDES} )
@@ -80,6 +85,9 @@ endif ( UNISIM__SERVICE__POWER__SUPPORT )
 configure_file ( 
 	${CMAKE_SOURCE_DIR}/config.hh.in 
 	${CMAKE_BINARY_DIR}/config.hh )
+configure_file (
+	${CMAKE_SOURCE_DIR}/setup.py.in
+	${CMAKE_BINARY_DIR}/setup.py )
 
 add_custom_target ( armemu__share_gdb
 	ALL
@@ -124,6 +132,7 @@ set ( armemu__sources
 	)
 	
 add_library ( ${ARMEMU_LIB_TARGET}
+	SHARED
 		${armemu__sources}
 	)
 add_executable ( ${ARMEMU_EXEC_TARGET}
@@ -159,7 +168,6 @@ target_link_libraries ( ${ARMEMU_EXEC_TARGET}
 	)
 target_link_libraries ( ${ARMEMU_LIB_TARGET}
 	${armemu__libraries}
-	${PYTHON_LIBRARY}
 	)
 
 set ( armemu__deps
@@ -180,11 +188,11 @@ if ( UNISIM__SERVICE__POWER__SUPPORT )
 		unisim__service__power
 		)
 endif ( UNISIM__SERVICE__POWER__SUPPORT )
-add_dependencies ( ${ARMEMU_EXEC_TARGET}
-	${armemu__deps}
-	)
 add_dependencies ( ${ARMEMU_LIB_TARGET}
 	${armemu__deps}
+	)
+add_dependencies ( ${ARMEMU_EXEC_TARGET}
+	${ARMEMU_LIB_TARGET}
 	)
 
 set_target_properties ( ${ARMEMU_EXEC_TARGET}
@@ -197,6 +205,30 @@ set_target_properties ( ${ARMEMU_LIB_TARGET}
 		ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
 		LIBRARY_OUTPUT_NAME ${ARMEMU_LIB_NAME}
 		LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib )
+
+add_custom_command (
+	OUTPUT lib/${SIM_PYTHON_IMPORT_NAME}.so
+	COMMAND
+		${CMAKE_COMMAND} -E make_directory python
+	COMMAND
+		${PYTHON_EXECUTABLE} setup.py build -t python --build-lib lib
+	DEPENDS
+		${ARMEMU_LIB_TARGET}
+		${CMAKE_BINARY_DIR}/setup.py
+		${CMAKE_BINARY_DIR}/config.hh
+		${CMAKE_SOURCE_DIR}/python_lib.cc
+	COMMENT
+		"Building python extension."
+	)
+if ( ${PYTHONINTERP_FOUND} )
+	add_custom_target ( ${ARMEMU_LIB_TARGET}-python
+		ALL
+		DEPENDS
+			lib/${SIM_PYTHON_IMPORT_NAME}.so
+		COMMENT
+			"Python target."
+		)
+endif ( ${PYTHONINTERP_FOUND} )
 
 add_custom_command (
 	OUTPUT
@@ -297,4 +329,3 @@ set ( CPACK_PACKAGE_VERSION_PATCH ${SIM_VERSION_PATCH} )
 set ( CPACK_SOURCE_GENERATOR "TBZ2" )
 set ( CPACK_GENERATOR "TBZ2" )
 include ( CPack )
-

@@ -34,61 +34,186 @@
 
 #include <Python.h>
 #include "simulator.hh"
+#include "config.hh"
 
 extern "C" {
 typedef struct {
     PyObject_HEAD
     /* Type-specific fields go here. */
     Simulator *sim;
-} simulator_SimulatorObject;
+} armemu_SimulatorObject;
 
-static PyTypeObject simulator_SimulatorType = {
+static void
+simulator_dealloc (armemu_SimulatorObject *self)
+{
+	if ( self->sim != 0 )
+		delete self->sim;
+	self->sim = 0;
+	if ( sc_curr_simcontext == sc_default_global_context )
+	{
+		delete sc_curr_simcontext;
+	}
+	else
+	{
+		delete sc_curr_simcontext;
+		delete sc_default_global_context;
+	}
+	sc_curr_simcontext = 0;
+	sc_default_global_context = 0;
+	Py_TYPE(self)->tp_free((PyObject *)self);
+}
+
+static PyObject *
+simulator_new (PyTypeObject *type, PyObject *args, PyObject *kwds)
+{
+	armemu_SimulatorObject *self;
+	char *argv[2] =
+	{
+			(char *)"/Users/gracia/Developer/unisim/armemu/build/armemu-0.2.0",
+			(char *)0
+	};
+
+	self = (armemu_SimulatorObject *)type->tp_alloc(type, 0);
+	self->sim = new Simulator(1, argv);
+	return (PyObject *)self;
+}
+
+static int
+simulator_init (armemu_SimulatorObject *self, PyObject *args, PyObject *kwds)
+{
+	return 0;
+}
+
+static PyObject *
+simulator_version (armemu_SimulatorObject *self)
+{
+	PyObject *result;
+	std::string version = (std::string)*self->sim->GetVariable("version");
+	result = PyUnicode_FromString(version.c_str());
+	return result;
+}
+
+static PyObject *
+simulator_get_variable (armemu_SimulatorObject *self, PyObject *args)
+{
+	PyObject *result;
+	const char *var_name;
+
+	if ( !PyArg_ParseTuple(args, "s", &var_name) )
+		return NULL;
+	std::string var = (std::string)*self->sim->GetVariable(var_name);
+	result = PyUnicode_FromString(var.c_str());
+	return result;
+}
+
+static PyObject *
+simulator_set_variable (armemu_SimulatorObject *self, PyObject *args)
+{
+	PyObject *result;
+	const char *var_name, *value;
+	if ( !PyArg_ParseTuple(args, "ss", &var_name, &value) )
+		return NULL;
+	std::cerr << "var_name = " << var_name << "; value = " << value << std::endl;
+	self->sim->SetVariable(var_name, value);
+	std::string var = (std::string)*self->sim->GetVariable(var_name);
+	result = PyUnicode_FromString(var.c_str());
+	return result;
+}
+
+static PyObject *
+simulator_run (armemu_SimulatorObject *self)
+{
+	PyObject *result;
+	bool setup;
+
+	setup = self->sim->Setup();
+	if ( setup )
+	{
+		self->sim->Run();
+		result = PyUnicode_FromString("Simulation finished.");
+	}
+	else
+		result = PyUnicode_FromString("Simulation setup failed.");
+	return result;
+}
+
+static PyMethodDef simulator_methods[] =
+{
+	{"version", (PyCFunction)simulator_version, METH_NOARGS,
+			"Return the simulator version."},
+	{"get_variable", (PyCFunction)simulator_get_variable, METH_VARARGS,
+			"Get the value of a simulator variable."},
+	{"set_variable", (PyCFunction)simulator_set_variable, METH_VARARGS,
+			"Set the value of a simulator variable."},
+	{"run", (PyCFunction)simulator_run, METH_NOARGS,
+			"Run the simulator."},
+	{NULL}
+};
+
+static PyTypeObject armemu_SimulatorType =
+{
     PyVarObject_HEAD_INIT(NULL, 0)
-    "noddy.Simulator",             /* tp_name */
-    sizeof(simulator_SimulatorObject), /* tp_basicsize */
-    0,                         /* tp_itemsize */
-    0,                         /* tp_dealloc */
-    0,                         /* tp_print */
-    0,                         /* tp_getattr */
-    0,                         /* tp_setattr */
-    0,                         /* tp_reserved */
-    0,                         /* tp_repr */
-    0,                         /* tp_as_number */
-    0,                         /* tp_as_sequence */
-    0,                         /* tp_as_mapping */
-    0,                         /* tp_hash  */
-    0,                         /* tp_call */
-    0,                         /* tp_str */
-    0,                         /* tp_getattro */
-    0,                         /* tp_setattro */
-    0,                         /* tp_as_buffer */
-    Py_TPFLAGS_DEFAULT,        /* tp_flags */
-    "Simulator objects",           /* tp_doc */
+    "armemu.ARMEmu",					/* tp_name */
+    sizeof(armemu_SimulatorObject),		/* tp_basicsize */
+    0,									/* tp_itemsize */
+    (destructor)simulator_dealloc,		/* tp_dealloc */
+    0,									/* tp_print */
+    0,									/* tp_getattr */
+    0,									/* tp_setattr */
+    0,									/* tp_reserved */
+    0,									/* tp_repr */
+    0,									/* tp_as_number */
+    0,									/* tp_as_sequence */
+    0,									/* tp_as_mapping */
+    0,									/* tp_hash  */
+    0,									/* tp_call */
+    0,									/* tp_str */
+    0,									/* tp_getattro */
+    0,									/* tp_setattro */
+    0,									/* tp_as_buffer */
+    Py_TPFLAGS_DEFAULT,					/* tp_flags */
+    "UNISIM ARMEmu simulator objects",	/* tp_doc */
+    0,									/* tp_traverse */
+    0,									/* tp_clear */
+    0,									/* tp_richcompare */
+    0,									/* tp_weaklistoffset */
+    0,									/* tp_iter */
+    0,									/* tp_iternext */
+    simulator_methods,									/* tp_methods */
+    0,									/* tp_members */
+    0,									/* tp_getset */
+    0,									/* tp_base */
+    0,									/* tp_dict */
+    0,									/* tp_descr_get */
+    0,									/* tp_descr_set */
+    0,									/* tp_dictoffset */
+    (initproc)simulator_init,			/* tp_init */
+    0,									/* tp_alloc */
+    simulator_new,						/* tp_new */
 };
 
 static PyModuleDef simulatormodule = {
     PyModuleDef_HEAD_INIT,
-    "simulator",
-    "UNISIM ArmEmu python extension.",
+    SIM_PYTHON_MODULE_NAME,
+    "UNISIM ARMEmu python extension.",
     -1,
     NULL, NULL, NULL, NULL, NULL
 };
 
 PyMODINIT_FUNC
-PyInit_simulator(void)
+PyInit_armemu020(void)
 {
     PyObject* m;
 
-    simulator_SimulatorType.tp_new = PyType_GenericNew;
-    if (PyType_Ready(&simulator_SimulatorType) < 0)
+    if (PyType_Ready(&armemu_SimulatorType) < 0)
         return NULL;
 
     m = PyModule_Create(&simulatormodule);
     if (m == NULL)
         return NULL;
 
-    Py_INCREF(&simulator_SimulatorType);
-    PyModule_AddObject(m, "Simulator", (PyObject *)&simulator_SimulatorType);
+    Py_INCREF(&armemu_SimulatorType);
+    PyModule_AddObject(m, SIM_PYTHON_MODULE_NAME, (PyObject *)&armemu_SimulatorType);
     return m;
 }
 
