@@ -70,6 +70,11 @@ int sc_main(int argc, char **argv)
 {
 	sc_start();
 	return 0;
+}
+extern "C"
+int main(int argc, char *argv[])
+{
+	return sc_core::sc_elab_and_sim(argc, argv);
 }]],
 		LIBS="${unisim_check_systemc_save_LIBS}"; AC_MSG_RESULT([yes]); [broken_systemc=no],
 		LIBS="${unisim_check_systemc_save_LIBS}"; AC_MSG_RESULT([no]); [broken_systemc=yes])
