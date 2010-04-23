@@ -1602,12 +1602,12 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	
 	if(GetBinPath(argv[0], bin_dir, program_binary))
 	{
-		//std::cerr << "bin_dir=\"" << bin_dir << "\"" << std::endl;
-		//std::cerr << "program_binary=\"" << program_binary << "\"" << std::endl;
+		std::cerr << "bin_dir=\"" << bin_dir << "\"" << std::endl;
+		std::cerr << "program_binary=\"" << program_binary << "\"" << std::endl;
 
 		if(GetSharePath(bin_dir, shared_data_dir))
 		{
-			//std::cerr << "shared_data_dir=\"" << shared_data_dir << "\"" << std::endl;
+			std::cerr << "shared_data_dir=\"" << shared_data_dir << "\"" << std::endl;
 		}
 		else
 		{
@@ -2459,7 +2459,7 @@ bool Simulator::GetBinPath(const char *argv0, std::string& out_bin_dir, std::str
 	std::string executable_path;
 	
 	if(!GetExecutablePath(argv0, executable_path)) return false;
-	//std::cerr << "executable_path=\"" << executable_path << "\"" << std::endl;
+	std::cerr << "executable_path=\"" << executable_path << "\"" << std::endl;
 	// compute bin dirname
 	const char *start = executable_path.c_str();
 	const char *end = start + executable_path.length() - 1;
@@ -2496,7 +2496,7 @@ bool Simulator::GetSharePath(const std::string& bin_dir, std::string& out_share_
 	unresolved_shared_data_dir += BIN_TO_SHARED_DATA_PATH;
 	char resolved_shared_data_dir_buf[PATH_MAX + 1];
 		
-#if defined(unix)
+#if defined(linux) || defined(__APPLE_CC__)
 	if(realpath(unresolved_shared_data_dir.c_str(), resolved_shared_data_dir_buf))
 	{
 		out_share_dir = resolved_shared_data_dir_buf;

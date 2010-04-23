@@ -41,25 +41,51 @@ typedef struct {
     PyObject_HEAD
     /* Type-specific fields go here. */
     Simulator *sim;
+    bool setup;
 } armemu_SimulatorObject;
+
+static Simulator *
+create_simulator()
+{
+	Simulator *sim;
+	char *argv[2] =
+	{
+			(char *)"/Users/gracia/Developer/unisim/armemu/build/armemu-0.2.0",
+			(char *)0
+	};
+
+	sim = new Simulator(1, argv);
+	return sim;
+}
+
+static void
+destroy_simulator(armemu_SimulatorObject *self)
+{
+	Simulator *sim = self->sim;
+	if ( sim )
+	{
+		delete sim;
+		if ( sc_curr_simcontext == sc_default_global_context )
+		{
+			delete sc_curr_simcontext;
+		}
+		else
+		{
+			delete sc_curr_simcontext;
+			delete sc_default_global_context;
+		}
+		sc_curr_simcontext = 0;
+		sc_default_global_context = 0;
+	}
+	self->sim = 0;
+	sim = 0;
+}
 
 static void
 simulator_dealloc (armemu_SimulatorObject *self)
 {
-	if ( self->sim != 0 )
-		delete self->sim;
-	self->sim = 0;
-	if ( sc_curr_simcontext == sc_default_global_context )
-	{
-		delete sc_curr_simcontext;
-	}
-	else
-	{
-		delete sc_curr_simcontext;
-		delete sc_default_global_context;
-	}
-	sc_curr_simcontext = 0;
-	sc_default_global_context = 0;
+	destroy_simulator(self);
+
 	Py_TYPE(self)->tp_free((PyObject *)self);
 }
 
@@ -67,14 +93,9 @@ static PyObject *
 simulator_new (PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
 	armemu_SimulatorObject *self;
-	char *argv[2] =
-	{
-			(char *)"/Users/gracia/Developer/unisim/armemu/build/armemu-0.2.0",
-			(char *)0
-	};
-
 	self = (armemu_SimulatorObject *)type->tp_alloc(type, 0);
-	self->sim = new Simulator(1, argv);
+	self->sim = create_simulator();
+	self->setup = self->sim->Setup();
 	return (PyObject *)self;
 }
 
@@ -106,15 +127,75 @@ simulator_get_variable (armemu_SimulatorObject *self, PyObject *args)
 	return result;
 }
 
+static void
+get_parameters_map (Simulator *sim, std::map<std::string, std::string> &parms)
+{
+	if ( sim == 0 ) return;
+	std::list<unisim::kernel::service::VariableBase *> parm_list;
+	sim->GetParameters(parm_list);
+	for ( std::list<unisim::kernel::service::VariableBase *>::iterator it = parm_list.begin();
+			it != parm_list.end();
+			it++ )
+		parms.insert(make_pair(std::string((*it)->GetName()),
+				(std::string)*(*it)));
+}
+
+static void
+set_parameters_map (Simulator *sim, std::map<std::string, std::string> &parms)
+{
+	if ( sim == 0 ) return;
+	for ( std::map<std::string, std::string>::iterator it = parms.begin();
+			it != parms.end();
+			it++ )
+		sim->SetVariable(it->first.c_str(), it->second.c_str());
+}
+
+static PyObject *
+simulator_get_parameters (armemu_SimulatorObject *self, PyObject *args)
+{
+	PyObject *result;
+	std::map<std::string, std::string> parms;
+
+	if ( self->sim == 0 ) return NULL;
+	result = PyDict_New();
+	if ( result == NULL ) return NULL;
+	get_parameters_map(self->sim, parms);
+	for ( std::map<std::string, std::string>::iterator it = parms.begin();
+			it != parms.end();
+			it++ )
+	{
+		PyObject *name;
+		PyObject *value;
+		name = PyUnicode_FromString(it->first.c_str());
+		value = PyUnicode_FromString(it->second.c_str());
+		if ( PyDict_SetItem(result, name, value) == -1)
+		{
+			Py_DECREF(name);
+			Py_DECREF(value);
+			PyDict_Clear(result);
+			result = NULL;
+			return result;
+		}
+		Py_DECREF(name);
+		Py_DECREF(value);
+	}
+	return result;
+}
+
 static PyObject *
 simulator_set_variable (armemu_SimulatorObject *self, PyObject *args)
 {
 	PyObject *result;
+	std::map<std::string, std::string> parms;
 	const char *var_name, *value;
+	get_parameters_map(self->sim, parms);
+	destroy_simulator(self);
+	self->sim = create_simulator();
 	if ( !PyArg_ParseTuple(args, "ss", &var_name, &value) )
 		return NULL;
-	std::cerr << "var_name = " << var_name << "; value = " << value << std::endl;
+	set_parameters_map(self->sim, parms);
 	self->sim->SetVariable(var_name, value);
+	self->setup = self->sim->Setup();
 	std::string var = (std::string)*self->sim->GetVariable(var_name);
 	result = PyUnicode_FromString(var.c_str());
 	return result;
@@ -124,10 +205,8 @@ static PyObject *
 simulator_run (armemu_SimulatorObject *self)
 {
 	PyObject *result;
-	bool setup;
 
-	setup = self->sim->Setup();
-	if ( setup )
+	if ( self->setup )
 	{
 		self->sim->Run();
 		result = PyUnicode_FromString("Simulation finished.");
@@ -141,6 +220,8 @@ static PyMethodDef simulator_methods[] =
 {
 	{"version", (PyCFunction)simulator_version, METH_NOARGS,
 			"Return the simulator version."},
+	{"get_parameters", (PyCFunction)simulator_get_parameters, METH_NOARGS,
+			"Return a dictionary with the complete list of the simulator parameters."},
 	{"get_variable", (PyCFunction)simulator_get_variable, METH_VARARGS,
 			"Get the value of a simulator variable."},
 	{"set_variable", (PyCFunction)simulator_set_variable, METH_VARARGS,
