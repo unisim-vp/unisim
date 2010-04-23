@@ -421,7 +421,6 @@ bool SDL<ADDRESS>::Setup()
 		return false;
 	}
 
-	cerr << "keymap_filename=" << keymap_filename << endl;
 	// Keyboard keymap
 	unisim::util::xml::Node *xml_node = 0;
 	if(!keymap_filename.empty())
