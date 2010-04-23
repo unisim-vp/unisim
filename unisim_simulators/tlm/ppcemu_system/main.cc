@@ -1127,3 +1127,9 @@ int sc_main(int argc, char *argv[])
 
 	return 0;
 }
+
+extern "C"
+int main(int argc, char *argv[])
+{
+	return sc_core::sc_elab_and_sim(argc, argv);
+}

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2009,
+ *  Copyright (c) 2009-2010,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -31,7 +31,11 @@
  *
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr), Gilles Mouchard (gilles.mouchard@cea.fr)
  */
- 
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <iostream>
 #include <getopt.h>
 #include <stdlib.h>
@@ -55,7 +59,7 @@
 
 #endif
 
-#ifdef TMS320C3X_DEBUG
+#ifdef DEBUG_TMS320C3X
 const bool CPU_DEBUG = true;
 const bool MEMORY_DEBUG = true;
 #else
@@ -67,7 +71,6 @@ const bool MEMORY_DEBUG = false;
 const uint32_t FSB_MAX_DATA_SIZE = 32;        // in bytes
 const uint32_t FSB_NUM_PROCS = 1;
 typedef unisim::component::cxx::processor::tms320::TMS320VC33_Config CPU_CONFIG;
-
 int return_status = 0;
 bool simulating;
 
@@ -95,168 +98,99 @@ void TMS320C3X::Stop(int ret)
 	simulating = false;
 }
 
-typedef TMS320C3X CPU;
-typedef unisim::service::loader::coff_loader::CoffLoader<uint64_t> LOADER;
-typedef unisim::component::cxx::memory::ram::Memory<uint64_t> MEMORY;
-typedef unisim::service::debug::gdb_server::GDBServer<uint64_t> GDB_SERVER;
-typedef unisim::service::debug::inline_debugger::InlineDebugger<uint64_t> INLINE_DEBUGGER;
-typedef unisim::service::time::host_time::HostTime HOST_TIME;
-typedef unisim::service::os::ti_c_io::TI_C_IO<uint64_t> TI_C_IO;
 using namespace std;
-using unisim::kernel::service::ServiceManager;
 using unisim::kernel::service::VariableBase;
+using unisim::kernel::service::Parameter;
 
 
+class Simulator : public unisim::kernel::service::Simulator
+{
+public:
+	Simulator(int argc, char **argv);
+	virtual ~Simulator();
+	void Run();
+protected:
+private:
 
+	//=========================================================================
+	//===                       Constants definitions                       ===
+	//=========================================================================
 
-void SigIntHandler(int signum) {
+	typedef TMS320C3X CPU;
+	typedef unisim::service::loader::coff_loader::CoffLoader<uint64_t> LOADER;
+	typedef unisim::component::cxx::memory::ram::Memory<uint64_t> MEMORY;
+	typedef unisim::service::debug::gdb_server::GDBServer<uint64_t> GDB_SERVER;
+	typedef unisim::service::debug::inline_debugger::InlineDebugger<uint64_t> INLINE_DEBUGGER;
+	typedef unisim::service::time::host_time::HostTime HOST_TIME;
+	typedef unisim::service::os::ti_c_io::TI_C_IO<uint64_t> TI_C_IO;
+
+	//=========================================================================
+	//===                             Components                            ===
+	//=========================================================================
+	CPU *cpu;
+	MEMORY *memory;
+
+	//=========================================================================
+	//===                              Services                             ===
+	//=========================================================================
+	HOST_TIME *host_time;
+	LOADER *loader;
+	LOADER *rom_loader;
+	TI_C_IO *ti_c_io;
+	GDB_SERVER *gdb_server;
+	INLINE_DEBUGGER *inline_debugger;
+
+	
+	bool use_gdb_server;
+	bool use_inline_debugger;
+	Parameter<bool> param_use_gdb_server;
+	Parameter<bool> param_use_inline_debugger;
+
+	static void LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator);
+};
+
+void SigIntHandler(int signum)
+{
 	cerr << "Interrupted by Ctrl-C or SIGINT signal" << endl;
 	simulating = false;
 }
 
-void help(char *prog_name) {
-	cerr << "Usage: " << prog_name << " [<options>] <binary to simulate>" << endl << endl;
-	cerr << "Options:" << endl;
-	cerr << " --help" << endl;
-	cerr << " -h" << endl;
-	cerr << "            displays this help" << endl << endl;
-	cerr << " --get-variables <xml file>" << endl;
-	cerr << " -v <xml file>" << endl;
-	cerr << "            get the simulation default configuration variables on a xml file" << endl << endl;
-	cerr << " --config <xml file>" << endl;
-	cerr << " -c <xml file>" << endl;
-	cerr << "            configures the simulator with the given xml configuration file" << endl << endl;
-	cerr << " --get-config <xml file>" << endl;
-	cerr << " -g <xml file>" << endl;
-	cerr << "            get the simulator default configuration xml file (you can use it to create your own configuration)" << endl;
-	cerr << "            This option can be combined with -c to get a new configuration file with existing variables from another file" << endl;
-	cerr << " --logger" << endl;
-	cerr << " -l" << endl;
-	cerr << "            activate the logger" << endl << endl;
-	cerr << " --xml-gdb <file>" << endl;
-	cerr << " -x <file>" << endl;
-	cerr << "            processor xml description file for gdb" << endl << endl;
-	cerr << " --gdb-server <port_number>" << endl;
-	cerr << " -d <port_number>" << endl;
-	cerr << "            activate the gdb server and use the given port" << endl << endl;
-	cerr << " --inline-debugger" << endl;
-	cerr << " -i" << endl;
-	cerr << "            activate the inline debugger (only active if logger option used)" << endl << endl;
-	cerr << " --rom" << endl;
-	cerr << " -r" << endl;
-	cerr << "            specify ROM filename (i.e. the boot loader in the TMS320C3X)" << endl << endl;
-}
+Simulator::Simulator(int argc, char **argv)
+	: unisim::kernel::service::Simulator(argc, argv, LoadBuiltInConfig)
+	, cpu(0)
+	, memory(0)
+	, gdb_server(0)
+	, inline_debugger(0)
+	, host_time(0)
+	, use_gdb_server(false)
+	, use_inline_debugger(false)
+	, param_use_gdb_server("use-gdb-server", 0, use_gdb_server, "Enable/Disable GDB server instantiation")
+	, param_use_inline_debugger("use-inline-debugger", 0, use_inline_debugger, "Enable/Disable inline debugger instantiation")
+{
+	//=========================================================================
+	//===                     Component instantiations                      ===
+	//=========================================================================
+	cpu = new CPU("cpu"); 
+	memory = new MEMORY("memory");
 
-int main(int argc, char *argv[]) {
-
-#ifdef WIN32
-	// Loads the winsock2 dll
-	WORD wVersionRequested = MAKEWORD( 2, 2 );
-	WSADATA wsaData;
-	if(WSAStartup(wVersionRequested, &wsaData) != 0)
-	{
-		cerr << "WSAStartup failed" << endl;
-		return -1;
-	}
-#endif
-
-	static struct option long_options[] = {
-		{"help", no_argument, 0, 'h'},
-		{"get-variables", required_argument, 0, 'v'},
-		{"get-config", required_argument, 0, 'g'},
-		{"config", required_argument, 0, 'c'},
-		{"logger", no_argument, 0, 'l'},
-		{"xml-gdb", required_argument, 0, 'x'},
-		{"gdb-server", required_argument, 0, 'd'},
-		{"inline-debugger", no_argument, 0, 'i'},
-		{"boot-loader", required_argument, 0, 'b'},
-		{0, 0, 0, 0}
-	};
-
-	char const *set_config_name = "default_parameters.xml";
-	char const *get_config_name = "default_parameters.xml";
-	char const *get_variables_name = "default_variables.xml";
-	char *filename = 0;
-	char *rom_filename = 0;
-	bool get_variables = false;
-	bool get_config = false;
-	bool set_config = false;
-	bool use_logger = false;
-	bool use_gdb_server = false;
-	char *gdb_xml = 0;
-	int gdb_server_port = 0;
-	bool use_inline_debugger = false;
-	
-
-	// Parse the command line arguments
-	int c;
-	while((c = getopt_long (argc, argv, "hv:g:c:ld:x:ir:", long_options, 0)) != -1) {
-		switch(c) {
-		case 'h':
-			help(argv[0]);
-			return 0;
-			break;
-		case 'v':
-			get_variables_name = optarg;
-			get_variables = true;
-			break;
-		case 'g':
-			get_config_name = optarg;
-			get_config = true;
-			break;
-		case 'x':
-			gdb_xml = optarg;
-			break;
-		case 'c':
-			set_config_name = optarg;
-			set_config = true;
-			break;
-		case 'l':
-			use_logger = true;
-			break;
-		case 'd':
-			gdb_server_port = atoi(optarg);
-			use_gdb_server = true;
-			break;
-		case 'i':
-			use_inline_debugger = true;
-			break;
-		case 'r':
-			rom_filename = optarg;
-			break;
-		}
-	}
-
-	// If last argument is not an option then it's a filename
-	if(optind == (argc - 1))
-	{
-		filename = argv[optind];
-	}
-	else
-	{
-		if(optind != argc)
-		{
-			help(argv[0]);
-			return 0;
-		}
-	}
-
-	// Time
-	HOST_TIME *host_time = new HOST_TIME("host-time");
-	
-	LOADER *loader = 0;
-	LOADER *rom_loader = 0;
-	TI_C_IO *ti_c_io = 0;
-	MEMORY *memory = new MEMORY("memory");
-	GDB_SERVER *gdb_server = (use_gdb_server || get_config) ? new GDB_SERVER("gdb-server") : 0;
-	INLINE_DEBUGGER *inline_debugger = (use_inline_debugger || get_config) ? new INLINE_DEBUGGER("inline-debugger") : 0;
-	CPU *cpu = new CPU("cpu"); 
-
-	// Instanciate COFF loaders
+	//=========================================================================
+	//===                         Service instantiations                    ===
+	//=========================================================================
+	//  - Host Time
+	host_time = new HOST_TIME("host-time");
+	//  - GDB server
+	gdb_server = use_gdb_server ? new GDB_SERVER("gdb-server") : 0;
+	//  - Inline debugger
+	inline_debugger = use_inline_debugger ? new INLINE_DEBUGGER("inline-debugger") : 0;
+	//  - COFF loaders
 	loader = new LOADER("loader");
 	rom_loader = new LOADER("rom-loader");
-
+	//  - TI C I/O
 	ti_c_io = new TI_C_IO("ti-c-io");
+
+	//=========================================================================
+	//===                       Components/Services connection              ===
+	//=========================================================================
 
 	// Connect the CPU to the memory
 	cpu->memory_import >> memory->memory_export;
@@ -267,14 +201,17 @@ int main(int argc, char *argv[]) {
 	ti_c_io->registers_import >> cpu->registers_export;
 	ti_c_io->symbol_table_lookup_import >> loader->symbol_table_lookup_export;
 
-	if(use_inline_debugger) {
+	if(use_inline_debugger)
+	{
 		cpu->debug_control_import >> inline_debugger->debug_control_export;
 		cpu->memory_access_reporting_import >> inline_debugger->memory_access_reporting_export;
 		cpu->trap_reporting_import >> inline_debugger->trap_reporting_export;
 		inline_debugger->disasm_import >> cpu->disasm_export;
 		inline_debugger->memory_import >> cpu->memory_export;
 		inline_debugger->registers_import >> cpu->registers_export;
-	} else if(use_gdb_server) {
+	}
+	else if(use_gdb_server)
+	{
 		// Connect gdb-server to CPU
 		cpu->debug_control_import >> gdb_server->debug_control_export;
 		cpu->memory_access_reporting_import >> gdb_server->memory_access_reporting_export;
@@ -290,113 +227,15 @@ int main(int argc, char *argv[]) {
 
 	cpu->symbol_table_lookup_import >> loader->symbol_table_lookup_export;
 
-	if(use_inline_debugger) {
+	if(use_inline_debugger)
+	{
 		inline_debugger->symbol_table_lookup_import >> 
 			loader->symbol_table_lookup_export;
 	}
-	
-#ifdef DEBUG_SERVICE
-	ServiceManager::Dump(cerr);
-#endif
+}
 
-	if (set_config)
-	{
-		ServiceManager::LoadXmlParameters(set_config_name);
-		cerr << "Parameters set using file \"" << set_config_name << "\"" << endl;
-	}
-	if (get_config)
-	{
-		ServiceManager::XmlfyParameters(get_config_name);
-		cerr << "Parameters saved on file \"" << get_config_name << "\"" << endl;
-		return 0;
-	}
-	if (!set_config)
-	{
-		if (!get_config) help(argv[0]);
-		return 0;
-	}
-
-	if(use_gdb_server) {
-		VariableBase *var =	ServiceManager::GetParameter("gdb-server.tcp-port");
-		cerr << "Using " << var->GetName() << " = " << gdb_server_port << endl;
-		*var = gdb_server_port;
-		if(gdb_xml != 0) {
-			var = ServiceManager::GetParameter("gdb-server.architecture-description-filename");
-			cerr << "Using " << var->GetName() << " = " << gdb_xml << endl;
-			*var = gdb_xml;
-		}
-	}
-
-	if(filename)
-	{
-		VariableBase *var = ServiceManager::GetParameter("loader.filename");
-		cerr << "Using " << var->GetName() << " = " << filename << endl;
-		*var = filename;
-	}
-
-	if(rom_filename)
-	{
-		VariableBase *var = ServiceManager::GetParameter("rom-loader.filename");
-		cerr << "Using " << var->GetName() << " = " << rom_filename << endl;
-		*var = rom_filename;
-	}
-	
-	if(ServiceManager::Setup())
-	{
-		cerr << "Starting simulation at system privilege level" << endl;
-
-		double time_start = host_time->GetTime();
-
-		void (*prev_sig_int_handler)(int);
-
-		if(!use_inline_debugger)
-			prev_sig_int_handler = signal(SIGINT, SigIntHandler);
-
-		try
-		{
-			simulating = true;
-			do
-			{
-				cpu->StepInstruction();
-			} while(simulating);
-		}
-		catch(std::runtime_error& e)
-		{
-			cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << endl;
-			cerr << e.what() << endl;
-		}
-
-		if(!use_inline_debugger)
-			signal(SIGINT, prev_sig_int_handler);
-
-		cerr << "Simulation finished" << endl;
-		cerr << "Simulation statistics:" << endl;
-
-		double time_stop = host_time->GetTime();
-		double spent_time = time_stop - time_start;
-
-		VariableBase *stat_instruction_counter = ServiceManager::GetVariable("cpu.instruction-counter");
-		VariableBase *stat_insn_cache_hits = ServiceManager::GetVariable("cpu.insn-cache-hits");
-		VariableBase *stat_insn_cache_misses = ServiceManager::GetVariable("cpu.insn-cache-misses");
-		cerr << "simulation time: " << spent_time << " seconds" << endl;
-		cerr << "simulated instructions : " << (uint64_t)(*stat_instruction_counter) << " instructions" << endl;
-		cerr << "host simulation speed: " << ((double)(*stat_instruction_counter) / spent_time / 1000000.0) << " MIPS" << endl;
-		cerr << "Insn cache hits: " << (uint64_t) *stat_insn_cache_hits << endl;
-		cerr << "Insn cache misses: " << (uint64_t) *stat_insn_cache_misses << endl;
-		cerr << "Insn cache miss rate: " << ((double) *stat_insn_cache_misses / (double) ((uint64_t) *stat_insn_cache_hits + (uint64_t) *stat_insn_cache_misses)) << endl;
-		
-		if(get_variables)
-		{
-			cerr << "getting variables" << endl;
-			ServiceManager::XmlfyVariables(get_variables_name);
-		}
-	}
-	else
-	{
-		cerr << "Can't start simulation because of previous errors" << endl;
-	}
-
-
+Simulator::~Simulator()
+{
 	if(rom_loader) delete rom_loader;
 	if(loader) delete loader;
 	if(memory) delete memory;
@@ -405,11 +244,101 @@ int main(int argc, char *argv[]) {
 	if(cpu) delete cpu;
 	if(host_time) delete host_time;
 	if(ti_c_io) delete ti_c_io;
+}
+	
+void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
+{
+	// meta information
+	simulator->SetVariable("program-name", "UNISIM tms320c3x");
+	simulator->SetVariable("copyright", "Copyright (C) 2009-2010, Commissariat a l'Energie Atomique (CEA)");
+	simulator->SetVariable("license", "BSD (see file COPYING)");
+	simulator->SetVariable("authors", "Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Pérez <daniel.gracia-perez@cea.fr>");
+	simulator->SetVariable("version", VERSION);
+	simulator->SetVariable("description", "UNISIM tms320c3x, a TMS320C3X DSP simulator with support of TI COFF binaries, and TI C I/O (RTS run-time)");
+}
 
+void Simulator::Run()
+{
+	double time_start = host_time->GetTime();
+
+	void (*prev_sig_int_handler)(int);
+
+	if(!use_inline_debugger)
+		prev_sig_int_handler = signal(SIGINT, SigIntHandler);
+
+	try
+	{
+		simulating = true;
+		do
+		{
+			cpu->StepInstruction();
+		} while(simulating);
+	}
+	catch(std::runtime_error& e)
+	{
+		cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << endl;
+		cerr << e.what() << endl;
+	}
+
+	if(!use_inline_debugger)
+		signal(SIGINT, prev_sig_int_handler);
+
+	cerr << "Simulation finished" << endl;
+	
+	double time_stop = host_time->GetTime();
+	double spent_time = time_stop - time_start;
+
+	cerr << "Simulation run-time parameters:" << endl;
+	DumpParameters(cerr);
+	cerr << endl;
+	cerr << "Simulation formulas:" << endl;
+	DumpFormulas(cerr);
+	cerr << endl;
+	cerr << "Simulation statistics:" << endl;
+	DumpStatistics(cerr);
+	cerr << endl;
+
+	VariableBase *stat_instruction_counter = GetVariable("cpu.instruction-counter");
+	VariableBase *stat_insn_cache_hits = GetVariable("cpu.insn-cache-hits");
+	VariableBase *stat_insn_cache_misses = GetVariable("cpu.insn-cache-misses");
+	cerr << "simulation time: " << spent_time << " seconds" << endl;
+	cerr << "simulated instructions : " << (uint64_t)(*stat_instruction_counter) << " instructions" << endl;
+	cerr << "host simulation speed: " << ((double)(*stat_instruction_counter) / spent_time / 1000000.0) << " MIPS" << endl;
+	cerr << "Insn cache hits: " << (uint64_t) *stat_insn_cache_hits << endl;
+	cerr << "Insn cache misses: " << (uint64_t) *stat_insn_cache_misses << endl;
+	cerr << "Insn cache miss rate: " << ((double) *stat_insn_cache_misses / (double) ((uint64_t) *stat_insn_cache_hits + (uint64_t) *stat_insn_cache_misses)) << endl;
+}
+
+int main(int argc, char *argv[])
+{
+#ifdef WIN32
+	// Loads the winsock2 dll
+	WORD wVersionRequested = MAKEWORD( 2, 2 );
+	WSADATA wsaData;
+	if(WSAStartup(wVersionRequested, &wsaData) != 0)
+	{
+		cerr << "WSAStartup failed" << endl;
+		return -1;
+	}
+#endif
+	Simulator *simulator = new Simulator(argc, argv);
+
+	if(simulator->Setup())
+	{
+		cerr << "Starting simulation at system privilege level" << endl;
+
+		simulator->Run();
+	}
+	else
+	{
+		cerr << "Can't start simulation because of previous errors" << endl;
+	}
+
+	if(simulator) delete simulator;
 #ifdef WIN32
 	// releases the winsock2 resources
 	WSACleanup();
 #endif
 
-	return return_status;
+	return 0;
 }

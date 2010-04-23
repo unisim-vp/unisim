@@ -253,6 +253,7 @@ private:
 	bool enable_help;
 	bool warn_get_bin_path;
 	bool warn_get_share_path;
+	bool enable_press_enter_at_exit;
 	string bin_dir;
 	string program_binary;
 	string program_name;
@@ -268,6 +269,7 @@ private:
 	Parameter<string> *var_description;
 	Parameter<string> *var_version;
 	Parameter<string> *var_license;
+	Parameter<bool> *param_enable_press_enter_at_exit;
 	
 	void Version();
 	void Help();

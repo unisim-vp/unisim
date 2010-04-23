@@ -51,6 +51,7 @@
 #include <iostream>
 #include <iomanip>
 #include <stdlib.h>
+#include <stdio.h>
 #include <unistd.h>
 #include <limits.h>
 
@@ -1569,11 +1570,13 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	, enable_version(false)
 	, enable_help(false)
 	, enable_warning(false)
+	, enable_press_enter_at_exit(false)
 	, warn_get_bin_path(false)
 	, warn_get_share_path(false)
 	, param_get_config(0)
 	, cmd_args(0)
 	, param_cmd_args(0)
+	, param_enable_press_enter_at_exit(0)
 	, void_variable(0)
 	, var_program_name(0)
 	, var_authors(0)
@@ -1595,6 +1598,7 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	var_version = new Parameter<string>("version", 0, version, "Version");
 	var_description = new Parameter<string>("description", 0, description, "Description");
 	var_license = new Parameter<string>("license", 0, license, "License");
+	param_enable_press_enter_at_exit = new Parameter<bool>("enable-press-enter-at-exit", 0, enable_press_enter_at_exit, "Enable/Disable pressing key enter at exit");
 	
 	if(GetBinPath(argv[0], bin_dir, program_binary))
 	{
@@ -1745,6 +1749,12 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 
 Simulator::~Simulator()
 {
+	if(enable_press_enter_at_exit)
+	{
+		std::cout << "Press Enter to exit..." << std::endl;
+		getc(stdin);
+	}
+	
 	if(void_variable)
 	{
 		delete void_variable;
@@ -1783,6 +1793,11 @@ Simulator::~Simulator()
 	if(var_license)
 	{
 		delete var_license;
+	}
+	
+	if(param_enable_press_enter_at_exit)
+	{
+		delete param_enable_press_enter_at_exit;
 	}
 	
 	if(cmd_args)
@@ -2280,7 +2295,6 @@ VariableBase *Simulator::GetVariable(const char *name, VariableBase::Type type)
 	
 	if(variable_iter != variables.end() && (type == VariableBase::VAR_VOID || (*variable_iter).second->GetType() == type)) return (*variable_iter).second;
 	
-	 cerr << "ConfigManager: unknown variable \"" << name << "\"" << endl;
 	return void_variable;
 }
 
@@ -2521,13 +2535,21 @@ string Simulator::SearchSharedDataFile(const char *filename) const
 
 void Simulator::SetVariable(const char *variable_name, const char *variable_value)
 {
-	std::map<string, string>::iterator set_vars_it = set_vars.find(string(variable_name));
-	
-	if(set_vars_it != set_vars.end())
+	VariableBase *variable = GetVariable(variable_name);
+	if(variable == void_variable)
 	{
-		set_vars.erase(set_vars_it);
+		std::map<string, string>::iterator set_vars_it = set_vars.find(string(variable_name));
+		
+		if(set_vars_it != set_vars.end())
+		{
+			set_vars.erase(set_vars_it);
+		}
+		set_vars.insert(std::pair<string, string>(string(variable_name), string(variable_value)));
 	}
-	set_vars.insert(std::pair<string, string>(string(variable_name), string(variable_value)));
+	else
+	{
+		*variable = variable_value;
+	}
 }
 
 void Simulator::SetVariable(const char *variable_name, bool variable_value)
