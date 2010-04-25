@@ -21,8 +21,7 @@ foreach ( CXX_INCLUDE ${CXX_INCLUDES} )
 endforeach ( CXX_INCLUDE )
 
 set ( linux_loader_subdirs
-	unisim/kernel/service
-	unisim/kernel/logger
+	unisim/kernel
 	unisim/service/interfaces/memory
 	unisim/service/interfaces/loader
 	unisim/util/endian
@@ -40,8 +39,7 @@ add_library ( unisim__service__loader__linux_loader
 	)
 
 target_link_libraries ( unisim__service__loader__linux_loader
-	unisim__kernel__service
-	unisim__kernel__logger
+	unisim__kernel
 	unisim__util__endian
 	)
 

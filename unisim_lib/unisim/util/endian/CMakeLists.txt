@@ -29,13 +29,17 @@ elseif ( UNIX )
 	endforeach ( C_INCLUDE )
 endif ( APPLE )
 
-unisim_include ( unisim/kernel/service )
+unisim_include ( unisim/kernel)
 
 add_library ( unisim__util__endian
 		${CMAKE_SOURCE_DIR}/unisim/util/endian/endian.hh
 		${CMAKE_SOURCE_DIR}/unisim/util/endian/endian.cc
 	)
 
+target_link_libraries ( unisim__util__endian
+	unisim__kernel
+	)
+	
 include_directories ( ${CMAKE_SOURCE_DIR} )
 
 set_source_files_properties ( ${CMAKE_SOURCE_DIR}/unisim/util/endian/endian.hh

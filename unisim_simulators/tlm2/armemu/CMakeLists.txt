@@ -11,7 +11,7 @@ set ( SIM_COPYRIGHT "\"Copyright (C) 2007-2010, Comissariat a l'Energie Atomique
 set ( SIM_LICENSE "\"BSD (See file COPYING)\"" )
 set ( SIM_DESCRIPTION "\"UNISIM ARMv5 User Level Simulator\"" )
 set ( SIM_PYTHON_MODULE_NAME "\"armemu\"" )
-set ( SIM_PYTHON_IMPORT_NAME "\"armemu${SIM_VERSION_MAJOR}${SIM_VERSION_MINOR}${SIM_VERSION_PATCH}\"")
+set ( SIM_PYTHON_IMPORT_NAME "armemu${SIM_VERSION_MAJOR}${SIM_VERSION_MINOR}${SIM_VERSION_PATCH}")
 
 project ( unisim_armemu_v${SIM_VERSION_MAJOR}_${SIM_VERSION_MINOR}_${SIM_VERSION_PATCH} )
 include ( CheckIncludeFileCXX )
@@ -28,7 +28,7 @@ message ( "Python executable: ${PYTHON_EXECUTABLE}" )
 # message ( "Python lib path: ${PYTHON_LIBRARIES}" )
 
 set ( CMAKE_CXX_SOURCE_FILE_EXTENSIONS *.cc *.tcc *.hh CACHE STRING "Extensions of the source files" )
-set ( CMAKE_CXX_FLAGS -fPIC )
+set ( CMAKE_CXX_FLAGS "-fPIC -g" )
 # set ( BUILD_SHARED_LIBS ON )
 	
 set ( CXX_INCLUDES iostream list string )
@@ -58,7 +58,7 @@ set_property ( GLOBAL
 		UNISIM_KERNEL_BIN_TO_SHARED_DATA_PATH "../share/${ARMEMU_EXEC_NAME}" )
 
 set ( armemu_subdirs
-	unisim/kernel/service
+	unisim/kernel
 	unisim/component/tlm2/processor/arm/arm926ejs
 	unisim/component/tlm2/interrupt
 	unisim/component/tlm2/memory/ram
@@ -145,7 +145,7 @@ set_source_files_properties ( ${CMAKE_SOURCE_DIR}/python_lib.cc
 	)
 set ( armemu__libraries
 	${OSCI_SYSTEMC_LIBRARIES}
-	unisim__kernel__service
+	unisim__kernel
 	unisim__component__cxx__processor__arm
 	unisim__component__tlm2__processor__arm__arm926ejs
 	unisim__component__tlm2__interrupt
@@ -171,7 +171,7 @@ target_link_libraries ( ${ARMEMU_LIB_TARGET}
 	)
 
 set ( armemu__deps
-	unisim__kernel__service
+	unisim__kernel
 	unisim__component__tlm2__processor__arm__arm926ejs
 	unisim__component__tlm2__interrupt
 	unisim__component__tlm2__memory__ram
@@ -217,6 +217,7 @@ add_custom_command (
 		${CMAKE_BINARY_DIR}/setup.py
 		${CMAKE_BINARY_DIR}/config.hh
 		${CMAKE_SOURCE_DIR}/python_lib.cc
+		${ARMEMU_LIB_TARGET}
 	COMMENT
 		"Building python extension."
 	)
@@ -224,7 +225,7 @@ if ( ${PYTHONINTERP_FOUND} )
 	add_custom_target ( ${ARMEMU_LIB_TARGET}-python
 		ALL
 		DEPENDS
-			lib/${SIM_PYTHON_IMPORT_NAME}.so
+			${CMAKE_BINARY_DIR}/lib/${SIM_PYTHON_IMPORT_NAME}.so
 		COMMENT
 			"Python target."
 		)
@@ -243,6 +244,17 @@ add_custom_command (
 		"Creating simulator default configuration in \"${RELATIVE_SHARE_DIRECTORY}/template-default-config.xml\""
 	)
 
+if ( ${PYTHONINTERP_FOUND} )
+#	install ( TARGETS ${CMAKE_BINARY_DIR}/lib/${SIM_PYTHON_IMPORT_NAME}.so
+#		LIBRARY DESTINATION lib
+#		)
+	install (
+		FILES
+			${CMAKE_BINARY_DIR}/lib/${SIM_PYTHON_IMPORT_NAME}.so
+		DESTINATION
+			lib
+		)
+endif ( ${PYTHONINTERP_FOUND} )
 install ( TARGETS ${ARMEMU_EXEC_TARGET} ${ARMEMU_LIB_TARGET}
 	RUNTIME DESTINATION bin
 	LIBRARY DESTINATION lib

@@ -33,6 +33,7 @@
  */
  
 #include "unisim/util/garbage_collector/garbage_collector.hh"
+#include <unisim/kernel/debug/debug.hh>
 #include <stdlib.h>
 #include <string.h>
 #include <iostream>

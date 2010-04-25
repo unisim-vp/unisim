@@ -6,7 +6,7 @@ include ( ${CMAKE_SOURCE_DIR}/cmake/UnisimInclude.cmake )
 
 set ( sc_time_subdirs
 	unisim/service/interfaces/time
-	unisim/kernel/service
+	unisim/kernel
 	)
 
 foreach ( dir ${sc_time_subdirs} )
@@ -24,13 +24,13 @@ add_library ( unisim__service__time__sc_time
 	)
 
 target_link_libraries ( unisim__service__time__sc_time
-	${OSCI_SYSTEMC_LIB}
-	unisim__kernel__service
+	${OSCI_SYSTEMC_LIBRARIES}
+	unisim__kernel
 	)
 
 add_dependencies ( unisim__service__time__sc_time
 	unisim__service__interfaces__time
-	unisim__kernel__service
+	unisim__kernel
 	)
 
 message ( STATUS "Checking unisim::service::time::sc_time - done" )

@@ -275,7 +275,7 @@ static PyTypeObject armemu_SimulatorType =
 
 static PyModuleDef simulatormodule = {
     PyModuleDef_HEAD_INIT,
-    SIM_PYTHON_MODULE_NAME,
+	SIM_PYTHON_MODULE_NAME,
     "UNISIM ARMEmu python extension.",
     -1,
     NULL, NULL, NULL, NULL, NULL

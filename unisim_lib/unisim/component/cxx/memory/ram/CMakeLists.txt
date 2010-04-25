@@ -11,7 +11,7 @@ foreach ( C_INCLUDE ${C_INCLUDES} )
 	endif ( NOT HAVE_${C_INCLUDE}_H )
 endforeach ( C_INCLUDE )
 
-unisim_include ( unisim/kernel/service )
+unisim_include ( unisim/kernel)
 
 include_directories ( ${CMAKE_SOURCE_DIR} )
 add_library ( unisim__component__cxx__memory__ram
@@ -19,6 +19,10 @@ add_library ( unisim__component__cxx__memory__ram
 		memory.tcc
 		memory_32.cc
 		memory_64.cc
+	)
+	
+target_link_libraries ( unisim__component__cxx__memory__ram
+	unisim__kernel
 	)
 
 message ( STATUS "Checking unisim::component::cxx::memory::ram - done" )

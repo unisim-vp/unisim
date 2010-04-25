@@ -1574,8 +1574,6 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	, warn_get_bin_path(false)
 	, warn_get_share_path(false)
 	, param_get_config(0)
-	, cmd_args(0)
-	, param_cmd_args(0)
 	, param_enable_press_enter_at_exit(0)
 	, void_variable(0)
 	, var_program_name(0)
@@ -1583,6 +1581,12 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	, var_copyright(0)
 	, var_version(0)
 	, var_license(0)
+	, objects()
+	, imports()
+	, exports()
+	, variables()
+	, cmd_args(0)
+	, param_cmd_args(0)
 {
 	if(LoadBuiltInConfig)
 	{

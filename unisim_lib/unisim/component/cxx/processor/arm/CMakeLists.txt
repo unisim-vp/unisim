@@ -21,8 +21,7 @@ foreach ( C_INCLUDE ${C_INCLUDES} )
 endforeach ( C_INCLUDE )
 
 set ( cxx_arm_subdirs
-	unisim/kernel/service
-	unisim/kernel/logger
+	unisim/kernel
 	unisim/util/endian
 	unisim/util/arithmetic
 	unisim/util/debug
@@ -188,8 +187,7 @@ add_dependencies ( unisim__component__cxx__processor__arm
 	unisim__component__cxx__processor__arm_generated_files
 	unisim__component__cxx__processor__arm__arm32_isa
 	unisim__component__cxx__processor__arm__thumb_isa
-	unisim__kernel__service
-	unisim__kernel__logger
+	unisim__kernel
 	unisim__util__endian
 	unisim__util__arithmetic
 	unisim__util__debug
@@ -210,8 +208,7 @@ add_dependencies ( unisim__component__cxx__processor__arm
 	)
 	
 target_link_libraries ( unisim__component__cxx__processor__arm
-	unisim__kernel__service
-	unisim__kernel__logger
+	unisim__kernel
 	unisim__util__endian
 	unisim__util__debug
 	)

@@ -34,8 +34,7 @@ set ( gdb_server_subdirs
 	unisim/service/interfaces/trap_reporting
 	unisim/util/endian
 	unisim/util/debug
-	unisim/kernel/service
-	unisim/kernel/logger
+	unisim/kernel
 	unisim/util/xml
 	)
 foreach ( dir ${gdb_server_subdirs} )
@@ -52,7 +51,12 @@ add_library ( unisim__service__debug__gdb_server
 	)
 
 target_link_libraries ( unisim__service__debug__gdb_server
-	unisim__util__xml )
+	unisim__util__endian
+	unisim__util__xml
+	unisim__util__debug
+	unisim__kernel
+	unisim__util__xml 
+	)
 
 set_source_files_properties (
 	${CMAKE_SOURCE_DIR}/unisim/service/debug/gdb_server/gdb_server.hh
