@@ -54,7 +54,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <limits.h>
-#if defined(__APPLE_CC__)
+#if defined(__APPLE_CC__) || defined (linux) 
 #include <dlfcn.h>
 #endif
 
@@ -62,9 +62,9 @@
 #include <windows.h>
 #endif
 
-#if defined(__APPLE_CC__)
-#include <mach-o/dyld.h>
-#endif
+// #if defined(__APPLE_CC__)
+// #include <mach-o/dyld.h>
+// #endif
 
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/topological_sort.hpp>
@@ -2387,25 +2387,28 @@ void Simulator::GetRootObjects(list<Object *>& lst)
 	}
 }
 
-#if defined(__APPLE_CC__)
+#if defined(__APPLE_CC__) || defined(linux)
 void FindMyself()
 {
-	// stupid method to find the path to the executable using the dladdr
-	//   function under apple
+	// stupid method to find the path to the executable/library using the dladdr
+	//   function under apple and linux
 }
 #endif
 
 bool Simulator::GetExecutablePath(const char *argv0, std::string& out_executable_path) const
 {
 #if defined(linux)
-	char bin_path_buf[PATH_MAX + 1];
-	ssize_t bin_path_length;
-	bin_path_length = readlink("/proc/self/exe", bin_path_buf, sizeof(bin_path_buf));
-	if(bin_path_length >= 0)
+	Dl_info info;
+	if ( dladdr((void *)unisim::kernel::service::FindMyself, &info) != 0 )
 	{
-		bin_path_buf[bin_path_length] = 0;
-		out_executable_path = std::string(bin_path_buf);
-		return true;
+		char bin_path_buf[PATH_MAX + 1];
+		ssize_t bin_path_length;
+		char *bin_path_pointer = realpath(info.dli_fname, bin_path_buf);
+		if(bin_path_pointer == bin_path_buf)
+		{
+			out_executable_path = std::string(bin_path_buf);
+			return true;
+		}
 	}
 #elif defined(WIN32)
 	char bin_path_buf[PATH_MAX + 1];
@@ -2418,13 +2421,13 @@ bool Simulator::GetExecutablePath(const char *argv0, std::string& out_executable
 		return true;
 	}
 #elif defined(__APPLE_CC__)
-	uint32_t bin_path_buf_size = 0;
 	Dl_info info;
 	if ( dladdr((void *)unisim::kernel::service::FindMyself, &info) != 0 )
 	{
 		out_executable_path = std::string(info.dli_fname);
 		return true;
 	}
+//	uint32_t bin_path_buf_size = 0;
 //	_NSGetExecutablePath(0, &bin_path_buf_size);
 //	char bin_path_buf[bin_path_buf_size];
 //	if(_NSGetExecutablePath(bin_path_buf, &bin_path_buf_size) == 0)

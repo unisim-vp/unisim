@@ -48,13 +48,14 @@ static Simulator *
 create_simulator()
 {
 	Simulator *sim;
-	char *argv[2] =
+	char *argv[3] =
 	{
 			(char *)"/Users/gracia/Developer/unisim/armemu/build/armemu-0.2.0",
-			(char *)0
+			(char *)"-w",
+			0
 	};
 
-	sim = new Simulator(1, argv);
+	sim = new Simulator(2, argv);
 	return sim;
 }
 
