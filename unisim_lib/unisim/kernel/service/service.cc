@@ -2432,8 +2432,6 @@ bool Simulator::GetExecutablePath(const char *argv0, std::string& out_executable
 			out_executable_path = std::string(bin_path_buf);
 			return true;
 		}
-		// out_executable_path = std::string(info.dli_fname);
-		// return true;
 	}
 //	uint32_t bin_path_buf_size = 0;
 //	_NSGetExecutablePath(0, &bin_path_buf_size);
