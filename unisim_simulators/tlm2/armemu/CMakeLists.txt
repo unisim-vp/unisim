@@ -30,6 +30,7 @@ message ( "Python executable: ${PYTHON_EXECUTABLE}" )
 set ( CMAKE_CXX_SOURCE_FILE_EXTENSIONS *.cc *.tcc *.hh CACHE STRING "Extensions of the source files" )
 set ( CMAKE_CXX_FLAGS "-fPIC -g" )
 # set ( BUILD_SHARED_LIBS ON )
+# set ( CMAKE_INSTALL_RPATH_USE_LINK_PATH true )
 	
 set ( CXX_INCLUDES iostream list string )
 foreach ( CXX_INCLUDE ${CXX_INCLUDES} )
@@ -225,7 +226,7 @@ if ( ${PYTHONINTERP_FOUND} )
 	add_custom_target ( ${ARMEMU_LIB_TARGET}-python
 		ALL
 		DEPENDS
-			${CMAKE_BINARY_DIR}/lib/${SIM_PYTHON_IMPORT_NAME}.so
+			lib/${SIM_PYTHON_IMPORT_NAME}.so
 		COMMENT
 			"Python target."
 		)
@@ -245,15 +246,16 @@ add_custom_command (
 	)
 
 if ( ${PYTHONINTERP_FOUND} )
-#	install ( TARGETS ${CMAKE_BINARY_DIR}/lib/${SIM_PYTHON_IMPORT_NAME}.so
-#		LIBRARY DESTINATION lib
+#   WARNING!!!
+#	uncomment the following if you want to install the python library
+#   however it has not been tested for installation (still under development)
+
+#	install (
+#		FILES
+#			${CMAKE_BINARY_DIR}/lib/${SIM_PYTHON_IMPORT_NAME}.so
+#		DESTINATION
+#			lib
 #		)
-	install (
-		FILES
-			${CMAKE_BINARY_DIR}/lib/${SIM_PYTHON_IMPORT_NAME}.so
-		DESTINATION
-			lib
-		)
 endif ( ${PYTHONINTERP_FOUND} )
 install ( TARGETS ${ARMEMU_EXEC_TARGET} ${ARMEMU_LIB_TARGET}
 	RUNTIME DESTINATION bin

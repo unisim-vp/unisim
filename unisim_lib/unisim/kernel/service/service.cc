@@ -54,6 +54,9 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <limits.h>
+#if defined(__APPLE_CC__)
+#include <dlfcn.h>
+#endif
 
 #if defined(WIN32)
 #include <windows.h>
@@ -2384,6 +2387,14 @@ void Simulator::GetRootObjects(list<Object *>& lst)
 	}
 }
 
+#if defined(__APPLE_CC__)
+void FindMyself()
+{
+	// stupid method to find the path to the executable using the dladdr
+	//   function under apple
+}
+#endif
+
 bool Simulator::GetExecutablePath(const char *argv0, std::string& out_executable_path) const
 {
 #if defined(linux)
@@ -2408,13 +2419,19 @@ bool Simulator::GetExecutablePath(const char *argv0, std::string& out_executable
 	}
 #elif defined(__APPLE_CC__)
 	uint32_t bin_path_buf_size = 0;
-	_NSGetExecutablePath(0, &bin_path_buf_size);
-	char bin_path_buf[bin_path_buf_size];
-	if(_NSGetExecutablePath(bin_path_buf, &bin_path_buf_size) == 0)
+	Dl_info info;
+	if ( dladdr((void *)unisim::kernel::service::FindMyself, &info) != 0 )
 	{
-		out_executable_path = std::string(bin_path_buf);
+		out_executable_path = std::string(info.dli_fname);
 		return true;
 	}
+//	_NSGetExecutablePath(0, &bin_path_buf_size);
+//	char bin_path_buf[bin_path_buf_size];
+//	if(_NSGetExecutablePath(bin_path_buf, &bin_path_buf_size) == 0)
+//	{
+//		out_executable_path = std::string(bin_path_buf);
+//		return true;
+//	}
 #endif
 	char *path_buf = getenv("PATH");
 	if(path_buf)
