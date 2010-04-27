@@ -23,7 +23,10 @@ include ( FindPythonInterp )
 # set ( PYTHON_EXECUTABLE "/opt/local/bin/python" )                                                                                                
 # set ( PYTHON_INCLUDE_DIR "/opt/local/Library/Frameworks/Python.framework/Headers" )                                                               
 # set ( PYTHON_LIBRARY "/opt/local/Library/Frameworks/Python.framework/Versions/3.1/lib/libpython3.1.dylib")
-message ( "Python executable: ${PYTHON_EXECUTABLE}" )
+message ( "The following python executable `${PYTHON_EXECUTABLE}' will be used
+	to create a python module of the UNISIM armemu simulator. If you want to use
+	another python version please launch cmake with the following option:
+	-DPYTHON_EXECUTABLE=<path to the python interpreter>" )
 # message ( "Python includes path: ${PYTHON_INCLUDE_PATH}" )
 # message ( "Python lib path: ${PYTHON_LIBRARIES}" )
 
@@ -209,11 +212,14 @@ set_target_properties ( ${ARMEMU_LIB_TARGET}
 add_custom_command (
 	OUTPUT lib/${SIM_PYTHON_IMPORT_NAME}.so
 	COMMAND
+		${CMAKE_COMMAND} -E remove_directory python
+	COMMAND
+		${CMAKE_COMMAND} -E remove lib/${SIM_PYTHON_IMPORT_NAME}.so
+	COMMAND
 		${CMAKE_COMMAND} -E make_directory python
 	COMMAND
 		${PYTHON_EXECUTABLE} setup.py build -t python --build-lib lib
 	DEPENDS
-		${ARMEMU_LIB_TARGET}
 		${CMAKE_BINARY_DIR}/setup.py
 		${CMAKE_BINARY_DIR}/config.hh
 		${CMAKE_SOURCE_DIR}/python_lib.cc
