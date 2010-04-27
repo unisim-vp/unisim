@@ -137,7 +137,6 @@ add_library ( ${ARMEMU_LIB_TARGET}
 		${armemu__sources}
 	)
 add_executable ( ${ARMEMU_EXEC_TARGET}
-	${armemu__sources}
 	${CMAKE_SOURCE_DIR}/main.cc
 	)
 set_source_files_properties ( ${CMAKE_SOURCE_DIR}/python_lib.cc
@@ -164,11 +163,11 @@ if ( UNISIM__SERVICE__POWER__SUPPORT )
 		unisim__service__power )
 endif ( UNISIM__SERVICE__POWER__SUPPORT )
 
-target_link_libraries ( ${ARMEMU_EXEC_TARGET}
-	${armemu__libraries}
-	)
 target_link_libraries ( ${ARMEMU_LIB_TARGET}
 	${armemu__libraries}
+	)
+target_link_libraries ( ${ARMEMU_EXEC_TARGET}
+	${ARMEMU_LIB_TARGET}
 	)
 
 set ( armemu__deps
