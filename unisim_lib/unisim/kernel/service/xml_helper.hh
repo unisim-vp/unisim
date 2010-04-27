@@ -81,6 +81,18 @@ private:
 	enum CurStatus {NONE, TYPE, NAME, VALUE, DESCRIPTION, DATA_TYPE};
 	CurVariable *cur_var;
 	CurStatus cur_status;
+
+	// tokens required
+	xmlChar* name_token;
+	xmlChar* variables_token;
+	xmlChar* object_token;
+	xmlChar* variable_token;
+	xmlChar* type_token;
+	xmlChar* value_token;
+	xmlChar* default_value_token;
+	xmlChar* data_type_token;
+	xmlChar* description_token;
+	xmlChar* _text_token;
 };
 
 } // end of namespace service

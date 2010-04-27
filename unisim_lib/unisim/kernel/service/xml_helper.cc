@@ -48,11 +48,45 @@ const char *XMLHelper::XML_ENCODING = "UTF-8";
 
 XMLHelper::
 XMLHelper(Simulator *_simulator) :
-	simulator(_simulator) {
+	simulator(_simulator),
+	name_token(0),
+	variables_token(0),
+	object_token(0),
+	variable_token(0),
+	type_token(0),
+	value_token(0),
+	default_value_token(0),
+	data_type_token(0),
+	description_token(0),
+	_text_token(0)
+{
+	name_token = xmlCharStrdup("name");
+	variables_token = xmlCharStrdup("variables");
+	object_token = xmlCharStrdup("object");
+	variable_token = xmlCharStrdup("variable");
+	type_token = xmlCharStrdup("type");
+	value_token = xmlCharStrdup("value");
+	default_value_token = xmlCharStrdup("default_value");
+	data_type_token = xmlCharStrdup("data_type");
+	description_token = xmlCharStrdup("description");
+	_text_token = xmlCharStrdup("#text");
+
 }
 
 XMLHelper::
-~XMLHelper() {}
+~XMLHelper()
+{
+	free(name_token); name_token = 0;
+	free(variables_token); variables_token = 0;
+	free(object_token); object_token = 0;
+	free(variable_token); variable_token = 0;
+	free(type_token); type_token = 0;
+	free(value_token); value_token = 0;
+	free(default_value_token); default_value_token = 0;
+	free(data_type_token); data_type_token = 0;
+	free(description_token); description_token = 0;
+	free(_text_token); _text_token = 0;
+}
 
 bool
 XMLHelper::
@@ -186,7 +220,12 @@ XmlfyVariables(xmlTextWriterPtr writer,
 	if (rc < 0) return rc;
 
 	// write object name
-	rc = xmlTextWriterWriteAttribute(writer, BAD_CAST "name", xmlCharStrdup(obj->GetName()));
+	{
+		xmlChar* obj_name = xmlCharStrdup(obj->GetName());
+
+		rc = xmlTextWriterWriteAttribute(writer, BAD_CAST "name", obj_name);
+		free(obj_name); obj_name = 0;
+	}
 	if (rc < 0) return rc;
 
 	// dump inner objects
@@ -247,7 +286,11 @@ XmlfyVariable(xmlTextWriterPtr writer,
 	if(rc < 0) return rc;
 
 	// write variable name
-	rc = xmlTextWriterWriteAttribute(writer, BAD_CAST "name", xmlCharStrdup(var->GetName()));
+	{
+		xmlChar* var_name = xmlCharStrdup(var->GetName());
+		rc = xmlTextWriterWriteAttribute(writer, BAD_CAST "name", var_name);
+		free(var_name); var_name = 0;
+	}
 	if (rc < 0) return rc;
 
 	// writing the variable type
@@ -398,28 +441,19 @@ ProcessXmlVariableNode(xmlTextReaderPtr reader, VariableBase::Type type)
 		cerr << "Could not read Xml variable node" << endl;
 		return false;
 	}
-
-	// TODO: this code should be removed, the root tag should be in lower letters, not capital
-	if (xmlStrEqual(name, xmlCharStrdup("VARIABLES"))) 
-	{
-//		if (xmlTextReaderNodeType(reader) == 1)
-//			cerr << "VARIABLES" << endl;
-		return true;
-	}
-	// End of TODO
 	
-	if (xmlStrEqual(name, xmlCharStrdup("variables")))
+	if (xmlStrEqual(name, variables_token))
 	{
 //		if (xmlTextReaderNodeType(reader) == 1)
 //			cerr << "variables" << endl;
 		return true;
 	}
 
-	if (xmlStrEqual(name, xmlCharStrdup("object")))
+	if (xmlStrEqual(name, object_token))
 	{
 		if (xmlTextReaderNodeType(reader) == 1)
 		{
-			name_attr = xmlTextReaderGetAttribute(reader, xmlCharStrdup("name"));
+			name_attr = xmlTextReaderGetAttribute(reader, name_token);
 			if (name_attr == 0)
 			{
 				cerr << "Error: could not get object name" << endl;
@@ -430,9 +464,9 @@ ProcessXmlVariableNode(xmlTextReaderPtr reader, VariableBase::Type type)
 		return true;
 	}
 	
-	if(xmlStrEqual(name, xmlCharStrdup("variable"))) {
+	if(xmlStrEqual(name, variable_token)) {
 		if(xmlTextReaderNodeType(reader) == 1) {
-			name_attr = xmlTextReaderGetAttribute(reader, xmlCharStrdup("name"));
+			name_attr = xmlTextReaderGetAttribute(reader, name_token);
 // TODO: uncomment this code as the name of the variable should be an attribute
 //			if (name_attr == 0)
 //			{
@@ -464,7 +498,7 @@ ProcessXmlVariableNode(xmlTextReaderPtr reader, VariableBase::Type type)
 		return true;
 	}
 
-	if(xmlStrEqual(name, xmlCharStrdup("type"))) {
+	if(xmlStrEqual(name, type_token)) {
 		if(xmlTextReaderNodeType(reader) == 1) {
 			cur_status = TYPE;
 		}
@@ -475,7 +509,7 @@ ProcessXmlVariableNode(xmlTextReaderPtr reader, VariableBase::Type type)
 	}
 
 	// TODO: this code should be removed because name is now an attribute
-	if(xmlStrEqual(name, xmlCharStrdup("name"))) {
+	if(xmlStrEqual(name, name_token)) {
 		if(xmlTextReaderNodeType(reader) == 1) {
 			cur_status = NAME;
 		}
@@ -487,13 +521,13 @@ ProcessXmlVariableNode(xmlTextReaderPtr reader, VariableBase::Type type)
 	// end of TODO
 	
 	// TODO: this code should be removed because default_value has dissappeared
-	if(xmlStrEqual(name, xmlCharStrdup("default_value"))) {
+	if(xmlStrEqual(name, default_value_token)) {
 		// nothing to do
 		return true;
 	}
 	// end of TODO
 
-	if(xmlStrEqual(name, xmlCharStrdup("value"))) {
+	if(xmlStrEqual(name, value_token)) {
 		if(xmlTextReaderNodeType(reader) == 1) {
 			cur_status = VALUE;
 		}
@@ -503,7 +537,7 @@ ProcessXmlVariableNode(xmlTextReaderPtr reader, VariableBase::Type type)
 		return true;
 	}
 	
-	if(xmlStrEqual(name, xmlCharStrdup("description"))) {
+	if(xmlStrEqual(name, description_token)) {
 		if(xmlTextReaderNodeType(reader) == 1) {
 			cur_status = DESCRIPTION;
 		}
@@ -513,7 +547,7 @@ ProcessXmlVariableNode(xmlTextReaderPtr reader, VariableBase::Type type)
 		return true;
 	}
 	
-	if(xmlStrEqual(name, xmlCharStrdup("data_type"))) {
+	if(xmlStrEqual(name, data_type_token)) {
 		if(xmlTextReaderNodeType(reader) == 1) {
 			cur_status = DATA_TYPE;
 		}
@@ -522,7 +556,7 @@ ProcessXmlVariableNode(xmlTextReaderPtr reader, VariableBase::Type type)
 		}
 	}
 	
-	if(xmlStrEqual(name, xmlCharStrdup("#text"))) {
+	if(xmlStrEqual(name, _text_token)) {
 		value = xmlTextReaderConstValue(reader);
 		switch(cur_status) {
 		case NONE:
