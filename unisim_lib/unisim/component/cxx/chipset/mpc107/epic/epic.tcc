@@ -57,7 +57,7 @@ template <class PHYSICAL_ADDR,
 	bool DEBUG>
 EPIC<PHYSICAL_ADDR, DEBUG> ::
 EPIC(const char *name, Object *parent) :
-	Object(name, parent),
+	Object(name, parent, "MPC107 integrated Embedded Programmable Interrupt Controller (EPIC)"),
 	Service<Memory<PHYSICAL_ADDR> >(name, parent),
 	logger(*this),
 	verbose(false),

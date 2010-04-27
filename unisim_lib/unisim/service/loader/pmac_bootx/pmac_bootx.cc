@@ -813,7 +813,7 @@ uint32_t BootInfos::GetImageSize()
 }
 
 PMACBootX::PMACBootX(const char *name, Object *parent) :
-	Object(name, parent),
+	Object(name, parent, "PowerMac BootX loader emulator"),
 	Service<Loader<uint32_t> >(name, parent),
 	Client<Loader<uint32_t> >(name, parent),
 	Client<Memory<uint32_t> >(name, parent),

@@ -188,6 +188,9 @@ Simulator::Simulator(int argc, char **argv)
 	//  - TI C I/O
 	ti_c_io = new TI_C_IO("ti-c-io");
 
+	VariableBase *program = GetVariable("cmd-args[0]");
+	(*loader)["filename"] = *program;
+
 	//=========================================================================
 	//===                       Components/Services connection              ===
 	//=========================================================================
@@ -255,6 +258,11 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("authors", "Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Pérez <daniel.gracia-perez@cea.fr>");
 	simulator->SetVariable("version", VERSION);
 	simulator->SetVariable("description", "UNISIM tms320c3x, a TMS320C3X DSP simulator with support of TI COFF binaries, and TI C I/O (RTS run-time)");
+	
+	// rom loader
+	simulator->SetVariable("rom-loader.filename", "c31boot.out");
+	simulator->SetVariable("cpu.mimic-dev-board", "true");
+	simulator->SetVariable("ti-c-io.enable", "true");
 }
 
 void Simulator::Run()

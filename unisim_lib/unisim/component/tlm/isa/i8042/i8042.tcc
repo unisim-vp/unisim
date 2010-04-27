@@ -60,7 +60,7 @@ using unisim::kernel::logger::EndDebugError;
 template <uint32_t MAX_DATA_SIZE>
 I8042<MAX_DATA_SIZE>::I8042(const sc_module_name& name, Object *parent) :
 	sc_module(name),
-	Object(name, parent),
+	Object(name, parent, "i8042 PS/2 keyboard/mouse controller"),
 	unisim::component::cxx::isa::i8042::I8042(name, parent),
 	isa_bus_cycle_time(),
 	bus_cycle_time()

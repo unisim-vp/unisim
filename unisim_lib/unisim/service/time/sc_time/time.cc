@@ -41,7 +41,7 @@ namespace time {
 namespace sc_time {
 
 ScTime::ScTime(const char *name, Object *parent) :
-	Object(name, parent),
+	Object(name, parent, "SystemC time"),
 	Service<Time>(name, parent),
 	time_export("time-export", this)
 {

@@ -173,7 +173,7 @@ public:
 
 	Bus(const sc_module_name &name, Object *parent = 0):
 		sc_module(name),
-		Object(name, parent),
+		Object(name, parent, "PCI bus"),
 		Service<unisim::service::interfaces::Memory<ADDRESS_TYPE> >(name, parent),
 		Client<unisim::service::interfaces::Memory<ADDRESS_TYPE> >(name, parent),
 		logger(*this),

@@ -52,7 +52,7 @@ using std::hex;
 using std::dec;
 
 I8042::I8042(const char *name, Object *parent) :
-	Object(name, parent),
+	Object(name, parent, "i8042 PS/2 keyboard/mouse controller"),
 	Client<Keyboard>(name, parent),
 	Client<Mouse>(name, parent),
 	keyboard_import("keyboard-import", this),

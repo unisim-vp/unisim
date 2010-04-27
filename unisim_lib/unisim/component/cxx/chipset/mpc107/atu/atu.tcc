@@ -54,7 +54,7 @@ using unisim::kernel::logger::EndDebugError;
 template<class ADDRESS_TYPE, class PCI_ADDRESS_TYPE, bool DEBUG>
 ATU<ADDRESS_TYPE, PCI_ADDRESS_TYPE, DEBUG> ::
 ATU(const char *name, Object *parent) :
-	Object(name, parent),
+	Object(name, parent, "MPC107 integrated Address Translation Unit (ATU)"),
 	logger(*this),
 	verbose(false),
 	param_verbose("verbose", this, verbose, "enable/disable verbosity") {
