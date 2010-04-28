@@ -30,7 +30,7 @@ set ( inline_debugger_subdirs
 	unisim/service/interfaces/symbol_table_lookup
 	unisim/util/debug
 	unisim/util/endian
-	unisim/kernel/service
+	unisim/kernel
 	)
 foreach ( dir ${inline_debugger_subdirs} )
 	unisim_include ( ${dir} )
@@ -46,7 +46,10 @@ add_library ( unisim__service__debug__inline_debugger
 	)
 
 target_link_libraries ( unisim__service__debug__inline_debugger 
-	unisim__util__debug )
+	unisim__util__debug 
+	unisim__util__endian
+	unisim__kernel
+	)
 
 if ( UNIX )
 	include ( FindCurses )

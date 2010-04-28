@@ -36,7 +36,6 @@
 #define __UNISIM_UTIL_GARBAGE_COLLECTOR_GARBAGE_COLLECTOR_HH__
 
 #include <cstddef>
-#include <unisim/kernel/debug/debug.hh>
 
 namespace unisim {
 namespace util {

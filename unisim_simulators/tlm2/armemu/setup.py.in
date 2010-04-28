@@ -1,0 +1,25 @@
+from distutils.core import setup, Extension
+from distutils import sysconfig, ccompiler
+import distutils
+import os.path
+
+print ( distutils.util.get_platform() )
+# print ( sysconfig.get_config_vars() )
+setup(name="@SIM_PYTHON_IMPORT_NAME@", version=@SIM_VERSION@,
+	ext_modules=[
+      	Extension("@SIM_PYTHON_IMPORT_NAME@", 
+      		["@CMAKE_SOURCE_DIR@/python_lib.cc"],
+      		include_dirs=[
+      			'@CMAKE_SOURCE_DIR@',
+      			'@CMAKE_BINARY_DIR@',
+      			'@OSCI_SYSTEMC_INCLUDE_DIR@',
+      			'@OSCI_TLM2_INCLUDE_DIR@'],
+      		library_dirs=['lib',
+      			os.path.dirname('@OSCI_SYSTEMC_LIBRARIES@')],
+      		libraries=[
+      			'@ARMEMU_LIB_NAME@',
+      			'systemc']
+      		)
+      	]
+	)
+

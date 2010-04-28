@@ -6,8 +6,7 @@ include ( ${CMAKE_SOURCE_DIR}/cmake/FindOSCITLM2.cmake )
 include ( ${CMAKE_SOURCE_DIR}/cmake/UnisimInclude.cmake )
 
 set ( interrupt_subdirs
-	unisim/kernel/service
-	unisim/kernel/tlm2
+	unisim/kernel
 	unisim/component/cxx/memory/ram
 	)
 foreach ( dir ${interrupt_subdirs} )
@@ -31,7 +30,10 @@ set_source_files_properties (
 	)
 
 target_link_libraries ( unisim__component__tlm2__interrupt
-	${OSCI_SYSTEMC_LIBRARIES} )
+	${OSCI_SYSTEMC_LIBRARIES} 
+	unisim__kernel
+	unisim__component__cxx__memory__ram
+	)
 
 message ( STATUS "Checking unisim::component::tlm2::interrupt - done" )
 

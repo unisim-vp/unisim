@@ -59,23 +59,54 @@ endianness(E_LITTLE_ENDIAN),
 stack_base(0),
 max_environ(0),
 argc(0),
+argv(0),
+envc(0),
+envp(0),
 endianness_string("little-endian"),
-param_endian("endianness", this, endianness_string, "The endianness of the binary loaded. Available values are: little-endian and big-endian."),
-param_stack_base("stack-base", this, stack_base),
-param_max_environ("max-environ", this, max_environ),
-param_argc("argc", this, argc),
-param_argv("argv", this, argv, MAX_ARGC),
-param_envc("envc", this, envc),
-param_envp("envp", this, envp, MAX_ENVC),
+param_endian("endianness", this, endianness_string,
+		"The endianness of the binary loaded. Available values are:"
+		" little-endian and big-endian."),
+param_stack_base("stack-base", this, stack_base,
+		"The stack base address used for the load and execution of the "
+		"linux application"),
+param_max_environ("max-environ", this, max_environ,
+		"The maximum size of the program environment during its execution."),
+param_argc("argc", this, argc,
+		"Number of commands in the program execution line (usually at least one"
+		" which is the name of the program executed). The different tokens"
+		" can be set up with the parameters argv[<n>] where <n> can go up to"
+		" argc - 1."),
+param_argv(0),
+param_envc("envc", this, envc,
+		"Number of environment variables defined for the program execution."
+		" The different variables can be set up with the parameters envp[<n>]"
+		" where <n> can go up to envc - 1."),
+param_envp(0),
 param_verbose("verbose", this, verbose, "Display verbose information"),
 logger(*this)
 {
+	if ( argc )
+	{
+		argv = new string[argc];
+		param_argv = new ParameterArray<string>("argv", this, argv, argc,
+				"The ordered list of tokens in the command line.");
+	}
+	if ( envc )
+	{
+		envp = new string[envc];
+		param_envp = new ParameterArray<string>("envp", this, envp, envc,
+				"The different environment variables defined.");
+	}
 	Object::SetupDependsOn(memory_import);
 	Object::SetupDependsOn(loader_import);
 }
 
 template<class T>
 LinuxLoader<T>::~LinuxLoader() {
+	if ( argv ) delete [] argv;
+	if ( param_argv ) delete param_argv;
+	if ( envp ) delete [] envp;
+	if ( param_envp ) delete param_envp;
 }
 
 template<class T>

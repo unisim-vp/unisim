@@ -54,14 +54,17 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <limits.h>
+#if defined(__APPLE_CC__) || defined (linux) 
+#include <dlfcn.h>
+#endif
 
 #if defined(WIN32)
 #include <windows.h>
 #endif
 
-#if defined(__APPLE_CC__)
-#include <mach-o/dyld.h>
-#endif
+// #if defined(__APPLE_CC__)
+// #include <mach-o/dyld.h>
+// #endif
 
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/topological_sort.hpp>
@@ -1832,8 +1835,6 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	, warn_get_bin_path(false)
 	, warn_get_share_path(false)
 	, param_get_config(0)
-	, cmd_args(0)
-	, param_cmd_args(0)
 	, param_enable_press_enter_at_exit(0)
 	, void_variable(0)
 	, var_program_name(0)
@@ -1841,6 +1842,12 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	, var_copyright(0)
 	, var_version(0)
 	, var_license(0)
+	, objects()
+	, imports()
+	, exports()
+	, variables()
+	, cmd_args(0)
+	, param_cmd_args(0)
 {
 	command_line_options.push_back(CommandLineOption('s', "set", "set value of parameter 'param' to 'value'", "param=value"));
 	command_line_options.push_back(CommandLineOption('c', "config", "configures the simulator with the given XML configuration file", "XML file"));
@@ -1869,12 +1876,12 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	
 	if(GetBinPath(argv[0], bin_dir, program_binary))
 	{
-		//std::cerr << "bin_dir=\"" << bin_dir << "\"" << std::endl;
-		//std::cerr << "program_binary=\"" << program_binary << "\"" << std::endl;
+		std::cerr << "bin_dir=\"" << bin_dir << "\"" << std::endl;
+		std::cerr << "program_binary=\"" << program_binary << "\"" << std::endl;
 
 		if(GetSharePath(bin_dir, shared_data_dir))
 		{
-			//std::cerr << "shared_data_dir=\"" << shared_data_dir << "\"" << std::endl;
+			std::cerr << "shared_data_dir=\"" << shared_data_dir << "\"" << std::endl;
 		}
 		else
 		{
@@ -2677,17 +2684,28 @@ void Simulator::GetRootObjects(list<Object *>& lst)
 	}
 }
 
+#if defined(__APPLE_CC__) || defined(linux)
+void FindMyself()
+{
+	// stupid method to find the path to the executable/library using the dladdr
+	//   function under apple and linux
+}
+#endif
+
 bool Simulator::GetExecutablePath(const char *argv0, std::string& out_executable_path) const
 {
 #if defined(linux)
-	char bin_path_buf[PATH_MAX + 1];
-	ssize_t bin_path_length;
-	bin_path_length = readlink("/proc/self/exe", bin_path_buf, sizeof(bin_path_buf));
-	if(bin_path_length >= 0)
+	Dl_info info;
+	if ( dladdr((void *)unisim::kernel::service::FindMyself, &info) != 0 )
 	{
-		bin_path_buf[bin_path_length] = 0;
-		out_executable_path = std::string(bin_path_buf);
-		return true;
+		char bin_path_buf[PATH_MAX + 1];
+		ssize_t bin_path_length;
+		char *bin_path_pointer = realpath(info.dli_fname, bin_path_buf);
+		if(bin_path_pointer == bin_path_buf)
+		{
+			out_executable_path = std::string(bin_path_buf);
+			return true;
+		}
 	}
 #elif defined(WIN32)
 	char bin_path_buf[PATH_MAX + 1];
@@ -2700,14 +2718,26 @@ bool Simulator::GetExecutablePath(const char *argv0, std::string& out_executable
 		return true;
 	}
 #elif defined(__APPLE_CC__)
-	uint32_t bin_path_buf_size = 0;
-	_NSGetExecutablePath(0, &bin_path_buf_size);
-	char bin_path_buf[bin_path_buf_size];
-	if(_NSGetExecutablePath(bin_path_buf, &bin_path_buf_size) == 0)
+	Dl_info info;
+	if ( dladdr((void *)unisim::kernel::service::FindMyself, &info) != 0 )
 	{
-		out_executable_path = std::string(bin_path_buf);
-		return true;
+		char bin_path_buf[PATH_MAX + 1];
+		ssize_t bin_path_length;
+		char *bin_path_pointer = realpath(info.dli_fname, bin_path_buf);
+		if(bin_path_pointer == bin_path_buf)
+		{
+			out_executable_path = std::string(bin_path_buf);
+			return true;
+		}
 	}
+//	uint32_t bin_path_buf_size = 0;
+//	_NSGetExecutablePath(0, &bin_path_buf_size);
+//	char bin_path_buf[bin_path_buf_size];
+//	if(_NSGetExecutablePath(bin_path_buf, &bin_path_buf_size) == 0)
+//	{
+//		out_executable_path = std::string(bin_path_buf);
+//		return true;
+//	}
 #endif
 	char *path_buf = getenv("PATH");
 	if(path_buf)
@@ -2756,7 +2786,7 @@ bool Simulator::GetBinPath(const char *argv0, std::string& out_bin_dir, std::str
 	std::string executable_path;
 	
 	if(!GetExecutablePath(argv0, executable_path)) return false;
-	//std::cerr << "executable_path=\"" << executable_path << "\"" << std::endl;
+	std::cerr << "executable_path=\"" << executable_path << "\"" << std::endl;
 	// compute bin dirname
 	const char *start = executable_path.c_str();
 	const char *end = start + executable_path.length() - 1;
@@ -2793,7 +2823,7 @@ bool Simulator::GetSharePath(const std::string& bin_dir, std::string& out_share_
 	unresolved_shared_data_dir += BIN_TO_SHARED_DATA_PATH;
 	char resolved_shared_data_dir_buf[PATH_MAX + 1];
 		
-#if defined(unix)
+#if defined(linux) || defined(__APPLE_CC__)
 	if(realpath(unresolved_shared_data_dir.c_str(), resolved_shared_data_dir_buf))
 	{
 		out_share_dir = resolved_shared_data_dir_buf;

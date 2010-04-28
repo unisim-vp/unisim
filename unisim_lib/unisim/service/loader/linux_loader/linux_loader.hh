@@ -88,18 +88,14 @@ public:
 	virtual T GetTopAddr() const;
 	virtual T GetStackBase() const;
 
-private:
-	static const int MAX_ARGC = 10;
-	static const int MAX_ENVC = 10;
-
 protected:
 	endian_type endianness;
 	T stack_base;
 	T max_environ;
-	int argc;
-	string argv[MAX_ARGC];
-	int envc;
-	string envp[MAX_ENVC];
+	unsigned int argc;
+	string *argv;
+	unsigned int envc;
+	string *envp;
 
 	T stack_address;
 	T arg_address;
@@ -113,10 +109,10 @@ private:
 	Parameter<string> param_endian;
 	Parameter<T> param_stack_base;
 	Parameter<T> param_max_environ;
-	Parameter<int> param_argc;
-	ParameterArray<string> param_argv;
-	Parameter<int> param_envc;
-	ParameterArray<string> param_envp;
+	Parameter<unsigned int> param_argc;
+	ParameterArray<string> *param_argv;
+	Parameter<unsigned int> param_envc;
+	ParameterArray<string> *param_envp;
 
 	Parameter<bool> param_verbose;
 	Logger logger;

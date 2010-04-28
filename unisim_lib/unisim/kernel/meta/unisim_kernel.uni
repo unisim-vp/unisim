@@ -1,6 +1,93 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <package>
 	<unit>
+		<name>unisim::kernel</name>
+		<files>
+			<file>unisim/kernel/service/service.cc</file>
+			<file>unisim/kernel/service/service.hh</file>
+			<file>unisim/kernel/service/xml_helper.cc</file>
+			<file>unisim/kernel/service/xml_helper.hh</file>
+			<file>unisim/kernel/service/config.hh.in</file>
+			<file>unisim/kernel/logger/logger.cc</file>
+			<file>unisim/kernel/logger/logger.hh</file>
+			<file>unisim/kernel/logger/logger_server.cc</file>
+			<file>unisim/kernel/logger/logger_server.hh</file>
+			<file>unisim/kernel/tlm2/tlm.hh</file>
+			<file>unisim/kernel/tlm/tlm.hh</file>
+			<file>unisim/kernel/tlm/tlm.cc</file>
+			<file>unisim/kernel/debug/debug.hh</file>
+			<file>unisim/kernel/debug/debug.cc</file>
+			<file>unisim/kernel/CMakeLists.txt</file>
+		</files>
+		<depends>
+			<dep>stl_iostream</dep>
+			<dep>stl_string</dep>
+			<dep>stl_list</dep>
+			<dep>stl_queue</dep>
+			<dep>stl_map</dep>
+			<dep>stl_vector</dep>
+			<dep>stl_sstream</dep>
+			<dep>clib_string_h</dep>
+			<dep>stl_fstream</dep>
+			<dep>clib_stdlib_h</dep>
+			<dep>libxml2</dep>
+			<dep>unisim::kernel::logger</dep>
+			<dep>stl_fstream</dep>
+			<dep>osci_systemc</dep>
+			<dep>unisim::util::garbage_collector</dep>
+			<dep>stl_iosfwd</dep>
+			<dep>clib_stdlib_h</dep>
+		</depends>
+	</unit>
+	<unit>
+		<name>unisim::kernel::service</name>
+		<files>
+			<file>unisim/kernel/service/CMakeLists.txt</file>
+		</files>
+		<depends>
+			<dep>unisim::kernel</dep>
+		</depends>
+	</unit>
+	<unit>
+		<name>unisim::kernel::logger</name>
+		<files>
+			<file>unisim/kernel/logger/CMakeLists.txt</file>
+		</files>
+		<depends>
+			<dep>unisim::kernel</dep>
+		</depends>
+	</unit>
+	<unit>
+		<name>unisim::kernel::tlm2</name>
+		<files>
+			<file>unisim/kernel/tlm2/CMakeLists.txt</file>
+		</files>
+		<depends>
+			<dep>unisim::kernel</dep>
+		</depends>
+	</unit>
+	<unit>
+		<name>unisim::kernel::tlm</name>
+		<files>
+			<file>unisim/kernel/tlm/CMakeLists.txt</file>
+		</files>
+		<depends>
+			<dep>unisim::kernel</dep>
+		</depends>
+	</unit>
+	<unit>
+		<name>unisim::kernel::debug</name>
+		<files>
+			<file>unisim/kernel/debug/CMakeLists.txt</file>
+		</files>
+		<depends>
+			<dep>unisim::kernel</dep>
+		</depends>
+	</unit>
+</package>
+<!-- <?xml version='1.0' encoding='UTF-8'?>
+<package>
+	<unit>
 		<name>unisim::kernel::service</name>
 		<files>
 			<file>unisim/kernel/service/service.cc</file>
@@ -99,3 +186,4 @@
 		</autotools>
 	</unit>
 </package>
+-->
