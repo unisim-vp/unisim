@@ -182,6 +182,13 @@ public:
 	virtual unsigned int GetLength() const;
 	
 	virtual VariableBase& operator = (const VariableBase& variable);
+	
+	bool IsMutable() const;
+	bool IsVisible() const;
+	bool IsSerializable() const;
+	void SetMutable(bool is_mutable);
+	void SetVisible(bool is_visible);
+	void SetSerializable(bool is_serializable);
 private:
 	string name;
 	string var_name;
@@ -191,6 +198,9 @@ private:
 	vector<string> enumerated_values;
 	Type type;
 	Format fmt;
+	bool is_mutable;
+	bool is_visible;
+	bool is_serializable;
 };
 
 //=============================================================================
@@ -498,6 +508,7 @@ public:
 	void SetFormat(Format fmt);
 	virtual unsigned int GetLength() const;
 	virtual VariableBase& operator = (const VariableBase& variable);
+	virtual const char *GetDataTypeName() const;
 
 private:
 	vector<VariableBase *> variables;
@@ -579,6 +590,12 @@ void VariableArray<TYPE>::SetFormat(Format fmt)
 	{
 		(*variable_iter)->SetFormat(fmt);
 	}
+}
+
+template <class TYPE>
+const char *VariableArray<TYPE>::GetDataTypeName() const
+{
+	return "array";
 }
 
 template <class TYPE>

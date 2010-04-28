@@ -17,13 +17,30 @@ Authors: Gilles Mouchard $<$gilles.mouchard@cea.fr$>$, Daniel Gracia P\'erez $<$
 \noindent The simulator is composed of the following modules and services:
 \begin{itemize}\addtolength{\itemsep}{-0.40\baselineskip}
 \item bus: Front side bus
+\item bus\_msg\_spy[0]
+\item bus\_msg\_spy[1]
+\item bus\_msg\_spy[2]
+\item bus\_msg\_spy[3]
 \item cpu: PowerPC MPC7447A CPU
+\item dl1-power-estimator
+\item dtlb-power-estimator
 \item erom: Memory
 \item flash: AM29LVxxx flash memory
+\item gdb-server: GDB Server
 \item heathrow: Heathrow Programmable Interrupt Controller (PIC)
 \item host-time: Host time
 \item i8042: i8042 PS/2 keyboard/mouse controller
+\item il1-power-estimator
+\item irq\_msg\_spy[0]
+\item irq\_msg\_spy[1]
+\item irq\_msg\_spy[2]
+\item irq\_msg\_spy[3]
+\item itlb-power-estimator
 \item kernel\_logger: UNISIM kernel logger
+\item l2-power-estimator
+\item mem\_msg\_spy[0]
+\item mem\_msg\_spy[1]
+\item mem\_msg\_spy[2]
 \item memory: Memory
 \item mpc107: MPC107 chipset
 \item mpc107.DMA: MPC107 integrated Direct Memory Access (DMA) controller
@@ -35,6 +52,13 @@ Authors: Gilles Mouchard $<$gilles.mouchard@cea.fr$>$, Daniel Gracia P\'erez $<$
 \item pci-display: PCI Video frame buffer display
 \item pci-ide: PIIX4 IDE controller
 \item pci-isa-bridge: PCI-to-ISA bridge
+\item pci\_msg\_spy[0]
+\item pci\_msg\_spy[1]
+\item pci\_msg\_spy[2]
+\item pci\_msg\_spy[3]
+\item pci\_msg\_spy[4]
+\item pci\_msg\_spy[5]
+\item pci\_msg\_spy[6]
 \item pmac-linux-kernel-loader: PowerMac Linux kernel loader
 \item pmac-linux-kernel-loader.elf32-loader: ELF Loader
 \item pmac-linux-kernel-loader.pmac-bootx: PowerMac BootX loader emulator
@@ -73,6 +97,118 @@ Authors: Gilles Mouchard $<$gilles.mouchard@cea.fr$>$, Daniel Gracia P\'erez $<$
 \multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{13333 ps}} & \multicolumn{1}{p{7.5cm}|}{}\\
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline cycle time.}\\
+\hline
+\hline
+\multicolumn{2}{|l|}{\textbf{\Large bus\_msg\_spy[0]}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{bus\_msg\_spy[0].verbose}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{boolean}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{bus\_msg\_spy[0].source\_module\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{cpu}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{bus\_msg\_spy[0].source\_port\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{cpu.bus-port}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{bus\_msg\_spy[0].target\_module\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{bus}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{bus\_msg\_spy[0].target\_port\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{bus.inport[0]}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\hline
+\multicolumn{2}{|l|}{\textbf{\Large bus\_msg\_spy[1]}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{bus\_msg\_spy[1].verbose}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{boolean}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{bus\_msg\_spy[1].source\_module\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{bus}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{bus\_msg\_spy[1].source\_port\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{bus.port\_0}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{bus\_msg\_spy[1].target\_module\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{cpu}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{bus\_msg\_spy[1].target\_port\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{cpu.snoop-port}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\hline
+\multicolumn{2}{|l|}{\textbf{\Large bus\_msg\_spy[2]}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{bus\_msg\_spy[2].verbose}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{boolean}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{bus\_msg\_spy[2].source\_module\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{bus}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{bus\_msg\_spy[2].source\_port\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{bus.chipset\_outport}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{bus\_msg\_spy[2].target\_module\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{mpc107}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{bus\_msg\_spy[2].target\_port\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{mpc107.slave\_port}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\hline
+\multicolumn{2}{|l|}{\textbf{\Large bus\_msg\_spy[3]}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{bus\_msg\_spy[3].verbose}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{boolean}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{bus\_msg\_spy[3].source\_module\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{mpc107}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{bus\_msg\_spy[3].source\_port\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{mpc107.master\_port}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{bus\_msg\_spy[3].target\_module\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{bus}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{bus\_msg\_spy[3].target\_port\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{bus.chipset\_inport}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
 \hline
 \hline
 \multicolumn{2}{|l|}{\textbf{\Large cpu}}\\
@@ -215,6 +351,142 @@ Authors: Gilles Mouchard $<$gilles.mouchard@cea.fr$>$, Daniel Gracia P\'erez $<$
 \multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline targeted average instructions per second.}\\
 \hline
 \hline
+\multicolumn{2}{|l|}{\textbf{\Large dl1-power-estimator}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{dl1-power-estimator.verbose}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{boolean}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{dl1-power-estimator.cache-} \newline$\hookrightarrow$\texttt{size}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x8000}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{dl1-power-estimator.line-size}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x20}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{dl1-power-estimator.associativity}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x8}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{dl1-power-estimator.rw-ports}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x1}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{dl1-power-estimator.excl-read-} \newline$\hookrightarrow$\texttt{ports}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x0}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{dl1-power-estimator.excl-write-} \newline$\hookrightarrow$\texttt{ports}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x0}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{dl1-power-estimator.single-} \newline$\hookrightarrow$\texttt{ended-read-ports}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x0}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{dl1-power-estimator.banks}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x4}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{dl1-power-estimator.tech-node}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{64-bit floating-point}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{130}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{dl1-power-estimator.output-} \newline$\hookrightarrow$\texttt{width}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x40}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{dl1-power-estimator.tag-width}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x40}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{dl1-power-estimator.access-} \newline$\hookrightarrow$\texttt{mode}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{cache power estimator access mode}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{fast}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\hline
+\multicolumn{2}{|l|}{\textbf{\Large dtlb-power-estimator}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{dtlb-power-estimator.verbose}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{boolean}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{dtlb-power-estimator.cache-} \newline$\hookrightarrow$\texttt{size}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x400}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{dtlb-power-estimator.line-} \newline$\hookrightarrow$\texttt{size}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x4}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{dtlb-power-estimator.associativity}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x2}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{dtlb-power-estimator.rw-ports}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x1}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{dtlb-power-estimator.excl-} \newline$\hookrightarrow$\texttt{read-ports}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x0}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{dtlb-power-estimator.excl-} \newline$\hookrightarrow$\texttt{write-ports}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x0}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{dtlb-power-estimator.single-} \newline$\hookrightarrow$\texttt{ended-read-ports}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x0}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{dtlb-power-estimator.banks}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x4}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{dtlb-power-estimator.tech-} \newline$\hookrightarrow$\texttt{node}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{64-bit floating-point}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{130}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{dtlb-power-estimator.output-} \newline$\hookrightarrow$\texttt{width}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x20}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{dtlb-power-estimator.tag-width}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x40}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{dtlb-power-estimator.access-} \newline$\hookrightarrow$\texttt{mode}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{cache power estimator access mode}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{fast}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\hline
 \multicolumn{2}{|l|}{\textbf{\Large erom}}\\
 \hline
 \multicolumn{2}{|l|}{\textbf{Description:} Memory}\\
@@ -269,7 +541,7 @@ Authors: Gilles Mouchard $<$gilles.mouchard@cea.fr$>$, Daniel Gracia P\'erez $<$
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline endianness of flash memory.}\\
 \hline
-\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{flash.sector-protect}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{flash.sector-protect}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{array}}\\
 \multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{}} & \multicolumn{1}{p{7.5cm}|}{}\\
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline enable/disable sector write protection.}\\
@@ -375,6 +647,26 @@ Authors: Gilles Mouchard $<$gilles.mouchard@cea.fr$>$, Daniel Gracia P\'erez $<$
 \multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline flash memory cycle time in picoseconds.}\\
 \hline
 \hline
+\multicolumn{2}{|l|}{\textbf{\Large gdb-server}}\\
+\hline
+\multicolumn{2}{|l|}{\textbf{Description:} GDB Server}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{gdb-server.memory-atom-size}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x1}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline size of the smallest addressable element in memory.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{gdb-server.tcp-port}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{signed 32-bit integer}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x4d2}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline TCP/IP port to listen waiting for a GDB client connection.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{gdb-server.architecture-description-} \newline$\hookrightarrow$\texttt{filename}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{gdb\_powerpc.xml}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline filename of a XML description of the connected processor.}\\
+\hline
+\hline
 \multicolumn{2}{|l|}{\textbf{\Large heathrow}}\\
 \hline
 \multicolumn{2}{|l|}{\textbf{Description:} Heathrow Programmable Interrupt Controller (PIC)}\\
@@ -445,6 +737,254 @@ Authors: Gilles Mouchard $<$gilles.mouchard@cea.fr$>$, Daniel Gracia P\'erez $<$
 \multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline enable/disable verbosity.}\\
 \hline
 \hline
+\multicolumn{2}{|l|}{\textbf{\Large il1-power-estimator}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{il1-power-estimator.verbose}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{boolean}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{il1-power-estimator.cache-} \newline$\hookrightarrow$\texttt{size}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x8000}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{il1-power-estimator.line-size}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x20}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{il1-power-estimator.associativity}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x8}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{il1-power-estimator.rw-ports}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x0}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{il1-power-estimator.excl-read-} \newline$\hookrightarrow$\texttt{ports}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x1}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{il1-power-estimator.excl-write-} \newline$\hookrightarrow$\texttt{ports}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x0}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{il1-power-estimator.single-} \newline$\hookrightarrow$\texttt{ended-read-ports}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x0}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{il1-power-estimator.banks}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x4}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{il1-power-estimator.tech-node}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{64-bit floating-point}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{130}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{il1-power-estimator.output-} \newline$\hookrightarrow$\texttt{width}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x80}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{il1-power-estimator.tag-width}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x40}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{il1-power-estimator.access-} \newline$\hookrightarrow$\texttt{mode}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{cache power estimator access mode}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{fast}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\hline
+\multicolumn{2}{|l|}{\textbf{\Large irq\_msg\_spy[0]}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{irq\_msg\_spy[0].verbose}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{boolean}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{irq\_msg\_spy[0].source\_module\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{pci-ide}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{irq\_msg\_spy[0].source\_port\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{pci-ide.irq\_port}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{irq\_msg\_spy[0].target\_module\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{heathrow}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{irq\_msg\_spy[0].target\_port\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{heathrow.irq\_port[47]}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\hline
+\multicolumn{2}{|l|}{\textbf{\Large irq\_msg\_spy[1]}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{irq\_msg\_spy[1].verbose}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{boolean}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{irq\_msg\_spy[1].source\_module\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{heathrow}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{irq\_msg\_spy[1].source\_port\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{heathrow.cpu\_irq\_port}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{irq\_msg\_spy[1].target\_module\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{mpc107}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{irq\_msg\_spy[1].target\_port\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{mpc107.irq\_slave\_port[0]}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\hline
+\multicolumn{2}{|l|}{\textbf{\Large irq\_msg\_spy[2]}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{irq\_msg\_spy[2].verbose}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{boolean}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{irq\_msg\_spy[2].source\_module\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{mpc107}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{irq\_msg\_spy[2].source\_port\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{mpc107.irq\_master\_port}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{irq\_msg\_spy[2].target\_module\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{cpu}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{irq\_msg\_spy[2].target\_port\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{cpu.export\_0}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\hline
+\multicolumn{2}{|l|}{\textbf{\Large irq\_msg\_spy[3]}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{irq\_msg\_spy[3].verbose}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{boolean}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{irq\_msg\_spy[3].source\_module\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{mpc107}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{irq\_msg\_spy[3].source\_port\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{mpc107.soft\_reset\_master\_} \newline$\hookrightarrow$\texttt{port}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{irq\_msg\_spy[3].target\_module\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{cpu}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{irq\_msg\_spy[3].target\_port\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{cpu.export\_2}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\hline
+\multicolumn{2}{|l|}{\textbf{\Large itlb-power-estimator}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{itlb-power-estimator.verbose}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{boolean}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{itlb-power-estimator.cache-} \newline$\hookrightarrow$\texttt{size}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x400}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{itlb-power-estimator.line-} \newline$\hookrightarrow$\texttt{size}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x4}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{itlb-power-estimator.associativity}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x2}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{itlb-power-estimator.rw-ports}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x1}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{itlb-power-estimator.excl-} \newline$\hookrightarrow$\texttt{read-ports}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x0}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{itlb-power-estimator.excl-} \newline$\hookrightarrow$\texttt{write-ports}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x0}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{itlb-power-estimator.single-} \newline$\hookrightarrow$\texttt{ended-read-ports}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x0}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{itlb-power-estimator.banks}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x4}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{itlb-power-estimator.tech-} \newline$\hookrightarrow$\texttt{node}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{64-bit floating-point}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{130}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{itlb-power-estimator.output-} \newline$\hookrightarrow$\texttt{width}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x20}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{itlb-power-estimator.tag-width}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x40}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{itlb-power-estimator.access-} \newline$\hookrightarrow$\texttt{mode}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{cache power estimator access mode}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{fast}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\hline
 \multicolumn{2}{|l|}{\textbf{\Large kernel\_logger}}\\
 \hline
 \multicolumn{2}{|l|}{\textbf{Description:} UNISIM kernel logger}\\
@@ -493,6 +1033,158 @@ Authors: Gilles Mouchard $<$gilles.mouchard@cea.fr$>$, Daniel Gracia P\'erez $<$
 \multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline If the xml\_file option is active, the output file will be compressed (a .gz extension will be automatically added to the xml\_filename option.}\\
+\hline
+\hline
+\multicolumn{2}{|l|}{\textbf{\Large l2-power-estimator}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{l2-power-estimator.verbose}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{boolean}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{l2-power-estimator.cache-size}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x80000}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{l2-power-estimator.line-size}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x20}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{l2-power-estimator.associativity}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x8}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{l2-power-estimator.rw-ports}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x1}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{l2-power-estimator.excl-read-} \newline$\hookrightarrow$\texttt{ports}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x0}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{l2-power-estimator.excl-write-} \newline$\hookrightarrow$\texttt{ports}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x0}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{l2-power-estimator.single-} \newline$\hookrightarrow$\texttt{ended-read-ports}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x0}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{l2-power-estimator.banks}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x4}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{l2-power-estimator.tech-node}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{64-bit floating-point}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{130}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{l2-power-estimator.output-} \newline$\hookrightarrow$\texttt{width}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x100}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{l2-power-estimator.tag-width}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x40}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{l2-power-estimator.access-} \newline$\hookrightarrow$\texttt{mode}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{cache power estimator access mode}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{fast}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\hline
+\multicolumn{2}{|l|}{\textbf{\Large mem\_msg\_spy[0]}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{mem\_msg\_spy[0].verbose}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{boolean}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{mem\_msg\_spy[0].source\_module\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{mpc107}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{mem\_msg\_spy[0].source\_port\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{mpc107.ram\_master\_port}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{mem\_msg\_spy[0].target\_module\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{memory}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{mem\_msg\_spy[0].target\_port\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{memory.slave-port}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\hline
+\multicolumn{2}{|l|}{\textbf{\Large mem\_msg\_spy[1]}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{mem\_msg\_spy[1].verbose}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{boolean}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{mem\_msg\_spy[1].source\_module\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{mpc107}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{mem\_msg\_spy[1].source\_port\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{mpc107.rom\_master\_port}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{mem\_msg\_spy[1].target\_module\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{flash}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{mem\_msg\_spy[1].target\_port\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{flash.slave-port}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\hline
+\multicolumn{2}{|l|}{\textbf{\Large mem\_msg\_spy[2]}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{mem\_msg\_spy[2].verbose}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{boolean}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{mem\_msg\_spy[2].source\_module\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{mpc107}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{mem\_msg\_spy[2].source\_port\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{mpc107.erom\_master\_port}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{mem\_msg\_spy[2].target\_module\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{erom}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{mem\_msg\_spy[2].target\_port\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{erom.slave-port}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
 \hline
 \hline
 \multicolumn{2}{|l|}{\textbf{\Large memory}}\\
@@ -634,7 +1326,7 @@ Authors: Gilles Mouchard $<$gilles.mouchard@cea.fr$>$, Daniel Gracia P\'erez $<$
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline total number of address mappings.}\\
 \hline
-\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci-bus.base-address}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci-bus.base-address}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{array}}\\
 \multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{}} & \multicolumn{1}{p{7.5cm}|}{}\\
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline mapping: base address of mapped device.}\\
@@ -689,7 +1381,7 @@ Authors: Gilles Mouchard $<$gilles.mouchard@cea.fr$>$, Daniel Gracia P\'erez $<$
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline mapping: base address of mapped device.}\\
 \hline
-\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci-bus.size}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci-bus.size}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{array}}\\
 \multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{}} & \multicolumn{1}{p{7.5cm}|}{}\\
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline mapping: size in bytes of mapped device.}\\
@@ -744,7 +1436,7 @@ Authors: Gilles Mouchard $<$gilles.mouchard@cea.fr$>$, Daniel Gracia P\'erez $<$
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline mapping: size in bytes of mapped device.}\\
 \hline
-\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci-bus.device-number}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci-bus.device-number}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{array}}\\
 \multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{}} & \multicolumn{1}{p{7.5cm}|}{}\\
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline mapping: device number.}\\
@@ -799,7 +1491,7 @@ Authors: Gilles Mouchard $<$gilles.mouchard@cea.fr$>$, Daniel Gracia P\'erez $<$
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline mapping: device number.}\\
 \hline
-\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci-bus.target-port}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci-bus.target-port}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{array}}\\
 \multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{}} & \multicolumn{1}{p{7.5cm}|}{}\\
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline mapping: target port number.}\\
@@ -854,7 +1546,7 @@ Authors: Gilles Mouchard $<$gilles.mouchard@cea.fr$>$, Daniel Gracia P\'erez $<$
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline mapping: target port number.}\\
 \hline
-\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci-bus.register-number}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci-bus.register-number}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{array}}\\
 \multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{}} & \multicolumn{1}{p{7.5cm}|}{}\\
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline mapping: BAR offset in PCI device configuration space.}\\
@@ -909,7 +1601,7 @@ Authors: Gilles Mouchard $<$gilles.mouchard@cea.fr$>$, Daniel Gracia P\'erez $<$
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline mapping: BAR offset in PCI device configuration space.}\\
 \hline
-\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci-bus.addr-type}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci-bus.addr-type}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{array}}\\
 \multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{}} & \multicolumn{1}{p{7.5cm}|}{}\\
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline mapping: address space type.}\\
@@ -1024,7 +1716,7 @@ Authors: Gilles Mouchard $<$gilles.mouchard@cea.fr$>$, Daniel Gracia P\'erez $<$
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
 \hline
-\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci-ide.base-address}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci-ide.base-address}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{array}}\\
 \multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{}} & \multicolumn{1}{p{7.5cm}|}{}\\
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline initial base address of memory space.}\\
@@ -1054,7 +1746,7 @@ Authors: Gilles Mouchard $<$gilles.mouchard@cea.fr$>$, Daniel Gracia P\'erez $<$
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline initial base address of memory space.}\\
 \hline
-\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci-ide.size}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci-ide.size}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{array}}\\
 \multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{}} & \multicolumn{1}{p{7.5cm}|}{}\\
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline size in bytes of memory space.}\\
@@ -1084,7 +1776,7 @@ Authors: Gilles Mouchard $<$gilles.mouchard@cea.fr$>$, Daniel Gracia P\'erez $<$
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline size in bytes of memory space.}\\
 \hline
-\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci-ide.register-number}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci-ide.register-number}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{array}}\\
 \multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{}} & \multicolumn{1}{p{7.5cm}|}{}\\
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline BAR offset in PCI configuration space.}\\
@@ -1119,7 +1811,7 @@ Authors: Gilles Mouchard $<$gilles.mouchard@cea.fr$>$, Daniel Gracia P\'erez $<$
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline PCI device number.}\\
 \hline
-\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci-ide.disk-image}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci-ide.disk-image}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{array}}\\
 \multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{}} & \multicolumn{1}{p{7.5cm}|}{}\\
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Raw disk image filename.}\\
@@ -1139,7 +1831,7 @@ Authors: Gilles Mouchard $<$gilles.mouchard@cea.fr$>$, Daniel Gracia P\'erez $<$
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Raw disk image filename.}\\
 \hline
-\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci-ide.disk-channel}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci-ide.disk-channel}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{array}}\\
 \multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{}} & \multicolumn{1}{p{7.5cm}|}{}\\
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline disk channel.}\\
@@ -1159,7 +1851,7 @@ Authors: Gilles Mouchard $<$gilles.mouchard@cea.fr$>$, Daniel Gracia P\'erez $<$
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline disk channel.}\\
 \hline
-\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci-ide.disk-num}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci-ide.disk-num}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{array}}\\
 \multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{}} & \multicolumn{1}{p{7.5cm}|}{}\\
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline disk number (0=master 1=slave).}\\
@@ -1213,6 +1905,202 @@ Authors: Gilles Mouchard $<$gilles.mouchard@cea.fr$>$, Daniel Gracia P\'erez $<$
 \multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{33}} & \multicolumn{1}{p{7.5cm}|}{}\\
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline PCI bus frequency in Mhz.}\\
+\hline
+\hline
+\multicolumn{2}{|l|}{\textbf{\Large pci\_msg\_spy[0]}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci\_msg\_spy[0].verbose}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{boolean}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci\_msg\_spy[0].source\_module\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{mpc107}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci\_msg\_spy[0].source\_port\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{mpc107.pci\_master\_port}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci\_msg\_spy[0].target\_module\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{pci-bus}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci\_msg\_spy[0].target\_port\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{pci-bus.input\_port[0]}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\hline
+\multicolumn{2}{|l|}{\textbf{\Large pci\_msg\_spy[1]}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci\_msg\_spy[1].verbose}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{boolean}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci\_msg\_spy[1].source\_module\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{pci-bus}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci\_msg\_spy[1].source\_port\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{pci-bus.output\_port[0]}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci\_msg\_spy[1].target\_module\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{mpc107}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci\_msg\_spy[1].target\_port\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{mpc107.pci\_slave\_port}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\hline
+\multicolumn{2}{|l|}{\textbf{\Large pci\_msg\_spy[2]}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci\_msg\_spy[2].verbose}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{boolean}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci\_msg\_spy[2].source\_module\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{pci-bus}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci\_msg\_spy[2].source\_port\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{pci-bus.output\_port[1]}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci\_msg\_spy[2].target\_module\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{heathrow}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci\_msg\_spy[2].target\_port\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{heathrow.bus\_port}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\hline
+\multicolumn{2}{|l|}{\textbf{\Large pci\_msg\_spy[3]}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci\_msg\_spy[3].verbose}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{boolean}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci\_msg\_spy[3].source\_module\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{pci-bus}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci\_msg\_spy[3].source\_port\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{pci-bus.output\_port[2]}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci\_msg\_spy[3].target\_module\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{pci-ide}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci\_msg\_spy[3].target\_port\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{pci-ide.PCI\_input\_port}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\hline
+\multicolumn{2}{|l|}{\textbf{\Large pci\_msg\_spy[4]}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci\_msg\_spy[4].verbose}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{boolean}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci\_msg\_spy[4].source\_module\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{pci-bus}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci\_msg\_spy[4].source\_port\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{pci-bus.output\_port[3]}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci\_msg\_spy[4].target\_module\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{pci-display}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci\_msg\_spy[4].target\_port\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{pci-display.bus\_port}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\hline
+\multicolumn{2}{|l|}{\textbf{\Large pci\_msg\_spy[5]}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci\_msg\_spy[5].verbose}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{boolean}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci\_msg\_spy[5].source\_module\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{pci-bus}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci\_msg\_spy[5].source\_port\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{pci-bus.output\_port[4]}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci\_msg\_spy[5].target\_module\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{pci-isa-bridge}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci\_msg\_spy[5].target\_port\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{pci-isa-bridge.pci-slave-} \newline$\hookrightarrow$\texttt{port}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\hline
+\multicolumn{2}{|l|}{\textbf{\Large pci\_msg\_spy[6]}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci\_msg\_spy[6].verbose}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{boolean}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci\_msg\_spy[6].source\_module\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{pci-ide}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci\_msg\_spy[6].source\_port\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{pci-ide.PCI\_output\_port}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci\_msg\_spy[6].target\_module\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{pci-bus}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci\_msg\_spy[6].target\_port\_} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{pci-bus.input\_port[1]}} & \multicolumn{1}{p{7.5cm}|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline .}\\
 \hline
 \hline
 \multicolumn{2}{|l|}{\textbf{\Large pmac-linux-kernel-loader}}\\

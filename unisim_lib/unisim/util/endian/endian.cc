@@ -70,11 +70,11 @@ template <> Variable<endian_type>::operator unsigned long long () const { return
 template <> Variable<endian_type>::operator double () const { return (double)(*storage == E_LITTLE_ENDIAN)?1:0; }
 template <> Variable<endian_type>::operator string () const { return (*storage == E_LITTLE_ENDIAN)?(string("little-endian")):(string("big-endian"));}
 
-template <> VariableBase& Variable<endian_type>::operator = (bool value) { *storage = (value?E_LITTLE_ENDIAN:E_BIG_ENDIAN); return *this;}
-template <> VariableBase& Variable<endian_type>::operator = (long long value) { *storage = value?E_LITTLE_ENDIAN:E_BIG_ENDIAN; return *this;}
-template <> VariableBase& Variable<endian_type>::operator = (unsigned long long value) { *storage = value?E_LITTLE_ENDIAN:E_BIG_ENDIAN; return *this;}
-template <> VariableBase& Variable<endian_type>::operator = (double value) { *storage = value?E_LITTLE_ENDIAN:E_BIG_ENDIAN; return *this;}
-template <> VariableBase& Variable<endian_type>::operator = (const char *value) { *storage = (string(value) == string("little-endian"))?E_LITTLE_ENDIAN:E_BIG_ENDIAN; return *this; }
+template <> VariableBase& Variable<endian_type>::operator = (bool value) { if(IsMutable()) *storage = (value?E_LITTLE_ENDIAN:E_BIG_ENDIAN); return *this;}
+template <> VariableBase& Variable<endian_type>::operator = (long long value) { if(IsMutable()) *storage = value?E_LITTLE_ENDIAN:E_BIG_ENDIAN; return *this;}
+template <> VariableBase& Variable<endian_type>::operator = (unsigned long long value) { if(IsMutable()) *storage = value?E_LITTLE_ENDIAN:E_BIG_ENDIAN; return *this;}
+template <> VariableBase& Variable<endian_type>::operator = (double value) { if(IsMutable()) *storage = value?E_LITTLE_ENDIAN:E_BIG_ENDIAN; return *this;}
+template <> VariableBase& Variable<endian_type>::operator = (const char *value) { if(IsMutable()) *storage = (string(value) == string("little-endian"))?E_LITTLE_ENDIAN:E_BIG_ENDIAN; return *this; }
 
 template class Variable<endian_type>;
 

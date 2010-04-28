@@ -121,7 +121,10 @@ VariableBase::VariableBase(const char *_name, Object *_owner, Type _type, const 
 	description(_description ? _description : ""),
 	enumerated_values(),
 	type(_type),
-	fmt(FMT_DEFAULT)
+	fmt(FMT_DEFAULT),
+	is_mutable(true),
+	is_visible(true),
+	is_serializable(true)
 {
 	if(_owner)
 	{
@@ -244,6 +247,36 @@ bool VariableBase::IsVoid() const
 	return this == Simulator::simulator->void_variable;
 }
 
+bool VariableBase::IsMutable() const
+{
+	return is_mutable;
+}
+
+bool VariableBase::IsVisible() const
+{
+	return is_visible;
+}
+
+bool VariableBase::IsSerializable() const
+{
+	return is_serializable;
+}
+
+void VariableBase::SetMutable(bool _is_mutable)
+{
+	is_mutable = _is_mutable;
+}
+
+void VariableBase::SetVisible(bool _is_visible)
+{
+	is_visible = _is_visible;
+}
+
+void VariableBase::SetSerializable(bool _is_serializable)
+{
+	is_serializable = _is_serializable;
+}
+
 
 VariableBase::operator bool () const { return false; }
 VariableBase::operator char () const { return (long long) *this; }
@@ -337,10 +370,10 @@ template <class TYPE> Variable<TYPE>::operator string () const
 	return sstr.str();
 }
 
-template <class TYPE> VariableBase& Variable<TYPE>::operator = (bool value) { *storage = value ? 1 : 0; return *this; }
-template <class TYPE> VariableBase& Variable<TYPE>::operator = (long long value) { *storage = value;	return *this; }
-template <class TYPE> VariableBase& Variable<TYPE>::operator = (unsigned long long value) { *storage = value;	return *this; }
-template <class TYPE> VariableBase& Variable<TYPE>::operator = (double value) { *storage = (TYPE) value; return *this; }
+template <class TYPE> VariableBase& Variable<TYPE>::operator = (bool value) { if(IsMutable()) *storage = value ? 1 : 0; return *this; }
+template <class TYPE> VariableBase& Variable<TYPE>::operator = (long long value) { if(IsMutable()) *storage = value;	return *this; }
+template <class TYPE> VariableBase& Variable<TYPE>::operator = (unsigned long long value) { if(IsMutable()) *storage = value; return *this; }
+template <class TYPE> VariableBase& Variable<TYPE>::operator = (double value) { if(IsMutable()) *storage = (TYPE) value; return *this; }
 
 //=============================================================================
 //=                           VariableArray<TYPE>                            =
@@ -1166,19 +1199,19 @@ template <> Variable<bool>::operator string () const
 	return sstr.str();
 }
 
-template <> VariableBase& Variable<bool>::operator = (const char *value) { *storage = (strcmp(value, "true") == 0) || (strcmp(value, "0x1") == 0) || (strcmp(value, "1") == 0); return *this; }
-template <> VariableBase& Variable<char>::operator = (const char *value) { *storage = strtoll(value, 0, 0); return *this; }
-template <> VariableBase& Variable<short>::operator = (const char *value) { *storage = strtoll(value, 0, 0); return *this; }
-template <> VariableBase& Variable<int>::operator = (const char *value) {	*storage = strtoll(value, 0, 0); return *this; }
-template <> VariableBase& Variable<long>::operator = (const char *value) { *storage = strtoll(value, 0, 0); return *this; }
-template <> VariableBase& Variable<long long>::operator = (const char *value) { *storage = strtoll(value, 0, 0); return *this; }
-template <> VariableBase& Variable<unsigned char>::operator = (const char *value) { *storage = strtoull(value, 0, 0); return *this; }
-template <> VariableBase& Variable<unsigned short>::operator = (const char *value) { *storage = strtoull(value, 0, 0); return *this; }
-template <> VariableBase& Variable<unsigned int>::operator = (const char *value) { *storage = strtoull(value, 0, 0); return *this; }
-template <> VariableBase& Variable<unsigned long>::operator = (const char *value) { *storage = strtoull(value, 0, 0); return *this; }
-template <> VariableBase& Variable<unsigned long long>::operator = (const char *value) { *storage = strtoull(value, 0, 0); return *this; }
-template <> VariableBase& Variable<float>::operator = (const char *value) { *storage = strtod(value, 0); return *this; }
-template <> VariableBase& Variable<double>::operator = (const char *value) { *storage = strtod(value, 0); return *this; }
+template <> VariableBase& Variable<bool>::operator = (const char *value) { if(IsMutable()) *storage = (strcmp(value, "true") == 0) || (strcmp(value, "0x1") == 0) || (strcmp(value, "1") == 0); return *this; }
+template <> VariableBase& Variable<char>::operator = (const char *value) { if(IsMutable()) *storage = strtoll(value, 0, 0); return *this; }
+template <> VariableBase& Variable<short>::operator = (const char *value) { if(IsMutable()) *storage = strtoll(value, 0, 0); return *this; }
+template <> VariableBase& Variable<int>::operator = (const char *value) {	if(IsMutable()) *storage = strtoll(value, 0, 0); return *this; }
+template <> VariableBase& Variable<long>::operator = (const char *value) { if(IsMutable()) *storage = strtoll(value, 0, 0); return *this; }
+template <> VariableBase& Variable<long long>::operator = (const char *value) { if(IsMutable()) *storage = strtoll(value, 0, 0); return *this; }
+template <> VariableBase& Variable<unsigned char>::operator = (const char *value) { if(IsMutable()) *storage = strtoull(value, 0, 0); return *this; }
+template <> VariableBase& Variable<unsigned short>::operator = (const char *value) { if(IsMutable()) *storage = strtoull(value, 0, 0); return *this; }
+template <> VariableBase& Variable<unsigned int>::operator = (const char *value) { if(IsMutable()) *storage = strtoull(value, 0, 0); return *this; }
+template <> VariableBase& Variable<unsigned long>::operator = (const char *value) { if(IsMutable()) *storage = strtoull(value, 0, 0); return *this; }
+template <> VariableBase& Variable<unsigned long long>::operator = (const char *value) { if(IsMutable()) *storage = strtoull(value, 0, 0); return *this; }
+template <> VariableBase& Variable<float>::operator = (const char *value) { if(IsMutable()) *storage = strtod(value, 0); return *this; }
+template <> VariableBase& Variable<double>::operator = (const char *value) { if(IsMutable()) *storage = strtod(value, 0); return *this; }
 
 template <> Variable<string>::operator bool () const { return *storage == string("true"); }
 template <> Variable<string>::operator long long () const { return strtoll(storage->c_str(), 0, 0); }
@@ -1186,11 +1219,11 @@ template <> Variable<string>::operator unsigned long long () const { return strt
 template <> Variable<string>::operator double () const { return strtod(storage->c_str(), 0); }
 template <> Variable<string>::operator string () const { return *storage; }
 
-template <> VariableBase& Variable<string>::operator = (bool value) { *storage = value ? "true" : "false"; return *this; }
-template <> VariableBase& Variable<string>::operator = (long long value) { stringstream sstr; sstr << "0x" << hex << value; *storage = sstr.str(); return *this; }
-template <> VariableBase& Variable<string>::operator = (unsigned long long value) { stringstream sstr; sstr << "0x" << hex << value; *storage = sstr.str(); return *this; }
-template <> VariableBase& Variable<string>::operator = (double value) { stringstream sstr; sstr << value; *storage = sstr.str(); return *this; }
-template <> VariableBase& Variable<string>::operator = (const char *value) { *storage = value; return *this; }
+template <> VariableBase& Variable<string>::operator = (bool value) { if(IsMutable()) *storage = value ? "true" : "false"; return *this; }
+template <> VariableBase& Variable<string>::operator = (long long value) { stringstream sstr; sstr << "0x" << hex << value; if(IsMutable()) *storage = sstr.str(); return *this; }
+template <> VariableBase& Variable<string>::operator = (unsigned long long value) { stringstream sstr; sstr << "0x" << hex << value; if(IsMutable()) *storage = sstr.str(); return *this; }
+template <> VariableBase& Variable<string>::operator = (double value) { stringstream sstr; sstr << value; if(IsMutable()) *storage = sstr.str(); return *this; }
+template <> VariableBase& Variable<string>::operator = (const char *value) { if(IsMutable()) *storage = value; return *this; }
 
 //=============================================================================
 //=                         specialized Formula<>                             =
