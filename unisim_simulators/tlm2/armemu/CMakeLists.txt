@@ -13,6 +13,7 @@ set ( SIM_DESCRIPTION "\"UNISIM ARMv5 User Level Simulator\"" )
 set ( SIM_PYTHON_MODULE_NAME "\"armemu\"" )
 set ( SIM_PYTHON_IMPORT_NAME "armemu${SIM_VERSION_MAJOR}${SIM_VERSION_MINOR}${SIM_VERSION_PATCH}")
 
+option ( BUILD_ARMEMU_PYTHON_MODULE "Set this option if you want to compile a module of the unisim armemu simulator. Note that it has been developed under python3.1." )
 # project ( unisim_armemu_v${SIM_VERSION_MAJOR}_${SIM_VERSION_MINOR}_${SIM_VERSION_PATCH} )
 project ( unisim_armemu )
 include ( CheckIncludeFileCXX )
@@ -263,15 +264,17 @@ add_custom_command (
 	COMMENT
 		"Building python extension."
 	)
-if ( ${PYTHONINTERP_FOUND} )
-	add_custom_target ( ${ARMEMU_LIB_TARGET}-python
-		ALL
-		DEPENDS
-			lib/${SIM_PYTHON_IMPORT_NAME}.so
-		COMMENT
-			"Python target."
+if ( BUILD_ARMEMU_PYTHON_MODULE )
+	if ( ${PYTHONINTERP_FOUND} )
+		add_custom_target ( ${ARMEMU_LIB_TARGET}-python
+			ALL
+			DEPENDS
+				lib/${SIM_PYTHON_IMPORT_NAME}.so
+			COMMENT
+				"Python target."
 		)
-endif ( ${PYTHONINTERP_FOUND} )
+	endif ( ${PYTHONINTERP_FOUND} )
+endif ( BUILD_ARMEMU_PYTHON_MODULE )
 
 add_custom_command (
 	OUTPUT
@@ -285,15 +288,17 @@ add_custom_command (
 	COMMENT
 		"Creating simulator default configuration in \"${RELATIVE_SHARE_DIRECTORY}/template-default-config.xml\""
 	)
+if ( BUILD_ARMEMU_PYTHON_MODULE )
+	if ( ${PYTHONINTERP_FOUND} )
+		install (
+			FILES
+				${CMAKE_BINARY_DIR}/lib/${SIM_PYTHON_IMPORT_NAME}.so
+			DESTINATION
+				lib
+			)
+	endif ( ${PYTHONINTERP_FOUND} )
+endif ( BUILD_ARMEMU_PYTHON_MODULE )
 
-if ( ${PYTHONINTERP_FOUND} )
-	install (
-		FILES
-			${CMAKE_BINARY_DIR}/lib/${SIM_PYTHON_IMPORT_NAME}.so
-		DESTINATION
-			lib
-		)
-endif ( ${PYTHONINTERP_FOUND} )
 install ( TARGETS ${ARMEMU_EXEC_TARGET}
 	RUNTIME DESTINATION bin
 	LIBRARY DESTINATION lib
