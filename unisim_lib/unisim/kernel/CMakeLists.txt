@@ -38,23 +38,27 @@ configure_file (
 	${CMAKE_BINARY_DIR}/unisim/kernel/service/config.hh
 	)
 
-if ( APPLE )
-	add_library ( libxml2 SHARED IMPORTED )
-	set_target_properties ( libxml2
-		PROPERTIES
-		IMPORTED_LOCATION
-			/usr/lib/libxml2.dylib )
-else ( APPLE )
-	include ( FindLibXml2 )
-	if ( NOT LIBXML2_FOUND )
-		message ( SEND_ERROR "Could not find the libxml2 library." )
-	endif ( NOT LIBXML2_FOUND )
+# if ( APPLE )
+# 	add_library ( libxml2 SHARED IMPORTED )
+# 	set_target_properties ( libxml2
+# 		PROPERTIES
+# 		IMPORTED_LOCATION
+# 			/usr/lib/libxml2.dylib )
+# else ( APPLE )
+# endif ( APPLE )
 
-	# include ( FindZLIB )
-	# if ( NOT ZLIB_FOUND )
-	#	message ( SEND_ERROR "Could not find the zlib library." )
-	# endif ( NOT ZLIB_FOUND )
-endif ( APPLE )
+include ( FindLibXml2 )
+if ( NOT LIBXML2_FOUND )
+	message ( SEND_ERROR "Could not find the libxml2 library." )
+endif ( NOT LIBXML2_FOUND )
+
+#	NOTE: The following code would be required to statically compile a final
+#         executable.
+#
+# include ( FindZLIB )
+# if ( NOT ZLIB_FOUND )
+#	message ( SEND_ERROR "Could not find the zlib library." )
+# endif ( NOT ZLIB_FOUND )
 
 include ( FindBoost )
 find_package ( Boost COMPONENTS graph )
@@ -85,49 +89,21 @@ set_source_files_properties ( ${CMAKE_SOURCE_DIR}/unisim/kernel/service/service.
 		COMPILE_DEFINITIONS HAVE_UNISIM__KERNEL__SERVICE__CONFIG_HH
 	)
 
-set ( unisim__kernel_libs
-	${OSCI_SYSTEMC_LIBRARIES} )
-if ( APPLE )
-	list ( APPEND unisim__kernel_libs 
-		libxml2 )
-	#target_link_libraries ( unisim__kernel LINK_INTERFACE_LIBRARIES
-	#	libxml2 )
-#	string ( REPLACE "/libxml2.dylib"
-#	#	"/"
-#	#	LIBXML2_LIBRARY_PATH
-#	#	${LIBXML2_LIBRARIES} )
-#	
-#	add_library ( libxml2 STATIC IMPORTED )
-#	add_library ( libz STATIC IMPORTED )
-#	add_library ( libiconv STATIC IMPORTED )
-#	
-#	set_target_properties ( libxml2
-#	#	PROPERTIES
-#	#	#	IMPORTED_LOCATION ${LIBXML2_LIBRARY_PATH}/libxml2.a
-#	#	)
-#	set_target_properties ( libz
-#	#	PROPERTIES
-#	#	#	IMPORTED_LOCATION ${LIBXML2_LIBRARY_PATH}/libz.a
-#	#	)
-#	set_target_properties ( libiconv
-#	#	PROPERTIES
-#	#	#	IMPORTED_LOCATION ${LIBXML2_LIBRARY_PATH}/libiconv.a
-#	#	)
-#	
-#	list ( APPEND unisim__kernel_link_libraries libxml2 libz libiconv ) 
-	
-#	target_link_libraries ( unisim__kernel
-#		${OSCI_SYSTEMC_LIBRARIES}
-#		${LIBXML2_LIBRARY_PATH}/libxml2.a
-#		${LIBXML2_LIBRARY_PATH}/libz.a
-#		${LIBXML2_LIBRARY_PATH}/libiconv.a
-#		)
-else ( APPLE )
-	list ( APPEND unisim__kernel_libs
-		${LIBXML2_LIBRARIES} )
-endif ( APPLE )
+# set ( unisim__kernel_libs
+# 	${OSCI_SYSTEMC_LIBRARIES} )
+# if ( APPLE )
+# 	list ( APPEND unisim__kernel_libs 
+# 		libxml2 )
+# else ( APPLE )
+# 	list ( APPEND unisim__kernel_libs
+# 		${LIBXML2_LIBRARIES} )
+# endif ( APPLE )
+# target_link_libraries ( unisim__kernel
+# 		 ${unisim__kernel_libs} )
 target_link_libraries ( unisim__kernel
-		 ${unisim__kernel_libs} )
+	${OSCI_SYSTEMC_LIBRARIES}
+	${LIBXML2_LIBRARIES}
+	)
 		 
 message ( STATUS "Checking unisim::kernel- done" )
 

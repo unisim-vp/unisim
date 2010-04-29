@@ -52,11 +52,15 @@ target_link_libraries ( unisim__service__debug__inline_debugger
 	)
 
 if ( UNIX )
-	include ( FindCurses )
-	if ( CURSES_FOUND )
-		target_link_libraries ( unisim__service__debug__inline_debugger
-			${CURSES_LIBRARIES} )
-	endif ( CURSES_FOUND )
+#	NOTE: The following code would be required to statically compile a final
+#         executable.
+#
+#	include ( FindCurses )
+#	if ( CURSES_FOUND )
+#		target_link_libraries ( unisim__service__debug__inline_debugger
+#			${CURSES_LIBRARIES} )
+#		message ( "+++++ CURSES_LIBRARIES = ${CURSES_LIBRARIES}" )
+#	endif ( CURSES_FOUND )
 	set ( CMAKE_REQUIRED_FLAGS "-include stdio.h" )
 	check_include_file ( editline/readline.h HAVE_editline_readline_H )
 	if ( HAVE_editline_readline_H )

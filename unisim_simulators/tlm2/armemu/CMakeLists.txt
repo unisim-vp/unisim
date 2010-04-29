@@ -169,10 +169,19 @@ set ( PYTHON__ARMEMU__LIBS
 	 'unisim__util__xml',
 	 'unisim__kernel',
 	 'xml2',
-	 'ncurses',
-	 'edit',
-	 'z',
 	 'systemc'")
+	 
+set ( CMAKE_REQUIRED_FLAGS "-include stdio.h" )
+check_include_file ( editline/readline.h HAVE_editline_readline_H )
+if ( HAVE_editline_readline_H )
+	find_library ( LIBEDIT
+		edit )
+	if ( LIBEDIT )
+		set ( PYTHON__ARMEMU__LIBS
+			"${PYTHON__ARMEMU__LIBS},'edit'" )
+	endif ( LIBEDIT )
+endif ( HAVE_editline_readline_H )
+
 configure_file ( 
 	${CMAKE_SOURCE_DIR}/config.hh.in 
 	${CMAKE_BINARY_DIR}/config.hh )
