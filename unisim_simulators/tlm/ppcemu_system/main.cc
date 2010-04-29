@@ -732,7 +732,8 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("license", "BSD (see file COPYING)");
 	simulator->SetVariable("authors", "Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Pérez <daniel.gracia-perez@cea.fr>");
 	simulator->SetVariable("version", VERSION);
-	simulator->SetVariable("description", "UNISIM ppcemu-system, a Full system \"PowerMac G4 PCI\" like machine simulator (MPC7447A/MPC107) with Linux boot support");
+	simulator->SetVariable("description", "UNISIM ppcemu-system is a full system simulator of a board including a MPC7447A PowerPC processor, a MPC107 chipset, and supporting Linux boot. The simulated board is very similar to a PowerMac G4 PCI machine. Computations on IEEE 754 floating point numbers are emulated using Simfloat++. Altivec instructions are currently decoded but not implemented. The running PowerPC application is a PowerMac Linux Kernel and all the applications installed on the hard disk image and/or the initial RAM disk image. Software running on the simulated hardware can be debugged by connecting a GDB client to the simulator through the GDB serial remote protocol. The GDB client can be either the standard text based client (i.e. command gdb), a graphical front-end to GDB (e.g. ddd), or even Eclipse CDT.");
+
 
 	// Default run-time configuration
 	int gdb_server_tcp_port = 1234;

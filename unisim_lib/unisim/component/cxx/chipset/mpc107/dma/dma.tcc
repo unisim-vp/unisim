@@ -56,7 +56,7 @@ template <class PHYSICAL_ADDR,
 DMA<PHYSICAL_ADDR, DEBUG> ::
 DMA(DMAClientInterface<PHYSICAL_ADDR> *_client,
 	const char *name, Object *parent) :
-	Object(name, parent),
+	Object(name, parent, "MPC107 integrated Direct Memory Access (DMA) controller"),
 	logger(*this),
 	verbose(false),
 	param_verbose("verbose", this, verbose),

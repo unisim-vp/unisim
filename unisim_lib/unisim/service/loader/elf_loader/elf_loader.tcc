@@ -54,7 +54,7 @@ using unisim::kernel::logger::EndDebugError;
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
 ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::ElfLoaderImpl(const char *name, Object *parent) :
-	Object(name, parent),
+	Object(name, parent, "ELF Loader"),
 	Client<Memory<MEMORY_ADDR> >(name, parent),
 	Service<SymbolTableLookup<MEMORY_ADDR> >(name, parent),
 	Service<Loader<MEMORY_ADDR> >(name, parent),

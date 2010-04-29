@@ -954,6 +954,8 @@ template <>
 Variable<bool>::Variable(const char *_name, Object *_owner, bool& _storage, Type type, const char *_description) :
 	VariableBase(_name, _owner, type,  _description), storage(&_storage)
 {
+	AddEnumeratedValue("true");
+	AddEnumeratedValue("false");
 	Simulator::simulator->Initialize(this);
 }
 
@@ -1104,7 +1106,7 @@ Variable<double>::Variable(const char *_name, Object *_owner, double& _storage, 
 template <>
 const char *Variable<double>::GetDataTypeName() const
 {
-	return "double precision floating-point";
+	return "64-bit floating-point";
 }
 
 template <>
@@ -1125,7 +1127,7 @@ Variable<float>::Variable(const char *_name, Object *_owner, float& _storage, Ty
 template <>
 const char *Variable<float>::GetDataTypeName() const
 {
-	return "single precision floating-point";
+	return "32-bit floating-point";
 }
 
 template <>
@@ -1335,12 +1337,13 @@ template class Formula<double>;
 //=                                 Object                                    =
 //=============================================================================
 
-Object::Object(const char *_name, Object *_parent) :
+Object::Object(const char *_name, Object *_parent, const char *_description) :
 	object_name(_parent ? (string(_parent->GetName()) + "." + _name) : _name),
 	parent(_parent),
 	srv_imports(),
 	srv_exports(),
-	leaf_objects()
+	leaf_objects(),
+	description(_description ? _description : "")
 {
 	if(_parent) _parent->Add(*this);
 	Simulator::simulator->Register(this);
@@ -1513,6 +1516,178 @@ Simulator *Object::GetSimulator() const
 	return Simulator::simulator;
 }
 
+const char *Object::GetDescription() const
+{
+	return description.c_str();
+}
+
+typedef struct
+{
+	const char *searchFor;
+	const char *replaceBy;
+} Translation;
+
+Translation conversion_table[] = {
+	"\n", "\\\\\n",
+	"é", "\\'e",
+	"è", "\\`e",
+	"ê", "\\^e",
+	"à", "\\`a",
+	"#", "\\#",
+//	" ", "~",
+	"_", "\\_",
+	"\t", "~~",
+	"{", "$\\{$",
+	"}", "$\\}$",
+	"&", "\\&",
+	"--", "{-}{-}",
+	"<<", "<}\\texttt{<",
+	">>", ">}\\texttt{>",
+	"<", "$<$",
+	">", "$>$",
+	"%", "\\%",
+	"//(1)", "\\ding{202}",
+	"//(2)", "\\ding{203}",
+	"//(3)", "\\ding{204}",
+	"//(4)", "\\ding{205}",
+	"//(5)", "\\ding{206}",
+	"//(6)", "\\ding{207}",
+	"//(7)", "\\ding{208}",
+	"//(8)", "\\ding{209}",
+	"//(9)", "\\ding{210}",
+	"/*(1)*/", "\\ding{202}",
+	"/*(2)*/", "\\ding{203}",
+	"/*(3)*/", "\\ding{204}",
+	"/*(4)*/", "\\ding{205}",
+	"/*(5)*/", "\\ding{206}",
+	"/*(6)*/", "\\ding{207}",
+	"/*(7)*/", "\\ding{208}",
+	"/*(8)*/", "\\ding{209}",
+	"/*(9)*/", "\\ding{210}"
+};
+
+std::string string_to_latex(const char *s, unsigned int cut = 0, const char *style = 0)
+{
+	std::string out;
+	int col = 1;
+	
+	if(style)
+	{
+		out += "\\";
+		out += style;
+		out += "{";
+	}
+	
+	while(*s)
+	{
+		int i;
+		bool found = false;
+		
+		bool can_cut = (*s == ' ') || (strncmp(s, "::", 2) == 0) || (*s == '/') || (*s == '_') || (*s == '-') || (*s == '.') || (*s == '[');
+		
+		for(i = 0; i < sizeof(conversion_table)/sizeof(conversion_table[0]); i++)
+		{
+			int length = strlen(conversion_table[i].searchFor);
+			if(strncmp(s, conversion_table[i].searchFor, length) == 0)
+			{
+				out += conversion_table[i].replaceBy;
+				s += length;
+				col += length;
+
+				if(cut)
+				{
+					if(col > cut && can_cut)
+					{
+						if(style) out += "}";
+						out += " \\newline$\\hookrightarrow$";
+						if(style)
+						{
+							out += "\\";
+							out += style;
+							out += "{";
+						}
+						col = 1;
+					}
+				}
+				found = true;
+			}
+		}
+		
+		if(!found)
+		{
+			out += *s;
+			s++;
+			col++;
+			if(cut)
+			{
+				if(col > cut && can_cut)
+				{
+					if(style) out += "}";
+					out += " \\newline$\\hookrightarrow$";
+					if(style)
+					{
+						out += "\\";
+						out += style;
+						out += "{";
+					}
+					col = 1;
+				}
+			}
+		}
+	}
+	
+	if(style)
+	{
+		out += "}";
+	}
+	return out;
+}
+
+void Object::GenerateLatexDocumentation(ostream& os) const
+{
+	os << "\\multicolumn{2}{|l|}{\\textbf{\\Large " << string_to_latex(GetName()) << "}}\\\\" << std::endl;
+	os << "\\hline" << std::endl;
+	if(!description.empty())
+	{
+		os << "\\multicolumn{2}{|l|}{\\textbf{Description:} " << string_to_latex(GetDescription()) << "}\\\\" << std::endl;
+		os << "\\hline" << std::endl;
+	}
+	
+	list<VariableBase *>::const_iterator variable_iter;
+	
+	for(variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
+	{
+		os << "\\multicolumn{1}{|p{7.5cm}}{\\textbf{Name:} " << string_to_latex((*variable_iter)->GetName(), 26, "texttt") << "} & \\multicolumn{1}{p{7.5cm}|}{\\textbf{Type:} " << string_to_latex((*variable_iter)->GetDataTypeName(), 36, "texttt") << "}\\\\" << std::endl;
+		os << "\\multicolumn{1}{|p{7.5cm}}{\\textbf{Default:} " << string_to_latex(((string) *(*variable_iter)).c_str(), 24, "texttt") << "} &";
+		
+		if((*variable_iter)->HasEnumeratedValues())
+		{
+			os << " \\multicolumn{1}{p{7.5cm}|}{\\textbf{Valid:} ";
+			
+			std::vector<string> enumerated_values;
+			(*variable_iter)->GetEnumeratedValues(enumerated_values);
+			std::vector<string>::const_iterator enumerated_values_iter;
+			for(enumerated_values_iter = enumerated_values.begin(); enumerated_values_iter != enumerated_values.end(); enumerated_values_iter++)
+			{
+				if(enumerated_values_iter != enumerated_values.begin())
+				{
+					os << ",~";
+				}
+				os << string_to_latex((*enumerated_values_iter).c_str(), 0, "texttt");
+			}
+			os << "}\\\\" << std::endl;
+		}
+		else
+		{
+			os << " \\multicolumn{1}{p{7.5cm}|}{}\\\\" << std::endl;
+		}
+		
+		os << "\\multicolumn{2}{|l|}{}\\\\" << std::endl;
+		os << "\\multicolumn{2}{|p{15cm}|}{\\textbf{Description:} \\newline " << string_to_latex((*variable_iter)->GetDescription()) << ".}\\\\" << std::endl;
+		os << "\\hline" << std::endl;
+	}
+}
+
 //=============================================================================
 //=                           ServiceImportBase                               =
 //=============================================================================
@@ -1565,11 +1740,61 @@ const char *ServiceExportBase::GetName() const
 
 Simulator *Simulator::simulator = 0;
 
+Simulator::CommandLineOption::CommandLineOption(char _short_name, const char *_long_name, const char *_opt_description, const char *_arg_description)
+	: short_name(_short_name)
+	, long_name(_long_name)
+	, opt_description(_opt_description)
+	, arg_description(_arg_description)
+{
+}
+
+char Simulator::CommandLineOption::GetShortName() const
+{
+	return short_name;
+}
+
+const char *Simulator::CommandLineOption::GetLongName() const
+{
+	return long_name;
+}
+
+bool Simulator::CommandLineOption::HasArgument() const
+{
+	return arg_description != 0;
+}
+
+const char *Simulator::CommandLineOption::GetArgumentDescription() const
+{
+	return arg_description;
+}
+
+const char *Simulator::CommandLineOption::GetOptionDescription() const
+{
+	return opt_description;
+}
+
+int Simulator::CommandLineOption::operator == (const char *arg) const
+{
+	if(arg[0] == '-')
+	{
+		if(arg[1] == '-')
+		{
+			return strcmp(arg + 2, long_name) == 0;
+		}
+		else
+		{
+			return (arg[2] == 0) && (arg[1] == short_name);
+		}
+	}
+	return 0;
+}
+
 Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator *simulator))
 	: argc(0)
 	, argv(0)
 	, list_parms(false)
 	, get_config(false)
+	, generate_doc(false)
 	, enable_version(false)
 	, enable_help(false)
 	, enable_warning(false)
@@ -1591,6 +1816,15 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	, cmd_args(0)
 	, param_cmd_args(0)
 {
+	command_line_options.push_back(CommandLineOption('s', "set", "set value of parameter 'param' to 'value'", "param=value"));
+	command_line_options.push_back(CommandLineOption('c', "config", "configures the simulator with the given XML configuration file", "XML file"));
+	command_line_options.push_back(CommandLineOption('g', "get-config", "get the simulator configuration XML file (you can use it to create your own configuration. This option can be combined with -c to get a new configuration file with existing variables from another file", "XML file"));
+	command_line_options.push_back(CommandLineOption('l', "list", "lists all available parameters, their type, and their current value"));
+	command_line_options.push_back(CommandLineOption('w', "warn", "enable printing of kernel warnings"));
+	command_line_options.push_back(CommandLineOption('d', "doc", "enable printing a latex documentation", "Latex file"));
+	command_line_options.push_back(CommandLineOption('v', "version", "displays the program version information"));
+	command_line_options.push_back(CommandLineOption('h', "help", "displays this help"));
+	
 	if(LoadBuiltInConfig)
 	{
 		LoadBuiltInConfig(this);
@@ -1635,56 +1869,71 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 		switch(state)
 		{
 			case 0:
-				if(strcmp(*arg, "-s") == 0 || strcmp(*arg, "--set") == 0)
 				{
-					arg++;
-					state = 1;
-				}
-				else if(strcmp(*arg, "-c") == 0 || strcmp(*arg, "--config") == 0)
-				{
-					arg++;
-					state = 2;
-				}
-				else if(strcmp(*arg, "-g") == 0 || strcmp(*arg, "--get-config") == 0)
-				{
-					arg++;
-					state = 3;
-				}
-				else if(strcmp(*arg, "-l") == 0 || strcmp(*arg, "--list") == 0)
-				{
-					arg++;
-					state = 4;
-				}
-				else if(strcmp(*arg, "-v") == 0 || strcmp(*arg, "--version") == 0)
-				{
-					arg++;
-					enable_version = true;
-				}
-				else if(strcmp(*arg, "-h") == 0 || strcmp(*arg, "--help") == 0)
-				{
-					arg++;
-					enable_help = true;
-				}
-				else if(strcmp(*arg, "-w") == 0 || strcmp(*arg, "--warn") == 0)
-				{
-					arg++;
-					enable_warning = true;
-					if(!LoadBuiltInConfig)
+					std::vector<CommandLineOption>::const_iterator cmd_opt_iter;
+					bool match = false;
+					for(cmd_opt_iter = command_line_options.begin(); !match && cmd_opt_iter != command_line_options.end(); cmd_opt_iter++)
 					{
-						cerr << "WARNING! No built-in parameters set loaded" << endl;
+						if(*cmd_opt_iter == *arg)
+						{
+							// match
+							match=true;
+							switch(cmd_opt_iter->GetShortName())
+							{
+								case 's':
+									arg++;
+									state = 1;
+									break;
+								case 'c':
+									arg++;
+									state = 2;
+									break;
+								case 'g':
+									arg++;
+									state = 3;
+									break;
+								case 'l':
+									arg++;
+									list_parms = true;
+									break;
+								case 'v':
+									arg++;
+									enable_version = true;
+									break;
+								case 'h':
+									arg++;
+									enable_help = true;
+									break;
+								case 'w':
+									arg++;
+									enable_warning = true;
+									if(!LoadBuiltInConfig)
+									{
+										cerr << "WARNING! No built-in parameters set loaded" << endl;
+									}
+									if(warn_get_bin_path)
+									{
+										cerr << "WARNING! Can't determine binary directory" << endl;
+									}
+									if(warn_get_share_path)
+									{
+										cerr << "WARNING! Can't determine share directory" << endl;
+									}
+									break;
+								case 'd':
+									arg++;
+									state = 4;
+									break;
+								default:
+									state = -1;
+									break;
+							}
+						}
 					}
-					if(warn_get_bin_path)
+					if(!match)
 					{
-						cerr << "WARNING! Can't determine binary directory" << endl;
+						state = -1;
 					}
-					if(warn_get_share_path)
-					{
-						cerr << "WARNING! Can't determine share directory" << endl;
-					}
-				}
-				else
-				{
-					state = -1;
 				}
 				break;
 			case 1:
@@ -1729,10 +1978,14 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 				state = 0;
 				break;
 			case 4:
-				list_parms = true;
+				generate_doc = true;
+				generate_doc_filename = *arg;
 				arg++;
 				state = 0;
 				break;
+			default:
+				cerr << "Internal error while parsing command line arguments" << endl;
+				state = -1;
 		}
 	}
 	
@@ -1813,41 +2066,39 @@ Simulator::~Simulator()
 	}
 }
 
-void Simulator::Version()
+void Simulator::Version(ostream& os) const
 {
-	cerr << program_name << " " << version << endl;
-	cerr << copyright << endl;
-	cerr << "License: " << license << endl;
-	cerr << "Authors: " << authors << endl;
+	os << program_name << " " << version << endl;
+	os << copyright << endl;
+	os << "License: " << license << endl;
+	os << "Authors: " << authors << endl;
 }
 
-void Simulator::Help()
+void Simulator::Help(ostream& os) const
 {
-	cerr << description << endl << endl;
-	cerr << "Usage: " << program_binary << " [<options>] [...]" << endl << endl;
-	cerr << "Options:" << endl;
-	cerr << " --config <XML file>" << endl;
-	cerr << " -c <XML file>" << endl;
-	cerr << "            configures the simulator with the given XML configuration file" << endl << endl;
-	cerr << " --get-config <XML file>" << endl;
-	cerr << " -g <XML file>" << endl;
-	cerr << "            get the simulator default configuration XML file (you can use it to create your own configuration)" << endl;
-	cerr << "            This option can be combined with -c to get a new configuration file with existing variables from another file" << endl << endl;
-	cerr << " --set <param=value>" << endl;
-	cerr << " -s <param=value>" << endl;
-	cerr << "            set value of parameter 'param' to 'value'" << endl << endl;
-	cerr << " --list" << endl;
-	cerr << " -l" << endl;
-	cerr << "            lists all available parameters, their type, and their current value" << endl << endl;
-	cerr << " --warn" << endl;
-	cerr << " -w" << endl;
-	cerr << "            enable printing of kernel warnings" << endl << endl;
-	cerr << " --version" << endl;
-	cerr << " -v" << endl;
-	cerr << "            displays the program version information" << endl;
-	cerr << " --help" << endl;
-	cerr << " -h" << endl;
-	cerr << "            displays this help" << endl;
+	os << description << endl << endl;
+	os << "Usage: " << program_binary << " [<options>] [...]" << endl << endl;
+	os << "Options:" << endl;
+
+	std::vector<CommandLineOption>::const_iterator cmd_opt_iter;
+	for(cmd_opt_iter = command_line_options.begin(); cmd_opt_iter != command_line_options.end(); cmd_opt_iter++)
+	{
+		os << std::endl;
+		os << " --" << cmd_opt_iter->GetLongName();
+		if(cmd_opt_iter->HasArgument())
+		{
+			os << " <" << cmd_opt_iter->GetArgumentDescription() << ">";
+		}
+		os << std::endl;
+		os << " -" << cmd_opt_iter->GetShortName();
+		if(cmd_opt_iter->HasArgument())
+		{
+			os << " <" << cmd_opt_iter->GetArgumentDescription() << ">";
+		}
+		os << std::endl;
+		os << "            " << cmd_opt_iter->GetOptionDescription();
+		os << std::endl;
+	}
 }
 
 void Simulator::Register(Object *object)
@@ -2187,14 +2438,27 @@ protected:
 
 bool Simulator::Setup()
 {
+	if(generate_doc)
+	{
+		if(generate_doc_filename.empty())
+		{
+			GenerateLatexDocumentation(std::cerr);
+		}
+		else
+		{
+			cerr << "Latex documentation generation using file \"" << generate_doc_filename << "\"" << endl;
+			ofstream stream(generate_doc_filename.c_str(), std::ofstream::out);
+			GenerateLatexDocumentation(stream);
+		}
+	}
 	if(enable_version)
 	{
-		Version();
+		Version(cerr);
 		return false;
 	}
 	if(enable_help)
 	{
-		Help();
+		Help(cerr);
 		return false;
 	}
 	
@@ -2651,6 +2915,86 @@ void Simulator::SetVariable(const char *variable_name, double variable_value)
 	stringstream sstr;
 	sstr << variable_value;
 	SetVariable(variable_name, sstr.str().c_str());
+}
+
+void Simulator::GenerateLatexDocumentation(ostream& os) const
+{
+	map<const char *, Object *, ltstr>::const_iterator object_iter;
+
+	os << "\\section{Introduction}" << endl;
+	os << string_to_latex(description.c_str()) << endl;
+
+	os << "\\section{Licensing}" << endl;
+	os << string_to_latex(program_name.c_str()) << " " << version << "\\\\" << endl;
+	os << string_to_latex(copyright.c_str()) << "\\\\" << endl;
+	os << "License: " << string_to_latex(license.c_str()) << "\\\\" << endl;
+	os << "Authors: " << string_to_latex(authors.c_str()) << "\\\\" << endl;
+	
+	os << "\\section{Simulated configuration}" << endl;
+	
+	os << "\\noindent The simulator is composed of the following modules and services:" << endl;
+	os << "\\begin{itemize}\\addtolength{\\itemsep}{-0.40\\baselineskip}" << endl;
+	for(object_iter = objects.begin(); object_iter != objects.end(); object_iter++)
+	{
+		const char *obj_description = (*object_iter).second->GetDescription();
+		os << "\\item " << string_to_latex((*object_iter).second->GetName());
+		if(*obj_description != 0) // not empty description
+		{
+			os << ": " << string_to_latex(obj_description);
+		}
+		os << std::endl;
+	}
+	os << "\\end{itemize}" << endl;
+
+	os << "\\section{Using " << program_name << "}" << endl;
+	os << "\\noindent Usage: \\texttt{" << program_binary << " [<options>] [...]}" << endl << endl;
+	os << "\\noindent Options:" << endl;
+	os << "\\begin{itemize}" << endl;
+
+	std::vector<CommandLineOption>::const_iterator cmd_opt_iter;
+	for(cmd_opt_iter = command_line_options.begin(); cmd_opt_iter != command_line_options.end(); cmd_opt_iter++)
+	{
+		os << "\\item \\texttt{";
+		os << "--" << string_to_latex(cmd_opt_iter->GetLongName());
+		if(cmd_opt_iter->HasArgument())
+		{
+			os << " $<$" << string_to_latex(cmd_opt_iter->GetArgumentDescription()) << "$>$";
+		}
+		os << " or -" << cmd_opt_iter->GetShortName();
+		if(cmd_opt_iter->HasArgument())
+		{
+			os << " $<$" << string_to_latex(cmd_opt_iter->GetArgumentDescription()) << "$>$";
+		}
+		os << "}: " << string_to_latex(cmd_opt_iter->GetOptionDescription());
+		os << "" << std::endl;
+	}
+	os << "\\end{itemize}" << endl;
+
+	
+	// 	std::stringstream sstr_version;
+// 	Version(sstr_version);
+// 	os << "\\section{Version}" << std::endl;
+// 	os << string_to_latex(sstr_version.str().c_str()) << std::endl;
+// 	
+// 	std::stringstream sstr_help;
+// 	Help(sstr_help);
+// 	os << "\\section{Usage}" << std::endl;
+// 	os << string_to_latex(sstr_help.str().c_str(), 80, "texttt") << std::endl;
+
+	os << "\\section{Configuration}" << std::endl;
+	os << "\\tablehead{\\hline}" << std::endl;
+	os << "\\tabletail{\\hline}" << std::endl;
+	os << "\\begin{supertabular}{|p{7.5cm}|p{7.5cm}|}" << std::endl;
+	os << "\\hline" << std::endl;
+
+	for(object_iter = objects.begin(); object_iter != objects.end(); object_iter++)
+	{
+		(*object_iter).second->GenerateLatexDocumentation(os);
+		os << "\\hline" << std::endl;
+	}
+
+	os << "\\hline" << std::endl;
+	os << "\\end{supertabular}" << std::endl;
 }
 
 } // end of namespace service

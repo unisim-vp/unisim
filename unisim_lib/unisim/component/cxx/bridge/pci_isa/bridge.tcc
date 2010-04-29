@@ -56,7 +56,7 @@ using unisim::kernel::logger::EndDebugError;
 
 template <class ADDRESS>
 Bridge<ADDRESS>::Bridge(const char *name, Object *parent) :
-	Object(name, parent),
+	Object(name, parent, "PCI-to-ISA bridge"),
 	pci_device_number(0),
 	isa_bus_frequency(0),
 	pci_bus_frequency(33),

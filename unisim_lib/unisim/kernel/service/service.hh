@@ -233,6 +233,8 @@ public:
 	bool GetSharePath(const std::string& bin_dir, std::string& out_share_dir) const;
 	string SearchSharedDataFile(const char *filename) const;
 
+	void GenerateLatexDocumentation(ostream& os) const;
+	
 private:
 	friend class Object;
 	friend class VariableBase;
@@ -248,6 +250,8 @@ private:
 	string get_config_filename;
 	bool list_parms;
 	bool get_config;
+	bool generate_doc;
+	string generate_doc_filename;
 	bool enable_warning;
 	bool enable_version;
 	bool enable_help;
@@ -271,8 +275,8 @@ private:
 	Parameter<string> *var_license;
 	Parameter<bool> *param_enable_press_enter_at_exit;
 	
-	void Version();
-	void Help();
+	void Version(ostream& os) const;
+	void Help(ostream& os) const;
 	
 	void Register(Object *object);
 	void Register(ServiceImportBase *srv_import);
@@ -301,8 +305,25 @@ private:
 
 	void GetRootObjects(list<Object *>& lst);
 	
+	class CommandLineOption
+	{
+	public:
+		CommandLineOption(char short_name, const char *long_name, const char *opt_description, const char *arg_description = 0);
+		char GetShortName() const;
+		const char *GetLongName() const;
+		bool HasArgument() const;
+		const char *GetArgumentDescription() const;
+		const char *GetOptionDescription() const;
+		int operator == (const char *arg) const;
+	private:
+		char short_name;
+		const char *long_name;
+		const char *arg_description;
+		const char *opt_description;
+	};
 
-
+	std::vector<CommandLineOption> command_line_options;
+	
 	struct ltstr
 	{
 		bool operator() (const char *s1, const char *s2) const
@@ -588,7 +609,7 @@ public:
 class Object
 {
 public:
-	Object(const char *name, Object *parent = 0);
+	Object(const char *name, Object *parent = 0, const char *description = 0);
 	virtual ~Object();
 
 	virtual void OnDisconnect();
@@ -614,8 +635,11 @@ public:
 	list<ServiceImportBase *>& GetSetupDependencies();
 	void SetupDependsOn(ServiceImportBase& srv_import);
 	Simulator *GetSimulator() const;
+	void GenerateLatexDocumentation(ostream& os) const;
+	const char *GetDescription() const;
 private:
 	string object_name;
+	string description;
 	Object *parent;
 	list<VariableBase *> variables;
 	list<ServiceImportBase *> srv_imports;

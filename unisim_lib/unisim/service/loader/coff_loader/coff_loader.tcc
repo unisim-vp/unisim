@@ -125,7 +125,7 @@ bool CoffLoader<MEMORY_ADDR>::Setup()
 
 	if(filename.empty()) return true;
 	
-	ifstream is(filename.c_str(), ifstream::in | ifstream::binary);
+	ifstream is(Object::GetSimulator()->SearchSharedDataFile(filename.c_str()).c_str(), ifstream::in | ifstream::binary);
 	if(is.fail())
 	{
 		logger << DebugError << "Can't open executable \"" << filename << "\"" << EndDebugError;

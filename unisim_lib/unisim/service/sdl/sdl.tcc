@@ -80,7 +80,7 @@ VideoMode<ADDRESS>::VideoMode(ADDRESS _fb_addr, uint32_t _width, uint32_t _heigh
 
 template <class ADDRESS>
 SDL<ADDRESS>::SDL(const char *name, Object *parent)
-	: Object(name, parent)
+	: Object(name, parent, "SDL (Simple DirectMedia Layer) wrapper")
 	, Service<Video<ADDRESS> >(name, parent)
 	, Client<Memory<ADDRESS> >(name, parent)
 	, Service<Keyboard>(name, parent)

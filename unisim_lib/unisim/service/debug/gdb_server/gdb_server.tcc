@@ -84,7 +84,7 @@ using unisim::kernel::logger::EndDebugError;
 
 template <class ADDRESS>
 GDBServer<ADDRESS>::GDBServer(const char *_name, Object *_parent) :
-	Object(_name, _parent),
+	Object(_name, _parent, "GDB Server"),
 	Service<DebugControl<ADDRESS> >(_name, _parent),
 	Service<MemoryAccessReporting<ADDRESS> >(_name, _parent),
 	Service<TrapReporting>(_name, _parent),

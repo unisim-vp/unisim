@@ -56,7 +56,7 @@ using unisim::kernel::logger::EndDebugError;
 
 template <class ADDRESS>
 Heathrow<ADDRESS>::Heathrow(const char *name, Object *parent) :
-	Object(name, parent),
+	Object(name, parent, "Heathrow Programmable Interrupt Controller (PIC)"),
 	logger(*this),
 	verbose(false),
 	pci_device_number(0),

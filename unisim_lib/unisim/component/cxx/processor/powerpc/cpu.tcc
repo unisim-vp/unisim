@@ -58,7 +58,7 @@ using namespace std;
 
 template <class CONFIG>
 CPU<CONFIG>::CPU(const char *name, Object *parent)
-	: Object(name, parent)
+	: Object(name, parent, "PowerPC MPC7447A CPU")
 	, Client<Loader<typename CONFIG::physical_address_t> >(name,  parent)
 	, Client<SymbolTableLookup<typename CONFIG::address_t> >(name,  parent)
 	, Client<DebugControl<typename CONFIG::address_t> >(name,  parent)

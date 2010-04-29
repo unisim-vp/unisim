@@ -61,7 +61,7 @@ template <class PHYSICAL_ADDR,
 EPIC<PHYSICAL_ADDR, MAX_TRANSACTION_DATA_SIZE, DEBUG> ::
 EPIC(const sc_module_name &name, Object *parent) :
 	sc_module(name),
-	Object(name, parent),
+	Object(name, parent, "MPC107 integrated Embedded Programmable Interrupt Controller (EPIC)"),
 	unisim::component::cxx::chipset::mpc107::epic::EPIC<PHYSICAL_ADDR, DEBUG>("epic_impl", parent),
 	irq_master_port("irq_master_port"),
 	soft_reset_master_port("soft_reset_master_port"),

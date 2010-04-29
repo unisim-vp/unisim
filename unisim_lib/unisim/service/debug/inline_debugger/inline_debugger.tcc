@@ -69,7 +69,7 @@ using unisim::kernel::service::VariableBase;
 
 template <class ADDRESS>
 InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent) :
-	Object(_name, _parent),
+	Object(_name, _parent, "Inline debugger"),
 	Service<DebugControl<ADDRESS> >(_name, _parent),
 	Service<MemoryAccessReporting<ADDRESS> >(_name, _parent),
 	Service<TrapReporting>(_name, _parent),

@@ -50,7 +50,7 @@ using unisim::kernel::logger::EndDebugError;
 
 template <class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
 Display<ADDRESS_TYPE, MAX_DATA_SIZE>::Display(const sc_module_name& name, Object *parent) :
-	Object(name, parent),
+	Object(name, parent, "PCI Video frame buffer display"),
 	unisim::component::cxx::pci::video::Display<ADDRESS_TYPE>(name, parent),
 	sc_module(name),
 	bus_port("bus_port"),

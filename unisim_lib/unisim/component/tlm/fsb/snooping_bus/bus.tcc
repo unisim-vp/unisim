@@ -95,7 +95,7 @@ template <class ADDRESS_TYPE, unsigned int DATA_SIZE,
 		unsigned int NUM_PROCS>
 Bus<ADDRESS_TYPE, DATA_SIZE, NUM_PROCS> :: 
 Bus(const sc_module_name& module_name, Object *parent) :
-	Object(module_name, parent),
+	Object(module_name, parent, "Front side bus"),
 	Service<Memory<ADDRESS_TYPE> >(module_name, parent),
 	Client<Memory<ADDRESS_TYPE> >(module_name, parent),
 	sc_module(module_name),

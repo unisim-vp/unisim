@@ -45,7 +45,7 @@ namespace powerpc {
 
 template <class CONFIG>
 PowerPC<CONFIG>::PowerPC(const sc_module_name& name, Object *parent) :
-	Object(name, parent),
+	Object(name, parent, "PowerPC MPC7447A CPU"),
 	sc_module(name),
 	CPU<CONFIG>(name, parent),
 	bus_port("bus-port"),
