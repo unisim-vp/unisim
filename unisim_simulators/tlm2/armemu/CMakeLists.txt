@@ -190,24 +190,18 @@ target_link_libraries ( ${ARMEMU_EXEC_TARGET}
 	simulator
 	${armemu__libraries}
 	)
-add_library ( ${ARMEMU_LIB_TARGET}-shared
+add_library ( ${ARMEMU_LIB_TARGET}
 	SHARED
 		${simulator__sources} )
-target_link_libraries ( ${ARMEMU_LIB_TARGET}-shared
+target_link_libraries ( ${ARMEMU_LIB_TARGET}
 	${armemu__libraries} )
 	
 set_target_properties ( ${ARMEMU_EXEC_TARGET}
 	PROPERTIES
 		RUNTIME_OUTPUT_NAME ${ARMEMU_EXEC_NAME} )
-#		RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin )
-# set_target_properties ( ${ARMEMU_LIB_TARGET}
-#	PROPERTIES
-#		ARCHIVE_OUTPUT_NAME ${ARMEMU_LIB_NAME} )
-#		ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib )
-set_target_properties ( ${ARMEMU_LIB_TARGET}-shared
+set_target_properties ( ${ARMEMU_LIB_TARGET}
 	PROPERTIES
 		LIBRARY_OUTPUT_NAME ${ARMEMU_LIB_NAME} )
-#		LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib )
 	
 set ( armemu__deps
 	unisim__kernel
@@ -230,11 +224,11 @@ endif ( UNISIM__SERVICE__POWER__SUPPORT )
 add_dependencies ( simulator
 	${armemu__deps}
 	)
-add_dependencies ( ${ARMEMU_LIB_TARGET}-shared
+add_dependencies ( ${ARMEMU_LIB_TARGET}
 	${armemu__deps}
 	)
 add_dependencies ( ${ARMEMU_EXEC_TARGET}
-	${ARMEMU_LIB_TARGET}
+	${armemu__deps}
 	)
 
 add_custom_command (
@@ -287,7 +281,7 @@ if ( ${PYTHONINTERP_FOUND} )
 			lib
 		)
 endif ( ${PYTHONINTERP_FOUND} )
-install ( TARGETS ${ARMEMU_EXEC_TARGET} # ${ARMEMU_LIB_TARGET}
+install ( TARGETS ${ARMEMU_EXEC_TARGET}
 	RUNTIME DESTINATION bin
 	LIBRARY DESTINATION lib
 	ARCHIVE DESTINATION lib
