@@ -25,11 +25,5 @@ add_library ( unisim__util__xml
 		${CMAKE_SOURCE_DIR}/unisim/util/xml/xml.cc
 	)
 	
-set_source_files_properties (
-	${CMAKE_SOURCE_DIR}/unisim/util/xml/xml.hh
-	PROPERTY
-		HEADER_FILE_ONLY TRUE
-	)
-		
 message ( STATUS "Checking unisim::util::xml - done" )
 

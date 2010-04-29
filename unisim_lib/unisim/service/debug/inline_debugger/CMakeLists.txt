@@ -69,18 +69,11 @@ if ( UNIX )
 					COMPILE_DEFINITIONS HAVE_LIBEDIT
 				)
 			target_link_libraries ( unisim__service__debug__inline_debugger
-				${LIBEDIT} )	
+				${LIBEDIT} )
 		endif ( LIBEDIT )
 	endif ( HAVE_editline_readline_H )
 endif ( UNIX )
 
-set_source_files_properties (
-	${CMAKE_SOURCE_DIR}/unisim/service/debug/inline_debugger/inline_debugger.hh
-	${CMAKE_SOURCE_DIR}/unisim/service/debug/inline_debugger/inline_debugger.tcc
-	PROPERTY
-		HEADER_FILE_ONLY TRUE
-	)
-	
 message ( STATUS "Checking unisim::service::debug::inline_debugger - done" )
 
 

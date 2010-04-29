@@ -39,12 +39,8 @@ add_library ( unisim__util__endian
 target_link_libraries ( unisim__util__endian
 	unisim__kernel
 	)
-	
-include_directories ( ${CMAKE_SOURCE_DIR} )
 
-set_source_files_properties ( ${CMAKE_SOURCE_DIR}/unisim/util/endian/endian.hh
-	PROPERTIES
-		HEADER_FILE_ONLY TRUE )
+include_directories ( ${CMAKE_SOURCE_DIR} )
 
 message ( STATUS "Checking unisim::util::endian - done" )
 

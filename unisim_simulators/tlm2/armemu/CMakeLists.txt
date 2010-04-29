@@ -31,9 +31,10 @@ message ( "The following python executable `${PYTHON_EXECUTABLE}' will be used
 # message ( "Python lib path: ${PYTHON_LIBRARIES}" )
 
 set ( CMAKE_CXX_SOURCE_FILE_EXTENSIONS *.cc *.tcc *.hh CACHE STRING "Extensions of the source files" )
-set ( CMAKE_CXX_FLAGS "-fPIC -g" )
-# set ( BUILD_SHARED_LIBS ON )
-# set ( CMAKE_INSTALL_RPATH_USE_LINK_PATH true )
+set ( CMAKE_CXX_FLAGS "-fPIC" )
+set ( CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin )
+set ( CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib )
+set ( CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib )
 	
 set ( CXX_INCLUDES iostream list string )
 foreach ( CXX_INCLUDE ${CXX_INCLUDES} )
@@ -86,12 +87,6 @@ if ( UNISIM__SERVICE__POWER__SUPPORT )
 else ( UNISIM__SERVICE__POWER__SUPPORT )
 	set ( SIM_POWER_ESTIMATOR_SUPPORT FALSE )
 endif ( UNISIM__SERVICE__POWER__SUPPORT )
-configure_file ( 
-	${CMAKE_SOURCE_DIR}/config.hh.in 
-	${CMAKE_BINARY_DIR}/config.hh )
-configure_file (
-	${CMAKE_SOURCE_DIR}/setup.py.in
-	${CMAKE_BINARY_DIR}/setup.py )
 
 add_custom_target ( armemu__share_gdb
 	ALL
@@ -129,27 +124,16 @@ add_custom_target ( armemu__share_test
 		"Setting test program source files"
 	)
 
-set ( armemu__sources
+set ( simulator__sources
 	${CMAKE_SOURCE_DIR}/simulator.cc
 	${CMAKE_SOURCE_DIR}/simulator.hh
 	${CMAKE_BINARY_DIR}/config.hh
 	)
 	
-add_library ( ${ARMEMU_LIB_TARGET}
-	SHARED
-		${armemu__sources}
-	)
-add_executable ( ${ARMEMU_EXEC_TARGET}
-	${CMAKE_SOURCE_DIR}/main.cc
-	)
-set_source_files_properties ( ${CMAKE_SOURCE_DIR}/python_lib.cc
-	PROPERTIES
-		COMPILE_FLAGS -I${PYTHON_INCLUDE_PATH}
-	)
 set ( armemu__libraries
 	${OSCI_SYSTEMC_LIBRARIES}
 	unisim__kernel
-	unisim__component__cxx__processor__arm
+	# unisim__component__cxx__processor__arm
 	unisim__component__tlm2__processor__arm__arm926ejs
 	unisim__component__tlm2__interrupt
 	unisim__component__tlm2__memory__ram
@@ -166,13 +150,65 @@ if ( UNISIM__SERVICE__POWER__SUPPORT )
 		unisim__service__power )
 endif ( UNISIM__SERVICE__POWER__SUPPORT )
 
-target_link_libraries ( ${ARMEMU_LIB_TARGET}
+set ( PYTHON__ARMEMU__LIBS
+	"'simulator',
+	 'unisim__kernel',
+	 'unisim__component__cxx__processor__arm',
+	 'unisim__component__cxx__memory__ram',
+	 'unisim__component__tlm2__processor__arm__arm926ejs',
+	 'unisim__component__tlm2__interrupt',
+	 'unisim__component__tlm2__memory__ram',
+	 'unisim__service__time__host_time',
+	 'unisim__service__time__sc_time',
+	 'unisim__service__loader__elf_loader',
+	 'unisim__service__loader__linux_loader',
+	 'unisim__service__os__linux_os',
+	 'unisim__service__os__linux_os__linux_os_32',
+	 'unisim__service__debug__gdb_server',
+	 'unisim__service__debug__inline_debugger',
+	 'unisim__util__debug',
+	 'unisim__util__xml',
+	 'xml2',
+	 'systemc'")
+configure_file ( 
+	${CMAKE_SOURCE_DIR}/config.hh.in 
+	${CMAKE_BINARY_DIR}/config.hh )
+configure_file (
+	${CMAKE_SOURCE_DIR}/setup.py.in
+	${CMAKE_BINARY_DIR}/setup.py )
+
+add_library ( simulator
+		${simulator__sources}
+	)
+target_link_libraries ( simulator
 	${armemu__libraries}
 	)
-target_link_libraries ( ${ARMEMU_EXEC_TARGET}
-	${ARMEMU_LIB_TARGET}
+add_executable ( ${ARMEMU_EXEC_TARGET}
+	${CMAKE_SOURCE_DIR}/main.cc
 	)
-
+target_link_libraries ( ${ARMEMU_EXEC_TARGET}
+	simulator
+	${armemu__libraries}
+	)
+add_library ( ${ARMEMU_LIB_TARGET}-shared
+	SHARED
+		${simulator__sources} )
+target_link_libraries ( ${ARMEMU_LIB_TARGET}-shared
+	${armemu__libraries} )
+	
+set_target_properties ( ${ARMEMU_EXEC_TARGET}
+	PROPERTIES
+		RUNTIME_OUTPUT_NAME ${ARMEMU_EXEC_NAME} )
+#		RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin )
+# set_target_properties ( ${ARMEMU_LIB_TARGET}
+#	PROPERTIES
+#		ARCHIVE_OUTPUT_NAME ${ARMEMU_LIB_NAME} )
+#		ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib )
+set_target_properties ( ${ARMEMU_LIB_TARGET}-shared
+	PROPERTIES
+		LIBRARY_OUTPUT_NAME ${ARMEMU_LIB_NAME} )
+#		LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib )
+	
 set ( armemu__deps
 	unisim__kernel
 	unisim__component__tlm2__processor__arm__arm926ejs
@@ -191,23 +227,15 @@ if ( UNISIM__SERVICE__POWER__SUPPORT )
 		unisim__service__power
 		)
 endif ( UNISIM__SERVICE__POWER__SUPPORT )
-add_dependencies ( ${ARMEMU_LIB_TARGET}
+add_dependencies ( simulator
+	${armemu__deps}
+	)
+add_dependencies ( ${ARMEMU_LIB_TARGET}-shared
 	${armemu__deps}
 	)
 add_dependencies ( ${ARMEMU_EXEC_TARGET}
 	${ARMEMU_LIB_TARGET}
 	)
-
-set_target_properties ( ${ARMEMU_EXEC_TARGET}
-	PROPERTIES
-		RUNTIME_OUTPUT_NAME ${ARMEMU_EXEC_NAME}
-		RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin )
-set_target_properties ( ${ARMEMU_LIB_TARGET}
-	PROPERTIES
-		ARCHIVE_OUTPUT_NAME ${ARMEMU_LIB_NAME}
-		ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
-		LIBRARY_OUTPUT_NAME ${ARMEMU_LIB_NAME}
-		LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib )
 
 add_custom_command (
 	OUTPUT lib/${SIM_PYTHON_IMPORT_NAME}.so
@@ -223,7 +251,8 @@ add_custom_command (
 		${CMAKE_BINARY_DIR}/setup.py
 		${CMAKE_BINARY_DIR}/config.hh
 		${CMAKE_SOURCE_DIR}/python_lib.cc
-		${ARMEMU_LIB_TARGET}
+		simulator
+		${armemu__deps}
 	COMMENT
 		"Building python extension."
 	)
@@ -251,18 +280,14 @@ add_custom_command (
 	)
 
 if ( ${PYTHONINTERP_FOUND} )
-#   WARNING!!!
-#	uncomment the following if you want to install the python library
-#   however it has not been tested for installation (still under development)
-
-#	install (
-#		FILES
-#			${CMAKE_BINARY_DIR}/lib/${SIM_PYTHON_IMPORT_NAME}.so
-#		DESTINATION
-#			lib
-#		)
+	install (
+		FILES
+			${CMAKE_BINARY_DIR}/lib/${SIM_PYTHON_IMPORT_NAME}.so
+		DESTINATION
+			lib
+		)
 endif ( ${PYTHONINTERP_FOUND} )
-install ( TARGETS ${ARMEMU_EXEC_TARGET} ${ARMEMU_LIB_TARGET}
+install ( TARGETS ${ARMEMU_EXEC_TARGET} # ${ARMEMU_LIB_TARGET}
 	RUNTIME DESTINATION bin
 	LIBRARY DESTINATION lib
 	ARCHIVE DESTINATION lib
