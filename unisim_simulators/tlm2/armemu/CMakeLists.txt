@@ -152,23 +152,26 @@ endif ( UNISIM__SERVICE__POWER__SUPPORT )
 
 set ( PYTHON__ARMEMU__LIBS
 	"'simulator',
-	 'unisim__kernel',
-	 'unisim__component__cxx__processor__arm',
-	 'unisim__component__cxx__memory__ram',
-	 'unisim__component__tlm2__processor__arm__arm926ejs',
 	 'unisim__component__tlm2__interrupt',
 	 'unisim__component__tlm2__memory__ram',
+	 'unisim__component__tlm2__processor__arm__arm926ejs',
+	 'unisim__component__cxx__processor__arm',
+	 'unisim__component__cxx__memory__ram',
 	 'unisim__service__time__host_time',
 	 'unisim__service__time__sc_time',
 	 'unisim__service__loader__elf_loader',
 	 'unisim__service__loader__linux_loader',
-	 'unisim__service__os__linux_os',
 	 'unisim__service__os__linux_os__linux_os_32',
+	 'unisim__service__os__linux_os',
 	 'unisim__service__debug__gdb_server',
 	 'unisim__service__debug__inline_debugger',
 	 'unisim__util__debug',
 	 'unisim__util__xml',
+	 'unisim__kernel',
 	 'xml2',
+	 'ncurses',
+	 'edit',
+	 'z',
 	 'systemc'")
 configure_file ( 
 	${CMAKE_SOURCE_DIR}/config.hh.in 
