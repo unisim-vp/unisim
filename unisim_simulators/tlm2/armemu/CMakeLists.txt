@@ -3,7 +3,9 @@ cmake_minimum_required ( VERSION 2.8 )
 set ( SIM_VERSION_MAJOR 0 )
 set ( SIM_VERSION_MINOR 2 )
 set ( SIM_VERSION_PATCH 0 )
-set ( SIM_VERSION "\"${SIM_VERSION_MAJOR}.${SIM_VERSION_MINOR}.${SIM_VERSION_PATCH}\"" )
+set ( SIM_VERSION 
+	${SIM_VERSION_MAJOR}.${SIM_VERSION_MINOR}.${SIM_VERSION_PATCH} )
+set ( SIM_SOVERSION ${SIM_VERSION_MAJOR}.${SIM_VERSION_MINOR} ) 
 set ( SIM_VERSION_CODENAME "\"Pacifico\"" )
 set ( SIM_AUTHOR "\"Daniel Gracia Perez (daniel.gracia-perez@cea.fr)\"" )
 set ( SIM_PROGRAM_NAME "\"UNISIM armemu\"" )
@@ -14,28 +16,31 @@ set ( SIM_PYTHON_MODULE_NAME "\"armemu\"" )
 set ( SIM_PYTHON_IMPORT_NAME "armemu${SIM_VERSION_MAJOR}${SIM_VERSION_MINOR}${SIM_VERSION_PATCH}")
 
 option ( BUILD_ARMEMU_PYTHON_MODULE "Set this option if you want to compile a module of the unisim armemu simulator. Note that it has been developed under python3.1." )
-# project ( unisim_armemu_v${SIM_VERSION_MAJOR}_${SIM_VERSION_MINOR}_${SIM_VERSION_PATCH} )
 project ( unisim_armemu )
 include ( CheckIncludeFileCXX )
 include ( CheckIncludeFile )
 include ( ${CMAKE_SOURCE_DIR}/cmake/FindOSCISystemC.cmake )
 include ( ${CMAKE_SOURCE_DIR}/cmake/UnisimInclude.cmake )
 include ( FindPythonInterp )
-# set ( PYTHON_DEBUG_LIBRARY "/opt/local/Library/Frameworks/Python.framework/Versions/3.1/lib/libpython3.1.dylib" )                                                                                                    
-# set ( PYTHON_EXECUTABLE "/opt/local/bin/python" )                                                                                                
-# set ( PYTHON_INCLUDE_DIR "/opt/local/Library/Frameworks/Python.framework/Headers" )                                                               
-# set ( PYTHON_LIBRARY "/opt/local/Library/Frameworks/Python.framework/Versions/3.1/lib/libpython3.1.dylib")
 message ( "The following python executable `${PYTHON_EXECUTABLE}' will be used
 	to create a python module of the UNISIM armemu simulator. If you want to use
 	another python version please launch cmake with the following option:
 	-DPYTHON_EXECUTABLE=<path to the python interpreter>" )
-# message ( "Python includes path: ${PYTHON_INCLUDE_PATH}" )
-# message ( "Python lib path: ${PYTHON_LIBRARIES}" )
+
+set ( ARMEMU_EXEC_NAME unisim-armemu )
+set ( ARMEMU_LIB_NAME unisim-armemu )
+set ( ARMEMU_EXEC_TARGET ${ARMEMU_EXEC_NAME}-exe )
+set ( ARMEMU_LIB_TARGET ${ARMEMU_LIB_NAME}-lib )
+set ( RELATIVE_SHARE_DIRECTORY "share/${ARMEMU_EXEC_NAME}" )
+set ( SHARE_DIRECTORY "${CMAKE_BINARY_DIR}/${RELATIVE_SHARE_DIRECTORY}" )
+set_property ( GLOBAL 
+	PROPERTY
+		UNISIM_KERNEL_BIN_TO_SHARED_DATA_PATH "../share/${ARMEMU_EXEC_NAME}" )
 
 set ( CMAKE_CXX_SOURCE_FILE_EXTENSIONS *.cc *.tcc *.hh CACHE STRING "Extensions of the source files" )
 set ( CMAKE_CXX_FLAGS "-fPIC" )
 set ( CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin )
-set ( CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib )
+set ( CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib/${ARMEMU_LIB_NAME}-${SIM_VERSION_MAJOR}.${SIM_VERSION_MINOR}.${SIM_VERSION_PATCH} )
 set ( CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib )
 	
 set ( CXX_INCLUDES iostream list string )
@@ -53,16 +58,6 @@ foreach ( C_INCLUDE ${C_INCLUDES} )
 		message ( SEND_ERROR "Could not find C header \"${C_INCLUDE}.h\"." )
 	endif ( NOT HAVE_${C_INCLUDE}_H )
 endforeach ( C_INCLUDE )
-
-set ( ARMEMU_EXEC_NAME armemu-${SIM_VERSION_MAJOR}.${SIM_VERSION_MINOR}.${SIM_VERSION_PATCH} )
-set ( ARMEMU_LIB_NAME armemu-${SIM_VERSION_MAJOR}.${SIM_VERSION_MINOR}.${SIM_VERSION_PATCH} )
-set ( ARMEMU_EXEC_TARGET ${ARMEMU_EXEC_NAME}-exe )
-set ( ARMEMU_LIB_TARGET ${ARMEMU_LIB_NAME}-lib )
-set ( RELATIVE_SHARE_DIRECTORY "share/${ARMEMU_EXEC_NAME}" )
-set ( SHARE_DIRECTORY "${CMAKE_BINARY_DIR}/${RELATIVE_SHARE_DIRECTORY}" )
-set_property ( GLOBAL 
-	PROPERTY
-		UNISIM_KERNEL_BIN_TO_SHARED_DATA_PATH "../share/${ARMEMU_EXEC_NAME}" )
 
 set ( armemu_subdirs
 	unisim/kernel
@@ -209,13 +204,20 @@ add_library ( ${ARMEMU_LIB_TARGET}
 		${simulator__sources} )
 target_link_libraries ( ${ARMEMU_LIB_TARGET}
 	${armemu__libraries} )
-	
+
+set_target_properties ( simulator
+	PROPERTIES
+		VERSION ${SIM_VERSION}
+		SOVERSION ${SIM_SOVERSION} )
 set_target_properties ( ${ARMEMU_EXEC_TARGET}
 	PROPERTIES
-		RUNTIME_OUTPUT_NAME ${ARMEMU_EXEC_NAME} )
+		RUNTIME_OUTPUT_NAME ${ARMEMU_EXEC_NAME}
+		VERSION ${SIM_VERSION} ) 
 set_target_properties ( ${ARMEMU_LIB_TARGET}
 	PROPERTIES
-		LIBRARY_OUTPUT_NAME ${ARMEMU_LIB_NAME} )
+		LIBRARY_OUTPUT_NAME ${ARMEMU_LIB_NAME} 
+		VERSION ${SIM_VERSION}
+		SOVERSION ${SIM_SOVERSION} )
 	
 set ( armemu__deps
 	unisim__kernel
@@ -274,21 +276,20 @@ if ( BUILD_ARMEMU_PYTHON_MODULE )
 				"Python target."
 		)
 	endif ( ${PYTHONINTERP_FOUND} )
-endif ( BUILD_ARMEMU_PYTHON_MODULE )
 
-add_custom_command (
-	OUTPUT
-		${SHARE_DIRECTORY}/template-default-config.xml
-	COMMAND
-		${CMAKE_COMMAND} -E make_directory ${SHARE_DIRECTORY}
-	COMMAND
-		${CMAKE_BINARY_DIR}/bin/${ARMEMU_EXEC_NAME} -g ${SHARE_DIRECTORY}/template-default-config.xml
-	DEPENDS
-		${CMAKE_BINARY_DIR}/bin/${ARMEMU_EXEC_NAME}
-	COMMENT
-		"Creating simulator default configuration in \"${RELATIVE_SHARE_DIRECTORY}/template-default-config.xml\""
-	)
-if ( BUILD_ARMEMU_PYTHON_MODULE )
+	add_custom_command (
+		OUTPUT
+			${SHARE_DIRECTORY}/template-default-config.xml
+		COMMAND
+			${CMAKE_COMMAND} -E make_directory ${SHARE_DIRECTORY}
+		COMMAND
+			${CMAKE_BINARY_DIR}/bin/${ARMEMU_EXEC_NAME} -g ${SHARE_DIRECTORY}/template-default-config.xml
+		DEPENDS
+			${CMAKE_BINARY_DIR}/bin/${ARMEMU_EXEC_NAME}
+		COMMENT
+			"Creating simulator default configuration in \"${RELATIVE_SHARE_DIRECTORY}/template-default-config.xml\""
+		)
+
 	if ( ${PYTHONINTERP_FOUND} )
 		install (
 			FILES
@@ -379,9 +380,35 @@ add_dependencies ( check
 	
 enable_testing()
 
+INCLUDE(CPack)
+# SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "UNISIM ArmEmu project.")
+# SET(CPACK_PACKAGE_VENDOR "CEA")
+# SET(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/README")
+# SET(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/COPYING")
+# SET(CPACK_PACKAGE_VERSION_MAJOR ${SIM_VERSION_MAJOR})
+# SET(CPACK_PACKAGE_VERSION_MINOR ${SIM_VERSION_MINOR})
+# SET(CPACK_PACKAGE_VERSION_PATCH ${SIM_VERSION_PATCH})
+# SET(CPACK_PACKAGE_INSTALL_DIRECTORY "CMake ${CMake_VERSION_MAJOR}.${CMake_VERSION_MINOR}")
+# IF(WIN32 AND NOT UNIX)
+  # There is a bug in NSI that does not handle full unix paths properly. Make
+  # sure there is at least one set of four (4) backlasshes.
+ # SET(CPACK_PACKAGE_ICON "${CMake_SOURCE_DIR}/Utilities/Release\\\\InstallIcon.bmp")
+ # SET(CPACK_NSIS_INSTALLED_ICON_NAME "bin\\\\MyExecutable.exe")
+ # SET(CPACK_NSIS_DISPLAY_NAME "${CPACK_PACKAGE_INSTALL_DIRECTORY} My Famous Project")
+ # SET(CPACK_NSIS_HELP_LINK "http:\\\\\\\\www.my-project-home-page.org")
+ # SET(CPACK_NSIS_URL_INFO_ABOUT "http:\\\\\\\\www.my-personal-home-page.com")
+ # SET(CPACK_NSIS_CONTACT "me@my-personal-home-page.com")
+ # SET(CPACK_NSIS_MODIFY_PATH ON)
+#ELSE(WIN32 AND NOT UNIX)
+ # SET(CPACK_STRIP_FILES "bin/MyExecutable")
+ # SET(CPACK_SOURCE_STRIP_FILES "")
+# ENDIF(WIN32 AND NOT UNIX)
+# SET(CPACK_PACKAGE_EXECUTABLES "MyExecutable" "My Executable")
+
 set ( CPACK_PACKAGE_VERSION_MAJOR ${SIM_VERSION_MAJOR} )
 set ( CPACK_PACKAGE_VERSION_MINOR ${SIM_VERSION_MINOR} )
 set ( CPACK_PACKAGE_VERSION_PATCH ${SIM_VERSION_PATCH} )
-set ( CPACK_SOURCE_GENERATOR "TBZ2" )
-set ( CPACK_GENERATOR "TBZ2" )
+set ( CPACK_SOURCE_GENERATOR "TBZ2;TGZ;ZIP" )
+set ( CPACK_SOURCE_PACKAGE_FILE_NAME "unisim-armemu-${SIM_VERSION}" )
+# set ( CPACK_GENERATOR "TBZ2" )
 include ( CPack )
