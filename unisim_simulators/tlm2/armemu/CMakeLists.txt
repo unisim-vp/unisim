@@ -248,25 +248,39 @@ add_dependencies ( ${ARMEMU_EXEC_TARGET}
 	)
 
 add_custom_command (
-	OUTPUT lib/${SIM_PYTHON_IMPORT_NAME}.so
+	OUTPUT
+		${SHARE_DIRECTORY}/template-default-config.xml
 	COMMAND
-		${CMAKE_COMMAND} -E remove_directory python
+		${CMAKE_COMMAND} -E make_directory ${SHARE_DIRECTORY}
 	COMMAND
-		${CMAKE_COMMAND} -E remove lib/${SIM_PYTHON_IMPORT_NAME}.so
-	COMMAND
-		${CMAKE_COMMAND} -E make_directory python
-	COMMAND
-		${PYTHON_EXECUTABLE} setup.py build -t python --build-lib lib
+		${CMAKE_BINARY_DIR}/bin/${ARMEMU_EXEC_NAME} -g ${SHARE_DIRECTORY}/template-default-config.xml
 	DEPENDS
-		${CMAKE_BINARY_DIR}/setup.py
-		${CMAKE_BINARY_DIR}/config.hh
-		${CMAKE_SOURCE_DIR}/python_lib.cc
-		simulator
-		${armemu__deps}
+		${CMAKE_BINARY_DIR}/bin/${ARMEMU_EXEC_NAME}
 	COMMENT
-		"Building python extension."
+		"Creating simulator default configuration in \"${RELATIVE_SHARE_DIRECTORY}/template-default-config.xml\""
 	)
+
 if ( BUILD_ARMEMU_PYTHON_MODULE )
+	add_custom_command (
+		OUTPUT lib/${SIM_PYTHON_IMPORT_NAME}.so
+		COMMAND
+			${CMAKE_COMMAND} -E remove_directory python
+		COMMAND
+			${CMAKE_COMMAND} -E remove lib/${SIM_PYTHON_IMPORT_NAME}.so
+		COMMAND
+			${CMAKE_COMMAND} -E make_directory python
+		COMMAND
+			${PYTHON_EXECUTABLE} setup.py build -t python --build-lib lib
+		DEPENDS
+			${CMAKE_BINARY_DIR}/setup.py
+			${CMAKE_BINARY_DIR}/config.hh
+			${CMAKE_SOURCE_DIR}/python_lib.cc
+			simulator
+			${armemu__deps}
+		COMMENT
+			"Building python extension."
+		)
+
 	if ( ${PYTHONINTERP_FOUND} )
 		add_custom_target ( ${ARMEMU_LIB_TARGET}-python
 			ALL
@@ -276,19 +290,6 @@ if ( BUILD_ARMEMU_PYTHON_MODULE )
 				"Python target."
 		)
 	endif ( ${PYTHONINTERP_FOUND} )
-
-	add_custom_command (
-		OUTPUT
-			${SHARE_DIRECTORY}/template-default-config.xml
-		COMMAND
-			${CMAKE_COMMAND} -E make_directory ${SHARE_DIRECTORY}
-		COMMAND
-			${CMAKE_BINARY_DIR}/bin/${ARMEMU_EXEC_NAME} -g ${SHARE_DIRECTORY}/template-default-config.xml
-		DEPENDS
-			${CMAKE_BINARY_DIR}/bin/${ARMEMU_EXEC_NAME}
-		COMMENT
-			"Creating simulator default configuration in \"${RELATIVE_SHARE_DIRECTORY}/template-default-config.xml\""
-		)
 
 	if ( ${PYTHONINTERP_FOUND} )
 		install (
