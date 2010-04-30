@@ -104,6 +104,11 @@ template <> VariableBase& Variable<unisim::service::power::CachePowerEstimator::
 	return *this;
 }
 
+template <> VariableBase& Variable<unisim::service::power::CachePowerEstimator::AccessMode>::operator = (bool value)
+{
+	return (*this) = (unsigned long long)(value ? 1 : 0);
+}
+
 template <> VariableBase& Variable<unisim::service::power::CachePowerEstimator::AccessMode>::operator = (long long value)
 {
 	return (*this) = (unsigned long long) value;

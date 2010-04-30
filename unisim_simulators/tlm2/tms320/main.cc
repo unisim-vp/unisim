@@ -320,9 +320,9 @@ int sc_main(int argc, char *argv[]) {
 		double time_stop = host_time->GetTime();
 		double spent_time = time_stop - time_start;
 
-		VariableBase *stat_instruction_counter = ServiceManager::GetVariable("cpu.instruction-counter");
-		VariableBase *stat_insn_cache_hits = ServiceManager::GetVariable("cpu.insn-cache-hits");
-		VariableBase *stat_insn_cache_misses = ServiceManager::GetVariable("cpu.insn-cache-misses");
+		VariableBase *stat_instruction_counter = ServiceManager::FindVariable("cpu.instruction-counter");
+		VariableBase *stat_insn_cache_hits = ServiceManager::FindVariable("cpu.insn-cache-hits");
+		VariableBase *stat_insn_cache_misses = ServiceManager::FindVariable("cpu.insn-cache-misses");
 		cerr << "simulation time: " << spent_time << " seconds" << endl;
 		cerr << "simulated time : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;
 		cerr << "simulated instructions : " << (uint64_t)(*stat_instruction_counter) << " instructions" << endl;

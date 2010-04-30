@@ -61,7 +61,7 @@ int sc_main(int argc, char *argv[]) {
 	}
 	else
 	{
-		if ( (bool)(*simulator->GetVariable("get-config")) )
+		if ( (bool)(*simulator->FindVariable("get-config")) )
 			ret = 0;
 		else
 		{

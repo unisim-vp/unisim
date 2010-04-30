@@ -56,6 +56,10 @@ function BuildRPM
 	shift
 	START_PARAMS="$1"
 	shift
+	BUILD="$1"
+	shift
+	CONFIGURE="$1"
+	shift
 
 	TOP_DIR="${HOME}/tmp/rpm"
 
@@ -104,7 +108,6 @@ function BuildRPM
 	echo "%make" >> "${SPEC}"
 
 	echo "%install" >> "${SPEC}"
-	echo "echo \"prefix is: %{_prefix}\"" >> "${SPEC}"
 	echo "make install prefix=%{buildroot}%{_prefix}" >> "${SPEC}"
 
 	if ! [ -z "${START_PROGRAM}" ] && ! [ -z "${START_ICON}" ]; then
@@ -203,6 +206,10 @@ function BuildDEB
 	START_PROGRAM="$1"
 	shift
 	START_PARAMS="$1"
+	shift
+	BUILD="$1"
+	shift
+	CONFIGURE="$1"
 	shift
 
 	PREFIX=/usr
@@ -348,6 +355,10 @@ function BuildWinInstaller
 	START_PROGRAM="$1"
 	shift
 	START_PARAMS="$1"
+	shift
+	BUILD="$1"
+	shift
+	CONFIGURE="$1"
 	shift
 
 	PREFIX=/
@@ -632,4 +643,6 @@ BuildPackage \
 	"share/unisim-tms320c3x-${TMS320C3X_VERSION}/unisim.ico" \
 	"bin/unisim-tms320c3x-${TMS320C3X_VERSION}${EXE_SUFFIX}" \
 	"-s enable-press-enter-at-exit=true fibo.out" \
+	"make install" \
+	"./configure" \
 	"CXXFLAGS=-O3 -g"

@@ -316,7 +316,7 @@ Simulator::Simulator(int argc, char **argv)
 	string filename;
 	string kernel_params;
 	
-	VariableBase *cmd_args = GetVariable("cmd-args");
+	VariableBase *cmd_args = FindVariable("cmd-args");
 	unsigned int cmd_args_length = cmd_args->GetLength();
 	if(cmd_args_length > 0)
 	{

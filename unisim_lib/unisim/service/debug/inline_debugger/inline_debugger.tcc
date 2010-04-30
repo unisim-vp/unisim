@@ -1229,7 +1229,7 @@ void InlineDebugger<ADDRESS>::DumpVariable(const char *cmd, const VariableBase *
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DumpVariable(const char *cmd, const char *name)
 {
-	VariableBase *variable = GetSimulator()->GetVariable(name);
+	VariableBase *variable = GetSimulator()->FindVariable(name);
 	
 	if (variable->IsVoid())
 	{
@@ -1260,7 +1260,7 @@ void InlineDebugger<ADDRESS>::DumpVariable(const char *cmd, const char *name)
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DumpRegister(const char *cmd, const char *name)
 {
-	VariableBase *variable = GetSimulator()->GetRegister(name);
+	VariableBase *variable = GetSimulator()->FindRegister(name);
 	
 	if (variable->IsVoid())
 	{
@@ -1274,7 +1274,7 @@ void InlineDebugger<ADDRESS>::DumpRegister(const char *cmd, const char *name)
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DumpStatistic(const char *cmd, const char *name)
 {
-	VariableBase *variable = GetSimulator()->GetStatistic(name);
+	VariableBase *variable = GetSimulator()->FindStatistic(name);
 	
 	if (variable->IsVoid())
 	{
@@ -1288,7 +1288,7 @@ void InlineDebugger<ADDRESS>::DumpStatistic(const char *cmd, const char *name)
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DumpParameter(const char *cmd, const char *name)
 {
-	VariableBase *variable = GetSimulator()->GetParameter(name);
+	VariableBase *variable = GetSimulator()->FindParameter(name);
 	
 	if (variable->IsVoid())
 	{
@@ -1302,7 +1302,7 @@ void InlineDebugger<ADDRESS>::DumpParameter(const char *cmd, const char *name)
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::SetVariable(const char *name, const char *value)
 {
-	VariableBase *variable = GetSimulator()->GetVariable(name);
+	VariableBase *variable = GetSimulator()->FindVariable(name);
 	
 	if (variable->IsVoid())
 	{
