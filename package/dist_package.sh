@@ -115,7 +115,7 @@ function BuildRPM
 	printf "if [ -f configure ]; then\n" >> "${SPEC}"
 	printf "\tmake install prefix=%%{buildroot}%%{_prefix}\n" >> "${SPEC}"
 	printf "elif [ -f 'CMakeLists.txt' ]; then\n" >> "${SPEC}"
-	printf "\tmake DESTDIR=%%{buildroot}%%{_prefix}\n" >> "${SPEC}"
+	printf "\tmake install DESTDIR=%%{buildroot}\n" >> "${SPEC}"
 	printf "fi\n" >> "${SPEC}"
 
 	if ! [ -z "${START_PROGRAM}" ] && ! [ -z "${START_ICON}" ]; then
@@ -253,7 +253,7 @@ function BuildDEB
 	if [ -f 'configure' ]; then
 		fakeroot make install prefix=${INSTALL_DIR}${PREFIX} || exit -1
 	elif [ -f 'CMakeLists.txt' ]; then
-		fakeroot make install DESTDIR=${INSTALL_DIR}${PREFIX} || exit -1
+		fakeroot make install DESTDIR=${INSTALL_DIR} || exit -1
 	fi
 
 	if ! [ -z "${START_PROGRAM}" ] && ! [ -z "${START_ICON}" ]; then
@@ -288,8 +288,11 @@ function BuildDEB
 	for FILE in ${FILES}
 	do
 		if [ -f "${INSTALL_DIR}${PREFIX}/${FILE}" ]; then
+			echo "Adding ${FILE}"
 			md5sum ".${PREFIX}/${FILE}" | sed 's/\.\///g' >> ${MD5SUMS_FILE}
 			INSTALLED_SIZE=$((${INSTALLED_SIZE} + `stat -c%s "${INSTALL_DIR}${PREFIX}/${FILE}"`))
+		else
+			echo "WARNING! No such file or directory: ${FILE}"
 		fi
 	done
 	printf "Done\n"
@@ -693,15 +696,20 @@ BuildPackage \
 	"Emulators" \
 	"Development;Emulator;ConsoleOnly" \
 	"Gilles Mouchard <gilles.mouchard@cea.fr>" \
-	"bin/armemu-${ARMEMU_VERSION}${EXE_SUFFIX} \
-	share/armemu-${ARMEMU_VERSION}/AUTHORS \
-	share/armemu-${ARMEMU_VERSION}/COPYING \
-	share/armemu-${ARMEMU_VERSION}/ChangeLog \
-	share/armemu-${ARMEMU_VERSION}/INSTALL \
-	share/armemu-${ARMEMU_VERSION}/NEWS \
-	share/armemu-${ARMEMU_VERSION}/README \
-	share/armemu-${ARMEMU_VERSION}/gdb_server/gdb_armv5l.xml \
-	share/armemu-${ARMEMU_VERSION}/template_default_config.xml" \
+	"bin/unisim-armemu-${ARMEMU_VERSION}${EXE_SUFFIX} \
+	share/unisim-armemu-${ARMEMU_VERSION}/AUTHORS.txt \
+	share/unisim-armemu-${ARMEMU_VERSION}/COPYING.txt \
+	share/unisim-armemu-${ARMEMU_VERSION}/INSTALL.txt \
+	share/unisim-armemu-${ARMEMU_VERSION}/NEWS.txt \
+	share/unisim-armemu-${ARMEMU_VERSION}/README.txt \
+	lib/libunisim-armemu.so \
+	lib/libunisim-armemu.so.0.2 \
+	lib/libunisim-armemu.so.${ARMEMU_VERSION} \
+	share/unisim-armemu-${ARMEMU_VERSION}/test/src/CMakeLists.txt \
+	share/unisim-armemu-${ARMEMU_VERSION}/test/src/main.c \
+	share/unisim-armemu-${ARMEMU_VERSION}/test/src/toolchain-armv5l.cmake \
+	share/unisim-armemu-${ARMEMU_VERSION}/gdb_server/gdb_armv5l.xml \
+	share/unisim-armemu-${ARMEMU_VERSION}/template-default-config.xml" \
     "/bin/libgcc_s_dw2-1.dll /bin/libxml2-2.dll" \
 	"" \
 	"" \
