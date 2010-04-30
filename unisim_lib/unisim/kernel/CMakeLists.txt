@@ -1,7 +1,7 @@
 message ( STATUS "Checking unisim::kernel" )
 include ( CheckIncludeFileCXX )
 include ( CheckIncludeFile )
-# include ( ${CMAKE_SOURCE_DIR}/cmake/UnisimInclude.cmake )
+include ( ${CMAKE_SOURCE_DIR}/cmake/UnisimInclude.cmake )
 include ( ${CMAKE_SOURCE_DIR}/cmake/FindOSCITLM2.cmake )
 include ( ${CMAKE_SOURCE_DIR}/cmake/FindOSCISystemC.cmake )
 
@@ -38,10 +38,27 @@ configure_file (
 	${CMAKE_BINARY_DIR}/unisim/kernel/service/config.hh
 	)
 
+# if ( APPLE )
+# 	add_library ( libxml2 SHARED IMPORTED )
+# 	set_target_properties ( libxml2
+# 		PROPERTIES
+# 		IMPORTED_LOCATION
+# 			/usr/lib/libxml2.dylib )
+# else ( APPLE )
+# endif ( APPLE )
+
 include ( FindLibXml2 )
 if ( NOT LIBXML2_FOUND )
 	message ( SEND_ERROR "Could not find the libxml2 library." )
 endif ( NOT LIBXML2_FOUND )
+
+#	NOTE: The following code would be required to statically compile a final
+#         executable.
+#
+# include ( FindZLIB )
+# if ( NOT ZLIB_FOUND )
+#	message ( SEND_ERROR "Could not find the zlib library." )
+# endif ( NOT ZLIB_FOUND )
 
 include ( FindBoost )
 find_package ( Boost COMPONENTS graph )
@@ -72,10 +89,21 @@ set_source_files_properties ( ${CMAKE_SOURCE_DIR}/unisim/kernel/service/service.
 		COMPILE_DEFINITIONS HAVE_UNISIM__KERNEL__SERVICE__CONFIG_HH
 	)
 
+# set ( unisim__kernel_libs
+# 	${OSCI_SYSTEMC_LIBRARIES} )
+# if ( APPLE )
+# 	list ( APPEND unisim__kernel_libs 
+# 		libxml2 )
+# else ( APPLE )
+# 	list ( APPEND unisim__kernel_libs
+# 		${LIBXML2_LIBRARIES} )
+# endif ( APPLE )
+# target_link_libraries ( unisim__kernel
+# 		 ${unisim__kernel_libs} )
 target_link_libraries ( unisim__kernel
 	${OSCI_SYSTEMC_LIBRARIES}
 	${LIBXML2_LIBRARIES}
 	)
-
+		 
 message ( STATUS "Checking unisim::kernel- done" )
 

@@ -207,11 +207,14 @@ add_dependencies ( unisim__component__cxx__processor__arm
 	genisslib
 	)
 	
-target_link_libraries ( unisim__component__cxx__processor__arm
+list ( APPEND link_libraries
 	unisim__kernel
 	unisim__util__endian
 	unisim__util__debug
+	) 
+target_link_libraries ( unisim__component__cxx__processor__arm
+	${link_libraries}
 	)
-
+	
 message ( STATUS "Checking unisim::component::cxx::processor::arm - done" )
 
