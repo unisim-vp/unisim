@@ -1,7 +1,7 @@
 cmake_minimum_required ( VERSION 2.8 )
 
 set ( SIM_VERSION_MAJOR 0 )
-set ( SIM_VERSION_MINOR 2 )
+set ( SIM_VERSION_MINOR 3 )
 set ( SIM_VERSION_PATCH 0 )
 set ( SIM_VERSION 
 	${SIM_VERSION_MAJOR}.${SIM_VERSION_MINOR}.${SIM_VERSION_PATCH} )
@@ -487,7 +487,7 @@ add_dependencies ( check
 enable_testing()
 
 if ( APPLE )
-	set ( CPACK_GENERATOR "Bundle" )
+	set ( CPACK_GENERATOR "Bundle;TGZ;TBZ2" )
 	set ( CPACK_BUNDLE_NAME "UNISIM ArmEmu" )
 	set ( CPACK_BUNDLE_PLIST "${SHARE_DIRECTORY}/macosx/Info.plist" )
 	set ( CPACK_BUNDLE_STARTUP_COMMAND "${SHARE_DIRECTORY}/macosx/armemu-launcher.sh" )
