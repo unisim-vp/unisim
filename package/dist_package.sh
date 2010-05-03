@@ -503,186 +503,185 @@ function BuildPackage
 	esac
 }
 
-if [ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ] || [ -z "$4" ] || [ -z "$5" ] || [ -z "$6" ] || [ -z "$7" ] || [ -z "$8" ] || [ -z "$8" ]; then
+OS="$1"
+shift
+GENISSLIB_VERSION="$1"
+shift
+PPCEMU_VERSION="$1"
+shift
+PPCEMU_SYSTEM_VERSION="$1"
+shift
+EMBEDDED_PPC_G4_BOARD_VERSION="$1"
+shift
+TMS320C3X_VERSION="$1"
+shift
+ARMEMU_VERSION="$1"
+shift
+SYSTEMC="$1"
+shift
+TLM20="$1"
+shift
+
+if [ -z "${OS}" ] || \
+   [ -z "${GENISSLIB_VERSION}" ] || \
+   [ -z "${PPCEMU_VERSION}" ] || \
+   [ -z "${PPCEMU_SYSTEM_VERSION}" ] || \
+   [ -z "${EMBEDDED_PPC_G4_BOARD_VERSION}" ] || \
+   [ -z "${TMS320C3X_VERSION}" ] || \
+   [ -z "${ARMEMU_VERSION}" ] || \
+   [ -z "${SYSTEMC}" ] || \
+   [ -z "${TLM20}" ]; then
 	usage
 	exit -1
 fi
 
-OS="$1"
-GENISSLIB_VERSION="$2"
-PPCEMU_VERSION="$3"
-PPCEMU_SYSTEM_VERSION="$4"
-EMBEDDED_PPC_G4_BOARD_VERSION="$5"
-TMS320C3X_VERSION="$6"
-ARMEMU_VERSION="$7"
-SYSTEMC="$8"
-TLM20="$9"
+BuildPackage \
+	"${OS}" \
+	"unisim-genisslib" \
+	"${GENISSLIB_VERSION}" \
+	"1" \
+	"http://www.unisim-vp.com" \
+	"GPL" \
+	"UNISIM genisslib" \
+	"UNISIM Instruction set simulator generator" \
+	"Development/Tools" \
+	"Development" \
+	"Gilles Mouchard <gilles.mouchard@cea.fr>" \
+	"bin/unisim-genisslib-${GENISSLIB_VERSION}${EXE_SUFFIX}" \
+    "/bin/libgcc_s_dw2-1.dll" \
+	"" \
+	"" \
+	"" \
+	"CXXFLAGS=-O3 -g"
 
-# NAME="$1"
-# VERSION="$1"
-# RELEASE="$1"
-# URL="$1"
-# LICENSE="$1"
-# SUMMARY="$1"
-# DESCRIPTION="$1"
-# GROUP="$1"
-# CATEGORIES="$1"
-# MAINTAINER="$1"
-# FILES=`printf "$1" | sed -e 's/ /\n/g'`
-# SYSTEM_FILES=`printf "$1" | sed -e 's/ /\n/g'`
-# START_ICON="$1"
-# START_PROGRAM="$1"
-# START_PARAMS="$1"
-# BUILD="$1"
-# CONFIGURE="$1"
+BuildPackage \
+	"${OS}" \
+	"unisim-ppcemu" \
+	"${PPCEMU_VERSION}" \
+	"1" \
+	"http://www.unisim-vp.com" \
+	"BSD" \
+	"UNISIM ppcemu" \
+	"UNISIM ppcemu is user level PowerPC simulator with support of ELF32 binaries and Linux system call translation." \
+	"Emulators" \
+	"Development;Emulator;ConsoleOnly" \
+	"Gilles Mouchard <gilles.mouchard@cea.fr>" \
+	"bin/unisim-ppcemu-${PPCEMU_VERSION}${EXE_SUFFIX} \
+	bin/unisim-ppcemu-debug-${PPCEMU_VERSION}${EXE_SUFFIX} \
+	share/unisim-ppcemu-${PPCEMU_VERSION}/AUTHORS \
+	share/unisim-ppcemu-${PPCEMU_VERSION}/COPYING \
+	share/unisim-ppcemu-${PPCEMU_VERSION}/ChangeLog \
+	share/unisim-ppcemu-${PPCEMU_VERSION}/INSTALL \
+	share/unisim-ppcemu-${PPCEMU_VERSION}/NEWS \
+	share/unisim-ppcemu-${PPCEMU_VERSION}/README \
+	share/unisim-ppcemu-${PPCEMU_VERSION}/gdb_powerpc.xml \
+	share/unisim-ppcemu-${PPCEMU_VERSION}/template_default_config.xml \
+	share/unisim-ppcemu-${PPCEMU_VERSION}/unisim.ico" \
+    "/bin/libgcc_s_dw2-1.dll /bin/libxml2-2.dll" \
+	"share/unisim-ppcemu-${PPCEMU_VERSION}/unisim.ico" \
+	"bin/unisim-ppcemu-${PPCEMU_VERSION}${EXE_SUFFIX}" \
+	"-s enable-press-enter-at-exit=true" \
+	"--with-systemc=${SYSTEMC}" \
+	"CXXFLAGS=-O3 -g"
 
-# BuildPackage \
-# 	"${OS}" \
-# 	"unisim-genisslib" \
-# 	"${GENISSLIB_VERSION}" \
-# 	"1" \
-# 	"http://www.unisim-vp.com" \
-# 	"GPL" \
-# 	"UNISIM genisslib" \
-# 	"UNISIM Instruction set simulator generator" \
-# 	"Development/Tools" \
-# 	"Development" \
-# 	"Gilles Mouchard <gilles.mouchard@cea.fr>" \
-# 	"bin/unisim-genisslib-${GENISSLIB_VERSION}${EXE_SUFFIX}" \
-#     "/bin/libgcc_s_dw2-1.dll" \
-# 	"" \
-# 	"" \
-# 	"" \
-# 	"CXXFLAGS=-O3 -g"
-# 
-# BuildPackage \
-# 	"${OS}" \
-# 	"unisim-ppcemu" \
-# 	"${PPCEMU_VERSION}" \
-# 	"1" \
-# 	"http://www.unisim-vp.com" \
-# 	"BSD" \
-# 	"UNISIM ppcemu" \
-# 	"UNISIM ppcemu is user level PowerPC simulator with support of ELF32 binaries and Linux system call translation." \
-# 	"Emulators" \
-# 	"Development;Emulator;ConsoleOnly" \
-# 	"Gilles Mouchard <gilles.mouchard@cea.fr>" \
-# 	"bin/unisim-ppcemu-${PPCEMU_VERSION}${EXE_SUFFIX} \
-# 	bin/unisim-ppcemu-debug-${PPCEMU_VERSION}${EXE_SUFFIX} \
-# 	share/unisim-ppcemu-${PPCEMU_VERSION}/AUTHORS \
-# 	share/unisim-ppcemu-${PPCEMU_VERSION}/COPYING \
-# 	share/unisim-ppcemu-${PPCEMU_VERSION}/ChangeLog \
-# 	share/unisim-ppcemu-${PPCEMU_VERSION}/INSTALL \
-# 	share/unisim-ppcemu-${PPCEMU_VERSION}/NEWS \
-# 	share/unisim-ppcemu-${PPCEMU_VERSION}/README \
-# 	share/unisim-ppcemu-${PPCEMU_VERSION}/gdb_powerpc.xml \
-# 	share/unisim-ppcemu-${PPCEMU_VERSION}/template_default_config.xml \
-# 	share/unisim-ppcemu-${PPCEMU_VERSION}/unisim.ico" \
-#     "/bin/libgcc_s_dw2-1.dll /bin/libxml2-2.dll" \
-# 	"share/unisim-ppcemu-${PPCEMU_VERSION}/unisim.ico" \
-# 	"bin/unisim-ppcemu-${PPCEMU_VERSION}${EXE_SUFFIX}" \
-# 	"-s enable-press-enter-at-exit=true" \
-# 	"--with-systemc=${SYSTEMC}" \
-# 	"CXXFLAGS=-O3 -g"
-# 
-# BuildPackage \
-# 	"${OS}" \
-# 	"unisim-ppcemu-system" \
-# 	"${PPCEMU_SYSTEM_VERSION}" \
-# 	"1" \
-# 	"http://www.unisim-vp.com" \
-# 	"BSD" \
-# 	"UNISIM ppcemu-system" \
-# 	"UNISIM ppcemu-system is a full system simulator of a \"PowerMac G4 PCI\" like machine (MPC7447A/MPC107) with Linux boot support." \
-# 	"Emulators" \
-# 	"Development;Emulator;ConsoleOnly" \
-# 	"Gilles Mouchard <gilles.mouchard@cea.fr>" \
-# 	"bin/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}${EXE_SUFFIX} \
-# 	bin/unisim-ppcemu-system-debug-${PPCEMU_SYSTEM_VERSION}${EXE_SUFFIX} \
-# 	share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/AUTHORS \
-# 	share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/COPYING \
-# 	share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/ChangeLog \
-# 	share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/INSTALL \
-# 	share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/NEWS \
-# 	share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/README \
-# 	share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/gdb_powerpc.xml \
-# 	share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/device_tree_pmac_g4.xml \
-# 	share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/pc_linux_fr_keymap.xml \
-# 	share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/pc_linux_us_keymap.xml \
-# 	share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/pc_windows_keymap.xml \
-# 	share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/vmlinux \
-# 	share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/initrd.img \
-# 	share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/template_default_config.xml \
-# 	share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/unisim.ico" \
-#     "/bin/libgcc_s_dw2-1.dll /bin/libxml2-2.dll /bin/SDL.dll" \
-# 	"share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/unisim.ico" \
-# 	"bin/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}${EXE_SUFFIX}" \
-# 	"-s enable-press-enter-at-exit=true" \
-# 	"--with-systemc=${SYSTEMC}" \
-# 	"CXXFLAGS=-O3 -g"
-# 
-# BuildPackage \
-# 	"${OS}" \
-# 	"unisim-embedded-ppc-g4-board" \
-# 	"${EMBEDDED_PPC_G4_BOARD_VERSION}" \
-# 	"1" \
-# 	"http://www.unisim-vp.com" \
-# 	"BSD" \
-# 	"UNISIM embedded-ppc-g4-board" \
-# 	"UNISIM embedded-ppc-g4-board is a full system simulator of an MPC7447A/MPC107 board with support of ELF32 binaries and targeted for industrial applications." \
-# 	"Emulators" \
-# 	"Development;Emulator;ConsoleOnly" \
-# 	"Gilles Mouchard <gilles.mouchard@cea.fr>" \
-# 	"bin/unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}${EXE_SUFFIX} \
-# 	bin/unisim-embedded-ppc-g4-board-debug-${EMBEDDED_PPC_G4_BOARD_VERSION}${EXE_SUFFIX} \
-# 	bin/unisim-embedded-ppc-g4-board-no-pci-stub-${EMBEDDED_PPC_G4_BOARD_VERSION}${EXE_SUFFIX} \
-# 	bin/unisim-embedded-ppc-g4-board-no-pci-stub-debug-${EMBEDDED_PPC_G4_BOARD_VERSION}${EXE_SUFFIX} \
-# 	share/unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/AUTHORS \
-# 	share/unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/COPYING \
-# 	share/unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/ChangeLog \
-# 	share/unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/INSTALL \
-# 	share/unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/NEWS \
-# 	share/unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/README \
-# 	share/unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/gdb_powerpc.xml \
-# 	share/unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/template_default_config.xml \
-# 	share/unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/unisim.ico" \
-#     "/bin/libgcc_s_dw2-1.dll /bin/libxml2-2.dll" \
-# 	"share/unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/unisim.ico" \
-# 	"bin/unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}${EXE_SUFFIX}" \
-# 	"-s enable-press-enter-at-exit=true" \
-# 	"--with-systemc=${SYSTEMC}" \
-# 	"CXXFLAGS=-O3 -g"
-# 
-# BuildPackage \
-# 	"${OS}" \
-# 	"unisim-tms320c3x" \
-# 	"${TMS320C3X_VERSION}" \
-# 	"1" \
-# 	"http://www.unisim-vp.com" \
-# 	"BSD" \
-# 	"UNISIM tms320c3x" \
-# 	"UNISIM tms320c3x is a TMS320C3X DSP simulator with support of TI COFF binaries, and TI C I/O (RTS run-time)." \
-# 	"Emulators" \
-# 	"Development;Emulator;ConsoleOnly" \
-# 	"Gilles Mouchard <gilles.mouchard@cea.fr>" \
-# 	"bin/unisim-tms320c3x-${TMS320C3X_VERSION}${EXE_SUFFIX} \
-# 	bin/unisim-tms320c3x-debug-${TMS320C3X_VERSION}${EXE_SUFFIX} \
-# 	share/unisim-tms320c3x-${TMS320C3X_VERSION}/AUTHORS \
-# 	share/unisim-tms320c3x-${TMS320C3X_VERSION}/COPYING \
-# 	share/unisim-tms320c3x-${TMS320C3X_VERSION}/ChangeLog \
-# 	share/unisim-tms320c3x-${TMS320C3X_VERSION}/INSTALL \
-# 	share/unisim-tms320c3x-${TMS320C3X_VERSION}/NEWS \
-# 	share/unisim-tms320c3x-${TMS320C3X_VERSION}/README \
-# 	share/unisim-tms320c3x-${TMS320C3X_VERSION}/unisim.ico \
-# 	share/unisim-tms320c3x-${TMS320C3X_VERSION}/template_default_config.xml \
-# 	share/unisim-tms320c3x-${TMS320C3X_VERSION}/fibo.out \
-# 	share/unisim-tms320c3x-${TMS320C3X_VERSION}/c31boot.out \
-# 	share/unisim-tms320c3x-${TMS320C3X_VERSION}/tms320c3x_manual.pdf" \
-#     "/bin/libgcc_s_dw2-1.dll /bin/libxml2-2.dll" \
-# 	"share/unisim-tms320c3x-${TMS320C3X_VERSION}/unisim.ico" \
-# 	"bin/unisim-tms320c3x-${TMS320C3X_VERSION}${EXE_SUFFIX}" \
-# 	"-s enable-press-enter-at-exit=true fibo.out" \
-# 	"CXXFLAGS=-O3 -g"
+BuildPackage \
+	"${OS}" \
+	"unisim-ppcemu-system" \
+	"${PPCEMU_SYSTEM_VERSION}" \
+	"1" \
+	"http://www.unisim-vp.com" \
+	"BSD" \
+	"UNISIM ppcemu-system" \
+	"UNISIM ppcemu-system is a full system simulator of a \"PowerMac G4 PCI\" like machine (MPC7447A/MPC107) with Linux boot support." \
+	"Emulators" \
+	"Development;Emulator;ConsoleOnly" \
+	"Gilles Mouchard <gilles.mouchard@cea.fr>" \
+	"bin/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}${EXE_SUFFIX} \
+	bin/unisim-ppcemu-system-debug-${PPCEMU_SYSTEM_VERSION}${EXE_SUFFIX} \
+	share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/AUTHORS \
+	share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/COPYING \
+	share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/ChangeLog \
+	share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/INSTALL \
+	share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/NEWS \
+	share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/README \
+	share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/gdb_powerpc.xml \
+	share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/device_tree_pmac_g4.xml \
+	share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/pc_linux_fr_keymap.xml \
+	share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/pc_linux_us_keymap.xml \
+	share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/pc_windows_keymap.xml \
+	share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/vmlinux \
+	share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/initrd.img \
+	share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/template_default_config.xml \
+	share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/unisim.ico" \
+    "/bin/libgcc_s_dw2-1.dll /bin/libxml2-2.dll /bin/SDL.dll" \
+	"share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/unisim.ico" \
+	"bin/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}${EXE_SUFFIX}" \
+	"-s enable-press-enter-at-exit=true" \
+	"--with-systemc=${SYSTEMC}" \
+	"CXXFLAGS=-O3 -g"
+
+BuildPackage \
+	"${OS}" \
+	"unisim-embedded-ppc-g4-board" \
+	"${EMBEDDED_PPC_G4_BOARD_VERSION}" \
+	"1" \
+	"http://www.unisim-vp.com" \
+	"BSD" \
+	"UNISIM embedded-ppc-g4-board" \
+	"UNISIM embedded-ppc-g4-board is a full system simulator of an MPC7447A/MPC107 board with support of ELF32 binaries and targeted for industrial applications." \
+	"Emulators" \
+	"Development;Emulator;ConsoleOnly" \
+	"Gilles Mouchard <gilles.mouchard@cea.fr>" \
+	"bin/unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}${EXE_SUFFIX} \
+	bin/unisim-embedded-ppc-g4-board-debug-${EMBEDDED_PPC_G4_BOARD_VERSION}${EXE_SUFFIX} \
+	bin/unisim-embedded-ppc-g4-board-no-pci-stub-${EMBEDDED_PPC_G4_BOARD_VERSION}${EXE_SUFFIX} \
+	bin/unisim-embedded-ppc-g4-board-no-pci-stub-debug-${EMBEDDED_PPC_G4_BOARD_VERSION}${EXE_SUFFIX} \
+	share/unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/AUTHORS \
+	share/unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/COPYING \
+	share/unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/ChangeLog \
+	share/unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/INSTALL \
+	share/unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/NEWS \
+	share/unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/README \
+	share/unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/gdb_powerpc.xml \
+	share/unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/template_default_config.xml \
+	share/unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/unisim.ico" \
+    "/bin/libgcc_s_dw2-1.dll /bin/libxml2-2.dll" \
+	"share/unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/unisim.ico" \
+	"bin/unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}${EXE_SUFFIX}" \
+	"-s enable-press-enter-at-exit=true" \
+	"--with-systemc=${SYSTEMC}" \
+	"CXXFLAGS=-O3 -g"
+
+BuildPackage \
+	"${OS}" \
+	"unisim-tms320c3x" \
+	"${TMS320C3X_VERSION}" \
+	"1" \
+	"http://www.unisim-vp.com" \
+	"BSD" \
+	"UNISIM tms320c3x" \
+	"UNISIM tms320c3x is a TMS320C3X DSP simulator with support of TI COFF binaries, and TI C I/O (RTS run-time)." \
+	"Emulators" \
+	"Development;Emulator;ConsoleOnly" \
+	"Gilles Mouchard <gilles.mouchard@cea.fr>" \
+	"bin/unisim-tms320c3x-${TMS320C3X_VERSION}${EXE_SUFFIX} \
+	bin/unisim-tms320c3x-debug-${TMS320C3X_VERSION}${EXE_SUFFIX} \
+	share/unisim-tms320c3x-${TMS320C3X_VERSION}/AUTHORS \
+	share/unisim-tms320c3x-${TMS320C3X_VERSION}/COPYING \
+	share/unisim-tms320c3x-${TMS320C3X_VERSION}/ChangeLog \
+	share/unisim-tms320c3x-${TMS320C3X_VERSION}/INSTALL \
+	share/unisim-tms320c3x-${TMS320C3X_VERSION}/NEWS \
+	share/unisim-tms320c3x-${TMS320C3X_VERSION}/README \
+	share/unisim-tms320c3x-${TMS320C3X_VERSION}/unisim.ico \
+	share/unisim-tms320c3x-${TMS320C3X_VERSION}/template_default_config.xml \
+	share/unisim-tms320c3x-${TMS320C3X_VERSION}/fibo.out \
+	share/unisim-tms320c3x-${TMS320C3X_VERSION}/c31boot.out \
+	share/unisim-tms320c3x-${TMS320C3X_VERSION}/tms320c3x_manual.pdf" \
+    "/bin/libgcc_s_dw2-1.dll /bin/libxml2-2.dll" \
+	"share/unisim-tms320c3x-${TMS320C3X_VERSION}/unisim.ico" \
+	"bin/unisim-tms320c3x-${TMS320C3X_VERSION}${EXE_SUFFIX}" \
+	"-s enable-press-enter-at-exit=true fibo.out" \
+	"CXXFLAGS=-O3 -g"
 
 BuildPackage \
 	"${OS}" \
@@ -695,7 +694,7 @@ BuildPackage \
 	"UNISIM armemu is a user level ARM simulator with support of ELF32 binaries and Linux system call translation." \
 	"Emulators" \
 	"Development;Emulator;ConsoleOnly" \
-	"Gilles Mouchard <gilles.mouchard@cea.fr>" \
+	"Daniel Gracia Pérez <daniel.gracia-perez@cea.fr>" \
 	"bin/unisim-armemu-${ARMEMU_VERSION}${EXE_SUFFIX} \
 	share/unisim-armemu-${ARMEMU_VERSION}/AUTHORS.txt \
 	share/unisim-armemu-${ARMEMU_VERSION}/COPYING.txt \

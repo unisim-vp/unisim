@@ -30,6 +30,8 @@ UNISIM_PPCEMU_SYSTEM_SOURCE=${WORKING_DIR}/ppcemu_system_source
 UNISIM_EMBEDDED_PPC_G4_BOARD_SOURCE=${WORKING_DIR}/embedded_ppc_g4_board_source
 UNISIM_TMS320C3X_SOURCE=${WORKING_DIR}/tms320c3x
 UNISIM_GENISSLIB_SOURCE=${WORKING_DIR}/genisslib
+UNISIM_ARMEMU_SOURCE=${WORKING_DIR}/armemu_source
+UNISIM_ARMEMU_BUILD=${WORKING_DIR}/armemu_build
 
 # Fetch sources from repository
 #svn --username guest --password "" export https://unisim.org/svn/devel ${UNISIM_REPO} || exit -1
@@ -40,6 +42,7 @@ ${UNISIM_REPO}/package/dist_ppcemu.sh ${GENISSLIB_VERSION} ${PPCEMU_VERSION} ${U
 ${UNISIM_REPO}/package/dist_ppcemu_system.sh ${GENISSLIB_VERSION} ${PPCEMU_SYSTEM_VERSION} ${UNISIM_PPCEMU_SYSTEM_SOURCE} ${UNISIM_REPO} || exit -1
 ${UNISIM_REPO}/package/dist_embedded_ppc_g4_board.sh ${GENISSLIB_VERSION} ${EMBEDDED_PPC_G4_BOARD_VERSION} ${UNISIM_EMBEDDED_PPC_G4_BOARD_SOURCE} ${UNISIM_REPO} || exit -1
 ${UNISIM_REPO}/package/dist_tms320c3x.sh ${GENISSLIB_VERSION} ${TMS320C3X_VERSION} ${UNISIM_TMS320C3X_SOURCE} ${UNISIM_REPO} || exit -1
+${UNISIM_REPO}/package/dist_armemu.sh ${UNISIM_ARMEMU_SOURCE} ${UNISIM_REPO} || exit -1
 
 # Build source tar.bz2 and zip
 cd ${UNISIM_GENISSLIB_SOURCE}
@@ -86,5 +89,14 @@ make dist-zip || exit -1
 mv -f *.tar.gz *.tar.bz2 *.zip ${HERE}
 cd ${HERE}
 rm -rf ${UNISIM_TMS320C3X_SOURCE}
+
+mkdir -p ${UNISIM_ARMEMU_BUILD}
+cd ${UNISIM_ARMEMU_BUILD}
+cmake ${UNISIM_ARMEMU_SOURCE} -Dwith_osci_systemc=${SYSTEMC} -Dwith_osci_tlm2=${TLM20}
+make package_source
+mv -f *.tar.gz *.tar.bz2 *.zip ${HERE}
+cd ${HERE}
+rm -rf ${UNISIM_ARMEMU_BUILD}
+rm -rf ${UNISIM_ARMEMU_SOURCE}
 
 rm -rf ${WORKING_DIR}
