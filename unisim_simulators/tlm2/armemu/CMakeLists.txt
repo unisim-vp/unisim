@@ -27,7 +27,7 @@ message ( "The following python executable `${PYTHON_EXECUTABLE}' will be used
 	another python version please launch cmake with the following option:
 	-DPYTHON_EXECUTABLE=<path to the python interpreter>" )
 
-set ( ARMEMU_EXEC_NAME unisim-armemu )
+set ( ARMEMU_EXEC_NAME unisim-armemu-${SIM_VERSION} )
 set ( ARMEMU_LIB_NAME unisim-armemu )
 set ( ARMEMU_EXEC_TARGET ${ARMEMU_EXEC_NAME}-exe )
 set ( ARMEMU_LIB_TARGET ${ARMEMU_LIB_NAME}-lib )
@@ -211,14 +211,28 @@ set_target_properties ( simulator
 		SOVERSION ${SIM_SOVERSION} )
 set_target_properties ( ${ARMEMU_EXEC_TARGET}
 	PROPERTIES
-		RUNTIME_OUTPUT_NAME ${ARMEMU_EXEC_NAME}
-		VERSION ${SIM_VERSION} ) 
+		RUNTIME_OUTPUT_NAME ${ARMEMU_EXEC_NAME} )
 set_target_properties ( ${ARMEMU_LIB_TARGET}
 	PROPERTIES
 		LIBRARY_OUTPUT_NAME ${ARMEMU_LIB_NAME} 
 		VERSION ${SIM_VERSION}
 		SOVERSION ${SIM_SOVERSION} )
 	
+# if ( APPLE )
+# 	add_executable ( ${ARMEMU_EXEC_TARGET}-apple
+# 		MACOSX_BUNDLE
+# 			${CMAKE_SOURCE_DIR}/main.cc
+# 		)
+# 	target_link_libraries ( ${ARMEMU_EXEC_TARGET}-apple
+# 		simulator
+# 		${armemu__libraries}
+# 		)
+# 	set_target_properties ( ${ARMEMU_EXEC_TARGET}-apple
+# 		PROPERTIES
+# 			RUNTIME_OUTPUT_NAME ${ARMEMU_EXEC_NAME}
+# 			VERSION ${SIM_VERSION} ) 
+# endif ( APPLE )
+
 set ( armemu__deps
 	unisim__kernel
 	unisim__component__tlm2__processor__arm__arm926ejs
@@ -306,13 +320,17 @@ install ( TARGETS ${ARMEMU_EXEC_TARGET} ${ARMEMU_LIB_TARGET}
 	LIBRARY DESTINATION lib
 	ARCHIVE DESTINATION lib
 	)
+# if ( APPLE )
+# 	install ( TARGETS ${ARMEMU_EXEC_TARGET}-apple
+# 		BUNDLE DESTINATION applications )
+# endif ( APPLE )
 install (
 	FILES
-		${CMAKE_SOURCE_DIR}/AUTHORS
-		${CMAKE_SOURCE_DIR}/COPYING
-		${CMAKE_SOURCE_DIR}/INSTALL
-		${CMAKE_SOURCE_DIR}/NEWS
-		${CMAKE_SOURCE_DIR}/README
+		${CMAKE_SOURCE_DIR}/AUTHORS.txt
+		${CMAKE_SOURCE_DIR}/COPYING.txt
+		${CMAKE_SOURCE_DIR}/INSTALL.txt
+		${CMAKE_SOURCE_DIR}/NEWS.txt
+		${CMAKE_SOURCE_DIR}/README.txt
 	DESTINATION
 		${RELATIVE_SHARE_DIRECTORY}
 	)
@@ -381,35 +399,37 @@ add_dependencies ( check
 	
 enable_testing()
 
-INCLUDE(CPack)
-# SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "UNISIM ArmEmu project.")
-# SET(CPACK_PACKAGE_VENDOR "CEA")
-# SET(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/README")
-# SET(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/COPYING")
-# SET(CPACK_PACKAGE_VERSION_MAJOR ${SIM_VERSION_MAJOR})
-# SET(CPACK_PACKAGE_VERSION_MINOR ${SIM_VERSION_MINOR})
-# SET(CPACK_PACKAGE_VERSION_PATCH ${SIM_VERSION_PATCH})
-# SET(CPACK_PACKAGE_INSTALL_DIRECTORY "CMake ${CMake_VERSION_MAJOR}.${CMake_VERSION_MINOR}")
-# IF(WIN32 AND NOT UNIX)
-  # There is a bug in NSI that does not handle full unix paths properly. Make
-  # sure there is at least one set of four (4) backlasshes.
- # SET(CPACK_PACKAGE_ICON "${CMake_SOURCE_DIR}/Utilities/Release\\\\InstallIcon.bmp")
- # SET(CPACK_NSIS_INSTALLED_ICON_NAME "bin\\\\MyExecutable.exe")
- # SET(CPACK_NSIS_DISPLAY_NAME "${CPACK_PACKAGE_INSTALL_DIRECTORY} My Famous Project")
- # SET(CPACK_NSIS_HELP_LINK "http:\\\\\\\\www.my-project-home-page.org")
- # SET(CPACK_NSIS_URL_INFO_ABOUT "http:\\\\\\\\www.my-personal-home-page.com")
- # SET(CPACK_NSIS_CONTACT "me@my-personal-home-page.com")
- # SET(CPACK_NSIS_MODIFY_PATH ON)
-#ELSE(WIN32 AND NOT UNIX)
- # SET(CPACK_STRIP_FILES "bin/MyExecutable")
- # SET(CPACK_SOURCE_STRIP_FILES "")
-# ENDIF(WIN32 AND NOT UNIX)
-# SET(CPACK_PACKAGE_EXECUTABLES "MyExecutable" "My Executable")
-
+if ( APPLE )
+	set ( CPACK_GENERATOR "Bundle" )
+	set ( CPACK_BUNDLE_NAME "unisim-armemu" )
+	set ( CPACK_BUNDLE_PLIST "${CMAKE_SOURCE_DIR}/README.txt" )
+	set ( CPACK_BUNDLE_ICON "${CMAKE_SOURCE_DIR}/share/logo/logo_unisim.icns" )
+endif ( APPLE )
+set ( CPACK_PACKAGE_FILE_NAME "unisim-armemu-${SIM_VERSION}" )
+set ( CPACK_PACKAGE_DESCRIPTION_SUMMARY "UNISIM ArmEmu project." )
+set ( CPACK_PACKAGE_VENDOR "CEA" )
+set ( CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_SOURCE_DIR}/README.txt" )
+set ( CPACK_RESOURCE_FILE_README "${CMAKE_SOURCE_DIR}/README.txt" )
+set ( CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/COPYING.txt" )
 set ( CPACK_PACKAGE_VERSION_MAJOR ${SIM_VERSION_MAJOR} )
 set ( CPACK_PACKAGE_VERSION_MINOR ${SIM_VERSION_MINOR} )
 set ( CPACK_PACKAGE_VERSION_PATCH ${SIM_VERSION_PATCH} )
+set ( CPACK_PACKAGE_INSTALL_DIRECTORY "UNISIM ArmEmu ${SIM_VERSION}" )
+# set ( CPACK_PACKAGE_ICON "${CMAKE_SOURCE_DIR}/share/logo/logo_unisim.icns" )
+IF(WIN32 AND NOT UNIX)
+	# There is a bug in NSI that does not handle full unix paths properly. Make
+	# sure there is at least one set of four (4) backlasshes.
+	SET(CPACK_NSIS_INSTALLED_ICON_NAME "bin\\\\MyExecutable.exe")
+	SET(CPACK_NSIS_DISPLAY_NAME "${CPACK_PACKAGE_INSTALL_DIRECTORY} My Famous Project")
+	SET(CPACK_NSIS_HELP_LINK "http:\\\\\\\\www.my-project-home-page.org")
+	SET(CPACK_NSIS_URL_INFO_ABOUT "http:\\\\\\\\www.my-personal-home-page.com")
+	SET(CPACK_NSIS_CONTACT "me@my-personal-home-page.com")
+	SET(CPACK_NSIS_MODIFY_PATH ON)
+# ELSE(WIN32 AND NOT UNIX)
+# 	SET(CPACK_STRIP_FILES "bin/${ARMEMU_EXEC_NAME}")
+	# SET(CPACK_SOURCE_STRIP_FILES "")
+ENDIF(WIN32 AND NOT UNIX)
+SET(CPACK_PACKAGE_EXECUTABLES "${ARMEMU_EXEC_NAME}" "${ARMEMU_EXEC_NAME}")
 set ( CPACK_SOURCE_GENERATOR "TBZ2;TGZ;ZIP" )
 set ( CPACK_SOURCE_PACKAGE_FILE_NAME "unisim-armemu-${SIM_VERSION}" )
-# set ( CPACK_GENERATOR "TBZ2" )
-include ( CPack )
+INCLUDE(CPack)

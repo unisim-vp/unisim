@@ -12,13 +12,19 @@
 			<file>share/test/src/main.c</file>
 			<file>share/test/src/CMakeLists.txt</file>
 			<file>share/test/src/toolchain-armv5l.cmake</file>
+			<file>share/logo/logo_unisim.icns</file>
+			<file>share/logo/logo_unisim.png</file>
+			<file>share/logo/logo_unisim256.png</file>
+			<file>share/logo/logo_unisim128.png</file>
+			<file>share/logo/logo_unisim32.png</file>
+			<file>share/logo/logo_unisim16.png</file>
 			<file>python_lib.cc</file>
 			<file>setup.py.in</file>
-			<file>AUTHORS</file>
-			<file>COPYING</file>
-			<file>INSTALL</file>
-			<file>NEWS</file>
-			<file>README</file>
+			<file>AUTHORS.txt</file>
+			<file>COPYING.txt</file>
+			<file>INSTALL.txt</file>
+			<file>NEWS.txt</file>
+			<file>README.txt</file>
 		</files>
 		<depends>
 			<dep>unisim</dep>
