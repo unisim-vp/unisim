@@ -18,6 +18,9 @@
 			<file>share/logo/logo_unisim128.png</file>
 			<file>share/logo/logo_unisim32.png</file>
 			<file>share/logo/logo_unisim16.png</file>
+			<file>share/macosx/armemu-launcher.scpt</file>
+			<file>share/macosx/armemu-launcher.sh.in</file>
+			<file>share/macosx/Info.plist</file>
 			<file>python_lib.cc</file>
 			<file>setup.py.in</file>
 			<file>AUTHORS.txt</file>

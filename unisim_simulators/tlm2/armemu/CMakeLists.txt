@@ -85,12 +85,40 @@ else ( UNISIM__SERVICE__POWER__SUPPORT )
 	set ( SIM_POWER_ESTIMATOR_SUPPORT FALSE )
 endif ( UNISIM__SERVICE__POWER__SUPPORT )
 
+add_custom_target ( armemu__share_license
+	ALL
+	COMMAND
+		${CMAKE_COMMAND} -E make_directory ${SHARE_DIRECTORY}
+	COMMAND
+		${CMAKE_COMMAND} -E copy_if_different
+			${CMAKE_SOURCE_DIR}/AUTHORS.txt
+			${SHARE_DIRECTORY}/AUTHORS.txt
+	COMMAND
+		${CMAKE_COMMAND} -E copy_if_different
+			${CMAKE_SOURCE_DIR}/COPYING.txt
+			${SHARE_DIRECTORY}/COPYING.txt
+	COMMAND
+		${CMAKE_COMMAND} -E copy_if_different
+			${CMAKE_SOURCE_DIR}/INSTALL.txt
+			${SHARE_DIRECTORY}/INSTALL.txt
+	COMMAND
+		${CMAKE_COMMAND} -E copy_if_different
+			${CMAKE_SOURCE_DIR}/NEWS.txt
+			${SHARE_DIRECTORY}/NEWS.txt
+	COMMAND
+		${CMAKE_COMMAND} -E copy_if_different
+			${CMAKE_SOURCE_DIR}/README.txt
+			${SHARE_DIRECTORY}/README.txt
+	COMMENT
+		"Copying license files."
+	)
+
 add_custom_target ( armemu__share_gdb
 	ALL
 	COMMAND
 		${CMAKE_COMMAND} -E make_directory ${SHARE_DIRECTORY}/gdb_server
 	COMMAND
-		${CMAKE_COMMAND} -E create_symlink
+		${CMAKE_COMMAND} -E copy_if_different
 			${CMAKE_SOURCE_DIR}/unisim/service/debug/gdb_server/gdb_armv5l.xml
 			${SHARE_DIRECTORY}/gdb_server/gdb_armv5l.xml
 	COMMENT
@@ -106,20 +134,73 @@ add_custom_target ( armemu__share_test
 	COMMAND
 		${CMAKE_COMMAND} -E make_directory ${SHARE_DIRECTORY}/test/install
 	COMMAND
-		${CMAKE_COMMAND} -E create_symlink
+		${CMAKE_COMMAND} -E copy_if_different
 			${CMAKE_SOURCE_DIR}/share/test/src/main.c
 			${SHARE_DIRECTORY}/test/src/main.c
 	COMMAND
-		${CMAKE_COMMAND} -E create_symlink
+		${CMAKE_COMMAND} -E copy_if_different
 			${CMAKE_SOURCE_DIR}/share/test/src/CMakeLists.txt
 			${SHARE_DIRECTORY}/test/src/CMakeLists.txt
 	COMMAND
-		${CMAKE_COMMAND} -E create_symlink 
+		${CMAKE_COMMAND} -E copy_if_different
 			${CMAKE_SOURCE_DIR}/share/test/src/toolchain-armv5l.cmake 
 			${SHARE_DIRECTORY}/test/src/toolchain-armv5l.cmake
 	COMMENT
 		"Setting test program source files"
 	)
+
+add_custom_target ( armemu__share_logo
+	ALL
+	COMMAND
+		${CMAKE_COMMAND} -E make_directory ${SHARE_DIRECTORY}/logo
+	COMMAND
+		${CMAKE_COMMAND} -E copy_if_different
+			${CMAKE_SOURCE_DIR}/share/logo/logo_unisim.icns
+			${SHARE_DIRECTORY}/logo/logo_unisim.icns
+	COMMAND
+		${CMAKE_COMMAND} -E copy_if_different
+			${CMAKE_SOURCE_DIR}/share/logo/logo_unisim.png
+			${SHARE_DIRECTORY}/logo/logo_unisim.png
+	COMMAND
+		${CMAKE_COMMAND} -E copy_if_different
+			${CMAKE_SOURCE_DIR}/share/logo/logo_unisim16.png
+			${SHARE_DIRECTORY}/logo/logo_unisim16.png
+	COMMAND
+		${CMAKE_COMMAND} -E copy_if_different
+			${CMAKE_SOURCE_DIR}/share/logo/logo_unisim32.png
+			${SHARE_DIRECTORY}/logo/logo_unisim32.png
+	COMMAND
+		${CMAKE_COMMAND} -E copy_if_different
+			${CMAKE_SOURCE_DIR}/share/logo/logo_unisim128.png
+			${SHARE_DIRECTORY}/logo/logo_unisim128.png
+	COMMAND
+		${CMAKE_COMMAND} -E copy_if_different
+			${CMAKE_SOURCE_DIR}/share/logo/logo_unisim256.png
+			${SHARE_DIRECTORY}/logo/logo_unisim256.png
+	COMMENT
+		"Copying icon files"
+	)
+			
+if ( APPLE )
+	configure_file ( 
+		${CMAKE_SOURCE_DIR}/share/macosx/armemu-launcher.sh.in
+		${SHARE_DIRECTORY}/macosx/armemu-launcher.sh )
+	add_custom_target ( armemu__share_macosx
+		ALL
+		COMMAND
+			${CMAKE_COMMAND} -E make_directory ${SHARE_DIRECTORY}/macosx
+		COMMAND
+			${CMAKE_COMMAND} -E copy_if_different
+				${CMAKE_SOURCE_DIR}/share/macosx/Info.plist
+				${SHARE_DIRECTORY}/macosx/Info.plist
+		COMMAND
+			${CMAKE_COMMAND} -E copy_if_different
+				${CMAKE_SOURCE_DIR}/share/macosx/armemu-launcher.scpt
+				${SHARE_DIRECTORY}/macosx/armemu-launcher.scpt
+		COMMENT
+			"Setting MacOSX application files."
+		)
+endif ( APPLE )
 
 set ( simulator__sources
 	${CMAKE_SOURCE_DIR}/simulator.cc
@@ -218,21 +299,6 @@ set_target_properties ( ${ARMEMU_LIB_TARGET}
 		VERSION ${SIM_VERSION}
 		SOVERSION ${SIM_SOVERSION} )
 	
-# if ( APPLE )
-# 	add_executable ( ${ARMEMU_EXEC_TARGET}-apple
-# 		MACOSX_BUNDLE
-# 			${CMAKE_SOURCE_DIR}/main.cc
-# 		)
-# 	target_link_libraries ( ${ARMEMU_EXEC_TARGET}-apple
-# 		simulator
-# 		${armemu__libraries}
-# 		)
-# 	set_target_properties ( ${ARMEMU_EXEC_TARGET}-apple
-# 		PROPERTIES
-# 			RUNTIME_OUTPUT_NAME ${ARMEMU_EXEC_NAME}
-# 			VERSION ${SIM_VERSION} ) 
-# endif ( APPLE )
-
 set ( armemu__deps
 	unisim__kernel
 	unisim__component__tlm2__processor__arm__arm926ejs
@@ -326,11 +392,11 @@ install ( TARGETS ${ARMEMU_EXEC_TARGET} ${ARMEMU_LIB_TARGET}
 # endif ( APPLE )
 install (
 	FILES
-		${CMAKE_SOURCE_DIR}/AUTHORS.txt
-		${CMAKE_SOURCE_DIR}/COPYING.txt
-		${CMAKE_SOURCE_DIR}/INSTALL.txt
-		${CMAKE_SOURCE_DIR}/NEWS.txt
-		${CMAKE_SOURCE_DIR}/README.txt
+		${SHARE_DIRECTORY}/AUTHORS.txt
+		${SHARE_DIRECTORY}/COPYING.txt
+		${SHARE_DIRECTORY}/INSTALL.txt
+		${SHARE_DIRECTORY}/NEWS.txt
+		${SHARE_DIRECTORY}/README.txt
 	DESTINATION
 		${RELATIVE_SHARE_DIRECTORY}
 	)
@@ -348,9 +414,9 @@ install (
 	)
 install ( 
 	FILES 
-		${CMAKE_SOURCE_DIR}/share/test/src/main.c
-		${CMAKE_SOURCE_DIR}/share/test/src/CMakeLists.txt
-		${CMAKE_SOURCE_DIR}/share/test/src/toolchain-armv5l.cmake
+		${SHARE_DIRECTORY}/test/src/main.c
+		${SHARE_DIRECTORY}/test/src/CMakeLists.txt
+		${SHARE_DIRECTORY}/test/src/toolchain-armv5l.cmake
 	DESTINATION
 		${RELATIVE_SHARE_DIRECTORY}/test/src
 	)
@@ -361,7 +427,28 @@ install (
 	DESTINATION
 		${RELATIVE_SHARE_DIRECTORY}/test/install
 	OPTIONAL
-	)	
+	)
+install (
+	FILES
+		${SHARE_DIRECTORY}/logo/logo_unisim.icns
+		${SHARE_DIRECTORY}/logo/logo_unisim.png
+		${SHARE_DIRECTORY}/logo/logo_unisim256.png
+		${SHARE_DIRECTORY}/logo/logo_unisim128.png
+		${SHARE_DIRECTORY}/logo/logo_unisim32.png
+		${SHARE_DIRECTORY}/logo/logo_unisim16.png
+	DESTINATION
+		${RELATIVE_SHARE_DIRECTORY}/logo
+	)
+if ( APPLE )	
+	install (
+		FILES
+			${SHARE_DIRECTORY}/macosx/Info.plist
+			${SHARE_DIRECTORY}/macosx/armemu-launcher.scpt
+			${SHARE_DIRECTORY}/macosx/armemu-launcher.sh
+		DESTINATION
+			${RELATIVE_SHARE_DIRECTORY}/macosx
+		)
+endif ( APPLE )
 	
 add_custom_target ( armemu__resources
 	ALL
@@ -401,9 +488,10 @@ enable_testing()
 
 if ( APPLE )
 	set ( CPACK_GENERATOR "Bundle" )
-	set ( CPACK_BUNDLE_NAME "unisim-armemu" )
-	set ( CPACK_BUNDLE_PLIST "${CMAKE_SOURCE_DIR}/README.txt" )
-	set ( CPACK_BUNDLE_ICON "${CMAKE_SOURCE_DIR}/share/logo/logo_unisim.icns" )
+	set ( CPACK_BUNDLE_NAME "UNISIM ArmEmu" )
+	set ( CPACK_BUNDLE_PLIST "${SHARE_DIRECTORY}/macosx/Info.plist" )
+	set ( CPACK_BUNDLE_STARTUP_COMMAND "${SHARE_DIRECTORY}/macosx/armemu-launcher.sh" )
+	set ( CPACK_BUNDLE_ICON "${SHARE_DIRECTORY}/logo/logo_unisim.icns" )
 endif ( APPLE )
 set ( CPACK_PACKAGE_FILE_NAME "unisim-armemu-${SIM_VERSION}" )
 set ( CPACK_PACKAGE_DESCRIPTION_SUMMARY "UNISIM ArmEmu project." )
