@@ -524,6 +524,20 @@ InstallBinArchive cmake-2.8.1-win32-x86.zip http://www.cmake.org/files/v2.8/cmak
 cp -rf ${INSTALL_DIR}/cmake-2.8.1-win32-x86/* ${INSTALL_DIR}/.
 rm -rf ${INSTALL_DIR}/cmake-2.8.1-win32-x86
 
+# Install python 3.1.2
+# if [ ! -e ${TMP_DIR}/python-3.1.2-mingw32.tar.bz2 ]; then
+# 	cd ${TMP_DIR}
+# 	printf "Downloading python 3.1.2"
+# 	wget http://www.python.org/ftp/python/3.1.2/python-3.1.2.msi
+# 	wine msiexec.exe /qn /i ${TMP_DIR}/python-3.1.2.msi TARGETDIR=${INSTALL_DIR}/python3.1.2
+# 	cd ~/.wine/drive_c
+# 	tar jcvf ${TMP_DIR}/python-3.1.2-mingw32.tar.bz2 python-3.1.2
+# 	wine msiexec.exe /qn /x ${TMP_DIR}/python-3.1.2.msi TARGETDIR=${INSTALL_DIR}/python3.1.2
+# 	rm -rf ${INSTALL_DIR}/python3.1.2
+# 	mv -f python-3.1.2-mingw32.tar.bz2 ${TMP_DIR}/python-3.1.2-mingw32.tar.bz2
+# fi
+
+
 # Package everything into a single .EXE installer
 Package mingw32-unisim-pack msys.bat m.ico "--norxvt"
 

@@ -235,7 +235,11 @@ namespace arm926ejs {
 		else
 		{
 			// current replacement policy is random
+#ifdef WIN32
+			m_replacement_history[set] = rand() % m_associativity_;
+#else
 			m_replacement_history[set] = random() % m_associativity_;
+#endif
 		}
 		return m_replacement_history[set];
 	}
