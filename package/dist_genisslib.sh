@@ -2,18 +2,19 @@
 function Usage
 {
 	echo "Usage:"
-	echo "  $0 <genisslib version> <destination directory> <unisim repository>"
+	echo "  $0 <destination directory> <unisim repository>"
 }
 
-if [ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ]; then
+if [ -z "$1" ] || [ -z "$2" ]; then
 	Usage
 	exit -1
 fi
 
 HERE=`pwd`
-GENISSLIB_VERSION=$1
-DEST_DIR=$2
-UNISIM_TOOLS_DIR=$3/unisim_tools
+DEST_DIR=$1
+UNISIM_TOOLS_DIR=$2/unisim_tools
+
+GENISSLIB_VERSION=$(cat ${UNISIM_TOOLS_DIR}/genisslib/VERSION)
 
 UNISIM_TOOLS_GENISSLIB_HEADER_FILES="\
 action.hh \
