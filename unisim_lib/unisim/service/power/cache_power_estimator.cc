@@ -83,24 +83,30 @@ template <> Variable<unisim::service::power::CachePowerEstimator::AccessMode>::o
 	return string("?");
 }
 
-template <> VariableBase& Variable<unisim::service::power::CachePowerEstimator::AccessMode>::operator = (bool value) { return *this;}
-
 template <> VariableBase& Variable<unisim::service::power::CachePowerEstimator::AccessMode>::operator = (unsigned long long value)
 {
-	switch(value)
+	if(IsMutable())
 	{
-		case unisim::service::power::CachePowerEstimator::ACCESS_MODE_SEQUENTIAL:
-			*storage = unisim::service::power::CachePowerEstimator::ACCESS_MODE_SEQUENTIAL;
-			break;
-		case unisim::service::power::CachePowerEstimator::ACCESS_MODE_FAST:
-			*storage = unisim::service::power::CachePowerEstimator::ACCESS_MODE_FAST;
-			break;
-		case unisim::service::power::CachePowerEstimator::ACCESS_MODE_NORMAL:
-		default:
-			*storage = unisim::service::power::CachePowerEstimator::ACCESS_MODE_NORMAL;
-			break;
+		switch(value)
+		{
+			case unisim::service::power::CachePowerEstimator::ACCESS_MODE_SEQUENTIAL:
+				*storage = unisim::service::power::CachePowerEstimator::ACCESS_MODE_SEQUENTIAL;
+				break;
+			case unisim::service::power::CachePowerEstimator::ACCESS_MODE_FAST:
+				*storage = unisim::service::power::CachePowerEstimator::ACCESS_MODE_FAST;
+				break;
+			case unisim::service::power::CachePowerEstimator::ACCESS_MODE_NORMAL:
+			default:
+				*storage = unisim::service::power::CachePowerEstimator::ACCESS_MODE_NORMAL;
+				break;
+		}
 	}
 	return *this;
+}
+
+template <> VariableBase& Variable<unisim::service::power::CachePowerEstimator::AccessMode>::operator = (bool value)
+{
+	return (*this) = (unsigned long long)(value ? 1 : 0);
 }
 
 template <> VariableBase& Variable<unisim::service::power::CachePowerEstimator::AccessMode>::operator = (long long value)
@@ -115,10 +121,12 @@ template <> VariableBase& Variable<unisim::service::power::CachePowerEstimator::
 
 template <> VariableBase& Variable<unisim::service::power::CachePowerEstimator::AccessMode>::operator = (const char *value)
 {
-	if(strcmp(value, "normal") == 0) *storage = unisim::service::power::CachePowerEstimator::ACCESS_MODE_NORMAL; else
-	if(strcmp(value, "sequential") == 0) *storage = unisim::service::power::CachePowerEstimator::ACCESS_MODE_SEQUENTIAL; else
-	if(strcmp(value, "fast") == 0) *storage = unisim::service::power::CachePowerEstimator::ACCESS_MODE_FAST;
-	
+	if(IsMutable())
+	{
+		if(strcmp(value, "normal") == 0) *storage = unisim::service::power::CachePowerEstimator::ACCESS_MODE_NORMAL; else
+		if(strcmp(value, "sequential") == 0) *storage = unisim::service::power::CachePowerEstimator::ACCESS_MODE_SEQUENTIAL; else
+		if(strcmp(value, "fast") == 0) *storage = unisim::service::power::CachePowerEstimator::ACCESS_MODE_FAST;
+	}
 	return *this;
 }
 
@@ -439,7 +447,7 @@ bool CachePowerEstimator::Setup()
 	SetPowerMode(min_cycle_time, default_voltage);
 	return true;
 #else
-	logger << DebugError << "Cacti 4.2 is not available." << DebugError;
+	logger << DebugError << "Cacti 4.2 is not available." << EndDebugError;
 	return false;
 #endif
 }

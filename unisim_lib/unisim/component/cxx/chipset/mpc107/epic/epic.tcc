@@ -1179,7 +1179,7 @@ GetVPRFromIRQMask(uint32_t mask) {
 		if(unlikely(verbose))
 			logger << DebugError << LOCATION
 				<< "Unknown mask received (mask = 0x" << std::hex << mask << std::dec
-				<< std::endl << DebugError;
+				<< std::endl << EndDebugError;
 		StopSimulation();
 	}
 	return vpr;

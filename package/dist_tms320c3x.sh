@@ -2,22 +2,23 @@
 function Usage
 {
 	echo "Usage:"
-	echo "  $0 <genisslib version> <tms320c3x version> <destination directory> <unisim repository>"
+	echo "  $0 <destination directory> <unisim repository>"
 }
 
-if [ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ] || [ -z "$4" ]; then
+if [ -z "$1" ] || [ -z "$2" ]; then
 	Usage
 	exit -1
 fi
 
 HERE=`pwd`
-TMS320C3X_VERSION=$2
-GENISSLIB_VERSION=$1-tms320c3x-${TMS320C3X_VERSION}
-DEST_DIR=$3
-UNISIM_TOOLS_DIR=$4/unisim_tools
-UNISIM_LIB_DIR=$4/unisim_lib
-UNISIM_SIMULATORS_DIR=$4/unisim_simulators/cxx/tms320c3x
-UNISIM_DOCS_DIR=$4/unisim_docs
+DEST_DIR=$1
+UNISIM_TOOLS_DIR=$2/unisim_tools
+UNISIM_LIB_DIR=$2/unisim_lib
+UNISIM_SIMULATORS_DIR=$2/unisim_simulators/cxx/tms320c3x
+UNISIM_DOCS_DIR=$2/unisim_docs
+
+TMS320C3X_VERSION=$(cat ${UNISIM_SIMULATORS_DIR}/VERSION)
+GENISSLIB_VERSION=$(cat ${UNISIM_TOOLS_DIR}/genisslib/VERSION)-tms320c3x-${TMS320C3X_VERSION}
 
 DOCS_VERSION=lastest-tms320c3x-${TMS320C3X_VERSION}
 

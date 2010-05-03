@@ -184,12 +184,12 @@ HasVariable(const Object *obj,
 {
 	list<VariableBase *> var_list;
 	list<VariableBase *>::iterator var_iter;
-	var_list = obj->GetVariables();
+	obj->GetVariables(var_list);
 	for(var_iter = var_list.begin();
 			var_iter != var_list.end();
 			var_iter++) {
-		if (type == VariableBase::VAR_VOID ||
-				type == (*var_iter)->GetType())
+		if ((*var_iter)->IsSerializable() && (type == VariableBase::VAR_VOID ||
+				type == (*var_iter)->GetType()))
 			return true;
 	}
 	
@@ -252,7 +252,7 @@ XmlfyVariables(xmlTextWriterPtr writer,
 	// dump object variables
 	list<VariableBase *> var_list;
 	list<VariableBase *>::iterator var_iter;
-	var_list = obj->GetVariables();
+	obj->GetVariables(var_list);
 	for(var_iter = var_list.begin();
 			var_iter != var_list.end();
 			var_iter++) {

@@ -188,7 +188,7 @@ Simulator::Simulator(int argc, char **argv)
 	//  - TI C I/O
 	ti_c_io = new TI_C_IO("ti-c-io");
 
-	VariableBase *program = GetVariable("cmd-args[0]");
+	VariableBase *program = FindVariable("cmd-args[0]");
 	(*loader)["filename"] = *program;
 
 	//=========================================================================
@@ -306,9 +306,9 @@ void Simulator::Run()
 	DumpStatistics(cerr);
 	cerr << endl;
 
-	VariableBase *stat_instruction_counter = GetVariable("cpu.instruction-counter");
-	VariableBase *stat_insn_cache_hits = GetVariable("cpu.insn-cache-hits");
-	VariableBase *stat_insn_cache_misses = GetVariable("cpu.insn-cache-misses");
+	VariableBase *stat_instruction_counter = FindVariable("cpu.instruction-counter");
+	VariableBase *stat_insn_cache_hits = FindVariable("cpu.insn-cache-hits");
+	VariableBase *stat_insn_cache_misses = FindVariable("cpu.insn-cache-misses");
 	cerr << "simulation time: " << spent_time << " seconds" << endl;
 	cerr << "simulated instructions : " << (uint64_t)(*stat_instruction_counter) << " instructions" << endl;
 	cerr << "host simulation speed: " << ((double)(*stat_instruction_counter) / spent_time / 1000000.0) << " MIPS" << endl;

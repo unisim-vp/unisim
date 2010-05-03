@@ -2,21 +2,22 @@
 function Usage
 {
 	echo "Usage:"
-	echo "  $0 <genisslib version> <ppcemu version> <destination directory> <unisim repository>"
+	echo "  $0 <destination directory> <unisim repository>"
 }
 
-if [ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ] || [ -z "$4" ]; then
+if [ -z "$1" ] || [ -z "$2" ]; then
 	Usage
 	exit -1
 fi
 
 HERE=`pwd`
-PPCEMU_VERSION=$2
-GENISSLIB_VERSION=$1-ppcemu-${PPCEMU_VERSION}
-DEST_DIR=$3
-UNISIM_TOOLS_DIR=$4/unisim_tools
-UNISIM_LIB_DIR=$4/unisim_lib
-UNISIM_SIMULATORS_DIR=$4/unisim_simulators/tlm/ppcemu
+DEST_DIR=$1
+UNISIM_TOOLS_DIR=$2/unisim_tools
+UNISIM_LIB_DIR=$2/unisim_lib
+UNISIM_SIMULATORS_DIR=$2/unisim_simulators/tlm/ppcemu
+
+PPCEMU_VERSION=$(cat ${UNISIM_SIMULATORS_DIR}/VERSION)
+GENISSLIB_VERSION=$(cat ${UNISIM_TOOLS_DIR}/genisslib/VERSION)-ppcemu-${PPCEMU_VERSION}
 
 UNISIM_TOOLS_GENISSLIB_HEADER_FILES="\
 action.hh \

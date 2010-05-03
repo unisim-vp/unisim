@@ -182,6 +182,13 @@ public:
 	virtual unsigned int GetLength() const;
 	
 	virtual VariableBase& operator = (const VariableBase& variable);
+	
+	bool IsMutable() const;
+	bool IsVisible() const;
+	bool IsSerializable() const;
+	void SetMutable(bool is_mutable);
+	void SetVisible(bool is_visible);
+	void SetSerializable(bool is_serializable);
 private:
 	string name;
 	string var_name;
@@ -191,6 +198,9 @@ private:
 	vector<string> enumerated_values;
 	Type type;
 	Format fmt;
+	bool is_mutable;
+	bool is_visible;
+	bool is_serializable;
 };
 
 //=============================================================================
@@ -207,12 +217,18 @@ public:
 	virtual ~Simulator();
 	bool Setup();
 
-	VariableBase *GetVariable(const char *name, VariableBase::Type type = VariableBase::VAR_VOID);
-	VariableBase *GetArray(const char *name);
-	VariableBase *GetParameter(const char *name);
-	VariableBase *GetRegister(const char *name);
-	VariableBase *GetStatistic(const char *name);
-	VariableBase *GetFormula(const char *name);
+	const VariableBase *FindVariable(const char *name, VariableBase::Type type = VariableBase::VAR_VOID) const;
+	VariableBase *FindVariable(const char *name, VariableBase::Type type = VariableBase::VAR_VOID);
+	const VariableBase *FindArray(const char *name) const;
+	VariableBase *FindArray(const char *name);
+	const VariableBase *FindParameter(const char *name) const;
+	VariableBase *FindParameter(const char *name);
+	const VariableBase *FindRegister(const char *name) const;
+	VariableBase *FindRegister(const char *name);
+	const VariableBase *FindStatistic(const char *name) const;
+	VariableBase *FindStatistic(const char *name);
+	const VariableBase *FindFormula(const char *name) const;
+	VariableBase *FindFormula(const char *name);
 
 	void GetVariables(list<VariableBase *>& lst, VariableBase::Type type = VariableBase::VAR_VOID);
 	void GetArrays(list<VariableBase *>& lst);
@@ -341,6 +357,8 @@ private:
 	ParameterArray<string> *param_cmd_args;
 	
 public:
+	template <typename T> T GetVariable(const char *variable_name, const T *t = 0) const;
+	
 	void SetVariable(const char *variable_name, const char *variable_value);
 	void SetVariable(const char *variable_name, bool variable_value);
 	void SetVariable(const char *variable_name, char variable_value);
@@ -498,6 +516,7 @@ public:
 	void SetFormat(Format fmt);
 	virtual unsigned int GetLength() const;
 	virtual VariableBase& operator = (const VariableBase& variable);
+	virtual const char *GetDataTypeName() const;
 
 private:
 	vector<VariableBase *> variables;
@@ -582,6 +601,12 @@ void VariableArray<TYPE>::SetFormat(Format fmt)
 }
 
 template <class TYPE>
+const char *VariableArray<TYPE>::GetDataTypeName() const
+{
+	return "array";
+}
+
+template <class TYPE>
 class ParameterArray : public VariableArray<TYPE>
 {
 public:
@@ -628,7 +653,7 @@ public:
 	const list<ServiceImportBase *>& GetServiceImports() const;
 	const list<ServiceExportBase *>& GetServiceExports() const;
 	const list<Object *>& GetLeafs() const;
-	const list<VariableBase *>& GetVariables() const;
+	void GetVariables(list<VariableBase *>& lst) const;
 	Object *GetParent() const;
 	void Disconnect();
 	VariableBase& operator [] (const char *name);

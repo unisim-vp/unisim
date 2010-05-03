@@ -89,55 +89,58 @@ Variable<sc_time>::operator string () const
 template <> 
 VariableBase& Variable<sc_time>::operator = (bool value)
 { 
-	*storage = sc_time(value ? 1.0 : 0.0, SC_SEC);
+	if(IsMutable()) *storage = sc_time(value ? 1.0 : 0.0, SC_SEC);
 	return *this;
 }
 
 template <> 
 VariableBase& Variable<sc_time>::operator = (long long value)
 {
-	*storage = sc_time((double) value, SC_SEC);
+	if(IsMutable()) *storage = sc_time((double) value, SC_SEC);
 	return *this;
 }
 
 template <> 
 VariableBase& Variable<sc_time>::operator = (unsigned long long value)
 {
-	*storage = sc_time((double) value, SC_SEC);
+	if(IsMutable()) *storage = sc_time((double) value, SC_SEC);
 	return *this;
 }
 
 template <> 
 VariableBase& Variable<sc_time>::operator = (double value)
 {
-	*storage = sc_time(value, SC_SEC);
+	if(IsMutable()) *storage = sc_time(value, SC_SEC);
 	return *this;
 }
 
 template <> 
 VariableBase& Variable<sc_time>::operator = (const char *value)
 {
-	double v = 0.0;
-	sc_time_unit unit = SC_SEC;
-	
-	char *end;
-	
-	v = strtod(value, &end);
-	
-	if(end != value)
+	if(IsMutable())
 	{
-		// skip spaces
-		while(*end == ' ') end++;
+		double v = 0.0;
+		sc_time_unit unit = SC_SEC;
 		
-		if(strncmp(end, "fs", 2) == 0) unit = SC_FS; else
-		if(strncmp(end, "ps", 2) == 0) unit = SC_PS; else
-		if(strncmp(end, "ns", 2) == 0) unit = SC_NS; else
-		if(strncmp(end, "us", 2) == 0) unit = SC_US; else
-		if(strncmp(end, "ms", 2) == 0) unit = SC_MS; else
-		if(strncmp(end, "s", 1) == 0) unit = SC_SEC;
+		char *end;
+		
+		v = strtod(value, &end);
+		
+		if(end != value)
+		{
+			// skip spaces
+			while(*end == ' ') end++;
+			
+			if(strncmp(end, "fs", 2) == 0) unit = SC_FS; else
+			if(strncmp(end, "ps", 2) == 0) unit = SC_PS; else
+			if(strncmp(end, "ns", 2) == 0) unit = SC_NS; else
+			if(strncmp(end, "us", 2) == 0) unit = SC_US; else
+			if(strncmp(end, "ms", 2) == 0) unit = SC_MS; else
+			if(strncmp(end, "s", 1) == 0) unit = SC_SEC;
+		}
+		
+		*storage = sc_time(v, unit);
 	}
-	
-	*storage = sc_time(v, unit);
 	return *this; 
 }
 

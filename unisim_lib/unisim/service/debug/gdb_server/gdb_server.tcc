@@ -164,7 +164,7 @@ bool GDBServer<ADDRESS>::Setup()
 	output_buffer_size = 0;
 
 	unisim::util::xml::Parser *parser = new unisim::util::xml::Parser();
-	unisim::util::xml::Node *root_node = parser->Parse(architecture_description_filename);
+	unisim::util::xml::Node *root_node = parser->Parse(Object::GetSimulator()->SearchSharedDataFile(architecture_description_filename.c_str()));
 
 	delete parser;
 
@@ -830,7 +830,7 @@ typename DebugControl<ADDRESS>::DebugCommand GDBServer<ADDRESS>::FetchDebugComma
 //								variable_name += ch;
 //							} while(pos < len);
 //
-//							variable = unisim::kernel::service::ServiceManager::GetVariable(variable_name.c_str());
+//							variable = unisim::kernel::service::ServiceManager::FindVariable(variable_name.c_str());
 //							if(variable == &unisim::kernel::service::ServiceManager::void_variable)
 //							{
 //								string msg("unknown variable\n");

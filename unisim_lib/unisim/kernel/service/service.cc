@@ -124,7 +124,10 @@ VariableBase::VariableBase(const char *_name, Object *_owner, Type _type, const 
 	description(_description ? _description : ""),
 	enumerated_values(),
 	type(_type),
-	fmt(FMT_DEFAULT)
+	fmt(FMT_DEFAULT),
+	is_mutable(true),
+	is_visible(true),
+	is_serializable(true)
 {
 	if(_owner)
 	{
@@ -247,6 +250,36 @@ bool VariableBase::IsVoid() const
 	return this == Simulator::simulator->void_variable;
 }
 
+bool VariableBase::IsMutable() const
+{
+	return is_mutable;
+}
+
+bool VariableBase::IsVisible() const
+{
+	return is_visible;
+}
+
+bool VariableBase::IsSerializable() const
+{
+	return is_serializable;
+}
+
+void VariableBase::SetMutable(bool _is_mutable)
+{
+	is_mutable = _is_mutable;
+}
+
+void VariableBase::SetVisible(bool _is_visible)
+{
+	is_visible = _is_visible;
+}
+
+void VariableBase::SetSerializable(bool _is_serializable)
+{
+	is_serializable = _is_serializable;
+}
+
 
 VariableBase::operator bool () const { return false; }
 VariableBase::operator char () const { return (long long) *this; }
@@ -340,10 +373,10 @@ template <class TYPE> Variable<TYPE>::operator string () const
 	return sstr.str();
 }
 
-template <class TYPE> VariableBase& Variable<TYPE>::operator = (bool value) { *storage = value ? 1 : 0; return *this; }
-template <class TYPE> VariableBase& Variable<TYPE>::operator = (long long value) { *storage = value;	return *this; }
-template <class TYPE> VariableBase& Variable<TYPE>::operator = (unsigned long long value) { *storage = value;	return *this; }
-template <class TYPE> VariableBase& Variable<TYPE>::operator = (double value) { *storage = (TYPE) value; return *this; }
+template <class TYPE> VariableBase& Variable<TYPE>::operator = (bool value) { if(IsMutable()) *storage = value ? 1 : 0; return *this; }
+template <class TYPE> VariableBase& Variable<TYPE>::operator = (long long value) { if(IsMutable()) *storage = value;	return *this; }
+template <class TYPE> VariableBase& Variable<TYPE>::operator = (unsigned long long value) { if(IsMutable()) *storage = value; return *this; }
+template <class TYPE> VariableBase& Variable<TYPE>::operator = (double value) { if(IsMutable()) *storage = (TYPE) value; return *this; }
 
 //=============================================================================
 //=                           VariableArray<TYPE>                            =
@@ -1169,19 +1202,19 @@ template <> Variable<bool>::operator string () const
 	return sstr.str();
 }
 
-template <> VariableBase& Variable<bool>::operator = (const char *value) { *storage = (strcmp(value, "true") == 0) || (strcmp(value, "0x1") == 0) || (strcmp(value, "1") == 0); return *this; }
-template <> VariableBase& Variable<char>::operator = (const char *value) { *storage = strtoll(value, 0, 0); return *this; }
-template <> VariableBase& Variable<short>::operator = (const char *value) { *storage = strtoll(value, 0, 0); return *this; }
-template <> VariableBase& Variable<int>::operator = (const char *value) {	*storage = strtoll(value, 0, 0); return *this; }
-template <> VariableBase& Variable<long>::operator = (const char *value) { *storage = strtoll(value, 0, 0); return *this; }
-template <> VariableBase& Variable<long long>::operator = (const char *value) { *storage = strtoll(value, 0, 0); return *this; }
-template <> VariableBase& Variable<unsigned char>::operator = (const char *value) { *storage = strtoull(value, 0, 0); return *this; }
-template <> VariableBase& Variable<unsigned short>::operator = (const char *value) { *storage = strtoull(value, 0, 0); return *this; }
-template <> VariableBase& Variable<unsigned int>::operator = (const char *value) { *storage = strtoull(value, 0, 0); return *this; }
-template <> VariableBase& Variable<unsigned long>::operator = (const char *value) { *storage = strtoull(value, 0, 0); return *this; }
-template <> VariableBase& Variable<unsigned long long>::operator = (const char *value) { *storage = strtoull(value, 0, 0); return *this; }
-template <> VariableBase& Variable<float>::operator = (const char *value) { *storage = strtod(value, 0); return *this; }
-template <> VariableBase& Variable<double>::operator = (const char *value) { *storage = strtod(value, 0); return *this; }
+template <> VariableBase& Variable<bool>::operator = (const char *value) { if(IsMutable()) *storage = (strcmp(value, "true") == 0) || (strcmp(value, "0x1") == 0) || (strcmp(value, "1") == 0); return *this; }
+template <> VariableBase& Variable<char>::operator = (const char *value) { if(IsMutable()) *storage = strtoll(value, 0, 0); return *this; }
+template <> VariableBase& Variable<short>::operator = (const char *value) { if(IsMutable()) *storage = strtoll(value, 0, 0); return *this; }
+template <> VariableBase& Variable<int>::operator = (const char *value) {	if(IsMutable()) *storage = strtoll(value, 0, 0); return *this; }
+template <> VariableBase& Variable<long>::operator = (const char *value) { if(IsMutable()) *storage = strtoll(value, 0, 0); return *this; }
+template <> VariableBase& Variable<long long>::operator = (const char *value) { if(IsMutable()) *storage = strtoll(value, 0, 0); return *this; }
+template <> VariableBase& Variable<unsigned char>::operator = (const char *value) { if(IsMutable()) *storage = strtoull(value, 0, 0); return *this; }
+template <> VariableBase& Variable<unsigned short>::operator = (const char *value) { if(IsMutable()) *storage = strtoull(value, 0, 0); return *this; }
+template <> VariableBase& Variable<unsigned int>::operator = (const char *value) { if(IsMutable()) *storage = strtoull(value, 0, 0); return *this; }
+template <> VariableBase& Variable<unsigned long>::operator = (const char *value) { if(IsMutable()) *storage = strtoull(value, 0, 0); return *this; }
+template <> VariableBase& Variable<unsigned long long>::operator = (const char *value) { if(IsMutable()) *storage = strtoull(value, 0, 0); return *this; }
+template <> VariableBase& Variable<float>::operator = (const char *value) { if(IsMutable()) *storage = strtod(value, 0); return *this; }
+template <> VariableBase& Variable<double>::operator = (const char *value) { if(IsMutable()) *storage = strtod(value, 0); return *this; }
 
 template <> Variable<string>::operator bool () const { return *storage == string("true"); }
 template <> Variable<string>::operator long long () const { return strtoll(storage->c_str(), 0, 0); }
@@ -1189,11 +1222,11 @@ template <> Variable<string>::operator unsigned long long () const { return strt
 template <> Variable<string>::operator double () const { return strtod(storage->c_str(), 0); }
 template <> Variable<string>::operator string () const { return *storage; }
 
-template <> VariableBase& Variable<string>::operator = (bool value) { *storage = value ? "true" : "false"; return *this; }
-template <> VariableBase& Variable<string>::operator = (long long value) { stringstream sstr; sstr << "0x" << hex << value; *storage = sstr.str(); return *this; }
-template <> VariableBase& Variable<string>::operator = (unsigned long long value) { stringstream sstr; sstr << "0x" << hex << value; *storage = sstr.str(); return *this; }
-template <> VariableBase& Variable<string>::operator = (double value) { stringstream sstr; sstr << value; *storage = sstr.str(); return *this; }
-template <> VariableBase& Variable<string>::operator = (const char *value) { *storage = value; return *this; }
+template <> VariableBase& Variable<string>::operator = (bool value) { if(IsMutable()) *storage = value ? "true" : "false"; return *this; }
+template <> VariableBase& Variable<string>::operator = (long long value) { stringstream sstr; sstr << "0x" << hex << value; if(IsMutable()) *storage = sstr.str(); return *this; }
+template <> VariableBase& Variable<string>::operator = (unsigned long long value) { stringstream sstr; sstr << "0x" << hex << value; if(IsMutable()) *storage = sstr.str(); return *this; }
+template <> VariableBase& Variable<string>::operator = (double value) { stringstream sstr; sstr << value; if(IsMutable()) *storage = sstr.str(); return *this; }
+template <> VariableBase& Variable<string>::operator = (const char *value) { if(IsMutable()) *storage = value; return *this; }
 
 //=============================================================================
 //=                         specialized Formula<>                             =
@@ -1451,9 +1484,19 @@ void Object::Remove(VariableBase& var)
 	}
 }
 
-const list<VariableBase *>& Object::GetVariables() const
+void Object::GetVariables(list<VariableBase *>& lst) const
 {
-	return variables;
+	list<VariableBase *>::const_iterator variable_iter;
+
+	lst.clear();
+	
+	for(variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
+	{
+		if((*variable_iter)->IsVisible())
+		{
+			lst.push_back(*variable_iter);
+		}
+	}
 }
 
 const list<Object *>& Object::GetLeafs() const
@@ -1497,7 +1540,7 @@ void Object::OnDisconnect()
 VariableBase& Object::operator [] (const char *name)
 {
 	string fullname = GetName() + string(".") + string(name);
-	VariableBase *variable = Simulator::simulator->GetVariable(fullname.c_str());
+	VariableBase *variable = Simulator::simulator->FindVariable(fullname.c_str());
 	return *variable;
 }
 
@@ -1657,34 +1700,37 @@ void Object::GenerateLatexDocumentation(ostream& os) const
 	
 	for(variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
 	{
-		os << "\\multicolumn{1}{|p{7.5cm}}{\\textbf{Name:} " << string_to_latex((*variable_iter)->GetName(), 26, "texttt") << "} & \\multicolumn{1}{p{7.5cm}|}{\\textbf{Type:} " << string_to_latex((*variable_iter)->GetDataTypeName(), 36, "texttt") << "}\\\\" << std::endl;
-		os << "\\multicolumn{1}{|p{7.5cm}}{\\textbf{Default:} " << string_to_latex(((string) *(*variable_iter)).c_str(), 24, "texttt") << "} &";
-		
-		if((*variable_iter)->HasEnumeratedValues())
+		if((*variable_iter)->IsVisible())
 		{
-			os << " \\multicolumn{1}{p{7.5cm}|}{\\textbf{Valid:} ";
+			os << "\\multicolumn{1}{|p{7.5cm}}{\\textbf{Name:} " << string_to_latex((*variable_iter)->GetName(), 26, "texttt") << "} & \\multicolumn{1}{p{7.5cm}|}{\\textbf{Type:} " << string_to_latex((*variable_iter)->GetDataTypeName(), 36, "texttt") << "}\\\\" << std::endl;
+			os << "\\multicolumn{1}{|p{7.5cm}}{\\textbf{Default:} " << string_to_latex(((string) *(*variable_iter)).c_str(), 24, "texttt") << "} &";
 			
-			std::vector<string> enumerated_values;
-			(*variable_iter)->GetEnumeratedValues(enumerated_values);
-			std::vector<string>::const_iterator enumerated_values_iter;
-			for(enumerated_values_iter = enumerated_values.begin(); enumerated_values_iter != enumerated_values.end(); enumerated_values_iter++)
+			if((*variable_iter)->HasEnumeratedValues())
 			{
-				if(enumerated_values_iter != enumerated_values.begin())
+				os << " \\multicolumn{1}{p{7.5cm}|}{\\textbf{Valid:} ";
+				
+				std::vector<string> enumerated_values;
+				(*variable_iter)->GetEnumeratedValues(enumerated_values);
+				std::vector<string>::const_iterator enumerated_values_iter;
+				for(enumerated_values_iter = enumerated_values.begin(); enumerated_values_iter != enumerated_values.end(); enumerated_values_iter++)
 				{
-					os << ",~";
+					if(enumerated_values_iter != enumerated_values.begin())
+					{
+						os << ",~";
+					}
+					os << string_to_latex((*enumerated_values_iter).c_str(), 0, "texttt");
 				}
-				os << string_to_latex((*enumerated_values_iter).c_str(), 0, "texttt");
+				os << "}\\\\" << std::endl;
 			}
-			os << "}\\\\" << std::endl;
+			else
+			{
+				os << " \\multicolumn{1}{p{7.5cm}|}{}\\\\" << std::endl;
+			}
+			
+			os << "\\multicolumn{2}{|l|}{}\\\\" << std::endl;
+			os << "\\multicolumn{2}{|p{15cm}|}{\\textbf{Description:} \\newline " << string_to_latex((*variable_iter)->GetDescription()) << ".}\\\\" << std::endl;
+			os << "\\hline" << std::endl;
 		}
-		else
-		{
-			os << " \\multicolumn{1}{p{7.5cm}|}{}\\\\" << std::endl;
-		}
-		
-		os << "\\multicolumn{2}{|l|}{}\\\\" << std::endl;
-		os << "\\multicolumn{2}{|p{15cm}|}{\\textbf{Description:} \\newline " << string_to_latex((*variable_iter)->GetDescription()) << ".}\\\\" << std::endl;
-		os << "\\hline" << std::endl;
 	}
 }
 
@@ -1833,12 +1879,37 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	simulator = this;
 	void_variable = new VariableBase("void", (Object *) 0, VariableBase::VAR_VOID, "unknown variable");
 	param_get_config = new Parameter<bool>("get-config", 0, get_config, "Enable/Disable saving configuration at setup");
+
 	var_program_name = new Parameter<string>("program-name", 0, program_name, "Program name");
+	var_program_name->SetMutable(false);
+	var_program_name->SetVisible(false);
+	var_program_name->SetSerializable(false);
+
 	var_authors = new Parameter<string>("authors", 0, authors, "Authors");
+	var_authors->SetMutable(false);
+	var_authors->SetVisible(false);
+	var_authors->SetSerializable(false);
+
 	var_copyright = new Parameter<string>("copyright", 0, copyright, "Copyright");
+	var_copyright->SetMutable(false);
+	var_copyright->SetVisible(false);
+	var_copyright->SetSerializable(false);
+
 	var_version = new Parameter<string>("version", 0, version, "Version");
+	var_version->SetMutable(false);
+	var_version->SetVisible(false);
+	var_version->SetSerializable(false);
+
 	var_description = new Parameter<string>("description", 0, description, "Description");
+	var_description->SetMutable(false);
+	var_description->SetVisible(false);
+	var_description->SetSerializable(false);
+
 	var_license = new Parameter<string>("license", 0, license, "License");
+	var_license->SetMutable(false);
+	var_license->SetVisible(false);
+	var_license->SetSerializable(false);
+
 	param_enable_press_enter_at_exit = new Parameter<bool>("enable-press-enter-at-exit", 0, enable_press_enter_at_exit, "Enable/Disable pressing key enter at exit");
 	
 	if(GetBinPath(argv[0], bin_dir, program_binary))
@@ -2276,7 +2347,7 @@ void Simulator::DumpVariables(ostream &os, VariableBase::Type filter_type) {
 	{
 		VariableBase *var = (*variable_iter).second;
 		VariableBase::Type var_type = var->GetType();
-		if(filter_type == VariableBase::VAR_VOID || var_type == filter_type)
+		if(var->IsVisible() && (filter_type == VariableBase::VAR_VOID || var_type == filter_type))
 		{
 			const char *name = var->GetName();
 			string value = (string) *var;
@@ -2293,7 +2364,7 @@ void Simulator::DumpVariables(ostream &os, VariableBase::Type filter_type) {
 	{
 		VariableBase *var = (*variable_iter).second;
 		VariableBase::Type var_type = var->GetType();
-		if(filter_type == VariableBase::VAR_VOID || var_type == filter_type)
+		if(var->IsVisible() && (filter_type == VariableBase::VAR_VOID || var_type == filter_type))
 		{
 			std::stringstream sstr_name;
 			std::stringstream sstr_value;
@@ -2558,7 +2629,18 @@ bool Simulator::Setup()
 	return true;
 }
 
-VariableBase *Simulator::GetVariable(const char *name, VariableBase::Type type)
+const VariableBase *Simulator::FindVariable(const char *name, VariableBase::Type type) const
+{
+	map<const char *, VariableBase *, ltstr>::const_iterator variable_iter;
+	
+	variable_iter = variables.find(name);
+	
+	if(variable_iter != variables.end() && (type == VariableBase::VAR_VOID || (*variable_iter).second->GetType() == type)) return (*variable_iter).second;
+	
+	return void_variable;
+}
+
+VariableBase *Simulator::FindVariable(const char *name, VariableBase::Type type)
 {
 	map<const char *, VariableBase *, ltstr>::iterator variable_iter;
 	
@@ -2569,29 +2651,54 @@ VariableBase *Simulator::GetVariable(const char *name, VariableBase::Type type)
 	return void_variable;
 }
 
-VariableBase *Simulator::GetArray(const char *name)
+const VariableBase *Simulator::FindArray(const char *name) const
 {
-	return GetVariable(name, VariableBase::VAR_ARRAY);
+	return FindVariable(name, VariableBase::VAR_ARRAY);
 }
 
-VariableBase *Simulator::GetParameter(const char *name)
+VariableBase *Simulator::FindArray(const char *name)
 {
-	return GetVariable(name, VariableBase::VAR_PARAMETER);
+	return FindVariable(name, VariableBase::VAR_ARRAY);
 }
 
-VariableBase *Simulator::GetRegister(const char *name)
+const VariableBase *Simulator::FindParameter(const char *name) const
 {
-	return GetVariable(name, VariableBase::VAR_REGISTER);
+	return FindVariable(name, VariableBase::VAR_PARAMETER);
 }
 
-VariableBase *Simulator::GetStatistic(const char *name)
+VariableBase *Simulator::FindParameter(const char *name)
 {
-	return GetVariable(name, VariableBase::VAR_STATISTIC);
+	return FindVariable(name, VariableBase::VAR_PARAMETER);
 }
 
-VariableBase *Simulator::GetFormula(const char *name)
+const VariableBase *Simulator::FindRegister(const char *name) const
 {
-	return GetVariable(name, VariableBase::VAR_FORMULA);
+	return FindVariable(name, VariableBase::VAR_REGISTER);
+}
+
+VariableBase *Simulator::FindRegister(const char *name)
+{
+	return FindVariable(name, VariableBase::VAR_REGISTER);
+}
+
+const VariableBase *Simulator::FindStatistic(const char *name) const
+{
+	return FindVariable(name, VariableBase::VAR_STATISTIC);
+}
+
+VariableBase *Simulator::FindStatistic(const char *name)
+{
+	return FindVariable(name, VariableBase::VAR_STATISTIC);
+}
+
+const VariableBase *Simulator::FindFormula(const char *name) const
+{
+	return FindVariable(name, VariableBase::VAR_FORMULA);
+}
+
+VariableBase *Simulator::FindFormula(const char *name)
+{
+	return FindVariable(name, VariableBase::VAR_FORMULA);
 }
 
 void Simulator::GetVariables(list<VariableBase *>& lst, VariableBase::Type type)
@@ -2602,7 +2709,7 @@ void Simulator::GetVariables(list<VariableBase *>& lst, VariableBase::Type type)
 	
 	for(variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
 	{
-		if(type == VariableBase::VAR_VOID || (*variable_iter).second->GetType() == type)
+		if((*variable_iter).second->IsVisible() && (type == VariableBase::VAR_VOID || (*variable_iter).second->GetType() == type))
 		{
 			lst.push_back((*variable_iter).second);
 		}
@@ -2827,9 +2934,29 @@ string Simulator::SearchSharedDataFile(const char *filename) const
 	return string(filename);
 }
 
+template <typename T>
+T Simulator::GetVariable(const char *variable_name, const T *t) const
+{
+	return (T) *FindVariable(variable_name);
+}
+
+template bool Simulator::GetVariable(const char *, const bool *) const;
+template char Simulator::GetVariable(const char *, const char *) const;
+template short Simulator::GetVariable(const char *, const short *) const;
+template int Simulator::GetVariable(const char *, const int *) const;
+template long Simulator::GetVariable(const char *, const long *) const;
+template long long Simulator::GetVariable(const char *, const long long *) const;
+template unsigned char Simulator::GetVariable(const char *, const unsigned char *) const;
+template unsigned short Simulator::GetVariable(const char *, const unsigned short *) const;
+template unsigned int Simulator::GetVariable(const char *, const unsigned int *) const;
+template unsigned long Simulator::GetVariable(const char *, const unsigned long *) const;
+template float Simulator::GetVariable(const char *, const float *) const;
+template double Simulator::GetVariable(const char *, const double *) const;
+template string Simulator::GetVariable(const char *, const string *) const;
+
 void Simulator::SetVariable(const char *variable_name, const char *variable_value)
 {
-	VariableBase *variable = GetVariable(variable_name);
+	VariableBase *variable = FindVariable(variable_name);
 	if(variable == void_variable)
 	{
 		std::map<string, string>::iterator set_vars_it = set_vars.find(string(variable_name));

@@ -110,7 +110,7 @@ static PyObject *
 simulator_version (armemu_SimulatorObject *self)
 {
 	PyObject *result;
-	std::string version = (std::string)*self->sim->GetVariable("version");
+	std::string version = (std::string)*self->sim->FindVariable("version");
 	result = PyUnicode_FromString(version.c_str());
 	return result;
 }
@@ -123,7 +123,7 @@ simulator_get_variable (armemu_SimulatorObject *self, PyObject *args)
 
 	if ( !PyArg_ParseTuple(args, "s", &var_name) )
 		return NULL;
-	std::string var = (std::string)*self->sim->GetVariable(var_name);
+	std::string var = (std::string)*self->sim->FindVariable(var_name);
 	result = PyUnicode_FromString(var.c_str());
 	return result;
 }
@@ -197,7 +197,7 @@ simulator_set_variable (armemu_SimulatorObject *self, PyObject *args)
 	set_parameters_map(self->sim, parms);
 	self->sim->SetVariable(var_name, value);
 	self->setup = self->sim->Setup();
-	std::string var = (std::string)*self->sim->GetVariable(var_name);
+	std::string var = (std::string)*self->sim->FindVariable(var_name);
 	result = PyUnicode_FromString(var.c_str());
 	return result;
 }

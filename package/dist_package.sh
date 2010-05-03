@@ -20,7 +20,7 @@ esac
 
 function usage
 {
-	echo "Usage: `basename $0` <OS> <genisslib version> <ppcemu version> <ppcemu-system version> <embedded-ppc-g4-board version> <tms320c3x version> <systemc> <tlm2.0>"
+	echo "Usage: `basename $0` <OS> <genisslib version> <ppcemu version> <ppcemu-system version> <embedded-ppc-g4-board version> <tms320c3x version> <armemu version> <systemc> <tlm2.0>"
 	echo "OS: deb | rpm | mingw"
 }
 
@@ -96,16 +96,27 @@ function BuildRPM
 
 
 	echo "%build" >> "${SPEC}"
-	printf "./configure " >> "${SPEC}"
+	printf "if [ -f 'configure' ]; then\n" >> "${SPEC}"
+	printf "\t./configure --prefix=%%{_prefix} " >> "${SPEC}"
 	for arg in "${@}"; do
 		printf "\'${arg}\' " >> "${SPEC}"
 	done
 	printf "\n" >> "${SPEC}"
+	printf "elif [ -f 'CMakeLists.txt' ]; then\n" >> "${SPEC}"
+	printf "\tcmake . -DCMAKE_INSTALL_PREFIX=%%{_prefix} " >> "${SPEC}"
+	for arg in "${@}"; do
+		printf "\'${arg}\' " >> "${SPEC}"
+	done
+	printf "\n" >> "${SPEC}"
+	printf "fi\n" >> "${SPEC}"
 	echo "%make" >> "${SPEC}"
 
 	echo "%install" >> "${SPEC}"
-	echo "echo \"prefix is: %{_prefix}\"" >> "${SPEC}"
-	echo "make install prefix=%{buildroot}%{_prefix}" >> "${SPEC}"
+	printf "if [ -f configure ]; then\n" >> "${SPEC}"
+	printf "\tmake install prefix=%%{buildroot}%%{_prefix}\n" >> "${SPEC}"
+	printf "elif [ -f 'CMakeLists.txt' ]; then\n" >> "${SPEC}"
+	printf "\tmake install DESTDIR=%%{buildroot}\n" >> "${SPEC}"
+	printf "fi\n" >> "${SPEC}"
 
 	if ! [ -z "${START_PROGRAM}" ] && ! [ -z "${START_ICON}" ]; then
 		echo "mkdir -p %{buildroot}%{_datadir}/applications" >> "${SPEC}"
@@ -228,14 +239,22 @@ function BuildDEB
 
 	# configure
 	cd ${BUILD_DIR}/${NAME}-${VERSION}
-	./configure --prefix=${PREFIX} "${@}" || exit -1
-	
+	if [ -f 'configure' ]; then
+		./configure --prefix=${PREFIX} "${@}" || exit -1
+	elif [ -f 'CMakeLists.txt' ]; then
+		cmake . -DCMAKE_INSTALL_PREFIX=${PREFIX} "${@}" || exit -1
+	fi
+
 	# build
 	NUM_PROCESSORS=`cat /proc/cpuinfo | cut -f 1 | grep vendor_id | wc -l`
 	make -j ${NUM_PROCESSORS} || exit -1
 
 	# install
-	fakeroot make install prefix=${INSTALL_DIR}${PREFIX} || exit -1
+	if [ -f 'configure' ]; then
+		fakeroot make install prefix=${INSTALL_DIR}${PREFIX} || exit -1
+	elif [ -f 'CMakeLists.txt' ]; then
+		fakeroot make install DESTDIR=${INSTALL_DIR} || exit -1
+	fi
 
 	if ! [ -z "${START_PROGRAM}" ] && ! [ -z "${START_ICON}" ]; then
 		mkdir -p "${INSTALL_DIR}${PREFIX}/share/applications"
@@ -269,8 +288,11 @@ function BuildDEB
 	for FILE in ${FILES}
 	do
 		if [ -f "${INSTALL_DIR}${PREFIX}/${FILE}" ]; then
+			echo "Adding ${FILE}"
 			md5sum ".${PREFIX}/${FILE}" | sed 's/\.\///g' >> ${MD5SUMS_FILE}
 			INSTALLED_SIZE=$((${INSTALLED_SIZE} + `stat -c%s "${INSTALL_DIR}${PREFIX}/${FILE}"`))
+		else
+			echo "WARNING! No such file or directory: ${FILE}"
 		fi
 	done
 	printf "Done\n"
@@ -373,13 +395,22 @@ function BuildWinInstaller
 
 	# configure
 	cd ${BUILD_DIR}/${NAME}-${VERSION}
-	./configure --prefix=${PREFIX} "${@}" || exit -1
-	
+	if [ -f 'configure' ]; then
+		./configure --prefix=${PREFIX} "${@}" || exit -1
+	elif [ -f 'CMakeLists.txt' ]; then
+		cmake . -G "MSYS Makefiles" -DCMAKE_INSTALL_PREFIX=${PREFIX} "${@}" || exit -1
+	fi
+
 	# build
+	NUM_PROCESSORS=`cat /proc/cpuinfo | cut -f 1 | grep vendor_id | wc -l`
 	make || exit -1
 
 	# install
-	make install prefix=${INSTALL_DIR}${PREFIX} || exit -1
+	if [ -f 'configure' ]; then
+		fakeroot make install prefix=${INSTALL_DIR}${PREFIX} || exit -1
+	elif [ -f 'CMakeLists.txt' ]; then
+		fakeroot make install DESTDIR=${INSTALL_DIR}${PREFIX} || exit -1
+	fi
 
 	ISS_FILENAME=${INSTALL_DIR}/${NAME}-${VERSION}.iss
 	
@@ -472,19 +503,37 @@ function BuildPackage
 	esac
 }
 
-if [ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ] || [ -z "$4" ] || [ -z "$5" ] || [ -z "$6" ] || [ -z "$7" ] || [ -z "$8" ]; then
+OS="$1"
+shift
+GENISSLIB_VERSION="$1"
+shift
+PPCEMU_VERSION="$1"
+shift
+PPCEMU_SYSTEM_VERSION="$1"
+shift
+EMBEDDED_PPC_G4_BOARD_VERSION="$1"
+shift
+TMS320C3X_VERSION="$1"
+shift
+ARMEMU_VERSION="$1"
+shift
+SYSTEMC="$1"
+shift
+TLM20="$1"
+shift
+
+if [ -z "${OS}" ] || \
+   [ -z "${GENISSLIB_VERSION}" ] || \
+   [ -z "${PPCEMU_VERSION}" ] || \
+   [ -z "${PPCEMU_SYSTEM_VERSION}" ] || \
+   [ -z "${EMBEDDED_PPC_G4_BOARD_VERSION}" ] || \
+   [ -z "${TMS320C3X_VERSION}" ] || \
+   [ -z "${ARMEMU_VERSION}" ] || \
+   [ -z "${SYSTEMC}" ] || \
+   [ -z "${TLM20}" ]; then
 	usage
 	exit -1
 fi
-
-OS="$1"
-GENISSLIB_VERSION="$2"
-PPCEMU_VERSION="$3"
-PPCEMU_SYSTEM_VERSION="$4"
-EMBEDDED_PPC_G4_BOARD_VERSION="$5"
-TMS320C3X_VERSION="$6"
-SYSTEMC="$7"
-TLM20="$8"
 
 BuildPackage \
 	"${OS}" \
@@ -633,3 +682,36 @@ BuildPackage \
 	"bin/unisim-tms320c3x-${TMS320C3X_VERSION}${EXE_SUFFIX}" \
 	"-s enable-press-enter-at-exit=true fibo.out" \
 	"CXXFLAGS=-O3 -g"
+
+BuildPackage \
+	"${OS}" \
+	"unisim-armemu" \
+	"${ARMEMU_VERSION}" \
+	"1" \
+	"http://www.unisim-vp.com" \
+	"BSD" \
+	"UNISIM armemu" \
+	"UNISIM armemu is a user level ARM simulator with support of ELF32 binaries and Linux system call translation." \
+	"Emulators" \
+	"Development;Emulator;ConsoleOnly" \
+	"Daniel Gracia Pérez <daniel.gracia-perez@cea.fr>" \
+	"bin/unisim-armemu-${ARMEMU_VERSION}${EXE_SUFFIX} \
+	share/unisim-armemu-${ARMEMU_VERSION}/AUTHORS.txt \
+	share/unisim-armemu-${ARMEMU_VERSION}/COPYING.txt \
+	share/unisim-armemu-${ARMEMU_VERSION}/INSTALL.txt \
+	share/unisim-armemu-${ARMEMU_VERSION}/NEWS.txt \
+	share/unisim-armemu-${ARMEMU_VERSION}/README.txt \
+	lib/libunisim-armemu.so \
+	lib/libunisim-armemu.so.0.2 \
+	lib/libunisim-armemu.so.${ARMEMU_VERSION} \
+	share/unisim-armemu-${ARMEMU_VERSION}/test/src/CMakeLists.txt \
+	share/unisim-armemu-${ARMEMU_VERSION}/test/src/main.c \
+	share/unisim-armemu-${ARMEMU_VERSION}/test/src/toolchain-armv5l.cmake \
+	share/unisim-armemu-${ARMEMU_VERSION}/gdb_server/gdb_armv5l.xml \
+	share/unisim-armemu-${ARMEMU_VERSION}/template-default-config.xml" \
+    "/bin/libgcc_s_dw2-1.dll /bin/libxml2-2.dll" \
+	"" \
+	"" \
+	"" \
+	"-Dwith_osci_systemc=${SYSTEMC}" \
+	"-Dwith_osci_tlm2=${TLM20}"

@@ -135,10 +135,6 @@ LinuxOS(const char *name, Object *parent) :
     		"The endianness of the binary loaded. Available values are: little-endian and big-endian."),
 	memory_page_size(4096),
 	param_memory_page_size("memory-page-size", this, memory_page_size),
-	linux_kernel("2.6.27.35"),
-	param_linux_kernel("linux-kernel", this, linux_kernel, "A string containing"
-			" the linux kernel version that the program emulated was compiled"
-			" for. Currently only version 2.6.27.35 is supported"),
 	utsname_sysname("Linux"),
 	param_utsname_sysname("utsname-sysname", this, utsname_sysname,
 			"The value that the uname system call should return. As this"
@@ -174,8 +170,7 @@ LinuxOS(const char *name, Object *parent) :
 	current_syscall_id(0),
     current_syscall_name(""),
 	osrelease_filename("/proc/sys/kernel/osrelease"),
-	fake_osrelease_filename("osrelease"),
-	fake_osrelease("2.6.8")
+	fake_osrelease_filename("osrelease")
 {
 	SetSyscallNameMap();
 
@@ -955,7 +950,7 @@ LSC_open()
 	{
 		{
 			std::ofstream fake_file(fake_osrelease_filename);
-			fake_file << fake_osrelease << std::endl;
+			fake_file << utsname_release << std::endl;
 		}
 		ret = open(fake_osrelease_filename, host_flags, host_mode);
 	}

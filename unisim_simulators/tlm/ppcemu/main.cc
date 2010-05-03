@@ -296,7 +296,7 @@ Simulator::Simulator(int argc, char **argv)
 
 	// Build the Linux OS arguments from the command line arguments
 	
-	VariableBase *cmd_args = GetVariable("cmd-args");
+	VariableBase *cmd_args = FindVariable("cmd-args");
 	unsigned int cmd_args_length = cmd_args->GetLength();
 	if(cmd_args_length > 0)
 	{

@@ -303,7 +303,7 @@ int main(int argc, char *argv[], char **envp) {
 		varname_sstr = set_vars_it->substr(0, pos);
 		value_sstr = set_vars_it->substr(pos + 1);
 		
-		unisim::kernel::service::VariableBase *var = ServiceManager::GetVariable(varname_sstr.c_str(), unisim::kernel::service::VariableBase::VAR_PARAMETER);
+		unisim::kernel::service::VariableBase *var = ServiceManager::FindVariable(varname_sstr.c_str(), unisim::kernel::service::VariableBase::VAR_PARAMETER);
 		
 		if (var == &ServiceManager::void_variable)
 		{
