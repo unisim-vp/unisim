@@ -8,10 +8,10 @@ set ( SIM_VERSION
 set ( SIM_SOVERSION ${SIM_VERSION_MAJOR}.${SIM_VERSION_MINOR} ) 
 set ( SIM_VERSION_CODENAME "\"Pacifico\"" )
 set ( SIM_AUTHOR "\"Daniel Gracia Perez (daniel.gracia-perez@cea.fr)\"" )
-set ( SIM_PROGRAM_NAME "\"UNISIM armemu\"" )
+set ( SIM_PROGRAM_NAME "UNISIM ARMEmu" )
 set ( SIM_COPYRIGHT "\"Copyright (C) 2007-2010, Comissariat a l'Energie Atomique\"")
 set ( SIM_LICENSE "\"BSD (See file COPYING)\"" )
-set ( SIM_DESCRIPTION "\"UNISIM ARMv5 User Level Simulator\"" )
+set ( SIM_DESCRIPTION "UNISIM ARMv5 User Level Simulator" )
 set ( SIM_PYTHON_MODULE_NAME "\"armemu\"" )
 set ( SIM_PYTHON_IMPORT_NAME "armemu${SIM_VERSION_MAJOR}${SIM_VERSION_MINOR}${SIM_VERSION_PATCH}")
 
@@ -145,6 +145,10 @@ add_custom_target ( armemu__share_test
 		${CMAKE_COMMAND} -E copy_if_different
 			${CMAKE_SOURCE_DIR}/share/test/src/toolchain-armv5l.cmake 
 			${SHARE_DIRECTORY}/test/src/toolchain-armv5l.cmake
+	COMMAND
+		${CMAKE_COMMAND} -E copy_if_different
+			${CMAKE_SOURCE_DIR}/share/test/test.armv5l
+			${SHARE_DIRECTORY}/test/install/test.armv5l
 	COMMENT
 		"Setting test program source files"
 	)
@@ -177,6 +181,10 @@ add_custom_target ( armemu__share_logo
 		${CMAKE_COMMAND} -E copy_if_different
 			${CMAKE_SOURCE_DIR}/share/logo/logo_unisim256.png
 			${SHARE_DIRECTORY}/logo/logo_unisim256.png
+	COMMAND
+		${CMAKE_COMMAND} -E copy_if_different
+			${CMAKE_SOURCE_DIR}/share/logo/unisim.ico
+			${SHARE_DIRECTORY}/logo/unisim.ico
 	COMMENT
 		"Copying icon files"
 	)
@@ -199,6 +207,23 @@ if ( APPLE )
 				${SHARE_DIRECTORY}/macosx/armemu-launcher.scpt
 		COMMENT
 			"Setting MacOSX application files."
+		)
+elseif ( UNIX )
+	configure_file (
+		${CMAKE_SOURCE_DIR}/share/linux/unisim-armemu.desktop.in
+		${SHARE_DIRECTORY}/linux/${ARMEMU_EXEC_NAME}.desktop.in )
+	add_custom_target ( armemu__share_linux
+		ALL
+		COMMAND
+			${CMAKE_COMMAND} -E copy
+				${SHARE_DIRECTORY}/linux/${ARMEMU_EXEC_NAME}.desktop.in
+				${SHARE_DIRECTORY}/linux/${ARMEMU_EXEC_NAME}.desktop
+		COMMAND
+			desktop-file-install --dir=${SHARE_DIRECTORY}/linux ${SHARE_DIRECTORY}/linux/${ARMEMU_EXEC_NAME}.desktop
+		DEPENDS
+			${SHARE_DIRECTORY}/linux/${ARMEMU_EXEC_NAME}.desktop.in
+		COMMENT
+			"Setting Linux desktop application files."
 		)
 endif ( APPLE )
 
@@ -436,6 +461,7 @@ install (
 		${SHARE_DIRECTORY}/logo/logo_unisim128.png
 		${SHARE_DIRECTORY}/logo/logo_unisim32.png
 		${SHARE_DIRECTORY}/logo/logo_unisim16.png
+		${SHARE_DIRECTORY}/logo/unisim.ico
 	DESTINATION
 		${RELATIVE_SHARE_DIRECTORY}/logo
 	)
@@ -448,8 +474,61 @@ if ( APPLE )
 		DESTINATION
 			${RELATIVE_SHARE_DIRECTORY}/macosx
 		)
+elseif ( UNIX )
+	#	add_custom_command ( TARGET ${ARMEMU_EXEC_TARGET}
+	#		POST_BUILD
+	#		COMMAND 
+	#			${CMAKE_SOURCE_DIR}/share/linux/find_deb_dependencies.sh
+	#				${CMAKE_BINARY_DIR}/bin/${ARMEMU_EXEC_NAME}
+	#				${CMAKE_BINARY_DIR}/lib/${ARMEMU_LIB_NAME}
+	#				${CMAKE_BINARY_DIR}/lib/${SIM_PYTHON_IMPORT_NAME}.so
+	#				> ${CMAKE_BINARY_DIR}/deps.deb
+	#		COMMENT
+	#			"Computing ARMEmu Debian dependencies."
+	#		)
+	add_custom_command ( 
+		OUTPUT ${CMAKE_BINARY_DIR}/deps.deb
+		COMMAND
+			${CMAKE_SOURCE_DIR}/share/linux/find_deb_dependencies.sh
+				${CMAKE_BINARY_DIR}/bin/${ARMEMU_EXEC_NAME}
+				${CMAKE_BINARY_DIR}/lib/${ARMEMU_LIB_NAME}
+				${CMAKE_BINARY_DIR}/lib/${SIM_PYTHON_IMPORT_NAME}.so
+				> ${CMAKE_BINARY_DIR}/deps.deb
+		DEPENDS
+			${ARMEMU_EXEC_TARGET}
+			${ARMEMU_LIB_TARGET}
+			${CMAKE_BINARY_DIR}/lib/${SIM_PYTHON_IMPORT_NAME}.so
+		COMMENT
+			"Computing ARMEmu Debian dependencies."
+		)
+	add_custom_target ( debian_package
+		COMMAND
+			make
+		COMMAND
+			${CMAKE_COMMAND} .
+		COMMAND
+			make package
+		DEPENDS ${CMAKE_BINARY_DIR}/deps.deb
+		)
+	if ( EXISTS ${CMAKE_BINARY_DIR}/deps.deb )
+		file ( STRINGS ${CMAKE_BINARY_DIR}/deps.deb ARMEMU__DEPS_DEB
+			LIMIT_COUNT 1 )
+		message ( "ARMEMU__DEPS_DEB = ${ARMEMU__DEPS_DEB}" )
+		set ( ARMEMU__DEPS_DEB ${ARMEMU__DEPS_DEB} CACHE STRING "Debian dependencies" FORCE )
+	else ( EXISTS ${CMAKE_BINARY_DIR}/deps.deb )
+		set ( ARMEMU__DEPS_DEB "" CACHE STRING "Debian dependencies" FORCE )
+		message ( "Could not find debian dependencies file, if you "
+			"are executing make package, make sure you have done a simple "
+			"make or make install before (or a previous make package)." )
+	endif ( EXISTS ${CMAKE_BINARY_DIR}/deps.deb )
+	install (
+		FILES
+			${SHARE_DIRECTORY}/linux/${ARMEMU_EXEC_NAME}.desktop
+		DESTINATION
+			share/applications
+		)
 endif ( APPLE )
-	
+
 add_custom_target ( armemu__resources
 	ALL
 	DEPENDS
@@ -499,22 +578,21 @@ set ( CPACK_PACKAGE_VERSION_MINOR ${SIM_VERSION_MINOR} )
 set ( CPACK_PACKAGE_VERSION_PATCH ${SIM_VERSION_PATCH} )
 set ( CPACK_PACKAGE_INSTALL_DIRECTORY "UNISIM ArmEmu ${SIM_VERSION}" )
 if ( APPLE )
-	set ( CPACK_GENERATOR "Bundle;TGZ;TBZ2" )
+	set ( CPACK_GENERATOR "Bundle" )
 	set ( CPACK_BUNDLE_NAME "UNISIM ArmEmu" )
 	set ( CPACK_BUNDLE_PLIST "${SHARE_DIRECTORY}/macosx/Info.plist" )
 	set ( CPACK_BUNDLE_STARTUP_COMMAND "${SHARE_DIRECTORY}/macosx/armemu-launcher.sh" )
 	set ( CPACK_BUNDLE_ICON "${SHARE_DIRECTORY}/logo/logo_unisim.icns" )
-endif ( APPLE )
-if ( DEBIAN )
-	set ( CPACK_GENERATOR "DEB;TGZ;TBZ2" )
+elseif ( UNIX )
+	set ( CPACK_GENERATOR "DEB" )
 	set ( CPACK_DEBIAN_PACKAGE_ARCHITECTURE i386 )
-	set ( CPACK_DEBIAN_PACKAGE_DEPENDS "" )
+	set ( CPACK_DEBIAN_PACKAGE_DEPENDS ${ARMEMU__DEPS_DEB} )
 	set ( CPACK_DEBIAN_PACKAGE_SECTION "devel" )
 	set ( CPACK_DEBIAN_PACKAGE_PRIORITY "optional" )
 	set ( CPACK_DEBIAN_PACKAGE_RECOMMENDS "" )
 	set ( CPACK_DEBIAN_PACKAGE_SUGGESTS "" )
 	set ( CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "" )
-endif ( DEBIAN )
+endif ( APPLE )
 # set ( CPACK_PACKAGE_ICON "${CMAKE_SOURCE_DIR}/share/logo/logo_unisim.icns" )
 IF(WIN32 AND NOT UNIX)
 	# There is a bug in NSI that does not handle full unix paths properly. Make
