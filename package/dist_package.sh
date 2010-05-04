@@ -402,14 +402,13 @@ function BuildWinInstaller
 	fi
 
 	# build
-	NUM_PROCESSORS=`cat /proc/cpuinfo | cut -f 1 | grep vendor_id | wc -l`
 	make || exit -1
 
 	# install
 	if [ -f 'configure' ]; then
-		fakeroot make install prefix=${INSTALL_DIR}${PREFIX} || exit -1
+		make install prefix=${INSTALL_DIR}${PREFIX} || exit -1
 	elif [ -f 'CMakeLists.txt' ]; then
-		fakeroot make install DESTDIR=${INSTALL_DIR}${PREFIX} || exit -1
+		make install DESTDIR=${INSTALL_DIR}${PREFIX} || exit -1
 	fi
 
 	ISS_FILENAME=${INSTALL_DIR}/${NAME}-${VERSION}.iss
