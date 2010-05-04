@@ -20,8 +20,9 @@ esac
 
 function usage
 {
-	echo "Usage: `basename $0` <OS> <genisslib version> <ppcemu version> <ppcemu-system version> <embedded-ppc-g4-board version> <tms320c3x version> <armemu version> <systemc> <tlm2.0>"
+	echo "Usage: `basename $0` <OS> <systemc> <tlm2.0> [<pkg name>-<version>...]"
 	echo "OS: deb | rpm | mingw"
+	echo "pkg name: genisslib | ppcemu | ppcemu-system | embedded-ppc-g4-board | tms320c3x | armemu"
 }
 
 function BuildRPM
@@ -29,8 +30,6 @@ function BuildRPM
 	NAME="$1"
 	shift
 	VERSION="$1"
-	shift
-	RELEASE="$1"
 	shift
 	URL="$1"
 	shift
@@ -56,6 +55,10 @@ function BuildRPM
 	shift
 	START_PARAMS="$1"
 	shift
+
+	DISTRIB_ID=$(cat /etc/*-release | sed -n 's/DISTRIB_ID=\(.*\)/\1/p' | head -n 1)
+	DISTRIB_RELEASE=$(cat /etc/*-release | sed -n 's/DISTRIB_RELEASE=\(.*\)/\1/p' | head -n 1)
+	RELEASE="${DISTRIB_ID}${DISTRIB_RELEASE}"
 
 	TOP_DIR="${HOME}/tmp/rpm"
 
@@ -189,8 +192,6 @@ function BuildDEB
 	shift
 	VERSION="$1"
 	shift
-	RELEASE="$1"
-	shift
 	URL="$1"
 	shift
 	LICENSE="$1"
@@ -215,6 +216,10 @@ function BuildDEB
 	shift
 	START_PARAMS="$1"
 	shift
+
+	DISTRIB_ID=$(cat /etc/*-release | sed -n 's/DISTRIB_ID=\(.*\)/\1/p' | head -n 1)
+	DISTRIB_RELEASE=$(cat /etc/*-release | sed -n 's/DISTRIB_RELEASE=\(.*\)/\1/p' | head -n 1)
+	RELEASE="${DISTRIB_ID}${DISTRIB_RELEASE}"
 
 	PREFIX=/usr
 	TOP_DIR="${HOME}/tmp/deb"
@@ -344,8 +349,6 @@ function BuildWinInstaller
 	NAME="$1"
 	shift
 	VERSION="$1"
-	shift
-	RELEASE="$1"
 	shift
 	URL="$1"
 	shift
@@ -504,213 +507,212 @@ function BuildPackage
 
 OS="$1"
 shift
-GENISSLIB_VERSION="$1"
-shift
-PPCEMU_VERSION="$1"
-shift
-PPCEMU_SYSTEM_VERSION="$1"
-shift
-EMBEDDED_PPC_G4_BOARD_VERSION="$1"
-shift
-TMS320C3X_VERSION="$1"
-shift
-ARMEMU_VERSION="$1"
-shift
 SYSTEMC="$1"
 shift
 TLM20="$1"
 shift
 
 if [ -z "${OS}" ] || \
-   [ -z "${GENISSLIB_VERSION}" ] || \
-   [ -z "${PPCEMU_VERSION}" ] || \
-   [ -z "${PPCEMU_SYSTEM_VERSION}" ] || \
-   [ -z "${EMBEDDED_PPC_G4_BOARD_VERSION}" ] || \
-   [ -z "${TMS320C3X_VERSION}" ] || \
-   [ -z "${ARMEMU_VERSION}" ] || \
    [ -z "${SYSTEMC}" ] || \
-   [ -z "${TLM20}" ]; then
+   [ -z "${TLM20}" ] || \
+   [ -z "$1" ]; then
 	usage
 	exit -1
 fi
 
-BuildPackage \
-	"${OS}" \
-	"unisim-genisslib" \
-	"${GENISSLIB_VERSION}" \
-	"1" \
-	"http://www.unisim-vp.com" \
-	"GPL" \
-	"UNISIM genisslib" \
-	"UNISIM Instruction set simulator generator" \
-	"Development/Tools" \
-	"Development" \
-	"Gilles Mouchard <gilles.mouchard@cea.fr>" \
-	"bin/unisim-genisslib-${GENISSLIB_VERSION}${EXE_SUFFIX}" \
-    "/bin/libgcc_s_dw2-1.dll" \
-	"" \
-	"" \
-	"" \
-	"CXXFLAGS=-O3 -g"
+for PKG in "$@"; do
+	PKG_NAME=$(echo ${PKG} | sed -n 's/^\(.*\)-\([0-9][0-9]*\(\.[0-9][0-9]*\)*\)$/\1/p')
+	PKG_VERSION=$(echo ${PKG} | sed -n 's/^\(.*\)-\([0-9][0-9]*\(\.[0-9][0-9]*\)*\)$/\2/p')
 
-BuildPackage \
-	"${OS}" \
-	"unisim-ppcemu" \
-	"${PPCEMU_VERSION}" \
-	"1" \
-	"http://www.unisim-vp.com" \
-	"BSD" \
-	"UNISIM ppcemu" \
-	"UNISIM ppcemu is user level PowerPC simulator with support of ELF32 binaries and Linux system call translation." \
-	"Emulators" \
-	"Development;Emulator;ConsoleOnly" \
-	"Gilles Mouchard <gilles.mouchard@cea.fr>" \
-	"bin/unisim-ppcemu-${PPCEMU_VERSION}${EXE_SUFFIX} \
-	bin/unisim-ppcemu-debug-${PPCEMU_VERSION}${EXE_SUFFIX} \
-	share/unisim-ppcemu-${PPCEMU_VERSION}/AUTHORS \
-	share/unisim-ppcemu-${PPCEMU_VERSION}/COPYING \
-	share/unisim-ppcemu-${PPCEMU_VERSION}/ChangeLog \
-	share/unisim-ppcemu-${PPCEMU_VERSION}/INSTALL \
-	share/unisim-ppcemu-${PPCEMU_VERSION}/NEWS \
-	share/unisim-ppcemu-${PPCEMU_VERSION}/README \
-	share/unisim-ppcemu-${PPCEMU_VERSION}/gdb_powerpc.xml \
-	share/unisim-ppcemu-${PPCEMU_VERSION}/template_default_config.xml \
-	share/unisim-ppcemu-${PPCEMU_VERSION}/unisim.ico" \
-    "/bin/libgcc_s_dw2-1.dll /bin/libxml2-2.dll" \
-	"share/unisim-ppcemu-${PPCEMU_VERSION}/unisim.ico" \
-	"bin/unisim-ppcemu-${PPCEMU_VERSION}${EXE_SUFFIX}" \
-	"-s enable-press-enter-at-exit=true" \
-	"--with-systemc=${SYSTEMC}" \
-	"CXXFLAGS=-O3 -g"
+	if [ -z ${PKG_NAME} ] || [ -z "${PKG_VERSION}" ]; then
+		echo "ERROR! Malformed package name \"${PKG}\""
+		exit -1
+	fi
 
-BuildPackage \
-	"${OS}" \
-	"unisim-ppcemu-system" \
-	"${PPCEMU_SYSTEM_VERSION}" \
-	"1" \
-	"http://www.unisim-vp.com" \
-	"BSD" \
-	"UNISIM ppcemu-system" \
-	"UNISIM ppcemu-system is a full system simulator of a \"PowerMac G4 PCI\" like machine (MPC7447A/MPC107) with Linux boot support." \
-	"Emulators" \
-	"Development;Emulator;ConsoleOnly" \
-	"Gilles Mouchard <gilles.mouchard@cea.fr>" \
-	"bin/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}${EXE_SUFFIX} \
-	bin/unisim-ppcemu-system-debug-${PPCEMU_SYSTEM_VERSION}${EXE_SUFFIX} \
-	share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/AUTHORS \
-	share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/COPYING \
-	share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/ChangeLog \
-	share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/INSTALL \
-	share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/NEWS \
-	share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/README \
-	share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/gdb_powerpc.xml \
-	share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/device_tree_pmac_g4.xml \
-	share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/pc_linux_fr_keymap.xml \
-	share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/pc_linux_us_keymap.xml \
-	share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/pc_windows_keymap.xml \
-	share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/vmlinux \
-	share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/initrd.img \
-	share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/template_default_config.xml \
-	share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/unisim.ico" \
-    "/bin/libgcc_s_dw2-1.dll /bin/libxml2-2.dll /bin/SDL.dll" \
-	"share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/unisim.ico" \
-	"bin/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}${EXE_SUFFIX}" \
-	"-s enable-press-enter-at-exit=true" \
-	"--with-systemc=${SYSTEMC}" \
-	"CXXFLAGS=-O3 -g"
-
-BuildPackage \
-	"${OS}" \
-	"unisim-embedded-ppc-g4-board" \
-	"${EMBEDDED_PPC_G4_BOARD_VERSION}" \
-	"1" \
-	"http://www.unisim-vp.com" \
-	"BSD" \
-	"UNISIM embedded-ppc-g4-board" \
-	"UNISIM embedded-ppc-g4-board is a full system simulator of an MPC7447A/MPC107 board with support of ELF32 binaries and targeted for industrial applications." \
-	"Emulators" \
-	"Development;Emulator;ConsoleOnly" \
-	"Gilles Mouchard <gilles.mouchard@cea.fr>" \
-	"bin/unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}${EXE_SUFFIX} \
-	bin/unisim-embedded-ppc-g4-board-debug-${EMBEDDED_PPC_G4_BOARD_VERSION}${EXE_SUFFIX} \
-	bin/unisim-embedded-ppc-g4-board-no-pci-stub-${EMBEDDED_PPC_G4_BOARD_VERSION}${EXE_SUFFIX} \
-	bin/unisim-embedded-ppc-g4-board-no-pci-stub-debug-${EMBEDDED_PPC_G4_BOARD_VERSION}${EXE_SUFFIX} \
-	share/unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/AUTHORS \
-	share/unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/COPYING \
-	share/unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/ChangeLog \
-	share/unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/INSTALL \
-	share/unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/NEWS \
-	share/unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/README \
-	share/unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/gdb_powerpc.xml \
-	share/unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/template_default_config.xml \
-	share/unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/unisim.ico" \
-    "/bin/libgcc_s_dw2-1.dll /bin/libxml2-2.dll" \
-	"share/unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/unisim.ico" \
-	"bin/unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}${EXE_SUFFIX}" \
-	"-s enable-press-enter-at-exit=true" \
-	"--with-systemc=${SYSTEMC}" \
-	"CXXFLAGS=-O3 -g"
-
-BuildPackage \
-	"${OS}" \
-	"unisim-tms320c3x" \
-	"${TMS320C3X_VERSION}" \
-	"1" \
-	"http://www.unisim-vp.com" \
-	"BSD" \
-	"UNISIM tms320c3x" \
-	"UNISIM tms320c3x is a TMS320C3X DSP simulator with support of TI COFF binaries, and TI C I/O (RTS run-time)." \
-	"Emulators" \
-	"Development;Emulator;ConsoleOnly" \
-	"Gilles Mouchard <gilles.mouchard@cea.fr>" \
-	"bin/unisim-tms320c3x-${TMS320C3X_VERSION}${EXE_SUFFIX} \
-	bin/unisim-tms320c3x-debug-${TMS320C3X_VERSION}${EXE_SUFFIX} \
-	share/unisim-tms320c3x-${TMS320C3X_VERSION}/AUTHORS \
-	share/unisim-tms320c3x-${TMS320C3X_VERSION}/COPYING \
-	share/unisim-tms320c3x-${TMS320C3X_VERSION}/ChangeLog \
-	share/unisim-tms320c3x-${TMS320C3X_VERSION}/INSTALL \
-	share/unisim-tms320c3x-${TMS320C3X_VERSION}/NEWS \
-	share/unisim-tms320c3x-${TMS320C3X_VERSION}/README \
-	share/unisim-tms320c3x-${TMS320C3X_VERSION}/unisim.ico \
-	share/unisim-tms320c3x-${TMS320C3X_VERSION}/template_default_config.xml \
-	share/unisim-tms320c3x-${TMS320C3X_VERSION}/fibo.out \
-	share/unisim-tms320c3x-${TMS320C3X_VERSION}/c31boot.out \
-	share/unisim-tms320c3x-${TMS320C3X_VERSION}/tms320c3x_manual.pdf" \
-    "/bin/libgcc_s_dw2-1.dll /bin/libxml2-2.dll" \
-	"share/unisim-tms320c3x-${TMS320C3X_VERSION}/unisim.ico" \
-	"bin/unisim-tms320c3x-${TMS320C3X_VERSION}${EXE_SUFFIX}" \
-	"-s enable-press-enter-at-exit=true fibo.out" \
-	"CXXFLAGS=-O3 -g"
-
-BuildPackage \
-	"${OS}" \
-	"unisim-armemu" \
-	"${ARMEMU_VERSION}" \
-	"1" \
-	"http://www.unisim-vp.com" \
-	"BSD" \
-	"UNISIM armemu" \
-	"UNISIM armemu is a user level ARM simulator with support of ELF32 binaries and Linux system call translation." \
-	"Emulators" \
-	"Development;Emulator;ConsoleOnly" \
-	"Daniel Gracia Pérez <daniel.gracia-perez@cea.fr>" \
-	"bin/unisim-armemu-${ARMEMU_VERSION}${EXE_SUFFIX} \
-	share/unisim-armemu-${ARMEMU_VERSION}/AUTHORS.txt \
-	share/unisim-armemu-${ARMEMU_VERSION}/COPYING.txt \
-	share/unisim-armemu-${ARMEMU_VERSION}/INSTALL.txt \
-	share/unisim-armemu-${ARMEMU_VERSION}/NEWS.txt \
-	share/unisim-armemu-${ARMEMU_VERSION}/README.txt \
-	lib/libunisim-armemu.so \
-	lib/libunisim-armemu.so.0.2 \
-	lib/libunisim-armemu.so.${ARMEMU_VERSION} \
-	share/unisim-armemu-${ARMEMU_VERSION}/test/src/CMakeLists.txt \
-	share/unisim-armemu-${ARMEMU_VERSION}/test/src/main.c \
-	share/unisim-armemu-${ARMEMU_VERSION}/test/src/toolchain-armv5l.cmake \
-	share/unisim-armemu-${ARMEMU_VERSION}/gdb_server/gdb_armv5l.xml \
-	share/unisim-armemu-${ARMEMU_VERSION}/template-default-config.xml" \
-    "/bin/libgcc_s_dw2-1.dll /bin/libxml2-2.dll" \
-	"" \
-	"" \
-	"" \
-	"-Dwith_osci_systemc=${SYSTEMC}" \
-	"-Dwith_osci_tlm2=${TLM20}"
+	case ${PKG_NAME} in
+		genisslib)
+			BuildPackage \
+				"${OS}" \
+				"unisim-genisslib" \
+				"${PKG_VERSION}" \
+				"http://www.unisim-vp.com" \
+				"GPL" \
+				"UNISIM genisslib" \
+				"UNISIM Instruction set simulator generator" \
+				"Development/Tools" \
+				"Development" \
+				"Gilles Mouchard <gilles.mouchard@cea.fr>" \
+				"bin/unisim-genisslib-${PKG_VERSION}${EXE_SUFFIX}" \
+				"/bin/libgcc_s_dw2-1.dll" \
+				"" \
+				"" \
+				"" \
+				"CXXFLAGS=-O3 -g"
+			;;
+		ppcemu)
+			BuildPackage \
+				"${OS}" \
+				"unisim-ppcemu" \
+				"${PKG_VERSION}" \
+				"http://www.unisim-vp.com" \
+				"BSD" \
+				"UNISIM ppcemu" \
+				"UNISIM ppcemu is user level PowerPC simulator with support of ELF32 binaries and Linux system call translation." \
+				"Emulators" \
+				"Development;Emulator;ConsoleOnly" \
+				"Gilles Mouchard <gilles.mouchard@cea.fr>" \
+				"bin/unisim-ppcemu-${PKG_VERSION}${EXE_SUFFIX} \
+				bin/unisim-ppcemu-debug-${PKG_VERSION}${EXE_SUFFIX} \
+				share/unisim-ppcemu-${PKG_VERSION}/AUTHORS \
+				share/unisim-ppcemu-${PKG_VERSION}/COPYING \
+				share/unisim-ppcemu-${PKG_VERSION}/ChangeLog \
+				share/unisim-ppcemu-${PKG_VERSION}/INSTALL \
+				share/unisim-ppcemu-${PKG_VERSION}/NEWS \
+				share/unisim-ppcemu-${PKG_VERSION}/README \
+				share/unisim-ppcemu-${PKG_VERSION}/gdb_powerpc.xml \
+				share/unisim-ppcemu-${PKG_VERSION}/template_default_config.xml \
+				share/unisim-ppcemu-${PKG_VERSION}/unisim.ico" \
+				"/bin/libgcc_s_dw2-1.dll /bin/libxml2-2.dll" \
+				"share/unisim-ppcemu-${PKG_VERSION}/unisim.ico" \
+				"bin/unisim-ppcemu-${PKG_VERSION}${EXE_SUFFIX}" \
+				"-s enable-press-enter-at-exit=true" \
+				"--with-systemc=${SYSTEMC}" \
+				"CXXFLAGS=-O3 -g"
+			;;
+		ppcemu-system)
+			BuildPackage \
+				"${OS}" \
+				"unisim-ppcemu-system" \
+				"${PKG_VERSION}" \
+				"http://www.unisim-vp.com" \
+				"BSD" \
+				"UNISIM ppcemu-system" \
+				"UNISIM ppcemu-system is a full system simulator of a \"PowerMac G4 PCI\" like machine (MPC7447A/MPC107) with Linux boot support." \
+				"Emulators" \
+				"Development;Emulator;ConsoleOnly" \
+				"Gilles Mouchard <gilles.mouchard@cea.fr>" \
+				"bin/unisim-ppcemu-system-${PKG_VERSION}${EXE_SUFFIX} \
+				bin/unisim-ppcemu-system-debug-${PKG_VERSION}${EXE_SUFFIX} \
+				share/unisim-ppcemu-system-${PKG_VERSION}/AUTHORS \
+				share/unisim-ppcemu-system-${PKG_VERSION}/COPYING \
+				share/unisim-ppcemu-system-${PKG_VERSION}/ChangeLog \
+				share/unisim-ppcemu-system-${PKG_VERSION}/INSTALL \
+				share/unisim-ppcemu-system-${PKG_VERSION}/NEWS \
+				share/unisim-ppcemu-system-${PKG_VERSION}/README \
+				share/unisim-ppcemu-system-${PKG_VERSION}/gdb_powerpc.xml \
+				share/unisim-ppcemu-system-${PKG_VERSION}/device_tree_pmac_g4.xml \
+				share/unisim-ppcemu-system-${PKG_VERSION}/pc_linux_fr_keymap.xml \
+				share/unisim-ppcemu-system-${PKG_VERSION}/pc_linux_us_keymap.xml \
+				share/unisim-ppcemu-system-${PKG_VERSION}/pc_windows_keymap.xml \
+				share/unisim-ppcemu-system-${PKG_VERSION}/vmlinux \
+				share/unisim-ppcemu-system-${PKG_VERSION}/initrd.img \
+				share/unisim-ppcemu-system-${PKG_VERSION}/template_default_config.xml \
+				share/unisim-ppcemu-system-${PKG_VERSION}/unisim.ico" \
+				"/bin/libgcc_s_dw2-1.dll /bin/libxml2-2.dll /bin/SDL.dll" \
+				"share/unisim-ppcemu-system-${PKG_VERSION}/unisim.ico" \
+				"bin/unisim-ppcemu-system-${PKG_VERSION}${EXE_SUFFIX}" \
+				"-s enable-press-enter-at-exit=true" \
+				"--with-systemc=${SYSTEMC}" \
+				"CXXFLAGS=-O3 -g"
+			;;
+		embedded-ppc-g4-board)
+			BuildPackage \
+				"${OS}" \
+				"unisim-embedded-ppc-g4-board" \
+				"${PKG_VERSION}" \
+				"http://www.unisim-vp.com" \
+				"BSD" \
+				"UNISIM embedded-ppc-g4-board" \
+				"UNISIM embedded-ppc-g4-board is a full system simulator of an MPC7447A/MPC107 board with support of ELF32 binaries and targeted for industrial applications." \
+				"Emulators" \
+				"Development;Emulator;ConsoleOnly" \
+				"Gilles Mouchard <gilles.mouchard@cea.fr>" \
+				"bin/unisim-embedded-ppc-g4-board-${PKG_VERSION}${EXE_SUFFIX} \
+				bin/unisim-embedded-ppc-g4-board-debug-${PKG_VERSION}${EXE_SUFFIX} \
+				bin/unisim-embedded-ppc-g4-board-no-pci-stub-${PKG_VERSION}${EXE_SUFFIX} \
+				bin/unisim-embedded-ppc-g4-board-no-pci-stub-debug-${PKG_VERSION}${EXE_SUFFIX} \
+				share/unisim-embedded-ppc-g4-board-${PKG_VERSION}/AUTHORS \
+				share/unisim-embedded-ppc-g4-board-${PKG_VERSION}/COPYING \
+				share/unisim-embedded-ppc-g4-board-${PKG_VERSION}/ChangeLog \
+				share/unisim-embedded-ppc-g4-board-${PKG_VERSION}/INSTALL \
+				share/unisim-embedded-ppc-g4-board-${PKG_VERSION}/NEWS \
+				share/unisim-embedded-ppc-g4-board-${PKG_VERSION}/README \
+				share/unisim-embedded-ppc-g4-board-${PKG_VERSION}/gdb_powerpc.xml \
+				share/unisim-embedded-ppc-g4-board-${PKG_VERSION}/template_default_config.xml \
+				share/unisim-embedded-ppc-g4-board-${PKG_VERSION}/unisim.ico" \
+				"/bin/libgcc_s_dw2-1.dll /bin/libxml2-2.dll" \
+				"share/unisim-embedded-ppc-g4-board-${PKG_VERSION}/unisim.ico" \
+				"bin/unisim-embedded-ppc-g4-board-${PKG_VERSION}${EXE_SUFFIX}" \
+				"-s enable-press-enter-at-exit=true" \
+				"--with-systemc=${SYSTEMC}" \
+				"CXXFLAGS=-O3 -g"
+			;;
+		tms320c3x)
+			BuildPackage \
+				"${OS}" \
+				"unisim-tms320c3x" \
+				"${PKG_VERSION}" \
+				"http://www.unisim-vp.com" \
+				"BSD" \
+				"UNISIM tms320c3x" \
+				"UNISIM tms320c3x is a TMS320C3X DSP simulator with support of TI COFF binaries, and TI C I/O (RTS run-time)." \
+				"Emulators" \
+				"Development;Emulator;ConsoleOnly" \
+				"Gilles Mouchard <gilles.mouchard@cea.fr>" \
+				"bin/unisim-tms320c3x-${PKG_VERSION}${EXE_SUFFIX} \
+				bin/unisim-tms320c3x-debug-${PKG_VERSION}${EXE_SUFFIX} \
+				share/unisim-tms320c3x-${PKG_VERSION}/AUTHORS \
+				share/unisim-tms320c3x-${PKG_VERSION}/COPYING \
+				share/unisim-tms320c3x-${PKG_VERSION}/ChangeLog \
+				share/unisim-tms320c3x-${PKG_VERSION}/INSTALL \
+				share/unisim-tms320c3x-${PKG_VERSION}/NEWS \
+				share/unisim-tms320c3x-${PKG_VERSION}/README \
+				share/unisim-tms320c3x-${PKG_VERSION}/unisim.ico \
+				share/unisim-tms320c3x-${PKG_VERSION}/template_default_config.xml \
+				share/unisim-tms320c3x-${PKG_VERSION}/fibo.out \
+				share/unisim-tms320c3x-${PKG_VERSION}/c31boot.out \
+				share/unisim-tms320c3x-${PKG_VERSION}/tms320c3x_manual.pdf" \
+				"/bin/libgcc_s_dw2-1.dll /bin/libxml2-2.dll" \
+				"share/unisim-tms320c3x-${PKG_VERSION}/unisim.ico" \
+				"bin/unisim-tms320c3x-${PKG_VERSION}${EXE_SUFFIX}" \
+				"-s enable-press-enter-at-exit=true fibo.out" \
+				"CXXFLAGS=-O3 -g"
+			;;
+		armemu)
+			BuildPackage \
+				"${OS}" \
+				"unisim-armemu" \
+				"${PKG_VERSION}" \
+				"http://www.unisim-vp.com" \
+				"BSD" \
+				"UNISIM armemu" \
+				"UNISIM armemu is a user level ARM simulator with support of ELF32 binaries and Linux system call translation." \
+				"Emulators" \
+				"Development;Emulator;ConsoleOnly" \
+				"Daniel Gracia Pérez <daniel.gracia-perez@cea.fr>" \
+				"bin/unisim-armemu-${PKG_VERSION}${EXE_SUFFIX} \
+				share/unisim-armemu-${PKG_VERSION}/AUTHORS.txt \
+				share/unisim-armemu-${PKG_VERSION}/COPYING.txt \
+				share/unisim-armemu-${PKG_VERSION}/INSTALL.txt \
+				share/unisim-armemu-${PKG_VERSION}/NEWS.txt \
+				share/unisim-armemu-${PKG_VERSION}/README.txt \
+				lib/libunisim-armemu.so \
+				lib/libunisim-armemu.so.0.2 \
+				lib/libunisim-armemu.so.${PKG_VERSION} \
+				share/unisim-armemu-${PKG_VERSION}/test/src/CMakeLists.txt \
+				share/unisim-armemu-${PKG_VERSION}/test/src/main.c \
+				share/unisim-armemu-${PKG_VERSION}/test/src/toolchain-armv5l.cmake \
+				share/unisim-armemu-${PKG_VERSION}/gdb_server/gdb_armv5l.xml \
+				share/unisim-armemu-${PKG_VERSION}/template-default-config.xml" \
+				"/bin/libgcc_s_dw2-1.dll /bin/libxml2-2.dll" \
+				"" \
+				"" \
+				"" \
+				"-Dwith_osci_systemc=${SYSTEMC}" \
+				"-Dwith_osci_tlm2=${TLM20}"
+			;;
+		*)
+			echo "Unknown package \"${PKG_NAME}\""
+			;;
+	esac
+done

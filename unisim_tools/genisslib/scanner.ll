@@ -430,6 +430,7 @@ Scanner::add_lookupdir( char const* _dir ) {
     buffer.write( "/" ).write( _dir );
 #endif
     s_lookupdirs.push_back( buffer.m_storage );
+    break;
   }
   
 }
