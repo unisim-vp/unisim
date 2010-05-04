@@ -378,13 +378,26 @@ void
 Scanner::add_lookupdir( char const* _dir ) {
 #ifdef WIN32
   if((((_dir[0] >= 'a' && _dir[0] <= 'z') || (_dir[0] >= 'A' && _dir[0] <= 'Z')) && (_dir[1] == ':') && ((_dir[2] == '\\') || (_dir[2] == '/'))) || (*_dir == '/'))
+  {
+     // convert '\' into '/' to have a UNIX friendly path as gcc doesn't like '\' in filenames in #line directives
+     int len = strlen(_dir);
+     char cv_dir[len + 1];
+     char *pch:
+     char *cv_pch;
+     for(pch = _dir, cv_pch = cv_dir; *pch; pch++, cv_pch++)
+     {
+        if(*pch == '\\') *cv_pch = '/'; else *cv_pch = *pch;
+     }
+     cv_dir[len] = 0;
+     s_lookupdirs.push_back( cv_dir );
+  }
 #else
   if( *_dir == '/' )
-#endif
   {
     s_lookupdirs.push_back( _dir );
     return;
   }
+#endif
   
   Str::Buf buffer( Str::Buf::Recycle );
   for( intptr_t capacity = 128; true; capacity *= 2 ) {
@@ -395,15 +408,31 @@ Scanner::add_lookupdir( char const* _dir ) {
     }
 #ifdef WIN32
 	assert((((storage[0] >= 'a' && storage[0] <= 'z') || (storage[0] >= 'A' && storage[0] <= 'Z')) && (storage[1] == ':') && ((storage[2] == '\\') || (storage[2] == '/'))) || (*storage == '/'));
+    // convert '\' into '/' to have a UNIX friendly path as gcc doesn't like '\' in filenames in #line directives
+    char *pch:
+    for(pch = storage; *pch; pch++)
+    {
+       if(*pch == '\\') *pch = '/';
+    }
+    int len = strlen(_dir);
+    char cv_dir[len + 1];
+    char *cv_pch;
+    for(pch = _dir, cv_pch = cv_dir; *pch; pch++, cv_pch++)
+    {
+       if(*pch == '\\') *cv_pch = '/'; else *cv_pch = *pch;
+    }
+    cv_dir[len] = 0;
+    buffer.write( storage );
+    buffer.write( "/" ).write( cv_dir );
 #else
     assert( storage[0] == '/' ); // a directory path does not start with '/' on a windows host !
-#endif
     buffer.write( storage );
+    buffer.write( "/" ).write( _dir );
+#endif
+    s_lookupdirs.push_back( buffer.m_storage );
     break;
   }
   
-  buffer.write( "/" ).write( _dir );
-  s_lookupdirs.push_back( buffer.m_storage );
 }
 
 ConstStr_t
