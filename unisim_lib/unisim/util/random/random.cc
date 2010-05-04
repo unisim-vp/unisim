@@ -34,6 +34,10 @@
 
 #include <unisim/util/random/random.hh>
 
+namespace unisim {
+namespace util {
+namespace random {
+
 Random::Random(int32_t seed_x, int32_t seed_y, int32_t seed_z, int32_t seed_w)
 	: x(seed_x)
 	, y(seed_y)
@@ -76,3 +80,7 @@ int32_t Random::Generate(uint32_t radius)
 
 	return (int32_t) r;
 }
+
+} // end of namespace random
+} // end of namespace util
+} // end of namespace unisim
