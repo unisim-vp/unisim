@@ -70,7 +70,7 @@ int32_t Random::Generate()
 int32_t Random::Generate(uint32_t radius)
 {
 	// generate a random value between Min and Max
-	int64_t r = generate();
+	int64_t r = Generate();
 
 	// compute current radius
 	uint64_t cur_radius = (uint64_t) Max + 1;
