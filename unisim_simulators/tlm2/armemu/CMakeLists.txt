@@ -283,6 +283,7 @@ set ( PYTHON__ARMEMU__LIBS
 	 'unisim__service__os__linux_os',
 	 'unisim__service__debug__gdb_server',
 	 'unisim__service__debug__inline_debugger',
+	 'unisim__util__random',
 	 'unisim__util__debug',
 	 'unisim__util__xml',
 	 'unisim__kernel',

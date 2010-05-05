@@ -177,6 +177,7 @@
 			<dep>unisim::util::endian</dep>
 			<dep>unisim::util::arithmetic</dep>
 			<dep>unisim::util::debug</dep>
+			<dep>unisim::util::random</dep>
 			<dep>unisim::service::interfaces::memory</dep>
 			<dep>unisim::service::interfaces::loader</dep>
 			<dep>unisim::service::interfaces::linux_os</dep>

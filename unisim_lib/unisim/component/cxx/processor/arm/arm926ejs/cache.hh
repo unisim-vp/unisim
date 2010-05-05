@@ -36,6 +36,7 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_ARM926EJS_CACHE_HH__
 
 #include <inttypes.h>
+#include "unisim/util/random/random.hh"
 
 #ifdef GCC_INLINE
 #undef GCC_INLINE
@@ -125,6 +126,8 @@ private:
 	static const uint32_t m_line_size_ = 32;
 	static const uint32_t m_set_shift_ = 5;
 	static const uint32_t m_index_mask_ = 0x01fULL;
+
+	unisim::util::random::Random rand;
 
 	bool m_is_ok;
 	uint32_t m_size;

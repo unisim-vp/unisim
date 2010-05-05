@@ -25,6 +25,7 @@ set ( cxx_arm_subdirs
 	unisim/util/endian
 	unisim/util/arithmetic
 	unisim/util/debug
+	unisim/util/random
 	unisim/service/interfaces/memory
 	unisim/service/interfaces/loader
 	unisim/service/interfaces/linux_os
@@ -191,6 +192,7 @@ add_dependencies ( unisim__component__cxx__processor__arm
 	unisim__util__endian
 	unisim__util__arithmetic
 	unisim__util__debug
+	unisim__util__random
 	unisim__service__interfaces__memory
 	unisim__service__interfaces__loader
 	unisim__service__interfaces__linux_os
@@ -211,6 +213,7 @@ list ( APPEND link_libraries
 	unisim__kernel
 	unisim__util__endian
 	unisim__util__debug
+	unisim__util__random
 	) 
 target_link_libraries ( unisim__component__cxx__processor__arm
 	${link_libraries}
