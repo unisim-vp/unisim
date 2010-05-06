@@ -382,7 +382,7 @@ Scanner::add_lookupdir( char const* _dir ) {
      // convert '\' into '/' to have a UNIX friendly path as gcc doesn't like '\' in filenames in #line directives
      int len = strlen(_dir);
      char cv_dir[len + 1];
-     char *pch:
+     const char *pch;
      char *cv_pch;
      for(pch = _dir, cv_pch = cv_dir; *pch; pch++, cv_pch++)
      {
@@ -407,21 +407,26 @@ Scanner::add_lookupdir( char const* _dir ) {
       continue; 
     }
 #ifdef WIN32
-	assert((((storage[0] >= 'a' && storage[0] <= 'z') || (storage[0] >= 'A' && storage[0] <= 'Z')) && (storage[1] == ':') && ((storage[2] == '\\') || (storage[2] == '/'))) || (*storage == '/'));
+    assert((((storage[0] >= 'a' && storage[0] <= 'z') || (storage[0] >= 'A' && storage[0] <= 'Z')) && (storage[1] == ':') && ((storage[2] == '\\') || (storage[2] == '/'))) || (*storage == '/'));
     // convert '\' into '/' to have a UNIX friendly path as gcc doesn't like '\' in filenames in #line directives
-    char *pch:
-    for(pch = storage; *pch; pch++)
     {
-       if(*pch == '\\') *pch = '/';
+      char *pch;
+      for(pch = storage; *pch; pch++)
+      {
+         if(*pch == '\\') *pch = '/';
+      }
     }
     int len = strlen(_dir);
     char cv_dir[len + 1];
-    char *cv_pch;
-    for(pch = _dir, cv_pch = cv_dir; *pch; pch++, cv_pch++)
     {
-       if(*pch == '\\') *cv_pch = '/'; else *cv_pch = *pch;
+      const char *pch;
+      char *cv_pch;
+      for(pch = _dir, cv_pch = cv_dir; *pch; pch++, cv_pch++)
+      {
+         if(*pch == '\\') *cv_pch = '/'; else *cv_pch = *pch;
+      }
+      cv_dir[len] = 0;
     }
-    cv_dir[len] = 0;
     buffer.write( storage );
     buffer.write( "/" ).write( cv_dir );
 #else

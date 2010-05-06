@@ -56,8 +56,8 @@ function BuildRPM
 	START_PARAMS="$1"
 	shift
 
-	DISTRIB_ID=$(cat /etc/*-release | sed -n 's/DISTRIB_ID=\(.*\)/\1/p' | head -n 1)
-	DISTRIB_RELEASE=$(cat /etc/*-release | sed -n 's/DISTRIB_RELEASE=\(.*\)/\1/p' | head -n 1)
+	DISTRIB_ID=$(cat /etc/lsb-release | sed -n 's/DISTRIB_ID=\(.*\)/\1/p' | head -n 1)
+	DISTRIB_RELEASE=$(cat /etc/lsb-release | sed -n 's/DISTRIB_RELEASE=\(.*\)/\1/p' | head -n 1)
 	RELEASE="${DISTRIB_ID}${DISTRIB_RELEASE}"
 
 	TOP_DIR="${HOME}/tmp/rpm"
@@ -217,8 +217,8 @@ function BuildDEB
 	START_PARAMS="$1"
 	shift
 
-	DISTRIB_ID=$(cat /etc/*-release | sed -n 's/DISTRIB_ID=\(.*\)/\1/p' | head -n 1)
-	DISTRIB_RELEASE=$(cat /etc/*-release | sed -n 's/DISTRIB_RELEASE=\(.*\)/\1/p' | head -n 1)
+	DISTRIB_ID=$(cat /etc/lsb-release | sed -n 's/DISTRIB_ID=\(.*\)/\1/p' | head -n 1)
+	DISTRIB_RELEASE=$(cat /etc/lsb-release | sed -n 's/DISTRIB_RELEASE=\(.*\)/\1/p' | head -n 1)
 	RELEASE="${DISTRIB_ID}${DISTRIB_RELEASE}"
 
 	PREFIX=/usr
@@ -312,7 +312,7 @@ function BuildDEB
 	ARCH=i386
 	# Fill-in DEBIAN/control
 	echo "Package: ${NAME}" > ${CONTROL_FILE}
-	echo "Version: ${VERSION}" >> ${CONTROL_FILE}
+	echo "Version: ${VERSION}-${RELEASE}" >> ${CONTROL_FILE}
 	echo "Section: ${SECTION}" >> ${CONTROL_FILE}
 	echo "Priority: optional" >> ${CONTROL_FILE}
 	echo "Architecture: ${ARCH}" >> ${CONTROL_FILE}
@@ -338,7 +338,7 @@ function BuildDEB
 	echo "========================================="
 	
 	cd ${HERE}
-	echo "Building ${NAME}_${VERSION}_${ARCH}.deb"
+	echo "Building ${NAME}_${VERSION}-${RELEASE}_${ARCH}.deb"
 	fakeroot dpkg-deb --build "${INSTALL_DIR}" "${HERE}" &> /dev/null || exit -1
 
 	rm -rf "${TOP_DIR}"
@@ -710,6 +710,39 @@ for PKG in "$@"; do
 				"" \
 				"-Dwith_osci_systemc=${SYSTEMC}" \
 				"-Dwith_osci_tlm2=${TLM20}"
+			;;
+		star12x)
+			BuildPackage \
+				"${OS}" \
+				"unisim-star12x" \
+				"${PKG_VERSION}" \
+				"http://www.unisim-vp.com" \
+				"BSD" \
+				"UNISIM star12x" \
+				"UNISIM star12x, a Star12X System-on-Chip simulator with support of ELF32 binaries and s19 hex files, and targeted for automotive applications." \
+				"Emulators" \
+				"Development;Emulator;ConsoleOnly" \
+				"Reda Nouacer <reda.nouacer@cea.fr>" \
+				"bin/unisim-star12x-${PKG_VERSION}${EXE_SUFFIX} \
+				share/unisim-star12x-${PKG_VERSION}/AUTHORS \
+				share/unisim-star12x-${PKG_VERSION}/COPYING \
+				share/unisim-star12x-${PKG_VERSION}/ChangeLog \
+				share/unisim-star12x-${PKG_VERSION}/INSTALL \
+				share/unisim-star12x-${PKG_VERSION}/NEWS \
+				share/unisim-star12x-${PKG_VERSION}/README \
+				share/unisim-star12x-${PKG_VERSION}/gdb_hcs12x.xml \
+				share/unisim-star12x-${PKG_VERSION}/default_config.xml \
+				share/unisim-star12x-${PKG_VERSION}/unisim.ico \
+				share/unisim-star12x-${PKG_VERSION}/ATD.xls \
+				share/unisim-star12x-${PKG_VERSION}/ATD.xml \
+				share/unisim-star12x-${PKG_VERSION}/pwm.xls" \
+				"/bin/libgcc_s_dw2-1.dll /bin/libxml2-2.dll" \
+				"share/unisim-star12x-${PKG_VERSION}/unisim.ico" \
+				"bin/unisim-star12x-${PKG_VERSION}${EXE_SUFFIX}" \
+				"-s enable-press-enter-at-exit=true" \
+				"--with-systemc=${SYSTEMC}" \
+				"--with-tlm20=${TLM20}" \
+				"CXXFLAGS=-O3 -g"
 			;;
 		*)
 			echo "Unknown package \"${PKG_NAME}\""
