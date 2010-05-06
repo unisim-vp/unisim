@@ -12,15 +12,19 @@
 			<file>share/test/src/main.c</file>
 			<file>share/test/src/CMakeLists.txt</file>
 			<file>share/test/src/toolchain-armv5l.cmake</file>
+			<file>share/test/test.armv5l</file>
 			<file>share/logo/logo_unisim.icns</file>
 			<file>share/logo/logo_unisim.png</file>
 			<file>share/logo/logo_unisim256.png</file>
 			<file>share/logo/logo_unisim128.png</file>
 			<file>share/logo/logo_unisim32.png</file>
 			<file>share/logo/logo_unisim16.png</file>
+			<file>share/logo/unisim.ico</file>
 			<file>share/macosx/armemu-launcher.scpt</file>
 			<file>share/macosx/armemu-launcher.sh.in</file>
 			<file>share/macosx/Info.plist</file>
+			<file>share/linux/unisim-armemu.desktop.in</file>
+			<file>share/linux/find_deb_dependencies.sh</file>
 			<file>python_lib.cc</file>
 			<file>setup.py.in</file>
 			<file>AUTHORS.txt</file>

@@ -63,6 +63,7 @@ namespace arm {
 namespace arm926ejs {
 
 	Cache::Cache() :
+	rand(1, -1, rand.Max, rand.Min),
 	m_is_ok(false),
 	m_size(0),
 	m_round_robin_replacement_policy(false)
@@ -235,11 +236,7 @@ namespace arm926ejs {
 		else
 		{
 			// current replacement policy is random
-#ifdef WIN32
-			m_replacement_history[set] = rand() % m_associativity_;
-#else
-			m_replacement_history[set] = random() % m_associativity_;
-#endif
+			m_replacement_history[set] = rand.Generate(m_associativity_);
 		}
 		return m_replacement_history[set];
 	}
