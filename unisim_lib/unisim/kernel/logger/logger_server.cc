@@ -50,7 +50,7 @@ std::vector<const unisim::kernel::service::Object *> *LoggerServer::obj_refs = 0
 
 LoggerServer::
 LoggerServer() :
-	Object(LoggerServer::name, 0),
+	Object(LoggerServer::name, 0, "UNISIM kernel logger"),
 	xml_writer(0),
 	opt_std_err(true),
 	param_std_err("std_err", this, opt_std_err, "Show logger output through the standard error output"),

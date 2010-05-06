@@ -53,7 +53,7 @@ using unisim::kernel::logger::EndDebugError;
 	
 template <class ADDRESS>
 Display<ADDRESS>::Display(const char *name, Object *parent) :
-	Object(name, parent),
+	Object(name, parent, "PCI Video frame buffer display"),
 	Service<Memory<ADDRESS> >(name, parent),
 	Client<Video<ADDRESS> >(name, parent),
 	memory_export("memory-export", this),

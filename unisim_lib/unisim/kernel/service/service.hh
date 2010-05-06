@@ -86,10 +86,11 @@ using std::vector;
 
 class EmptyClientInterface {};
 class Object;
-class Object;
 class VariableBase;
 template <class TYPE> class Variable;
+template <class TYPE> class Parameter;
 template <class TYPE> class VariableArray;
+template <class TYPE> class ParameterArray;
 template <class SERVICE_IF> class Client;
 template <class SERVICE_IF> class Service;
 class ServiceImportBase;
@@ -132,7 +133,7 @@ public:
 	virtual ~VariableBase();
 
 	Object *GetOwner() const;
-	VariableBase *GetObject() const;
+	VariableBase *GetContainer() const;
 	const char *GetName() const;
 	const char *GetVarName() const;
 	const char *GetDescription() const;
@@ -145,6 +146,7 @@ public:
 	bool AddEnumeratedValue(const char *value);
 	bool RemoveEnumeratedValue(const char *value);
 	void SetFormat(Format fmt);
+	bool IsVoid() const;
 
 	virtual operator bool () const;
 	operator char () const;
@@ -176,6 +178,17 @@ public:
 	virtual VariableBase& operator = (const char * value);
 
 	virtual VariableBase& operator [] (unsigned int index);
+	virtual const VariableBase& operator [] (unsigned int index) const;
+	virtual unsigned int GetLength() const;
+	
+	virtual VariableBase& operator = (const VariableBase& variable);
+	
+	bool IsMutable() const;
+	bool IsVisible() const;
+	bool IsSerializable() const;
+	void SetMutable(bool is_mutable);
+	void SetVisible(bool is_visible);
+	void SetSerializable(bool is_serializable);
 private:
 	string name;
 	string var_name;
@@ -185,70 +198,148 @@ private:
 	vector<string> enumerated_values;
 	Type type;
 	Format fmt;
+	bool is_mutable;
+	bool is_visible;
+	bool is_serializable;
 };
 
 //=============================================================================
-//=                             ServiceManager                                =
+//=                                 Simulator                                 =
 //=============================================================================
 
-class ServiceManager
+class Simulator
 {
 public:
-	static void Register(Object *object);
-	static void Register(ServiceImportBase *srv_import);
-	static void Register(ServiceExportBase *srv_export);
-	static void Register(VariableBase *variable);
+	static Simulator *simulator;
+	VariableBase *void_variable;
 
-	static void Unregister(Object *object);
-	static void Unregister(ServiceImportBase *srv_import);
-	static void Unregister(ServiceExportBase *srv_export);
-	static void Unregister(VariableBase *variable);
+	Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator *simulator) = 0);
+	virtual ~Simulator();
+	bool Setup();
 
-	static void Dump(ostream& os);
-	static void DumpVariables(ostream& os, VariableBase::Type filter_type = VariableBase::VAR_VOID);
-	static void DumpStatistics(ostream& os);
-	static void DumpParameters(ostream& os);
-	static void DumpRegisters(ostream& os);
-	static void DumpFormulas(ostream& os);
+	const VariableBase *FindVariable(const char *name, VariableBase::Type type = VariableBase::VAR_VOID) const;
+	VariableBase *FindVariable(const char *name, VariableBase::Type type = VariableBase::VAR_VOID);
+	const VariableBase *FindArray(const char *name) const;
+	VariableBase *FindArray(const char *name);
+	const VariableBase *FindParameter(const char *name) const;
+	VariableBase *FindParameter(const char *name);
+	const VariableBase *FindRegister(const char *name) const;
+	VariableBase *FindRegister(const char *name);
+	const VariableBase *FindStatistic(const char *name) const;
+	VariableBase *FindStatistic(const char *name);
+	const VariableBase *FindFormula(const char *name) const;
+	VariableBase *FindFormula(const char *name);
 
-	static bool XmlfyParameters(const char *filename);
-	static bool XmlfyStatistics(const char *filename);
-	static bool XmlfyRegisters(const char *filename);
-	static bool XmlfyFormulas(const char *filename);
+	void GetVariables(list<VariableBase *>& lst, VariableBase::Type type = VariableBase::VAR_VOID);
+	void GetArrays(list<VariableBase *>& lst);
+	void GetParameters(list<VariableBase *>& lst);
+	void GetRegisters(list<VariableBase *>& lst);
+	void GetStatistics(list<VariableBase *>& lst);
+	void GetFormulas(list<VariableBase *>& lst);
 
-	static bool LoadXmlParameters(const char *filename);
-	static bool LoadXmlStatistics(const char *filename);
-	static bool LoadXmlRegisters(const char *filename);
-	static bool LoadXmlFormulas(const char *filename);
+	void Dump(ostream& os);
+	void DumpVariables(ostream& os, VariableBase::Type filter_type = VariableBase::VAR_VOID);
+	void DumpStatistics(ostream& os);
+	void DumpParameters(ostream& os);
+	void DumpRegisters(ostream& os);
+	void DumpFormulas(ostream& os);
 
-	static bool XmlfyVariables(const char *filename);
-	static bool LoadXmlVariables(const char *filename);
+	bool GetExecutablePath(const char *argv0, std::string& out_execute_path) const;
+	bool GetBinPath(const char *argv0, std::string& out_bin_dir, std::string& out_bin_program) const;
+	bool GetSharePath(const std::string& bin_dir, std::string& out_share_dir) const;
+	string SearchSharedDataFile(const char *filename) const;
 
-	static bool Setup();
-
-	static VariableBase *GetVariable(const char *name, VariableBase::Type type = VariableBase::VAR_VOID);
-	static VariableBase *GetArray(const char *name);
-	static VariableBase *GetParameter(const char *name);
-	static VariableBase *GetRegister(const char *name);
-	static VariableBase *GetStatistic(const char *name);
-	static VariableBase *GetFormula(const char *name);
-
-	static void GetVariables(list<VariableBase *>& lst, VariableBase::Type type = VariableBase::VAR_VOID);
-	static void GetArrays(list<VariableBase *>& lst);
-	static void GetParameters(list<VariableBase *>& lst);
-	static void GetRegisters(list<VariableBase *>& lst);
-	static void GetStatistics(list<VariableBase *>& lst);
-	static void GetFormulas(list<VariableBase *>& lst);
-
-	static VariableBase void_variable;
-
-	static void GetRootObjects(list<Object *>& lst);
-
+	void GenerateLatexDocumentation(ostream& os) const;
+	
 private:
 	friend class Object;
 	friend class VariableBase;
+	template <class TYPE> friend class Variable;
 	friend class XMLHelper;
+	friend class ServiceImportBase;
+	friend class ServiceExportBase;
 
+	int argc;
+	char **argv;
+	string shared_data_dir;
+	std::map<string, string> set_vars;
+	string get_config_filename;
+	bool list_parms;
+	bool get_config;
+	bool generate_doc;
+	string generate_doc_filename;
+	bool enable_warning;
+	bool enable_version;
+	bool enable_help;
+	bool warn_get_bin_path;
+	bool warn_get_share_path;
+	bool enable_press_enter_at_exit;
+	string bin_dir;
+	string program_binary;
+	string program_name;
+	string authors;
+	string copyright;
+	string description;
+	string version;
+	string license;
+	Parameter<bool> *param_get_config;
+	Parameter<string> *var_program_name;
+	Parameter<string> *var_authors;
+	Parameter<string> *var_copyright;
+	Parameter<string> *var_description;
+	Parameter<string> *var_version;
+	Parameter<string> *var_license;
+	Parameter<bool> *param_enable_press_enter_at_exit;
+	
+	void Version(ostream& os) const;
+	void Help(ostream& os) const;
+	
+	void Register(Object *object);
+	void Register(ServiceImportBase *srv_import);
+	void Register(ServiceExportBase *srv_export);
+	void Register(VariableBase *variable);
+
+	void Unregister(Object *object);
+	void Unregister(ServiceImportBase *srv_import);
+	void Unregister(ServiceExportBase *srv_export);
+	void Unregister(VariableBase *variable);
+	
+	void Initialize(VariableBase *variable);
+
+	bool XmlfyParameters(const char *filename);
+	bool XmlfyStatistics(const char *filename);
+	bool XmlfyRegisters(const char *filename);
+	bool XmlfyFormulas(const char *filename);
+
+	bool LoadXmlParameters(const char *filename);
+	bool LoadXmlStatistics(const char *filename);
+	bool LoadXmlRegisters(const char *filename);
+	bool LoadXmlFormulas(const char *filename);
+
+	bool XmlfyVariables(const char *filename);
+	bool LoadXmlVariables(const char *filename);
+
+	void GetRootObjects(list<Object *>& lst);
+	
+	class CommandLineOption
+	{
+	public:
+		CommandLineOption(char short_name, const char *long_name, const char *opt_description, const char *arg_description = 0);
+		char GetShortName() const;
+		const char *GetLongName() const;
+		bool HasArgument() const;
+		const char *GetArgumentDescription() const;
+		const char *GetOptionDescription() const;
+		int operator == (const char *arg) const;
+	private:
+		char short_name;
+		const char *long_name;
+		const char *arg_description;
+		const char *opt_description;
+	};
+
+	std::vector<CommandLineOption> command_line_options;
+	
 	struct ltstr
 	{
 		bool operator() (const char *s1, const char *s2) const
@@ -257,12 +348,31 @@ private:
 		}
 	};
 
-	static map<const char *, Object *, ltstr> objects;
-	static map<const char *, ServiceImportBase *, ltstr> imports;
-	static map<const char *, ServiceExportBase *, ltstr> exports;
-	static map<const char *, VariableBase *, ltstr> variables;
-//
-//	static void ProcessXmlVariableNode(xmlTextReaderPtr reader);
+	map<const char *, Object *, ltstr> objects;
+	map<const char *, ServiceImportBase *, ltstr> imports;
+	map<const char *, ServiceExportBase *, ltstr> exports;
+	map<const char *, VariableBase *, ltstr> variables;
+	
+	string *cmd_args;
+	ParameterArray<string> *param_cmd_args;
+	
+public:
+	template <typename T> T GetVariable(const char *variable_name, const T *t = 0) const;
+	
+	void SetVariable(const char *variable_name, const char *variable_value);
+	void SetVariable(const char *variable_name, bool variable_value);
+	void SetVariable(const char *variable_name, char variable_value);
+	void SetVariable(const char *variable_name, unsigned char variable_value);
+	void SetVariable(const char *variable_name, short variable_value);
+	void SetVariable(const char *variable_name, unsigned short variable_value);
+	void SetVariable(const char *variable_name, int variable_value);
+	void SetVariable(const char *variable_name, unsigned int variable_value);
+	void SetVariable(const char *variable_name, long variable_value);
+	void SetVariable(const char *variable_name, unsigned long variable_value);
+	void SetVariable(const char *variable_name, unsigned long long variable_value);
+	void SetVariable(const char *variable_name, long long variable_value);
+	void SetVariable(const char *variable_name, float variable_value);
+	void SetVariable(const char *variable_name, double variable_value);
 };
 
 //=============================================================================
@@ -402,7 +512,12 @@ public:
 	virtual ~VariableArray();
 
 	virtual VariableBase& operator [] (unsigned int index);
+	virtual const VariableBase& operator [] (unsigned int index) const;
 	void SetFormat(Format fmt);
+	virtual unsigned int GetLength() const;
+	virtual VariableBase& operator = (const VariableBase& variable);
+	virtual const char *GetDataTypeName() const;
+
 private:
 	vector<VariableBase *> variables;
 };
@@ -440,9 +555,38 @@ VariableBase& VariableArray<TYPE>::operator [] (unsigned int index)
 	if(index >= variables.size())
 	{
 		cerr << "Subscript out of range" << endl;
-		return ServiceManager::void_variable;
+		return *Simulator::simulator->void_variable;
 	}
 	return *variables[index];
+}
+
+template <class TYPE>
+const VariableBase& VariableArray<TYPE>::operator [] (unsigned int index) const
+{
+	if(index >= variables.size())
+	{
+		cerr << "Subscript out of range" << endl;
+		return *Simulator::simulator->void_variable;
+	}
+	return *variables[index];
+}
+
+template <class TYPE>
+unsigned int VariableArray<TYPE>::GetLength() const
+{
+	return variables.size();
+}
+
+template <class TYPE>
+VariableBase& VariableArray<TYPE>::operator = (const VariableBase& variable)
+{
+	unsigned int index;
+	unsigned int length = variable.GetLength();
+	for(index = 0; index < length && index < variables.size(); index++)
+	{
+		*variables[index] = variable[index];
+	}
+	return *this;
 }
 
 template <class TYPE>
@@ -454,6 +598,12 @@ void VariableArray<TYPE>::SetFormat(Format fmt)
 	{
 		(*variable_iter)->SetFormat(fmt);
 	}
+}
+
+template <class TYPE>
+const char *VariableArray<TYPE>::GetDataTypeName() const
+{
+	return "array";
 }
 
 template <class TYPE>
@@ -484,7 +634,7 @@ public:
 class Object
 {
 public:
-	Object(const char *name, Object *parent = 0);
+	Object(const char *name, Object *parent = 0, const char *description = 0);
 	virtual ~Object();
 
 	virtual void OnDisconnect();
@@ -503,14 +653,18 @@ public:
 	const list<ServiceImportBase *>& GetServiceImports() const;
 	const list<ServiceExportBase *>& GetServiceExports() const;
 	const list<Object *>& GetLeafs() const;
-	const list<VariableBase *>& GetVariables() const;
+	void GetVariables(list<VariableBase *>& lst) const;
 	Object *GetParent() const;
 	void Disconnect();
 	VariableBase& operator [] (const char *name);
 	list<ServiceImportBase *>& GetSetupDependencies();
 	void SetupDependsOn(ServiceImportBase& srv_import);
+	Simulator *GetSimulator() const;
+	void GenerateLatexDocumentation(ostream& os) const;
+	const char *GetDescription() const;
 private:
 	string object_name;
+	string description;
 	Object *parent;
 	list<VariableBase *> variables;
 	list<ServiceImportBase *> srv_imports;

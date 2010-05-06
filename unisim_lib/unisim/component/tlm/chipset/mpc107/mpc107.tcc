@@ -63,7 +63,7 @@ MPC107<PHYSICAL_ADDR, MAX_TRANSACTION_DATA_SIZE,
 	PCI_ADDR, MAX_PCI_TRANSACTION_DATA_SIZE, DEBUG>::
 MPC107(const sc_module_name &name, Object *parent) :
 	sc_module(name),
-	Object(name, parent),
+	Object(name, parent, "MPC107 chipset"),
 	Service<Memory<PHYSICAL_ADDR> >(name, parent),
 	Client<Memory<PHYSICAL_ADDR> >(name, parent),
 	logger(*this),

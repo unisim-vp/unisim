@@ -50,7 +50,7 @@ namespace time {
 namespace host_time {
 
 HostTime::HostTime(const char *name, Object *parent) :
-	Object(name, parent),
+	Object(name, parent, "Host time"),
 	Service<Time>(name, parent),
 	time_export("time-export", this)
 {

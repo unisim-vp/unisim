@@ -18,7 +18,7 @@ endforeach ( C_INCLUDE )
 
 set ( host_time_subdirs
 	unisim/service/interfaces/time
-	unisim/kernel/service
+	unisim/kernel
 	)
 
 foreach ( dir ${host_time_subdirs} )
@@ -30,6 +30,10 @@ include_directories ( ${CMAKE_SOURCE_DIR} )
 add_library ( unisim__service__time__host_time
 		${CMAKE_SOURCE_DIR}/unisim/service/time/host_time/time.hh
 		${CMAKE_SOURCE_DIR}/unisim/service/time/host_time/time.cc
+	)
+	
+target_link_libraries ( unisim__service__time__host_time
+	unisim__kernel
 	)
 
 message ( STATUS "Checking unisim::service::time::host_time - done" )

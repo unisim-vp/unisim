@@ -111,7 +111,7 @@ bool S19_Loader<MEMORY_ADDR>::Setup() {
 	
 	linenum = 0;
 
-	bootptr = fopen(filename.c_str(), "r");
+	bootptr = fopen(Object::GetSimulator()->SearchSharedDataFile(filename.c_str()).c_str(), "r");
 	if (!bootptr)  {
 		ShowError(ERR_NOFILE,0,NULL);
 		return false;

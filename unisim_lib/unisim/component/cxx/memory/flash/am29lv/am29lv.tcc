@@ -59,7 +59,7 @@ using unisim::kernel::logger::EndDebugError;
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
 AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::AM29LV(const char *name, Object *parent) :
-	Object(name, parent),
+	Object(name, parent, "AM29LVxxx flash memory"),
 	Service<Memory<typename CONFIG::ADDRESS> >(name, parent),
 	memory_export("memory-export", this),
 	logger(*this),

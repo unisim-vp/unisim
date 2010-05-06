@@ -55,7 +55,7 @@ template <class ADDRESS_TYPE, class PCI_ADDRESS_TYPE, bool DEBUG>
 AddressMap<ADDRESS_TYPE, PCI_ADDRESS_TYPE, DEBUG>::AddressMap(ConfigurationRegisters &_config_regs,
 	ATU<ADDRESS_TYPE, PCI_ADDRESS_TYPE, DEBUG> &_atu,
 	const char *name, Object *parent) :
-	Object(name, parent),
+	Object(name, parent, "MPC107 Address mapper"),
 	logger(*this),
 	verbose(false),
 	param_verbose("verbose", this, verbose, "enable/disable verbosity"),

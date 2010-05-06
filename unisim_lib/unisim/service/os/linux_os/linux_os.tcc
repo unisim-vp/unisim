@@ -129,14 +129,12 @@ LinuxOS(const char *name, Object *parent) :
 	system(""),
 	param_system("system", this, system, "Emulated system architecture "
 			"available values are \"arm\" and \"powerpc\""),
-    endianess(E_LITTLE_ENDIAN),
-    param_endian("endianess", this, endianess),
+	endianess(E_LITTLE_ENDIAN),
+    endianess_string("little-endian"),
+    param_endian("endianness", this, endianess_string,
+    		"The endianness of the binary loaded. Available values are: little-endian and big-endian."),
 	memory_page_size(4096),
 	param_memory_page_size("memory-page-size", this, memory_page_size),
-	linux_kernel("2.6.27.35"),
-	param_linux_kernel("linux-kernel", this, linux_kernel, "A string containing"
-			" the linux kernel version that the program emulated was compiled"
-			" for. Currently only version 2.6.27.35 is supported"),
 	utsname_sysname("Linux"),
 	param_utsname_sysname("utsname-sysname", this, utsname_sysname,
 			"The value that the uname system call should return. As this"
@@ -172,8 +170,7 @@ LinuxOS(const char *name, Object *parent) :
 	current_syscall_id(0),
     current_syscall_name(""),
 	osrelease_filename("/proc/sys/kernel/osrelease"),
-	fake_osrelease_filename("osrelease"),
-	fake_osrelease("2.6.8")
+	fake_osrelease_filename("osrelease")
 {
 	SetSyscallNameMap();
 
@@ -236,6 +233,23 @@ Setup()
 		return false;
 	}
 	
+	// check the endianess parameter
+	if ( (endianess_string.compare("little-endian") != 0) &&
+			(endianess_string.compare("big-endian") != 0) )
+	{
+		logger << DebugError
+			<< "Unknown endian value. Correct values are:"
+			<< " little-endian and big-endian"
+			<< EndDebugError;
+		return false;
+	}
+	else
+	{
+		if ( endianess_string.compare("little-endian") == 0 )
+			endianess = E_LITTLE_ENDIAN;
+		else
+			endianess = E_BIG_ENDIAN;
+	}
 	// check that the given system is supported
 	if (system != "arm" && system != "powerpc") 
 	{
@@ -936,7 +950,7 @@ LSC_open()
 	{
 		{
 			std::ofstream fake_file(fake_osrelease_filename);
-			fake_file << fake_osrelease << std::endl;
+			fake_file << utsname_release << std::endl;
 		}
 		ret = open(fake_osrelease_filename, host_flags, host_mode);
 	}

@@ -30,7 +30,7 @@ set ( inline_debugger_subdirs
 	unisim/service/interfaces/symbol_table_lookup
 	unisim/util/debug
 	unisim/util/endian
-	unisim/kernel/service
+	unisim/kernel
 	)
 foreach ( dir ${inline_debugger_subdirs} )
 	unisim_include ( ${dir} )
@@ -46,14 +46,21 @@ add_library ( unisim__service__debug__inline_debugger
 	)
 
 target_link_libraries ( unisim__service__debug__inline_debugger 
-	unisim__util__debug )
+	unisim__util__debug 
+	unisim__util__endian
+	unisim__kernel
+	)
 
 if ( UNIX )
-	include ( FindCurses )
-	if ( CURSES_FOUND )
-		target_link_libraries ( unisim__service__debug__inline_debugger
-			${CURSES_LIBRARIES} )
-	endif ( CURSES_FOUND )
+#	NOTE: The following code would be required to statically compile a final
+#         executable.
+#
+#	include ( FindCurses )
+#	if ( CURSES_FOUND )
+#		target_link_libraries ( unisim__service__debug__inline_debugger
+#			${CURSES_LIBRARIES} )
+#		message ( "+++++ CURSES_LIBRARIES = ${CURSES_LIBRARIES}" )
+#	endif ( CURSES_FOUND )
 	set ( CMAKE_REQUIRED_FLAGS "-include stdio.h" )
 	check_include_file ( editline/readline.h HAVE_editline_readline_H )
 	if ( HAVE_editline_readline_H )
@@ -66,18 +73,11 @@ if ( UNIX )
 					COMPILE_DEFINITIONS HAVE_LIBEDIT
 				)
 			target_link_libraries ( unisim__service__debug__inline_debugger
-				${LIBEDIT} )	
+				${LIBEDIT} )
 		endif ( LIBEDIT )
 	endif ( HAVE_editline_readline_H )
 endif ( UNIX )
 
-set_source_files_properties (
-	${CMAKE_SOURCE_DIR}/unisim/service/debug/inline_debugger/inline_debugger.hh
-	${CMAKE_SOURCE_DIR}/unisim/service/debug/inline_debugger/inline_debugger.tcc
-	PROPERTY
-		HEADER_FILE_ONLY TRUE
-	)
-	
 message ( STATUS "Checking unisim::service::debug::inline_debugger - done" )
 
 

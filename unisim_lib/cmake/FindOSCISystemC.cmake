@@ -1,8 +1,8 @@
 IF ( APPLE )
 	SET ( TARGET_ARCH macosx-x86 )
-ELSEIF ( MINGW32 )
+ELSEIF ( MINGW )
 	SET ( TARGET_ARCH mingw32 )
-ELSE ( MINGW32 )
+ELSE ( MINGW )
 	set ( TARGET_ARCH linux )
 ENDIF ( APPLE )
 

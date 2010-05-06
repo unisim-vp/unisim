@@ -14,9 +14,7 @@ foreach ( C_INCLUDE ${C_INCLUDES} )
 endforeach ( C_INCLUDE )
 
 set ( ram_subdirs
-	unisim/kernel/service
-	unisim/kernel/logger
-	unisim/kernel/tlm2
+	unisim/kernel
 	unisim/component/cxx/memory/ram
 	)
 foreach ( dir ${ram_subdirs} )
@@ -40,13 +38,12 @@ set_source_files_properties (
 
 target_link_libraries ( unisim__component__tlm2__memory__ram
 	${OSCI_SYSTEMC_LIBRARIES}
-	unisim__kernel__service
-	unisim__kernel__logger
+	unisim__kernel
 	unisim__component__cxx__memory__ram
 	)
 
 add_dependencies ( unisim__component__tlm2__memory__ram
-	unisim__kernel__tlm2
+	unisim__kernel
 	)
 
 message ( STATUS "Checking unisim::component::tlm2::memory::ram - done" )

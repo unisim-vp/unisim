@@ -37,7 +37,7 @@
 <key sdlk="j" loc="37"/>
 <key sdlk="k" loc="38"/>
 <key sdlk="l" loc="39"/>
-<key sdlk=";" loc="40"/>
+<key sdlk="semicolon" loc="40"/>
 <key sdlk="quote" loc="41"/>
 <key sdlk="return" loc="43"/>
 <key sdlk="lshift" loc="44"/>

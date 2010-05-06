@@ -1,6 +1,7 @@
 /*
  */
 
+#if HAVE_RTBCOB
 
 #include "rtb_unisim.hh"
 
@@ -291,3 +292,5 @@ void RTBStub::ProcessPWM() {
 	}
 
 }
+
+#endif

@@ -65,7 +65,7 @@ PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	AddressMap<SYSTEM_BUS_PHYSICAL_ADDR, PCI_BUS_PHYSICAL_ADDR, DEBUG> &_addr_map, 
 	const char *name, 
 	Object *parent):
-	Object(name, parent),
+	Object(name, parent, "MPC107 integrated PCI bus controller"),
 	logger(*this),
 	verbose(false),
 	param_verbose("verbose", this, verbose, "enable/disable verbosity"),

@@ -40,7 +40,7 @@ namespace loader {
 namespace pmac_linux_kernel_loader {
 
 PMACLinuxKernelLoader::PMACLinuxKernelLoader(const char *name, Object *parent) :
-	Object(name, parent),
+	Object(name, parent, "PowerMac Linux kernel loader"),
 	loader_export("loader-export", this),
 	symbol_table_lookup_export("symbol-table-lookup-export", this),
 	memory_import("memory-import", this),

@@ -57,7 +57,7 @@ template <class PHYSICAL_ADDR,
 	bool DEBUG>
 EPIC<PHYSICAL_ADDR, DEBUG> ::
 EPIC(const char *name, Object *parent) :
-	Object(name, parent),
+	Object(name, parent, "MPC107 integrated Embedded Programmable Interrupt Controller (EPIC)"),
 	Service<Memory<PHYSICAL_ADDR> >(name, parent),
 	logger(*this),
 	verbose(false),
@@ -1179,7 +1179,7 @@ GetVPRFromIRQMask(uint32_t mask) {
 		if(unlikely(verbose))
 			logger << DebugError << LOCATION
 				<< "Unknown mask received (mask = 0x" << std::hex << mask << std::dec
-				<< std::endl << DebugError;
+				<< std::endl << EndDebugError;
 		StopSimulation();
 	}
 	return vpr;

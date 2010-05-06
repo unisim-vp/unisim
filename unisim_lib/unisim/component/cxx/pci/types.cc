@@ -46,6 +46,7 @@ using namespace unisim::component::cxx::pci;
 template <> Variable<PCISpace>::Variable(const char *_name, Object *_object, PCISpace& _storage, Type type, const char *_description) :
 	VariableBase(_name, _object, type, _description), storage(&_storage)
 {
+	Simulator::simulator->Initialize(this);
 	AddEnumeratedValue("mem");
 	AddEnumeratedValue("i/o");
 	AddEnumeratedValue("cfg");
@@ -109,52 +110,64 @@ template <> Variable<PCISpace>::operator string () const {
 template <> VariableBase& Variable<PCISpace>::operator = (bool value) { return *this;}
 
 template <> VariableBase& Variable<PCISpace>::operator = (long long value) { 
-	switch(value) {
-	case 1:
-		*storage = SP_MEM;
-		break;
-	case 2:
-		*storage = SP_IO; 
-		break;
-	case 3:
-		*storage = SP_CONFIG;
-		break;
-	} 
+	if(IsMutable())
+	{
+		switch(value) {
+		case 1:
+			*storage = SP_MEM;
+			break;
+		case 2:
+			*storage = SP_IO; 
+			break;
+		case 3:
+			*storage = SP_CONFIG;
+			break;
+		} 
+	}
 	return *this;
 }
 
 template <> VariableBase& Variable<PCISpace>::operator = (unsigned long long value) {   	
-  	switch(value) {
-	case 1:
-		*storage = SP_MEM;
-		break;
-	case 2:
-		*storage = SP_IO; 
-		break;
-	case 3:
-		*storage = SP_CONFIG;
-		break;
-	} 
+	if(IsMutable())
+	{
+		switch(value) {
+		case 1:
+			*storage = SP_MEM;
+			break;
+		case 2:
+			*storage = SP_IO; 
+			break;
+		case 3:
+			*storage = SP_CONFIG;
+			break;
+		} 
+	}
 	return *this;
 }
 
 template <> VariableBase& Variable<PCISpace>::operator = (double value) {   	
-  	if (value==1) 
-		*storage = SP_MEM;
-	if (value==2) 
-		*storage = SP_IO; 
-	if (value==3) 
-		*storage = SP_CONFIG;
+	if(IsMutable())
+	{
+		if (value==1) 
+			*storage = SP_MEM;
+		if (value==2) 
+			*storage = SP_IO; 
+		if (value==3) 
+			*storage = SP_CONFIG;
+	}
  	return *this;
 }
 
 template <> VariableBase& Variable<PCISpace>::operator = (const char *value) { 
-	if (string(value) == string("mem"))
-		*storage = SP_MEM;
-	if (string(value) == string("i/o"))
-		*storage = SP_IO; 
-	if (string(value) == string("cfg"))
-		*storage = SP_CONFIG;
+	if(IsMutable())
+	{
+		if (string(value) == string("mem"))
+			*storage = SP_MEM;
+		if (string(value) == string("i/o"))
+			*storage = SP_IO; 
+		if (string(value) == string("cfg"))
+			*storage = SP_CONFIG;
+	}
  	return *this;
 }
 

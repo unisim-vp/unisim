@@ -164,13 +164,10 @@ private:
     string system;
     Parameter<string> param_system;
     endian_type endianess;
-    Parameter<endian_type> param_endian;
+    string endianess_string;
+    Parameter<string> param_endian;
     PARAMETER_TYPE memory_page_size;
     Parameter<PARAMETER_TYPE> param_memory_page_size;
-
-    /* linux kernel parameter */
-    string linux_kernel;
-    Parameter<string> param_linux_kernel;
 
     /* uname parameters */
     string utsname_sysname;
@@ -508,7 +505,6 @@ private:
 
 	const char *osrelease_filename;
 	const char *fake_osrelease_filename;
-	const char *fake_osrelease;
 };
 
 } // end of linux_os namespace

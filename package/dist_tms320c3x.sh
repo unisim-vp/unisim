@@ -2,20 +2,25 @@
 function Usage
 {
 	echo "Usage:"
-	echo "  $0 <destination directory> <unisim_tools directory> <unisim_lib directory> <unisim_simulators directory> <unisim_docs directory>"
+	echo "  $0 <destination directory> <unisim repository>"
 }
 
-if test "x$1" = x || test "x$2" = x || test "x$3" = x || test "x$4" = x || test "x$5" = x; then
+if [ -z "$1" ] || [ -z "$2" ]; then
 	Usage
-	exit
+	exit -1
 fi
 
 HERE=`pwd`
 DEST_DIR=$1
-UNISIM_TOOLS_DIR=$2
-UNISIM_LIB_DIR=$3
-UNISIM_SIMULATORS_DIR=$4/cxx/tms320c3x
-UNISIM_DOCS_DIR=$5
+UNISIM_TOOLS_DIR=$2/unisim_tools
+UNISIM_LIB_DIR=$2/unisim_lib
+UNISIM_SIMULATORS_DIR=$2/unisim_simulators/cxx/tms320c3x
+UNISIM_DOCS_DIR=$2/unisim_docs
+
+TMS320C3X_VERSION=$(cat ${UNISIM_SIMULATORS_DIR}/VERSION)
+GENISSLIB_VERSION=$(cat ${UNISIM_TOOLS_DIR}/genisslib/VERSION)-tms320c3x-${TMS320C3X_VERSION}
+
+DOCS_VERSION=lastest-tms320c3x-${TMS320C3X_VERSION}
 
 UNISIM_TOOLS_GENISSLIB_HEADER_FILES="\
 action.hh \
@@ -208,7 +213,13 @@ m4/boost_graph.m4 \
 m4/bsd_sockets.m4 \
 m4/curses.m4 \
 m4/libedit.m4 \
-m4/with_boost.m4"
+m4/with_boost.m4 \
+m4/check_lib.m4 \
+m4/get_exec_path.m4 \
+m4/real_path.m4"
+
+UNISIM_LIB_TMS320C3X_DATA_FILES="\
+"
 
 TMS320C3X_EXTERNAL_HEADERS="\
 assert.h \
@@ -238,12 +249,35 @@ unistd.h \
 vector \
 "
 
-UNISIM_SIMULATORS_TMS320C3X_SOURCE_FILES=main.cc
-UNISIM_SIMULATORS_TMS320C3X_HEADER_FILES=
-UNISIM_SIMULATORS_TMS320C3X_TEMPLATE_FILES=
-UNISIM_SIMULATORS_TMS320C3X_DATA_FILES="COPYING INSTALL NEWS README AUTHORS ChangeLog"
+UNISIM_SIMULATORS_TMS320C3X_SOURCE_FILES="\
+main.cc \
+"
+UNISIM_SIMULATORS_TMS320C3X_HEADER_FILES="\
+"
+
+UNISIM_SIMULATORS_TMS320C3X_TEMPLATE_FILES="\
+"
+
+UNISIM_SIMULATORS_TMS320C3X_DATA_FILES="\
+COPYING \
+INSTALL \
+NEWS \
+README \
+AUTHORS \
+ChangeLog \
+unisim.ico \
+template_default_config.xml \
+c31boot.out \
+fibo.out \
+"
 
 UNISIM_DOCS_FILES="\
+README \
+INSTALL \
+NEWS \
+COPYING \
+AUTHORS \
+ChangeLog \
 genisslib_manual.pdf \
 tms320c3x_manual.pdf \
 genisslib_manual.tex \
@@ -292,6 +326,7 @@ has_to_build_tms320c3x_configure=no
 
 mkdir -p ${DEST_DIR}/genisslib
 mkdir -p ${DEST_DIR}/tms320c3x
+mkdir -p ${DEST_DIR}/docs
 
 UNISIM_TOOLS_GENISSLIB_FILES="${UNISIM_TOOLS_GENISSLIB_SOURCE_FILES} ${UNISIM_TOOLS_GENISSLIB_HEADER_FILES} ${UNISIM_TOOLS_GENISSLIB_DATA_FILES}"
 
@@ -311,7 +346,7 @@ for file in ${UNISIM_TOOLS_GENISSLIB_FILES}; do
 	fi
 done
 
-UNISIM_LIB_TMS320C3X_FILES="${UNISIM_LIB_TMS320C3X_SOURCE_FILES} ${UNISIM_LIB_TMS320C3X_HEADER_FILES} ${UNISIM_LIB_TMS320C3X_TEMPLATE_FILES}"
+UNISIM_LIB_TMS320C3X_FILES="${UNISIM_LIB_TMS320C3X_SOURCE_FILES} ${UNISIM_LIB_TMS320C3X_HEADER_FILES} ${UNISIM_LIB_TMS320C3X_TEMPLATE_FILES} ${UNISIM_LIB_TMS320C3X_DATA_FILES}"
 
 for file in ${UNISIM_LIB_TMS320C3X_FILES}; do
 	mkdir -p "${DEST_DIR}/tms320c3x/`dirname ${file}`"
@@ -383,6 +418,8 @@ mkdir -p ${DEST_DIR}/tms320c3x/config
 mkdir -p ${DEST_DIR}/tms320c3x/m4
 mkdir -p ${DEST_DIR}/genisslib/config
 mkdir -p ${DEST_DIR}/genisslib/m4
+mkdir -p ${DEST_DIR}/docs/config
+mkdir -p ${DEST_DIR}/docs/m4
 
 for file in ${UNISIM_TOOLS_GENISSLIB_M4_FILES}; do
 	has_to_copy=no
@@ -451,15 +488,23 @@ MAKEFILE_AM="${DEST_DIR}/Makefile.am"
 
 if [ ! -e "${CONFIGURE_AC}" ]; then
 	has_to_build_configure=yes
+else
+	if [ "$0" -nt "${CONFIGURE_AC}" ]; then
+		has_to_build_configure=yes
+	fi
 fi
 
 if [ ! -e "${MAKEFILE_AM}" ]; then
 	has_to_build_configure=yes
+else
+	if [ "$0" -nt "${MAKEFILE_AM}" ]; then
+		has_to_build_configure=yes
+	fi
 fi
 
 if [ "${has_to_build_configure}" = "yes" ]; then
 	echo "Generating configure.ac"
-	echo "AC_INIT([UNISIM TMS320C3X Standalone simulator], [0.1], [Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Perez <daniel.gracia-perez@cea.fr>], [tms320c3x])" > "${DEST_DIR}/configure.ac"
+	echo "AC_INIT([UNISIM TMS320C3X Standalone simulator], [${TMS320C3X_VERSION}], [Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Perez <daniel.gracia-perez@cea.fr>], [unisim-tms320c3x])" > "${DEST_DIR}/configure.ac"
 	echo "AC_CONFIG_AUX_DIR(config)" >> "${CONFIGURE_AC}"
 	echo "AC_CANONICAL_BUILD" >> "${CONFIGURE_AC}"
 	echo "AC_CANONICAL_HOST" >> "${CONFIGURE_AC}"
@@ -470,15 +515,61 @@ if [ "${has_to_build_configure}" = "yes" ]; then
 	echo "AC_PROG_LN_S" >> "${CONFIGURE_AC}"
 	echo "AC_CONFIG_SUBDIRS([genisslib])"  >> "${CONFIGURE_AC}" 
 	echo "AC_CONFIG_SUBDIRS([tms320c3x])"  >> "${CONFIGURE_AC}" 
+	echo "AC_CONFIG_SUBDIRS([docs])"  >> "${CONFIGURE_AC}" 
 	echo "AC_CONFIG_FILES([Makefile])" >> "${CONFIGURE_AC}"
 	echo "AC_OUTPUT" >> "${CONFIGURE_AC}"
 
 	echo "Generating Makefile.am"
-	echo "SUBDIRS=genisslib tms320c3x" > "${MAKEFILE_AM}"
-	echo "EXTRA_DIST = ${UNISIM_DOCS_FILES}" >> "${MAKEFILE_AM}"
+	echo "SUBDIRS=genisslib tms320c3x docs" > "${MAKEFILE_AM}"
 
 	echo "Building configure"
 	${SHELL} -c "cd ${DEST_DIR} && aclocal && autoconf --force && automake -ac"
+fi
+
+# Documentation
+
+DOCS_CONFIGURE_AC="${DEST_DIR}/docs/configure.ac"
+DOCS_MAKEFILE_AM="${DEST_DIR}/docs/Makefile.am"
+
+
+if [ ! -e "${DOCS_CONFIGURE_AC}" ]; then
+	has_to_build_docs_configure=yes
+else
+	if [ "$0" -nt "${DOCS_CONFIGURE_AC}" ]; then
+		has_to_build_docs_configure=yes
+	fi
+fi
+
+if [ ! -e "${DOCS_MAKEFILE_AM}" ]; then
+	has_to_build_docs_configure=yes
+else
+	if [ "$0" -nt "${DOCS_MAKEFILE_AM}" ]; then
+		has_to_build_docs_configure=yes
+	fi
+fi
+
+if [ "${has_to_build_docs_configure}" = "yes" ]; then
+	echo "Generating docs configure.ac"
+	echo "AC_INIT([UNISIM Documentation], [${DOCS_VERSION}], [Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Perez <daniel.gracia-perez@cea.fr>], [unisim-docs])" > "${DOCS_CONFIGURE_AC}"
+	echo "AC_CONFIG_AUX_DIR(config)" >> "${DOCS_CONFIGURE_AC}"
+	echo "AC_CANONICAL_BUILD" >> "${DOCS_CONFIGURE_AC}"
+	echo "AC_CANONICAL_HOST" >> "${DOCS_CONFIGURE_AC}"
+	echo "AC_CANONICAL_TARGET" >> "${DOCS_CONFIGURE_AC}"
+	echo "AM_INIT_AUTOMAKE([subdir-objects tar-pax])" >> "${DOCS_CONFIGURE_AC}"
+	echo "AC_PATH_PROGS(SH, sh)" >> "${DOCS_CONFIGURE_AC}"
+	echo "AC_PROG_INSTALL" >> "${DOCS_CONFIGURE_AC}"
+	echo "AC_PROG_LN_S" >> "${DOCS_CONFIGURE_AC}"
+	echo "AC_CONFIG_FILES([Makefile])" >> "${DOCS_CONFIGURE_AC}"
+	echo "AC_OUTPUT" >> "${DOCS_CONFIGURE_AC}"
+
+	echo "Generating docs Makefile.am"
+	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${DOCS_MAKEFILE_AM}"
+	echo "EXTRA_DIST = ${UNISIM_DOCS_FILES}" >> "${DOCS_MAKEFILE_AM}"
+	echo "sharedir = \$(prefix)/share/unisim-tms320c3x-${TMS320C3X_VERSION}" >> "${DOCS_MAKEFILE_AM}"
+	echo "share_DATA = tms320c3x_manual.pdf" >> "${DOCS_MAKEFILE_AM}"
+
+	echo "Building configure"
+	${SHELL} -c "cd ${DEST_DIR}/docs && aclocal && autoconf --force && automake -ac"
 fi
 
 # GENISSLIB
@@ -489,22 +580,30 @@ GENISSLIB_MAKEFILE_AM="${DEST_DIR}/genisslib/Makefile.am"
 
 if [ ! -e "${GENISSLIB_CONFIGURE_AC}" ]; then
 	has_to_build_genisslib_configure=yes
+else
+	if [ "$0" -nt "${GENISSLIB_CONFIGURE_AC}" ]; then
+		has_to_build_genisslib_configure=yes
+	fi
 fi
 
 if [ ! -e "${GENISSLIB_MAKEFILE_AM}" ]; then
 	has_to_build_genisslib_configure=yes
+else
+	if [ "$0" -nt "${GENISSLIB_MAKEFILE_AM}" ]; then
+		has_to_build_genisslib_configure=yes
+	fi
 fi
 
 if [ "${has_to_build_genisslib_configure}" = "yes" ]; then
 	echo "Generating GENISSLIB configure.ac"
-	echo "AC_INIT([UNISIM GENISSLIB], [0.1], [Gilles Mouchard <gilles.mouchard@cea.fr>, Yves  Lhuillier <yves.lhuillier@cea.fr>], [genisslib])" > "${GENISSLIB_CONFIGURE_AC}"
+	echo "AC_INIT([UNISIM GENISSLIB], [${GENISSLIB_VERSION}], [Gilles Mouchard <gilles.mouchard@cea.fr>, Yves  Lhuillier <yves.lhuillier@cea.fr>], [genisslib])" > "${GENISSLIB_CONFIGURE_AC}"
 	echo "AC_CONFIG_MACRO_DIR([m4])" >> "${GENISSLIB_CONFIGURE_AC}"
 	echo "AC_CONFIG_AUX_DIR(config)" >> "${GENISSLIB_CONFIGURE_AC}"
 	echo "AC_CONFIG_HEADERS([config.h])" >> "${GENISSLIB_CONFIGURE_AC}"
 	echo "AC_CANONICAL_BUILD" >> "${GENISSLIB_CONFIGURE_AC}"
 	echo "AC_CANONICAL_HOST" >> "${GENISSLIB_CONFIGURE_AC}"
 	echo "AC_CANONICAL_TARGET" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "AM_INIT_AUTOMAKE" >> "${GENISSLIB_CONFIGURE_AC}"
+	echo "AM_INIT_AUTOMAKE([subdir-objects tar-pax])" >> "${GENISSLIB_CONFIGURE_AC}"
 	echo "AC_PATH_PROGS(SH, sh)" >> "${GENISSLIB_CONFIGURE_AC}"
 	echo "AC_PROG_CXX" >> "${GENISSLIB_CONFIGURE_AC}"
 	echo "AC_PROG_INSTALL" >> "${GENISSLIB_CONFIGURE_AC}"
@@ -522,8 +621,8 @@ if [ "${has_to_build_genisslib_configure}" = "yes" ]; then
 	echo "CLEANFILES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "AM_YFLAGS = -d -p yy" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "AM_LFLAGS = -l" >> "${GENISSLIB_MAKEFILE_AM}"
-	echo "genisslib_INCLUDES=-I\$(top_srcdir) -I\$(top_builddir)" >> "${GENISSLIB_MAKEFILE_AM}"
-	echo "bin_PROGRAMS = genisslib" >> "${GENISSLIB_MAKEFILE_AM}"
+	echo "INCLUDES=-I\$(top_srcdir) -I\$(top_builddir)" >> "${GENISSLIB_MAKEFILE_AM}"
+	echo "noinst_PROGRAMS = genisslib" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "genisslib_SOURCES = ${UNISIM_TOOLS_GENISSLIB_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "noinst_HEADERS= ${UNISIM_TOOLS_GENISSLIB_HEADER_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "EXTRA_DIST = ${UNISIM_TOOLS_GENISSLIB_M4_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
@@ -541,24 +640,33 @@ TMS320C3X_MAKEFILE_AM="${DEST_DIR}/tms320c3x/Makefile.am"
 
 if [ ! -e "${TMS320C3X_CONFIGURE_AC}" ]; then
 	has_to_build_tms320c3x_configure=yes
+else
+	if [ "$0" -nt "${TMS320C3X_CONFIGURE_AC}" ]; then
+		has_to_build_tms320c3x_configure=yes
+	fi
 fi
 
 if [ ! -e "${TMS320C3X_MAKEFILE_AM}" ]; then
 	has_to_build_tms320c3x_configure=yes
+else
+	if [ "$0" -nt "${TMS320C3X_MAKEFILE_AM}" ]; then
+		has_to_build_tms320c3x_configure=yes
+	fi
 fi
 
 if [ "${has_to_build_tms320c3x_configure}" = "yes" ]; then
 	echo "Generating TMS320C3X configure.ac"
-	echo "AC_INIT([UNISIM TMS320C3X C++ simulator], [0.1], [Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Perez <daniel.gracia-perez@cea.fr>], [tms320c3x_cxx])" > "${TMS320C3X_CONFIGURE_AC}"
+	echo "AC_INIT([UNISIM TMS320C3X C++ simulator], [${TMS320C3X_VERSION}], [Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Perez <daniel.gracia-perez@cea.fr>], [unisim-tms320c3x-core])" > "${TMS320C3X_CONFIGURE_AC}"
 	echo "AC_CONFIG_MACRO_DIR([m4])" >> "${TMS320C3X_CONFIGURE_AC}"
 	echo "AC_CONFIG_AUX_DIR(config)" >> "${TMS320C3X_CONFIGURE_AC}"
 	echo "AC_CONFIG_HEADERS([config.h])" >> "${TMS320C3X_CONFIGURE_AC}"
 	echo "AC_CANONICAL_BUILD" >> "${TMS320C3X_CONFIGURE_AC}"
 	echo "AC_CANONICAL_HOST" >> "${TMS320C3X_CONFIGURE_AC}"
 	echo "AC_CANONICAL_TARGET" >> "${TMS320C3X_CONFIGURE_AC}"
-	echo "AM_INIT_AUTOMAKE" >> "${TMS320C3X_CONFIGURE_AC}"
+	echo "AM_INIT_AUTOMAKE([subdir-objects tar-pax])" >> "${TMS320C3X_CONFIGURE_AC}"
 	echo "AC_PATH_PROGS(SH, sh)" >> "${TMS320C3X_CONFIGURE_AC}"
 	echo "AC_PROG_CXX" >> "${TMS320C3X_CONFIGURE_AC}"
+	echo "AC_PROG_RANLIB" >> "${TMS320C3X_CONFIGURE_AC}"
 	echo "AC_PROG_INSTALL" >> "${TMS320C3X_CONFIGURE_AC}"
 	echo "AC_PROG_LN_S" >> "${TMS320C3X_CONFIGURE_AC}"
 	echo "AC_LANG([C++])" >> "${TMS320C3X_CONFIGURE_AC}"
@@ -573,24 +681,64 @@ if [ "${has_to_build_tms320c3x_configure}" = "yes" ]; then
 	echo "UNISIM_CHECK_LIBXML2" >> "${TMS320C3X_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_BOOST_GRAPH" >> "${TMS320C3X_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_CXXABI" >> "${TMS320C3X_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_GET_EXECUTABLE_PATH" >> "${TMS320C3X_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_REAL_PATH" >> "${TMS320C3X_CONFIGURE_AC}"
 	echo "GENISSLIB_PATH=\`pwd\`/../genisslib/genisslib" >> "${TMS320C3X_CONFIGURE_AC}"
 	echo "AC_SUBST(GENISSLIB_PATH)" >> "${TMS320C3X_CONFIGURE_AC}"
+	echo "AC_DEFINE([BIN_TO_SHARED_DATA_PATH], [\"../share/unisim-tms320c3x-${TMS320C3X_VERSION}\"], [path of shared data relative to bin directory])" >> "${TMS320C3X_CONFIGURE_AC}"
 	echo "AC_CONFIG_FILES([Makefile])" >> "${TMS320C3X_CONFIGURE_AC}"
 	echo "AC_OUTPUT" >> "${TMS320C3X_CONFIGURE_AC}"
 
+	AM_TMS320C3X_VERSION=`printf ${TMS320C3X_VERSION} | sed -e 's/\./_/g'`
 	echo "Generating TMS320C3X Makefile.am"
 	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${TMS320C3X_MAKEFILE_AM}"
-	echo "tms320c3x_INCLUDES=-I\$(top_srcdir) -I\$(top_builddir)" >> "${TMS320C3X_MAKEFILE_AM}"
-	echo "bin_PROGRAMS = tms320c3x" >> "${TMS320C3X_MAKEFILE_AM}"
-	echo "tms320c3x_SOURCES = ${UNISIM_LIB_TMS320C3X_SOURCE_FILES} ${UNISIM_SIMULATORS_TMS320C3X_SOURCE_FILES}" >> "${TMS320C3X_MAKEFILE_AM}"
-	echo "noinst_HEADERS = ${UNISIM_TOOLS_TMS320C3X_HEADER_FILES} ${UNISIM_LIB_TMS320C3X_HEADER_FILES} ${UNISIM_LIB_TMS320C3X_TEMPLATE_FILES} ${UNISIM_SIMULATORS_TMS320C3X_HEADER_FILES} ${UNISIM_SIMULATORS_TMS320C3X_TEMPLATE_FILES}" >> "${TMS320C3X_MAKEFILE_AM}"
+	echo "INCLUDES=-I\$(top_srcdir) -I\$(top_builddir)" >> "${TMS320C3X_MAKEFILE_AM}"
+	echo "noinst_LIBRARIES = libtms320c3x-${TMS320C3X_VERSION}.a" >> "${TMS320C3X_MAKEFILE_AM}"
+	echo "libtms320c3x_${AM_TMS320C3X_VERSION}_a_SOURCES = ${UNISIM_LIB_TMS320C3X_SOURCE_FILES}" >> "${TMS320C3X_MAKEFILE_AM}"
+	echo "bin_PROGRAMS = unisim-tms320c3x-${TMS320C3X_VERSION} unisim-tms320c3x-debug-${TMS320C3X_VERSION}" >> "${TMS320C3X_MAKEFILE_AM}"
+	echo "unisim_tms320c3x_${AM_TMS320C3X_VERSION}_SOURCES = ${UNISIM_SIMULATORS_TMS320C3X_SOURCE_FILES}" >> "${TMS320C3X_MAKEFILE_AM}"
+	echo "unisim_tms320c3x_debug_${AM_TMS320C3X_VERSION}_SOURCES = ${UNISIM_SIMULATORS_TMS320C3X_SOURCE_FILES}" >> "${TMS320C3X_MAKEFILE_AM}"
+	echo "unisim_tms320c3x_debug_${AM_TMS320C3X_VERSION}_CPPFLAGS = -DDEBUG_TMS320C3X" >> "${TMS320C3X_MAKEFILE_AM}"
+	echo "unisim_tms320c3x_${AM_TMS320C3X_VERSION}_LDADD = libtms320c3x-${TMS320C3X_VERSION}.a" >> "${TMS320C3X_MAKEFILE_AM}"
+	echo "unisim_tms320c3x_debug_${AM_TMS320C3X_VERSION}_LDADD = libtms320c3x-${TMS320C3X_VERSION}.a" >> "${TMS320C3X_MAKEFILE_AM}"
+	echo "noinst_HEADERS = ${UNISIM_LIB_TMS320C3X_HEADER_FILES} ${UNISIM_LIB_TMS320C3X_TEMPLATE_FILES} ${UNISIM_SIMULATORS_TMS320C3X_HEADER_FILES} ${UNISIM_SIMULATORS_TMS320C3X_TEMPLATE_FILES}" >> "${TMS320C3X_MAKEFILE_AM}"
 	echo "EXTRA_DIST = ${UNISIM_LIB_TMS320C3X_M4_FILES}" >> "${TMS320C3X_MAKEFILE_AM}"
+	echo "sharedir = \$(prefix)/share/unisim-tms320c3x-${TMS320C3X_VERSION}" >> "${TMS320C3X_MAKEFILE_AM}"
+	echo "dist_share_DATA = ${UNISIM_LIB_TMS320C3X_DATA_FILES} ${UNISIM_SIMULATORS_TMS320C3X_DATA_FILES}" >> "${TMS320C3X_MAKEFILE_AM}"
+
 	echo "BUILT_SOURCES=\$(top_srcdir)/unisim/component/cxx/processor/tms320/isa_tms320.hh \$(top_srcdir)/unisim/component/cxx/processor/tms320/isa_tms320.tcc" >> "${TMS320C3X_MAKEFILE_AM}"
 	echo "CLEANFILES=\$(top_srcdir)/unisim/component/cxx/processor/tms320/isa_tms320.hh \$(top_srcdir)/unisim/component/cxx/processor/tms320/isa_tms320.tcc" >> "${TMS320C3X_MAKEFILE_AM}"
 	echo "\$(top_srcdir)/unisim/component/cxx/processor/tms320/isa_tms320.tcc: \$(top_srcdir)/unisim/component/cxx/processor/tms320/isa_tms320.hh" >> "${TMS320C3X_MAKEFILE_AM}"
 	echo "\$(top_srcdir)/unisim/component/cxx/processor/tms320/isa_tms320.hh: ${UNISIM_LIB_TMS320C3X_ISA_FILES}" >> "${TMS320C3X_MAKEFILE_AM}"
 	printf "\t" >> "${TMS320C3X_MAKEFILE_AM}"
 	echo "cd \$(top_srcdir)/unisim/component/cxx/processor/tms320; \$(GENISSLIB_PATH) -o isa_tms320 -w 32 -I isa isa/tms320.isa" >> "${TMS320C3X_MAKEFILE_AM}"
+
+	echo "all-local: all-local-bin all-local-share" >> "${TMS320C3X_MAKEFILE_AM}"
+	echo "clean-local: clean-local-bin clean-local-share" >> "${TMS320C3X_MAKEFILE_AM}"
+	echo "all-local-bin: \$(bin_PROGRAMS)" >> "${TMS320C3X_MAKEFILE_AM}"
+	printf "\t@PROGRAMS='\$(bin_PROGRAMS)'; \\\\\n" >> "${TMS320C3X_MAKEFILE_AM}"
+	printf "\tfor PROGRAM in \$\${PROGRAMS}; do \\\\\n" >> "${TMS320C3X_MAKEFILE_AM}"
+	printf "\trm -f \"\$(top_builddir)/bin/\`basename \$\${PROGRAM}\`\"; \\\\\n" >> "${TMS320C3X_MAKEFILE_AM}"
+	printf "\tmkdir -p '\$(top_builddir)/bin'; \\\\\n" >> "${TMS320C3X_MAKEFILE_AM}"
+	printf "\t(cd '\$(top_builddir)/bin' && cp -f \"\$(abs_top_builddir)/\$\${PROGRAM}\" \`basename \"\$\${PROGRAM}\"\`); \\\\\n" >> "${TMS320C3X_MAKEFILE_AM}"
+	printf "\tdone\n" >> "${TMS320C3X_MAKEFILE_AM}"
+	echo "clean-local-bin:" >> "${TMS320C3X_MAKEFILE_AM}"
+	printf "\t@if [ ! -z '\$(bin_PROGRAMS)' ]; then \\\\\n" >> "${TMS320C3X_MAKEFILE_AM}"
+	printf "\trm -rf '\$(top_builddir)/bin'; \\\\\n" >> "${TMS320C3X_MAKEFILE_AM}"
+	printf "\tfi\n" >> "${TMS320C3X_MAKEFILE_AM}"
+	echo "all-local-share: \$(dist_share_DATA)" >> "${TMS320C3X_MAKEFILE_AM}"
+	printf "\t@SHARED_DATAS='\$(dist_share_DATA)'; \\\\\n" >> "${TMS320C3X_MAKEFILE_AM}"
+	printf "\tfor SHARED_DATA in \$\${SHARED_DATAS}; do \\\\\n" >> "${TMS320C3X_MAKEFILE_AM}"
+	printf "\trm -f \"\$(top_builddir)/share/unisim-tms320c3x-${TMS320C3X_VERSION}/\`basename \$\${SHARED_DATA}\`\"; \\\\\n" >> "${TMS320C3X_MAKEFILE_AM}"
+	printf "\tmkdir -p '\$(top_builddir)/share/unisim-tms320c3x-${TMS320C3X_VERSION}'; \\\\\n" >> "${TMS320C3X_MAKEFILE_AM}"
+	printf "\t(cd '\$(top_builddir)/share/unisim-tms320c3x-${TMS320C3X_VERSION}' && cp -f \"\$(abs_top_builddir)/\$\${SHARED_DATA}\" \`basename \"\$\${SHARED_DATA}\"\`); \\\\\n" >> "${TMS320C3X_MAKEFILE_AM}"
+	printf "\tdone\n" >> "${TMS320C3X_MAKEFILE_AM}"
+	echo "clean-local-share:" >> "${TMS320C3X_MAKEFILE_AM}"
+	printf "\t@if [ ! -z '\$(dist_share_DATA)' ]; then \\\\\n" >> "${TMS320C3X_MAKEFILE_AM}"
+	printf "\trm -rf '\$(top_builddir)/share'; \\\\\n" >> "${TMS320C3X_MAKEFILE_AM}"
+	printf "\tfi\n" >> "${TMS320C3X_MAKEFILE_AM}"
+
+
 	echo "Building TMS320C3X configure"
 	${SHELL} -c "cd ${DEST_DIR}/tms320c3x && aclocal -I m4 && autoconf --force && autoheader && automake -ac"
 fi

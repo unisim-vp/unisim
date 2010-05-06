@@ -45,7 +45,7 @@ namespace service {
 
 class XMLHelper {
 public:
-	XMLHelper();
+	XMLHelper(Simulator *simulator);
 	~XMLHelper();
 	
 	bool XmlfyVariables(const char *filename, VariableBase::Type type = VariableBase::VAR_VOID);
@@ -64,7 +64,7 @@ private:
 	int XmlfyVariable(xmlTextWriterPtr writer, 
 			const VariableBase *var);
 	
-	ServiceManager *manager;
+	Simulator *simulator;
 	
 	bool ProcessXmlVariableNode(xmlTextReaderPtr reader,
 			VariableBase::Type type = VariableBase::VAR_VOID);
@@ -81,6 +81,18 @@ private:
 	enum CurStatus {NONE, TYPE, NAME, VALUE, DESCRIPTION, DATA_TYPE};
 	CurVariable *cur_var;
 	CurStatus cur_status;
+
+	// tokens required
+	xmlChar* name_token;
+	xmlChar* variables_token;
+	xmlChar* object_token;
+	xmlChar* variable_token;
+	xmlChar* type_token;
+	xmlChar* value_token;
+	xmlChar* default_value_token;
+	xmlChar* data_type_token;
+	xmlChar* description_token;
+	xmlChar* _text_token;
 };
 
 } // end of namespace service

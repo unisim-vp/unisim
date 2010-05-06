@@ -67,7 +67,7 @@ using unisim::kernel::logger::EndDebugError;
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH, uint32_t MAX_TRANSACTION_DATA_SIZE>
 AM29LV<CONFIG, BYTESIZE, IO_WIDTH, MAX_TRANSACTION_DATA_SIZE>::AM29LV(const sc_module_name& name, Object *parent) :
-	Object(name, parent),
+	Object(name, parent, "AM29LVxxx flash memory"),
 	sc_module(name),
 	unisim::component::cxx::memory::flash::am29lv::AM29LV<CONFIG, BYTESIZE, IO_WIDTH>(name, parent),
 	slave_port("slave-port"),

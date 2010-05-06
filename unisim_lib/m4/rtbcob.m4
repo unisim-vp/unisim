@@ -15,7 +15,7 @@ AC_DEFUN([UNISIM_CHECK_RTBCOB], [
 	AC_CHECK_LIB(cob,init_network,broken_rtbcob=no,broken_rtbcob=yes)
 
 	if test "$broken_rtbcob" == "yes"; then
-		AC_MSG_NOTICE(([RTBuilder COB not found. Support for RTBuilder COB will be disabled.])
+		AC_MSG_NOTICE([RTBuilder COB not found. Support for RTBuilder COB will be disabled.])
 	else
 		LIBS="-lcob ${LIBS}"
 		AC_DEFINE([HAVE_RTBCOB], [], [Whether RTBuilder COB is available])

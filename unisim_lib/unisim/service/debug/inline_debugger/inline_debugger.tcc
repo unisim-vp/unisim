@@ -64,12 +64,12 @@ using std::endl;
 using std::hex;
 using std::dec;
 using std::streamsize;
-using unisim::kernel::service::ServiceManager;
+using unisim::kernel::service::Simulator;
 using unisim::kernel::service::VariableBase;
 
 template <class ADDRESS>
 InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent) :
-	Object(_name, _parent),
+	Object(_name, _parent, "Inline debugger"),
 	Service<DebugControl<ADDRESS> >(_name, _parent),
 	Service<MemoryAccessReporting<ADDRESS> >(_name, _parent),
 	Service<TrapReporting>(_name, _parent),
@@ -78,17 +78,16 @@ InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent) :
 	Client<Memory<ADDRESS> >(_name, _parent),
 	Client<Registers>(_name, _parent),
 	Client<SymbolTableLookup<ADDRESS> >(_name, _parent),
-	InlineDebuggerBase(),
+	memory_atom_size(1),
+	param_memory_atom_size("memory-atom-size", this, memory_atom_size, "size of the smallest addressable element in memory"),
 	debug_control_export("debug-control-export", this),
 	memory_access_reporting_export("memory-access-reporting-export", this),
 	trap_reporting_export("trap-reporting-export", this),
+	memory_access_reporting_control_import("memory-access-reporting-control-import", this),
 	disasm_import("disasm-import", this),
 	memory_import("memory-import", this),
-	memory_access_reporting_control_import("memory-access-reporting-control-import", this),
 	registers_import("registers-import", this),
-	symbol_table_lookup_import("symbol-table-lookup-import", this),
-	memory_atom_size(1),
-	param_memory_atom_size("memory-atom-size", this, memory_atom_size)
+	symbol_table_lookup_import("symbol-table-lookup-import", this)
 {
 	trap = false;
 	strcpy(last_line, "");
@@ -228,7 +227,7 @@ ReportTrap(const unisim::kernel::service::Object &obj,
 template <class ADDRESS>
 typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebugCommand(ADDRESS cia)
 {
-	// int count;
+	int count;
 	bool recognized = false;
 	ADDRESS addr;
 	ADDRESS cont_addr;
@@ -649,7 +648,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 			{
 				recognized = true;
 				std::stringstream str;
-				for (unsigned int i = 2; i < (unsigned int)nparms; i++)
+				for (unsigned int i = 2; i < nparms; i++)
 				{
 					if (i > 2) str << " ";
 						str << parm[i];
@@ -661,7 +660,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 		if(!recognized)
 		{
 			cout << "Unrecognized command.  Try \"help\"." << endl;
-			for (unsigned int i = 0; i < (unsigned int)nparms; i++)
+			for (unsigned int i = 0; i < nparms; i++)
 				cout << parm[i] << " ";
 			cout << endl;
 		}
@@ -943,9 +942,6 @@ void InlineDebugger<ADDRESS>::DumpWatchpoints()
 			case MemoryAccessReporting<ADDRESS>::MAT_WRITE:
 				cout << "write";
 				break;
-			case MemoryAccessReporting<ADDRESS>::MAT_NONE:
-				cout << " NONE";
-				break;
 		}
 		cout << " ";
 		
@@ -979,10 +975,10 @@ void InlineDebugger<ADDRESS>::DumpMemory(ADDRESS addr)
 	cout.width(2 * sizeof(addr));
 	cout << "address" << hex;
 	cout.width(0);
-	for(i = 0; (unsigned int)i < 16 / memory_atom_size; i++)
+	for(i = 0; i < 16 / memory_atom_size; i++)
 	{
 		cout << "  " << i;
-		for(j = 1; (unsigned int)j < memory_atom_size; j++) cout << "   ";
+		for(j = 1; j < memory_atom_size; j++) cout << "   ";
 	}
 	cout << endl;
 	for(i = 0; i < 16; i++)
@@ -1017,7 +1013,7 @@ void InlineDebugger<ADDRESS>::DumpVariables()
 	
 	cout << "VARIABLES LIST:";
 	
-	ServiceManager::GetVariables(lst);
+	GetSimulator()->GetVariables(lst);
 	if (lst.size() == 0) cout << " No variables" << endl;
 	else
 	{
@@ -1038,9 +1034,6 @@ void InlineDebugger<ADDRESS>::DumpVariables()
 				case VariableBase::VAR_REGISTER:
 					cout << " R";
 					break;
-				case VariableBase::VAR_ARRAY:
-					cout << " A"; // TOCHECK
-					break;
 			}
 			cout << "\t" << (*iter)->GetName() << endl;
 		}
@@ -1055,7 +1048,7 @@ void InlineDebugger<ADDRESS>::DumpRegisters()
 	
 	cout << "REGISTERS LIST:";
 	
-	ServiceManager::GetRegisters(lst);
+	GetSimulator()->GetRegisters(lst);
 	if (lst.size() == 0) cout << " No registers" << endl;
 	else
 	{
@@ -1073,7 +1066,7 @@ void InlineDebugger<ADDRESS>::DumpStatistics()
 	
 	cout << "STATISTICS LIST:";
 	
-	ServiceManager::GetStatistics(lst);
+	GetSimulator()->GetStatistics(lst);
 	if (lst.size() == 0) cout << " No statistics" << endl;
 	else
 	{
@@ -1091,7 +1084,7 @@ void InlineDebugger<ADDRESS>::DumpParameters()
 	
 	cout << "PARAMETERS LIST:";
 	
-	ServiceManager::GetParameters(lst);
+	GetSimulator()->GetParameters(lst);
 	if (lst.size() == 0) cout << " No parameters" << endl;
 	else
 	{
@@ -1176,7 +1169,7 @@ DumpVariable(const char *name)
 {
 	bool found = false;
 	list<VariableBase *> vars;
-	ServiceManager::GetVariables(vars);
+	GetSimulator()->GetVariables(vars);
 	list<VariableBase *>::iterator var_it;
 	
 	for (var_it = vars.begin(); var_it != vars.end(); var_it++)
@@ -1236,9 +1229,9 @@ void InlineDebugger<ADDRESS>::DumpVariable(const char *cmd, const VariableBase *
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DumpVariable(const char *cmd, const char *name)
 {
-	VariableBase *variable = ServiceManager::GetVariable(name);
+	VariableBase *variable = GetSimulator()->FindVariable(name);
 	
-	if (variable == &unisim::kernel::service::ServiceManager::void_variable)
+	if (variable->IsVoid())
 	{
 		cout << "Unknow variable (" << name << ")" << endl;
 		return;
@@ -1258,9 +1251,6 @@ void InlineDebugger<ADDRESS>::DumpVariable(const char *cmd, const char *name)
 		case VariableBase::VAR_REGISTER:
 			cout << " R";
 			break;
-		case VariableBase::VAR_ARRAY:
-			cout << " A"; // TOCHECK
-			break;
 	}
 
 	cout << "\t";
@@ -1270,9 +1260,9 @@ void InlineDebugger<ADDRESS>::DumpVariable(const char *cmd, const char *name)
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DumpRegister(const char *cmd, const char *name)
 {
-	VariableBase *variable = ServiceManager::GetRegister(name);
+	VariableBase *variable = GetSimulator()->FindRegister(name);
 	
-	if (variable == &unisim::kernel::service::ServiceManager::void_variable)
+	if (variable->IsVoid())
 	{
 		cout << "Unknow register (" << name << ")" << endl;
 		return;
@@ -1284,9 +1274,9 @@ void InlineDebugger<ADDRESS>::DumpRegister(const char *cmd, const char *name)
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DumpStatistic(const char *cmd, const char *name)
 {
-	VariableBase *variable = ServiceManager::GetStatistic(name);
+	VariableBase *variable = GetSimulator()->FindStatistic(name);
 	
-	if (variable == &unisim::kernel::service::ServiceManager::void_variable)
+	if (variable->IsVoid())
 	{
 		cout << "Unknow statistic (" << name << ")" << endl;
 		return;
@@ -1298,9 +1288,9 @@ void InlineDebugger<ADDRESS>::DumpStatistic(const char *cmd, const char *name)
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DumpParameter(const char *cmd, const char *name)
 {
-	VariableBase *variable = ServiceManager::GetParameter(name);
+	VariableBase *variable = GetSimulator()->FindParameter(name);
 	
-	if (variable == &unisim::kernel::service::ServiceManager::void_variable)
+	if (variable->IsVoid())
 	{
 		cout << "Unknow parameter (" << name << ")" << endl;
 		return;
@@ -1312,9 +1302,9 @@ void InlineDebugger<ADDRESS>::DumpParameter(const char *cmd, const char *name)
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::SetVariable(const char *name, const char *value)
 {
-	VariableBase *variable = ServiceManager::GetVariable(name);
+	VariableBase *variable = GetSimulator()->FindVariable(name);
 	
-	if (variable == &unisim::kernel::service::ServiceManager::void_variable)
+	if (variable->IsVoid())
 	{
 		cout << "Unknow variable (" << name << ")" << endl;
 		return;
@@ -1375,7 +1365,7 @@ void InlineDebugger<ADDRESS>::DumpDataProfile(bool write)
 	{
 		ADDRESS addr = (*iter).first;
 		const Symbol<ADDRESS> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(addr) : 0;
-		// ADDRESS next_addr;
+		ADDRESS next_addr;
 
 		cout << "0x" << hex;
 		cout.fill('0');

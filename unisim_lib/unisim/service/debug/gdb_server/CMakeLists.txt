@@ -34,8 +34,7 @@ set ( gdb_server_subdirs
 	unisim/service/interfaces/trap_reporting
 	unisim/util/endian
 	unisim/util/debug
-	unisim/kernel/service
-	unisim/kernel/logger
+	unisim/kernel
 	unisim/util/xml
 	)
 foreach ( dir ${gdb_server_subdirs} )
@@ -51,25 +50,17 @@ add_library ( unisim__service__debug__gdb_server
 		${CMAKE_SOURCE_DIR}/unisim/service/debug/gdb_server/gdb_server_64.cc
 	)
 
+set ( link_libraries
+	unisim__util__endian
+	unisim__util__xml
+	unisim__util__debug
+	unisim__kernel
+	unisim__util__xml 
+	)
 target_link_libraries ( unisim__service__debug__gdb_server
-	unisim__util__xml )
-
-set_source_files_properties (
-	${CMAKE_SOURCE_DIR}/unisim/service/debug/gdb_server/gdb_server.hh
-	${CMAKE_SOURCE_DIR}/unisim/service/debug/gdb_server/gdb_server.tcc
-	PROPERTY
-		HEADER_FILE_ONLY TRUE
+	${link_libraries}
 	)
 
-# file ( MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/resources/gdb_server )
-# file ( 
-# 	COPY 
-# 		${CMAKE_SOURCE_DIR}/unisim/service/debug/gdb_server/gdb_armv5b.xml 
-# 		${CMAKE_SOURCE_DIR}/unisim/service/debug/gdb_server/gdb_armv4l.xml 
-# 		${CMAKE_SOURCE_DIR}/unisim/service/debug/gdb_server/gdb_hcs12x.xml 
-# 		${CMAKE_SOURCE_DIR}/unisim/service/debug/gdb_server/gdb_powerpc.xml 
-# 	DESTINATION ${CMAKE_BINARY_DIR}/resources/gdb_server )
-	
 message ( STATUS "Checking unisim::service::debug::gdb_server - done" )
 
 

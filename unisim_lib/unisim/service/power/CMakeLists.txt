@@ -70,8 +70,7 @@ foreach ( CXX_INCLUDE ${CXX_INCLUDES} )
 endforeach ( CXX_INCLUDE )
 
 set ( power_subdirs 
-	unisim/kernel/service
-	unisim/kernel/logger
+	unisim/kernel
 	unisim/service/interfaces/cache_power_estimator
 	unisim/service/interfaces/power_mode
 	unisim/service/interfaces/time
@@ -99,8 +98,7 @@ add_library ( unisim__service__power
 	)
 
 set ( unisim__service__power_libraries
-	unisim__kernel__service
-	unisim__kernel__logger
+	unisim__kernel
 	)
 if ( CACTI4_2_FOUND )
 	list ( APPEND unisim__service__power_libraries
@@ -118,8 +116,7 @@ if ( CACTI4_2_FOUND )
 endif ( CACTI4_2_FOUND )
 
 add_dependencies ( unisim__service__power
-	unisim__kernel__service
-	unisim__kernel__logger
+	unisim__kernel
 	unisim__service__interfaces__cache_power_estimator
 	unisim__service__interfaces__power_mode
 	unisim__service__interfaces__time

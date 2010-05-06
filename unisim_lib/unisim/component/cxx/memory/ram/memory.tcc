@@ -67,7 +67,7 @@ MemoryPage<PHYSICAL_ADDR, PAGE_SIZE>::~MemoryPage()
 
 template <class PHYSICAL_ADDR, uint32_t PAGE_SIZE>
 Memory<PHYSICAL_ADDR, PAGE_SIZE>::Memory(const  char *name, Object *parent) :
-	Object(name, parent),
+	Object(name, parent, "memory"),
 	Service<unisim::service::interfaces::Memory<PHYSICAL_ADDR> >(name, parent),
 	memory_export("memory-export", this),
 	org(0),

@@ -21,8 +21,7 @@ foreach ( CXX_INCLUDE ${CXX_INCLUDES} )
 endforeach ( CXX_INCLUDE )
 
 set ( elf_loader_subdirs
-	unisim/kernel/service
-	unisim/kernel/logger
+	unisim/kernel
 	unisim/service/interfaces/memory
 	unisim/service/interfaces/loader
 	unisim/service/interfaces/symbol_table_lookup
@@ -44,6 +43,21 @@ add_library ( unisim__service__loader__elf_loader
 		${CMAKE_SOURCE_DIR}/unisim/service/loader/elf_loader/elf_loader.tcc
 		${CMAKE_SOURCE_DIR}/unisim/service/loader/elf_loader/elf32_loader.cc
 		${CMAKE_SOURCE_DIR}/unisim/service/loader/elf_loader/elf64_loader.cc
+	)
+
+target_link_libraries ( unisim__service__loader__elf_loader
+	unisim__kernel
+	unisim__util__endian
+	unisim__util__debug
+	)
+
+add_dependencies ( unisim__service__loader__elf_loader
+	unisim__kernel
+	unisim__service__interfaces__memory
+	unisim__service__interfaces__loader
+	unisim__service__interfaces__symbol_table_lookup
+	unisim__util__endian
+	unisim__util__debug
 	)
 
 message ( STATUS "Checking unisim::service::loader::elf_loader - done" )

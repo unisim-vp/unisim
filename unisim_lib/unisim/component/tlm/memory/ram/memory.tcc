@@ -54,7 +54,7 @@ using unisim::kernel::logger::EndDebugError;
 template <class PHYSICAL_ADDR, uint32_t DATA_SIZE, uint32_t PAGE_SIZE, bool DEBUG>
 Memory<PHYSICAL_ADDR, DATA_SIZE, PAGE_SIZE, DEBUG>::
 Memory(const sc_module_name& name, Object *parent) :
-	Object(name, parent),
+	Object(name, parent, "Memory"),
 	sc_module(name),
 	unisim::component::cxx::memory::ram::Memory<PHYSICAL_ADDR, PAGE_SIZE>(name, parent),
 	slave_port("slave-port"),

@@ -1145,6 +1145,7 @@ namespace arm {
 		uint32_t statistics_id;
 		// endianness parameter
 		endian_type default_endianness;
+		string default_endianness_string;
 		// parameters for the 966E_S configuration
 		bool arm966es_initram;
 		bool arm966es_vinithi;
@@ -1172,7 +1173,7 @@ namespace arm {
 		bool trap_on_exception;
 		uint64_t trap_on_instruction_counter;
 		
-		unisim::kernel::service::Parameter<endian_type> param_default_endianness;
+		unisim::kernel::service::Parameter<string> param_default_endianness;
 		unisim::kernel::service::Parameter<bool> param_arm966es_initram;
 		unisim::kernel::service::Parameter<bool> param_arm966es_vinithi;
 		unisim::kernel::service::Parameter<uint64_t> param_cpu_cycle_time;
