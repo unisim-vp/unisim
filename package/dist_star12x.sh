@@ -304,7 +304,7 @@ vector \
 "
 
 UNISIM_SIMULATORS_STAR12X_SOURCE_FILES="\
-main_gilles.cc \
+main.cc \
 atd_pwm_stub.cc \
 xml_atd_pwm_stub.cc \
 rtb_unisim.cc \

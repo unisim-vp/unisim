@@ -120,11 +120,20 @@ bool S19_Loader<MEMORY_ADDR>::Setup() {
 	cerr << Object::GetName() << ": Load file \"" << filename << "\" to simulated RAM." << endl;
 	cerr << Object::GetName() << ": Load started..." << endl;
 
-	while (!feof(bootptr))  {
+	do
+	{
+		if(!fgets(srec, S_RECORD_SIZE, bootptr))
+		{
+			if(!feof(bootptr))
+			{
+				ShowError(ERR_IO,0,NULL);	
+			}
+			break;
+		}
 		linenum++;
-		fgets(srec, S_RECORD_SIZE, bootptr);
 		success = success && ProcessRecord(linenum,srec);
 	}
+	while (1);
 
 	fclose(bootptr);
 
@@ -260,7 +269,9 @@ bool  S19_Loader<MEMORY_ADDR>::ProcessRecord(int linenum, char srec[S_RECORD_SIZ
 
 			nDataByte = (cnt-addrSize-1); 
 			for (sdataIndex=0; sdataIndex<nDataByte; sdataIndex++)  {
-				sscanf(srec+(addrSize+2+sdataIndex)*2, "%2x", &sdata[sdataIndex]);
+				unsigned int v;
+				sscanf(srec+(addrSize+2+sdataIndex)*2, "%2x", &v);
+				sdata[sdataIndex] = v;
 				chksum += sdata[sdataIndex];
 
 			}
@@ -330,6 +341,7 @@ void  S19_Loader<MEMORY_ADDR>::ShowError(int  errnum, int linenum, char srec[S_R
 		case ERR_BADADDR: cerr << "Error: Address is out of range for this MCU."; break;
 		case ERR_BADCHKSUM: cerr << "Error: Record checksum is bad."; break;
 		case ERR_BADFILENAME: cerr << "Error: Illegal character in file name."; break;
+		case ERR_IO : cerr << "Error: Input/Output !"; break;
 		default: cerr << "Error: Unknown!";
 	}
 	

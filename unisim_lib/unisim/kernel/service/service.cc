@@ -2521,6 +2521,7 @@ bool Simulator::Setup()
 			ofstream stream(generate_doc_filename.c_str(), std::ofstream::out);
 			GenerateLatexDocumentation(stream);
 		}
+		return false;
 	}
 	if(enable_version)
 	{

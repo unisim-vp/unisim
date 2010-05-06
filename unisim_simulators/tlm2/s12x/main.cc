@@ -239,6 +239,7 @@ private:
 
 	bool use_gdb_server;
 	bool use_inline_debugger;
+	string filename;
 	Parameter<bool> param_use_gdb_server;
 	Parameter<bool> param_use_inline_debugger;
 	
@@ -280,18 +281,16 @@ Simulator::Simulator(int argc, char **argv)
 	, param_use_gdb_server("use-gdb-server", 0, use_gdb_server, "Enable/Disable GDB server instantiation")
 	, param_use_inline_debugger("use-inline-debugger", 0, use_inline_debugger, "Enable/Disable inline debugger instantiation")
 {
+	//=========================================================================
+	//===      Handling of file to load passed as command line argument     ===
+	//=========================================================================
+
 	VariableBase *cmd_args = FindVariable("cmd-args");
 	unsigned int cmd_args_length = cmd_args->GetLength();
-	string filename;
 	if(cmd_args_length > 0)
 	{
 		filename = (string)(*cmd_args)[0];
-	}
-
-	// If no filename has been specified then display the help
-	if(filename.empty())
-	{
-		std::cerr << "WARNING! No file to load. You should provide a file to load as command line argument." << std::endl;
+		std::cerr << "filename=\"" << filename << "\"" << std::endl;
 	}
 
 	//=========================================================================
@@ -347,25 +346,29 @@ Simulator::Simulator(int argc, char **argv)
 	}
 
 	//  - GDB server
-	use_gdb_server ? new GDBServer<SERVICE_ADDRESS_TYPE>("gdb-server") : 0;
+	gdb_server = use_gdb_server ? new GDBServer<SERVICE_ADDRESS_TYPE>("gdb-server") : 0;
 	//  - Inline debugger
-	use_inline_debugger ? new InlineDebugger<SERVICE_ADDRESS_TYPE>("inline-debugger") : 0;
+	inline_debugger = use_inline_debugger ? new InlineDebugger<SERVICE_ADDRESS_TYPE>("inline-debugger") : 0;
 	//  - SystemC Time
 	sim_time = new unisim::service::time::sc_time::ScTime("time");
 	//  - Host Time
 	host_time = new unisim::service::time::host_time::HostTime("host-time");
 
 	//=========================================================================
-	//===                        Components connection                      ===
+	//===                       Service parameterization     ===
 	//=========================================================================
 
-	/*
-	 * TODO:
-	 *  - One of the output of the CRG is the BusClock (hereafter fsb_cycle_time).
-	 *  - In fact I have to connect all the others component to the CRG::BusClock output.
-	 *  - If (PLLSEL == 1) the BusClock = PLLCLK / 2; else BusClock = OSCCLK / 2;
-	 *  - PLLCLK = 2 * OSCCLK * (SYNR + 1) / (REFDV + 1)
-	 */
+	if(isS19) {
+		(*loaderS19)["filename"] = filename.c_str();
+	}
+	else
+	{
+		(*loaderELF)["filename"] = filename.c_str();
+	}
+
+	//=========================================================================
+	//===                        Components connection                      ===
+	//=========================================================================
 
 	cpu->socket(mmc->cpu_socket);
 	cpu->toXINT(s12xint->fromCPU_Target);
@@ -544,7 +547,6 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 
 	int gdb_server_tcp_port = 0;
 	const char *gdb_server_arch_filename = "gdb_hcs12x.xml";
-	string parameter_filename = "default_config.xml";
 	const char *filename = "";
 	const char *symbol_filename = "";
 
@@ -556,7 +558,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	uint64_t cpu_cycle_time = (uint64_t)(1e6 / cpu_frequency); // in picoseconds
 	uint64_t fsb_cycle_time = cpu_clock_multiplier * cpu_cycle_time;
 	uint32_t mem_cycle_time = fsb_cycle_time;
-	bool force_use_virtual_address = false;
+	bool force_use_virtual_address = true;
 
 	ADDRESS::ENCODING address_encoding = ADDRESS::BANKED;
 
@@ -577,14 +579,126 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("S19_Loader.filename", filename);
 	simulator->SetVariable("elf32-loader.filename", symbol_filename);
 	simulator->SetVariable("elf32-loader.force-use-virtual-address", force_use_virtual_address);
+
+#ifdef HAVE_RTBCOB
+	simulator->SetVariable("RTBStub.anx-stimulus-period", 80000000);
+	simulator->SetVariable("RTBStub.atd0-anx-stimulus-file", "ATD.xml");
+	simulator->SetVariable("RTBStub.atd0-anx-start-channel", 0);
+	simulator->SetVariable("RTBStub.atd0-anx-wrap-around-channel", 0);
+	simulator->SetVariable("RTBStub.atd1-anx-stimulus-file", "ATD.xml");
+	simulator->SetVariable("RTBStub.atd1-anx-start-channel", 0);
+	simulator->SetVariable("RTBStub.atd1-anx-wrap-around-channel", 0);
+	simulator->SetVariable("RTBStub.trace-enable", false);
+#else
+	simulator->SetVariable("xml-atd-pwm-stub.anx-stimulus-period", 80000000);
+	simulator->SetVariable("xml-atd-pwm-stub.atd0-anx-stimulus-file", "ATD.xml");
+	simulator->SetVariable("xml-atd-pwm-stub.atd0-anx-start-channel", 0);
+	simulator->SetVariable("xml-atd-pwm-stub.atd0-anx-wrap-around-channel", 0);
+	simulator->SetVariable("xml-atd-pwm-stub.atd1-anx-stimulus-file", "ATD.xml");
+	simulator->SetVariable("xml-atd-pwm-stub.atd1-anx-start-channel", 0);
+	simulator->SetVariable("xml-atd-pwm-stub.atd1-anx-wrap-around-channel", 0);
+	simulator->SetVariable("xml-atd-pwm-stub.trace-enable", false);
+#endif
+	simulator->SetVariable("ATD0.bus-cycle-time", 250000);
+	simulator->SetVariable("ATD0.base-address", 0x2c0);
+	simulator->SetVariable("ATD0.interrupt-offset", 0xd2);
+	simulator->SetVariable("ATD0.vrl", 0.000000e+00);
+	simulator->SetVariable("ATD0.vrh", 5.120000e+00);
+	simulator->SetVariable("ATD0.debug-enabled", false);
+	simulator->SetVariable("ATD0.vih", 3.250000e+00);
+	simulator->SetVariable("ATD0.vil", 1.750000e+00);
+	simulator->SetVariable("ATD0.Has-External-Trigger", false);
+	simulator->SetVariable("ATD1.bus-cycle-time", 250000);
+	simulator->SetVariable("ATD1.base-address", 0x80);
+	simulator->SetVariable("ATD1.interrupt-offset", 0xd0);
+	simulator->SetVariable("ATD1.vrl", 0.000000e+00);
+	simulator->SetVariable("ATD1.vrh", 5.120000e+00);
+	simulator->SetVariable("ATD1.debug-enabled", false);
+	simulator->SetVariable("ATD1.vih", 3.250000e+00);
+	simulator->SetVariable("ATD1.vil", 1.750000e+00);
+	simulator->SetVariable("ATD1.Has-External-Trigger", false);
+	simulator->SetVariable("CPU.trace-enable", false);
+	simulator->SetVariable("CPU.verbose-all", false);
+	simulator->SetVariable("CPU.verbose-setup", false);
+	simulator->SetVariable("CPU.verbose-step", false);
+	simulator->SetVariable("CPU.verbose-dump-regs-start", false);
+	simulator->SetVariable("CPU.verbose-dump-regs-end", false);
+	simulator->SetVariable("CPU.verbose-exception", false);
+	simulator->SetVariable("CPU.requires-memory-access-reporting", false);
+	simulator->SetVariable("CPU.requires-finished-instruction-reporting", false);
+	simulator->SetVariable("CPU.debug-enabled", false);
+	simulator->SetVariable("CPU.max-inst", 0xffffffffffffffffULL);
+	simulator->SetVariable("CPU.nice-time", 0xffffffffffULL);
+	simulator->SetVariable("CPU.cpu-cycle-time", 250000);
+	simulator->SetVariable("CPU.bus-cycle-time", 250000);
+	simulator->SetVariable("CPU.verbose-tlm-bus-synchronize", false);
+	simulator->SetVariable("CPU.verbose-tlm-run-thread", false);
+	simulator->SetVariable("CPU.verbose-tlm-commands", false);
+	simulator->SetVariable("CRG.oscillator-clock", 125000);
+	simulator->SetVariable("CRG.base-address", 0x34);
+	simulator->SetVariable("CRG.interrupt-offset-rti", 0xf0);
+	simulator->SetVariable("CRG.interrupt-offset-pll-lock", 0xc6);
+	simulator->SetVariable("CRG.interrupt-offset-self-clock-mode", 0xc4);
+	simulator->SetVariable("CRG.debug-enabled", false);
+	simulator->SetVariable("ECT.bus-cycle-time", 250000);
+	simulator->SetVariable("ECT.base-address", 0x40);
+	simulator->SetVariable("ECT.interrupt-offset-channel0", 0xee);
+	simulator->SetVariable("ECT.interrupt-offset-overflow", 0xde);
+	simulator->SetVariable("ECT.debug-enabled", false);
+	simulator->SetVariable("external-memory.org", 0x0);
+	simulator->SetVariable("external-memory.bytesize", 0x800000);
+	simulator->SetVariable("external-memory.cycle-time", 250000);
+	simulator->SetVariable("external-memory.verbose", false);
+	simulator->SetVariable("external_router.cycle_time", 250000);
+	simulator->SetVariable("external_router.port_buffer_size", 0x0);
+	simulator->SetVariable("external_router.mapping_0", "range_start=\"0x800\" range_end=\"0x7fffff\" output_port=\"0\" translation=\"800\"");
+	simulator->SetVariable("internal-memory.org", 0x0);
+	simulator->SetVariable("internal-memory.bytesize", 0x10000);
+	simulator->SetVariable("internal-memory.cycle-time", 250000);
+	simulator->SetVariable("internal-memory.verbose", false);
+	simulator->SetVariable("internal_router.cycle_time", 250000);
+	simulator->SetVariable("internal_router.port_buffer_size", 0x0);
+	simulator->SetVariable("internal_router.mapping_0", "range_start=\"0x34\" range_end=\"0x40\" output_port=\"0\" translation=\"34\"");
+	simulator->SetVariable("internal_router.mapping_1", "range_start=\"0x40\" range_end=\"0x7f\" output_port=\"1\" translation=\"40\"");
+	simulator->SetVariable("internal_router.mapping_2", "range_start=\"0x80\" range_end=\"0xb0\" output_port=\"2\" translation=\"80\"");
+	simulator->SetVariable("internal_router.mapping_3", "range_start=\"0x120\" range_end=\"0x130\" output_port=\"3\" translation=\"120\"");
+	simulator->SetVariable("internal_router.mapping_4", "range_start=\"0x2c0\" range_end=\"0x2e0\" output_port=\"4\" translation=\"2c0\"");
+	simulator->SetVariable("internal_router.mapping_5", "range_start=\"0x300\" range_end=\"0x328\" output_port=\"5\" translation=\"300\"");
+	simulator->SetVariable("internal_router.mapping_6", "range_start=\"0x800\" range_end=\"0xffff\" output_port=\"6\" translation=\"800\"");
+	simulator->SetVariable("kernel_logger.std_err", true);
+	simulator->SetVariable("kernel_logger.std_out", false);
+	simulator->SetVariable("kernel_logger.std_err_color", false);
+	simulator->SetVariable("kernel_logger.std_out_color", false);
+	simulator->SetVariable("kernel_logger.file", false);
+	simulator->SetVariable("kernel_logger.filename", "logger_output.txt");
+	simulator->SetVariable("kernel_logger.xml_file", true);
+	simulator->SetVariable("kernel_logger.xml_filename", "logger_output.xml");
+	simulator->SetVariable("kernel_logger.xml_file_gzipped", false);
+	simulator->SetVariable("MMC.debug-enabled", false);
+	simulator->SetVariable("MMC.mode", 0x80);
+	simulator->SetVariable("MMC.mmcctl1", 0x5);
+	simulator->SetVariable("MMC.address-encoding", 0x0);
+	simulator->SetVariable("PWM.bus-cycle-time", 250000);
+	simulator->SetVariable("PWM.base-address", 0x300);
+	simulator->SetVariable("PWM.interrupt-offset", 0x8c);
+	simulator->SetVariable("PWM.debug-enabled", false);
+	simulator->SetVariable("XINT.debug-enabled", false);
 }
 
 void Simulator::Run()
 {
+	// If no filename has been specified, abort simulation
+	if(filename.empty())
+	{
+		std::cerr << "ERROR! No file to load. You should provide a file to load as command line argument." << std::endl;
+		return;
+	}
+
 	physical_address_t entry_point;
 
 	if (isS19) {
 		entry_point = loaderS19->GetEntryPoint();
+		std::cerr << "entry_point=0x" << std::hex << entry_point << std::dec << std::endl;
 	}
 	else{
 		entry_point = loaderELF->GetEntryPoint();
