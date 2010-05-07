@@ -61,12 +61,12 @@
 #define unlikely(x) (x)
 #endif
 
-// #ifdef DEBUG_MEMORY_ALLOCATION
-// void *operator new(std::size_t size);
-// void *operator new[](std::size_t size);
-// void operator delete(void *p, std::size_t size);
-// void operator delete[](void *p, std::size_t size);
-// #endif
+#ifdef DEBUG_MEMORY_ALLOCATION
+void *operator new(std::size_t size);
+void *operator new[](std::size_t size);
+void operator delete(void *p, std::size_t size);
+void operator delete[](void *p, std::size_t size);
+#endif
 
 namespace unisim {
 namespace kernel {
@@ -210,12 +210,20 @@ private:
 class Simulator
 {
 public:
+	typedef enum
+	{
+		ST_OK_TO_START,
+		ST_OK_DONT_START,
+		ST_WARNING,
+		ST_ERROR
+	} SetupStatus;
+	
 	static Simulator *simulator;
 	VariableBase *void_variable;
 
 	Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator *simulator) = 0);
 	virtual ~Simulator();
-	bool Setup();
+	virtual SetupStatus Setup();
 
 	const VariableBase *FindVariable(const char *name, VariableBase::Type type = VariableBase::VAR_VOID) const;
 	VariableBase *FindVariable(const char *name, VariableBase::Type type = VariableBase::VAR_VOID);

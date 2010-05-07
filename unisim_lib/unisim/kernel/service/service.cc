@@ -1914,12 +1914,12 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	
 	if(GetBinPath(argv[0], bin_dir, program_binary))
 	{
-		std::cerr << "bin_dir=\"" << bin_dir << "\"" << std::endl;
-		std::cerr << "program_binary=\"" << program_binary << "\"" << std::endl;
+		//std::cerr << "bin_dir=\"" << bin_dir << "\"" << std::endl;
+		//std::cerr << "program_binary=\"" << program_binary << "\"" << std::endl;
 
 		if(GetSharePath(bin_dir, shared_data_dir))
 		{
-			std::cerr << "shared_data_dir=\"" << shared_data_dir << "\"" << std::endl;
+			//std::cerr << "shared_data_dir=\"" << shared_data_dir << "\"" << std::endl;
 		}
 		else
 		{
@@ -2507,7 +2507,7 @@ protected:
 	bool& has_cycle;
 };
 
-bool Simulator::Setup()
+Simulator::SetupStatus Simulator::Setup()
 {
 	if(generate_doc)
 	{
@@ -2521,17 +2521,17 @@ bool Simulator::Setup()
 			ofstream stream(generate_doc_filename.c_str(), std::ofstream::out);
 			GenerateLatexDocumentation(stream);
 		}
-		return false;
+		return ST_OK_DONT_START;
 	}
 	if(enable_version)
 	{
 		Version(cerr);
-		return false;
+		return ST_OK_DONT_START;
 	}
 	if(enable_help)
 	{
 		Help(cerr);
-		return false;
+		return ST_OK_DONT_START;
 	}
 	
 	if(enable_warning)
@@ -2551,7 +2551,7 @@ bool Simulator::Setup()
 		cerr << "Listing parameters..." << endl;
 		DumpVariables(cerr, unisim::kernel::service::VariableBase::VAR_PARAMETER);
 		cerr << "Aborting simulation" << endl;
-		return false;
+		return ST_OK_DONT_START;
 	}
 
 	if(!get_config_filename.empty() > 0)
@@ -2559,7 +2559,7 @@ bool Simulator::Setup()
 		XmlfyParameters(get_config_filename.c_str());
 		cerr << "Parameters saved on file \"" << get_config_filename << "\"" << endl;
 		cerr << "Aborting simulation" << endl;
-		return false;
+		return ST_OK_DONT_START;
 	}
 
 	// Build a dependency graph of methods "Setup"
@@ -2605,7 +2605,7 @@ bool Simulator::Setup()
 	if(has_cycle)
 	{
 		cerr << "Simulator: ERROR! cyclic setup dependency graph" << endl;
-		return false;
+		return ST_ERROR;
 	}
 
 	// Compute a topological order of methods "Setup"
@@ -2623,11 +2623,11 @@ bool Simulator::Setup()
 		if(!dependency_graph[*vertex_iter].obj->Setup())
 		{
 			cerr << "Simulator: " << dependency_graph[*vertex_iter].obj->GetName() << " setup failed" << endl;
-			return false;
+			return ST_ERROR;
 		}
 	}
 
-	return true;
+	return ST_OK_TO_START;
 }
 
 const VariableBase *Simulator::FindVariable(const char *name, VariableBase::Type type) const
@@ -2861,7 +2861,7 @@ bool Simulator::GetBinPath(const char *argv0, std::string& out_bin_dir, std::str
 	std::string executable_path;
 	
 	if(!GetExecutablePath(argv0, executable_path)) return false;
-	std::cerr << "executable_path=\"" << executable_path << "\"" << std::endl;
+	//std::cerr << "executable_path=\"" << executable_path << "\"" << std::endl;
 	// compute bin dirname
 	const char *start = executable_path.c_str();
 	const char *end = start + executable_path.length() - 1;
