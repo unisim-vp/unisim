@@ -35,6 +35,58 @@
 #include <Python.h>
 #include "simulator.hh"
 #include "config.hh"
+#include <map>
+
+static std::map<std::string, int> time_unit_map;
+static std::map<std::string, sc_time_unit> sc_time_unit_map;
+
+void TimeUnitMapInit()
+{
+	time_unit_map.insert(std::pair<std::string, int>("fs", 0));
+	time_unit_map.insert(std::pair<std::string, int>("FS", 0));
+	time_unit_map.insert(std::pair<std::string, int>("ps", 1));
+	time_unit_map.insert(std::pair<std::string, int>("PS", 1));
+	time_unit_map.insert(std::pair<std::string, int>("ns", 2));
+	time_unit_map.insert(std::pair<std::string, int>("NS", 2));
+	time_unit_map.insert(std::pair<std::string, int>("us", 3));
+	time_unit_map.insert(std::pair<std::string, int>("US", 3));
+	time_unit_map.insert(std::pair<std::string, int>("ms", 4));
+	time_unit_map.insert(std::pair<std::string, int>("MS", 4));
+	time_unit_map.insert(std::pair<std::string, int>("sec", 5));
+	time_unit_map.insert(std::pair<std::string, int>("SEC", 5));
+
+	sc_time_unit_map.insert(std::pair<std::string, sc_time_unit>("fs", SC_FS));
+	sc_time_unit_map.insert(std::pair<std::string, sc_time_unit>("FS", SC_FS));
+	sc_time_unit_map.insert(std::pair<std::string, sc_time_unit>("ps", SC_PS));
+	sc_time_unit_map.insert(std::pair<std::string, sc_time_unit>("PS", SC_PS));
+	sc_time_unit_map.insert(std::pair<std::string, sc_time_unit>("ns", SC_NS));
+	sc_time_unit_map.insert(std::pair<std::string, sc_time_unit>("NS", SC_NS));
+	sc_time_unit_map.insert(std::pair<std::string, sc_time_unit>("us", SC_US));
+	sc_time_unit_map.insert(std::pair<std::string, sc_time_unit>("US", SC_US));
+	sc_time_unit_map.insert(std::pair<std::string, sc_time_unit>("ms", SC_MS));
+	sc_time_unit_map.insert(std::pair<std::string, sc_time_unit>("MS", SC_MS));
+	sc_time_unit_map.insert(std::pair<std::string, sc_time_unit>("sec", SC_SEC));
+	sc_time_unit_map.insert(std::pair<std::string, sc_time_unit>("SEC", SC_SEC));
+}
+
+int TimeUnit(const std::string& unit)
+{
+	const std::map<std::string, int>::iterator it = time_unit_map.find(unit);
+
+	if ( it == time_unit_map.end() ) return -1;
+	return (*it).second;
+}
+
+bool SCTimeUnit(const std::string& unit, sc_time_unit& sc_unit)
+{
+	const std::map<std::string, sc_time_unit>::iterator it = sc_time_unit_map.find(unit);
+
+	std::cerr << "SCTimeUnit(" << unit << ")" << std::endl;
+	if ( it == sc_time_unit_map.end() ) return false;
+	sc_unit = (*it).second;
+
+	return true;
+}
 
 extern "C" {
 typedef struct {
@@ -50,7 +102,7 @@ create_simulator()
 	Simulator *sim;
 	char *argv[3] =
 	{
-			(char *)"/Users/gracia/Developer/unisim/armemu/build/armemu-0.2.0",
+			(char *)"/Users/gracia/Developer/unisim/armemu/build/bin/armemu-0.3.1",
 			(char *)"-w",
 			0
 	};
@@ -152,7 +204,7 @@ set_parameters_map (Simulator *sim, std::map<std::string, std::string> &parms)
 }
 
 static PyObject *
-simulator_get_parameters (armemu_SimulatorObject *self, PyObject *args)
+simulator_get_parameters (armemu_SimulatorObject *self)
 {
 	PyObject *result;
 	std::map<std::string, std::string> parms;
@@ -203,19 +255,113 @@ simulator_set_variable (armemu_SimulatorObject *self, PyObject *args)
 }
 
 static PyObject *
-simulator_run (armemu_SimulatorObject *self)
+simulator_is_running (armemu_SimulatorObject *self)
 {
-	PyObject *result;
+	PyObject *result = 0;
 
-	if ( self->setup )
+	if ( !self->setup )
+	{
+		result = PyUnicode_FromString("Simulation setup failed.");
+	}
+
+	if ( result == 0 )
+	{
+		if ( self->sim->IsRunning() )
+			Py_RETURN_TRUE;
+		Py_RETURN_FALSE;
+	}
+	return result;
+}
+
+static PyObject *
+simulator_has_started (armemu_SimulatorObject *self)
+{
+	PyObject *result = 0;
+
+	if ( !self->setup )
+	{
+		result = PyUnicode_FromString("Simulation setup failed.");
+	}
+
+	if ( result == 0 )
+	{
+		if ( self->sim->SimulationStarted() )
+			Py_RETURN_TRUE;
+		Py_RETURN_FALSE;
+	}
+	return result;
+}
+
+static PyObject *
+simulator_has_finished(armemu_SimulatorObject *self)
+{
+	PyObject *result = 0;
+
+	if ( !self->setup )
+	{
+		result = PyUnicode_FromString("Simulation setup failed.");
+	}
+
+	if ( result == 0 )
+	{
+		if ( self->sim->SimulationFinished() )
+			Py_RETURN_TRUE;
+		Py_RETURN_FALSE;
+	}
+	return result;
+}
+
+static PyObject *
+simulator_run (armemu_SimulatorObject *self, PyObject *args)
+{
+	PyObject *result = 0;
+	double dtime = 0.0;
+	char *cunit = "sec";
+	std::string unit;
+	sc_time_unit time_unit;
+	if ( !self->setup )
+	{
+		result = PyUnicode_FromString("Simulation setup failed.");
+	}
+
+	if ( (result == 0) && PyArg_ParseTuple(args, "|ds", &dtime, cunit))
+	{
+		unit = cunit;
+	}
+	else
+		return result;
+
+	if ( result ) return result;
+	if ( !SCTimeUnit(unit, time_unit) )
+	{
+		result = PyUnicode_FromFormat("ERROR: Unknown time_unit \"%s\"", unit.c_str());
+		return result;
+	}
+
+	if ( dtime == 0.0 )
 	{
 		self->sim->Run();
 		result = PyUnicode_FromString("Simulation finished.");
 	}
 	else
-		result = PyUnicode_FromString("Simulation setup failed.");
+	{
+		self->sim->Run(dtime, time_unit);
+		PyObject *py_dtime = PyFloat_FromDouble(dtime);
+		result = PyUnicode_FromFormat("Simulation of %S%s finished.",
+				py_dtime, unit.c_str(), time_unit);
+	}
+
 	return result;
 }
+
+static PyObject *
+titi (armemu_SimulatorObject *self, PyObject *args)
+{
+	PyObject *result = 0;
+	result = PyUnicode_FromString("titi");
+	return result;
+}
+
 
 static PyMethodDef simulator_methods[] =
 {
@@ -227,8 +373,14 @@ static PyMethodDef simulator_methods[] =
 			"Get the value of a simulator variable."},
 	{"set_variable", (PyCFunction)simulator_set_variable, METH_VARARGS,
 			"Set the value of a simulator variable."},
-	{"run", (PyCFunction)simulator_run, METH_NOARGS,
+	{"run", (PyCFunction)simulator_run, METH_VARARGS,
 			"Run the simulator."},
+	{"is_running", (PyCFunction)simulator_is_running, METH_NOARGS,
+			"Check if the simulator is running or not."},
+	{"has_started", (PyCFunction)simulator_has_started, METH_NOARGS,
+			"Checks if the simulation has been started or not"},
+	{"has_finished", (PyCFunction)simulator_has_finished, METH_NOARGS,
+			"Checks if the simulation has been finished or not"},
 	{NULL}
 };
 
@@ -283,12 +435,14 @@ static PyModuleDef simulatormodule = {
 };
 
 PyMODINIT_FUNC
-PyInit_armemu020(void)
+PyInit_armemu031(void)
 {
     PyObject* m;
 
     if (PyType_Ready(&armemu_SimulatorType) < 0)
         return NULL;
+
+    TimeUnitMapInit();
 
     m = PyModule_Create(&simulatormodule);
     if (m == NULL)
