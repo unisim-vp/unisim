@@ -434,8 +434,11 @@ static PyModuleDef simulatormodule = {
     NULL, NULL, NULL, NULL, NULL
 };
 
+#define armemu__PyInit_function(b) PyInit_ ## b
+
 PyMODINIT_FUNC
-PyInit_armemu031(void)
+PyInit_ARMEMU_DECLARATION
+// PyInit_armemu031(void)
 {
     PyObject* m;
 
