@@ -354,15 +354,6 @@ simulator_run (armemu_SimulatorObject *self, PyObject *args)
 	return result;
 }
 
-static PyObject *
-titi (armemu_SimulatorObject *self, PyObject *args)
-{
-	PyObject *result = 0;
-	result = PyUnicode_FromString("titi");
-	return result;
-}
-
-
 static PyMethodDef simulator_methods[] =
 {
 	{"version", (PyCFunction)simulator_version, METH_NOARGS,
