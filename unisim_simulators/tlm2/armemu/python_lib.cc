@@ -214,7 +214,6 @@ static PyObject *
 simulator_get_parameters (armemu_SimulatorObject *self)
 {
 	PyObject *result;
-	std::map<std::string, std::string> parms;
 
 	if ( self->sim == 0 ) return NULL;
 	std::list<unisim::kernel::service::VariableBase *> parm_list;
@@ -228,12 +227,10 @@ static PyObject *
 simulator_get_statistics (armemu_SimulatorObject *self)
 {
 	PyObject *result;
-	std::map<std::string, std::string> parms;
 
 	if ( self->sim == 0 ) return NULL;
 	std::list<unisim::kernel::service::VariableBase *> stat_list;
 	self->sim->GetStatistics(stat_list);
-
 	result = pydict_from_variable_list(stat_list);
 
 	return result;
