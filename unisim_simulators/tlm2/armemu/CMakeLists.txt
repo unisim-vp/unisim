@@ -304,9 +304,6 @@ endif ( HAVE_editline_readline_H )
 configure_file ( 
 	${CMAKE_SOURCE_DIR}/config.hh.in 
 	${CMAKE_BINARY_DIR}/config.hh )
-configure_file (
-	${CMAKE_SOURCE_DIR}/setup.py.in
-	${CMAKE_BINARY_DIR}/setup.py )
 
 add_library ( simulator
 		${simulator__sources}
@@ -382,20 +379,26 @@ add_custom_command (
 	)
 
 if ( BUILD_ARMEMU_PYTHON_MODULE )
+	configure_file (
+		${CMAKE_SOURCE_DIR}/python/setup.py.in
+		${CMAKE_BINARY_DIR}/python/setup.py )
+	configure_file (
+		${CMAKE_SOURCE_DIR}/python/python_config.hh.in
+		${CMAKE_BINARY_DIR}/python/python_config.hh )
+
 	add_custom_command (
 		OUTPUT lib/${SIM_PYTHON_IMPORT_NAME}.so
-		COMMAND
-			${CMAKE_COMMAND} -E remove_directory python
 		COMMAND
 			${CMAKE_COMMAND} -E remove lib/${SIM_PYTHON_IMPORT_NAME}.so
 		COMMAND
 			${CMAKE_COMMAND} -E make_directory python
 		COMMAND
-			${PYTHON_EXECUTABLE} setup.py build -t python --build-lib lib
+			${PYTHON_EXECUTABLE} python/setup.py build -t python --build-lib lib
 		DEPENDS
-			${CMAKE_BINARY_DIR}/setup.py
 			${CMAKE_BINARY_DIR}/config.hh
-			${CMAKE_SOURCE_DIR}/python_lib.cc
+			${CMAKE_BINARY_DIR}/python/setup.py
+			${CMAKE_BINARY_DIR}/python/python_config.hh
+			${CMAKE_SOURCE_DIR}/python/armemu.cc
 			simulator
 			${armemu__deps}
 		COMMENT

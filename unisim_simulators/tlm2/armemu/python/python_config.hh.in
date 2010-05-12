@@ -1,0 +1,4 @@
+#include "config.hh"
+
+#define SIM_PYTHON_MODULE_NAME @SIM_PYTHON_MODULE_NAME@
+#define PyInit_ARMEMU_DECLARATION PyInit_@SIM_PYTHON_IMPORT_NAME@(void)

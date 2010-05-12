@@ -34,7 +34,7 @@
 
 #include <Python.h>
 #include "simulator.hh"
-#include "config.hh"
+#include "python/python_config.hh"
 #include <map>
 
 static std::map<std::string, int> time_unit_map;
@@ -69,7 +69,7 @@ void TimeUnitMapInit()
 	sc_time_unit_map.insert(std::pair<std::string, sc_time_unit>("SEC", SC_SEC));
 }
 
-int TimeUnit(const std::string& unit)
+static int TimeUnit(const std::string& unit)
 {
 	const std::map<std::string, int>::iterator it = time_unit_map.find(unit);
 
@@ -77,11 +77,10 @@ int TimeUnit(const std::string& unit)
 	return (*it).second;
 }
 
-bool SCTimeUnit(const std::string& unit, sc_time_unit& sc_unit)
+static bool SCTimeUnit(const std::string& unit, sc_time_unit& sc_unit)
 {
 	const std::map<std::string, sc_time_unit>::iterator it = sc_time_unit_map.find(unit);
 
-	std::cerr << "SCTimeUnit(" << unit << ")" << std::endl;
 	if ( it == sc_time_unit_map.end() ) return false;
 	sc_unit = (*it).second;
 
