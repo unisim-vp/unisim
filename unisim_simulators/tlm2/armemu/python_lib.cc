@@ -211,6 +211,19 @@ pydict_from_variable_list ( std::list<unisim::kernel::service::VariableBase*>& l
 }
 
 static PyObject *
+simulator_get_variables (armemu_SimulatorObject *self)
+{
+	PyObject *result;
+
+	if ( self->sim == 0 ) return NULL;
+	std::list<unisim::kernel::service::VariableBase *> var_list;
+	self->sim->GetParameters(var_list);
+	result = pydict_from_variable_list(var_list);
+
+	return result;
+}
+
+static PyObject *
 simulator_get_parameters (armemu_SimulatorObject *self)
 {
 	PyObject *result;
@@ -232,6 +245,32 @@ simulator_get_statistics (armemu_SimulatorObject *self)
 	std::list<unisim::kernel::service::VariableBase *> stat_list;
 	self->sim->GetStatistics(stat_list);
 	result = pydict_from_variable_list(stat_list);
+
+	return result;
+}
+
+static PyObject *
+simulator_get_registers (armemu_SimulatorObject *self)
+{
+	PyObject *result;
+
+	if ( self->sim == 0 ) return NULL;
+	std::list<unisim::kernel::service::VariableBase *> reg_list;
+	self->sim->GetRegisters(reg_list);
+	result = pydict_from_variable_list(reg_list);
+
+	return result;
+}
+
+static PyObject *
+simulator_get_formulas ( armemu_SimulatorObject *self)
+{
+	PyObject *result;
+
+	if ( self->sim == 0 ) return NULL;
+	std::list<unisim::kernel::service::VariableBase *> form_list;
+	self->sim->GetFormulas(form_list);
+	result = pydict_from_variable_list(form_list);
 
 	return result;
 }
@@ -382,10 +421,16 @@ static PyMethodDef simulator_methods[] =
 {
 	{"version", (PyCFunction)simulator_version, METH_NOARGS,
 			"Return the simulator version."},
+	{"get_variables", (PyCFunction)simulator_get_variables, METH_NOARGS,
+			"Return a dictionary with the complete list of the simulator variables."},
 	{"get_parameters", (PyCFunction)simulator_get_parameters, METH_NOARGS,
 			"Return a dictionary with the complete list of the simulator parameters."},
 	{"get_statistics", (PyCFunction)simulator_get_statistics, METH_NOARGS,
 			"Return a dictionary with the complete list of the simulator statistics."},
+	{"get_registers", (PyCFunction)simulator_get_registers, METH_NOARGS,
+			"Return a dictionary with the complete list of the simulator registers."},
+	{"get_formulas", (PyCFunction)simulator_get_formulas, METH_NOARGS,
+			"Return a dictionary with the complete list of the simulator formulas."},
 	{"get_variable", (PyCFunction)simulator_get_variable, METH_VARARGS,
 			"Get the value of a simulator variable."},
 	{"set_variable", (PyCFunction)simulator_set_variable, METH_VARARGS,
