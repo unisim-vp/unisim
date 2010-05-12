@@ -180,6 +180,65 @@ simulator_get_variable (armemu_SimulatorObject *self, PyObject *args)
 	return result;
 }
 
+static PyObject *
+pydict_from_variable_list ( std::list<unisim::kernel::service::VariableBase*>& list)
+{
+	PyObject *result;
+	result = PyDict_New();
+	if ( result == NULL ) return NULL;
+
+	for ( std::list<unisim::kernel::service::VariableBase *>::iterator it = list.begin();
+			it != list.end();
+			it++ )
+	{
+		PyObject *name;
+		PyObject *value;
+		name = PyUnicode_FromString((*it)->GetName());
+		value = PyUnicode_FromString(((std::string)*(*it)).c_str());
+		if ( PyDict_SetItem(result, name, value) == -1)
+		{
+			Py_DECREF(name);
+			Py_DECREF(value);
+			PyDict_Clear(result);
+			result = NULL;
+			return result;
+		}
+		Py_DECREF(name);
+		Py_DECREF(value);
+	}
+
+	return result;
+}
+
+static PyObject *
+simulator_get_parameters (armemu_SimulatorObject *self)
+{
+	PyObject *result;
+	std::map<std::string, std::string> parms;
+
+	if ( self->sim == 0 ) return NULL;
+	std::list<unisim::kernel::service::VariableBase *> parm_list;
+	self->sim->GetParameters(parm_list);
+	result = pydict_from_variable_list(parm_list);
+
+	return result;
+}
+
+static PyObject *
+simulator_get_statistics (armemu_SimulatorObject *self)
+{
+	PyObject *result;
+	std::map<std::string, std::string> parms;
+
+	if ( self->sim == 0 ) return NULL;
+	std::list<unisim::kernel::service::VariableBase *> stat_list;
+	self->sim->GetStatistics(stat_list);
+
+	result = pydict_from_variable_list(stat_list);
+
+	return result;
+}
+
 static void
 get_parameters_map (Simulator *sim, std::map<std::string, std::string> &parms)
 {
@@ -201,38 +260,6 @@ set_parameters_map (Simulator *sim, std::map<std::string, std::string> &parms)
 			it != parms.end();
 			it++ )
 		sim->SetVariable(it->first.c_str(), it->second.c_str());
-}
-
-static PyObject *
-simulator_get_parameters (armemu_SimulatorObject *self)
-{
-	PyObject *result;
-	std::map<std::string, std::string> parms;
-
-	if ( self->sim == 0 ) return NULL;
-	result = PyDict_New();
-	if ( result == NULL ) return NULL;
-	get_parameters_map(self->sim, parms);
-	for ( std::map<std::string, std::string>::iterator it = parms.begin();
-			it != parms.end();
-			it++ )
-	{
-		PyObject *name;
-		PyObject *value;
-		name = PyUnicode_FromString(it->first.c_str());
-		value = PyUnicode_FromString(it->second.c_str());
-		if ( PyDict_SetItem(result, name, value) == -1)
-		{
-			Py_DECREF(name);
-			Py_DECREF(value);
-			PyDict_Clear(result);
-			result = NULL;
-			return result;
-		}
-		Py_DECREF(name);
-		Py_DECREF(value);
-	}
-	return result;
 }
 
 static PyObject *
@@ -360,6 +387,8 @@ static PyMethodDef simulator_methods[] =
 			"Return the simulator version."},
 	{"get_parameters", (PyCFunction)simulator_get_parameters, METH_NOARGS,
 			"Return a dictionary with the complete list of the simulator parameters."},
+	{"get_statistics", (PyCFunction)simulator_get_statistics, METH_NOARGS,
+			"Return a dictionary with the complete list of the simulator statistics."},
 	{"get_variable", (PyCFunction)simulator_get_variable, METH_VARARGS,
 			"Get the value of a simulator variable."},
 	{"set_variable", (PyCFunction)simulator_set_variable, METH_VARARGS,
