@@ -643,6 +643,7 @@ typename DebugControl<ADDRESS>::DebugCommand GDBServer<ADDRESS>::FetchDebugComma
 	{
 		if(!GetPacket(packet, true))
 		{
+			Object::Stop(0);
 			return DebugControl<ADDRESS>::DBG_KILL;
 		}
 
@@ -652,12 +653,20 @@ typename DebugControl<ADDRESS>::DebugCommand GDBServer<ADDRESS>::FetchDebugComma
 		switch(packet[pos++])
 		{
 			case 'g':
-				if(!ReadRegisters()) return DebugControl<ADDRESS>::DBG_KILL;
+				if(!ReadRegisters())
+				{
+					Object::Stop(0);
+					return DebugControl<ADDRESS>::DBG_KILL;
+				}
 				break;
 
 			case 'p':
 				if(!ParseHex(packet, pos, reg_num)) break;
-				if(!ReadRegister(reg_num)) return DebugControl<ADDRESS>::DBG_KILL;
+				if(!ReadRegister(reg_num))
+				{
+					Object::Stop(0);
+					return DebugControl<ADDRESS>::DBG_KILL;
+				}
 				break;
 
 			case 'G':
@@ -681,7 +690,11 @@ typename DebugControl<ADDRESS>::DebugCommand GDBServer<ADDRESS>::FetchDebugComma
 				if(packet[pos++] != ',') break;
 				if(!ParseHex(packet, pos, size)) break;
 				if(pos != len) break;
-				if(!ReadMemory(addr, size)) return DebugControl<ADDRESS>::DBG_KILL;
+				if(!ReadMemory(addr, size))
+				{
+					Object::Stop(0);
+					return DebugControl<ADDRESS>::DBG_KILL;
+				}
 				break;
 
 			case 'M':
@@ -874,6 +887,7 @@ typename DebugControl<ADDRESS>::DebugCommand GDBServer<ADDRESS>::FetchDebugComma
 				}
 		} // end of switch
 	}
+	Object::Stop(0);
 	return DebugControl<ADDRESS>::DBG_KILL;
 }
 

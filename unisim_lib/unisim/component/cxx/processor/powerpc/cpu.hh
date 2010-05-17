@@ -793,7 +793,6 @@ public:
 	void StepOneInstruction();
 	void StepOneCycle();
 	void Run();
-	virtual void Stop(int ret);
 	virtual void Synchronize();
 	virtual void Reset();
 	virtual void Idle();

@@ -91,11 +91,15 @@ void *operator new[](std::size_t size)
 
 void operator delete(void *storage, std::size_t size)
 {
+	std::cerr << "free(" << size << ")" << std::endl;
+	std::cerr << unisim::kernel::debug::BackTrace() << std::endl;
 	free(storage);
 }
 
 void operator delete[](void *storage, std::size_t size)
 {
+	std::cerr << "free(" << size << ")" << std::endl;
+	std::cerr << unisim::kernel::debug::BackTrace() << std::endl;
 	free(storage);
 }
 #endif
@@ -1734,6 +1738,11 @@ void Object::GenerateLatexDocumentation(ostream& os) const
 	}
 }
 
+void Object::Stop(int exit_status)
+{
+	Simulator::simulator->Stop(this, exit_status);
+}
+
 //=============================================================================
 //=                           ServiceImportBase                               =
 //=============================================================================
@@ -2628,6 +2637,10 @@ Simulator::SetupStatus Simulator::Setup()
 	}
 
 	return ST_OK_TO_START;
+}
+
+void Simulator::Stop(Object *object, int exit_status)
+{
 }
 
 const VariableBase *Simulator::FindVariable(const char *name, VariableBase::Type type) const

@@ -189,6 +189,8 @@ void ATD_PWM_STUB::Output_ATD1(double anValue[ATD1_SIZE])
 
 	tlm_sync_enum ret = atd1_master_sock->nb_transport_fw(*payload, phase, local_time);
 
+	payload->release();
+	
 	switch(ret)
 	{
 		case TLM_ACCEPTED:
@@ -226,6 +228,8 @@ void ATD_PWM_STUB::Output_ATD0(double anValue[ATD0_SIZE])
 	sc_time local_time = quantumkeeper.get_local_time();
 
 	tlm_sync_enum ret = atd0_master_sock->nb_transport_fw(*payload, phase, local_time);
+
+	payload->release();
 
 	switch(ret)
 	{

@@ -143,6 +143,8 @@ void CRG::assertInterrupt(uint8_t interrupt_offset) {
 
 	tlm_sync_enum ret = interrupt_request->nb_transport_fw(*payload, phase, local_time);
 
+	payload->release();
+
 	switch(ret)
 	{
 		case TLM_ACCEPTED:

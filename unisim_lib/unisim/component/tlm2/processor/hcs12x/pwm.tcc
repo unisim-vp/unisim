@@ -192,6 +192,8 @@ void PWM<PWM_SIZE>::assertInterrupt() {
 
 	tlm_sync_enum ret = interrupt_request->nb_transport_fw(*payload, phase, local_time);
 
+	payload->release();
+	
 	switch(ret)
 	{
 		case TLM_ACCEPTED:
@@ -306,6 +308,8 @@ void PWM<PWM_SIZE>::refreshOutput(bool pwmValue[PWM_SIZE])
 
 	tlm_sync_enum ret = master_sock->nb_transport_fw(*payload, phase, local_time);
 
+	payload->release();
+	
 	switch(ret)
 	{
 		case TLM_ACCEPTED:

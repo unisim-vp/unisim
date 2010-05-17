@@ -101,8 +101,7 @@ void PowerPC<CONFIG>::Stop(int ret)
 		inherited::logger << DebugInfo << "Program exited with status " << ret << EndDebugInfo;
 	}
 	BusSynchronize();
-	sc_stop();
-	wait();
+	Object::Stop(ret);
 }
 
 template <class CONFIG>

@@ -224,6 +224,7 @@ public:
 	Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator *simulator) = 0);
 	virtual ~Simulator();
 	virtual SetupStatus Setup();
+	virtual void Stop(Object *object, int exit_status);
 
 	const VariableBase *FindVariable(const char *name, VariableBase::Type type = VariableBase::VAR_VOID) const;
 	VariableBase *FindVariable(const char *name, VariableBase::Type type = VariableBase::VAR_VOID);
@@ -670,6 +671,7 @@ public:
 	Simulator *GetSimulator() const;
 	void GenerateLatexDocumentation(ostream& os) const;
 	const char *GetDescription() const;
+	virtual void Stop(int exit_status);
 private:
 	string object_name;
 	string description;

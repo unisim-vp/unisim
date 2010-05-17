@@ -111,6 +111,7 @@ using unisim::component::cxx::pci::pci64_address_t;
 using unisim::component::cxx::pci::pci32_address_t;
 using unisim::kernel::service::VariableBase;
 using unisim::kernel::service::Parameter;
+using unisim::kernel::service::Object;
 
 class Simulator : public unisim::kernel::service::Simulator
 {
@@ -118,6 +119,7 @@ public:
 	Simulator(int argc, char **argv);
 	virtual ~Simulator();
 	void Run();
+	virtual void Stop(Object *object, int exit_status);
 protected:
 private:
 	//=========================================================================
@@ -1002,6 +1004,14 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	
 	// - kernel logger
 	simulator->SetVariable("kernel_logger.std_err", true);
+}
+
+void Simulator::Stop(Object *object, int exit_status)
+{
+	std::cerr << object->GetName() << " has requested simulation stop" << std::endl;
+	std::cerr << "Program exited with status " << exit_status << std::endl;
+	sc_stop();
+	wait();
 }
 
 void Simulator::Run()

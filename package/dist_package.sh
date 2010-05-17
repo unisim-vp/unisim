@@ -22,7 +22,7 @@ function usage
 {
 	echo "Usage: `basename $0` <OS> <systemc> <tlm2.0> [<pkg name>-<version>...]"
 	echo "OS: deb | rpm | mingw"
-	echo "pkg name: genisslib | ppcemu | ppcemu-system | embedded-ppc-g4-board | tms320c3x | armemu"
+	echo "pkg name: genisslib | ppcemu | ppcemu-system | embedded-ppc-g4-board | tms320c3x | armemu | star12x"
 }
 
 function BuildRPM
