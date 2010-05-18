@@ -114,6 +114,7 @@ using unisim::component::cxx::pci::pci32_address_t;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::Variable;
 using unisim::kernel::service::VariableBase;
+using unisim::kernel::service::Object;
 
 class Simulator : public unisim::kernel::service::Simulator
 {
@@ -121,6 +122,7 @@ public:
 	Simulator(int argc, char **argv);
 	virtual ~Simulator();
 	void Run();
+	virtual void Stop(Object *object, int exit_status);
 protected:
 private:
 	//=========================================================================
@@ -987,6 +989,14 @@ void Simulator::Run()
 	}
 }
 
+void Simulator::Stop(Object *object, int exit_status)
+{
+	std::cerr << object->GetName() << " has requested simulation stop" << std::endl;
+	std::cerr << "Program exited with status " << exit_status << std::endl;
+	sc_stop();
+	wait();
+}
+
 int sc_main(int argc, char *argv[])
 {
 #ifdef WIN32
@@ -1001,15 +1011,19 @@ int sc_main(int argc, char *argv[])
 #endif
 	Simulator *simulator = new Simulator(argc, argv);
 
-	if(simulator->Setup())
+	switch(simulator->Setup())
 	{
-		cerr << "Starting simulation at supervisor privilege level (kernel mode)" << endl;
-
-		simulator->Run();
-	}
-	else
-	{
-		cerr << "Can't start simulation because of previous errors" << endl;
+		case unisim::kernel::service::Simulator::ST_OK_DONT_START:
+			break;
+		case unisim::kernel::service::Simulator::ST_WARNING:
+			cerr << "Some warnings occurred during setup" << endl;
+		case unisim::kernel::service::Simulator::ST_OK_TO_START:
+			cerr << "Starting simulation at user privilege level (Linux system call translation mode)" << endl;
+			simulator->Run();
+			break;
+		case unisim::kernel::service::Simulator::ST_ERROR:
+			cerr << "Can't start simulation because of previous errors" << endl;
+			break;
 	}
 
 	if(simulator) delete simulator;
