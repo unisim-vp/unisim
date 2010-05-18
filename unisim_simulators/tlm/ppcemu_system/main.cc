@@ -118,6 +118,7 @@ class Simulator : public unisim::kernel::service::Simulator
 public:
 	Simulator(int argc, char **argv);
 	virtual ~Simulator();
+	virtual unisim::kernel::service::Simulator::SetupStatus Setup();
 	void Run();
 	virtual void Stop(Object *object, int exit_status);
 protected:
@@ -314,23 +315,6 @@ Simulator::Simulator(int argc, char **argv)
 	, param_estimate_power("estimate-power", 0, estimate_power, "Enable/Disable power estimators instantiation")
 	, param_message_spy("message-spy", 0, message_spy, "Enable/Disable message spies instantiation")
 {
-	// Build the kernel parameters string from the command line arguments
-	string filename;
-	string kernel_params;
-	
-	VariableBase *cmd_args = FindVariable("cmd-args");
-	unsigned int cmd_args_length = cmd_args->GetLength();
-	if(cmd_args_length > 0)
-	{
-		filename = (string) (*cmd_args)[0];
-		unsigned int i;
-		for(i = 1; i < cmd_args_length; i++)
-		{
-			kernel_params += (string) (*cmd_args)[i];
-			if(i < cmd_args_length - 1) kernel_params += " ";
-		}
-	}
-	
 	//=========================================================================
 	//===                     Component instantiations                      ===
 	//=========================================================================
@@ -424,19 +408,6 @@ Simulator::Simulator(int argc, char **argv)
 	l2_power_estimator = (estimate_power) ? new CachePowerEstimator("l2-power-estimator") : 0;
 	itlb_power_estimator = (estimate_power) ? new CachePowerEstimator("itlb-power-estimator") : 0;
 	dtlb_power_estimator = (estimate_power) ? new CachePowerEstimator("dtlb-power-estimator") : 0;
-	
-	//  - Loader run-time configuration
-	if(!filename.empty())
-	{
-		cerr << "Using " << (*kloader)["elf32-loader.filename"].GetName() << " = \"" << filename << "\"" << endl;
-		(*kloader)["elf32-loader.filename"] = filename.c_str();
-	}
-
-	if(!kernel_params.empty())
-	{
-		cerr << "Using " << (*kloader)["pmac-bootx.kernel-params"].GetName() << " = \"" << kernel_params << "\"" << endl;
-		(*kloader)["pmac-bootx.kernel-params"] = kernel_params.c_str();
-	}
 	
 	//=========================================================================
 	//===                        Components connection                      ===
@@ -1103,6 +1074,39 @@ void Simulator::Run()
 		cerr << "Total leakage power: " << total_leakage_power << " W" << endl;
 		cerr << "Total power (dynamic+leakage): " << total_power << " W" << endl;
 	}
+}
+
+unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
+{
+	// Build the kernel parameters string from the command line arguments
+	string filename;
+	string kernel_params;
+	
+	VariableBase *cmd_args = FindVariable("cmd-args");
+	unsigned int cmd_args_length = cmd_args->GetLength();
+	if(cmd_args_length > 0)
+	{
+		filename = (string) (*cmd_args)[0];
+		unsigned int i;
+		for(i = 1; i < cmd_args_length; i++)
+		{
+			kernel_params += (string) (*cmd_args)[i];
+			if(i < cmd_args_length - 1) kernel_params += " ";
+		}
+	}
+	
+	//  - Loader run-time configuration
+	if(!filename.empty())
+	{
+		SetVariable("pmac-linux-kernel-loader.elf32-loader.filename", filename.c_str());
+	}
+
+	if(!kernel_params.empty())
+	{
+		SetVariable("pmac-linux-kernel-loader.pmac-bootx.kernel-params", kernel_params.c_str());
+	}
+
+	return unisim::kernel::service::Simulator::Setup();
 }
 
 int sc_main(int argc, char *argv[])
