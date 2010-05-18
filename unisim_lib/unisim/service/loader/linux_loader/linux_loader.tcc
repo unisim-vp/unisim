@@ -62,6 +62,7 @@ argc(0),
 argv(0),
 envc(0),
 envp(0),
+verbose(false),
 endianness_string("little-endian"),
 param_endian("endianness", this, endianness_string,
 		"The endianness of the binary loaded. Available values are:"
@@ -85,18 +86,6 @@ param_envp(0),
 param_verbose("verbose", this, verbose, "Display verbose information"),
 logger(*this)
 {
-	if ( argc )
-	{
-		argv = new string[argc];
-		param_argv = new ParameterArray<string>("argv", this, argv, argc,
-				"The ordered list of tokens in the command line.");
-	}
-	if ( envc )
-	{
-		envp = new string[envc];
-		param_envp = new ParameterArray<string>("envp", this, envp, envc,
-				"The different environment variables defined.");
-	}
 	Object::SetupDependsOn(memory_import);
 	Object::SetupDependsOn(loader_import);
 }
@@ -153,6 +142,19 @@ LinuxLoader<T>::Setup() {
 			endianness = E_LITTLE_ENDIAN;
 		else
 			endianness = E_BIG_ENDIAN;
+	}
+
+	if ( argc )
+	{
+		argv = new string[argc];
+		param_argv = new ParameterArray<string>("argv", this, argv, argc,
+				"The ordered list of tokens in the command line.");
+	}
+	if ( envc )
+	{
+		envp = new string[envc];
+		param_envp = new ParameterArray<string>("envp", this, envp, envc,
+				"The different environment variables defined.");
 	}
 
 	/* perform the initialization of the linuxloader */

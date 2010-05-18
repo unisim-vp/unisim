@@ -225,10 +225,12 @@ private:
 	char output_buffer[MAX_BUFFER_SIZE];
 
 	unsigned int memory_atom_size;
-	Parameter<unsigned int> param_memory_atom_size;
+	bool verbose;
 
+	Parameter<unsigned int> param_memory_atom_size;
 	Parameter<int> param_tcp_port;
 	Parameter<string> param_architecture_description_filename;
+	Parameter<bool> param_verbose;
 };
 
 } // end of namespace gdb_server
