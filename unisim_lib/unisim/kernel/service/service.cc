@@ -352,7 +352,7 @@ VariableBase& VariableBase::operator = (const VariableBase& variable)
 
 template <class TYPE>
 Variable<TYPE>::Variable(const char *_name, Object *_owner, TYPE& _storage, Type type, const char *_description) :
-	VariableBase(_name, _owner, "string", type, _description), storage(&_storage)
+	VariableBase(_name, _owner, type, _description), storage(&_storage)
 {
 	Simulator::simulator->Initialize(this);
 }
@@ -2543,18 +2543,6 @@ Simulator::SetupStatus Simulator::Setup()
 		return ST_OK_DONT_START;
 	}
 	
-	if(enable_warning)
-	{
-		// display a warning if some variable values are unused
-		std::map<string, string>::iterator set_var_iter;
-		
-		for(set_var_iter = set_vars.begin(); set_var_iter != set_vars.end(); set_var_iter++)
-		{
-			cerr << "WARNING! value \"" << (*set_var_iter).second << "\" for variable \"" << (*set_var_iter).first << "\" is unused." << endl;
-		}
-	}
-	set_vars.clear();
-	
 	if(list_parms)
 	{
 		cerr << "Listing parameters..." << endl;
@@ -2625,6 +2613,7 @@ Simulator::SetupStatus Simulator::Setup()
 	// Call methods "Setup" in a topological order
 	unisim::kernel::logger::LoggerServer::GetInstanceWithoutCountingReference()->Setup();
 	
+	SetupStatus status = ST_OK_TO_START;
 	list<Vertex>::iterator vertex_iter;
 	for(vertex_iter = setup_order.begin(); vertex_iter != setup_order.end(); vertex_iter++)
 	{
@@ -2632,11 +2621,23 @@ Simulator::SetupStatus Simulator::Setup()
 		if(!dependency_graph[*vertex_iter].obj->Setup())
 		{
 			cerr << "Simulator: " << dependency_graph[*vertex_iter].obj->GetName() << " setup failed" << endl;
-			return ST_ERROR;
+			status = ST_ERROR;
+			break;
 		}
 	}
 
-	return ST_OK_TO_START;
+	if(enable_warning)
+	{
+		// display a warning if some variable values are unused
+		std::map<string, string>::iterator set_var_iter;
+		
+		for(set_var_iter = set_vars.begin(); set_var_iter != set_vars.end(); set_var_iter++)
+		{
+			cerr << "WARNING! value \"" << (*set_var_iter).second << "\" for variable \"" << (*set_var_iter).first << "\" is unused." << endl;
+		}
+	}
+
+	return status;
 }
 
 void Simulator::Stop(Object *object, int exit_status)

@@ -114,6 +114,7 @@ public:
 	Simulator(int argc, char **argv);
 	virtual ~Simulator();
 	void Run();
+	virtual unisim::kernel::service::Simulator::SetupStatus Setup();
 	virtual void Stop(Object *object, int exit_status);
 protected:
 private:
@@ -295,17 +296,6 @@ Simulator::Simulator(int argc, char **argv)
 	l2_power_estimator = estimate_power ? new CachePowerEstimator("l2-power-estimator") : 0;
 	itlb_power_estimator = estimate_power ? new CachePowerEstimator("itlb-power-estimator") : 0;
 	dtlb_power_estimator = estimate_power ? new CachePowerEstimator("dtlb-power-estimator") : 0;
-
-	// Build the Linux OS arguments from the command line arguments
-	
-	VariableBase *cmd_args = FindVariable("cmd-args");
-	unsigned int cmd_args_length = cmd_args->GetLength();
-	if(cmd_args_length > 0)
-	{
-		(*elf32_loader)["filename"] = (*cmd_args)[0];
-		(*linux_loader)["argv"] = *cmd_args;
-		(*linux_loader)["argc"] = cmd_args_length;
-	}
 
 	//=========================================================================
 	//===                        Components connection                      ===
@@ -688,6 +678,29 @@ void Simulator::Run()
 		cerr << "Total leakage power: " << total_leakage_power << " W" << endl;
 		cerr << "Total power (dynamic+leakage): " << total_power << " W" << endl;
 	}
+}
+
+unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
+{
+	// Build the Linux OS arguments from the command line arguments
+	
+	VariableBase *cmd_args = FindVariable("cmd-args");
+	unsigned int cmd_args_length = cmd_args->GetLength();
+	if(cmd_args_length > 0)
+	{
+		SetVariable("elf32-loader.filename", ((string)(*cmd_args)[0]).c_str());
+		SetVariable("linux-loader.argc", cmd_args_length);
+		
+		unsigned int i;
+		for(i = 0; i < cmd_args_length; i++)
+		{
+			std::stringstream sstr;
+			sstr << "linux-loader.argv[" << i << "]";
+			SetVariable(sstr.str().c_str(), ((string)(*cmd_args)[i]).c_str());
+		}
+	}
+
+	return unisim::kernel::service::Simulator::Setup();
 }
 
 void Simulator::Stop(Object *object, int exit_status)
