@@ -106,6 +106,7 @@ using unisim::util::garbage_collector::GarbageCollector;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::Variable;
 using unisim::kernel::service::VariableBase;
+using unisim::kernel::service::Object;
 
 class Simulator : public unisim::kernel::service::Simulator
 {
@@ -113,7 +114,7 @@ public:
 	Simulator(int argc, char **argv);
 	virtual ~Simulator();
 	void Run();
-	virtual void Stop(int exit_status);
+	virtual void Stop(Object *object, int exit_status);
 protected:
 private:
 
@@ -694,6 +695,7 @@ void Simulator::Stop(Object *object, int exit_status)
 	std::cerr << object->GetName() << " has requested simulation stop" << std::endl;
 	std::cerr << "Program exited with status " << exit_status << std::endl;
 	sc_stop();
+	wait();
 }
 
 int sc_main(int argc, char *argv[])
