@@ -106,6 +106,7 @@ using unisim::util::garbage_collector::GarbageCollector;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::Variable;
 using unisim::kernel::service::VariableBase;
+using unisim::kernel::service::Object;
 
 class Simulator : public unisim::kernel::service::Simulator
 {
@@ -113,6 +114,8 @@ public:
 	Simulator(int argc, char **argv);
 	virtual ~Simulator();
 	void Run();
+	virtual unisim::kernel::service::Simulator::SetupStatus Setup();
+	virtual void Stop(Object *object, int exit_status);
 protected:
 private:
 
@@ -293,17 +296,6 @@ Simulator::Simulator(int argc, char **argv)
 	l2_power_estimator = estimate_power ? new CachePowerEstimator("l2-power-estimator") : 0;
 	itlb_power_estimator = estimate_power ? new CachePowerEstimator("itlb-power-estimator") : 0;
 	dtlb_power_estimator = estimate_power ? new CachePowerEstimator("dtlb-power-estimator") : 0;
-
-	// Build the Linux OS arguments from the command line arguments
-	
-	VariableBase *cmd_args = FindVariable("cmd-args");
-	unsigned int cmd_args_length = cmd_args->GetLength();
-	if(cmd_args_length > 0)
-	{
-		(*elf32_loader)["filename"] = (*cmd_args)[0];
-		(*linux_loader)["argv"] = *cmd_args;
-		(*linux_loader)["argc"] = cmd_args_length;
-	}
 
 	//=========================================================================
 	//===                        Components connection                      ===
@@ -688,6 +680,37 @@ void Simulator::Run()
 	}
 }
 
+unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
+{
+	// Build the Linux OS arguments from the command line arguments
+	
+	VariableBase *cmd_args = FindVariable("cmd-args");
+	unsigned int cmd_args_length = cmd_args->GetLength();
+	if(cmd_args_length > 0)
+	{
+		SetVariable("elf32-loader.filename", ((string)(*cmd_args)[0]).c_str());
+		SetVariable("linux-loader.argc", cmd_args_length);
+		
+		unsigned int i;
+		for(i = 0; i < cmd_args_length; i++)
+		{
+			std::stringstream sstr;
+			sstr << "linux-loader.argv[" << i << "]";
+			SetVariable(sstr.str().c_str(), ((string)(*cmd_args)[i]).c_str());
+		}
+	}
+
+	return unisim::kernel::service::Simulator::Setup();
+}
+
+void Simulator::Stop(Object *object, int exit_status)
+{
+	std::cerr << object->GetName() << " has requested simulation stop" << std::endl;
+	std::cerr << "Program exited with status " << exit_status << std::endl;
+	sc_stop();
+	wait();
+}
+
 int sc_main(int argc, char *argv[])
 {
 #ifdef WIN32
@@ -702,15 +725,19 @@ int sc_main(int argc, char *argv[])
 #endif
 	Simulator *simulator = new Simulator(argc, argv);
 
-	if(simulator->Setup())
+	switch(simulator->Setup())
 	{
-		cerr << "Starting simulation at supervisor privilege level (kernel mode)" << endl;
-
-		simulator->Run();
-	}
-	else
-	{
-		cerr << "Can't start simulation because of previous errors" << endl;
+		case unisim::kernel::service::Simulator::ST_OK_DONT_START:
+			break;
+		case unisim::kernel::service::Simulator::ST_WARNING:
+			cerr << "Some warnings occurred during setup" << endl;
+		case unisim::kernel::service::Simulator::ST_OK_TO_START:
+			cerr << "Starting simulation at user privilege level (Linux system call translation mode)" << endl;
+			simulator->Run();
+			break;
+		case unisim::kernel::service::Simulator::ST_ERROR:
+			cerr << "Can't start simulation because of previous errors" << endl;
+			break;
 	}
 
 	if(simulator) delete simulator;

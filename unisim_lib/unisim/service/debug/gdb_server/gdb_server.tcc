@@ -120,9 +120,11 @@ GDBServer<ADDRESS>::GDBServer(const char *_name, Object *_parent) :
 	output_buffer_size(0),
 	logger(*this),
 	memory_atom_size(1),
+	verbose(false),
 	param_memory_atom_size("memory-atom-size", this, memory_atom_size, "size of the smallest addressable element in memory"),
 	param_tcp_port("tcp-port", this, tcp_port, "TCP/IP port to listen waiting for a GDB client connection"),
-	param_architecture_description_filename("architecture-description-filename", this, architecture_description_filename, "filename of a XML description of the connected processor")
+	param_architecture_description_filename("architecture-description-filename", this, architecture_description_filename, "filename of a XML description of the connected processor"),
+	param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
 {
 	Object::SetupDependsOn(registers_import);
 	Object::SetupDependsOn(memory_access_reporting_control_import);
@@ -289,14 +291,20 @@ bool GDBServer<ADDRESS>::Setup()
 						if(!reg)
 						{
 							cpu_has_reg = false;
-							logger << DebugWarning << "CPU does not support register " << reg_name << EndDebugWarning;
+							if(verbose)
+							{
+								logger << DebugWarning << "CPU does not support register " << reg_name << EndDebugWarning;
+							}
 						}
 						else
 						{
 							if(reg->GetSize() != reg_size)
 							{
 								cpu_has_right_reg_size = false;
-								logger << DebugWarning << ": register size (" << 8 * reg_size << " bits) doesn't match with size (" << 8 * reg->GetSize() << " bits) reported by CPU" << EndDebugWarning;
+								if(verbose)
+								{
+									logger << DebugWarning << ": register size (" << 8 * reg_size << " bits) doesn't match with size (" << 8 * reg->GetSize() << " bits) reported by CPU" << EndDebugWarning;
+								}
 							}
 						}
 
@@ -431,7 +439,10 @@ bool GDBServer<ADDRESS>::Setup()
 		socklen_t addr_len;
 #endif
 
-	logger << DebugInfo << "Listening on TCP port " << tcp_port << EndDebugInfo;
+	if(verbose)
+	{
+		logger << DebugInfo << "Listening on TCP port " << tcp_port << EndDebugInfo;
+	}
 	addr_len = sizeof(addr);
 	sock = accept(server_sock, (struct sockaddr *) &addr, &addr_len);
 
@@ -446,13 +457,19 @@ bool GDBServer<ADDRESS>::Setup()
 		return false;
 	}
 
-	logger << DebugInfo << "Connection with GDB client established" << EndDebugInfo;
+	if(verbose)
+	{
+		logger << DebugInfo << "Connection with GDB client established" << EndDebugInfo;
+	}
 
     /* set short latency */
     int opt = 1;
     if(setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (char *) &opt, sizeof(opt)) < 0)
 	{
-		logger << DebugWarning << "setsockopt failed requesting short latency" << EndDebugWarning;
+		if(verbose)
+		{
+			logger << DebugWarning << "setsockopt failed requesting short latency" << EndDebugWarning;
+		}
 	}
 
 
@@ -643,6 +660,7 @@ typename DebugControl<ADDRESS>::DebugCommand GDBServer<ADDRESS>::FetchDebugComma
 	{
 		if(!GetPacket(packet, true))
 		{
+			Object::Stop(0);
 			return DebugControl<ADDRESS>::DBG_KILL;
 		}
 
@@ -652,12 +670,20 @@ typename DebugControl<ADDRESS>::DebugCommand GDBServer<ADDRESS>::FetchDebugComma
 		switch(packet[pos++])
 		{
 			case 'g':
-				if(!ReadRegisters()) return DebugControl<ADDRESS>::DBG_KILL;
+				if(!ReadRegisters())
+				{
+					Object::Stop(0);
+					return DebugControl<ADDRESS>::DBG_KILL;
+				}
 				break;
 
 			case 'p':
 				if(!ParseHex(packet, pos, reg_num)) break;
-				if(!ReadRegister(reg_num)) return DebugControl<ADDRESS>::DBG_KILL;
+				if(!ReadRegister(reg_num))
+				{
+					Object::Stop(0);
+					return DebugControl<ADDRESS>::DBG_KILL;
+				}
 				break;
 
 			case 'G':
@@ -681,7 +707,11 @@ typename DebugControl<ADDRESS>::DebugCommand GDBServer<ADDRESS>::FetchDebugComma
 				if(packet[pos++] != ',') break;
 				if(!ParseHex(packet, pos, size)) break;
 				if(pos != len) break;
-				if(!ReadMemory(addr, size)) return DebugControl<ADDRESS>::DBG_KILL;
+				if(!ReadMemory(addr, size))
+				{
+					Object::Stop(0);
+					return DebugControl<ADDRESS>::DBG_KILL;
+				}
 				break;
 
 			case 'M':
@@ -706,7 +736,10 @@ typename DebugControl<ADDRESS>::DebugCommand GDBServer<ADDRESS>::FetchDebugComma
 					gdb_pc->SetValue(&addr);
 				else
 				{
-					logger << DebugWarning << "CPU has no program counter" << EndDebugWarning;
+					if(verbose)
+					{
+						logger << DebugWarning << "CPU has no program counter" << EndDebugWarning;
+					}
 				}
 				running_mode = GDBSERVER_MODE_STEP;
 				synched = false;
@@ -723,7 +756,10 @@ typename DebugControl<ADDRESS>::DebugCommand GDBServer<ADDRESS>::FetchDebugComma
 					gdb_pc->SetValue(&addr);
 				else
 				{
-					logger << DebugWarning << "CPU has no program counter" << EndDebugWarning;
+					if(verbose)
+					{
+						logger << DebugWarning << "CPU has no program counter" << EndDebugWarning;
+					}
 				}
 				running_mode = GDBSERVER_MODE_CONTINUE;
 				return DebugControl<ADDRESS>::DBG_STEP;
@@ -869,11 +905,15 @@ typename DebugControl<ADDRESS>::DebugCommand GDBServer<ADDRESS>::FetchDebugComma
 				}
 				else
 				{
-					logger << DebugWarning << "Received an unknown GDB remote protocol packet" << EndDebugWarning;
+					if(verbose)
+					{
+						logger << DebugWarning << "Received an unknown GDB remote protocol packet" << EndDebugWarning;
+					}
 					PutPacket("");
 				}
 		} // end of switch
 	}
+	Object::Stop(0);
 	return DebugControl<ADDRESS>::DBG_KILL;
 }
 
@@ -1013,7 +1053,10 @@ bool GDBServer<ADDRESS>::GetPacket(string& s, bool blocking)
 			if(!GetChar(c, true)) break;
 			received_checksum += HexChar2Nibble(c);
 
-			logger << DebugInfo << "receiving $" << s << "#" << Nibble2HexChar((received_checksum >> 4) & 0xf) << Nibble2HexChar(received_checksum & 0xf) << EndDebugInfo;
+			if(verbose)
+			{
+				logger << DebugInfo << "receiving $" << s << "#" << Nibble2HexChar((received_checksum >> 4) & 0xf) << Nibble2HexChar(received_checksum & 0xf) << EndDebugInfo;
+			}
 			if(checksum != received_checksum)
 			{
 				if(!PutChar('-')) return false;
@@ -1063,7 +1106,10 @@ bool GDBServer<ADDRESS>::PutPacket(const string& s)
 		if(!PutChar('#')) return false;
 		if(!PutChar(Nibble2HexChar(checksum >> 4))) return false;
 		if(!PutChar(Nibble2HexChar(checksum & 0xf))) return false;
-		logger << DebugInfo << "sending $" << s << "#" << Nibble2HexChar(checksum >> 4) << Nibble2HexChar(checksum & 0xf) << EndDebugInfo;
+		if(verbose)
+		{
+			logger << DebugInfo << "sending $" << s << "#" << Nibble2HexChar(checksum >> 4) << Nibble2HexChar(checksum & 0xf) << EndDebugInfo;
+		}
 		if(!FlushOutput()) return false;
 	} while(GetChar(c, true) && c != '+');
 	return true;
@@ -1166,7 +1212,10 @@ bool GDBServer<ADDRESS>::ReadMemory(ADDRESS addr, uint32_t size)
 
 	if(read_error)
 	{
-		logger << DebugWarning << memory_import.GetName() << "->ReadMemory has reported an error" << EndDebugWarning;
+		if(verbose)
+		{
+			logger << DebugWarning << memory_import.GetName() << "->ReadMemory has reported an error" << EndDebugWarning;
+		}
 	}
 
 	return PutPacket(packet);
@@ -1199,7 +1248,10 @@ bool GDBServer<ADDRESS>::WriteMemory(ADDRESS addr, const string& hex, uint32_t s
 
 	if(write_error)
 	{
-		logger << DebugWarning << memory_import.GetName() << "->WriteMemory has reported an error" << EndDebugWarning;
+		if(verbose)
+		{
+			logger << DebugWarning << memory_import.GetName() << "->WriteMemory has reported an error" << EndDebugWarning;
+		}
 	}
 
 	return true;

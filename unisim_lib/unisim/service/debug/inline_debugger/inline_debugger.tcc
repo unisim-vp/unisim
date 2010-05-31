@@ -264,6 +264,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 
 		if(!GetLine(line, sizeof(line)))
 		{
+			Object::Stop(0);
 			return DebugControl<ADDRESS>::DBG_KILL;
 		}
 
@@ -321,6 +322,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 				if(IsQuitCommand(parm[0]))
 				{
 					recognized = true;
+					Object::Stop(0);
 					return DebugControl<ADDRESS>::DBG_KILL;
 				}
 
@@ -667,6 +669,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 		
 		strcpy(last_line, line);
 	}
+	Object::Stop(0);
 	return DebugControl<ADDRESS>::DBG_KILL;
 }
 

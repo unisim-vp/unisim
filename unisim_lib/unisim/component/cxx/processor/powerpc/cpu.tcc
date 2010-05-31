@@ -6116,12 +6116,6 @@ void CPU<CONFIG>::AckSoftReset()
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Stop(int ret)
-{
-	exit(ret);
-}
-
-template <class CONFIG>
 void CPU<CONFIG>::Synchronize()
 {
 }

@@ -152,7 +152,12 @@ verbose_all(false),
 verbose_setup(false),
 verbose_tlm(false),
 verbose_tlm_debug(false),
-verbose_memory_interface(false)
+verbose_memory_interface(false),
+param_verbose_all(0),
+param_verbose_setup(0),
+param_verbose_tlm(0),
+param_verbose_tlm_debug(0),
+param_verbose_memory_interface(0)
 {
 	if (VERBOSE)
 	{

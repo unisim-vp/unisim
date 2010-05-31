@@ -82,7 +82,7 @@ class S19_Loader :
 {
 public:
 
-	enum {ERR_NOFILE, ERR_BADREC, ERR_NOSUPPORT, ERR_BADADDR, ERR_BADCHKSUM, ERR_BADFILENAME};
+	enum {ERR_NOFILE, ERR_BADREC, ERR_NOSUPPORT, ERR_BADADDR, ERR_BADCHKSUM, ERR_BADFILENAME, ERR_IO};
 
 /* ********* S-Record Types ***********************
  * Record	Description		Address Bytes	Data Sequence

@@ -16,7 +16,7 @@ shift
 
 if [ -z "${UNISIM_REPO}" ] || [ -z "${SYSTEMC}" ] || [ -z "${TLM20}" ] || [ -z "$1" ]; then
 	echo "Usage: `basename $0` <unisim repo> <systemc> <tlm2.0> [<pkg name>...]"
-	echo "pkg name: genisslib | ppcemu | ppcemu-system | embedded-ppc-g4-board | tms320c3x | armemu"
+	echo "pkg name: genisslib | ppcemu | ppcemu-system | embedded-ppc-g4-board | tms320c3x | armemu | star12x"
 	exit -1
 fi
 
@@ -98,6 +98,18 @@ for PKG_NAME in "$@"; do
 			cd ${HERE}
 			rm -rf ${UNISIM_ARMEMU_BUILD}
 			rm -rf ${UNISIM_ARMEMU_SOURCE}
+			;;
+		star12x)
+			UNISIM_STAR12X_SOURCE=${WORKING_DIR}/star12x
+			${UNISIM_REPO}/package/dist_star12x.sh ${UNISIM_STAR12X_SOURCE} ${UNISIM_REPO} || exit -1
+			cd ${UNISIM_STAR12X_SOURCE}
+			./configure --with-systemc=${SYSTEMC} --with-tlm20=${TLM20} || exit -1
+			make dist-gzip || exit -1
+			make dist-bzip2 || exit -1
+			make dist-zip || exit -1
+			mv -f *.tar.gz *.tar.bz2 *.zip ${HERE}
+			cd ${HERE}
+			rm -rf ${UNISIM_STAR12X_SOURCE}
 			;;
 		*)
 			echo "Unknown package \"${PKG_NAME}\""

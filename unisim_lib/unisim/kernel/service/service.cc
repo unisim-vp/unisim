@@ -91,11 +91,15 @@ void *operator new[](std::size_t size)
 
 void operator delete(void *storage, std::size_t size)
 {
+	std::cerr << "free(" << size << ")" << std::endl;
+	std::cerr << unisim::kernel::debug::BackTrace() << std::endl;
 	free(storage);
 }
 
 void operator delete[](void *storage, std::size_t size)
 {
+	std::cerr << "free(" << size << ")" << std::endl;
+	std::cerr << unisim::kernel::debug::BackTrace() << std::endl;
 	free(storage);
 }
 #endif
@@ -348,7 +352,7 @@ VariableBase& VariableBase::operator = (const VariableBase& variable)
 
 template <class TYPE>
 Variable<TYPE>::Variable(const char *_name, Object *_owner, TYPE& _storage, Type type, const char *_description) :
-	VariableBase(_name, _owner, "string", type, _description), storage(&_storage)
+	VariableBase(_name, _owner, type, _description), storage(&_storage)
 {
 	Simulator::simulator->Initialize(this);
 }
@@ -1734,6 +1738,11 @@ void Object::GenerateLatexDocumentation(ostream& os) const
 	}
 }
 
+void Object::Stop(int exit_status)
+{
+	Simulator::simulator->Stop(this, exit_status);
+}
+
 //=============================================================================
 //=                           ServiceImportBase                               =
 //=============================================================================
@@ -1914,12 +1923,12 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	
 	if(GetBinPath(argv[0], bin_dir, program_binary))
 	{
-		std::cerr << "bin_dir=\"" << bin_dir << "\"" << std::endl;
-		std::cerr << "program_binary=\"" << program_binary << "\"" << std::endl;
+		//std::cerr << "bin_dir=\"" << bin_dir << "\"" << std::endl;
+		//std::cerr << "program_binary=\"" << program_binary << "\"" << std::endl;
 
 		if(GetSharePath(bin_dir, shared_data_dir))
 		{
-			std::cerr << "shared_data_dir=\"" << shared_data_dir << "\"" << std::endl;
+			//std::cerr << "shared_data_dir=\"" << shared_data_dir << "\"" << std::endl;
 		}
 		else
 		{
@@ -2507,7 +2516,7 @@ protected:
 	bool& has_cycle;
 };
 
-bool Simulator::Setup()
+Simulator::SetupStatus Simulator::Setup()
 {
 	if(generate_doc)
 	{
@@ -2521,36 +2530,25 @@ bool Simulator::Setup()
 			ofstream stream(generate_doc_filename.c_str(), std::ofstream::out);
 			GenerateLatexDocumentation(stream);
 		}
+		return ST_OK_DONT_START;
 	}
 	if(enable_version)
 	{
 		Version(cerr);
-		return false;
+		return ST_OK_DONT_START;
 	}
 	if(enable_help)
 	{
 		Help(cerr);
-		return false;
+		return ST_OK_DONT_START;
 	}
-	
-	if(enable_warning)
-	{
-		// display a warning if some variable values are unused
-		std::map<string, string>::iterator set_var_iter;
-		
-		for(set_var_iter = set_vars.begin(); set_var_iter != set_vars.end(); set_var_iter++)
-		{
-			cerr << "WARNING! value \"" << (*set_var_iter).second << "\" for variable \"" << (*set_var_iter).first << "\" is unused." << endl;
-		}
-	}
-	set_vars.clear();
 	
 	if(list_parms)
 	{
 		cerr << "Listing parameters..." << endl;
 		DumpVariables(cerr, unisim::kernel::service::VariableBase::VAR_PARAMETER);
 		cerr << "Aborting simulation" << endl;
-		return false;
+		return ST_OK_DONT_START;
 	}
 
 	if(!get_config_filename.empty() > 0)
@@ -2558,7 +2556,7 @@ bool Simulator::Setup()
 		XmlfyParameters(get_config_filename.c_str());
 		cerr << "Parameters saved on file \"" << get_config_filename << "\"" << endl;
 		cerr << "Aborting simulation" << endl;
-		return false;
+		return ST_OK_DONT_START;
 	}
 
 	// Build a dependency graph of methods "Setup"
@@ -2604,7 +2602,7 @@ bool Simulator::Setup()
 	if(has_cycle)
 	{
 		cerr << "Simulator: ERROR! cyclic setup dependency graph" << endl;
-		return false;
+		return ST_ERROR;
 	}
 
 	// Compute a topological order of methods "Setup"
@@ -2615,6 +2613,7 @@ bool Simulator::Setup()
 	// Call methods "Setup" in a topological order
 	unisim::kernel::logger::LoggerServer::GetInstanceWithoutCountingReference()->Setup();
 	
+	SetupStatus status = ST_OK_TO_START;
 	list<Vertex>::iterator vertex_iter;
 	for(vertex_iter = setup_order.begin(); vertex_iter != setup_order.end(); vertex_iter++)
 	{
@@ -2622,11 +2621,27 @@ bool Simulator::Setup()
 		if(!dependency_graph[*vertex_iter].obj->Setup())
 		{
 			cerr << "Simulator: " << dependency_graph[*vertex_iter].obj->GetName() << " setup failed" << endl;
-			return false;
+			status = ST_ERROR;
+			break;
 		}
 	}
 
-	return true;
+	if(enable_warning)
+	{
+		// display a warning if some variable values are unused
+		std::map<string, string>::iterator set_var_iter;
+		
+		for(set_var_iter = set_vars.begin(); set_var_iter != set_vars.end(); set_var_iter++)
+		{
+			cerr << "WARNING! value \"" << (*set_var_iter).second << "\" for variable \"" << (*set_var_iter).first << "\" is unused." << endl;
+		}
+	}
+
+	return status;
+}
+
+void Simulator::Stop(Object *object, int exit_status)
+{
 }
 
 const VariableBase *Simulator::FindVariable(const char *name, VariableBase::Type type) const
@@ -2860,7 +2875,7 @@ bool Simulator::GetBinPath(const char *argv0, std::string& out_bin_dir, std::str
 	std::string executable_path;
 	
 	if(!GetExecutablePath(argv0, executable_path)) return false;
-	std::cerr << "executable_path=\"" << executable_path << "\"" << std::endl;
+	//std::cerr << "executable_path=\"" << executable_path << "\"" << std::endl;
 	// compute bin dirname
 	const char *start = executable_path.c_str();
 	const char *end = start + executable_path.length() - 1;

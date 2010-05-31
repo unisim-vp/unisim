@@ -42,6 +42,7 @@ using unisim::kernel::service::Variable;
 
 template <> Variable<unisim::component::tlm2::interconnect::generic_router::Mapping>::Variable(const char *_name, Object *_object, unisim::component::tlm2::interconnect::generic_router::Mapping &_storage, Type type, const char *_description) :
 	VariableBase(_name, _object, type, _description), storage(&_storage) {
+	Simulator::simulator->Initialize(this);
 }
 
 template <> Variable<unisim::component::tlm2::interconnect::generic_router::Mapping>::operator bool () const { return false; }

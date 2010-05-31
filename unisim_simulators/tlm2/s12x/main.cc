@@ -32,6 +32,10 @@
  * Authors: Reda Nouacer (reda.nouacer@cea.fr)
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <iostream>
 #include <getopt.h>
 #include <stdlib.h>
@@ -72,6 +76,10 @@
 
 #include "xml_atd_pwm_stub.hh"
 
+#ifdef HAVE_RTBCOB
+#include "rtb_unisim.hh"
+#endif
+
 #include <signal.h>
 
 #ifdef WIN32
@@ -100,61 +108,11 @@ void SigIntHandler(int signum)
 	sc_stop();
 }
 
-
-//=========================================================================
-//===                       Constants definitions                       ===
-//=========================================================================
-
-typedef unisim::component::cxx::processor::hcs12x::physical_address_t CPU_ADDRESS_TYPE;
-typedef uint64_t MEMORY_ADDRESS_TYPE;
-typedef unisim::component::cxx::processor::hcs12x::service_address_t SERVICE_ADDRESS_TYPE;
-
-//=========================================================================
-//===                     Aliases for components classes                ===
-//=========================================================================
-
-typedef unisim::component::tlm2::memory::ram::Memory<> MEMORY;
-
-typedef unisim::component::tlm2::processor::hcs12x::HCS12X CPU;
-
-class InternalRouterConfig {
-public:
-	static const unsigned int INPUT_SOCKETS = 1;
-	static const unsigned int OUTPUT_SOCKETS = 7;
-	static const unsigned int MAX_NUM_MAPPINGS = 256;
-	static const unsigned int BUSWIDTH = 32;
-	typedef tlm::tlm_base_protocol_types TYPES;
-	static const bool VERBOSE = false;
-};
-typedef unisim::component::tlm2::interconnect::generic_router::Router<InternalRouterConfig> INTERNAL_ROUTER;
-
-class ExternalRouterConfig {
-public:
-	static const unsigned int INPUT_SOCKETS = 1;
-	static const unsigned int OUTPUT_SOCKETS = 1;
-	static const unsigned int MAX_NUM_MAPPINGS = 256;
-	static const unsigned int BUSWIDTH = 32;
-	typedef tlm::tlm_base_protocol_types TYPES;
-	static const bool VERBOSE = false;
-};
-typedef unisim::component::tlm2::interconnect::generic_router::Router<ExternalRouterConfig> EXTERNAL_ROUTER;
-
-typedef unisim::component::tlm2::processor::hcs12x::S12XMMC MMC;
-
-typedef unisim::component::tlm2::processor::hcs12x::PWM<8> PWM;
-typedef unisim::component::tlm2::processor::hcs12x::ATD10B<16> ATD1;
-typedef unisim::component::tlm2::processor::hcs12x::ATD10B<8> ATD0;
-
 using unisim::component::cxx::processor::hcs12x::ADDRESS;
 using namespace std;
 
 using unisim::util::endian::E_BIG_ENDIAN;
 using unisim::util::garbage_collector::GarbageCollector;
-
-typedef unisim::service::loader::elf_loader::ElfLoaderImpl<uint64_t, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym> Elf32Loader;
-typedef unisim::service::tee::registers::RegistersTee<> RegistersTee;
-typedef unisim::service::tee::memory_import_export::MemoryImportExportTee<service_address_t> MemoryImportExportTee;
-
 
 using unisim::component::tlm2::processor::hcs12x::XINT;
 using unisim::component::tlm2::processor::hcs12x::CRG;
@@ -164,151 +122,175 @@ using unisim::service::debug::gdb_server::GDBServer;
 using unisim::service::debug::inline_debugger::InlineDebugger;
 using unisim::kernel::service::Service;
 using unisim::kernel::service::Client;
+using unisim::kernel::service::Parameter;
+using unisim::kernel::service::VariableBase;
 using unisim::service::interfaces::Loader;
 
-using unisim::kernel::service::ServiceManager;
-
-void help(char *prog_name)
+class Simulator : public unisim::kernel::service::Simulator
 {
-	cerr << "Usage: " << prog_name << " [<options>] <program> [program arguments]" << endl << endl;
-	cerr << "       For using ElfLoader, 'program' is statically linked ELF32 HCS12X Linux program" << endl << endl;
-	cerr << "Options:" << endl;
-	cerr << "--inline-debugger" << endl;
-	cerr << "-i" << endl;
-	cerr << "            starts the inline debugger" << endl;
-	cerr << "--gdb-server <TCP port>" << endl;
-	cerr << "-d <TCP port>" << endl;
-	cerr << "            starts a gdb server" << endl << endl;
-	cerr << "--gdb-server-arch-file <arch file>" << endl;
-	cerr << "-a  <arch file>" << endl;
-	cerr << "            uses <arch file> as architecture description file for GDB server" << endl << endl;
-	cerr << "-m <mode>" << endl;
-	cerr << "--memory-modele <mode>" << endl;
-	cerr << "            indicate the memory map modele to use for interpreting addresses" << endl;
-	cerr << "            0: banked modele (default)" << endl;
-	cerr << "            1: linear modele (recommended by Motorola/Freescale)" << endl;
-	cerr << "            2: gnu/gcc modele " << endl << endl;
-	cerr << "-s <symbol_filename>" << endl;
-	cerr << "--symbol-filename <symbol_filename>" << endl;
-	cerr << "            used for debbug purpose when loading an S19-File" << endl;
-	cerr << "-f" << endl;
-	cerr << "--force-use-virtual-address" << endl;
-	cerr << "            force the ELF Loader to use segment virtual address instead of segment physical address" << endl << endl;
-	cerr << " --config <xml file>" << endl;
-	cerr << " -c <xml file>" << endl;
-	cerr << "            configures the simulator with the given xml configuration file" << endl << endl;
-	cerr << " --get-config <xml file>" << endl;
-	cerr << " -g <xml file>" << endl;
-	cerr << "            get the simulator default configuration xml file (you can use it to create your own configuration)" << endl;
-	cerr << "            This option can be combined with -p to get a new configuration file with existing variables from another file" << endl;
-	cerr << "--help" << endl;
-	cerr << "-h" << endl;
-	cerr << "            displays this help" << endl;
-}
+public:
+	Simulator(int argc, char **argv);
+	virtual ~Simulator();
+	void Run();
+protected:
+private:
+	//=========================================================================
+	//===                       Constants definitions                       ===
+	//=========================================================================
 
-extern char **environ;
+	typedef unisim::component::cxx::processor::hcs12x::physical_address_t CPU_ADDRESS_TYPE;
+	typedef uint64_t MEMORY_ADDRESS_TYPE;
+	typedef unisim::component::cxx::processor::hcs12x::service_address_t SERVICE_ADDRESS_TYPE;
 
-int sc_main(int argc, char *argv[])
-{
-#ifdef WIN32
-	// Loads the winsock2 dll
-	WORD wVersionRequested = MAKEWORD( 2, 2 );
-	WSADATA wsaData;
-	if(WSAStartup(wVersionRequested, &wsaData) != 0)
-	{
-		cerr << "WSAStartup failed" << endl;
-		return -1;
-	}
+	//=========================================================================
+	//===                     Aliases for components classes                ===
+	//=========================================================================
+
+	typedef unisim::component::tlm2::memory::ram::Memory<> MEMORY;
+
+	typedef unisim::component::tlm2::processor::hcs12x::HCS12X CPU;
+
+	class InternalRouterConfig {
+	public:
+		static const unsigned int INPUT_SOCKETS = 1;
+		static const unsigned int OUTPUT_SOCKETS = 7;
+		static const unsigned int MAX_NUM_MAPPINGS = 256;
+		static const unsigned int BUSWIDTH = 32;
+		typedef tlm::tlm_base_protocol_types TYPES;
+		static const bool VERBOSE = false;
+	};
+	typedef unisim::component::tlm2::interconnect::generic_router::Router<InternalRouterConfig> INTERNAL_ROUTER;
+
+	class ExternalRouterConfig {
+	public:
+		static const unsigned int INPUT_SOCKETS = 1;
+		static const unsigned int OUTPUT_SOCKETS = 1;
+		static const unsigned int MAX_NUM_MAPPINGS = 256;
+		static const unsigned int BUSWIDTH = 32;
+		typedef tlm::tlm_base_protocol_types TYPES;
+		static const bool VERBOSE = false;
+	};
+	typedef unisim::component::tlm2::interconnect::generic_router::Router<ExternalRouterConfig> EXTERNAL_ROUTER;
+
+	typedef unisim::component::tlm2::processor::hcs12x::S12XMMC MMC;
+
+	typedef unisim::component::tlm2::processor::hcs12x::PWM<8> PWM;
+	typedef unisim::component::tlm2::processor::hcs12x::ATD10B<16> ATD1;
+	typedef unisim::component::tlm2::processor::hcs12x::ATD10B<8> ATD0;
+
+	typedef unisim::service::loader::elf_loader::ElfLoaderImpl<uint64_t, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym> Elf32Loader;
+	typedef unisim::service::tee::registers::RegistersTee<> RegistersTee;
+	typedef unisim::service::tee::memory_import_export::MemoryImportExportTee<service_address_t> MemoryImportExportTee;
+
+	//=========================================================================
+	//===                     Component instantiations                      ===
+	//=========================================================================
+	//  - 68HCS12X processor
+
+	CPU *cpu;
+
+	MMC *mmc;
+
+	CRG  *crg;
+	ECT  *ect;
+
+	ATD1 *atd1;
+	ATD0 *atd0;
+
+	PWM *pwm;
+
+	//  - tlm2 router
+	EXTERNAL_ROUTER	*external_router;
+	INTERNAL_ROUTER	*internal_router;
+
+	//  - Memories
+	MEMORY *internal_memory;
+	MEMORY *external_memory;
+
+	// - Interrupt controller
+	XINT *s12xint;
+
+	RegistersTee* registersTee;
+
+	MemoryImportExportTee* memoryImportExportTee;
+
+#ifdef HAVE_RTBCOB
+	RTBStub *rtbStub;
+#else
+	XML_ATD_PWM_STUB *xml_atd_pwm_stub;
 #endif
 
-	static struct option long_options[] = {
-	{"inline-debugger", no_argument, 0, 'i'},
-	{"gdb-server", required_argument, 0, 'd'},
-	{"gdb-server-arch-file", required_argument, 0, 'a'},
-	{"help", no_argument, 0, 'h'},
-	{"memory-modele", required_argument, 0, 'm'},
-	{"symbol-filename", required_argument, 0, 's'},
-	{"force-use-virtual-address", no_argument, 0, 'f'},
-	{"config", required_argument, 0, 'c'},
-	{"get-config", required_argument, 0, 'g'},
-	{0, 0, 0, 0}
-	};
+	//=========================================================================
+	//===                         Service instantiations                    ===
+	//=========================================================================
 
-	int c;
-	bool use_gdb_server = false;
-	bool use_inline_debugger = false;
-	int gdb_server_tcp_port = 0;
-	const char *gdb_server_arch_filename = "gdb_hcs12x.xml";
-	string parameter_filename = "default_config.xml";
-	char* extracted_parameter_file = NULL;
-	bool get_parameter = false;
-	bool set_parameter = false;
+	Service<Loader<SERVICE_ADDRESS_TYPE> > *loaderS19;
+	Service<Loader<SERVICE_ADDRESS_TYPE> > *loaderELF;
 
-	char *symbol_filename = NULL;
 
-	double cpu_frequency = 4.0; // in Mhz
+	//  - GDB server
+	GDBServer<SERVICE_ADDRESS_TYPE> *gdb_server;
+	//  - Inline debugger
+	InlineDebugger<SERVICE_ADDRESS_TYPE> *inline_debugger;
+	//  - SystemC Time
+	unisim::service::time::sc_time::ScTime *sim_time;
+	//  - Host Time
+	unisim::service::time::host_time::HostTime *host_time;
 
-	uint8_t cpu_clock_multiplier = 1;
-	uint8_t xgate_clock_multiplier = 2;
-//	double cpu_ipc = 1.0; // in instructions per cycle
-	uint64_t cpu_cycle_time = (uint64_t)(1e6 / cpu_frequency); // in picoseconds
-	uint64_t fsb_cycle_time = cpu_clock_multiplier * cpu_cycle_time;
-	uint32_t mem_cycle_time = fsb_cycle_time;
-	bool force_use_virtual_address = false;
+	bool use_gdb_server;
+	bool use_inline_debugger;
+	string filename;
+	Parameter<bool> param_use_gdb_server;
+	Parameter<bool> param_use_inline_debugger;
+	
+	bool isS19;
 
-	ADDRESS::ENCODING address_encoding = ADDRESS::BANKED;
+	static void LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator);
+};
 
-	// Parse the command line arguments
-	while((c = getopt_long (argc, argv, "g:c:m:s:id:a:hf", long_options, 0)) != -1)
+Simulator::Simulator(int argc, char **argv)
+	: unisim::kernel::service::Simulator(argc, argv, LoadBuiltInConfig)
+	, cpu(0)
+	, mmc(0)
+	, crg(0)
+	, ect(0)
+	, atd1(0)
+	, atd0(0)
+	, pwm(0)
+	, external_router(0)
+	, internal_router(0)
+	, internal_memory(0)
+	, external_memory(0)
+	, s12xint(0)
+	, registersTee(0)
+	, memoryImportExportTee(0)
+#ifdef HAVE_RTBCOB
+	, rtbStub(0)
+#else
+	, xml_atd_pwm_stub(0)
+#endif
+	, loaderS19(0)
+	, loaderELF(0)
+	, gdb_server(0)
+	, inline_debugger(0)
+	, sim_time(0)
+	, host_time(0)
+	, use_gdb_server(false)
+	, use_inline_debugger(false)
+	, isS19(false)
+	, param_use_gdb_server("use-gdb-server", 0, use_gdb_server, "Enable/Disable GDB server instantiation")
+	, param_use_inline_debugger("use-inline-debugger", 0, use_inline_debugger, "Enable/Disable inline debugger instantiation")
+{
+	//=========================================================================
+	//===      Handling of file to load passed as command line argument     ===
+	//=========================================================================
+
+	VariableBase *cmd_args = FindVariable("cmd-args");
+	unsigned int cmd_args_length = cmd_args->GetLength();
+	if(cmd_args_length > 0)
 	{
-		switch(c)
-		{
-			case 'i':
-				use_inline_debugger = true;
-				break;
-			case 'd':
-				use_gdb_server = true;
-				gdb_server_tcp_port = atoi(optarg);
-				break;
-			case 'a':
-				gdb_server_arch_filename = optarg;
-				break;
-			case 'h':
-				help(argv[0]);
-				return 0;
-			case 'm':
-				address_encoding = (ADDRESS::ENCODING) atoi(optarg);
-				break;
-			case 's':
-				symbol_filename = optarg;
-				break;
-			case 'f':
-				force_use_virtual_address = true;
-				break;
-			case 'c':
-				parameter_filename = optarg;
-				set_parameter = true;
-				break;
-			case 'g':
-				extracted_parameter_file = optarg;
-				get_parameter = true;
-				break;
-		}
-	}
-
-	if(optind >= argc)
-	{
-		help(argv[0]);
-		return 0;
-	}
-
-	char *filename = argv[optind];
-
-	// If no filename has been specified then display the help
-	if(filename == NULL)
-	{
-		help(argv[0]);
-		return 0;
+		filename = (string)(*cmd_args)[0];
+		std::cerr << "filename=\"" << filename << "\"" << std::endl;
 	}
 
 	//=========================================================================
@@ -316,99 +298,73 @@ int sc_main(int argc, char *argv[])
 	//=========================================================================
 	//  - 68HCS12X processor
 
-	CPU *cpu =new CPU("CPU");
+	cpu =new CPU("CPU");
 
-	MMC *mmc = 	new MMC("MMC");
+	mmc = 	new MMC("MMC");
 
-	CRG  *crg = new CRG("CRG");
-	ECT  *ect = new ECT("ECT");
+	crg = new CRG("CRG");
+	ect = new ECT("ECT");
 
-	ATD1 *atd1 = new ATD1("ATD1");
-	ATD0 *atd0 = new ATD0("ATD0");
+	atd1 = new ATD1("ATD1");
+	atd0 = new ATD0("ATD0");
 
-	PWM *pwm = new PWM("PWM");
+	pwm = new PWM("PWM");
 
 	//  - tlm2 router
-	EXTERNAL_ROUTER	*external_router = new EXTERNAL_ROUTER("external_router");
-	INTERNAL_ROUTER	*internal_router = new INTERNAL_ROUTER("internal_router");
+	external_router = new EXTERNAL_ROUTER("external_router");
+	internal_router = new INTERNAL_ROUTER("internal_router");
 
 	//  - Memories
-	MEMORY *internal_memory = new MEMORY("internal-memory");
-	MEMORY *external_memory = new MEMORY("external-memory");
+	internal_memory = new MEMORY("internal-memory");
+	external_memory = new MEMORY("external-memory");
 
 	// - Interrupt controller
-	XINT *s12xint = new XINT("XINT");
+	s12xint = new XINT("XINT");
 
-	RegistersTee* registersTee = new RegistersTee("registersTee");
+	registersTee = new RegistersTee("registersTee");
 
-	MemoryImportExportTee* memoryImportExportTee = new MemoryImportExportTee("memoryImportExportTee");
+	memoryImportExportTee = new MemoryImportExportTee("memoryImportExportTee");
 
-	XML_ATD_PWM_STUB *rtbStub = new XML_ATD_PWM_STUB("RTBStub"/*, fsb_cycle_time*/);
-
+#ifdef HAVE_RTBCOB
+	rtbStub = new RTBStub("RTBStub"/*, fsb_cycle_time*/);
+#else
+	xml_atd_pwm_stub = new XML_ATD_PWM_STUB("xml-atd-pwm-stub"/*, fsb_cycle_time*/);
+#endif
+	
 	//=========================================================================
 	//===                         Service instantiations                    ===
 	//=========================================================================
 
-	bool isS19 = false;
-
-	if ((strstr(filename, ".s19") != NULL) ||
-		 (strstr(filename, ".S19") != NULL))  {
-		isS19 = true;
-	}
-
-	Service<Loader<SERVICE_ADDRESS_TYPE> > *loaderS19 = NULL;
-	Service<Loader<SERVICE_ADDRESS_TYPE> > *loaderELF = NULL;
+	isS19 = (filename.find(".s19") != std::string::npos) ||
+		 (filename.find(".S19") != std::string::npos);
 
 	if (isS19) {
 		loaderS19 = new S19_Loader<SERVICE_ADDRESS_TYPE>("S19_Loader");
-		if (symbol_filename != NULL) {
-			loaderELF = new Elf32Loader("elf32-loader");
-		}
+		loaderELF = new Elf32Loader("elf32-loader");
 	} else {
 		loaderELF = new Elf32Loader("elf32-loader");
 	}
 
-
 	//  - GDB server
-	GDBServer<SERVICE_ADDRESS_TYPE> *gdb_server = use_gdb_server ? new GDBServer<SERVICE_ADDRESS_TYPE>("gdb-server") : 0;
+	gdb_server = use_gdb_server ? new GDBServer<SERVICE_ADDRESS_TYPE>("gdb-server") : 0;
 	//  - Inline debugger
-	InlineDebugger<SERVICE_ADDRESS_TYPE> *inline_debugger = use_inline_debugger ? new InlineDebugger<SERVICE_ADDRESS_TYPE>("inline-debugger") : 0;
+	inline_debugger = use_inline_debugger ? new InlineDebugger<SERVICE_ADDRESS_TYPE>("inline-debugger") : 0;
 	//  - SystemC Time
-	unisim::service::time::sc_time::ScTime *time = new unisim::service::time::sc_time::ScTime("time");
+	sim_time = new unisim::service::time::sc_time::ScTime("time");
 	//  - Host Time
-	unisim::service::time::host_time::HostTime *host_time = new unisim::service::time::host_time::HostTime("host-time");
+	host_time = new unisim::service::time::host_time::HostTime("host-time");
 
 	//=========================================================================
-	//===                     Component run-time configuration              ===
+	//===                       Service parameterization     ===
 	//=========================================================================
-
-
-
-	//=========================================================================
-	//===                      Service run-time configuration               ===
-	//=========================================================================
-
-	//  - GDB Server run-time configuration
-	if(gdb_server)
-	{
-		(*gdb_server)["tcp-port"] = gdb_server_tcp_port;
-		(*gdb_server)["architecture-description-filename"] = gdb_server_arch_filename;
-	}
-
 
 	if(isS19) {
-		(*loaderS19)["filename"] = filename;
-		if (symbol_filename != NULL) {
-			(*loaderELF)["filename"] = symbol_filename;
-			(*loaderELF)["force-use-virtual-address"] = force_use_virtual_address;
-		}
+		(*loaderS19)["filename"] = filename.c_str();
 	}
 	else
 	{
-		(*loaderELF)["filename"] = filename;
-		(*loaderELF)["force-use-virtual-address"] = force_use_virtual_address;
+		(*loaderELF)["filename"] = filename.c_str();
 	}
-
 
 	//=========================================================================
 	//===                        Components connection                      ===
@@ -425,9 +381,15 @@ int sc_main(int argc, char *argv[])
 	atd1->interrupt_request(s12xint->interrupt_request);
 	atd0->interrupt_request(s12xint->interrupt_request);
 
+#ifdef HAVE_RTBCOB
 	rtbStub->atd1_master_sock(atd1->anx_socket);
 	rtbStub->atd0_master_sock(atd0->anx_socket);
 	rtbStub->slave_sock(pwm->master_sock);
+#else
+	xml_atd_pwm_stub->atd1_master_sock(atd1->anx_socket);
+	xml_atd_pwm_stub->atd0_master_sock(atd0->anx_socket);
+	xml_atd_pwm_stub->slave_sock(pwm->master_sock);
+#endif
 
 	mmc->local_socket(internal_router->targ_socket[0]);
 	mmc->external_socket(external_router->targ_socket[0]);
@@ -476,7 +438,7 @@ int sc_main(int argc, char *argv[])
 	*(registersTee->registers_import[6]) >> pwm->registers_export;
 	*(registersTee->registers_import[7]) >> ect->registers_export;
 
-	if(inline_debugger)
+	if(use_inline_debugger)
 	{
 		// Connect inline-debugger to CPU
 		cpu->debug_control_import >> inline_debugger->debug_control_export;
@@ -496,7 +458,7 @@ int sc_main(int argc, char *argv[])
 
 		inline_debugger->memory_access_reporting_control_import >> cpu->memory_access_reporting_control_export;
 	}
-	else if(gdb_server)
+	else if(use_gdb_server)
 	{
 		// Connect gdb-server to CPU
 		cpu->debug_control_import >> gdb_server->debug_control_export;
@@ -535,94 +497,10 @@ int sc_main(int argc, char *argv[])
 		}
 	}
 
+}
 
-#ifdef DEBUG_SERVICE
-	ServiceManager::Dump(cerr);
-#endif
-
-	if (set_parameter)
-	{
-		ServiceManager::LoadXmlParameters(parameter_filename.c_str());
-		cerr << "Parameters set using file \"" << parameter_filename << "\"" << endl;
-	}
-
-	if (get_parameter)
-	{
-		ServiceManager::XmlfyParameters(extracted_parameter_file);
-		cerr << "Parameters saved on file \"" << extracted_parameter_file << "\"" << endl;
-
-		goto STOP_MAIN;
-	}
-
-	if(ServiceManager::Setup())
-	{
-
-		physical_address_t entry_point;
-
-		if (isS19) {
-			entry_point = loaderS19->GetEntryPoint();
-		}
-		else{
-			entry_point = loaderELF->GetEntryPoint();
-		}
-
-		address_t cpu_address;
-		uint8_t page = 0;
-
-		if (isS19) {
-			mmc->SplitPagedAddress(entry_point, page, cpu_address);
-		} else {
-			cpu_address = (address_t) entry_point;
-		}
-
-		cpu->SetEntryPoint(cpu_address);
-
-		cerr << "Starting simulation ..." << endl;
-
-		double time_start = host_time->GetTime();
-
-		EnableDebug();
-		void (*prev_sig_int_handler)(int);
-
-		if(!inline_debugger)
-		{
-			prev_sig_int_handler = signal(SIGINT, SigIntHandler);
-		}
-
-		try
-		{
-			sc_start();
-		}
-		catch(std::runtime_error& e)
-		{
-			cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << endl;
-			cerr << e.what() << endl;
-		}
-
-		if(!inline_debugger)
-		{
-			signal(SIGINT, prev_sig_int_handler);
-		}
-
-		cerr << "Simulation finished" << endl;
-		cerr << "Simulation statistics:" << endl;
-
-		double time_stop = host_time->GetTime();
-		double spent_time = time_stop - time_start;
-
-		cerr << "simulation time: " << spent_time << " seconds" << endl;
-		cerr << "simulated time : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;
-		cerr << "simulated instructions : " << cpu->GetInstructionCounter() << " instructions" << endl;
-		cerr << "host simulation speed: " << ((double) cpu->GetInstructionCounter() / spent_time / 1000000.0) << " MIPS" << endl;
-		cerr << "time dilatation: " << spent_time / sc_time_stamp().to_seconds() << " times slower than target machine" << endl;
-	}
-	else
-	{
-		cerr << "Can't start simulation because of previous errors" << endl;
-	}
-
-STOP_MAIN:
-
+Simulator::~Simulator()
+{
 	if (registersTee) { delete registersTee; registersTee = NULL; }
 	if (memoryImportExportTee) { delete memoryImportExportTee; memoryImportExportTee = NULL; }
 
@@ -630,12 +508,16 @@ STOP_MAIN:
 	if(inline_debugger) { delete inline_debugger; inline_debugger = NULL; }
 
 	if (host_time) { delete host_time; host_time = NULL; }
-	if(time) { delete time; time = NULL; }
+	if(sim_time) { delete sim_time; sim_time = NULL; }
 
 	if(loaderS19) { delete loaderS19; loaderS19 = NULL; }
 	if(loaderELF) { delete loaderELF; loaderELF = NULL; }
 
+#ifdef HAVE_RTBCOB
 	if (rtbStub) { delete rtbStub; rtbStub = NULL; }
+#else
+	if (xml_atd_pwm_stub) { delete xml_atd_pwm_stub; xml_atd_pwm_stub = NULL; }
+#endif
 
 	if(external_memory) { delete external_memory; external_memory = NULL; }
 	if(internal_memory) { delete internal_memory; internal_memory = NULL; }
@@ -651,7 +533,266 @@ STOP_MAIN:
 	if (mmc) { delete mmc; mmc = NULL; }
 
 	if(cpu) { delete cpu; cpu = NULL; }
+}
 
+void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
+{
+	// meta information
+	simulator->SetVariable("program-name", "UNISIM star12x");
+	simulator->SetVariable("copyright", "Copyright (C) 2008-2010, Commissariat a l'Energie Atomique (CEA)");
+	simulator->SetVariable("license", "BSD (see file COPYING)");
+	simulator->SetVariable("authors", "Reda Nouacer <reda.nouacer@cea.fr>");
+	simulator->SetVariable("version", VERSION);
+	simulator->SetVariable("description", "UNISIM star12x, a Star12X System-on-Chip simulator with support of ELF32 binaries and s19 hex files, and targeted for automotive applications");
+
+	int gdb_server_tcp_port = 0;
+	const char *gdb_server_arch_filename = "gdb_hcs12x.xml";
+	const char *filename = "";
+	const char *symbol_filename = "";
+
+	double cpu_frequency = 4.0; // in Mhz
+
+	uint8_t cpu_clock_multiplier = 1;
+	uint8_t xgate_clock_multiplier = 2;
+//	double cpu_ipc = 1.0; // in instructions per cycle
+	uint64_t cpu_cycle_time = (uint64_t)(1e6 / cpu_frequency); // in picoseconds
+	uint64_t fsb_cycle_time = cpu_clock_multiplier * cpu_cycle_time;
+	uint32_t mem_cycle_time = fsb_cycle_time;
+	bool force_use_virtual_address = true;
+
+	ADDRESS::ENCODING address_encoding = ADDRESS::BANKED;
+
+	//=========================================================================
+	//===                     Component run-time configuration              ===
+	//=========================================================================
+
+
+
+	//=========================================================================
+	//===                      Service run-time configuration               ===
+	//=========================================================================
+
+	//  - GDB Server run-time configuration
+	simulator->SetVariable("gdb-server.tcp-port", gdb_server_tcp_port);
+	simulator->SetVariable("gdb-server.architecture-description-filename", gdb_server_arch_filename);
+
+	simulator->SetVariable("S19_Loader.filename", filename);
+	simulator->SetVariable("elf32-loader.filename", symbol_filename);
+	simulator->SetVariable("elf32-loader.force-use-virtual-address", force_use_virtual_address);
+
+#ifdef HAVE_RTBCOB
+	simulator->SetVariable("RTBStub.anx-stimulus-period", 80000000);
+	simulator->SetVariable("RTBStub.atd0-anx-stimulus-file", "ATD.xml");
+	simulator->SetVariable("RTBStub.atd0-anx-start-channel", 0);
+	simulator->SetVariable("RTBStub.atd0-anx-wrap-around-channel", 0);
+	simulator->SetVariable("RTBStub.atd1-anx-stimulus-file", "ATD.xml");
+	simulator->SetVariable("RTBStub.atd1-anx-start-channel", 0);
+	simulator->SetVariable("RTBStub.atd1-anx-wrap-around-channel", 0);
+	simulator->SetVariable("RTBStub.trace-enable", false);
+#else
+	simulator->SetVariable("xml-atd-pwm-stub.anx-stimulus-period", 80000000);
+	simulator->SetVariable("xml-atd-pwm-stub.atd0-anx-stimulus-file", "ATD.xml");
+	simulator->SetVariable("xml-atd-pwm-stub.atd0-anx-start-channel", 0);
+	simulator->SetVariable("xml-atd-pwm-stub.atd0-anx-wrap-around-channel", 0);
+	simulator->SetVariable("xml-atd-pwm-stub.atd1-anx-stimulus-file", "ATD.xml");
+	simulator->SetVariable("xml-atd-pwm-stub.atd1-anx-start-channel", 0);
+	simulator->SetVariable("xml-atd-pwm-stub.atd1-anx-wrap-around-channel", 0);
+	simulator->SetVariable("xml-atd-pwm-stub.trace-enable", false);
+#endif
+	simulator->SetVariable("ATD0.bus-cycle-time", 250000);
+	simulator->SetVariable("ATD0.base-address", 0x2c0);
+	simulator->SetVariable("ATD0.interrupt-offset", 0xd2);
+	simulator->SetVariable("ATD0.vrl", 0.000000e+00);
+	simulator->SetVariable("ATD0.vrh", 5.120000e+00);
+	simulator->SetVariable("ATD0.debug-enabled", false);
+	simulator->SetVariable("ATD0.vih", 3.250000e+00);
+	simulator->SetVariable("ATD0.vil", 1.750000e+00);
+	simulator->SetVariable("ATD0.Has-External-Trigger", false);
+	simulator->SetVariable("ATD1.bus-cycle-time", 250000);
+	simulator->SetVariable("ATD1.base-address", 0x80);
+	simulator->SetVariable("ATD1.interrupt-offset", 0xd0);
+	simulator->SetVariable("ATD1.vrl", 0.000000e+00);
+	simulator->SetVariable("ATD1.vrh", 5.120000e+00);
+	simulator->SetVariable("ATD1.debug-enabled", false);
+	simulator->SetVariable("ATD1.vih", 3.250000e+00);
+	simulator->SetVariable("ATD1.vil", 1.750000e+00);
+	simulator->SetVariable("ATD1.Has-External-Trigger", false);
+	simulator->SetVariable("CPU.trace-enable", false);
+	simulator->SetVariable("CPU.verbose-all", false);
+	simulator->SetVariable("CPU.verbose-setup", false);
+	simulator->SetVariable("CPU.verbose-step", false);
+	simulator->SetVariable("CPU.verbose-dump-regs-start", false);
+	simulator->SetVariable("CPU.verbose-dump-regs-end", false);
+	simulator->SetVariable("CPU.verbose-exception", false);
+	simulator->SetVariable("CPU.requires-memory-access-reporting", false);
+	simulator->SetVariable("CPU.requires-finished-instruction-reporting", false);
+	simulator->SetVariable("CPU.debug-enabled", false);
+	simulator->SetVariable("CPU.max-inst", 0xffffffffffffffffULL);
+	simulator->SetVariable("CPU.nice-time", 0xffffffffffULL);
+	simulator->SetVariable("CPU.cpu-cycle-time", 250000);
+	simulator->SetVariable("CPU.bus-cycle-time", 250000);
+	simulator->SetVariable("CPU.verbose-tlm-bus-synchronize", false);
+	simulator->SetVariable("CPU.verbose-tlm-run-thread", false);
+	simulator->SetVariable("CPU.verbose-tlm-commands", false);
+	simulator->SetVariable("CRG.oscillator-clock", 125000);
+	simulator->SetVariable("CRG.base-address", 0x34);
+	simulator->SetVariable("CRG.interrupt-offset-rti", 0xf0);
+	simulator->SetVariable("CRG.interrupt-offset-pll-lock", 0xc6);
+	simulator->SetVariable("CRG.interrupt-offset-self-clock-mode", 0xc4);
+	simulator->SetVariable("CRG.debug-enabled", false);
+	simulator->SetVariable("ECT.bus-cycle-time", 250000);
+	simulator->SetVariable("ECT.base-address", 0x40);
+	simulator->SetVariable("ECT.interrupt-offset-channel0", 0xee);
+	simulator->SetVariable("ECT.interrupt-offset-overflow", 0xde);
+	simulator->SetVariable("ECT.debug-enabled", false);
+	simulator->SetVariable("external-memory.org", 0x0);
+	simulator->SetVariable("external-memory.bytesize", 0x800000);
+	simulator->SetVariable("external-memory.cycle-time", 250000);
+	simulator->SetVariable("external-memory.verbose", false);
+	simulator->SetVariable("external_router.cycle_time", 250000);
+	simulator->SetVariable("external_router.port_buffer_size", 0x0);
+	simulator->SetVariable("external_router.mapping_0", "range_start=\"0x800\" range_end=\"0x7fffff\" output_port=\"0\" translation=\"800\"");
+	simulator->SetVariable("internal-memory.org", 0x0);
+	simulator->SetVariable("internal-memory.bytesize", 0x10000);
+	simulator->SetVariable("internal-memory.cycle-time", 250000);
+	simulator->SetVariable("internal-memory.verbose", false);
+	simulator->SetVariable("internal_router.cycle_time", 250000);
+	simulator->SetVariable("internal_router.port_buffer_size", 0x0);
+	simulator->SetVariable("internal_router.mapping_0", "range_start=\"0x34\" range_end=\"0x40\" output_port=\"0\" translation=\"34\"");
+	simulator->SetVariable("internal_router.mapping_1", "range_start=\"0x40\" range_end=\"0x7f\" output_port=\"1\" translation=\"40\"");
+	simulator->SetVariable("internal_router.mapping_2", "range_start=\"0x80\" range_end=\"0xb0\" output_port=\"2\" translation=\"80\"");
+	simulator->SetVariable("internal_router.mapping_3", "range_start=\"0x120\" range_end=\"0x130\" output_port=\"3\" translation=\"120\"");
+	simulator->SetVariable("internal_router.mapping_4", "range_start=\"0x2c0\" range_end=\"0x2e0\" output_port=\"4\" translation=\"2c0\"");
+	simulator->SetVariable("internal_router.mapping_5", "range_start=\"0x300\" range_end=\"0x328\" output_port=\"5\" translation=\"300\"");
+	simulator->SetVariable("internal_router.mapping_6", "range_start=\"0x800\" range_end=\"0xffff\" output_port=\"6\" translation=\"800\"");
+	simulator->SetVariable("kernel_logger.std_err", true);
+	simulator->SetVariable("kernel_logger.std_out", false);
+	simulator->SetVariable("kernel_logger.std_err_color", false);
+	simulator->SetVariable("kernel_logger.std_out_color", false);
+	simulator->SetVariable("kernel_logger.file", false);
+	simulator->SetVariable("kernel_logger.filename", "logger_output.txt");
+	simulator->SetVariable("kernel_logger.xml_file", true);
+	simulator->SetVariable("kernel_logger.xml_filename", "logger_output.xml");
+	simulator->SetVariable("kernel_logger.xml_file_gzipped", false);
+	simulator->SetVariable("MMC.debug-enabled", false);
+	simulator->SetVariable("MMC.mode", 0x80);
+	simulator->SetVariable("MMC.mmcctl1", 0x5);
+	simulator->SetVariable("MMC.address-encoding", 0x0);
+	simulator->SetVariable("PWM.bus-cycle-time", 250000);
+	simulator->SetVariable("PWM.base-address", 0x300);
+	simulator->SetVariable("PWM.interrupt-offset", 0x8c);
+	simulator->SetVariable("PWM.debug-enabled", false);
+	simulator->SetVariable("XINT.debug-enabled", false);
+}
+
+void Simulator::Run()
+{
+	// If no filename has been specified, abort simulation
+	if(filename.empty())
+	{
+		std::cerr << "ERROR! No file to load. You should provide a file to load as command line argument." << std::endl;
+		return;
+	}
+
+	physical_address_t entry_point;
+
+	if (isS19) {
+		entry_point = loaderS19->GetEntryPoint();
+		std::cerr << "entry_point=0x" << std::hex << entry_point << std::dec << std::endl;
+	}
+	else{
+		entry_point = loaderELF->GetEntryPoint();
+	}
+
+	address_t cpu_address;
+	uint8_t page = 0;
+
+	if (isS19) {
+		mmc->SplitPagedAddress(entry_point, page, cpu_address);
+	} else {
+		cpu_address = (address_t) entry_point;
+	}
+
+	cpu->SetEntryPoint(cpu_address);
+
+	cerr << "Starting simulation ..." << endl;
+
+	double time_start = host_time->GetTime();
+
+	EnableDebug();
+	void (*prev_sig_int_handler)(int);
+
+	if(!inline_debugger)
+	{
+		prev_sig_int_handler = signal(SIGINT, SigIntHandler);
+	}
+
+	try
+	{
+		sc_start();
+	}
+	catch(std::runtime_error& e)
+	{
+		cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << endl;
+		cerr << e.what() << endl;
+	}
+
+	if(!inline_debugger)
+	{
+		signal(SIGINT, prev_sig_int_handler);
+	}
+
+	cerr << "Simulation finished" << endl;
+
+	double time_stop = host_time->GetTime();
+	double spent_time = time_stop - time_start;
+
+	cerr << "Simulation run-time parameters:" << endl;
+	DumpParameters(cerr);
+	cerr << endl;
+	cerr << "Simulation formulas:" << endl;
+	DumpFormulas(cerr);
+	cerr << endl;
+	cerr << "Simulation statistics:" << endl;
+	DumpStatistics(cerr);
+	cerr << endl;
+
+	cerr << "simulation time: " << spent_time << " seconds" << endl;
+	cerr << "simulated time : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;
+	cerr << "host simulation speed: " << ((double) (*cpu)["instruction-counter"] / spent_time / 1000000.0) << " MIPS" << endl;
+	cerr << "time dilatation: " << spent_time / sc_time_stamp().to_seconds() << " times slower than target machine" << endl;
+}
+
+int sc_main(int argc, char *argv[])
+{
+#ifdef WIN32
+	// Loads the winsock2 dll
+	WORD wVersionRequested = MAKEWORD( 2, 2 );
+	WSADATA wsaData;
+	if(WSAStartup(wVersionRequested, &wsaData) != 0)
+	{
+		cerr << "WSAStartup failed" << endl;
+		return -1;
+	}
+#endif
+	Simulator *simulator = new Simulator(argc, argv);
+
+	switch(simulator->Setup())
+	{
+		case unisim::kernel::service::Simulator::ST_OK_DONT_START:
+			break;
+		case unisim::kernel::service::Simulator::ST_WARNING:
+			cerr << "Some warnings occurred during setup" << endl;
+		case unisim::kernel::service::Simulator::ST_OK_TO_START:
+			cerr << "Starting simulation at supervisor privilege level (kernel mode)" << endl;
+			simulator->Run();
+			break;
+		case unisim::kernel::service::Simulator::ST_ERROR:
+			cerr << "Can't start simulation because of previous errors" << endl;
+			break;
+	}
+
+	if(simulator) delete simulator;
 #ifdef WIN32
 	// releases the winsock2 resources
 	WSACleanup();

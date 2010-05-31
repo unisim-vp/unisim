@@ -134,7 +134,7 @@ template <int SIZE> int XML_ATD_PWM_STUB::LoadXmlData(const char *filename, std:
 	xmlXPathObjectPtr xmlobject;
 	int result = 0;
 
-	doc = xmlParseFile (filename);
+	doc = xmlParseFile (GetSimulator()->SearchSharedDataFile(filename).c_str());
 	if (!doc)
 	{
 		cerr << __FILE__ << ":" << __LINE__ << " Could not parse the document" << endl;
