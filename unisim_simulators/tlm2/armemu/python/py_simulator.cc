@@ -65,7 +65,7 @@ typedef struct {
     PyObject_HEAD
     /* Type-specific fields go here. */
     Simulator *sim;
-    bool setup;
+    unisim::kernel::service::Simulator::SetupStatus setup;
 } armemu_SimulatorObject;
 
 static Simulator *
@@ -120,7 +120,7 @@ simulator_new (PyTypeObject *type, PyObject *args, PyObject *kwds)
 	armemu_SimulatorObject *self;
 	self = (armemu_SimulatorObject *)type->tp_alloc(type, 0);
 	self->sim = 0; // create_simulator();
-	self->setup = false; // self->sim->Setup();
+	self->setup = unisim::kernel::service::Simulator::ST_ERROR; // self->sim->Setup();
 	return (PyObject *)self;
 }
 
@@ -372,7 +372,8 @@ simulator_run (armemu_SimulatorObject *self, PyObject *args)
 	char *cunit = "sec";
 	std::string unit;
 	sc_time_unit time_unit;
-	if ( !self->setup )
+	if ( self->setup != unisim::kernel::service::Simulator::ST_OK_TO_START ||
+			self->setup != unisim::kernel::service::Simulator::ST_WARNING )
 	{
 		result = PyUnicode_FromString("Simulation setup failed.");
 	}
