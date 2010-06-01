@@ -38,12 +38,6 @@
 
 extern "C" {
 
-typedef struct {
-    PyObject_HEAD
-    /* Type-specific fields go here. */
-    unisim::kernel::service::VariableBase *var;
-} variable_VariableObject;
-
 static void
 variable_dealloc (variable_VariableObject *self)
 {
@@ -69,7 +63,7 @@ variable_init (variable_VariableObject *self, PyObject *args, PyObject *kwds)
 }
 
 static PyObject *
-variable_get_name ( variable_VariableObject *self )
+variable_get_name (variable_VariableObject *self)
 {
 	PyObject *result;
 	const char *name = self->var->GetName();

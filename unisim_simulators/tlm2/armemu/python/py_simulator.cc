@@ -61,13 +61,6 @@ static bool SCTimeUnit(const std::string& unit, sc_time_unit& sc_unit)
 
 extern "C" {
 
-typedef struct {
-    PyObject_HEAD
-    /* Type-specific fields go here. */
-    Simulator *sim;
-    unisim::kernel::service::Simulator::SetupStatus setup;
-} armemu_SimulatorObject;
-
 static Simulator *
 create_simulator()
 {
