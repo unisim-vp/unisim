@@ -399,6 +399,10 @@ if ( BUILD_ARMEMU_PYTHON_MODULE )
 			${CMAKE_BINARY_DIR}/python/setup.py
 			${CMAKE_BINARY_DIR}/python/python_config.hh
 			${CMAKE_SOURCE_DIR}/python/armemu.cc
+			${CMAKE_SOURCE_DIR}/python/py_simulator.hh
+			${CMAKE_SOURCE_DIR}/python/py_simulator.cc
+			${CMAKE_SOURCE_DIR}/python/py_variable.hh
+			${CMAKE_SOURCE_DIR}/python/py_variable.cc
 			simulator
 			${armemu__deps}
 		COMMENT
