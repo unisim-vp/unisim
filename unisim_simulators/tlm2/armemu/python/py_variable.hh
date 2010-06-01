@@ -12,8 +12,8 @@
 
 extern "C" {
 
-int PyVariableType_Ready();
-int PyModule_AddVariableObject(PyObject *module);
+static int PyVariableType_Ready();
+static int PyModule_AddVariableObject(PyObject *module);
 
 }
 

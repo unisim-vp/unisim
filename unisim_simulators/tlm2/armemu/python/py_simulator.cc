@@ -479,12 +479,12 @@ static PyTypeObject armemu_SimulatorType =
     simulator_new,						/* tp_new */
 };
 
-int PySimulatorType_Ready()
+static int PySimulatorType_Ready()
 {
     return PyType_Ready(&armemu_SimulatorType);
 }
 
-int PyModule_AddSimulatorObject(PyObject *m)
+static int PyModule_AddSimulatorObject(PyObject *m)
 {
     TimeUnitMapInit();
 

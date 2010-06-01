@@ -135,12 +135,12 @@ static PyTypeObject variable_VariableType = {
 	    variable_new,						/* tp_new */
 };
 
-int PyVariableType_Ready()
+static int PyVariableType_Ready()
 {
     return PyType_Ready(&variable_VariableType);
 }
 
-int PyModule_AddVariableObject(PyObject *m)
+static int PyModule_AddVariableObject(PyObject *m)
 {
 	Py_INCREF(&variable_VariableType);
 	PyModule_AddObject(m, "Variable", (PyObject *)&variable_VariableType);

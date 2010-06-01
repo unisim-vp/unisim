@@ -12,8 +12,8 @@
 
 extern "C" {
 
-int PySimulatorType_Ready();
-int PyModule_AddSimulatorObject(PyObject *module);
+static int PySimulatorType_Ready();
+static int PyModule_AddSimulatorObject(PyObject *module);
 
 }
 
