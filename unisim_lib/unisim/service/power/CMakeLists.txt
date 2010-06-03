@@ -90,11 +90,15 @@ endif ( CACTI4_2_FOUND )
 configure_file ( 
 	${CMAKE_SOURCE_DIR}/unisim/service/power/config.hh.in 
 	${CMAKE_BINARY_DIR}/unisim/service/power/config.hh )
-	
+
 add_library ( unisim__service__power
 		${CMAKE_SOURCE_DIR}/unisim/service/power/cache_power_estimator.hh
 		${CMAKE_SOURCE_DIR}/unisim/service/power/cache_power_estimator.cc
 		${CMAKE_BINARY_DIR}/unisim/service/power/config.hh
+	)
+set_target_properties ( unisim__service__power
+	PROPERTIES
+		COMPILE_DEFINITIONS "HAVE_CONFIG_HH"
 	)
 
 set ( unisim__service__power_libraries

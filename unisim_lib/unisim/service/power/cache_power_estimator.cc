@@ -35,6 +35,9 @@
 #if defined(HAVE_CONFIG_H)
 #include "config.h"
 #endif
+#if defined(HAVE_CONFIG_HH)
+#include "unisim/service/power/config.hh"
+#endif
 
 #if defined(HAVE_CACTI4_2)
 #include <cacti4_2.hh>
