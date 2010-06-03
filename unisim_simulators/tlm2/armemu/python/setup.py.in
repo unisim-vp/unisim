@@ -6,10 +6,33 @@ import os.path
 # print ( distutils.util.get_platform() )
 # print ( sysconfig.get_config_vars() )
 
-module_armemu = Extension("@SIM_PYTHON_IMPORT_NAME@", 
-	sources=["@CMAKE_SOURCE_DIR@/python/py_variable.cc",
-		"@CMAKE_SOURCE_DIR@/python/py_simulator.cc",
-		"@CMAKE_SOURCE_DIR@/python/armemu.cc"],
+module_simulator = Extension('simulator',
+	sources=[
+		'@CMAKE_SOURCE_DIR@/python/py_simulator.cc'
+		],
+	depends=[
+		'@CMAKE_SOURCE_DIR@/python/py_simulator.hh',
+		'@CMAKE_SOURCE_DIR@/python/py_variable.hh'
+		],
+	include_dirs=[
+		'@CMAKE_SOURCE_DIR@',
+		'@CMAKE_BINARY_DIR@',
+		'@OSCI_SYSTEMC_INCLUDE_DIR@',
+		'@OSCI_TLM2_INCLUDE_DIR@'],
+	library_dirs=['@CMAKE_ARCHIVE_OUTPUT_DIRECTORY@',
+		os.path.dirname('@OSCI_SYSTEMC_LIBRARIES@')],
+	libraries=[@PYTHON__ARMEMU__LIBS@],
+	extra_compile_args=['-fPIC'],
+	extra_link_args=['-fPIC'],
+	)
+	
+module_variable = Extension('variable',
+	sources=[
+		'@CMAKE_SOURCE_DIR@/python/py_variable.cc'
+		],
+	depends=[
+		'@CMAKE_SOURCE_DIR@/python/py_variable.hh'
+		],
 	include_dirs=[
 		'@CMAKE_SOURCE_DIR@',
 		'@CMAKE_BINARY_DIR@',
@@ -23,6 +46,9 @@ module_armemu = Extension("@SIM_PYTHON_IMPORT_NAME@",
 	)
 	
 setup(name="@SIM_PYTHON_IMPORT_NAME@", version="@SIM_VERSION@",
-	ext_modules=[module_armemu]
+	ext_package='@SIM_PYTHON_IMPORT_NAME@',
+	ext_modules=[module_simulator,module_variable],
+	packages=['@SIM_PYTHON_IMPORT_NAME@'],
+	package_dir={'@SIM_PYTHON_IMPORT_NAME@':'@CMAKE_SOURCE_DIR@/python'}
  	)
 

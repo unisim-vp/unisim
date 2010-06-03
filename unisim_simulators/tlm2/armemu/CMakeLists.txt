@@ -12,7 +12,7 @@ set ( SIM_PROGRAM_NAME "UNISIM ARMEmu" )
 set ( SIM_COPYRIGHT "\"Copyright (C) 2007-2010, Comissariat a l'Energie Atomique\"")
 set ( SIM_LICENSE "\"BSD (See file COPYING)\"" )
 set ( SIM_DESCRIPTION "UNISIM ARMv5 User Level Simulator" )
-set ( SIM_PYTHON_MODULE_NAME "\"armemu\"" )
+set ( SIM_PYTHON_MODULE_NAME "armemu" )
 set ( SIM_PYTHON_IMPORT_NAME "armemu${SIM_VERSION_MAJOR}${SIM_VERSION_MINOR}${SIM_VERSION_PATCH}")
 
 if ( UNIX AND NOT APPLE )
@@ -398,7 +398,6 @@ if ( BUILD_ARMEMU_PYTHON_MODULE )
 			${CMAKE_BINARY_DIR}/config.hh
 			${CMAKE_BINARY_DIR}/python/setup.py
 			${CMAKE_BINARY_DIR}/python/python_config.hh
-			${CMAKE_SOURCE_DIR}/python/armemu.cc
 			${CMAKE_SOURCE_DIR}/python/py_simulator.hh
 			${CMAKE_SOURCE_DIR}/python/py_simulator.cc
 			${CMAKE_SOURCE_DIR}/python/py_variable.hh
