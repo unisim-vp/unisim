@@ -235,7 +235,7 @@ int Simulator::Run()
 	cerr << "host simulation speed: " << ((double) (*cpu)["instruction-counter"] / spent_time / 1000000.0) << " MIPS" << endl;
 	cerr << "time dilatation: " << spent_time / sc_time_stamp().to_seconds() << " times slower than target machine" << endl;
 #ifdef SIM_POWER_ESTIMATOR_SUPPORT
-	if ( enable_estimate_power )
+	if ( enable_power_estimation )
 	{
 		{
 			double total_dynamic_energy = il1_power_estimator->GetDynamicEnergy()
