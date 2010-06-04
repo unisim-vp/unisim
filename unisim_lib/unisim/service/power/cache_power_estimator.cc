@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007, 2010,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -30,6 +30,7 @@
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ *          Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
 #if defined(HAVE_CONFIG_H)
@@ -152,23 +153,6 @@ using unisim::kernel::logger::EndDebugError;
 using std::endl;
 using std::string;
 
-CacheProfile::CacheProfile(
-	unsigned int _cycle_time,
-	unsigned int _voltage,
-	double _dyn_energy_per_read,
-	double _dyn_energy_per_write,
-	double _leak_power) :
-	CacheProfileKey(_cycle_time, _voltage),
-	dyn_energy_per_read(_dyn_energy_per_read),
-	dyn_energy_per_write(_dyn_energy_per_write),
-	leak_power(_leak_power),
-	read_accesses(0),
-	write_accesses(0),
-	duration(0.0)
-{
-}
-
-
 CachePowerEstimator::CachePowerEstimator(const char *name, Object *parent) :
 	Object(name, parent),
 	Service<unisim::service::interfaces::CachePowerEstimator>(name, parent),
@@ -205,6 +189,15 @@ CachePowerEstimator::CachePowerEstimator(const char *name, Object *parent) :
 	param_output_width("output-width", this, p_output_width),
 	param_tag_width("tag-width", this, p_tag_width),
 	param_access_mode("access-mode", this, p_access_mode),
+	dynamic_energy(&profiles),
+	dynamic_power(&profiles, &time_import),
+	leakage_power(&time_stamp, &current_profile, &profiles, &time_import),
+	stat_dynamic_energy("dynamic-energy", this, dynamic_energy, "cache dynamic energy (in J)"),
+	stat_dynamic_power("dynamic-power", this, dynamic_power, "cache dynamic power (in W)"),
+	stat_leakage_power("leakage-power", this, leakage_power, "cache leakage power (in W)"),
+	formula_total_power("total-power", this,
+			Formula<double>::OP_ADD, &stat_dynamic_power, &stat_leakage_power, 0,
+			"cache total (dynamic+leakage) power (in W)"),
 	Ndwl(0),
 	Ndbl(0),
 	Ntwl(0),

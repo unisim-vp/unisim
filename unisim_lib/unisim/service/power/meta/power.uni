@@ -3,6 +3,14 @@
 	<unit>
 		<name>unisim::service::power</name>
 		<files>
+			<file>unisim/service/power/cache_profile.hh</file>
+			<file>unisim/service/power/cache_profile.cc</file>
+			<file>unisim/service/power/cache_dynamic_energy.hh</file>
+			<file>unisim/service/power/cache_dynamic_energy.cc</file>
+			<file>unisim/service/power/cache_dynamic_power.hh</file>
+			<file>unisim/service/power/cache_dynamic_power.cc</file>
+			<file>unisim/service/power/cache_leakage_power.hh</file>
+			<file>unisim/service/power/cache_leakage_power.cc</file>
 			<file>unisim/service/power/cache_power_estimator.hh</file>
 			<file>unisim/service/power/cache_power_estimator.cc</file>
 			<file>unisim/service/power/config.hh.in</file>

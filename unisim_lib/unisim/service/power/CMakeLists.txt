@@ -61,7 +61,7 @@ foreach ( C_INCLUDE ${C_INCLUDES} )
 	endif ( NOT HAVE_${C_INCLUDE}_H )
 endforeach ( C_INCLUDE )
 
-set ( CXX_INCLUDES iostream map )
+set ( CXX_INCLUDES iostream map sstream )
 foreach ( CXX_INCLUDE ${CXX_INCLUDES} )
 	check_include_file_cxx ( ${CXX_INCLUDE} HAVE_${CXX_INCLUDE} )
 	if ( NOT HAVE_${CXX_INCLUDE} )
@@ -92,6 +92,14 @@ configure_file (
 	${CMAKE_BINARY_DIR}/unisim/service/power/config.hh )
 
 add_library ( unisim__service__power
+		${CMAKE_SOURCE_DIR}/unisim/service/power/cache_profile.hh
+		${CMAKE_SOURCE_DIR}/unisim/service/power/cache_profile.cc
+		${CMAKE_SOURCE_DIR}/unisim/service/power/cache_dynamic_energy.hh
+		${CMAKE_SOURCE_DIR}/unisim/service/power/cache_dynamic_energy.cc
+		${CMAKE_SOURCE_DIR}/unisim/service/power/cache_dynamic_power.hh
+		${CMAKE_SOURCE_DIR}/unisim/service/power/cache_dynamic_power.cc
+		${CMAKE_SOURCE_DIR}/unisim/service/power/cache_leakage_power.hh
+		${CMAKE_SOURCE_DIR}/unisim/service/power/cache_leakage_power.cc
 		${CMAKE_SOURCE_DIR}/unisim/service/power/cache_power_estimator.hh
 		${CMAKE_SOURCE_DIR}/unisim/service/power/cache_power_estimator.cc
 		${CMAKE_BINARY_DIR}/unisim/service/power/config.hh
