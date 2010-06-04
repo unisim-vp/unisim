@@ -100,6 +100,38 @@ Simulator(int argc, char **argv) :
 	{
 		il1_power_estimator = new POWER_ESTIMATOR("il1-power-estimator");
 		dl1_power_estimator = new POWER_ESTIMATOR("dl1-power-estimator");
+		formula_caches_total_dynamic_energy =
+				new unisim::kernel::service::Formula<double> (
+						"caches-total-dynamic-energy", 0,
+						unisim::kernel::service::Formula<double>::OP_ADD,
+						&(*dl1_power_estimator)["dynamic-energy"],
+						&(*il1_power_estimator)["dynamic-energy"],
+						0,
+						"caches total dynamic energy (in J)");
+		formula_caches_total_dynamic_power =
+				new unisim::kernel::service::Formula<double> (
+						"caches-total-dynamic-power", 0,
+						unisim::kernel::service::Formula<double>::OP_ADD,
+						&(*dl1_power_estimator)["dynamic-power"],
+						&(*il1_power_estimator)["dynamic-power"],
+						0,
+						"caches total dynamic power (in J)");
+		formula_caches_total_leakage_power =
+				new unisim::kernel::service::Formula<double> (
+						"caches-total-leakage-power", 0,
+						unisim::kernel::service::Formula<double>::OP_ADD,
+						&(*dl1_power_estimator)["leakage-power"],
+						&(*il1_power_estimator)["leakage-power"],
+						0,
+						"caches total leakage power (in J)");
+		formula_caches_total_power =
+				new unisim::kernel::service::Formula<double> (
+						"caches-total-power", 0,
+						unisim::kernel::service::Formula<double>::OP_ADD,
+						formula_caches_total_dynamic_power,
+						formula_caches_total_leakage_power,
+						0,
+						"caches total (dynamic+leakage) power (in J)");
 	}
 #endif // SIM_POWER_ESTIMATOR_SUPPORT
 
