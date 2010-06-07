@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2010,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,20 +32,25 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#include <unisim/service/loader/elf_loader/elf_loader.hh>
-#include <unisim/service/loader/elf_loader/elf_loader.tcc>
+#ifndef __UNISIM_SERVICE_INTERFACES_STMT_LOOKUP_HH__
+#define __UNISIM_SERVICE_INTERFACES_STMT_LOOKUP_HH__
+
+#include <unisim/util/debug/stmt.hh>
 
 namespace unisim {
 namespace service {
-namespace loader {
-namespace elf_loader {
+namespace interfaces {
 
-template class ElfLoaderImpl<uint64_t, ELFCLASS64, Elf64_Ehdr, Elf64_Phdr, Elf64_Shdr, Elf64_Sym>;
-template class Statement<uint64_t>;
-template class DWARF_StatementProgram<uint64_t>;
-template std::ostream& operator << (std::ostream& os, const DWARF_StatementProgram<uint64_t>& dw_stmt_prog);
+template <class MEMORY_ADDR>
+class StatementLookup
+{
+public:
+	virtual ~StatementLookup() {}
+	virtual const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(MEMORY_ADDR addr) const = 0;
+};
 
-} // end of namespace elf_loader
-} // end of namespace loader
+} // end of namespace interfaces
 } // end of namespace service
 } // end of namespace unisim
+
+#endif

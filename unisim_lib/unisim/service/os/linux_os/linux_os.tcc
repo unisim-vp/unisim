@@ -115,12 +115,14 @@ LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 LinuxOS(const char *name, Object *parent) :
     Object(name, parent),
 	Service<unisim::service::interfaces::LinuxOS>(name, parent),
+	Service<Loader<ADDRESS_TYPE> >(name, parent),
 	Client<CPULinuxOS>(name, parent),
 	Client<Memory<ADDRESS_TYPE> >(name, parent),
 	Client<MemoryInjection<ADDRESS_TYPE> >(name, parent),
 	Client<Registers>(name, parent),
 	Client<Loader<ADDRESS_TYPE> >(name, parent),
 	linux_os_export("linux-os-export", this),
+	loader_export("loader-export", this),
 	memory_import("memory-import", this),
 	memory_injection_import("memory-injection-import", this),
 	registers_import("registers-import", this),
@@ -193,12 +195,56 @@ OnDisconnect()
 {
 }
 
-/** Method to setup the service */
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+void
+LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
+Reset()
+{
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+ADDRESS_TYPE
+LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
+GetEntryPoint()
+const
+{
+	return loader_import->GetEntryPoint();
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+ADDRESS_TYPE
+LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
+GetTopAddr()
+const
+{
+	return loader_import->GetTopAddr();
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+ADDRESS_TYPE
+LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
+GetStackBase()
+const
+{
+	return loader_import->GetStackBase();
+}
+
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-Setup() 
+Load(const char *filename)
 {
+	if(!loader_import->Load(filename)) return false;
+	return Load();
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+bool
+LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
+Load() 
+{
+	syscall_impl_assoc_map.clear();
+	 
 	if (!cpu_linux_os_import) 
 	{
 		logger << DebugError
@@ -275,6 +321,15 @@ Setup()
 			<< LOCATION
 			<< EndDebugInfo;
 	return true;
+}
+
+/** Method to setup the service */
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+bool
+LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
+Setup() 
+{
+	return Load();
 }
 
 /**
@@ -573,6 +628,8 @@ PPCSetup()
 				<< EndDebugError;
 			return false;
 		}
+		PARAMETER_TYPE zero = 0;
+		ppc_regs[i]->SetValue(&zero);
     }
 
     // Set initial CPU registers

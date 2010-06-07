@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2010,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,20 +32,36 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#include <unisim/service/loader/elf_loader/elf_loader.hh>
-#include <unisim/service/loader/elf_loader/elf_loader.tcc>
+#ifndef __UNISIM_SERVICE_LOADER_ELF_LOADER_LEB128_HH__
+#define __UNISIM_SERVICE_LOADER_ELF_LOADER_LEB128_HH__
+
+#include <iosfwd>
 
 namespace unisim {
 namespace service {
 namespace loader {
 namespace elf_loader {
 
-template class ElfLoaderImpl<uint64_t, ELFCLASS64, Elf64_Ehdr, Elf64_Phdr, Elf64_Shdr, Elf64_Sym>;
-template class Statement<uint64_t>;
-template class DWARF_StatementProgram<uint64_t>;
-template std::ostream& operator << (std::ostream& os, const DWARF_StatementProgram<uint64_t>& dw_stmt_prog);
+class DWARF_LEB128
+{
+public:
+	DWARF_LEB128(const uint8_t *leb128);
+	DWARF_LEB128(const DWARF_LEB128& leb128);
+	~DWARF_LEB128();
+	
+	unsigned int GetByteSize() const;
+	unsigned int GetBitLength() const;
+	template <typename T> bool Fit(const T *t = 0) const;
+	template <typename T> operator T() const;
+	DWARF_LEB128& operator = (const uint8_t *leb128);
+	DWARF_LEB128& operator = (const DWARF_LEB128& leb128);
+private:
+	const uint8_t *leb128;
+};
 
 } // end of namespace elf_loader
 } // end of namespace loader
 } // end of namespace service
 } // end of namespace unisim
+
+#endif

@@ -363,6 +363,7 @@ Simulator::Simulator(int argc, char **argv)
 		inline_debugger->registers_import >> cpu->registers_export;
 		inline_debugger->memory_access_reporting_control_import >>
 			cpu->memory_access_reporting_control_export;
+		*inline_debugger->loader_import[0] >> linux_os->loader_export;
 	}
 	else if(use_gdb_server)
 	{
@@ -449,7 +450,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("version", VERSION);
 	simulator->SetVariable("description", "UNISIM ppcemu, user level PowerPC simulator with support of ELF32 binaries and Linux system call translation");
 
-	const char *filename = "a.out";
+	const char *filename = "";
 	bool use_gdb_server = false;
 	bool use_inline_debugger = false;
 	bool estimate_power = false;
@@ -587,6 +588,9 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("dtlb-power-estimator.output-width", 32);
 	simulator->SetVariable("dtlb-power-estimator.tag-width", 64);
 	simulator->SetVariable("dtlb-power-estimator.access-mode", "fast");
+	
+	// Inline debugger
+	simulator->SetVariable("inline-debugger.num-loaders", 1);
 }
 
 void Simulator::Run()

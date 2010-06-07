@@ -78,8 +78,11 @@ InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent) :
 	Client<Memory<ADDRESS> >(_name, _parent),
 	Client<Registers>(_name, _parent),
 	Client<SymbolTableLookup<ADDRESS> >(_name, _parent),
+	Client<Loader<ADDRESS> >(_name, _parent),
 	memory_atom_size(1),
+	num_loaders(0),
 	param_memory_atom_size("memory-atom-size", this, memory_atom_size, "size of the smallest addressable element in memory"),
+	param_num_loaders("num-loaders", this, num_loaders, "number of loaders"),
 	debug_control_export("debug-control-export", this),
 	memory_access_reporting_export("memory-access-reporting-export", this),
 	trap_reporting_export("trap-reporting-export", this),
@@ -87,8 +90,12 @@ InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent) :
 	disasm_import("disasm-import", this),
 	memory_import("memory-import", this),
 	registers_import("registers-import", this),
-	symbol_table_lookup_import("symbol-table-lookup-import", this)
+	symbol_table_lookup_import("symbol-table-lookup-import", this),
+	loader_import(0)
 {
+	param_num_loaders.SetMutable(false);
+	param_num_loaders.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	
 	trap = false;
 	strcpy(last_line, "");
 	strcpy(line, "");
@@ -127,6 +134,20 @@ InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent) :
 		case 8:
 			int_addr_fmt = strdup(PRIu64);
 			break;
+	}
+	
+	if(num_loaders)
+	{
+		typedef ServiceImport<Loader<ADDRESS> > *PLoaderImport;
+		loader_import = new PLoaderImport[num_loaders];
+		
+		unsigned int i;
+		for(i = 0; i < num_loaders; i++)
+		{
+			std::stringstream sstr_name;
+			sstr_name << "loader-import[" << i << "]";
+			loader_import[i] = new ServiceImport<Loader<ADDRESS> >(sstr_name.str().c_str(), this);
+		}
 	}
 
 	Object::SetupDependsOn(memory_access_reporting_control_import);
@@ -438,6 +459,13 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 					break;
 				}
 				
+				if(IsLoadCommand(parm[0]))
+				{
+					recognized = true;
+					DumpAvailableLoaders();
+					break;
+				}
+				
 				if (recognized == false)
 				{
 					// check for possible variable that could have the given name (parm[0])
@@ -636,6 +664,12 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 					break;
 				}
 
+				if(IsLoadCommand(parm[0]))
+				{
+					recognized = true;
+					Load(parm[1], parm[2]);
+					break;
+				}
 				break;
 
 			case EOF:
@@ -677,6 +711,9 @@ template <class ADDRESS>
 void InlineDebugger<ADDRESS>::Help()
 {
 	cout << "HELP:" << endl;
+	cout << "================================  LOAD =========================================" << endl;
+	cout << "<l | ld | load> [<loader name> <filename>]" << endl;
+	cout << "    load program file <filename> using loader <loader name>" << endl;
 	cout << "================================ EXECUTE =======================================" << endl;
 	cout << "<c | cont | continue> [<symbol | *address>]" << endl;
 	cout << "    continue to execute instructions until program reaches a breakpoint," << endl;
@@ -1358,6 +1395,58 @@ void InlineDebugger<ADDRESS>::DumpProgramProfile()
 }
 
 template <class ADDRESS>
+void InlineDebugger<ADDRESS>::DumpAvailableLoaders()
+{
+	if(num_loaders && loader_import)
+	{
+		unsigned int i;
+		for(i = 0; i < num_loaders; i++)
+		{
+			ServiceImport<Loader<ADDRESS> > *import = loader_import[i];
+			if(*import)
+			{
+				Object *service = import->GetService();
+				if(service)
+				{
+					cout << service->GetName() << endl;
+				}
+			}
+		}
+	}
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::Load(const char *loader_name, const char *filename)
+{
+	if(num_loaders && loader_import)
+	{
+		unsigned int i;
+		for(i = 0; i < num_loaders; i++)
+		{
+			ServiceImport<Loader<ADDRESS> > *import = loader_import[i];
+			if(*import)
+			{
+				Object *service = import->GetService();
+				if(service)
+				{
+					if(strcmp(service->GetName(), loader_name) == 0)
+					{
+						// Found loader
+						if(!(*import)->Load(filename))
+						{
+							cerr << Object::GetName() << ": ERROR! Loader \"" << loader_name << "\" was not able to load file \"" << filename << "\"" << endl;
+						}
+						
+						return;
+					}
+				}
+			}
+		}
+	}
+	cerr << Object::GetName() << ": ERROR! Loader \"" << loader_name << "\" does not exist" << endl;
+}
+
+template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DumpDataProfile(bool write)
 {
 	cout << "Data " << (write ? "write" : "read") << " profile:" << endl;
@@ -1643,6 +1732,12 @@ template <class ADDRESS>
 bool InlineDebugger<ADDRESS>::IsProfileCommand(const char *cmd)
 {
 	return strcmp(cmd, "p") == 0 || strcmp(cmd, "prof") == 0 || strcmp(cmd, "profile") == 0;
+}
+
+template <class ADDRESS>
+bool InlineDebugger<ADDRESS>::IsLoadCommand(const char *cmd)
+{
+	return strcmp(cmd, "l") == 0 || strcmp(cmd, "ld") == 0 || strcmp(cmd, "load") == 0;
 }
 
 } // end of namespace inline_debugger

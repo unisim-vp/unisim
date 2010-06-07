@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2010,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,20 +32,17 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#include <unisim/service/loader/elf_loader/elf_loader.hh>
-#include <unisim/service/loader/elf_loader/elf_loader.tcc>
+#include <unisim/util/debug/stmt.hh>
+#include <unisim/util/debug/stmt.tcc>
+#include <inttypes.h>
 
 namespace unisim {
-namespace service {
-namespace loader {
-namespace elf_loader {
+namespace util {
+namespace debug {
 
-template class ElfLoaderImpl<uint64_t, ELFCLASS64, Elf64_Ehdr, Elf64_Phdr, Elf64_Shdr, Elf64_Sym>;
 template class Statement<uint64_t>;
-template class DWARF_StatementProgram<uint64_t>;
-template std::ostream& operator << (std::ostream& os, const DWARF_StatementProgram<uint64_t>& dw_stmt_prog);
+template std::ostream& operator << (std::ostream& os, const Statement<uint64_t>& stmt);
 
-} // end of namespace elf_loader
-} // end of namespace loader
-} // end of namespace service
+} // end of namespace debug
+} // end of namespace util
 } // end of namespace unisim

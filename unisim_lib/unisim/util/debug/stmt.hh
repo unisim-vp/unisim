@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2010,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -31,21 +31,44 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
- 
-#include <unisim/service/loader/elf_loader/elf_loader.hh>
-#include <unisim/service/loader/elf_loader/elf_loader.tcc>
+
+#ifndef __UNISIM_UTIL_DEBUG_STMT_H__
+#define __UNISIM_UTIL_DEBUG_STMT_H__
+
+#include <iosfwd>
+#include <string>
 
 namespace unisim {
-namespace service {
-namespace loader {
-namespace elf_loader {
+namespace util {
+namespace debug {
 
-template class ElfLoaderImpl<uint64_t, ELFCLASS64, Elf64_Ehdr, Elf64_Phdr, Elf64_Shdr, Elf64_Sym>;
-template class Statement<uint64_t>;
-template class DWARF_StatementProgram<uint64_t>;
-template std::ostream& operator << (std::ostream& os, const DWARF_StatementProgram<uint64_t>& dw_stmt_prog);
+template <class MEMORY_ADDR> class Statement;
+template <class MEMORY_ADDR>
+std::ostream& operator << (std::ostream& os, const Statement<MEMORY_ADDR>& stmt);
 
-} // end of namespace elf_loader
-} // end of namespace loader
-} // end of namespace service
+template <class MEMORY_ADDR>
+class Statement
+{
+public:
+	Statement(MEMORY_ADDR addr, bool is_beginning_of_basic_block, const std::string *source_dirname, const std::string *source_filename, unsigned int lineno, unsigned int colno);
+	MEMORY_ADDR GetAddress() const;
+	bool IsBeginningOfBasicBlock() const;
+	const char *GetSourceDirname() const;
+	const char *GetSourceFilename() const;
+	unsigned int GetLineNo() const;
+	unsigned int GetColNo() const;
+	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const Statement<MEMORY_ADDR>& stmt);
+private:
+	MEMORY_ADDR addr;
+	bool is_beginning_of_basic_block;
+	const std::string *source_dirname;
+	const std::string *source_filename;
+	unsigned int lineno;
+	unsigned int colno;
+};
+
+} // end of namespace debug
+} // end of namespace util
 } // end of namespace unisim
+
+#endif

@@ -42,6 +42,7 @@
 #include <unisim/service/interfaces/registers.hh>
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/trap_reporting.hh>
+#include <unisim/service/interfaces/loader.hh>
 
 #include <unisim/util/debug/breakpoint_registry.hh>
 #include <unisim/util/debug/watchpoint_registry.hh>
@@ -65,6 +66,7 @@ using unisim::service::interfaces::SymbolTableLookup;
 using unisim::service::interfaces::Registers;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::TrapReporting;
+using unisim::service::interfaces::Loader;
 
 using unisim::util::debug::BreakpointRegistry;
 using unisim::util::debug::Breakpoint;
@@ -113,6 +115,7 @@ class InlineDebugger :
 	public Client<Memory<ADDRESS> >,
 	public Client<Registers>,
 	public Client<SymbolTableLookup<ADDRESS> >,
+	public Client<Loader<ADDRESS> >,
 	public InlineDebuggerBase
 {
 public:
@@ -124,6 +127,7 @@ public:
 	ServiceImport<MemoryAccessReportingControl> memory_access_reporting_control_import;
 	ServiceImport<Registers> registers_import;
 	ServiceImport<SymbolTableLookup<ADDRESS> > symbol_table_lookup_import;
+	ServiceImport<Loader<ADDRESS> > **loader_import;
 	
 	InlineDebugger(const char *name, Object *parent = 0);
 	virtual ~InlineDebugger();
@@ -145,7 +149,9 @@ public:
 	virtual void OnDisconnect();
 private:
 	unsigned int memory_atom_size;
+	unsigned int num_loaders;
 	Parameter<unsigned int> param_memory_atom_size;
+	Parameter<unsigned int> param_num_loaders;
 
 	BreakpointRegistry<ADDRESS> breakpoint_registry;
 	WatchpointRegistry<ADDRESS> watchpoint_registry;
@@ -185,6 +191,7 @@ private:
 	bool IsParameterCommand(const char *cmd, const char *format = 0);
 	bool IsMonitorSetCommand(const char *cmd);
 	bool IsProfileCommand(const char *cmd);
+	bool IsLoadCommand(const char *cmd);
 
 	void Help();
 	void Disasm(ADDRESS addr, int count);
@@ -212,6 +219,8 @@ private:
 	void SetVariable(const char *name, const char *value);
 	void DumpProgramProfile();
 	void DumpDataProfile(bool write);
+	void DumpAvailableLoaders();
+	void Load(const char *loader_name, const char *filename);
 
 	static InlineDebugger<ADDRESS> *debugger;
 };
