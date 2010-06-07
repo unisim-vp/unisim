@@ -171,10 +171,8 @@ pydict_from_variable_list ( std::list<unisim::kernel::service::VariableBase*>& l
 	{
 		PyObject *variable;
 		PyObject *name;
-		// PyObject *value;
 		variable = PyVariable_NewVariable(*it);
 		name = PyUnicode_FromString((*it)->GetName());
-		// value = PyUnicode_FromString(((std::string)*(*it)).c_str());
 		if ( PyDict_SetItem(result, name, variable) == -1)
 		{
 			Py_DECREF(name);
@@ -277,25 +275,6 @@ set_parameters_map (Simulator *sim, std::map<std::string, std::string> &parms)
 			it++ )
 		sim->SetVariable(it->first.c_str(), it->second.c_str());
 }
-
-//static PyObject *
-//simulator_set_variable (armemu_SimulatorObject *self, PyObject *args)
-//{
-//	PyObject *result;
-//	std::map<std::string, std::string> parms;
-//	const char *var_name, *value;
-//	get_parameters_map(self->sim, parms);
-//	destroy_simulator(self);
-//	self->sim = create_simulator();
-//	if ( !PyArg_ParseTuple(args, "ss", &var_name, &value) )
-//		return NULL;
-//	set_parameters_map(self->sim, parms);
-//	self->sim->SetVariable(var_name, value);
-//	self->setup = self->sim->Setup();
-//	std::string var = (std::string)*self->sim->FindVariable(var_name);
-//	result = PyUnicode_FromString(var.c_str());
-//	return result;
-//}
 
 static PyObject *
 simulator_is_running (armemu_SimulatorObject *self)
