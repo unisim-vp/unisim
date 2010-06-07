@@ -279,7 +279,8 @@ foreach ( lib ${OSCI_SYSTEMC_LIBRARIES} )
 	get_filename_component( lib_path ${lib}
 		PATH )
 	set ( PYTHON__ARMEMU__LIB_DIRS
-		"${PYTHON__ARMEMU__LIB_DIRS},'${lib_path}'")
+		"${PYTHON__ARMEMU__LIB_DIRS},
+		 '${lib_path}'")
 endforeach ( lib ${OSCI_SYSTEMC_LIBRARIES} )
 set ( PYTHON__ARMEMU__LIBS
 	"'simulator',
