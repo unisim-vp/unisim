@@ -6,7 +6,7 @@ set ( SIM_VERSION_PATCH 1 )
 set ( SIM_VERSION 
 	${SIM_VERSION_MAJOR}.${SIM_VERSION_MINOR}.${SIM_VERSION_PATCH} )
 set ( SIM_SOVERSION ${SIM_VERSION_MAJOR}.${SIM_VERSION_MINOR} ) 
-set ( SIM_VERSION_CODENAME "\"Pacifico\"" )
+set ( SIM_VERSION_CODENAME "\"Pegaso\"" )
 set ( SIM_AUTHOR "\"Daniel Gracia Perez (daniel.gracia-perez@cea.fr)\"" )
 set ( SIM_PROGRAM_NAME "UNISIM ARMEmu" )
 set ( SIM_COPYRIGHT "\"Copyright (C) 2007-2010, Comissariat a l'Energie Atomique\"")
@@ -268,6 +268,19 @@ if ( UNISIM__SERVICE__POWER__SUPPORT )
 		unisim__service__power )
 endif ( UNISIM__SERVICE__POWER__SUPPORT )
 
+set ( PYTHON__ARMEMU__INCLUDE_DIRS
+	"'${CMAKE_SOURCE_DIR}',
+	 '${CMAKE_BINARY_DIR}',
+	 '${OSCI_SYSTEMC_INCLUDE_DIR}',
+	 '${OSCI_TLM2_INCLUDE_DIR}'")
+set ( PYTHON__ARMEMU__LIB_DIRS
+	"'${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}'")
+foreach ( lib ${OSCI_SYSTEMC_LIBRARIES} )
+	get_filename_component( lib_path ${lib}
+		PATH )
+	set ( PYTHON__ARMEMU__LIB_DIRS
+		"${PYTHON__ARMEMU__LIB_DIRS},'${lib_path}'")
+endforeach ( lib ${OSCI_SYSTEMC_LIBRARIES} )
 set ( PYTHON__ARMEMU__LIBS
 	"'simulator',
 	 'unisim__component__tlm2__interrupt',
@@ -289,6 +302,20 @@ set ( PYTHON__ARMEMU__LIBS
 	 'unisim__kernel',
 	 'xml2',
 	 'systemc'")
+if ( UNISIM__SERVICE__POWER__SUPPORT )
+	get_filename_component ( lib_path ${CACTI_4_2_LIBRARY}
+		PATH )
+	set ( PYTHON__ARMEMU__LIB_DIRS
+		"${PYTHON__ARMEMU__LIB_DIRS},
+		 '${lib_path}'")
+	get_filename_component ( lib_name ${CACTI_4_2_LIBRARY}
+		NAME_WE )
+	string ( REGEX REPLACE "^lib" "" lib_name ${lib_name} )
+	set ( PYTHON__ARMEMU__LIBS
+		"${PYTHON__ARMEMU__LIBS},
+		'unisim__service__power',
+		'${lib_name}'" )
+endif ( UNISIM__SERVICE__POWER__SUPPORT )
 	 
 set ( CMAKE_REQUIRED_FLAGS "-include stdio.h" )
 check_include_file ( editline/readline.h HAVE_editline_readline_H )

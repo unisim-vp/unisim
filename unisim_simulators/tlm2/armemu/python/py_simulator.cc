@@ -75,7 +75,7 @@ create_simulator()
 	Simulator *sim;
 	char *argv[3] =
 	{
-			(char *)"/Users/gracia/Developer/unisim/armemu/build/bin/unisim-armemu-0.3.1",
+			(char *)ARMEMU_EXEC_LOCATION,
 			(char *)"-w",
 			0
 	};
@@ -158,16 +158,16 @@ simulator_version (armemu_SimulatorObject *self)
 static PyObject *
 simulator_get_variable (armemu_SimulatorObject *self, PyObject *args)
 {
-	PyObject *result;
+	PyObject *result = NULL;
 	const char *var_name;
 
 	if ( !PyArg_ParseTuple(args, "s", &var_name) )
-		return NULL;
+		return result;
 	unisim::kernel::service::VariableBase *var = self->sim->FindVariable(var_name);
-	if ( var != 0 )
-	{
+	if ( var == 0 )
+		PyErr_SetString(PyExc_ValueError, "could not find the given variable");
+	else
 		result = PyVariable_NewVariable(var);
-	}
 	return result;
 }
 
