@@ -142,19 +142,6 @@ simulator_version (armemu_SimulatorObject *self)
 	return result;
 }
 
-//static PyObject *
-//simulator_get_variable (armemu_SimulatorObject *self, PyObject *args)
-//{
-//	PyObject *result;
-//	const char *var_name;
-//
-//	if ( !PyArg_ParseTuple(args, "s", &var_name) )
-//		return NULL;
-//	std::string var = (std::string)*self->sim->FindVariable(var_name);
-//	result = PyUnicode_FromString(var.c_str());
-//	return result;
-//}
-
 static PyObject *
 simulator_get_variable (armemu_SimulatorObject *self, PyObject *args)
 {
@@ -182,20 +169,22 @@ pydict_from_variable_list ( std::list<unisim::kernel::service::VariableBase*>& l
 			it != list.end();
 			it++ )
 	{
+		PyObject *variable;
 		PyObject *name;
-		PyObject *value;
+		// PyObject *value;
+		variable = PyVariable_NewVariable(*it);
 		name = PyUnicode_FromString((*it)->GetName());
-		value = PyUnicode_FromString(((std::string)*(*it)).c_str());
-		if ( PyDict_SetItem(result, name, value) == -1)
+		// value = PyUnicode_FromString(((std::string)*(*it)).c_str());
+		if ( PyDict_SetItem(result, name, variable) == -1)
 		{
 			Py_DECREF(name);
-			Py_DECREF(value);
+			Py_DECREF(variable);
 			PyDict_Clear(result);
 			result = NULL;
 			return result;
 		}
 		Py_DECREF(name);
-		Py_DECREF(value);
+		Py_DECREF(variable);
 	}
 
 	return result;
@@ -208,7 +197,7 @@ simulator_get_variables (armemu_SimulatorObject *self)
 
 	if ( self->sim == 0 ) return NULL;
 	std::list<unisim::kernel::service::VariableBase *> var_list;
-	self->sim->GetParameters(var_list);
+	self->sim->GetVariables(var_list);
 	result = pydict_from_variable_list(var_list);
 
 	return result;
