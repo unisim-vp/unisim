@@ -107,6 +107,7 @@ public:
 	virtual MEMORY_ADDR GetEntryPoint() const;
 	virtual MEMORY_ADDR GetTopAddr() const;
 	virtual MEMORY_ADDR GetStackBase() const;
+	virtual bool Load(const char *filename);
 
 	S19_Loader(char const *name, Object *parent = 0);
 	virtual ~S19_Loader();
@@ -122,6 +123,7 @@ private:
 	bool	ProcessRecord(int linenum, char srec[S_RECORD_SIZE]);
 	void	ShowError(int  errnum, int linenum, char srec[S_RECORD_SIZE]);
 	bool	memWrite(physical_address_t addr, const void *buffer, uint32_t size);
+	bool	Load();
 
 };
 
