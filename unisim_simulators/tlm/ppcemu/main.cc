@@ -364,6 +364,8 @@ Simulator::Simulator(int argc, char **argv)
 		inline_debugger->memory_access_reporting_control_import >>
 			cpu->memory_access_reporting_control_export;
 		*inline_debugger->loader_import[0] >> linux_os->loader_export;
+		*inline_debugger->stmt_lookup_import[0] >> elf32_loader->stmt_lookup_export;
+		*inline_debugger->symbol_table_lookup_import[0] >> elf32_loader->symbol_table_lookup_export;
 	}
 	else if(use_gdb_server)
 	{
@@ -410,11 +412,6 @@ Simulator::Simulator(int argc, char **argv)
 	cpu->symbol_table_lookup_import >> elf32_loader->symbol_table_lookup_export;
 	bus->memory_import >> fsb_to_mem_bridge->memory_export;
 	fsb_to_mem_bridge->memory_import >> memory->memory_export;
-
-	if(inline_debugger)
-	{
-		inline_debugger->symbol_table_lookup_import >> elf32_loader->symbol_table_lookup_export;
-	}
 }
 
 Simulator::~Simulator()

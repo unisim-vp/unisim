@@ -43,6 +43,7 @@
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/trap_reporting.hh>
 #include <unisim/service/interfaces/loader.hh>
+#include <unisim/service/interfaces/stmt_lookup.hh>
 
 #include <unisim/util/debug/breakpoint_registry.hh>
 #include <unisim/util/debug/watchpoint_registry.hh>
@@ -67,6 +68,7 @@ using unisim::service::interfaces::Registers;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::TrapReporting;
 using unisim::service::interfaces::Loader;
+using unisim::service::interfaces::StatementLookup;
 
 using unisim::util::debug::BreakpointRegistry;
 using unisim::util::debug::Breakpoint;
@@ -116,6 +118,7 @@ class InlineDebugger :
 	public Client<Registers>,
 	public Client<SymbolTableLookup<ADDRESS> >,
 	public Client<Loader<ADDRESS> >,
+	public Client<StatementLookup<ADDRESS> >,
 	public InlineDebuggerBase
 {
 public:
@@ -126,8 +129,9 @@ public:
 	ServiceImport<Memory<ADDRESS> > memory_import;
 	ServiceImport<MemoryAccessReportingControl> memory_access_reporting_control_import;
 	ServiceImport<Registers> registers_import;
-	ServiceImport<SymbolTableLookup<ADDRESS> > symbol_table_lookup_import;
+	ServiceImport<SymbolTableLookup<ADDRESS> > **symbol_table_lookup_import;
 	ServiceImport<Loader<ADDRESS> > **loader_import;
+	ServiceImport<StatementLookup<ADDRESS> > **stmt_lookup_import;
 	
 	InlineDebugger(const char *name, Object *parent = 0);
 	virtual ~InlineDebugger();
@@ -150,8 +154,10 @@ public:
 private:
 	unsigned int memory_atom_size;
 	unsigned int num_loaders;
+	std::string search_path;
 	Parameter<unsigned int> param_memory_atom_size;
 	Parameter<unsigned int> param_num_loaders;
+	Parameter<std::string> param_search_path;
 
 	BreakpointRegistry<ADDRESS> breakpoint_registry;
 	WatchpointRegistry<ADDRESS> watchpoint_registry;
@@ -221,6 +227,8 @@ private:
 	void DumpDataProfile(bool write);
 	void DumpAvailableLoaders();
 	void Load(const char *loader_name, const char *filename);
+	void DumpSource(const char *filename, unsigned int lineno, unsigned int colno, unsigned int count);
+	bool IsAbsolutePath(const char *filename) const;
 
 	static InlineDebugger<ADDRESS> *debugger;
 };
