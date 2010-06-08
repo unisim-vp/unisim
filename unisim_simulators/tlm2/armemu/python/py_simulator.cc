@@ -129,8 +129,17 @@ static int
 simulator_init (armemu_SimulatorObject *self, PyObject *args, PyObject *kwds)
 {
 	self->sim = create_simulator();
-	self->setup = self->sim->Setup();
+	// self->setup = self->sim->Setup();
 	return 0;
+}
+
+static PyObject *
+simulator_setup (armemu_SimulatorObject *self)
+{
+	PyObject *result;
+	self->setup = self->sim->Setup();
+	result = PyLong_FromLong(self->setup);
+	return result;
 }
 
 static PyObject *
@@ -379,6 +388,8 @@ simulator_run (armemu_SimulatorObject *self, PyObject *args)
 
 static PyMethodDef simulator_methods[] =
 {
+	{"setup", (PyCFunction)simulator_setup, METH_NOARGS,
+			"Setup the simulator."},
 	{"version", (PyCFunction)simulator_version, METH_NOARGS,
 			"Return the simulator version."},
 	{"get_variables", (PyCFunction)simulator_get_variables, METH_NOARGS,
