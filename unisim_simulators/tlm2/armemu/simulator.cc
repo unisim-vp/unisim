@@ -79,7 +79,8 @@ Simulator(int argc, char **argv) :
 			"Activate the inline debugger."),
 	param_enable_power_estimation("enable-power-estimation", 0,
 			enable_power_estimation,
-			"Activate caches power estimation.")
+			"Activate caches power estimation."),
+	simulation_spent_time(0.0)
 {
 	cpu = new CPU("cpu");
 	irq_master_stub = new IRQ_MASTER_STUB("irq-master-stub");
@@ -99,6 +100,38 @@ Simulator(int argc, char **argv) :
 	{
 		il1_power_estimator = new POWER_ESTIMATOR("il1-power-estimator");
 		dl1_power_estimator = new POWER_ESTIMATOR("dl1-power-estimator");
+		formula_caches_total_dynamic_energy =
+				new unisim::kernel::service::Formula<double> (
+						"caches-total-dynamic-energy", 0,
+						unisim::kernel::service::Formula<double>::OP_ADD,
+						&(*dl1_power_estimator)["dynamic-energy"],
+						&(*il1_power_estimator)["dynamic-energy"],
+						0,
+						"caches total dynamic energy (in J)");
+		formula_caches_total_dynamic_power =
+				new unisim::kernel::service::Formula<double> (
+						"caches-total-dynamic-power", 0,
+						unisim::kernel::service::Formula<double>::OP_ADD,
+						&(*dl1_power_estimator)["dynamic-power"],
+						&(*il1_power_estimator)["dynamic-power"],
+						0,
+						"caches total dynamic power (in J)");
+		formula_caches_total_leakage_power =
+				new unisim::kernel::service::Formula<double> (
+						"caches-total-leakage-power", 0,
+						unisim::kernel::service::Formula<double>::OP_ADD,
+						&(*dl1_power_estimator)["leakage-power"],
+						&(*il1_power_estimator)["leakage-power"],
+						0,
+						"caches total leakage power (in J)");
+		formula_caches_total_power =
+				new unisim::kernel::service::Formula<double> (
+						"caches-total-power", 0,
+						unisim::kernel::service::Formula<double>::OP_ADD,
+						formula_caches_total_dynamic_power,
+						formula_caches_total_leakage_power,
+						0,
+						"caches total (dynamic+leakage) power (in J)");
 	}
 #endif // SIM_POWER_ESTIMATOR_SUPPORT
 
@@ -185,6 +218,8 @@ Simulator::~Simulator()
 
 int Simulator::Run()
 {
+	if ( unlikely(SimulationFinished()) ) return 0;
+
 	double time_start = host_time->GetTime();
 
 	EnableDebug();
@@ -214,6 +249,8 @@ int Simulator::Run()
 
 	double time_stop = host_time->GetTime();
 	double spent_time = time_stop - time_start;
+	simulation_spent_time += spent_time;
+
 
 	cerr << "Simulation run-time parameters:" << endl;
 	DumpParameters(cerr);
@@ -225,40 +262,67 @@ int Simulator::Run()
 	DumpStatistics(cerr);
 	cerr << endl;
 
-	cerr << "simulation time: " << spent_time << " seconds" << endl;
+	cerr << "simulation time: " << simulation_spent_time << " seconds" << endl;
 	cerr << "simulated time : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;
 	cerr << "host simulation speed: " << ((double) (*cpu)["instruction-counter"] / spent_time / 1000000.0) << " MIPS" << endl;
 	cerr << "time dilatation: " << spent_time / sc_time_stamp().to_seconds() << " times slower than target machine" << endl;
-#ifdef SIM_POWER_ESTIMATOR_SUPPORT
-	if ( enable_estimate_power )
-	{
-		{
-			double total_dynamic_energy = il1_power_estimator->GetDynamicEnergy()
-					+ dl1_power_estimator->GetDynamicEnergy();
 
-			double total_dynamic_power = il1_power_estimator->GetDynamicPower()
-					+ dl1_power_estimator->GetDynamicPower();
-
-			double total_leakage_power = il1_power_estimator->GetLeakagePower()
-					+ dl1_power_estimator->GetLeakagePower();
-
-			double total_power = total_dynamic_power + total_leakage_power;
-
-			cerr << "L1 instruction cache dynamic energy: " << il1_power_estimator->GetDynamicEnergy() << " J" << endl;
-			cerr << "L1 data cache dynamic energy: " << dl1_power_estimator->GetDynamicEnergy() << " J" << endl;
-			cerr << "L1 instruction cache dynamic power: " << il1_power_estimator->GetDynamicPower() << " W" << endl;
-			cerr << "L1 data cache dynamic power: " << dl1_power_estimator->GetDynamicPower() << " W" << endl;
-			cerr << "L1 instruction cache leakage power: " << il1_power_estimator->GetLeakagePower() << " W" << endl;
-			cerr << "L1 data cache leakage power: " << dl1_power_estimator->GetLeakagePower() << " W" << endl;
-			cerr << "Total power (dynamic+leakage): " << total_power << " W" << endl;
-
-			cerr << "Total dynamic energy: " << total_dynamic_energy << " J" << endl;
-			cerr << "Total dynamic power: " << total_dynamic_power << " W" << endl;
-			cerr << "Total leakage power: " << total_leakage_power << " W" << endl;
-		}
-	}
-#endif // SIM_POWER_ESTIMATOR_SUPPORT
 	return 0;
+}
+
+int Simulator::Run(double time, sc_time_unit unit)
+{
+	if ( unlikely(SimulationFinished()) ) return 0;
+
+	double time_start = host_time->GetTime();
+
+	EnableDebug();
+	void (*prev_sig_int_handler)(int);
+
+	if ( ! inline_debugger )
+	{
+		prev_sig_int_handler = signal(SIGINT, SigIntHandler);
+	}
+
+	try
+	{
+		sc_start(time, unit);
+	}
+	catch(std::runtime_error& e)
+	{
+		cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << endl;
+		cerr << e.what() << endl;
+	}
+
+	if ( !inline_debugger )
+	{
+		signal(SIGINT, prev_sig_int_handler);
+	}
+
+	double time_stop = host_time->GetTime();
+	double spent_time = time_stop - time_start;
+	simulation_spent_time += spent_time;
+
+	cerr << "Simulation statistics:" << endl;
+	DumpStatistics(cerr);
+	cerr << endl;
+
+	return 0;
+}
+
+bool Simulator::IsRunning() const
+{
+	return sc_is_running();
+}
+
+bool Simulator::SimulationStarted() const
+{
+	return sc_start_of_simulation_invoked();
+}
+
+bool Simulator::SimulationFinished() const
+{
+	return sc_end_of_simulation_invoked();
 }
 
 void Simulator::DefaultConfiguration(unisim::kernel::service::Simulator *sim)

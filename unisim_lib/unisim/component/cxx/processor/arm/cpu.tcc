@@ -197,6 +197,8 @@ namespace arm {
 	/* initialization of ARM926EJS variables   END */
 	{
 	
+		stat_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+
 		/* create ARM926EJS parameters if the CONFIG::MODEL is ARM926EJS */
 		if (CONFIG::MODEL == ARM926EJS)
 		{

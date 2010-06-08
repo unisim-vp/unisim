@@ -120,7 +120,11 @@ unisim/service/debug/gdb_server/gdb_server_32.cc \
 unisim/service/debug/gdb_server/gdb_server.cc \
 unisim/service/time/host_time/time.cc \
 unisim/service/time/sc_time/time.cc \
+unisim/service/power/cache_dynamic_energy.cc \
+unisim/service/power/cache_dynamic_power.cc \
+unisim/service/power/cache_leakage_power.cc \
 unisim/service/power/cache_power_estimator.cc \
+unisim/service/power/cache_profile.cc \
 unisim/service/os/linux_os/linux_os_32.cc \
 unisim/service/os/linux_os/linux_os_exception.cc \
 unisim/service/loader/elf_loader/elf32_loader.cc \
@@ -216,6 +220,10 @@ unisim/service/loader/linux_loader/linux_loader.hh \
 unisim/service/time/host_time/time.hh \
 unisim/service/time/sc_time/time.hh \
 unisim/service/power/cache_power_estimator.hh \
+unisim/service/power/cache_profile.hh \
+unisim/service/power/cache_dynamic_energy.hh \
+unisim/service/power/cache_dynamic_power.hh \
+unisim/service/power/cache_leakage_power.hh \
 unisim/service/os/linux_os/linux_os.hh \
 unisim/service/os/linux_os/linux_os_exception.hh \
 unisim/component/cxx/memory/ram/memory.hh \
@@ -274,6 +282,7 @@ m4/curses.m4 \
 m4/libedit.m4 \
 m4/systemc.m4 \
 m4/with_boost.m4 \
+m4/cacti.m4 \
 m4/check_lib.m4 \
 m4/get_exec_path.m4 \
 m4/real_path.m4"
@@ -640,6 +649,7 @@ if [ "${has_to_build_ppcemu_configure}" = "yes" ]; then
 	echo "UNISIM_CHECK_SYSTEMC" >> "${PPCEMU_CONFIGURE_AC}"
 	echo "UNISIM_WITH_BOOST" >> "${PPCEMU_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_BOOST_GRAPH" >> "${PPCEMU_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_CACTI" >> "${PPCEMU_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_GET_EXECUTABLE_PATH" >> "${PPCEMU_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_REAL_PATH" >> "${PPCEMU_CONFIGURE_AC}"
 	echo "GENISSLIB_PATH=\`pwd\`/../genisslib/genisslib" >> "${PPCEMU_CONFIGURE_AC}"

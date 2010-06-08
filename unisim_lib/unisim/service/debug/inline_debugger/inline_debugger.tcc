@@ -50,6 +50,8 @@
 #endif
 
 #include <unisim/util/endian/endian.hh>
+#include <fstream>
+#include <iostream>
 
 namespace unisim {
 namespace service {
@@ -66,6 +68,7 @@ using std::dec;
 using std::streamsize;
 using unisim::kernel::service::Simulator;
 using unisim::kernel::service::VariableBase;
+using unisim::util::debug::Statement;
 
 template <class ADDRESS>
 InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent) :
@@ -79,10 +82,12 @@ InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent) :
 	Client<Registers>(_name, _parent),
 	Client<SymbolTableLookup<ADDRESS> >(_name, _parent),
 	Client<Loader<ADDRESS> >(_name, _parent),
+	Client<StatementLookup<ADDRESS> >(_name, _parent),
 	memory_atom_size(1),
 	num_loaders(0),
 	param_memory_atom_size("memory-atom-size", this, memory_atom_size, "size of the smallest addressable element in memory"),
 	param_num_loaders("num-loaders", this, num_loaders, "number of loaders"),
+	param_search_path("search-path", this, search_path, "Search path for source (separated by ';')"),
 	debug_control_export("debug-control-export", this),
 	memory_access_reporting_export("memory-access-reporting-export", this),
 	trap_reporting_export("trap-reporting-export", this),
@@ -90,8 +95,9 @@ InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent) :
 	disasm_import("disasm-import", this),
 	memory_import("memory-import", this),
 	registers_import("registers-import", this),
-	symbol_table_lookup_import("symbol-table-lookup-import", this),
-	loader_import(0)
+	loader_import(0),
+	symbol_table_lookup_import(0),
+	stmt_lookup_import(0)
 {
 	param_num_loaders.SetMutable(false);
 	param_num_loaders.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
@@ -138,15 +144,35 @@ InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent) :
 	
 	if(num_loaders)
 	{
+		unsigned int i;
 		typedef ServiceImport<Loader<ADDRESS> > *PLoaderImport;
 		loader_import = new PLoaderImport[num_loaders];
 		
-		unsigned int i;
 		for(i = 0; i < num_loaders; i++)
 		{
 			std::stringstream sstr_name;
 			sstr_name << "loader-import[" << i << "]";
 			loader_import[i] = new ServiceImport<Loader<ADDRESS> >(sstr_name.str().c_str(), this);
+		}
+
+		typedef ServiceImport<SymbolTableLookup<ADDRESS> > *PSymbolTableLookupImport;
+		symbol_table_lookup_import = new PSymbolTableLookupImport[num_loaders];
+		
+		for(i = 0; i < num_loaders; i++)
+		{
+			std::stringstream sstr_name;
+			sstr_name << "symbol-table-lookup-import[" << i << "]";
+			symbol_table_lookup_import[i] = new ServiceImport<SymbolTableLookup<ADDRESS> >(sstr_name.str().c_str(), this);
+		}
+
+		typedef ServiceImport<StatementLookup<ADDRESS> > *PStatementLookupImport;
+		stmt_lookup_import = new PStatementLookupImport[num_loaders];
+		
+		for(i = 0; i < num_loaders; i++)
+		{
+			std::stringstream sstr_name;
+			sstr_name << "stmt-lookup-import[" << i << "]";
+			stmt_lookup_import[i] = new ServiceImport<StatementLookup<ADDRESS> >(sstr_name.str().c_str(), this);
 		}
 	}
 
@@ -158,6 +184,19 @@ InlineDebugger<ADDRESS>::~InlineDebugger()
 {
 	free(hex_addr_fmt);
 	free(int_addr_fmt);
+
+	if(num_loaders)
+	{
+		unsigned int i;
+		
+		for(i = 0; i < num_loaders; i++)
+		{
+			delete loader_import[i];
+			delete stmt_lookup_import[i];
+		}
+		delete[] loader_import;
+		delete[] stmt_lookup_import;
+	}
 }
 
 template<class ADDRESS>
@@ -803,8 +842,48 @@ void InlineDebugger<ADDRESS>::Disasm(ADDRESS addr, int count)
 		ADDRESS next_addr;
 		do
 		{
+			const Statement<ADDRESS> *stmt = 0;
+			unsigned int i;
+			for(i = 0; (!stmt) && (i < num_loaders); i++)
+			{
+				if(*stmt_lookup_import[i])
+				{
+					stmt = (*stmt_lookup_import[i])->FindStatement(addr);
+				}
+			}
+			
+			if(stmt)
+			{
+				const char *source_filename = stmt->GetSourceFilename();
+				if(source_filename)
+				{
+					unsigned int lineno = stmt->GetLineNo();
+					unsigned int colno = stmt->GetColNo();
+					std::string source_path;
+					if(!IsAbsolutePath(source_filename))
+					{
+						const char *source_dirname = stmt->GetSourceDirname();
+						if(source_dirname)
+						{
+							source_path += source_dirname;
+							source_path += '/';
+						}
+					}
+					source_path += source_filename;
+					DumpSource(source_path.c_str(), lineno, colno, 1);
+				}
+			}
+			
 			cout.fill('0');
-			const Symbol<ADDRESS> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(addr) : 0;
+			const Symbol<ADDRESS> *symbol = 0;
+			
+			for(i = 0; (!symbol) && (i < num_loaders); i++)
+			{
+				if(*symbol_table_lookup_import[i])
+				{
+					symbol = (*symbol_table_lookup_import[i])->FindSymbolByAddr(addr);
+				}
+			}
 			string s = disasm_import->Disasm(addr, next_addr);
 			
 			if(symbol)
@@ -934,18 +1013,25 @@ void InlineDebugger<ADDRESS>::DumpBreakpoints()
 		ADDRESS addr = iter->GetAddress();
 		
 		cout << "*0x" << hex << (addr / memory_atom_size) << dec << " (";
-		if(symbol_table_lookup_import)
-		{
-			const Symbol<ADDRESS> *symbol = symbol_table_lookup_import->FindSymbolByAddr(addr);
 		
-			if(symbol)
+		const Symbol<ADDRESS> *symbol = 0;
+		
+		unsigned int i;
+		for(i = 0; (!symbol) && (i < num_loaders); i++)
+		{
+			if(*symbol_table_lookup_import[i])
 			{
-				cout << symbol->GetFriendlyName(addr);
+				symbol = (*symbol_table_lookup_import[i])->FindSymbolByAddr(addr);
 			}
-			else
-			{
-				cout << "?";
-			}
+		}
+		
+		if(symbol)
+		{
+			cout << symbol->GetFriendlyName(addr);
+		}
+		else
+		{
+			cout << "?";
 		}
 		cout << ")" << endl;
 	}
@@ -987,18 +1073,24 @@ void InlineDebugger<ADDRESS>::DumpWatchpoints()
 		
 		cout << "*0x" << hex << (addr / memory_atom_size) << dec << ":" << (size / memory_atom_size) << " (";
 		
-		if(symbol_table_lookup_import)
-		{
-			const Symbol<ADDRESS> *symbol = symbol_table_lookup_import->FindSymbolByAddr(addr);
+		const Symbol<ADDRESS> *symbol = 0;
 		
-			if(symbol)
+		unsigned int i;
+		for(i = 0; (!symbol) && (i < num_loaders); i++)
+		{
+			if(*symbol_table_lookup_import[i])
 			{
-				cout << symbol->GetFriendlyName(addr);
+				symbol = (*symbol_table_lookup_import[i])->FindSymbolByAddr(addr);
 			}
-			else
-			{
-				cout << "?";
-			}
+		}
+		
+		if(symbol)
+		{
+			cout << symbol->GetFriendlyName(addr);
+		}
+		else
+		{
+			cout << "?";
 		}
 		cout << ")" << endl;
 	}
@@ -1364,7 +1456,17 @@ void InlineDebugger<ADDRESS>::DumpProgramProfile()
 	for(iter = map.begin(); iter != map.end(); iter++)
 	{
 		ADDRESS addr = (*iter).first;
-		const Symbol<ADDRESS> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(addr) : 0;
+		const Symbol<ADDRESS> *symbol = 0;
+		
+		unsigned int i;
+		for(i = 0; (!symbol) && (i < num_loaders); i++)
+		{
+			if(*symbol_table_lookup_import[i])
+			{
+				symbol = (*symbol_table_lookup_import[i])->FindSymbolByAddr(addr);
+			}
+		}
+		
 		ADDRESS next_addr;
 
 		string s = disasm_import->Disasm(addr, next_addr);
@@ -1456,7 +1558,17 @@ void InlineDebugger<ADDRESS>::DumpDataProfile(bool write)
 	for(iter = map.begin(); iter != map.end(); iter++)
 	{
 		ADDRESS addr = (*iter).first;
-		const Symbol<ADDRESS> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(addr) : 0;
+		const Symbol<ADDRESS> *symbol = 0;
+		
+		unsigned int i;
+		for(i = 0; (!symbol) && (i < num_loaders); i++)
+		{
+			if(*symbol_table_lookup_import[i])
+			{
+				symbol = (*symbol_table_lookup_import[i])->FindSymbolByAddr(addr);
+			}
+		}
+		
 		ADDRESS next_addr;
 
 		cout << "0x" << hex;
@@ -1484,6 +1596,132 @@ void InlineDebugger<ADDRESS>::DumpDataProfile(bool write)
 	}
 }
 
+template <class ADDRESS>
+bool InlineDebugger<ADDRESS>::IsAbsolutePath(const char *filename) const
+{
+	// filename starts '/' or 'drive letter':\ or 'driver letter':/
+	return (((filename[0] >= 'a' && filename[0] <= 'z') || (filename[0] >= 'A' && filename[0] <= 'Z')) && (filename[1] == ':') && ((filename[2] == '\\') || (filename[2] == '/'))) || (*filename == '/');
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::DumpSource(const char *source_path, unsigned int lineno, unsigned int colno, unsigned int count)
+{
+	std::string s;
+	const char *p;
+
+	std::vector<std::string> search_paths;
+
+	s.clear();
+	p = search_path.c_str();
+	do
+	{
+		if(*p == 0 || *p == ';')
+		{
+			search_paths.push_back(s);
+			s.clear();
+		}
+		else
+		{
+			s += *p;
+		}
+	} while(*(p++));
+	
+	std::vector<std::string> hierarchical_source_path;
+	
+	s.clear();
+	p = source_path;
+	do
+	{
+		if(*p == 0 || *p == '/')
+		{
+			hierarchical_source_path.push_back(s);
+			s.clear();
+		}
+		else
+		{
+			s += *p;
+		}
+	} while(*(p++));
+	
+	bool match = false;
+	std::string match_source_path;
+	
+	int hierarchical_source_path_depth = hierarchical_source_path.size();
+	
+	if(hierarchical_source_path_depth > 0)
+	{
+		int num_search_paths = search_paths.size();
+		int k;
+		
+		for(k = 0; k < num_search_paths; k++)
+		{
+			const std::string& search_path = search_paths[k];
+			int i;
+			for(i = 0; (!match) && (i < hierarchical_source_path_depth); i++)
+			{
+				std::string try_source_path = search_path;
+				int j;
+				for(j = i; j < hierarchical_source_path_depth; j++)
+				{
+					if(!try_source_path.empty()) try_source_path += '/';
+					try_source_path += hierarchical_source_path[j];
+				}
+				//std::cerr << "try_source_path=\"" << try_source_path << "\":";
+				if(access(try_source_path.c_str(), R_OK) == 0)
+				{
+					//std::cerr << "found" << std::endl;
+					match = true;
+					match_source_path = try_source_path;
+				}
+				else
+				{
+					//std::cerr << "not found" << std::endl;
+				}
+			}
+		}
+	}
+
+	if(match)
+	{
+		std::cout << match_source_path;
+	}
+	else
+	{
+		std::cout << source_path << " (not found)";
+	}
+	
+	std::cout << " at line #" << lineno;
+	if(colno)
+	{
+		std::cout << ", column #" << colno;
+	}
+	cout << ": ";
+
+	if(match)
+	{
+		std::ifstream f(match_source_path.c_str(), std::ifstream::in);
+		std::string line;
+		
+		unsigned int n = 1;
+		unsigned int printed = 0;
+		do
+		{
+			getline(f, line);
+			if(f.fail() || f.eof()) break;
+			
+			if((n >= lineno) && (n < (lineno + count)))
+			{
+				std::cout << line << std::endl;
+				printed++;
+			}
+			n++;
+		} while(printed < count);
+	}
+	else
+	{
+		std::cout << std::endl;
+	}
+}
 
 template <class ADDRESS>
 bool InlineDebugger<ADDRESS>::ParseAddrRange(const char *s, ADDRESS& addr, unsigned int& size)
@@ -1512,17 +1750,23 @@ bool InlineDebugger<ADDRESS>::ParseAddrRange(const char *s, ADDRESS& addr, unsig
 		return true;
 	}
 
-	if(symbol_table_lookup_import)
+	const Symbol<ADDRESS> *symbol = 0;
+	
+	unsigned int i;
+	for(i = 0; (!symbol) && (i < num_loaders); i++)
 	{
-		const Symbol<ADDRESS> *symbol = symbol_table_lookup_import->FindSymbolByName(s);
-		
-		if(symbol)
+		if(*symbol_table_lookup_import[i])
 		{
-			addr = symbol->GetAddress();
-			size = symbol->GetSize();
-			if(size < 1) size = 1;
-			return true;
+			symbol = (*symbol_table_lookup_import[i])->FindSymbolByName(s);
 		}
+	}
+	
+	if(symbol)
+	{
+		addr = symbol->GetAddress();
+		size = symbol->GetSize();
+		if(size < 1) size = 1;
+		return true;
 	}
 	
 	return false;
@@ -1544,15 +1788,21 @@ bool InlineDebugger<ADDRESS>::ParseAddr(const char *s, ADDRESS& addr)
 		return true;
 	}
 	
-	if(symbol_table_lookup_import)
+	const Symbol<ADDRESS> *symbol = 0;
+	
+	unsigned int i;
+	for(i = 0; (!symbol) && (i < num_loaders); i++)
 	{
-		const Symbol<ADDRESS> *symbol = symbol_table_lookup_import->FindSymbolByName(s);
-		
-		if(symbol)
+		if(*symbol_table_lookup_import[i])
 		{
-			addr = symbol->GetAddress();
-			return true;
+			symbol = (*symbol_table_lookup_import[i])->FindSymbolByName(s);
 		}
+	}
+
+	if(symbol)
+	{
+		addr = symbol->GetAddress();
+		return true;
 	}
 	
 	return false;

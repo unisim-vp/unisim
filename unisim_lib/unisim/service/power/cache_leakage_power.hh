@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2009,
+ *  Copyright (c) 2010,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -30,54 +30,43 @@
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ *          Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <iostream>
-#include <systemc.h>
-#include "simulator.hh"
+#ifndef __UNISIM_SERVICE_POWER_CACHE_LEAKAGE_POWER_HH__
+#define __UNISIM_SERVICE_POWER_CACHE_LEAKAGE_POWER_HH__
 
-using namespace std;
+#include "unisim/kernel/service/service.hh"
+#include "unisim/service/interfaces/time.hh"
+#include "unisim/service/power/cache_profile.hh"
+#include <map>
 
-int sc_main(int argc, char *argv[]) {
-	int ret = 0;
+namespace unisim {
+namespace service {
+namespace power {
 
-#ifdef WIN32
-	// Loads the winsock2 dll
-	WORD wVersionRequested = MAKEWORD( 2, 2 );
-	WSADATA wsaData;
-	if(WSAStartup(wVersionRequested, &wsaData) != 0)
-	{
-		cerr << "WSAStartup failed" << endl;
-		return -1;
-	}
-#endif
+using std::map;
 
-	Simulator *simulator = new Simulator(argc, argv);
+class CacheLeakagePower
+{
+public:
+	CacheLeakagePower(const double *_time_stamp,
+			CacheProfile **_current_profile,
+			const map<CacheProfileKey, CacheProfile *> *_profiles,
+			unisim::kernel::service::ServiceImport<unisim::service::interfaces::Time> *_time_import);
+	~CacheLeakagePower();
 
-	switch ( simulator->Setup() )
-	{
-	case unisim::kernel::service::Simulator::ST_ERROR:
-		cerr << "ERROR: Can't start simulation because of previous erros" << endl;
-		ret = -1;
-		break;
-	case unisim::kernel::service::Simulator::ST_OK_DONT_START:
-		cerr << "Successfully configured the simulator." << endl;
-		ret = 0;
-		break;
-	case unisim::kernel::service::Simulator::ST_WARNING:
-		cerr << "WARNING: problems detected during setup."
-			<< " Starting simulation anyway, but errors could appear during "
-			<< "the simulation." << endl;
-	case unisim::kernel::service::Simulator::ST_OK_TO_START:
-		cerr << "Starting simulation." << endl;
-		ret = simulator->Run();
-		break;
-	}
+	double GetLeakagePower();
 
-	if (simulator) delete simulator;
-#ifdef WIN32
-	//releases the winsock2 resources
-	WSACleanup();
-#endif
-	return ret;
-}
+private:
+	const double *time_stamp;
+	CacheProfile **current_profile;
+	const map<CacheProfileKey, CacheProfile *> *profiles;
+	unisim::kernel::service::ServiceImport<unisim::service::interfaces::Time> *time_import;
+};
+
+} // end of namespace power
+} // end of namespace service
+} // end of namespace unisim
+
+#endif /* __UNISIM_SERVICE_POWER_CACHE_LEAKAGE_POWER_HH__ */
