@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2009,
+ *  Copyright (c) 2007,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,55 +29,57 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <iostream>
-#include <systemc.h>
-#include "simulator.hh"
+#ifndef __UNISIM_SERVICE_POWER_CACHE_PROFILE_HH__
+#define __UNISIM_SERVICE_POWER_CACHE_PROFILE_HH__
 
-using namespace std;
+#include <inttypes.h>
 
-int sc_main(int argc, char *argv[]) {
-	int ret = 0;
+namespace unisim {
+namespace service {
+namespace power {
 
-#ifdef WIN32
-	// Loads the winsock2 dll
-	WORD wVersionRequested = MAKEWORD( 2, 2 );
-	WSADATA wsaData;
-	if(WSAStartup(wVersionRequested, &wsaData) != 0)
+class CacheProfileKey
+{
+public:
+	unsigned int cycle_time; // Mhz
+	unsigned int voltage; // mV
+
+	CacheProfileKey(unsigned int t, unsigned int v) : cycle_time(t), voltage(v)
 	{
-		cerr << "WSAStartup failed" << endl;
-		return -1;
-	}
-#endif
-
-	Simulator *simulator = new Simulator(argc, argv);
-
-	switch ( simulator->Setup() )
-	{
-	case unisim::kernel::service::Simulator::ST_ERROR:
-		cerr << "ERROR: Can't start simulation because of previous erros" << endl;
-		ret = -1;
-		break;
-	case unisim::kernel::service::Simulator::ST_OK_DONT_START:
-		cerr << "Successfully configured the simulator." << endl;
-		ret = 0;
-		break;
-	case unisim::kernel::service::Simulator::ST_WARNING:
-		cerr << "WARNING: problems detected during setup."
-			<< " Starting simulation anyway, but errors could appear during "
-			<< "the simulation." << endl;
-	case unisim::kernel::service::Simulator::ST_OK_TO_START:
-		cerr << "Starting simulation." << endl;
-		ret = simulator->Run();
-		break;
 	}
 
-	if (simulator) delete simulator;
-#ifdef WIN32
-	//releases the winsock2 resources
-	WSACleanup();
-#endif
-	return ret;
-}
+	inline bool operator < (CacheProfileKey rhs) const
+	{
+		if(cycle_time < rhs.cycle_time) return true;
+		if(cycle_time > rhs.cycle_time) return false;
+		return voltage < rhs.voltage;
+	}
+};
+
+class CacheProfile : public CacheProfileKey
+{
+public:
+	CacheProfile(
+		unsigned int cycle_time,
+		unsigned int voltage,
+		double dyn_energy_per_read,
+		double dyn_energy_per_write,
+		double leak_power);
+
+	double dyn_energy_per_read; // in J
+	double dyn_energy_per_write; // in J
+	double leak_power; // in W
+	uint64_t read_accesses;
+	uint64_t write_accesses;
+	double duration; // in seconds
+
+};
+
+} // end of namespace power
+} // end of namespace service
+} // end of namespace unisim
+
+#endif /* __UNISIM_SERVICE_POWER_CACHE_PROFILE_HH__ */

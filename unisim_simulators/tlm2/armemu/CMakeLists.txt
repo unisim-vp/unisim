@@ -1,18 +1,18 @@
 cmake_minimum_required ( VERSION 2.8 )
 
 set ( SIM_VERSION_MAJOR 0 )
-set ( SIM_VERSION_MINOR 3 )
-set ( SIM_VERSION_PATCH 1 )
+set ( SIM_VERSION_MINOR 4 )
+set ( SIM_VERSION_PATCH 0 )
 set ( SIM_VERSION 
 	${SIM_VERSION_MAJOR}.${SIM_VERSION_MINOR}.${SIM_VERSION_PATCH} )
 set ( SIM_SOVERSION ${SIM_VERSION_MAJOR}.${SIM_VERSION_MINOR} ) 
-set ( SIM_VERSION_CODENAME "\"Pacifico\"" )
+set ( SIM_VERSION_CODENAME "\"Pegaso\"" )
 set ( SIM_AUTHOR "\"Daniel Gracia Perez (daniel.gracia-perez@cea.fr)\"" )
 set ( SIM_PROGRAM_NAME "UNISIM ARMEmu" )
 set ( SIM_COPYRIGHT "\"Copyright (C) 2007-2010, Comissariat a l'Energie Atomique\"")
 set ( SIM_LICENSE "\"BSD (See file COPYING)\"" )
 set ( SIM_DESCRIPTION "UNISIM ARMv5 User Level Simulator" )
-set ( SIM_PYTHON_MODULE_NAME "\"armemu\"" )
+set ( SIM_PYTHON_MODULE_NAME "armemu" )
 set ( SIM_PYTHON_IMPORT_NAME "armemu${SIM_VERSION_MAJOR}${SIM_VERSION_MINOR}${SIM_VERSION_PATCH}")
 
 if ( UNIX AND NOT APPLE )
@@ -268,6 +268,20 @@ if ( UNISIM__SERVICE__POWER__SUPPORT )
 		unisim__service__power )
 endif ( UNISIM__SERVICE__POWER__SUPPORT )
 
+set ( PYTHON__ARMEMU__INCLUDE_DIRS
+	"'${CMAKE_SOURCE_DIR}',
+	 '${CMAKE_BINARY_DIR}',
+	 '${OSCI_SYSTEMC_INCLUDE_DIR}',
+	 '${OSCI_TLM2_INCLUDE_DIR}'")
+set ( PYTHON__ARMEMU__LIB_DIRS
+	"'${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}'")
+foreach ( lib ${OSCI_SYSTEMC_LIBRARIES} )
+	get_filename_component( lib_path ${lib}
+		PATH )
+	set ( PYTHON__ARMEMU__LIB_DIRS
+		"${PYTHON__ARMEMU__LIB_DIRS},
+		 '${lib_path}'")
+endforeach ( lib ${OSCI_SYSTEMC_LIBRARIES} )
 set ( PYTHON__ARMEMU__LIBS
 	"'simulator',
 	 'unisim__component__tlm2__interrupt',
@@ -289,6 +303,20 @@ set ( PYTHON__ARMEMU__LIBS
 	 'unisim__kernel',
 	 'xml2',
 	 'systemc'")
+if ( UNISIM__SERVICE__POWER__SUPPORT )
+	get_filename_component ( lib_path ${CACTI_4_2_LIBRARY}
+		PATH )
+	set ( PYTHON__ARMEMU__LIB_DIRS
+		"${PYTHON__ARMEMU__LIB_DIRS},
+		 '${lib_path}'")
+	get_filename_component ( lib_name ${CACTI_4_2_LIBRARY}
+		NAME_WE )
+	string ( REGEX REPLACE "^lib" "" lib_name ${lib_name} )
+	set ( PYTHON__ARMEMU__LIBS
+		"${PYTHON__ARMEMU__LIBS},
+		'unisim__service__power',
+		'${lib_name}'" )
+endif ( UNISIM__SERVICE__POWER__SUPPORT )
 	 
 set ( CMAKE_REQUIRED_FLAGS "-include stdio.h" )
 check_include_file ( editline/readline.h HAVE_editline_readline_H )
@@ -304,9 +332,6 @@ endif ( HAVE_editline_readline_H )
 configure_file ( 
 	${CMAKE_SOURCE_DIR}/config.hh.in 
 	${CMAKE_BINARY_DIR}/config.hh )
-configure_file (
-	${CMAKE_SOURCE_DIR}/setup.py.in
-	${CMAKE_BINARY_DIR}/setup.py )
 
 add_library ( simulator
 		${simulator__sources}
@@ -382,20 +407,29 @@ add_custom_command (
 	)
 
 if ( BUILD_ARMEMU_PYTHON_MODULE )
+	configure_file (
+		${CMAKE_SOURCE_DIR}/python/setup.py.in
+		${CMAKE_BINARY_DIR}/python/setup.py )
+	configure_file (
+		${CMAKE_SOURCE_DIR}/python/python_config.hh.in
+		${CMAKE_BINARY_DIR}/python/python_config.hh )
+
 	add_custom_command (
 		OUTPUT lib/${SIM_PYTHON_IMPORT_NAME}.so
-		COMMAND
-			${CMAKE_COMMAND} -E remove_directory python
 		COMMAND
 			${CMAKE_COMMAND} -E remove lib/${SIM_PYTHON_IMPORT_NAME}.so
 		COMMAND
 			${CMAKE_COMMAND} -E make_directory python
 		COMMAND
-			${PYTHON_EXECUTABLE} setup.py build -t python --build-lib lib
+			${PYTHON_EXECUTABLE} python/setup.py build -t python --build-lib lib
 		DEPENDS
-			${CMAKE_BINARY_DIR}/setup.py
 			${CMAKE_BINARY_DIR}/config.hh
-			${CMAKE_SOURCE_DIR}/python_lib.cc
+			${CMAKE_BINARY_DIR}/python/setup.py
+			${CMAKE_BINARY_DIR}/python/python_config.hh
+			${CMAKE_SOURCE_DIR}/python/py_simulator.hh
+			${CMAKE_SOURCE_DIR}/python/py_simulator.cc
+			${CMAKE_SOURCE_DIR}/python/py_variable.hh
+			${CMAKE_SOURCE_DIR}/python/py_variable.cc
 			simulator
 			${armemu__deps}
 		COMMENT

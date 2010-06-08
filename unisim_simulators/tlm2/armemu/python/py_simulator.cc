@@ -1,41 +1,14 @@
 /*
- *  Copyright (c) 2010,
- *  Commissariat a l'Energie Atomique (CEA)
- *  All rights reserved.
+ * py_simulator.cc
  *
- *  Redistribution and use in source and binary forms, with or without modification,
- *  are permitted provided that the following conditions are met:
- *
- *   - Redistributions of source code must retain the above copyright notice, this
- *     list of conditions and the following disclaimer.
- *
- *   - Redistributions in binary form must reproduce the above copyright notice,
- *     this list of conditions and the following disclaimer in the documentation
- *     and/or other materials provided with the distribution.
- *
- *   - Neither the name of CEA nor the names of its contributors may be used to
- *     endorse or promote products derived from this software without specific prior
- *     written permission.
- *
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- *  DISCLAIMED.
- *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
- *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
- *  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
- *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ *  Created on: May 31, 2010
+ *      Author: gracia
  */
 
 #include <Python.h>
 #include "simulator.hh"
-#include "config.hh"
-#include <map>
+#include "python/py_simulator.hh"
+#include "python/py_variable.hh"
 
 static std::map<std::string, int> time_unit_map;
 static std::map<std::string, sc_time_unit> sc_time_unit_map;
@@ -69,7 +42,7 @@ void TimeUnitMapInit()
 	sc_time_unit_map.insert(std::pair<std::string, sc_time_unit>("SEC", SC_SEC));
 }
 
-int TimeUnit(const std::string& unit)
+static int TimeUnit(const std::string& unit)
 {
 	const std::map<std::string, int>::iterator it = time_unit_map.find(unit);
 
@@ -77,11 +50,10 @@ int TimeUnit(const std::string& unit)
 	return (*it).second;
 }
 
-bool SCTimeUnit(const std::string& unit, sc_time_unit& sc_unit)
+static bool SCTimeUnit(const std::string& unit, sc_time_unit& sc_unit)
 {
 	const std::map<std::string, sc_time_unit>::iterator it = sc_time_unit_map.find(unit);
 
-	std::cerr << "SCTimeUnit(" << unit << ")" << std::endl;
 	if ( it == sc_time_unit_map.end() ) return false;
 	sc_unit = (*it).second;
 
@@ -89,11 +61,12 @@ bool SCTimeUnit(const std::string& unit, sc_time_unit& sc_unit)
 }
 
 extern "C" {
+
 typedef struct {
     PyObject_HEAD
     /* Type-specific fields go here. */
     Simulator *sim;
-    bool setup;
+    unisim::kernel::service::Simulator::SetupStatus setup;
 } armemu_SimulatorObject;
 
 static Simulator *
@@ -102,7 +75,7 @@ create_simulator()
 	Simulator *sim;
 	char *argv[3] =
 	{
-			(char *)"/Users/gracia/Developer/unisim/armemu/build/bin/armemu-0.3.1",
+			(char *)ARMEMU_EXEC_LOCATION,
 			(char *)"-w",
 			0
 	};
@@ -147,14 +120,16 @@ simulator_new (PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
 	armemu_SimulatorObject *self;
 	self = (armemu_SimulatorObject *)type->tp_alloc(type, 0);
-	self->sim = create_simulator();
-	self->setup = self->sim->Setup();
+	self->sim = 0; // create_simulator();
+	self->setup = unisim::kernel::service::Simulator::ST_ERROR; // self->sim->Setup();
 	return (PyObject *)self;
 }
 
 static int
 simulator_init (armemu_SimulatorObject *self, PyObject *args, PyObject *kwds)
 {
+	self->sim = create_simulator();
+	self->setup = self->sim->Setup();
 	return 0;
 }
 
@@ -167,16 +142,32 @@ simulator_version (armemu_SimulatorObject *self)
 	return result;
 }
 
+//static PyObject *
+//simulator_get_variable (armemu_SimulatorObject *self, PyObject *args)
+//{
+//	PyObject *result;
+//	const char *var_name;
+//
+//	if ( !PyArg_ParseTuple(args, "s", &var_name) )
+//		return NULL;
+//	std::string var = (std::string)*self->sim->FindVariable(var_name);
+//	result = PyUnicode_FromString(var.c_str());
+//	return result;
+//}
+
 static PyObject *
 simulator_get_variable (armemu_SimulatorObject *self, PyObject *args)
 {
-	PyObject *result;
+	PyObject *result = NULL;
 	const char *var_name;
 
 	if ( !PyArg_ParseTuple(args, "s", &var_name) )
-		return NULL;
-	std::string var = (std::string)*self->sim->FindVariable(var_name);
-	result = PyUnicode_FromString(var.c_str());
+		return result;
+	unisim::kernel::service::VariableBase *var = self->sim->FindVariable(var_name);
+	if ( var == 0 )
+		PyErr_SetString(PyExc_ValueError, "could not find the given variable");
+	else
+		result = PyVariable_NewVariable(var);
 	return result;
 }
 
@@ -298,24 +289,24 @@ set_parameters_map (Simulator *sim, std::map<std::string, std::string> &parms)
 		sim->SetVariable(it->first.c_str(), it->second.c_str());
 }
 
-static PyObject *
-simulator_set_variable (armemu_SimulatorObject *self, PyObject *args)
-{
-	PyObject *result;
-	std::map<std::string, std::string> parms;
-	const char *var_name, *value;
-	get_parameters_map(self->sim, parms);
-	destroy_simulator(self);
-	self->sim = create_simulator();
-	if ( !PyArg_ParseTuple(args, "ss", &var_name, &value) )
-		return NULL;
-	set_parameters_map(self->sim, parms);
-	self->sim->SetVariable(var_name, value);
-	self->setup = self->sim->Setup();
-	std::string var = (std::string)*self->sim->FindVariable(var_name);
-	result = PyUnicode_FromString(var.c_str());
-	return result;
-}
+//static PyObject *
+//simulator_set_variable (armemu_SimulatorObject *self, PyObject *args)
+//{
+//	PyObject *result;
+//	std::map<std::string, std::string> parms;
+//	const char *var_name, *value;
+//	get_parameters_map(self->sim, parms);
+//	destroy_simulator(self);
+//	self->sim = create_simulator();
+//	if ( !PyArg_ParseTuple(args, "ss", &var_name, &value) )
+//		return NULL;
+//	set_parameters_map(self->sim, parms);
+//	self->sim->SetVariable(var_name, value);
+//	self->setup = self->sim->Setup();
+//	std::string var = (std::string)*self->sim->FindVariable(var_name);
+//	result = PyUnicode_FromString(var.c_str());
+//	return result;
+//}
 
 static PyObject *
 simulator_is_running (armemu_SimulatorObject *self)
@@ -382,7 +373,8 @@ simulator_run (armemu_SimulatorObject *self, PyObject *args)
 	char *cunit = "sec";
 	std::string unit;
 	sc_time_unit time_unit;
-	if ( !self->setup )
+	if ( self->setup != unisim::kernel::service::Simulator::ST_OK_TO_START ||
+			self->setup != unisim::kernel::service::Simulator::ST_WARNING )
 	{
 		result = PyUnicode_FromString("Simulation setup failed.");
 	}
@@ -432,9 +424,9 @@ static PyMethodDef simulator_methods[] =
 	{"get_formulas", (PyCFunction)simulator_get_formulas, METH_NOARGS,
 			"Return a dictionary with the complete list of the simulator formulas."},
 	{"get_variable", (PyCFunction)simulator_get_variable, METH_VARARGS,
-			"Get the value of a simulator variable."},
-	{"set_variable", (PyCFunction)simulator_set_variable, METH_VARARGS,
-			"Set the value of a simulator variable."},
+			"Get a simulator variable if existent."},
+	//{"set_variable", (PyCFunction)simulator_set_variable, METH_VARARGS,
+	//		"Set the value of a simulator variable."},
 	{"run", (PyCFunction)simulator_run, METH_VARARGS,
 			"Run the simulator."},
 	{"is_running", (PyCFunction)simulator_is_running, METH_NOARGS,
@@ -488,34 +480,60 @@ static PyTypeObject armemu_SimulatorType =
     simulator_new,						/* tp_new */
 };
 
+//int PySimulatorType_Ready()
+//{
+//    return PyType_Ready(&armemu_SimulatorType);
+//}
+//
+//int PyModule_AddSimulatorObject(PyObject *m)
+//{
+//    TimeUnitMapInit();
+//
+//	Py_INCREF(&armemu_SimulatorType);
+//	PyModule_AddObject(m, "Simulator", (PyObject *)&armemu_SimulatorType);
+//	return 0;
+//}
+
 static PyModuleDef simulatormodule = {
     PyModuleDef_HEAD_INIT,
-	SIM_PYTHON_MODULE_NAME,
-    "UNISIM ARMEmu python extension.",
+    "simulator",
+	//SIM_PYTHON_MODULE_NAME,
+    "UNISIM python simulator module.",
     -1,
     NULL, NULL, NULL, NULL, NULL
 };
 
-#define armemu__PyInit_function(b) PyInit_ ## b
-
 PyMODINIT_FUNC
+// PyInit_simulator(void)
 PyInit_ARMEMU_DECLARATION
-// PyInit_armemu031(void)
 {
     PyObject* m;
 
-    if (PyType_Ready(&armemu_SimulatorType) < 0)
-        return NULL;
-
-    TimeUnitMapInit();
+    if ( PyType_Ready(&armemu_SimulatorType) < 0 )
+    	return NULL;
 
     m = PyModule_Create(&simulatormodule);
     if (m == NULL)
         return NULL;
 
-    Py_INCREF(&armemu_SimulatorType);
-    PyModule_AddObject(m, SIM_PYTHON_MODULE_NAME, (PyObject *)&armemu_SimulatorType);
-    return m;
+    TimeUnitMapInit();
+	Py_INCREF(&armemu_SimulatorType);
+	PyModule_AddObject(m, "Simulator", (PyObject *)&armemu_SimulatorType);
+
+	if ( import_variable_module() < 0 )
+	{
+		printf ("ERROR: could not import '"PyVariable_Module_Name"'.\n");
+		return NULL;
+	}
+
+	if ( import_variable_api() < 0 )
+	{
+		printf ("ERROR: could not import '"PyVariable_Capsule_Name"'.\n");
+		return NULL;
+	}
+
+	return m;
 }
+
 
 }
