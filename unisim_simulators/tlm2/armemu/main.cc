@@ -75,6 +75,5 @@ int sc_main(int argc, char *argv[]) {
 	//releases the winsock2 resources
 	WSACleanup();
 #endif
-
 	return ret;
 }
