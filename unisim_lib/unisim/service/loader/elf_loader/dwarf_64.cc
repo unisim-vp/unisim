@@ -42,6 +42,7 @@ namespace elf_loader {
 
 template class DWARF_StatementProgram<uint64_t>;
 template std::ostream& operator << (std::ostream& os, const DWARF_StatementProgram<uint64_t>& dw_stmt_prog);
+template class DWARF_StatementVM<uint64_t>;
 
 } // end of namespace elf_loader
 } // end of namespace loader
