@@ -156,6 +156,7 @@ private:
 	void BuildStatementMatrix(const void *content, uint32_t size);
 	void DumpRawData(const void *content, MEMORY_ADDR size);
 	void DumpStatementMatrix();
+	bool IsAbsolutePath(const char *filename) const;
 };
 
 } // end of namespace elf_loader
