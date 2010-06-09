@@ -849,7 +849,17 @@ void PMACBootX::OnDisconnect()
 {
 }
 
+bool PMACBootX::Load(const char *filename)
+{
+	return loader_import->Load(filename);
+}
+
 bool PMACBootX::Setup()
+{
+	return Load();
+}
+
+bool PMACBootX::Load()
 {
 	if(!loader_import)
 	{

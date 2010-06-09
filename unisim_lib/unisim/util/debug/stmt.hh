@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2010,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -31,38 +31,44 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
- 
-#include <unisim/service/loader/pmac_linux_kernel_loader/pmac_linux_kernel_loader.hh>
+
+#ifndef __UNISIM_UTIL_DEBUG_STMT_H__
+#define __UNISIM_UTIL_DEBUG_STMT_H__
+
+#include <iosfwd>
+#include <string>
 
 namespace unisim {
-namespace service {
-namespace loader {
-namespace pmac_linux_kernel_loader {
+namespace util {
+namespace debug {
 
-PMACLinuxKernelLoader::PMACLinuxKernelLoader(const char *name, Object *parent) :
-	Object(name, parent, "PowerMac Linux kernel loader"),
-	loader_export("loader-export", this),
-	symbol_table_lookup_export("symbol-table-lookup-export", this),
-	stmt_lookup_export("stmt-lookup-export", this),
-	memory_import("memory-import", this),
-	registers_import("registers-import", this),
-	pmac_bootx("pmac-bootx", this),
-	elf32_loader("elf32-loader", this)
+template <class MEMORY_ADDR> class Statement;
+template <class MEMORY_ADDR>
+std::ostream& operator << (std::ostream& os, const Statement<MEMORY_ADDR>& stmt);
+
+template <class MEMORY_ADDR>
+class Statement
 {
-	pmac_bootx.loader_import >> elf32_loader.loader_export;
-	pmac_bootx.memory_import >> memory_import;
-	pmac_bootx.registers_import >> registers_import;
-	elf32_loader.memory_import >> memory_import;
-	loader_export >> pmac_bootx.loader_export;
-	symbol_table_lookup_export >> elf32_loader.symbol_table_lookup_export;
-	stmt_lookup_export >> elf32_loader.stmt_lookup_export;
-}
+public:
+	Statement(MEMORY_ADDR addr, bool is_beginning_of_basic_block, const std::string *source_dirname, const std::string *source_filename, unsigned int lineno, unsigned int colno);
+	MEMORY_ADDR GetAddress() const;
+	bool IsBeginningOfBasicBlock() const;
+	const char *GetSourceDirname() const;
+	const char *GetSourceFilename() const;
+	unsigned int GetLineNo() const;
+	unsigned int GetColNo() const;
+	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const Statement<MEMORY_ADDR>& stmt);
+private:
+	MEMORY_ADDR addr;
+	bool is_beginning_of_basic_block;
+	const std::string *source_dirname;
+	const std::string *source_filename;
+	unsigned int lineno;
+	unsigned int colno;
+};
 
-PMACLinuxKernelLoader::~PMACLinuxKernelLoader()
-{
-}
-
-} // end of namespace pmac_linux_kernel_loader
-} // end of namespace loader
-} // end of namespace service
+} // end of namespace debug
+} // end of namespace util
 } // end of namespace unisim
+
+#endif

@@ -106,6 +106,57 @@ LinuxLoader<T>::OnDisconnect() {
 template<class T>
 bool
 LinuxLoader<T>::Setup() {
+	return Load();
+}
+
+template<class T>
+void
+LinuxLoader<T>::
+Reset()
+{
+}
+
+template<class T>
+T
+LinuxLoader<T>::
+GetEntryPoint()
+const
+{
+	return loader_import->GetEntryPoint();
+}
+
+template<class T>
+T
+LinuxLoader<T>::
+GetTopAddr()
+const
+{
+	return loader_import->GetTopAddr();
+}
+
+template<class T>
+T
+LinuxLoader<T>::
+GetStackBase()
+const
+{
+	return stack_address;
+}
+
+template<class T>
+bool
+LinuxLoader<T>::
+Load(const char *_filename)
+{
+	if(!loader_import->Load(_filename)) return false;
+	return Load();
+}
+
+template<class T>
+bool
+LinuxLoader<T>::
+Load()
+{
 	/* check that mem and elf_loader are available */
 	if(!memory_import) {
 		logger << DebugError << "ERROR(" << __FUNCTION__ << ":"
@@ -144,13 +195,17 @@ LinuxLoader<T>::Setup() {
 			endianness = E_BIG_ENDIAN;
 	}
 
-	if ( argc )
+	std::cerr << "argc=" << argc << std::endl;
+	std::cerr << "argv=" << argv << std::endl;
+	std::cerr << "param_argv=" << param_argv << std::endl;
+	if ( argc && !argv && !param_argv)
 	{
+		std::cerr << "Creating argv" << std::endl;
 		argv = new string[argc];
 		param_argv = new ParameterArray<string>("argv", this, argv, argc,
 				"The ordered list of tokens in the command line.");
 	}
-	if ( envc )
+	if ( envc && !envc && !param_envp )
 	{
 		envp = new string[envc];
 		param_envp = new ParameterArray<string>("envp", this, envp, envc,
@@ -232,40 +287,6 @@ LinuxLoader<T>::Setup() {
 		exit(-1);
 	}
 	return true;
-}
-
-template<class T>
-void
-LinuxLoader<T>::
-Reset()
-{
-}
-
-template<class T>
-T
-LinuxLoader<T>::
-GetEntryPoint()
-const
-{
-	return loader_import->GetEntryPoint();
-}
-
-template<class T>
-T
-LinuxLoader<T>::
-GetTopAddr()
-const
-{
-	return loader_import->GetTopAddr();
-}
-
-template<class T>
-T
-LinuxLoader<T>::
-GetStackBase()
-const
-{
-	return stack_address;
 }
 
 template<class T>

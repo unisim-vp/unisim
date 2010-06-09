@@ -38,9 +38,11 @@
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/loader.hh>
 #include <unisim/service/interfaces/symbol_table_lookup.hh>
+#include <unisim/service/interfaces/stmt_lookup.hh>
 
 #include <unisim/service/loader/elf_loader/elf32.h>
 #include <unisim/service/loader/elf_loader/elf64.h>
+#include <unisim/service/loader/elf_loader/dwarf.hh>
 
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/debug/symbol_table.hh>
@@ -57,6 +59,7 @@ namespace elf_loader {
 using namespace std;
 using unisim::service::interfaces::Memory;
 using namespace unisim::util::endian;
+using unisim::util::debug::Statement;
 using unisim::kernel::service::Service;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::Object;
@@ -66,18 +69,21 @@ using unisim::kernel::service::Parameter;
 using unisim::util::debug::Symbol;
 using unisim::util::debug::SymbolTable;
 using unisim::service::interfaces::SymbolTableLookup;
+using unisim::service::interfaces::StatementLookup;
 using unisim::service::interfaces::Loader;
 
 template <class MEMORY_ADDR, unsigned int ElfClass, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
 class ElfLoaderImpl :
 	public Client<Memory<MEMORY_ADDR> >,
 	public Service<Loader<MEMORY_ADDR> >,
-	public Service<SymbolTableLookup<MEMORY_ADDR> >
+	public Service<SymbolTableLookup<MEMORY_ADDR> >,
+	public Service<StatementLookup<MEMORY_ADDR> >
 {
 public:
 	ServiceImport<Memory<MEMORY_ADDR> > memory_import;
 	ServiceExport<SymbolTableLookup<MEMORY_ADDR> > symbol_table_lookup_export;
 	ServiceExport<Loader<MEMORY_ADDR> > loader_export;
+	ServiceExport<StatementLookup<MEMORY_ADDR> > stmt_lookup_export;
 
 	ElfLoaderImpl(const char *name, Object *parent = 0);
 	virtual ~ElfLoaderImpl();
@@ -89,6 +95,7 @@ public:
 	virtual MEMORY_ADDR GetEntryPoint() const;
 	virtual MEMORY_ADDR GetTopAddr() const;
 	virtual MEMORY_ADDR GetStackBase() const;
+	virtual bool Load(const char *filename);
 
 	virtual const list<unisim::util::debug::Symbol<MEMORY_ADDR> *> *GetSymbols() const;
 	virtual const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbol(const char *name, MEMORY_ADDR addr, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
@@ -96,7 +103,8 @@ public:
 	virtual const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByName(const char *name) const;
 	virtual const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByName(const char *name, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
 	virtual const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByAddr(MEMORY_ADDR addr, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
-
+	virtual const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(MEMORY_ADDR addr) const;
+	virtual const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(const char *filename, unsigned int lineno, unsigned int colno) const;
 private:
 	string filename;
 	MEMORY_ADDR entry_point;
@@ -107,12 +115,17 @@ private:
 	SymbolTable<MEMORY_ADDR> symbol_table;
 	unisim::kernel::logger::Logger logger;
 	bool verbose;
+	endian_type endianness;
+	std::vector<DWARF_StatementProgram<MEMORY_ADDR> *> dw_stmt_progs;
+	std::vector<DWARF_StatementVM<MEMORY_ADDR> *> dw_stmt_vms;
+	std::map<MEMORY_ADDR, Statement<MEMORY_ADDR> *> stmt_matrix;
 	Parameter<string> param_filename;
 	Parameter<MEMORY_ADDR> param_base_addr;
 	Parameter<bool> param_force_use_virtual_address;
 	Parameter<bool> param_dump_headers;
 	Parameter<bool> param_verbose;
 
+	bool Load();
 	void SwapElfHeader(Elf_Ehdr *hdr);
 	void SwapProgramHeader(Elf_Phdr *phdr);
 	void SwapSectionHeader(Elf_Shdr *shdr);
@@ -140,6 +153,10 @@ private:
 	MEMORY_ADDR GetSectionFlags(const Elf_Shdr *shdr);
 	const char *GetSectionName(const Elf_Shdr *shdr, const char *string_table);
 	void BuildSymbolTable(const Elf_Shdr *shdr, const void *content, const char *string_table);
+	void BuildStatementMatrix(const void *content, uint32_t size);
+	void DumpRawData(const void *content, MEMORY_ADDR size);
+	void DumpStatementMatrix();
+	bool IsAbsolutePath(const char *filename) const;
 };
 
 } // end of namespace elf_loader

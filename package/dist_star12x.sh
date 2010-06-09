@@ -115,6 +115,8 @@ unisim/util/debug/watchpoint_registry_32.cc \
 unisim/util/debug/watchpoint_registry_64.cc \
 unisim/util/debug/breakpoint_registry_32.cc \
 unisim/util/debug/breakpoint_registry_64.cc \
+unisim/util/debug/stmt_32.cc \
+unisim/util/debug/stmt_64.cc \
 unisim/util/endian/endian.cc \
 unisim/service/debug/inline_debugger/inline_debugger.cc \
 unisim/service/debug/inline_debugger/inline_debugger_32.cc \
@@ -124,6 +126,9 @@ unisim/service/debug/gdb_server/gdb_server_64.cc \
 unisim/service/debug/gdb_server/gdb_server.cc \
 unisim/service/loader/elf_loader/elf32_loader.cc \
 unisim/service/loader/elf_loader/elf64_loader.cc \
+unisim/service/loader/elf_loader/dwarf_32.cc \
+unisim/service/loader/elf_loader/dwarf_64.cc \
+unisim/service/loader/elf_loader/dwarf.cc \
 unisim/service/loader/s19_loader/s19_loader.cc \
 unisim/service/time/host_time/time.cc \
 unisim/service/time/sc_time/time.cc \
@@ -185,6 +190,7 @@ unisim/util/debug/watchpoint_registry.hh \
 unisim/util/debug/watchpoint.hh \
 unisim/util/debug/breakpoint_registry.hh \
 unisim/util/debug/symbol_table.hh \
+unisim/util/debug/stmt.hh \
 unisim/util/endian/endian.hh \
 unisim/util/garbage_collector/garbage_collector.hh \
 unisim/util/hash_table/hash_table.hh \
@@ -196,6 +202,7 @@ unisim/service/interfaces/disassembly.hh \
 unisim/service/interfaces/loader.hh \
 unisim/service/interfaces/memory.hh \
 unisim/service/interfaces/symbol_table_lookup.hh \
+unisim/service/interfaces/stmt_lookup.hh \
 unisim/service/interfaces/time.hh \
 unisim/service/interfaces/memory_injection.hh \
 unisim/service/interfaces/registers.hh \
@@ -211,6 +218,7 @@ unisim/service/loader/elf_loader/elf32.h \
 unisim/service/loader/elf_loader/elf32_loader.hh \
 unisim/service/loader/elf_loader/elf64.h \
 unisim/service/loader/elf_loader/elf64_loader.hh \
+unisim/service/loader/elf_loader/dwarf.hh \
 unisim/service/loader/s19_loader/s19_loader.hh \
 unisim/service/time/host_time/time.hh \
 unisim/service/time/sc_time/time.hh \
@@ -242,9 +250,11 @@ unisim/util/debug/profile.tcc \
 unisim/util/debug/watchpoint_registry.tcc \
 unisim/util/debug/symbol_table.tcc \
 unisim/util/debug/symbol.tcc \
+unisim/util/debug/stmt.tcc \
 unisim/service/debug/inline_debugger/inline_debugger.tcc \
 unisim/service/debug/gdb_server/gdb_server.tcc \
 unisim/service/loader/elf_loader/elf_loader.tcc \
+unisim/service/loader/elf_loader/dwarf.tcc \
 unisim/service/loader/s19_loader/s19_loader.tcc \
 unisim/component/tlm2/interconnect/generic_router/router.tcc \
 unisim/component/tlm2/interconnect/generic_router/router_dispatcher.tcc \

@@ -490,7 +490,8 @@ Simulator::Simulator(int argc, char **argv)
 		cpu->symbol_table_lookup_import >> ((Elf32Loader *) loaderELF)->symbol_table_lookup_export;
 		if(inline_debugger)
 		{
-			inline_debugger->symbol_table_lookup_import >> ((Elf32Loader *) loaderELF)->symbol_table_lookup_export;
+			*inline_debugger->symbol_table_lookup_import[0] >> ((Elf32Loader *) loaderELF)->symbol_table_lookup_export;
+			*inline_debugger->stmt_lookup_import[0] >> ((Elf32Loader *) loaderELF)->stmt_lookup_export;
 		} else if(gdb_server)
 		{
 			gdb_server->symbol_table_lookup_import >> ((Elf32Loader *) loaderELF)->symbol_table_lookup_export;
@@ -683,6 +684,9 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("PWM.interrupt-offset", 0x8c);
 	simulator->SetVariable("PWM.debug-enabled", false);
 	simulator->SetVariable("XINT.debug-enabled", false);
+	
+	// Inline debugger
+	simulator->SetVariable("inline-debugger.num-loaders", 1);
 }
 
 void Simulator::Run()

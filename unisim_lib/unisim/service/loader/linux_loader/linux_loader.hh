@@ -87,6 +87,7 @@ public:
 	virtual T GetEntryPoint() const;
 	virtual T GetTopAddr() const;
 	virtual T GetStackBase() const;
+	virtual bool Load(const char *filename);
 
 protected:
 	endian_type endianness;
@@ -117,6 +118,7 @@ private:
 	Parameter<bool> param_verbose;
 	Logger logger;
 
+	bool Load();
 	void Log(T addr, const uint8_t *value, uint32_t size);
 };
 

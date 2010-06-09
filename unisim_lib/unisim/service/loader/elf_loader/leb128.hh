@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2010,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,37 +32,36 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#include <unisim/service/loader/pmac_linux_kernel_loader/pmac_linux_kernel_loader.hh>
+#ifndef __UNISIM_SERVICE_LOADER_ELF_LOADER_LEB128_HH__
+#define __UNISIM_SERVICE_LOADER_ELF_LOADER_LEB128_HH__
+
+#include <iosfwd>
 
 namespace unisim {
 namespace service {
 namespace loader {
-namespace pmac_linux_kernel_loader {
+namespace elf_loader {
 
-PMACLinuxKernelLoader::PMACLinuxKernelLoader(const char *name, Object *parent) :
-	Object(name, parent, "PowerMac Linux kernel loader"),
-	loader_export("loader-export", this),
-	symbol_table_lookup_export("symbol-table-lookup-export", this),
-	stmt_lookup_export("stmt-lookup-export", this),
-	memory_import("memory-import", this),
-	registers_import("registers-import", this),
-	pmac_bootx("pmac-bootx", this),
-	elf32_loader("elf32-loader", this)
+class DWARF_LEB128
 {
-	pmac_bootx.loader_import >> elf32_loader.loader_export;
-	pmac_bootx.memory_import >> memory_import;
-	pmac_bootx.registers_import >> registers_import;
-	elf32_loader.memory_import >> memory_import;
-	loader_export >> pmac_bootx.loader_export;
-	symbol_table_lookup_export >> elf32_loader.symbol_table_lookup_export;
-	stmt_lookup_export >> elf32_loader.stmt_lookup_export;
-}
+public:
+	DWARF_LEB128(const uint8_t *leb128);
+	DWARF_LEB128(const DWARF_LEB128& leb128);
+	~DWARF_LEB128();
+	
+	unsigned int GetByteSize() const;
+	unsigned int GetBitLength() const;
+	template <typename T> bool Fit(const T *t = 0) const;
+	template <typename T> operator T() const;
+	DWARF_LEB128& operator = (const uint8_t *leb128);
+	DWARF_LEB128& operator = (const DWARF_LEB128& leb128);
+private:
+	const uint8_t *leb128;
+};
 
-PMACLinuxKernelLoader::~PMACLinuxKernelLoader()
-{
-}
-
-} // end of namespace pmac_linux_kernel_loader
+} // end of namespace elf_loader
 } // end of namespace loader
 } // end of namespace service
 } // end of namespace unisim
+
+#endif

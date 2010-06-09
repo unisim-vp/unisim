@@ -91,6 +91,7 @@ using unisim::util::debug::Register;
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 class LinuxOS :
 	public Service<unisim::service::interfaces::LinuxOS>,
+	public Service<unisim::service::interfaces::Loader<ADDRESS_TYPE> >,
 	public Client<CPULinuxOS>,
 	public Client<Memory<ADDRESS_TYPE> >,
 	public Client<MemoryInjection<ADDRESS_TYPE> >,
@@ -99,6 +100,7 @@ class LinuxOS :
 public:
     /* Exported services */
 	ServiceExport<unisim::service::interfaces::LinuxOS> linux_os_export;
+	ServiceExport<unisim::service::interfaces::Loader<ADDRESS_TYPE> > loader_export;
 
 	/* Imported services */
 	ServiceImport<CPULinuxOS>  cpu_linux_os_import;
@@ -117,10 +119,16 @@ public:
 
     /* Service interface methods */
     virtual void ExecuteSystemCall(int id);
+	virtual void Reset();
+	virtual ADDRESS_TYPE GetEntryPoint() const;
+	virtual ADDRESS_TYPE GetTopAddr() const;
+	virtual ADDRESS_TYPE GetStackBase() const;
+	virtual bool Load(const char *filename);
 
 private:
 	bool ARMSetup();
 	bool PPCSetup();
+	bool Load();
 	
 	bool ReadMem(ADDRESS_TYPE, void *buffer, uint32_t size);
 	bool WriteMem(ADDRESS_TYPE, const void *buffer, uint32_t size);
