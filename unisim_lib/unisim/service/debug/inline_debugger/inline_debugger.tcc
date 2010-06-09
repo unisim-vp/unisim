@@ -810,9 +810,9 @@ void InlineDebugger<ADDRESS>::Help()
 	cout << "<p | prof | profile> data write" << endl;
 	cout << "    display the program/data profile" << endl;
 	cout << "========================= BREAKPOINTS/WATCHPOINTS ==============================" << endl;
-	cout << "<b | break> [<symbol | *address>]" << endl;
-	cout << "    set a breakpoint at 'symbol' or 'address'. If 'symbol' or 'address' are not" << endl;
-	cout << "    specified, display the breakpoint list" << endl;
+	cout << "<b | break> [<symbol | *address | filename#lineno>]" << endl;
+	cout << "    set a breakpoint at 'symbol', 'address', or 'filename#lineno'. If 'symbol', 'address'," << endl;
+	cout << "    or 'filename#lineno' are not specified, display the breakpoint list" << endl;
 	cout << "--------------------------------------------------------------------------------" << endl;
 	cout << "<w | watch> [<symbol | *address[:<size>]>] [<read | write>]" << endl;
 	cout << "    set a watchpoint at 'symbol' or 'address'." << endl;
@@ -820,8 +820,8 @@ void InlineDebugger<ADDRESS>::Help()
 	cout << "    and store. The debugger will return to command line prompt once a load," << endl;
 	cout << "    or a store will access to 'symbol' or 'address'." << endl;
 	cout << "--------------------------------------------------------------------------------" << endl;
-	cout << "<del | delete> <symbol | *address>" << endl;
-	cout << "    delete the breakpoint at 'symbol' or 'address'" << endl << endl;
+	cout << "<del | delete> <symbol | *address | filename#lineno>" << endl;
+	cout << "    delete the breakpoint at 'symbol', 'address', or 'filename#lineno'" << endl << endl;
 	cout << "--------------------------------------------------------------------------------" << endl;
 	cout << "<delw | delwatch> <symbol | *address> [<read | write>] [<size>]" << endl;
 	cout << "    delete the watchpoint at 'symbol' or 'address'" << endl;
@@ -860,14 +860,11 @@ void InlineDebugger<ADDRESS>::Disasm(ADDRESS addr, int count)
 					unsigned int lineno = stmt->GetLineNo();
 					unsigned int colno = stmt->GetColNo();
 					std::string source_path;
-					if(!IsAbsolutePath(source_filename))
+					const char *source_dirname = stmt->GetSourceDirname();
+					if(source_dirname)
 					{
-						const char *source_dirname = stmt->GetSourceDirname();
-						if(source_dirname)
-						{
-							source_path += source_dirname;
-							source_path += '/';
-						}
+						source_path += source_dirname;
+						source_path += '/';
 					}
 					source_path += source_filename;
 					DumpSource(source_path.c_str(), lineno, colno, 1);
@@ -1033,7 +1030,39 @@ void InlineDebugger<ADDRESS>::DumpBreakpoints()
 		{
 			cout << "?";
 		}
-		cout << ")" << endl;
+		cout << ")";
+		
+		const Statement<ADDRESS> *stmt = 0;
+		//unsigned int i;
+		for(i = 0; (!stmt) && (i < num_loaders); i++)
+		{
+			if(*stmt_lookup_import[i])
+			{
+				stmt = (*stmt_lookup_import[i])->FindStatement(addr);
+			}
+		}
+		
+		if(stmt)
+		{
+			const char *source_filename = stmt->GetSourceFilename();
+			if(source_filename)
+			{
+				unsigned int lineno = stmt->GetLineNo();
+				unsigned int colno = stmt->GetColNo();
+				std::string source_path;
+				const char *source_dirname = stmt->GetSourceDirname();
+				if(source_dirname)
+				{
+					source_path += source_dirname;
+					source_path += '/';
+				}
+				source_path += source_filename;
+				cout << " in ";
+				DumpSource(source_path.c_str(), lineno, colno, 1);
+			}
+		}
+
+		cout << endl;
 	}
 }
 
@@ -1597,13 +1626,6 @@ void InlineDebugger<ADDRESS>::DumpDataProfile(bool write)
 }
 
 template <class ADDRESS>
-bool InlineDebugger<ADDRESS>::IsAbsolutePath(const char *filename) const
-{
-	// filename starts '/' or 'drive letter':\ or 'driver letter':/
-	return (((filename[0] >= 'a' && filename[0] <= 'z') || (filename[0] >= 'A' && filename[0] <= 'Z')) && (filename[1] == ':') && ((filename[2] == '\\') || (filename[2] == '/'))) || (*filename == '/');
-}
-
-template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DumpSource(const char *source_path, unsigned int lineno, unsigned int colno, unsigned int count)
 {
 	std::string s;
@@ -1632,7 +1654,7 @@ void InlineDebugger<ADDRESS>::DumpSource(const char *source_path, unsigned int l
 	p = source_path;
 	do
 	{
-		if(*p == 0 || *p == '/')
+		if(*p == 0 || *p == '/' || *p == '\\')
 		{
 			hierarchical_source_path.push_back(s);
 			s.clear();
@@ -1802,6 +1824,31 @@ bool InlineDebugger<ADDRESS>::ParseAddr(const char *s, ADDRESS& addr)
 	if(symbol)
 	{
 		addr = symbol->GetAddress();
+		return true;
+	}
+	
+	std::string filename;
+	unsigned int lineno;
+	while(*s && *s != '#')
+	{
+		filename += *s;
+		s++;
+	}
+	if(*s == '#') s++;
+	if(sscanf(s, "%u", &lineno) != 1) return false;
+	
+	const Statement<ADDRESS> *stmt = 0;
+	for(i = 0; (!stmt) && (i < num_loaders); i++)
+	{
+		if(*stmt_lookup_import[i])
+		{
+			stmt = (*stmt_lookup_import[i])->FindStatement(filename.c_str(), lineno, 0);
+		}
+	}
+	
+	if(stmt)
+	{
+		addr = stmt->GetAddress();
 		return true;
 	}
 	

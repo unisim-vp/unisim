@@ -228,7 +228,6 @@ private:
 	void DumpAvailableLoaders();
 	void Load(const char *loader_name, const char *filename);
 	void DumpSource(const char *filename, unsigned int lineno, unsigned int colno, unsigned int count);
-	bool IsAbsolutePath(const char *filename) const;
 
 	static InlineDebugger<ADDRESS> *debugger;
 };

@@ -1241,6 +1241,91 @@ const unisim::util::debug::Statement<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, El
 	return (stmt_iter != stmt_matrix.end()) ? (*stmt_iter).second : 0;
 }
 
+template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+const unisim::util::debug::Statement<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::FindStatement(const char *filename, unsigned int lineno, unsigned int colno) const
+{
+	std::vector<std::string> hierarchical_requested_filename;
+	
+	std::string s;
+	const char *p = filename;
+	do
+	{
+		if(*p == 0 || *p == '/' || *p == '\\')
+		{
+			hierarchical_requested_filename.push_back(s);
+			s.clear();
+		}
+		else
+		{
+			s += *p;
+		}
+	} while(*(p++));
+	int hierarchical_requested_filename_depth = hierarchical_requested_filename.size();
+
+	typename std::map<MEMORY_ADDR, Statement<MEMORY_ADDR> *>::const_iterator stmt_iter;
+	
+	for(stmt_iter = stmt_matrix.begin(); stmt_iter != stmt_matrix.end(); stmt_iter++)
+	{
+		Statement<MEMORY_ADDR> *stmt = (*stmt_iter).second;
+		
+		if(stmt)
+		{
+			if(stmt->GetLineNo() == lineno && (!colno || (stmt->GetColNo() == colno)))
+			{
+				std::string source_path;
+				const char *source_filename = stmt->GetSourceFilename();
+				if(source_filename)
+				{
+					const char *source_dirname = stmt->GetSourceDirname();
+					if(source_dirname)
+					{
+						source_path += source_dirname;
+						source_path += '/';
+					}
+					source_path += source_filename;
+
+					std::vector<std::string> hierarchical_source_path;
+					
+					s.clear();
+					p = source_path.c_str();
+					do
+					{
+						if(*p == 0 || *p == '/' || *p == '\\')
+						{
+							hierarchical_source_path.push_back(s);
+							s.clear();
+						}
+						else
+						{
+							s += *p;
+						}
+					} while(*(p++));
+
+					int hierarchical_source_path_depth = hierarchical_source_path.size();
+					
+					if(hierarchical_source_path_depth >= hierarchical_requested_filename_depth)
+					{
+						int i;
+						bool match = true;
+						
+						for(i = 0; i < hierarchical_requested_filename_depth; i++)
+						{
+							if(hierarchical_source_path[hierarchical_source_path_depth - 1 - i] != hierarchical_requested_filename[hierarchical_requested_filename_depth - 1 - i])
+							{
+								match = false;
+								break;
+							}
+						}
+						
+						if(match) return stmt;
+					}
+				}
+			}
+		}
+	}
+	return 0;
+}
+
 } // end of namespace elf_loader
 } // end of namespace loader
 } // end of namespace service
