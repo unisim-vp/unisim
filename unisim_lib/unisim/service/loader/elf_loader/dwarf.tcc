@@ -484,16 +484,26 @@ DWARF_StatementVM<MEMORY_ADDR>::~DWARF_StatementVM()
 }
 
 template <class MEMORY_ADDR>
+bool DWARF_StatementVM<MEMORY_ADDR>::IsAbsolutePath(const char *filename) const
+{
+	// filename starts '/' or 'drive letter':\ or 'driver letter':/
+	return (((filename[0] >= 'a' && filename[0] <= 'z') || (filename[0] >= 'A' && filename[0] <= 'Z')) && (filename[1] == ':') && ((filename[2] == '\\') || (filename[2] == '/'))) || (*filename == '/');
+}
+
+template <class MEMORY_ADDR>
 void DWARF_StatementVM<MEMORY_ADDR>::AddRow(const DWARF_StatementProgram<MEMORY_ADDR> *dw_stmt_prog, std::map<MEMORY_ADDR, Statement<MEMORY_ADDR> *>& matrix)
 {
 	const DWARF_Filename *dw_filename = (file >= 1 && file <= filenames.size()) ? &filenames[file - 1] : 0;
 	const std::string *filename = dw_filename ? dw_filename->GetFilename() : 0;
 	const std::string *dirname = 0;
-	if(dw_filename)
+	if(filename)
 	{
-		const DWARF_LEB128& leb128_dir = dw_filename->GetDirectoryIndex();
-		unsigned int dir = (unsigned int) leb128_dir;
-		dirname = (dir >= 1 && dir <= dw_stmt_prog->include_directories.size()) ? &dw_stmt_prog->include_directories[dir - 1] : 0;
+		if(!IsAbsolutePath(filename->c_str()))
+		{
+			const DWARF_LEB128& leb128_dir = dw_filename->GetDirectoryIndex();
+			unsigned int dir = (unsigned int) leb128_dir;
+			dirname = (dir >= 1 && dir <= dw_stmt_prog->include_directories.size()) ? &dw_stmt_prog->include_directories[dir - 1] : 0;
+		}
 	}
 	Statement<MEMORY_ADDR> *stmt = new Statement<MEMORY_ADDR>(address, basic_block, dirname, filename, line, column);
 	matrix.insert(std::pair<MEMORY_ADDR, Statement<MEMORY_ADDR> *>(address, stmt));

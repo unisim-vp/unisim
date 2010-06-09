@@ -208,6 +208,7 @@ private:
 	bool end_sequence;     // A boolean indicating that the current address is that of the first byte after the end of a sequence of target machine instructions.
 	std::vector<DWARF_Filename> filenames; // filenames (filenames in statement program prologue + those added by extended opcode DW_LNE_define_file)
 
+	bool IsAbsolutePath(const char *filename) const;
 	void AddRow(const DWARF_StatementProgram<MEMORY_ADDR> *dw_stmt_prog, std::map<MEMORY_ADDR, Statement<MEMORY_ADDR> *>& matrix);
 };
 

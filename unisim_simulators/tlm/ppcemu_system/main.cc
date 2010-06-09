@@ -608,6 +608,9 @@ Simulator::Simulator(int argc, char **argv)
 		inline_debugger->disasm_import >> cpu->disasm_export;
 		inline_debugger->memory_import >> cpu->memory_export;
 		inline_debugger->registers_import >> cpu->registers_export;
+		*inline_debugger->loader_import[0] >> kloader->loader_export;
+		*inline_debugger->symbol_table_lookup_import[0] >> kloader->symbol_table_lookup_export;
+		*inline_debugger->stmt_lookup_import[0] >> kloader->stmt_lookup_export;
 	}
 	else if(gdb_server)
 	{
@@ -618,6 +621,7 @@ Simulator::Simulator(int argc, char **argv)
 		gdb_server->disasm_import >> cpu->disasm_export;
 		gdb_server->memory_import >> cpu->memory_export;
 		gdb_server->registers_import >> cpu->registers_export;
+		gdb_server->symbol_table_lookup_import >> kloader->symbol_table_lookup_export;
 	}
 
 	if(estimate_power)
@@ -654,14 +658,6 @@ Simulator::Simulator(int argc, char **argv)
 	mpc107->pci_import >> *pci_bus->memory_export[PCI_MPC107_MASTER_PORT];
 	i8042->keyboard_import >> sdl->keyboard_export;
 	i8042->mouse_import >> sdl->mouse_export;
-
-	if(inline_debugger)
-	{
-		inline_debugger->symbol_table_lookup_import >> kloader->symbol_table_lookup_export;
-	} else if(gdb_server)
-	{
-		gdb_server->symbol_table_lookup_import >> kloader->symbol_table_lookup_export;
-	}
 }
 
 Simulator::~Simulator()
@@ -975,6 +971,9 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	
 	// - kernel logger
 	simulator->SetVariable("kernel_logger.std_err", true);
+	
+	// Inline debugger
+	simulator->SetVariable("inline-debugger.num-loaders", 1);
 }
 
 void Simulator::Stop(Object *object, int exit_status)
@@ -1031,49 +1030,6 @@ void Simulator::Run()
 	cerr << "simulated time : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;
 	cerr << "host simulation speed: " << ((double) (*cpu)["instruction-counter"] / spent_time / 1000000.0) << " MIPS" << endl;
 	cerr << "time dilatation: " << spent_time / sc_time_stamp().to_seconds() << " times slower than target machine" << endl;
-	if(estimate_power)
-	{
-		double total_dynamic_energy = il1_power_estimator->GetDynamicEnergy()
-			+ dl1_power_estimator->GetDynamicEnergy()
-			+ l2_power_estimator->GetDynamicEnergy()
-			+ itlb_power_estimator->GetDynamicEnergy()
-			+ dtlb_power_estimator->GetDynamicEnergy();
-
-		double total_dynamic_power = il1_power_estimator->GetDynamicPower()
-			+ dl1_power_estimator->GetDynamicPower()
-			+ l2_power_estimator->GetDynamicPower()
-			+ itlb_power_estimator->GetDynamicPower()
-			+ dtlb_power_estimator->GetDynamicPower();
-
-		double total_leakage_power = il1_power_estimator->GetLeakagePower()
-			+ dl1_power_estimator->GetLeakagePower()
-			+ l2_power_estimator->GetLeakagePower()
-			+ itlb_power_estimator->GetLeakagePower()
-			+ dtlb_power_estimator->GetLeakagePower();
-
-		double total_power = total_dynamic_power + total_leakage_power;
-
-		cerr << "L1 instruction cache dynamic energy: " << il1_power_estimator->GetDynamicEnergy() << " J" << endl;
-		cerr << "L1 data cache dynamic energy: " << dl1_power_estimator->GetDynamicEnergy() << " J" << endl;
-		cerr << "L2 cache dynamic energy: " << l2_power_estimator->GetDynamicEnergy() << " J" << endl;
-		cerr << "Instruction TLB dynamic energy: " << itlb_power_estimator->GetDynamicEnergy() << " J" << endl;
-		cerr << "Data TLB dynamic energy: " << dtlb_power_estimator->GetDynamicEnergy() << " J" << endl;
-		cerr << "L1 instruction cache dynamic power: " << il1_power_estimator->GetDynamicPower() << " W" << endl;
-		cerr << "L1 data cache dynamic power: " << dl1_power_estimator->GetDynamicPower() << " W" << endl;
-		cerr << "L2 cache dynamic power: " << l2_power_estimator->GetDynamicPower() << " W" << endl;
-		cerr << "Instruction TLB dynamic power: " << itlb_power_estimator->GetDynamicPower() << " W" << endl;
-		cerr << "Data TLB dynamic power: " << dtlb_power_estimator->GetDynamicPower() << " W" << endl;
-		cerr << "L1 instruction cache leakage power: " << il1_power_estimator->GetLeakagePower() << " W" << endl;
-		cerr << "L1 data cache leakage power: " << dl1_power_estimator->GetLeakagePower() << " W" << endl;
-		cerr << "L2 cache leakage power: " << l2_power_estimator->GetLeakagePower() << " W" << endl;
-		cerr << "Instruction TLB leakage power: " << itlb_power_estimator->GetLeakagePower() << " W" << endl;
-		cerr << "Data TLB leakage power: " << dtlb_power_estimator->GetLeakagePower() << " W" << endl;
-
-		cerr << "Total dynamic energy: " << total_dynamic_energy << " J" << endl;
-		cerr << "Total dynamic power: " << total_dynamic_power << " W" << endl;
-		cerr << "Total leakage power: " << total_leakage_power << " W" << endl;
-		cerr << "Total power (dynamic+leakage): " << total_power << " W" << endl;
-	}
 }
 
 unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
