@@ -40,6 +40,10 @@
 #include <unisim/service/interfaces/cache_power_estimator.hh>
 #include <unisim/service/interfaces/power_mode.hh>
 #include <unisim/service/interfaces/time.hh>
+#include "unisim/service/power/cache_profile.hh"
+#include "unisim/service/power/cache_dynamic_energy.hh"
+#include "unisim/service/power/cache_dynamic_power.hh"
+#include "unisim/service/power/cache_leakage_power.hh"
 #include <map>
 #include <inttypes.h>
 
@@ -56,44 +60,9 @@ using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::ParameterArray;
+using unisim::kernel::service::Statistic;
+using unisim::kernel::service::Formula;
 using std::map;
-
-class CacheProfileKey
-{
-public:
-	unsigned int cycle_time; // Mhz
-	unsigned int voltage; // mV
-	
-	CacheProfileKey(unsigned int t, unsigned int v) : cycle_time(t), voltage(v)
-	{
-	}
-	
-	inline bool operator < (CacheProfileKey rhs) const
-	{
-		if(cycle_time < rhs.cycle_time) return true;
-		if(cycle_time > rhs.cycle_time) return false;
-		return voltage < rhs.voltage;
-	}
-};
-
-class CacheProfile : public CacheProfileKey
-{
-public:
-	CacheProfile(
-		unsigned int cycle_time,
-		unsigned int voltage,
-		double dyn_energy_per_read,
-		double dyn_energy_per_write,
-		double leak_power);
-	
-	double dyn_energy_per_read; // in J
-	double dyn_energy_per_write; // in J
-	double leak_power; // in W
-	uint64_t read_accesses;
-	uint64_t write_accesses;
-	double duration; // in seconds
-	
-};
 
 class CachePowerEstimator :
 	public Service<unisim::service::interfaces::CachePowerEstimator>,
@@ -158,6 +127,14 @@ private:
 	Parameter<unsigned int> param_tag_width;
 	Parameter<AccessMode> param_access_mode;
 	
+	CacheDynamicEnergy dynamic_energy;
+	CacheDynamicPower dynamic_power;
+	CacheLeakagePower leakage_power;
+	Statistic<CacheDynamicEnergy> stat_dynamic_energy;
+	Statistic<CacheDynamicPower> stat_dynamic_power;
+	Statistic<CacheLeakagePower> stat_leakage_power;
+	Formula<double> formula_total_power;
+
 	int Ndwl;
 	int Ndbl;
 	int Ntwl;

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2010,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,37 +32,26 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#include <unisim/service/loader/pmac_linux_kernel_loader/pmac_linux_kernel_loader.hh>
+#ifndef __UNISIM_SERVICE_INTERFACES_STMT_LOOKUP_HH__
+#define __UNISIM_SERVICE_INTERFACES_STMT_LOOKUP_HH__
+
+#include <unisim/util/debug/stmt.hh>
 
 namespace unisim {
 namespace service {
-namespace loader {
-namespace pmac_linux_kernel_loader {
+namespace interfaces {
 
-PMACLinuxKernelLoader::PMACLinuxKernelLoader(const char *name, Object *parent) :
-	Object(name, parent, "PowerMac Linux kernel loader"),
-	loader_export("loader-export", this),
-	symbol_table_lookup_export("symbol-table-lookup-export", this),
-	stmt_lookup_export("stmt-lookup-export", this),
-	memory_import("memory-import", this),
-	registers_import("registers-import", this),
-	pmac_bootx("pmac-bootx", this),
-	elf32_loader("elf32-loader", this)
+template <class MEMORY_ADDR>
+class StatementLookup
 {
-	pmac_bootx.loader_import >> elf32_loader.loader_export;
-	pmac_bootx.memory_import >> memory_import;
-	pmac_bootx.registers_import >> registers_import;
-	elf32_loader.memory_import >> memory_import;
-	loader_export >> pmac_bootx.loader_export;
-	symbol_table_lookup_export >> elf32_loader.symbol_table_lookup_export;
-	stmt_lookup_export >> elf32_loader.stmt_lookup_export;
-}
+public:
+	virtual ~StatementLookup() {}
+	virtual const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(MEMORY_ADDR addr) const = 0;
+	virtual const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(const char *filename, unsigned int lineno, unsigned int colno) const = 0;
+};
 
-PMACLinuxKernelLoader::~PMACLinuxKernelLoader()
-{
-}
-
-} // end of namespace pmac_linux_kernel_loader
-} // end of namespace loader
+} // end of namespace interfaces
 } // end of namespace service
 } // end of namespace unisim
+
+#endif

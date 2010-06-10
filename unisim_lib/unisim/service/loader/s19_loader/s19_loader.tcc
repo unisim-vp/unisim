@@ -97,6 +97,19 @@ MEMORY_ADDR S19_Loader<MEMORY_ADDR>::GetStackBase() const
 
 template <class MEMORY_ADDR>
 bool S19_Loader<MEMORY_ADDR>::Setup() {
+	return Load();
+}
+
+
+template <class MEMORY_ADDR>
+bool S19_Loader<MEMORY_ADDR>::Load(const char *_filename) {
+	if(memory_import) memory_import->Reset();
+	filename = _filename;
+	return Load();
+}
+
+template <class MEMORY_ADDR>
+bool S19_Loader<MEMORY_ADDR>::Load() {
 	 
 	int             linenum;            /* tracks line number in bootstrap file */
 	char            srec[S_RECORD_SIZE];          /* holds S-record from bootstrap file */

@@ -110,6 +110,7 @@ unisim/util/debug/symbol_32.cc \
 unisim/util/debug/symbol_table_32.cc \
 unisim/util/debug/watchpoint_registry_32.cc \
 unisim/util/debug/breakpoint_registry_32.cc \
+unisim/util/debug/stmt_32.cc \
 unisim/util/endian/endian.cc \
 unisim/util/queue/queue.cc \
 unisim/util/garbage_collector/garbage_collector.cc \
@@ -119,10 +120,16 @@ unisim/service/debug/gdb_server/gdb_server_32.cc \
 unisim/service/debug/gdb_server/gdb_server.cc \
 unisim/service/time/host_time/time.cc \
 unisim/service/time/sc_time/time.cc \
+unisim/service/power/cache_dynamic_energy.cc \
+unisim/service/power/cache_dynamic_power.cc \
+unisim/service/power/cache_leakage_power.cc \
 unisim/service/power/cache_power_estimator.cc \
+unisim/service/power/cache_profile.cc \
 unisim/service/os/linux_os/linux_os_32.cc \
 unisim/service/os/linux_os/linux_os_exception.cc \
 unisim/service/loader/elf_loader/elf32_loader.cc \
+unisim/service/loader/elf_loader/dwarf_32.cc \
+unisim/service/loader/elf_loader/dwarf.cc \
 unisim/service/loader/linux_loader/linux32_loader.cc \
 unisim/component/cxx/processor/powerpc/cpu.cc \
 unisim/component/cxx/processor/powerpc/exception.cc \
@@ -168,6 +175,7 @@ unisim/util/debug/breakpoint.hh \
 unisim/util/debug/profile.hh \
 unisim/util/debug/register.hh \
 unisim/util/debug/symbol.hh \
+unisim/util/debug/stmt.hh \
 unisim/util/debug/simple_register.hh \
 unisim/util/debug/watchpoint_registry.hh \
 unisim/util/debug/watchpoint.hh \
@@ -188,6 +196,7 @@ unisim/service/interfaces/disassembly.hh \
 unisim/service/interfaces/loader.hh \
 unisim/service/interfaces/memory.hh \
 unisim/service/interfaces/symbol_table_lookup.hh \
+unisim/service/interfaces/stmt_lookup.hh \
 unisim/service/interfaces/time.hh \
 unisim/service/interfaces/memory_injection.hh \
 unisim/service/interfaces/registers.hh \
@@ -206,10 +215,15 @@ unisim/service/loader/elf_loader/elf_loader.hh \
 unisim/service/loader/elf_loader/elf32.h \
 unisim/service/loader/elf_loader/elf64.h \
 unisim/service/loader/elf_loader/elf32_loader.hh \
+unisim/service/loader/elf_loader/dwarf.hh \
 unisim/service/loader/linux_loader/linux_loader.hh \
 unisim/service/time/host_time/time.hh \
 unisim/service/time/sc_time/time.hh \
 unisim/service/power/cache_power_estimator.hh \
+unisim/service/power/cache_profile.hh \
+unisim/service/power/cache_dynamic_energy.hh \
+unisim/service/power/cache_dynamic_power.hh \
+unisim/service/power/cache_leakage_power.hh \
 unisim/service/os/linux_os/linux_os.hh \
 unisim/service/os/linux_os/linux_os_exception.hh \
 unisim/component/cxx/memory/ram/memory.hh \
@@ -235,6 +249,7 @@ unisim/util/debug/profile.tcc \
 unisim/util/debug/watchpoint_registry.tcc \
 unisim/util/debug/symbol_table.tcc \
 unisim/util/debug/symbol.tcc \
+unisim/util/debug/stmt.tcc \
 unisim/util/queue/queue.tcc \
 unisim/util/simfloat/floating.tcc \
 unisim/util/simfloat/integer.tcc \
@@ -243,6 +258,7 @@ unisim/service/debug/inline_debugger/inline_debugger.tcc \
 unisim/service/debug/gdb_server/gdb_server.tcc \
 unisim/service/os/linux_os/linux_os.tcc \
 unisim/service/loader/elf_loader/elf_loader.tcc \
+unisim/service/loader/elf_loader/dwarf.tcc \
 unisim/service/loader/linux_loader/linux_loader.tcc \
 unisim/component/cxx/processor/powerpc/cpu.tcc \
 unisim/component/cxx/processor/powerpc/exception.tcc \
@@ -266,6 +282,7 @@ m4/curses.m4 \
 m4/libedit.m4 \
 m4/systemc.m4 \
 m4/with_boost.m4 \
+m4/cacti.m4 \
 m4/check_lib.m4 \
 m4/get_exec_path.m4 \
 m4/real_path.m4"
@@ -632,6 +649,7 @@ if [ "${has_to_build_ppcemu_configure}" = "yes" ]; then
 	echo "UNISIM_CHECK_SYSTEMC" >> "${PPCEMU_CONFIGURE_AC}"
 	echo "UNISIM_WITH_BOOST" >> "${PPCEMU_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_BOOST_GRAPH" >> "${PPCEMU_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_CACTI" >> "${PPCEMU_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_GET_EXECUTABLE_PATH" >> "${PPCEMU_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_REAL_PATH" >> "${PPCEMU_CONFIGURE_AC}"
 	echo "GENISSLIB_PATH=\`pwd\`/../genisslib/genisslib" >> "${PPCEMU_CONFIGURE_AC}"

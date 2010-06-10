@@ -31,38 +31,30 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
- 
-#include <unisim/service/loader/pmac_linux_kernel_loader/pmac_linux_kernel_loader.hh>
+
+#include "unisim/service/power/cache_profile.hh"
 
 namespace unisim {
 namespace service {
-namespace loader {
-namespace pmac_linux_kernel_loader {
+namespace power {
 
-PMACLinuxKernelLoader::PMACLinuxKernelLoader(const char *name, Object *parent) :
-	Object(name, parent, "PowerMac Linux kernel loader"),
-	loader_export("loader-export", this),
-	symbol_table_lookup_export("symbol-table-lookup-export", this),
-	stmt_lookup_export("stmt-lookup-export", this),
-	memory_import("memory-import", this),
-	registers_import("registers-import", this),
-	pmac_bootx("pmac-bootx", this),
-	elf32_loader("elf32-loader", this)
-{
-	pmac_bootx.loader_import >> elf32_loader.loader_export;
-	pmac_bootx.memory_import >> memory_import;
-	pmac_bootx.registers_import >> registers_import;
-	elf32_loader.memory_import >> memory_import;
-	loader_export >> pmac_bootx.loader_export;
-	symbol_table_lookup_export >> elf32_loader.symbol_table_lookup_export;
-	stmt_lookup_export >> elf32_loader.stmt_lookup_export;
-}
-
-PMACLinuxKernelLoader::~PMACLinuxKernelLoader()
+CacheProfile::CacheProfile(
+	unsigned int _cycle_time,
+	unsigned int _voltage,
+	double _dyn_energy_per_read,
+	double _dyn_energy_per_write,
+	double _leak_power) :
+	CacheProfileKey(_cycle_time, _voltage),
+	dyn_energy_per_read(_dyn_energy_per_read),
+	dyn_energy_per_write(_dyn_energy_per_write),
+	leak_power(_leak_power),
+	read_accesses(0),
+	write_accesses(0),
+	duration(0.0)
 {
 }
 
-} // end of namespace pmac_linux_kernel_loader
-} // end of namespace loader
+} // end of namespace power
 } // end of namespace service
 } // end of namespace unisim
+

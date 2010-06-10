@@ -270,6 +270,7 @@ public:
 	virtual uint32_t GetEntryPoint() const;
 	virtual uint32_t GetTopAddr() const;
 	virtual uint32_t GetStackBase() const;
+	virtual bool Load(const char *filename);
 
 private:
 	unisim::kernel::logger::Logger logger;
@@ -292,6 +293,8 @@ private:
 	Parameter<bool> param_verbose;
 
 	uint32_t stack_base;
+	
+	bool Load();
 };
 
 } // end of namesapce pmac_bootx

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2010,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,40 +29,40 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ *          Gilles Mouchard (gilles.mouchard@cea.fr)
  */
- 
-#include <unisim/service/loader/pmac_linux_kernel_loader/pmac_linux_kernel_loader.hh>
+
+#ifndef __UNISIM_SERVICE_POWER_CACHE_DYNAMIC_POWER_HH__
+#define __UNISIM_SERVICE_POWER_CACHE_DYNAMIC_POWER_HH__
+
+#include "unisim/kernel/service/service.hh"
+#include "unisim/service/interfaces/time.hh"
+#include "unisim/service/power/cache_profile.hh"
+#include "unisim/service/power/cache_dynamic_energy.hh"
+#include <map>
 
 namespace unisim {
 namespace service {
-namespace loader {
-namespace pmac_linux_kernel_loader {
+namespace power {
 
-PMACLinuxKernelLoader::PMACLinuxKernelLoader(const char *name, Object *parent) :
-	Object(name, parent, "PowerMac Linux kernel loader"),
-	loader_export("loader-export", this),
-	symbol_table_lookup_export("symbol-table-lookup-export", this),
-	stmt_lookup_export("stmt-lookup-export", this),
-	memory_import("memory-import", this),
-	registers_import("registers-import", this),
-	pmac_bootx("pmac-bootx", this),
-	elf32_loader("elf32-loader", this)
+using std::map;
+
+class CacheDynamicPower : public CacheDynamicEnergy
 {
-	pmac_bootx.loader_import >> elf32_loader.loader_export;
-	pmac_bootx.memory_import >> memory_import;
-	pmac_bootx.registers_import >> registers_import;
-	elf32_loader.memory_import >> memory_import;
-	loader_export >> pmac_bootx.loader_export;
-	symbol_table_lookup_export >> elf32_loader.symbol_table_lookup_export;
-	stmt_lookup_export >> elf32_loader.stmt_lookup_export;
-}
+public:
+	CacheDynamicPower(const map<CacheProfileKey, CacheProfile *> *_profiles,
+			unisim::kernel::service::ServiceImport<unisim::service::interfaces::Time> *_time_import);
+	~CacheDynamicPower();
 
-PMACLinuxKernelLoader::~PMACLinuxKernelLoader()
-{
-}
+	double GetDynamicPower();
 
-} // end of namespace pmac_linux_kernel_loader
-} // end of namespace loader
+private:
+	unisim::kernel::service::ServiceImport<unisim::service::interfaces::Time> *time_import;
+};
+
+} // end of namespace power
 } // end of namespace service
 } // end of namespace unisim
+
+#endif /* __UNISIM_SERVICE_POWER_CACHE_DYNAMIC_POWER_HH__ */

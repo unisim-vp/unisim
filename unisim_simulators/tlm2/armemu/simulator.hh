@@ -68,6 +68,10 @@ public:
 	Simulator(int argc, char **argv);
 	virtual ~Simulator();
 	int Run();
+	int Run(double time, sc_time_unit unit);
+	bool IsRunning() const;
+	bool SimulationStarted() const;
+	bool SimulationFinished() const;
 
 protected:
 private:
@@ -107,6 +111,12 @@ private:
 	unisim::kernel::service::Parameter<bool> param_enable_gdb_server;
 	unisim::kernel::service::Parameter<bool> param_enable_inline_debugger;
 	unisim::kernel::service::Parameter<bool> param_enable_power_estimation;
+	unisim::kernel::service::Formula<double> *formula_caches_total_dynamic_energy;
+	unisim::kernel::service::Formula<double> *formula_caches_total_dynamic_power;
+	unisim::kernel::service::Formula<double> *formula_caches_total_leakage_power;
+	unisim::kernel::service::Formula<double> *formula_caches_total_power;
+
+	double simulation_spent_time;
 };
 
 #endif /* SIMULATOR_HH_ */

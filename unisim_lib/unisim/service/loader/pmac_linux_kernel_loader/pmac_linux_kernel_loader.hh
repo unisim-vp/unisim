@@ -40,6 +40,7 @@
 
 #include <unisim/service/interfaces/loader.hh>
 #include <unisim/service/interfaces/symbol_table_lookup.hh>
+#include <unisim/service/interfaces/stmt_lookup.hh>
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/registers.hh>
 
@@ -60,12 +61,14 @@ using unisim::service::interfaces::Loader;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Registers;
 using unisim::service::interfaces::SymbolTableLookup;
+using unisim::service::interfaces::StatementLookup;
 
 class PMACLinuxKernelLoader : public Object
 {
 public:
 	ServiceExport<Loader<uint32_t> > loader_export;
 	ServiceExport<SymbolTableLookup<uint32_t> > symbol_table_lookup_export;
+	ServiceExport<StatementLookup<uint32_t> > stmt_lookup_export;
 
 	ServiceImport<Memory<uint32_t> > memory_import;
 	ServiceImport<Registers> registers_import;

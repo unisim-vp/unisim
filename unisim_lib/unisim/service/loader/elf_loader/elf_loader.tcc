@@ -52,15 +52,18 @@ using unisim::kernel::logger::EndDebugInfo;
 using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 
+
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
 ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::ElfLoaderImpl(const char *name, Object *parent) :
 	Object(name, parent, "ELF Loader"),
 	Client<Memory<MEMORY_ADDR> >(name, parent),
 	Service<SymbolTableLookup<MEMORY_ADDR> >(name, parent),
 	Service<Loader<MEMORY_ADDR> >(name, parent),
+	Service<StatementLookup<MEMORY_ADDR> >(name, parent),
 	memory_import("memory-import", this),
 	symbol_table_lookup_export("symbol-table-lookup-export", this),
 	loader_export("loader-export", this),
+	stmt_lookup_export("stmt-lookup-export", this),
 	filename(),
 	entry_point(0),
 	base_addr(0),
@@ -81,6 +84,13 @@ ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::El
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
 ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::~ElfLoaderImpl()
 {
+	unsigned int num_stmt_progs = dw_stmt_progs.size();
+	unsigned int i;
+	for(i = 0; i < num_stmt_progs; i++)
+	{
+		delete dw_stmt_progs[i];
+		delete dw_stmt_vms[i];
+	}
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
@@ -107,7 +117,15 @@ MEMORY_ADDR ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, 
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::Setup()
+bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::Load(const char *_filename)
+{
+	if(memory_import) memory_import->Reset();
+	filename = _filename;
+	return Load();
+}
+
+template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::Load()
 {
 	symbol_table.Reset();
 
@@ -143,7 +161,17 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		logger << DebugError << "Could not read ELF header or \"" << filename << "\" is not an ELF file." << EndDebugError;
 		return false;
 	}
-		
+
+	switch(hdr->e_ident[EI_DATA])
+	{
+		case ELFDATA2LSB:
+			endianness = E_LITTLE_ENDIAN;
+			break;
+		case ELFDATA2MSB:
+			endianness = E_BIG_ENDIAN;
+			break;
+	}
+
 	if(unlikely(verbose))
 	{
 		logger << DebugInfo << "Reading ELF header" << EndDebugInfo;
@@ -321,7 +349,7 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 			section_flags = GetSectionFlags(shdr);
 			section_name = GetSectionName(shdr, sh_string_table);
 
-			if(!(section_flags & SHF_ALLOC))
+			if((section_type != SHT_NULL) && (section_type != SHT_STRTAB) && !(section_flags & SHF_ALLOC))
 			{
 				if(section_type == SHT_SYMTAB)
 				{
@@ -329,34 +357,65 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 					section = malloc(section_size);
 					if(!LoadSection(hdr, shdr, section, is))
 					{
-						logger << DebugWarning << "Can't load section " << GetSectionName(shdr, sh_string_table) << EndDebugWarning;
+						logger << DebugWarning << "Can't load section " << section_name << EndDebugWarning;
 					}
 					else
 					{
 						int strtab_size;
+						const char *strtab_section_name;
 						char *string_table;
 						if(unlikely(verbose))
 						{
-							logger << DebugInfo << "Loading section " << GetSectionName(shdr, sh_string_table) << " (" << section_size << " bytes)" << EndDebugInfo;
+							logger << DebugInfo << "Loading section " << section_name << " (" << section_size << " bytes)" << EndDebugInfo;
 						}
 						sh_strtab = (Elf_Shdr *)((char *) shdr_table + shdr->sh_link * hdr->e_shentsize);
 						strtab_size = GetSectionSize(sh_strtab);
+						strtab_section_name = GetSectionName(sh_strtab, sh_string_table);
 						string_table = (char *) malloc(strtab_size);
 						if(!LoadSection(hdr, sh_strtab, string_table, is))
 						{
-							logger << DebugWarning << "Can't load section " << GetSectionName(sh_strtab, sh_string_table) << EndDebugWarning;
+							logger << DebugWarning << "Can't load section " << strtab_section_name << EndDebugWarning;
 						}
 						else
 						{
 							if(unlikely(verbose))
 							{
-								logger << DebugInfo << "Building symbol table from section " << GetSectionName(sh_strtab, sh_string_table) << EndDebugInfo;
+								logger << DebugInfo << "Building symbol table from sections " << section_name << " and " << strtab_section_name << EndDebugInfo;
 							}
 							BuildSymbolTable(shdr, section, string_table);
 						}
 						free(string_table);
 					}
 					free(section);
+				}
+				else if(strcmp(section_name, ".debug_line") == 0)
+				{
+					if(unlikely(verbose))
+					{
+						logger << DebugInfo << "Loading section " << section_name << " (" << section_size << " bytes)" << EndDebugInfo;
+					}
+					section = malloc(section_size);
+					if(!LoadSection(hdr, shdr, section, is))
+					{
+						logger << DebugWarning << "Can't load section " << section_name << EndDebugWarning;
+					}
+					else
+					{
+						//DumpRawData(section, section_size);
+						if(unlikely(verbose))
+						{
+							logger << DebugInfo << "Building statement matrix from section " << section_name << EndDebugInfo;
+						}
+						BuildStatementMatrix(section, section_size);
+					}
+					free(section);
+				}
+				else
+				{
+					if(unlikely(verbose))
+					{
+						logger << DebugWarning << "Ignoring section " << section_name << " (" << section_size << " bytes)" << EndDebugWarning;
+					}
 				}
 			}
 		}
@@ -368,6 +427,12 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 	if(hdr) free(hdr);
 
 	return success;
+}
+
+template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::Setup()
+{
+	return Load();
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
@@ -1063,6 +1128,211 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		symbol_table.AddSymbol(symbol_name.c_str(), (MEMORY_ADDR) sym->st_value, (MEMORY_ADDR) sym->st_size, type);
 	}
 	//symbol_table.Dump(cerr);
+}
+
+
+template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::DumpRawData(const void *content, MEMORY_ADDR size)
+{
+	int i, j;
+	MEMORY_ADDR offset = 0;
+	streamsize width = cout.width();
+
+	cout.fill(' ');
+	cout.width(2 * sizeof(offset));
+	cout << "offset" << hex;
+	cout.width(0);
+	for(i = 0; i < 16; i++)
+	{
+		cout << "  " << i;
+	}
+	cout << endl;
+	
+	while(offset < size)
+	{
+		cout << hex; cout.fill('0'); cout.width(2 * sizeof(offset)); cout << offset << " "; cout.fill(' ');
+		for(j = 0; j < 16; j++, offset++)
+		{
+			if(offset < size)
+			{
+				uint8_t value = ((uint8_t *) content)[offset];
+				cout << (uint32_t)(value >> 4);
+				cout << (uint32_t)(value & 15);
+			}
+			else
+			{
+				cout << "  ";
+			}
+			if(j < 15) cout << " ";
+		}
+		offset -= 16;
+		cout << dec << "  ";
+		for(j = 0; j < 16; j++, offset++)
+		{
+			if(offset < size)
+			{
+				uint8_t value = ((uint8_t *) content)[offset];
+				cout << (char)((value >= ' ' && value < 128) ? value : '.');
+			}
+			else
+			{
+				cout << ' ';
+			}
+		}
+		cout << endl;
+	}
+	cout.width(width);
+}
+
+template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::BuildStatementMatrix(const void *content, uint32_t total_size)
+{
+	//DumpRawData(content, total_size);
+	MEMORY_ADDR size = 0;
+	do
+	{
+		DWARF_StatementProgram<MEMORY_ADDR> *dw_stmt_prog = new DWARF_StatementProgram<MEMORY_ADDR>(endianness);
+		int sz;
+		if((sz = dw_stmt_prog->Load((const uint8_t *) content + size, total_size - size)) < 0)
+		{
+			logger << DebugWarning << "Invalid DWARF2 statement program prologue at offset 0x" << std::hex << size << std::dec << EndDebugWarning;
+			delete dw_stmt_prog;
+			break;
+		}
+		else
+		{
+			//std::cerr << *dw_stmt_prog << std::endl;
+			dw_stmt_progs.push_back(dw_stmt_prog);
+			size += sz;
+
+			DWARF_StatementVM<MEMORY_ADDR> *dw_stmt_vm = new DWARF_StatementVM<MEMORY_ADDR>(endianness);
+			dw_stmt_vms.push_back(dw_stmt_vm);
+
+			if(!dw_stmt_vm->Run(dw_stmt_prog, 0 /*&std::cout*/, &stmt_matrix))
+			{
+				logger << DebugWarning << "Invalid DWARF2 statement program. Statement matrix may be incomplete." << EndDebugWarning;
+			}
+		}
+	}
+	while(size < total_size);
+	
+	//DumpStatementMatrix();
+}
+
+template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::DumpStatementMatrix()
+{
+	typename std::map<MEMORY_ADDR, Statement<MEMORY_ADDR> *>::const_iterator stmt_iter;
+
+	for(stmt_iter = stmt_matrix.begin(); stmt_iter != stmt_matrix.end(); stmt_iter++)
+	{
+		if((*stmt_iter).second)
+		{
+			std::cout << *(*stmt_iter).second << std::endl;
+		}
+	}
+}
+
+template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+const unisim::util::debug::Statement<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::FindStatement(MEMORY_ADDR addr) const
+{
+	typename std::map<MEMORY_ADDR, Statement<MEMORY_ADDR> *>::const_iterator stmt_iter = stmt_matrix.find(addr);
+	
+	return (stmt_iter != stmt_matrix.end()) ? (*stmt_iter).second : 0;
+}
+
+template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+const unisim::util::debug::Statement<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::FindStatement(const char *filename, unsigned int lineno, unsigned int colno) const
+{
+	bool requested_filename_is_absolute = IsAbsolutePath(filename);
+	std::vector<std::string> hierarchical_requested_filename;
+	
+	std::string s;
+	const char *p = filename;
+	do
+	{
+		if(*p == 0 || *p == '/' || *p == '\\')
+		{
+			hierarchical_requested_filename.push_back(s);
+			s.clear();
+		}
+		else
+		{
+			s += *p;
+		}
+	} while(*(p++));
+	int hierarchical_requested_filename_depth = hierarchical_requested_filename.size();
+
+	typename std::map<MEMORY_ADDR, Statement<MEMORY_ADDR> *>::const_iterator stmt_iter;
+	
+	for(stmt_iter = stmt_matrix.begin(); stmt_iter != stmt_matrix.end(); stmt_iter++)
+	{
+		Statement<MEMORY_ADDR> *stmt = (*stmt_iter).second;
+		
+		if(stmt)
+		{
+			if(stmt->GetLineNo() == lineno && (!colno || (stmt->GetColNo() == colno)))
+			{
+				std::string source_path;
+				const char *source_filename = stmt->GetSourceFilename();
+				if(source_filename)
+				{
+					const char *source_dirname = stmt->GetSourceDirname();
+					if(source_dirname)
+					{
+						source_path += source_dirname;
+						source_path += '/';
+					}
+					source_path += source_filename;
+
+					std::vector<std::string> hierarchical_source_path;
+					
+					s.clear();
+					p = source_path.c_str();
+					do
+					{
+						if(*p == 0 || *p == '/' || *p == '\\')
+						{
+							hierarchical_source_path.push_back(s);
+							s.clear();
+						}
+						else
+						{
+							s += *p;
+						}
+					} while(*(p++));
+
+					int hierarchical_source_path_depth = hierarchical_source_path.size();
+					
+					if((!requested_filename_is_absolute && hierarchical_source_path_depth >= hierarchical_requested_filename_depth) ||
+					   (requested_filename_is_absolute && hierarchical_source_path_depth == hierarchical_requested_filename_depth))
+					{
+						int i;
+						bool match = true;
+						
+						for(i = 0; i < hierarchical_requested_filename_depth; i++)
+						{
+							if(hierarchical_source_path[hierarchical_source_path_depth - 1 - i] != hierarchical_requested_filename[hierarchical_requested_filename_depth - 1 - i])
+							{
+								match = false;
+								break;
+							}
+						}
+						
+						if(match) return stmt;
+					}
+				}
+			}
+		}
+	}
+	return 0;
+}
+
+template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::IsAbsolutePath(const char *filename) const
+{
+	// filename starts '/' or 'drive letter':\ or 'driver letter':/
+	return (((filename[0] >= 'a' && filename[0] <= 'z') || (filename[0] >= 'A' && filename[0] <= 'Z')) && (filename[1] == ':') && ((filename[2] == '\\') || (filename[2] == '/'))) || (*filename == '/');
 }
 
 } // end of namespace elf_loader

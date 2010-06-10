@@ -31,38 +31,55 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
- 
-#include <unisim/service/loader/pmac_linux_kernel_loader/pmac_linux_kernel_loader.hh>
+
+#ifndef __UNISIM_SERVICE_POWER_CACHE_PROFILE_HH__
+#define __UNISIM_SERVICE_POWER_CACHE_PROFILE_HH__
+
+#include <inttypes.h>
 
 namespace unisim {
 namespace service {
-namespace loader {
-namespace pmac_linux_kernel_loader {
+namespace power {
 
-PMACLinuxKernelLoader::PMACLinuxKernelLoader(const char *name, Object *parent) :
-	Object(name, parent, "PowerMac Linux kernel loader"),
-	loader_export("loader-export", this),
-	symbol_table_lookup_export("symbol-table-lookup-export", this),
-	stmt_lookup_export("stmt-lookup-export", this),
-	memory_import("memory-import", this),
-	registers_import("registers-import", this),
-	pmac_bootx("pmac-bootx", this),
-	elf32_loader("elf32-loader", this)
+class CacheProfileKey
 {
-	pmac_bootx.loader_import >> elf32_loader.loader_export;
-	pmac_bootx.memory_import >> memory_import;
-	pmac_bootx.registers_import >> registers_import;
-	elf32_loader.memory_import >> memory_import;
-	loader_export >> pmac_bootx.loader_export;
-	symbol_table_lookup_export >> elf32_loader.symbol_table_lookup_export;
-	stmt_lookup_export >> elf32_loader.stmt_lookup_export;
-}
+public:
+	unsigned int cycle_time; // Mhz
+	unsigned int voltage; // mV
 
-PMACLinuxKernelLoader::~PMACLinuxKernelLoader()
+	CacheProfileKey(unsigned int t, unsigned int v) : cycle_time(t), voltage(v)
+	{
+	}
+
+	inline bool operator < (CacheProfileKey rhs) const
+	{
+		if(cycle_time < rhs.cycle_time) return true;
+		if(cycle_time > rhs.cycle_time) return false;
+		return voltage < rhs.voltage;
+	}
+};
+
+class CacheProfile : public CacheProfileKey
 {
-}
+public:
+	CacheProfile(
+		unsigned int cycle_time,
+		unsigned int voltage,
+		double dyn_energy_per_read,
+		double dyn_energy_per_write,
+		double leak_power);
 
-} // end of namespace pmac_linux_kernel_loader
-} // end of namespace loader
+	double dyn_energy_per_read; // in J
+	double dyn_energy_per_write; // in J
+	double leak_power; // in W
+	uint64_t read_accesses;
+	uint64_t write_accesses;
+	double duration; // in seconds
+
+};
+
+} // end of namespace power
 } // end of namespace service
 } // end of namespace unisim
+
+#endif /* __UNISIM_SERVICE_POWER_CACHE_PROFILE_HH__ */

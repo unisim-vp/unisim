@@ -54,20 +54,24 @@ int sc_main(int argc, char *argv[]) {
 
 	Simulator *simulator = new Simulator(argc, argv);
 
-	if ( simulator->Setup() )
+	switch ( simulator->Setup() )
 	{
-		cerr << "Starting simulation" << endl;
+	case unisim::kernel::service::Simulator::ST_ERROR:
+		cerr << "ERROR: Can't start simulation because of previous erros" << endl;
+		ret = -1;
+		break;
+	case unisim::kernel::service::Simulator::ST_OK_DONT_START:
+		cerr << "Successfully configured the simulator." << endl;
+		ret = 0;
+		break;
+	case unisim::kernel::service::Simulator::ST_WARNING:
+		cerr << "WARNING: problems detected during setup."
+			<< " Starting simulation anyway, but errors could appear during "
+			<< "the simulation." << endl;
+	case unisim::kernel::service::Simulator::ST_OK_TO_START:
+		cerr << "Starting simulation." << endl;
 		ret = simulator->Run();
-	}
-	else
-	{
-		if ( (bool)(*simulator->FindVariable("get-config")) )
-			ret = 0;
-		else
-		{
-			cerr << "Can't start simulation because of previous errors" << endl;
-			ret = -1;
-		}
+		break;
 	}
 
 	if (simulator) delete simulator;
@@ -75,6 +79,5 @@ int sc_main(int argc, char *argv[]) {
 	//releases the winsock2 resources
 	WSACleanup();
 #endif
-
 	return ret;
 }
