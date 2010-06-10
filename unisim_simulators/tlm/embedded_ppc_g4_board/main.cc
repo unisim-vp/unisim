@@ -114,6 +114,7 @@ using unisim::component::cxx::pci::pci32_address_t;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::Variable;
 using unisim::kernel::service::VariableBase;
+using unisim::kernel::service::Object;
 
 class Simulator : public unisim::kernel::service::Simulator
 {
@@ -121,6 +122,7 @@ public:
 	Simulator(int argc, char **argv);
 	virtual ~Simulator();
 	void Run();
+	virtual void Stop(Object *object, int exit_status);
 protected:
 private:
 	//=========================================================================
@@ -305,6 +307,8 @@ Simulator::Simulator(int argc, char **argv)
 	, param_num_programs("num-programs", 0, num_programs, "Number of programs to load into memory")
 {
 	unsigned int pci_stub_irq = 0;
+	
+	SetVariable("inline-debugger.num-loaders", num_programs);
 
 	//=========================================================================
 	//===                     Component instantiations                      ===
@@ -635,7 +639,12 @@ Simulator::Simulator(int argc, char **argv)
 
 	if(inline_debugger)
 	{
-		inline_debugger->symbol_table_lookup_import >> tee_symbol_table_lookup->in;
+		for(unsigned int i = 0; i < elf32_loaders->size(); i++) 
+		{
+			*inline_debugger->loader_import[i] >> (*elf32_loaders)[i]->loader_export;
+			*inline_debugger->symbol_table_lookup_import[i] >> (*elf32_loaders)[i]->symbol_table_lookup_export;
+			*inline_debugger->stmt_lookup_import[i] >> (*elf32_loaders)[i]->stmt_lookup_export;
+		}
 	}
 }
 
@@ -715,7 +724,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	double cpu_cycle_time = (uint64_t)(1e6 / cpu_frequency); // in picoseconds
 	double fsb_cycle_time = cpu_clock_multiplier * cpu_cycle_time;
 	double mem_cycle_time = fsb_cycle_time;
-	unsigned int num_programs = 2;
+	unsigned int num_programs = 1;
 	
 	//=========================================================================
 	//===                     Component run-time configuration              ===
@@ -894,6 +903,9 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("dtlb-power-estimator.output-width", 32);
 	simulator->SetVariable("dtlb-power-estimator.tag-width", 64);
 	simulator->SetVariable("dtlb-power-estimator.access-mode", "fast");
+
+	// Inline debugger
+	simulator->SetVariable("inline-debugger.num-loaders", num_programs);
 }
 
 void Simulator::Run()
@@ -987,6 +999,14 @@ void Simulator::Run()
 	}
 }
 
+void Simulator::Stop(Object *object, int exit_status)
+{
+	std::cerr << object->GetName() << " has requested simulation stop" << std::endl;
+	std::cerr << "Program exited with status " << exit_status << std::endl;
+	sc_stop();
+	wait();
+}
+
 int sc_main(int argc, char *argv[])
 {
 #ifdef WIN32
@@ -1001,15 +1021,19 @@ int sc_main(int argc, char *argv[])
 #endif
 	Simulator *simulator = new Simulator(argc, argv);
 
-	if(simulator->Setup())
+	switch(simulator->Setup())
 	{
-		cerr << "Starting simulation at supervisor privilege level (kernel mode)" << endl;
-
-		simulator->Run();
-	}
-	else
-	{
-		cerr << "Can't start simulation because of previous errors" << endl;
+		case unisim::kernel::service::Simulator::ST_OK_DONT_START:
+			break;
+		case unisim::kernel::service::Simulator::ST_WARNING:
+			cerr << "Some warnings occurred during setup" << endl;
+		case unisim::kernel::service::Simulator::ST_OK_TO_START:
+			cerr << "Starting simulation at user privilege level (Linux system call translation mode)" << endl;
+			simulator->Run();
+			break;
+		case unisim::kernel::service::Simulator::ST_ERROR:
+			cerr << "Can't start simulation because of previous errors" << endl;
+			break;
 	}
 
 	if(simulator) delete simulator;
