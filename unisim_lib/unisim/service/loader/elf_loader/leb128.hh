@@ -36,6 +36,7 @@
 #define __UNISIM_SERVICE_LOADER_ELF_LOADER_LEB128_HH__
 
 #include <iosfwd>
+#include <inttypes.h>
 
 namespace unisim {
 namespace service {
@@ -56,7 +57,7 @@ public:
 	DWARF_LEB128& operator = (const uint8_t *leb128);
 	DWARF_LEB128& operator = (const DWARF_LEB128& leb128);
 private:
-	const uint8_t *leb128;
+	uint8_t *leb128;
 };
 
 } // end of namespace elf_loader

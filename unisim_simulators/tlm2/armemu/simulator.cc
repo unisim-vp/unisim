@@ -192,8 +192,12 @@ Simulator(int argc, char **argv) :
 
 	if ( enable_inline_debugger )
 	{
-		inline_debugger->symbol_table_lookup_import >>
+		*inline_debugger->loader_import[0] >> 
+			linux_os->loader_export;
+		*inline_debugger->symbol_table_lookup_import[0] >>
 			elf32_loader->symbol_table_lookup_export;
+		*inline_debugger->stmt_lookup_import[0] >>
+			elf32_loader->stmt_lookup_export;
 	}
 }
 
@@ -352,6 +356,8 @@ void Simulator::DefaultConfiguration(unisim::kernel::service::Simulator *sim)
 	sim->SetVariable("gdb-server.architecture-description-filename",
 			"gdb_server/gdb_armv5l.xml");
 
+	sim->SetVariable("inline-debugger.num-loaders", 1);
+	sim->SetVariable("inline-debugger.search-path", "");
 
 #ifdef SIM_POWER_ESTIMATOR_SUPPORT
 	sim->SetVariable("il1-power-estimator.cache-size", 32 * 128);

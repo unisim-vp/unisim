@@ -4,7 +4,7 @@ import xml.etree.ElementTree as ET
 
 def getUnitsFromFile(filename, rep_name):
 	unit_list = []
-	# print("parsing package file: %s" % (filename))
+	print("parsing package file: %s" % (filename))
 	xml = ET.parse(filename)
 	root = xml.getroot()
 	unit_entries = root.findall('unit')

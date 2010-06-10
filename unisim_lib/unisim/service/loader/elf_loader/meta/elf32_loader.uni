@@ -12,6 +12,11 @@
 			<file>unisim/service/loader/elf_loader/elf_loader.tcc</file>
 			<file>unisim/service/loader/elf_loader/elf32_loader.cc</file>
 			<file>unisim/service/loader/elf_loader/elf64_loader.cc</file>
+			<file>unisim/service/loader/elf_loader/dwarf.hh</file>
+			<file>unisim/service/loader/elf_loader/dwarf.tcc</file>
+			<file>unisim/service/loader/elf_loader/dwarf.cc</file>
+			<file>unisim/service/loader/elf_loader/dwarf_32.cc</file>
+			<file>unisim/service/loader/elf_loader/dwarf_64.cc</file>
 			<file>unisim/service/loader/elf_loader/CMakeLists.txt</file>
 		</files>
 		<depends>
@@ -20,6 +25,7 @@
 			<dep>unisim::service::interfaces::memory</dep>
 			<dep>unisim::service::interfaces::loader</dep>
 			<dep>unisim::service::interfaces::symbol_table_lookup</dep>
+			<dep>unisim::service::interfaces::stmt_lookup</dep>
 			<dep>unisim::util::endian</dep>
 			<dep>unisim::util::debug</dep>
 			<dep>stl_iosfwd</dep>

@@ -4,7 +4,7 @@ include ( CheckIncludeFileCXX )
 include ( CheckIncludeFile )
 include ( ${CMAKE_SOURCE_DIR}/cmake/UnisimInclude.cmake )
 
-set ( C_INCLUDES inttypes stdlib )
+set ( C_INCLUDES inttypes stdlib string )
 foreach ( C_INCLUDE ${C_INCLUDES} )
 	check_include_file ( ${C_INCLUDE}.h HAVE_${C_INCLUDE}_H )
 	if ( NOT HAVE_${C_INCLUDE}_H )
@@ -12,7 +12,7 @@ foreach ( C_INCLUDE ${C_INCLUDES} )
 	endif ( NOT HAVE_${C_INCLUDE}_H )
 endforeach ( C_INCLUDE )
 
-set ( CXX_INCLUDES iosfwd iostream fstream )
+set ( CXX_INCLUDES iosfwd iostream fstream vector map sstream limits )
 foreach ( CXX_INCLUDE ${CXX_INCLUDES} )
 	check_include_file_cxx ( ${CXX_INCLUDE} HAVE_${CXX_INCLUDE} )
 	if ( NOT HAVE_${CXX_INCLUDE} )
@@ -25,6 +25,7 @@ set ( elf_loader_subdirs
 	unisim/service/interfaces/memory
 	unisim/service/interfaces/loader
 	unisim/service/interfaces/symbol_table_lookup
+	unisim/service/interfaces/stmt_lookup
 	unisim/util/endian
 	unisim/util/debug
 	)
@@ -43,6 +44,13 @@ add_library ( unisim__service__loader__elf_loader
 		${CMAKE_SOURCE_DIR}/unisim/service/loader/elf_loader/elf_loader.tcc
 		${CMAKE_SOURCE_DIR}/unisim/service/loader/elf_loader/elf32_loader.cc
 		${CMAKE_SOURCE_DIR}/unisim/service/loader/elf_loader/elf64_loader.cc
+		${CMAKE_SOURCE_DIR}/unisim/service/loader/elf_loader/dwarf.hh
+		${CMAKE_SOURCE_DIR}/unisim/service/loader/elf_loader/dwarf.cc
+		${CMAKE_SOURCE_DIR}/unisim/service/loader/elf_loader/dwarf_32.cc
+		${CMAKE_SOURCE_DIR}/unisim/service/loader/elf_loader/dwarf_64.cc
+		${CMAKE_SOURCE_DIR}/unisim/service/loader/elf_loader/dwarf.hh
+		${CMAKE_SOURCE_DIR}/unisim/service/loader/elf_loader/dwarf.tcc
+		${CMAKE_SOURCE_DIR}/unisim/service/loader/elf_loader/dwarf.cc
 	)
 
 target_link_libraries ( unisim__service__loader__elf_loader

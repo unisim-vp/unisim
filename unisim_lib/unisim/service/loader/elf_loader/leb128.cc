@@ -35,18 +35,20 @@
 #include <unisim/service/loader/elf_loader/leb128.hh>
 #include <iostream>
 #include <limits>
+#include <vector>
+#include <string.h>
 
 namespace unisim {
 namespace service {
 namespace loader {
 namespace elf_loader {
 
-static unsigned int GetByteSize(const std::vector<uint8_t>& leb128)
-{
-	unsigned int byte_size;
-	for(byte_size = 1; (byte_size < leb128.size()) && (leb128[byte_size] & 0x80); byte_size++);
-	return byte_size;
-}
+//static unsigned int GetByteSize(const std::vector<uint8_t>& leb128)
+//{
+//	unsigned int byte_size;
+//	for(byte_size = 1; (byte_size < leb128.size()) && (leb128[byte_size] & 0x80); byte_size++);
+//	return byte_size;
+//}
 
 static unsigned int GetByteSize(const uint8_t *leb128)
 {
@@ -60,32 +62,32 @@ static unsigned int GetBitLength(const uint8_t *leb128)
 	return GetByteSize(leb128) * 7;
 }
 
-DWARF_LEB128::DWARF_LEB128()
-	: leb128(0)
-{
-}
+//DWARF_LEB128::DWARF_LEB128()
+//	: leb128(0)
+//{
+//}
 
-DWARF_LEB128::DWARF_LEB128(const std::vector<uint8_t>& _leb128)
-	: leb128(0)
-{
-	if(_leb128)
-	{
-		unsigned int byte_size = GetByteSize(_leb128);
-		leb128 = new uint8_t[byte_size];
-		unsigned int byte_index;
-		for(byte_index = 0; byte_index < byte_size; byte_index++)
-		{
-			leb128[byte_index] = _leb128[byte_index];
-		}
-	}
-}
+//DWARF_LEB128::DWARF_LEB128(const std::vector<uint8_t>& _leb128)
+//	: leb128(0)
+//{
+//	if(_leb128)
+//	{
+//		unsigned int byte_size = GetByteSize(_leb128);
+//		leb128 = new uint8_t[byte_size];
+//		unsigned int byte_index;
+//		for(byte_index = 0; byte_index < byte_size; byte_index++)
+//		{
+//			leb128[byte_index] = _leb128[byte_index];
+//		}
+//	}
+//}
 
 DWARF_LEB128::DWARF_LEB128(const uint8_t *_leb128)
 	: leb128(0)
 {
 	if(_leb128)
 	{
-		unsigned int byte_size = GetByteSize(_leb128);
+		unsigned int byte_size = unisim::service::loader::elf_loader::GetByteSize(_leb128);
 		leb128 = new uint8_t[byte_size];
 		memcpy(leb128, _leb128, byte_size);
 	}
@@ -121,7 +123,7 @@ DWARF_LEB128& DWARF_LEB128::operator = (const uint8_t *_leb128)
 
 	if(_leb128)
 	{
-		unsigned int byte_size = GetByteSize(_leb128);
+		unsigned int byte_size = unisim::service::loader::elf_loader::GetByteSize(_leb128);
 		leb128 = new uint8_t[byte_size];
 		memcpy(leb128, _leb128, byte_size);
 	}
@@ -149,16 +151,16 @@ DWARF_LEB128& DWARF_LEB128::operator = (const DWARF_LEB128& _leb128)
 
 unsigned int DWARF_LEB128::GetByteSize() const
 {
-	return GetByteSize(leb128);
+	return unisim::service::loader::elf_loader::GetByteSize(leb128);
 }
 
 unsigned int DWARF_LEB128::GetBitLength() const
 {
-	return GetBitLength(leb128);
+	return unisim::service::loader::elf_loader::GetBitLength(leb128);
 }
 
 template <typename T>
-bool DWARF_LEB128::Fit(const T *t = 0) const
+bool DWARF_LEB128::Fit(const T *t) const
 {
 	return 8 * sizeof(T) >= GetBitLength();
 }
@@ -192,4 +194,3 @@ DWARF_LEB128::operator T() const
 } // end of namespace service
 } // end of namespace unisim
 
-#endif

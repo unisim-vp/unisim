@@ -25,7 +25,6 @@
 			<file>share/macosx/Info.plist</file>
 			<file>share/linux/unisim-armemu.desktop.in</file>
 			<file>share/linux/find_deb_dependencies.sh</file>
-			<file>python/armemu.cc</file>
 			<file>python/py_simulator.hh</file>
 			<file>python/py_simulator.cc</file>
 			<file>python/py_variable.hh</file>
