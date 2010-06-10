@@ -307,6 +307,8 @@ Simulator::Simulator(int argc, char **argv)
 	, param_num_programs("num-programs", 0, num_programs, "Number of programs to load into memory")
 {
 	unsigned int pci_stub_irq = 0;
+	
+	SetVariable("inline-debugger.num-loaders", num_programs);
 
 	//=========================================================================
 	//===                     Component instantiations                      ===
@@ -637,7 +639,12 @@ Simulator::Simulator(int argc, char **argv)
 
 	if(inline_debugger)
 	{
-		inline_debugger->symbol_table_lookup_import >> tee_symbol_table_lookup->in;
+		for(unsigned int i = 0; i < elf32_loaders->size(); i++) 
+		{
+			*inline_debugger->loader_import[i] >> (*elf32_loaders)[i]->loader_export;
+			*inline_debugger->symbol_table_lookup_import[i] >> (*elf32_loaders)[i]->symbol_table_lookup_export;
+			*inline_debugger->stmt_lookup_import[i] >> (*elf32_loaders)[i]->stmt_lookup_export;
+		}
 	}
 }
 
@@ -717,7 +724,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	double cpu_cycle_time = (uint64_t)(1e6 / cpu_frequency); // in picoseconds
 	double fsb_cycle_time = cpu_clock_multiplier * cpu_cycle_time;
 	double mem_cycle_time = fsb_cycle_time;
-	unsigned int num_programs = 2;
+	unsigned int num_programs = 1;
 	
 	//=========================================================================
 	//===                     Component run-time configuration              ===
@@ -896,6 +903,9 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("dtlb-power-estimator.output-width", 32);
 	simulator->SetVariable("dtlb-power-estimator.tag-width", 64);
 	simulator->SetVariable("dtlb-power-estimator.access-mode", "fast");
+
+	// Inline debugger
+	simulator->SetVariable("inline-debugger.num-loaders", num_programs);
 }
 
 void Simulator::Run()
