@@ -29,6 +29,7 @@
 			<file>python/py_simulator.cc</file>
 			<file>python/py_variable.hh</file>
 			<file>python/py_variable.cc</file>
+			<file>python/__init__.py</file>
 			<file>python/setup.py.in</file>
 			<file>python/python_config.hh.in</file>
 			<file>AUTHORS.txt</file>
