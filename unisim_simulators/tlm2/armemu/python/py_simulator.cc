@@ -161,7 +161,6 @@ pydict_from_variable_list ( armemu_SimulatorObject *self,
 	result = PyDict_New();
 	if ( result == NULL ) return NULL;
 
-	printf("pydict\n");
 	for ( std::list<unisim::kernel::service::VariableBase *>::iterator it = list.begin();
 			it != list.end();
 			it++ )
