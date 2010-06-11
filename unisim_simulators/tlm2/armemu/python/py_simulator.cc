@@ -132,6 +132,7 @@ destroy_simulator(armemu_SimulatorObject *self)
 	}
 	self->sim = 0;
 	sim = 0;
+
 }
 
 static void
@@ -152,10 +153,98 @@ simulator_new (PyTypeObject *type, PyObject *args, PyObject *kwds)
 	return (PyObject *)self;
 }
 
+static PyObject *
+pydict_from_variable_list ( armemu_SimulatorObject *self,
+		std::list<unisim::kernel::service::VariableBase*>& list)
+{
+	PyObject *result;
+	result = PyDict_New();
+	if ( result == NULL ) return NULL;
+
+	printf("pydict\n");
+	for ( std::list<unisim::kernel::service::VariableBase *>::iterator it = list.begin();
+			it != list.end();
+			it++ )
+	{
+		PyObject *variable;
+		PyObject *name;
+		variable = PyVariable_NewVariable(&self->sim, (*it)->GetName());
+		name = PyUnicode_FromString((*it)->GetName());
+		if ( PyDict_SetItem(result, name, variable) == -1)
+		{
+			Py_DECREF(name);
+			Py_DECREF(variable);
+			PyDict_Clear(result);
+			result = NULL;
+			return result;
+		}
+		Py_DECREF(name);
+		Py_DECREF(variable);
+	}
+
+	return result;
+}
+
+//static void
+//update_variables (armemu_SimulatorObject *self)
+//{
+//	std::list<unisim::kernel::service::VariableBase *> var_list;
+//	self->sim->GetVariables(var_list);
+//
+//	if ( self->vars == 0 )
+//	{
+//		self->vars = pydict_from_variable_list(self, var_list);
+//		return;
+//	}
+//
+//	std::list<unisim::kernel::service::VariableBase *>::const_iterator it;
+//	for ( it = var_list.begin(); it != var_list.end(); it++)
+//	{
+//		PyObject *var = PyDict_GetItemString(self->vars, (*it)->GetName());
+//		if ( var == NULL )
+//		{
+//			printf("INFO: variable '%s' not found in variable dictionary, adding it.\n",
+//					(*it)->GetName());
+//			PyObject *name;
+//			var = PyVariable_NewVariable(&(self->sim),(*it)->GetName());
+//			name = PyUnicode_FromString((*it)->GetName());
+//			if ( PyDict_SetItem(self->vars, name, var) == -1)
+//			{
+//				printf("ERROR: could not add variable '%s' to dictionary.\n",
+//						(*it)->GetName());
+//				Py_DECREF(name);
+//				Py_DECREF(var);
+//			}
+//			Py_DECREF(name);
+//			Py_DECREF(var);
+//
+//		}
+//	}
+//
+//	PyObject *keys = PyDict_Keys(self->vars);
+//	Py_ssize_t size = PyList_Size(keys);
+//	for ( Py_ssize_t i = 0; i < size; i++ )
+//	{
+//		PyObject *key = PyList_GetItem(keys, i);
+//		PyObject *utf8 = PyUnicode_AsEncodedString(key, NULL, NULL);
+//		char *name = PyBytes_AsString(utf8);
+//		bool found = false;
+//		for ( it = var_list.begin(); !found && it != var_list.end(); it++ )
+//		{
+//			if ( strcmp(name, (*it)->GetName()) )
+//				found = true;
+//		}
+//		if ( !found )
+//			printf("WARNING: variable '%s' is no longer available.\n",
+//					name);
+//	}
+//}
+
 static int
 simulator_init (armemu_SimulatorObject *self, PyObject *args, PyObject *kwds)
 {
 	self->sim = create_simulator();
+	// update_variables(self);
 	// self->setup = self->sim->Setup();
 	return 0;
 }
@@ -166,6 +255,7 @@ simulator_setup (armemu_SimulatorObject *self)
 	PyObject *result;
 	self->setup = self->sim->Setup();
 	result = PyLong_FromLong(self->setup);
+	// update_variables(self);
 	return result;
 }
 
@@ -190,37 +280,7 @@ simulator_get_variable (armemu_SimulatorObject *self, PyObject *args)
 	if ( var == 0 )
 		PyErr_SetString(PyExc_ValueError, "could not find the given variable");
 	else
-		result = PyVariable_NewVariable(var);
-	return result;
-}
-
-static PyObject *
-pydict_from_variable_list ( std::list<unisim::kernel::service::VariableBase*>& list)
-{
-	PyObject *result;
-	result = PyDict_New();
-	if ( result == NULL ) return NULL;
-
-	for ( std::list<unisim::kernel::service::VariableBase *>::iterator it = list.begin();
-			it != list.end();
-			it++ )
-	{
-		PyObject *variable;
-		PyObject *name;
-		variable = PyVariable_NewVariable(*it);
-		name = PyUnicode_FromString((*it)->GetName());
-		if ( PyDict_SetItem(result, name, variable) == -1)
-		{
-			Py_DECREF(name);
-			Py_DECREF(variable);
-			PyDict_Clear(result);
-			result = NULL;
-			return result;
-		}
-		Py_DECREF(name);
-		Py_DECREF(variable);
-	}
-
+		result = PyVariable_NewVariable(&(self->sim), var->GetName());
 	return result;
 }
 
@@ -229,10 +289,12 @@ simulator_get_variables (armemu_SimulatorObject *self)
 {
 	PyObject *result;
 
-	if ( self->sim == 0 ) return NULL;
+//	if ( self->sim == 0 ) return NULL;
+//	if ( self->vars == 0 ) return NULL;
+//	return self->vars;
 	std::list<unisim::kernel::service::VariableBase *> var_list;
 	self->sim->GetVariables(var_list);
-	result = pydict_from_variable_list(var_list);
+	result = pydict_from_variable_list(self, var_list);
 
 	return result;
 }
@@ -245,7 +307,7 @@ simulator_get_parameters (armemu_SimulatorObject *self)
 	if ( self->sim == 0 ) return NULL;
 	std::list<unisim::kernel::service::VariableBase *> parm_list;
 	self->sim->GetParameters(parm_list);
-	result = pydict_from_variable_list(parm_list);
+	result = pydict_from_variable_list(self, parm_list);
 
 	return result;
 }
@@ -258,7 +320,7 @@ simulator_get_statistics (armemu_SimulatorObject *self)
 	if ( self->sim == 0 ) return NULL;
 	std::list<unisim::kernel::service::VariableBase *> stat_list;
 	self->sim->GetStatistics(stat_list);
-	result = pydict_from_variable_list(stat_list);
+	result = pydict_from_variable_list(self, stat_list);
 
 	return result;
 }
@@ -271,7 +333,7 @@ simulator_get_registers (armemu_SimulatorObject *self)
 	if ( self->sim == 0 ) return NULL;
 	std::list<unisim::kernel::service::VariableBase *> reg_list;
 	self->sim->GetRegisters(reg_list);
-	result = pydict_from_variable_list(reg_list);
+	result = pydict_from_variable_list(self, reg_list);
 
 	return result;
 }
@@ -284,7 +346,7 @@ simulator_get_formulas ( armemu_SimulatorObject *self)
 	if ( self->sim == 0 ) return NULL;
 	std::list<unisim::kernel::service::VariableBase *> form_list;
 	self->sim->GetFormulas(form_list);
-	result = pydict_from_variable_list(form_list);
+	result = pydict_from_variable_list(self, form_list);
 
 	return result;
 }
@@ -377,7 +439,7 @@ simulator_run (armemu_SimulatorObject *self, PyObject *args)
 	char *cunit = "sec";
 	std::string unit;
 	sc_time_unit time_unit;
-	if ( self->setup != unisim::kernel::service::Simulator::ST_OK_TO_START ||
+	if ( self->setup != unisim::kernel::service::Simulator::ST_OK_TO_START &&
 			self->setup != unisim::kernel::service::Simulator::ST_WARNING )
 	{
 		result = PyUnicode_FromString("Simulation setup failed.");

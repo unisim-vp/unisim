@@ -34,6 +34,7 @@
 
 #include <Python.h>
 #include "simulator.hh"
+#include <string>
 #define VARIABLE_MODULE
 #include "python/py_variable.hh"
 
@@ -42,13 +43,21 @@ extern "C" {
 typedef struct {
     PyObject_HEAD
     /* Type-specific fields go here. */
-    unisim::kernel::service::VariableBase *var;
+    //unisim::kernel::service::VariableBase *var;
+    Simulator **sim;
+    std::string *name;
 } variable_VariableObject;
 
 static void
 variable_dealloc (variable_VariableObject *self)
 {
-	self->var = 0;
+	if ( self->sim )
+		printf ("---Deallocating '%s'\n", self->name->c_str() );
+	else
+		printf ("---Deallocating variable\n" );
+	delete self->name;
+	self->name = 0;
+	self->sim = 0;
 
 	Py_TYPE(self)->tp_free((PyObject *)self);
 }
@@ -58,42 +67,57 @@ variable_new (PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
 	return NULL;
 	//return PyVariable_NewVariable();
-	variable_VariableObject *self;
-	self = (variable_VariableObject *)type->tp_alloc(type, 0);
-	self->var = 0;
-	return (PyObject *)self;
+//	variable_VariableObject *self;
+//	self = (variable_VariableObject *)type->tp_alloc(type, 0);
+//	self->sim = 0;
+//	self->name = 0;
+//	return (PyObject *)self;
 }
 
 static PyObject *
 variable_init (variable_VariableObject *self, PyObject *args, PyObject *kwds)
 {
-	self->var = 0;
+	self->sim = 0;
+	self->name = 0;
 	return (PyObject *)self;
 }
 
 static PyObject *
 variable_get_name (variable_VariableObject *self)
 {
-	PyObject *result;
-	const char *name = self->var->GetName();
-	result = PyUnicode_FromString(name);
+	PyObject *result = NULL;
+	if ( self->sim == 0 )
+	{
+		PyErr_Format(PyExc_ValueError, "Variable '%s' is no longer available", self->name->c_str());
+		return result;
+	}
+	result = PyUnicode_FromString(self->name->c_str());
 	return result;
 }
 
 static PyObject *
 variable_getname (variable_VariableObject *self, void *closure)
 {
-	PyObject *result;
-	const char *name = self->var->GetName();
-	result = PyUnicode_FromString(name);
+	PyObject *result = NULL;
+	if ( self->sim == 0 )
+	{
+		PyErr_Format(PyExc_ValueError, "Variable '%s' is no longer available", self->name->c_str());
+		return result;
+	}
+	result = PyUnicode_FromString(self->name->c_str());
 	return result;
 }
 
 static PyObject *
 variable_getvalue (variable_VariableObject *self, void *closure)
 {
-	PyObject *result;
-	std::string value = (std::string)*self->var;
+	PyObject *result = NULL;
+	if ( self->sim == 0 )
+	{
+		PyErr_Format(PyExc_ValueError, "Variable '%s' is no longer available", self->name->c_str());
+		return result;
+	}
+	std::string value = (std::string)*(*self->sim)->FindVariable(self->name->c_str());
 	result = PyUnicode_FromString(value.c_str());
 	return result;
 }
@@ -101,6 +125,11 @@ variable_getvalue (variable_VariableObject *self, void *closure)
 static int
 variable_setvalue (variable_VariableObject *self, PyObject *value, void *closure)
 {
+	if ( self->sim == 0 )
+	{
+		PyErr_Format(PyExc_ValueError, "Variable '%s' is no longer available", self->name->c_str());
+		return -1;
+	}
 	if ( value == NULL )
 	{
 		PyErr_SetString(PyExc_TypeError, "Cannot set value to NULL");
@@ -111,22 +140,26 @@ variable_setvalue (variable_VariableObject *self, PyObject *value, void *closure
 		PyErr_SetString(PyExc_TypeError, "The value must be a string");
 		return -1;
 	}
-	// PyObject *ascii = PyUnicode_EncodeASCII(PyUnicode_AS_UNICODE(value), PyUnicode_GET_SIZE(value), NULL);
-	// printf ("%s\n", PyByteArray_AsString(ascii));
 	PyObject *utf8 = PyUnicode_AsEncodedString(value, NULL, NULL);
 	if ( !PyBytes_Check(utf8) )
 	{
 		PyErr_SetString(PyExc_TypeError, "not a python bytes");
 		return -1;
 	}
-	*self->var = PyBytes_AsString(utf8);
+	*(*self->sim)->FindVariable(self->name->c_str()) = PyBytes_AsString(utf8);
 	return 0;
 }
+
 static PyObject *
 variable_get_value ( variable_VariableObject *self )
 {
-	PyObject *result;
-	std::string value = (std::string)*self->var;
+	PyObject *result = NULL;
+	if ( self->sim == 0 )
+	{
+		PyErr_Format(PyExc_ValueError, "Variable '%s' is no longer available", self->name->c_str());
+		return result;
+	}
+	std::string value = (std::string)*(*self->sim)->FindVariable(self->name->c_str());
 	result = PyUnicode_FromString(value.c_str());
 	return result;
 }
@@ -136,9 +169,15 @@ variable_set_value ( variable_VariableObject *self, PyObject *args)
 {
 	const char *value;
 
+	if ( self->sim == 0 )
+	{
+		PyErr_Format(PyExc_ValueError, "Variable '%s' is no longer available", self->name->c_str());
+		return NULL;
+	}
+
 	if ( !PyArg_ParseTuple(args, "s", &value) )
 		return NULL;
-	*self->var = value;
+	*(*self->sim)->FindVariable(self->name->c_str()) = value;
 	return (PyObject *)self;
 }
 
@@ -237,6 +276,7 @@ PyInit_variable(void)
 
 	/* Initialize the C API pointer array */
 	PyVariable_API[PyVariable_NewVariable_NUM] = (void *)PyVariable_NewVariable;
+	PyVariable_API[PyVariable_DeleteVariable_NUM] = (void *)PyVariable_DeleteVariable;
 
 	/* Create a Capsule containing the API pointer array's address */
 	c_api_object = PyCapsule_New((void *)PyVariable_API, PyVariable_Capsule_Name, NULL);
@@ -249,13 +289,22 @@ PyInit_variable(void)
 }
 
 static PyObject *
-PyVariable_NewVariable (unisim::kernel::service::VariableBase *var)
+PyVariable_NewVariable (Simulator **sim,
+		const char *name)
 {
 	variable_VariableObject *self;
 	self = (variable_VariableObject *)variable_VariableType.tp_alloc(
 			&variable_VariableType, 0);
-	self->var = var;
+	self->sim = sim;
+	self->name = new std::string(name);
 	return (PyObject *)self;
+}
+
+static void
+PyVariable_DeleteVariable (PyObject *_self)
+{
+	variable_VariableObject *self = (variable_VariableObject *)_self;
+	self->sim = 0;
 }
 
 }
