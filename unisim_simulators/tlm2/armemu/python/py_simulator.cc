@@ -34,6 +34,7 @@
 
 #include <Python.h>
 #include "simulator.hh"
+#define SIMULATOR_MODULE
 #include "python/py_simulator.hh"
 #include "python/py_variable.hh"
 
@@ -575,6 +576,8 @@ PyMODINIT_FUNC
 PyInit_ARMEMU_DECLARATION
 {
     PyObject* m;
+    static void *PySimulator_API[PySimulator_API_pointers];
+    PyObject *c_api_object;
 
     if ( PyType_Ready(&armemu_SimulatorType) < 0 )
     	return NULL;
@@ -586,6 +589,19 @@ PyInit_ARMEMU_DECLARATION
     TimeUnitMapInit();
 	Py_INCREF(&armemu_SimulatorType);
 	PyModule_AddObject(m, "Simulator", (PyObject *)&armemu_SimulatorType);
+
+	/* Initialize the C API pointer array */
+	PySimulator_API[PySimulator_GetSimRef_NUM] = (void *)PySimulator_GetSimRef;
+
+	/* Create a Capsule containing the API pointer array's address */
+	c_api_object = PyCapsule_New((void *)PySimulator_API, PySimulator_Capsule_Name, NULL);
+
+	if ( c_api_object != NULL )
+		PyModule_AddObject(m, "_C_API", c_api_object);
+	else
+		return NULL;
+
+	import_variable_init();
 
 	if ( import_variable_module() < 0 )
 	{
@@ -602,5 +618,10 @@ PyInit_ARMEMU_DECLARATION
 	return m;
 }
 
+static Simulator *
+PySimulator_GetSimRef()
+{
+	return NULL;
+}
 
 }

@@ -38,6 +38,7 @@
 #include <Python.h>
 #include "simulator.hh"
 #include "python/python_config.hh"
+
 extern "C" {
 
 /* Variable full capsule name */

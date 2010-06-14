@@ -37,6 +37,7 @@
 #include <string>
 #define VARIABLE_MODULE
 #include "python/py_variable.hh"
+#include "python/py_simulator.hh"
 
 extern "C" {
 
@@ -285,6 +286,9 @@ PyInit_variable(void)
 		PyModule_AddObject(m, "_C_API", c_api_object);
 	else
 		return NULL;
+
+	import_simulator_init();
+
 	return m;
 }
 
@@ -292,6 +296,18 @@ static PyObject *
 PyVariable_NewVariable (Simulator **sim,
 		const char *name)
 {
+	if ( import_simulator_module() < 0 )
+	{
+		printf ("ERROR: could not import '"PySimulator_Module_Name"'.\n");
+		return NULL;
+	}
+
+	if ( import_simulator_api() < 0 )
+	{
+		printf ("ERROR: could not import '"PySimulator_Capsule_Name"'.\n");
+		return NULL;
+	}
+
 	variable_VariableObject *self;
 	self = (variable_VariableObject *)variable_VariableType.tp_alloc(
 			&variable_VariableType, 0);
