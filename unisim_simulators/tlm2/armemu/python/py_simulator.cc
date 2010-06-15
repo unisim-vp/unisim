@@ -496,8 +496,6 @@ static PyMethodDef simulator_methods[] =
 			"Return a dictionary with the complete list of the simulator formulas."},
 	{"get_variable", (PyCFunction)simulator_get_variable, METH_VARARGS,
 			"Get a simulator variable if existent."},
-	//{"set_variable", (PyCFunction)simulator_set_variable, METH_VARARGS,
-	//		"Set the value of a simulator variable."},
 	{"run", (PyCFunction)simulator_run, METH_VARARGS,
 			"Run the simulator."},
 	{"is_running", (PyCFunction)simulator_is_running, METH_NOARGS,
