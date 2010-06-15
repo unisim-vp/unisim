@@ -48,20 +48,15 @@ extern "C" {
 /* C API functions */
 #define PyVariable_NewVariable_NUM 0
 #define PyVariable_NewVariable_RETURN PyObject *
-#define PyVariable_NewVariable_PROTO (Simulator **, const char *)
-
-#define PyVariable_DeleteVariable_NUM 1
-#define PyVariable_DeleteVariable_RETURN void
-#define PyVariable_DeleteVariable_PROTO (PyObject *)
+#define PyVariable_NewVariable_PROTO (const char *)
 
 /* Total number of C API pointers */
-#define PyVariable_API_pointers 2
+#define PyVariable_API_pointers 1
 
 #ifdef VARIABLE_MODULE
 /* This section is used when compiling py_variable.cc */
 
 static PyVariable_NewVariable_RETURN PyVariable_NewVariable PyVariable_NewVariable_PROTO;
-static PyVariable_DeleteVariable_RETURN PyVariable_DeleteVariable PyVariable_DeleteVariable_PROTO;
 
 #else // VARIABLE_MODULE
 /* This section is used in modules that use variablemodule's API */
@@ -69,8 +64,6 @@ static void **PyVariable_API;
 
 #define PyVariable_NewVariable \
 	(*(PyVariable_NewVariable_RETURN (*)PyVariable_NewVariable_PROTO) PyVariable_API[PyVariable_NewVariable_NUM])
-#define PyVariable_DeleteVariable \
-	(*(PyVariable_DeleteVariable_RETURN (*)PyVariable_DeleteVariable_PROTO) PyVariable_API[PyVariable_DeleteVariable_NUM])
 
 /* Ensures that the initial PyVariable_API is NULL
  */

@@ -89,6 +89,7 @@ static bool SCTimeUnit(const std::string& unit, sc_time_unit& sc_unit)
 }
 
 extern "C" {
+static Simulator *__current_simulator;
 
 typedef struct {
     PyObject_HEAD
@@ -140,6 +141,7 @@ static void
 simulator_dealloc (armemu_SimulatorObject *self)
 {
 	destroy_simulator(self);
+	__current_simulator = 0;
 
 	Py_TYPE(self)->tp_free((PyObject *)self);
 }
@@ -168,7 +170,7 @@ pydict_from_variable_list ( armemu_SimulatorObject *self,
 	{
 		PyObject *variable;
 		PyObject *name;
-		variable = PyVariable_NewVariable(&self->sim, (*it)->GetName());
+		variable = PyVariable_NewVariable((*it)->GetName());
 		name = PyUnicode_FromString((*it)->GetName());
 		if ( PyDict_SetItem(result, name, variable) == -1)
 		{
@@ -244,6 +246,7 @@ static int
 simulator_init (armemu_SimulatorObject *self, PyObject *args, PyObject *kwds)
 {
 	self->sim = create_simulator();
+	__current_simulator = self->sim;
 	// update_variables(self);
 	// self->setup = self->sim->Setup();
 	return 0;
@@ -280,7 +283,7 @@ simulator_get_variable (armemu_SimulatorObject *self, PyObject *args)
 	if ( var == 0 )
 		PyErr_SetString(PyExc_ValueError, "could not find the given variable");
 	else
-		result = PyVariable_NewVariable(&(self->sim), var->GetName());
+		result = PyVariable_NewVariable(var->GetName());
 	return result;
 }
 
@@ -579,6 +582,8 @@ PyInit_ARMEMU_DECLARATION
     static void *PySimulator_API[PySimulator_API_pointers];
     PyObject *c_api_object;
 
+    __current_simulator = 0;
+
     if ( PyType_Ready(&armemu_SimulatorType) < 0 )
     	return NULL;
 
@@ -612,7 +617,7 @@ PyInit_ARMEMU_DECLARATION
 static Simulator *
 PySimulator_GetSimRef()
 {
-	return NULL;
+	return __current_simulator;
 }
 
 }
