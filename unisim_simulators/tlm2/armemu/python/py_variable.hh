@@ -74,20 +74,9 @@ static void **PyVariable_API;
 
 /* Ensures that the initial PyVariable_API is NULL
  */
-static void import_variable_init(void)
+static void import_variable_api_init(void)
 {
 	PyVariable_API = NULL;
-}
-
-/* Return -1 on error, 0 on success.
- */
-static int import_variable_module(void)
-{
-	if ( PyImport_ImportModule(PyVariable_Module_Name) != NULL )
-	{
-		return 0;
-	}
-	return -1;
 }
 
 /* Return -1 on error, 0 on success.
@@ -96,6 +85,7 @@ static int import_variable_module(void)
 static int import_variable_api(void)
 {
 	if ( PyVariable_API != NULL ) return 0;
+	if ( PyImport_ImportModule(PyVariable_Module_Name) == NULL ) return -1;
 	PyVariable_API = (void **)PyCapsule_Import(PyVariable_Capsule_Name, 0);
 	return ( PyVariable_API != NULL ) ? 0 : -1;
 }

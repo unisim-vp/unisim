@@ -68,20 +68,9 @@ static void **PySimulator_API;
 
 /* Ensures that the initial PySimulator_API is NULL
  */
-static void import_simulator_init(void)
+static void import_simulator_api_init(void)
 {
 	PySimulator_API = NULL;
-}
-
-/* Return -1 on error, 0 on success.
- */
-static int import_simulator_module(void)
-{
-	if ( PyImport_ImportModule(PySimulator_Module_Name) != NULL )
-	{
-		return 0;
-	}
-	return -1;
 }
 
 /* Return -1 on error, 0 on success.
@@ -90,6 +79,7 @@ static int import_simulator_module(void)
 static int import_simulator_api(void)
 {
 	if ( PySimulator_API != NULL ) return 0;
+	if ( PyImport_ImportModule(PySimulator_Module_Name) == NULL ) return -1;
 	PySimulator_API = (void **)PyCapsule_Import(PySimulator_Capsule_Name, 0);
 	return ( PySimulator_API != NULL ) ? 0 : -1;
 }

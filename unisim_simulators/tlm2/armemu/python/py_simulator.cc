@@ -601,19 +601,10 @@ PyInit_ARMEMU_DECLARATION
 	else
 		return NULL;
 
-	import_variable_init();
-
-	if ( import_variable_module() < 0 )
-	{
-		printf ("ERROR: could not import '"PyVariable_Module_Name"'.\n");
-		return NULL;
-	}
+	import_variable_api_init();
 
 	if ( import_variable_api() < 0 )
-	{
-		printf ("ERROR: could not import '"PyVariable_Capsule_Name"'.\n");
 		return NULL;
-	}
 
 	return m;
 }

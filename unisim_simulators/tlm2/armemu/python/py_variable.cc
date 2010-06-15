@@ -287,7 +287,7 @@ PyInit_variable(void)
 	else
 		return NULL;
 
-	import_simulator_init();
+	import_simulator_api_init();
 
 	return m;
 }
@@ -296,17 +296,8 @@ static PyObject *
 PyVariable_NewVariable (Simulator **sim,
 		const char *name)
 {
-	if ( import_simulator_module() < 0 )
-	{
-		printf ("ERROR: could not import '"PySimulator_Module_Name"'.\n");
-		return NULL;
-	}
-
 	if ( import_simulator_api() < 0 )
-	{
-		printf ("ERROR: could not import '"PySimulator_Capsule_Name"'.\n");
 		return NULL;
-	}
 
 	variable_VariableObject *self;
 	self = (variable_VariableObject *)variable_VariableType.tp_alloc(
