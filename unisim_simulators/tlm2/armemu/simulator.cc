@@ -69,6 +69,7 @@ Simulator(int argc, char **argv) :
 	dl1_power_estimator(0),
 #endif // SIM_POWER_ESTIMATOR_SUPPORT
 	enable_gdb_server(false),
+	enable_inline_debugger_prev(false),
 	enable_inline_debugger(false),
 	enable_power_estimation(false),
 	param_enable_gdb_server("enable-gdb-server", 0,
@@ -82,6 +83,7 @@ Simulator(int argc, char **argv) :
 			"Activate caches power estimation."),
 	simulation_spent_time(0.0)
 {
+	param_enable_inline_debugger.SetNotify(this);
 	cpu = new CPU("cpu");
 	irq_master_stub = new IRQ_MASTER_STUB("irq-master-stub");
 	fiq_master_stub = new FIQ_MASTER_STUB("fiq-master-stub");
@@ -93,8 +95,12 @@ Simulator(int argc, char **argv) :
 	linux_os = new LINUX_OS("linux-os");
 	if ( enable_gdb_server )
 		gdb_server = new GDB_SERVER("gdb-server");
-	if ( enable_inline_debugger )
-		inline_debugger = new INLINE_DEBUGGER("inline-debugger");
+//	if ( enable_inline_debugger )
+	inline_debugger = new INLINE_DEBUGGER("inline-debugger");
+	(*inline_debugger)["memory-atom-size"].SetVisible(false);
+	(*inline_debugger)["num-loaders"].SetVisible(false);
+	(*inline_debugger)["search-path"].SetVisible(false);
+
 #ifdef SIM_POWER_ESTIMATOR_SUPPORT
 	if ( enable_power_estimation )
 	{
@@ -142,17 +148,8 @@ Simulator(int argc, char **argv) :
 	irq_master_stub->out_interrupt(cpu->in_irq);
 	fiq_master_stub->out_interrupt(cpu->in_fiq);
 
-	if(enable_inline_debugger)
-	{
-		cpu->debug_control_import >> inline_debugger->debug_control_export;
-		cpu->memory_access_reporting_import >> inline_debugger->memory_access_reporting_export;
-		inline_debugger->disasm_import >> cpu->disasm_export;
-		inline_debugger->memory_import >> cpu->memory_export;
-		inline_debugger->registers_import >> cpu->registers_export;
-		inline_debugger->memory_access_reporting_control_import >>
-			cpu->memory_access_reporting_control_export;
-	}
-	else if(enable_gdb_server)
+	EnableInlineDebugger();
+	if(enable_gdb_server)
 	{
 		// Connect gdb-server to CPU
 		cpu->debug_control_import >> gdb_server->debug_control_export;
@@ -189,16 +186,6 @@ Simulator(int argc, char **argv) :
 
 	cpu->symbol_table_lookup_import >> elf32_loader->symbol_table_lookup_export;
 	// bridge->memory_import >> memory->memory_export;
-
-	if ( enable_inline_debugger )
-	{
-		*inline_debugger->loader_import[0] >> 
-			linux_os->loader_export;
-		*inline_debugger->symbol_table_lookup_import[0] >>
-			elf32_loader->symbol_table_lookup_export;
-		*inline_debugger->stmt_lookup_import[0] >>
-			elf32_loader->stmt_lookup_export;
-	}
 }
 
 Simulator::~Simulator()
@@ -390,3 +377,65 @@ void Simulator::DefaultConfiguration(unisim::kernel::service::Simulator *sim)
 #endif // SIM_POWER_ESTIMATOR_SUPPORT
 }
 
+void
+Simulator::
+VariableNotify(const char *name)
+{
+	// check the variable that was notified
+	if ( strcmp(param_enable_inline_debugger.GetName(), name) == 0 )
+		EnableInlineDebugger();
+}
+
+void
+Simulator::
+EnableInlineDebugger()
+{
+	// we do not have anything to do if the value of enable_inline_debugger
+	//   did not change
+	if ( enable_inline_debugger_prev == enable_inline_debugger )
+		return;
+
+	if ( enable_inline_debugger )
+	{
+		// make the inline debugger variables visible
+		(*inline_debugger)["memory-atom-size"].SetVisible(true);
+		(*inline_debugger)["num-loaders"].SetVisible(true);
+		(*inline_debugger)["search-path"].SetVisible(true);
+
+		// connect the inline debugger to other components
+		cpu->debug_control_import >> inline_debugger->debug_control_export;
+		cpu->memory_access_reporting_import >> inline_debugger->memory_access_reporting_export;
+		inline_debugger->disasm_import >> cpu->disasm_export;
+		inline_debugger->memory_import >> cpu->memory_export;
+		inline_debugger->registers_import >> cpu->registers_export;
+		inline_debugger->memory_access_reporting_control_import >>
+			cpu->memory_access_reporting_control_export;
+		*inline_debugger->loader_import[0] >>
+			linux_os->loader_export;
+		*inline_debugger->symbol_table_lookup_import[0] >>
+			elf32_loader->symbol_table_lookup_export;
+		*inline_debugger->stmt_lookup_import[0] >>
+			elf32_loader->stmt_lookup_export;
+	}
+	else
+	{
+		// make the inline debugger variables invisible
+		(*inline_debugger)["memory-atom-size"].SetVisible(false);
+		(*inline_debugger)["num-loaders"].SetVisible(false);
+		(*inline_debugger)["search-path"].SetVisible(false);
+
+		// disconnect the inline debugger to other components
+		inline_debugger->debug_control_export.Disconnect();
+		inline_debugger->memory_access_reporting_export.Disconnect();
+		inline_debugger->disasm_import.Disconnect();
+		inline_debugger->memory_import.Disconnect();
+		inline_debugger->registers_import.Disconnect();
+		inline_debugger->memory_access_reporting_control_import.Disconnect();
+		inline_debugger->loader_import[0]->Disconnect();
+		inline_debugger->symbol_table_lookup_import[0]->Disconnect();
+		inline_debugger->stmt_lookup_import[0]->Disconnect();
+	}
+
+	// change the value of the enable_inline_debugger_prev
+	enable_inline_debugger_prev = enable_inline_debugger;
+}

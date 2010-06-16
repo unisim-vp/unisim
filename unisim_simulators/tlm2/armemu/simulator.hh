@@ -62,7 +62,9 @@
 #include "unisim/service/power/cache_power_estimator.hh"
 #endif // SIM_POWER_ESTIMATOR_SUPPORT
 
-class Simulator : public unisim::kernel::service::Simulator
+class Simulator :
+	public unisim::kernel::service::Simulator,
+	public unisim::kernel::service::VariableBase::Notifiable
 {
 public:
 	Simulator(int argc, char **argv);
@@ -106,6 +108,7 @@ private:
 #endif // SIM_POWER_ESTIMATOR_SUPPORT
 
 	bool enable_gdb_server;
+	bool enable_inline_debugger_prev;
 	bool enable_inline_debugger;
 	bool enable_power_estimation;
 	unisim::kernel::service::Parameter<bool> param_enable_gdb_server;
@@ -117,6 +120,9 @@ private:
 	unisim::kernel::service::Formula<double> *formula_caches_total_power;
 
 	double simulation_spent_time;
+
+	virtual void VariableNotify(const char *name);
+	void EnableInlineDebugger();
 };
 
 #endif /* SIMULATOR_HH_ */
