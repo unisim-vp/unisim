@@ -189,6 +189,16 @@ public:
 	void SetMutable(bool is_mutable);
 	void SetVisible(bool is_visible);
 	void SetSerializable(bool is_serializable);
+
+	class Notifiable
+	{
+	public:
+		virtual void VariableNotify(const char *name) = 0;
+	};
+	void SetNotify(Notifiable *notifiable);
+	void RemoveNotify(Notifiable *notifiable);
+	void Notify();
+
 private:
 	string name;
 	string var_name;
@@ -201,6 +211,7 @@ private:
 	bool is_mutable;
 	bool is_visible;
 	bool is_serializable;
+	list<Notifiable *> notifiable_list;
 };
 
 //=============================================================================
