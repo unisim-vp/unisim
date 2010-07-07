@@ -224,6 +224,10 @@ CachePowerEstimator::~CachePowerEstimator()
 		CacheProfile *prof = (*prof_iter).second;
 		delete prof;
 	}
+	
+#if defined(HAVE_CACTI4_2)
+	delete cacti;
+#endif
 }
 
 void CachePowerEstimator::SetPowerMode(unsigned int cycle_time, unsigned int voltage)

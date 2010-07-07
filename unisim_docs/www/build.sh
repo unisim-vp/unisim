@@ -616,6 +616,8 @@ for THEME in ${THEMES}; do
 				mkdir -p "${HERE}/site/${THEME_ROOT}/style/${CONTENT_DIR}"
 				cp "${MY_DIR}/content/${CONTENT_DIR}/style.css" "${HERE}/site/${THEME_ROOT}/style/${CONTENT_DIR}/style.css" || exit 1
 				CONTENT_STYLE="style/${CONTENT_DIR}/style.css"
+			else
+				CONTENT_STYLE=
 			fi
 
 			echo "Building ${CONTENT_DIR}.html for theme ${THEME}..."

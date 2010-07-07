@@ -2135,6 +2135,11 @@ Simulator::~Simulator()
 		delete var_license;
 	}
 	
+	if(var_description)
+	{
+		delete var_description;
+	}
+
 	if(param_enable_press_enter_at_exit)
 	{
 		delete param_enable_press_enter_at_exit;
