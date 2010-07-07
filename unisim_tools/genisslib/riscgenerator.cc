@@ -216,6 +216,38 @@ RiscGenerator::codetype_decl( Product_t& _product ) const {
 }
 
 void
+RiscGenerator::insn_encode_impl( Product_t& _product, Operation_t const& _op, char const* _codename ) const
+{
+  OpCode_t const& oc = opcode( &_op );
+  
+  if (oc.m_vlen) {
+    _product.code( "assert( \"Encode method does not work with variable length operations.\" and false );\n" );
+  }
+  
+  _product.code( "%s = this->GetEncoding();\n", _codename );
+  
+  for (FieldIterator fi( isa().m_little_endian, _op.m_bitfields, m_insn_maxsize ); fi.next(); ) {
+    if (fi.item().type() == BitField_t::SubOp) {
+      _product.code( "assert( \"Encode method does not work with sub-operations.\" and false );\n" );
+    }
+    
+    else if (fi.item().type() == BitField_t::Operand) {
+      OperandBitField_t const& opbf = dynamic_cast<OperandBitField_t const&>( fi.item() );
+      int opsize = std::max( least_ctype_size( opbf.dstsize() ), m_minwordsize );
+      ConstStr_t shiftedop;
+      if      (opbf.m_shift > 0)
+        shiftedop = Str::fmt( "(uint%d_t( %s ) << %u)", opsize, opbf.m_symbol.str(), +opbf.m_shift );
+      else if (opbf.m_shift < 0)
+        shiftedop = Str::fmt( "(uint%d_t( %s ) >> %u)", opsize, opbf.m_symbol.str(), -opbf.m_shift );
+      else
+        shiftedop = Str::fmt( "uint%d_t( %s )", opsize, opbf.m_symbol.str() );
+        
+      _product.code( "%s |= ((%s & 0x%llx) << %u);\n", _codename, shiftedop.str(), opbf.mask(), fi.pos() );
+    }
+  }
+}
+
+void
 RiscGenerator::insn_decode_impl( Product_t& _product, Operation_t const& _op, char const* _codename, char const* _addrname ) const
 {
   OpCode_t const& oc = opcode( &_op );
@@ -250,10 +282,10 @@ RiscGenerator::insn_decode_impl( Product_t& _product, Operation_t const& _op, ch
       _product.code( "%s = ", opbf.m_symbol.str() );
       
       if( opbf.m_sext ) {
-        int sizeofop = std::max( least_ctype_size( opbf.dstsize() ), m_minwordsize );
-        int sext_shift = sizeofop - opbf.m_size;
+        int opsize = std::max( least_ctype_size( opbf.dstsize() ), m_minwordsize );
+        int sext_shift = opsize - opbf.m_size;
         _product.code( "(((((int%d_t)(%s >> %u)) & 0x%llx) << %u) >> %u)",
-                       sizeofop, _codename, fi.pos(),
+                       opsize, _codename, fi.pos(),
                        opbf.mask(), sext_shift, sext_shift );
       } else {
         // FIXME: a cast from the instruction type to the operand type

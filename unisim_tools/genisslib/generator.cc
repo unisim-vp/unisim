@@ -227,6 +227,7 @@ Generator::iss( Product_t& _product ) const {
   isa_operations_decl( _product );
   isa_operations_methods( _product );
   isa_operations_ctors( _product );
+  isa_operations_encoders( _product );
   
   decoder_impl( _product );
   
@@ -457,6 +458,7 @@ Generator::isa_operations_decl( Product_t& _product ) const {
                    codetype_constref().str(), isa().m_addrtype.str() );
     insn_destructor_decl( _product, **op );
     insn_getlen_decl( _product, **op );
+    _product.code( " void Encode(%s code) const;\n", codetype_ref().str() );
     
     for( Vect_t<BitField_t>::const_iterator bf = (**op).m_bitfields.begin(); bf < (**op).m_bitfields.end(); ++ bf ) {
       BitField_t::Type_t bftype = (**bf).type();
@@ -698,6 +700,22 @@ Generator::isa_operations_ctors( Product_t& _product ) const {
     _product.code( "}\n\n" );
     
     insn_destructor_impl( _product, **op );
+  }
+}
+
+void
+Generator::isa_operations_encoders( Product_t& _product ) const {
+  for( Vect_t<Operation_t>::const_iterator op = isa().m_operations.begin(); op < isa().m_operations.end(); ++ op ) {
+    _product.template_signature( isa().m_tparams );
+    _product.code( "void Op%s", Str::capitalize( (**op).m_symbol ).str() );
+    _product.template_abbrev( isa().m_tparams );
+    _product.code( "::Encode(%s code) const\n", codetype_ref().str() );
+
+    _product.code( "{\n" );
+    
+    insn_encode_impl( _product, **op, "code" );
+
+    _product.code( "}\n\n" );
   }
 }
 
