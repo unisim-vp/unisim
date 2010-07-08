@@ -197,7 +197,7 @@ GIL_MAIN (int argc, char** argv, char** envp) {
     
     generator->init( isa );
     
-    Product_t product( gil.outputprefix, gil.sourcelines );
+    FProduct_t product( gil.outputprefix, gil.sourcelines );
     
     try {
       // Back-end specific preprocess

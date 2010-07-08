@@ -35,7 +35,7 @@ struct Generator {
   Generator&                          init( Isa& _isa );
   virtual void                        finalize() = 0;
 
-  void                                iss( Product_t& _product ) const;
+  void                                iss( FProduct_t& _product ) const;
   /* header file */
   void                                decoder_decl( Product_t& _product ) const;
   void                                operation_decl( Product_t& _product ) const;

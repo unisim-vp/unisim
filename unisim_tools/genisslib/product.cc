@@ -27,17 +27,24 @@
 using namespace std;
 
 /** Constructor: Create a Product object
-    @param _prefix the prefix of output files
+    @param _filename the filename attached to the output code
 */
-Product_t::Product_t( ConstStr_t _prefix, bool _sourcelines )
-  : m_prefix( _prefix ), m_stream( 0 ), m_line( Str::Buf::Recycle ), m_lineno( 1 ), m_sourcelines( _sourcelines )
+Product_t::Product_t( ConstStr_t _filename, bool _sourcelines )
+  : m_filename( _filename ), m_line( Str::Buf::Recycle ), m_lineno( 1 ), m_sourcelines( _sourcelines )
+{}
+
+/** Constructor: Create a FProduct object
+    @param _prefix the filename prefix attached to the output code
+*/
+FProduct_t::FProduct_t( ConstStr_t _prefix, bool _sourcelines )
+  : Product_t( _prefix, _sourcelines ), m_prefix( _prefix ), m_stream( 0 )
 {}
 
 /** Open a file and redirects all output to this file
     @param _suffix the suffix of the new output file 
 */
 bool
-Product_t::open( char const* _suffix ) {
+FProduct_t::open( char const* _suffix ) {
   close();
   m_filename = Str::fmt( "%s%s", m_prefix.str(), _suffix );
   m_line.clear();
@@ -51,7 +58,7 @@ Product_t::open( char const* _suffix ) {
 /** Close the current output file 
  */
 void
-Product_t::close() {
+FProduct_t::close() {
   if( not m_line.empty() and sink().good() )
     sink() << m_line.m_storage;
   delete m_stream;
@@ -59,7 +66,7 @@ Product_t::close() {
 }
 
 /** Destructor: Close the Product object */
-Product_t::~Product_t() {
+FProduct_t::~FProduct_t() {
   close();
 }
 
@@ -237,7 +244,7 @@ Product_t::write( char const* _ptr ) {
         else if( *pchr == '}' ) --braces;
       }
       m_line.truncate( rstrip-m_line.m_storage );
-      if( m_line.empty() ) { sink() << '\n'; m_lineno += 1; continue; }
+      if( m_line.empty() ) { xwrite( "\n" ); m_lineno += 1; continue; }
       
       if( braces > 0 ) {
         while( (--braces) > 0) m_indentations.push_back( current_indentation );
@@ -258,8 +265,9 @@ Product_t::write( char const* _ptr ) {
       else if( /*'{'*/ first_char == '}' ) current_indentation = m_indentations.back();
       else if( last_char == ':' ) --current_indentation;
       
-      while( (--current_indentation) >= 0 ) sink() << '\t';
-      sink() << m_line.m_storage << '\n';
+      while( (--current_indentation) >= 0 ) xwrite( "\t" );
+      xwrite( m_line.m_storage );
+      xwrite( "\n" );
       m_line.clear();
       m_lineno += 1;
       continue;
@@ -268,4 +276,9 @@ Product_t::write( char const* _ptr ) {
     m_line.write( chr );
   }
   return *this;
+}
+
+void
+FProduct_t::xwrite( char const* _ptr ) {
+  sink() << _ptr;
 }

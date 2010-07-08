@@ -79,6 +79,7 @@ operator<<( std::ostream& _sink, ActionProto_t const& _ap ) {
   case ActionProto_t::Constructor:  _sink << "constructor "; break;
   case ActionProto_t::Static:       _sink << "static "; break;
   case ActionProto_t::Destructor:   _sink << "destructor "; break;
+  case ActionProto_t::Ignored:      _sink << "ignored "; break;
   case ActionProto_t::Common:       /* do nothing */ break;
   }
   

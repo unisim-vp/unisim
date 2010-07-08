@@ -26,20 +26,15 @@
 #include <vector>
 
 struct Product_t {
-  ConstStr_t          m_prefix;
   ConstStr_t          m_filename;
-  std::ostream*       m_stream;
   Str::Buf            m_line;
   unsigned int        m_lineno;
   std::vector<int>    m_indentations;
   bool                m_sourcelines;
   
   Product_t( ConstStr_t _filename, bool _sourcelines );
-  ~Product_t();
+  virtual ~Product_t() {};
   
-  bool                open( char const* _ext );
-  void                close();
-  std::ostream&       sink() { return *m_stream; };
   Product_t&          usercode( FileLoc_t const& _fileloc, char const* _format, ... );
   Product_t&          usercode( SourceCode_t const& _source );
   Product_t&          usercode( SourceCode_t const& _source, char const* _fmt );
@@ -51,6 +46,22 @@ struct Product_t {
   Product_t&          require_newline();
   Product_t&          write( char const* _chars );
   Product_t&          flatten_indentation();
+  
+  virtual void        xwrite( char const* chrs ) = 0;
+};
+
+struct FProduct_t : public Product_t {
+  ConstStr_t          m_prefix;
+  std::ostream*       m_stream;
+  
+  FProduct_t( ConstStr_t _prefix, bool _sourcelines );
+  ~FProduct_t();
+  
+  bool                open( char const* _ext );
+  void                close();
+  std::ostream&       sink() { return *m_stream; };
+  
+  void                xwrite( char const* chrs );
 };
 
 #endif // __PRODUCT_HH__

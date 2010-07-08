@@ -288,6 +288,7 @@ Scanner::Token_t Scanner::s_tokens[] = {
   {"decoder", TOK_DECODER},
   {"destructor", TOK_DESTRUCTOR},
   {"group", TOK_GROUP},
+  {"ignored", TOK_IGNORED},
   {"impl", TOK_IMPL},
   {"include", TOK_INCLUDE},
   {"inheritance", TOK_INHERITANCE},
