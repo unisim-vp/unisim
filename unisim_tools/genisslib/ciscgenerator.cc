@@ -353,9 +353,10 @@ CiscGenerator::codetype_decl( Product_t& _product ) const {
   _product.code( " unsigned int              size;\n" );
   _product.code( " uint8_t                   str[capacity];\n" );
   _product.code( " enum Exception_t { NotEnoughBytes };\n" );
-  _product.code( " CodeType() : size( 0 ) {};\n" );
+  _product.code( " CodeType() : size( 0 ) { for (int idx = capacity; (--idx) >= 0;) str[idx] = 0; };\n" );
   _product.code( " CodeType( uint8_t* src, unsigned int sz )\n" );
   _product.code( " : size( std::min( sz, capacity*8 ) )\n{\n" );
+  _product.code( "   for (int idx = capacity; (--idx) >= 0;) str[idx] = 0;\n" );
   _product.code( "   for (int idx = (size+7)/8; (--idx) >= 0;) str[idx] = src[idx];\n" );
   _product.code( " }\n" );
   _product.code( " CodeType( CodeType const& ct )\n" );
