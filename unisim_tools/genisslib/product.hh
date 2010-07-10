@@ -45,21 +45,26 @@ struct Product_t {
   Product_t&          ns_leave( std::vector<ConstStr_t> const& _namespace );
   Product_t&          require_newline();
   Product_t&          write( char const* _chars );
+  void                flush();
   Product_t&          flatten_indentation();
   
   virtual void        xwrite( char const* chrs ) = 0;
 };
 
 struct FProduct_t : public Product_t {
-  ConstStr_t          m_prefix;
-  std::ostream*       m_stream;
+  std::ostream*       m_sink;
   
-  FProduct_t( ConstStr_t _prefix, bool _sourcelines );
+  FProduct_t( char const* prefix, char const* suffix, bool sourcelines );
   ~FProduct_t();
   
-  bool                open( char const* _ext );
-  void                close();
-  std::ostream&       sink() { return *m_stream; };
+  bool                good() const;
+  void                xwrite( char const* chrs );
+};
+
+struct SProduct_t : public Product_t {
+  Str::Buf            m_content;
+  
+  SProduct_t( ConstStr_t _prefix, bool _sourcelines );
   
   void                xwrite( char const* chrs );
 };
