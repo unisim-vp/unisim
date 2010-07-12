@@ -152,6 +152,69 @@ variable_setvalue (variable_VariableObject *self,
 }
 
 static PyObject *
+variable_getmutable (variable_VariableObject *self,
+		PyObject *value,
+		void *closure)
+{
+	PyObject *result = NULL;
+	Simulator *sim = PySimulator_GetSimRef();
+	if (sim == 0 )
+	{
+		PyErr_Format(PyExc_RuntimeError,
+				"Simulator for variable '%s' is no longer available",
+				self->name->c_str());
+		return result;
+	}
+	bool is_mutable = sim->FindVariable(self->name->c_str())->IsMutable();
+	if ( is_mutable )
+		Py_RETURN_TRUE;
+	else
+		Py_RETURN_FALSE;
+}
+
+static PyObject *
+variable_getvisible (variable_VariableObject *self,
+		PyObject *value,
+		void *closure)
+{
+	PyObject *result = NULL;
+	Simulator *sim = PySimulator_GetSimRef();
+	if (sim == 0 )
+	{
+		PyErr_Format(PyExc_RuntimeError,
+				"Simulator for variable '%s' is no longer available",
+				self->name->c_str());
+		return result;
+	}
+	bool is_visible = sim->FindVariable(self->name->c_str())->IsVisible();
+	if ( is_visible )
+		Py_RETURN_TRUE;
+	else
+		Py_RETURN_FALSE;
+}
+
+static PyObject *
+variable_getserializable (variable_VariableObject *self,
+		PyObject *value,
+		void *closure)
+{
+	PyObject *result = NULL;
+	Simulator *sim = PySimulator_GetSimRef();
+	if (sim == 0 )
+	{
+		PyErr_Format(PyExc_RuntimeError,
+				"Simulator for variable '%s' is no longer available",
+				self->name->c_str());
+		return result;
+	}
+	bool is_serializable = sim->FindVariable(self->name->c_str())->IsSerializable();
+	if ( is_serializable )
+		Py_RETURN_TRUE;
+	else
+		Py_RETURN_FALSE;
+}
+
+static PyObject *
 variable_get_value ( variable_VariableObject *self )
 {
 	PyObject *result = NULL;
@@ -210,6 +273,21 @@ static PyGetSetDef variable_getseters[] =
 		{"value",
 				(getter)variable_getvalue, (setter)variable_setvalue,
 				"variable value",
+				NULL,
+		},
+		{"mutable",
+				(getter)variable_getmutable, NULL,
+				"is variable mutable",
+				NULL,
+		},
+		{"visible",
+				(getter)variable_getvisible, NULL,
+				"is variable visible",
+				NULL,
+		},
+		{"serializable",
+				(getter)variable_getserializable, NULL,
+				"is variable serializable",
 				NULL,
 		},
 		{NULL},
