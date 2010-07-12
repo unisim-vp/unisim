@@ -35,14 +35,6 @@
 #include "simulator.hh"
 bool debug_enabled;
 
-void EnableDebug() {
-	debug_enabled = true;
-}
-
-void DisableDebug() {
-	debug_enabled = false;
-}
-
 void SigIntHandler(int signum) {
 	cerr << "Interrupted by Ctrl-C or SIGINT signal (" << signum << ")" << endl;
 	sc_stop();
@@ -51,39 +43,43 @@ void SigIntHandler(int signum) {
 using namespace std;
 
 Simulator ::
-Simulator(int argc, char **argv) :
-	unisim::kernel::service::Simulator(argc, argv, Simulator::DefaultConfiguration),
-	cpu(0),
-	irq_master_stub(0),
-	fiq_master_stub(0),
-	memory(0),
-	time(0),
-	host_time(0),
-	elf32_loader(0),
-	linux_loader(0),
-	linux_os(0),
-	gdb_server(0),
-	inline_debugger(0),
+Simulator(int argc, char **argv)
+	: unisim::kernel::service::Simulator(argc, argv, Simulator::DefaultConfiguration)
+	, unisim::kernel::service::VariableBase::Notifiable()
+	, cpu(0)
+	, irq_master_stub(0)
+	, fiq_master_stub(0)
+	, memory(0)
+	, time(0)
+	, host_time(0)
+	, elf32_loader(0)
+	, linux_loader(0)
+	, linux_os(0)
+	, simulation_spent_time(0.0)
+#ifdef SIM_GDB_SERVER_SUPPORT
+	, gdb_server(0)
+	, enable_gdb_server(false)
+	, param_enable_gdb_server(0)
+#endif // SIM_GDB_SERVER_SUPPORT
+#ifdef SIM_INLINE_DEBUGGER_SUPPORT
+	, inline_debugger(0)
+	, enable_inline_debugger(false)
+	, param_enable_inline_debugger(0)
+#endif // SIM_INLINE_DEBUGGER_SUPPORT
+#ifdef SIM_SIM_DEBUGGER_SUPPORT
+	, sim_debugger(0)
+	, enable_sim_debugger(true) // the debugger is activated by default on api mode
+	, param_enable_sim_debugger(0)
+#endif // SIM_SIM_DEBUGGER_SUPPORT
 #ifdef SIM_POWER_ESTIMATOR_SUPPORT
-	il1_power_estimator(0),
-	dl1_power_estimator(0),
-#endif // SIM_POWER_ESTIMATOR_SUPPORT
-	enable_gdb_server(false),
-	enable_inline_debugger_prev(false),
-	enable_inline_debugger(false),
-	enable_power_estimation(false),
-	param_enable_gdb_server("enable-gdb-server", 0,
-			enable_gdb_server,
-			"Enable gdb server."),
-	param_enable_inline_debugger("enable-inline-debugger", 0,
-			enable_inline_debugger,
-			"Activate the inline debugger."),
-	param_enable_power_estimation("enable-power-estimation", 0,
+	, il1_power_estimator(0)
+	, dl1_power_estimator(0)
+	, enable_power_estimation(false)
+	, param_enable_power_estimation("enable-power-estimation", 0,
 			enable_power_estimation,
-			"Activate caches power estimation."),
-	simulation_spent_time(0.0)
+			"Activate caches power estimation.")
+#endif // SIM_POWER_ESTIMATOR_SUPPORT
 {
-	param_enable_inline_debugger.SetNotify(this);
 	cpu = new CPU("cpu");
 	irq_master_stub = new IRQ_MASTER_STUB("irq-master-stub");
 	fiq_master_stub = new FIQ_MASTER_STUB("fiq-master-stub");
@@ -93,14 +89,31 @@ Simulator(int argc, char **argv) :
 	elf32_loader = new ELF32_LOADER("elf-loader");
 	linux_loader = new LINUX_LOADER("linux-loader");
 	linux_os = new LINUX_OS("linux-os");
+#ifdef SIM_GDB_SERVER_SUPPORT
+	param_enable_gdb_server = new unisim::kernel::service::Parameter<bool>(
+			"enable-gdb-server", 0,
+			enable_gdb_server,
+			"Enable GDB server.");
 	if ( enable_gdb_server )
 		gdb_server = new GDB_SERVER("gdb-server");
-//	if ( enable_inline_debugger )
-	inline_debugger = new INLINE_DEBUGGER("inline-debugger");
-	(*inline_debugger)["memory-atom-size"].SetVisible(false);
-	(*inline_debugger)["num-loaders"].SetVisible(false);
-	(*inline_debugger)["search-path"].SetVisible(false);
-
+#endif // SIM_GDB_SERVER_SUPPORT
+#ifdef SIM_INLINE_DEBUGGER_SUPPORT
+	param_enable_inline_debugger = new unisim::kernel::service::Parameter<bool>(
+			"enable-inline-debugger", 0,
+			enable_inline_debugger,
+			"Enable inline debugger.");
+	if ( enable_inline_debugger )
+		inline_debugger = new INLINE_DEBUGGER("inline-debugger");
+#endif
+#ifdef SIM_SIM_DEBUGGER_SUPPORT
+	param_enable_sim_debugger = new unisim::kernel::service::Parameter<bool>(
+			"enable-sim-debugger", 0,
+			enable_sim_debugger,
+			"Enable sim debugger.");
+	param_enable_sim_debugger->SetNotify(this);
+	if ( enable_sim_debugger )
+		sim_debugger = new SIM_DEBUGGER("sim-debugger");
+#endif
 #ifdef SIM_POWER_ESTIMATOR_SUPPORT
 	if ( enable_power_estimation )
 	{
@@ -148,17 +161,15 @@ Simulator(int argc, char **argv) :
 	irq_master_stub->out_interrupt(cpu->in_irq);
 	fiq_master_stub->out_interrupt(cpu->in_fiq);
 
+#ifdef SIM_GDB_SERVER_SUPPORT
+	EnableGdbServer();
+#endif // SIM_GDB_SERVER_SUPPORT
+#ifdef SIM_INLINE_DEBUGGER_SUPPORT
 	EnableInlineDebugger();
-	if(enable_gdb_server)
-	{
-		// Connect gdb-server to CPU
-		cpu->debug_control_import >> gdb_server->debug_control_export;
-		cpu->memory_access_reporting_import >> gdb_server->memory_access_reporting_export;
-		gdb_server->memory_import >> cpu->memory_export;
-		gdb_server->registers_import >> cpu->registers_export;
-		gdb_server->memory_access_reporting_control_import >>
-			cpu->memory_access_reporting_control_export;
-	}
+#endif // SIM_INLINE_DEBUGGER_SUPPORT
+#ifdef SIM_SIM_DEBUGGER_SUPPORT
+	EnableSimDebugger();
+#endif // SIM_SIM_DEBUGGER_SUPPORT
 
 	// Connect everything
 	elf32_loader->memory_import >> memory->memory_export;
@@ -199,27 +210,40 @@ Simulator::~Simulator()
 	if ( elf32_loader ) delete elf32_loader;
 	if ( linux_loader ) delete linux_loader;
 	if ( linux_os ) delete linux_os;
+#ifdef SIM_GDB_SERVER_SUPPORT
+	if ( param_enable_gdb_server ) delete param_enable_gdb_server;
 	if ( gdb_server ) delete gdb_server;
+#endif // SIM_GDB_SERVER_SUPPORT
+#ifdef SIM_INLINE_DEBUGGER_SUPPORT
+	if ( param_enable_inline_debugger ) delete param_enable_inline_debugger;
 	if ( inline_debugger ) delete inline_debugger;
+#endif // SIM_INLINE_DEBUGGER_SUPPORT
+#ifdef SIM_SIM_DEBUGGER_SUPPORT
+	if ( param_enable_sim_debugger ) delete param_enable_sim_debugger;
+	if ( sim_debugger ) delete sim_debugger;
+#endif // SIM_SIM_DEBUGGER_SUPPORT
 #ifdef SIM_POWER_ESTIMATOR_SUPPORT
 	if ( il1_power_estimator ) delete il1_power_estimator;
 	if ( dl1_power_estimator ) delete dl1_power_estimator;
 #endif // SIM_POWER_ESTIMATOR_SUPPORT
 }
 
-int Simulator::Run()
+int
+Simulator ::
+Run()
 {
 	if ( unlikely(SimulationFinished()) ) return 0;
 
 	double time_start = host_time->GetTime();
 
-	EnableDebug();
+#ifdef SIM_INLINE_DEBUGGER_SUPPORT
 	void (*prev_sig_int_handler)(int);
 
 	if ( ! inline_debugger )
 	{
 		prev_sig_int_handler = signal(SIGINT, SigIntHandler);
 	}
+#endif // SIM_INLINE_DEBUGGER_SUPPORT
 
 	try
 	{
@@ -231,10 +255,12 @@ int Simulator::Run()
 		cerr << e.what() << endl;
 	}
 
+#ifdef SIM_INLINE_DEBUGGER_SUPPORT
 	if ( !inline_debugger )
 	{
 		signal(SIGINT, prev_sig_int_handler);
 	}
+#endif // SIM_INLINE_DEBUGGER_SUPPORT
 
 	cerr << "Simulation finished" << endl;
 
@@ -261,19 +287,22 @@ int Simulator::Run()
 	return 0;
 }
 
-int Simulator::Run(double time, sc_time_unit unit)
+int
+Simulator ::
+Run(double time, sc_time_unit unit)
 {
 	if ( unlikely(SimulationFinished()) ) return 0;
 
 	double time_start = host_time->GetTime();
 
-	EnableDebug();
+#ifdef SIM_INLINE_DEBUGGER_SUPPORT
 	void (*prev_sig_int_handler)(int);
 
 	if ( ! inline_debugger )
 	{
 		prev_sig_int_handler = signal(SIGINT, SigIntHandler);
 	}
+#endif // SIM_INLINE_DEBUGGER_SUPPORT
 
 	try
 	{
@@ -285,10 +314,12 @@ int Simulator::Run(double time, sc_time_unit unit)
 		cerr << e.what() << endl;
 	}
 
+#ifdef SIM_INLINE_DEBUGGER_SUPPORT
 	if ( !inline_debugger )
 	{
 		signal(SIGINT, prev_sig_int_handler);
 	}
+#endif // SIM_INLINE_DEBUGGER_SUPPORT
 
 	double time_stop = host_time->GetTime();
 	double spent_time = time_stop - time_start;
@@ -301,22 +332,30 @@ int Simulator::Run(double time, sc_time_unit unit)
 	return 0;
 }
 
-bool Simulator::IsRunning() const
+bool
+Simulator ::
+IsRunning() const
 {
 	return sc_is_running();
 }
 
-bool Simulator::SimulationStarted() const
+bool
+Simulator ::
+SimulationStarted() const
 {
 	return sc_start_of_simulation_invoked();
 }
 
-bool Simulator::SimulationFinished() const
+bool
+Simulator ::
+SimulationFinished() const
 {
 	return sc_end_of_simulation_invoked();
 }
 
-void Simulator::DefaultConfiguration(unisim::kernel::service::Simulator *sim)
+void
+Simulator ::
+DefaultConfiguration(unisim::kernel::service::Simulator *sim)
 {
 	sim->SetVariable("program-name", SIM_PROGRAM_NAME);
 	sim->SetVariable("authors", SIM_AUTHOR);
@@ -340,11 +379,21 @@ void Simulator::DefaultConfiguration(unisim::kernel::service::Simulator *sim)
 	sim->SetVariable("linux-os.system", "arm");
 	sim->SetVariable("linux-os.endianness", "little-endian");
 	sim->SetVariable("elf-loader.filename", "test/install/test.armv5l");
+
+#ifdef SIM_GDB_SERVER_SUPPORT
 	sim->SetVariable("gdb-server.architecture-description-filename",
 			"gdb_server/gdb_armv5l.xml");
+#endif // SIM_GDB_SERVER_SUPPORT
 
+#ifdef SIM_INLINE_DEBUGGER_SUPPORT
 	sim->SetVariable("inline-debugger.num-loaders", 1);
 	sim->SetVariable("inline-debugger.search-path", "");
+#endif // SIM_INLINE_DEBUGGER_SUPPORT
+
+#ifdef SIM_SIM_DEBUGGER_SUPPORT
+	sim->SetVariable("sim-debugger.num-loaders", 1);
+	sim->SetVariable("sim-debugger.search-path", "");
+#endif // SIM_INLINE_DEBUGGER_SUPPORT
 
 #ifdef SIM_POWER_ESTIMATOR_SUPPORT
 	sim->SetVariable("il1-power-estimator.cache-size", 32 * 128);
@@ -382,26 +431,35 @@ Simulator::
 VariableNotify(const char *name)
 {
 	// check the variable that was notified
-	if ( strcmp(param_enable_inline_debugger.GetName(), name) == 0 )
-		EnableInlineDebugger();
+//	if ( strcmp(param_enable_inline_debugger->GetName(), name) == 0 )
+//		EnableInlineDebugger();
 }
 
+#ifdef SIM_GDB_SERVER_SUPPORT
+void
+Simulator::
+EnableGdbServer()
+{
+	if(enable_gdb_server)
+	{
+		// Connect gdb-server to CPU
+		cpu->debug_control_import >> gdb_server->debug_control_export;
+		cpu->memory_access_reporting_import >> gdb_server->memory_access_reporting_export;
+		gdb_server->memory_import >> cpu->memory_export;
+		gdb_server->registers_import >> cpu->registers_export;
+		gdb_server->memory_access_reporting_control_import >>
+			cpu->memory_access_reporting_control_export;
+	}
+}
+#endif // SIM_GDB_SERVER_SUPPORT
+
+#ifdef SIM_INLINE_DEBUGGER_SUPPORT
 void
 Simulator::
 EnableInlineDebugger()
 {
-	// we do not have anything to do if the value of enable_inline_debugger
-	//   did not change
-	if ( enable_inline_debugger_prev == enable_inline_debugger )
-		return;
-
 	if ( enable_inline_debugger )
 	{
-		// make the inline debugger variables visible
-		(*inline_debugger)["memory-atom-size"].SetVisible(true);
-		(*inline_debugger)["num-loaders"].SetVisible(true);
-		(*inline_debugger)["search-path"].SetVisible(true);
-
 		// connect the inline debugger to other components
 		cpu->debug_control_import >> inline_debugger->debug_control_export;
 		cpu->memory_access_reporting_import >> inline_debugger->memory_access_reporting_export;
@@ -417,25 +475,30 @@ EnableInlineDebugger()
 		*inline_debugger->stmt_lookup_import[0] >>
 			elf32_loader->stmt_lookup_export;
 	}
-	else
-	{
-		// make the inline debugger variables invisible
-		(*inline_debugger)["memory-atom-size"].SetVisible(false);
-		(*inline_debugger)["num-loaders"].SetVisible(false);
-		(*inline_debugger)["search-path"].SetVisible(false);
-
-		// disconnect the inline debugger to other components
-		inline_debugger->debug_control_export.Disconnect();
-		inline_debugger->memory_access_reporting_export.Disconnect();
-		inline_debugger->disasm_import.Disconnect();
-		inline_debugger->memory_import.Disconnect();
-		inline_debugger->registers_import.Disconnect();
-		inline_debugger->memory_access_reporting_control_import.Disconnect();
-		inline_debugger->loader_import[0]->Disconnect();
-		inline_debugger->symbol_table_lookup_import[0]->Disconnect();
-		inline_debugger->stmt_lookup_import[0]->Disconnect();
-	}
-
-	// change the value of the enable_inline_debugger_prev
-	enable_inline_debugger_prev = enable_inline_debugger;
 }
+#endif // SIM_INLINE_DEBUGGER_SUPPORT
+
+#ifdef SIM_SIM_DEBUGGER_SUPPORT
+void
+Simulator ::
+EnableSimDebugger()
+{
+	if ( enable_sim_debugger )
+	{
+		// connect the simulator api debugger to other components
+		cpu->debug_control_import >> sim_debugger->debug_control_export;
+		cpu->memory_access_reporting_import >> sim_debugger->memory_access_reporting_export;
+		sim_debugger->disasm_import >> cpu->disasm_export;
+		sim_debugger->memory_import >> cpu->memory_export;
+		sim_debugger->registers_import >> cpu->registers_export;
+		sim_debugger->memory_access_reporting_control_import >>
+			cpu->memory_access_reporting_control_export;
+		*sim_debugger->loader_import[0] >>
+			linux_os->loader_export;
+		*sim_debugger->symbol_table_lookup_import[0] >>
+			elf32_loader->symbol_table_lookup_export;
+		*sim_debugger->stmt_lookup_import[0] >>
+			elf32_loader->stmt_lookup_export;
+	}
+}
+#endif // SIM_SIM_DEBUGGER_SUPPORT
