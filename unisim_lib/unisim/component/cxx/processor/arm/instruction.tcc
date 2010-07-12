@@ -281,31 +281,6 @@ SetFlushPipelineRequired(bool flush) {
 	flush_pipeline_required = true;
 }
 
-template<class CONFIG>
-Instruction<CONFIG> *
-InstructionFactory<CONFIG> ::
-New() {
-	if(queue.empty()) {
-		return new Instruction<CONFIG>();
-	}
-	Instruction<CONFIG> *insn = queue.front();
-	queue.pop();
-	return insn;
-}
-
-template<class CONFIG>
-void
-InstructionFactory<CONFIG> ::
-Destroy(Instruction<CONFIG> *insn) {
-	if(insn == NULL) return;
-	insn->Reset();
-	queue.push(insn);
-}
-
-template<class CONFIG>
-queue<Instruction<CONFIG> *>
-InstructionFactory<CONFIG> :: queue;
-
 } // end of namespace arm
 } // end of namespace processor
 } // end of namespace cxx

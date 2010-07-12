@@ -4974,8 +4974,8 @@ namespace arm {
 #undef INLINE
 
 #include "unisim/component/cxx/processor/arm/cpu.step_instruction.tcc"
-#include "unisim/component/cxx/processor/arm/cpu.step_cycle.tcc"
-#include "unisim/component/cxx/processor/arm/cpu.soclib_step_cycle.tcc"
+// #include "unisim/component/cxx/processor/arm/cpu.step_cycle.tcc"
+// #include "unisim/component/cxx/processor/arm/cpu.soclib_step_cycle.tcc"
 
 #endif // __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CPU_TCC__
 
