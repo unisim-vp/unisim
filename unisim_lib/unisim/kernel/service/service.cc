@@ -120,19 +120,20 @@ using namespace boost;
 //=                             VariableBase                                 =
 //=============================================================================
 	
-VariableBase::VariableBase(const char *_name, Object *_owner, Type _type, const char *_description) :
-	name(_owner ? _owner->GetName() + string(".") + string(_name) : _name),
-	var_name(_name),
-	owner(_owner),
-	container(0),
-	description(_description ? _description : ""),
-	enumerated_values(),
-	type(_type),
-	fmt(FMT_DEFAULT),
-	is_mutable(true),
-	is_visible(true),
-	is_serializable(true),
-	notifiable_list()
+VariableBase::
+VariableBase(const char *_name, Object *_owner, Type _type, const char *_description)
+	: name(_owner ? string(_owner->GetName()) + string(".") + string(_name) : string(_name) )
+	, var_name(string(_name))
+	, owner(_owner)
+	, container(0)
+	, description(_description ? string(_description) : string(""))
+	, enumerated_values()
+	, type(_type)
+	, fmt(FMT_DEFAULT)
+	, is_mutable(true)
+	, is_visible(true)
+	, is_serializable(true)
+	, notifiable_list()
 {
 	if(_owner)
 	{
@@ -141,34 +142,38 @@ VariableBase::VariableBase(const char *_name, Object *_owner, Type _type, const 
 	Simulator::simulator->Register(this);
 }
 
-VariableBase::VariableBase(const char *_name, VariableBase *_container, Type _type, const char *_description) :
-	name(_container ? _container->GetName() + string(".") + string(_name) : _name), 
-	var_name(_container ? _container->GetVarName() + string(".") + string(_name) : _name),
-	owner(0),
-	container(_container),
-	description(_description ? _description : ""),
-	enumerated_values(),
-	type(_type),
-	fmt(FMT_DEFAULT),
-	notifiable_list()
+VariableBase::
+VariableBase(const char *_name, VariableBase *_container, Type _type, const char *_description)
+	: name(_container ? string(_container->GetName()) + string(".") + string(_name) : string(_name))
+	, var_name(_container ? string(_container->GetVarName()) + string(".") + string(_name) : string(_name))
+	, owner(0)
+	, container(_container)
+	, description(_description ? string(_description) : string(""))
+	, enumerated_values()
+	, type(_type)
+	, fmt(FMT_DEFAULT)
+	, is_mutable(true)
+	, is_visible(true)
+	, is_serializable(true)
+	, notifiable_list()
 {
 	Simulator::simulator->Register(this);
 }
 
-VariableBase::VariableBase() :
-	name(),
-	owner(0),
-	container(0),
-	description(),
-	type(VAR_VOID),
-	fmt(FMT_DEFAULT),
-	notifiable_list()
+VariableBase::
+VariableBase()
+	: name()
+	, owner(0)
+	, container(0)
+	, description()
+	, type(VAR_VOID)
+	, fmt(FMT_DEFAULT)
+	, notifiable_list()
 {
 }
 
 VariableBase::~VariableBase()
 {
-	cerr.flush();
 	if(owner) owner->Remove(*this);
 	Simulator::simulator->Unregister(this);
 }
@@ -329,17 +334,17 @@ VariableBase::operator double () const { return 0.0; }
 VariableBase::operator string () const { return string(); }
 
 VariableBase& VariableBase::operator = (bool value) { Notify(); return *this; }
-VariableBase& VariableBase::operator = (char value) { *this = (long long) value; Notify(); return *this; }
-VariableBase& VariableBase::operator = (short value) { *this = (long long) value; Notify(); return *this; }
-VariableBase& VariableBase::operator = (int value) { *this = (long long) value; Notify(); return *this; }
-VariableBase& VariableBase::operator = (long value) { *this = (long long) value; Notify(); return *this; }
-VariableBase& VariableBase::operator = (long long value) { return *this; }
-VariableBase& VariableBase::operator = (unsigned char value) { *this = (unsigned long long) value; Notify(); return *this; }
-VariableBase& VariableBase::operator = (unsigned short value) { *this = (unsigned long long) value; Notify(); return *this; }
-VariableBase& VariableBase::operator = (unsigned int value) { *this = (unsigned long long) value; Notify(); return *this; }
-VariableBase& VariableBase::operator = (unsigned long value) { *this = (unsigned long long) value; Notify(); return *this; }
-VariableBase& VariableBase::operator = (unsigned long long value) { Notify(); return *this; }
-VariableBase& VariableBase::operator = (float value) { *this = (double) value; Notify(); return *this; }
+VariableBase& VariableBase::operator = (char value) { *this = (long long) value; return *this; }
+VariableBase& VariableBase::operator = (short value) { *this = (long long) value; return *this; }
+VariableBase& VariableBase::operator = (int value) { *this = (long long) value; return *this; }
+VariableBase& VariableBase::operator = (long value) { *this = (long long) value; return *this; }
+VariableBase& VariableBase::operator = (long long value) { Notify(); return *this; }
+VariableBase& VariableBase::operator = (unsigned char value) { *this = (unsigned long long) value; return *this; }
+VariableBase& VariableBase::operator = (unsigned short value) { *this = (unsigned long long) value; return *this; }
+VariableBase& VariableBase::operator = (unsigned int value) { *this = (unsigned long long) value; return *this; }
+VariableBase& VariableBase::operator = (unsigned long value) { *this = (unsigned long long) value; return *this; }
+VariableBase& VariableBase::operator = (unsigned long long value) { return *this; }
+VariableBase& VariableBase::operator = (float value) { *this = (double) value; return *this; }
 VariableBase& VariableBase::operator = (double value) { Notify(); return *this; }
 VariableBase& VariableBase::operator = (const char *value) { Notify(); return *this; }
 
@@ -445,7 +450,7 @@ template <class TYPE> VariableBase& Variable<TYPE>::operator = (double value)
 //=                             Formula<TYPE>                                 =
 //=============================================================================
 
-static unsigned int auto_formula_id = 0;
+// static unsigned int auto_formula_id = 0;
 static string auto_formula_id_string;
 
 template <class TYPE>
@@ -1050,13 +1055,14 @@ template class Formula<double>;
 //=                                 Object                                    =
 //=============================================================================
 
-Object::Object(const char *_name, Object *_parent, const char *_description) :
-	object_name(_parent ? (string(_parent->GetName()) + "." + _name) : _name),
-	parent(_parent),
-	srv_imports(),
-	srv_exports(),
-	leaf_objects(),
-	description(_description ? _description : "")
+Object::Object(const char *_name, Object *_parent, const char *_description)
+	: object_name(_parent ? (string(_parent->GetName()) + string(".") + string(_name)) : string(_name))
+	, description(_description ? string(_description) : string(""))
+	, parent(_parent)
+	, srv_imports()
+	, srv_exports()
+	, leaf_objects()
+	, setup_dependencies()
 {
 	if(_parent) _parent->Add(*this);
 	Simulator::simulator->Register(this);
@@ -1251,48 +1257,48 @@ typedef struct
 } Translation;
 
 Translation conversion_table[] = {
-	"\n", "\\\\\n",
-	"é", "\\'e",
-	"è", "\\`e",
-	"ê", "\\^e",
-	"à", "\\`a",
-	"#", "\\#",
+		{"\n"}, {"\\\\\n"},
+		{"é"}, {"\\'e"},
+		{"è"}, {"\\`e"},
+		{"ê"}, {"\\^e"},
+		{"à"}, {"\\`a"},
+		{"#"}, {"\\#"},
 //	" ", "~",
-	"_", "\\_",
-	"\t", "~~",
-	"{", "$\\{$",
-	"}", "$\\}$",
-	"&", "\\&",
-	"--", "{-}{-}",
-	"<<", "<}\\texttt{<",
-	">>", ">}\\texttt{>",
-	"<", "$<$",
-	">", "$>$",
-	"%", "\\%",
-	"//(1)", "\\ding{202}",
-	"//(2)", "\\ding{203}",
-	"//(3)", "\\ding{204}",
-	"//(4)", "\\ding{205}",
-	"//(5)", "\\ding{206}",
-	"//(6)", "\\ding{207}",
-	"//(7)", "\\ding{208}",
-	"//(8)", "\\ding{209}",
-	"//(9)", "\\ding{210}",
-	"/*(1)*/", "\\ding{202}",
-	"/*(2)*/", "\\ding{203}",
-	"/*(3)*/", "\\ding{204}",
-	"/*(4)*/", "\\ding{205}",
-	"/*(5)*/", "\\ding{206}",
-	"/*(6)*/", "\\ding{207}",
-	"/*(7)*/", "\\ding{208}",
-	"/*(8)*/", "\\ding{209}",
-	"/*(9)*/", "\\ding{210}"
+		{"_"}, {"\\_"},
+		{"\t"}, {"~~"},
+		{"{"}, {"$\\{$"},
+		{"}"}, {"$\\}$"},
+		{"&"}, {"\\&"},
+		{"--"}, {"{-}{-}"},
+		{"<<"}, {"<}\\texttt{<"},
+		{">>"}, {">}\\texttt{>"},
+		{"<"}, {"$<$"},
+		{">"}, {"$>$"},
+		{"%"}, {"\\%"},
+		{"//(1)"}, {"\\ding{202}"},
+		{"//(2)"}, {"\\ding{203}"},
+		{"//(3)"}, {"\\ding{204}"},
+		{"//(4)"}, {"\\ding{205}"},
+		{"//(5)"}, {"\\ding{206}"},
+		{"//(6)"}, {"\\ding{207}"},
+		{"//(7)"}, {"\\ding{208}"},
+		{"//(8)"}, {"\\ding{209}"},
+		{"//(9)"}, {"\\ding{210}"},
+		{"/*(1)*/"}, {"\\ding{202}"},
+		{"/*(2)*/"}, {"\\ding{203}"},
+		{"/*(3)*/"}, {"\\ding{204}"},
+		{"/*(4)*/"}, {"\\ding{205}"},
+		{"/*(5)*/"}, {"\\ding{206}"},
+		{"/*(6)*/"}, {"\\ding{207}"},
+		{"/*(7)*/"}, {"\\ding{208}"},
+		{"/*(8)*/"}, {"\\ding{209}"},
+		{"/*(9)*/"}, {"\\ding{210}"}
 };
 
 std::string string_to_latex(const char *s, unsigned int cut = 0, const char *style = 0)
 {
 	std::string out;
-	int col = 1;
+	unsigned int col = 1;
 	
 	if(style)
 	{
@@ -1303,7 +1309,7 @@ std::string string_to_latex(const char *s, unsigned int cut = 0, const char *sty
 	
 	while(*s)
 	{
-		int i;
+		unsigned int i;
 		bool found = false;
 		
 		bool can_cut = (*s == ' ') || (strncmp(s, "::", 2) == 0) || (*s == '/') || (*s == '_') || (*s == '-') || (*s == '.') || (*s == '[');
@@ -1424,7 +1430,7 @@ void Object::Stop(int exit_status)
 //=============================================================================
 
 ServiceImportBase::ServiceImportBase(const char *_name, Object *_owner) :
-	name(string(_owner->GetName()) + "." + _name),
+	name(string(_owner->GetName()) + string(".") + string(_name)),
 	owner(_owner)
 {
 	_owner->Add(*this);
@@ -1447,7 +1453,7 @@ const char *ServiceImportBase::GetName() const
 //=============================================================================
 
 ServiceExportBase::ServiceExportBase(const char *_name, Object *_owner) :
-	name(string(_owner->GetName()) + "." + _name),
+	name(string(_owner->GetName()) + string(".") + string(_name)),
 	owner(_owner)
 {
 	_owner->Add(*this);
@@ -1474,8 +1480,8 @@ Simulator *Simulator::simulator = 0;
 Simulator::CommandLineOption::CommandLineOption(char _short_name, const char *_long_name, const char *_opt_description, const char *_arg_description)
 	: short_name(_short_name)
 	, long_name(_long_name)
-	, opt_description(_opt_description)
 	, arg_description(_arg_description)
+	, opt_description(_opt_description)
 {
 }
 
@@ -1520,26 +1526,38 @@ int Simulator::CommandLineOption::operator == (const char *arg) const
 	return 0;
 }
 
-Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator *simulator))
-	: argc(0)
-	, argv(0)
+Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator *))
+	: void_variable(0)
+	, shared_data_dir()
+	, set_vars()
+	, get_config_filename()
 	, list_parms(false)
 	, get_config(false)
 	, generate_doc(false)
+	, generate_doc_filename()
+	, enable_warning(false)
 	, enable_version(false)
 	, enable_help(false)
-	, enable_warning(false)
-	, enable_press_enter_at_exit(false)
 	, warn_get_bin_path(false)
 	, warn_get_share_path(false)
+	, enable_press_enter_at_exit(false)
+    , bin_dir()
+	, program_binary()
+	, program_name()
+	, authors()
+	, copyright()
+	, description()
+	, version()
+    , license()
 	, param_get_config(0)
-	, param_enable_press_enter_at_exit(0)
-	, void_variable(0)
 	, var_program_name(0)
 	, var_authors(0)
 	, var_copyright(0)
+	, var_description(0)
 	, var_version(0)
 	, var_license(0)
+	, param_enable_press_enter_at_exit(0)
+	, command_line_options()
 	, objects()
 	, imports()
 	, exports()
@@ -1565,35 +1583,35 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	void_variable = new VariableBase("void", (Object *) 0, VariableBase::VAR_VOID, "unknown variable");
 	param_get_config = new Parameter<bool>("get-config", 0, get_config, "Enable/Disable saving configuration at setup");
 
-	var_program_name = new Parameter<string>("program-name", 0, program_name, "Program name");
-	var_program_name->SetMutable(false);
-	var_program_name->SetVisible(false);
-	var_program_name->SetSerializable(false);
-
 	var_authors = new Parameter<string>("authors", 0, authors, "Authors");
-	var_authors->SetMutable(false);
-	var_authors->SetVisible(false);
-	var_authors->SetSerializable(false);
+	var_authors->SetMutable(true);
+	var_authors->SetVisible(true);
+	var_authors->SetSerializable(true);
+
+	var_program_name = new Parameter<string>("program-name", 0, program_name, "Program name");
+	var_program_name->SetMutable(true);
+	var_program_name->SetVisible(true);
+	var_program_name->SetSerializable(true);
 
 	var_copyright = new Parameter<string>("copyright", 0, copyright, "Copyright");
-	var_copyright->SetMutable(false);
-	var_copyright->SetVisible(false);
-	var_copyright->SetSerializable(false);
+	var_copyright->SetMutable(true);
+	var_copyright->SetVisible(true);
+	var_copyright->SetSerializable(true);
 
 	var_version = new Parameter<string>("version", 0, version, "Version");
-	var_version->SetMutable(false);
-	var_version->SetVisible(false);
-	var_version->SetSerializable(false);
+	var_version->SetMutable(true);
+	var_version->SetVisible(true);
+	var_version->SetSerializable(true);
 
 	var_description = new Parameter<string>("description", 0, description, "Description");
-	var_description->SetMutable(false);
-	var_description->SetVisible(false);
-	var_description->SetSerializable(false);
+	var_description->SetMutable(true);
+	var_description->SetVisible(true);
+	var_description->SetSerializable(true);
 
 	var_license = new Parameter<string>("license", 0, license, "License");
-	var_license->SetMutable(false);
-	var_license->SetVisible(false);
-	var_license->SetSerializable(false);
+	var_license->SetMutable(true);
+	var_license->SetVisible(true);
+	var_license->SetSerializable(true);
 
 	param_enable_press_enter_at_exit = new Parameter<bool>("enable-press-enter-at-exit", 0, enable_press_enter_at_exit, "Enable/Disable pressing key enter at exit");
 	
@@ -2055,7 +2073,7 @@ void Simulator::DumpVariables(ostream &os, VariableBase::Type filter_type) {
 			std::stringstream sstr_value;
 			const char *name = var->GetName();
 			string value = (string) *var;
-			const char *dt = var->GetDataTypeName();
+//			const char *dt = var->GetDataTypeName();
 			const char *desc = (*variable_iter).second->GetDescription();
 			
 			sstr_name.width(max_variable_name_length);
@@ -2227,7 +2245,7 @@ Simulator::SetupStatus Simulator::Setup()
 		return ST_OK_DONT_START;
 	}
 
-	if(!get_config_filename.empty() > 0)
+	if(!get_config_filename.empty())
 	{
 		XmlfyParameters(get_config_filename.c_str());
 		cerr << "Parameters saved on file \"" << get_config_filename << "\"" << endl;
@@ -2487,7 +2505,7 @@ bool Simulator::GetExecutablePath(const char *argv0, std::string& out_executable
 	if ( dladdr((void *)unisim::kernel::service::FindMyself, &info) != 0 )
 	{
 		char bin_path_buf[PATH_MAX + 1];
-		ssize_t bin_path_length;
+//		ssize_t bin_path_length;
 		char *bin_path_pointer = realpath(info.dli_fname, bin_path_buf);
 		if(bin_path_pointer == bin_path_buf)
 		{

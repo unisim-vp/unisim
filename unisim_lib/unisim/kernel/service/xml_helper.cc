@@ -160,6 +160,33 @@ XmlfyVariables(const char *filename, VariableBase::Type type) {
 		}
 	}
 
+	map<const char *, VariableBase *, Simulator::ltstr>::iterator var_iter;
+	for ( var_iter = Simulator::simulator->variables.begin();
+			var_iter != Simulator::simulator->variables.end();
+			var_iter++ )
+	{
+		if ( type == VariableBase::VAR_VOID ||
+				type == (*var_iter).second->GetType())
+		{
+			// stupid algorithm to remove non-root variables
+			bool root_var = true;
+			for ( unsigned int i = 0; (*var_iter).first[i] != '\0'; i++ )
+				if ( (*var_iter).first[i] == '.' )
+					root_var = false;
+			if ( root_var )
+			{
+				rc = XmlfyVariable(writer, (*var_iter).second);
+				if ( rc < 0 )
+				{
+					cerr << "Error(Simulator::XmlfyVariables): "
+							<< "error writing variable"
+							<< endl;
+					return false;
+				}
+			}
+		}
+	}
+
 	rc = xmlTextWriterEndElement(writer);
 	if(rc < 0) {
 		cerr << "Error(Simulator::XmlfyVariables): "

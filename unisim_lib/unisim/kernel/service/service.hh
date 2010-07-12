@@ -194,10 +194,11 @@ public:
 	{
 	public:
 		virtual void VariableNotify(const char *name) = 0;
+		virtual ~Notifiable() {};
 	};
 	void SetNotify(Notifiable *notifiable);
 	void RemoveNotify(Notifiable *notifiable);
-	void Notify();
+ 	void Notify();
 
 private:
 	string name;
@@ -279,8 +280,6 @@ private:
 	friend class ServiceImportBase;
 	friend class ServiceExportBase;
 
-	int argc;
-	char **argv;
 	string shared_data_dir;
 	std::map<string, string> set_vars;
 	string get_config_filename;
