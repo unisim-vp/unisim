@@ -45,7 +45,9 @@ using namespace std;
 Simulator ::
 Simulator(int argc, char **argv)
 	: unisim::kernel::service::Simulator(argc, argv, Simulator::DefaultConfiguration)
+#ifdef SIM_LIBRARY
 	, unisim::kernel::service::VariableBase::Notifiable()
+#endif // SIM_LIBRARY
 	, cpu(0)
 	, irq_master_stub(0)
 	, fiq_master_stub(0)
@@ -110,7 +112,6 @@ Simulator(int argc, char **argv)
 			"enable-sim-debugger", 0,
 			enable_sim_debugger,
 			"Enable sim debugger.");
-	param_enable_sim_debugger->SetNotify(this);
 	if ( enable_sim_debugger )
 		sim_debugger = new SIM_DEBUGGER("sim-debugger");
 #endif
@@ -426,14 +427,15 @@ DefaultConfiguration(unisim::kernel::service::Simulator *sim)
 #endif // SIM_POWER_ESTIMATOR_SUPPORT
 }
 
+#ifdef SIM_LIBRARY
 void
 Simulator::
 VariableNotify(const char *name)
 {
-	// check the variable that was notified
-//	if ( strcmp(param_enable_inline_debugger->GetName(), name) == 0 )
-//		EnableInlineDebugger();
+	// use this function to check the variable that was notified
+	// NOTE: for the moment it is empty, but more to come :-P
 }
+#endif // SIM_LIBRARY
 
 #ifdef SIM_GDB_SERVER_SUPPORT
 void

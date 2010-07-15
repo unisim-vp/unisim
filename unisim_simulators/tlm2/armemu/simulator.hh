@@ -71,7 +71,9 @@
 
 class Simulator
 	: public unisim::kernel::service::Simulator
+#ifdef SIM_LIBRARY
 	, public unisim::kernel::service::VariableBase::Notifiable
+#endif // SIM_LIBRARY
 {
 public:
 	Simulator(int argc, char **argv);
@@ -81,6 +83,9 @@ public:
 	bool IsRunning() const;
 	bool SimulationStarted() const;
 	bool SimulationFinished() const;
+#ifdef SIM_LIBRARY
+	bool AddNotifiable(void *(*notif_function)(const char *), const char *var_name);
+#endif // SIM_LIBRARY
 
 protected:
 private:
@@ -146,7 +151,10 @@ private:
 	unisim::kernel::service::Formula<double> *formula_caches_total_power;
 #endif // SIM_POWER_ESTIMATOR_SUPPORT
 
+#ifdef SIM_LIBRARY
+	std::map < std::string, std::vector<void * (*)(const char *)> * > notif_list;
 	virtual void VariableNotify(const char *name);
+#endif // SIM_LIBRARY
 };
 
 #endif /* SIMULATOR_HH_ */
