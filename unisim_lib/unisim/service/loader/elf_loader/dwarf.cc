@@ -86,8 +86,8 @@ DWARF_LEB128::operator T() const
 		uint8_t byte;
 		do
 		{
-			byte = *p++;
-			result |= (byte & 0x7f) << shift;
+			byte = *(p++);
+			result |= (T)(byte & 0x7f) << shift;
 			shift += 7;
 		}
 		while(byte & 0x80);
@@ -95,7 +95,7 @@ DWARF_LEB128::operator T() const
 		if(std::numeric_limits<T>::is_signed)
 		{
 			if((shift < size) && (byte & 0x40))
-			result |= -(1 << shift);
+			result |= -((T) 1 << shift);
 		}
 	}
 	return result;
@@ -202,7 +202,7 @@ std::string DWARF_LEB128::to_hex(bool is_signed) const
 		uint8_t byte;
 		do
 		{
-			byte = *p++;
+			byte = *(p++);
 			for(i = 0; i < 7; i++, shift++)
 			{
 				data[shift / 8] |= (byte & (1 << i)) << (shift % 8);

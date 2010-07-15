@@ -1,4 +1,4 @@
- /*
+/*
  *  Copyright (c) 2010,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
@@ -691,6 +691,12 @@ void DWARF_AttributeValue<MEMORY_ADDR>::Fix(DWARF_Handler<MEMORY_ADDR> *dw_handl
 }
 
 template <class MEMORY_ADDR>
+std::ostream& operator << (std::ostream& os, const DWARF_AttributeValue<MEMORY_ADDR>& dw_value)
+{
+	return os << dw_value.to_string();
+}
+
+template <class MEMORY_ADDR>
 DWARF_Block<MEMORY_ADDR>::DWARF_Block(uint64_t _length, const uint8_t *_value)
 	: DWARF_AttributeValue<MEMORY_ADDR>(DW_CLASS_BLOCK)
 	, length(_length)
@@ -991,9 +997,11 @@ void DWARF_LinePtr<MEMORY_ADDR>::Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler)
 }
 
 template <class MEMORY_ADDR>
-DWARF_LocListPtr<MEMORY_ADDR>::DWARF_LocListPtr(uint64_t _debug_loc_offset)
-	: DWARF_AttributeValue<MEMORY_ADDR>(DW_CLASS_LOCLISTPTR)
+DWARF_LocListPtr<MEMORY_ADDR>::DWARF_LocListPtr(const DWARF_CompilationUnit<MEMORY_ADDR> *_dw_cu, uint64_t _debug_loc_offset)
+	: DWARF_AttributeValue<MEMORY_ADDR>(DW_CLASS_RANGELISTPTR)
+	, dw_cu(_dw_cu)
 	, debug_loc_offset(_debug_loc_offset)
+	, dw_loc_list_entry(0)
 {
 }
 
@@ -1003,18 +1011,46 @@ DWARF_LocListPtr<MEMORY_ADDR>::~DWARF_LocListPtr()
 }
 
 template <class MEMORY_ADDR>
-uint64_t DWARF_LocListPtr<MEMORY_ADDR>::GetValue() const
+const DWARF_LocListEntry<MEMORY_ADDR> *DWARF_LocListPtr<MEMORY_ADDR>::GetValue() const
 {
-	return debug_loc_offset;
+	return dw_loc_list_entry;
 }
 
 template <class MEMORY_ADDR>
 std::string DWARF_LocListPtr<MEMORY_ADDR>::to_string() const
 {
 	std::stringstream sstr;
-	sstr << debug_loc_offset;
+
+	if(dw_loc_list_entry)
+	{
+		const DWARF_LocListEntry<MEMORY_ADDR> *dw_current_loc_list_entry = dw_loc_list_entry;
+		
+		do
+		{
+			if(dw_current_loc_list_entry != dw_loc_list_entry) sstr << ";";
+			sstr << *dw_current_loc_list_entry;
+			dw_current_loc_list_entry = dw_current_loc_list_entry->GetNext();
+		}
+		while(dw_current_loc_list_entry && !dw_current_loc_list_entry->IsEndOfList());
+	}
+	else
+	{
+		sstr << debug_loc_offset;
+	}
+
 	return std::string(sstr.str());
 }
+
+template <class MEMORY_ADDR>
+void DWARF_LocListPtr<MEMORY_ADDR>::Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler)
+{
+	dw_loc_list_entry = dw_handler->FindLocListEntry(dw_cu, debug_loc_offset);
+	if(!dw_loc_list_entry)
+	{
+		std::cerr << "Can't find Loc list entry at offset " << debug_loc_offset << std::endl;
+	}
+}
+
 
 template <class MEMORY_ADDR>
 DWARF_MacPtr<MEMORY_ADDR>::DWARF_MacPtr(uint64_t _debug_macinfo_offset)
@@ -1049,7 +1085,7 @@ std::string DWARF_MacPtr<MEMORY_ADDR>::to_string() const
 			sstr << *dw_current_macinfo_list_entry;
 			dw_current_macinfo_list_entry = dw_current_macinfo_list_entry->GetNext();
 		}
-		while(dw_current_macinfo_list_entry);
+		while(dw_current_macinfo_list_entry && (dw_current_macinfo_list_entry->GetType() != 0));
 	}
 	else
 	{
@@ -1104,7 +1140,7 @@ std::string DWARF_RangeListPtr<MEMORY_ADDR>::to_string() const
 			sstr << *dw_current_range_list_entry;
 			dw_current_range_list_entry = dw_current_range_list_entry->GetNext();
 		}
-		while(dw_current_range_list_entry = dw_current_range_list_entry->GetNext());
+		while(dw_current_range_list_entry && (!dw_current_range_list_entry->IsEndOfList()));
 	}
 	else
 	{
@@ -1593,7 +1629,7 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 						case DW_AT_static_link:
 						case DW_AT_use_location:
 						case DW_AT_vtable_elem_location:
-							dw_value = new DWARF_LocListPtr<MEMORY_ADDR>((uint64_t) value);
+							dw_value = new DWARF_LocListPtr<MEMORY_ADDR>(dw_cu, (uint64_t) value);
 							break;
 						default:
 							dw_value = new DWARF_UnsignedConstant<MEMORY_ADDR>((uint64_t) value);
@@ -1634,7 +1670,7 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 						case DW_AT_static_link:
 						case DW_AT_use_location:
 						case DW_AT_vtable_elem_location:
-							dw_value = new DWARF_LocListPtr<MEMORY_ADDR>((uint64_t) value);
+							dw_value = new DWARF_LocListPtr<MEMORY_ADDR>(dw_cu, (uint64_t) value);
 							break;
 						default:
 							dw_value = new DWARF_UnsignedConstant<MEMORY_ADDR>((uint64_t) value);
@@ -4232,6 +4268,41 @@ std::string DWARF_MacInfoListEntryVendorExtension<MEMORY_ADDR>::to_string() cons
 }
 
 template <class MEMORY_ADDR>
+DWARF_MacInfoListEntryNull<MEMORY_ADDR>::DWARF_MacInfoListEntryNull()
+	: DWARF_MacInfoListEntry<MEMORY_ADDR>(DW_MACINFO_end_file)
+{
+}
+
+template <class MEMORY_ADDR>
+DWARF_MacInfoListEntryNull<MEMORY_ADDR>::~DWARF_MacInfoListEntryNull()
+{
+}
+
+template <class MEMORY_ADDR>
+int64_t DWARF_MacInfoListEntryNull<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, uint64_t _offset)
+{
+	DWARF_MacInfoListEntry<MEMORY_ADDR>::offset = _offset;
+	int64_t size = 0;
+	
+	uint8_t type;
+	if(max_size < sizeof(type)) return -1;
+	memcpy(&type, rawdata, sizeof(type));
+	rawdata += sizeof(type);
+	size += sizeof(type);
+	max_size -= sizeof(type);
+	
+	if(DWARF_MacInfoListEntry<MEMORY_ADDR>::dw_mac_info_type != type) return -1;
+	
+	return size;
+}
+
+template <class MEMORY_ADDR>
+std::string DWARF_MacInfoListEntryNull<MEMORY_ADDR>::to_string() const
+{
+	return std::string("DW_MACINFO_null");
+}
+
+template <class MEMORY_ADDR>
 DWARF_AddressRangeDescriptor<MEMORY_ADDR>::DWARF_AddressRangeDescriptor(const DWARF_AddressRanges<MEMORY_ADDR> *_dw_aranges)
 	: dw_aranges(_dw_aranges)
 	, addr(0)
@@ -4836,6 +4907,173 @@ std::ostream& operator << (std::ostream& os, const DWARF_Pubs<MEMORY_ADDR>& dw_p
 }
 
 template <class MEMORY_ADDR>
+DWARF_LocListEntry<MEMORY_ADDR>::DWARF_LocListEntry(const DWARF_CompilationUnit<MEMORY_ADDR> *_dw_cu)
+	: offset(0xffffffffffffffffULL)
+	, dw_cu(_dw_cu)
+	, next(0)
+	, begin_addr_offset(0)
+	, end_addr_offset(0)
+	, dw_expr(0)
+{
+}
+
+template <class MEMORY_ADDR>
+DWARF_LocListEntry<MEMORY_ADDR>::~DWARF_LocListEntry()
+{
+	if(dw_expr)
+	{
+		delete dw_expr;
+	}
+}
+
+template <class MEMORY_ADDR>
+MEMORY_ADDR DWARF_LocListEntry<MEMORY_ADDR>::GetBeginAddressOffset() const
+{
+	return begin_addr_offset;
+}
+
+template <class MEMORY_ADDR>
+MEMORY_ADDR DWARF_LocListEntry<MEMORY_ADDR>::GetEndAddressOffset() const
+{
+	return end_addr_offset;
+}
+
+template <class MEMORY_ADDR>
+bool DWARF_LocListEntry<MEMORY_ADDR>::IsBaseAddressSelection() const
+{
+	return begin_addr_offset > end_addr_offset;
+}
+
+template <class MEMORY_ADDR>
+bool DWARF_LocListEntry<MEMORY_ADDR>::IsEndOfList() const
+{
+	return (begin_addr_offset == 0) && (end_addr_offset == 0);
+}
+
+template <class MEMORY_ADDR>
+uint64_t DWARF_LocListEntry<MEMORY_ADDR>::GetOffset() const
+{
+	return offset;
+}
+
+template <class MEMORY_ADDR>
+const DWARF_LocListEntry<MEMORY_ADDR> *DWARF_LocListEntry<MEMORY_ADDR>::GetNext() const
+{
+	return next;
+}
+
+template <class MEMORY_ADDR>
+int64_t DWARF_LocListEntry<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, uint64_t _offset)
+{
+	offset = _offset;
+	int64_t size = 0;
+	
+	endian_type endianness = dw_cu->GetEndianness();
+	
+	switch(dw_cu->GetAddressSize())
+	{
+		case 2:
+			{
+				uint16_t begin_addr_offset16;
+				if(max_size < sizeof(begin_addr_offset16)) return -1;
+				memcpy(&begin_addr_offset16, rawdata, sizeof(begin_addr_offset16));
+				begin_addr_offset16 = Target2Host(endianness, begin_addr_offset16);
+				rawdata += sizeof(begin_addr_offset16);
+				max_size -= sizeof(begin_addr_offset16);
+				size += sizeof(begin_addr_offset16);
+				begin_addr_offset = (MEMORY_ADDR) begin_addr_offset16;
+
+				uint16_t end_addr_offset16;
+				if(max_size < sizeof(end_addr_offset16)) return -1;
+				memcpy(&end_addr_offset16, rawdata, sizeof(end_addr_offset16));
+				end_addr_offset16 = Target2Host(endianness, end_addr_offset16);
+				rawdata += sizeof(end_addr_offset16);
+				max_size -= sizeof(end_addr_offset16);
+				size += sizeof(end_addr_offset16);
+				end_addr_offset = (MEMORY_ADDR) end_addr_offset16;
+			}
+			break;
+		case 4:
+			{
+				uint32_t begin_addr_offset32;
+				if(max_size < sizeof(begin_addr_offset32)) return -1;
+				memcpy(&begin_addr_offset32, rawdata, sizeof(begin_addr_offset32));
+				begin_addr_offset32 = Target2Host(endianness, begin_addr_offset32);
+				rawdata += sizeof(begin_addr_offset32);
+				max_size -= sizeof(begin_addr_offset32);
+				size += sizeof(begin_addr_offset32);
+				begin_addr_offset = (MEMORY_ADDR) begin_addr_offset32;
+
+				uint32_t end_addr_offset32;
+				if(max_size < sizeof(end_addr_offset32)) return -1;
+				memcpy(&end_addr_offset32, rawdata, sizeof(end_addr_offset32));
+				end_addr_offset32 = Target2Host(endianness, end_addr_offset32);
+				rawdata += sizeof(end_addr_offset32);
+				max_size -= sizeof(end_addr_offset32);
+				size += sizeof(end_addr_offset32);
+				end_addr_offset = (MEMORY_ADDR) end_addr_offset32;
+			}
+			break;
+		case 8:
+			{
+				uint64_t begin_addr_offset64;
+				if(max_size < sizeof(begin_addr_offset64)) return -1;
+				memcpy(&begin_addr_offset64, rawdata, sizeof(begin_addr_offset64));
+				begin_addr_offset64 = Target2Host(endianness, begin_addr_offset64);
+				rawdata += sizeof(begin_addr_offset64);
+				max_size -= sizeof(begin_addr_offset64);
+				size += sizeof(begin_addr_offset64);
+				begin_addr_offset = (MEMORY_ADDR) begin_addr_offset64;
+
+				uint64_t end_addr_offset64;
+				if(max_size < sizeof(end_addr_offset64)) return -1;
+				memcpy(&end_addr_offset64, rawdata, sizeof(end_addr_offset64));
+				end_addr_offset64 = Target2Host(endianness, end_addr_offset64);
+				rawdata += sizeof(end_addr_offset64);
+				max_size -= sizeof(end_addr_offset64);
+				size += sizeof(end_addr_offset64);
+				end_addr_offset = (MEMORY_ADDR) end_addr_offset64;
+			}
+			break;
+		default:
+			return -1;
+	}
+
+	if(IsBaseAddressSelection() || IsEndOfList()) return size;
+	
+	// Warning! whether block_length is a 2-byte unsigned integer or an unsigned LEB128 as I initially expected is undocumented both in DWARF v2 and v3 specifications.
+	uint16_t block_length;
+	if(max_size < sizeof(block_length)) return -1;
+	memcpy(&block_length, rawdata, sizeof(block_length));
+	block_length = Target2Host(endianness, block_length);
+	rawdata += sizeof(block_length);
+	max_size -= sizeof(block_length);
+	size += sizeof(block_length);
+
+	if(max_size < block_length) return -1;
+	dw_expr = new DWARF_Expression<MEMORY_ADDR>(dw_cu, block_length, rawdata);
+	rawdata += block_length;
+	size += block_length;
+	max_size -= block_length;
+	
+	return size;
+}
+
+template <class MEMORY_ADDR>
+std::ostream& operator << (std::ostream& os, const DWARF_LocListEntry<MEMORY_ADDR>& dw_loc_list_entry)
+{
+	if(dw_loc_list_entry.IsEndOfList()) return os << "EOL";
+	if(dw_loc_list_entry.IsBaseAddressSelection()) os << "Base";
+	os << "[0x" << std::hex << dw_loc_list_entry.begin_addr_offset << "-0x" << dw_loc_list_entry.end_addr_offset;
+	if(dw_loc_list_entry.dw_expr)
+	{
+		os << ":" << *dw_loc_list_entry.dw_expr;
+	}
+	os << "]";
+	return os;
+}
+
+template <class MEMORY_ADDR>
 DWARF_Handler<MEMORY_ADDR>::DWARF_Handler(endian_type _endianness)
 	: endianness(_endianness)
 	, debug_line_section(0)
@@ -4960,6 +5198,15 @@ DWARF_Handler<MEMORY_ADDR>::~DWARF_Handler()
 	for(i = 0; i < num_pubtypes; i++)
 	{
 		delete dw_pubtypes[i];
+	}
+
+	typename std::map<uint64_t, DWARF_LocListEntry<MEMORY_ADDR> *>::iterator dw_loc_list_entry_iter;
+	for(dw_loc_list_entry_iter = dw_loc_list.begin(); dw_loc_list_entry_iter != dw_loc_list.end(); dw_loc_list_entry_iter++)
+	{
+		if((*dw_loc_list_entry_iter).second)
+		{
+			delete (*dw_loc_list_entry_iter).second;
+		}
 	}
 
 	if(debug_line_section)
@@ -5322,6 +5569,49 @@ void DWARF_Handler<MEMORY_ADDR>::Initialize()
 	{
 		dw_pubtypes[i]->Fix(this);
 	}
+	
+	typename std::map<uint64_t, DWARF_RangeListEntry<MEMORY_ADDR> *>::iterator dw_range_list_entry_iter;
+	DWARF_RangeListEntry<MEMORY_ADDR> *dw_prev_range_list_entry = 0;
+	for(dw_range_list_entry_iter = dw_range_list.begin(); dw_range_list_entry_iter != dw_range_list.end(); dw_range_list_entry_iter++)
+	{
+		DWARF_RangeListEntry<MEMORY_ADDR> *dw_range_list_entry = (*dw_range_list_entry_iter).second;
+		
+		if(dw_prev_range_list_entry)
+		{
+			dw_prev_range_list_entry->next = dw_range_list_entry;
+		}
+		
+		dw_prev_range_list_entry = dw_range_list_entry;
+	}
+
+	typename std::map<uint64_t, DWARF_MacInfoListEntry<MEMORY_ADDR> *>::iterator dw_macinfo_list_entry_iter;
+	DWARF_MacInfoListEntry<MEMORY_ADDR> *dw_prev_macinfo_list_entry = 0;
+	for(dw_macinfo_list_entry_iter = dw_macinfo_list.begin(); dw_macinfo_list_entry_iter != dw_macinfo_list.end(); dw_macinfo_list_entry_iter++)
+	{
+		DWARF_MacInfoListEntry<MEMORY_ADDR> *dw_macinfo_list_entry = (*dw_macinfo_list_entry_iter).second;
+		
+		if(dw_prev_macinfo_list_entry)
+		{
+			dw_prev_macinfo_list_entry->next = dw_macinfo_list_entry;
+		}
+		
+		dw_prev_macinfo_list_entry = dw_macinfo_list_entry;
+	}
+
+	typename std::map<uint64_t, DWARF_LocListEntry<MEMORY_ADDR> *>::iterator dw_loc_list_entry_iter;
+	DWARF_LocListEntry<MEMORY_ADDR> *dw_prev_loc_list_entry = 0;
+	for(dw_loc_list_entry_iter = dw_loc_list.begin(); dw_loc_list_entry_iter != dw_loc_list.end(); dw_loc_list_entry_iter++)
+	{
+		DWARF_LocListEntry<MEMORY_ADDR> *dw_loc_list_entry = (*dw_loc_list_entry_iter).second;
+		
+		if(dw_prev_loc_list_entry)
+		{
+			dw_prev_loc_list_entry->next = dw_loc_list_entry;
+		}
+		
+		dw_prev_loc_list_entry = dw_loc_list_entry;
+	}
+
 #if 0
 	{
 		std::ofstream f;
@@ -5380,6 +5670,12 @@ template <class MEMORY_ADDR>
 void DWARF_Handler<MEMORY_ADDR>::Register(DWARF_MacInfoListEntry<MEMORY_ADDR> *dw_macinfo_list_entry)
 {
 	dw_macinfo_list.insert(std::pair<uint64_t, DWARF_MacInfoListEntry<MEMORY_ADDR> *>(dw_macinfo_list_entry->GetOffset(), dw_macinfo_list_entry));
+}
+
+template <class MEMORY_ADDR>
+void DWARF_Handler<MEMORY_ADDR>::Register(DWARF_LocListEntry<MEMORY_ADDR> *dw_loc_list_entry)
+{
+	dw_loc_list.insert(std::pair<uint64_t, DWARF_LocListEntry<MEMORY_ADDR> *>(dw_loc_list_entry->GetOffset(), dw_loc_list_entry));
 }
 
 template <class MEMORY_ADDR>
@@ -5523,45 +5819,34 @@ const DWARF_DIE<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDIE(uint64_t debug
 template <class MEMORY_ADDR>
 const DWARF_RangeListEntry<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindRangeListEntry(const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu, uint64_t debug_ranges_offset)
 {
-	typename std::map<uint64_t, DWARF_RangeListEntry<MEMORY_ADDR> *>::const_iterator dw_range_list_iter = dw_range_list.find(debug_ranges_offset);
-	
-	if(dw_range_list_iter != dw_range_list.end())
-	{
-		return (*dw_range_list_iter).second;
-	}
-	
 	if(!debug_ranges_section || debug_ranges_offset >= debug_ranges_section_size) return 0;
 	
 	DWARF_RangeListEntry<MEMORY_ADDR> *head = 0;
-	DWARF_RangeListEntry<MEMORY_ADDR> *prev = 0;
-	
 	do
 	{
+		typename std::map<uint64_t, DWARF_RangeListEntry<MEMORY_ADDR> *>::const_iterator dw_range_list_iter = dw_range_list.find(debug_ranges_offset);
+		
+		if(dw_range_list_iter != dw_range_list.end())
+		{
+			return head ? head : (*dw_range_list_iter).second;
+		}
+		
 		DWARF_RangeListEntry<MEMORY_ADDR> *dw_range_list_entry = new DWARF_RangeListEntry<MEMORY_ADDR>(dw_cu);
 		int64_t sz;
-		
+			
 		if((sz = dw_range_list_entry->Load((const uint8_t *) debug_ranges_section + debug_ranges_offset, debug_ranges_section_size - debug_ranges_offset, debug_ranges_offset)) < 0)
 		{
 			std::cerr << "Invalid DWARF2 debug ranges at offset 0x" << std::hex << debug_ranges_offset << std::dec << std::endl;
 			delete dw_range_list_entry;
 			return head;
 		}
-		else
-		{
-			if(dw_range_list_entry->IsEndOfList())
-			{
-				delete dw_range_list_entry;
-				return head;
-			}
 
-			Register(dw_range_list_entry);
-			if(!head) head = dw_range_list_entry;
-			if(prev) prev->next = dw_range_list_entry;
-			prev = dw_range_list_entry;
-			debug_ranges_offset += sz;
-		}
-	}
-	while(debug_ranges_offset < debug_ranges_section_size);
+		//std::cerr << *dw_range_list_entry << std::endl;
+		Register(dw_range_list_entry);
+		debug_ranges_offset += sz;
+		if(!head) head = dw_range_list_entry;
+		if(dw_range_list_entry->IsEndOfList()) break; // End of list
+	} while(debug_ranges_offset < debug_ranges_section_size);
 	
 	return head;
 }
@@ -5569,20 +5854,18 @@ const DWARF_RangeListEntry<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindRangeLi
 template <class MEMORY_ADDR>
 const DWARF_MacInfoListEntry<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindMacInfoListEntry(uint64_t debug_macinfo_offset)
 {
-	typename std::map<uint64_t, DWARF_MacInfoListEntry<MEMORY_ADDR> *>::const_iterator dw_macinfo_list_iter = dw_macinfo_list.find(debug_macinfo_offset);
-	
-	if(dw_macinfo_list_iter != dw_macinfo_list.end())
-	{
-		return (*dw_macinfo_list_iter).second;
-	}
-	
 	if(!debug_macinfo_section || debug_macinfo_offset >= debug_macinfo_section_size) return 0;
-	
+
 	DWARF_MacInfoListEntry<MEMORY_ADDR> *head = 0;
-	DWARF_MacInfoListEntry<MEMORY_ADDR> *prev = 0;
-	
 	do
 	{
+		typename std::map<uint64_t, DWARF_MacInfoListEntry<MEMORY_ADDR> *>::const_iterator dw_macinfo_list_iter = dw_macinfo_list.find(debug_macinfo_offset);
+		
+		if(dw_macinfo_list_iter != dw_macinfo_list.end())
+		{
+			return head ? head : (*dw_macinfo_list_iter).second;
+		}
+		
 		uint8_t dw_mac_info_type = *((const uint8_t *) debug_macinfo_section + debug_macinfo_offset);
 
 		DWARF_MacInfoListEntry<MEMORY_ADDR> *dw_macinfo_list_entry = 0;
@@ -5590,6 +5873,7 @@ const DWARF_MacInfoListEntry<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindMacIn
 		switch(dw_mac_info_type)
 		{
 			case 0: // Null entry
+				dw_macinfo_list_entry = new DWARF_MacInfoListEntryNull<MEMORY_ADDR>();
 				break;
 			case DW_MACINFO_define:
 				dw_macinfo_list_entry = new DWARF_MacInfoListEntryDefine<MEMORY_ADDR>();
@@ -5608,29 +5892,26 @@ const DWARF_MacInfoListEntry<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindMacIn
 				break;
 			default:
 				std::cerr << "Invalid DWARF2 debug macinfo at offset 0x" << std::hex << debug_macinfo_offset << std::dec << std::endl;
-				return head;
+				return 0;
 		}
-		
+			
 		if(!dw_macinfo_list_entry) return head;
-		
+
 		int64_t sz;
-		
+			
 		if((sz = dw_macinfo_list_entry->Load((const uint8_t *) debug_macinfo_section + debug_macinfo_offset, debug_macinfo_section_size - debug_macinfo_offset, debug_macinfo_offset)) < 0)
 		{
 			std::cerr << "Invalid DWARF2 debug macinfo at offset 0x" << std::hex << debug_macinfo_offset << std::dec << std::endl;
 			delete dw_macinfo_list_entry;
 			return head;
 		}
-		else
-		{
-			Register(dw_macinfo_list_entry);
-			debug_macinfo_offset += sz;
-			if(!head) head = dw_macinfo_list_entry;
-			if(prev) prev->next = dw_macinfo_list_entry;
-			prev = dw_macinfo_list_entry;
-		}
-	}
-	while(debug_macinfo_offset < debug_macinfo_section_size);
+
+		// std::cerr << *dw_macinfo_list_entry << std::endl;
+		Register(dw_macinfo_list_entry);
+		debug_macinfo_offset += sz;
+		if(!head) head = dw_macinfo_list_entry;
+		if(dw_macinfo_list_entry->GetType() == 0) break; // Null entry, i.e. End of list
+	} while(debug_macinfo_offset < debug_macinfo_section_size);
 	
 	return head;
 }
@@ -5641,6 +5922,45 @@ const DWARF_CompilationUnit<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindCompil
 	typename std::map<uint64_t, DWARF_CompilationUnit<MEMORY_ADDR> *>::const_iterator dw_cu_iter = dw_cus.find(debug_info_offset);
 	
 	return dw_cu_iter != dw_cus.end() ? (*dw_cu_iter).second : 0;
+}
+
+template <class MEMORY_ADDR>
+const DWARF_LocListEntry<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindLocListEntry(const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu, uint64_t debug_loc_offset)
+{
+	if(!debug_loc_section || debug_loc_offset >= debug_loc_section_size) return 0;
+	
+	DWARF_LocListEntry<MEMORY_ADDR> *head = 0;
+	
+	do
+	{
+		typename std::map<uint64_t, DWARF_LocListEntry<MEMORY_ADDR> *>::const_iterator dw_loc_list_iter = dw_loc_list.find(debug_loc_offset);
+			
+		if(dw_loc_list_iter != dw_loc_list.end())
+		{
+			return head ? head : (*dw_loc_list_iter).second;
+		}
+			
+		DWARF_LocListEntry<MEMORY_ADDR> *dw_loc_list_entry = new DWARF_LocListEntry<MEMORY_ADDR>(dw_cu);
+		int64_t sz;
+			
+		if((sz = dw_loc_list_entry->Load((const uint8_t *) debug_loc_section + debug_loc_offset, debug_loc_section_size - debug_loc_offset, debug_loc_offset)) < 0)
+		{
+			std::cerr << "Invalid DWARF2 debug loc at offset 0x" << std::hex << debug_loc_offset << std::dec << std::endl;
+			delete dw_loc_list_entry;
+			return head;
+		}
+
+		//std::cerr << *dw_loc_list_entry << std::endl;
+		Register(dw_loc_list_entry);
+		debug_loc_offset += sz;
+		if(!head) head = dw_loc_list_entry;
+		if(dw_loc_list_entry->IsEndOfList())
+		{
+			break; // End of list
+		}
+	} while(debug_loc_offset < debug_loc_section_size);
+	
+	return head;
 }
 
 } // end of namespace elf_loader

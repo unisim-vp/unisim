@@ -196,10 +196,9 @@ InlineDebugger<ADDRESS>::~InlineDebugger()
 			delete stmt_lookup_import[i];
 		}
 		delete[] loader_import;
+		delete[] symbol_table_lookup_import;
 		delete[] stmt_lookup_import;
 	}
-	
-	delete symbol_table_lookup_import;
 }
 
 template<class ADDRESS>

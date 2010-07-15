@@ -552,6 +552,7 @@ template <class MEMORY_ADDR> class DWARF_AddressRangeDescriptor;
 template <class MEMORY_ADDR> class DWARF_AddressRanges;
 template <class MEMORY_ADDR> class DWARF_Pub;
 template <class MEMORY_ADDR> class DWARF_Pubs;
+template <class MEMORY_ADDR> class DWARF_LocListEntry;
 
 template <class MEMORY_ADDR> class DWARF_Handler;
 
@@ -824,12 +825,15 @@ template <class MEMORY_ADDR>
 class DWARF_LocListPtr : public DWARF_AttributeValue<MEMORY_ADDR>
 {
 public:
-	DWARF_LocListPtr(uint64_t debug_loc_offset);
+	DWARF_LocListPtr(const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu, uint64_t debug_loc_offset);
 	~DWARF_LocListPtr();
-	uint64_t GetValue() const;
+	const DWARF_LocListEntry<MEMORY_ADDR> *GetValue() const;
 	virtual std::string to_string() const;
+	virtual void Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler);
 private:
+	const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu;
 	uint64_t debug_loc_offset;
+	const DWARF_LocListEntry<MEMORY_ADDR> *dw_loc_list_entry;
 };
 
 template <class MEMORY_ADDR>
@@ -1453,6 +1457,16 @@ private:
 };
 
 template <class MEMORY_ADDR>
+class DWARF_MacInfoListEntryNull : public DWARF_MacInfoListEntry<MEMORY_ADDR>
+{
+public:
+	DWARF_MacInfoListEntryNull();
+	virtual ~DWARF_MacInfoListEntryNull();
+	virtual int64_t Load(const uint8_t *rawdata, uint64_t max_size, uint64_t offset);
+	virtual std::string to_string() const;
+};
+
+template <class MEMORY_ADDR>
 std::ostream& operator << (std::ostream& os, const DWARF_AddressRangeDescriptor<MEMORY_ADDR>& dw_addr_range_desc);
 
 template <class MEMORY_ADDR>
@@ -1567,6 +1581,33 @@ private:
 };
 
 template <class MEMORY_ADDR>
+std::ostream& operator << (std::ostream& os, const DWARF_LocListEntry<MEMORY_ADDR>& dw_loc_list_entry);
+
+template <class MEMORY_ADDR>
+class DWARF_LocListEntry
+{
+public:
+	DWARF_LocListEntry(const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu);
+	~DWARF_LocListEntry();
+	MEMORY_ADDR GetBeginAddressOffset() const;
+	MEMORY_ADDR GetEndAddressOffset() const;
+	bool IsBaseAddressSelection() const;
+	bool IsEndOfList() const;
+	uint64_t GetOffset() const;
+	const DWARF_LocListEntry<MEMORY_ADDR> *GetNext() const;
+	int64_t Load(const uint8_t *rawdata, uint64_t max_size, uint64_t offset);
+	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_LocListEntry<MEMORY_ADDR>& dw_loc_list_entry);
+private:
+	friend class DWARF_Handler<MEMORY_ADDR>;
+	uint64_t offset;
+	const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu;
+	DWARF_LocListEntry<MEMORY_ADDR> *next;
+	MEMORY_ADDR begin_addr_offset;
+	MEMORY_ADDR end_addr_offset;
+	DWARF_Expression<MEMORY_ADDR> *dw_expr;
+};
+
+template <class MEMORY_ADDR>
 class DWARF_Handler
 {
 public:
@@ -1579,12 +1620,14 @@ public:
 	void Register(DWARF_DIE<MEMORY_ADDR> *dw_die);
 	void Register(DWARF_RangeListEntry<MEMORY_ADDR> *dw_range_list_entry);
 	void Register(DWARF_MacInfoListEntry<MEMORY_ADDR> *dw_macinfo_list_entry);
+	void Register(DWARF_LocListEntry<MEMORY_ADDR> *dw_loc_list_entry);
 	
 	const DWARF_StatementProgram<MEMORY_ADDR> *FindStatementProgram(uint64_t debug_line_offset) const;
 	const DWARF_DIE<MEMORY_ADDR> *FindDIE(uint64_t debug_info_offset) const;
 	const DWARF_RangeListEntry<MEMORY_ADDR> *FindRangeListEntry(const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu, uint64_t debug_ranges_offset);
 	const DWARF_MacInfoListEntry<MEMORY_ADDR> *FindMacInfoListEntry(uint64_t debug_macinfo_offset);
 	const DWARF_CompilationUnit<MEMORY_ADDR> *FindCompilationUnit(uint64_t debug_info_offset) const;
+	const DWARF_LocListEntry<MEMORY_ADDR> *FindLocListEntry(const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu, uint64_t debug_loc_offset);
 	
 	endian_type GetEndianness() const;
 	const DWARF_Abbrev *FindAbbrev(uint64_t debug_abbrev_offset, const DWARF_LEB128& dw_abbrev_code) const;
@@ -1630,8 +1673,9 @@ private:
 	std::map<uint64_t, DWARF_RangeListEntry<MEMORY_ADDR> *> dw_range_list;     // range list entries in section .debug_ranges indexed by .debug_ranges section offset
 	std::map<uint64_t, DWARF_MacInfoListEntry<MEMORY_ADDR> *> dw_macinfo_list; // macinfo list entries in section .debug_macinfo indexed by .debug_macinfo section offset
 	std::vector<DWARF_AddressRanges<MEMORY_ADDR> *> dw_aranges;                // from section .debug_frame
-	std::vector<DWARF_Pubs<MEMORY_ADDR> *> dw_pubnames;                         // from section .debug_pubnames
+	std::vector<DWARF_Pubs<MEMORY_ADDR> *> dw_pubnames;                        // from section .debug_pubnames
 	std::vector<DWARF_Pubs<MEMORY_ADDR> *> dw_pubtypes;                        // from section .debug_pubtypes
+	std::map<uint64_t, DWARF_LocListEntry<MEMORY_ADDR> * > dw_loc_list;        // location lists in section .debug_loc indexed by .debug_loc section offset
 	
 	void DumpStatementMatrix();
 	bool IsAbsolutePath(const char *filename) const;
