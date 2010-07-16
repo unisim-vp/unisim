@@ -42,7 +42,7 @@ namespace util {
 namespace debug {
 
 template <class MEMORY_ADDR>
-Statement<MEMORY_ADDR>::Statement(MEMORY_ADDR _addr, bool _is_beginning_of_basic_block, const std::string *_source_dirname, const std::string *_source_filename, unsigned int _lineno, unsigned int _colno)
+Statement<MEMORY_ADDR>::Statement(MEMORY_ADDR _addr, bool _is_beginning_of_basic_block, const char *_source_dirname, const char *_source_filename, unsigned int _lineno, unsigned int _colno)
 	: addr(_addr)
 	, is_beginning_of_basic_block(_is_beginning_of_basic_block)
 	, source_dirname(_source_dirname)
@@ -67,13 +67,13 @@ bool Statement<MEMORY_ADDR>::IsBeginningOfBasicBlock() const
 template <class MEMORY_ADDR>
 const char *Statement<MEMORY_ADDR>::GetSourceDirname() const
 {
-	return source_dirname ? source_dirname->c_str() : 0;
+	return source_dirname;
 }
 
 template <class MEMORY_ADDR>
 const char *Statement<MEMORY_ADDR>::GetSourceFilename() const
 {
-	return source_filename ? source_filename->c_str() : 0; 
+	return source_filename;
 }
 
 template <class MEMORY_ADDR>
@@ -93,8 +93,8 @@ std::ostream& operator << (std::ostream& os, const Statement<MEMORY_ADDR>& stmt)
 {
 	os << "addr=0x" << std::hex << stmt.addr << std::dec
 	   << ", basic_block=" << stmt.is_beginning_of_basic_block
-	   << ", dir=\"" << (stmt.source_dirname ? *stmt.source_dirname : "") << "\""
-	   << ", file=\"" << (stmt.source_filename ? *stmt.source_filename : "") << "\""
+	   << ", dir=\"" << (stmt.source_dirname ? stmt.source_dirname : "") << "\""
+	   << ", file=\"" << (stmt.source_filename ? stmt.source_filename : "") << "\""
 	   << ", line=" << stmt.lineno
 	   << ", col=" << stmt.colno;
 	return os;

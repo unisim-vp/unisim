@@ -430,15 +430,18 @@ const uint8_t DW_ORD_col_major = 0x01;
 const uint8_t DW_DSC_label = 0x00;
 const uint8_t DW_DSC_range = 0x01;
 
-const uint8_t DW_LNS_copy = 0x01;
-const uint8_t DW_LNS_advance_pc = 0x02;
-const uint8_t DW_LNS_advance_line = 0x03;
-const uint8_t DW_LNS_set_file = 0x04;
-const uint8_t DW_LNS_set_column = 0x05;
-const uint8_t DW_LNS_negate_stmt = 0x06;
-const uint8_t DW_LNS_set_basic_block = 0x07;
-const uint8_t DW_LNS_const_add_pc = 0x08;
-const uint8_t DW_LNS_fixed_advance_pc = 0x09;
+const uint8_t DW_LNS_copy = 0x01;               // DWARF v2
+const uint8_t DW_LNS_advance_pc = 0x02;         // DWARF v2
+const uint8_t DW_LNS_advance_line = 0x03;       // DWARF v2
+const uint8_t DW_LNS_set_file = 0x04;           // DWARF v2
+const uint8_t DW_LNS_set_column = 0x05;         // DWARF v2
+const uint8_t DW_LNS_negate_stmt = 0x06;        // DWARF v2
+const uint8_t DW_LNS_set_basic_block = 0x07;    // DWARF v2
+const uint8_t DW_LNS_const_add_pc = 0x08;       // DWARF v2
+const uint8_t DW_LNS_fixed_advance_pc = 0x09;   // DWARF v2
+const uint8_t DW_LNS_set_prologue_end = 0x0a;   // DWARF v3
+const uint8_t DW_LNS_set_epilogue_begin = 0x0b; // DWARF v3
+const uint8_t DW_LNS_set_isa = 0x0c;            // DWARF v3
 
 const uint8_t DW_LNE_end_sequence = 0x01;
 const uint8_t DW_LNE_set_address = 0x02;
@@ -577,7 +580,7 @@ public:
 	std::string to_hex(bool is_signed) const;
 	std::string to_string(bool is_signed) const;
 private:
-	uint8_t *leb128;
+	const uint8_t *leb128;
 };
 
 std::ostream& operator << (std::ostream& os, const DWARF_Filename& dw_filename);
@@ -588,7 +591,7 @@ public:
 	DWARF_Filename();
 	DWARF_Filename(const DWARF_Filename& dw_filename);
 	~DWARF_Filename();
-	const std::string *GetFilename() const;
+	const char *GetFilename() const;
 	const DWARF_LEB128& GetDirectoryIndex() const;
 	const DWARF_LEB128& GetLastModificationTime() const;
 	const DWARF_LEB128& GetByteLength() const;
@@ -598,7 +601,7 @@ public:
 	
 	friend std::ostream& operator << (std::ostream& os, const DWARF_Filename& dw_filename);
 private:
-	std::string filename;
+	const char *filename;
 	DWARF_LEB128 directory_index;         // unsigned, directory index of the directory in which file was found
 	DWARF_LEB128 last_modification_time;  // unsigned, time of last modification for the file
 	DWARF_LEB128 byte_length;             // unsigned, length in bytes of the file
@@ -616,14 +619,13 @@ public:
 	int64_t Load(const uint8_t *rawdata, uint64_t max_size, uint64_t offset);
 	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_StatementProgram<MEMORY_ADDR>& dw_stmt_prog);
 	uint64_t GetOffset() const;
+	endian_type GetEndianness() const;
 private:
 	friend class DWARF_StatementVM<MEMORY_ADDR>;
 	
 	DWARF_Handler<MEMORY_ADDR> *dw_handler;
 	
 	uint64_t offset;
-	
-	endian_type endianness;
 	
 	uint64_t unit_length;                 // The size in bytes of the statement information for this compilation unit
 	                                      // (not including the unit_length field itself).
@@ -656,13 +658,13 @@ private:
 	                                                // while allowing consumers who do not know about these new opcodes to be able to skip
 	                                                // them.
 	
-	std::vector<std::string> include_directories; // The sequence contains an entry for each path that was searched for included source files in
-	                                              // this compilation. (The paths include those directories specified explicitly by the user for
-	                                              // the compiler to search and those the compiler searches without explicit direction). Each
-	                                              // path entry is either a full path name or is relative to the current directory of the compilation.
-	                                              // The current directory of the compilation is understood to be the first entry and is not
-	                                              // explicitly represented. Each entry is a null-terminated string containing a full path name.
-	                                              // The last entry is followed by a single null byte.
+	std::vector<const char *> include_directories; // The sequence contains an entry for each path that was searched for included source files in
+	                                               // this compilation. (The paths include those directories specified explicitly by the user for
+	                                               // the compiler to search and those the compiler searches without explicit direction). Each
+	                                               // path entry is either a full path name or is relative to the current directory of the compilation.
+	                                               // The current directory of the compilation is understood to be the first entry and is not
+	                                               // explicitly represented. Each entry is a null-terminated string containing a full path name.
+	                                               // The last entry is followed by a single null byte.
 
 	std::vector<DWARF_Filename> filenames;        // The sequence contains an entry for each source file that contributed to the statement
 	                                              // information for this compilation unit or is used in other contexts, such as in a declaration
@@ -675,20 +677,18 @@ private:
 	                                              // byte.
 
 	uint32_t program_length;
-	uint8_t *program;                             // the program itself
+	const uint8_t *program;                       // the program itself
 };
 
 template <class MEMORY_ADDR>
 class DWARF_StatementVM
 {
 public:
-	DWARF_StatementVM(endian_type _endianness);
+	DWARF_StatementVM();
 	~DWARF_StatementVM();
 
 	bool Run(const DWARF_StatementProgram<MEMORY_ADDR> *dw_stmt_prog, std::ostream *os, std::map<MEMORY_ADDR, Statement<MEMORY_ADDR> *> *matrix);
 private:
-	endian_type endianness;
-	
 	// Machine state
 	MEMORY_ADDR address;   // The program-counter value corresponding to a machine instruction generated by the compiler.
 	unsigned int file;     // An unsigned integer indicating the identity of the source file corresponding to a machine instruction.
@@ -697,6 +697,10 @@ private:
 	bool is_stmt;          // A boolean indicating that the current instruction is the beginning of a statement.
 	bool basic_block;      // A boolean indicating that the current instruction is the beginning of a basic block.
 	bool end_sequence;     // A boolean indicating that the current address is that of the first byte after the end of a sequence of target machine instructions.
+	bool prologue_end;     // A boolean indicating that the current address is one (of possibly many) where execution should be suspended for an entry breakpoint of a function.
+	bool prologue_begin;   // A boolean indicating that the current address is one (of possibly many) where execution should be suspended for an exit breakpoint of a function.
+	unsigned int isa;      // An unsigned integer whose value encodes the applicable instruction set architecture for the current instruction.
+
 	std::vector<DWARF_Filename> filenames; // filenames (filenames in statement program prologue + those added by extended opcode DW_LNE_define_file)
 
 	bool IsAbsolutePath(const char *filename) const;
@@ -744,7 +748,7 @@ public:
 	virtual std::string to_string() const;
 private:
 	uint64_t length;
-	uint8_t *value;
+	const uint8_t *value;
 };
 
 template <class MEMORY_ADDR>
@@ -899,17 +903,14 @@ class DWARF_Expression : public DWARF_AttributeValue<MEMORY_ADDR>
 {
 public:
 	DWARF_Expression(const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu, uint64_t length, const uint8_t *value);
-	DWARF_Expression(endian_type endianness, uint8_t address_size, uint64_t length, const uint8_t *value);
 	~DWARF_Expression();
 	uint64_t GetLength() const;
 	const uint8_t *GetValue() const;
 	virtual std::string to_string() const;
 private:
 	const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu;
-	endian_type endianness;
-	uint8_t address_size;
 	uint64_t length;
-	uint8_t *value;
+	const uint8_t *value;
 };
 
 
@@ -960,9 +961,6 @@ public:
 private:
 	DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu;
 	DWARF_DIE<MEMORY_ADDR> *dw_parent_die;
-	endian_type endianness;
-	DWARF_Format dw_fmt;
-	uint8_t address_size;
 	uint64_t offset;
 	const DWARF_Abbrev *abbrev;
 	std::vector<DWARF_DIE<MEMORY_ADDR> *> children;
@@ -995,7 +993,6 @@ public:
 	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_CompilationUnit& dw_cu);
 private:
 	DWARF_Handler<MEMORY_ADDR> *dw_handler;
-	endian_type endianness;
 	DWARF_Format dw_fmt;
 	
 	uint64_t offset;
@@ -1119,15 +1116,12 @@ class DWARF_ExpressionVM
 {
 public:
 	DWARF_ExpressionVM(const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu);
-	DWARF_ExpressionVM(endian_type endianness, uint8_t address_size);
 	~DWARF_ExpressionVM();
 	
 	bool Disasm(std::ostream& os, const DWARF_Expression<MEMORY_ADDR> *dw_expr);
 	bool Execute(const DWARF_Expression<MEMORY_ADDR> *dw_expr, DWARF_Location<MEMORY_ADDR> *dw_location);
 private:
 	const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu;
-	endian_type endianness;
-	uint8_t address_size;
 	unisim::util::debug::Register *registers[32];
 
 	bool Run(const DWARF_Expression<MEMORY_ADDR> *dw_expr, std::ostream *os, DWARF_Location<MEMORY_ADDR> *dw_location);
@@ -1141,7 +1135,7 @@ template <class MEMORY_ADDR>
 class DWARF_CallFrameProgram
 {
 public:
-	DWARF_CallFrameProgram(endian_type endianness, uint64_t length, const uint8_t *program);
+	DWARF_CallFrameProgram(DWARF_Handler<MEMORY_ADDR> *dw_handler, uint64_t length, const uint8_t *program);
 	~DWARF_CallFrameProgram();
 	uint64_t GetLength() const;
 	const uint8_t *GetProgram() const;
@@ -1149,9 +1143,9 @@ public:
 private:
 	friend class DWARF_CallFrameVM<MEMORY_ADDR>;
 
-	endian_type endianness;
+	DWARF_Handler<MEMORY_ADDR> *dw_handler;
 	uint64_t length;
-	uint8_t *program;
+	const uint8_t *program;
 };
 
 template <class MEMORY_ADDR>
@@ -1168,7 +1162,6 @@ public:
 	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_CIE<MEMORY_ADDR>& dw_cie);
 private:
 	DWARF_Handler<MEMORY_ADDR> *dw_handler;
-	endian_type endianness;
 	DWARF_Format dw_fmt;
 	uint64_t offset;
 	
@@ -1204,7 +1197,6 @@ public:
 	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_FDE<MEMORY_ADDR>& dw_fde);
 private:
 	DWARF_Handler<MEMORY_ADDR> *dw_handler;
-	endian_type endianness;
 	DWARF_Format dw_fmt;
 	uint64_t offset;
 
@@ -1493,7 +1485,7 @@ template <class MEMORY_ADDR>
 class DWARF_AddressRanges
 {
 public:
-	DWARF_AddressRanges(endian_type endianness);
+	DWARF_AddressRanges(DWARF_Handler<MEMORY_ADDR> *dw_handler);
 	~DWARF_AddressRanges();
 	endian_type GetEndianness() const;
 	uint8_t GetSegmentSize() const;
@@ -1504,7 +1496,7 @@ public:
 	int64_t Load(const uint8_t *rawdata, uint64_t max_size);
 	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_AddressRanges<MEMORY_ADDR>& dw_aranges);
 private:
-	endian_type endianness;
+	DWARF_Handler<MEMORY_ADDR> *dw_handler;
 	const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu;
 	
 	uint64_t unit_length;        // The length of the entries for that set, not including the length field itself (see Section 7.2.2).
@@ -1552,7 +1544,7 @@ template <class MEMORY_ADDR>
 class DWARF_Pubs
 {
 public:
-	DWARF_Pubs(endian_type endianness);
+	DWARF_Pubs(DWARF_Handler<MEMORY_ADDR> *dw_handler);
 	~DWARF_Pubs();
 	uint64_t GetDebugInfoOffset() const;
 	endian_type GetEndianness() const;
@@ -1561,7 +1553,7 @@ public:
 	void Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler);
 	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_Pubs<MEMORY_ADDR>& dw_pubs);
 private:
-	endian_type endianness;
+	DWARF_Handler<MEMORY_ADDR> *dw_handler;
 	DWARF_Format dw_fmt;
 	uint64_t offset;
 	const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu;
@@ -1663,7 +1655,6 @@ private:
 	uint64_t debug_ranges_section_size;
 	
 	std::map<uint64_t, DWARF_StatementProgram<MEMORY_ADDR> *> dw_stmt_progs;   // statement programs from section .debug_line indexed by .debug_line section offset
-	std::vector<DWARF_StatementVM<MEMORY_ADDR> *> dw_stmt_vms;                 // Virtual machines for running the statement programs
 	std::map<MEMORY_ADDR, Statement<MEMORY_ADDR> *> stmt_matrix;               // Result of running dw_stmt_progs on dw_stmt_vms
 	std::map<uint64_t, DWARF_CompilationUnit<MEMORY_ADDR> *> dw_cus;           // compilation units contributions to section .debug_info indexed by .debug_info section offset
 	std::map<uint64_t, DWARF_DIE<MEMORY_ADDR> *> dw_dies;                      // debug info entries in section .debug_info indexed by .debug_info section offset

@@ -87,7 +87,6 @@ inline std::ostream& c_string_to_XML(std::ostream& os, const char *s)
 template <class MEMORY_ADDR>
 DWARF_StatementProgram<MEMORY_ADDR>::DWARF_StatementProgram(DWARF_Handler<MEMORY_ADDR> *_dw_handler)
 	: dw_handler(_dw_handler)
-	, endianness(_dw_handler->GetEndianness())
 	, unit_length(0)
 	, version(0)
 	, header_length(0)
@@ -103,20 +102,19 @@ DWARF_StatementProgram<MEMORY_ADDR>::DWARF_StatementProgram(DWARF_Handler<MEMORY
 template <class MEMORY_ADDR>
 DWARF_StatementProgram<MEMORY_ADDR>::~DWARF_StatementProgram()
 {
-	if(program)
-	{
-		delete[] program;
-	}
+}
+
+template <class MEMORY_ADDR>
+endian_type DWARF_StatementProgram<MEMORY_ADDR>::GetEndianness() const
+{
+	return dw_handler->GetEndianness();
 }
 
 template <class MEMORY_ADDR>
 int64_t DWARF_StatementProgram<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, uint64_t _offset)
 {
 	offset = _offset;
-	if(program)
-	{
-		delete[] program;
-	}
+	endian_type endianness = dw_handler->GetEndianness();
 	standard_opcode_lengths.clear();
 	include_directories.clear();
 	filenames.clear();
@@ -266,13 +264,13 @@ int64_t DWARF_StatementProgram<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64
 	do
 	{
 		if(!max_size) return -1;
-		std::string directory_name = std::string((const char *) rawdata);
-		int64_t sz = directory_name.length() + 1;
+		const char *directory_name = (const char *) rawdata;
+		int64_t sz = strlen(directory_name) + 1;
 		size += sz;
 		rawdata += sz;
 		max_size -= sz;
 		
-		if(directory_name.empty()) break;
+		if(*directory_name == 0) break; // empty directory name
 		
 		include_directories.push_back(directory_name);
 	} while(1);
@@ -311,8 +309,7 @@ int64_t DWARF_StatementProgram<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64
 	}
 	
 	if(program_length > max_size) return -1;
-	program = new uint8_t[program_length];
-	memcpy(program, rawdata, program_length);
+	program = rawdata;
 	size += program_length;
 
 	return size + padding;
@@ -354,7 +351,7 @@ std::ostream& operator << (std::ostream& os, const DWARF_StatementProgram<MEMORY
 	}
 	os << " - Program (" << dw_stmt_prog.program_length << " bytes):" << std::endl;
 	
-	DWARF_StatementVM<MEMORY_ADDR> dw_stmt_vm = DWARF_StatementVM<MEMORY_ADDR>(dw_stmt_prog.endianness);
+	DWARF_StatementVM<MEMORY_ADDR> dw_stmt_vm = DWARF_StatementVM<MEMORY_ADDR>();
 	
 	dw_stmt_vm.Run(&dw_stmt_prog, &os, 0);
 	return os;
@@ -367,9 +364,8 @@ uint64_t DWARF_StatementProgram<MEMORY_ADDR>::GetOffset() const
 }
 
 template <class MEMORY_ADDR>
-DWARF_StatementVM<MEMORY_ADDR>::DWARF_StatementVM(endian_type _endianness)
-	: endianness(_endianness)
-	, address(0)
+DWARF_StatementVM<MEMORY_ADDR>::DWARF_StatementVM()
+	: address(0)
 	, file(1)
 	, line(1)
 	, column(0)
@@ -396,15 +392,15 @@ template <class MEMORY_ADDR>
 void DWARF_StatementVM<MEMORY_ADDR>::AddRow(const DWARF_StatementProgram<MEMORY_ADDR> *dw_stmt_prog, std::map<MEMORY_ADDR, Statement<MEMORY_ADDR> *>& matrix)
 {
 	const DWARF_Filename *dw_filename = (file >= 1 && file <= filenames.size()) ? &filenames[file - 1] : 0;
-	const std::string *filename = dw_filename ? dw_filename->GetFilename() : 0;
-	const std::string *dirname = 0;
+	const char *filename = dw_filename ? dw_filename->GetFilename() : 0;
+	const char *dirname = 0;
 	if(filename)
 	{
-		if(!IsAbsolutePath(filename->c_str()))
+		if(!IsAbsolutePath(filename))
 		{
 			const DWARF_LEB128& leb128_dir = dw_filename->GetDirectoryIndex();
 			unsigned int dir = (unsigned int) leb128_dir;
-			dirname = (dir >= 1 && dir <= dw_stmt_prog->include_directories.size()) ? &dw_stmt_prog->include_directories[dir - 1] : 0;
+			dirname = (dir >= 1 && dir <= dw_stmt_prog->include_directories.size()) ? dw_stmt_prog->include_directories[dir - 1] : 0;
 		}
 	}
 	if(matrix.find(address) != matrix.end())
@@ -428,9 +424,13 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 	is_stmt = dw_stmt_prog->default_is_stmt;
 	basic_block = false;
 	end_sequence = false;
+	prologue_end = false;
+	prologue_begin = false;
+	isa = 0;
 	filenames = dw_stmt_prog->filenames;
 
 	// Run the program
+	endian_type endianness = dw_stmt_prog->GetEndianness();
 	const uint8_t *prg = dw_stmt_prog->program;
 	unsigned int count = dw_stmt_prog->program_length;
 	uint8_t opcode;
@@ -545,6 +545,23 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 							address += uhalf_arg;
 							if(os) (*os) << "Advance PC by fixed " << uhalf_arg << " to 0x" << std::hex << address << std::dec << std::endl;
 							break;
+						case DW_LNS_set_prologue_end:
+							prologue_end = true;
+							if(os) (*os) << "DW_LNS_set_prologue_end" << std::endl;
+							break;
+						case DW_LNS_set_epilogue_begin:
+							prologue_end = false;
+							if(os) (*os) << "DW_LNS_set_epilogue_begin" << std::endl;
+							break;
+						case DW_LNS_set_isa:
+							{
+								const DWARF_LEB128& isa_val = args[0];
+								
+								// Set isa to 'isa_val'
+								isa = (unsigned int) isa_val;
+								if(os) (*os) << "Set isa to " << isa << std::endl;
+							}
+							break;
 						default:
 							// Skipped unknown
 							if(os) (*os) << "Skipped unknown" << std::endl;
@@ -564,6 +581,10 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 					if(matrix) AddRow(dw_stmt_prog, *matrix);
 					// Reset basic_block
 					basic_block = false;
+					// Reset prologue_end
+					prologue_end = false;
+					// Reset prologue_begin
+					prologue_begin = false;
 					if(os) (*os) << "   - Special opcode " << (unsigned int) adjusted_opcode << ": advance Address by " << address_increment << " to 0x" << std::hex << address << std::dec << " and Line by " << line_increment << " to " << line << std::endl;
 				}
 			}
@@ -700,15 +721,13 @@ template <class MEMORY_ADDR>
 DWARF_Block<MEMORY_ADDR>::DWARF_Block(uint64_t _length, const uint8_t *_value)
 	: DWARF_AttributeValue<MEMORY_ADDR>(DW_CLASS_BLOCK)
 	, length(_length)
+	, value(_value)
 {
-	value = new uint8_t[length];
-	memcpy(value, _value, length);
 }
 
 template <class MEMORY_ADDR>
 DWARF_Block<MEMORY_ADDR>::~DWARF_Block()
 {
-	delete[] value;
 }
 
 template <class MEMORY_ADDR>
@@ -998,7 +1017,7 @@ void DWARF_LinePtr<MEMORY_ADDR>::Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler)
 
 template <class MEMORY_ADDR>
 DWARF_LocListPtr<MEMORY_ADDR>::DWARF_LocListPtr(const DWARF_CompilationUnit<MEMORY_ADDR> *_dw_cu, uint64_t _debug_loc_offset)
-	: DWARF_AttributeValue<MEMORY_ADDR>(DW_CLASS_RANGELISTPTR)
+	: DWARF_AttributeValue<MEMORY_ADDR>(DW_CLASS_LOCLISTPTR)
 	, dw_cu(_dw_cu)
 	, debug_loc_offset(_debug_loc_offset)
 	, dw_loc_list_entry(0)
@@ -1165,30 +1184,14 @@ template <class MEMORY_ADDR>
 DWARF_Expression<MEMORY_ADDR>::DWARF_Expression(const DWARF_CompilationUnit<MEMORY_ADDR> *_dw_cu, uint64_t _length, const uint8_t *_value)
 	: DWARF_AttributeValue<MEMORY_ADDR>(DW_CLASS_EXPRESSION)
 	, dw_cu(_dw_cu)
-	, endianness(_dw_cu->GetEndianness())
-	, address_size(_dw_cu->GetAddressSize())
 	, length(_length)
+	, value(_value)
 {
-	value = new uint8_t[length];
-	memcpy(value, _value, length);
-}
-
-template <class MEMORY_ADDR>
-DWARF_Expression<MEMORY_ADDR>::DWARF_Expression(endian_type _endianness, uint8_t _address_size, uint64_t _length, const uint8_t *_value)
-	: DWARF_AttributeValue<MEMORY_ADDR>(DW_CLASS_EXPRESSION)
-	, dw_cu(0)
-	, endianness(_endianness)
-	, address_size(_address_size)
-	, length(_length)
-{
-	value = new uint8_t[length];
-	memcpy(value, _value, length);
 }
 
 template <class MEMORY_ADDR>
 DWARF_Expression<MEMORY_ADDR>::~DWARF_Expression()
 {
-	delete[] value;
 }
 
 template <class MEMORY_ADDR>
@@ -1208,13 +1211,7 @@ std::string DWARF_Expression<MEMORY_ADDR>::to_string() const
 {
 	std::stringstream sstr;
 	
-	if(dw_cu)
-	{
-		DWARF_ExpressionVM<MEMORY_ADDR> expr_vm = DWARF_ExpressionVM<MEMORY_ADDR>(dw_cu);
-		return expr_vm.Disasm(sstr, this) ? sstr.str() : std::string();
-	}
-	
-	DWARF_ExpressionVM<MEMORY_ADDR> expr_vm = DWARF_ExpressionVM<MEMORY_ADDR>(endianness, address_size);
+	DWARF_ExpressionVM<MEMORY_ADDR> expr_vm = DWARF_ExpressionVM<MEMORY_ADDR>(dw_cu);
 	return expr_vm.Disasm(sstr, this) ? sstr.str() : std::string();
 }
 
@@ -1276,9 +1273,6 @@ template <class MEMORY_ADDR>
 DWARF_DIE<MEMORY_ADDR>::DWARF_DIE(DWARF_CompilationUnit<MEMORY_ADDR> *_dw_cu, DWARF_DIE<MEMORY_ADDR> *_dw_parent_die)
 	: dw_cu(_dw_cu)
 	, dw_parent_die(_dw_parent_die)
-	, endianness(_dw_cu->GetEndianness())
-	, dw_fmt(_dw_cu->GetFormat())
-	, address_size(_dw_cu->GetAddressSize())
 	, offset(0xffffffffffffffffULL)
 	, abbrev(0)
 	, children()
@@ -1372,6 +1366,9 @@ template <class MEMORY_ADDR>
 int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, uint64_t _offset)
 {
 	offset = _offset;
+	uint8_t address_size = dw_cu->GetAddressSize();
+	uint8_t offset_size = dw_cu->GetOffsetSize();
+	endian_type endianness = dw_cu->GetEndianness();
 	uint64_t size = 0;
 	int64_t sz;
 	DWARF_LEB128 dw_abbrev_code;
@@ -1831,7 +1828,7 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 			case DW_FORM_strp:
 				{
 					uint64_t debug_str_offset;
-					switch(dw_cu->GetOffsetSize())
+					switch(offset_size)
 					{
 						case 2:
 							{
@@ -1897,7 +1894,7 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 			case DW_FORM_ref_addr:
 				{
 					uint64_t debug_info_offset;
-					switch(dw_cu->GetOffsetSize())
+					switch(offset_size)
 					{
 						case 2:
 							{
@@ -2129,7 +2126,6 @@ std::ostream& operator << (std::ostream& os, const DWARF_DIE<MEMORY_ADDR>& dw_di
 template <class MEMORY_ADDR>
 DWARF_CompilationUnit<MEMORY_ADDR>::DWARF_CompilationUnit(DWARF_Handler<MEMORY_ADDR> *_dw_handler)
 	: dw_handler(_dw_handler)
-	, endianness(_dw_handler->GetEndianness())
 	, offset(0xffffffffffffffffULL)
 	, unit_length(0)
 	, version(0)
@@ -2152,7 +2148,7 @@ DWARF_CompilationUnit<MEMORY_ADDR>::~DWARF_CompilationUnit()
 template <class MEMORY_ADDR>
 endian_type DWARF_CompilationUnit<MEMORY_ADDR>::GetEndianness() const
 {
-	return endianness;
+	return dw_handler->GetEndianness();
 }
 
 template <class MEMORY_ADDR>
@@ -2207,6 +2203,7 @@ template <class MEMORY_ADDR>
 int64_t DWARF_CompilationUnit<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, uint64_t _offset)
 {
 	offset = _offset;
+	endian_type endianness = dw_handler->GetEndianness();
 	uint32_t unit_length32;
 	
 	int64_t size = 0;
@@ -2454,17 +2451,6 @@ const std::vector<DWARF_LocationPiece<MEMORY_ADDR> *>& DWARF_Location<MEMORY_ADD
 template <class MEMORY_ADDR>
 DWARF_ExpressionVM<MEMORY_ADDR>::DWARF_ExpressionVM(const DWARF_CompilationUnit<MEMORY_ADDR> *_dw_cu)
 	: dw_cu(_dw_cu)
-	, endianness(_dw_cu->GetEndianness())
-	, address_size(dw_cu->GetAddressSize())
-{
-	//memcpy(registers, _registers, sizeof(registers));
-}
-
-template <class MEMORY_ADDR>
-DWARF_ExpressionVM<MEMORY_ADDR>::DWARF_ExpressionVM(endian_type _endianness, uint8_t _address_size)
-	: dw_cu(0)
-	, endianness(_endianness)
-	, address_size(_address_size)
 {
 	//memcpy(registers, _registers, sizeof(registers));
 }
@@ -2491,6 +2477,10 @@ template <class MEMORY_ADDR>
 bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *dw_expr, std::ostream *os, DWARF_Location<MEMORY_ADDR> *dw_location)
 {
 	std::stack<MEMORY_ADDR> dw_stack;
+	uint8_t address_size = dw_cu->GetAddressSize();
+	endian_type endianness = dw_cu->GetEndianness();
+	uint8_t offset_size = dw_cu->GetOffsetSize();
+	
 	uint64_t expr_length = dw_expr->GetLength();
 	const uint8_t *expr = dw_expr->GetValue();
 	
@@ -3104,25 +3094,16 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 }
 
 template <class MEMORY_ADDR>
-DWARF_CallFrameProgram<MEMORY_ADDR>::DWARF_CallFrameProgram(endian_type _endianness, uint64_t _length, const uint8_t *_program)
-	: endianness(_endianness)
+DWARF_CallFrameProgram<MEMORY_ADDR>::DWARF_CallFrameProgram(DWARF_Handler<MEMORY_ADDR> *_dw_handler, uint64_t _length, const uint8_t *_program)
+	: dw_handler(_dw_handler)
 	, length(_length)
-	, program(0)
+	, program(_program)
 {
-	if(length)
-	{
-		program = new uint8_t[length];
-		memcpy(program, _program, length);
-	}
 }
 
 template <class MEMORY_ADDR>
 DWARF_CallFrameProgram<MEMORY_ADDR>::~DWARF_CallFrameProgram()
 {
-	if(program)
-	{
-		delete[] program;
-	}
 }
 
 template <class MEMORY_ADDR>
@@ -3151,7 +3132,6 @@ std::ostream& operator << (std::ostream& os, const DWARF_CallFrameProgram<MEMORY
 template <class MEMORY_ADDR>
 DWARF_CIE<MEMORY_ADDR>::DWARF_CIE(DWARF_Handler<MEMORY_ADDR> *_dw_handler)
 	: dw_handler(_dw_handler)
-	, endianness(_dw_handler->GetEndianness())
 	, dw_initial_call_frame_prog(0)
 {
 }
@@ -3169,6 +3149,7 @@ template <class MEMORY_ADDR>
 int64_t DWARF_CIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, uint64_t _offset)
 {
 	offset = _offset;
+	endian_type endianness = dw_handler->GetEndianness();
 	uint32_t length32;
 	
 	int64_t size = 0;
@@ -3281,7 +3262,7 @@ int64_t DWARF_CIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 	}
 	
 	if(initial_instructions_length > max_size) return -1;
-	dw_initial_call_frame_prog = new DWARF_CallFrameProgram<MEMORY_ADDR>(endianness, initial_instructions_length, rawdata);
+	dw_initial_call_frame_prog = new DWARF_CallFrameProgram<MEMORY_ADDR>(dw_handler, initial_instructions_length, rawdata);
 	size += initial_instructions_length;
 
 	return size;
@@ -3313,7 +3294,6 @@ std::ostream& operator << (std::ostream& os, const DWARF_CIE<MEMORY_ADDR>& dw_ci
 template <class MEMORY_ADDR>
 DWARF_FDE<MEMORY_ADDR>::DWARF_FDE(DWARF_Handler<MEMORY_ADDR> *_dw_handler)
 	: dw_handler(_dw_handler)
-	, endianness(_dw_handler->GetEndianness())
 	, dw_call_frame_prog(0)
 {
 }
@@ -3331,6 +3311,7 @@ template <class MEMORY_ADDR>
 int64_t DWARF_FDE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, uint64_t _offset)
 {
 	offset = _offset;
+	endian_type endianness = dw_handler->GetEndianness();
 	uint32_t length32;
 	
 	int64_t size = 0;
@@ -3412,7 +3393,7 @@ int64_t DWARF_FDE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 	}
 	
 	if(instructions_length > max_size) return -1;
-	dw_call_frame_prog = new DWARF_CallFrameProgram<MEMORY_ADDR>(endianness, instructions_length, rawdata);
+	dw_call_frame_prog = new DWARF_CallFrameProgram<MEMORY_ADDR>(dw_handler, instructions_length, rawdata);
 	size += instructions_length;
 
 	return size;
@@ -4424,8 +4405,8 @@ std::ostream& operator << (std::ostream& os, const DWARF_AddressRangeDescriptor<
 }
 
 template <class MEMORY_ADDR>
-DWARF_AddressRanges<MEMORY_ADDR>::DWARF_AddressRanges(endian_type _endianness)
-	: endianness(_endianness)
+DWARF_AddressRanges<MEMORY_ADDR>::DWARF_AddressRanges(DWARF_Handler<MEMORY_ADDR> *_dw_handler)
+	: dw_handler(_dw_handler)
 	, unit_length(0)
 	, version(0)
 	, debug_info_offset(0)
@@ -4451,7 +4432,7 @@ DWARF_AddressRanges<MEMORY_ADDR>::~DWARF_AddressRanges()
 template <class MEMORY_ADDR>
 endian_type DWARF_AddressRanges<MEMORY_ADDR>::GetEndianness() const
 {
-	return endianness;
+	return dw_handler->GetEndianness();
 }
 
 template <class MEMORY_ADDR>
@@ -4491,6 +4472,7 @@ void DWARF_AddressRanges<MEMORY_ADDR>::Fix(DWARF_Handler<MEMORY_ADDR> *dw_handle
 template <class MEMORY_ADDR>
 int64_t DWARF_AddressRanges<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size)
 {
+	endian_type endianness = dw_handler->GetEndianness();
 	DWARF_Format dw_fmt;
 	uint32_t unit_length32;
 	
@@ -4717,8 +4699,8 @@ std::ostream& operator << (std::ostream& os, const DWARF_Pub<MEMORY_ADDR>& dw_pu
 }
 
 template <class MEMORY_ADDR>
-DWARF_Pubs<MEMORY_ADDR>::DWARF_Pubs(endian_type _endianness)
-	: endianness(_endianness)
+DWARF_Pubs<MEMORY_ADDR>::DWARF_Pubs(DWARF_Handler<MEMORY_ADDR> *_dw_handler)
+	: dw_handler(_dw_handler)
 	, dw_fmt(FMT_DWARF32)
 	, offset(0xffffffffffffffffULL)
 	, dw_cu(0)
@@ -4751,7 +4733,7 @@ uint64_t DWARF_Pubs<MEMORY_ADDR>::GetDebugInfoOffset() const
 template <class MEMORY_ADDR>
 endian_type DWARF_Pubs<MEMORY_ADDR>::GetEndianness() const
 {
-	return endianness;
+	return dw_handler->GetEndianness();
 }
 
 template <class MEMORY_ADDR>
@@ -4763,6 +4745,7 @@ DWARF_Format DWARF_Pubs<MEMORY_ADDR>::GetFormat() const
 template <class MEMORY_ADDR>
 int64_t DWARF_Pubs<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size)
 {
+	endian_type endianness = dw_handler->GetEndianness();
 	uint32_t unit_length32;
 	
 	int64_t size = 0;
@@ -5143,12 +5126,6 @@ DWARF_Handler<MEMORY_ADDR>::~DWARF_Handler()
 		}
 	}
 
-	unsigned int num_stmt_vms = dw_stmt_vms.size();
-	for(i = 0; i < num_stmt_vms; i++)
-	{
-		delete dw_stmt_vms[i];
-	}
-
 	unsigned int num_fdes = dw_fdes.size();
 	for(i = 0; i < num_fdes; i++)
 	{
@@ -5373,10 +5350,9 @@ void DWARF_Handler<MEMORY_ADDR>::Initialize()
 				//std::cerr << *dw_stmt_prog << std::endl;
 				debug_line_offset += sz;
 
-				DWARF_StatementVM<MEMORY_ADDR> *dw_stmt_vm = new DWARF_StatementVM<MEMORY_ADDR>(endianness);
-				dw_stmt_vms.push_back(dw_stmt_vm);
+				DWARF_StatementVM<MEMORY_ADDR> dw_stmt_vm = DWARF_StatementVM<MEMORY_ADDR>();
 
-				if(!dw_stmt_vm->Run(dw_stmt_prog, 0 /*&std::cout*/, &stmt_matrix))
+				if(!dw_stmt_vm.Run(dw_stmt_prog, 0 /*&std::cout*/, &stmt_matrix))
 				{
 					std::cerr << "Invalid DWARF2 statement program. Statement matrix may be incomplete." << std::endl;
 				}
@@ -5478,7 +5454,7 @@ void DWARF_Handler<MEMORY_ADDR>::Initialize()
 		uint64_t debug_aranges_offset = 0;
 		do
 		{
-			DWARF_AddressRanges<MEMORY_ADDR> *dw_address_ranges = new DWARF_AddressRanges<MEMORY_ADDR>(endianness);
+			DWARF_AddressRanges<MEMORY_ADDR> *dw_address_ranges = new DWARF_AddressRanges<MEMORY_ADDR>(this);
 			int64_t sz;
 			if((sz = dw_address_ranges->Load((const uint8_t *) debug_aranges_section + debug_aranges_offset, debug_aranges_section_size - debug_aranges_offset)) < 0)
 			{
@@ -5501,7 +5477,7 @@ void DWARF_Handler<MEMORY_ADDR>::Initialize()
 		uint64_t debug_pubnames_offset = 0;
 		do
 		{
-			DWARF_Pubs<MEMORY_ADDR> *dw_public_names = new DWARF_Pubs<MEMORY_ADDR>(endianness);
+			DWARF_Pubs<MEMORY_ADDR> *dw_public_names = new DWARF_Pubs<MEMORY_ADDR>(this);
 			int64_t sz;
 			if((sz = dw_public_names->Load((const uint8_t *) debug_pubnames_section + debug_pubnames_offset, debug_pubnames_section_size - debug_pubnames_offset)) < 0)
 			{
@@ -5524,7 +5500,7 @@ void DWARF_Handler<MEMORY_ADDR>::Initialize()
 		uint64_t debug_pubtypes_offset = 0;
 		do
 		{
-			DWARF_Pubs<MEMORY_ADDR> *dw_public_types = new DWARF_Pubs<MEMORY_ADDR>(endianness);
+			DWARF_Pubs<MEMORY_ADDR> *dw_public_types = new DWARF_Pubs<MEMORY_ADDR>(this);
 			int64_t sz;
 			if((sz = dw_public_types->Load((const uint8_t *) debug_pubtypes_section + debug_pubtypes_offset, debug_pubtypes_section_size - debug_pubtypes_offset)) < 0)
 			{

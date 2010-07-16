@@ -427,6 +427,10 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 	
 	if(dw_handler)
 	{
+		if(verbose)
+		{
+			logger << DebugInfo << "Parsing DWARF debugging informations" << EndDebugInfo;
+		}
 		dw_handler->Initialize();
 	}
 

@@ -51,21 +51,22 @@ DWARF_LEB128::DWARF_LEB128()
 DWARF_LEB128::DWARF_LEB128(const DWARF_LEB128& _leb128)
 	: leb128(0)
 {
-	if(_leb128.leb128)
+	leb128 = _leb128.leb128;
+/*	if(_leb128.leb128)
 	{
 		unsigned int byte_size = _leb128.GetByteSize();
 		leb128 = new uint8_t[byte_size];
 		memcpy(leb128, _leb128.leb128, byte_size);
-	}
+	}*/
 }
 
 DWARF_LEB128::~DWARF_LEB128()
 {
-	if(leb128)
+/*	if(leb128)
 	{
 		delete[] leb128;
 		leb128 = 0;
-	}
+	}*/
 }
 
 template <typename T>
@@ -80,7 +81,7 @@ DWARF_LEB128::operator T() const
 	T result = 0;
 	if(leb128)
 	{
-		uint8_t *p = leb128;
+		const uint8_t *p = leb128;
 		unsigned int shift = 0;
 		unsigned int size = 8 * sizeof(T);
 		uint8_t byte;
@@ -103,7 +104,9 @@ DWARF_LEB128::operator T() const
 
 DWARF_LEB128& DWARF_LEB128::operator = (const DWARF_LEB128& _leb128)
 {
-	if(leb128)
+	leb128 = _leb128.leb128;
+	
+/*	if(leb128)
 	{
 		delete[] leb128;
 		leb128 = 0;
@@ -114,7 +117,7 @@ DWARF_LEB128& DWARF_LEB128::operator = (const DWARF_LEB128& _leb128)
 		unsigned int byte_size = _leb128.GetByteSize();
 		leb128 = new uint8_t[byte_size];
 		memcpy(leb128, _leb128.leb128, byte_size);
-	}
+	}*/
 	
 	return *this;
 }
@@ -154,11 +157,11 @@ unsigned int DWARF_LEB128::GetBitLength() const
 
 int64_t DWARF_LEB128::Load(const uint8_t *rawdata, uint64_t max_size)
 {
-	if(leb128)
-	{
-		delete[] leb128;
-		leb128 = 0;
-	}
+// 	if(leb128)
+// 	{
+// 		delete[] leb128;
+// 		leb128 = 0;
+// 	}
 
 	unsigned int byte_index;
 
@@ -171,12 +174,13 @@ int64_t DWARF_LEB128::Load(const uint8_t *rawdata, uint64_t max_size)
 	
 	unsigned int byte_size = byte_index;
 
-	leb128 = new uint8_t[byte_size];
-	
-	for(byte_index = 0; byte_index < byte_size; byte_index++)
-	{
-		leb128[byte_index] = rawdata[byte_index];
-	}
+	leb128 = rawdata;
+// 	leb128 = new uint8_t[byte_size];
+// 	
+// 	for(byte_index = 0; byte_index < byte_size; byte_index++)
+// 	{
+// 		leb128[byte_index] = rawdata[byte_index];
+// 	}
 
 	return byte_size;
 }
@@ -198,7 +202,7 @@ std::string DWARF_LEB128::to_hex(bool is_signed) const
 
 		unsigned int shift = 0;
 		unsigned int i;
-		uint8_t *p = leb128;
+		const uint8_t *p = leb128;
 		uint8_t byte;
 		do
 		{
@@ -286,9 +290,9 @@ DWARF_Filename::~DWARF_Filename()
 {
 }
 
-const std::string *DWARF_Filename::GetFilename() const
+const char *DWARF_Filename::GetFilename() const
 {
-	return &filename;
+	return filename;
 }
 
 const DWARF_LEB128& DWARF_Filename::GetDirectoryIndex() const
@@ -321,8 +325,8 @@ int64_t DWARF_Filename::Load(const uint8_t *rawdata, uint64_t max_size)
 	int64_t sz;
 
 	if(!max_size) return -1;
-	filename = std::string((const char *) rawdata);
-	sz = filename.length() + 1;
+	filename = (const char *) rawdata;
+	sz = strlen(filename) + 1;
 	size += sz;
 	rawdata += sz;
 	max_size -= sz;
