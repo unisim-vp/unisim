@@ -286,6 +286,44 @@ li
 	width:58%;
 }
 
+/* hint table */
+
+.hint-table
+{
+	width:100%;
+}
+
+.hint-table td
+{
+	padding:14px 0px 14px 14px;
+}
+
+.hint-question
+{
+	width:25%;
+	font-style:normal;
+	font-size:16px;
+	text-align:center;
+	font-weight:normal;
+	color:#aa0000;
+}
+
+.hint-question a
+{
+	text-decoration:none;
+}
+
+.hint-question a.hover
+{
+	color:#aa0000;
+}
+
+.hint-answer
+{
+	width:75%;
+	text-align:justify;
+}
+
 /* directory table */
 
 .directory-table
@@ -335,7 +373,8 @@ li
 
 .content-item-body li, .aside-item-body li
 {
-	line-height:1.4em;
+	text-align:justify;
+	/*line-height:1.4em;*/
 }
 
 /* download */
