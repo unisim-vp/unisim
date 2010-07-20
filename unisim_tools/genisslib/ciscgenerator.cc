@@ -530,6 +530,7 @@ void
 CiscGenerator::insn_decode_impl( Product_t& _product, Operation_t const& _op, char const* _codename, char const* _addrname ) const
 {
   OpCode_t const& oc = opcode( &_op );
+  _product.code( "if (this->encoding.size < %u) throw CodeType::NotEnoughBytes;\n", oc.m_fullsize );
   _product.code( "this->encoding.size = %u;\n", oc.m_fullsize );
   if (oc.m_vlen) {
     char const* ncodename = "_code_";
