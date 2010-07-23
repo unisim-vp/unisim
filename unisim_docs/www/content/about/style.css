@@ -2,3 +2,8 @@
 {
 	visibility:visible;
 }
+
+.content .image-gallery img
+{
+	width:280px;
+}

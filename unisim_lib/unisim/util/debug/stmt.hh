@@ -50,7 +50,7 @@ template <class MEMORY_ADDR>
 class Statement
 {
 public:
-	Statement(MEMORY_ADDR addr, bool is_beginning_of_basic_block, const std::string *source_dirname, const std::string *source_filename, unsigned int lineno, unsigned int colno);
+	Statement(MEMORY_ADDR addr, bool is_beginning_of_basic_block, const char *source_dirname, const char *source_filename, unsigned int lineno, unsigned int colno);
 	MEMORY_ADDR GetAddress() const;
 	bool IsBeginningOfBasicBlock() const;
 	const char *GetSourceDirname() const;
@@ -61,8 +61,8 @@ public:
 private:
 	MEMORY_ADDR addr;
 	bool is_beginning_of_basic_block;
-	const std::string *source_dirname;
-	const std::string *source_filename;
+	const char *source_dirname;
+	const char *source_filename;
 	unsigned int lineno;
 	unsigned int colno;
 };
