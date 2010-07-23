@@ -58,13 +58,13 @@ mkdir -p ${HERE}/site/downloads
 NEWS_LIST=`cd ${MY_DIR}/news; ls -r *.html 2> /dev/null`
 
 # list all image materials
-IMAGES=`cd ${IMAGES_DIR}; ls *.png 2> /dev/null`
+IMAGES=`cd ${IMAGES_DIR}; ls *.png *.jpg 2> /dev/null`
 
 # list all video materials
 VIDEOS=`cd ${VIDEOS_DIR}; ls *.avi 2> /dev/null`
 
 # list all glyph materials
-GLYPHES=`cd ${MY_DIR}/glyphes; ls *.png *.ico 2> /dev/null`
+GLYPHES=`cd ${MY_DIR}/glyphes; ls *.png *.ico *.jpg 2> /dev/null`
 
 ###############################################################################
 #                                     NEWS                                    #
@@ -168,7 +168,9 @@ for VIDEO in ${VIDEOS}; do
 		echo "Generating thumbnail for video ${VIDEO}..."
 		VIDEO_NAME=`echo ${VIDEO} | sed -e 's/\..*$//g'`
 		mplayer -frames 1 -vo png:z=5 -zoom -xy 256 "${VIDEOS_DIR}/${VIDEO}" &> /dev/null
-		mv 00000001.png "${HERE}/site/videos_thumbs/${VIDEO_NAME}.png"
+		composite -gravity center "${MY_DIR}/glyphes/play.png" 00000001.png "${HERE}/site/videos_thumbs/${VIDEO_NAME}.png"
+		rm -f 00000001.png
+		#mv 00000001.png "${HERE}/site/videos_thumbs/${VIDEO_NAME}.png"
 	fi
 done
 
@@ -481,6 +483,9 @@ for CONTENT_DIR in ${CONTENTS}; do
 
 	for IMAGE_NAME in ${IMAGE_NAMES}; do
 		IMAGE="${IMAGE_NAME}.png"
+		if [ ! -f "${IMAGES_DIR}/${IMAGE}" ]; then
+			IMAGE="${IMAGE_NAME}.jpg"
+		fi
 		if [ -f "${IMAGES_DIR}/${IMAGE}" ]; then
 			echo "Generating view for image ${IMAGE} from ${CONTENT_DIR}.html..."
 			VIEW_DIR=${MY_DIR}/content/${CONTENT_DIR}-view-image-${IMAGE_NAME}
@@ -540,9 +545,15 @@ for CONTENT_DIR in ${CONTENTS}; do
 				printf "<h1>${VIDEO_NAME}</h1>\n" >> "${VIEW_DIR}/content.html"
 				printf "Video: ${VIDEO_NAME}" > "${VIEW_DIR}/title.txt"
 			fi
-			printf "<table>\n" >> "${VIEW_DIR}/content.html"
+			printf "<table class=\"video-view-nav\">\n" >> "${VIEW_DIR}/content.html"
 			printf "\t<tr>\n" >> "${VIEW_DIR}/content.html"
-			printf "\t\t<td>Download <a class=\"download-video\" href=\`\`VIDEOS/${VIDEO}\`\`>${VIDEO}</a></td>\n" >> "${VIEW_DIR}/content.html"
+			printf "\t\t<td>Download <a class=\"download-video\" href=\`\`VIDEOS/${VIDEO}\`\`>video</a>" >> "${VIEW_DIR}/content.html"
+			if [ -f "${MY_DIR}/videos/${VIDEO_NAME}_codec.txt" ]; then
+				printf " [" >> "${VIEW_DIR}/content.html"
+				cat "${MY_DIR}/videos/${VIDEO_NAME}_codec.txt" >> "${VIEW_DIR}/content.html"
+				printf " ]" >> "${VIEW_DIR}/content.html"
+			fi
+			printf "</td>\n" >> "${VIEW_DIR}/content.html"
 			printf "\t\t<td>Enter <a class=\"online-document\" href=\"video-gallery-1.html\">Video Gallery</a></td>\n" >> "${VIEW_DIR}/content.html"
 			printf "\t\t<td>Back to <a class=\"online-document\" href=\"${CONTENT_DIR}.html\">${CONTENT_TITLE}</a></td>\n" >> "${VIEW_DIR}/content.html"
 			printf "\t</tr>\n" >> "${VIEW_DIR}/content.html"
@@ -552,7 +563,7 @@ for CONTENT_DIR in ${CONTENTS}; do
 			printf "\t<param name=\"SRC\" value=\`\`VIDEOS/${VIDEO}\`\`>\n" >> "${VIEW_DIR}/content.html"
 			printf "\t<param name=\"autoplay\" value=\"true\">\n" >> "${VIEW_DIR}/content.html"
 			printf "\t<param name=\"autoStart\" value=\"1\">\n" >> "${VIEW_DIR}/content.html"
-			printf "\t<p>Please install appropriate plugin for mime type video/x-msvideo</p>\n" >> "${VIEW_DIR}/content.html"
+			printf "\t#include \"no_video_plugin.html\"\n" >> "${VIEW_DIR}/content.html"
 			printf "</object>\n" >> "${VIEW_DIR}/content.html"
 			printf "\t</div>\n" >> "${VIEW_DIR}/content.html"
 			printf ".aside\n" > "${VIEW_DIR}/style.css"

@@ -60,7 +60,7 @@ li
 	height:144px;
 }
 
-/* area of the unisim icon */
+/* area of the unisim logo */
 
 .logo-sensitive-area
 {
@@ -673,12 +673,12 @@ li
 	text-align:center;
 }
 
-.video-view table
+.video-view-nav
 {
 	width:1024px;
 }
 
-.video-view td
+.video-view-nav td
 {
 	padding:2px 2px 4px 2px;
 	width:33%;
@@ -705,4 +705,10 @@ li
 { 
     vertical-align: bottom; 
     margin-left: 1px; 
+}
+
+/* warning */
+#warning
+{
+	width:100%;
 }
