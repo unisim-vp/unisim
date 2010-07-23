@@ -372,6 +372,9 @@ DWARF_StatementVM<MEMORY_ADDR>::DWARF_StatementVM()
 	, is_stmt(false)
 	, basic_block(false)
 	, end_sequence(false)
+	, prologue_end(false)
+	, prologue_begin(false)
+	, isa(0)
 	, filenames()
 {
 }
