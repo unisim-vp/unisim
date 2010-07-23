@@ -403,7 +403,9 @@ Generator::operation_decl( Product_t& _product ) const {
 
   _product.code( " Operation(%s code, %s addr, const char *name);\n", codetype_constref().str(), isa().m_addrtype.str() );
   _product.code( " virtual ~Operation();\n" );
+  _product.code( " virtual void Encode(%s code) const {}\n", codetype_ref().str() );
   _product.code( " inline %s GetAddr() const { return addr; }\n", isa().m_addrtype.str() );
+  _product.code( " inline void SetAddr(%s _addr) { this->addr = _addr; }\n", isa().m_addrtype.str() );
   _product.code( " inline %s GetEncoding() const { return encoding; }\n", codetype_constref().str() );
   op_getlen_decl( _product );
   _product.code( " inline const char *GetName() const { return name; }\n" );
