@@ -156,12 +156,8 @@ private:
 	MEMORY_ADDR GetSectionFlags(const Elf_Shdr *shdr);
 	const char *GetSectionName(const Elf_Shdr *shdr, const char *string_table);
 	void BuildSymbolTable(const Elf_Shdr *shdr, const void *content, const char *string_table);
-	void BuildStatementMatrix(const void *content, uint64_t size);
 	void DumpRawData(const void *content, MEMORY_ADDR size);
-	void DumpStatementMatrix();
-	bool IsAbsolutePath(const char *filename) const;
-	void LoadDebugInfo(const void *content, uint64_t size);
-	void LoadDebugAbbrev(const void *content, uint64_t size);
+	uint8_t GetAddressSize(const Elf_Ehdr *hdr) const;
 };
 
 } // end of namespace elf_loader

@@ -903,12 +903,14 @@ class DWARF_Expression : public DWARF_AttributeValue<MEMORY_ADDR>
 {
 public:
 	DWARF_Expression(const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu, uint64_t length, const uint8_t *value);
+	DWARF_Expression(const DWARF_CallFrameProgram<MEMORY_ADDR> *dw_cfp, uint64_t length, const uint8_t *value);
 	~DWARF_Expression();
 	uint64_t GetLength() const;
 	const uint8_t *GetValue() const;
 	virtual std::string to_string() const;
 private:
 	const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu;
+	const DWARF_CallFrameProgram<MEMORY_ADDR> *dw_cfp;
 	uint64_t length;
 	const uint8_t *value;
 };
@@ -1116,12 +1118,14 @@ class DWARF_ExpressionVM
 {
 public:
 	DWARF_ExpressionVM(const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu);
+	DWARF_ExpressionVM(const DWARF_CallFrameProgram<MEMORY_ADDR> *dw_cfp);
 	~DWARF_ExpressionVM();
 	
 	bool Disasm(std::ostream& os, const DWARF_Expression<MEMORY_ADDR> *dw_expr);
 	bool Execute(const DWARF_Expression<MEMORY_ADDR> *dw_expr, DWARF_Location<MEMORY_ADDR> *dw_location);
 private:
 	const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu;
+	const DWARF_CallFrameProgram<MEMORY_ADDR> *dw_cfp;
 	unisim::util::debug::Register *registers[32];
 
 	bool Run(const DWARF_Expression<MEMORY_ADDR> *dw_expr, std::ostream *os, DWARF_Location<MEMORY_ADDR> *dw_location);
@@ -1137,6 +1141,8 @@ class DWARF_CallFrameProgram
 public:
 	DWARF_CallFrameProgram(DWARF_Handler<MEMORY_ADDR> *dw_handler, uint64_t length, const uint8_t *program);
 	~DWARF_CallFrameProgram();
+	endian_type GetEndianness() const;
+	uint8_t GetAddressSize() const;
 	uint64_t GetLength() const;
 	const uint8_t *GetProgram() const;
 	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_CallFrameProgram<MEMORY_ADDR>& dw_call_frame_prog);
@@ -1603,7 +1609,7 @@ template <class MEMORY_ADDR>
 class DWARF_Handler
 {
 public:
-	DWARF_Handler(endian_type endianness);
+	DWARF_Handler(endian_type endianness, uint8_t address_size);
 	~DWARF_Handler();
 	void Handle(const char *section_name, uint8_t *section, uint64_t section_size);
 	void Initialize();
@@ -1614,7 +1620,7 @@ public:
 	void Register(DWARF_MacInfoListEntry<MEMORY_ADDR> *dw_macinfo_list_entry);
 	void Register(DWARF_LocListEntry<MEMORY_ADDR> *dw_loc_list_entry);
 	
-	const DWARF_StatementProgram<MEMORY_ADDR> *FindStatementProgram(uint64_t debug_line_offset) const;
+	const DWARF_StatementProgram<MEMORY_ADDR> *FindStatementProgram(uint64_t debug_line_offset);
 	const DWARF_DIE<MEMORY_ADDR> *FindDIE(uint64_t debug_info_offset) const;
 	const DWARF_RangeListEntry<MEMORY_ADDR> *FindRangeListEntry(const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu, uint64_t debug_ranges_offset);
 	const DWARF_MacInfoListEntry<MEMORY_ADDR> *FindMacInfoListEntry(uint64_t debug_macinfo_offset);
@@ -1622,6 +1628,7 @@ public:
 	const DWARF_LocListEntry<MEMORY_ADDR> *FindLocListEntry(const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu, uint64_t debug_loc_offset);
 	
 	endian_type GetEndianness() const;
+	uint8_t GetAddressSize() const;
 	const DWARF_Abbrev *FindAbbrev(uint64_t debug_abbrev_offset, const DWARF_LEB128& dw_abbrev_code) const;
 	const char *GetString(uint64_t debug_str_offset) const;
 
@@ -1629,6 +1636,7 @@ public:
 	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(const char *filename, unsigned int lineno, unsigned int colno) const;
 private:
 	endian_type endianness;
+	uint8_t address_size;
 	
 	// Raw data
 	uint8_t *debug_line_section;     // .debug_line section (raw data)

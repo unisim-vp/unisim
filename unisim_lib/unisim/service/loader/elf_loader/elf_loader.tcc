@@ -408,7 +408,11 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 					}
 					else
 					{
-						if(!dw_handler) dw_handler = new DWARF_Handler<MEMORY_ADDR>(endianness);
+/*						if(strcmp(section_name, ".debug_line") == 0)
+						{
+							DumpRawData(section, section_size);
+						}*/
+						if(!dw_handler) dw_handler = new DWARF_Handler<MEMORY_ADDR>(endianness, GetAddressSize(hdr));
 						dw_handler->Handle(section_name, (uint8_t *) section, section_size);
 					}
 				}
@@ -1202,6 +1206,93 @@ template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_P
 const unisim::util::debug::Statement<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::FindStatement(const char *filename, unsigned int lineno, unsigned int colno) const
 {
 	return dw_handler ? dw_handler->FindStatement(filename, lineno, colno) : 0;
+}
+
+template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+uint8_t ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetAddressSize(const Elf_Ehdr *hdr) const
+{
+	switch(hdr->e_machine)
+	{
+		case EM_NONE: return sizeof(uint32_t);
+		case EM_M32: return sizeof(uint32_t);
+		case EM_SPARC: return sizeof(uint32_t);
+		case EM_386: return sizeof(uint32_t);
+		case EM_68K: return sizeof(uint32_t);
+		case EM_88K: return sizeof(uint32_t);
+		case EM_860: return sizeof(uint32_t);
+		case EM_MIPS: return sizeof(uint32_t);
+		case EM_S370: return sizeof(uint32_t);
+		case EM_MIPS_RS4_BE: return sizeof(uint32_t);
+	
+		case EM_PARISC: return sizeof(uint32_t);
+		case EM_VPP500: return sizeof(uint32_t);
+		case EM_SPARC32PLUS: return sizeof(uint32_t);
+		case EM_960: return sizeof(uint32_t);
+		case EM_PPC: return sizeof(uint32_t);
+		case EM_PPC64: return sizeof(uint64_t);
+		case EM_S390: return sizeof(uint32_t);
+	
+		case EM_V800: return sizeof(uint32_t);
+		case EM_FR20: return sizeof(uint32_t);
+		case EM_RH32: return sizeof(uint32_t);
+		case EM_RCE: return sizeof(uint32_t);
+		case EM_ARM: return sizeof(uint32_t);
+		case EM_FAKE_ALPHA: return sizeof(uint64_t);
+		case EM_SH: return sizeof(uint32_t);
+		case EM_SPARCV9: return sizeof(uint64_t);
+		case EM_TRICORE: return sizeof(uint32_t);
+		case EM_ARC: return sizeof(uint32_t);
+		case EM_H8_300: return sizeof(uint32_t);
+		case EM_H8_300H: return sizeof(uint32_t);
+		case EM_H8S: return sizeof(uint32_t);
+		case EM_H8_500: return sizeof(uint32_t);
+		case EM_IA_64: return sizeof(uint64_t);
+		case EM_MIPS_X: return sizeof(uint32_t);
+		case EM_COLDFIRE: return sizeof(uint32_t);
+		case EM_68HC12: return sizeof(uint16_t);
+		case EM_MMA: return sizeof(uint32_t);
+		case EM_PCP: return sizeof(uint32_t);
+		case EM_NCPU: return sizeof(uint32_t);
+		case EM_NDR1: return sizeof(uint32_t);
+		case EM_STARCORE: return sizeof(uint32_t);
+		case EM_ME16: return sizeof(uint32_t);
+		case EM_ST100: return sizeof(uint32_t);
+		case EM_TINYJ: return sizeof(uint32_t);
+		case EM_X86_64: return sizeof(uint64_t);
+		case EM_PDSP: return sizeof(uint32_t);
+
+		case EM_FX66: return sizeof(uint32_t);
+		case EM_ST9PLUS: return sizeof(uint32_t);
+		case EM_ST7: return sizeof(uint32_t);
+		case EM_68HC16: return sizeof(uint16_t);
+		case EM_68HC11: return sizeof(uint16_t);
+		case EM_68HC08: return sizeof(uint16_t);
+		case EM_68HC05: return sizeof(uint16_t);
+		case EM_SVX: return sizeof(uint32_t);
+		case EM_ST19: return sizeof(uint32_t);
+		case EM_VAX: return sizeof(uint32_t);
+		case EM_CRIS: return sizeof(uint32_t);
+		case EM_JAVELIN: return sizeof(uint32_t);
+		case EM_FIREPATH: return sizeof(uint64_t);
+		case EM_ZSP: return sizeof(uint16_t);
+		case EM_MMIX: return sizeof(uint64_t);
+		case EM_HUANY: return sizeof(uint32_t);
+		case EM_PRISM: return sizeof(uint32_t);
+		case EM_AVR: return sizeof(uint32_t);
+		case EM_FR30: return sizeof(uint32_t);
+		case EM_D10V: return sizeof(uint32_t);
+		case EM_D30V: return sizeof(uint32_t);
+		case EM_V850: return sizeof(uint32_t);
+		case EM_M32R: return sizeof(uint32_t);
+		case EM_MN10300: return sizeof(uint32_t);
+		case EM_MN10200: return sizeof(uint32_t);
+		case EM_PJ: return sizeof(uint32_t);
+		case EM_OPENRISC: return sizeof(uint32_t);
+		case EM_ARC_A5: return sizeof(uint32_t);
+		case EM_XTENSA: return sizeof(uint32_t);
+		case EM_ALPHA: return sizeof(uint64_t);
+	}
+	return sizeof(uint32_t);
 }
 
 } // end of namespace elf_loader

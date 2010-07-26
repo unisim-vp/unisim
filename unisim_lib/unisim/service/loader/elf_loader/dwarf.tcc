@@ -123,97 +123,78 @@ int64_t DWARF_StatementProgram<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64
 	
 	int64_t size = 0;
 
-	// padding should be 0 in fully compliant DWARF .debug_line section
-	bool valid_header = false;
-	unsigned int padding = 0;
-	do
+	if(max_size < sizeof(unit_length32)) return -1;
+	memcpy(&unit_length32, rawdata, sizeof(unit_length32));
+	unit_length32 = Target2Host(endianness, unit_length32);
+	rawdata += sizeof(unit_length32);
+	max_size -= sizeof(unit_length32);
+	size += sizeof(unit_length32);
+	
+	DWARF_Format dw_fmt = (unit_length32 == 0xffffffffUL) ? FMT_DWARF64 : FMT_DWARF32;
+
+	// 64-bit DWARF format ?
+	if(dw_fmt == FMT_DWARF64)
 	{
-		if(max_size < sizeof(unit_length32)) return -1;
-		memcpy(&unit_length32, rawdata, sizeof(unit_length32));
-		unit_length32 = Target2Host(endianness, unit_length32);
-		rawdata += sizeof(unit_length32);
-		max_size -= sizeof(unit_length32);
-		size += sizeof(unit_length32);
+		uint64_t unit_length64;
+		if(max_size < sizeof(unit_length64)) return -1;
+		memcpy(&unit_length64, rawdata, sizeof(unit_length64));
+		unit_length64 = Target2Host(endianness, unit_length64);
+		rawdata += sizeof(unit_length64);
+		max_size -= sizeof(unit_length64);
+		size += sizeof(unit_length64);
+		unit_length = unit_length64;
+	}
+	else
+	{
+		unit_length = unit_length32;
+	}
+	
+	if(max_size < unit_length) return -1;
+
+	if(max_size < sizeof(version)) return -1;
+	memcpy(&version, rawdata, sizeof(version));
+	version = Target2Host(endianness, version);
+	rawdata += sizeof(version);
+	max_size -= sizeof(version);
+	size += sizeof(version);
+
+	// 64-bit DWARF format ?
+	if(dw_fmt == FMT_DWARF64)
+	{
+		uint64_t header_length64;
 		
-		// 64-bit DWARF format ?
-		if(unit_length32 == 0xffffffffUL)
-		{
-			uint64_t unit_length64;
-			if(max_size < sizeof(unit_length64)) return -1;
-			memcpy(&unit_length64, rawdata, sizeof(unit_length64));
-			unit_length64 = Target2Host(endianness, unit_length64);
-			rawdata += sizeof(unit_length64);
-			max_size -= sizeof(unit_length64);
-			size += sizeof(unit_length64);
-			unit_length = unit_length64;
-		}
-		else
-		{
-			unit_length = unit_length32;
-		}
+		if(max_size < sizeof(header_length64)) return -1;
+		memcpy(&header_length64, rawdata, sizeof(header_length64));
+		header_length64 = Target2Host(endianness, header_length64);
+		rawdata += sizeof(header_length64);
+		max_size -= sizeof(header_length64);
+		size += sizeof(header_length64);
+		header_length = header_length64;
+	}
+	else
+	{
+		uint32_t header_length32;
 		
-		if(max_size < unit_length) return -1;
-
-		if(max_size < sizeof(version)) return -1;
-		memcpy(&version, rawdata, sizeof(version));
-		version = Target2Host(endianness, version);
-		rawdata += sizeof(version);
-		max_size -= sizeof(version);
-		size += sizeof(version);
-
-		// 64-bit DWARF format ?
-		if(unit_length32 == 0xffffffffUL)
-		{
-			uint64_t header_length64;
-			
-			if(max_size < sizeof(header_length64)) return -1;
-			memcpy(&header_length64, rawdata, sizeof(header_length64));
-			header_length64 = Target2Host(endianness, header_length64);
-			rawdata += sizeof(header_length64);
-			max_size -= sizeof(header_length64);
-			size += sizeof(header_length64);
-			header_length = header_length64;
-		}
-		else
-		{
-			uint32_t header_length32;
-			
-			if(max_size < sizeof(header_length32)) return -1;
-			memcpy(&header_length32, rawdata, sizeof(header_length32));
-			header_length32 = Target2Host(endianness, header_length32);
-			rawdata += sizeof(header_length32);
-			max_size -= sizeof(header_length32);
-			size += sizeof(header_length32);
-			header_length = header_length32;
-		}
+		if(max_size < sizeof(header_length32)) return -1;
+		memcpy(&header_length32, rawdata, sizeof(header_length32));
+		header_length32 = Target2Host(endianness, header_length32);
+		rawdata += sizeof(header_length32);
+		max_size -= sizeof(header_length32);
+		size += sizeof(header_length32);
+		header_length = header_length32;
+	}
 
 
-		if((version == 2) || (version == 3))
-		{
-			if(unit_length32 == 0xffffffffUL)
-			{
-				if((header_length <= (unit_length - sizeof(version) - sizeof(uint32_t) - sizeof(uint64_t))) && ((unit_length - sizeof(version) - sizeof(uint32_t) - sizeof(uint64_t)) <= max_size))
-				{
-					valid_header = true;
-					break;
-				}
-			}
-			else
-			{
-				if((header_length <= (unit_length - sizeof(version) - sizeof(uint32_t))) && ((unit_length - sizeof(version) - sizeof(uint32_t)) <= max_size))
-				{
-					valid_header = true;
-					break;
-				}
-			}
-		}
-		// retry with a different padding
-		rawdata -= size - 1;
-		max_size += size - 1;
-		size = 0;
-	} while(++padding < 4);
+	if((version != 2) && (version != 3)) return -1;
 
-	if(!valid_header) return -1;
+	if(dw_fmt == FMT_DWARF64)
+	{
+		if((header_length > (unit_length - sizeof(version) - sizeof(uint32_t) - sizeof(uint64_t))) || ((unit_length - sizeof(version) - sizeof(uint32_t) - sizeof(uint64_t)) > max_size)) return -1;
+	}
+	else
+	{
+		if((header_length > (unit_length - sizeof(version) - sizeof(uint32_t))) || ((unit_length - sizeof(version) - sizeof(uint32_t)) > max_size)) return -1;
+	}
 
 	if(max_size < sizeof(minimum_instruction_length)) return -1;
 	memcpy(&minimum_instruction_length, rawdata, sizeof(minimum_instruction_length));
@@ -291,7 +272,7 @@ int64_t DWARF_StatementProgram<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64
 		filenames.push_back(filename);
 	} while(1);
 
-	if(unit_length32 == 0xffffffffUL)
+	if(dw_fmt == FMT_DWARF64)
 	{
 		if(size > header_length + sizeof(uint32_t) + sizeof(uint64_t) + sizeof(version) + sizeof(uint64_t)) return -1;
 		rawdata += header_length + sizeof(uint32_t) + sizeof(uint64_t) + sizeof(version) + sizeof(uint64_t) - size;
@@ -312,7 +293,7 @@ int64_t DWARF_StatementProgram<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64
 	program = rawdata;
 	size += program_length;
 
-	return size + padding;
+	return size;
 }
 
 template <class MEMORY_ADDR>
@@ -1187,6 +1168,17 @@ template <class MEMORY_ADDR>
 DWARF_Expression<MEMORY_ADDR>::DWARF_Expression(const DWARF_CompilationUnit<MEMORY_ADDR> *_dw_cu, uint64_t _length, const uint8_t *_value)
 	: DWARF_AttributeValue<MEMORY_ADDR>(DW_CLASS_EXPRESSION)
 	, dw_cu(_dw_cu)
+	, dw_cfp(0)
+	, length(_length)
+	, value(_value)
+{
+}
+
+template <class MEMORY_ADDR>
+DWARF_Expression<MEMORY_ADDR>::DWARF_Expression(const DWARF_CallFrameProgram<MEMORY_ADDR> *_dw_cfp, uint64_t _length, const uint8_t *_value)
+	: DWARF_AttributeValue<MEMORY_ADDR>(DW_CLASS_EXPRESSION)
+	, dw_cu(0)
+	, dw_cfp(_dw_cfp)
 	, length(_length)
 	, value(_value)
 {
@@ -1214,8 +1206,19 @@ std::string DWARF_Expression<MEMORY_ADDR>::to_string() const
 {
 	std::stringstream sstr;
 	
-	DWARF_ExpressionVM<MEMORY_ADDR> expr_vm = DWARF_ExpressionVM<MEMORY_ADDR>(dw_cu);
-	return expr_vm.Disasm(sstr, this) ? sstr.str() : std::string();
+	if(dw_cu)
+	{
+		DWARF_ExpressionVM<MEMORY_ADDR> expr_vm = DWARF_ExpressionVM<MEMORY_ADDR>(dw_cu);
+		return expr_vm.Disasm(sstr, this) ? sstr.str() : std::string();
+	}
+	
+	if(dw_cfp)
+	{
+		DWARF_ExpressionVM<MEMORY_ADDR> expr_vm = DWARF_ExpressionVM<MEMORY_ADDR>(dw_cfp);
+		return expr_vm.Disasm(sstr, this) ? sstr.str() : std::string();
+	}
+	
+	return std::string();
 }
 
 template <class MEMORY_ADDR>
@@ -2044,16 +2047,10 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 			max_size -= sz;
 			size += sz;
 			
-			if(!dw_die->IsNull())
-			{
-				children.push_back(dw_die);
-				dw_cu->Register(dw_die);
-			}
+			children.push_back(dw_die);
+			dw_cu->Register(dw_die);
 		}
 		while(!dw_die->IsNull());
-		
-		// dw_die->IsNull() is true
-		delete dw_die;
 	}
 	
 	abbrev = dw_abbrev;
@@ -2292,15 +2289,8 @@ int64_t DWARF_CompilationUnit<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_
 		max_size -= sz;
 		size += sz;
 		
-		if(dw_die->IsNull())
-		{
-			delete dw_die;
-		}
-		else
-		{
-			debug_info_entries.push_back(dw_die);
-			Register(dw_die);
-		}
+		debug_info_entries.push_back(dw_die);
+		Register(dw_die);
  	}
  	while(size < ((dw_fmt == FMT_DWARF64) ? (unit_length + sizeof(uint32_t) + sizeof(uint64_t)) : (unit_length + sizeof(uint32_t))));
 	return size;
@@ -2454,6 +2444,15 @@ const std::vector<DWARF_LocationPiece<MEMORY_ADDR> *>& DWARF_Location<MEMORY_ADD
 template <class MEMORY_ADDR>
 DWARF_ExpressionVM<MEMORY_ADDR>::DWARF_ExpressionVM(const DWARF_CompilationUnit<MEMORY_ADDR> *_dw_cu)
 	: dw_cu(_dw_cu)
+	, dw_cfp(0)
+{
+	//memcpy(registers, _registers, sizeof(registers));
+}
+
+template <class MEMORY_ADDR>
+DWARF_ExpressionVM<MEMORY_ADDR>::DWARF_ExpressionVM(const DWARF_CallFrameProgram<MEMORY_ADDR> *_dw_cfp)
+	: dw_cu(0)
+	, dw_cfp(_dw_cfp)
 {
 	//memcpy(registers, _registers, sizeof(registers));
 }
@@ -2480,9 +2479,9 @@ template <class MEMORY_ADDR>
 bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *dw_expr, std::ostream *os, DWARF_Location<MEMORY_ADDR> *dw_location)
 {
 	std::stack<MEMORY_ADDR> dw_stack;
-	uint8_t address_size = dw_cu->GetAddressSize();
-	endian_type endianness = dw_cu->GetEndianness();
-	uint8_t offset_size = dw_cu->GetOffsetSize();
+	uint8_t address_size = dw_cu ? dw_cu->GetAddressSize() : dw_cfp->GetAddressSize();
+	endian_type endianness = dw_cu ? dw_cu->GetEndianness() : dw_cfp->GetEndianness();
+	uint8_t offset_size = dw_cu ? dw_cu->GetOffsetSize() : 0; // offsets are unused for expressions in a call frame program
 	
 	uint64_t expr_length = dw_expr->GetLength();
 	const uint8_t *expr = dw_expr->GetValue();
@@ -2829,6 +2828,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 					}
 					break;
 				case DW_OP_push_object_address:
+					if(!dw_cu) return false;
 					if(os) *os << "DW_OP_push_object_address";
 					break;
 				case DW_OP_form_tls_address:
@@ -3110,6 +3110,19 @@ DWARF_CallFrameProgram<MEMORY_ADDR>::~DWARF_CallFrameProgram()
 }
 
 template <class MEMORY_ADDR>
+endian_type DWARF_CallFrameProgram<MEMORY_ADDR>::GetEndianness() const
+{
+	return dw_handler->GetEndianness();
+}
+
+template <class MEMORY_ADDR>
+uint8_t DWARF_CallFrameProgram<MEMORY_ADDR>::GetAddressSize() const
+{
+	return dw_handler->GetAddressSize();
+}
+
+
+template <class MEMORY_ADDR>
 uint64_t DWARF_CallFrameProgram<MEMORY_ADDR>::GetLength() const
 {
 	return length;
@@ -3214,7 +3227,7 @@ int64_t DWARF_CIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 	max_size -= sizeof(version);
 	size += sizeof(version);
 
-	if((version != 1) && (version != 2)) return -1;
+	if((version != 1) && (version != 3)) return -1;
 	
 	augmentation = (const char *) rawdata;
 	unsigned int augmentation_length = strlen(augmentation);
@@ -3315,6 +3328,7 @@ int64_t DWARF_FDE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 {
 	offset = _offset;
 	endian_type endianness = dw_handler->GetEndianness();
+	uint8_t address_size = dw_handler->GetAddressSize();
 	uint32_t length32;
 	
 	int64_t size = 0;
@@ -3369,19 +3383,83 @@ int64_t DWARF_FDE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 		cie_pointer = cie_pointer32;
 	}
 
-	if(max_size < sizeof(initial_location)) return -1;
-	memcpy(&initial_location, rawdata, sizeof(initial_location));
-	initial_location = Target2Host(endianness, initial_location);
-	rawdata += sizeof(initial_location);
-	max_size -= sizeof(initial_location);
-	size += sizeof(initial_location);
+	switch(address_size)
+	{
+		case sizeof(uint16_t):
+			{
+				if(max_size < sizeof(uint16_t)) return -1;
+				uint16_t value;
+				memcpy(&value, rawdata, sizeof(uint16_t));
+				initial_location = Target2Host(endianness, value);
+				size += sizeof(uint16_t);
+				rawdata += sizeof(uint16_t);
+				max_size -= sizeof(uint16_t);
+			}
+			break;
+		case sizeof(uint32_t):
+			{
+				if(max_size < sizeof(uint32_t)) return -1;
+				uint32_t value;
+				memcpy(&value, rawdata, sizeof(uint32_t));
+				initial_location = Target2Host(endianness, value);
+				size += sizeof(uint32_t);
+				rawdata += sizeof(uint32_t);
+				max_size -= sizeof(uint32_t);
+			}
+			break;
+		case sizeof(uint64_t):
+			{
+				if(max_size < sizeof(uint64_t)) return -1;
+				uint64_t value;
+				memcpy(&value, rawdata, sizeof(uint64_t));
+				initial_location = Target2Host(endianness, value);
+				size += sizeof(uint64_t);
+				rawdata += sizeof(uint64_t);
+				max_size -= sizeof(uint64_t);
+			}
+			break;
+		default:
+			return -1;
+	}
 
-	if(max_size < sizeof(address_range)) return -1;
-	memcpy(&address_range, rawdata, sizeof(address_range));
-	address_range = Target2Host(endianness, address_range);
-	rawdata += sizeof(address_range);
-	max_size -= sizeof(address_range);
-	size += sizeof(address_range);
+	switch(address_size)
+	{
+		case sizeof(uint16_t):
+			{
+				if(max_size < sizeof(uint16_t)) return -1;
+				uint16_t value;
+				memcpy(&value, rawdata, sizeof(uint16_t));
+				address_range = Target2Host(endianness, value);
+				size += sizeof(uint16_t);
+				rawdata += sizeof(uint16_t);
+				max_size -= sizeof(uint16_t);
+			}
+			break;
+		case sizeof(uint32_t):
+			{
+				if(max_size < sizeof(uint32_t)) return -1;
+				uint32_t value;
+				memcpy(&value, rawdata, sizeof(uint32_t));
+				address_range = Target2Host(endianness, value);
+				size += sizeof(uint32_t);
+				rawdata += sizeof(uint32_t);
+				max_size -= sizeof(uint32_t);
+			}
+			break;
+		case sizeof(uint64_t):
+			{
+				if(max_size < sizeof(uint64_t)) return -1;
+				uint64_t value;
+				memcpy(&value, rawdata, sizeof(uint64_t));
+				address_range = Target2Host(endianness, value);
+				size += sizeof(uint64_t);
+				rawdata += sizeof(uint64_t);
+				max_size -= sizeof(uint64_t);
+			}
+			break;
+		default:
+			return -1;
+	}
 	
 	uint64_t instructions_length;
 	if(dw_fmt == FMT_DWARF64)
@@ -3441,7 +3519,9 @@ template <class MEMORY_ADDR>
 bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADDR>& dw_call_frame_prog, std::ostream *os, std::map<MEMORY_ADDR, RuleMatrixRow<MEMORY_ADDR> *> *rule_matrix)
 {
 	uint64_t program_length = dw_call_frame_prog.length;
-	uint8_t *program = dw_call_frame_prog.program;
+	endian_type endianness = dw_call_frame_prog.GetEndianness();
+	uint8_t address_size = dw_call_frame_prog.GetAddressSize();
+	const uint8_t *program = dw_call_frame_prog.program;
 	
 	if(program_length)
 	{
@@ -3487,11 +3567,41 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 							{
 								MEMORY_ADDR addr;
 								
-								if(program_length < sizeof(addr)) return false;
-								memcpy(&addr, program, sizeof(addr));
-								addr = Target2Host(dw_call_frame_prog.endianness, addr);
-								program += sizeof(addr);
-								program_length -= sizeof(addr);
+								switch(address_size)
+								{
+									case sizeof(uint16_t):
+										{
+											if(program_length < sizeof(uint16_t)) return false;
+											uint16_t value;
+											memcpy(&value, program, sizeof(uint16_t));
+											addr = Target2Host(endianness, value);
+											program += sizeof(uint16_t);
+											program_length -= sizeof(uint16_t);
+										}
+										break;
+									case sizeof(uint32_t):
+										{
+											if(program_length < sizeof(uint32_t)) return false;
+											uint32_t value;
+											memcpy(&value, program, sizeof(uint32_t));
+											addr = Target2Host(endianness, value);
+											program += sizeof(uint32_t);
+											program_length -= sizeof(uint32_t);
+										}
+										break;
+									case sizeof(uint64_t):
+										{
+											if(program_length < sizeof(uint64_t)) return false;
+											uint64_t value;
+											memcpy(&value, program, sizeof(uint64_t));
+											addr = Target2Host(endianness, value);
+											program += sizeof(uint64_t);
+											program_length -= sizeof(uint64_t);
+										}
+										break;
+									default:
+										return false;
+								}
 								if(os) *os << "DW_CFA_set_loc 0x" << std::hex << addr << std::dec;
 							}
 							break;
@@ -3501,7 +3611,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 								
 								if(program_length < sizeof(delta)) return false;
 								memcpy(&delta, program, sizeof(delta));
-								delta = Target2Host(dw_call_frame_prog.endianness, delta);
+								delta = Target2Host(dw_call_frame_prog.GetEndianness(), delta);
 								program += sizeof(delta);
 								program_length -= sizeof(delta);
 								if(os) *os << "DW_CFA_advance_loc1 " << std::hex << (uint32_t) delta << std::dec;
@@ -3513,7 +3623,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 								
 								if(program_length < sizeof(delta)) return false;
 								memcpy(&delta, program, sizeof(delta));
-								delta = Target2Host(dw_call_frame_prog.endianness, delta);
+								delta = Target2Host(dw_call_frame_prog.GetEndianness(), delta);
 								program += sizeof(delta);
 								program_length -= sizeof(delta);
 								if(os) *os << "DW_CFA_advance_loc2 " << std::hex << delta << std::dec;
@@ -3525,7 +3635,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 								
 								if(program_length < sizeof(delta)) return false;
 								memcpy(&delta, program, sizeof(delta));
-								delta = Target2Host(dw_call_frame_prog.endianness, delta);
+								delta = Target2Host(dw_call_frame_prog.GetEndianness(), delta);
 								program += sizeof(delta);
 								program_length -= sizeof(delta);
 								if(os) *os << "DW_CFA_advance_loc4 " << std::hex << delta << std::dec;
@@ -3648,7 +3758,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 								uint64_t block_length = (uint64_t) leb128_block_length;
 								if(program_length < block_length) return -1;
 
-								DWARF_Expression<MEMORY_ADDR> dw_expr = DWARF_Expression<MEMORY_ADDR>(dw_call_frame_prog.endianness, sizeof(MEMORY_ADDR), block_length, program);
+								DWARF_Expression<MEMORY_ADDR> dw_expr = DWARF_Expression<MEMORY_ADDR>(&dw_call_frame_prog, block_length, program);
 								program += block_length;
 								program_length -= block_length;
 								if(os) *os << "DW_CFA_def_cfa_expression {" << dw_expr.to_string() << "}";
@@ -3671,7 +3781,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 								uint64_t block_length = (uint64_t) leb128_block_length;
 								if(program_length < block_length) return -1;
 
-								DWARF_Expression<MEMORY_ADDR> dw_expr = DWARF_Expression<MEMORY_ADDR>(dw_call_frame_prog.endianness, sizeof(MEMORY_ADDR), block_length, program);
+								DWARF_Expression<MEMORY_ADDR> dw_expr = DWARF_Expression<MEMORY_ADDR>(&dw_call_frame_prog, block_length, program);
 								program += block_length;
 								program_length -= block_length;
 								if(os) *os << "DW_CFA_expression " << reg_num.to_string(false) << " {" << dw_expr.to_string() << "}";
@@ -3765,7 +3875,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 								uint64_t block_length = (uint64_t) leb128_block_length;
 								if(program_length < block_length) return -1;
 
-								DWARF_Expression<MEMORY_ADDR> dw_expr = DWARF_Expression<MEMORY_ADDR>(dw_call_frame_prog.endianness, sizeof(MEMORY_ADDR), block_length, program);
+								DWARF_Expression<MEMORY_ADDR> dw_expr = DWARF_Expression<MEMORY_ADDR>(&dw_call_frame_prog, block_length, program);
 								program += block_length;
 								program_length -= block_length;
 								if(os) *os << "DW_CFA_val_expression " << reg_num.to_string(false) << " {" << dw_expr.to_string() << "}";
@@ -4253,7 +4363,7 @@ std::string DWARF_MacInfoListEntryVendorExtension<MEMORY_ADDR>::to_string() cons
 
 template <class MEMORY_ADDR>
 DWARF_MacInfoListEntryNull<MEMORY_ADDR>::DWARF_MacInfoListEntryNull()
-	: DWARF_MacInfoListEntry<MEMORY_ADDR>(DW_MACINFO_end_file)
+	: DWARF_MacInfoListEntry<MEMORY_ADDR>(0)
 {
 }
 
@@ -5060,8 +5170,9 @@ std::ostream& operator << (std::ostream& os, const DWARF_LocListEntry<MEMORY_ADD
 }
 
 template <class MEMORY_ADDR>
-DWARF_Handler<MEMORY_ADDR>::DWARF_Handler(endian_type _endianness)
+DWARF_Handler<MEMORY_ADDR>::DWARF_Handler(endian_type _endianness, uint8_t _address_size)
 	: endianness(_endianness)
+	, address_size(_address_size)
 	, debug_line_section(0)
 	, debug_line_section_size(0)
 	, debug_info_section(0)
@@ -5333,7 +5444,7 @@ void DWARF_Handler<MEMORY_ADDR>::Initialize()
 {
 	unsigned int i;
 	
-	if(debug_line_section)
+/*	if(debug_line_section)
 	{
 		uint64_t debug_line_offset = 0;
 		do
@@ -5355,14 +5466,14 @@ void DWARF_Handler<MEMORY_ADDR>::Initialize()
 
 				DWARF_StatementVM<MEMORY_ADDR> dw_stmt_vm = DWARF_StatementVM<MEMORY_ADDR>();
 
-				if(!dw_stmt_vm.Run(dw_stmt_prog, 0 /*&std::cout*/, &stmt_matrix))
+				if(!dw_stmt_vm.Run(dw_stmt_prog, 0, &stmt_matrix))
 				{
 					std::cerr << "Invalid DWARF2 statement program. Statement matrix may be incomplete." << std::endl;
 				}
 			}
 		}
 		while(debug_line_offset < debug_line_section_size);
-	}
+	}*/
 	
 	if(debug_abbrev_section)
 	{
@@ -5596,7 +5707,7 @@ void DWARF_Handler<MEMORY_ADDR>::Initialize()
 		std::ofstream f;
 		unsigned int num_cus = dw_cus.size();
 		unsigned int i;
-		const unsigned int NUM_CUS_PER_FILES = 10;
+		const unsigned int NUM_CUS_PER_FILES = 0xffffffff;
 		typename std::map<uint64_t, DWARF_CompilationUnit<MEMORY_ADDR> *>::iterator dw_cu_iter;
 		for(i = 0, dw_cu_iter = dw_cus.begin(); dw_cu_iter != dw_cus.end(); i++, dw_cu_iter++)
 		{
@@ -5780,11 +5891,35 @@ endian_type DWARF_Handler<MEMORY_ADDR>::GetEndianness() const
 }
 
 template <class MEMORY_ADDR>
-const DWARF_StatementProgram<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindStatementProgram(uint64_t debug_line_offset) const
+uint8_t DWARF_Handler<MEMORY_ADDR>::GetAddressSize() const
 {
-	typename std::map<uint64_t, DWARF_StatementProgram<MEMORY_ADDR> *>::const_iterator stmt_prog_iter = dw_stmt_progs.find(debug_line_offset);
+	return address_size;
+}
+
+template <class MEMORY_ADDR>
+const DWARF_StatementProgram<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindStatementProgram(uint64_t debug_line_offset)
+{
+	if(!debug_line_section || debug_line_offset >= debug_line_section_size) return 0;
 	
-	return stmt_prog_iter != dw_stmt_progs.end() ? (*stmt_prog_iter).second : 0;
+	typename std::map<uint64_t, DWARF_StatementProgram<MEMORY_ADDR> *>::const_iterator dw_stmt_prog_iter = dw_stmt_progs.find(debug_line_offset);
+		
+	if(dw_stmt_prog_iter != dw_stmt_progs.end())
+	{
+		return (*dw_stmt_prog_iter).second;
+	}
+
+	DWARF_StatementProgram<MEMORY_ADDR> *dw_stmt_prog = new DWARF_StatementProgram<MEMORY_ADDR>(this);
+	int64_t sz;
+	if((sz = dw_stmt_prog->Load((const uint8_t *) debug_line_section + debug_line_offset, debug_line_section_size - debug_line_offset, debug_line_offset)) < 0)
+	{
+		std::cerr << "Invalid DWARF2 statement program prologue at offset 0x" << std::hex << debug_line_offset << std::dec << std::endl;
+		delete dw_stmt_prog;
+		return 0;
+	}
+
+	Register(dw_stmt_prog);
+	//std::cerr << *dw_stmt_prog << std::endl;
+	return dw_stmt_prog;
 }
 
 template <class MEMORY_ADDR>
@@ -5870,7 +6005,7 @@ const DWARF_MacInfoListEntry<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindMacIn
 				dw_macinfo_list_entry = new DWARF_MacInfoListEntryVendorExtension<MEMORY_ADDR>();
 				break;
 			default:
-				std::cerr << "Invalid DWARF2 debug macinfo at offset 0x" << std::hex << debug_macinfo_offset << std::dec << std::endl;
+				std::cerr << "Invalid DWARF2 debug macinfo at offset 0x" << std::hex << debug_macinfo_offset << std::dec << " (unknown type " << ((unsigned int) dw_mac_info_type) << ")" << std::endl;
 				return 0;
 		}
 			
@@ -5880,12 +6015,12 @@ const DWARF_MacInfoListEntry<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindMacIn
 			
 		if((sz = dw_macinfo_list_entry->Load((const uint8_t *) debug_macinfo_section + debug_macinfo_offset, debug_macinfo_section_size - debug_macinfo_offset, debug_macinfo_offset)) < 0)
 		{
-			std::cerr << "Invalid DWARF2 debug macinfo at offset 0x" << std::hex << debug_macinfo_offset << std::dec << std::endl;
+			std::cerr << "Invalid DWARF2 debug macinfo at offset 0x" << std::hex << debug_macinfo_offset << std::dec << " (type " << ((unsigned int) dw_mac_info_type) << ")" << std::endl;
 			delete dw_macinfo_list_entry;
 			return head;
 		}
 
-		// std::cerr << *dw_macinfo_list_entry << std::endl;
+		//std::cerr << *dw_macinfo_list_entry << std::endl;
 		Register(dw_macinfo_list_entry);
 		debug_macinfo_offset += sz;
 		if(!head) head = dw_macinfo_list_entry;
