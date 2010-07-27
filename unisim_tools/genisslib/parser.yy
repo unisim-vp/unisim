@@ -118,7 +118,6 @@ extend_oplist( Vect_t<Operation_t>* _oplist, ConstStr_t _symbol ) {
 %token TOK_DECODER
 %token TOK_DESTRUCTOR
 %token TOK_GROUP
-%token TOK_IGNORED
 %token TOK_IMPL
 %token TOK_INCLUDE
 %token TOK_INHERITANCE
@@ -708,10 +707,6 @@ action_proto_type:
   | TOK_STATIC
 {
   $$ = ActionProto_t::Static;
-}
-  | TOK_IGNORED
-{
-  $$ = ActionProto_t::Ignored;
 }
 ;
 

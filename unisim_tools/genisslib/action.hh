@@ -44,7 +44,7 @@ std::ostream& operator<<( std::ostream& _sink, Action_t const& _act );
 
 /** An action prototype object */
 struct ActionProto_t : virtual ReferenceCounter {
-  enum type_t { Constructor, Destructor, Static, Common, Ignored };
+  enum type_t { Constructor, Destructor, Static, Common };
   type_t                   m_type;                /**< The type of the action prototype */
   ConstStr_t               m_symbol;              /**< The associated symbol */
   Ptr_t<SourceCode_t>      m_returns;             /**< The C return type of the action */

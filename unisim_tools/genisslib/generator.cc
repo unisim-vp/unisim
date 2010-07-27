@@ -430,9 +430,6 @@ Generator::operation_decl( Product_t& _product ) const {
   }
   
   for( intptr_t idx = isa().m_actionprotos.size(); (--idx) >= 0; ) {
-    if (isa().m_actionprotos[idx]->m_type == ActionProto_t::Ignored)
-      continue;
-    
     if( isa().m_withsource ) {
       /* base declaration for user-defined code introspection
        * methods */
@@ -526,8 +523,6 @@ Generator::isa_operations_decl( Product_t& _product ) const {
 
     for( Vect_t<Action_t>::const_iterator action = (**op).m_actions.begin(); action < (**op).m_actions.end(); ++ action ) {
       ActionProto_t const* actionproto = (**action).m_actionproto;
-      if (actionproto->m_type == ActionProto_t::Ignored)
-        continue;
       
       if( not actionproto->m_comments.empty() ) {
         for( Vect_t<Comment_t>::const_iterator comm = actionproto->m_comments.begin(); comm < actionproto->m_comments.end(); ++ comm )
@@ -616,9 +611,6 @@ Generator::operation_impl( Product_t& _product ) const {
   }
   
   for( intptr_t idx = isa().m_actionprotos.size(); (--idx) >= 0; ) {
-    if (isa().m_actionprotos[idx]->m_type == ActionProto_t::Ignored)
-      continue;
-    
     if( isa().m_withsource ) {
       // for cstring version of the method
       _product.template_signature( isa().m_tparams );
@@ -684,9 +676,6 @@ Generator::isa_operations_methods( Product_t& _product ) const {
     
     for( Vect_t<Action_t>::const_iterator action = (**op).m_actions.begin(); action < (**op).m_actions.end(); ++ action ) {
       ActionProto_t const* actionproto = (**action).m_actionproto;
-
-      if (actionproto->m_type == ActionProto_t::Ignored)
-        continue;
 
       if( not (**action).m_comments.empty() ) {
         for( Vect_t<Comment_t>::const_iterator comm = (**action).m_comments.begin(); comm < (**action).m_comments.end(); ++ comm )
