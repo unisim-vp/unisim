@@ -3,6 +3,22 @@ message ( STATUS "Checking unisim::service::trap_handler" )
 include ( CheckIncludeFile )
 include ( ${CMAKE_SOURCE_DIR}/cmake/UnisimInclude.cmake )
 
+set ( CXX_INCLUDES string sstream vector )
+foreach ( CXX_INCLUDE ${CXX_INCLUDES} )
+	check_include_file_cxx ( ${CXX_INCLUDE} HAVE_${CXX_INCLUDE} )
+	if ( NOT HAVE_${CXX_INCLUDE} )
+		message ( SEND_ERROR "Could not find C++ header \"${CXX_INCLUDE}\"." )
+	endif ( NOT HAVE_${CXX_INCLUDE} )
+endforeach ( CXX_INCLUDE )
+
+# set ( C_INCLUDES inttypes stdint stdlib string time )
+# foreach ( C_INCLUDE ${C_INCLUDES} )
+# 	check_include_file ( ${C_INCLUDE}.h HAVE_${C_INCLUDE}_H )
+# 	if ( NOT HAVE_${C_INCLUDE}_H )
+# 		message ( SEND_ERROR "Could not find C header \"${C_INCLUDE}.h\"." )
+# 	endif ( NOT HAVE_${C_INCLUDE}_H )
+# endforeach ( C_INCLUDE )
+
 set ( trap_handler_subdirs 
 	unisim/service/interfaces/trap_reporting
 	unisim/kernel
