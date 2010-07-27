@@ -115,12 +115,14 @@ set ( cxx_arm_srcs
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/coprocessor_interface.hh
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/cpu.hh
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/exception.hh
-	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/cpu.soclib_step_cycle.tcc
+	# ${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/cpu.soclib_step_cycle.tcc
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/exception.tcc
-	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/cpu.step_cycle.tcc
+	# ${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/cpu.step_cycle.tcc
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/instruction.hh
+	# ${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/instruction_factory.hh
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/cpu.step_instruction.tcc
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/instruction.tcc
+	# ${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/instruction_factory.tcc
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/cpu.tcc
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/memory_op.hh
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/arm926ejs/cache.hh

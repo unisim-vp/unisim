@@ -2,15 +2,15 @@ cmake_minimum_required ( VERSION 2.8 )
 
 set ( SIM_VERSION_MAJOR 0 )
 set ( SIM_VERSION_MINOR 4 )
-set ( SIM_VERSION_PATCH 0 )
+set ( SIM_VERSION_PATCH 1 )
 set ( SIM_VERSION 
-	${SIM_VERSION_MAJOR}.${SIM_VERSION_MINOR}.${SIM_VERSION_PATCH} )
+	"${SIM_VERSION_MAJOR}.${SIM_VERSION_MINOR}.${SIM_VERSION_PATCH}" )
 set ( SIM_SOVERSION ${SIM_VERSION_MAJOR}.${SIM_VERSION_MINOR} ) 
-set ( SIM_VERSION_CODENAME "\"Pegaso\"" )
-set ( SIM_AUTHOR "\"Daniel Gracia Perez (daniel.gracia-perez@cea.fr)\"" )
+set ( SIM_VERSION_CODENAME "Pegaso" )
+set ( SIM_AUTHOR "Daniel Gracia Perez (daniel.gracia-perez@cea.fr)" )
 set ( SIM_PROGRAM_NAME "UNISIM ARMEmu" )
-set ( SIM_COPYRIGHT "\"Copyright (C) 2007-2010, Comissariat a l'Energie Atomique\"")
-set ( SIM_LICENSE "\"BSD (See file COPYING)\"" )
+set ( SIM_COPYRIGHT "Copyright (C) 2007-2010, Commissariat a l'Energie Atomique" )
+set ( SIM_LICENSE "BSD (See file COPYING)" )
 set ( SIM_DESCRIPTION "UNISIM ARMv5 User Level Simulator" )
 set ( SIM_PYTHON_MODULE_NAME "armemu" )
 set ( SIM_PYTHON_IMPORT_NAME "armemu${SIM_VERSION_MAJOR}${SIM_VERSION_MINOR}${SIM_VERSION_PATCH}")
@@ -53,7 +53,7 @@ set_property ( GLOBAL
 		UNISIM_KERNEL_BIN_TO_SHARED_DATA_PATH "../share/${ARMEMU_EXEC_NAME}" )
 
 set ( CMAKE_CXX_SOURCE_FILE_EXTENSIONS *.cc *.tcc *.hh CACHE STRING "Extensions of the source files" )
-set ( CMAKE_CXX_FLAGS "-fPIC" )
+# set ( CMAKE_CXX_FLAGS "-fPIC" )
 set ( CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin )
 set ( CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib/${ARMEMU_LIB_NAME}-${SIM_VERSION_MAJOR}.${SIM_VERSION_MINOR}.${SIM_VERSION_PATCH} )
 set ( CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib )
@@ -83,9 +83,11 @@ set ( armemu_subdirs
 	unisim/service/time/host_time
 	unisim/service/debug/gdb_server
 	unisim/service/debug/inline_debugger
+	unisim/service/debug/sim_debugger
 	unisim/service/loader/elf_loader
 	unisim/service/loader/linux_loader
 	unisim/service/os/linux_os/linux_os_32
+	unisim/service/trap_handler
 	unisim/service/power
 	)
 foreach ( dir ${armemu_subdirs} )
@@ -262,6 +264,8 @@ set ( armemu__libraries
 	unisim__service__os__linux_os__linux_os_32
 	unisim__service__debug__gdb_server
 	unisim__service__debug__inline_debugger
+	unisim__service__debug__sim_debugger
+	unisim__service__trap_handler
 	)
 if ( UNISIM__SERVICE__POWER__SUPPORT )
 	list ( APPEND armemu__libraries
@@ -283,7 +287,7 @@ foreach ( lib ${OSCI_SYSTEMC_LIBRARIES} )
 		 '${lib_path}'")
 endforeach ( lib ${OSCI_SYSTEMC_LIBRARIES} )
 set ( PYTHON__ARMEMU__LIBS
-	"'simulator',
+	"'simulatorlib',
 	 'unisim__component__tlm2__interrupt',
 	 'unisim__component__tlm2__memory__ram',
 	 'unisim__component__tlm2__processor__arm__arm926ejs',
@@ -297,6 +301,8 @@ set ( PYTHON__ARMEMU__LIBS
 	 'unisim__service__os__linux_os',
 	 'unisim__service__debug__gdb_server',
 	 'unisim__service__debug__inline_debugger',
+	 'unisim__service__debug__sim_debugger',
+	 'unisim__service__trap_handler',
 	 'unisim__util__random',
 	 'unisim__util__debug',
 	 'unisim__util__xml',
@@ -333,37 +339,55 @@ configure_file (
 	${CMAKE_SOURCE_DIR}/config.hh.in 
 	${CMAKE_BINARY_DIR}/config.hh )
 
-add_library ( simulator
-		${simulator__sources}
+# add_library ( simulator
+# 	${simulator__sources}
+# 	)
+# target_link_libraries ( simulator
+# 	${armemu__libraries}
+# 	)
+# set_target_properties ( simulator
+# 	PROPERTIES
+# 		COMPILE_DEFINITIONS SIM_EXECUTABLE
+# 	)
+add_library ( simulatorlib
+	${simulator__sources}
 	)
-target_link_libraries ( simulator
+target_link_libraries ( simulatorlib
 	${armemu__libraries}
+	)
+set_target_properties ( simulatorlib
+	PROPERTIES
+		COMPILE_DEFINITIONS SIM_LIBRARY
 	)
 add_executable ( ${ARMEMU_EXEC_TARGET}
 	${CMAKE_SOURCE_DIR}/main.cc
+	${simulator__sources}
 	)
+set_target_properties ( ${ARMEMU_EXEC_TARGET}
+	PROPERTIES
+		COMPILE_DEFINITIONS SIM_EXECUTABLE )
 target_link_libraries ( ${ARMEMU_EXEC_TARGET}
-	simulator
+	# simulator
 	${armemu__libraries}
 	)
-add_library ( ${ARMEMU_LIB_TARGET}
-	SHARED
-		${simulator__sources} )
-target_link_libraries ( ${ARMEMU_LIB_TARGET}
-	${armemu__libraries} )
+# add_library ( ${ARMEMU_LIB_TARGET}
+# 	SHARED
+# 		${simulator__sources} )
+# target_link_libraries ( ${ARMEMU_LIB_TARGET}
+# 	${armemu__libraries} )
 
-set_target_properties ( simulator
-	PROPERTIES
-		VERSION ${SIM_VERSION}
-		SOVERSION ${SIM_SOVERSION} )
+# set_target_properties ( simulator
+# 	PROPERTIES
+# 		VERSION ${SIM_VERSION}
+# 		SOVERSION ${SIM_SOVERSION} )
 set_target_properties ( ${ARMEMU_EXEC_TARGET}
 	PROPERTIES
 		RUNTIME_OUTPUT_NAME ${ARMEMU_EXEC_NAME} )
-set_target_properties ( ${ARMEMU_LIB_TARGET}
-	PROPERTIES
-		LIBRARY_OUTPUT_NAME ${ARMEMU_LIB_NAME} 
-		VERSION ${SIM_VERSION}
-		SOVERSION ${SIM_SOVERSION} )
+# set_target_properties ( ${ARMEMU_LIB_TARGET}
+# 	PROPERTIES
+# 		LIBRARY_OUTPUT_NAME ${ARMEMU_LIB_NAME} 
+# 		VERSION ${SIM_VERSION}
+# 		SOVERSION ${SIM_SOVERSION} )
 	
 set ( armemu__deps
 	unisim__kernel
@@ -374,21 +398,23 @@ set ( armemu__deps
 	unisim__service__time__host_time
 	unisim__service__debug__gdb_server
 	unisim__service__debug__inline_debugger
+	unisim__service__debug__sim_debugger
 	unisim__service__loader__elf_loader
 	unisim__service__loader__linux_loader
 	unisim__service__os__linux_os__linux_os_32
+	unisim__service__trap_handler
 	)
 if ( UNISIM__SERVICE__POWER__SUPPORT )
 	list ( APPEND armemu__deps
 		unisim__service__power
 		)
 endif ( UNISIM__SERVICE__POWER__SUPPORT )
-add_dependencies ( simulator
-	${armemu__deps}
-	)
-add_dependencies ( ${ARMEMU_LIB_TARGET}
-	${armemu__deps}
-	)
+# add_dependencies ( simulator
+# 	${armemu__deps}
+# 	)
+# add_dependencies ( ${ARMEMU_LIB_TARGET}
+# 	${armemu__deps}
+# 	)
 add_dependencies ( ${ARMEMU_EXEC_TARGET}
 	${armemu__deps}
 	)
@@ -456,7 +482,7 @@ if ( BUILD_ARMEMU_PYTHON_MODULE )
 	endif ( ${PYTHONINTERP_FOUND} )
 endif ( BUILD_ARMEMU_PYTHON_MODULE )
 
-install ( TARGETS ${ARMEMU_EXEC_TARGET} ${ARMEMU_LIB_TARGET}
+install ( TARGETS ${ARMEMU_EXEC_TARGET} # ${ARMEMU_LIB_TARGET}
 	RUNTIME DESTINATION bin
 	LIBRARY DESTINATION lib
 	ARCHIVE DESTINATION lib

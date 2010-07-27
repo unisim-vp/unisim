@@ -39,6 +39,7 @@
 #include <unisim/service/interfaces/loader.hh>
 #include <unisim/service/interfaces/symbol_table_lookup.hh>
 #include <unisim/service/interfaces/stmt_lookup.hh>
+#include <unisim/service/interfaces/registers.hh>
 
 #include <unisim/service/loader/elf_loader/elf32.h>
 #include <unisim/service/loader/elf_loader/elf64.h>
@@ -71,16 +72,19 @@ using unisim::util::debug::SymbolTable;
 using unisim::service::interfaces::SymbolTableLookup;
 using unisim::service::interfaces::StatementLookup;
 using unisim::service::interfaces::Loader;
+using unisim::service::interfaces::Registers;
 
 template <class MEMORY_ADDR, unsigned int ElfClass, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
 class ElfLoaderImpl :
 	public Client<Memory<MEMORY_ADDR> >,
+	public Client<Registers>,
 	public Service<Loader<MEMORY_ADDR> >,
 	public Service<SymbolTableLookup<MEMORY_ADDR> >,
 	public Service<StatementLookup<MEMORY_ADDR> >
 {
 public:
 	ServiceImport<Memory<MEMORY_ADDR> > memory_import;
+	ServiceImport<Registers> registers_import;
 	ServiceExport<SymbolTableLookup<MEMORY_ADDR> > symbol_table_lookup_export;
 	ServiceExport<Loader<MEMORY_ADDR> > loader_export;
 	ServiceExport<StatementLookup<MEMORY_ADDR> > stmt_lookup_export;
@@ -113,12 +117,11 @@ private:
 	bool force_use_virtual_address;
 	bool dump_headers;
 	SymbolTable<MEMORY_ADDR> symbol_table;
+	DWARF_Handler<MEMORY_ADDR> *dw_handler;
 	unisim::kernel::logger::Logger logger;
 	bool verbose;
 	endian_type endianness;
-	std::vector<DWARF_StatementProgram<MEMORY_ADDR> *> dw_stmt_progs;
-	std::vector<DWARF_StatementVM<MEMORY_ADDR> *> dw_stmt_vms;
-	std::map<MEMORY_ADDR, Statement<MEMORY_ADDR> *> stmt_matrix;
+	
 	Parameter<string> param_filename;
 	Parameter<MEMORY_ADDR> param_base_addr;
 	Parameter<bool> param_force_use_virtual_address;
@@ -153,10 +156,8 @@ private:
 	MEMORY_ADDR GetSectionFlags(const Elf_Shdr *shdr);
 	const char *GetSectionName(const Elf_Shdr *shdr, const char *string_table);
 	void BuildSymbolTable(const Elf_Shdr *shdr, const void *content, const char *string_table);
-	void BuildStatementMatrix(const void *content, uint32_t size);
 	void DumpRawData(const void *content, MEMORY_ADDR size);
-	void DumpStatementMatrix();
-	bool IsAbsolutePath(const char *filename) const;
+	uint8_t GetAddressSize(const Elf_Ehdr *hdr) const;
 };
 
 } // end of namespace elf_loader

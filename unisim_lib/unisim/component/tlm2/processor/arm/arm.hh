@@ -43,6 +43,7 @@
 #include "unisim/component/cxx/processor/arm/cache_interface.hh"
 #include "unisim/kernel/tlm2/tlm.hh"
 #include "unisim/component/tlm2/interrupt/types.hh"
+#include "unisim/service/interfaces/trap_reporting.hh"
 #include <inttypes.h>
 #include <string>
 
@@ -62,15 +63,18 @@ using unisim::kernel::service::Service;
 using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::ServiceImport;
 using unisim::component::cxx::processor::arm::CacheInterface;
+// using unisim::service::interfaces::TrapReporting;
 
 using std::string;
 
 template <class CONFIG, bool BLOCKING = false>
-class ARM :
-	public sc_module,
-	public tlm::tlm_bw_transport_if<>,
-	public CPU<CONFIG>,
-	public CacheInterface<typename CONFIG::address_t> {
+class ARM
+	: public sc_module
+	, public tlm::tlm_bw_transport_if<>
+	, public CPU<CONFIG>
+	, public CacheInterface<typename CONFIG::address_t>
+//	, public Client<TrapReporting>
+{
 public:
 	typedef tlm::tlm_base_protocol_types::tlm_payload_type  transaction_type;
 	typedef tlm::tlm_base_protocol_types::tlm_phase_type    phase_type;
@@ -247,6 +251,8 @@ private:
 	bool trap_on_verbose_tlm_irq;
 	unisim::kernel::service::Parameter<bool> param_trap_on_verbose_tlm_irq;
 	inline void TrapOnVerboseTLMIrq();
+public:
+	ServiceImport<unisim::service::interfaces::TrapReporting> irq_trap_reporting_import;
 
 	/*************************************************************************
 	 * Logger, verbose and trap parameters/methods/ports                 END *
