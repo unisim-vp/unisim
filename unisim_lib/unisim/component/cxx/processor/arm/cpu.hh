@@ -181,7 +181,8 @@ namespace arm {
 		ServiceImport<MemoryAccessReporting<uint64_t> > memory_access_reporting_import;
 		ServiceImport<SymbolTableLookup<uint64_t> > symbol_table_lookup_import;
 		ServiceImport<LinuxOS> linux_os_import;
-		ServiceImport<TrapReporting> trap_reporting_import;
+		ServiceImport<TrapReporting> exception_trap_reporting_import;
+		ServiceImport<TrapReporting> instruction_counter_trap_reporting_import;
 
 		ServiceImport<CachePowerEstimator> il1_power_estimator_import;
 		ServiceImport<CachePowerEstimator> dl1_power_estimator_import;

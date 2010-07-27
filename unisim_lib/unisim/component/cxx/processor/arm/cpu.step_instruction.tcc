@@ -253,10 +253,11 @@ StepInstruction() {
 		VerboseDumpRegsEnd();
 
 		instruction_counter++;
-		if (unlikely((trap_on_instruction_counter == instruction_counter) && trap_reporting_import))
-			trap_reporting_import->ReportTrap();
+		if ( unlikely((trap_on_instruction_counter == instruction_counter)
+				&& instruction_counter_trap_reporting_import) )
+			instruction_counter_trap_reporting_import->ReportTrap();
 
-		if (unlikely(HasPendingException()))
+		if ( unlikely(HasPendingException()) )
 		{
 			if (HasPendingException(IRQ_EXCEPTION)) { ClearPendingException(IRQ_EXCEPTION); throw IRQException<CONFIG>();}
 			if (HasPendingException(FIQ_EXCEPTION)) { ClearPendingException(FIQ_EXCEPTION); throw FIQException<CONFIG>();}
@@ -268,7 +269,7 @@ StepInstruction() {
 				<< "Received processor reset exception :" << exc.what() 
 				<< EndDebugError;
 		if (TrapOnException())
-			trap_reporting_import->ReportTrap();
+			exception_trap_reporting_import->ReportTrap();
 		PerformResetException();
 	}
 	catch (UndefinedInstructionException<CONFIG> &exc) 
@@ -278,7 +279,7 @@ StepInstruction() {
 				<< "Received undefined instruction exception: " << exc.what()
 				<< EndDebugInfo;
 		if (TrapOnException())
-			trap_reporting_import->ReportTrap();
+			exception_trap_reporting_import->ReportTrap();
 		PerformUndefInsnException();
 	}
 	catch (SoftwareInterruptException<CONFIG> &exc) 
@@ -288,7 +289,7 @@ StepInstruction() {
 				<< "Received software interrupt exception: " << exc.what()
 				<< EndDebugInfo;
 		if (TrapOnException())
-			trap_reporting_import->ReportTrap();
+			exception_trap_reporting_import->ReportTrap();
 		PerformSWIException();
 	}
 	catch (PrefetchAbortException<CONFIG> &exc) 
@@ -297,7 +298,7 @@ StepInstruction() {
 			<< "Received processor prefetch abort exception :" << exc.what() << endl
 			<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << EndDebugError;
 		if (TrapOnException())
-			trap_reporting_import->ReportTrap();
+			exception_trap_reporting_import->ReportTrap();
 		PerformPrefetchAbortException();
 	}
 	catch (DataAbortException<CONFIG> &exc) 
@@ -306,7 +307,7 @@ StepInstruction() {
 			<< "Received processor data abort exception :" << exc.what() 
 			<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << EndDebugError;
 		if (TrapOnException())
-			trap_reporting_import->ReportTrap();
+			exception_trap_reporting_import->ReportTrap();
 		PerformDataAbortException();
 	}
 	catch (IRQException<CONFIG> &exc) 
@@ -345,7 +346,7 @@ StepInstruction() {
 					ss << "FIQ_MODE";
 					break;
 			}
-			trap_reporting_import->ReportTrap(*this, ss.str().c_str());
+			exception_trap_reporting_import->ReportTrap(*this, ss.str().c_str());
 		}
 		PerformIRQException();
 	}
@@ -356,7 +357,7 @@ StepInstruction() {
 				<< "Received processor FIQ exception:" << exc.what()
 				<< EndDebugInfo;
 		if (TrapOnException())
-			trap_reporting_import->ReportTrap();
+			exception_trap_reporting_import->ReportTrap();
 		PerformFIQException();
 	}
 	catch (Exception &exc) 

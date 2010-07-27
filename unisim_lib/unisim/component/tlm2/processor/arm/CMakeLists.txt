@@ -30,6 +30,7 @@ set ( tlm2_arm_subdirs
 	unisim/kernel/tlm2
 	unisim/component/cxx/processor/arm
 	unisim/component/tlm2/interrupt
+	unisim/service/interfaces/trap_reporting
 	)
 
 foreach ( dir ${tlm2_arm_subdirs} )
@@ -54,6 +55,7 @@ add_dependencies ( unisim__component__tlm2__processor__arm
 	unisim__kernel__tlm2
 	unisim__component__cxx__processor__arm
 	unisim__component__tlm2__interrupt
+	unisim__service__interfaces__trap_reporting
 	)
 
 target_link_libraries ( unisim__component__tlm2__processor__arm
