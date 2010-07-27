@@ -87,6 +87,7 @@ set ( armemu_subdirs
 	unisim/service/loader/elf_loader
 	unisim/service/loader/linux_loader
 	unisim/service/os/linux_os/linux_os_32
+	unisim/service/trap_handler
 	unisim/service/power
 	)
 foreach ( dir ${armemu_subdirs} )
@@ -264,6 +265,7 @@ set ( armemu__libraries
 	unisim__service__debug__gdb_server
 	unisim__service__debug__inline_debugger
 	unisim__service__debug__sim_debugger
+	unisim__service__trap_handler
 	)
 if ( UNISIM__SERVICE__POWER__SUPPORT )
 	list ( APPEND armemu__libraries
@@ -300,6 +302,7 @@ set ( PYTHON__ARMEMU__LIBS
 	 'unisim__service__debug__gdb_server',
 	 'unisim__service__debug__inline_debugger',
 	 'unisim__service__debug__sim_debugger',
+	 'unisim__service__trap_handler',
 	 'unisim__util__random',
 	 'unisim__util__debug',
 	 'unisim__util__xml',
@@ -399,6 +402,7 @@ set ( armemu__deps
 	unisim__service__loader__elf_loader
 	unisim__service__loader__linux_loader
 	unisim__service__os__linux_os__linux_os_32
+	unisim__service__trap_handler
 	)
 if ( UNISIM__SERVICE__POWER__SUPPORT )
 	list ( APPEND armemu__deps
