@@ -35,6 +35,7 @@
 #ifndef __UNISIM_KERNEL_SERVICE_XML_HELPER_HH__
 #define __UNISIM_KERNEL_SERVICE_XML_HELPER_HH__
 
+#include <vector>
 #include <libxml/xmlreader.h>
 #include <libxml/xmlwriter.h>
 #include "unisim/kernel/service/service.hh"
@@ -81,6 +82,7 @@ private:
 	enum CurStatus {NONE, TYPE, NAME, VALUE, DESCRIPTION, DATA_TYPE};
 	CurVariable *cur_var;
 	CurStatus cur_status;
+	std::vector<string> cur_object;
 
 	// tokens required
 	xmlChar* name_token;

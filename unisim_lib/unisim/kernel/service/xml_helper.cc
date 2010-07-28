@@ -314,7 +314,7 @@ XmlfyVariable(xmlTextWriterPtr writer,
 
 	// write variable name
 	{
-		xmlChar* var_name = xmlCharStrdup(var->GetName());
+		xmlChar* var_name = xmlCharStrdup(var->GetVarName());
 		rc = xmlTextWriterWriteAttribute(writer, BAD_CAST "name", var_name);
 		free(var_name); var_name = 0;
 	}
@@ -486,27 +486,37 @@ ProcessXmlVariableNode(xmlTextReaderPtr reader, VariableBase::Type type)
 				cerr << "Error: could not get object name" << endl;
 				return false;
 			}
-//			cerr << "  object " << name_attr << endl;
+			// cerr << "  object " << name_attr << endl;
+			cur_object.push_back(string((char *)name_attr));
 		}
 		return true;
+		if (xmlTextReaderNodeType(reader) == 15)
+		{
+			cur_object.pop_back();
+		}
 	}
 	
-	if(xmlStrEqual(name, variable_token)) {
-		if(xmlTextReaderNodeType(reader) == 1) {
+	if (xmlStrEqual(name, variable_token))
+	{
+		if (xmlTextReaderNodeType(reader) == 1)
+		{
 			name_attr = xmlTextReaderGetAttribute(reader, name_token);
-// TODO: uncomment this code as the name of the variable should be an attribute
-//			if (name_attr == 0)
-//			{
-//				cerr << "Error: could not get variable name" << endl;
-//				return false;
-//			}
-// end of TODO:
+			if (name_attr == 0)
+			{
+				cerr << "Error: could not get variable name" << endl;
+				return false;
+			}
 			cur_var = new CurVariable();
-			// TODO: remove the following if, as the name must be an attribute of the variable
-			if (name_attr != 0)
-				cur_var->name << name_attr;
+			for ( std::vector<string>::const_iterator it = cur_object.begin();
+					it != cur_object.end();
+					it++)
+			{
+				cur_var->name << *it << ".";
+			}
+			cur_var->name << name_attr;
 		}
-		if(xmlTextReaderNodeType(reader) == 15) {
+		if (xmlTextReaderNodeType(reader) == 15)
+		{
 //			cerr << "    variable" << endl;
 //			cerr << "      type = " << cur_var->type.str() << endl;
 //			cerr << "      name = " << cur_var->name.str() << endl;
@@ -517,7 +527,8 @@ ProcessXmlVariableNode(xmlTextReaderPtr reader, VariableBase::Type type)
 				(type == VariableBase::VAR_PARAMETER && cur_var->type.str().compare("parameter") == 0) ||
 				(type == VariableBase::VAR_REGISTER && cur_var->type.str().compare("register") == 0) ||
 				(type == VariableBase::VAR_STATISTIC && cur_var->type.str().compare("statistic") == 0);
-			if(modify) {
+			if (modify)
+			{
 				simulator->SetVariable(cur_var->name.str().c_str(), cur_var->value.str().c_str());
 			}
 			delete cur_var;
