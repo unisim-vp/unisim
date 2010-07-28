@@ -434,9 +434,10 @@ const uint16_t DW_LANG_ObjC = 0x0010;
 const uint16_t DW_LANG_ObjC_plus_plus = 0x0011;
 const uint16_t DW_LANG_UPC = 0x0012;
 const uint16_t DW_LANG_D = 0x0013;
-
 const uint16_t DW_LANG_lo_user = 0x8000;
 const uint16_t DW_LANG_hi_user = 0xffff;
+const uint16_t DW_LANG_Mips_Assembler = 0x8001;
+const uint16_t DW_LANG_Upc = 0x8765;
 
 const uint8_t DW_ID_case_sensitive = 0x00;
 const uint8_t DW_ID_up_case = 0x01;
