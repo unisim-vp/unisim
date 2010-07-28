@@ -185,6 +185,7 @@ GIL_MAIN (int argc, char** argv, char** envp) {
     if( gil.depfilename ) {
       ofstream depfile( gil.depfilename );
       isa.deps( depfile, gil.outputprefix );
+      depfile.close();
     }
     
     if( not isa.sanity_checks() ) throw CLI::Exit_t( 1 );
