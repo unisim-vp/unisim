@@ -1394,6 +1394,7 @@ public:
 	int64_t Load(const uint8_t *rawdata, uint64_t max_size, uint64_t offset);
 	const DWARF_RangeListEntry<MEMORY_ADDR> *GetNext() const;
 	uint64_t GetOffset() const;
+	std::ostream& to_XML(std::ostream& os) const;
 	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_RangeListEntry<MEMORY_ADDR>& dw_range_list_entry);
 private:
 	friend class DWARF_Handler<MEMORY_ADDR>;
@@ -1419,6 +1420,7 @@ public:
 	uint64_t GetOffset() const;
 	const DWARF_MacInfoListEntry<MEMORY_ADDR> *GetNext() const;
 	virtual std::string to_string() const = 0;
+	virtual std::ostream& to_XML(std::ostream& os) const = 0;
 	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_MacInfoListEntry<MEMORY_ADDR>& dw_macinfo_list_entry);
 protected:
 	friend class DWARF_Handler<MEMORY_ADDR>;
@@ -1438,6 +1440,7 @@ public:
 	const DWARF_LEB128& GetLineNo() const;
 	const char *GetPreprocessorSymbolName() const;
 	virtual std::string to_string() const;
+	virtual std::ostream& to_XML(std::ostream& os) const;
 private:
 	DWARF_LEB128 lineno;
 	const char *preprocessor_symbol_name;
@@ -1453,6 +1456,7 @@ public:
 	const DWARF_LEB128& GetLineNo() const;
 	const char *GetPreprocessorSymbolName() const;
 	virtual std::string to_string() const;
+	virtual std::ostream& to_XML(std::ostream& os) const;
 private:
 	DWARF_LEB128 lineno;
 	const char *preprocessor_symbol_name;
@@ -1468,6 +1472,7 @@ public:
 	const DWARF_LEB128& GetLineNo() const;
 	const DWARF_LEB128& GetFileIndex() const;
 	virtual std::string to_string() const;
+	virtual std::ostream& to_XML(std::ostream& os) const;
 private:
 	DWARF_LEB128 lineno;
 	DWARF_LEB128 file_idx;
@@ -1481,6 +1486,7 @@ public:
 	virtual ~DWARF_MacInfoListEntryEndFile();
 	virtual int64_t Load(const uint8_t *rawdata, uint64_t max_size, uint64_t offset);
 	virtual std::string to_string() const;
+	virtual std::ostream& to_XML(std::ostream& os) const;
 };
 
 template <class MEMORY_ADDR>
@@ -1493,6 +1499,7 @@ public:
 	const DWARF_LEB128& GetConstant() const;
 	const char *GetString() const;
 	virtual std::string to_string() const;
+	virtual std::ostream& to_XML(std::ostream& os) const;
 private:
 	DWARF_LEB128 vendor_ext_constant;
 	const char *vendor_ext_string;
@@ -1506,6 +1513,7 @@ public:
 	virtual ~DWARF_MacInfoListEntryNull();
 	virtual int64_t Load(const uint8_t *rawdata, uint64_t max_size, uint64_t offset);
 	virtual std::string to_string() const;
+	virtual std::ostream& to_XML(std::ostream& os) const;
 };
 
 template <class MEMORY_ADDR>
@@ -1638,6 +1646,7 @@ public:
 	uint64_t GetOffset() const;
 	const DWARF_LocListEntry<MEMORY_ADDR> *GetNext() const;
 	int64_t Load(const uint8_t *rawdata, uint64_t max_size, uint64_t offset);
+	std::ostream& to_XML(std::ostream& os) const;
 	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_LocListEntry<MEMORY_ADDR>& dw_loc_list_entry);
 private:
 	friend class DWARF_Handler<MEMORY_ADDR>;
@@ -1657,7 +1666,8 @@ public:
 	~DWARF_Handler();
 	void Handle(const char *section_name, uint8_t *section, uint64_t section_size);
 	void Initialize();
-
+	void to_XML(std::ostream& os);
+	
 	void Register(DWARF_StatementProgram<MEMORY_ADDR> *dw_stmt_prog);
 	void Register(DWARF_DIE<MEMORY_ADDR> *dw_die);
 	void Register(DWARF_RangeListEntry<MEMORY_ADDR> *dw_range_list_entry);

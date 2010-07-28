@@ -43,6 +43,6 @@ echo "</entry>" >> ${DEST_DIR}/puscomp_config.xml
 echo "</repositories>" >> ${DEST_DIR}/puscomp_config.xml
 
 cd ${MY_DIR}/puscomp
-python3 ./puscomp.py -c ${DEST_DIR}/puscomp_config.xml -o ${DEST_DIR} unisim_simulator::tlm2::armemu
+python3 ./puscomp.py --link -c ${DEST_DIR}/puscomp_config.xml -o ${DEST_DIR} unisim_simulator::tlm2::armemu
 
 rm -f ${DEST_DIR}/puscomp_config.xml
