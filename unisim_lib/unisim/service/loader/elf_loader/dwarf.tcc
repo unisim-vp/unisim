@@ -691,6 +691,12 @@ const char *DWARF_AttributeValue<MEMORY_ADDR>::GetClassName() const
 }
 
 template <class MEMORY_ADDR>
+uint64_t DWARF_AttributeValue<MEMORY_ADDR>::to_int() const
+{
+	return 0;
+}
+
+template <class MEMORY_ADDR>
 void DWARF_AttributeValue<MEMORY_ADDR>::Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler)
 {
 }
@@ -766,6 +772,12 @@ std::string DWARF_UnsignedConstant<MEMORY_ADDR>::to_string() const
 }
 
 template <class MEMORY_ADDR>
+uint64_t DWARF_UnsignedConstant<MEMORY_ADDR>::to_int() const
+{
+	return value;
+}
+
+template <class MEMORY_ADDR>
 DWARF_SignedConstant<MEMORY_ADDR>::DWARF_SignedConstant(int64_t _value)
 	: DWARF_AttributeValue<MEMORY_ADDR>(DW_CLASS_SIGNED_CONSTANT)
 	, value(_value)
@@ -791,6 +803,11 @@ std::string DWARF_SignedConstant<MEMORY_ADDR>::to_string() const
 	return std::string(sstr.str());
 }
 
+template <class MEMORY_ADDR>
+uint64_t DWARF_SignedConstant<MEMORY_ADDR>::to_int() const
+{
+	return (uint64_t) value;
+}
 
 template <class MEMORY_ADDR>
 DWARF_UnsignedLEB128Constant<MEMORY_ADDR>::DWARF_UnsignedLEB128Constant(const DWARF_LEB128& leb128)
@@ -814,6 +831,12 @@ template <class MEMORY_ADDR>
 std::string DWARF_UnsignedLEB128Constant<MEMORY_ADDR>::to_string() const
 {
 	return value.to_string(false);
+}
+
+template <class MEMORY_ADDR>
+uint64_t DWARF_UnsignedLEB128Constant<MEMORY_ADDR>::to_int() const
+{
+	return (uint64_t) value;
 }
 
 template <class MEMORY_ADDR>
@@ -841,6 +864,12 @@ std::string DWARF_SignedLEB128Constant<MEMORY_ADDR>::to_string() const
 }
 
 template <class MEMORY_ADDR>
+uint64_t DWARF_SignedLEB128Constant<MEMORY_ADDR>::to_int() const
+{
+	return (uint64_t) (int64_t) value;
+}
+
+template <class MEMORY_ADDR>
 DWARF_Flag<MEMORY_ADDR>::DWARF_Flag(bool _value)
 	: DWARF_AttributeValue<MEMORY_ADDR>(DW_CLASS_FLAG)
 	, value(_value)
@@ -862,6 +891,12 @@ template <class MEMORY_ADDR>
 std::string DWARF_Flag<MEMORY_ADDR>::to_string() const
 {
 	return value ? std::string("1") : std::string("0");
+}
+
+template <class MEMORY_ADDR>
+uint64_t DWARF_Flag<MEMORY_ADDR>::to_int() const
+{
+	return value ? 1 : 0;
 }
 
 template <class MEMORY_ADDR>
@@ -930,6 +965,12 @@ std::string DWARF_Address<MEMORY_ADDR>::to_string() const
 }
 
 template <class MEMORY_ADDR>
+uint64_t DWARF_Address<MEMORY_ADDR>::to_int() const
+{
+	return (uint64_t) value;
+}
+
+template <class MEMORY_ADDR>
 DWARF_Reference<MEMORY_ADDR>::DWARF_Reference(uint64_t _debug_info_offset)
 	: DWARF_AttributeValue<MEMORY_ADDR>(DW_CLASS_REFERENCE)
 	, debug_info_offset(_debug_info_offset)
@@ -946,6 +987,12 @@ template <class MEMORY_ADDR>
 const DWARF_DIE<MEMORY_ADDR> *DWARF_Reference<MEMORY_ADDR>::GetValue() const
 {
 	return dw_die;
+}
+
+template <class MEMORY_ADDR>
+uint64_t DWARF_Reference<MEMORY_ADDR>::GetDebugInfoOffset() const
+{
+	return debug_info_offset;
 }
 
 template <class MEMORY_ADDR>
@@ -986,6 +1033,12 @@ const DWARF_StatementProgram<MEMORY_ADDR> *DWARF_LinePtr<MEMORY_ADDR>::GetValue(
 }
 
 template <class MEMORY_ADDR>
+uint64_t DWARF_LinePtr<MEMORY_ADDR>::GetDebugLineOffset() const
+{
+	return debug_line_offset;
+}
+
+template <class MEMORY_ADDR>
 std::string DWARF_LinePtr<MEMORY_ADDR>::to_string() const
 {
 	std::stringstream sstr;
@@ -1020,6 +1073,12 @@ const DWARF_LocListEntry<MEMORY_ADDR> *DWARF_LocListPtr<MEMORY_ADDR>::GetValue()
 }
 
 template <class MEMORY_ADDR>
+uint64_t DWARF_LocListPtr<MEMORY_ADDR>::GetDebugLocOffset() const
+{
+	return debug_loc_offset;
+}
+
+template <class MEMORY_ADDR>
 std::string DWARF_LocListPtr<MEMORY_ADDR>::to_string() const
 {
 	std::stringstream sstr;
@@ -1032,9 +1091,9 @@ std::string DWARF_LocListPtr<MEMORY_ADDR>::to_string() const
 		{
 			if(dw_current_loc_list_entry != dw_loc_list_entry) sstr << ";";
 			sstr << *dw_current_loc_list_entry;
-			dw_current_loc_list_entry = dw_current_loc_list_entry->GetNext();
+			if(dw_current_loc_list_entry->IsEndOfList()) break;
 		}
-		while(dw_current_loc_list_entry && !dw_current_loc_list_entry->IsEndOfList());
+		while(dw_current_loc_list_entry = dw_current_loc_list_entry->GetNext());
 	}
 	else
 	{
@@ -1071,6 +1130,12 @@ template <class MEMORY_ADDR>
 const DWARF_MacInfoListEntry<MEMORY_ADDR> *DWARF_MacPtr<MEMORY_ADDR>::GetValue() const
 {
 	return dw_macinfo_list_entry;
+}
+
+template <class MEMORY_ADDR>
+uint64_t DWARF_MacPtr<MEMORY_ADDR>::GetDebugMacInfoOffset() const
+{
+	return debug_macinfo_offset;
 }
 
 template <class MEMORY_ADDR>
@@ -1129,6 +1194,12 @@ const DWARF_RangeListEntry<MEMORY_ADDR> *DWARF_RangeListPtr<MEMORY_ADDR>::GetVal
 }
 
 template <class MEMORY_ADDR>
+uint64_t DWARF_RangeListPtr<MEMORY_ADDR>::GetDebugRangesOffset() const
+{
+	return debug_ranges_offset;
+}
+
+template <class MEMORY_ADDR>
 std::string DWARF_RangeListPtr<MEMORY_ADDR>::to_string() const
 {
 	std::stringstream sstr;
@@ -1141,9 +1212,9 @@ std::string DWARF_RangeListPtr<MEMORY_ADDR>::to_string() const
 		{
 			if(dw_current_range_list_entry != dw_range_list_entry) sstr << ";";
 			sstr << *dw_current_range_list_entry;
-			dw_current_range_list_entry = dw_current_range_list_entry->GetNext();
+			if(dw_current_range_list_entry->IsEndOfList()) break;
 		}
-		while(dw_current_range_list_entry && (!dw_current_range_list_entry->IsEndOfList()));
+		while(dw_current_range_list_entry = dw_current_range_list_entry->GetNext());
 	}
 	else
 	{
@@ -1222,8 +1293,9 @@ std::string DWARF_Expression<MEMORY_ADDR>::to_string() const
 }
 
 template <class MEMORY_ADDR>
-DWARF_Attribute<MEMORY_ADDR>::DWARF_Attribute(DWARF_AbbrevAttribute *_dw_abbrev_attribute, DWARF_AttributeValue<MEMORY_ADDR> *_dw_value)
-	: dw_abbrev_attribute(_dw_abbrev_attribute)
+DWARF_Attribute<MEMORY_ADDR>::DWARF_Attribute(const DWARF_DIE<MEMORY_ADDR> *_dw_die, DWARF_AbbrevAttribute *_dw_abbrev_attribute, DWARF_AttributeValue<MEMORY_ADDR> *_dw_value)
+	: dw_die(_dw_die)
+	, dw_abbrev_attribute(_dw_abbrev_attribute)
 	, dw_value(_dw_value)
 {
 }
@@ -1252,13 +1324,158 @@ const DWARF_AttributeValue<MEMORY_ADDR> *DWARF_Attribute<MEMORY_ADDR>::GetValue(
 template <class MEMORY_ADDR>
 void DWARF_Attribute<MEMORY_ADDR>::Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler)
 {
+	uint16_t dw_tag = (uint16_t) dw_abbrev_attribute->GetTag();
+	unsigned int dw_class = dw_value->GetClass();
+	
+	uint64_t ref;
+	
+	switch(dw_class)
+	{
+		case DW_CLASS_LINEPTR:
+			ref = ((DWARF_LinePtr<MEMORY_ADDR> *) dw_value)->GetDebugLineOffset();
+			break;
+		case DW_CLASS_LOCLISTPTR:
+			ref = ((DWARF_LocListPtr<MEMORY_ADDR> *) dw_value)->GetDebugLocOffset();
+			break;
+		case DW_CLASS_MACPTR:
+			ref = ((DWARF_MacPtr<MEMORY_ADDR> *) dw_value)->GetDebugMacInfoOffset();
+			break;
+		case DW_CLASS_RANGELISTPTR:
+			ref = ((DWARF_RangeListPtr<MEMORY_ADDR> *) dw_value)->GetDebugRangesOffset();
+			break;
+		case DW_CLASS_REFERENCE:
+			ref = ((DWARF_Reference<MEMORY_ADDR> *) dw_value)->GetDebugInfoOffset();
+			break;
+		default:
+			return;
+	}
+	
+	const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu = dw_die->GetCompilationUnit();
+	
+	switch(dw_tag)
+	{
+		case DW_AT_sibling:
+		case DW_AT_byte_size:
+		case DW_AT_bit_offset:
+		case DW_AT_bit_size:
+		case DW_AT_discr:
+		case DW_AT_import:
+		case DW_AT_common_reference:
+		case DW_AT_containing_type:
+		case DW_AT_default_value:
+		case DW_AT_lower_bound:
+		case DW_AT_upper_bound:
+		case DW_AT_abstract_origin:
+		case DW_AT_base_types:
+		case DW_AT_count:
+		case DW_AT_friend:
+		case DW_AT_priority:
+		case DW_AT_specification:
+		case DW_AT_type:
+		case DW_AT_allocated:
+		case DW_AT_associated:
+		case DW_AT_byte_stride:
+		case DW_AT_extension:
+		case DW_AT_trampoline:
+		case DW_AT_small:
+		case DW_AT_object_pointer:
+			delete dw_value;
+			dw_value = new DWARF_Reference<MEMORY_ADDR>(ref);
+			break;
+		case DW_AT_location:
+		case DW_AT_string_length:
+		case DW_AT_return_addr:
+		case DW_AT_data_member_location:
+		case DW_AT_frame_base:
+		case DW_AT_segment:
+		case DW_AT_static_link:
+		case DW_AT_use_location:
+		case DW_AT_vtable_elem_location:
+			delete dw_value;
+			dw_value = new DWARF_LocListPtr<MEMORY_ADDR>(dw_cu, ref);
+			break;
+		case DW_AT_stmt_list:
+			delete dw_value;
+			dw_value = new DWARF_LinePtr<MEMORY_ADDR>(ref);
+			break;
+		case DW_AT_macro_info:
+			delete dw_value;
+			dw_value = new DWARF_MacPtr<MEMORY_ADDR>(ref);
+			break;
+		case DW_AT_ranges:
+			delete dw_value;
+			dw_value = new DWARF_RangeListPtr<MEMORY_ADDR>(dw_cu, ref);
+			break;
+	}
+
 	dw_value->Fix(dw_handler);
 }
 
 template <class MEMORY_ADDR>
 std::ostream& operator << (std::ostream& os, const DWARF_Attribute<MEMORY_ADDR>& dw_attribute)
 {
-	os << dw_attribute.dw_abbrev_attribute->GetName() << ": " << dw_attribute.dw_value->to_string();
+	os << dw_attribute.dw_abbrev_attribute->GetName() << ": ";
+	
+	unsigned int dw_class = dw_attribute.dw_value->GetClass();
+	switch(dw_class)
+	{
+		case DW_CLASS_UNSIGNED_CONSTANT:
+		case DW_CLASS_SIGNED_CONSTANT:
+		case DW_CLASS_UNSIGNED_LEB128_CONSTANT:
+		case DW_CLASS_SIGNED_LEB128_CONSTANT:
+			{
+				uint64_t int_value = dw_attribute.dw_value->to_int();
+				uint16_t dw_at = (uint16_t) dw_attribute.dw_abbrev_attribute->GetTag();
+				
+				switch(dw_at)
+				{
+					case DW_AT_encoding:
+						os << DWARF_GetATEName(int_value);
+						break;
+					case DW_AT_language:
+						os << DWARF_GetLANGName(int_value);
+						break;
+					case DW_AT_virtuality:
+						os << DWARF_GetVIRTUALITYName(int_value);
+						break;
+					case DW_AT_visibility:
+						os << DWARF_GetVISName(int_value);
+						break;
+					case DW_AT_accessibility:
+						os << DWARF_GetACCESSName(int_value);
+						break;
+					case DW_AT_endianity:
+						os << DWARF_GetENDName(int_value);
+						break;
+					case DW_AT_decimal_sign:
+						os << DWARF_GetDSName(int_value);
+						break;
+					case DW_AT_identifier_case:
+						os << DWARF_GetIDName(int_value);
+						break;
+					case DW_AT_calling_convention:
+						os << DWARF_GetCCName(int_value);
+						break;
+					case DW_AT_inline:
+						os << DWARF_GetINLName(int_value);
+						break;
+					case DW_AT_ordering:
+						os << DWARF_GetORDName(int_value);
+						break;
+					case DW_AT_discr_list:
+						os << DWARF_GetDSCName(int_value);
+						break;
+					default:
+						os << dw_attribute.dw_value->to_string();
+						break;
+				}
+			}
+			break;
+		default:
+			os << dw_attribute.dw_value->to_string();
+			break;
+	}
+	
 	return os;
 }
 
@@ -1270,7 +1487,66 @@ std::ostream& DWARF_Attribute<MEMORY_ADDR>::to_XML(std::ostream& os)
 	os << "\" class=\"";
 	c_string_to_XML(os, dw_value->GetClassName());
 	os << "\" value=\"";
-	c_string_to_XML(os, dw_value->to_string().c_str());
+
+	unsigned int dw_class = dw_value->GetClass();
+	switch(dw_class)
+	{
+		case DW_CLASS_UNSIGNED_CONSTANT:
+		case DW_CLASS_SIGNED_CONSTANT:
+		case DW_CLASS_UNSIGNED_LEB128_CONSTANT:
+		case DW_CLASS_SIGNED_LEB128_CONSTANT:
+			{
+				uint64_t int_value = dw_value->to_int();
+				uint16_t dw_at = (uint16_t) dw_abbrev_attribute->GetTag();
+				
+				switch(dw_at)
+				{
+					case DW_AT_encoding:
+						c_string_to_XML(os, DWARF_GetATEName(int_value));
+						break;
+					case DW_AT_language:
+						c_string_to_XML(os, DWARF_GetLANGName(int_value));
+						break;
+					case DW_AT_virtuality:
+						c_string_to_XML(os, DWARF_GetVIRTUALITYName(int_value));
+						break;
+					case DW_AT_visibility:
+						c_string_to_XML(os, DWARF_GetVISName(int_value));
+						break;
+					case DW_AT_accessibility:
+						c_string_to_XML(os, DWARF_GetACCESSName(int_value));
+						break;
+					case DW_AT_endianity:
+						c_string_to_XML(os, DWARF_GetENDName(int_value));
+						break;
+					case DW_AT_decimal_sign:
+						c_string_to_XML(os, DWARF_GetDSName(int_value));
+						break;
+					case DW_AT_identifier_case:
+						c_string_to_XML(os, DWARF_GetIDName(int_value));
+						break;
+					case DW_AT_calling_convention:
+						c_string_to_XML(os, DWARF_GetCCName(int_value));
+						break;
+					case DW_AT_inline:
+						c_string_to_XML(os, DWARF_GetINLName(int_value));
+						break;
+					case DW_AT_ordering:
+						c_string_to_XML(os, DWARF_GetORDName(int_value));
+						break;
+					case DW_AT_discr_list:
+						c_string_to_XML(os, DWARF_GetDSCName(int_value));
+						break;
+					default:
+						c_string_to_XML(os, dw_value->to_string().c_str());
+						break;
+				}
+			}
+			break;
+		default:
+			c_string_to_XML(os, dw_value->to_string().c_str());
+			break;
+	}
 	os << "\"/>";
 	return os;
 }
@@ -1488,7 +1764,7 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 					}
 					
 					DWARF_Address<MEMORY_ADDR> *dw_address = new DWARF_Address<MEMORY_ADDR>(addr);
-					dw_attribute = new DWARF_Attribute<MEMORY_ADDR>(dw_abbrev_attribute, dw_address);
+					dw_attribute = new DWARF_Attribute<MEMORY_ADDR>(this, dw_abbrev_attribute, dw_address);
 				}
 				break;
 			case DW_FORM_block2:
@@ -1536,7 +1812,7 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 					rawdata += block_length;
 					size += block_length;
 					max_size -= block_length;
-					dw_attribute = new DWARF_Attribute<MEMORY_ADDR>(dw_abbrev_attribute, dw_value);
+					dw_attribute = new DWARF_Attribute<MEMORY_ADDR>(this, dw_abbrev_attribute, dw_value);
 				}
 				break;
 			case DW_FORM_block4:
@@ -1584,7 +1860,7 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 					rawdata += block_length;
 					size += block_length;
 					max_size -= block_length;
-					dw_attribute = new DWARF_Attribute<MEMORY_ADDR>(dw_abbrev_attribute, dw_value);
+					dw_attribute = new DWARF_Attribute<MEMORY_ADDR>(this, dw_abbrev_attribute, dw_value);
 				}
 				break;
 			case DW_FORM_data2:
@@ -1597,7 +1873,7 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 					rawdata += sizeof(uint16_t);
 					max_size -= sizeof(uint16_t);
 					DWARF_UnsignedConstant<MEMORY_ADDR> *dw_const = new DWARF_UnsignedConstant<MEMORY_ADDR>((uint64_t) value);
-					dw_attribute = new DWARF_Attribute<MEMORY_ADDR>(dw_abbrev_attribute, dw_const);
+					dw_attribute = new DWARF_Attribute<MEMORY_ADDR>(this, dw_abbrev_attribute, dw_const);
 				}
 				break;
 			case DW_FORM_data4:
@@ -1638,7 +1914,7 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 							dw_value = new DWARF_UnsignedConstant<MEMORY_ADDR>((uint64_t) value);
 							break;
 					}
-					dw_attribute = new DWARF_Attribute<MEMORY_ADDR>(dw_abbrev_attribute, dw_value);
+					dw_attribute = new DWARF_Attribute<MEMORY_ADDR>(this, dw_abbrev_attribute, dw_value);
 				}
 				break;
 			case DW_FORM_data8:
@@ -1679,7 +1955,7 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 							dw_value = new DWARF_UnsignedConstant<MEMORY_ADDR>((uint64_t) value);
 							break;
 					}
-					dw_attribute = new DWARF_Attribute<MEMORY_ADDR>(dw_abbrev_attribute, dw_value);
+					dw_attribute = new DWARF_Attribute<MEMORY_ADDR>(this, dw_abbrev_attribute, dw_value);
 				}
 				break;
 			case DW_FORM_string:
@@ -1691,7 +1967,7 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 					rawdata += string_length + 1;
 					max_size -= string_length + 1;
 					DWARF_String<MEMORY_ADDR> *dw_string = new DWARF_String<MEMORY_ADDR>(c_string);
-					dw_attribute = new DWARF_Attribute<MEMORY_ADDR>(dw_abbrev_attribute, dw_string);
+					dw_attribute = new DWARF_Attribute<MEMORY_ADDR>(this, dw_abbrev_attribute, dw_string);
 				}
 				break;
 			case DW_FORM_block:
@@ -1740,7 +2016,7 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 					rawdata += block_length;
 					size += block_length;
 					max_size -= block_length;
-					dw_attribute = new DWARF_Attribute<MEMORY_ADDR>(dw_abbrev_attribute, dw_value);
+					dw_attribute = new DWARF_Attribute<MEMORY_ADDR>(this, dw_abbrev_attribute, dw_value);
 				}
 				break;
 			case DW_FORM_block1:
@@ -1789,7 +2065,7 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 					rawdata += block_length;
 					size += block_length;
 					max_size -= block_length;
-					dw_attribute = new DWARF_Attribute<MEMORY_ADDR>(dw_abbrev_attribute, dw_value);
+					dw_attribute = new DWARF_Attribute<MEMORY_ADDR>(this, dw_abbrev_attribute, dw_value);
 				}
 				break;
 			case DW_FORM_data1:
@@ -1802,7 +2078,7 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 					rawdata += sizeof(uint8_t);
 					max_size -= sizeof(uint8_t);
 					DWARF_UnsignedConstant<MEMORY_ADDR> *dw_const = new DWARF_UnsignedConstant<MEMORY_ADDR>((uint64_t) value);
-					dw_attribute = new DWARF_Attribute<MEMORY_ADDR>(dw_abbrev_attribute, dw_const);
+					dw_attribute = new DWARF_Attribute<MEMORY_ADDR>(this, dw_abbrev_attribute, dw_const);
 				}
 				break;
 			case DW_FORM_flag:
@@ -1815,7 +2091,7 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 					max_size -= sizeof(uint8_t);
 					
 					DWARF_Flag<MEMORY_ADDR> *dw_flag = new DWARF_Flag<MEMORY_ADDR>(value ? true : false);
-					dw_attribute = new DWARF_Attribute<MEMORY_ADDR>(dw_abbrev_attribute, dw_flag);
+					dw_attribute = new DWARF_Attribute<MEMORY_ADDR>(this, dw_abbrev_attribute, dw_flag);
 				}
 				break;
 			case DW_FORM_sdata:
@@ -1828,7 +2104,7 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 					max_size -= sz;
 					
 					DWARF_SignedLEB128Constant<MEMORY_ADDR> *dw_const = new DWARF_SignedLEB128Constant<MEMORY_ADDR>(leb128);
-					dw_attribute = new DWARF_Attribute<MEMORY_ADDR>(dw_abbrev_attribute, dw_const);
+					dw_attribute = new DWARF_Attribute<MEMORY_ADDR>(this, dw_abbrev_attribute, dw_const);
 				}
 				break;
 			case DW_FORM_strp:
@@ -1881,7 +2157,7 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 					const char *c_str = dw_cu->GetString(debug_str_offset);
 					if(!c_str) return -1;
 					DWARF_String<MEMORY_ADDR> *dw_string = new DWARF_String<MEMORY_ADDR>(c_str);
-					dw_attribute = new DWARF_Attribute<MEMORY_ADDR>(dw_abbrev_attribute, dw_string);
+					dw_attribute = new DWARF_Attribute<MEMORY_ADDR>(this, dw_abbrev_attribute, dw_string);
 				}
 				break;
 			case DW_FORM_udata:
@@ -1894,7 +2170,7 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 					max_size -= sz;
 					
 					DWARF_UnsignedLEB128Constant<MEMORY_ADDR> *dw_const = new DWARF_UnsignedLEB128Constant<MEMORY_ADDR>(leb128);
-					dw_attribute = new DWARF_Attribute<MEMORY_ADDR>(dw_abbrev_attribute, dw_const);
+					dw_attribute = new DWARF_Attribute<MEMORY_ADDR>(this, dw_abbrev_attribute, dw_const);
 				}
 				break;
 			case DW_FORM_ref_addr:
@@ -1945,7 +2221,7 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 							return -1;
 					}
 					DWARF_Reference<MEMORY_ADDR> *dw_ref = new DWARF_Reference<MEMORY_ADDR>(debug_info_offset);
-					dw_attribute = new DWARF_Attribute<MEMORY_ADDR>(dw_abbrev_attribute, dw_ref);
+					dw_attribute = new DWARF_Attribute<MEMORY_ADDR>(this, dw_abbrev_attribute, dw_ref);
 				}
 				break;
 			case DW_FORM_ref1:
@@ -1960,7 +2236,7 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 					size += sizeof(debug_info_offset);
 
 					DWARF_Reference<MEMORY_ADDR> *dw_ref = new DWARF_Reference<MEMORY_ADDR>(dw_cu->GetOffset() + (uint64_t) debug_info_offset);
-					dw_attribute = new DWARF_Attribute<MEMORY_ADDR>(dw_abbrev_attribute, dw_ref);
+					dw_attribute = new DWARF_Attribute<MEMORY_ADDR>(this, dw_abbrev_attribute, dw_ref);
 				}
 				break;
 			case DW_FORM_ref2:
@@ -1975,7 +2251,7 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 					size += sizeof(debug_info_offset);
 
 					DWARF_Reference<MEMORY_ADDR> *dw_ref = new DWARF_Reference<MEMORY_ADDR>(dw_cu->GetOffset() + (uint64_t) debug_info_offset);
-					dw_attribute = new DWARF_Attribute<MEMORY_ADDR>(dw_abbrev_attribute, dw_ref);
+					dw_attribute = new DWARF_Attribute<MEMORY_ADDR>(this, dw_abbrev_attribute, dw_ref);
 				}
 				break;
 			case DW_FORM_ref4:
@@ -1990,7 +2266,7 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 					size += sizeof(debug_info_offset);
 
 					DWARF_Reference<MEMORY_ADDR> *dw_ref = new DWARF_Reference<MEMORY_ADDR>(dw_cu->GetOffset() + (uint64_t) debug_info_offset);
-					dw_attribute = new DWARF_Attribute<MEMORY_ADDR>(dw_abbrev_attribute, dw_ref);
+					dw_attribute = new DWARF_Attribute<MEMORY_ADDR>(this, dw_abbrev_attribute, dw_ref);
 				}
 				break;
 			case DW_FORM_ref8:
@@ -2005,7 +2281,7 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 					size += sizeof(debug_info_offset);
 
 					DWARF_Reference<MEMORY_ADDR> *dw_ref = new DWARF_Reference<MEMORY_ADDR>(dw_cu->GetOffset() + debug_info_offset);
-					dw_attribute = new DWARF_Attribute<MEMORY_ADDR>(dw_abbrev_attribute, dw_ref);
+					dw_attribute = new DWARF_Attribute<MEMORY_ADDR>(this, dw_abbrev_attribute, dw_ref);
 				}
 				break;
 			case DW_FORM_ref_udata:
@@ -2018,7 +2294,7 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 					max_size -= sz;
 
 					DWARF_Reference<MEMORY_ADDR> *dw_ref = new DWARF_Reference<MEMORY_ADDR>(dw_cu->GetOffset() + (uint64_t) debug_info_offset);
-					dw_attribute = new DWARF_Attribute<MEMORY_ADDR>(dw_abbrev_attribute, dw_ref);
+					dw_attribute = new DWARF_Attribute<MEMORY_ADDR>(this, dw_abbrev_attribute, dw_ref);
 				}
 				break;
 			default:
@@ -2069,6 +2345,7 @@ void DWARF_DIE<MEMORY_ADDR>::Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler)
 {
 	unsigned int num_attributes = attributes.size();
 	unsigned int i;
+
 	for(i = 0; i < num_attributes; i++)
 	{
 		attributes[i]->Fix(dw_handler);
@@ -5702,7 +5979,7 @@ void DWARF_Handler<MEMORY_ADDR>::Initialize()
 		dw_prev_loc_list_entry = dw_loc_list_entry;
 	}
 
-#if 0
+#if 1
 	{
 		std::ofstream f;
 		unsigned int num_cus = dw_cus.size();

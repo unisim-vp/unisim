@@ -191,6 +191,7 @@ const uint16_t DW_AT_explicit             = 0x63; // DWARF3
 const uint16_t DW_AT_object_pointer       = 0x64; // DWARF3
 const uint16_t DW_AT_endianity            = 0x65; // DWARF3
 const uint16_t DW_AT_elemental            = 0x66; // DWARF3
+const uint16_t DW_AT_pure                 = 0x67; // DWARF3
 const uint16_t DW_AT_recursive            = 0x68; // DWARF3
 const uint16_t DW_AT_lo_user              = 0x2000;
 const uint16_t DW_AT_hi_user              = 0x3fff;
@@ -372,16 +373,35 @@ const uint8_t DW_OP_bit_piece = 0x9d;
 const uint8_t DW_OP_lo_user = 0xe0;
 const uint8_t DW_OP_hi_user = 0xff;
 
-const uint8_t DW_ATE_address = 0x01;
-const uint8_t DW_ATE_boolean = 0x02;
-const uint8_t DW_ATE_complex_float = 0x03;
-const uint8_t DW_ATE_float = 0x04;
-const uint8_t DW_ATE_signed = 0x05;
-const uint8_t DW_ATE_signed_char = 0x06;
-const uint8_t DW_ATE_unsigned = 0x07;
-const uint8_t DW_ATE_unsigned_char = 0x08;
+const uint8_t DW_ATE_address = 0x01;          // DWARF v2
+const uint8_t DW_ATE_boolean = 0x02;          // DWARF v2
+const uint8_t DW_ATE_complex_float = 0x03;    // DWARF v2
+const uint8_t DW_ATE_float = 0x04;            // DWARF v2
+const uint8_t DW_ATE_signed = 0x05;           // DWARF v2
+const uint8_t DW_ATE_signed_char = 0x06;      // DWARF v2
+const uint8_t DW_ATE_unsigned = 0x07;         // DWARF v2
+const uint8_t DW_ATE_unsigned_char = 0x08;    // DWARF v2
+const uint8_t DW_ATE_imaginary_float = 0x09;  // DWARF v3
+const uint8_t DW_ATE_packed_decimal = 0x0a;   // DWARF v3
+const uint8_t DW_ATE_numeric_string = 0x0b;   // DWARF v3
+const uint8_t DW_ATE_edited = 0x0c;           // DWARF v3
+const uint8_t DW_ATE_signed_fixed = 0x0d;     // DWARF v3
+const uint8_t DW_ATE_unsigned_fixed = 0x0e;   // DWARF v3
+const uint8_t DW_ATE_decimal_float = 0x0f;    // DWARF v3
 const uint8_t DW_ATE_lo_user = 0x80;
 const uint8_t DW_ATE_hi_user = 0xff;
+
+const uint8_t DW_DS_unsigned = 0x01;           // DWARF v3
+const uint8_t DW_DS_leading_overpunch = 0x02;  // DWARF v3
+const uint8_t DW_DS_trailing_overpunch = 0x03; // DWARF v3
+const uint8_t DW_DS_leading_separate = 0x04;   // DWARF v3
+const uint8_t DW_DS_trailing_separate = 0x05;  // DWARF v3
+
+const uint8_t DW_END_default = 0x00;
+const uint8_t DW_END_big = 0x01;
+const uint8_t DW_END_little = 0x02;
+const uint8_t DW_END_lo_user = 0x40;
+const uint8_t DW_END_hi_user = 0xff;
 
 const uint8_t DW_ACCESS_public = 0x01;
 const uint8_t DW_ACCESS_protected = 0x02;
@@ -405,6 +425,16 @@ const uint16_t DW_LANG_Fortran77 = 0x0007;
 const uint16_t DW_LANG_Fortran90 = 0x0008;
 const uint16_t DW_LANG_Pascal83 = 0x0009;
 const uint16_t DW_LANG_Modula2 = 0x000a;
+const uint16_t DW_LANG_Java = 0x000b;
+const uint16_t DW_LANG_C99 = 0x000c;
+const uint16_t DW_LANG_Ada95 = 0x000d;
+const uint16_t DW_LANG_Fortran95 = 0x000e;
+const uint16_t DW_LANG_PLI = 0x000f;
+const uint16_t DW_LANG_ObjC = 0x0010;
+const uint16_t DW_LANG_ObjC_plus_plus = 0x0011;
+const uint16_t DW_LANG_UPC = 0x0012;
+const uint16_t DW_LANG_D = 0x0013;
+
 const uint16_t DW_LANG_lo_user = 0x8000;
 const uint16_t DW_LANG_hi_user = 0xffff;
 
@@ -719,6 +749,7 @@ public:
 	unsigned int GetClass() const;
 	const char *GetClassName() const;
 	virtual std::string to_string() const = 0;
+	virtual uint64_t to_int() const;
 	virtual void Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler);
 	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_AttributeValue& dw_value);
 private:
@@ -733,6 +764,7 @@ public:
 	~DWARF_Address();
 	MEMORY_ADDR GetValue() const;
 	virtual std::string to_string() const;
+	virtual uint64_t to_int() const;
 private:
 	MEMORY_ADDR value;
 };
@@ -759,6 +791,7 @@ public:
 	~DWARF_UnsignedConstant();
 	uint64_t GetValue() const;
 	virtual std::string to_string() const;
+	virtual uint64_t to_int() const;
 private:
 	uint64_t value;
 };
@@ -771,6 +804,7 @@ public:
 	~DWARF_SignedConstant();
 	int64_t GetValue() const;
 	virtual std::string to_string() const;
+	virtual uint64_t to_int() const;
 private:
 	int64_t value;
 };
@@ -783,6 +817,7 @@ public:
 	~DWARF_UnsignedLEB128Constant();
 	const DWARF_LEB128& GetValue() const;
 	virtual std::string to_string() const;
+	virtual uint64_t to_int() const;
 private:
 	DWARF_LEB128 value;
 };
@@ -795,6 +830,7 @@ public:
 	~DWARF_SignedLEB128Constant();
 	const DWARF_LEB128& GetValue() const;
 	virtual std::string to_string() const;
+	virtual uint64_t to_int() const;
 private:
 	DWARF_LEB128 value;
 };
@@ -807,6 +843,7 @@ public:
 	~DWARF_Flag();
 	bool GetValue() const;
 	virtual std::string to_string() const;
+	virtual uint64_t to_int() const;
 private:
 	bool value;
 };
@@ -818,6 +855,7 @@ public:
 	DWARF_LinePtr(uint64_t debug_line_offset);
 	~DWARF_LinePtr();
 	const DWARF_StatementProgram<MEMORY_ADDR> *GetValue() const;
+	uint64_t GetDebugLineOffset() const;
 	virtual std::string to_string() const;
 	virtual void Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler);
 private:
@@ -832,6 +870,7 @@ public:
 	DWARF_LocListPtr(const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu, uint64_t debug_loc_offset);
 	~DWARF_LocListPtr();
 	const DWARF_LocListEntry<MEMORY_ADDR> *GetValue() const;
+	uint64_t GetDebugLocOffset() const;
 	virtual std::string to_string() const;
 	virtual void Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler);
 private:
@@ -847,6 +886,7 @@ public:
 	DWARF_MacPtr(uint64_t debug_macinfo_offset);
 	~DWARF_MacPtr();
 	const DWARF_MacInfoListEntry<MEMORY_ADDR> *GetValue() const;
+	uint64_t GetDebugMacInfoOffset() const;
 	virtual std::string to_string() const;
 	virtual void Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler);
 private:
@@ -860,6 +900,7 @@ class DWARF_RangeListPtr : public DWARF_AttributeValue<MEMORY_ADDR>
 public:
 	DWARF_RangeListPtr(const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu, uint64_t debug_ranges_offset);
 	~DWARF_RangeListPtr();
+	uint64_t GetDebugRangesOffset() const;
 	const DWARF_RangeListEntry<MEMORY_ADDR> *GetValue() const;
 	virtual std::string to_string() const;
 	virtual void Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler);
@@ -876,6 +917,7 @@ public:
 	DWARF_Reference(uint64_t debug_info_offset);
 	~DWARF_Reference();
 	const DWARF_DIE<MEMORY_ADDR> *GetValue() const;
+	uint64_t GetDebugInfoOffset() const;
 	virtual std::string to_string() const;
 	virtual void Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler);
 private:
@@ -923,7 +965,7 @@ template <class MEMORY_ADDR>
 class DWARF_Attribute
 {
 public:
-	DWARF_Attribute(DWARF_AbbrevAttribute *dw_abbrev_attribute, DWARF_AttributeValue<MEMORY_ADDR> *dw_value);
+	DWARF_Attribute(const DWARF_DIE<MEMORY_ADDR> *dw_die, DWARF_AbbrevAttribute *dw_abbrev_attribute, DWARF_AttributeValue<MEMORY_ADDR> *dw_value);
 	~DWARF_Attribute();
 	const DWARF_AbbrevAttribute *GetAbbrevAttribute() const;
 	const DWARF_AttributeValue<MEMORY_ADDR> *GetValue() const;
@@ -931,6 +973,7 @@ public:
 	void Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler);
 	std::ostream& to_XML(std::ostream& os);
 private:
+	const DWARF_DIE<MEMORY_ADDR> *dw_die;
 	DWARF_AbbrevAttribute *dw_abbrev_attribute;
 	DWARF_AttributeValue<MEMORY_ADDR> *dw_value;
 };
@@ -1685,6 +1728,18 @@ const char *DWARF_GetTagName(uint16_t dw_tag);
 const char *DWARF_GetATName(uint16_t dw_at);
 const char *DWARF_GetFORMName(uint16_t dw_form);
 const char *DWARF_GetCLASSName(unsigned int dw_class);
+const char *DWARF_GetATEName(uint8_t dw_ate);
+const char *DWARF_GetLANGName(uint16_t dw_lang);
+const char *DWARF_GetVIRTUALITYName(uint8_t dw_virtuality);
+const char *DWARF_GetVISName(uint8_t dw_vis);
+const char *DWARF_GetACCESSName(uint8_t dw_access);
+const char *DWARF_GetENDName(uint8_t dw_end);
+const char *DWARF_GetDSName(uint8_t dw_ds);
+const char *DWARF_GetIDName(uint8_t dw_id);
+const char *DWARF_GetCCName(uint8_t dw_cc);
+const char *DWARF_GetINLName(uint8_t dw_inl);
+const char *DWARF_GetORDName(uint8_t dw_ord);
+const char *DWARF_GetDSCName(uint8_t dw_dsc);
 
 } // end of namespace elf_loader
 } // end of namespace loader
