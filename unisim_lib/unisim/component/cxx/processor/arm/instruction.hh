@@ -291,16 +291,6 @@ private:
 	bool is_flushed;
 };
 
-template<class CONFIG>
-class InstructionFactory {
-public:
-	static Instruction<CONFIG> *New();
-	static void Destroy(Instruction<CONFIG> *insn);
-	
-private:
-	static std::queue<Instruction<CONFIG> *> queue;
-};
-
 } // end of namespace arm
 } // end of namespace processor
 } // end of namespace cxx

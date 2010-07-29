@@ -14,6 +14,7 @@ class RepositoryClass:
 		self._config = configuration
 		self._units = dict()
 		for (name, location) in self._config.getRepositories():
+			print ('%s -> %s' % (name, location))
 			self.addPhysicalRepository(name, location)
 		# for entry in self._config.getRepositories():
 		# 	self.addPhysicalRepository(entry['name'], entry['location'])

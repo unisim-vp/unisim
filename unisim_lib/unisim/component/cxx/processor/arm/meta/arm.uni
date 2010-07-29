@@ -43,9 +43,11 @@
 			<file>unisim/component/cxx/processor/arm/cpu.soclib_step_cycle.tcc</file>
 			<file>unisim/component/cxx/processor/arm/exception.tcc</file>
 			<file>unisim/component/cxx/processor/arm/cpu.step_cycle.tcc</file>
-			<file>unisim/component/cxx/processor/arm/instruction.hh</file>
 			<file>unisim/component/cxx/processor/arm/cpu.step_instruction.tcc</file>
+			<file>unisim/component/cxx/processor/arm/instruction.hh</file>
 			<file>unisim/component/cxx/processor/arm/instruction.tcc</file>
+			<file>unisim/component/cxx/processor/arm/instruction_factory.hh</file>
+			<file>unisim/component/cxx/processor/arm/instruction_factory.tcc</file>
 			<file>unisim/component/cxx/processor/arm/cpu.tcc</file>
 			<file>unisim/component/cxx/processor/arm/memory_op.hh</file>
 			<file>unisim/component/cxx/processor/arm/arm926ejs/cache.hh</file>

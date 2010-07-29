@@ -165,7 +165,28 @@ Bus(const sc_module_name& module_name, Object *parent) :
 template <class ADDRESS_TYPE, unsigned int DATA_SIZE,
 		unsigned int NUM_PROCS>
 Bus<ADDRESS_TYPE, DATA_SIZE, NUM_PROCS> :: 
-~Bus() {}
+~Bus()
+{
+	for(unsigned int i = 0; i < NUM_PROCS; i++) {
+		delete inport[i];
+	}
+
+	for(unsigned int i = 0; i < NUM_PROCS; i++) {
+		delete inport_controller[i];
+	}
+	
+	for(unsigned int i = 0; i < NUM_PROCS; i++) {
+		delete req_fifo[i];
+	}
+
+	/* create snooping output ports and name them */
+	for(unsigned int i = 0; i < NUM_PROCS; i++) {
+		delete outport[i];
+	}
+		
+	delete chipset_outport;
+	delete chipset_inport;
+}
 
 template <class ADDRESS_TYPE, unsigned int DATA_SIZE,
 		unsigned int NUM_PROCS>

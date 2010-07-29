@@ -205,5 +205,12 @@
 			<file>unisim/service/interfaces/synchronizable/CMakeLists.txt</file>
 		</files>
 	</unit>
+	<unit>
+		<name>unisim::service::interfaces::stmt_lookup</name>
+		<files>
+			<file>unisim/service/interfaces/stmt_lookup.hh</file>
+			<file>unisim/service/interfaces/stmt_lookup/CMakeLists.txt</file>
+		</files>
+	</unit>
 </package>
 

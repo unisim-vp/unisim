@@ -54,12 +54,14 @@ set ( debug_files
 		${CMAKE_SOURCE_DIR}/unisim/util/debug/symbol_table.hh
 		${CMAKE_SOURCE_DIR}/unisim/util/debug/watchpoint.hh
 		${CMAKE_SOURCE_DIR}/unisim/util/debug/watchpoint_registry.hh
+		${CMAKE_SOURCE_DIR}/unisim/util/debug/stmt.hh
 		${CMAKE_SOURCE_DIR}/unisim/util/debug/breakpoint_registry.tcc
 		${CMAKE_SOURCE_DIR}/unisim/util/debug/netstub.tcc
 		${CMAKE_SOURCE_DIR}/unisim/util/debug/profile.tcc
 		${CMAKE_SOURCE_DIR}/unisim/util/debug/symbol.tcc
 		${CMAKE_SOURCE_DIR}/unisim/util/debug/symbol_table.tcc
 		${CMAKE_SOURCE_DIR}/unisim/util/debug/watchpoint_registry.tcc
+		${CMAKE_SOURCE_DIR}/unisim/util/debug/stmt.tcc
 		${CMAKE_SOURCE_DIR}/unisim/util/debug/breakpoint_registry_32.cc
 		${CMAKE_SOURCE_DIR}/unisim/util/debug/breakpoint_registry_64.cc
 		${CMAKE_SOURCE_DIR}/unisim/util/debug/netstub.cc
@@ -71,6 +73,8 @@ set ( debug_files
 		${CMAKE_SOURCE_DIR}/unisim/util/debug/symbol_table_64.cc
 		${CMAKE_SOURCE_DIR}/unisim/util/debug/watchpoint_registry_32.cc
 		${CMAKE_SOURCE_DIR}/unisim/util/debug/watchpoint_registry_64.cc
+		${CMAKE_SOURCE_DIR}/unisim/util/debug/stmt_32.cc
+		${CMAKE_SOURCE_DIR}/unisim/util/debug/stmt_64.cc
 		)
 
 include_directories (

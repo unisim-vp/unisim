@@ -192,9 +192,11 @@ InlineDebugger<ADDRESS>::~InlineDebugger()
 		for(i = 0; i < num_loaders; i++)
 		{
 			delete loader_import[i];
+			delete symbol_table_lookup_import[i];
 			delete stmt_lookup_import[i];
 		}
 		delete[] loader_import;
+		delete[] symbol_table_lookup_import;
 		delete[] stmt_lookup_import;
 	}
 }

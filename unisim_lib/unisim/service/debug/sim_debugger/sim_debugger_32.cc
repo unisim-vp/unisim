@@ -29,39 +29,25 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ *          Gilles Mouchard (gilles.mouchard@cea.fr)
  */
- 
-#ifndef __UNISIM_SERVICE_LOADER_ELF_LOADER_LEB128_HH__
-#define __UNISIM_SERVICE_LOADER_ELF_LOADER_LEB128_HH__
 
-#include <iosfwd>
+//#ifndef __STDC_FORMAT_MACROS
+//#define __STDC_FORMAT_MACROS
+//#endif
+
+#include <unisim/service/debug/sim_debugger/sim_debugger.hh>
+#include <unisim/service/debug/sim_debugger/sim_debugger.tcc>
 
 namespace unisim {
 namespace service {
-namespace loader {
-namespace elf_loader {
+namespace debug {
+namespace sim_debugger {
 
-class DWARF_LEB128
-{
-public:
-	DWARF_LEB128(const uint8_t *leb128);
-	DWARF_LEB128(const DWARF_LEB128& leb128);
-	~DWARF_LEB128();
-	
-	unsigned int GetByteSize() const;
-	unsigned int GetBitLength() const;
-	template <typename T> bool Fit(const T *t = 0) const;
-	template <typename T> operator T() const;
-	DWARF_LEB128& operator = (const uint8_t *leb128);
-	DWARF_LEB128& operator = (const DWARF_LEB128& leb128);
-private:
-	const uint8_t *leb128;
-};
+template class SimDebugger<uint32_t>;
 
-} // end of namespace elf_loader
-} // end of namespace loader
+} // end of namespace sim_debugger
+} // end of namespace debug
 } // end of namespace service
 } // end of namespace unisim
-
-#endif
