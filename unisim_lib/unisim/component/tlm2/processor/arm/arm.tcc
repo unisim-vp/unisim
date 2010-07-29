@@ -114,48 +114,49 @@ using namespace unisim::kernel::logger;
 
 template<class CONFIG, bool BLOCKING>
 ARM<CONFIG, BLOCKING> :: 
-ARM(const sc_module_name& name, Object *parent) :
-	Object(name, parent),
-	sc_module(name),
-	CPU<CONFIG>(name, this, parent),
-	master_socket("master_socket"),
-	in_irq("in_irq"),
-	in_fiq("in_fiq"),
-	free_interrupt_queue(),
-	interrupt_queue("interrupt_queue"),
-	cpu_cycle_time(),
-	bus_cycle_time(),
-	cpu_time(),
-	bus_time(),
-	quantum_time(),
-	last_cpu_time(),
-	nice_time(),
-	next_nice_time(),
-	nice_time_int(10),
-	ipc(1.0),
-//	cpu_cycle_time_int(0),
-	bus_cycle_time_int(0),
-	param_nice_time("nice-time", this, nice_time_int),
-	param_ipc("ipc", this, ipc),
-//	param_cpu_cycle_time("cpu-cycle-time", this, cpu_cycle_time_int),
-	param_bus_cycle_time("bus-cycle-time", this, bus_cycle_time_int),
-//	inherited::logger(*this),
-	verbose_all(false),
-	param_verbose_all("verbose_all", this, verbose_all, "Activate all the verbose options"),
-	verbose_setup(false),
-	param_verbose_setup("verbose_setup", this, verbose_setup, "Display object setup information"),
-	verbose_tlm(false),
-	param_verbose_tlm("verbose_tlm", this, verbose_tlm, "Display TLM information"),
-	verbose_tlm_bus_synchronize(false),
-	param_verbose_tlm_bus_synchronize("verbose_tlm_bus_synchronize", this, verbose_tlm_bus_synchronize, "Display bus synchronization handling"),
-	verbose_tlm_run_thread(false),
-	param_verbose_tlm_run_thread("verbose_tlm_run_thread", this, verbose_tlm_run_thread, "Display main thread execution information"),
-	verbose_tlm_commands(false),
-	param_verbose_tlm_commands("verbose_tlm_commands", this, verbose_tlm_commands, "Display commands handling"),
-	verbose_tlm_irq(false),
-	param_verbose_tlm_irq("verbose_tlm_irq", this, verbose_tlm_irq, "Display TLM irq information"),
-	trap_on_verbose_tlm_irq(false),
-	param_trap_on_verbose_tlm_irq("trap_on_verbose_tlm_irq", this, trap_on_verbose_tlm_irq, "Send a trap when displaying TLM irq information")
+ARM(const sc_module_name& name, Object *parent)
+	: Object(name, parent)
+	, sc_module(name)
+	, CPU<CONFIG>(name, this, parent)
+	, master_socket("master_socket")
+	, in_irq("in_irq")
+	, in_fiq("in_fiq")
+	, free_interrupt_queue()
+	, interrupt_queue("interrupt_queue")
+	, cpu_cycle_time()
+	, bus_cycle_time()
+	, cpu_time()
+	, bus_time()
+	, quantum_time()
+	, last_cpu_time()
+	, nice_time()
+	, next_nice_time()
+	, nice_time_int(10)
+	, ipc(1.0)
+//	, cpu_cycle_time_int(0)
+	, bus_cycle_time_int(0)
+	, param_nice_time("nice-time", this, nice_time_int)
+	, param_ipc("ipc", this, ipc)
+//	, param_cpu_cycle_time("cpu-cycle-time", this, cpu_cycle_time_int)
+	, param_bus_cycle_time("bus-cycle-time", this, bus_cycle_time_int)
+//	, inherited::logger(*this)
+	, verbose_all(false)
+	, param_verbose_all("verbose_all", this, verbose_all, "Activate all the verbose options")
+	, verbose_setup(false)
+	, param_verbose_setup("verbose_setup", this, verbose_setup, "Display object setup information")
+	, verbose_tlm(false)
+	, param_verbose_tlm("verbose_tlm", this, verbose_tlm, "Display TLM information")
+	, verbose_tlm_bus_synchronize(false)
+	, param_verbose_tlm_bus_synchronize("verbose_tlm_bus_synchronize", this, verbose_tlm_bus_synchronize, "Display bus synchronization handling")
+	, verbose_tlm_run_thread(false)
+	, param_verbose_tlm_run_thread("verbose_tlm_run_thread", this, verbose_tlm_run_thread, "Display main thread execution information")
+	, verbose_tlm_commands(false)
+	, param_verbose_tlm_commands("verbose_tlm_commands", this, verbose_tlm_commands, "Display commands handling")
+	, verbose_tlm_irq(false)
+	, param_verbose_tlm_irq("verbose_tlm_irq", this, verbose_tlm_irq, "Display TLM irq information")
+	, trap_on_verbose_tlm_irq(false)
+	, param_trap_on_verbose_tlm_irq("trap_on_verbose_tlm_irq", this, trap_on_verbose_tlm_irq, "Send a trap when displaying TLM irq information")
+	, irq_trap_reporting_import("irq-trap-reporting-import", this)
 {
 	master_socket.bind(*this);
 	
@@ -1246,8 +1247,8 @@ void
 ARM<CONFIG, BLOCKING>::
 TrapOnVerboseTLMIrq()
 {
-	if (CONFIG::DEBUG_ENABLE && trap_on_verbose_tlm_irq && inherited::trap_reporting_import)
-		inherited::trap_reporting_import->ReportTrap();
+	if (CONFIG::DEBUG_ENABLE && trap_on_verbose_tlm_irq && irq_trap_reporting_import)
+		irq_trap_reporting_import->ReportTrap();
 }
 
 /*************************************************************************

@@ -57,6 +57,7 @@ Simulator(int argc, char **argv)
 	, elf32_loader(0)
 	, linux_loader(0)
 	, linux_os(0)
+	, trap_handler(0)
 	, simulation_spent_time(0.0)
 #ifdef SIM_GDB_SERVER_SUPPORT
 	, gdb_server(0)
@@ -91,6 +92,7 @@ Simulator(int argc, char **argv)
 	elf32_loader = new ELF32_LOADER("elf-loader");
 	linux_loader = new LINUX_LOADER("linux-loader");
 	linux_os = new LINUX_OS("linux-os");
+	trap_handler = new TRAP_HANDLER("trap-handler");
 #ifdef SIM_GDB_SERVER_SUPPORT
 	param_enable_gdb_server = new unisim::kernel::service::Parameter<bool>(
 			"enable-gdb-server", 0,
@@ -182,6 +184,9 @@ Simulator(int argc, char **argv)
 	linux_os->memory_injection_import >> cpu->memory_injection_export;
 	linux_os->registers_import >> cpu->registers_export;
 	linux_os->loader_import >> linux_loader->loader_export;
+	cpu->exception_trap_reporting_import >> *trap_handler->trap_reporting_export[0];
+	cpu->instruction_counter_trap_reporting_import >> *trap_handler->trap_reporting_export[1];
+	cpu->irq_trap_reporting_import >> *trap_handler->trap_reporting_export[2];
 #ifdef SIM_POWER_ESTIMATOR_SUPPORT
 	// connecting power estimator
 	if ( enable_power_estimation )
@@ -211,6 +216,7 @@ Simulator::~Simulator()
 	if ( elf32_loader ) delete elf32_loader;
 	if ( linux_loader ) delete linux_loader;
 	if ( linux_os ) delete linux_os;
+	if ( trap_handler ) delete trap_handler;
 #ifdef SIM_GDB_SERVER_SUPPORT
 	if ( param_enable_gdb_server ) delete param_enable_gdb_server;
 	if ( gdb_server ) delete gdb_server;
@@ -380,6 +386,14 @@ DefaultConfiguration(unisim::kernel::service::Simulator *sim)
 	sim->SetVariable("linux-os.system", "arm");
 	sim->SetVariable("linux-os.endianness", "little-endian");
 	sim->SetVariable("elf-loader.filename", "test/install/test.armv5l");
+
+	sim->SetVariable("trap-handler.num-traps", 3);
+	sim->SetVariable("trap-handler.trap-reporting-export-name[0]",
+			"cpu-exception-trap-handler");
+	sim->SetVariable("trap-handler.trap-reporting-export-name[1]",
+			"cpu-instruction-counter-trap-handler");
+	sim->SetVariable("trap-handler.trap-reporting-export-name[2]",
+			"cpu-irq-trap-handler");
 
 #ifdef SIM_GDB_SERVER_SUPPORT
 	sim->SetVariable("gdb-server.architecture-description-filename",

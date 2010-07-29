@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2010,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -31,74 +31,56 @@
  *
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
+ 
+#ifndef __UNISIM_SERVICE_TRAP_HANDLER_HH__
+#define __UNISIM_SERVICE_TRAP_HANDLER_HH__
 
-#ifndef __UNISIM_KERNEL_SERVICE_XML_HELPER_HH__
-#define __UNISIM_KERNEL_SERVICE_XML_HELPER_HH__
-
+#include <unisim/service/interfaces/trap_reporting.hh>
+#include <unisim/kernel/service/service.hh>
+#include <string>
 #include <vector>
-#include <libxml/xmlreader.h>
-#include <libxml/xmlwriter.h>
-#include "unisim/kernel/service/service.hh"
 
 namespace unisim {
-namespace kernel {
 namespace service {
+namespace trap_handler {
 
-class XMLHelper {
+using unisim::kernel::service::Service;
+using unisim::kernel::service::Client;
+using unisim::kernel::service::ServiceImport;
+using unisim::kernel::service::ServiceExport;
+using unisim::kernel::service::Object;
+using unisim::kernel::service::Parameter;
+using unisim::kernel::service::ParameterArray;
+using unisim::service::interfaces::TrapReporting;
+	
+class TrapHandler : public Service<TrapReporting>
+{
 public:
-	XMLHelper(Simulator *simulator);
-	~XMLHelper();
-	
-	bool XmlfyVariables(const char *filename, VariableBase::Type type = VariableBase::VAR_VOID);
-	bool LoadXmlVariables(const char *filename, VariableBase::Type type = VariableBase::VAR_VOID);
-	
+	std::vector<ServiceExport<TrapReporting> *>trap_reporting_export;
+
+	TrapHandler(const char *name, Object *parent = 0);
+	virtual ~TrapHandler();
+
+	virtual bool Setup();
+
 private:
-	static const char *XML_ENCODING; 
+	std::vector<std::string *> trap_reporting_export_name;
+	std::vector<Parameter<std::string> *> param_trap_reporting_export_name;
+	unsigned int num_traps;
+	Parameter<unsigned int> param_num_traps;
 
-	bool HasVariable(const Object *obj,
-			VariableBase::Type type = VariableBase::VAR_VOID);
-
-	int XmlfyVariables(xmlTextWriterPtr writer,
-			const Object *obj,
-			VariableBase::Type type = VariableBase::VAR_VOID);
-	
-	int XmlfyVariable(xmlTextWriterPtr writer, 
-			const VariableBase *var);
-	
-	Simulator *simulator;
-	
-	bool ProcessXmlVariableNode(xmlTextReaderPtr reader,
-			VariableBase::Type type = VariableBase::VAR_VOID);
-	
-	class CurVariable {
-	public:
-		stringstream type;
-		stringstream name;
-		stringstream value;
-		stringstream description;
-		stringstream data_type;
-	};
-	
-	enum CurStatus {NONE, TYPE, NAME, VALUE, DESCRIPTION, DATA_TYPE};
-	CurVariable *cur_var;
-	CurStatus cur_status;
-	std::vector<string> cur_object;
-
-	// tokens required
-	xmlChar* name_token;
-	xmlChar* variables_token;
-	xmlChar* object_token;
-	xmlChar* variable_token;
-	xmlChar* type_token;
-	xmlChar* value_token;
-	xmlChar* default_value_token;
-	xmlChar* data_type_token;
-	xmlChar* description_token;
-	xmlChar* _text_token;
+	virtual void ReportTrap();
+	virtual void ReportTrap(const unisim::kernel::service::Object &obj);
+	virtual void ReportTrap(const unisim::kernel::service::Object &obj,
+							const std::string &str);
+	virtual void ReportTrap(const unisim::kernel::service::Object &obj,
+							const char *c_str);
 };
 
+} // end of namespace trap_handler
 } // end of namespace service
-} // end of namespace kernel
 } // end of namespace unisim
 
-#endif // __UNISIM_KERNEL_SERVICE_XML_HELPER_HH__
+
+#endif // __UNISIM_SERVICE_TRAP_HANDLER_HH__
+

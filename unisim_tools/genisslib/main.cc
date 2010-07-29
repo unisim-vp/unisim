@@ -27,7 +27,6 @@
 #include <isa.hh>
 #include <generator.hh>
 #include <scanner.hh>
-#include <product.hh>
 #include <strtools.hh>
 #include <iostream>
 #include <fstream>
@@ -186,6 +185,7 @@ GIL_MAIN (int argc, char** argv, char** envp) {
     if( gil.depfilename ) {
       ofstream depfile( gil.depfilename );
       isa.deps( depfile, gil.outputprefix );
+      depfile.close();
     }
     
     if( not isa.sanity_checks() ) throw CLI::Exit_t( 1 );
@@ -197,13 +197,11 @@ GIL_MAIN (int argc, char** argv, char** envp) {
     
     generator->init( isa );
     
-    Product_t product( gil.outputprefix, gil.sourcelines );
-    
     try {
       // Back-end specific preprocess
       generator->finalize();
       // ISS Generation
-      generator->iss( product );
+      generator->iss( gil.outputprefix, gil.sourcelines );
     } catch( Generator::Exception_t ) {
       cerr << GENISSLIB ": compilation aborted.\n";
       throw CLI::Exit_t( 1 );

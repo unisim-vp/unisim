@@ -72,6 +72,7 @@ struct RiscGenerator : public Generator {
   void                          insn_match_ifexpr( Product_t& _product, char const* _code, char const* _mask, char const* _bits ) const;
   void                          insn_unchanged_expr( Product_t& _product, char const* _old, char const* _new ) const;
   void                          insn_decode_impl( Product_t& _product, Operation_t const& _op, char const* _codename, char const* _addrname ) const;
+  void                          insn_encode_impl( Product_t& _product, Operation_t const& _op, char const* _codename ) const;
   void                          additional_impl_includes( Product_t& _product ) const {}
   void                          additional_decl_includes( Product_t& _product ) const {}
   void                          subdecoder_bounds( Product_t& _product ) const;

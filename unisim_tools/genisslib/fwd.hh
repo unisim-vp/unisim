@@ -30,6 +30,7 @@ struct Inheritance_t;
 struct BitField_t;
 struct Isa;
 struct Product_t;
+struct FProduct_t;
 struct ConstStr_t;
 struct Generator;
 struct Product_t;

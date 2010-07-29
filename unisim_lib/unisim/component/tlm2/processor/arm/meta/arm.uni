@@ -17,6 +17,7 @@
 			<dep>unisim::kernel::service</dep>
 			<dep>unisim::kernel::logger</dep>
 			<dep>unisim::component::tlm2::interrupt</dep>
+			<dep>unisim::service::interfaces::trap_reporting</dep>
 		</depends>
 		<autotools>
 			<automake>unisim/component/tlm2/processor/arm/arm.am</automake>

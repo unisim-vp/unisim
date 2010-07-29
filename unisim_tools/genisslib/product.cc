@@ -27,41 +27,31 @@
 using namespace std;
 
 /** Constructor: Create a Product object
-    @param _prefix the prefix of output files
+    @param _filename the filename attached to the output code
 */
-Product_t::Product_t( ConstStr_t _prefix, bool _sourcelines )
-  : m_prefix( _prefix ), m_stream( 0 ), m_line( Str::Buf::Recycle ), m_lineno( 1 ), m_sourcelines( _sourcelines )
+Product_t::Product_t( ConstStr_t filename, bool sourcelines )
+  : m_filename( filename ), m_line( Str::Buf::Recycle ), m_lineno( 1 ), m_sourcelines( sourcelines )
+{
+  m_indentations.push_back( 0 );
+}
+
+/** Constructor: Create a FProduct object
+    @param _prefix the filename prefix attached to the output code
+*/
+FProduct_t::FProduct_t( char const* prefix, char const* suffix, bool sourcelines )
+  : Product_t( Str::fmt( "%s%s", prefix, suffix ), sourcelines ),
+    m_sink( new std::ofstream( m_filename ) )
 {}
 
-/** Open a file and redirects all output to this file
-    @param _suffix the suffix of the new output file 
+/** Constructor: Create a SProduct object
+    @param _prefix the filename prefix attached to the output code
 */
-bool
-Product_t::open( char const* _suffix ) {
-  close();
-  m_filename = Str::fmt( "%s%s", m_prefix.str(), _suffix );
-  m_line.clear();
-  m_lineno = 1;
-  m_stream = new ofstream( m_filename );
-  m_indentations.clear();
-  m_indentations.push_back( 0 );
-  return m_stream->good();
-}
-
-/** Close the current output file 
- */
-void
-Product_t::close() {
-  if( not m_line.empty() and sink().good() )
-    sink() << m_line.m_storage;
-  delete m_stream;
-  m_stream = 0;
-}
+SProduct_t::SProduct_t( ConstStr_t _filename, bool _sourcelines )
+  : Product_t( _filename, _sourcelines ), m_content( Str::Buf::Recycle )
+{}
 
 /** Destructor: Close the Product object */
-Product_t::~Product_t() {
-  close();
-}
+FProduct_t::~FProduct_t() { delete m_sink; }
 
 /** Output source code into the output file
     Also generate #line in the output file to link the C compiler error to the original source code
@@ -105,8 +95,6 @@ Product_t::usercode( FileLoc_t const& _fileloc, char const* _fmt, ... ) {
     if( size < 0 or size >= capacity ) continue;
     
     /* Now storage is ok... */
-//     sink() << storage;
-//     m_lineno += count_end_of_line( storage );
     write( storage );
     break;
   }
@@ -136,8 +124,6 @@ Product_t::code( char const* _fmt, ... ) {
     if( size < 0 or size >= capacity ) continue;
     
     /* Now storage is ok... */
-//     sink() << storage;
-//     m_lineno += count_end_of_line( storage );
     write( storage );
     break;
   }
@@ -237,7 +223,7 @@ Product_t::write( char const* _ptr ) {
         else if( *pchr == '}' ) --braces;
       }
       m_line.truncate( rstrip-m_line.m_storage );
-      if( m_line.empty() ) { sink() << '\n'; m_lineno += 1; continue; }
+      if( m_line.empty() ) { xwrite( "\n" ); m_lineno += 1; continue; }
       
       if( braces > 0 ) {
         while( (--braces) > 0) m_indentations.push_back( current_indentation );
@@ -258,8 +244,9 @@ Product_t::write( char const* _ptr ) {
       else if( /*'{'*/ first_char == '}' ) current_indentation = m_indentations.back();
       else if( last_char == ':' ) --current_indentation;
       
-      while( (--current_indentation) >= 0 ) sink() << '\t';
-      sink() << m_line.m_storage << '\n';
+      while( (--current_indentation) >= 0 ) xwrite( "\t" );
+      xwrite( m_line.m_storage );
+      xwrite( "\n" );
       m_line.clear();
       m_lineno += 1;
       continue;
@@ -269,3 +256,14 @@ Product_t::write( char const* _ptr ) {
   }
   return *this;
 }
+
+/** \brief flush the line buffer
+ *
+ */
+void Product_t::flush() { if( not m_line.empty() ) write( "\n" ); }
+
+void FProduct_t::xwrite( char const* _ptr ) { (*m_sink) << _ptr; }
+
+bool FProduct_t::good() const { return m_sink->good(); };
+
+void SProduct_t::xwrite( char const* _ptr ) { m_content.write( _ptr ); }

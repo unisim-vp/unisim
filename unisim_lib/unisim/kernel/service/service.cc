@@ -1584,34 +1584,34 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	param_get_config = new Parameter<bool>("get-config", 0, get_config, "Enable/Disable saving configuration at setup");
 
 	var_authors = new Parameter<string>("authors", 0, authors, "Authors");
-	var_authors->SetMutable(true);
-	var_authors->SetVisible(true);
-	var_authors->SetSerializable(true);
+	var_authors->SetMutable(false);
+	var_authors->SetVisible(false);
+	var_authors->SetSerializable(false);
 
 	var_program_name = new Parameter<string>("program-name", 0, program_name, "Program name");
-	var_program_name->SetMutable(true);
-	var_program_name->SetVisible(true);
-	var_program_name->SetSerializable(true);
+	var_program_name->SetMutable(false);
+	var_program_name->SetVisible(false);
+	var_program_name->SetSerializable(false);
 
 	var_copyright = new Parameter<string>("copyright", 0, copyright, "Copyright");
-	var_copyright->SetMutable(true);
-	var_copyright->SetVisible(true);
-	var_copyright->SetSerializable(true);
+	var_copyright->SetMutable(false);
+	var_copyright->SetVisible(false);
+	var_copyright->SetSerializable(false);
 
 	var_version = new Parameter<string>("version", 0, version, "Version");
-	var_version->SetMutable(true);
-	var_version->SetVisible(true);
-	var_version->SetSerializable(true);
+	var_version->SetMutable(false);
+	var_version->SetVisible(false);
+	var_version->SetSerializable(false);
 
 	var_description = new Parameter<string>("description", 0, description, "Description");
-	var_description->SetMutable(true);
-	var_description->SetVisible(true);
-	var_description->SetSerializable(true);
+	var_description->SetMutable(false);
+	var_description->SetVisible(false);
+	var_description->SetSerializable(false);
 
 	var_license = new Parameter<string>("license", 0, license, "License");
-	var_license->SetMutable(true);
-	var_license->SetVisible(true);
-	var_license->SetSerializable(true);
+	var_license->SetMutable(false);
+	var_license->SetVisible(false);
+	var_license->SetSerializable(false);
 
 	param_enable_press_enter_at_exit = new Parameter<bool>("enable-press-enter-at-exit", 0, enable_press_enter_at_exit, "Enable/Disable pressing key enter at exit");
 	

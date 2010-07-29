@@ -185,6 +185,7 @@ namespace Str {
     for( char const* ptr = _str; *ptr; ++ ptr ) {
       char ch = *ptr;
       switch( ch ) {
+      case '\t': buffer.write( "\\t" ); break;
       case '\n': buffer.write( "\\n" ); break;
       case '\r': buffer.write( "\\r" ); break;
       case  '"': buffer.write( "\\\"" ); break;

@@ -114,7 +114,8 @@ namespace arm {
 	memory_access_reporting_import("memory_access_reporting_import", this),
 	symbol_table_lookup_import("symbol_table_lookup_import", this),
 	linux_os_import("linux_os_import", this),
-	trap_reporting_import("trap_reporting_import", this),
+	exception_trap_reporting_import("exception_trap_reporting_import", this),
+	instruction_counter_trap_reporting_import("instruction_counter_trap_reporting_import", this),
 	il1_power_estimator_import("il1-power-estimator-import",  this),
 	dl1_power_estimator_import("dl1-power-estimator-import",  this),
 	il1_power_mode_import("il1-power-mode-import",  this),
@@ -4891,7 +4892,7 @@ namespace arm {
 	CPU<CONFIG>::
 	TrapOnException()
 	{
-		return trap_on_exception && trap_reporting_import;
+		return trap_on_exception && exception_trap_reporting_import;
 	}
 	
 	/**************************************************************/
