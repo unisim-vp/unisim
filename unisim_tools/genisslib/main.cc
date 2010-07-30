@@ -103,7 +103,7 @@ struct GIL : public CLI, public Opts {
       throw CLI::Exit_t( 1 );
     }
     
-    if( _args.match( "-w,--word-size", "<size>", "Uses <size> as the "
+    if( _args.match( "-w,--min-word-size", "<size>", "Uses <size> as the "
                      "minimum bit size for holding an operand bit field." ) ) {
       if( this->setminwordsize( _args.pop_front() ) ) return;
       cerr << GENISSLIB ": '-w' must be followed by a size.\n";

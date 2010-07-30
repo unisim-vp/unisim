@@ -33,6 +33,7 @@ struct Isa {
   bool                          m_little_endian;   /**< Endianness of isa (false: big endian, true: little endian) */
   bool                          m_asc_forder;      /**< bitfields ordering (false: descending)*/
   bool                          m_asc_worder;      /**< words ordering (false: descending)*/
+  unsigned int                  m_minwordsize;     /**< minimum C type size for operation fields */
   std::vector<ConstStr_t>       m_namespace;       /**< Encapsulating namespace of the iss */
   Vect_t<CodePair_t>            m_tparams;         /**< Template parameters of the iss */
   Vect_t<Variable_t>            m_vars;            /**< Global variables used by the iss */
@@ -73,6 +74,7 @@ struct Isa {
   
   void                          setparam( ConstStr_t key, ConstStr_t value );
   void                          setparam( ConstStr_t key, SourceCode_t* value );
+  void                          setparam( ConstStr_t key, unsigned int value );
 };
 
 #endif // __ISA_HH__

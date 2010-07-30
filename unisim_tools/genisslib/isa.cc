@@ -41,7 +41,8 @@ using namespace std;
  */
 Isa::Isa()
   : m_decoder( RiscDecoder ), m_is_subdecoder( false ), m_withsource( false ),
-    m_little_endian( false ), m_asc_forder( false ), m_asc_worder( false )
+    m_little_endian( false ), m_asc_forder( false ), m_asc_worder( false ),
+    m_minwordsize( 0 )
 {}
 
 /** Destructor for isa instance
@@ -319,6 +320,17 @@ Isa::setparam( ConstStr_t key, SourceCode_t* value ) {
   } else if (key == codetypeclass) {
     //m_codetype = value->m_content;
     delete value;
+  }
+  
+  else throw UnknownIdent( key );
+}
+
+void
+Isa::setparam( ConstStr_t key, unsigned int value ) {
+  static ConstStr_t minwordsize( "minwordsize", Scanner::symbols );
+  
+  if        (key == minwordsize) {
+    m_minwordsize = value;
   }
   
   else throw UnknownIdent( key );
