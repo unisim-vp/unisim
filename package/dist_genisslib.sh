@@ -16,6 +16,10 @@ UNISIM_TOOLS_DIR=$2/unisim_tools
 
 GENISSLIB_VERSION=$(cat ${UNISIM_TOOLS_DIR}/genisslib/VERSION)
 
+if test -z ${DISTCOPY}; then
+    DISTCOPY=cp
+fi
+
 UNISIM_TOOLS_GENISSLIB_HEADER_FILES="\
 action.hh \
 cli.hh \
@@ -112,7 +116,7 @@ for file in ${UNISIM_TOOLS_GENISSLIB_FILES}; do
 	fi
 	if [ "${has_to_copy}" = "yes" ]; then
 		echo "${UNISIM_TOOLS_DIR}/genisslib/${file} ==> ${DEST_DIR}/${file}"
-		cp -f "${UNISIM_TOOLS_DIR}/genisslib/${file}" "${DEST_DIR}/${file}" || exit
+		${DISTCOPY} -f "${UNISIM_TOOLS_DIR}/genisslib/${file}" "${DEST_DIR}/${file}" || exit
 	fi
 done
 mkdir -p ${DEST_DIR}/config

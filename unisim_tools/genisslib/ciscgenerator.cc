@@ -489,7 +489,17 @@ CiscGenerator::insn_encode_impl( Product_t& _product, Operation_t const& _op, ch
     _product.code( "assert( \"Encode method does not work with variable length operations.\" and false );\n" );
   }
   
-  _product.code( "%s = this->GetEncoding();\n", _codename );
+  
+  { /* writing  common operation bits */
+    _product.code( "%s = CodeType( (uint8_t*)( \"", _codename );
+    char const* const hex = "0123456789abcdef";
+    unsigned int idx = 0;
+    for (;idx < oc.maskbytesize(); ++idx)
+      _product.code( "\\x%c%c", hex[oc.m_bits[idx]/16], hex[oc.m_bits[idx]%16] );
+    for (;idx < oc.fullbytesize(); ++idx)
+      _product.code( "\\0" );
+    _product.code( "\" ), %u );\n", oc.m_fullsize );
+  }
   
   bool little_endian = isa().m_little_endian;
   

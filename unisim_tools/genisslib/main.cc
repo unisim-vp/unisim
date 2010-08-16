@@ -103,7 +103,7 @@ struct GIL : public CLI, public Opts {
       throw CLI::Exit_t( 1 );
     }
     
-    if( _args.match( "-w,--word-size", "<size>", "Uses <size> as the "
+    if( _args.match( "-w,--min-word-size", "<size>", "Uses <size> as the "
                      "minimum bit size for holding an operand bit field." ) ) {
       if( this->setminwordsize( _args.pop_front() ) ) return;
       cerr << GENISSLIB ": '-w' must be followed by a size.\n";
@@ -172,9 +172,9 @@ GIL_MAIN (int argc, char** argv, char** envp) {
     if( not Scanner::parse( gil.inputname, isa ) )
       throw CLI::Exit_t( 1 );
   
-    if( gil.expandname ) {
+    if (gil.expandname) {
       ofstream expandfile( gil.expandname );
-      if( not expandfile ) {
+      if (not expandfile.good()) {
         cerr << GENISSLIB ": can't open output file `" << gil.expandname << "'" << endl;
         throw CLI::Exit_t( 1 );
       }
@@ -182,10 +182,14 @@ GIL_MAIN (int argc, char** argv, char** envp) {
       isa.expand( expandfile );
     }
     
-    if( gil.depfilename ) {
+    if (gil.depfilename) {
       ofstream depfile( gil.depfilename );
+      if (not depfile.good()) {
+        cerr << GENISSLIB ": can't open output file `" << gil.depfilename << "'" << endl;
+        throw CLI::Exit_t( 1 );
+      }
+      
       isa.deps( depfile, gil.outputprefix );
-      depfile.close();
     }
     
     if( not isa.sanity_checks() ) throw CLI::Exit_t( 1 );

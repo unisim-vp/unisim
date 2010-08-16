@@ -73,7 +73,10 @@ struct OpProperties {
 Generator&
 Generator::init( Isa& _isa ) {
   m_isa = &_isa;
-  m_minwordsize = least_ctype_size( Opts::shared().minwordsize );
+  m_minwordsize =
+    least_ctype_size( std::max( Opts::shared().minwordsize, /* coming from the command line */
+                                _isa.m_minwordsize          /* coming from the isa source */
+                                ) );
   
   { // change bitfield ordering
     bool rev_forder = isa().m_asc_forder xor isa().m_little_endian;

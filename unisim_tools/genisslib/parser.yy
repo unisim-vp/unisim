@@ -287,6 +287,18 @@ global_sourcecode_parameter: TOK_SET TOK_IDENT TOK_SOURCE_CODE
   }
 }
 
+global_uinteger_parameter: TOK_SET TOK_IDENT TOK_INTEGER
+{
+  ConstStr_t key( $2, Scanner::symbols );
+  unsigned int val = $3;
+  try {
+    Scanner::isa().setparam( key, val );
+  } catch( Isa::UnknownIdent ui ) {
+    Scanner::fileloc.err( "error: unknown or illegal ident `%s'.", ui.m_ident.str() );
+    YYABORT;
+  }
+}
+
 template_declaration: TOK_TEMPLATE '<' param_list '>'
 {
   $$ = $3;
@@ -297,6 +309,7 @@ declaration:
              TOK_ENDL {}
            | global_ident_parameter TOK_ENDL
            | global_sourcecode_parameter TOK_ENDL
+           | global_uinteger_parameter TOK_ENDL
            | subdecoder_class TOK_ENDL
            | subdecoder_instance TOK_ENDL
            | operation_declaration TOK_ENDL

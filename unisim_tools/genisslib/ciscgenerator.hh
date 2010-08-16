@@ -45,6 +45,7 @@ struct CiscGenerator : public Generator {
     bool                        match( OpCode_t const& _oc ) const;
     void                        optimize( bool is_little_endian );
     unsigned int                maskbytesize() const { return (m_prefixsize+7)/8; };
+    unsigned int                fullbytesize() const { return (m_fullsize+7)/8; };
     
     // Topology methods
     enum Location_t { Outside, Overlaps, Inside, Contains, Equal };

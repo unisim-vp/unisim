@@ -224,7 +224,7 @@ RiscGenerator::insn_encode_impl( Product_t& _product, Operation_t const& _op, ch
     _product.code( "assert( \"Encode method does not work with variable length operations.\" and false );\n" );
   }
   
-  _product.code( "%s = this->GetEncoding();\n", _codename );
+  _product.code( "%s = 0x%llx%s;\n", _codename, oc.m_bits, m_insn_cpostfix.str() );
   
   for (FieldIterator fi( isa().m_little_endian, _op.m_bitfields, m_insn_maxsize ); fi.next(); ) {
     if (fi.item().type() == BitField_t::SubOp) {
