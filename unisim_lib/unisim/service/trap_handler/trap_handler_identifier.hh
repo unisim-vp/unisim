@@ -31,17 +31,14 @@
  *
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
- 
-#ifndef __UNISIM_SERVICE_TRAP_HANDLER_HH__
-#define __UNISIM_SERVICE_TRAP_HANDLER_HH__
 
-#include <string>
-#include <vector>
+#ifndef __UNISIM_SERVICE_TRAP_HANDLER_IDENTIFIER_HH__
+#define __UNISIM_SERVICE_TRAP_HANDLER_IDENTIFIER_HH__
+
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger.hh"
 #include "unisim/service/interfaces/trap_reporting.hh"
 #include "unisim/service/trap_handler/trap_handler_identifier_interface.hh"
-#include "unisim/service/trap_handler/trap_handler_identifier.hh"
 
 namespace unisim {
 namespace service {
@@ -50,46 +47,35 @@ namespace trap_handler {
 using unisim::kernel::service::Service;
 using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::Object;
-using unisim::kernel::service::Parameter;
 using unisim::service::interfaces::TrapReporting;
 
-class TrapHandler
-	: public unisim::kernel::service::Object
-	, public TrapHandlerIdentifierInterface
-	// , public Service<TrapReporting>
+class TrapHandlerIdentifier
+	: public Service<TrapReporting>
 {
 public:
-	std::vector<ServiceExport<TrapReporting> *> trap_reporting_export;
+	ServiceExport<TrapReporting> trap_reporting_export;
 
-	TrapHandler(const char *name, Object *parent = 0);
-	virtual ~TrapHandler();
+	TrapHandlerIdentifier(int id,
+			TrapHandlerIdentifierInterface *interface,
+			const char *name,
+			Object *parent = 0);
+	virtual ~TrapHandlerIdentifier();
 
 	virtual bool Setup();
 
 private:
+	int id;
+	TrapHandlerIdentifierInterface *interface;
+
+	virtual void ReportTrap();
+	virtual void ReportTrap(const unisim::kernel::service::Object &obj);
+	virtual void ReportTrap(const unisim::kernel::service::Object &obj,
+			const std::string &str);
+	virtual void ReportTrap(const unisim::kernel::service::Object &obj,
+			const char *c_str);
 	// the kernel logger
 	unisim::kernel::logger::Logger logger;
-	// identifier for each one of the trap_reporting exports
-	std::vector<TrapHandlerIdentifier *> trap_reporting_export_identifier;
 
-	std::vector<std::string *> trap_reporting_export_name;
-	std::vector<Parameter<std::string> *> param_trap_reporting_export_name;
-	unsigned int num_traps;
-	Parameter<unsigned int> param_num_traps;
-
-	bool send_to_logger;
-	Parameter<bool> param_send_to_logger;
-
-
-	virtual void ReportTrap(int id);
-	virtual void ReportTrap(int id,
-			const unisim::kernel::service::Object &obj);
-	virtual void ReportTrap(int id,
-			const unisim::kernel::service::Object &obj,
-			const std::string &str);
-	virtual void ReportTrap(int id,
-			const unisim::kernel::service::Object &obj,
-			const char *c_str);
 };
 
 } // end of namespace trap_handler
@@ -97,5 +83,5 @@ private:
 } // end of namespace unisim
 
 
-#endif // __UNISIM_SERVICE_TRAP_HANDLER_HH__
+#endif // __UNISIM_SERVICE_TRAP_HANDLER_IDENTIFIER_HH__
 
