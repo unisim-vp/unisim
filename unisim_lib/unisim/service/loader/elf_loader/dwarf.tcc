@@ -2829,7 +2829,8 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 								break;
 							case 2:
 								{
-									uint8_t addr16;
+									// *** REDA *** replace uint8_t by uint16_t
+									uint16_t addr16;
 									memcpy(&addr16, expr, address_size);
 									addr16 = Target2Host(endianness, addr16);
 									addr = addr16;
@@ -2837,7 +2838,8 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 								break;
 							case 4:
 								{
-									uint8_t addr32;
+									// *** REDA *** replace uint8_t by uint32_t
+									uint32_t addr32;
 									memcpy(&addr32, expr, address_size);
 									addr32 = Target2Host(endianness, addr32);
 									addr = addr32;
