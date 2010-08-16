@@ -640,7 +640,7 @@ public:
 };
 
 template <class TYPE>
-class RegisterArray : public RegisterArray<TYPE>
+class RegisterArray : public VariableArray<TYPE>
 {
 public:
 	RegisterArray(const char *name, Object *owner, TYPE *parameters, unsigned int dim, const char *description = NULL) : VariableArray<TYPE>(name, owner, parameters, dim, VariableBase::VAR_REGISTER, description) {}
