@@ -55,7 +55,7 @@ TrapHandlerIdentifier::TrapHandlerIdentifier(int _id,
 	, logger(*this)
 {}
 
-TrapHandlerIdentifier::~TrapHandlerIdentifier() {}
+TrapHandlerIdentifier::~TrapHandlerIdentifier() { id = 0; interface = 0; }
 
 bool
 TrapHandlerIdentifier::Setup()
