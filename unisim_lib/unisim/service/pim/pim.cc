@@ -488,17 +488,18 @@ bool PIM::Setup() {
 	stringstream pimfile;
 
 	pimfile << fSimulator->GetSharedDirectory() << "/" << filename;
-
+*/
 
 	GetExportedVariables(pim_model);
+/*
 	SavePimToXml(pim_model, pimfile.str());
 
 
 	exit(0);
-*/
+
 
 	LoadPimFromXml(pim_model, filename);
-
+*/
 	for (int i=0; i < pim_model.size(); i++) {
 		for (int j=0; j < pim_model[i]->pins.size(); j++) {
 			cerr << "VAR : " << pim_model[i]->pins[j]->name << endl;
@@ -554,9 +555,7 @@ void TargetThread::Run(){
 
 	while (!isTerminated()) {
 
-		cerr << "PIM::TargetThread Before Receive " << std::endl;
 		char *buffer = sockfd->receive();
-		cerr << "PIM::TargetThread After Receive " << std::endl;
 
 		string buf_str(buffer);
 
@@ -601,6 +600,8 @@ void InitiatorThread::Run(){
 
 	double time = 0;
 	uint32_t period = 1e6; // 1000 millisecond
+
+	cerr << "PIM::InitiatorThread start RUN " << std::endl;
 
 	while (!isTerminated()) {
 
