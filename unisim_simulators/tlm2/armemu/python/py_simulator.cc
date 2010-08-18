@@ -106,7 +106,7 @@ create_simulator()
 	{
 			(char *)ARMEMU_EXEC_LOCATION,
 			(char *)"-p",
-			(char *)"../../share/unisim-armemu-0.4.1",
+			(char *)PHYTON_LIB_TO_SHARED_DATA_PATH,
 			(char *)"-w",
 			0
 	};
