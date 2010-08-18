@@ -1565,6 +1565,9 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	, cmd_args(0)
 	, param_cmd_args(0)
 {
+	bool has_share_data_dir_hint = false;
+	string shared_data_dir_hint;
+
 	command_line_options.push_back(CommandLineOption('s', "set", "set value of parameter 'param' to 'value'", "param=value"));
 	command_line_options.push_back(CommandLineOption('c', "config", "configures the simulator with the given XML configuration file", "XML file"));
 	command_line_options.push_back(CommandLineOption('g', "get-config", "get the simulator configuration XML file (you can use it to create your own configuration. This option can be combined with -c to get a new configuration file with existing variables from another file", "XML file"));
@@ -1572,6 +1575,7 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	command_line_options.push_back(CommandLineOption('w', "warn", "enable printing of kernel warnings"));
 	command_line_options.push_back(CommandLineOption('d', "doc", "enable printing a latex documentation", "Latex file"));
 	command_line_options.push_back(CommandLineOption('v', "version", "displays the program version information"));
+	command_line_options.push_back(CommandLineOption('p', "share-path", "the path that should be used for the share directory", "path"));
 	command_line_options.push_back(CommandLineOption('h', "help", "displays this help"));
 	
 	if(LoadBuiltInConfig)
@@ -1615,12 +1619,114 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 
 	param_enable_press_enter_at_exit = new Parameter<bool>("enable-press-enter-at-exit", 0, enable_press_enter_at_exit, "Enable/Disable pressing key enter at exit");
 	
+	// parse command line arguments
+	int state = 0;
+	char **arg;
+	for(arg = argv + 1; *arg != 0 && state != -1;)
+	{
+		switch(state)
+		{
+			case 0:
+				{
+					std::vector<CommandLineOption>::const_iterator cmd_opt_iter;
+					bool match = false;
+					for(cmd_opt_iter = command_line_options.begin(); !match && cmd_opt_iter != command_line_options.end(); cmd_opt_iter++)
+					{
+						if(*cmd_opt_iter == *arg)
+						{
+							// match
+							match=true;
+							switch(cmd_opt_iter->GetShortName())
+							{
+								case 's':
+									arg++;
+									state = 1;
+									break;
+								case 'c':
+									arg++;
+									state = 2;
+									break;
+								case 'g':
+									arg++;
+									state = 3;
+									break;
+								case 'l':
+									arg++;
+									list_parms = true;
+									break;
+								case 'v':
+									arg++;
+									enable_version = true;
+									break;
+								case 'h':
+									arg++;
+									enable_help = true;
+									break;
+								case 'w':
+									arg++;
+									enable_warning = true;
+									break;
+								case 'd':
+									arg++;
+									state = 4;
+									break;
+								case 'p':
+									has_share_data_dir_hint = true;
+									arg++;
+									state = 5;
+									break;
+								default:
+									state = -1;
+									break;
+							}
+						}
+					}
+					if(!match)
+					{
+						state = -1;
+					}
+				}
+				break;
+			case 1:
+				// skipping set variable
+				arg++;
+				state = 0;
+				break;
+			case 2:
+				// skipping loading variables
+				arg++;
+				state = 0;
+				break;
+			case 3:
+				// skipping get config
+				arg++;
+				state = 0;
+				break;
+			case 4:
+				// skipping generate doc
+				arg++;
+				state = 0;
+				break;
+			case 5:
+				// getting the share data path
+				shared_data_dir_hint = *arg;
+				arg++;
+				state = 0;
+				break;
+			default:
+				cerr << "Internal error while parsing command line arguments" << endl;
+				state = -1;
+		}
+	}
+
 	if(GetBinPath(argv[0], bin_dir, program_binary))
 	{
 		//std::cerr << "bin_dir=\"" << bin_dir << "\"" << std::endl;
 		//std::cerr << "program_binary=\"" << program_binary << "\"" << std::endl;
 
-		if(GetSharePath(bin_dir, shared_data_dir))
+		if(has_share_data_dir_hint ?
+				GetSharePath(bin_dir, shared_data_dir, shared_data_dir_hint) :
+				GetSharePath(bin_dir, shared_data_dir))
 		{
 			//std::cerr << "shared_data_dir=\"" << shared_data_dir << "\"" << std::endl;
 		}
@@ -1634,10 +1740,12 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 		warn_get_bin_path = true;
 		warn_get_share_path = true;
 	}
-	
+
 	// parse command line arguments
-	int state = 0;
-	char **arg;
+	// int state = 0;
+	// char **arg;
+	state = 0;
+	
 	for(arg = argv + 1; *arg != 0 && state != -1;)
 	{
 		switch(state)
@@ -1692,6 +1800,8 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 									if(warn_get_share_path)
 									{
 										cerr << "WARNING! Can't determine share directory" << endl;
+										cerr << "         Program binary is '" << program_binary << "'" << endl;
+										cerr << "         Binary dir is     '" << bin_dir << "'" << endl;
 									}
 									break;
 								case 'd':
@@ -1729,8 +1839,8 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 					{
 						cerr << "WARNING! Ignoring " << *arg << endl;
 					}
-					arg++;
 				}
+				arg++;
 				state = 0;
 				break;
 			case 2:
@@ -2601,6 +2711,34 @@ bool Simulator::GetBinPath(const char *argv0, std::string& out_bin_dir, std::str
 		return true;
 	}
 	return false;
+}
+
+bool Simulator::GetSharePath(const std::string& bin_dir,
+		std::string& out_share_dir,
+		const std::string& share_dir_hint) const
+{
+	std::string unresolved_shared_data_dir = bin_dir;
+	unresolved_shared_data_dir += '/';
+	unresolved_shared_data_dir += share_dir_hint;
+	char resolved_shared_data_dir_buf[PATH_MAX + 1];
+
+#if defined(linux) || defined(__APPLE_CC__)
+	if(realpath(unresolved_shared_data_dir.c_str(), resolved_shared_data_dir_buf))
+	{
+		out_share_dir = resolved_shared_data_dir_buf;
+		return true;
+	}
+#elif defined(WIN32)
+	DWORD length = GetFullPathName(unresolved_shared_data_dir.c_str(), PATH_MAX + 1, resolved_shared_data_dir_buf, 0);
+	if(length > 0)
+	{
+		resolved_shared_data_dir_buf[length] = 0;
+		out_share_dir = resolved_shared_data_dir_buf;
+		return true;
+	}
+#endif
+	// if the submitted path doesn't exist try to guest it anyway
+	return GetSharePath(bin_dir, out_share_dir);
 }
 
 bool Simulator::GetSharePath(const std::string& bin_dir, std::string& out_share_dir) const
