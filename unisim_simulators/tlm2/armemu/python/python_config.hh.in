@@ -5,7 +5,7 @@
 
 #define SIM_PYTHON_MODULE_NAME @SIM_PYTHON_MODULE_NAME@
 #define PyInit_ARMEMU_DECLARATION PyInit_@SIM_PYTHON_IMPORT_NAME@(void)
-#define PACKAGE_NAME "python_@SIM_PYTHON_IMPORT_NAME@"
+#define PACKAGE_NAME "@SIM_PYTHON_IMPORT_NAME@"
 #define ARMEMU_EXEC_LOCATION "/Users/gracia/Developer/unisim/armemu/build/bin/@ARMEMU_EXEC_NAME@"
 
 #endif // __PYTHON_PYTHON_CONFIG_HH__

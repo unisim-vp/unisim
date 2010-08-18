@@ -6,7 +6,7 @@ import os.path
 # print ( distutils.util.get_platform() )
 # print ( sysconfig.get_config_vars() )
 
-module_simulator = Extension('@SIM_PYTHON_IMPORT_NAME@',
+module_simulator = Extension('@SIM_PYTHON_IMPORT_NAME@.simulator',
 	sources=[
 		'@CMAKE_SOURCE_DIR@/python/py_simulator.cc'
 		],
@@ -27,7 +27,7 @@ module_simulator = Extension('@SIM_PYTHON_IMPORT_NAME@',
 	extra_link_args=['-fPIC'],
 	)
 	
-module_variable = Extension('python_@SIM_PYTHON_IMPORT_NAME@.variable',
+module_variable = Extension('@SIM_PYTHON_IMPORT_NAME@.variable',
 	sources=[
 		'@CMAKE_SOURCE_DIR@/python/py_variable.cc'
 		],
@@ -50,7 +50,7 @@ module_variable = Extension('python_@SIM_PYTHON_IMPORT_NAME@.variable',
 setup(name="@SIM_PYTHON_IMPORT_NAME@", version="@SIM_VERSION@",
 	# ext_package='@SIM_PYTHON_IMPORT_NAME@',
 	ext_modules=[module_simulator,module_variable],
-	packages=['python_@SIM_PYTHON_IMPORT_NAME@'],
-	package_dir={'python_@SIM_PYTHON_IMPORT_NAME@':'@CMAKE_SOURCE_DIR@/python'}
+	packages=['@SIM_PYTHON_IMPORT_NAME@'],
+	package_dir={'@SIM_PYTHON_IMPORT_NAME@':'@CMAKE_SOURCE_DIR@/python'}
  	)
 

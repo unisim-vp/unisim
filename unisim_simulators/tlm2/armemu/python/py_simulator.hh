@@ -42,8 +42,10 @@
 extern "C" {
 
 /* Variable full capsule name */
-#define PySimulator_Module_Name "armemu040"
-#define PySimulator_Capsule_Name "armemu040._C_API"
+#define PySimulator_Module_Name PACKAGE_NAME".simulator"
+// "armemu041"
+#define PySimulator_Capsule_Name PACKAGE_NAME".simulator._C_API"
+// "armemu041._C_API"
 
 /* C API functions */
 #define PySimulator_GetSimRef_NUM 0
@@ -78,9 +80,13 @@ static void import_simulator_api_init(void)
  */
 static int import_simulator_api(void)
 {
+	cerr << "PySimulator_API = " << PySimulator_API << endl;
 	if ( PySimulator_API != NULL ) return 0;
+	cerr << "PyImport_ImportModule(" << PySimulator_Module_Name << ")" << endl;
 	if ( PyImport_ImportModule(PySimulator_Module_Name) == NULL ) return -1;
+	cerr << "PyCapsule_Import(" << PySimulator_Capsule_Name << ")" << endl;
 	PySimulator_API = (void **)PyCapsule_Import(PySimulator_Capsule_Name, 0);
+	cerr << "PySimulator_API = " << PySimulator_API << endl;
 	return ( PySimulator_API != NULL ) ? 0 : -1;
 }
 
