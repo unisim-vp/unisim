@@ -268,7 +268,7 @@ public:
 	bool GetExecutablePath(const char *argv0, std::string& out_execute_path) const;
 	bool GetBinPath(const char *argv0, std::string& out_bin_dir, std::string& out_bin_program) const;
 	bool GetSharePath(const std::string& bin_dir, std::string& out_share_dir) const;
-	bool GetSharePath(const std::string& bin_dir, std::string& out_share_dir, const std::string& share_dir_hint) const;
+	bool GetSharePath(const std::string& bin_dir, std::string& out_share_dir, const std::string& share_dir_relative_path) const;
 	string SearchSharedDataFile(const char *filename) const;
 
 	void GenerateLatexDocumentation(ostream& os) const;

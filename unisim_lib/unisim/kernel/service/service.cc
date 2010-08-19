@@ -2715,40 +2715,13 @@ bool Simulator::GetBinPath(const char *argv0, std::string& out_bin_dir, std::str
 
 bool Simulator::GetSharePath(const std::string& bin_dir,
 		std::string& out_share_dir,
-		const std::string& share_dir_hint) const
+		const std::string& share_dir_relative_path) const
 {
 	std::string unresolved_shared_data_dir = bin_dir;
 	unresolved_shared_data_dir += '/';
-	unresolved_shared_data_dir += share_dir_hint;
+	unresolved_shared_data_dir += share_dir_relative_path;
 	char resolved_shared_data_dir_buf[PATH_MAX + 1];
 
-#if defined(linux) || defined(__APPLE_CC__)
-	if(realpath(unresolved_shared_data_dir.c_str(), resolved_shared_data_dir_buf))
-	{
-		out_share_dir = resolved_shared_data_dir_buf;
-		return true;
-	}
-#elif defined(WIN32)
-	DWORD length = GetFullPathName(unresolved_shared_data_dir.c_str(), PATH_MAX + 1, resolved_shared_data_dir_buf, 0);
-	if(length > 0)
-	{
-		resolved_shared_data_dir_buf[length] = 0;
-		out_share_dir = resolved_shared_data_dir_buf;
-		return true;
-	}
-#endif
-	// if the submitted path doesn't exist try to guest it anyway
-	return GetSharePath(bin_dir, out_share_dir);
-}
-
-bool Simulator::GetSharePath(const std::string& bin_dir, std::string& out_share_dir) const
-{
-	// append path of shared data relative to bin directory
-	std::string unresolved_shared_data_dir = bin_dir;
-	unresolved_shared_data_dir += '/';
-	unresolved_shared_data_dir += BIN_TO_SHARED_DATA_PATH;
-	char resolved_shared_data_dir_buf[PATH_MAX + 1];
-		
 #if defined(linux) || defined(__APPLE_CC__)
 	if(realpath(unresolved_shared_data_dir.c_str(), resolved_shared_data_dir_buf))
 	{
@@ -2765,6 +2738,11 @@ bool Simulator::GetSharePath(const std::string& bin_dir, std::string& out_share_
 	}
 #endif
 	return false;
+}
+
+bool Simulator::GetSharePath(const std::string& bin_dir, std::string& out_share_dir) const
+{
+	return GetSharePath(bin_dir, out_share_dir, string(BIN_TO_SHARED_DATA_PATH));
 }
 
 string Simulator::SearchSharedDataFile(const char *filename) const
