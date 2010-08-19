@@ -195,12 +195,8 @@ Load()
 			endianness = E_BIG_ENDIAN;
 	}
 
-	std::cerr << "argc=" << argc << std::endl;
-	std::cerr << "argv=" << argv << std::endl;
-	std::cerr << "param_argv=" << param_argv << std::endl;
 	if ( argc && !argv && !param_argv)
 	{
-		std::cerr << "Creating argv" << std::endl;
 		argv = new string[argc];
 		param_argv = new ParameterArray<string>("argv", this, argv, argc,
 				"The ordered list of tokens in the command line.");

@@ -93,7 +93,6 @@ SimDebugger(const char *_name, Object *_parent) :
 	symbol_table_lookup_import(0),
 	stmt_lookup_import(0)
 {
-	cerr << "---> Sim debugger" << endl;
 	param_num_loaders.SetMutable(false);
 	param_num_loaders.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 
@@ -143,7 +142,6 @@ SimDebugger(const char *_name, Object *_parent) :
 	}
 
 	Object::SetupDependsOn(memory_access_reporting_control_import);
-	cerr << "<---- Sim debugger" << endl;
 }
 
 template <class ADDRESS>

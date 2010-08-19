@@ -331,7 +331,7 @@ static PyTypeObject variable_VariableType = {
 	    0,									/* tp_dictoffset */
 	    (initproc)variable_init,			/* tp_init */
 	    0,									/* tp_alloc */
-	    0, //variable_new,						/* tp_new */
+	    variable_new,						/* tp_new */
 };
 
 static PyModuleDef variablemodule = {

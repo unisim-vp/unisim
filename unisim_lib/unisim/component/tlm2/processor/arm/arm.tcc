@@ -190,11 +190,6 @@ bool
 ARM<CONFIG, BLOCKING> :: 
 Setup() 
 {
-
-	cerr << "debug_enable = " << CONFIG::DEBUG_ENABLE << endl;
-	cerr << "verbose_all = " << inherited::verbose_all << endl;
-	cerr << "verbose_setup = " << inherited::verbose_setup << endl;
-	cerr << "verbose_tlm_irq = " << verbose_tlm_irq << endl;
 	if (!inherited::Setup()) 
 	{
 		inherited::logger << DebugError

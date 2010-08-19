@@ -32,62 +32,33 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
-#ifndef __PYTHON_PY_SIMULATOR_HH__
-#define __PYTHON_PY_SIMULATOR_HH__
+#ifndef __UNISIM_SERVICE_TRAP_HANDLER_IDENTIFIER_INTERFACE_HH__
+#define __UNISIM_SERVICE_TRAP_HANDLER_IDENTIFIER_INTERFACE_HH__
 
-#include <Python.h>
-#include "simulator.hh"
-#include "python/python_config.hh"
+#include "unisim/kernel/service/service.hh"
 
-extern "C" {
+namespace unisim {
+namespace service {
+namespace trap_handler {
 
-/* Variable full capsule name */
-#define PySimulator_Module_Name PACKAGE_NAME".simulator"
-// "armemu041"
-#define PySimulator_Capsule_Name PACKAGE_NAME".simulator._C_API"
-// "armemu041._C_API"
-
-/* C API functions */
-#define PySimulator_GetSimRef_NUM 0
-#define PySimulator_GetSimRef_RETURN Simulator *
-#define PySimulator_GetSimRef_PROTO ()
-
-/* Total number of C API pointers */
-#define PySimulator_API_pointers 1
-
-#ifdef SIMULATOR_MODULE
-/* This section is used when compiling py_variable.cc */
-
-static PySimulator_GetSimRef_RETURN PySimulator_GetSimRef PySimulator_GetSimRef_PROTO;
-
-#else // SIMULATOR_MODULE
-
-/* This section is used in modules that use simulator module's API */
-static void **PySimulator_API;
-
-#define PySimulator_GetSimRef \
-	(*(PySimulator_GetSimRef_RETURN (*)PySimulator_GetSimRef_PROTO) PySimulator_API[PySimulator_GetSimRef_NUM])
-
-/* Ensures that the initial PySimulator_API is NULL
- */
-static void import_simulator_api_init(void)
+class TrapHandlerIdentifierInterface
 {
-	PySimulator_API = NULL;
-}
+public:
+	virtual ~TrapHandlerIdentifierInterface() {}
 
-/* Return -1 on error, 0 on success.
- * PyCapsule_Import will set an exception if there's an error.
- */
-static int import_simulator_api(void)
-{
-	if ( PySimulator_API != NULL ) return 0;
-	if ( PyImport_ImportModule(PySimulator_Module_Name) == NULL ) return -1;
-	PySimulator_API = (void **)PyCapsule_Import(PySimulator_Capsule_Name, 0);
-	return ( PySimulator_API != NULL ) ? 0 : -1;
-}
+	virtual void ReportTrap(int id) = 0;
+	virtual void ReportTrap(int id,
+			const unisim::kernel::service::Object &obj) = 0;
+	virtual void ReportTrap(int id,
+			const unisim::kernel::service::Object &obj,
+			const std::string &str) = 0;
+	virtual void ReportTrap(int id,
+			const unisim::kernel::service::Object &obj,
+			const char *c_str) = 0;
+};
 
-#endif // SIMULATOR_MODULE
+} // end of namespace trap_handler
+} // end of namespace service
+} // end of namespace unisim
 
-}
-
-#endif /* __PYTHON_PY_SIMULATOR_HH__ */
+#endif // __UNISIM_SERVICE_TRAP_HANDLER_IDENTIFIER_INTERFACE_HH__

@@ -32,21 +32,29 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
-#include <unisim/service/trap_handler/trap_handler.hh>
+#include "unisim/service/trap_handler/trap_handler.hh"
 #include <sstream>
 
 namespace unisim {
 namespace service {
 namespace trap_handler {
 
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugError;
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::EndDebugInfo;
+
 TrapHandler::TrapHandler(const char *name, Object *parent)
 	: unisim::kernel::service::Object(name, parent, "Trap handler")
-	, Service<TrapReporting>(name, parent)
+	// , Service<TrapReporting>(name, parent)
 	, trap_reporting_export()
+	, logger(*this)
 	, trap_reporting_export_name()
 	, param_trap_reporting_export_name()
 	, num_traps(0)
 	, param_num_traps("num-traps", this, num_traps, "Total number of traps that will be received.")
+	, send_to_logger(false)
+	, param_send_to_logger("send-traps-to-logger", this, send_to_logger, "Send the traps to the logger.")
 {
 	for ( unsigned int i = 0;
 			i < num_traps;
@@ -71,6 +79,12 @@ TrapHandler::TrapHandler(const char *name, Object *parent)
 		ServiceExport<TrapReporting> *exp =
 				new ServiceExport<TrapReporting>(((std::string)(*param)).c_str(), this);
 		trap_reporting_export.push_back(exp);
+		std::stringstream identifier_name;
+		identifier_name << "trap_handler_identifier[" << i << "]";
+		TrapHandlerIdentifier *identifier =
+				new TrapHandlerIdentifier(i, this,
+						identifier_name.str().c_str(), this);
+		*exp >> identifier->trap_reporting_export;
 	}
 }
 
@@ -99,26 +113,51 @@ TrapHandler::Setup()
 }
 
 void
-TrapHandler::ReportTrap()
+TrapHandler::ReportTrap(int id)
 {
 	// what to do with non identified traps???
+	if ( send_to_logger )
+		logger << DebugInfo
+			<< "Received trap from unknown source."
+			<< " In id = " << id << "."
+			<< EndDebugInfo;
 }
 
 void
-TrapHandler::ReportTrap(const unisim::kernel::service::Object &obj)
+TrapHandler::ReportTrap(int id,
+		const unisim::kernel::service::Object &obj)
 {
+	if ( send_to_logger )
+		logger << DebugInfo
+			<< "Received trap from '" << obj.GetName() << "'."
+			<< " In id = " << id << "."
+			<< EndDebugInfo;
 }
 
 void
-TrapHandler::ReportTrap(const unisim::kernel::service::Object &obj,
-						const std::string &str)
+TrapHandler::ReportTrap(int id,
+		const unisim::kernel::service::Object &obj,
+		const std::string &str)
 {
+	if ( send_to_logger )
+		logger << DebugInfo
+			<< "Received trap from '" << obj.GetName() << "' with message: '"
+			<< str << "'."
+			<< " In id = " << id << "."
+			<< EndDebugInfo;
 }
 
 void
-TrapHandler::ReportTrap(const unisim::kernel::service::Object &obj,
-						const char *c_str)
+TrapHandler::ReportTrap(int id,
+		const unisim::kernel::service::Object &obj,
+		const char *c_str)
 {
+	if ( send_to_logger )
+		logger << DebugInfo
+			<< "Received trap from '" << obj.GetName() << "' with message: '"
+			<< c_str << "'."
+			<< " In id = " << id << "."
+			<< EndDebugInfo;
 }
 
 } // end of namespace trap_handler
