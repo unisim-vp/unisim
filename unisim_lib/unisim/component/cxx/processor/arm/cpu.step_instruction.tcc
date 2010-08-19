@@ -255,7 +255,7 @@ StepInstruction() {
 		instruction_counter++;
 		if ( unlikely((trap_on_instruction_counter == instruction_counter)
 				&& instruction_counter_trap_reporting_import) )
-			instruction_counter_trap_reporting_import->ReportTrap();
+			instruction_counter_trap_reporting_import->ReportTrap(*this);
 
 		if ( unlikely(HasPendingException()) )
 		{
@@ -269,7 +269,7 @@ StepInstruction() {
 				<< "Received processor reset exception :" << exc.what() 
 				<< EndDebugError;
 		if (TrapOnException())
-			exception_trap_reporting_import->ReportTrap();
+			exception_trap_reporting_import->ReportTrap(*this);
 		PerformResetException();
 	}
 	catch (UndefinedInstructionException<CONFIG> &exc) 
@@ -279,7 +279,7 @@ StepInstruction() {
 				<< "Received undefined instruction exception: " << exc.what()
 				<< EndDebugInfo;
 		if (TrapOnException())
-			exception_trap_reporting_import->ReportTrap();
+			exception_trap_reporting_import->ReportTrap(*this);
 		PerformUndefInsnException();
 	}
 	catch (SoftwareInterruptException<CONFIG> &exc) 
@@ -289,7 +289,7 @@ StepInstruction() {
 				<< "Received software interrupt exception: " << exc.what()
 				<< EndDebugInfo;
 		if (TrapOnException())
-			exception_trap_reporting_import->ReportTrap();
+			exception_trap_reporting_import->ReportTrap(*this);
 		PerformSWIException();
 	}
 	catch (PrefetchAbortException<CONFIG> &exc) 
@@ -298,7 +298,7 @@ StepInstruction() {
 			<< "Received processor prefetch abort exception :" << exc.what() << endl
 			<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << EndDebugError;
 		if (TrapOnException())
-			exception_trap_reporting_import->ReportTrap();
+			exception_trap_reporting_import->ReportTrap(*this);
 		PerformPrefetchAbortException();
 	}
 	catch (DataAbortException<CONFIG> &exc) 
@@ -307,7 +307,7 @@ StepInstruction() {
 			<< "Received processor data abort exception :" << exc.what() 
 			<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << EndDebugError;
 		if (TrapOnException())
-			exception_trap_reporting_import->ReportTrap();
+			exception_trap_reporting_import->ReportTrap(*this);
 		PerformDataAbortException();
 	}
 	catch (IRQException<CONFIG> &exc) 
@@ -357,7 +357,7 @@ StepInstruction() {
 				<< "Received processor FIQ exception:" << exc.what()
 				<< EndDebugInfo;
 		if (TrapOnException())
-			exception_trap_reporting_import->ReportTrap();
+			exception_trap_reporting_import->ReportTrap(*this);
 		PerformFIQException();
 	}
 	catch (Exception &exc) 

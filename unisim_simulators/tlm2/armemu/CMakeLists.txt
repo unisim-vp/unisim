@@ -206,6 +206,18 @@ add_custom_target ( armemu__share_logo
 		"Copying icon files"
 	)
 			
+add_custom_target ( armemu__share_python
+	ALL
+	COMMAND
+		${CMAKE_COMMAND} -E make_directory ${SHARE_DIRECTORY}/python
+	COMMAND
+		${CMAKE_COMMAND} -E copy_if_different
+			${CMAKE_SOURCE_DIR}/share/python/demo.py
+			${SHARE_DIRECTORY}/python/demo.py
+	COMMENT
+		"Setting python demos."
+	)
+
 if ( APPLE )
 	configure_file ( 
 		${CMAKE_SOURCE_DIR}/share/macosx/armemu-launcher.sh.in
