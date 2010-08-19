@@ -102,14 +102,16 @@ static Simulator *
 create_simulator()
 {
 	Simulator *sim;
-	char *argv[3] =
+	char *argv[5] =
 	{
 			(char *)ARMEMU_EXEC_LOCATION,
+			(char *)"-p",
+			(char *)PHYTON_LIB_TO_SHARED_DATA_PATH,
 			(char *)"-w",
 			0
 	};
 
-	sim = new Simulator(2, argv);
+	sim = new Simulator(4, argv);
 	return sim;
 }
 
@@ -134,7 +136,6 @@ destroy_simulator(armemu_SimulatorObject *self)
 	}
 	self->sim = 0;
 	sim = 0;
-
 }
 
 static void
@@ -169,18 +170,20 @@ pydict_from_variable_list ( armemu_SimulatorObject *self,
 			it++ )
 	{
 		PyObject *variable;
-		PyObject *name;
 		variable = PyVariable_NewVariable((*it)->GetName());
-		name = PyUnicode_FromString((*it)->GetName());
-		if ( PyDict_SetItem(result, name, variable) == -1)
+		if ( variable == NULL )
 		{
-			Py_DECREF(name);
+			PyDict_Clear(result);
+			result = NULL;
+			return result;
+		}
+		if ( PyDict_SetItemString(result, (*it)->GetName(), variable) == -1)
+		{
 			Py_DECREF(variable);
 			PyDict_Clear(result);
 			result = NULL;
 			return result;
 		}
-		Py_DECREF(name);
 		Py_DECREF(variable);
 	}
 
@@ -573,8 +576,8 @@ static PyModuleDef simulatormodule = {
 };
 
 PyMODINIT_FUNC
-// PyInit_simulator(void)
-PyInit_ARMEMU_DECLARATION
+PyInit_simulator(void)
+// PyInit_ARMEMU_DECLARATION
 {
     PyObject* m;
     static void *PySimulator_API[PySimulator_API_pointers];

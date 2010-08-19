@@ -32,62 +32,73 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
-#ifndef __PYTHON_PY_SIMULATOR_HH__
-#define __PYTHON_PY_SIMULATOR_HH__
+#include "unisim/service/trap_handler/trap_handler_identifier.hh"
 
-#include <Python.h>
-#include "simulator.hh"
-#include "python/python_config.hh"
+namespace unisim {
+namespace service {
+namespace trap_handler {
 
-extern "C" {
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugError;
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::EndDebugInfo;
 
-/* Variable full capsule name */
-#define PySimulator_Module_Name PACKAGE_NAME".simulator"
-// "armemu041"
-#define PySimulator_Capsule_Name PACKAGE_NAME".simulator._C_API"
-// "armemu041._C_API"
+TrapHandlerIdentifier::TrapHandlerIdentifier(int _id,
+		TrapHandlerIdentifierInterface *_interface,
+		const char *name,
+		Object *parent)
+	: unisim::kernel::service::Object(name, parent, "Trap handler identifier")
+	, Service<TrapReporting>(name, parent)
+	, trap_reporting_export("trap_reporting_import", this)
+	, id(_id)
+	, interface(_interface)
+	, logger(*this)
+{}
 
-/* C API functions */
-#define PySimulator_GetSimRef_NUM 0
-#define PySimulator_GetSimRef_RETURN Simulator *
-#define PySimulator_GetSimRef_PROTO ()
+TrapHandlerIdentifier::~TrapHandlerIdentifier() { id = 0; interface = 0; }
 
-/* Total number of C API pointers */
-#define PySimulator_API_pointers 1
-
-#ifdef SIMULATOR_MODULE
-/* This section is used when compiling py_variable.cc */
-
-static PySimulator_GetSimRef_RETURN PySimulator_GetSimRef PySimulator_GetSimRef_PROTO;
-
-#else // SIMULATOR_MODULE
-
-/* This section is used in modules that use simulator module's API */
-static void **PySimulator_API;
-
-#define PySimulator_GetSimRef \
-	(*(PySimulator_GetSimRef_RETURN (*)PySimulator_GetSimRef_PROTO) PySimulator_API[PySimulator_GetSimRef_NUM])
-
-/* Ensures that the initial PySimulator_API is NULL
- */
-static void import_simulator_api_init(void)
+bool
+TrapHandlerIdentifier::Setup()
 {
-	PySimulator_API = NULL;
+	if ( interface == 0 )
+	{
+		logger << DebugError
+				<< "Could not initialize trap handler identifier because no"
+				<< " interface was given."
+				<< EndDebugError;
+		return false;
+	}
+	return true;
 }
 
-/* Return -1 on error, 0 on success.
- * PyCapsule_Import will set an exception if there's an error.
- */
-static int import_simulator_api(void)
+void
+TrapHandlerIdentifier::
+ReportTrap()
 {
-	if ( PySimulator_API != NULL ) return 0;
-	if ( PyImport_ImportModule(PySimulator_Module_Name) == NULL ) return -1;
-	PySimulator_API = (void **)PyCapsule_Import(PySimulator_Capsule_Name, 0);
-	return ( PySimulator_API != NULL ) ? 0 : -1;
+	interface->ReportTrap(id);
 }
 
-#endif // SIMULATOR_MODULE
-
+void
+TrapHandlerIdentifier::
+ReportTrap(const unisim::kernel::service::Object &obj)
+{
+	interface->ReportTrap(id, obj);
 }
 
-#endif /* __PYTHON_PY_SIMULATOR_HH__ */
+void
+TrapHandlerIdentifier::ReportTrap(const unisim::kernel::service::Object &obj,
+						const std::string &str)
+{
+	interface->ReportTrap(id, obj, str);
+}
+
+void
+TrapHandlerIdentifier::ReportTrap(const unisim::kernel::service::Object &obj,
+						const char *c_str)
+{
+	interface->ReportTrap(id, obj, c_str);
+}
+
+} // end of namespace trap_handler
+} // end of namespace service
+} // end of namespace unisim

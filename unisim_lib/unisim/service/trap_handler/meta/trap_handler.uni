@@ -3,6 +3,9 @@
 	<unit>
 		<name>unisim::service::trap_handler</name>
 		<files>
+			<file>unisim/service/trap_handler/trap_handler_identifier_interface.hh</file>
+			<file>unisim/service/trap_handler/trap_handler_identifier.hh</file>
+			<file>unisim/service/trap_handler/trap_handler_identifier.cc</file>
 			<file>unisim/service/trap_handler/trap_handler.hh</file>
 			<file>unisim/service/trap_handler/trap_handler.cc</file>
 			<file>unisim/service/trap_handler/CMakeLists.txt</file>

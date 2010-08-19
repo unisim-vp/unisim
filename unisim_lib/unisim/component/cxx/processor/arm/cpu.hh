@@ -48,8 +48,8 @@
 #include "unisim/service/interfaces/memory_injection.hh"
 #include "unisim/service/interfaces/registers.hh"
 #include "unisim/service/interfaces/trap_reporting.hh"
-#include <unisim/service/interfaces/cache_power_estimator.hh>
-#include <unisim/service/interfaces/power_mode.hh>
+#include "unisim/service/interfaces/cache_power_estimator.hh"
+#include "unisim/service/interfaces/power_mode.hh"
 #include "unisim/util/debug/register.hh"
 #include "unisim/util/arithmetic/arithmetic.hh"
 #include "unisim/component/cxx/processor/arm/memory_op.hh"

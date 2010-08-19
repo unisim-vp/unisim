@@ -33,6 +33,9 @@ include_directories ( ${CMAKE_SOURCE_DIR} )
 add_library ( unisim__service__trap_handler
 		${CMAKE_SOURCE_DIR}/unisim/service/trap_handler/trap_handler.hh
 		${CMAKE_SOURCE_DIR}/unisim/service/trap_handler/trap_handler.cc
+		${CMAKE_SOURCE_DIR}/unisim/service/trap_handler/trap_handler_identifier.hh
+		${CMAKE_SOURCE_DIR}/unisim/service/trap_handler/trap_handler_identifier.cc
+		${CMAKE_SOURCE_DIR}/unisim/service/trap_handler/trap_handler_identifier_interface.hh
 	)
 	
 target_link_libraries ( unisim__service__trap_handler

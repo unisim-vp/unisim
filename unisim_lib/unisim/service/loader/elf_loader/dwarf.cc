@@ -793,6 +793,8 @@ const char *DWARF_GetLANGName(uint16_t dw_lang)
 		case DW_LANG_ObjC_plus_plus: return "DW_LANG_ObjC_plus_plus";
 		case DW_LANG_UPC: return "DW_LANG_UPC";
 		case DW_LANG_D: return "DW_LANG_D";
+		case DW_LANG_Mips_Assembler: return "DW_LANG_Mips_Assembler";
+		case DW_LANG_Upc: return "DW_LANG_Upc";
 	}
 	std::stringstream sstr;
 	sstr << "0x" << std::hex << (unsigned int) dw_lang << std::dec << " (?)";

@@ -1082,24 +1082,7 @@ template <class MEMORY_ADDR>
 std::string DWARF_LocListPtr<MEMORY_ADDR>::to_string() const
 {
 	std::stringstream sstr;
-
-	if(dw_loc_list_entry)
-	{
-		const DWARF_LocListEntry<MEMORY_ADDR> *dw_current_loc_list_entry = dw_loc_list_entry;
-		
-		do
-		{
-			if(dw_current_loc_list_entry != dw_loc_list_entry) sstr << ";";
-			sstr << *dw_current_loc_list_entry;
-			if(dw_current_loc_list_entry->IsEndOfList()) break;
-		}
-		while(dw_current_loc_list_entry = dw_current_loc_list_entry->GetNext());
-	}
-	else
-	{
-		sstr << debug_loc_offset;
-	}
-
+	sstr << debug_loc_offset;
 	return std::string(sstr.str());
 }
 
@@ -1142,24 +1125,7 @@ template <class MEMORY_ADDR>
 std::string DWARF_MacPtr<MEMORY_ADDR>::to_string() const
 {
 	std::stringstream sstr;
-
-	if(dw_macinfo_list_entry)
-	{
-		const DWARF_MacInfoListEntry<MEMORY_ADDR> *dw_current_macinfo_list_entry = dw_macinfo_list_entry;
-		
-		do
-		{
-			if(dw_current_macinfo_list_entry != dw_macinfo_list_entry) sstr << ";";
-			sstr << *dw_current_macinfo_list_entry;
-			dw_current_macinfo_list_entry = dw_current_macinfo_list_entry->GetNext();
-		}
-		while(dw_current_macinfo_list_entry && (dw_current_macinfo_list_entry->GetType() != 0));
-	}
-	else
-	{
-		sstr << debug_macinfo_offset;
-	}
-
+	sstr << debug_macinfo_offset;
 	return std::string(sstr.str());
 }
 
@@ -1203,24 +1169,7 @@ template <class MEMORY_ADDR>
 std::string DWARF_RangeListPtr<MEMORY_ADDR>::to_string() const
 {
 	std::stringstream sstr;
-
-	if(dw_range_list_entry)
-	{
-		const DWARF_RangeListEntry<MEMORY_ADDR> *dw_current_range_list_entry = dw_range_list_entry;
-		
-		do
-		{
-			if(dw_current_range_list_entry != dw_range_list_entry) sstr << ";";
-			sstr << *dw_current_range_list_entry;
-			if(dw_current_range_list_entry->IsEndOfList()) break;
-		}
-		while(dw_current_range_list_entry = dw_current_range_list_entry->GetNext());
-	}
-	else
-	{
-		sstr << debug_ranges_offset;
-	}
-
+	sstr << debug_ranges_offset;
 	return std::string(sstr.str());
 }
 
@@ -4307,6 +4256,19 @@ int64_t DWARF_RangeListEntry<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t
 }
 
 template <class MEMORY_ADDR>
+std::ostream& DWARF_RangeListEntry<MEMORY_ADDR>::to_XML(std::ostream& os) const
+{
+	if(IsEndOfList()) return os << "<DW_EOL offset=\"" << offset << "\"/>";
+	if(IsBaseAddressSelection())
+	{
+		os << "<DW_BASE_ADDRESS_SELECTION offset=\"" << offset << "\" largest_address_offset=\"0x" << std::hex << begin << std::dec << "\" address=\"0x" << std::hex << end << std::dec << "\"/>";
+		return os;
+	}
+	os << "<DW_RANGE offset=\"" << offset << "\" begin_address_offset=\"0x" << std::hex << begin << std::dec << "\" end_address_offset=\"0x" << std::hex << end << std::dec << "\"/>";
+	return os;
+}
+
+template <class MEMORY_ADDR>
 std::ostream& operator << (std::ostream& os, const DWARF_RangeListEntry<MEMORY_ADDR>& dw_range_list_entry)
 {
 	if(dw_range_list_entry.IsEndOfList()) return os << "EOL";
@@ -4416,6 +4378,15 @@ std::string DWARF_MacInfoListEntryDefine<MEMORY_ADDR>::to_string() const
 }
 
 template <class MEMORY_ADDR>
+std::ostream& DWARF_MacInfoListEntryDefine<MEMORY_ADDR>::to_XML(std::ostream& os) const
+{
+	os << "<DW_MACINFO_define offset=\"" << DWARF_MacInfoListEntry<MEMORY_ADDR>::GetOffset() << "\" lineno=\"" << lineno.to_string(false) << "\" preprocessor_symbol_name=\"";
+	c_string_to_XML(os, preprocessor_symbol_name);
+	os << "\"/>";
+	return os;
+}
+
+template <class MEMORY_ADDR>
 DWARF_MacInfoListEntryUndef<MEMORY_ADDR>::DWARF_MacInfoListEntryUndef()
 	: DWARF_MacInfoListEntry<MEMORY_ADDR>(DW_MACINFO_undef)
 	, lineno()
@@ -4477,6 +4448,15 @@ std::string DWARF_MacInfoListEntryUndef<MEMORY_ADDR>::to_string() const
 	std::stringstream sstr;
 	sstr << "DW_MACINFO_undef " << lineno.to_string(false) << ", \"" << preprocessor_symbol_name << "\"";
 	return std::string(sstr.str());
+}
+
+template <class MEMORY_ADDR>
+std::ostream& DWARF_MacInfoListEntryUndef<MEMORY_ADDR>::to_XML(std::ostream& os) const
+{
+	os << "<DW_MACINFO_undef offset=\"" << DWARF_MacInfoListEntry<MEMORY_ADDR>::GetOffset() << "\" lineno=\"" << lineno.to_string(false) << "\" preprocessor_symbol_name=\"";
+	c_string_to_XML(os, preprocessor_symbol_name);
+	os << "\"/>";
+	return os;
 }
 
 template <class MEMORY_ADDR>
@@ -4542,6 +4522,13 @@ std::string DWARF_MacInfoListEntryStartFile<MEMORY_ADDR>::to_string() const
 }
 
 template <class MEMORY_ADDR>
+std::ostream& DWARF_MacInfoListEntryStartFile<MEMORY_ADDR>::to_XML(std::ostream& os) const
+{
+	os << "<DW_MACINFO_start_file offset=\"" << DWARF_MacInfoListEntry<MEMORY_ADDR>::GetOffset() << "\" lineno=\"" << lineno.to_string(false) << "\" file_idx=\"" << file_idx.to_string(false) << "\"/>";
+	return os;
+}
+
+template <class MEMORY_ADDR>
 DWARF_MacInfoListEntryEndFile<MEMORY_ADDR>::DWARF_MacInfoListEntryEndFile()
 	: DWARF_MacInfoListEntry<MEMORY_ADDR>(DW_MACINFO_end_file)
 {
@@ -4574,6 +4561,13 @@ template <class MEMORY_ADDR>
 std::string DWARF_MacInfoListEntryEndFile<MEMORY_ADDR>::to_string() const
 {
 	return std::string("DW_MACINFO_end_file");
+}
+
+template <class MEMORY_ADDR>
+std::ostream& DWARF_MacInfoListEntryEndFile<MEMORY_ADDR>::to_XML(std::ostream& os) const
+{
+	os << "<DW_MACINFO_end_file offset=\"" << DWARF_MacInfoListEntry<MEMORY_ADDR>::GetOffset() << "\"/>";
+	return os;
 }
 
 template <class MEMORY_ADDR>
@@ -4641,6 +4635,15 @@ std::string DWARF_MacInfoListEntryVendorExtension<MEMORY_ADDR>::to_string() cons
 }
 
 template <class MEMORY_ADDR>
+std::ostream& DWARF_MacInfoListEntryVendorExtension<MEMORY_ADDR>::to_XML(std::ostream& os) const
+{
+	os << "<DW_MACINFO_vendor_ext offset=\"" << DWARF_MacInfoListEntry<MEMORY_ADDR>::GetOffset() << "\" vendor_ext_constant=\"" << vendor_ext_constant.to_string(false) << "\" vendor_ext_string=\"";
+	c_string_to_XML(os, vendor_ext_string);
+	os << "\"/>";
+	return os;
+}
+
+template <class MEMORY_ADDR>
 DWARF_MacInfoListEntryNull<MEMORY_ADDR>::DWARF_MacInfoListEntryNull()
 	: DWARF_MacInfoListEntry<MEMORY_ADDR>(0)
 {
@@ -4673,6 +4676,13 @@ template <class MEMORY_ADDR>
 std::string DWARF_MacInfoListEntryNull<MEMORY_ADDR>::to_string() const
 {
 	return std::string("DW_MACINFO_null");
+}
+
+template <class MEMORY_ADDR>
+std::ostream& DWARF_MacInfoListEntryNull<MEMORY_ADDR>::to_XML(std::ostream& os) const
+{
+	os << "<DW_MACINFO_null offset=\"" << DWARF_MacInfoListEntry<MEMORY_ADDR>::GetOffset() << "\"/>";
+	return os;
 }
 
 template <class MEMORY_ADDR>
@@ -5435,6 +5445,26 @@ int64_t DWARF_LocListEntry<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t m
 }
 
 template <class MEMORY_ADDR>
+std::ostream& DWARF_LocListEntry<MEMORY_ADDR>::to_XML(std::ostream& os) const
+{
+	if(IsEndOfList()) return os << "<DW_EOL offset=\"" << offset << "\"/>";
+	if(IsBaseAddressSelection())
+	{
+		os << "<DW_BASE_ADDRESS_SELECTION offset=\"" << offset << "\" largest_address_offset=\"0x" << std::hex << begin_addr_offset << std::dec << "\" address=\"0x" << std::hex << end_addr_offset << std::dec << "\"/>";
+		return os;
+	}
+	os << "<DW_LOC offset=\"" << offset << "\" begin_address_offset=\"0x" << std::hex << begin_addr_offset << std::dec << "\" end_address_offset=\"0x" << std::hex << end_addr_offset << std::dec << "\"";
+	if(dw_expr)
+	{
+		os << " expression=\"";
+		c_string_to_XML(os, dw_expr->to_string().c_str());
+		os << "\"";
+	}
+	os << "/>";
+	return os;
+}
+
+template <class MEMORY_ADDR>
 std::ostream& operator << (std::ostream& os, const DWARF_LocListEntry<MEMORY_ADDR>& dw_loc_list_entry)
 {
 	if(dw_loc_list_entry.IsEndOfList()) return os << "EOL";
@@ -5980,40 +6010,50 @@ void DWARF_Handler<MEMORY_ADDR>::Initialize()
 		
 		dw_prev_loc_list_entry = dw_loc_list_entry;
 	}
+	
+	//std::ofstream f("out.xml", std::ios::out);
+	//to_XML(f);
+}
 
-#if 1
+template <class MEMORY_ADDR>
+void DWARF_Handler<MEMORY_ADDR>::to_XML(std::ostream& os)
+{
+	os << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" << std::endl;
+	os << "<DWARF>" << std::endl;
+	os << "<DW_DEBUG_INFO>" << std::endl;
+	typename std::map<uint64_t, DWARF_CompilationUnit<MEMORY_ADDR> *>::iterator dw_cu_iter;
+	for(dw_cu_iter = dw_cus.begin(); dw_cu_iter != dw_cus.end(); dw_cu_iter++)
 	{
-		std::ofstream f;
-		unsigned int num_cus = dw_cus.size();
-		unsigned int i;
-		const unsigned int NUM_CUS_PER_FILES = 0xffffffff;
-		typename std::map<uint64_t, DWARF_CompilationUnit<MEMORY_ADDR> *>::iterator dw_cu_iter;
-		for(i = 0, dw_cu_iter = dw_cus.begin(); dw_cu_iter != dw_cus.end(); i++, dw_cu_iter++)
-		{
-			DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu = (*dw_cu_iter).second;
-			if((i % NUM_CUS_PER_FILES) == 0)
-			{
-				std::stringstream sstr_filename;
-				sstr_filename << "out" << (i / NUM_CUS_PER_FILES) << ".xml";
-				std::string filename = sstr_filename.str();
-				f.open(filename.c_str(), std::ofstream::out);
-				f << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" << std::endl;
-				f << "<DW_DEBUG_INFO>" << std::endl;
-			}
-			dw_cu->to_XML(f) << std::endl;
-			if((i % NUM_CUS_PER_FILES) == (NUM_CUS_PER_FILES - 1))
-			{
-				f << "</DW_DEBUG_INFO>" << std::endl;
-				f.close();
-			}
-		}
-		if((i % NUM_CUS_PER_FILES) != (NUM_CUS_PER_FILES - 1))
-		{
-			f << "</DW_DEBUG_INFO>" << std::endl;
-			f.close();
-		}
+		DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu = (*dw_cu_iter).second;
+		dw_cu->to_XML(os) << std::endl;
 	}
-#endif
+	os << "</DW_DEBUG_INFO>" << std::endl;
+	os << "<DW_DEBUG_MACINFO>" << std::endl;
+	typename std::map<uint64_t, DWARF_MacInfoListEntry<MEMORY_ADDR> *>::iterator dw_macinfo_list_entry_iter;
+	for(dw_macinfo_list_entry_iter = dw_macinfo_list.begin(); dw_macinfo_list_entry_iter != dw_macinfo_list.end(); dw_macinfo_list_entry_iter++)
+	{
+		DWARF_MacInfoListEntry<MEMORY_ADDR> *dw_macinfo_list_entry = (*dw_macinfo_list_entry_iter).second;
+		dw_macinfo_list_entry->to_XML(os) << std::endl;
+	}
+	os << "</DW_DEBUG_MACINFO>" << std::endl;
+	os << "<DW_DEBUG_RANGES>" << std::endl;
+	typename std::map<uint64_t, DWARF_RangeListEntry<MEMORY_ADDR> *>::iterator dw_range_list_entry_iter;
+	for(dw_range_list_entry_iter = dw_range_list.begin(); dw_range_list_entry_iter != dw_range_list.end(); dw_range_list_entry_iter++)
+	{
+		DWARF_RangeListEntry<MEMORY_ADDR> *dw_range_list_entry = (*dw_range_list_entry_iter).second;
+		dw_range_list_entry->to_XML(os) << std::endl;
+	}
+	os << "</DW_DEBUG_RANGES>" << std::endl;
+	os << "</DWARF>" << std::endl;
+	os << "<DW_DEBUG_LOC>" << std::endl;
+	typename std::map<uint64_t, DWARF_LocListEntry<MEMORY_ADDR> *>::iterator dw_loc_list_entry_iter;
+	for(dw_loc_list_entry_iter = dw_loc_list.begin(); dw_loc_list_entry_iter != dw_loc_list.end(); dw_loc_list_entry_iter++)
+	{
+		DWARF_LocListEntry<MEMORY_ADDR> *dw_loc_list_entry = (*dw_loc_list_entry_iter).second;
+		dw_loc_list_entry->to_XML(os) << std::endl;
+	}
+	os << "</DW_DEBUG_LOC>" << std::endl;
+	os << "<DW_DEBUG_RANGES>" << std::endl;
 }
 
 template <class MEMORY_ADDR>
