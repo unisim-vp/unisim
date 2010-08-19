@@ -80,13 +80,9 @@ static void import_simulator_api_init(void)
  */
 static int import_simulator_api(void)
 {
-	cerr << "PySimulator_API = " << PySimulator_API << endl;
 	if ( PySimulator_API != NULL ) return 0;
-	cerr << "PyImport_ImportModule(" << PySimulator_Module_Name << ")" << endl;
 	if ( PyImport_ImportModule(PySimulator_Module_Name) == NULL ) return -1;
-	cerr << "PyCapsule_Import(" << PySimulator_Capsule_Name << ")" << endl;
 	PySimulator_API = (void **)PyCapsule_Import(PySimulator_Capsule_Name, 0);
-	cerr << "PySimulator_API = " << PySimulator_API << endl;
 	return ( PySimulator_API != NULL ) ? 0 : -1;
 }
 

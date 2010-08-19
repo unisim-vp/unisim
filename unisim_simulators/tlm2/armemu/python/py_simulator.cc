@@ -118,33 +118,24 @@ create_simulator()
 static void
 destroy_simulator(armemu_SimulatorObject *self)
 {
-	cerr << "> destroy simulator" << endl;
 	Simulator *sim = self->sim;
 	if ( sim )
 	{
-		cerr << "-> deleting sim" << endl;
 		delete sim;
-		cerr << "<- sim deleted" << endl;
 		if ( sc_curr_simcontext == sc_default_global_context )
 		{
-			cerr << "--> deleting sc_curr_simcontext" << endl;
 			delete sc_curr_simcontext;
-			cerr << "<-- sc_curr_simcontext deleted" << endl;
 		}
 		else
 		{
-			cerr << "--> deleting sc_curr_simcontext and sc_default_global_context" << endl;
 			delete sc_curr_simcontext;
-			cerr << "<-- sc_curr_simcontext deleted" << endl;
 			delete sc_default_global_context;
-			cerr << "<-- sc_default_globol_context deleted" << endl;
 		}
 		sc_curr_simcontext = 0;
 		sc_default_global_context = 0;
 	}
 	self->sim = 0;
 	sim = 0;
-	cerr << "< destory simulator" << endl;
 }
 
 static void
@@ -170,44 +161,31 @@ static PyObject *
 pydict_from_variable_list ( armemu_SimulatorObject *self,
 		std::list<unisim::kernel::service::VariableBase*>& list)
 {
-	cerr << "-> Entering pydict_from_variable_list" << endl;
 	PyObject *result;
-	cerr << "--> Creating dictionary" << endl;
 	result = PyDict_New();
 	if ( result == NULL ) return NULL;
-	cerr << "<-- Dictionary created" << endl;
 
-	cerr << "--> Populating dictionary" << endl;
 	for ( std::list<unisim::kernel::service::VariableBase *>::iterator it = list.begin();
 			it != list.end();
 			it++ )
 	{
 		PyObject *variable;
-		cerr << "---> Creating PyVariable from variable \""
-				<< (*it)->GetName() << "\"" << endl;
 		variable = PyVariable_NewVariable((*it)->GetName());
 		if ( variable == NULL )
 		{
-			cerr << "<--- Could not create the PyVariable object" << endl;
 			PyDict_Clear(result);
 			result = NULL;
 			return result;
 		}
-		cerr << "<--- PyVariable created" << endl;
-		cerr << "---> Pushing variable into dictionary (" << variable << ")" << endl;
 		if ( PyDict_SetItemString(result, (*it)->GetName(), variable) == -1)
 		{
-			cerr << "<--- Could not push variable into dictionary" << endl;
 			Py_DECREF(variable);
 			PyDict_Clear(result);
 			result = NULL;
 			return result;
 		}
-		cerr << "<--- Variable pushed into dictionary" << endl;
 		Py_DECREF(variable);
 	}
-	cerr << "<-- Dictionary populated" << endl;
-	cerr << "<- Leaving pydict_from_variable_list" << endl;
 
 	return result;
 }

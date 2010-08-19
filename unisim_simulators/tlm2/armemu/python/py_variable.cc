@@ -59,14 +59,12 @@ variable_dealloc (variable_VariableObject *self)
 static PyObject *
 variable_new (PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
-	cerr << "+++ creating new variable" << endl;
 	return NULL;
 }
 
 static PyObject *
 variable_init (variable_VariableObject *self, PyObject *args, PyObject *kwds)
 {
-	cerr << "+++ initializing variable" << endl;
 	self->name = 0;
 	return (PyObject *)self;
 }
@@ -381,11 +379,9 @@ PyInit_variable(void)
 static PyObject *
 PyVariable_NewVariable (const char *name)
 {
-	cerr << "Checking simulator API" << endl;
 	if ( import_simulator_api() < 0 )
 		return NULL;
 
-	cerr << "Getting simulator reference" << endl;
 	if ( PySimulator_GetSimRef() == 0 )
 	{
 		PyErr_Format(PyExc_RuntimeError,
@@ -394,7 +390,6 @@ PyVariable_NewVariable (const char *name)
 		return NULL;
 	}
 
-	cerr << "Builinding PyVariable" << endl;
 	variable_VariableObject *self;
 	self = (variable_VariableObject *)variable_VariableType.tp_alloc(
 			&variable_VariableType, 0);
