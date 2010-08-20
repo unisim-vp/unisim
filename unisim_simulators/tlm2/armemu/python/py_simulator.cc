@@ -191,60 +191,6 @@ pydict_from_variable_list ( armemu_SimulatorObject *self,
 	return result;
 }
 
-//static void
-//update_variables (armemu_SimulatorObject *self)
-//{
-//	std::list<unisim::kernel::service::VariableBase *> var_list;
-//	self->sim->GetVariables(var_list);
-//
-//	if ( self->vars == 0 )
-//	{
-//		self->vars = pydict_from_variable_list(self, var_list);
-//		return;
-//	}
-//
-//	std::list<unisim::kernel::service::VariableBase *>::const_iterator it;
-//	for ( it = var_list.begin(); it != var_list.end(); it++)
-//	{
-//		PyObject *var = PyDict_GetItemString(self->vars, (*it)->GetName());
-//		if ( var == NULL )
-//		{
-//			printf("INFO: variable '%s' not found in variable dictionary, adding it.\n",
-//					(*it)->GetName());
-//			PyObject *name;
-//			var = PyVariable_NewVariable(&(self->sim),(*it)->GetName());
-//			name = PyUnicode_FromString((*it)->GetName());
-//			if ( PyDict_SetItem(self->vars, name, var) == -1)
-//			{
-//				printf("ERROR: could not add variable '%s' to dictionary.\n",
-//						(*it)->GetName());
-//				Py_DECREF(name);
-//				Py_DECREF(var);
-//			}
-//			Py_DECREF(name);
-//			Py_DECREF(var);
-//
-//		}
-//	}
-//
-//	PyObject *keys = PyDict_Keys(self->vars);
-//	Py_ssize_t size = PyList_Size(keys);
-//	for ( Py_ssize_t i = 0; i < size; i++ )
-//	{
-//		PyObject *key = PyList_GetItem(keys, i);
-//		PyObject *utf8 = PyUnicode_AsEncodedString(key, NULL, NULL);
-//		char *name = PyBytes_AsString(utf8);
-//		bool found = false;
-//		for ( it = var_list.begin(); !found && it != var_list.end(); it++ )
-//		{
-//			if ( strcmp(name, (*it)->GetName()) )
-//				found = true;
-//		}
-//		if ( !found )
-//			printf("WARNING: variable '%s' is no longer available.\n",
-//					name);
-//	}
-//}
 
 static int
 simulator_init (armemu_SimulatorObject *self, PyObject *args, PyObject *kwds)
