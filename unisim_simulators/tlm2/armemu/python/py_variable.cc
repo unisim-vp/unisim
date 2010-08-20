@@ -220,12 +220,6 @@ variable_setvalue (variable_VariableObject *self,
 	}
 	else
 		utf8 = PyUnicode_AsEncodedString(value, NULL, NULL);
-//	if ( !PyUnicode_Check(value) )
-//	{
-//		PyErr_SetString(PyExc_TypeError, "The value must be a string");
-//		return -1;
-//	}
-//	PyObject *utf8 = PyUnicode_AsEncodedString(value, NULL, NULL);
 	if ( !PyBytes_Check(utf8) )
 	{
 		PyErr_SetString(PyExc_TypeError, "not a python bytes");
