@@ -469,7 +469,7 @@ if ( BUILD_ARMEMU_PYTHON_MODULE )
 			${CMAKE_SOURCE_DIR}/python/py_simulator.cc
 			${CMAKE_SOURCE_DIR}/python/py_variable.hh
 			${CMAKE_SOURCE_DIR}/python/py_variable.cc
-			simulator
+			simulatorlib
 			${armemu__deps}
 		COMMENT
 			"Building python extension."
