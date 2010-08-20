@@ -97,6 +97,7 @@ typedef struct {
     /* Type-specific fields go here. */
     Simulator *sim;
     unisim::kernel::service::Simulator::SetupStatus setup;
+    PyObject *trap_handler;
 } armemu_SimulatorObject;
 
 static Simulator *
@@ -137,6 +138,7 @@ destroy_simulator(armemu_SimulatorObject *self)
 	}
 	self->sim = 0;
 	sim = 0;
+	self->trap_handler = 0;
 }
 
 static void
@@ -191,11 +193,24 @@ pydict_from_variable_list ( armemu_SimulatorObject *self,
 	return result;
 }
 
+static void
+simulator_trap_handler (void *_self, unsigned int id)
+{
+	armemu_SimulatorObject *self = (armemu_SimulatorObject *)_self;
+	if ( self->trap_handler == 0 )
+		return;
+	PyObject *arglist;
+	arglist = Py_BuildValue("(Oi)", self, id);
+	PyObject_CallObject(self->trap_handler, arglist);
+	Py_DECREF(arglist);
+}
 
 static int
 simulator_init (armemu_SimulatorObject *self, PyObject *args, PyObject *kwds)
 {
 	self->sim = create_simulator();
+	self->sim->SetTrapHandler(simulator_trap_handler, (void *)self);
+	self->trap_handler = 0;
 	__current_simulator = self->sim;
 	// update_variables(self);
 	// self->setup = self->sim->Setup();
@@ -433,6 +448,32 @@ simulator_stop (armemu_SimulatorObject *self)
 {
 	self->sim->Stop();
 }
+
+static PyObject *
+simulator_set_trap_handler (armemu_SimulatorObject *self, PyObject *args)
+{
+	PyObject *result = 0;
+
+	int ok;
+	PyObject *handler;
+
+	ok = PyArg_ParseTuple(args, "O", &handler);
+    if (!PyCallable_Check(handler)) {
+        PyErr_SetString(PyExc_TypeError, "parameter must be callable");
+        return Py_None;
+    }
+    Py_XINCREF(handler);         /* Add a reference to new callback */
+	if ( self->trap_handler )
+	{
+		result = self->trap_handler;
+	    Py_XDECREF(result);  /* Dispose of previous callback */
+	}
+	else
+		result = Py_None;
+	self->trap_handler = handler;
+	return result;
+}
+
 static PyMethodDef simulator_methods[] =
 {
 	{"setup", (PyCFunction)simulator_setup, METH_NOARGS,
@@ -461,6 +502,8 @@ static PyMethodDef simulator_methods[] =
 			"Checks if the simulation has been started or not"},
 	{"has_finished", (PyCFunction)simulator_has_finished, METH_NOARGS,
 			"Checks if the simulation has been finished or not"},
+	{"set_trap_handler", (PyCFunction)simulator_set_trap_handler, METH_VARARGS,
+			"Set the external trap handler"},
 	{NULL}
 };
 
