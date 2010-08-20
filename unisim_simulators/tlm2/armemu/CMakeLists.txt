@@ -454,9 +454,13 @@ if ( BUILD_ARMEMU_PYTHON_MODULE )
 		${CMAKE_BINARY_DIR}/python/python_config.hh )
 
 	add_custom_command (
-		OUTPUT lib/${SIM_PYTHON_IMPORT_NAME}.so
+		OUTPUT
+			lib/${SIM_PYTHON_IMPORT_NAME}/simulator.so
+			lib/${SIM_PYTHON_IMPORT_NAME}/variable.so
 		COMMAND
-			${CMAKE_COMMAND} -E remove lib/${SIM_PYTHON_IMPORT_NAME}.so
+			${CMAKE_COMMAND} -E remove lib/${SIM_PYTHON_IMPORT_NAME}/simulator.so
+		COMMAND
+			${CMAKE_COMMAND} -E remove lib/${SIM_PYTHON_IMPORT_NAME}/variable.so
 		COMMAND
 			${CMAKE_COMMAND} -E make_directory python
 		COMMAND
@@ -479,7 +483,8 @@ if ( BUILD_ARMEMU_PYTHON_MODULE )
 		add_custom_target ( ${ARMEMU_LIB_TARGET}-python
 			ALL
 			DEPENDS
-				lib/${SIM_PYTHON_IMPORT_NAME}.so
+				lib/${SIM_PYTHON_IMPORT_NAME}/simulator.so
+				lib/${SIM_PYTHON_IMPORT_NAME}/variable.so
 			COMMENT
 				"Python target."
 		)
