@@ -55,6 +55,7 @@ TrapHandler::TrapHandler(const char *name, Object *parent)
 	, param_num_traps("num-traps", this, num_traps, "Total number of traps that will be received.")
 	, send_to_logger(false)
 	, param_send_to_logger("send-traps-to-logger", this, send_to_logger, "Send the traps to the logger.")
+	, external_handler(0)
 {
 	for ( unsigned int i = 0;
 			i < num_traps;
@@ -121,6 +122,8 @@ TrapHandler::ReportTrap(int id)
 			<< "Received trap from unknown source."
 			<< " In id = " << id << "."
 			<< EndDebugInfo;
+	if ( external_handler )
+		external_handler->ExternalTrap(id);
 }
 
 void
@@ -131,7 +134,10 @@ TrapHandler::ReportTrap(int id,
 		logger << DebugInfo
 			<< "Received trap from '" << obj.GetName() << "'."
 			<< " In id = " << id << "."
+			<< " External_handler = " << external_handler << "."
 			<< EndDebugInfo;
+	if ( external_handler )
+		external_handler->ExternalTrap(id);
 }
 
 void
@@ -145,6 +151,8 @@ TrapHandler::ReportTrap(int id,
 			<< str << "'."
 			<< " In id = " << id << "."
 			<< EndDebugInfo;
+	if ( external_handler )
+		external_handler->ExternalTrap(id);
 }
 
 void
@@ -158,6 +166,18 @@ TrapHandler::ReportTrap(int id,
 			<< c_str << "'."
 			<< " In id = " << id << "."
 			<< EndDebugInfo;
+	if ( external_handler )
+		external_handler->ExternalTrap(id);
+}
+
+ExternalTrapHandlerInterface *
+TrapHandler::
+SetExternalTrapHandler(ExternalTrapHandlerInterface *handler)
+{
+	ExternalTrapHandlerInterface *old;
+	old = external_handler;
+	external_handler = handler;
+	return old;
 }
 
 } // end of namespace trap_handler
