@@ -33,6 +33,7 @@
  */
 
 #include <Python.h>
+#include <map>
 #include "simulator.hh"
 #define SIMULATOR_MODULE
 #include "python/py_simulator.hh"
@@ -481,6 +482,11 @@ simulator_run (armemu_SimulatorObject *self, PyObject *args)
 	return result;
 }
 
+static PyObject *
+simulator_stop (armemu_SimulatorObject *self)
+{
+	self->sim->Stop();
+}
 static PyMethodDef simulator_methods[] =
 {
 	{"setup", (PyCFunction)simulator_setup, METH_NOARGS,
@@ -501,6 +507,8 @@ static PyMethodDef simulator_methods[] =
 			"Get a simulator variable if existent."},
 	{"run", (PyCFunction)simulator_run, METH_VARARGS,
 			"Run the simulator."},
+	{"stop", (PyCFunction)simulator_stop, METH_NOARGS,
+			"Stop the simulator."},
 	{"is_running", (PyCFunction)simulator_is_running, METH_NOARGS,
 			"Check if the simulator is running or not."},
 	{"has_started", (PyCFunction)simulator_has_started, METH_NOARGS,
