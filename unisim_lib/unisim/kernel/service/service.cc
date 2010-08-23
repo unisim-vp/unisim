@@ -1808,6 +1808,10 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 									arg++;
 									state = 4;
 									break;
+								case 'p':
+									arg++;
+									state = 5;
+									break;
 								default:
 									state = -1;
 									break;
@@ -1864,6 +1868,10 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 			case 4:
 				generate_doc = true;
 				generate_doc_filename = *arg;
+				arg++;
+				state = 0;
+				break;
+			case 5:
 				arg++;
 				state = 0;
 				break;
