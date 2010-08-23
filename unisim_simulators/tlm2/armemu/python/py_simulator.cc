@@ -130,14 +130,6 @@ create_simulator(char *xml_file, std::vector<std::string> *parms)
 	for (int i = 0; i < argv_size; i++)
 		cerr << i << " -> " << argv[i] << endl;
 	argv[index] = 0;
-//	char *argv[5] =
-//	{
-//			(char *)ARMEMU_EXEC_LOCATION,
-//			(char *)"-p",
-//			(char *)PYTHON_LIB_TO_SHARED_DATA_PATH,
-//			(char *)"-w",
-//			0
-//	};
 
 	sim = new Simulator(argv_size, argv);
 	return sim;
@@ -292,9 +284,6 @@ simulator_init (armemu_SimulatorObject *self, PyObject *args, PyObject *kwds)
 			std::stringstream assign;
 			assign << ckey << "=" << cvalue;
 			cparms->push_back(assign.str());
-			//cparms->insert(std::pair<std::string, std::string>(std::string(ckey), std::string(cvalue)));
-//			free(ckey);
-//			free(cvalue);
 		}
 	}
 
