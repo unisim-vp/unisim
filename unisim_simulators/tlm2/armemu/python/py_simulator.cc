@@ -101,19 +101,45 @@ typedef struct {
 } armemu_SimulatorObject;
 
 static Simulator *
-create_simulator()
+create_simulator(char *xml_file, std::vector<std::string> *parms)
 {
 	Simulator *sim;
-	char *argv[5] =
+	char **argv;
+	int argv_size = 4; // default number of parameters;
+	if ( xml_file != NULL )
+		argv_size += 2;
+	if ( parms != NULL )
+		argv_size += (parms->size() * 2);
+	argv = (char **)malloc(sizeof(char *) * (argv_size + 1));
+	int index = 0;
+	argv[index++] = (char *)ARMEMU_EXEC_LOCATION;
+	argv[index++] = (char *)"-p";
+	argv[index++] = (char *)PYTHON_LIB_TO_SHARED_DATA_PATH;
+	argv[index++] = (char *)"-w";
+	if ( xml_file != NULL )
+		argv[index++] = xml_file;
+	if ( parms != NULL )
 	{
-			(char *)ARMEMU_EXEC_LOCATION,
-			(char *)"-p",
-			(char *)PHYTON_LIB_TO_SHARED_DATA_PATH,
-			(char *)"-w",
-			0
-	};
+		std::vector<std::string>::iterator it;
+		for ( it = parms->begin(); it != parms->end(); it++ )
+		{
+			argv[index++] = (char *)"-s";
+			argv[index++] = (char *)(*it).c_str();
+		}
+	}
+	for (int i = 0; i < argv_size; i++)
+		cerr << i << " -> " << argv[i] << endl;
+	argv[index] = 0;
+//	char *argv[5] =
+//	{
+//			(char *)ARMEMU_EXEC_LOCATION,
+//			(char *)"-p",
+//			(char *)PYTHON_LIB_TO_SHARED_DATA_PATH,
+//			(char *)"-w",
+//			0
+//	};
 
-	sim = new Simulator(4, argv);
+	sim = new Simulator(argv_size, argv);
 	return sim;
 }
 
@@ -208,7 +234,77 @@ simulator_trap_handler (void *_self, unsigned int id)
 static int
 simulator_init (armemu_SimulatorObject *self, PyObject *args, PyObject *kwds)
 {
-	self->sim = create_simulator();
+	char *xml_file = NULL;
+	PyObject *parms = NULL;
+	std::vector<std::string> *cparms = NULL;
+
+	static char *kwlist[] = {"xml", "parms", NULL};
+	if (! PyArg_ParseTupleAndKeywords(args, kwds, "|sO", kwlist,
+			&xml_file, &parms))
+		return -1;
+	if ( (parms != NULL) )
+	{
+		if ( !PyDict_Check(parms))
+		{
+			PyErr_SetString(PyExc_TypeError, "'parms' must be a dictionary of parameters");
+			return -1;
+		}
+		PyObject *key, *value;
+		Py_ssize_t pos = 0;
+		while ( PyDict_Next(parms, &pos, &key, &value) )
+		{
+			if ( !PyUnicode_Check(key) )
+			{
+				PyErr_SetString(PyExc_TypeError,"parameter names (keys in the 'parms' dictionary must be unicode strings" );
+				return -1;
+			}
+		}
+		pos = 0;
+		cparms = new std::vector<std::string>();
+		while ( PyDict_Next(parms, &pos, &key, &value) )
+		{
+			char *ckey = 0;
+			char *cvalue = 0;
+			PyObject *utf8;
+
+			utf8 = PyUnicode_AsEncodedString(key, NULL, NULL);
+			ckey = PyBytes_AsString(utf8);
+			Py_DECREF(utf8);
+			if ( !PyUnicode_Check(value) )
+			{
+				PyObject *unicode;
+				if ( PyBool_Check(value) )
+				{
+					if ( PyObject_IsTrue(value) )
+						unicode = PyUnicode_FromFormat("true");
+					else
+						unicode = PyUnicode_FromFormat("false");
+				}
+				else
+					unicode = PyUnicode_FromFormat("%A", value);
+				utf8 = PyUnicode_AsEncodedString(unicode, NULL, NULL);
+				Py_DECREF(unicode);
+			}
+			else
+				utf8 = PyUnicode_AsEncodedString(value, NULL, NULL);
+			cvalue = PyBytes_AsString(utf8);
+			Py_DECREF(utf8);
+			std::stringstream assign;
+			assign << ckey << "=" << cvalue;
+			cparms->push_back(assign.str());
+			//cparms->insert(std::pair<std::string, std::string>(std::string(ckey), std::string(cvalue)));
+//			free(ckey);
+//			free(cvalue);
+		}
+	}
+
+	self->sim = create_simulator(xml_file, cparms);
+	if ( xml_file )
+		free(xml_file);
+
+	if ( cparms )
+		delete cparms;
+
 	self->sim->SetTrapHandler(simulator_trap_handler, (void *)self);
 	self->trap_handler = 0;
 	__current_simulator = self->sim;

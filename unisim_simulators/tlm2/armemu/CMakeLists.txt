@@ -31,6 +31,7 @@ if ( UNIX AND NOT APPLE )
 endif ( UNIX AND NOT APPLE )
 
 option ( BUILD_ARMEMU_PYTHON_MODULE "Set this option if you want to compile a module of the unisim armemu simulator. Note that it has been developed under python3.1." )
+option ( BUILD_ARMEMU_POWER_SUPPORT "Set this option if you want to compile the unisim armemu simulator with power measurements support. Note that the CACTI_4_2_INCLUDE_DIR and CACTI_4_2_LIBRARY cmake variables might be required.")
 project ( unisim_armemu )
 include ( CheckIncludeFileCXX )
 include ( CheckIncludeFile )
@@ -96,11 +97,11 @@ endforeach ( dir )
 
 include_directories ( ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR} ${OSCI_SYSTEMC_INCLUDE_DIR} ${OSCI_TLM2_INCLUDE_DIR})
 
-if ( UNISIM__SERVICE__POWER__SUPPORT )
+if ( BUILD_ARMEMU_POWER_SUPPORT )
 	set ( SIM_POWER_ESTIMATOR_SUPPORT TRUE )
-else ( UNISIM__SERVICE__POWER__SUPPORT )
+else ( BUILD_ARMEMU_POWER_SUPPORT )
 	set ( SIM_POWER_ESTIMATOR_SUPPORT FALSE )
-endif ( UNISIM__SERVICE__POWER__SUPPORT )
+endif ( BUILD_ARMEMU_POWER_SUPPORT )
 
 add_custom_target ( armemu__share_license
 	ALL
@@ -279,10 +280,10 @@ set ( armemu__libraries
 	unisim__service__debug__sim_debugger
 	unisim__service__trap_handler
 	)
-if ( UNISIM__SERVICE__POWER__SUPPORT )
+if ( BUILD_ARMEMU_POWER_SUPPORT )
 	list ( APPEND armemu__libraries
 		unisim__service__power )
-endif ( UNISIM__SERVICE__POWER__SUPPORT )
+endif ( BUILD_ARMEMU_POWER_SUPPORT )
 
 set ( UNISIM_KERNEL_PYTHON_TO_SHARED_DATA_PATH "../../share/${ARMEMU_EXEC_NAME}" )
 set ( PYTHON__ARMEMU__INCLUDE_DIRS
@@ -322,7 +323,7 @@ set ( PYTHON__ARMEMU__LIBS
 	 'unisim__kernel',
 	 'xml2',
 	 'systemc'")
-if ( UNISIM__SERVICE__POWER__SUPPORT )
+if ( BUILD_ARMEMU_POWER_SUPPORT )
 	get_filename_component ( lib_path ${CACTI_4_2_LIBRARY}
 		PATH )
 	set ( PYTHON__ARMEMU__LIB_DIRS
@@ -335,7 +336,7 @@ if ( UNISIM__SERVICE__POWER__SUPPORT )
 		"${PYTHON__ARMEMU__LIBS},
 		'unisim__service__power',
 		'${lib_name}'" )
-endif ( UNISIM__SERVICE__POWER__SUPPORT )
+endif ( BUILD_ARMEMU_POWER_SUPPORT )
 	 
 set ( CMAKE_REQUIRED_FLAGS "-include stdio.h" )
 check_include_file ( editline/readline.h HAVE_editline_readline_H )
@@ -417,11 +418,11 @@ set ( armemu__deps
 	unisim__service__os__linux_os__linux_os_32
 	unisim__service__trap_handler
 	)
-if ( UNISIM__SERVICE__POWER__SUPPORT )
+if ( BUILD_ARMEMU_POWER_SUPPORT )
 	list ( APPEND armemu__deps
 		unisim__service__power
 		)
-endif ( UNISIM__SERVICE__POWER__SUPPORT )
+endif ( BUILD_ARMEMU_POWER_SUPPORT )
 # add_dependencies ( simulator
 # 	${armemu__deps}
 # 	)
