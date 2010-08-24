@@ -166,12 +166,10 @@ destroy_simulator(armemu_SimulatorObject *self)
 static void
 simulator_dealloc (armemu_SimulatorObject *self)
 {
-	cerr << "--> simulator_dealloc" << endl;
 	destroy_simulator(self);
 	__current_simulator = 0;
 
 	Py_TYPE(self)->tp_free((PyObject *)self);
-	cerr << "<-- simulator_dealloc" << endl;
 }
 
 static PyObject *
@@ -220,13 +218,17 @@ pydict_from_variable_list ( armemu_SimulatorObject *self,
 static void
 simulator_trap_handler (void *_self, unsigned int id)
 {
+	PyObject *result;
 	armemu_SimulatorObject *self = (armemu_SimulatorObject *)_self;
 	if ( self->trap_handler == 0 )
+	{
 		return;
+	}
 	PyObject *arglist;
 	arglist = Py_BuildValue("(Oi)", self->trap_context, id);
-	PyObject_CallObject(self->trap_handler, arglist);
+	result = PyObject_CallObject(self->trap_handler, arglist);
 	Py_DECREF(arglist);
+	if ( result != NULL ) Py_DECREF(result);
 }
 
 static int
@@ -242,7 +244,7 @@ simulator_init (armemu_SimulatorObject *self, PyObject *args, PyObject *kwds)
 		return -1;
 	if ( (parms != NULL) )
 	{
-		if ( !PyDict_Check(parms))
+		if ( !PyDict_Check(parms) )
 		{
 			PyErr_SetString(PyExc_TypeError, "'parms' must be a dictionary of parameters");
 			return -1;
@@ -542,36 +544,63 @@ simulator_set_trap_handler (armemu_SimulatorObject *self, PyObject *args)
 {
 	PyObject *result = 0;
 
-	int ok;
 	PyObject *handler;
 	PyObject *context;
 
-	if ( PyArg_ParseTuple(args, "OO", &context, &handler) )
+	if ( !PyArg_ParseTuple(args, "OO", &context, &handler) )
 	{
-		result = Py_None;
-		return result;
+		PyErr_SetString(PyExc_TypeError, "parameters must be a context and a function/method");
+		return NULL;
 	}
     if ( !PyCallable_Check(handler) )
     {
         PyErr_SetString(PyExc_TypeError, "parameter must be callable");
-        return Py_None;
+        return NULL;
     }
     Py_XINCREF(handler);         /* Add a reference to new callback */
 	if ( self->trap_handler )
 	{
 		result = self->trap_handler;
-	    Py_XDECREF(result);  /* Dispose of previous callback */
+	    Py_DECREF(result);  /* Dispose of previous callback */
 	}
-	else
-		result = Py_None;
 	self->trap_handler = handler;
 	if ( self->trap_context )
-		Py_XDECREF(self->trap_context);
-	Py_XINCREF(context);
+		Py_DECREF(self->trap_context);
+	Py_INCREF(context);
 	self->trap_context = context;
-	return result;
+	if ( result )
+		return result;
+	Py_INCREF(Py_None);
+	return Py_None;
 }
 
+static PyObject *
+simulator_remove_trap_handler (armemu_SimulatorObject *self)
+{
+	PyObject *result;
+
+	if ( self->trap_handler )
+	{
+		if ( self->trap_context )
+		{
+			result = Py_BuildValue("(OO)", self->trap_handler, self->trap_context);
+			Py_DECREF(self->trap_context);
+			self->trap_context = 0;
+		}
+		else
+		{
+			Py_INCREF(Py_None);
+			result = Py_BuildValue("(OO)", self->trap_handler, Py_None);
+		}
+		Py_DECREF(self->trap_handler);
+	}
+	else
+	{
+		result = Py_None;
+		Py_INCREF(result);
+	}
+	return result;
+}
 static PyMethodDef simulator_methods[] =
 {
 	{"setup", (PyCFunction)simulator_setup, METH_NOARGS,
@@ -602,6 +631,8 @@ static PyMethodDef simulator_methods[] =
 			"Checks if the simulation has been finished or not"},
 	{"set_trap_handler", (PyCFunction)simulator_set_trap_handler, METH_VARARGS,
 			"Set the external trap handler"},
+	{"remove_trap_handler", (PyCFunction)simulator_remove_trap_handler, METH_NOARGS,
+			"Remove the external trap handler"},
 	{NULL}
 };
 
