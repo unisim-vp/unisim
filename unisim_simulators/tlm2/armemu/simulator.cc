@@ -442,7 +442,7 @@ DefaultConfiguration(unisim::kernel::service::Simulator *sim)
 	sim->SetVariable("il1-power-estimator.output-width", 32 * 8);
 	sim->SetVariable("il1-power-estimator.tag-width", 32); // to fix
 	sim->SetVariable("il1-power-estimator.access-mode", "fast");
-	sim->SetVariable("il1-power-estimator.verbose", true);
+	sim->SetVariable("il1-power-estimator.verbose", false);
 
 	sim->SetVariable("dl1-power-estimator.cache-size", 32 * 128);
 	sim->SetVariable("dl1-power-estimator.line-size", 32);
@@ -456,7 +456,7 @@ DefaultConfiguration(unisim::kernel::service::Simulator *sim)
 	sim->SetVariable("dl1-power-estimator.output-width", 32 * 8);
 	sim->SetVariable("dl1-power-estimator.tag-width", 32); // to fix
 	sim->SetVariable("dl1-power-estimator.access-mode", "fast");
-	sim->SetVariable("dl1-power-estimator.verbose", true);
+	sim->SetVariable("dl1-power-estimator.verbose", false);
 #endif // SIM_POWER_ESTIMATOR_SUPPORT
 }
 
