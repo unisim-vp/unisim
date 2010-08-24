@@ -98,6 +98,7 @@ typedef struct {
     Simulator *sim;
     unisim::kernel::service::Simulator::SetupStatus setup;
     PyObject *trap_handler;
+    PyObject *trap_context;
 } armemu_SimulatorObject;
 
 static Simulator *
@@ -127,8 +128,6 @@ create_simulator(char *xml_file, std::vector<std::string> *parms)
 			argv[index++] = (char *)(*it).c_str();
 		}
 	}
-	for (int i = 0; i < argv_size; i++)
-		cerr << i << " -> " << argv[i] << endl;
 	argv[index] = 0;
 
 	sim = new Simulator(argv_size, argv);
@@ -156,16 +155,23 @@ destroy_simulator(armemu_SimulatorObject *self)
 	}
 	self->sim = 0;
 	sim = 0;
+	if ( self->trap_handler )
+		Py_DECREF(self->trap_handler);
+	if ( self->trap_context )
+		Py_DECREF(self->trap_context);
 	self->trap_handler = 0;
+	self->trap_context = 0;
 }
 
 static void
 simulator_dealloc (armemu_SimulatorObject *self)
 {
+	cerr << "--> simulator_dealloc" << endl;
 	destroy_simulator(self);
 	__current_simulator = 0;
 
 	Py_TYPE(self)->tp_free((PyObject *)self);
+	cerr << "<-- simulator_dealloc" << endl;
 }
 
 static PyObject *
@@ -218,7 +224,7 @@ simulator_trap_handler (void *_self, unsigned int id)
 	if ( self->trap_handler == 0 )
 		return;
 	PyObject *arglist;
-	arglist = Py_BuildValue("(Oi)", self, id);
+	arglist = Py_BuildValue("(Oi)", self->trap_context, id);
 	PyObject_CallObject(self->trap_handler, arglist);
 	Py_DECREF(arglist);
 }
@@ -296,9 +302,9 @@ simulator_init (armemu_SimulatorObject *self, PyObject *args, PyObject *kwds)
 
 	self->sim->SetTrapHandler(simulator_trap_handler, (void *)self);
 	self->trap_handler = 0;
+	self->trap_context = 0;
 	__current_simulator = self->sim;
-	// update_variables(self);
-	// self->setup = self->sim->Setup();
+
 	return 0;
 }
 
@@ -308,7 +314,7 @@ simulator_setup (armemu_SimulatorObject *self)
 	PyObject *result;
 	self->setup = self->sim->Setup();
 	result = PyLong_FromLong(self->setup);
-	// update_variables(self);
+
 	return result;
 }
 
@@ -342,9 +348,6 @@ simulator_get_variables (armemu_SimulatorObject *self)
 {
 	PyObject *result;
 
-//	if ( self->sim == 0 ) return NULL;
-//	if ( self->vars == 0 ) return NULL;
-//	return self->vars;
 	std::list<unisim::kernel::service::VariableBase *> var_list;
 	self->sim->GetVariables(var_list);
 	result = pydict_from_variable_list(self, var_list);
@@ -541,9 +544,15 @@ simulator_set_trap_handler (armemu_SimulatorObject *self, PyObject *args)
 
 	int ok;
 	PyObject *handler;
+	PyObject *context;
 
-	ok = PyArg_ParseTuple(args, "O", &handler);
-    if (!PyCallable_Check(handler)) {
+	if ( PyArg_ParseTuple(args, "OO", &context, &handler) )
+	{
+		result = Py_None;
+		return result;
+	}
+    if ( !PyCallable_Check(handler) )
+    {
         PyErr_SetString(PyExc_TypeError, "parameter must be callable");
         return Py_None;
     }
@@ -556,6 +565,10 @@ simulator_set_trap_handler (armemu_SimulatorObject *self, PyObject *args)
 	else
 		result = Py_None;
 	self->trap_handler = handler;
+	if ( self->trap_context )
+		Py_XDECREF(self->trap_context);
+	Py_XINCREF(context);
+	self->trap_context = context;
 	return result;
 }
 
@@ -595,7 +608,7 @@ static PyMethodDef simulator_methods[] =
 static PyTypeObject armemu_SimulatorType =
 {
     PyVarObject_HEAD_INIT(NULL, 0)
-    "armemu.ARMEmu",					/* tp_name */
+    PACKAGE_NAME".simulator.Simulator",					/* tp_name */
     sizeof(armemu_SimulatorObject),		/* tp_basicsize */
     0,									/* tp_itemsize */
     (destructor)simulator_dealloc,		/* tp_dealloc */
@@ -613,7 +626,7 @@ static PyTypeObject armemu_SimulatorType =
     0,									/* tp_getattro */
     0,									/* tp_setattro */
     0,									/* tp_as_buffer */
-    Py_TPFLAGS_DEFAULT,					/* tp_flags */
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,					/* tp_flags */
     "UNISIM ARMEmu simulator objects",	/* tp_doc */
     0,									/* tp_traverse */
     0,									/* tp_clear */

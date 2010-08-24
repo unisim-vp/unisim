@@ -2,67 +2,127 @@
 
 from armemu042 import simulator
 
-def trap_handler(context, id):
-	print("Python: Received a trap handler call with id = ", id)
-	parms = context.get_parameters()
-	print("        cpu.trap-on-instruction-counter = ",
+class SimulatorHandler(simulator.Simulator):
+	def __init__(self):
+		simulator.Simulator.__init__(self, parms={"enable-power-estimation":True})
+		parms = self.get_parameters()
+		self.insn_threshold = 100
+		self.traps_to_logger = True
+		print("cpu.trap-on-instruction-counter = ",
 			parms['cpu.trap-on-instruction-counter'].value)
-	if parms['cpu.trap-on-instruction-counter'].value is 100:
-		print("      Setting it to 200")
-		parms['cpu.trap-on-instruction-counter'].value = '200'
-	elif parms['cpu.trap-on-instruction-counter'].value is 200:
-		print("      Setting it to 300")
-		parms['cpu.trap-on-instruction-counter'].value = '300'
-	else:
-		print("      Resetting cpu.trap-on-instruction-counter")
-		parms['cpu.trap-on-instruction-counter'].value = '0'
+		print("trap-handler.send-traps-to-logger =",
+				parms['trap-handler.send-traps-to-logger'].value)
+		print("Setting cpu.trap-on-instruction-counter to ", 
+				self.insn_threshold)
+		parms['cpu.trap-on-instruction-counter'].value = \
+				self.insn_threshold
+		print("Setting trap-handler.send-traps-to-logger to ", 
+				self.traps_to_logger)
+		parms['trap-handler.send-traps-to-logger'].value = \
+			self.traps_to_logger
+		print("cpu.trap-on-instruction-counter = ",
+			parms['cpu.trap-on-instruction-counter'].value)
+		print("trap-handler.send-traps-to-logger =",
+				parms['trap-handler.send-traps-to-logger'].value)
+		print("Setting external trap handler")
+		self.set_trap_handler(self, self.trap_handler)
 
-print("Instantiating a new simulator.")
-sim = simulator.Simulator()
-parms = sim.get_parameters()
+	def trap_handler(self, id):
+		print("Python: Received a trap handler call with id = ", id)
+		parms = self.get_parameters()
+		print("        cpu.trap-on-instruction-counter = ",
+				parms['cpu.trap-on-instruction-counter'].value)
+		if parms['cpu.trap-on-instruction-counter'].value is 100:
+			print("      Setting it to 200")
+			parms['cpu.trap-on-instruction-counter'].value = '200'
+		elif parms['cpu.trap-on-instruction-counter'].value is 200:
+			print("      Setting it to 300")
+			parms['cpu.trap-on-instruction-counter'].value = '300'
+		else:
+			print("      Resetting cpu.trap-on-instruction-counter")
+			parms['cpu.trap-on-instruction-counter'].value = '0'
 
-print("====> START: Testing boolean parameters")
-verbose = parms['cpu.verbose-all']
-print("cpu.verbose-all = ",
-		parms['cpu.verbose-all'].value)
-parms['cpu.verbose-all'].value = True
-print("cpu.verbose-all = ",
-		parms['cpu.verbose-all'].value)
-parms['cpu.verbose-all'].value = False
-print("cpu.verbose-all = ",
-		parms['cpu.verbose-all'].value)
-parms['cpu.verbose-all'].value = verbose
-print("<==== END:   Testing boolean parameters")
+	def setup(self):
+		print("Launching simulator setup.")
+		# we can not call self.setup() because it would cause a recursive
+		#   call to the SimulatorHandler class. To avoid that we call the
+		#   class directly (simulator.Simulator.setup()) giving it the 
+		#   reference to itself.
+		simulator.Simulator.setup(self)
+		print("Launching simulator.")
 
-print("====> START: Testing floating parameters")
-ipc = parms['cpu.ipc'].value
-print("cpu.ipc = ", ipc)
-parms['cpu.ipc'] = ipc + 1.3235
-print("cpu.ipc = ", parms['cpu.ipc'])
-parms['cpu.ipc'] = ipc
-print("cpu.ipc = ", parms['cpu.ipc'])
-print("<==== END:   Testing floating parameters")
+	def dump_params(self):
+		print("Dumping parameters:")
+		parms = self.get_parameters()
+		for k, v in parms.items():
+			print("- ", k, " = ", v.value)
 
-insn_threshold = 100
-traps_to_logger = True
-print("Setting cpu.trap-on-instruction-counter to ", insn_threshold)
-parms['cpu.trap-on-instruction-counter'].value = insn_threshold
-print("Setting trap-handler.send-traps-to-logger to ", traps_to_logger)
-parms['trap-handler.send-traps-to-logger'].value = traps_to_logger
-print("cpu.trap-on-instruction-counter = ",
-		parms['cpu.trap-on-instruction-counter'].value)
-print("Setting external trap handler")
-sim.set_trap_handler(trap_handler)
-print("Launching simulator setup.")
+sim = SimulatorHandler()
 sim.setup()
-print("Launching simulator.")
-print("================================================================================")
 sim.run()
-print("================================================================================")
-print("Simulation has been stopped")
-vars = sim.get_variables()
-print("Number of simulated instructions = ",
-		vars['cpu.instruction-counter'].value)
-sim.run()
+sim.dump_params()
 
-print("Bye!")
+# def trap_handler(context, id):
+# 	print("Python: Received a trap handler call with id = ", id)
+# 	parms = context.get_parameters()
+# 	print("        cpu.trap-on-instruction-counter = ",
+# 			parms['cpu.trap-on-instruction-counter'].value)
+# 	if parms['cpu.trap-on-instruction-counter'].value is 100:
+# 		print("      Setting it to 200")
+# 		parms['cpu.trap-on-instruction-counter'].value = '200'
+# 	elif parms['cpu.trap-on-instruction-counter'].value is 200:
+# 		print("      Setting it to 300")
+# 		parms['cpu.trap-on-instruction-counter'].value = '300'
+# 	else:
+# 		print("      Resetting cpu.trap-on-instruction-counter")
+# 		parms['cpu.trap-on-instruction-counter'].value = '0'
+# 
+# print("Instantiating a new simulator.")
+# sim = simulator.Simulator()
+# parms = sim.get_parameters()
+# 
+# print("====> START: Testing boolean parameters")
+# verbose = parms['cpu.verbose-all']
+# print("cpu.verbose-all = ",
+# 		parms['cpu.verbose-all'].value)
+# parms['cpu.verbose-all'].value = True
+# print("cpu.verbose-all = ",
+# 		parms['cpu.verbose-all'].value)
+# parms['cpu.verbose-all'].value = False
+# print("cpu.verbose-all = ",
+# 		parms['cpu.verbose-all'].value)
+# parms['cpu.verbose-all'].value = verbose
+# print("<==== END:   Testing boolean parameters")
+# 
+# print("====> START: Testing floating parameters")
+# ipc = parms['cpu.ipc'].value
+# print("cpu.ipc = ", ipc)
+# parms['cpu.ipc'] = ipc + 1.3235
+# print("cpu.ipc = ", parms['cpu.ipc'])
+# parms['cpu.ipc'] = ipc
+# print("cpu.ipc = ", parms['cpu.ipc'])
+# print("<==== END:   Testing floating parameters")
+# 
+# insn_threshold = 100
+# traps_to_logger = True
+# print("Setting cpu.trap-on-instruction-counter to ", insn_threshold)
+# parms['cpu.trap-on-instruction-counter'].value = insn_threshold
+# print("Setting trap-handler.send-traps-to-logger to ", traps_to_logger)
+# parms['trap-handler.send-traps-to-logger'].value = traps_to_logger
+# print("cpu.trap-on-instruction-counter = ",
+# 		parms['cpu.trap-on-instruction-counter'].value)
+# print("Setting external trap handler")
+# sim.set_trap_handler(trap_handler)
+# print("Launching simulator setup.")
+# sim.setup()
+# print("Launching simulator.")
+# print("================================================================================")
+# sim.run()
+# print("================================================================================")
+# print("Simulation has been stopped")
+# vars = sim.get_variables()
+# print("Number of simulated instructions = ",
+# 		vars['cpu.instruction-counter'].value)
+# sim.run()
+# 
+# print("Bye!")
