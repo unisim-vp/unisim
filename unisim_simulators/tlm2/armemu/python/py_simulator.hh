@@ -43,9 +43,9 @@ extern "C" {
 
 /* Variable full capsule name */
 #define PySimulator_Module_Name PACKAGE_NAME".simulator"
-// "armemu041"
+// i.e., "armemu041.simulator"
 #define PySimulator_Capsule_Name PACKAGE_NAME".simulator._C_API"
-// "armemu041._C_API"
+// i.e., "armemu041.simulator._C_API"
 
 /* C API functions */
 #define PySimulator_GetSimRef_NUM 0

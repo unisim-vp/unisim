@@ -50,10 +50,12 @@ typedef struct {
 static void
 variable_dealloc (variable_VariableObject *self)
 {
+	cerr << "--> variabla_dealloc" << endl;
 	delete self->name;
 	self->name = 0;
 
 	Py_TYPE(self)->tp_free((PyObject *)self);
+	cerr << "<-- variable_dealloc" << endl;
 }
 
 static PyObject *
@@ -214,7 +216,7 @@ variable_setvalue (variable_VariableObject *self,
 	if ( !PyUnicode_Check(value) )
 	{
 		PyObject *unicode;
-		unicode = PyUnicode_FromFormat("%A", value);
+		unicode = PyUnicode_FromFormat("%S", value);
 		utf8 = PyUnicode_AsEncodedString(unicode, NULL, NULL);
 		Py_DECREF(unicode);
 	}
@@ -374,7 +376,7 @@ static PyGetSetDef variable_getseters[] =
 
 static PyTypeObject variable_VariableType = {
 	    PyVarObject_HEAD_INIT(NULL, 0)
-	    "variable.Variable",					/* tp_name */
+	    PACKAGE_NAME".variable.Variable",					/* tp_name */
 	    sizeof(variable_VariableObject),		/* tp_basicsize */
 	    0,									/* tp_itemsize */
 	    (destructor)variable_dealloc,		/* tp_dealloc */
