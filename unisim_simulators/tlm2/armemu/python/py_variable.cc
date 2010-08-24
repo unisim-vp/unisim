@@ -50,12 +50,10 @@ typedef struct {
 static void
 variable_dealloc (variable_VariableObject *self)
 {
-	cerr << "--> variabla_dealloc" << endl;
 	delete self->name;
 	self->name = 0;
 
 	Py_TYPE(self)->tp_free((PyObject *)self);
-	cerr << "<-- variable_dealloc" << endl;
 }
 
 static PyObject *
@@ -124,6 +122,7 @@ variable_getvalue (variable_VariableObject *self,
 			result = Py_True;
 		else
 			result = Py_False;
+		Py_INCREF(result);
 	}
 	else if ( strcmp("signed 8-bit integer", type) == 0 )
 	{
@@ -224,8 +223,9 @@ variable_setvalue (variable_VariableObject *self,
 		utf8 = PyUnicode_AsEncodedString(value, NULL, NULL);
 	if ( !PyBytes_Check(utf8) )
 	{
+		Py_DECREF(utf8);
 		PyErr_SetString(PyExc_TypeError, "not a python bytes");
-		return -1;
+		return NULL;
 	}
 	*sim->FindVariable(self->name->c_str()) = PyBytes_AsString(utf8);
 	Py_DECREF(utf8);
