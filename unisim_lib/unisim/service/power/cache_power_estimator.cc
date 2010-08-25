@@ -177,18 +177,27 @@ CachePowerEstimator::CachePowerEstimator(const char *name, Object *parent) :
 	p_output_width(0),
 	p_tag_width(0),
 	p_access_mode(ACCESS_MODE_NORMAL),
-	param_cache_size("cache-size", this, p_cache_size),
-	param_line_size("line-size", this, p_line_size),
-	param_associativity("associativity", this, p_associativity),
-	param_rw_ports("rw-ports", this, p_rw_ports),
-	param_excl_read_ports("excl-read-ports", this, p_excl_read_ports),
-	param_excl_write_ports("excl-write-ports", this, p_excl_write_ports),
-	param_single_ended_read_ports("single-ended-read-ports", this, p_single_ended_read_ports),
-	param_banks("banks", this, p_banks),
-	param_tech_node("tech-node", this, p_tech_node),
-	param_output_width("output-width", this, p_output_width),
-	param_tag_width("tag-width", this, p_tag_width),
-	param_access_mode("access-mode", this, p_access_mode),
+	param_cache_size("cache-size", this, p_cache_size, "cache size (in bytes)"),
+	param_line_size("line-size", this, p_line_size,
+			"cache line size (in bytes)"),
+	param_associativity("associativity", this, p_associativity,
+			"cache associativity level"),
+	param_rw_ports("rw-ports", this, p_rw_ports, "number of read-write ports"),
+	param_excl_read_ports("excl-read-ports", this, p_excl_read_ports,
+			"number of read only ports"),
+	param_excl_write_ports("excl-write-ports", this, p_excl_write_ports,
+			"number of write only ports"),
+	param_single_ended_read_ports("single-ended-read-ports", this,
+			p_single_ended_read_ports, "number of single ended read ports"),
+	param_banks("banks", this, p_banks, "number of cache banks"),
+	param_tech_node("tech-node", this, p_tech_node,
+			"size of the technology node (in nm)"),
+	param_output_width("output-width", this, p_output_width,
+			"cache output width (in number of bits)"),
+	param_tag_width("tag-width", this, p_tag_width,
+			"tag width in bits"),
+	param_access_mode("access-mode", this, p_access_mode,
+			"access mode type (normal, sequential, fast)"),
 	dynamic_energy(&profiles),
 	dynamic_power(&profiles, &time_import),
 	leakage_power(&time_stamp, &current_profile, &profiles, &time_import),
@@ -207,6 +216,16 @@ CachePowerEstimator::CachePowerEstimator(const char *name, Object *parent) :
 	min_cycle_time(0),
 	time_stamp(0.0)
 {
+	param_cache_size.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_line_size.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_associativity.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_rw_ports.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_excl_read_ports.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_excl_write_ports.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_single_ended_read_ports.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_banks.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_output_width.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_tag_width.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 #if defined(HAVE_CACTI4_2)
 	cacti =  new Cacti4_2();
 #else
