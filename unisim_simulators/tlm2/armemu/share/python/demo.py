@@ -55,12 +55,19 @@ class SimulatorHandler(simulator.Simulator):
 		print("Dumping parameters:")
 		parms = self.get_parameters()
 		for k, v in parms.items():
-			print("- ", k, " = ", v.value)
+			print("- %s = %s" % (k, v.str) )
+
+	def dump_statistics(self):
+		print("Dumping statistics:")
+		stats = self.get_statistics()
+		for k, v in stats.items():
+			print("- %s = %s" % (k, v.str) )
 
 sim = SimulatorHandler()
 sim.setup()
 sim.run()
 sim.remove_trap_handler()
 sim.dump_params()
+sim.dump_statistics()
 
 print("Bye!")

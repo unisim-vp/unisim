@@ -182,6 +182,26 @@ variable_getvalue (variable_VariableObject *self,
 	return result;
 }
 
+static PyObject *
+variable_getstr (variable_VariableObject *self,
+		void *closure)
+{
+	PyObject *result = NULL;
+	Simulator *sim = PySimulator_GetSimRef();
+	if (sim == 0 )
+	{
+		PyErr_Format(PyExc_RuntimeError,
+				"Simulator for variable '%s' is no longer available",
+				self->name->c_str());
+		return result;
+	}
+	unisim::kernel::service::VariableBase *var =
+			sim->FindVariable(self->name->c_str());
+	std::string value = (std::string)*var;
+	result = PyUnicode_FromString(value.c_str());
+	return result;
+}
+
 static int
 variable_setvalue (variable_VariableObject *self,
 		PyObject *value,
@@ -354,6 +374,11 @@ static PyGetSetDef variable_getseters[] =
 		{"value",
 				(getter)variable_getvalue, (setter)variable_setvalue,
 				"variable value",
+				NULL,
+		},
+		{"str",
+				(getter)variable_getstr, NULL,
+				"variable string representation",
 				NULL,
 		},
 		{"mutable",
