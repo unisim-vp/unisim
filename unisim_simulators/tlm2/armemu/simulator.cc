@@ -251,7 +251,9 @@ Run()
 {
 	if ( unlikely(SimulationFinished()) ) return 0;
 
+#ifndef SIM_LIBRARY
 	double time_start = host_time->GetTime();
+#endif // !SIM_LIBRARY
 
 #ifdef SIM_INLINE_DEBUGGER_SUPPORT
 	void (*prev_sig_int_handler)(int);

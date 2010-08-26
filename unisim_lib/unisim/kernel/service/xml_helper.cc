@@ -333,6 +333,12 @@ XmlfyVariable(xmlTextWriterPtr writer,
 		case VariableBase::VAR_REGISTER:
 			rc = xmlTextWriterWriteFormatString(writer, "register");
 			break;
+		case VariableBase::VAR_VOID:
+		case VariableBase::VAR_ARRAY:
+		case VariableBase::VAR_FORMULA:
+			cerr << "Unexpected variable type to Xmlfy. Variable name is '"
+				<< var->GetVarName() << "'" << endl;
+			break;
 	}
 	if(rc < 0) return rc;
 	rc = xmlTextWriterEndElement(writer);

@@ -50,8 +50,12 @@ using std::endl;
 using std::string;
 using std::cerr;
 
-Property::Property(const string &_name, const string &_value) : 
-	filename(""), lineno(0), name(_name), value(_value) {}
+Property::Property(const string &_name, const string &_value)
+	: name(_name)
+	, value(_value)
+	, filename("")
+	, lineno(0)
+{}
 
 Property::Property(const string& name, const string& value, const string& filename, int lineno)
 {
@@ -70,14 +74,26 @@ ostream& operator << (ostream& os, const Property& prop)
 	return os << prop.name << "=" << "\"" << prop.value << "\"";
 }
 
-Node::Node(const string &_name) :
-	filename(""), lineno(0), name(_name), parent(0) {
+Node::Node(const string &_name)
+	: parent(0)
+	, name(_name)
+	, props(0)
+	, childs(0)
+	, filename("")
+	, lineno(0)
+{
 	props = new PtrList<Property>();
 	childs = new PtrList<Node>();
 }
 	
-Node::Node(const string &_name, PtrList<Property> *_props, PtrList<Node> *_childs) :
-	filename(""), lineno(0), name(_name), props(_props), childs(_childs), parent(0) {}
+Node::Node(const string &_name, PtrList<Property> *_props, PtrList<Node> *_childs)
+	: parent(0)
+	, name(_name)
+	, props(_props)
+	, childs(_childs)
+	, filename("")
+	, lineno(0)
+{}
 	
 Node::Node(const string& name, PtrList<Property> *props, PtrList<Node> *childs, const string& filename, int lineno)
 {

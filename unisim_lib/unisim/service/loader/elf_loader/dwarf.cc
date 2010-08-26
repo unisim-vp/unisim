@@ -580,7 +580,11 @@ const char *DWARF_GetTagName(uint16_t dw_tag)
 		case DW_TAG_volatile_type: return "DW_TAG_volatile_type";
 	}
 	std::stringstream sstr;
-	sstr << "0x" << std::hex << dw_tag << std::dec << " (" << (((dw_tag >= DW_TAG_lo_user) && (dw_tag <= DW_TAG_hi_user)) ? "user" : "?") << ")";
+	sstr << "0x" << std::hex << dw_tag << std::dec << " ("
+			// << (((dw_tag >= DW_TAG_lo_user) && (dw_tag <= DW_TAG_hi_user)) ?
+			<< (((dw_tag >= DW_TAG_lo_user)) ?
+					"user" : "?")
+			<< ")";
 	strncpy(buf, sstr.str().c_str(), sizeof(buf));
 	buf[sizeof(buf) - 1] = 0;
 	return (const char *) buf;
