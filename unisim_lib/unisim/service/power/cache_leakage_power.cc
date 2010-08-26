@@ -67,7 +67,6 @@ GetLeakagePower()
 	map<CacheProfileKey, CacheProfile *>::const_iterator prof_iter;
 	double leakage_power = 0.0;
 	double total_time = (*time_import)->GetTime(); // in seconds
-	double t = 0.0;
 
 	for(prof_iter = profiles->begin(); prof_iter != profiles->end(); prof_iter++)
 	{

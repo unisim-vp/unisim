@@ -56,6 +56,7 @@ using unisim::service::interfaces::TrapReporting;
 class ExternalTrapHandlerInterface
 {
 public:
+	virtual ~ExternalTrapHandlerInterface() {}
 	virtual void ExternalTrap(unsigned int id) = 0;
 };
 

@@ -42,6 +42,8 @@ namespace interfaces {
 class PowerMode
 {
 public:
+	PowerMode() {}
+	virtual ~PowerMode() {}
 	virtual void SetPowerMode(unsigned int cycle_time, unsigned int voltage) = 0;	// in ps/mV
 	virtual unsigned int GetMinCycleTime() = 0; // in ps
 	virtual unsigned int GetDefaultVoltage() = 0; // in mV

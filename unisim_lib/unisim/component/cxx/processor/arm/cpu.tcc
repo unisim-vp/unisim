@@ -4162,7 +4162,6 @@ CPU<CONFIG> ::
 PerformPrefetchAccess(MemoryOp<CONFIG> *memop)
 {
 	uint32_t addr = memop->GetAddress();
-	uint32_t value = 0;
 
 	if ( CONFIG::MODEL == ARM926EJS && linux_os_import )
 	{
@@ -4466,7 +4465,6 @@ PerformReadAccess(MemoryOp<CONFIG> *memop)
 		{
 			uint32_t val32;
 			uint32_t val32_l, val32_r;
-			uint32_t mask32_l, mask32_r;
 			uint32_t align;
 
 			val32 = Target2Host(GetEndianness(), *((uint32_t *)data));
@@ -4606,7 +4604,6 @@ PerformReadToPCAccess(MemoryOp<CONFIG> *memop) {
 		uint32_t value;
 		uint32_t val32;
 		uint32_t val32_l, val32_r;
-		uint32_t mask32_l, mask32_r;
 		uint32_t align;
 
 		val32 = Target2Host(GetEndianness(), *((uint32_t *)data));
@@ -4745,7 +4742,6 @@ PerformReadToPCUpdateTAccess(MemoryOp<CONFIG> *memop) {
 		uint32_t value;
 		uint32_t val32;
 		uint32_t val32_l, val32_r;
-		uint32_t mask32_l, mask32_r;
 		uint32_t align;
 
 		val32 = Target2Host(GetEndianness(), *((uint32_t *)data));

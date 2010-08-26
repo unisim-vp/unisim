@@ -79,7 +79,7 @@ inline std::ostream& c_string_to_XML(std::ostream& os, const char *s)
 					os << c;
 			}
 		}
-		while(c = *(++s));
+		while((c = *(++s)));
 	}
 	return os;
 }
@@ -121,7 +121,7 @@ int64_t DWARF_StatementProgram<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64
 	
 	uint32_t unit_length32;
 	
-	int64_t size = 0;
+	uint64_t size = 0;
 
 	if(max_size < sizeof(unit_length32)) return -1;
 	memcpy(&unit_length32, rawdata, sizeof(unit_length32));
@@ -2432,7 +2432,7 @@ int64_t DWARF_CompilationUnit<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_
 	endian_type endianness = dw_handler->GetEndianness();
 	uint32_t unit_length32;
 	
-	int64_t size = 0;
+	uint64_t size = 0;
 	if(max_size < sizeof(unit_length32)) return -1;
 	memcpy(&unit_length32, rawdata, sizeof(unit_length32));
 	unit_length32 = Target2Host(endianness, unit_length32);
@@ -2707,7 +2707,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 	std::stack<MEMORY_ADDR> dw_stack;
 	uint8_t address_size = dw_cu ? dw_cu->GetAddressSize() : dw_cfp->GetAddressSize();
 	endian_type endianness = dw_cu ? dw_cu->GetEndianness() : dw_cfp->GetEndianness();
-	uint8_t offset_size = dw_cu ? dw_cu->GetOffsetSize() : 0; // offsets are unused for expressions in a call frame program
+//	uint8_t offset_size = dw_cu ? dw_cu->GetOffsetSize() : 0; // offsets are unused for expressions in a call frame program
 	
 	uint64_t expr_length = dw_expr->GetLength();
 	const uint8_t *expr = dw_expr->GetValue();
@@ -3396,7 +3396,7 @@ int64_t DWARF_CIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 	endian_type endianness = dw_handler->GetEndianness();
 	uint32_t length32;
 	
-	int64_t size = 0;
+	uint64_t size = 0;
 	int64_t sz;
 	if(max_size < sizeof(length32)) return -1;
 	memcpy(&length32, rawdata, sizeof(length32));
@@ -3559,8 +3559,7 @@ int64_t DWARF_FDE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 	uint8_t address_size = dw_handler->GetAddressSize();
 	uint32_t length32;
 	
-	int64_t size = 0;
-	int64_t sz;
+	uint64_t size = 0;
 	if(max_size < sizeof(length32)) return -1;
 	memcpy(&length32, rawdata, sizeof(length32));
 	length32 = Target2Host(endianness, length32);
@@ -4126,11 +4125,11 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 
 template <class MEMORY_ADDR>
 DWARF_RangeListEntry<MEMORY_ADDR>::DWARF_RangeListEntry(const DWARF_CompilationUnit<MEMORY_ADDR> *_dw_cu)
-	: offset(0xffffffffffffffffULL)
-	, dw_cu(_dw_cu)
+	: dw_cu(_dw_cu)
+	, next(0)
+	, offset(0xffffffffffffffffULL)
 	, begin(0)
 	, end(0)
-	, next(0)
 {
 }
 
@@ -4878,7 +4877,7 @@ int64_t DWARF_AddressRanges<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t 
 	DWARF_Format dw_fmt;
 	uint32_t unit_length32;
 	
-	int64_t size = 0;
+	uint64_t size = 0;
 	if(max_size < sizeof(unit_length32)) return -1;
 	memcpy(&unit_length32, rawdata, sizeof(unit_length32));
 	unit_length32 = Target2Host(endianness, unit_length32);
@@ -5060,7 +5059,7 @@ int64_t DWARF_Pub<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size)
 	if(debug_info_offset == 0) return size;
 	
 	name = (const char *) rawdata;
-	int64_t sz = strlen(name) + 1;
+	uint64_t sz = strlen(name) + 1;
 	if(max_size < sz) return -1;
 	size += sz;
 	rawdata += sz;
@@ -5150,7 +5149,7 @@ int64_t DWARF_Pubs<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size)
 	endian_type endianness = dw_handler->GetEndianness();
 	uint32_t unit_length32;
 	
-	int64_t size = 0;
+	uint64_t size = 0;
 	if(max_size < sizeof(unit_length32)) return -1;
 	memcpy(&unit_length32, rawdata, sizeof(unit_length32));
 	unit_length32 = Target2Host(endianness, unit_length32);
@@ -5595,7 +5594,7 @@ DWARF_Handler<MEMORY_ADDR>::~DWARF_Handler()
 	}
 
 	unsigned int num_pubtypes = dw_pubtypes.size();
-	for(i = 0; i < num_pubtypes; i++)
+	for(unsigned int i = 0; i < num_pubtypes; i++)
 	{
 		delete dw_pubtypes[i];
 	}

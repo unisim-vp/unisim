@@ -83,53 +83,53 @@ using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 
 template <class ADDRESS>
-GDBServer<ADDRESS>::GDBServer(const char *_name, Object *_parent) :
-	Object(_name, _parent, "GDB Server"),
-	Service<DebugControl<ADDRESS> >(_name, _parent),
-	Service<MemoryAccessReporting<ADDRESS> >(_name, _parent),
-	Service<TrapReporting>(_name, _parent),
-	Client<MemoryAccessReportingControl>(_name, _parent),
-	Client<Memory<ADDRESS> >(_name, _parent),
-	Client<Registers>(_name, _parent),
-	Client<Disassembly<ADDRESS> >(_name, _parent),
-	Client<SymbolTableLookup<ADDRESS> >(_name, _parent),
-	debug_control_export("debug-control-export", this),
-	memory_access_reporting_export("memory-access-reporting-export", this),
-	trap_reporting_export("trap-reporting-export", this),
-	memory_access_reporting_control_import("memory_access_reporting_control_import", this),
-	memory_import("memory-import", this),
-	registers_import("cpu-registers-import", this),
-	disasm_import("disasm-import", this),
-	symbol_table_lookup_import("symbol-table-lookup-import", this),
-	tcp_port(12345),
-	architecture_description_filename(),
-	sock(-1),
-	gdb_registers(),
-	gdb_pc(0),
-	killed(false),
-	trap(false),
-	synched(false),
-	breakpoint_registry(),
-	watchpoint_registry(),
-	running_mode(GDBSERVER_MODE_WAITING_GDB_CLIENT),
-	extended_mode(false),
-	counter(0),
-	period(50),
-	input_buffer_size(0),
-	input_buffer_index(0),
-	output_buffer_size(0),
-	logger(*this),
-	memory_atom_size(1),
-	verbose(false),
-	param_memory_atom_size("memory-atom-size", this, memory_atom_size, "size of the smallest addressable element in memory"),
-	param_tcp_port("tcp-port", this, tcp_port, "TCP/IP port to listen waiting for a GDB client connection"),
-	param_architecture_description_filename("architecture-description-filename", this, architecture_description_filename, "filename of a XML description of the connected processor"),
-	param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
+GDBServer<ADDRESS>::GDBServer(const char *_name, Object *_parent)
+	: Object(_name, _parent, "GDB Server")
+	, Service<DebugControl<ADDRESS> >(_name, _parent)
+	, Service<MemoryAccessReporting<ADDRESS> >(_name, _parent)
+	, Service<TrapReporting>(_name, _parent)
+	, Client<MemoryAccessReportingControl>(_name, _parent)
+	, Client<Memory<ADDRESS> >(_name, _parent)
+	, Client<Disassembly<ADDRESS> >(_name, _parent)
+	, Client<SymbolTableLookup<ADDRESS> >(_name, _parent)
+	, Client<Registers>(_name, _parent)
+	, debug_control_export("debug-control-export", this)
+	, memory_access_reporting_export("memory-access-reporting-export", this)
+	, trap_reporting_export("trap-reporting-export", this)
+	, memory_access_reporting_control_import("memory_access_reporting_control_import", this)
+	, memory_import("memory-import", this)
+	, registers_import("cpu-registers-import", this)
+	, disasm_import("disasm-import", this)
+	, symbol_table_lookup_import("symbol-table-lookup-import", this)
+	, logger(*this)
+	, tcp_port(12345)
+	, architecture_description_filename()
+	, sock(-1)
+	, gdb_registers()
+	, gdb_pc(0)
+	, killed(false)
+	, trap(false)
+	, synched(false)
+	, breakpoint_registry()
+	, watchpoint_registry()
+	, running_mode(GDBSERVER_MODE_WAITING_GDB_CLIENT)
+	, extended_mode(false)
+	, counter(0)
+	, period(50)
+	, disasm_addr(0)
+	, input_buffer_size(0)
+	, input_buffer_index(0)
+	, output_buffer_size(0)
+	, memory_atom_size(1)
+	, verbose(false)
+	, param_memory_atom_size("memory-atom-size", this, memory_atom_size, "size of the smallest addressable element in memory")
+	, param_tcp_port("tcp-port", this, tcp_port, "TCP/IP port to listen waiting for a GDB client connection")
+	, param_architecture_description_filename("architecture-description-filename", this, architecture_description_filename, "filename of a XML description of the connected processor")
+	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
 {
 	Object::SetupDependsOn(registers_import);
 	Object::SetupDependsOn(memory_access_reporting_control_import);
 	counter = period;
-	disasm_addr = 0;
 }
 
 template <class ADDRESS>
@@ -1274,8 +1274,6 @@ bool GDBServer<ADDRESS>::ReportSignal(unsigned int signum)
 template <class ADDRESS>
 bool GDBServer<ADDRESS>::ReportTracePointTrap()
 {
-	uint8_t reg_num;
-
 	string packet("T05");
 	vector<GDBRegister>::const_iterator gdb_reg;
 
@@ -1535,14 +1533,13 @@ void GDBServer<ADDRESS>::HandleQRcmd(string command) {
 }
 
 template <class ADDRESS>
-void GDBServer<ADDRESS>::Disasm(ADDRESS symbol_address, int symbol_size)
+void GDBServer<ADDRESS>::Disasm(ADDRESS symbol_address, unsigned int symbol_size)
 {
 
 	ADDRESS current_address = symbol_address;
 	ADDRESS next_address = symbol_address;
 	ADDRESS disassembled_size = 0;
 	std::stringstream strstm;
-	const Symbol<ADDRESS> *last_symbol = 0;
 
 	while (disassembled_size < symbol_size) {
 

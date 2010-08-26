@@ -236,7 +236,6 @@ CachePowerEstimator::CachePowerEstimator(const char *name, Object *parent) :
 CachePowerEstimator::~CachePowerEstimator()
 {
 	map<CacheProfileKey, CacheProfile *>::iterator prof_iter;
-	double dyn_energy = 0.0;
 
 	for(prof_iter = profiles.begin(); prof_iter != profiles.end(); prof_iter++)
 	{
@@ -373,7 +372,6 @@ double CachePowerEstimator::GetLeakagePower()
 	map<CacheProfileKey, CacheProfile *>::iterator prof_iter;
 	double leakage_power = 0.0;
 	double total_time = time_import->GetTime(); // in seconds
-	double t = 0.0;
 
 	if(total_time > time_stamp)
 	{
@@ -399,7 +397,6 @@ bool CachePowerEstimator::Setup()
 		logger << DebugError << "no time service is connected." << EndDebugError;
 		return false;
 	}
-	int i, j;
 	if(verbose)
 	{
 		logger << DebugInfo << ((double) p_cache_size / 1024.0) << " KB cache" << EndDebugInfo;

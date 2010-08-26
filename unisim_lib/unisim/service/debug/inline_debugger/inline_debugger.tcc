@@ -71,33 +71,45 @@ using unisim::kernel::service::VariableBase;
 using unisim::util::debug::Statement;
 
 template <class ADDRESS>
-InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent) :
-	Object(_name, _parent, "Inline debugger"),
-	Service<DebugControl<ADDRESS> >(_name, _parent),
-	Service<MemoryAccessReporting<ADDRESS> >(_name, _parent),
-	Service<TrapReporting>(_name, _parent),
-	Client<MemoryAccessReportingControl>(_name, _parent),
-	Client<Disassembly<ADDRESS> >(_name, _parent),
-	Client<Memory<ADDRESS> >(_name, _parent),
-	Client<Registers>(_name, _parent),
-	Client<SymbolTableLookup<ADDRESS> >(_name, _parent),
-	Client<Loader<ADDRESS> >(_name, _parent),
-	Client<StatementLookup<ADDRESS> >(_name, _parent),
-	memory_atom_size(1),
-	num_loaders(0),
-	param_memory_atom_size("memory-atom-size", this, memory_atom_size, "size of the smallest addressable element in memory"),
-	param_num_loaders("num-loaders", this, num_loaders, "number of loaders"),
-	param_search_path("search-path", this, search_path, "Search path for source (separated by ';')"),
-	debug_control_export("debug-control-export", this),
-	memory_access_reporting_export("memory-access-reporting-export", this),
-	trap_reporting_export("trap-reporting-export", this),
-	memory_access_reporting_control_import("memory-access-reporting-control-import", this),
-	disasm_import("disasm-import", this),
-	memory_import("memory-import", this),
-	registers_import("registers-import", this),
-	loader_import(0),
-	symbol_table_lookup_import(0),
-	stmt_lookup_import(0)
+InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent)
+	: Object(_name, _parent, "Inline debugger")
+	, Service<DebugControl<ADDRESS> >(_name, _parent)
+	, Service<MemoryAccessReporting<ADDRESS> >(_name, _parent)
+	, Service<TrapReporting>(_name, _parent)
+	, Client<MemoryAccessReportingControl>(_name, _parent)
+	, Client<Disassembly<ADDRESS> >(_name, _parent)
+	, Client<Memory<ADDRESS> >(_name, _parent)
+	, Client<Registers>(_name, _parent)
+	, Client<SymbolTableLookup<ADDRESS> >(_name, _parent)
+	, Client<Loader<ADDRESS> >(_name, _parent)
+	, Client<StatementLookup<ADDRESS> >(_name, _parent)
+	, InlineDebuggerBase()
+	, debug_control_export("debug-control-export", this)
+	, memory_access_reporting_export("memory-access-reporting-export", this)
+	, trap_reporting_export("trap-reporting-export", this)
+	, disasm_import("disasm-import", this)
+	, memory_import("memory-import", this)
+	, memory_access_reporting_control_import("memory-access-reporting-control-import", this)
+	, registers_import("registers-import", this)
+	, symbol_table_lookup_import(0)
+	, loader_import(0)
+	, stmt_lookup_import(0)
+	, memory_atom_size(1)
+	, num_loaders(0)
+	, param_memory_atom_size("memory-atom-size", this, memory_atom_size, "size of the smallest addressable element in memory")
+	, param_num_loaders("num-loaders", this, num_loaders, "number of loaders")
+	, param_search_path("search-path", this, search_path, "Search path for source (separated by ';')")
+	, breakpoint_registry()
+	, watchpoint_registry()
+	, program_profile()
+	, data_read_profile()
+	, data_write_profile()
+	, running_mode(INLINE_DEBUGGER_MODE_WAITING_USER)
+	, disasm_addr(0)
+	, dump_addr(0)
+	, prompt(string(_name) + "> ")
+	, hex_addr_fmt(0)
+	, int_addr_fmt(0)
 {
 	param_num_loaders.SetMutable(false);
 	param_num_loaders.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
@@ -105,10 +117,6 @@ InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent) :
 	trap = false;
 	strcpy(last_line, "");
 	strcpy(line, "");
-	running_mode = INLINE_DEBUGGER_MODE_WAITING_USER;
-	disasm_addr = 0;
-	dump_addr = 0;
-	prompt = string(_name) + "> ";
 
 	switch(sizeof(ADDRESS))
 	{
@@ -289,7 +297,6 @@ ReportTrap(const unisim::kernel::service::Object &obj,
 template <class ADDRESS>
 typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebugCommand(ADDRESS cia)
 {
-	int count;
 	bool recognized = false;
 	ADDRESS addr;
 	ADDRESS cont_addr;
@@ -725,7 +732,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 			{
 				recognized = true;
 				std::stringstream str;
-				for (unsigned int i = 2; i < nparms; i++)
+				for (int i = 2; i < nparms; i++)
 				{
 					if (i > 2) str << " ";
 						str << parm[i];
@@ -737,7 +744,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 		if(!recognized)
 		{
 			cout << "Unrecognized command.  Try \"help\"." << endl;
-			for (unsigned int i = 0; i < nparms; i++)
+			for (int i = 0; i < nparms; i++)
 				cout << parm[i] << " ";
 			cout << endl;
 		}
@@ -1099,6 +1106,9 @@ void InlineDebugger<ADDRESS>::DumpWatchpoints()
 			case MemoryAccessReporting<ADDRESS>::MAT_WRITE:
 				cout << "write";
 				break;
+			default:
+				cout << "  (?)";
+				break;
 		}
 		cout << " ";
 		
@@ -1131,7 +1141,7 @@ void InlineDebugger<ADDRESS>::DumpWatchpoints()
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DumpMemory(ADDRESS addr)
 {
-	int i, j;
+	unsigned int i, j;
 	streamsize width = cout.width();
 
 	cout.fill(' ');
@@ -1196,6 +1206,9 @@ void InlineDebugger<ADDRESS>::DumpVariables()
 					break;
 				case VariableBase::VAR_REGISTER:
 					cout << " R";
+					break;
+				default:
+					cout << " ?";
 					break;
 			}
 			cout << "\t" << (*iter)->GetName() << endl;
@@ -1414,6 +1427,9 @@ void InlineDebugger<ADDRESS>::DumpVariable(const char *cmd, const char *name)
 		case VariableBase::VAR_REGISTER:
 			cout << " R";
 			break;
+		default:
+			cout << " ?";
+			break;
 	}
 
 	cout << "\t";
@@ -1600,8 +1616,6 @@ void InlineDebugger<ADDRESS>::DumpDataProfile(bool write)
 			}
 		}
 		
-		ADDRESS next_addr;
-
 		cout << "0x" << hex;
 		cout.fill('0');
 		cout.width(8);

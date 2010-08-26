@@ -293,7 +293,7 @@ Log(T addr, const uint8_t *value, uint32_t size)
 	logger << DebugInfo
 			<< "0x" << hex << (unsigned long int)addr << dec
 			<< " [" << (unsigned int)size << "] =" << hex;
-	for (int i = 0; i < size; i++)
+	for (uint32_t i = 0; i < size; i++)
 		logger << " " << (unsigned short int)value[i];
 	logger << dec << EndDebugInfo;
 }
