@@ -112,67 +112,73 @@ using unisim::util::endian::Host2Target;
 /** Constructor. */
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-LinuxOS(const char *name, Object *parent) :
-    Object(name, parent),
-	Service<unisim::service::interfaces::LinuxOS>(name, parent),
-	Service<Loader<ADDRESS_TYPE> >(name, parent),
-	Client<CPULinuxOS>(name, parent),
-	Client<Memory<ADDRESS_TYPE> >(name, parent),
-	Client<MemoryInjection<ADDRESS_TYPE> >(name, parent),
-	Client<Registers>(name, parent),
-	Client<Loader<ADDRESS_TYPE> >(name, parent),
-	linux_os_export("linux-os-export", this),
-	loader_export("loader-export", this),
-	memory_import("memory-import", this),
-	memory_injection_import("memory-injection-import", this),
-	registers_import("registers-import", this),
-	loader_import("loader-import", this),
-	cpu_linux_os_import("cpu-linux-os-import", this),
-	system(""),
-	param_system("system", this, system, "Emulated system architecture "
-			"available values are \"arm\" and \"powerpc\""),
-	endianess(E_LITTLE_ENDIAN),
-    endianess_string("little-endian"),
-    param_endian("endianness", this, endianess_string,
-    		"The endianness of the binary loaded. Available values are: little-endian and big-endian."),
-	memory_page_size(4096),
-	param_memory_page_size("memory-page-size", this, memory_page_size),
-	utsname_sysname("Linux"),
-	param_utsname_sysname("utsname-sysname", this, utsname_sysname,
+LinuxOS(const char *name, Object *parent)
+	: Object(name, parent)
+	, Service<unisim::service::interfaces::LinuxOS>(name, parent)
+	, Service<Loader<ADDRESS_TYPE> >(name, parent)
+	, Client<CPULinuxOS>(name, parent)
+	, Client<Memory<ADDRESS_TYPE> >(name, parent)
+	, Client<MemoryInjection<ADDRESS_TYPE> >(name, parent)
+	, Client<Registers>(name, parent)
+	, Client<Loader<ADDRESS_TYPE> >(name, parent)
+	, linux_os_export("linux-os-export", this)
+	, loader_export("loader-export", this)
+	, cpu_linux_os_import("cpu-linux-os-import", this)
+	, memory_import("memory-import", this)
+	, memory_injection_import("memory-injection-import", this)
+	, registers_import("registers-import", this)
+	, loader_import("loader-import", this)
+	, syscall_name_map()
+	, syscall_name_assoc_map()
+	, syscall_impl_assoc_map()
+	, current_syscall_id(0)
+	, current_syscall_name()
+	, system("")
+	, param_system("system", this, system, "Emulated system architecture "
+			"available values are \"arm\" and \"powerpc\"")
+	, endianess(E_LITTLE_ENDIAN)
+	, endianess_string("little-endian")
+	, param_endian("endianness", this, endianess_string,
+    		"The endianness of the binary loaded. Available values are: little-endian and big-endian.")
+	, memory_page_size(4096)
+	, param_memory_page_size("memory-page-size", this, memory_page_size)
+	, utsname_sysname("Linux")
+	, param_utsname_sysname("utsname-sysname", this, utsname_sysname,
 			"The value that the uname system call should return. As this"
 			" service is providing linux emulation supoort its value should"
-			" be 'Linux', so you should not modify it."),
-	utsname_nodename("localhost"),
-	param_utsname_nodename("utsname-nodename", this, utsname_nodename,
+			" be 'Linux', so you should not modify it.")
+	, utsname_nodename("localhost")
+	, param_utsname_nodename("utsname-nodename", this, utsname_nodename,
 			"The network node hostname that the uname system call should"
 			" return. Default value is localhost, but you could write whatever"
-			" name you want."),
-	utsname_release("2.6.27.35"),
-	param_utsname_release("utsname-release", this, utsname_release,
+			" name you want.")
+	, utsname_release("2.6.27.35")
+	, param_utsname_release("utsname-release", this, utsname_release,
 			"The kernel realese information that the uname system call should"
-			" return. This should usually match the linux-kernel parameter."),
-	utsname_version("#UNISIM SMP Fri Mar 12 05:23:09 UTC 2010"),
-	param_utsname_version("utsname-version", this, utsname_version,
+			" return. This should usually match the linux-kernel parameter.")
+	, utsname_version("#UNISIM SMP Fri Mar 12 05:23:09 UTC 2010")
+	, param_utsname_version("utsname-version", this, utsname_version,
 			"The kernel version information that the uname system call should"
-			" return."),
-	utsname_machine("armv5"),
-	param_utsname_machine("utsname-machine", this, utsname_machine,
+			" return.")
+	, utsname_machine("armv5")
+	, param_utsname_machine("utsname-machine", this, utsname_machine,
 			"The machine information that the uname system call should"
 			" return. This should be one of the supported architectures (the"
 			" system parameter, that is, arm or powerpc) or a specific model "
-			" derived from it (i.e., arm926ejs)."),
-	utsname_domainname("localhost"),
-	param_utsname_domainname("utsname-domainname", this, utsname_domainname,
+			" derived from it (i.e., arm926ejs).")
+	, utsname_domainname("localhost")
+	, param_utsname_domainname("utsname-domainname", this, utsname_domainname,
 			"The domain name information that the uname system call should"
-			" return."),
-	logger(*this),
-    verbose(false),
-    param_verbose("verbose", this, verbose),
-	mmap_base(0xd4000000),
-	current_syscall_id(0),
-    current_syscall_name(""),
-	osrelease_filename("/proc/sys/kernel/osrelease"),
-	fake_osrelease_filename("osrelease")
+			" return.")
+	, logger(*this)
+	, verbose(false)
+	, param_verbose("verbose", this, verbose)
+	, mmap_base(0xd4000000)
+	, mmap_brk_point(0)
+	, brk_point(0)
+	, ppc_cr(0)
+	, osrelease_filename("/proc/sys/kernel/osrelease")
+	, fake_osrelease_filename("osrelease")
 {
 	SetSyscallNameMap();
 
@@ -655,7 +661,8 @@ bool
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 ReadMem(ADDRESS_TYPE addr, void *buffer, uint32_t size) 
 {
-	memory_injection_import->InjectReadMemory(addr, buffer, size);
+	bool result;
+	result = memory_injection_import->InjectReadMemory(addr, buffer, size);
 	if(unlikely(verbose)) 
 	{
 		logger << DebugInfo
@@ -669,6 +676,7 @@ ReadMem(ADDRESS_TYPE addr, void *buffer, uint32_t size)
 			<< LOCATION
 			<< EndDebugInfo;
 	}
+	return result;
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
@@ -676,6 +684,8 @@ bool
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 WriteMem(ADDRESS_TYPE addr, const void *buffer, uint32_t size) 
 {
+	bool result;
+
 	if(unlikely(verbose)) 
 	{
 		logger << DebugInfo 
@@ -689,7 +699,9 @@ WriteMem(ADDRESS_TYPE addr, const void *buffer, uint32_t size)
 			<< LOCATION
 			<< EndDebugInfo;
 	}
-	memory_injection_import->InjectWriteMemory(addr, buffer, size);
+
+	result = memory_injection_import->InjectWriteMemory(addr, buffer, size);
+	return result;
 }
 
 /**
@@ -731,8 +743,6 @@ void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 SetSyscallId(const string &syscall_name, int syscall_id) 
 {
-    syscall_t syscall_impl;
-
 	if(unlikely(verbose))
 		logger << DebugInfo
 			<< "Associating syscall_name \"" << syscall_name << "\""
@@ -1688,8 +1698,7 @@ LSC_fstat()
 	int ret;
 	int fd;
 	ADDRESS_TYPE buf_address;
-	struct stat *buf;
-    
+
 	fd = GetSystemCallParam(0);
 	buf_address = GetSystemCallParam(1);
 	if (system == "arm")
@@ -1751,7 +1760,6 @@ LSC_llseek()
 	uint64_t lseek_ret64;
 	off_t lseek_ret;
 	int whence;
-	int ret;
 		
 	fd = GetSystemCallParam(0);
 	offset_high = GetSystemCallParam(1);
@@ -1885,7 +1893,6 @@ LSC_stat64()
 	int ret;
 	ADDRESS_TYPE buf_address;
 	int fd;
-	struct stat64 *buf;
 
 	fd = GetSystemCallParam(0);
 	buf_address = GetSystemCallParam(1);
@@ -1918,7 +1925,6 @@ LSC_fstat64()
 	int ret;
 	ADDRESS_TYPE buf_address;
 	int fd;
-	struct stat64 *buf;
 
 	fd = GetSystemCallParam(0);
 	buf_address = GetSystemCallParam(1);

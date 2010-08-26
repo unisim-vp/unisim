@@ -704,7 +704,7 @@ Variable<double>::Variable(const char *_name, Object *_owner, double& _storage, 
 template <>
 const char *Variable<double>::GetDataTypeName() const
 {
-	return "64-bit floating-point";
+	return "double precision floating-point";
 }
 
 template <>
@@ -725,7 +725,7 @@ Variable<float>::Variable(const char *_name, Object *_owner, float& _storage, Ty
 template <>
 const char *Variable<float>::GetDataTypeName() const
 {
-	return "32-bit floating-point";
+	return "single precision floating-point";
 }
 
 template <>
@@ -1808,6 +1808,10 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 									arg++;
 									state = 4;
 									break;
+								case 'p':
+									arg++;
+									state = 5;
+									break;
 								default:
 									state = -1;
 									break;
@@ -1864,6 +1868,10 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 			case 4:
 				generate_doc = true;
 				generate_doc_filename = *arg;
+				arg++;
+				state = 0;
+				break;
+			case 5:
 				arg++;
 				state = 0;
 				break;

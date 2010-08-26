@@ -54,32 +54,34 @@ using unisim::kernel::logger::EndDebugError;
 
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::ElfLoaderImpl(const char *name, Object *parent) :
-	Object(name, parent, "ELF Loader"),
-	Client<Memory<MEMORY_ADDR> >(name, parent),
-	Client<Registers>(name, parent),
-	Service<SymbolTableLookup<MEMORY_ADDR> >(name, parent),
-	Service<Loader<MEMORY_ADDR> >(name, parent),
-	Service<StatementLookup<MEMORY_ADDR> >(name, parent),
-	memory_import("memory-import", this),
-	registers_import("registers-import", this),
-	symbol_table_lookup_export("symbol-table-lookup-export", this),
-	loader_export("loader-export", this),
-	stmt_lookup_export("stmt-lookup-export", this),
-	filename(),
-	entry_point(0),
-	base_addr(0),
-	top_addr(0),
-	force_use_virtual_address(false),
-	dump_headers(false),
-	dw_handler(0),
-	logger(*this),
-	verbose(false),
-	param_filename("filename", this, filename, "the ELF filename to load into memory"),
-	param_base_addr("base-addr", this, base_addr, "if not null, a forced base address for a unique program segment"),
-	param_force_use_virtual_address("force-use-virtual-address", this, force_use_virtual_address, "force use of virtual addresses instead of physical addresses"),
-	param_dump_headers("dump-headers", this, dump_headers, "dump headers while loading ELF file"),
-	param_verbose("verbose", this, verbose, "enable/disable verbosity")
+ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::ElfLoaderImpl(const char *name, Object *parent)
+	: Object(name, parent, "ELF Loader")
+	, Client<Memory<MEMORY_ADDR> >(name, parent)
+	, Client<Registers>(name, parent)
+	, Service<Loader<MEMORY_ADDR> >(name, parent)
+	, Service<SymbolTableLookup<MEMORY_ADDR> >(name, parent)
+	, Service<StatementLookup<MEMORY_ADDR> >(name, parent)
+	, memory_import("memory-import", this)
+	, registers_import("registers-import", this)
+	, symbol_table_lookup_export("symbol-table-lookup-export", this)
+	, loader_export("loader-export", this)
+	, stmt_lookup_export("stmt-lookup-export", this)
+	, filename()
+	, entry_point(0)
+	, top_addr(0)
+	, base_addr(0)
+	, force_use_virtual_address(false)
+	, dump_headers(false)
+	, symbol_table()
+	, dw_handler(0)
+	, logger(*this)
+	, verbose(false)
+	, endianness(E_LITTLE_ENDIAN)
+	, param_filename("filename", this, filename, "the ELF filename to load into memory")
+	, param_base_addr("base-addr", this, base_addr, "if not null, a forced base address for a unique program segment")
+	, param_force_use_virtual_address("force-use-virtual-address", this, force_use_virtual_address, "force use of virtual addresses instead of physical addresses")
+	, param_dump_headers("dump-headers", this, dump_headers, "dump headers while loading ELF file")
+	, param_verbose("verbose", this, verbose, "enable/disable verbosity")
 {
 	Object::SetupDependsOn(memory_import);
 }
@@ -801,7 +803,8 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 	if(hdr->e_type == ET_CORE) os << "Core file"; else
 	if(hdr->e_type == ET_NUM) os << "Number of defined types"; else
 	if(hdr->e_type >= ET_LOOS && hdr->e_type <= ET_HIOS) os << "OS-specific"; else
-	if(hdr->e_type >= ET_LOPROC && hdr->e_type <= ET_HIPROC) os << "Processor-specific"; else os << "Unknown (" << hdr->e_type << ")";
+	//if(hdr->e_type >= ET_LOPROC && hdr->e_type <= ET_HIPROC) os << "Processor-specific"; else os << "Unknown (" << hdr->e_type << ")";
+	if(hdr->e_type >= ET_LOPROC) os << "Processor-specific"; else os << "Unknown (" << hdr->e_type << ")";
 
 	os << endl << "Target machine : ";
 

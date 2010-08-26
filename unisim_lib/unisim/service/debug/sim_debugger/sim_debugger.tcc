@@ -65,33 +65,41 @@ using std::list;
 
 template <class ADDRESS>
 SimDebugger<ADDRESS>::
-SimDebugger(const char *_name, Object *_parent) :
-	Object(_name, _parent, "Simulator debugger"),
-	Service<DebugControl<ADDRESS> >(_name, _parent),
-	Service<MemoryAccessReporting<ADDRESS> >(_name, _parent),
-	Service<TrapReporting>(_name, _parent),
-	Client<MemoryAccessReportingControl>(_name, _parent),
-	Client<Disassembly<ADDRESS> >(_name, _parent),
-	Client<Memory<ADDRESS> >(_name, _parent),
-	Client<Registers>(_name, _parent),
-	Client<SymbolTableLookup<ADDRESS> >(_name, _parent),
-	Client<Loader<ADDRESS> >(_name, _parent),
-	Client<StatementLookup<ADDRESS> >(_name, _parent),
-	memory_atom_size(1),
-	num_loaders(0),
-	param_memory_atom_size("memory-atom-size", this, memory_atom_size, "size of the smallest addressable element in memory"),
-	param_num_loaders("num-loaders", this, num_loaders, "number of loaders"),
-	param_search_path("search-path", this, search_path, "Search path for source (separated by ';')"),
-	debug_control_export("debug-control-export", this),
-	memory_access_reporting_export("memory-access-reporting-export", this),
-	trap_reporting_export("trap-reporting-export", this),
-	memory_access_reporting_control_import("memory-access-reporting-control-import", this),
-	disasm_import("disasm-import", this),
-	memory_import("memory-import", this),
-	registers_import("registers-import", this),
-	loader_import(0),
-	symbol_table_lookup_import(0),
-	stmt_lookup_import(0)
+SimDebugger(const char *_name, Object *_parent)
+	: Object(_name, _parent, "Simulator debugger")
+	, Service<DebugControl<ADDRESS> >(_name, _parent)
+	, Service<MemoryAccessReporting<ADDRESS> >(_name, _parent)
+	, Service<TrapReporting>(_name, _parent)
+	, Client<MemoryAccessReportingControl>(_name, _parent)
+	, Client<Disassembly<ADDRESS> >(_name, _parent)
+	, Client<Memory<ADDRESS> >(_name, _parent)
+	, Client<Registers>(_name, _parent)
+	, Client<SymbolTableLookup<ADDRESS> >(_name, _parent)
+	, Client<Loader<ADDRESS> >(_name, _parent)
+	, Client<StatementLookup<ADDRESS> >(_name, _parent)
+	, SimDebuggerBase()
+	, debug_control_export("debug-control-export", this)
+	, memory_access_reporting_export("memory-access-reporting-export", this)
+	, trap_reporting_export("trap-reporting-export", this)
+	, disasm_import("disasm-import", this)
+	, memory_import("memory-import", this)
+	, memory_access_reporting_control_import("memory-access-reporting-control-import", this)
+	, registers_import("registers-import", this)
+	, symbol_table_lookup_import(0)
+	, loader_import(0)
+	, stmt_lookup_import(0)
+	, memory_atom_size(1)
+	, num_loaders(0)
+	, param_memory_atom_size("memory-atom-size", this, memory_atom_size, "size of the smallest addressable element in memory")
+	, param_num_loaders("num-loaders", this, num_loaders, "number of loaders")
+	, param_search_path("search-path", this, search_path, "Search path for source (separated by ';')")
+	, breakpoint_registry()
+	, watchpoint_registry()
+	, program_profile()
+	, data_read_profile()
+	, running_mode(SIM_DEBUGGER_MODE_STEP)
+	, disasm_addr(0)
+	, dump_addr(0)
 {
 	param_num_loaders.SetMutable(false);
 	param_num_loaders.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
@@ -597,6 +605,9 @@ DumpWatchpoints()
 		case MemoryAccessReporting<ADDRESS>::MAT_WRITE:
 			cout << "write";
 			break;
+		default:
+			cout << "  (?)";
+			break;
 		}
 		cout << " ";
 
@@ -631,7 +642,7 @@ void
 SimDebugger<ADDRESS>::
 DumpMemory(uint64_t addr)
 {
-	int i, j;
+	unsigned int i, j;
 	std::streamsize width = cout.width();
 
 	cout.fill(' ');
@@ -805,8 +816,6 @@ DumpDataProfile(bool write)
 				symbol = (*symbol_table_lookup_import[i])->FindSymbolByAddr(addr);
 			}
 		}
-
-		ADDRESS next_addr;
 
 		cout << "0x" << hex;
 		cout.fill('0');

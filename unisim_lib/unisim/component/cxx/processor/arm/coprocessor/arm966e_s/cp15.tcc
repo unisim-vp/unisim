@@ -79,20 +79,31 @@ CP15(unsigned int _cp_id,
 		CPUCPInterface *_cpu,
 		DTCM<CONFIG> *_dtcm,
 		ITCM<CONFIG> *_itcm,
-		CacheInterface<address_t> *_memory_interface) :
-	CPInterface<CONFIG::DEBUG_ENABLE>(_cp_id, _cpu),
-	dtcm(_dtcm),
-	itcm(_itcm),
-	memory_interface(_memory_interface),
-	silicon_revision_number(0),
-	verbose_all(false),
-	verbose_read_reg(false),
-	verbose_write_reg(false),
-	verbose_pr_read(false),
-	verbose_pr_write(false),
-	verbose_debug_read(false),
-	verbose_debug_write(false) {
-	
+		CacheInterface<address_t> *_memory_interface)
+	: CPInterface<CONFIG::DEBUG_ENABLE>(_cp_id, _cpu)
+	, id_code_reg(0)
+	, tcm_size_reg(0)
+	, control_reg(0)
+	, core_reg(0)
+	, tpi_reg(0)
+	, conf_control_reg(0)
+	, bist_control_reg(0)
+	, ibist_addr_reg(0)
+	, ibist_gen_reg(0)
+	, dbist_addr_reg(0)
+	, dbist_gen_reg(0)
+	, dtcm(_dtcm)
+	, itcm(_itcm)
+	, memory_interface(_memory_interface)
+	, silicon_revision_number(0)
+	, verbose_all(false)
+	, verbose_read_reg(false)
+	, verbose_write_reg(false)
+	, verbose_pr_read(false)
+	, verbose_pr_write(false)
+	, verbose_debug_read(false)
+	, verbose_debug_write(false)
+{
 	InitRegs();
 }	
 
@@ -107,29 +118,40 @@ CP15(const char *name,
 		DTCM<CONFIG> *_dtcm,
 		ITCM<CONFIG> *_itcm,
 		CacheInterface<address_t> *_memory_interface,
-		Object *parent) :
-	Object(name, parent),
-	CPInterface<CONFIG::DEBUG_ENABLE>(_cp_id, _cpu),
-	dtcm(_dtcm),
-	itcm(_itcm),
-	memory_interface(_memory_interface),
-	silicon_revision_number(0),
-	param_silicon_revision_number("silicon-revision-number", this, silicon_revision_number),
-	verbose_all(false),
-	param_verbose_all("verbose-all", this, verbose_all),
-	verbose_read_reg(false),
-	param_verbose_read_reg("verbose-read-reg", this, verbose_read_reg),
-	verbose_write_reg(false),
-	param_verbose_write_reg("verbose-write-reg", this, verbose_write_reg),
-	verbose_pr_read(false),
-	param_verbose_pr_read("verbose-pr-read", this, verbose_pr_read),
-	verbose_pr_write(false),
-	param_verbose_pr_write("verbose-pr-write", this, verbose_pr_write),
-	verbose_debug_read(false),
-	param_verbose_debug_read("verbose-debug-read", this, verbose_debug_read),
-	verbose_debug_write(false),
-	param_verbose_debug_write("verbose-debug-write", this, verbose_debug_write),
-	logger(*this)
+		Object *parent)
+	: Object(name, parent)
+	, CPInterface<CONFIG::DEBUG_ENABLE>(_cp_id, _cpu)
+	, id_code_reg(0)
+	, tcm_size_reg(0)
+	, control_reg(0)
+	, core_reg(0)
+	, tpi_reg(0)
+	, conf_control_reg(0)
+	, bist_control_reg(0)
+	, ibist_addr_reg(0)
+	, ibist_gen_reg(0)
+	, dbist_addr_reg(0)
+	, dbist_gen_reg(0)
+	, dtcm(_dtcm)
+	, itcm(_itcm)
+	, memory_interface(_memory_interface)
+	, silicon_revision_number(0)
+	, verbose_all(false)
+	, verbose_read_reg(false)
+	, verbose_write_reg(false)
+	, verbose_pr_read(false)
+	, verbose_pr_write(false)
+	, verbose_debug_read(false)
+	, verbose_debug_write(false)
+	, param_silicon_revision_number("silicon-revision-number", this, silicon_revision_number)
+	, param_verbose_all("verbose-all", this, verbose_all)
+	, param_verbose_read_reg("verbose-read-reg", this, verbose_read_reg)
+	, param_verbose_write_reg("verbose-write-reg", this, verbose_write_reg)
+	, param_verbose_pr_read("verbose-pr-read", this, verbose_pr_read)
+	, param_verbose_pr_write("verbose-pr-write", this, verbose_pr_write)
+	, param_verbose_debug_read("verbose-debug-read", this, verbose_debug_read)
+	, param_verbose_debug_write("verbose-debug-write", this, verbose_debug_write)
+	, logger(*this)
 {
 }
 

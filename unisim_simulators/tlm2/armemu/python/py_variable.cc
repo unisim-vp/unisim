@@ -112,7 +112,92 @@ variable_getvalue (variable_VariableObject *self,
 				self->name->c_str());
 		return result;
 	}
-	std::string value = (std::string)*sim->FindVariable(self->name->c_str());
+	unisim::kernel::service::VariableBase *var =
+			sim->FindVariable(self->name->c_str());
+	const char *type = var->GetDataTypeName();
+	if ( strcmp("boolean", type) == 0 )
+	{
+		bool value = (bool)*sim->FindVariable(self->name->c_str());
+		if ( value )
+			result = Py_True;
+		else
+			result = Py_False;
+		Py_INCREF(result);
+	}
+	else if ( strcmp("signed 8-bit integer", type) == 0 )
+	{
+		char value = (char)*sim->FindVariable(self->name->c_str());
+		result = Py_BuildValue("b", value);
+	}
+	else if ( strcmp("signed 16-bit integer", type) == 0 )
+	{
+		short int value = (short int)*sim->FindVariable(self->name->c_str());
+		result = Py_BuildValue("h", value);
+	}
+	else if ( strcmp("signed 32-bit integer", type) == 0 )
+	{
+		long int value = (long int)*sim->FindVariable(self->name->c_str());
+		result = Py_BuildValue("l",value);
+	}
+	else if ( strcmp("signed 64-bit integer", type) == 0)
+	{
+		long long int value = (long long int)*sim->FindVariable(self->name->c_str());
+		result = Py_BuildValue("L", value);
+	}
+	else if ( strcmp("unsigned 8-bit integer", type) == 0 )
+	{
+		unsigned char value = (unsigned char)*sim->FindVariable(self->name->c_str());
+		result = Py_BuildValue("B", value);
+	}
+	else if ( strcmp("unsigned 16-bit integer", type) == 0 )
+	{
+		unsigned short int value = (unsigned short int)*sim->FindVariable(self->name->c_str());
+		result = Py_BuildValue("H", value);
+	}
+	else if ( strcmp("unsigned 32-bit integer", type) == 0 )
+	{
+		unsigned long int value = (unsigned long int)*sim->FindVariable(self->name->c_str());
+		result = Py_BuildValue("k",value);
+	}
+	else if ( strcmp("unsigned 64-bit integer", type) == 0 )
+	{
+		unsigned long long int value = (unsigned long long int)*sim->FindVariable(self->name->c_str());
+		result = Py_BuildValue("K", value);
+	}
+	else if ( strcmp("single precision floating-point", type) == 0 )
+	{
+		float value = (float)*sim->FindVariable(self->name->c_str());
+		result = Py_BuildValue("f", value);
+	}
+	else if ( strcmp("double precision floating-point", type) == 0 )
+	{
+		double value = (double)*sim->FindVariable(self->name->c_str());
+		result = Py_BuildValue("d", value);
+	}
+	else 	// anything else we consider it to be an string
+	{
+		std::string value = (std::string)*sim->FindVariable(self->name->c_str());
+		result = PyUnicode_FromString(value.c_str());
+	}
+	return result;
+}
+
+static PyObject *
+variable_getstr (variable_VariableObject *self,
+		void *closure)
+{
+	PyObject *result = NULL;
+	Simulator *sim = PySimulator_GetSimRef();
+	if (sim == 0 )
+	{
+		PyErr_Format(PyExc_RuntimeError,
+				"Simulator for variable '%s' is no longer available",
+				self->name->c_str());
+		return result;
+	}
+	unisim::kernel::service::VariableBase *var =
+			sim->FindVariable(self->name->c_str());
+	std::string value = (std::string)*var;
 	result = PyUnicode_FromString(value.c_str());
 	return result;
 }
@@ -136,18 +221,34 @@ variable_setvalue (variable_VariableObject *self,
 		PyErr_SetString(PyExc_TypeError, "Cannot set value to NULL");
 		return -1;
 	}
+	unisim::kernel::service::VariableBase *var =
+			sim->FindVariable(self->name->c_str());
+	if ( PyBool_Check(value) )
+	{
+		bool boolean = false;
+		if ( PyObject_IsTrue(value) ) boolean = true;
+		*var = boolean;
+		return 0;
+	}
+
+	PyObject *utf8;
 	if ( !PyUnicode_Check(value) )
 	{
-		PyErr_SetString(PyExc_TypeError, "The value must be a string");
-		return -1;
+		PyObject *unicode;
+		unicode = PyUnicode_FromFormat("%S", value);
+		utf8 = PyUnicode_AsEncodedString(unicode, NULL, NULL);
+		Py_DECREF(unicode);
 	}
-	PyObject *utf8 = PyUnicode_AsEncodedString(value, NULL, NULL);
+	else
+		utf8 = PyUnicode_AsEncodedString(value, NULL, NULL);
 	if ( !PyBytes_Check(utf8) )
 	{
+		Py_DECREF(utf8);
 		PyErr_SetString(PyExc_TypeError, "not a python bytes");
-		return -1;
+		return NULL;
 	}
 	*sim->FindVariable(self->name->c_str()) = PyBytes_AsString(utf8);
+	Py_DECREF(utf8);
 	return 0;
 }
 
@@ -275,6 +376,11 @@ static PyGetSetDef variable_getseters[] =
 				"variable value",
 				NULL,
 		},
+		{"str",
+				(getter)variable_getstr, NULL,
+				"variable string representation",
+				NULL,
+		},
 		{"mutable",
 				(getter)variable_getmutable, NULL,
 				"is variable mutable",
@@ -295,7 +401,7 @@ static PyGetSetDef variable_getseters[] =
 
 static PyTypeObject variable_VariableType = {
 	    PyVarObject_HEAD_INIT(NULL, 0)
-	    "variable.Variable",					/* tp_name */
+	    PACKAGE_NAME".variable.Variable",					/* tp_name */
 	    sizeof(variable_VariableObject),		/* tp_basicsize */
 	    0,									/* tp_itemsize */
 	    (destructor)variable_dealloc,		/* tp_dealloc */

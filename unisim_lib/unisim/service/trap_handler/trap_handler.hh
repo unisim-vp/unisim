@@ -53,6 +53,13 @@ using unisim::kernel::service::Object;
 using unisim::kernel::service::Parameter;
 using unisim::service::interfaces::TrapReporting;
 
+class ExternalTrapHandlerInterface
+{
+public:
+	virtual ~ExternalTrapHandlerInterface() {}
+	virtual void ExternalTrap(unsigned int id) = 0;
+};
+
 class TrapHandler
 	: public unisim::kernel::service::Object
 	, public TrapHandlerIdentifierInterface
@@ -65,6 +72,8 @@ public:
 	virtual ~TrapHandler();
 
 	virtual bool Setup();
+
+	ExternalTrapHandlerInterface *SetExternalTrapHandler(ExternalTrapHandlerInterface *handler);
 
 private:
 	// the kernel logger
@@ -80,6 +89,7 @@ private:
 	bool send_to_logger;
 	Parameter<bool> param_send_to_logger;
 
+	ExternalTrapHandlerInterface *external_handler;
 
 	virtual void ReportTrap(int id);
 	virtual void ReportTrap(int id,

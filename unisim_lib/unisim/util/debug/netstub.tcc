@@ -71,21 +71,21 @@ template <class ADDRESS>
 NetStub<ADDRESS>::NetStub(bool _is_server, 
 	unsigned int _protocol,
 	const char *_server_name, unsigned int _tcp_port,
-	const char *_pipename) :
-	is_server(_is_server),
-	server_name(_server_name),
-	protocol(_protocol),
-	pipename(_pipename),
-	tcp_port(_tcp_port),
-	sock(-1),
-	default_tu(TU_MS),
-	input_buffer_size(0),
-	input_buffer_index(0),
-	output_buffer_size(0),
-	tag(0),
-	device_id(0),
-	started(true),
-	stopped(false)
+	const char *_pipename)
+	: sock(-1)
+	, default_tu(TU_MS)
+	, is_server(_is_server)
+	, server_name(_server_name)
+	, tcp_port(_tcp_port)
+	, protocol(_protocol)
+	, pipename(_pipename)
+	, tag(0)
+	, device_id(0)
+	, started(true)
+	, stopped(false)
+	, input_buffer_size(0)
+	, input_buffer_index(0)
+	, output_buffer_size(0)
 {
 	s_status[STATUS_OK] = "ok";
 	s_status[STATUS_FAILED] = "failed";
@@ -354,7 +354,7 @@ bool NetStub<ADDRESS>::Initialize()
 		if(protocol == protocol_af_inet)
 		{
 #endif
-			if(sonadr.sin_addr.s_addr != -1)
+			if(sonadr.sin_addr.s_addr != (in_addr_t)-1)
 			{
 				//host format is xxx.yyy.zzz.ttt
 				connected = connect(sock, (struct sockaddr *) &sonadr, sizeof(sonadr)) != -1;
@@ -1864,6 +1864,11 @@ bool NetStub<ADDRESS>::ParseTrap(const string& packet, unsigned int& pos, uint64
 					return false;
 				}
 				break;
+			default:
+#ifdef DEBUG_NETSTUB
+				cerr << "NETSTUB: unexpected trap type" << endl;
+#endif
+				break;
 		}
 
 		traps.push_back(trap);
@@ -2150,6 +2155,9 @@ bool NetStub<ADDRESS>::PutTrapPacket(uint64_t t, TIME_UNIT tu, const list<TRAP>&
 				sstr << ';' << s_watchpoint_type[trap_iter->watchpoint.wtype];
 				sstr << ';' << std::hex << '*' << trap_iter->watchpoint.addr << ';' << trap_iter->watchpoint.size;
 				sstr << ';' << s_space[trap_iter->watchpoint.space];
+				break;
+			default:
+				cerr << "WARNING! NetStub::PutTrapPacket executing unknown option" << endl;
 				break;
 		}
 	}

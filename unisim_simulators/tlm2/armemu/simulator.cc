@@ -47,6 +47,7 @@ Simulator(int argc, char **argv)
 	: unisim::kernel::service::Simulator(argc, argv, Simulator::DefaultConfiguration)
 #ifdef SIM_LIBRARY
 	, unisim::kernel::service::VariableBase::Notifiable()
+	, unisim::service::trap_handler::ExternalTrapHandlerInterface()
 #endif // SIM_LIBRARY
 	, cpu(0)
 	, irq_master_stub(0)
@@ -81,7 +82,16 @@ Simulator(int argc, char **argv)
 	, param_enable_power_estimation("enable-power-estimation", 0,
 			enable_power_estimation,
 			"Activate caches power estimation.")
+	, formula_caches_total_dynamic_energy(0)
+	, formula_caches_total_dynamic_power(0)
+	, formula_caches_total_leakage_power(0)
+	, formula_caches_total_power(0)
 #endif // SIM_POWER_ESTIMATOR_SUPPORT
+#ifdef SIM_LIBRARY
+	, notif_list()
+	, trap_handler_context(0)
+	, trap_handler_function(0)
+#endif // SIM_LIBRARY
 {
 	cpu = new CPU("cpu");
 	irq_master_stub = new IRQ_MASTER_STUB("irq-master-stub");
@@ -241,7 +251,9 @@ Run()
 {
 	if ( unlikely(SimulationFinished()) ) return 0;
 
+#ifndef SIM_LIBRARY
 	double time_start = host_time->GetTime();
+#endif // !SIM_LIBRARY
 
 #ifdef SIM_INLINE_DEBUGGER_SUPPORT
 	void (*prev_sig_int_handler)(int);
@@ -269,6 +281,7 @@ Run()
 	}
 #endif // SIM_INLINE_DEBUGGER_SUPPORT
 
+#ifndef SIM_LIBRARY
 	cerr << "Simulation finished" << endl;
 
 	double time_stop = host_time->GetTime();
@@ -290,6 +303,7 @@ Run()
 	cerr << "simulated time : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;
 	cerr << "host simulation speed: " << ((double) (*cpu)["instruction-counter"] / spent_time / 1000000.0) << " MIPS" << endl;
 	cerr << "time dilatation: " << spent_time / sc_time_stamp().to_seconds() << " times slower than target machine" << endl;
+#endif // SIM_LIBRARY
 
 	return 0;
 }
@@ -362,6 +376,13 @@ SimulationFinished() const
 
 void
 Simulator ::
+Stop()
+{
+	sc_stop();
+}
+
+void
+Simulator ::
 DefaultConfiguration(unisim::kernel::service::Simulator *sim)
 {
 	sim->SetVariable("program-name", SIM_PROGRAM_NAME);
@@ -423,7 +444,7 @@ DefaultConfiguration(unisim::kernel::service::Simulator *sim)
 	sim->SetVariable("il1-power-estimator.output-width", 32 * 8);
 	sim->SetVariable("il1-power-estimator.tag-width", 32); // to fix
 	sim->SetVariable("il1-power-estimator.access-mode", "fast");
-	sim->SetVariable("il1-power-estimator.verbose", true);
+	sim->SetVariable("il1-power-estimator.verbose", false);
 
 	sim->SetVariable("dl1-power-estimator.cache-size", 32 * 128);
 	sim->SetVariable("dl1-power-estimator.line-size", 32);
@@ -437,11 +458,40 @@ DefaultConfiguration(unisim::kernel::service::Simulator *sim)
 	sim->SetVariable("dl1-power-estimator.output-width", 32 * 8);
 	sim->SetVariable("dl1-power-estimator.tag-width", 32); // to fix
 	sim->SetVariable("dl1-power-estimator.access-mode", "fast");
-	sim->SetVariable("dl1-power-estimator.verbose", true);
+	sim->SetVariable("dl1-power-estimator.verbose", false);
 #endif // SIM_POWER_ESTIMATOR_SUPPORT
 }
 
 #ifdef SIM_LIBRARY
+
+bool
+Simulator::
+AddNotifiable (void *(*notif_function)(const char *), const char *var_name)
+{
+	return false;
+}
+
+bool
+Simulator::
+SetTrapHandler (void (*function)(void *, unsigned int), void *context)
+{
+	trap_handler_function = function;
+	trap_handler_context = context;
+	trap_handler->SetExternalTrapHandler(this);
+
+	return true;
+}
+
+void
+Simulator::
+ExternalTrap (unsigned int id)
+{
+	if (trap_handler_function)
+	{
+		(*trap_handler_function)(trap_handler_context, id);
+	}
+}
+
 void
 Simulator::
 VariableNotify(const char *name)

@@ -33,6 +33,7 @@
  */
 
 #include <Python.h>
+#include <map>
 #include "simulator.hh"
 #define SIMULATOR_MODULE
 #include "python/py_simulator.hh"
@@ -96,22 +97,40 @@ typedef struct {
     /* Type-specific fields go here. */
     Simulator *sim;
     unisim::kernel::service::Simulator::SetupStatus setup;
+    PyObject *trap_handler;
+    PyObject *trap_context;
 } armemu_SimulatorObject;
 
 static Simulator *
-create_simulator()
+create_simulator(char *xml_file, std::vector<std::string> *parms)
 {
 	Simulator *sim;
-	char *argv[5] =
+	char **argv;
+	int argv_size = 4; // default number of parameters;
+	if ( xml_file != NULL )
+		argv_size += 2;
+	if ( parms != NULL )
+		argv_size += (parms->size() * 2);
+	argv = (char **)malloc(sizeof(char *) * (argv_size + 1));
+	int index = 0;
+	argv[index++] = (char *)ARMEMU_EXEC_LOCATION;
+	argv[index++] = (char *)"-p";
+	argv[index++] = (char *)PYTHON_LIB_TO_SHARED_DATA_PATH;
+	argv[index++] = (char *)"-w";
+	if ( xml_file != NULL )
+		argv[index++] = xml_file;
+	if ( parms != NULL )
 	{
-			(char *)ARMEMU_EXEC_LOCATION,
-			(char *)"-p",
-			(char *)PHYTON_LIB_TO_SHARED_DATA_PATH,
-			(char *)"-w",
-			0
-	};
+		std::vector<std::string>::iterator it;
+		for ( it = parms->begin(); it != parms->end(); it++ )
+		{
+			argv[index++] = (char *)"-s";
+			argv[index++] = (char *)(*it).c_str();
+		}
+	}
+	argv[index] = 0;
 
-	sim = new Simulator(4, argv);
+	sim = new Simulator(argv_size, argv);
 	return sim;
 }
 
@@ -136,6 +155,12 @@ destroy_simulator(armemu_SimulatorObject *self)
 	}
 	self->sim = 0;
 	sim = 0;
+	if ( self->trap_handler )
+		Py_DECREF(self->trap_handler);
+	if ( self->trap_context )
+		Py_DECREF(self->trap_context);
+	self->trap_handler = 0;
+	self->trap_context = 0;
 }
 
 static void
@@ -190,68 +215,98 @@ pydict_from_variable_list ( armemu_SimulatorObject *self,
 	return result;
 }
 
-//static void
-//update_variables (armemu_SimulatorObject *self)
-//{
-//	std::list<unisim::kernel::service::VariableBase *> var_list;
-//	self->sim->GetVariables(var_list);
-//
-//	if ( self->vars == 0 )
-//	{
-//		self->vars = pydict_from_variable_list(self, var_list);
-//		return;
-//	}
-//
-//	std::list<unisim::kernel::service::VariableBase *>::const_iterator it;
-//	for ( it = var_list.begin(); it != var_list.end(); it++)
-//	{
-//		PyObject *var = PyDict_GetItemString(self->vars, (*it)->GetName());
-//		if ( var == NULL )
-//		{
-//			printf("INFO: variable '%s' not found in variable dictionary, adding it.\n",
-//					(*it)->GetName());
-//			PyObject *name;
-//			var = PyVariable_NewVariable(&(self->sim),(*it)->GetName());
-//			name = PyUnicode_FromString((*it)->GetName());
-//			if ( PyDict_SetItem(self->vars, name, var) == -1)
-//			{
-//				printf("ERROR: could not add variable '%s' to dictionary.\n",
-//						(*it)->GetName());
-//				Py_DECREF(name);
-//				Py_DECREF(var);
-//			}
-//			Py_DECREF(name);
-//			Py_DECREF(var);
-//
-//		}
-//	}
-//
-//	PyObject *keys = PyDict_Keys(self->vars);
-//	Py_ssize_t size = PyList_Size(keys);
-//	for ( Py_ssize_t i = 0; i < size; i++ )
-//	{
-//		PyObject *key = PyList_GetItem(keys, i);
-//		PyObject *utf8 = PyUnicode_AsEncodedString(key, NULL, NULL);
-//		char *name = PyBytes_AsString(utf8);
-//		bool found = false;
-//		for ( it = var_list.begin(); !found && it != var_list.end(); it++ )
-//		{
-//			if ( strcmp(name, (*it)->GetName()) )
-//				found = true;
-//		}
-//		if ( !found )
-//			printf("WARNING: variable '%s' is no longer available.\n",
-//					name);
-//	}
-//}
+static void
+simulator_trap_handler (void *_self, unsigned int id)
+{
+	PyObject *result;
+	armemu_SimulatorObject *self = (armemu_SimulatorObject *)_self;
+	if ( self->trap_handler == 0 )
+	{
+		return;
+	}
+	PyObject *arglist;
+	arglist = Py_BuildValue("(Oi)", self->trap_context, id);
+	result = PyObject_CallObject(self->trap_handler, arglist);
+	Py_DECREF(arglist);
+	if ( result != NULL ) Py_DECREF(result);
+}
 
 static int
 simulator_init (armemu_SimulatorObject *self, PyObject *args, PyObject *kwds)
 {
-	self->sim = create_simulator();
+	char *xml_file = NULL;
+	PyObject *parms = NULL;
+	std::vector<std::string> *cparms = NULL;
+
+	static char *kwlist[] = {"xml", "parms", NULL};
+	if (! PyArg_ParseTupleAndKeywords(args, kwds, "|sO", kwlist,
+			&xml_file, &parms))
+		return -1;
+	if ( (parms != NULL) )
+	{
+		if ( !PyDict_Check(parms) )
+		{
+			PyErr_SetString(PyExc_TypeError, "'parms' must be a dictionary of parameters");
+			return -1;
+		}
+		PyObject *key, *value;
+		Py_ssize_t pos = 0;
+		while ( PyDict_Next(parms, &pos, &key, &value) )
+		{
+			if ( !PyUnicode_Check(key) )
+			{
+				PyErr_SetString(PyExc_TypeError,"parameter names (keys in the 'parms' dictionary must be unicode strings" );
+				return -1;
+			}
+		}
+		pos = 0;
+		cparms = new std::vector<std::string>();
+		while ( PyDict_Next(parms, &pos, &key, &value) )
+		{
+			char *ckey = 0;
+			char *cvalue = 0;
+			PyObject *utf8;
+
+			utf8 = PyUnicode_AsEncodedString(key, NULL, NULL);
+			ckey = PyBytes_AsString(utf8);
+			Py_DECREF(utf8);
+			if ( !PyUnicode_Check(value) )
+			{
+				PyObject *unicode;
+				if ( PyBool_Check(value) )
+				{
+					if ( PyObject_IsTrue(value) )
+						unicode = PyUnicode_FromFormat("true");
+					else
+						unicode = PyUnicode_FromFormat("false");
+				}
+				else
+					unicode = PyUnicode_FromFormat("%A", value);
+				utf8 = PyUnicode_AsEncodedString(unicode, NULL, NULL);
+				Py_DECREF(unicode);
+			}
+			else
+				utf8 = PyUnicode_AsEncodedString(value, NULL, NULL);
+			cvalue = PyBytes_AsString(utf8);
+			Py_DECREF(utf8);
+			std::stringstream assign;
+			assign << ckey << "=" << cvalue;
+			cparms->push_back(assign.str());
+		}
+	}
+
+	self->sim = create_simulator(xml_file, cparms);
+	if ( xml_file )
+		free(xml_file);
+
+	if ( cparms )
+		delete cparms;
+
+	self->sim->SetTrapHandler(simulator_trap_handler, (void *)self);
+	self->trap_handler = 0;
+	self->trap_context = 0;
 	__current_simulator = self->sim;
-	// update_variables(self);
-	// self->setup = self->sim->Setup();
+
 	return 0;
 }
 
@@ -261,7 +316,7 @@ simulator_setup (armemu_SimulatorObject *self)
 	PyObject *result;
 	self->setup = self->sim->Setup();
 	result = PyLong_FromLong(self->setup);
-	// update_variables(self);
+
 	return result;
 }
 
@@ -295,9 +350,6 @@ simulator_get_variables (armemu_SimulatorObject *self)
 {
 	PyObject *result;
 
-//	if ( self->sim == 0 ) return NULL;
-//	if ( self->vars == 0 ) return NULL;
-//	return self->vars;
 	std::list<unisim::kernel::service::VariableBase *> var_list;
 	self->sim->GetVariables(var_list);
 	result = pydict_from_variable_list(self, var_list);
@@ -481,6 +533,76 @@ simulator_run (armemu_SimulatorObject *self, PyObject *args)
 	return result;
 }
 
+static PyObject *
+simulator_stop (armemu_SimulatorObject *self)
+{
+	self->sim->Stop();
+	Py_INCREF(Py_None);
+	return Py_None;
+}
+
+static PyObject *
+simulator_set_trap_handler (armemu_SimulatorObject *self, PyObject *args)
+{
+	PyObject *result = 0;
+
+	PyObject *handler;
+	PyObject *context;
+
+	if ( !PyArg_ParseTuple(args, "OO", &context, &handler) )
+	{
+		PyErr_SetString(PyExc_TypeError, "parameters must be a context and a function/method");
+		return NULL;
+	}
+    if ( !PyCallable_Check(handler) )
+    {
+        PyErr_SetString(PyExc_TypeError, "parameter must be callable");
+        return NULL;
+    }
+    Py_XINCREF(handler);         /* Add a reference to new callback */
+	if ( self->trap_handler )
+	{
+		result = self->trap_handler;
+	    Py_DECREF(result);  /* Dispose of previous callback */
+	}
+	self->trap_handler = handler;
+	if ( self->trap_context )
+		Py_DECREF(self->trap_context);
+	Py_INCREF(context);
+	self->trap_context = context;
+	if ( result )
+		return result;
+	Py_INCREF(Py_None);
+	return Py_None;
+}
+
+static PyObject *
+simulator_remove_trap_handler (armemu_SimulatorObject *self)
+{
+	PyObject *result;
+
+	if ( self->trap_handler )
+	{
+		if ( self->trap_context )
+		{
+			result = Py_BuildValue("(OO)", self->trap_handler, self->trap_context);
+			Py_DECREF(self->trap_context);
+			self->trap_context = 0;
+		}
+		else
+		{
+			Py_INCREF(Py_None);
+			result = Py_BuildValue("(OO)", self->trap_handler, Py_None);
+		}
+		Py_DECREF(self->trap_handler);
+	}
+	else
+	{
+		result = Py_None;
+		Py_INCREF(result);
+	}
+	return result;
+}
 static PyMethodDef simulator_methods[] =
 {
 	{"setup", (PyCFunction)simulator_setup, METH_NOARGS,
@@ -501,19 +623,25 @@ static PyMethodDef simulator_methods[] =
 			"Get a simulator variable if existent."},
 	{"run", (PyCFunction)simulator_run, METH_VARARGS,
 			"Run the simulator."},
+	{"stop", (PyCFunction)simulator_stop, METH_NOARGS,
+			"Stop the simulator."},
 	{"is_running", (PyCFunction)simulator_is_running, METH_NOARGS,
 			"Check if the simulator is running or not."},
 	{"has_started", (PyCFunction)simulator_has_started, METH_NOARGS,
 			"Checks if the simulation has been started or not"},
 	{"has_finished", (PyCFunction)simulator_has_finished, METH_NOARGS,
 			"Checks if the simulation has been finished or not"},
+	{"set_trap_handler", (PyCFunction)simulator_set_trap_handler, METH_VARARGS,
+			"Set the external trap handler"},
+	{"remove_trap_handler", (PyCFunction)simulator_remove_trap_handler, METH_NOARGS,
+			"Remove the external trap handler"},
 	{NULL}
 };
 
 static PyTypeObject armemu_SimulatorType =
 {
     PyVarObject_HEAD_INIT(NULL, 0)
-    "armemu.ARMEmu",					/* tp_name */
+    PACKAGE_NAME".simulator.Simulator",					/* tp_name */
     sizeof(armemu_SimulatorObject),		/* tp_basicsize */
     0,									/* tp_itemsize */
     (destructor)simulator_dealloc,		/* tp_dealloc */
@@ -531,7 +659,7 @@ static PyTypeObject armemu_SimulatorType =
     0,									/* tp_getattro */
     0,									/* tp_setattro */
     0,									/* tp_as_buffer */
-    Py_TPFLAGS_DEFAULT,					/* tp_flags */
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,					/* tp_flags */
     "UNISIM ARMEmu simulator objects",	/* tp_doc */
     0,									/* tp_traverse */
     0,									/* tp_clear */

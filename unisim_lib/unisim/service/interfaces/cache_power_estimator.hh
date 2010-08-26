@@ -42,6 +42,8 @@ namespace interfaces {
 class CachePowerEstimator
 {
 public:
+	CachePowerEstimator() {}
+	virtual ~CachePowerEstimator() {}
 	virtual void ReportReadAccess() = 0;
 	virtual void ReportWriteAccess() = 0;
 	virtual double GetDynamicEnergy() = 0;

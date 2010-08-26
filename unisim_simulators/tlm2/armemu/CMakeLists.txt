@@ -6,7 +6,7 @@ set ( SIM_VERSION_PATCH 2 )
 set ( SIM_VERSION 
 	"${SIM_VERSION_MAJOR}.${SIM_VERSION_MINOR}.${SIM_VERSION_PATCH}" )
 set ( SIM_SOVERSION ${SIM_VERSION_MAJOR}.${SIM_VERSION_MINOR} ) 
-set ( SIM_VERSION_CODENAME "Pegaso" )
+set ( SIM_VERSION_CODENAME "Barcino" )
 set ( SIM_AUTHOR "Daniel Gracia Perez (daniel.gracia-perez@cea.fr)" )
 set ( SIM_PROGRAM_NAME "UNISIM ARMEmu" )
 set ( SIM_COPYRIGHT "Copyright (C) 2007-2010, Commissariat a l'Energie Atomique" )
@@ -31,6 +31,7 @@ if ( UNIX AND NOT APPLE )
 endif ( UNIX AND NOT APPLE )
 
 option ( BUILD_ARMEMU_PYTHON_MODULE "Set this option if you want to compile a module of the unisim armemu simulator. Note that it has been developed under python3.1." )
+option ( BUILD_ARMEMU_POWER_SUPPORT "Set this option if you want to compile the unisim armemu simulator with power measurements support. Note that the CACTI_4_2_INCLUDE_DIR and CACTI_4_2_LIBRARY cmake variables might be required.")
 project ( unisim_armemu )
 include ( CheckIncludeFileCXX )
 include ( CheckIncludeFile )
@@ -96,11 +97,11 @@ endforeach ( dir )
 
 include_directories ( ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR} ${OSCI_SYSTEMC_INCLUDE_DIR} ${OSCI_TLM2_INCLUDE_DIR})
 
-if ( UNISIM__SERVICE__POWER__SUPPORT )
+if ( BUILD_ARMEMU_POWER_SUPPORT )
 	set ( SIM_POWER_ESTIMATOR_SUPPORT TRUE )
-else ( UNISIM__SERVICE__POWER__SUPPORT )
+else ( BUILD_ARMEMU_POWER_SUPPORT )
 	set ( SIM_POWER_ESTIMATOR_SUPPORT FALSE )
-endif ( UNISIM__SERVICE__POWER__SUPPORT )
+endif ( BUILD_ARMEMU_POWER_SUPPORT )
 
 add_custom_target ( armemu__share_license
 	ALL
@@ -206,6 +207,18 @@ add_custom_target ( armemu__share_logo
 		"Copying icon files"
 	)
 			
+add_custom_target ( armemu__share_python
+	ALL
+	COMMAND
+		${CMAKE_COMMAND} -E make_directory ${SHARE_DIRECTORY}/python
+	COMMAND
+		${CMAKE_COMMAND} -E copy_if_different
+			${CMAKE_SOURCE_DIR}/share/python/demo.py
+			${SHARE_DIRECTORY}/python/demo.py
+	COMMENT
+		"Setting python demos."
+	)
+
 if ( APPLE )
 	configure_file ( 
 		${CMAKE_SOURCE_DIR}/share/macosx/armemu-launcher.sh.in
@@ -267,10 +280,10 @@ set ( armemu__libraries
 	unisim__service__debug__sim_debugger
 	unisim__service__trap_handler
 	)
-if ( UNISIM__SERVICE__POWER__SUPPORT )
+if ( BUILD_ARMEMU_POWER_SUPPORT )
 	list ( APPEND armemu__libraries
 		unisim__service__power )
-endif ( UNISIM__SERVICE__POWER__SUPPORT )
+endif ( BUILD_ARMEMU_POWER_SUPPORT )
 
 set ( UNISIM_KERNEL_PYTHON_TO_SHARED_DATA_PATH "../../share/${ARMEMU_EXEC_NAME}" )
 set ( PYTHON__ARMEMU__INCLUDE_DIRS
@@ -310,7 +323,7 @@ set ( PYTHON__ARMEMU__LIBS
 	 'unisim__kernel',
 	 'xml2',
 	 'systemc'")
-if ( UNISIM__SERVICE__POWER__SUPPORT )
+if ( BUILD_ARMEMU_POWER_SUPPORT )
 	get_filename_component ( lib_path ${CACTI_4_2_LIBRARY}
 		PATH )
 	set ( PYTHON__ARMEMU__LIB_DIRS
@@ -323,7 +336,7 @@ if ( UNISIM__SERVICE__POWER__SUPPORT )
 		"${PYTHON__ARMEMU__LIBS},
 		'unisim__service__power',
 		'${lib_name}'" )
-endif ( UNISIM__SERVICE__POWER__SUPPORT )
+endif ( BUILD_ARMEMU_POWER_SUPPORT )
 	 
 set ( CMAKE_REQUIRED_FLAGS "-include stdio.h" )
 check_include_file ( editline/readline.h HAVE_editline_readline_H )
@@ -405,11 +418,11 @@ set ( armemu__deps
 	unisim__service__os__linux_os__linux_os_32
 	unisim__service__trap_handler
 	)
-if ( UNISIM__SERVICE__POWER__SUPPORT )
+if ( BUILD_ARMEMU_POWER_SUPPORT )
 	list ( APPEND armemu__deps
 		unisim__service__power
 		)
-endif ( UNISIM__SERVICE__POWER__SUPPORT )
+endif ( BUILD_ARMEMU_POWER_SUPPORT )
 # add_dependencies ( simulator
 # 	${armemu__deps}
 # 	)
@@ -442,9 +455,13 @@ if ( BUILD_ARMEMU_PYTHON_MODULE )
 		${CMAKE_BINARY_DIR}/python/python_config.hh )
 
 	add_custom_command (
-		OUTPUT lib/${SIM_PYTHON_IMPORT_NAME}.so
+		OUTPUT
+			lib/${SIM_PYTHON_IMPORT_NAME}/simulator.so
+			lib/${SIM_PYTHON_IMPORT_NAME}/variable.so
 		COMMAND
-			${CMAKE_COMMAND} -E remove lib/${SIM_PYTHON_IMPORT_NAME}.so
+			${CMAKE_COMMAND} -E remove lib/${SIM_PYTHON_IMPORT_NAME}/simulator.so
+		COMMAND
+			${CMAKE_COMMAND} -E remove lib/${SIM_PYTHON_IMPORT_NAME}/variable.so
 		COMMAND
 			${CMAKE_COMMAND} -E make_directory python
 		COMMAND
@@ -457,7 +474,7 @@ if ( BUILD_ARMEMU_PYTHON_MODULE )
 			${CMAKE_SOURCE_DIR}/python/py_simulator.cc
 			${CMAKE_SOURCE_DIR}/python/py_variable.hh
 			${CMAKE_SOURCE_DIR}/python/py_variable.cc
-			simulator
+			simulatorlib
 			${armemu__deps}
 		COMMENT
 			"Building python extension."
@@ -467,7 +484,8 @@ if ( BUILD_ARMEMU_PYTHON_MODULE )
 		add_custom_target ( ${ARMEMU_LIB_TARGET}-python
 			ALL
 			DEPENDS
-				lib/${SIM_PYTHON_IMPORT_NAME}.so
+				lib/${SIM_PYTHON_IMPORT_NAME}/simulator.so
+				lib/${SIM_PYTHON_IMPORT_NAME}/variable.so
 			COMMENT
 				"Python target."
 		)
