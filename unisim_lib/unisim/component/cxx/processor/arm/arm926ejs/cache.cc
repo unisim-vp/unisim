@@ -236,7 +236,9 @@ namespace arm926ejs {
 		else
 		{
 			// current replacement policy is random
-			m_replacement_history[set] = rand.Generate(m_associativity_);
+			m_replacement_history[set] =
+					rand.Generate(m_associativity_/2) +
+					(m_associativity_/2);
 		}
 		return m_replacement_history[set];
 	}
