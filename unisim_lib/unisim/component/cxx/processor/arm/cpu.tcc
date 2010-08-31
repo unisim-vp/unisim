@@ -676,35 +676,52 @@ InjectReadMemory(uint64_t addr, void *buffer, uint32_t size)
 	uint32_t ef_addr;
 	if ( (CONFIG::MODEL == ARM926EJS) && linux_os_import)
 	{
-		// access memory while using the linux_os_import
-		//   tcm is ignored
-		while (size != 0)
+		if ( arm926ejs_dcache.GetSize() )
 		{
-			// need to access the data cache before accessing the main memory
-			ef_addr = base_addr + index;
-
-			uint32_t cache_tag = arm926ejs_dcache.GetTag(ef_addr);
-			uint32_t cache_set = arm926ejs_dcache.GetSet(ef_addr);
-			uint32_t cache_way;
-			bool cache_hit = false;
-			if ( arm926ejs_dcache.GetWay(cache_tag, cache_set, &cache_way) )
+			// access memory while using the linux_os_import
+			//   tcm is ignored
+			while (size != 0)
 			{
-				if ( arm926ejs_dcache.GetValid(cache_set, cache_way))
+				// need to access the data cache before accessing the main memory
+				ef_addr = base_addr + index;
+
+				uint32_t cache_tag = arm926ejs_dcache.GetTag(ef_addr);
+				uint32_t cache_set = arm926ejs_dcache.GetSet(ef_addr);
+				uint32_t cache_way;
+				bool cache_hit = false;
+				if ( arm926ejs_dcache.GetWay(cache_tag, cache_set, &cache_way) )
 				{
-					// the cache access is a hit, data can be simply read from the cache
-					uint32_t cache_index = arm926ejs_dcache.GetIndex(ef_addr);
-					uint32_t read_data_size =
-						arm926ejs_dcache.GetDataCopy(cache_set, cache_way, cache_index, size, &(((uint8_t *)buffer)[index]));
-					index += read_data_size;
-					size -= read_data_size;
-					cache_hit = true;
+					if ( arm926ejs_dcache.GetValid(cache_set, cache_way) )
+					{
+						// the cache access is a hit, data can be simply read from the cache
+						uint32_t cache_index = arm926ejs_dcache.GetIndex(ef_addr);
+						uint32_t read_data_size =
+							arm926ejs_dcache.GetDataCopy(cache_set, cache_way, cache_index, size, &(((uint8_t *)buffer)[index]));
+						index += read_data_size;
+						size -= read_data_size;
+						cache_hit = true;
+					}
+				}
+				if ( !cache_hit )
+				{
+					memory_interface->PrRead(ef_addr,
+											 &(((uint8_t *)buffer)[index]),
+											 1);
+					index++;
+					size--;
 				}
 			}
-			if ( !cache_hit )
+		}
+		else
+		{
+			// no data cache on this system, just send request to the memory
+			//   subsystem
+			while ( size != 0 )
 			{
+				ef_addr = base_addr + index;
 				memory_interface->PrRead(ef_addr,
-										 &(((uint8_t *)buffer)[index]),
-										 1);
+						&(((uint8_t *)buffer)[index]),
+						1);
 				index++;
 				size--;
 			}
@@ -731,33 +748,50 @@ InjectWriteMemory(uint64_t addr,
 	uint32_t ef_addr;
 	if ( (CONFIG::MODEL == ARM926EJS) && linux_os_import)
 	{
-		// access memory while using the linux_os_import
-		//   tcm is ignored
-		while (size != 0)
+		if ( arm926ejs_dcache.GetSize() )
 		{
-			// need to access the data cache before accessing the main memory
-			ef_addr = base_addr + index;
-
-			uint32_t cache_tag = arm926ejs_dcache.GetTag(ef_addr);
-			uint32_t cache_set = arm926ejs_dcache.GetSet(ef_addr);
-			uint32_t cache_way;
-			bool cache_hit = false;
-			if ( arm926ejs_dcache.GetWay(cache_tag, cache_set, &cache_way) )
+			// access memory while using the linux_os_import
+			//   tcm is ignored
+			while ( size != 0 )
 			{
-				if ( arm926ejs_dcache.GetValid(cache_set, cache_way) )
+				// need to access the data cache before accessing the main memory
+				ef_addr = base_addr + index;
+
+				uint32_t cache_tag = arm926ejs_dcache.GetTag(ef_addr);
+				uint32_t cache_set = arm926ejs_dcache.GetSet(ef_addr);
+				uint32_t cache_way;
+				bool cache_hit = false;
+				if ( arm926ejs_dcache.GetWay(cache_tag, cache_set, &cache_way) )
 				{
-					// the cache access is a hit, data can be simply read from the cache
-					uint32_t cache_index = arm926ejs_dcache.GetIndex(ef_addr);
-					uint32_t write_data_size =
-						arm926ejs_dcache.SetData(cache_set, cache_way, cache_index, size, &(((uint8_t *)buffer)[index]));
-					arm926ejs_dcache.SetDirty(cache_set, cache_way, 1);
-					index += write_data_size;
-					size -= write_data_size;
-					cache_hit = true;
+					if ( arm926ejs_dcache.GetValid(cache_set, cache_way) )
+					{
+						// the cache access is a hit, data can be simply read from the cache
+						uint32_t cache_index = arm926ejs_dcache.GetIndex(ef_addr);
+						uint32_t write_data_size =
+							arm926ejs_dcache.SetData(cache_set, cache_way, cache_index, size, &(((uint8_t *)buffer)[index]));
+						arm926ejs_dcache.SetDirty(cache_set, cache_way, 1);
+						index += write_data_size;
+						size -= write_data_size;
+						cache_hit = true;
+					}
+				}
+				if ( !cache_hit )
+				{
+					memory_interface->PrWrite(ef_addr,
+							&(((uint8_t *)buffer)[index]),
+							1);
+					index++;
+					size--;
 				}
 			}
-			if ( !cache_hit )
+		}
+		else
+		{
+			// there is no data cache in this system just send the request to
+			//   the memory subsystem
+			while ( size != 0 )
 			{
+				ef_addr = base_addr + index;
 				memory_interface->PrWrite(ef_addr,
 						&(((uint8_t *)buffer)[index]),
 						1);
@@ -819,41 +853,59 @@ ReadMemory(uint64_t addr, void *buffer, uint32_t size)
 
 	if (CONFIG::MODEL == ARM926EJS && linux_os_import)
 	{
-		// non intrusive access with linux support
-		//   tcm is ignored
-		while (size != 0 && status)
+		if ( arm926ejs_dcache.GetSize() )
 		{
-			// need to access the data cache before accessing the main
-			//   memory
-			ef_addr = base_addr + index;
-
-			uint32_t cache_tag = arm926ejs_dcache.GetTag(ef_addr);
-			uint32_t cache_set = arm926ejs_dcache.GetSet(ef_addr);
-			uint32_t cache_way;
-			bool cache_hit = false;
-			if ( arm926ejs_dcache.GetWay(cache_tag, cache_set, &cache_way) )
+			// non intrusive access with linux support
+			//   tcm is ignored
+			while (size != 0 && status)
 			{
-				if ( arm926ejs_dcache.GetValid(cache_set, cache_way) )
+				// need to access the data cache before accessing the main
+				//   memory
+				ef_addr = base_addr + index;
+
+				uint32_t cache_tag = arm926ejs_dcache.GetTag(ef_addr);
+				uint32_t cache_set = arm926ejs_dcache.GetSet(ef_addr);
+				uint32_t cache_way;
+				bool cache_hit = false;
+				if ( arm926ejs_dcache.GetWay(cache_tag, cache_set, &cache_way) )
 				{
-					// the cache access is a hit, data can be simply read
-					//   from the cache
-					uint32_t cache_index =
-							arm926ejs_dcache.GetIndex(ef_addr);
-					uint32_t data_read_size =
-							arm926ejs_dcache.GetDataCopy(cache_set,
-									cache_way, cache_index, size,
-									&(((uint8_t *)buffer)[index]));
-					index += data_read_size;
-					size -= data_read_size;
-					cache_hit = true;
+					if ( arm926ejs_dcache.GetValid(cache_set, cache_way) )
+					{
+						// the cache access is a hit, data can be simply read
+						//   from the cache
+						uint32_t cache_index =
+								arm926ejs_dcache.GetIndex(ef_addr);
+						uint32_t data_read_size =
+								arm926ejs_dcache.GetDataCopy(cache_set,
+										cache_way, cache_index, size,
+										&(((uint8_t *)buffer)[index]));
+						index += data_read_size;
+						size -= data_read_size;
+						cache_hit = true;
+					}
+				}
+				if ( !cache_hit )
+				{
+					status = status &&
+						ExternalReadMemory(ef_addr,
+										   &(((uint8_t *)buffer)[index]),
+										   1);
+					index++;
+					size--;
 				}
 			}
-			if ( !cache_hit )
+		}
+		else
+		{
+			// there is no data cache in this system just perform the request
+			//   to the memory subsystem
+			while ( size != 0 && status )
 			{
+				ef_addr = base_addr + index;
 				status = status &&
-					ExternalReadMemory(ef_addr,
-									   &(((uint8_t *)buffer)[index]),
-									   1);
+						ExternalReadMemory(ef_addr,
+								&(((uint8_t *)buffer)[index]),
+								1);
 				index++;
 				size--;
 			}
@@ -884,37 +936,55 @@ WriteMemory(uint64_t addr,
 
 	if (CONFIG::MODEL == ARM926EJS && linux_os_import)
 	{
-		// non intrusive access with linux support
-		//   tcm is ignored
-		while (size != 0 && status)
+		if ( arm926ejs_dcache.GetSize() )
 		{
-			// need to access the data cache before accessing the main memory
-			ef_addr = base_addr + index;
-
-			uint32_t cache_tag = arm926ejs_dcache.GetTag(ef_addr);
-			uint32_t cache_set = arm926ejs_dcache.GetSet(ef_addr);
-			uint32_t cache_way;
-			bool cache_hit = false;
-			if ( arm926ejs_dcache.GetWay(cache_tag, cache_set, &cache_way) )
+			// non intrusive access with linux support
+			//   tcm is ignored
+			while (size != 0 && status)
 			{
-				if ( arm926ejs_dcache.GetValid(cache_set, cache_way) )
+				// need to access the data cache before accessing the main memory
+				ef_addr = base_addr + index;
+
+				uint32_t cache_tag = arm926ejs_dcache.GetTag(ef_addr);
+				uint32_t cache_set = arm926ejs_dcache.GetSet(ef_addr);
+				uint32_t cache_way;
+				bool cache_hit = false;
+				if ( arm926ejs_dcache.GetWay(cache_tag, cache_set, &cache_way) )
 				{
-					// the cache access is a hit, data can be simply written to the cache
-					uint32_t cache_index = arm926ejs_dcache.GetIndex(ef_addr);
-					uint32_t data_read_size =
-						arm926ejs_dcache.SetData(cache_set, cache_way, cache_index, size, &(((uint8_t *)buffer)[index]));
-					arm926ejs_dcache.SetDirty(cache_set, cache_way, 1);
-					index += data_read_size;
-					size -= data_read_size;
-					cache_hit = true;
+					if ( arm926ejs_dcache.GetValid(cache_set, cache_way) )
+					{
+						// the cache access is a hit, data can be simply written to the cache
+						uint32_t cache_index = arm926ejs_dcache.GetIndex(ef_addr);
+						uint32_t data_read_size =
+							arm926ejs_dcache.SetData(cache_set, cache_way, cache_index, size, &(((uint8_t *)buffer)[index]));
+						arm926ejs_dcache.SetDirty(cache_set, cache_way, 1);
+						index += data_read_size;
+						size -= data_read_size;
+						cache_hit = true;
+					}
+				}
+				if ( !cache_hit )
+				{
+					status = status &&
+						ExternalWriteMemory(ef_addr,
+											&(((uint8_t *)buffer)[index]),
+											1);
+					index++;
+					size--;
 				}
 			}
-			if ( !cache_hit )
+		}
+		else
+		{
+			// there is no data cache in this system, just write the data to
+			//   the memory subsystem
+			while ( size != 0 && status )
 			{
+				ef_addr = base_addr + index;
 				status = status &&
-					ExternalWriteMemory(ef_addr,
-										&(((uint8_t *)buffer)[index]),
-										1);
+						ExternalWriteMemory(ef_addr,
+								&(((uint8_t *)buffer)[index]),
+								1);
 				index++;
 				size--;
 			}
@@ -3110,47 +3180,97 @@ void
 CPU<CONFIG> ::
 ReadInsn(address_t address, uint32_t &val)
 {
+	uint32_t size = 4;
+	uint8_t *data;
+
+	if ( unlikely(verbose_memory) )
+		logger << DebugInfo << "Reading instruction at 0x" << hex
+			<< address << dec << EndDebugInfo;
+
 	if ( CONFIG::MODEL == ARM926EJS && linux_os_import )
 	{
-		if ( unlikely(verbose_memory) )
-			logger << DebugInfo
-				<< "Fetching 0x" << hex << address << dec
-				<< EndDebugInfo;
-		// we are running simulation the linux OS
-		//   tcm memories are ignored on this mode
-		// check the instruction cache
-		uint32_t cache_tag = arm926ejs_icache.GetTag(address);
-		uint32_t cache_set = arm926ejs_icache.GetSet(address);
-		uint32_t cache_way;
-		bool cache_hit = false;
-		if ( arm926ejs_icache.GetWay(cache_tag, cache_set, &cache_way) )
+		if ( arm926ejs_icache.GetSize() )
 		{
-			if ( arm926ejs_icache.GetValid(cache_set, cache_way) )
+			if ( unlikely(verbose_memory) )
+				logger << DebugInfo
+					<< "Fetching 0x" << hex << address << dec
+					<< EndDebugInfo;
+			// we are running simulation the linux OS
+			//   tcm memories are ignored on this mode
+			// check the instruction cache
+			uint32_t cache_tag = arm926ejs_icache.GetTag(address);
+			uint32_t cache_set = arm926ejs_icache.GetSet(address);
+			uint32_t cache_way;
+			bool cache_hit = false;
+			if ( arm926ejs_icache.GetWay(cache_tag, cache_set, &cache_way) )
 			{
-				// the data is in the cache, just read it
-				uint32_t cache_index =
-					arm926ejs_icache.GetIndex(address);
-				uint32_t read_data_size =
-					arm926ejs_icache.GetDataCopy(cache_set, cache_way, cache_index, 4, (uint8_t *)&val);
-				cache_hit = true;
-				if ( unlikely(read_data_size != 4 ) )
+				if ( arm926ejs_icache.GetValid(cache_set, cache_way) )
 				{
-					logger << DebugWarning
-							<< "While reading instruction cache, only "
-							<< (unsigned int)read_data_size
-							<< " byte(s) could be read, instead of the 4 "
-							<< " that were requested (base address = 0x"
-							<< (unsigned int)address << ")"
-							<< EndDebugWarning;
+					// the access is a hit, nothing needs to be done
+					cache_hit = true;
 				}
 			}
+			if ( unlikely(!cache_hit) )
+			{
+				if ( unlikely(verbose_memory) )
+					logger << DebugInfo << "ICache miss" << EndDebugInfo;
+				// get a way to replace
+				cache_way = arm926ejs_icache.GetNewWay(cache_set);
+				// no need to check valiad and dirty bits
+				// the new data can be requested
+				uint8_t *cache_data = 0;
+				uint32_t cache_address =
+						arm926ejs_icache.GetBaseAddressFromAddress(address);
+				// when getting the data we get the pointer to the cache line
+				//   containing the data, so no need to write the cache
+				//   afterwards
+				uint32_t cache_line_size = arm926ejs_icache.GetData(cache_set,
+						cache_way, &cache_data);
+				if ( unlikely(verbose_memory) )
+					logger << DebugInfo << "Requesting data (0x"
+						<< hex << cache_address << dec << ", "
+						<< cache_line_size << ") ..."
+						<< EndDebugInfo;
+				memory_interface->PrRead(cache_address, cache_data,
+						cache_line_size);
+				if ( unlikely(verbose_memory) )
+					logger << DebugInfo << "... data received" << EndDebugInfo;
+				arm926ejs_icache.SetTag(cache_set, cache_way, cache_tag);
+				arm926ejs_icache.SetValid(cache_set, cache_way, 1);
+			}
+			else
+			{
+				if ( unlikely(verbose_memory) )
+					logger << DebugInfo << "ICache hit" << EndDebugInfo;
+			}
+
+			// at this point the data is in the cache, we can read it from the
+			//   cache
+			uint32_t cache_index = arm926ejs_icache.GetIndex(address);
+			(void)arm926ejs_icache.GetData(cache_set, cache_way, cache_index,
+					size, &data);
+			arm926ejs_icache.GetDataCopy(cache_set, cache_way, cache_index, size,
+					(uint8_t *)&val);
+
+			if ( unlikely(il1_power_estimator_import != 0) )
+				il1_power_estimator_import->ReportReadAccess();
 		}
-		if ( unlikely(!cache_hit) )
+		else
 		{
-			memory_interface->PrRead(address, (uint8_t *)&val, 4);
+			// no instruction cache present, just request the insn to the
+			//   memory system
+			if ( unlikely(verbose_memory) )
+				logger << DebugInfo
+					<< "Requesting memory data read (no insn cache)..."
+					<< EndDebugInfo;
+			memory_interface->PrRead(address, (uint8_t *)&val, size);
+			if ( unlikely(verbose_memory) )
+				logger << DebugInfo
+					<< "... data received (0x"
+					<< hex << address << dec << ", " << size << ") = 0x"
+					<< hex << val << dec << EndDebugInfo;
+
 		}
-		if ( unlikely(il1_power_estimator_import != 0) )
-			il1_power_estimator_import->ReportReadAccess();
 		return;
 	}
 	
@@ -4280,48 +4400,63 @@ PerformWriteAccess(MemoryOp<CONFIG> *memop)
 
 	if ( (CONFIG::MODEL == ARM926EJS) && linux_os_import )
 	{
-		// running arm926ejs with linux simulation
-		//   tcm are ignored
-		uint32_t cache_tag = arm926ejs_dcache.GetTag(write_addr);
-		uint32_t cache_set = arm926ejs_dcache.GetSet(write_addr);
-		uint32_t cache_way;
-		bool cache_hit = false;
-		if ( arm926ejs_dcache.GetWay(cache_tag, cache_set, &cache_way) )
+		if ( arm926ejs_dcache.GetSize() )
 		{
-			if ( arm926ejs_dcache.GetValid(cache_set, cache_way) != 0 )
+			// running arm926ejs with linux simulation
+			//   tcm are ignored
+			uint32_t cache_tag = arm926ejs_dcache.GetTag(write_addr);
+			uint32_t cache_set = arm926ejs_dcache.GetSet(write_addr);
+			uint32_t cache_way;
+			bool cache_hit = false;
+			if ( arm926ejs_dcache.GetWay(cache_tag, cache_set, &cache_way) )
 			{
-				// the access is a hit
-				cache_hit = true;
+				if ( arm926ejs_dcache.GetValid(cache_set, cache_way) != 0 )
+				{
+					// the access is a hit
+					cache_hit = true;
+				}
 			}
+			// if the access was a hit the data needs to be written into
+			//   the cache, if the access was a miss the data needs to be
+			//   written into memory, but the cache doesn't need to be updated
+			if ( cache_hit )
+			{
+				if ( unlikely(verbose_memory) )
+					logger << DebugInfo << "Cache hit, updating cache."
+						<< EndDebugInfo;
+				uint32_t cache_index = arm926ejs_dcache.GetIndex(write_addr);
+				arm926ejs_dcache.SetData(cache_set, cache_way, cache_index,
+						size, data);
+				arm926ejs_dcache.SetDirty(cache_set, cache_way, 1);
+			}
+			else
+			{
+				if ( unlikely(verbose_memory) )
+					logger << DebugInfo << "Cache miss" << EndDebugInfo;
+				if ( unlikely(verbose_memory) )
+					logger << DebugInfo << "Performing write-through ..."
+						<< EndDebugInfo;
+				memory_interface->PrWrite(write_addr, data, size);
+				if ( unlikely(verbose_memory) )
+					logger << DebugInfo << "... write-through finished."
+						<< EndDebugInfo;
+			}
+
+			if ( unlikely(dl1_power_estimator_import != 0) )
+				dl1_power_estimator_import->ReportWriteAccess();
 		}
-		// if the access was a hit the data needs to be written into
-		//   the cache, if the access was a miss the data needs to be
-		//   written into memory, but the cache doesn't need to be updated
-		if ( cache_hit )
+		else // there is no data cache
 		{
+			// there is no data cache, so just send the request to the
+			//   memory interface
 			if ( unlikely(verbose_memory) )
-				logger << DebugInfo << "Cache hit, updating cache."
-					<< EndDebugInfo;
-			uint32_t cache_index = arm926ejs_dcache.GetIndex(write_addr);
-			arm926ejs_dcache.SetData(cache_set, cache_way, cache_index,
-					size, data);
-			arm926ejs_dcache.SetDirty(cache_set, cache_way, 1);
-		}
-		else
-		{
-			if ( unlikely(verbose_memory) )
-				logger << DebugInfo << "Cache miss" << EndDebugInfo;
-			if ( unlikely(verbose_memory) )
-				logger << DebugInfo << "Performing write-through ..."
+				logger << DebugInfo << "Performing a memory write (no data cache) ..."
 					<< EndDebugInfo;
 			memory_interface->PrWrite(write_addr, data, size);
 			if ( unlikely(verbose_memory) )
-				logger << DebugInfo << "... write-through finished."
+				logger << DebugInfo << "... memory write finished."
 					<< EndDebugInfo;
 		}
-
-		if ( unlikely(dl1_power_estimator_import != 0) )
-			dl1_power_estimator_import->ReportWriteAccess();
 	}
 	if ( (CONFIG::MODEL == ARM926EJS) && !linux_os_import )
 	{
@@ -4346,6 +4481,7 @@ PerformReadAccess(MemoryOp<CONFIG> *memop)
 	uint32_t addr = memop->GetAddress();
 	uint32_t size = memop->GetSize();
 	uint32_t read_addr = addr & ~(uint32_t)(size - 1);
+	uint8_t data32[4];
 	uint8_t *data;
 
 	if ( unlikely(verbose_memory) )
@@ -4364,84 +4500,99 @@ PerformReadAccess(MemoryOp<CONFIG> *memop)
 
 	if ( (CONFIG::MODEL == ARM926EJS) && linux_os_import )
 	{
-		// running arm926ejs with linux simulation
-		//   tcm are ignored
-		uint32_t cache_tag = arm926ejs_dcache.GetTag(read_addr);
-		uint32_t cache_set = arm926ejs_dcache.GetSet(read_addr);
-		uint32_t cache_way;
-		bool cache_hit = false;
-		if ( arm926ejs_dcache.GetWay(cache_tag, cache_set, &cache_way) )
+		if ( arm926ejs_dcache.GetSize() )
 		{
-			if ( arm926ejs_dcache.GetValid(cache_set, cache_way) )
+			// running arm926ejs with linux simulation
+			//   tcm are ignored
+			uint32_t cache_tag = arm926ejs_dcache.GetTag(read_addr);
+			uint32_t cache_set = arm926ejs_dcache.GetSet(read_addr);
+			uint32_t cache_way;
+			bool cache_hit = false;
+			if ( arm926ejs_dcache.GetWay(cache_tag, cache_set, &cache_way) )
 			{
-				// the access is a hit, nothing needs to be done
-				cache_hit = true;
+				if ( arm926ejs_dcache.GetValid(cache_set, cache_way) )
+				{
+					// the access is a hit, nothing needs to be done
+					cache_hit = true;
+				}
 			}
-		}
-		// if the access was a miss, data needs to be fetched from main
-		//   memory and placed into the cache
-		if ( !cache_hit )
-		{
-			if ( unlikely(verbose_memory) )
-				logger << DebugInfo << "Cache miss" << EndDebugInfo;
-			// get a way to replace
-			cache_way = arm926ejs_dcache.GetNewWay(cache_set);
-			// get the valid and dirty bits from the way to replace
-			uint8_t cache_valid = arm926ejs_dcache.GetValid(cache_set,
-					cache_way);
-			uint8_t cache_dirty = arm926ejs_dcache.GetDirty(cache_set,
-					cache_way);
+			// if the access was a miss, data needs to be fetched from main
+			//   memory and placed into the cache
+			if ( unlikely(!cache_hit) )
+			{
+				// get a way to replace
+				cache_way = arm926ejs_dcache.GetNewWay(cache_set);
+				if ( unlikely(verbose_memory) )
+					logger << DebugInfo << "Cache miss" << EndDebugInfo;
+				// get the valid and dirty bits from the way to replace
+				uint8_t cache_valid = arm926ejs_dcache.GetValid(cache_set,
+						cache_way);
+				uint8_t cache_dirty = arm926ejs_dcache.GetDirty(cache_set,
+						cache_way);
 
-			if ( (cache_valid != 0) & (cache_dirty != 0) )
-			{
-				// the cache line to replace is valid and dirty so it needs
-				//   to be sent to the main memory
-				uint8_t *rep_cache_data = 0;
-				uint32_t rep_cache_address =
-						arm926ejs_dcache.GetBaseAddress(cache_set,
-								cache_way);
-				arm926ejs_dcache.GetData(cache_set, cache_way,
-						&rep_cache_data);
+				if ( (cache_valid != 0) & (cache_dirty != 0) )
+				{
+					// the cache line to replace is valid and dirty so it needs
+					//   to be sent to the main memory
+					uint8_t *rep_cache_data = 0;
+					uint32_t rep_cache_address =
+							arm926ejs_dcache.GetBaseAddress(cache_set,
+									cache_way);
+					arm926ejs_dcache.GetData(cache_set, cache_way,
+							&rep_cache_data);
+					if ( unlikely(verbose_memory) )
+						logger << DebugInfo << "Performing writeback ..."
+							<< EndDebugInfo;
+					memory_interface->PrWrite(rep_cache_address, rep_cache_data,
+							arm926ejs_dcache.LINE_SIZE);
+					if ( unlikely(verbose_memory) )
+						logger << DebugInfo << "... writeback performed."
+							<< EndDebugInfo;
+				}
+				// the new data can be requested
+				uint8_t *cache_data = 0;
+				uint32_t cache_address =
+						arm926ejs_dcache.GetBaseAddressFromAddress(read_addr);
+				// when getting the data we get the pointer to the cache line
+				//   containing the data, so no need to write the cache
+				//   afterwards
+				uint32_t cache_line_size = arm926ejs_dcache.GetData(cache_set,
+						cache_way, &cache_data);
 				if ( unlikely(verbose_memory) )
-					logger << DebugInfo << "Performing writeback ..."
+					logger << DebugInfo << "Requesting data ..."
 						<< EndDebugInfo;
-				memory_interface->PrWrite(rep_cache_address, rep_cache_data,
-						arm926ejs_dcache.LINE_SIZE);
+				memory_interface->PrRead(cache_address, cache_data,
+						cache_line_size);
 				if ( unlikely(verbose_memory) )
-					logger << DebugInfo << "... writeback performed."
-						<< EndDebugInfo;
+					logger << DebugInfo << "... data received" << EndDebugInfo;
+				arm926ejs_dcache.SetTag(cache_set, cache_way, cache_tag);
+				arm926ejs_dcache.SetValid(cache_set, cache_way, 1);
+				arm926ejs_dcache.SetDirty(cache_set, cache_way, 0);
 			}
-			// the new data can be requested
-			uint8_t *cache_data = 0;
-			uint32_t cache_address =
-					arm926ejs_dcache.GetBaseAddressFromAddress(read_addr);
-			// when getting the data we get the pointer to the cache line
-			//   containing the data, so no need to write the cache
-			//   afterwards
-			uint32_t cache_line_size = arm926ejs_dcache.GetData(cache_set,
-					cache_way, &cache_data);
+			else
+			{
+				if ( unlikely(verbose_memory) )
+					logger << DebugInfo << "Cache hit" << EndDebugInfo;
+			}
+
+			// at this point the data is in the cache, we can read it from the
+			//   cache
+			uint32_t cache_index = arm926ejs_dcache.GetIndex(read_addr);
+			(void)arm926ejs_dcache.GetData(cache_set, cache_way, cache_index,
+					size, &data);
+		}
+		else // there is no data cache
+		{
+			// just read the data from the memory system
 			if ( unlikely(verbose_memory) )
-				logger << DebugInfo << "Requesting data ..."
+				logger << DebugInfo << "Requesting data (no data cache) ..."
 					<< EndDebugInfo;
-			memory_interface->PrRead(cache_address, cache_data,
-					cache_line_size);
+			memory_interface->PrRead(read_addr, data32, size);
+			data = data32;
 			if ( unlikely(verbose_memory) )
 				logger << DebugInfo << "... data received" << EndDebugInfo;
-			arm926ejs_dcache.SetTag(cache_set, cache_way, cache_tag);
-			arm926ejs_dcache.SetValid(cache_set, cache_way, 1);
-			arm926ejs_dcache.SetDirty(cache_set, cache_way, 0);
-		}
-		else
-		{
-			if ( unlikely(verbose_memory) )
-				logger << DebugInfo << "Cache hit" << EndDebugInfo;
 		}
 
-		// at this point the data is in the cache, we can read it from the
-		//   cache
-		uint32_t cache_index = arm926ejs_dcache.GetIndex(read_addr);
-		(void)arm926ejs_dcache.GetData(cache_set, cache_way, cache_index,
-				size, &data);
 		// fix the data depending on its size
 		uint32_t value;
 		if (size == 1)
@@ -4513,6 +4664,7 @@ PerformReadToPCAccess(MemoryOp<CONFIG> *memop) {
 	uint32_t addr = memop->GetAddress();
 	const uint32_t size = 4;
 	uint32_t read_addr = addr & ~(uint32_t)0x03;
+	uint8_t data32[4];
 	uint8_t *data;
 
 	if ( unlikely(verbose_memory) )
@@ -4521,85 +4673,99 @@ PerformReadToPCAccess(MemoryOp<CONFIG> *memop) {
 
 	if ( (CONFIG::MODEL == ARM926EJS) && linux_os_import )
 	{
-		// running arm926ejs with linux simulation
-		//   tcm are ignored
-		uint32_t cache_tag = arm926ejs_dcache.GetTag(read_addr);
-		uint32_t cache_set = arm926ejs_dcache.GetSet(read_addr);
-		uint32_t cache_way;
-		bool cache_hit = false;
-
-		if ( arm926ejs_dcache.GetWay(cache_tag, cache_set, &cache_way) )
+		if ( arm926ejs_dcache.GetSize() )
 		{
-			if ( arm926ejs_dcache.GetValid(cache_set, cache_way) )
-			{
-				// the access is a hit, nothing needs to be done
-				cache_hit = true;
-			}
-		}
-		// if the access was a miss, data needs to be fetched from main
-		//   memory and placed into the cache
-		if ( !cache_hit )
-		{
-			if ( unlikely(verbose_memory) )
-				logger << DebugInfo << "Cache miss" << EndDebugInfo;
-			// get a way to replace
-			cache_way = arm926ejs_dcache.GetNewWay(cache_set);
-			// get the valid and dirty bits from the way to replace
-			uint8_t cache_valid = arm926ejs_dcache.GetValid(cache_set,
-					cache_way);
-			uint8_t cache_dirty = arm926ejs_dcache.GetDirty(cache_set,
-					cache_way);
+			// running arm926ejs with linux simulation
+			//   tcm are ignored
+			uint32_t cache_tag = arm926ejs_dcache.GetTag(read_addr);
+			uint32_t cache_set = arm926ejs_dcache.GetSet(read_addr);
+			uint32_t cache_way;
+			bool cache_hit = false;
 
-			if ( (cache_valid != 0) && (cache_dirty != 0) )
+			if ( arm926ejs_dcache.GetWay(cache_tag, cache_set, &cache_way) )
 			{
-				// the cache line to replace is valid and dirty so it needs
-				//   to be sent to the main memory
-				uint8_t *rep_cache_data = 0;
-				uint32_t rep_cache_address =
-						arm926ejs_dcache.GetBaseAddress(cache_set,
-								cache_way);
-				arm926ejs_dcache.GetData(cache_set, cache_way,
-						&rep_cache_data);
-				if ( unlikely(verbose_memory) )
-					logger << DebugInfo << "Performing writeback ..."
-						<< EndDebugInfo;
-				memory_interface->PrWrite(rep_cache_address, rep_cache_data,
-						arm926ejs_dcache.LINE_SIZE);
-				if ( unlikely(verbose_memory) )
-					logger << DebugInfo << "... writeback performed."
-						<< EndDebugInfo;
+				if ( arm926ejs_dcache.GetValid(cache_set, cache_way) )
+				{
+					// the access is a hit, nothing needs to be done
+					cache_hit = true;
+				}
 			}
-			// the new data can be requested
-			uint8_t *cache_data = 0;
-			uint32_t cache_address =
-					arm926ejs_dcache.GetBaseAddressFromAddress(read_addr);
-			// when getting the data we get the pointer to the cache line
-			//   containing the data, so no need to write the cache
-			//   afterwards
-			uint32_t cache_line_size = arm926ejs_dcache.GetData(cache_set,
-					cache_way, &cache_data);
-			if ( unlikely(verbose_memory) )
-				logger << DebugInfo << "Requesting data ..."
-					<< EndDebugInfo;
-			memory_interface->PrRead(cache_address, cache_data,
-					cache_line_size);
-			if ( unlikely(verbose_memory) )
-				logger << DebugInfo << "... data received" << EndDebugInfo;
-			arm926ejs_dcache.SetTag(cache_set, cache_way, cache_tag);
-			arm926ejs_dcache.SetValid(cache_set, cache_way, 1);
-			arm926ejs_dcache.SetDirty(cache_set, cache_way, 0);
+			// if the access was a miss, data needs to be fetched from main
+			//   memory and placed into the cache
+			if ( !cache_hit )
+			{
+				if ( unlikely(verbose_memory) )
+					logger << DebugInfo << "Cache miss" << EndDebugInfo;
+				// get a way to replace
+				cache_way = arm926ejs_dcache.GetNewWay(cache_set);
+				// get the valid and dirty bits from the way to replace
+				uint8_t cache_valid = arm926ejs_dcache.GetValid(cache_set,
+						cache_way);
+				uint8_t cache_dirty = arm926ejs_dcache.GetDirty(cache_set,
+						cache_way);
+
+				if ( (cache_valid != 0) && (cache_dirty != 0) )
+				{
+					// the cache line to replace is valid and dirty so it needs
+					//   to be sent to the main memory
+					uint8_t *rep_cache_data = 0;
+					uint32_t rep_cache_address =
+							arm926ejs_dcache.GetBaseAddress(cache_set,
+									cache_way);
+					arm926ejs_dcache.GetData(cache_set, cache_way,
+							&rep_cache_data);
+					if ( unlikely(verbose_memory) )
+						logger << DebugInfo << "Performing writeback ..."
+							<< EndDebugInfo;
+					memory_interface->PrWrite(rep_cache_address, rep_cache_data,
+							arm926ejs_dcache.LINE_SIZE);
+					if ( unlikely(verbose_memory) )
+						logger << DebugInfo << "... writeback performed."
+							<< EndDebugInfo;
+				}
+				// the new data can be requested
+				uint8_t *cache_data = 0;
+				uint32_t cache_address =
+						arm926ejs_dcache.GetBaseAddressFromAddress(read_addr);
+				// when getting the data we get the pointer to the cache line
+				//   containing the data, so no need to write the cache
+				//   afterwards
+				uint32_t cache_line_size = arm926ejs_dcache.GetData(cache_set,
+						cache_way, &cache_data);
+				if ( unlikely(verbose_memory) )
+					logger << DebugInfo << "Requesting data ..."
+						<< EndDebugInfo;
+				memory_interface->PrRead(cache_address, cache_data,
+						cache_line_size);
+				if ( unlikely(verbose_memory) )
+					logger << DebugInfo << "... data received" << EndDebugInfo;
+				arm926ejs_dcache.SetTag(cache_set, cache_way, cache_tag);
+				arm926ejs_dcache.SetValid(cache_set, cache_way, 1);
+				arm926ejs_dcache.SetDirty(cache_set, cache_way, 0);
+			}
+			else
+			{
+				if ( unlikely(verbose_memory) )
+					logger << DebugInfo << "Cache hit" << EndDebugInfo;
+			}
+
+			// at this point the data is in the cache, we can read it from the
+			//   cache
+			uint32_t cache_index = arm926ejs_dcache.GetIndex(read_addr);
+			(void)arm926ejs_dcache.GetData(cache_set, cache_way, cache_index,
+					size, &data);
 		}
 		else
 		{
 			if ( unlikely(verbose_memory) )
-				logger << DebugInfo << "Cache hit" << EndDebugInfo;
-		}
+				logger << DebugInfo << "Requesting data (no data cache) ..."
+					<< EndDebugInfo;
+			memory_interface->PrRead(read_addr, data32, size);
+			data = data32;
+			if ( unlikely(verbose_memory) )
+				logger << DebugInfo << "... data received" << EndDebugInfo;
 
-		// at this point the data is in the cache, we can read it from the
-		//   cache
-		uint32_t cache_index = arm926ejs_dcache.GetIndex(read_addr);
-		(void)arm926ejs_dcache.GetData(cache_set, cache_way, cache_index,
-				size, &data);
+		}
 		// fix the data depending on its size
 		uint32_t value;
 		uint32_t val32;
@@ -4651,6 +4817,7 @@ PerformReadToPCUpdateTAccess(MemoryOp<CONFIG> *memop) {
 	uint32_t addr = memop->GetAddress();
 	const uint32_t size = 4;
 	uint32_t read_addr = addr & ~(uint32_t)0x03;
+	uint8_t data32[4];
 	uint8_t *data;
 
 	if ( unlikely(verbose_memory) )
@@ -4660,84 +4827,98 @@ PerformReadToPCUpdateTAccess(MemoryOp<CONFIG> *memop) {
 
 	if ( (CONFIG::MODEL == ARM926EJS) && linux_os_import )
 	{
-		// running arm926ejs with linux simulation
-		//   tcm are ignored
-		uint32_t cache_tag = arm926ejs_dcache.GetTag(read_addr);
-		uint32_t cache_set = arm926ejs_dcache.GetSet(read_addr);
-		uint32_t cache_way;
-		bool cache_hit = false;
+		if ( arm926ejs_dcache.GetSize() )
+		{
+			// running arm926ejs with linux simulation
+			//   tcm are ignored
+			uint32_t cache_tag = arm926ejs_dcache.GetTag(read_addr);
+			uint32_t cache_set = arm926ejs_dcache.GetSet(read_addr);
+			uint32_t cache_way;
+			bool cache_hit = false;
 
-		if ( arm926ejs_dcache.GetWay(cache_tag, cache_set, &cache_way) )
-		{
-			if ( arm926ejs_dcache.GetValid(cache_set, cache_way) )
+			if ( arm926ejs_dcache.GetWay(cache_tag, cache_set, &cache_way) )
 			{
-				// the access is a hit, nothing needs to be done
-				cache_hit = true;
+				if ( arm926ejs_dcache.GetValid(cache_set, cache_way) )
+				{
+					// the access is a hit, nothing needs to be done
+					cache_hit = true;
+				}
 			}
+			// if the access was a miss, data needs to be fetched from main
+			//   memory and placed into the cache
+			if ( !cache_hit )
+			{
+				if ( unlikely(verbose_memory) )
+					logger << DebugInfo << "Cache miss" << EndDebugInfo;
+				// get a way to replace
+				cache_way = arm926ejs_dcache.GetNewWay(cache_set);
+				// get the valid and dirty bits from the way to replace
+				bool cache_valid = arm926ejs_dcache.GetValid(cache_set,
+						cache_way);
+				bool cache_dirty = arm926ejs_dcache.GetDirty(cache_set,
+						cache_way);
+				if ( cache_valid & cache_dirty )
+				{
+					// the cache line to replace is valid and dirty so it needs
+					//   to be sent to the main memory
+					uint8_t *rep_cache_data = 0;
+					uint32_t rep_cache_address =
+							arm926ejs_dcache.GetBaseAddress(cache_set,
+									cache_way);
+					arm926ejs_dcache.GetData(cache_set, cache_way,
+							&rep_cache_data);
+					if ( unlikely(verbose_memory) )
+						logger << DebugInfo << "Performing writeback ..."
+							<< EndDebugInfo;
+					memory_interface->PrWrite(rep_cache_address, rep_cache_data,
+							arm926ejs_dcache.LINE_SIZE);
+					if ( unlikely(verbose_memory) )
+						logger << DebugInfo << "... writeback performed."
+							<< EndDebugInfo;
+				}
+				// the new data can be requested
+				uint8_t *cache_data = 0;
+				uint32_t cache_address =
+						arm926ejs_dcache.GetBaseAddressFromAddress(read_addr);
+				// when getting the data we get the pointer to the cache line
+				//   containing the data, so no need to write the cache
+				//   afterwards
+				uint32_t cache_line_size = arm926ejs_dcache.GetData(cache_set,
+						cache_way, &cache_data);
+				if ( unlikely(verbose_memory) )
+					logger << DebugInfo << "Requesting data ..."
+						<< EndDebugInfo;
+				memory_interface->PrRead(cache_address, cache_data,
+						cache_line_size);
+				if ( unlikely(verbose_memory) )
+					logger << DebugInfo << "... data received" << EndDebugInfo;
+				arm926ejs_dcache.SetTag(cache_set, cache_way, cache_tag);
+				arm926ejs_dcache.SetValid(cache_set, cache_way, 1);
+				arm926ejs_dcache.SetDirty(cache_set, cache_way, 0);
+			}
+			else
+			{
+				if ( unlikely(verbose_memory) )
+					logger << DebugInfo << "Cache hit" << EndDebugInfo;
+			}
+
+			// at this point the data is in the cache, we can read it from the
+			//   cache
+			uint32_t cache_index = arm926ejs_dcache.GetIndex(read_addr);
+			(void)arm926ejs_dcache.GetData(cache_set, cache_way, cache_index,
+					size, &data);
 		}
-		// if the access was a miss, data needs to be fetched from main
-		//   memory and placed into the cache
-		if ( !cache_hit )
+		else // there is no data cache
 		{
 			if ( unlikely(verbose_memory) )
-				logger << DebugInfo << "Cache miss" << EndDebugInfo;
-			// get a way to replace
-			cache_way = arm926ejs_dcache.GetNewWay(cache_set);
-			// get the valid and dirty bits from the way to replace
-			bool cache_valid = arm926ejs_dcache.GetValid(cache_set,
-					cache_way);
-			bool cache_dirty = arm926ejs_dcache.GetDirty(cache_set,
-					cache_way);
-			if ( cache_valid & cache_dirty )
-			{
-				// the cache line to replace is valid and dirty so it needs
-				//   to be sent to the main memory
-				uint8_t *rep_cache_data = 0;
-				uint32_t rep_cache_address =
-						arm926ejs_dcache.GetBaseAddress(cache_set,
-								cache_way);
-				arm926ejs_dcache.GetData(cache_set, cache_way,
-						&rep_cache_data);
-				if ( unlikely(verbose_memory) )
-					logger << DebugInfo << "Performing writeback ..."
-						<< EndDebugInfo;
-				memory_interface->PrWrite(rep_cache_address, rep_cache_data,
-						arm926ejs_dcache.LINE_SIZE);
-				if ( unlikely(verbose_memory) )
-					logger << DebugInfo << "... writeback performed."
-						<< EndDebugInfo;
-			}
-			// the new data can be requested
-			uint8_t *cache_data = 0;
-			uint32_t cache_address =
-					arm926ejs_dcache.GetBaseAddressFromAddress(read_addr);
-			// when getting the data we get the pointer to the cache line
-			//   containing the data, so no need to write the cache
-			//   afterwards
-			uint32_t cache_line_size = arm926ejs_dcache.GetData(cache_set,
-					cache_way, &cache_data);
-			if ( unlikely(verbose_memory) )
-				logger << DebugInfo << "Requesting data ..."
+				logger << DebugInfo << "Requesting data (no data cache) ..."
 					<< EndDebugInfo;
-			memory_interface->PrRead(cache_address, cache_data,
-					cache_line_size);
+			memory_interface->PrRead(read_addr, data32,	size);
+			data = data32;
 			if ( unlikely(verbose_memory) )
 				logger << DebugInfo << "... data received" << EndDebugInfo;
-			arm926ejs_dcache.SetTag(cache_set, cache_way, cache_tag);
-			arm926ejs_dcache.SetValid(cache_set, cache_way, 1);
-			arm926ejs_dcache.SetDirty(cache_set, cache_way, 0);
-		}
-		else
-		{
-			if ( unlikely(verbose_memory) )
-				logger << DebugInfo << "Cache hit" << EndDebugInfo;
 		}
 
-		// at this point the data is in the cache, we can read it from the
-		//   cache
-		uint32_t cache_index = arm926ejs_dcache.GetIndex(read_addr);
-		(void)arm926ejs_dcache.GetData(cache_set, cache_way, cache_index,
-				size, &data);
 		// fix the data depending on its size
 		uint32_t value;
 		uint32_t val32;

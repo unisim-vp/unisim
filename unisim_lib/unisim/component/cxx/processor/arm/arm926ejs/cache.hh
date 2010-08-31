@@ -69,6 +69,10 @@ public:
 	 * @return true on success, false on error (not valid size)
 	 */
 	bool SetSize(uint32_t size);
+	/** Get the size of the cache
+	 * @return the size of the cache in bytes
+	 */
+	uint32_t GetSize();
 	/** Set the current replacement policy.
 	 * Sets the cache active replacement policy (round-robin/random).
 	 *
