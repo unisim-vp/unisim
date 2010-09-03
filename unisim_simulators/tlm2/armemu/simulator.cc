@@ -482,6 +482,16 @@ SetTrapHandler (void (*function)(void *, unsigned int), void *context)
 	return true;
 }
 
+unisim::service::debug::DebuggerHandler *
+Simulator::
+GetDebugger(const char *name)
+{
+	if ( enable_sim_debugger )
+		return sim_debugger;
+	else
+		return 0;
+}
+
 void
 Simulator::
 ExternalTrap (unsigned int id)
@@ -499,6 +509,7 @@ VariableNotify(const char *name)
 	// use this function to check the variable that was notified
 	// NOTE: for the moment it is empty, but more to come :-P
 }
+
 #endif // SIM_LIBRARY
 
 #ifdef SIM_GDB_SERVER_SUPPORT

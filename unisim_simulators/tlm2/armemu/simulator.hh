@@ -88,6 +88,7 @@ public:
 #ifdef SIM_LIBRARY
 	bool AddNotifiable(void *(*notif_function)(const char *), const char *var_name);
 	bool SetTrapHandler(void (*function)(void *, unsigned int), void *context);
+	unisim::service::debug::DebuggerHandler *GetDebugger(const char *name);
 #endif // SIM_LIBRARY
 	void Stop();
 

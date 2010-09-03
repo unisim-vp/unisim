@@ -9,14 +9,38 @@ class SimulatorHandler(simulator.Simulator):
 		print("        cpu.trap-on-instruction-counter = ",
 				parms['cpu.trap-on-instruction-counter'].value)
 		if parms['cpu.trap-on-instruction-counter'].value is 100:
-			print("      Setting it to 200")
-			parms['cpu.trap-on-instruction-counter'].value = '200'
+			print("      Setting debugger to step mode")
+			self.debugger.set_step_mode()
+			print("      Setting trap-on-instruction-counter to 200")
+			parms['cpu.trap-on-instruction-counter'].value = 200
 		elif parms['cpu.trap-on-instruction-counter'].value is 200:
-			print("      Setting it to 300")
-			parms['cpu.trap-on-instruction-counter'].value = '300'
+			print("      Setting debugger to continue mode")
+			self.debugger.set_continue_mode()
+			print("      Setting breakpoint at 'main'", end = "")
+			if self.debugger.set_breakpoint("main"):
+				print("  OK")
+			else:
+				print("  ERROR") 
+			print("      Setting breakpoint at 'rec_fibonnaci_test'", end = "")
+			if self.debugger.set_breakpoint("rec_fibonnaci_test"):
+				print("  OK")
+			else:
+				print("  ERROR")
+			print("      Setting trap-on-instruction-counter to 300")
+			parms['cpu.trap-on-instruction-counter'].value = 300
 		else:
 			print("      Resetting cpu.trap-on-instruction-counter")
-			parms['cpu.trap-on-instruction-counter'].value = '0'
+			parms['cpu.trap-on-instruction-counter'].value = 0
+
+	def breakpoint_handler(self, context, addr):
+		print("Python: 0x%08x (%s, %s, %s)" % 
+				(addr, 
+					addr, 
+					self.debugger.is_mode_step(),
+					self.debugger.has_breakpoint(addr)))
+		if self.debugger.has_breakpoint(addr):
+			print("      Removing breakpoint at 0x%08x" % addr)
+			self.debugger.delete_breakpoint(addr)
 
 	def __init__(self):
 		simulator.Simulator.__init__(self, parms={"enable-power-estimation":True})
@@ -41,6 +65,10 @@ class SimulatorHandler(simulator.Simulator):
 				parms['trap-handler.send-traps-to-logger'].value)
 		print("Setting external trap handler")
 		self.set_trap_handler(None, self.trap_handler)
+		self.debugger = self.get_debugger("main")
+		# self.debugger.set_step_mode()
+		self.debugger.set_context(None)
+		self.debugger.set_breakpoint_callback(self.breakpoint_handler)
 
 	def setup(self):
 		print("Launching simulator setup.")

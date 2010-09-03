@@ -38,6 +38,7 @@
 #define SIMULATOR_MODULE
 #include "python/py_simulator.hh"
 #include "python/py_variable.hh"
+#include "python/py_debugger.hh"
 
 static std::map<std::string, int> time_unit_map;
 static std::map<std::string, sc_time_unit> sc_time_unit_map;
@@ -603,6 +604,23 @@ simulator_remove_trap_handler (armemu_SimulatorObject *self)
 	}
 	return result;
 }
+
+static PyObject *
+simulator_get_debugger (armemu_SimulatorObject *self, PyObject *args)
+{
+	PyObject *result = 0;
+
+	const char *debugger_name = 0;
+	if ( !PyArg_ParseTuple(args, "s", &debugger_name) )
+	{
+		PyErr_SetString(PyExc_TypeError, "parameters must be the name of the desired debugger");
+		return NULL;
+	}
+	// the name of the debugger should be checked before its creation
+	result = PyDebugger_NewDebugger(debugger_name);
+	return result;
+}
+
 static PyMethodDef simulator_methods[] =
 {
 	{"setup", (PyCFunction)simulator_setup, METH_NOARGS,
@@ -635,6 +653,8 @@ static PyMethodDef simulator_methods[] =
 			"Set the external trap handler"},
 	{"remove_trap_handler", (PyCFunction)simulator_remove_trap_handler, METH_NOARGS,
 			"Remove the external trap handler"},
+	{"get_debugger", (PyCFunction)simulator_get_debugger, METH_VARARGS,
+					"Get a handler of the given name debugger"},
 	{NULL}
 };
 
@@ -738,6 +758,11 @@ PyInit_simulator(void)
 	import_variable_api_init();
 
 	if ( import_variable_api() < 0 )
+		return NULL;
+
+	import_debugger_api_init();
+
+	if ( import_debugger_api() < 0 )
 		return NULL;
 
 	return m;
