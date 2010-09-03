@@ -458,10 +458,13 @@ if ( BUILD_ARMEMU_PYTHON_MODULE )
 		OUTPUT
 			lib/${SIM_PYTHON_IMPORT_NAME}/simulator.so
 			lib/${SIM_PYTHON_IMPORT_NAME}/variable.so
+			lib/${SIM_PYTHON_IMPORT_NAME}/debugger.so
 		COMMAND
 			${CMAKE_COMMAND} -E remove lib/${SIM_PYTHON_IMPORT_NAME}/simulator.so
 		COMMAND
 			${CMAKE_COMMAND} -E remove lib/${SIM_PYTHON_IMPORT_NAME}/variable.so
+		COMMAND
+			${CMAKE_COMMAND} -E remove lib/${SIM_PYTHON_IMPORT_NAME}/debugger.so
 		COMMAND
 			${CMAKE_COMMAND} -E make_directory python
 		COMMAND
@@ -474,6 +477,8 @@ if ( BUILD_ARMEMU_PYTHON_MODULE )
 			${CMAKE_SOURCE_DIR}/python/py_simulator.cc
 			${CMAKE_SOURCE_DIR}/python/py_variable.hh
 			${CMAKE_SOURCE_DIR}/python/py_variable.cc
+			${CMAKE_SOURCE_DIR}/python/py_debugger.hh
+			${CMAKE_SOURCE_DIR}/python/py_debugger.cc
 			simulatorlib
 			${armemu__deps}
 		COMMENT
@@ -486,6 +491,7 @@ if ( BUILD_ARMEMU_PYTHON_MODULE )
 			DEPENDS
 				lib/${SIM_PYTHON_IMPORT_NAME}/simulator.so
 				lib/${SIM_PYTHON_IMPORT_NAME}/variable.so
+				lib/${SIM_PYTHON_IMPORT_NAME}/debugger.so
 			COMMENT
 				"Python target."
 		)

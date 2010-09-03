@@ -97,7 +97,7 @@ SimDebugger(const char *_name, Object *_parent)
 	, watchpoint_registry()
 	, program_profile()
 	, data_read_profile()
-	, running_mode(SIM_DEBUGGER_MODE_STEP)
+	, running_mode(SIM_DEBUGGER_MODE_CONTINUE)
 	, disasm_addr(0)
 	, dump_addr(0)
 {
@@ -105,7 +105,7 @@ SimDebugger(const char *_name, Object *_parent)
 	param_num_loaders.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 
 	trap = false;
-	running_mode = SIM_DEBUGGER_MODE_STEP;
+	running_mode = SIM_DEBUGGER_MODE_CONTINUE;
 	disasm_addr = 0;
 	dump_addr = 0;
 
@@ -282,18 +282,45 @@ FetchDebugCommand(ADDRESS cia)
 		return DebugControl<ADDRESS>::DBG_STEP;
 	}
 
-//	if ( running_mode == SIM_DEBUGGER_MODE_RESET )
-//	{
-//		running_mode = INLINE_DEBUGGER_MODE_CONTINUE;
-//		program_profile.Accumulate(cia, 1);
-//		return DebugControl<ADDRESS>::DBG_STEP;
-//	}
-
-	// we must be in step mode or continue until, so we can stop
-	//  simulation
-	Object::Stop(0);
-	// when restarting just make a DBG_STEP
+	// A trap was produced or we are in step mode
+	CallBreakpointHandler(cia);
+	program_profile.Accumulate(cia, 1);
+	trap = false;
 	return DebugControl<ADDRESS>::DBG_STEP;
+}
+
+template <class ADDRESS>
+bool
+SimDebugger<ADDRESS>::
+SetStepMode()
+{
+	running_mode = SIM_DEBUGGER_MODE_STEP;
+	return true;
+}
+
+template <class ADDRESS>
+bool
+SimDebugger<ADDRESS>::
+SetContinueMode()
+{
+	running_mode = SIM_DEBUGGER_MODE_CONTINUE;
+	return true;
+}
+
+template <class ADDRESS>
+bool
+SimDebugger<ADDRESS>::
+IsModeStep()
+{
+	return running_mode == SIM_DEBUGGER_MODE_STEP;
+}
+
+template <class ADDRESS>
+bool
+SimDebugger<ADDRESS>::
+IsModeContinue()
+{
+	return running_mode == SIM_DEBUGGER_MODE_CONTINUE;
 }
 
 template <class ADDRESS>
@@ -390,6 +417,20 @@ HasBreakpoint(uint64_t addr)
 template <class ADDRESS>
 bool
 SimDebugger<ADDRESS>::
+HasBreakpoint(const char *str)
+{
+	uint64_t addr = 0;
+
+	if ( !ParseSymbol(str, addr) )
+		if ( !ParseFileSystem(str, addr) )
+			return false;
+
+	return HasBreakpoint(addr);
+}
+
+template <class ADDRESS>
+bool
+SimDebugger<ADDRESS>::
 SetBreakpoint(uint64_t addr)
 {
 	bool set = false;
@@ -403,6 +444,54 @@ SetBreakpoint(uint64_t addr)
 				breakpoint_registry.HasBreakpoints());
 
 	return set;
+}
+
+template <class ADDRESS>
+bool
+SimDebugger<ADDRESS>::
+SetBreakpoint(const char *str)
+{
+	uint64_t addr = 0;
+
+	if ( !ParseSymbol(str, addr) )
+		if ( !ParseFileSystem(str, addr) )
+		{
+			return false;
+		}
+
+	return SetBreakpoint(addr);
+}
+
+template <class ADDRESS>
+bool
+SimDebugger<ADDRESS>::
+DeleteBreakpoint(uint64_t addr)
+{
+	bool deleted = false;
+	if ( !breakpoint_registry.RemoveBreakpoint(addr) )
+		cout << "Can't remove breakpoint at 0x" << hex << addr << dec << endl;
+	else
+		deleted = true;
+
+	if ( memory_access_reporting_control_import )
+		memory_access_reporting_control_import->RequiresFinishedInstructionReporting(
+				breakpoint_registry.HasBreakpoints());
+
+	return deleted;
+}
+
+template <class ADDRESS>
+bool
+SimDebugger<ADDRESS>::
+DeleteBreakpoint(const char *str)
+{
+	uint64_t addr = 0;
+
+	if ( !ParseSymbol(str, addr) )
+		if ( !ParseFileSystem(str, addr) )
+			return false;
+
+	return DeleteBreakpoint(addr);
 }
 
 template <class ADDRESS>
@@ -448,24 +537,6 @@ SetWriteWatchpoint(uint64_t addr, uint32_t size)
 template <class ADDRESS>
 bool
 SimDebugger<ADDRESS>::
-DeleteBreakpoint(uint64_t addr)
-{
-	bool deleted = false;
-	if ( !breakpoint_registry.RemoveBreakpoint(addr) )
-		cout << "Can't remove breakpoint at 0x" << hex << addr << dec << endl;
-	else
-		deleted = true;
-
-	if ( memory_access_reporting_control_import )
-		memory_access_reporting_control_import->RequiresFinishedInstructionReporting(
-				breakpoint_registry.HasBreakpoints());
-
-	return deleted;
-}
-
-template <class ADDRESS>
-bool
-SimDebugger<ADDRESS>::
 DeleteReadWatchpoint(uint64_t addr, uint32_t size)
 {
 	bool deleted = false;
@@ -501,6 +572,66 @@ DeleteWriteWatchpoint(uint64_t addr, uint32_t size)
 				watchpoint_registry.HasWatchpoints());
 
 	return deleted;
+}
+
+template <class ADDRESS>
+bool
+SimDebugger<ADDRESS>::
+ParseSymbol(const char *str, uint64_t &addr)
+{
+	const Symbol<ADDRESS> *symbol = 0;
+
+	unsigned int i;
+	for(i = 0; (!symbol) && (i < num_loaders); i++)
+	{
+		if(*symbol_table_lookup_import[i])
+		{
+			symbol = (*symbol_table_lookup_import[i])->FindSymbolByName(str);
+		}
+	}
+
+	if(symbol)
+	{
+		addr = symbol->GetAddress();
+		return true;
+	}
+
+	return false;
+}
+
+template <class ADDRESS>
+bool
+SimDebugger<ADDRESS>::
+ParseFileSystem(const char *str, uint64_t &addr)
+{
+	std::string filename;
+	unsigned int lineno;
+	unsigned int i;
+
+	while ( *str && *str != '#' )
+	{
+		filename += *str;
+		str++;
+	}
+	if ( *str == '#' ) str++;
+	if ( sscanf(str, "%u", &lineno) != 1 ) return false;
+
+	const Statement<ADDRESS> *stmt = 0;
+	for ( i = 0; (!stmt) && (i < num_loaders); i++ )
+	{
+		if ( *stmt_lookup_import[i] )
+		{
+			stmt = (*stmt_lookup_import[i])->FindStatement(filename.c_str(), lineno, 0);
+		}
+	}
+
+	if ( stmt )
+	{
+		addr = stmt->GetAddress();
+		return true;
+	}
+
+	return false;
 }
 
 template <class ADDRESS>
