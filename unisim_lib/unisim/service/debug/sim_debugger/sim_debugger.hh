@@ -49,75 +49,12 @@
 #include <unisim/util/debug/breakpoint_registry.hh>
 #include <unisim/util/debug/watchpoint_registry.hh>
 #include <unisim/util/debug/profile.hh>
+#include <unisim/util/debug/debugger_handler/debugger_handler.hh>
 
 #include <unisim/kernel/service/service.hh>
 
 #include <inttypes.h>
 #include <string>
-
-namespace unisim {
-namespace service {
-namespace debug {
-	class DebuggerHandler
-	{
-	public:
-		DebuggerHandler()
-			: handler_context(0)
-			, breakpoint_handler_function(0)
-			, watchpoint_handler_function(0)
-		{};
-		virtual ~DebuggerHandler() {};
-		virtual bool SetStepMode() = 0;
-		virtual bool SetContinueMode() = 0;
-		virtual bool IsModeStep() = 0;
-		virtual bool IsModeContinue() = 0;
-		virtual bool HasBreakpoint(uint64_t addr) = 0;
-		virtual bool HasBreakpoint(const char *str) = 0;
-		virtual bool SetBreakpoint(uint64_t addr) = 0;
-		virtual bool SetBreakpoint(const char *str) = 0;
-		virtual bool DeleteBreakpoint(uint64_t addr) = 0;
-		virtual bool DeleteBreakpoint(const char *str) = 0;
-		virtual bool SetHandlerContext(void *context)
-		{
-			handler_context = context;
-			return true;
-		};
-		virtual bool SetBreakpointHandler(
-				void (*function)(void *, uint64_t))
-		{
-			breakpoint_handler_function = function;
-			return true;
-		};
-
-		virtual bool SetWatchpointHandler(
-				void (*function)(void *, uint64_t, bool))
-		{
-			watchpoint_handler_function = function;
-			return true;
-		};
-
-	protected:
-		void CallBreakpointHandler(uint64_t addr)
-		{
-			if ( breakpoint_handler_function )
-				breakpoint_handler_function(handler_context, addr);
-		};
-
-		void CallWatchpointHandler(uint64_t addr, bool read)
-		{
-			if ( watchpoint_handler_function )
-				watchpoint_handler_function(handler_context, addr, read);
-		};
-
-	private:
-		void *handler_context;
-		void (*breakpoint_handler_function)(void *, uint64_t);
-		void (*watchpoint_handler_function)(void *, uint64_t, bool);
-
-	};
-}
-}
-}
 
 namespace unisim {
 namespace service {
@@ -179,7 +116,7 @@ class SimDebugger
 	, public Client<Loader<ADDRESS> >
 	, public Client<StatementLookup<ADDRESS> >
 	, public SimDebuggerBase
-	, public unisim::service::debug::DebuggerHandler
+	, public unisim::util::debug::debugger_handler::DebuggerHandler
 {
 public:
 	ServiceExport<DebugControl<ADDRESS> > debug_control_export;
@@ -253,8 +190,8 @@ private:
 	bool DeleteReadWatchpoint(uint64_t addr, uint32_t size);
 	bool DeleteWriteWatchpoint(uint64_t addr, uint32_t size);
 
-	bool ParseSymbol(const char *str, uint64_t &addr);
-	bool ParseFileSystem(const char *str, uint64_t &addr);
+	bool GetSymbolAddress(const char *str, uint64_t &addr);
+	bool GetFileSystemAddress(const char *str, uint64_t &addr);
 
 	void DumpBreakpoints();
 	void DumpWatchpoints();
