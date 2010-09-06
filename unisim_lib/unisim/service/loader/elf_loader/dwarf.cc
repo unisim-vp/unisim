@@ -43,6 +43,77 @@ namespace service {
 namespace loader {
 namespace elf_loader {
 
+std::ostream& c_string_to_XML(std::ostream& os, const char *s)
+{
+	char c = *s;
+
+	if(c)
+	{
+		do
+		{
+			switch(c)
+			{
+				case '<':
+					os << "&lt;";
+					break;
+				case '>':
+					os << "&gt;";
+					break;
+				case '&':
+					os << "&amp;";
+					break;
+				case '"':
+					os << "&quot;";
+					break;
+				case '\'':
+					os << "&apos;";
+					break;
+				default:
+					os << c;
+			}
+		}
+		while(c = *(++s));
+	}
+	return os;
+}
+
+std::ostream& c_string_to_HTML(std::ostream& os, const char *s)
+{
+	char c = *s;
+
+	if(c)
+	{
+		do
+		{
+			switch(c)
+			{
+				case '\n':
+					os << "<br>";
+					break;
+				case '<':
+					os << "&lt;";
+					break;
+				case '>':
+					os << "&gt;";
+					break;
+				case '&':
+					os << "&amp;";
+					break;
+				case '"':
+					os << "&quot;";
+					break;
+				case '\'':
+					os << "&apos;";
+					break;
+				default:
+					os << c;
+			}
+		}
+		while(c = *(++s));
+	}
+	return os;
+}
+
 DWARF_LEB128::DWARF_LEB128()
 	: leb128(0)
 {
@@ -270,11 +341,12 @@ std::string DWARF_LEB128::to_string(bool is_signed) const
 	return std::string();
 }
 
-DWARF_Filename::DWARF_Filename()
+DWARF_Filename::DWARF_Filename(unsigned int _id)
 	: filename()
 	, directory_index()
 	, last_modification_time()
 	, byte_length()
+	, id(_id)
 {
 }
 
@@ -283,6 +355,7 @@ DWARF_Filename::DWARF_Filename(const DWARF_Filename& dw_filename)
 	, directory_index(dw_filename.directory_index)
 	, last_modification_time(dw_filename.last_modification_time)
 	, byte_length(dw_filename.byte_length)
+	, id(dw_filename.id)
 {
 }
 
@@ -347,6 +420,30 @@ int64_t DWARF_Filename::Load(const uint8_t *rawdata, uint64_t max_size)
 	max_size -= sz;
 
 	return size;
+}
+
+std::ostream& DWARF_Filename::to_XML(std::ostream& os) const
+{
+	os << "<DW_FILENAME filename=\"";
+	c_string_to_XML(os, filename);
+	os << "\" directory_index=\"" << directory_index.to_string(false) << "\"";
+	os << " time=\"" << last_modification_time.to_string(false) << "\"";
+	os << " size=\"" << byte_length.to_string(false) << "\"/>";
+	return os;
+}
+
+std::ostream& DWARF_Filename::to_HTML(std::ostream& os) const
+{
+	os << "<tr>" << std::endl;
+	os << "<td>" << id << "</td>";
+	os << "<td>";
+	c_string_to_HTML(os, filename);
+	os << "</td>";
+	os << "<td>" <<directory_index.to_string(false) << "</td>";
+	os << "<td>" << last_modification_time.to_string(false) << "</td>";
+	os << "<td>" << byte_length.to_string(false) << "</td>";
+	os << "</tr>" << std::endl;
+	return os;
 }
 
 std::ostream& operator << (std::ostream& os, const DWARF_Filename& dw_filename)
@@ -453,6 +550,60 @@ bool DWARF_Abbrev::HasChildren() const
 	return dw_children == DW_CHILDREN_yes;
 }
 
+std::ostream& DWARF_Abbrev::to_XML(std::ostream& os) const
+{
+	os << "<DW_ABBREV offset=\"" << offset << "\" abbrev_code=\"" << abbrev_code.to_string(false) << "\" tag=\"";
+	c_string_to_XML(os, DWARF_GetTagName((uint16_t) dw_tag));
+	os << "\" children=\"";
+	c_string_to_XML(os, DWARF_GetCHILDRENName(dw_children));
+	os << "\">" << std::endl;
+	unsigned int num_attrs = dw_abbrev_attributes.size();
+	unsigned int i;
+	
+	for(i = 0; i < num_attrs; i++)
+	{
+		dw_abbrev_attributes[i]->to_XML(os) << std::endl;
+	}
+	
+	os << "</DW_ABBREV>";
+	return os;
+}
+
+std::ostream& DWARF_Abbrev::to_HTML(std::ostream& os) const
+{
+	os << "<tr>" << std::endl;
+	os << "<td>" << offset << "</td>" << std::endl;
+	os << "<td>" << abbrev_code.to_string(false) << "</td>" << std::endl;
+	os << "<td>";
+	c_string_to_XML(os, DWARF_GetTagName((uint16_t) dw_tag));
+	os << "</td>" << std::endl;
+	os << "<td>";
+	c_string_to_XML(os, DWARF_GetCHILDRENName(dw_children));
+	os << "</td>" << std::endl;
+	os << "<td>" << std::endl;
+	unsigned int num_attrs = dw_abbrev_attributes.size();
+	
+	if(num_attrs)
+	{
+		unsigned int i;
+		
+		os << "<table class=\"abbrev_attr\">" << std::endl;
+		os << "<tr>" << std::endl;
+		os << "<th>Name</th><th>Form</th>" << std::endl;
+		os << "</tr>" << std::endl;
+		for(i = 0; i < num_attrs; i++)
+		{
+			os << "<tr>" << std::endl;
+			dw_abbrev_attributes[i]->to_HTML(os);
+			os << "</tr>" << std::endl;
+		}
+		os << "</table>" << std::endl;
+	}
+	os << "</td>" << std::endl;
+	os << "</tr>" << std::endl;
+	return os;
+}
+
 std::ostream& operator << (std::ostream& os, const DWARF_Abbrev& dw_abbrev)
 {
 	os << "Abbreviation:" << std::endl
@@ -518,6 +669,26 @@ const char *DWARF_AbbrevAttribute::GetName() const
 const DWARF_LEB128& DWARF_AbbrevAttribute::GetTag() const
 {
 	return dw_at;
+}
+
+std::ostream& DWARF_AbbrevAttribute::to_XML(std::ostream& os) const
+{
+	os << "<DW_ABBREV_ATTR name=\"";
+	c_string_to_XML(os, DWARF_GetATName(dw_at));
+	os << "\" form=\"";
+	c_string_to_XML(os, DWARF_GetFORMName(dw_form));
+	os << "\"/>";
+	return os;
+}
+
+std::ostream& DWARF_AbbrevAttribute::to_HTML(std::ostream& os) const
+{
+	os << "<td>";
+	c_string_to_XML(os, DWARF_GetATName(dw_at));
+	os << "</td><td>";
+	c_string_to_XML(os, DWARF_GetFORMName(dw_form));
+	os << "</td>" << std::endl;
+	return os;
 }
 
 std::ostream& operator << (std::ostream& os, const DWARF_AbbrevAttribute& dw_abbrev_attribute)
@@ -968,6 +1139,22 @@ const char *DWARF_GetDSCName(uint8_t dw_dsc)
 	buf[sizeof(buf) - 1] = 0;
 	return (const char *) buf;
 }
+
+const char *DWARF_GetCHILDRENName(uint8_t dw_children)
+{
+	static char buf[9];
+	switch(dw_children)
+	{
+		case DW_CHILDREN_no: return "DW_CHILDREN_no";
+		case DW_CHILDREN_yes: return "DW_CHILDREN_yes";
+	}
+	std::stringstream sstr;
+	sstr << "0x" << std::hex << (unsigned int) dw_children << std::dec << " (?)";
+	strncpy(buf, sstr.str().c_str(), sizeof(buf));
+	buf[sizeof(buf) - 1] = 0;
+	return (const char *) buf;
+}
+
 
 template bool DWARF_LEB128::Fit<char>(const char *t = 0) const;
 template bool DWARF_LEB128::Fit<short>(const short *t = 0) const;
