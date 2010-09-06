@@ -1688,6 +1688,8 @@ std::ostream& DWARF_Attribute<MEMORY_ADDR>::to_HTML(std::ostream& os) const
 			break;
 	}
 	os << "</tr>" << std::endl;
+
+	return os;
 }
 
 template <class MEMORY_ADDR>
@@ -2825,6 +2827,8 @@ std::ostream& DWARF_CompilationUnit<MEMORY_ADDR>::to_HTML(std::ostream& os)
 	}
 	os << "</td>" << std::endl;
 	os << "</tr>" << std::endl;
+
+	return os;
 }
 
 template <class MEMORY_ADDR>
