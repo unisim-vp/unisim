@@ -118,6 +118,7 @@ private:
 	bool dump_headers;
 	SymbolTable<MEMORY_ADDR> symbol_table;
 	DWARF_Handler<MEMORY_ADDR> *dw_handler;
+	string dwarf_to_html_output_directory;
 	unisim::kernel::logger::Logger logger;
 	bool verbose;
 	endian_type endianness;
@@ -127,6 +128,7 @@ private:
 	Parameter<bool> param_force_use_virtual_address;
 	Parameter<bool> param_dump_headers;
 	Parameter<bool> param_verbose;
+	Parameter<string> param_dwarf_to_html_output_directory;
 
 	bool Load();
 	void SwapElfHeader(Elf_Ehdr *hdr);

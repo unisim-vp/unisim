@@ -535,6 +535,16 @@ typedef enum
 	FMT_DWARF64  // DWARF version 3 only
 } DWARF_Format;
 
+// HTML
+const unsigned int debug_abbrev_per_file = 512;
+const unsigned int debug_macinfo_per_file = 2048;
+const unsigned int debug_range_per_file = 2048;
+const unsigned int debug_line_per_file = 16;
+const unsigned int debug_arange_per_file = 2048;
+const unsigned int dies_per_file = 2048;
+const unsigned int cus_per_file = 8;
+const unsigned int cies_per_file = 2048;
+
 using unisim::util::endian::endian_type;
 using unisim::util::debug::Statement;
 
@@ -619,7 +629,7 @@ std::ostream& operator << (std::ostream& os, const DWARF_Filename& dw_filename);
 class DWARF_Filename
 {
 public:
-	DWARF_Filename();
+	DWARF_Filename(unsigned int id);
 	DWARF_Filename(const DWARF_Filename& dw_filename);
 	~DWARF_Filename();
 	const char *GetFilename() const;
@@ -629,9 +639,12 @@ public:
 	
 	DWARF_Filename& operator = (const DWARF_Filename& dw_filename);
 	int64_t Load(const uint8_t *rawdata, uint64_t max_size);
-	
+	void Fix(unsigned int id);
+	std::ostream& to_XML(std::ostream& os) const;
+	std::ostream& to_HTML(std::ostream& os) const;
 	friend std::ostream& operator << (std::ostream& os, const DWARF_Filename& dw_filename);
 private:
+	unsigned int id;
 	const char *filename;
 	DWARF_LEB128 directory_index;         // unsigned, directory index of the directory in which file was found
 	DWARF_LEB128 last_modification_time;  // unsigned, time of last modification for the file
@@ -648,6 +661,11 @@ public:
 	DWARF_StatementProgram(DWARF_Handler<MEMORY_ADDR> *dw_handler);
 	~DWARF_StatementProgram();
 	int64_t Load(const uint8_t *rawdata, uint64_t max_size, uint64_t offset);
+	void Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler, unsigned int id);
+	unsigned int GetId() const;
+	std::string GetHREF() const;
+	std::ostream& to_XML(std::ostream& os) const;
+	std::ostream& to_HTML(std::ostream& os) const;
 	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_StatementProgram<MEMORY_ADDR>& dw_stmt_prog);
 	uint64_t GetOffset() const;
 	endian_type GetEndianness() const;
@@ -657,6 +675,7 @@ private:
 	DWARF_Handler<MEMORY_ADDR> *dw_handler;
 	
 	uint64_t offset;
+	unsigned int id;
 	
 	uint64_t unit_length;                 // The size in bytes of the statement information for this compilation unit
 	                                      // (not including the unit_length field itself).
@@ -973,6 +992,7 @@ public:
 	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_Attribute& dw_attribute);
 	void Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler);
 	std::ostream& to_XML(std::ostream& os);
+	std::ostream& to_HTML(std::ostream& os) const;
 private:
 	const DWARF_DIE<MEMORY_ADDR> *dw_die;
 	DWARF_AbbrevAttribute *dw_abbrev_attribute;
@@ -1001,13 +1021,17 @@ public:
 	void Add(DWARF_DIE<MEMORY_ADDR> *child);
 	int64_t Load(const uint8_t *rawdata, uint64_t max_size, uint64_t offset);
 	bool IsNull() const;
-	void Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler);
+	void Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler, unsigned int id);
+	unsigned int GetId() const;
+	std::string GetHREF() const;
 	std::ostream& to_XML(std::ostream& os);
+	std::ostream& to_HTML(std::ostream& os) const;
 	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_DIE<MEMORY_ADDR>& dw_die);
 private:
 	DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu;
 	DWARF_DIE<MEMORY_ADDR> *dw_parent_die;
 	uint64_t offset;
+	unsigned int id;
 	const DWARF_Abbrev *abbrev;
 	std::vector<DWARF_DIE<MEMORY_ADDR> *> children;
 	std::vector<DWARF_Attribute<MEMORY_ADDR> *> attributes;
@@ -1035,13 +1059,18 @@ public:
 	uint64_t GetOffset() const;
 	int64_t Load(const uint8_t *rawdata, uint64_t max_size, uint64_t offset);
 	void Register(DWARF_DIE<MEMORY_ADDR> *dw_die);
+	void Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler, unsigned int id);
+	unsigned int GetId() const;
+	std::string GetHREF() const;
 	std::ostream& to_XML(std::ostream& os);
+	std::ostream& to_HTML(std::ostream& os);
 	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_CompilationUnit& dw_cu);
 private:
 	DWARF_Handler<MEMORY_ADDR> *dw_handler;
 	DWARF_Format dw_fmt;
 	
 	uint64_t offset;
+	unsigned int id;
 	
 	uint64_t unit_length;                 // The length of the .debug_info contribution for that compilation unit
 	                                      // (not including the unit_length field itself).
@@ -1066,6 +1095,8 @@ public:
 	DWARF_Abbrev(endian_type endianness);
 	~DWARF_Abbrev();
 	int64_t Load(const uint8_t *rawdata, uint64_t max_size, uint64_t offset);
+	std::ostream& to_XML(std::ostream& os) const;
+	std::ostream& to_HTML(std::ostream& os) const;
 	friend std::ostream& operator << (std::ostream& os, const DWARF_Abbrev& dw_abbrev);
 	bool IsNull() const;
 	const DWARF_LEB128& GetAbbrevCode() const;
@@ -1095,6 +1126,8 @@ public:
 	const char *GetName() const;
 	const DWARF_LEB128& GetTag() const;
 	const DWARF_LEB128& GetForm() const;
+	std::ostream& to_XML(std::ostream& os) const;
+	std::ostream& to_HTML(std::ostream& os) const;
 	friend std::ostream& operator << (std::ostream& os, const DWARF_AbbrevAttribute& dw_abbrev_attribute);
 private:
 	DWARF_LEB128 dw_at;
@@ -1209,11 +1242,17 @@ public:
 	~DWARF_CIE();
 	
 	int64_t Load(const uint8_t *rawdata, uint64_t max_size, uint64_t offset);
+	void Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler, unsigned int id);
+	unsigned int GetId() const;
+	std::string GetHREF() const;
+	std::ostream& to_XML(std::ostream& os) const;
+	std::ostream& to_HTML(std::ostream& os) const;
 	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_CIE<MEMORY_ADDR>& dw_cie);
 private:
 	DWARF_Handler<MEMORY_ADDR> *dw_handler;
 	DWARF_Format dw_fmt;
 	uint64_t offset;
+	unsigned int id;
 	
 	uint64_t length;          // length not including field 'length'
 	
@@ -1244,6 +1283,9 @@ public:
 	~DWARF_FDE();
 	
 	int64_t Load(const uint8_t *rawdata, uint64_t max_size, uint64_t offset);
+	void Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler);
+	std::ostream& to_XML(std::ostream& os) const;
+	std::ostream& to_HTML(std::ostream& os) const;
 	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_FDE<MEMORY_ADDR>& dw_fde);
 private:
 	DWARF_Handler<MEMORY_ADDR> *dw_handler;
@@ -1259,6 +1301,7 @@ private:
 	MEMORY_ADDR address_range;     // An addressing unit sized constant indicating the number of bytes of program instructions described by this entry.
 
 	DWARF_CallFrameProgram<MEMORY_ADDR> *dw_call_frame_prog;
+	const DWARF_CIE<MEMORY_ADDR> *dw_cie;
 };
 
 
@@ -1393,8 +1436,12 @@ public:
 	MEMORY_ADDR GetEnd() const;
 	int64_t Load(const uint8_t *rawdata, uint64_t max_size, uint64_t offset);
 	const DWARF_RangeListEntry<MEMORY_ADDR> *GetNext() const;
+	void Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler, unsigned int id);
 	uint64_t GetOffset() const;
+	std::string GetHREF() const;
+	unsigned int GetId() const;
 	std::ostream& to_XML(std::ostream& os) const;
+	std::ostream& to_HTML(std::ostream& os) const;
 	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_RangeListEntry<MEMORY_ADDR>& dw_range_list_entry);
 private:
 	friend class DWARF_Handler<MEMORY_ADDR>;
@@ -1402,6 +1449,7 @@ private:
 	const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu;
 	DWARF_RangeListEntry<MEMORY_ADDR> *next;
 	uint64_t offset; // offset within .debug_range section
+	unsigned int id;
 	MEMORY_ADDR begin;
 	MEMORY_ADDR end;
 };
@@ -1416,17 +1464,22 @@ public:
 	DWARF_MacInfoListEntry(uint8_t dw_mac_info_type);
 	virtual ~DWARF_MacInfoListEntry();
 	virtual int64_t Load(const uint8_t *rawdata, uint64_t max_size, uint64_t offset) = 0;
+	void Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler, unsigned int id);
 	uint8_t GetType() const;
 	uint64_t GetOffset() const;
+	std::string GetHREF() const;
+	unsigned int GetId() const;
 	const DWARF_MacInfoListEntry<MEMORY_ADDR> *GetNext() const;
 	virtual std::string to_string() const = 0;
 	virtual std::ostream& to_XML(std::ostream& os) const = 0;
+	virtual std::ostream& to_HTML(std::ostream& os) const = 0;
 	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_MacInfoListEntry<MEMORY_ADDR>& dw_macinfo_list_entry);
 protected:
 	friend class DWARF_Handler<MEMORY_ADDR>;
 	
 	DWARF_MacInfoListEntry<MEMORY_ADDR> *next;
 	uint64_t offset; // offset within .debug_macinfo section_name
+	unsigned int id;
 	uint8_t dw_mac_info_type;
 };
 
@@ -1441,6 +1494,7 @@ public:
 	const char *GetPreprocessorSymbolName() const;
 	virtual std::string to_string() const;
 	virtual std::ostream& to_XML(std::ostream& os) const;
+	virtual std::ostream& to_HTML(std::ostream& os) const;
 private:
 	DWARF_LEB128 lineno;
 	const char *preprocessor_symbol_name;
@@ -1457,6 +1511,7 @@ public:
 	const char *GetPreprocessorSymbolName() const;
 	virtual std::string to_string() const;
 	virtual std::ostream& to_XML(std::ostream& os) const;
+	virtual std::ostream& to_HTML(std::ostream& os) const;
 private:
 	DWARF_LEB128 lineno;
 	const char *preprocessor_symbol_name;
@@ -1473,6 +1528,7 @@ public:
 	const DWARF_LEB128& GetFileIndex() const;
 	virtual std::string to_string() const;
 	virtual std::ostream& to_XML(std::ostream& os) const;
+	virtual std::ostream& to_HTML(std::ostream& os) const;
 private:
 	DWARF_LEB128 lineno;
 	DWARF_LEB128 file_idx;
@@ -1487,6 +1543,7 @@ public:
 	virtual int64_t Load(const uint8_t *rawdata, uint64_t max_size, uint64_t offset);
 	virtual std::string to_string() const;
 	virtual std::ostream& to_XML(std::ostream& os) const;
+	virtual std::ostream& to_HTML(std::ostream& os) const;
 };
 
 template <class MEMORY_ADDR>
@@ -1500,6 +1557,7 @@ public:
 	const char *GetString() const;
 	virtual std::string to_string() const;
 	virtual std::ostream& to_XML(std::ostream& os) const;
+	virtual std::ostream& to_HTML(std::ostream& os) const;
 private:
 	DWARF_LEB128 vendor_ext_constant;
 	const char *vendor_ext_string;
@@ -1514,6 +1572,7 @@ public:
 	virtual int64_t Load(const uint8_t *rawdata, uint64_t max_size, uint64_t offset);
 	virtual std::string to_string() const;
 	virtual std::ostream& to_XML(std::ostream& os) const;
+	virtual std::ostream& to_HTML(std::ostream& os) const;
 };
 
 template <class MEMORY_ADDR>
@@ -1529,6 +1588,8 @@ public:
 	MEMORY_ADDR GetAddress() const;
 	MEMORY_ADDR GetLength() const;
 	bool IsNull() const;
+	std::ostream& to_XML(std::ostream& os) const;
+	std::ostream& to_HTML(std::ostream& os) const;
 	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_AddressRangeDescriptor<MEMORY_ADDR>& dw_addr_range_desc);
 private:
 	const DWARF_AddressRanges<MEMORY_ADDR> *dw_aranges;
@@ -1552,6 +1613,8 @@ public:
 	const DWARF_CompilationUnit<MEMORY_ADDR> *GetCompilationUnit() const;
 	void Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler);
 	int64_t Load(const uint8_t *rawdata, uint64_t max_size);
+	std::ostream& to_XML(std::ostream& os) const;
+	std::ostream& to_HTML(std::ostream& os) const;
 	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_AddressRanges<MEMORY_ADDR>& dw_aranges);
 private:
 	DWARF_Handler<MEMORY_ADDR> *dw_handler;
@@ -1587,6 +1650,8 @@ public:
 	const DWARF_DIE<MEMORY_ADDR> *GetDIE() const;
 	bool IsNull() const;
 	void Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler);
+	std::ostream& to_XML(std::ostream& os) const;
+	std::ostream& to_HTML(std::ostream& os) const;
 	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_Pub<MEMORY_ADDR>& dw_pub);
 private:
 	const DWARF_Pubs<MEMORY_ADDR> *dw_pubs;
@@ -1609,6 +1674,8 @@ public:
 	DWARF_Format GetFormat() const;
 	int64_t Load(const uint8_t *rawdata, uint64_t max_size);
 	void Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler);
+	std::ostream& to_XML(std::ostream& os) const;
+	std::ostream& to_HTML(std::ostream& os) const;
 	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_Pubs<MEMORY_ADDR>& dw_pubs);
 private:
 	DWARF_Handler<MEMORY_ADDR> *dw_handler;
@@ -1644,13 +1711,18 @@ public:
 	bool IsBaseAddressSelection() const;
 	bool IsEndOfList() const;
 	uint64_t GetOffset() const;
+	void Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler, unsigned int id);
+	std::string GetHREF() const;
+	unsigned int GetId() const;
 	const DWARF_LocListEntry<MEMORY_ADDR> *GetNext() const;
 	int64_t Load(const uint8_t *rawdata, uint64_t max_size, uint64_t offset);
 	std::ostream& to_XML(std::ostream& os) const;
+	std::ostream& to_HTML(std::ostream& os) const;
 	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_LocListEntry<MEMORY_ADDR>& dw_loc_list_entry);
 private:
 	friend class DWARF_Handler<MEMORY_ADDR>;
 	uint64_t offset;
+	unsigned int id;
 	const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu;
 	DWARF_LocListEntry<MEMORY_ADDR> *next;
 	MEMORY_ADDR begin_addr_offset;
@@ -1667,6 +1739,7 @@ public:
 	void Handle(const char *section_name, uint8_t *section, uint64_t section_size);
 	void Initialize();
 	void to_XML(std::ostream& os);
+	void to_HTML(const char *output_dir);
 	
 	void Register(DWARF_StatementProgram<MEMORY_ADDR> *dw_stmt_prog);
 	void Register(DWARF_DIE<MEMORY_ADDR> *dw_die);
@@ -1680,6 +1753,7 @@ public:
 	const DWARF_MacInfoListEntry<MEMORY_ADDR> *FindMacInfoListEntry(uint64_t debug_macinfo_offset);
 	const DWARF_CompilationUnit<MEMORY_ADDR> *FindCompilationUnit(uint64_t debug_info_offset) const;
 	const DWARF_LocListEntry<MEMORY_ADDR> *FindLocListEntry(const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu, uint64_t debug_loc_offset);
+	const DWARF_CIE<MEMORY_ADDR> *FindCIE(uint64_t debug_frame_offset) const;
 	
 	endian_type GetEndianness() const;
 	uint8_t GetAddressSize() const;
@@ -1688,6 +1762,7 @@ public:
 
 	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(MEMORY_ADDR addr) const;
 	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(const char *filename, unsigned int lineno, unsigned int colno) const;
+	
 private:
 	endian_type endianness;
 	uint8_t address_size;
@@ -1725,11 +1800,11 @@ private:
 	std::vector<DWARF_FDE<MEMORY_ADDR> *> dw_fdes;                             // from section .debug_frame
 	std::map<uint64_t, DWARF_RangeListEntry<MEMORY_ADDR> *> dw_range_list;     // range list entries in section .debug_ranges indexed by .debug_ranges section offset
 	std::map<uint64_t, DWARF_MacInfoListEntry<MEMORY_ADDR> *> dw_macinfo_list; // macinfo list entries in section .debug_macinfo indexed by .debug_macinfo section offset
-	std::vector<DWARF_AddressRanges<MEMORY_ADDR> *> dw_aranges;                // from section .debug_frame
+	std::vector<DWARF_AddressRanges<MEMORY_ADDR> *> dw_aranges;                // from section .debug_aranges
 	std::vector<DWARF_Pubs<MEMORY_ADDR> *> dw_pubnames;                        // from section .debug_pubnames
 	std::vector<DWARF_Pubs<MEMORY_ADDR> *> dw_pubtypes;                        // from section .debug_pubtypes
 	std::map<uint64_t, DWARF_LocListEntry<MEMORY_ADDR> * > dw_loc_list;        // location lists in section .debug_loc indexed by .debug_loc section offset
-	
+
 	void DumpStatementMatrix();
 	bool IsAbsolutePath(const char *filename) const;
 
@@ -1751,6 +1826,10 @@ const char *DWARF_GetCCName(uint8_t dw_cc);
 const char *DWARF_GetINLName(uint8_t dw_inl);
 const char *DWARF_GetORDName(uint8_t dw_ord);
 const char *DWARF_GetDSCName(uint8_t dw_dsc);
+const char *DWARF_GetCHILDRENName(uint8_t dw_children);
+
+std::ostream& c_string_to_XML(std::ostream& os, const char *s);
+std::ostream& c_string_to_HTML(std::ostream& os, const char *s);
 
 } // end of namespace elf_loader
 } // end of namespace loader

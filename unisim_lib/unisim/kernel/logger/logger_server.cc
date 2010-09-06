@@ -322,7 +322,7 @@ DebugWarning(const unisim::kernel::service::Object &obj, const char *buffer) {
 	{
 		if(opt_std_err_color)
 		{
-			std::cerr << "\033[33";
+			std::cerr << "\033[33m";
 			std::cerr << obj.GetName() << ": WARNING! " << buffer << endl;
 			std::cerr << "\033[0m";
 		}

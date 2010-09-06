@@ -43,46 +43,17 @@
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/util/debug/register.hh>
 
+// TODO: verify on each host platform what is needed for mkdir. Below is for linux.
+#include <sys/stat.h>
+#include <sys/types.h>
+
+
 namespace unisim {
 namespace service {
 namespace loader {
 namespace elf_loader {
 
 using unisim::util::arithmetic::SignExtend;
-
-inline std::ostream& c_string_to_XML(std::ostream& os, const char *s)
-{
-	char c = *s;
-
-	if(c)
-	{
-		do
-		{
-			switch(c)
-			{
-				case '<':
-					os << "&lt;";
-					break;
-				case '>':
-					os << "&gt;";
-					break;
-				case '&':
-					os << "&amp;";
-					break;
-				case '"':
-					os << "&quot;";
-					break;
-				case '\'':
-					os << "&apos;";
-					break;
-				default:
-					os << c;
-			}
-		}
-		while((c = *(++s)));
-	}
-	return os;
-}
 
 template <class MEMORY_ADDR>
 DWARF_StatementProgram<MEMORY_ADDR>::DWARF_StatementProgram(DWARF_Handler<MEMORY_ADDR> *_dw_handler)
@@ -256,12 +227,13 @@ int64_t DWARF_StatementProgram<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64
 		include_directories.push_back(directory_name);
 	} while(1);
 
+	unsigned int filename_idx = 0;
 	do
 	{
 		if(!max_size) return -1;
 		if(!(*rawdata)) break;
 		
-		DWARF_Filename filename;
+		DWARF_Filename filename(filename_idx);
 			
 		int64_t sz;
 		if((sz = filename.Load(rawdata, max_size)) < 0) return -1;
@@ -270,6 +242,7 @@ int64_t DWARF_StatementProgram<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64
 		max_size -= sz;
 		
 		filenames.push_back(filename);
+		filename_idx++;
 	} while(1);
 
 	if(dw_fmt == FMT_DWARF64)
@@ -294,6 +267,122 @@ int64_t DWARF_StatementProgram<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64
 	size += program_length;
 
 	return size;
+}
+
+template <class MEMORY_ADDR>
+void DWARF_StatementProgram<MEMORY_ADDR>::Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler, unsigned int _id)
+{
+	id = _id;
+}
+
+template <class MEMORY_ADDR>
+std::string DWARF_StatementProgram<MEMORY_ADDR>::GetHREF() const
+{
+	std::stringstream sstr;
+	sstr << "debug_line/" << (id / debug_line_per_file) << ".html#stmt-prog-" << id;
+	return sstr.str();
+}
+
+template <class MEMORY_ADDR>
+unsigned int DWARF_StatementProgram<MEMORY_ADDR>::GetId() const
+{
+	return id;
+}
+
+template <class MEMORY_ADDR>
+std::ostream& DWARF_StatementProgram<MEMORY_ADDR>::to_XML(std::ostream& os) const
+{
+	unsigned int i;
+	
+	os << "<DW_STMT_PROG unit_length=\"" << unit_length << "\" version=\"" << version << "\" header_length=\"" << header_length << "\"";
+	os << " minimum_instruction_length=\"" << (uint32_t) minimum_instruction_length << "\" default_is_stmt=\"" << (uint32_t) default_is_stmt << "\"";
+	os << " line_base=\"" << (int32_t) line_base << "\" line_range=\"" << (uint32_t) line_range << "\" opcode_base=\"" << (uint32_t) opcode_base << "\"";
+	os << " standard_opcode_lengths=\"";
+	unsigned int num_standard_opcode_lengths = standard_opcode_lengths.size();
+	for(i = 0; i < num_standard_opcode_lengths; i++)
+	{
+		if(i != 0) os << " ";
+		os << (uint32_t) standard_opcode_lengths[i];
+	}
+	os << "\">" << std::endl;
+	os << "<DW_INCLUDE_DIRECTORIES>" << std::endl;
+	unsigned int num_include_directories = include_directories.size();
+	for(i = 0; i < num_include_directories; i++)
+	{
+		os << "<DW_INLCUDE_DIRECTORY name=\"";
+		c_string_to_XML(os, include_directories[i]);
+		os << "\"/>" << std::endl;
+	}
+	os << "</DW_INCLUDE_DIRECTORIES>" << std::endl;
+	os << "<DW_FILENAMES>" << std::endl;
+	unsigned int num_filenames = filenames.size();
+	for(i = 0; i < num_filenames; i++)
+	{
+		filenames[i].to_XML(os) << std::endl;
+	}
+	os << "</FILENAMES>" << std::endl;
+	os << "<DW_STMT_PROG_OPCODES>" << std::endl;
+	std::stringstream sstr;
+	DWARF_StatementVM<MEMORY_ADDR> dw_stmt_vm = DWARF_StatementVM<MEMORY_ADDR>();
+	dw_stmt_vm.Run(this, &sstr, 0);
+	c_string_to_XML(os, sstr.str().c_str());
+	os << "</DW_STMT_PROG_OPCODES>" << std::endl;
+	os << "</DW_STMT_PROG>";
+	return os;
+}
+
+template <class MEMORY_ADDR>
+std::ostream& DWARF_StatementProgram<MEMORY_ADDR>::to_HTML(std::ostream& os) const
+{
+	unsigned int i;
+
+	os << "<tr id=\"stmt-prog-" << id << "\"><td>" << std::endl;
+	os << "<ul>" << std::endl;
+	os << "<li>Id: " << id << "</li>" << std::endl;
+	os << "<li>Offset: " << offset << "</li>" << std::endl;
+	os << "<li>Version: " << version << "</li>" << std::endl;
+	os << "<li>Minimum Instruction Length: " << (uint32_t) minimum_instruction_length << "</li>" << std::endl;
+	os << "<li>Initial value of 'is_stmt': " << (uint32_t) default_is_stmt << "</li>" << std::endl;
+	os << "<li>Line Base: " << (int32_t) line_base << "</li>" << std::endl;
+	os << "<li>Line Range: " << (uint32_t) line_range << "</li>" << std::endl;
+	os << "<li>Opcode Base: " << (uint32_t) opcode_base << "</li>" << std::endl;
+	os << "<li>Opcodes:" << std::endl;
+	os << "<ul>" << std::endl;
+	unsigned int num_standard_opcode_lengths = standard_opcode_lengths.size();
+	for(i = 0; i < num_standard_opcode_lengths; i++)
+	{
+		os << "<li>Opcode " << (i + 1) << " has " << (uint32_t) standard_opcode_lengths[i] << " args" << "</li>" << std::endl;
+	}
+	os << "</ul>" << std::endl;
+	os << "</ul>" << std::endl;
+	
+	os << "Directory Table:<br><table><tr><th>Id</th><th>Directory name</th></tr>" << std::endl;
+	unsigned int num_include_directories = include_directories.size();
+	for(i = 0; i < num_include_directories; i++)
+	{
+		os << "<tr><td>" << i << "</td><td>";
+		c_string_to_XML(os, include_directories[i]);
+		os << "</td></tr>" << std::endl;
+	}
+	os << "</table>" << std::endl;
+	os << "<br>" << std::endl;
+	os << "Filenames Table:<br><table><tr><th>Id</th><th>Filename</th><th>Directory index</th><th>Last modification time</th><th>Byte size</th></tr>" << std::endl;
+	unsigned int num_filenames = filenames.size();
+	for(i = 0; i < num_filenames; i++)
+	{
+		filenames[i].to_HTML(os) << std::endl;
+	}
+	os << "</table>" << std::endl;
+	os << "<br>" << std::endl;
+	os << "Program (" << program_length << " bytes):<br>" << std::endl;
+	
+	std::stringstream sstr;
+	DWARF_StatementVM<MEMORY_ADDR> dw_stmt_vm = DWARF_StatementVM<MEMORY_ADDR>();
+	dw_stmt_vm.Run(this, &sstr, 0);
+	c_string_to_HTML(os, sstr.str().c_str());
+	os << "</td>" << std::endl;
+	os << "</tr>" << std::endl;
+	return os;
 }
 
 template <class MEMORY_ADDR>
@@ -641,7 +730,8 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 						break;
 					case DW_LNE_define_file:
 						{
-							DWARF_Filename dw_filename;
+							unsigned int filename_idx = filenames.size();
+							DWARF_Filename dw_filename(filename_idx);
 							int64_t sz;
 							if((sz = dw_filename.Load(prg, count)) < 0)
 							{
@@ -1183,7 +1273,6 @@ void DWARF_RangeListPtr<MEMORY_ADDR>::Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler
 	}
 }
 
-
 template <class MEMORY_ADDR>
 DWARF_Expression<MEMORY_ADDR>::DWARF_Expression(const DWARF_CompilationUnit<MEMORY_ADDR> *_dw_cu, uint64_t _length, const uint8_t *_value)
 	: DWARF_AttributeValue<MEMORY_ADDR>(DW_CLASS_EXPRESSION)
@@ -1498,6 +1587,107 @@ std::ostream& DWARF_Attribute<MEMORY_ADDR>::to_XML(std::ostream& os)
 	}
 	os << "\"/>";
 	return os;
+}
+
+template <class MEMORY_ADDR>
+std::ostream& DWARF_Attribute<MEMORY_ADDR>::to_HTML(std::ostream& os) const
+{
+	os << "<tr>" << std::endl;
+	os << "<td>" << std::endl;
+	c_string_to_XML(os, dw_abbrev_attribute->GetName());
+	os << "</td>" << std::endl;
+	os << "<td>" << std::endl;
+	c_string_to_XML(os, dw_value->GetClassName());
+	os << "</td>" << std::endl;
+	os << "<td>" << std::endl;
+	unsigned int dw_class = dw_value->GetClass();
+	switch(dw_class)
+	{
+		case DW_CLASS_REFERENCE:
+			{
+				DWARF_Reference<MEMORY_ADDR> *dw_ref = (DWARF_Reference<MEMORY_ADDR> *) dw_value;
+				const DWARF_DIE<MEMORY_ADDR> *dw_ref_die = dw_ref->GetValue();
+				os << "<a href=\"../../" << dw_ref_die->GetHREF() << "\">die-" << dw_ref_die->GetId() << "</a>" << std::endl;
+			}
+			break;
+		case DW_CLASS_MACPTR:
+			{
+				DWARF_MacPtr<MEMORY_ADDR> *dw_macptr = (DWARF_MacPtr<MEMORY_ADDR> *) dw_value;
+				const DWARF_MacInfoListEntry<MEMORY_ADDR> *dw_macinfo_list_entry = dw_macptr->GetValue();
+				os << "<a href=\"../../" << dw_macinfo_list_entry->GetHREF() << "\">mac-" << dw_macinfo_list_entry->GetId() << "</a>" << std::endl;
+			}
+			break;
+		case DW_CLASS_LOCLISTPTR:
+			{
+				DWARF_LocListPtr<MEMORY_ADDR> *dw_loclistptr = (DWARF_LocListPtr<MEMORY_ADDR> *) dw_value;
+				const DWARF_LocListEntry<MEMORY_ADDR> *dw_loc_list_entry = dw_loclistptr->GetValue();
+				os << "<a href=\"../../" << dw_loc_list_entry->GetHREF() << "\">loc-" << dw_loc_list_entry->GetId() << "</a>" << std::endl;
+			}
+			break;
+		case DW_CLASS_LINEPTR:
+			{
+				DWARF_LinePtr<MEMORY_ADDR> *dw_lineptr = (DWARF_LinePtr<MEMORY_ADDR> *) dw_value;
+				const DWARF_StatementProgram<MEMORY_ADDR> *dw_stmt_prog = dw_lineptr->GetValue();
+				os << "<a href=\"../../" << dw_stmt_prog->GetHREF() << "\">stmt-prog-" << dw_stmt_prog->GetId() << "</a>" << std::endl;
+			}
+			break;
+		case DW_CLASS_UNSIGNED_CONSTANT:
+		case DW_CLASS_SIGNED_CONSTANT:
+		case DW_CLASS_UNSIGNED_LEB128_CONSTANT:
+		case DW_CLASS_SIGNED_LEB128_CONSTANT:
+			{
+				uint64_t int_value = dw_value->to_int();
+				uint16_t dw_at = (uint16_t) dw_abbrev_attribute->GetTag();
+				
+				switch(dw_at)
+				{
+					case DW_AT_encoding:
+						c_string_to_XML(os, DWARF_GetATEName(int_value));
+						break;
+					case DW_AT_language:
+						c_string_to_XML(os, DWARF_GetLANGName(int_value));
+						break;
+					case DW_AT_virtuality:
+						c_string_to_XML(os, DWARF_GetVIRTUALITYName(int_value));
+						break;
+					case DW_AT_visibility:
+						c_string_to_XML(os, DWARF_GetVISName(int_value));
+						break;
+					case DW_AT_accessibility:
+						c_string_to_XML(os, DWARF_GetACCESSName(int_value));
+						break;
+					case DW_AT_endianity:
+						c_string_to_XML(os, DWARF_GetENDName(int_value));
+						break;
+					case DW_AT_decimal_sign:
+						c_string_to_XML(os, DWARF_GetDSName(int_value));
+						break;
+					case DW_AT_identifier_case:
+						c_string_to_XML(os, DWARF_GetIDName(int_value));
+						break;
+					case DW_AT_calling_convention:
+						c_string_to_XML(os, DWARF_GetCCName(int_value));
+						break;
+					case DW_AT_inline:
+						c_string_to_XML(os, DWARF_GetINLName(int_value));
+						break;
+					case DW_AT_ordering:
+						c_string_to_XML(os, DWARF_GetORDName(int_value));
+						break;
+					case DW_AT_discr_list:
+						c_string_to_XML(os, DWARF_GetDSCName(int_value));
+						break;
+					default:
+						c_string_to_XML(os, dw_value->to_string().c_str());
+						break;
+				}
+			}
+			break;
+		default:
+			c_string_to_XML(os, dw_value->to_string().c_str());
+			break;
+	}
+	os << "</tr>" << std::endl;
 }
 
 template <class MEMORY_ADDR>
@@ -2290,8 +2480,9 @@ bool DWARF_DIE<MEMORY_ADDR>::IsNull() const
 }
 
 template <class MEMORY_ADDR>
-void DWARF_DIE<MEMORY_ADDR>::Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler)
+void DWARF_DIE<MEMORY_ADDR>::Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler, unsigned int _id)
 {
+	id = _id;
 	unsigned int num_attributes = attributes.size();
 	unsigned int i;
 
@@ -2299,6 +2490,20 @@ void DWARF_DIE<MEMORY_ADDR>::Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler)
 	{
 		attributes[i]->Fix(dw_handler);
 	}
+}
+
+template <class MEMORY_ADDR>
+std::string DWARF_DIE<MEMORY_ADDR>::GetHREF() const
+{
+	std::stringstream sstr;
+	sstr << "debug_info/dies/" << (id / dies_per_file) << ".html#die-" << id;
+	return sstr.str();
+}
+
+template <class MEMORY_ADDR>
+unsigned int DWARF_DIE<MEMORY_ADDR>::GetId() const
+{
+	return id;
 }
 
 template <class MEMORY_ADDR>
@@ -2320,6 +2525,45 @@ std::ostream& DWARF_DIE<MEMORY_ADDR>::to_XML(std::ostream& os)
 	os << "</DW_DIE>" << std::endl;
 	return os;
 }
+
+template <class MEMORY_ADDR>
+std::ostream& DWARF_DIE<MEMORY_ADDR>::to_HTML(std::ostream& os) const
+{
+	unsigned int i;
+
+	os << "<tr id=\"die-" << id << "\">" << std::endl;
+	os << "<td>" << id << "</td><td>" << offset << "</td><td><a href=\"../../" << dw_cu->GetHREF() << "\">cu-" << dw_cu->GetId() << "</a></td><td>";
+	if(dw_parent_die)
+	{
+		os << "<a href=\"../../" << dw_parent_die->GetHREF() << "\">die-" << dw_parent_die->GetId() << "</a>";
+	}
+	else
+	{
+		os << "-";
+	}
+	os << std::endl;
+	os << "<td>" << std::endl;
+	unsigned int num_children = children.size();
+	for(i = 0; i < num_children; i++)
+	{
+		if(i != 0) os << "<br>";
+		os << "<a href=\"../../" << children[i]->GetHREF() << "\">die-" << children[i]->GetId() << "</a>" << std::endl;
+	}
+	os << "</td>" << std::endl;
+	os << "<td>" << std::endl;
+	os << "<table>" << std::endl;
+	os << "<tr><th>Name</th><th>Class</th><th>Value</th></tr>" << std::endl;
+	unsigned int num_attributes = attributes.size();
+	for(i = 0; i < num_attributes; i++)
+	{
+		attributes[i]->to_HTML(os) << std::endl;
+	}
+	os << "</table>" << std::endl;
+	os << "</td>" << std::endl;
+	os << "</tr>" << std::endl;
+	return os;
+}
+
 
 template <class MEMORY_ADDR>
 std::ostream& operator << (std::ostream& os, const DWARF_DIE<MEMORY_ADDR>& dw_die)
@@ -2529,6 +2773,26 @@ void DWARF_CompilationUnit<MEMORY_ADDR>::Register(DWARF_DIE<MEMORY_ADDR> *dw_die
 }
 
 template <class MEMORY_ADDR>
+void DWARF_CompilationUnit<MEMORY_ADDR>::Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler, unsigned int _id)
+{
+	id = _id;
+}
+
+template <class MEMORY_ADDR>
+std::string DWARF_CompilationUnit<MEMORY_ADDR>::GetHREF() const
+{
+	std::stringstream sstr;
+	sstr << "debug_info/cus/" << (id / cus_per_file) << ".html#cu-" << id;
+	return sstr.str();
+}
+
+template <class MEMORY_ADDR>
+unsigned int DWARF_CompilationUnit<MEMORY_ADDR>::GetId() const
+{
+	return id;
+}
+
+template <class MEMORY_ADDR>
 std::ostream& DWARF_CompilationUnit<MEMORY_ADDR>::to_XML(std::ostream& os)
 {
 	os << "<DW_CU offset=\"" << offset
@@ -2545,6 +2809,22 @@ std::ostream& DWARF_CompilationUnit<MEMORY_ADDR>::to_XML(std::ostream& os)
 	}
 	os << "</DW_CU>" << std::endl;
 	return os;
+}
+
+template <class MEMORY_ADDR>
+std::ostream& DWARF_CompilationUnit<MEMORY_ADDR>::to_HTML(std::ostream& os)
+{
+	os << "<tr id=\"cu-" << id << "\">" << std::endl;
+	os << "<td>" << id << "</td><td>" << offset << "</td><td>" << (uint32_t) version << "</td><td>" << (uint32_t) address_size << "</td>" << std::endl;
+	os << "<td>";
+	unsigned int num_debug_info_entries = debug_info_entries.size();
+	unsigned int i;
+	for(i = 0; i < num_debug_info_entries; i++)
+	{
+		os << "<a href=\"../../" << debug_info_entries[i]->GetHREF() << "\">die #" << debug_info_entries[i]->GetId() << "</a>&nbsp;";
+	}
+	os << "</td>" << std::endl;
+	os << "</tr>" << std::endl;
 }
 
 template <class MEMORY_ADDR>
@@ -3513,6 +3793,71 @@ int64_t DWARF_CIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 }
 
 template <class MEMORY_ADDR>
+void DWARF_CIE<MEMORY_ADDR>::Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler, unsigned int _id)
+{
+	id = _id;
+}
+
+template <class MEMORY_ADDR>
+std::string DWARF_CIE<MEMORY_ADDR>::GetHREF() const
+{
+	std::stringstream sstr;
+	sstr << "debug_frame/cies/" << (id / cies_per_file) << ".html#cie-" << id;
+	return sstr.str();
+}
+
+template <class MEMORY_ADDR>
+unsigned int DWARF_CIE<MEMORY_ADDR>::GetId() const
+{
+	return id;
+}
+
+template <class MEMORY_ADDR>
+std::ostream& DWARF_CIE<MEMORY_ADDR>::to_XML(std::ostream& os) const
+{
+	os << "<DW_CIE offset=\"" << offset << "\" version=\"" << (uint32_t) version << "\" augmentation=\"";
+	c_string_to_XML(os, augmentation);
+	os << "\" code_alignment_factor=\"" << code_alignment_factor.to_string(false) << "\" data_alignment_factor=\"" << data_alignment_factor.to_string(true) << "\" return_address_register=\"";
+	if(version == 1)
+	{
+		os << (uint32_t) dw2_return_address_register;
+	}
+	else
+	{
+		os << dw3_return_address_register.to_string(false);
+	}
+	os << "\" initial_call_frame_program=\"";
+	std::stringstream sstr;
+	sstr << *dw_initial_call_frame_prog;
+	c_string_to_XML(os, sstr.str().c_str());
+	os << "\"/>";
+	return os;
+}
+
+template <class MEMORY_ADDR>
+std::ostream& DWARF_CIE<MEMORY_ADDR>::to_HTML(std::ostream& os) const
+{
+	os << "<tr id=\"cie-" << id << "\">" << std::endl;
+	os << "<td>" << id << "</td><td>" << offset << "</td><td>" << (uint32_t) version << "</td><td>";
+	c_string_to_XML(os, augmentation);
+	os << "</td><td>" << code_alignment_factor.to_string(false) << "</td><td>" << data_alignment_factor.to_string(true) << "</td><td>";
+	if(version == 1)
+	{
+		os << (uint32_t) dw2_return_address_register;
+	}
+	else
+	{
+		os << dw3_return_address_register.to_string(false);
+	}
+	os << "</td><td>";
+	std::stringstream sstr;
+	sstr << *dw_initial_call_frame_prog;
+	c_string_to_XML(os, sstr.str().c_str());
+	os << "</td></tr>" << std::endl;
+	return os;
+}
+
+template <class MEMORY_ADDR>
 std::ostream& operator << (std::ostream& os, const DWARF_CIE<MEMORY_ADDR>& dw_cie)
 {
 	os << "Common Information Entry:" << std::endl;
@@ -3705,6 +4050,54 @@ int64_t DWARF_FDE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 	size += instructions_length;
 
 	return size;
+}
+
+template <class MEMORY_ADDR>
+void DWARF_FDE<MEMORY_ADDR>::Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler)
+{
+	dw_cie = dw_handler->FindCIE(cie_pointer);
+	if(!dw_cie)
+	{
+		std::cerr << "Can't find CIE at offset " << cie_pointer << std::endl;
+	}
+}
+
+// template <class MEMORY_ADDR>
+// std::string DWARF_FDE<MEMORY_ADDR>::GetHREF() const
+// {
+// 	std::stringstream sstr;
+// 	sstr << "debug_frame/fdes/" << (id / cies_per_file) << ".html#fde-" << id;
+// 	return sstr.str();
+// }
+// 
+// template <class MEMORY_ADDR>
+// unsigned int DWARF_FDE<MEMORY_ADDR>::GetId() const
+// {
+// 	return id;
+// }
+
+template <class MEMORY_ADDR>
+std::ostream& DWARF_FDE<MEMORY_ADDR>::to_XML(std::ostream& os) const
+{
+	os << "<DW_FDE offset=\"" << offset << "\" length=\"" << length << "\" cie_pointer=\"" << cie_pointer << "\" initial_location=\"0x" << std::hex << initial_location << std::dec << "\" address_range=\"0x" << std::hex << address_range << std::dec << "\" call_frame_program=\"";
+	std::stringstream sstr;
+	sstr << *dw_call_frame_prog;
+	c_string_to_XML(os, sstr.str().c_str());
+	os << "\"/>";
+	return os;
+}
+
+template <class MEMORY_ADDR>
+std::ostream& DWARF_FDE<MEMORY_ADDR>::to_HTML(std::ostream& os) const
+{
+	os << "<tr>" << std::endl;
+	os << "<td>" << offset << "</td><td><a href=\"../../" << dw_cie->GetHREF() << "\">cie-" << dw_cie->GetId() << "</a></td>";
+	os << "<td>" << initial_location << "</td><td>" << address_range << "</td><td>";
+	std::stringstream sstr;
+	sstr << *dw_call_frame_prog;
+	c_string_to_XML(os, sstr.str().c_str());
+	os << "</td></tr>" << std::endl;
+	return os;
 }
 
 template <class MEMORY_ADDR>
@@ -4175,6 +4568,26 @@ uint64_t DWARF_RangeListEntry<MEMORY_ADDR>::GetOffset() const
 }
 
 template <class MEMORY_ADDR>
+void DWARF_RangeListEntry<MEMORY_ADDR>::Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler, unsigned int _id)
+{
+	id = _id;
+}
+
+template <class MEMORY_ADDR>
+std::string DWARF_RangeListEntry<MEMORY_ADDR>::GetHREF() const
+{
+	std::stringstream sstr;
+	sstr << "debug_ranges/" << (id / debug_range_per_file) << ".html#range-" << id;
+	return sstr.str();
+}
+
+template <class MEMORY_ADDR>
+unsigned int DWARF_RangeListEntry<MEMORY_ADDR>::GetId() const
+{
+	return id;
+}
+
+template <class MEMORY_ADDR>
 int64_t DWARF_RangeListEntry<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, uint64_t _offset)
 {
 	offset = _offset;
@@ -4268,6 +4681,53 @@ std::ostream& DWARF_RangeListEntry<MEMORY_ADDR>::to_XML(std::ostream& os) const
 }
 
 template <class MEMORY_ADDR>
+std::ostream& DWARF_RangeListEntry<MEMORY_ADDR>::to_HTML(std::ostream& os) const
+{
+	os << "<tr id=\"range-" << id << "\">" << std::endl;
+	if(IsEndOfList())
+	{
+		os << "<td>End-of-List</td>";
+	}
+	else if(IsBaseAddressSelection())
+	{
+		os << "<td>Base address selection</td>";
+	}
+	else
+	{
+		os << "<td>Address Range</td>";
+	}
+	os << "<td>" << id << "</td>" << std::endl;
+	os << "<td>" << offset << "</td>" << std::endl;
+	os << "<td>";
+	const DWARF_RangeListEntry<MEMORY_ADDR> *next = DWARF_RangeListEntry<MEMORY_ADDR>::GetNext();
+	if(next)
+	{
+		os << "<a href=\"../" << next->GetHREF() << "\">range #" << next->GetId() << "</a>" << std::endl;
+	}
+	else
+	{
+		os << "-";
+	}
+	os << "</td>";
+	if(IsEndOfList())
+	{
+		os << "<td>-</td>";
+	}
+	else if(IsBaseAddressSelection())
+	{
+		os << "<td><table><tr><th>Largest address offset</th><th>Address</th></tr>";
+		os << "<tr><td>0x" << std::hex << begin << std::dec << "</td><td>0x" << std::hex << end << std::dec << "</td></tr></table></td>";
+	}
+	else
+	{
+		os << "<td><table><tr><th>Beginning address offset</th><th>End Address offset</th></tr>";
+		os << "<tr><td>0x" << std::hex << begin << std::dec << "</td><td>0x" << std::hex << end << std::dec << "</td></tr></table></td>";
+	}
+	os << "</tr>" << std::endl;
+	return os;
+}
+
+template <class MEMORY_ADDR>
 std::ostream& operator << (std::ostream& os, const DWARF_RangeListEntry<MEMORY_ADDR>& dw_range_list_entry)
 {
 	if(dw_range_list_entry.IsEndOfList()) return os << "EOL";
@@ -4289,6 +4749,12 @@ DWARF_MacInfoListEntry<MEMORY_ADDR>::~DWARF_MacInfoListEntry()
 }
 
 template <class MEMORY_ADDR>
+void DWARF_MacInfoListEntry<MEMORY_ADDR>::Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler, unsigned int _id)
+{
+	id = _id;
+}
+
+template <class MEMORY_ADDR>
 uint8_t DWARF_MacInfoListEntry<MEMORY_ADDR>::GetType() const
 {
 	return dw_mac_info_type;
@@ -4298,6 +4764,20 @@ template <class MEMORY_ADDR>
 uint64_t DWARF_MacInfoListEntry<MEMORY_ADDR>::GetOffset() const
 {
 	return offset;
+}
+
+template <class MEMORY_ADDR>
+std::string DWARF_MacInfoListEntry<MEMORY_ADDR>::GetHREF() const
+{
+	std::stringstream sstr;
+	sstr << "debug_macinfo/" << (id / debug_macinfo_per_file) << ".html#mac-" << id;
+	return sstr.str();
+}
+
+template <class MEMORY_ADDR>
+unsigned int DWARF_MacInfoListEntry<MEMORY_ADDR>::GetId() const
+{
+	return id;
 }
 
 template <class MEMORY_ADDR>
@@ -4386,6 +4866,41 @@ std::ostream& DWARF_MacInfoListEntryDefine<MEMORY_ADDR>::to_XML(std::ostream& os
 }
 
 template <class MEMORY_ADDR>
+std::ostream& DWARF_MacInfoListEntryDefine<MEMORY_ADDR>::to_HTML(std::ostream& os) const
+{
+	os << "<tr id=\"mac-" << DWARF_MacInfoListEntry<MEMORY_ADDR>::GetId() << "\">" << std::endl;
+	os << "<td>DW_MACINFO_define</td>" << std::endl;
+	os << "<td>" << DWARF_MacInfoListEntry<MEMORY_ADDR>::GetId() << "</td>" << std::endl;
+	os << "<td>" << DWARF_MacInfoListEntry<MEMORY_ADDR>::GetOffset() << "</td>" << std::endl;
+	os << "<td>";
+	const DWARF_MacInfoListEntry<MEMORY_ADDR> *next = DWARF_MacInfoListEntry<MEMORY_ADDR>::GetNext();
+	if(next)
+	{
+		os << "<a href=\"../" << next->GetHREF() << "\">mac-" << next->GetId() << "</a>" << std::endl;
+	}
+	else
+	{
+		os << "-";
+	}
+	os << "</td>" << std::endl;
+	
+	os << "<td>" << std::endl;
+	os << "<table class=\"macinfo\">" << std::endl;
+	os << "<tr>" << std::endl;
+	os << "<th>Line number</th><th>Preprocessor symbol name</th>" << std::endl;
+	os << "</tr>" << std::endl;
+	os << "<tr>" << std::endl;
+	os << "<td>" << lineno.to_string(false) << "</td><td>&quot;";
+	c_string_to_XML(os, preprocessor_symbol_name);
+	os << "&quot;</td>" << std::endl;
+	os << "</tr>" << std::endl;
+	os << "</table>" << std::endl;
+	os << "</td>" << std::endl;
+	os << "</tr>" << std::endl;
+	return os;
+}
+
+template <class MEMORY_ADDR>
 DWARF_MacInfoListEntryUndef<MEMORY_ADDR>::DWARF_MacInfoListEntryUndef()
 	: DWARF_MacInfoListEntry<MEMORY_ADDR>(DW_MACINFO_undef)
 	, lineno()
@@ -4459,6 +4974,40 @@ std::ostream& DWARF_MacInfoListEntryUndef<MEMORY_ADDR>::to_XML(std::ostream& os)
 }
 
 template <class MEMORY_ADDR>
+std::ostream& DWARF_MacInfoListEntryUndef<MEMORY_ADDR>::to_HTML(std::ostream& os) const
+{
+	os << "<tr id=\"mac-" << DWARF_MacInfoListEntry<MEMORY_ADDR>::GetId() << "\">" << std::endl;
+	os << "<td>DW_MACINFO_Undef</td>" << std::endl;
+	os << "<td>" << DWARF_MacInfoListEntry<MEMORY_ADDR>::GetId() << "</td>" << std::endl;
+	os << "<td>" << DWARF_MacInfoListEntry<MEMORY_ADDR>::GetOffset() << "</td>" << std::endl;
+	os << "<td>";
+	const DWARF_MacInfoListEntry<MEMORY_ADDR> *next = DWARF_MacInfoListEntry<MEMORY_ADDR>::GetNext();
+	if(next)
+	{
+		os << "<a href=\"../" << next->GetHREF() << "\">mac-" << next->GetId() << "</a>" << std::endl;
+	}
+	else
+	{
+		os << "-";
+	}
+	os << "</td>" << std::endl;
+	os << "<td>" << std::endl;
+	os << "<table class=\"macinfo\">" << std::endl;
+	os << "<tr>" << std::endl;
+	os << "<th>LineNo</th><th>Preprocessor symbol name</th>" << std::endl;
+	os << "</tr>" << std::endl;
+	os << "<tr>" << std::endl;
+	os << "<td>" << lineno.to_string(false) << "</td><td>&quot;";
+	c_string_to_XML(os, preprocessor_symbol_name);
+	os << "&quot;</td>" << std::endl;
+	os << "</tr>" << std::endl;
+	os << "</table>" << std::endl;
+	os << "</td>" << std::endl;
+	os << "</tr>" << std::endl;
+	return os;
+}
+
+template <class MEMORY_ADDR>
 DWARF_MacInfoListEntryStartFile<MEMORY_ADDR>::DWARF_MacInfoListEntryStartFile()
 	: DWARF_MacInfoListEntry<MEMORY_ADDR>(DW_MACINFO_start_file)
 	, lineno()
@@ -4528,6 +5077,38 @@ std::ostream& DWARF_MacInfoListEntryStartFile<MEMORY_ADDR>::to_XML(std::ostream&
 }
 
 template <class MEMORY_ADDR>
+std::ostream& DWARF_MacInfoListEntryStartFile<MEMORY_ADDR>::to_HTML(std::ostream& os) const
+{
+	os << "<tr id=\"mac-" << DWARF_MacInfoListEntry<MEMORY_ADDR>::GetId() << "\">" << std::endl;
+	os << "<td>DW_MACINFO_start_file</td>" << std::endl;
+	os << "<td>" << DWARF_MacInfoListEntry<MEMORY_ADDR>::GetId() << "</td>" << std::endl;
+	os << "<td>" << DWARF_MacInfoListEntry<MEMORY_ADDR>::GetOffset() << "</td>" << std::endl;
+	os << "<td>";
+	const DWARF_MacInfoListEntry<MEMORY_ADDR> *next = DWARF_MacInfoListEntry<MEMORY_ADDR>::GetNext();
+	if(next)
+	{
+		os << "<a href=\"../" << next->GetHREF() << "\">mac-" << next->GetId() << "</a>" << std::endl;
+	}
+	else
+	{
+		os << "-";
+	}
+	os << "</td>" << std::endl;
+	os << "<td>" << std::endl;
+	os << "<table class=\"macinfo\">" << std::endl;
+	os << "<tr>" << std::endl;
+	os << "<th>LineNo</th><th>File index</th>" << std::endl;
+	os << "</tr>" << std::endl;
+	os << "<tr>" << std::endl;
+	os << "<td>" << lineno.to_string(false) << "</td><td>" << file_idx.to_string(false) << "</td>" << std::endl;
+	os << "</tr>" << std::endl;
+	os << "</table>" << std::endl;
+	os << "</td>" << std::endl;
+	os << "</tr>" << std::endl;
+	return os;
+}
+
+template <class MEMORY_ADDR>
 DWARF_MacInfoListEntryEndFile<MEMORY_ADDR>::DWARF_MacInfoListEntryEndFile()
 	: DWARF_MacInfoListEntry<MEMORY_ADDR>(DW_MACINFO_end_file)
 {
@@ -4566,6 +5147,29 @@ template <class MEMORY_ADDR>
 std::ostream& DWARF_MacInfoListEntryEndFile<MEMORY_ADDR>::to_XML(std::ostream& os) const
 {
 	os << "<DW_MACINFO_end_file offset=\"" << DWARF_MacInfoListEntry<MEMORY_ADDR>::GetOffset() << "\"/>";
+	return os;
+}
+
+template <class MEMORY_ADDR>
+std::ostream& DWARF_MacInfoListEntryEndFile<MEMORY_ADDR>::to_HTML(std::ostream& os) const
+{
+	os << "<tr id=\"mac-" << DWARF_MacInfoListEntry<MEMORY_ADDR>::GetId() << "\">" << std::endl;
+	os << "<td>DW_MACINFO_end_file</td>" << std::endl;
+	os << "<td>" << DWARF_MacInfoListEntry<MEMORY_ADDR>::GetId() << "</td>" << std::endl;
+	os << "<td>" << DWARF_MacInfoListEntry<MEMORY_ADDR>::GetOffset() << "</td>" << std::endl;
+	os << "<td>";
+	const DWARF_MacInfoListEntry<MEMORY_ADDR> *next = DWARF_MacInfoListEntry<MEMORY_ADDR>::GetNext();
+	if(next)
+	{
+		os << "<a href=\"../" << next->GetHREF() << "\">mac-" << next->GetId() << "</a>" << std::endl;
+	}
+	else
+	{
+		os << "-";
+	}
+	os << "</td>" << std::endl;
+	os << "<td></td>" << std::endl;
+	os << "</tr>" << std::endl;
 	return os;
 }
 
@@ -4643,6 +5247,40 @@ std::ostream& DWARF_MacInfoListEntryVendorExtension<MEMORY_ADDR>::to_XML(std::os
 }
 
 template <class MEMORY_ADDR>
+std::ostream& DWARF_MacInfoListEntryVendorExtension<MEMORY_ADDR>::to_HTML(std::ostream& os) const
+{
+	os << "<tr id=\"mac-" << DWARF_MacInfoListEntry<MEMORY_ADDR>::GetId() << "\">" << std::endl;
+	os << "<td>DW_MACINFO_vendor_ext</td>" << std::endl;
+	os << "<td>" << DWARF_MacInfoListEntry<MEMORY_ADDR>::GetId() << "</td>" << std::endl;
+	os << "<td>" << DWARF_MacInfoListEntry<MEMORY_ADDR>::GetOffset() << "</td>" << std::endl;
+	os << "<td>";
+	const DWARF_MacInfoListEntry<MEMORY_ADDR> *next = DWARF_MacInfoListEntry<MEMORY_ADDR>::GetNext();
+	if(next)
+	{
+		os << "<a href=\"../" << next->GetHREF() << "\">mac-" << next->GetId() << "</a>" << std::endl;
+	}
+	else
+	{
+		os << "-";
+	}
+	os << "</td>" << std::endl;
+	os << "<td>" << std::endl;
+	os << "<table class=\"macinfo\">" << std::endl;
+	os << "<tr>" << std::endl;
+	os << "<th>Vendor Ext. Constant</th><th>Vendor Ext. String</th>" << std::endl;
+	os << "</tr>" << std::endl;
+	os << "<tr>" << std::endl;
+	os << "<td>" << vendor_ext_constant.to_string(false) << "</td><td>";
+	c_string_to_XML(os, vendor_ext_string);
+	os << "</td>" << std::endl;
+	os << "</tr>" << std::endl;
+	os << "</table>" << std::endl;
+	os << "</td>" << std::endl;
+	os << "</tr>" << std::endl;
+	return os;
+}
+
+template <class MEMORY_ADDR>
 DWARF_MacInfoListEntryNull<MEMORY_ADDR>::DWARF_MacInfoListEntryNull()
 	: DWARF_MacInfoListEntry<MEMORY_ADDR>(0)
 {
@@ -4681,6 +5319,29 @@ template <class MEMORY_ADDR>
 std::ostream& DWARF_MacInfoListEntryNull<MEMORY_ADDR>::to_XML(std::ostream& os) const
 {
 	os << "<DW_MACINFO_null offset=\"" << DWARF_MacInfoListEntry<MEMORY_ADDR>::GetOffset() << "\"/>";
+	return os;
+}
+
+template <class MEMORY_ADDR>
+std::ostream& DWARF_MacInfoListEntryNull<MEMORY_ADDR>::to_HTML(std::ostream& os) const
+{
+	os << "<tr id=\"mac-" << DWARF_MacInfoListEntry<MEMORY_ADDR>::GetId() << "\">" << std::endl;
+	os << "<td>DW_MACINFO_null</td>" << std::endl;
+	os << "<td>" << DWARF_MacInfoListEntry<MEMORY_ADDR>::GetId() << "</td>" << std::endl;
+	os << "<td>" << DWARF_MacInfoListEntry<MEMORY_ADDR>::GetOffset() << "</td>" << std::endl;
+	os << "<td>";
+	const DWARF_MacInfoListEntry<MEMORY_ADDR> *next = DWARF_MacInfoListEntry<MEMORY_ADDR>::GetNext();
+	if(next)
+	{
+		os << "<a href=\"../" << next->GetHREF() << "\">mac-" << next->GetId() << "</a>" << std::endl;
+	}
+	else
+	{
+		os << "-";
+	}
+	os << "</td>" << std::endl;
+	os << "<td></td>" << std::endl;
+	os << "</tr>" << std::endl;
 	return os;
 }
 
@@ -4795,6 +5456,20 @@ template <class MEMORY_ADDR>
 bool DWARF_AddressRangeDescriptor<MEMORY_ADDR>::IsNull() const
 {
 	return (addr == 0) && (length == 0);
+}
+
+template <class MEMORY_ADDR>
+std::ostream& DWARF_AddressRangeDescriptor<MEMORY_ADDR>::to_XML(std::ostream& os) const
+{
+	os << "<DW_ARANGE address=\"0x" << std::hex << addr << std::dec << "\" length=\"0x" << std::hex << length << std::dec << "\"/>";
+	return os;
+}
+
+template <class MEMORY_ADDR>
+std::ostream& DWARF_AddressRangeDescriptor<MEMORY_ADDR>::to_HTML(std::ostream& os) const
+{
+	os << "<tr><td>0x" << std::hex << addr << std::dec << "</td><td>0x" << std::hex << length << std::dec << "</td></tr>" << std::endl;
+	return os;
 }
 
 template <class MEMORY_ADDR>
@@ -4988,6 +5663,42 @@ int64_t DWARF_AddressRanges<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t 
 }
 
 template <class MEMORY_ADDR>
+std::ostream& DWARF_AddressRanges<MEMORY_ADDR>::to_XML(std::ostream& os) const
+{
+	os << "<DW_RANGES unit_length=\"" << unit_length << "\" version=\"" << version << "\" debug_info_offset=\"" << debug_info_offset << "\" address_size=\"" << (uint32_t) address_size << "\" segment_size=\"" << (uint32_t) segment_size << "\">" << std::endl;
+	unsigned int num_addr_range_descriptors = dw_addr_range_descriptors.size();
+	
+	unsigned int i;
+	
+	for(i = 0; i < num_addr_range_descriptors; i++)
+	{
+		 dw_addr_range_descriptors[i]->to_XML(os) << std::endl;
+	}
+	os << "</DW_RANGES>";
+	return os;
+}
+
+template <class MEMORY_ADDR>
+std::ostream& DWARF_AddressRanges<MEMORY_ADDR>::to_HTML(std::ostream& os) const
+{
+	os << "<tr>" << std::endl;
+	os << "<td>" << version << "</td><td><a href=\"../" << dw_cu->GetHREF() << "\">cu-" << dw_cu->GetId() << "</a></td>";
+	os << "<td>" <<  (uint32_t) address_size << "</td><td>" << (uint32_t) segment_size << "</td>" << std::endl;
+	os << "<td><table><tr><th>Address</th><th>Length</th></tr>";
+	unsigned int num_addr_range_descriptors = dw_addr_range_descriptors.size();
+	
+	unsigned int i;
+	
+	for(i = 0; i < num_addr_range_descriptors; i++)
+	{
+		 dw_addr_range_descriptors[i]->to_HTML(os) << std::endl;
+	}
+	os << "</table></td>";
+	os << "</tr>" << std::endl;
+	return os;
+}
+
+template <class MEMORY_ADDR>
 std::ostream& operator << (std::ostream& os, const DWARF_AddressRanges<MEMORY_ADDR>& dw_aranges)
 {
 	os << "Address Ranges:" << std::endl;
@@ -5089,6 +5800,21 @@ void DWARF_Pub<MEMORY_ADDR>::Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler)
 	{
 		std::cerr << "Can't find DIE at offset " << (cu_debug_info_offset + debug_info_offset) << std::endl;
 	}
+}
+
+template <class MEMORY_ADDR>
+std::ostream& DWARF_Pub<MEMORY_ADDR>::to_XML(std::ostream& os) const
+{
+	uint64_t cu_debug_info_offset = dw_pubs->GetDebugInfoOffset();
+	os << "<DW_PUB abs_debug_info_offset=\"" << (cu_debug_info_offset + debug_info_offset) << "\" debug_info_offset=\"" << debug_info_offset << "\" name=\"" << name << "\"/>";
+	return os;
+}
+
+template <class MEMORY_ADDR>
+std::ostream& DWARF_Pub<MEMORY_ADDR>::to_HTML(std::ostream& os) const
+{
+	os << "<tr><td>" << name << "</td><td><a href=\"../" << dw_die->GetHREF() << "\">die-" << dw_die->GetId() << "</a></td></tr>" << std::endl;
+	return os;
 }
 
 template <class MEMORY_ADDR>
@@ -5263,6 +5989,12 @@ int64_t DWARF_Pubs<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size)
 template <class MEMORY_ADDR>
 void DWARF_Pubs<MEMORY_ADDR>::Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler)
 {
+	dw_cu = dw_handler->FindCompilationUnit(debug_info_offset);
+	if(!dw_cu)
+	{
+		std::cerr << "Can't find compilation unit at offset " << debug_info_offset << std::endl;
+	}
+	
 	unsigned int num_pubs = dw_pubs.size();
 	
 	unsigned int i;
@@ -5270,6 +6002,38 @@ void DWARF_Pubs<MEMORY_ADDR>::Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler)
 	{
 		dw_pubs[i]->Fix(dw_handler);
 	}
+}
+
+template <class MEMORY_ADDR>
+std::ostream& DWARF_Pubs<MEMORY_ADDR>::to_XML(std::ostream& os) const
+{
+	os << "<DW_PUBS unit_length=\"" << unit_length << "\" version=\"" << version << "\" debug_info_offset=\"" << debug_info_offset << "\" debug_info_length=\"" << debug_info_length << "\">" << std::endl;
+	unsigned int num_pubs = dw_pubs.size();
+	
+	unsigned int i;
+	for(i = 0; i < num_pubs; i++)
+	{
+		dw_pubs[i]->to_XML(os);
+		os << std::endl;
+	}
+	os << "</DW_PUBS>";
+	return os;
+}
+
+template <class MEMORY_ADDR>
+std::ostream& DWARF_Pubs<MEMORY_ADDR>::to_HTML(std::ostream& os) const
+{
+	os << "<tr><td>" << version << "</td><td><a href=\"../" << dw_cu->GetHREF() << "\">cu-" << dw_cu->GetId() << "</a></td><td><table>";
+	unsigned int num_pubs = dw_pubs.size();
+	
+	unsigned int i;
+	for(i = 0; i < num_pubs; i++)
+	{
+		dw_pubs[i]->to_HTML(os);
+		os << std::endl;
+	}
+	os << "</table></td></tr>";
+	return os;
 }
 
 template <class MEMORY_ADDR>
@@ -5338,6 +6102,26 @@ template <class MEMORY_ADDR>
 uint64_t DWARF_LocListEntry<MEMORY_ADDR>::GetOffset() const
 {
 	return offset;
+}
+
+template <class MEMORY_ADDR>
+void DWARF_LocListEntry<MEMORY_ADDR>::Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler, unsigned int _id)
+{
+	id = _id;
+}
+
+template <class MEMORY_ADDR>
+std::string DWARF_LocListEntry<MEMORY_ADDR>::GetHREF() const
+{
+	std::stringstream sstr;
+	sstr << "debug_loc/" << (id / debug_range_per_file) << ".html#loc-" << id;
+	return sstr.str();
+}
+
+template <class MEMORY_ADDR>
+unsigned int DWARF_LocListEntry<MEMORY_ADDR>::GetId() const
+{
+	return id;
 }
 
 template <class MEMORY_ADDR>
@@ -5460,6 +6244,54 @@ std::ostream& DWARF_LocListEntry<MEMORY_ADDR>::to_XML(std::ostream& os) const
 		os << "\"";
 	}
 	os << "/>";
+	return os;
+}
+
+template <class MEMORY_ADDR>
+std::ostream& DWARF_LocListEntry<MEMORY_ADDR>::to_HTML(std::ostream& os) const
+{
+	os << "<tr id=\"loc-" << id << "\">" << std::endl;
+	if(IsEndOfList())
+	{
+		os << "<td>End-of-List</td>";
+	}
+	else if(IsBaseAddressSelection())
+	{
+		os << "<td>Base address selection</td>";
+	}
+	else
+	{
+		os << "<td>Location</td>";
+	}
+	os << "<td>" << id << "</td>" << std::endl;
+	os << "<td>" << offset << "</td>" << std::endl;
+	os << "<td>";
+	if(next)
+	{
+		os << "<a href=\"../" << next->GetHREF() << "\">loc-" << next->GetId() << "</a>" << std::endl;
+	}
+	else
+	{
+		os << "-";
+	}
+	os << "</td>";
+	if(IsEndOfList())
+	{
+		os << "<td>-</td>";
+	}
+	else if(IsBaseAddressSelection())
+	{
+		os << "<td><table><tr><th>Largest address offset</th><th>Address</th></tr>";
+		os << "<tr><td>0x" << std::hex << begin_addr_offset << std::dec << "</td><td>0x" << std::hex << end_addr_offset << std::dec << "</td></tr></table></td>";
+	}
+	else
+	{
+		os << "<td><table><tr><th>Beginning address offset</th><th>End Address offset</th><th>Expression</th></tr>";
+		os << "<tr><td>0x" << std::hex << begin_addr_offset << std::dec << "</td><td>0x" << std::hex << end_addr_offset << std::dec << "</td><td>";
+		c_string_to_XML(os, dw_expr->to_string().c_str());
+		os << "</td></tr></table></td>";
+	}
+	os << "</tr>" << std::endl;
 	return os;
 }
 
@@ -5940,16 +6772,48 @@ void DWARF_Handler<MEMORY_ADDR>::Initialize()
 		while(debug_pubtypes_offset < debug_pubtypes_section_size);
 	}
 
+	typename std::map<uint64_t, DWARF_CompilationUnit<MEMORY_ADDR> *>::const_iterator dw_cu_iter;
+	
+	unsigned int dw_cu_id = 0;
+	for(dw_cu_iter = dw_cus.begin(); dw_cu_iter != dw_cus.end(); dw_cu_iter++, dw_cu_id++)
+	{
+		DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu = (*dw_cu_iter).second;
+		dw_cu->Fix(this, dw_cu_id);
+	}
+
 	typename std::map<uint64_t, DWARF_DIE<MEMORY_ADDR> *>::const_iterator dw_die_iter;
 	
-	for(dw_die_iter = dw_dies.begin(); dw_die_iter != dw_dies.end(); dw_die_iter++)
+	unsigned int dw_die_id = 0;
+	for(dw_die_iter = dw_dies.begin(); dw_die_iter != dw_dies.end(); dw_die_iter++, dw_die_id++)
 	{
-		if((*dw_die_iter).second)
-		{
-			(*dw_die_iter).second->Fix(this);
-		}
+		DWARF_DIE<MEMORY_ADDR> *dw_die = (*dw_die_iter).second;
+		dw_die->Fix(this, dw_die_id);
 	}
+
+	typename std::map<uint64_t, DWARF_StatementProgram<MEMORY_ADDR> *>::const_iterator dw_stmt_prog_iter;
 	
+	unsigned int dw_stmt_prog_id = 0;
+	for(dw_stmt_prog_iter = dw_stmt_progs.begin(); dw_stmt_prog_iter != dw_stmt_progs.end(); dw_stmt_prog_iter++, dw_stmt_prog_id++)
+	{
+		DWARF_StatementProgram<MEMORY_ADDR> *dw_stmt_prog = (*dw_stmt_prog_iter).second;
+		dw_stmt_prog->Fix(this, dw_stmt_prog_id);
+	}
+
+	typename std::map<uint64_t, DWARF_CIE<MEMORY_ADDR> *>::const_iterator dw_cie_iter;
+	
+	unsigned int dw_cie_id = 0;
+	for(dw_cie_iter = dw_cies.begin(); dw_cie_iter != dw_cies.end(); dw_cie_iter++, dw_cie_id++)
+	{
+		DWARF_CIE<MEMORY_ADDR> *dw_cie = (*dw_cie_iter).second;
+		dw_cie->Fix(this, dw_cie_id);
+	}
+
+	unsigned int num_fdes = dw_fdes.size();
+	for(i = 0; i < num_fdes; i++)
+	{
+		dw_fdes[i]->Fix(this);
+	}
+
 	unsigned int num_aranges = dw_aranges.size();
 	for(i = 0; i < num_aranges; i++)
 	{
@@ -5969,8 +6833,9 @@ void DWARF_Handler<MEMORY_ADDR>::Initialize()
 	}
 	
 	typename std::map<uint64_t, DWARF_RangeListEntry<MEMORY_ADDR> *>::iterator dw_range_list_entry_iter;
+	unsigned int dw_range_list_entry_id = 0;
 	DWARF_RangeListEntry<MEMORY_ADDR> *dw_prev_range_list_entry = 0;
-	for(dw_range_list_entry_iter = dw_range_list.begin(); dw_range_list_entry_iter != dw_range_list.end(); dw_range_list_entry_iter++)
+	for(dw_range_list_entry_iter = dw_range_list.begin(); dw_range_list_entry_iter != dw_range_list.end(); dw_range_list_entry_iter++, dw_range_list_entry_id++)
 	{
 		DWARF_RangeListEntry<MEMORY_ADDR> *dw_range_list_entry = (*dw_range_list_entry_iter).second;
 		
@@ -5979,12 +6844,15 @@ void DWARF_Handler<MEMORY_ADDR>::Initialize()
 			dw_prev_range_list_entry->next = dw_range_list_entry;
 		}
 		
+		dw_range_list_entry->Fix(this, dw_range_list_entry_id);
+		
 		dw_prev_range_list_entry = dw_range_list_entry;
 	}
 
 	typename std::map<uint64_t, DWARF_MacInfoListEntry<MEMORY_ADDR> *>::iterator dw_macinfo_list_entry_iter;
+	unsigned int dw_macinfo_list_entry_id = 0;
 	DWARF_MacInfoListEntry<MEMORY_ADDR> *dw_prev_macinfo_list_entry = 0;
-	for(dw_macinfo_list_entry_iter = dw_macinfo_list.begin(); dw_macinfo_list_entry_iter != dw_macinfo_list.end(); dw_macinfo_list_entry_iter++)
+	for(dw_macinfo_list_entry_iter = dw_macinfo_list.begin(); dw_macinfo_list_entry_iter != dw_macinfo_list.end(); dw_macinfo_list_entry_iter++, dw_macinfo_list_entry_id++)
 	{
 		DWARF_MacInfoListEntry<MEMORY_ADDR> *dw_macinfo_list_entry = (*dw_macinfo_list_entry_iter).second;
 		
@@ -5993,12 +6861,15 @@ void DWARF_Handler<MEMORY_ADDR>::Initialize()
 			dw_prev_macinfo_list_entry->next = dw_macinfo_list_entry;
 		}
 		
+		dw_macinfo_list_entry->Fix(this, dw_macinfo_list_entry_id);
+		
 		dw_prev_macinfo_list_entry = dw_macinfo_list_entry;
 	}
 
 	typename std::map<uint64_t, DWARF_LocListEntry<MEMORY_ADDR> *>::iterator dw_loc_list_entry_iter;
+	unsigned int dw_loc_list_entry_id = 0;
 	DWARF_LocListEntry<MEMORY_ADDR> *dw_prev_loc_list_entry = 0;
-	for(dw_loc_list_entry_iter = dw_loc_list.begin(); dw_loc_list_entry_iter != dw_loc_list.end(); dw_loc_list_entry_iter++)
+	for(dw_loc_list_entry_iter = dw_loc_list.begin(); dw_loc_list_entry_iter != dw_loc_list.end(); dw_loc_list_entry_iter++, dw_loc_list_entry_id++)
 	{
 		DWARF_LocListEntry<MEMORY_ADDR> *dw_loc_list_entry = (*dw_loc_list_entry_iter).second;
 		
@@ -6007,6 +6878,8 @@ void DWARF_Handler<MEMORY_ADDR>::Initialize()
 			dw_prev_loc_list_entry->next = dw_loc_list_entry;
 		}
 		
+		dw_loc_list_entry->Fix(this, dw_loc_list_entry_id);
+
 		dw_prev_loc_list_entry = dw_loc_list_entry;
 	}
 	
@@ -6017,8 +6890,40 @@ void DWARF_Handler<MEMORY_ADDR>::Initialize()
 template <class MEMORY_ADDR>
 void DWARF_Handler<MEMORY_ADDR>::to_XML(std::ostream& os)
 {
+	unsigned int i;
+	
 	os << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" << std::endl;
 	os << "<DWARF>" << std::endl;
+	os << "<DW_DEBUG_PUBNAMES>" << std::endl;
+	unsigned int num_pubnames = dw_pubnames.size();
+	for(i = 0; i < num_pubnames; i++)
+	{
+		dw_pubnames[i]->to_XML(os) << std::endl;
+	}
+	os << "</DW_DEBUG_PUBNAMES>" << std::endl;
+	os << "<DW_DEBUG_PUBTYPES>" << std::endl;
+	unsigned int num_pubtypes = dw_pubtypes.size();
+	for(i = 0; i < num_pubtypes; i++)
+	{
+		dw_pubtypes[i]->to_XML(os) << std::endl;
+	}
+	os << "</DW_DEBUG_PUBTYPESS>" << std::endl;
+	os << "<DW_DEBUG_ARANGES>" << std::endl;
+	unsigned int num_aranges = dw_aranges.size();
+	for(i = 0; i < num_aranges; i++)
+	{
+		dw_aranges[i]->to_XML(os) << std::endl;
+	}
+	os << "</DW_DEBUG_ARANGESS>" << std::endl;
+	os << "<DW_DEBUG_ABBREV>" << std::endl;
+	typename std::map<uint64_t, DWARF_Abbrev *>::iterator dw_abbrev_iter;
+	for(dw_abbrev_iter = dw_abbrevs.begin(); dw_abbrev_iter != dw_abbrevs.end(); dw_abbrev_iter++)
+	{
+		DWARF_Abbrev *dw_abbrev = (*dw_abbrev_iter).second;
+		
+		dw_abbrev->to_XML(os) << std::endl;
+	}
+	os << "</DW_DEBUG_ABBREV>" << std::endl;
 	os << "<DW_DEBUG_INFO>" << std::endl;
 	typename std::map<uint64_t, DWARF_CompilationUnit<MEMORY_ADDR> *>::iterator dw_cu_iter;
 	for(dw_cu_iter = dw_cus.begin(); dw_cu_iter != dw_cus.end(); dw_cu_iter++)
@@ -6043,7 +6948,6 @@ void DWARF_Handler<MEMORY_ADDR>::to_XML(std::ostream& os)
 		dw_range_list_entry->to_XML(os) << std::endl;
 	}
 	os << "</DW_DEBUG_RANGES>" << std::endl;
-	os << "</DWARF>" << std::endl;
 	os << "<DW_DEBUG_LOC>" << std::endl;
 	typename std::map<uint64_t, DWARF_LocListEntry<MEMORY_ADDR> *>::iterator dw_loc_list_entry_iter;
 	for(dw_loc_list_entry_iter = dw_loc_list.begin(); dw_loc_list_entry_iter != dw_loc_list.end(); dw_loc_list_entry_iter++)
@@ -6052,7 +6956,1187 @@ void DWARF_Handler<MEMORY_ADDR>::to_XML(std::ostream& os)
 		dw_loc_list_entry->to_XML(os) << std::endl;
 	}
 	os << "</DW_DEBUG_LOC>" << std::endl;
-	os << "<DW_DEBUG_RANGES>" << std::endl;
+	os << "<DW_DEBUG_FRAME>" << std::endl;
+	typename std::map<uint64_t, DWARF_CIE<MEMORY_ADDR> *>::iterator dw_cie_iter;
+	for(dw_cie_iter = dw_cies.begin(); dw_cie_iter != dw_cies.end(); dw_cie_iter++)
+	{
+		DWARF_CIE<MEMORY_ADDR> *dw_cie = (*dw_cie_iter).second;
+		
+		dw_cie->to_XML(os) << std::endl;
+	}
+
+	unsigned int num_fdes = dw_fdes.size();
+	for(i = 0; i < num_fdes; i++)
+	{
+		dw_fdes[i]->to_XML(os) << std::endl;
+	}
+	os << "</DW_DEBUG_FRAME>" << std::endl;
+	os << "<DW_DEBUG_LINE>" << std::endl;
+	typename std::map<uint64_t, DWARF_StatementProgram<MEMORY_ADDR> *>::iterator dw_stmt_prog_iter;
+	for(dw_stmt_prog_iter = dw_stmt_progs.begin(); dw_stmt_prog_iter != dw_stmt_progs.end(); dw_stmt_prog_iter++)
+	{
+		DWARF_StatementProgram<MEMORY_ADDR> *dw_stmt_prog = (*dw_stmt_prog_iter).second;
+		
+		dw_stmt_prog->to_XML(os) << std::endl;
+	}
+	os << "</DW_DEBUG_LINE>" << std::endl;
+	os << "</DWARF>" << std::endl;
+}
+
+template <class MEMORY_ADDR>
+void DWARF_Handler<MEMORY_ADDR>::to_HTML(const char *output_dir)
+{
+	mkdir(output_dir, S_IRWXU);
+	std::string index_filename(std::string(output_dir) + "/index.html");
+	std::ofstream index(index_filename.c_str(), std::ios::out);
+	
+	index << "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01//EN\" \"http://www.w3.org/TR/html4/strict.dtd\">" << std::endl;
+	index << "<html>" << std::endl;
+	index << "<head>" << std::endl;
+	index << "<meta name=\"description\" content=\"DWARF v2/v3 navigation\">" << std::endl;
+	index << "<meta name=\"keywords\" content=\"DWARF\">" << std::endl;
+	index << "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
+	index << "<title>DWARF v2/v3 navigation</title>" << std::endl;
+	index << "<style type=\"text/css\">" << std::endl;
+	index << "<!--" << std::endl;
+	index << "table th { text-align:center; }" << std::endl;
+	index << "table th { font-weight:bold; }" << std::endl;
+	index << "table td { text-align:left; }" << std::endl;
+	index << "table { border-style:solid; }" << std::endl;
+	index << "table { border-width:1px; }" << std::endl;
+	index << "th, td { border-style:solid; }" << std::endl;
+	index << "th, td { border-width:1px; }" << std::endl;
+	index << "th, td { border-width:1px; }" << std::endl;
+	index << "-->" << std::endl;
+	index << "</style>" << std::endl;
+	index << "</head>" << std::endl;
+	index << "<body>" << std::endl;
+	index << "<h1>DWARF v2/v3 navigation</h1>" << std::endl;
+	index << "<table>" << std::endl;
+	index << "<tr><th>Section</th><th>Description</th></tr>" << std::endl;
+	index << "<tr>" << std::endl;
+	index << "<td><a href=\"debug_abbrev/0.html\">.debug_abbrev</a></td>" << std::endl;
+	index << "<td>Abbreviations Tables</td>" << std::endl;
+	index << "</tr>" << std::endl;
+	index << "<tr>" << std::endl;
+	index << "<td><a href=\"debug_info/cus/0.html\">.debug_info</a></td>" << std::endl;
+	index << "<td>Debugging Information</td>" << std::endl;
+	index << "</tr>" << std::endl;
+	index << "<tr>" << std::endl;
+	index << "<td><a href=\"debug_pubnames/0.html\">.debug_pubnames</a>&nbsp;<a href=\"debug_pubtypes/0.html\">.debug_pubtypes</a></td>" << std::endl;
+	index << "<td>Lookup by Name</td>" << std::endl;
+	index << "</tr>" << std::endl;
+	index << "<tr>" << std::endl;
+	index << "<td><a href=\"debug_aranges/0.html\">.debug_aranges</a></td>" << std::endl;
+	index << "<td>Lookup by Address</td>" << std::endl;
+	index << "</tr>" << std::endl;
+	index << "<tr>" << std::endl;
+	index << "<td><a href=\"debug_ranges/0.html\">.debug_ranges</a></td>" << std::endl;
+	index << "<td> Non-Contiguous Address Ranges</td>" << std::endl;
+	index << "</tr>" << std::endl;
+	index << "<tr>" << std::endl;
+	index << "<td><a href=\"debug_frame/fdes/0.html\">.debug_frame</a></td>" << std::endl;
+	index << "<td>Call Frame Information</td>" << std::endl;
+	index << "</tr>" << std::endl;
+	index << "<tr>" << std::endl;
+	index << "<td><a href=\"debug_line/0.html\">.debug_line</a></td>" << std::endl;
+	index << "<td>Line Number Information</td>" << std::endl;
+	index << "</tr>" << std::endl;
+	index << "<tr>" << std::endl;
+	index << "<td><a href=\"debug_macinfo/0.html\">.debug_macinfo</a></td>" << std::endl;
+	index << "<td>Macro Information</td>" << std::endl;
+	index << "</tr>" << std::endl;
+	index << "<tr>" << std::endl;
+	index << "<td><a href=\"debug_loc/0.html\">.debug_loc</a></td>" << std::endl;
+	index << "<td> Location Lists</td>" << std::endl;
+	index << "</tr>" << std::endl;
+	index << "</table>" << std::endl;
+	
+	index << "</body>" << std::endl;
+	index << "</html>" << std::endl;
+
+
+	// Abbreviations Table
+	std::stringstream debug_abbrev_output_dir_sstr;
+	debug_abbrev_output_dir_sstr << output_dir << "/debug_abbrev";
+	std::string debug_abbrev_output_dir(debug_abbrev_output_dir_sstr.str());
+	mkdir(debug_abbrev_output_dir.c_str(), S_IRWXU);
+
+	unsigned int debug_abbrev_filename_idx = 0;
+	unsigned int debug_abbrev_per_file = 512;
+	unsigned int num_debug_abbrevs = dw_abbrevs.size();
+	unsigned int num_debug_abbrev_filenames = ((num_debug_abbrevs + debug_abbrev_per_file - 1) / debug_abbrev_per_file);
+	typename std::map<uint64_t, DWARF_Abbrev *>::iterator dw_abbrev_iter = dw_abbrevs.begin();
+	do
+	{
+		std::stringstream debug_abbrev_filename_sstr;
+		debug_abbrev_filename_sstr << debug_abbrev_output_dir << "/" << debug_abbrev_filename_idx << ".html";
+		std::string debug_abbrev_filename = debug_abbrev_filename_sstr.str().c_str();
+		std::ofstream debug_abbrev(debug_abbrev_filename.c_str(), std::ios::out);
+		debug_abbrev << "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01//EN\" \"http://www.w3.org/TR/html4/strict.dtd\">" << std::endl;
+		debug_abbrev << "<html>" << std::endl;
+		debug_abbrev << "<head>" << std::endl;
+		debug_abbrev << "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
+		debug_abbrev << "<style type=\"text/css\">" << std::endl;
+		debug_abbrev << "table th { text-align:center; }" << std::endl;
+		debug_abbrev << "table th { font-weight:bold; }" << std::endl;
+		debug_abbrev << "table td { text-align:left; }" << std::endl;
+		debug_abbrev << "table { border-style:solid; }" << std::endl;
+		debug_abbrev << "table { border-width:1px; }" << std::endl;
+		debug_abbrev << "th, td { border-style:solid; }" << std::endl;
+		debug_abbrev << "th, td { border-width:1px; }" << std::endl;
+		debug_abbrev << "th, td { border-width:1px; }" << std::endl;
+		debug_abbrev << "table.abbrev_attr { border-width:0px; }" << std::endl;
+		debug_abbrev << "table.abbrev_attr th { border-width:0px; }" << std::endl;
+		debug_abbrev << "table.abbrev_attr td { border-width:0px; }" << std::endl;
+		debug_abbrev << "</style>" << std::endl;
+		debug_abbrev << "</head>" << std::endl;
+		debug_abbrev << "<body>" << std::endl;
+		debug_abbrev << "<h1>Abbreviations Tables (.debug_abbrev)</h1>" << std::endl;
+		debug_abbrev << "<a href=\"../index.html\">Up</a>&nbsp;" << std::endl;
+		unsigned int i;
+		for(i = 0; i < num_debug_abbrev_filenames; i++)
+		{
+			if(i != 0) debug_abbrev << "&nbsp;";
+			if(i == debug_abbrev_filename_idx)
+			{
+				debug_abbrev << i << std::endl;
+			}
+			else
+			{
+				std::stringstream sstr;
+				sstr << i << ".html";
+				debug_abbrev << "<a href=\"" << sstr.str() << "\">" << i << "</a>" << std::endl;
+			}
+		}
+		debug_abbrev << "<table>" << std::endl;
+		debug_abbrev << "<tr>" << std::endl;
+		debug_abbrev << "<th>Offset</th>" << std::endl;
+		debug_abbrev << "<th>Code</th>" << std::endl;
+		debug_abbrev << "<th>Tag</th>" << std::endl;
+		debug_abbrev << "<th>Children</th>" << std::endl;
+		debug_abbrev << "<th>Attributes</th>" << std::endl;
+		debug_abbrev << "</tr>" << std::endl;
+		unsigned int count = 0;
+		while(count < debug_abbrev_per_file && dw_abbrev_iter != dw_abbrevs.end())
+		{
+			DWARF_Abbrev *dw_abbrev = (*dw_abbrev_iter).second;
+			dw_abbrev->to_HTML(debug_abbrev) << std::endl;
+			
+			dw_abbrev_iter++;
+			count++;
+		}
+		debug_abbrev << "</table>" << std::endl;
+		debug_abbrev << "</body>" << std::endl;
+		debug_abbrev << "</html>" << std::endl;
+		debug_abbrev_filename_idx++;
+	}
+	while(dw_abbrev_iter != dw_abbrevs.end());
+	
+	// Macro Information
+	std::stringstream debug_macinfo_ouput_dir_sstr;
+	debug_macinfo_ouput_dir_sstr << output_dir << "/debug_macinfo";
+	std::string debug_macinfo_output_dir(debug_macinfo_ouput_dir_sstr.str());
+	mkdir(debug_macinfo_output_dir.c_str(), S_IRWXU);
+	
+	unsigned int debug_macinfo_filename_idx = 0;
+	unsigned int debug_macinfo_per_file = 2048;
+	unsigned int num_debug_macinfos = dw_macinfo_list.size();
+	unsigned int num_debug_macinfo_filenames = ((num_debug_macinfos + debug_macinfo_per_file - 1) / debug_macinfo_per_file);
+	typename std::map<uint64_t, DWARF_MacInfoListEntry<MEMORY_ADDR> *>::iterator dw_macinfo_list_iter = dw_macinfo_list.begin();
+	do
+	{
+		std::stringstream debug_macinfo_filename_sstr;
+		debug_macinfo_filename_sstr << debug_macinfo_output_dir << "/" << debug_macinfo_filename_idx << ".html";
+		std::string debug_macinfo_filename = debug_macinfo_filename_sstr.str().c_str();
+		std::ofstream debug_macinfo(debug_macinfo_filename.c_str(), std::ios::out);
+		debug_macinfo << "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01//EN\" \"http://www.w3.org/TR/html4/strict.dtd\">" << std::endl;
+		debug_macinfo << "<html>" << std::endl;
+		debug_macinfo << "<head>" << std::endl;
+		debug_macinfo << "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
+		debug_macinfo << "<style type=\"text/css\">" << std::endl;
+		debug_macinfo << "<!--" << std::endl;
+		debug_macinfo << "table th { text-align:center; }" << std::endl;
+		debug_macinfo << "table th { font-weight:bold; }" << std::endl;
+		debug_macinfo << "table td { text-align:left; }" << std::endl;
+		debug_macinfo << "table { border-style:solid; }" << std::endl;
+		debug_macinfo << "table { border-width:1px; }" << std::endl;
+		debug_macinfo << "th, td { border-style:solid; }" << std::endl;
+		debug_macinfo << "th, td { border-width:1px; }" << std::endl;
+		debug_macinfo << "th, td { border-width:1px; }" << std::endl;
+		debug_macinfo << "table.macinfo { border-width:0px; }" << std::endl;
+		debug_macinfo << "table.macinfo th { border-width:0px; }" << std::endl;
+		debug_macinfo << "table.macinfo td { border-width:0px; }" << std::endl;
+		debug_macinfo << "-->" << std::endl;
+		debug_macinfo << "</style>" << std::endl;
+		debug_macinfo << "</head>" << std::endl;
+		debug_macinfo << "<body>" << std::endl;
+		debug_macinfo << "<h1>Macro Information (.debug_macinfo)</h1>" << std::endl;
+		debug_macinfo << "<a href=\"../index.html\">Up</a>&nbsp;" << std::endl;
+		unsigned int i;
+		for(i = 0; i < num_debug_macinfo_filenames; i++)
+		{
+			if(i != 0) debug_macinfo << "&nbsp;";
+			if(i == debug_macinfo_filename_idx)
+			{
+				debug_macinfo << i << std::endl;
+			}
+			else
+			{
+				std::stringstream sstr;
+				sstr << i << ".html";
+				debug_macinfo << "<a href=\"" << sstr.str() << "\">" << i << "</a>" << std::endl;
+			}
+		}
+		debug_macinfo << "<table>" << std::endl;
+		debug_macinfo << "<tr>" << std::endl;
+		debug_macinfo << "<th>Entry type</th>" << std::endl;
+		debug_macinfo << "<th>Id</th>" << std::endl;
+		debug_macinfo << "<th>Offset</th>" << std::endl;
+		debug_macinfo << "<th>Next</th>" << std::endl;
+		debug_macinfo << "<th>Entry Information</th>" << std::endl;
+		debug_macinfo << "</tr>" << std::endl;
+		unsigned int count = 0;
+		while(count < debug_macinfo_per_file && dw_macinfo_list_iter != dw_macinfo_list.end())
+		{
+			DWARF_MacInfoListEntry<MEMORY_ADDR> *dw_macinfo = (*dw_macinfo_list_iter).second;
+
+			dw_macinfo->to_HTML(debug_macinfo) << std::endl;
+			
+			dw_macinfo_list_iter++;
+			count++;
+		}
+		debug_macinfo << "</table>" << std::endl;
+		debug_macinfo << "</body>" << std::endl;
+		debug_macinfo << "</html>" << std::endl;
+		debug_macinfo_filename_idx++;
+	}
+	while(dw_macinfo_list_iter != dw_macinfo_list.end());
+
+	
+	// Line Number Information
+	std::stringstream debug_line_ouput_dir_sstr;
+	debug_line_ouput_dir_sstr << output_dir << "/debug_line";
+	std::string debug_line_output_dir(debug_line_ouput_dir_sstr.str());
+	mkdir(debug_line_output_dir.c_str(), S_IRWXU);
+
+	
+	unsigned int debug_line_filename_idx = 0;
+	unsigned int num_debug_line = dw_stmt_progs.size();
+	unsigned int num_debug_line_filenames = ((num_debug_line + debug_line_per_file - 1) / debug_line_per_file);
+	typename std::map<uint64_t, DWARF_StatementProgram<MEMORY_ADDR> *>::iterator dw_stmt_prog_iter = dw_stmt_progs.begin();
+	do
+	{
+		std::stringstream debug_line_filename_sstr;
+		debug_line_filename_sstr << debug_line_output_dir << "/" << debug_line_filename_idx << ".html";
+		std::string debug_line_filename = debug_line_filename_sstr.str().c_str();
+		std::ofstream debug_line(debug_line_filename.c_str(), std::ios::out);
+		debug_line << "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01//EN\" \"http://www.w3.org/TR/html4/strict.dtd\">" << std::endl;
+		debug_line << "<html>" << std::endl;
+		debug_line << "<head>" << std::endl;
+		debug_line << "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
+		debug_line << "<style type=\"text/css\">" << std::endl;
+		debug_line << "<!--" << std::endl;
+		debug_line << "table th { text-align:center; }" << std::endl;
+		debug_line << "table th { font-weight:bold; }" << std::endl;
+		debug_line << "table td { text-align:left; }" << std::endl;
+		debug_line << "table { border-style:solid; }" << std::endl;
+		debug_line << "table { border-width:1px; }" << std::endl;
+		debug_line << "th, td { border-style:solid; }" << std::endl;
+		debug_line << "th, td { border-width:1px; }" << std::endl;
+		debug_line << "th, td { border-width:1px; }" << std::endl;
+		debug_line << "table.range { border-width:0px; }" << std::endl;
+		debug_line << "table.range th { border-width:0px; }" << std::endl;
+		debug_line << "table.range td { border-width:0px; }" << std::endl;
+		debug_line << "-->" << std::endl;
+		debug_line << "</style>" << std::endl;
+		debug_line << "</head>" << std::endl;
+		debug_line << "<body>" << std::endl;
+		debug_line << "<h1>Line number information (.debug_line)</h1>" << std::endl;
+		debug_line << "<a href=\"../index.html\">Up</a>&nbsp;" << std::endl;
+		unsigned int i;
+		for(i = 0; i < num_debug_line_filenames; i++)
+		{
+			if(i != 0) debug_line << "&nbsp;";
+			if(i == debug_line_filename_idx)
+			{
+				debug_line << i << std::endl;
+			}
+			else
+			{
+				std::stringstream sstr;
+				sstr << i << ".html";
+				debug_line << "<a href=\"" << sstr.str() << "\">" << i << "</a>" << std::endl;
+			}
+		}
+		debug_line << "<table>" << std::endl;
+		debug_line << "<tr>" << std::endl;
+		debug_line << "<th>Statement Program</th>" << std::endl;
+		debug_line << "</tr>" << std::endl;
+		unsigned int count = 0;
+		while(count < debug_line_per_file && dw_stmt_prog_iter != dw_stmt_progs.end())
+		{
+			DWARF_StatementProgram<MEMORY_ADDR> *dw_stmt_prog = (*dw_stmt_prog_iter).second;
+
+			dw_stmt_prog->to_HTML(debug_line) << std::endl;
+			
+			dw_stmt_prog_iter++;
+			count++;
+		}
+		debug_line << "</table>" << std::endl;
+		debug_line << "</body>" << std::endl;
+		debug_line << "</html>" << std::endl;
+		debug_line_filename_idx++;
+	}
+	while(dw_stmt_prog_iter != dw_stmt_progs.end());
+
+	// Lookup by Address
+	std::stringstream debug_aranges_ouput_dir_sstr;
+	debug_aranges_ouput_dir_sstr << output_dir << "/debug_aranges";
+	std::string debug_aranges_output_dir(debug_aranges_ouput_dir_sstr.str());
+	mkdir(debug_aranges_output_dir.c_str(), S_IRWXU);
+
+	
+	unsigned int debug_aranges_filename_idx = 0;
+	unsigned int debug_aranges_per_file = 2048;
+	unsigned int num_debug_aranges = dw_aranges.size();
+	unsigned int num_debug_aranges_filenames = ((num_debug_aranges + debug_aranges_per_file - 1) / debug_aranges_per_file);
+	typename std::vector<DWARF_AddressRanges<MEMORY_ADDR> *>::iterator dw_aranges_iter = dw_aranges.begin();
+	do
+	{
+		std::stringstream debug_aranges_filename_sstr;
+		debug_aranges_filename_sstr << debug_aranges_output_dir << "/" << debug_aranges_filename_idx << ".html";
+		std::string debug_aranges_filename = debug_aranges_filename_sstr.str().c_str();
+		std::ofstream debug_aranges(debug_aranges_filename.c_str(), std::ios::out);
+		debug_aranges << "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01//EN\" \"http://www.w3.org/TR/html4/strict.dtd\">" << std::endl;
+		debug_aranges << "<html>" << std::endl;
+		debug_aranges << "<head>" << std::endl;
+		debug_aranges << "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
+		debug_aranges << "<style type=\"text/css\">" << std::endl;
+		debug_aranges << "<!--" << std::endl;
+		debug_aranges << "table th { text-align:center; }" << std::endl;
+		debug_aranges << "table th { font-weight:bold; }" << std::endl;
+		debug_aranges << "table td { text-align:left; }" << std::endl;
+		debug_aranges << "table { border-style:solid; }" << std::endl;
+		debug_aranges << "table { border-width:1px; }" << std::endl;
+		debug_aranges << "th, td { border-style:solid; }" << std::endl;
+		debug_aranges << "th, td { border-width:1px; }" << std::endl;
+		debug_aranges << "th, td { border-width:1px; }" << std::endl;
+		debug_aranges << "table.range { border-width:0px; }" << std::endl;
+		debug_aranges << "table.range th { border-width:0px; }" << std::endl;
+		debug_aranges << "table.range td { border-width:0px; }" << std::endl;
+		debug_aranges << "-->" << std::endl;
+		debug_aranges << "</style>" << std::endl;
+		debug_aranges << "</head>" << std::endl;
+		debug_aranges << "<body>" << std::endl;
+		debug_aranges << "<h1>Lookup by Address (.debug_aranges)</h1>" << std::endl;
+		debug_aranges << "<a href=\"../index.html\">Up</a>&nbsp;" << std::endl;
+		unsigned int i;
+		for(i = 0; i < num_debug_aranges_filenames; i++)
+		{
+			if(i != 0) debug_aranges << "&nbsp;";
+			if(i == debug_aranges_filename_idx)
+			{
+				debug_aranges << i << std::endl;
+			}
+			else
+			{
+				std::stringstream sstr;
+				sstr << i << ".html";
+				debug_aranges << "<a href=\"" << sstr.str() << "\">" << i << "</a>" << std::endl;
+			}
+		}
+		debug_aranges << "<table>" << std::endl;
+		debug_aranges << "<tr>" << std::endl;
+		debug_aranges << "<th>Version</th>" << std::endl;
+		debug_aranges << "<th>Compilation unit</th>" << std::endl;
+		debug_aranges << "<th>Address size</th>" << std::endl;
+		debug_aranges << "<th>Segment size</th>" << std::endl;
+		debug_aranges << "<th>Address descriptors</th>" << std::endl;
+		debug_aranges << "</tr>" << std::endl;
+		unsigned int count = 0;
+		while(count < debug_aranges_per_file && dw_aranges_iter != dw_aranges.end())
+		{
+			DWARF_AddressRanges<MEMORY_ADDR> *dw_arange = (*dw_aranges_iter);
+
+			dw_arange->to_HTML(debug_aranges) << std::endl;
+			
+			dw_aranges_iter++;
+			count++;
+		}
+		debug_aranges << "</table>" << std::endl;
+		debug_aranges << "</body>" << std::endl;
+		debug_aranges << "</html>" << std::endl;
+		debug_aranges_filename_idx++;
+	}
+	while(dw_aranges_iter != dw_aranges.end());
+
+	// Lookup by name (.debug_pubnames)
+	std::stringstream debug_pubnames_ouput_dir_sstr;
+	debug_pubnames_ouput_dir_sstr << output_dir << "/debug_pubnames";
+	std::string debug_pubnames_output_dir(debug_pubnames_ouput_dir_sstr.str());
+	mkdir(debug_pubnames_output_dir.c_str(), S_IRWXU);
+
+	
+	unsigned int debug_pubnames_filename_idx = 0;
+	unsigned int debug_pubnames_per_file = 2048;
+	unsigned int num_debug_pubnames = dw_pubnames.size();
+	unsigned int num_debug_pubnames_filenames = ((num_debug_pubnames + debug_pubnames_per_file - 1) / debug_pubnames_per_file);
+	typename std::vector<DWARF_Pubs<MEMORY_ADDR> *>::iterator dw_pubnames_iter = dw_pubnames.begin();
+	do
+	{
+		std::stringstream debug_pubnames_filename_sstr;
+		debug_pubnames_filename_sstr << debug_pubnames_output_dir << "/" << debug_pubnames_filename_idx << ".html";
+		std::string debug_pubnames_filename = debug_pubnames_filename_sstr.str().c_str();
+		std::ofstream debug_pubnames(debug_pubnames_filename.c_str(), std::ios::out);
+		debug_pubnames << "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01//EN\" \"http://www.w3.org/TR/html4/strict.dtd\">" << std::endl;
+		debug_pubnames << "<html>" << std::endl;
+		debug_pubnames << "<head>" << std::endl;
+		debug_pubnames << "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
+		debug_pubnames << "<style type=\"text/css\">" << std::endl;
+		debug_pubnames << "<!--" << std::endl;
+		debug_pubnames << "table th { text-align:center; }" << std::endl;
+		debug_pubnames << "table th { font-weight:bold; }" << std::endl;
+		debug_pubnames << "table td { text-align:left; }" << std::endl;
+		debug_pubnames << "table { border-style:solid; }" << std::endl;
+		debug_pubnames << "table { border-width:1px; }" << std::endl;
+		debug_pubnames << "th, td { border-style:solid; }" << std::endl;
+		debug_pubnames << "th, td { border-width:1px; }" << std::endl;
+		debug_pubnames << "th, td { border-width:1px; }" << std::endl;
+		debug_pubnames << "table.range { border-width:0px; }" << std::endl;
+		debug_pubnames << "table.range th { border-width:0px; }" << std::endl;
+		debug_pubnames << "table.range td { border-width:0px; }" << std::endl;
+		debug_pubnames << "-->" << std::endl;
+		debug_pubnames << "</style>" << std::endl;
+		debug_pubnames << "</head>" << std::endl;
+		debug_pubnames << "<body>" << std::endl;
+		debug_pubnames << "<h1>Lookup by name (.debug_pubnames)</h1>" << std::endl;
+		debug_pubnames << "<a href=\"../index.html\">Up</a>&nbsp;" << std::endl;
+		unsigned int i;
+		for(i = 0; i < num_debug_pubnames_filenames; i++)
+		{
+			if(i != 0) debug_pubnames << "&nbsp;";
+			if(i == debug_pubnames_filename_idx)
+			{
+				debug_pubnames << i << std::endl;
+			}
+			else
+			{
+				std::stringstream sstr;
+				sstr << i << ".html";
+				debug_pubnames << "<a href=\"" << sstr.str() << "\">" << i << "</a>" << std::endl;
+			}
+		}
+		debug_pubnames << "<table>" << std::endl;
+		debug_pubnames << "<tr>" << std::endl;
+		debug_pubnames << "<th>Version</th>" << std::endl;
+		debug_pubnames << "<th>Compilation unit</th>" << std::endl;
+		debug_pubnames << "<th>Public names</th>" << std::endl;
+		debug_pubnames << "</tr>" << std::endl;
+		unsigned int count = 0;
+		while(count < debug_pubnames_per_file && dw_pubnames_iter != dw_pubnames.end())
+		{
+			DWARF_Pubs<MEMORY_ADDR> *dw_pubname = (*dw_pubnames_iter);
+
+			dw_pubname->to_HTML(debug_pubnames) << std::endl;
+			
+			dw_pubnames_iter++;
+			count++;
+		}
+		debug_pubnames << "</table>" << std::endl;
+		debug_pubnames << "</body>" << std::endl;
+		debug_pubnames << "</html>" << std::endl;
+		debug_pubnames_filename_idx++;
+	}
+	while(dw_pubnames_iter != dw_pubnames.end());
+
+	// Lookup by name (.debug_pubtypes)
+	std::stringstream debug_pubtypes_ouput_dir_sstr;
+	debug_pubtypes_ouput_dir_sstr << output_dir << "/debug_pubtypes";
+	std::string debug_pubtypes_output_dir(debug_pubtypes_ouput_dir_sstr.str());
+	mkdir(debug_pubtypes_output_dir.c_str(), S_IRWXU);
+
+	
+	unsigned int debug_pubtypes_filename_idx = 0;
+	unsigned int debug_pubtypes_per_file = 2048;
+	unsigned int num_debug_pubtypes = dw_pubtypes.size();
+	unsigned int num_debug_pubtypes_filenames = ((num_debug_pubtypes + debug_pubtypes_per_file - 1) / debug_pubtypes_per_file);
+	typename std::vector<DWARF_Pubs<MEMORY_ADDR> *>::iterator dw_pubtypes_iter = dw_pubtypes.begin();
+	do
+	{
+		std::stringstream debug_pubtypes_filename_sstr;
+		debug_pubtypes_filename_sstr << debug_pubtypes_output_dir << "/" << debug_pubtypes_filename_idx << ".html";
+		std::string debug_pubtypes_filename = debug_pubtypes_filename_sstr.str().c_str();
+		std::ofstream debug_pubtypes(debug_pubtypes_filename.c_str(), std::ios::out);
+		debug_pubtypes << "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01//EN\" \"http://www.w3.org/TR/html4/strict.dtd\">" << std::endl;
+		debug_pubtypes << "<html>" << std::endl;
+		debug_pubtypes << "<head>" << std::endl;
+		debug_pubtypes << "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
+		debug_pubtypes << "<style type=\"text/css\">" << std::endl;
+		debug_pubtypes << "<!--" << std::endl;
+		debug_pubtypes << "table th { text-align:center; }" << std::endl;
+		debug_pubtypes << "table th { font-weight:bold; }" << std::endl;
+		debug_pubtypes << "table td { text-align:left; }" << std::endl;
+		debug_pubtypes << "table { border-style:solid; }" << std::endl;
+		debug_pubtypes << "table { border-width:1px; }" << std::endl;
+		debug_pubtypes << "th, td { border-style:solid; }" << std::endl;
+		debug_pubtypes << "th, td { border-width:1px; }" << std::endl;
+		debug_pubtypes << "th, td { border-width:1px; }" << std::endl;
+		debug_pubtypes << "table.range { border-width:0px; }" << std::endl;
+		debug_pubtypes << "table.range th { border-width:0px; }" << std::endl;
+		debug_pubtypes << "table.range td { border-width:0px; }" << std::endl;
+		debug_pubtypes << "-->" << std::endl;
+		debug_pubtypes << "</style>" << std::endl;
+		debug_pubtypes << "</head>" << std::endl;
+		debug_pubtypes << "<body>" << std::endl;
+		debug_pubtypes << "<h1>Lookup by name (.debug_pubtypes)</h1>" << std::endl;
+		debug_pubtypes << "<a href=\"../index.html\">Up</a>&nbsp;" << std::endl;
+		unsigned int i;
+		for(i = 0; i < num_debug_pubtypes_filenames; i++)
+		{
+			if(i != 0) debug_pubtypes << "&nbsp;";
+			if(i == debug_pubtypes_filename_idx)
+			{
+				debug_pubtypes << i << std::endl;
+			}
+			else
+			{
+				std::stringstream sstr;
+				sstr << i << ".html";
+				debug_pubtypes << "<a href=\"" << sstr.str() << "\">" << i << "</a>" << std::endl;
+			}
+		}
+		debug_pubtypes << "<table>" << std::endl;
+		debug_pubtypes << "<tr>" << std::endl;
+		debug_pubtypes << "<th>Version</th>" << std::endl;
+		debug_pubtypes << "<th>Compilation unit</th>" << std::endl;
+		debug_pubtypes << "<th>Public names</th>" << std::endl;
+		debug_pubtypes << "</tr>" << std::endl;
+		unsigned int count = 0;
+		while(count < debug_pubtypes_per_file && dw_pubtypes_iter != dw_pubtypes.end())
+		{
+			DWARF_Pubs<MEMORY_ADDR> *dw_pubtype = (*dw_pubtypes_iter);
+
+			dw_pubtype->to_HTML(debug_pubtypes) << std::endl;
+			
+			dw_pubtypes_iter++;
+			count++;
+		}
+		debug_pubtypes << "</table>" << std::endl;
+		debug_pubtypes << "</body>" << std::endl;
+		debug_pubtypes << "</html>" << std::endl;
+		debug_pubtypes_filename_idx++;
+	}
+	while(dw_pubtypes_iter != dw_pubtypes.end());
+
+	// Non-Contiguous Address Ranges
+	
+	std::stringstream debug_range_ouput_dir_sstr;
+	debug_range_ouput_dir_sstr << output_dir << "/debug_ranges";
+	std::string debug_range_output_dir(debug_range_ouput_dir_sstr.str());
+	mkdir(debug_range_output_dir.c_str(), S_IRWXU);
+	
+	unsigned int debug_range_filename_idx = 0;
+	unsigned int debug_range_per_file = 2048;
+	unsigned int num_debug_ranges = dw_range_list.size();
+	unsigned int num_debug_range_filenames = ((num_debug_ranges + debug_range_per_file - 1) / debug_range_per_file);
+	typename std::map<uint64_t, DWARF_RangeListEntry<MEMORY_ADDR> *>::iterator dw_range_list_iter = dw_range_list.begin();
+	do
+	{
+		std::stringstream debug_range_filename_sstr;
+		debug_range_filename_sstr << debug_range_output_dir << "/" << debug_range_filename_idx << ".html";
+		std::string debug_range_filename = debug_range_filename_sstr.str().c_str();
+		std::ofstream debug_range(debug_range_filename.c_str(), std::ios::out);
+		debug_range << "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01//EN\" \"http://www.w3.org/TR/html4/strict.dtd\">" << std::endl;
+		debug_range << "<html>" << std::endl;
+		debug_range << "<head>" << std::endl;
+		debug_range << "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
+		debug_range << "<style type=\"text/css\">" << std::endl;
+		debug_range << "<!--" << std::endl;
+		debug_range << "table th { text-align:center; }" << std::endl;
+		debug_range << "table th { font-weight:bold; }" << std::endl;
+		debug_range << "table td { text-align:left; }" << std::endl;
+		debug_range << "table { border-style:solid; }" << std::endl;
+		debug_range << "table { border-width:1px; }" << std::endl;
+		debug_range << "th, td { border-style:solid; }" << std::endl;
+		debug_range << "th, td { border-width:1px; }" << std::endl;
+		debug_range << "th, td { border-width:1px; }" << std::endl;
+		debug_range << "table.range { border-width:0px; }" << std::endl;
+		debug_range << "table.range th { border-width:0px; }" << std::endl;
+		debug_range << "table.range td { border-width:0px; }" << std::endl;
+		debug_range << "-->" << std::endl;
+		debug_range << "</style>" << std::endl;
+		debug_range << "</head>" << std::endl;
+		debug_range << "<body>" << std::endl;
+		debug_range << "<h1>Non-Contiguous Address Ranges (.debug_ranges)</h1>" << std::endl;
+		debug_range << "<a href=\"../index.html\">Up</a>&nbsp;" << std::endl;
+		unsigned int i;
+		for(i = 0; i < num_debug_range_filenames; i++)
+		{
+			if(i != 0) debug_range << "&nbsp;";
+			if(i == debug_range_filename_idx)
+			{
+				debug_range << i << std::endl;
+			}
+			else
+			{
+				std::stringstream sstr;
+				sstr << i << ".html";
+				debug_range << "<a href=\"" << sstr.str() << "\">" << i << "</a>" << std::endl;
+			}
+		}
+		debug_range << "<table>" << std::endl;
+		debug_range << "<tr>" << std::endl;
+		debug_range << "<th>Entry type</th>" << std::endl;
+		debug_range << "<th>Id</th>" << std::endl;
+		debug_range << "<th>Offset</th>" << std::endl;
+		debug_range << "<th>Next</th>" << std::endl;
+		debug_range << "<th>Entry Information</th>" << std::endl;
+		debug_range << "</tr>" << std::endl;
+		unsigned int count = 0;
+		while(count < debug_range_per_file && dw_range_list_iter != dw_range_list.end())
+		{
+			DWARF_RangeListEntry<MEMORY_ADDR> *dw_range = (*dw_range_list_iter).second;
+
+			dw_range->to_HTML(debug_range) << std::endl;
+			
+			dw_range_list_iter++;
+			count++;
+		}
+		debug_range << "</table>" << std::endl;
+		debug_range << "</body>" << std::endl;
+		debug_range << "</html>" << std::endl;
+		debug_range_filename_idx++;
+	}
+	while(dw_range_list_iter != dw_range_list.end());
+
+	// Location Lists
+	
+	std::stringstream debug_loc_ouput_dir_sstr;
+	debug_loc_ouput_dir_sstr << output_dir << "/debug_loc";
+	std::string debug_loc_output_dir(debug_loc_ouput_dir_sstr.str());
+	mkdir(debug_loc_output_dir.c_str(), S_IRWXU);
+	
+	unsigned int debug_loc_filename_idx = 0;
+	unsigned int debug_loc_per_file = 2048;
+	unsigned int num_debug_locs = dw_loc_list.size();
+	unsigned int num_debug_loc_filenames = ((num_debug_locs + debug_loc_per_file - 1) / debug_loc_per_file);
+	typename std::map<uint64_t, DWARF_LocListEntry<MEMORY_ADDR> *>::iterator dw_loc_list_iter = dw_loc_list.begin();
+	do
+	{
+		std::stringstream debug_loc_filename_sstr;
+		debug_loc_filename_sstr << debug_loc_output_dir << "/" << debug_loc_filename_idx << ".html";
+		std::string debug_loc_filename = debug_loc_filename_sstr.str().c_str();
+		std::ofstream debug_loc(debug_loc_filename.c_str(), std::ios::out);
+		debug_loc << "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01//EN\" \"http://www.w3.org/TR/html4/strict.dtd\">" << std::endl;
+		debug_loc << "<html>" << std::endl;
+		debug_loc << "<head>" << std::endl;
+		debug_loc << "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
+		debug_loc << "<style type=\"text/css\">" << std::endl;
+		debug_loc << "<!--" << std::endl;
+		debug_loc << "table th { text-align:center; }" << std::endl;
+		debug_loc << "table th { font-weight:bold; }" << std::endl;
+		debug_loc << "table td { text-align:left; }" << std::endl;
+		debug_loc << "table { border-style:solid; }" << std::endl;
+		debug_loc << "table { border-width:1px; }" << std::endl;
+		debug_loc << "th, td { border-style:solid; }" << std::endl;
+		debug_loc << "th, td { border-width:1px; }" << std::endl;
+		debug_loc << "th, td { border-width:1px; }" << std::endl;
+		debug_loc << "table.loc { border-width:0px; }" << std::endl;
+		debug_loc << "table.loc th { border-width:0px; }" << std::endl;
+		debug_loc << "table.loc td { border-width:0px; }" << std::endl;
+		debug_loc << "-->" << std::endl;
+		debug_loc << "</style>" << std::endl;
+		debug_loc << "</head>" << std::endl;
+		debug_loc << "<body>" << std::endl;
+		debug_loc << "<h1>Non-Contiguous Address Ranges (.debug_locs)</h1>" << std::endl;
+		debug_loc << "<a href=\"../index.html\">Up</a>&nbsp;" << std::endl;
+		unsigned int i;
+		for(i = 0; i < num_debug_loc_filenames; i++)
+		{
+			if(i != 0) debug_loc << "&nbsp;";
+			if(i == debug_loc_filename_idx)
+			{
+				debug_loc << i << std::endl;
+			}
+			else
+			{
+				std::stringstream sstr;
+				sstr << i << ".html";
+				debug_loc << "<a href=\"" << sstr.str() << "\">" << i << "</a>" << std::endl;
+			}
+		}
+		debug_loc << "<table>" << std::endl;
+		debug_loc << "<tr>" << std::endl;
+		debug_loc << "<th>Entry type</th>" << std::endl;
+		debug_loc << "<th>Id</th>" << std::endl;
+		debug_loc << "<th>Offset</th>" << std::endl;
+		debug_loc << "<th>Next</th>" << std::endl;
+		debug_loc << "<th>Entry Information</th>" << std::endl;
+		debug_loc << "</tr>" << std::endl;
+		unsigned int count = 0;
+		while(count < debug_loc_per_file && dw_loc_list_iter != dw_loc_list.end())
+		{
+			DWARF_LocListEntry<MEMORY_ADDR> *dw_loc = (*dw_loc_list_iter).second;
+
+			dw_loc->to_HTML(debug_loc) << std::endl;
+			
+			dw_loc_list_iter++;
+			count++;
+		}
+		debug_loc << "</table>" << std::endl;
+		debug_loc << "</body>" << std::endl;
+		debug_loc << "</html>" << std::endl;
+		debug_loc_filename_idx++;
+	}
+	while(dw_loc_list_iter != dw_loc_list.end());
+
+	// Call Frame Information
+	std::stringstream debug_frame_ouput_dir_sstr;
+	debug_frame_ouput_dir_sstr << output_dir << "/debug_frame";
+	std::string debug_frame_output_dir(debug_frame_ouput_dir_sstr.str());
+	mkdir(debug_frame_output_dir.c_str(), S_IRWXU);
+
+	std::stringstream debug_frame_cies_ouput_dir_sstr;
+	debug_frame_cies_ouput_dir_sstr << debug_frame_output_dir << "/cies";
+	std::string debug_frame_cies_output_dir(debug_frame_cies_ouput_dir_sstr.str());
+	mkdir(debug_frame_cies_output_dir.c_str(), S_IRWXU);
+
+	std::stringstream debug_frame_fdes_ouput_dir_sstr;
+	debug_frame_fdes_ouput_dir_sstr << debug_frame_output_dir << "/fdes";
+	std::string debug_frame_fdes_output_dir(debug_frame_fdes_ouput_dir_sstr.str());
+	mkdir(debug_frame_fdes_output_dir.c_str(), S_IRWXU);
+
+	unsigned int debug_frame_cies_filename_idx = 0;
+	unsigned int cies_per_file = 2048;
+	unsigned int num_debug_cies = dw_cies.size();
+	unsigned int num_debug_frame_cies_filenames = ((num_debug_cies + cies_per_file - 1) /cies_per_file);
+	typename std::map<uint64_t, DWARF_CIE<MEMORY_ADDR> *>::iterator dw_cie_iter = dw_cies.begin();
+	do
+	{
+		std::stringstream debug_frame_cies_filename_sstr;
+		debug_frame_cies_filename_sstr << debug_frame_cies_output_dir << "/" << debug_frame_cies_filename_idx << ".html";
+		std::string debug_frame_cies_filename = debug_frame_cies_filename_sstr.str().c_str();
+		std::ofstream debug_frame_cies(debug_frame_cies_filename.c_str(), std::ios::out);
+		debug_frame_cies << "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01//EN\" \"http://www.w3.org/TR/html4/strict.dtd\">" << std::endl;
+		debug_frame_cies << "<html>" << std::endl;
+		debug_frame_cies << "<head>" << std::endl;
+		debug_frame_cies << "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
+		debug_frame_cies << "<style type=\"text/css\">" << std::endl;
+		debug_frame_cies << "<!--" << std::endl;
+		debug_frame_cies << "table th { text-align:center; }" << std::endl;
+		debug_frame_cies << "table th { font-weight:bold; }" << std::endl;
+		debug_frame_cies << "table td { text-align:left; }" << std::endl;
+		debug_frame_cies << "table { border-style:solid; }" << std::endl;
+		debug_frame_cies << "table { border-width:1px; }" << std::endl;
+		debug_frame_cies << "th, td { border-style:solid; }" << std::endl;
+		debug_frame_cies << "th, td { border-width:1px; }" << std::endl;
+		debug_frame_cies << "th, td { border-width:1px; }" << std::endl;
+		debug_frame_cies << "-->" << std::endl;
+		debug_frame_cies << "</style>" << std::endl;
+		debug_frame_cies << "</head>" << std::endl;
+		debug_frame_cies << "<body>" << std::endl;
+		debug_frame_cies << "<h1>Debug Information/Debug Information Entries (.debug_frame)</h1>" << std::endl;
+		debug_frame_cies << "<a href=\"../../index.html\">Up</a>&nbsp;" << std::endl;
+		unsigned int i;
+		for(i = 0; i < num_debug_frame_cies_filenames; i++)
+		{
+			if(i != 0) debug_frame_cies << "&nbsp;";
+			if(i == debug_frame_cies_filename_idx)
+			{
+				debug_frame_cies << i << std::endl;
+			}
+			else
+			{
+				std::stringstream sstr;
+				sstr << i << ".html";
+				debug_frame_cies << "<a href=\"" << sstr.str() << "\">" << i << "</a>" << std::endl;
+			}
+		}
+		debug_frame_cies << "<hr>" << std::endl;
+		debug_frame_cies << "<table>" << std::endl;
+		debug_frame_cies << "<tr>" << std::endl;
+		debug_frame_cies << "<th>Id</th>" << std::endl;
+		debug_frame_cies << "<th>Offset</th>" << std::endl;
+		debug_frame_cies << "<th>Version</th>" << std::endl;
+		debug_frame_cies << "<th>Augmentation</th>" << std::endl;
+		debug_frame_cies << "<th>Code alignment factor</th>" << std::endl;
+		debug_frame_cies << "<th>Data alignment factor</th>" << std::endl;
+		debug_frame_cies << "<th>Return address register</th>" << std::endl;
+		debug_frame_cies << "<th>Initial call frame program</th>" << std::endl;
+		debug_frame_cies << "</tr>" << std::endl;
+		unsigned int count = 0;
+		while(count < cies_per_file && dw_cie_iter != dw_cies.end())
+		{
+			DWARF_CIE<MEMORY_ADDR> *dw_cie = (*dw_cie_iter).second;
+
+			dw_cie->to_HTML(debug_frame_cies) << std::endl;
+			
+			dw_cie_iter++;
+			count++;
+		}
+		debug_frame_cies << "</table>" << std::endl;
+		debug_frame_cies << "<hr>" << std::endl;
+		for(i = 0; i < num_debug_frame_cies_filenames; i++)
+		{
+			if(i != 0) debug_frame_cies << "&nbsp;";
+			if(i == debug_frame_cies_filename_idx)
+			{
+				debug_frame_cies << i << std::endl;
+			}
+			else
+			{
+				std::stringstream sstr;
+				sstr << i << ".html";
+				debug_frame_cies << "<a href=\"" << sstr.str() << "\">" << i << "</a>" << std::endl;
+			}
+		}
+		debug_frame_cies << "</body>" << std::endl;
+		debug_frame_cies << "</html>" << std::endl;
+		debug_frame_cies_filename_idx++;
+	}
+	while(dw_cie_iter != dw_cies.end());
+	
+	unsigned int debug_frame_fdes_filename_idx = 0;
+	unsigned int fdes_per_file = 2048;
+	unsigned int num_debug_fdes = dw_fdes.size();
+	unsigned int num_debug_frame_fdes_filenames = ((num_debug_fdes + fdes_per_file - 1) /fdes_per_file);
+	typename std::vector<DWARF_FDE<MEMORY_ADDR> *>::iterator dw_fde_iter = dw_fdes.begin();
+	do
+	{
+		std::stringstream debug_frame_fdes_filename_sstr;
+		debug_frame_fdes_filename_sstr << debug_frame_fdes_output_dir << "/" << debug_frame_fdes_filename_idx << ".html";
+		std::string debug_frame_fdes_filename = debug_frame_fdes_filename_sstr.str().c_str();
+		std::ofstream debug_frame_fdes(debug_frame_fdes_filename.c_str(), std::ios::out);
+		debug_frame_fdes << "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01//EN\" \"http://www.w3.org/TR/html4/strict.dtd\">" << std::endl;
+		debug_frame_fdes << "<html>" << std::endl;
+		debug_frame_fdes << "<head>" << std::endl;
+		debug_frame_fdes << "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
+		debug_frame_fdes << "<style type=\"text/css\">" << std::endl;
+		debug_frame_fdes << "<!--" << std::endl;
+		debug_frame_fdes << "table th { text-align:center; }" << std::endl;
+		debug_frame_fdes << "table th { font-weight:bold; }" << std::endl;
+		debug_frame_fdes << "table td { text-align:left; }" << std::endl;
+		debug_frame_fdes << "table { border-style:solid; }" << std::endl;
+		debug_frame_fdes << "table { border-width:1px; }" << std::endl;
+		debug_frame_fdes << "th, td { border-style:solid; }" << std::endl;
+		debug_frame_fdes << "th, td { border-width:1px; }" << std::endl;
+		debug_frame_fdes << "th, td { border-width:1px; }" << std::endl;
+		debug_frame_fdes << "-->" << std::endl;
+		debug_frame_fdes << "</style>" << std::endl;
+		debug_frame_fdes << "</head>" << std::endl;
+		debug_frame_fdes << "<body>" << std::endl;
+		debug_frame_fdes << "<h1>Debug Information/Debug Information Entries (.debug_frame)</h1>" << std::endl;
+		debug_frame_fdes << "<a href=\"../../index.html\">Up</a>&nbsp;" << std::endl;
+		unsigned int i;
+		for(i = 0; i < num_debug_frame_fdes_filenames; i++)
+		{
+			if(i != 0) debug_frame_fdes << "&nbsp;";
+			if(i == debug_frame_fdes_filename_idx)
+			{
+				debug_frame_fdes << i << std::endl;
+			}
+			else
+			{
+				std::stringstream sstr;
+				sstr << i << ".html";
+				debug_frame_fdes << "<a href=\"" << sstr.str() << "\">" << i << "</a>" << std::endl;
+			}	// Lookup by Address
+	std::stringstream debug_aranges_ouput_dir_sstr;
+	debug_aranges_ouput_dir_sstr << output_dir << "/debug_aranges";
+	std::string debug_aranges_output_dir(debug_aranges_ouput_dir_sstr.str());
+	mkdir(debug_aranges_output_dir.c_str(), S_IRWXU);
+
+	
+	unsigned int debug_aranges_filename_idx = 0;
+	unsigned int debug_aranges_per_file = 2048;
+	unsigned int num_debug_aranges = dw_aranges.size();
+	unsigned int num_debug_aranges_filenames = ((num_debug_aranges + debug_aranges_per_file - 1) / debug_aranges_per_file);
+	typename std::vector<DWARF_AddressRanges<MEMORY_ADDR> *>::iterator dw_aranges_iter = dw_aranges.begin();
+	do
+	{
+		std::stringstream debug_aranges_filename_sstr;
+		debug_aranges_filename_sstr << debug_aranges_output_dir << "/" << debug_aranges_filename_idx << ".html";
+		std::string debug_aranges_filename = debug_aranges_filename_sstr.str().c_str();
+		std::ofstream debug_aranges(debug_aranges_filename.c_str(), std::ios::out);
+		debug_aranges << "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01//EN\" \"http://www.w3.org/TR/html4/strict.dtd\">" << std::endl;
+		debug_aranges << "<html>" << std::endl;
+		debug_aranges << "<head>" << std::endl;
+		debug_aranges << "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
+		debug_aranges << "<style type=\"text/css\">" << std::endl;
+		debug_aranges << "<!--" << std::endl;
+		debug_aranges << "table th { text-align:center; }" << std::endl;
+		debug_aranges << "table th { font-weight:bold; }" << std::endl;
+		debug_aranges << "table td { text-align:left; }" << std::endl;
+		debug_aranges << "table { border-style:solid; }" << std::endl;
+		debug_aranges << "table { border-width:1px; }" << std::endl;
+		debug_aranges << "th, td { border-style:solid; }" << std::endl;
+		debug_aranges << "th, td { border-width:1px; }" << std::endl;
+		debug_aranges << "th, td { border-width:1px; }" << std::endl;
+		debug_aranges << "table.range { border-width:0px; }" << std::endl;
+		debug_aranges << "table.range th { border-width:0px; }" << std::endl;
+		debug_aranges << "table.range td { border-width:0px; }" << std::endl;
+		debug_aranges << "-->" << std::endl;
+		debug_aranges << "</style>" << std::endl;
+		debug_aranges << "</head>" << std::endl;
+		debug_aranges << "<body>" << std::endl;
+		debug_aranges << "<h1>Lookup by Address (.debug_aranges)</h1>" << std::endl;
+		debug_aranges << "<a href=\"../index.html\">Up</a>&nbsp;" << std::endl;
+		unsigned int i;
+		for(i = 0; i < num_debug_aranges_filenames; i++)
+		{
+			if(i != 0) debug_aranges << "&nbsp;";
+			if(i == debug_aranges_filename_idx)
+			{
+				debug_aranges << i << std::endl;
+			}
+			else
+			{
+				std::stringstream sstr;
+				sstr << i << ".html";
+				debug_aranges << "<a href=\"" << sstr.str() << "\">" << i << "</a>" << std::endl;
+			}
+		}
+		debug_aranges << "<table>" << std::endl;
+		debug_aranges << "<tr>" << std::endl;
+		debug_aranges << "<th>Version</th>" << std::endl;
+		debug_aranges << "<th>Compilation unit</th>" << std::endl;
+		debug_aranges << "<th>Address size</th>" << std::endl;
+		debug_aranges << "<th>Segment size</th>" << std::endl;
+		debug_aranges << "<th>Address descriptors</th>" << std::endl;
+		debug_aranges << "</tr>" << std::endl;
+		unsigned int count = 0;
+		while(count < debug_aranges_per_file && dw_aranges_iter != dw_aranges.end())
+		{
+			DWARF_AddressRanges<MEMORY_ADDR> *dw_arange = (*dw_aranges_iter);
+
+			dw_arange->to_HTML(debug_aranges) << std::endl;
+			
+			dw_aranges_iter++;
+			count++;
+		}
+		debug_aranges << "</table>" << std::endl;
+		debug_aranges << "</body>" << std::endl;
+		debug_aranges << "</html>" << std::endl;
+		debug_aranges_filename_idx++;
+	}
+	while(dw_aranges_iter != dw_aranges.end());
+
+		}
+		debug_frame_fdes << "<hr>" << std::endl;
+		debug_frame_fdes << "<table>" << std::endl;
+		debug_frame_fdes << "<tr>" << std::endl;
+		debug_frame_fdes << "<th>Offset</th>" << std::endl;
+		debug_frame_fdes << "<th>CIE</th>" << std::endl;
+		debug_frame_fdes << "<th>Initial location</th>" << std::endl;
+		debug_frame_fdes << "<th>Address range</th>" << std::endl;
+		debug_frame_fdes << "<th>Call frame program</th>" << std::endl;
+		debug_frame_fdes << "</tr>" << std::endl;
+		unsigned int count = 0;
+		while(count < fdes_per_file && dw_fde_iter != dw_fdes.end())
+		{
+			DWARF_FDE<MEMORY_ADDR> *dw_fde = (*dw_fde_iter);
+
+			dw_fde->to_HTML(debug_frame_fdes) << std::endl;
+			
+			dw_fde_iter++;
+			count++;
+		}
+		debug_frame_fdes << "</table>" << std::endl;
+		debug_frame_fdes << "<hr>" << std::endl;
+		for(i = 0; i < num_debug_frame_fdes_filenames; i++)
+		{
+			if(i != 0) debug_frame_fdes << "&nbsp;";
+			if(i == debug_frame_fdes_filename_idx)
+			{
+				debug_frame_fdes << i << std::endl;
+			}
+			else
+			{
+				std::stringstream sstr;
+				sstr << i << ".html";
+				debug_frame_fdes << "<a href=\"" << sstr.str() << "\">" << i << "</a>" << std::endl;
+			}
+		}
+		debug_frame_fdes << "</body>" << std::endl;
+		debug_frame_fdes << "</html>" << std::endl;
+		debug_frame_fdes_filename_idx++;
+	}
+	while(dw_fde_iter != dw_fdes.end());
+	
+	// Debugging Information
+	std::stringstream debug_info_ouput_dir_sstr;
+	debug_info_ouput_dir_sstr << output_dir << "/debug_info";
+	std::string debug_info_output_dir(debug_info_ouput_dir_sstr.str());
+	mkdir(debug_info_output_dir.c_str(), S_IRWXU);
+
+	std::stringstream debug_info_cus_ouput_dir_sstr;
+	debug_info_cus_ouput_dir_sstr << debug_info_output_dir << "/cus";
+	std::string debug_info_cus_output_dir(debug_info_cus_ouput_dir_sstr.str());
+	mkdir(debug_info_cus_output_dir.c_str(), S_IRWXU);
+
+	std::stringstream debug_info_dies_ouput_dir_sstr;
+	debug_info_dies_ouput_dir_sstr << debug_info_output_dir << "/dies";
+	std::string debug_info_dies_output_dir(debug_info_dies_ouput_dir_sstr.str());
+	mkdir(debug_info_dies_output_dir.c_str(), S_IRWXU);
+
+	unsigned int debug_info_cus_filename_idx = 0;
+	unsigned int num_debug_cus = dw_cus.size();
+	unsigned int num_debug_info_cus_filenames = ((num_debug_cus + cus_per_file - 1) / cus_per_file);
+	typename std::map<uint64_t, DWARF_CompilationUnit<MEMORY_ADDR> *>::iterator dw_cu_iter = dw_cus.begin();
+	do
+	{
+		std::stringstream debug_info_cus_filename_sstr;
+		debug_info_cus_filename_sstr << debug_info_cus_output_dir << "/" << debug_info_cus_filename_idx << ".html";
+		std::string debug_info_cus_filename = debug_info_cus_filename_sstr.str().c_str();
+		std::ofstream debug_info_cus(debug_info_cus_filename.c_str(), std::ios::out);
+		debug_info_cus << "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01//EN\" \"http://www.w3.org/TR/html4/strict.dtd\">" << std::endl;
+		debug_info_cus << "<html>" << std::endl;
+		debug_info_cus << "<head>" << std::endl;
+		debug_info_cus << "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
+		debug_info_cus << "<style type=\"text/css\">" << std::endl;
+		debug_info_cus << "<!--" << std::endl;
+		debug_info_cus << "table th { text-align:center; }" << std::endl;
+		debug_info_cus << "table th { font-weight:bold; }" << std::endl;
+		debug_info_cus << "table td { text-align:left; }" << std::endl;
+		debug_info_cus << "table { border-style:solid; }" << std::endl;
+		debug_info_cus << "table { border-width:1px; }" << std::endl;
+		debug_info_cus << "th, td { border-style:solid; }" << std::endl;
+		debug_info_cus << "th, td { border-width:1px; }" << std::endl;
+		debug_info_cus << "th, td { border-width:1px; }" << std::endl;
+		debug_info_cus << "-->" << std::endl;
+		debug_info_cus << "</style>" << std::endl;
+		debug_info_cus << "</head>" << std::endl;
+		debug_info_cus << "<body>" << std::endl;
+		debug_info_cus << "<h1>Debug Information/Compilation Units (.debug_info)</h1>" << std::endl;
+		debug_info_cus << "<a href=\"../../index.html\">Up</a>&nbsp;" << std::endl;
+		unsigned int i;
+		for(i = 0; i < num_debug_info_cus_filenames; i++)
+		{
+			if(i != 0) debug_info_cus << "&nbsp;";
+			if(i == debug_info_cus_filename_idx)
+			{
+				debug_info_cus << i << std::endl;
+			}
+			else
+			{
+				std::stringstream sstr;
+				sstr << i << ".html";
+				debug_info_cus << "<a href=\"" << sstr.str() << "\">" << i << "</a>" << std::endl;
+			}
+		}
+		debug_info_cus << "<table>" << std::endl;
+		debug_info_cus << "<tr>" << std::endl;
+		debug_info_cus << "<th>Id</th>" << std::endl;
+		debug_info_cus << "<th>Offset</th>" << std::endl;
+		debug_info_cus << "<th>Version</th>" << std::endl;
+		debug_info_cus << "<th>Address size</th>" << std::endl;
+		debug_info_cus << "<th>DIEs</th>" << std::endl;
+		debug_info_cus << "</tr>" << std::endl;
+		unsigned int count = 0;
+		while(count < cus_per_file && dw_cu_iter != dw_cus.end())
+		{
+			DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu = (*dw_cu_iter).second;
+
+			dw_cu->to_HTML(debug_info_cus) << std::endl;
+			
+			dw_cu_iter++;
+			count++;
+		}
+		debug_info_cus << "</table>" << std::endl;
+		debug_info_cus << "</body>" << std::endl;
+		debug_info_cus << "</html>" << std::endl;
+		debug_info_cus_filename_idx++;
+	}
+	while(dw_cu_iter != dw_cus.end());
+	
+	unsigned int debug_info_dies_filename_idx = 0;
+	unsigned int dies_per_file = 2048;
+	unsigned int num_debug_dies = dw_dies.size();
+	unsigned int num_debug_info_dies_filenames = ((num_debug_dies + dies_per_file - 1) /dies_per_file);
+	typename std::map<uint64_t, DWARF_DIE<MEMORY_ADDR> *>::iterator dw_die_iter = dw_dies.begin();
+	do
+	{
+		std::stringstream debug_info_dies_filename_sstr;
+		debug_info_dies_filename_sstr << debug_info_dies_output_dir << "/" << debug_info_dies_filename_idx << ".html";
+		std::string debug_info_dies_filename = debug_info_dies_filename_sstr.str().c_str();
+		std::ofstream debug_info_dies(debug_info_dies_filename.c_str(), std::ios::out);
+		debug_info_dies << "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01//EN\" \"http://www.w3.org/TR/html4/strict.dtd\">" << std::endl;
+		debug_info_dies << "<html>" << std::endl;
+		debug_info_dies << "<head>" << std::endl;
+		debug_info_dies << "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
+		debug_info_dies << "<style type=\"text/css\">" << std::endl;
+		debug_info_dies << "<!--" << std::endl;
+		debug_info_dies << "table th { text-align:center; }" << std::endl;
+		debug_info_dies << "table th { font-weight:bold; }" << std::endl;
+		debug_info_dies << "table td { text-align:left; }" << std::endl;
+		debug_info_dies << "table { border-style:solid; }" << std::endl;
+		debug_info_dies << "table { border-width:1px; }" << std::endl;
+		debug_info_dies << "th, td { border-style:solid; }" << std::endl;
+		debug_info_dies << "th, td { border-width:1px; }" << std::endl;
+		debug_info_dies << "th, td { border-width:1px; }" << std::endl;
+		debug_info_dies << "-->" << std::endl;
+		debug_info_dies << "</style>" << std::endl;
+		debug_info_dies << "</head>" << std::endl;
+		debug_info_dies << "<body>" << std::endl;
+		debug_info_dies << "<h1>Debug Information/Debug Information Entries (.debug_info)</h1>" << std::endl;
+		debug_info_dies << "<a href=\"../../index.html\">Up</a>&nbsp;" << std::endl;
+		unsigned int i;
+		for(i = 0; i < num_debug_info_dies_filenames; i++)
+		{
+			if(i != 0) debug_info_dies << "&nbsp;";
+			if(i == debug_info_dies_filename_idx)
+			{
+				debug_info_dies << i << std::endl;
+			}
+			else
+			{
+				std::stringstream sstr;
+				sstr << i << ".html";
+				debug_info_dies << "<a href=\"" << sstr.str() << "\">" << i << "</a>" << std::endl;
+			}
+		}
+		debug_info_dies << "<hr>" << std::endl;
+		debug_info_dies << "<table>" << std::endl;
+		debug_info_dies << "<tr>" << std::endl;
+		debug_info_dies << "<th>Id</th>" << std::endl;
+		debug_info_dies << "<th>Offset</th>" << std::endl;
+		debug_info_dies << "<th>Compilation Unit</th>" << std::endl;
+		debug_info_dies << "<th>Parent DIE</th>" << std::endl;
+		debug_info_dies << "<th>Children</th>" << std::endl;
+		debug_info_dies << "<th>Entry Information</th>" << std::endl;
+		debug_info_dies << "</tr>" << std::endl;
+		unsigned int count = 0;
+		while(count < dies_per_file && dw_die_iter != dw_dies.end())
+		{
+			DWARF_DIE<MEMORY_ADDR> *dw_die = (*dw_die_iter).second;
+
+			dw_die->to_HTML(debug_info_dies) << std::endl;
+			
+			dw_die_iter++;
+			count++;
+		}
+		debug_info_dies << "</table>" << std::endl;
+		debug_info_dies << "<hr>" << std::endl;
+		for(i = 0; i < num_debug_info_dies_filenames; i++)
+		{
+			if(i != 0) debug_info_dies << "&nbsp;";
+			if(i == debug_info_dies_filename_idx)
+			{
+				debug_info_dies << i << std::endl;
+			}
+			else
+			{
+				std::stringstream sstr;
+				sstr << i << ".html";
+				debug_info_dies << "<a href=\"" << sstr.str() << "\">" << i << "</a>" << std::endl;
+			}
+		}
+		debug_info_dies << "</body>" << std::endl;
+		debug_info_dies << "</html>" << std::endl;
+		debug_info_dies_filename_idx++;
+	}
+	while(dw_die_iter != dw_dies.end());
 }
 
 template <class MEMORY_ADDR>
@@ -6393,6 +8477,14 @@ const DWARF_LocListEntry<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindLocListEn
 	} while(debug_loc_offset < debug_loc_section_size);
 	
 	return head;
+}
+
+template <class MEMORY_ADDR>
+const DWARF_CIE<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindCIE(uint64_t debug_frame_offset) const
+{
+	typename std::map<uint64_t, DWARF_CIE<MEMORY_ADDR> *>::const_iterator dw_cie_iter = dw_cies.find(debug_frame_offset);
+	
+	return dw_cie_iter != dw_cies.end() ? (*dw_cie_iter).second : 0;
 }
 
 } // end of namespace elf_loader
