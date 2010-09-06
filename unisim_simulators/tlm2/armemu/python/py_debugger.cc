@@ -230,7 +230,11 @@ debugger_is_mode_step (debugger_DebuggerObject *self)
 		return result;
 	}
 	Simulator *sim = PySimulator_GetSimRef();
+<<<<<<< HEAD
 	unisim::util::debug::debugger_handler::DebuggerHandler *debugger =
+=======
+	unisim::service::debug::DebuggerHandler *debugger =
+>>>>>>> origin/star12x
 			sim->GetDebugger(self->name->c_str());
 	if ( debugger->IsModeStep() )
 		Py_RETURN_TRUE;
@@ -249,7 +253,11 @@ debugger_set_continue_mode (debugger_DebuggerObject *self)
 		return result;
 	}
 	Simulator *sim = PySimulator_GetSimRef();
+<<<<<<< HEAD
 	unisim::util::debug::debugger_handler::DebuggerHandler *debugger =
+=======
+	unisim::service::debug::DebuggerHandler *debugger =
+>>>>>>> origin/star12x
 			sim->GetDebugger(self->name->c_str());
 	debugger->SetContinueMode();
 	Py_RETURN_NONE;
@@ -267,7 +275,11 @@ debugger_is_mode_continue (debugger_DebuggerObject *self)
 		return result;
 	}
 	Simulator *sim = PySimulator_GetSimRef();
+<<<<<<< HEAD
 	unisim::util::debug::debugger_handler::DebuggerHandler *debugger =
+=======
+	unisim::service::debug::DebuggerHandler *debugger =
+>>>>>>> origin/star12x
 			sim->GetDebugger(self->name->c_str());
 	if ( debugger->IsModeContinue() )
 		Py_RETURN_TRUE;
@@ -330,7 +342,11 @@ debugger_has_breakpoint (debugger_DebuggerObject *self, PyObject *args)
 //		}
 
 	Simulator *sim = PySimulator_GetSimRef();
+<<<<<<< HEAD
 	unisim::util::debug::debugger_handler::DebuggerHandler *debugger =
+=======
+	unisim::service::debug::DebuggerHandler *debugger =
+>>>>>>> origin/star12x
 			sim->GetDebugger(self->name->c_str());
 
 	if ( c_str )
@@ -400,7 +416,11 @@ debugger_set_breakpoint (debugger_DebuggerObject *self, PyObject *args)
 //		}
 
 	Simulator *sim = PySimulator_GetSimRef();
+<<<<<<< HEAD
 	unisim::util::debug::debugger_handler::DebuggerHandler *debugger =
+=======
+	unisim::service::debug::DebuggerHandler *debugger =
+>>>>>>> origin/star12x
 			sim->GetDebugger(self->name->c_str());
 
 	if ( c_str )
@@ -473,7 +493,11 @@ debugger_delete_breakpoint (debugger_DebuggerObject *self, PyObject *args)
 //		}
 
 	Simulator *sim = PySimulator_GetSimRef();
+<<<<<<< HEAD
 	unisim::util::debug::debugger_handler::DebuggerHandler *debugger =
+=======
+	unisim::service::debug::DebuggerHandler *debugger =
+>>>>>>> origin/star12x
 			sim->GetDebugger(self->name->c_str());
 
 	if ( c_str )
@@ -642,7 +666,11 @@ PyDebugger_NewDebugger (const char *name)
 	self->debug_watchpoint_handler = 0;
 
 	Simulator *sim = PySimulator_GetSimRef();
+<<<<<<< HEAD
 	unisim::util::debug::debugger_handler::DebuggerHandler *debugger =
+=======
+	unisim::service::debug::DebuggerHandler *debugger =
+>>>>>>> origin/star12x
 			sim->GetDebugger(name);
 	debugger->SetHandlerContext((void *)self);
 	debugger->SetBreakpointHandler(debugger_breakpoint_handler);

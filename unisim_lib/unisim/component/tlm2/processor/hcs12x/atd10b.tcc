@@ -88,10 +88,17 @@ ATD10B<ATD_SIZE>::ATD10B(const sc_module_name& name, Object *parent) :
 	isTriggerModeRunning(false),
 	isATDON(false),
 
+	analog_signal_reg("ANx", this, analog_signal, ATD_SIZE, "ANx: ATD Analog Input Pins"),
+
 	resultIndex(0)
 
 {
+	
+	for (uint8_t i=0; i<ATD_SIZE; i++) {
 
+		analog_signal_reg[i].SetMutable(true);
+	}
+	
 	anx_socket(*this);
 	interrupt_request(*this);
 	slave_socket.register_b_transport(this, &ATD10B::read_write);

@@ -4058,6 +4058,57 @@ int64_t DWARF_FDE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 
 template <class MEMORY_ADDR>
 void DWARF_FDE<MEMORY_ADDR>::Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler)
+<<<<<<< HEAD
+{
+	dw_cie = dw_handler->FindCIE(cie_pointer);
+	if(!dw_cie)
+	{
+		std::cerr << "Can't find CIE at offset " << cie_pointer << std::endl;
+	}
+}
+
+// template <class MEMORY_ADDR>
+// std::string DWARF_FDE<MEMORY_ADDR>::GetHREF() const
+// {
+// 	std::stringstream sstr;
+// 	sstr << "debug_frame/fdes/" << (id / cies_per_file) << ".html#fde-" << id;
+// 	return sstr.str();
+// }
+// 
+// template <class MEMORY_ADDR>
+// unsigned int DWARF_FDE<MEMORY_ADDR>::GetId() const
+// {
+// 	return id;
+// }
+
+template <class MEMORY_ADDR>
+std::ostream& DWARF_FDE<MEMORY_ADDR>::to_XML(std::ostream& os) const
+{
+	os << "<DW_FDE offset=\"" << offset << "\" length=\"" << length << "\" cie_pointer=\"" << cie_pointer << "\" initial_location=\"0x" << std::hex << initial_location << std::dec << "\" address_range=\"0x" << std::hex << address_range << std::dec << "\" call_frame_program=\"";
+	std::stringstream sstr;
+	sstr << *dw_call_frame_prog;
+	c_string_to_XML(os, sstr.str().c_str());
+	os << "\"/>";
+	return os;
+}
+
+template <class MEMORY_ADDR>
+std::ostream& DWARF_FDE<MEMORY_ADDR>::to_HTML(std::ostream& os) const
+{
+	os << "<tr>" << std::endl;
+	os << "<td>" << offset << "</td><td><a href=\"../../" << dw_cie->GetHREF() << "\">cie-" << dw_cie->GetId() << "</a></td>";
+	os << "<td>" << initial_location << "</td><td>" << address_range << "</td><td>";
+	std::stringstream sstr;
+	sstr << *dw_call_frame_prog;
+	c_string_to_XML(os, sstr.str().c_str());
+	os << "</td></tr>" << std::endl;
+	return os;
+}
+
+template <class MEMORY_ADDR>
+std::ostream& operator << (std::ostream& os, const DWARF_FDE<MEMORY_ADDR>& dw_fde)
+=======
+>>>>>>> origin/star12x
 {
 	dw_cie = dw_handler->FindCIE(cie_pointer);
 	if(!dw_cie)
@@ -6777,6 +6828,7 @@ void DWARF_Handler<MEMORY_ADDR>::Initialize()
 	}
 
 	typename std::map<uint64_t, DWARF_CompilationUnit<MEMORY_ADDR> *>::const_iterator dw_cu_iter;
+<<<<<<< HEAD
 	
 	unsigned int dw_cu_id = 0;
 	for(dw_cu_iter = dw_cus.begin(); dw_cu_iter != dw_cus.end(); dw_cu_iter++, dw_cu_id++)
@@ -6790,6 +6842,21 @@ void DWARF_Handler<MEMORY_ADDR>::Initialize()
 	unsigned int dw_die_id = 0;
 	for(dw_die_iter = dw_dies.begin(); dw_die_iter != dw_dies.end(); dw_die_iter++, dw_die_id++)
 	{
+=======
+	
+	unsigned int dw_cu_id = 0;
+	for(dw_cu_iter = dw_cus.begin(); dw_cu_iter != dw_cus.end(); dw_cu_iter++, dw_cu_id++)
+	{
+		DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu = (*dw_cu_iter).second;
+		dw_cu->Fix(this, dw_cu_id);
+	}
+
+	typename std::map<uint64_t, DWARF_DIE<MEMORY_ADDR> *>::const_iterator dw_die_iter;
+	
+	unsigned int dw_die_id = 0;
+	for(dw_die_iter = dw_dies.begin(); dw_die_iter != dw_dies.end(); dw_die_iter++, dw_die_id++)
+	{
+>>>>>>> origin/star12x
 		DWARF_DIE<MEMORY_ADDR> *dw_die = (*dw_die_iter).second;
 		dw_die->Fix(this, dw_die_id);
 	}

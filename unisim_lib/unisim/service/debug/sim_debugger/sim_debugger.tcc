@@ -453,8 +453,13 @@ SetBreakpoint(const char *str)
 {
 	uint64_t addr = 0;
 
+<<<<<<< HEAD
 	if ( !GetSymbolAddress(str, addr) )
 		if ( !GetFileSystemAddress(str, addr) )
+=======
+	if ( !ParseSymbol(str, addr) )
+		if ( !ParseFileSystem(str, addr) )
+>>>>>>> origin/star12x
 		{
 			return false;
 		}
@@ -487,8 +492,13 @@ DeleteBreakpoint(const char *str)
 {
 	uint64_t addr = 0;
 
+<<<<<<< HEAD
 	if ( !GetSymbolAddress(str, addr) )
 		if ( !GetFileSystemAddress(str, addr) )
+=======
+	if ( !ParseSymbol(str, addr) )
+		if ( !ParseFileSystem(str, addr) )
+>>>>>>> origin/star12x
 			return false;
 
 	return DeleteBreakpoint(addr);
@@ -577,7 +587,11 @@ DeleteWriteWatchpoint(uint64_t addr, uint32_t size)
 template <class ADDRESS>
 bool
 SimDebugger<ADDRESS>::
+<<<<<<< HEAD
 GetSymbolAddress(const char *str, uint64_t &addr)
+=======
+ParseSymbol(const char *str, uint64_t &addr)
+>>>>>>> origin/star12x
 {
 	const Symbol<ADDRESS> *symbol = 0;
 
@@ -602,7 +616,11 @@ GetSymbolAddress(const char *str, uint64_t &addr)
 template <class ADDRESS>
 bool
 SimDebugger<ADDRESS>::
+<<<<<<< HEAD
 GetFileSystemAddress(const char *str, uint64_t &addr)
+=======
+ParseFileSystem(const char *str, uint64_t &addr)
+>>>>>>> origin/star12x
 {
 	std::string filename;
 	unsigned int lineno;

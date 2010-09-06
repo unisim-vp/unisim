@@ -78,6 +78,7 @@ using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::ServiceImport;
 using unisim::service::interfaces::TrapReporting;
 using unisim::kernel::service::Parameter;
+using unisim::kernel::service::RegisterArray;
 
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Registers;
@@ -196,6 +197,12 @@ public:
 	bool	debug_enabled;
 	Parameter<bool>	param_debug_enabled;
 
+	RegisterArray<bool> channel_output_reg;
+
+protected:
+	void setOutput(uint8_t channel_index, bool value) { assert(channel_index < PWM_SIZE); output[channel_index] = value; };
+	bool getOutput(uint8_t channel_index) { assert(channel_index < PWM_SIZE); return output[channel_index]; }
+
 private:
 	void ComputeInternalTime();
 
@@ -243,6 +250,8 @@ private:
 	uint8_t pwmper16_register[PWM_SIZE];
 	uint8_t pwmdty16_register_value[PWM_SIZE];
 
+	bool output[PWM_SIZE];
+
 	class Channel_t : public sc_module {
 	public:
 
@@ -269,7 +278,7 @@ private:
 
 
 	private:
-		bool output;
+//		bool output;
 
 		uint8_t channelMask;
 		uint8_t *pwmcnt_register_ptr;
@@ -278,7 +287,7 @@ private:
 		uint8_t *pwmdty_register_value_ptr;
 		uint8_t pwmdty_register_buffer;
 
-		uint8_t channel_number;
+		uint8_t channel_index;
 		PWM	*pwmParent;
 		sc_event wakeup_event;
 

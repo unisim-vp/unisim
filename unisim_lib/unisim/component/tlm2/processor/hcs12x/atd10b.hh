@@ -76,6 +76,7 @@ using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::ServiceImport;
 using unisim::service::interfaces::TrapReporting;
 using unisim::kernel::service::Parameter;
+using unisim::kernel::service::RegisterArray;
 
 using unisim::component::cxx::processor::hcs12x::service_address_t;
 using unisim::component::cxx::processor::hcs12x::CONFIG;
@@ -226,6 +227,9 @@ private:
 
 	bool	debug_enabled;
 	Parameter<bool>	param_debug_enabled;
+
+	RegisterArray<double> analog_signal_reg;
+
 
 	/**
 	 * Vih and Vil are logical levels

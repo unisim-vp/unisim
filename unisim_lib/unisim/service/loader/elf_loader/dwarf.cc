@@ -72,7 +72,11 @@ std::ostream& c_string_to_XML(std::ostream& os, const char *s)
 					os << c;
 			}
 		}
+<<<<<<< HEAD
 		while((c = *(++s)));
+=======
+		while(c = *(++s));
+>>>>>>> origin/star12x
 	}
 	return os;
 }
@@ -109,7 +113,11 @@ std::ostream& c_string_to_HTML(std::ostream& os, const char *s)
 					os << c;
 			}
 		}
+<<<<<<< HEAD
 		while((c = *(++s)));
+=======
+		while(c = *(++s));
+>>>>>>> origin/star12x
 	}
 	return os;
 }
@@ -342,11 +350,16 @@ std::string DWARF_LEB128::to_string(bool is_signed) const
 }
 
 DWARF_Filename::DWARF_Filename(unsigned int _id)
+<<<<<<< HEAD
 	: id(_id)
 	, filename()
+=======
+	: filename()
+>>>>>>> origin/star12x
 	, directory_index()
 	, last_modification_time()
 	, byte_length()
+	, id(_id)
 {
 }
 
@@ -356,6 +369,7 @@ DWARF_Filename::DWARF_Filename(const DWARF_Filename& dw_filename)
 	, directory_index(dw_filename.directory_index)
 	, last_modification_time(dw_filename.last_modification_time)
 	, byte_length(dw_filename.byte_length)
+	, id(dw_filename.id)
 {
 }
 
