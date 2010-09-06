@@ -317,18 +317,6 @@ debugger_has_breakpoint (debugger_DebuggerObject *self, PyObject *args)
 		return NULL;
 	}
 
-	//	if ( !PyArg_ParseTuple(args, "K", &addr) )
-//		if ( !PyArg_ParseTuple(args, "O", &str))
-//		{
-//			if ( !PyUnicode_FSConverter(str, &str_bytes) )
-//			{
-//				PyErr_SetString(PyExc_TypeError, "An address/symbol/filename:line was expected");
-//				return NULL;
-//			}
-//			c_str = PyBytes_AsString(str_bytes);
-//			Py_DECREF(str_bytes);
-//		}
-
 	Simulator *sim = PySimulator_GetSimRef();
 	unisim::util::debug::debugger_handler::DebuggerHandler *debugger =
 			sim->GetDebugger(self->name->c_str());
@@ -386,18 +374,6 @@ debugger_set_breakpoint (debugger_DebuggerObject *self, PyObject *args)
 				"An address/symbol/filename:lien is expected");
 		return NULL;
 	}
-
-	//	if ( !PyArg_ParseTuple(args, "K", &addr) )
-//		if ( !PyArg_ParseTuple(args, "O", &str))
-//		{
-//			if ( !PyUnicode_FSConverter(str, &str_bytes) )
-//			{
-//				PyErr_SetString(PyExc_TypeError, "An address/symbol/filename:line was expected");
-//				return NULL;
-//			}
-//			c_str = PyBytes_AsString(str_bytes);
-//			Py_DECREF(str_bytes);
-//		}
 
 	Simulator *sim = PySimulator_GetSimRef();
 	unisim::util::debug::debugger_handler::DebuggerHandler *debugger =
@@ -460,18 +436,6 @@ debugger_delete_breakpoint (debugger_DebuggerObject *self, PyObject *args)
 		return NULL;
 	}
 
-	//	if ( !PyArg_ParseTuple(args, "K", &addr) )
-//		if ( !PyArg_ParseTuple(args, "O", &str))
-//		{
-//			if ( !PyUnicode_FSConverter(str, &str_bytes) )
-//			{
-//				PyErr_SetString(PyExc_TypeError, "An address/symbol/filename:line was expected");
-//				return NULL;
-//			}
-//			c_str = PyBytes_AsString(str_bytes);
-//			Py_DECREF(str_bytes);
-//		}
-
 	Simulator *sim = PySimulator_GetSimRef();
 	unisim::util::debug::debugger_handler::DebuggerHandler *debugger =
 			sim->GetDebugger(self->name->c_str());
@@ -488,6 +452,192 @@ debugger_delete_breakpoint (debugger_DebuggerObject *self, PyObject *args)
 			Py_RETURN_TRUE;
 	}
 	Py_RETURN_FALSE;
+}
+
+// type is 1 for read, 2 for write and any other as read/write
+static PyObject *
+debugger_generic_set_wathcpoint ( debugger_DebuggerObject *self, PyObject *args,
+		int type)
+{
+	PyObject *result = NULL;
+	PyObject *parm = NULL;
+	unsigned long long int addr = 0;
+	PyObject *str_bytes = NULL;
+	char *c_str = 0;
+	unsigned int size = 0;
+	bool parm_ok = false;
+
+	if ( PySimulator_GetSimRef() == 0 )
+	{
+		PyErr_Format(PyExc_RuntimeError,
+				"Simulator for debugger '%s' is no longer available",
+				self->name->c_str());
+		return result;
+	}
+	if ( PyArg_ParseTuple(args, "OI", &parm, &size) )
+	{
+		if ( PyLong_Check(parm) )
+		{
+			// the parameter is a number
+			addr = PyLong_AsUnsignedLongLong(parm);
+			parm_ok = true;
+		}
+		else if ( PyUnicode_Check(parm) )
+		{
+			// the parameter is a string
+			if ( PyUnicode_FSConverter( parm, &str_bytes) )
+			{
+				c_str = PyBytes_AsString(str_bytes);
+				parm_ok = true;
+			}
+			Py_DECREF(str_bytes);
+		}
+	}
+	if ( !parm_ok )
+	{
+		PyErr_SetString(PyExc_TypeError,
+				"An address/symbol/filename:line and a size are expected");
+		return NULL;
+	}
+
+	Simulator *sim = PySimulator_GetSimRef();
+	unisim::util::debug::debugger_handler::DebuggerHandler *debugger =
+			sim->GetDebugger(self->name->c_str());
+
+	bool watchpoint_result = false;
+	switch ( type )
+	{
+	case 1: // read watchpoint
+		watchpoint_result = ( c_str ?
+				debugger->SetReadWatchpoint(c_str, size):
+				debugger->SetReadWatchpoint(addr, size));
+		break;
+	case 2: // write watchpoint
+		watchpoint_result = ( c_str ?
+				debugger->SetWriteWatchpoint(c_str, size):
+				debugger->SetWriteWatchpoint(addr, size));
+		break;
+	default: // read/write watchpoint
+		watchpoint_result = ( c_str ?
+				debugger->SetWatchpoint(c_str, size):
+				debugger->SetWatchpoint(addr, size));
+		break;
+	}
+
+	if ( watchpoint_result )
+		Py_RETURN_TRUE;
+	Py_RETURN_FALSE;
+}
+
+static PyObject *
+debugger_set_watchpoint (debugger_DebuggerObject *self, PyObject *args)
+{
+	return debugger_generic_set_wathcpoint(self, args, 0);
+}
+
+static PyObject *
+debugger_set_read_watchpoint (debugger_DebuggerObject *self, PyObject *args)
+{
+	return debugger_generic_set_wathcpoint(self, args, 1);
+}
+
+static PyObject *
+debugger_set_write_watchpoint (debugger_DebuggerObject *self, PyObject *args)
+{
+	return debugger_generic_set_wathcpoint(self, args, 2);
+}
+
+// type is 1 for read, 2 for write and any other as read/write
+static PyObject *
+debugger_generic_delete_wathcpoint ( debugger_DebuggerObject *self, PyObject *args,
+		int type)
+{
+	PyObject *result = NULL;
+	PyObject *parm = NULL;
+	unsigned long long int addr = 0;
+	PyObject *str_bytes = NULL;
+	char *c_str = 0;
+	unsigned int size = 0;
+	bool parm_ok = false;
+
+	if ( PySimulator_GetSimRef() == 0 )
+	{
+		PyErr_Format(PyExc_RuntimeError,
+				"Simulator for debugger '%s' is no longer available",
+				self->name->c_str());
+		return result;
+	}
+	if ( PyArg_ParseTuple(args, "OI", &parm, &size) )
+	{
+		if ( PyLong_Check(parm) )
+		{
+			// the parameter is a number
+			addr = PyLong_AsUnsignedLongLong(parm);
+			parm_ok = true;
+		}
+		else if ( PyUnicode_Check(parm) )
+		{
+			// the parameter is a string
+			if ( PyUnicode_FSConverter( parm, &str_bytes) )
+			{
+				c_str = PyBytes_AsString(str_bytes);
+				parm_ok = true;
+			}
+			Py_DECREF(str_bytes);
+		}
+	}
+	if ( !parm_ok )
+	{
+		PyErr_SetString(PyExc_TypeError,
+				"An address/symbol/filename:line and a size are expected");
+		return NULL;
+	}
+
+	Simulator *sim = PySimulator_GetSimRef();
+	unisim::util::debug::debugger_handler::DebuggerHandler *debugger =
+			sim->GetDebugger(self->name->c_str());
+
+	bool watchpoint_result = false;
+	switch ( type )
+	{
+	case 1: // read watchpoint
+		watchpoint_result = ( c_str ?
+				debugger->DeleteReadWatchpoint(c_str, size) :
+				debugger->DeleteReadWatchpoint(addr, size));
+		break;
+	case 2: // write watchpoint
+		watchpoint_result = ( c_str ?
+				debugger->DeleteWriteWatchpoint(c_str, size) :
+				debugger->DeleteWriteWatchpoint(addr, size));
+		break;
+	default: // read/write watchpoint
+		watchpoint_result = ( c_str ?
+				debugger->DeleteWatchpoint(c_str, size) :
+				debugger->DeleteWatchpoint(addr, size));
+		break;
+	}
+
+	if ( watchpoint_result )
+		Py_RETURN_TRUE;
+	Py_RETURN_FALSE;
+}
+
+static PyObject *
+debugger_delete_watchpoint (debugger_DebuggerObject *self, PyObject *args)
+{
+	return debugger_generic_delete_wathcpoint(self, args, 0);
+}
+
+static PyObject *
+debugger_delete_read_watchpoint (debugger_DebuggerObject *self, PyObject *args)
+{
+	return debugger_generic_delete_wathcpoint(self, args, 1);
+}
+
+static PyObject *
+debugger_delete_write_watchpoint (debugger_DebuggerObject *self, PyObject *args)
+{
+	return debugger_generic_delete_wathcpoint(self, args, 2);
 }
 
 static PyMethodDef debugger_methods[] =
@@ -533,6 +683,30 @@ static PyMethodDef debugger_methods[] =
 				(PyCFunction)debugger_delete_breakpoint,
 				METH_VARARGS,
 				"Remove a breakpoint."},
+		{"set_watchpoint",
+				(PyCFunction)debugger_set_watchpoint,
+				METH_VARARGS,
+				"Set a watchpoint."},
+		{"set_read_watchpoint",
+				(PyCFunction)debugger_set_read_watchpoint,
+				METH_VARARGS,
+				"Set a read watchpoint."},
+		{"set_write_watchpoint",
+				(PyCFunction)debugger_set_write_watchpoint,
+				METH_VARARGS,
+				"Set a write watchpoint."},
+		{"delete_watchpoint",
+				(PyCFunction)debugger_delete_watchpoint,
+				METH_VARARGS,
+				"Remove a watchpoint."},
+		{"delete_read_watchpoint",
+				(PyCFunction)debugger_delete_read_watchpoint,
+				METH_VARARGS,
+				"Remove a read watchpoint."},
+		{"delete_write_watchpoint.",
+				(PyCFunction)debugger_delete_write_watchpoint,
+				METH_VARARGS,
+				"Remove a write watchpoint."},
 		{NULL}
 };
 
