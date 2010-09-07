@@ -575,10 +575,10 @@ std::ostream& DWARF_Abbrev::to_HTML(std::ostream& os) const
 	os << "<td>" << offset << "</td>" << std::endl;
 	os << "<td>" << abbrev_code.to_string(false) << "</td>" << std::endl;
 	os << "<td>";
-	c_string_to_XML(os, DWARF_GetTagName((uint16_t) dw_tag));
+	c_string_to_HTML(os, DWARF_GetTagName((uint16_t) dw_tag));
 	os << "</td>" << std::endl;
 	os << "<td>";
-	c_string_to_XML(os, DWARF_GetCHILDRENName(dw_children));
+	c_string_to_HTML(os, DWARF_GetCHILDRENName(dw_children));
 	os << "</td>" << std::endl;
 	os << "<td>" << std::endl;
 	unsigned int num_attrs = dw_abbrev_attributes.size();
@@ -684,9 +684,9 @@ std::ostream& DWARF_AbbrevAttribute::to_XML(std::ostream& os) const
 std::ostream& DWARF_AbbrevAttribute::to_HTML(std::ostream& os) const
 {
 	os << "<td>";
-	c_string_to_XML(os, DWARF_GetATName(dw_at));
+	c_string_to_HTML(os, DWARF_GetATName(dw_at));
 	os << "</td><td>";
-	c_string_to_XML(os, DWARF_GetFORMName(dw_form));
+	c_string_to_HTML(os, DWARF_GetFORMName(dw_form));
 	os << "</td>" << std::endl;
 	return os;
 }
