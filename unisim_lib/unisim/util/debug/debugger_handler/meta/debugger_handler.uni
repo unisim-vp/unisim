@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<package>
+	<unit>
+		<name>unisim::util::debug::debugger_handler</name>
+		<files>
+			<file>unisim/util/debug/debugger_handler/debugger_handler.hh</file>
+			<file>unisim/util/debug/debugger_handler/debugger_handler.cc</file>
+			<file>unisim/util/debug/debugger_handler/CMakeLists.txt</file>
+		</files>
+		<depends>
+		</depends>
+	</unit>
+</package>

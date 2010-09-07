@@ -49,6 +49,7 @@
 #include <unisim/util/debug/breakpoint_registry.hh>
 #include <unisim/util/debug/watchpoint_registry.hh>
 #include <unisim/util/debug/profile.hh>
+#include <unisim/util/debug/debugger_handler/debugger_handler.hh>
 
 #include <unisim/kernel/service/service.hh>
 
@@ -179,7 +180,7 @@ class SimDebugger
 	, public Client<Loader<ADDRESS> >
 	, public Client<StatementLookup<ADDRESS> >
 	, public SimDebuggerBase
-	, public unisim::service::debug::DebuggerHandler
+	, public unisim::util::debug::debugger_handler::DebuggerHandler
 {
 public:
 	ServiceExport<DebugControl<ADDRESS> > debug_control_export;
@@ -253,8 +254,8 @@ private:
 	bool DeleteReadWatchpoint(uint64_t addr, uint32_t size);
 	bool DeleteWriteWatchpoint(uint64_t addr, uint32_t size);
 
-	bool ParseSymbol(const char *str, uint64_t &addr);
-	bool ParseFileSystem(const char *str, uint64_t &addr);
+	bool GetSymbolAddress(const char *str, uint64_t &addr);
+	bool GetFileSystemAddress(const char *str, uint64_t &addr);
 
 	void DumpBreakpoints();
 	void DumpWatchpoints();

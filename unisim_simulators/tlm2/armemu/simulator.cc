@@ -482,7 +482,7 @@ SetTrapHandler (void (*function)(void *, unsigned int), void *context)
 	return true;
 }
 
-unisim::service::debug::DebuggerHandler *
+unisim::util::debug::debugger_handler::DebuggerHandler *
 Simulator::
 GetDebugger(const char *name)
 {

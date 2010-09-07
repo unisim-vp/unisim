@@ -70,14 +70,17 @@ PWM<PWM_SIZE>::PWM(const sc_module_name& name, Object *parent) :
 	interruptOffset(0x8C),
 	param_interruptOffset("interrupt-offset", this, interruptOffset),
 	bus_cycle_time_int(0),
-	param_bus_cycle_time_int("bus-cycle-time", this, bus_cycle_time_int)
+	param_bus_cycle_time_int("bus-cycle-time", this, bus_cycle_time_int),
+	
+	channel_output_reg("channel", this, output, PWM_SIZE, "PWM output")
 
 {
+
 	uint8_t channel_number;
 
 	char channelName[20];
 
-	for (int i=0; i<PWM_SIZE; i++) {
+	for (uint8_t i=0; i<PWM_SIZE; i++) {
 #if BYTE_ORDER == BIG_ENDIAN
 		channel_number = i;
 #else
@@ -88,6 +91,7 @@ PWM<PWM_SIZE>::PWM(const sc_module_name& name, Object *parent) :
 
 		channel[channel_number] = new Channel_t(channelName, this, channel_number, &pwmcnt16_register[i], &pwmper16_register[i], &pwmdty16_register_value[i]);
 
+		channel_output_reg[i].SetMutable(false);
 	}
 
 	// Reserved Register for factory testing
@@ -796,15 +800,14 @@ template <uint8_t PWM_SIZE>
 PWM<PWM_SIZE>::Channel_t::Channel_t(const sc_module_name& name, PWM *parent, const uint8_t channel_num, uint8_t *pwmcnt_ptr, uint8_t *pwmper_ptr, uint8_t *pwmdty_ptr) :
 	sc_module(name),
 	pwmParent(parent),
-	channel_number(channel_num),
+	channel_index(channel_num),
 	pwmcnt_register_ptr(pwmcnt_ptr),
 	pwmper_register_value_ptr(pwmper_ptr),
-	pwmdty_register_value_ptr(pwmdty_ptr),
-	output(false)
+	pwmdty_register_value_ptr(pwmdty_ptr)
 
 {
 
-	channelMask = (0x01 << channel_number);
+	channelMask = (0x01 << channel_index);
 
 	SC_HAS_PROCESS(Channel_t);
 
@@ -821,7 +824,7 @@ void PWM<PWM_SIZE>::Channel_t::Run() {
 
 
 	uint8_t ctl_register;
-	uint8_t conMask = 0x10 << (channel_number / 2);
+	uint8_t conMask = 0x10 << (channel_index / 2);
 	/*
 	 * PWMCTL bits interpretation
 	 * bit7: CON67, bit6: CON45, bit5: CON23, bit4: CON01
@@ -840,7 +843,7 @@ void PWM<PWM_SIZE>::Channel_t::Run() {
 		 * - Take in account the channel state (Enable or Disable)
 		 * - Is Channel concatenated ?
 		 */
-		while ((((ctl_register & conMask) != 0) && (channel_number % 2 == 0)) || (!isEnable))
+		while ((((ctl_register & conMask) != 0) && (channel_index % 2 == 0)) || (!isEnable))
 		{
 			wait(wakeup_event);
 
@@ -854,14 +857,14 @@ void PWM<PWM_SIZE>::Channel_t::Run() {
 	 	 *     channel 2, 3, 6, 7 then clock B or SB
 		 */
 		if ((pwmParent->pwmclk_register & channelMask)  != 0) {
-			if ((channel_number & bit1Mask) != 0) {
+			if ((channel_index & bit1Mask) != 0) {
 				clk = pwmParent->getClockB();
 			} else {
 				clk = pwmParent->getClockA();
 			}
 
 		} else {
-			if ((channel_number & bit1Mask) != 0) {
+			if ((channel_index & bit1Mask) != 0) {
 				clk = pwmParent->getClockSB();
 			} else {
 				clk = pwmParent->getClockSA();
@@ -869,7 +872,7 @@ void PWM<PWM_SIZE>::Channel_t::Run() {
 
 		}
 
-		if (((ctl_register & conMask) != 0) && (channel_number % 2 != 0)) { // 16-bit mode
+		if (((ctl_register & conMask) != 0) && (channel_index % 2 != 0)) { // 16-bit mode
 			checkChangeStateAndWait<uint16_t>(clk);
 		} else { // 8-bit mode
 			checkChangeStateAndWait<uint8_t>(clk);
@@ -896,12 +899,12 @@ template <class T> void PWM<PWM_SIZE>::Channel_t::checkChangeStateAndWait(const 
 
 		setPwmcnt_register(0);
 		if (isPolarityHigh) {
-				output = true;
+				setOutput(true);
 		} else {
-				output = false;
+				setOutput(false);
 		}
 
-		pwmParent->refresh_channel(channel_number);
+		pwmParent->refresh_channel(channel_index);
 
 		wait(wakeup_event);
 		return;
@@ -911,9 +914,9 @@ template <class T> void PWM<PWM_SIZE>::Channel_t::checkChangeStateAndWait(const 
 			((dty >= period) && isPolarityHigh))
 	{
 
-		output = true;
+		setOutput(true);
 
-		pwmParent->refresh_channel(channel_number);
+		pwmParent->refresh_channel(channel_index);
 
 		wait(wakeup_event);
 		return;
@@ -922,9 +925,9 @@ template <class T> void PWM<PWM_SIZE>::Channel_t::checkChangeStateAndWait(const 
 			((dty >= period) && !isPolarityHigh))
 	{
 
-		output = false;
+		setOutput(false);
 
-		pwmParent->refresh_channel(channel_number);
+		pwmParent->refresh_channel(channel_index);
 
 		wait(wakeup_event);
 		return;
@@ -941,9 +944,9 @@ template <class T> void PWM<PWM_SIZE>::Channel_t::checkChangeStateAndWait(const 
 
 	wait(dty*clk);
 
-	output = !output;
+	setOutput(!getOutput());
 
-	pwmParent->refresh_channel(channel_number);
+	pwmParent->refresh_channel(channel_index);
 
 	if (*((T *) pwmcnt_register_ptr) == dty) // The counter can be reset by software during wait
 	{
@@ -961,9 +964,9 @@ template <class T> void PWM<PWM_SIZE>::Channel_t::checkChangeStateAndWait(const 
 				wait(toPeriod*clk);
 			}
 
-			output = !output;
+			setOutput(!getOutput());
 
-			pwmParent->refresh_channel(channel_number);
+			pwmParent->refresh_channel(channel_index);
 
 			if (isCenterAligned) {
 
@@ -1001,14 +1004,14 @@ void PWM<PWM_SIZE>::Channel_t::disable() {
 }
 
 template <uint8_t PWM_SIZE>
-bool PWM<PWM_SIZE>::Channel_t::getOutput() { return output; }
+bool PWM<PWM_SIZE>::Channel_t::getOutput() { return pwmParent->getOutput(channel_index); }
 /**
  * The channel output is meaningful only if the channel is enabled
  */
 template <uint8_t PWM_SIZE>
 void PWM<PWM_SIZE>::Channel_t::setOutput(bool val) {
 
-	if ((pwmParent->pwme_register & channelMask) != 0) output = val;
+	if ((pwmParent->pwme_register & channelMask) != 0) pwmParent->setOutput(channel_index, val);
 }
 
 template <uint8_t PWM_SIZE>
