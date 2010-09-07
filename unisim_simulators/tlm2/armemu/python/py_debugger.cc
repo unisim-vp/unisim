@@ -454,10 +454,11 @@ debugger_delete_breakpoint (debugger_DebuggerObject *self, PyObject *args)
 	Py_RETURN_FALSE;
 }
 
-// type is 1 for read, 2 for write and any other as read/write
+typedef enum WatchpointType_t { READ, WRITE, RW} WatchpointType_t;
+
 static PyObject *
 debugger_generic_set_wathcpoint ( debugger_DebuggerObject *self, PyObject *args,
-		int type)
+		WatchpointType_t type)
 {
 	PyObject *result = NULL;
 	PyObject *parm = NULL;
@@ -507,12 +508,12 @@ debugger_generic_set_wathcpoint ( debugger_DebuggerObject *self, PyObject *args,
 	bool watchpoint_result = false;
 	switch ( type )
 	{
-	case 1: // read watchpoint
+	case READ: // read watchpoint
 		watchpoint_result = ( c_str ?
 				debugger->SetReadWatchpoint(c_str, size):
 				debugger->SetReadWatchpoint(addr, size));
 		break;
-	case 2: // write watchpoint
+	case WRITE: // write watchpoint
 		watchpoint_result = ( c_str ?
 				debugger->SetWriteWatchpoint(c_str, size):
 				debugger->SetWriteWatchpoint(addr, size));
@@ -532,25 +533,24 @@ debugger_generic_set_wathcpoint ( debugger_DebuggerObject *self, PyObject *args,
 static PyObject *
 debugger_set_watchpoint (debugger_DebuggerObject *self, PyObject *args)
 {
-	return debugger_generic_set_wathcpoint(self, args, 0);
+	return debugger_generic_set_wathcpoint(self, args, RW);
 }
 
 static PyObject *
 debugger_set_read_watchpoint (debugger_DebuggerObject *self, PyObject *args)
 {
-	return debugger_generic_set_wathcpoint(self, args, 1);
+	return debugger_generic_set_wathcpoint(self, args, READ);
 }
 
 static PyObject *
 debugger_set_write_watchpoint (debugger_DebuggerObject *self, PyObject *args)
 {
-	return debugger_generic_set_wathcpoint(self, args, 2);
+	return debugger_generic_set_wathcpoint(self, args, (WatchpointType_t)WRITE);
 }
 
-// type is 1 for read, 2 for write and any other as read/write
 static PyObject *
 debugger_generic_delete_wathcpoint ( debugger_DebuggerObject *self, PyObject *args,
-		int type)
+		WatchpointType_t type)
 {
 	PyObject *result = NULL;
 	PyObject *parm = NULL;
@@ -600,12 +600,12 @@ debugger_generic_delete_wathcpoint ( debugger_DebuggerObject *self, PyObject *ar
 	bool watchpoint_result = false;
 	switch ( type )
 	{
-	case 1: // read watchpoint
+	case READ: // read watchpoint
 		watchpoint_result = ( c_str ?
 				debugger->DeleteReadWatchpoint(c_str, size) :
 				debugger->DeleteReadWatchpoint(addr, size));
 		break;
-	case 2: // write watchpoint
+	case WRITE: // write watchpoint
 		watchpoint_result = ( c_str ?
 				debugger->DeleteWriteWatchpoint(c_str, size) :
 				debugger->DeleteWriteWatchpoint(addr, size));
@@ -625,19 +625,19 @@ debugger_generic_delete_wathcpoint ( debugger_DebuggerObject *self, PyObject *ar
 static PyObject *
 debugger_delete_watchpoint (debugger_DebuggerObject *self, PyObject *args)
 {
-	return debugger_generic_delete_wathcpoint(self, args, 0);
+	return debugger_generic_delete_wathcpoint(self, args, RW);
 }
 
 static PyObject *
 debugger_delete_read_watchpoint (debugger_DebuggerObject *self, PyObject *args)
 {
-	return debugger_generic_delete_wathcpoint(self, args, 1);
+	return debugger_generic_delete_wathcpoint(self, args, READ);
 }
 
 static PyObject *
 debugger_delete_write_watchpoint (debugger_DebuggerObject *self, PyObject *args)
 {
-	return debugger_generic_delete_wathcpoint(self, args, 2);
+	return debugger_generic_delete_wathcpoint(self, args, WRITE);
 }
 
 static PyMethodDef debugger_methods[] =

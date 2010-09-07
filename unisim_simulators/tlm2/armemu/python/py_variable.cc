@@ -319,7 +319,8 @@ static PyObject *
 variable_get_value ( variable_VariableObject *self )
 {
 	PyObject *result = NULL;
-	Simulator *sim;
+	Simulator *sim = PySimulator_GetSimRef();
+
 	if ( sim == 0 )
 	{
 		PyErr_Format(PyExc_RuntimeError,

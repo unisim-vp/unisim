@@ -72,13 +72,13 @@ void TimeUnitMapInit()
 	sc_time_unit_map.insert(std::pair<std::string, sc_time_unit>("SEC", SC_SEC));
 }
 
-static int TimeUnit(const std::string& unit)
-{
-	const std::map<std::string, int>::iterator it = time_unit_map.find(unit);
-
-	if ( it == time_unit_map.end() ) return -1;
-	return (*it).second;
-}
+//static int TimeUnit(const std::string& unit)
+//{
+//	const std::map<std::string, int>::iterator it = time_unit_map.find(unit);
+//
+//	if ( it == time_unit_map.end() ) return -1;
+//	return (*it).second;
+//}
 
 static bool SCTimeUnit(const std::string& unit, sc_time_unit& sc_unit)
 {
@@ -410,28 +410,28 @@ simulator_get_formulas ( armemu_SimulatorObject *self)
 	return result;
 }
 
-static void
-get_parameters_map (Simulator *sim, std::map<std::string, std::string> &parms)
-{
-	if ( sim == 0 ) return;
-	std::list<unisim::kernel::service::VariableBase *> parm_list;
-	sim->GetParameters(parm_list);
-	for ( std::list<unisim::kernel::service::VariableBase *>::iterator it = parm_list.begin();
-			it != parm_list.end();
-			it++ )
-		parms.insert(make_pair(std::string((*it)->GetName()),
-				(std::string)*(*it)));
-}
-
-static void
-set_parameters_map (Simulator *sim, std::map<std::string, std::string> &parms)
-{
-	if ( sim == 0 ) return;
-	for ( std::map<std::string, std::string>::iterator it = parms.begin();
-			it != parms.end();
-			it++ )
-		sim->SetVariable(it->first.c_str(), it->second.c_str());
-}
+//static void
+//get_parameters_map (Simulator *sim, std::map<std::string, std::string> &parms)
+//{
+//	if ( sim == 0 ) return;
+//	std::list<unisim::kernel::service::VariableBase *> parm_list;
+//	sim->GetParameters(parm_list);
+//	for ( std::list<unisim::kernel::service::VariableBase *>::iterator it = parm_list.begin();
+//			it != parm_list.end();
+//			it++ )
+//		parms.insert(make_pair(std::string((*it)->GetName()),
+//				(std::string)*(*it)));
+//}
+//
+//static void
+//set_parameters_map (Simulator *sim, std::map<std::string, std::string> &parms)
+//{
+//	if ( sim == 0 ) return;
+//	for ( std::map<std::string, std::string>::iterator it = parms.begin();
+//			it != parms.end();
+//			it++ )
+//		sim->SetVariable(it->first.c_str(), it->second.c_str());
+//}
 
 static PyObject *
 simulator_is_running (armemu_SimulatorObject *self)
