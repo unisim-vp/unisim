@@ -33,11 +33,11 @@
  */
 
 /**
- * Methods for the arm processor data processing operand decoding
+ * Methods for the arm processor load/store operand decoding
  **/
 
-#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_DATA_PROCESSING_HH__
-#define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_DATA_PROCESSING_HH__
+#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_DECODE_LOAD_STORE_HH__
+#define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_DECODE_LOAD_STORE_HH__
 
 #include <inttypes.h>
 
@@ -47,29 +47,19 @@ namespace cxx {
 namespace processor {
 namespace arm {
 
-uint32_t ShiftOperand32imm(const uint32_t rotate_imm,
-		const uint32_t imm);
-uint32_t ShiftOperand32imm(const uint32_t rotate_imm,
-		const uint32_t imm,
-		const bool carry_in,
-		bool *shift_carry_out);
-uint32_t ShiftOperandImmShift(const uint32_t shift_imm,
-		const uint32_t shift,
+uint32_t
+LSWUBImmOffset(const uint32_t u,
 		const uint32_t val_reg,
+		const uint32_t offset);
+
+uint32_t
+LSWUBReg(const uint32_t u,
+		const uint32_t val_rn,
+		const uint32_t val_rd,
+		const uint32_t shift_imm,
+		const uint32_t shift,
+		const uint32_t val_rm,
 		const bool carry_in);
-uint32_t ShiftOperandImmShift(const uint32_t shift_imm,
-		const uint32_t shift,
-		const uint32_t val_reg,
-		const bool carry_in,
-		bool *shift_carry_out);
-uint32_t ShiftOperandRegShift(const uint32_t shift_reg,
-		const uint32_t shift,
-		const uint32_t val_reg);
-uint32_t ShiftOperandRegShift(const uint32_t shift_reg,
-		const uint32_t shift,
-		const uint32_t val_reg,
-		const bool carry_in,
-		bool *shift_carry_out);
 
 } // end of namespace arm
 } // end of namespace processor
@@ -77,4 +67,4 @@ uint32_t ShiftOperandRegShift(const uint32_t shift_reg,
 } // end of namespace component
 } // end of namespace unisim
 
-#endif /* __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_DATA_PROCESSING_HH__ */
+#endif /* __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_DECODE_LOAD_STORE_HH__ */

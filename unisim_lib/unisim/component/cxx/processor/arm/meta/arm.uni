@@ -51,6 +51,8 @@
 			<file>unisim/component/cxx/processor/arm/cpu.tcc</file>
 			<file>unisim/component/cxx/processor/arm/data_processing.hh</file>
 			<file>unisim/component/cxx/processor/arm/data_processing.cc</file>
+			<file>unisim/component/cxx/processor/arm/decode_load_store.hh</file>
+			<file>unisim/component/cxx/processor/arm/decode_load_store.cc</file>
 			<file>unisim/component/cxx/processor/arm/memory_op.hh</file>
 			<file>unisim/component/cxx/processor/arm/arm926ejs/cache.hh</file>
 			<file>unisim/component/cxx/processor/arm/arm926ejs/cache.cc</file>

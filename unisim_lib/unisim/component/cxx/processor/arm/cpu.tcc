@@ -1220,74 +1220,7 @@ CoprocessorGetInitram() {
 /* Operand decoding methods     START                         */
 /**************************************************************/
 
-/* Address operand decoding */
-template<class CONFIG>
-typename CONFIG::address_t
-CPU<CONFIG> ::
-LSWUBImmOffset(const uint32_t u,
-			   const typename CONFIG::reg_t val_reg,
-			   const uint32_t offset) {
-	return val_reg + (((u << 1) - 1) * offset);
-}
-
-template<class CONFIG>
-typename CONFIG::address_t
-CPU<CONFIG> ::
-LSWUBReg(const uint32_t u,
-		 const typename CONFIG::reg_t val_rn,
-		 const typename CONFIG::reg_t val_rd,
-		 const uint32_t shift_imm,
-		 const uint32_t shift,
-		 const typename CONFIG::reg_t val_rm) {
-	
-	if((shift_imm == 0) && (shift == 0)) {
-		return val_rn + ((( u << 1) - 1) * val_rm);
-	}
-	
-	typename CONFIG::reg_t index = 0;
-	switch(shift) {
-		case 0:
-			index = val_rm << shift_imm;
-			// index |= val_rm >> (32 - shift_imm);
-			break;
-		case 1:
-			if(shift_imm == 0)
-				index = 0;
-			else {
-				index = val_rm >> shift_imm;
-				//       index |= val_rm << (32 - shift_imm);
-			}
-			break;
-		case 2:
-			if(shift_imm == 0) {
-				if((val_rm & (1 << ((sizeof(typename CONFIG::reg_t) * 8) - 1))) != 0) {
-					index = (typename CONFIG::reg_t)((typename CONFIG::sreg_t)-1);
-				} else {
-					index = 0;
-				}
-			} else {
-				index = ((typename CONFIG::sreg_t)val_rm) >> shift_imm;
-			}
-			break;
-		case 3:
-			if(shift_imm == 0) {
-				if(GetCPSR_C()) index = 1 << ((sizeof(typename CONFIG::reg_t) * 8) - 1);
-				index |= val_rm >> 1;
-			} else {
-				index = RotateRight(val_rm, shift_imm);
-			}
-			break;
-		default:
-			logger << DebugError
-			<< "(" << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << "): "
-			<< "unknown shift value (" << shift << ")"
-			<< EndDebugError;
-			Stop(-1);
-	}
-	return val_rn + (((u << 1) - 1) * index);
-}
-
-/* Load/store operand decoding */
+/* Miscellaneous load/store operand decoding */
 template<class CONFIG>
 typename CONFIG::address_t
 CPU<CONFIG> ::

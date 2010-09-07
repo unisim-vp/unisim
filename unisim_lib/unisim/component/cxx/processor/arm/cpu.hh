@@ -298,17 +298,6 @@ namespace arm {
 		/* Operand decoding methods     START                         */
 		/**************************************************************/
 		
-		/* Load/store operand decoding */
-		inline address_t LSWUBImmOffset(const uint32_t u, 
-										const reg_t val_reg, 
-										const uint32_t offset) GCC_INLINE;
-		inline address_t LSWUBReg(const uint32_t u, 
-								  const reg_t val_rn, 
-								  const reg_t val_rd, 
-								  const uint32_t shift_imm, 
-								  const uint32_t shift, 
-								  const reg_t val_rm) GCC_INLINE;
-		
 		/* Miscellaneous load/store operand decoding */
 		inline address_t MLSImmOffset(const uint32_t u, 
 									  const reg_t val_reg, 

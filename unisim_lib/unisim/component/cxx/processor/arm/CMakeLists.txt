@@ -141,6 +141,8 @@ set ( cxx_arm_srcs
 	
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/data_processing.hh
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/data_processing.cc
+	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/decode_load_store.hh
+	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/decode_load_store.cc
 	
 	${CMAKE_BINARY_DIR}/unisim/component/cxx/processor/arm/isa_arm32.hh
 	${CMAKE_BINARY_DIR}/unisim/component/cxx/processor/arm/isa_arm32.tcc

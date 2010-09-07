@@ -113,7 +113,7 @@ ldr_imm_post.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	address = rn_value; // address used is the contents of rn
-	new_rn_value = cpu.LSWUBImmOffset(u, rn_value, offset);
+	new_rn_value = LSWUBImmOffset(u, rn_value, offset);
 	cpu.SetGPR(rn, new_rn_value); // update rn
 
 	if(rd == cpu.PC_reg) {
@@ -133,7 +133,7 @@ ldr_imm_offset.execute = {
 
 	if(!cpu.CheckCondition(cond)) return;
   
-	address = cpu.LSWUBImmOffset(u, rn_value, offset); 
+	address = LSWUBImmOffset(u, rn_value, offset); 
 	if(rd == cpu.PC_reg) {
 		cpu.Read32toPCUpdateT(address);
 	} else {
@@ -151,7 +151,7 @@ ldr_imm_pre.execute = {
 
 	if(!cpu.CheckCondition(cond)) return;
   
-	address = cpu.LSWUBImmOffset(u, rn_value, offset); // compute address
+	address = LSWUBImmOffset(u, rn_value, offset); // compute address
 	cpu.SetGPR(rn, address); // update rn with the address
 	if(rd == cpu.PC_reg) {
 		cpu.Read32toPCUpdateT(address);
@@ -173,7 +173,9 @@ ldr_reg_post.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	address = rn_value;
-	cpu.SetGPR(rn, cpu.LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value));
+	cpu.SetGPR(rn, 
+		LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value,
+			cpu.GetCPSR_C()));
 	if(rd == cpu.PC_reg) {
 		cpu.Read32toPCUpdateT(address);
 	} else {
@@ -193,7 +195,9 @@ ldr_reg_offset.execute = {
 
 	if(!cpu.CheckCondition(cond)) return;
 
-	address = cpu.LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value);
+	address = 
+		LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value,
+			cpu.GetCPSR_C());
 	if(rd == cpu.PC_reg) {
 		cpu.Read32toPCUpdateT(address);
 	} else {
@@ -213,7 +217,9 @@ ldr_reg_pre.execute = {
 	
 	if(!cpu.CheckCondition(cond)) return;
 
-	address = cpu.LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value);
+	address = 
+		LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value,
+			cpu.GetCPSR_C());
 	cpu.SetGPR(rn, address);
 	if(rd == cpu.PC_reg) {
 		cpu.Read32toPCUpdateT(address);
@@ -293,7 +299,7 @@ ldrb_imm_post.execute = {
 	if(!cpu.CheckCondition(cond)) return;
   
 	address = cpu.GetGPR(rn); // address used is the contents of rn
-	cpu.SetGPR(rn, cpu.LSWUBImmOffset(u, rn_value, offset)); // update rn
+	cpu.SetGPR(rn, LSWUBImmOffset(u, rn_value, offset)); // update rn
 	cpu.Read8toGPR(address, rd);
 }
 
@@ -307,7 +313,7 @@ ldrb_imm_offset.execute = {
 
 	if(!cpu.CheckCondition(cond)) return;
   
-	address = cpu.LSWUBImmOffset(u, rn_value, offset); 
+	address = LSWUBImmOffset(u, rn_value, offset); 
 	cpu.Read8toGPR(address, rd);
 }
 
@@ -321,7 +327,7 @@ ldrb_imm_pre.execute = {
 
 	if(!cpu.CheckCondition(cond)) return;
   
-	address = cpu.LSWUBImmOffset(u, rn_value, offset); // compute address
+	address = LSWUBImmOffset(u, rn_value, offset); // compute address
 	cpu.SetGPR(rn, address); // update rn with the address
 	cpu.Read8toGPR(address, rd);
 }
@@ -339,7 +345,9 @@ ldrb_reg_post.execute = {
 	if(!cpu.CheckCondition(cond)) return;
   
 	address = cpu.GetGPR(rn);
-	cpu.SetGPR(rn, cpu.LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value));
+	cpu.SetGPR(rn, 
+		LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value,
+			cpu.GetCPSR_C()));
 	cpu.Read8toGPR(address, rd);
 }
 
@@ -355,7 +363,9 @@ ldrb_reg_offset.execute = {
 
 	if(!cpu.CheckCondition(cond)) return;
 	
-	address = cpu.LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value);
+	address = 
+		LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value,
+			cpu.GetCPSR_C());
 	cpu.Read8toGPR(address, rd);
 }
 
@@ -371,7 +381,9 @@ ldrb_reg_pre.execute = {
 
 	if(!cpu.CheckCondition(cond)) return;
   
-	address = cpu.LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value);
+	address = 
+		LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value,
+			cpu.GetCPSR_C());
 	cpu.SetGPR(rn, address);
 	cpu.Read8toGPR(address, rd);
 }
@@ -442,7 +454,7 @@ ldrb_rd15_imm_offset.execute = {
 
 		cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
-		address = cpu.LSWUBImmOffset(u, rn_value, offset);
+		address = LSWUBImmOffset(u, rn_value, offset);
 		cpu.ReadPrefetch(address);
 	} else {
 		/* unpredictable */
@@ -473,7 +485,9 @@ ldrb_rd15_reg_offset.execute = {
 
 		cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
-		address = cpu.LSWUBReg(u, rn_value, 15, shift_imm, shift, rm_value);
+		address = 
+			LSWUBReg(u, rn_value, 15, shift_imm, shift, rm_value,
+				cpu.GetCPSR_C());
 		cpu.ReadPrefetch(address);
 	} else {
 		/* unpredictable */
@@ -525,7 +539,7 @@ ldrt_imm.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	address = rn_value;
-	cpu.SetGPR(rn, cpu.LSWUBImmOffset(u, rn_value, offset));
+	cpu.SetGPR(rn, LSWUBImmOffset(u, rn_value, offset));
 	cpu.Read32toGPR(address, rd);
 }
 
@@ -580,7 +594,7 @@ ldrbt_imm.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	address = rn_value;
-	cpu.SetGPR(rn, cpu.LSWUBImmOffset(u, rn_value, offset));
+	cpu.SetGPR(rn, LSWUBImmOffset(u, rn_value, offset));
 	cpu.Read8toGPR(address, rd);
 }
 
@@ -597,7 +611,9 @@ ldrbt_reg.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	address = rn_value;
-	cpu.SetGPR(rn, cpu.LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value));
+	cpu.SetGPR(rn, 
+		LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value,
+			cpu.GetCPSR_C()));
 	cpu.Read8toGPR(address, rd);
 }
 
@@ -672,7 +688,7 @@ str_imm_post.execute = {
 
 	address = rn_value; // address used is the contents of rn
 	cpu.CheckAlignmentExcep(address); // TODO
-	cpu.SetGPR(rn, cpu.LSWUBImmOffset(u, rn_value, offset)); // update rn
+	cpu.SetGPR(rn, LSWUBImmOffset(u, rn_value, offset)); // update rn
 	value = rd_value;
 	cpu.Write32(address, value);
 }
@@ -689,7 +705,7 @@ str_imm_offset.execute = {
 
 	if(!cpu.CheckCondition(cond)) return;
   
-	address = cpu.LSWUBImmOffset(u, rn_value, offset); 
+	address = LSWUBImmOffset(u, rn_value, offset); 
 	cpu.CheckAlignmentExcep(address); // TODO
 	value = rd_value;
 
@@ -708,7 +724,7 @@ str_imm_pre.execute = {
 
 	if(!cpu.CheckCondition(cond)) return;
   
-	address = cpu.LSWUBImmOffset(u, rn_value, offset); // compute address
+	address = LSWUBImmOffset(u, rn_value, offset); // compute address
 	cpu.CheckAlignmentExcep(address); // TODO
 	cpu.SetGPR(rn, address); // update rn with the address
 	value = rd_value;
@@ -730,7 +746,9 @@ str_reg_post.execute = {
 
 	address = rn_value;
 	cpu.CheckAlignmentExcep(address); // TODO
-	cpu.SetGPR(rn, cpu.LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value));
+	cpu.SetGPR(rn, 
+		LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value,
+			cpu.GetCPSR_C()));
 	value = rd_value;
 	cpu.Write32(address, value);
 }
@@ -748,7 +766,9 @@ str_reg_offset.execute = {
 	
 	if(!cpu.CheckCondition(cond)) return;
 
-	address = cpu.LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value);
+	address = 
+		LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value,
+			cpu.GetCPSR_C());
 	cpu.CheckAlignmentExcep(address); // TODO
 	value = rd_value;
 	cpu.Write32(address, value);
@@ -767,7 +787,9 @@ str_reg_pre.execute = {
 
 	if(!cpu.CheckCondition(cond)) return;
 
-	address = cpu.LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value);
+	address = 
+		LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value,
+			cpu.GetCPSR_C());
 	cpu.CheckAlignmentExcep(address); // TODO
 	cpu.SetGPR(rn, address);
 	value = rd_value;
@@ -847,7 +869,7 @@ strb_imm_post.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 	
 	address = rn_value; // address used is the contents of rn
-	cpu.SetGPR(rn, cpu.LSWUBImmOffset(u, rn_value, offset)); // update rn
+	cpu.SetGPR(rn, LSWUBImmOffset(u, rn_value, offset)); // update rn
 	value = rd_value & 0x0FF;
 	cpu.Write8(address, value);
 }
@@ -864,7 +886,7 @@ strb_imm_offset.execute = {
 
 	if(!cpu.CheckCondition(cond)) return;
   
-	address = cpu.LSWUBImmOffset(u, rn_value, offset); 
+	address = LSWUBImmOffset(u, rn_value, offset); 
 	value = rd_value & 0x0FF;
 	cpu.Write8(address, value);
 }
@@ -881,7 +903,7 @@ strb_imm_pre.execute = {
 
 	if(!cpu.CheckCondition(cond)) return;
   
-	address = cpu.LSWUBImmOffset(u, rn_value, offset); // compute address
+	address = LSWUBImmOffset(u, rn_value, offset); // compute address
 	cpu.SetGPR(rn, address); // update rn with the address
 	value = rd_value & 0x0FF;
 	cpu.Write8(address, value);
@@ -901,7 +923,9 @@ strb_reg_post.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	address = cpu.GetGPR(rn);
-	cpu.SetGPR(rn, cpu.LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value));
+	cpu.SetGPR(rn, 
+		LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value,
+			cpu.GetCPSR_C()));
 	value = rd_value & 0x0FF;
 	cpu.Write8(address, value);
 }
@@ -919,7 +943,9 @@ strb_reg_offset.execute = {
 
 	if(!cpu.CheckCondition(cond)) return;
 	
-	address = cpu.LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value);
+	address = 
+		LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value,
+			cpu.GetCPSR_C());
 	value = rd_value & 0x0FF;
 	cpu.Write8(address, value);
 }
@@ -937,7 +963,9 @@ strb_reg_pre.execute = {
 
 	if(!cpu.CheckCondition(cond)) return;
   
-	address = cpu.LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value);
+	address = 
+		LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value,
+			cpu.GetCPSR_C());
 	cpu.SetGPR(rn, address);
 	value = rd_value & 0x0FF;
 	cpu.Write8(address, value);
@@ -983,7 +1011,7 @@ strt_imm.execute = {
 
 	address = rn_value; // address used is the contents of rn
 	cpu.CheckAlignmentExcep(address); // TODO
-	cpu.SetGPR(rn, cpu.LSWUBImmOffset(u, rn_value, offset)); // update rn
+	cpu.SetGPR(rn, LSWUBImmOffset(u, rn_value, offset)); // update rn
 	value = rd_value;
 	cpu.Write32(address, value);
 }
@@ -1003,7 +1031,9 @@ strt_reg.execute = {
 
 	address = rn_value;
 	cpu.CheckAlignmentExcep(address); // TODO
-	cpu.SetGPR(rn, cpu.LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value));
+	cpu.SetGPR(rn, 
+		LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value,
+			cpu.GetCPSR_C()));
 	value = rd_value;
 	cpu.Write32(address, value);
 }
@@ -1044,7 +1074,7 @@ strbt_imm.execute = {
 	if(!cpu.CheckCondition(cond)) return;
   
 	address = cpu.GetGPR(rn); // address used is the contents of rn
-	cpu.SetGPR(rn, cpu.LSWUBImmOffset(u, cpu.GetGPR(rn), offset)); // update rn
+	cpu.SetGPR(rn, LSWUBImmOffset(u, cpu.GetGPR(rn), offset)); // update rn
 	value = cpu.GetGPR(rd) & 0x0FF;
 	cpu.Write8(address, value);
 }
@@ -1063,7 +1093,9 @@ strbt_reg.execute = {
 	if(!cpu.CheckCondition(cond)) return;
   
 	address = rn_value;
-	cpu.SetGPR(rn, cpu.LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value));
+	cpu.SetGPR(rn, 
+		LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value,
+			cpu.GetCPSR_C()));
 	value = rd_value & 0x0FF;
 	cpu.Write8(address, value);
 }

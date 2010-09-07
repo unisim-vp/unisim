@@ -78,6 +78,7 @@ class CPU;
 impl {
 #include "unisim/util/arithmetic/arithmetic.hh"
 #include "unisim/component/cxx/processor/arm/data_processing.hh"
+#include "unisim/component/cxx/processor/arm/decode_load_store.hh"
 #include "unisim/component/cxx/processor/arm/exception.hh"
 #include "unisim/kernel/logger/logger.hh"
 #include <stdint.h>
