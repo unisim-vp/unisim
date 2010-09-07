@@ -138,6 +138,10 @@ set ( cxx_arm_srcs
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/tcm/tcm.hh
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/tcm/tcm.tcc
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/tcm/tcm.cc
+	
+	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/data_processing.hh
+	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/data_processing.cc
+	
 	${CMAKE_BINARY_DIR}/unisim/component/cxx/processor/arm/isa_arm32.hh
 	${CMAKE_BINARY_DIR}/unisim/component/cxx/processor/arm/isa_arm32.tcc
 	${CMAKE_BINARY_DIR}/unisim/component/cxx/processor/arm/isa_thumb.hh

@@ -1221,317 +1221,317 @@ CoprocessorGetInitram() {
 /**************************************************************/
 
 /* Data processing operand decoding */
-template<class CONFIG>
-inline
-typename CONFIG::reg_t
-CPU<CONFIG> ::
-ShiftOperand32imm(const uint32_t rotate_imm,
-				  const uint32_t imm) {
-	reg_t shifter_operand = 0;
+//template<class CONFIG>
+//inline
+//typename CONFIG::reg_t
+//CPU<CONFIG> ::
+//ShiftOperand32imm(const uint32_t rotate_imm,
+//				  const uint32_t imm) {
+//	reg_t shifter_operand = 0;
+//
+//	//	if(rotate_imm == 0) {
+//	//		shifter_operand = imm;
+//	//	} else {
+//	shifter_operand = RotateRight(imm, rotate_imm * 2);
+//	//	}
+//
+//	return shifter_operand;
+//}
 
-	//	if(rotate_imm == 0) {
-	//		shifter_operand = imm;
-	//	} else {
-	shifter_operand = RotateRight(imm, rotate_imm * 2);
-	//	}
-	
-	return shifter_operand;
-}
+//template<class CONFIG>
+//inline
+//typename CONFIG::reg_t
+//CPU<CONFIG> ::
+//ShiftOperand32imm(const uint32_t rotate_imm,
+//				  const uint32_t imm,
+//				  bool *shift_carry_out) {
+//	reg_t shifter_operand = 0;
+//
+//	shifter_operand = RotateRight(imm, rotate_imm * 2);
+//	if(rotate_imm == 0) {
+//		*shift_carry_out = GetCPSR_C();
+//	} else {
+//		//		*shift_carry_out = ((((typename CONFIG::reg_t)(-1)) & ~(((typename CONFIG::reg_t)(-1)) >> 1)) & shifter_operand) != 0;
+//		*shift_carry_out = (((typename CONFIG::reg_t)1) << 31) & shifter_operand;
+//	}
+//
+//	return shifter_operand;
+//}
 
-template<class CONFIG>
-inline
-typename CONFIG::reg_t
-CPU<CONFIG> ::
-ShiftOperand32imm(const uint32_t rotate_imm,
-				  const uint32_t imm,
-				  bool *shift_carry_out) {
-	reg_t shifter_operand = 0;
+//template<class CONFIG>
+//inline
+//typename CONFIG::reg_t
+//CPU<CONFIG> ::
+//ShiftOperandImmShift(const uint32_t shift_imm,
+//					 const uint32_t shift,
+//					 const typename CONFIG::reg_t val_reg) {
+//	typename CONFIG::reg_t shifter_operand = 0;
+//
+//	if((shift_imm == 0) && (shift == 0)) {
+//		shifter_operand = val_reg;
+//		return shifter_operand;
+//	} else {
+//
+//		if(shift == 0) {
+//			shifter_operand = val_reg << shift_imm;
+//			return shifter_operand;
+//		} else {
+//
+//			if(shift == 0x01) {
+//				if(shift_imm == 0) {
+//					shifter_operand = 0;
+//				} else {
+//					shifter_operand = val_reg >> shift_imm;
+//				}
+//				return shifter_operand;
+//			} else {
+//				if(shift == 0x02) {
+//					if(shift_imm == 0) {
+//						if(((typename CONFIG::sreg_t)val_reg) > 0) {
+//							shifter_operand = 0;
+//						} else {
+//							shifter_operand = (typename CONFIG::reg_t)((typename CONFIG::sreg_t)-1);
+//						}
+//					} else {
+//						shifter_operand = ((typename CONFIG::sreg_t)val_reg) >> shift_imm;
+//					}
+//					return shifter_operand;
+//				} else {
+//
+//					if(shift == 0x03) { /* ROR */
+//						if(shift_imm == 0) {
+//							shifter_operand = 0;
+//							shifter_operand = ((GetCPSR_C()?1:0) << 31) | (val_reg >> 1);
+//						} else {
+//							shifter_operand = RotateRight(val_reg, shift_imm);
+//						}
+//						return shifter_operand;
+//					}
+//				}
+//			}
+//		}
+//	}
+//
+//	return 0;
+//}
+//
+//template<class CONFIG>
+//inline
+//typename CONFIG::reg_t
+//CPU<CONFIG> ::
+//ShiftOperandImmShift(const uint32_t shift_imm,
+//					 const uint32_t shift,
+//					 const typename CONFIG::reg_t val_reg,
+//					 bool *shift_carry_out) {
+//	typename CONFIG::reg_t shifter_operand = 0;
+//	uint32_t mask = 1;
+//
+//	if((shift_imm == 0) && (shift == 0)) {
+//		shifter_operand = val_reg;
+//		*shift_carry_out = GetCPSR_C();
+//		return shifter_operand;
+//	} else {
+//
+//		if(shift == 0) {
+//			shifter_operand = val_reg << shift_imm;
+//			//     shifter_operand |= val_reg >> (32 - shift_imm);
+//			mask = mask << (32 - shift_imm);
+//			*shift_carry_out = ((mask & val_reg) != 0);
+//			return shifter_operand;
+//		} else {
+//			if(shift == 0x01) {
+//				if(shift_imm == 0) {
+//					shifter_operand = 0;
+//					mask = mask << 31;
+//					*shift_carry_out = ((mask & val_reg) != 0);
+//				} else {
+//					shifter_operand = val_reg >> shift_imm;
+//					mask = mask << (shift_imm - 1);
+//					*shift_carry_out = ((mask & val_reg) != 0);
+//				}
+//				return shifter_operand;
+//			} else {
+//
+//				if(shift == 0x02) {
+//					if(shift_imm == 0) {
+//						if(((typename CONFIG::sreg_t)val_reg) > 0) {
+//							shifter_operand = 0;
+//							*shift_carry_out = false;
+//						} else {
+//							shifter_operand = (typename CONFIG::reg_t)((typename CONFIG::sreg_t)-1);
+//							*shift_carry_out = true;
+//						}
+//					} else {
+//						shifter_operand = ((typename CONFIG::sreg_t)val_reg) >> shift_imm;
+//						mask = mask << (shift_imm - 1);
+//						*shift_carry_out = ((mask & val_reg) != 0);
+//					}
+//					return shifter_operand;
+//				} else {
+//
+//					if(shift == 0x03) { /* ROR */
+//						if(shift_imm == 0) {
+//							shifter_operand = 0;
+//							if(GetCPSR_C()) {
+//								shifter_operand = ((typename CONFIG::reg_t)1) << 31;
+//							}
+//							shifter_operand |= (val_reg >> 1);
+//							*shift_carry_out = ((0x01 & val_reg) != 0);
+//						} else {
+//							shifter_operand = RotateRight(val_reg, shift_imm);
+//							*shift_carry_out = (val_reg >> (shift_imm - 1)) & 0x1;
+//						}
+//						return shifter_operand;
+//					}
+//				}
+//			}
+//		}
+//	}
+//
+//	return 0;
+//}
 
-	shifter_operand = RotateRight(imm, rotate_imm * 2);
-	if(rotate_imm == 0) {
-		*shift_carry_out = GetCPSR_C();
-	} else {
-		//		*shift_carry_out = ((((typename CONFIG::reg_t)(-1)) & ~(((typename CONFIG::reg_t)(-1)) >> 1)) & shifter_operand) != 0;
-		*shift_carry_out = (((typename CONFIG::reg_t)1) << 31) & shifter_operand;
-	}
-	
-	return shifter_operand;
-}
-
-template<class CONFIG>
-inline
-typename CONFIG::reg_t
-CPU<CONFIG> ::
-ShiftOperandImmShift(const uint32_t shift_imm,
-					 const uint32_t shift,
-					 const typename CONFIG::reg_t val_reg) {
-	typename CONFIG::reg_t shifter_operand = 0;
-
-	if((shift_imm == 0) && (shift == 0)) {
-		shifter_operand = val_reg;
-		return shifter_operand;
-	} else {
-		
-		if(shift == 0) {
-			shifter_operand = val_reg << shift_imm;
-			return shifter_operand;
-		} else {
-			
-			if(shift == 0x01) {
-				if(shift_imm == 0) {
-					shifter_operand = 0;
-				} else {
-					shifter_operand = val_reg >> shift_imm;
-				}
-				return shifter_operand;
-			} else {
-				if(shift == 0x02) {
-					if(shift_imm == 0) {
-						if(((typename CONFIG::sreg_t)val_reg) > 0) {
-							shifter_operand = 0;
-						} else {
-							shifter_operand = (typename CONFIG::reg_t)((typename CONFIG::sreg_t)-1);
-						}
-					} else {
-						shifter_operand = ((typename CONFIG::sreg_t)val_reg) >> shift_imm;
-					}
-					return shifter_operand;
-				} else {
-
-					if(shift == 0x03) { /* ROR */
-						if(shift_imm == 0) {
-							shifter_operand = 0;
-							shifter_operand = ((GetCPSR_C()?1:0) << 31) | (val_reg >> 1);
-						} else {
-							shifter_operand = RotateRight(val_reg, shift_imm);
-						}
-						return shifter_operand;
-					}
-				}
-			}
-		}
-	}
-	
-	return 0;
-}
-
-template<class CONFIG>
-inline
-typename CONFIG::reg_t
-CPU<CONFIG> ::
-ShiftOperandImmShift(const uint32_t shift_imm,
-					 const uint32_t shift,
-					 const typename CONFIG::reg_t val_reg,
-					 bool *shift_carry_out) {
-	typename CONFIG::reg_t shifter_operand = 0;
-	uint32_t mask = 1;
-
-	if((shift_imm == 0) && (shift == 0)) {
-		shifter_operand = val_reg;
-		*shift_carry_out = GetCPSR_C();
-		return shifter_operand;
-	} else {
-		
-		if(shift == 0) {
-			shifter_operand = val_reg << shift_imm;
-			//     shifter_operand |= val_reg >> (32 - shift_imm);
-			mask = mask << (32 - shift_imm);
-			*shift_carry_out = ((mask & val_reg) != 0);
-			return shifter_operand;
-		} else {
-			if(shift == 0x01) {
-				if(shift_imm == 0) {
-					shifter_operand = 0;
-					mask = mask << 31;
-					*shift_carry_out = ((mask & val_reg) != 0);
-				} else {
-					shifter_operand = val_reg >> shift_imm;
-					mask = mask << (shift_imm - 1);
-					*shift_carry_out = ((mask & val_reg) != 0);
-				}
-				return shifter_operand;
-			} else {
-
-				if(shift == 0x02) {
-					if(shift_imm == 0) {
-						if(((typename CONFIG::sreg_t)val_reg) > 0) {
-							shifter_operand = 0;
-							*shift_carry_out = false;
-						} else {
-							shifter_operand = (typename CONFIG::reg_t)((typename CONFIG::sreg_t)-1);
-							*shift_carry_out = true;
-						}
-					} else {
-						shifter_operand = ((typename CONFIG::sreg_t)val_reg) >> shift_imm;
-						mask = mask << (shift_imm - 1);
-						*shift_carry_out = ((mask & val_reg) != 0);
-					}
-					return shifter_operand;
-				} else {
-					
-					if(shift == 0x03) { /* ROR */
-						if(shift_imm == 0) {
-							shifter_operand = 0;
-							if(GetCPSR_C()) {
-								shifter_operand = ((typename CONFIG::reg_t)1) << 31;
-							}
-							shifter_operand |= (val_reg >> 1);
-							*shift_carry_out = ((0x01 & val_reg) != 0);
-						} else {
-							shifter_operand = RotateRight(val_reg, shift_imm);
-							*shift_carry_out = (val_reg >> (shift_imm - 1)) & 0x1;
-						}
-						return shifter_operand;
-					}
-				}
-			}
-		}
-	}
-	
-	return 0;
-}
-
-template<class CONFIG>
-inline
-typename CONFIG::reg_t
-CPU<CONFIG> ::
-ShiftOperandRegShift(const uint32_t shift_reg,
-					 const uint32_t shift,
-					 const typename CONFIG::reg_t val_reg) {
-	typename CONFIG::reg_t shifter_operand = 0;
-	typename CONFIG::reg_t sr8 = (shift_reg & 0x0FF);
-	typename CONFIG::reg_t sr5 = (shift_reg & 0x01F);
-
-	if(shift == 0x0) {
-		if(sr8 == 0) {
-			shifter_operand = val_reg;
-		} else if(sr8 < 32) {
-			shifter_operand = val_reg << sr8;
-		} else if(sr8 == 32) {
-			shifter_operand = 0;
-		} else {
-			shifter_operand = 0;
-		}
-		return shifter_operand;
-	} else {
-		
-		if(shift == 0x01) {
-			if(sr8 == 0) {
-				shifter_operand = val_reg;
-			} else if(sr8 < 32) {
-				shifter_operand = val_reg >> sr8;
-			} else if(sr8 == 32) {
-				shifter_operand = 0;
-			} else {
-				shifter_operand = 0;
-			}
-			return shifter_operand;
-		} else {
-			
-			if(shift == 0x02) {
-				if(sr8 == 0) {
-					shifter_operand = val_reg;
-				} else if(sr8 < 32) {
-					shifter_operand = ((typename CONFIG::sreg_t)val_reg) >> sr8;
-				} else {
-					if((val_reg & ((typename CONFIG::reg_t)1 << 31)) == 0) {
-						shifter_operand = 0;
-					} else {
-						shifter_operand = (typename CONFIG::reg_t)((typename CONFIG::sreg_t)-1);
-					}
-				}
-				return shifter_operand;
-			} else {
-				
-				if(shift == 0x03) {
-					shifter_operand = RotateRight(val_reg, sr5);
-					return shifter_operand;
-				}
-			}
-		}
-	}
-	
-	return shifter_operand;
-}
-
-template<class CONFIG>
-inline
-typename CONFIG::reg_t
-CPU<CONFIG> ::
-ShiftOperandRegShift(const uint32_t shift_reg,
-					 const uint32_t shift,
-					 const typename CONFIG::reg_t val_reg,
-					 bool *shift_carry_out) {
-	typename CONFIG::reg_t shifter_operand = 0;
-	typename CONFIG::reg_t sr8 = (shift_reg & 0x0FF);
-	typename CONFIG::reg_t sr5 = (shift_reg & 0x01F);
-
-	if(shift == 0x0) {
-		if(sr8 == 0) {
-			shifter_operand = val_reg;
-			*shift_carry_out = GetCPSR_C();
-		} else if(sr8 < 32) {
-			shifter_operand = val_reg << sr8;
-			*shift_carry_out = ((val_reg & (1 << (32 - sr8))) != 0);
-		} else if(sr8 == 32) {
-			shifter_operand = 0;
-			*shift_carry_out = ((val_reg & 0x01) != 0);
-		} else {
-			shifter_operand = 0;
-			*shift_carry_out = false;
-		}
-		return shifter_operand;
-	} else {
-		if(shift == 0x01) {
-			if(sr8 == 0) {
-				shifter_operand = val_reg;
-				*shift_carry_out = GetCPSR_C();
-			} else if(sr8 < 32) {
-				shifter_operand = val_reg >> sr8;
-				*shift_carry_out = ((val_reg & (1 << (sr8 - 1))) != 0);
-			} else if(sr8 == 32) {
-				shifter_operand = 0;
-				*shift_carry_out = ((val_reg & (1 << 31)) != 0);
-			} else {
-				shifter_operand = 0;
-				*shift_carry_out = false;
-			}
-			return shifter_operand;
-		} else {
-
-			if(shift == 0x02) {
-				if(sr8 == 0) {
-					shifter_operand = val_reg;
-					*shift_carry_out = GetCPSR_C();
-				} else if(sr8 < 32) {
-					shifter_operand = ((typename CONFIG::sreg_t)val_reg) >> sr8;
-					*shift_carry_out = ((val_reg & ((typename CONFIG::reg_t)1 << (sr8 - 1))) != 0);
-				} else {
-					if((val_reg & ((typename CONFIG::reg_t)1 << 31)) == 0) {
-						shifter_operand = 0;
-						*shift_carry_out = ((val_reg & ((typename CONFIG::reg_t)1 << 31)) != 0);
-					} else {
-						shifter_operand = (typename CONFIG::reg_t)((typename CONFIG::sreg_t)-1);
-						*shift_carry_out = ((val_reg & ((typename CONFIG::reg_t)1 << 31)) != 0);
-					}
-				}
-				return shifter_operand;
-			} else {
-				
-				if(shift == 0x03) {
-					shifter_operand = RotateRight(val_reg, sr5);
-					if(sr8 == 0) {
-						*shift_carry_out = GetCPSR_C();
-					} else {
-						*shift_carry_out = (val_reg & (1 << ((sr5 - 1) & 0x01F)));
-					}
-					return shifter_operand;
-				}
-			}
-		}
-	}
-	return 0;
-}
+//template<class CONFIG>
+//inline
+//typename CONFIG::reg_t
+//CPU<CONFIG> ::
+//ShiftOperandRegShift(const uint32_t shift_reg,
+//					 const uint32_t shift,
+//					 const typename CONFIG::reg_t val_reg) {
+//	typename CONFIG::reg_t shifter_operand = 0;
+//	typename CONFIG::reg_t sr8 = (shift_reg & 0x0FF);
+//	typename CONFIG::reg_t sr5 = (shift_reg & 0x01F);
+//
+//	if(shift == 0x0) {
+//		if(sr8 == 0) {
+//			shifter_operand = val_reg;
+//		} else if(sr8 < 32) {
+//			shifter_operand = val_reg << sr8;
+//		} else if(sr8 == 32) {
+//			shifter_operand = 0;
+//		} else {
+//			shifter_operand = 0;
+//		}
+//		return shifter_operand;
+//	} else {
+//
+//		if(shift == 0x01) {
+//			if(sr8 == 0) {
+//				shifter_operand = val_reg;
+//			} else if(sr8 < 32) {
+//				shifter_operand = val_reg >> sr8;
+//			} else if(sr8 == 32) {
+//				shifter_operand = 0;
+//			} else {
+//				shifter_operand = 0;
+//			}
+//			return shifter_operand;
+//		} else {
+//
+//			if(shift == 0x02) {
+//				if(sr8 == 0) {
+//					shifter_operand = val_reg;
+//				} else if(sr8 < 32) {
+//					shifter_operand = ((typename CONFIG::sreg_t)val_reg) >> sr8;
+//				} else {
+//					if((val_reg & ((typename CONFIG::reg_t)1 << 31)) == 0) {
+//						shifter_operand = 0;
+//					} else {
+//						shifter_operand = (typename CONFIG::reg_t)((typename CONFIG::sreg_t)-1);
+//					}
+//				}
+//				return shifter_operand;
+//			} else {
+//
+//				if(shift == 0x03) {
+//					shifter_operand = RotateRight(val_reg, sr5);
+//					return shifter_operand;
+//				}
+//			}
+//		}
+//	}
+//
+//	return shifter_operand;
+//}
+//
+//template<class CONFIG>
+//inline
+//typename CONFIG::reg_t
+//CPU<CONFIG> ::
+//ShiftOperandRegShift(const uint32_t shift_reg,
+//					 const uint32_t shift,
+//					 const typename CONFIG::reg_t val_reg,
+//					 bool *shift_carry_out) {
+//	typename CONFIG::reg_t shifter_operand = 0;
+//	typename CONFIG::reg_t sr8 = (shift_reg & 0x0FF);
+//	typename CONFIG::reg_t sr5 = (shift_reg & 0x01F);
+//
+//	if(shift == 0x0) {
+//		if(sr8 == 0) {
+//			shifter_operand = val_reg;
+//			*shift_carry_out = GetCPSR_C();
+//		} else if(sr8 < 32) {
+//			shifter_operand = val_reg << sr8;
+//			*shift_carry_out = ((val_reg & (1 << (32 - sr8))) != 0);
+//		} else if(sr8 == 32) {
+//			shifter_operand = 0;
+//			*shift_carry_out = ((val_reg & 0x01) != 0);
+//		} else {
+//			shifter_operand = 0;
+//			*shift_carry_out = false;
+//		}
+//		return shifter_operand;
+//	} else {
+//		if(shift == 0x01) {
+//			if(sr8 == 0) {
+//				shifter_operand = val_reg;
+//				*shift_carry_out = GetCPSR_C();
+//			} else if(sr8 < 32) {
+//				shifter_operand = val_reg >> sr8;
+//				*shift_carry_out = ((val_reg & (1 << (sr8 - 1))) != 0);
+//			} else if(sr8 == 32) {
+//				shifter_operand = 0;
+//				*shift_carry_out = ((val_reg & (1 << 31)) != 0);
+//			} else {
+//				shifter_operand = 0;
+//				*shift_carry_out = false;
+//			}
+//			return shifter_operand;
+//		} else {
+//
+//			if(shift == 0x02) {
+//				if(sr8 == 0) {
+//					shifter_operand = val_reg;
+//					*shift_carry_out = GetCPSR_C();
+//				} else if(sr8 < 32) {
+//					shifter_operand = ((typename CONFIG::sreg_t)val_reg) >> sr8;
+//					*shift_carry_out = ((val_reg & ((typename CONFIG::reg_t)1 << (sr8 - 1))) != 0);
+//				} else {
+//					if((val_reg & ((typename CONFIG::reg_t)1 << 31)) == 0) {
+//						shifter_operand = 0;
+//						*shift_carry_out = ((val_reg & ((typename CONFIG::reg_t)1 << 31)) != 0);
+//					} else {
+//						shifter_operand = (typename CONFIG::reg_t)((typename CONFIG::sreg_t)-1);
+//						*shift_carry_out = ((val_reg & ((typename CONFIG::reg_t)1 << 31)) != 0);
+//					}
+//				}
+//				return shifter_operand;
+//			} else {
+//
+//				if(shift == 0x03) {
+//					shifter_operand = RotateRight(val_reg, sr5);
+//					if(sr8 == 0) {
+//						*shift_carry_out = GetCPSR_C();
+//					} else {
+//						*shift_carry_out = (val_reg & (1 << ((sr5 - 1) & 0x01F)));
+//					}
+//					return shifter_operand;
+//				}
+//			}
+//		}
+//	}
+//	return 0;
+//}
 
 /* Address operand decoding */
 template<class CONFIG>

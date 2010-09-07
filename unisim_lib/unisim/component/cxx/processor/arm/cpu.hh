@@ -298,25 +298,25 @@ namespace arm {
 		/* Operand decoding methods     START                         */
 		/**************************************************************/
 		/* Data processing operand decoding */
-		static inline reg_t ShiftOperand32imm(const uint32_t rotate_imm, 
-											  const uint32_t imm) GCC_INLINE;
-		inline reg_t ShiftOperand32imm(const uint32_t rotate_imm, 
-									   const uint32_t imm, 
-									   bool *shift_carry_out) GCC_INLINE;
-		inline reg_t ShiftOperandImmShift(const uint32_t shift_imm, 
-										  const uint32_t shift, 
-										  const reg_t val_reg) GCC_INLINE;
-		inline reg_t ShiftOperandImmShift(const uint32_t shift_imm, 
-										  const uint32_t shift, 
-										  const reg_t val_reg, 
-										  bool *shift_carry_out) GCC_INLINE;
-		static inline reg_t ShiftOperandRegShift(const uint32_t shift_reg, 
-												 const uint32_t shift, 
-												 const reg_t val_reg) GCC_INLINE;
-		inline reg_t ShiftOperandRegShift(const uint32_t shift_reg, 
-										  const uint32_t shift, 
-										  const reg_t val_reg,
-										  bool *shift_carry_out) GCC_INLINE;
+		//static inline reg_t ShiftOperand32imm(const uint32_t rotate_imm,
+		//									  const uint32_t imm) GCC_INLINE;
+		// inline reg_t ShiftOperand32imm(const uint32_t rotate_imm,
+		// 							   const uint32_t imm,
+		// 							   bool *shift_carry_out) GCC_INLINE;
+		// inline reg_t ShiftOperandImmShift(const uint32_t shift_imm,
+		// 								  const uint32_t shift,
+		// 								  const reg_t val_reg) GCC_INLINE;
+		// inline reg_t ShiftOperandImmShift(const uint32_t shift_imm,
+		// 								  const uint32_t shift,
+		// 								  const reg_t val_reg,
+		// 								  bool *shift_carry_out) GCC_INLINE;
+		// static inline reg_t ShiftOperandRegShift(const uint32_t shift_reg,
+		// 										 const uint32_t shift,
+		// 										 const reg_t val_reg) GCC_INLINE;
+		// inline reg_t ShiftOperandRegShift(const uint32_t shift_reg,
+		// 								  const uint32_t shift,
+		// 								  const reg_t val_reg,
+		// 								  bool *shift_carry_out) GCC_INLINE;
 		
 		/* Load/store operand decoding */
 		inline address_t LSWUBImmOffset(const uint32_t u, 
