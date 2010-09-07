@@ -53,6 +53,12 @@
 #include <fstream>
 #include <iostream>
 
+#if defined(WIN32)
+#include <io.h>     // for function access()
+#else
+#include <unistd.h>
+#endif
+
 namespace unisim {
 namespace service {
 namespace debug {

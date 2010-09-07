@@ -43,9 +43,12 @@
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/util/debug/register.hh>
 
-// TODO: verify on each host platform what is needed for mkdir. Below is for linux.
-#include <sys/stat.h>
+#if defined(WIN32)
+#include <io.h>
+#else
 #include <sys/types.h>
+#include <sys/stat.h>
+#endif
 
 
 namespace unisim {
@@ -6991,7 +6994,11 @@ void DWARF_Handler<MEMORY_ADDR>::to_XML(std::ostream& os)
 template <class MEMORY_ADDR>
 void DWARF_Handler<MEMORY_ADDR>::to_HTML(const char *output_dir)
 {
+#if defined(WIN32)
+	mkdir(output_dir);
+#else
 	mkdir(output_dir, S_IRWXU);
+#endif
 	std::string index_filename(std::string(output_dir) + "/index.html");
 	std::ofstream index(index_filename.c_str(), std::ios::out);
 	
@@ -7063,8 +7070,11 @@ void DWARF_Handler<MEMORY_ADDR>::to_HTML(const char *output_dir)
 	std::stringstream debug_abbrev_output_dir_sstr;
 	debug_abbrev_output_dir_sstr << output_dir << "/debug_abbrev";
 	std::string debug_abbrev_output_dir(debug_abbrev_output_dir_sstr.str());
+#if defined(WIN32)
+	mkdir(debug_abbrev_output_dir.c_str());
+#else
 	mkdir(debug_abbrev_output_dir.c_str(), S_IRWXU);
-
+#endif
 	unsigned int debug_abbrev_filename_idx = 0;
 	unsigned int debug_abbrev_per_file = 512;
 	unsigned int num_debug_abbrevs = dw_abbrevs.size();
@@ -7140,7 +7150,11 @@ void DWARF_Handler<MEMORY_ADDR>::to_HTML(const char *output_dir)
 	std::stringstream debug_macinfo_ouput_dir_sstr;
 	debug_macinfo_ouput_dir_sstr << output_dir << "/debug_macinfo";
 	std::string debug_macinfo_output_dir(debug_macinfo_ouput_dir_sstr.str());
+#if defined(WIN32)
+	mkdir(debug_macinfo_output_dir.c_str());
+#else
 	mkdir(debug_macinfo_output_dir.c_str(), S_IRWXU);
+#endif
 	
 	unsigned int debug_macinfo_filename_idx = 0;
 	unsigned int debug_macinfo_per_file = 2048;
@@ -7221,7 +7235,11 @@ void DWARF_Handler<MEMORY_ADDR>::to_HTML(const char *output_dir)
 	std::stringstream debug_line_ouput_dir_sstr;
 	debug_line_ouput_dir_sstr << output_dir << "/debug_line";
 	std::string debug_line_output_dir(debug_line_ouput_dir_sstr.str());
+#if defined(WIN32)
+	mkdir(debug_line_output_dir.c_str());
+#else
 	mkdir(debug_line_output_dir.c_str(), S_IRWXU);
+#endif
 
 	
 	unsigned int debug_line_filename_idx = 0;
@@ -7297,7 +7315,11 @@ void DWARF_Handler<MEMORY_ADDR>::to_HTML(const char *output_dir)
 	std::stringstream debug_aranges_ouput_dir_sstr;
 	debug_aranges_ouput_dir_sstr << output_dir << "/debug_aranges";
 	std::string debug_aranges_output_dir(debug_aranges_ouput_dir_sstr.str());
+#if defined(WIN32)
+	mkdir(debug_aranges_output_dir.c_str());
+#else
 	mkdir(debug_aranges_output_dir.c_str(), S_IRWXU);
+#endif
 
 	
 	unsigned int debug_aranges_filename_idx = 0;
@@ -7378,7 +7400,11 @@ void DWARF_Handler<MEMORY_ADDR>::to_HTML(const char *output_dir)
 	std::stringstream debug_pubnames_ouput_dir_sstr;
 	debug_pubnames_ouput_dir_sstr << output_dir << "/debug_pubnames";
 	std::string debug_pubnames_output_dir(debug_pubnames_ouput_dir_sstr.str());
+#if defined(WIN32)
+	mkdir(debug_pubnames_output_dir.c_str());
+#else
 	mkdir(debug_pubnames_output_dir.c_str(), S_IRWXU);
+#endif
 
 	
 	unsigned int debug_pubnames_filename_idx = 0;
@@ -7457,7 +7483,11 @@ void DWARF_Handler<MEMORY_ADDR>::to_HTML(const char *output_dir)
 	std::stringstream debug_pubtypes_ouput_dir_sstr;
 	debug_pubtypes_ouput_dir_sstr << output_dir << "/debug_pubtypes";
 	std::string debug_pubtypes_output_dir(debug_pubtypes_ouput_dir_sstr.str());
+#if defined(WIN32)
+	mkdir(debug_pubtypes_output_dir.c_str());
+#else
 	mkdir(debug_pubtypes_output_dir.c_str(), S_IRWXU);
+#endif
 
 	
 	unsigned int debug_pubtypes_filename_idx = 0;
@@ -7537,7 +7567,11 @@ void DWARF_Handler<MEMORY_ADDR>::to_HTML(const char *output_dir)
 	std::stringstream debug_range_ouput_dir_sstr;
 	debug_range_ouput_dir_sstr << output_dir << "/debug_ranges";
 	std::string debug_range_output_dir(debug_range_ouput_dir_sstr.str());
+#if defined(WIN32)
+	mkdir(debug_range_output_dir.c_str());
+#else
 	mkdir(debug_range_output_dir.c_str(), S_IRWXU);
+#endif
 	
 	unsigned int debug_range_filename_idx = 0;
 	unsigned int debug_range_per_file = 2048;
@@ -7618,7 +7652,11 @@ void DWARF_Handler<MEMORY_ADDR>::to_HTML(const char *output_dir)
 	std::stringstream debug_loc_ouput_dir_sstr;
 	debug_loc_ouput_dir_sstr << output_dir << "/debug_loc";
 	std::string debug_loc_output_dir(debug_loc_ouput_dir_sstr.str());
+#if defined(WIN32)
+	mkdir(debug_loc_output_dir.c_str());
+#else
 	mkdir(debug_loc_output_dir.c_str(), S_IRWXU);
+#endif
 	
 	unsigned int debug_loc_filename_idx = 0;
 	unsigned int debug_loc_per_file = 2048;
@@ -7698,17 +7736,29 @@ void DWARF_Handler<MEMORY_ADDR>::to_HTML(const char *output_dir)
 	std::stringstream debug_frame_ouput_dir_sstr;
 	debug_frame_ouput_dir_sstr << output_dir << "/debug_frame";
 	std::string debug_frame_output_dir(debug_frame_ouput_dir_sstr.str());
+#if defined(WIN32)
+	mkdir(debug_frame_output_dir.c_str());
+#else
 	mkdir(debug_frame_output_dir.c_str(), S_IRWXU);
+#endif
 
 	std::stringstream debug_frame_cies_ouput_dir_sstr;
 	debug_frame_cies_ouput_dir_sstr << debug_frame_output_dir << "/cies";
 	std::string debug_frame_cies_output_dir(debug_frame_cies_ouput_dir_sstr.str());
+#if defined(WIN32)
+	mkdir(debug_frame_cies_output_dir.c_str());
+#else
 	mkdir(debug_frame_cies_output_dir.c_str(), S_IRWXU);
+#endif
 
 	std::stringstream debug_frame_fdes_ouput_dir_sstr;
 	debug_frame_fdes_ouput_dir_sstr << debug_frame_output_dir << "/fdes";
 	std::string debug_frame_fdes_output_dir(debug_frame_fdes_ouput_dir_sstr.str());
+#if defined(WIN32)
+	mkdir(debug_frame_fdes_output_dir.c_str());
+#else
 	mkdir(debug_frame_fdes_output_dir.c_str(), S_IRWXU);
+#endif
 
 	unsigned int debug_frame_cies_filename_idx = 0;
 	unsigned int cies_per_file = 2048;
@@ -7891,17 +7941,29 @@ void DWARF_Handler<MEMORY_ADDR>::to_HTML(const char *output_dir)
 	std::stringstream debug_info_ouput_dir_sstr;
 	debug_info_ouput_dir_sstr << output_dir << "/debug_info";
 	std::string debug_info_output_dir(debug_info_ouput_dir_sstr.str());
+#if defined(WIN32)
+	mkdir(debug_info_output_dir.c_str());
+#else
 	mkdir(debug_info_output_dir.c_str(), S_IRWXU);
+#endif
 
 	std::stringstream debug_info_cus_ouput_dir_sstr;
 	debug_info_cus_ouput_dir_sstr << debug_info_output_dir << "/cus";
 	std::string debug_info_cus_output_dir(debug_info_cus_ouput_dir_sstr.str());
+#if defined(WIN32)
+	mkdir(debug_info_cus_output_dir.c_str());
+#else
 	mkdir(debug_info_cus_output_dir.c_str(), S_IRWXU);
+#endif
 
 	std::stringstream debug_info_dies_ouput_dir_sstr;
 	debug_info_dies_ouput_dir_sstr << debug_info_output_dir << "/dies";
 	std::string debug_info_dies_output_dir(debug_info_dies_ouput_dir_sstr.str());
+#if defined(WIN32)
+	mkdir(debug_info_dies_output_dir.c_str());
+#else
 	mkdir(debug_info_dies_output_dir.c_str(), S_IRWXU);
+#endif
 
 	unsigned int debug_info_cus_filename_idx = 0;
 	unsigned int num_debug_cus = dw_cus.size();
