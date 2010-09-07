@@ -1,9 +1,40 @@
 /*
- * data_processing.hh
+ *  Copyright (c) 2010,
+ *  Commissariat a l'Energie Atomique (CEA)
+ *  All rights reserved.
  *
- *  Created on: Sep 7, 2010
- *      Author: gracia
+ *  Redistribution and use in source and binary forms, with or without modification,
+ *  are permitted provided that the following conditions are met:
+ *
+ *   - Redistributions of source code must retain the above copyright notice, this
+ *     list of conditions and the following disclaimer.
+ *
+ *   - Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *
+ *   - Neither the name of CEA nor the names of its contributors may be used to
+ *     endorse or promote products derived from this software without specific prior
+ *     written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *  DISCLAIMED.
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ *  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
+
+/**
+ * Methods for the arm processor data processing operand decoding
+ **/
 
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_DATA_PROCESSING_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_DATA_PROCESSING_HH__
@@ -16,50 +47,24 @@ namespace cxx {
 namespace processor {
 namespace arm {
 
-// static inline uint32_t ShiftOperand32imm(const uint32_t rotate_imm,
-//								  const uint32_t imm) GCC_INLINE;
 uint32_t ShiftOperand32imm(const uint32_t rotate_imm,
 		const uint32_t imm);
-
-
-// static inline uint32_t ShiftOperand32imm(const uint32_t rotate_imm,
-//							   const uint32_t imm,
-//							   bool *shift_carry_out) GCC_INLINE;
 uint32_t ShiftOperand32imm(const uint32_t rotate_imm,
 		const uint32_t imm,
 		const bool carry_in,
 		bool *shift_carry_out);
-
-
-// inline reg_t ShiftOperandImmShift(const uint32_t shift_imm,
-// 								  const uint32_t shift,
-// 								  const reg_t val_reg) GCC_INLINE;
 uint32_t ShiftOperandImmShift(const uint32_t shift_imm,
 		const uint32_t shift,
 		const uint32_t val_reg,
 		const bool carry_in);
-
-//inline reg_t ShiftOperandImmShift(const uint32_t shift_imm,
-//								  const uint32_t shift,
-//								  const reg_t val_reg,
-//								  bool *shift_carry_out) GCC_INLINE;
 uint32_t ShiftOperandImmShift(const uint32_t shift_imm,
 		const uint32_t shift,
 		const uint32_t val_reg,
 		const bool carry_in,
 		bool *shift_carry_out);
-
-//static inline reg_t ShiftOperandRegShift(const uint32_t shift_reg,
-//										 const uint32_t shift,
-//										 const reg_t val_reg) GCC_INLINE;
 uint32_t ShiftOperandRegShift(const uint32_t shift_reg,
 		const uint32_t shift,
 		const uint32_t val_reg);
-
-//inline reg_t ShiftOperandRegShift(const uint32_t shift_reg,
-//								  const uint32_t shift,
-//								  const reg_t val_reg,
-//								  bool *shift_carry_out) GCC_INLINE;
 uint32_t ShiftOperandRegShift(const uint32_t shift_reg,
 		const uint32_t shift,
 		const uint32_t val_reg,
