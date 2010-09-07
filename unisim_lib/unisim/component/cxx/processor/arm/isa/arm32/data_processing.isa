@@ -146,7 +146,6 @@ and_imm_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value);
 	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value, cpu.GetCPSR_C());
   	res = s1 & s2;
   	cpu.SetGPR(rd, res);
@@ -166,7 +165,6 @@ and_reg_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value);
 	s2 = ShiftOperandRegShift(rs_value, shift, rm_value);
 	res = s1 & s2;
 	cpu.SetGPR(rd, res);
@@ -185,7 +183,6 @@ ands_32imm.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperand32imm(rotate_imm, imm, &shift_carry_out);
 	s2 = ShiftOperand32imm(rotate_imm, imm, cpu.GetCPSR_C(), &shift_carry_out);
 	res = s1 & s2;
 	cpu.SetGPR(rd, res);
@@ -214,7 +211,6 @@ ands_imm_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value, &shift_carry_out);
 	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value, 
 			cpu.GetCPSR_C(), &shift_carry_out);
 	res = s1 & s2;
@@ -245,7 +241,6 @@ ands_reg_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value, &shift_carry_out);
 	s2 = ShiftOperandRegShift(rs_value, shift, rm_value,
 			cpu.GetCPSR_C(), &shift_carry_out);
 	res = s1 & s2;
@@ -354,7 +349,6 @@ eor_32imm.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperand32imm(rotate_imm, imm);
 	s2 = ShiftOperand32imm(rotate_imm, imm);
 	res = s1 ^ s2;
 	cpu.SetGPR(rd, res);
@@ -373,7 +367,6 @@ eor_imm_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value);
 	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value, cpu.GetCPSR_C());
 	res = s1 ^ s2;
 	cpu.SetGPR(rd, res);
@@ -393,7 +386,6 @@ eor_reg_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value);
 	s2 = ShiftOperandRegShift(rs_value, shift, rm_value);
 	res = s1 ^ s2;
 	cpu.SetGPR(rd, res);
@@ -412,7 +404,6 @@ eors_32imm.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 	
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperand32imm(rotate_imm, imm, &shift_carry_out);
 	s2 = ShiftOperand32imm(rotate_imm, imm, cpu.GetCPSR_C(), &shift_carry_out);
 	res = s1 ^ s2;
 	cpu.SetGPR(rd, res);
@@ -441,7 +432,6 @@ eors_imm_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value, &shift_carry_out);
 	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value, 
 				cpu.GetCPSR_C(), &shift_carry_out);
 	res = s1 ^ s2;
@@ -472,7 +462,6 @@ eors_reg_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value, &shift_carry_out);
 	s2 = ShiftOperandRegShift(rs_value, shift, rm_value, 
 			cpu.GetCPSR_C(), &shift_carry_out);
 	res = s1 ^ s2;
@@ -581,7 +570,6 @@ sub_32imm.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperand32imm(rotate_imm, imm);
 	s2 = ShiftOperand32imm(rotate_imm, imm);
 	res = s1 - s2;
 	cpu.SetGPR(rd, res);
@@ -600,7 +588,6 @@ sub_imm_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value);
 	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value, cpu.GetCPSR_C());
 	res = s1 - s2;
 	cpu.SetGPR(rd, res);
@@ -620,7 +607,6 @@ sub_reg_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value);
 	s2 = ShiftOperandRegShift(rs_value, shift, rm_value);
 	res = s1 - s2;
 	cpu.SetGPR(rd, res);
@@ -638,7 +624,6 @@ subs_32imm.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperand32imm(rotate_imm, imm);
 	s2 = ShiftOperand32imm(rotate_imm, imm);
 	res = s1 - s2;
 	cpu.SetGPR(rd, res);
@@ -666,7 +651,6 @@ subs_imm_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value);
 	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value, cpu.GetCPSR_C());
 	res = s1 - s2;
 	cpu.SetGPR(rd, res);
@@ -695,7 +679,6 @@ subs_reg_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value);
 	s2 = ShiftOperandRegShift(rs_value, shift, rm_value);
 	res = s1 - s2;
 	cpu.SetGPR(rd, res);
@@ -803,7 +786,6 @@ rsb_32imm.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperand32imm(rotate_imm, imm);
 	s2 = ShiftOperand32imm(rotate_imm, imm);
 	res = s2 - s1;
 	cpu.SetGPR(rd, res);
@@ -822,7 +804,6 @@ rsb_imm_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value);
 	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value, cpu.GetCPSR_C());
 	res = s2 - s1;
 	cpu.SetGPR(rd, res);
@@ -842,7 +823,6 @@ rsb_reg_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value);
 	s2 = ShiftOperandRegShift(rs_value, shift, rm_value);
 	res = s2 - s1;
 	cpu.SetGPR(rd, res);
@@ -860,7 +840,6 @@ rsbs_32imm.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 	
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperand32imm(rotate_imm, imm);
 	s2 = ShiftOperand32imm(rotate_imm, imm);
 	res = s2 - s1;
 	cpu.SetGPR(rd, res);
@@ -888,7 +867,6 @@ rsbs_imm_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value);
 	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value, cpu.GetCPSR_C());
 	res = s2 - s1;
 	cpu.SetGPR(rd, res);
@@ -917,7 +895,6 @@ rsbs_reg_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 	
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value);
 	s2 = ShiftOperandRegShift(rs_value, shift, rm_value);
 	res = s2 - s1;
 	cpu.SetGPR(rd, res);
@@ -1025,7 +1002,6 @@ add_32imm.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperand32imm(rotate_imm, imm);
 	s2 = ShiftOperand32imm(rotate_imm, imm);
   	res = s1 + s2;
   	cpu.SetGPR(rd, res);
@@ -1044,7 +1020,6 @@ add_imm_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value);
 	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value, cpu.GetCPSR_C());
 	res = s1 + s2;
 	cpu.SetGPR(rd, res);
@@ -1064,7 +1039,6 @@ add_reg_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value);
 	s2 = ShiftOperandRegShift(rs_value, shift, rm_value);
 	res = s1 + s2;
 	cpu.SetGPR(rd, res);
@@ -1085,7 +1059,6 @@ adds_32imm.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperand32imm(rotate_imm, imm);
 	s2 = ShiftOperand32imm(rotate_imm, imm);
 	Add32(res, carry_out, overflow_out, sign,
 			s1, s2, 0);
@@ -1117,7 +1090,6 @@ adds_imm_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value);
 	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value, cpu.GetCPSR_C());
 	Add32(res, carry_out, overflow_out, sign,
 			s1, s2, 0);
@@ -1150,7 +1122,6 @@ adds_reg_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value);
 	s2 = ShiftOperandRegShift(rs_value, shift, rm_value);
 	Add32(res, carry_out, overflow_out, sign,
 			s1, s2, 0);
@@ -1260,7 +1231,6 @@ adc_32imm.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperand32imm(rotate_imm, imm);
 	s2 = ShiftOperand32imm(rotate_imm, imm);
 	carry_in = (cpu.GetCPSR_C() ? 1 : 0);
 	res = s1 + s2 + carry_in;
@@ -1281,7 +1251,6 @@ adc_imm_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value);
 	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value, cpu.GetCPSR_C());
 	carry_in = (cpu.GetCPSR_C() ? 1 : 0);
 	res = s1 + s2 + carry_in;
@@ -1303,7 +1272,6 @@ adc_reg_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value);
 	s2 = ShiftOperandRegShift(rs_value, shift, rm_value);
 	carry_in = (cpu.GetCPSR_C() ? 1 : 0);
 	res = s1 + s2 + carry_in;
@@ -1326,7 +1294,6 @@ adcs_32imm.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 	
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperand32imm(rotate_imm, imm);
 	s2 = ShiftOperand32imm(rotate_imm, imm);
 	carry_in = (cpu.GetCPSR_C() ? 1 : 0);
 	Add32(res, carry_out, overflow_out, sign,
@@ -1360,7 +1327,6 @@ adcs_imm_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value);
 	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value, cpu.GetCPSR_C());
 	carry_in = (cpu.GetCPSR_C() ? 1 : 0);
 	Add32(res, carry_out, overflow_out, sign,
@@ -1395,7 +1361,6 @@ adcs_reg_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value);
 	s2 = ShiftOperandRegShift(rs_value, shift, rm_value);
 	carry_in = (cpu.GetCPSR_C() ? 1 : 0);
 	Add32(res, carry_out, overflow_out, sign,
@@ -1506,7 +1471,6 @@ sbc_32imm.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperand32imm(rotate_imm, imm);
 	s2 = ShiftOperand32imm(rotate_imm, imm);
 	in_neg_carry = (cpu.GetCPSR_C() ? 0 : 1);
 	res = s1 - s2 - in_neg_carry;
@@ -1527,7 +1491,6 @@ sbc_imm_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value);
 	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value, cpu.GetCPSR());
 	in_neg_carry = (cpu.GetCPSR_C() ? 0 : 1);
 	res = s1 - s2 - in_neg_carry;
@@ -1549,7 +1512,6 @@ sbc_reg_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value);
 	s2 = ShiftOperandRegShift(rs_value, shift, rm_value);
 	in_neg_carry = (cpu.GetCPSR_C() ? 0 : 1);
 	res = s1 - s2 - in_neg_carry;
@@ -1569,7 +1531,6 @@ sbcs_32imm.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperand32imm(rotate_imm, imm);
 	s2 = ShiftOperand32imm(rotate_imm, imm);
 	in_neg_carry = (cpu.GetCPSR_C() ? 0 : 1);
 	res = s1 - s2 - in_neg_carry;
@@ -1599,7 +1560,6 @@ sbcs_imm_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value);
 	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value, cpu.GetCPSR_C());
 	in_neg_carry = (cpu.GetCPSR_C() ? 0 : 1);
 	res = s1 - s2 - in_neg_carry;
@@ -1630,7 +1590,6 @@ sbcs_reg_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value);
 	s2 = ShiftOperandRegShift(rs_value, shift, rm_value);
 	in_neg_carry = (cpu.GetCPSR_C() ? 0 : 1);
 	res = s1 - s2 - in_neg_carry;;
@@ -1740,7 +1699,6 @@ rsc_32imm.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperand32imm(rotate_imm, imm);
 	s2 = ShiftOperand32imm(rotate_imm, imm);
 	in_neg_carry = (cpu.GetCPSR_C() ? 0 : 1);
 	res = s2 - s1 - in_neg_carry;
@@ -1761,7 +1719,6 @@ rsc_imm_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value);
 	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value, cpu.GetCPSR_C());
 	in_neg_carry = (cpu.GetCPSR_C() ? 0 : 1);
 	res = s2 - s1 - in_neg_carry;
@@ -1783,7 +1740,6 @@ rsc_reg_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value);
 	s2 = ShiftOperandRegShift(rs_value, shift, rm_value);
 	in_neg_carry = (cpu.GetCPSR_C() ? 0 : 1);
 	res = s2 - s1 - in_neg_carry;
@@ -1803,7 +1759,6 @@ rscs_32imm.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 	
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperand32imm(rotate_imm, imm);
 	s2 = ShiftOperand32imm(rotate_imm, imm);
 	in_neg_carry = (cpu.GetCPSR_C() ? 0 : 1);
 	res = s2 - s1 - in_neg_carry;
@@ -1833,7 +1788,6 @@ rscs_imm_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value);
 	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value, cpu.GetCPSR_C());
 	in_neg_carry = (cpu.GetCPSR_C() ? 0 : 1);
 	res = s2 - s1 - in_neg_carry;
@@ -1864,7 +1818,6 @@ rscs_reg_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value);
 	s2 = ShiftOperandRegShift(rs_value, shift, rm_value);
 	in_neg_carry = (cpu.GetCPSR_C() ? 0 : 1);
 	res = s2 - s1 - in_neg_carry;
@@ -1932,7 +1885,6 @@ tst_32imm.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperand32imm(rotate_imm, imm, &shift_carry_out);
 	s2 = ShiftOperand32imm(rotate_imm, imm, cpu.GetCPSR_C(), &shift_carry_out);
 	res = s1 & s2;
 
@@ -1956,7 +1908,6 @@ tst_imm_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value, &shift_carry_out);
 	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value, 
 				cpu.GetCPSR_C(), &shift_carry_out);
 	res = s1 & s2;
@@ -1982,7 +1933,6 @@ tst_reg_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 	
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value, &shift_carry_out);
 	s2 = ShiftOperandRegShift(rs_value, shift, rm_value,
 			cpu.GetCPSR_C(), &shift_carry_out);
 	res = s1 & s2;
@@ -2045,7 +1995,6 @@ teq_32imm.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperand32imm(rotate_imm, imm, &shift_carry_out);
 	s2 = ShiftOperand32imm(rotate_imm, imm, cpu.GetCPSR_C(), &shift_carry_out);
 	res = s1 ^ s2;
 
@@ -2069,7 +2018,6 @@ teq_imm_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value, &shift_carry_out);
 	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value, 
 				cpu.GetCPSR_C(), &shift_carry_out);
 	res = s1 ^ s2;
@@ -2095,7 +2043,6 @@ teq_reg_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value, &shift_carry_out);
 	s2 = ShiftOperandRegShift(rs_value, shift, rm_value, 
 			cpu.GetCPSR_C(), &shift_carry_out);
 	res = s1 ^ s2;
@@ -2159,7 +2106,6 @@ cmp_32imm.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperand32imm(rotate_imm, imm, &shift_carry_out);
 	s2 = ShiftOperand32imm(rotate_imm, imm, cpu.GetCPSR_C(), &shift_carry_out);
 	res = s1 - s2;
 	
@@ -2183,7 +2129,6 @@ cmp_imm_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value, &shift_carry_out);
 	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value, 
 				cpu.GetCPSR_C(), &shift_carry_out);
 	res = s1 - s2;
@@ -2209,7 +2154,6 @@ cmp_reg_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value, &shift_carry_out);
 	s2 = ShiftOperandRegShift(rs_value, shift, rm_value,
 			cpu.GetCPSR_C(), &shift_carry_out);
 	res = s1 - s2;
@@ -2272,7 +2216,6 @@ cmn_32imm.execute = {
   	if(!cpu.CheckCondition(cond)) return;
 
   	s1 = rn_value;
-  	// s2 = cpu.ShiftOperand32imm(rotate_imm, imm, &shift_carry_out);
   	s2 = ShiftOperand32imm(rotate_imm, imm, cpu.GetCPSR_C(), &shift_carry_out);
   	res = s1 + s2;
 
@@ -2296,7 +2239,6 @@ cmn_imm_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value, &shift_carry_out);
 	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value,
 				cpu.GetCPSR_C(), &shift_carry_out);
 	res = s1 + s2;
@@ -2322,7 +2264,6 @@ cmn_reg_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value, &shift_carry_out);
 	s2 = ShiftOperandRegShift(rs_value, shift, rm_value, 
 			cpu.GetCPSR_C(), &shift_carry_out);
 	res = s1 + s2;
@@ -2426,7 +2367,6 @@ orr_32imm.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperand32imm(rotate_imm, imm);
 	s2 = ShiftOperand32imm(rotate_imm, imm);
 	res = s1 | s2;
 	cpu.SetGPR(rd, res);
@@ -2445,7 +2385,6 @@ orr_imm_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value);
 	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value, cpu.GetCPSR_C());
 	res = s1 | s2;
 	cpu.SetGPR(rd, res);
@@ -2465,7 +2404,6 @@ orr_reg_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 	
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value);
 	s2 = ShiftOperandRegShift(rs_value, shift, rm_value);
 	res = s1 | s2;
 	cpu.SetGPR(rd, res);
@@ -2484,7 +2422,6 @@ orrs_32imm.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperand32imm(rotate_imm, imm, &shift_carry_out);
 	s2 = ShiftOperand32imm(rotate_imm, imm, cpu.GetCPSR_C(), &shift_carry_out);
 	res = s1 | s2;
 	cpu.SetGPR(rd, res);
@@ -2513,7 +2450,6 @@ orrs_imm_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value, &shift_carry_out);
 	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value, 
 				cpu.GetCPSR_C(), &shift_carry_out);
 	res = s1 | s2;
@@ -2544,7 +2480,6 @@ orrs_reg_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value, &shift_carry_out);
 	s2 = ShiftOperandRegShift(rs_value, shift, rm_value,
 			cpu.GetCPSR_C(), &shift_carry_out);
 	res = s1 | s2;
@@ -2640,7 +2575,6 @@ mov_32imm.execute = {
 
 	if(!cpu.CheckCondition(cond)) return;
 	
-	// s1 = cpu.ShiftOperand32imm(rotate_imm, imm);
 	s1 = ShiftOperand32imm(rotate_imm, imm);
 	res = s1;
 	cpu.SetGPR(rd, res);
@@ -2657,7 +2591,6 @@ mov_imm_shift.execute = {
 
 	if(!cpu.CheckCondition(cond)) return;
 
-	// s1 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value);
 	s1 = ShiftOperandImmShift(shift_imm, shift, rm_value, cpu.GetCPSR_C());
 	res = s1;
 	cpu.SetGPR(rd, res);
@@ -2675,7 +2608,6 @@ mov_reg_shift.execute = {
 
 	if(!cpu.CheckCondition(cond)) return;
 
-	// s1 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value);
 	s1 = ShiftOperandRegShift(rs_value, shift, rm_value);
 	res = s1;
 	cpu.SetGPR(rd, res);
@@ -2690,7 +2622,6 @@ movs_32imm.execute = {
 
 	if(!cpu.CheckCondition(cond)) return;
 
-	// s1 = cpu.ShiftOperand32imm(rotate_imm, imm, &shift_carry_out);
 	s1 = ShiftOperand32imm(rotate_imm, imm, cpu.GetCPSR_C(), &shift_carry_out);
 	res = s1;
 	cpu.SetGPR(rd, res);
@@ -2717,7 +2648,6 @@ movs_imm_shift.execute = {
 	
 	if(!cpu.CheckCondition(cond)) return;
 	
-	// s1 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value, &shift_carry_out);
 	s1 = ShiftOperandImmShift(shift_imm, shift, rm_value,
 				cpu.GetCPSR_C(), &shift_carry_out);
 	res = s1;
@@ -2746,7 +2676,6 @@ movs_reg_shift.execute = {
 
 	if(!cpu.CheckCondition(cond)) return;
 
-	// s1 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value, &shift_carry_out);
 	s1 = ShiftOperandRegShift(rs_value, shift, rm_value,
 			cpu.GetCPSR_C(), &shift_carry_out);
 	res = s1;
@@ -2855,7 +2784,6 @@ bic_32imm.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperand32imm(rotate_imm, imm);
 	s2 = ShiftOperand32imm(rotate_imm, imm);
 	res = s1 & ~s2;
 	cpu.SetGPR(rd, res);
@@ -2874,7 +2802,6 @@ bic_imm_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value);
 	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value, cpu.GetCPSR_C());
 	res = s1 & ~s2;
 	cpu.SetGPR(rd, res);
@@ -2894,7 +2821,6 @@ bic_reg_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value);
 	s2 = ShiftOperandRegShift(rs_value, shift, rm_value);
 	res = s1 & ~s2;
 	cpu.SetGPR(rd, res);
@@ -2913,7 +2839,6 @@ bics_32imm.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperand32imm(rotate_imm, imm, &shift_carry_out);
 	s2 = ShiftOperand32imm(rotate_imm, imm, cpu.GetCPSR_C(), &shift_carry_out);
 	res = s1 & ~s2;
 	cpu.SetGPR(rd, res);
@@ -2942,7 +2867,6 @@ bics_imm_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value, &shift_carry_out);
 	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value,
 				cpu.GetCPSR_C(), &shift_carry_out);
 	res = s1 & ~s2;
@@ -2973,7 +2897,6 @@ bics_reg_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	// s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value, &shift_carry_out);
 	s2 = ShiftOperandRegShift(rs_value, shift, rm_value, 
 			cpu.GetCPSR_C(), &shift_carry_out);
 	res = s1 & ~s2;
@@ -3066,7 +2989,6 @@ mvn_32imm.execute = {
 
 	if(!cpu.CheckCondition(cond)) return;
 
-	// s1 = cpu.ShiftOperand32imm(rotate_imm, imm);
 	s1 = ShiftOperand32imm(rotate_imm, imm);
 	res = ~s1;
 	cpu.SetGPR(rd, res);
@@ -3083,7 +3005,6 @@ mvn_imm_shift.execute = {
 
 	if(!cpu.CheckCondition(cond)) return;
 
-	// s1 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value);
 	s1 = ShiftOperandImmShift(shift_imm, shift, rm_value, cpu.GetCPSR_C());
 	res = ~s1;
 	cpu.SetGPR(rd, res);
@@ -3101,7 +3022,6 @@ mvn_reg_shift.execute = {
 
 	if(!cpu.CheckCondition(cond)) return;
 	
-	// s1 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value);
 	s1 = ShiftOperandRegShift(rs_value, shift, rm_value);
 	res = ~s1;
 	cpu.SetGPR(rd, res);
@@ -3116,7 +3036,6 @@ mvns_32imm.execute = {
 
 	if(!cpu.CheckCondition(cond)) return;
 
-	// s1 = cpu.ShiftOperand32imm(rotate_imm, imm, &shift_carry_out);
 	s1 = ShiftOperand32imm(rotate_imm, imm, cpu.GetCPSR_C(), &shift_carry_out);
 	res = ~s1;
 	cpu.SetGPR(rd, res);
@@ -3143,7 +3062,6 @@ mvns_imm_shift.execute = {
 
 	if(!cpu.CheckCondition(cond)) return;
 
-	// s1 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value, &shift_carry_out);
 	s1 = ShiftOperandImmShift(shift_imm, shift, rm_value,
 				cpu.GetCPSR_C(), &shift_carry_out);
 	res = ~s1;
@@ -3172,7 +3090,6 @@ mvns_reg_shift.execute = {
 
 	if(!cpu.CheckCondition(cond)) return;
 
-	// s1 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value, &shift_carry_out);
 	s1 = ShiftOperandRegShift(rs_value, shift, rm_value,
 			cpu.GetCPSR_C(), &shift_carry_out);
 	res = ~s1;

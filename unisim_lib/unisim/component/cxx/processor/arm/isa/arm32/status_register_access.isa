@@ -134,7 +134,6 @@ msr_imm.execute = {
 
 	if(!cpu.CheckCondition(cond)) return;
 	
-	// operand = cpu.ShiftOperand32imm(rotate_imm, imm);
 	operand = ShiftOperand32imm(rotate_imm, imm);
 	run_mode = cpu.GetCPSR() & cpu.RUNNING_MODE_MASK; /* get running mode */
 	if(r) {
