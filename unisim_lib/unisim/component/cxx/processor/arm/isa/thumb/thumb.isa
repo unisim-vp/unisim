@@ -55,6 +55,7 @@ decl {
 #include "unisim/component/cxx/processor/arm/decode_load_store_multiple.hh"
 #include "unisim/component/cxx/processor/arm/decode_misc_load_store.hh"
 #include "unisim/component/cxx/processor/arm/decode_copro_load_store.hh"
+#include "unisim/component/cxx/processor/arm/disasm.hh"
 
 namespace unisim {
 namespace component {

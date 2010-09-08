@@ -58,50 +58,50 @@
 
 ldrd_imm_post.disasm = {
   buffer << "ldr";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << "d r" << rd << ", ";
   // MLS = Miscellaneous Load Store
-  cpu.DisasmMLSImmOffset_post(u, rn, immedH, immedL, buffer);
+  DisasmMLSImmOffset_post(u, rn, immedH, immedL, buffer);
 }
 
 ldrd_imm_offset.disasm = {
   buffer << "ldr";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << "d r" << rd << ", ";
   // MLS = Miscellaneous Load Store
-  cpu.DisasmMLSImmOffset_offset(u, rn, immedH, immedL, buffer);
+  DisasmMLSImmOffset_offset(u, rn, immedH, immedL, buffer);
 }
 
 ldrd_imm_pre.disasm = {
   buffer << "ldr";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << "d r" << rd << ", ";
   // MLS = Miscellaneous Load Store
-  cpu.DisasmMLSImmOffset_pre(u, rn, immedH, immedL, buffer);
+  DisasmMLSImmOffset_pre(u, rn, immedH, immedL, buffer);
 }
 
 ldrd_reg_post.disasm = {
   buffer << "ldr";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << "d r" << rd << ", ";
   // MLS = Miscellaneous Load Store
-  cpu.DisasmMLSReg_post(u, rn, rm, buffer);
+  DisasmMLSReg_post(u, rn, rm, buffer);
 }
 
 ldrd_reg_offset.disasm = {
   buffer << "ldr";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << "d r" << rd << ", ";
   // MLS = Miscellaneous Load Store
-  cpu.DisasmMLSReg_offset(u, rn, rm, buffer);
+  DisasmMLSReg_offset(u, rn, rm, buffer);
 }
 
 ldrd_reg_pre.disasm = {
   buffer << "ldr";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << "d r" << rd << ", ";
   // MLS = Miscellaneous Load Store
-  cpu.DisasmMLSReg_pre(u, rn, rm, buffer);
+  DisasmMLSReg_pre(u, rn, rm, buffer);
 }
 
 ldrd_imm_post.execute = {
@@ -275,50 +275,50 @@ ldrd_reg_pre.execute = {
 
 strd_imm_post.disasm = {
   buffer << "str";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << "d r" << rd << ", ";
   // MLS = Miscellaneous Load Store
-  cpu.DisasmMLSImmOffset_post(u, rn, immedH, immedL, buffer);
+  DisasmMLSImmOffset_post(u, rn, immedH, immedL, buffer);
 }
 
 strd_imm_offset.disasm = {
   buffer << "str";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << "d r" << rd << ", ";
   // MLS = Miscellaneous Load Store
-  cpu.DisasmMLSImmOffset_offset(u, rn, immedH, immedL, buffer);
+  DisasmMLSImmOffset_offset(u, rn, immedH, immedL, buffer);
 }
 
 strd_imm_pre.disasm = {
   buffer << "str";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << "d r" << rd << ", ";
   // MLS = Miscellaneous Load Store
-  cpu.DisasmMLSImmOffset_pre(u, rn, immedH, immedL, buffer);
+  DisasmMLSImmOffset_pre(u, rn, immedH, immedL, buffer);
 }
 
 strd_reg_post.disasm = {
   buffer << "str";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << "d r" << rd << ", ";
   // MLS = Miscellaneous Load Store
-  cpu.DisasmMLSReg_post(u, rn, rm, buffer);
+  DisasmMLSReg_post(u, rn, rm, buffer);
 }
 
 strd_reg_offset.disasm = {
   buffer << "str";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << "d r" << rd << ", ";
   // MLS = Miscellaneous Load Store
-  cpu.DisasmMLSReg_offset(u, rn, rm, buffer);
+  DisasmMLSReg_offset(u, rn, rm, buffer);
 }
 
 strd_reg_pre.disasm = {
   buffer << "str";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << "d r" << rd << ", ";
   // MLS = Miscellaneous Load Store
-  cpu.DisasmMLSReg_pre(u, rn, rm, buffer);
+  DisasmMLSReg_pre(u, rn, rm, buffer);
 }
 
 strd_imm_post.execute = {

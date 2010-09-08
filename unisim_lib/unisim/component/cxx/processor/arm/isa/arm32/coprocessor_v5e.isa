@@ -81,7 +81,7 @@ mcrr.disasm = {
 	typedef Operation<CONFIG> inherited;
 	
 	buffer << "mcrr";
-	cpu.DisasmCondition(inherited::cond_init, buffer);
+	DisasmCondition(inherited::cond_init, buffer);
 	buffer << " " << cp_num;
 	buffer << ", " << op1;
 	buffer << ", r" << rd;
@@ -147,7 +147,7 @@ mrrc.disasm = {
 	typedef Operation<CONFIG> inherited;
 
 	buffer << "mrrc";
-	cpu.DisasmCondition(inherited::cond_init, buffer);
+	DisasmCondition(inherited::cond_init, buffer);
 	buffer << " " << cp_num;
 	buffer << ", " << op1;
 	buffer << ", r" << rd;

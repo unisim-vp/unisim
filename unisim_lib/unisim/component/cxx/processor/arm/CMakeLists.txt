@@ -110,6 +110,7 @@ add_custom_command (
 	)
 
 set ( cxx_arm_srcs
+	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/masks.hh
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/cache_interface.hh
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/config.hh
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/coprocessor_interface.hh
@@ -149,6 +150,9 @@ set ( cxx_arm_srcs
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/decode_misc_load_store.cc
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/decode_copro_load_store.hh
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/decode_copro_load_store.cc
+	
+	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/disasm.hh
+	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/disasm.cc
 	
 	${CMAKE_BINARY_DIR}/unisim/component/cxx/processor/arm/isa_arm32.hh
 	${CMAKE_BINARY_DIR}/unisim/component/cxx/processor/arm/isa_arm32.tcc

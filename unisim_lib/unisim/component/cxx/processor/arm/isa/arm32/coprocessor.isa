@@ -76,7 +76,7 @@ cdp.disasm = {
 	typedef Operation<CONFIG> inherited;
 
 	buffer << "cdp";
-	cpu.DisasmCondition(inherited::cond_init, buffer);
+	DisasmCondition(inherited::cond_init, buffer);
 	buffer << " " << dec << cp_num;
 	buffer << ", " << dec << op1;
 	buffer << ", cr" << dec << crd;
@@ -231,48 +231,48 @@ ldc_offset.disasm = {
 	typedef Operation<CONFIG> inherited;
 
 	buffer << "ldc";
-	cpu.DisasmCondition(inherited::cond_init, buffer);
+	DisasmCondition(inherited::cond_init, buffer);
 	if(n == 1) buffer << "l";
 	buffer << " " << cp_num;
 	buffer << ", cr" << crd;
 	buffer << ", ";
-	cpu.DisasmCLSImm_offset(u, rn, offset, buffer);
+	DisasmCLSImm_offset(u, rn, offset, buffer);
 }
 
 ldc_pre.disasm = {
 	typedef Operation<CONFIG> inherited;
 
 	buffer << "ldc";
-	cpu.DisasmCondition(inherited::cond_init, buffer);
+	DisasmCondition(inherited::cond_init, buffer);
 	if(n == 1) buffer << "l";
 	buffer << " " << cp_num;
 	buffer << ", cr" << crd;
 	buffer << ", ";
-	cpu.DisasmCLSImm_pre(u, rn, offset, buffer);
+	DisasmCLSImm_pre(u, rn, offset, buffer);
 }
 
 ldc_post.disasm = {
 	typedef Operation<CONFIG> inherited;
 	
 	buffer << "ldc";
-	cpu.DisasmCondition(inherited::cond_init, buffer);
+	DisasmCondition(inherited::cond_init, buffer);
 	if(n == 1) buffer << "l";
 	buffer << " " << cp_num;
 	buffer << ", cr" << crd;
 	buffer << ", ";
-	cpu.DisasmCLSImm_post(u, rn, offset, buffer);
+	DisasmCLSImm_post(u, rn, offset, buffer);
 }
 
 ldc_unindexed.disasm = {
 	typedef Operation<CONFIG> inherited;
 
 	buffer << "ldc";
-	cpu.DisasmCondition(inherited::cond_init, buffer);
+	DisasmCondition(inherited::cond_init, buffer);
 	if(n == 1) buffer << "l";
 	buffer << " " << cp_num;
 	buffer << ", cr" << crd;
 	buffer << ", ";
-	cpu.DisasmCLSUnindexed(rn, option, buffer);
+	DisasmCLSUnindexed(rn, option, buffer);
 }
 
 ldc_offset.execute = {
@@ -383,7 +383,7 @@ mcr.disasm = {
 	typedef Operation<CONFIG> inherited;
 	
 	buffer << "mcr";
-	cpu.DisasmCondition(inherited::cond_init, buffer);
+	DisasmCondition(inherited::cond_init, buffer);
 	buffer << " " << cp_num;
 	buffer << ", " << op1;
 	buffer << ", r" << rd;
@@ -444,7 +444,7 @@ mrc.disasm = {
 	typedef Operation<CONFIG> inherited;
 
 	buffer << "mrc";
-	cpu.DisasmCondition(inherited::cond_init, buffer);
+	DisasmCondition(inherited::cond_init, buffer);
 	buffer << " " << cp_num;
 	buffer << ", " << op1;
 	buffer << ", r" << rd;
@@ -599,48 +599,48 @@ stc_offset.disasm = {
 	typedef Operation<CONFIG> inherited;
 
 	buffer << "stc";
-	cpu.DisasmCondition(inherited::cond_init, buffer);
+	DisasmCondition(inherited::cond_init, buffer);
 	if(n == 1) buffer << "l";
 	buffer << " " << cp_num;
 	buffer << ", cr" << crd;
 	buffer << ", ";
-	cpu.DisasmCLSImm_offset(u, rn, offset, buffer);
+	DisasmCLSImm_offset(u, rn, offset, buffer);
 }	
 
 stc_pre.disasm = {
 	typedef Operation<CONFIG> inherited;
 
 	buffer << "stc";
-	cpu.DisasmCondition(inherited::cond_init, buffer);
+	DisasmCondition(inherited::cond_init, buffer);
 	if(n == 1) buffer << "l";
 	buffer << " " << cp_num;
 	buffer << ", cr" << crd;
 	buffer << ", ";
-	cpu.DisasmCLSImm_pre(u, rn, offset, buffer);
+	DisasmCLSImm_pre(u, rn, offset, buffer);
 }
 
 stc_post.disasm = {
 	typedef Operation<CONFIG> inherited;
 
 	buffer << "stc";
-	cpu.DisasmCondition(inherited::cond_init, buffer);
+	DisasmCondition(inherited::cond_init, buffer);
 	if(n == 1) buffer << "l";
 	buffer << " " << cp_num;
 	buffer << ", cr" << crd;
 	buffer << ", ";
-	cpu.DisasmCLSImm_post(u, rn, offset, buffer);
+	DisasmCLSImm_post(u, rn, offset, buffer);
 }
 
 stc_unindexed.disasm = {
 	typedef Operation<CONFIG> inherited;
 
 	buffer << "stc";
-	cpu.DisasmCondition(inherited::cond_init, buffer);
+	DisasmCondition(inherited::cond_init, buffer);
 	if(n == 1) buffer << "l";
 	buffer << " " << cp_num;
 	buffer << ", cr" << crd;
 	buffer << ", ";
-	cpu.DisasmCLSUnindexed(rn, option, buffer);
+	DisasmCLSUnindexed(rn, option, buffer);
 }
 
 stc_offset.execute = {
@@ -770,7 +770,7 @@ ldc2_offset.disasm = {
   buffer << " " << cp_num;
   buffer << ", cr" << crd;
   buffer << ", ";
-  cpu.DisasmCLSImm_offset(u, rn, offset, buffer);
+  DisasmCLSImm_offset(u, rn, offset, buffer);
 }
 
 ldc2_pre.disasm = {
@@ -779,7 +779,7 @@ ldc2_pre.disasm = {
   buffer << " " << cp_num;
   buffer << ", cr" << crd;
   buffer << ", ";
-  cpu.DisasmCLSImm_pre(u, rn, offset, buffer);
+  DisasmCLSImm_pre(u, rn, offset, buffer);
 }
 
 ldc2_post.disasm = {
@@ -788,19 +788,19 @@ ldc2_post.disasm = {
   buffer << " " << cp_num;
   buffer << ", cr" << crd;
   buffer << ", ";
-  cpu.DisasmCLSImm_post(u, rn, offset, buffer);
+  DisasmCLSImm_post(u, rn, offset, buffer);
 }
 
 ldc2_unindexed.disasm = {
 	typedef Operation<CONFIG> inherited;
 	
 	buffer << "ldc";
-	cpu.DisasmCondition(inherited::cond_init, buffer);
+	DisasmCondition(inherited::cond_init, buffer);
 	if(n == 1) buffer << "l";
 	buffer << " " << cp_num;
 	buffer << ", cr" << crd;
 	buffer << ", ";
-	cpu.DisasmCLSUnindexed(rn, option, buffer);
+	DisasmCLSUnindexed(rn, option, buffer);
 }
 
 ldc2_offset.execute = {
@@ -938,7 +938,7 @@ stc2_offset.disasm = {
   buffer << " " << cp_num;
   buffer << ", cr" << crd;
   buffer << ", ";
-  cpu.DisasmCLSImm_offset(u, rn, offset, buffer);
+  DisasmCLSImm_offset(u, rn, offset, buffer);
 }
 
 stc2_pre.disasm = {
@@ -947,7 +947,7 @@ stc2_pre.disasm = {
   buffer << " " << cp_num;
   buffer << ", cr" << crd;
   buffer << ", ";
-  cpu.DisasmCLSImm_pre(u, rn, offset, buffer);
+  DisasmCLSImm_pre(u, rn, offset, buffer);
 }
 
 stc2_post.disasm = {
@@ -956,7 +956,7 @@ stc2_post.disasm = {
   buffer << " " << cp_num;
   buffer << ", cr" << crd;
   buffer << ", ";
-  cpu.DisasmCLSImm_post(u, rn, offset, buffer);
+  DisasmCLSImm_post(u, rn, offset, buffer);
 }
 
 stc2_unindexed.disasm = {
@@ -965,7 +965,7 @@ stc2_unindexed.disasm = {
   buffer << " " << cp_num;
   buffer << ", cr" << crd;
   buffer << ", ";
-  cpu.DisasmCLSUnindexed(rn, option, buffer);
+  DisasmCLSUnindexed(rn, option, buffer);
 }
 
 stc2_offset.execute = {

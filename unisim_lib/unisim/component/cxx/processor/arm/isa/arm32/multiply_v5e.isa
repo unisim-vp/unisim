@@ -60,7 +60,7 @@ smlaxy.disasm = {
 	else buffer << "b";
 	if(y) buffer << "t";
 	else buffer << "b";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << " r" << rd;
 	buffer << ", r" << rm;
 	buffer << ", r" << rs;
@@ -135,7 +135,7 @@ smlalxy.disasm = {
 	else buffer << "b";
 	if(y) buffer << "t";
 	else buffer << "b";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << " r" << rdlo;
 	buffer << ", r" << rdhi;
 	buffer << ", r" << rm;
@@ -210,7 +210,7 @@ smlawy.disasm = {
 	buffer << "smlaw";
 	if(y) buffer << "t";
 	else buffer << "b";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << " r" << rd;
 	buffer << ", r" << rm;
 	buffer << ", r" << rs;
@@ -287,7 +287,7 @@ smulxy.disasm = {
 	else buffer << "b";
 	if(y) buffer << "t";
 	else buffer << "b";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << " r" << rd;
 	buffer << ", r" << rm;
 	buffer << ", r" << rs;
@@ -352,7 +352,7 @@ smulwy.disasm = {
 	buffer << "smulw";
 	if(y) buffer << "t";
 	else buffer << "b";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << " r" << rd;
 	buffer << ", r" << rm;
 	buffer << ", r" << rs;

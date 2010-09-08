@@ -70,7 +70,7 @@ group b_1(b_1_0xxx, b_1_10xx, b_1_110x)
 b_1.disasm = {
 	typedef Operation<CONFIG> inherited;
 	buffer << "b";
-	cpu.DisasmCondition(inherited::cond_init, buffer);
+	DisasmCondition(inherited::cond_init, buffer);
 	buffer << " 0x" << hex << cpu.GetGPR(cpu.PC_reg) + 4 + (imm << 1) << dec;
 }
 

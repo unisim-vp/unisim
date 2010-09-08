@@ -58,47 +58,47 @@ group ldr_group(ldr_imm_post, ldr_imm_offset, ldr_imm_pre, \
 
 ldr_imm_post.disasm = {
   buffer << "ldr";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << " r" << rd << ", ";
   // LSWUB = Load Store Word or Unsigned Byte
-  cpu.DisasmLSWUBImmOffset_post(u, rn, offset, buffer);
+  DisasmLSWUBImmOffset_post(u, rn, offset, buffer);
 }
 
 ldr_imm_offset.disasm = {
   buffer << "ldr";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << " r" << rd << ", ";
   // LSWUB = Load Store Word or Unsigned Byte
-  cpu.DisasmLSWUBImmOffset_offset(u, rn, offset, buffer);
+  DisasmLSWUBImmOffset_offset(u, rn, offset, buffer);
 }
 
 ldr_imm_pre.disasm = {
   buffer << "ldr";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << " r" << rd << ", ";
   // LSWUB = Load Store Word or Unsigned Byte
-  cpu.DisasmLSWUBImmOffset_pre(u, rn, offset, buffer);
+  DisasmLSWUBImmOffset_pre(u, rn, offset, buffer);
 }
 
 ldr_reg_post.disasm = {
 			   buffer << "ldr";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << " r" << rd << ", ";
-  cpu.DisasmLSWUBReg_post(u, rn, shift_imm, shift, rm, buffer);
+  DisasmLSWUBReg_post(u, rn, shift_imm, shift, rm, buffer);
 }
 
 ldr_reg_offset.disasm = {
   buffer << "ldr";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << " r" << rd << ", ";
-  cpu.DisasmLSWUBReg_offset(u, rn, shift_imm, shift, rm, buffer);
+  DisasmLSWUBReg_offset(u, rn, shift_imm, shift, rm, buffer);
 }
 
 ldr_reg_pre.disasm = {
   buffer << "ldr";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << " r" << rd << ", ";
-  cpu.DisasmLSWUBReg_pre(u, rn, shift_imm, shift, rm, buffer);
+  DisasmLSWUBReg_pre(u, rn, shift_imm, shift, rm, buffer);
 }
 
 ldr_imm_post.execute = {
@@ -245,47 +245,47 @@ op ldrb_reg_pre(cond[4]:0b011[3]:0b1[1]:u[1]:0b1[1]:0b1[1]:0b1[1]:rn[4]:rd[4]:sh
 
 ldrb_imm_post.disasm = {
   buffer << "ldr";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << "b r" << rd << ", ";
   // LSWUB = Load Store Word or Unsigned Byte
-  cpu.DisasmLSWUBImmOffset_post(u, rn, offset, buffer);
+  DisasmLSWUBImmOffset_post(u, rn, offset, buffer);
 }
 
 ldrb_imm_offset.disasm = {
   buffer << "ldr";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << "b r" << rd << ", ";
   // LSWUB = Load Store Word or Unsigned Byte
-  cpu.DisasmLSWUBImmOffset_offset(u, rn, offset, buffer);
+  DisasmLSWUBImmOffset_offset(u, rn, offset, buffer);
 }
 
 ldrb_imm_pre.disasm = {
   buffer << "ldr";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << "b r" << rd << ", ";
   // LSWUB = Load Store Word or Unsigned Byte
-  cpu.DisasmLSWUBImmOffset_pre(u, rn, offset, buffer);
+  DisasmLSWUBImmOffset_pre(u, rn, offset, buffer);
 }
 
 ldrb_reg_post.disasm = {
   buffer << "ldr";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << "b r" << rd << ", ";
-  cpu.DisasmLSWUBReg_post(u, rn, shift_imm, shift, rm, buffer);
+  DisasmLSWUBReg_post(u, rn, shift_imm, shift, rm, buffer);
 }
 
 ldrb_reg_offset.disasm = {
   buffer << "ldr";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << "b r" << rd << ", ";
-  cpu.DisasmLSWUBReg_offset(u, rn, shift_imm, shift, rm, buffer);
+  DisasmLSWUBReg_offset(u, rn, shift_imm, shift, rm, buffer);
 }
 
 ldrb_reg_pre.disasm = {
   buffer << "ldr";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << "b r" << rd << ", ";
-  cpu.DisasmLSWUBReg_pre(u, rn, shift_imm, shift, rm, buffer);
+  DisasmLSWUBReg_pre(u, rn, shift_imm, shift, rm, buffer);
 }
 
 ldrb_imm_post.execute = {
@@ -414,7 +414,7 @@ ldrb_rd15_imm_post.disasm = {
 ldrb_rd15_imm_offset.disasm = {
 	if(CONFIG::HAS_LOAD_STORE_V5E) {
 		buffer << "pld";
-		cpu.DisasmLSWUBImmOffset_offset(u, rn, offset, buffer);
+		DisasmLSWUBImmOffset_offset(u, rn, offset, buffer);
 	} else
 		buffer << "unpredictable instruction (ldrb)";
 }
@@ -430,7 +430,7 @@ ldrb_rd15_reg_post.disasm = {
 ldrb_rd15_reg_offset.disasm = {
 	if(CONFIG::HAS_LOAD_STORE_V5E) {
 		buffer << "pld ";
-		cpu.DisasmLSWUBReg_offset(u, rn, shift_imm, shift, rm, buffer);
+		DisasmLSWUBReg_offset(u, rn, shift_imm, shift, rm, buffer);
 	} else
 		buffer << "unpredictable instruction (ldrb)";
 }
@@ -516,16 +516,16 @@ op ldrt_reg(cond[4]:0b0110[4]:u[1]:0b011[3]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0b
 
 ldrt_imm.disasm = {
   buffer << "ldr";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << "t r" << rd << ", ";
-  cpu.DisasmLSWUBImmOffset_post(u, rn, offset, buffer);
+  DisasmLSWUBImmOffset_post(u, rn, offset, buffer);
 }
 
 ldrt_reg.disasm = {
   buffer << "ldr";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << "t r" << rd << ", ";
-  cpu.DisasmLSWUBReg_post(u, rn, shift_imm, shift, rm, buffer);
+  DisasmLSWUBReg_post(u, rn, shift_imm, shift, rm, buffer);
 }
 
 ldrt_imm.execute = {
@@ -571,16 +571,16 @@ op ldrbt_reg(cond[4]:0b0110[4]:u[1]:0b111[3]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0
 
 ldrbt_imm.disasm = {
   buffer << "ldr";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << "bt r" << rd << ", ";
-  cpu.DisasmLSWUBImmOffset_post(u, rn, offset, buffer);
+  DisasmLSWUBImmOffset_post(u, rn, offset, buffer);
 }
 
 ldrbt_reg.disasm = {
   buffer << "ldr";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << "bt r" << rd << ", ";
-  cpu.DisasmLSWUBReg_post(u, rn, shift_imm, shift, rm, buffer);
+  DisasmLSWUBReg_post(u, rn, shift_imm, shift, rm, buffer);
 }
 
 ldrbt_imm.execute = {
@@ -634,44 +634,44 @@ op str_reg_pre(cond[4]:0b011[3]:0b1[1]:u[1]:0b0[1]:0b1[1]:0b0[1]:rn[4]:rd[4]:shi
 
 str_imm_post.disasm = {
   buffer << "str";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << " r" << rd << ", ";
-  cpu.DisasmLSWUBImmOffset_post(u, rn, offset, buffer);
+  DisasmLSWUBImmOffset_post(u, rn, offset, buffer);
 }
 
 str_imm_offset.disasm = {
   buffer << "str";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << " r" << rd << ", ";
-  cpu.DisasmLSWUBImmOffset_offset(u, rn, offset, buffer);
+  DisasmLSWUBImmOffset_offset(u, rn, offset, buffer);
 }
 
 str_imm_pre.disasm = {
   buffer << "str";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << " r" << rd << ", ";
-  cpu.DisasmLSWUBImmOffset_pre(u, rn, offset, buffer);
+  DisasmLSWUBImmOffset_pre(u, rn, offset, buffer);
 }
 
 str_reg_post.disasm = {
   buffer << "str";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << " r" << rd << ", ";
-  cpu.DisasmLSWUBReg_post(u, rn, shift_imm, shift, rm, buffer);
+  DisasmLSWUBReg_post(u, rn, shift_imm, shift, rm, buffer);
 }
 
 str_reg_offset.disasm = {
   buffer << "str";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << " r" << rd << ", ";
-  cpu.DisasmLSWUBReg_offset(u, rn, shift_imm, shift, rm, buffer);
+  DisasmLSWUBReg_offset(u, rn, shift_imm, shift, rm, buffer);
 }
 
 str_reg_pre.disasm = {
   buffer << "str";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << " r" << rd << ", ";
-  cpu.DisasmLSWUBReg_pre(u, rn, shift_imm, shift, rm, buffer);
+  DisasmLSWUBReg_pre(u, rn, shift_imm, shift, rm, buffer);
 }
 
 str_imm_post.execute = {
@@ -813,47 +813,47 @@ op strb_reg_pre(cond[4]:0b011[3]:0b1[1]:u[1]:0b1[1]:0b1[1]:0b0[1]:rn[4]:rd[4]:sh
 
 strb_imm_post.disasm = {
   buffer << "str";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << "b r" << rd << ", ";
   // LSWUB = Load Store Word or Unsigned Byte
-  cpu.DisasmLSWUBImmOffset_post(u, rn, offset, buffer);
+  DisasmLSWUBImmOffset_post(u, rn, offset, buffer);
 }
 
 strb_imm_offset.disasm = {
   buffer << "str";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << "b r" << rd << ", ";
   // LSWUB = Load Store Word or Unsigned Byte
-  cpu.DisasmLSWUBImmOffset_offset(u, rn, offset, buffer);
+  DisasmLSWUBImmOffset_offset(u, rn, offset, buffer);
 }
 
 strb_imm_pre.disasm = {
   buffer << "str";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << "b r" << rd << ", ";
   // LSWUB = Load Store Word or Unsigned Byte
-  cpu.DisasmLSWUBImmOffset_pre(u, rn, offset, buffer);
+  DisasmLSWUBImmOffset_pre(u, rn, offset, buffer);
 }
 
 strb_reg_post.disasm = {
   buffer << "str";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << "b r" << rd << ", ";
-  cpu.DisasmLSWUBReg_post(u, rn, shift_imm, shift, rm, buffer);
+  DisasmLSWUBReg_post(u, rn, shift_imm, shift, rm, buffer);
 }
 
 strb_reg_offset.disasm = {
   buffer << "str";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << "b r" << rd << ", ";
-  cpu.DisasmLSWUBReg_offset(u, rn, shift_imm, shift, rm, buffer);
+  DisasmLSWUBReg_offset(u, rn, shift_imm, shift, rm, buffer);
 }
 
 strb_reg_pre.disasm = {
   buffer << "str";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << "b r" << rd << ", ";
-  cpu.DisasmLSWUBReg_pre(u, rn, shift_imm, shift, rm, buffer);
+  DisasmLSWUBReg_pre(u, rn, shift_imm, shift, rm, buffer);
 }
 
 strb_imm_post.execute = {
@@ -985,16 +985,16 @@ op strt_reg(cond[4]:0b011[3]:0b0[1]:u[1]:0b0[1]:0b1[1]:0b0[1]:rn[4]:rd[4]:shift_
 
 strt_imm.disasm = {
   buffer << "str";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << "t r" << rd << ", ";
-  cpu.DisasmLSWUBImmOffset_post(u, rn, offset, buffer);
+  DisasmLSWUBImmOffset_post(u, rn, offset, buffer);
 }
 
 strt_reg.disasm = {
   buffer << "str";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << "t r" << rd << ", ";
-  cpu.DisasmLSWUBReg_post(u, rn, shift_imm, shift, rm, buffer);
+  DisasmLSWUBReg_post(u, rn, shift_imm, shift, rm, buffer);
 }
 
 strt_imm.execute = {
@@ -1052,17 +1052,17 @@ op strbt_reg(cond[4]:0b011[3]:0b0[1]:u[1]:0b1[1]:0b1[1]:0b0[1]:rn[4]:rd[4]:shift
 
 strbt_imm.disasm = {
   buffer << "str";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << "bt r" << rd << ", ";
   // LSWUB = Load Store Word or Unsigned Byte
-  cpu.DisasmLSWUBImmOffset_post(u, rn, offset, buffer);
+  DisasmLSWUBImmOffset_post(u, rn, offset, buffer);
 }
 
 strbt_reg.disasm = {
   buffer << "str";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << "bt r" << rd << ", ";
-  cpu.DisasmLSWUBReg_post(u, rn, shift_imm, shift, rm, buffer);
+  DisasmLSWUBReg_post(u, rn, shift_imm, shift, rm, buffer);
 }
 
 strbt_imm.execute = {

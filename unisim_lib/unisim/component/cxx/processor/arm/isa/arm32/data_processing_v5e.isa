@@ -55,7 +55,7 @@ op qadd(cond[4]:0b00010000[8]:rn[4]:rd[4]:sbz[4]:0b0101[4]:rm[4])
 
 qadd.disasm = {
 	buffer << "qadd";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << " r" << rd;
 	buffer << ", r" << rm;
 	buffer << ", r" << rn;
@@ -92,7 +92,7 @@ op qsub(cond[4]:0b00010010[8]:rn[4]:rd[4]:sbz[4]:0b0101[4]:rm[4])
 
 qsub.disasm = {
 	buffer << "qsub";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << " r" << rd;
 	buffer << ", r" << rm;
 	buffer << ", r" << rn;
@@ -129,7 +129,7 @@ op qdadd(cond[4]:0b00010100[8]:rn[4]:rd[4]:sbz[4]:0b0101[4]:rm[4])
 
 qdadd.disasm = {
 	buffer << "qdadd";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << " r" << rd;
 	buffer << ", r" << rm;
 	buffer << ", r" << rn;
@@ -167,7 +167,7 @@ op qdsub(cond[4]:0b00010110[8]:rn[4]:rd[4]:sbz[4]:0b0101[4]:rm[4])
 
 qdsub.disasm = {
 	buffer << "qdsub";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << " r" << rd;
 	buffer << ", r" << rm;
 	buffer << ", r" << rn;

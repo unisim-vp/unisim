@@ -54,7 +54,7 @@ op mla(cond[4]:0b01[7]:s[1]:rd[4]:rn[4]:rs[4]:0b01001[4]:rm[4])
 
 mla.disasm = {
 	buffer << "mla";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	if(s) buffer << "s";
 	buffer << " r" << rd << ", "
 		<< "r" << rm << ", "
@@ -96,7 +96,7 @@ op mul(cond[4]:0b0[7]:s[1]:rd[4]:sbz[4]:rs[4]:0b01001[4]:rm[4])
 
 mul.disasm = {
 	buffer << "mul";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	if(s) buffer << "s";
 	buffer << " r" << rd << ", "
 		<< "r" << rm << ", "
@@ -140,7 +140,7 @@ mul.execute = {
 
 smlal.disasm = {
 	buffer << "smlal";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	if(s) buffer << "s";
 	buffer << " r" << rdhi << ", "
 		<< "r" << rdlo << ", "
@@ -192,7 +192,7 @@ smlal.execute = {
 
 smull.disasm = {
 	buffer << "smull";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	if(s) buffer << "s";
 	buffer << " r" << rdhi << ", "
 	<< "r" << rdlo << ", "
@@ -241,7 +241,7 @@ smull.execute = {
 
 umlal.disasm = {
 	buffer << "umlal";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	if(s) buffer << "s";
 	buffer << " r" << rdhi << ", "
 		<< "r" << rdlo << ", "
@@ -293,7 +293,7 @@ umlal.execute = {
 
 umull.disasm = {
 	buffer << "umull";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	if(s) buffer << "s";
 	buffer << " r" << rdhi << ", "
 		<< "r" << rdlo << ", "
