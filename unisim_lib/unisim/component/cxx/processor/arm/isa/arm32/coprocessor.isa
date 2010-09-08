@@ -285,7 +285,7 @@ ldc_offset.execute = {
 
 	if(!cpu.CheckCondition(inherited::cond_init)) return;
 	
-	address = cpu.CLSOpDec(u, rn_value, offset);
+	address = CLSOpDec(u, rn_value, offset);
 	while(cpu.CoprocessorLoad(cp_num, address)) {
 		address += 4;
 	}
@@ -301,7 +301,7 @@ ldc_pre.execute = {
 
 	if(!cpu.CheckCondition(inherited::cond_init)) return;
 	
-	address = cpu.CLSOpDec(u, rn_value, offset);
+	address = CLSOpDec(u, rn_value, offset);
 	cpu.SetGPR(rn, address);
 	while(cpu.CoprocessorLoad(cp_num, address)) {
 		address += 4;
@@ -319,7 +319,7 @@ ldc_post.execute = {
 	if(!cpu.CheckCondition(inherited::cond_init)) return;
 	
 	address = rn_value;
-	cpu.SetGPR(rn, cpu.CLSOpDec(u, rn_value, offset));
+	cpu.SetGPR(rn, CLSOpDec(u, rn_value, offset));
 	while(cpu.CoprocessorLoad(cp_num, address)) {
 		address += 4;
 	}
@@ -653,7 +653,7 @@ stc_offset.execute = {
 
 	if(!cpu.CheckCondition(inherited::cond_init)) return;
 	
-	address = cpu.CLSOpDec(u, rn_value, offset);
+	address = CLSOpDec(u, rn_value, offset);
 	while(cpu.CoprocessorStore(cp_num, address)) {
 		address += 4;
 	}
@@ -669,7 +669,7 @@ stc_pre.execute = {
 
 	if(!cpu.CheckCondition(inherited::cond_init)) return;
 	
-	address = cpu.CLSOpDec(u, rn_value, offset);
+	address = CLSOpDec(u, rn_value, offset);
 	cpu.SetGPR(rn, address);
 	while(cpu.CoprocessorStore(cp_num, address)) {
 		address += 4;
@@ -687,7 +687,7 @@ stc_post.execute = {
 	if(!cpu.CheckCondition(inherited::cond_init)) return;
 	
 	address = rn_value;
-	cpu.SetGPR(rn, cpu.CLSOpDec(u, rn_value, offset));
+	cpu.SetGPR(rn, CLSOpDec(u, rn_value, offset));
 	while(cpu.CoprocessorStore(cp_num, address)) {
 		address += 4;
 	}
@@ -811,7 +811,7 @@ ldc2_offset.execute = {
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
-	address = cpu.CLSOpDec(u, rn_value, offset);
+	address = CLSOpDec(u, rn_value, offset);
 	while(cpu.CoprocessorLoad(cp_num, address)) {
 		address += 4;
 	}
@@ -825,7 +825,7 @@ ldc2_pre.execute = {
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
-	address = cpu.CLSOpDec(u, rn_value, offset);
+	address = CLSOpDec(u, rn_value, offset);
 	cpu.SetGPR(rn, address);
 	while(cpu.CoprocessorLoad(cp_num, address)) {
 		address += 4;
@@ -841,7 +841,7 @@ ldc2_post.execute = {
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	address = rn_value;
-	cpu.SetGPR(rn, cpu.CLSOpDec(u, rn_value, offset));
+	cpu.SetGPR(rn, CLSOpDec(u, rn_value, offset));
 	while(cpu.CoprocessorLoad(cp_num, address)) {
 		address += 4;
 	}
@@ -976,7 +976,7 @@ stc2_offset.execute = {
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
-	address = cpu.CLSOpDec(u, rn_value, offset);
+	address = CLSOpDec(u, rn_value, offset);
 	while(cpu.CoprocessorStore(cp_num, address)) {
 		address += 4;
 	}
@@ -990,7 +990,7 @@ stc2_pre.execute = {
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
-	address = cpu.CLSOpDec(u, rn_value, offset);
+	address = CLSOpDec(u, rn_value, offset);
 	cpu.SetGPR(rn, address);
 	while(cpu.CoprocessorStore(cp_num, address)) {
 		address += 4;
@@ -1006,7 +1006,7 @@ stc2_post.execute = {
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	address = rn_value;
-	cpu.SetGPR(rn, cpu.CLSOpDec(u, rn_value, offset));
+	cpu.SetGPR(rn, CLSOpDec(u, rn_value, offset));
 	while(cpu.CoprocessorStore(cp_num, address)) {
 		address += 4;
 	}

@@ -32,7 +32,7 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
-#include "unisim/component/cxx/processor/arm/data_processing.hh"
+#include "unisim/component/cxx/processor/arm/decode_data_processing.hh"
 #include "unisim/util/arithmetic/arithmetic.hh"
 
 namespace unisim {

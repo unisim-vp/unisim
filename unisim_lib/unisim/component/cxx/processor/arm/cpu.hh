@@ -295,51 +295,6 @@ namespace arm {
 		string GetFunctionFriendlyName(uint64_t addr);
 		
 		/**************************************************************/
-		/* Operand decoding methods     START                         */
-		/**************************************************************/
-		
-		/* Miscellaneous load/store operand decoding */
-		inline address_t MLSImmOffset(const uint32_t u, 
-									  const reg_t val_reg, 
-									  const uint32_t immedH,
-									  const uint32_t immedL) GCC_INLINE;
-		inline address_t MLSReg(const uint32_t u, 
-								const reg_t val_rn, 
-								const reg_t val_rd, 
-								const reg_t val_rm) GCC_INLINE;
-		
-		/* Load/sotre multiple operand decoding */
-		inline uint32_t LSMia(const reg_t val_reg,
-							  const uint32_t reg_list,
-							  address_t *start_address,
-							  address_t *end_address,
-							  reg_t *new_val_reg) GCC_INLINE;
-		inline uint32_t LSMib(const reg_t val_reg,
-							  const uint32_t reg_list,
-							  address_t *start_address,
-							  address_t *end_address,
-							  reg_t *new_val_reg) GCC_INLINE;
-		inline uint32_t LSMda(const reg_t val_reg,
-							  const uint32_t reg_list,
-							  address_t *start_address,
-							  address_t *end_address,
-							  reg_t *new_val_reg) GCC_INLINE;
-		inline uint32_t LSMdb(const reg_t val_reg,
-							  const uint32_t reg_list,
-							  address_t *start_address,
-							  address_t *end_address,
-							  reg_t *new_val_reg) GCC_INLINE;
-		
-		/* Coprocessor load/store operand decoding */
-		inline address_t CLSOpDec(const uint32_t u,
-								  const uint32_t val_reg,
-								  const uint32_t offset) GCC_INLINE;
-		
-		/**************************************************************/
-		/* Operand decoding methods     END                           */
-		/**************************************************************/
-		
-		/**************************************************************/
 		/* Disassembling methods     START                            */
 		/**************************************************************/
 		/* Condition opcode bytes disassembling method */

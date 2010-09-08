@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2010,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -31,29 +31,7 @@
  *
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
- 
-/**********************************************
 
-           THUMB ARM EMULATOR ISA
-
-**********************************************/
-
-namespace unisim::component::cxx::processor::arm::isa::thumb
-set endianness big
-set addressclass {typename CONFIG::address_t}
-template <{class} {CONFIG}>
-
-decl {
-#ifndef __STDC_CONSTANT_MACROS
-#define __STDC_CONSTANT_MACROS
-#endif // __STDC_CONSTANT_MACROS
-#include <sstream>
-#include <iostream>
-#include <stdexcept>
-#include "unisim/component/cxx/processor/arm/decode_data_processing.hh"
-#include "unisim/component/cxx/processor/arm/decode_load_store.hh"
-#include "unisim/component/cxx/processor/arm/decode_load_store_multiple.hh"
-#include "unisim/component/cxx/processor/arm/decode_misc_load_store.hh"
 #include "unisim/component/cxx/processor/arm/decode_copro_load_store.hh"
 
 namespace unisim {
@@ -62,47 +40,19 @@ namespace cxx {
 namespace processor {
 namespace arm {
 
-using std::stringstream;
-using std::cerr;
-using std::endl;
-using std::hex;
-using std::dec;
-using std::exception;
+uint32_t
+CLSOpDec(const uint32_t u,
+		const uint32_t val_reg,
+		const uint32_t offset) {
+	uint32_t res;
 
-template<class CONFIG>
-class CPU;
+	res = val_reg + (((u << 1) - 1) * (offset * 4));
 
-} // end of namespace arm 
+	return res;
+}
+
+} // end of namespace arm
 } // end of namespace processor
 } // end of namespace cxx
 } // end of namespace component
 } // end of namespace unisim
-
-} // end of decl
-
-impl {
-#include "unisim/util/arithmetic/arithmetic.hh"
-#include "unisim/component/cxx/processor/arm/exception.hh"
-#include "unisim/kernel/logger/logger.hh"
-#include <stdint.h>
-	
-using unisim::component::cxx::processor::arm::UndefinedInstructionException;
-using unisim::util::arithmetic::Add32;
-using unisim::kernel::logger::DebugInfo;
-using unisim::kernel::logger::EndDebugInfo;
-using unisim::kernel::logger::DebugWarning;
-using unisim::kernel::logger::EndDebugWarning;
-using unisim::kernel::logger::DebugError;
-using unisim::kernel::logger::EndDebugError;
-}
-
-include "constructors_dec.isa"
-include "actions_dec.isa"
-
-include "branch.isa"
-include "data_processing.isa"
-include "load_store_reg.isa"
-include "load_store_multiple.isa"
-include "exception.isa"
-
-include "profiling.isa"

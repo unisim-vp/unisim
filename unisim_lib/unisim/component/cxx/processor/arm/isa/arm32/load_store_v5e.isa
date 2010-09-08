@@ -123,7 +123,7 @@ ldrd_imm_post.execute = {
 			(rd == 14)) // undefined behavior
 		return;
 
-	cpu.SetGPR(rn, cpu.MLSImmOffset(u, rn_value, immedH, immedL)); // update rn
+	cpu.SetGPR(rn, MLSImmOffset(u, rn_value, immedH, immedL)); // update rn
 	cpu.Read32toGPRAligned(address, rd);
 	cpu.Read32toGPRAligned(address + 4, rd + 1);
 }
@@ -138,7 +138,7 @@ ldrd_imm_offset.execute = {
 
 	if(!cpu.CheckCondition(cond)) return;
   
-	address = cpu.MLSImmOffset(u, rn_value, immedH, immedL); 
+	address = MLSImmOffset(u, rn_value, immedH, immedL); 
 	cpu.CheckAlignmentExcep(address); // TODO
 
 	if(rd % 2 != 0) // rd must be even numbered, unpredictable behavior
@@ -161,7 +161,7 @@ ldrd_imm_pre.execute = {
 	
 	if(!cpu.CheckCondition(cond)) return;
 	
-	address = cpu.MLSImmOffset(u, rn_value, immedH, immedL); // compute address
+	address = MLSImmOffset(u, rn_value, immedH, immedL); // compute address
 	cpu.CheckAlignmentExcep(address); // TODO
 
 	if(rd % 2 != 0) // rd must be even numbered, unpredictable behavior
@@ -196,7 +196,7 @@ ldrd_reg_post.execute = {
 			(rd == 14)) // undefined behavior
 		return;
 
-	cpu.SetGPR(rn, cpu.MLSReg(u, rn_value, rd_value, rm_value));
+	cpu.SetGPR(rn, MLSReg(u, rn_value, rd_value, rm_value));
 	cpu.Read32toGPRAligned(address, rd);
 	cpu.Read32toGPRAligned(address + 4, rd + 1);
 }
@@ -213,7 +213,7 @@ ldrd_reg_offset.execute = {
 
 	if(!cpu.CheckCondition(cond)) return;
 	
-	address = cpu.MLSReg(u, rn_value, rd_value, rm_value);
+	address = MLSReg(u, rn_value, rd_value, rm_value);
 	cpu.CheckAlignmentExcep(address); // TODO
 
 	if(rd % 2 != 0) // rd must be even numbered, unpredictable behavior
@@ -238,7 +238,7 @@ ldrd_reg_pre.execute = {
 
 	if(!cpu.CheckCondition(cond)) return;
   
-	address = cpu.MLSReg(u, rn_value, rd_value, rm_value);
+	address = MLSReg(u, rn_value, rd_value, rm_value);
 	cpu.CheckAlignmentExcep(address); // TODO
 
 	if(rd % 2 != 0) // rd must be even numbered, unpredictable behavior
@@ -342,7 +342,7 @@ strd_imm_post.execute = {
 			(rd == 14)) // undefined behavior
 		return;
 
-	cpu.SetGPR(rn, cpu.MLSImmOffset(u, rn_value, immedH, immedL)); // update rn
+	cpu.SetGPR(rn, MLSImmOffset(u, rn_value, immedH, immedL)); // update rn
 	cpu.Write32(address, rd_value);
 	cpu.Write32(address + 4, rdp1_value);
 }
@@ -359,7 +359,7 @@ strd_imm_offset.execute = {
 
 	if(!cpu.CheckCondition(cond)) return;
 	
-	address = cpu.MLSImmOffset(u, rn_value, immedH, immedL); 
+	address = MLSImmOffset(u, rn_value, immedH, immedL); 
 	cpu.CheckAlignmentExcep(address); // TODO
 
 	if(rd % 2 != 0) // rd must be even numbered, unpredictable behavior
@@ -384,7 +384,7 @@ strd_imm_pre.execute = {
 
 	if(!cpu.CheckCondition(cond)) return;
   
-	address = cpu.MLSImmOffset(u, rn_value, immedH, immedL); // compute address
+	address = MLSImmOffset(u, rn_value, immedH, immedL); // compute address
 	cpu.CheckAlignmentExcep(address); // TODO
 
 	if(rd % 2 != 0) // rd must be even numbered, unpredictable behavior
@@ -420,7 +420,7 @@ strd_reg_post.execute = {
 		(rd == 14)) // undefined behavior
 		return;
 
-	cpu.SetGPR(rn, cpu.MLSReg(u, rn_value, rd_value, rm_value));
+	cpu.SetGPR(rn, MLSReg(u, rn_value, rd_value, rm_value));
 	cpu.Write32(address, rd_value);
 	cpu.Write32(address + 4, rdp1_value);
 }
@@ -438,7 +438,7 @@ strd_reg_offset.execute = {
 	
 	if(!cpu.CheckCondition(cond)) return;
 	
-	address = cpu.MLSReg(u, rn_value, rd_value, rm_value);
+	address = MLSReg(u, rn_value, rd_value, rm_value);
 	cpu.CheckAlignmentExcep(address); // TODO
 
 	if(rd % 2 != 0) // rd must be even numbered, unpredictable behavior
@@ -464,7 +464,7 @@ strd_reg_pre.execute = {
 	
 	if(!cpu.CheckCondition(cond)) return;
 	
-	address = cpu.MLSReg(u, rn_value, rd_value, rm_value);
+	address = MLSReg(u, rn_value, rd_value, rm_value);
 	cpu.CheckAlignmentExcep(address); // TODO
 
 	if(rd % 2 != 0) // rd must be even numbered, unpredictable behavior
