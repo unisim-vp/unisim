@@ -539,10 +539,10 @@ typedef enum
 const unsigned int debug_abbrev_per_file = 512;
 const unsigned int debug_macinfo_per_file = 2048;
 const unsigned int debug_range_per_file = 2048;
-const unsigned int debug_line_per_file = 16;
+const unsigned int debug_line_per_file = 8;
 const unsigned int debug_arange_per_file = 2048;
 const unsigned int dies_per_file = 2048;
-const unsigned int cus_per_file = 8;
+const unsigned int cus_per_file = 256;
 const unsigned int cies_per_file = 2048;
 
 using unisim::util::endian::endian_type;
