@@ -18,6 +18,3 @@ add_library ( unisim__util__debug__debugger_handler
 	)
 
 message ( STATUS "Checking unisim::service::debug::sim_debugger - done" )
-
-
-

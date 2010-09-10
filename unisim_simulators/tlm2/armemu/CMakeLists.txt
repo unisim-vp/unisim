@@ -321,6 +321,7 @@ set ( PYTHON__ARMEMU__LIBS
 	 'unisim__service__trap_handler',
 	 'unisim__util__random',
 	 'unisim__util__debug',
+	 'unisim__util__debug__dwarf',
 	 'unisim__util__debug__debugger_handler',
 	 'unisim__util__xml',
 	 'unisim__kernel',
