@@ -415,7 +415,7 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 						{
 							DumpRawData(section, section_size);
 						}*/
-						if(!dw_handler) dw_handler = new DWARF_Handler<MEMORY_ADDR>(endianness, GetAddressSize(hdr));
+						if(!dw_handler) dw_handler = new unisim::util::debug::dwarf::DWARF_Handler<MEMORY_ADDR>(endianness, GetAddressSize(hdr));
 						dw_handler->Handle(section_name, (uint8_t *) section, section_size);
 					}
 				}

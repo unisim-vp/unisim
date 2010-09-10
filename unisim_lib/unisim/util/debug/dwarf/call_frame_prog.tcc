@@ -31,24 +31,62 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
- 
-#include <unisim/service/loader/elf_loader/dwarf.hh>
-#include <unisim/service/loader/elf_loader/dwarf.tcc>
 
 namespace unisim {
-namespace service {
-namespace loader {
-namespace elf_loader {
+namespace util {
+namespace debug {
+namespace dwarf {
 
-template class DWARF_StatementProgram<uint32_t>;
-template std::ostream& operator << (std::ostream& os, const DWARF_StatementProgram<uint32_t>& dw_stmt_prog);
-template class DWARF_StatementVM<uint32_t>;
-template class DWARF_CompilationUnit<uint32_t>;
-template std::ostream& operator << (std::ostream& os, const DWARF_CompilationUnit<uint32_t>& dw_cu);
-template class DWARF_Address<uint32_t>;
-template class DWARF_Handler<uint32_t>;
+template <class MEMORY_ADDR>
+DWARF_CallFrameProgram<MEMORY_ADDR>::DWARF_CallFrameProgram(DWARF_Handler<MEMORY_ADDR> *_dw_handler, uint64_t _length, const uint8_t *_program)
+	: dw_handler(_dw_handler)
+	, length(_length)
+	, program(_program)
+{
+}
 
-} // end of namespace elf_loader
-} // end of namespace loader
-} // end of namespace service
+template <class MEMORY_ADDR>
+DWARF_CallFrameProgram<MEMORY_ADDR>::~DWARF_CallFrameProgram()
+{
+}
+
+template <class MEMORY_ADDR>
+endian_type DWARF_CallFrameProgram<MEMORY_ADDR>::GetEndianness() const
+{
+	return dw_handler->GetEndianness();
+}
+
+template <class MEMORY_ADDR>
+uint8_t DWARF_CallFrameProgram<MEMORY_ADDR>::GetAddressSize() const
+{
+	return dw_handler->GetAddressSize();
+}
+
+
+template <class MEMORY_ADDR>
+uint64_t DWARF_CallFrameProgram<MEMORY_ADDR>::GetLength() const
+{
+	return length;
+}
+
+template <class MEMORY_ADDR>
+const uint8_t *DWARF_CallFrameProgram<MEMORY_ADDR>::GetProgram() const
+{
+	return program;
+}
+
+template <class MEMORY_ADDR>
+std::ostream& operator << (std::ostream& os, const DWARF_CallFrameProgram<MEMORY_ADDR>& dw_call_frame_prog)
+{
+	DWARF_CallFrameVM<MEMORY_ADDR> dw_call_frame_vm;
+	if(!dw_call_frame_vm.Disasm(os, dw_call_frame_prog))
+	{
+		os << "Invalid opcode";
+	}
+	return os;
+}
+
+} // end of namespace dwarf
+} // end of namespace debug
+} // end of namespace util
 } // end of namespace unisim

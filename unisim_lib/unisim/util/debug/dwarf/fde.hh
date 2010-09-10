@@ -31,24 +31,52 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
- 
-#include <unisim/service/loader/elf_loader/dwarf.hh>
-#include <unisim/service/loader/elf_loader/dwarf.tcc>
+
+#ifndef __UNISIM_UTIL_DEBUG_DWARF_FDE_HH__
+#define __UNISIM_UTIL_DEBUG_DWARF_FDE_HH__
+
+#include <unisim/util/debug/dwarf/fwd.hh>
 
 namespace unisim {
-namespace service {
-namespace loader {
-namespace elf_loader {
+namespace util {
+namespace debug {
+namespace dwarf {
 
-template class DWARF_StatementProgram<uint64_t>;
-template std::ostream& operator << (std::ostream& os, const DWARF_StatementProgram<uint64_t>& dw_stmt_prog);
-template class DWARF_StatementVM<uint64_t>;
-template class DWARF_CompilationUnit<uint64_t>;
-template std::ostream& operator << (std::ostream& os, const DWARF_CompilationUnit<uint64_t>& dw_cu);
-template class DWARF_Address<uint64_t>;
-template class DWARF_Handler<uint64_t>;
+template <class MEMORY_ADDR>
+std::ostream& operator << (std::ostream& os, const DWARF_FDE<MEMORY_ADDR>& dw_fde);
 
-} // end of namespace elf_loader
-} // end of namespace loader
-} // end of namespace service
+template <class MEMORY_ADDR>
+class DWARF_FDE
+{
+public:
+	DWARF_FDE(DWARF_Handler<MEMORY_ADDR> *dw_handler);
+	~DWARF_FDE();
+	
+	int64_t Load(const uint8_t *rawdata, uint64_t max_size, uint64_t offset);
+	void Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler);
+	std::ostream& to_XML(std::ostream& os) const;
+	std::ostream& to_HTML(std::ostream& os) const;
+	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_FDE<MEMORY_ADDR>& dw_fde);
+private:
+	DWARF_Handler<MEMORY_ADDR> *dw_handler;
+	DWARF_Format dw_fmt;
+	uint64_t offset;
+
+	uint64_t length;               // length not including field 'length'
+	
+	uint64_t cie_pointer;          // A constant offset into the .debug_frame section that denotes the CIE that is associated with this FDE.
+
+	MEMORY_ADDR initial_location;  // An addressing-unit sized constant indicating the address of the first location associated with this table entry.
+
+	MEMORY_ADDR address_range;     // An addressing unit sized constant indicating the number of bytes of program instructions described by this entry.
+
+	DWARF_CallFrameProgram<MEMORY_ADDR> *dw_call_frame_prog;
+	const DWARF_CIE<MEMORY_ADDR> *dw_cie;
+};
+
+} // end of namespace dwarf
+} // end of namespace debug
+} // end of namespace util
 } // end of namespace unisim
+
+#endif
