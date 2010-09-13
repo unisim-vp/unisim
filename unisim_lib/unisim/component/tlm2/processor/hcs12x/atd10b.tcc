@@ -960,7 +960,7 @@ void ATD10B<ATD_SIZE>::Reset() {
 	portad1_register = 0xFF;
 
 	for (int i=0; i < ATD_SIZE; i++)
-		atddrhl_register[ATDDR0H + i] = 0x00;
+		atddrhl_register[i] = 0x00;
 
 	setATDClock();
 
