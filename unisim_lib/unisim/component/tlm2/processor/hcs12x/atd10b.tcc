@@ -692,7 +692,7 @@ bool ATD10B<ATD_SIZE>::read(uint8_t offset, void *buffer) {
 			*((uint8_t *) buffer) = portad1_register;
 		} break;
 
-		default: if ((offset >= ATDDR0H) && (offset <= ATDDR15L)) {
+		default: if ((offset >= ATDDR0H) && (offset <= (ATDDR0H + 2*ATD_SIZE - 1))) {
 			*((uint16_t *) buffer) = atddrhl_register[(offset-ATDDR0H)/2] & 0xFFC0;
 			uint8_t index = (offset - ATDDR0H)/2;
 			uint8_t clearMask = 0xFF;
@@ -795,7 +795,7 @@ bool ATD10B<ATD_SIZE>::write(uint8_t offset, const void *buffer) {
 			/* write has no effect */
 		} break;
 
-		default: if ((offset >= ATDDR0H) && (offset <= ATDDR15L)) {
+		default: if ((offset >= ATDDR0H) && (offset <= (ATDDR0H + 2*ATD_SIZE - 1))) {
 			/* write has no effect */
 		} else {
 			return false;
@@ -975,7 +975,7 @@ bool ATD10B<ATD_SIZE>::ReadMemory(service_address_t addr, void *buffer, uint32_t
 
 	service_address_t offset = addr-baseAddress;
 
-	if (offset <= ATDDR15L) {
+	if (offset <= (ATDDR0H + 2*ATD_SIZE - 1)) {
 
 		switch (offset) {
 			case ATDCTL0: *((uint8_t *) buffer) = atdctl0_register; break;
@@ -1012,7 +1012,7 @@ bool ATD10B<ATD_SIZE>::ReadMemory(service_address_t addr, void *buffer, uint32_t
 			} break;
 			case PORTAD1: *((uint8_t *) buffer) = portad1_register; break;
 
-			default: if ((offset >= ATDDR0H) && (offset <= ATDDR15L)) {
+			default: if ((offset >= ATDDR0H) && (offset <= (ATDDR0H + 2*ATD_SIZE - 1))) {
 				if (size == sizeof(uint8_t)) {
 
 					if (((offset-ATDDR0H) % 2) == 0) {
@@ -1042,7 +1042,7 @@ bool ATD10B<ATD_SIZE>::WriteMemory(service_address_t addr, const void *buffer, u
 
 	service_address_t offset = addr-baseAddress;
 
-	if (offset <= ATDDR15L) {
+	if (offset <= (ATDDR0H + 2*ATD_SIZE - 1)) {
 		return write(offset, buffer);
 	}
 
