@@ -92,7 +92,12 @@ CPU::CPU(const char *name, Object *parent):
 	asynchronous_interrupt(false),
 	maskableIbit_interrupt(false),
 	nonMaskableXIRQ_interrupt(false),
+	nonMaskableAccessError_interrupt(false),
+	nonMascableSWI_interrupt(false),
+	trap_interrupt(false),
 	reset(false),
+	syscall_interrupt(false),
+	spurious_interrupt(false),
 
 	requires_memory_access_reporting(true),
 	param_requires_memory_access_reporting("requires-memory-access-reporting", this, requires_memory_access_reporting),

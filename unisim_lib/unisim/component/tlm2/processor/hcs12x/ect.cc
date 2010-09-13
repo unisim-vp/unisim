@@ -174,6 +174,8 @@ void ECT::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 	assert(address >= baseAddress);
 
 	if (cmd == tlm::TLM_READ_COMMAND) {
+		unsigned int data_length = trans.get_data_length();
+		memset(data_ptr, 0, data_length);
 		read(address - baseAddress, *data_ptr);
 	} else if (cmd == tlm::TLM_WRITE_COMMAND) {
 		write(address - baseAddress, *data_ptr);
@@ -188,7 +190,7 @@ bool ECT::read(uint8_t offset, uint8_t &value) {
 		default: {
 			char buff[30];
 			sprintf(buff,"%d",offset);
-			std::cerr << "Warning: ETC => Read Request not supported for register at offset = " << buff << std::endl;
+			std::cerr << "Warning: ECT => Read Request not supported for register at offset = " << buff << std::endl;
 		}
 	}
 
@@ -201,7 +203,7 @@ bool ECT::write(uint8_t offset, uint8_t value) {
 		default: {
 			char buff[30];
 			sprintf(buff,"%d",offset);
-			std::cerr << "Warning: ETC => Write Request not supported for register at offset = " << buff << std::endl;
+			std::cerr << "Warning: ECT => Write Request not supported for register at offset = " << buff << std::endl;
 		}
 	}
 

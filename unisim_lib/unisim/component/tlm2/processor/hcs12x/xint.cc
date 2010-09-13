@@ -403,6 +403,8 @@ void XINT::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 	uint8_t* data_ptr = (uint8_t *)trans.get_data_ptr();
 
 	if (cmd == tlm::TLM_READ_COMMAND) {
+		unsigned int data_length = trans.get_data_length();
+		memset(data_ptr, 0, data_length);
 		read((address_t) address, *data_ptr);
 	} else if (cmd == tlm::TLM_WRITE_COMMAND) {
 		write((address_t) address, *data_ptr);

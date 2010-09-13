@@ -425,6 +425,9 @@ inline uint8_t MMC::read(address_t address)
 	if (address == MMC_REGS_ADDRESSES[RAMSHL]) return ramshl;
 	if (address == MMC_REGS_ADDRESSES[RAMSHU]) return ramshu;
 
+	std::stringstream sstr;
+	sstr << "MMC::read: unhandled address 0x" << std::hex << address << std::dec;
+	throw std::runtime_error(sstr.str());
 }
 
 inline void MMC::write(address_t address, uint8_t val)

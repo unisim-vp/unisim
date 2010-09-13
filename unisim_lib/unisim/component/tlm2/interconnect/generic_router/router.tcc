@@ -37,6 +37,7 @@
 
 #include "unisim/component/tlm2/interconnect/generic_router/router_dispatcher.tcc"
 #include <cmath>
+#include <sstream>
 
 #define LOCATION 	" - location = " << __FUNCTION__ << ":unisim_lib/unisim/component/tlm2/interconnect/generic_router/router.tcc:" << __LINE__
 #define TIME(X) 	" - time = " << sc_time_stamp() + (X)
@@ -177,14 +178,22 @@ param_verbose_memory_interface(0)
 		buf << "mapping_" << i;
 		param_mapping[i] = new unisim::kernel::service::Parameter<Mapping>(buf.str().c_str(), this, mapping[i], mapping_desc);
 	}
+	
+	/* create target sockets */
+	for (unsigned int i = 0; i < INPUT_SOCKETS; i++)
+	{
+		std::stringstream targ_socket_name_sstr;
+		targ_socket_name_sstr << "targ_socket_" << i;
+		targ_socket[i] = new TargSocket(targ_socket_name_sstr.str().c_str());
+	}
 
 	/* register target sockets callbacks */
 	for (unsigned int i = 0; i < INPUT_SOCKETS; i++)
 	{
-		targ_socket[i].register_nb_transport_fw(	this, &Router<CONFIG>::T_nb_transport_fw_cb, i);
-		targ_socket[i].register_b_transport(		this, &Router<CONFIG>::T_b_transport_cb, i);
-		targ_socket[i].register_transport_dbg(		this, &Router<CONFIG>::T_transport_dbg_cb, i);
-		targ_socket[i].register_get_direct_mem_ptr(this, &Router<CONFIG>::T_get_direct_mem_ptr_cb, i);
+		(*targ_socket[i]).register_nb_transport_fw(	this, &Router<CONFIG>::T_nb_transport_fw_cb, i);
+		(*targ_socket[i]).register_b_transport(		this, &Router<CONFIG>::T_b_transport_cb, i);
+		(*targ_socket[i]).register_transport_dbg(		this, &Router<CONFIG>::T_transport_dbg_cb, i);
+		(*targ_socket[i]).register_get_direct_mem_ptr(this, &Router<CONFIG>::T_get_direct_mem_ptr_cb, i);
 	}
 //	/* create target sockets and register socket callbacks */
 //	for (unsigned int i = 0; i < MAX_INPUT_SOCKETS; i++)
@@ -204,11 +213,19 @@ param_verbose_memory_interface(0)
  	// TODO: remove ==>	targ_socket.register_transport_dbg(      this, &Router<CONFIG>::T_transport_dbg_cb);
  	// TODO: remove ==>	targ_socket.register_get_direct_mem_ptr( this, &Router<CONFIG>::T_get_direct_mem_ptr_cb);
 
-	/* register initiator sockets callbacks */
+	/* create initiator sockets */
 	for (unsigned int i = 0; i < OUTPUT_SOCKETS; i++)
 	{
-		init_socket[i].register_nb_transport_bw(			this, &Router<CONFIG>::I_nb_transport_bw_cb, i);
-		init_socket[i].register_invalidate_direct_mem_ptr(	this, &Router<CONFIG>::I_invalidate_direct_mem_ptr_cb, i);
+		std::stringstream init_socket_name_sstr;
+		init_socket_name_sstr << "init_socket_" << i;
+		init_socket[i] = new InitSocket(init_socket_name_sstr.str().c_str());
+	}
+	
+	/* create initiator sockets and register initiator sockets callbacks */
+	for (unsigned int i = 0; i < OUTPUT_SOCKETS; i++)
+	{
+		(*init_socket[i]).register_nb_transport_bw(			this, &Router<CONFIG>::I_nb_transport_bw_cb, i);
+		(*init_socket[i]).register_invalidate_direct_mem_ptr(	this, &Router<CONFIG>::I_invalidate_direct_mem_ptr_cb, i);
 	}
 
 	/* create memory_imports */
@@ -270,6 +287,16 @@ Router<CONFIG>::
 	for (m_rsp_dispatcher_iter = m_rsp_dispatcher.begin(); m_rsp_dispatcher_iter != m_rsp_dispatcher.end(); m_rsp_dispatcher_iter++)
 	{
 		delete *m_rsp_dispatcher_iter;
+	}
+
+	for (unsigned int i = 0; i < OUTPUT_SOCKETS; i++)
+	{
+		delete init_socket[i];
+	}
+
+	for (unsigned int i = 0; i < INPUT_SOCKETS; i++)
+	{
+		delete targ_socket[i];
 	}
 
 	for (unsigned int i = 0; i < MAX_NUM_MAPPINGS; i++) 
@@ -609,7 +636,7 @@ T_b_transport_cb(int id, transaction_type &trans, sc_core::sc_time &time)
 		TRANS(logger, trans);
 		logger << EndDebug;
 	}
-	init_socket[mapping[mapping_id].output_port]->b_transport(trans, time);
+	(*init_socket[mapping[mapping_id].output_port])->b_transport(trans, time);
 	if (VerboseTLM()) 
 	{
 		logger << DebugInfo << "Forwarding transaction reply to port " << id << endl
@@ -671,7 +698,7 @@ T_transport_dbg_cb(int id, transaction_type &trans)
 			TRANS(logger, trans);
 			logger << EndDebug;
 		}
-		counter += init_socket[mapping[*it].output_port]->transport_dbg(trans);
+		counter += (*init_socket[mapping[*it].output_port])->transport_dbg(trans);
 		if (trans.is_read())
 			m_req_dispatcher[mapping[*it].output_port]->ReadTransportDbg(id, trans);
 		else
@@ -734,7 +761,7 @@ ReadTransportDbg(unsigned int id, transaction_type &trans) {
 		trans.set_data_length(buffer_size);
 		uint64_t translated_addr = buffer_addr - mapping[*it].range_start + mapping[*it].translation;
 		trans.set_address(translated_addr);
-		counter += init_socket[mapping[*it].output_port]->transport_dbg(trans);
+		counter += (*init_socket[mapping[*it].output_port])->transport_dbg(trans);
 		m_req_dispatcher[mapping[*it].output_port]->ReadTransportDbg(id, trans);	
 	}
 	logger << DebugInfo << "ReadTransportDbg of address 0x" << hex << trans_addr << dec
@@ -776,7 +803,7 @@ WriteTransportDbg(unsigned int id, transaction_type &trans) {
 		trans.set_data_length(buffer_size);
 		uint64_t translated_addr = buffer_addr - mapping[*it].range_start + mapping[*it].translation;
 		trans.set_address(translated_addr);
-		counter += init_socket[mapping[*it].output_port]->transport_dbg(trans);
+		counter += (*init_socket[mapping[*it].output_port])->transport_dbg(trans);
 		m_req_dispatcher[mapping[*it].output_port]->WriteTransportDbg(id, trans);	
 	}
 	return counter;
@@ -912,7 +939,7 @@ SendReq(unsigned int id, transaction_type &trans) {
 		logger << EndDebug;
 	}
 	
-	switch(init_socket[id]->nb_transport_fw(trans, phase, time)) {
+	switch((*init_socket[id])->nb_transport_fw(trans, phase, time)) {
 		case tlm::TLM_ACCEPTED:
 			/* the request has been accepted */
 			if (VerboseTLM()) {
@@ -1007,7 +1034,7 @@ SendReq(unsigned int id, transaction_type &trans) {
 
 						/* immediately send an END_REQ through the init_port */
 						phase = tlm::END_REQ;
-						if(init_socket[id]->nb_transport_fw(trans, phase, time) != tlm::TLM_COMPLETED) {
+						if((*init_socket[id])->nb_transport_fw(trans, phase, time) != tlm::TLM_COMPLETED) {
 							logger << DebugError << "When sending END_REQ did not receive TLM_COMPLETED from init_socket[" << id << "]" << endl
 								<< LOCATION << endl
 								<< TIME(time) << endl;
@@ -1102,7 +1129,7 @@ SendRsp(unsigned int id, transaction_type &trans) {
 		logger << EndDebug;
 	}
 	
-	switch(targ_socket[id]->nb_transport_bw(trans, phase, time)) {
+	switch((*targ_socket[id])->nb_transport_bw(trans, phase, time)) {
 		case tlm::TLM_ACCEPTED:
 			/* the response has been accepted */
 			if (VerboseTLM()) {

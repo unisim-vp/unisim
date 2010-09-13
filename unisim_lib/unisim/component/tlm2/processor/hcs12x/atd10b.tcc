@@ -815,6 +815,8 @@ void ATD10B<ATD_SIZE>::read_write( tlm::tlm_generic_payload& trans, sc_time& del
 	assert(address >= baseAddress);
 
 	if (cmd == tlm::TLM_READ_COMMAND) {
+		unsigned int data_length = trans.get_data_length();
+		memset(data_ptr, 0, data_length);
 		read(address - baseAddress, data_ptr);
 	} else if (cmd == tlm::TLM_WRITE_COMMAND) {
 		write(address - baseAddress, data_ptr);
