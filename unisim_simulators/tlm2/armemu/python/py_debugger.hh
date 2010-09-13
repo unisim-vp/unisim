@@ -29,26 +29,62 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
- 
-#include <unisim/service/loader/elf_loader/dwarf.hh>
-#include <unisim/service/loader/elf_loader/dwarf.tcc>
 
-namespace unisim {
-namespace service {
-namespace loader {
-namespace elf_loader {
+#ifndef __PYTHON_PY_DEBUGGER_HH__
+#define __PYTHON_PY_DEBUGGER_HH__
 
-template class DWARF_StatementProgram<uint64_t>;
-template std::ostream& operator << (std::ostream& os, const DWARF_StatementProgram<uint64_t>& dw_stmt_prog);
-template class DWARF_StatementVM<uint64_t>;
-template class DWARF_CompilationUnit<uint64_t>;
-template std::ostream& operator << (std::ostream& os, const DWARF_CompilationUnit<uint64_t>& dw_cu);
-template class DWARF_Address<uint64_t>;
-template class DWARF_Handler<uint64_t>;
+#include <Python.h>
+#include "simulator.hh"
+#include "python/python_config.hh"
 
-} // end of namespace elf_loader
-} // end of namespace loader
-} // end of namespace service
-} // end of namespace unisim
+extern "C" {
+
+/* Variable full capsule name */
+#define PyDebugger_Module_Name PACKAGE_NAME".debugger"
+#define PyDebugger_Capsule_Name PACKAGE_NAME".debugger._C_API"
+
+/* C API functions */
+#define PyDebugger_NewDebugger_NUM 0
+#define PyDebugger_NewDebugger_RETURN PyObject *
+#define PyDebugger_NewDebugger_PROTO (const char *)
+
+/* Total number of C API pointers */
+#define PyDebugger_API_pointers 1
+
+#ifdef DEBUGGER_MODULE
+/* This section is used when compiling py_variable.cc */
+
+static PyDebugger_NewDebugger_RETURN PyDebugger_NewDebugger PyDebugger_NewDebugger_PROTO;
+
+#else // DEBUGGER_MODULE
+/* This section is used in modules that use debugger module's API */
+static void **PyDebugger_API;
+
+#define PyDebugger_NewDebugger \
+	(*(PyDebugger_NewDebugger_RETURN (*)PyDebugger_NewDebugger_PROTO) PyDebugger_API[PyDebugger_NewDebugger_NUM])
+
+/* Ensures that the initial PyDebugger_API is NULL
+ */
+static void import_debugger_api_init(void)
+{
+	PyDebugger_API = NULL;
+}
+
+/* Return -1 on error, 0 on success.
+ * PyCapsule_Import will set an exception if there's an error.
+ */
+static int import_debugger_api(void)
+{
+	if ( PyDebugger_API != NULL ) return 0;
+	if ( PyImport_ImportModule(PyDebugger_Module_Name) == NULL ) return -1;
+	PyDebugger_API = (void **)PyCapsule_Import(PyDebugger_Capsule_Name, 0);
+	return ( PyDebugger_API != NULL ) ? 0 : -1;
+}
+
+#endif // DEBUGGER_MODULE
+
+}
+
+#endif /* __PYTHON_DEBUGGER_HH__ */

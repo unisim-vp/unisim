@@ -65,6 +65,7 @@
 #endif // SIM_INLINE_DEBUGGER_SUPPORT
 #ifdef SIM_SIM_DEBUGGER_SUPPORT
 #include "unisim/service/debug/sim_debugger/sim_debugger.hh"
+#include "unisim/util/debug/debugger_handler/debugger_handler.hh"
 #endif // SIM_SIM_DEBUGGER_SUPPORT
 #ifdef SIM_POWER_ESTIMATOR_SUPPORT
 #include "unisim/service/power/cache_power_estimator.hh"
@@ -88,6 +89,7 @@ public:
 #ifdef SIM_LIBRARY
 	bool AddNotifiable(void *(*notif_function)(const char *), const char *var_name);
 	bool SetTrapHandler(void (*function)(void *, unsigned int), void *context);
+	unisim::util::debug::debugger_handler::DebuggerHandler *GetDebugger(const char *name);
 #endif // SIM_LIBRARY
 	void Stop();
 

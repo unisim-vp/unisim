@@ -82,6 +82,7 @@ ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::El
 	, param_force_use_virtual_address("force-use-virtual-address", this, force_use_virtual_address, "force use of virtual addresses instead of physical addresses")
 	, param_dump_headers("dump-headers", this, dump_headers, "dump headers while loading ELF file")
 	, param_verbose("verbose", this, verbose, "enable/disable verbosity")
+	, param_dwarf_to_html_output_directory("dwarf-to-html-output-directory", this, dwarf_to_html_output_directory, "DWARF v2/v3 to HTML output directory")
 {
 	Object::SetupDependsOn(memory_import);
 }
@@ -414,7 +415,7 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 						{
 							DumpRawData(section, section_size);
 						}*/
-						if(!dw_handler) dw_handler = new DWARF_Handler<MEMORY_ADDR>(endianness, GetAddressSize(hdr));
+						if(!dw_handler) dw_handler = new unisim::util::debug::dwarf::DWARF_Handler<MEMORY_ADDR>(endianness, GetAddressSize(hdr));
 						dw_handler->Handle(section_name, (uint8_t *) section, section_size);
 					}
 				}
@@ -438,6 +439,14 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 			logger << DebugInfo << "Parsing DWARF debugging informations" << EndDebugInfo;
 		}
 		dw_handler->Initialize();
+		if(!dwarf_to_html_output_directory.empty())
+		{
+			if(unlikely(verbose))
+			{
+				logger << DebugInfo << "Dumping DWARF debugging informations as HTML into directory " << dwarf_to_html_output_directory << EndDebugInfo;
+			}
+			dw_handler->to_HTML(dwarf_to_html_output_directory.c_str());
+		}
 	}
 
 	return success;

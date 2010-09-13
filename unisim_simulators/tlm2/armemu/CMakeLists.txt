@@ -85,6 +85,7 @@ set ( armemu_subdirs
 	unisim/service/debug/gdb_server
 	unisim/service/debug/inline_debugger
 	unisim/service/debug/sim_debugger
+	unisim/util/debug/debugger_handler
 	unisim/service/loader/elf_loader
 	unisim/service/loader/linux_loader
 	unisim/service/os/linux_os/linux_os_32
@@ -278,6 +279,7 @@ set ( armemu__libraries
 	unisim__service__debug__gdb_server
 	unisim__service__debug__inline_debugger
 	unisim__service__debug__sim_debugger
+	unisim__util__debug__debugger_handler
 	unisim__service__trap_handler
 	)
 if ( BUILD_ARMEMU_POWER_SUPPORT )
@@ -319,6 +321,8 @@ set ( PYTHON__ARMEMU__LIBS
 	 'unisim__service__trap_handler',
 	 'unisim__util__random',
 	 'unisim__util__debug',
+	 'unisim__util__debug__dwarf',
+	 'unisim__util__debug__debugger_handler',
 	 'unisim__util__xml',
 	 'unisim__kernel',
 	 'xml2',
@@ -413,6 +417,7 @@ set ( armemu__deps
 	unisim__service__debug__gdb_server
 	unisim__service__debug__inline_debugger
 	unisim__service__debug__sim_debugger
+	unisim__util__debug__debugger_handler
 	unisim__service__loader__elf_loader
 	unisim__service__loader__linux_loader
 	unisim__service__os__linux_os__linux_os_32
@@ -458,10 +463,13 @@ if ( BUILD_ARMEMU_PYTHON_MODULE )
 		OUTPUT
 			lib/${SIM_PYTHON_IMPORT_NAME}/simulator.so
 			lib/${SIM_PYTHON_IMPORT_NAME}/variable.so
+			lib/${SIM_PYTHON_IMPORT_NAME}/debugger.so
 		COMMAND
 			${CMAKE_COMMAND} -E remove lib/${SIM_PYTHON_IMPORT_NAME}/simulator.so
 		COMMAND
 			${CMAKE_COMMAND} -E remove lib/${SIM_PYTHON_IMPORT_NAME}/variable.so
+		COMMAND
+			${CMAKE_COMMAND} -E remove lib/${SIM_PYTHON_IMPORT_NAME}/debugger.so
 		COMMAND
 			${CMAKE_COMMAND} -E make_directory python
 		COMMAND
@@ -474,6 +482,8 @@ if ( BUILD_ARMEMU_PYTHON_MODULE )
 			${CMAKE_SOURCE_DIR}/python/py_simulator.cc
 			${CMAKE_SOURCE_DIR}/python/py_variable.hh
 			${CMAKE_SOURCE_DIR}/python/py_variable.cc
+			${CMAKE_SOURCE_DIR}/python/py_debugger.hh
+			${CMAKE_SOURCE_DIR}/python/py_debugger.cc
 			simulatorlib
 			${armemu__deps}
 		COMMENT
@@ -486,6 +496,7 @@ if ( BUILD_ARMEMU_PYTHON_MODULE )
 			DEPENDS
 				lib/${SIM_PYTHON_IMPORT_NAME}/simulator.so
 				lib/${SIM_PYTHON_IMPORT_NAME}/variable.so
+				lib/${SIM_PYTHON_IMPORT_NAME}/debugger.so
 			COMMENT
 				"Python target."
 		)

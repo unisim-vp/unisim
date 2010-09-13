@@ -47,7 +47,7 @@ op swi(cond[4]:0b1111[4]:immed[24])
 
 swi.disasm = {
 	buffer << "swi";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << " #" << dec << immed;
 }
 

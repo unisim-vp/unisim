@@ -49,11 +49,76 @@
 #include <unisim/util/debug/breakpoint_registry.hh>
 #include <unisim/util/debug/watchpoint_registry.hh>
 #include <unisim/util/debug/profile.hh>
+#include <unisim/util/debug/debugger_handler/debugger_handler.hh>
 
 #include <unisim/kernel/service/service.hh>
 
 #include <inttypes.h>
 #include <string>
+
+namespace unisim {
+namespace service {
+namespace debug {
+	class DebuggerHandler
+	{
+	public:
+		DebuggerHandler()
+			: handler_context(0)
+			, breakpoint_handler_function(0)
+			, watchpoint_handler_function(0)
+		{};
+		virtual ~DebuggerHandler() {};
+		virtual bool SetStepMode() = 0;
+		virtual bool SetContinueMode() = 0;
+		virtual bool IsModeStep() = 0;
+		virtual bool IsModeContinue() = 0;
+		virtual bool HasBreakpoint(uint64_t addr) = 0;
+		virtual bool HasBreakpoint(const char *str) = 0;
+		virtual bool SetBreakpoint(uint64_t addr) = 0;
+		virtual bool SetBreakpoint(const char *str) = 0;
+		virtual bool DeleteBreakpoint(uint64_t addr) = 0;
+		virtual bool DeleteBreakpoint(const char *str) = 0;
+		virtual bool SetHandlerContext(void *context)
+		{
+			handler_context = context;
+			return true;
+		};
+		virtual bool SetBreakpointHandler(
+				void (*function)(void *, uint64_t))
+		{
+			breakpoint_handler_function = function;
+			return true;
+		};
+
+		virtual bool SetWatchpointHandler(
+				void (*function)(void *, uint64_t, bool))
+		{
+			watchpoint_handler_function = function;
+			return true;
+		};
+
+	protected:
+		void CallBreakpointHandler(uint64_t addr)
+		{
+			if ( breakpoint_handler_function )
+				breakpoint_handler_function(handler_context, addr);
+		};
+
+		void CallWatchpointHandler(uint64_t addr, bool read)
+		{
+			if ( watchpoint_handler_function )
+				watchpoint_handler_function(handler_context, addr, read);
+		};
+
+	private:
+		void *handler_context;
+		void (*breakpoint_handler_function)(void *, uint64_t);
+		void (*watchpoint_handler_function)(void *, uint64_t, bool);
+
+	};
+}
+}
+}
 
 namespace unisim {
 namespace service {
@@ -103,18 +168,19 @@ private:
 };
 
 template <class ADDRESS>
-class SimDebugger :
-	public Service<DebugControl<ADDRESS> >,
-	public Service<MemoryAccessReporting<ADDRESS> >,
-	public Service<TrapReporting>,
-	public Client<MemoryAccessReportingControl>,
-	public Client<Disassembly<ADDRESS> >,
-	public Client<Memory<ADDRESS> >,
-	public Client<Registers>,
-	public Client<SymbolTableLookup<ADDRESS> >,
-	public Client<Loader<ADDRESS> >,
-	public Client<StatementLookup<ADDRESS> >,
-	public SimDebuggerBase
+class SimDebugger
+	: public Service<DebugControl<ADDRESS> >
+	, public Service<MemoryAccessReporting<ADDRESS> >
+	, public Service<TrapReporting>
+	, public Client<MemoryAccessReportingControl>
+	, public Client<Disassembly<ADDRESS> >
+	, public Client<Memory<ADDRESS> >
+	, public Client<Registers>
+	, public Client<SymbolTableLookup<ADDRESS> >
+	, public Client<Loader<ADDRESS> >
+	, public Client<StatementLookup<ADDRESS> >
+	, public SimDebuggerBase
+	, public unisim::util::debug::debugger_handler::DebuggerHandler
 {
 public:
 	ServiceExport<DebugControl<ADDRESS> > debug_control_export;
@@ -146,6 +212,7 @@ public:
 
 	virtual bool Setup();
 	virtual void OnDisconnect();
+
 private:
 	unsigned int memory_atom_size;
 	unsigned int num_loaders;
@@ -164,22 +231,31 @@ private:
 	ADDRESS disasm_addr;
 	ADDRESS dump_addr;
 
-	bool SetStepMode();
-	bool SetContinueMode();
-	bool IsModeStep();
-	bool IsModeContinue();
+private:
+	virtual bool SetStepMode();
+	virtual bool SetContinueMode();
+	virtual bool IsModeStep();
+	virtual bool IsModeContinue();
+
 //	string *Disasm();
 //	string *Disasm(uint64_t addr);
 	void Disasm(uint64_t addr, int count);
+
+	bool HasBreakpoint(uint64_t addr);
+	bool HasBreakpoint(const char *str);
 	bool SetBreakpoint(uint64_t addr);
+	bool SetBreakpoint(const char *str);
+	bool DeleteBreakpoint(uint64_t addr);
+	bool DeleteBreakpoint(const char *str);
 	bool SetWatchpoint(uint64_t addr, uint32_t size);
 	bool SetReadWatchpoint(uint64_t addr, uint32_t size);
 	bool SetWriteWatchpoint(uint64_t addr, uint32_t size);
-	bool DeleteBreakpoint(uint64_t addr);
 	bool DeleteWatchpoint(uint64_t addr, uint32_t size);
 	bool DeleteReadWatchpoint(uint64_t addr, uint32_t size);
 	bool DeleteWriteWatchpoint(uint64_t addr, uint32_t size);
-	bool HasBreakpoint(uint64_t addr);
+
+	bool GetSymbolAddress(const char *str, uint64_t &addr);
+	bool GetFileSystemAddress(const char *str, uint64_t &addr);
 
 	void DumpBreakpoints();
 	void DumpWatchpoints();
@@ -189,8 +265,6 @@ private:
 	void DumpAvailableLoaders();
 	void Load(const char *loader_name, const char *filename);
 	void DumpSource(const char *filename, unsigned int lineno, unsigned int colno, unsigned int count);
-
-	static SimDebugger<ADDRESS> *debugger;
 };
 
 } // end of namespace sim_debugger

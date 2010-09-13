@@ -78,7 +78,7 @@ b.disasm = {
 	typedef Operation<CONFIG> inherited;
 
 	buffer << "b";
-	cpu.DisasmCondition(inherited::cond_init, buffer);
+	DisasmCondition(inherited::cond_init, buffer);
 	buffer << " 0x" << hex << (imm << 2) + cpu.GetGPR(cpu.PC_reg) + 8<< dec;
 }
 
@@ -140,7 +140,7 @@ bl.disasm = {
 	typedef Operation<CONFIG> inherited;
 
 	buffer << "bl";
-	cpu.DisasmCondition(inherited::cond_init, buffer);
+	DisasmCondition(inherited::cond_init, buffer);
 	buffer << " 0x" << hex << cpu.GetGPR(cpu.PC_reg) + (imm << 2) + 8 << dec;
 }
 
@@ -182,7 +182,7 @@ bl.execute = {
 
 bx.disasm = {
 	buffer << "bx";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << " r" << rm;
 }
 
@@ -261,7 +261,7 @@ blx_1.execute = {
 
 blx_2.disasm = {
 	buffer << "blx";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << " r" << rm;
 }
 

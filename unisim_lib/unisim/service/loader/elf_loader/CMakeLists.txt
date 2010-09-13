@@ -28,6 +28,7 @@ set ( elf_loader_subdirs
 	unisim/service/interfaces/stmt_lookup
 	unisim/util/endian
 	unisim/util/debug
+	unisim/util/debug/dwarf
 	)
 foreach ( dir ${elf_loader_subdirs} )
 	unisim_include ( ${dir} )
@@ -44,19 +45,13 @@ add_library ( unisim__service__loader__elf_loader
 		${CMAKE_SOURCE_DIR}/unisim/service/loader/elf_loader/elf_loader.tcc
 		${CMAKE_SOURCE_DIR}/unisim/service/loader/elf_loader/elf32_loader.cc
 		${CMAKE_SOURCE_DIR}/unisim/service/loader/elf_loader/elf64_loader.cc
-		${CMAKE_SOURCE_DIR}/unisim/service/loader/elf_loader/dwarf.hh
-		${CMAKE_SOURCE_DIR}/unisim/service/loader/elf_loader/dwarf.cc
-		${CMAKE_SOURCE_DIR}/unisim/service/loader/elf_loader/dwarf_32.cc
-		${CMAKE_SOURCE_DIR}/unisim/service/loader/elf_loader/dwarf_64.cc
-		${CMAKE_SOURCE_DIR}/unisim/service/loader/elf_loader/dwarf.hh
-		${CMAKE_SOURCE_DIR}/unisim/service/loader/elf_loader/dwarf.tcc
-		${CMAKE_SOURCE_DIR}/unisim/service/loader/elf_loader/dwarf.cc
 	)
 
 target_link_libraries ( unisim__service__loader__elf_loader
 	unisim__kernel
 	unisim__util__endian
 	unisim__util__debug
+	unisim__util__debug__dwarf
 	)
 
 add_dependencies ( unisim__service__loader__elf_loader
@@ -66,6 +61,7 @@ add_dependencies ( unisim__service__loader__elf_loader
 	unisim__service__interfaces__symbol_table_lookup
 	unisim__util__endian
 	unisim__util__debug
+	unisim__util__debug__dwarf
 	)
 
 message ( STATUS "Checking unisim::service::loader::elf_loader - done" )

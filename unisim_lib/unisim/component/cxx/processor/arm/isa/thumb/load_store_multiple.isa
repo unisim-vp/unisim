@@ -71,7 +71,7 @@ ldmia.execute = {
 	
 	rn_value = cpu.GetGPR(rn);
 	
-	num_regs = cpu.LSMia(rn_value, reg_list,
+	num_regs = LSMia(rn_value, reg_list,
 						&start_address, &end_address,
 						&rn_new_val);
 
@@ -125,7 +125,7 @@ pop.execute = {
 	
 	sp_value = cpu.GetGPR(cpu.SP_reg);
 	
-	num_regs = cpu.LSMia(sp_value, reg_list,
+	num_regs = LSMia(sp_value, reg_list,
 						&start_address, &end_address,
 						&sp_new_val);
 
@@ -187,7 +187,7 @@ push.execute = {
 	
 	sp_value = cpu.GetGPR(cpu.SP_reg);
 
-	num_regs = cpu.LSMdb(sp_value, reg_list,
+	num_regs = LSMdb(sp_value, reg_list,
 			&start_address, &end_address,
 			&sp_new_val);
 	if(r)
@@ -249,7 +249,7 @@ stmia.execute = {
 	
 	rn_value = cpu.GetGPR(rn);
 
-	num_regs = cpu.LSMia(rn_value, reg_list,
+	num_regs = LSMia(rn_value, reg_list,
 			&start_address, &end_address,
 			&rn_new_val);
 

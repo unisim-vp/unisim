@@ -294,181 +294,6 @@ namespace arm {
 		string GetObjectFriendlyName(uint64_t addr);
 		string GetFunctionFriendlyName(uint64_t addr);
 		
-		/**************************************************************/
-		/* Operand decoding methods     START                         */
-		/**************************************************************/
-		/* Data processing operand decoding */
-		static inline reg_t ShiftOperand32imm(const uint32_t rotate_imm, 
-											  const uint32_t imm) GCC_INLINE;
-		inline reg_t ShiftOperand32imm(const uint32_t rotate_imm, 
-									   const uint32_t imm, 
-									   bool *shift_carry_out) GCC_INLINE;
-		inline reg_t ShiftOperandImmShift(const uint32_t shift_imm, 
-										  const uint32_t shift, 
-										  const reg_t val_reg) GCC_INLINE;
-		inline reg_t ShiftOperandImmShift(const uint32_t shift_imm, 
-										  const uint32_t shift, 
-										  const reg_t val_reg, 
-										  bool *shift_carry_out) GCC_INLINE;
-		static inline reg_t ShiftOperandRegShift(const uint32_t shift_reg, 
-												 const uint32_t shift, 
-												 const reg_t val_reg) GCC_INLINE;
-		inline reg_t ShiftOperandRegShift(const uint32_t shift_reg, 
-										  const uint32_t shift, 
-										  const reg_t val_reg,
-										  bool *shift_carry_out) GCC_INLINE;
-		
-		/* Load/store operand decoding */
-		inline address_t LSWUBImmOffset(const uint32_t u, 
-										const reg_t val_reg, 
-										const uint32_t offset) GCC_INLINE;
-		inline address_t LSWUBReg(const uint32_t u, 
-								  const reg_t val_rn, 
-								  const reg_t val_rd, 
-								  const uint32_t shift_imm, 
-								  const uint32_t shift, 
-								  const reg_t val_rm) GCC_INLINE;
-		
-		/* Miscellaneous load/store operand decoding */
-		inline address_t MLSImmOffset(const uint32_t u, 
-									  const reg_t val_reg, 
-									  const uint32_t immedH,
-									  const uint32_t immedL) GCC_INLINE;
-		inline address_t MLSReg(const uint32_t u, 
-								const reg_t val_rn, 
-								const reg_t val_rd, 
-								const reg_t val_rm) GCC_INLINE;
-		
-		/* Load/sotre multiple operand decoding */
-		inline uint32_t LSMia(const reg_t val_reg,
-							  const uint32_t reg_list,
-							  address_t *start_address,
-							  address_t *end_address,
-							  reg_t *new_val_reg) GCC_INLINE;
-		inline uint32_t LSMib(const reg_t val_reg,
-							  const uint32_t reg_list,
-							  address_t *start_address,
-							  address_t *end_address,
-							  reg_t *new_val_reg) GCC_INLINE;
-		inline uint32_t LSMda(const reg_t val_reg,
-							  const uint32_t reg_list,
-							  address_t *start_address,
-							  address_t *end_address,
-							  reg_t *new_val_reg) GCC_INLINE;
-		inline uint32_t LSMdb(const reg_t val_reg,
-							  const uint32_t reg_list,
-							  address_t *start_address,
-							  address_t *end_address,
-							  reg_t *new_val_reg) GCC_INLINE;
-		
-		/* Coprocessor load/store operand decoding */
-		inline address_t CLSOpDec(const uint32_t u,
-								  const uint32_t val_reg,
-								  const uint32_t offset) GCC_INLINE;
-		
-		/**************************************************************/
-		/* Operand decoding methods     END                           */
-		/**************************************************************/
-		
-		/**************************************************************/
-		/* Disassembling methods     START                            */
-		/**************************************************************/
-		/* Condition opcode bytes disassembling method */
-		void DisasmCondition(const uint32_t cond, stringstream &buffer);
-		void DisasmConditionFieldsMask(const uint32_t mask,
-									   stringstream &buffer);
-		/* Data processing operand disassembling methods */
-		void DisasmShiftOperand32Imm(const uint32_t rotate_imm, 
-									 const uint32_t imm, 
-									 stringstream &buffer);
-		void DisasmShiftOperandImmShift(const uint32_t shift_imm, 
-										const uint32_t shift, 
-										const uint32_t rm, 
-										stringstream &buffer);
-		void DisasmShiftOperandRegShift(const uint32_t rs, 
-										const uint32_t shift, 
-										const uint32_t rm, 
-										stringstream &buffer);
-		/* Load/store operand disassembling methods */
-		void DisasmLSWUBImmOffset_post(const uint32_t u, 
-									   const uint32_t rn, 
-									   const uint32_t offset,
-									   stringstream &buffer);
-		void DisasmLSWUBImmOffset_offset(const uint32_t u, 
-										 const uint32_t rn, 
-										 const uint32_t offset,
-										 stringstream &buffer);
-		void DisasmLSWUBImmOffset_pre(const uint32_t u, 
-									  const uint32_t rn, 
-									  const uint32_t offset,
-									  stringstream &buffer);
-		void DisasmLSWUBReg_post(const uint32_t u, 
-								 const uint32_t rn, 
-								 const uint32_t shift_imm, 
-								 const uint32_t shift, 
-								 const uint32_t rm,
-								 stringstream &buffer);
-		void DisasmLSWUBReg_offset(const uint32_t u, 
-								   const uint32_t rn, 
-								   const uint32_t shift_imm, 
-								   const uint32_t shift, 
-								   const uint32_t rm,
-								   stringstream &buffer);
-		void DisasmLSWUBReg_pre(const uint32_t u, 
-								const uint32_t rn, 
-								const uint32_t shift_imm, 
-								const uint32_t shift, 
-								const uint32_t rm,
-								stringstream &buffer);
-		/* Miscellaneous load/store operand disassembling methods */
-		void DisasmMLSImmOffset_post(const uint32_t u, 
-									 const uint32_t rn,
-									 const uint32_t immedH,
-									 const uint32_t immedL,
-									 stringstream &buffer);
-		void DisasmMLSImmOffset_offset(const uint32_t u, 
-									   const uint32_t rn, 
-									   const uint32_t immedH,
-									   const uint32_t immedL,
-									   stringstream &buffer);
-		void DisasmMLSImmOffset_pre(const uint32_t u, 
-									const uint32_t rn, 
-									const uint32_t immedH,
-									const uint32_t immedL,
-									stringstream &buffer);
-		void DisasmMLSReg_post(const uint32_t u, 
-							   const uint32_t rn, 
-							   const uint32_t rm,
-							   stringstream &buffer);
-		void DisasmMLSReg_offset(const uint32_t u, 
-								 const uint32_t rn, 
-								 const uint32_t rm,
-								 stringstream &buffer);
-		void DisasmMLSReg_pre(const uint32_t u, 
-							  const uint32_t rn, 
-							  const uint32_t rm,
-							  stringstream &buffer);
-		/* Coprocessor load/store operand disassembling methods */
-		void DisasmCLSImm_post(const uint32_t u,
-							   const uint32_t rn,
-							   const uint32_t offset,
-							   stringstream &buffer);
-		void DisasmCLSImm_offset(const uint32_t u,
-								 const uint32_t rn,
-								 const uint32_t offset,
-								 stringstream &buffer);
-		void DisasmCLSImm_pre(const uint32_t u,
-							  const uint32_t rn,
-							  const uint32_t offset,
-							  stringstream &buffer);
-		void DisasmCLSUnindexed(const uint32_t rn,
-								const uint32_t option,
-								stringstream &buffer);
-		
-		/**************************************************************/
-		/* Disassembling methods     END                              */
-		/**************************************************************/
-		
 		// Linux OS Interface
 		virtual void PerformExit(int ret);
 		
@@ -885,51 +710,51 @@ namespace arm {
 		/* Exception methods            END                           */
 		/**************************************************************/
 		
-		/* masks for the different running modes */
-		static const uint32_t RUNNING_MODE_MASK = 0x1F;
-		static const uint32_t USER_MODE = 0x10;
-		static const uint32_t FIQ_MODE = 0x11;
-		static const uint32_t IRQ_MODE = 0x12;
-		static const uint32_t SUPERVISOR_MODE = 0x13;
-		static const uint32_t ABORT_MODE = 0x17;
-		static const uint32_t UNDEFINED_MODE = 0x1B;
-		static const uint32_t SYSTEM_MODE = 0x1F;
-		/* masks for the different CPSR status bits */
-		static const uint32_t CPSR_N_MASK = 0x80000000;
-		static const uint32_t CPSR_Z_MASK = 0x40000000;
-		static const uint32_t CPSR_C_MASK = 0x20000000;
-		static const uint32_t CPSR_V_MASK = 0x10000000;
-		static const uint32_t CPSR_Q_MASK = 0x01000000;
-		static const uint32_t CPSR_I_MASK = 0x00000080;
-		static const uint32_t CPSR_F_MASK = 0x00000040;
-		static const uint32_t CPSR_T_MASK = 0x00000020;
-		static const uint32_t CPSR_RUNNING_MODE_MASK = 0x0000001F;
-		/* masks for the different SPSR status bits */
-		static const uint32_t SPSR_N_MASK = CPSR_N_MASK;
-		static const uint32_t SPSR_Z_MASK = CPSR_Z_MASK;
-		static const uint32_t SPSR_C_MASK = CPSR_C_MASK;
-		static const uint32_t SPSR_V_MASK = CPSR_V_MASK;
-		static const uint32_t SPSR_Q_MASK = CPSR_Q_MASK;
-		static const uint32_t SPSR_I_MASK = CPSR_I_MASK;
-		static const uint32_t SPSR_F_MASK = CPSR_F_MASK;
-		static const uint32_t SPSR_T_MASK = CPSR_T_MASK;
-		static const uint32_t SPSR_RUNNING_MODE_MASK = CPSR_RUNNING_MODE_MASK;
-		/* masks for the different condition codes */
-		static const uint32_t COND_EQ = 0x00;
-		static const uint32_t COND_NE = 0x01;
-		static const uint32_t COND_CS_HS = 0x02;
-		static const uint32_t COND_CC_LO = 0x03;
-		static const uint32_t COND_MI = 0x04;
-		static const uint32_t COND_PL = 0x05;
-		static const uint32_t COND_VS = 0x06;
-		static const uint32_t COND_VC = 0x07;
-		static const uint32_t COND_HI = 0x08;
-		static const uint32_t COND_LS = 0x09;
-		static const uint32_t COND_GE = 0x0a;
-		static const uint32_t COND_LT = 0x0b;
-		static const uint32_t COND_GT = 0x0c;
-		static const uint32_t COND_LE = 0x0d;
-		static const uint32_t COND_AL = 0x0e;
+//		/* masks for the different running modes */
+//		static const uint32_t RUNNING_MODE_MASK = 0x1F;
+//		static const uint32_t USER_MODE = 0x10;
+//		static const uint32_t FIQ_MODE = 0x11;
+//		static const uint32_t IRQ_MODE = 0x12;
+//		static const uint32_t SUPERVISOR_MODE = 0x13;
+//		static const uint32_t ABORT_MODE = 0x17;
+//		static const uint32_t UNDEFINED_MODE = 0x1B;
+//		static const uint32_t SYSTEM_MODE = 0x1F;
+//		/* masks for the different CPSR status bits */
+//		static const uint32_t CPSR_N_MASK = 0x80000000;
+//		static const uint32_t CPSR_Z_MASK = 0x40000000;
+//		static const uint32_t CPSR_C_MASK = 0x20000000;
+//		static const uint32_t CPSR_V_MASK = 0x10000000;
+//		static const uint32_t CPSR_Q_MASK = 0x01000000;
+//		static const uint32_t CPSR_I_MASK = 0x00000080;
+//		static const uint32_t CPSR_F_MASK = 0x00000040;
+//		static const uint32_t CPSR_T_MASK = 0x00000020;
+//		static const uint32_t CPSR_RUNNING_MODE_MASK = 0x0000001F;
+//		/* masks for the different SPSR status bits */
+//		static const uint32_t SPSR_N_MASK = CPSR_N_MASK;
+//		static const uint32_t SPSR_Z_MASK = CPSR_Z_MASK;
+//		static const uint32_t SPSR_C_MASK = CPSR_C_MASK;
+//		static const uint32_t SPSR_V_MASK = CPSR_V_MASK;
+//		static const uint32_t SPSR_Q_MASK = CPSR_Q_MASK;
+//		static const uint32_t SPSR_I_MASK = CPSR_I_MASK;
+//		static const uint32_t SPSR_F_MASK = CPSR_F_MASK;
+//		static const uint32_t SPSR_T_MASK = CPSR_T_MASK;
+//		static const uint32_t SPSR_RUNNING_MODE_MASK = CPSR_RUNNING_MODE_MASK;
+//		/* masks for the different condition codes */
+//		static const uint32_t COND_EQ = 0x00;
+//		static const uint32_t COND_NE = 0x01;
+//		static const uint32_t COND_CS_HS = 0x02;
+//		static const uint32_t COND_CC_LO = 0x03;
+//		static const uint32_t COND_MI = 0x04;
+//		static const uint32_t COND_PL = 0x05;
+//		static const uint32_t COND_VS = 0x06;
+//		static const uint32_t COND_VC = 0x07;
+//		static const uint32_t COND_HI = 0x08;
+//		static const uint32_t COND_LS = 0x09;
+//		static const uint32_t COND_GE = 0x0a;
+//		static const uint32_t COND_LT = 0x0b;
+//		static const uint32_t COND_GT = 0x0c;
+//		static const uint32_t COND_LE = 0x0d;
+//		static const uint32_t COND_AL = 0x0e;
 		
 		/* Returns current instruction size 
 		 * NOTE: for the moment thumb is not supported, so only an instruction

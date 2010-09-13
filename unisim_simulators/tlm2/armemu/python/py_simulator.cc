@@ -38,6 +38,7 @@
 #define SIMULATOR_MODULE
 #include "python/py_simulator.hh"
 #include "python/py_variable.hh"
+#include "python/py_debugger.hh"
 
 static std::map<std::string, int> time_unit_map;
 static std::map<std::string, sc_time_unit> sc_time_unit_map;
@@ -71,13 +72,13 @@ void TimeUnitMapInit()
 	sc_time_unit_map.insert(std::pair<std::string, sc_time_unit>("SEC", SC_SEC));
 }
 
-static int TimeUnit(const std::string& unit)
-{
-	const std::map<std::string, int>::iterator it = time_unit_map.find(unit);
-
-	if ( it == time_unit_map.end() ) return -1;
-	return (*it).second;
-}
+//static int TimeUnit(const std::string& unit)
+//{
+//	const std::map<std::string, int>::iterator it = time_unit_map.find(unit);
+//
+//	if ( it == time_unit_map.end() ) return -1;
+//	return (*it).second;
+//}
 
 static bool SCTimeUnit(const std::string& unit, sc_time_unit& sc_unit)
 {
@@ -409,28 +410,28 @@ simulator_get_formulas ( armemu_SimulatorObject *self)
 	return result;
 }
 
-static void
-get_parameters_map (Simulator *sim, std::map<std::string, std::string> &parms)
-{
-	if ( sim == 0 ) return;
-	std::list<unisim::kernel::service::VariableBase *> parm_list;
-	sim->GetParameters(parm_list);
-	for ( std::list<unisim::kernel::service::VariableBase *>::iterator it = parm_list.begin();
-			it != parm_list.end();
-			it++ )
-		parms.insert(make_pair(std::string((*it)->GetName()),
-				(std::string)*(*it)));
-}
-
-static void
-set_parameters_map (Simulator *sim, std::map<std::string, std::string> &parms)
-{
-	if ( sim == 0 ) return;
-	for ( std::map<std::string, std::string>::iterator it = parms.begin();
-			it != parms.end();
-			it++ )
-		sim->SetVariable(it->first.c_str(), it->second.c_str());
-}
+//static void
+//get_parameters_map (Simulator *sim, std::map<std::string, std::string> &parms)
+//{
+//	if ( sim == 0 ) return;
+//	std::list<unisim::kernel::service::VariableBase *> parm_list;
+//	sim->GetParameters(parm_list);
+//	for ( std::list<unisim::kernel::service::VariableBase *>::iterator it = parm_list.begin();
+//			it != parm_list.end();
+//			it++ )
+//		parms.insert(make_pair(std::string((*it)->GetName()),
+//				(std::string)*(*it)));
+//}
+//
+//static void
+//set_parameters_map (Simulator *sim, std::map<std::string, std::string> &parms)
+//{
+//	if ( sim == 0 ) return;
+//	for ( std::map<std::string, std::string>::iterator it = parms.begin();
+//			it != parms.end();
+//			it++ )
+//		sim->SetVariable(it->first.c_str(), it->second.c_str());
+//}
 
 static PyObject *
 simulator_is_running (armemu_SimulatorObject *self)
@@ -603,6 +604,23 @@ simulator_remove_trap_handler (armemu_SimulatorObject *self)
 	}
 	return result;
 }
+
+static PyObject *
+simulator_get_debugger (armemu_SimulatorObject *self, PyObject *args)
+{
+	PyObject *result = 0;
+
+	const char *debugger_name = 0;
+	if ( !PyArg_ParseTuple(args, "s", &debugger_name) )
+	{
+		PyErr_SetString(PyExc_TypeError, "parameters must be the name of the desired debugger");
+		return NULL;
+	}
+	// the name of the debugger should be checked before its creation
+	result = PyDebugger_NewDebugger(debugger_name);
+	return result;
+}
+
 static PyMethodDef simulator_methods[] =
 {
 	{"setup", (PyCFunction)simulator_setup, METH_NOARGS,
@@ -635,6 +653,8 @@ static PyMethodDef simulator_methods[] =
 			"Set the external trap handler"},
 	{"remove_trap_handler", (PyCFunction)simulator_remove_trap_handler, METH_NOARGS,
 			"Remove the external trap handler"},
+	{"get_debugger", (PyCFunction)simulator_get_debugger, METH_VARARGS,
+					"Get a handler of the given name debugger"},
 	{NULL}
 };
 
@@ -738,6 +758,11 @@ PyInit_simulator(void)
 	import_variable_api_init();
 
 	if ( import_variable_api() < 0 )
+		return NULL;
+
+	import_debugger_api_init();
+
+	if ( import_debugger_api() < 0 )
 		return NULL;
 
 	return m;

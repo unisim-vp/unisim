@@ -32,7 +32,8 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <unisim/util/random/random.hh>
+#include <assert.h>
+#include "unisim/util/random/random.hh"
 
 namespace unisim {
 namespace util {
@@ -69,16 +70,33 @@ int32_t Random::Generate()
 
 int32_t Random::Generate(uint32_t radius)
 {
-	// generate a random value between Min and Max
-	int64_t r = Generate();
-
 	// compute current radius
 	uint64_t cur_radius = (uint64_t) Max + 1;
 
-	// scale
-	r = r * radius / cur_radius;
+	if ( radius > cur_radius )
+		radius = cur_radius;
 
-	return (int32_t) r;
+	// generate a random value between [ 0 , 2*Max [
+	int64_t r = (int64_t)Generate() + (int64_t)cur_radius;
+
+	// scale [ 0 , 2*radius [
+	r = (r * (int64_t)(uint64_t)radius) / (int64_t)cur_radius;
+
+	// project to [ -radius , radius [
+	r = r - (int64_t)(uint64_t)radius;
+
+	assert(r >= -(int64_t)(uint64_t)radius);
+	assert(r < (int64_t)(uint64_t)radius);
+
+	return (int32_t)r;
+//
+//	// generate a random value between Min and Max
+//	int64_t r = Generate();
+//
+//	// scale
+//	r = (r * (int64_t)(uint64_t)radius) / (int64_t)cur_radius;
+//
+//	return (int32_t) r;
 }
 
 } // end of namespace random

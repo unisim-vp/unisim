@@ -74,8 +74,8 @@ namespace arm926ejs {
 			{
 				m_tag[set][way] = 0;
 				memset(m_data[set][way], 0, m_line_size_);
-				m_valid[set][way] = 0;
-				m_dirty[set][way] = 0;
+				m_valid[set][way] = false;
+				m_dirty[set][way] = false;
 			}
 			m_replacement_history[set] = 0;
 		}
@@ -92,7 +92,9 @@ namespace arm926ejs {
 	{
 		m_is_ok = false;
 		// test that the size parameter is a valid value
-		if ( size > 0 )
+		if ( size == 0 )
+			m_is_ok = true;
+		else if ( size > 0 )
 		{
 			// ARM926EJS caches can only be between 4KB (0x01000) and 128KB (0x020000)
 			//   and must be 2^x = size
@@ -136,6 +138,13 @@ namespace arm926ejs {
 		}
 
 		return m_is_ok;
+	}
+
+	uint32_t
+	Cache::
+	GetSize()
+	{
+		return m_size;
 	}
 
 	bool
@@ -219,6 +228,7 @@ namespace arm926ejs {
 			}
 			current_way++;
 		}
+		*way = 0;
 		return found;
 	}
 
@@ -236,7 +246,9 @@ namespace arm926ejs {
 		else
 		{
 			// current replacement policy is random
-			m_replacement_history[set] = rand.Generate(m_associativity_);
+			m_replacement_history[set] =
+					rand.Generate(m_associativity_/2) +
+					(m_associativity_/2);
 		}
 		return m_replacement_history[set];
 	}

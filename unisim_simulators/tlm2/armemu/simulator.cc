@@ -395,18 +395,18 @@ DefaultConfiguration(unisim::kernel::service::Simulator *sim)
 	sim->SetVariable("kernel_logger.std_err", true);
 	sim->SetVariable("kernel_logger.std_err_color", true);
 
-	sim->SetVariable("cpu.default-endianness", "little-endian");
-	sim->SetVariable("cpu.cpu-cycle-time", 1000UL);
-	sim->SetVariable("memory.bytesize", 0xffffffffUL);
-	sim->SetVariable("memory.cycle-time", 1000000UL);
-	sim->SetVariable("linux-loader.stack-base", 0xc0000000UL);
+	sim->SetVariable("cpu.default-endianness",   "little-endian");
+	sim->SetVariable("cpu.cpu-cycle-time",       1000UL);
+	sim->SetVariable("memory.bytesize",          0xffffffffUL);
+	sim->SetVariable("memory.cycle-time",        1000000UL);
+	sim->SetVariable("linux-loader.stack-base",  0xc0000000UL);
 	sim->SetVariable("linux-loader.max-environ", 0x4000UL);
-	sim->SetVariable("linux-loader.endianness", "little-endian");
-	sim->SetVariable("linux-loader.argc", 1);
-	sim->SetVariable("linux-loader.argv[0]", "test/install/test.armv5l");
-	sim->SetVariable("linux-os.system", "arm");
-	sim->SetVariable("linux-os.endianness", "little-endian");
-	sim->SetVariable("elf-loader.filename", "test/install/test.armv5l");
+	sim->SetVariable("linux-loader.endianness",  "little-endian");
+	sim->SetVariable("linux-loader.argc",        1);
+	sim->SetVariable("linux-loader.argv[0]",     "test/install/test.armv5l");
+	sim->SetVariable("linux-os.system",          "arm");
+	sim->SetVariable("linux-os.endianness",      "little-endian");
+	sim->SetVariable("elf-loader.filename",      "test/install/test.armv5l");
 
 	sim->SetVariable("trap-handler.num-traps", 3);
 	sim->SetVariable("trap-handler.trap-reporting-export-name[0]",
@@ -482,6 +482,16 @@ SetTrapHandler (void (*function)(void *, unsigned int), void *context)
 	return true;
 }
 
+unisim::util::debug::debugger_handler::DebuggerHandler *
+Simulator::
+GetDebugger(const char *name)
+{
+	if ( enable_sim_debugger )
+		return sim_debugger;
+	else
+		return 0;
+}
+
 void
 Simulator::
 ExternalTrap (unsigned int id)
@@ -499,6 +509,7 @@ VariableNotify(const char *name)
 	// use this function to check the variable that was notified
 	// NOTE: for the moment it is empty, but more to come :-P
 }
+
 #endif // SIM_LIBRARY
 
 #ifdef SIM_GDB_SERVER_SUPPORT

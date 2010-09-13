@@ -47,7 +47,7 @@
 
 clz.disasm = {
 	buffer << "clz";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << " r" << rd << ", r" << rm;
 }
 

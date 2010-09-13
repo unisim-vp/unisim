@@ -35,6 +35,7 @@
 			<file>unisim/component/cxx/processor/arm/isa/thumb/constructors_dec.isa</file>
 			<file>unisim/component/cxx/processor/arm/isa/thumb/load_store_multiple.isa</file>
 			<file>unisim/component/cxx/processor/arm/isa/thumb/thumb.isa</file>
+			<file>unisim/component/cxx/processor/arm/masks.hh</file>
 			<file>unisim/component/cxx/processor/arm/cache_interface.hh</file>
 			<file>unisim/component/cxx/processor/arm/config.hh</file>
 			<file>unisim/component/cxx/processor/arm/coprocessor_interface.hh</file>
@@ -49,6 +50,18 @@
 			<file>unisim/component/cxx/processor/arm/instruction_factory.hh</file>
 			<file>unisim/component/cxx/processor/arm/instruction_factory.tcc</file>
 			<file>unisim/component/cxx/processor/arm/cpu.tcc</file>
+			<file>unisim/component/cxx/processor/arm/decode_data_processing.hh</file>
+			<file>unisim/component/cxx/processor/arm/decode_data_processing.cc</file>
+			<file>unisim/component/cxx/processor/arm/decode_load_store.hh</file>
+			<file>unisim/component/cxx/processor/arm/decode_load_store.cc</file>
+			<file>unisim/component/cxx/processor/arm/decode_misc_load_store.hh</file>
+			<file>unisim/component/cxx/processor/arm/decode_misc_load_store.cc</file>
+			<file>unisim/component/cxx/processor/arm/decode_load_store_multiple.hh</file>
+			<file>unisim/component/cxx/processor/arm/decode_load_store_multiple.cc</file>
+			<file>unisim/component/cxx/processor/arm/decode_copro_load_store.hh</file>
+			<file>unisim/component/cxx/processor/arm/decode_copro_load_store.cc</file>
+			<file>unisim/component/cxx/processor/arm/disasm.hh</file>
+			<file>unisim/component/cxx/processor/arm/disasm.cc</file>
 			<file>unisim/component/cxx/processor/arm/memory_op.hh</file>
 			<file>unisim/component/cxx/processor/arm/arm926ejs/cache.hh</file>
 			<file>unisim/component/cxx/processor/arm/arm926ejs/cache.cc</file>

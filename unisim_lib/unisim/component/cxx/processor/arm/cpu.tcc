@@ -40,6 +40,7 @@
 #include <iostream>
 #include <stdlib.h>
 #include "unisim/component/cxx/processor/arm/cpu.hh"
+#include "unisim/component/cxx/processor/arm/masks.hh"
 #include "unisim/component/cxx/processor/arm/config.hh"
 #include "unisim/component/cxx/processor/arm/isa_arm32.tcc"
 #include "unisim/component/cxx/processor/arm/isa_thumb.tcc"
@@ -676,35 +677,52 @@ InjectReadMemory(uint64_t addr, void *buffer, uint32_t size)
 	uint32_t ef_addr;
 	if ( (CONFIG::MODEL == ARM926EJS) && linux_os_import)
 	{
-		// access memory while using the linux_os_import
-		//   tcm is ignored
-		while (size != 0)
+		if ( arm926ejs_dcache.GetSize() )
 		{
-			// need to access the data cache before accessing the main memory
-			ef_addr = base_addr + index;
-
-			uint32_t cache_tag = arm926ejs_dcache.GetTag(ef_addr);
-			uint32_t cache_set = arm926ejs_dcache.GetSet(ef_addr);
-			uint32_t cache_way;
-			bool cache_hit = false;
-			if ( arm926ejs_dcache.GetWay(cache_tag, cache_set, &cache_way) )
+			// access memory while using the linux_os_import
+			//   tcm is ignored
+			while (size != 0)
 			{
-				if ( arm926ejs_dcache.GetValid(cache_set, cache_way))
+				// need to access the data cache before accessing the main memory
+				ef_addr = base_addr + index;
+
+				uint32_t cache_tag = arm926ejs_dcache.GetTag(ef_addr);
+				uint32_t cache_set = arm926ejs_dcache.GetSet(ef_addr);
+				uint32_t cache_way;
+				bool cache_hit = false;
+				if ( arm926ejs_dcache.GetWay(cache_tag, cache_set, &cache_way) )
 				{
-					// the cache access is a hit, data can be simply read from the cache
-					uint32_t cache_index = arm926ejs_dcache.GetIndex(ef_addr);
-					uint32_t read_data_size =
-						arm926ejs_dcache.GetDataCopy(cache_set, cache_way, cache_index, size, &(((uint8_t *)buffer)[index]));
-					index += read_data_size;
-					size -= read_data_size;
-					cache_hit = true;
+					if ( arm926ejs_dcache.GetValid(cache_set, cache_way) )
+					{
+						// the cache access is a hit, data can be simply read from the cache
+						uint32_t cache_index = arm926ejs_dcache.GetIndex(ef_addr);
+						uint32_t read_data_size =
+							arm926ejs_dcache.GetDataCopy(cache_set, cache_way, cache_index, size, &(((uint8_t *)buffer)[index]));
+						index += read_data_size;
+						size -= read_data_size;
+						cache_hit = true;
+					}
+				}
+				if ( !cache_hit )
+				{
+					memory_interface->PrRead(ef_addr,
+											 &(((uint8_t *)buffer)[index]),
+											 1);
+					index++;
+					size--;
 				}
 			}
-			if ( !cache_hit )
+		}
+		else
+		{
+			// no data cache on this system, just send request to the memory
+			//   subsystem
+			while ( size != 0 )
 			{
+				ef_addr = base_addr + index;
 				memory_interface->PrRead(ef_addr,
-										 &(((uint8_t *)buffer)[index]),
-										 1);
+						&(((uint8_t *)buffer)[index]),
+						1);
 				index++;
 				size--;
 			}
@@ -731,33 +749,50 @@ InjectWriteMemory(uint64_t addr,
 	uint32_t ef_addr;
 	if ( (CONFIG::MODEL == ARM926EJS) && linux_os_import)
 	{
-		// access memory while using the linux_os_import
-		//   tcm is ignored
-		while (size != 0)
+		if ( arm926ejs_dcache.GetSize() )
 		{
-			// need to access the data cache before accessing the main memory
-			ef_addr = base_addr + index;
-
-			uint32_t cache_tag = arm926ejs_dcache.GetTag(ef_addr);
-			uint32_t cache_set = arm926ejs_dcache.GetSet(ef_addr);
-			uint32_t cache_way;
-			bool cache_hit = false;
-			if ( arm926ejs_dcache.GetWay(cache_tag, cache_set, &cache_way) )
+			// access memory while using the linux_os_import
+			//   tcm is ignored
+			while ( size != 0 )
 			{
-				if ( arm926ejs_dcache.GetValid(cache_set, cache_way) )
+				// need to access the data cache before accessing the main memory
+				ef_addr = base_addr + index;
+
+				uint32_t cache_tag = arm926ejs_dcache.GetTag(ef_addr);
+				uint32_t cache_set = arm926ejs_dcache.GetSet(ef_addr);
+				uint32_t cache_way;
+				bool cache_hit = false;
+				if ( arm926ejs_dcache.GetWay(cache_tag, cache_set, &cache_way) )
 				{
-					// the cache access is a hit, data can be simply read from the cache
-					uint32_t cache_index = arm926ejs_dcache.GetIndex(ef_addr);
-					uint32_t write_data_size =
-						arm926ejs_dcache.SetData(cache_set, cache_way, cache_index, size, &(((uint8_t *)buffer)[index]));
-					arm926ejs_dcache.SetDirty(cache_set, cache_way, 1);
-					index += write_data_size;
-					size -= write_data_size;
-					cache_hit = true;
+					if ( arm926ejs_dcache.GetValid(cache_set, cache_way) )
+					{
+						// the cache access is a hit, data can be simply read from the cache
+						uint32_t cache_index = arm926ejs_dcache.GetIndex(ef_addr);
+						uint32_t write_data_size =
+							arm926ejs_dcache.SetData(cache_set, cache_way, cache_index, size, &(((uint8_t *)buffer)[index]));
+						arm926ejs_dcache.SetDirty(cache_set, cache_way, 1);
+						index += write_data_size;
+						size -= write_data_size;
+						cache_hit = true;
+					}
+				}
+				if ( !cache_hit )
+				{
+					memory_interface->PrWrite(ef_addr,
+							&(((uint8_t *)buffer)[index]),
+							1);
+					index++;
+					size--;
 				}
 			}
-			if ( !cache_hit )
+		}
+		else
+		{
+			// there is no data cache in this system just send the request to
+			//   the memory subsystem
+			while ( size != 0 )
 			{
+				ef_addr = base_addr + index;
 				memory_interface->PrWrite(ef_addr,
 						&(((uint8_t *)buffer)[index]),
 						1);
@@ -819,41 +854,59 @@ ReadMemory(uint64_t addr, void *buffer, uint32_t size)
 
 	if (CONFIG::MODEL == ARM926EJS && linux_os_import)
 	{
-		// non intrusive access with linux support
-		//   tcm is ignored
-		while (size != 0 && status)
+		if ( arm926ejs_dcache.GetSize() )
 		{
-			// need to access the data cache before accessing the main
-			//   memory
-			ef_addr = base_addr + index;
-
-			uint32_t cache_tag = arm926ejs_dcache.GetTag(ef_addr);
-			uint32_t cache_set = arm926ejs_dcache.GetSet(ef_addr);
-			uint32_t cache_way;
-			bool cache_hit = false;
-			if ( arm926ejs_dcache.GetWay(cache_tag, cache_set, &cache_way) )
+			// non intrusive access with linux support
+			//   tcm is ignored
+			while (size != 0 && status)
 			{
-				if ( arm926ejs_dcache.GetValid(cache_set, cache_way) )
+				// need to access the data cache before accessing the main
+				//   memory
+				ef_addr = base_addr + index;
+
+				uint32_t cache_tag = arm926ejs_dcache.GetTag(ef_addr);
+				uint32_t cache_set = arm926ejs_dcache.GetSet(ef_addr);
+				uint32_t cache_way;
+				bool cache_hit = false;
+				if ( arm926ejs_dcache.GetWay(cache_tag, cache_set, &cache_way) )
 				{
-					// the cache access is a hit, data can be simply read
-					//   from the cache
-					uint32_t cache_index =
-							arm926ejs_dcache.GetIndex(ef_addr);
-					uint32_t data_read_size =
-							arm926ejs_dcache.GetDataCopy(cache_set,
-									cache_way, cache_index, size,
-									&(((uint8_t *)buffer)[index]));
-					index += data_read_size;
-					size -= data_read_size;
-					cache_hit = true;
+					if ( arm926ejs_dcache.GetValid(cache_set, cache_way) )
+					{
+						// the cache access is a hit, data can be simply read
+						//   from the cache
+						uint32_t cache_index =
+								arm926ejs_dcache.GetIndex(ef_addr);
+						uint32_t data_read_size =
+								arm926ejs_dcache.GetDataCopy(cache_set,
+										cache_way, cache_index, size,
+										&(((uint8_t *)buffer)[index]));
+						index += data_read_size;
+						size -= data_read_size;
+						cache_hit = true;
+					}
+				}
+				if ( !cache_hit )
+				{
+					status = status &&
+						ExternalReadMemory(ef_addr,
+										   &(((uint8_t *)buffer)[index]),
+										   1);
+					index++;
+					size--;
 				}
 			}
-			if ( !cache_hit )
+		}
+		else
+		{
+			// there is no data cache in this system just perform the request
+			//   to the memory subsystem
+			while ( size != 0 && status )
 			{
+				ef_addr = base_addr + index;
 				status = status &&
-					ExternalReadMemory(ef_addr,
-									   &(((uint8_t *)buffer)[index]),
-									   1);
+						ExternalReadMemory(ef_addr,
+								&(((uint8_t *)buffer)[index]),
+								1);
 				index++;
 				size--;
 			}
@@ -884,37 +937,55 @@ WriteMemory(uint64_t addr,
 
 	if (CONFIG::MODEL == ARM926EJS && linux_os_import)
 	{
-		// non intrusive access with linux support
-		//   tcm is ignored
-		while (size != 0 && status)
+		if ( arm926ejs_dcache.GetSize() )
 		{
-			// need to access the data cache before accessing the main memory
-			ef_addr = base_addr + index;
-
-			uint32_t cache_tag = arm926ejs_dcache.GetTag(ef_addr);
-			uint32_t cache_set = arm926ejs_dcache.GetSet(ef_addr);
-			uint32_t cache_way;
-			bool cache_hit = false;
-			if ( arm926ejs_dcache.GetWay(cache_tag, cache_set, &cache_way) )
+			// non intrusive access with linux support
+			//   tcm is ignored
+			while (size != 0 && status)
 			{
-				if ( arm926ejs_dcache.GetValid(cache_set, cache_way) )
+				// need to access the data cache before accessing the main memory
+				ef_addr = base_addr + index;
+
+				uint32_t cache_tag = arm926ejs_dcache.GetTag(ef_addr);
+				uint32_t cache_set = arm926ejs_dcache.GetSet(ef_addr);
+				uint32_t cache_way;
+				bool cache_hit = false;
+				if ( arm926ejs_dcache.GetWay(cache_tag, cache_set, &cache_way) )
 				{
-					// the cache access is a hit, data can be simply written to the cache
-					uint32_t cache_index = arm926ejs_dcache.GetIndex(ef_addr);
-					uint32_t data_read_size =
-						arm926ejs_dcache.SetData(cache_set, cache_way, cache_index, size, &(((uint8_t *)buffer)[index]));
-					arm926ejs_dcache.SetDirty(cache_set, cache_way, 1);
-					index += data_read_size;
-					size -= data_read_size;
-					cache_hit = true;
+					if ( arm926ejs_dcache.GetValid(cache_set, cache_way) )
+					{
+						// the cache access is a hit, data can be simply written to the cache
+						uint32_t cache_index = arm926ejs_dcache.GetIndex(ef_addr);
+						uint32_t data_read_size =
+							arm926ejs_dcache.SetData(cache_set, cache_way, cache_index, size, &(((uint8_t *)buffer)[index]));
+						arm926ejs_dcache.SetDirty(cache_set, cache_way, 1);
+						index += data_read_size;
+						size -= data_read_size;
+						cache_hit = true;
+					}
+				}
+				if ( !cache_hit )
+				{
+					status = status &&
+						ExternalWriteMemory(ef_addr,
+											&(((uint8_t *)buffer)[index]),
+											1);
+					index++;
+					size--;
 				}
 			}
-			if ( !cache_hit )
+		}
+		else
+		{
+			// there is no data cache in this system, just write the data to
+			//   the memory subsystem
+			while ( size != 0 && status )
 			{
+				ef_addr = base_addr + index;
 				status = status &&
-					ExternalWriteMemory(ef_addr,
-										&(((uint8_t *)buffer)[index]),
-										1);
+						ExternalWriteMemory(ef_addr,
+								&(((uint8_t *)buffer)[index]),
+								1);
 				index++;
 				size--;
 			}
@@ -1145,950 +1216,6 @@ CoprocessorGetInitram() {
 //=====================================================================
 //=                    execution handling methods               END   =
 //=====================================================================
-
-/**************************************************************/
-/* Operand decoding methods     START                         */
-/**************************************************************/
-
-/* Data processing operand decoding */
-template<class CONFIG>
-inline
-typename CONFIG::reg_t
-CPU<CONFIG> ::
-ShiftOperand32imm(const uint32_t rotate_imm,
-				  const uint32_t imm) {
-	reg_t shifter_operand = 0;
-
-	//	if(rotate_imm == 0) {
-	//		shifter_operand = imm;
-	//	} else {
-	shifter_operand = RotateRight(imm, rotate_imm * 2);
-	//	}
-	
-	return shifter_operand;
-}
-
-template<class CONFIG>
-inline
-typename CONFIG::reg_t
-CPU<CONFIG> ::
-ShiftOperand32imm(const uint32_t rotate_imm,
-				  const uint32_t imm,
-				  bool *shift_carry_out) {
-	reg_t shifter_operand = 0;
-
-	shifter_operand = RotateRight(imm, rotate_imm * 2);
-	if(rotate_imm == 0) {
-		*shift_carry_out = GetCPSR_C();
-	} else {
-		//		*shift_carry_out = ((((typename CONFIG::reg_t)(-1)) & ~(((typename CONFIG::reg_t)(-1)) >> 1)) & shifter_operand) != 0;
-		*shift_carry_out = (((typename CONFIG::reg_t)1) << 31) & shifter_operand;
-	}
-	
-	return shifter_operand;
-}
-
-template<class CONFIG>
-inline
-typename CONFIG::reg_t
-CPU<CONFIG> ::
-ShiftOperandImmShift(const uint32_t shift_imm,
-					 const uint32_t shift,
-					 const typename CONFIG::reg_t val_reg) {
-	typename CONFIG::reg_t shifter_operand = 0;
-
-	if((shift_imm == 0) && (shift == 0)) {
-		shifter_operand = val_reg;
-		return shifter_operand;
-	} else {
-		
-		if(shift == 0) {
-			shifter_operand = val_reg << shift_imm;
-			return shifter_operand;
-		} else {
-			
-			if(shift == 0x01) {
-				if(shift_imm == 0) {
-					shifter_operand = 0;
-				} else {
-					shifter_operand = val_reg >> shift_imm;
-				}
-				return shifter_operand;
-			} else {
-				if(shift == 0x02) {
-					if(shift_imm == 0) {
-						if(((typename CONFIG::sreg_t)val_reg) > 0) {
-							shifter_operand = 0;
-						} else {
-							shifter_operand = (typename CONFIG::reg_t)((typename CONFIG::sreg_t)-1);
-						}
-					} else {
-						shifter_operand = ((typename CONFIG::sreg_t)val_reg) >> shift_imm;
-					}
-					return shifter_operand;
-				} else {
-
-					if(shift == 0x03) { /* ROR */
-						if(shift_imm == 0) {
-							shifter_operand = 0;
-							shifter_operand = ((GetCPSR_C()?1:0) << 31) | (val_reg >> 1);
-						} else {
-							shifter_operand = RotateRight(val_reg, shift_imm);
-						}
-						return shifter_operand;
-					}
-				}
-			}
-		}
-	}
-	
-	return 0;
-}
-
-template<class CONFIG>
-inline
-typename CONFIG::reg_t
-CPU<CONFIG> ::
-ShiftOperandImmShift(const uint32_t shift_imm,
-					 const uint32_t shift,
-					 const typename CONFIG::reg_t val_reg,
-					 bool *shift_carry_out) {
-	typename CONFIG::reg_t shifter_operand = 0;
-	uint32_t mask = 1;
-
-	if((shift_imm == 0) && (shift == 0)) {
-		shifter_operand = val_reg;
-		*shift_carry_out = GetCPSR_C();
-		return shifter_operand;
-	} else {
-		
-		if(shift == 0) {
-			shifter_operand = val_reg << shift_imm;
-			//     shifter_operand |= val_reg >> (32 - shift_imm);
-			mask = mask << (32 - shift_imm);
-			*shift_carry_out = ((mask & val_reg) != 0);
-			return shifter_operand;
-		} else {
-			if(shift == 0x01) {
-				if(shift_imm == 0) {
-					shifter_operand = 0;
-					mask = mask << 31;
-					*shift_carry_out = ((mask & val_reg) != 0);
-				} else {
-					shifter_operand = val_reg >> shift_imm;
-					mask = mask << (shift_imm - 1);
-					*shift_carry_out = ((mask & val_reg) != 0);
-				}
-				return shifter_operand;
-			} else {
-
-				if(shift == 0x02) {
-					if(shift_imm == 0) {
-						if(((typename CONFIG::sreg_t)val_reg) > 0) {
-							shifter_operand = 0;
-							*shift_carry_out = false;
-						} else {
-							shifter_operand = (typename CONFIG::reg_t)((typename CONFIG::sreg_t)-1);
-							*shift_carry_out = true;
-						}
-					} else {
-						shifter_operand = ((typename CONFIG::sreg_t)val_reg) >> shift_imm;
-						mask = mask << (shift_imm - 1);
-						*shift_carry_out = ((mask & val_reg) != 0);
-					}
-					return shifter_operand;
-				} else {
-					
-					if(shift == 0x03) { /* ROR */
-						if(shift_imm == 0) {
-							shifter_operand = 0;
-							if(GetCPSR_C()) {
-								shifter_operand = ((typename CONFIG::reg_t)1) << 31;
-							}
-							shifter_operand |= (val_reg >> 1);
-							*shift_carry_out = ((0x01 & val_reg) != 0);
-						} else {
-							shifter_operand = RotateRight(val_reg, shift_imm);
-							*shift_carry_out = (val_reg >> (shift_imm - 1)) & 0x1;
-						}
-						return shifter_operand;
-					}
-				}
-			}
-		}
-	}
-	
-	return 0;
-}
-
-template<class CONFIG>
-inline
-typename CONFIG::reg_t
-CPU<CONFIG> ::
-ShiftOperandRegShift(const uint32_t shift_reg,
-					 const uint32_t shift,
-					 const typename CONFIG::reg_t val_reg) {
-	typename CONFIG::reg_t shifter_operand = 0;
-	typename CONFIG::reg_t sr8 = (shift_reg & 0x0FF);
-	typename CONFIG::reg_t sr5 = (shift_reg & 0x01F);
-
-	if(shift == 0x0) {
-		if(sr8 == 0) {
-			shifter_operand = val_reg;
-		} else if(sr8 < 32) {
-			shifter_operand = val_reg << sr8;
-		} else if(sr8 == 32) {
-			shifter_operand = 0;
-		} else {
-			shifter_operand = 0;
-		}
-		return shifter_operand;
-	} else {
-		
-		if(shift == 0x01) {
-			if(sr8 == 0) {
-				shifter_operand = val_reg;
-			} else if(sr8 < 32) {
-				shifter_operand = val_reg >> sr8;
-			} else if(sr8 == 32) {
-				shifter_operand = 0;
-			} else {
-				shifter_operand = 0;
-			}
-			return shifter_operand;
-		} else {
-			
-			if(shift == 0x02) {
-				if(sr8 == 0) {
-					shifter_operand = val_reg;
-				} else if(sr8 < 32) {
-					shifter_operand = ((typename CONFIG::sreg_t)val_reg) >> sr8;
-				} else {
-					if((val_reg & ((typename CONFIG::reg_t)1 << 31)) == 0) {
-						shifter_operand = 0;
-					} else {
-						shifter_operand = (typename CONFIG::reg_t)((typename CONFIG::sreg_t)-1);
-					}
-				}
-				return shifter_operand;
-			} else {
-				
-				if(shift == 0x03) {
-					shifter_operand = RotateRight(val_reg, sr5);
-					return shifter_operand;
-				}
-			}
-		}
-	}
-	
-	return shifter_operand;
-}
-
-template<class CONFIG>
-inline
-typename CONFIG::reg_t
-CPU<CONFIG> ::
-ShiftOperandRegShift(const uint32_t shift_reg,
-					 const uint32_t shift,
-					 const typename CONFIG::reg_t val_reg,
-					 bool *shift_carry_out) {
-	typename CONFIG::reg_t shifter_operand = 0;
-	typename CONFIG::reg_t sr8 = (shift_reg & 0x0FF);
-	typename CONFIG::reg_t sr5 = (shift_reg & 0x01F);
-
-	if(shift == 0x0) {
-		if(sr8 == 0) {
-			shifter_operand = val_reg;
-			*shift_carry_out = GetCPSR_C();
-		} else if(sr8 < 32) {
-			shifter_operand = val_reg << sr8;
-			*shift_carry_out = ((val_reg & (1 << (32 - sr8))) != 0);
-		} else if(sr8 == 32) {
-			shifter_operand = 0;
-			*shift_carry_out = ((val_reg & 0x01) != 0);
-		} else {
-			shifter_operand = 0;
-			*shift_carry_out = false;
-		}
-		return shifter_operand;
-	} else {
-		if(shift == 0x01) {
-			if(sr8 == 0) {
-				shifter_operand = val_reg;
-				*shift_carry_out = GetCPSR_C();
-			} else if(sr8 < 32) {
-				shifter_operand = val_reg >> sr8;
-				*shift_carry_out = ((val_reg & (1 << (sr8 - 1))) != 0);
-			} else if(sr8 == 32) {
-				shifter_operand = 0;
-				*shift_carry_out = ((val_reg & (1 << 31)) != 0);
-			} else {
-				shifter_operand = 0;
-				*shift_carry_out = false;
-			}
-			return shifter_operand;
-		} else {
-
-			if(shift == 0x02) {
-				if(sr8 == 0) {
-					shifter_operand = val_reg;
-					*shift_carry_out = GetCPSR_C();
-				} else if(sr8 < 32) {
-					shifter_operand = ((typename CONFIG::sreg_t)val_reg) >> sr8;
-					*shift_carry_out = ((val_reg & ((typename CONFIG::reg_t)1 << (sr8 - 1))) != 0);
-				} else {
-					if((val_reg & ((typename CONFIG::reg_t)1 << 31)) == 0) {
-						shifter_operand = 0;
-						*shift_carry_out = ((val_reg & ((typename CONFIG::reg_t)1 << 31)) != 0);
-					} else {
-						shifter_operand = (typename CONFIG::reg_t)((typename CONFIG::sreg_t)-1);
-						*shift_carry_out = ((val_reg & ((typename CONFIG::reg_t)1 << 31)) != 0);
-					}
-				}
-				return shifter_operand;
-			} else {
-				
-				if(shift == 0x03) {
-					shifter_operand = RotateRight(val_reg, sr5);
-					if(sr8 == 0) {
-						*shift_carry_out = GetCPSR_C();
-					} else {
-						*shift_carry_out = (val_reg & (1 << ((sr5 - 1) & 0x01F)));
-					}
-					return shifter_operand;
-				}
-			}
-		}
-	}
-	return 0;
-}
-
-/* Address operand decoding */
-template<class CONFIG>
-typename CONFIG::address_t
-CPU<CONFIG> ::
-LSWUBImmOffset(const uint32_t u,
-			   const typename CONFIG::reg_t val_reg,
-			   const uint32_t offset) {
-	return val_reg + (((u << 1) - 1) * offset);
-}
-
-template<class CONFIG>
-typename CONFIG::address_t
-CPU<CONFIG> ::
-LSWUBReg(const uint32_t u,
-		 const typename CONFIG::reg_t val_rn,
-		 const typename CONFIG::reg_t val_rd,
-		 const uint32_t shift_imm,
-		 const uint32_t shift,
-		 const typename CONFIG::reg_t val_rm) {
-	
-	if((shift_imm == 0) && (shift == 0)) {
-		return val_rn + ((( u << 1) - 1) * val_rm);
-	}
-	
-	typename CONFIG::reg_t index = 0;
-	switch(shift) {
-		case 0:
-			index = val_rm << shift_imm;
-			// index |= val_rm >> (32 - shift_imm);
-			break;
-		case 1:
-			if(shift_imm == 0)
-				index = 0;
-			else {
-				index = val_rm >> shift_imm;
-				//       index |= val_rm << (32 - shift_imm);
-			}
-			break;
-		case 2:
-			if(shift_imm == 0) {
-				if((val_rm & (1 << ((sizeof(typename CONFIG::reg_t) * 8) - 1))) != 0) {
-					index = (typename CONFIG::reg_t)((typename CONFIG::sreg_t)-1);
-				} else {
-					index = 0;
-				}
-			} else {
-				index = ((typename CONFIG::sreg_t)val_rm) >> shift_imm;
-			}
-			break;
-		case 3:
-			if(shift_imm == 0) {
-				if(GetCPSR_C()) index = 1 << ((sizeof(typename CONFIG::reg_t) * 8) - 1);
-				index |= val_rm >> 1;
-			} else {
-				index = RotateRight(val_rm, shift_imm);
-			}
-			break;
-		default:
-			logger << DebugError
-			<< "(" << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << "): "
-			<< "unknown shift value (" << shift << ")"
-			<< EndDebugError;
-			Stop(-1);
-	}
-	return val_rn + (((u << 1) - 1) * index);
-}
-
-/* Load/store operand decoding */
-template<class CONFIG>
-typename CONFIG::address_t
-CPU<CONFIG> ::
-MLSImmOffset(const uint32_t u,
-			 const typename CONFIG::reg_t val_reg,
-			 const uint32_t immedH,
-			 const uint32_t immedL) {
-	uint32_t offset_8 = (immedH << 4) | immedL;
-	return val_reg + (((u << 1) - 1) * offset_8);
-}
-
-template<class CONFIG>
-typename CONFIG::address_t
-CPU<CONFIG> ::
-MLSReg(const uint32_t u,
-	   const typename CONFIG::reg_t val_rn,
-	   const typename CONFIG::reg_t val_rd,
-	   const typename CONFIG::reg_t val_rm) {
-	return val_rn + (((u << 1) - 1) * val_rm);
-}
-
-/* Load/sotre multiple operand decoding */
-template<class CONFIG>
-uint32_t
-CPU<CONFIG> ::
-LSMia(const typename CONFIG::reg_t val_reg,
-	  const uint32_t reg_list,
-	  typename CONFIG::address_t *start_address,
-	  typename CONFIG::address_t *end_address,
-	  typename CONFIG::reg_t *new_val_reg) {
-	uint32_t num_regs;
-	
-	*start_address = val_reg;
-	num_regs = 0;
-	for(uint32_t mask = 0x00008000; mask != 0; mask = mask >> 1) {
-		if(mask & reg_list) num_regs++;
-	}
-	*end_address = val_reg + (num_regs * 4) - 4;
-	*new_val_reg = val_reg + (num_regs * 4);
-	
-	return num_regs;
-}
-
-template<class CONFIG>
-uint32_t
-CPU<CONFIG> ::
-LSMib(const typename CONFIG::reg_t val_reg,
-	  const uint32_t reg_list,
-	  typename CONFIG::address_t *start_address,
-	  typename CONFIG::address_t *end_address,
-	  typename CONFIG::reg_t *new_val_reg) {
-	uint32_t num_regs;
-
-	*start_address = val_reg + 4;
-	num_regs = 0;
-	for(uint32_t mask = 0x00008000; mask != 0; mask = mask >> 1) {
-		if(mask & reg_list) num_regs++;
-	}
-	*end_address = val_reg + (num_regs * 4);
-	*new_val_reg = val_reg + (num_regs * 4);
-	
-	return num_regs;
-}
-
-template<class CONFIG>
-uint32_t
-CPU<CONFIG> ::
-LSMda(const typename CONFIG::reg_t val_reg,
-	  const uint32_t reg_list,
-	  typename CONFIG::address_t *start_address,
-	  typename CONFIG::address_t *end_address,
-	  typename CONFIG::reg_t *new_val_reg) {
-	uint32_t num_regs;
-	
-	num_regs = 0;
-	for(uint32_t mask = 0x00008000; mask != 0; mask = mask >> 1) {
-		if(mask & reg_list) num_regs++;
-	}
-	*start_address = val_reg - (num_regs * 4) + 4;
-	*end_address = val_reg;
-	*new_val_reg = val_reg - (num_regs * 4);
-	
-	return num_regs;
-}
-
-template<class CONFIG>
-uint32_t
-CPU<CONFIG> ::
-LSMdb(const typename CONFIG::reg_t val_reg,
-	  const uint32_t reg_list,
-	  typename CONFIG::address_t *start_address,
-	  typename CONFIG::address_t *end_address,
-	  typename CONFIG::reg_t *new_val_reg) {
-	uint32_t num_regs;
-	
-	num_regs = 0;
-	for(uint32_t mask = 0x00008000; mask != 0; mask = mask >> 1) {
-		if(mask & reg_list) num_regs++;
-	}
-	*start_address = val_reg - (num_regs * 4);
-	*end_address = val_reg - 4;
-	*new_val_reg = val_reg - (num_regs * 4);
-	
-	return num_regs;
-}
-
-/* Coprocessor load/store operand decoding */
-template<class CONFIG>
-typename CONFIG::address_t
-CPU<CONFIG> ::
-CLSOpDec(const uint32_t u,
-		 const uint32_t val_reg,
-		 const uint32_t offset) {
-	typename CONFIG::address_t res;
-	
-	res = val_reg + (((u << 1) - 1) * (offset * 4));
-	
-	return res;
-}
-
-/**************************************************************/
-/* Operand decoding methods     END                           */
-/**************************************************************/
-
-/**************************************************************/
-/* Disassembling methods     START                            */
-/**************************************************************/
-
-/* Condition opcode bytes disassembling method */
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-DisasmCondition(const uint32_t cond, stringstream &buffer) {
-	switch(cond) {
-		case COND_EQ:
-			buffer << "eq";
-			break;
-		case COND_NE:
-			buffer << "ne";
-			break;
-		case COND_CS_HS:
-			buffer << "cs/hs";
-			break;
-		case COND_CC_LO:
-			buffer << "cc/lo";
-			break;
-		case COND_MI:
-			buffer << "mi";
-			break;
-		case COND_PL:
-			buffer << "pl";
-			break;
-		case COND_VS:
-			buffer << "vs";
-			break;
-		case COND_VC:
-			buffer << "vc";
-			break;
-		case COND_HI:
-			buffer << "hi";
-			break;
-		case COND_LS:
-			buffer << "ls";
-			break;
-		case COND_GE:
-			buffer << "ge";
-			break;
-		case COND_LT:
-			buffer << "lt";
-			break;
-		case COND_GT:
-			buffer << "gt";
-			break;
-		case COND_LE:
-			buffer << "le";
-			break;
-		case COND_AL:
-			// buffer << "al";
-			break;
-		default:
-			cerr << "ERROR(" << __FUNCTION__ << "): "
-			<< "unknown condition code (" << cond << ")" << endl;
-			Stop(-1);
-			break;
-	}
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-DisasmConditionFieldsMask(const uint32_t mask,
-						  stringstream &buffer) {
-	if((mask & 0x01) == 0x01) buffer << "c";
-	if((mask & 0x02) == 0x02) buffer << "x";
-	if((mask & 0x04) == 0x04) buffer << "s";
-	if((mask & 0x08) == 0x08) buffer << "f";
-}
-
-/* Data processing operand disassembling methods */
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-DisasmShiftOperand32Imm(const uint32_t rotate_imm,
-						const uint32_t imm,
-						stringstream &buffer) {
-	uint32_t imm_r, imm_l; // immediate right and left rotated
-	uint32_t imm_f; // final immediate
-	
-	imm_r = imm >> (rotate_imm * 2);
-	imm_l = imm << (32 - (rotate_imm * 2));
-
-	imm_f = imm_r | imm_l;
-	buffer << "#" << dec << imm_f;
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-DisasmShiftOperandImmShift(const uint32_t shift_imm,
-						   const uint32_t shift,
-						   const uint32_t rm,
-						   stringstream &buffer) {
-	buffer << "r" << rm;
-	if((shift_imm == 0) && (shift == 0)) {
-		return;
-	}
-	
-	if((shift_imm == 0) && (shift == 0x01)) {
-		buffer << ", rrx";
-		return;
-	}
-	
-	buffer << ", ";
-	switch(shift) {
-		case 0x00:
-			buffer << "lsl";
-			break;
-		case 0x01:
-			buffer << "lsr";
-			break;
-		case 0x02:
-			buffer << "asr";
-			break;
-		case 0x03:
-			buffer << "ror";
-			break;
-		default:
-			cerr << "ERROR(" << __FUNCTION__ << "): ";
-			cerr << "unexpected case found disassembling (shift val = "
-			<< dec << shift << ")." << endl;
-			Stop(-1);
-	}
-	
-	buffer << " #" << dec << shift_imm;
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-DisasmShiftOperandRegShift(const uint32_t rs,
-						   const uint32_t shift,
-						   const uint32_t rm,
-						   stringstream &buffer) {
-	buffer << "r" << rm;
-	buffer << ", ";
-	switch(shift) {
-		case 0x00:
-			buffer << "lsl";
-			break;
-		case 0x01:
-			buffer << "lsr";
-			break;
-		case 0x02:
-			buffer << "asr";
-			break;
-		case 0x03:
-			buffer << "ror";
-			break;
-		default:
-			cerr << "ERROR(" << __FUNCTION__ << "): ";
-			cerr << "unexpected case found disassembling (shift val = "
-			<< hex << shift << dec << ")." << endl;
-			break;
-	}
-	buffer << " r" << rs;
-}
-
-/* Load/store operand disassembling methods */
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-DisasmLSWUBImmOffset_post(const uint32_t u,
-						  const uint32_t rn, 
-						  const uint32_t offset,
-						  stringstream &buffer) {
-	buffer << "[r" << rn << "], "
-	<< "#" << (u == 0 ? "-" : "") << dec << offset;
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-DisasmLSWUBImmOffset_offset(const uint32_t u,
-							const uint32_t rn,
-							const uint32_t offset,
-							stringstream &buffer) {
-	buffer << "[r" << rn << ", "
-	<< "#" << (u == 0 ? "-" : "") << dec << offset << "]";
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-DisasmLSWUBImmOffset_pre(const uint32_t u,
-						 const uint32_t rn,
-						 const uint32_t offset,
-						 stringstream &buffer) {
-	buffer << "[r" << rn << ", "
-	<< "#" << (u == 0 ? "-" : "") << dec << offset << "]!";
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-DisasmLSWUBReg_post(const uint32_t u,
-					const uint32_t rn,
-					const uint32_t shift_imm,
-					const uint32_t shift,
-					const uint32_t rm,
-					stringstream &buffer) {
-	buffer << "[r" << rn << "], "
-	<< (u == 0 ? "-" : "") << "r" << rm;
-	if(!((shift_imm == 0) && (shift == 0))) {
-		buffer << ", ";
-		switch(shift) {
-			case 0:
-				buffer << "lsl";
-				break;
-			case 1:
-				buffer << "lsr";
-				break;
-			case 2:
-				buffer << "asr";
-				break;
-			case 3:
-				if(shift_imm == 0) buffer << "rrx";
-				else buffer << "ror";
-				break;
-			default:
-				cerr << "ERROR(" << __FUNCTION__ << "): "
-				<< "unknown shift value (" << dec << shift << ")" << endl;
-				Stop(-1);
-				break;
-		}
-		if((shift != 3) && (shift_imm != 0))
-			buffer << " #" << shift_imm;
-	}
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-DisasmLSWUBReg_offset(const uint32_t u,
-					  const uint32_t rn,
-					  const uint32_t shift_imm,
-					  const uint32_t shift,
-					  const uint32_t rm,
-					  stringstream &buffer) {
-	buffer << "[r" << rn << ", "
-	<< (u == 0 ? "-" : "") << "r" << rm;
-	if(!((shift_imm == 0) && (shift == 0))) {
-		buffer << ", ";
-		switch(shift) {
-			case 0:
-				buffer << "lsl";
-				break;
-			case 1:
-				buffer << "lsr";
-				break;
-			case 2:
-				buffer << "asr";
-				break;
-			case 3:
-				if(shift_imm == 0) buffer << "rrx";
-				else buffer << "ror";
-				break;
-			default:
-				cerr << "ERROR(" << __FUNCTION__ << "): "
-				<< "unknown shift value (" << dec << shift << ")" << endl;
-				Stop(-1);
-				break;
-		}
-		if(shift != 3 && shift_imm != 0)
-			buffer << " #" << shift_imm;
-	}
-	buffer << "]";
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-DisasmLSWUBReg_pre(const uint32_t u,
-				   const uint32_t rn,
-				   const uint32_t shift_imm,
-				   const uint32_t shift,
-				   const uint32_t rm,
-				   stringstream &buffer) {
-	buffer << "[r" << rn << ", "
-	<< (u == 0 ? "-" : "") << "r" << rm;
-	if(!((shift_imm == 0) && (shift == 0))) {
-		buffer << ", ";
-		switch(shift) {
-			case 0:
-				buffer << "lsl";
-				break;
-			case 1:
-				buffer << "lsr";
-				break;
-			case 2:
-				buffer << "asr";
-				break;
-			case 3:
-				if(shift_imm == 0) buffer << "rrx";
-				else buffer << "ror";
-				break;
-			default:
-				cerr << "ERROR(" << __FUNCTION__ << "): "
-				<< "unknown shift value (" << dec << shift << ")" << endl;
-				Stop(-1);
-				break;
-		}
-		if((shift != 3) && (shift_imm != 0))
-			buffer << " #" << shift_imm;
-	}
-	buffer << "]!";
-}
-
-/* Miscellaneous load/store operand disassembling methods */
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-DisasmMLSImmOffset_post(const uint32_t u,
-						const uint32_t rn,
-						const uint32_t immedH,
-						const uint32_t immedL,
-						stringstream &buffer) {
-	buffer << "[r" << rn << "], "
-	<< "#" << ((u == 1) ? "" : "-")
-	<< (immedH << 4) + immedL;
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-DisasmMLSImmOffset_offset(const uint32_t u,
-						  const uint32_t rn,
-						  const uint32_t immedH,
-						  const uint32_t immedL,
-						  stringstream &buffer) {
-	buffer << "[r" << rn << ", "
-	<< "#" << ((u == 1) ? "" : "-")
-	<< (immedH << 4) + immedL << "]";
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-DisasmMLSImmOffset_pre(const uint32_t u,
-					   const uint32_t rn,
-					   const uint32_t immedH,
-					   const uint32_t immedL,
-					   stringstream &buffer) {
-	buffer << "[r" << rn << ", "
-	<< "#" << ((u == 1) ? "" : "-")
-	<< (immedH << 4) + immedL << "]!";
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-DisasmMLSReg_post(const uint32_t u,
-				  const uint32_t rn,
-				  const uint32_t rm,
-				  stringstream &buffer) {
-	buffer << "[r" << rn << "], "
-	<< ((u == 1) ? "" : "-") << "r" << rm;
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-DisasmMLSReg_offset(const uint32_t u,
-					const uint32_t rn,
-					const uint32_t rm,
-					stringstream &buffer) {
-	buffer << "[r" << rn << ", "
-	<< ((u == 1) ? "" : "-") << "r" << rm << "]";
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-DisasmMLSReg_pre(const uint32_t u,
-				 const uint32_t rn,
-				 const uint32_t rm,
-				 stringstream &buffer) {
-	buffer << "[r" << rn << ", "
-	<< ((u == 1) ? "" : "-") << "r" << rm << "]!";
-}
-
-/* Coprocessor load/store operand disassembling methods */
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-DisasmCLSImm_post(const uint32_t u,
-				  const uint32_t rn,
-				  const uint32_t offset,
-				  stringstream &buffer) {
-	
-	buffer << "[r" << rn << "], #"
-	<< ((u == 1) ? "" : "-") << offset * 4;
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-DisasmCLSImm_offset(const uint32_t u,
-					const uint32_t rn,
-					const uint32_t offset,
-					stringstream &buffer) {
-	buffer << "[r" << rn << ", #"
-	<< ((u == 1) ? "" : "-") << offset * 4 << "]";
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-DisasmCLSImm_pre(const uint32_t u,
-				 const uint32_t rn,
-				 const uint32_t offset,
-				 stringstream &buffer) {
-	buffer << "[r" << rn << ", #"
-	<< ((u == 1) ? "" : "-") << offset * 4 << "]!";
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-DisasmCLSUnindexed(const uint32_t rn,
-				   const uint32_t option,
-				   stringstream &buffer) {
-	buffer << "[r" << rn << "], "
-	<< "{" << option << "}";
-}
-
-/**************************************************************/
-/* Disassembling methods     END                              */
-/**************************************************************/
 
 /**************************************************************/
 /* Registers access methods    START                          */
@@ -3110,47 +2237,97 @@ void
 CPU<CONFIG> ::
 ReadInsn(address_t address, uint32_t &val)
 {
+	uint32_t size = 4;
+	uint8_t *data;
+
+	if ( unlikely(verbose_memory) )
+		logger << DebugInfo << "Reading instruction at 0x" << hex
+			<< address << dec << EndDebugInfo;
+
 	if ( CONFIG::MODEL == ARM926EJS && linux_os_import )
 	{
-		if ( unlikely(verbose_memory) )
-			logger << DebugInfo
-				<< "Fetching 0x" << hex << address << dec
-				<< EndDebugInfo;
-		// we are running simulation the linux OS
-		//   tcm memories are ignored on this mode
-		// check the instruction cache
-		uint32_t cache_tag = arm926ejs_icache.GetTag(address);
-		uint32_t cache_set = arm926ejs_icache.GetSet(address);
-		uint32_t cache_way;
-		bool cache_hit = false;
-		if ( arm926ejs_icache.GetWay(cache_tag, cache_set, &cache_way) )
+		if ( arm926ejs_icache.GetSize() )
 		{
-			if ( arm926ejs_icache.GetValid(cache_set, cache_way) )
+			if ( unlikely(verbose_memory) )
+				logger << DebugInfo
+					<< "Fetching 0x" << hex << address << dec
+					<< EndDebugInfo;
+			// we are running simulation the linux OS
+			//   tcm memories are ignored on this mode
+			// check the instruction cache
+			uint32_t cache_tag = arm926ejs_icache.GetTag(address);
+			uint32_t cache_set = arm926ejs_icache.GetSet(address);
+			uint32_t cache_way;
+			bool cache_hit = false;
+			if ( arm926ejs_icache.GetWay(cache_tag, cache_set, &cache_way) )
 			{
-				// the data is in the cache, just read it
-				uint32_t cache_index =
-					arm926ejs_icache.GetIndex(address);
-				uint32_t read_data_size =
-					arm926ejs_icache.GetDataCopy(cache_set, cache_way, cache_index, 4, (uint8_t *)&val);
-				cache_hit = true;
-				if ( unlikely(read_data_size != 4 ) )
+				if ( arm926ejs_icache.GetValid(cache_set, cache_way) )
 				{
-					logger << DebugWarning
-							<< "While reading instruction cache, only "
-							<< (unsigned int)read_data_size
-							<< " byte(s) could be read, instead of the 4 "
-							<< " that were requested (base address = 0x"
-							<< (unsigned int)address << ")"
-							<< EndDebugWarning;
+					// the access is a hit, nothing needs to be done
+					cache_hit = true;
 				}
 			}
+			if ( unlikely(!cache_hit) )
+			{
+				if ( unlikely(verbose_memory) )
+					logger << DebugInfo << "ICache miss" << EndDebugInfo;
+				// get a way to replace
+				cache_way = arm926ejs_icache.GetNewWay(cache_set);
+				// no need to check valiad and dirty bits
+				// the new data can be requested
+				uint8_t *cache_data = 0;
+				uint32_t cache_address =
+						arm926ejs_icache.GetBaseAddressFromAddress(address);
+				// when getting the data we get the pointer to the cache line
+				//   containing the data, so no need to write the cache
+				//   afterwards
+				uint32_t cache_line_size = arm926ejs_icache.GetData(cache_set,
+						cache_way, &cache_data);
+				if ( unlikely(verbose_memory) )
+					logger << DebugInfo << "Requesting data (0x"
+						<< hex << cache_address << dec << ", "
+						<< cache_line_size << ") ..."
+						<< EndDebugInfo;
+				memory_interface->PrRead(cache_address, cache_data,
+						cache_line_size);
+				if ( unlikely(verbose_memory) )
+					logger << DebugInfo << "... data received" << EndDebugInfo;
+				arm926ejs_icache.SetTag(cache_set, cache_way, cache_tag);
+				arm926ejs_icache.SetValid(cache_set, cache_way, 1);
+			}
+			else
+			{
+				if ( unlikely(verbose_memory) )
+					logger << DebugInfo << "ICache hit" << EndDebugInfo;
+			}
+
+			// at this point the data is in the cache, we can read it from the
+			//   cache
+			uint32_t cache_index = arm926ejs_icache.GetIndex(address);
+			(void)arm926ejs_icache.GetData(cache_set, cache_way, cache_index,
+					size, &data);
+			arm926ejs_icache.GetDataCopy(cache_set, cache_way, cache_index, size,
+					(uint8_t *)&val);
+
+			if ( unlikely(il1_power_estimator_import != 0) )
+				il1_power_estimator_import->ReportReadAccess();
 		}
-		if ( unlikely(!cache_hit) )
+		else
 		{
-			memory_interface->PrRead(address, (uint8_t *)&val, 4);
+			// no instruction cache present, just request the insn to the
+			//   memory system
+			if ( unlikely(verbose_memory) )
+				logger << DebugInfo
+					<< "Requesting memory data read (no insn cache)..."
+					<< EndDebugInfo;
+			memory_interface->PrRead(address, (uint8_t *)&val, size);
+			if ( unlikely(verbose_memory) )
+				logger << DebugInfo
+					<< "... data received (0x"
+					<< hex << address << dec << ", " << size << ") = 0x"
+					<< hex << val << dec << EndDebugInfo;
+
 		}
-		if ( unlikely(il1_power_estimator_import != 0) )
-			il1_power_estimator_import->ReportReadAccess();
 		return;
 	}
 	
@@ -4280,48 +3457,63 @@ PerformWriteAccess(MemoryOp<CONFIG> *memop)
 
 	if ( (CONFIG::MODEL == ARM926EJS) && linux_os_import )
 	{
-		// running arm926ejs with linux simulation
-		//   tcm are ignored
-		uint32_t cache_tag = arm926ejs_dcache.GetTag(write_addr);
-		uint32_t cache_set = arm926ejs_dcache.GetSet(write_addr);
-		uint32_t cache_way;
-		bool cache_hit = false;
-		if ( arm926ejs_dcache.GetWay(cache_tag, cache_set, &cache_way) )
+		if ( arm926ejs_dcache.GetSize() )
 		{
-			if ( arm926ejs_dcache.GetValid(cache_set, cache_way) != 0 )
+			// running arm926ejs with linux simulation
+			//   tcm are ignored
+			uint32_t cache_tag = arm926ejs_dcache.GetTag(write_addr);
+			uint32_t cache_set = arm926ejs_dcache.GetSet(write_addr);
+			uint32_t cache_way;
+			bool cache_hit = false;
+			if ( arm926ejs_dcache.GetWay(cache_tag, cache_set, &cache_way) )
 			{
-				// the access is a hit
-				cache_hit = true;
+				if ( arm926ejs_dcache.GetValid(cache_set, cache_way) != 0 )
+				{
+					// the access is a hit
+					cache_hit = true;
+				}
 			}
+			// if the access was a hit the data needs to be written into
+			//   the cache, if the access was a miss the data needs to be
+			//   written into memory, but the cache doesn't need to be updated
+			if ( cache_hit )
+			{
+				if ( unlikely(verbose_memory) )
+					logger << DebugInfo << "Cache hit, updating cache."
+						<< EndDebugInfo;
+				uint32_t cache_index = arm926ejs_dcache.GetIndex(write_addr);
+				arm926ejs_dcache.SetData(cache_set, cache_way, cache_index,
+						size, data);
+				arm926ejs_dcache.SetDirty(cache_set, cache_way, 1);
+			}
+			else
+			{
+				if ( unlikely(verbose_memory) )
+					logger << DebugInfo << "Cache miss" << EndDebugInfo;
+				if ( unlikely(verbose_memory) )
+					logger << DebugInfo << "Performing write-through ..."
+						<< EndDebugInfo;
+				memory_interface->PrWrite(write_addr, data, size);
+				if ( unlikely(verbose_memory) )
+					logger << DebugInfo << "... write-through finished."
+						<< EndDebugInfo;
+			}
+
+			if ( unlikely(dl1_power_estimator_import != 0) )
+				dl1_power_estimator_import->ReportWriteAccess();
 		}
-		// if the access was a hit the data needs to be written into
-		//   the cache, if the access was a miss the data needs to be
-		//   written into memory, but the cache doesn't need to be updated
-		if ( cache_hit )
+		else // there is no data cache
 		{
+			// there is no data cache, so just send the request to the
+			//   memory interface
 			if ( unlikely(verbose_memory) )
-				logger << DebugInfo << "Cache hit, updating cache."
-					<< EndDebugInfo;
-			uint32_t cache_index = arm926ejs_dcache.GetIndex(write_addr);
-			arm926ejs_dcache.SetData(cache_set, cache_way, cache_index,
-					size, data);
-			arm926ejs_dcache.SetDirty(cache_set, cache_way, 1);
-		}
-		else
-		{
-			if ( unlikely(verbose_memory) )
-				logger << DebugInfo << "Cache miss" << EndDebugInfo;
-			if ( unlikely(verbose_memory) )
-				logger << DebugInfo << "Performing write-through ..."
+				logger << DebugInfo << "Performing a memory write (no data cache) ..."
 					<< EndDebugInfo;
 			memory_interface->PrWrite(write_addr, data, size);
 			if ( unlikely(verbose_memory) )
-				logger << DebugInfo << "... write-through finished."
+				logger << DebugInfo << "... memory write finished."
 					<< EndDebugInfo;
 		}
-
-		if ( unlikely(dl1_power_estimator_import != 0) )
-			dl1_power_estimator_import->ReportWriteAccess();
 	}
 	if ( (CONFIG::MODEL == ARM926EJS) && !linux_os_import )
 	{
@@ -4346,6 +3538,7 @@ PerformReadAccess(MemoryOp<CONFIG> *memop)
 	uint32_t addr = memop->GetAddress();
 	uint32_t size = memop->GetSize();
 	uint32_t read_addr = addr & ~(uint32_t)(size - 1);
+	uint8_t data32[4];
 	uint8_t *data;
 
 	if ( unlikely(verbose_memory) )
@@ -4364,84 +3557,99 @@ PerformReadAccess(MemoryOp<CONFIG> *memop)
 
 	if ( (CONFIG::MODEL == ARM926EJS) && linux_os_import )
 	{
-		// running arm926ejs with linux simulation
-		//   tcm are ignored
-		uint32_t cache_tag = arm926ejs_dcache.GetTag(read_addr);
-		uint32_t cache_set = arm926ejs_dcache.GetSet(read_addr);
-		uint32_t cache_way;
-		bool cache_hit = false;
-		if ( arm926ejs_dcache.GetWay(cache_tag, cache_set, &cache_way) )
+		if ( arm926ejs_dcache.GetSize() )
 		{
-			if ( arm926ejs_dcache.GetValid(cache_set, cache_way) )
+			// running arm926ejs with linux simulation
+			//   tcm are ignored
+			uint32_t cache_tag = arm926ejs_dcache.GetTag(read_addr);
+			uint32_t cache_set = arm926ejs_dcache.GetSet(read_addr);
+			uint32_t cache_way;
+			bool cache_hit = false;
+			if ( arm926ejs_dcache.GetWay(cache_tag, cache_set, &cache_way) )
 			{
-				// the access is a hit, nothing needs to be done
-				cache_hit = true;
+				if ( arm926ejs_dcache.GetValid(cache_set, cache_way) )
+				{
+					// the access is a hit, nothing needs to be done
+					cache_hit = true;
+				}
 			}
-		}
-		// if the access was a miss, data needs to be fetched from main
-		//   memory and placed into the cache
-		if ( !cache_hit )
-		{
-			if ( unlikely(verbose_memory) )
-				logger << DebugInfo << "Cache miss" << EndDebugInfo;
-			// get a way to replace
-			cache_way = arm926ejs_dcache.GetNewWay(cache_set);
-			// get the valid and dirty bits from the way to replace
-			uint8_t cache_valid = arm926ejs_dcache.GetValid(cache_set,
-					cache_way);
-			uint8_t cache_dirty = arm926ejs_dcache.GetDirty(cache_set,
-					cache_way);
+			// if the access was a miss, data needs to be fetched from main
+			//   memory and placed into the cache
+			if ( unlikely(!cache_hit) )
+			{
+				// get a way to replace
+				cache_way = arm926ejs_dcache.GetNewWay(cache_set);
+				if ( unlikely(verbose_memory) )
+					logger << DebugInfo << "Cache miss" << EndDebugInfo;
+				// get the valid and dirty bits from the way to replace
+				uint8_t cache_valid = arm926ejs_dcache.GetValid(cache_set,
+						cache_way);
+				uint8_t cache_dirty = arm926ejs_dcache.GetDirty(cache_set,
+						cache_way);
 
-			if ( (cache_valid != 0) & (cache_dirty != 0) )
-			{
-				// the cache line to replace is valid and dirty so it needs
-				//   to be sent to the main memory
-				uint8_t *rep_cache_data = 0;
-				uint32_t rep_cache_address =
-						arm926ejs_dcache.GetBaseAddress(cache_set,
-								cache_way);
-				arm926ejs_dcache.GetData(cache_set, cache_way,
-						&rep_cache_data);
+				if ( (cache_valid != 0) & (cache_dirty != 0) )
+				{
+					// the cache line to replace is valid and dirty so it needs
+					//   to be sent to the main memory
+					uint8_t *rep_cache_data = 0;
+					uint32_t rep_cache_address =
+							arm926ejs_dcache.GetBaseAddress(cache_set,
+									cache_way);
+					arm926ejs_dcache.GetData(cache_set, cache_way,
+							&rep_cache_data);
+					if ( unlikely(verbose_memory) )
+						logger << DebugInfo << "Performing writeback ..."
+							<< EndDebugInfo;
+					memory_interface->PrWrite(rep_cache_address, rep_cache_data,
+							arm926ejs_dcache.LINE_SIZE);
+					if ( unlikely(verbose_memory) )
+						logger << DebugInfo << "... writeback performed."
+							<< EndDebugInfo;
+				}
+				// the new data can be requested
+				uint8_t *cache_data = 0;
+				uint32_t cache_address =
+						arm926ejs_dcache.GetBaseAddressFromAddress(read_addr);
+				// when getting the data we get the pointer to the cache line
+				//   containing the data, so no need to write the cache
+				//   afterwards
+				uint32_t cache_line_size = arm926ejs_dcache.GetData(cache_set,
+						cache_way, &cache_data);
 				if ( unlikely(verbose_memory) )
-					logger << DebugInfo << "Performing writeback ..."
+					logger << DebugInfo << "Requesting data ..."
 						<< EndDebugInfo;
-				memory_interface->PrWrite(rep_cache_address, rep_cache_data,
-						arm926ejs_dcache.LINE_SIZE);
+				memory_interface->PrRead(cache_address, cache_data,
+						cache_line_size);
 				if ( unlikely(verbose_memory) )
-					logger << DebugInfo << "... writeback performed."
-						<< EndDebugInfo;
+					logger << DebugInfo << "... data received" << EndDebugInfo;
+				arm926ejs_dcache.SetTag(cache_set, cache_way, cache_tag);
+				arm926ejs_dcache.SetValid(cache_set, cache_way, 1);
+				arm926ejs_dcache.SetDirty(cache_set, cache_way, 0);
 			}
-			// the new data can be requested
-			uint8_t *cache_data = 0;
-			uint32_t cache_address =
-					arm926ejs_dcache.GetBaseAddressFromAddress(read_addr);
-			// when getting the data we get the pointer to the cache line
-			//   containing the data, so no need to write the cache
-			//   afterwards
-			uint32_t cache_line_size = arm926ejs_dcache.GetData(cache_set,
-					cache_way, &cache_data);
+			else
+			{
+				if ( unlikely(verbose_memory) )
+					logger << DebugInfo << "Cache hit" << EndDebugInfo;
+			}
+
+			// at this point the data is in the cache, we can read it from the
+			//   cache
+			uint32_t cache_index = arm926ejs_dcache.GetIndex(read_addr);
+			(void)arm926ejs_dcache.GetData(cache_set, cache_way, cache_index,
+					size, &data);
+		}
+		else // there is no data cache
+		{
+			// just read the data from the memory system
 			if ( unlikely(verbose_memory) )
-				logger << DebugInfo << "Requesting data ..."
+				logger << DebugInfo << "Requesting data (no data cache) ..."
 					<< EndDebugInfo;
-			memory_interface->PrRead(cache_address, cache_data,
-					cache_line_size);
+			memory_interface->PrRead(read_addr, data32, size);
+			data = data32;
 			if ( unlikely(verbose_memory) )
 				logger << DebugInfo << "... data received" << EndDebugInfo;
-			arm926ejs_dcache.SetTag(cache_set, cache_way, cache_tag);
-			arm926ejs_dcache.SetValid(cache_set, cache_way, 1);
-			arm926ejs_dcache.SetDirty(cache_set, cache_way, 0);
-		}
-		else
-		{
-			if ( unlikely(verbose_memory) )
-				logger << DebugInfo << "Cache hit" << EndDebugInfo;
 		}
 
-		// at this point the data is in the cache, we can read it from the
-		//   cache
-		uint32_t cache_index = arm926ejs_dcache.GetIndex(read_addr);
-		(void)arm926ejs_dcache.GetData(cache_set, cache_way, cache_index,
-				size, &data);
 		// fix the data depending on its size
 		uint32_t value;
 		if (size == 1)
@@ -4513,6 +3721,7 @@ PerformReadToPCAccess(MemoryOp<CONFIG> *memop) {
 	uint32_t addr = memop->GetAddress();
 	const uint32_t size = 4;
 	uint32_t read_addr = addr & ~(uint32_t)0x03;
+	uint8_t data32[4];
 	uint8_t *data;
 
 	if ( unlikely(verbose_memory) )
@@ -4521,85 +3730,99 @@ PerformReadToPCAccess(MemoryOp<CONFIG> *memop) {
 
 	if ( (CONFIG::MODEL == ARM926EJS) && linux_os_import )
 	{
-		// running arm926ejs with linux simulation
-		//   tcm are ignored
-		uint32_t cache_tag = arm926ejs_dcache.GetTag(read_addr);
-		uint32_t cache_set = arm926ejs_dcache.GetSet(read_addr);
-		uint32_t cache_way;
-		bool cache_hit = false;
-
-		if ( arm926ejs_dcache.GetWay(cache_tag, cache_set, &cache_way) )
+		if ( arm926ejs_dcache.GetSize() )
 		{
-			if ( arm926ejs_dcache.GetValid(cache_set, cache_way) )
-			{
-				// the access is a hit, nothing needs to be done
-				cache_hit = true;
-			}
-		}
-		// if the access was a miss, data needs to be fetched from main
-		//   memory and placed into the cache
-		if ( !cache_hit )
-		{
-			if ( unlikely(verbose_memory) )
-				logger << DebugInfo << "Cache miss" << EndDebugInfo;
-			// get a way to replace
-			cache_way = arm926ejs_dcache.GetNewWay(cache_set);
-			// get the valid and dirty bits from the way to replace
-			uint8_t cache_valid = arm926ejs_dcache.GetValid(cache_set,
-					cache_way);
-			uint8_t cache_dirty = arm926ejs_dcache.GetDirty(cache_set,
-					cache_way);
+			// running arm926ejs with linux simulation
+			//   tcm are ignored
+			uint32_t cache_tag = arm926ejs_dcache.GetTag(read_addr);
+			uint32_t cache_set = arm926ejs_dcache.GetSet(read_addr);
+			uint32_t cache_way;
+			bool cache_hit = false;
 
-			if ( (cache_valid != 0) && (cache_dirty != 0) )
+			if ( arm926ejs_dcache.GetWay(cache_tag, cache_set, &cache_way) )
 			{
-				// the cache line to replace is valid and dirty so it needs
-				//   to be sent to the main memory
-				uint8_t *rep_cache_data = 0;
-				uint32_t rep_cache_address =
-						arm926ejs_dcache.GetBaseAddress(cache_set,
-								cache_way);
-				arm926ejs_dcache.GetData(cache_set, cache_way,
-						&rep_cache_data);
-				if ( unlikely(verbose_memory) )
-					logger << DebugInfo << "Performing writeback ..."
-						<< EndDebugInfo;
-				memory_interface->PrWrite(rep_cache_address, rep_cache_data,
-						arm926ejs_dcache.LINE_SIZE);
-				if ( unlikely(verbose_memory) )
-					logger << DebugInfo << "... writeback performed."
-						<< EndDebugInfo;
+				if ( arm926ejs_dcache.GetValid(cache_set, cache_way) )
+				{
+					// the access is a hit, nothing needs to be done
+					cache_hit = true;
+				}
 			}
-			// the new data can be requested
-			uint8_t *cache_data = 0;
-			uint32_t cache_address =
-					arm926ejs_dcache.GetBaseAddressFromAddress(read_addr);
-			// when getting the data we get the pointer to the cache line
-			//   containing the data, so no need to write the cache
-			//   afterwards
-			uint32_t cache_line_size = arm926ejs_dcache.GetData(cache_set,
-					cache_way, &cache_data);
-			if ( unlikely(verbose_memory) )
-				logger << DebugInfo << "Requesting data ..."
-					<< EndDebugInfo;
-			memory_interface->PrRead(cache_address, cache_data,
-					cache_line_size);
-			if ( unlikely(verbose_memory) )
-				logger << DebugInfo << "... data received" << EndDebugInfo;
-			arm926ejs_dcache.SetTag(cache_set, cache_way, cache_tag);
-			arm926ejs_dcache.SetValid(cache_set, cache_way, 1);
-			arm926ejs_dcache.SetDirty(cache_set, cache_way, 0);
+			// if the access was a miss, data needs to be fetched from main
+			//   memory and placed into the cache
+			if ( !cache_hit )
+			{
+				if ( unlikely(verbose_memory) )
+					logger << DebugInfo << "Cache miss" << EndDebugInfo;
+				// get a way to replace
+				cache_way = arm926ejs_dcache.GetNewWay(cache_set);
+				// get the valid and dirty bits from the way to replace
+				uint8_t cache_valid = arm926ejs_dcache.GetValid(cache_set,
+						cache_way);
+				uint8_t cache_dirty = arm926ejs_dcache.GetDirty(cache_set,
+						cache_way);
+
+				if ( (cache_valid != 0) && (cache_dirty != 0) )
+				{
+					// the cache line to replace is valid and dirty so it needs
+					//   to be sent to the main memory
+					uint8_t *rep_cache_data = 0;
+					uint32_t rep_cache_address =
+							arm926ejs_dcache.GetBaseAddress(cache_set,
+									cache_way);
+					arm926ejs_dcache.GetData(cache_set, cache_way,
+							&rep_cache_data);
+					if ( unlikely(verbose_memory) )
+						logger << DebugInfo << "Performing writeback ..."
+							<< EndDebugInfo;
+					memory_interface->PrWrite(rep_cache_address, rep_cache_data,
+							arm926ejs_dcache.LINE_SIZE);
+					if ( unlikely(verbose_memory) )
+						logger << DebugInfo << "... writeback performed."
+							<< EndDebugInfo;
+				}
+				// the new data can be requested
+				uint8_t *cache_data = 0;
+				uint32_t cache_address =
+						arm926ejs_dcache.GetBaseAddressFromAddress(read_addr);
+				// when getting the data we get the pointer to the cache line
+				//   containing the data, so no need to write the cache
+				//   afterwards
+				uint32_t cache_line_size = arm926ejs_dcache.GetData(cache_set,
+						cache_way, &cache_data);
+				if ( unlikely(verbose_memory) )
+					logger << DebugInfo << "Requesting data ..."
+						<< EndDebugInfo;
+				memory_interface->PrRead(cache_address, cache_data,
+						cache_line_size);
+				if ( unlikely(verbose_memory) )
+					logger << DebugInfo << "... data received" << EndDebugInfo;
+				arm926ejs_dcache.SetTag(cache_set, cache_way, cache_tag);
+				arm926ejs_dcache.SetValid(cache_set, cache_way, 1);
+				arm926ejs_dcache.SetDirty(cache_set, cache_way, 0);
+			}
+			else
+			{
+				if ( unlikely(verbose_memory) )
+					logger << DebugInfo << "Cache hit" << EndDebugInfo;
+			}
+
+			// at this point the data is in the cache, we can read it from the
+			//   cache
+			uint32_t cache_index = arm926ejs_dcache.GetIndex(read_addr);
+			(void)arm926ejs_dcache.GetData(cache_set, cache_way, cache_index,
+					size, &data);
 		}
 		else
 		{
 			if ( unlikely(verbose_memory) )
-				logger << DebugInfo << "Cache hit" << EndDebugInfo;
-		}
+				logger << DebugInfo << "Requesting data (no data cache) ..."
+					<< EndDebugInfo;
+			memory_interface->PrRead(read_addr, data32, size);
+			data = data32;
+			if ( unlikely(verbose_memory) )
+				logger << DebugInfo << "... data received" << EndDebugInfo;
 
-		// at this point the data is in the cache, we can read it from the
-		//   cache
-		uint32_t cache_index = arm926ejs_dcache.GetIndex(read_addr);
-		(void)arm926ejs_dcache.GetData(cache_set, cache_way, cache_index,
-				size, &data);
+		}
 		// fix the data depending on its size
 		uint32_t value;
 		uint32_t val32;
@@ -4651,6 +3874,7 @@ PerformReadToPCUpdateTAccess(MemoryOp<CONFIG> *memop) {
 	uint32_t addr = memop->GetAddress();
 	const uint32_t size = 4;
 	uint32_t read_addr = addr & ~(uint32_t)0x03;
+	uint8_t data32[4];
 	uint8_t *data;
 
 	if ( unlikely(verbose_memory) )
@@ -4660,84 +3884,98 @@ PerformReadToPCUpdateTAccess(MemoryOp<CONFIG> *memop) {
 
 	if ( (CONFIG::MODEL == ARM926EJS) && linux_os_import )
 	{
-		// running arm926ejs with linux simulation
-		//   tcm are ignored
-		uint32_t cache_tag = arm926ejs_dcache.GetTag(read_addr);
-		uint32_t cache_set = arm926ejs_dcache.GetSet(read_addr);
-		uint32_t cache_way;
-		bool cache_hit = false;
+		if ( arm926ejs_dcache.GetSize() )
+		{
+			// running arm926ejs with linux simulation
+			//   tcm are ignored
+			uint32_t cache_tag = arm926ejs_dcache.GetTag(read_addr);
+			uint32_t cache_set = arm926ejs_dcache.GetSet(read_addr);
+			uint32_t cache_way;
+			bool cache_hit = false;
 
-		if ( arm926ejs_dcache.GetWay(cache_tag, cache_set, &cache_way) )
-		{
-			if ( arm926ejs_dcache.GetValid(cache_set, cache_way) )
+			if ( arm926ejs_dcache.GetWay(cache_tag, cache_set, &cache_way) )
 			{
-				// the access is a hit, nothing needs to be done
-				cache_hit = true;
+				if ( arm926ejs_dcache.GetValid(cache_set, cache_way) )
+				{
+					// the access is a hit, nothing needs to be done
+					cache_hit = true;
+				}
 			}
+			// if the access was a miss, data needs to be fetched from main
+			//   memory and placed into the cache
+			if ( !cache_hit )
+			{
+				if ( unlikely(verbose_memory) )
+					logger << DebugInfo << "Cache miss" << EndDebugInfo;
+				// get a way to replace
+				cache_way = arm926ejs_dcache.GetNewWay(cache_set);
+				// get the valid and dirty bits from the way to replace
+				bool cache_valid = arm926ejs_dcache.GetValid(cache_set,
+						cache_way);
+				bool cache_dirty = arm926ejs_dcache.GetDirty(cache_set,
+						cache_way);
+				if ( cache_valid & cache_dirty )
+				{
+					// the cache line to replace is valid and dirty so it needs
+					//   to be sent to the main memory
+					uint8_t *rep_cache_data = 0;
+					uint32_t rep_cache_address =
+							arm926ejs_dcache.GetBaseAddress(cache_set,
+									cache_way);
+					arm926ejs_dcache.GetData(cache_set, cache_way,
+							&rep_cache_data);
+					if ( unlikely(verbose_memory) )
+						logger << DebugInfo << "Performing writeback ..."
+							<< EndDebugInfo;
+					memory_interface->PrWrite(rep_cache_address, rep_cache_data,
+							arm926ejs_dcache.LINE_SIZE);
+					if ( unlikely(verbose_memory) )
+						logger << DebugInfo << "... writeback performed."
+							<< EndDebugInfo;
+				}
+				// the new data can be requested
+				uint8_t *cache_data = 0;
+				uint32_t cache_address =
+						arm926ejs_dcache.GetBaseAddressFromAddress(read_addr);
+				// when getting the data we get the pointer to the cache line
+				//   containing the data, so no need to write the cache
+				//   afterwards
+				uint32_t cache_line_size = arm926ejs_dcache.GetData(cache_set,
+						cache_way, &cache_data);
+				if ( unlikely(verbose_memory) )
+					logger << DebugInfo << "Requesting data ..."
+						<< EndDebugInfo;
+				memory_interface->PrRead(cache_address, cache_data,
+						cache_line_size);
+				if ( unlikely(verbose_memory) )
+					logger << DebugInfo << "... data received" << EndDebugInfo;
+				arm926ejs_dcache.SetTag(cache_set, cache_way, cache_tag);
+				arm926ejs_dcache.SetValid(cache_set, cache_way, 1);
+				arm926ejs_dcache.SetDirty(cache_set, cache_way, 0);
+			}
+			else
+			{
+				if ( unlikely(verbose_memory) )
+					logger << DebugInfo << "Cache hit" << EndDebugInfo;
+			}
+
+			// at this point the data is in the cache, we can read it from the
+			//   cache
+			uint32_t cache_index = arm926ejs_dcache.GetIndex(read_addr);
+			(void)arm926ejs_dcache.GetData(cache_set, cache_way, cache_index,
+					size, &data);
 		}
-		// if the access was a miss, data needs to be fetched from main
-		//   memory and placed into the cache
-		if ( !cache_hit )
+		else // there is no data cache
 		{
 			if ( unlikely(verbose_memory) )
-				logger << DebugInfo << "Cache miss" << EndDebugInfo;
-			// get a way to replace
-			cache_way = arm926ejs_dcache.GetNewWay(cache_set);
-			// get the valid and dirty bits from the way to replace
-			bool cache_valid = arm926ejs_dcache.GetValid(cache_set,
-					cache_way);
-			bool cache_dirty = arm926ejs_dcache.GetDirty(cache_set,
-					cache_way);
-			if ( cache_valid & cache_dirty )
-			{
-				// the cache line to replace is valid and dirty so it needs
-				//   to be sent to the main memory
-				uint8_t *rep_cache_data = 0;
-				uint32_t rep_cache_address =
-						arm926ejs_dcache.GetBaseAddress(cache_set,
-								cache_way);
-				arm926ejs_dcache.GetData(cache_set, cache_way,
-						&rep_cache_data);
-				if ( unlikely(verbose_memory) )
-					logger << DebugInfo << "Performing writeback ..."
-						<< EndDebugInfo;
-				memory_interface->PrWrite(rep_cache_address, rep_cache_data,
-						arm926ejs_dcache.LINE_SIZE);
-				if ( unlikely(verbose_memory) )
-					logger << DebugInfo << "... writeback performed."
-						<< EndDebugInfo;
-			}
-			// the new data can be requested
-			uint8_t *cache_data = 0;
-			uint32_t cache_address =
-					arm926ejs_dcache.GetBaseAddressFromAddress(read_addr);
-			// when getting the data we get the pointer to the cache line
-			//   containing the data, so no need to write the cache
-			//   afterwards
-			uint32_t cache_line_size = arm926ejs_dcache.GetData(cache_set,
-					cache_way, &cache_data);
-			if ( unlikely(verbose_memory) )
-				logger << DebugInfo << "Requesting data ..."
+				logger << DebugInfo << "Requesting data (no data cache) ..."
 					<< EndDebugInfo;
-			memory_interface->PrRead(cache_address, cache_data,
-					cache_line_size);
+			memory_interface->PrRead(read_addr, data32,	size);
+			data = data32;
 			if ( unlikely(verbose_memory) )
 				logger << DebugInfo << "... data received" << EndDebugInfo;
-			arm926ejs_dcache.SetTag(cache_set, cache_way, cache_tag);
-			arm926ejs_dcache.SetValid(cache_set, cache_way, 1);
-			arm926ejs_dcache.SetDirty(cache_set, cache_way, 0);
-		}
-		else
-		{
-			if ( unlikely(verbose_memory) )
-				logger << DebugInfo << "Cache hit" << EndDebugInfo;
 		}
 
-		// at this point the data is in the cache, we can read it from the
-		//   cache
-		uint32_t cache_index = arm926ejs_dcache.GetIndex(read_addr);
-		(void)arm926ejs_dcache.GetData(cache_set, cache_way, cache_index,
-				size, &data);
 		// fix the data depending on its size
 		uint32_t value;
 		uint32_t val32;

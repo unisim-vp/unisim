@@ -37,7 +37,7 @@
         DATA PROCESSING INSTRUCTIONS
 
 **********************************************/
- 
+
 /*******************************************************************
  * and instruction
  */
@@ -51,68 +51,68 @@ op ands_reg_shift(cond[4]:0b00[2]:0b0[1]:0b0000[4]:0b1[1]:rn[4]:rd[4]:rs[4]:0b0[
 
 and_32imm.disasm = {
   buffer << "and";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << " r";
   buffer << rd;
   buffer << ", r";
   buffer << rn;
   buffer << ", ";
-  cpu.DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
+  DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
 }
 
 and_imm_shift.disasm = {
   buffer << "and";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << " r";
   buffer << rd;
   buffer << ", r";
   buffer << rn;
   buffer << ", ";
-  cpu.DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
+  DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
 }
 
 and_reg_shift.disasm = {
   buffer << "and";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << " r";
   buffer << rd;
   buffer << ", r";
   buffer << rn;
   buffer << ", ";
-  cpu.DisasmShiftOperandRegShift(rs, shift, rm, buffer);
+  DisasmShiftOperandRegShift(rs, shift, rm, buffer);
 }
 
 ands_32imm.disasm = {
   buffer << "and";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << "s r";
   buffer << rd;
   buffer << ", r";
   buffer << rn;
   buffer << ", ";
-  cpu.DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
+  DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
 }
 
 ands_imm_shift.disasm = {
   buffer << "and";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << "s r";
   buffer << rd;
   buffer << ", r";
   buffer << rn;
   buffer << ", ";
-  cpu.DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
+  DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
 }
 
 ands_reg_shift.disasm = {
   buffer << "and";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << "s r";
   buffer << rd;
   buffer << ", r";
   buffer << rn;
   buffer << ", ";
-  cpu.DisasmShiftOperandRegShift(rs, shift, rm, buffer);
+  DisasmShiftOperandRegShift(rs, shift, rm, buffer);
 }
 
 and_32imm.execute = {
@@ -127,7 +127,8 @@ and_32imm.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperand32imm(rotate_imm, imm);
+//	s2 = cpu.ShiftOperand32imm(rotate_imm, imm);
+	s2 = ShiftOperand32imm(rotate_imm, imm);
 	res = s1 & s2;
 	cpu.SetGPR(rd, res);
 }
@@ -145,7 +146,7 @@ and_imm_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value);
+	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value, cpu.GetCPSR_C());
   	res = s1 & s2;
   	cpu.SetGPR(rd, res);
 }
@@ -164,7 +165,7 @@ and_reg_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value);
+	s2 = ShiftOperandRegShift(rs_value, shift, rm_value);
 	res = s1 & s2;
 	cpu.SetGPR(rd, res);
 }
@@ -182,7 +183,7 @@ ands_32imm.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperand32imm(rotate_imm, imm, &shift_carry_out);
+	s2 = ShiftOperand32imm(rotate_imm, imm, cpu.GetCPSR_C(), &shift_carry_out);
 	res = s1 & s2;
 	cpu.SetGPR(rd, res);
 
@@ -210,7 +211,8 @@ ands_imm_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value, &shift_carry_out);
+	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value, 
+			cpu.GetCPSR_C(), &shift_carry_out);
 	res = s1 & s2;
 	cpu.SetGPR(rd, res);
 
@@ -239,7 +241,8 @@ ands_reg_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value, &shift_carry_out);
+	s2 = ShiftOperandRegShift(rs_value, shift, rm_value,
+			cpu.GetCPSR_C(), &shift_carry_out);
 	res = s1 & s2;
 	cpu.SetGPR(rd, res);
 
@@ -270,68 +273,68 @@ op eors_reg_shift(cond[4]:0b00[2]:0b0[1]:0b0001[4]:0b1[1]:rn[4]:rd[4]:rs[4]:0b0[
 
 eor_32imm.disasm = {
   buffer << "eor";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << " r";
   buffer << rd;
   buffer << ", r";
   buffer << rn;
   buffer << ", ";
-  cpu.DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
+  DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
 }
 
 eor_imm_shift.disasm = {
   buffer << "eor";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << " r";
   buffer << rd;
   buffer << ", r";
   buffer << rn;
   buffer << ", ";
-  cpu.DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
+  DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
 }
 
 eor_reg_shift.disasm = {
   buffer << "eor";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << " r";
   buffer << rd;
   buffer << ", r";
   buffer << rn;
   buffer << ", ";
-  cpu.DisasmShiftOperandRegShift(rs, shift, rm, buffer);
+  DisasmShiftOperandRegShift(rs, shift, rm, buffer);
 }
 
 eors_32imm.disasm = {
   buffer << "eor";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << "s r";
   buffer << rd;
   buffer << ", r";
   buffer << rn;
   buffer << ", ";
-  cpu.DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
+  DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
 }
 
 eors_imm_shift.disasm = {
   buffer << "eor";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << "s r";
   buffer << rd;
   buffer << ", r";
   buffer << rn;
   buffer << ", ";
-  cpu.DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
+  DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
 }
 
 eors_reg_shift.disasm = {
   buffer << "eor";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << "s r";
   buffer << rd;
   buffer << ", r";
   buffer << rn;
   buffer << ", ";
-  cpu.DisasmShiftOperandRegShift(rs, shift, rm, buffer);
+  DisasmShiftOperandRegShift(rs, shift, rm, buffer);
 }
 
 eor_32imm.execute = {
@@ -346,7 +349,7 @@ eor_32imm.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperand32imm(rotate_imm, imm);
+	s2 = ShiftOperand32imm(rotate_imm, imm);
 	res = s1 ^ s2;
 	cpu.SetGPR(rd, res);
 }
@@ -364,7 +367,7 @@ eor_imm_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value);
+	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value, cpu.GetCPSR_C());
 	res = s1 ^ s2;
 	cpu.SetGPR(rd, res);
 }
@@ -383,7 +386,7 @@ eor_reg_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value);
+	s2 = ShiftOperandRegShift(rs_value, shift, rm_value);
 	res = s1 ^ s2;
 	cpu.SetGPR(rd, res);
 }
@@ -401,7 +404,7 @@ eors_32imm.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 	
 	s1 = rn_value;
-	s2 = cpu.ShiftOperand32imm(rotate_imm, imm, &shift_carry_out);
+	s2 = ShiftOperand32imm(rotate_imm, imm, cpu.GetCPSR_C(), &shift_carry_out);
 	res = s1 ^ s2;
 	cpu.SetGPR(rd, res);
 	
@@ -429,7 +432,8 @@ eors_imm_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value, &shift_carry_out);
+	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value, 
+				cpu.GetCPSR_C(), &shift_carry_out);
 	res = s1 ^ s2;
 	cpu.SetGPR(rd, res);
 
@@ -458,7 +462,8 @@ eors_reg_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value, &shift_carry_out);
+	s2 = ShiftOperandRegShift(rs_value, shift, rm_value, 
+			cpu.GetCPSR_C(), &shift_carry_out);
 	res = s1 ^ s2;
 	cpu.SetGPR(rd, res);
 
@@ -489,68 +494,68 @@ op subs_reg_shift(cond[4]:0b00[2]:0b0[1]:0b0010[4]:0b1[1]:rn[4]:rd[4]:rs[4]:0b0[
 
 sub_32imm.disasm = {
   buffer << "sub";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << " r";
   buffer << rd;
   buffer << ", r";
   buffer << rn;
   buffer << ", ";
-  cpu.DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
+  DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
 }
 
 sub_imm_shift.disasm = {
   buffer << "sub";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << " r";
   buffer << rd;
   buffer << ", r";
   buffer << rn;
   buffer << ", ";
-  cpu.DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
+  DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
 }
 
 sub_reg_shift.disasm = {
   buffer << "sub";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << " r";
   buffer << rd;
   buffer << ", r";
   buffer << rn;
   buffer << ", ";
-  cpu.DisasmShiftOperandRegShift(rs, shift, rm, buffer);
+  DisasmShiftOperandRegShift(rs, shift, rm, buffer);
 }
 
 subs_32imm.disasm = {
   buffer << "sub";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << "s r";
   buffer << rd;
   buffer << ", r";
   buffer << rn;
   buffer << ", ";
-  cpu.DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
+  DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
 }
 
 subs_imm_shift.disasm = {
   buffer << "sub";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << "s r";
   buffer << rd;
   buffer << ", r";
   buffer << rn;
   buffer << ", ";
-  cpu.DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
+  DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
 }
 
 subs_reg_shift.disasm = {
   buffer << "sub";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << "s r";
   buffer << rd;
   buffer << ", r";
   buffer << rn;
   buffer << ", ";
-  cpu.DisasmShiftOperandRegShift(rs, shift, rm, buffer);
+  DisasmShiftOperandRegShift(rs, shift, rm, buffer);
 }
 
 sub_32imm.execute = {
@@ -565,7 +570,7 @@ sub_32imm.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperand32imm(rotate_imm, imm);
+	s2 = ShiftOperand32imm(rotate_imm, imm);
 	res = s1 - s2;
 	cpu.SetGPR(rd, res);
 }
@@ -583,7 +588,7 @@ sub_imm_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value);
+	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value, cpu.GetCPSR_C());
 	res = s1 - s2;
 	cpu.SetGPR(rd, res);
 }
@@ -602,7 +607,7 @@ sub_reg_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value);
+	s2 = ShiftOperandRegShift(rs_value, shift, rm_value);
 	res = s1 - s2;
 	cpu.SetGPR(rd, res);
 }
@@ -619,7 +624,7 @@ subs_32imm.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperand32imm(rotate_imm, imm);
+	s2 = ShiftOperand32imm(rotate_imm, imm);
 	res = s1 - s2;
 	cpu.SetGPR(rd, res);
 
@@ -646,7 +651,7 @@ subs_imm_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value);
+	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value, cpu.GetCPSR_C());
 	res = s1 - s2;
 	cpu.SetGPR(rd, res);
 
@@ -674,7 +679,7 @@ subs_reg_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value);
+	s2 = ShiftOperandRegShift(rs_value, shift, rm_value);
 	res = s1 - s2;
 	cpu.SetGPR(rd, res);
 	
@@ -705,68 +710,68 @@ op rsbs_reg_shift(cond[4]:0b00[2]:0b0[1]:0b0011[4]:0b1[1]:rn[4]:rd[4]:rs[4]:0b0[
 
 rsb_32imm.disasm = {
   buffer << "rsb";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << " r";
   buffer << rd;
   buffer << ", r";
   buffer << rn;
   buffer << ", ";
-  cpu.DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
+  DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
 }
 
 rsb_imm_shift.disasm = {
   buffer << "rsb";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << " r";
   buffer << rd;
   buffer << ", r";
   buffer << rn;
   buffer << ", ";
-  cpu.DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
+  DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
 }
 
 rsb_reg_shift.disasm = {
   buffer << "rsb";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << " r";
   buffer << rd;
   buffer << ", r";
   buffer << rn;
   buffer << ", ";
-  cpu.DisasmShiftOperandRegShift(rs, shift, rm, buffer);
+  DisasmShiftOperandRegShift(rs, shift, rm, buffer);
 }
 
 rsbs_32imm.disasm = {
   buffer << "rsb";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << "s r";
   buffer << rd;
   buffer << ", r";
   buffer << rn;
   buffer << ", ";
-  cpu.DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
+  DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
 }
 
 rsbs_imm_shift.disasm = {
   buffer << "rsb";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << "s r";
   buffer << rd;
   buffer << ", r";
   buffer << rn;
   buffer << ", ";
-  cpu.DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
+  DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
 }
 
 rsbs_reg_shift.disasm = {
   buffer << "rsb";
-  cpu.DisasmCondition(cond, buffer);
+  DisasmCondition(cond, buffer);
   buffer << "s r";
   buffer << rd;
   buffer << ", r";
   buffer << rn;
   buffer << ", ";
-  cpu.DisasmShiftOperandRegShift(rs, shift, rm, buffer);
+  DisasmShiftOperandRegShift(rs, shift, rm, buffer);
 }
 
 rsb_32imm.execute = {
@@ -781,7 +786,7 @@ rsb_32imm.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperand32imm(rotate_imm, imm);
+	s2 = ShiftOperand32imm(rotate_imm, imm);
 	res = s2 - s1;
 	cpu.SetGPR(rd, res);
 }
@@ -799,7 +804,7 @@ rsb_imm_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value);
+	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value, cpu.GetCPSR_C());
 	res = s2 - s1;
 	cpu.SetGPR(rd, res);
 }
@@ -818,7 +823,7 @@ rsb_reg_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value);
+	s2 = ShiftOperandRegShift(rs_value, shift, rm_value);
 	res = s2 - s1;
 	cpu.SetGPR(rd, res);
 }
@@ -835,7 +840,7 @@ rsbs_32imm.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 	
 	s1 = rn_value;
-	s2 = cpu.ShiftOperand32imm(rotate_imm, imm);
+	s2 = ShiftOperand32imm(rotate_imm, imm);
 	res = s2 - s1;
 	cpu.SetGPR(rd, res);
 	
@@ -862,7 +867,7 @@ rsbs_imm_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value);
+	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value, cpu.GetCPSR_C());
 	res = s2 - s1;
 	cpu.SetGPR(rd, res);
 
@@ -890,7 +895,7 @@ rsbs_reg_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 	
 	s1 = rn_value;
-	s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value);
+	s2 = ShiftOperandRegShift(rs_value, shift, rm_value);
 	res = s2 - s1;
 	cpu.SetGPR(rd, res);
 
@@ -921,68 +926,68 @@ op adds_reg_shift(cond[4]:0b00[2]:0b0[1]:0b0100[4]:0b1[1]:rn[4]:rd[4]:rs[4]:0b0[
 
 add_32imm.disasm = {
 	buffer << "add";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << " r";
 	buffer << rd;
 	buffer << ", r";
 	buffer << rn;
 	buffer << ", ";
-	cpu.DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
+	DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
 }
 
 add_imm_shift.disasm = {
 	buffer << "add";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << " r";
 	buffer << rd;
 	buffer << ", r";
 	buffer << rn;
 	buffer << ", ";
-	cpu.DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
+	DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
 }
 
 add_reg_shift.disasm = {
 	buffer << "add";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << " r";
 	buffer << rd;
 	buffer << ", r";
 	buffer << rn;
 	buffer << ", ";
-	cpu.DisasmShiftOperandRegShift(rs, shift, rm, buffer);
+	DisasmShiftOperandRegShift(rs, shift, rm, buffer);
 }
 
 adds_32imm.disasm = {
 	buffer << "add";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << "s r";
 	buffer << rd;
 	buffer << ", r";
 	buffer << rn;
 	buffer << ", ";
-	cpu.DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
+	DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
 }
 
 adds_imm_shift.disasm = {
 	buffer << "add";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << "s r";
 	buffer << rd;
 	buffer << ", r";
 	buffer << rn;
 	buffer << ", ";
-	cpu.DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
+	DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
 }
 
 adds_reg_shift.disasm = {
 	buffer << "add";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << "s r";
 	buffer << rd;
 	buffer << ", r";
 	buffer << rn;
 	buffer << ", ";
-	cpu.DisasmShiftOperandRegShift(rs, shift, rm, buffer);
+	DisasmShiftOperandRegShift(rs, shift, rm, buffer);
 }
 
 add_32imm.execute = {
@@ -997,7 +1002,7 @@ add_32imm.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperand32imm(rotate_imm, imm);
+	s2 = ShiftOperand32imm(rotate_imm, imm);
   	res = s1 + s2;
   	cpu.SetGPR(rd, res);
 }
@@ -1015,7 +1020,7 @@ add_imm_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value);
+	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value, cpu.GetCPSR_C());
 	res = s1 + s2;
 	cpu.SetGPR(rd, res);
 }
@@ -1034,7 +1039,7 @@ add_reg_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value);
+	s2 = ShiftOperandRegShift(rs_value, shift, rm_value);
 	res = s1 + s2;
 	cpu.SetGPR(rd, res);
 }
@@ -1054,7 +1059,7 @@ adds_32imm.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperand32imm(rotate_imm, imm);
+	s2 = ShiftOperand32imm(rotate_imm, imm);
 	Add32(res, carry_out, overflow_out, sign,
 			s1, s2, 0);
 	cpu.SetGPR(rd, res);
@@ -1085,7 +1090,7 @@ adds_imm_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value);
+	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value, cpu.GetCPSR_C());
 	Add32(res, carry_out, overflow_out, sign,
 			s1, s2, 0);
 	cpu.SetGPR(rd, res);
@@ -1117,7 +1122,7 @@ adds_reg_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value);
+	s2 = ShiftOperandRegShift(rs_value, shift, rm_value);
 	Add32(res, carry_out, overflow_out, sign,
 			s1, s2, 0);
 	cpu.SetGPR(rd, res);
@@ -1149,68 +1154,68 @@ op adcs_reg_shift(cond[4]:0b00[2]:0b0[1]:0b0101[4]:0b1[1]:rn[4]:rd[4]:rs[4]:0b0[
 
 adc_32imm.disasm = {
 	buffer << "adc";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << " r";
 	buffer << rd;
 	buffer << ", r";
 	buffer << rn;
 	buffer << ", ";
-	cpu.DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
+	DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
 }
 
 adc_imm_shift.disasm = {
 	buffer << "adc";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << " r";
 	buffer << rd;
 	buffer << ", r";
 	buffer << rn;
 	buffer << ", ";
-	cpu.DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
+	DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
 }
 
 adc_reg_shift.disasm = {
 	buffer << "adc";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << " r";
 	buffer << rd;
 	buffer << ", r";
 	buffer << rn;
 	buffer << ", ";
-	cpu.DisasmShiftOperandRegShift(rs, shift, rm, buffer);
+	DisasmShiftOperandRegShift(rs, shift, rm, buffer);
 }
 
 adcs_32imm.disasm = {
 	buffer << "adc";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << "s r";
 	buffer << rd;
 	buffer << ", r";
 	buffer << rn;
 	buffer << ", ";
-	cpu.DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
+	DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
 }
 
 adcs_imm_shift.disasm = {
 	buffer << "adc";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << "s r";
 	buffer << rd;
 	buffer << ", r";
 	buffer << rn;
 	buffer << ", ";
-	cpu.DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
+	DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
 }
 
 adcs_reg_shift.disasm = {
 	buffer << "adc";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << "s r";
 	buffer << rd;
 	buffer << ", r";
 	buffer << rn;
 	buffer << ", ";
-	cpu.DisasmShiftOperandRegShift(rs, shift, rm, buffer);
+	DisasmShiftOperandRegShift(rs, shift, rm, buffer);
 }
 
 adc_32imm.execute = {
@@ -1226,7 +1231,7 @@ adc_32imm.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperand32imm(rotate_imm, imm);
+	s2 = ShiftOperand32imm(rotate_imm, imm);
 	carry_in = (cpu.GetCPSR_C() ? 1 : 0);
 	res = s1 + s2 + carry_in;
 	cpu.SetGPR(rd, res);
@@ -1246,7 +1251,7 @@ adc_imm_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value);
+	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value, cpu.GetCPSR_C());
 	carry_in = (cpu.GetCPSR_C() ? 1 : 0);
 	res = s1 + s2 + carry_in;
 	cpu.SetGPR(rd, res);
@@ -1267,7 +1272,7 @@ adc_reg_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value);
+	s2 = ShiftOperandRegShift(rs_value, shift, rm_value);
 	carry_in = (cpu.GetCPSR_C() ? 1 : 0);
 	res = s1 + s2 + carry_in;
 	cpu.SetGPR(rd, res);
@@ -1289,7 +1294,7 @@ adcs_32imm.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 	
 	s1 = rn_value;
-	s2 = cpu.ShiftOperand32imm(rotate_imm, imm);
+	s2 = ShiftOperand32imm(rotate_imm, imm);
 	carry_in = (cpu.GetCPSR_C() ? 1 : 0);
 	Add32(res, carry_out, overflow_out, sign,
 			s1, s2, carry_in);
@@ -1322,7 +1327,7 @@ adcs_imm_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value);
+	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value, cpu.GetCPSR_C());
 	carry_in = (cpu.GetCPSR_C() ? 1 : 0);
 	Add32(res, carry_out, overflow_out, sign,
 			s1, s2, carry_in);
@@ -1356,7 +1361,7 @@ adcs_reg_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value);
+	s2 = ShiftOperandRegShift(rs_value, shift, rm_value);
 	carry_in = (cpu.GetCPSR_C() ? 1 : 0);
 	Add32(res, carry_out, overflow_out, sign,
 			s1, s2, carry_in);
@@ -1389,68 +1394,68 @@ op sbcs_reg_shift(cond[4]:0b00[2]:0b0[1]:0b0110[4]:0b1[1]:rn[4]:rd[4]:rs[4]:0b0[
 
 sbc_32imm.disasm = {
 	buffer << "sbc";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << " r";
 	buffer << rd;
 	buffer << ", r";
 	buffer << rn;
 	buffer << ", ";
-	cpu.DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
+	DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
 }
 
 sbc_imm_shift.disasm = {
 	buffer << "sbc";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << " r";
 	buffer << rd;
 	buffer << ", r";
 	buffer << rn;
 	buffer << ", ";
-	cpu.DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
+	DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
 }
 
 sbc_reg_shift.disasm = {
 	buffer << "sbc";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << " r";
 	buffer << rd;
 	buffer << ", r";
 	buffer << rn;
 	buffer << ", ";
-	cpu.DisasmShiftOperandRegShift(rs, shift, rm, buffer);
+	DisasmShiftOperandRegShift(rs, shift, rm, buffer);
 }
 
 sbcs_32imm.disasm = {
 	buffer << "sbc";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << "s r";
 	buffer << rd;
 	buffer << ", r";
 	buffer << rn;
 	buffer << ", ";
-	cpu.DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
+	DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
 }
 
 sbcs_imm_shift.disasm = {
 	buffer << "sbc";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << "s r";
 	buffer << rd;
 	buffer << ", r";
 	buffer << rn;
 	buffer << ", ";
-	cpu.DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
+	DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
 }
 
 sbcs_reg_shift.disasm = {
 	buffer << "sbc";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << "s r";
 	buffer << rd;
 	buffer << ", r";
 	buffer << rn;
 	buffer << ", ";
-	cpu.DisasmShiftOperandRegShift(rs, shift, rm, buffer);
+	DisasmShiftOperandRegShift(rs, shift, rm, buffer);
 }
 
 sbc_32imm.execute = {
@@ -1466,7 +1471,7 @@ sbc_32imm.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperand32imm(rotate_imm, imm);
+	s2 = ShiftOperand32imm(rotate_imm, imm);
 	in_neg_carry = (cpu.GetCPSR_C() ? 0 : 1);
 	res = s1 - s2 - in_neg_carry;
 	cpu.SetGPR(rd, res);
@@ -1486,7 +1491,7 @@ sbc_imm_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value);
+	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value, cpu.GetCPSR());
 	in_neg_carry = (cpu.GetCPSR_C() ? 0 : 1);
 	res = s1 - s2 - in_neg_carry;
 	cpu.SetGPR(rd, res);
@@ -1507,7 +1512,7 @@ sbc_reg_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value);
+	s2 = ShiftOperandRegShift(rs_value, shift, rm_value);
 	in_neg_carry = (cpu.GetCPSR_C() ? 0 : 1);
 	res = s1 - s2 - in_neg_carry;
 	cpu.SetGPR(rd, res);
@@ -1526,7 +1531,7 @@ sbcs_32imm.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperand32imm(rotate_imm, imm);
+	s2 = ShiftOperand32imm(rotate_imm, imm);
 	in_neg_carry = (cpu.GetCPSR_C() ? 0 : 1);
 	res = s1 - s2 - in_neg_carry;
 	cpu.SetGPR(rd, res);
@@ -1555,7 +1560,7 @@ sbcs_imm_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value);
+	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value, cpu.GetCPSR_C());
 	in_neg_carry = (cpu.GetCPSR_C() ? 0 : 1);
 	res = s1 - s2 - in_neg_carry;
 	cpu.SetGPR(rd, res);
@@ -1585,7 +1590,7 @@ sbcs_reg_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value);
+	s2 = ShiftOperandRegShift(rs_value, shift, rm_value);
 	in_neg_carry = (cpu.GetCPSR_C() ? 0 : 1);
 	res = s1 - s2 - in_neg_carry;;
 	cpu.SetGPR(rd, res);
@@ -1617,68 +1622,68 @@ op rscs_reg_shift(cond[4]:0b00[2]:0b0[1]:0b0111[4]:0b1[1]:rn[4]:rd[4]:rs[4]:0b0[
 
 rsc_32imm.disasm = {
 	buffer << "rsc";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << " r";
 	buffer << rd;
 	buffer << ", r";
 	buffer << rn;
 	buffer << ", ";
-	cpu.DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
+	DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
 }
 
 rsc_imm_shift.disasm = {
 	buffer << "rsc";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << " r";
 	buffer << rd;
 	buffer << ", r";
 	buffer << rn;
 	buffer << ", ";
-	cpu.DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
+	DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
 }
 
 rsc_reg_shift.disasm = {
 	buffer << "rsc";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << " r";
 	buffer << rd;
 	buffer << ", r";
 	buffer << rn;
 	buffer << ", ";
-	cpu.DisasmShiftOperandRegShift(rs, shift, rm, buffer);
+	DisasmShiftOperandRegShift(rs, shift, rm, buffer);
 }
 
 rscs_32imm.disasm = {
 	buffer << "rsc";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << "s r";
 	buffer << rd;
 	buffer << ", r";
 	buffer << rn;
 	buffer << ", ";
-	cpu.DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
+	DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
 }
 
 rscs_imm_shift.disasm = {
 	buffer << "rsc";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << "s r";
 	buffer << rd;
 	buffer << ", r";
 	buffer << rn;
 	buffer << ", ";
-	cpu.DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
+	DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
 }
 
 rscs_reg_shift.disasm = {
 	buffer << "rsc";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << "s r";
 	buffer << rd;
 	buffer << ", r";
 	buffer << rn;
 	buffer << ", ";
-	cpu.DisasmShiftOperandRegShift(rs, shift, rm, buffer);
+	DisasmShiftOperandRegShift(rs, shift, rm, buffer);
 }
 
 rsc_32imm.execute = {
@@ -1694,7 +1699,7 @@ rsc_32imm.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperand32imm(rotate_imm, imm);
+	s2 = ShiftOperand32imm(rotate_imm, imm);
 	in_neg_carry = (cpu.GetCPSR_C() ? 0 : 1);
 	res = s2 - s1 - in_neg_carry;
 	cpu.SetGPR(rd, res);
@@ -1714,7 +1719,7 @@ rsc_imm_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value);
+	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value, cpu.GetCPSR_C());
 	in_neg_carry = (cpu.GetCPSR_C() ? 0 : 1);
 	res = s2 - s1 - in_neg_carry;
 	cpu.SetGPR(rd, res);
@@ -1735,7 +1740,7 @@ rsc_reg_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value);
+	s2 = ShiftOperandRegShift(rs_value, shift, rm_value);
 	in_neg_carry = (cpu.GetCPSR_C() ? 0 : 1);
 	res = s2 - s1 - in_neg_carry;
 	cpu.SetGPR(rd, res);
@@ -1754,7 +1759,7 @@ rscs_32imm.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 	
 	s1 = rn_value;
-	s2 = cpu.ShiftOperand32imm(rotate_imm, imm);
+	s2 = ShiftOperand32imm(rotate_imm, imm);
 	in_neg_carry = (cpu.GetCPSR_C() ? 0 : 1);
 	res = s2 - s1 - in_neg_carry;
 	cpu.SetGPR(rd, res);
@@ -1783,7 +1788,7 @@ rscs_imm_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value);
+	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value, cpu.GetCPSR_C());
 	in_neg_carry = (cpu.GetCPSR_C() ? 0 : 1);
 	res = s2 - s1 - in_neg_carry;
 	cpu.SetGPR(rd, res);
@@ -1813,7 +1818,7 @@ rscs_reg_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value);
+	s2 = ShiftOperandRegShift(rs_value, shift, rm_value);
 	in_neg_carry = (cpu.GetCPSR_C() ? 0 : 1);
 	res = s2 - s1 - in_neg_carry;
 	cpu.SetGPR(rd, res);
@@ -1842,29 +1847,29 @@ op tst_reg_shift(cond[4]:0b00[2]:0b0[1]:0b1000[4]:0b1[1]:rn[4]:sbz[4]:rs[4]:0b0[
 
 tst_32imm.disasm = {
 	buffer << "tst";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << " r";
 	buffer << rn;
 	buffer << ", ";
-	cpu.DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
+	DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
 }
 
 tst_imm_shift.disasm = {
 	buffer << "tst";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << " r";
 	buffer << rn;
 	buffer << ", ";
-	cpu.DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
+	DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
 }
 
 tst_reg_shift.disasm = {
 	buffer << "tst";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << " r";
 	buffer << rn;
 	buffer << ", ";
-	cpu.DisasmShiftOperandRegShift(rs, shift, rm, buffer);
+	DisasmShiftOperandRegShift(rs, shift, rm, buffer);
 }
 
 tst_32imm.execute = {
@@ -1880,7 +1885,7 @@ tst_32imm.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperand32imm(rotate_imm, imm, &shift_carry_out);
+	s2 = ShiftOperand32imm(rotate_imm, imm, cpu.GetCPSR_C(), &shift_carry_out);
 	res = s1 & s2;
 
 	cpu.SetCPSR_N(res & 0x80000000);
@@ -1903,7 +1908,8 @@ tst_imm_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value, &shift_carry_out);
+	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value, 
+				cpu.GetCPSR_C(), &shift_carry_out);
 	res = s1 & s2;
   
 	cpu.SetCPSR_N(res & 0x80000000);
@@ -1927,7 +1933,8 @@ tst_reg_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 	
 	s1 = rn_value;
-	s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value, &shift_carry_out);
+	s2 = ShiftOperandRegShift(rs_value, shift, rm_value,
+			cpu.GetCPSR_C(), &shift_carry_out);
 	res = s1 & s2;
 	
 	cpu.SetCPSR_N(res & 0x80000000);
@@ -1950,29 +1957,29 @@ op teq_reg_shift(cond[4]:0b00[2]:0b0[1]:0b1001[4]:0b1[1]:rn[4]:sbz[4]:rs[4]:0b0[
 
 teq_32imm.disasm = {
 	buffer << "teq";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << " r";
 	buffer << rn;
 	buffer << ", ";
-	cpu.DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
+	DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
 }
 
 teq_imm_shift.disasm = {
 	buffer << "teq";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << " r";
 	buffer << rn;
 	buffer << ", ";
-	cpu.DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
+	DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
 }
 
 teq_reg_shift.disasm = {
 	buffer << "teq";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << " r";
 	buffer << rn;
 	buffer << ", ";
-	cpu.DisasmShiftOperandRegShift(rs, shift, rm, buffer);
+	DisasmShiftOperandRegShift(rs, shift, rm, buffer);
 }
 
 teq_32imm.execute = {
@@ -1988,7 +1995,7 @@ teq_32imm.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperand32imm(rotate_imm, imm, &shift_carry_out);
+	s2 = ShiftOperand32imm(rotate_imm, imm, cpu.GetCPSR_C(), &shift_carry_out);
 	res = s1 ^ s2;
 
 	cpu.SetCPSR_N(res & 0x80000000);
@@ -2011,7 +2018,8 @@ teq_imm_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value, &shift_carry_out);
+	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value, 
+				cpu.GetCPSR_C(), &shift_carry_out);
 	res = s1 ^ s2;
   
 	cpu.SetCPSR_N(res & 0x80000000);
@@ -2035,7 +2043,8 @@ teq_reg_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value, &shift_carry_out);
+	s2 = ShiftOperandRegShift(rs_value, shift, rm_value, 
+			cpu.GetCPSR_C(), &shift_carry_out);
 	res = s1 ^ s2;
   
 	cpu.SetCPSR_N(res & 0x80000000);
@@ -2058,30 +2067,30 @@ op cmp_reg_shift(cond[4]:0b00[2]:0b0[1]:0b1010[4]:0b1[1]:rn[4]:sbz[4]:rs[4]:0b0[
 
 cmp_32imm.disasm = {
 	buffer << "cmp";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << " r";
 	buffer << rn;
 	buffer << ", ";
-	cpu.DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
+	DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
 }
 
 cmp_imm_shift.disasm = {
 	buffer << "cmp";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << " r";
 	buffer << rn;
 	buffer << ", ";
-	cpu.DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
+	DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
 }
 
 
 cmp_reg_shift.disasm = {
 	buffer << "cmp";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << " r";
 	buffer << rn;
 	buffer << ", ";
-	cpu.DisasmShiftOperandRegShift(rs, shift, rm, buffer);
+	DisasmShiftOperandRegShift(rs, shift, rm, buffer);
 }
 
 cmp_32imm.execute = {
@@ -2097,7 +2106,7 @@ cmp_32imm.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperand32imm(rotate_imm, imm, &shift_carry_out);
+	s2 = ShiftOperand32imm(rotate_imm, imm, cpu.GetCPSR_C(), &shift_carry_out);
 	res = s1 - s2;
 	
 	cpu.SetCPSR_N(res & 0x80000000);
@@ -2120,7 +2129,8 @@ cmp_imm_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value, &shift_carry_out);
+	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value, 
+				cpu.GetCPSR_C(), &shift_carry_out);
 	res = s1 - s2;
   
 	cpu.SetCPSR_N((res & 0x80000000) != 0);
@@ -2144,7 +2154,8 @@ cmp_reg_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value, &shift_carry_out);
+	s2 = ShiftOperandRegShift(rs_value, shift, rm_value,
+			cpu.GetCPSR_C(), &shift_carry_out);
 	res = s1 - s2;
   
 	cpu.SetCPSR_N(res & 0x80000000);
@@ -2167,29 +2178,29 @@ op cmn_reg_shift(cond[4]:0b00[2]:0b0[1]:0b1011[4]:0b1[1]:rn[4]:sbz[4]:rs[4]:0b0[
 
 cmn_32imm.disasm = {
 	buffer << "cmn";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << " r";
 	buffer << rn;
 	buffer << ", ";
-	cpu.DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
+	DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
 }
 
 cmn_imm_shift.disasm = {
 	buffer << "cmn";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << " r";
 	buffer << rn;
 	buffer << ", ";
-	cpu.DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
+	DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
 }
 
 cmn_reg_shift.disasm = {
 	buffer << "cmn";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << " r";
 	buffer << rn;
 	buffer << ", ";
-	cpu.DisasmShiftOperandRegShift(rs, shift, rm, buffer);
+	DisasmShiftOperandRegShift(rs, shift, rm, buffer);
 }
 
 cmn_32imm.execute = {
@@ -2205,7 +2216,7 @@ cmn_32imm.execute = {
   	if(!cpu.CheckCondition(cond)) return;
 
   	s1 = rn_value;
-  	s2 = cpu.ShiftOperand32imm(rotate_imm, imm, &shift_carry_out);
+  	s2 = ShiftOperand32imm(rotate_imm, imm, cpu.GetCPSR_C(), &shift_carry_out);
   	res = s1 + s2;
 
   	cpu.SetCPSR_N(res & 0x80000000);
@@ -2228,7 +2239,8 @@ cmn_imm_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value, &shift_carry_out);
+	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value,
+				cpu.GetCPSR_C(), &shift_carry_out);
 	res = s1 + s2;
   
 	cpu.SetCPSR_N(res & 0x80000000);
@@ -2252,7 +2264,8 @@ cmn_reg_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value, &shift_carry_out);
+	s2 = ShiftOperandRegShift(rs_value, shift, rm_value, 
+			cpu.GetCPSR_C(), &shift_carry_out);
 	res = s1 + s2;
 	
 	cpu.SetCPSR_N(res & 0x80000000);
@@ -2278,68 +2291,68 @@ op orrs_reg_shift(cond[4]:0b00[2]:0b0[1]:0b1100[4]:0b1[1]:rn[4]:rd[4]:rs[4]:0b0[
 
 orr_32imm.disasm = {
 	buffer << "orr";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << " r";
 	buffer << rd;
 	buffer << ", r";
 	buffer << rn;
 	buffer << ", ";
-	cpu.DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
+	DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
 }
 
 orr_imm_shift.disasm = {
 	buffer << "orr";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << " r";
 	buffer << rd;
 	buffer << ", r";
 	buffer << rn;
 	buffer << ", ";
-	cpu.DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
+	DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
 }
 
 orr_reg_shift.disasm = {
 	buffer << "orr";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << " r";
 	buffer << rd;
 	buffer << ", r";
 	buffer << rn;
 	buffer << ", ";
-	cpu.DisasmShiftOperandRegShift(rs, shift, rm, buffer);
+	DisasmShiftOperandRegShift(rs, shift, rm, buffer);
 }
 
 orrs_32imm.disasm = {
 	buffer << "orr";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << "s r";
 	buffer << rd;
 	buffer << ", r";
 	buffer << rn;
 	buffer << ", ";
-	cpu.DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
+	DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
 }
 
 orrs_imm_shift.disasm = {
 	buffer << "orr";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << "s r";
 	buffer << rd;
 	buffer << ", r";
 	buffer << rn;
 	buffer << ", ";
-	cpu.DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
+	DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
 }
 
 orrs_reg_shift.disasm = {
 	buffer << "orr";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << "s r";
 	buffer << rd;
 	buffer << ", r";
 	buffer << rn;
 	buffer << ", ";
-	cpu.DisasmShiftOperandRegShift(rs, shift, rm, buffer);
+	DisasmShiftOperandRegShift(rs, shift, rm, buffer);
 }
 
 orr_32imm.execute = {
@@ -2354,7 +2367,7 @@ orr_32imm.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperand32imm(rotate_imm, imm);
+	s2 = ShiftOperand32imm(rotate_imm, imm);
 	res = s1 | s2;
 	cpu.SetGPR(rd, res);
 }
@@ -2372,7 +2385,7 @@ orr_imm_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value);
+	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value, cpu.GetCPSR_C());
 	res = s1 | s2;
 	cpu.SetGPR(rd, res);
 }
@@ -2391,7 +2404,7 @@ orr_reg_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 	
 	s1 = rn_value;
-	s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value);
+	s2 = ShiftOperandRegShift(rs_value, shift, rm_value);
 	res = s1 | s2;
 	cpu.SetGPR(rd, res);
 }
@@ -2409,7 +2422,7 @@ orrs_32imm.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperand32imm(rotate_imm, imm, &shift_carry_out);
+	s2 = ShiftOperand32imm(rotate_imm, imm, cpu.GetCPSR_C(), &shift_carry_out);
 	res = s1 | s2;
 	cpu.SetGPR(rd, res);
 
@@ -2437,7 +2450,8 @@ orrs_imm_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value, &shift_carry_out);
+	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value, 
+				cpu.GetCPSR_C(), &shift_carry_out);
 	res = s1 | s2;
 	cpu.SetGPR(rd, res);
 
@@ -2466,7 +2480,8 @@ orrs_reg_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value, &shift_carry_out);
+	s2 = ShiftOperandRegShift(rs_value, shift, rm_value,
+			cpu.GetCPSR_C(), &shift_carry_out);
 	res = s1 | s2;
 	cpu.SetGPR(rd, res);
 
@@ -2500,56 +2515,56 @@ group mov(mov_32imm, mov_imm_shift, mov_reg_shift, \
 
 mov_32imm.disasm = {
 	buffer << "mov";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << " r";
 	buffer << rd;
 	buffer << ", ";
-	cpu.DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
+	DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
 }
 
 mov_imm_shift.disasm = {
 	buffer << "mov";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << " r";
 	buffer << rd;
 	buffer << ", ";
-	cpu.DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
+	DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
 }
 
 mov_reg_shift.disasm = {
 	buffer << "mov";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << " r";
 	buffer << rd;
 	buffer << ", ";
-	cpu.DisasmShiftOperandRegShift(rs, shift, rm, buffer);
+	DisasmShiftOperandRegShift(rs, shift, rm, buffer);
 }
 
 movs_32imm.disasm = {
 	buffer << "mov";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << "s r";
 	buffer << rd;
 	buffer << ", ";
-	cpu.DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
+	DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
 }
 
 movs_imm_shift.disasm = {
 	buffer << "mov";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << "s r";
 	buffer << rd;
 	buffer << ", ";
-	cpu.DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
+	DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
 }
 
 movs_reg_shift.disasm = {
 	buffer << "mov";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << "s r";
 	buffer << rd;
 	buffer << ", ";
-	cpu.DisasmShiftOperandRegShift(rs, shift, rm, buffer);
+	DisasmShiftOperandRegShift(rs, shift, rm, buffer);
 }
 
 mov_32imm.execute = {
@@ -2560,7 +2575,7 @@ mov_32imm.execute = {
 
 	if(!cpu.CheckCondition(cond)) return;
 	
-	s1 = cpu.ShiftOperand32imm(rotate_imm, imm);
+	s1 = ShiftOperand32imm(rotate_imm, imm);
 	res = s1;
 	cpu.SetGPR(rd, res);
 }
@@ -2576,7 +2591,7 @@ mov_imm_shift.execute = {
 
 	if(!cpu.CheckCondition(cond)) return;
 
-	s1 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value);
+	s1 = ShiftOperandImmShift(shift_imm, shift, rm_value, cpu.GetCPSR_C());
 	res = s1;
 	cpu.SetGPR(rd, res);
 }
@@ -2593,7 +2608,7 @@ mov_reg_shift.execute = {
 
 	if(!cpu.CheckCondition(cond)) return;
 
-	s1 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value);
+	s1 = ShiftOperandRegShift(rs_value, shift, rm_value);
 	res = s1;
 	cpu.SetGPR(rd, res);
 }
@@ -2607,7 +2622,7 @@ movs_32imm.execute = {
 
 	if(!cpu.CheckCondition(cond)) return;
 
-	s1 = cpu.ShiftOperand32imm(rotate_imm, imm, &shift_carry_out);
+	s1 = ShiftOperand32imm(rotate_imm, imm, cpu.GetCPSR_C(), &shift_carry_out);
 	res = s1;
 	cpu.SetGPR(rd, res);
 	
@@ -2633,7 +2648,8 @@ movs_imm_shift.execute = {
 	
 	if(!cpu.CheckCondition(cond)) return;
 	
-	s1 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value, &shift_carry_out);
+	s1 = ShiftOperandImmShift(shift_imm, shift, rm_value,
+				cpu.GetCPSR_C(), &shift_carry_out);
 	res = s1;
 	cpu.SetGPR(rd, res);
 	
@@ -2660,7 +2676,8 @@ movs_reg_shift.execute = {
 
 	if(!cpu.CheckCondition(cond)) return;
 
-	s1 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value, &shift_carry_out);
+	s1 = ShiftOperandRegShift(rs_value, shift, rm_value,
+			cpu.GetCPSR_C(), &shift_carry_out);
 	res = s1;
 	cpu.SetGPR(rd, res);
 
@@ -2691,68 +2708,68 @@ op bics_reg_shift(cond[4]:0b00[2]:0b0[1]:0b1110[4]:0b1[1]:rn[4]:rd[4]:rs[4]:0b0[
 
 bic_32imm.disasm = {
 	buffer << "bic";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << " r";
 	buffer << rd;
 	buffer << ", r";
 	buffer << rn;
 	buffer << ", ";
-	cpu.DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
+	DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
 }
 
 bic_imm_shift.disasm = {
 	buffer << "bic";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << " r";
 	buffer << rd;
 	buffer << ", r";
 	buffer << rn;
 	buffer << ", ";
-	cpu.DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
+	DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
 }
 
 bic_reg_shift.disasm = {
 	buffer << "bic";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << " r";
 	buffer << rd;
 	buffer << ", r";
 	buffer << rn;
 	buffer << ", ";
-	cpu.DisasmShiftOperandRegShift(rs, shift, rm, buffer);
+	DisasmShiftOperandRegShift(rs, shift, rm, buffer);
 }
 
 bics_32imm.disasm = {
 	buffer << "bic";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << "s r";
 	buffer << rd;
 	buffer << ", r";
 	buffer << rn;
 	buffer << ", ";
-	cpu.DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
+	DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
 }
 
 bics_imm_shift.disasm = {
 	buffer << "bic";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << "s r";
 	buffer << rd;
 	buffer << ", r";
 	buffer << rn;
 	buffer << ", ";
-	cpu.DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
+	DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
 }
 
 bics_reg_shift.disasm = {
 	buffer << "bic";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << "s r";
 	buffer << rd;
 	buffer << ", r";
 	buffer << rn;
 	buffer << ", ";
-	cpu.DisasmShiftOperandRegShift(rs, shift, rm, buffer);
+	DisasmShiftOperandRegShift(rs, shift, rm, buffer);
 }
 
 bic_32imm.execute = {
@@ -2767,7 +2784,7 @@ bic_32imm.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperand32imm(rotate_imm, imm);
+	s2 = ShiftOperand32imm(rotate_imm, imm);
 	res = s1 & ~s2;
 	cpu.SetGPR(rd, res);
 }
@@ -2785,7 +2802,7 @@ bic_imm_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value);
+	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value, cpu.GetCPSR_C());
 	res = s1 & ~s2;
 	cpu.SetGPR(rd, res);
 }
@@ -2804,7 +2821,7 @@ bic_reg_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value);
+	s2 = ShiftOperandRegShift(rs_value, shift, rm_value);
 	res = s1 & ~s2;
 	cpu.SetGPR(rd, res);
 }
@@ -2822,7 +2839,7 @@ bics_32imm.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperand32imm(rotate_imm, imm, &shift_carry_out);
+	s2 = ShiftOperand32imm(rotate_imm, imm, cpu.GetCPSR_C(), &shift_carry_out);
 	res = s1 & ~s2;
 	cpu.SetGPR(rd, res);
 
@@ -2850,7 +2867,8 @@ bics_imm_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value, &shift_carry_out);
+	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value,
+				cpu.GetCPSR_C(), &shift_carry_out);
 	res = s1 & ~s2;
 	cpu.SetGPR(rd, res);
 	
@@ -2879,7 +2897,8 @@ bics_reg_shift.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	s1 = rn_value;
-	s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value, &shift_carry_out);
+	s2 = ShiftOperandRegShift(rs_value, shift, rm_value, 
+			cpu.GetCPSR_C(), &shift_carry_out);
 	res = s1 & ~s2;
 	cpu.SetGPR(rd, res);
 
@@ -2910,56 +2929,56 @@ op mvns_reg_shift(cond[4]:0b00[2]:0b0[1]:0b1111[4]:0b1[1]:rn[4]:rd[4]:rs[4]:0b0[
 
 mvn_32imm.disasm = {
 	buffer << "mvn";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << " r";
 	buffer << rd;
 	buffer << ", ";
-	cpu.DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
+	DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
 }
 
 mvn_imm_shift.disasm = {
 	buffer << "mvn";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << " r";
 	buffer << rd;
 	buffer << ", ";
-	cpu.DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
+	DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
 }
 
 mvn_reg_shift.disasm = {
 	buffer << "mvn";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << " r";
 	buffer << rd;
 	buffer << ", ";
-	cpu.DisasmShiftOperandRegShift(rs, shift, rm, buffer);
+	DisasmShiftOperandRegShift(rs, shift, rm, buffer);
 }
 
 mvns_32imm.disasm = {
 	buffer << "mvn";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << "s r";
 	buffer << rd;
 	buffer << ", ";
-	cpu.DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
+	DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
 }
 
 mvns_imm_shift.disasm = {
 	buffer << "mvn";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << "s r";
 	buffer << rd;
 	buffer << ", ";
-	cpu.DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
+	DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
 }
 
 mvns_reg_shift.disasm = {
 	buffer << "mvn";
-	cpu.DisasmCondition(cond, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << "s r";
 	buffer << rd;
 	buffer << ", ";
-	cpu.DisasmShiftOperandRegShift(rs, shift, rm, buffer);
+	DisasmShiftOperandRegShift(rs, shift, rm, buffer);
 }
 
 mvn_32imm.execute = {
@@ -2970,7 +2989,7 @@ mvn_32imm.execute = {
 
 	if(!cpu.CheckCondition(cond)) return;
 
-	s1 = cpu.ShiftOperand32imm(rotate_imm, imm);
+	s1 = ShiftOperand32imm(rotate_imm, imm);
 	res = ~s1;
 	cpu.SetGPR(rd, res);
 }
@@ -2986,7 +3005,7 @@ mvn_imm_shift.execute = {
 
 	if(!cpu.CheckCondition(cond)) return;
 
-	s1 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value);
+	s1 = ShiftOperandImmShift(shift_imm, shift, rm_value, cpu.GetCPSR_C());
 	res = ~s1;
 	cpu.SetGPR(rd, res);
 }
@@ -3003,7 +3022,7 @@ mvn_reg_shift.execute = {
 
 	if(!cpu.CheckCondition(cond)) return;
 	
-	s1 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value);
+	s1 = ShiftOperandRegShift(rs_value, shift, rm_value);
 	res = ~s1;
 	cpu.SetGPR(rd, res);
 }
@@ -3017,7 +3036,7 @@ mvns_32imm.execute = {
 
 	if(!cpu.CheckCondition(cond)) return;
 
-	s1 = cpu.ShiftOperand32imm(rotate_imm, imm, &shift_carry_out);
+	s1 = ShiftOperand32imm(rotate_imm, imm, cpu.GetCPSR_C(), &shift_carry_out);
 	res = ~s1;
 	cpu.SetGPR(rd, res);
 
@@ -3043,7 +3062,8 @@ mvns_imm_shift.execute = {
 
 	if(!cpu.CheckCondition(cond)) return;
 
-	s1 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value, &shift_carry_out);
+	s1 = ShiftOperandImmShift(shift_imm, shift, rm_value,
+				cpu.GetCPSR_C(), &shift_carry_out);
 	res = ~s1;
 	cpu.SetGPR(rd, res);
 
@@ -3070,7 +3090,8 @@ mvns_reg_shift.execute = {
 
 	if(!cpu.CheckCondition(cond)) return;
 
-	s1 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value, &shift_carry_out);
+	s1 = ShiftOperandRegShift(rs_value, shift, rm_value,
+			cpu.GetCPSR_C(), &shift_carry_out);
 	res = ~s1;
 	cpu.SetGPR(rd, res);
 
