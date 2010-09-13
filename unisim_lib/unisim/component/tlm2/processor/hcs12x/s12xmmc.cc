@@ -117,6 +117,7 @@ void S12XMMC::b_transport( tlm::tlm_generic_payload& trans, sc_time& delay ) {
 
 	if (find) {
 		if (cmd == tlm::TLM_READ_COMMAND) {
+			memset(buffer->buffer, 0, buffer->data_size);
 			*((uint8_t *) buffer->buffer) = inherited::read(logicalAddress);
 		} else {
 			inherited::write(logicalAddress, *((uint8_t *) buffer->buffer));
@@ -143,7 +144,7 @@ void S12XMMC::b_transport( tlm::tlm_generic_payload& trans, sc_time& delay ) {
 */
 					cout << "WARNING: S12XMMC => Device at 0x" << std::hex << logicalAddress << " Not present in the emulated platform." << std::dec << std::endl;
 				}
-
+				memset(buffer->buffer, 0, buffer->data_size);
 			}
 
 		}
@@ -174,10 +175,11 @@ void S12XMMC::b_transport( tlm::tlm_generic_payload& trans, sc_time& delay ) {
 				mmc_trans->set_address( addr & 0x7FFFFF);
 				external_socket->b_transport( *mmc_trans, tlm2_btrans_time );
 			} else {
-
 				mmc_trans->set_address( addr & 0xFFFF);
 				local_socket->b_transport( *mmc_trans, tlm2_btrans_time );
-
+				unsigned int i;
+				for(i = 0; i < buffer->data_size; i++)
+					if(((uint8_t *) buffer->buffer)[i]) std::cerr << "";
 			}
 
 			if (mmc_trans->is_response_error() ) {

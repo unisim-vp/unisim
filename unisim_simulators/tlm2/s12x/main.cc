@@ -154,7 +154,7 @@ private:
 	public:
 		static const unsigned int INPUT_SOCKETS = 1;
 		static const unsigned int OUTPUT_SOCKETS = 7;
-		static const unsigned int MAX_NUM_MAPPINGS = 256;
+		static const unsigned int MAX_NUM_MAPPINGS = 7; //256;
 		static const unsigned int BUSWIDTH = 32;
 		typedef tlm::tlm_base_protocol_types TYPES;
 		static const bool VERBOSE = false;
@@ -165,7 +165,7 @@ private:
 	public:
 		static const unsigned int INPUT_SOCKETS = 1;
 		static const unsigned int OUTPUT_SOCKETS = 1;
-		static const unsigned int MAX_NUM_MAPPINGS = 256;
+		static const unsigned int MAX_NUM_MAPPINGS = 1; //256;
 		static const unsigned int BUSWIDTH = 32;
 		typedef tlm::tlm_base_protocol_types TYPES;
 		static const bool VERBOSE = false;
@@ -391,19 +391,19 @@ Simulator::Simulator(int argc, char **argv)
 	xml_atd_pwm_stub->slave_sock(pwm->master_sock);
 #endif
 
-	mmc->local_socket(internal_router->targ_socket[0]);
-	mmc->external_socket(external_router->targ_socket[0]);
+	mmc->local_socket(*internal_router->targ_socket[0]);
+	mmc->external_socket(*external_router->targ_socket[0]);
 
 	// This order is mandatory (see the memoryMapping)
-	internal_router->init_socket[0](crg->slave_socket);
-	internal_router->init_socket[1](ect->slave_socket);
-	internal_router->init_socket[2](atd1->slave_socket);
-	internal_router->init_socket[3](s12xint->slave_socket);
-	internal_router->init_socket[4](atd0->slave_socket);
-	internal_router->init_socket[5](pwm->slave_socket);
-	internal_router->init_socket[6](internal_memory->slave_sock); // to connect to the MMC
+	(*internal_router->init_socket[0])(crg->slave_socket);
+	(*internal_router->init_socket[1])(ect->slave_socket);
+	(*internal_router->init_socket[2])(atd1->slave_socket);
+	(*internal_router->init_socket[3])(s12xint->slave_socket);
+	(*internal_router->init_socket[4])(atd0->slave_socket);
+	(*internal_router->init_socket[5])(pwm->slave_socket);
+	(*internal_router->init_socket[6])(internal_memory->slave_sock); // to connect to the MMC
 
-	external_router->init_socket[0](external_memory->slave_sock);
+	(*external_router->init_socket[0])(external_memory->slave_sock);
 
 	crg->bus_clock_socket(cpu->bus_clock_socket);
 	crg->bus_clock_socket(ect->bus_clock_socket);
