@@ -249,10 +249,14 @@ XmlDebug(const char *type, const unisim::kernel::service::Object &obj, const cha
 	rc = xmlTextWriterStartElement(xml_writer, BAD_CAST "DEBUG");
 	if(rc < 0)
 		cerr << "Error(LoggerServer): could not add a debug message of type \"" << type << "\"" << endl;
-	rc = xmlTextWriterWriteAttribute(xml_writer, BAD_CAST "type", xmlCharStrdup(type));
+	xmlChar *xml_type = xmlCharStrdup(type);
+	rc = xmlTextWriterWriteAttribute(xml_writer, BAD_CAST "type", xml_type);
+	free(xml_type);
 	if(rc < 0)
 		cerr << "Error(LoggerServer): could not add \"type\" attribute to debug message of type \"" << type << "\"" << endl;
-	rc = xmlTextWriterWriteAttribute(xml_writer, BAD_CAST "source", xmlCharStrdup(obj.GetName()));
+	xmlChar *xml_obj_name = xmlCharStrdup(obj.GetName());
+	rc = xmlTextWriterWriteAttribute(xml_writer, BAD_CAST "source", xml_obj_name);
+	free(xml_obj_name);
 	if(rc < 0)
 		cerr << "Error(LoggerServer): could not add \"source\" attribute to debug message of type \"" << type << "\"" << endl;
 	rc = xmlTextWriterWriteFormatString(xml_writer, "%s", buffer);

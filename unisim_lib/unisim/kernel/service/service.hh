@@ -302,7 +302,6 @@ private:
 	string description;
 	string version;
 	string license;
-	Parameter<bool> *param_get_config;
 	Parameter<string> *var_program_name;
 	Parameter<string> *var_authors;
 	Parameter<string> *var_copyright;

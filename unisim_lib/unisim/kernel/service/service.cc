@@ -1549,7 +1549,6 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	, description()
 	, version()
     , license()
-	, param_get_config(0)
 	, var_program_name(0)
 	, var_authors(0)
 	, var_copyright(0)
@@ -1585,7 +1584,6 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	
 	simulator = this;
 	void_variable = new VariableBase("void", (Object *) 0, VariableBase::VAR_VOID, "unknown variable");
-	param_get_config = new Parameter<bool>("get-config", 0, get_config, "Enable/Disable saving configuration at setup");
 
 	var_authors = new Parameter<string>("authors", 0, authors, "Authors");
 	var_authors->SetMutable(false);
@@ -1910,11 +1908,6 @@ Simulator::~Simulator()
 	if(void_variable)
 	{
 		delete void_variable;
-	}
-	
-	if(param_get_config)
-	{
-		delete param_get_config;
 	}
 	
 	if(param_cmd_args)

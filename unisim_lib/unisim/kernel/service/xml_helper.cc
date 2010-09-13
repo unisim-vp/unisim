@@ -116,6 +116,7 @@ XmlfyVariables(const char *filename, VariableBase::Type type) {
 	if(rc < 0) {
 		cerr << "Error(Simulator::XmlfyVariables): "
 			<< "error starting the xml document" << endl;
+		xmlFreeTextWriter(writer);
 		return false;
 	}
 	// rc = xmlTextWriterStartElement(writer, BAD_CAST "VARIABLES");
@@ -123,6 +124,7 @@ XmlfyVariables(const char *filename, VariableBase::Type type) {
 	if(rc < 0) {
 		cerr << "Error(Simulator::XmlfyVariables): "
 			<< "error starting the xml document" << endl;
+		xmlFreeTextWriter(writer);
 		return false;
 	}
 
@@ -155,6 +157,7 @@ XmlfyVariables(const char *filename, VariableBase::Type type) {
 				cerr << "Error(ServiceManage::XmlfyVariables): "
 					<< "error writing root object"
 					<< endl;
+				xmlFreeTextWriter(writer);
 				return false;
 			}
 		}
@@ -181,6 +184,7 @@ XmlfyVariables(const char *filename, VariableBase::Type type) {
 					cerr << "Error(Simulator::XmlfyVariables): "
 							<< "error writing variable"
 							<< endl;
+					xmlFreeTextWriter(writer);
 					return false;
 				}
 			}
@@ -191,6 +195,7 @@ XmlfyVariables(const char *filename, VariableBase::Type type) {
 	if(rc < 0) {
 		cerr << "Error(Simulator::XmlfyVariables): "
 			<< "could not close the root element" << endl;
+		xmlFreeTextWriter(writer);
 		return false;
 	}
 	rc = xmlTextWriterEndDocument(writer);

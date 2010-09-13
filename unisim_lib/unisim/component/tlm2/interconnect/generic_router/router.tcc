@@ -269,7 +269,6 @@ param_verbose_memory_interface(0)
 		dispatcher = new RouterDispatcher<Router<CONFIG>, CONFIG>(sstr.str().c_str(), i, this, &Router<CONFIG>::SendRsp);
 		m_rsp_dispatcher.push_back(dispatcher);
 	}
-
 }
 
 template<class CONFIG>
@@ -302,6 +301,11 @@ Router<CONFIG>::
 	for (unsigned int i = 0; i < MAX_NUM_MAPPINGS; i++) 
 	{
 		delete param_mapping[i];
+	}
+
+	for (unsigned int i = 0; i < OUTPUT_SOCKETS; i++)
+	{
+		delete memory_import[i];
 	}
 
 	if (param_verbose_all) delete param_verbose_all;
