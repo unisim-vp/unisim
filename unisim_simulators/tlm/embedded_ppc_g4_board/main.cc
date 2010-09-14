@@ -263,13 +263,13 @@ private:
 	CachePowerEstimator *itlb_power_estimator;
 	CachePowerEstimator *dtlb_power_estimator;
 
-	bool use_gdb_server;
-	bool use_inline_debugger;
+	bool enable_gdb_server;
+	bool enable_inline_debugger;
 	bool estimate_power;
 	bool message_spy;
 	unsigned int num_programs;
-	Parameter<bool> param_use_gdb_server;
-	Parameter<bool> param_use_inline_debugger;
+	Parameter<bool> param_enable_gdb_server;
+	Parameter<bool> param_enable_inline_debugger;
 	Parameter<bool> param_estimate_power;
 	Parameter<bool> param_message_spy;
 	Parameter<unsigned int> param_num_programs;
@@ -295,13 +295,13 @@ Simulator::Simulator(int argc, char **argv)
 	, l2_power_estimator(0)
 	, itlb_power_estimator(0)
 	, dtlb_power_estimator(0)
-	, use_gdb_server(false)
-	, use_inline_debugger(false)
+	, enable_gdb_server(false)
+	, enable_inline_debugger(false)
 	, estimate_power(false)
 	, message_spy(false)
 	, num_programs(1)
-	, param_use_gdb_server("use-gdb-server", 0, use_gdb_server, "Enable/Disable GDB server instantiation")
-	, param_use_inline_debugger("use-inline-debugger", 0, use_inline_debugger, "Enable/Disable inline debugger instantiation")
+	, param_enable_gdb_server("enable-gdb-server", 0, enable_gdb_server, "Enable/Disable GDB server instantiation")
+	, param_enable_inline_debugger("enable-inline-debugger", 0, enable_inline_debugger, "Enable/Disable inline debugger instantiation")
 	, param_estimate_power("estimate-power", 0, estimate_power, "Enable/Disable power estimators instantiation")
 	, param_message_spy("message-spy", 0, message_spy, "Enable/Disable message spies instantiation")
 	, param_num_programs("num-programs", 0, num_programs, "Number of programs to load into memory")
@@ -394,13 +394,13 @@ Simulator::Simulator(int argc, char **argv)
 	tee_symbol_table_lookup = new unisim::service::tee::symbol_table_lookup::Tee<CPU_ADDRESS_TYPE>("tee-symbol-table-lookup");
 	//  - Tee Memory Access Reporting
 	tee_memory_access_reporting = 
-		(use_gdb_server || use_inline_debugger) ?
+		(enable_gdb_server || enable_inline_debugger) ?
 			new unisim::service::tee::memory_access_reporting::Tee<PCI_ADDRESS_TYPE>("tee-memory-access-reporting") :
 			0;
 	//  - GDB server
-	gdb_server = use_gdb_server ? new GDBServer<CPU_ADDRESS_TYPE>("gdb-server") : 0;
+	gdb_server = enable_gdb_server ? new GDBServer<CPU_ADDRESS_TYPE>("gdb-server") : 0;
 	//  - Inline debugger
-	inline_debugger = use_inline_debugger ? new InlineDebugger<CPU_ADDRESS_TYPE>("inline-debugger") : 0;
+	inline_debugger = enable_inline_debugger ? new InlineDebugger<CPU_ADDRESS_TYPE>("inline-debugger") : 0;
 	//  - the optional power estimators
 	il1_power_estimator = estimate_power ? new CachePowerEstimator("il1-power-estimator") : 0;
 	dl1_power_estimator = estimate_power ? new CachePowerEstimator("dl1-power-estimator") : 0;
@@ -554,7 +554,7 @@ Simulator::Simulator(int argc, char **argv)
 
 	cpu->memory_import >> bus->memory_export;
 	
-	if(use_inline_debugger || use_gdb_server) 
+	if(enable_inline_debugger || enable_gdb_server) 
 	{
 		cpu->memory_access_reporting_import >> tee_memory_access_reporting->in;
 		tee_memory_access_reporting->out_control >> cpu->memory_access_reporting_control_export;
@@ -619,7 +619,7 @@ Simulator::Simulator(int argc, char **argv)
 
 #ifdef WITH_PCI_STUB
 	*pci_bus->memory_import[PCI_STUB_TARGET_PORT] >> pci_stub->memory_export; 
-	if(use_inline_debugger || use_gdb_server) 
+	if(enable_inline_debugger || enable_gdb_server) 
 	{
 		*tee_memory_access_reporting->out[0] >> pci_stub->memory_access_reporting_export;
 		pci_stub->memory_access_reporting_control_import >> 
@@ -698,8 +698,8 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("description", "UNISIM embedded-ppc-g4-board, a MPC7447A/MPC107 board simulator with support of ELF32 binaries and targeted for industrial applications");
 
 	int c;
-	bool use_gdb_server = false;
-	bool use_inline_debugger = false;
+	bool enable_gdb_server = false;
+	bool enable_inline_debugger = false;
 	bool estimate_power = false;
 	int gdb_server_tcp_port = 0;
 	const char *gdb_server_arch_filename = "gdb_powerpc.xml";
