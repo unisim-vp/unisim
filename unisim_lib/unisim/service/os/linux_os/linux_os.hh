@@ -438,7 +438,7 @@ private:
         uint32_t st_uid;			/* User ID of the file's owner.	*/
         uint32_t st_gid;			/* Group ID of the file's group.*/
         uint64_t st_rdev;			/* Device number, if device.  */
-        uint16_t __pad2;
+        uint32_t __pad2;
         int64_t st_size;			/* Size of file, in bytes.  */
         int32_t st_blksize;		/* Optimal block size for I/O.  */
         int64_t st_blocks;		/* Number 512-byte blocks allocated. */
@@ -458,14 +458,14 @@ private:
     struct powerpc_stat_t
     {
       int64_t st_dev;
-      uint16_t __pad1;
+      uint32_t __pad1;
       uint32_t st_ino;
       uint32_t st_mode;
       uint32_t st_nlink;
       uint32_t st_uid;
       uint32_t st_gid;
       int64_t st_rdev;
-      uint16_t __pad2;
+      uint32_t __pad2;
       int32_t st_size;
       int32_t st_blksize;
       int32_t st_blocks;

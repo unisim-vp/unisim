@@ -1336,6 +1336,7 @@ template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 int LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 Stat(int fd, struct powerpc_stat_t *target_stat)
 {
+	std::cerr << "sizeof=" << sizeof(powerpc_stat_t) << std::endl;
 	int ret;
 	struct stat host_stat;
 	ret = fstat(fd, &host_stat);
@@ -1350,7 +1351,6 @@ Stat(int fd, struct powerpc_stat_t *target_stat)
 	target_stat->st_uid = Host2Target(endianess, (uint32_t) host_stat.st_uid);
 	target_stat->st_gid = Host2Target(endianess, (uint32_t) host_stat.st_gid);
 	target_stat->st_rdev = Host2Target(endianess, (int64_t) host_stat.st_rdev);
-	target_stat->__pad2 = 0;
 	target_stat->st_size = Host2Target(endianess, (int64_t) host_stat.st_size);
 #if defined(WIN64) // Windows x64
 	target_stat->st_blksize = Host2Target((int32_t) 512);
@@ -1390,7 +1390,6 @@ Stat(int fd, struct powerpc_stat_t *target_stat)
 	target_stat->st_uid = Host2Target(endianess, (uint32_t) host_stat.st_uid);
 	target_stat->st_gid = Host2Target(endianess, (uint32_t) host_stat.st_gid);
 	target_stat->st_rdev = Host2Target(endianess, (int64_t) host_stat.st_rdev);
-	target_stat->__pad2 = 0;
 	target_stat->st_size = Host2Target(endianess, (int64_t) host_stat.st_size);
 #if defined(WIN32) // Windows 32
 	target_stat->st_blksize = Host2Target(endianess, (int32_t) 512);
@@ -1422,6 +1421,8 @@ Stat(int fd, struct powerpc_stat_t *target_stat)
 #endif
 
 #endif
+	target_stat->__pad1 = 0;
+	target_stat->__pad2 = 0;
 	target_stat->__unused4 = 0;
 	target_stat->__unused5 = 0;
 	return ret;
@@ -1454,7 +1455,6 @@ Stat64(int fd, struct powerpc_stat64_t *target_stat)
 	target_stat->st_uid = Host2Target(endianess, (uint32_t) host_stat.st_uid);
 	target_stat->st_gid = Host2Target(endianess, (uint32_t) host_stat.st_gid);
 	target_stat->st_rdev = Host2Target(endianess, (int64_t) host_stat.st_rdev);
-	target_stat->__pad2 = 0;
 	target_stat->st_size = Host2Target(endianess, (int64_t) host_stat.st_size);
 #if defined(WIN64) // Windows x64
 	target_stat->st_blksize = Host2Target(endianess, (int32_t) 512);
@@ -1494,7 +1494,6 @@ Stat64(int fd, struct powerpc_stat64_t *target_stat)
 	target_stat->st_uid = Host2Target(endianess, (uint32_t) host_stat.st_uid);
 	target_stat->st_gid = Host2Target(endianess, (uint32_t) host_stat.st_gid);
 	target_stat->st_rdev = Host2Target(endianess, (int64_t) host_stat.st_rdev);
-	target_stat->__pad2 = 0;
 	target_stat->st_size = Host2Target(endianess, (int64_t) host_stat.st_size);
 #if defined(WIN32) // Windows 32
 	target_stat->st_blksize = Host2Target(endianess, (int32_t) 512);
@@ -1526,6 +1525,7 @@ Stat64(int fd, struct powerpc_stat64_t *target_stat)
 #endif
 
 #endif
+	target_stat->__pad2 = 0;
     target_stat->__unused4 = 0;
     target_stat->__unused5 = 0;
 	return ret;
@@ -1551,13 +1551,13 @@ Stat64(int fd, arm_stat64_t *target_stat)
 #if defined(__x86_64) || defined(__amd64) || defined(__x86_64__) || defined(__amd64__) || defined(__LP64__) || defined(_LP64)
 	// 64-bit host
 	target_stat->st_dev = Host2Target(endianess, (uint64_t) host_stat.st_dev);
+	target_stat->__st_ino = Host2Target(endianess, (uint32_t) host_stat.st_ino);
 	target_stat->st_ino = Host2Target(endianess, (uint64_t) host_stat.st_ino);
 	target_stat->st_mode = Host2Target(endianess, (uint32_t) host_stat.st_mode);
 	target_stat->st_nlink = Host2Target(endianess, (uint64_t) host_stat.st_nlink);
 	target_stat->st_uid = Host2Target(endianess, (uint32_t) host_stat.st_uid);
 	target_stat->st_gid = Host2Target(endianess, (uint32_t) host_stat.st_gid);
 	target_stat->st_rdev = Host2Target(endianess, (int64_t) host_stat.st_rdev);
-	target_stat->__pad2 = 0;
 	target_stat->st_size = Host2Target(endianess, (int64_t) host_stat.st_size);
 #if defined(WIN64) // Windows x64
 	target_stat->st_blksize = Host2Target(endianess, (int32_t) 512);
@@ -1591,13 +1591,13 @@ Stat64(int fd, arm_stat64_t *target_stat)
 #else
 	// 32-bit host
 	target_stat->st_dev = Host2Target(endianess, (uint64_t) host_stat.st_dev);
+	target_stat->__st_ino = Host2Target(endianess, (uint32_t) host_stat.st_ino);
 	target_stat->st_ino = Host2Target(endianess, (uint32_t) host_stat.st_ino);
 	target_stat->st_mode = Host2Target(endianess, (uint32_t) host_stat.st_mode);
 	target_stat->st_nlink = Host2Target(endianess, (uint32_t) host_stat.st_nlink);
 	target_stat->st_uid = Host2Target(endianess, (uint32_t) host_stat.st_uid);
 	target_stat->st_gid = Host2Target(endianess, (uint32_t) host_stat.st_gid);
 	target_stat->st_rdev = Host2Target(endianess, (int64_t) host_stat.st_rdev);
-	target_stat->__pad2 = 0;
 	target_stat->st_size = Host2Target(endianess, (int64_t) host_stat.st_size);
 #if defined(WIN32) // Windows 32
 	target_stat->st_blksize = Host2Target(endianess, (int32_t) 512);
@@ -1629,6 +1629,8 @@ Stat64(int fd, arm_stat64_t *target_stat)
 #endif
 
 #endif
+	target_stat->__pad1 = 0;
+	target_stat->__pad2 = 0;
 	return ret;
 }
 
