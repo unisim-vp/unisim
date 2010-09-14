@@ -105,6 +105,7 @@ Bus(const sc_module_name& module_name, Object *parent) :
 	cycle_time(),
 	cycle_time_parameter("cycle-time", this, cycle_time, "cycle time"),
 	logger(*this),
+	verbose(false),
 	param_verbose("verbose", this, verbose, "enable/disable verbosity"),
 	bus_synchro_event(),
 	next_serviced(0),
