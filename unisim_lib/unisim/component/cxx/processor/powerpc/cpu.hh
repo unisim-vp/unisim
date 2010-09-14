@@ -1464,24 +1464,6 @@ public:
 
 	address_t GetEA() { return effective_address; }
 	
-	Parameter<bool> param_verbose_all;
-	Parameter<bool> param_verbose_setup;
-	Parameter<bool> param_verbose_step;
-	Parameter<bool> param_verbose_dtlb;
-	Parameter<bool> param_verbose_dl1;
-	Parameter<bool> param_verbose_il1;
-	Parameter<bool> param_verbose_l2;
-	Parameter<bool> param_verbose_load;
-	Parameter<bool> param_verbose_store;
-	Parameter<bool> param_verbose_read_memory;
-	Parameter<bool> param_verbose_write_memory;
-	Parameter<bool> param_verbose_exception;
-	Parameter<bool> param_verbose_set_msr;
-	Parameter<bool> param_verbose_set_hid0;
-	Parameter<bool> param_verbose_set_hid1;
-	Parameter<bool> param_verbose_set_hid2;
-	Parameter<bool> param_verbose_set_l2cr;
-	Parameter<uint64_t> param_trap_on_instruction_counter;
 	virtual unisim::util::debug::Register *GetRegister(const char *name);
 	virtual string Disasm(address_t addr, address_t& next_addr);
 	virtual const char *GetArchitectureName() const;
@@ -1758,6 +1740,26 @@ private:
 	bool verbose_set_hid2;
 	bool verbose_set_l2cr;
 	uint64_t trap_on_instruction_counter;
+
+	Parameter<bool> param_verbose_all;
+	Parameter<bool> param_verbose_setup;
+	Parameter<bool> param_verbose_step;
+	Parameter<bool> param_verbose_dtlb;
+	Parameter<bool> param_verbose_dl1;
+	Parameter<bool> param_verbose_il1;
+	Parameter<bool> param_verbose_l2;
+	Parameter<bool> param_verbose_load;
+	Parameter<bool> param_verbose_store;
+	Parameter<bool> param_verbose_read_memory;
+	Parameter<bool> param_verbose_write_memory;
+	Parameter<bool> param_verbose_exception;
+	Parameter<bool> param_verbose_set_msr;
+	Parameter<bool> param_verbose_set_hid0;
+	Parameter<bool> param_verbose_set_hid1;
+	Parameter<bool> param_verbose_set_hid2;
+	Parameter<bool> param_verbose_set_l2cr;
+	Parameter<uint64_t> param_trap_on_instruction_counter;
+	
 	map<string, unisim::util::debug::Register *> registers_registry;       //!< Every CPU register interfaces excluding MMU/FPU registers
 	string architecture_name;                                  //!< Architecture name (i.e. "powerpc")
 	uint64_t instruction_counter;                              //!< Number of executed instructions
