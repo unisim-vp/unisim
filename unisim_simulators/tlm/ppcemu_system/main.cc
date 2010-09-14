@@ -269,12 +269,12 @@ private:
 	CachePowerEstimator *itlb_power_estimator;
 	CachePowerEstimator *dtlb_power_estimator;
 
-	bool use_gdb_server;
-	bool use_inline_debugger;
+	bool enable_gdb_server;
+	bool enable_inline_debugger;
 	bool estimate_power;
 	bool message_spy;
-	Parameter<bool> param_use_gdb_server;
-	Parameter<bool> param_use_inline_debugger;
+	Parameter<bool> param_enable_gdb_server;
+	Parameter<bool> param_enable_inline_debugger;
 	Parameter<bool> param_estimate_power;
 	Parameter<bool> param_message_spy;
 
@@ -306,12 +306,12 @@ Simulator::Simulator(int argc, char **argv)
 	, l2_power_estimator(0)
 	, itlb_power_estimator(0)
 	, dtlb_power_estimator(0)
-	, use_gdb_server(false)
-	, use_inline_debugger(false)
+	, enable_gdb_server(false)
+	, enable_inline_debugger(false)
 	, estimate_power(false)
 	, message_spy(false)
-	, param_use_gdb_server("use-gdb-server", 0, use_gdb_server, "Enable/Disable GDB server instantiation")
-	, param_use_inline_debugger("use-inline-debugger", 0, use_inline_debugger, "Enable/Disable inline debugger instantiation")
+	, param_enable_gdb_server("enable-gdb-server", 0, enable_gdb_server, "Enable/Disable GDB server instantiation")
+	, param_enable_inline_debugger("enable-inline-debugger", 0, enable_inline_debugger, "Enable/Disable inline debugger instantiation")
 	, param_estimate_power("estimate-power", 0, estimate_power, "Enable/Disable power estimators instantiation")
 	, param_message_spy("message-spy", 0, message_spy, "Enable/Disable message spies instantiation")
 {
@@ -395,9 +395,9 @@ Simulator::Simulator(int argc, char **argv)
 	//    A Linux kernel loader acting as a firmware and a bootloader of a real PowerMac machine
 	kloader = new PMACLinuxKernelLoader("pmac-linux-kernel-loader");
 	//  - GDB server
-	gdb_server = (use_gdb_server) ? new GDBServer<CPU_ADDRESS_TYPE>("gdb-server") : 0;
+	gdb_server = (enable_gdb_server) ? new GDBServer<CPU_ADDRESS_TYPE>("gdb-server") : 0;
 	//  - Inline debugger
-	inline_debugger = (use_inline_debugger) ? new InlineDebugger<CPU_ADDRESS_TYPE>("inline-debugger") : 0;
+	inline_debugger = (enable_inline_debugger) ? new InlineDebugger<CPU_ADDRESS_TYPE>("inline-debugger") : 0;
 	//  - SystemC Time
 	sim_time = new unisim::service::time::sc_time::ScTime("time");
 	//  - Host Time
