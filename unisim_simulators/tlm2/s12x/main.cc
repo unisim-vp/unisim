@@ -237,11 +237,11 @@ private:
 	//  - Host Time
 	unisim::service::time::host_time::HostTime *host_time;
 
-	bool use_gdb_server;
-	bool use_inline_debugger;
+	bool enable_gdb_server;
+	bool enable_inline_debugger;
 	string filename;
-	Parameter<bool> param_use_gdb_server;
-	Parameter<bool> param_use_inline_debugger;
+	Parameter<bool> param_enable_gdb_server;
+	Parameter<bool> param_enable_inline_debugger;
 	
 	bool isS19;
 
@@ -275,11 +275,11 @@ Simulator::Simulator(int argc, char **argv)
 	, inline_debugger(0)
 	, sim_time(0)
 	, host_time(0)
-	, use_gdb_server(false)
-	, use_inline_debugger(false)
+	, enable_gdb_server(false)
+	, enable_inline_debugger(false)
 	, isS19(false)
-	, param_use_gdb_server("use-gdb-server", 0, use_gdb_server, "Enable/Disable GDB server instantiation")
-	, param_use_inline_debugger("use-inline-debugger", 0, use_inline_debugger, "Enable/Disable inline debugger instantiation")
+	, param_enable_gdb_server("enable-gdb-server", 0, enable_gdb_server, "Enable/Disable GDB server instantiation")
+	, param_enable_inline_debugger("enable-inline-debugger", 0, enable_inline_debugger, "Enable/Disable inline debugger instantiation")
 {
 	//=========================================================================
 	//===      Handling of file to load passed as command line argument     ===
@@ -346,9 +346,9 @@ Simulator::Simulator(int argc, char **argv)
 	}
 
 	//  - GDB server
-	gdb_server = use_gdb_server ? new GDBServer<SERVICE_ADDRESS_TYPE>("gdb-server") : 0;
+	gdb_server = enable_gdb_server ? new GDBServer<SERVICE_ADDRESS_TYPE>("gdb-server") : 0;
 	//  - Inline debugger
-	inline_debugger = use_inline_debugger ? new InlineDebugger<SERVICE_ADDRESS_TYPE>("inline-debugger") : 0;
+	inline_debugger = enable_inline_debugger ? new InlineDebugger<SERVICE_ADDRESS_TYPE>("inline-debugger") : 0;
 	//  - SystemC Time
 	sim_time = new unisim::service::time::sc_time::ScTime("time");
 	//  - Host Time
@@ -438,7 +438,7 @@ Simulator::Simulator(int argc, char **argv)
 	*(registersTee->registers_import[6]) >> pwm->registers_export;
 	*(registersTee->registers_import[7]) >> ect->registers_export;
 
-	if(use_inline_debugger)
+	if(enable_inline_debugger)
 	{
 		// Connect inline-debugger to CPU
 		cpu->debug_control_import >> inline_debugger->debug_control_export;
@@ -458,7 +458,7 @@ Simulator::Simulator(int argc, char **argv)
 
 		inline_debugger->memory_access_reporting_control_import >> cpu->memory_access_reporting_control_export;
 	}
-	else if(use_gdb_server)
+	else if(enable_gdb_server)
 	{
 		// Connect gdb-server to CPU
 		cpu->debug_control_import >> gdb_server->debug_control_export;
