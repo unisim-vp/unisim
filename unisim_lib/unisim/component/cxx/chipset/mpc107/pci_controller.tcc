@@ -540,7 +540,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 		logger << std::dec << std::endl << EndDebugInfo;
 	}
 	unsigned int i;
-	for(i = 0; i < req_size; i++)
+	for(i = 0; i < req_size;)
 	{
 		ConfigurationRegister *creg = config_regs->GetRegister(reg + i);
 		if(!creg)
@@ -552,13 +552,14 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 					<< std::hex << (reg + i) << std::dec << std::endl << EndDebugError;
 			}
 			status = false;
+			i++;
 			continue;
 		}
 		if(!(creg->permission & unisim::component::cxx::chipset::mpc107::ConfigurationRegister::WriteAccess))
 		{
 			if(unlikely(DEBUG && verbose))
 			{
-				logger << DebugInfo << LOCATION
+				logger << DebugWarning << LOCATION
 					<< "Write access to unwritable register " << creg->name
 					<< " with value = " << std::hex;
 				for(unsigned int j = i; j < req_size; j++)
@@ -566,8 +567,9 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 					if(j != i) logger << " ";
 					logger << "0x" << (unsigned int)req_data[j];
 				}
-				logger << std::dec << std::endl << EndDebugInfo;
+				logger << std::dec << std::endl << EndDebugWarning;
 			}
+			i += creg->byte_size; 
 			continue;
 		}
 		

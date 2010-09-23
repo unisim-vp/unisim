@@ -136,15 +136,12 @@ unisim/service/power/cache_leakage_power.cc \
 unisim/service/power/cache_power_estimator.cc \
 unisim/service/power/cache_profile.cc \
 unisim/service/loader/elf_loader/elf32_loader.cc \
-unisim/service/loader/elf_loader/dwarf_32.cc \
-unisim/service/loader/elf_loader/dwarf.cc \
 unisim/service/tee/memory_access_reporting/tee_32.cc \
 unisim/service/tee/symbol_table_lookup/tee_32.cc \
-unisim/component/cxx/processor/powerpc/cpu.cc \
-unisim/component/cxx/processor/powerpc/exception.cc \
-unisim/component/cxx/processor/powerpc/config.cc \
-unisim/component/cxx/processor/powerpc/mpc7447a.cc \
-unisim/component/cxx/processor/powerpc/mpc7447a_debug.cc \
+unisim/component/cxx/processor/powerpc/mpc7447a/cpu.cc \
+unisim/component/cxx/processor/powerpc/mpc7447a/cpu_debug.cc \
+unisim/component/cxx/processor/powerpc/floating.cc \
+unisim/component/cxx/processor/powerpc/mpc7447a/config.cc \
 unisim/component/cxx/memory/ram/memory_32.cc \
 unisim/component/cxx/memory/flash/am29lv/am29lv.cc \
 unisim/component/cxx/memory/flash/am29lv/config.cc \
@@ -169,8 +166,8 @@ unisim/component/cxx/chipset/mpc107/epic/register.cc \
 unisim/component/cxx/pci/types.cc \
 unisim/component/cxx/pci/debug/pci_stub.cc \
 unisim/component/tlm/pci/debug/pci_stub_32.cc \
-unisim/component/tlm/processor/powerpc/mpc7447a.cc \
-unisim/component/tlm/processor/powerpc/mpc7447a_debug.cc \
+unisim/component/tlm/processor/powerpc/mpc7447a/cpu.cc \
+unisim/component/tlm/processor/powerpc/mpc7447a/cpu_debug.cc \
 unisim/component/tlm/message/interrupt.cc \
 unisim/component/tlm/chipset/mpc107/epic/epic_32.cc \
 unisim/component/tlm/chipset/mpc107/epic/epic_32_debug.cc \
@@ -183,21 +180,21 @@ unisim/component/tlm/memory/ram/memory_32_debug.cc \
 unisim/component/tlm/memory/flash/am29lv/am29lv.cc"
 
 UNISIM_LIB_EMBEDDED_PPC_G4_BOARD_ISA_FILES="\
-unisim/component/cxx/processor/powerpc/altivec.isa \
-unisim/component/cxx/processor/powerpc/condition.isa \
-unisim/component/cxx/processor/powerpc/integer.isa \
-unisim/component/cxx/processor/powerpc/misc.isa \
-unisim/component/cxx/processor/powerpc/ppc.isa \
-unisim/component/cxx/processor/powerpc/branch.isa \
-unisim/component/cxx/processor/powerpc/floating.isa \
-unisim/component/cxx/processor/powerpc/loadstore.isa \
-unisim/component/cxx/processor/powerpc/perf.isa \
-unisim/component/cxx/processor/powerpc/sim_dependencies.isa \
-unisim/component/cxx/processor/powerpc/sim_latencies.isa \
-unisim/component/cxx/processor/powerpc/sim_load.isa \
-unisim/component/cxx/processor/powerpc/sim_branch.isa \
-unisim/component/cxx/processor/powerpc/sim_ppc.isa \
-unisim/component/cxx/processor/powerpc/sim_latencies.isa"
+unisim/component/cxx/processor/powerpc/isa/altivec.isa \
+unisim/component/cxx/processor/powerpc/isa/condition.isa \
+unisim/component/cxx/processor/powerpc/isa/integer.isa \
+unisim/component/cxx/processor/powerpc/isa/misc.isa \
+unisim/component/cxx/processor/powerpc/isa/ppc.isa \
+unisim/component/cxx/processor/powerpc/isa/branch.isa \
+unisim/component/cxx/processor/powerpc/isa/floating.isa \
+unisim/component/cxx/processor/powerpc/isa/loadstore.isa \
+unisim/component/cxx/processor/powerpc/isa/perf.isa \
+unisim/component/cxx/processor/powerpc/isa/sim_dependencies.isa \
+unisim/component/cxx/processor/powerpc/isa/sim_latencies.isa \
+unisim/component/cxx/processor/powerpc/isa/sim_load.isa \
+unisim/component/cxx/processor/powerpc/isa/sim_branch.isa \
+unisim/component/cxx/processor/powerpc/isa/sim_ppc.isa \
+unisim/component/cxx/processor/powerpc/isa/sim_latencies.isa"
 
 UNISIM_LIB_EMBEDDED_PPC_G4_BOARD_HEADER_FILES="${UNISIM_LIB_EMBEDDED_PPC_G4_BOARD_ISA_FILES} \
 unisim/kernel/service/service.hh \
@@ -275,7 +272,6 @@ unisim/service/debug/inline_debugger/inline_debugger.hh \
 unisim/service/debug/gdb_server/gdb_server.hh \
 unisim/service/loader/elf_loader/elf_common.h \
 unisim/service/loader/elf_loader/elf_loader.hh \
-unisim/service/loader/elf_loader/dwarf.hh \
 unisim/service/loader/elf_loader/elf32.h \
 unisim/service/loader/elf_loader/elf64.h \
 unisim/service/loader/elf_loader/elf32_loader.hh \
@@ -288,10 +284,11 @@ unisim/service/power/cache_dynamic_power.hh \
 unisim/service/power/cache_leakage_power.hh \
 unisim/service/sdl/sdl.hh \
 unisim/component/cxx/memory/ram/memory.hh \
-unisim/component/cxx/processor/powerpc/cpu.hh \
+unisim/component/cxx/processor/powerpc/mpc7447a/cpu.hh \
 unisim/component/cxx/processor/powerpc/exception.hh \
 unisim/component/cxx/processor/powerpc/floating.hh \
 unisim/component/cxx/processor/powerpc/config.hh \
+unisim/component/cxx/processor/powerpc/mpc7447a/config.hh \
 unisim/component/cxx/cache/cache.hh \
 unisim/component/cxx/tlb/tlb.hh \
 unisim/component/cxx/memory/flash/am29lv/am29lv.hh \
@@ -311,7 +308,7 @@ unisim/component/cxx/chipset/mpc107/epic/epic.hh \
 unisim/component/cxx/pci/types.hh \
 unisim/component/cxx/memory/flash/am29lv/types.hh \
 unisim/component/cxx/memory/flash/am29lv/config.hh \
-unisim/component/tlm/processor/powerpc/powerpc.hh \
+unisim/component/tlm/processor/powerpc/mpc7447a/cpu.hh \
 unisim/component/tlm/message/snooping_fsb.hh \
 unisim/component/tlm/message/interrupt.hh \
 unisim/component/tlm/debug/transaction_spy.hh \
@@ -358,15 +355,15 @@ unisim/util/simfloat/host_floating.tcc \
 unisim/service/debug/inline_debugger/inline_debugger.tcc \
 unisim/service/debug/gdb_server/gdb_server.tcc \
 unisim/service/loader/elf_loader/elf_loader.tcc \
-unisim/service/loader/elf_loader/dwarf.tcc \
 unisim/service/tee/memory_access_reporting/tee.tcc \
 unisim/service/tee/symbol_table_lookup/tee.tcc \
-unisim/component/cxx/processor/powerpc/cpu.tcc \
+unisim/component/cxx/processor/powerpc/mpc7447a/cpu.tcc \
+unisim/component/cxx/processor/powerpc/mpc7447a/exception.tcc \
 unisim/component/cxx/processor/powerpc/exception.tcc \
 unisim/component/cxx/memory/ram/memory.tcc \
 unisim/component/cxx/cache/cache.tcc \
 unisim/component/cxx/tlb/tlb.tcc \
-unisim/component/tlm/processor/powerpc/powerpc.tcc \
+unisim/component/tlm/processor/powerpc/mpc7447a/cpu.tcc \
 unisim/component/tlm/memory/ram/memory.tcc \
 unisim/component/cxx/memory/flash/am29lv/am29lv.tcc \
 unisim/component/cxx/chipset/mpc107/address_maps.tcc \
@@ -794,12 +791,12 @@ if [ "${has_to_build_embedded_ppc_g4_board_configure}" = "yes" ]; then
 	echo "sharedir = \$(prefix)/share/unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
 	echo "dist_share_DATA = ${UNISIM_LIB_EMBEDDED_PPC_G4_BOARD_DATA_FILES} ${UNISIM_SIMULATORS_EMBEDDED_PPC_G4_BOARD_DATA_FILES}" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
 
-	echo "BUILT_SOURCES=\$(top_srcdir)/unisim/component/cxx/processor/powerpc/powerpc.hh \$(top_srcdir)/unisim/component/cxx/processor/powerpc/powerpc.tcc" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	echo "CLEANFILES=\$(top_srcdir)/unisim/component/cxx/processor/powerpc/powerpc.hh \$(top_srcdir)/unisim/component/cxx/processor/powerpc/powerpc.tcc" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	echo "\$(top_srcdir)/unisim/component/cxx/processor/powerpc/powerpc.tcc: \$(top_srcdir)/unisim/component/cxx/processor/powerpc/powerpc.hh" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	echo "\$(top_srcdir)/unisim/component/cxx/processor/powerpc/powerpc.hh: ${UNISIM_LIB_EMBEDDED_PPC_G4_BOARD_ISA_FILES}" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
+	echo "BUILT_SOURCES=\$(top_srcdir)/unisim/component/cxx/processor/powerpc/isa/powerpc.hh \$(top_srcdir)/unisim/component/cxx/processor/powerpc/isa/powerpc.tcc" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
+	echo "CLEANFILES=\$(top_srcdir)/unisim/component/cxx/processor/powerpc/isa/powerpc.hh \$(top_srcdir)/unisim/component/cxx/processor/powerpc/isa/powerpc.tcc" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
+	echo "\$(top_srcdir)/unisim/component/cxx/processor/powerpc/isa/powerpc.tcc: \$(top_srcdir)/unisim/component/cxx/processor/powerpc/isa/powerpc.hh" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
+	echo "\$(top_srcdir)/unisim/component/cxx/processor/powerpc/isa/powerpc.hh: ${UNISIM_LIB_EMBEDDED_PPC_G4_BOARD_ISA_FILES}" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
 	printf "\t" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	echo "cd \$(top_srcdir)/unisim/component/cxx/processor/powerpc; \$(GENISSLIB_PATH) -o powerpc -w 32 -I . ppc.isa" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
+	echo "cd \$(top_srcdir)/unisim/component/cxx/processor/powerpc/isa; \$(GENISSLIB_PATH) -o powerpc -w 32 -I . ppc.isa" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
 
 	echo "all-local: all-local-bin all-local-share" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
 	echo "clean-local: clean-local-bin clean-local-share" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
