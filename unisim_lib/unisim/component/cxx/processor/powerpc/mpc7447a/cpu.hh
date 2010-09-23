@@ -32,13 +32,13 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_CPU_HH__
-#define __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_CPU_HH__
+#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_MPC7447A_CPU_HH__
+#define __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_MPC7447A_CPU_HH__
 
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/component/cxx/processor/powerpc/floating.hh>
-#include <unisim/component/cxx/processor/powerpc/powerpc.hh>
-#include <unisim/component/cxx/processor/powerpc/config.hh>
+#include <unisim/component/cxx/processor/powerpc/isa/powerpc.hh>
+#include <unisim/component/cxx/processor/powerpc/mpc7447a/config.hh>
 #include <unisim/component/cxx/cache/cache.hh>
 #include <unisim/component/cxx/tlb/tlb.hh>
 #include <unisim/service/interfaces/memory.hh>
@@ -48,7 +48,6 @@
 #include <unisim/service/interfaces/disassembly.hh>
 #include <unisim/util/debug/simple_register.hh>
 #include <unisim/util/endian/endian.hh>
-//#include <memories/endian_interface.hh>
 #include <unisim/component/cxx/processor/powerpc/exception.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/kernel/service/service.hh>
@@ -71,20 +70,7 @@ namespace component {
 namespace cxx {
 namespace processor {
 namespace powerpc {
-
-class FloatingPointRegisterInterface : public unisim::util::debug::Register
-{
-public:
-	FloatingPointRegisterInterface(const char *name, SoftDouble *value);
-	virtual ~FloatingPointRegisterInterface();
-	virtual const char *GetName() const;
-	virtual void GetValue(void *buffer) const;
-	virtual void SetValue(const void *buffer);
-	virtual int GetSize() const;
-private:
-	string name;
-	SoftDouble *value;
-};
+namespace mpc7447a {
 
 using unisim::service::interfaces::DebugControl;
 using unisim::service::interfaces::Disassembly;
@@ -503,7 +489,7 @@ public:
 	Instruction();
 	~Instruction();
 
-	Operation<CONFIG> *operation;
+	unisim::component::cxx::processor::powerpc::isa::Operation<CONFIG> *operation;
 	CPU<CONFIG> *cpu;
 	SimulationMode sim_mode;
 	Stage stage;
@@ -528,11 +514,6 @@ public:
 	Instruction<CONFIG> *next_free;
 
 	friend ostream& operator << <CONFIG> (ostream& os, const Instruction<CONFIG>& instruction);
-};
-
-template <class CONFIG>
-class CPUInterface : public Instruction<CONFIG>
-{
 };
 
 template <class CONFIG>
@@ -587,7 +568,7 @@ private:
 
 template <class CONFIG>
 class CPU :
-	public Decoder<CONFIG>,
+	public unisim::component::cxx::processor::powerpc::isa::Decoder<CONFIG>,
 	public Client<Loader<typename CONFIG::physical_address_t> >,
 	public Client<SymbolTableLookup<typename CONFIG::address_t> >,
 	public Client<DebugControl<typename CONFIG::address_t> >,
@@ -606,159 +587,23 @@ class CPU :
 	public Service<Synchronizable>
 {
 public:
-
-	static inline bool IsMPC7XX() { return CONFIG::MODEL == CONFIG::MPC740 || CONFIG::MODEL == CONFIG::MPC745 || CONFIG::MODEL == CONFIG::MPC750 || CONFIG::MODEL == CONFIG::MPC755; }
-	static inline bool IsMPC74X() { return CONFIG::MODEL == CONFIG::MPC740 || CONFIG::MODEL == CONFIG::MPC745; }
-	static inline bool IsMPC75X() { return CONFIG::MODEL == CONFIG::MPC750 || CONFIG::MODEL == CONFIG::MPC755; }
-	static inline bool IsMPC7X5() { return CONFIG::MODEL == CONFIG::MPC745 || CONFIG::MODEL == CONFIG::MPC755; }
-	static inline bool IsMPC7XXX()
-	{
-		return CONFIG::MODEL == CONFIG::MPC7400 || CONFIG::MODEL == CONFIG::MPC7410 || CONFIG::MODEL == CONFIG::MPC7441 || CONFIG::MODEL == CONFIG::MPC7445 ||
-		       CONFIG::MODEL == CONFIG::MPC7447 || CONFIG::MODEL == CONFIG::MPC7447A || CONFIG::MODEL == CONFIG::MPC7448 || CONFIG::MODEL == CONFIG::MPC7450 ||
-		       CONFIG::MODEL == CONFIG::MPC7451 || CONFIG::MODEL == CONFIG::MPC7455 || CONFIG::MODEL == CONFIG::MPC7457;
-	}
-
-	static inline bool IsG3() { return IsMPC7XX(); }
-	static inline bool IsG4() { return IsMPC7XXX(); }
-
-	typedef typename CONFIG::address_t address_t;
-	typedef typename CONFIG::virtual_address_t virtual_address_t;
-	typedef typename CONFIG::physical_address_t physical_address_t;
-	typedef typename CONFIG::WIMG WIMG;
-	typedef typename CONFIG::PTE PTE;
-	static const uint32_t MEMORY_PAGE_SIZE = CONFIG::MEMORY_PAGE_SIZE;
-
-	static const uint32_t FSB_WIDTH = 8; // 64-bit front side bus
-
-	static const uint32_t HID0_EMCP_MASK = CONFIG::HAS_HID0_EMCP ? ((1UL << CONFIG::HID0_EMCP_BITSIZE) - 1) << CONFIG::HID0_EMCP_OFFSET : 0;
-	static const uint32_t HID0_DBP_MASK = CONFIG::HAS_HID0_DBP ? ((1UL << CONFIG::HID0_DBP_BITSIZE) - 1) << CONFIG::HID0_DBP_OFFSET : 0;
-	static const uint32_t HID0_EBA_MASK = CONFIG::HAS_HID0_EBA ? ((1UL << CONFIG::HID0_EBA_BITSIZE) - 1) << CONFIG::HID0_EBA_OFFSET : 0;
-	static const uint32_t HID0_EBD_MASK = CONFIG::HAS_HID0_EBD ? ((1UL << CONFIG::HID0_EBD_BITSIZE) - 1) << CONFIG::HID0_EBD_OFFSET : 0;
-	static const uint32_t HID0_SBCLK_MASK = CONFIG::HAS_HID0_SBCLK ? ((1UL << CONFIG::HID0_SBCLK_BITSIZE) - 1) << CONFIG::HID0_SBCLK_OFFSET : 0;
-	static const uint32_t HID0_BCLK_MASK = CONFIG::HAS_HID0_BCLK ? ((1UL << CONFIG::HID0_BCLK_BITSIZE) - 1) << CONFIG::HID0_BCLK_OFFSET : 0;
-	static const uint32_t HID0_TBEN_MASK = CONFIG::HAS_HID0_TBEN ? ((1UL << CONFIG::HID0_TBEN_BITSIZE) - 1) << CONFIG::HID0_TBEN_OFFSET : 0;
-	static const uint32_t HID0_EICE_MASK = CONFIG::HAS_HID0_EICE ? ((1UL << CONFIG::HID0_EICE_BITSIZE) - 1) << CONFIG::HID0_EICE_OFFSET : 0;
-	static const uint32_t HID0_ECLK_MASK = CONFIG::HAS_HID0_ECLK ? ((1UL << CONFIG::HID0_ECLK_BITSIZE) - 1) << CONFIG::HID0_ECLK_OFFSET : 0;
-	static const uint32_t HID0_PAR_MASK = CONFIG::HAS_HID0_PAR ? ((1UL << CONFIG::HID0_PAR_BITSIZE) - 1) << CONFIG::HID0_PAR_OFFSET : 0;
-	static const uint32_t HID0_STEN_MASK = CONFIG::HAS_HID0_STEN ? ((1UL << CONFIG::HID0_STEN_BITSIZE) - 1) << CONFIG::HID0_STEN_OFFSET : 0;
-	static const uint32_t HID0_DOZE_MASK = CONFIG::HAS_HID0_DOZE ? ((1UL << CONFIG::HID0_DOZE_BITSIZE) - 1) << CONFIG::HID0_DOZE_OFFSET : 0;
-	static const uint32_t HID0_NAP_MASK = CONFIG::HAS_HID0_NAP ? ((1UL << CONFIG::HID0_NAP_BITSIZE) - 1) << CONFIG::HID0_NAP_OFFSET : 0;
-	static const uint32_t HID0_SLEEP_MASK = CONFIG::HAS_HID0_SLEEP ? ((1UL << CONFIG::HID0_SLEEP_BITSIZE) - 1) << CONFIG::HID0_SLEEP_OFFSET : 0;
-	static const uint32_t HID0_DPM_MASK = CONFIG::HAS_HID0_DPM ? ((1UL << CONFIG::HID0_DPM_BITSIZE) - 1) << CONFIG::HID0_DPM_OFFSET : 0;
-	static const uint32_t HID0_RISEG_MASK = CONFIG::HAS_HID0_RISEG ? ((1UL << CONFIG::HID0_RISEG_BITSIZE) - 1) << CONFIG::HID0_RISEG_OFFSET : 0;
-	static const uint32_t HID0_BHTCLR_MASK = CONFIG::HAS_HID0_BHTCLR ? ((1UL << CONFIG::HID0_BHTCLR_BITSIZE) - 1) << CONFIG::HID0_BHTCLR_OFFSET : 0;
-	static const uint32_t HID0_EIEC_MASK = CONFIG::HAS_HID0_EIEC ? ((1UL << CONFIG::HID0_EIEC_BITSIZE) - 1) << CONFIG::HID0_EIEC_OFFSET : 0;
-	static const uint32_t HID0_XAEN_MASK = CONFIG::HAS_HID0_XAEN ? ((1UL << CONFIG::HID0_XAEN_BITSIZE) - 1) << CONFIG::HID0_XAEN_OFFSET : 0;
-	static const uint32_t HID0_NHR_MASK = CONFIG::HAS_HID0_NHR ? ((1UL << CONFIG::HID0_NHR_BITSIZE) - 1) << CONFIG::HID0_NHR_OFFSET : 0;
-	static const uint32_t HID0_ICE_MASK = CONFIG::HAS_HID0_ICE ? ((1UL << CONFIG::HID0_ICE_BITSIZE) - 1) << CONFIG::HID0_ICE_OFFSET : 0;
-	static const uint32_t HID0_DCE_MASK = CONFIG::HAS_HID0_DCE ? ((1UL << CONFIG::HID0_DCE_BITSIZE) - 1) << CONFIG::HID0_DCE_OFFSET : 0;
-	static const uint32_t HID0_ILOCK_MASK = CONFIG::HAS_HID0_ILOCK ? ((1UL << CONFIG::HID0_ILOCK_BITSIZE) - 1) << CONFIG::HID0_ILOCK_OFFSET : 0;
-	static const uint32_t HID0_DLOCK_MASK = CONFIG::HAS_HID0_DLOCK ? ((1UL << CONFIG::HID0_DLOCK_BITSIZE) - 1) << CONFIG::HID0_DLOCK_OFFSET : 0;
-	static const uint32_t HID0_ICFI_MASK = CONFIG::HAS_HID0_ICFI ? ((1UL << CONFIG::HID0_ICFI_BITSIZE) - 1) << CONFIG::HID0_ICFI_OFFSET : 0;
-	static const uint32_t HID0_DCFI_MASK = CONFIG::HAS_HID0_DCFI ? ((1UL << CONFIG::HID0_DCFI_BITSIZE) - 1) << CONFIG::HID0_DCFI_OFFSET : 0;
-	static const uint32_t HID0_SPD_MASK = CONFIG::HAS_HID0_SPD ? ((1UL << CONFIG::HID0_SPD_BITSIZE) - 1) << CONFIG::HID0_SPD_OFFSET : 0;
-	static const uint32_t HID0_IFEM_MASK = CONFIG::HAS_HID0_IFEM ? ((1UL << CONFIG::HID0_IFEM_BITSIZE) - 1) << CONFIG::HID0_IFEM_OFFSET : 0;
-	static const uint32_t HID0_IFTT_MASK = CONFIG::HAS_HID0_IFTT ? ((1UL << CONFIG::HID0_IFTT_BITSIZE) - 1) << CONFIG::HID0_IFTT_OFFSET : 0;
-	static const uint32_t HID0_XBSEN_MASK = CONFIG::HAS_HID0_XBSEN ? ((1UL << CONFIG::HID0_XBSEN_BITSIZE) - 1) << CONFIG::HID0_XBSEN_OFFSET : 0;
-	static const uint32_t HID0_SIED_MASK = CONFIG::HAS_HID0_SIED ? ((1UL << CONFIG::HID0_SIED_BITSIZE) - 1) << CONFIG::HID0_SIED_OFFSET : 0;
-	static const uint32_t HID0_SGE_MASK = CONFIG::HAS_HID0_SGE ? ((1UL << CONFIG::HID0_SGE_BITSIZE) - 1) << CONFIG::HID0_SGE_OFFSET : 0;
-	static const uint32_t HID0_DCFA_MASK = CONFIG::HAS_HID0_DCFA ? ((1UL << CONFIG::HID0_DCFA_BITSIZE) - 1) << CONFIG::HID0_DCFA_OFFSET : 0;
-	static const uint32_t HID0_BTIC_MASK = CONFIG::HAS_HID0_BTIC ? ((1UL << CONFIG::HID0_BTIC_BITSIZE) - 1) << CONFIG::HID0_BTIC_OFFSET : 0;
-	static const uint32_t HID0_LRSTK_MASK = CONFIG::HAS_HID0_LRSTK ? ((1UL << CONFIG::HID0_LRSTK_BITSIZE) - 1) << CONFIG::HID0_LRSTK_OFFSET : 0;
-	static const uint32_t HID0_ABE_MASK = CONFIG::HAS_HID0_ABE ? ((1UL << CONFIG::HID0_ABE_BITSIZE) - 1) << CONFIG::HID0_ABE_OFFSET : 0;
-	static const uint32_t HID0_FOLD_MASK = CONFIG::HAS_HID0_FOLD ? ((1UL << CONFIG::HID0_FOLD_BITSIZE) - 1) << CONFIG::HID0_FOLD_OFFSET : 0;
-	static const uint32_t HID0_BHT_MASK = CONFIG::HAS_HID0_BHT ? ((1UL << CONFIG::HID0_BHT_BITSIZE) - 1) << CONFIG::HID0_BHT_OFFSET : 0;
-	static const uint32_t HID0_NOPDST_MASK = CONFIG::HAS_HID0_NOPDST ? ((1UL << CONFIG::HID0_NOPDST_BITSIZE) - 1) << CONFIG::HID0_NOPDST_OFFSET : 0;
-	static const uint32_t HID0_NOPTI_MASK = CONFIG::HAS_HID0_NOPTI ? ((1UL << CONFIG::HID0_NOPTI_BITSIZE) - 1) << CONFIG::HID0_NOPTI_OFFSET : 0;
-
-	static const uint32_t HID0_MASK = HID0_EMCP_MASK | HID0_DBP_MASK | HID0_EBA_MASK | HID0_EBD_MASK | HID0_SBCLK_MASK | HID0_BCLK_MASK | HID0_TBEN_MASK |
-	                                  HID0_EICE_MASK | HID0_ECLK_MASK | HID0_PAR_MASK | HID0_STEN_MASK | HID0_DOZE_MASK | HID0_NAP_MASK | HID0_SLEEP_MASK |
-	                                  HID0_DPM_MASK | HID0_RISEG_MASK | HID0_BHTCLR_MASK | HID0_EIEC_MASK | HID0_XAEN_MASK | HID0_NHR_MASK | HID0_ICE_MASK |
-	                                  HID0_DCE_MASK | HID0_ILOCK_MASK | HID0_DLOCK_MASK | HID0_ICFI_MASK | HID0_DCFI_MASK | HID0_SPD_MASK | HID0_IFEM_MASK |
-	                                  HID0_IFTT_MASK | HID0_XBSEN_MASK | HID0_SIED_MASK | HID0_SGE_MASK | HID0_DCFA_MASK | HID0_BTIC_MASK | HID0_LRSTK_MASK |
-	                                  HID0_ABE_MASK | HID0_FOLD_MASK | HID0_BHT_MASK | HID0_NOPDST_MASK | HID0_NOPTI_MASK;
-
-	static const uint32_t HID1_PC0_MASK = CONFIG::HAS_HID1_PC0 ? ((1UL << CONFIG::HID1_PC0_BITSIZE) - 1) << CONFIG::HID1_PC0_OFFSET : 0;
-	static const uint32_t HID1_PC1_MASK = CONFIG::HAS_HID1_PC1 ? ((1UL << CONFIG::HID1_PC1_BITSIZE) - 1) << CONFIG::HID1_PC1_OFFSET : 0;
-	static const uint32_t HID1_PC2_MASK = CONFIG::HAS_HID1_PC2 ? ((1UL << CONFIG::HID1_PC2_BITSIZE) - 1) << CONFIG::HID1_PC2_OFFSET : 0;
-	static const uint32_t HID1_PC3_MASK = CONFIG::HAS_HID1_PC3 ? ((1UL << CONFIG::HID1_PC3_BITSIZE) - 1) << CONFIG::HID1_PC3_OFFSET : 0;
-	static const uint32_t HID1_PC4_MASK = CONFIG::HAS_HID1_PC4 ? ((1UL << CONFIG::HID1_PC4_BITSIZE) - 1) << CONFIG::HID1_PC4_OFFSET : 0;
-	static const uint32_t HID1_PC5_MASK = CONFIG::HAS_HID1_PC5 ? ((1UL << CONFIG::HID1_PC5_BITSIZE) - 1) << CONFIG::HID1_PC5_OFFSET : 0;
-	static const uint32_t HID1_EMCP_MASK = CONFIG::HAS_HID1_EMCP ? ((1UL << CONFIG::HID1_EMCP_BITSIZE) - 1) << CONFIG::HID1_EMCP_OFFSET : 0;
-	static const uint32_t HID1_EBA_MASK = CONFIG::HAS_HID1_EBA ? ((1UL << CONFIG::HID1_EBA_BITSIZE) - 1) << CONFIG::HID1_EBA_OFFSET : 0;
-	static const uint32_t HID1_EBD_MASK = CONFIG::HAS_HID1_EBD ? ((1UL << CONFIG::HID1_EBD_BITSIZE) - 1) << CONFIG::HID1_EBD_OFFSET : 0;
-	static const uint32_t HID1_BCLK_MASK = CONFIG::HAS_HID1_BCLK ? ((1UL << CONFIG::HID1_BCLK_BITSIZE) - 1) << CONFIG::HID1_BCLK_OFFSET : 0;
-	static const uint32_t HID1_ECLK_MASK = CONFIG::HAS_HID1_ECLK ? ((1UL << CONFIG::HID1_ECLK_BITSIZE) - 1) << CONFIG::HID1_ECLK_OFFSET : 0;
-	static const uint32_t HID1_PAR_MASK = CONFIG::HAS_HID1_PAR ? ((1UL << CONFIG::HID1_PAR_BITSIZE) - 1) << CONFIG::HID1_PAR_OFFSET : 0;
-	static const uint32_t HID1_DFS4_MASK = CONFIG::HAS_HID1_DFS4 ? ((1UL << CONFIG::HID1_DFS4_BITSIZE) - 1) << CONFIG::HID1_DFS4_OFFSET : 0;
-	static const uint32_t HID1_DFS2_MASK = CONFIG::HAS_HID1_DFS2 ? ((1UL << CONFIG::HID1_DFS2_BITSIZE) - 1) << CONFIG::HID1_DFS2_OFFSET : 0;
-	static const uint32_t HID1_SYNCBE_MASK = CONFIG::HAS_HID1_SYNCBE ? ((1UL << CONFIG::HID1_SYNCBE_BITSIZE) - 1) << CONFIG::HID1_SYNCBE_OFFSET : 0;
-	static const uint32_t HID1_ABE_MASK = CONFIG::HAS_HID1_ABE ? ((1UL << CONFIG::HID1_ABE_BITSIZE) - 1) << CONFIG::HID1_ABE_OFFSET : 0;
-
-	static const uint32_t HID1_MASK = HID1_PC0_MASK | HID1_PC1_MASK | HID1_PC2_MASK | HID1_PC3_MASK | HID1_PC4_MASK | HID1_PC5_MASK | HID1_EMCP_MASK |
-	                                  HID1_EBA_MASK | HID1_EBD_MASK | HID1_BCLK_MASK | HID1_ECLK_MASK | HID1_PAR_MASK | HID1_DFS4_MASK | HID1_DFS2_MASK |
-	                                  HID1_SYNCBE_MASK | HID1_ABE_MASK;
-
-	static const uint32_t HID2_L2AP_EN_MASK = CONFIG::HAS_HID2_L2AP_EN ? ((1UL << CONFIG::HID2_L2AP_EN_BITSIZE) - 1) << CONFIG::HID2_L2AP_EN_OFFSET : 0;
-	static const uint32_t HID2_SWT_EN_MASK = CONFIG::HAS_HID2_SWT_EN ? ((1UL << CONFIG::HID2_SWT_EN_BITSIZE) - 1) << CONFIG::HID2_SWT_EN_OFFSET : 0;
-	static const uint32_t HID2_HIGH_BAT_EN_MASK = CONFIG::HAS_HID2_HIGH_BAT_EN ? ((1UL << CONFIG::HID2_HIGH_BAT_EN_BITSIZE) - 1) << CONFIG::HID2_HIGH_BAT_EN_OFFSET : 0;
-	static const uint32_t HID2_IWLCK_MASK = CONFIG::HAS_HID2_IWLCK ? ((1UL << CONFIG::HID2_IWLCK_BITSIZE) - 1) << CONFIG::HID2_IWLCK_OFFSET : 0;
-	static const uint32_t HID2_DWLCK_MASK = CONFIG::HAS_HID2_DWLCK ? ((1UL << CONFIG::HID2_DWLCK_BITSIZE) - 1) << CONFIG::HID2_DWLCK_OFFSET : 0;
-
-	static const uint32_t HID2_MASK = HID2_L2AP_EN_MASK | HID2_SWT_EN_MASK | HID2_HIGH_BAT_EN_MASK | HID2_IWLCK_MASK | HID2_DWLCK_MASK;
-
-	static const uint32_t L2CR_L2E_MASK = CONFIG::HAS_L2CR_L2E ? ((1UL << CONFIG::L2CR_L2E_BITSIZE) - 1) << CONFIG::L2CR_L2E_OFFSET : 0;
-	static const uint32_t L2CR_L2PE_MASK = CONFIG::HAS_L2CR_L2PE ? ((1UL << CONFIG::L2CR_L2PE_BITSIZE) - 1) << CONFIG::L2CR_L2PE_OFFSET : 0;
-	static const uint32_t L2CR_L2SIZ_MASK = CONFIG::HAS_L2CR_L2SIZ ? ((1UL << CONFIG::L2CR_L2SIZ_BITSIZE) - 1) << CONFIG::L2CR_L2SIZ_OFFSET : 0;
-	static const uint32_t L2CR_L2CLK_MASK = CONFIG::HAS_L2CR_L2CLK ? ((1UL << CONFIG::L2CR_L2CLK_BITSIZE) - 1) << CONFIG::L2CR_L2CLK_OFFSET : 0;
-	static const uint32_t L2CR_L2RAM_MASK = CONFIG::HAS_L2CR_L2RAM ? ((1UL << CONFIG::L2CR_L2RAM_BITSIZE) - 1) << CONFIG::L2CR_L2RAM_OFFSET : 0;
-	static const uint32_t L2CR_L2DR_MASK = CONFIG::HAS_L2CR_L2DR ? ((1UL << CONFIG::L2CR_L2DR_BITSIZE) - 1) << CONFIG::L2CR_L2DR_OFFSET : 0;
-	static const uint32_t L2CR_L2DO_MASK = CONFIG::HAS_L2CR_L2DO ? ((1UL << CONFIG::L2CR_L2DO_BITSIZE) - 1) << CONFIG::L2CR_L2DO_OFFSET : 0;
-	static const uint32_t L2CR_L2I_MASK = CONFIG::HAS_L2CR_L2I ? ((1UL << CONFIG::L2CR_L2I_BITSIZE) - 1) << CONFIG::L2CR_L2I_OFFSET : 0;
-	static const uint32_t L2CR_L2CTL_MASK = CONFIG::HAS_L2CR_L2CTL ? ((1UL << CONFIG::L2CR_L2CTL_BITSIZE) - 1) << CONFIG::L2CR_L2CTL_OFFSET : 0;
-	static const uint32_t L2CR_L2WT_MASK = CONFIG::HAS_L2CR_L2WT ? ((1UL << CONFIG::L2CR_L2WT_BITSIZE) - 1) << CONFIG::L2CR_L2WT_OFFSET : 0;
-	static const uint32_t L2CR_L2TS_MASK = CONFIG::HAS_L2CR_L2TS ? ((1UL << CONFIG::L2CR_L2TS_BITSIZE) - 1) << CONFIG::L2CR_L2TS_OFFSET : 0;
-	static const uint32_t L2CR_L2OH_MASK = CONFIG::HAS_L2CR_L2OH ? ((1UL << CONFIG::L2CR_L2OH_BITSIZE) - 1) << CONFIG::L2CR_L2OH_OFFSET : 0;
-	static const uint32_t L2CR_L2SL_MASK = CONFIG::HAS_L2CR_L2SL ? ((1UL << CONFIG::L2CR_L2SL_BITSIZE) - 1) << CONFIG::L2CR_L2SL_OFFSET : 0;
-	static const uint32_t L2CR_L2DF_MASK = CONFIG::HAS_L2CR_L2DF ? ((1UL << CONFIG::L2CR_L2DF_BITSIZE) - 1) << CONFIG::L2CR_L2DF_OFFSET : 0;
-	static const uint32_t L2CR_L2BYP_MASK = CONFIG::HAS_L2CR_L2BYP ? ((1UL << CONFIG::L2CR_L2BYP_BITSIZE) - 1) << CONFIG::L2CR_L2BYP_OFFSET : 0;
-	static const uint32_t L2CR_L2FA_MASK = CONFIG::HAS_L2CR_L2FA ? ((1UL << CONFIG::L2CR_L2FA_BITSIZE) - 1) << CONFIG::L2CR_L2FA_OFFSET : 0;
-	static const uint32_t L2CR_L2REP_MASK = CONFIG::HAS_L2CR_L2REP ? ((1UL << CONFIG::L2CR_L2REP_BITSIZE) - 1) << CONFIG::L2CR_L2REP_OFFSET : 0;
-	static const uint32_t L2CR_L2HWF_MASK = CONFIG::HAS_L2CR_L2HWF ? ((1UL << CONFIG::L2CR_L2HWF_BITSIZE) - 1) << CONFIG::L2CR_L2HWF_OFFSET : 0;
-	static const uint32_t L2CR_L2IO_MASK = CONFIG::HAS_L2CR_L2IO ? ((1UL << CONFIG::L2CR_L2IO_BITSIZE) - 1) << CONFIG::L2CR_L2IO_OFFSET : 0;
-	static const uint32_t L2CR_L2CLKSTP_MASK = CONFIG::HAS_L2CR_L2CLKSTP ? ((1UL << CONFIG::L2CR_L2CLKSTP_BITSIZE) - 1) << CONFIG::L2CR_L2CLKSTP_OFFSET : 0;
-	static const uint32_t L2CR_L2DRO_MASK = CONFIG::HAS_L2CR_L2DRO ? ((1UL << CONFIG::L2CR_L2DRO_BITSIZE) - 1) << CONFIG::L2CR_L2DRO_OFFSET : 0;
-	static const uint32_t L2CR_L2IP_MASK = CONFIG::HAS_L2CR_L2IP ? ((1UL << CONFIG::L2CR_L2IP_BITSIZE) - 1) << CONFIG::L2CR_L2IP_OFFSET : 0;
-	static const uint32_t L2CR_LVRAME_MASK = CONFIG::HAS_L2CR_LVRAME? ((1UL << CONFIG::L2CR_LVRAME_BITSIZE) - 1) << CONFIG::L2CR_LVRAME_OFFSET : 0;
-	static const uint32_t L2CR_LVRAMM_MASK = CONFIG::HAS_L2CR_LVRAMM ? ((1UL << CONFIG::L2CR_LVRAMM_BITSIZE) - 1) << CONFIG::L2CR_LVRAMM_OFFSET : 0;
-
-
-	static const uint32_t ICTRL_CIRQ_MASK = CONFIG::HAS_ICTRL_CIRQ ? ((1UL << CONFIG::ICTRL_CIRQ_BITSIZE) - 1) << CONFIG::ICTRL_CIRQ_OFFSET : 0;
-	static const uint32_t ICTRL_EIEC_MASK = CONFIG::HAS_ICTRL_EIEC ? ((1UL << CONFIG::ICTRL_EIEC_BITSIZE) - 1) << CONFIG::ICTRL_EIEC_OFFSET : 0;
-	static const uint32_t ICTRL_EDCE_MASK = CONFIG::HAS_ICTRL_EDCE ? ((1UL << CONFIG::ICTRL_EDCE_BITSIZE) - 1) << CONFIG::ICTRL_EDCE_OFFSET : 0;
-	static const uint32_t ICTRL_EICP_MASK = CONFIG::HAS_ICTRL_EICP ? ((1UL << CONFIG::ICTRL_EICP_BITSIZE) - 1) << CONFIG::ICTRL_EICP_OFFSET : 0;
-	static const uint32_t ICTRL_ICWL_MASK = CONFIG::HAS_ICTRL_ICWL ? ((1UL << CONFIG::ICTRL_ICWL_BITSIZE) - 1) << CONFIG::ICTRL_ICWL_OFFSET : 0;
-
-	static const uint32_t ICTRL_MASK = ICTRL_CIRQ_MASK | ICTRL_EIEC_MASK | ICTRL_EDCE_MASK | ICTRL_EICP_MASK | ICTRL_ICWL_MASK;
-
-
 	//=====================================================================
 	//=                  public service imports/exports                   =
 	//=====================================================================
 	
-	ServiceExport<Disassembly<address_t> > disasm_export;
+	ServiceExport<Disassembly<typename CONFIG::address_t> > disasm_export;
 	ServiceExport<unisim::service::interfaces::Registers> registers_export;
-	ServiceExport<Memory<address_t> > memory_export;
-	ServiceExport<MemoryInjection<address_t> > memory_injection_export;
+	ServiceExport<Memory<typename CONFIG::address_t> > memory_export;
+	ServiceExport<MemoryInjection<typename CONFIG::address_t> > memory_injection_export;
 	ServiceExport<CPULinuxOS> cpu_linux_os_export;
 	ServiceExport<Synchronizable> synchronizable_export;
 	ServiceExport<MemoryAccessReportingControl> memory_access_reporting_control_export;
 
-	ServiceImport<Loader<physical_address_t> > kernel_loader_import;
-	ServiceImport<DebugControl<address_t> > debug_control_import;
-	ServiceImport<MemoryAccessReporting<address_t> > memory_access_reporting_import;
-	ServiceImport<SymbolTableLookup<address_t> > symbol_table_lookup_import;
-	ServiceImport<Memory<physical_address_t> > memory_import;
+	ServiceImport<Loader<typename CONFIG::physical_address_t> > kernel_loader_import;
+	ServiceImport<DebugControl<typename CONFIG::address_t> > debug_control_import;
+	ServiceImport<MemoryAccessReporting<typename CONFIG::address_t> > memory_access_reporting_import;
+	ServiceImport<SymbolTableLookup<typename CONFIG::address_t> > symbol_table_lookup_import;
+	ServiceImport<Memory<typename CONFIG::physical_address_t> > memory_import;
 	ServiceImport<LinuxOS> linux_os_import;
 	ServiceImport<TrapReporting> trap_reporting_import;
 	ServiceImport<CachePowerEstimator> il1_power_estimator_import;
@@ -829,71 +674,24 @@ public:
 	const SoftDouble& GetFPR(unsigned int n) const { return fpr[n]; }
 	void SetFPR(unsigned int n, const SoftDouble& value) { fpr[n] = value; }
 
-	//=====================================================================
-	//=                     Cache/MMU handling methods                    =
-	//=====================================================================
-
-	void InvalidateITLBSet(uint32_t index);
-	void InvalidateITLB();
-	void InvalidateDTLBSet(uint32_t index);
-	void InvalidateDTLB();
-	void InvalidateDL1Set(uint32_t index);
-	void InvalidateDL1();
-	void InvalidateIL1Set(uint32_t index);
-	void InvalidateIL1();
-	void InvalidateL2Set(uint32_t index);
-	void InvalidateL2();
-	void ClearAccessDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_access);
-	void ClearAccessIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_access);
-	void ClearAccessL2(CacheAccess<typename CONFIG::L2_CONFIG>& l2_access);
-	void LookupDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_access);
-	void LookupIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_access);
-	void LookupL2(CacheAccess<typename CONFIG::L2_CONFIG>& l2_access);
-	void EmuEvictDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_access);
-	void EmuEvictIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_access);
-	void EmuEvictL2(CacheAccess<typename CONFIG::L2_CONFIG>& l2_access);
-	void ChooseLineToEvictDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_access);
-	void ChooseLineToEvictIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_access);
-	void ChooseLineToEvictL2(CacheAccess<typename CONFIG::L2_CONFIG>& l2_access);
-	void UpdateReplacementPolicyDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_access);
-	void UpdateReplacementPolicyIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_access);
-	void UpdateReplacementPolicyL2(CacheAccess<typename CONFIG::L2_CONFIG>& l2_access);
-	void EmuFillDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_access, WIMG wimg, bool rwitm);
-	void EmuFillIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_access, WIMG wimg);
-	void EmuFillL2(CacheAccess<typename CONFIG::L2_CONFIG>& l2_access, WIMG wimg, bool rwitm);
-	void EmuFetch(typename CONFIG::address_t addr, void *buffer, uint32_t size);
-	template <bool TRANSLATE_ADDR> void EmuLoad(address_t addr, void *buffer, uint32_t size);
-	template <bool TRANSLATE_ADDR> void EmuStore(address_t addr, const void *buffer, uint32_t size);
-	template <class T> void EmuLoad(T& value, address_t ea);
-	template <class T> void EmuStore(T value, address_t ea);
-	inline address_t MungEffectiveAddress(address_t ea, unsigned int size) { return (msr & CONFIG::MSR_LE_MASK) ? ea ^ (8 - size) : ea; }
-	void Int8Load(unsigned int rd, address_t ea);
-	void Int16Load(unsigned int rd, address_t ea);
-	void SInt16Load(unsigned int rd, address_t ea);
-	void Int32Load(unsigned int rd, address_t ea);
-	void Fp32Load(unsigned int fd, address_t ea);
-	void Fp64Load(unsigned int fd, address_t ea);
-	void Int16LoadByteReverse(unsigned int rd, address_t ea);
-	void Int32LoadByteReverse(unsigned int rd, address_t ea);
-	void IntLoadMSBFirst(unsigned int rd, address_t ea, uint32_t size);
-	void Int8Store(unsigned int rs, address_t ea);
-	void Int16Store(unsigned int rs, address_t ea);
-	void Int32Store(unsigned int rs, address_t ea);
-	void Fp32Store(unsigned int fs, address_t ea);
-	void Fp64Store(unsigned int fs, address_t ea);
-	void FpStoreLSW(unsigned int fs, address_t ea);
-	void Int16StoreByteReverse(unsigned int rs, address_t ea);
-	void Int32StoreByteReverse(unsigned int rs, address_t ea);
-	void IntStoreMSBFirst(unsigned int rs, address_t ea, uint32_t size);
-
-	virtual void BusRead(physical_address_t physical_addr, void *buffer, uint32_t size, WIMG wimg = CONFIG::WIMG_DEFAULT, bool rwitm = false);
-	virtual void BusWrite(physical_address_t physical_addr, const void *buffer, uint32_t size, WIMG wimg = CONFIG::WIMG_DEFAULT);
-	virtual void BusZeroBlock(physical_address_t physical_addr);
-	virtual void BusFlushBlock(physical_address_t physical_addr);
-
-#ifdef SOCLIB
-	virtual void GenLoadStore(typename LoadStoreAccess<CONFIG>::Type type, unsigned int reg_num, address_t munged_ea, uint32_t size) = 0;
-#endif
+	void Int8Load(unsigned int rd, typename CONFIG::address_t ea);
+	void Int16Load(unsigned int rd, typename CONFIG::address_t ea);
+	void SInt16Load(unsigned int rd, typename CONFIG::address_t ea);
+	void Int32Load(unsigned int rd, typename CONFIG::address_t ea);
+	void Fp32Load(unsigned int fd, typename CONFIG::address_t ea);
+	void Fp64Load(unsigned int fd, typename CONFIG::address_t ea);
+	void Int16LoadByteReverse(unsigned int rd, typename CONFIG::address_t ea);
+	void Int32LoadByteReverse(unsigned int rd, typename CONFIG::address_t ea);
+	void IntLoadMSBFirst(unsigned int rd, typename CONFIG::address_t ea, uint32_t size);
+	void Int8Store(unsigned int rs, typename CONFIG::address_t ea);
+	void Int16Store(unsigned int rs, typename CONFIG::address_t ea);
+	void Int32Store(unsigned int rs, typename CONFIG::address_t ea);
+	void Fp32Store(unsigned int fs, typename CONFIG::address_t ea);
+	void Fp64Store(unsigned int fs, typename CONFIG::address_t ea);
+	void FpStoreLSW(unsigned int fs, typename CONFIG::address_t ea);
+	void Int16StoreByteReverse(unsigned int rs, typename CONFIG::address_t ea);
+	void Int32StoreByteReverse(unsigned int rs, typename CONFIG::address_t ea);
+	void IntStoreMSBFirst(unsigned int rs, typename CONFIG::address_t ea, uint32_t size);
 
 	//=====================================================================
 	//=             memory access reporting control interface methods     =
@@ -912,12 +710,10 @@ public:
 	//=               Programmer view memory access methods               =
 	//=====================================================================
 	
-	bool ReadMemory(address_t addr, void *buffer, uint32_t size, typename CONFIG::MemoryType mt, bool translate_addr);
-	bool WriteMemory(address_t addr, const void *buffer, uint32_t size, typename CONFIG::MemoryType mt, bool translate_addr);
-	virtual bool ReadMemory(address_t addr, void *buffer, uint32_t size);
-	virtual bool WriteMemory(address_t addr, const void *buffer, uint32_t size);
-	virtual bool InjectReadMemory(address_t addr, void *buffer, uint32_t size);
-	virtual bool InjectWriteMemory(address_t addr, const void *buffer, uint32_t size);
+	virtual bool ReadMemory(typename CONFIG::address_t addr, void *buffer, uint32_t size);
+	virtual bool WriteMemory(typename CONFIG::address_t addr, const void *buffer, uint32_t size);
+	virtual bool InjectReadMemory(typename CONFIG::address_t addr, void *buffer, uint32_t size);
+	virtual bool InjectWriteMemory(typename CONFIG::address_t addr, const void *buffer, uint32_t size);
 
 	//=====================================================================
 	//=                         utility methods                           =
@@ -950,12 +746,6 @@ public:
 	inline void SetLR(uint32_t value) { lr = value; }
 	inline uint32_t GetCTR() { return ctr; }
 	inline void SetCTR(uint32_t value) { ctr = value; }
-	inline uint32_t GetMQ() { return mq; }
-	inline void SetMQ(uint32_t value) { mq = value; }	
-	inline uint32_t GetRTCU() { return rtcu; }
-	inline void SetRTCU(uint32_t value) { rtcu = value; }	
-	inline uint32_t GetRTCL() { return rtcl; }
-	inline void SetRTCL(uint32_t value) { rtcl = value; }	
 	inline uint32_t GetVRSAVE() { return vrsave; }
 	inline void SetVRSAVE(uint32_t value) { vrsave = value; }	
 	
@@ -1110,16 +900,6 @@ public:
 
 
 	//=====================================================================
-	//=                       DABR set/get methods                        =
-	//=====================================================================
-	
-	inline void SetDABR(uint32_t value) { dabr = value; }
-	inline uint32_t GetDABR() { return dabr; }
-	inline uint32_t GetDABR_DAB() { return (dabr >> 3) & 0x1fffffffUL; }
-	inline uint32_t GetDABR_BT() { return (dabr >> 2) & 1; }inline uint32_t GetDABR_DW() { return (dabr >> 1) & 1; }
-	inline uint32_t GetDABR_DR() { return dabr & 1; }
-
-	//=====================================================================
 	//=                   FPU registers set/get methods                   =
 	//=====================================================================
 
@@ -1127,19 +907,234 @@ public:
 	inline void SetFPSCR(uint32_t value) { fpscr = value; }
 	
 	//=====================================================================
+	//=                  MMU registers set/get methods                    =
+	//=====================================================================
+
+	inline uint32_t GetSR(unsigned int n) { return sr[n]; }
+	inline void SetSR(unsigned int n, uint32_t value) { sr[n] = value; }
+
+	// Methods for reading SR registers bits
+	inline uint32_t GetSR_T(unsigned int n) { return (sr[n] >> 31) & 1; }
+	inline uint32_t GetSR_KS(unsigned int n) { return (sr[n] >> 30) & 1; }
+	inline uint32_t GetSR_KP(unsigned int n) { return (sr[n] >> 29) & 1; }
+	inline uint32_t GetSR_N(unsigned int n) { return (sr[n] >> 28) & 1; }
+	inline uint32_t GetSR_VSID(unsigned int n) { return sr[n] & 0xffffffUL; }
+
+	//=====================================================================
+	//=                   Vector instructions handling                    =
+	//=====================================================================
+	
+	//=====================================================================
+	//=               Cache management instructions handling              =
+	//=====================================================================
+	
+	void Dcba(typename CONFIG::address_t addr);
+	void Dcbf(typename CONFIG::address_t addr);
+	void Dcbi(typename CONFIG::address_t addr);
+	void Dcbst(typename CONFIG::address_t addr);
+	void Dcbz(typename CONFIG::address_t addr);
+	void Icbi(typename CONFIG::address_t addr);
+	
+	//=====================================================================
+	//=  Translation look-aside buffers management instructions handling  =
+	//=====================================================================
+	
+	void Tlbia();
+	void Tlbie(typename CONFIG::address_t addr);
+	void Tlbld(typename CONFIG::address_t addr);
+	void Tlbli(typename CONFIG::address_t addr);
+
+	//=====================================================================
+	//=               Linked Load-Store instructions handling             =
+	//=====================================================================
+	
+	void Lwarx(unsigned int rd, typename CONFIG::address_t addr);
+	void Stwcx(unsigned int rs, typename CONFIG::address_t addr);
+
+	//=====================================================================
+	//=                        Debugging stuffs                           =
+	//=====================================================================
+
+	typename CONFIG::address_t GetEA() { return effective_address; }
+	
+	virtual unisim::util::debug::Register *GetRegister(const char *name);
+	virtual string Disasm(typename CONFIG::address_t addr, typename CONFIG::address_t& next_addr);
+	virtual const char *GetArchitectureName() const;
+	string GetObjectFriendlyName(typename CONFIG::address_t addr);
+	string GetFunctionFriendlyName(typename CONFIG::address_t addr);
+
+	
+	//=====================================================================
+	//=          Instruction prefetch buffer handling methods             =
+	//=====================================================================
+	
+	void FlushSubsequentInstructions();
+	
+	//=====================================================================
+	//=               Hardware check/acknowledgement methods              =
+	//=====================================================================
+	
+	void AckDecrementerOverflow();
+	void AckExternalInterrupt();
+	void AckHardReset();
+	void AckSoftReset();
+	void AckMCP();
+	void AckTEA();
+	void AckSMI();
+	void AckThermalManagementInterrupt();
+	void AckPerformanceMonitorInterrupt();
+
+	inline bool HasDecrementerOverflow() const { return asynchronous_interrupt & CONFIG::SIG_DECREMENTER_OVERFLOW; }
+	inline bool HasExternalInterrupt() const { return asynchronous_interrupt & CONFIG::SIG_EXTERNAL_INTERRUPT; }
+	inline bool HasHardReset() const { return asynchronous_interrupt & CONFIG::SIG_HARD_RESET; }
+	inline bool HasSoftReset() const { return asynchronous_interrupt & CONFIG::SIG_SOFT_RESET; }
+	inline bool HasMCP() const { return asynchronous_interrupt & CONFIG::SIG_MCP; }
+	inline bool HasTEA() const { return asynchronous_interrupt & CONFIG::SIG_TEA; }
+	inline bool HasSMI() const { return asynchronous_interrupt & CONFIG::SIG_SMI; }
+	inline bool HasPerformanceMonitorInterrupt() const { return asynchronous_interrupt & CONFIG::SIG_PERFORMANCE_MONITOR_INTERRUPT; }
+	inline bool HasAsynchronousInterrupt() const { return asynchronous_interrupt; }
+
+	//=====================================================================
+	//=                    Hardware interrupt request                     =
+	//=====================================================================
+	
+	void ReqDecrementerOverflow();
+	void ReqExternalInterrupt();
+	void ReqHardReset();
+	void ReqSoftReset();
+	void ReqMCP();
+	void ReqTEA();
+	void ReqSMI();
+	void ReqThermalManagementInterrupt();
+	void ReqPerformanceMonitorInterrupt();
+
+protected:
+
+	//=====================================================================
+	//=          Instruction prefetch buffer handling methods             =
+	//=====================================================================
+	
+	void FillPrefetchBuffer(uint32_t insn);
+	bool NeedFillingPrefetchBuffer() const;
+
+	//=====================================================================
+	//=          DEC/TBL/TBU bus-time based update methods                =
+	//=====================================================================
+	
+	void OnBusCycle();
+	
+	//=====================================================================
+	//=                        Debugging stuff                            =
+	//=====================================================================
+
+	Logger logger;
+    /** indicates if the memory accesses require to be reported */
+    bool requires_memory_access_reporting;
+    /** indicates if the finished instructions require to be reported */
+    bool requires_finished_instruction_reporting;
+	
+	inline bool IsVerboseSetup() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_SETUP_ENABLE && (verbose_all || verbose_setup); }
+	inline bool IsVerboseStep() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_STEP_ENABLE && (verbose_all || verbose_step); }
+	inline bool IsVerboseDTLB() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_DTLB_ENABLE && (verbose_all || verbose_dtlb); }
+	inline bool IsVerboseDL1() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_DL1_ENABLE && (verbose_all || verbose_dl1); }
+	inline bool IsVerboseIL1() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_IL1_ENABLE && (verbose_all || verbose_il1); }
+	inline bool IsVerboseL2() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_L2_ENABLE && (verbose_all || verbose_l2); }
+	inline bool IsVerboseLoad() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_LOAD_ENABLE && (verbose_all || verbose_load); }
+	inline bool IsVerboseStore() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_STORE_ENABLE && (verbose_all || verbose_store); }
+	inline bool IsVerboseReadMemory() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_READ_MEMORY_ENABLE && (verbose_all || verbose_read_memory); }
+	inline bool IsVerboseWriteMemory() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_WRITE_MEMORY_ENABLE && (verbose_all || verbose_write_memory); }
+	inline bool IsVerboseException() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_EXCEPTION_ENABLE && (verbose_all || verbose_exception); }
+	inline bool IsVerboseSetMSR() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_SET_MSR_ENABLE && (verbose_all || verbose_set_msr); }
+	inline bool IsVerboseSetHID0() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_SET_HID0_ENABLE && (verbose_all || verbose_set_hid0); }
+	inline bool IsVerboseSetHID1() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_SET_HID1_ENABLE && (verbose_all || verbose_set_hid1); }
+	inline bool IsVerboseSetHID2() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_SET_HID2_ENABLE && (verbose_all || verbose_set_hid2); }
+	inline bool IsVerboseSetL2CR() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_SET_L2CR_ENABLE && (verbose_all || verbose_set_l2cr); }
+
+	//=====================================================================
+	//=                      Bus access methods                           =
+	//=====================================================================
+
+	virtual void BusRead(typename CONFIG::physical_address_t physical_addr, void *buffer, uint32_t size, typename CONFIG::WIMG wimg = CONFIG::WIMG_DEFAULT, bool rwitm = false);
+	virtual void BusWrite(typename CONFIG::physical_address_t physical_addr, const void *buffer, uint32_t size, typename CONFIG::WIMG wimg = CONFIG::WIMG_DEFAULT);
+	virtual void BusZeroBlock(typename CONFIG::physical_address_t physical_addr);
+	virtual void BusFlushBlock(typename CONFIG::physical_address_t physical_addr);
+
+	
+	//=====================================================================
+	//=              CPU Cycle Time/Voltage/Bus Cycle Time                =
+	//=====================================================================
+	
+	uint64_t cpu_cycle_time; //!< CPU cycle time in ps
+	uint64_t voltage;        //!< CPU voltage in mV
+	uint64_t bus_cycle_time; //!< Front side bus cycle time in ps
+	uint64_t cpu_cycle;      //!< Number of cpu cycles
+	uint64_t bus_cycle;      //!< Number of front side bus cycles
+
+private:
+
+	//=====================================================================
+	//=                     Cache/MMU handling methods                    =
+	//=====================================================================
+
+	void InvalidateITLBSet(uint32_t index);
+	void InvalidateITLB();
+	void InvalidateDTLBSet(uint32_t index);
+	void InvalidateDTLB();
+	void InvalidateDL1Set(uint32_t index);
+	void InvalidateDL1();
+	void InvalidateIL1Set(uint32_t index);
+	void InvalidateIL1();
+	void InvalidateL2Set(uint32_t index);
+	void InvalidateL2();
+	void ClearAccessDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_access);
+	void ClearAccessIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_access);
+	void ClearAccessL2(CacheAccess<typename CONFIG::L2_CONFIG>& l2_access);
+	void LookupDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_access);
+	void LookupIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_access);
+	void LookupL2(CacheAccess<typename CONFIG::L2_CONFIG>& l2_access);
+	void EmuEvictDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_access);
+	void EmuEvictIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_access);
+	void EmuEvictL2(CacheAccess<typename CONFIG::L2_CONFIG>& l2_access);
+	void ChooseLineToEvictDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_access);
+	void ChooseLineToEvictIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_access);
+	void ChooseLineToEvictL2(CacheAccess<typename CONFIG::L2_CONFIG>& l2_access);
+	void UpdateReplacementPolicyDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_access);
+	void UpdateReplacementPolicyIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_access);
+	void UpdateReplacementPolicyL2(CacheAccess<typename CONFIG::L2_CONFIG>& l2_access);
+	void EmuFillDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_access, typename CONFIG::WIMG wimg, bool rwitm);
+	void EmuFillIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_access, typename CONFIG::WIMG wimg);
+	void EmuFillL2(CacheAccess<typename CONFIG::L2_CONFIG>& l2_access, typename CONFIG::WIMG wimg, bool rwitm);
+	void EmuFetch(typename CONFIG::address_t addr, void *buffer, uint32_t size);
+	template <bool TRANSLATE_ADDR> void EmuLoad(typename CONFIG::address_t addr, void *buffer, uint32_t size);
+	template <bool TRANSLATE_ADDR> void EmuStore(typename CONFIG::address_t addr, const void *buffer, uint32_t size);
+	template <class T> void EmuLoad(T& value, typename CONFIG::address_t ea);
+	template <class T> void EmuStore(T value, typename CONFIG::address_t ea);
+	inline typename CONFIG::address_t MungEffectiveAddress(typename CONFIG::address_t ea, unsigned int size) { return (msr & CONFIG::MSR_LE_MASK) ? ea ^ (8 - size) : ea; }
+	
+	
+#ifdef SOCLIB
+	virtual void GenLoadStore(typename LoadStoreAccess<CONFIG>::Type type, unsigned int reg_num, typename CONFIG::address_t munged_ea, uint32_t size) = 0;
+#endif
+
+	//=====================================================================
+	//=               Programmer view memory access methods               =
+	//=====================================================================
+	
+	bool ReadMemory(typename CONFIG::address_t addr, void *buffer, uint32_t size, typename CONFIG::MemoryType mt, bool translate_addr);
+	bool WriteMemory(typename CONFIG::address_t addr, const void *buffer, uint32_t size, typename CONFIG::MemoryType mt, bool translate_addr);
+
+	//=====================================================================
 	//=                      L2CR set/get methods                         =
 	//=====================================================================
 	
 	inline uint32_t GetL2CR() { return l2cr; }
 	void SetL2CR(uint32_t value);
-	inline uint32_t GetL2CR_L2E() { return (GetL2CR() & L2CR_L2E_MASK) >> CONFIG::L2CR_L2E_OFFSET; }
-	inline uint32_t GetL2CR_L2I() { return (GetL2CR() & L2CR_L2I_MASK) >> CONFIG::L2CR_L2I_OFFSET; }
-	inline uint32_t GetL2CR_L2IP() { return (GetL2CR() & L2CR_L2IP_MASK) >> CONFIG::L2CR_L2IP_OFFSET; }
-	inline void SetL2CR_L2E() { SetL2CR(GetL2CR() | L2CR_L2E_MASK); }
-	inline void SetL2CR_L2I() { SetL2CR(GetL2CR() | L2CR_L2I_MASK); }
-	inline void ResetL2CR_L2E() { SetL2CR(GetL2CR() & ~L2CR_L2E_MASK); }
-	inline void ResetL2CR_L2I() { SetL2CR(GetL2CR() & ~L2CR_L2I_MASK); }
-	inline void ResetL2CR_L2IP() { SetL2CR(GetL2CR() & ~L2CR_L2IP_MASK); }
+	inline uint32_t GetL2CR_L2E() { return (GetL2CR() & CONFIG::L2CR_L2E_MASK) >> CONFIG::L2CR_L2E_OFFSET; }
+	inline uint32_t GetL2CR_L2I() { return (GetL2CR() & CONFIG::L2CR_L2I_MASK) >> CONFIG::L2CR_L2I_OFFSET; }
+	inline void SetL2CR_L2E() { SetL2CR(GetL2CR() | CONFIG::L2CR_L2E_MASK); }
+	inline void SetL2CR_L2I() { SetL2CR(GetL2CR() | CONFIG::L2CR_L2I_MASK); }
+	inline void ResetL2CR_L2E() { SetL2CR(GetL2CR() & ~CONFIG::L2CR_L2E_MASK); }
+	inline void ResetL2CR_L2I() { SetL2CR(GetL2CR() & ~CONFIG::L2CR_L2I_MASK); }
 
 	//=====================================================================
 	//=                      IABR set/get methods                         =
@@ -1153,20 +1148,18 @@ public:
 	inline uint32_t GetLDSTDB() { return ldstdb; }
 	inline void SetLDSTDB(uint32_t value) { ldstdb = value; }
 	
-	//=====================================================================
-	//=                THRM1/THRM2/THRM3 set/get methods                  =
-	//=====================================================================
-	
-	inline uint32_t GetTHRM1() { return thrm1; }
-	inline void SetTHRM1(uint32_t value) { thrm1 = value; }
-	inline uint32_t GetTHRM2() { return thrm2; }
-	inline void SetTHRM2(uint32_t value) { thrm2 = value; }
-	inline uint32_t GetTHRM3() { return thrm3; }
-	inline void SetTHRM3(uint32_t value) { thrm3 = value; }
-	
-	
 	inline uint32_t GetICTC() { return ictc; }
 	inline void SetICTC(uint32_t value) { ictc = value; }
+
+	//=====================================================================
+	//=                       DABR set/get methods                        =
+	//=====================================================================
+	
+	inline void SetDABR(uint32_t value) { dabr = value; }
+	inline uint32_t GetDABR() { return dabr; }
+	inline uint32_t GetDABR_DAB() { return (dabr >> 3) & 0x1fffffffUL; }
+	inline uint32_t GetDABR_BT() { return (dabr >> 2) & 1; }inline uint32_t GetDABR_DW() { return (dabr >> 1) & 1; }
+	inline uint32_t GetDABR_DR() { return dabr & 1; }
 
 	//=====================================================================
 	//=         performance monitor registers set/get methods             =
@@ -1202,40 +1195,38 @@ public:
 
 	inline uint32_t GetHID0() { return hid0; }
 	void SetHID0(uint32_t value);
-	inline uint32_t GetHID0_EMCP() { return (GetHID0() & HID0_EMCP_MASK) >> CONFIG::HID0_EMCP_OFFSET; }
-	inline uint32_t GetHID0_DBP() { return (GetHID0() & HID0_DBP_MASK) >> CONFIG::HID0_DBP_OFFSET; }
-	inline uint32_t GetHID0_EBA() { return (GetHID0() & HID0_EBA_MASK) >> CONFIG::HID0_EBA_OFFSET; }
-	inline uint32_t GetHID0_EBD() { return (GetHID0() & HID0_EBD_MASK) >> CONFIG::HID0_EBD_OFFSET; }
-	inline uint32_t GetHID0_SBCLK() { return (GetHID0() & HID0_SBCLK_MASK) >> CONFIG::HID0_SBCLK_OFFSET; }
-	inline uint32_t GetHID0_EICE() { return (GetHID0() & HID0_EICE_MASK) >> CONFIG::HID0_EICE_OFFSET; }
-	inline uint32_t GetHID0_ECLK() { return (GetHID0() & HID0_ECLK_MASK) >> CONFIG::HID0_ECLK_OFFSET; }
-	inline uint32_t GetHID0_PAR() { return (GetHID0() & HID0_PAR_MASK) >> CONFIG::HID0_PAR_OFFSET; }
-	inline uint32_t GetHID0_DOZE() { return (GetHID0() & HID0_DOZE_MASK) >> CONFIG::HID0_DOZE_OFFSET; }
-	inline uint32_t GetHID0_NAP() { return (GetHID0() & HID0_NAP_MASK) >> CONFIG::HID0_NAP_OFFSET; }
-	inline uint32_t GetHID0_SLEEP() { return (GetHID0() & HID0_SLEEP_MASK) >> CONFIG::HID0_SLEEP_OFFSET; }
-	inline uint32_t GetHID0_DPM() { return (GetHID0() & HID0_DPM_MASK) >> CONFIG::HID0_DPM_OFFSET; }
-	inline uint32_t GetHID0_NHR() { return (GetHID0() & HID0_NHR_MASK) >> CONFIG::HID0_NHR_OFFSET; }
-	inline uint32_t GetHID0_ICE() { return (GetHID0() & HID0_ICE_MASK) >> CONFIG::HID0_ICE_OFFSET; }
-	inline uint32_t GetHID0_DCE() { return (GetHID0() & HID0_DCE_MASK) >> CONFIG::HID0_DCE_OFFSET; }
-	inline uint32_t GetHID0_ILOCK() { return (GetHID0() & HID0_ILOCK_MASK) >> CONFIG::HID0_ILOCK_OFFSET; }
-	inline uint32_t GetHID0_DLOCK() { return (GetHID0() & HID0_DLOCK_MASK) >> CONFIG::HID0_DLOCK_OFFSET; }
-	inline uint32_t GetHID0_ICFI() { return (GetHID0() & HID0_ICFI_MASK) >> CONFIG::HID0_ICFI_OFFSET; }
-	inline uint32_t GetHID0_DCFI() { return (GetHID0() & HID0_DCFI_MASK) >> CONFIG::HID0_DCFI_OFFSET; }
-	inline uint32_t GetHID0_SPD() { return (GetHID0() & HID0_SPD_MASK) >> CONFIG::HID0_SPD_OFFSET; }
-	inline uint32_t GetHID0_SIED() { return (GetHID0() & HID0_SIED_MASK) >> CONFIG::HID0_SIED_OFFSET; }
-	inline uint32_t GetHID0_SGE() { return (GetHID0() & HID0_SGE_MASK) >> CONFIG::HID0_SGE_OFFSET; }
-	inline uint32_t GetHID0_BTIC() { return (GetHID0() & HID0_BTIC_MASK) >> CONFIG::HID0_BTIC_OFFSET; }
-	inline uint32_t GetHID0_ABE() { return (GetHID0() & HID0_ABE_MASK) >> CONFIG::HID0_ABE_OFFSET; }
-	inline void SetHID0_DCE() { SetHID0(GetHID0() | HID0_DCE_MASK); }
-	inline void ResetHID0_DCE() { SetHID0(GetHID0() & ~HID0_DCE_MASK); }
-	inline void SetHID0_ICE() { SetHID0(GetHID0() | HID0_ICE_MASK); }
-	inline void ResetHID0_ICE() { SetHID0(GetHID0() & ~HID0_ICE_MASK); }
-	inline void SetHID0_ABE() { SetHID0(GetHID0() | HID0_ABE_MASK); }
-	inline void ResetHID0_ABE() { SetHID0(GetHID0() & ~HID0_ABE_MASK); }
-	inline void ResetHID0_ICFI() { SetHID0(GetHID0() & ~HID0_ICFI_MASK); }
-	inline void ResetHID0_DCFI() { SetHID0(GetHID0() & ~HID0_DCFI_MASK); }
-	inline void SetHID0_NHR() { SetHID0(GetHID0() | HID0_NHR_MASK); }
-	inline void ResetHID0_NHR() { SetHID0(GetHID0() & ~HID0_NHR_MASK); }
+	inline uint32_t GetHID0_TBEN() { return (GetHID0() & CONFIG::HID0_TBEN_MASK) >> CONFIG::HID0_TBEN_OFFSET; }
+	inline uint32_t GetHID0_STEN() { return (GetHID0() & CONFIG::HID0_STEN_MASK) >> CONFIG::HID0_STEN_OFFSET; }
+	inline uint32_t GetHID0_HIGH_BAT_EN() { return (GetHID0() & CONFIG::HID0_HIGH_BAT_EN_MASK) >> CONFIG::HID0_HIGH_BAT_EN_OFFSET; }
+	inline uint32_t GetHID0_NAP() { return (GetHID0() & CONFIG::HID0_NAP_MASK) >> CONFIG::HID0_NAP_OFFSET; }
+	inline uint32_t GetHID0_SLEEP() { return (GetHID0() & CONFIG::HID0_SLEEP_MASK) >> CONFIG::HID0_SLEEP_OFFSET; }
+	inline uint32_t GetHID0_DPM() { return (GetHID0() & CONFIG::HID0_DPM_MASK) >> CONFIG::HID0_DPM_OFFSET; }
+	inline uint32_t GetHID0_BHTCLR() { return (GetHID0() & CONFIG::HID0_BHTCLR_MASK) >> CONFIG::HID0_BHTCLR_OFFSET; }
+	inline uint32_t GetHID0_XAEN() { return (GetHID0() & CONFIG::HID0_XAEN_MASK) >> CONFIG::HID0_XAEN_OFFSET; }
+	inline uint32_t GetHID0_NHR() { return (GetHID0() & CONFIG::HID0_NHR_MASK) >> CONFIG::HID0_NHR_OFFSET; }
+	inline uint32_t GetHID0_ICE() { return (GetHID0() & CONFIG::HID0_ICE_MASK) >> CONFIG::HID0_ICE_OFFSET; }
+	inline uint32_t GetHID0_DCE() { return (GetHID0() & CONFIG::HID0_DCE_MASK) >> CONFIG::HID0_DCE_OFFSET; }
+	inline uint32_t GetHID0_ILOCK() { return (GetHID0() & CONFIG::HID0_ILOCK_MASK) >> CONFIG::HID0_ILOCK_OFFSET; }
+	inline uint32_t GetHID0_DLOCK() { return (GetHID0() & CONFIG::HID0_DLOCK_MASK) >> CONFIG::HID0_DLOCK_OFFSET; }
+	inline uint32_t GetHID0_ICFI() { return (GetHID0() & CONFIG::HID0_ICFI_MASK) >> CONFIG::HID0_ICFI_OFFSET; }
+	inline uint32_t GetHID0_DCFI() { return (GetHID0() & CONFIG::HID0_DCFI_MASK) >> CONFIG::HID0_DCFI_OFFSET; }
+	inline uint32_t GetHID0_SPD() { return (GetHID0() & CONFIG::HID0_SPD_MASK) >> CONFIG::HID0_SPD_OFFSET; }
+	inline uint32_t GetHID0_XBSEN() { return (GetHID0() & CONFIG::HID0_XBSEN_MASK) >> CONFIG::HID0_XBSEN_OFFSET; }
+	inline uint32_t GetHID0_SGE() { return (GetHID0() & CONFIG::HID0_SGE_MASK) >> CONFIG::HID0_SGE_OFFSET; }
+	inline uint32_t GetHID0_BTIC() { return (GetHID0() & CONFIG::HID0_BTIC_MASK) >> CONFIG::HID0_BTIC_OFFSET; }
+	inline uint32_t GetHID0_LRSTK() { return (GetHID0() & CONFIG::HID0_LRSTK_MASK) >> CONFIG::HID0_LRSTK_OFFSET; }
+	inline uint32_t GetHID0_FOLD() { return (GetHID0() & CONFIG::HID0_FOLD_MASK) >> CONFIG::HID0_FOLD_OFFSET; }
+	inline uint32_t GetHID0_BHT() { return (GetHID0() & CONFIG::HID0_BHT_MASK) >> CONFIG::HID0_BHT_OFFSET; }
+	inline uint32_t GetHID0_NOPDST() { return (GetHID0() & CONFIG::HID0_NOPDST_MASK) >> CONFIG::HID0_NOPDST_OFFSET; }
+	inline uint32_t GetHID0_NOPTI() { return (GetHID0() & CONFIG::HID0_NOPTI_MASK) >> CONFIG::HID0_NOPTI_OFFSET; }
+	inline void SetHID0_DCE() { SetHID0(GetHID0() | CONFIG::HID0_DCE_MASK); }
+	inline void ResetHID0_DCE() { SetHID0(GetHID0() & ~CONFIG::HID0_DCE_MASK); }
+	inline void SetHID0_ICE() { SetHID0(GetHID0() | CONFIG::HID0_ICE_MASK); }
+	inline void ResetHID0_ICE() { SetHID0(GetHID0() & ~CONFIG::HID0_ICE_MASK); }
+	inline void ResetHID0_ICFI() { SetHID0(GetHID0() & ~CONFIG::HID0_ICFI_MASK); }
+	inline void ResetHID0_DCFI() { SetHID0(GetHID0() & ~CONFIG::HID0_DCFI_MASK); }
+	inline void SetHID0_NHR() { SetHID0(GetHID0() | CONFIG::HID0_NHR_MASK); }
+	inline void ResetHID0_NHR() { SetHID0(GetHID0() & ~CONFIG::HID0_NHR_MASK); }
 
 	//=====================================================================
 	//=                  HID1 register set/get methods                    =
@@ -1243,34 +1234,11 @@ public:
 	
 	inline uint32_t GetHID1() { return hid1; }
 	void SetHID1(uint32_t value);
-	inline uint32_t GetHID1_ABE() { return (GetHID1() & HID1_ABE_MASK) >> CONFIG::HID1_ABE_OFFSET; }
-	inline void SetHID1_ABE() { SetHID1(GetHID1() | HID1_ABE_MASK); }
-	inline void ResetHID1_ABE() { SetHID1(GetHID1() & ~HID1_ABE_MASK); }
+	inline uint32_t GetHID1_EMCP() { return (GetHID1() & CONFIG::HID1_EMCP_MASK) >> CONFIG::HID1_EMCP_OFFSET; }
+	inline uint32_t GetHID1_ABE() { return (GetHID1() & CONFIG::HID1_ABE_MASK) >> CONFIG::HID1_ABE_OFFSET; }
+	inline void SetHID1_ABE() { SetHID1(GetHID1() | CONFIG::HID1_ABE_MASK); }
+	inline void ResetHID1_ABE() { SetHID1(GetHID1() & ~CONFIG::HID1_ABE_MASK); }
 	
-	//=====================================================================
-	//=                  HID2 register set/get methods                    =
-	//=====================================================================
-	
-	inline uint32_t GetHID2() { return hid2; }
-	void SetHID2(uint32_t value);
-	inline uint32_t GetHID2_SWT_EN() { return (GetHID2() & HID2_SWT_EN_MASK) >> CONFIG::HID2_SWT_EN_OFFSET; }
-	inline uint32_t GetHID2_HIGH_BAT_EN() { return (GetHID2() & HID2_HIGH_BAT_EN_MASK) >> CONFIG::HID2_HIGH_BAT_EN_OFFSET; }
-	inline void SetDMISS(uint32_t value) { dmiss = value; }
-	inline uint32_t GetDMISS() { return dmiss; }
-	inline void SetDCMP(uint32_t value) { dcmp = value; }
-	inline uint32_t GetDCMP() { return dcmp; }
-	inline void SetIMISS(uint32_t value) { imiss = value; }
-	inline uint32_t GetIMISS() { return imiss; }
-	inline void SetICMP(uint32_t value) { icmp = value; }
-	inline uint32_t GetICMP() { return icmp; }
-	inline void SetHASH1(uint32_t value) { hash1 = value; }
-	inline uint32_t GetHASH1() { return hash1; }
-	inline void SetHASH2(uint32_t value) { hash2 = value; }
-	inline uint32_t GetHASH2() { return hash2; }
-	inline void SetRPA(uint32_t value) { rpa = value; }
-	inline uint32_t GetRPA() { return rpa; }
-	inline void SetL2PM(uint32_t value) { l2pm = value; }
-	inline uint32_t GetL2PM() { return l2pm; }
 	inline void SetPTEHI(uint32_t value) { ptehi = value; }
 	inline uint32_t GetPTEHI() { return ptehi; }
 	inline void SetPTELO(uint32_t value) { ptelo = value; }
@@ -1310,16 +1278,6 @@ public:
 	inline uint32_t GetIBATL_WIMG(unsigned int n) { return (GetIBATL(n) >> 3) & 0xf; }
 	inline uint32_t GetIBATL_PP(unsigned int n) { return GetIBATL(n) & 3; }
 
-	inline uint32_t GetSR(unsigned int n) { return sr[n]; }
-	inline void SetSR(unsigned int n, uint32_t value) { sr[n] = value; }
-
-	// Methods for reading SR registers bits
-	inline uint32_t GetSR_T(unsigned int n) { return (sr[n] >> 31) & 1; }
-	inline uint32_t GetSR_KS(unsigned int n) { return (sr[n] >> 30) & 1; }
-	inline uint32_t GetSR_KP(unsigned int n) { return (sr[n] >> 29) & 1; }
-	inline uint32_t GetSR_N(unsigned int n) { return (sr[n] >> 28) & 1; }
-	inline uint32_t GetSR_VSID(unsigned int n) { return sr[n] & 0xffffffUL; }
-	
 	inline uint32_t GetSDR1() { return sdr1; }
 	inline void SetSDR1(uint32_t value) { sdr1 = value; }
 
@@ -1328,88 +1286,41 @@ public:
 	inline uint32_t GetSDR1_HTABMASK() { return sdr1 & 0x1ff; }
 
 	//=====================================================================
-	//=                    registers set/get methods                      =
+	//=                      Debugging stuffs                             =
 	//=====================================================================
+	typename CONFIG::address_t effective_address;
 
-	inline uint32_t GetBAMR() { return bamr; }
-	inline void SetBAMR(uint32_t value) { bamr = value; }
+	bool verbose_all;
+	bool verbose_setup;
+	bool verbose_step;
+	bool verbose_dtlb;
+	bool verbose_dl1;
+	bool verbose_il1;
+	bool verbose_l2;
+	bool verbose_load;
+	bool verbose_store;
+	bool verbose_read_memory;
+	bool verbose_write_memory;
+	bool verbose_exception;
+	bool verbose_set_msr;
+	bool verbose_set_hid0;
+	bool verbose_set_hid1;
+	bool verbose_set_hid2;
+	bool verbose_set_l2cr;
+	uint64_t trap_on_instruction_counter;
+	uint64_t max_inst;                                         //!< Maximum number of instructions to execute
 
-	inline uint32_t GetICTRL() { return ictrl; }
-	inline void SetICTRL(uint32_t value) { ictrl = (ictrl & ~ICTRL_MASK) | (value & ICTRL_MASK); }
-	inline uint32_t GetICTRL_CIRQ() { return (GetICTRL() & ICTRL_CIRQ_MASK) >> CONFIG::ICTRL_CIRQ_OFFSET; }
-	inline uint32_t GetICTRL_EIEC() { return (GetICTRL() & ICTRL_EIEC_MASK) >> CONFIG::ICTRL_EIEC_OFFSET; }
-	inline uint32_t GetICTRL_EDCE() { return (GetICTRL() & ICTRL_EDCE_MASK) >> CONFIG::ICTRL_EDCE_OFFSET; }
-	inline uint32_t GetICTRL_EICP() { return (GetICTRL() & ICTRL_EICP_MASK) >> CONFIG::ICTRL_EICP_OFFSET; }
-	inline uint32_t GetICTRL_ICWL() { return (GetICTRL() & ICTRL_ICWL_MASK) >> CONFIG::ICTRL_ICWL_OFFSET; }
-	inline void SetICTRL_CIRQ() { SetICTRL(GetICTRL() | ICTRL_CIRQ_MASK); }
-	inline void ResetICTRL_CIRQ() { SetICTRL(GetICTRL() & ~ICTRL_CIRQ_MASK); }
-	inline void SetICTRL_EIEC() { SetICTRL(GetICTRL() | ICTRL_EIEC_MASK); }
-	inline void ResetICTRL_EIEC() { SetICTRL(GetICTRL() & ~ICTRL_EIEC_MASK); }
-	inline void SetICTRL_EDCE() { SetICTRL(GetICTRL() | ICTRL_EDCE_MASK); }
-	inline void ResetICTRL_EDCE() { SetICTRL(GetICTRL() & ~ICTRL_EDCE_MASK); }
-	inline void SetICTRL_EICP() { SetICTRL(GetICTRL() | ICTRL_EICP_MASK); }
-	inline void ResetICTRL_EICP() { SetICTRL(GetICTRL() & ~ICTRL_EICP_MASK); }
-	inline void SetICTRL_ICWL() { SetICTRL(GetICTRL() | ICTRL_ICWL_MASK); }
-	inline void ResetICTRL_ICWL() { SetICTRL(GetICTRL() & ~ICTRL_ICWL_MASK); }
+	map<string, unisim::util::debug::Register *> registers_registry;       //!< Every CPU register interfaces excluding MMU/FPU registers
+	uint64_t instruction_counter;                              //!< Number of executed instructions
+	bool fp32_estimate_inv_warning;
+	bool fp64_estimate_inv_sqrt_warning;
 
-	inline uint32_t GetL2ERRINJHI() { return l2errinjhi; }
-	inline void SetL2ERRINJHI(uint32_t value) { l2errinjhi = value; }
-	inline uint32_t GetL2ERRINJLO() { return l2errinjlo; }
-	inline void SetL2ERRINJLO(uint32_t value) { l2errinjlo = value; }
-	inline uint32_t GetL2ERRINJCTL() { return l2errinjctl; }
-	inline void SetL2ERRINJCTL(uint32_t value) { l2errinjctl = value; }
-	inline uint32_t GetL2CAPTDATAHI() { return l2captdatahi; }
-	inline void SetL2CAPTDATAHI(uint32_t value) { l2captdatahi = value; }
-	inline uint32_t GetL2CAPTDATALO() { return l2captdatalo; }
-	inline void SetL2CAPTDATALO(uint32_t value) { l2captdatalo = value; }
-	inline uint32_t GetL2CAPTDATAECC() { return l2captdataecc; }
-	inline void SetL2CAPTDATAECC(uint32_t value) { l2captdataecc = value; }
-	inline uint32_t GetL2ERRDET() { return l2errdet; }
-	inline void SetL2ERRDET(uint32_t value) { l2errdet = value; }
-	inline uint32_t GetL2ERRDIS() { return l2errdis; }
-	inline void SetL2ERRDIS(uint32_t value) { l2errdis = value; }
-	inline uint32_t GetL2ERRINTEN() { return l2errinten; }
-	inline void SetL2ERRINTEN(uint32_t value) { l2errinten = value; }
-	inline uint32_t GetL2ERRATTR() { return l2errattr; }
-	inline void SetL2ERRATTR(uint32_t value) { l2errattr = value; }
-	inline uint32_t GetL2ERRADDR() { return l2erraddr; }
-	inline void SetL2ERRADDR(uint32_t value) { l2erraddr = value; }
-	inline uint32_t GetL2ERREADDR() { return l2erreaddr; }
-	inline void SetL2ERREADDR(uint32_t value) { l2erreaddr = value; }
-	inline uint32_t GetL2ERRCTL() { return l2errctl; }
-	inline void SetL2ERRCTL(uint32_t value) { l2errctl = value; }
-	inline uint32_t GetL3CR() { return l3cr; }
-	inline void SetL3CR(uint32_t value) { l3cr = value; }
-	inline uint32_t GetL3ITCR0() { return l3itcr0; }
-	inline void SetL3ITCR0(uint32_t value) { l3itcr0 = value; }
-	inline uint32_t GetL3ITCR1() { return l3itcr1; }
-	inline void SetL3ITCR1(uint32_t value) { l3itcr1 = value; }
-	inline uint32_t GetL3ITCR2() { return l3itcr2; }
-	inline void SetL3ITCR2(uint32_t value) { l3itcr2 = value; }
-	inline uint32_t GetL3ITCR3() { return l3itcr3; }
-	inline void SetL3ITCR3(uint32_t value) { l3itcr3 = value; }
-	inline uint32_t GetL3OHCR() { return l3ohcr; }
-	inline void SetL3OHCR(uint32_t value) { l3ohcr = value; }
-	inline uint32_t GetL3PM() { return l3pm; }
-	inline void SetL3PM(uint32_t value) { l3pm = value; }
-	inline uint32_t GetLDSTCR() { return ldstcr; }
-	inline void SetLDSTCR(uint32_t value) { ldstcr = value; }
-	inline uint32_t GetMSSCR0() { return msscr0; }
-	inline void SetMSSCR0(uint32_t value) { msscr0 = value; }
-	inline uint32_t GetMSSSR0() { return msssr0; }
-	inline void SetMSSSR0(uint32_t value) { msssr0 = value; }
-	inline uint32_t GetPIR() { return pir; }
-	inline void SetPIR(uint32_t value) { pir = value; }
-	inline uint32_t GetSVR() { return svr; }
-	inline void SetSVR(uint32_t value) { svr = value; }
-	inline uint32_t GetTLBMISS() { return tlbmiss; }
-	inline void SetTLBMISS(uint32_t value) { tlbmiss = value; }
+	int StringLength(typename CONFIG::address_t addr);                          //!< Something to compute the length of a null-terminated string at an effective address
+	inline uint64_t GetInstructionCounter() const { return instruction_counter; }
+	inline void MonitorLoad(typename CONFIG::address_t ea, uint32_t size);
+	inline void MonitorStore(typename CONFIG::address_t ea, uint32_t size);
+	bool FloatingPointSelfTest();
 
-	
-	//=====================================================================
-	//=                   Vector instructions handling                    =
-	//=====================================================================
-	
 	//=====================================================================
 	//=                     MMU Address translation                       =
 	//=====================================================================
@@ -1424,132 +1335,45 @@ public:
 	template <bool DEBUG> void AccessTLB(MMUAccess<CONFIG>& mmu_access);
 	template <bool DEBUG> void EmuHardwarePageTableSearch(MMUAccess<CONFIG>& mmu_access);
 	template <bool DEBUG> void EmuTranslateAddress(MMUAccess<CONFIG>& mmu_access);
-	void LoadITLBEntry(address_t addr, uint32_t way, uint32_t pte_hi, uint32_t pte_lo);
-	void LoadDTLBEntry(address_t addr, uint32_t way, uint32_t pte_hi, uint32_t pte_lo);
+	void LoadITLBEntry(typename CONFIG::address_t addr, uint32_t way, uint32_t pte_hi, uint32_t pte_lo);
+	void LoadDTLBEntry(typename CONFIG::address_t addr, uint32_t way, uint32_t pte_hi, uint32_t pte_lo);
 	void DumpPageTable(ostream& os);
 
 	//=====================================================================
-	//=               Cache management instructions handling              =
-	//=====================================================================
-	
-	void Dcba(address_t addr);
-	void Dcbf(address_t addr);
-	void Dcbi(address_t addr);
-	void Dcbst(address_t addr);
-	void Dcbz(address_t addr);
-	void Icbi(address_t addr);
-	
-	//=====================================================================
-	//=  Translation look-aside buffers management instructions handling  =
-	//=====================================================================
-	
-	void Tlbia();
-	void Tlbie(address_t addr);
-	void Tlbld(address_t addr);
-	void Tlbli(address_t addr);
-
-	//=====================================================================
-	//=               Linked Load-Store instructions handling             =
-	//=====================================================================
-	
-	void Lwarx(unsigned int rd, address_t addr);
-	void Stwcx(unsigned int rs, address_t addr);
-
-	//=====================================================================
-	//=                        Debugging stuffs                           =
+	//=                    registers set/get methods                      =
 	//=====================================================================
 
-	bool fp32_estimate_inv_warning;
-	bool fp64_estimate_inv_sqrt_warning;
+	inline uint32_t GetBAMR() { return bamr; }
+	inline void SetBAMR(uint32_t value) { bamr = value; }
 
-	address_t GetEA() { return effective_address; }
-	
-	virtual unisim::util::debug::Register *GetRegister(const char *name);
-	virtual string Disasm(address_t addr, address_t& next_addr);
-	virtual const char *GetArchitectureName() const;
-	inline uint64_t GetInstructionCounter() const { return instruction_counter; }
-	string GetObjectFriendlyName(address_t addr);
-	string GetFunctionFriendlyName(address_t addr);
-	bool ProcessCustomDebugCommand(const char *custom_debug_command);
-	inline void MonitorLoad(address_t ea, uint32_t size);
-	inline void MonitorStore(address_t ea, uint32_t size);
-	bool FloatingPointSelfTest();
+	inline uint32_t GetICTRL() { return ictrl; }
+	inline void SetICTRL(uint32_t value) { ictrl = (ictrl & ~CONFIG::ICTRL_MASK) | (value & CONFIG::ICTRL_MASK); }
+	inline uint32_t GetICTRL_CIRQ() { return (GetICTRL() & CONFIG::ICTRL_CIRQ_MASK) >> CONFIG::ICTRL_CIRQ_OFFSET; }
+	inline uint32_t GetICTRL_EIEC() { return (GetICTRL() & CONFIG::ICTRL_EIEC_MASK) >> CONFIG::ICTRL_EIEC_OFFSET; }
+	inline uint32_t GetICTRL_EDCE() { return (GetICTRL() & CONFIG::ICTRL_EDCE_MASK) >> CONFIG::ICTRL_EDCE_OFFSET; }
+	inline uint32_t GetICTRL_EICP() { return (GetICTRL() & CONFIG::ICTRL_EICP_MASK) >> CONFIG::ICTRL_EICP_OFFSET; }
+	inline uint32_t GetICTRL_ICWL() { return (GetICTRL() & CONFIG::ICTRL_ICWL_MASK) >> CONFIG::ICTRL_ICWL_OFFSET; }
+	inline void SetICTRL_CIRQ() { SetICTRL(GetICTRL() | CONFIG::ICTRL_CIRQ_MASK); }
+	inline void ResetICTRL_CIRQ() { SetICTRL(GetICTRL() & ~CONFIG::ICTRL_CIRQ_MASK); }
+	inline void SetICTRL_EIEC() { SetICTRL(GetICTRL() | CONFIG::ICTRL_EIEC_MASK); }
+	inline void ResetICTRL_EIEC() { SetICTRL(GetICTRL() & ~CONFIG::ICTRL_EIEC_MASK); }
+	inline void SetICTRL_EDCE() { SetICTRL(GetICTRL() | CONFIG::ICTRL_EDCE_MASK); }
+	inline void ResetICTRL_EDCE() { SetICTRL(GetICTRL() & ~CONFIG::ICTRL_EDCE_MASK); }
+	inline void SetICTRL_EICP() { SetICTRL(GetICTRL() | CONFIG::ICTRL_EICP_MASK); }
+	inline void ResetICTRL_EICP() { SetICTRL(GetICTRL() & ~CONFIG::ICTRL_EICP_MASK); }
+	inline void SetICTRL_ICWL() { SetICTRL(GetICTRL() | CONFIG::ICTRL_ICWL_MASK); }
+	inline void ResetICTRL_ICWL() { SetICTRL(GetICTRL() & ~CONFIG::ICTRL_ICWL_MASK); }
 
-	//=====================================================================
-	//=               Hardware check/acknowledgement methods              =
-	//=====================================================================
-	
-	void AckDecrementerOverflow();
-	void AckExternalInterrupt();
-	void AckHardReset();
-	void AckSoftReset();
-	void AckMCP();
-	void AckTEA();
-	void AckSMI();
-	void AckThermalManagementInterrupt();
-	void AckPerformanceMonitorInterrupt();
-	void AckAsynchronousInterrupt();
-
-	//=====================================================================
-	//=                    Hardware interrupt request                     =
-	//=====================================================================
-	
-	void ReqDecrementerOverflow();
-	void ReqExternalInterrupt();
-	void ReqHardReset();
-	void ReqSoftReset();
-	void ReqMCP();
-	void ReqTEA();
-	void ReqSMI();
-	void ReqThermalManagementInterrupt();
-	void ReqPerformanceMonitorInterrupt();
-	void ReqAsynchronousInterrupt();
-	
-	//=====================================================================
-	//=          Instruction prefetch buffer handling methods             =
-	//=====================================================================
-	
-	void FlushSubsequentInstructions();
-	void FillPrefetchBuffer(uint32_t insn);
-	bool NeedFillingPrefetchBuffer() const;
-	
-	//=====================================================================
-	//=          DEC/TBL/TBU bus-time based update methods                =
-	//=====================================================================
-	
-	void OnBusCycle();
-
-private:
-	//=====================================================================
-	//=                         Exception vectors                         =
-	//=====================================================================
-	// PowerPC 32 bits common exceptions
-	static const physical_address_t EXC_SYSTEM_RESET_VECTOR = 0x100UL;                  //!< system reset vector (all)
-	static const physical_address_t EXC_MACHINE_CHECK_VECTOR = 0x200UL;                 //!< machine check exception vector (all)
-	static const physical_address_t EXC_DSI_VECTOR = 0x300UL;                           //!< DSI exception vector (all)
-	static const physical_address_t EXC_ISI_VECTOR = 0x400UL;                           //!< ISI exception vector (all)
-	static const physical_address_t EXC_EXTERNAL_INTERRUPT_VECTOR = 0x500UL;            //!< External interrupt vector (all)
-	static const physical_address_t EXC_ALIGNMENT_VECTOR = 0x600UL;                     //!< Alignment exception vector (all)
-	static const physical_address_t EXC_PROGRAM_VECTOR = 0x700UL;                       //!< Program exception vector (all)
-	static const physical_address_t EXC_FLOATING_POINT_UNAVAILABLE_VECTOR = 0x800UL;    //!< Floating unavailable exception vector (all)
-	static const physical_address_t EXC_DECREMENTER_VECTOR = 0x900UL;                   //!< Decrementer exception vector (all)
-	static const physical_address_t EXC_SYSTEM_CALL_VECTOR = 0xc00UL;                   //!< system call exception vector (all)
-	static const physical_address_t EXC_TRACE_VECTOR = 0xd00UL;                         //!< Trace exception vector (all)
-	static const physical_address_t EXC_FLOATING_POINT_ASSIST_VECTOR = 0xe00UL;         //!< Floating point assist exception vector (none ?)
-
-	// Additional exceptions in MPC7xx 
-	static const physical_address_t EXC_PERFORMANCE_MONITOR_VECTOR = 0xf00UL;
-	static const physical_address_t EXC_INSTRUCTION_ADDRESS_BREAKPOINT_VECTOR = 0x1300UL;
-	static const physical_address_t EXC_SYSTEM_MANAGEMENT_INTERRUPT_VECTOR = 0x1400UL;
-	static const physical_address_t EXC_THERMAL_MANAGEMENT_INTERRUPT_VECTOR = 0x1700UL; // (not in 74xx)
-
-	// Additional exceptions in MPC7x5
-	static const physical_address_t EXC_ITLB_MISS_VECTOR = 0x1000UL;
-	static const physical_address_t EXC_DTLB_LOAD_MISS_VECTOR = 0x1100UL;
-	static const physical_address_t EXC_DTLB_STORE_MISS_VECTOR = 0x1200UL;
-	
-	// Additional exceptions in MPC74xx
-	static const physical_address_t EXC_ALTIVEC_UNAVAILABLE_VECTOR = 0xf20UL;
+	inline uint32_t GetLDSTCR() { return ldstcr; }
+	inline void SetLDSTCR(uint32_t value) { ldstcr = value; }
+	inline uint32_t GetMSSCR0() { return msscr0; }
+	inline void SetMSSCR0(uint32_t value) { msscr0 = value; }
+	inline uint32_t GetMSSSR0() { return msssr0; }
+	inline void SetMSSSR0(uint32_t value) { msssr0 = value; }
+	inline uint32_t GetPIR() { return pir; }
+	inline void SetPIR(uint32_t value) { pir = value; }
+	inline uint32_t GetTLBMISS() { return tlbmiss; }
+	inline void SetTLBMISS(uint32_t value) { tlbmiss = value; }
 
 	//=====================================================================
 	//=                        PowerPC registers                          =
@@ -1561,14 +1385,11 @@ private:
 	// UISA
 	uint32_t cr;            //!< condition register (all)
 	uint32_t ctr;           //!< count register (all)
-	SoftDouble fpr[32];     //!< floating point registers (C++ objects implementing IEEE 754 floating point numbers) (604e, 7xx, 7xxx)
+	SoftDouble fpr[CONFIG::NUM_FPRS];     //!< floating point registers (C++ objects implementing IEEE 754 floating point numbers) (604e, 7xx, 7xxx)
 	uint32_t fpscr;         //!< floating point status and control register (604e, 7xx, 7xxx)
-	uint32_t gpr[32];       //!< general purpose registers (all)
+	uint32_t gpr[CONFIG::NUM_GPRS];       //!< general purpose registers (all)
 	uint32_t lr;            //!< link register (all)
-	uint32_t mq;            //!< MQ register (601)
-	uint32_t rtcl;          //!< RTCL register (601)
-	uint32_t rtcu;          //!< RTCU register (601)
-	vr_t vr[CONFIG::NUM_VRS ? CONFIG::NUM_VRS : 1]; //!< vector registers (7xxx)
+	vr_t vr[CONFIG::NUM_VRS]; //!< vector registers (7xxx)
 	uint32_t vrsave;        //!< vector save/restore register (7xxx)
 	uint32_t vscr;          //!< vector status and control register (7xxx)
 	uint32_t xer;           //!< XER register (all)
@@ -1584,40 +1405,12 @@ private:
 	uint32_t dec;           //!< decrementer (all)
 	uint32_t dsisr;         //!< DSISR register (all)
 	uint32_t ear;           //!< external access register (all)
-	uint32_t hash1;         //!< Primary hash address register (603e, 7x5)
-	uint32_t hash2;         //!< Secondary hash address register (603e, 7x5)
 	uint32_t hid0;          //!< hardware implementation dependent register 0 (all)
 	uint32_t hid1;          //!< hardware implementation dependent register 1 (all)
-	uint32_t hid2;          //!< hardware implementation dependent register 2 (7x5)
 	uint32_t iabr;          //!< instruction address breakpoint register (603e, 604e, 7xx, 7xxx)
-	uint32_t icmp;          //!< ITLB Compare register (603e, 7x5)
-	uint32_t dcmp;          //!< DTLB Compare register (603e, 7x5)
-	uint32_t dmiss;         //!< DTLB Miss register (603e, 7x5)
 	uint32_t ictc;          //!< instruction cache throttling control register (7xx, 7xxx)
 	uint32_t ictrl;         //!< instruction cache and interrupt control register (7445, 7447, 7447A, 7448, 7455, 7457)
-	uint32_t imiss;         //!< ITLB Miss register (603e, 7x5)
 	uint32_t l2cr;          //!< L2 Control Register (7xx, 7xxx)
-	uint32_t l2errinjhi;    //!< L2 error registers (7448)
-	uint32_t l2errinjlo;    //!< L2 error registers (7448)
-	uint32_t l2errinjctl;   //!< L2 error registers (7448)
-	uint32_t l2captdatahi;  //!< L2 error registers (7448)
-	uint32_t l2captdatalo;  //!< L2 error registers (7448)
-	uint32_t l2captdataecc; //!< L2 error registers (7448)
-	uint32_t l2errdet;      //!< L2 error registers (7448)
-	uint32_t l2errdis;      //!< L2 error registers (7448)
-	uint32_t l2errinten;    //!< L2 error registers (7448)
-	uint32_t l2errattr;     //!< L2 error registers (7448)
-	uint32_t l2erraddr;     //!< L2 error registers (7448)
-	uint32_t l2erreaddr;    //!< L2 error registers (7448)
-	uint32_t l2errctl;      //!< L2 error registers (7448)
-	uint32_t l2pm;          //!< L2 private memory control register (755, 7410)
-	uint32_t l3cr;          //!< L3 cache output control register (7455, 7457)
-	uint32_t l3itcr0;       //!< L3 cache input timing control register 0 (7451, 7455, 7457)
-	uint32_t l3itcr1;       //!< L3 cache input timing control register 1 (7457)
-	uint32_t l3itcr2;       //!< L3 cache input timing control register 1 (7457)
-	uint32_t l3itcr3;       //!< L3 cache input timing control register 1 (7457)
-	uint32_t l3ohcr;        //!< L3 cache output hold control register (7457)
-	uint32_t l3pm;          //!< L3 private memory register (7451, 7455, 7457)
 	uint32_t ldstcr;        //!< load/store control register (7441, 7445, 7447, 7447A, 7448, 7451, 7455, 7457)
 	uint32_t ldstdb;		//!< load/store debug register (factory-use only register)
 	uint32_t mmcr0;         //!< monitor control (604e, 7xx, 7xxx)
@@ -1636,16 +1429,11 @@ private:
 	uint32_t ptehi;         //!< PTEHI (7445, 7447, 7447A, 7448, 7455, 7457)
 	uint32_t ptelo;         //!< PTELO (7445, 7447, 7447A, 7448, 7455, 7457)
 	uint32_t pvr;           //!< processor version register (all)
-	uint32_t rpa;           //!< Required Physical Address register (603e, 7x5)
 	uint32_t sda;           //!< Sampled data address (604e, 7xx, 7xxx)
 	uint32_t sia;           //!< Sampled instruction address (604e, 7xx, 7xxx)
-	uint32_t sprg[CONFIG::NUM_SPRGS ? CONFIG::NUM_SPRGS : 1];   //!< SPRGs registers (all)
+	uint32_t sprg[CONFIG::NUM_SPRGS];   //!< SPRGs registers (all)
 	uint32_t srr0;          //!< Save and restore register 0 (all)
 	uint32_t srr1;          //!< Save and restore register 1 (all)
-	uint32_t svr;           //!< System version register (7448)
-	uint32_t thrm1;         //!< thermal assist unit register (7xx, 7400, 7410)
-	uint32_t thrm2;         //!< thermal assist unit register (7xx, 7400, 7410)
-	uint32_t thrm3;         //!< thermal assist unit register (7xx, 7400, 7410)
 	uint32_t tlbmiss;       //!< TLBMISS register (7441, 7445, 7447, 7447A, 7448, 7451, 7455)
 
 	//=====================================================================
@@ -1655,25 +1443,8 @@ private:
 	uint32_t dbatl[CONFIG::NUM_BATS];	/*< data block address translation registers (lower 32 bits) */
 	uint32_t ibatu[CONFIG::NUM_BATS];	/*< instruction block address translation registers (upper 32 bits) */
 	uint32_t ibatl[CONFIG::NUM_BATS];	/*< instruction block address translation registers (lower 32 bits) */
-	uint32_t sr[16];	/*< segment registers */
+	uint32_t sr[CONFIG::NUM_SRS];	/*< segment registers */
 	uint32_t sdr1;		/*< SDR1 register */
-
-	//=====================================================================
-	//=              PowerPC hardware interrupt signals                   =
-	//=====================================================================
-	
-	bool decrementer_overflow;            //!< Decrementer overflow signal
-	bool external_interrupt;              //!< External interrupt signal
-	bool soft_reset;                      //!< Soft reset signal
-	bool hard_reset;                      //!< Hard reset signal
-	bool mcp;                             //!< Machine check exception signal
-	bool tea;                             //!< Transfer error acknowledge signal
-	bool smi;                             //!< System management interrupt signal
-	bool thermal_management_interrupt;    //!< Thermal management interrupt signal
-	bool performance_monitor_interrupt;   //!< Performance monitor interrupt signal
-	
-	bool asynchronous_interrupt;          //!< summary of all hardware interrupt signals
-	
 
 	//=====================================================================
 	//=                     L1 Instruction Cache                          =
@@ -1718,94 +1489,17 @@ private:
 	uint32_t prefetch_buffer[CONFIG::NUM_PREFETCH_BUFFER_ENTRIES];     //!< The instruction prefetch buffer
 	
 	//=====================================================================
-	//=                      Debugging stuffs                             =
-	//=====================================================================
-        address_t effective_address;
-
-	bool verbose_all;
-	bool verbose_setup;
-	bool verbose_step;
-	bool verbose_dtlb;
-	bool verbose_dl1;
-	bool verbose_il1;
-	bool verbose_l2;
-	bool verbose_load;
-	bool verbose_store;
-	bool verbose_read_memory;
-	bool verbose_write_memory;
-	bool verbose_exception;
-	bool verbose_set_msr;
-	bool verbose_set_hid0;
-	bool verbose_set_hid1;
-	bool verbose_set_hid2;
-	bool verbose_set_l2cr;
-	uint64_t trap_on_instruction_counter;
-
-	Parameter<bool> param_verbose_all;
-	Parameter<bool> param_verbose_setup;
-	Parameter<bool> param_verbose_step;
-	Parameter<bool> param_verbose_dtlb;
-	Parameter<bool> param_verbose_dl1;
-	Parameter<bool> param_verbose_il1;
-	Parameter<bool> param_verbose_l2;
-	Parameter<bool> param_verbose_load;
-	Parameter<bool> param_verbose_store;
-	Parameter<bool> param_verbose_read_memory;
-	Parameter<bool> param_verbose_write_memory;
-	Parameter<bool> param_verbose_exception;
-	Parameter<bool> param_verbose_set_msr;
-	Parameter<bool> param_verbose_set_hid0;
-	Parameter<bool> param_verbose_set_hid1;
-	Parameter<bool> param_verbose_set_hid2;
-	Parameter<bool> param_verbose_set_l2cr;
-	Parameter<uint64_t> param_trap_on_instruction_counter;
-	
-	map<string, unisim::util::debug::Register *> registers_registry;       //!< Every CPU register interfaces excluding MMU/FPU registers
-	string architecture_name;                                  //!< Architecture name (i.e. "powerpc")
-	uint64_t instruction_counter;                              //!< Number of executed instructions
-	uint64_t max_inst;                                         //!< Maximum number of instructions to execute
-	int StringLength(address_t addr);                          //!< Something to compute the length of a null-terminated string at an effective address
-protected:
-	inline bool IsVerboseSetup() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_SETUP_ENABLE && (verbose_all || verbose_setup); }
-	inline bool IsVerboseStep() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_STEP_ENABLE && (verbose_all || verbose_step); }
-	inline bool IsVerboseDTLB() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_DTLB_ENABLE && (verbose_all || verbose_dtlb); }
-	inline bool IsVerboseDL1() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_DL1_ENABLE && (verbose_all || verbose_dl1); }
-	inline bool IsVerboseIL1() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_IL1_ENABLE && (verbose_all || verbose_il1); }
-	inline bool IsVerboseL2() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_L2_ENABLE && (verbose_all || verbose_l2); }
-	inline bool IsVerboseLoad() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_LOAD_ENABLE && (verbose_all || verbose_load); }
-	inline bool IsVerboseStore() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_STORE_ENABLE && (verbose_all || verbose_store); }
-	inline bool IsVerboseReadMemory() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_READ_MEMORY_ENABLE && (verbose_all || verbose_read_memory); }
-	inline bool IsVerboseWriteMemory() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_WRITE_MEMORY_ENABLE && (verbose_all || verbose_write_memory); }
-	inline bool IsVerboseException() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_EXCEPTION_ENABLE && (verbose_all || verbose_exception); }
-	inline bool IsVerboseSetMSR() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_SET_MSR_ENABLE && (verbose_all || verbose_set_msr); }
-	inline bool IsVerboseSetHID0() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_SET_HID0_ENABLE && (verbose_all || verbose_set_hid0); }
-	inline bool IsVerboseSetHID1() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_SET_HID1_ENABLE && (verbose_all || verbose_set_hid1); }
-	inline bool IsVerboseSetHID2() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_SET_HID2_ENABLE && (verbose_all || verbose_set_hid2); }
-	inline bool IsVerboseSetL2CR() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_SET_L2CR_ENABLE && (verbose_all || verbose_set_l2cr); }
-private:
-	//=====================================================================
 	//=                   lwarx/stwcx. reservation                        =
 	//=====================================================================
 	
 	bool reserve;                                             //!< true if a reservation has been set (by lwarx), otherwise false
-	address_t reserve_addr;                                   //!< address of the reservation
+	typename CONFIG::address_t reserve_addr;                                   //!< address of the reservation
 	
 	//=====================================================================
-	//=                    Interface with outside                         =
+	//=              PowerPC hardware interrupt signals                   =
 	//=====================================================================
 	
-protected:
-	inline bool HasDecrementerOverflow() const { return decrementer_overflow; }
-	inline bool HasExternalInterrupt() const { return external_interrupt; }
-	inline bool HasHardReset() const { return hard_reset; }
-	inline bool HasSoftReset() const { return soft_reset; }
-	inline bool HasMCP() const { return mcp; }
-	inline bool HasTEA() const { return tea; }
-	inline bool HasThermalManagementInterrupt() const { return thermal_management_interrupt; }
-	inline bool HasSMI() const { return smi; }
-	inline bool HasPerformanceMonitorInterrupt() const { return performance_monitor_interrupt; }
-	inline bool HasAsynchronousInterrupt() const { return asynchronous_interrupt; }
-private:
+	unsigned int asynchronous_interrupt;
 
 	//=====================================================================
 	//=                    Exception handling methods                     =
@@ -1829,9 +1523,6 @@ private:
 	// System management interrupt exception
 	void HandleException(const SystemManagementInterruptException<CONFIG>& exc);
 
-	// Thermal management interrupt exception
-	void HandleException(const ThermalManagementInterruptException<CONFIG>& exc);
-
 	// Instruction address breakpoint exception
 	void HandleException(const InstructionAddressBreakpointException<CONFIG>& exc);
 
@@ -1853,9 +1544,6 @@ private:
 	// Alignment exception
 	void HandleException(const AlignmentException<CONFIG>& exc, uint32_t instruction_encoding);
 
-	// Floating point assist exception
-	void HandleFloatingPointAssistException(const FloatingPointAssistException<CONFIG>& exc);
-
 	// Program exceptions
 	void HandleException(const IllegalInstructionException<CONFIG>& exc);
 	void HandleException(const PrivilegeViolationException<CONFIG>& exc);
@@ -1874,10 +1562,9 @@ private:
 	// TLB exception
 	void HandleException(const TLBMissException<CONFIG>& exc);
 
-    /** indicates if the memory accesses require to be reported */
-    bool requires_memory_access_reporting;
-    /** indicates if the finished instructions require to be reported */
-    bool requires_finished_instruction_reporting;
+	//=====================================================================
+	//=                          FPSCR generation                         =
+	//=====================================================================
 
 	// Compute the FPSCR bits
 	void ComputeFPSCR_FEX(Instruction<CONFIG> *insn = 0);
@@ -1896,21 +1583,6 @@ private:
 	void ComputeFPSCR_VXCVI(const Flags& flags, Instruction<CONFIG> *insn = 0);
 	void ComputeFPSCR_FR(const SoftDouble& result, const Flags& flags, Instruction<CONFIG> *insn = 0);
 
-protected:
-	Logger logger;
-	
-	//=====================================================================
-	//=              CPU Cycle Time/Voltage/Bus Cycle Time                =
-	//=====================================================================
-	
-	uint64_t cpu_cycle_time; //!< CPU cycle time in ps
-	uint64_t voltage;        //!< CPU voltage in mV
-	uint64_t bus_cycle_time; //!< Front side bus cycle time in ps
-	uint64_t cpu_cycle;      //!< Number of cpu cycles
-	uint64_t bus_cycle;      //!< Number of front side bus cycles
-	uint64_t dec_bus_cycle;  //!< Last bus cycle DEC register has been decremented
-
-private:
 	//=====================================================================
 	//=                    CPU run-time parameters                        =
 	//=====================================================================
@@ -1919,6 +1591,24 @@ private:
 	Parameter<uint64_t> param_voltage;                    //!< linked to member voltage
 	//Parameter<uint64_t> param_bus_cycle_time;             //!< linked to member bus_cycle_time
 	Parameter<uint64_t> param_max_inst;                   //!< linked to member max_inst
+	Parameter<bool> param_verbose_all;
+	Parameter<bool> param_verbose_setup;
+	Parameter<bool> param_verbose_step;
+	Parameter<bool> param_verbose_dtlb;
+	Parameter<bool> param_verbose_dl1;
+	Parameter<bool> param_verbose_il1;
+	Parameter<bool> param_verbose_l2;
+	Parameter<bool> param_verbose_load;
+	Parameter<bool> param_verbose_store;
+	Parameter<bool> param_verbose_read_memory;
+	Parameter<bool> param_verbose_write_memory;
+	Parameter<bool> param_verbose_exception;
+	Parameter<bool> param_verbose_set_msr;
+	Parameter<bool> param_verbose_set_hid0;
+	Parameter<bool> param_verbose_set_hid1;
+	Parameter<bool> param_verbose_set_hid2;
+	Parameter<bool> param_verbose_set_l2cr;
+	Parameter<uint64_t> param_trap_on_instruction_counter;
 
 	//=====================================================================
 	//=                    CPU run-time statistics                        =
@@ -2220,7 +1910,7 @@ protected:
 	Instruction<CONFIG> *AllocateInstruction();
 	Operand<CONFIG> *AllocateOperand();
 	LoadStoreAccess<CONFIG> *AllocateLoadStoreAccess();
-	void GenLoadStoreAccess(typename LoadStoreAccess<CONFIG>::Type type, unsigned int reg_num, address_t munged_ea, uint32_t size, Instruction<CONFIG> *instruction);
+	void GenLoadStoreAccess(typename LoadStoreAccess<CONFIG>::Type type, unsigned int reg_num, typename CONFIG::address_t munged_ea, uint32_t size, Instruction<CONFIG> *instruction);
 	BusAccess<CONFIG> *AllocateBusAccess();
 	FetchAccess<CONFIG> *AllocateFetchAccess();
 	void AcquireOperand(Operand<CONFIG> *operand);
@@ -2295,6 +1985,7 @@ protected:
 	friend class Instruction<CONFIG>;
 };
 
+} // end of namespace mpc7447a
 } // end of namespace powerpc
 } // end of namespace processor
 } // end of namespace cxx

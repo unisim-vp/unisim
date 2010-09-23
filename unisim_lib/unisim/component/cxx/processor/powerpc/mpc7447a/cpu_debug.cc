@@ -32,50 +32,22 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-namespace unisim::component::cxx::processor::powerpc
-set endianness big	/* instruction endian */
-set addressclass {typename CONFIG::address_t}
-template <{class} {CONFIG}>
-
-decl {
-#include <iosfwd>
-#include <unisim/component/cxx/processor/powerpc/exception.hh>
+#include <unisim/component/cxx/processor/powerpc/mpc7447a/cpu.hh>
+#include <unisim/component/cxx/processor/powerpc/mpc7447a/cpu.tcc>
 
 namespace unisim {
 namespace component {
 namespace cxx {
 namespace processor {
 namespace powerpc {
+namespace mpc7447a {
 
-using std::ostream;
+template class CPU<DebugConfig>;
 
+} // end of namespace mpc7447a
 } // end of namespace powerpc
 } // end of namespace processor
 } // end of namespace cxx
 } // end of namespace component
 } // end of namespace unisim
 
-}
-
-action {void} execute({typename CONFIG::STATE *} {cpu}) {
-	throw IllegalInstructionException<CONFIG>();
-}
-
-action {void} disasm({typename CONFIG::STATE *} {cpu}, {ostream&} {os}) {
-	os << "???";
-}
-
-include "integer.isa"
-include "floating.isa"
-include "branch.isa"
-include "condition.isa"
-include "loadstore.isa"
-include "misc.isa"
-include "altivec.isa"
-include "perf.isa"
-
-include "sim_ppc.isa"
-include "sim_latencies.isa"
-include "sim_dependencies.isa"
-include "sim_branch.isa"
-include "sim_load.isa"

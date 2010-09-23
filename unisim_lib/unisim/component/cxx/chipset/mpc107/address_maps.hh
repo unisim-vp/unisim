@@ -79,7 +79,7 @@ private:
 	AddressMapEntryNode *proc_list;
 	AddressMapEntryNode *pci_list;
 
-	bool DeleteEntryList(AddressMapEntryNode **list);	
+	void DeleteEntryList(AddressMapEntryNode **list);	
 	void AddEntryNode(AddressMapEntryNode **list, AddressMapEntryNode *entry);
 	void CreateAddressMapEntry(AddressMapEntryNode **list,
 		const char *name,

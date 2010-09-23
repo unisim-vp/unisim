@@ -54,14 +54,16 @@ using unisim::kernel::logger::EndDebugError;
 template <class ADDRESS_TYPE, class PCI_ADDRESS_TYPE, bool DEBUG>
 AddressMap<ADDRESS_TYPE, PCI_ADDRESS_TYPE, DEBUG>::AddressMap(ConfigurationRegisters &_config_regs,
 	ATU<ADDRESS_TYPE, PCI_ADDRESS_TYPE, DEBUG> &_atu,
-	const char *name, Object *parent) :
-	Object(name, parent, "MPC107 Address mapper"),
-	logger(*this),
-	verbose(false),
-	param_verbose("verbose", this, verbose, "enable/disable verbosity"),
-	proc_list(NULL), pci_list(NULL),
-	config_regs(&_config_regs),
-	atu(&_atu) {
+	const char *name, Object *parent)
+	: Object(name, parent, "MPC107 Address mapper")
+	, proc_list(NULL)
+	, pci_list(NULL)
+	, config_regs(&_config_regs)
+	, atu(&_atu)
+	, logger(*this)
+	, verbose(false)
+	, param_verbose("verbose", this, verbose, "enable/disable verbosity")
+{
 }
 
 template <class ADDRESS_TYPE, class PCI_ADDRESS_TYPE, bool DEBUG>
@@ -974,7 +976,7 @@ AddressMap<ADDRESS_TYPE, PCI_ADDRESS_TYPE, DEBUG>::GetEntryPCI(address_t addr) {
 }
 
 template <class ADDRESS_TYPE, class PCI_ADDRESS_TYPE, bool DEBUG>
-bool
+void
 AddressMap<ADDRESS_TYPE, PCI_ADDRESS_TYPE, DEBUG>::DeleteEntryList(AddressMapEntryNode **list) {
 	while(*list) {
 		AddressMapEntryNode *node = *list;

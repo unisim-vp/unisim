@@ -67,14 +67,6 @@ Display<ADDRESS>::Display(const char *name, Object *parent) :
 	bytes_per_line(0),
 	logger(*this),
 	verbose(false),
-	param_verbose("verbose", this, verbose, "enable/disable verbosity"),
-	param_bytesize("bytesize", this, bytesize, "frame buffer size in bytes"),
-	param_width("width", this, width, "screen width in pixels"),
-	param_height("height", this, height, "screen height in pixels"),
-	param_depth("depth", this, depth, "screen depth in bits per pixel"),
-	pci_device_number(0),
-	pci_bus_frequency(33),
-	initial_base_addr(0),
 
 	// PCI configuration registers initialization
 	pci_conf_device_id("pci_conf_device_id", "PCI config Device ID", 0x0, 0x4758), // Mach64 GT
@@ -92,7 +84,16 @@ Display<ADDRESS>::Display(const char *name, Object *parent) :
 	pci_conf_subsystem_id("pci_conf_subsystem_id", "PCI Config Subsystem ID", 0x0, 0x0),
 	pci_conf_subsystem_vendor_id("pci_conf_subsystem_vendor_id", "PCI Config Subsystem Vendor ID", 0x0, 0x0),
 
+	pci_device_number(0),
+	initial_base_addr(0),
+	pci_bus_frequency(33),
+
 	// Parameters initialization
+	param_verbose("verbose", this, verbose, "enable/disable verbosity"),
+	param_width("width", this, width, "screen width in pixels"),
+	param_height("height", this, height, "screen height in pixels"),
+	param_depth("depth", this, depth, "screen depth in bits per pixel"),
+	param_bytesize("bytesize", this, bytesize, "frame buffer size in bytes"),
 	param_initial_base_addr("initial-base-addr", this, initial_base_addr, "initial base address of memory space"),
 	param_pci_device_number("pci-device-number", this, pci_device_number, "PCI device number"),
 	param_pci_bus_frequency("pci-bus-frequency", this, pci_bus_frequency, "PCI bus frequency")

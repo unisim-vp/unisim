@@ -51,31 +51,34 @@ using std::endl;
 using std::hex;
 using std::dec;
 
-I8042::I8042(const char *name, Object *parent) :
-	Object(name, parent, "i8042 PS/2 keyboard/mouse controller"),
-	Client<Keyboard>(name, parent),
-	Client<Mouse>(name, parent),
-	keyboard_import("keyboard-import", this),
-	mouse_import("mouse-import", this),
-	logger(*this),
-	status(0),
-	control(0),
-	fsb_frequency(0),
-	isa_bus_frequency(8),
-	typematic_rate(30.0),
-	typematic_delay(0.250),
-	speed_boost(30.0),
-	aux_status(0),
-	aux_log2_resolution(2),
-	aux_sample_rate(100),
-	aux_wrap(false),
-	verbose(false),
-	param_fsb_frequency("fsb-frequency", this, fsb_frequency, "front side bus frequency in Mhz"),
-	param_isa_bus_frequency("isa-bus-frequency", this, isa_bus_frequency, "ISA bus frequency in Mhz"),
-	param_typematic_rate("typematic-rate", this, typematic_rate, "typematic rate (key strokes per second)"),
-	param_typematic_delay("typematic-delay", this, typematic_delay, "typematic delay (key repeat delay in seconds)"),
-	param_speed_boost("speed-boost", this, speed_boost, "speed-boost factor"),
-	param_verbose("verbose", this, verbose, "enable/disable verbosity")
+I8042::I8042(const char *name, Object *parent)
+	: Object(name, parent, "i8042 PS/2 keyboard/mouse controller")
+	, Client<Keyboard>(name, parent)
+	, Client<Mouse>(name, parent)
+	, keyboard_import("keyboard-import", this)
+	, mouse_import("mouse-import", this)
+	, typematic_rate(30.0)
+	, typematic_delay(0.250)
+	, speed_boost(30.0)
+	, aux_status(0)
+	, aux_log2_resolution(2)
+	, aux_sample_rate(100)
+	, aux_wrap(false)
+	, logger(*this)
+	, verbose(false)
+	, isa_bus_frequency(8)
+	, fsb_frequency(0)
+	, status(0)
+	, control(0)
+	, kbd_irq_level(false)
+	, aux_irq_level(false)
+	, kbd_scanning(false)
+	, param_isa_bus_frequency("isa-bus-frequency", this, isa_bus_frequency, "ISA bus frequency in Mhz")
+	, param_fsb_frequency("fsb-frequency", this, fsb_frequency, "front side bus frequency in Mhz")
+	, param_typematic_rate("typematic-rate", this, typematic_rate, "typematic rate (key strokes per second)")
+	, param_typematic_delay("typematic-delay", this, typematic_delay, "typematic delay (key repeat delay in seconds)")
+	, param_speed_boost("speed-boost", this, speed_boost, "speed-boost factor")
+	, param_verbose("verbose", this, verbose, "enable/disable verbosity")
 {
 	param_fsb_frequency.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	param_isa_bus_frequency.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);

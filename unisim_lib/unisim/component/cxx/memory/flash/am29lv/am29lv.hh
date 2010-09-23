@@ -106,7 +106,7 @@ private:
 	ParameterArray<bool> param_sector_protect;
 
 	bool ReverseCompare(const uint8_t *data1, const uint8_t *data2, uint32_t size);
-	bool ReverseCopy(uint8_t *dest, const uint8_t *source, uint32_t size);
+	void ReverseCopy(uint8_t *dest, const uint8_t *source, uint32_t size);
 	int GetSector(typename CONFIG::ADDRESS addr);
 	void FSM(unsigned int chip_num, COMMAND command, typename CONFIG::ADDRESS addr, uint8_t *data, uint32_t size);
 	void Read(unsigned int chip_num, typename CONFIG::ADDRESS addr, uint8_t *data, uint32_t size);

@@ -146,8 +146,8 @@ class RawDiskImage : public DiskImage
 class CowDiskImage : public DiskImage
 {
   public:
-    static const int VersionMajor;
-    static const int VersionMinor;
+    static const unsigned int VersionMajor;
+    static const unsigned int VersionMinor;
 
   protected:
     struct Sector {

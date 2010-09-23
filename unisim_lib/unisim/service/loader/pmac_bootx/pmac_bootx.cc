@@ -55,11 +55,6 @@ using unisim::kernel::logger::EndDebugInfo;
 using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 
-static char Nibble2HexChar(uint8_t v)
-{
-	return v < 10 ? '0' + v : 'a' + v - 10;
-}
-
 static uint8_t HexChar2Nibble(char ch)
 {
 	if(ch >= 'a' && ch <= 'f') return ch - 'a' + 10;
@@ -168,7 +163,6 @@ DeviceProperty *DeviceTree::CreateDeviceProperty(const unisim::util::xml::Node *
 			}
 		}
 
-		unsigned int i, n;
 		char buffer[value.length() + 1];
 		unsigned int len = ExpandEscapeSequences(value, buffer);
 		
@@ -463,12 +457,12 @@ void DeviceTree::DumpDeviceNode(DeviceNode *reloc_node)
 
 DeviceTree::DeviceTree(BootInfos *_boot_infos, unisim::kernel::logger::Logger& _logger, bool _verbose)
 	: logger(_logger)
-	, verbose(_verbose)
+	, boot_infos(_boot_infos)
 	, root_node(0)
 	, last_reloc_node(0)
-	, boot_infos(_boot_infos)
-	, size(0)
 	, base(0)
+	, size(0)
+	, verbose(_verbose)
 {
 }
 
@@ -622,7 +616,7 @@ uint32_t BootInfos::UnRelocate(void *p)
 
 bool BootInfos::Load(const string& device_tree_filename, const string& kernel_parms, const string& ramdisk_filename, unsigned int screen_width, unsigned int screen_height)
 {
-	int i;
+	unsigned int i;
 	DeviceTree device_tree(this, logger, verbose);
 	BootInfosImage *boot_infos;
 	//char *kernel_parms = "";
@@ -818,13 +812,14 @@ PMACBootX::PMACBootX(const char *name, Object *parent) :
 	Client<Loader<uint32_t> >(name, parent),
 	Client<Memory<uint32_t> >(name, parent),
 	Client<Registers>(name, parent),
-	logger(*this),
 	loader_export("loader-export", this),
 	loader_import("loader-import", this),
 	memory_import("memory-import", this),
 	registers_import("cpu-registers-import", this),
+	logger(*this),
 	device_tree_filename(),
 	kernel_parms(),
+	ramdisk_filename(),
 	r1_value(0),
 	r3_value(0),
 	r4_value(0),

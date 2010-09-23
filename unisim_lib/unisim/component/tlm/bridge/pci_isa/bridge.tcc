@@ -53,8 +53,8 @@ using unisim::kernel::logger::EndDebugError;
 template <class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
 Bridge<ADDRESS_TYPE, MAX_DATA_SIZE>::Bridge(const sc_module_name& name, Object *parent) :
 	Object(name, parent, "PCI-to-ISA bridge"),
-	unisim::component::cxx::bridge::pci_isa::Bridge<ADDRESS_TYPE>(name, parent),
 	sc_module(name),
+	unisim::component::cxx::bridge::pci_isa::Bridge<ADDRESS_TYPE>(name, parent),
 	pci_slave_port("pci-slave-port"),
 	//pci_master_port("pci-master-port"),
 	//isa_slave_port("isa-slave-port"),

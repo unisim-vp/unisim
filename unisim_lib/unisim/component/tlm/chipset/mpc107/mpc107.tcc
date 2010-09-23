@@ -62,16 +62,10 @@ template <class PHYSICAL_ADDR,
 MPC107<PHYSICAL_ADDR, MAX_TRANSACTION_DATA_SIZE,
 	PCI_ADDR, MAX_PCI_TRANSACTION_DATA_SIZE, DEBUG>::
 MPC107(const sc_module_name &name, Object *parent) :
-	sc_module(name),
 	Object(name, parent, "MPC107 chipset"),
+	sc_module(name),
 	Service<Memory<PHYSICAL_ADDR> >(name, parent),
 	Client<Memory<PHYSICAL_ADDR> >(name, parent),
-	logger(*this),
-	verbose(false),
-	param_verbose("verbose", this, verbose, "enable/disable verbosity"),
-	dma(this, "DMA", this),
-	epic("epic", this),
-	atu("atu", this),
 	slave_port("slave_port"),
 	master_port("master_port"),
 	pci_slave_port("pci_slave_port"),
@@ -79,35 +73,41 @@ MPC107(const sc_module_name &name, Object *parent) :
 	rom_master_port("rom_master_port"),
 	erom_master_port("erom_master_port"),
 	pci_master_port("pci_master_port"),
-	epic_master_port("epic_master_port"),
 	irq_master_port("irq_master_port"),
 	soft_reset_master_port("soft_reset_master_port"),
-	sdram_master_port("sdram_master_port"),
-	sdram_to_epic_sig("sdram_to_epic_sig"),
 	memory_export("memory_export", this),
 	ram_import("ram_import", this),
 	rom_import("rom_import", this),
 	erom_import("erom_import", this),
-	epic_memory_import("epic_memory_import", this),
 	pci_import("pci_import", this),
-	a_address_map(false),
+	logger(*this),
+	verbose(false),
+	param_verbose("verbose", this, verbose, "enable/disable verbosity"),
+	dma(this, "DMA", this),
+	atu("atu", this),
+	epic("epic", this),
+	epic_master_port("epic_master_port"),
+	epic_memory_import("epic_memory_import", this),
+	sdram_master_port("sdram_master_port"),
+	sdram_to_epic_sig("sdram_to_epic_sig"),
+	config_regs(),
+	pci_controller(0, config_regs, addr_map, "pci_controller", this),
+	config_addr(0),
+	addr_map(config_regs, atu, "address_mapper", this),
 	host_mode(true),
+	a_address_map(false),
 	memory_32bit_data_bus_size(true),
 	rom0_8bit_data_bus_size(false),
 	rom1_8bit_data_bus_size(false),
 	frequency(0),
 	sdram_cycle_time(0),
-	param_a_address_map("a_address_map", this, a_address_map, "enable/disable address map A"),
 	param_host_mode("host_mode", this, host_mode, "enable/disable host mode"),
+	param_a_address_map("a_address_map", this, a_address_map, "enable/disable address map A"),
 	param_memory_32bit_data_bus_size("memory_32bit_data_bus_size", this, memory_32bit_data_bus_size, "enable/disable 32-bit data bus width"),
 	param_rom0_8bit_data_bus_size("rom0_8bit_data_bus_size", this, rom0_8bit_data_bus_size, "enable/disable rom #0 8-bit data bus width"),
 	param_rom1_8bit_data_bus_size("rom1_8bit_data_bus_size", this, rom1_8bit_data_bus_size, "enable/disable rom #1 8-bit data bus width"),
 	param_frequency("frequency", this, frequency, "frequency in Mhz"),
-	param_sdram_cycle_time("sdram_cycle_time", this, sdram_cycle_time, "SDRAM cycle time in picoseconds"),
-	config_addr(0),
-	config_regs(),
-	pci_controller(0, config_regs, addr_map, "pci_controller", this),
-	addr_map(config_regs, atu, "address_mapper", this)
+	param_sdram_cycle_time("sdram_cycle_time", this, sdram_cycle_time, "SDRAM cycle time in picoseconds")
 {
 	param_frequency.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	param_sdram_cycle_time.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
@@ -879,6 +879,7 @@ Send(const PMsgType &message) {
 		wait();
 		break;
 	}
+	return false;
 }
 
 template <class PHYSICAL_ADDR, 
@@ -1364,7 +1365,7 @@ ConverttoFSBMsg(const PPCIMsgType &pci_msg, int size_done, int size) {
 
 	fsb_req->global = true;
 	fsb_req->addr = pci_req->addr + size_done;
-	fsb_req->size = (size < MAX_TRANSACTION_DATA_SIZE)?size:MAX_TRANSACTION_DATA_SIZE;
+	fsb_req->size = (size < (int) MAX_TRANSACTION_DATA_SIZE)?size:MAX_TRANSACTION_DATA_SIZE;
 	switch(pci_req->type) {
 	case unisim::component::cxx::pci::TT_READ:
 		fsb_req->type = ReqType::READ;
@@ -1399,7 +1400,7 @@ ConverttoMemMsg(const PPCIMsgType &pci_msg, int size_done, int size) {
 	PPCIReqType pci_req = pci_msg->req;
 
 	mem_req->addr = pci_req->addr + size_done;
-	mem_req->size = (size < MAX_TRANSACTION_DATA_SIZE)?size:MAX_TRANSACTION_DATA_SIZE;
+	mem_req->size = (size < (int) MAX_TRANSACTION_DATA_SIZE)?size:MAX_TRANSACTION_DATA_SIZE;
 	switch(pci_req->type) {
 	case unisim::component::cxx::pci::TT_READ:
 		mem_req->type = MemReqType::READ;
@@ -1557,7 +1558,7 @@ DispatchPCIReq() {
 		// We have to take into account that the width of the pci bus may be greater than the one of the system bus [paula]
         int size_done = 0;
 		PPCIRspType pci_rsp = new(pci_rsp) PCIRspType();
-		while (size_done< item->pci_msg->req->size) {
+		while (size_done< (int) item->pci_msg->req->size) {
 		
             			
 			/* prepare a request (and message) for the system bus */

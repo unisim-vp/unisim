@@ -67,8 +67,8 @@ BusMasterPortController(const char *_name,
 	Bus<ADDRESS_TYPE, DATA_SIZE, NUM_PROCS> *_bus,
 	unsigned int _id) :
 	name(_name),
-	bus(_bus),
-	id(_id) {}
+	id(_id),
+	bus(_bus) {}
 
 /** TlmSendIf interface implementation.
  * Puts the incomming request in the fifo. The request will be handled
@@ -96,25 +96,25 @@ template <class ADDRESS_TYPE, unsigned int DATA_SIZE,
 Bus<ADDRESS_TYPE, DATA_SIZE, NUM_PROCS> :: 
 Bus(const sc_module_name& module_name, Object *parent) :
 	Object(module_name, parent, "Front side bus"),
-	Service<Memory<ADDRESS_TYPE> >(module_name, parent),
-	Client<Memory<ADDRESS_TYPE> >(module_name, parent),
 	sc_module(module_name),
 	ResponseListener<ReqType, RspType>(),		
+	Service<Memory<ADDRESS_TYPE> >(module_name, parent),
+	Client<Memory<ADDRESS_TYPE> >(module_name, parent),
 	memory_export("memory-export", this),
 	memory_import("memory-import", this),
-	cycle_time(),
-	cycle_time_parameter("cycle-time", this, cycle_time, "cycle time"),
 	logger(*this),
 	verbose(false),
 	param_verbose("verbose", this, verbose, "enable/disable verbosity"),
-	bus_synchro_event(),
-	next_serviced(0),
 	chipset_req_fifo("chipset_req_fifo"),
 	chipset_rsp_fifo("chipset_rsp_fifo"),
+	bus_synchro_event(),
+	next_serviced(0),
 	chipset_snoop(false),
 	cpu_snoop(false),
 	snoop_event(),
-	snoop_counter(0)
+	snoop_counter(0),
+	cycle_time(),
+	cycle_time_parameter("cycle-time", this, cycle_time, "cycle time")
 {
 	cycle_time_parameter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	

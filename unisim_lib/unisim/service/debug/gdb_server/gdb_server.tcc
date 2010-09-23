@@ -772,6 +772,7 @@ typename DebugControl<ADDRESS>::DebugCommand GDBServer<ADDRESS>::FetchDebugComma
 			case 'k':
 				if(!extended_mode)
 				{
+					Kill();
 					killed = true;
 				}
 				break;
@@ -1255,6 +1256,20 @@ bool GDBServer<ADDRESS>::WriteMemory(ADDRESS addr, const string& hex, uint32_t s
 	}
 
 	return true;
+}
+
+template <class ADDRESS>
+void GDBServer<ADDRESS>::Kill()
+{
+	if(sock >= 0)
+	{
+#ifdef WIN32
+		closesocket(sock);
+#else
+		close(sock);
+#endif
+		sock = -1;
+	}
 }
 
 template <class ADDRESS>

@@ -32,36 +32,41 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#ifndef __UNISIM_COMPONENT_TLM_PROCESSOR_POWERPC_POWERPC_TCC__
-#define __UNISIM_COMPONENT_TLM_PROCESSOR_POWERPC_POWERPC_TCC__
+#ifndef __UNISIM_COMPONENT_TLM_PROCESSOR_POWERPC_MPC7447A_CPU_TCC__
+#define __UNISIM_COMPONENT_TLM_PROCESSOR_POWERPC_MPC7447A_CPU_TCC__
 
 #include <unistd.h>
+#include <unisim/component/cxx/processor/powerpc/exception.tcc>
 
 namespace unisim {
 namespace component {
 namespace tlm {
 namespace processor {
 namespace powerpc {
+namespace mpc7447a {
 
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::EndDebugInfo;
+	
 template <class CONFIG>
-PowerPC<CONFIG>::PowerPC(const sc_module_name& name, Object *parent) :
+CPU<CONFIG>::CPU(const sc_module_name& name, Object *parent) :
 	Object(name, parent, "PowerPC MPC7447A CPU"),
 	sc_module(name),
-	CPU<CONFIG>(name, parent),
+	unisim::component::cxx::processor::powerpc::mpc7447a::CPU<CONFIG>(name, parent),
 	bus_port("bus-port"),
 	snoop_port("snoop-port"),
 	cpu_cycle_sctime(),
 	bus_cycle_sctime(),
-	nice_sctime(100.0, SC_MS),
-	next_nice_sctime(),
-	//nice_time(100000000000ULL), // leave at least 10 times per simulated seconds the host processor to the SystemC simulation kernel 
-	param_bus_cycle_time("bus-cycle-time", this, bus_cycle_sctime, "bus cycle time"),
-	param_nice_time("nice-time", this, nice_sctime, "maximum time between synchonizations"),
-	param_ipc("ipc", this, ipc, "targeted average instructions per second"),
 	cpu_sctime(),
 	bus_sctime(),
 	last_sync_sctime(),
+	nice_sctime(100.0, SC_MS),
+	next_nice_sctime(),
+	//nice_time(100000000000ULL), // leave at least 10 times per simulated seconds the host processor to the SystemC simulation kernel 
 	ipc(1.0),
+	param_bus_cycle_time("bus-cycle-time", this, bus_cycle_sctime, "bus cycle time"),
+	param_nice_time("nice-time", this, nice_sctime, "maximum time between synchonizations"),
+	param_ipc("ipc", this, ipc, "targeted average instructions per second"),
 	external_interrupt_listener("external_interrupt_listener",this, &ev_interrupt),
 	hard_reset_listener("hard_reset_listener",this, &ev_interrupt),
 	soft_reset_listener("soft_reset_listener",this, &ev_interrupt),
@@ -72,7 +77,7 @@ PowerPC<CONFIG>::PowerPC(const sc_module_name& name, Object *parent) :
 	//param_nice_time.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	param_ipc.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	
-	SC_HAS_PROCESS(PowerPC);
+	SC_HAS_PROCESS(CPU);
 	
 	snoop_port(*this);
 	external_interrupt_port(external_interrupt_listener);
@@ -88,12 +93,12 @@ PowerPC<CONFIG>::PowerPC(const sc_module_name& name, Object *parent) :
 }
 
 template <class CONFIG>
-PowerPC<CONFIG>::~PowerPC()
+CPU<CONFIG>::~CPU()
 {
 }
 	
 template <class CONFIG>
-void PowerPC<CONFIG>::Stop(int ret)
+void CPU<CONFIG>::Stop(int ret)
 {
 	// Call BusSynchronize to account for the remaining time spent in the cpu core
 	if(unlikely(inherited::IsVerboseStep()))
@@ -105,7 +110,7 @@ void PowerPC<CONFIG>::Stop(int ret)
 }
 
 template <class CONFIG>
-void PowerPC<CONFIG>::Synchronize()
+void CPU<CONFIG>::Synchronize()
 {
 	sc_dt::uint64 cpu_time_tu = cpu_sctime.value();
 	sc_dt::uint64 last_sync_time_tu = last_sync_sctime.value();
@@ -118,9 +123,9 @@ void PowerPC<CONFIG>::Synchronize()
 
 	
 template <class CONFIG>
-bool PowerPC<CONFIG>::Setup()
+bool CPU<CONFIG>::Setup()
 {
-	if(!CPU<CONFIG>::Setup()) return false;
+	if(!inherited::Setup()) return false;
 	cpu_cycle_sctime = sc_time((double) inherited::cpu_cycle_time, SC_PS);
 	//bus_cycle_sctime = sc_time((double) inherited::bus_cycle_time, SC_PS);
 	//nice_sctime = sc_time((double) nice_time, SC_PS); // 10000 * cpu_cycle_sctime;//
@@ -128,7 +133,7 @@ bool PowerPC<CONFIG>::Setup()
 }
 
 template <class CONFIG>
-void PowerPC<CONFIG>::BusSynchronize()
+void CPU<CONFIG>::BusSynchronize()
 {
 	if(unlikely(cpu_sctime > bus_sctime))
 	{
@@ -136,7 +141,7 @@ void PowerPC<CONFIG>::BusSynchronize()
 		do
 		{
 			bus_sctime += bus_cycle_sctime;
-			CPU<CONFIG>::OnBusCycle();
+			inherited::OnBusCycle();
 		} while(unlikely(cpu_sctime > bus_sctime));
 	}
 	
@@ -144,7 +149,7 @@ void PowerPC<CONFIG>::BusSynchronize()
 }
 
 /*template <class CONFIG>
-void PowerPC<CONFIG>::BusSynchronize()
+void CPU<CONFIG>::BusSynchronize()
 {
 	sc_time time_spent = cpu_sctime - bus_sctime;
 
@@ -192,7 +197,7 @@ void PowerPC<CONFIG>::BusSynchronize()
 }*/
 	
 // template <class CONFIG>
-// void PowerPC<CONFIG>::Run()
+// void CPU<CONFIG>::Run()
 // {
 // 	sc_time time_per_instruction = cpu_cycle_sctime * ipc;
 // 	
@@ -213,11 +218,11 @@ void PowerPC<CONFIG>::BusSynchronize()
 // }
 
 template <class CONFIG>
-void PowerPC<CONFIG>::Idle()
+void CPU<CONFIG>::Idle()
 {
 	UpdateBusTime();
 	max_idle_time = bus_cycle_sctime;
-	max_idle_time *= CPU<CONFIG>::GetDEC() * 4;
+	max_idle_time *= inherited::GetDEC() * 4;
 #if 0
 	usleep(max_idle_time.to_seconds() * 1.0e6);
 #endif
@@ -227,7 +232,7 @@ void PowerPC<CONFIG>::Idle()
 	cpu_sctime = sc_time_stamp();
 	last_sync_sctime = cpu_sctime;
 	UpdateBusTime();
-	while(likely(!CPU<CONFIG>::HasAsynchronousInterrupt()))
+	while(likely(!inherited::HasAsynchronousInterrupt()))
 	{
 		cpu_sctime += cpu_cycle_sctime;
 		UpdateBusTime();
@@ -235,14 +240,14 @@ void PowerPC<CONFIG>::Idle()
 }
 
 template <class CONFIG>
-inline void PowerPC<CONFIG>::UpdateBusTime()
+inline void CPU<CONFIG>::UpdateBusTime()
 {
 	if(unlikely(cpu_sctime > bus_sctime))
 	{
 		do
 		{
 			bus_sctime += bus_cycle_sctime;
-			CPU<CONFIG>::OnBusCycle();
+			inherited::OnBusCycle();
 		}
 		while(unlikely(cpu_sctime > bus_sctime));
 
@@ -254,46 +259,46 @@ inline void PowerPC<CONFIG>::UpdateBusTime()
 }
 
 template <class CONFIG>
-void PowerPC<CONFIG>::Run()
+void CPU<CONFIG>::Run()
 {
 #if 1
 	sc_time time_per_instruction = cpu_cycle_sctime * ipc;
 	
 	while(1)
 	{
-		CPU<CONFIG>::StepOneInstruction();
+		inherited::StepOneInstruction();
 		cpu_sctime += time_per_instruction;
 		UpdateBusTime();
 	}
 #else
 	while(1)
 	{
-		CPU<CONFIG>::StepOneCycle();
+		inherited::StepOneCycle();
 		UpdateTime(cpu_cycle_sctime);
 	}
 #endif
 }
 
 template <class CONFIG>
-void PowerPC<CONFIG>::BusMaster()
+void CPU<CONFIG>::BusMaster()
 {
 	while(1)
 	{
-		BusAccess<CONFIG> *bus_access;
+		unisim::component::cxx::processor::powerpc::mpc7447a::BusAccess<CONFIG> *bus_access = 0;
 		bus_access_queue.read(bus_access); // blocking read
 		
 		inherited::logger << DebugInfo << "BusMaster" << EndDebugInfo;
 		switch(bus_access->type)
 		{
-			case BusAccess<CONFIG>::LOAD:
-			case BusAccess<CONFIG>::REFILL:
-			case BusAccess<CONFIG>::REFILLX:
+			case unisim::component::cxx::processor::powerpc::mpc7447a::BusAccess<CONFIG>::LOAD:
+			case unisim::component::cxx::processor::powerpc::mpc7447a::BusAccess<CONFIG>::REFILL:
+			case unisim::component::cxx::processor::powerpc::mpc7447a::BusAccess<CONFIG>::REFILLX:
 				BusRead(bus_access->addr, bus_access->storage, bus_access->size, bus_access->wimg, bus_access->rwitm);
 				inherited::logger << DebugInfo << "BusMaster: finished bus access" << EndDebugInfo;
 				OnFinishedBusAccess(bus_access);
 				break;
-			case BusAccess<CONFIG>::STORE:
-			case BusAccess<CONFIG>::EVICTION:
+			case unisim::component::cxx::processor::powerpc::mpc7447a::BusAccess<CONFIG>::STORE:
+			case unisim::component::cxx::processor::powerpc::mpc7447a::BusAccess<CONFIG>::EVICTION:
 				BusWrite(bus_access->addr, bus_access->storage, bus_access->size, bus_access->wimg);
 				OnFinishedBusAccess(bus_access);
 				break;
@@ -303,18 +308,18 @@ void PowerPC<CONFIG>::BusMaster()
 
 	
 template <class CONFIG>
-bool PowerPC<CONFIG>::Send(const Pointer<TlmMessage<FSBReq, FSBRsp> >& message)
+bool CPU<CONFIG>::Send(const Pointer<TlmMessage<FSBReq, FSBRsp> >& message)
 {
 	return true;
 }
 
 template <class CONFIG>
-void PowerPC<CONFIG>::Reset()
+void CPU<CONFIG>::Reset()
 {
 }
 	
 template <class CONFIG>
-void PowerPC<CONFIG>::BusRead(physical_address_t physical_addr, void *buffer, uint32_t size, typename CONFIG::WIMG wimg, bool rwitm)
+void CPU<CONFIG>::BusRead(physical_address_t physical_addr, void *buffer, uint32_t size, typename CONFIG::WIMG wimg, bool rwitm)
 {
 #ifdef DEBUG_POWERPC
 	if(DebugEnabled())
@@ -404,7 +409,7 @@ void PowerPC<CONFIG>::BusRead(physical_address_t physical_addr, void *buffer, ui
 	
 	
 template <class CONFIG>
-void PowerPC<CONFIG>::BusWrite(physical_address_t physical_addr, const void *buffer, uint32_t size, typename CONFIG::WIMG wimg)
+void CPU<CONFIG>::BusWrite(physical_address_t physical_addr, const void *buffer, uint32_t size, typename CONFIG::WIMG wimg)
 {
 #ifdef DEBUG_POWERPC
 	if(DebugEnabled())
@@ -456,7 +461,7 @@ void PowerPC<CONFIG>::BusWrite(physical_address_t physical_addr, const void *buf
 }
 
 template <class CONFIG>
-void PowerPC<CONFIG>::BusZeroBlock(physical_address_t physical_addr)
+void CPU<CONFIG>::BusZeroBlock(physical_address_t physical_addr)
 {
 #ifdef DEBUG_POWERPC
 	if(DebugEnabled())
@@ -500,7 +505,7 @@ void PowerPC<CONFIG>::BusZeroBlock(physical_address_t physical_addr)
 }
 
 template <class CONFIG>
-void PowerPC<CONFIG>::BusFlushBlock(physical_address_t physical_addr)
+void CPU<CONFIG>::BusFlushBlock(physical_address_t physical_addr)
 {
 #ifdef DEBUG_POWERPC
 	if(DebugEnabled())
@@ -544,7 +549,7 @@ void PowerPC<CONFIG>::BusFlushBlock(physical_address_t physical_addr)
 }
 
 template <class CONFIG>
-void PowerPC<CONFIG>::DoBusAccess(BusAccess<CONFIG> *bus_access)
+void CPU<CONFIG>::DoBusAccess(unisim::component::cxx::processor::powerpc::mpc7447a::BusAccess<CONFIG> *bus_access)
 {
 	inherited::logger << DebugInfo << "DoBusAccess" << EndDebugInfo;
 	if(!bus_access_queue.nb_write(bus_access))
@@ -556,7 +561,7 @@ void PowerPC<CONFIG>::DoBusAccess(BusAccess<CONFIG> *bus_access)
 }
 
 template <class CONFIG>
-PowerPC<CONFIG>::ExternalInterruptListener::ExternalInterruptListener(const sc_module_name& name, unisim::component::cxx::processor::powerpc::CPU<CONFIG> *_cpu, sc_event *_ev) :
+CPU<CONFIG>::ExternalInterruptListener::ExternalInterruptListener(const sc_module_name& name, unisim::component::cxx::processor::powerpc::mpc7447a::CPU<CONFIG> *_cpu, sc_event *_ev) :
 	sc_module(name),
 	cpu(_cpu),
 	ev(_ev)
@@ -564,7 +569,7 @@ PowerPC<CONFIG>::ExternalInterruptListener::ExternalInterruptListener(const sc_m
 }
 	
 template <class CONFIG>
-bool PowerPC<CONFIG>::ExternalInterruptListener::Send(const Pointer<TlmMessage<InterruptRequest> >& message)
+bool CPU<CONFIG>::ExternalInterruptListener::Send(const Pointer<TlmMessage<InterruptRequest> >& message)
 {
 	if(message->req->level)
 		cpu->ReqExternalInterrupt();
@@ -576,7 +581,7 @@ bool PowerPC<CONFIG>::ExternalInterruptListener::Send(const Pointer<TlmMessage<I
 }
 
 template <class CONFIG>
-PowerPC<CONFIG>::HardResetListener::HardResetListener(const sc_module_name& name, unisim::component::cxx::processor::powerpc::CPU<CONFIG> *_cpu, sc_event *_ev) :
+CPU<CONFIG>::HardResetListener::HardResetListener(const sc_module_name& name, unisim::component::cxx::processor::powerpc::mpc7447a::CPU<CONFIG> *_cpu, sc_event *_ev) :
 	sc_module(name),
 	cpu(_cpu),
 	ev(_ev)
@@ -584,7 +589,7 @@ PowerPC<CONFIG>::HardResetListener::HardResetListener(const sc_module_name& name
 }
 	
 template <class CONFIG>
-bool PowerPC<CONFIG>::HardResetListener::Send(const Pointer<TlmMessage<InterruptRequest> >& message)
+bool CPU<CONFIG>::HardResetListener::Send(const Pointer<TlmMessage<InterruptRequest> >& message)
 {
 	if(message->req->level)
 		cpu->ReqHardReset();
@@ -596,7 +601,7 @@ bool PowerPC<CONFIG>::HardResetListener::Send(const Pointer<TlmMessage<Interrupt
 }
 
 template <class CONFIG>
-PowerPC<CONFIG>::SoftResetListener::SoftResetListener(const sc_module_name& name, unisim::component::cxx::processor::powerpc::CPU<CONFIG> *_cpu, sc_event *_ev) :
+CPU<CONFIG>::SoftResetListener::SoftResetListener(const sc_module_name& name, unisim::component::cxx::processor::powerpc::mpc7447a::CPU<CONFIG> *_cpu, sc_event *_ev) :
 	sc_module(name),
 	cpu(_cpu),
 	ev(_ev)
@@ -604,7 +609,7 @@ PowerPC<CONFIG>::SoftResetListener::SoftResetListener(const sc_module_name& name
 }
 
 template <class CONFIG>
-bool PowerPC<CONFIG>::SoftResetListener::Send(const Pointer<TlmMessage<InterruptRequest> >& message)
+bool CPU<CONFIG>::SoftResetListener::Send(const Pointer<TlmMessage<InterruptRequest> >& message)
 {
 	if(message->req->level)
 		cpu->ReqSoftReset();
@@ -616,7 +621,7 @@ bool PowerPC<CONFIG>::SoftResetListener::Send(const Pointer<TlmMessage<Interrupt
 }
 
 template <class CONFIG>
-PowerPC<CONFIG>::MCPListener::MCPListener(const sc_module_name& name, unisim::component::cxx::processor::powerpc::CPU<CONFIG> *_cpu, sc_event *_ev) :
+CPU<CONFIG>::MCPListener::MCPListener(const sc_module_name& name, unisim::component::cxx::processor::powerpc::mpc7447a::CPU<CONFIG> *_cpu, sc_event *_ev) :
 	sc_module(name),
 	cpu(_cpu),
 	ev(_ev)
@@ -624,7 +629,7 @@ PowerPC<CONFIG>::MCPListener::MCPListener(const sc_module_name& name, unisim::co
 }
 
 template <class CONFIG>
-bool PowerPC<CONFIG>::MCPListener::Send(const Pointer<TlmMessage<InterruptRequest> >& message)
+bool CPU<CONFIG>::MCPListener::Send(const Pointer<TlmMessage<InterruptRequest> >& message)
 {
 	if(message->req->level)
 		cpu->ReqMCP();
@@ -636,7 +641,7 @@ bool PowerPC<CONFIG>::MCPListener::Send(const Pointer<TlmMessage<InterruptReques
 }
 
 template <class CONFIG>
-PowerPC<CONFIG>::TEAListener::TEAListener(const sc_module_name& name, unisim::component::cxx::processor::powerpc::CPU<CONFIG> *_cpu, sc_event *_ev) :
+CPU<CONFIG>::TEAListener::TEAListener(const sc_module_name& name, unisim::component::cxx::processor::powerpc::mpc7447a::CPU<CONFIG> *_cpu, sc_event *_ev) :
 	sc_module(name),
 	cpu(_cpu),
 	ev(_ev)
@@ -644,7 +649,7 @@ PowerPC<CONFIG>::TEAListener::TEAListener(const sc_module_name& name, unisim::co
 }
 
 template <class CONFIG>
-bool PowerPC<CONFIG>::TEAListener::Send(const Pointer<TlmMessage<InterruptRequest> >& message)
+bool CPU<CONFIG>::TEAListener::Send(const Pointer<TlmMessage<InterruptRequest> >& message)
 {
 	if(message->req->level)
 		cpu->ReqTEA();
@@ -656,7 +661,7 @@ bool PowerPC<CONFIG>::TEAListener::Send(const Pointer<TlmMessage<InterruptReques
 }
 
 template <class CONFIG>
-PowerPC<CONFIG>::SMIListener::SMIListener(const sc_module_name& name, unisim::component::cxx::processor::powerpc::CPU<CONFIG> *_cpu, sc_event *_ev) :
+CPU<CONFIG>::SMIListener::SMIListener(const sc_module_name& name, unisim::component::cxx::processor::powerpc::mpc7447a::CPU<CONFIG> *_cpu, sc_event *_ev) :
 	sc_module(name),
 	cpu(_cpu),
 	ev(_ev)
@@ -664,7 +669,7 @@ PowerPC<CONFIG>::SMIListener::SMIListener(const sc_module_name& name, unisim::co
 }
 
 template <class CONFIG>
-bool PowerPC<CONFIG>::SMIListener::Send(const Pointer<TlmMessage<InterruptRequest> >& message)
+bool CPU<CONFIG>::SMIListener::Send(const Pointer<TlmMessage<InterruptRequest> >& message)
 {
 	if(message->req->level)
 		cpu->ReqSMI();
@@ -675,6 +680,7 @@ bool PowerPC<CONFIG>::SMIListener::Send(const Pointer<TlmMessage<InterruptReques
 	return true;
 }
 
+} // end of namespace mpc7447a
 } // end of namespace powerpc
 } // end of namespace processor
 } // end of namespace tlm

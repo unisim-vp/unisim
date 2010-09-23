@@ -31,21 +31,23 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
- 
-#include <unisim/component/cxx/processor/powerpc/cpu.hh>
-#include <unisim/component/cxx/processor/powerpc/cpu.tcc>
+
+#include <unisim/component/tlm/processor/powerpc/mpc7447a/cpu.hh>
+#include <unisim/component/tlm/processor/powerpc/mpc7447a/cpu.tcc>
+#include <unisim/component/cxx/processor/powerpc/mpc7447a/config.hh>
 
 namespace unisim {
 namespace component {
-namespace cxx {
+namespace tlm {
 namespace processor {
 namespace powerpc {
+namespace mpc7447a {
 
-template class CPU<MPC7447AConfig>;
+template class CPU<unisim::component::cxx::processor::powerpc::mpc7447a::Config>;
 
+} // end of namespace mpc7447a
 } // end of namespace powerpc
 } // end of namespace processor
-} // end of namespace cxx
+} // end of namespace tlm
 } // end of namespace component
 } // end of namespace unisim
-

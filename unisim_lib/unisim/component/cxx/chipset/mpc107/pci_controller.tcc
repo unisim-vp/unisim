@@ -48,7 +48,7 @@ using unisim::kernel::logger::EndDebugInfo;
 using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 
-#define LOCATION "In function " << __FUNCTION__ << "file " << __FILE__ << ", line #" << __LINE__
+#define LOCATION "In function " << __FUNCTION__ << "file " << __FILE__ << ", line #" << __LINE__ << ": "
 
 template <class SYSTEM_BUS_PHYSICAL_ADDR,
 	uint32_t SYSTEM_MAX_TRANSACTION_DATA_SIZE,
@@ -344,7 +344,8 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 		if (req_size == 4) {
 			//Checking the word alingment
 			if ((req_addr & 0x03) == 0) {
-				config_addr = *(uint32_t *)req_data;
+				//config_addr = *(uint32_t *)req_data;
+				memcpy(&config_addr, req_data, sizeof(uint32_t));
 				config_addr = LittleEndian2Host(config_addr);
 				// mask the two low bits of config_addr
 				if(config_addr & 0x03) {
@@ -445,83 +446,66 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 						uint32_t req_size, 
 						uint8_t data[SYSTEM_MAX_TRANSACTION_DATA_SIZE]) {
 	ConfigurationRegister *creg;
-	int reg = (config_addr & 0xFF) + (req_addr & 0x03);
+	unsigned int reg = (config_addr & 0xFF) + (req_addr & 0x03);
 
-	creg = config_regs->GetRegister(reg);
-	if(creg == NULL) {
-		//I changed this to answer ffffff of the size of the request in this case
-		memset(data, 0xff, req_size);
-		if(unlikely(verbose))
-			logger << DebugWarning << LOCATION
-				<< "trying to access configuration register 0x"
-				<< std::hex << reg << std::dec 
-				<< std::endl << EndDebugWarning;
-		return true;
-	}
-	//I could check if the size is ok, but i think it's not necesary
-	if(!creg->AllowedSize(req_size)) {
-		if(unlikely(verbose))
-			logger << DebugError << LOCATION 
-				<< "bad read size (received_size = " << req_size 
-				<< ", expected_size = 0x" 
-				<< std::hex << creg->access_size << std::dec << ")" 
-				<< std::endl << EndDebugError;
-		return false;		
-	}
-	switch(req_size) {
-	case 4: {
-		uint32_t t_data = creg->value;
-		*(uint32_t *)data = t_data;
-		break;}
-	case 2: {
-		switch(creg->byte_size) {
-		case 4: {
+	unsigned int i;
+	for(i = 0; i < req_size;)
+	{
+		creg = config_regs->GetRegister(reg + i);
+		if(creg)
+		{
+			if((creg->permission & unisim::component::cxx::chipset::mpc107::ConfigurationRegister::ReadAccess))
+			{
+				if(unlikely(DEBUG && verbose))
+				{
+					if(!creg->AllowedSize(reg, req_size))
+					{
+						logger << DebugWarning
+							<< LOCATION
+							<< "Read access at 0x" << std::hex << reg << std::dec << " to register " << creg->name << " with bad size (got " << req_size
+							<< ", expected " << creg->access_size << ")"
+							<< EndDebugWarning;
+					}
+				}
+				if(unlikely(DEBUG && verbose))
+				{
+					logger << DebugInfo
+						<< LOCATION
+						<< "Read access to register " << creg->name
+						<< " (contains value 0x" << std::hex << creg->value << std::dec << ")" << EndDebugInfo;
+				}
+				unsigned int j;
+				for(j = (reg + i) - creg->base_address; i < req_size && j < creg->byte_size; i++, j++)
+				{
+					unsigned int shift = 8 * j;
+					data[i] = (creg->value >> shift) & 0xff;
+				}
+			}
+		}
+		else
+		{
+			data[i] = 0xff;
 			if(unlikely(verbose))
-				logger << DebugError << LOCATION
-					<< "accessing a register of size 4 with size 2"
-					<< std::endl << EndDebugError;
-			return false;
-			break;}
-		case 2: {
-			uint16_t t_data = creg->value;
-			*(uint16_t *)data = t_data;
-			break;}
+			{
+				logger << DebugWarning << LOCATION
+					<< "Trying to read unmapped register 0x"
+					<< std::hex << (reg + i) << std::dec 
+					<< std::endl << EndDebugWarning;
+			}
+			i++;
 		}
-		break;}
-	case 1: {
-		switch(creg->byte_size) {
-		case 4:
-		case 2: {
-			if(creg->base_address != reg) 
-				*data = 0x00ff & creg->value;
-			else
-				*data = 0x00ff & (creg->value >> 8);
-			break;}
-		case 1: {
-			*data = creg->value;
-			break;}
-		}
-		break;}
-	default:
-		break;
 	}
-	if(unlikely(DEBUG && verbose)) {
-		logger << DebugInfo
-			<< LOCATION
-			<< "Read access to register " << creg->name
-			<< " (contains value 0x" << std::hex;
-		switch(req_size) {
-		case 4:
-			logger << *(uint32_t *)data;
-			break;
-		case 2:
-			logger << *(uint16_t *)data;
-			break;
-		case 1:
-			logger << (unsigned int)*data;
-			break;
+	if(unlikely(DEBUG && verbose))
+	{
+		logger << DebugInfo << LOCATION
+			<< "Read access to register 0x" << std::hex << reg << std::dec
+			<< " with value = " << std::hex;
+		for(unsigned int i = 0; i < req_size; i++)
+		{
+			if(i != 0) logger << " ";
+			logger << "0x" << (unsigned int) data[i];
 		}
-		logger << std::dec << ")" << std::endl << EndDebugInfo;
+		logger << std::dec << std::endl << EndDebugInfo;
 	}
 	return true;
 }
@@ -540,92 +524,92 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 						uint8_t req_data[SYSTEM_MAX_TRANSACTION_DATA_SIZE],
 						uint32_t req_size) {
 
-	int reg = (config_addr & 0xFF) + (req_addr & 0x3); // does not need to be 4 byte aligned (maybe it should be aligned to the size)
-	ConfigurationRegister *config_reg = config_regs->GetRegister(reg);
-	if(config_reg == NULL) {
-		if(unlikely(verbose))
-			logger << DebugError << LOCATION
-				<< "error while trying to write configuration register 0x"
-				<< std::hex << reg << std::dec << std::endl << EndDebugError;
-		return false;
-	}
-	//Check if it's writable, else quit
-	if (!(config_reg->permission & unisim::component::cxx::chipset::mpc107::ConfigurationRegister::WriteAccess)) {
-		if(unlikely(DEBUG && verbose)) {
-			logger << DebugInfo << LOCATION
-				<< "Write access to unwritable register " << config_reg->name
-				<< " with value = 0x" << std::hex;
-			for(unsigned int i = 0; i < req_size - 1; i++)
-				logger << (unsigned int)req_data[i] << " ";
-			logger << (unsigned int)req_data[req_size - 1] << std::dec
-				<< std::endl << EndDebugInfo;
+	bool status = true;
+	unsigned int reg = (config_addr & 0xFF) + (req_addr & 0x3); // does not need to be 4 byte aligned (maybe it should be aligned to the size)
+
+	if(unlikely(DEBUG && verbose))
+	{
+		logger << DebugInfo << LOCATION
+			<< "Write access to register 0x" << std::hex << reg << std::dec
+			<< " with value = " << std::hex;
+		for(unsigned int i = 0; i < req_size; i++)
+		{
+			if(i != 0) logger << " ";
+			logger << "0x" << (unsigned int) req_data[i];
 		}
-		return true;
+		logger << std::dec << std::endl << EndDebugInfo;
 	}
-	//Check the size
-	if (!config_reg->AllowedSize(req_size)) { // != config_reg->byte_size)	{
-		if(unlikely(verbose))
-			logger << DebugError << LOCATION
-				<< "Not the right size:" << std::endl
-				<< " - expected: " << config_reg->byte_size << std::endl
-				<< " - received: " << req_size << std::endl
-				<< " - config_addr = 0x" << std::hex << config_addr << std::dec << std::endl
-				<< " - req_addr = 0x" << std::hex << req_addr << std::dec << std::endl
-				<< " - reg = 0x" << std::hex << reg << std::dec << std::endl
-				<< " - reg_name = " << config_reg->name << std::endl
-				<< EndDebugError;
-		return false;
-	}
-	
-	//As we have only implemented host mode, i'll say i have no space to allocate in the bars
-	if (reg >= 0x10 && reg <= 0x24) {
-		if(unlikely(verbose))
-			logger << DebugWarning << LOCATION
-				<< "Accessing bar registers in host mode (reg_name = " 
-			 	<< config_reg->name << ", reg_id = " << reg << ")" << std::endl
-			 	<< EndDebugWarning;
-		uint32_t data;
-		memcpy(&data, req_data, 4);
-
-		uint32_t bar_mask;
-
-		if (config_regs->GetRegister(reg)->value & 0x1) {
-		  bar_mask = BAR_IO_MASK;
-		} else {
-		  bar_mask = BAR_MEM_MASK;
+	unsigned int i;
+	for(i = 0; i < req_size; i++)
+	{
+		ConfigurationRegister *creg = config_regs->GetRegister(reg + i);
+		if(!creg)
+		{
+			if(unlikely(verbose))
+			{
+				logger << DebugError << LOCATION
+					<< "error while trying to write configuration register 0x"
+					<< std::hex << (reg + i) << std::dec << std::endl << EndDebugError;
+			}
+			status = false;
+			continue;
+		}
+		if(!(creg->permission & unisim::component::cxx::chipset::mpc107::ConfigurationRegister::WriteAccess))
+		{
+			if(unlikely(DEBUG && verbose))
+			{
+				logger << DebugInfo << LOCATION
+					<< "Write access to unwritable register " << creg->name
+					<< " with value = " << std::hex;
+				for(unsigned int j = i; j < req_size; j++)
+				{
+					if(j != i) logger << " ";
+					logger << "0x" << (unsigned int)req_data[j];
+				}
+				logger << std::dec << std::endl << EndDebugInfo;
+			}
+			continue;
 		}
 		
-		if (data==0xffffffffUL) { //Say we need 0 size to allocate
-		//writing bar address
-		//We check the bit that indicates if it's for io or mem
-		// we write 0 to indicate we have nothing to map here
-			config_regs->GetRegister(reg)->value =
-				(config_regs->GetRegister(reg)->value & bar_mask);
+		unsigned int j;
+		uint32_t new_creg_value = creg->value;
+		for(j = (reg + i) - creg->base_address; i < req_size && j < creg->byte_size; i++, j++)
+		{
+			unsigned int shift = 8 * j;
+			uint32_t mask = 0xff << shift;
+			new_creg_value = (new_creg_value & ~mask) | ((uint32_t) req_data[i] << shift);
+		}
+		
+		if(creg->base_address >= 10 && creg->base_address <= 24)
+		{
+			if(unlikely(verbose))
+			{
+				logger << DebugWarning << LOCATION
+					<< "Accessing bar registers in host mode (reg_name = " 
+					<< creg->name << ", reg_id = " << creg->base_address << ")" << std::endl
+					<< EndDebugWarning;
+			}
+			uint32_t bar_mask;
+
+			bar_mask = (creg->value & 0x1) ? BAR_IO_MASK : BAR_MEM_MASK;
 			
-		} else {
-			config_regs->GetRegister(reg)->value = (LittleEndian2Host(data) & ~bar_mask) |
-				(config_regs->GetRegister(reg)->value & bar_mask);
-		} 
+			if(new_creg_value == 0xffffffffUL)
+			{
+				//Say we need 0 size to allocate
+				//writing bar address
+				//We check the bit that indicates if it's for io or mem
+				// we write 0 to indicate we have nothing to map here
+				new_creg_value = creg->value & bar_mask;
+			}
+			else
+			{
+				new_creg_value = (new_creg_value & ~bar_mask) | (creg->value & bar_mask);
+			} 
+		}
 		
-		return true;
+		if(!WriteLocalConfigReg(creg->base_address, new_creg_value)) status = false;
 	}
-
-	uint32_t data;
-	switch(req_size) {
-	case 4:
-		data = LittleEndian2Host(*(uint32_t *)req_data);
-		break;
-	case 2:
-		data = LittleEndian2Host(*(uint16_t *)req_data);
-		break;
-	case 1:
-		data = *req_data;
-		break;
-	}
-//	memcpy(&data, req_data, 4);
-
-	return WriteLocalConfigReg(reg, data, req_size);
-	
+	return status;
 }
 
 template <class SYSTEM_BUS_PHYSICAL_ADDR,
@@ -638,66 +622,66 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 		PCI_BUS_PHYSICAL_ADDR, 
 		PCI_MAX_TRANSACTION_DATA_SIZE,
 		DEBUG>
-::WriteLocalConfigReg(int reg, uint32_t data, uint32_t req_size) {
+::WriteLocalConfigReg(int reg, uint32_t data) {
 	//Check if it's a special case
 	switch(reg) {
 	case EUMBBAR:
-		return WriteEUMBBAR(reg, data, req_size);
+		return WriteEUMBBAR(reg, data);
 		break;
 	case PCI_COMMAND_REGISTER:
-		return WritePCICommandRegister(reg, data, req_size);
+		return WritePCICommandRegister(reg, data);
 		break;
 	case PICR1:
-		return WritePICR1(reg, data, req_size);
+		return WritePICR1(reg, data);
 		break;
 	case PICR2:
-		return WritePICR2(reg, data, req_size);
+		return WritePICR2(reg, data);
 		break;
 	case MCCR1:
-		return WriteMCCR1(reg, data, req_size);
+		return WriteMCCR1(reg, data);
 		break;
 	case MCCR2:
-		return WriteMCCR2(reg, data, req_size);
+		return WriteMCCR2(reg, data);
 		break;
 	case MCCR3:
-		return WriteMCCR3(reg, data, req_size);
+		return WriteMCCR3(reg, data);
 		break;
 	case MCCR4:
-		return WriteMCCR4(reg, data, req_size);
+		return WriteMCCR4(reg, data);
 		break;
 	case MEM_START_ADDR_REG1:
-		return WriteMemStartAddrReg1(reg, data, req_size);
+		return WriteMemStartAddrReg1(reg, data);
 		break;
 	case MEM_START_ADDR_REG2:
-		return WriteMemStartAddrReg2(reg, data, req_size);
+		return WriteMemStartAddrReg2(reg, data);
 		break;		
 	case EXT_MEM_START_ADDR_REG1:
-		return WriteExtMemStartAddrReg1(reg, data, req_size);
+		return WriteExtMemStartAddrReg1(reg, data);
 		break;
 	case EXT_MEM_START_ADDR_REG2:
-		return WriteExtMemStartAddrReg2(reg, data, req_size);
+		return WriteExtMemStartAddrReg2(reg, data);
 		break;		
 	case MEM_END_ADDR_REG1:
-		return WriteMemEndAddrReg1(reg, data, req_size);
+		return WriteMemEndAddrReg1(reg, data);
 		break;
 	case MEM_END_ADDR_REG2:
-		return WriteMemEndAddrReg2(reg, data, req_size);
+		return WriteMemEndAddrReg2(reg, data);
 		break;		
 	case EXT_MEM_END_ADDR_REG1:
-		return WriteExtMemEndAddrReg1(reg, data, req_size);
+		return WriteExtMemEndAddrReg1(reg, data);
 		break;
 	case EXT_MEM_END_ADDR_REG2:
-		return WriteExtMemEndAddrReg2(reg, data, req_size);
+		return WriteExtMemEndAddrReg2(reg, data);
 		break;	
 	case MEM_BANK_EN_REG:
-		return WriteMemBankEnableReg(reg, data, req_size);
+		return WriteMemBankEnableReg(reg, data);
 		break;
 	case MEM_PAGE_MODE_REG:
-		return WriteMemPageModeReg(reg, data, req_size);
+		return WriteMemPageModeReg(reg, data);
 		break;
 	default: // Its a normal register, we just write it :)
 		//This is a caothic thing
-		config_regs->GetRegister(reg)->Write(reg, data, req_size);
+		config_regs->GetRegister(reg)->Write(reg, data);
 		if(unlikely(verbose))
 			logger << DebugWarning << LOCATION
 				<< "TODO register " << config_regs->GetRegister(reg)->name 
@@ -719,7 +703,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 		PCI_BUS_PHYSICAL_ADDR, 
 		PCI_MAX_TRANSACTION_DATA_SIZE,
 		DEBUG>
-::WriteEUMBBAR(int reg, uint32_t data, uint32_t req_size) {
+::WriteEUMBBAR(int reg, uint32_t data) {
 	/* checking reserved bits */
 	if(data & (uint32_t)0x000fffff) {
 		if(unlikely(verbose))
@@ -749,7 +733,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 			logger << "thus disabling the Embedded Utilities";
 		logger << ")" << std::endl;
 	}
-	config_regs->GetRegister(reg)->Write(reg, data, req_size);
+	config_regs->GetRegister(reg)->Write(reg, data);
 	if(unlikely(DEBUG && verbose)) {
 		logger << "checking Embedded Utilities Memory Block Base Address Register = 0x"
 			<< std::hex << config_regs->GetRegister(reg)->value << std::dec << std::endl;
@@ -778,7 +762,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 		PCI_BUS_PHYSICAL_ADDR, 
 		PCI_MAX_TRANSACTION_DATA_SIZE,
 		DEBUG>
-::WritePCICommandRegister(int reg, uint32_t data, uint32_t req_size) {
+::WritePCICommandRegister(int reg, uint32_t data) {
 	/* checking reserved/hardwired registers:
 	 * - starting with bits from 10 to 15 which are reserved and set to 0,
 	 * - the bit 9 fast back to back bit hardwired to 0 
@@ -879,7 +863,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 			<< " (chipset do not respond on 0, respond on 1 to PCI memory space accesses)" 
 			<< std::endl;	 
 	}
-	config_regs->GetRegister(reg)->Write(reg, data, req_size);
+	config_regs->GetRegister(reg)->Write(reg, data);
 	if(unlikely(DEBUG && verbose)) {
 		logger << "checking PCI Command Register = 0x"
 			<< std::hex << config_regs->GetRegister(reg)->value << std::dec << std::endl;
@@ -908,7 +892,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 		PCI_BUS_PHYSICAL_ADDR, 
 		PCI_MAX_TRANSACTION_DATA_SIZE,
 		DEBUG>
-::WritePICR1(int reg, uint32_t data, uint32_t req_size) {
+::WritePICR1(int reg, uint32_t data) {
 	/* checking reserved/hardwired registers:
 	 * - starting with bits from 31-24 which are reserved and set to 1,
 	 * - the reserved bit 21 set to 0 
@@ -1143,7 +1127,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 		PCI_BUS_PHYSICAL_ADDR, 
 		PCI_MAX_TRANSACTION_DATA_SIZE,
 		DEBUG>
-::WritePICR2(int reg, uint32_t data, uint32_t req_size) {
+::WritePICR2(int reg, uint32_t data) {
 	/* checking reserved/hardwired registers:
 	 * - reserved bits: 31, 30, 28, 24-20, 17-11, 8-4, 1,0 set to 0
 	 * - bits 10-9 can not take the reserved value 00 (default 11)
@@ -1223,7 +1207,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 			<< ", which corresponds to " << (unsigned int)((data >> 2) & ((uint32_t)3)) << " wait states" 
 			<< std::endl;
 	}
-//	config_regs->GetRegister(reg)->Write(reg, data, req_size);
+//	config_regs->GetRegister(reg)->Write(reg, data);
 	config_regs->GetRegister(reg)->value = data;
 	if(unlikely(DEBUG && verbose)) {
 		logger << "checking PICR2 = 0x"
@@ -1243,7 +1227,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 		PCI_BUS_PHYSICAL_ADDR, 
 		PCI_MAX_TRANSACTION_DATA_SIZE,
 		DEBUG>
-::WriteMCCR1(int reg, uint32_t data, uint32_t req_size) {
+::WriteMCCR1(int reg, uint32_t data) {
 	/* checking read-only bits 22-21 DBUS_SIZ[0-1] */
 	if(((data >> 21) & ((uint32_t)3)) != ((config_regs->mccr1.value >> 21) & ((uint32_t)3))) {
 		if(unlikely(verbose)) {
@@ -1354,7 +1338,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 				<< std::endl;
 		}
 	}
-//	config_regs->GetRegister(reg)->Write(reg, data, req_size);
+//	config_regs->GetRegister(reg)->Write(reg, data);
 	config_regs->GetRegister(reg)->value = data;
 	if(unlikely(DEBUG && verbose)) {
 		logger << "checking MCCR1 = 0x"
@@ -1374,7 +1358,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 		PCI_BUS_PHYSICAL_ADDR, 
 		PCI_MAX_TRANSACTION_DATA_SIZE,
 		DEBUG>
-::WriteMCCR2(int reg, uint32_t data, uint32_t req_size) {
+::WriteMCCR2(int reg, uint32_t data) {
 	/* checking invalid configurations:
 	 * - bits 31-29 (TS_WAIT_TIMER) transaction state wait state timers must be set to
 	 *     000 if using EDO/FPM DRAM systems MCCR1[RAM_TYPE] = 1
@@ -1503,7 +1487,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 		logger << " read-modify-write (RMW) parity (bit 0, RMW_PAR)"
 			<< std::endl;	
 	}	
-//	config_regs->GetRegister(reg)->Write(reg, data, req_size);
+//	config_regs->GetRegister(reg)->Write(reg, data);
 	config_regs->GetRegister(reg)->value = data;
 	if(unlikely(DEBUG && verbose)) {
 		logger << "checking MCCR2 = 0x"
@@ -1523,7 +1507,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 		PCI_BUS_PHYSICAL_ADDR, 
 		PCI_MAX_TRANSACTION_DATA_SIZE,
 		DEBUG>
-::WriteMCCR3(int reg, uint32_t data, uint32_t req_size) {
+::WriteMCCR3(int reg, uint32_t data) {
 	/* checking:
 	 * - bits 23-20 (RDLAT) data latency from read command can not be bigger than 0110
 	 * - bits 11-9 (CP4) CAS precharge interval can not be bigger than 010 (note that 0
@@ -1642,7 +1626,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 		logger << "   - setting RAS precharge interval (bits 2-0, RP1) "
 			<< "to 0x" << std::hex << val << std::dec << std::endl;
 	}
-//	config_regs->GetRegister(reg)->Write(reg, data, req_size);
+//	config_regs->GetRegister(reg)->Write(reg, data);
 	config_regs->GetRegister(reg)->value = data;
 	if(unlikely(DEBUG && verbose)) {
 		logger << "checking MCCR3 = 0x"
@@ -1662,7 +1646,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 		PCI_BUS_PHYSICAL_ADDR, 
 		PCI_MAX_TRANSACTION_DATA_SIZE,
 		DEBUG>
-::WriteMCCR4(int reg, uint32_t data, uint32_t req_size) {
+::WriteMCCR4(int reg, uint32_t data) {
 	/* checking reserved bit 16 */
 	if(data & (((uint32_t)1) << 16)) {
 		if(unlikely(verbose))
@@ -1765,7 +1749,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 		PCI_BUS_PHYSICAL_ADDR, 
 		PCI_MAX_TRANSACTION_DATA_SIZE,
 		DEBUG>
-::WriteMemStartAddrReg1(int reg, uint32_t data, uint32_t req_size) {
+::WriteMemStartAddrReg1(int reg, uint32_t data) {
 	/* showing the new register settings */
 	if(unlikely(DEBUG && verbose)) {
 		logger << DebugInfo << LOCATION
@@ -1802,7 +1786,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 		PCI_BUS_PHYSICAL_ADDR, 
 		PCI_MAX_TRANSACTION_DATA_SIZE,
 		DEBUG>
-::WriteMemStartAddrReg2(int reg, uint32_t data, uint32_t req_size) {
+::WriteMemStartAddrReg2(int reg, uint32_t data) {
 	/* showing the new register settings */
 	if(unlikely(DEBUG && verbose)) {
 		logger << DebugInfo << LOCATION
@@ -1839,7 +1823,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 		PCI_BUS_PHYSICAL_ADDR, 
 		PCI_MAX_TRANSACTION_DATA_SIZE,
 		DEBUG>
-::WriteExtMemStartAddrReg1(int reg, uint32_t data, uint32_t req_size) {
+::WriteExtMemStartAddrReg1(int reg, uint32_t data) {
 	/* checking reserved bits */
 	for(uint32_t i = 0; i < 4; i++) {
 		uint32_t val;
@@ -1891,7 +1875,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 		PCI_BUS_PHYSICAL_ADDR, 
 		PCI_MAX_TRANSACTION_DATA_SIZE,
 		DEBUG>
-::WriteExtMemStartAddrReg2(int reg, uint32_t data, uint32_t req_size) {
+::WriteExtMemStartAddrReg2(int reg, uint32_t data) {
 	/* checking reserved bits */
 	for(uint32_t i = 0; i < 4; i++) {
 		uint32_t val;
@@ -1943,7 +1927,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 		PCI_BUS_PHYSICAL_ADDR, 
 		PCI_MAX_TRANSACTION_DATA_SIZE,
 		DEBUG>
-::WriteMemEndAddrReg1(int reg, uint32_t data, uint32_t req_size) {
+::WriteMemEndAddrReg1(int reg, uint32_t data) {
 	/* showing the new register settings */
 	if(unlikely(DEBUG && verbose)) {
 		logger << DebugInfo << LOCATION
@@ -1980,7 +1964,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 		PCI_BUS_PHYSICAL_ADDR, 
 		PCI_MAX_TRANSACTION_DATA_SIZE,
 		DEBUG>
-::WriteMemEndAddrReg2(int reg, uint32_t data, uint32_t req_size) {
+::WriteMemEndAddrReg2(int reg, uint32_t data) {
 	/* showing the new register settings */
 	if(unlikely(DEBUG && verbose)) {
 		logger << DebugInfo << LOCATION
@@ -2017,7 +2001,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 		PCI_BUS_PHYSICAL_ADDR, 
 		PCI_MAX_TRANSACTION_DATA_SIZE,
 		DEBUG>
-::WriteExtMemEndAddrReg1(int reg, uint32_t data, uint32_t req_size) {
+::WriteExtMemEndAddrReg1(int reg, uint32_t data) {
 	/* checking reserved bits */
 	for(uint32_t i = 0; i < 4; i++) {
 		uint32_t val;
@@ -2069,7 +2053,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 		PCI_BUS_PHYSICAL_ADDR, 
 		PCI_MAX_TRANSACTION_DATA_SIZE,
 		DEBUG>
-::WriteExtMemEndAddrReg2(int reg, uint32_t data, uint32_t req_size) {
+::WriteExtMemEndAddrReg2(int reg, uint32_t data) {
 	/* checking reserved bits */
 	for(uint32_t i = 0; i < 4; i++) {
 		uint32_t val;
@@ -2121,17 +2105,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 		PCI_BUS_PHYSICAL_ADDR, 
 		PCI_MAX_TRANSACTION_DATA_SIZE,
 		DEBUG>
-::WriteMemBankEnableReg(int reg, uint32_t data, uint32_t req_size) {
-	/* checking request size */
-	if(req_size > 1) {
-		if(unlikely(verbose))
-			logger << DebugWarning << LOCATION
-				<< "Trying to write Memory Bank Enable Register (0x"
-				<< std::hex << MEM_BANK_EN_REG << std::dec << ") "
-				<< "with a request of size " << req_size << "bytes, "
-				<< "only the first byte will be considered" 
-				<< std::endl << EndDebugWarning;
-	}
+::WriteMemBankEnableReg(int reg, uint32_t data) {
 	/* checking that enabled banks have an starting address smaller than
 	 *   the ending address */
 	for(unsigned int i = 0; i < 8; i++) {
@@ -2197,18 +2171,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 		PCI_BUS_PHYSICAL_ADDR, 
 		PCI_MAX_TRANSACTION_DATA_SIZE,
 		DEBUG>
-::WriteMemPageModeReg(int reg, uint32_t data, uint32_t req_size) {
-	/* checking request size */
-	if(req_size > 1) {
-		if(unlikely(verbose))
-			logger << DebugWarning << LOCATION
-				<< "Trying to write Memory Page Mode Register (0x"
-				<< std::hex << reg << std::dec << ") "
-				<< "with a request of size " << req_size << "bytes, "
-				<< "only the first byte will be considered" 
-				<< std::endl << EndDebugWarning;
-	}
-		
+::WriteMemPageModeReg(int reg, uint32_t data) {
 	/* showing entered value */ 
 	if(unlikely(DEBUG && verbose)) {
 		logger << DebugInfo << LOCATION

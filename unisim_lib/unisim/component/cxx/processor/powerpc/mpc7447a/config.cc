@@ -32,18 +32,20 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <unisim/component/cxx/processor/powerpc/config.hh>
+#include <unisim/component/cxx/processor/powerpc/mpc7447a/config.hh>
 
 namespace unisim {
 namespace component {
 namespace cxx {
 namespace processor {
 namespace powerpc {
+namespace mpc7447a {
 
-const uint32_t CRLayout::CR0_LT_MASK;
-const uint32_t CRLayout::CR0_GT_MASK;
-const uint32_t CRLayout::CR0_EQ_MASK;
+// const uint32_t CRLayout::CR0_LT_MASK;
+// const uint32_t CRLayout::CR0_GT_MASK;
+// const uint32_t CRLayout::CR0_EQ_MASK;
 
+} // end of namespace mpc7447a
 } // end of namespace powerpc
 } // end of namespace processor
 } // end of namespace cxx

@@ -138,11 +138,10 @@ unisim/service/loader/elf_loader/elf32_loader.cc \
 unisim/service/loader/pmac_linux_kernel_loader/pmac_linux_kernel_loader.cc \
 unisim/service/loader/pmac_bootx/pmac_bootx.cc \
 unisim/service/sdl/sdl.cc \
-unisim/component/cxx/processor/powerpc/cpu.cc \
-unisim/component/cxx/processor/powerpc/exception.cc \
-unisim/component/cxx/processor/powerpc/config.cc \
-unisim/component/cxx/processor/powerpc/mpc7447a.cc \
-unisim/component/cxx/processor/powerpc/mpc7447a_debug.cc \
+unisim/component/cxx/processor/powerpc/mpc7447a/cpu.cc \
+unisim/component/cxx/processor/powerpc/mpc7447a/cpu_debug.cc \
+unisim/component/cxx/processor/powerpc/floating.cc \
+unisim/component/cxx/processor/powerpc/mpc7447a/config.cc \
 unisim/component/cxx/memory/ram/memory_32.cc \
 unisim/component/cxx/pci/video/display_32.cc \
 unisim/component/cxx/pci/macio/heathrow_32.cc \
@@ -173,8 +172,8 @@ unisim/component/cxx/pci/ide/ide_ctrl.cc \
 unisim/component/cxx/pci/ide/ide_disk.cc \
 unisim/component/cxx/pci/types.cc \
 unisim/component/tlm/isa/i8042/i8042.cc \
-unisim/component/tlm/processor/powerpc/mpc7447a.cc \
-unisim/component/tlm/processor/powerpc/mpc7447a_debug.cc \
+unisim/component/tlm/processor/powerpc/mpc7447a/cpu.cc \
+unisim/component/tlm/processor/powerpc/mpc7447a/cpu_debug.cc \
 unisim/component/tlm/bridge/pci_isa/bridge_32.cc \
 unisim/component/tlm/pci/ide/pci_dev_32.cc \
 unisim/component/tlm/pci/ide/pci_ide_module_32.cc \
@@ -192,21 +191,21 @@ unisim/component/tlm/memory/ram/memory_32_debug.cc \
 unisim/component/tlm/memory/flash/am29lv/am29lv.cc"
 
 UNISIM_LIB_PPCEMU_SYSTEM_ISA_FILES="\
-unisim/component/cxx/processor/powerpc/altivec.isa \
-unisim/component/cxx/processor/powerpc/condition.isa \
-unisim/component/cxx/processor/powerpc/integer.isa \
-unisim/component/cxx/processor/powerpc/misc.isa \
-unisim/component/cxx/processor/powerpc/ppc.isa \
-unisim/component/cxx/processor/powerpc/branch.isa \
-unisim/component/cxx/processor/powerpc/floating.isa \
-unisim/component/cxx/processor/powerpc/loadstore.isa \
-unisim/component/cxx/processor/powerpc/perf.isa \
-unisim/component/cxx/processor/powerpc/sim_dependencies.isa \
-unisim/component/cxx/processor/powerpc/sim_latencies.isa \
-unisim/component/cxx/processor/powerpc/sim_load.isa \
-unisim/component/cxx/processor/powerpc/sim_branch.isa \
-unisim/component/cxx/processor/powerpc/sim_ppc.isa \
-unisim/component/cxx/processor/powerpc/sim_latencies.isa"
+unisim/component/cxx/processor/powerpc/isa/altivec.isa \
+unisim/component/cxx/processor/powerpc/isa/condition.isa \
+unisim/component/cxx/processor/powerpc/isa/integer.isa \
+unisim/component/cxx/processor/powerpc/isa/misc.isa \
+unisim/component/cxx/processor/powerpc/isa/ppc.isa \
+unisim/component/cxx/processor/powerpc/isa/branch.isa \
+unisim/component/cxx/processor/powerpc/isa/floating.isa \
+unisim/component/cxx/processor/powerpc/isa/loadstore.isa \
+unisim/component/cxx/processor/powerpc/isa/perf.isa \
+unisim/component/cxx/processor/powerpc/isa/sim_dependencies.isa \
+unisim/component/cxx/processor/powerpc/isa/sim_latencies.isa \
+unisim/component/cxx/processor/powerpc/isa/sim_load.isa \
+unisim/component/cxx/processor/powerpc/isa/sim_branch.isa \
+unisim/component/cxx/processor/powerpc/isa/sim_ppc.isa \
+unisim/component/cxx/processor/powerpc/isa/sim_latencies.isa"
 
 UNISIM_LIB_PPCEMU_SYSTEM_HEADER_FILES="${UNISIM_LIB_PPCEMU_SYSTEM_ISA_FILES} \
 unisim/kernel/service/service.hh \
@@ -298,10 +297,11 @@ unisim/service/power/cache_dynamic_power.hh \
 unisim/service/power/cache_leakage_power.hh \
 unisim/service/sdl/sdl.hh \
 unisim/component/cxx/memory/ram/memory.hh \
-unisim/component/cxx/processor/powerpc/cpu.hh \
+unisim/component/cxx/processor/powerpc/mpc7447a/cpu.hh \
 unisim/component/cxx/processor/powerpc/exception.hh \
 unisim/component/cxx/processor/powerpc/floating.hh \
 unisim/component/cxx/processor/powerpc/config.hh \
+unisim/component/cxx/processor/powerpc/mpc7447a/config.hh \
 unisim/component/cxx/cache/cache.hh \
 unisim/component/cxx/tlb/tlb.hh \
 unisim/component/cxx/memory/flash/am29lv/am29lv.hh \
@@ -336,7 +336,7 @@ unisim/component/cxx/isa/types.hh \
 unisim/component/cxx/isa/i8042/i8042.hh \
 unisim/component/cxx/memory/flash/am29lv/types.hh \
 unisim/component/cxx/memory/flash/am29lv/config.hh \
-unisim/component/tlm/processor/powerpc/powerpc.hh \
+unisim/component/tlm/processor/powerpc/mpc7447a/cpu.hh \
 unisim/component/tlm/message/snooping_fsb.hh \
 unisim/component/tlm/message/interrupt.hh \
 unisim/component/tlm/debug/transaction_spy.hh \
@@ -388,12 +388,13 @@ unisim/service/debug/inline_debugger/inline_debugger.tcc \
 unisim/service/debug/gdb_server/gdb_server.tcc \
 unisim/service/loader/elf_loader/elf_loader.tcc \
 unisim/service/sdl/sdl.tcc \
-unisim/component/cxx/processor/powerpc/cpu.tcc \
+unisim/component/cxx/processor/powerpc/mpc7447a/cpu.tcc \
+unisim/component/cxx/processor/powerpc/mpc7447a/exception.tcc \
 unisim/component/cxx/processor/powerpc/exception.tcc \
 unisim/component/cxx/memory/ram/memory.tcc \
 unisim/component/cxx/cache/cache.tcc \
 unisim/component/cxx/tlb/tlb.tcc \
-unisim/component/tlm/processor/powerpc/powerpc.tcc \
+unisim/component/tlm/processor/powerpc/mpc7447a/cpu.tcc \
 unisim/component/tlm/memory/ram/memory.tcc \
 unisim/component/tlm/bridge/pci_isa/bridge.tcc \
 unisim/component/tlm/isa/i8042/i8042.tcc \
@@ -834,12 +835,12 @@ if [ "${has_to_build_ppcemu_system_configure}" = "yes" ]; then
 	echo "sharedir = \$(prefix)/share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
 	echo "dist_share_DATA = ${UNISIM_LIB_PPCEMU_SYSTEM_DATA_FILES} ${UNISIM_SIMULATORS_PPCEMU_SYSTEM_DATA_FILES}" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
 
-	echo "BUILT_SOURCES=\$(top_srcdir)/unisim/component/cxx/processor/powerpc/powerpc.hh \$(top_srcdir)/unisim/component/cxx/processor/powerpc/powerpc.tcc" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
-	echo "CLEANFILES=\$(top_srcdir)/unisim/component/cxx/processor/powerpc/powerpc.hh \$(top_srcdir)/unisim/component/cxx/processor/powerpc/powerpc.tcc" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
-	echo "\$(top_srcdir)/unisim/component/cxx/processor/powerpc/powerpc.tcc: \$(top_srcdir)/unisim/component/cxx/processor/powerpc/powerpc.hh" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
-	echo "\$(top_srcdir)/unisim/component/cxx/processor/powerpc/powerpc.hh: ${UNISIM_LIB_PPCEMU_SYSTEM_ISA_FILES}" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
+	echo "BUILT_SOURCES=\$(top_srcdir)/unisim/component/cxx/processor/powerpc/isa/powerpc.hh \$(top_srcdir)/unisim/component/cxx/processor/powerpc/isa/powerpc.tcc" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
+	echo "CLEANFILES=\$(top_srcdir)/unisim/component/cxx/processor/powerpc/isa/powerpc.hh \$(top_srcdir)/unisim/component/cxx/processor/powerpc/isa/powerpc.tcc" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
+	echo "\$(top_srcdir)/unisim/component/cxx/processor/powerpc/isa/powerpc.tcc: \$(top_srcdir)/unisim/component/cxx/processor/powerpc/isa/powerpc.hh" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
+	echo "\$(top_srcdir)/unisim/component/cxx/processor/powerpc/isa/powerpc.hh: ${UNISIM_LIB_PPCEMU_SYSTEM_ISA_FILES}" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
 	printf "\t" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
-	echo "cd \$(top_srcdir)/unisim/component/cxx/processor/powerpc; \$(GENISSLIB_PATH) -o powerpc -w 32 -I . ppc.isa" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
+	echo "cd \$(top_srcdir)/unisim/component/cxx/processor/powerpc/isa; \$(GENISSLIB_PATH) -o powerpc -w 32 -I . ppc.isa" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
 	echo "all-local: all-local-bin all-local-share" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
 	echo "clean-local: clean-local-bin clean-local-share" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
 	echo "all-local-bin: \$(bin_PROGRAMS)" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"

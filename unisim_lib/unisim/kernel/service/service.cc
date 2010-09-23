@@ -2593,12 +2593,11 @@ void FindMyself()
 
 bool Simulator::GetExecutablePath(const char *argv0, std::string& out_executable_path) const
 {
-#if defined(linux)
+#if defined(linux) || defined(__APPLE_CC__)
 	Dl_info info;
 	if ( dladdr((void *)unisim::kernel::service::FindMyself, &info) != 0 )
 	{
 		char bin_path_buf[PATH_MAX + 1];
-		ssize_t bin_path_length;
 		char *bin_path_pointer = realpath(info.dli_fname, bin_path_buf);
 		if(bin_path_pointer == bin_path_buf)
 		{
@@ -2616,27 +2615,6 @@ bool Simulator::GetExecutablePath(const char *argv0, std::string& out_executable
 		out_executable_path = std::string(bin_path_buf);
 		return true;
 	}
-#elif defined(__APPLE_CC__)
-	Dl_info info;
-	if ( dladdr((void *)unisim::kernel::service::FindMyself, &info) != 0 )
-	{
-		char bin_path_buf[PATH_MAX + 1];
-//		ssize_t bin_path_length;
-		char *bin_path_pointer = realpath(info.dli_fname, bin_path_buf);
-		if(bin_path_pointer == bin_path_buf)
-		{
-			out_executable_path = std::string(bin_path_buf);
-			return true;
-		}
-	}
-//	uint32_t bin_path_buf_size = 0;
-//	_NSGetExecutablePath(0, &bin_path_buf_size);
-//	char bin_path_buf[bin_path_buf_size];
-//	if(_NSGetExecutablePath(bin_path_buf, &bin_path_buf_size) == 0)
-//	{
-//		out_executable_path = std::string(bin_path_buf);
-//		return true;
-//	}
 #endif
 	char *path_buf = getenv("PATH");
 	if(path_buf)

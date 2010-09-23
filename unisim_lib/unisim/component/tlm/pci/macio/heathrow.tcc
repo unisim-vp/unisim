@@ -57,16 +57,16 @@ using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 
 template <class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
-Heathrow<ADDRESS_TYPE, MAX_DATA_SIZE>::Heathrow(const sc_module_name& name, Object *parent) :
-	Object(name, parent, "Heathrow Programmable Interrupt Controller (PIC)"),
-	unisim::component::cxx::pci::macio::Heathrow<ADDRESS_TYPE>(name, parent),
-	sc_module(name),
-	bus_port("bus_port"),
-	cpu_irq_port("cpu_irq_port"),
-	pci_bus_cycle_time(),
-	bus_cycle_time(),
-	set_irq_ev(),
-	level(false)
+Heathrow<ADDRESS_TYPE, MAX_DATA_SIZE>::Heathrow(const sc_module_name& name, Object *parent)
+	: Object(name, parent, "Heathrow Programmable Interrupt Controller (PIC)")
+	, sc_module(name)
+	, unisim::component::cxx::pci::macio::Heathrow<ADDRESS_TYPE>(name, parent)
+	, bus_port("bus_port")
+	, cpu_irq_port("cpu_irq_port")
+	, level(false)
+	, pci_bus_cycle_time()
+	, bus_cycle_time()
+	, set_irq_ev()
 {
 	SC_HAS_PROCESS(Heathrow);
 	

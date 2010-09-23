@@ -632,7 +632,7 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 								uint64_t debug_str_offset64;
 							
 								if(max_size < sizeof(debug_str_offset64)) return -1;
-								memcpy(&debug_str_offset, rawdata, sizeof(debug_str_offset64));
+								memcpy(&debug_str_offset64, rawdata, sizeof(debug_str_offset64));
 								debug_str_offset64 = Target2Host(endianness, debug_str_offset64);
 								rawdata += sizeof(debug_str_offset64);
 								max_size -= sizeof(debug_str_offset64);
@@ -698,7 +698,7 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 								uint64_t debug_info_offset64;
 							
 								if(max_size < sizeof(debug_info_offset64)) return -1;
-								memcpy(&debug_info_offset, rawdata, sizeof(debug_info_offset64));
+								memcpy(&debug_info_offset64, rawdata, sizeof(debug_info_offset64));
 								debug_info_offset64 = Target2Host(endianness, debug_info_offset64);
 								rawdata += sizeof(debug_info_offset64);
 								max_size -= sizeof(debug_info_offset64);

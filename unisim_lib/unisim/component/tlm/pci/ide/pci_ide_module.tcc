@@ -36,6 +36,7 @@
 #define __UNISIM_COMPONENT_TLM_PCI_IDE_PCI_IDE_MODULE_TCC__
 
 #include <unisim/component/tlm/pci/ide/pci_dev.tcc>
+#include <string.h>
 
 namespace unisim {
 namespace component {
@@ -84,7 +85,8 @@ bool PCIDevIde<ADDRESS_TYPE, MAX_DATA_SIZE>::Setup () {
 
 	for(unsigned int i = 0; i < NUM_MAPPINGS; i++) {
 		pci_config_data->BARSize[i] = size[i];//BARSize;
-		*((uint32_t*)&pci_config_data->config.data[register_number[i]]) = (uint32_t)base_address[i]; 
+		//*((uint32_t*)&pci_config_data->config.data[register_number[i]]) = (uint32_t)base_address[i]; 
+		memcpy(&pci_config_data->config.data[register_number[i]], &base_address[i], sizeof(uint32_t));
 	}
 	
 	pci_config_data->config.vendor = 32902;//htole(VendorID);

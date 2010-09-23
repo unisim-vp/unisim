@@ -288,8 +288,8 @@ fadd.execute = {
 	cpu->SetFPSCR(fpscr);
 
 	// Check for floating point exception condition: (MSR[FE0] ^ MSR[FE1]) & FPSCR[FEX]
-	if(unlikely(((CONFIG::HAS_MSR_FE0 && (msr & CONFIG::MSR_FE0_MASK)) |
-	            (CONFIG::HAS_MSR_FE1 && (msr & CONFIG::MSR_FE1_MASK))) &&
+	if(unlikely(((msr & CONFIG::MSR_FE0_MASK) |
+	            (msr & CONFIG::MSR_FE1_MASK)) &&
 	            (fpscr & CONFIG::FPSCR_FEX_MASK)))
 	{
 		// Raise a floating point exception
@@ -345,8 +345,8 @@ fadds.execute = {
 	cpu->SetFPSCR(fpscr);
 
 	// Check for floating point exception condition: (MSR[FE0] ^ MSR[FE1]) & FPSCR[FEX]
-	if(unlikely(((CONFIG::HAS_MSR_FE0 && (msr & CONFIG::MSR_FE0_MASK)) |
-	            (CONFIG::HAS_MSR_FE1 && (msr & CONFIG::MSR_FE1_MASK))) &&
+	if(unlikely(((msr & CONFIG::MSR_FE0_MASK) |
+	            (msr & CONFIG::MSR_FE1_MASK)) &&
 	            (fpscr & CONFIG::FPSCR_FEX_MASK)))
 	{
 		// Raise a floating point exception
@@ -402,8 +402,8 @@ fdiv.execute = {
 	cpu->SetFPSCR(fpscr);
 
 	// Check for floating point exception condition: (MSR[FE0] ^ MSR[FE1]) & FPSCR[FEX]
-	if(unlikely(((CONFIG::HAS_MSR_FE0 && (msr & CONFIG::MSR_FE0_MASK)) |
-	            (CONFIG::HAS_MSR_FE1 && (msr & CONFIG::MSR_FE1_MASK))) &&
+	if(unlikely(((msr & CONFIG::MSR_FE0_MASK) |
+	            (msr & CONFIG::MSR_FE1_MASK)) &&
 	            (fpscr & CONFIG::FPSCR_FEX_MASK)))
 	{
 		// Raise a floating point exception
@@ -460,8 +460,8 @@ fdivs.execute = {
 	cpu->SetFPSCR(fpscr);
 
 	// Check for floating point exception condition: (MSR[FE0] ^ MSR[FE1]) & FPSCR[FEX]
-	if(unlikely(((CONFIG::HAS_MSR_FE0 && (msr & CONFIG::MSR_FE0_MASK)) |
-	            (CONFIG::HAS_MSR_FE1 && (msr & CONFIG::MSR_FE1_MASK))) &&
+	if(unlikely(((msr & CONFIG::MSR_FE0_MASK) |
+	            (msr & CONFIG::MSR_FE1_MASK)) &&
 	            (fpscr & CONFIG::FPSCR_FEX_MASK)))
 	{
 		// Raise a floating point exception
@@ -515,8 +515,8 @@ fmul.execute = {
 	cpu->SetFPSCR(fpscr);
 
 	// Check for floating point exception condition: (MSR[FE0] ^ MSR[FE1]) & FPSCR[FEX]
-	if(unlikely(((CONFIG::HAS_MSR_FE0 && (msr & CONFIG::MSR_FE0_MASK)) |
-	            (CONFIG::HAS_MSR_FE1 && (msr & CONFIG::MSR_FE1_MASK))) &&
+	if(unlikely(((msr & CONFIG::MSR_FE0_MASK) |
+	            (msr & CONFIG::MSR_FE1_MASK)) &&
 	            (fpscr & CONFIG::FPSCR_FEX_MASK)))
 	{
 		// Raise a floating point exception
@@ -572,8 +572,8 @@ fmuls.execute = {
 	cpu->SetFPSCR(fpscr);
 
 	// Check for floating point exception condition: (MSR[FE0] ^ MSR[FE1]) & FPSCR[FEX]
-	if(unlikely(((CONFIG::HAS_MSR_FE0 && (msr & CONFIG::MSR_FE0_MASK)) |
-	            (CONFIG::HAS_MSR_FE1 && (msr & CONFIG::MSR_FE1_MASK))) &&
+	if(unlikely(((msr & CONFIG::MSR_FE0_MASK) |
+	            (msr & CONFIG::MSR_FE1_MASK)) &&
 	            (fpscr & CONFIG::FPSCR_FEX_MASK)))
 	{
 		// Raise a floating point exception
@@ -697,8 +697,8 @@ fres.execute = {
 	cpu->SetFPSCR(fpscr);
 
 	// Check for floating point exception condition: (MSR[FE0] ^ MSR[FE1]) & FPSCR[FEX]
-	if(unlikely(((CONFIG::HAS_MSR_FE0 && (msr & CONFIG::MSR_FE0_MASK)) |
-	            (CONFIG::HAS_MSR_FE1 && (msr & CONFIG::MSR_FE1_MASK))) &&
+	if(unlikely(((msr & CONFIG::MSR_FE0_MASK) |
+	            (msr & CONFIG::MSR_FE1_MASK)) &&
 	            (fpscr & CONFIG::FPSCR_FEX_MASK)))
 	{
 		// Raise a floating point exception
@@ -841,8 +841,8 @@ frsqrte.execute = {
 	cpu->SetFPSCR(fpscr);
 
 	// Check for floating point exception condition: (MSR[FE0] ^ MSR[FE1]) & FPSCR[FEX]
-	if(unlikely(((CONFIG::HAS_MSR_FE0 && (msr & CONFIG::MSR_FE0_MASK)) |
-	            (CONFIG::HAS_MSR_FE1 && (msr & CONFIG::MSR_FE1_MASK))) &&
+	if(unlikely(((msr & CONFIG::MSR_FE0_MASK) |
+	            (msr & CONFIG::MSR_FE1_MASK)) &&
 	            (fpscr & CONFIG::FPSCR_FEX_MASK)))
 	{
 		// Raise a floating point exception
@@ -893,8 +893,8 @@ fsub.execute = {
 	cpu->SetFPSCR(fpscr);
 
 	// Check for floating point exception condition: (MSR[FE0] ^ MSR[FE1]) & FPSCR[FEX]
-	if(unlikely(((CONFIG::HAS_MSR_FE0 && (msr & CONFIG::MSR_FE0_MASK)) |
-	            (CONFIG::HAS_MSR_FE1 && (msr & CONFIG::MSR_FE1_MASK))) &&
+	if(unlikely(((msr & CONFIG::MSR_FE0_MASK) |
+	            (msr & CONFIG::MSR_FE1_MASK)) &&
 	            (fpscr & CONFIG::FPSCR_FEX_MASK)))
 	{
 		// Raise a floating point exception
@@ -950,8 +950,8 @@ fsubs.execute = {
 	cpu->SetFPSCR(fpscr);
 
 	// Check for floating point exception condition: (MSR[FE0] ^ MSR[FE1]) & FPSCR[FEX]
-	if(unlikely(((CONFIG::HAS_MSR_FE0 && (msr & CONFIG::MSR_FE0_MASK)) |
-	            (CONFIG::HAS_MSR_FE1 && (msr & CONFIG::MSR_FE1_MASK))) &&
+	if(unlikely(((msr & CONFIG::MSR_FE0_MASK) |
+	            (msr & CONFIG::MSR_FE1_MASK)) &&
 	            (fpscr & CONFIG::FPSCR_FEX_MASK)))
 	{
 		// Raise a floating point exception
@@ -1057,8 +1057,8 @@ fmadd.execute = {
 	cpu->SetFPSCR(fpscr);
 
 	// Check for floating point exception condition: (MSR[FE0] ^ MSR[FE1]) & FPSCR[FEX]
-	if(unlikely(((CONFIG::HAS_MSR_FE0 && (msr & CONFIG::MSR_FE0_MASK)) |
-	            (CONFIG::HAS_MSR_FE1 && (msr & CONFIG::MSR_FE1_MASK))) &&
+	if(unlikely(((msr & CONFIG::MSR_FE0_MASK) |
+	            (msr & CONFIG::MSR_FE1_MASK)) &&
 	            (fpscr & CONFIG::FPSCR_FEX_MASK)))
 	{
 		// Raise a floating point exception
@@ -1117,8 +1117,8 @@ fmadds.execute = {
 	cpu->SetFPSCR(fpscr);
 
 	// Check for floating point exception condition: (MSR[FE0] ^ MSR[FE1]) & FPSCR[FEX]
-	if(unlikely(((CONFIG::HAS_MSR_FE0 && (msr & CONFIG::MSR_FE0_MASK)) |
-	            (CONFIG::HAS_MSR_FE1 && (msr & CONFIG::MSR_FE1_MASK))) &&
+	if(unlikely(((msr & CONFIG::MSR_FE0_MASK) |
+	            (msr & CONFIG::MSR_FE1_MASK)) &&
 	            (fpscr & CONFIG::FPSCR_FEX_MASK)))
 	{
 		// Raise a floating point exception
@@ -1174,9 +1174,9 @@ fmsub.execute = {
 	cpu->SetFPSCR(fpscr);
 
 	// Check for floating point exception condition: (MSR[FE0] ^ MSR[FE1]) & FPSCR[FEX]
-	if(unlikely(((CONFIG::HAS_MSR_FE0 && (msr & CONFIG::MSR_FE0_MASK)) |
-	             (CONFIG::HAS_MSR_FE1 && (msr & CONFIG::MSR_FE1_MASK))) &&
-	             (fpscr & CONFIG::FPSCR_FEX_MASK)))
+	if(unlikely(((msr & CONFIG::MSR_FE0_MASK) |
+	            (msr & CONFIG::MSR_FE1_MASK)) &&
+	            (fpscr & CONFIG::FPSCR_FEX_MASK)))
 	{
 		// Raise a floating point exception
 		throw FloatingPointException<CONFIG>();
@@ -1234,9 +1234,9 @@ fmsubs.execute = {
 	cpu->SetFPSCR(fpscr);
 
 	// Check for floating point exception condition: (MSR[FE0] ^ MSR[FE1]) & FPSCR[FEX]
-	if(unlikely(((CONFIG::HAS_MSR_FE0 && (msr & CONFIG::MSR_FE0_MASK)) |
-	             (CONFIG::HAS_MSR_FE1 && (msr & CONFIG::MSR_FE1_MASK))) &&
-	             (fpscr & CONFIG::FPSCR_FEX_MASK)))
+	if(unlikely(((msr & CONFIG::MSR_FE0_MASK) |
+	            (msr & CONFIG::MSR_FE1_MASK)) &&
+	            (fpscr & CONFIG::FPSCR_FEX_MASK)))
 	{
 		// Raise a floating point exception
 		throw FloatingPointException<CONFIG>();
@@ -1294,9 +1294,9 @@ fnmadd.execute = {
 	cpu->SetFPSCR(fpscr);
 
 	// Check for floating point exception condition: (MSR[FE0] ^ MSR[FE1]) & FPSCR[FEX]
-	if(unlikely(((CONFIG::HAS_MSR_FE0 && (msr & CONFIG::MSR_FE0_MASK)) |
-	             (CONFIG::HAS_MSR_FE1 && (msr & CONFIG::MSR_FE1_MASK))) &&
-	             (fpscr & CONFIG::FPSCR_FEX_MASK)))
+	if(unlikely(((msr & CONFIG::MSR_FE0_MASK) |
+	            (msr & CONFIG::MSR_FE1_MASK)) &&
+	            (fpscr & CONFIG::FPSCR_FEX_MASK)))
 	{
 		// Raise a floating point exception
 		throw FloatingPointException<CONFIG>();
@@ -1357,9 +1357,9 @@ fnmadds.execute = {
 	cpu->SetFPSCR(fpscr);
 
 	// Check for floating point exception condition: (MSR[FE0] ^ MSR[FE1]) & FPSCR[FEX]
-	if(unlikely(((CONFIG::HAS_MSR_FE0 && (msr & CONFIG::MSR_FE0_MASK)) |
-	             (CONFIG::HAS_MSR_FE1 && (msr & CONFIG::MSR_FE1_MASK))) &&
-	             (fpscr & CONFIG::FPSCR_FEX_MASK)))
+	if(unlikely(((msr & CONFIG::MSR_FE0_MASK) |
+	            (msr & CONFIG::MSR_FE1_MASK)) &&
+	            (fpscr & CONFIG::FPSCR_FEX_MASK)))
 	{
 		// Raise a floating point exception
 		throw FloatingPointException<CONFIG>();
@@ -1417,9 +1417,9 @@ fnmsub.execute = {
 	cpu->SetFPSCR(fpscr);
 
 	// Check for floating point exception condition: (MSR[FE0] ^ MSR[FE1]) & FPSCR[FEX]
-	if(unlikely(((CONFIG::HAS_MSR_FE0 && (msr & CONFIG::MSR_FE0_MASK)) |
-	             (CONFIG::HAS_MSR_FE1 && (msr & CONFIG::MSR_FE1_MASK))) &&
-	             (fpscr & CONFIG::FPSCR_FEX_MASK)))
+	if(unlikely(((msr & CONFIG::MSR_FE0_MASK) |
+	            (msr & CONFIG::MSR_FE1_MASK)) &&
+	            (fpscr & CONFIG::FPSCR_FEX_MASK)))
 	{
 		// Raise a floating point exception
 		throw FloatingPointException<CONFIG>();
@@ -1479,9 +1479,9 @@ fnmsubs.execute = {
 	cpu->SetFPSCR(fpscr);
 
 	// Check for floating point exception condition: (MSR[FE0] ^ MSR[FE1]) & FPSCR[FEX]
-	if(unlikely(((CONFIG::HAS_MSR_FE0 && (msr & CONFIG::MSR_FE0_MASK)) |
-	             (CONFIG::HAS_MSR_FE1 && (msr & CONFIG::MSR_FE1_MASK))) &&
-	             (fpscr & CONFIG::FPSCR_FEX_MASK)))
+	if(unlikely(((msr & CONFIG::MSR_FE0_MASK) |
+	            (msr & CONFIG::MSR_FE1_MASK)) &&
+	            (fpscr & CONFIG::FPSCR_FEX_MASK)))
 	{
 		// Raise a floating point exception
 		throw FloatingPointException<CONFIG>();
@@ -1556,9 +1556,9 @@ fcmpo.execute = {
 	cpu->SetFPSCR(fpscr);
 
 	// Check for floating point exception condition: (MSR[FE0] ^ MSR[FE1]) & FPSCR[FEX]
-	if(unlikely(((CONFIG::HAS_MSR_FE0 && (msr & CONFIG::MSR_FE0_MASK)) |
-	             (CONFIG::HAS_MSR_FE1 && (msr & CONFIG::MSR_FE1_MASK))) &&
-	             (fpscr & CONFIG::FPSCR_FEX_MASK)))
+	if(unlikely(((msr & CONFIG::MSR_FE0_MASK) |
+	            (msr & CONFIG::MSR_FE1_MASK)) &&
+	            (fpscr & CONFIG::FPSCR_FEX_MASK)))
 	{
 		// Raise a floating point exception
 		throw FloatingPointException<CONFIG>();
@@ -1616,9 +1616,9 @@ fcmpu.execute = {
 	cpu->SetFPSCR(fpscr);
 
 	// Check for floating point exception condition: (MSR[FE0] ^ MSR[FE1]) & FPSCR[FEX]
-	if(unlikely(((CONFIG::HAS_MSR_FE0 && (msr & CONFIG::MSR_FE0_MASK)) |
-	             (CONFIG::HAS_MSR_FE1 && (msr & CONFIG::MSR_FE1_MASK))) &&
-	             (fpscr & CONFIG::FPSCR_FEX_MASK)))
+	if(unlikely(((msr & CONFIG::MSR_FE0_MASK) |
+	            (msr & CONFIG::MSR_FE1_MASK)) &&
+	            (fpscr & CONFIG::FPSCR_FEX_MASK)))
 	{
 		// Raise a floating point exception
 		throw FloatingPointException<CONFIG>();
@@ -1680,18 +1680,18 @@ fctiw.execute = {
 	// Update FPSCR
 	cpu->SetFPSCR(fpscr);
 
-	if(unlikely(((CONFIG::HAS_MSR_FE0 && (msr & CONFIG::MSR_FE0_MASK)) |
-	             (CONFIG::HAS_MSR_FE1 && (msr & CONFIG::MSR_FE1_MASK))) &&
-	             (fpscr & CONFIG::FPSCR_FEX_MASK)))
+	if(unlikely(((msr & CONFIG::MSR_FE0_MASK) |
+	            (msr & CONFIG::MSR_FE1_MASK)) &&
+	            (fpscr & CONFIG::FPSCR_FEX_MASK)))
 	{
 		// Raise a floating point exception if FPSCR[FEX] is set
 		throw FloatingPointException<CONFIG>();
 	}
 
 	// Check for floating point exception condition: (MSR[FE0] ^ MSR[FE1]) & FPSCR[FEX]
-	if(unlikely(((CONFIG::HAS_MSR_FE0 && (msr & CONFIG::MSR_FE0_MASK)) |
-	             (CONFIG::HAS_MSR_FE1 && (msr & CONFIG::MSR_FE1_MASK))) &&
-	             (fpscr & CONFIG::FPSCR_FEX_MASK)))
+	if(unlikely(((msr & CONFIG::MSR_FE0_MASK) |
+	            (msr & CONFIG::MSR_FE1_MASK)) &&
+	            (fpscr & CONFIG::FPSCR_FEX_MASK)))
 	{
 		// Raise a floating point exception
 		throw FloatingPointException<CONFIG>();
@@ -1752,18 +1752,18 @@ fctiwz.execute = {
 	// Update FPSCR
 	cpu->SetFPSCR(fpscr);
 
-	if(unlikely(((CONFIG::HAS_MSR_FE0 && (msr & CONFIG::MSR_FE0_MASK)) |
-	             (CONFIG::HAS_MSR_FE1 && (msr & CONFIG::MSR_FE1_MASK))) &&
-	             (fpscr & CONFIG::FPSCR_FEX_MASK)))
+	if(unlikely(((msr & CONFIG::MSR_FE0_MASK) |
+	            (msr & CONFIG::MSR_FE1_MASK)) &&
+	            (fpscr & CONFIG::FPSCR_FEX_MASK)))
 	{
 		// Raise a floating point exception if FPSCR[FEX] is set
 		throw FloatingPointException<CONFIG>();
 	}
 
 	// Check for floating point exception condition: (MSR[FE0] ^ MSR[FE1]) & FPSCR[FEX]
-	if(unlikely(((CONFIG::HAS_MSR_FE0 && (msr & CONFIG::MSR_FE0_MASK)) |
-	             (CONFIG::HAS_MSR_FE1 && (msr & CONFIG::MSR_FE1_MASK))) &&
-	             (fpscr & CONFIG::FPSCR_FEX_MASK)))
+	if(unlikely(((msr & CONFIG::MSR_FE0_MASK) |
+	            (msr & CONFIG::MSR_FE1_MASK)) &&
+	            (fpscr & CONFIG::FPSCR_FEX_MASK)))
 	{
 		// Raise a floating point exception
 		throw FloatingPointException<CONFIG>();
@@ -1818,9 +1818,9 @@ frsp.execute = {
 	cpu->SetFPSCR(fpscr);
 
 	// Check for floating point exception condition: (MSR[FE0] ^ MSR[FE1]) & FPSCR[FEX]
-	if(unlikely(((CONFIG::HAS_MSR_FE0 && (msr & CONFIG::MSR_FE0_MASK)) |
-	             (CONFIG::HAS_MSR_FE1 && (msr & CONFIG::MSR_FE1_MASK))) &&
-	             (fpscr & CONFIG::FPSCR_FEX_MASK)))
+	if(unlikely(((msr & CONFIG::MSR_FE0_MASK) |
+	            (msr & CONFIG::MSR_FE1_MASK)) &&
+	            (fpscr & CONFIG::FPSCR_FEX_MASK)))
 	{
 		// Raise a floating point exception
 		throw FloatingPointException<CONFIG>();

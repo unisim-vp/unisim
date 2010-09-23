@@ -32,12 +32,12 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_CPU_TCC__
-#define __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_CPU_TCC__
+#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_MPC7447A_CPU_TCC__
+#define __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_MPC7447A_CPU_TCC__
 
-#include <unisim/component/cxx/processor/powerpc/powerpc.tcc>
+#include <unisim/component/cxx/processor/powerpc/isa/powerpc.tcc>
 #include <unisim/util/simfloat/floating.tcc>
-#include <unisim/component/cxx/processor/powerpc/exception.tcc>
+#include <unisim/component/cxx/processor/powerpc/mpc7447a/exception.tcc>
 #include <unisim/component/cxx/cache/cache.tcc>
 #include <unisim/component/cxx/tlb/tlb.tcc>
 #include <unisim/util/queue/queue.tcc>
@@ -53,12 +53,14 @@ namespace component {
 namespace cxx {
 namespace processor {
 namespace powerpc {
+namespace mpc7447a {
 
 using namespace std;
 
 template <class CONFIG>
 CPU<CONFIG>::CPU(const char *name, Object *parent)
 	: Object(name, parent, "PowerPC MPC7447A CPU")
+	, unisim::component::cxx::processor::powerpc::isa::Decoder<CONFIG>()
 	, Client<Loader<typename CONFIG::physical_address_t> >(name,  parent)
 	, Client<SymbolTableLookup<typename CONFIG::address_t> >(name,  parent)
 	, Client<DebugControl<typename CONFIG::address_t> >(name,  parent)
@@ -99,16 +101,15 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	, l2_power_mode_import("l2-power-mode-import",  this)
 	, dtlb_power_mode_import("dtlb-power-mode-import",  this)
 	, itlb_power_mode_import("itlb-power-mode-import",  this)
-	, fp32_estimate_inv_warning(false)
-	, fp64_estimate_inv_sqrt_warning(false)
-	//, formula_insn_per_bus_cycle("insn-per-bus-cycle", this, Formula<double>::OP_DIV, &stat_instruction_counter, &stat_bus_cycle)
-	, il1()
-	, dl1()
-	, l2()
-	, dtlb()
-	, itlb()
-	, num_insn_in_prefetch_buffer(0)
-	, cur_insn_in_prefetch_buffer(0)
+	, logger(*this)
+	, requires_memory_access_reporting(true)
+	, requires_finished_instruction_reporting(true)
+	, cpu_cycle_time(0)
+	, voltage(0)
+	, bus_cycle_time(0)
+	, cpu_cycle(0)
+	, bus_cycle(0)
+	, effective_address(0)
 	, verbose_all(false)
 	, verbose_setup(false)
 	, verbose_step(false)
@@ -127,6 +128,32 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	, verbose_set_hid2(false)
 	, verbose_set_l2cr(false)
 	, trap_on_instruction_counter(0xffffffffffffffffULL)
+	, max_inst(0xffffffffffffffffULL)
+	, registers_registry()
+	, instruction_counter(0)
+	, fp32_estimate_inv_warning(false)
+	, fp64_estimate_inv_sqrt_warning(false)
+	//, formula_insn_per_bus_cycle("insn-per-bus-cycle", this, Formula<double>::OP_DIV, &stat_instruction_counter, &stat_bus_cycle)
+	, il1()
+	, num_il1_accesses(0)
+	, num_il1_misses(0)
+	, dl1()
+	, num_dl1_accesses(0)
+	, num_dl1_misses(0)
+	, l2()
+	, num_l2_accesses(0)
+	, num_l2_misses(0)
+	, dtlb()
+	, itlb()
+	, num_insn_in_prefetch_buffer(0)
+	, cur_insn_in_prefetch_buffer(0)
+	, prefetch_buffer()
+	, reserve(false)
+	, reserve_addr(0)
+	, asynchronous_interrupt(0)
+	, param_cpu_cycle_time("cpu-cycle-time",  this,  cpu_cycle_time, "CPU cycle time in picoseconds")
+	, param_voltage("voltage",  this,  voltage, "CPU voltage in mV")
+	, param_max_inst("max-inst",  this,  max_inst, "maximum number of instructions to simulate")
 	, param_verbose_all("verbose-all",  this,  verbose_all, "globally enable/disable verbosity")
 	, param_verbose_setup("verbose-setup",  this,  verbose_setup, "enable/disable verbosity while setup")
 	, param_verbose_step("verbose-step",  this,  verbose_step, "enable/disable verbosity when simulating an instruction")
@@ -145,25 +172,13 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	, param_verbose_set_hid2("verbose-set-hid2",  this,  verbose_set_hid2, "enable/disable verbosity when setting HID2")
 	, param_verbose_set_l2cr("verbose-set-l2cr",  this,  verbose_set_l2cr, "enable/disable verbosity when setting L2CR")
 	, param_trap_on_instruction_counter("trap-on-instruction-counter",  this,  trap_on_instruction_counter, "number of simulated instruction before traping")
-	, max_inst(0xffffffffffffffffULL)
-	, param_cpu_cycle_time("cpu-cycle-time",  this,  cpu_cycle_time, "CPU cycle time in picoseconds")
-	, param_voltage("voltage",  this,  voltage, "CPU voltage in mV")
 //	, param_bus_cycle_time("bus-cycle-time",  this,  bus_cycle_time, "bus cycle time in picoseconds")
-	, param_max_inst("max-inst",  this,  max_inst, "maximum number of instructions to simulate")
 	, stat_instruction_counter("instruction-counter",  this,  instruction_counter, "number of simulated instructions")
 	, stat_cpu_cycle("cpu-cycle",  this,  cpu_cycle, "number of simulated CPU cycles")
 	, stat_bus_cycle("bus-cycle",  this,  bus_cycle, "number of simulated bus cycles")
 #if 0
 	, formula_insn_per_bus_cycle("insn-per-bus-cycle", this, unisim::kernel::service::Formula<double>::OP_DIV, &stat_instruction_counter, &stat_bus_cycle)
 #endif
-	, requires_memory_access_reporting(true)
-	, requires_finished_instruction_reporting(true)
-	, logger(*this)
-	, cpu_cycle_time(0)
-	, voltage(0)
-	//, bus_cycle_time(0)
-	, cpu_cycle(0)
-	, bus_cycle(0)
 	, event_free_list(0)
 	, insn_free_list(0)
 	, operand_free_list(0)
@@ -214,11 +229,11 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	registers_registry["cia"] = new unisim::util::debug::SimpleRegister<uint32_t>("cia", &cia);
 
 	registers_registry["msr"] = new unisim::util::debug::SimpleRegister<uint32_t>("msr", &msr);
-	if(CONFIG::HAS_SRR0) registers_registry["srr0"] = new unisim::util::debug::SimpleRegister<uint32_t>("srr0", &srr0);
-	if(CONFIG::HAS_SRR1) registers_registry["srr1"] = new unisim::util::debug::SimpleRegister<uint32_t>("srr1", &srr1);
+	registers_registry["srr0"] = new unisim::util::debug::SimpleRegister<uint32_t>("srr0", &srr0);
+	registers_registry["srr1"] = new unisim::util::debug::SimpleRegister<uint32_t>("srr1", &srr1);
 
-	if(CONFIG::HAS_TBL) registers_registry["tbl"] = new unisim::util::debug::SimpleRegister<uint32_t>("tbl", &tbl);
-	if(CONFIG::HAS_TBU) registers_registry["tbu"] = new unisim::util::debug::SimpleRegister<uint32_t>("tbu", &tbu);
+	registers_registry["tbl"] = new unisim::util::debug::SimpleRegister<uint32_t>("tbl", &tbl);
+	registers_registry["tbu"] = new unisim::util::debug::SimpleRegister<uint32_t>("tbu", &tbu);
 
 	for(i = 0; i < CONFIG::NUM_SPRGS; i++)
 	{
@@ -234,42 +249,31 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 		registers_registry[sstr.str()] = new unisim::util::debug::SimpleRegister<vr_t>(sstr.str().c_str(), &vr[i]);
 	}
 
-	if(CONFIG::HAS_DAR) registers_registry["dar"] = new unisim::util::debug::SimpleRegister<uint32_t>("dar", &dar);
-	if(CONFIG::HAS_DSISR) registers_registry["dsisr"] = new unisim::util::debug::SimpleRegister<uint32_t>("dsisr", &dsisr);
-	if(CONFIG::HAS_EAR) registers_registry["ear"] = new unisim::util::debug::SimpleRegister<uint32_t>("ear", &ear);
-	if(CONFIG::HAS_DEC) registers_registry["dec"] = new unisim::util::debug::SimpleRegister<uint32_t>("dec", &dec);
-	if(CONFIG::HAS_DABR) registers_registry["dabr"] = new unisim::util::debug::SimpleRegister<uint32_t>("dabr", &dabr);
+	registers_registry["dar"] = new unisim::util::debug::SimpleRegister<uint32_t>("dar", &dar);
+	registers_registry["dsisr"] = new unisim::util::debug::SimpleRegister<uint32_t>("dsisr", &dsisr);
+	registers_registry["ear"] = new unisim::util::debug::SimpleRegister<uint32_t>("ear", &ear);
+	registers_registry["dec"] = new unisim::util::debug::SimpleRegister<uint32_t>("dec", &dec);
+	registers_registry["dabr"] = new unisim::util::debug::SimpleRegister<uint32_t>("dabr", &dabr);
 	registers_registry["pvr"] = new unisim::util::debug::SimpleRegister<uint32_t>("pvr", &pvr);
 
-	if(CONFIG::HAS_HID0) registers_registry["hid0"] = new unisim::util::debug::SimpleRegister<uint32_t>("hid0", &hid0);
-	if(CONFIG::HAS_HID1) registers_registry["hid1"] = new unisim::util::debug::SimpleRegister<uint32_t>("hid1", &hid1);
-	if(CONFIG::HAS_IABR) registers_registry["iabr"] = new unisim::util::debug::SimpleRegister<uint32_t>("iabr", &iabr);
-	if(CONFIG::HAS_LDSTDB) registers_registry["ldstdb"] = new unisim::util::debug::SimpleRegister<uint32_t>("ldstdb", &ldstdb);
-	if(CONFIG::HAS_THRM1) registers_registry["thrm1"] = new unisim::util::debug::SimpleRegister<uint32_t>("thrm1", &thrm1);
-	if(CONFIG::HAS_THRM2) registers_registry["thrm2"] = new unisim::util::debug::SimpleRegister<uint32_t>("thrm2", &thrm2);
-	if(CONFIG::HAS_THRM3) registers_registry["thrm3"] = new unisim::util::debug::SimpleRegister<uint32_t>("thrm3", &thrm3);
-	if(CONFIG::HAS_ICTC) registers_registry["ictc"] = new unisim::util::debug::SimpleRegister<uint32_t>("ictc", &ictc);
-	if(CONFIG::HAS_PMC1) registers_registry["pmc1"] = new unisim::util::debug::SimpleRegister<uint32_t>("pmc1", &pmc1);
-	if(CONFIG::HAS_PMC2) registers_registry["pmc2"] = new unisim::util::debug::SimpleRegister<uint32_t>("pmc2", &pmc1);
-	if(CONFIG::HAS_PMC3) registers_registry["pmc3"] = new unisim::util::debug::SimpleRegister<uint32_t>("pmc3", &pmc1);
-	if(CONFIG::HAS_PMC4) registers_registry["pmc4"] = new unisim::util::debug::SimpleRegister<uint32_t>("pmc4", &pmc1);
-	if(CONFIG::HAS_SIA) registers_registry["sia"] = new unisim::util::debug::SimpleRegister<uint32_t>("sia", &sia);
-	if(CONFIG::HAS_SDA) registers_registry["sda"] = new unisim::util::debug::SimpleRegister<uint32_t>("sda", &sda);
-	if(CONFIG::HAS_MMCR0) registers_registry["mmcr0"] = new unisim::util::debug::SimpleRegister<uint32_t>("mmmcr0", &mmcr0);
-	if(CONFIG::HAS_MMCR1) registers_registry["mmcr1"] = new unisim::util::debug::SimpleRegister<uint32_t>("mmcr1", &mmcr1);
-	if(CONFIG::HAS_L2CR) registers_registry["l2cr"] = new unisim::util::debug::SimpleRegister<uint32_t>("l2cr", &l2cr);
-	if(CONFIG::HAS_L2PM) registers_registry["l2pm"] = new unisim::util::debug::SimpleRegister<uint32_t>("l2pm", &l2pm);
-	if(CONFIG::HAS_HID2) registers_registry["hid2"] = new unisim::util::debug::SimpleRegister<uint32_t>("hid2", &hid2);
-	if(CONFIG::HAS_DMISS) registers_registry["dmiss"] = new unisim::util::debug::SimpleRegister<uint32_t>("dmiss", &dmiss);
-	if(CONFIG::HAS_IMISS) registers_registry["imiss"] = new unisim::util::debug::SimpleRegister<uint32_t>("imiss", &imiss);
-	if(CONFIG::HAS_DCMP) registers_registry["dcmp"] = new unisim::util::debug::SimpleRegister<uint32_t>("dcmp", &dcmp);
-	if(CONFIG::HAS_ICMP) registers_registry["icmp"] = new unisim::util::debug::SimpleRegister<uint32_t>("icmp", &icmp);
-	if(CONFIG::HAS_HASH1) registers_registry["hash1"] = new unisim::util::debug::SimpleRegister<uint32_t>("hash1", &hash1);
-	if(CONFIG::HAS_HASH2) registers_registry["hash2"] = new unisim::util::debug::SimpleRegister<uint32_t>("hash2", &hash2);
-	if(CONFIG::HAS_RPA) registers_registry["rpa"] = new unisim::util::debug::SimpleRegister<uint32_t>("rpa", &rpa);
+	registers_registry["hid0"] = new unisim::util::debug::SimpleRegister<uint32_t>("hid0", &hid0);
+	registers_registry["hid1"] = new unisim::util::debug::SimpleRegister<uint32_t>("hid1", &hid1);
+	registers_registry["iabr"] = new unisim::util::debug::SimpleRegister<uint32_t>("iabr", &iabr);
+	registers_registry["ldstdb"] = new unisim::util::debug::SimpleRegister<uint32_t>("ldstdb", &ldstdb);
+	registers_registry["ictc"] = new unisim::util::debug::SimpleRegister<uint32_t>("ictc", &ictc);
+	registers_registry["pmc1"] = new unisim::util::debug::SimpleRegister<uint32_t>("pmc1", &pmc1);
+	registers_registry["pmc2"] = new unisim::util::debug::SimpleRegister<uint32_t>("pmc2", &pmc1);
+	registers_registry["pmc3"] = new unisim::util::debug::SimpleRegister<uint32_t>("pmc3", &pmc1);
+	registers_registry["pmc4"] = new unisim::util::debug::SimpleRegister<uint32_t>("pmc4", &pmc1);
+	registers_registry["sia"] = new unisim::util::debug::SimpleRegister<uint32_t>("sia", &sia);
+	registers_registry["sda"] = new unisim::util::debug::SimpleRegister<uint32_t>("sda", &sda);
+	registers_registry["mmcr0"] = new unisim::util::debug::SimpleRegister<uint32_t>("mmmcr0", &mmcr0);
+	registers_registry["mmcr1"] = new unisim::util::debug::SimpleRegister<uint32_t>("mmcr1", &mmcr1);
+	registers_registry["l2cr"] = new unisim::util::debug::SimpleRegister<uint32_t>("l2cr", &l2cr);
+	registers_registry["tlbmiss"] = new unisim::util::debug::SimpleRegister<uint32_t>("tlbmiss", &tlbmiss);
 
-	if(CONFIG::HAS_VSCR) registers_registry["vscr"] = new unisim::util::debug::SimpleRegister<uint32_t>("vscr", &vscr);
-	if(CONFIG::HAS_VSCR) registers_registry["vrsave"] = new unisim::util::debug::SimpleRegister<uint32_t>("vrsave", &vrsave);
+	registers_registry["vscr"] = new unisim::util::debug::SimpleRegister<uint32_t>("vscr", &vscr);
+	registers_registry["vrsave"] = new unisim::util::debug::SimpleRegister<uint32_t>("vrsave", &vrsave);
 
 	for(i = 0; i < CONFIG::NUM_BATS; i++)
 	{
@@ -299,7 +303,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 		registers_registry[sstr.str().c_str()] = new unisim::util::debug::SimpleRegister<uint32_t>(sstr.str().c_str(), &ibatl[i]);
 	}
 
-	for(i = 0; i < 16; i++)
+	for(i = 0; i < CONFIG::NUM_SRS; i++)
 	{
 		stringstream sstr;
 		sstr << "sr" << i;
@@ -560,67 +564,68 @@ void CPU<CONFIG>::Reset()
 
 	bus_cycle = 0;
 	cpu_cycle = 0;
-	dec_bus_cycle = 0;
 	instruction_counter = 0;
 
-	dec = 0;
-
-	decrementer_overflow = false;
-	external_interrupt = false;
-	soft_reset = false;
-	hard_reset = false;
-	asynchronous_interrupt = false;
+	asynchronous_interrupt = 0;
 
 	reserve = false;
 	reserve_addr = 0;
 
-	for(i = 0; i < 32; i++) SetGPR(i, 0);
+	for(i = 0; i < CONFIG::NUM_GPRS; i++) gpr[i] = 0;
 
-	SetFPSCR(0);
-	//flags.clear();
-	for(i = 0; i < 32; i++) SetFPR(i, SoftDouble(0));
+	fpscr = 0;
+	for(i = 0; i < CONFIG::NUM_FPRS; i++) fpr[i] = SoftDouble(0);
 
-	SetCR(0);
-	SetXER(0);
-	SetLR(0);
-	SetCTR(0);
+	for(i = 0; i < CONFIG::NUM_VRS; i++)
+	{
+		memset(&vr[i], 0, sizeof(vr[i]));
+	}
+	vrsave = 0;
+	vscr = 0;
 
-	SetCIA(CONFIG::START_ADDR);
-	SetNIA(CONFIG::START_ADDR);
+	cr = 0;
+	xer = 0;
+	lr = 0;
+	ctr = 0;
+
+	cia = CONFIG::START_ADDR;
+	nia = CONFIG::START_ADDR;
 	
-	msr = 0;
-	SetMSR(CONFIG::MSR_RESET_VALUE);
+	msr = CONFIG::MSR_RESET_VALUE;
 	
-	SetPVR(CONFIG::PROCESSOR_VERSION);
+	pvr = CONFIG::PROCESSOR_VERSION;
 	
-	SetSRR0(0);
-	SetSRR1(0);
-	if(CONFIG::HAS_TBL) SetTBL(0);
-	if(CONFIG::HAS_TBU) SetTBU(0);
+	srr0 = 0;
+	srr1 = 0;
+	tbl = 0;
+	tbu = 0;
 
 	for(i = 0; i < CONFIG::NUM_SPRGS; i++)
-		SetSPRG(i, 0);
+	{
+		sprg[i] = 0;
+	}
 
-	if(CONFIG::HAS_DAR) SetDAR(0);
-	if(CONFIG::HAS_DSISR) SetDSISR(0);
-	if(CONFIG::HAS_EAR) SetEAR(0);
-	if(CONFIG::HAS_DEC) SetDEC(0);
-	if(CONFIG::HAS_DABR) SetDABR(0);
+	bamr = 0;
+	dar = 0;
+	dsisr = 0;
+	ear = 0;
+	dec = 0;
+	SetDABR(0);
 
 	CPU<CONFIG>::InvalidateDecodingCache();
 	
 	for(i = 0; i < CONFIG::NUM_BATS; i++)
 	{
-		SetDBATU(i, 0);
-		SetDBATL(i, 0);
-		SetIBATU(i, 0);
-		SetIBATL(i, 0);
+		dbatu[i] = 0;
+		dbatl[i] = 0;
+		ibatu[i] = 0;
+		ibatl[i] = 0;
 	}
 	for(i = 0; i < 16; i++)
 	{
-		SetSR(i, 0);
+		sr[i] = 0;
 	}
-	SetSDR1(0);
+	sdr1 = 0;
 	InvalidateDTLB();
 	InvalidateITLB();
 
@@ -640,64 +645,34 @@ void CPU<CONFIG>::Reset()
 	num_insn_in_prefetch_buffer = 0;
 	cur_insn_in_prefetch_buffer = 0;
 
-	if(CONFIG::HAS_DECREMENTER_OVERFLOW) decrementer_overflow = false;
-	if(CONFIG::HAS_EXTERNAL_INTERRUPT) external_interrupt = false;
-	if(CONFIG::HAS_SOFT_RESET) soft_reset = false;
-	if(CONFIG::HAS_HARD_RESET) hard_reset = false;
-	if(CONFIG::HAS_MCP) mcp = false;
-	if(CONFIG::HAS_TEA) tea = false;
-	if(CONFIG::HAS_SMI) smi = false;
-	if(CONFIG::HAS_THERMAL_MANAGEMENT_INTERRUPT) thermal_management_interrupt = false;
-	if(CONFIG::HAS_PERFORMANCE_MONITOR_INTERRUPT) performance_monitor_interrupt = false;
-	asynchronous_interrupt = false;
+	asynchronous_interrupt = 0;
 	
-	if(CONFIG::HAS_HID0)
-	{
-		hid0 = 0;
-		SetHID0(CONFIG::HID0_RESET_VALUE);
-	}
-	if(CONFIG::HAS_HID1)
-	{
-		hid1 = 0;
-		SetHID1(0);
-	}
+	hid0 = CONFIG::HID0_RESET_VALUE;
+	hid1 = CONFIG::HID1_RESET_VALUE;
 
-	if(CONFIG::HAS_HID2)
-	{
-		hid2 = 0;
-		SetHID2(0);
-	}
-
-	if(CONFIG::HAS_IABR) SetIABR(0);
-	if(CONFIG::HAS_LDSTDB) SetLDSTDB(0);
-	if(CONFIG::HAS_THRM1) SetTHRM1(0);
-	if(CONFIG::HAS_THRM2) SetTHRM2(0);
-	if(CONFIG::HAS_THRM3) SetTHRM3(0);
-	if(CONFIG::HAS_ICTC) SetICTC(0);
-	if(CONFIG::HAS_PMC1) SetPMC1(0);
-	if(CONFIG::HAS_PMC2) SetPMC2(0);
-	if(CONFIG::HAS_PMC3) SetPMC3(0);
-	if(CONFIG::HAS_PMC4) SetPMC4(0);
-	if(CONFIG::HAS_PMC5) SetPMC5(0);
-	if(CONFIG::HAS_PMC6) SetPMC6(0);
-	if(CONFIG::HAS_SIA) SetSIA(0);
-	if(CONFIG::HAS_SDA) SetSDA(0);
-	if(CONFIG::HAS_MMCR0) SetMMCR0(0);
-	if(CONFIG::HAS_MMCR1) SetMMCR1(0);
-	if(CONFIG::HAS_MMCR2) SetMMCR2(0);
+	iabr = 0;
+	dabr = 0;
+	ldstcr = 0;
+	ldstdb = 0;
+	ictc = 0;
+	ictrl = 0;
+	pir = 0;
+	ptehi = 0;
+	ptelo = 0;
+	tlbmiss = 0;
+	pmc1 = 0;
+	pmc2 = 0;
+	pmc3 = 0;
+	pmc4 = 0;
+	pmc5 = 0;
+	pmc6 = 0;
+	sia = 0;
+	sda = 0;
+	mmcr0 = 0;
+	mmcr1 = 0;
+	mmcr2 = 0;
 	
-	if(CONFIG::HAS_L2CR)
-	{
-		l2cr = 0;
-		SetL2CR(0);
-	}
-
-	if(CONFIG::HAS_DMISS) SetDMISS(0);
-	if(CONFIG::HAS_DCMP) SetDCMP(0);
-	if(CONFIG::HAS_HASH1) SetHASH1(0);
-	if(CONFIG::HAS_HASH2) SetHASH2(0);
-	if(CONFIG::HAS_RPA) SetRPA(0);
-	if(CONFIG::HAS_L2PM) SetL2PM(0);
+	l2cr = 0;
 
 	effective_address = 0;
 }
@@ -707,75 +682,29 @@ uint32_t CPU<CONFIG>::GetSPR(unsigned int n)
 {
 	switch(n)
 	{
-		case 0:
-			if(CONFIG::HAS_MQ)
-			{
-				return GetMQ();
-			}
-			throw IllegalInstructionException<CONFIG>();
 		case 1: return GetXER();
-		case 4:
-			if(CONFIG::HAS_RTCU)
-			{
-				return GetRTCU();
-			}
-			throw IllegalInstructionException<CONFIG>();
-		case 5:
-			if(CONFIG::HAS_RTCL)
-			{
-				return GetRTCL();
-			}
-			throw IllegalInstructionException<CONFIG>();
 		case 8: return GetLR();
 		case 9: return GetCTR();
 		case 18:
-			if(CONFIG::HAS_DSISR)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetDSISR();
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			return GetDSISR();
 		case 19:
-			if(CONFIG::HAS_DAR)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetDAR();
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			return GetDAR();
 		case 22:
-			if(CONFIG::HAS_DEC)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetDEC();
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			return GetDEC();
 		case 25:
-			if(CONFIG::HAS_SDR1)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetSDR1();
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			return GetSDR1();
 		case 26:
-			if(CONFIG::HAS_SRR0)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetSRR0();
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			return GetSRR0();
 		case 27:
-			if(CONFIG::HAS_SRR1)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetSRR1();
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			return GetSRR1();
 		case 256:
-			if(CONFIG::HAS_VRSAVE)
-			{
-				return GetVRSAVE();
-			}
-			throw IllegalInstructionException<CONFIG>();
+			return GetVRSAVE();
 		case 272:
 		case 273:
 		case 274:
@@ -794,12 +723,8 @@ uint32_t CPU<CONFIG>::GetSPR(unsigned int n)
 			throw IllegalInstructionException<CONFIG>();
 		}
 		case 282:
-			if(CONFIG::HAS_EAR)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetEAR();
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			return GetEAR();
 		case 287:
 			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
 			return GetPVR();
@@ -876,434 +801,101 @@ uint32_t CPU<CONFIG>::GetSPR(unsigned int n)
 			throw IllegalInstructionException<CONFIG>();
 		}
 		case 928:
-			if(CONFIG::HAS_MMCR2)
-			{
-				return GetMMCR2();
-			}
-			throw IllegalInstructionException<CONFIG>();
+			return GetMMCR2();
 		case 929:
-			if(CONFIG::HAS_PMC5)
-			{
-				return GetPMC5();
-			}
-			throw IllegalInstructionException<CONFIG>();
+			return GetPMC5();
 		case 930:
-			if(CONFIG::HAS_PMC6)
-			{
-				return GetPMC6();
-			}
-			throw IllegalInstructionException<CONFIG>();
+			return GetPMC6();
 		case 936:
-			if(CONFIG::HAS_MMCR0)
-			{
-				return GetMMCR0();
-			}
-			throw IllegalInstructionException<CONFIG>();
+			return GetMMCR0();
 		case 937:
-			if(CONFIG::HAS_PMC1)
-			{
-				return GetPMC1();
-			}
-			throw IllegalInstructionException<CONFIG>();
+			return GetPMC1();
 		case 938:
-			if(CONFIG::HAS_PMC2)
-			{
-				return GetPMC2();
-			}
-			throw IllegalInstructionException<CONFIG>();
+			return GetPMC2();
 		case 940:
-			if(CONFIG::HAS_MMCR1)
-			{
-				return GetMMCR1();
-			}
-			throw IllegalInstructionException<CONFIG>();
+			return GetMMCR1();
 		case 941:
-			if(CONFIG::HAS_PMC3)
-			{
-				return GetPMC3();
-			}
-			throw IllegalInstructionException<CONFIG>();
+			return GetPMC3();
 		case 942:
-			if(CONFIG::HAS_PMC4)
-			{
-				return GetPMC4();
-			}
-			throw IllegalInstructionException<CONFIG>();
+			return GetPMC4();
 		case 944:
-			if(CONFIG::HAS_MMCR2)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetMMCR2();
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			return GetMMCR2();
 		case 945:
-			if(CONFIG::HAS_PMC5)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetPMC5();
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			return GetPMC5();
 		case 946:
-			if(CONFIG::HAS_PMC6)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetPMC6();
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			return GetPMC6();
 		case 951:
-			if(CONFIG::HAS_BAMR)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetBAMR();
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			return GetBAMR();
 		case 952:
-			if(CONFIG::HAS_MMCR0)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetMMCR0();
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			return GetMMCR0();
 		case 953:
-			if(CONFIG::HAS_PMC1)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetPMC1();
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			return GetPMC1();
 		case 954:
-			if(CONFIG::HAS_PMC2)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetPMC2();
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			return GetPMC2();
 		case 955:
-			if(CONFIG::HAS_SIA)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetSIA();
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			return GetSIA();
 		case 956:
-			if(CONFIG::HAS_MMCR1)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetMMCR1();
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			return GetMMCR1();
 		case 957:
-			if(CONFIG::HAS_PMC3)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetPMC3();
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			return GetPMC3();
 		case 958:
-			if(CONFIG::HAS_PMC4)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetPMC4();
-			}
-			throw IllegalInstructionException<CONFIG>();
-		case 976:
-			if(CONFIG::HAS_DMISS)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetDMISS();
-			}
-			throw IllegalInstructionException<CONFIG>();
-		case 977:
-			if(CONFIG::HAS_DCMP)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetDCMP();
-			}
-			throw IllegalInstructionException<CONFIG>();
-		case 978:
-			if(CONFIG::HAS_HASH1)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetHASH1();
-			}
-			throw IllegalInstructionException<CONFIG>();
-		case 979:
-			if(CONFIG::HAS_HASH2)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetHASH2();
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			return GetPMC4();
 		case 980:
-			if(CONFIG::HAS_IMISS)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetIMISS();
-			}
-			if(CONFIG::HAS_TLBMISS)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetTLBMISS();
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			return GetTLBMISS();
 		case 981:
-			if(CONFIG::HAS_ICMP)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetICMP();
-			}
-			if(CONFIG::HAS_PTEHI)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetPTEHI();
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			return GetPTEHI();
 		case 982:
-			if(CONFIG::HAS_RPA)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetPTELO();
-			}
-			if(CONFIG::HAS_PTELO)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetPTELO();
-			}
-			throw IllegalInstructionException<CONFIG>();
-		case 983:
-			if(CONFIG::HAS_L3PM)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetL3PM();
-			}
-			throw IllegalInstructionException<CONFIG>();
-		case 984:
-			if(CONFIG::HAS_L3ITCR0)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetL3ITCR0();
-			}
-			throw IllegalInstructionException<CONFIG>();
-		case 985:
-			if(CONFIG::HAS_L2ERRINJHI)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetL2ERRINJHI();
-			}
-			throw IllegalInstructionException<CONFIG>();
-		case 986:
-			if(CONFIG::HAS_L2ERRINJLO)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetL2ERRINJLO();
-			}
-			throw IllegalInstructionException<CONFIG>();
-		case 987:
-			if(CONFIG::HAS_L2ERRINJCTL)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetL2ERRINJCTL();
-			}
-			throw IllegalInstructionException<CONFIG>();
-		case 988:
-			if(CONFIG::HAS_L2CAPTDATAHI)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetL2CAPTDATAHI();
-			}
-			throw IllegalInstructionException<CONFIG>();
-		case 989:
-			if(CONFIG::HAS_L2CAPTDATALO)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetL2CAPTDATALO();
-			}
-			throw IllegalInstructionException<CONFIG>();
-		case 990:
-			if(CONFIG::HAS_L2CAPTDATAECC)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetL2CAPTDATAECC();
-			}
-			throw IllegalInstructionException<CONFIG>();
-		case 991:
-			if(CONFIG::HAS_L2ERRDET)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetL2ERRDET();
-			}
-			throw IllegalInstructionException<CONFIG>();
-		case 992:
-			if(CONFIG::HAS_L2ERRDIS)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetL2ERRDIS();
-			}
-			throw IllegalInstructionException<CONFIG>();
-		case 993:
-			if(CONFIG::HAS_L2ERRINTEN)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetL2ERRINTEN();
-			}
-			throw IllegalInstructionException<CONFIG>();
-		case 994:
-			if(CONFIG::HAS_L2ERRATTR)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetL2ERRATTR();
-			}
-			throw IllegalInstructionException<CONFIG>();
-		case 995:
-			if(CONFIG::HAS_L2ERRADDR)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetL2ERRADDR();
-			}
-			throw IllegalInstructionException<CONFIG>();
-		case 996:
-			if(CONFIG::HAS_L2ERREADDR)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetL2ERREADDR();
-			}
-			throw IllegalInstructionException<CONFIG>();
-		case 997:
-			if(CONFIG::HAS_L2ERRCTL)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetL2ERRCTL();
-			}
-			throw IllegalInstructionException<CONFIG>();
-		case 1000:
-			if(CONFIG::HAS_L3OHCR)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetL3OHCR();
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			return GetPTELO();
 		case 1008:
-			if(CONFIG::HAS_HID0)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetHID0();
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			return GetHID0();
 		case 1009:
-			if(CONFIG::HAS_HID1)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetHID1();
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			return GetHID1();
 		case 1010:
-			if(CONFIG::HAS_IABR)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetIABR();
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			return GetIABR();
 		case 1011:
-			if(CONFIG::HAS_HID2)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetHID2();
-			}
-			if(CONFIG::HAS_ICTRL)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetICTRL();
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			return GetICTRL();
 		case 1012: // undocumented !!!
-			if(CONFIG::HAS_LDSTDB)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetLDSTDB();
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			return GetLDSTDB();
 		case 1013:
-			if(CONFIG::HAS_DABR)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetDABR();
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			return GetDABR();
 		case 1014:
-			if(CONFIG::HAS_MSSCR0)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetMSSCR0();
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			return GetMSSCR0();
 		case 1015:
-			if(CONFIG::HAS_MSSSR0)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetMSSSR0();
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			return GetMSSSR0();
 		case 1016:
-			if(CONFIG::HAS_L2PM)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetL2PM();
-			}
-			if(CONFIG::HAS_LDSTCR)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetLDSTCR();
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			return GetLDSTCR();
 		case 1017:
-			if(CONFIG::HAS_L2CR)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetL2CR();
-			}
-			throw IllegalInstructionException<CONFIG>();
-		case 1018:
-			if(CONFIG::HAS_L3CR)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetL3CR();
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			return GetL2CR();
 		case 1019:
-			if(CONFIG::HAS_ICTC)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetICTC();
-			}
-			throw IllegalInstructionException<CONFIG>();
-		case 1020:
-			if(CONFIG::HAS_THRM1)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetTHRM1();
-			}
-			throw IllegalInstructionException<CONFIG>();
-		case 1021:
-			if(CONFIG::HAS_THRM2)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetTHRM2();
-			}
-			throw IllegalInstructionException<CONFIG>();
-		case 1022:
-			if(CONFIG::HAS_THRM3)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetTHRM3();
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			return GetICTC();
 		case 1023:
-			if(CONFIG::HAS_PIR)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetPIR();
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			return GetPIR();
 	}
 	throw IllegalInstructionException<CONFIG>();
 	return 0;
@@ -1315,86 +907,36 @@ void CPU<CONFIG>::SetSPR(unsigned int n, uint32_t value)
 	switch(n)
 	{
 		case 0:
-			if(CONFIG::HAS_MQ)
-			{
-				SetMQ(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
 		case 1: SetXER(value); return;
 		case 8: SetLR(value); return;
 		case 9: SetCTR(value); return;
 		case 18:
-			if(CONFIG::HAS_DSISR)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetDSISR(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			SetDSISR(value);
+			return;
 		case 19:
-			if(CONFIG::HAS_DAR)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetDAR(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
-		case 20:
-			if(CONFIG::HAS_RTCU)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetRTCU(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
-		case 21:
-			if(CONFIG::HAS_RTCL)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetRTCL(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			SetDAR(value);
+			return;
 		case 22:
-			if(CONFIG::HAS_DEC)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetDEC(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			SetDEC(value);
+			return;
 		case 25:
-			if(CONFIG::HAS_SDR1)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetSDR1(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			SetSDR1(value);
+			return;
 		case 26:
-			if(CONFIG::HAS_SRR0)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetSRR0(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			SetSRR0(value);
+			return;
 		case 27:
-			if(CONFIG::HAS_SRR1)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetSRR1(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			SetSRR1(value);
+			return;
 		case 256:
-			if(CONFIG::HAS_VRSAVE)
-			{
-				SetVRSAVE(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
+			SetVRSAVE(value);
+			return;
 		case 272:
 		case 273:
 		case 274:
@@ -1414,29 +956,17 @@ void CPU<CONFIG>::SetSPR(unsigned int n, uint32_t value)
 			throw IllegalInstructionException<CONFIG>();
 		}
 		case 282:
-			if(CONFIG::HAS_EAR)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetEAR(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			SetEAR(value);
+			return;
 		case 284:
-			if(CONFIG::HAS_TBL)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetTBL(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			SetTBL(value);
+			return;
 		case 285:
-			if(CONFIG::HAS_TBU)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetTBU(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			SetTBU(value);
+			return;
 		case 528:
 		case 529:
 		case 530:
@@ -1514,443 +1044,113 @@ void CPU<CONFIG>::SetSPR(unsigned int n, uint32_t value)
 			throw IllegalInstructionException<CONFIG>();
 		}
 		case 944:
-			if(CONFIG::HAS_MMCR2)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetMMCR2(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			SetMMCR2(value);
+			return;
 		case 945:
-			if(CONFIG::HAS_PMC5)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetPMC5(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			SetPMC5(value);
+			return;
 		case 946:
-			if(CONFIG::HAS_PMC6)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetPMC6(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			SetPMC6(value);
+			return;
 		case 951:
-			if(CONFIG::HAS_BAMR)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetBAMR(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			SetBAMR(value);
+			return;
 		case 952:
-			if(CONFIG::HAS_MMCR0)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetMMCR0(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			SetMMCR0(value);
+			return;
 		case 953:
-			if(CONFIG::HAS_PMC1)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetPMC1(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			SetPMC1(value);
+			return;
 		case 954:
-			if(CONFIG::HAS_PMC2)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetPMC2(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			SetPMC2(value);
+			return;
 		case 955:
-			if(CONFIG::HAS_SIA)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetSIA(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			SetSIA(value);
+			return;
 		case 956:
-			if(CONFIG::HAS_MMCR1)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetMMCR1(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			SetMMCR1(value);
+			return;
 		case 957:
-			if(CONFIG::HAS_PMC3)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetPMC3(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			SetPMC3(value);
+			return;
 		case 958:
-			if(CONFIG::HAS_PMC4)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetPMC4(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			SetPMC4(value);
+			return;
 		case 959:
-			if(CONFIG::HAS_SDA)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetSDA(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
-		case 976:
-			if(CONFIG::HAS_DMISS)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetDMISS(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
-		case 977:
-			if(CONFIG::HAS_DCMP)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetDCMP(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
-		case 978:
-			if(CONFIG::HAS_HASH1)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetHASH1(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
-		case 979:
-			if(CONFIG::HAS_HASH2)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetHASH2(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			SetSDA(value);
+			return;
 		case 980:
-			if(CONFIG::HAS_IMISS)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetIMISS(value);
-				return;
-			}
-			if(CONFIG::HAS_TLBMISS)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetTLBMISS(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			SetTLBMISS(value);
+			return;
 		case 981:
-			if(CONFIG::HAS_ICMP)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetICMP(value);
-				return;
-			}
-			if(CONFIG::HAS_PTEHI)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetPTEHI(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			SetPTEHI(value);
+			return;
 		case 982:
-			if(CONFIG::HAS_RPA)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetRPA(value);
-				return;
-			}
-			if(CONFIG::HAS_PTELO)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetPTELO(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
-		case 983:
-			if(CONFIG::HAS_L3PM)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetL3PM(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
-		case 984:
-			if(CONFIG::HAS_L3ITCR0)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetL3ITCR0(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
-		case 985:
-			if(CONFIG::HAS_L2ERRINJHI)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetL2ERRINJHI(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
-		case 986:
-			if(CONFIG::HAS_L2ERRINJLO)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetL2ERRINJLO(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
-		case 987:
-			if(CONFIG::HAS_L2ERRINJCTL)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetL2ERRINJCTL(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
-		case 988:
-			if(CONFIG::HAS_L2CAPTDATAHI)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetL2CAPTDATAHI(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
-		case 989:
-			if(CONFIG::HAS_L2CAPTDATALO)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetL2CAPTDATALO(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
-		case 990:
-			if(CONFIG::HAS_L2CAPTDATAECC)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetL2CAPTDATAECC(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
-		case 991:
-			if(CONFIG::HAS_L2ERRDET)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetL2ERRDET(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
-		case 992:
-			if(CONFIG::HAS_L2ERRDIS)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetL2ERRDIS(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
-		case 993:
-			if(CONFIG::HAS_L2ERRINTEN)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetL2ERRINTEN(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
-		case 994:
-			if(CONFIG::HAS_L2ERRATTR)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetL2ERRATTR(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
-		case 995:
-			if(CONFIG::HAS_L2ERRADDR)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetL2ERRADDR(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
-		case 996:
-			if(CONFIG::HAS_L2ERREADDR)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetL2ERREADDR(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
-		case 997:
-			if(CONFIG::HAS_L2ERRCTL)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetL2ERRCTL(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
-		case 1000:
-			if(CONFIG::HAS_L3OHCR)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetL3OHCR(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			SetPTELO(value);
+			return;
 		case 1008:
-			if(CONFIG::HAS_HID0)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetHID0(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			SetHID0(value);
+			return;
 		case 1009:
-			if(CONFIG::HAS_HID1)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetHID1(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			SetHID1(value);
+			return;
 		case 1010:
-			if(CONFIG::HAS_IABR)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetIABR(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			SetIABR(value);
+			return;
 		case 1011:
-			if(CONFIG::HAS_HID2)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetHID2(value);
-				return;
-			}
-			if(CONFIG::HAS_ICTRL)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetICTRL(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			SetICTRL(value);
+			return;
 		case 1012: // undocumented !!!
-			if(CONFIG::HAS_LDSTDB)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetLDSTDB(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			SetLDSTDB(value);
+			return;
 		case 1013:
-			if(CONFIG::HAS_DABR)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetDABR(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			SetDABR(value);
+			return;
 		case 1014:
-			if(CONFIG::HAS_MSSCR0)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetMSSCR0(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			SetMSSCR0(value);
+			return;
 		case 1015:
-			if(CONFIG::HAS_MSSSR0)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetMSSSR0(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			SetMSSSR0(value);
+			return;
 		case 1016:
-			if(CONFIG::HAS_L2PM)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetL2PM(value);
-				return;
-			}
-			if(CONFIG::HAS_LDSTCR)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetLDSTCR(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			SetLDSTCR(value);
+			return;
 		case 1017:
-			if(CONFIG::HAS_L2CR)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetL2CR(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
-		case 1018:
-			if(CONFIG::HAS_L3CR)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetL3CR(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			SetL2CR(value);
+			return;
 		case 1019:
-			if(CONFIG::HAS_ICTC)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetICTC(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
-		case 1020:
-			if(CONFIG::HAS_THRM1)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetTHRM1(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
-		case 1021:
-			if(CONFIG::HAS_THRM2)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetTHRM2(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
-		case 1022:
-			if(CONFIG::HAS_THRM3)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetTHRM3(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			SetICTC(value);
+			return;
 		case 1023:
-			if(CONFIG::HAS_PIR)
-			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				SetPIR(value);
-				return;
-			}
-			throw IllegalInstructionException<CONFIG>();
+			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			SetPIR(value);
+			return;
 	}
 	throw IllegalInstructionException<CONFIG>();
 }
@@ -1962,19 +1162,19 @@ void CPU<CONFIG>::StepOneInstruction()
 	{
 		do
 		{
-			typename DebugControl<address_t>::DebugCommand dbg_cmd;
+			typename DebugControl<typename CONFIG::address_t>::DebugCommand dbg_cmd;
 
 			dbg_cmd = debug_control_import->FetchDebugCommand(GetCIA());
 	
-			if(dbg_cmd == DebugControl<address_t>::DBG_STEP) break;
-			if(dbg_cmd == DebugControl<address_t>::DBG_SYNC)
+			if(dbg_cmd == DebugControl<typename CONFIG::address_t>::DBG_STEP) break;
+			if(dbg_cmd == DebugControl<typename CONFIG::address_t>::DBG_SYNC)
 			{
 				Synchronize();
 				continue;
 			}
 
-			if(dbg_cmd == DebugControl<address_t>::DBG_KILL) Stop(0);
-			if(dbg_cmd == DebugControl<address_t>::DBG_RESET)
+			if(dbg_cmd == DebugControl<typename CONFIG::address_t>::DBG_KILL) Stop(0);
+			if(dbg_cmd == DebugControl<typename CONFIG::address_t>::DBG_RESET)
 			{
 				if(kernel_loader_import)
 				{
@@ -1984,14 +1184,14 @@ void CPU<CONFIG>::StepOneInstruction()
 		} while(1);
 	}
 
-	address_t sequential_nia = GetCIA() + 4;
-	Operation<CONFIG> *operation = 0;
+	typename CONFIG::address_t sequential_nia = GetCIA() + 4;
+	unisim::component::cxx::processor::powerpc::isa::Operation<CONFIG> *operation = 0;
 
 	SetNIA(sequential_nia);
 
 	try
 	{
-		address_t addr = GetCIA();
+		typename CONFIG::address_t addr = GetCIA();
 		uint32_t insn;
 
 #ifdef SOCLIB
@@ -2006,7 +1206,7 @@ void CPU<CONFIG>::StepOneInstruction()
 		{
 			if(unlikely(cur_insn_in_prefetch_buffer == num_insn_in_prefetch_buffer))
 			{
-				uint32_t size_to_block_boundary = IsInsnCacheEnabled() ? CONFIG::IL1_CONFIG::CACHE_BLOCK_SIZE - (addr & (CONFIG::IL1_CONFIG::CACHE_BLOCK_SIZE - 1)) : FSB_WIDTH - (addr & (FSB_WIDTH - 1));
+				uint32_t size_to_block_boundary = IsInsnCacheEnabled() ? CONFIG::IL1_CONFIG::CACHE_BLOCK_SIZE - (addr & (CONFIG::IL1_CONFIG::CACHE_BLOCK_SIZE - 1)) : CONFIG::FSB_WIDTH - (addr & (CONFIG::FSB_WIDTH - 1));
 				uint32_t size_to_prefetch = size_to_block_boundary > (4 * CONFIG::NUM_PREFETCH_BUFFER_ENTRIES) ? CONFIG::NUM_PREFETCH_BUFFER_ENTRIES / 4 : size_to_block_boundary;
 				// refill the prefetch buffer with up to one cache line, not much
 				EmuFetch(addr, prefetch_buffer, size_to_prefetch);
@@ -2029,10 +1229,10 @@ void CPU<CONFIG>::StepOneInstruction()
 		{
 			if(unlikely(memory_access_reporting_import != 0))
 			{
-				memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_READ, MemoryAccessReporting<address_t>::MT_INSN, addr, 4);
+				memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<typename CONFIG::address_t>::MAT_READ, MemoryAccessReporting<typename CONFIG::address_t>::MT_INSN, addr, 4);
 			}
 		}
-		if(CONFIG::IABR_ENABLE && CONFIG::HAS_IABR)
+		if(CONFIG::IABR_ENABLE)
 		{
 			/* Check for instruction address breakpoint */
 			if(unlikely(GetIABR_BE() && GetIABR_TE() == GetMSR_IR() && ((GetCIA() >> 2) & 0x3fffffffUL) == GetIABR_ADDR()))
@@ -2041,7 +1241,7 @@ void CPU<CONFIG>::StepOneInstruction()
 			}
 		}
 
-		operation = Decoder<CONFIG>::Decode(addr, insn);
+		operation = unisim::component::cxx::processor::powerpc::isa::Decoder<CONFIG>::Decode(addr, insn);
 
 //		stringstream sstr;
 //		operation->disasm((CPU<CONFIG> *) this, sstr);
@@ -2059,15 +1259,14 @@ void CPU<CONFIG>::StepOneInstruction()
 
 		if(unlikely(HasAsynchronousInterrupt()))
 		{
-			if(CONFIG::HAS_HARD_RESET && HasHardReset()) throw SystemResetException<CONFIG>();
-			if(CONFIG::HAS_MCP && HasMCP() && GetHID0_EMCP()) throw MachineCheckException<CONFIG>();
-			if(CONFIG::HAS_TEA && HasTEA()) throw MachineCheckException<CONFIG>();
-			if(CONFIG::HAS_SOFT_RESET && HasSoftReset()) throw SystemResetException<CONFIG>();
-			if(CONFIG::HAS_SMI && HasSMI()) throw SystemManagementInterruptException<CONFIG>();
-			if(CONFIG::HAS_EXTERNAL_INTERRUPT && HasExternalInterrupt() && GetMSR_EE()) throw ExternalInterruptException<CONFIG>();
-			if(CONFIG::HAS_PERFORMANCE_MONITOR_INTERRUPT && HasPerformanceMonitorInterrupt()) throw PerformanceMonitorInterruptException<CONFIG>();
-			if(CONFIG::HAS_DECREMENTER_OVERFLOW && HasDecrementerOverflow() && GetMSR_EE()) throw DecrementerException<CONFIG>();
-			if(CONFIG::HAS_THERMAL_MANAGEMENT_INTERRUPT && HasThermalManagementInterrupt()) throw ThermalManagementInterruptException<CONFIG>();
+			if(HasHardReset()) throw SystemResetException<CONFIG>();
+			if(HasMCP() && GetHID1_EMCP()) throw MachineCheckException<CONFIG>();
+			if(HasTEA()) throw MachineCheckException<CONFIG>();
+			if(HasSoftReset()) throw SystemResetException<CONFIG>();
+			if(HasSMI()) throw SystemManagementInterruptException<CONFIG>();
+			if(HasExternalInterrupt() && GetMSR_EE()) throw ExternalInterruptException<CONFIG>();
+			if(HasPerformanceMonitorInterrupt()) throw PerformanceMonitorInterruptException<CONFIG>();
+			if(HasDecrementerOverflow() && GetMSR_EE()) throw DecrementerException<CONFIG>();
 		}
 	}
 	catch(MachineCheckException<CONFIG>& exc) { HandleException(exc); }
@@ -2076,7 +1275,6 @@ void CPU<CONFIG>::StepOneInstruction()
 	catch(SystemResetException<CONFIG>& exc) { HandleException(exc); }
 	catch(PerformanceMonitorInterruptException<CONFIG>& exc) { HandleException(exc); }
 	catch(SystemManagementInterruptException<CONFIG>& exc) { HandleException(exc); }
-	catch(ThermalManagementInterruptException<CONFIG>& exc) { HandleException(exc); }
 	catch(ISIProtectionViolationException<CONFIG>& exc) { HandleException(exc); }
 	catch(ISINoExecuteException<CONFIG>& exc) { HandleException(exc); }
 	catch(ISIDirectStoreException<CONFIG>& exc) { HandleException(exc); }
@@ -2179,11 +1377,11 @@ void CPU<CONFIG>::OnBusCycle()
 	if(unlikely((bus_cycle % 4) == 0))
 	{
 		/* Update Time base counters */
-		if(CONFIG::HAS_TBU) SetTBU((bus_cycle >> 34) & 0xffffffffUL);
-		if(CONFIG::HAS_TBL) SetTBL((bus_cycle >> 2) & 0xffffffffUL);
+		SetTBU((bus_cycle >> 34) & 0xffffffffUL);
+		SetTBL((bus_cycle >> 2) & 0xffffffffUL);
 		
 		/* std::decrement the decrementer */
-		if(CONFIG::HAS_DEC) SetDEC(GetDEC() - 1);
+		SetDEC(GetDEC() - 1);
 	}
 }
 
@@ -2224,12 +1422,11 @@ void CPU<CONFIG>::SetHID0(uint32_t value)
 		logger << DebugInfo << "Writing 0x" << std::hex << value << std::dec << " into HID0" << endl << EndDebugInfo;
 	uint32_t old_hid0_ice = GetHID0_ICE();
 	uint32_t old_hid0_dce = GetHID0_DCE();
-	uint32_t old_hid0_abe = GetHID0_ABE();
 	uint32_t old_hid0_nap = GetHID0_NAP();
 
-	hid0 = (hid0 & ~HID0_MASK) | (value & HID0_MASK);
+	hid0 = (hid0 & ~CONFIG::HID0_MASK) | (value & CONFIG::HID0_MASK);
 
-	if(CONFIG::IL1_CONFIG::ENABLE && CONFIG::HAS_HID0_ICE)
+	if(CONFIG::IL1_CONFIG::ENABLE)
 	{
 		if(!old_hid0_ice && GetHID0_ICE())
 		{
@@ -2244,7 +1441,7 @@ void CPU<CONFIG>::SetHID0(uint32_t value)
 		}
 	}
 	
-	if(CONFIG::DL1_CONFIG::ENABLE && CONFIG::HAS_HID0_DCE)
+	if(CONFIG::DL1_CONFIG::ENABLE)
 	{
 		if(!old_hid0_dce && GetHID0_DCE())
 		{
@@ -2259,80 +1456,56 @@ void CPU<CONFIG>::SetHID0(uint32_t value)
 		}
 	}
 	
-	if(CONFIG::HAS_HID0_ICFI)
+	if(GetHID0_ICFI())
 	{
-		if(GetHID0_ICFI())
+		if(CONFIG::IL1_CONFIG::ENABLE)
 		{
-			if(CONFIG::IL1_CONFIG::ENABLE)
+			if(unlikely(IsVerboseSetHID0()))
+				logger << DebugInfo << "Flash Invalidating L1 Insn Cache" << endl << EndDebugInfo;
+			InvalidateIL1();
+		}
+		unisim::component::cxx::processor::powerpc::isa::Decoder<CONFIG>::InvalidateDecodingCache();
+		ResetHID0_ICFI();
+	}
+
+	if(GetHID0_DCFI())
+	{
+		if(CONFIG::DL1_CONFIG::ENABLE)
+		{
+			if(unlikely(IsVerboseSetHID0()))
+				logger << DebugInfo << "Flash Invalidating L1 Data Cache" << endl << EndDebugInfo;
+			InvalidateDL1();
+		}
+		ResetHID0_DCFI();
+	}
+
+	if(!old_hid0_nap && GetHID0_NAP())
+	{
+		if(unlikely(IsVerboseSetHID0()))
+			logger << DebugInfo << "Enabling NAP mode" << endl << EndDebugInfo;
+		if(GetMSR_POW())
+		{
+			if(unlikely(IsVerboseSetHID0()))
 			{
-				if(unlikely(IsVerboseSetHID0()))
-					logger << DebugInfo << "Flash Invalidating L1 Insn Cache" << endl << EndDebugInfo;
-				InvalidateIL1();
+				logger << DebugInfo << "Entering NAP mode" << endl << EndDebugInfo;
 			}
-			Decoder<CONFIG>::InvalidateDecodingCache();
-			ResetHID0_ICFI();
+			if(GetMSR_EE())
+			{
+				Idle();
+			}
+			//CPU<CONFIG>::ResetMSR_POW();
 		}
 	}
 
-	if(CONFIG::HAS_HID0_DCFI)
+	if(old_hid0_nap && !GetHID0_NAP())
 	{
-		if(GetHID0_DCFI())
+		if(unlikely(IsVerboseSetHID0()))
+			logger << DebugInfo << "Disabling NAP mode" << endl << EndDebugInfo;
+		if(GetMSR_POW())
 		{
-			if(CONFIG::DL1_CONFIG::ENABLE)
+			if(unlikely(IsVerboseSetHID0()))
 			{
-				if(unlikely(IsVerboseSetHID0()))
-					logger << DebugInfo << "Flash Invalidating L1 Data Cache" << endl << EndDebugInfo;
-				InvalidateDL1();
-			}
-			ResetHID0_DCFI();
-		}
-	}
-
-	if(CONFIG::HAS_HID0_ABE)
-	{
-		if(!old_hid0_abe && GetHID0_ABE())
-		{
-			if(unlikely(IsVerboseSetHID0()))
-				logger << DebugInfo << "Enabling Address Only broadcast" << endl << EndDebugInfo;
-		}
-
-		if(old_hid0_abe && !GetHID0_ABE())
-		{
-			if(unlikely(IsVerboseSetHID0()))
-				logger << DebugInfo << "Disabling Address Only broadcast" << endl << EndDebugInfo;
-		}
-	}
-
-	if(CONFIG::HAS_HID0_NAP)
-	{
-		if(!old_hid0_nap && GetHID0_NAP())
-		{
-			if(unlikely(IsVerboseSetHID0()))
-				logger << DebugInfo << "Enabling NAP mode" << endl << EndDebugInfo;
-			if(GetMSR_POW())
-			{
-				if(unlikely(IsVerboseSetHID0()))
-				{
-					logger << DebugInfo << "Entering NAP mode" << endl << EndDebugInfo;
-				}
-				if(GetMSR_EE())
-				{
-					Idle();
-				}
-				//CPU<CONFIG>::ResetMSR_POW();
-			}
-		}
-
-		if(old_hid0_nap && !GetHID0_NAP())
-		{
-			if(unlikely(IsVerboseSetHID0()))
-				logger << DebugInfo << "Disabling NAP mode" << endl << EndDebugInfo;
-			if(GetMSR_POW())
-			{
-				if(unlikely(IsVerboseSetHID0()))
-				{
-					logger << DebugInfo << "Leaving NAP mode" << endl << EndDebugInfo;
-				}
+				logger << DebugInfo << "Leaving NAP mode" << endl << EndDebugInfo;
 			}
 		}
 	}
@@ -2343,137 +1516,93 @@ void CPU<CONFIG>::SetHID1(uint32_t value)
 {
 	uint32_t old_hid1_abe = GetHID1_ABE();
 
-	hid1 = (hid1 & ~HID1_MASK) | (value & HID1_MASK);
+	hid1 = (hid1 & ~CONFIG::HID1_MASK) | (value & CONFIG::HID1_MASK);
 
-	if(CONFIG::HAS_HID1_ABE)
+	if(!old_hid1_abe && GetHID1_ABE())
 	{
-		if(!old_hid1_abe && GetHID1_ABE())
-		{
-			if(unlikely(IsVerboseSetHID1()))
-				logger << DebugInfo << "Enabling Address Only broadcast" << endl << EndDebugInfo;
-		}
-
-		if(old_hid1_abe && !GetHID1_ABE())
-		{
-			if(unlikely(IsVerboseSetHID1()))
-				logger << DebugInfo << "Disabling Address Only broadcast" << endl << EndDebugInfo;
-		}
-	}
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::SetHID2(uint32_t value)
-{
-	uint32_t old_hid2_swt_en = GetHID2_SWT_EN();
-	uint32_t old_hid2_high_bat_en = GetHID2_HIGH_BAT_EN();
-
-	hid2 = (hid2 & ~HID2_MASK) | (value & HID2_MASK);
-
-	if(CONFIG::HAS_HID2_SWT_EN)
-	{
-		if(!old_hid2_swt_en && GetHID2_SWT_EN())
-		{
-			if(unlikely(IsVerboseSetHID2()))
-				logger << DebugInfo << "Enabling Software Table Search" << endl << EndDebugInfo;
-		}
-	
-		if(old_hid2_swt_en && !GetHID2_SWT_EN())
-		{
-			if(unlikely(IsVerboseSetHID2()))
-				logger << DebugInfo << "Disabling Software Table Search" << endl << EndDebugInfo;
-		}
+		if(unlikely(IsVerboseSetHID1()))
+			logger << DebugInfo << "Enabling Address Only broadcast" << endl << EndDebugInfo;
 	}
 
-	if(CONFIG::HAS_HID2_HIGH_BAT_EN)
+	if(old_hid1_abe && !GetHID1_ABE())
 	{
-		if(!old_hid2_high_bat_en && GetHID2_HIGH_BAT_EN())
-		{
-			if(unlikely(IsVerboseSetHID2()))
-				logger << DebugInfo << "Enabling IBAT[4-7] and DBAT[4-7]" << endl << EndDebugInfo;
-		}
-		
-		if(old_hid2_high_bat_en && !GetHID2_HIGH_BAT_EN())
-		{
-			if(unlikely(IsVerboseSetHID2()))
-				logger << DebugInfo << "Disabling IBAT[4-7] and DBAT[4-7]" << endl << EndDebugInfo;
-		}
+		if(unlikely(IsVerboseSetHID1()))
+			logger << DebugInfo << "Disabling Address Only broadcast" << endl << EndDebugInfo;
 	}
 }
 
 template <class CONFIG>
 void CPU<CONFIG>::SetSupervisorPrivilegeLevel()
 {
-	if(CONFIG::HAS_MSR_PR) ResetMSR_PR();
+	ResetMSR_PR();
 }
 
 template <class CONFIG>
 void CPU<CONFIG>::SetUserPrivilegeLevel()
 {
-	if(CONFIG::HAS_MSR_PR) SetMSR_PR();
+	SetMSR_PR();
 }
 
 template <class CONFIG>
 void CPU<CONFIG>::EnableFPU()
 {
-	if(CONFIG::HAS_MSR_FP) SetMSR_FP();   // enable floating point unit
+	SetMSR_FP();   // enable floating point unit
 }
 
 template <class CONFIG>
 void CPU<CONFIG>::DisableFPU()
 {
-	if(CONFIG::HAS_MSR_FP) ResetMSR_FP();   // disable floating point unit
+	ResetMSR_FP();   // disable floating point unit
 }
 
 template <class CONFIG>
 void CPU<CONFIG>::EnableDataCache()
 {
-	if(CONFIG::HAS_HID0_DCE) SetHID0_DCE();
+	SetHID0_DCE();
 }
 
 template <class CONFIG>
 void CPU<CONFIG>::DisableDataCache()
 {
-	if(CONFIG::HAS_HID0_DCE) ResetHID0_DCE();
+	ResetHID0_DCE();
 }
 
 template <class CONFIG>
 void CPU<CONFIG>::EnableInsnCache()
 {
-	if(CONFIG::HAS_HID0_ICE) SetHID0_ICE();
+	SetHID0_ICE();
 }
 
 template <class CONFIG>
 void CPU<CONFIG>::DisableInsnCache()
 {
-	if(CONFIG::HAS_HID0_ICE) SetHID0_ICE();
+	SetHID0_ICE();
 }
 
 template <class CONFIG>
 void CPU<CONFIG>::EnableL2Cache()
 {
-	if(CONFIG::HAS_L2CR_L2E) SetL2CR_L2E();
+	SetL2CR_L2E();
 }
 
 template <class CONFIG>
 void CPU<CONFIG>::DisableL2Cache()
 {
-	if(CONFIG::HAS_L2CR_L2E) ResetL2CR_L2E();
+	ResetL2CR_L2E();
 }
 
 template <class CONFIG>
 void CPU<CONFIG>::EnableAddressBroadcast()
 {
 	// enable address only broadcast
-	if(CONFIG::HAS_HID0_ABE) SetHID0_ABE();
-	if(CONFIG::HAS_HID1_ABE) SetHID1_ABE();
+	SetHID1_ABE();
 }
 
 template <class CONFIG>
 void CPU<CONFIG>::DisableAddressBroadcast()
 {
 	// enable address only broadcast
-	if(CONFIG::HAS_HID0_ABE) ResetHID0_ABE();
-	if(CONFIG::HAS_HID1_ABE) ResetHID1_ABE();
+	ResetHID1_ABE();
 }
 
 template <class CONFIG>
@@ -2485,32 +1614,32 @@ inline bool CPU<CONFIG>::IsFPUEnabled()
 template <class CONFIG>
 inline bool CPU<CONFIG>::IsFPUExceptionEnabled()
 {
-	return (CONFIG::HAS_MSR_FE0 && GetMSR_FE0()) | (CONFIG::HAS_MSR_FE1 && GetMSR_FE1());
+	return GetMSR_FE0() || GetMSR_FE1();
 }
 
 template <class CONFIG>
 inline bool CPU<CONFIG>::IsDataCacheEnabled()
 {
-	return CONFIG::DL1_CONFIG::ENABLE && (!CONFIG::HAS_HID0_DCE || (CONFIG::HAS_HID0_DCE && GetHID0_DCE()));
+	return CONFIG::DL1_CONFIG::ENABLE && GetHID0_DCE();
 }
 
 template <class CONFIG>
 inline bool CPU<CONFIG>::IsInsnCacheEnabled()
 {
-	return CONFIG::IL1_CONFIG::ENABLE && (!CONFIG::HAS_HID0_ICE || (CONFIG::HAS_HID0_ICE && GetHID0_ICE()));
+	return CONFIG::IL1_CONFIG::ENABLE && GetHID0_ICE();
 }
 
 template <class CONFIG>
 inline bool CPU<CONFIG>::IsL2CacheEnabled()
 {
-	return CONFIG::L2_CONFIG::ENABLE && (!CONFIG::HAS_L2CR_L2E || (CONFIG::HAS_L2CR_L2E && GetL2CR_L2E()));
+	return CONFIG::L2_CONFIG::ENABLE && GetL2CR_L2E();
 }
 
 
 template <class CONFIG>
 inline bool CPU<CONFIG>::IsAddressBroadcastEnabled()
 {
-	return (!CONFIG::HAS_HID0_ABE || (CONFIG::HAS_HID0_ABE &&  GetHID0_ABE())) && (!CONFIG::HAS_HID1_ABE || (CONFIG::HAS_HID1_ABE &&  GetHID1_ABE()));
+	return GetHID1_ABE() != 0;
 }
 
 template <class CONFIG>
@@ -2520,7 +1649,7 @@ void CPU<CONFIG>::SetL2CR(uint32_t value)
 
 	l2cr = value;
 
-	if(CONFIG::L2_CONFIG::ENABLE && CONFIG::HAS_L2CR_L2E)
+	if(CONFIG::L2_CONFIG::ENABLE)
 	{
 		if(!old_l2cr_l2e && GetL2CR_L2E())
 		{
@@ -2535,32 +1664,22 @@ void CPU<CONFIG>::SetL2CR(uint32_t value)
 		}
 	}
 
-	if(CONFIG::HAS_L2CR_L2I)
+	if(GetL2CR_L2I())
 	{
-		if(GetL2CR_L2I())
+		if(old_l2cr_l2e)
 		{
-			if(old_l2cr_l2e)
-			{
-				if(unlikely(IsVerboseSetL2CR()))
-					logger << DebugWarning << "L2 Cache should be disabled prior a flash invalidation" << endl << EndDebugWarning;
-			}
-			
 			if(unlikely(IsVerboseSetL2CR()))
-				logger << DebugInfo << "Flash Invalidating L2 Cache" << endl << EndDebugInfo;
-			Decoder<CONFIG>::InvalidateDecodingCache();
-			if(CONFIG::L2_CONFIG::ENABLE)
-			{
-				InvalidateL2();
-			}
-			if(CONFIG::HAS_L2CR_L2IP)
-			{
-				ResetL2CR_L2IP();
-			}
-			if(IsMPC7XXX())
-			{
-				ResetL2CR_L2I();
-			}
+				logger << DebugWarning << "L2 Cache should be disabled prior a flash invalidation" << endl << EndDebugWarning;
 		}
+		
+		if(unlikely(IsVerboseSetL2CR()))
+			logger << DebugInfo << "Flash Invalidating L2 Cache" << endl << EndDebugInfo;
+		unisim::component::cxx::processor::powerpc::isa::Decoder<CONFIG>::InvalidateDecodingCache();
+		if(CONFIG::L2_CONFIG::ENABLE)
+		{
+			InvalidateL2();
+		}
+		ResetL2CR_L2I();
 	}
 }
 
@@ -2572,107 +1691,89 @@ void CPU<CONFIG>::SetMSR(uint32_t value)
 	uint32_t old_msr_fp = GetMSR_FP();
 	uint32_t old_msr_pr = GetMSR_PR();
 	uint32_t old_msr_le = GetMSR_LE();
-	uint32_t old_msr_fe = (CONFIG::HAS_MSR_FE0 ? GetMSR_FE0() : 0) | (CONFIG::HAS_MSR_FE1 ? GetMSR_FE1() : 0);
+	uint32_t old_msr_fe = GetMSR_FE0() | GetMSR_FE1();
 	uint32_t old_msr_pow = GetMSR_POW();
 
 	msr = (msr & ~CONFIG::MSR_MASK) | (value & CONFIG::MSR_MASK);
 
-	if(CONFIG::HAS_MSR_IR)
+	if(!old_msr_ir && GetMSR_IR())
 	{
-		if(!old_msr_ir && GetMSR_IR())
-		{
-			if(unlikely(IsVerboseSetMSR()))
-				logger << DebugInfo << "Enabling IMMU" << endl << EndDebugInfo;
-		}
-	
-		if(old_msr_ir && !GetMSR_IR())
-		{
-			if(unlikely(IsVerboseSetMSR()))
-				logger << DebugInfo << "Disabling IMMU" << endl << EndDebugInfo;
-		}
+		if(unlikely(IsVerboseSetMSR()))
+			logger << DebugInfo << "Enabling IMMU" << endl << EndDebugInfo;
 	}
 
-	if(CONFIG::HAS_MSR_DR)
+	if(old_msr_ir && !GetMSR_IR())
 	{
-		if(!old_msr_dr && GetMSR_DR())
-		{
-			if(unlikely(IsVerboseSetMSR()))
-				logger << DebugInfo << "Enabling DMMU" << endl << EndDebugInfo;
-		}
-		
-		if(old_msr_dr && !GetMSR_DR())	
-		{
-			if(unlikely(IsVerboseSetMSR()))
-				logger << DebugInfo << "Disabling DMMU" << endl << EndDebugInfo;
-		}
+		if(unlikely(IsVerboseSetMSR()))
+			logger << DebugInfo << "Disabling IMMU" << endl << EndDebugInfo;
 	}
 
-	if(CONFIG::HAS_MSR_FP)
+	if(!old_msr_dr && GetMSR_DR())
 	{
-		if(!old_msr_fp && GetMSR_FP())
-		{
-			if(unlikely(IsVerboseSetMSR()))
-				logger << DebugInfo << "Enabling FPU" << endl << EndDebugInfo;
-		}
+		if(unlikely(IsVerboseSetMSR()))
+			logger << DebugInfo << "Enabling DMMU" << endl << EndDebugInfo;
+	}
 	
-		if(old_msr_fp && !GetMSR_FP())
-		{
-			if(unlikely(IsVerboseSetMSR()))
-				logger << DebugInfo << "Disabling FPU" << endl << EndDebugInfo;
-		}
+	if(old_msr_dr && !GetMSR_DR())	
+	{
+		if(unlikely(IsVerboseSetMSR()))
+			logger << DebugInfo << "Disabling DMMU" << endl << EndDebugInfo;
 	}
 
-	if(CONFIG::HAS_MSR_FE0 || CONFIG::HAS_MSR_FE1)
+	if(!old_msr_fp && GetMSR_FP())
 	{
-		uint32_t msr_fe = (CONFIG::HAS_MSR_FE0 ? GetMSR_FE0() : 0) | (CONFIG::HAS_MSR_FE1 ? GetMSR_FE1() : 0);
-		if(!old_msr_fe && msr_fe)
-		{
-			if(unlikely(IsVerboseSetMSR()))
-				logger << DebugInfo << "Enabling FPU exception" << endl << EndDebugInfo;
-		}
-	
-		if(old_msr_fe && !msr_fe)
-		{
-			if(unlikely(IsVerboseSetMSR()))
-				logger << DebugInfo << "Disabling FPU exception" << endl << EndDebugInfo;
-		}
+		if(unlikely(IsVerboseSetMSR()))
+			logger << DebugInfo << "Enabling FPU" << endl << EndDebugInfo;
 	}
 
-	if(CONFIG::HAS_MSR_PR)
+	if(old_msr_fp && !GetMSR_FP())
 	{
-		if(!old_msr_pr && GetMSR_PR())
-		{
-			if(unlikely(IsVerboseSetMSR()))
-				logger << DebugInfo << "Switching to user privilege level" << endl << EndDebugInfo;
-		}
-	
-		if(old_msr_pr && !GetMSR_PR())
-		{
-			if(unlikely(IsVerboseSetMSR()))
-				logger << DebugInfo << "Switching to supervisor privilege level" << endl << EndDebugInfo;
-		}
+		if(unlikely(IsVerboseSetMSR()))
+			logger << DebugInfo << "Disabling FPU" << endl << EndDebugInfo;
 	}
 
-	if(CONFIG::HAS_MSR_LE)
+	uint32_t msr_fe = GetMSR_FE0() | GetMSR_FE1();
+	if(!old_msr_fe && msr_fe)
 	{
-		if(!old_msr_le && GetMSR_LE())
-		{
-			if(unlikely(IsVerboseSetMSR()))
-				logger << DebugInfo << "Switching to little endian" << endl << EndDebugInfo;
-		}
-	
-		if(old_msr_le && !GetMSR_LE())
-		{
-			if(unlikely(IsVerboseSetMSR()))
-				logger << DebugInfo << "Switching to big endian" << endl << EndDebugInfo;
-		}
+		if(unlikely(IsVerboseSetMSR()))
+			logger << DebugInfo << "Enabling FPU exception" << endl << EndDebugInfo;
+	}
+
+	if(old_msr_fe && !msr_fe)
+	{
+		if(unlikely(IsVerboseSetMSR()))
+			logger << DebugInfo << "Disabling FPU exception" << endl << EndDebugInfo;
+	}
+
+	if(!old_msr_pr && GetMSR_PR())
+	{
+		if(unlikely(IsVerboseSetMSR()))
+			logger << DebugInfo << "Switching to user privilege level" << endl << EndDebugInfo;
+	}
+
+	if(old_msr_pr && !GetMSR_PR())
+	{
+		if(unlikely(IsVerboseSetMSR()))
+			logger << DebugInfo << "Switching to supervisor privilege level" << endl << EndDebugInfo;
+	}
+
+	if(!old_msr_le && GetMSR_LE())
+	{
+		if(unlikely(IsVerboseSetMSR()))
+			logger << DebugInfo << "Switching to little endian" << endl << EndDebugInfo;
+	}
+
+	if(old_msr_le && !GetMSR_LE())
+	{
+		if(unlikely(IsVerboseSetMSR()))
+			logger << DebugInfo << "Switching to big endian" << endl << EndDebugInfo;
 	}
 	
 	if(!old_msr_pow && GetMSR_POW())
 	{
 		if(unlikely(IsVerboseSetMSR()))
 			logger << DebugInfo << "Enabling power management" << endl << EndDebugInfo;
-		if(CONFIG::HAS_HID0_NAP && GetHID0_NAP())
+		if(GetHID0_NAP())
 		{
 			if(unlikely(IsVerboseSetMSR()))
 			{
@@ -2691,7 +1792,7 @@ void CPU<CONFIG>::SetMSR(uint32_t value)
 		if(unlikely(IsVerboseSetMSR()))
 			logger << DebugInfo << "Disabling power management" << endl << EndDebugInfo;
 
-		if(CONFIG::HAS_HID0_NAP && GetHID0_NAP())
+		if(GetHID0_NAP())
 		{
 			if(unlikely(IsVerboseSetMSR()))
 			{
@@ -2715,11 +1816,11 @@ void CPU<CONFIG>::SetDEC(uint32_t value)
 }
 
 template <class CONFIG>
-string CPU<CONFIG>::GetObjectFriendlyName(address_t addr)
+string CPU<CONFIG>::GetObjectFriendlyName(typename CONFIG::address_t addr)
 {
 	stringstream sstr;
 	
-	const Symbol<address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(addr, Symbol<address_t>::SYM_OBJECT) : 0;
+	const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(addr, Symbol<typename CONFIG::address_t>::SYM_OBJECT) : 0;
 	if(symbol)
 		sstr << symbol->GetFriendlyName(addr);
 	else
@@ -2729,11 +1830,11 @@ string CPU<CONFIG>::GetObjectFriendlyName(address_t addr)
 }
 
 template <class CONFIG>
-string CPU<CONFIG>::GetFunctionFriendlyName(address_t addr)
+string CPU<CONFIG>::GetFunctionFriendlyName(typename CONFIG::address_t addr)
 {
 	stringstream sstr;
 	
-	const Symbol<address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(addr, Symbol<address_t>::SYM_FUNC) : 0;
+	const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(addr, Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
 	if(symbol)
 		sstr << symbol->GetFriendlyName(addr);
 	else
@@ -2761,19 +1862,19 @@ const char *CPU<CONFIG>::GetArchitectureName() const
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::BusRead(physical_address_t physical_addr, void *buffer, uint32_t size, WIMG wimg, bool rwitm)
+void CPU<CONFIG>::BusRead(typename CONFIG::physical_address_t physical_addr, void *buffer, uint32_t size, typename CONFIG::WIMG wimg, bool rwitm)
 {
 	memory_import->ReadMemory(physical_addr, buffer, size);
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::BusWrite(physical_address_t physical_addr, const void *buffer, uint32_t size, WIMG wimg)
+void CPU<CONFIG>::BusWrite(typename CONFIG::physical_address_t physical_addr, const void *buffer, uint32_t size, typename CONFIG::WIMG wimg)
 {
 	memory_import->WriteMemory(physical_addr, buffer, size);
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::BusZeroBlock(physical_address_t physical_addr)
+void CPU<CONFIG>::BusZeroBlock(typename CONFIG::physical_address_t physical_addr)
 {
 	uint8_t zero[32];
 	memset(zero, 0, sizeof(zero));
@@ -2781,7 +1882,7 @@ void CPU<CONFIG>::BusZeroBlock(physical_address_t physical_addr)
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::BusFlushBlock(physical_address_t physical_addr)
+void CPU<CONFIG>::BusFlushBlock(typename CONFIG::physical_address_t physical_addr)
 {
 }
 
@@ -3431,7 +2532,7 @@ void CPU<CONFIG>::UpdateReplacementPolicyL2(CacheAccess<typename CONFIG::L2_CONF
 }
 
 template <class CONFIG>
-inline void CPU<CONFIG>::EmuFillDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_access, WIMG wimg, bool rwitm)
+inline void CPU<CONFIG>::EmuFillDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_access, typename CONFIG::WIMG wimg, bool rwitm)
 {
 	l1_access.block = &(*l1_access.line)[l1_access.sector];
 	if(unlikely(unlikely(IsVerboseDL1())))
@@ -3491,7 +2592,7 @@ inline void CPU<CONFIG>::EmuFillDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1
 }
 
 template <class CONFIG>
-inline void CPU<CONFIG>::EmuFillIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_access, WIMG wimg)
+inline void CPU<CONFIG>::EmuFillIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_access, typename CONFIG::WIMG wimg)
 {
 	l1_access.block = &(*l1_access.line)[l1_access.sector];
 	if(unlikely(IsVerboseIL1()))
@@ -3550,7 +2651,7 @@ inline void CPU<CONFIG>::EmuFillIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::EmuFillL2(CacheAccess<typename CONFIG::L2_CONFIG>& l2_access, WIMG wimg, bool rwitm)
+void CPU<CONFIG>::EmuFillL2(CacheAccess<typename CONFIG::L2_CONFIG>& l2_access, typename CONFIG::WIMG wimg, bool rwitm)
 {
 	l2_access.block = &(*l2_access.line)[l2_access.sector];
 	if(unlikely(IsVerboseL2()))
@@ -3567,8 +2668,8 @@ void CPU<CONFIG>::EmuFillL2(CacheAccess<typename CONFIG::L2_CONFIG>& l2_access, 
 template <class CONFIG>
 void CPU<CONFIG>::EmuFetch(typename CONFIG::address_t addr, void *buffer, uint32_t size)
 {
-	WIMG wimg;
-	physical_address_t physical_addr;
+	typename CONFIG::WIMG wimg;
+	typename CONFIG::physical_address_t physical_addr;
 
 	if(GetMSR_IR())
 	{
@@ -3591,7 +2692,7 @@ void CPU<CONFIG>::EmuFetch(typename CONFIG::address_t addr, void *buffer, uint32
 		// I=0: Cache not inhibited
 		// M=1: Memory coherency enforced
 		// G=1: Guarded memory access (speculative fetch forbidden)
-		wimg = (WIMG)(CONFIG::WIMG_MEMORY_COHERENCY_ENFORCED | CONFIG::WIMG_GUARDED_MEMORY);
+		wimg = (typename CONFIG::WIMG)(CONFIG::WIMG_MEMORY_COHERENCY_ENFORCED | CONFIG::WIMG_GUARDED_MEMORY);
 		physical_addr = addr;
 	}
 
@@ -3645,10 +2746,10 @@ void CPU<CONFIG>::EmuFetch(typename CONFIG::address_t addr, void *buffer, uint32
 
 template <class CONFIG>
 template <bool TRANSLATE_ADDR>
-void CPU<CONFIG>::EmuLoad(address_t addr, void *buffer, uint32_t size)
+void CPU<CONFIG>::EmuLoad(typename CONFIG::address_t addr, void *buffer, uint32_t size)
 {
-	WIMG wimg;
-	physical_address_t physical_addr;
+	typename CONFIG::WIMG wimg;
+	typename CONFIG::physical_address_t physical_addr;
 
 	memset(buffer, 0, size);
 	
@@ -3673,7 +2774,7 @@ void CPU<CONFIG>::EmuLoad(address_t addr, void *buffer, uint32_t size)
 		// I=0: Cache not inhibited
 		// M=1: Memory coherency enforced
 		// G=1: Guarded memory access (speculative fetch forbidden)
-		wimg = (WIMG)(CONFIG::WIMG_MEMORY_COHERENCY_ENFORCED | CONFIG::WIMG_GUARDED_MEMORY);
+		wimg = (typename CONFIG::WIMG)(CONFIG::WIMG_MEMORY_COHERENCY_ENFORCED | CONFIG::WIMG_GUARDED_MEMORY);
 		physical_addr = addr;
 	}
 	
@@ -3737,7 +2838,7 @@ void CPU<CONFIG>::EmuLoad(address_t addr, void *buffer, uint32_t size)
 
 template <class CONFIG>
 template <bool TRANSLATE_ADDR>
-void CPU<CONFIG>::EmuStore(address_t addr, const void *buffer, uint32_t size)
+void CPU<CONFIG>::EmuStore(typename CONFIG::address_t addr, const void *buffer, uint32_t size)
 {
 	if(unlikely(IsVerboseStore()))
 	{
@@ -3752,8 +2853,8 @@ void CPU<CONFIG>::EmuStore(address_t addr, const void *buffer, uint32_t size)
 		}
 		logger << "(" << size << " bytes) at 0x" << std::hex << addr << std::dec << endl << EndDebugInfo;
 	}
-	WIMG wimg;
-	physical_address_t physical_addr;
+	typename CONFIG::WIMG wimg;
+	typename CONFIG::physical_address_t physical_addr;
 	
 	if(TRANSLATE_ADDR && GetMSR_DR())
 	{
@@ -3776,7 +2877,7 @@ void CPU<CONFIG>::EmuStore(address_t addr, const void *buffer, uint32_t size)
 		// I=0: Cache not inhibited
 		// M=1: Memory coherency enforced
 		// G=1: Guarded memory access (speculative fetch forbidden)
-		wimg = (WIMG)(CONFIG::WIMG_MEMORY_COHERENCY_ENFORCED | CONFIG::WIMG_GUARDED_MEMORY);
+		wimg = (typename CONFIG::WIMG)(CONFIG::WIMG_MEMORY_COHERENCY_ENFORCED | CONFIG::WIMG_GUARDED_MEMORY);
 		physical_addr = addr;
 	}
 
@@ -3847,10 +2948,10 @@ void CPU<CONFIG>::EmuStore(address_t addr, const void *buffer, uint32_t size)
 
 template <class CONFIG>
 template <class T>
-inline void CPU<CONFIG>::EmuLoad(T& value, address_t ea)
+inline void CPU<CONFIG>::EmuLoad(T& value, typename CONFIG::address_t ea)
 {
 	// Data Address Breakpoint handling
-	if(CONFIG::DABR_ENABLE && CONFIG::HAS_DABR)
+	if(CONFIG::DABR_ENABLE)
 	{
 		if(unlikely(GetDABR_DR() && ((ea >> 3) & 0x1fffffffUL) == GetDABR_DAB() && GetMSR_DR() == GetDABR_BT()))
 		{
@@ -3859,9 +2960,9 @@ inline void CPU<CONFIG>::EmuLoad(T& value, address_t ea)
 	}
 
 	// Address munging
-	address_t munged_ea = MungEffectiveAddress(ea, sizeof(T));
+	typename CONFIG::address_t munged_ea = MungEffectiveAddress(ea, sizeof(T));
 
-	uint32_t size_to_fsb_boundary = FSB_WIDTH - (munged_ea & (FSB_WIDTH - 1));
+	uint32_t size_to_fsb_boundary = CONFIG::FSB_WIDTH - (munged_ea & (CONFIG::FSB_WIDTH - 1));
 
 	// Ensure that memory access does not cross a FSB boundary
 	if(likely(size_to_fsb_boundary >= sizeof(T)))
@@ -3879,10 +2980,10 @@ inline void CPU<CONFIG>::EmuLoad(T& value, address_t ea)
 
 template <class CONFIG>
 template <class T>
-inline void CPU<CONFIG>::EmuStore(T value, address_t ea)
+inline void CPU<CONFIG>::EmuStore(T value, typename CONFIG::address_t ea)
 {
 	// Data Address	Breakpoint handling
-	if(CONFIG::DABR_ENABLE && CONFIG::HAS_DABR)
+	if(CONFIG::DABR_ENABLE)
 	{
 		if(unlikely(GetDABR_DW() && ((ea >> 3) & 0x1fffffffUL) == GetDABR_DAB() && GetMSR_DR() == GetDABR_BT()))
 		{
@@ -3891,9 +2992,9 @@ inline void CPU<CONFIG>::EmuStore(T value, address_t ea)
 	}
 
 	// Address munging
-	address_t munged_ea = MungEffectiveAddress(ea, sizeof(T));
+	typename CONFIG::address_t munged_ea = MungEffectiveAddress(ea, sizeof(T));
 
-	uint32_t size_to_fsb_boundary = FSB_WIDTH - (munged_ea & (FSB_WIDTH - 1));
+	uint32_t size_to_fsb_boundary = CONFIG::FSB_WIDTH - (munged_ea & (CONFIG::FSB_WIDTH - 1));
 
 	// Ensure that memory access does not cross a FSB boundary
 	if(likely(size_to_fsb_boundary >= sizeof(T)))
@@ -3910,27 +3011,27 @@ inline void CPU<CONFIG>::EmuStore(T value, address_t ea)
 }
 
 template <class CONFIG>
-inline void CPU<CONFIG>::MonitorLoad(address_t ea, uint32_t size)
+inline void CPU<CONFIG>::MonitorLoad(typename CONFIG::address_t ea, uint32_t size)
 {
 	// Memory access reporting
 	if(unlikely(requires_memory_access_reporting && memory_access_reporting_import))
 	{
-		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_READ, MemoryAccessReporting<address_t>::MT_DATA, ea, size);
+		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<typename CONFIG::address_t>::MAT_READ, MemoryAccessReporting<typename CONFIG::address_t>::MT_DATA, ea, size);
 	}
 }
 
 template <class CONFIG>
-inline void CPU<CONFIG>::MonitorStore(address_t ea, uint32_t size)
+inline void CPU<CONFIG>::MonitorStore(typename CONFIG::address_t ea, uint32_t size)
 {
 	// Memory access reporting
 	if(unlikely(requires_memory_access_reporting && memory_access_reporting_import))
 	{
-		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_WRITE, MemoryAccessReporting<address_t>::MT_DATA, ea, size);
+		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<typename CONFIG::address_t>::MAT_WRITE, MemoryAccessReporting<typename CONFIG::address_t>::MT_DATA, ea, size);
 	}
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Int8Load(unsigned int rd, address_t ea)
+void CPU<CONFIG>::Int8Load(unsigned int rd, typename CONFIG::address_t ea)
 {
 #ifdef SOCLIB
 	GenLoadStore(LoadStoreAccess<CONFIG>::INT8_LOAD, rd, MungEffectiveAddress(ea, 1), 1);
@@ -3944,7 +3045,7 @@ void CPU<CONFIG>::Int8Load(unsigned int rd, address_t ea)
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Int16Load(unsigned int rd, address_t ea)
+void CPU<CONFIG>::Int16Load(unsigned int rd, typename CONFIG::address_t ea)
 {
 #ifdef SOCLIB
 	GenLoadStore(LoadStoreAccess<CONFIG>::INT16_LOAD, rd, MungEffectiveAddress(ea, 2), 2);
@@ -3958,7 +3059,7 @@ void CPU<CONFIG>::Int16Load(unsigned int rd, address_t ea)
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::SInt16Load(unsigned int rd, address_t ea)
+void CPU<CONFIG>::SInt16Load(unsigned int rd, typename CONFIG::address_t ea)
 {
 #ifdef SOCLIB
 	GenLoadStore(LoadStoreAccess<CONFIG>::SINT16_LOAD, rd, ea, 2);
@@ -3972,7 +3073,7 @@ void CPU<CONFIG>::SInt16Load(unsigned int rd, address_t ea)
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Int32Load(unsigned int rd, address_t ea)
+void CPU<CONFIG>::Int32Load(unsigned int rd, typename CONFIG::address_t ea)
 {
 #ifdef SOCLIB
 	GenLoadStore(LoadStoreAccess<CONFIG>::INT32_LOAD, rd, MungEffectiveAddress(ea, 4), 4);
@@ -3986,7 +3087,7 @@ void CPU<CONFIG>::Int32Load(unsigned int rd, address_t ea)
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Fp32Load(unsigned int fd, address_t ea)
+void CPU<CONFIG>::Fp32Load(unsigned int fd, typename CONFIG::address_t ea)
 {
 #ifdef SOCLIB
 	GenLoadStore(LoadStoreAccess<CONFIG>::FP32_LOAD, fd, MungEffectiveAddress(ea, 4), 4);
@@ -4002,7 +3103,7 @@ void CPU<CONFIG>::Fp32Load(unsigned int fd, address_t ea)
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Fp64Load(unsigned int fd, address_t ea)
+void CPU<CONFIG>::Fp64Load(unsigned int fd, typename CONFIG::address_t ea)
 {
 #ifdef SOCLIB
 	GenLoadStore(LoadStoreAccess<CONFIG>::FP64_LOAD, fd, MungEffectiveAddress(ea, 8), 8);
@@ -4016,7 +3117,7 @@ void CPU<CONFIG>::Fp64Load(unsigned int fd, address_t ea)
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Int16LoadByteReverse(unsigned int rd, address_t ea)
+void CPU<CONFIG>::Int16LoadByteReverse(unsigned int rd, typename CONFIG::address_t ea)
 {
 #ifdef SOCLIB
 	GenLoadStore(LoadStoreAccess<CONFIG>::INT16_LOAD_BYTE_REVERSE, rd, MungEffectiveAddress(ea, 2), 2);
@@ -4030,7 +3131,7 @@ void CPU<CONFIG>::Int16LoadByteReverse(unsigned int rd, address_t ea)
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Int32LoadByteReverse(unsigned int rd, address_t ea)
+void CPU<CONFIG>::Int32LoadByteReverse(unsigned int rd, typename CONFIG::address_t ea)
 {
 #ifdef SOCLIB
 	GenLoadStore(LoadStoreAccess<CONFIG>::INT32_LOAD_BYTE_REVERSE, rd, MungEffectiveAddress(ea, 4), 4);
@@ -4044,7 +3145,7 @@ void CPU<CONFIG>::Int32LoadByteReverse(unsigned int rd, address_t ea)
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::IntLoadMSBFirst(unsigned int rd, address_t ea, uint32_t size)
+void CPU<CONFIG>::IntLoadMSBFirst(unsigned int rd, typename CONFIG::address_t ea, uint32_t size)
 {
 #ifdef SOCLIB
 	GenLoadStore(LoadStoreAccess<CONFIG>::INT_LOAD_MSB, rd, ea, size);
@@ -4089,7 +3190,7 @@ void CPU<CONFIG>::IntLoadMSBFirst(unsigned int rd, address_t ea, uint32_t size)
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Int8Store(unsigned int rs, address_t ea)
+void CPU<CONFIG>::Int8Store(unsigned int rs, typename CONFIG::address_t ea)
 {
 #ifdef SOCLIB
 	GenLoadStore(LoadStoreAccess<CONFIG>::INT8_STORE, rs, MungEffectiveAddress(ea, 1), 1);
@@ -4102,7 +3203,7 @@ void CPU<CONFIG>::Int8Store(unsigned int rs, address_t ea)
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Int16Store(unsigned int rs, address_t ea)
+void CPU<CONFIG>::Int16Store(unsigned int rs, typename CONFIG::address_t ea)
 {
 #ifdef SOCLIB
 	GenLoadStore(LoadStoreAccess<CONFIG>::INT16_STORE, rs, MungEffectiveAddress(ea, 2), 2);
@@ -4115,7 +3216,7 @@ void CPU<CONFIG>::Int16Store(unsigned int rs, address_t ea)
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Int32Store(unsigned int rs, address_t ea)
+void CPU<CONFIG>::Int32Store(unsigned int rs, typename CONFIG::address_t ea)
 {
 #ifdef SOCLIB
 	GenLoadStore(LoadStoreAccess<CONFIG>::INT32_STORE, rs, MungEffectiveAddress(ea, 4), 4);
@@ -4128,7 +3229,7 @@ void CPU<CONFIG>::Int32Store(unsigned int rs, address_t ea)
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Fp32Store(unsigned int fs, address_t ea)
+void CPU<CONFIG>::Fp32Store(unsigned int fs, typename CONFIG::address_t ea)
 {
 #ifdef SOCLIB
 	GenLoadStore(LoadStoreAccess<CONFIG>::FP32_STORE, fs, MungEffectiveAddress(ea, 4), 4);
@@ -4143,7 +3244,7 @@ void CPU<CONFIG>::Fp32Store(unsigned int fs, address_t ea)
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Fp64Store(unsigned int fs, address_t ea)
+void CPU<CONFIG>::Fp64Store(unsigned int fs, typename CONFIG::address_t ea)
 {
 #ifdef SOCLIB
 	GenLoadStore(LoadStoreAccess<CONFIG>::FP64_STORE, fs, MungEffectiveAddress(ea, 8), 8);
@@ -4156,7 +3257,7 @@ void CPU<CONFIG>::Fp64Store(unsigned int fs, address_t ea)
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::FpStoreLSW(unsigned int fs, address_t ea)
+void CPU<CONFIG>::FpStoreLSW(unsigned int fs, typename CONFIG::address_t ea)
 {
 #ifdef SOCLIB
 	GenLoadStore(LoadStoreAccess<CONFIG>::FP_STORE_LSW, fs, MungEffectiveAddress(ea, 4), 4);
@@ -4169,7 +3270,7 @@ void CPU<CONFIG>::FpStoreLSW(unsigned int fs, address_t ea)
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Int16StoreByteReverse(unsigned int rs, address_t ea)
+void CPU<CONFIG>::Int16StoreByteReverse(unsigned int rs, typename CONFIG::address_t ea)
 {
 #ifdef SOCLIB
 	GenLoadStore(LoadStoreAccess<CONFIG>::INT16_STORE_BYTE_REVERSE, rs, MungEffectiveAddress(ea, 2), 2);
@@ -4182,7 +3283,7 @@ void CPU<CONFIG>::Int16StoreByteReverse(unsigned int rs, address_t ea)
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Int32StoreByteReverse(unsigned int rs, address_t ea)
+void CPU<CONFIG>::Int32StoreByteReverse(unsigned int rs, typename CONFIG::address_t ea)
 {
 #ifdef SOCLIB
 	GenLoadStore(LoadStoreAccess<CONFIG>::INT32_STORE_BYTE_REVERSE, rs, MungEffectiveAddress(ea, 4), 4);
@@ -4195,7 +3296,7 @@ void CPU<CONFIG>::Int32StoreByteReverse(unsigned int rs, address_t ea)
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::IntStoreMSBFirst(unsigned int rs, address_t ea, uint32_t size)
+void CPU<CONFIG>::IntStoreMSBFirst(unsigned int rs, typename CONFIG::address_t ea, uint32_t size)
 {
 #ifdef SOCLIB
 	GenLoadStore(LoadStoreAccess<CONFIG>::INT_STORE_MSB, rs, ea, size);
@@ -4243,7 +3344,7 @@ template <class CONFIG>
 template <bool DEBUG>
 void CPU<CONFIG>::LookupBAT(MMUAccess<CONFIG>& mmu_access)
 {
-	address_t addr = mmu_access.addr;
+	typename CONFIG::address_t addr = mmu_access.addr;
 	typename CONFIG::PrivilegeLevel privilege_level = mmu_access.privilege_level;
 	typename CONFIG::MemoryAccessType memory_access_type = mmu_access.memory_access_type;
 	typename CONFIG::MemoryType memory_type = mmu_access.memory_type;
@@ -4265,7 +3366,7 @@ void CPU<CONFIG>::LookupBAT(MMUAccess<CONFIG>& mmu_access)
 	physical_address_t pte_addr;			// a page table entry address
 	uint32_t pte_num;
 	bool key;*/
-	WIMG wimg;
+	typename CONFIG::WIMG wimg;
 	
 	//------------------------------
 	//-  Block Address Translation -
@@ -4277,7 +3378,7 @@ void CPU<CONFIG>::LookupBAT(MMUAccess<CONFIG>& mmu_access)
 	if(memory_type == CONFIG::MT_INSN)
 	{
 		// Memory access is an instruction fetch
-		uint32_t num_ibats = (CONFIG::HAS_HID2 && GetHID2_SWT_EN()) ? CONFIG::NUM_BATS : 4;
+		uint32_t num_ibats = (GetHID0_HIGH_BAT_EN()) ? CONFIG::NUM_BATS : 4;
 
 		// Scan each IBAT register to find a translation
 		for(bat_num = 0; bat_num < num_ibats; bat_num++)
@@ -4296,7 +3397,7 @@ void CPU<CONFIG>::LookupBAT(MMUAccess<CONFIG>& mmu_access)
 					//cerr << "IBAT match for 0x" << hex << addr << endl;
 					// A BAT match occurs
 					mmu_access.protection_boundary = ((GetIBATU_BEPI(bat_num) & 0x7ffUL) + GetIBATU_BL(bat_num) + 1) << 17;
-					mmu_access.wimg = wimg = (WIMG)(GetIBATL_WIMG(bat_num) & 0x6); // W and G are not defined in IBATs;
+					mmu_access.wimg = wimg = (typename CONFIG::WIMG)(GetIBATL_WIMG(bat_num) & 0x6); // W and G are not defined in IBATs;
 
 					// Check if access is guarded
 					if(unlikely(wimg & CONFIG::WIMG_GUARDED_MEMORY))
@@ -4326,7 +3427,7 @@ void CPU<CONFIG>::LookupBAT(MMUAccess<CONFIG>& mmu_access)
 	else
 	{
 		// Memory access is a data memory access
-		uint32_t num_dbats = (CONFIG::HAS_HID2 && GetHID2_SWT_EN()) ? CONFIG::NUM_BATS : 4;
+		uint32_t num_dbats = (GetHID0_HIGH_BAT_EN()) ? CONFIG::NUM_BATS : 4;
 		// Scan each DBAT register to find a translation
 		for(bat_num = 0; bat_num < num_dbats; bat_num++)
 		{
@@ -4340,7 +3441,7 @@ void CPU<CONFIG>::LookupBAT(MMUAccess<CONFIG>& mmu_access)
 				{
 					// A DBAT match occurs
 					mmu_access.protection_boundary = ((GetDBATU_BEPI(bat_num) & 0x7ffUL) + GetDBATU_BL(bat_num)) << 17;
-					mmu_access.wimg = wimg = (WIMG) GetDBATL_WIMG(bat_num);
+					mmu_access.wimg = wimg = (typename CONFIG::WIMG) GetDBATL_WIMG(bat_num);
 	
 					// Check access rights
 					uint32_t pp = GetDBATL_PP(bat_num);
@@ -4447,7 +3548,7 @@ void CPU<CONFIG>::LookupITLB(MMUAccess<CONFIG>& mmu_access)
 		if(tlb_entry->status.valid && tlb_entry->GetBaseVirtualAddr() == base_virtual_addr)
 		{
 			// ITLB Hit
-			// return WIMG bits
+			// return typename CONFIG::WIMG bits
 			mmu_access.tlb_way = tlb_way;
 			mmu_access.itlb_entry = tlb_entry;
 			mmu_access.tlb_hit = true;
@@ -4587,7 +3688,7 @@ template <class CONFIG>
 template <bool DEBUG>
 void CPU<CONFIG>::AccessTLB(MMUAccess<CONFIG>& mmu_access)
 {
-	address_t addr = mmu_access.addr;
+	typename CONFIG::address_t addr = mmu_access.addr;
 	typename CONFIG::PrivilegeLevel privilege_level = mmu_access.privilege_level;
 	typename CONFIG::MemoryAccessType memory_access_type = mmu_access.memory_access_type;
 	typename CONFIG::MemoryType memory_type = mmu_access.memory_type;
@@ -4598,8 +3699,8 @@ void CPU<CONFIG>::AccessTLB(MMUAccess<CONFIG>& mmu_access)
 	uint32_t sr_ks;							// Supervisor key of a segment register
 	uint32_t sr_kp;							// User key of a segment register
 	uint32_t sr_noexecute;					// No-execute bit of a segment register
-	virtual_address_t virtual_addr;			// Virtual address
-	virtual_address_t base_virtual_addr;	// Base virtual address
+	typename CONFIG::virtual_address_t virtual_addr;			// Virtual address
+	typename CONFIG::virtual_address_t base_virtual_addr;	// Base virtual address
 /*	uint32_t tlb_index;						// An index in DTLB/ITLB
 	uint32_t h;*/
 /*	uint32_t page_index;					// page index
@@ -4609,12 +3710,12 @@ void CPU<CONFIG>::AccessTLB(MMUAccess<CONFIG>& mmu_access)
 	physical_address_t pte_addr;			// a page table entry address
 	uint32_t pte_num;*/
 	bool key;
-	WIMG wimg;
+	typename CONFIG::WIMG wimg;
 // 	TLBSet<typename CONFIG::ITLB_CONFIG> *tlb_set;
 // 	TLBEntry<typename CONFIG::ITLB_CONFIG> *tlb_entry;
 
 	// Compute the protection boundary
-	mmu_access.protection_boundary = (addr + (MEMORY_PAGE_SIZE)) & ~(MEMORY_PAGE_SIZE - 1);
+	mmu_access.protection_boundary = (addr + (CONFIG::MEMORY_PAGE_SIZE)) & ~(CONFIG::MEMORY_PAGE_SIZE - 1);
 
 	//-------------------------------
 	//- Compute the virtual address -
@@ -4654,7 +3755,7 @@ void CPU<CONFIG>::AccessTLB(MMUAccess<CONFIG>& mmu_access)
 	mmu_access.virtual_segment_id = virtual_segment_id = GetSR_VSID(sr_num);
 	
 	// Compute the virtual address from the virtual segment id and the least significant bits of the effective address
-	mmu_access.virtual_addr = virtual_addr = ((virtual_address_t) virtual_segment_id << 28) | (virtual_address_t)(addr & 0x0fffffffUL);
+	mmu_access.virtual_addr = virtual_addr = ((typename CONFIG::virtual_address_t) virtual_segment_id << 28) | (typename CONFIG::virtual_address_t)(addr & 0x0fffffffUL);
 	
 	mmu_access.force_page_table_walk = false;
 	//------------------------------
@@ -4709,7 +3810,7 @@ void CPU<CONFIG>::AccessTLB(MMUAccess<CONFIG>& mmu_access)
 			if(likely(mmu_access.tlb_hit))
 			{
 				// DTLB Hit
-				// return WIMG bits
+				// return typename CONFIG::WIMG bits
 				mmu_access.wimg = wimg = mmu_access.dtlb_entry->pte.wimg;
 	
 				// Check access rights
@@ -4742,31 +3843,31 @@ void CPU<CONFIG>::AccessTLB(MMUAccess<CONFIG>& mmu_access)
 	}
 	// Miss in ITLB/DTLB
 	mmu_access.tlb_hit = false;
-	mmu_access.base_virtual_addr = base_virtual_addr = virtual_addr & ~((virtual_address_t) MEMORY_PAGE_SIZE - 1);
+	mmu_access.base_virtual_addr = base_virtual_addr = virtual_addr & ~((typename CONFIG::virtual_address_t) CONFIG::MEMORY_PAGE_SIZE - 1);
 }
 
 template <class CONFIG>
 template <bool DEBUG>
 void CPU<CONFIG>::EmuHardwarePageTableSearch(MMUAccess<CONFIG>& mmu_access)
 {
-	address_t addr = mmu_access.addr;
+	typename CONFIG::address_t addr = mmu_access.addr;
 	typename CONFIG::PrivilegeLevel privilege_level = mmu_access.privilege_level;
 	typename CONFIG::MemoryAccessType memory_access_type = mmu_access.memory_access_type;
 	typename CONFIG::MemoryType memory_type = mmu_access.memory_type;
 	uint32_t sr_num = mmu_access.sr_num;						// Segment register number
 	uint32_t virtual_segment_id = mmu_access.virtual_segment_id;			// Virtual segment id
 //	virtual_address_t virtual_addr = mmu_access.virtual_addr;			// Virtual address
-	virtual_address_t base_virtual_addr = mmu_access.base_virtual_addr;	// Base virtual address
+	typename CONFIG::virtual_address_t base_virtual_addr = mmu_access.base_virtual_addr;	// Base virtual address
 //	uint32_t tlb_index = mmu_access.tlb_index;						// An index in DTLB/ITLB
 	uint32_t h;
 	uint32_t page_index;					// page index
 	uint32_t api;							// Abreviated page index
 	uint32_t hash;							// hash key
 	uint32_t pteg_select;
-	physical_address_t pte_addr;			// a page table entry address
+	typename CONFIG::physical_address_t pte_addr;			// a page table entry address
 	uint32_t pte_num;
 	bool key = mmu_access.key;
-	WIMG wimg;
+	typename CONFIG::WIMG wimg;
 
 	// Compute the page index from the virtual address
 	mmu_access.page_index = page_index = (base_virtual_addr >> 12) & 0xffff;
@@ -4774,34 +3875,31 @@ void CPU<CONFIG>::EmuHardwarePageTableSearch(MMUAccess<CONFIG>& mmu_access)
 	// Compute API from the page index
 	mmu_access.api = api = page_index >> 10;
 
-	if(CONFIG::HAS_SOFTWARE_TABLE_SEARCH_SUPPORT)
+	if(unlikely(!DEBUG && GetHID0_STEN()))
 	{
-		if(unlikely(!DEBUG && CONFIG::HAS_HID2 && GetHID2_SWT_EN()))
-		{
-			// Software page table search is enabled
+		// Software page table search is enabled
+		
+		/* primary PTEG address */
+		hash = (virtual_segment_id & 0x7ffff) ^ page_index;
+		pteg_select = (((GetSDR1_HTABORG() & 0x1ff) | (GetSDR1_HTABMASK() & ((hash >> 10) & 0x1ff))) << 10) | (hash & 0x3ff);
+		typename CONFIG::physical_address_t primary_pteg = (((GetSDR1_HTABORG() >> 9) & 0x7f) << 25) | (pteg_select << 6);
 			
-			/* primary PTEG address */
-			hash = (virtual_segment_id & 0x7ffff) ^ page_index;
-			pteg_select = (((GetSDR1_HTABORG() & 0x1ff) | (GetSDR1_HTABMASK() & ((hash >> 10) & 0x1ff))) << 10) | (hash & 0x3ff);
-			physical_address_t primary_pteg = (((GetSDR1_HTABORG() >> 9) & 0x7f) << 25) | (pteg_select << 6);
-				
-			/* secondary PTEG address */
-			hash = (~hash) & 0x7ffff;
-			pteg_select = (((GetSDR1_HTABORG() & 0x1ff) | (GetSDR1_HTABMASK() & ((hash >> 10) & 0x1ff))) << 10) | (hash & 0x3ff);
-			physical_address_t secondary_pteg = (((GetSDR1_HTABORG() >> 9) & 0x7f) << 25) | (pteg_select << 6);
-			
-			// raise a TLB miss
-			throw TLBMissException<CONFIG>(
-				memory_access_type,
-				memory_type,
-				addr,
-				mmu_access.tlb_way,
-				(privilege_level & CONFIG::PR_USER) ? GetSR_KP(sr_num) : GetSR_KS(sr_num),
-				virtual_segment_id,
-				api,
-				primary_pteg,
-				secondary_pteg);
-		}
+		/* secondary PTEG address */
+		hash = (~hash) & 0x7ffff;
+		pteg_select = (((GetSDR1_HTABORG() & 0x1ff) | (GetSDR1_HTABMASK() & ((hash >> 10) & 0x1ff))) << 10) | (hash & 0x3ff);
+		typename CONFIG::physical_address_t secondary_pteg = (((GetSDR1_HTABORG() >> 9) & 0x7f) << 25) | (pteg_select << 6);
+		
+		// raise a TLB miss
+		throw TLBMissException<CONFIG>(
+			memory_access_type,
+			memory_type,
+			addr,
+			mmu_access.tlb_way,
+			(privilege_level & CONFIG::PR_USER) ? GetSR_KP(sr_num) : GetSR_KS(sr_num),
+			virtual_segment_id,
+			api,
+			primary_pteg,
+			secondary_pteg);
 	}
 	
 	//-------------------------------------
@@ -4824,9 +3922,9 @@ void CPU<CONFIG>::EmuHardwarePageTableSearch(MMUAccess<CONFIG>& mmu_access)
 			uint32_t pte_valid;
 			uint32_t pte_h;
 			uint32_t pte_pp;
-			WIMG pte_wimg;
+			typename CONFIG::WIMG pte_wimg;
 			uint32_t pte_c;
-			physical_address_t base_physical_addr;
+			typename CONFIG::physical_address_t base_physical_addr;
 
 
 //			cerr << "pte_addr = 0x" << std::hex << pte_addr << std::dec << endl;
@@ -4860,7 +3958,7 @@ void CPU<CONFIG>::EmuHardwarePageTableSearch(MMUAccess<CONFIG>& mmu_access)
 						pte_api == api)) // compare APIs
 			{
 				// Hit in page table
-				pte_wimg = (WIMG)((pte_value >> 3) & 0xf);
+				pte_wimg = (typename CONFIG::WIMG)((pte_value >> 3) & 0xf);
 				mmu_access.wimg = wimg = pte_wimg;
 				
 				// Check if access is guarded
@@ -4976,11 +4074,11 @@ void CPU<CONFIG>::DumpPageTable(ostream& os)
 	uint32_t page_index;					// page index
 	uint32_t api;							// Abreviated page index
 	uint32_t hash[2];						// hash keys
-	physical_address_t pte_addr;			// a page table entry address
+	typename CONFIG::physical_address_t pte_addr;			// a page table entry address
 	uint32_t pte_num;
 	uint32_t mask = GetSDR1_HTABMASK();
 	uint32_t hash_lo, hash_hi;
-	physical_address_t pteg_select;
+	typename CONFIG::physical_address_t pteg_select;
 	
 	os << "HTABORG = 0x" << std::hex << GetSDR1_HTABORG() << std::dec << endl;
 	os << "HTABMASK = 0x" << std::hex << GetSDR1_HTABMASK() << std::dec << endl;
@@ -5001,9 +4099,9 @@ void CPU<CONFIG>::DumpPageTable(ostream& os)
 				for(pte_num = 0; pte_num < 8; pte_num++, pte_addr += 8)
 				{
 					uint64_t pte_value;
-					virtual_address_t base_virtual_addr;
+					typename CONFIG::virtual_address_t base_virtual_addr;
 					uint32_t pte_valid, pte_h, pte_virtual_segment_id, pte_api, pte_pp, pte_r, pte_c, pte_wimg;
-					address_t base_paddr;
+					typename CONFIG::address_t base_paddr;
 
 					ReadMemory(pte_addr, &pte_value, 8, CONFIG::MT_DATA, false);
 		
@@ -5054,15 +4152,15 @@ void CPU<CONFIG>::EmuTranslateAddress(MMUAccess<CONFIG>& mmu_access)
 }
 
 template <class CONFIG>
-bool CPU<CONFIG>::ReadMemory(address_t addr, void *buffer, uint32_t size, typename CONFIG::MemoryType mt, bool translate_addr)
+bool CPU<CONFIG>::ReadMemory(typename CONFIG::address_t addr, void *buffer, uint32_t size, typename CONFIG::MemoryType mt, bool translate_addr)
 {
 	uint32_t read_offset = 0;
 
 	do
 	{
-		WIMG wimg;
-		physical_address_t physical_addr;
-		address_t protection_boundary;
+		typename CONFIG::WIMG wimg;
+		typename CONFIG::physical_address_t physical_addr;
+		typename CONFIG::address_t protection_boundary;
 		if(translate_addr && GetMSR_DR())
 		{
 			// Address translation
@@ -5085,7 +4183,7 @@ bool CPU<CONFIG>::ReadMemory(address_t addr, void *buffer, uint32_t size, typena
 			// I=0: Cache not inhibited
 			// M=1: Memory coherency enforced
 			// G=1: Guarded memory access (speculative fetch forbidden)
-			wimg = (WIMG)(CONFIG::WIMG_MEMORY_COHERENCY_ENFORCED | CONFIG::WIMG_GUARDED_MEMORY);
+			wimg = (typename CONFIG::WIMG)(CONFIG::WIMG_MEMORY_COHERENCY_ENFORCED | CONFIG::WIMG_GUARDED_MEMORY);
 			physical_addr = addr;
 			protection_boundary = addr + size;
 		}
@@ -5200,15 +4298,15 @@ bool CPU<CONFIG>::ReadMemory(address_t addr, void *buffer, uint32_t size, typena
 }
 
 template <class CONFIG>
-bool CPU<CONFIG>::WriteMemory(address_t addr, const void *buffer, uint32_t size, typename CONFIG::MemoryType mt, bool translate_addr)
+bool CPU<CONFIG>::WriteMemory(typename CONFIG::address_t addr, const void *buffer, uint32_t size, typename CONFIG::MemoryType mt, bool translate_addr)
 {
 	uint32_t write_offset = 0;
 
 	do
 	{
-		WIMG wimg;
-		physical_address_t physical_addr;
-		address_t protection_boundary;
+		typename CONFIG::WIMG wimg;
+		typename CONFIG::physical_address_t physical_addr;
+		typename CONFIG::address_t protection_boundary;
 		if(translate_addr && GetMSR_DR())
 		{
 			// Address translation
@@ -5231,7 +4329,7 @@ bool CPU<CONFIG>::WriteMemory(address_t addr, const void *buffer, uint32_t size,
 			// I=0: Cache not inhibited
 			// M=1: Memory coherency enforced
 			// G=1: Guarded memory access (speculative fetch forbidden)
-			wimg = (WIMG)(CONFIG::WIMG_MEMORY_COHERENCY_ENFORCED | CONFIG::WIMG_GUARDED_MEMORY);
+			wimg = (typename CONFIG::WIMG)(CONFIG::WIMG_MEMORY_COHERENCY_ENFORCED | CONFIG::WIMG_GUARDED_MEMORY);
 			physical_addr = addr;
 			protection_boundary = addr + size;
 		}
@@ -5346,19 +4444,19 @@ bool CPU<CONFIG>::WriteMemory(address_t addr, const void *buffer, uint32_t size,
 }
 
 template <class CONFIG>
-bool CPU<CONFIG>::ReadMemory(address_t addr, void *buffer, uint32_t size)
+bool CPU<CONFIG>::ReadMemory(typename CONFIG::address_t addr, void *buffer, uint32_t size)
 {
 	return ReadMemory(addr, buffer, size, CONFIG::MT_DATA, true);
 }
 
 template <class CONFIG>
-bool CPU<CONFIG>::WriteMemory(address_t addr, const void *buffer, uint32_t size)
+bool CPU<CONFIG>::WriteMemory(typename CONFIG::address_t addr, const void *buffer, uint32_t size)
 {
 	return WriteMemory(addr, buffer, size, CONFIG::MT_DATA, true);
 }
 
 template <class CONFIG>
-bool CPU<CONFIG>::InjectReadMemory(address_t addr, void *buffer, uint32_t size)
+bool CPU<CONFIG>::InjectReadMemory(typename CONFIG::address_t addr, void *buffer, uint32_t size)
 {
 	if(size > 0)
 	{
@@ -5366,7 +4464,7 @@ bool CPU<CONFIG>::InjectReadMemory(address_t addr, void *buffer, uint32_t size)
 		uint8_t *dst = (uint8_t *) buffer;
 		do
 		{
-			uint32_t size_to_fsb_boundary = FSB_WIDTH - (addr & (FSB_WIDTH - 1));
+			uint32_t size_to_fsb_boundary = CONFIG::FSB_WIDTH - (addr & (CONFIG::FSB_WIDTH - 1));
 			sz = size > size_to_fsb_boundary ? size_to_fsb_boundary : size;
 			EmuLoad<true>(addr, dst, sz);
 			dst += sz;
@@ -5378,7 +4476,7 @@ bool CPU<CONFIG>::InjectReadMemory(address_t addr, void *buffer, uint32_t size)
 }
 
 template <class CONFIG>
-bool CPU<CONFIG>::InjectWriteMemory(address_t addr, const void *buffer, uint32_t size)
+bool CPU<CONFIG>::InjectWriteMemory(typename CONFIG::address_t addr, const void *buffer, uint32_t size)
 {
 	if(size > 0)
 	{
@@ -5386,7 +4484,7 @@ bool CPU<CONFIG>::InjectWriteMemory(address_t addr, const void *buffer, uint32_t
 		const uint8_t *src = (const uint8_t *) buffer;
 		do
 		{
-			uint32_t size_to_fsb_boundary = FSB_WIDTH - (addr & (FSB_WIDTH - 1));
+			uint32_t size_to_fsb_boundary = CONFIG::FSB_WIDTH - (addr & (CONFIG::FSB_WIDTH - 1));
 			sz = size > size_to_fsb_boundary ? size_to_fsb_boundary : size;
 			EmuStore<true>(addr, src, sz);
 			src += sz;
@@ -5398,14 +4496,14 @@ bool CPU<CONFIG>::InjectWriteMemory(address_t addr, const void *buffer, uint32_t
 }
 
 template <class CONFIG>
-string CPU<CONFIG>::Disasm(address_t addr, address_t& next_addr)
+string CPU<CONFIG>::Disasm(typename CONFIG::address_t addr, typename CONFIG::address_t& next_addr)
 {
 	stringstream sstr;
-	Operation<CONFIG> *operation;
+	unisim::component::cxx::processor::powerpc::isa::Operation<CONFIG> *operation;
 	uint32_t insn;
 
-	WIMG wimg;
-	physical_address_t physical_addr;
+	typename CONFIG::WIMG wimg;
+	typename CONFIG::physical_address_t physical_addr;
 
 	if(GetMSR_IR())
 	{
@@ -5428,7 +4526,7 @@ string CPU<CONFIG>::Disasm(address_t addr, address_t& next_addr)
 		// I=0: Cache not inhibited
 		// M=1: Memory coherency enforced
 		// G=1: Guarded memory access (speculative fetch forbidden)
-		wimg = (WIMG)(CONFIG::WIMG_MEMORY_COHERENCY_ENFORCED | CONFIG::WIMG_GUARDED_MEMORY);
+		wimg = (typename CONFIG::WIMG)(CONFIG::WIMG_MEMORY_COHERENCY_ENFORCED | CONFIG::WIMG_GUARDED_MEMORY);
 		physical_addr = addr;
 	}
 
@@ -5474,7 +4572,7 @@ string CPU<CONFIG>::Disasm(address_t addr, address_t& next_addr)
 	BSwap(insn);
 #endif
 
-	operation = Decoder<CONFIG>::Decode(addr, insn);
+	operation = unisim::component::cxx::processor::powerpc::isa::Decoder<CONFIG>::Decode(addr, insn);
 
 	// disassemble the instruction
 	sstr << "0x" << std::hex;
@@ -5504,24 +4602,24 @@ endian_type CPU<CONFIG>::GetEndianess()
 
 /* Data Cache management */
 template <class CONFIG>
-void CPU<CONFIG>::Dcba(address_t addr)
+void CPU<CONFIG>::Dcba(typename CONFIG::address_t addr)
 {
 	Dcbz(addr);
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Dcbf(address_t addr)
+void CPU<CONFIG>::Dcbf(typename CONFIG::address_t addr)
 {
 	Dcbst(addr);
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Dcbi(address_t addr)
+void CPU<CONFIG>::Dcbi(typename CONFIG::address_t addr)
 {
 	if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
 
-	WIMG wimg;
-	physical_address_t physical_addr;
+	typename CONFIG::WIMG wimg;
+	typename CONFIG::physical_address_t physical_addr;
 	
 	if(GetMSR_DR())
 	{
@@ -5544,7 +4642,7 @@ void CPU<CONFIG>::Dcbi(address_t addr)
 		// I=0: Cache not inhibited
 		// M=1: Memory coherency enforced
 		// G=1: Guarded memory access (speculative fetch forbidden)
-		wimg = (WIMG)(CONFIG::WIMG_MEMORY_COHERENCY_ENFORCED | CONFIG::WIMG_GUARDED_MEMORY);
+		wimg = (typename CONFIG::WIMG)(CONFIG::WIMG_MEMORY_COHERENCY_ENFORCED | CONFIG::WIMG_GUARDED_MEMORY);
 		physical_addr = addr;
 	}
 
@@ -5631,10 +4729,10 @@ void CPU<CONFIG>::Dcbi(address_t addr)
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Dcbst(address_t addr)
+void CPU<CONFIG>::Dcbst(typename CONFIG::address_t addr)
 {
-	WIMG wimg;
-	physical_address_t physical_addr;
+	typename CONFIG::WIMG wimg;
+	typename CONFIG::physical_address_t physical_addr;
 	
 	if(GetMSR_DR())
 	{
@@ -5657,7 +4755,7 @@ void CPU<CONFIG>::Dcbst(address_t addr)
 		// I=0: Cache not inhibited
 		// M=1: Memory coherency enforced
 		// G=1: Guarded memory access (speculative fetch forbidden)
-		wimg = (WIMG)(CONFIG::WIMG_MEMORY_COHERENCY_ENFORCED | CONFIG::WIMG_GUARDED_MEMORY);
+		wimg = (typename CONFIG::WIMG)(CONFIG::WIMG_MEMORY_COHERENCY_ENFORCED | CONFIG::WIMG_GUARDED_MEMORY);
 		physical_addr = addr;
 	}
 
@@ -5744,15 +4842,15 @@ void CPU<CONFIG>::Dcbst(address_t addr)
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Dcbz(address_t addr)
+void CPU<CONFIG>::Dcbz(typename CONFIG::address_t addr)
 {
 	if(CONFIG::DL1_CONFIG::ENABLE && !IsDataCacheEnabled())
 	{
 		throw AlignmentException<CONFIG>(addr);
 	}
 
-	WIMG wimg;
-	physical_address_t physical_addr;
+	typename CONFIG::WIMG wimg;
+	typename CONFIG::physical_address_t physical_addr;
 	
 	if(GetMSR_DR())
 	{
@@ -5775,7 +4873,7 @@ void CPU<CONFIG>::Dcbz(address_t addr)
 		// I=0: Cache not inhibited
 		// M=1: Memory coherency enforced
 		// G=1: Guarded memory access (speculative fetch forbidden)
-		wimg = (WIMG)(CONFIG::WIMG_MEMORY_COHERENCY_ENFORCED | CONFIG::WIMG_GUARDED_MEMORY);
+		wimg = (typename CONFIG::WIMG)(CONFIG::WIMG_MEMORY_COHERENCY_ENFORCED | CONFIG::WIMG_GUARDED_MEMORY);
 		physical_addr = addr;
 	}
 
@@ -5865,7 +4963,7 @@ void CPU<CONFIG>::Dcbz(address_t addr)
 
 /* Instruction Cache Management */
 template <class CONFIG>
-void CPU<CONFIG>::Icbi(address_t addr)
+void CPU<CONFIG>::Icbi(typename CONFIG::address_t addr)
 {
 //	mmu.InvalidateInsnCacheBlock(addr, GetPrivilegeLevel());
 
@@ -5881,131 +4979,94 @@ void CPU<CONFIG>::Icbi(address_t addr)
 
 	InvalidateIL1Set(index);
 
-	Decoder<CONFIG>::InvalidateDecodingCacheEntry(addr);
+	unisim::component::cxx::processor::powerpc::isa::Decoder<CONFIG>::InvalidateDecodingCacheEntry(addr);
 }
 
 /* TLB management */
 template <class CONFIG>
 void CPU<CONFIG>::Tlbia()
 {
-	if(IsMPC7XX() || IsMPC7XXX())
-	{
-		throw IllegalInstructionException<CONFIG>();
-	}
-	if(GetMSR_PR())
-	{
-		throw PrivilegeViolationException<CONFIG>();
-	}
-
-	InvalidateDTLB();
-	InvalidateITLB();
+	throw IllegalInstructionException<CONFIG>();
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Tlbie(address_t addr)
+void CPU<CONFIG>::Tlbie(typename CONFIG::address_t addr)
 {
 	if(GetMSR_PR())
 	{
 		throw PrivilegeViolationException<CONFIG>();
 	}
-	InvalidateDTLBSet((addr / MEMORY_PAGE_SIZE) & ((CONFIG::DTLB_CONFIG::TLB_NUM_ENTRIES / CONFIG::DTLB_CONFIG::TLB_ASSOCIATIVITY) - 1));
-	InvalidateITLBSet((addr / MEMORY_PAGE_SIZE) & ((CONFIG::ITLB_CONFIG::TLB_NUM_ENTRIES / CONFIG::ITLB_CONFIG::TLB_ASSOCIATIVITY) - 1));
+	InvalidateDTLBSet((addr / CONFIG::MEMORY_PAGE_SIZE) & ((CONFIG::DTLB_CONFIG::TLB_NUM_ENTRIES / CONFIG::DTLB_CONFIG::TLB_ASSOCIATIVITY) - 1));
+	InvalidateITLBSet((addr / CONFIG::MEMORY_PAGE_SIZE) & ((CONFIG::ITLB_CONFIG::TLB_NUM_ENTRIES / CONFIG::ITLB_CONFIG::TLB_ASSOCIATIVITY) - 1));
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::LoadITLBEntry(address_t addr, uint32_t way, uint32_t pte_hi, uint32_t pte_lo)
+void CPU<CONFIG>::LoadITLBEntry(typename CONFIG::address_t addr, uint32_t way, uint32_t pte_hi, uint32_t pte_lo)
 {
 	if(CONFIG::ITLB_CONFIG::ENABLE)
 	{
-		uint32_t index = addr / MEMORY_PAGE_SIZE;
+		uint32_t index = addr / CONFIG::MEMORY_PAGE_SIZE;
 		uint32_t virtual_segment_id = (pte_hi >> 7) & 0xffffffUL;
-		address_t base_physical_addr = pte_lo & ~(MEMORY_PAGE_SIZE - 1);
-		virtual_address_t base_virtual_addr = ((virtual_address_t) virtual_segment_id << 28) | (virtual_address_t)(addr & 0x0fffffffUL & ~(MEMORY_PAGE_SIZE - 1));
+		typename CONFIG::address_t base_physical_addr = pte_lo & ~(CONFIG::MEMORY_PAGE_SIZE - 1);
+		typename CONFIG::virtual_address_t base_virtual_addr = ((typename CONFIG::virtual_address_t) virtual_segment_id << 28) | (typename CONFIG::virtual_address_t)(addr & 0x0fffffffUL & ~(CONFIG::MEMORY_PAGE_SIZE - 1));
 		
 		TLBEntry<typename CONFIG::ITLB_CONFIG>& tlb_entry = itlb[index][way];
 	
 		tlb_entry.status.valid = ((pte_hi >> 31) & 1) ? true : false;
 		tlb_entry.SetBaseVirtualAddr(base_virtual_addr);
 		tlb_entry.pte.c = (pte_lo >> 7) & 1;
-		tlb_entry.pte.wimg = (WIMG)((pte_lo >> 3) & 0xf);
+		tlb_entry.pte.wimg = (typename CONFIG::WIMG)((pte_lo >> 3) & 0xf);
 		tlb_entry.pte.pp = (pte_lo & 3);
 		tlb_entry.pte.base_physical_addr = base_physical_addr;
 	}
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::LoadDTLBEntry(address_t addr, uint32_t way, uint32_t pte_hi, uint32_t pte_lo)
+void CPU<CONFIG>::LoadDTLBEntry(typename CONFIG::address_t addr, uint32_t way, uint32_t pte_hi, uint32_t pte_lo)
 {
 	if(CONFIG::DTLB_CONFIG::ENABLE)
 	{
-		uint32_t index = addr / MEMORY_PAGE_SIZE;
+		uint32_t index = addr / CONFIG::MEMORY_PAGE_SIZE;
 		uint32_t virtual_segment_id = (pte_hi >> 7) & 0xffffffUL;
-		address_t base_physical_addr = pte_lo & ~(MEMORY_PAGE_SIZE - 1);
-		virtual_address_t base_virtual_addr = ((virtual_address_t) virtual_segment_id << 28) | (virtual_address_t)(addr & 0x0fffffffUL & ~(MEMORY_PAGE_SIZE - 1));
+		typename CONFIG::address_t base_physical_addr = pte_lo & ~(CONFIG::MEMORY_PAGE_SIZE - 1);
+		typename CONFIG::virtual_address_t base_virtual_addr = ((typename CONFIG::virtual_address_t) virtual_segment_id << 28) | (typename CONFIG::virtual_address_t)(addr & 0x0fffffffUL & ~(CONFIG::MEMORY_PAGE_SIZE - 1));
 		
 		TLBEntry<typename CONFIG::DTLB_CONFIG>& tlb_entry = dtlb[index][way];
 	
 		tlb_entry.SetBaseVirtualAddr(base_virtual_addr);
 		tlb_entry.pte.c = (pte_lo >> 7) & 1;
-		tlb_entry.pte.wimg = (WIMG)((pte_lo >> 3) & 0xf);
+		tlb_entry.pte.wimg = (typename CONFIG::WIMG)((pte_lo >> 3) & 0xf);
 		tlb_entry.pte.pp = (pte_lo & 3);
 		tlb_entry.pte.base_physical_addr = base_physical_addr;
 	}
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Tlbld(address_t addr)
+void CPU<CONFIG>::Tlbld(typename CONFIG::address_t addr)
 {
-	if(!IsMPC7X5() && !IsMPC7XXX())
-	{
-		throw IllegalInstructionException<CONFIG>();
-	}
-	
-	if(GetMSR_PR())
-	{
-			throw PrivilegeViolationException<CONFIG>();
-	}
-
-	Stop(-1);
-	throw IllegalInstructionException<CONFIG>();
-	if(IsMPC7XXX())
-	{
-		LoadDTLBEntry(addr, GetSRR1_WAY(), GetDCMP(), GetRPA());
-	}
-	else if(IsMPC7XXX())
-	{
-		LoadDTLBEntry(addr, addr & 1, GetPTEHI(), GetPTEHI());
-	}
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::Tlbli(address_t addr)
-{
-	if(!IsMPC7X5() && !IsMPC7XXX())
-	{
-		throw IllegalInstructionException<CONFIG>();
-	}
-	
 	if(GetMSR_PR())
 	{
 		throw PrivilegeViolationException<CONFIG>();
 	}
 
-	throw IllegalInstructionException<CONFIG>();
-	if(IsMPC7X5())
+	LoadDTLBEntry(addr, addr & 1, GetPTEHI(), GetPTEHI());
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::Tlbli(typename CONFIG::address_t addr)
+{
+	if(GetMSR_PR())
 	{
-		LoadITLBEntry(addr, GetSRR1_WAY(), GetICMP(), GetRPA());
+		throw PrivilegeViolationException<CONFIG>();
 	}
-	else if(IsMPC7XXX())
-	{
-		LoadITLBEntry(addr, addr & 1, GetPTEHI(), GetPTEHI());
-	}
+
+	LoadITLBEntry(addr, addr & 1, GetPTEHI(), GetPTEHI());
 }
 
 
 /* Linked Load-Store */
 template <class CONFIG>
-void CPU<CONFIG>::Lwarx(unsigned int rd, address_t addr)
+void CPU<CONFIG>::Lwarx(unsigned int rd, typename CONFIG::address_t addr)
 {
 	Int32Load(rd, addr);
 
@@ -6014,7 +5075,7 @@ void CPU<CONFIG>::Lwarx(unsigned int rd, address_t addr)
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Stwcx(unsigned int rs, address_t addr)
+void CPU<CONFIG>::Stwcx(unsigned int rs, typename CONFIG::address_t addr)
 {
 	// TBD
 	if(reserve)
@@ -6035,39 +5096,15 @@ void CPU<CONFIG>::Stwcx(unsigned int rs, address_t addr)
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::ReqAsynchronousInterrupt()
-{
-	asynchronous_interrupt = true;
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::AckAsynchronousInterrupt()
-{
-	asynchronous_interrupt = false;
-	
-	if(CONFIG::HAS_DECREMENTER_OVERFLOW) asynchronous_interrupt |= decrementer_overflow;
-	if(CONFIG::HAS_EXTERNAL_INTERRUPT) asynchronous_interrupt |= external_interrupt;
-	if(CONFIG::HAS_SOFT_RESET) asynchronous_interrupt |= soft_reset;
-	if(CONFIG::HAS_HARD_RESET) asynchronous_interrupt |= hard_reset;
-	if(CONFIG::HAS_MCP) asynchronous_interrupt |= mcp;
-	if(CONFIG::HAS_TEA) asynchronous_interrupt |= tea;
-	if(CONFIG::HAS_SMI) asynchronous_interrupt |= smi;
-	if(CONFIG::HAS_THERMAL_MANAGEMENT_INTERRUPT) asynchronous_interrupt |= thermal_management_interrupt;
-	if(CONFIG::HAS_PERFORMANCE_MONITOR_INTERRUPT) asynchronous_interrupt |= performance_monitor_interrupt;
-}
-
-template <class CONFIG>
 void CPU<CONFIG>::ReqDecrementerOverflow()
 {
-	decrementer_overflow = true;
-	ReqAsynchronousInterrupt();
+	asynchronous_interrupt |= CONFIG::SIG_DECREMENTER_OVERFLOW;
 }
 
 template <class CONFIG>
 void CPU<CONFIG>::AckDecrementerOverflow()
 {
-	decrementer_overflow = false;
-	AckAsynchronousInterrupt();
+	asynchronous_interrupt &= ~CONFIG::SIG_DECREMENTER_OVERFLOW;
 }
 
 template <class CONFIG>
@@ -6076,43 +5113,37 @@ void CPU<CONFIG>::ReqExternalInterrupt()
 	if(unlikely(IsVerboseException())) {
 		logger << DebugInfo << "Received external interrupt" << EndDebugInfo;
 	}
-	external_interrupt = true;
-	ReqAsynchronousInterrupt();
+	asynchronous_interrupt |= CONFIG::SIG_EXTERNAL_INTERRUPT;
 }
 
 template <class CONFIG>
 void CPU<CONFIG>::AckExternalInterrupt()
 {
-	external_interrupt = false;
-	AckAsynchronousInterrupt();
+	asynchronous_interrupt &= ~CONFIG::SIG_EXTERNAL_INTERRUPT;
 }
 
 template <class CONFIG>
 void CPU<CONFIG>::ReqHardReset()
 {
-	hard_reset = true;
-	ReqAsynchronousInterrupt();
+	asynchronous_interrupt |= CONFIG::SIG_HARD_RESET;
 }
 
 template <class CONFIG>
 void CPU<CONFIG>::AckHardReset()
 {
-	hard_reset = false;
-	AckAsynchronousInterrupt();
+	asynchronous_interrupt &= ~CONFIG::SIG_HARD_RESET;
 }
 
 template <class CONFIG>
 void CPU<CONFIG>::ReqSoftReset()
 {
-	soft_reset = true;
-	ReqAsynchronousInterrupt();
+	asynchronous_interrupt |= CONFIG::SIG_SOFT_RESET;
 }
 
 template <class CONFIG>
 void CPU<CONFIG>::AckSoftReset()
 {
-	soft_reset = false;
-	AckAsynchronousInterrupt();
+	asynchronous_interrupt &= ~CONFIG::SIG_SOFT_RESET;
 }
 
 template <class CONFIG>
@@ -6128,71 +5159,50 @@ void CPU<CONFIG>::Idle()
 template <class CONFIG>
 void CPU<CONFIG>::ReqMCP()
 {
-	mcp = true;
-	ReqAsynchronousInterrupt();
+	asynchronous_interrupt |= CONFIG::SIG_MCP;
 }
 
 template <class CONFIG>
 void CPU<CONFIG>::AckMCP()
 {
-	mcp = false;
-	AckAsynchronousInterrupt();
+	asynchronous_interrupt &= ~CONFIG::SIG_MCP;
 }
 
 template <class CONFIG>
 void CPU<CONFIG>::ReqTEA()
 {
-	tea = true;
-	ReqAsynchronousInterrupt();
+	asynchronous_interrupt |= CONFIG::SIG_TEA;
 }
 
 template <class CONFIG>
 void CPU<CONFIG>::AckTEA()
 {
-	tea = false;
-	AckAsynchronousInterrupt();
+	asynchronous_interrupt &= ~CONFIG::SIG_TEA;
 }
 
 template <class CONFIG>
 void CPU<CONFIG>::ReqSMI()
 {
-	smi = true;
-	ReqAsynchronousInterrupt();
+	asynchronous_interrupt |= CONFIG::SIG_SMI;
 }
 
 template <class CONFIG>
 void CPU<CONFIG>::AckSMI()
 {
-	smi = false;
-	AckAsynchronousInterrupt();
+	asynchronous_interrupt &= ~CONFIG::SIG_SMI;
 }
 
-template <class CONFIG>
-void CPU<CONFIG>::ReqThermalManagementInterrupt()
-{
-	thermal_management_interrupt = true;
-	ReqAsynchronousInterrupt();
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::AckThermalManagementInterrupt()
-{
-	thermal_management_interrupt = false;
-	AckAsynchronousInterrupt();
-}
 
 template <class CONFIG>
 void CPU<CONFIG>::ReqPerformanceMonitorInterrupt()
 {
-	performance_monitor_interrupt = true;
-	ReqAsynchronousInterrupt();
+	asynchronous_interrupt |= CONFIG::SIG_PERFORMANCE_MONITOR_INTERRUPT;
 }
 
 template <class CONFIG>
 void CPU<CONFIG>::AckPerformanceMonitorInterrupt()
 {
-	performance_monitor_interrupt = false;
-	AckAsynchronousInterrupt();
+	asynchronous_interrupt &= ~CONFIG::SIG_PERFORMANCE_MONITOR_INTERRUPT;
 }
 
 template <class CONFIG>
@@ -6285,9 +5295,9 @@ LoadStoreAccess<CONFIG> *CPU<CONFIG>::AllocateLoadStoreAccess()
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::GenLoadStoreAccess(typename LoadStoreAccess<CONFIG>::Type type, unsigned int reg_num, address_t munged_ea, uint32_t size, Instruction<CONFIG> *instruction)
+void CPU<CONFIG>::GenLoadStoreAccess(typename LoadStoreAccess<CONFIG>::Type type, unsigned int reg_num, typename CONFIG::address_t munged_ea, uint32_t size, Instruction<CONFIG> *instruction)
 {
-	uint32_t size_to_fsb_boundary = FSB_WIDTH - (munged_ea & (FSB_WIDTH - 1));
+	uint32_t size_to_fsb_boundary = CONFIG::FSB_WIDTH - (munged_ea & (CONFIG::FSB_WIDTH - 1));
 
 	// Ensure that memory access does not cross a FSB boundary
 	if(size_to_fsb_boundary >= size)
@@ -6451,7 +5461,7 @@ void CPU<CONFIG>::Fetch()
 		// I=0: Cache not inhibited
 		// M=1: Memory coherency enforced
 		// G=1: Guarded memory access (speculative fetch forbidden)
-		fetch_access->mmu_access.wimg = (WIMG)(CONFIG::WIMG_MEMORY_COHERENCY_ENFORCED | CONFIG::WIMG_GUARDED_MEMORY);
+		fetch_access->mmu_access.wimg = (typename CONFIG::WIMG)(CONFIG::WIMG_MEMORY_COHERENCY_ENFORCED | CONFIG::WIMG_GUARDED_MEMORY);
 		fetch_access->mmu_access.physical_addr = fetch_access->mmu_access.addr;
 	}
 
@@ -6644,7 +5654,7 @@ void CPU<CONFIG>::DecodeDispatch()
 		if(num_output_ctr && num_output_ctr > ctr_mapping_table.GetNumFreeRenameRegisters()) return;
 
 		// Locate input operands
-		Operation<CONFIG> *operation = instruction->operation;
+		unisim::component::cxx::processor::powerpc::isa::Operation<CONFIG> *operation = instruction->operation;
 		unsigned int num_operands = operation->num_insn_operands;
 
 		for(j = 0; j < num_operands; j++)
@@ -6653,7 +5663,7 @@ void CPU<CONFIG>::DecodeDispatch()
 	
 			if(insn_operand->dir == CONFIG::INPUT_T)
 			{
-				Operand<CONFIG> *operand;
+				Operand<CONFIG> *operand = 0;
 				bool forwarding = true;
 
 				switch(insn_operand->type)
@@ -7035,7 +6045,7 @@ void CPU<CONFIG>::LSUExecute2()
 			// I=0: Cache not inhibited
 			// M=1: Memory coherency enforced
 			// G=1: Guarded memory access (speculative fetch forbidden)
-			load_store_access->mmu_access.wimg = (WIMG)(CONFIG::WIMG_MEMORY_COHERENCY_ENFORCED | CONFIG::WIMG_GUARDED_MEMORY);
+			load_store_access->mmu_access.wimg = (typename CONFIG::WIMG)(CONFIG::WIMG_MEMORY_COHERENCY_ENFORCED | CONFIG::WIMG_GUARDED_MEMORY);
 			load_store_access->mmu_access.physical_addr = load_store_access->munged_ea;
 		}
 
@@ -7451,7 +6461,7 @@ void CPU<CONFIG>::DumpSchedule()
 			case Event<CONFIG>::EV_NULL:
 				sstr << "null";
 				break;
-/*			case Event<CONFIG>::EV_FINISHED_INSN:     // an instruction is finished
+			case Event<CONFIG>::EV_FINISHED_INSN:     // an instruction is finished
 				{
 					Instruction<CONFIG> *instruction = ev->object.instruction;
 
@@ -7467,9 +6477,10 @@ void CPU<CONFIG>::DumpSchedule()
 				break;
 			case Event<CONFIG>::EV_BUS_ACCESS:        // a cache miss causes a bus access
 				{
+					BusAccess<CONFIG> *bus_access = ev->object.bus_access;
 					sstr << *bus_access;
 				}
-				break;*/
+				break;
 				
 			case Event<CONFIG>::EV_FINISHED_FETCH:     // a fetch has finished
 				{
@@ -8260,7 +7271,7 @@ void Instruction<CONFIG>::Initialize(CPU<CONFIG> *cpu, typename CONFIG::address_
 	serialization = operation->serialization;
 	num_uops = operation->num_uops;
 	this->uop_num = 0;
-	Instruction<CONFIG> *macro_op;
+	//Instruction<CONFIG> *macro_op;
 	num_input_gpr = 0;
 	num_input_fpr = 0;
 	num_input_cr = 0;
@@ -8956,7 +7967,7 @@ ostream& operator << (ostream& os, const BusAccess<CONFIG>& bus_access)
 	os << ", addr=0x" << std::hex << bus_access.addr << std::dec;
 	os << ", size=" << bus_access.size;
 	os << ", storage=[";
-	int i;
+	unsigned int i;
 	for(i = 0; i < bus_access.size; i++)
 	{
 		if(i != 0) os << " ";
@@ -9004,6 +8015,7 @@ ostream& operator << (ostream& os, const Instruction<CONFIG>& instruction)
 	return os;
 }
 
+} // end of namespace mpc7447a
 } // end of namespace powerpc
 } // end of namespace processor
 } // end of namespace cxx

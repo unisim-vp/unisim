@@ -174,7 +174,7 @@ private:
 	static const uint32_t BOOT_ARCH_NUBUS_POWERBOOK = 0x00000040UL;
 	
 	/*  Maximum number of ranges in phys memory map */
-	static const uint32_t MAX_MEM_MAP_SIZE = 26;
+	static const unsigned int MAX_MEM_MAP_SIZE = 26;
 
 	/* This is the format of an element in the physical memory map. Note that
 	the map is optional and current BootX will only build it for pre-PCI

@@ -103,7 +103,6 @@ protected:
 	// debug stuff
 	unisim::kernel::logger::Logger logger;
 	bool verbose;
-	Parameter<bool> param_verbose;
 	
 	// PCI configuration registers
 	reg16_t pci_conf_device_id;
@@ -126,6 +125,7 @@ protected:
 	ADDRESS initial_base_addr;
 	unsigned int pci_bus_frequency; // in Mhz
 private:
+	Parameter<bool> param_verbose;
 	Parameter<uint32_t> param_width;
 	Parameter<uint32_t> param_height;
 	Parameter<uint32_t> param_depth;

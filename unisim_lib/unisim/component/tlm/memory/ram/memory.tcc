@@ -53,16 +53,16 @@ using unisim::kernel::logger::EndDebugError;
 /* Constructor */
 template <class PHYSICAL_ADDR, uint32_t DATA_SIZE, uint32_t PAGE_SIZE, bool DEBUG>
 Memory<PHYSICAL_ADDR, DATA_SIZE, PAGE_SIZE, DEBUG>::
-Memory(const sc_module_name& name, Object *parent) :
-	Object(name, parent, "Memory"),
-	sc_module(name),
-	unisim::component::cxx::memory::ram::Memory<PHYSICAL_ADDR, PAGE_SIZE>(name, parent),
-	slave_port("slave-port"),
-	cycle_sctime(),
-	param_cycle_time("cycle-time", this, cycle_sctime, "RAM memory cycle time"),
-	verbose(false),
-	param_verbose("verbose", this, verbose, "enable/disable verbosity"),
-	logger(*this)
+Memory(const sc_module_name& name, Object *parent)
+	: Object(name, parent, "Memory")
+	, sc_module(name)
+	, unisim::component::cxx::memory::ram::Memory<PHYSICAL_ADDR, PAGE_SIZE>(name, parent)
+	, slave_port("slave-port")
+	, logger(*this)
+	, verbose(false)
+	, param_verbose("verbose", this, verbose, "enable/disable verbosity")
+	, cycle_sctime()
+	, param_cycle_time("cycle-time", this, cycle_sctime, "RAM memory cycle time")
 {
 	param_cycle_time.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	slave_port(*this);

@@ -92,6 +92,8 @@ SDL<ADDRESS>::SDL(const char *name, Object *parent)
 	, logger(*this)
 	, verbose_setup(false)
 	, verbose_run(false)
+	, kbd_key_action_fifo()
+	, mouse_state()
 	, mouse_state_updated(false)
 	, param_verbose_setup("verbose-setup", this, verbose_setup, "enable/disable verbosity while setup")
 	, param_verbose_run("verbose-run", this, verbose_run, "enable/disable verbosity while simulation")
@@ -103,16 +105,19 @@ SDL<ADDRESS>::SDL(const char *name, Object *parent)
 	, logger_mutex(0)
 	, refresh_timer(0)
 	, host_key_down(false)
+	, host_cmd(false)
 	, grab_input(false)
 	, full_screen(false)
 	, host_key(SDLK_RCTRL)
-	, host_cmd(false)
 	, mode_set(false)
 	, alive(false)
 	, video_subsystem_initialized_cond(false)
 	, video_subsystem_initialized_mutex(false)
 	, refresh(false)
 	, force_refresh(false)
+	, typematic_delay_us(0)
+	, typematic_interval_us(0)
+	, video_mode()
 	, bmp_out_file_number(0)
 	, learn_keymap_filename("learned_keymap.xml")
 	, bmp_out_filename()
@@ -703,7 +708,7 @@ void SDL<ADDRESS>::LearnKeyboard()
 		cout << "Click on graphical window to give it the keyboard focus, and press a key please..." << endl;
 		cout.flush();
 		bool pressed = false;
-		SDLKey sdlk;
+		SDLKey sdlk = SDLK_UNKNOWN;
 
 		while(!pressed)
 		{
@@ -820,6 +825,8 @@ void SDL<ADDRESS>::ProcessKeyboardEvent(SDL_KeyboardEvent& kbd_ev)
 				ToggleFullScreen();
 				return;
 			}
+			break;
+		default:
 			break;
 	}
 
@@ -1187,7 +1194,6 @@ void SDL<ADDRESS>::HandleBlit()
 	
 	uint32_t line;
 	uint8_t *dst;
-	uint8_t *src;
 	ADDRESS scan_line_addr;
 	
 	if(SDL_LockSurface(surface) < 0) return;

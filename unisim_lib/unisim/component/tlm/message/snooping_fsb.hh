@@ -129,6 +129,9 @@ unisim::kernel::logger::Logger& operator << (unisim::kernel::logger::Logger& os,
 	case ReqType::ZERO_BLOCK:
 		os << "ZERO_BLOCK";
 		break;
+	case ReqType::INV_TLB:
+		os << "INV_TLB";
+		break;
 	}
 	os << std::endl;
 	os << "- global = " << (req.global?"TRUE":"FALSE") << std::endl;
@@ -203,6 +206,9 @@ public:
 			break;
 		case ReqType::ZERO_BLOCK:
 			os << "ZERO_BLOCK";
+			break;
+		case ReqType::INV_TLB:
+			os << "INV_TLB";
 			break;
 		}
 		os << std::endl;

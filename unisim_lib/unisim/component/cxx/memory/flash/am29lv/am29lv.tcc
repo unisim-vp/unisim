@@ -58,20 +58,20 @@ using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
-AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::AM29LV(const char *name, Object *parent) :
-	Object(name, parent, "AM29LVxxx flash memory"),
-	Service<Memory<typename CONFIG::ADDRESS> >(name, parent),
-	memory_export("memory-export", this),
-	logger(*this),
-	verbose(false),
-	param_verbose("verbose", this, verbose, "enable/disable verbosity"),
-	org(0),
-	bytesize(BYTESIZE),
-	endian(E_LITTLE_ENDIAN),
-	param_org("org", this, org, "flash memory base address"),
-	param_bytesize("bytesize", this, bytesize, "flash memory size in bytes"),
-	param_endian("endian", this, endian, "endianness of flash memory"),
-	param_sector_protect("sector-protect", this, sector_protect, CONFIG::NUM_SECTORS, "enable/disable sector write protection")
+AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::AM29LV(const char *name, Object *parent)
+	: Object(name, parent, "AM29LVxxx flash memory")
+	, Service<Memory<typename CONFIG::ADDRESS> >(name, parent)
+	, memory_export("memory-export", this)
+	, logger(*this)
+	, verbose(false)
+	, param_verbose("verbose", this, verbose, "enable/disable verbosity")
+	, org(0)
+	, bytesize(BYTESIZE)
+	, endian(E_LITTLE_ENDIAN)
+	, param_org("org", this, org, "flash memory base address")
+	, param_bytesize("bytesize", this, bytesize, "flash memory size in bytes")
+	, param_endian("endian", this, endian, "endianness of flash memory")
+	, param_sector_protect("sector-protect", this, sector_protect, CONFIG::NUM_SECTORS, "enable/disable sector write protection")
 {
 	uint32_t chip_io_width;
 	for(config_addr_shift = 0, chip_io_width = CHIP_IO_WIDTH; chip_io_width > 1; chip_io_width >>= 1, config_addr_shift++);
@@ -161,7 +161,7 @@ bool AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::ReverseCompare(const uint8_t *data1, co
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
-bool AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::ReverseCopy(uint8_t *dest, const uint8_t *source, uint32_t size)
+void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::ReverseCopy(uint8_t *dest, const uint8_t *source, uint32_t size)
 {
 	if(size > 0)
 	{
@@ -259,7 +259,7 @@ bool AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::FSM(COMMAND command, typename CONFIG::A
 
 	do
 	{
-		FSM(chip_num, command, addr, data, sz > CHIP_IO_WIDTH ? CHIP_IO_WIDTH : sz);
+		FSM(chip_num, command, addr, data, sz > (int32_t) CHIP_IO_WIDTH ? CHIP_IO_WIDTH : sz);
 	} while(data += CHIP_IO_WIDTH, addr += CHIP_IO_WIDTH, chip_num = (chip_num + 1) % NUM_CHIPS, (sz -= CHIP_IO_WIDTH) > 0);
 
 	return true;

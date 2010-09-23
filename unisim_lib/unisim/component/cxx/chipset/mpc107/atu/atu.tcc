@@ -158,6 +158,8 @@ MemRead(ADDRESS_TYPE addr, uint8_t *read_data, unsigned int size) {
 	/* set the read data */
 	for(unsigned int i = 0; i < size; i++)
 		read_data[i] = (uint8_t)((data >> (i * 8)) & (uint32_t)0x0ff);
+	
+	return true;
 }
 
 template<class ADDRESS_TYPE, class PCI_ADDRESS_TYPE, bool DEBUG>
@@ -258,6 +260,8 @@ PCIRead(PCI_ADDRESS_TYPE addr, uint8_t *read_data, unsigned int size) {
 	/* set the read data */
 	for(unsigned int i = 0; i < size; i++)
 		read_data[i] = (uint8_t)((data >> (i * 8)) & (uint32_t)0x0ff);
+	
+	return true;
 }
 
 template<class ADDRESS_TYPE, class PCI_ADDRESS_TYPE, bool DEBUG>
