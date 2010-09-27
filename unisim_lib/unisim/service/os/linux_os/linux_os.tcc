@@ -1336,7 +1336,6 @@ template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 int LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 Stat(int fd, struct powerpc_stat_t *target_stat)
 {
-	std::cerr << "sizeof=" << sizeof(powerpc_stat_t) << std::endl;
 	int ret;
 	struct stat host_stat;
 	ret = fstat(fd, &host_stat);

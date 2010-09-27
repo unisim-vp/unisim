@@ -60,20 +60,21 @@ Bridge(const sc_module_name& name, Object *parent) :
 	sc_module(name),
 	Service<Memory<fsb_address_t> >(name, parent),
 	Client<Memory<mem_address_t> >(name, parent),
-	logger(*this),
-	master_port("master-port"),
 	slave_port("slave-port"),
+	master_port("master-port"),
 	memory_export("memory-export", this),
 	memory_import("memory-import", this),
+	logger(*this),
 	verbose_all(false),
 	param_verbose_all("verbose_all", this, verbose_all),
+	buffer_req("buffer_req", CONFIG::BUFFER_SIZE),
 	fsb_cycle_sctime(),
+	mem_cycle_sctime(),
 	fsb_cycle_time(0),
 	param_fsb_cycle_time("fsb-cycle-time", this, fsb_cycle_time),
-	mem_cycle_sctime(),
 	mem_cycle_time(0),
-	param_mem_cycle_time("mem-cycle-time", this, mem_cycle_time),
-	buffer_req("buffer_req", CONFIG::BUFFER_SIZE) {
+	param_mem_cycle_time("mem-cycle-time", this, mem_cycle_time)
+{
 	slave_port(*this);
 	
 	SC_THREAD(DispatchMemory);
@@ -206,6 +207,7 @@ DispatchMemory() {
 			case fsb_req_t::FLUSH_BLOCK: logger << "FLUSH_BLOCK"; break;
 			case fsb_req_t::ZERO_BLOCK: logger << "ZERO_BLOCK"; break;
 			case fsb_req_t::INV_TLB: logger << "INV_TLB"; break;
+			default: break;
 			}
 			logger << " will be ignored (can not be handled by this module)"
 				<< std::endl << EndDebugWarning;
