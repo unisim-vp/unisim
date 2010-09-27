@@ -60,20 +60,19 @@ PWM<PWM_SIZE>::PWM(const sc_module_name& name, Object *parent) :
 	memory_export("memory_export", this),
 	memory_import("memory_import", this),
 	registers_export("registers_export", this),
-	trap_reporting_import("trap_reproting_import", this),
+	trap_reporting_import("trap_reporting_import", this),
 
 	debug_enabled(false),
 	param_debug_enabled("debug-enabled", this, debug_enabled),
+	channel_output_reg("channel", this, output, PWM_SIZE, "PWM output"),
+
+	bus_cycle_time_int(0),
+	param_bus_cycle_time_int("bus-cycle-time", this, bus_cycle_time_int),
 
 	baseAddress(0x0300), // MC9S12XDP512V2 - PWM baseAddress
 	param_baseAddress("base-address", this, baseAddress),
 	interruptOffset(0x8C),
-	param_interruptOffset("interrupt-offset", this, interruptOffset),
-	bus_cycle_time_int(0),
-	param_bus_cycle_time_int("bus-cycle-time", this, bus_cycle_time_int),
-	
-	channel_output_reg("channel", this, output, PWM_SIZE, "PWM output")
-
+	param_interruptOffset("interrupt-offset", this, interruptOffset)
 {
 
 	uint8_t channel_number;
@@ -132,9 +131,9 @@ void PWM<PWM_SIZE>::start() {
  * remark: PWM7IN is channel[7]
  */
 template <uint8_t PWM_SIZE>
-bool PWM<PWM_SIZE>::pwm7in_ChangeStatus(bool pwm7in_status) {
+void PWM<PWM_SIZE>::pwm7in_ChangeStatus(bool pwm7in_status) {
 
-	const uint8_t pwm7ena_mask = 0x01;
+	//const uint8_t pwm7ena_mask = 0x01;
 	const uint8_t pwmlvl_mask = 0x10;
 	const uint8_t set_pwm7in_mask = 0x04;
 	const uint8_t clear_pwm7in_mask = 0xFB;
@@ -516,7 +515,7 @@ bool PWM<PWM_SIZE>::write(uint8_t offset, uint8_t val) {
 			const uint8_t pwm7ena_mask = 0x01;
 			const uint8_t pwmrstrt_mask = 0x20;
 			const uint8_t pwm7inl_mask = 0x02;
-			const uint8_t pwm7in_mask = 0x04;
+			//const uint8_t pwm7in_mask = 0x04;
 
 
 			/*
@@ -801,12 +800,11 @@ void PWM<PWM_SIZE>::Reset() {
 template <uint8_t PWM_SIZE>
 PWM<PWM_SIZE>::Channel_t::Channel_t(const sc_module_name& name, PWM *parent, const uint8_t channel_num, uint8_t *pwmcnt_ptr, uint8_t *pwmper_ptr, uint8_t *pwmdty_ptr) :
 	sc_module(name),
-	pwmParent(parent),
-	channel_index(channel_num),
 	pwmcnt_register_ptr(pwmcnt_ptr),
 	pwmper_register_value_ptr(pwmper_ptr),
-	pwmdty_register_value_ptr(pwmdty_ptr)
-
+	pwmdty_register_value_ptr(pwmdty_ptr),
+	channel_index(channel_num),
+	pwmParent(parent)
 {
 
 	channelMask = (0x01 << channel_index);
@@ -887,7 +885,7 @@ template <class T> void PWM<PWM_SIZE>::Channel_t::checkChangeStateAndWait(const 
 
 	uint16_t toPeriod;
 	bool	isCenterAligned = true;
-	int8_t increment = 1;
+	//int8_t increment = 1;
 
 	T dty = *((T *) pwmdty_register_value_ptr);
 	T period = *((T *) pwmper_register_value_ptr);

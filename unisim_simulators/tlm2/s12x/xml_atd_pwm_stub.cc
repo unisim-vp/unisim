@@ -59,6 +59,8 @@ XML_ATD_PWM_STUB::XML_ATD_PWM_STUB(const sc_module_name& name, Object *parent) :
 
 	SC_THREAD(ProcessATD);
 	SC_THREAD(ProcessPWM);
+	
+	quantumkeeper.set_global_quantum(sc_time(1.0, SC_MS));
 
 }
 
@@ -102,7 +104,7 @@ template <int SIZE> void XML_ATD_PWM_STUB::parseRow (xmlDocPtr doc, xmlNodePtr c
 	 * First cells of row are ATD voltage
 	 * The last cell is time of sampling
 	 */
-	for (int i=0; (i < rowCells.size()) && (i < SIZE); i++) {
+	for (unsigned int i=0; (i < rowCells.size()) && (i < SIZE); i++) {
 		cur = rowCells.at(i);
 
 		xmlNodePtr node = cur->children;
@@ -195,13 +197,12 @@ void XML_ATD_PWM_STUB::ProcessATD()
 	/**
 	 * Note: The Software sample the ATDDRx every 20ms. As well as for the first sampling
 	 */
-	wait(sc_time(20, SC_MS));
+	quantumkeeper.set(sc_time(20, SC_MS));
 
 	while(1)
 	{
 		double atd1_anValue[ATD1_SIZE];
 		double atd0_anValue[ATD0_SIZE];
-		bool pwmValue[PWM_SIZE];
 
 		uint8_t atd0_wrap_around;
 		uint8_t atd0_start;
@@ -270,10 +271,8 @@ void XML_ATD_PWM_STUB::ProcessATD()
 		Output_ATD1(atd1_anValue);
 		Output_ATD0(atd0_anValue);
 
-		wait(delay);
-
 		quantumkeeper.inc(delay);
-		quantumkeeper.sync();
+		if(quantumkeeper.need_sync()) quantumkeeper.sync();
 	}
 
 }

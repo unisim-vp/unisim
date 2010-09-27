@@ -124,23 +124,6 @@ private:
 
 	typedef tlm_utils::simple_initiator_socket_tagged<Router, BUSWIDTH, TYPES> InitSocket;
 	typedef tlm_utils::passthrough_target_socket_tagged<Router, BUSWIDTH, TYPES> TargSocket;
-// 	class InitSocket : 
-// 		public tlm_utils::simple_initiator_socket_tagged<Router, BUSWIDTH, TYPES> {
-// 	public:
-// 		InitSocket() :
-// 			tlm_utils::simple_initiator_socket_tagged<Router, BUSWIDTH, TYPES>("init_socket")
-// 		{
-// 		}
-// 	};
-// 
-// 	class TargSocket :
-// 		public tlm_utils::passthrough_target_socket_tagged<Router, BUSWIDTH, TYPES> {
-// 	public:
-// 		TargSocket() :
-// 			tlm_utils::passthrough_target_socket_tagged<Router, BUSWIDTH, TYPES>("targ_socket")
-// 		{
-// 		}
-// 	};
 
 public:
 	SC_HAS_PROCESS(Router);
@@ -149,12 +132,8 @@ public:
 
 	/** Router initiator port sockets */
 	InitSocket *init_socket[OUTPUT_SOCKETS];
-	// tlm_utils::simple_initiator_socket_tagged<Router, BUSWIDTH, TYPES> init_socket[OUTPUT_SOCKETS];
-	// TODO: remove ==> tlm_utils::multi_passthrough_initiator_socket<Router, BUSWIDTH, TYPES> init_socket;
 	/** Router target port sockets */
 	TargSocket *targ_socket[INPUT_SOCKETS];
-	// tlm_utils::passthrough_target_socket_tagged<Router, BUSWIDTH, TYPES> targ_socket[INPUT_SOCKETS];
-	// TODO: remove ==> tlm_utils::multi_passthrough_target_socket<Router, BUSWIDTH, TYPES> targ_socket;
 
 	/** Incomming memory interface for incomming debugging/loading requests 
 	 * One single memory interface for incomming requests is enough, as there is no concurrency */

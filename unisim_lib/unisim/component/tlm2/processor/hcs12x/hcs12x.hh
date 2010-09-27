@@ -160,16 +160,18 @@ private:
 	sc_time last_cpu_time;
 	sc_time nice_time;
 	sc_time next_nice_time;
-	uint64_t nice_time_int;
 
 	sc_time tlm2_btrans_time;
 	sc_time opCyclesArray[32]; // replace with the Max Inst Cycles
 
 	uint64_t bus_cycle_time_int;
 
-	Parameter<uint64_t> param_nice_time;
+	Parameter<sc_time> param_nice_time;
 	Parameter<uint64_t> param_bus_cycle_time;
 
+	bool enable_fine_timing;
+	Parameter<bool> param_enable_fine_timing;
+	
 	// verbose parameters
 	bool verbose_tlm_bus_synchronize;
 	Parameter<bool> param_verbose_tlm_bus_synchronize;

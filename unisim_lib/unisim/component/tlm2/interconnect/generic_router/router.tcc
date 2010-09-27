@@ -134,13 +134,11 @@ template <class CONFIG> const unsigned int unisim::component::tlm2::interconnect
 template<class CONFIG>
 Router<CONFIG>::
 Router(const sc_module_name &name, Object *parent) :
-sc_module(name),
 unisim::kernel::service::Object(name, parent),
 unisim::kernel::service::Service<unisim::service::interfaces::Memory<uint64_t> >(name, parent),
 unisim::kernel::service::Client<unisim::service::interfaces::Memory<uint64_t> >(name, parent),
+sc_module(name),
 memory_export("memory-export", this),
-// TODO: remove ==> targ_socket("targ_socket"),
-// TODO: remove ==> init_socket("init_socket"), 
 m_req_dispatcher(),
 m_rsp_dispatcher(),
 cycle_time(SC_ZERO_TIME),
@@ -150,14 +148,14 @@ port_buffer_size(0),
 param_port_buffer_size("port_buffer_size", this, port_buffer_size, "Defines the size of the buffer for incomming requests in each of the input ports (0 = infinite)"),
 logger(*this),
 verbose_all(false),
-verbose_setup(false),
-verbose_tlm(false),
-verbose_tlm_debug(false),
-verbose_memory_interface(false),
 param_verbose_all(0),
+verbose_setup(false),
 param_verbose_setup(0),
+verbose_tlm(false),
 param_verbose_tlm(0),
+verbose_tlm_debug(false),
 param_verbose_tlm_debug(0),
+verbose_memory_interface(false),
 param_verbose_memory_interface(0)
 {
 	if (VERBOSE)
@@ -429,6 +427,7 @@ I_nb_transport_bw_cb(int id, transaction_type &trans, phase_type &phase, sc_core
 					logger << EndDebug;
 					sc_stop();
 					wait();
+					return tlm::TLM_COMPLETED; // should never occur
 				}
 				if (VerboseTLM()) {
 					logger << DebugInfo << "Received response through init_socket[" << id << "], queueing it to be sent through targ_socket[" << targ_id << "]"  << endl
@@ -544,6 +543,7 @@ T_nb_transport_fw_cb(int id, transaction_type &trans, phase_type &phase, sc_core
 				logger << EndDebug;
 				sc_stop();
 				wait();
+				return tlm::TLM_COMPLETED; // should never occur
 			}
 
 			/* perform the address translation */
@@ -1013,6 +1013,7 @@ SendReq(unsigned int id, transaction_type &trans) {
 							logger << EndDebug;
 							sc_stop();
 							wait();
+							return; // should never occur
 						}
 						if (VerboseTLM()) {
 							logger << DebugInfo << "Transaction request sent through the init_port[" << id << "] accepted and response received (TLM_UPDATED, BEGIN_REQ), queueing the response to be sent through the targ_socket[" << targ_id << "]" << endl
@@ -1089,6 +1090,7 @@ SendReq(unsigned int id, transaction_type &trans) {
 						logger << EndDebug;
 						sc_stop();
 						wait();
+						return; // should never occur
 					}
 					if (VerboseTLM()) {
 						logger << DebugInfo << "Transaction request sent through the init_port[" << id << "] accepted and response received (TLM_UPDATED, BEGIN_REQ), queueing the response to be sent through the targ_socket[" << targ_id << "]" << endl

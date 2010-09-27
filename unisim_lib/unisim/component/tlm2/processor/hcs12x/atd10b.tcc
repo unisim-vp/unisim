@@ -57,41 +57,45 @@ ATD10B<ATD_SIZE>::ATD10B(const sc_module_name& name, Object *parent) :
 	anx_socket("anx_socket"),
 	slave_socket("slave_socket"),
 
-	input_anx_payload_queue("input_anx_payload_queue"),
-
 	memory_export("memory_export", this),
 	memory_import("memory_import", this),
 	registers_export("registers_export", this),
-	trap_reporting_import("trap_reproting_import", this),
+	trap_reporting_import("trap_reporting_import", this),
+
+	input_anx_payload_queue("input_anx_payload_queue"),
+
+	bus_cycle_time_int(0),
+	param_bus_cycle_time_int("bus-cycle-time", this, bus_cycle_time_int),
+
+	conversionStop(false),
+	abortSequence(false),
+	resultIndex(0),
+
+	isTriggerModeRunning(false),
+	isATDON(false),
 
 	baseAddress(0x0080), // MC9S12XDP512V2 - ATD baseAddress
 	param_baseAddress("base-address", this, baseAddress),
 	interruptOffset(0xD0), // ATD1 - ATDCTL2 (ASCIE)
 	param_interruptOffset("interrupt-offset", this, interruptOffset),
-	bus_cycle_time_int(0),
-	param_bus_cycle_time_int("bus-cycle-time", this, bus_cycle_time_int),
-	debug_enabled(false),
-	param_debug_enabled("debug-enabled", this, debug_enabled),
 
 	vrl(0),
 	vrh(5.12),
 	param_vrl("vrl", this, vrl),
 	param_vrh("vrh", this, vrh),
-	vil(1.75),
-	vih(3.25),
-	param_vih("vih", this, vih),
-	param_vil("vil", this, vil),
-	hasExternalTrigger(false),
-	param_hasExternalTrigger("Has-External-Trigger", this, hasExternalTrigger),
-	conversionStop(false),
-	abortSequence(false),
-	isTriggerModeRunning(false),
-	isATDON(false),
+	
+	debug_enabled(false),
+	param_debug_enabled("debug-enabled", this, debug_enabled),
 
 	analog_signal_reg("ANx", this, analog_signal, ATD_SIZE, "ANx: ATD Analog Input Pins"),
 
-	resultIndex(0)
-
+	vih(3.25),
+	vil(1.75),
+	param_vih("vih", this, vih),
+	param_vil("vil", this, vil),
+	
+	hasExternalTrigger(false),
+	param_hasExternalTrigger("Has-External-Trigger", this, hasExternalTrigger)
 {
 	
 	for (uint8_t i=0; i<ATD_SIZE; i++) {
@@ -250,7 +254,13 @@ void ATD10B<ATD_SIZE>::InputANx(double anValue[ATD_SIZE])
 			anValue[i] = payload->anPort[i];
 		}
 
+		if (debug_enabled) {
+			cout << name() << ":: Starting RunScanMode" << endl;
+		}
 		RunScanMode();
+		if (debug_enabled) {
+			cout << name() << ":: End RunScanMode" << endl;
+		}
 
 	} else {
 		cerr << "Warning: " << name() << " => The ATD is OFF. You have to set ATDCTL2::ADPU bit before.\n";
@@ -369,6 +379,7 @@ void ATD10B<ATD_SIZE>::RunScanMode()
 						if (debug_enabled) {
 							cerr << "Warning: " << name() << " => Reserved value of CD/CC/CB/CA.\n";
 						}
+						anSignal = vrl;
 				}
 			} else {
 				anSignal = analog_signal[currentChannel];

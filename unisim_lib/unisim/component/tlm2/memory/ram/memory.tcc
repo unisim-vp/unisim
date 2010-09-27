@@ -131,7 +131,7 @@ unsigned int Memory<BUSWIDTH, PAGE_SIZE, DEBUG>::transport_dbg(tlm::tlm_generic_
 	unsigned char *byte_enable_ptr = payload.get_byte_enable_ptr();
 	unsigned int byte_enable_length = byte_enable_ptr ? payload.get_byte_enable_length() : 0;
 	unsigned int streaming_width = payload.get_streaming_width();
-	bool status;
+	bool status = false;
 
 	switch(cmd)
 	{
@@ -209,7 +209,7 @@ tlm::tlm_sync_enum Memory<BUSWIDTH, PAGE_SIZE, DEBUG>::nb_transport_fw(tlm::tlm_
 	unsigned char *byte_enable_ptr = payload.get_byte_enable_ptr();
 	unsigned int byte_enable_length = byte_enable_ptr ? payload.get_byte_enable_length() : 0;
 	unsigned int streaming_width = payload.get_streaming_width();
-	bool status;
+	bool status = false;
 
 	switch(cmd)
 	{
@@ -283,7 +283,7 @@ void Memory<BUSWIDTH, PAGE_SIZE, DEBUG>::b_transport(tlm::tlm_generic_payload& p
 	unsigned char *byte_enable_ptr = payload.get_byte_enable_ptr();
 	unsigned int byte_enable_length = byte_enable_ptr ? payload.get_byte_enable_length() : 0;
 	unsigned int streaming_width = payload.get_streaming_width();
-	bool status;
+	bool status = false;
 
 	switch(cmd)
 	{

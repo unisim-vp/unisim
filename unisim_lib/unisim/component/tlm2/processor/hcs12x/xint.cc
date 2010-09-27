@@ -50,21 +50,23 @@ address_t XINT::XINT_REGS_ADDRESSES[XINT::XINT_MEMMAP_SIZE];
 uint8_t XINT::XINT_REGS_RESET_VALUES[XINT::XINT_MEMMAP_SIZE];
 
 XINT::XINT(const sc_module_name& name, Object *parent) :
-	sc_module(name),
 	Object(name, parent),
+	sc_module(name),
 	Service<Memory<service_address_t> >(name, parent),
 	Service<Registers>(name, parent),
 	Client<Memory<service_address_t> >(name, parent),
+
+	interrupt_request("interrupt_request"),
 
 	memory_export("memory_export", this),
 	memory_import("memory_import", this),
 	registers_export("registers_export", this),
 
-	interrupt_request("interrupt_request"),
 	input_payload_queue("input_payload_queue"),
+
+	isHardwareInterrupt(false),
 	debug_enabled(false),
-	param_debug_enabled("debug-enabled", this, debug_enabled),
-	isHardwareInterrupt(false)
+	param_debug_enabled("debug-enabled", this, debug_enabled)
 {
 
 	interrupt_request(*this);

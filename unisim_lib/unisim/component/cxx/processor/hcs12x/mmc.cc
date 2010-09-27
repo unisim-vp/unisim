@@ -52,20 +52,20 @@ address_t MMC::MMC_REGS_ADDRESSES[MMC::MMC_MEMMAP_SIZE];
 MMC::MMC(const char *name, Object *parent):
 	Object(name, parent),
 	Service<Memory<service_address_t> >(name, parent),
-	Service<Registers>(name, parent),
 	Client<Memory<service_address_t> >(name, parent),
+	Service<Registers>(name, parent),
 	memory_export("memory_export", this),
 	internal_memory_import("internal_memory_import", this),
 	external_memory_import("external_memory_import", this),
 	registers_export("registers_export", this),
-	address_encoding(ADDRESS::BANKED),
-	param_address_encoding("address-encoding",this,address_encoding),
-	mode_int(MMC_MODE_RESET),
-	mmcctl1_int(MMCCTL1_RESET),
 	debug_enabled(false),
 	param_debug_enabled("debug-enabled", this, debug_enabled),
+	mode_int(MMC_MODE_RESET),
+	mmcctl1_int(MMCCTL1_RESET),
 	param_mode("mode", this, mode_int),
-	param_mmcctl1("mmcctl1", this, mmcctl1_int)
+	param_mmcctl1("mmcctl1", this, mmcctl1_int),
+	address_encoding(ADDRESS::BANKED),
+	param_address_encoding("address-encoding",this,address_encoding)
 
 {
 

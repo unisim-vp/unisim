@@ -88,7 +88,7 @@ public:
 	typedef MMC inherited;
 
 	ServiceImport<TrapReporting > trap_reporting_import;
-
+	
 	tlm_utils::simple_target_socket<S12XMMC> cpu_socket;
 	tlm_utils::simple_initiator_socket<S12XMMC> local_socket;
 	tlm_utils::simple_initiator_socket<S12XMMC> external_socket;

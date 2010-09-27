@@ -277,9 +277,9 @@ Simulator::Simulator(int argc, char **argv)
 	, host_time(0)
 	, enable_gdb_server(false)
 	, enable_inline_debugger(false)
-	, isS19(false)
 	, param_enable_gdb_server("enable-gdb-server", 0, enable_gdb_server, "Enable/Disable GDB server instantiation")
 	, param_enable_inline_debugger("enable-inline-debugger", 0, enable_inline_debugger, "Enable/Disable inline debugger instantiation")
+	, isS19(false)
 {
 	//=========================================================================
 	//===      Handling of file to load passed as command line argument     ===
@@ -551,17 +551,17 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	const char *filename = "";
 	const char *symbol_filename = "";
 
-	double cpu_frequency = 4.0; // in Mhz
+//	double cpu_frequency = 4.0; // in Mhz
 
-	uint8_t cpu_clock_multiplier = 1;
-	uint8_t xgate_clock_multiplier = 2;
+//	uint8_t cpu_clock_multiplier = 1;
+//	uint8_t xgate_clock_multiplier = 2;
 //	double cpu_ipc = 1.0; // in instructions per cycle
-	uint64_t cpu_cycle_time = (uint64_t)(1e6 / cpu_frequency); // in picoseconds
-	uint64_t fsb_cycle_time = cpu_clock_multiplier * cpu_cycle_time;
-	uint32_t mem_cycle_time = fsb_cycle_time;
+//	uint64_t cpu_cycle_time = (uint64_t)(1e6 / cpu_frequency); // in picoseconds
+//	uint64_t fsb_cycle_time = cpu_clock_multiplier * cpu_cycle_time;
+//	uint32_t mem_cycle_time = fsb_cycle_time;
 	bool force_use_virtual_address = true;
 
-	ADDRESS::ENCODING address_encoding = ADDRESS::BANKED;
+//	ADDRESS::ENCODING address_encoding = ADDRESS::BANKED;
 
 	//=========================================================================
 	//===                     Component run-time configuration              ===
@@ -629,7 +629,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("CPU.requires-finished-instruction-reporting", false);
 	simulator->SetVariable("CPU.debug-enabled", false);
 	simulator->SetVariable("CPU.max-inst", 0xffffffffffffffffULL);
-	simulator->SetVariable("CPU.nice-time", 0xffffffffffULL);
+	simulator->SetVariable("CPU.nice-time", "1 ms");
 	simulator->SetVariable("CPU.cpu-cycle-time", 250000);
 	simulator->SetVariable("CPU.bus-cycle-time", 250000);
 	simulator->SetVariable("CPU.verbose-tlm-bus-synchronize", false);
@@ -724,7 +724,7 @@ void Simulator::Run()
 	double time_start = host_time->GetTime();
 
 	EnableDebug();
-	void (*prev_sig_int_handler)(int);
+	void (*prev_sig_int_handler)(int) = 0;
 
 	if(!inline_debugger)
 	{

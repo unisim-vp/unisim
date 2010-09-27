@@ -45,10 +45,11 @@ ATD_PWM_STUB::ATD_PWM_STUB(const sc_module_name& name, Object *parent) :
 	slave_sock("slave_sock"),
 	input_payload_queue("input_payload_queue"),
 
+	anx_stimulus_period(80000000), // 80 us
+
 	trace_enable(false),
 	param_trace_enable("trace-enable", this, trace_enable),
 
-	anx_stimulus_period(80000000), // 80 us
 	param_anx_stimulus_period("anx-stimulus-period", this, anx_stimulus_period)
 
 

@@ -65,19 +65,20 @@ HCS12X(const sc_module_name& name, Object *parent) :
 	cpu_time(),
 	bus_time(),
 	last_cpu_time(),
-	nice_time(),
+	nice_time(1.0, SC_US),
 	next_nice_time(),
-	nice_time_int(1000000000000ULL),
 	bus_cycle_time_int(0),
-	last_instruction_counter(0),
-	param_nice_time("nice-time", this, nice_time_int),
+	param_nice_time("nice-time", this, nice_time),
 	param_bus_cycle_time("bus-cycle-time", this, bus_cycle_time_int),
+	enable_fine_timing(false),
+	param_enable_fine_timing("enable-fine-timing", this, enable_fine_timing),
 	verbose_tlm_bus_synchronize(false),
 	param_verbose_tlm_bus_synchronize("verbose-tlm-bus-synchronize", this, verbose_tlm_bus_synchronize),
 	verbose_tlm_run_thread(false),
 	param_verbose_tlm_run_thread("verbose-tlm-run-thread", this, verbose_tlm_run_thread),
 	verbose_tlm_commands(false),
-	param_verbose_tlm_commands("verbose-tlm-commands", this, verbose_tlm_commands)
+	param_verbose_tlm_commands("verbose-tlm-commands", this, verbose_tlm_commands),
+	last_instruction_counter(0)
 {
 
 	SC_HAS_PROCESS(HCS12X);
@@ -251,7 +252,6 @@ Setup() {
 
 	this->Reset();
 
-	nice_time = sc_time((double)nice_time_int, SC_PS);
 	if(debug_enabled &&  inherited::verbose_setup) {
 		*inherited::logger << DebugInfo
 			<< "Setting CPU cycle time to " << cpu_cycle_time.to_string() << std::endl
@@ -294,6 +294,7 @@ BusSynchronize() {
 		bus_time += bus_cycle_time;
 	}
 	sc_time sleep_time = bus_time - sc_time_stamp();
+	std::cerr << "HCS12X: sleep_time=" << sleep_time << std::endl;
 	wait(sleep_time);
 	cpu_time = sc_time_stamp();
 	last_cpu_time = sc_time_stamp();
@@ -349,6 +350,9 @@ HCS12X::Synchronize()
 {
 	sc_time time_spent = cpu_time - last_cpu_time;
 	last_cpu_time = cpu_time;
+	if (debug_enabled) {
+		std::cerr << "HCS12X: time_spent=" << time_spent << std::endl;
+	}
 	wait(time_spent);
 	cpu_time = sc_time_stamp();
 //	next_nice_sctime = sc_time_stamp() + nice_sctime;
@@ -360,14 +364,8 @@ HCS12X ::
 Run() {
 	uint8_t opCycles = 0;
 
-	sc_time &time_per_instruction = opCyclesArray[0];
-
 	while(1) {
 
-		if(cpu_time >= next_nice_time) {
-			next_nice_time = cpu_time + nice_time;
-			Synchronize();
-		}
 
 		if(debug_enabled && verbose_tlm_run_thread)
 			*inherited::logger << DebugInfo
@@ -381,13 +379,20 @@ Run() {
 				<< "Finished executing step"
 				<< std::endl << EndDebugInfo;
 
-		time_per_instruction = opCyclesArray[opCycles];
-		cpu_time += time_per_instruction;
+		sc_time & time_per_instruction = opCyclesArray[opCycles];
 
-		if (CONFIG::TIMING_ENABLE) {
+		if (enable_fine_timing) {
+			if (debug_enabled) {
+				std::cerr << "HCS12X: time_per_instruction=" << time_per_instruction << std::endl;
+			}
+			
 			wait(time_per_instruction);
 		} else {
-			wait(SC_ZERO_TIME);
+			cpu_time += time_per_instruction;
+			if(cpu_time >= next_nice_time) {
+				next_nice_time = cpu_time + nice_time;
+				Synchronize();
+			}
 		}
 
 	}

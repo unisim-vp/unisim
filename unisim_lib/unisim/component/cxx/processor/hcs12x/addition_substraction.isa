@@ -2368,7 +2368,18 @@ daa.execute = {
 	uint8_t a74 =  aVal >> 4;
 	uint8_t a30 = aVal & 0x0F;
 
-	
+	// cBit=0 A[7:4]=0-9 hBit=0 A[3:0]=0-9
+	if ((cBit == 0) &&
+		(a74 < 0xA) &&
+		(hBit == 0) &&
+		(a30 < 0xA))
+	{
+		Add8(result, carry_out, overflow, sign, aVal, 0x00, 0x00);
+		cpu->setRegA(result);
+		cpu->ccr->clrC();
+	}
+	else
+	// cBit=0 A[7:4]=0-8 hBit=0 A[3:0]=A-F
 	if ((cBit == 0) &&
 		(a74 < 0x9) &&
 		(hBit == 0) &&
@@ -2378,7 +2389,8 @@ daa.execute = {
 		cpu->setRegA(result);
 		cpu->ccr->clrC();
 	}
-	
+	else
+	// cBit=0 A[7:4]=0-9 hBit=1 A[3:0]=0-3
 	if ((cBit == 0) &&
 		(a74 < 0xA) &&
 		(hBit == 1) &&
@@ -2388,7 +2400,8 @@ daa.execute = {
 		cpu->setRegA(result);
 		cpu->ccr->clrC();
 	}
-
+	else
+	// cBit=0 A[7:4]=A-F hBit=0 A[3:0]=0-9
 	if ((cBit == 0) &&
 		(a74 > 0x9) &&
 		(hBit == 0) &&
@@ -2398,7 +2411,8 @@ daa.execute = {
 		cpu->setRegA(result);
 		cpu->ccr->setC();
 	}
-
+	else
+	// cBit=0 A[7:4]=9-F hBit=0 A[3:0]=A-F
 	if ((cBit == 0) &&
 		(a74 > 0x8) &&
 		(hBit == 0) &&
@@ -2408,7 +2422,8 @@ daa.execute = {
 		cpu->setRegA(result);
 		cpu->ccr->setC();
 	}
-
+	else
+	// cBit=0 A[7:4]=A-F hBit=1 A[3:0]=0-3
 	if ((cBit == 0) &&
 		(a74 > 0x9) &&
 		(hBit == 1) &&
@@ -2418,7 +2433,8 @@ daa.execute = {
 		cpu->setRegA(result);
 		cpu->ccr->setC();
 	}
-
+	else
+	// cBit=1 A[7:4]=0-2 hBit=0 A[3:0]=0-9
 	if ((cBit == 1) &&
 		(a74 < 0x3) &&
 		(hBit == 0) &&
@@ -2428,7 +2444,8 @@ daa.execute = {
 		cpu->setRegA(result);
 		cpu->ccr->setC();
 	}
-
+	else
+	// cBit=1 A[7:4]=0-2 hBit=0 A[3:0]=A-F
 	if ((cBit == 1) &&
 		(a74 < 0x3) &&
 		(hBit == 0) &&
@@ -2438,7 +2455,8 @@ daa.execute = {
 		cpu->setRegA(result);
 		cpu->ccr->setC();
 	}
-
+	else
+	// cBit=1 A[7:4]=0-3 hBit=1 A[3:0]=0-3
 	if ((cBit == 1) &&
 		(a74 < 0x4) &&
 		(hBit == 1) &&
@@ -2448,9 +2466,14 @@ daa.execute = {
 		cpu->setRegA(result);
 		cpu->ccr->setC();
 	}
+	else
+	{
+		// illegal combination of input operands
+		result = aVal;
+		std::cerr << "daa: illegal combination of input operands: A=0x" << std::hex << (unsigned int) aVal << std::dec << " H=" << (unsigned int) hBit << " C=" << (unsigned int) cBit << std::endl;
+	}
 	
 	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 	if (result == 0x00) cpu->ccr->setZ(); else cpu->ccr->clrZ();
-	if (overflow == 1) cpu->ccr->setV(); else cpu->ccr->clrV(); 
 }
 

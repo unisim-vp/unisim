@@ -65,30 +65,48 @@ CPU::CPU(const char *name, Object *parent):
 	Object(name, parent),
 	Client<DebugControl<service_address_t> >(name, parent),
 	Client<MemoryAccessReporting<service_address_t> >(name, parent),
-	Client<TrapReporting>(name, parent),
 	Service<MemoryAccessReportingControl>(name, parent),
 	Service<Disassembly<service_address_t> >(name, parent),
 	Service<Registers>(name, parent),
 	Service<Memory<service_address_t> >(name, parent),
 	Client<Memory<service_address_t> >(name, parent),
 	Client<SymbolTableLookup<service_address_t> >(name, parent),
-
-//	logger(*this),
-
+	Client<TrapReporting>(name, parent),
+	queueCurrentAddress(0xFFFE),
+	queueFirst(-1),
+	queueNElement(0),
 	disasm_export("disasm_export", this),
 	registers_export("registers_export", this),
-	memory_access_reporting_control_export("memory_access_reporting_control_export", this),
 	memory_export("memory_export", this),
+	memory_access_reporting_control_export("memory_access_reporting_control_export", this),
 	debug_control_import("debug_control_import", this),
 	memory_access_reporting_import("memory_access_reporting_import", this),
 	memory_import("memory_import", this),
-	trap_reporting_import("trap_reproting_import", this),
 	symbol_table_lookup_import("symbol-table-lookup-import",  this),
-
-	instruction_counter(0),
-	queueFirst(-1), queueNElement(0), queueCurrentAddress(0xFFFE),
-	bus_cycle(0),
+	logger(0),
+	trap_reporting_import("trap_reporting_import", this),
 	cpu_cycle(0),
+	bus_cycle(0),
+	verbose_all(false),
+	param_verbose_all("verbose-all", this, verbose_all),
+	verbose_setup(false),
+	param_verbose_setup("verbose-setup", this, verbose_setup),
+	verbose_step(false),
+	param_verbose_step("verbose-step", this, verbose_step),
+	verbose_dump_regs_start(false),
+	param_verbose_dump_regs_start("verbose-dump-regs-start", this, verbose_dump_regs_start),
+	verbose_dump_regs_end(false),
+	param_verbose_dump_regs_end("verbose-dump-regs-end", this, verbose_dump_regs_end),
+	verbose_exception(false),
+	param_verbose_exception("verbose-exception", this, verbose_exception),
+	trace_enable(false),
+	param_trace_enable("trace-enable", this, trace_enable),
+	requires_memory_access_reporting(true),
+	param_requires_memory_access_reporting("requires-memory-access-reporting", this, requires_memory_access_reporting),
+	requires_finished_instruction_reporting(true),
+	param_requires_finished_instruction_reporting("requires-finished-instruction-reporting", this, requires_finished_instruction_reporting),
+	debug_enabled(false),
+	param_debug_enabled("debug-enabled", this, debug_enabled),
 	asynchronous_interrupt(false),
 	maskableIbit_interrupt(false),
 	nonMaskableXIRQ_interrupt(false),
@@ -98,33 +116,15 @@ CPU::CPU(const char *name, Object *parent):
 	reset(false),
 	syscall_interrupt(false),
 	spurious_interrupt(false),
-
-	requires_memory_access_reporting(true),
-	param_requires_memory_access_reporting("requires-memory-access-reporting", this, requires_memory_access_reporting),
-	requires_finished_instruction_reporting(true),
-	param_requires_finished_instruction_reporting("requires-finished-instruction-reporting", this, requires_finished_instruction_reporting),
-
-	verbose_all(false),
-	param_verbose_all("verbose-all", this, verbose_all),
-	verbose_exception(false),
-	param_verbose_exception("verbose-exception", this, verbose_exception),
-	verbose_setup(false),
-	param_verbose_setup("verbose-setup", this, verbose_setup),
-	verbose_step(false),
-	param_verbose_step("verbose-step", this, verbose_step),
-	verbose_dump_regs_start(false),
-	param_verbose_dump_regs_start("verbose-dump-regs-start", this, verbose_dump_regs_start),
-	verbose_dump_regs_end(false),
-	param_verbose_dump_regs_end("verbose-dump-regs-end", this, verbose_dump_regs_end),
-	trace_enable(false),
-	param_trace_enable("trace-enable", this, trace_enable),
-
-	debug_enabled(false),
-	param_debug_enabled("debug-enabled", this, debug_enabled),
+	instruction_counter(0),
 	max_inst((uint64_t) -1),
+	stat_instruction_counter("instruction-counter", this, instruction_counter),
 	param_max_inst("max-inst",this,max_inst)
 
 {
+	stat_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_max_inst.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	
     ccr = new CCR_t();
 
     eblb = new EBLB(this);
@@ -173,7 +173,7 @@ void CPU::Reset()
 	lastPC = 0;
 
 	ccr->reset();
-	for (char i=0; i < QUEUE_SIZE; i++) queueBuffer[i] = 0;
+	for (unsigned int i=0; i < QUEUE_SIZE; i++) queueBuffer[i] = 0;
 }
 
 //=====================================================================
@@ -830,6 +830,7 @@ T EBLB::getter(uint8_t rr) // getter function
 		} break;
 		default:;
 	}
+	throw std::runtime_error("Internal error");
 }
 
 template <class T>

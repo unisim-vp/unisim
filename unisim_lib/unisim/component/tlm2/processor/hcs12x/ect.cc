@@ -47,31 +47,32 @@ ECT::ECT(const sc_module_name& name, Object *parent) :
 	Object(name, parent),
 	sc_module(name),
 
+	Client<TrapReporting>(name, parent),
 	Service<Memory<service_address_t> >(name, parent),
 	Service<Registers>(name, parent),
 	Client<Memory<service_address_t> >(name, parent),
-	Client<TrapReporting>(name, parent),
+
+	trap_reporting_import("trap_reporting_import", this),
 
 	slave_socket("slave_socket"),
 
-	trap_reporting_import("trap_reproting_import", this),
 	memory_export("memory_export", this),
 	memory_import("memory_import", this),
 	registers_export("registers_export", this),
 
+	bus_cycle_time_int(0),
+	param_bus_cycle_time_int("bus-cycle-time", this, bus_cycle_time_int),
+
 	baseAddress(0x0040), // MC9S12XDP512V2 - ECT baseAddress
 	param_baseAddress("base-address", this, baseAddress),
-	debug_enabled(false),
-	param_debug_enabled("debug-enabled", this, debug_enabled),
 
 	interrupt_offset_channel0(0xEE),
 	param_interrupt_offset_channel0("interrupt-offset-channel0", this, interrupt_offset_channel0),
 	interrupt_offset_overflow(0xDE),
 	param_interrupt_offset_overflow("interrupt-offset-overflow", this, interrupt_offset_overflow),
 
-	bus_cycle_time_int(0),
-	param_bus_cycle_time_int("bus-cycle-time", this, bus_cycle_time_int)
-
+	debug_enabled(false),
+	param_debug_enabled("debug-enabled", this, debug_enabled)
 {
 
 	interrupt_request(*this);

@@ -85,6 +85,7 @@ using unisim::kernel::service::Service;
 using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::Parameter;
+using unisim::kernel::service::Statistic;
 
 using unisim::service::interfaces::TrapReporting;
 using unisim::service::interfaces::DebugControl;
@@ -414,28 +415,28 @@ public:
 	 * ******************************************************************/
 	static string xb_getAddrRegLabel(uint8_t rr) {
 		switch (rr) {
-    	case 0:
-       		return "X";
-    	case 1:
-   	    	return "Y";
+		case 0:
+			return "X";
+		case 1:
+			return "Y";
 		case 2:
-       		return "SP";
-    	case 3:
-   	    	return "PC";
+			return "SP";
+		case 3:
+			return "PC";
 		}
+		return "unknown";
 	}
 
 	static string xb_getAccRegLabel(uint8_t rr) {
 		switch (rr) {
-    	case 0:
-       		return "A";
-    	case 1:
-   	    	return "B";
+		case 0:
+			return "A";
+		case 1:
+			return "B";
 		case 2:
-       		return "D";
-       	default:
-       		return "unknown"; // rr=11 see accumulator D offset indexed-indirect
+			return "D";
 		}
+		return "unknown"; // rr=11 see accumulator D offset indexed-indirect
 	}
 
 	inline uint16_t xb_getAddrRegValue(uint8_t rr);
@@ -595,6 +596,7 @@ private:
 	/** the instruction counter */
 	uint64_t instruction_counter;
 	uint64_t	max_inst;
+	Statistic<uint64_t> stat_instruction_counter;
 	Parameter<uint64_t>	   param_max_inst;
 
 };
@@ -712,6 +714,7 @@ case 2:
 case 3:
 	return getRegPC(); break;
 }
+throw std::runtime_error("Internal error");
 }
 
 void CPU::xb_setAddrRegValue(uint8_t rr,uint16_t val) {
@@ -725,6 +728,7 @@ case 2:
 case 3:
 	return setRegPC(val); break;
 }
+throw std::runtime_error("Internal error");
 }
 
 
@@ -736,9 +740,8 @@ case 1:
 	return getRegB(); break;
 case 2:
 	return getRegD(); break;
-default:
-	return 0; // ! or throw an exception
 }
+throw std::runtime_error("Internal error");
 }
 
 
