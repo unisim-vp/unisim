@@ -497,14 +497,15 @@ ProcessXmlVariableNode(xmlTextReaderPtr reader, VariableBase::Type type)
 				cerr << "Error: could not get object name" << endl;
 				return false;
 			}
-			// cerr << "  object " << name_attr << endl;
+			cerr << " + object " << name_attr << endl;
 			cur_object.push_back(string((char *)name_attr));
 		}
-		return true;
 		if (xmlTextReaderNodeType(reader) == 15)
 		{
+			cerr << " - object " << endl;
 			cur_object.pop_back();
 		}
+		return true;
 	}
 	
 	if (xmlStrEqual(name, variable_token))
