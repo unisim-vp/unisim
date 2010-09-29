@@ -219,6 +219,22 @@ void ATD10B<ATD_SIZE>::Process()
 	}
 }
 
+//template <uint8_t ATD_SIZE>
+//void ATD10B<ATD_SIZE>::Process()
+//{
+//	while(1)
+//	{
+//		wait(atd_clock);
+//		InputANx(analog_signal);
+//
+//		// TODO: see in details how to use quantumkeeper in the case of ATD
+//
+//		quantumkeeper.inc(bus_cycle_time); // Processing the input takes one cycle
+//		if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
+//
+//	}
+//}
+
 /**
  * Store external analog signals as capacitor charge
  *  1/ Is Multi-Channel or Single-Channel scan

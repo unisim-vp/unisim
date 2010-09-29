@@ -57,11 +57,10 @@ XML_ATD_PWM_STUB::XML_ATD_PWM_STUB(const sc_module_name& name, Object *parent) :
 {
 	SC_HAS_PROCESS(XML_ATD_PWM_STUB);
 
-	SC_THREAD(ProcessATD);
+	SC_THREAD(ProcessATD0);
+	SC_THREAD(ProcessATD1);
 	SC_THREAD(ProcessPWM);
 	
-	quantumkeeper.set_global_quantum(sc_time(1.0, SC_MS));
-
 }
 
 XML_ATD_PWM_STUB::~XML_ATD_PWM_STUB() {
@@ -136,6 +135,8 @@ template <int SIZE> int XML_ATD_PWM_STUB::LoadXmlData(const char *filename, std:
 	xmlXPathObjectPtr xmlobject;
 	int result = 0;
 
+	cout << name() << " Parsing " << filename << endl;
+
 	doc = xmlParseFile (GetSimulator()->SearchSharedDataFile(filename).c_str());
 	if (!doc)
 	{
@@ -170,45 +171,34 @@ template <int SIZE> int XML_ATD_PWM_STUB::LoadXmlData(const char *filename, std:
 	return (result);
 }
 
-void XML_ATD_PWM_STUB::ProcessATD()
+void XML_ATD_PWM_STUB::ProcessATD0()
 {
 	srand(12345);
 
-	sc_time delay(anx_stimulus_period, SC_PS);
-
 	int atd0_data_size, atd0_data_index = 0;
-	int atd1_data_size, atd1_data_index = 0;
 
 
 	LoadXmlData<ATD0_SIZE>(atd0_anx_stimulus_file.c_str(), atd0_vect);
-	LoadXmlData<ATD1_SIZE>(atd1_anx_stimulus_file.c_str(), atd1_vect);
 
 
 	atd0_data_size = atd0_vect.size();
-	atd1_data_size = atd1_vect.size();
 
 	if (atd0_data_size == 0) {
 		cerr << name() << " Warning: ATD0 random inputs values will be used during simulation !" << endl;
-	}
-	if (atd1_data_size == 0) {
-		cerr << name() << " Warning: ATD1 random inputs values will be used during simulation !" << endl;
 	}
 
 	/**
 	 * Note: The Software sample the ATDDRx every 20ms. As well as for the first sampling
 	 */
-	quantumkeeper.set(sc_time(20, SC_MS));
+	atd0_quantumkeeper.set(sc_time(20, SC_MS));
+	if (atd0_quantumkeeper.need_sync()) atd0_quantumkeeper.sync();
 
 	while(1)
 	{
-		double atd1_anValue[ATD1_SIZE];
 		double atd0_anValue[ATD0_SIZE];
 
 		uint8_t atd0_wrap_around;
 		uint8_t atd0_start;
-
-		uint8_t atd1_wrap_around;
-		uint8_t atd1_start;
 
 		if (atd0_anx_wrap_around_channel < ATD0_SIZE) {
 			atd0_wrap_around = atd0_anx_wrap_around_channel;
@@ -220,18 +210,6 @@ void XML_ATD_PWM_STUB::ProcessATD()
 			atd0_start = atd0_anx_start_channel;
 		} else {
 			atd0_start = 0;
-		}
-
-		if (atd1_anx_wrap_around_channel < ATD1_SIZE) {
-			atd1_wrap_around = atd1_anx_wrap_around_channel;
-		} else {
-			atd1_wrap_around = ATD1_SIZE - 1;
-		}
-
-		if (atd1_anx_start_channel < ATD1_SIZE) {
-			atd1_start = atd1_anx_start_channel;
-		} else {
-			atd1_start = 0;
 		}
 
 		if (atd0_data_size > 0) {
@@ -251,11 +229,56 @@ void XML_ATD_PWM_STUB::ProcessATD()
 			}
 		}
 
+		Output_ATD0(atd0_anValue);
+
+	}
+
+}
+
+
+void XML_ATD_PWM_STUB::ProcessATD1()
+{
+	srand(12345);
+
+	int atd1_data_size, atd1_data_index = 0;
+
+	LoadXmlData<ATD1_SIZE>(atd1_anx_stimulus_file.c_str(), atd1_vect);
+
+	atd1_data_size = atd1_vect.size();
+
+	if (atd1_data_size == 0) {
+		cerr << name() << " Warning: ATD1 random inputs values will be used during simulation !" << endl;
+	}
+
+	/**
+	 * Note: The Software sample the ATDDRx every 20ms. As well as for the first sampling
+	 */
+	atd1_quantumkeeper.set(sc_time(20, SC_MS));
+	if (atd1_quantumkeeper.need_sync()) atd1_quantumkeeper.sync();
+
+	while(1)
+	{
+		double atd1_anValue[ATD1_SIZE];
+		uint8_t atd1_wrap_around;
+		uint8_t atd1_start;
+
+		if (atd1_anx_wrap_around_channel < ATD1_SIZE) {
+			atd1_wrap_around = atd1_anx_wrap_around_channel;
+		} else {
+			atd1_wrap_around = ATD1_SIZE - 1;
+		}
+
+		if (atd1_anx_start_channel < ATD1_SIZE) {
+			atd1_start = atd1_anx_start_channel;
+		} else {
+			atd1_start = 0;
+		}
+
 		if (atd1_data_size > 0) {
 			atd1_data_index = (atd1_data_index + 1) % atd1_data_size;
 		}
 
-		j = 0;
+		uint8_t j = 0;
 		for (uint8_t i=0; i < ATD1_SIZE; i++) {
 			if (atd1_data_size > 0) {
 				if ((i < atd1_start) || (i > atd1_wrap_around)) {
@@ -269,10 +292,7 @@ void XML_ATD_PWM_STUB::ProcessATD()
 		}
 
 		Output_ATD1(atd1_anValue);
-		Output_ATD0(atd0_anValue);
 
-		quantumkeeper.inc(delay);
-		if(quantumkeeper.need_sync()) quantumkeeper.sync();
 	}
 
 }
@@ -284,11 +304,7 @@ void XML_ATD_PWM_STUB::ProcessPWM()
 
 	while(1)
 	{
-		wait(input_payload_queue.get_event());
-
 		Input(pwmValue);
-
-		quantumkeeper.sync();
 	}
 
 }
