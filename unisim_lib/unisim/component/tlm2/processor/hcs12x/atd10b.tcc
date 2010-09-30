@@ -206,34 +206,14 @@ void ATD10B<ATD_SIZE>::Process()
 {
 	while(1)
 	{
-		quantumkeeper.sync();
+
+//		wait(atd_clock);
 		wait(input_anx_payload_queue.get_event());
 
 		InputANx(analog_signal);
 
-		// TODO: see in details how to use quantumkeeper in the case of ATD
-
-		quantumkeeper.inc(bus_cycle_time); // Processing the input takes one cycle
-		if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
-
 	}
 }
-
-//template <uint8_t ATD_SIZE>
-//void ATD10B<ATD_SIZE>::Process()
-//{
-//	while(1)
-//	{
-//		wait(atd_clock);
-//		InputANx(analog_signal);
-//
-//		// TODO: see in details how to use quantumkeeper in the case of ATD
-//
-//		quantumkeeper.inc(bus_cycle_time); // Processing the input takes one cycle
-//		if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
-//
-//	}
-//}
 
 /**
  * Store external analog signals as capacitor charge
@@ -246,6 +226,7 @@ void ATD10B<ATD_SIZE>::InputANx(double anValue[ATD_SIZE])
 {
 	ATD_Payload<ATD_SIZE> *last_payload = NULL;
 	ATD_Payload<ATD_SIZE> *payload = NULL;
+
 
 	do
 	{
@@ -260,27 +241,26 @@ void ATD10B<ATD_SIZE>::InputANx(double anValue[ATD_SIZE])
 
 	payload = last_payload;
 
-	if (debug_enabled) {
+	if (debug_enabled && payload) {
 		cout << name() << ":: Last Receive " << *payload << " - " << sc_time_stamp() << endl;
 	}
 
-	if ((atdctl2_register & 0x80) != 0) // is ATD power ON (enabled)
-	{
-		for (int i=0; i<ATD_SIZE; i++) {
-			anValue[i] = payload->anPort[i];
-		}
+	if (payload) {
+		if ((atdctl2_register & 0x80) != 0) // is ATD power ON (enabled)
+		{
+			for (int i=0; i<ATD_SIZE; i++) {
+				anValue[i] = payload->anPort[i];
+			}
 
-		if (debug_enabled) {
-			cout << name() << ":: Starting RunScanMode" << endl;
-		}
-		RunScanMode();
-		if (debug_enabled) {
-			cout << name() << ":: End RunScanMode" << endl;
-		}
+			RunScanMode();
 
-	} else {
-		cerr << "Warning: " << name() << " => The ATD is OFF. You have to set ATDCTL2::ADPU bit before.\n";
+		} else {
+			cerr << "Warning: " << name() << " => The ATD is OFF. You have to set ATDCTL2::ADPU bit before.\n";
+		}
 	}
+
+//	quantumkeeper.inc(bus_cycle_time); // Processing the input takes one cycle
+//	if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
 
 }
 

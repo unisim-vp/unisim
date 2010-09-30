@@ -169,7 +169,7 @@ void ATD_PWM_STUB::Input(bool pwmValue[PWM_SIZE])
 	payload = last_payload;
 
 	if (trace_enable) {
-		pwm_output_file << (sc_time_stamp().to_seconds() * 1000) << " ms \t\t" << *payload <<  endl;
+		pwm_output_file << (pwm_quantumkeeper.get_current_time().to_seconds() * 1000) << " ms \t\t" << *payload <<  endl;
 	}
 
 	for (int i=0; i<PWM_SIZE; i++) {
@@ -192,13 +192,13 @@ void ATD_PWM_STUB::Output_ATD1(double anValue[ATD1_SIZE])
 	}
 
 
-	sc_time current_time = atd1_quantumkeeper.get_current_time();
+	sc_time local_time = atd1_quantumkeeper.get_local_time();
 
 	if (trace_enable) {
-		atd1_output_file << (current_time.to_seconds() * 1000) << " ms \t\t" << *payload << endl;
+		atd1_output_file << (atd1_quantumkeeper.get_current_time().to_seconds() * 1000) << " ms \t\t" << *payload << endl;
 	}
 
-	tlm_sync_enum ret = atd1_master_sock->nb_transport_fw(*payload, phase, current_time);
+	tlm_sync_enum ret = atd1_master_sock->nb_transport_fw(*payload, phase, local_time);
 
 	payload->release();
 	
@@ -210,13 +210,13 @@ void ATD_PWM_STUB::Output_ATD1(double anValue[ATD1_SIZE])
 			break;
 		case TLM_UPDATED:
 			// the callee may have modified 'payload', 'phase' and 'local_time'
-			atd1_quantumkeeper.set(current_time); // increase the time
+			atd1_quantumkeeper.set(local_time); // increase the time
 			if(atd1_quantumkeeper.need_sync()) atd1_quantumkeeper.sync(); // synchronize if needed
 
 			break;
 		case TLM_COMPLETED:
 			// the callee may have modified 'payload', and 'local_time' ('phase' can be ignored)
-			atd1_quantumkeeper.set(current_time); // increase the time
+			atd1_quantumkeeper.set(local_time); // increase the time
 			if(atd1_quantumkeeper.need_sync()) atd1_quantumkeeper.sync(); // synchronize if needed
 			break;
 	}
@@ -236,13 +236,13 @@ void ATD_PWM_STUB::Output_ATD0(double anValue[ATD0_SIZE])
 	}
 
 
-	sc_time current_time = atd0_quantumkeeper.get_current_time();
+	sc_time local_time = atd0_quantumkeeper.get_local_time();
 
 	if (trace_enable) {
-		atd0_output_file << (current_time.to_seconds() * 1000) << " ms \t\t" << *payload << endl;
+		atd0_output_file << (atd0_quantumkeeper.get_current_time().to_seconds() * 1000) << " ms \t\t" << *payload << endl;
 	}
 
-	tlm_sync_enum ret = atd0_master_sock->nb_transport_fw(*payload, phase, current_time);
+	tlm_sync_enum ret = atd0_master_sock->nb_transport_fw(*payload, phase, local_time);
 
 	payload->release();
 
@@ -254,13 +254,13 @@ void ATD_PWM_STUB::Output_ATD0(double anValue[ATD0_SIZE])
 			break;
 		case TLM_UPDATED:
 			// the callee may have modified 'payload', 'phase' and 'local_time'
-			atd0_quantumkeeper.set(current_time); // increase the time
+			atd0_quantumkeeper.set(local_time); // increase the time
 			if(atd0_quantumkeeper.need_sync()) atd0_quantumkeeper.sync(); // synchronize if needed
 
 			break;
 		case TLM_COMPLETED:
 			// the callee may have modified 'payload', and 'local_time' ('phase' can be ignored)
-			atd0_quantumkeeper.set(current_time); // increase the time
+			atd0_quantumkeeper.set(local_time); // increase the time
 			if(atd0_quantumkeeper.need_sync()) atd0_quantumkeeper.sync(); // synchronize if needed
 			break;
 	}
