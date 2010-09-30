@@ -35,7 +35,7 @@
 #ifndef __UNISIM_COMPONENT_TLM2_MEMORY_RAM_MEMORY_TCC__
 #define __UNISIM_COMPONENT_TLM2_MEMORY_RAM_MEMORY_TCC__
 
-#define LOCATION __FUNCTION__ << ":" << __FILE__ << ":" <<  __LINE__
+#define LOCATION __FUNCTION__ << ":" << __FILE__ << ":" <<  __LINE__ << ": "
 
 namespace unisim {
 namespace component {
@@ -53,57 +53,120 @@ using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 
 /* Constructor */
-template <unsigned int BUSWIDTH, uint32_t PAGE_SIZE, bool DEBUG>
-Memory<BUSWIDTH, PAGE_SIZE, DEBUG>::
+template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::
 Memory(const sc_module_name& name, Object *parent) :
 	Object(name, parent),
 	sc_module(name),
-	unisim::component::cxx::memory::ram::Memory<uint64_t, PAGE_SIZE>(name, parent),
+	unisim::component::cxx::memory::ram::Memory<ADDRESS, PAGE_SIZE>(name, parent),
 	slave_sock("slave-sock"),
 	logger(*this),
 	verbose(false),
-	cycle_time(0),
-	cycle_sctime(),
-	param_cycle_time("cycle-time", this, cycle_time, "memory cycle time in picoseconds"),
+	cycle_time(),
+	read_latency(cycle_time),
+	write_latency(SC_ZERO_TIME),
+	ready_time(),
+	param_cycle_time("cycle-time", this, cycle_time, "memory cycle time"),
+	param_read_latency("read-latency", this, read_latency, "memory read latency"),
+	param_write_latency("write-latency", this, write_latency, "memory write latency"),
 	param_verbose("verbose", this, verbose)
 {
 	slave_sock(*this);
+	
+	unsigned int burst_length;
+	for(burst_length = 0; burst_length < NUM_BURST_LATENCY_FAST_LOOKUP; burst_length++)
+	{
+		burst_latency_fast_lookup[burst_length] = burst_length * cycle_time;
+	}
 }
 
 /* Destructor */
-template <unsigned int BUSWIDTH, uint32_t PAGE_SIZE, bool DEBUG>
-Memory<BUSWIDTH, PAGE_SIZE, DEBUG>::
+template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::
 ~Memory() {
 }
 
 /* ClientIndependentSetup */
-template <unsigned int BUSWIDTH, uint32_t PAGE_SIZE, bool DEBUG>
-bool Memory<BUSWIDTH, PAGE_SIZE, DEBUG>::
+template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+bool Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::
 Setup() {
 	if(IsVerbose())
 		logger << DebugInfo << LOCATION
-			<< " cycle time of " << cycle_time << " ps" 
+			<< " cycle time of " << cycle_time 
 			<< std::endl << EndDebugInfo;
-	if(!cycle_time) {
+	if(cycle_time == SC_ZERO_TIME) {
 		logger << DebugError << LOCATION
 				<< "cycle time must be different than 0" << std::endl
 				<< EndDebugError;
 		return false;
 	}
-	cycle_sctime = sc_time(cycle_time, SC_PS);
-	return unisim::component::cxx::memory::ram::Memory<uint64_t, PAGE_SIZE>::Setup();
+	return unisim::component::cxx::memory::ram::Memory<ADDRESS, PAGE_SIZE>::Setup();
+}
+
+template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+sc_time& Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::GetBurstLatency(unsigned int num_burst_beats)
+{
+	
+	if(num_burst_beats < NUM_BURST_LATENCY_FAST_LOOKUP)
+	{
+		return burst_latency_fast_lookup[num_burst_beats];
+	}
+	
+	unsigned int pass = 0;
+	do
+	{
+		std::map<unsigned int, sc_time>::iterator iter = burst_latency_slow_lookup.find(num_burst_beats);
+		
+		if(iter != burst_latency_slow_lookup.end())
+		{
+			return (*iter).second;
+		}
+		
+		sc_time burst_latency = num_burst_beats * cycle_time;
+		burst_latency_slow_lookup[num_burst_beats] = burst_latency;
+	}
+	while(pass < 2);
+	
+	logger << DebugError << LOCATION << "Internal error" << EndDebugError;
+	
+	return burst_latency_fast_lookup[0];
+}
+
+template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+void Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::UpdateTime(unsigned int data_length, const sc_time& latency, sc_time& t)
+{
+	if(data_length)
+	{
+		const sc_time& time = sc_time_stamp();
+		unsigned int data_bus_word_length = ((data_length * 8) + BUSWIDTH - 1) / BUSWIDTH;
+		do
+		{
+			t = (((time + t) >= ready_time) ? t : ready_time - time) + latency;
+			if(data_bus_word_length > BURST_LENGTH)
+			{
+				ready_time = time + t + GetBurstLatency(data_bus_word_length);
+				data_bus_word_length = 0;
+			}
+			else
+			{
+				ready_time = time + t + GetBurstLatency(BURST_LENGTH);
+				data_bus_word_length -= BURST_LENGTH;
+			}
+		}
+		while(data_bus_word_length);
+	}
 }
 
 /* TLM2 Slave methods */
-template <unsigned int BUSWIDTH, uint32_t PAGE_SIZE, bool DEBUG>
-bool Memory<BUSWIDTH, PAGE_SIZE, DEBUG>::get_direct_mem_ptr(tlm::tlm_generic_payload& payload, tlm::tlm_dmi& dmi_data)
+template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+bool Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::get_direct_mem_ptr(tlm::tlm_generic_payload& payload, tlm::tlm_dmi& dmi_data)
 {
 	// tlm::tlm_command cmd = payload.get_command();
-	uint64_t addr = payload.get_address();
-	uint64_t dmi_start_addr;
-	uint64_t dmi_end_addr;
-	sc_core::sc_time dmi_read_latency = cycle_sctime;
-	sc_core::sc_time dmi_write_latency = cycle_sctime;
+	ADDRESS addr = payload.get_address();
+	ADDRESS dmi_start_addr;
+	ADDRESS dmi_end_addr;
+	sc_core::sc_time dmi_read_latency = cycle_time;
+	sc_core::sc_time dmi_write_latency = cycle_time;
 	tlm::tlm_dmi::dmi_access_e dmi_granted_access = tlm::tlm_dmi::DMI_ACCESS_READ_WRITE;
 
 	unsigned char *dmi_ptr = (unsigned char *) inherited::GetDirectAccess(addr, dmi_start_addr, dmi_end_addr);
@@ -119,8 +182,8 @@ bool Memory<BUSWIDTH, PAGE_SIZE, DEBUG>::get_direct_mem_ptr(tlm::tlm_generic_pay
 	return true;
 }
 
-template <unsigned int BUSWIDTH, uint32_t PAGE_SIZE, bool DEBUG>
-unsigned int Memory<BUSWIDTH, PAGE_SIZE, DEBUG>::transport_dbg(tlm::tlm_generic_payload& payload)
+template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+unsigned int Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::transport_dbg(tlm::tlm_generic_payload& payload)
 {
 	payload.set_dmi_allowed(true);
 
@@ -187,8 +250,8 @@ unsigned int Memory<BUSWIDTH, PAGE_SIZE, DEBUG>::transport_dbg(tlm::tlm_generic_
 	return status ? data_length : 0;
 }
 
-template <unsigned int BUSWIDTH, uint32_t PAGE_SIZE, bool DEBUG>
-tlm::tlm_sync_enum Memory<BUSWIDTH, PAGE_SIZE, DEBUG>::nb_transport_fw(tlm::tlm_generic_payload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t)
+template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+tlm::tlm_sync_enum Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::nb_transport_fw(tlm::tlm_generic_payload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t)
 {
 	if(phase != tlm::BEGIN_REQ)
 	{
@@ -228,7 +291,8 @@ tlm::tlm_sync_enum Memory<BUSWIDTH, PAGE_SIZE, DEBUG>::nb_transport_fw(tlm::tlm_
 				status = inherited::ReadMemory(addr, data_ptr, data_length, byte_enable_ptr, byte_enable_length, streaming_width);
 			else
 				status = inherited::ReadMemory(addr, data_ptr, data_length);
-			break;
+			
+			UpdateTime(data_length, read_latency, t);
 			break;
 		case tlm::TLM_WRITE_COMMAND:
 			if(IsVerbose())
@@ -244,6 +308,8 @@ tlm::tlm_sync_enum Memory<BUSWIDTH, PAGE_SIZE, DEBUG>::nb_transport_fw(tlm::tlm_
 				status = inherited::WriteMemory(addr, data_ptr, data_length, byte_enable_ptr, byte_enable_length, streaming_width);
 			else
 				status = inherited::WriteMemory(addr, data_ptr, data_length);
+
+			UpdateTime(data_length, write_latency, t);
 			break;
 		case tlm::TLM_IGNORE_COMMAND:
 			if(IsVerbose())
@@ -267,12 +333,11 @@ tlm::tlm_sync_enum Memory<BUSWIDTH, PAGE_SIZE, DEBUG>::nb_transport_fw(tlm::tlm_
 	else
 		payload.set_response_status(tlm::TLM_ADDRESS_ERROR_RESPONSE);
 
-	t = t + cycle_sctime;
 	return tlm::TLM_COMPLETED;
 }
 
-template <unsigned int BUSWIDTH, uint32_t PAGE_SIZE, bool DEBUG>
-void Memory<BUSWIDTH, PAGE_SIZE, DEBUG>::b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t)
+template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+void Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t)
 {
 	payload.set_dmi_allowed(true);
 
@@ -302,6 +367,7 @@ void Memory<BUSWIDTH, PAGE_SIZE, DEBUG>::b_transport(tlm::tlm_generic_payload& p
 				status = inherited::ReadMemory(addr, data_ptr, data_length, byte_enable_ptr, byte_enable_length, streaming_width);
 			else
 				status = inherited::ReadMemory(addr, data_ptr, data_length);
+			
 			if (status && IsVerbose())
 			{
 				logger << DebugInfo << LOCATION
@@ -311,6 +377,7 @@ void Memory<BUSWIDTH, PAGE_SIZE, DEBUG>::b_transport(tlm::tlm_generic_payload& p
 					logger << (unsigned int)(uint8_t)data_ptr[i] << " ";
 				logger << EndDebugInfo;
 			}
+			UpdateTime(data_length, read_latency, t);
 			break;
 		case tlm::TLM_WRITE_COMMAND:
 			if(IsVerbose())
@@ -326,6 +393,8 @@ void Memory<BUSWIDTH, PAGE_SIZE, DEBUG>::b_transport(tlm::tlm_generic_payload& p
 				status = inherited::WriteMemory(addr, data_ptr, data_length, byte_enable_ptr, byte_enable_length, streaming_width);
 			else
 				status = inherited::WriteMemory(addr, data_ptr, data_length);
+			
+			UpdateTime(data_length, write_latency, t);
 			break;
 		case tlm::TLM_IGNORE_COMMAND:
 			if(IsVerbose())
@@ -345,8 +414,8 @@ void Memory<BUSWIDTH, PAGE_SIZE, DEBUG>::b_transport(tlm::tlm_generic_payload& p
 		payload.set_response_status(tlm::TLM_OK_RESPONSE);
 	else
 		payload.set_response_status(tlm::TLM_ADDRESS_ERROR_RESPONSE);
-
-	t = t + cycle_sctime;
+	
+	//std::cerr << "t=" << t << std::endl;
 }
 
 } // end of namespace ram

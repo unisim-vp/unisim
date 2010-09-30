@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2010,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -30,29 +30,23 @@
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
- *          Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
-#include "unisim/component/tlm2/memory/ram/memory.hh"
-#include "unisim/component/tlm2/memory/ram/memory.tcc"
+#include <unisim/component/tlm2/processor/powerpc/mpc7447a/cpu.hh>
+#include <unisim/component/tlm2/processor/powerpc/mpc7447a/cpu.tcc>
 
 namespace unisim {
 namespace component {
 namespace tlm2 {
-namespace memory {
-namespace ram {
+namespace processor {
+namespace powerpc {
+namespace mpc7447a {
 
-/*template class Memory<8, uint16_t>;
-template class Memory<8, uint32_t>;
-template class Memory<16, uint32_t>;
-template class Memory<32, uint32_t>;*/
-template class Memory<64, uint32_t, 4, DEFAULT_PAGE_SIZE, false>;
-template class Memory<64, uint32_t, 4, DEFAULT_PAGE_SIZE, true>;
-template class Memory<64, uint64_t, 8, DEFAULT_PAGE_SIZE, false>;
-template class Memory<64, uint64_t, 8, DEFAULT_PAGE_SIZE, true>;
+template class CPU<unisim::component::cxx::processor::powerpc::mpc7447a::Config>;
 
-} // end of namespace ram
-} // end of namespace memory
-} // end of namespace tlm
+} // end of namespace mpc7447a
+} // end of namespace powerpc
+} // end of namespace processor
+} // end of namespace tlm2
 } // end of namespace component
-} // end of namespace unisim 
+} // end of namespace unisim

@@ -62,12 +62,12 @@ void CPU<CONFIG>::HandleException(const SystemResetException<CONFIG>& exc)
 	if(HasHardReset())
 	{
 		ResetHID0_NHR(); // reset HID0[NHR]
-		AckHardReset();
+		ResetIRQ(CONFIG::IRQ_HARD_RESET);
 	}
 	else if(HasSoftReset())
 	{
 		SetHID0_NHR(); // set HID0[NHR]
-		AckSoftReset();
+		ResetIRQ(CONFIG::IRQ_SOFT_RESET);
 	}
 	
 	SetNIA(CONFIG::EXC_SYSTEM_RESET_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
@@ -90,14 +90,14 @@ void CPU<CONFIG>::HandleException(const MachineCheckException<CONFIG>& exc)
 	{
 		// set SRR1[12]
 		SetSRR1(GetSRR1() | 0x00080000UL);
-		AckMCP();
+		ResetIRQ(CONFIG::IRQ_MCP);
 	}
 	
 	if(HasTEA())
 	{
 		// set SRR1[13]
 		SetSRR1(GetSRR1() | 0x00040000UL);
-		AckTEA();
+		ResetIRQ(CONFIG::IRQ_TEA);
 	}
 	
 	// MSR[LE]=MSR[ILE], MSR[POW]=0, MSR[EE]=0, MSR[PR]=0, MSR[FP]=0, MSR[FE0]=0,
@@ -131,7 +131,7 @@ void CPU<CONFIG>::HandleException(const DecrementerException<CONFIG>& exc)
 	if(unlikely(IsVerboseException()))
 		logger << DebugInfo << "bus cycle " << bus_cycle << ": " << exc.what() << endl << EndDebugInfo;
 	
-	AckDecrementerOverflow();
+	ResetIRQ(CONFIG::IRQ_DECREMENTER_OVERFLOW);
 }
 
 /* External interrupt exception */
@@ -154,7 +154,7 @@ void CPU<CONFIG>::HandleException(const ExternalInterruptException<CONFIG>& exc)
 	if(unlikely(IsVerboseException()))
 		logger << DebugInfo << exc.what() << endl << EndDebugInfo;
 
-	AckExternalInterrupt();
+	ResetIRQ(CONFIG::IRQ_EXTERNAL_INTERRUPT);
 }
 
 template <class CONFIG>
@@ -173,7 +173,7 @@ void CPU<CONFIG>::HandleException(const PerformanceMonitorInterruptException<CON
 	
 	SetNIA(CONFIG::EXC_PERFORMANCE_MONITOR_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	
-	AckPerformanceMonitorInterrupt();
+	ResetIRQ(CONFIG::IRQ_PERFORMANCE_MONITOR_INTERRUPT);
 	
 	if(unlikely(IsVerboseException()))
 		logger << DebugInfo << exc.what() << endl << EndDebugInfo;
@@ -196,7 +196,7 @@ void CPU<CONFIG>::HandleException(const SystemManagementInterruptException<CONFI
 	
 	SetNIA(CONFIG::EXC_SYSTEM_MANAGEMENT_INTERRUPT_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	
-	AckSMI();
+	ResetIRQ(CONFIG::IRQ_SMI);
 
 	if(unlikely(IsVerboseException()))
 		logger << DebugInfo << exc.what() << endl << EndDebugInfo;

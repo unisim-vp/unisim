@@ -150,7 +150,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	, prefetch_buffer()
 	, reserve(false)
 	, reserve_addr(0)
-	, asynchronous_interrupt(0)
+	, irq(0)
 	, param_cpu_cycle_time("cpu-cycle-time",  this,  cpu_cycle_time, "CPU cycle time in picoseconds")
 	, param_voltage("voltage",  this,  voltage, "CPU voltage in mV")
 	, param_max_inst("max-inst",  this,  max_inst, "maximum number of instructions to simulate")
@@ -566,7 +566,7 @@ void CPU<CONFIG>::Reset()
 	cpu_cycle = 0;
 	instruction_counter = 0;
 
-	asynchronous_interrupt = 0;
+	irq = 0;
 
 	reserve = false;
 	reserve_addr = 0;
@@ -645,8 +645,6 @@ void CPU<CONFIG>::Reset()
 	num_insn_in_prefetch_buffer = 0;
 	cur_insn_in_prefetch_buffer = 0;
 
-	asynchronous_interrupt = 0;
-	
 	hid0 = CONFIG::HID0_RESET_VALUE;
 	hid1 = CONFIG::HID1_RESET_VALUE;
 
@@ -1257,7 +1255,7 @@ void CPU<CONFIG>::StepOneInstruction()
 		/* execute the instruction */
 		operation->execute(this);
 
-		if(unlikely(HasAsynchronousInterrupt()))
+		if(unlikely(HasIRQ()))
 		{
 			if(HasHardReset()) throw SystemResetException<CONFIG>();
 			if(HasMCP() && GetHID1_EMCP()) throw MachineCheckException<CONFIG>();
@@ -1811,7 +1809,7 @@ void CPU<CONFIG>::SetDEC(uint32_t value)
 
 	if(overflow)
 	{
-		ReqDecrementerOverflow();
+		SetIRQ(CONFIG::IRQ_DECREMENTER_OVERFLOW);
 	}
 }
 
@@ -5096,54 +5094,15 @@ void CPU<CONFIG>::Stwcx(unsigned int rs, typename CONFIG::address_t addr)
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::ReqDecrementerOverflow()
+void CPU<CONFIG>::SetIRQ(unsigned int _irq)
 {
-	asynchronous_interrupt |= CONFIG::SIG_DECREMENTER_OVERFLOW;
+	irq = irq | _irq;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::AckDecrementerOverflow()
+void CPU<CONFIG>::ResetIRQ(unsigned int _irq)
 {
-	asynchronous_interrupt &= ~CONFIG::SIG_DECREMENTER_OVERFLOW;
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::ReqExternalInterrupt()
-{
-	if(unlikely(IsVerboseException())) {
-		logger << DebugInfo << "Received external interrupt" << EndDebugInfo;
-	}
-	asynchronous_interrupt |= CONFIG::SIG_EXTERNAL_INTERRUPT;
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::AckExternalInterrupt()
-{
-	asynchronous_interrupt &= ~CONFIG::SIG_EXTERNAL_INTERRUPT;
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::ReqHardReset()
-{
-	asynchronous_interrupt |= CONFIG::SIG_HARD_RESET;
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::AckHardReset()
-{
-	asynchronous_interrupt &= ~CONFIG::SIG_HARD_RESET;
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::ReqSoftReset()
-{
-	asynchronous_interrupt |= CONFIG::SIG_SOFT_RESET;
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::AckSoftReset()
-{
-	asynchronous_interrupt &= ~CONFIG::SIG_SOFT_RESET;
+	irq = irq & (~_irq);
 }
 
 template <class CONFIG>
@@ -5154,55 +5113,6 @@ void CPU<CONFIG>::Synchronize()
 template <class CONFIG>
 void CPU<CONFIG>::Idle()
 {
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::ReqMCP()
-{
-	asynchronous_interrupt |= CONFIG::SIG_MCP;
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::AckMCP()
-{
-	asynchronous_interrupt &= ~CONFIG::SIG_MCP;
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::ReqTEA()
-{
-	asynchronous_interrupt |= CONFIG::SIG_TEA;
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::AckTEA()
-{
-	asynchronous_interrupt &= ~CONFIG::SIG_TEA;
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::ReqSMI()
-{
-	asynchronous_interrupt |= CONFIG::SIG_SMI;
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::AckSMI()
-{
-	asynchronous_interrupt &= ~CONFIG::SIG_SMI;
-}
-
-
-template <class CONFIG>
-void CPU<CONFIG>::ReqPerformanceMonitorInterrupt()
-{
-	asynchronous_interrupt |= CONFIG::SIG_PERFORMANCE_MONITOR_INTERRUPT;
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::AckPerformanceMonitorInterrupt()
-{
-	asynchronous_interrupt &= ~CONFIG::SIG_PERFORMANCE_MONITOR_INTERRUPT;
 }
 
 template <class CONFIG>

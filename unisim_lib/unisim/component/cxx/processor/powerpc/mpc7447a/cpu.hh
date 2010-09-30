@@ -974,39 +974,23 @@ public:
 	//=               Hardware check/acknowledgement methods              =
 	//=====================================================================
 	
-	void AckDecrementerOverflow();
-	void AckExternalInterrupt();
-	void AckHardReset();
-	void AckSoftReset();
-	void AckMCP();
-	void AckTEA();
-	void AckSMI();
-	void AckThermalManagementInterrupt();
-	void AckPerformanceMonitorInterrupt();
+	void ResetIRQ(unsigned int irq);
 
-	inline bool HasDecrementerOverflow() const { return asynchronous_interrupt & CONFIG::SIG_DECREMENTER_OVERFLOW; }
-	inline bool HasExternalInterrupt() const { return asynchronous_interrupt & CONFIG::SIG_EXTERNAL_INTERRUPT; }
-	inline bool HasHardReset() const { return asynchronous_interrupt & CONFIG::SIG_HARD_RESET; }
-	inline bool HasSoftReset() const { return asynchronous_interrupt & CONFIG::SIG_SOFT_RESET; }
-	inline bool HasMCP() const { return asynchronous_interrupt & CONFIG::SIG_MCP; }
-	inline bool HasTEA() const { return asynchronous_interrupt & CONFIG::SIG_TEA; }
-	inline bool HasSMI() const { return asynchronous_interrupt & CONFIG::SIG_SMI; }
-	inline bool HasPerformanceMonitorInterrupt() const { return asynchronous_interrupt & CONFIG::SIG_PERFORMANCE_MONITOR_INTERRUPT; }
-	inline bool HasAsynchronousInterrupt() const { return asynchronous_interrupt; }
+	inline bool HasDecrementerOverflow() const { return irq & CONFIG::IRQ_DECREMENTER_OVERFLOW; }
+	inline bool HasExternalInterrupt() const { return irq & CONFIG::IRQ_EXTERNAL_INTERRUPT; }
+	inline bool HasHardReset() const { return irq & CONFIG::IRQ_HARD_RESET; }
+	inline bool HasSoftReset() const { return irq & CONFIG::IRQ_SOFT_RESET; }
+	inline bool HasMCP() const { return irq & CONFIG::IRQ_MCP; }
+	inline bool HasTEA() const { return irq & CONFIG::IRQ_TEA; }
+	inline bool HasSMI() const { return irq & CONFIG::IRQ_SMI; }
+	inline bool HasPerformanceMonitorInterrupt() const { return irq & CONFIG::IRQ_PERFORMANCE_MONITOR_INTERRUPT; }
+	inline bool HasIRQ() const { return irq; }
 
 	//=====================================================================
 	//=                    Hardware interrupt request                     =
 	//=====================================================================
 	
-	void ReqDecrementerOverflow();
-	void ReqExternalInterrupt();
-	void ReqHardReset();
-	void ReqSoftReset();
-	void ReqMCP();
-	void ReqTEA();
-	void ReqSMI();
-	void ReqThermalManagementInterrupt();
-	void ReqPerformanceMonitorInterrupt();
+	void SetIRQ(unsigned int irq);
 
 protected:
 
@@ -1499,7 +1483,7 @@ private:
 	//=              PowerPC hardware interrupt signals                   =
 	//=====================================================================
 	
-	unsigned int asynchronous_interrupt;
+	unsigned int irq;
 
 	//=====================================================================
 	//=                    Exception handling methods                     =

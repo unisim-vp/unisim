@@ -67,12 +67,12 @@ CPU<CONFIG>::CPU(const sc_module_name& name, Object *parent) :
 	param_bus_cycle_time("bus-cycle-time", this, bus_cycle_sctime, "bus cycle time"),
 	param_nice_time("nice-time", this, nice_sctime, "maximum time between synchonizations"),
 	param_ipc("ipc", this, ipc, "targeted average instructions per second"),
-	external_interrupt_listener("external_interrupt_listener",this, &ev_interrupt),
-	hard_reset_listener("hard_reset_listener",this, &ev_interrupt),
-	soft_reset_listener("soft_reset_listener",this, &ev_interrupt),
-	mcp_listener("mcp_listener",this, &ev_interrupt),
-	tea_listener("tea_listener",this, &ev_interrupt),
-	smi_listener("smi_listener",this, &ev_interrupt)
+	external_interrupt_listener("external_interrupt_listener", CONFIG::IRQ_EXTERNAL_INTERRUPT, this, &ev_interrupt),
+	hard_reset_listener("hard_reset_listener", CONFIG::IRQ_HARD_RESET, this, &ev_interrupt),
+	soft_reset_listener("soft_reset_listener", CONFIG::IRQ_SOFT_RESET, this, &ev_interrupt),
+	mcp_listener("mcp_listener", CONFIG::IRQ_MCP, this, &ev_interrupt),
+	tea_listener("tea_listener", CONFIG::IRQ_TEA, this, &ev_interrupt),
+	smi_listener("smi_listener", CONFIG::IRQ_SMI, this, &ev_interrupt)
 {
 	//param_nice_time.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	param_ipc.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
@@ -232,7 +232,7 @@ void CPU<CONFIG>::Idle()
 	cpu_sctime = sc_time_stamp();
 	last_sync_sctime = cpu_sctime;
 	UpdateBusTime();
-	while(likely(!inherited::HasAsynchronousInterrupt()))
+	while(likely(!inherited::HasIRQ()))
 	{
 		cpu_sctime += cpu_cycle_sctime;
 		UpdateBusTime();
@@ -561,120 +561,21 @@ void CPU<CONFIG>::DoBusAccess(unisim::component::cxx::processor::powerpc::mpc744
 }
 
 template <class CONFIG>
-CPU<CONFIG>::ExternalInterruptListener::ExternalInterruptListener(const sc_module_name& name, unisim::component::cxx::processor::powerpc::mpc7447a::CPU<CONFIG> *_cpu, sc_event *_ev) :
+CPU<CONFIG>::IRQListener::IRQListener(const sc_module_name& name, unsigned int _irq, unisim::component::cxx::processor::powerpc::mpc7447a::CPU<CONFIG> *_cpu, sc_event *_ev) :
 	sc_module(name),
+	irq(_irq),
 	cpu(_cpu),
 	ev(_ev)
 {
 }
 	
 template <class CONFIG>
-bool CPU<CONFIG>::ExternalInterruptListener::Send(const Pointer<TlmMessage<InterruptRequest> >& message)
+bool CPU<CONFIG>::IRQListener::Send(const Pointer<TlmMessage<InterruptRequest> >& message)
 {
 	if(message->req->level)
-		cpu->ReqExternalInterrupt();
+		cpu->SetIRQ(irq);
 	else
-		cpu->AckExternalInterrupt();
-	
-	ev->notify(SC_ZERO_TIME);
-	return true;
-}
-
-template <class CONFIG>
-CPU<CONFIG>::HardResetListener::HardResetListener(const sc_module_name& name, unisim::component::cxx::processor::powerpc::mpc7447a::CPU<CONFIG> *_cpu, sc_event *_ev) :
-	sc_module(name),
-	cpu(_cpu),
-	ev(_ev)
-{
-}
-	
-template <class CONFIG>
-bool CPU<CONFIG>::HardResetListener::Send(const Pointer<TlmMessage<InterruptRequest> >& message)
-{
-	if(message->req->level)
-		cpu->ReqHardReset();
-	else
-		cpu->AckHardReset();
-	
-	ev->notify(SC_ZERO_TIME);
-	return true;
-}
-
-template <class CONFIG>
-CPU<CONFIG>::SoftResetListener::SoftResetListener(const sc_module_name& name, unisim::component::cxx::processor::powerpc::mpc7447a::CPU<CONFIG> *_cpu, sc_event *_ev) :
-	sc_module(name),
-	cpu(_cpu),
-	ev(_ev)
-{
-}
-
-template <class CONFIG>
-bool CPU<CONFIG>::SoftResetListener::Send(const Pointer<TlmMessage<InterruptRequest> >& message)
-{
-	if(message->req->level)
-		cpu->ReqSoftReset();
-	else
-		cpu->AckSoftReset();
-	
-	ev->notify(SC_ZERO_TIME);
-	return true;
-}
-
-template <class CONFIG>
-CPU<CONFIG>::MCPListener::MCPListener(const sc_module_name& name, unisim::component::cxx::processor::powerpc::mpc7447a::CPU<CONFIG> *_cpu, sc_event *_ev) :
-	sc_module(name),
-	cpu(_cpu),
-	ev(_ev)
-{
-}
-
-template <class CONFIG>
-bool CPU<CONFIG>::MCPListener::Send(const Pointer<TlmMessage<InterruptRequest> >& message)
-{
-	if(message->req->level)
-		cpu->ReqMCP();
-	else
-		cpu->AckMCP();
-	
-	ev->notify(SC_ZERO_TIME);
-	return true;
-}
-
-template <class CONFIG>
-CPU<CONFIG>::TEAListener::TEAListener(const sc_module_name& name, unisim::component::cxx::processor::powerpc::mpc7447a::CPU<CONFIG> *_cpu, sc_event *_ev) :
-	sc_module(name),
-	cpu(_cpu),
-	ev(_ev)
-{
-}
-
-template <class CONFIG>
-bool CPU<CONFIG>::TEAListener::Send(const Pointer<TlmMessage<InterruptRequest> >& message)
-{
-	if(message->req->level)
-		cpu->ReqTEA();
-	else
-		cpu->AckTEA();
-	
-	ev->notify(SC_ZERO_TIME);
-	return true;
-}
-
-template <class CONFIG>
-CPU<CONFIG>::SMIListener::SMIListener(const sc_module_name& name, unisim::component::cxx::processor::powerpc::mpc7447a::CPU<CONFIG> *_cpu, sc_event *_ev) :
-	sc_module(name),
-	cpu(_cpu),
-	ev(_ev)
-{
-}
-
-template <class CONFIG>
-bool CPU<CONFIG>::SMIListener::Send(const Pointer<TlmMessage<InterruptRequest> >& message)
-{
-	if(message->req->level)
-		cpu->ReqSMI();
-	else
-		cpu->AckSMI();
+		cpu->ResetIRQ(irq);
 	
 	ev->notify(SC_ZERO_TIME);
 	return true;
