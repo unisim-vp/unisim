@@ -354,8 +354,7 @@ public:
 							<< "Received a read request without response event ("
 							<< __FUNCTION__ << ":"<< __FILE__ << ":" << __LINE__ << ")" << std::endl
 							<< EndDebugError;
-					sc_stop();
-					wait();
+					Object::Stop(-1);
 				}
 
 	    		PRspType res = new(res) RspType();
@@ -408,7 +407,7 @@ public:
 							<< "Invalid access size(?) for PCI configspace! ("
 							<< __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << ")" << std::endl
 							<< EndDebugError;
-					sc_stop(); wait();
+					Object::Stop(-1);
 					return true;
 					}
 	      		}
@@ -502,8 +501,7 @@ public:
 	 					logger << DebugError
 	 						<< "received a response for a pci message without response field" << std::endl
 	 						<< EndDebugError;
-					sc_stop();
-					wait();
+					Object::Stop(-1);
 		 		}
 		 		PReqType& req = message->req;
 	 			PRspType& rsp = message->rsp;

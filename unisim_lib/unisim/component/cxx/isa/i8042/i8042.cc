@@ -1573,11 +1573,6 @@ void I8042::TriggerAuxInterrupt(bool level)
 	// this should be implemented elsewhere as it is a virtual method
 }
 
-void I8042::Stop()
-{
-	// this should be implemented elsewhere as it is a virtual method
-}
-
 void I8042::Lock()
 {
 	// this should be implemented elsewhere as it is a virtual method

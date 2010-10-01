@@ -167,8 +167,7 @@ DispatchMemory() {
 				<< "trying to dispatch a message to the memory bus when none is available" << std::endl
 				<< "Stopping simulation"
 				<< std::endl << EndDebugError;
-			sc_stop();
-			wait();
+			Object::Stop(-1);
 		}
 		
 		const p_fsb_req_t &fsb_req = fsb_msg->req;

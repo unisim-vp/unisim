@@ -289,8 +289,7 @@ BusSynchronize() {
 				<< "cur_cycle_init_int = " << cur_cycle_init_int << ", "
 				<< "cur_time_int = " << cur_time_int << ")" << std::endl
 				<< EndDebugError;
-		sc_stop();
-		wait();
+		Object::Stop(-1);
 	}
 	// check if a message can be send right now
 	if(cur_cycle_init_int == cur_time_int) {

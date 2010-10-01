@@ -52,7 +52,7 @@ CPU<CONFIG>::CPU(const sc_module_name& name, Object *parent)
 	, hard_reset_slave_sock("hard-reset-slave-sock")
 	, soft_reset_slave_sock("soft-reset-slave-sock")
 	, mcp_slave_sock("mcp-slave-sock")
-	, tea_slave_sock("tea-slave-sock")
+//	, tea_slave_sock("tea-slave-sock")
 	, smi_slave_sock("smi-slave-sock")
 	, payload_fabric()
 	, cpu_cycle_time()
@@ -71,7 +71,7 @@ CPU<CONFIG>::CPU(const sc_module_name& name, Object *parent)
 	, hard_reset_queue("hard-reset-queue")
 	, soft_reset_queue("soft-reset-queue")
 	, mcp_queue("mcp-queue")
-	, tea_queue("tea-queue")
+//	, tea_queue("tea-queue")
 	, smi_queue("smi-queue")
 {
 	bus_master_sock(*this);
@@ -79,7 +79,7 @@ CPU<CONFIG>::CPU(const sc_module_name& name, Object *parent)
 	hard_reset_slave_sock(hard_reset_queue);
 	soft_reset_slave_sock(soft_reset_queue);
 	mcp_slave_sock(mcp_queue);
-	tea_slave_sock(tea_queue);
+//	tea_slave_sock(tea_queue);
 	smi_slave_sock(smi_queue);
 	
 	SC_HAS_PROCESS(CPU);
@@ -89,7 +89,7 @@ CPU<CONFIG>::CPU(const sc_module_name& name, Object *parent)
 	SC_THREAD(SignalHardReset);
 	SC_THREAD(SignalSoftReset);
 	SC_THREAD(SignalMCP);
-	SC_THREAD(SignalTEA);
+//	SC_THREAD(SignalTEA);
 	SC_THREAD(SignalSMI);
 }
 
@@ -172,6 +172,20 @@ inline void CPU<CONFIG>::UpdateTime()
 }
 
 template <class CONFIG>
+inline void CPU<CONFIG>::AlignToBusClock()
+{
+	sc_dt::uint64 time_tu = sc_time_stamp().value();
+	sc_dt::uint64 bus_cycle_time_tu = bus_cycle_time.value();
+	sc_dt::uint64 cpu_time_tu = cpu_time.value() + time_tu;
+	sc_dt::uint64 modulo = cpu_time_tu % bus_cycle_time_tu;
+	if(!modulo) return; // already aligned
+
+	cpu_time_tu += bus_cycle_time_tu - modulo;
+	cpu_time = sc_time(cpu_time_tu - time_tu, false);
+	UpdateTime();
+}
+
+template <class CONFIG>
 void CPU<CONFIG>::SignalIRQ(IRQQueue& queue, unsigned int irq)
 {
 	while(1)
@@ -217,11 +231,11 @@ void CPU<CONFIG>::SignalMCP()
 	SignalIRQ(mcp_queue, CONFIG::IRQ_MCP);
 }
 
-template <class CONFIG>
-void CPU<CONFIG>::SignalTEA()
-{
-	SignalIRQ(tea_queue, CONFIG::IRQ_TEA);
-}
+// template <class CONFIG>
+// void CPU<CONFIG>::SignalTEA()
+// {
+// 	SignalIRQ(tea_queue, CONFIG::IRQ_TEA);
+// }
 
 template <class CONFIG>
 void CPU<CONFIG>::SignalSMI()
@@ -245,6 +259,8 @@ void CPU<CONFIG>::Run()
 template <class CONFIG>
 void CPU<CONFIG>::BusRead(typename CONFIG::physical_address_t physical_addr, void *buffer, uint32_t size, typename CONFIG::WIMG wimg, bool rwitm)
 {
+	AlignToBusClock();
+	
 	tlm::tlm_generic_payload *payload = payload_fabric.allocate();
 	
 	payload->set_address(physical_addr);
@@ -253,6 +269,22 @@ void CPU<CONFIG>::BusRead(typename CONFIG::physical_address_t physical_addr, voi
 	payload->set_data_ptr((unsigned char *) buffer);
 	
 	bus_master_sock->b_transport(*payload, cpu_time);
+	
+	tlm::tlm_response_status status = payload->get_response_status();
+	
+	switch(status)
+	{
+		case tlm::TLM_OK_RESPONSE:
+			break;
+		case tlm::TLM_INCOMPLETE_RESPONSE:
+		case tlm::TLM_GENERIC_ERROR_RESPONSE:
+		case tlm::TLM_ADDRESS_ERROR_RESPONSE:
+		case tlm::TLM_COMMAND_ERROR_RESPONSE:
+		case tlm::TLM_BURST_ERROR_RESPONSE:
+		case tlm::TLM_BYTE_ENABLE_ERROR_RESPONSE:
+			inherited::SetIRQ(CONFIG::IRQ_TEA);
+			break;
+	}
 
 	payload->release();
 
@@ -262,6 +294,8 @@ void CPU<CONFIG>::BusRead(typename CONFIG::physical_address_t physical_addr, voi
 template <class CONFIG>
 void CPU<CONFIG>::BusWrite(typename CONFIG::physical_address_t physical_addr, const void *buffer, uint32_t size, typename CONFIG::WIMG wimg)
 {
+	AlignToBusClock();
+	
 	tlm::tlm_generic_payload *payload = payload_fabric.allocate();
 	
 	payload->set_address(physical_addr);
@@ -271,6 +305,21 @@ void CPU<CONFIG>::BusWrite(typename CONFIG::physical_address_t physical_addr, co
 	
 	bus_master_sock->b_transport(*payload, cpu_time);
 	
+	tlm::tlm_response_status status = payload->get_response_status();
+	switch(status)
+	{
+		case tlm::TLM_OK_RESPONSE:
+			break;
+		case tlm::TLM_INCOMPLETE_RESPONSE:
+		case tlm::TLM_GENERIC_ERROR_RESPONSE:
+		case tlm::TLM_ADDRESS_ERROR_RESPONSE:
+		case tlm::TLM_COMMAND_ERROR_RESPONSE:
+		case tlm::TLM_BURST_ERROR_RESPONSE:
+		case tlm::TLM_BYTE_ENABLE_ERROR_RESPONSE:
+			inherited::SetIRQ(CONFIG::IRQ_TEA);
+			break;
+	}
+
 	payload->release();
 
 	UpdateTime();

@@ -226,10 +226,8 @@ unisim/service/interfaces/stmt_lookup.hh \
 unisim/service/interfaces/time.hh \
 unisim/service/interfaces/memory_injection.hh \
 unisim/service/interfaces/registers.hh \
-unisim/service/interfaces/cpu_linux_os.hh \
 unisim/service/interfaces/linux_os.hh \
 unisim/service/interfaces/os.hh \
-unisim/service/interfaces/cpu_os.hh \
 unisim/service/interfaces/cache_power_estimator.hh \
 unisim/service/interfaces/power_mode.hh \
 unisim/service/interfaces/synchronizable.hh \

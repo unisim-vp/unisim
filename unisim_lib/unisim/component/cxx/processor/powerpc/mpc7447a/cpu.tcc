@@ -71,7 +71,6 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	, Service<unisim::service::interfaces::Registers>(name,  parent)
 	, Service<Memory<typename CONFIG::address_t> >(name,  parent)
 	, Service<MemoryInjection<typename CONFIG::address_t> >(name,  parent)
-	, Service<CPULinuxOS>(name,  parent)
 	, Client<Memory<typename CONFIG::address_t> >(name,  parent)
 	, Client<LinuxOS>(name,  parent)
 	, Client<CachePowerEstimator>(name,  parent)
@@ -81,7 +80,6 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	, registers_export("registers-export",  this)
 	, memory_export("memory-export",  this)
 	, memory_injection_export("memory-injection-export",  this)
-	, cpu_linux_os_export("cpu-linux-os-export",  this)
 	, synchronizable_export("synchronizable-export",  this)
 	, memory_access_reporting_control_export("memory_access_reporting_control_export",  this)
 	, kernel_loader_import("kernel-loader-import",  this)
@@ -4580,15 +4578,6 @@ string CPU<CONFIG>::Disasm(typename CONFIG::address_t addr, typename CONFIG::add
 
 	next_addr = addr + 4;
 	return sstr.str();
-}
-
-/* PowerPC Linux OS Interface */
-template <class CONFIG>
-void CPU<CONFIG>::PerformExit(int ret)
-{
-	if(unlikely(IsVerboseStep()))
-		logger << DebugInfo << "Program exited with code " << ret << endl << EndDebugInfo;
-	Stop(ret);
 }
 
 /* Endian interface */

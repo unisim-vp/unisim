@@ -364,8 +364,7 @@ Send(const PPCIMsgType &pci_message) {
 				<< std::endl
 				<< EndDebugError;
 		}
-		sc_stop();
-		wait(); 
+		Object::Stop(-1);
 	}
 	switch(entry->type) {
 	case AddressMapEntry::LOCAL_MEMORY_SPACE:
@@ -379,8 +378,7 @@ Send(const PPCIMsgType &pci_message) {
 			DEBUG_PCI_REQ(pci_req);
 			logger << std::endl << EndDebugError;
 		}
-		sc_stop();
-		wait();
+		Object::Stop(-1);
 		return false; // never executed
 		break;
 	case AddressMapEntry::EXTENDED_ROM_1:
@@ -401,8 +399,7 @@ Send(const PPCIMsgType &pci_message) {
 				<< "This should never happen!!!!" << std::endl 
 				<< EndDebugError;
 		}
-		sc_stop();
-		wait();
+		Object::Stop(-1);
 		return false; // never executed
 		break;
 	case AddressMapEntry::ROM_SPACE_1:
@@ -420,8 +417,7 @@ Send(const PPCIMsgType &pci_message) {
 			DEBUG_PCI_REQ(pci_req);
 			logger << std::endl << EndDebugError;
 		}
-		sc_stop();
-		wait();
+		Object::Stop(-1);
 		return false; // never executed
 		break;
 	}
@@ -493,8 +489,7 @@ Send(const PMsgType &message) {
 				<< std::endl
 				<< EndDebugError;
 		}
-		sc_stop();
-		wait(); 
+		Object::Stop(-1);
 		return false;
 	}
 	switch(entry->type) {
@@ -509,8 +504,7 @@ Send(const PMsgType &message) {
 			DEBUG_BUS_REQ(req);
 			logger << std::endl << EndDebugInfo;
 		}
-		sc_stop();
-		wait();
+		Object::Stop(-1);
 		return false;
 		break;
 	case AddressMapEntry::EXTENDED_ROM_1:
@@ -536,8 +530,7 @@ Send(const PMsgType &message) {
 					DEBUG_BUS_REQ(req);
 					logger << std::endl << EndDebugError;
 				}
-				sc_stop();
-				wait(); 		
+				Object::Stop(-1);
 			}
 			if(!message->HasResponseEvent()) {
 				if(unlikely(verbose)) {
@@ -548,8 +541,7 @@ Send(const PMsgType &message) {
 					DEBUG_BUS_REQ(req);
 					logger << std::endl << EndDebugError;
 				}
-				sc_stop();
-				wait();
+				Object::Stop(-1);
 			}
 			break;
 		case ReqType::WRITE:
@@ -566,8 +558,7 @@ Send(const PMsgType &message) {
 					DEBUG_BUS_REQ(req);
 					logger << std::endl << EndDebugError;
 				}
-				sc_stop();
-				wait();
+				Object::Stop(-1);
 			}
 			break;
 		default:
@@ -579,8 +570,7 @@ Send(const PMsgType &message) {
 				DEBUG_BUS_REQ(req);
 				logger << std::endl << EndDebugError;
 			}
-			sc_stop();
-			wait();
+			Object::Stop(-1);
 			return false;
 			break;
 		}
@@ -609,8 +599,7 @@ Send(const PMsgType &message) {
 					DEBUG_BUS_REQ(req);
 					logger << std::endl << EndDebugError;
 				}
-				sc_stop();
-				wait(); 		
+				Object::Stop(-1);
 			}
 			if(!message->HasResponseEvent()) {
 				if(unlikely(verbose)) {
@@ -620,8 +609,7 @@ Send(const PMsgType &message) {
 					DEBUG_BUS_REQ(req);
 					logger << std::endl << EndDebugError;
 				}
-				sc_stop();
-				wait();
+				Object::Stop(-1);
 			}			
 			break;
 		case ReqType::WRITE:
@@ -638,8 +626,7 @@ Send(const PMsgType &message) {
 					DEBUG_BUS_REQ(req);
 					logger << std::endl << EndDebugError;
 				}
-				sc_stop();
-				wait();
+				Object::Stop(-1);
 			}
 			break;
 		default:
@@ -651,8 +638,7 @@ Send(const PMsgType &message) {
 				DEBUG_BUS_REQ(req);
 				logger << std::endl << EndDebugError;
 			}
-			sc_stop();
-			wait();
+			Object::Stop(-1);
 			return false;
 			break;
 		}
@@ -695,8 +681,7 @@ Send(const PMsgType &message) {
 						DEBUG_BUS_REQ(req);
 						logger << std::endl << EndDebugError;
 					}
-					sc_stop();
-					wait();
+					Object::Stop(-1);
 				}
 				memset(rsp->read_data, 0, MAX_TRANSACTION_DATA_SIZE);
 				rsp->read_status = RspType::RS_MISS;
@@ -715,8 +700,7 @@ Send(const PMsgType &message) {
 					DEBUG_BUS_REQ(req);
 					logger << std::endl << EndDebugError;
 				}
-				sc_stop();
-				wait();
+				Object::Stop(-1);
 			}
 			/* nothing else to do */
 			break;
@@ -729,8 +713,7 @@ Send(const PMsgType &message) {
 				DEBUG_BUS_REQ(req);
 				logger << std::endl << EndDebugError;
 			}
-			sc_stop();
-			wait();
+			Object::Stop(-1);
 			return false;
 			break;
 		}
@@ -751,8 +734,7 @@ Send(const PMsgType &message) {
 						DEBUG_BUS_REQ(req);
 						logger << std::endl << EndDebugError;
 					}
-					sc_stop();
-					wait(); 		
+					Object::Stop(-1);
 				}
 				message->rsp = rsp;
 				message->GetResponseEvent()->notify(cycle_time);
@@ -770,8 +752,7 @@ Send(const PMsgType &message) {
 						DEBUG_BUS_REQ(req);
 						logger << std::endl << EndDebugError;
 					}
-					sc_stop();
-					wait(); 		
+					Object::Stop(-1);
 				}
 			}
 			break;
@@ -785,8 +766,7 @@ Send(const PMsgType &message) {
 						DEBUG_BUS_REQ(req);
 						logger << std::endl << EndDebugError;
 					}
-					sc_stop();
-					wait(); 		
+					Object::Stop(-1);
 				}
 				return true;			
 			} else {
@@ -803,8 +783,7 @@ Send(const PMsgType &message) {
 						DEBUG_BUS_REQ(req);
 						logger << std::endl << EndDebugError;
 					}
-					sc_stop();
-					wait();
+					Object::Stop(-1);
 				}
 			}
 			break;
@@ -816,8 +795,7 @@ Send(const PMsgType &message) {
 				DEBUG_BUS_REQ(req);
 				logger << std::endl << EndDebugError;
 			}
-			sc_stop();
-			wait();
+			Object::Stop(-1);
 			return false;
 			break;
 		}
@@ -837,8 +815,7 @@ Send(const PMsgType &message) {
 			DEBUG_BUS_REQ(req);
 			logger << std::endl << EndDebugError;
 		}
-		sc_stop();
-		wait();
+		Object::Stop(-1);
 		return false;
 		break;
 	case AddressMapEntry::ROM_SPACE_1:
@@ -864,8 +841,7 @@ Send(const PMsgType &message) {
 			DEBUG_BUS_REQ(req);
 			logger << std::endl << EndDebugError;
 		}
-		sc_stop();
-		wait();
+		Object::Stop(-1);
 		break;
 	default:
 		if(unlikely(verbose)) {
@@ -875,8 +851,7 @@ Send(const PMsgType &message) {
 			DEBUG_BUS_REQ(req);
 			logger << std::endl << EndDebugError;
 		}
-		sc_stop();
-		wait();
+		Object::Stop(-1);
 		break;
 	}
 	return false;
@@ -1295,8 +1270,7 @@ PCIDispatch() {
 						<< LOCATION
 						<< " received a response for a pci message without request field" 
 						<< std::endl << EndDebugError;
-				sc_stop();
-				wait();
+				Object::Stop(-1);
 			}
 			if(!pci_msg->rsp) {
 				if(unlikely(DEBUG && verbose))
@@ -1304,8 +1278,7 @@ PCIDispatch() {
 						<< LOCATION
 						<< " received a response for a pci message without response field" 
 						<< std::endl << EndDebugError;
-				sc_stop();
-				wait();
+				Object::Stop(-1);
 			}
 			pci_rsp = pci_msg->rsp;
 			rsp->read_status = RspType::RS_MISS;
@@ -1379,8 +1352,7 @@ ConverttoFSBMsg(const PPCIMsgType &pci_msg, int size_done, int size) {
 			logger << DebugError
 				<< "Unknown pci request type" << std::endl
 				<< EndDebugError;
-		sc_stop();
-		wait();
+		Object::Stop(-1);
 		break;		
 	}
 	
@@ -1414,8 +1386,7 @@ ConverttoMemMsg(const PPCIMsgType &pci_msg, int size_done, int size) {
 			logger << DebugError
 				<< "Unknown pci request type" << std::endl
 				<< EndDebugError;
-		sc_stop();
-		wait();
+		Object::Stop(-1);
 		break;		
 	}
 	
@@ -1454,32 +1425,28 @@ ConverttoMemMsg(const PMsgType &fsb_msg) {
 			logger << DebugError << LOCATION
 				<< "Can not send INV_BLOCK request to the memory system"
 				<< std::endl << EndDebugError;
-		sc_stop();
-		wait();
+		Object::Stop(-1);
 		break;
 	case ReqType::FLUSH_BLOCK:  // Flush block
 		if(unlikely(verbose)) 
 			logger << DebugError << LOCATION
 				<< "Can not send FLUSH_BLOCK request to the memory system"
 				<< std::endl << EndDebugError;
-		sc_stop();
-		wait();
+		Object::Stop(-1);
 		break;
 	case ReqType::ZERO_BLOCK:   // Fill in block with zero
 		if(unlikely(verbose)) 
 			logger << DebugError << LOCATION
 				<< "Can not send ZERO_BLOCK request to the memory system"
 				<< std::endl << EndDebugError;
-		sc_stop();
-		wait();
+		Object::Stop(-1);
 		break;
 	case ReqType::INV_TLB:      // Invalidate TLB set
 		if(unlikely(verbose)) 
 			logger << DebugError << LOCATION
 				<< "Can not send INV_TLB request to the memory system"
 				<< std::endl << EndDebugError;
-		sc_stop();
-		wait();
+		Object::Stop(-1);
 		break;
 	}
 

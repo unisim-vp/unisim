@@ -54,7 +54,6 @@
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/loader.hh>
 #include <unisim/service/interfaces/linux_os.hh>
-#include <unisim/service/interfaces/cpu_linux_os.hh>
 #include <unisim/service/interfaces/symbol_table_lookup.hh>
 #include <unisim/service/interfaces/cache_power_estimator.hh>
 #include <unisim/service/interfaces/power_mode.hh>
@@ -89,7 +88,6 @@ using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::Object;
 using unisim::service::interfaces::Loader;
 using unisim::service::interfaces::LinuxOS;
-using unisim::service::interfaces::CPULinuxOS;
 using unisim::util::debug::Symbol;
 using unisim::service::interfaces::SymbolTableLookup;
 using unisim::service::interfaces::Synchronizable;
@@ -579,7 +577,6 @@ class CPU :
 	public Service<unisim::service::interfaces::Registers>,
 	public Service<Memory<typename CONFIG::address_t> >,
 	public Service<MemoryInjection<typename CONFIG::address_t> >,
-	public Service<CPULinuxOS>,
 	public Client<Memory<typename CONFIG::address_t> >,
 	public Client<LinuxOS>,
 	public Client<CachePowerEstimator>,
@@ -595,7 +592,6 @@ public:
 	ServiceExport<unisim::service::interfaces::Registers> registers_export;
 	ServiceExport<Memory<typename CONFIG::address_t> > memory_export;
 	ServiceExport<MemoryInjection<typename CONFIG::address_t> > memory_injection_export;
-	ServiceExport<CPULinuxOS> cpu_linux_os_export;
 	ServiceExport<Synchronizable> synchronizable_export;
 	ServiceExport<MemoryAccessReportingControl> memory_access_reporting_control_export;
 
@@ -699,9 +695,6 @@ public:
 
 	virtual void RequiresMemoryAccessReporting(bool report);
 	virtual void RequiresFinishedInstructionReporting(bool report) ;
-
-	// PowerPC Linux OS Interface
-	virtual void PerformExit(int ret);
 
 	// Endian interface
     virtual endian_type GetEndianess();

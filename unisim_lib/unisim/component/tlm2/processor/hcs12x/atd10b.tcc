@@ -178,23 +178,19 @@ tlm_sync_enum ATD10B<ATD_SIZE>::nb_transport_fw(ATD_Payload<ATD_SIZE>& payload, 
 			return TLM_UPDATED;
 		case END_REQ:
 			cout << sc_time_stamp() << ":" << name() << ": received an unexpected phase END_REQ" << endl;
-			sc_stop();
-			wait(); // leave control to the SystemC kernel
+			Object::Stop(-1);
 			break;
 		case BEGIN_RESP:
 			cout << sc_time_stamp() << ":" << name() << ": received an unexpected phase BEGIN_RESP" << endl;
-			sc_stop();
-			wait(); // leave control to the SystemC kernel
+			Object::Stop(-1);
 			break;
 		case END_RESP:
 			cout << sc_time_stamp() << ":" << name() << ": received an unexpected phase END_RESP" << endl;
-			sc_stop();
-			wait(); // leave control to the SystemC kernel
+			Object::Stop(-1);
 			break;
 		default:
 			cout << sc_time_stamp() << ":" << name() << ": received an unexpected phase" << endl;
-			sc_stop();
-			wait(); // leave control to the SystemC kernel
+			Object::Stop(-1);
 			break;
 	}
 

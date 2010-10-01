@@ -49,7 +49,12 @@ namespace mpc7447a {
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const SystemResetException<CONFIG>& exc)
 {
-	if(linux_os_import) Stop(-1);
+	if(linux_os_import)
+	{
+		logger << DebugInfo << "System reset" << EndDebugInfo;
+		Stop(0);
+		return;
+	}
 	SetSRR0(GetNIA()); // save NIA
 	
 	// clear SRR1[0-5], SRR1[6]=MSR[6], clear SSR1[7-15], SRR1[16-31]=MSR[16-31]
@@ -80,7 +85,20 @@ void CPU<CONFIG>::HandleException(const SystemResetException<CONFIG>& exc)
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const MachineCheckException<CONFIG>& exc)
 {
-	if(linux_os_import) Stop(-1);
+	if(linux_os_import)
+	{
+		if(HasMCP())
+		{
+			logger << DebugError << "Machine check" << EndDebugError;
+		}
+	
+		if(HasTEA())
+		{
+			logger << DebugError << "Bus error" << EndDebugError;
+		}
+		Stop(-1);
+		return;
+	}
 	SetSRR0(GetNIA()); // save NIA
 		
 	// clear SRR1[0-15], SRR1[16-31]=MSR[16-31]
@@ -114,8 +132,7 @@ void CPU<CONFIG>::HandleException(const MachineCheckException<CONFIG>& exc)
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const DecrementerException<CONFIG>& exc)
 {
-	if(linux_os_import) Stop(-1);
-//	cerr << "before jumping to exception handler r9=0x" << hex << GetGPR(9) << std::dec << endl;
+	if(linux_os_import) return; // silently ignore the IRQ when Linux ABI translation is enabled
 	SetSRR0(GetNIA()); // save NIA
 	
 	// keep SRR1[0], clear SRR1[1-4], keep SRR1[5-9], clear SRR1[10-11], set SRR1[12], clear SRR1[13-15],
@@ -138,7 +155,7 @@ void CPU<CONFIG>::HandleException(const DecrementerException<CONFIG>& exc)
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const ExternalInterruptException<CONFIG>& exc)
 {
-	if(linux_os_import) Stop(-1);
+	if(linux_os_import) return; // silently ignore the IRQ when Linux ABI translation is enabled
 	SetSRR0(GetNIA()); // save NIA
 	
 	// keep SRR1[0], clear SRR1[1-4], keep SRR1[5-9], clear SRR1[10-11], set SRR1[12], clear SRR1[13-15],
@@ -160,7 +177,7 @@ void CPU<CONFIG>::HandleException(const ExternalInterruptException<CONFIG>& exc)
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const PerformanceMonitorInterruptException<CONFIG>& exc)
 {
-	if(linux_os_import) Stop(-1);
+	if(linux_os_import) return; // silently ignore the IRQ when Linux ABI translation is enabled
 	SetSRR0(GetNIA()); // save NIA
 	
 	// keep SRR1[0], clear SRR1[1-4], keep SRR1[5-9], clear SRR1[10-11], set SRR1[12], clear SRR1[13-15],
@@ -183,7 +200,7 @@ void CPU<CONFIG>::HandleException(const PerformanceMonitorInterruptException<CON
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const SystemManagementInterruptException<CONFIG>& exc)
 {
-	if(linux_os_import) Stop(-1);
+	if(linux_os_import) return; // silently ignore the IRQ when Linux ABI translation is enabled
 	SetSRR0(GetNIA()); // save NIA
 	
 	// keep SRR1[0], clear SRR1[1-4], keep SRR1[5-9], clear SRR1[10-11], set SRR1[12], clear SRR1[13-15],
@@ -221,7 +238,12 @@ void CPU<CONFIG>::HandleException(const SystemManagementInterruptException<CONFI
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const ISIProtectionViolationException<CONFIG>& exc)
 {
-	if(linux_os_import) Stop(-1);
+	if(linux_os_import)
+	{
+		logger << DebugError << "Instruction storage interrupt: protection violation" << EndDebugError;
+		Stop(-1);
+		return;
+	}
 	SetSRR0(GetCIA()); // save CIA
 		
 	// keep SRR1[0], clear SRR1[1-3], set SRR1[4], keep SRR1[5-9], clear SRR1[10-11], set SRR1[12], clear SRR1[13-15],
@@ -248,7 +270,12 @@ void CPU<CONFIG>::HandleException(const ISIProtectionViolationException<CONFIG>&
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const ISINoExecuteException<CONFIG>& exc)
 {
-	if(linux_os_import) Stop(-1);
+	if(linux_os_import)
+	{
+		logger << DebugError << "Instruction storage interrupt: no execute exception" << EndDebugError;
+		Stop(-1);
+		return;
+	}
 	SetSRR0(GetCIA()); // save CIA
 		
 	// keep SRR1[0], clear SRR1[1-2], set SRR1[3], clear SRR1[4], keep SRR1[5-9], clear SRR1[10-11], set SRR1[12], clear SRR1[13-15],
@@ -275,7 +302,12 @@ void CPU<CONFIG>::HandleException(const ISINoExecuteException<CONFIG>& exc)
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const ISIDirectStoreException<CONFIG>& exc)
 {
-	if(linux_os_import) Stop(-1);
+	if(linux_os_import)
+	{
+		logger << DebugError << "Instruction storage interrupt: direct store" << EndDebugError;
+		Stop(-1);
+		return;
+	}
 	SetSRR0(GetCIA()); // save CIA
 		
 	// keep SRR1[0], clear SRR1[1-2], set SRR1[3], clear SRR1[4], keep SRR1[5-9], clear SRR1[10-11], set SRR1[12], clear SRR1[13-15],
@@ -302,7 +334,12 @@ void CPU<CONFIG>::HandleException(const ISIDirectStoreException<CONFIG>& exc)
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const ISIPageFaultException<CONFIG>& exc)
 {
-	if(linux_os_import) Stop(-1);
+	if(linux_os_import)
+	{
+		logger << DebugError << "Instruction storage interrupt: page fault" << EndDebugError;
+		Stop(-1);
+		return;
+	}
 	SetSRR0(GetCIA()); // save CIA
 		
 	// keep SRR1[0], set SRR1[1], clear SRR1[2-4], keep SRR1[5-9], clear SRR1[10-11], set SRR1[12], clear SRR1[13-15],
@@ -329,7 +366,12 @@ void CPU<CONFIG>::HandleException(const ISIPageFaultException<CONFIG>& exc)
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const ISIGuardedMemoryException<CONFIG>& exc)
 {
-	if(linux_os_import) Stop(-1);
+	if(linux_os_import)
+	{
+		logger << DebugError << "Instruction storage interrupt: guarded memory" << EndDebugError;
+		Stop(-1);
+		return;
+	}
 	SetSRR0(GetCIA()); // save CIA
 		
 	// keep SRR1[0], clear SRR1[1-2], set SRR1[3], clear SRR1[4], keep SRR1[5-9], clear SRR1[10-11], set SRR1[12], clear SRR1[13-15],
@@ -377,7 +419,12 @@ void CPU<CONFIG>::HandleException(const ISIGuardedMemoryException<CONFIG>& exc)
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const DSIDirectStoreException<CONFIG>& exc)
 {
-	if(linux_os_import) Stop(-1);
+	if(linux_os_import)
+	{
+		logger << DebugError << "Data storage interrupt: direct store" << EndDebugError;
+		Stop(-1);
+		return;
+	}
 	SetDAR(exc.GetAddress()); // DAR=effective address
 	
 	SetSRR0(GetCIA()); // save CIA
@@ -416,7 +463,12 @@ void CPU<CONFIG>::HandleException(const DSIDirectStoreException<CONFIG>& exc)
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const DSIProtectionViolationException<CONFIG>& exc)
 {
-	if(linux_os_import) Stop(-1);
+	if(linux_os_import)
+	{
+		logger << DebugError << "Data storage interrupt: protection violation" << EndDebugError;
+		Stop(-1);
+		return;
+	}
 	SetDAR(exc.GetAddress()); // DAR=effective address
 	
 	SetSRR0(GetCIA()); // save CIA
@@ -454,7 +506,12 @@ void CPU<CONFIG>::HandleException(const DSIProtectionViolationException<CONFIG>&
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const DSIPageFaultException<CONFIG>& exc)
 {
-	if(linux_os_import) Stop(-1);
+	if(linux_os_import)
+	{
+		logger << DebugError << "Data storage interrupt: page fault" << EndDebugError;
+		Stop(-1);
+		return;
+	}
 	SetDAR(exc.GetAddress()); // DAR=effective address
 	
 	SetSRR0(GetCIA()); // save CIA
@@ -492,7 +549,12 @@ void CPU<CONFIG>::HandleException(const DSIPageFaultException<CONFIG>& exc)
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const DSIDataAddressBreakpointException<CONFIG>& exc)
 {
-	if(linux_os_import) Stop(-1);
+	if(linux_os_import)
+	{
+		logger << DebugError << "Data storage interrupt: data address breakpoint" << EndDebugError;
+		Stop(-1);
+		return;
+	}
 	SetDAR(exc.GetAddress()); // DAR=effective address
 	
 	SetSRR0(GetCIA()); // save CIA
@@ -530,7 +592,12 @@ void CPU<CONFIG>::HandleException(const DSIDataAddressBreakpointException<CONFIG
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const DSIExternalAccessDisabledException<CONFIG>& exc)
 {
-	if(linux_os_import) Stop(-1);
+	if(linux_os_import)
+	{
+		logger << DebugError << "Data storage interrupt: external access disabled" << EndDebugError;
+		Stop(-1);
+		return;
+	}
 	SetDAR(exc.GetAddress()); // DAR=effective address
 	
 	SetSRR0(GetCIA()); // save CIA
@@ -568,7 +635,12 @@ void CPU<CONFIG>::HandleException(const DSIExternalAccessDisabledException<CONFI
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const DSIWriteThroughLinkedLoadStore<CONFIG>& exc)
 {
-	if(linux_os_import) Stop(-1);
+	if(linux_os_import)
+	{
+		logger << DebugError << "Data storage interrupt: write through linked load/store" << EndDebugError;
+		Stop(-1);
+		return;
+	}
 	SetDAR(exc.GetAddress()); // DAR=effective address
 	
 	SetSRR0(GetCIA()); // save CIA
@@ -629,7 +701,12 @@ void CPU<CONFIG>::HandleException(const DSIWriteThroughLinkedLoadStore<CONFIG>& 
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const AlignmentException<CONFIG>& exc, uint32_t instruction_encoding)
 {
-	if(linux_os_import) Stop(-1);
+	if(linux_os_import)
+	{
+		logger << DebugError << "Data storage interrupt: misalignment" << EndDebugError;
+		Stop(-1);
+		return;
+	}
 	SetDAR(exc.GetAddress()); // DAR=effective address
 	
 	SetSRR0(GetCIA()); // save CIA
@@ -718,7 +795,12 @@ void CPU<CONFIG>::HandleException(const AlignmentException<CONFIG>& exc, uint32_
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const IllegalInstructionException<CONFIG>& exc)
 {
-	if(linux_os_import) Stop(-1);
+	if(linux_os_import)
+	{
+		logger << DebugError << "Illegal instruction" << EndDebugError;
+		Stop(-1);
+		return;
+	}
 	SetSRR0(GetCIA()); // save CIA
 		
 	// keep SRR1[0], clear SRR1[1-4], keep SRR1[5-9], clear SRR1[10-11], set SRR1[12], clear SRR1[13-15],
@@ -745,7 +827,12 @@ void CPU<CONFIG>::HandleException(const IllegalInstructionException<CONFIG>& exc
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const PrivilegeViolationException<CONFIG>& exc)
 {
-	if(linux_os_import) Stop(-1);
+	if(linux_os_import)
+	{
+		logger << DebugError << "Privilege violation" << EndDebugError;
+		Stop(-1);
+		return;
+	}
 	SetSRR0(GetCIA()); // save CIA
 		
 	// keep SRR1[0], clear SRR1[1-4], keep SRR1[5-9], clear SRR1[10-12], set SRR1[13], clear SRR1[14-15],
@@ -772,7 +859,7 @@ void CPU<CONFIG>::HandleException(const PrivilegeViolationException<CONFIG>& exc
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const TrapException<CONFIG>& exc)
 {
-	if(linux_os_import) Stop(-1);
+	if(linux_os_import) return; // silently ignore trap when Linux ABI translation is enabled
 	SetSRR0(GetCIA()); // save CIA
 		
 	// keep SRR1[0], clear SRR1[1-4], keep SRR1[5-9], clear SRR1[10-13], set SRR1[14], clear SRR1[15],
@@ -799,7 +886,12 @@ void CPU<CONFIG>::HandleException(const TrapException<CONFIG>& exc)
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const FloatingPointException<CONFIG>& exc)
 {
-	if(linux_os_import) Stop(-1);
+	if(linux_os_import)
+	{
+		logger << DebugError << "Floating-point exception" << EndDebugError;
+		Stop(-1);
+		return;
+	}
 	SetSRR0(GetCIA()); // save CIA
 		
 	// keep SRR1[0], clear SRR1[1-4], keep SRR1[5-9], clear SRR1[10], set SRR1[11], clear SRR1[12-15],
@@ -827,7 +919,12 @@ void CPU<CONFIG>::HandleException(const FloatingPointException<CONFIG>& exc)
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const FloatingPointUnavailableException<CONFIG>& exc)
 {
-	if(linux_os_import) Stop(-1);
+	if(linux_os_import)
+	{
+		logger << DebugError << "Floating-point unavailable exception" << EndDebugError;
+		Stop(-1);
+		return;
+	}
 	SetSRR0(GetCIA()); // save CIA
 	
 	SetSRR1((GetSRR1() & 0x87c0008cUL) | (GetMSR() & 0x0000ff73UL)); // clear SRR1[1-4], SRR1[10-15], copy MSR[16-23], MSR[25-27], and MSR[30-31]
@@ -870,312 +967,11 @@ void CPU<CONFIG>::HandleException(const SystemCallException<CONFIG>& exc)
 {
 	if(linux_os_import)
 	{
-//   cerr << "Syscall #" << GetGPR(0) << endl;
+		// Do Linux ABI translation
 		linux_os_import->ExecuteSystemCall(GetGPR(0));
-/*   if(GetCR() & (1 << 28))
-   {
-     cerr << "got an error" << endl;
-   }*/
 	}
 	else
 	{
-#if 0
-		if(unlikely(IsVerboseException()))
-		{
-			switch(GetGPR(0))
-			{
-				case 1:
-					logger << DebugInfo << "exit(0x" << std::hex << GetGPR(3) << std::dec << ");" << endl << EndDebugInfo;
-					break;
-					
-				case 2:
-					logger << DebugInfo << "fork()" << endl << EndDebugInfo;
-					break;
-			
-				case 3:
-					logger << DebugInfo << "read(fd=" << (signed) GetGPR(3) << ", buf=0x" << std::hex << GetGPR(4) << std::dec
-							<< ", count=" << GetGPR(5) << ");" << endl << EndDebugInfo;
-					break;
-			
-				case 4:
-					{
-						int fd; 
-		
-						fd = GetGPR(3);
-#if 0
-						if(fd == 1 || fd == 2)
-						{
-							size_t count;
-							void *buf;
-							address_t buf_addr;
-							
-							buf_addr = GetGPR(4);
-							count = (size_t) GetGPR(5);
-							buf = malloc(count);
-							ReadMemory(buf_addr, buf, count);
-								
-							char *tbuf = new char[count + 1];
-							memcpy(tbuf, buf, count);
-							tbuf[count] = '\0';
-							string *str = new string(tbuf);
-							cout << (*str);
-							cout << flush;
-							delete str;
-						}
-#endif
-						
-						logger << DebugInfo << "write(fd=" << (signed) GetGPR(3) << ", buf=0x" << std::hex << GetGPR(4) << std::dec
-								<< ", count=" << GetGPR(5) << ");" << endl << EndDebugInfo;
-					}
-					break;
-					
-				case 5:
-					{
-						address_t addr;
-						int pathnamelen;
-						char *pathname;
-						int flags;
-						uint32_t mode;
-						
-						addr = GetGPR(3);
-						pathnamelen = StringLength(addr);
-						pathname = (char *) malloc(pathnamelen + 1);
-						ReadMemory(addr, pathname, pathnamelen + 1);
-						flags = GetGPR(4);
-						mode = GetGPR(5);
-							
-						logger << DebugInfo << "open(pathname=\"" << pathname << "\", flags=0x" << std::hex << flags 
-								<< ", mode=0x" << mode << std::dec << ");" << endl << EndDebugInfo;
-							
-						free(pathname);
-					}
-					break;
-				
-				case 6:
-					logger << DebugInfo << "close(fd=" << (signed) GetGPR(3) << ");" << endl << EndDebugInfo;
-					break;
-					
-				case 11:
-					{
-						address_t filename_addr = GetGPR(3);
-						int filenamelen = StringLength(filename_addr);
-						char *filename = (char *) malloc(filenamelen + 1);
-						ReadMemory(filename_addr, filename, filenamelen + 1);
-						address_t argv_addr = GetGPR(4);
-						address_t envp_addr = GetGPR(5);
-						logger << DebugInfo << "execve(filename=\"" << filename << "\", argv=0x" << std::hex << argv_addr << ", envp=0x" << envp_addr << std::dec << ");" << endl << EndDebugInfo;
-						free(filename);
-					}
-					break;
-					
-				case 14:
-					{
-						address_t path_addr = GetGPR(3);
-						int pathlen = StringLength(path_addr);
-						char *path = (char *) malloc(pathlen + 1);
-						ReadMemory(path_addr, path, pathlen + 1);
-						
-						uint32_t mode = GetGPR(4);
-						uint32_t dev = GetGPR(5);
-						
-						logger << DebugInfo << "mknod(pathname=\"" << path << "\", mode=0x" << std::hex << mode << ", dev=0x" << dev << std::dec << ");" << endl << EndDebugInfo;
-						free(path);
-					}
-					break;
-					
-				case 15:
-					{
-						address_t path_addr = GetGPR(3);
-						int pathlen = StringLength(path_addr);
-						char *path = (char *) malloc(pathlen + 1);
-						ReadMemory(path_addr, path, pathlen + 1);
-							
-						uint32_t mode = GetGPR(4);
-							
-						logger << DebugInfo << "chmod(pathname=\"" << path << "\", mode=0x" << std::hex << mode << std::dec << ");" << endl << EndDebugInfo;
-						free(path);
-					}
-					break;
-					
-				case 20:
-					logger << DebugInfo << "getpid();" << endl << EndDebugInfo;
-					break;
-					
-				case 21:
-					{
-						address_t source_addr = GetGPR(3);
-						int sourcelen = StringLength(source_addr);
-						char *source = (char *) malloc(sourcelen + 1);
-						ReadMemory(source_addr, source, sourcelen + 1);
-							
-						address_t target_addr = GetGPR(4);
-						int targetlen = StringLength(target_addr);
-						char *target = (char *) malloc(targetlen + 1);
-						ReadMemory(target_addr, target, targetlen + 1);
-							
-						address_t filesystemtype_addr = GetGPR(5);
-						int filesystemtypelen = StringLength(filesystemtype_addr);
-						char *filesystemtype = (char *) malloc(filesystemtypelen + 1);
-						ReadMemory(filesystemtype_addr, filesystemtype, filesystemtypelen + 1);
-							
-						unsigned long mountflags = GetGPR(6);
-						address_t data_addr = GetGPR(7);
-							
-						logger << DebugInfo << "mount(source=\"" << source << "\", target=\"" << target << "\", filesystemtype=\""
-								<< filesystemtype << "\", mountflags=0x" << std::hex << mountflags << ", data=0x"
-								<< data_addr << std::dec << ");" << endl << EndDebugInfo;
-						free(source);
-						free(target);
-						free(filesystemtype);
-					}
-					break;
-				
-				case 22:
-					{
-						address_t target_addr = GetGPR(4);
-						int targetlen = StringLength(target_addr);
-						char *target = (char *) malloc(targetlen + 1);
-						ReadMemory(target_addr, target, targetlen + 1);
-								
-						logger << DebugInfo << "umount(target=\"" << target << "\");" << endl << EndDebugInfo;
-						free(target);
-					}
-					break;
-					
-				case 23:
-					logger << DebugInfo << "setuid(uid=0x" << std::hex << GetGPR(3) << std::dec << ");" << endl << EndDebugInfo;
-					break;
-					
-				case 24:
-					logger << DebugInfo << "getuid();" << endl << EndDebugInfo;
-					break;
-				
-				case 33:
-					{
-						address_t addr;
-						int pathnamelen;
-						char *pathname;
-						uint32_t mode;
-		
-						addr = GetGPR(3);
-						pathnamelen = StringLength(addr);
-						pathname = (char *) malloc(pathnamelen + 1);
-						ReadMemory(addr, pathname, pathnamelen + 1);
-						mode = GetGPR(4);
-						logger << DebugInfo << "access(pathname=\"" << pathname 
-							<< "\", mode=0x" << std::hex << mode << std::dec << ");" << endl << EndDebugInfo;
-						free(pathname);
-					}
-					break;
-					
-				case 39:
-					{
-						address_t path_addr = GetGPR(3);
-						int pathlen = StringLength(path_addr);
-						char *path = (char *) malloc(pathlen + 1);
-						ReadMemory(path_addr, path, pathlen + 1);
-					
-						uint32_t mode = GetGPR(4);
-					
-						logger << DebugInfo << "mkdir(pathname=\"" << path << "\", mode=0x" << std::hex << mode << std::dec << ");" << endl << EndDebugInfo;
-						free(path);
-					}
-					break;
-					
-				case 45:
-					logger << DebugInfo << "brk(end_data_segment=0x" << std::hex << GetGPR(3) << std::dec << ");" << endl << EndDebugInfo;
-					break;
-					
-				case 46:
-					logger << DebugInfo << "setgid(gid=0x" << std::hex << GetGPR(3) << std::dec << ");" << endl << EndDebugInfo;
-					break;
-				
-				case 47:
-					logger << DebugInfo << "getgid();" << endl << EndDebugInfo;
-					break;
-					
-				case 49:
-					logger << DebugInfo << "geteuid();" << endl << EndDebugInfo;
-					break;
-					
-				case 50:
-					logger << DebugInfo << "getegid();" << endl << EndDebugInfo;
-					break;
-				
-				case 60:
-					logger << DebugInfo << "umask(mask=0x" << std::hex << GetGPR(3) << std::dec << ");" << endl << EndDebugInfo;
-					break;
-					
-				case 63:
-					logger << DebugInfo << "dup2(old=" << GetGPR(3) << ", new=" << GetGPR(4) << ");" << endl << EndDebugInfo;
-					break;
-					
-				case 64:
-					logger << DebugInfo << "getppid();" << endl << EndDebugInfo;
-					break;
-					
-				case 90:
-					logger << DebugInfo << "mmap(start=0x" << std::hex << GetGPR(3) << std::dec << ", length=" << GetGPR(4) << ", prot=0x"
-							<< std::hex << GetGPR(5) << ", flags=0x" << GetGPR(6) << std::dec << ", fd=" << (signed) GetGPR(7)
-							<< ", offset=" << GetGPR(8) << ");" << endl << EndDebugInfo;
-					break;
-					
-				case 106:
-					{
-						address_t path_addr = GetGPR(3);
-						int pathlen = StringLength(path_addr);
-						char *path = (char *) malloc(pathlen + 1);
-						ReadMemory(path_addr, path, pathlen + 1);
-						
-						address_t buf_addr = GetGPR(4);
-						
-						logger << DebugInfo << "stat(path=\"" << path << "\", buf=0x" << std::hex << buf_addr << std::dec << ");" << endl << EndDebugInfo;
-						free(path);
-					}
-					break;
-					
-				case 114:
-					logger << DebugInfo << "wait4(pid=" << GetGPR(3) << ", status=0x" << std::hex << GetGPR(4) << ", options=0x" << GetGPR(5) << ", rusage=0x" << GetGPR(6) << std::dec << ");" << endl << EndDebugInfo;
-					break;
-				
-				case 120:
-					{
-						address_t fn_addr = GetGPR(3);
-						address_t child_stack = GetGPR(4);
-						int flags = GetGPR(5);
-						address_t arg = GetGPR(6);
-						
-						logger << DebugInfo << "clone(fn=0x" << std::hex << fn_addr << ", child_stack=0x" << child_stack << ", flags=0x" << flags << ", arg=0x" << arg << std::dec << ");" << endl << EndDebugInfo;
-					}
-					break;
-					
-				case 122:
-					logger << DebugInfo << "uname(buf=0x" << std::hex << GetGPR(3) << std::dec << ");" << endl << EndDebugInfo;
-					break;
-					
-				case 141:
-					logger << DebugInfo << "getdents(fd=" << (signed) GetGPR(3) << ", dirp=0x" << std::hex << GetGPR(4) << std::dec << ", count=" << GetGPR(5) << ");" << endl << EndDebugInfo;
-					break;
-					
-				case 173:
-					logger << DebugInfo << "rt_sigaction(" << GetGPR(3) << ", act=0x" << std::hex << GetGPR(4) << ", oact=0x" << GetGPR(5) << std::dec << ", sigsetsize=" << GetGPR(6) << ");" << endl << EndDebugInfo;
-					break;
-					
-				case 182:
-					logger << DebugInfo << "getcwd(buf=0x" << std::hex << GetGPR(3) << std::dec << ", size=" << GetGPR(4) << ");" << endl << EndDebugInfo;
-					break;
-					
-				case 204:
-					logger << DebugInfo << "fcntl64(fd=" << GetGPR(3) << ", cmd=0x" << std::hex << GetGPR(4) << ", arg=0x" << GetGPR(5) << ");" << endl << EndDebugInfo;
-					break;
-					
-				case 234:
-					logger << DebugInfo << "exit_group(" << (signed) GetGPR(3) << ");" << endl << EndDebugInfo;
-					break;
-			}
-		}
-#endif
-
 		SetSRR0(GetNIA()); // save NIA
 			
 		SetSRR1((GetSRR1() & 0x87c008cUL) | (GetMSR() & 0x0000ff73UL)); // clear SRR1[1-4], clear SRR1[10-15], save MSR[16-23], MSR[25-27], MSR[30-31]
@@ -1200,7 +996,7 @@ void CPU<CONFIG>::HandleException(const SystemCallException<CONFIG>& exc)
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const TraceException<CONFIG>& exc)
 {
-	if(linux_os_import) Stop(-1);
+	if(linux_os_import) return; // silently ignore trace exception when Linux ABI translation is enabled
 	SetSRR0(GetNIA()); // save NIA
 	
 	SetSRR1((GetSRR1() & 0x87c0008cUL) | (GetMSR() & 0x0000ff73UL)); // clear SRR1[1-4], SRR1[10-15], copy MSR[16-23], MSR[25-27], and MSR[30-31]
@@ -1224,7 +1020,7 @@ void CPU<CONFIG>::HandleException(const TraceException<CONFIG>& exc)
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const InstructionAddressBreakpointException<CONFIG>& exc)
 {
-	if(linux_os_import) Stop(-1);
+	if(linux_os_import) return; // silently ignore the instruction address breakpoint exception when Linux ABI translation is enabled
 	SetSRR0(GetCIA()); // save CIA
 	
 	SetSRR1((GetSRR1() & 0x87c0008cUL) | (GetMSR() & 0x0000ff73UL)); // clear SRR1[1-4], SRR1[10-15], copy MSR[16-23], MSR[25-27], and MSR[30-31]
@@ -1247,7 +1043,12 @@ void CPU<CONFIG>::HandleException(const InstructionAddressBreakpointException<CO
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const TLBMissException<CONFIG>& exc)
 {
-	if(linux_os_import) Stop(-1);
+	if(linux_os_import)
+	{
+		logger << DebugError << "TLB Miss exception" << EndDebugError;
+		Stop(-1);
+		return;
+	}
 	SetSRR0(GetCIA()); // save CIA
 	
 	uint32_t pte_hi = ((exc.GetVSID() & 0x00ffffffUL) << 7) | (exc.GetAPI() & 0x3fUL) | 0x80000000UL;
