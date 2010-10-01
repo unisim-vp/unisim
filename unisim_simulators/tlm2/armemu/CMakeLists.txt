@@ -77,8 +77,7 @@ endforeach ( C_INCLUDE )
 
 set ( armemu_subdirs
 	unisim/kernel
-	unisim/component/tlm2/processor/arm/arm926ejs
-	unisim/component/tlm2/interrupt
+	unisim/component/tlm2/processor/arm/armemu
 	unisim/component/tlm2/memory/ram
 	unisim/service/time/sc_time
 	unisim/service/time/host_time
@@ -96,7 +95,10 @@ foreach ( dir ${armemu_subdirs} )
 	unisim_include ( ${dir} )
 endforeach ( dir )
 
-include_directories ( ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR} ${OSCI_SYSTEMC_INCLUDE_DIR} ${OSCI_TLM2_INCLUDE_DIR})
+include_directories ( ${CMAKE_SOURCE_DIR} 
+	${CMAKE_BINARY_DIR} 
+	${OSCI_SYSTEMC_INCLUDE_DIR} 
+	${OSCI_TLM2_INCLUDE_DIR})
 
 if ( BUILD_ARMEMU_POWER_SUPPORT )
 	set ( SIM_POWER_ESTIMATOR_SUPPORT TRUE )
@@ -268,8 +270,8 @@ set ( armemu__libraries
 	${OSCI_SYSTEMC_LIBRARIES}
 	unisim__kernel
 	# unisim__component__cxx__processor__arm
-	unisim__component__tlm2__processor__arm__arm926ejs
-	unisim__component__tlm2__interrupt
+	unisim__component__tlm2__processor__arm__armemu
+	# unisim__component__tlm2__interrupt
 	unisim__component__tlm2__memory__ram
 	unisim__service__time__host_time
 	unisim__service__time__sc_time
@@ -304,9 +306,8 @@ foreach ( lib ${OSCI_SYSTEMC_LIBRARIES} )
 endforeach ( lib ${OSCI_SYSTEMC_LIBRARIES} )
 set ( PYTHON__ARMEMU__LIBS
 	"'simulatorlib',
-	 'unisim__component__tlm2__interrupt',
 	 'unisim__component__tlm2__memory__ram',
-	 'unisim__component__tlm2__processor__arm__arm926ejs',
+	 'unisim__component__tlm2__processor__arm__armemu',
 	 'unisim__component__cxx__processor__arm',
 	 'unisim__component__cxx__memory__ram',
 	 'unisim__service__time__host_time',
@@ -409,8 +410,8 @@ set_target_properties ( ${ARMEMU_EXEC_TARGET}
 	
 set ( armemu__deps
 	unisim__kernel
-	unisim__component__tlm2__processor__arm__arm926ejs
-	unisim__component__tlm2__interrupt
+	unisim__component__tlm2__processor__arm__armemu
+	# unisim__component__tlm2__interrupt
 	unisim__component__tlm2__memory__ram
 	unisim__service__time__sc_time
 	unisim__service__time__host_time

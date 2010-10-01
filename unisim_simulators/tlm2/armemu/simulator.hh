@@ -45,9 +45,9 @@
 
 #include "unisim/kernel/service/service.hh"
 
-#include "unisim/component/tlm2/processor/arm/arm926ejs/arm926ejs.hh"
+#include "unisim/component/tlm2/processor/arm/armemu/armemu.hh"
 #include "unisim/component/tlm2/memory/ram/memory.hh"
-#include "unisim/component/tlm2/interrupt/master_stub.hh"
+// #include "unisim/component/tlm2/interrupt/master_stub.hh"
 
 #include "unisim/service/time/sc_time/time.hh"
 #include "unisim/service/time/host_time/time.hh"
@@ -96,9 +96,9 @@ public:
 protected:
 private:
 	static void DefaultConfiguration(unisim::kernel::service::Simulator *sim);
-	typedef unisim::component::tlm2::processor::arm::arm926ejs::ARM926EJS CPU;
-	typedef unisim::component::tlm2::interrupt::InterruptMasterStub IRQ_MASTER_STUB;
-	typedef unisim::component::tlm2::interrupt::InterruptMasterStub FIQ_MASTER_STUB;
+	typedef unisim::component::tlm2::processor::arm::armemu::ARMEMU CPU;
+	// typedef unisim::component::tlm2::interrupt::InterruptMasterStub IRQ_MASTER_STUB;
+	// typedef unisim::component::tlm2::interrupt::InterruptMasterStub FIQ_MASTER_STUB;
 	typedef unisim::component::tlm2::memory::ram::Memory<32, 1024 * 1024, true> MEMORY;
 	typedef unisim::service::loader::linux_loader::LinuxLoader<uint64_t> LINUX_LOADER;
 	typedef unisim::service::loader::elf_loader::ElfLoaderImpl<uint64_t, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym> ELF32_LOADER;
@@ -118,8 +118,8 @@ private:
 #endif // SIM_POWER_ESTIMATOR_SUPPORT
 
 	CPU *cpu;
-	IRQ_MASTER_STUB *irq_master_stub;
-	FIQ_MASTER_STUB *fiq_master_stub;
+	// IRQ_MASTER_STUB *irq_master_stub;
+	// FIQ_MASTER_STUB *fiq_master_stub;
 	MEMORY *memory;
 	unisim::service::time::sc_time::ScTime *time;
 	unisim::service::time::host_time::HostTime *host_time;

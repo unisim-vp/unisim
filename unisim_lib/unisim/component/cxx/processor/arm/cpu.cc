@@ -38,30 +38,32 @@
 #include <inttypes.h>
 #include <assert.h>
 #include "unisim/component/cxx/processor/arm/cpu.hh"
-#include "unisim/component/cxx/processor/arm/mask.hh"
-#include "unisim/util/debug/simple_register.hh"
-
-#include <sstream>
-#include <iostream>
-#include <stdlib.h>
-#include "unisim/component/cxx/processor/arm/cpu.hh"
 #include "unisim/component/cxx/processor/arm/masks.hh"
-#include "unisim/component/cxx/processor/arm/config.hh"
-#include "unisim/component/cxx/processor/arm/isa_arm32.tcc"
-#include "unisim/component/cxx/processor/arm/isa_thumb.tcc"
-#include "unisim/component/cxx/processor/arm/instruction.tcc"
-#include "unisim/component/cxx/processor/arm/exception.tcc"
+#include "unisim/util/debug/symbol.hh"
 #include "unisim/util/debug/simple_register.hh"
-#ifndef __STDC_CONSTANT_MACROS
-#define __STDC_CONSTANT_MACROS
-#endif // __STDC_CONSTANT_MACROS
-#include <stdint.h>
+#include "unisim/util/arithmetic/arithmetic.hh"
 
-#if (defined(__GNUC__) && (__GNUC__ >= 3))
-#define INLINE __attribute__((always_inline))
-#else
-#define INLINE
-#endif
+//#include <sstream>
+//#include <iostream>
+//#include <stdlib.h>
+//#include "unisim/component/cxx/processor/arm/cpu.hh"
+//#include "unisim/component/cxx/processor/arm/masks.hh"
+//#include "unisim/component/cxx/processor/arm/config.hh"
+//#include "unisim/component/cxx/processor/arm/isa_arm32.tcc"
+//#include "unisim/component/cxx/processor/arm/isa_thumb.tcc"
+//#include "unisim/component/cxx/processor/arm/instruction.tcc"
+//#include "unisim/component/cxx/processor/arm/exception.tcc"
+//#include "unisim/util/debug/simple_register.hh"
+//#ifndef __STDC_CONSTANT_MACROS
+//#define __STDC_CONSTANT_MACROS
+//#endif // __STDC_CONSTANT_MACROS
+//#include <stdint.h>
+
+// #if (defined(__GNUC__) && (__GNUC__ >= 3))
+// #define INLINE __attribute__((always_inline))
+// #else
+// #define INLINE
+// #endif
 
 // #define ARM_OPTIMIZATION
 
@@ -73,11 +75,14 @@ namespace arm {
 
 using unisim::util::endian::E_BIG_ENDIAN;
 using unisim::util::endian::E_LITTLE_ENDIAN;
+using std::string;
 using std::stringstream;
 using std::ostringstream;
+using unisim::util::debug::Register;
 using unisim::util::debug::SimpleRegister;
 using std::map;
 
+using unisim::util::endian::endian_type;
 using unisim::util::endian::E_BIG_ENDIAN;
 using unisim::util::endian::E_LITTLE_ENDIAN;
 using unisim::util::endian::BigEndian2Host;
@@ -93,7 +98,6 @@ using std::dec;
 using std::ostringstream;
 using unisim::util::debug::SimpleRegister;
 using unisim::util::debug::Symbol;
-using namespace unisim::kernel::logger;
 
 // Constructor
 CPU ::
@@ -132,12 +136,12 @@ CPU(endian_type endianness)
 		stringstream str;
 		str << "r" << i;
 		registers_registry[str.str().c_str()] =
-		new SimpleRegister<reg_t>(str.str().c_str(), &gpr[i]);
+		new SimpleRegister<uint32_t>(str.str().c_str(), &gpr[i]);
 	}
-	registers_registry["sp"] = new SimpleRegister<reg_t>("sp", &gpr[13]);
-	registers_registry["lr"] = new SimpleRegister<reg_t>("lr", &gpr[14]);
-	registers_registry["pc"] = new SimpleRegister<reg_t>("pc", &gpr[15]);
-	registers_registry["cpsr"] = new SimpleRegister<reg_t>("cpsr", &cpsr);
+	registers_registry["sp"] = new SimpleRegister<uint32_t>("sp", &gpr[13]);
+	registers_registry["lr"] = new SimpleRegister<uint32_t>("lr", &gpr[14]);
+	registers_registry["pc"] = new SimpleRegister<uint32_t>("pc", &gpr[15]);
+	registers_registry["cpsr"] = new SimpleRegister<uint32_t>("cpsr", &cpsr);
 
 	// Initialize check condition table
 	InitializeCheckConditionTable();
@@ -1238,6 +1242,108 @@ CheckCondition(uint32_t cond)
 	return (cond == 0xe) || ((check_condition_table[cond] >> (cpsr >> 28)) & 1);
 }
 
+/** Check the given condition against CPSR.
+ * This method checks the given condition against the given value of
+ *   CPSR and returns true if the condition succeeds, and false otherwise.
+ *
+ * @param cond the condition to check
+ * @param cpsr_val the value of the CPSR register
+ * @return true if the condition check succeeds, false otherwise.
+ */
+bool 
+CPU::
+CheckCondition(unsigned int cond, unsigned int cpsr_val)
+{
+	switch (cond) 
+	{
+		case COND_EQ:
+			if ((cpsr_val & CPSR_Z_MASK) == CPSR_Z_MASK)
+				return true;
+			break;
+		case COND_NE:
+			if ((cpsr_val & CPSR_Z_MASK) == 0)
+				return true;
+			break;
+		case COND_CS_HS:
+			if ((cpsr_val & CPSR_C_MASK) == CPSR_C_MASK)
+				return true;
+			break;
+		case COND_CC_LO:
+			if ((cpsr_val & CPSR_C_MASK) == 0)
+				return true;
+			break;
+		case COND_MI:
+			if ((cpsr_val & CPSR_N_MASK) == CPSR_N_MASK)
+				return true;
+			break;
+		case COND_PL:
+			if ((cpsr_val & CPSR_N_MASK) == 0)
+				return true;
+			break;
+		case COND_VS:
+			if ((cpsr_val & CPSR_V_MASK) == CPSR_V_MASK)
+				return true;
+			break;
+		case COND_VC:
+			if ((cpsr_val & CPSR_V_MASK) == 0)
+				return true;
+			break;
+		case COND_HI:
+			if (((cpsr_val & CPSR_C_MASK) == CPSR_C_MASK) &&
+					((cpsr_val & CPSR_Z_MASK) == 0))
+				return true;
+			break;
+		case COND_LS:
+			if (((cpsr_val & CPSR_C_MASK) == 0) ||
+					((cpsr_val & CPSR_Z_MASK) == CPSR_Z_MASK))
+				return true;
+			break;
+		case COND_GE:
+			if ((cpsr_val & (CPSR_N_MASK | CPSR_V_MASK)) == 
+					(CPSR_N_MASK | CPSR_V_MASK))
+				return true;
+			if ((cpsr_val & (CPSR_N_MASK | CPSR_V_MASK)) == 0)
+				return true;
+			break;
+		case COND_LT:
+			if (((cpsr_val & CPSR_N_MASK) == CPSR_N_MASK) &&
+					((cpsr_val & CPSR_V_MASK) == 0))
+				return true;
+			if (((cpsr_val & CPSR_N_MASK) == 0) &&
+					((cpsr_val & CPSR_V_MASK) == CPSR_V_MASK))
+				return true;
+			break;
+		case COND_GT:
+			if ((cpsr_val & CPSR_Z_MASK) == 0)
+			{
+				if ((cpsr_val & (CPSR_N_MASK | CPSR_V_MASK)) == 
+						(CPSR_N_MASK | CPSR_V_MASK))
+					return true;
+				if ((cpsr_val & (CPSR_N_MASK | CPSR_V_MASK)) == 0)
+					return true;
+			}
+			break;
+		case COND_LE:
+			if ((cpsr_val & CPSR_Z_MASK) == CPSR_Z_MASK)
+				return true;
+			if (((cpsr_val & CPSR_N_MASK) == CPSR_N_MASK) &&
+					((cpsr_val & CPSR_V_MASK) == 0))
+				return true;
+			if (((cpsr_val & CPSR_N_MASK) == 0) &&
+					((cpsr_val & CPSR_V_MASK) == CPSR_V_MASK))
+				return true;
+			break;
+		case COND_AL:
+			return true;
+			break;
+		default:
+			return false;
+			break;
+	}
+
+	return false;
+}
+
 void 
 CPU::
 InitializeCheckConditionTable()
@@ -1265,5 +1371,4 @@ InitializeCheckConditionTable()
 } // end of namespace component
 } // end of namespace unisim
 
-#endif // __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CPU_TCC__
 

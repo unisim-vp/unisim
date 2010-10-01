@@ -52,7 +52,7 @@ mrs.disasm = {
 }
 
 mrs.execute = {
-	typename CONFIG::reg_t run_mode;
+	uint32_t run_mode;
 	
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 	
@@ -126,9 +126,9 @@ msr_imm.disasm = {
 
 msr_imm.execute = {
 	uint32_t operand;
-	typename CONFIG::reg_t reg;
-	typename CONFIG::reg_t reg_mask;
-	typename CONFIG::reg_t run_mode;
+	uint32_t reg;
+	uint32_t reg_mask;
+	uint32_t run_mode;
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -221,7 +221,7 @@ msr_imm.execute = {
 		cpu.SetCPSR(reg);
 		/* check if there has been any change in the running mode,
 		 *   and switch registers if so */
-		typename CONFIG::reg_t new_run_mode = reg & RUNNING_MODE_MASK;
+		uint32_t new_run_mode = reg & RUNNING_MODE_MASK;
 		if(run_mode != new_run_mode) {
 			cpu.SetGPRMapping(run_mode, new_run_mode);
 		}
@@ -241,13 +241,13 @@ msr_reg.disasm = {
 }
 
 msr_reg.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	uint32_t operand;
-	typename CONFIG::reg_t reg;
-	typename CONFIG::reg_t reg_mask;
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	typename CONFIG::reg_t run_mode;
+	uint32_t reg;
+	uint32_t reg_mask;
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t run_mode;
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -341,7 +341,7 @@ msr_reg.execute = {
 		cpu.SetCPSR(reg);
 		/* check if there has been any change in the running mode,
 		 *   and switch registers if so */
-		typename CONFIG::reg_t new_run_mode = reg & RUNNING_MODE_MASK;
+		uint32_t new_run_mode = reg & RUNNING_MODE_MASK;
 		if(run_mode != new_run_mode) {
 			cpu.SetGPRMapping(run_mode, new_run_mode);
 		}
@@ -354,7 +354,7 @@ msr_reg.execute = {
 
 group status_register_access_rm_init(msr_reg)
 status_register_access_rm_init.initialize_rm_init = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	if(rm == 15) inherited::rm_init = 8;
 	else inherited::rm_init = 0;

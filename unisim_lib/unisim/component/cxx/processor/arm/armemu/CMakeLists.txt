@@ -1,4 +1,4 @@
-message ( STATUS "Checking unisim::component::cxx::processor::arm" )
+message ( STATUS "Checking unisim::component::cxx::processor::arm::armemu" )
 
 include ( CheckIncludeFileCXX )
 include ( CheckIncludeFile )
@@ -72,52 +72,52 @@ set ( arm32_isa_files
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/isa/arm32/load_store.isa
 	)
 
-set ( thumb_isa_files
-	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa
-	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa
-	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/isa/thumb/load_store_reg.isa
-	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/isa/thumb/branch.isa
-	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/isa/thumb/exception.isa
-	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/isa/thumb/profiling.isa
-	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/isa/thumb/constructors_dec.isa
-	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/isa/thumb/load_store_multiple.isa
-	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/isa/thumb/thumb.isa
-	)
-
-
 add_custom_command (
 	OUTPUT
 		${CMAKE_BINARY_DIR}/unisim/component/cxx/processor/arm/isa_arm32.hh
 		${CMAKE_BINARY_DIR}/unisim/component/cxx/processor/arm/isa_arm32.tcc
 	COMMAND
-		genisslib -o ${CMAKE_BINARY_DIR}/unisim/component/cxx/processor/arm/isa_arm32 -w 32 -I ${CMAKE_CURRENT_SOURCE_DIR}/isa/arm32 ${CMAKE_CURRENT_SOURCE_DIR}/isa/arm32/arm32.isa
+		genisslib -o ${CMAKE_BINARY_DIR}/unisim/component/cxx/processor/arm/isa_arm32 -w 32 -I ${CMAKE_CURRENT_SOURCE_DIR}/../isa/arm32 ${CMAKE_CURRENT_SOURCE_DIR}/../isa/arm32/arm32.isa
 	DEPENDS
 		${arm32_isa_files}
 	COMMENT
 		"Building ARM (ARM32) instruction set simulator"
 	)
 
-add_custom_command (
-	OUTPUT
-		${CMAKE_BINARY_DIR}/unisim/component/cxx/processor/arm/isa_thumb.hh
-		${CMAKE_BINARY_DIR}/unisim/component/cxx/processor/arm/isa_thumb.tcc
-	COMMAND
-		genisslib -o ${CMAKE_BINARY_DIR}/unisim/component/cxx/processor/arm/isa_thumb -w 32 -I ${CMAKE_CURRENT_SOURCE_DIR}/isa/thumb ${CMAKE_CURRENT_SOURCE_DIR}/isa/thumb/thumb.isa
-	DEPENDS
-		${thumb_isa_files}
-	COMMENT
-		"Building ARM (Thumb) instruction set simulator"
-	)
-
 set ( cxx_arm_srcs
-	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/models.hh
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/masks.hh
+	# ${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/config.hh
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/coprocessor_interface.hh
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/cpu.hh
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/cpu.cc
-	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/memory_op.hh
+	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/armemu/cpu.hh
+	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/armemu/cpu.cc
+	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/armemu/cache.hh
+	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/armemu/cache.cc
+	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/exception.hh
+	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/exception.tcc
+	# ${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/instruction.hh
+	# ${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/cpu.step_instruction.tcc
+	# ${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/instruction.tcc
+	# ${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/cpu.tcc
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/memory_op.cc
+	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/memory_op.hh
+	# ${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/arm926ejs/cache.hh
+	# ${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/arm926ejs/cache.cc
+	# ${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/arm926ejs/tcm.hh
+	# ${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/arm926ejs/tcm.cc
+	# ${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/arm926ejs/write_buffer.hh
+	# ${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/arm926ejs/write_buffer.cc
+	# ${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/arm926ejs/cpu.cc
+	# ${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/coprocessor/arm966e_s/cp15.cc
+	# ${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/coprocessor/arm966e_s/cp15.hh
+	# ${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/coprocessor/arm966e_s/cp15.tcc
+	# ${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/tcm/tcm.hh
+	# ${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/tcm/tcm.tcc
+	# ${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/tcm/tcm.cc
 	
+	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/carry_overflow.hh
+	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/carry_overflow.cc
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/decode_data_processing.hh
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/decode_data_processing.cc
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/decode_load_store.hh
@@ -131,26 +131,21 @@ set ( cxx_arm_srcs
 	
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/disasm.hh
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/disasm.cc
-	
-	# ${CMAKE_BINARY_DIR}/unisim/component/cxx/processor/arm/isa_arm32.hh
-	# ${CMAKE_BINARY_DIR}/unisim/component/cxx/processor/arm/isa_arm32.tcc
-	# ${CMAKE_BINARY_DIR}/unisim/component/cxx/processor/arm/isa_thumb.hh
-	# ${CMAKE_BINARY_DIR}/unisim/component/cxx/processor/arm/isa_thumb.tcc
+
+	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/armemu/isa_arm32.cc
+	${CMAKE_BINARY_DIR}/unisim/component/cxx/processor/arm/isa_arm32.hh
+	${CMAKE_BINARY_DIR}/unisim/component/cxx/processor/arm/isa_arm32.tcc
 	)
 
 set_source_files_properties (
 	${CMAKE_BINARY_DIR}/unisim/component/cxx/processor/arm/isa_arm32.hh
 	${CMAKE_BINARY_DIR}/unisim/component/cxx/processor/arm/isa_arm32.tcc
-	${CMAKE_BINARY_DIR}/unisim/component/cxx/processor/arm/isa_thumb.hh
-	${CMAKE_BINARY_DIR}/unisim/component/cxx/processor/arm/isa_thumb.tcc
 	PROPERTIES
 		GENERATED TRUE )
 
 add_custom_target ( unisim__component__cxx__processor__arm_generated_files DEPENDS
 	${CMAKE_BINARY_DIR}/unisim/component/cxx/processor/arm/isa_arm32.hh
 	${CMAKE_BINARY_DIR}/unisim/component/cxx/processor/arm/isa_arm32.tcc
-	${CMAKE_BINARY_DIR}/unisim/component/cxx/processor/arm/isa_thumb.hh
-	${CMAKE_BINARY_DIR}/unisim/component/cxx/processor/arm/isa_thumb.tcc
 	)
 
 add_custom_target ( unisim__component__cxx__processor__arm__arm32_isa
@@ -158,14 +153,8 @@ add_custom_target ( unisim__component__cxx__processor__arm__arm32_isa
 		${arm32_isa_files}
 	)
 
-add_custom_target ( unisim__component__cxx__processor__arm__thumb_isa
-	DEPENDS
-		${thumb_isa_files}
-	)
-
 set_source_files_properties (
 	${arm32_isa_files}
-	${thumb_isa_files}
 	PROPERTIES
 		LANGUAGE C	
 		HEADER_FILE_ONLY TRUE
@@ -176,14 +165,13 @@ include_directories (
 	${CMAKE_BINARY_DIR}
 	)
 
-add_library ( unisim__component__cxx__processor__arm
+add_library ( unisim__component__cxx__processor__arm__armemu
 		${cxx_arm_srcs}
 	)
 
-add_dependencies ( unisim__component__cxx__processor__arm
+add_dependencies ( unisim__component__cxx__processor__arm__armemu
 	unisim__component__cxx__processor__arm_generated_files
 	unisim__component__cxx__processor__arm__arm32_isa
-	unisim__component__cxx__processor__arm__thumb_isa
 	unisim__kernel
 	unisim__util__endian
 	unisim__util__arithmetic
@@ -205,15 +193,16 @@ add_dependencies ( unisim__component__cxx__processor__arm
 	genisslib
 	)
 	
-list ( APPEND link_libraries
+list ( APPEND armemu_link_libraries
 	unisim__kernel
 	unisim__util__endian
 	unisim__util__debug
 	unisim__util__random
 	) 
-target_link_libraries ( unisim__component__cxx__processor__arm
-	${link_libraries}
+target_link_libraries ( unisim__component__cxx__processor__arm__armemu
+	${armemu_link_libraries}
 	)
 	
-message ( STATUS "Checking unisim::component::cxx::processor::arm - done" )
+message ( STATUS "Checking unisim::component::cxx::processor::arm::armemu - done" )
+
 

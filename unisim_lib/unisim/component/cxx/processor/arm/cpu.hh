@@ -210,6 +210,12 @@ namespace arm {
  * @param value the value to write into memory
  *
  * void Write8(uint32_t address, uint8_t value);
+ *
+ * * Unpredictable Instruction Behaviour.
+ * This method is just called when an unpredictable behaviour is detected to
+ *   notifiy the processor.
+ *
+ * void UnpredictableInsnBehaviour();
  */
 
 class CPU 
@@ -614,50 +620,7 @@ public:
 	 */
 	bool CheckCondition(uint32_t cond); 
 	/* TODO: Condition codes update method */
-	void UpdateConditionCodes();
-	/* END TODO */
-
-	/* TODO: The following methods could be moved into a separate file */
-	/** Compute if a carry is produced from an operation.
-	 *
-	 * @param res the result of the operation
-	 * @param s1 the first operand
-	 * @param s2 the second operand
-	 * @param carry_in the input carry if any
-	 * @return true if a carry is produced, false otherwise
-	 */
-	bool CarryFrom(const uint32_t res, const uint32_t s1, const uint32_t s2,
-			const uint32_t carry_in = 0);
-	/** Compute if a borrow is produced from an operation.
-	 *
-	 * @param res the result of the operation
-	 * @param s1 the first operand
-	 * @param s2 the second operand
-	 * @param carry_in the input carry if any
-	 * @return true if a borrow is produced, false otherwise
-	 */
-	bool BorrowFrom(const uint32_t res, const uint32_t s1, const uint32_t s2,
-			const uint32_t carry_in = 0);
-	/** Compute if an overflow is produced from an addition operation.
-	 *
-	 * @param res the result of the operation
-	 * @param s1 the first operand
-	 * @param s2 the second operand
-	 * @param carry_in the input carry if any
-	 * @result true if an overflow is produced, false otherwise
-	 */
-	bool AdditionOverflowFrom(const uint32_t res, const uint32_t s1,
-			const uint32_t s2,	const uint32_t carry_in = 0);
-	/** Compute if an overflow is produced from a subtraction operation.
-	 *
-	 * @param res the result of the operation
-	 * @param s1 the first operand
-	 * @param s2 the second operand
-	 * @param carry_in the input carry if any
-	 * @result true if an overflow is produced, false otherwise
-	 */
-	bool SubtractionOverflowFrom(const uint32_t res, const uint32_t s1,
-			const uint32_t s2, const uint32_t carry_in = 0);
+	// void UpdateConditionCodes();
 	/* END TODO */
 
 	/**************************************************************/
@@ -714,7 +677,7 @@ protected:
 	/** Storage for the physical registers */
 	uint32_t phys_gpr[num_phys_gprs]; 
 	/** Storage for the logical registers */
-	reg_t gpr[num_log_gprs];
+	uint32_t gpr[num_log_gprs];
 	/** The CPSR register.
 	 * All the running modes share the same CPSR register
 	 * CPSR organization:
