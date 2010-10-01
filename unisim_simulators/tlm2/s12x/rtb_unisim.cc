@@ -230,19 +230,12 @@ void RTBStub::ProcessATD0() {
 
 	double atd0_anValue[ATD0_SIZE];
 
-	sc_time delay(anx_stimulus_period, SC_PS);
-
 	while(1)
 	{
 
 		Input_Cob2ATD0(atd0_anValue);
 
 		Output_ATD0(atd0_anValue);
-
-		wait(delay);
-
-		quantumkeeper.inc(delay);
-		quantumkeeper.sync();
 
 	}
 
@@ -252,24 +245,12 @@ void RTBStub::ProcessATD1() {
 
 	double atd1_anValue[ATD1_SIZE];
 
-	sc_time delay(anx_stimulus_period, SC_PS);
-
-//	/**
-//	 * Note: The Software sample the ATDDRx every 20ms. As well as for the first sampling
-//	 */
-//	wait(sc_time(20, SC_MS));
-
 	while(1)
 	{
 
 		Input_Cob2ATD1(atd1_anValue);
 
 		Output_ATD1(atd1_anValue);
-
-		wait(delay);
-
-		quantumkeeper.inc(delay);
-		quantumkeeper.sync();
 
 	}
 
@@ -282,13 +263,11 @@ void RTBStub::ProcessPWM() {
 
 	while(1)
 	{
-		wait(input_payload_queue.get_event());
 
 		Input(pwmValue);
 
 		output_PWM2Cob(pwmValue);
 
-		quantumkeeper.sync();
 	}
 
 }

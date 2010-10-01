@@ -74,6 +74,8 @@
 
 #include <unisim/util/garbage_collector/garbage_collector.hh>
 
+//#include <unisim/service/pim/pim.hh>
+
 #include "xml_atd_pwm_stub.hh"
 
 #ifdef HAVE_RTBCOB
@@ -125,6 +127,8 @@ using unisim::kernel::service::Client;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::VariableBase;
 using unisim::service::interfaces::Loader;
+
+//using unisim::service::pim::PIM;
 
 class Simulator : public unisim::kernel::service::Simulator
 {
@@ -227,6 +231,7 @@ private:
 	Service<Loader<SERVICE_ADDRESS_TYPE> > *loaderS19;
 	Service<Loader<SERVICE_ADDRESS_TYPE> > *loaderELF;
 
+//	PIM *pim;
 
 	//  - GDB server
 	GDBServer<SERVICE_ADDRESS_TYPE> *gdb_server;
@@ -326,9 +331,9 @@ Simulator::Simulator(int argc, char **argv)
 	memoryImportExportTee = new MemoryImportExportTee("memoryImportExportTee");
 
 #ifdef HAVE_RTBCOB
-	rtbStub = new RTBStub("RTBStub"/*, fsb_cycle_time*/);
+	rtbStub = new RTBStub("atd-pwm-stub"/*, fsb_cycle_time*/);
 #else
-	xml_atd_pwm_stub = new XML_ATD_PWM_STUB("xml-atd-pwm-stub"/*, fsb_cycle_time*/);
+	xml_atd_pwm_stub = new XML_ATD_PWM_STUB("atd-pwm-stub"/*, fsb_cycle_time*/);
 #endif
 	
 	//=========================================================================
@@ -344,6 +349,8 @@ Simulator::Simulator(int argc, char **argv)
 	} else {
 		loaderELF = new Elf32Loader("elf32-loader");
 	}
+
+//	pim = new PIM("PIM", this, 1234);
 
 	//  - GDB server
 	gdb_server = enable_gdb_server ? new GDBServer<SERVICE_ADDRESS_TYPE>("gdb-server") : 0;
@@ -502,6 +509,8 @@ Simulator::Simulator(int argc, char **argv)
 
 Simulator::~Simulator()
 {
+//	if (pim) { delete pim; pim = NULL; }
+
 	if (registersTee) { delete registersTee; registersTee = NULL; }
 	if (memoryImportExportTee) { delete memoryImportExportTee; memoryImportExportTee = NULL; }
 
@@ -581,25 +590,16 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("elf32-loader.filename", symbol_filename);
 	simulator->SetVariable("elf32-loader.force-use-virtual-address", force_use_virtual_address);
 
-#ifdef HAVE_RTBCOB
-	simulator->SetVariable("RTBStub.anx-stimulus-period", 80000000);
-	simulator->SetVariable("RTBStub.atd0-anx-stimulus-file", "ATD.xml");
-	simulator->SetVariable("RTBStub.atd0-anx-start-channel", 0);
-	simulator->SetVariable("RTBStub.atd0-anx-wrap-around-channel", 0);
-	simulator->SetVariable("RTBStub.atd1-anx-stimulus-file", "ATD.xml");
-	simulator->SetVariable("RTBStub.atd1-anx-start-channel", 0);
-	simulator->SetVariable("RTBStub.atd1-anx-wrap-around-channel", 0);
-	simulator->SetVariable("RTBStub.trace-enable", false);
-#else
-	simulator->SetVariable("xml-atd-pwm-stub.anx-stimulus-period", 80000000);
-	simulator->SetVariable("xml-atd-pwm-stub.atd0-anx-stimulus-file", "ATD.xml");
-	simulator->SetVariable("xml-atd-pwm-stub.atd0-anx-start-channel", 0);
-	simulator->SetVariable("xml-atd-pwm-stub.atd0-anx-wrap-around-channel", 0);
-	simulator->SetVariable("xml-atd-pwm-stub.atd1-anx-stimulus-file", "ATD.xml");
-	simulator->SetVariable("xml-atd-pwm-stub.atd1-anx-start-channel", 0);
-	simulator->SetVariable("xml-atd-pwm-stub.atd1-anx-wrap-around-channel", 0);
-	simulator->SetVariable("xml-atd-pwm-stub.trace-enable", false);
-#endif
+	simulator->SetVariable("atd-pwm-stub.anx-stimulus-period", 80000000); // 80 us
+	simulator->SetVariable("atd-pwm-stub.pwm-fetch-period", 1e9); // 1 ms
+	simulator->SetVariable("atd-pwm-stub.atd0-anx-stimulus-file", "ATD.xml");
+	simulator->SetVariable("atd-pwm-stub.atd0-anx-start-channel", 0);
+	simulator->SetVariable("atd-pwm-stub.atd0-anx-wrap-around-channel", 0);
+	simulator->SetVariable("atd-pwm-stub.atd1-anx-stimulus-file", "ATD.xml");
+	simulator->SetVariable("atd-pwm-stub.atd1-anx-start-channel", 0);
+	simulator->SetVariable("atd-pwm-stub.atd1-anx-wrap-around-channel", 0);
+	simulator->SetVariable("atd-pwm-stub.trace-enable", false);
+
 	simulator->SetVariable("ATD0.bus-cycle-time", 250000);
 	simulator->SetVariable("ATD0.base-address", 0x2c0);
 	simulator->SetVariable("ATD0.interrupt-offset", 0xd2);
@@ -730,6 +730,8 @@ void Simulator::Run()
 	{
 		prev_sig_int_handler = signal(SIGINT, SigIntHandler);
 	}
+
+//	pim->start();
 
 	try
 	{
