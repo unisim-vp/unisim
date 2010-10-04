@@ -74,7 +74,7 @@ static const bool DEBUG_INFORMATION = false;
 void SigIntHandler(int signum)
 {
 	cerr << "Interrupted by Ctrl-C or SIGINT signal" << endl;
-	unisim::kernel::service::Simulator::simulator->Stop(0, 0);//sc_stop();
+	unisim::kernel::service::Simulator::simulator->Stop(0, 0);
 }
 
 using namespace std;

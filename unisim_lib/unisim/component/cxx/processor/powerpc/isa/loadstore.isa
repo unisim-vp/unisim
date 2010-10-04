@@ -45,7 +45,7 @@ lbz.execute = {
 	cpu->Int8Load(rd, ea);
 }
 lbz.disasm = {
-	os << "lbz r" << rd << ", " << d << "(r" << ra << ")";
+	os << "lbz r" << (unsigned int) rd << ", " << d << "(r" << (unsigned int) ra << ")";
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + d : d);
@@ -55,7 +55,7 @@ lbz.disasm = {
 
 op lbzu(35[6]:rd[5]:ra[5]:sext<32>d[16])
 lbzu.execute = {
-	if(ra == 0 || ra == rd) throw IllegalInstructionException<CONFIG>();
+	if(unlikely(ra == 0 || ra == rd)) throw IllegalInstructionException<CONFIG>();
 	// compute the effective address
 	typename CONFIG::address_t ea = (cpu->GetGPR(ra) + d);
 	// do the memory access
@@ -64,7 +64,7 @@ lbzu.execute = {
 	cpu->SetGPR(ra, ea);
 }
 lbzu.disasm = {
-	os << "lbzu r" << rd << ", " << d << "(r" << ra << ")";
+	os << "lbzu r" << (unsigned int) rd << ", " << d << "(r" << (unsigned int) ra << ")";
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (cpu->GetGPR(ra) + d);
@@ -74,7 +74,7 @@ lbzu.disasm = {
 
 op lbzux(31[6]:rd[5]:ra[5]:rb[5]:119[10]:?[1])
 lbzux.execute = {
-	if(ra == 0 || ra == rd) throw IllegalInstructionException<CONFIG>();
+	if(unlikely(ra == 0 || ra == rd)) throw IllegalInstructionException<CONFIG>();
 	// compute the effective address
 	typename CONFIG::address_t ea = (cpu->GetGPR(ra) + cpu->GetGPR(rb));
 	// do the memory access
@@ -83,7 +83,7 @@ lbzux.execute = {
 	cpu->SetGPR(ra, ea);
 }
 lbzux.disasm = {
-	os << "lbzux r" << rd << ", r" << ra << ", r" << rb;
+	os << "lbzux r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (cpu->GetGPR(ra) + cpu->GetGPR(rb));
@@ -99,7 +99,7 @@ lbzx.execute = {
 	cpu->Int8Load(rd, ea);
 }
 lbzx.disasm = {
-	os << "lbzx r" << rd << ", r" << ra << ", r" << rb;
+	os << "lbzx r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
@@ -115,7 +115,7 @@ lha.execute = {
 	cpu->SInt16Load(rd, ea); // 16-bit load/no byte reverse/sign extend
 }
 lha.disasm = {
-	os << "lha r" << rd << ", " << d << "(r" << ra << ")";
+	os << "lha r" << (unsigned int) rd << ", " << d << "(r" << (unsigned int) ra << ")";
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + d : d);
@@ -125,7 +125,7 @@ lha.disasm = {
 
 op lhau(43[6]:rd[5]:ra[5]:sext<32>d[16])
 lhau.execute = {
-	if(ra == 0 || ra == rd) throw IllegalInstructionException<CONFIG>();
+	if(unlikely(ra == 0 || ra == rd)) throw IllegalInstructionException<CONFIG>();
 	// compute the effective address
 	typename CONFIG::address_t ea = (cpu->GetGPR(ra) + d);
 	// do the memory access
@@ -134,7 +134,7 @@ lhau.execute = {
 	cpu->SetGPR(ra, ea);
 }
 lhau.disasm = {
-	os << "lhau r" << rd << ", " << d << "(r" << ra << ")";
+	os << "lhau r" << (unsigned int) rd << ", " << d << "(r" << (unsigned int) ra << ")";
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (cpu->GetGPR(ra) + d);
@@ -144,7 +144,7 @@ lhau.disasm = {
 
 op lhaux(31[6]:rd[5]:ra[5]:rb[5]:375[10]:?[1])
 lhaux.execute = {
-	if(ra == 0 || ra == rd) throw IllegalInstructionException<CONFIG>();
+	if(unlikely(ra == 0 || ra == rd)) throw IllegalInstructionException<CONFIG>();
 	// compute the effective address
 	typename CONFIG::address_t ea = (cpu->GetGPR(ra) + cpu->GetGPR(rb));
 	// do the memory access
@@ -153,7 +153,7 @@ lhaux.execute = {
 	cpu->SetGPR(ra, ea);
 }
 lhaux.disasm = {
-	os << "lhaux r" << rd << ", r" << ra << ", r" << rb;
+	os << "lhaux r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (cpu->GetGPR(ra) + cpu->GetGPR(rb));
@@ -169,7 +169,7 @@ lhax.execute = {
 	cpu->SInt16Load(rd, ea); // 16-bit load/no byte reverse/sign extend
 }
 lhax.disasm = {
-	os << "lhax r" << rd << ", r" << ra << ", r" << rb;
+	os << "lhax r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
@@ -185,7 +185,7 @@ lhz.execute = {
 	cpu->Int16Load(rd, ea); // 16-bit load/no byte reverse/no sign extend
 }
 lhz.disasm = {
-	os << "lhz r" << rd << ", " << d << "(r" << ra << ")";
+	os << "lhz r" << (unsigned int) rd << ", " << d << "(r" << (unsigned int) ra << ")";
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + d : d);
@@ -195,7 +195,7 @@ lhz.disasm = {
 
 op lhzu(41[6]:rd[5]:ra[5]:sext<32>d[16])
 lhzu.execute = {
-	if(ra == 0 || ra == rd) throw IllegalInstructionException<CONFIG>();
+	if(unlikely(ra == 0 || ra == rd)) throw IllegalInstructionException<CONFIG>();
 	// compute the effective address
 	typename CONFIG::address_t ea = (cpu->GetGPR(ra) + d);
 	// do the memory access
@@ -204,7 +204,7 @@ lhzu.execute = {
 	cpu->SetGPR(ra, ea);
 }
 lhzu.disasm = {
-	os << "lhzu r" << rd << ", " << d << "(r" << ra << ")";
+	os << "lhzu r" << (unsigned int) rd << ", " << d << "(r" << (unsigned int) ra << ")";
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (cpu->GetGPR(ra) + d);
@@ -214,7 +214,7 @@ lhzu.disasm = {
 
 op lhzux(31[6]:rd[5]:ra[5]:rb[5]:311[10]:?[1])
 lhzux.execute = {
-	if(ra == 0 || ra == rd) throw IllegalInstructionException<CONFIG>();
+	if(unlikely(ra == 0 || ra == rd)) throw IllegalInstructionException<CONFIG>();
 	// compute the effective address
 	typename CONFIG::address_t ea = (cpu->GetGPR(ra) + cpu->GetGPR(rb));
 	// do the memory access
@@ -223,7 +223,7 @@ lhzux.execute = {
 	cpu->SetGPR(ra, ea);
 }
 lhzux.disasm = {
-	os << "lhzux r" << rd << ", r" << ra << ", r" << rb;
+	os << "lhzux r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (cpu->GetGPR(ra) + cpu->GetGPR(rb));
@@ -239,7 +239,7 @@ lhzx.execute = {
 	cpu->Int16Load(rd, ea); // 16-bit load/no byte reverse/no sign extend
 }
 lhzx.disasm = {
-	os << "lhzx r" << rd << ", r" << ra << ", r" << rb;
+	os << "lhzx r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
@@ -255,7 +255,7 @@ lwz.execute = {
 	cpu->Int32Load(rd, ea); // 32-bit load/no byte reverse/no sign extend
 }
 lwz.disasm = {
-	os << "lwz r" << rd << ", " << d << "(r" << ra << ")";
+	os << "lwz r" << (unsigned int) rd << ", " << d << "(r" << (unsigned int) ra << ")";
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + d : d);
@@ -265,7 +265,7 @@ lwz.disasm = {
 
 op lwzu(33[6]:rd[5]:ra[5]:sext<32>d[16])
 lwzu.execute = {
-	if(ra == 0 || ra == rd) throw IllegalInstructionException<CONFIG>();
+	if(unlikely(ra == 0 || ra == rd)) throw IllegalInstructionException<CONFIG>();
 	// compute the effective address
 	typename CONFIG::address_t ea = (cpu->GetGPR(ra) + d);
 	// do the memory access
@@ -274,7 +274,7 @@ lwzu.execute = {
 	cpu->SetGPR(ra, ea);
 }
 lwzu.disasm = {
-	os << "lwzu r" << rd << ", " << d << "(r" << ra << ")";
+	os << "lwzu r" << (unsigned int) rd << ", " << d << "(r" << (unsigned int) ra << ")";
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (cpu->GetGPR(ra) + d);
@@ -284,7 +284,7 @@ lwzu.disasm = {
 
 op lwzux(31[6]:rd[5]:ra[5]:rb[5]:55[10]:?[1])
 lwzux.execute = {
-	if(ra == 0 || ra == rd) throw IllegalInstructionException<CONFIG>();
+	if(unlikely(ra == 0 || ra == rd)) throw IllegalInstructionException<CONFIG>();
 	// compute the effective address
 	typename CONFIG::address_t ea = (cpu->GetGPR(ra) + cpu->GetGPR(rb));
 	// do the memory access
@@ -293,7 +293,7 @@ lwzux.execute = {
 	cpu->SetGPR(ra, ea);
 }
 lwzux.disasm = {
-	os << "lwzux r" << rd << ", r" << ra << ", r" << rb;
+	os << "lwzux r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (cpu->GetGPR(ra) + cpu->GetGPR(rb));
@@ -309,7 +309,7 @@ lwzx.execute = {
 	cpu->Int32Load(rd, ea); // 32-bit load/no byte reverse/no sign extend
 }
 lwzx.disasm = {
-	os << "lwzx r" << rd << ", r" << ra << ", r" << rb;
+	os << "lwzx r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
@@ -330,7 +330,7 @@ stb.execute = {
 	cpu->Int8Store(rs, ea);
 }
 stb.disasm = {
-	os << "stb r" << rs << ", " << d << "(r" << ra << ")";
+	os << "stb r" << (unsigned int) rs << ", " << d << "(r" << (unsigned int) ra << ")";
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + d : d);
@@ -340,7 +340,7 @@ stb.disasm = {
 
 op stbu(39[6]:rs[5]:ra[5]:sext<32>d[16])
 stbu.execute = {
-	if(ra == 0) throw IllegalInstructionException<CONFIG>();
+	if(unlikely(ra == 0)) throw IllegalInstructionException<CONFIG>();
 	// compute the effective address
 	typename CONFIG::address_t ea = (cpu->GetGPR(ra) + d);
 	// do the memory access
@@ -349,7 +349,7 @@ stbu.execute = {
 	cpu->SetGPR(ra, ea);
 }
 stbu.disasm = {
-	os << "stbu r" << rs << ", " << d << "(r" << ra << ")";
+	os << "stbu r" << (unsigned int) rs << ", " << d << "(r" << (unsigned int) ra << ")";
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (cpu->GetGPR(ra) + d);
@@ -359,7 +359,7 @@ stbu.disasm = {
 
 op stbux(31[6]:rs[5]:ra[5]:rb[5]:247[10]:?[1])
 stbux.execute = {
-	if(ra == 0) throw IllegalInstructionException<CONFIG>();
+	if(unlikely(ra == 0)) throw IllegalInstructionException<CONFIG>();
 	// compute the effective address
 	typename CONFIG::address_t ea = (cpu->GetGPR(ra) + cpu->GetGPR(rb));
 	// do the memory access
@@ -368,7 +368,7 @@ stbux.execute = {
 	cpu->SetGPR(ra, ea);
 }
 stbux.disasm = {
-	os << "stbux r" << rs << ", r" << ra << ", r" << rb;
+	os << "stbux r" << (unsigned int) rs << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (cpu->GetGPR(ra) + cpu->GetGPR(rb));
@@ -384,7 +384,7 @@ stbx.execute = {
 	cpu->Int8Store(rs, ea);
 }
 stbx.disasm = {
-	os << "stbx r" << rs << ", r" << ra << ", r" << rb;
+	os << "stbx r" << (unsigned int) rs << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
@@ -400,7 +400,7 @@ sth.execute = {
 	cpu->Int16Store(rs, ea);
 }
 sth.disasm = {
-	os << "sth r" << rs << ", " << d << "(r" << ra << ")";
+	os << "sth r" << (unsigned int) rs << ", " << d << "(r" << (unsigned int) ra << ")";
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + d : d);
@@ -410,7 +410,7 @@ sth.disasm = {
 
 op sthu(45[6]:rs[5]:ra[5]:sext<32>d[16])
 sthu.execute = {
-	if(ra == 0) throw IllegalInstructionException<CONFIG>();
+	if(unlikely(ra == 0)) throw IllegalInstructionException<CONFIG>();
 	// compute the effective address
 	typename CONFIG::address_t ea = (cpu->GetGPR(ra) + d);
 	// do the memory access
@@ -419,7 +419,7 @@ sthu.execute = {
 	cpu->SetGPR(ra, ea);
 }
 sthu.disasm = {
-	os << "sthu r" << rs << ", " << d << "(r" << ra << ")";
+	os << "sthu r" << (unsigned int) rs << ", " << d << "(r" << (unsigned int) ra << ")";
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (cpu->GetGPR(ra) + d);
@@ -429,7 +429,7 @@ sthu.disasm = {
 
 op sthux(31[6]:rs[5]:ra[5]:rb[5]:439[10]:?[1])
 sthux.execute = {
-	if(ra == 0) throw IllegalInstructionException<CONFIG>();
+	if(unlikely(ra == 0)) throw IllegalInstructionException<CONFIG>();
 	// compute the effective address
 	typename CONFIG::address_t ea = (cpu->GetGPR(ra) + cpu->GetGPR(rb));
 	// do the memory access
@@ -438,7 +438,7 @@ sthux.execute = {
 	cpu->SetGPR(ra, ea);
 }
 sthux.disasm = {
-	os << "sthux r" << rs << ", r" << ra << ", r" << rb;
+	os << "sthux r" << (unsigned int) rs << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (cpu->GetGPR(ra) + cpu->GetGPR(rb));
@@ -454,7 +454,7 @@ sthx.execute = {
 	cpu->Int16Store(rs, ea);
 }
 sthx.disasm = {
-	os << "sthx r" << rs << ", r" << ra << ", r" << rb;
+	os << "sthx r" << (unsigned int) rs << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
@@ -470,7 +470,7 @@ stw.execute = {
 	cpu->Int32Store(rs, ea);
 }
 stw.disasm = {
-	os << "stw r" << rs << ", " << d << "(r" << ra << ")";
+	os << "stw r" << (unsigned int) rs << ", " << d << "(r" << (unsigned int) ra << ")";
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + d : d);
@@ -480,7 +480,7 @@ stw.disasm = {
 
 op stwu(37[6]:rs[5]:ra[5]:sext<32>d[16])
 stwu.execute = {
-	if(ra == 0) throw IllegalInstructionException<CONFIG>();
+	if(unlikely(ra == 0)) throw IllegalInstructionException<CONFIG>();
 	// compute the effective address
 	typename CONFIG::address_t ea = (cpu->GetGPR(ra) + d);
 	// do the memory access
@@ -489,7 +489,7 @@ stwu.execute = {
 	cpu->SetGPR(ra, ea);
 }
 stwu.disasm = {
-	os << "stwu r" << rs << ", " << d << "(r" << ra << ")";
+	os << "stwu r" << (unsigned int) rs << ", " << d << "(r" << (unsigned int) ra << ")";
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (cpu->GetGPR(ra) + d);
@@ -499,7 +499,7 @@ stwu.disasm = {
 
 op stwux(31[6]:rs[5]:ra[5]:rb[5]:183[10]:?[1])
 stwux.execute = {
-	if(ra == 0) throw IllegalInstructionException<CONFIG>();
+	if(unlikely(ra == 0)) throw IllegalInstructionException<CONFIG>();
 	// compute the effective address
 	typename CONFIG::address_t ea = (cpu->GetGPR(ra) + cpu->GetGPR(rb));
 	// do the memory access
@@ -508,7 +508,7 @@ stwux.execute = {
 	cpu->SetGPR(ra, ea);
 }
 stwux.disasm = {
-	os << "stwux r" << rs << ", r" << ra << ", r" << rb;
+	os << "stwux r" << (unsigned int) rs << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (cpu->GetGPR(ra) + cpu->GetGPR(rb));
@@ -524,7 +524,7 @@ stwx.execute = {
 	cpu->Int32Store(rs, ea);
 }
 stwx.disasm = {
-	os << "stwx r" << rs << ", r" << ra << ", r" << rb;
+	os << "stwx r" << (unsigned int) rs << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
@@ -546,7 +546,7 @@ lhbrx.execute = {
 	cpu->Int16LoadByteReverse(rd, ea); // 16-bit load/byte reverse/no signe extend
 }
 lhbrx.disasm = {
-	os << "lhbrx r" << rd << ", r" << ra << ", r" << rb;
+	os << "lhbrx r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
@@ -562,7 +562,7 @@ lwbrx.execute = {
 	cpu->Int32LoadByteReverse(rd, ea); // 32-bit load/byte reverse/no signe extend
 }
 lwbrx.disasm = {
-	os << "lwbrx r" << rd << ", r" << ra << ", r" << rb;
+	os << "lwbrx r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
@@ -578,7 +578,7 @@ sthbrx.execute = {
 	cpu->Int16StoreByteReverse(rs, ea); // 16-bit load/byte reverse
 }
 sthbrx.disasm = {
-	os << "sthbrx r" << rs << ", r" << ra << ", r" << rb;
+	os << "sthbrx r" << (unsigned int) rs << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
@@ -594,7 +594,7 @@ stwbrx.execute = {
 	cpu->Int32StoreByteReverse(rs, ea); // 32-bit load/byte reverse
 }
 stwbrx.disasm = {
-	os << "stwbrx r" << rs << ", r" << ra << ", r" << rb;
+	os << "stwbrx r" << (unsigned int) rs << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
@@ -612,7 +612,7 @@ op lswi(31[6]:rd[5]:ra[5]:nb[5]:597[10]:?[1])
 lswi.execute = {
 	typename CONFIG::address_t ea = ra ? cpu->GetGPR(ra) : 0;
 
-	if(cpu->GetMSR_LE())
+	if(unlikely(cpu->GetMSR_LE()))
 	{
 		if(!cpu->linux_os_import) throw AlignmentException<CONFIG>(ea);
 	}
@@ -630,7 +630,7 @@ lswi.execute = {
 	}
 }
 lswi.disasm = {
-	os << "lswi r" << rd << ", r" << ra << ", " << nb;
+	os << "lswi r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", " << (unsigned int) nb;
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = ra ? cpu->GetGPR(ra) : 0;
@@ -640,13 +640,13 @@ lswi.disasm = {
 
 op lswx(31[6]:rd[5]:ra[5]:rb[5]:533[10]:?[1])
 lswx.execute = {
-	if(rd == ra ||
-	   rd == rb ||
-	   (rd == 0 && ra == 0)) throw IllegalInstructionException<CONFIG>();
+	if(unlikely(rd == ra ||
+	            rd == rb ||
+	            (rd == 0 && ra == 0))) throw IllegalInstructionException<CONFIG>();
 
 	typename CONFIG::address_t ea = ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb);
 
-	if(cpu->GetMSR_LE()) if(!cpu->linux_os_import) throw AlignmentException<CONFIG>(ea);
+	if(unlikely(cpu->GetMSR_LE())) if(!cpu->linux_os_import) throw AlignmentException<CONFIG>(ea);
 
 	uint32_t xer = cpu->GetXER();
 	uint8_t n = (xer & CONFIG::XER_BYTE_COUNT_MASK) >> CONFIG::XER_BYTE_COUNT_OFFSET;
@@ -662,7 +662,7 @@ lswx.execute = {
 	}
 }
 lswx.disasm = {
-	os << "lswx r" << rd << ", r" << ra << ", r" << rb;
+	os << "lswx r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
@@ -674,7 +674,7 @@ op stswi(31[6]:rs[5]:ra[5]:nb[5]:725[10]:?[1])
 stswi.execute = {
 	typename CONFIG::address_t ea = ra ? cpu->GetGPR(ra) : 0;
 
-	if(cpu->GetMSR_LE()) if(!cpu->linux_os_import) throw AlignmentException<CONFIG>(ea);
+	if(unlikely(cpu->GetMSR_LE())) if(!cpu->linux_os_import) throw AlignmentException<CONFIG>(ea);
 
 	uint8_t n = nb ? nb : 32;
 	unsigned int r = rs;
@@ -688,7 +688,7 @@ stswi.execute = {
 	}
 }
 stswi.disasm = {
-	os << "stswi r" << rs << ", r" << ra << ", " << nb;
+	os << "stswi r" << (unsigned int) rs << ", r" << (unsigned int) ra << ", " << (unsigned int) nb;
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = ra ? cpu->GetGPR(ra) : 0;
@@ -700,7 +700,7 @@ op stswx(31[6]:rs[5]:ra[5]:rb[5]:661[10]:?[1])
 stswx.execute = {
 	typename CONFIG::address_t ea = ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb);
 
-	if(cpu->GetMSR_LE()) if(!cpu->linux_os_import) throw AlignmentException<CONFIG>(ea);
+	if(unlikely(cpu->GetMSR_LE())) if(!cpu->linux_os_import) throw AlignmentException<CONFIG>(ea);
 
 	uint32_t xer = cpu->GetXER();
 	uint8_t n = (xer & CONFIG::XER_BYTE_COUNT_MASK) >> CONFIG::XER_BYTE_COUNT_OFFSET;
@@ -716,7 +716,7 @@ stswx.execute = {
 	}
 }
 stswx.disasm = {
-	os << "stswx r" << rs << ", r" << ra << ", r" << rb;
+	os << "stswx r" << (unsigned int) rs << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
@@ -732,10 +732,10 @@ INTEGER LOAD STORE MULTIPLE INSTRUCTIONS
 
 op lmw(46[6]:rd[5]:ra[5]:sext<32>d[16])
 lmw.execute = {
-	if(ra >= rd) throw IllegalInstructionException<CONFIG>();
+	if(unlikely(ra >= rd)) throw IllegalInstructionException<CONFIG>();
 	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + d : d);
 
-	if(ea & 3) if(!cpu->linux_os_import) throw AlignmentException<CONFIG>(ea);
+	if(unlikely(ea & 3)) if(!cpu->linux_os_import) throw AlignmentException<CONFIG>(ea);
 
 	unsigned int r;
 	for(r = rd; r < 32; r++)
@@ -745,7 +745,7 @@ lmw.execute = {
 	}
 }
 lmw.disasm = {
-	os << "lmw r" << rd << ", " << d << "(r" << ra << ")";
+	os << "lmw r" << (unsigned int) rd << ", " << d << "(r" << (unsigned int) ra << ")";
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + d : d);
@@ -757,7 +757,7 @@ op stmw(47[6]:rs[5]:ra[5]:sext<32>d[16])
 stmw.execute = {
 	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + d : d);
 
-	if(ea & 3) if(!cpu->linux_os_import) throw AlignmentException<CONFIG>(ea);
+	if(unlikely(ea & 3)) if(!cpu->linux_os_import) throw AlignmentException<CONFIG>(ea);
 
 	unsigned int r;
 
@@ -768,7 +768,7 @@ stmw.execute = {
 	}
 }
 stmw.disasm = {
-	os << "stmw r" << rs << ", " << d << "(r" << ra << ")";
+	os << "stmw r" << (unsigned int) rs << ", " << d << "(r" << (unsigned int) ra << ")";
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + d : d);
@@ -785,7 +785,7 @@ FLOATING POINT LOAD INSTRUCTIONS
 op lfd(50[6]:fd[5]:ra[5]:sext<32>d[16])
 lfd.execute = {
 	// check if FPU is available
-	if(!cpu->GetMSR_FP())
+	if(unlikely(!cpu->GetMSR_FP()))
 	{
 		throw FloatingPointUnavailableException<CONFIG>();
 	}
@@ -793,7 +793,7 @@ lfd.execute = {
 	// compute the effective address
 	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + d : d);
 	// check alignment
-	if(ea & 3)
+	if(unlikely(ea & 3))
 	{
 		if(!cpu->linux_os_import) throw AlignmentException<CONFIG>(ea);
 	}
@@ -802,7 +802,7 @@ lfd.execute = {
 	cpu->Fp64Load(fd, ea);
 }
 lfd.disasm = {
-	os << "lfd f" << fd << ", " << d << "(r" << ra << ")";
+	os << "lfd f" << (unsigned int) fd << ", " << d << "(r" << (unsigned int) ra << ")";
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + d : d);
@@ -812,8 +812,8 @@ lfd.disasm = {
 
 op lfdu(51[6]:fd[5]:ra[5]:sext<32>d[16])
 lfdu.execute = {
-	if(ra == 0) throw IllegalInstructionException<CONFIG>();
-	if(!cpu->GetMSR_FP())
+	if(unlikely(ra == 0)) throw IllegalInstructionException<CONFIG>();
+	if(unlikely(!cpu->GetMSR_FP()))
 	{
 		throw FloatingPointUnavailableException<CONFIG>();
 	}
@@ -821,7 +821,7 @@ lfdu.execute = {
 	// compute the effective address
 	typename CONFIG::address_t ea = (cpu->GetGPR(ra) + d);
 	// check alignment
-	if(ea & 3)
+	if(unlikely(ea & 3))
 	{
 		if(!cpu->linux_os_import) throw AlignmentException<CONFIG>(ea);
 	}
@@ -832,7 +832,7 @@ lfdu.execute = {
 	cpu->SetGPR(ra, ea);
 }
 lfdu.disasm = {
-	os << "lfdu f" << fd << ", " << d << "(r" << ra << ")";
+	os << "lfdu f" << (unsigned int) fd << ", " << d << "(r" << (unsigned int) ra << ")";
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (cpu->GetGPR(ra) + d);
@@ -842,8 +842,8 @@ lfdu.disasm = {
 
 op lfdux(31[6]:fd[5]:ra[5]:rb[5]:631[10]:?[1])
 lfdux.execute = {
-	if(ra == 0) throw IllegalInstructionException<CONFIG>();
-	if(!cpu->GetMSR_FP())
+	if(unlikely(ra == 0)) throw IllegalInstructionException<CONFIG>();
+	if(unlikely(!cpu->GetMSR_FP()))
 	{
 		throw FloatingPointUnavailableException<CONFIG>();
 	}	
@@ -851,7 +851,7 @@ lfdux.execute = {
 	// compute the effective address
 	typename CONFIG::address_t ea = (cpu->GetGPR(ra) + cpu->GetGPR(rb));
 	// check alignment
-	if(ea & 3)
+	if(unlikely(ea & 3))
 	{
 		if(!cpu->linux_os_import) throw AlignmentException<CONFIG>(ea);
 	}
@@ -861,7 +861,7 @@ lfdux.execute = {
 	cpu->SetGPR(ra, ea);
 }
 lfdux.disasm = {
-	os << "lfdux f" << fd << ", r" << ra << ", r" << rb;
+	os << "lfdux f" << (unsigned int) fd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (cpu->GetGPR(ra) + cpu->GetGPR(rb));
@@ -871,7 +871,7 @@ lfdux.disasm = {
 
 op lfdx(31[6]:fd[5]:ra[5]:rb[5]:599[10]:?[1])
 lfdx.execute = {
-	if(!cpu->GetMSR_FP())
+	if(unlikely(!cpu->GetMSR_FP()))
 	{
 		throw FloatingPointUnavailableException<CONFIG>();
 	}
@@ -880,7 +880,7 @@ lfdx.execute = {
 	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
 
 	// check alignment
-	if(ea & 3)
+	if(unlikely(ea & 3))
 	{
 		if(!cpu->linux_os_import) throw AlignmentException<CONFIG>(ea);
 	}
@@ -889,7 +889,7 @@ lfdx.execute = {
 	cpu->Fp64Load(fd, ea);
 }
 lfdx.disasm = {
-	os << "lfdx f" << fd << ", r" << ra << ", r" << rb;
+	os << "lfdx f" << (unsigned int) fd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
@@ -899,7 +899,7 @@ lfdx.disasm = {
 
 op lfs(48[6]:fd[5]:ra[5]:sext<32>d[16])
 lfs.execute = {
-	if(!cpu->GetMSR_FP())
+	if(unlikely(!cpu->GetMSR_FP()))
 	{
 		throw FloatingPointUnavailableException<CONFIG>();
 	}
@@ -908,7 +908,7 @@ lfs.execute = {
 	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + d : d);
 
 	// check alignment
-	if(ea & 3)
+	if(unlikely(ea & 3))
 	{
 		if(!cpu->linux_os_import) throw AlignmentException<CONFIG>(ea);
 	}
@@ -917,7 +917,7 @@ lfs.execute = {
 	cpu->Fp32Load(fd, ea);
 }
 lfs.disasm = {
-	os << "lfs f" << fd << ", " << d << "(r" << ra << ")";
+	os << "lfs f" << (unsigned int) fd << ", " << d << "(r" << (unsigned int) ra << ")";
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + d : d);
@@ -927,8 +927,8 @@ lfs.disasm = {
 
 op lfsu(49[6]:fd[5]:ra[5]:sext<32>d[16])
 lfsu.execute = {
-	if(ra == 0) throw IllegalInstructionException<CONFIG>();
-	if(!cpu->GetMSR_FP())
+	if(unlikely(ra == 0)) throw IllegalInstructionException<CONFIG>();
+	if(unlikely(!cpu->GetMSR_FP()))
 	{
 		throw FloatingPointUnavailableException<CONFIG>();
 	}
@@ -937,7 +937,7 @@ lfsu.execute = {
 	typename CONFIG::address_t ea = (cpu->GetGPR(ra) + d);
 
 	// check alignment
-	if(ea & 3)
+	if(unlikely(ea & 3))
 	{
 		if(!cpu->linux_os_import) throw AlignmentException<CONFIG>(ea);
 	}
@@ -947,7 +947,7 @@ lfsu.execute = {
 	cpu->SetGPR(ra, ea);
 }
 lfsu.disasm = {
-	os << "lfsu f" << fd << ", " << d << "(r" << ra << ")";
+	os << "lfsu f" << (unsigned int) fd << ", " << d << "(r" << (unsigned int) ra << ")";
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (cpu->GetGPR(ra) + d);
@@ -957,8 +957,8 @@ lfsu.disasm = {
 
 op lfsux(31[6]:fd[5]:ra[5]:rb[5]:567[10]:?[1])
 lfsux.execute = {
-	if(ra == 0) throw IllegalInstructionException<CONFIG>();
-	if(!cpu->GetMSR_FP())
+	if(unlikely(ra == 0)) throw IllegalInstructionException<CONFIG>();
+	if(unlikely(!cpu->GetMSR_FP()))
 	{
 		throw FloatingPointUnavailableException<CONFIG>();
 	}
@@ -966,7 +966,7 @@ lfsux.execute = {
 	// compute the effective address
 	typename CONFIG::address_t ea = (cpu->GetGPR(ra) + cpu->GetGPR(rb));
 	// check alignment
-	if(ea & 3)
+	if(unlikely(ea & 3))
 	{
 		if(!cpu->linux_os_import) throw AlignmentException<CONFIG>(ea);
 	}
@@ -977,7 +977,7 @@ lfsux.execute = {
 	cpu->SetGPR(ra, ea);
 }
 lfsux.disasm = {
-	os << "lfsux f" << fd << ", r" << ra << ", r" << rb;
+	os << "lfsux f" << (unsigned int) fd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (cpu->GetGPR(ra) + cpu->GetGPR(rb));
@@ -987,7 +987,7 @@ lfsux.disasm = {
 
 op lfsx(31[6]:fd[5]:ra[5]:rb[5]:535[10]:?[1])
 lfsx.execute = {
-	if(!cpu->GetMSR_FP())
+	if(unlikely(!cpu->GetMSR_FP()))
 	{
 		throw FloatingPointUnavailableException<CONFIG>();
 	}
@@ -996,7 +996,7 @@ lfsx.execute = {
 	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
 
 	// check alignment
-	if(ea & 3)
+	if(unlikely(ea & 3))
 	{
 		if(!cpu->linux_os_import) throw AlignmentException<CONFIG>(ea);
 	}
@@ -1005,7 +1005,7 @@ lfsx.execute = {
 	cpu->Fp32Load(fd, ea);
 }
 lfsx.disasm = {
-	os << "lfsx f" << fd << ", r" << ra << ", r" << rb;
+	os << "lfsx f" << (unsigned int) fd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
@@ -1021,7 +1021,7 @@ FLOATING POINT STORE INSTRUCTIONS
 
 op stfd(54[6]:fs[5]:ra[5]:sext<32>d[16])
 stfd.execute = {
-	if(!cpu->GetMSR_FP())
+	if(unlikely(!cpu->GetMSR_FP()))
 	{
 		throw FloatingPointUnavailableException<CONFIG>();
 	}
@@ -1030,7 +1030,7 @@ stfd.execute = {
 	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + d : d);
 
 	// check alignment
-	if(ea & 3)
+	if(unlikely(ea & 3))
 	{
 		if(!cpu->linux_os_import) throw AlignmentException<CONFIG>(ea);
 	}
@@ -1038,7 +1038,7 @@ stfd.execute = {
 	cpu->Fp64Store(fs, ea);
 }
 stfd.disasm = {
-	os << "stfd f" << fs << ", " << d << "(r" << ra << ")";
+	os << "stfd f" << (unsigned int) fs << ", " << d << "(r" << (unsigned int) ra << ")";
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + d : d);
@@ -1048,8 +1048,8 @@ stfd.disasm = {
 
 op stfdu(55[6]:fs[5]:ra[5]:sext<32>d[16])
 stfdu.execute = {
-	if(ra == 0) throw IllegalInstructionException<CONFIG>();
-	if(!cpu->GetMSR_FP())
+	if(unlikely(ra == 0)) throw IllegalInstructionException<CONFIG>();
+	if(unlikely(!cpu->GetMSR_FP()))
 	{
 		throw FloatingPointUnavailableException<CONFIG>();
 	}
@@ -1058,7 +1058,7 @@ stfdu.execute = {
 	typename CONFIG::address_t ea = (cpu->GetGPR(ra) + d);
 
 	// check alignment
-	if(ea & 3)
+	if(unlikely(ea & 3))
 	{
 		if(!cpu->linux_os_import) throw AlignmentException<CONFIG>(ea);
 	}
@@ -1068,7 +1068,7 @@ stfdu.execute = {
 	cpu->SetGPR(ra, ea);
 }
 stfdu.disasm = {
-	os << "stfdu f" << fs << ", " << d << "(r" << ra << ")";
+	os << "stfdu f" << (unsigned int) fs << ", " << d << "(r" << (unsigned int) ra << ")";
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (cpu->GetGPR(ra) + d);
@@ -1078,8 +1078,8 @@ stfdu.disasm = {
 
 op stfdux(31[6]:fs[5]:ra[5]:rb[5]:759[10]:?[1])
 stfdux.execute = {
-	if(ra == 0) throw IllegalInstructionException<CONFIG>();
-	if(!cpu->GetMSR_FP())
+	if(unlikely(ra == 0)) throw IllegalInstructionException<CONFIG>();
+	if(unlikely(!cpu->GetMSR_FP()))
 	{
 		throw FloatingPointUnavailableException<CONFIG>();
 	}
@@ -1088,7 +1088,7 @@ stfdux.execute = {
 	typename CONFIG::address_t ea = (cpu->GetGPR(ra) + cpu->GetGPR(rb));
 
 	// check alignment
-	if(ea & 3)
+	if(unlikely(ea & 3))
 	{
 		if(!cpu->linux_os_import) throw AlignmentException<CONFIG>(ea);
 	}
@@ -1098,7 +1098,7 @@ stfdux.execute = {
 	cpu->SetGPR(ra, ea);
 }
 stfdux.disasm = {
-	os << "stfdux f" << fs << ", r" << ra << ", r" << rb;
+	os << "stfdux f" << (unsigned int) fs << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (cpu->GetGPR(ra) + cpu->GetGPR(rb));
@@ -1108,7 +1108,7 @@ stfdux.disasm = {
 
 op stfdx(31[6]:fs[5]:ra[5]:rb[5]:727[10]:?[1])
 stfdx.execute = {
-	if(!cpu->GetMSR_FP())
+	if(unlikely(!cpu->GetMSR_FP()))
 	{
 		throw FloatingPointUnavailableException<CONFIG>();
 	}
@@ -1116,7 +1116,7 @@ stfdx.execute = {
 	// compute the effective address
 	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
 	// check alignment
-	if(ea & 3)
+	if(unlikely(ea & 3))
 	{
 		if(!cpu->linux_os_import) throw AlignmentException<CONFIG>(ea);
 	}
@@ -1124,7 +1124,7 @@ stfdx.execute = {
 	cpu->Fp64Store(fs, ea);
 }
 stfdx.disasm = {
-	os << "stfdx f" << fs << ", r" << ra << ", r" << rb;
+	os << "stfdx f" << (unsigned int) fs << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
@@ -1134,7 +1134,7 @@ stfdx.disasm = {
 
 op stfiwx(31[6]:fs[5]:ra[5]:rb[5]:983[10]:?[1])
 stfiwx.execute = {
-	if(!cpu->GetMSR_FP())
+	if(unlikely(!cpu->GetMSR_FP()))
 	{
 		throw FloatingPointUnavailableException<CONFIG>();
 	}
@@ -1142,7 +1142,7 @@ stfiwx.execute = {
 	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
 
 	// check alignment
-	if(ea & 3)
+	if(unlikely(ea & 3))
 	{
 		if(!cpu->linux_os_import) throw AlignmentException<CONFIG>(ea);
 	}
@@ -1150,7 +1150,7 @@ stfiwx.execute = {
 	cpu->FpStoreLSW(fs, ea);
 }
 stfiwx.disasm = {
-	os << "stfiwx f" << fs << ", r" << ra << ", r" << rb;
+	os << "stfiwx f" << (unsigned int) fs << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
@@ -1160,14 +1160,14 @@ stfiwx.disasm = {
 
 op stfs(52[6]:fs[5]:ra[5]:sext<32>d[16])
 stfs.execute = {
-	if(!cpu->GetMSR_FP())
+	if(unlikely(!cpu->GetMSR_FP()))
 	{
 		throw FloatingPointUnavailableException<CONFIG>();
 	}
 	// compute the effective address
 	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + d : d);
 	// check alignment
-	if(ea & 3)
+	if(unlikely(ea & 3))
 	{
 		if(!cpu->linux_os_import) throw AlignmentException<CONFIG>(ea);
 	}
@@ -1175,7 +1175,7 @@ stfs.execute = {
 	cpu->Fp32Store(fs, ea);
 }
 stfs.disasm = {
-	os << "stfs f" << fs << ", " << d << "(r" << ra << ")";
+	os << "stfs f" << (unsigned int) fs << ", " << d << "(r" << (unsigned int) ra << ")";
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + d : d);
@@ -1185,8 +1185,8 @@ stfs.disasm = {
 
 op stfsu(53[6]:fs[5]:ra[5]:sext<32>d[16])
 stfsu.execute = {
-	if(ra == 0) throw IllegalInstructionException<CONFIG>();
-	if(!cpu->GetMSR_FP())
+	if(unlikely(ra == 0)) throw IllegalInstructionException<CONFIG>();
+	if(unlikely(!cpu->GetMSR_FP()))
 	{
 		throw FloatingPointUnavailableException<CONFIG>();
 	}
@@ -1194,7 +1194,7 @@ stfsu.execute = {
 	// compute the effective address
 	typename CONFIG::address_t ea = (cpu->GetGPR(ra) + d);
 	// check alignment
-	if(ea & 3)
+	if(unlikely(ea & 3))
 	{
 		if(!cpu->linux_os_import) throw AlignmentException<CONFIG>(ea);
 	}
@@ -1204,7 +1204,7 @@ stfsu.execute = {
 	cpu->SetGPR(ra, ea);
 }
 stfsu.disasm = {
-	os << "stfsu f" << fs << ", " << d << "(r" << ra << ")";
+	os << "stfsu f" << (unsigned int) fs << ", " << d << "(r" << (unsigned int) ra << ")";
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (cpu->GetGPR(ra) + d);
@@ -1214,8 +1214,8 @@ stfsu.disasm = {
 
 op stfsux(31[6]:fs[5]:ra[5]:rb[5]:695[10]:?[1])
 stfsux.execute = {
-	if(ra == 0) throw IllegalInstructionException<CONFIG>();
-	if(!cpu->GetMSR_FP())
+	if(unlikely(ra == 0)) throw IllegalInstructionException<CONFIG>();
+	if(unlikely(!cpu->GetMSR_FP()))
 	{
 		throw FloatingPointUnavailableException<CONFIG>();
 	}
@@ -1223,7 +1223,7 @@ stfsux.execute = {
 	// compute the effective address
 	typename CONFIG::address_t ea = (cpu->GetGPR(ra) + cpu->GetGPR(rb));
 	// check alignment
-	if(ea & 3)
+	if(unlikely(ea & 3))
 	{
 		if(!cpu->linux_os_import) throw AlignmentException<CONFIG>(ea);
 	}
@@ -1233,7 +1233,7 @@ stfsux.execute = {
 	cpu->SetGPR(ra, ea);
 }
 stfsux.disasm = {
-	os << "stfsux f" << fs << ", r" << ra << ", r" << rb;
+	os << "stfsux f" << (unsigned int) fs << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (cpu->GetGPR(ra) + cpu->GetGPR(rb));
@@ -1243,7 +1243,7 @@ stfsux.disasm = {
 
 op stfsx(31[6]:fs[5]:ra[5]:rb[5]:663[10]:?[1])
 stfsx.execute = {
-	if(!cpu->GetMSR_FP())
+	if(unlikely(!cpu->GetMSR_FP()))
 	{
 		throw FloatingPointUnavailableException<CONFIG>();
 	}
@@ -1251,7 +1251,7 @@ stfsx.execute = {
 	// compute the effective address
 	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
 	// check alignment
-	if(ea & 3)
+	if(unlikely(ea & 3))
 	{
 		if(!cpu->linux_os_import) throw AlignmentException<CONFIG>(ea);
 	}
@@ -1259,7 +1259,7 @@ stfsx.execute = {
 	cpu->Fp32Store(fs, ea);
 }
 stfsx.disasm = {
-	os << "stfsx f" << fs << ", r" << ra << ", r" << rb;
+	os << "stfsx f" << (unsigned int) fs << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
@@ -1280,7 +1280,7 @@ dcba.execute = {
 	cpu->Dcba(ea);
 }
 dcba.disasm = {
-	os << "dcba r" << ra << ", r" << rb;
+	os << "dcba r" << (unsigned int) ra << ", r" << (unsigned int) rb;
 }
 
 
@@ -1291,7 +1291,7 @@ dcbf.execute = {
 	cpu->Dcbf(ea);
 }
 dcbf.disasm = {
-	os << "dcbf r" << ra << ", r" << rb;
+	os << "dcbf r" << (unsigned int) ra << ", r" << (unsigned int) rb;
 }
 
 op dcbi(31[6]:?[5]:ra[5]:rb[5]:470[10]:?[1])
@@ -1300,7 +1300,7 @@ dcbi.execute = {
 	cpu->Dcbi(ea);
 }
 dcbi.disasm = {
-	os << "dcbi r" << ra << ", r" << rb;
+	os << "dcbi r" << (unsigned int) ra << ", r" << (unsigned int) rb;
 }
 
 op dcbst(31[6]:?[5]:ra[5]:rb[5]:54[10]:?[1])
@@ -1310,7 +1310,7 @@ dcbst.execute = {
 	cpu->Dcbst(ea);
 }
 dcbst.disasm = {
-	os << "dcbst r" << ra << ", r" << rb;
+	os << "dcbst r" << (unsigned int) ra << ", r" << (unsigned int) rb;
 }
 
 op dcbt(31[6]:?[5]:ra[5]:rb[5]:278[10]:?[1])
@@ -1318,7 +1318,7 @@ dcbt.execute = {
 	/* this instruction has no architectural effect (software prefetching) */
 }
 dcbt.disasm = {
-	os << "dcbt r" << ra << ", r" << rb;
+	os << "dcbt r" << (unsigned int) ra << ", r" << (unsigned int) rb;
 }
 
 op dcbtst(31[6]:?[5]:ra[5]:rb[5]:246[10]:?[1])
@@ -1326,7 +1326,7 @@ dcbtst.execute = {
 	/* this instruction has no architectural effect (software prefetching) */
 }
 dcbtst.disasm = {
-	os << "dcbtst r" << ra << ", r" << rb;
+	os << "dcbtst r" << (unsigned int) ra << ", r" << (unsigned int) rb;
 }
 
 op dcbz(31[6]:?[5]:ra[5]:rb[5]:1014[10]:?[1])
@@ -1337,7 +1337,7 @@ dcbz.execute = {
 	cpu->Dcbz(ea);
 }
 dcbz.disasm = {
-	os << "dcbz r" << ra << ", r" << rb;
+	os << "dcbz r" << (unsigned int) ra << ", r" << (unsigned int) rb;
 }
 
 op icbi(31[6]:?[5]:ra[5]:rb[5]:982[10]:?[1])
@@ -1347,7 +1347,7 @@ icbi.execute = {
 	cpu->Icbi(ea);
 }
 icbi.disasm = {
-	os << "icbi r" << ra << ", r" << rb;
+	os << "icbi r" << (unsigned int) ra << ", r" << (unsigned int) rb;
 }
 
 /*********************************************
@@ -1368,7 +1368,7 @@ tlbie.execute = {
 	cpu->Tlbie(ea);
 }
 tlbie.disasm = {
-	os << "tlbie r" << rb;
+	os << "tlbie r" << (unsigned int) rb;
 }
 
 op tlbsync(31[6]:?[5]:?[5]:?[5]:566[10]:?[1])
@@ -1381,7 +1381,7 @@ tlbld.execute = {
 	cpu->Tlbld(ea);
 }
 tlbld.disasm = {
-	os << "tlbld r" << rb;
+	os << "tlbld r" << (unsigned int) rb;
 }
 
 op tlbli(31[6]:0[5]:0[5]:rb[5]:1010[10]:0[1])
@@ -1390,7 +1390,7 @@ tlbli.execute = {
 	cpu->Tlbli(ea);
 }
 tlbli.disasm = {
-	os << "tlbli r" << rb;
+	os << "tlbli r" << (unsigned int) rb;
 }
 
 /********************************
@@ -1404,7 +1404,7 @@ eciwx.execute = {
 	throw IllegalInstructionException<CONFIG>();
 }
 eciwx.disasm = {
-	os << "eciwx r" << rd << ", r" << ra << ", r" << rb;
+	os << "eciwx r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
 }
 
 op ecowx(31[6]:rs[5]:ra[5]:rb[5]:438[10]:?[1])
@@ -1412,7 +1412,7 @@ ecowx.execute = {
 	throw IllegalInstructionException<CONFIG>();
 }
 ecowx.disasm = {
-	os << "ecowx r" << rs << ", r" << ra << ", r" << rb;
+	os << "ecowx r" << (unsigned int) rs << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
 }
 
 /***************************************
@@ -1440,7 +1440,7 @@ lwarx.execute = {
 	cpu->Lwarx(rd, ea);
 }
 lwarx.disasm = {
-	os << "lwarx r" << rd << ", r" << ra << ", r" << rb;
+	os << "lwarx r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
@@ -1456,7 +1456,7 @@ stwcx_.execute = {
 }
 
 stwcx_.disasm = {
-	os << "stwcx. r" << rs << ", r" << ra << ", r" << rb;
+	os << "stwcx. r" << (unsigned int) rs << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
