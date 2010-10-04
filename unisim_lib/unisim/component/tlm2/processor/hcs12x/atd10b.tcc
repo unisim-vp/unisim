@@ -87,6 +87,9 @@ ATD10B<ATD_SIZE>::ATD10B(const sc_module_name& name, Object *parent) :
 	debug_enabled(false),
 	param_debug_enabled("debug-enabled", this, debug_enabled),
 
+	use_atd_stub(false),
+	param_use_atd_stub("use-atd-stub", this, use_atd_stub),
+
 	analog_signal_reg("ANx", this, analog_signal, ATD_SIZE, "ANx: ATD Analog Input Pins"),
 
 	vih(3.25),
@@ -215,9 +218,11 @@ void ATD10B<ATD_SIZE>::Process()
 			cerr << "Warning: " << name() << " => The ATD is OFF. You have to set ATDCTL2::ADPU bit before.\n";
 		}
 
-		wait(input_anx_payload_queue.get_event());
+		if (use_atd_stub) {
+			wait(input_anx_payload_queue.get_event());
 
-		InputANx(analog_signal);
+			InputANx(analog_signal);
+		}
 
 		RunScanMode();
 

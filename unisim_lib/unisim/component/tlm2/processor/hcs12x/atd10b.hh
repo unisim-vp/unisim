@@ -228,6 +228,9 @@ private:
 	bool	debug_enabled;
 	Parameter<bool>	param_debug_enabled;
 
+	bool	use_atd_stub;
+	Parameter<bool>	param_use_atd_stub;
+
 	RegisterArray<double> analog_signal_reg;
 
 
