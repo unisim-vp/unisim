@@ -29,7 +29,6 @@ set ( cxx_arm_subdirs
 	unisim/service/interfaces/memory
 	unisim/service/interfaces/loader
 	unisim/service/interfaces/linux_os
-	unisim/service/interfaces/cpu_linux_os
 	unisim/service/interfaces/debug_control
 	unisim/service/interfaces/disassembly
 	unisim/service/interfaces/memory_access_reporting
@@ -192,7 +191,6 @@ add_dependencies ( unisim__component__cxx__processor__arm
 	unisim__service__interfaces__memory
 	unisim__service__interfaces__loader
 	unisim__service__interfaces__linux_os
-	unisim__service__interfaces__cpu_linux_os
 	unisim__service__interfaces__debug_control
 	unisim__service__interfaces__disassembly
 	unisim__service__interfaces__memory_access_reporting

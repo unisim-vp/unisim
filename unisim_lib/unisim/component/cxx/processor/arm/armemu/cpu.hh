@@ -42,7 +42,6 @@
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger.hh"
 #include "unisim/service/interfaces/linux_os.hh"
-#include "unisim/service/interfaces/cpu_linux_os.hh"
 #include "unisim/service/interfaces/debug_control.hh"
 #include "unisim/service/interfaces/disassembly.hh"
 #include "unisim/service/interfaces/memory_access_reporting.hh"
@@ -83,8 +82,6 @@ class CPU
 	: public unisim::component::cxx::processor::arm::CPU
 	, public unisim::kernel::service::Client<
 	  	unisim::service::interfaces::LinuxOS>
-	, public unisim::kernel::service::Service<
-	  	unisim::service::interfaces::CPULinuxOS>
 	, public unisim::kernel::service::Service<
 	  	unisim::service::interfaces::MemoryInjection<uint64_t> >
 	, public unisim::kernel::service::Client<
@@ -130,10 +127,6 @@ public:
 	unisim::kernel::service::ServiceExport<
 		unisim::service::interfaces::Memory<uint64_t> > 
 		memory_export;
-	/** CPU Linux OS service export. */
-	unisim::kernel::service::ServiceExport<
-		unisim::service::interfaces::CPULinuxOS> 
-		cpu_linux_os_export;
 	/** Memory access reporting control service export. */
 	unisim::kernel::service::ServiceExport<
 		unisim::service::interfaces::MemoryAccessReportingControl> 

@@ -72,7 +72,6 @@ using unisim::kernel::service::Object;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::Service;
 using unisim::service::interfaces::LinuxOS;
-using unisim::service::interfaces::CPULinuxOS;
 using unisim::service::interfaces::MemoryInjection;
 using unisim::service::interfaces::DebugControl;
 using unisim::service::interfaces::MemoryAccessReporting;
@@ -101,7 +100,6 @@ CPU(const char *name, Object *parent)
 	: unisim::component::cxx::processor::arm::CPU()
 	, Object(name, parent)
 	, Client<LinuxOS>(name, parent)
-	, Service<CPULinuxOS>(name, parent)
 	, Service<MemoryInjection<uint64_t> >(name, parent)
 	, Client<DebugControl<uint64_t> >(name, parent)
 	, Client<MemoryAccessReporting<uint64_t> >(name, parent)
@@ -116,7 +114,6 @@ CPU(const char *name, Object *parent)
 	, registers_export("registers-export", this)
 	, memory_injection_export("memory-injection-export", this)
 	, memory_export("memory-export", this)
-	, cpu_linux_os_export("cpu-linux-os-export", this)
 	, memory_access_reporting_control_export(
 			"memory-access-reporting-control-export", this)
 	, debug_control_import("debug-control-import", this)

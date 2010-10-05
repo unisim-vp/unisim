@@ -85,7 +85,6 @@
 			<dep>unisim::service::interfaces::memory</dep>
 			<dep>unisim::service::interfaces::loader</dep>
 			<dep>unisim::service::interfaces::linux_os</dep>
-			<dep>unisim::service::interfaces::cpu_linux_os</dep>
 			<dep>unisim::service::interfaces::debug_control</dep>
 			<dep>unisim::service::interfaces::disassembly</dep>
 			<dep>unisim::service::interfaces::memory_access_reporting</dep>
