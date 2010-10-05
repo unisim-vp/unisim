@@ -97,8 +97,8 @@ using std::stringstream;
  */
 CPU::
 CPU(const char *name, Object *parent)
-	: unisim::component::cxx::processor::arm::CPU()
-	, Object(name, parent)
+	: Object(name, parent)
+	, unisim::component::cxx::processor::arm::CPU()
 	, Client<LinuxOS>(name, parent)
 	, Service<MemoryInjection<uint64_t> >(name, parent)
 	, Client<DebugControl<uint64_t> >(name, parent)
