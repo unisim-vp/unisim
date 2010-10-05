@@ -141,13 +141,20 @@ ARMEMU(const sc_module_name& name, Object *parent)
 	, nice_time_int(10)
 	, ipc(1.0)
 	, bus_cycle_time_int(0)
-	, param_nice_time("nice-time", this, nice_time_int)
-	, param_ipc("ipc", this, ipc)
-	, param_bus_cycle_time("bus-cycle-time", this, bus_cycle_time_int)
+	, param_nice_time("nice-time", this, nice_time_int,
+			"Maximum time between systemc waits in picoseconds.")
+	, param_ipc("ipc", this, ipc,
+			"Instructions per cycle performance.")
+	, param_bus_cycle_time("bus-cycle-time", this, bus_cycle_time_int,
+			"The processor bus cycle time in picoseconds.")
 	, verbose_tlm(false)
 	, param_verbose_tlm("verbose_tlm", this, verbose_tlm, 
 			"Display TLM information")
 {
+	param_nice_time.SetFormat(
+			unisim::kernel::service::VariableBase::FMT_DEC);
+	param_bus_cycle_time.SetFormat(
+			unisim::kernel::service::VariableBase::FMT_DEC);
 	master_socket.bind(*this);
 	
 	SC_THREAD(Run);

@@ -214,6 +214,20 @@ CPU(const char *name, Object *parent)
 	// This implementation of the arm architecture can only run in user mode,
 	//   so we can already set CPSR to that mode.
 	SetCPSR_Mode(USER_MODE);
+
+	// Set the right format for various of the variables
+	param_cpu_cycle_time.SetFormat(
+			unisim::kernel::service::VariableBase::FMT_DEC);
+	param_icache_size.SetFormat(
+			unisim::kernel::service::VariableBase::FMT_DEC);
+	param_dcache_size.SetFormat(
+			unisim::kernel::service::VariableBase::FMT_DEC);
+	param_voltage.SetFormat(
+			unisim::kernel::service::VariableBase::FMT_DEC);
+	param_trap_on_instruction_counter.SetFormat(
+			unisim::kernel::service::VariableBase::FMT_DEC);
+	stat_instruction_counter.SetFormat(
+			unisim::kernel::service::VariableBase::FMT_DEC);
 }
 
 /** Destructor.
