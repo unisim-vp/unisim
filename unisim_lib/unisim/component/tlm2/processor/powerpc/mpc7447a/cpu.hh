@@ -77,7 +77,7 @@ public:
 	irq_slave_socket hard_reset_slave_sock;
 	irq_slave_socket soft_reset_slave_sock;
 	irq_slave_socket mcp_slave_sock;
-	irq_slave_socket tea_slave_sock;
+	//irq_slave_socket tea_slave_sock;
 	irq_slave_socket smi_slave_sock;
 	
 	CPU(const sc_module_name& name, Object *parent = 0);
@@ -92,14 +92,14 @@ public:
 	virtual void Idle();
 	virtual void Synchronize();
 	
-	void UpdateTime();
-	
+	inline void UpdateTime();
+	inline void AlignToBusClock();
 	void Run();
 	void SignalExternalInterrupt();
 	void SignalHardReset();
 	void SignalSoftReset();
 	void SignalMCP();
-	void SignalTEA();
+	//void SignalTEA();
 	void SignalSMI();
 	
 protected:
@@ -148,7 +148,7 @@ private:
 	IRQQueue hard_reset_queue;
 	IRQQueue soft_reset_queue;
 	IRQQueue mcp_queue;
-	IRQQueue tea_queue;
+	//IRQQueue tea_queue;
 	IRQQueue smi_queue;
 
 	void SignalIRQ(IRQQueue& queue, unsigned int irq);

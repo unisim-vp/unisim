@@ -188,6 +188,7 @@ unisim/component/cxx/processor/powerpc/isa/ppc.isa \
 unisim/component/cxx/processor/powerpc/isa/branch.isa \
 unisim/component/cxx/processor/powerpc/isa/floating.isa \
 unisim/component/cxx/processor/powerpc/isa/loadstore.isa \
+unisim/component/cxx/processor/powerpc/isa/specialization.isa \
 unisim/component/cxx/processor/powerpc/isa/perf.isa \
 unisim/component/cxx/processor/powerpc/isa/sim_dependencies.isa \
 unisim/component/cxx/processor/powerpc/isa/sim_latencies.isa \
@@ -258,10 +259,8 @@ unisim/service/interfaces/stmt_lookup.hh \
 unisim/service/interfaces/time.hh \
 unisim/service/interfaces/memory_injection.hh \
 unisim/service/interfaces/registers.hh \
-unisim/service/interfaces/cpu_linux_os.hh \
 unisim/service/interfaces/linux_os.hh \
 unisim/service/interfaces/os.hh \
-unisim/service/interfaces/cpu_os.hh \
 unisim/service/interfaces/cache_power_estimator.hh \
 unisim/service/interfaces/power_mode.hh \
 unisim/service/interfaces/synchronizable.hh \
@@ -796,7 +795,7 @@ if [ "${has_to_build_embedded_ppc_g4_board_configure}" = "yes" ]; then
 	echo "\$(top_srcdir)/unisim/component/cxx/processor/powerpc/isa/powerpc.tcc: \$(top_srcdir)/unisim/component/cxx/processor/powerpc/isa/powerpc.hh" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
 	echo "\$(top_srcdir)/unisim/component/cxx/processor/powerpc/isa/powerpc.hh: ${UNISIM_LIB_EMBEDDED_PPC_G4_BOARD_ISA_FILES}" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
 	printf "\t" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	echo "cd \$(top_srcdir)/unisim/component/cxx/processor/powerpc/isa; \$(GENISSLIB_PATH) -o powerpc -w 32 -I . ppc.isa" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
+	echo "cd \$(top_srcdir)/unisim/component/cxx/processor/powerpc/isa; \$(GENISSLIB_PATH) -o powerpc -w 8 -I . ppc.isa" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
 
 	echo "all-local: all-local-bin all-local-share" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
 	echo "clean-local: clean-local-bin clean-local-share" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"

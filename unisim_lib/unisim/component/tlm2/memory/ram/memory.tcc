@@ -165,8 +165,8 @@ bool Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::get_direct_mem_p
 	ADDRESS addr = payload.get_address();
 	ADDRESS dmi_start_addr;
 	ADDRESS dmi_end_addr;
-	sc_core::sc_time dmi_read_latency = cycle_time;
-	sc_core::sc_time dmi_write_latency = cycle_time;
+	sc_core::sc_time dmi_read_latency = read_latency;
+	sc_core::sc_time dmi_write_latency = write_latency;
 	tlm::tlm_dmi::dmi_access_e dmi_granted_access = tlm::tlm_dmi::DMI_ACCESS_READ_WRITE;
 
 	unsigned char *dmi_ptr = (unsigned char *) inherited::GetDirectAccess(addr, dmi_start_addr, dmi_end_addr);
@@ -237,8 +237,7 @@ unsigned int Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::transpor
 					<< std::hex << addr << std::dec
 					<< " of " << data_length << " bytes in length" << std::endl
 					<< EndDebugInfo;
-			sc_stop();
-			wait(); // leave control to the SystemC kernel
+			Object::Stop(-1);
 			break;
 	}
 
@@ -259,8 +258,7 @@ tlm::tlm_sync_enum Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::nb
 				<< ":" << (sc_time_stamp() + t).to_string() 
 				<< " : received an unexpected phase " << phase << std::endl
 				<< EndDebugInfo;
-		sc_stop();
-		wait(); // leave control to the SystemC kernel
+		Object::Stop(-1);
 	}
 
 	payload.set_dmi_allowed(true);

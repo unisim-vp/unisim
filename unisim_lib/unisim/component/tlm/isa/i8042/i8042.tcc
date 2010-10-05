@@ -247,17 +247,6 @@ void I8042<MAX_DATA_SIZE>::TriggerAuxInterrupt(bool level)
 }
 
 template <uint32_t MAX_DATA_SIZE>
-void I8042<MAX_DATA_SIZE>::Stop()
-{
-	if(inherited::verbose)
-	{
-		inherited::logger << DebugError << " An unknown error occured" << EndDebugError;
-	}
-	sc_stop();
-	wait();
-}
-
-template <uint32_t MAX_DATA_SIZE>
 void I8042<MAX_DATA_SIZE>::Reset()
 {
 	inherited::Reset();

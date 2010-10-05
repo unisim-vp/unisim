@@ -555,8 +555,7 @@ void CPU<CONFIG>::DoBusAccess(unisim::component::cxx::processor::powerpc::mpc744
 	if(!bus_access_queue.nb_write(bus_access))
 	{
 		inherited::logger << DebugInfo << "DoBusAccess failed" << EndDebugInfo;
-		sc_stop();
-		wait();
+		Object::Stop(-1);
 	}
 }
 

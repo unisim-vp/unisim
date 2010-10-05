@@ -198,7 +198,6 @@ public:
 	virtual void TriggerAuxInterrupt(bool level);
 	bool CaptureKey();
 	void CaptureMouse();
-	virtual void Stop();
 	virtual void Reset();
 	virtual void Lock();
 	virtual void Unlock();

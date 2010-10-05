@@ -303,7 +303,7 @@ fadd.execute = {
 	if(unlikely(rc)) cpu->SetCR((cpu->GetCR() & ~(CONFIG::CR0_MASK >> 4)) | ((fpscr >> 4) & (CONFIG::CR0_MASK >> 4)));
 }
 fadd.disasm = {
-	os << "fadd" << (rc ? "." : "") << " f" << fd << ", f" << fa << ", f" << fb;
+	os << "fadd" << (rc ? "." : "") << " f" << (unsigned int) fd << ", f" << (unsigned int) fa << ", f" << (unsigned int) fb;
 }
 
 op fadds(59[6]:fd[5]:fa[5]:fb[5]:?[5]:21[5]:rc[1])
@@ -360,7 +360,7 @@ fadds.execute = {
 	if(unlikely(rc)) cpu->SetCR((cpu->GetCR() & ~(CONFIG::CR0_MASK >> 4)) | ((fpscr >> 4) & (CONFIG::CR0_MASK >> 4)));
 }
 fadds.disasm = {
-	os << "fadds" << (rc ? "." : "") << " f" << fd << ", f" << fa << ", f" << fb;
+	os << "fadds" << (rc ? "." : "") << " f" << (unsigned int) fd << ", f" << (unsigned int) fa << ", f" << (unsigned int) fb;
 }
 
 op fdiv(63[6]:fd[5]:fa[5]:fb[5]:?[5]:18[5]:rc[1])
@@ -417,7 +417,7 @@ fdiv.execute = {
 	if(unlikely(rc)) cpu->SetCR((cpu->GetCR() & ~(CONFIG::CR0_MASK >> 4)) | ((fpscr >> 4) & (CONFIG::CR0_MASK >> 4)));
 }
 fdiv.disasm = {
-	os << "fdiv" << (rc ? "." : "") << " f" << fd << ", f" << fa << ", f" << fb;
+	os << "fdiv" << (rc ? "." : "") << " f" << (unsigned int) fd << ", f" << (unsigned int) fa << ", f" << (unsigned int) fb;
 }
 
 op fdivs(59[6]:fd[5]:fa[5]:fb[5]:?[5]:18[5]:rc[1])
@@ -475,7 +475,7 @@ fdivs.execute = {
 	if(unlikely(rc)) cpu->SetCR((cpu->GetCR() & ~(CONFIG::CR0_MASK >> 4)) | ((fpscr >> 4) & (CONFIG::CR0_MASK >> 4)));
 }
 fdivs.disasm = {
-	os << "fdivs" << (rc ? "." : "") << " f" << fd << ", f" << fa << ", f" << fb;
+	os << "fdivs" << (rc ? "." : "") << " f" << (unsigned int) fd << ", f" << (unsigned int) fa << ", f" << (unsigned int) fb;
 }
 
 op fmul(63[6]:fd[5]:fa[5]:?[5]:fc[5]:25[5]:rc[1])
@@ -530,7 +530,7 @@ fmul.execute = {
 	if(unlikely(rc)) cpu->SetCR((cpu->GetCR() & ~(CONFIG::CR0_MASK >> 4)) | ((fpscr >> 4) & (CONFIG::CR0_MASK >> 4)));
 }
 fmul.disasm = {
-	os << "fmul" << (rc ? "." : "") << " f" << fd << ", f" << fa << ", f" << fc;
+	os << "fmul" << (rc ? "." : "") << " f" << (unsigned int) fd << ", f" << (unsigned int) fa << ", f" << (unsigned int) fc;
 }
 
 op fmuls(59[6]:fd[5]:fa[5]:?[5]:fc[5]:25[5]:rc[1])
@@ -587,7 +587,7 @@ fmuls.execute = {
 	if(unlikely(rc)) cpu->SetCR((cpu->GetCR() & ~(CONFIG::CR0_MASK >> 4)) | ((fpscr >> 4) & (CONFIG::CR0_MASK >> 4)));
 }
 fmuls.disasm = {
-	os << "fmuls" << (rc ? "." : "") << " f" << fd << ", f" << fa << ", f" << fc;
+	os << "fmuls" << (rc ? "." : "") << " f" << (unsigned int) fd << ", f" << (unsigned int) fa << ", f" << (unsigned int) fc;
 }
 
 op fres(59[6]:fd[5]:?[5]:fb[5]:?[5]:24[5]:rc[1])
@@ -709,7 +709,7 @@ fres.execute = {
 	if(unlikely(rc)) cpu->SetCR((cpu->GetCR() & ~(CONFIG::CR0_MASK >> 4)) | ((fpscr >> 4) & (CONFIG::CR0_MASK >> 4)));
 }
 fres.disasm = {
-	os << "fres" << (rc ? "." : "") << " f" << fd << ", f" << fb;
+	os << "fres" << (rc ? "." : "") << " f" << (unsigned int) fd << ", f" << (unsigned int) fb;
 }
 
 op frsqrte(63[6]:fd[5]:?[5]:fb[5]:?[5]:26[5]:rc[1])
@@ -853,7 +853,7 @@ frsqrte.execute = {
 	if(unlikely(rc)) cpu->SetCR((cpu->GetCR() & ~(CONFIG::CR0_MASK >> 4)) | ((fpscr >> 4) & (CONFIG::CR0_MASK >> 4)));
 }
 frsqrte.disasm = {
-	os << "frsqrte" << (rc ? "." : "") << " f" << fd << ", f" << fb;
+	os << "frsqrte" << (rc ? "." : "") << " f" << (unsigned int) fd << ", f" << (unsigned int) fb;
 }
 
 op fsub(63[6]:fd[5]:fa[5]:fb[5]:?[5]:20[5]:rc[1])
@@ -908,7 +908,7 @@ fsub.execute = {
 	if(unlikely(rc)) cpu->SetCR((cpu->GetCR() & ~(CONFIG::CR0_MASK >> 4)) | ((fpscr >> 4) & (CONFIG::CR0_MASK >> 4)));
 }
 fsub.disasm = {
-	os << "fsub" << (rc ? "." : "") << " f" << fd << ", f" << fa << ", f" << fb;
+	os << "fsub" << (rc ? "." : "") << " f" << (unsigned int) fd << ", f" << (unsigned int) fa << ", f" << (unsigned int) fb;
 }
 
 op fsubs(59[6]:fd[5]:fa[5]:fb[5]:?[5]:20[5]:rc[1])
@@ -966,7 +966,7 @@ fsubs.execute = {
 
 }
 fsubs.disasm = {
-	os << "fsubs" << (rc ? "." : "") << " f" << fd << ", f" << fa << ", f" << fb;
+	os << "fsubs" << (rc ? "." : "") << " f" << (unsigned int) fd << ", f" << (unsigned int) fa << ", f" << (unsigned int) fb;
 }
 
 op fsel(63[6]:fd[5]:fa[5]:fb[5]:fc[5]:23[5]:rc[1])
@@ -991,7 +991,7 @@ fsel.execute = {
 	if(unlikely(rc)) cpu->SetCR((cpu->GetCR() & ~(CONFIG::CR0_MASK >> 4)) | ((fpscr >> 4) & (CONFIG::CR0_MASK >> 4)));
 }
 fsel.disasm = {
-	os << "fsel" << (rc ? "." : "") << " f" << fd << ", f" << fa << ", f" << fc << ", f" << fb;
+	os << "fsel" << (rc ? "." : "") << " f" << (unsigned int) fd << ", f" << (unsigned int) fa << ", f" << (unsigned int) fc << ", f" << (unsigned int) fb;
 }
 
 op fsqrt(63[6]:fd[5]:?[5]:fb[5]:?[5]:22[5]:rc[1])
@@ -1000,7 +1000,7 @@ fsqrt.execute = {
 	throw IllegalInstructionException<CONFIG>();
 }
 fsqrt.disasm = {
-	os << "fsqrt" << (rc ? "." : "") << " f" << fd << ", f" << fb;
+	os << "fsqrt" << (rc ? "." : "") << " f" << (unsigned int) fd << ", f" << (unsigned int) fb;
 }
 
 op fsqrts(59[6]:fd[5]:?[5]:fb[5]:?[5]:22[5]:rc[1])
@@ -1009,7 +1009,7 @@ fsqrts.execute = {
 	throw IllegalInstructionException<CONFIG>();
 }
 fsqrts.disasm = {
-	os << "fsqrts" << (rc ? "." : "") << " f" << fd << ", f" << fb;
+	os << "fsqrts" << (rc ? "." : "") << " f" << (unsigned int) fd << ", f" << (unsigned int) fb;
 }
 
 /******************************************************
@@ -1072,7 +1072,7 @@ fmadd.execute = {
 	if(unlikely(rc)) cpu->SetCR((cpu->GetCR() & ~(CONFIG::CR0_MASK >> 4)) | ((fpscr >> 4) & (CONFIG::CR0_MASK >> 4)));
 }
 fmadd.disasm = {
-	os << "fmadd" << (rc ? "." : "") << " f" << fd << ", f" << fa << ", f" << fc << ", f" << fb;
+	os << "fmadd" << (rc ? "." : "") << " f" << (unsigned int) fd << ", f" << (unsigned int) fa << ", f" << (unsigned int) fc << ", f" << (unsigned int) fb;
 }
 
 op fmadds(59[6]:fd[5]:fa[5]:fb[5]:fc[5]:29[5]:rc[1])
@@ -1132,7 +1132,7 @@ fmadds.execute = {
 	if(unlikely(rc)) cpu->SetCR((cpu->GetCR() & ~(CONFIG::CR0_MASK >> 4)) | ((fpscr >> 4) & (CONFIG::CR0_MASK >> 4)));
 }
 fmadds.disasm = {
-	os << "fmadds" << (rc ? "." : "") << " f" << fd << ", f" << fa << ", f" << fc << ", f" << fb;
+	os << "fmadds" << (rc ? "." : "") << " f" << (unsigned int) fd << ", f" << (unsigned int) fa << ", f" << (unsigned int) fc << ", f" << (unsigned int) fb;
 }
 
 op fmsub(63[6]:fd[5]:fa[5]:fb[5]:fc[5]:28[5]:rc[1])
@@ -1189,7 +1189,7 @@ fmsub.execute = {
 	if(unlikely(rc)) cpu->SetCR((cpu->GetCR() & ~(CONFIG::CR0_MASK >> 4)) | ((fpscr >> 4) & (CONFIG::CR0_MASK >> 4)));
 }
 fmsub.disasm = {
-	os << "fmsub" << (rc ? "." : "") << " f" << fd << ", f" << fa << ", f" << fc << ", f" << fb;
+	os << "fmsub" << (rc ? "." : "") << " f" << (unsigned int) fd << ", f" << (unsigned int) fa << ", f" << (unsigned int) fc << ", f" << (unsigned int) fb;
 }
 
 op fmsubs(59[6]:fd[5]:fa[5]:fb[5]:fc[5]:28[5]:rc[1])
@@ -1249,7 +1249,7 @@ fmsubs.execute = {
 	if(unlikely(rc)) cpu->SetCR((cpu->GetCR() & ~(CONFIG::CR0_MASK >> 4)) | ((fpscr >> 4) & (CONFIG::CR0_MASK >> 4)));
 }
 fmsubs.disasm = {
-	os << "fmsubs" << (rc ? "." : "") << " f" << fd << ", f" << fa << ", f" << fc << ", f" << fb;
+	os << "fmsubs" << (rc ? "." : "") << " f" << (unsigned int) fd << ", f" << (unsigned int) fa << ", f" << (unsigned int) fc << ", f" << (unsigned int) fb;
 }
 
 op fnmadd(63[6]:fd[5]:fa[5]:fb[5]:fc[5]:31[5]:rc[1])
@@ -1309,7 +1309,7 @@ fnmadd.execute = {
 	if(unlikely(rc)) cpu->SetCR((cpu->GetCR() & ~(CONFIG::CR0_MASK >> 4)) | ((fpscr >> 4) & (CONFIG::CR0_MASK >> 4)));
 }
 fnmadd.disasm = {
-	os << "fnmadd" << (rc ? "." : "") << " f" << fd << ", f" << fa << ", f" << fc << ", f" << fb;
+	os << "fnmadd" << (rc ? "." : "") << " f" << (unsigned int) fd << ", f" << (unsigned int) fa << ", f" << (unsigned int) fc << ", f" << (unsigned int) fb;
 }
 
 op fnmadds(59[6]:fd[5]:fa[5]:fb[5]:fc[5]:31[5]:rc[1])
@@ -1372,7 +1372,7 @@ fnmadds.execute = {
 	if(unlikely(rc)) cpu->SetCR((cpu->GetCR() & ~(CONFIG::CR0_MASK >> 4)) | ((fpscr >> 4) & (CONFIG::CR0_MASK >> 4)));
 }
 fnmadds.disasm = {
-	os << "fnmadds" << (rc ? "." : "") << " f" << fd << ", f" << fa << ", f" << fc << ", f" << fb;
+	os << "fnmadds" << (rc ? "." : "") << " f" << (unsigned int) fd << ", f" << (unsigned int) fa << ", f" << (unsigned int) fc << ", f" << (unsigned int) fb;
 }
 
 op fnmsub(63[6]:fd[5]:fa[5]:fb[5]:fc[5]:30[5]:rc[1])
@@ -1432,7 +1432,7 @@ fnmsub.execute = {
 	if(unlikely(rc)) cpu->SetCR((cpu->GetCR() & ~(CONFIG::CR0_MASK >> 4)) | ((fpscr >> 4) & (CONFIG::CR0_MASK >> 4)));
 }
 fnmsub.disasm = {
-	os << "fnmsub" << (rc ? "." : "") << " f" << fd << ", f" << fa << ", f" << fc << ", f" << fb;
+	os << "fnmsub" << (rc ? "." : "") << " f" << (unsigned int) fd << ", f" << (unsigned int) fa << ", f" << (unsigned int) fc << ", f" << (unsigned int) fb;
 }
 
 op fnmsubs(59[6]:fd[5]:fa[5]:fb[5]:fc[5]:30[5]:rc[1])
@@ -1494,7 +1494,7 @@ fnmsubs.execute = {
 	if(unlikely(rc)) cpu->SetCR((cpu->GetCR() & ~(CONFIG::CR0_MASK >> 4)) | ((fpscr >> 4) & (CONFIG::CR0_MASK >> 4)));
 }
 fnmsubs.disasm = {
-	os << "fnmsubs" << (rc ? "." : "") << " f" << fd << ", f" << fa << ", f" << fc << ", f" << fb;
+	os << "fnmsubs" << (rc ? "." : "") << " f" << (unsigned int) fd << ", f" << (unsigned int) fa << ", f" << (unsigned int) fc << ", f" << (unsigned int) fb;
 }
 
 /**************************************************
@@ -1568,7 +1568,7 @@ fcmpo.execute = {
 	cpu->SetCR((cpu->GetCR() & ~(CONFIG::CR0_MASK >> (4 * crfD))) | (c << ((7 - crfD) * 4)));
 }
 fcmpo.disasm = {
-	os << "fcmpo cr" << crfD << ", f" << fa << ", f" << fb;
+	os << "fcmpo cr" << (unsigned int) crfD << ", f" << (unsigned int) fa << ", f" << (unsigned int) fb;
 }
 
 op fcmpu(63[6]:crfD[3]:?[2]:fa[5]:fb[5]:0[10]:?[1])
@@ -1628,7 +1628,7 @@ fcmpu.execute = {
 	cpu->SetCR((cpu->GetCR() & ~(CONFIG::CR0_MASK >> (4 * crfD))) | (c << ((7 - crfD) * 4)));
 }
 fcmpu.disasm = {
-	os << "fcmpu cr" << crfD << ", f" << fa << ", f" << fb;
+	os << "fcmpu cr" << (unsigned int) crfD << ", f" << (unsigned int) fa << ", f" << (unsigned int) fb;
 }
 
 /**************************************************
@@ -1704,7 +1704,7 @@ fctiw.execute = {
 	if(unlikely(rc)) cpu->SetCR((cpu->GetCR() & ~(CONFIG::CR0_MASK >> 4)) | ((fpscr >> 4) & (CONFIG::CR0_MASK >> 4)));
 }
 fctiw.disasm = {
-	os << "fctiw" << (rc ? "." : "") << " f" << fd << ", f" << fb;
+	os << "fctiw" << (rc ? "." : "") << " f" << (unsigned int) fd << ", f" << (unsigned int) fb;
 }
 
 
@@ -1776,7 +1776,7 @@ fctiwz.execute = {
 	if(unlikely(rc)) cpu->SetCR((cpu->GetCR() & ~(CONFIG::CR0_MASK >> 4)) | ((fpscr >> 4) & (CONFIG::CR0_MASK >> 4)));
 }
 fctiwz.disasm = {
-	os << "fctiwz" << (rc ? "." : "") << " f" << fd << ", f" << fb;
+	os << "fctiwz" << (rc ? "." : "") << " f" << (unsigned int) fd << ", f" << (unsigned int) fb;
 }
 
 op frsp(63[6]:fd[5]:?[5]:fb[5]:12[10]:rc[1])
@@ -1833,7 +1833,7 @@ frsp.execute = {
 	if(unlikely(rc)) cpu->SetCR((cpu->GetCR() & ~(CONFIG::CR0_MASK >> 4)) | ((fpscr >> 4) & (CONFIG::CR0_MASK >> 4)));
 }
 frsp.disasm = {
-	os << "frsp" << (rc ? "." : "") << " f" << fd << ", f" << fb;
+	os << "frsp" << (rc ? "." : "") << " f" << (unsigned int) fd << ", f" << (unsigned int) fb;
 }
 
 /**************************************************
@@ -1870,7 +1870,7 @@ fabs.execute = {
 	if(unlikely(rc)) cpu->SetCR((cpu->GetCR() & ~(CONFIG::CR0_MASK >> 4)) | ((fpscr >> 4) & (CONFIG::CR0_MASK >> 4)));
 }
 fabs.disasm = {
-	os << "fabs" << (rc ? "." : "") << " f" << fd << ", f" << fb;
+	os << "fabs" << (rc ? "." : "") << " f" << (unsigned int) fd << ", f" << (unsigned int) fb;
 }
 
 op fmr(63[6]:fd[5]:?[5]:fb[5]:72[10]:rc[1])
@@ -1890,7 +1890,7 @@ fmr.execute = {
 	if(unlikely(rc)) cpu->SetCR((cpu->GetCR() & ~(CONFIG::CR0_MASK >> 4)) | ((fpscr >> 4) & (CONFIG::CR0_MASK >> 4)));
 }
 fmr.disasm = {
-	os << "fmr" << (rc ? "." : "") << " f" << fd << ", f" << fb;
+	os << "fmr" << (rc ? "." : "") << " f" << (unsigned int) fd << ", f" << (unsigned int) fb;
 }
 
 op fnabs(63[6]:fd[5]:?[5]:fb[5]:136[10]:rc[1])
@@ -1921,7 +1921,7 @@ fnabs.execute = {
 	if(unlikely(rc)) cpu->SetCR((cpu->GetCR() & ~(CONFIG::CR0_MASK >> 4)) | ((fpscr >> 4) & (CONFIG::CR0_MASK >> 4)));
 }
 fnabs.disasm = {
-	os << "fnabs" << (rc ? "." : "") << " f" << fd << ", f" << fb;
+	os << "fnabs" << (rc ? "." : "") << " f" << (unsigned int) fd << ", f" << (unsigned int) fb;
 }
 
 op fneg(63[6]:fd[5]:?[5]:fb[5]:40[10]:rc[1])
@@ -1947,7 +1947,7 @@ fneg.execute = {
 	if(unlikely(rc)) cpu->SetCR((cpu->GetCR() & ~(CONFIG::CR0_MASK >> 4)) | ((fpscr >> 4) & (CONFIG::CR0_MASK >> 4)));
 }
 fneg.disasm = {
-	os << "fneg" << (rc ? "." : "") << " f" << fd << ", f" << fb;
+	os << "fneg" << (rc ? "." : "") << " f" << (unsigned int) fd << ", f" << (unsigned int) fb;
 }
 
 /*****************************************************************
@@ -1978,7 +1978,7 @@ mcrfs.execute = {
 		cpu->SetFPSCR(fpscr & ~(0xffUL << (4 * (7 - crfS)))); // clear bit field
 }
 mcrfs.disasm = {
-	os << "mcrfs cr" << crfD << ", cr" << crfS;
+	os << "mcrfs cr" << (unsigned int) crfD << ", cr" << (unsigned int) crfS;
 }
 
 op mffs(63[6]:fd[5]:?[10]:583[10]:rc[1])
@@ -2000,7 +2000,7 @@ mffs.execute = {
 	if(unlikely(rc)) cpu->SetCR((cpu->GetCR() & ~(CONFIG::CR0_MASK >> 4)) | ((fpscr >> 4) & (CONFIG::CR0_MASK >> 4)));
 }
 mffs.disasm = {
-	os << "mffs" << (rc ? "." : "") << " f" << fd;
+	os << "mffs" << (rc ? "." : "") << " f" << (unsigned int) fd;
 }
 
 op mtfsb0(63[6]:crbD[5]:?[10]:70[10]:rc[1])
@@ -2094,7 +2094,7 @@ mtfsf.execute = {
 	if(unlikely(rc)) cpu->SetCR((cpu->GetCR() & ~(CONFIG::CR0_MASK >> 4)) | ((fpscr >> 4) & (CONFIG::CR0_MASK >> 4)));
 }
 mtfsf.disasm = {
-	os << "mtfsf" << (rc ? "." : "") << " " << fm << ", f" << fb;
+	os << "mtfsf" << (rc ? "." : "") << " " << (unsigned int) fm << ", f" << (unsigned int) fb;
 }
 
 op mtfsfi(63[6]:crfD[3]:?[7]:imm[4]:?[1]:134[10]:rc[1])
@@ -2114,5 +2114,5 @@ mtfsfi.execute = {
 	if(unlikely(rc)) cpu->SetCR((cpu->GetCR() & ~(CONFIG::CR0_MASK >> 4)) | ((fpscr >> 4) & (CONFIG::CR0_MASK >> 4)));
 }
 mtfsfi.disasm = {
-	os << "mtfsfi" << (rc ? "." : "") << " cr" << crfD << ", " << imm;
+	os << "mtfsfi" << (rc ? "." : "") << " cr" << (unsigned int) crfD << ", " << (unsigned int) imm;
 }

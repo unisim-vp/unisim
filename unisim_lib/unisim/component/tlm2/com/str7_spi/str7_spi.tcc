@@ -229,8 +229,7 @@ namespace unisim {
                                         << ITRANS(trans) << endl
                                         << PHASE(phase) << endl
                                         << TIME(t) << EndDebugError;
-                                sc_stop();
-                                wait();
+                                Object::Stop(-1);
                                 break;
                         }
                         // this code should never be executed
@@ -239,8 +238,7 @@ namespace unisim {
                                 << ITRANS(trans) << endl
                                 << PHASE(phase) << endl
                                 << TIME(t) << EndDebugError;
-                        sc_stop();
-                        wait();
+                        Object::Stop(-1);
                         return tlm::TLM_COMPLETED;
                     }
 
@@ -273,8 +271,7 @@ namespace unisim {
                                         << LOCATION << endl
                                         << PHASE(phase) << endl
                                         << TIME(t) << EndDebugError;
-                                sc_stop();
-                                wait();
+                                Object::Stop(-1);
                                 break;
                         }
                         // this code should never be executed
@@ -282,8 +279,7 @@ namespace unisim {
                                 << LOCATION << endl
                                 << PHASE(phase) << endl
                                 << TIME(t) << EndDebugError;
-                        sc_stop();
-                        wait();
+                        Object::Stop(-1);
                         return tlm::TLM_COMPLETED;
                     }
 

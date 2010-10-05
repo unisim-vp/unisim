@@ -41,6 +41,7 @@
 #include <unisim/component/tlm2/memory/ram/memory.hh>
 
 #include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/debug/debug.hh>
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
 #include <unisim/service/loader/elf_loader/elf32_loader.hh>
@@ -73,7 +74,7 @@ static const bool DEBUG_INFORMATION = false;
 void SigIntHandler(int signum)
 {
 	cerr << "Interrupted by Ctrl-C or SIGINT signal" << endl;
-	sc_stop();
+	unisim::kernel::service::Simulator::simulator->Stop(0, 0);
 }
 
 using namespace std;
@@ -128,6 +129,7 @@ public:
 	void Run();
 	virtual unisim::kernel::service::Simulator::SetupStatus Setup();
 	virtual void Stop(Object *object, int exit_status);
+	int GetExitStatus() const;
 protected:
 private:
 
@@ -160,7 +162,7 @@ private:
 	IRQStub *hard_reset_stub;
 	IRQStub *soft_reset_stub;
 	IRQStub *mcp_slave_stub;
-	IRQStub *tea_slave_stub;
+//	IRQStub *tea_slave_stub;
 	IRQStub *smi_slave_stub;
 
 	//=========================================================================
@@ -194,6 +196,7 @@ private:
 	Parameter<bool> param_enable_inline_debugger;
 	Parameter<bool> param_estimate_power;
 
+	int exit_status;
 	static void LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator);
 };
 
@@ -207,7 +210,7 @@ Simulator::Simulator(int argc, char **argv)
 	, hard_reset_stub(0)
 	, soft_reset_stub(0)
 	, mcp_slave_stub(0)
-	, tea_slave_stub(0)
+//	, tea_slave_stub(0)
 	, smi_slave_stub(0)
 	, gdb_server(0)
 	, inline_debugger(0)
@@ -224,6 +227,7 @@ Simulator::Simulator(int argc, char **argv)
 	, param_enable_gdb_server("enable-gdb-server", 0, enable_gdb_server, "Enable/Disable GDB server instantiation")
 	, param_enable_inline_debugger("enable-inline-debugger", 0, enable_inline_debugger, "Enable/Disable inline debugger instantiation")
 	, param_estimate_power("estimate-power", 0, estimate_power, "Enable/Disable power estimators instantiation")
+	, exit_status(0)
 {
 	//=========================================================================
 	//===                     Component instantiations                      ===
@@ -237,7 +241,7 @@ Simulator::Simulator(int argc, char **argv)
 	hard_reset_stub = new IRQStub("hard-reset-stub");
 	soft_reset_stub = new IRQStub("soft-reset-stub");
 	mcp_slave_stub = new IRQStub("mcp-stub");
-	tea_slave_stub = new IRQStub("tea-stub");
+//	tea_slave_stub = new IRQStub("tea-stub");
 	smi_slave_stub = new IRQStub("smi-stub");
 
 	//=========================================================================
@@ -273,7 +277,7 @@ Simulator::Simulator(int argc, char **argv)
 	hard_reset_stub->irq_master_sock(cpu->hard_reset_slave_sock);
 	soft_reset_stub->irq_master_sock(cpu->soft_reset_slave_sock);
 	mcp_slave_stub->irq_master_sock(cpu->mcp_slave_sock);
-	tea_slave_stub->irq_master_sock(cpu->tea_slave_sock);
+//	tea_slave_stub->irq_master_sock(cpu->tea_slave_sock);
 	smi_slave_stub->irq_master_sock(cpu->smi_slave_sock);
 
 	//=========================================================================
@@ -334,7 +338,6 @@ Simulator::Simulator(int argc, char **argv)
 	linux_loader->memory_import >> memory->memory_export;
 	linux_loader->loader_import >> elf32_loader->loader_export;
 	cpu->linux_os_import >> linux_os->linux_os_export;
-	linux_os->cpu_linux_os_import >> cpu->cpu_linux_os_export;
 	linux_os->memory_import >> cpu->memory_export;
 	linux_os->memory_injection_import >> cpu->memory_injection_export;
 	linux_os->registers_import >> cpu->registers_export;
@@ -348,7 +351,7 @@ Simulator::~Simulator()
 	if(hard_reset_stub) delete hard_reset_stub;
 	if(soft_reset_stub) delete soft_reset_stub;
 	if(mcp_slave_stub) delete mcp_slave_stub;
-	if(tea_slave_stub) delete tea_slave_stub;
+//	if(tea_slave_stub) delete tea_slave_stub;
 	if(smi_slave_stub) delete smi_slave_stub;
 	if(memory) delete memory;
 	if(gdb_server) delete gdb_server;
@@ -575,12 +578,21 @@ unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
 	return unisim::kernel::service::Simulator::Setup();
 }
 
-void Simulator::Stop(Object *object, int exit_status)
+void Simulator::Stop(Object *object, int _exit_status)
 {
-	std::cerr << object->GetName() << " has requested simulation stop" << std::endl;
+	exit_status = _exit_status;
+	if(object)
+	{
+		std::cerr << object->GetName() << " has requested simulation stop" << std::endl << std::endl;
+	}
 	std::cerr << "Program exited with status " << exit_status << std::endl;
 	sc_stop();
 	wait();
+}
+
+int Simulator::GetExitStatus() const
+{
+	return exit_status;
 }
 
 int sc_main(int argc, char *argv[])
@@ -612,11 +624,12 @@ int sc_main(int argc, char *argv[])
 			break;
 	}
 
+	int exit_status = simulator->GetExitStatus();
 	if(simulator) delete simulator;
 #ifdef WIN32
 	// releases the winsock2 resources
 	WSACleanup();
 #endif
 
-	return 0;
+	return exit_status;
 }

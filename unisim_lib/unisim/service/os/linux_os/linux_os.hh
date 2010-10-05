@@ -52,7 +52,6 @@
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger.hh"
 #include "unisim/service/interfaces/linux_os.hh"
-#include "unisim/service/interfaces/cpu_linux_os.hh"
 #include "unisim/service/interfaces/loader.hh"
 #include "unisim/service/interfaces/memory.hh"
 #include "unisim/service/interfaces/memory_injection.hh"
@@ -80,7 +79,6 @@ using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::logger::Logger;
-using unisim::service::interfaces::CPULinuxOS;
 using unisim::service::interfaces::Loader;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::MemoryInjection;
@@ -92,7 +90,6 @@ template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 class LinuxOS :
 	public Service<unisim::service::interfaces::LinuxOS>,
 	public Service<unisim::service::interfaces::Loader<ADDRESS_TYPE> >,
-	public Client<CPULinuxOS>,
 	public Client<Memory<ADDRESS_TYPE> >,
 	public Client<MemoryInjection<ADDRESS_TYPE> >,
 	public Client<Registers>,
@@ -103,7 +100,6 @@ public:
 	ServiceExport<unisim::service::interfaces::Loader<ADDRESS_TYPE> > loader_export;
 
 	/* Imported services */
-	ServiceImport<CPULinuxOS>  cpu_linux_os_import;
 	ServiceImport<Memory<ADDRESS_TYPE> > memory_import;
 	ServiceImport<MemoryInjection<ADDRESS_TYPE> > memory_injection_import;
 	ServiceImport<Registers> registers_import;
