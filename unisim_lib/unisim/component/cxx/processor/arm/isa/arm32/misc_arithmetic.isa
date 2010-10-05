@@ -42,7 +42,11 @@
  * clz instruction
  */
 
-{ CONFIG::HAS_INSN_ARITH_CLZ
+{ STATE::MODEL == ARMV5T ||
+  STATE::MODEL == ARMV5TE ||
+  STATE::MODEL == ARMV5TEJ ||
+  STATE::MODEL == ARMV5TEXP ||
+  STATE::MODEL == ARMV6
 }:op clz(cond[4]:0b00010110[8]:sbo1[4]:rd[4]:sbo2[4]:0b0001[4]:rm[4])
 
 clz.disasm = {
@@ -52,11 +56,11 @@ clz.disasm = {
 }
 
 clz.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 	
-	typename CONFIG::reg_t src;
-	typename CONFIG::reg_t res;
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t src;
+	uint32_t res;
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -81,9 +85,9 @@ clz.execute = {
 
 group misc_arithmetic_rm_init(clz)
 misc_arithmetic_rm_init.initialize_rm_init = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	if(rm == CPU<CONFIG>::PC_reg) inherited::rm_init = 8;
+	if(rm == STATE::PC_reg) inherited::rm_init = 8;
 	else inherited::rm_init = 0;
 }
 

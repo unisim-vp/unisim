@@ -64,13 +64,7 @@ swi.execute = {
 
 	if(!cpu.CheckCondition(cond)) return;
 
-#ifdef SOCLIB
-	
-	throw SoftwareInterruptException<CONFIG>();
-	
-#else // SOCLIB
-	
-	if(cpu.linux_os_import) {
+	if(cpu.MODEL == ARMEMU) {
 		// we are executing on linux emulation mode
 		// use linux_os_import
 		try {
@@ -80,11 +74,9 @@ swi.execute = {
 		}
 	} else {		
 		// we are executing on full system mode
-		throw SoftwareInterruptException<CONFIG>();
+		throw SoftwareInterruptException<STATE>();
 	}
 	
-#endif // SOCLIB
-
 }
 
 /*
@@ -119,21 +111,13 @@ bkpt.execute = {
 	
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
-#ifdef SOCLIB
-	
-	throw PrefetchAbortException<CONFIG>();
-	
-#else // SOCLIB
-	
-	if(cpu.linux_os_import) {
+	if(cpu.MODEL == ARMEMU) {
 		// we are executing on linux emulation mode
 		// what should we do with this kind of call? ignore it
 	} else {
 		// we are executing on full system mode
-		throw PrefetchAbortException<CONFIG>();
+		throw PrefetchAbortException<STATE>();
 	}
-	
-#endif // SOCLIB
 	
 }
 

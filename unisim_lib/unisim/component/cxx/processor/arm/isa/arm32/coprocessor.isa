@@ -49,31 +49,31 @@ op cdp_1110(0b1110[4]:0b1110[4]:op1[4]:crn[4]:crd[4]:cp_num[4]:op2[3]:0b0[1]:crm
 group cdp(cdp_0xxx, cdp_10xx, cdp_110x, cdp_1110)
 
 cdp_0xxx.initialize_condition = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	inherited::cond_init = sub_cond;
 }
 
 cdp_10xx.initialize_condition = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	inherited::cond_init = 8 + sub_cond;
 }
 
 cdp_110x.initialize_condition = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	inherited::cond_init = 12 + sub_cond;
 }
 
 cdp_1110.initialize_condition = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	inherited::cond_init = 14;
 }
 
 cdp.disasm = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	buffer << "cdp";
 	DisasmCondition(inherited::cond_init, buffer);
@@ -86,7 +86,7 @@ cdp.disasm = {
 }
 
 cdp.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 	
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -109,25 +109,25 @@ op ldc_offset_110x(0b110[3]:sub_cond[1]:0b110[3]:/*p*/0b1[1]:/*u*/u[1]:/*n*/n[1]
 op ldc_offset_1110(0b1110[4]:0b110[3]:/*p*/0b1[1]:/*u*/u[1]:/*n*/n[1]:/*w*/0b0[1]:0b1[1]:rn[4]:crd[4]:cp_num[4]:offset[8])
 
 ldc_offset_0xxx.initialize_condition = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	inherited::cond_init = sub_cond;
 }
 
 ldc_offset_10xx.initialize_condition = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	inherited::cond_init = 8 + sub_cond;
 }
 
 ldc_offset_110x.initialize_condition = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	inherited::cond_init = 12 + sub_cond;
 }
 
 ldc_offset_1110.initialize_condition = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	inherited::cond_init = 14;
 }
@@ -140,25 +140,25 @@ op ldc_pre_110x(0b110[3]:sub_cond[1]:0b110[3]:/*p*/0b1[1]:/*u*/u[1]:/*n*/n[1]:/*
 op ldc_pre_1110(0b1110[4]:0b110[3]:/*p*/0b1[1]:/*u*/u[1]:/*n*/n[1]:/*w*/0b1[1]:0b1[1]:rn[4]:crd[4]:cp_num[4]:offset[8])
 
 ldc_pre_0xxx.initialize_condition = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	inherited::cond_init = sub_cond;
 }
 
 ldc_pre_10xx.initialize_condition = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	inherited::cond_init = 8 + sub_cond;
 }
 
 ldc_pre_110x.initialize_condition = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	inherited::cond_init = 12 + sub_cond;
 }
 
 ldc_pre_1110.initialize_condition = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	inherited::cond_init = 14;
 }
@@ -171,25 +171,25 @@ op ldc_post_110x(0b110[3]:sub_cond[1]:0b110[3]:/*p*/0b0[1]:/*u*/u[1]:/*n*/n[1]:/
 op ldc_post_1110(0b1110[4]:0b110[3]:/*p*/0b0[1]:/*u*/u[1]:/*n*/n[1]:/*w*/0b1[1]:0b1[1]:rn[4]:crd[4]:cp_num[4]:offset[8])
 
 ldc_post_0xxx.initialize_condition = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	inherited::cond_init = sub_cond;
 }
 
 ldc_post_10xx.initialize_condition = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	inherited::cond_init = 8 + sub_cond;
 }
 
 ldc_post_110x.initialize_condition = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	inherited::cond_init = 12 + sub_cond;
 }
 
 ldc_post_1110.initialize_condition = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	inherited::cond_init = 14;
 }
@@ -202,25 +202,25 @@ op ldc_unindexed_110x(0b110[3]:sub_cond[1]:0b110[3]:/*p*/0b0[1]:/*u*/0b1[1]:/*n*
 op ldc_unindexed_1110(0b1110[4]:0b110[3]:/*p*/0b0[1]:/*u*/0b1[1]:/*n*/n[1]:/*w*/0b0[1]:0b1[1]:rn[4]:crd[4]:cp_num[4]:option[8])
 
 ldc_unindexed_0xxx.initialize_condition = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	inherited::cond_init = sub_cond;
 }
 
 ldc_unindexed_10xx.initialize_condition = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	inherited::cond_init = 8 + sub_cond;
 }
 
 ldc_unindexed_110x.initialize_condition = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	inherited::cond_init = 12 + sub_cond;
 }
 
 ldc_unindexed_1110.initialize_condition = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	inherited::cond_init = 14;
 }
@@ -228,7 +228,7 @@ ldc_unindexed_1110.initialize_condition = {
 group ldc_unindexed(ldc_unindexed_0xxx, ldc_unindexed_10xx, ldc_unindexed_110x, ldc_unindexed_1110)
 
 ldc_offset.disasm = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	buffer << "ldc";
 	DisasmCondition(inherited::cond_init, buffer);
@@ -240,7 +240,7 @@ ldc_offset.disasm = {
 }
 
 ldc_pre.disasm = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	buffer << "ldc";
 	DisasmCondition(inherited::cond_init, buffer);
@@ -252,7 +252,7 @@ ldc_pre.disasm = {
 }
 
 ldc_post.disasm = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 	
 	buffer << "ldc";
 	DisasmCondition(inherited::cond_init, buffer);
@@ -264,7 +264,7 @@ ldc_post.disasm = {
 }
 
 ldc_unindexed.disasm = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	buffer << "ldc";
 	DisasmCondition(inherited::cond_init, buffer);
@@ -276,10 +276,10 @@ ldc_unindexed.disasm = {
 }
 
 ldc_offset.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::address_t address;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t address;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -292,10 +292,10 @@ ldc_offset.execute = {
 }
 
 ldc_pre.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::address_t address;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t address;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -309,10 +309,10 @@ ldc_pre.execute = {
 }
 
 ldc_post.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::address_t address;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t address;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -326,10 +326,10 @@ ldc_post.execute = {
 }
 
 ldc_unindexed.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::address_t address;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t address;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -356,31 +356,31 @@ op mcr_1110(0b1110[4]:0b1110[4]:op1[3]:0b0[1]:crn[4]:rd[4]:cp_num[4]:op2[3]:0b1[
 group mcr(mcr_0xxx, mcr_10xx, mcr_110x, mcr_1110)
 
 mcr_0xxx.initialize_condition = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	inherited::cond_init = sub_cond;
 }
 
 mcr_10xx.initialize_condition = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	inherited::cond_init = 8 + sub_cond;
 }
 
 mcr_110x.initialize_condition = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	inherited::cond_init = 12 + sub_cond;
 }
 
 mcr_1110.initialize_condition = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	inherited::cond_init = 14;
 }
 
 mcr.disasm = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 	
 	buffer << "mcr";
 	DisasmCondition(inherited::cond_init, buffer);
@@ -393,7 +393,7 @@ mcr.disasm = {
 }
 
 mcr.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -417,31 +417,31 @@ op mrc_1110(0b1110[4]:0b1110[4]:op1[3]:0b1[1]:crn[4]:rd[4]:cp_num[4]:op2[3]:0b1[
 group mrc(mrc_0xxx, mrc_10xx, mrc_110x, mrc_1110)
 
 mrc_0xxx.initialize_condition = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	inherited::cond_init = sub_cond;
 }
 
 mrc_10xx.initialize_condition = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	inherited::cond_init = 8 + sub_cond;
 }
 
 mrc_110x.initialize_condition = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	inherited::cond_init = 12 + sub_cond;
 }
 
 mrc_1110.initialize_condition = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	inherited::cond_init = 14;
 }
 
 mrc.disasm = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	buffer << "mrc";
 	DisasmCondition(inherited::cond_init, buffer);
@@ -454,7 +454,7 @@ mrc.disasm = {
 }
 
 mrc.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -477,25 +477,25 @@ op stc_offset_110x(0b110[3]:sub_cond[1]:0b110[3]:/*p*/0b1[1]:/*u*/u[1]:/*n*/n[1]
 op stc_offset_1110(0b1110[4]:0b110[3]:/*p*/0b1[1]:/*u*/u[1]:/*n*/n[1]:/*w*/0b0[1]:0b0[1]:rn[4]:crd[4]:cp_num[4]:offset[8])
 
 stc_offset_0xxx.initialize_condition = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	inherited::cond_init = sub_cond;
 }
 
 stc_offset_10xx.initialize_condition = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	inherited::cond_init = 8 + sub_cond;
 }
 
 stc_offset_110x.initialize_condition = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	inherited::cond_init = 12 + sub_cond;
 }
 
 stc_offset_1110.initialize_condition = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 	
 	inherited::cond_init = 14;
 }
@@ -508,25 +508,25 @@ op stc_pre_110x(0b110[3]:sub_cond[1]:0b110[3]:/*p*/0b1[1]:/*u*/u[1]:/*n*/n[1]:/*
 op stc_pre_1110(0b1110[4]:0b110[3]:/*p*/0b1[1]:/*u*/u[1]:/*n*/n[1]:/*w*/0b1[1]:0b0[1]:rn[4]:crd[4]:cp_num[4]:offset[8])
 
 stc_pre_0xxx.initialize_condition = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	inherited::cond_init = sub_cond;
 }
 
 stc_pre_10xx.initialize_condition = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	inherited::cond_init = 8 + sub_cond;
 }
 
 stc_pre_110x.initialize_condition = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	inherited::cond_init = 12 + sub_cond;
 }
 
 stc_pre_1110.initialize_condition = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 	
 	inherited::cond_init = 14;
 }
@@ -539,25 +539,25 @@ op stc_post_110x(0b110[3]:sub_cond[1]:0b110[3]:/*p*/0b0[1]:/*u*/u[1]:/*n*/n[1]:/
 op stc_post_1110(0b1110[4]:0b110[3]:/*p*/0b0[1]:/*u*/u[1]:/*n*/n[1]:/*w*/0b1[1]:0b0[1]:rn[4]:crd[4]:cp_num[4]:offset[8])
 
 stc_post_0xxx.initialize_condition = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	inherited::cond_init = sub_cond;
 }
 
 stc_post_10xx.initialize_condition = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	inherited::cond_init = 8 + sub_cond;
 }
 
 stc_post_110x.initialize_condition = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 	
 	inherited::cond_init = 12 + sub_cond;
 }
 
 stc_post_1110.initialize_condition = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	inherited::cond_init = 14;
 }
@@ -570,25 +570,25 @@ op stc_unindexed_110x(0b110[3]:sub_cond[1]:0b110[3]:/*p*/0b0[1]:/*u*/0b1[1]:/*n*
 op stc_unindexed_1110(0b1110[4]:0b110[3]:/*p*/0b0[1]:/*u*/0b1[1]:/*n*/n[1]:/*w*/0b0[1]:0b0[1]:rn[4]:crd[4]:cp_num[4]:option[8])
 
 stc_unindexed_0xxx.initialize_condition = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	inherited::cond_init = sub_cond;
 }
 
 stc_unindexed_10xx.initialize_condition = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	inherited::cond_init = 8 + sub_cond;
 }
 
 stc_unindexed_110x.initialize_condition = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	inherited::cond_init = 12 + sub_cond;
 }
 
 stc_unindexed_1110.initialize_condition = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	inherited::cond_init = 14;
 }
@@ -596,7 +596,7 @@ stc_unindexed_1110.initialize_condition = {
 group stc_unindexed(stc_unindexed_0xxx, stc_unindexed_10xx, stc_unindexed_110x, stc_unindexed_1110)
 
 stc_offset.disasm = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	buffer << "stc";
 	DisasmCondition(inherited::cond_init, buffer);
@@ -608,7 +608,7 @@ stc_offset.disasm = {
 }	
 
 stc_pre.disasm = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	buffer << "stc";
 	DisasmCondition(inherited::cond_init, buffer);
@@ -620,7 +620,7 @@ stc_pre.disasm = {
 }
 
 stc_post.disasm = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	buffer << "stc";
 	DisasmCondition(inherited::cond_init, buffer);
@@ -632,7 +632,7 @@ stc_post.disasm = {
 }
 
 stc_unindexed.disasm = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	buffer << "stc";
 	DisasmCondition(inherited::cond_init, buffer);
@@ -644,10 +644,10 @@ stc_unindexed.disasm = {
 }
 
 stc_offset.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::address_t address;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t address;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -660,10 +660,10 @@ stc_offset.execute = {
 }	
 
 stc_pre.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::address_t address;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t address;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -677,10 +677,10 @@ stc_pre.execute = {
 }
 
 stc_post.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::address_t address;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t address;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -694,10 +694,10 @@ stc_post.execute = {
 }
 
 stc_unindexed.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::address_t address;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t address;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -718,7 +718,7 @@ group coprocessor_rn_init(ldc_offset_0xxx, ldc_offset_10xx, ldc_offset_110x, ldc
                           stc_offset_0xxx, stc_offset_10xx, stc_offset_110x, stc_offset_1110, \
                           stc_unindexed_0xxx, stc_unindexed_10xx, stc_unindexed_110x, stc_unindexed_1110)
 coprocessor_rn_init.initialize_rn_init = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	if(rn == 15) inherited::rn_init = 8;
 	else inherited::rn_init = 0;
@@ -728,7 +728,11 @@ coprocessor_rn_init.initialize_rn_init = {
  * cdp2 instruction
  */
 
-{ CONFIG::HAS_INSN_COPROCESSOR_ALTER_OPS
+{ STATE::MODEL == ARMV5T ||
+  STATE::MODEL == ARMV5TE ||
+  STATE::MODEL == ARMV5TEJ ||
+  STATE::MODEL == ARMV5TEXP ||
+  STATE::MODEL == ARMV6
 }:op cdp2(0b1111[4]:0b1110[4]:op1[4]:crn[4]:crd[4]:cp_num[4]:op2[3]:0b0[1]:crm[4])
 
 cdp2.disasm = {
@@ -755,13 +759,29 @@ cdp2.execute = {
  * ldc2 instruction
  */
 
-{ CONFIG::HAS_INSN_COPROCESSOR_ALTER_LOADS
+{ STATE::MODEL == ARMV5T ||
+  STATE::MODEL == ARMV5TE ||
+  STATE::MODEL == ARMV5TEJ ||
+  STATE::MODEL == ARMV5TEXP ||
+  STATE::MODEL == ARMV6
 }:op ldc2_offset(0b1111[4]:0b110[3]:/*p*/0b1[1]:/*u*/u[1]:/*n*/n[1]:/*w*/0b0[1]:0b1[1]:rn[4]:crd[4]:cp_num[4]:offset[8])
-{ CONFIG::HAS_INSN_COPROCESSOR_ALTER_LOADS
+{ STATE::MODEL == ARMV5T ||
+  STATE::MODEL == ARMV5TE ||
+  STATE::MODEL == ARMV5TEJ ||
+  STATE::MODEL == ARMV5TEXP ||
+  STATE::MODEL == ARMV6
 }:op ldc2_pre(0b1111[4]:0b110[3]:/*p*/0b1[1]:/*u*/u[1]:/*n*/n[1]:/*w*/0b1[1]:0b1[1]:rn[4]:crd[4]:cp_num[4]:offset[8])
-{ CONFIG::HAS_INSN_COPROCESSOR_ALTER_LOADS
+{ STATE::MODEL == ARMV5T ||
+  STATE::MODEL == ARMV5TE ||
+  STATE::MODEL == ARMV5TEJ ||
+  STATE::MODEL == ARMV5TEXP ||
+  STATE::MODEL == ARMV6
 }:op ldc2_post(0b1111[4]:0b110[3]:/*p*/0b0[1]:/*u*/u[1]:/*n*/n[1]:/*w*/0b1[1]:0b1[1]:rn[4]:crd[4]:cp_num[4]:offset[8])
-{ CONFIG::HAS_INSN_COPROCESSOR_ALTER_LOADS
+{ STATE::MODEL == ARMV5T ||
+  STATE::MODEL == ARMV5TE ||
+  STATE::MODEL == ARMV5TEJ ||
+  STATE::MODEL == ARMV5TEXP ||
+  STATE::MODEL == ARMV6
 }:op ldc2_unindexed(0b1111[4]:0b110[3]:/*p*/0b0[1]:/*u*/u[1]:/*n*/n[1]:/*w*/0b0[1]:0b1[1]:rn[4]:crd[4]:cp_num[4]:option[8])
 
 ldc2_offset.disasm = {
@@ -792,7 +812,7 @@ ldc2_post.disasm = {
 }
 
 ldc2_unindexed.disasm = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 	
 	buffer << "ldc";
 	DisasmCondition(inherited::cond_init, buffer);
@@ -804,10 +824,10 @@ ldc2_unindexed.disasm = {
 }
 
 ldc2_offset.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::address_t address;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t address;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -818,10 +838,10 @@ ldc2_offset.execute = {
 }
 
 ldc2_pre.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::address_t address;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t address;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -833,10 +853,10 @@ ldc2_pre.execute = {
 }
 
 ldc2_post.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::address_t address;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t address;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -848,10 +868,10 @@ ldc2_post.execute = {
 }
 
 ldc2_unindexed.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::address_t address;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t address;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -869,7 +889,11 @@ ldc2_unindexed.execute = {
  * mcr2 instruction
  */
 
-{ CONFIG::HAS_INSN_COPROCESSOR_ALTER_MOVES
+{ STATE::MODEL == ARMV5T ||
+  STATE::MODEL == ARMV5TE ||
+  STATE::MODEL == ARMV5TEJ ||
+  STATE::MODEL == ARMV5TEXP ||
+  STATE::MODEL == ARMV6
 }:op mcr2(0b1111[4]:0b1110[4]:op1[3]:0b0[1]:crn[4]:rd[4]:cp_num[4]:op2[3]:0b1[1]:crm[4])
 
 mcr2.disasm = {
@@ -896,7 +920,11 @@ mcr2.execute = {
  * mrc2 instruction
  */
 
-{ CONFIG::HAS_INSN_COPROCESSOR_ALTER_MOVES
+{ STATE::MODEL == ARMV5T ||
+  STATE::MODEL == ARMV5TE ||
+  STATE::MODEL == ARMV5TEJ ||
+  STATE::MODEL == ARMV5TEXP ||
+  STATE::MODEL == ARMV6
 }:op mrc2(0b1111[4]:0b1110[4]:op1[3]:0b1[1]:crn[4]:rd[4]:cp_num[4]:op2[3]:0b1[1]:crm[4])
 
 mrc2.disasm = {
@@ -923,13 +951,29 @@ mrc2.execute = {
  * stc2 instruction
  */
 
-{ CONFIG::HAS_INSN_COPROCESSOR_ALTER_STORES
+{ STATE::MODEL == ARMV5T ||
+  STATE::MODEL == ARMV5TE ||
+  STATE::MODEL == ARMV5TEJ ||
+  STATE::MODEL == ARMV5TEXP ||
+  STATE::MODEL == ARMV6
 }:op stc2_offset(0b1111[4]:0b110[3]:/*p*/0b1[1]:/*u*/u[1]:/*n*/n[1]:/*w*/0b0[1]:0b0[1]:rn[4]:crd[4]:cp_num[4]:offset[8])
-{ CONFIG::HAS_INSN_COPROCESSOR_ALTER_STORES
+{ STATE::MODEL == ARMV5T ||
+  STATE::MODEL == ARMV5TE ||
+  STATE::MODEL == ARMV5TEJ ||
+  STATE::MODEL == ARMV5TEXP ||
+  STATE::MODEL == ARMV6
 }:op stc2_pre(0b1111[4]:0b110[3]:/*p*/0b1[1]:/*u*/u[1]:/*n*/n[1]:/*w*/0b1[1]:0b0[1]:rn[4]:crd[4]:cp_num[4]:offset[8])
-{ CONFIG::HAS_INSN_COPROCESSOR_ALTER_STORES
+{ STATE::MODEL == ARMV5T ||
+  STATE::MODEL == ARMV5TE ||
+  STATE::MODEL == ARMV5TEJ ||
+  STATE::MODEL == ARMV5TEXP ||
+  STATE::MODEL == ARMV6
 }:op stc2_post(0b1111[4]:0b110[3]:/*p*/0b0[1]:/*u*/u[1]:/*n*/n[1]:/*w*/0b1[1]:0b0[1]:rn[4]:crd[4]:cp_num[4]:offset[8])
-{ CONFIG::HAS_INSN_COPROCESSOR_ALTER_STORES
+{ STATE::MODEL == ARMV5T ||
+  STATE::MODEL == ARMV5TE ||
+  STATE::MODEL == ARMV5TEJ ||
+  STATE::MODEL == ARMV5TEXP ||
+  STATE::MODEL == ARMV6
 }:op stc2_unindexed(0b1111[4]:0b110[3]:/*p*/0b0[1]:/*u*/u[1]:/*n*/n[1]:/*w*/0b0[1]:0b0[1]:rn[4]:crd[4]:cp_num[4]:option[8])
 
 stc2_offset.disasm = {
@@ -969,10 +1013,10 @@ stc2_unindexed.disasm = {
 }
 
 stc2_offset.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::address_t address;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t address;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -983,10 +1027,10 @@ stc2_offset.execute = {
 }	
 
 stc2_pre.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::address_t address;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t address;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -998,10 +1042,10 @@ stc2_pre.execute = {
 }
 
 stc2_post.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::address_t address;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t address;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -1013,10 +1057,10 @@ stc2_post.execute = {
 }
 
 stc2_unindexed.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::address_t address;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t address;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -1031,8 +1075,8 @@ stc2_unindexed.execute = {
 
 group coprocessor_v5_rn_init(ldc2_offset, ldc2_unindexed, stc2_offset, stc2_unindexed)
 coprocessor_v5_rn_init.initialize_rn_init = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	if(rn == CPU<CONFIG>::PC_reg) inherited::rn_init = 8;
+	if(rn == STATE::PC_reg) inherited::rn_init = 8;
 	else inherited::rn_init = 0;
 }

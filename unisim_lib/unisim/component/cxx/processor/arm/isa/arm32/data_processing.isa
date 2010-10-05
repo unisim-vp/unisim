@@ -116,11 +116,11 @@ ands_reg_shift.disasm = {
 }
 
 and_32imm.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t s1, s2;
+	uint32_t res;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -134,12 +134,12 @@ and_32imm.execute = {
 }
 
 and_imm_shift.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t s1, s2;
+	uint32_t res;
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -152,13 +152,13 @@ and_imm_shift.execute = {
 }
 
 and_reg_shift.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t s1, s2;
+	uint32_t res;
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -171,12 +171,12 @@ and_reg_shift.execute = {
 }
 
 ands_32imm.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
+	uint32_t s1, s2;
+	uint32_t res;
 	bool shift_carry_out = false;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -198,13 +198,13 @@ ands_32imm.execute = {
 }
 
 ands_imm_shift.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
+	uint32_t s1, s2;
+	uint32_t res;
 	bool shift_carry_out = false;
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -227,14 +227,14 @@ ands_imm_shift.execute = {
 }
 
 ands_reg_shift.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
+	uint32_t s1, s2;
+	uint32_t res;
 	bool shift_carry_out = false;
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -338,11 +338,11 @@ eors_reg_shift.disasm = {
 }
 
 eor_32imm.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t s1, s2;
+	uint32_t res;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -355,12 +355,12 @@ eor_32imm.execute = {
 }
 
 eor_imm_shift.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t s1, s2;
+	uint32_t res;
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -373,13 +373,13 @@ eor_imm_shift.execute = {
 }
 
 eor_reg_shift.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t s1, s2;
+	uint32_t res;
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
   
@@ -392,12 +392,12 @@ eor_reg_shift.execute = {
 }
 
 eors_32imm.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
+	uint32_t s1, s2;
+	uint32_t res;
 	bool shift_carry_out = false;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 	
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 	
@@ -419,13 +419,13 @@ eors_32imm.execute = {
 }
 
 eors_imm_shift.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
+	uint32_t s1, s2;
+	uint32_t res;
 	bool shift_carry_out = false;
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -448,14 +448,14 @@ eors_imm_shift.execute = {
 }
 
 eors_reg_shift.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
+	uint32_t s1, s2;
+	uint32_t res;
 	bool shift_carry_out = false;
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -559,11 +559,11 @@ subs_reg_shift.disasm = {
 }
 
 sub_32imm.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t s1, s2;
+	uint32_t res;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -576,12 +576,12 @@ sub_32imm.execute = {
 }
 
 sub_imm_shift.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t s1, s2;
+	uint32_t res;
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 	
@@ -594,13 +594,13 @@ sub_imm_shift.execute = {
 }
 
 sub_reg_shift.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t s1, s2;
+	uint32_t res;
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -613,11 +613,11 @@ sub_reg_shift.execute = {
 }
 
 subs_32imm.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t s1, s2;
+	uint32_t res;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -633,18 +633,18 @@ subs_32imm.execute = {
 	} else {
 		cpu.SetCPSR_N(res & 0x80000000);
 		cpu.SetCPSR_Z(res == 0);
-		cpu.SetCPSR_C(!cpu.BorrowFrom(res, s1, s2)); // to check
-		cpu.SetCPSR_V(cpu.SubtractionOverflowFrom(res, s1, s2)); // to check
+		cpu.SetCPSR_C(!BorrowFrom(res, s1, s2)); // to check
+		cpu.SetCPSR_V(SubtractionOverflowFrom(res, s1, s2)); // to check
 	}
 }
 
 subs_imm_shift.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t s1, s2;
+	uint32_t res;
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -660,19 +660,19 @@ subs_imm_shift.execute = {
 	} else {
 		cpu.SetCPSR_N(res & 0x80000000);
 		cpu.SetCPSR_Z(res == 0);
-		cpu.SetCPSR_C(!cpu.BorrowFrom(res, s1, s2)); // to check
-		cpu.SetCPSR_V(cpu.SubtractionOverflowFrom(res, s1, s2)); // to check
+		cpu.SetCPSR_C(!BorrowFrom(res, s1, s2)); // to check
+		cpu.SetCPSR_V(SubtractionOverflowFrom(res, s1, s2)); // to check
 	}
 }
 
 subs_reg_shift.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t s1, s2;
+	uint32_t res;
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -688,8 +688,8 @@ subs_reg_shift.execute = {
 	} else {
 		cpu.SetCPSR_N(res & 0x80000000);
 		cpu.SetCPSR_Z(res == 0);
-		cpu.SetCPSR_C(!cpu.BorrowFrom(res, s1, s2)); // to check
-		cpu.SetCPSR_V(cpu.SubtractionOverflowFrom(res, s1, s2)); // to check
+		cpu.SetCPSR_C(!BorrowFrom(res, s1, s2)); // to check
+		cpu.SetCPSR_V(SubtractionOverflowFrom(res, s1, s2)); // to check
 	}
 }
 
@@ -775,11 +775,11 @@ rsbs_reg_shift.disasm = {
 }
 
 rsb_32imm.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t s1, s2;
+	uint32_t res;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 	
@@ -792,12 +792,12 @@ rsb_32imm.execute = {
 }
 
 rsb_imm_shift.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 	
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t s1, s2;
+	uint32_t res;
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -810,13 +810,13 @@ rsb_imm_shift.execute = {
 }
 
 rsb_reg_shift.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t s1, s2;
+	uint32_t res;
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -829,11 +829,11 @@ rsb_reg_shift.execute = {
 }
 
 rsbs_32imm.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t s1, s2;
+	uint32_t res;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -849,18 +849,18 @@ rsbs_32imm.execute = {
 	} else {
 		cpu.SetCPSR_N(res & 0x80000000);
 		cpu.SetCPSR_Z(res == 0);
-		cpu.SetCPSR_C(!cpu.BorrowFrom(res, s2, s1)); // to check
-		cpu.SetCPSR_V(cpu.SubtractionOverflowFrom(res, s2, s1)); // to check
+		cpu.SetCPSR_C(!BorrowFrom(res, s2, s1)); // to check
+		cpu.SetCPSR_V(SubtractionOverflowFrom(res, s2, s1)); // to check
 	}
 }
 
 rsbs_imm_shift.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t s1, s2;
+	uint32_t res;
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -876,19 +876,19 @@ rsbs_imm_shift.execute = {
 	} else {
 		cpu.SetCPSR_N(res & 0x80000000);
 		cpu.SetCPSR_Z(res == 0);
-		cpu.SetCPSR_C(!cpu.BorrowFrom(res, s2, s1)); // to check
-		cpu.SetCPSR_V(cpu.SubtractionOverflowFrom(res, s2, s1)); // to check
+		cpu.SetCPSR_C(!BorrowFrom(res, s2, s1)); // to check
+		cpu.SetCPSR_V(SubtractionOverflowFrom(res, s2, s1)); // to check
 	}
 }
 
 rsbs_reg_shift.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t s1, s2;
+	uint32_t res;
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -904,8 +904,8 @@ rsbs_reg_shift.execute = {
 	} else {
 		cpu.SetCPSR_N(res & 0x80000000);
 		cpu.SetCPSR_Z(res == 0);
-		cpu.SetCPSR_C(!cpu.BorrowFrom(res, s2, s1)); // to check
-		cpu.SetCPSR_V(cpu.SubtractionOverflowFrom(res, s2, s1)); // to check
+		cpu.SetCPSR_C(!BorrowFrom(res, s2, s1)); // to check
+		cpu.SetCPSR_V(SubtractionOverflowFrom(res, s2, s1)); // to check
 	}
 }
 
@@ -991,11 +991,11 @@ adds_reg_shift.disasm = {
 }
 
 add_32imm.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
   
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t s1, s2;
+	uint32_t res;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -1008,12 +1008,12 @@ add_32imm.execute = {
 }
 
 add_imm_shift.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t s1, s2;
+	uint32_t res;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -1026,13 +1026,13 @@ add_imm_shift.execute = {
 }
 
 add_reg_shift.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t s1, s2;
+	uint32_t res;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -1045,11 +1045,11 @@ add_reg_shift.execute = {
 }
 
 adds_32imm.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t s1, s2;
+	uint32_t res;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 	uint8_t carry_out;
 	uint8_t overflow_out;
 	uint8_t sign;
@@ -1075,12 +1075,12 @@ adds_32imm.execute = {
 }
 
 adds_imm_shift.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 	
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t s1, s2;
+	uint32_t res;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
 	uint8_t carry_out;
 	uint8_t overflow_out;
 	uint8_t sign;
@@ -1106,13 +1106,13 @@ adds_imm_shift.execute = {
 }
 
 adds_reg_shift.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t s1, s2;
+	uint32_t res;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
 	uint8_t carry_out;
 	uint8_t overflow_out;
 	uint8_t sign;
@@ -1219,12 +1219,12 @@ adcs_reg_shift.disasm = {
 }
 
 adc_32imm.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
-	typename CONFIG::reg_t carry_in;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t s1, s2;
+	uint32_t res;
+	uint32_t carry_in;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -1238,13 +1238,13 @@ adc_32imm.execute = {
 }
 
 adc_imm_shift.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 	
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
-	typename CONFIG::reg_t carry_in;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t s1, s2;
+	uint32_t res;
+	uint32_t carry_in;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -1258,14 +1258,14 @@ adc_imm_shift.execute = {
 }
 
 adc_reg_shift.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
-	typename CONFIG::reg_t carry_in;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t s1, s2;
+	uint32_t res;
+	uint32_t carry_in;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -1279,12 +1279,12 @@ adc_reg_shift.execute = {
 }
 
 adcs_32imm.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
+	uint32_t s1, s2;
+	uint32_t res;
 	uint8_t carry_in;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 	uint8_t carry_out;
 	uint8_t overflow_out;
 	uint8_t sign;
@@ -1311,13 +1311,13 @@ adcs_32imm.execute = {
 }
 
 adcs_imm_shift.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
+	uint32_t s1, s2;
+	uint32_t res;
 	uint8_t carry_in;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
 	uint8_t carry_out;
 	uint8_t overflow_out;
 	uint8_t sign;
@@ -1344,14 +1344,14 @@ adcs_imm_shift.execute = {
 }
 
 adcs_reg_shift.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
+	uint32_t s1, s2;
+	uint32_t res;
 	uint8_t carry_in;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
 	uint8_t carry_out;
 	uint8_t overflow_out;
 	uint8_t sign;
@@ -1459,12 +1459,12 @@ sbcs_reg_shift.disasm = {
 }
 
 sbc_32imm.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
-	typename CONFIG::reg_t in_neg_carry;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t s1, s2;
+	uint32_t res;
+	uint32_t in_neg_carry;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -1478,13 +1478,13 @@ sbc_32imm.execute = {
 }
 
 sbc_imm_shift.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
-	typename CONFIG::reg_t in_neg_carry;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t s1, s2;
+	uint32_t res;
+	uint32_t in_neg_carry;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -1498,14 +1498,14 @@ sbc_imm_shift.execute = {
 }
 
 sbc_reg_shift.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
-	typename CONFIG::reg_t in_neg_carry;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t s1, s2;
+	uint32_t res;
+	uint32_t in_neg_carry;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -1519,12 +1519,12 @@ sbc_reg_shift.execute = {
 }
 
 sbcs_32imm.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 	
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
-	typename CONFIG::reg_t in_neg_carry;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t s1, s2;
+	uint32_t res;
+	uint32_t in_neg_carry;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -1541,19 +1541,19 @@ sbcs_32imm.execute = {
 	} else {
 		cpu.SetCPSR_N(res & 0x80000000);
 		cpu.SetCPSR_Z(res == 0);
-		cpu.SetCPSR_C(!cpu.BorrowFrom(res, s1, s2, in_neg_carry)); // to check
-		cpu.SetCPSR_V(cpu.SubtractionOverflowFrom(res, s1, s2, in_neg_carry)); // to check
+		cpu.SetCPSR_C(!BorrowFrom(res, s1, s2, in_neg_carry)); // to check
+		cpu.SetCPSR_V(SubtractionOverflowFrom(res, s1, s2, in_neg_carry)); // to check
 	}
 }
 
 sbcs_imm_shift.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
-	typename CONFIG::reg_t in_neg_carry;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t s1, s2;
+	uint32_t res;
+	uint32_t in_neg_carry;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -1570,20 +1570,20 @@ sbcs_imm_shift.execute = {
 	} else {
 		cpu.SetCPSR_N(res & 0x80000000);
 		cpu.SetCPSR_Z(res == 0);
-		cpu.SetCPSR_C(!cpu.BorrowFrom(res, s1, s2, in_neg_carry)); // to check
-		cpu.SetCPSR_V(cpu.SubtractionOverflowFrom(res, s1, s2, in_neg_carry)); // to check
+		cpu.SetCPSR_C(!BorrowFrom(res, s1, s2, in_neg_carry)); // to check
+		cpu.SetCPSR_V(SubtractionOverflowFrom(res, s1, s2, in_neg_carry)); // to check
 	}
 }
 
 sbcs_reg_shift.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
-	typename CONFIG::reg_t in_neg_carry;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t s1, s2;
+	uint32_t res;
+	uint32_t in_neg_carry;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -1600,8 +1600,8 @@ sbcs_reg_shift.execute = {
 	} else {
 		cpu.SetCPSR_N(res & 0x80000000);
 		cpu.SetCPSR_Z(res == 0);
-		cpu.SetCPSR_C(!cpu.BorrowFrom(res, s1, s2, in_neg_carry)); // to check
-		cpu.SetCPSR_V(cpu.SubtractionOverflowFrom(res, s1, s2, in_neg_carry)); // to check
+		cpu.SetCPSR_C(!BorrowFrom(res, s1, s2, in_neg_carry)); // to check
+		cpu.SetCPSR_V(SubtractionOverflowFrom(res, s1, s2, in_neg_carry)); // to check
 	}
 }
 
@@ -1687,12 +1687,12 @@ rscs_reg_shift.disasm = {
 }
 
 rsc_32imm.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
-	typename CONFIG::reg_t in_neg_carry;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t s1, s2;
+	uint32_t res;
+	uint32_t in_neg_carry;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -1706,13 +1706,13 @@ rsc_32imm.execute = {
 }
 
 rsc_imm_shift.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
-	typename CONFIG::reg_t in_neg_carry;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t s1, s2;
+	uint32_t res;
+	uint32_t in_neg_carry;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
 	
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 	
@@ -1726,14 +1726,14 @@ rsc_imm_shift.execute = {
 }
 
 rsc_reg_shift.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
-	typename CONFIG::reg_t in_neg_carry;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t s1, s2;
+	uint32_t res;
+	uint32_t in_neg_carry;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -1747,12 +1747,12 @@ rsc_reg_shift.execute = {
 }
 
 rscs_32imm.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
-	typename CONFIG::reg_t in_neg_carry;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t s1, s2;
+	uint32_t res;
+	uint32_t in_neg_carry;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 	
@@ -1769,19 +1769,19 @@ rscs_32imm.execute = {
 	} else {
 		cpu.SetCPSR_N(res & 0x80000000);
 		cpu.SetCPSR_Z(res == 0);
-		cpu.SetCPSR_C(!cpu.BorrowFrom(res, s2, s1, in_neg_carry)); // to check
-		cpu.SetCPSR_V(cpu.SubtractionOverflowFrom(res, s2, s1, in_neg_carry)); // to check
+		cpu.SetCPSR_C(!BorrowFrom(res, s2, s1, in_neg_carry)); // to check
+		cpu.SetCPSR_V(SubtractionOverflowFrom(res, s2, s1, in_neg_carry)); // to check
 	}
 }
 
 rscs_imm_shift.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
-	typename CONFIG::reg_t in_neg_carry;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t s1, s2;
+	uint32_t res;
+	uint32_t in_neg_carry;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -1798,20 +1798,20 @@ rscs_imm_shift.execute = {
 	} else {
 		cpu.SetCPSR_N(res & 0x80000000);
 		cpu.SetCPSR_Z(res == 0);
-		cpu.SetCPSR_C(!cpu.BorrowFrom(res, s2, s1, in_neg_carry)); // to check
-		cpu.SetCPSR_V(cpu.SubtractionOverflowFrom(res, s2, s1, in_neg_carry)); // to check
+		cpu.SetCPSR_C(!BorrowFrom(res, s2, s1, in_neg_carry)); // to check
+		cpu.SetCPSR_V(SubtractionOverflowFrom(res, s2, s1, in_neg_carry)); // to check
 	}
 }
 
 rscs_reg_shift.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
-	typename CONFIG::reg_t in_neg_carry;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t s1, s2;
+	uint32_t res;
+	uint32_t in_neg_carry;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -1828,8 +1828,8 @@ rscs_reg_shift.execute = {
 	} else {
 		cpu.SetCPSR_N(res & 0x80000000);
 		cpu.SetCPSR_Z(res == 0);
-		cpu.SetCPSR_C(!cpu.BorrowFrom(res, s2, s1, in_neg_carry)); // to check
-		cpu.SetCPSR_V(cpu.SubtractionOverflowFrom(res, s2, s1, in_neg_carry)); // to check
+		cpu.SetCPSR_C(!BorrowFrom(res, s2, s1, in_neg_carry)); // to check
+		cpu.SetCPSR_V(SubtractionOverflowFrom(res, s2, s1, in_neg_carry)); // to check
 	}
 }
 
@@ -1873,12 +1873,12 @@ tst_reg_shift.disasm = {
 }
 
 tst_32imm.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
+	uint32_t s1, s2;
+	uint32_t res;
 	bool shift_carry_out = false;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -1895,13 +1895,13 @@ tst_32imm.execute = {
 }
 
 tst_imm_shift.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
+	uint32_t s1, s2;
+	uint32_t res;
 	bool shift_carry_out = false;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -1919,14 +1919,14 @@ tst_imm_shift.execute = {
 }
 
 tst_reg_shift.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
+	uint32_t s1, s2;
+	uint32_t res;
 	bool shift_carry_out = false;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -1983,12 +1983,12 @@ teq_reg_shift.disasm = {
 }
 
 teq_32imm.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
+	uint32_t s1, s2;
+	uint32_t res;
 	bool shift_carry_out = false;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 	
@@ -2005,13 +2005,13 @@ teq_32imm.execute = {
 }
 
 teq_imm_shift.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
+	uint32_t s1, s2;
+	uint32_t res;
 	bool shift_carry_out = false;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -2029,14 +2029,14 @@ teq_imm_shift.execute = {
 }
 
 teq_reg_shift.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
+	uint32_t s1, s2;
+	uint32_t res;
 	bool shift_carry_out = false;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -2094,12 +2094,12 @@ cmp_reg_shift.disasm = {
 }
 
 cmp_32imm.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
+	uint32_t s1, s2;
+	uint32_t res;
 	bool shift_carry_out = false;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -2111,18 +2111,18 @@ cmp_32imm.execute = {
 	
 	cpu.SetCPSR_N(res & 0x80000000);
 	cpu.SetCPSR_Z(res == 0);
-	cpu.SetCPSR_C(!cpu.BorrowFrom(res, s1, s2)); // to check
-	cpu.SetCPSR_V(cpu.SubtractionOverflowFrom(res, s1, s2)); // to check
+	cpu.SetCPSR_C(!BorrowFrom(res, s1, s2)); // to check
+	cpu.SetCPSR_V(SubtractionOverflowFrom(res, s1, s2)); // to check
 }
 
 cmp_imm_shift.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
+	uint32_t s1, s2;
+	uint32_t res;
 	bool shift_carry_out = false;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -2135,19 +2135,19 @@ cmp_imm_shift.execute = {
   
 	cpu.SetCPSR_N((res & 0x80000000) != 0);
 	cpu.SetCPSR_Z(res == 0);
-	cpu.SetCPSR_C(!cpu.BorrowFrom(res, s1, s2)); // to check
-	cpu.SetCPSR_V(cpu.SubtractionOverflowFrom(res, s1, s2)); // to check
+	cpu.SetCPSR_C(!BorrowFrom(res, s1, s2)); // to check
+	cpu.SetCPSR_V(SubtractionOverflowFrom(res, s1, s2)); // to check
 }
 
 cmp_reg_shift.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
+	uint32_t s1, s2;
+	uint32_t res;
 	bool shift_carry_out = false;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -2160,8 +2160,8 @@ cmp_reg_shift.execute = {
   
 	cpu.SetCPSR_N(res & 0x80000000);
 	cpu.SetCPSR_Z(res == 0);
-	cpu.SetCPSR_C(!cpu.BorrowFrom(res, s1, s2)); // to check
-	cpu.SetCPSR_V(cpu.SubtractionOverflowFrom(res, s1, s2)); // to check
+	cpu.SetCPSR_C(!BorrowFrom(res, s1, s2)); // to check
+	cpu.SetCPSR_V(SubtractionOverflowFrom(res, s1, s2)); // to check
 }
 
 /*
@@ -2204,12 +2204,12 @@ cmn_reg_shift.disasm = {
 }
 
 cmn_32imm.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
+	uint32_t s1, s2;
+	uint32_t res;
 	bool shift_carry_out = false;
-  	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+  	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 
   	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -2221,18 +2221,18 @@ cmn_32imm.execute = {
 
   	cpu.SetCPSR_N(res & 0x80000000);
   	cpu.SetCPSR_Z(res == 0);
-  	cpu.SetCPSR_C(cpu.CarryFrom(res, s1, s2)); // to check
-  	cpu.SetCPSR_V(cpu.AdditionOverflowFrom(res, s1, s2)); // to check
+  	cpu.SetCPSR_C(CarryFrom(res, s1, s2)); // to check
+  	cpu.SetCPSR_V(AdditionOverflowFrom(res, s1, s2)); // to check
 }
 
 cmn_imm_shift.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
+	uint32_t s1, s2;
+	uint32_t res;
 	bool shift_carry_out = false;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -2245,19 +2245,19 @@ cmn_imm_shift.execute = {
   
 	cpu.SetCPSR_N(res & 0x80000000);
 	cpu.SetCPSR_Z(res == 0);
-	cpu.SetCPSR_C(cpu.CarryFrom(res, s1, s2)); // to check
-	cpu.SetCPSR_V(cpu.AdditionOverflowFrom(res, s1, s2)); // to check
+	cpu.SetCPSR_C(CarryFrom(res, s1, s2)); // to check
+	cpu.SetCPSR_V(AdditionOverflowFrom(res, s1, s2)); // to check
 }
 
 cmn_reg_shift.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
+	uint32_t s1, s2;
+	uint32_t res;
 	bool shift_carry_out = false;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -2270,8 +2270,8 @@ cmn_reg_shift.execute = {
 	
 	cpu.SetCPSR_N(res & 0x80000000);
 	cpu.SetCPSR_Z(res == 0);
-	cpu.SetCPSR_C(cpu.CarryFrom(res, s1, s2)); // to check
-	cpu.SetCPSR_V(cpu.AdditionOverflowFrom(res, s1, s2)); // to check
+	cpu.SetCPSR_C(CarryFrom(res, s1, s2)); // to check
+	cpu.SetCPSR_V(AdditionOverflowFrom(res, s1, s2)); // to check
 }
 
 /*
@@ -2356,11 +2356,11 @@ orrs_reg_shift.disasm = {
 }
 
 orr_32imm.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t s1, s2;
+	uint32_t res;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -2373,12 +2373,12 @@ orr_32imm.execute = {
 }
 
 orr_imm_shift.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t s1, s2;
+	uint32_t res;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -2391,13 +2391,13 @@ orr_imm_shift.execute = {
 }
 
 orr_reg_shift.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t s1, s2;
+	uint32_t res;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -2410,12 +2410,12 @@ orr_reg_shift.execute = {
 }
 
 orrs_32imm.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
+	uint32_t s1, s2;
+	uint32_t res;
 	bool shift_carry_out = false;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -2437,13 +2437,13 @@ orrs_32imm.execute = {
 }
 
 orrs_imm_shift.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
+	uint32_t s1, s2;
+	uint32_t res;
 	bool shift_carry_out = false;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -2466,14 +2466,14 @@ orrs_imm_shift.execute = {
 }
 
 orrs_reg_shift.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
+	uint32_t s1, s2;
+	uint32_t res;
 	bool shift_carry_out = false;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -2568,8 +2568,8 @@ movs_reg_shift.disasm = {
 }
 
 mov_32imm.execute = {
-	typename CONFIG::reg_t s1;
-	typename CONFIG::reg_t res;
+	uint32_t s1;
+	uint32_t res;
 	
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -2581,11 +2581,11 @@ mov_32imm.execute = {
 }
 
 mov_imm_shift.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1;
-	typename CONFIG::reg_t res;
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t s1;
+	uint32_t res;
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -2597,12 +2597,12 @@ mov_imm_shift.execute = {
 }
 
 mov_reg_shift.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1;
-	typename CONFIG::reg_t res;
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t s1;
+	uint32_t res;
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -2614,8 +2614,8 @@ mov_reg_shift.execute = {
 }
 
 movs_32imm.execute = {
-	typename CONFIG::reg_t s1;
-	typename CONFIG::reg_t res;
+	uint32_t s1;
+	uint32_t res;
 	bool shift_carry_out = false;
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
@@ -2637,12 +2637,12 @@ movs_32imm.execute = {
 }
 
 movs_imm_shift.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1;
-	typename CONFIG::reg_t res;
+	uint32_t s1;
+	uint32_t res;
 	bool shift_carry_out = false;
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 	
@@ -2664,13 +2664,13 @@ movs_imm_shift.execute = {
 }
 
 movs_reg_shift.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1;
-	typename CONFIG::reg_t res;
+	uint32_t s1;
+	uint32_t res;
 	bool shift_carry_out = false;
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -2773,11 +2773,11 @@ bics_reg_shift.disasm = {
 }
 
 bic_32imm.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t s1, s2;
+	uint32_t res;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -2790,12 +2790,12 @@ bic_32imm.execute = {
 }
 
 bic_imm_shift.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t s1, s2;
+	uint32_t res;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -2808,13 +2808,13 @@ bic_imm_shift.execute = {
 }
 
 bic_reg_shift.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t s1, s2;
+	uint32_t res;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -2827,12 +2827,12 @@ bic_reg_shift.execute = {
 }
 
 bics_32imm.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
+	uint32_t s1, s2;
+	uint32_t res;
 	bool shift_carry_out = false;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -2854,13 +2854,13 @@ bics_32imm.execute = {
 }
 
 bics_imm_shift.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
+	uint32_t s1, s2;
+	uint32_t res;
 	bool shift_carry_out = false;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -2883,14 +2883,14 @@ bics_imm_shift.execute = {
 }
 
 bics_reg_shift.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
+	uint32_t s1, s2;
+	uint32_t res;
 	bool shift_carry_out = false;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -2982,8 +2982,8 @@ mvns_reg_shift.disasm = {
 }
 
 mvn_32imm.execute = {
-	typename CONFIG::reg_t s1;
-	typename CONFIG::reg_t res;
+	uint32_t s1;
+	uint32_t res;
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -2995,11 +2995,11 @@ mvn_32imm.execute = {
 }
 
 mvn_imm_shift.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
   
-	typename CONFIG::reg_t s1;
-	typename CONFIG::reg_t res;
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t s1;
+	uint32_t res;
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -3011,12 +3011,12 @@ mvn_imm_shift.execute = {
 }
 
 mvn_reg_shift.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1;
-	typename CONFIG::reg_t res;
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t s1;
+	uint32_t res;
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -3028,8 +3028,8 @@ mvn_reg_shift.execute = {
 }
 
 mvns_32imm.execute = {
-	typename CONFIG::reg_t s1;
-	typename CONFIG::reg_t res;
+	uint32_t s1;
+	uint32_t res;
 	bool shift_carry_out = false;
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
@@ -3051,12 +3051,12 @@ mvns_32imm.execute = {
 }
 
 mvns_imm_shift.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1;
-	typename CONFIG::reg_t res;
+	uint32_t s1;
+	uint32_t res;
 	bool shift_carry_out = false;
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -3078,13 +3078,13 @@ mvns_imm_shift.execute = {
 }
 
 mvns_reg_shift.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1;
-	typename CONFIG::reg_t res;
+	uint32_t s1;
+	uint32_t res;
 	bool shift_carry_out = false;
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -3134,7 +3134,7 @@ group dp_rn_init(and_32imm, and_imm_shift, and_reg_shift, \
                  bic_32imm, bic_imm_shift, bic_reg_shift, \
                  bics_32imm, bics_imm_shift, bics_reg_shift)
 dp_rn_init.initialize_rn_init = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	if(rn == 15) inherited::rn_init = 8;
 	else inherited::rn_init = 0;
@@ -3169,7 +3169,7 @@ group dp_rm_init(and_imm_shift, and_reg_shift, \
                  mvn_imm_shift, mvn_reg_shift, \
                  mvns_imm_shift, mvns_reg_shift)
 dp_rm_init.initialize_rm_init = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	if(rm == 15) inherited::rm_init = 8;
 	else inherited::rm_init = 0;
@@ -3204,7 +3204,7 @@ group dp_rs_init(and_reg_shift, \
                  mvn_reg_shift, \
                  mvns_reg_shift)
 dp_rs_init.initialize_rs_init = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	if(rs == 15) inherited::rs_init = 8;
 	else inherited::rs_init = 0;

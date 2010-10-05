@@ -50,8 +50,8 @@ Simulator(int argc, char **argv)
 	, unisim::service::trap_handler::ExternalTrapHandlerInterface()
 #endif // SIM_LIBRARY
 	, cpu(0)
-	, irq_master_stub(0)
-	, fiq_master_stub(0)
+	//, irq_master_stub(0)
+	//, fiq_master_stub(0)
 	, memory(0)
 	, time(0)
 	, host_time(0)
@@ -94,8 +94,8 @@ Simulator(int argc, char **argv)
 #endif // SIM_LIBRARY
 {
 	cpu = new CPU("cpu");
-	irq_master_stub = new IRQ_MASTER_STUB("irq-master-stub");
-	fiq_master_stub = new FIQ_MASTER_STUB("fiq-master-stub");
+	// irq_master_stub = new IRQ_MASTER_STUB("irq-master-stub");
+	// fiq_master_stub = new FIQ_MASTER_STUB("fiq-master-stub");
 	memory = new MEMORY("memory");
 	time = new unisim::service::time::sc_time::ScTime("time");
 	host_time = new unisim::service::time::host_time::HostTime("host-time");
@@ -171,8 +171,8 @@ Simulator(int argc, char **argv)
 	// This mode allows to run Linux applications without simulating all the peripherals.
 
 	cpu->master_socket(memory->slave_sock);
-	irq_master_stub->out_interrupt(cpu->in_irq);
-	fiq_master_stub->out_interrupt(cpu->in_fiq);
+	// irq_master_stub->out_interrupt(cpu->in_irq);
+	// fiq_master_stub->out_interrupt(cpu->in_fiq);
 
 #ifdef SIM_GDB_SERVER_SUPPORT
 	EnableGdbServer();
@@ -189,14 +189,13 @@ Simulator(int argc, char **argv)
 	linux_loader->memory_import >> memory->memory_export;
 	linux_loader->loader_import >> elf32_loader->loader_export;
 	cpu->linux_os_import >> linux_os->linux_os_export;
-	linux_os->cpu_linux_os_import >> cpu->cpu_linux_os_export;
 	linux_os->memory_import >> cpu->memory_export;
 	linux_os->memory_injection_import >> cpu->memory_injection_export;
 	linux_os->registers_import >> cpu->registers_export;
 	linux_os->loader_import >> linux_loader->loader_export;
-	cpu->exception_trap_reporting_import >> *trap_handler->trap_reporting_export[0];
-	cpu->instruction_counter_trap_reporting_import >> *trap_handler->trap_reporting_export[1];
-	cpu->irq_trap_reporting_import >> *trap_handler->trap_reporting_export[2];
+	// cpu->exception_trap_reporting_import >> *trap_handler->trap_reporting_export[0];
+	cpu->instruction_counter_trap_reporting_import >> *trap_handler->trap_reporting_export[0];
+	// cpu->irq_trap_reporting_import >> *trap_handler->trap_reporting_export[2];
 #ifdef SIM_POWER_ESTIMATOR_SUPPORT
 	// connecting power estimator
 	if ( enable_power_estimation )
@@ -218,8 +217,8 @@ Simulator(int argc, char **argv)
 Simulator::~Simulator()
 {
 	if ( cpu ) delete cpu;
-	if ( irq_master_stub ) delete irq_master_stub;
-	if ( fiq_master_stub ) delete fiq_master_stub;
+	// if ( irq_master_stub ) delete irq_master_stub;
+	// if ( fiq_master_stub ) delete fiq_master_stub;
 	if ( memory ) delete memory;
 	if ( time ) delete time;
 	if ( host_time ) delete host_time;
@@ -376,7 +375,7 @@ SimulationFinished() const
 
 void
 Simulator ::
-Stop()
+Stop(unisim::kernel::service::Object *object, int exit_status)
 {
 	sc_stop();
 }

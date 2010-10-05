@@ -51,8 +51,11 @@
  * smlaxy instruction
  */
 
-{ CONFIG::HAS_INSN_ARITH_MULT_SMLAXY }:\
-op smlaxy(cond[4]:0b00010000[8]:rd[4]:rn[4]:rs[4]:0b1[1]:y[1]:x[1]:0b0[1]:rm[4])
+{ STATE::MODEL == ARMV5TE ||
+  STATE::MODEL == ARMV5TEJ ||
+  STATE::MODEL == ARMV5TEXP ||
+  STATE::MODEL == ARMV6
+}:op smlaxy(cond[4]:0b00010000[8]:rd[4]:rn[4]:rs[4]:0b1[1]:y[1]:x[1]:0b0[1]:rm[4])
 
 smlaxy.disasm = {
 	buffer << "smla";
@@ -68,12 +71,12 @@ smlaxy.disasm = {
 }
 
 smlaxy.execute = {
-	typename CONFIG::sreg_t op1;
-	typename CONFIG::sreg_t op2;
-	typename CONFIG::reg_t val_rm;
-	typename CONFIG::reg_t val_rs;
-	typename CONFIG::reg_t val_rn;
-	typename CONFIG::reg_t val_rd;
+	int32_t op1;
+	int32_t op2;
+	uint32_t val_rm;
+	uint32_t val_rs;
+	uint32_t val_rn;
+	uint32_t val_rd;
 	
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -90,27 +93,27 @@ smlaxy.execute = {
 	
 	if(x)
 		val_rm = val_rm >> 16;
-	if(val_rm & (typename CONFIG::reg_t)0x00008000ULL) {
-		val_rm = val_rm | (typename CONFIG::reg_t)0xffff0000ULL;
-		op1 = (typename CONFIG::sreg_t)val_rm;
+	if(val_rm & (uint32_t)0x00008000ULL) {
+		val_rm = val_rm | (uint32_t)0xffff0000ULL;
+		op1 = (int32_t)val_rm;
 	} else {
-		val_rm = val_rm & (typename CONFIG::reg_t)0x0000ffffULL;
-		op1 = (typename CONFIG::sreg_t)val_rm;
+		val_rm = val_rm & (uint32_t)0x0000ffffULL;
+		op1 = (int32_t)val_rm;
 	}
 	
 	if(y)
 		val_rs = val_rs >> 16;
-	if(val_rs & (typename CONFIG::reg_t)0x00008000ULL) {
-		val_rs = val_rs | (typename CONFIG::reg_t)0xffff0000ULL;
-		op2 = (typename CONFIG::sreg_t)val_rs;
+	if(val_rs & (uint32_t)0x00008000ULL) {
+		val_rs = val_rs | (uint32_t)0xffff0000ULL;
+		op2 = (int32_t)val_rs;
 	} else {
-		val_rs = val_rs & (typename CONFIG::reg_t)0x0000ffffULL;
-		op2 = (typename CONFIG::sreg_t)val_rs;
+		val_rs = val_rs & (uint32_t)0x0000ffffULL;
+		op2 = (int32_t)val_rs;
 	}
 	
 	op1 = op1 * op2;
 	val_rd = op1 + val_rn;
-	if(op1 > 0 && (val_rd & (typename CONFIG::reg_t)0x80000000ULL) != 0) {
+	if(op1 > 0 && (val_rd & (uint32_t)0x80000000ULL) != 0) {
 		cpu.SetCPSR_Q(true);
 	} else {
 		cpu.SetCPSR_Q(false);
@@ -126,8 +129,11 @@ smlaxy.execute = {
  * smlalxy instruction
  */
 
-{ CONFIG::HAS_INSN_ARITH_MULT_SMLALXY }:\
-op smlalxy(cond[4]:0b00010100[8]:rdhi[4]:rdlo[4]:rs[4]:0b1[1]:y[1]:x[1]:0b0[1]:rm[4])
+{ STATE::MODEL == ARMV5TE ||
+  STATE::MODEL == ARMV5TEJ ||
+  STATE::MODEL == ARMV5TEXP ||
+  STATE::MODEL == ARMV6
+}:op smlalxy(cond[4]:0b00010100[8]:rdhi[4]:rdlo[4]:rs[4]:0b1[1]:y[1]:x[1]:0b0[1]:rm[4])
 
 smlalxy.disasm = {
 	buffer << "smlal";
@@ -143,12 +149,12 @@ smlalxy.disasm = {
 }
 
 smlalxy.execute = {
-	typename CONFIG::sreg_t op1;
-	typename CONFIG::sreg_t op2;
-	typename CONFIG::reg_t val_rm;
-	typename CONFIG::reg_t val_rs;
-	typename CONFIG::reg_t val_rdhi;
-	typename CONFIG::reg_t val_rdlo, val_rdlo_init;
+	int32_t op1;
+	int32_t op2;
+	uint32_t val_rm;
+	uint32_t val_rs;
+	uint32_t val_rdhi;
+	uint32_t val_rdlo, val_rdlo_init;
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -166,29 +172,29 @@ smlalxy.execute = {
 	
 	if(x)
 		val_rm = val_rm >> 16;
-	if(val_rm & (typename CONFIG::reg_t)0x00008000ULL) {
-		val_rm = val_rm | (typename CONFIG::reg_t)0xffff0000ULL;
-		op1 = (typename CONFIG::sreg_t)val_rm;
+	if(val_rm & (uint32_t)0x00008000ULL) {
+		val_rm = val_rm | (uint32_t)0xffff0000ULL;
+		op1 = (int32_t)val_rm;
 	} else {
-		val_rm = val_rm & (typename CONFIG::reg_t)0x0000ffffULL;
-		op1 = (typename CONFIG::sreg_t)val_rm;
+		val_rm = val_rm & (uint32_t)0x0000ffffULL;
+		op1 = (int32_t)val_rm;
 	}
 	
 	if(y)
 		val_rs = val_rs >> 16;
-	if(val_rs & (typename CONFIG::reg_t)0x00008000ULL) {
-		val_rs = val_rs | (typename CONFIG::reg_t)0xffff0000ULL;
-		op2 = (typename CONFIG::sreg_t)val_rs;
+	if(val_rs & (uint32_t)0x00008000ULL) {
+		val_rs = val_rs | (uint32_t)0xffff0000ULL;
+		op2 = (int32_t)val_rs;
 	} else {
-		val_rs = val_rs & (typename CONFIG::reg_t)0x0000ffffULL;
-		op2 = (typename CONFIG::sreg_t)val_rs;
+		val_rs = val_rs & (uint32_t)0x0000ffffULL;
+		op2 = (int32_t)val_rs;
 	}
 	
 	op1 = op1 * op2;
 	val_rdlo = val_rdlo_init + op1;
-	if(op1 < 0) rdhi = rdhi + (typename CONFIG::reg_t)0xffffffffULL;
+	if(op1 < 0) rdhi = rdhi + (uint32_t)0xffffffffULL;
 	else {
-		if(cpu.CarryFrom(val_rdlo, val_rdlo_init, (typename CONFIG::reg_t)op1))
+		if(CarryFrom(val_rdlo, val_rdlo_init, (uint32_t)op1))
 			rdhi++;
 	}
 	cpu.SetGPR(rdlo, val_rdlo);
@@ -203,8 +209,11 @@ smlalxy.execute = {
  * smlawy instruction
  */
 
-{ CONFIG::HAS_INSN_ARITH_MULT_SMLAWY }:\
-op smlawy(cond[4]:0b00010010[8]:rd[4]:rn[4]:rs[4]:0b1[1]:y[1]:0b00[2]:rm[4])
+{ STATE::MODEL == ARMV5TE ||
+  STATE::MODEL == ARMV5TEJ ||
+  STATE::MODEL == ARMV5TEXP ||
+  STATE::MODEL == ARMV6
+}:op smlawy(cond[4]:0b00010010[8]:rd[4]:rn[4]:rs[4]:0b1[1]:y[1]:0b00[2]:rm[4])
 
 smlawy.disasm = {
 	buffer << "smlaw";
@@ -218,11 +227,11 @@ smlawy.disasm = {
 }
 
 smlawy.execute = {
-	typename CONFIG::sreg_t op;
-	typename CONFIG::reg_t val_rm;
-	typename CONFIG::reg_t val_rs;
-	typename CONFIG::reg_t val_rn;
-	typename CONFIG::reg_t val_rd;
+	int32_t op;
+	uint32_t val_rm;
+	uint32_t val_rs;
+	uint32_t val_rn;
+	uint32_t val_rd;
 	
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -239,29 +248,29 @@ smlawy.execute = {
 	
 	if(y)
 		val_rs = val_rs >> 16;
-	if(val_rs & (typename CONFIG::reg_t)0x00008000ULL) {
-		val_rs = val_rs | (typename CONFIG::reg_t)0xffff0000ULL;
-		op = (typename CONFIG::sreg_t)val_rs;
+	if(val_rs & (uint32_t)0x00008000ULL) {
+		val_rs = val_rs | (uint32_t)0xffff0000ULL;
+		op = (int32_t)val_rs;
 	} else {
-		val_rs = val_rs & (typename CONFIG::reg_t)0x0000ffffULL;
-		op = (typename CONFIG::sreg_t)val_rs;
+		val_rs = val_rs & (uint32_t)0x0000ffffULL;
+		op = (int32_t)val_rs;
 	}
 	
 	int64_t op64;
-	op64 = (typename CONFIG::sreg_t)val_rm;
+	op64 = (int32_t)val_rm;
 	op64 = op64 * op;
 	op64 = op64 >> 16;
 	op64 = op64 & (uint64_t)0xffffffffULL;
-	typename CONFIG::sreg_t sval_rd;
-	typename CONFIG::reg_t op_tmp = op64;
-	sval_rd = (typename CONFIG::sreg_t)op_tmp;
-	val_rd = (typename CONFIG::reg_t)(sval_rd + (typename CONFIG::sreg_t)val_rn);
-	if(op_tmp & (typename CONFIG::reg_t)0x80000000ULL !=
-		val_rn & (typename CONFIG::reg_t)0x80000000ULL) {
+	int32_t sval_rd;
+	uint32_t op_tmp = op64;
+	sval_rd = (int32_t)op_tmp;
+	val_rd = (uint32_t)(sval_rd + (int32_t)val_rn);
+	if(op_tmp & (uint32_t)0x80000000ULL !=
+		val_rn & (uint32_t)0x80000000ULL) {
 		cpu.SetCPSR_Q(false);
 	} else {
-		if(op_tmp & (typename CONFIG::reg_t)0x80000000ULL !=
-			val_rd & (typename CONFIG::reg_t)0x80000000ULL) {
+		if(op_tmp & (uint32_t)0x80000000ULL !=
+			val_rd & (uint32_t)0x80000000ULL) {
 			cpu.SetCPSR_Q(true);
 		} else
 			cpu.SetCPSR_Q(false);
@@ -278,8 +287,11 @@ smlawy.execute = {
  * smulxy instruction
  */
 
-{ CONFIG::HAS_INSN_ARITH_MULT_SMULXY }:\
-op smulxy(cond[4]:0b00010110[8]:rd[4]:sbz[4]:rs[4]:0b1[1]:y[1]:x[1]:0b0[1]:rm[4])
+{ STATE::MODEL == ARMV5TE ||
+  STATE::MODEL == ARMV5TEJ ||
+  STATE::MODEL == ARMV5TEXP ||
+  STATE::MODEL == ARMV6
+}:op smulxy(cond[4]:0b00010110[8]:rd[4]:sbz[4]:rs[4]:0b1[1]:y[1]:x[1]:0b0[1]:rm[4])
 
 smulxy.disasm = {
 	buffer << "smul";
@@ -294,11 +306,11 @@ smulxy.disasm = {
 }
 
 smulxy.execute = {
-	typename CONFIG::sreg_t op1;
-	typename CONFIG::sreg_t op2;
-	typename CONFIG::reg_t val_rm;
-	typename CONFIG::reg_t val_rs;
-	typename CONFIG::reg_t val_rd;
+	int32_t op1;
+	int32_t op2;
+	uint32_t val_rm;
+	uint32_t val_rs;
+	uint32_t val_rd;
 	
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -314,26 +326,26 @@ smulxy.execute = {
 	
 	if(x)
 		val_rm = val_rm >> 16;
-	if(val_rm & (typename CONFIG::reg_t)0x00008000ULL) {
-		val_rm = val_rm | (typename CONFIG::reg_t)0xffff0000ULL;
-		op1 = (typename CONFIG::sreg_t)val_rm;
+	if(val_rm & (uint32_t)0x00008000ULL) {
+		val_rm = val_rm | (uint32_t)0xffff0000ULL;
+		op1 = (int32_t)val_rm;
 	} else {
-		val_rm = val_rm & (typename CONFIG::reg_t)0x0000ffffULL;
-		op1 = (typename CONFIG::sreg_t)val_rm;
+		val_rm = val_rm & (uint32_t)0x0000ffffULL;
+		op1 = (int32_t)val_rm;
 	}
 	
 	if(y)
 		val_rs = val_rs >> 16;
-	if(val_rs & (typename CONFIG::reg_t)0x00008000ULL) {
-		val_rs = val_rs | (typename CONFIG::reg_t)0xffff0000ULL;
-		op2 = (typename CONFIG::sreg_t)val_rs;
+	if(val_rs & (uint32_t)0x00008000ULL) {
+		val_rs = val_rs | (uint32_t)0xffff0000ULL;
+		op2 = (int32_t)val_rs;
 	} else {
-		val_rs = val_rs & (typename CONFIG::reg_t)0x0000ffffULL;
-		op2 = (typename CONFIG::sreg_t)val_rs;
+		val_rs = val_rs & (uint32_t)0x0000ffffULL;
+		op2 = (int32_t)val_rs;
 	}
 	
 	op1 = op1 * op2;
-	val_rd = (typename CONFIG::reg_t)op1;
+	val_rd = (uint32_t)op1;
 	cpu.SetGPR(rd, val_rd);
 }
 
@@ -345,8 +357,11 @@ smulxy.execute = {
  * smulwy instruction
  */
 
-{ CONFIG::HAS_INSN_ARITH_MULT_SMULWY }:\
-op smulwy(cond[4]:0b00010010[8]:rd[4]:sbz[4]:rs[4]:0b1[1]:y[1]:0b10[2]:rm[4])
+{ STATE::MODEL == ARMV5TE ||
+  STATE::MODEL == ARMV5TEJ ||
+  STATE::MODEL == ARMV5TEXP ||
+  STATE::MODEL == ARMV6
+}:op smulwy(cond[4]:0b00010010[8]:rd[4]:sbz[4]:rs[4]:0b1[1]:y[1]:0b10[2]:rm[4])
 
 smulwy.disasm = {
 	buffer << "smulw";
@@ -359,11 +374,11 @@ smulwy.disasm = {
 }
 
 smulwy.execute = {
-	typename CONFIG::sreg_t op1;
-	typename CONFIG::sreg_t op2;
-	typename CONFIG::reg_t val_rm;
-	typename CONFIG::reg_t val_rs;
-	typename CONFIG::reg_t val_rd;
+	int32_t op1;
+	int32_t op2;
+	uint32_t val_rm;
+	uint32_t val_rs;
+	uint32_t val_rd;
 	
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -379,17 +394,17 @@ smulwy.execute = {
 	
 	if(y)
 		val_rs = val_rs >> 16;
-	if(val_rs & (typename CONFIG::reg_t)0x00008000ULL) {
-		val_rs = val_rs | (typename CONFIG::reg_t)0xffff0000ULL;
-		op2 = (typename CONFIG::sreg_t)val_rs;
+	if(val_rs & (uint32_t)0x00008000ULL) {
+		val_rs = val_rs | (uint32_t)0xffff0000ULL;
+		op2 = (int32_t)val_rs;
 	} else {
-		val_rs = val_rs & (typename CONFIG::reg_t)0x0000ffffULL;
-		op2 = (typename CONFIG::sreg_t)val_rs;
+		val_rs = val_rs & (uint32_t)0x0000ffffULL;
+		op2 = (int32_t)val_rs;
 	}
 	
-	op1 = (typename CONFIG::sreg_t)val_rm;
+	op1 = (int32_t)val_rm;
 	int64_t op64 = (int64_t)op1 * (int64_t)op2;
-	val_rd = (typename CONFIG::reg_t)((uint64_t)(op64 >> 16) & (uint64_t)0xffffffffULL);
+	val_rd = (uint32_t)((uint64_t)(op64 >> 16) & (uint64_t)0xffffffffULL);
 	cpu.SetGPR(rd, val_rd);
 }
 

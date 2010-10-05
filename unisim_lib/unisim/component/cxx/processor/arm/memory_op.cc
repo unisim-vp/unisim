@@ -33,9 +33,7 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
-#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_MEMORY_OP_HH__
-#define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_MEMORY_OP_HH__
-
+#include "unisim/component/cxx/processor/arm/memory_op.hh"
 #include <inttypes.h>
 
 namespace unisim {
@@ -44,47 +42,121 @@ namespace cxx {
 namespace processor {
 namespace arm {
 
-class MemoryOp {
-public:
-	typedef enum {
-		READ,
-		READ_TO_PC_UPDATE_T,
-		READ_TO_PC,
-		WRITE,
-		PREFETCH
-	} type_t;
-	
-	MemoryOp();
-	~MemoryOp();
-	
-	void SetReadToPCUpdateT(uint32_t address);
-	void SetReadToPC(uint32_t address);
-	void SetRead(uint32_t address, uint32_t size, uint32_t dest, 
-			bool aligned, bool read_signed);
-	void SetWrite(uint32_t address, uint32_t size, uint32_t value);
-	void SetPrefetch(uint32_t address); 
-	type_t GetType() const;
-	uint32_t GetAddress() const;
-	uint32_t GetSize() const;
-	uint32_t GetTargetReg() const;
-	uint32_t GetWriteValue() const;
-	bool NeedAlignment() const;
-	bool IsSigned() const;
-	
-private:
-	uint32_t address;
-	type_t type;
-	uint32_t size;
-	uint32_t target_reg;
-	uint32_t write_value;
-	bool read_signed;
-	bool aligned;
-};
+MemoryOp::
+MemoryOp() 
+{}
 
+MemoryOp::
+~MemoryOp() 
+{}
+	
+void 
+MemoryOp::
+SetReadToPCUpdateT(uint32_t address) 
+{
+	type = READ_TO_PC_UPDATE_T;
+	this->address = address;
+	this->size = 4;
+	target_reg = 15; // the pc register
+	this->read_signed = false;
+	this->aligned = true;
+}
+	
+void 
+MemoryOp::
+SetReadToPC(uint32_t address) 
+{
+	type = READ_TO_PC;
+	this->address = address;
+	this->size = 4;
+	target_reg = 15; // the pc register
+	this->read_signed = false;
+	this->aligned = true;
+}
+	
+void 
+MemoryOp::
+SetRead(uint32_t address, uint32_t size, uint32_t dest, 
+		bool aligned, bool read_signed) 
+{
+	type = READ;
+	this->address = address;
+	this->size = size;
+	target_reg = dest;
+	this->read_signed = read_signed;
+	this->aligned = aligned;
+}
+	
+void 
+MemoryOp::
+SetWrite(uint32_t address, uint32_t size, uint32_t value) 
+{
+	type = WRITE;
+	this->address = address;
+	this->size = size;
+	write_value = value;
+}
+	
+void 
+MemoryOp::
+SetPrefetch(uint32_t address)
+{
+	type = PREFETCH;
+	this->address = address;
+}
+	
+MemoryOp::type_t
+MemoryOp::
+GetType() const 
+{
+	return type;
+}
+
+uint32_t 
+MemoryOp::
+GetAddress() const 
+{
+	return address;
+}
+
+uint32_t 
+MemoryOp::
+GetSize() const 
+{
+	return size;
+}
+
+uint32_t 
+MemoryOp::
+GetTargetReg() const 
+{
+	return target_reg;
+}
+
+uint32_t 
+MemoryOp::
+GetWriteValue() const 
+{
+	return write_value;
+}
+
+bool 
+MemoryOp::
+NeedAlignment() const 
+{
+	return !aligned;
+}
+
+bool 
+MemoryOp::
+IsSigned() const 
+{
+	return read_signed;
+}
+	
 } // end of namespace arm
 } // end of namespace processor
 } // end of namespace cxx
 } // end of namespace component
 } // end of namespace unisim
 
-#endif // __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_MEMORY_OP_HH__
