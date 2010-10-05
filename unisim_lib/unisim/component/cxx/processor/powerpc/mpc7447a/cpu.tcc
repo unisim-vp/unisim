@@ -1271,22 +1271,10 @@ void CPU<CONFIG>::StepOneInstruction()
 	catch(SystemResetException<CONFIG>& exc) { HandleException(exc); }
 	catch(PerformanceMonitorInterruptException<CONFIG>& exc) { HandleException(exc); }
 	catch(SystemManagementInterruptException<CONFIG>& exc) { HandleException(exc); }
-	catch(ISIProtectionViolationException<CONFIG>& exc) { HandleException(exc); }
-	catch(ISINoExecuteException<CONFIG>& exc) { HandleException(exc); }
-	catch(ISIDirectStoreException<CONFIG>& exc) { HandleException(exc); }
-	catch(ISIPageFaultException<CONFIG>& exc) { HandleException(exc); }
-	catch(ISIGuardedMemoryException<CONFIG>& exc) { HandleException(exc); }
-	catch(DSIDirectStoreException<CONFIG>& exc) { HandleException(exc); }
-	catch(DSIProtectionViolationException<CONFIG>& exc) { HandleException(exc); }
-	catch(DSIPageFaultException<CONFIG>& exc) { HandleException(exc); }
-	catch(DSIDataAddressBreakpointException<CONFIG>& exc) { HandleException(exc); }
-	catch(DSIExternalAccessDisabledException<CONFIG>& exc) { HandleException(exc); }
-	catch(DSIWriteThroughLinkedLoadStore<CONFIG>& exc) { HandleException(exc); }
+	catch(ISIException<CONFIG>& exc) { HandleException(exc); }
+	catch(DSIException<CONFIG>& exc) { HandleException(exc); }
 	catch(AlignmentException<CONFIG>& exc) { HandleException(exc, operation->GetEncoding()); }
-	catch(IllegalInstructionException<CONFIG>& exc) { HandleException(exc); }
-	catch(PrivilegeViolationException<CONFIG>& exc) { HandleException(exc); }
-	catch(TrapException<CONFIG>& exc) { HandleException(exc); }
-	catch(FloatingPointException<CONFIG>& exc) { HandleException(exc); }
+	catch(ProgramException<CONFIG>& exc) { HandleException(exc); }
 	catch(SystemCallException<CONFIG>& exc) { HandleException(exc); }
 	catch(FloatingPointUnavailableException<CONFIG>& exc) { HandleException(exc); }
 	catch(TraceException<CONFIG>& exc) { HandleException(exc); }
