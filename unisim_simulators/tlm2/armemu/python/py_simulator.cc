@@ -537,7 +537,7 @@ simulator_run (armemu_SimulatorObject *self, PyObject *args)
 static PyObject *
 simulator_stop (armemu_SimulatorObject *self)
 {
-	self->sim->Stop();
+	self->sim->Stop(0, 0);
 	Py_INCREF(Py_None);
 	return Py_None;
 }

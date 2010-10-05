@@ -308,7 +308,6 @@ set ( PYTHON__ARMEMU__LIBS
 	"'simulatorlib',
 	 'unisim__component__tlm2__memory__ram',
 	 'unisim__component__tlm2__processor__arm__armemu',
-	 'unisim__component__cxx__processor__arm',
 	 'unisim__component__cxx__memory__ram',
 	 'unisim__service__time__host_time',
 	 'unisim__service__time__sc_time',
