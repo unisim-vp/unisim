@@ -189,7 +189,6 @@ Simulator(int argc, char **argv)
 	linux_loader->memory_import >> memory->memory_export;
 	linux_loader->loader_import >> elf32_loader->loader_export;
 	cpu->linux_os_import >> linux_os->linux_os_export;
-	linux_os->cpu_linux_os_import >> cpu->cpu_linux_os_export;
 	linux_os->memory_import >> cpu->memory_export;
 	linux_os->memory_injection_import >> cpu->memory_injection_export;
 	linux_os->registers_import >> cpu->registers_export;
@@ -376,7 +375,7 @@ SimulationFinished() const
 
 void
 Simulator ::
-Stop()
+Stop(unisim::kernel::service::Object *object, int exit_status)
 {
 	sc_stop();
 }

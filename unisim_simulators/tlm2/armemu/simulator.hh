@@ -91,7 +91,7 @@ public:
 	bool SetTrapHandler(void (*function)(void *, unsigned int), void *context);
 	unisim::util::debug::debugger_handler::DebuggerHandler *GetDebugger(const char *name);
 #endif // SIM_LIBRARY
-	void Stop();
+	virtual void Stop(unisim::kernel::service::Object *object, int exit_status);
 
 protected:
 private:
