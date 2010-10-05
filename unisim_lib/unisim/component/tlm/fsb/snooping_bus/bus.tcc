@@ -324,8 +324,7 @@ BusSynchronize() {
 			<< "cur_cycle_init_int = " << cur_cycle_init_int << ", "
 			<< "cur_time_int = " << cur_time_int << ")" << endl
 			<< EndDebugError;
-		sc_stop();
-		wait();
+		Object::Stop(-1);
 	}
 	// check if a message can be send right now
 	if(cur_cycle_init_int == cur_time_int) {
@@ -519,8 +518,7 @@ DispatchChipsetMessage() {
 			<< "The bus received a request from the chipset that is not "
 			<< "a READX, neither a WRITE. Stopping simulation" << endl
 			<< EndDebugError;
-		sc_stop();
-		wait();
+		Object::Stop(-1);
 	}
 	/* if the message is just a write, then just forward the message to the cpus */
 	if(msg->req->type == ReqType::WRITE) {
@@ -617,8 +615,7 @@ DispatchCPUMessage() {
 			logger << DebugError << LOCATION << ", "
 				<< "Unknown command received" << endl
 				<< EndDebugError;
-		sc_stop();
-		wait();
+		Object::Stop(-1);
 	} 
 	/* the message is a read with intent to modify (READX) or a read (READ),
 	 *   this is a little bit harder to handle.
@@ -677,8 +674,7 @@ ProcessSnoopingResponse(const PTransactionMsgType &msg) {
 		logger << DebugError << LOCATION << ", "
 			<< "Received a snoop response when nothing was expected" << endl
 			<< EndDebugError;
-		sc_stop();
-		wait();
+		Object::Stop(-1);
 	}
 	snoop_counter++;
 	if(chipset_snoop && snoop_counter == NUM_PROCS)

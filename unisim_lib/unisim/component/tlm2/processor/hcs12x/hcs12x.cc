@@ -100,9 +100,7 @@ HCS12X ::
 Stop(int ret) {
 	// Call BusSynchronize to account for the remaining time spent in the cpu core
 	BusSynchronize();
-	sc_stop();
-	// Leave control to the SystemC simulation kernel
-	wait();
+	Object::Stop(-1);
 }
 
 
@@ -283,7 +281,7 @@ BusSynchronize() {
 //		cerr << "sc_time_stamp bigger than cpu_time" << endl;
 //		cerr << "sc_time_stamp = " << sc_time_stamp() << endl;
 //		cerr << "cpu_time = " << cpu_time << endl;
-//		sc_stop();
+//		Object::Stop(-1);
 //		wait();
 //	}
 

@@ -149,16 +149,14 @@ T_nb_transport_fw_cb(int id,
 			<< TIME(time) << endl
 			<< PHASE(phase) << endl
 			<< TRANS(trans) << EndDebug;
-		sc_stop();
-		wait();
+		Object::Stop(-1);
 	}
 
 	// this should never be executed
 	logger << DebugError << "Unreacheable code section reached" << endl
 		<< " - time = " << sc_time_stamp() + time << endl
 		<< LOCATION << EndDebug;
-	sc_stop();
-	wait();
+	Object::Stop(-1);
 	return tlm::TLM_ACCEPTED; // unnecessary, but to avoid compilation errors/warnings
 }
 
@@ -233,8 +231,7 @@ I_nb_transport_bw_cb(typename TYPES::tlm_payload_type &trans,
 			<< TIME(time) << endl
 			<< PHASE(phase) << endl
 			<< TRANS(trans) << EndDebug;
-		sc_stop();
-		wait();
+		Object::Stop(-1);
 	}
 
 	// this should never be executed
@@ -243,8 +240,7 @@ I_nb_transport_bw_cb(typename TYPES::tlm_payload_type &trans,
 		<< TIME(time) << endl
 		<< PHASE(phase) << endl
 		<< TRANS(trans) << EndDebug;
-	sc_stop();
-	wait();
+	Object::Stop(-1);
 	return tlm::TLM_ACCEPTED; // unnecessary, but to avoid compilation errors/warnings
 }
 
@@ -345,8 +341,7 @@ DispatchFW(BusTlmGenericProtocol<TYPES> *item) {
 				<< PHASE(phase) << endl
 				<< TRANS(*(item->payload)) << endl
 				<< " - item = " << item << EndDebug;
-			sc_stop();
-			wait();
+			Object::Stop(-1);
 		}
 		break;
 	case tlm::TLM_COMPLETED:
@@ -376,8 +371,7 @@ DispatchFW(BusTlmGenericProtocol<TYPES> *item) {
 				<< TIME(time) << endl
 				<< TRANS(*(item->payload)) << endl
 				<< " - item = " << item << EndDebug;
-			sc_stop();
-			wait();
+			Object::Stop(-1);
 			break;
 		case tlm::TLM_COMPLETED:
 			if(VerboseNonBlocking())
@@ -399,8 +393,7 @@ DispatchFW(BusTlmGenericProtocol<TYPES> *item) {
 			<< TIME(time) << endl
 			<< TRANS(*(item->payload)) << endl
 			<< " - item = " << item << EndDebug;
-		sc_stop();
-		wait();
+		Object::Stop(-1);
 		break;
 	}
 }

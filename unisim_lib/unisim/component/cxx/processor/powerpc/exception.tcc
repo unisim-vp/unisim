@@ -88,18 +88,44 @@ const char * ExternalInterruptException<CONFIG>::what () const throw ()
 }
 
 template <class CONFIG>
-ISIException<CONFIG>::ISIException(const char *name, address_t addr)
+ISIException<CONFIG>::ISIException(Type _type, address_t _addr)
+	: type(_type)
+	, addr(_addr)
 {
 	std::stringstream sstr;
-	this->addr = addr;
 	sstr.setf(std::ios::right | std::ios::hex | std::ios::showbase);
-	sstr << "ISI " << name << " exception";
+	sstr << "ISI ";
+	switch(type)
+	{
+		case ISI_PROTECTION_VIOLATION:
+			sstr << "protection violation";
+			break;
+		case ISI_NO_EXECUTE:
+			sstr << "no execute";
+			break;
+		case ISI_DIRECT_STORE:
+			sstr << "direct store";
+			break;
+		case ISI_PAGE_FAULT:
+			sstr << "page fault";
+			break;
+		case ISI_GUARDED_MEMORY:
+			sstr << "guarded memory";
+			break;
+	}
+	sstr << " exception";
 	what_str = sstr.str();
 }
 
 template <class CONFIG>
 ISIException<CONFIG>::~ISIException() throw()
 {
+}
+
+template <class CONFIG>
+typename ISIException<CONFIG>::Type ISIException<CONFIG>::GetType() const
+{
+	return type;
 }
 
 template <class CONFIG>
@@ -115,45 +141,74 @@ typename CONFIG::address_t ISIException<CONFIG>::GetAddr() const
 }
 
 template <class CONFIG>
-ISIProtectionViolationException<CONFIG>::ISIProtectionViolationException(address_t addr) : ISIException<CONFIG>("protection violation", addr)
+ISIProtectionViolationException<CONFIG>::ISIProtectionViolationException(address_t addr) : ISIException<CONFIG>(ISIException<CONFIG>::ISI_PROTECTION_VIOLATION, addr)
 {
 }
 
 template <class CONFIG>
-ISINoExecuteException<CONFIG>::ISINoExecuteException(address_t addr) : ISIException<CONFIG>("no execute", addr)
+ISINoExecuteException<CONFIG>::ISINoExecuteException(address_t addr) : ISIException<CONFIG>(ISIException<CONFIG>::ISI_NO_EXECUTE, addr)
 {
 }
 
 template <class CONFIG>
-ISIDirectStoreException<CONFIG>::ISIDirectStoreException(address_t addr) : ISIException<CONFIG>("direct store", addr)
+ISIDirectStoreException<CONFIG>::ISIDirectStoreException(address_t addr) : ISIException<CONFIG>(ISIException<CONFIG>::ISI_DIRECT_STORE, addr)
 {
 }
 
 template <class CONFIG>
-ISIPageFaultException<CONFIG>::ISIPageFaultException(address_t addr) : ISIException<CONFIG>("page fault", addr)
+ISIPageFaultException<CONFIG>::ISIPageFaultException(address_t addr) : ISIException<CONFIG>(ISIException<CONFIG>::ISI_PAGE_FAULT, addr)
 {
 }
 
 template <class CONFIG>
-ISIGuardedMemoryException<CONFIG>::ISIGuardedMemoryException(address_t addr) : ISIException<CONFIG>("guarded memory", addr)
+ISIGuardedMemoryException<CONFIG>::ISIGuardedMemoryException(address_t addr) : ISIException<CONFIG>(ISIException<CONFIG>::ISI_GUARDED_MEMORY, addr)
 {
 }
 
 template <class CONFIG>
-DSIException<CONFIG>::DSIException(const char *name, address_t addr, typename CONFIG::MemoryAccessType memory_access_type)
+DSIException<CONFIG>::DSIException(Type _type, address_t _addr, typename CONFIG::MemoryAccessType _memory_access_type)
+	: type(_type)
+	, addr(_addr)
+	, memory_access_type(_memory_access_type)
+	, what_str()
 {
-	this->addr = addr;
-	this->memory_access_type = memory_access_type;
-	
 	std::stringstream sstr;
 	sstr.setf(std::ios::right | std::ios::hex | std::ios::showbase);
-	sstr << "DSI " << name << " exception";
+	sstr << "DSI ";
+	switch(type)
+	{
+		case DSI_DIRECT_STORE:
+			sstr << "direct store";
+			break;
+		case DSI_PROTECTION_VIOLATION:
+			sstr << "protection violation";
+			break;
+		case DSI_PAGE_FAULT:
+			sstr << "page fault";
+			break;
+		case DSI_DATA_ADDRESS_BREAKPOINT:
+			sstr << "data address breakpoint";
+			break;
+		case DSI_EXTERNAL_ACCESS_DISABLED:
+			sstr << "external access disabled";
+			break;
+		case DSI_WRITE_THROUGH_LINKED_LOAD_STORE:
+			sstr << "write through linked load/store";
+			break;
+	}
+	sstr << " exception";
 	what_str = sstr.str();
 }
 
 template <class CONFIG>
 DSIException<CONFIG>::~DSIException() throw()
 {
+}
+
+template <class CONFIG>
+typename DSIException<CONFIG>::Type DSIException<CONFIG>::GetType() const
+{
+	return type;
 }
 
 template <class CONFIG>
@@ -175,32 +230,38 @@ const char * DSIException<CONFIG>::what () const throw ()
 }
 
 template <class CONFIG>
-DSIDirectStoreException<CONFIG>::DSIDirectStoreException(address_t addr, typename CONFIG::MemoryAccessType memory_access_type) : DSIException<CONFIG>("direct store", addr, memory_access_type)
+DSIDirectStoreException<CONFIG>::DSIDirectStoreException(address_t addr, typename CONFIG::MemoryAccessType memory_access_type)
+	: DSIException<CONFIG>(DSIException<CONFIG>::DSI_DIRECT_STORE, addr, memory_access_type)
 {
 }
 
 template <class CONFIG>
-DSIProtectionViolationException<CONFIG>::DSIProtectionViolationException(address_t addr, typename CONFIG::MemoryAccessType memory_access_type) : DSIException<CONFIG>("protection violation", addr, memory_access_type)
+DSIProtectionViolationException<CONFIG>::DSIProtectionViolationException(address_t addr, typename CONFIG::MemoryAccessType memory_access_type)
+	: DSIException<CONFIG>(DSIException<CONFIG>::DSI_PROTECTION_VIOLATION, addr, memory_access_type)
 {
 }
 
 template <class CONFIG>
-DSIPageFaultException<CONFIG>::DSIPageFaultException(address_t addr, typename CONFIG::MemoryAccessType memory_access_type) : DSIException<CONFIG>("page fault", addr, memory_access_type)
+DSIPageFaultException<CONFIG>::DSIPageFaultException(address_t addr, typename CONFIG::MemoryAccessType memory_access_type)
+	: DSIException<CONFIG>(DSIException<CONFIG>::DSI_PAGE_FAULT, addr, memory_access_type)
 {
 }
 
 template <class CONFIG>
-DSIDataAddressBreakpointException<CONFIG>::DSIDataAddressBreakpointException(address_t addr, typename CONFIG::MemoryAccessType memory_access_type) : DSIException<CONFIG>("data address breakpoint", addr, memory_access_type)
+DSIDataAddressBreakpointException<CONFIG>::DSIDataAddressBreakpointException(address_t addr, typename CONFIG::MemoryAccessType memory_access_type)
+	: DSIException<CONFIG>(DSIException<CONFIG>::DSI_DATA_ADDRESS_BREAKPOINT, addr, memory_access_type)
 {
 }
 
 template <class CONFIG>
-DSIExternalAccessDisabledException<CONFIG>::DSIExternalAccessDisabledException(address_t addr, typename CONFIG::MemoryAccessType memory_access_type) : DSIException<CONFIG>("external access disabled", addr, memory_access_type)
+DSIExternalAccessDisabledException<CONFIG>::DSIExternalAccessDisabledException(address_t addr, typename CONFIG::MemoryAccessType memory_access_type)
+	: DSIException<CONFIG>(DSIException<CONFIG>::DSI_EXTERNAL_ACCESS_DISABLED, addr, memory_access_type)
 {
 }
 
 template <class CONFIG>
-DSIWriteThroughLinkedLoadStore<CONFIG>::DSIWriteThroughLinkedLoadStore(address_t addr, typename CONFIG::MemoryAccessType memory_access_type) : DSIException<CONFIG>("write through linked load-store", addr, memory_access_type)
+DSIWriteThroughLinkedLoadStore<CONFIG>::DSIWriteThroughLinkedLoadStore(address_t addr, typename CONFIG::MemoryAccessType memory_access_type)
+	: DSIException<CONFIG>(DSIException<CONFIG>::DSI_WRITE_THROUGH_LINKED_LOAD_STORE, addr, memory_access_type)
 {
 }
 
@@ -234,10 +295,27 @@ const char * AlignmentException<CONFIG>::what () const throw ()
 }
 
 template <class CONFIG>
-ProgramException<CONFIG>::ProgramException(const char *name)
+ProgramException<CONFIG>::ProgramException(Type _type)
+	: type(_type)
 {
 	std::stringstream sstr;
-	sstr << "Program " << name << " exception";
+	sstr << "Program ";
+	switch(type)
+	{
+		case PX_ILLEGAL_INSTRUCTION:
+			sstr << "illegal instruction";
+			break;
+		case PX_PRIVILEGE_VIOLATION:
+			sstr << "privilege violation";
+			break;
+		case PX_TRAP:
+			sstr << "trap";
+			break;
+		case PX_FLOATING_POINT:
+			sstr << "floating-point";
+			break;
+	}
+	sstr << " exception";
 	what_str = sstr.str();
 }
 
@@ -247,28 +325,34 @@ ProgramException<CONFIG>::~ProgramException() throw()
 }
 
 template <class CONFIG>
+typename ProgramException<CONFIG>::Type ProgramException<CONFIG>::GetType() const
+{
+	return type;
+}
+
+template <class CONFIG>
 const char * ProgramException<CONFIG>::what () const throw ()
 {
 	return what_str.c_str();
 }
 
 template <class CONFIG>
-IllegalInstructionException<CONFIG>::IllegalInstructionException() : ProgramException<CONFIG>("illegal instruction")
+IllegalInstructionException<CONFIG>::IllegalInstructionException() : ProgramException<CONFIG>(ProgramException<CONFIG>::PX_ILLEGAL_INSTRUCTION)
 {
 }
 
 template <class CONFIG>
-PrivilegeViolationException<CONFIG>::PrivilegeViolationException() : ProgramException<CONFIG>("privilege violation")
+PrivilegeViolationException<CONFIG>::PrivilegeViolationException() : ProgramException<CONFIG>(ProgramException<CONFIG>::PX_PRIVILEGE_VIOLATION)
 {
 }
 
 template <class CONFIG>
-TrapException<CONFIG>::TrapException() : ProgramException<CONFIG>("trap")
+TrapException<CONFIG>::TrapException() : ProgramException<CONFIG>(ProgramException<CONFIG>::PX_TRAP)
 {
 }
 
 template <class CONFIG>
-FloatingPointException<CONFIG>::FloatingPointException() : ProgramException<CONFIG>("floating point")
+FloatingPointException<CONFIG>::FloatingPointException() : ProgramException<CONFIG>(ProgramException<CONFIG>::PX_FLOATING_POINT)
 {
 }
 

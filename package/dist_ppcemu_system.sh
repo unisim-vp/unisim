@@ -199,6 +199,7 @@ unisim/component/cxx/processor/powerpc/isa/ppc.isa \
 unisim/component/cxx/processor/powerpc/isa/branch.isa \
 unisim/component/cxx/processor/powerpc/isa/floating.isa \
 unisim/component/cxx/processor/powerpc/isa/loadstore.isa \
+unisim/component/cxx/processor/powerpc/isa/specialization.isa \
 unisim/component/cxx/processor/powerpc/isa/perf.isa \
 unisim/component/cxx/processor/powerpc/isa/sim_dependencies.isa \
 unisim/component/cxx/processor/powerpc/isa/sim_latencies.isa \
@@ -840,7 +841,7 @@ if [ "${has_to_build_ppcemu_system_configure}" = "yes" ]; then
 	echo "\$(top_srcdir)/unisim/component/cxx/processor/powerpc/isa/powerpc.tcc: \$(top_srcdir)/unisim/component/cxx/processor/powerpc/isa/powerpc.hh" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
 	echo "\$(top_srcdir)/unisim/component/cxx/processor/powerpc/isa/powerpc.hh: ${UNISIM_LIB_PPCEMU_SYSTEM_ISA_FILES}" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
 	printf "\t" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
-	echo "cd \$(top_srcdir)/unisim/component/cxx/processor/powerpc/isa; \$(GENISSLIB_PATH) -o powerpc -w 32 -I . ppc.isa" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
+	echo "cd \$(top_srcdir)/unisim/component/cxx/processor/powerpc/isa; \$(GENISSLIB_PATH) -o powerpc -w 8 -I . ppc.isa" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
 	echo "all-local: all-local-bin all-local-share" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
 	echo "clean-local: clean-local-bin clean-local-share" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
 	echo "all-local-bin: \$(bin_PROGRAMS)" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"

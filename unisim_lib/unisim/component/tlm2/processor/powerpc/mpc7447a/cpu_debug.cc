@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2010,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,27 +29,24 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __UNISIM_SERVICE_INTERFACES_CPU_LINUX_OS_HH__
-#define __UNISIM_SERVICE_INTERFACES_CPU_LINUX_OS_HH__
+#include <unisim/component/tlm2/processor/powerpc/mpc7447a/cpu.hh>
+#include <unisim/component/tlm2/processor/powerpc/mpc7447a/cpu.tcc>
 
-#include "unisim/service/interfaces/cpu_os.hh"
-  
 namespace unisim {
-namespace service {
-namespace interfaces {
+namespace component {
+namespace tlm2 {
+namespace processor {
+namespace powerpc {
+namespace mpc7447a {
 
-class CPULinuxOS {
-public:
-	CPULinuxOS() {}
-	virtual ~CPULinuxOS() {}
-    virtual void PerformExit(int ret) = 0;
-};
+template class CPU<unisim::component::cxx::processor::powerpc::mpc7447a::DebugConfig>;
 
-} // end of interfaces namespace
-} // end of service namespace
-} // end of unisim namespace
-
-#endif // __UNISIM_SERVICE_INTERFACES_CPU_LINUX_OS_HH__
+} // end of namespace mpc7447a
+} // end of namespace powerpc
+} // end of namespace processor
+} // end of namespace tlm2
+} // end of namespace component
+} // end of namespace unisim

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2010,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,36 +29,24 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
- 
-#ifndef __UNISIM_SERVICE_INTERFACES_CPU_OS_HH__
-#define __UNISIM_SERVICE_INTERFACES_CPU_OS_HH__
+
+#include <unisim/component/tlm2/processor/powerpc/mpc7447a/cpu.hh>
+#include <unisim/component/tlm2/processor/powerpc/mpc7447a/cpu.tcc>
 
 namespace unisim {
-namespace service {
-namespace interfaces {
+namespace component {
+namespace tlm2 {
+namespace processor {
+namespace powerpc {
+namespace mpc7447a {
 
-  template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-  class CPUOS {
-  public:
-	CPUOS() {}
-	virtual ~CPUOS() {}
-    virtual int GetSystemCallNumber() = 0;
-    virtual ADDRESS_TYPE GetMmapBase() const = 0;
-    virtual void SetMmapBase(ADDRESS_TYPE base) = 0;
-    virtual ADDRESS_TYPE GetMmapBrkPoint() const = 0;
-    virtual void SetMmapBrkPoint(ADDRESS_TYPE brk_point) = 0;
-    virtual ADDRESS_TYPE GetBrkPoint() const = 0;
-    virtual void SetBrkPoint(ADDRESS_TYPE brk_point) = 0;
-    virtual PARAMETER_TYPE GetSystemCallParam(int id) = 0;
-    virtual void PerformExit(int ret) = 0;
-    virtual void SetSystemCallStatus(int ret, bool error) = 0;
-  };
+template class CPU<unisim::component::cxx::processor::powerpc::mpc7447a::Config>;
 
-} // end of interfaces namespace
-} // end of service namespace
-} // end of unisim namespace
-  
-
-#endif // __UNISIM_SERVICE_INTERFACES_CPU_OS_HH__
+} // end of namespace mpc7447a
+} // end of namespace powerpc
+} // end of namespace processor
+} // end of namespace tlm2
+} // end of namespace component
+} // end of namespace unisim

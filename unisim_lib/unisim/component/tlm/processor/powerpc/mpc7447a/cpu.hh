@@ -136,84 +136,25 @@ private:
 #endif
 	;
 	
-	class ExternalInterruptListener :
+	class IRQListener :
 		public sc_module,
 		public TlmSendIf<InterruptRequest>
 	{
 	public:
-		ExternalInterruptListener(const sc_module_name& name, unisim::component::cxx::processor::powerpc::mpc7447a::CPU<CONFIG> *_cpu, sc_event *ev);
+		IRQListener(const sc_module_name& name, unsigned int irq, unisim::component::cxx::processor::powerpc::mpc7447a::CPU<CONFIG> *_cpu, sc_event *ev);
 		virtual bool Send(const Pointer<TlmMessage<InterruptRequest> >& message);
 	private:
-		unisim::component::cxx::processor::powerpc::mpc7447a::CPU<CONFIG> *cpu;
-		sc_event *ev;
-	};
-	
-	class HardResetListener :
-		public sc_module,
-		public TlmSendIf<InterruptRequest>
-	{
-	public:
-		HardResetListener(const sc_module_name& name, unisim::component::cxx::processor::powerpc::mpc7447a::CPU<CONFIG> *_cpu, sc_event *ev);
-		virtual bool Send(const Pointer<TlmMessage<InterruptRequest> >& message);
-	private:
-		unisim::component::cxx::processor::powerpc::mpc7447a::CPU<CONFIG> *cpu;
-		sc_event *ev;
-	};
-	
-	class SoftResetListener :
-		public sc_module,
-		public TlmSendIf<InterruptRequest>
-	{
-	public:
-		SoftResetListener(const sc_module_name& name, unisim::component::cxx::processor::powerpc::mpc7447a::CPU<CONFIG> *_cpu, sc_event *ev);
-		virtual bool Send(const Pointer<TlmMessage<InterruptRequest> >& message);
-	private:
-		unisim::component::cxx::processor::powerpc::mpc7447a::CPU<CONFIG> *cpu;
-		sc_event *ev;
-	};
-	
-	class MCPListener :
-		public sc_module,
-		public TlmSendIf<InterruptRequest>
-	{
-	public:
-		MCPListener(const sc_module_name& name, unisim::component::cxx::processor::powerpc::mpc7447a::CPU<CONFIG> *_cpu, sc_event *ev);
-		virtual bool Send(const Pointer<TlmMessage<InterruptRequest> >& message);
-	private:
-		unisim::component::cxx::processor::powerpc::mpc7447a::CPU<CONFIG> *cpu;
-		sc_event *ev;
-	};
-	
-	class TEAListener :
-		public sc_module,
-		public TlmSendIf<InterruptRequest>
-	{
-	public:
-		TEAListener(const sc_module_name& name, unisim::component::cxx::processor::powerpc::mpc7447a::CPU<CONFIG> *_cpu, sc_event *ev);
-		virtual bool Send(const Pointer<TlmMessage<InterruptRequest> >& message);
-	private:
-		unisim::component::cxx::processor::powerpc::mpc7447a::CPU<CONFIG> *cpu;
-		sc_event *ev;
-	};
-	
-	class SMIListener :
-		public sc_module,
-		public TlmSendIf<InterruptRequest>
-	{
-	public:
-		SMIListener(const sc_module_name& name, unisim::component::cxx::processor::powerpc::mpc7447a::CPU<CONFIG> *_cpu, sc_event *ev);
-		virtual bool Send(const Pointer<TlmMessage<InterruptRequest> >& message);
-	private:
+		unsigned int irq;
 		unisim::component::cxx::processor::powerpc::mpc7447a::CPU<CONFIG> *cpu;
 		sc_event *ev;
 	};
 
-	ExternalInterruptListener external_interrupt_listener;
-	HardResetListener hard_reset_listener;
-	SoftResetListener soft_reset_listener;
-	MCPListener mcp_listener;
-	TEAListener tea_listener;
-	SMIListener smi_listener;
+	IRQListener external_interrupt_listener;
+	IRQListener hard_reset_listener;
+	IRQListener soft_reset_listener;
+	IRQListener mcp_listener;
+	IRQListener tea_listener;
+	IRQListener smi_listener;
 };
 
 } // end of namespace mpc7447a

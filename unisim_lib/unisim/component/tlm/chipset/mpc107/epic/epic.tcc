@@ -178,8 +178,7 @@ SetINT() {
 				<< "handle interrupt requests that could not be handled"
 				<< endl;
 		
-		sc_stop();
-		wait();
+		Object::Stop(-1);
 	}
 }
 
@@ -209,8 +208,7 @@ UnsetINT() {
 				<< "handle interrupt requests that could not be handled"
 				<< endl;
 		
-		sc_stop();
-		wait();
+		Object::Stop(-1);
 	}
 }
 
@@ -240,8 +238,7 @@ SetSoftReset() {
 				<< "handle soft reset interrupt requests that could not be handled"
 				<< endl;
 		
-		sc_stop();
-		wait();
+		Object::Stop(-1);
 	}
 }
 
@@ -271,8 +268,7 @@ UnsetSoftReset() {
 				<< "handle soft reset interrupt requests that could not be handled"
 				<< endl;
 		
-		sc_stop();
-		wait();
+		Object::Stop(-1);
 	}
 }
 
@@ -338,8 +334,7 @@ template <class PHYSICAL_ADDR,
 void
 EPIC<PHYSICAL_ADDR, MAX_TRANSACTION_DATA_SIZE, DEBUG> ::
 StopSimulation() {
-	sc_stop();
-	wait();
+	Object::Stop(-1);
 }
 
 template <class PHYSICAL_ADDR,

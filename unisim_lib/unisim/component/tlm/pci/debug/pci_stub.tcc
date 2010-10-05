@@ -118,8 +118,7 @@ void PCIStub<ADDRESS_TYPE, MAX_DATA_SIZE>::ServeStart()
 template <class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
 void PCIStub<ADDRESS_TYPE, MAX_DATA_SIZE>::ServeStop()
 {
-	sc_stop();
-	wait();
+	Object::Stop(-1);
 }
 
 template <class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>

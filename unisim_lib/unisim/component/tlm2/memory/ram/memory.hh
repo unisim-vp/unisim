@@ -56,7 +56,9 @@ using unisim::kernel::service::Client;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::logger::Logger;
 
+typedef uint64_t DEFAULT_ADDRESS;
 const unsigned int DEFAULT_BUSWIDTH = 32; // 32-bit bus
+const unsigned int DEFAULT_BURST_LENGTH = 8; // 8 beats
 const uint32_t DEFAULT_PAGE_SIZE = 1024 * 1024; // 1 MB page size (implementation detail)
 const bool DEFAULT_DEBUG = false; // no debug
 
@@ -65,18 +67,18 @@ const bool DEFAULT_DEBUG = false; // no debug
  * It implements a tlm2 module using the tlm_generic_payload and (as it inherits from the memory service) the 
  *   service methods (Read and WriteMemory).
  */
-template <unsigned int BUSWIDTH = DEFAULT_BUSWIDTH, uint32_t PAGE_SIZE = DEFAULT_PAGE_SIZE, bool DEBUG = DEFAULT_DEBUG>
+template <unsigned int BUSWIDTH = DEFAULT_BUSWIDTH, class ADDRESS = DEFAULT_ADDRESS, unsigned int BURST_LENGTH = DEFAULT_BURST_LENGTH, uint32_t PAGE_SIZE = DEFAULT_PAGE_SIZE, bool DEBUG = DEFAULT_DEBUG>
 class Memory :
 	public sc_module,
-	public unisim::component::cxx::memory::ram::Memory<uint64_t, PAGE_SIZE>,
+	public unisim::component::cxx::memory::ram::Memory<ADDRESS, PAGE_SIZE>,
 	public tlm::tlm_fw_transport_if<>
 {
 public:
-	typedef unisim::component::cxx::memory::ram::Memory<uint64_t, PAGE_SIZE> inherited;
+	typedef unisim::component::cxx::memory::ram::Memory<ADDRESS, PAGE_SIZE> inherited;
 	/**
 	 * TLM2 Target socket
 	 */
-	tlm::tlm_target_socket<> slave_sock;
+	tlm::tlm_target_socket<BUSWIDTH> slave_sock;
 
 	/**
 	 * Constructor.
@@ -108,17 +110,29 @@ private:
 	 * Check the verbosity
 	 */
 	inline bool IsVerbose() { return (DEBUG && verbose); }
+	sc_time& GetBurstLatency(unsigned int num_burst_beats);
+	void UpdateTime(unsigned int data_length, const sc_time& latency, sc_time& t);
 
 	/** Logger */
 	Logger logger;
 	/** Verbosity */
 	bool verbose;
-	/** The cycle time in ps */
-	unsigned int cycle_time;
-	/** The frequency in sc_time format */
-	sc_time cycle_sctime;
+	/** The cycle time */
+	sc_time cycle_time;
+	/** Latencies */
+	sc_time read_latency;
+	sc_time write_latency;
+	/** Moment when memory will be ready to serve another request */
+	sc_time ready_time;
+	/** Burst latency lookup tables */
+	static const unsigned int NUM_BURST_LATENCY_FAST_LOOKUP = 16; // 0 <= burst_length < 16 for fast lookup
+	sc_time burst_latency_fast_lookup[NUM_BURST_LATENCY_FAST_LOOKUP];
+	std::map<unsigned int, sc_time> burst_latency_slow_lookup;
 	/** The parameter to set frequency */
-	Parameter<unsigned int> param_cycle_time;
+	Parameter<sc_time> param_cycle_time;
+	/** The parameters to set the latencies */
+	Parameter<sc_time> param_read_latency;
+	Parameter<sc_time> param_write_latency;
 	/** The parameter to set the verbosity */
 	Parameter<bool> param_verbose;
 };

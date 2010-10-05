@@ -71,7 +71,6 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	, Service<unisim::service::interfaces::Registers>(name,  parent)
 	, Service<Memory<typename CONFIG::address_t> >(name,  parent)
 	, Service<MemoryInjection<typename CONFIG::address_t> >(name,  parent)
-	, Service<CPULinuxOS>(name,  parent)
 	, Client<Memory<typename CONFIG::address_t> >(name,  parent)
 	, Client<LinuxOS>(name,  parent)
 	, Client<CachePowerEstimator>(name,  parent)
@@ -81,7 +80,6 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	, registers_export("registers-export",  this)
 	, memory_export("memory-export",  this)
 	, memory_injection_export("memory-injection-export",  this)
-	, cpu_linux_os_export("cpu-linux-os-export",  this)
 	, synchronizable_export("synchronizable-export",  this)
 	, memory_access_reporting_control_export("memory_access_reporting_control_export",  this)
 	, kernel_loader_import("kernel-loader-import",  this)
@@ -150,7 +148,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	, prefetch_buffer()
 	, reserve(false)
 	, reserve_addr(0)
-	, asynchronous_interrupt(0)
+	, irq(0)
 	, param_cpu_cycle_time("cpu-cycle-time",  this,  cpu_cycle_time, "CPU cycle time in picoseconds")
 	, param_voltage("voltage",  this,  voltage, "CPU voltage in mV")
 	, param_max_inst("max-inst",  this,  max_inst, "maximum number of instructions to simulate")
@@ -566,7 +564,7 @@ void CPU<CONFIG>::Reset()
 	cpu_cycle = 0;
 	instruction_counter = 0;
 
-	asynchronous_interrupt = 0;
+	irq = 0;
 
 	reserve = false;
 	reserve_addr = 0;
@@ -645,8 +643,6 @@ void CPU<CONFIG>::Reset()
 	num_insn_in_prefetch_buffer = 0;
 	cur_insn_in_prefetch_buffer = 0;
 
-	asynchronous_interrupt = 0;
-	
 	hid0 = CONFIG::HID0_RESET_VALUE;
 	hid1 = CONFIG::HID1_RESET_VALUE;
 
@@ -1257,7 +1253,7 @@ void CPU<CONFIG>::StepOneInstruction()
 		/* execute the instruction */
 		operation->execute(this);
 
-		if(unlikely(HasAsynchronousInterrupt()))
+		if(unlikely(HasIRQ()))
 		{
 			if(HasHardReset()) throw SystemResetException<CONFIG>();
 			if(HasMCP() && GetHID1_EMCP()) throw MachineCheckException<CONFIG>();
@@ -1275,22 +1271,10 @@ void CPU<CONFIG>::StepOneInstruction()
 	catch(SystemResetException<CONFIG>& exc) { HandleException(exc); }
 	catch(PerformanceMonitorInterruptException<CONFIG>& exc) { HandleException(exc); }
 	catch(SystemManagementInterruptException<CONFIG>& exc) { HandleException(exc); }
-	catch(ISIProtectionViolationException<CONFIG>& exc) { HandleException(exc); }
-	catch(ISINoExecuteException<CONFIG>& exc) { HandleException(exc); }
-	catch(ISIDirectStoreException<CONFIG>& exc) { HandleException(exc); }
-	catch(ISIPageFaultException<CONFIG>& exc) { HandleException(exc); }
-	catch(ISIGuardedMemoryException<CONFIG>& exc) { HandleException(exc); }
-	catch(DSIDirectStoreException<CONFIG>& exc) { HandleException(exc); }
-	catch(DSIProtectionViolationException<CONFIG>& exc) { HandleException(exc); }
-	catch(DSIPageFaultException<CONFIG>& exc) { HandleException(exc); }
-	catch(DSIDataAddressBreakpointException<CONFIG>& exc) { HandleException(exc); }
-	catch(DSIExternalAccessDisabledException<CONFIG>& exc) { HandleException(exc); }
-	catch(DSIWriteThroughLinkedLoadStore<CONFIG>& exc) { HandleException(exc); }
+	catch(ISIException<CONFIG>& exc) { HandleException(exc); }
+	catch(DSIException<CONFIG>& exc) { HandleException(exc); }
 	catch(AlignmentException<CONFIG>& exc) { HandleException(exc, operation->GetEncoding()); }
-	catch(IllegalInstructionException<CONFIG>& exc) { HandleException(exc); }
-	catch(PrivilegeViolationException<CONFIG>& exc) { HandleException(exc); }
-	catch(TrapException<CONFIG>& exc) { HandleException(exc); }
-	catch(FloatingPointException<CONFIG>& exc) { HandleException(exc); }
+	catch(ProgramException<CONFIG>& exc) { HandleException(exc); }
 	catch(SystemCallException<CONFIG>& exc) { HandleException(exc); }
 	catch(FloatingPointUnavailableException<CONFIG>& exc) { HandleException(exc); }
 	catch(TraceException<CONFIG>& exc) { HandleException(exc); }
@@ -1811,7 +1795,7 @@ void CPU<CONFIG>::SetDEC(uint32_t value)
 
 	if(overflow)
 	{
-		ReqDecrementerOverflow();
+		SetIRQ(CONFIG::IRQ_DECREMENTER_OVERFLOW);
 	}
 }
 
@@ -4584,15 +4568,6 @@ string CPU<CONFIG>::Disasm(typename CONFIG::address_t addr, typename CONFIG::add
 	return sstr.str();
 }
 
-/* PowerPC Linux OS Interface */
-template <class CONFIG>
-void CPU<CONFIG>::PerformExit(int ret)
-{
-	if(unlikely(IsVerboseStep()))
-		logger << DebugInfo << "Program exited with code " << ret << endl << EndDebugInfo;
-	Stop(ret);
-}
-
 /* Endian interface */
 template <class CONFIG>
 endian_type CPU<CONFIG>::GetEndianess()
@@ -5096,54 +5071,15 @@ void CPU<CONFIG>::Stwcx(unsigned int rs, typename CONFIG::address_t addr)
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::ReqDecrementerOverflow()
+void CPU<CONFIG>::SetIRQ(unsigned int _irq)
 {
-	asynchronous_interrupt |= CONFIG::SIG_DECREMENTER_OVERFLOW;
+	irq = irq | _irq;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::AckDecrementerOverflow()
+void CPU<CONFIG>::ResetIRQ(unsigned int _irq)
 {
-	asynchronous_interrupt &= ~CONFIG::SIG_DECREMENTER_OVERFLOW;
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::ReqExternalInterrupt()
-{
-	if(unlikely(IsVerboseException())) {
-		logger << DebugInfo << "Received external interrupt" << EndDebugInfo;
-	}
-	asynchronous_interrupt |= CONFIG::SIG_EXTERNAL_INTERRUPT;
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::AckExternalInterrupt()
-{
-	asynchronous_interrupt &= ~CONFIG::SIG_EXTERNAL_INTERRUPT;
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::ReqHardReset()
-{
-	asynchronous_interrupt |= CONFIG::SIG_HARD_RESET;
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::AckHardReset()
-{
-	asynchronous_interrupt &= ~CONFIG::SIG_HARD_RESET;
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::ReqSoftReset()
-{
-	asynchronous_interrupt |= CONFIG::SIG_SOFT_RESET;
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::AckSoftReset()
-{
-	asynchronous_interrupt &= ~CONFIG::SIG_SOFT_RESET;
+	irq = irq & (~_irq);
 }
 
 template <class CONFIG>
@@ -5154,55 +5090,6 @@ void CPU<CONFIG>::Synchronize()
 template <class CONFIG>
 void CPU<CONFIG>::Idle()
 {
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::ReqMCP()
-{
-	asynchronous_interrupt |= CONFIG::SIG_MCP;
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::AckMCP()
-{
-	asynchronous_interrupt &= ~CONFIG::SIG_MCP;
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::ReqTEA()
-{
-	asynchronous_interrupt |= CONFIG::SIG_TEA;
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::AckTEA()
-{
-	asynchronous_interrupt &= ~CONFIG::SIG_TEA;
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::ReqSMI()
-{
-	asynchronous_interrupt |= CONFIG::SIG_SMI;
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::AckSMI()
-{
-	asynchronous_interrupt &= ~CONFIG::SIG_SMI;
-}
-
-
-template <class CONFIG>
-void CPU<CONFIG>::ReqPerformanceMonitorInterrupt()
-{
-	asynchronous_interrupt |= CONFIG::SIG_PERFORMANCE_MONITOR_INTERRUPT;
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::AckPerformanceMonitorInterrupt()
-{
-	asynchronous_interrupt &= ~CONFIG::SIG_PERFORMANCE_MONITOR_INTERRUPT;
 }
 
 template <class CONFIG>
