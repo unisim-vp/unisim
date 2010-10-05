@@ -234,21 +234,38 @@ void CPU<CONFIG>::HandleException(const SystemManagementInterruptException<CONFI
 //       |                       or guarded memory (PTE[G]=1 or DBAT[G]=1)
 //       |
 //       +-----------------> page fault
-
 template <class CONFIG>
-void CPU<CONFIG>::HandleException(const ISIProtectionViolationException<CONFIG>& exc)
+void CPU<CONFIG>::HandleException(const ISIException<CONFIG>& exc)
 {
 	if(linux_os_import)
 	{
-		logger << DebugError << "Instruction storage interrupt: protection violation" << EndDebugError;
+		logger << DebugError << exc.what() << EndDebugError;
 		Stop(-1);
 		return;
 	}
+	
 	SetSRR0(GetCIA()); // save CIA
-		
-	// keep SRR1[0], clear SRR1[1-3], set SRR1[4], keep SRR1[5-9], clear SRR1[10-11], set SRR1[12], clear SRR1[13-15],
-	// SRR1[16-23]=MSR[16-23], keep SRR1[24], SRR1[25-27]=MSR[25-27], keep SRR1[28-29], SRR1[30-31]=MSR[30-31]
-	SetSRR1((GetSRR1() & 0x87c0008cUL) | (GetMSR() & 0x0000ff73UL) | 0x080000000UL); 
+	
+	switch(exc.GetType())
+	{
+		case ISIException<CONFIG>::ISI_PROTECTION_VIOLATION:
+			// keep SRR1[0], clear SRR1[1-3], set SRR1[4], keep SRR1[5-9], clear SRR1[10-11], set SRR1[12], clear SRR1[13-15],
+			// SRR1[16-23]=MSR[16-23], keep SRR1[24], SRR1[25-27]=MSR[25-27], keep SRR1[28-29], SRR1[30-31]=MSR[30-31]
+			SetSRR1((GetSRR1() & 0x87c0008cUL) | (GetMSR() & 0x0000ff73UL) | 0x80000000UL); 
+			break;
+		case ISIException<CONFIG>::ISI_NO_EXECUTE:
+		case ISIException<CONFIG>::ISI_DIRECT_STORE:
+		case ISIException<CONFIG>::ISI_GUARDED_MEMORY:
+			// keep SRR1[0], clear SRR1[1-2], set SRR1[3], clear SRR1[4], keep SRR1[5-9], clear SRR1[10-11], set SRR1[12], clear SRR1[13-15],
+			// SRR1[16-23]=MSR[16-23], keep SRR1[24], SRR1[25-27]=MSR[25-27], keep SRR1[28-29], SRR1[30-31]=MSR[30-31]
+			SetSRR1((GetSRR1() & 0x87c0008cUL) | (GetMSR() & 0x0000ff73UL) | 0x10000000UL); 
+			break;
+		case ISIException<CONFIG>::ISI_PAGE_FAULT:
+			// keep SRR1[0], set SRR1[1], clear SRR1[2-4], keep SRR1[5-9], clear SRR1[10-11], set SRR1[12], clear SRR1[13-15],
+			// SRR1[16-23]=MSR[16-23], keep SRR1[24], SRR1[25-27]=MSR[25-27], keep SRR1[28-29], SRR1[30-31]=MSR[30-31]
+			SetSRR1((GetSRR1() & 0x87c0008cUL) | (GetMSR() & 0x0000ff73UL) | 0x40000000UL); 
+			break;
+	}
 	
 	// MSR[LE]=MSR[ILE], MSR[POW]=0, MSR[EE]=0, MSR[PR]=0, MSR[FP]=0, MSR[FE0]=0,
 	// MSR[SE]=0, MSR[BE]=0, MSR[FE1]=0, MSR[IR]=0, MSR[DR]=0, MSR[RI]=0
@@ -256,134 +273,6 @@ void CPU<CONFIG>::HandleException(const ISIProtectionViolationException<CONFIG>&
 		
 	SetNIA(CONFIG::EXC_ISI_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 
-	if(unlikely(IsVerboseException()))
-	{
-		logger << DebugInfo;
-		logger << "At 0x" << std::hex << GetCIA() << std::dec;
-		const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
-		if(symbol) logger << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
-		logger << ":" << exc.what() << endl;
-		logger << EndDebugInfo;
-	}
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::HandleException(const ISINoExecuteException<CONFIG>& exc)
-{
-	if(linux_os_import)
-	{
-		logger << DebugError << "Instruction storage interrupt: no execute exception" << EndDebugError;
-		Stop(-1);
-		return;
-	}
-	SetSRR0(GetCIA()); // save CIA
-		
-	// keep SRR1[0], clear SRR1[1-2], set SRR1[3], clear SRR1[4], keep SRR1[5-9], clear SRR1[10-11], set SRR1[12], clear SRR1[13-15],
-	// SRR1[16-23]=MSR[16-23], keep SRR1[24], SRR1[25-27]=MSR[25-27], keep SRR1[28-29], SRR1[30-31]=MSR[30-31]
-	SetSRR1((GetSRR1() & 0x87c0008cUL) | (GetMSR() & 0x0000ff73UL) | 0x10000000UL); 
-	
-	// MSR[LE]=MSR[ILE], MSR[POW]=0, MSR[EE]=0, MSR[PR]=0, MSR[FP]=0, MSR[FE0]=0,
-	// MSR[SE]=0, MSR[BE]=0, MSR[FE1]=0, MSR[IR]=0, MSR[DR]=0, MSR[RI]=0
-	SetMSR((GetMSR() & 0x00011040UL) | ((GetMSR() >> 16) & 1));
-		
-	SetNIA(CONFIG::EXC_ISI_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
-	
-	if(unlikely(IsVerboseException()))
-	{
-		logger << DebugInfo;
-		logger << "At 0x" << std::hex << GetCIA() << std::dec;
-		const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
-		if(symbol) logger << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
-		logger << ":" << exc.what() << endl;
-		logger << EndDebugInfo;
-	}
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::HandleException(const ISIDirectStoreException<CONFIG>& exc)
-{
-	if(linux_os_import)
-	{
-		logger << DebugError << "Instruction storage interrupt: direct store" << EndDebugError;
-		Stop(-1);
-		return;
-	}
-	SetSRR0(GetCIA()); // save CIA
-		
-	// keep SRR1[0], clear SRR1[1-2], set SRR1[3], clear SRR1[4], keep SRR1[5-9], clear SRR1[10-11], set SRR1[12], clear SRR1[13-15],
-	// SRR1[16-23]=MSR[16-23], keep SRR1[24], SRR1[25-27]=MSR[25-27], keep SRR1[28-29], SRR1[30-31]=MSR[30-31]
-	SetSRR1((GetSRR1() & 0x87c0008cUL) | (GetMSR() & 0x0000ff73UL) | 0x10000000UL); 
-	
-	// MSR[LE]=MSR[ILE], MSR[POW]=0, MSR[EE]=0, MSR[PR]=0, MSR[FP]=0, MSR[FE0]=0,
-	// MSR[SE]=0, MSR[BE]=0, MSR[FE1]=0, MSR[IR]=0, MSR[DR]=0, MSR[RI]=0
-	SetMSR((GetMSR() & 0x00011040UL) | ((GetMSR() >> 16) & 1));
-		
-	SetNIA(CONFIG::EXC_ISI_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
-	
-	if(unlikely(IsVerboseException()))
-	{
-		logger << DebugInfo;
-		logger << "At 0x" << std::hex << GetCIA() << std::dec;
-		const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
-		if(symbol) logger << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
-		logger << ":" << exc.what() << endl;
-		logger << EndDebugInfo;
-	}
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::HandleException(const ISIPageFaultException<CONFIG>& exc)
-{
-	if(linux_os_import)
-	{
-		logger << DebugError << "Instruction storage interrupt: page fault" << EndDebugError;
-		Stop(-1);
-		return;
-	}
-	SetSRR0(GetCIA()); // save CIA
-		
-	// keep SRR1[0], set SRR1[1], clear SRR1[2-4], keep SRR1[5-9], clear SRR1[10-11], set SRR1[12], clear SRR1[13-15],
-	// SRR1[16-23]=MSR[16-23], keep SRR1[24], SRR1[25-27]=MSR[25-27], keep SRR1[28-29], SRR1[30-31]=MSR[30-31]
-	SetSRR1((GetSRR1() & 0x87c0008cUL) | (GetMSR() & 0x0000ff73UL) | 0x40000000UL); 
-	
-	// MSR[LE]=MSR[ILE], MSR[POW]=0, MSR[EE]=0, MSR[PR]=0, MSR[FP]=0, MSR[FE0]=0,
-	// MSR[SE]=0, MSR[BE]=0, MSR[FE1]=0, MSR[IR]=0, MSR[DR]=0, MSR[RI]=0
-	SetMSR((GetMSR() & 0x00011040UL) | ((GetMSR() >> 16) & 1));
-		
-	SetNIA(CONFIG::EXC_ISI_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
-	
-	if(unlikely(IsVerboseException()))
-	{
-		logger << DebugInfo;
-		logger << "At 0x" << std::hex << GetCIA() << std::dec;
-		const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
-		if(symbol) logger << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
-		logger << ":" << exc.what() << endl;
-		logger << EndDebugInfo;
-	}
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::HandleException(const ISIGuardedMemoryException<CONFIG>& exc)
-{
-	if(linux_os_import)
-	{
-		logger << DebugError << "Instruction storage interrupt: guarded memory" << EndDebugError;
-		Stop(-1);
-		return;
-	}
-	SetSRR0(GetCIA()); // save CIA
-		
-	// keep SRR1[0], clear SRR1[1-2], set SRR1[3], clear SRR1[4], keep SRR1[5-9], clear SRR1[10-11], set SRR1[12], clear SRR1[13-15],
-	// SRR1[16-23]=MSR[16-23], keep SRR1[24], SRR1[25-27]=MSR[25-27], keep SRR1[28-29], SRR1[30-31]=MSR[30-31]
-	SetSRR1((GetSRR1() & 0x87c0008cUL) | (GetMSR() & 0x0000ff73UL) | 0x10000000UL); 
-	
-	// MSR[LE]=MSR[ILE], MSR[POW]=0, MSR[EE]=0, MSR[PR]=0, MSR[FP]=0, MSR[FE0]=0,
-	// MSR[SE]=0, MSR[BE]=0, MSR[FE1]=0, MSR[IR]=0, MSR[DR]=0, MSR[RI]=0
-	SetMSR((GetMSR() & 0x00011040UL) | ((GetMSR() >> 16) & 1));
-		
-	SetNIA(CONFIG::EXC_ISI_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
-	
 	if(unlikely(IsVerboseException()))
 	{
 		logger << DebugInfo;
@@ -396,6 +285,7 @@ void CPU<CONFIG>::HandleException(const ISIGuardedMemoryException<CONFIG>& exc)
 }
 
 /* DSI exception */
+// DAR indicates the faulting address to the operating system
 // DSISR indicates to the operating system the cause of the DSI exception:
 //
 //   0   1   2   3   4   5   6   7   8   9   10  11  12 .... 31
@@ -409,7 +299,7 @@ void CPU<CONFIG>::HandleException(const ISIGuardedMemoryException<CONFIG>& exc)
 //   |   |           |   |   |
 //   |   |           |   |   +------------------------> 1 for a store, 0 for a load
 //   |   |           |   |
-//   |   |           |   +----------------------------> direct store exception (eciwx, ecowx, lwarx, stwcx.)
+//   |   |           |   +----------------------------> write through or cache inhibited (lwarx, stwcx.)
 //   |   |           |
 //   |   |           +--------------------------------> protection violation
 //   |   |
@@ -417,11 +307,11 @@ void CPU<CONFIG>::HandleException(const ISIGuardedMemoryException<CONFIG>& exc)
 //   |
 //   +------------------------------------------------> direct store exception (load/store)
 template <class CONFIG>
-void CPU<CONFIG>::HandleException(const DSIDirectStoreException<CONFIG>& exc)
+void CPU<CONFIG>::HandleException(const DSIException<CONFIG>& exc)
 {
 	if(linux_os_import)
 	{
-		logger << DebugError << "Data storage interrupt: direct store" << EndDebugError;
+		logger << DebugError << exc.what() << EndDebugError;
 		Stop(-1);
 		return;
 	}
@@ -437,226 +327,45 @@ void CPU<CONFIG>::HandleException(const DSIDirectStoreException<CONFIG>& exc)
 	// MSR[SE]=0, MSR[BE]=0, MSR[FE1]=0, MSR[IR]=0, MSR[DR]=0, MSR[RI]=0
 	SetMSR((GetMSR() & 0x00011040UL) | ((GetMSR() >> 16) & 1));
 	
-	// FIXME: for eciwx, ecowx, lwarx or stwcx. DSISR[5] should be set
-	if(exc.GetAccessType() == CONFIG::MAT_WRITE)
-		SetDSISR(0x82000000UL); // set DSISR[0], DSISR[6], clear other bits
-	else
-		SetDSISR(0x80000000UL); // set DSISR[0], clear other bits
-		
-	SetNIA(CONFIG::EXC_DSI_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
-	
-	if(unlikely(IsVerboseException()))
+	switch(exc.GetType())
 	{
-		logger << DebugInfo;
-		logger << "At 0x" << std::hex << GetCIA() << std::dec;
-		const Symbol<typename CONFIG::address_t> *func_symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
-		if(func_symbol) logger << " (" << func_symbol->GetFriendlyName(GetCIA()) << ")";
-		logger << ":" << exc.what() << " while " << (exc.GetAccessType() == CONFIG::MAT_WRITE ? "writing" : "reading")
-				<< " data at 0x" << std::hex << exc.GetAddress() << std::dec;
-		const Symbol<typename CONFIG::address_t> *obj_symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_OBJECT) : 0;
-		if(obj_symbol) logger << " (" << obj_symbol->GetFriendlyName(exc.GetAddress()) << ")";
-		logger << endl;
-		logger << EndDebugInfo;
+		case DSIException<CONFIG>::DSI_DIRECT_STORE:
+			if(exc.GetAccessType() == CONFIG::MAT_WRITE)
+				SetDSISR(0x82000000UL); // set DSISR[0], DSISR[6], clear other bits
+			else
+				SetDSISR(0x80000000UL); // set DSISR[0], clear other bits
+			break;
+		case DSIException<CONFIG>::DSI_PROTECTION_VIOLATION:
+			if(exc.GetAccessType() == CONFIG::MAT_WRITE)
+				SetDSISR(0x0a000000UL); // set DSISR[4], set DSISR[6], clear other bits
+			else
+				SetDSISR(0x08000000UL); // set DSISR[4], clear other bits
+			break;
+		case DSIException<CONFIG>::DSI_PAGE_FAULT:
+			if(exc.GetAccessType() == CONFIG::MAT_WRITE)
+				SetDSISR(0x42000000UL); // set DSISR[1], set DSISR[6], clear other bits
+			else
+				SetDSISR(0x40000000UL); // set DSISR[1], clear other bits
+			break;
+		case DSIException<CONFIG>::DSI_DATA_ADDRESS_BREAKPOINT:
+			if(exc.GetAccessType() == CONFIG::MAT_WRITE)
+				SetDSISR(0x02400000UL); // set DSISR[6], set DSISR[9], clear other bits
+			else
+				SetDSISR(0x00400000UL); // set DSISR[9], clear other bits
+			break;
+		case DSIException<CONFIG>::DSI_EXTERNAL_ACCESS_DISABLED:
+			if(exc.GetAccessType() == CONFIG::MAT_WRITE)
+				SetDSISR(0x02100000UL); // set DSISR[6], DSISR[11], clear other bits
+			else
+				SetDSISR(0x02100000UL); // set DSISR[11], clear other bits
+			break;
+		case DSIException<CONFIG>::DSI_WRITE_THROUGH_LINKED_LOAD_STORE:
+			if(exc.GetAccessType() == CONFIG::MAT_WRITE)
+				SetDSISR(0x06000000UL); // set DSISR[5], DSISR[6], clear other bits
+			else
+				SetDSISR(0x04000000UL); // set DSISR[5], clear other bits
+			break;
 	}
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::HandleException(const DSIProtectionViolationException<CONFIG>& exc)
-{
-	if(linux_os_import)
-	{
-		logger << DebugError << "Data storage interrupt: protection violation" << EndDebugError;
-		Stop(-1);
-		return;
-	}
-	SetDAR(exc.GetAddress()); // DAR=effective address
-	
-	SetSRR0(GetCIA()); // save CIA
-		
-	// keep SRR1[0], clear SRR1[1-4], keep SRR1[5-9], clear SRR1[10-11], set SRR1[12], clear SRR1[13-15],
-	// SRR1[16-23]=MSR[16-23], keep SRR1[24], SRR1[25-27]=MSR[25-27], keep SRR1[28-29], SRR1[30-31]=MSR[30-31]
-	SetSRR1((GetSRR1() & 0x87c0008cUL) | (GetMSR() & 0x0000ff73UL)); 
-	
-	// MSR[LE]=MSR[ILE], MSR[POW]=0, MSR[EE]=0, MSR[PR]=0, MSR[FP]=0, MSR[FE0]=0,
-	// MSR[SE]=0, MSR[BE]=0, MSR[FE1]=0, MSR[IR]=0, MSR[DR]=0, MSR[RI]=0
-	SetMSR((GetMSR() & 0x00011040UL) | ((GetMSR() >> 16) & 1));
-	
-	if(exc.GetAccessType() == CONFIG::MAT_WRITE)
-		SetDSISR(0x0a000000UL); // set DSISR[4], set DSISR[6], clear other bits
-	else
-		SetDSISR(0x08000000UL); // set DSISR[4], clear other bits
-		
-	SetNIA(CONFIG::EXC_DSI_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
-	
-	if(unlikely(IsVerboseException()))
-	{
-		logger << DebugInfo;
-		logger << "At 0x" << std::hex << GetCIA() << std::dec;
-		const Symbol<typename CONFIG::address_t> *func_symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
-		if(func_symbol) logger << " (" << func_symbol->GetFriendlyName(GetCIA()) << ")";
-		logger << ":" << exc.what() << " while " << (exc.GetAccessType() == CONFIG::MAT_WRITE ? "writing" : "reading")
-				<< " data at 0x" << std::hex << exc.GetAddress() << std::dec;
-		const Symbol<typename CONFIG::address_t> *obj_symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_OBJECT) : 0;
-		if(obj_symbol) logger << " (" << obj_symbol->GetFriendlyName(exc.GetAddress()) << ")";
-		logger << endl;
-		logger << EndDebugInfo;
-	}
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::HandleException(const DSIPageFaultException<CONFIG>& exc)
-{
-	if(linux_os_import)
-	{
-		logger << DebugError << "Data storage interrupt: page fault" << EndDebugError;
-		Stop(-1);
-		return;
-	}
-	SetDAR(exc.GetAddress()); // DAR=effective address
-	
-	SetSRR0(GetCIA()); // save CIA
-		
-	// keep SRR1[0], clear SRR1[1-4], keep SRR1[5-9], clear SRR1[10-11], set SRR1[12], clear SRR1[13-15],
-	// SRR1[16-23]=MSR[16-23], keep SRR1[24], SRR1[25-27]=MSR[25-27], keep SRR1[28-29], SRR1[30-31]=MSR[30-31]
-	SetSRR1((GetSRR1() & 0x87c0008cUL) | (GetMSR() & 0x0000ff73UL)); 
-	
-	// MSR[LE]=MSR[ILE], MSR[POW]=0, MSR[EE]=0, MSR[PR]=0, MSR[FP]=0, MSR[FE0]=0,
-	// MSR[SE]=0, MSR[BE]=0, MSR[FE1]=0, MSR[IR]=0, MSR[DR]=0, MSR[RI]=0
-	SetMSR((GetMSR() & 0x00011040UL) | ((GetMSR() >> 16) & 1));
-	
-	if(exc.GetAccessType() == CONFIG::MAT_WRITE)
-		SetDSISR(0x42000000UL); // set DSISR[1], set DSISR[6], clear other bits
-	else
-		SetDSISR(0x40000000UL); // set DSISR[1], clear other bits
-		
-	SetNIA(CONFIG::EXC_DSI_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
-	
-	if(unlikely(IsVerboseException()))
-	{
-		logger << DebugInfo;
-		logger << "At 0x" << std::hex << GetCIA() << std::dec;
-		const Symbol<typename CONFIG::address_t> *func_symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
-		if(func_symbol) logger << " (" << func_symbol->GetFriendlyName(GetCIA()) << ")";
-		logger << ":" << exc.what() << " while " << (exc.GetAccessType() == CONFIG::MAT_WRITE ? "writing" : "reading")
-				<< " data at 0x" << std::hex << exc.GetAddress() << std::dec;
-		const Symbol<typename CONFIG::address_t> *obj_symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_OBJECT) : 0;
-		if(obj_symbol) logger << " (" << obj_symbol->GetFriendlyName(exc.GetAddress()) << ")";
-		logger << endl;
-		logger << EndDebugInfo;
-	}
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::HandleException(const DSIDataAddressBreakpointException<CONFIG>& exc)
-{
-	if(linux_os_import)
-	{
-		logger << DebugError << "Data storage interrupt: data address breakpoint" << EndDebugError;
-		Stop(-1);
-		return;
-	}
-	SetDAR(exc.GetAddress()); // DAR=effective address
-	
-	SetSRR0(GetCIA()); // save CIA
-		
-	// keep SRR1[0], clear SRR1[1-4], keep SRR1[5-9], clear SRR1[10-11], set SRR1[12], clear SRR1[13-15],
-	// SRR1[16-23]=MSR[16-23], keep SRR1[24], SRR1[25-27]=MSR[25-27], keep SRR1[28-29], SRR1[30-31]=MSR[30-31]
-	SetSRR1((GetSRR1() & 0x87c0008cUL) | (GetMSR() & 0x0000ff73UL)); 
-	
-	// MSR[LE]=MSR[ILE], MSR[POW]=0, MSR[EE]=0, MSR[PR]=0, MSR[FP]=0, MSR[FE0]=0,
-	// MSR[SE]=0, MSR[BE]=0, MSR[FE1]=0, MSR[IR]=0, MSR[DR]=0, MSR[RI]=0
-	SetMSR((GetMSR() & 0x00011040UL) | ((GetMSR() >> 16) & 1));
-	
-	if(exc.GetAccessType() == CONFIG::MAT_WRITE)
-		SetDSISR(0x02400000UL); // set DSISR[6], set DSISR[9], clear other bits
-	else
-		SetDSISR(0x00400000UL); // set DSISR[9], clear other bits
-		
-	SetNIA(CONFIG::EXC_DSI_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
-	
-	if(unlikely(IsVerboseException()))
-	{
-		logger << DebugInfo;
-		logger << ":" << "At 0x" << std::hex << GetCIA() << std::dec;
-		const Symbol<typename CONFIG::address_t> *func_symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
-		if(func_symbol) logger << " (" << func_symbol->GetFriendlyName(GetCIA()) << ")";
-		logger << exc.what() << " while " << (exc.GetAccessType() == CONFIG::MAT_WRITE ? "writing" : "reading")
-				<< " data at 0x" << std::hex << exc.GetAddress() << std::dec;
-		const Symbol<typename CONFIG::address_t> *obj_symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_OBJECT) : 0;
-		if(obj_symbol) logger << " (" << obj_symbol->GetFriendlyName(exc.GetAddress()) << ")";
-		logger << endl;
-		logger << EndDebugInfo;
-	}
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::HandleException(const DSIExternalAccessDisabledException<CONFIG>& exc)
-{
-	if(linux_os_import)
-	{
-		logger << DebugError << "Data storage interrupt: external access disabled" << EndDebugError;
-		Stop(-1);
-		return;
-	}
-	SetDAR(exc.GetAddress()); // DAR=effective address
-	
-	SetSRR0(GetCIA()); // save CIA
-		
-	// keep SRR1[0], clear SRR1[1-4], keep SRR1[5-9], clear SRR1[10-11], set SRR1[12], clear SRR1[13-15],
-	// SRR1[16-23]=MSR[16-23], keep SRR1[24], SRR1[25-27]=MSR[25-27], keep SRR1[28-29], SRR1[30-31]=MSR[30-31]
-	SetSRR1((GetSRR1() & 0x87c0008cUL) | (GetMSR() & 0x0000ff73UL)); 
-	
-	// MSR[LE]=MSR[ILE], MSR[POW]=0, MSR[EE]=0, MSR[PR]=0, MSR[FP]=0, MSR[FE0]=0,
-	// MSR[SE]=0, MSR[BE]=0, MSR[FE1]=0, MSR[IR]=0, MSR[DR]=0, MSR[RI]=0
-	SetMSR((GetMSR() & 0x00011040UL) | ((GetMSR() >> 16) & 1));
-	
-	if(exc.GetAccessType() == CONFIG::MAT_WRITE)
-		SetDSISR(0x02100000UL); // set DSISR[6], DSISR[11], clear other bits
-	else
-		SetDSISR(0x02100000UL); // set DSISR[11], clear other bits
-		
-	SetNIA(CONFIG::EXC_DSI_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
-	
-	if(unlikely(IsVerboseException()))
-	{
-		logger << DebugInfo;
-		logger << "At 0x" << std::hex << GetCIA() << std::dec;
-		const Symbol<typename CONFIG::address_t> *func_symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
-		if(func_symbol) logger << " (" << func_symbol->GetFriendlyName(GetCIA()) << ")";
-		logger << ":" << exc.what() << " while " << (exc.GetAccessType() == CONFIG::MAT_WRITE ? "writing" : "reading")
-				<< " data at 0x" << std::hex << exc.GetAddress() << std::dec;
-		const Symbol<typename CONFIG::address_t> *obj_symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_OBJECT) : 0;
-		if(obj_symbol) logger << " (" << obj_symbol->GetFriendlyName(exc.GetAddress()) << ")";
-		logger << endl;
-		logger << EndDebugInfo;
-	}
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::HandleException(const DSIWriteThroughLinkedLoadStore<CONFIG>& exc)
-{
-	if(linux_os_import)
-	{
-		logger << DebugError << "Data storage interrupt: write through linked load/store" << EndDebugError;
-		Stop(-1);
-		return;
-	}
-	SetDAR(exc.GetAddress()); // DAR=effective address
-	
-	SetSRR0(GetCIA()); // save CIA
-		
-	// keep SRR1[0], clear SRR1[1-4], keep SRR1[5-9], clear SRR1[10-11], set SRR1[12], clear SRR1[13-15],
-	// SRR1[16-23]=MSR[16-23], keep SRR1[24], SRR1[25-27]=MSR[25-27], keep SRR1[28-29], SRR1[30-31]=MSR[30-31]
-	SetSRR1((GetSRR1() & 0x87c0008cUL) | (GetMSR() & 0x0000ff73UL)); 
-	
-	// MSR[LE]=MSR[ILE], MSR[POW]=0, MSR[EE]=0, MSR[PR]=0, MSR[FP]=0, MSR[FE0]=0,
-	// MSR[SE]=0, MSR[BE]=0, MSR[FE1]=0, MSR[IR]=0, MSR[DR]=0, MSR[RI]=0
-	SetMSR((GetMSR() & 0x00011040UL) | ((GetMSR() >> 16) & 1));
-	
-	if(exc.GetAccessType() == CONFIG::MAT_WRITE)
-		SetDSISR(0x06000000UL); // set DSISR[5], DSISR[6], clear other bits
-	else
-		SetDSISR(0x04000000UL); // set DSISR[5], clear other bits
 		
 	SetNIA(CONFIG::EXC_DSI_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	
@@ -793,110 +502,39 @@ void CPU<CONFIG>::HandleException(const AlignmentException<CONFIG>& exc, uint32_
 //                                   |
 //                                   +--------------------> IEEE floating point exception
 template <class CONFIG>
-void CPU<CONFIG>::HandleException(const IllegalInstructionException<CONFIG>& exc)
+void CPU<CONFIG>::HandleException(const ProgramException<CONFIG>& exc)
 {
 	if(linux_os_import)
 	{
-		logger << DebugError << "Illegal instruction" << EndDebugError;
+		logger << DebugError << exc.what() << EndDebugError;
 		Stop(-1);
 		return;
 	}
 	SetSRR0(GetCIA()); // save CIA
-		
-	// keep SRR1[0], clear SRR1[1-4], keep SRR1[5-9], clear SRR1[10-11], set SRR1[12], clear SRR1[13-15],
-	// SRR1[16-23]=MSR[16-23], keep SRR1[24], SRR1[25-27]=MSR[25-27], keep SRR1[28-29], SRR1[30-31]=MSR[30-31]
-	SetSRR1((GetSRR1() & 0x87c0008cUL) | (GetMSR() & 0x0000ff73UL) | 0x00080000UL); 
 	
-	// MSR[LE]=MSR[ILE], MSR[POW]=0, MSR[EE]=0, MSR[PR]=0, MSR[FP]=0, MSR[FE0]=0,
-	// MSR[SE]=0, MSR[BE]=0, MSR[FE1]=0, MSR[IR]=0, MSR[DR]=0, MSR[RI]=0
-	SetMSR((GetMSR() & 0x00011040UL) | ((GetMSR() >> 16) & 1));
-		
-	SetNIA(CONFIG::EXC_PROGRAM_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
-	
-	if(unlikely(IsVerboseException()))
+	switch(exc.GetType())
 	{
-		logger << DebugInfo;
-		logger << "At 0x" << std::hex << GetCIA() << std::dec;
-		const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
-		if(symbol) logger << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
-		logger << ":" << exc.what() << endl;
-		logger << EndDebugInfo;
+		case ProgramException<CONFIG>::PX_ILLEGAL_INSTRUCTION:
+			// keep SRR1[0], clear SRR1[1-4], keep SRR1[5-9], clear SRR1[10-11], set SRR1[12], clear SRR1[13-15],
+			// SRR1[16-23]=MSR[16-23], keep SRR1[24], SRR1[25-27]=MSR[25-27], keep SRR1[28-29], SRR1[30-31]=MSR[30-31]
+			SetSRR1((GetSRR1() & 0x87c0008cUL) | (GetMSR() & 0x0000ff73UL) | 0x00080000UL); 
+			break;
+		case ProgramException<CONFIG>::PX_PRIVILEGE_VIOLATION:
+			// keep SRR1[0], clear SRR1[1-4], keep SRR1[5-9], clear SRR1[10-12], set SRR1[13], clear SRR1[14-15],
+			// SRR1[16-23]=MSR[16-23], keep SRR1[24], SRR1[25-27]=MSR[25-27], keep SRR1[28-29], SRR1[30-31]=MSR[30-31]
+			SetSRR1((GetSRR1() & 0x87c0008cUL) | (GetMSR() & 0x0000ff73UL) | 0x00040000UL); 
+			break;
+		case ProgramException<CONFIG>::PX_TRAP:
+			// keep SRR1[0], clear SRR1[1-4], keep SRR1[5-9], clear SRR1[10-13], set SRR1[14], clear SRR1[15],
+			// SRR1[16-23]=MSR[16-23], keep SRR1[24], SRR1[25-27]=MSR[25-27], keep SRR1[28-29], SRR1[30-31]=MSR[30-31]
+			SetSRR1((GetSRR1() & 0x87c0008cUL) | (GetMSR() & 0x0000ff73UL) | 0x00020000UL); 
+			break;
+		case ProgramException<CONFIG>::PX_FLOATING_POINT:
+			// keep SRR1[0], clear SRR1[1-4], keep SRR1[5-9], clear SRR1[10], set SRR1[11], clear SRR1[12-15],
+			// SRR1[16-23]=MSR[16-23], keep SRR1[24], SRR1[25-27]=MSR[25-27], keep SRR1[28-29], SRR1[30-31]=MSR[30-31]
+			SetSRR1((GetSRR1() & 0x87c0008cUL) | (GetMSR() & 0x0000ff73UL) | 0x00100000UL); 
+			break;
 	}
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::HandleException(const PrivilegeViolationException<CONFIG>& exc)
-{
-	if(linux_os_import)
-	{
-		logger << DebugError << "Privilege violation" << EndDebugError;
-		Stop(-1);
-		return;
-	}
-	SetSRR0(GetCIA()); // save CIA
-		
-	// keep SRR1[0], clear SRR1[1-4], keep SRR1[5-9], clear SRR1[10-12], set SRR1[13], clear SRR1[14-15],
-	// SRR1[16-23]=MSR[16-23], keep SRR1[24], SRR1[25-27]=MSR[25-27], keep SRR1[28-29], SRR1[30-31]=MSR[30-31]
-	SetSRR1((GetSRR1() & 0x87c0008cUL) | (GetMSR() & 0x0000ff73UL) | 0x00040000UL); 
-	
-	// MSR[LE]=MSR[ILE], MSR[POW]=0, MSR[EE]=0, MSR[PR]=0, MSR[FP]=0, MSR[FE0]=0,
-	// MSR[SE]=0, MSR[BE]=0, MSR[FE1]=0, MSR[IR]=0, MSR[DR]=0, MSR[RI]=0
-	SetMSR((GetMSR() & 0x00011040UL) | ((GetMSR() >> 16) & 1));
-		
-	SetNIA(CONFIG::EXC_PROGRAM_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
-	
-	if(unlikely(IsVerboseException()))
-	{
-		logger << DebugInfo;
-		logger << "At 0x" << std::hex << GetCIA() << std::dec;
-		const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
-		if(symbol) logger << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
-		logger << ":" << exc.what() << endl;
-		logger << EndDebugInfo;
-	}
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::HandleException(const TrapException<CONFIG>& exc)
-{
-	if(linux_os_import) return; // silently ignore trap when Linux ABI translation is enabled
-	SetSRR0(GetCIA()); // save CIA
-		
-	// keep SRR1[0], clear SRR1[1-4], keep SRR1[5-9], clear SRR1[10-13], set SRR1[14], clear SRR1[15],
-	// SRR1[16-23]=MSR[16-23], keep SRR1[24], SRR1[25-27]=MSR[25-27], keep SRR1[28-29], SRR1[30-31]=MSR[30-31]
-	SetSRR1((GetSRR1() & 0x87c0008cUL) | (GetMSR() & 0x0000ff73UL) | 0x00020000UL); 
-	
-	// MSR[LE]=MSR[ILE], MSR[POW]=0, MSR[EE]=0, MSR[PR]=0, MSR[FP]=0, MSR[FE0]=0,
-	// MSR[SE]=0, MSR[BE]=0, MSR[FE1]=0, MSR[IR]=0, MSR[DR]=0, MSR[RI]=0
-	SetMSR((GetMSR() & 0x00011040UL) | ((GetMSR() >> 16) & 1));
-		
-	SetNIA(CONFIG::EXC_PROGRAM_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
-	
-	if(unlikely(IsVerboseException()))
-	{
-		logger << DebugInfo;
-		logger << "At 0x" << std::hex << GetCIA() << std::dec;
-		const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
-		if(symbol) logger << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
-		logger << ":" << exc.what() << endl;
-		logger << EndDebugInfo;
-	}
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::HandleException(const FloatingPointException<CONFIG>& exc)
-{
-	if(linux_os_import)
-	{
-		logger << DebugError << "Floating-point exception" << EndDebugError;
-		Stop(-1);
-		return;
-	}
-	SetSRR0(GetCIA()); // save CIA
-		
-	// keep SRR1[0], clear SRR1[1-4], keep SRR1[5-9], clear SRR1[10], set SRR1[11], clear SRR1[12-15],
-	// SRR1[16-23]=MSR[16-23], keep SRR1[24], SRR1[25-27]=MSR[25-27], keep SRR1[28-29], SRR1[30-31]=MSR[30-31]
-	SetSRR1((GetSRR1() & 0x87c0008cUL) | (GetMSR() & 0x0000ff73UL) | 0x00100000UL); 
 	
 	// MSR[LE]=MSR[ILE], MSR[POW]=0, MSR[EE]=0, MSR[PR]=0, MSR[FP]=0, MSR[FE0]=0,
 	// MSR[SE]=0, MSR[BE]=0, MSR[FE1]=0, MSR[IR]=0, MSR[DR]=0, MSR[RI]=0
@@ -943,23 +581,6 @@ void CPU<CONFIG>::HandleException(const FloatingPointUnavailableException<CONFIG
 		logger << EndDebugInfo;
 	}
 }
-
-
-template <class CONFIG>
-int CPU<CONFIG>::StringLength(typename CONFIG::address_t addr)
-{
-	int len = 0;
-	char buffer;
-
-	while(1)
-	{
-		ReadMemory(addr, &buffer, 1);
-		if(buffer == 0) return len;
-		len++;
-		addr += 1;
-	}
-}
-
 
 /* System call exception */
 template <class CONFIG>

@@ -1292,7 +1292,6 @@ private:
 	bool fp32_estimate_inv_warning;
 	bool fp64_estimate_inv_sqrt_warning;
 
-	int StringLength(typename CONFIG::address_t addr);                          //!< Something to compute the length of a null-terminated string at an effective address
 	inline uint64_t GetInstructionCounter() const { return instruction_counter; }
 	inline void MonitorLoad(typename CONFIG::address_t ea, uint32_t size);
 	inline void MonitorStore(typename CONFIG::address_t ea, uint32_t size);
@@ -1504,28 +1503,16 @@ private:
 	void HandleException(const InstructionAddressBreakpointException<CONFIG>& exc);
 
 	// ISI exception
-	void HandleException(const ISIProtectionViolationException<CONFIG>& exc);
-	void HandleException(const ISINoExecuteException<CONFIG>& exc);
-	void HandleException(const ISIDirectStoreException<CONFIG>& exc);
-	void HandleException(const ISIPageFaultException<CONFIG>& exc);
-	void HandleException(const ISIGuardedMemoryException<CONFIG>& exc);
+	void HandleException(const ISIException<CONFIG>& exc);
 
 	// DSI exception
-	void HandleException(const DSIDirectStoreException<CONFIG>& exc);
-	void HandleException(const DSIProtectionViolationException<CONFIG>& exc);
-	void HandleException(const DSIPageFaultException<CONFIG>& exc);
-	void HandleException(const DSIDataAddressBreakpointException<CONFIG>& exc);
-	void HandleException(const DSIExternalAccessDisabledException<CONFIG>& exc);
-	void HandleException(const DSIWriteThroughLinkedLoadStore<CONFIG>& exc);
+	void HandleException(const DSIException<CONFIG>& exc);
 	
 	// Alignment exception
 	void HandleException(const AlignmentException<CONFIG>& exc, uint32_t instruction_encoding);
 
 	// Program exceptions
-	void HandleException(const IllegalInstructionException<CONFIG>& exc);
-	void HandleException(const PrivilegeViolationException<CONFIG>& exc);
-	void HandleException(const TrapException<CONFIG>& exc);
-	void HandleException(const FloatingPointException<CONFIG>& exc);
+	void HandleException(const ProgramException<CONFIG>& exc);
 
 	// Floating point unavailable exception
 	void HandleException(const FloatingPointUnavailableException<CONFIG>& exc);

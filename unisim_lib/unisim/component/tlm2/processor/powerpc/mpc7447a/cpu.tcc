@@ -194,16 +194,21 @@ void CPU<CONFIG>::SignalIRQ(IRQQueue& queue, unsigned int irq)
 		TLMInterruptPayload *payload;
 		
 		payload = queue.GetNextIRQ();
-		if(!payload) continue;
-		
-		if(payload->level)
-			inherited::SetIRQ(irq);
-		else
-			inherited::ResetIRQ(irq);
-		
-		payload->release();
-		
-		ev_irq.notify(SC_ZERO_TIME);
+		if(payload)
+		{
+			do
+			{
+				if(payload->level)
+					inherited::SetIRQ(irq);
+				else
+					inherited::ResetIRQ(irq);
+				
+				payload->release();
+			}
+			while((payload = queue.GetNextIRQ()) != 0);
+
+			ev_irq.notify(SC_ZERO_TIME);
+		}
 	}
 }
 
