@@ -193,7 +193,7 @@ void XML_ATD_PWM_STUB::ProcessATD0()
 	atd0_quantumkeeper.set(sc_time(20, SC_MS));
 	if (atd0_quantumkeeper.need_sync()) atd0_quantumkeeper.sync();
 
-	while(1)
+	while(enabled)
 	{
 		double atd0_anValue[ATD0_SIZE];
 
@@ -256,7 +256,7 @@ void XML_ATD_PWM_STUB::ProcessATD1()
 	atd1_quantumkeeper.set(sc_time(20, SC_MS));
 	if (atd1_quantumkeeper.need_sync()) atd1_quantumkeeper.sync();
 
-	while(1)
+	while(enabled)
 	{
 		double atd1_anValue[ATD1_SIZE];
 		uint8_t atd1_wrap_around;
@@ -302,7 +302,7 @@ void XML_ATD_PWM_STUB::ProcessPWM()
 
 	bool pwmValue[PWM_SIZE];
 
-	while(1)
+	while(enabled)
 	{
 		Input(pwmValue);
 	}

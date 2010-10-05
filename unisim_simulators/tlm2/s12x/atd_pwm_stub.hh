@@ -140,6 +140,9 @@ protected:
 	bool trace_enable;
 	Parameter<bool> param_trace_enable;
 
+	bool	enabled;
+	Parameter<bool>		param_enabled;
+
 private:
 	Parameter<double>	param_anx_stimulus_period;
 	Parameter<double>	param_pwm_fetch_period;
