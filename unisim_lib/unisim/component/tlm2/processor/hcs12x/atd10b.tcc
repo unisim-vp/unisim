@@ -202,11 +202,23 @@ void ATD10B<ATD_SIZE>::Process()
 {
 	while(1)
 	{
+		if (atd_clock.to_seconds() == 0) {
+			wait(scan_event);
+		}
 
-//		wait(atd_clock);
+		if ((atdctl2_register & 0x80) == 0) // is ATD power ON (enabled)
+		{
+			cerr << "Warning: " << name() << " => The ATD is OFF. You have to set ATDCTL2::ADPU bit before.\n";
+		}
+
 		wait(input_anx_payload_queue.get_event());
 
 		InputANx(analog_signal);
+
+		RunScanMode();
+
+		quantumkeeper.inc(atd_clock + bus_cycle_time); // Processing the input takes one cycle
+		if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
 
 	}
 }
@@ -242,21 +254,10 @@ void ATD10B<ATD_SIZE>::InputANx(double anValue[ATD_SIZE])
 	}
 
 	if (payload) {
-		if ((atdctl2_register & 0x80) != 0) // is ATD power ON (enabled)
-		{
-			for (int i=0; i<ATD_SIZE; i++) {
-				anValue[i] = payload->anPort[i];
-			}
-
-			RunScanMode();
-
-		} else {
-			cerr << "Warning: " << name() << " => The ATD is OFF. You have to set ATDCTL2::ADPU bit before.\n";
+		for (int i=0; i<ATD_SIZE; i++) {
+			anValue[i] = payload->anPort[i];
 		}
 	}
-
-//	quantumkeeper.inc(bus_cycle_time); // Processing the input takes one cycle
-//	if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
 
 }
 
@@ -553,6 +554,7 @@ void ATD10B<ATD_SIZE>::setATDClock() {
 	atd_clock = bus_cycle_time / (prsValue + 1) * 0.5;
 	first_phase_clock = atd_clock * 2;
 	second_phase_clock = atd_clock * 2 * (1 << smpValue);
+
 }
 
 /*	===========================
@@ -750,6 +752,7 @@ bool ATD10B<ATD_SIZE>::write(uint8_t offset, const void *buffer) {
 			abortConversion();
 
 			setATDClock();
+			scan_event.notify();
 
 		} break;
 		case ATDCTL5: {
