@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2010,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -36,28 +36,24 @@
 #include "config.h"
 #endif
 
-#include <unisim/component/tlm/processor/powerpc/mpc7447a/cpu.hh>
+#include <unisim/component/cxx/processor/powerpc/mpc7447a/config.hh>
+#include <unisim/component/tlm2/processor/powerpc/mpc7447a/cpu.hh>
+#include <unisim/component/tlm2/memory/ram/memory.hh>
+
+#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/debug/debug.hh>
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
 #include <unisim/service/loader/elf_loader/elf32_loader.hh>
 #include <unisim/service/loader/linux_loader/linux_loader.hh>
-#include "unisim/service/os/linux_os/linux_os.hh"
-#include <iostream>
-#include <getopt.h>
-#include <unisim/kernel/service/service.hh>
-#include <stdlib.h>
+#include <unisim/service/os/linux_os/linux_os.hh>
 #include <unisim/service/power/cache_power_estimator.hh>
-#include <unisim/component/tlm/memory/ram/memory.hh>
-#include <unisim/component/tlm/fsb/snooping_bus/bus.hh>
-#include <unisim/util/garbage_collector/garbage_collector.hh>
 #include <unisim/service/time/sc_time/time.hh>
 #include <unisim/service/time/host_time/time.hh>
 
-#include <unisim/component/cxx/processor/powerpc/mpc7447a/config.hh>
+#include <iostream>
 #include <stdexcept>
-#include <unisim/component/tlm/debug/transaction_spy.hh>
-#include <unisim/component/tlm/bridge/snooping_fsb_to_mem/bridge.hh>
-#include <unisim/component/tlm/bridge/snooping_fsb_to_mem/config.hh>
+#include <stdlib.h>
 #include <signal.h>
 
 #ifdef WIN32
@@ -69,30 +65,17 @@
 
 #ifdef DEBUG_PPCEMU
 typedef unisim::component::cxx::processor::powerpc::mpc7447a::DebugConfig CPU_CONFIG;
+static const bool DEBUG_INFORMATION = true;
 #else
 typedef unisim::component::cxx::processor::powerpc::mpc7447a::Config CPU_CONFIG;
-#endif
-
 static const bool DEBUG_INFORMATION = false;
-
-bool debug_enabled;
-
-void EnableDebug()
-{
-	debug_enabled = true;
-}
-
-void DisableDebug()
-{
-	debug_enabled = false;
-}
+#endif
 
 void SigIntHandler(int signum)
 {
 	cerr << "Interrupted by Ctrl-C or SIGINT signal" << endl;
-	sc_stop();
+	unisim::kernel::service::Simulator::simulator->Stop(0, 0);
 }
-
 
 using namespace std;
 using unisim::util::endian::E_BIG_ENDIAN;
@@ -102,11 +85,41 @@ using unisim::service::os::linux_os::LinuxOS;
 using unisim::service::debug::gdb_server::GDBServer;
 using unisim::service::debug::inline_debugger::InlineDebugger;
 using unisim::service::power::CachePowerEstimator;
-using unisim::util::garbage_collector::GarbageCollector;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::Variable;
 using unisim::kernel::service::VariableBase;
 using unisim::kernel::service::Object;
+
+class IRQStub
+	: public sc_module
+	, tlm::tlm_bw_transport_if<unisim::component::tlm2::interrupt::InterruptProtocolTypes>
+{
+public:
+	tlm::tlm_initiator_socket<0, unisim::component::tlm2::interrupt::InterruptProtocolTypes> irq_master_sock;
+	
+	IRQStub(const sc_module_name& name);
+
+	virtual tlm::tlm_sync_enum nb_transport_bw(unisim::component::tlm2::interrupt::TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t);
+
+	virtual void invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range);
+};
+
+IRQStub::IRQStub(const sc_module_name& name)
+	: sc_module(name)
+	, irq_master_sock("irq-master-sock")
+{
+	irq_master_sock(*this);
+}
+
+tlm::tlm_sync_enum IRQStub::nb_transport_bw(unisim::component::tlm2::interrupt::TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
+{
+	return tlm::TLM_COMPLETED;
+}
+
+void IRQStub::invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
+{
+}
+
 
 class Simulator : public unisim::kernel::service::Simulator
 {
@@ -116,6 +129,7 @@ public:
 	void Run();
 	virtual unisim::kernel::service::Simulator::SetupStatus Setup();
 	virtual void Stop(Object *object, int exit_status);
+	int GetExitStatus() const;
 protected:
 private:
 
@@ -128,50 +142,28 @@ private:
 	typedef CPU_ADDRESS_TYPE FSB_ADDRESS_TYPE;
 	typedef CPU_ADDRESS_TYPE MEMORY_ADDRESS_TYPE;
 	typedef uint32_t CPU_REG_TYPE;
-	static const uint32_t FSB_MAX_DATA_SIZE = 32;        // in bytes
-	static const uint32_t FSB_NUM_PROCS = 1;
-
-	// the maximum number of transaction spies (per type of message)
-	static const unsigned int MAX_BUS_TRANSACTION_SPY = 3;
-	static const unsigned int MAX_MEM_TRANSACTION_SPY = 1;
 
 	//=========================================================================
 	//===                     Aliases for components classes                ===
 	//=========================================================================
 
-	typedef unisim::component::tlm::fsb::snooping_bus::Bus<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE, 1> FRONT_SIDE_BUS;
-	typedef unisim::component::tlm::bridge::snooping_fsb_to_mem::Bridge<unisim::component::tlm::bridge::snooping_fsb_to_mem::Addr32BurstSize32_Config> FSB_TO_MEM_BRIDGE;
-	typedef unisim::component::tlm::memory::ram::Memory<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE> MEMORY;
-	typedef unisim::component::tlm::processor::powerpc::mpc7447a::CPU<CPU_CONFIG> CPU;
-
-	//=========================================================================
-	//===               Aliases for transaction Spies classes               ===
-	//=========================================================================
-
-	typedef unisim::component::tlm::fsb::snooping_bus::Bus<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE, 1>::ReqType BusMsgReqType;
-	typedef unisim::component::tlm::fsb::snooping_bus::Bus<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE, 1>::RspType BusMsgRspType;
-	typedef unisim::component::tlm::debug::TransactionSpy<BusMsgReqType, BusMsgRspType> BusMsgSpyType;
-	typedef unisim::component::tlm::message::MemoryRequest<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE> MemMsgReqType;
-	typedef unisim::component::tlm::message::MemoryResponse<FSB_MAX_DATA_SIZE> MemMsgRspType;
-	typedef unisim::component::tlm::debug::TransactionSpy<MemMsgReqType, MemMsgRspType> MemMsgSpyType;
+	typedef unisim::component::tlm2::memory::ram::Memory<CPU_CONFIG::FSB_WIDTH * 8, CPU_CONFIG::physical_address_t, CPU_CONFIG::FSB_BURST_SIZE / CPU_CONFIG::FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_INFORMATION> MEMORY;
+	typedef unisim::component::tlm2::processor::powerpc::mpc7447a::CPU<CPU_CONFIG> CPU;
 
 	//=========================================================================
 	//===                     Component instantiations                      ===
 	//=========================================================================
 	//  - PowerPC processor
 	CPU *cpu;
-	//  - Front side bus
-	FRONT_SIDE_BUS *bus;
-	//  - Front side bus to memory bridge
-	FSB_TO_MEM_BRIDGE *fsb_to_mem_bridge;
 	//  - RAM
 	MEMORY *memory;
-
-	//=========================================================================
-	//===            Debugging stuff: Transaction spy instantiations        ===
-	//=========================================================================
-	BusMsgSpyType *bus_msg_spy[MAX_BUS_TRANSACTION_SPY];
-	MemMsgSpyType *mem_msg_spy[MAX_MEM_TRANSACTION_SPY];
+	// - IRQ stubs
+	IRQStub *external_interrupt_stub;
+	IRQStub *hard_reset_stub;
+	IRQStub *soft_reset_stub;
+	IRQStub *mcp_slave_stub;
+//	IRQStub *tea_slave_stub;
+	IRQStub *smi_slave_stub;
 
 	//=========================================================================
 	//===                         Service instantiations                    ===
@@ -200,12 +192,11 @@ private:
 	bool enable_gdb_server;
 	bool enable_inline_debugger;
 	bool estimate_power;
-	bool message_spy;
 	Parameter<bool> param_enable_gdb_server;
 	Parameter<bool> param_enable_inline_debugger;
 	Parameter<bool> param_estimate_power;
-	Parameter<bool> param_message_spy;
 
+	int exit_status;
 	static void LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator);
 };
 
@@ -214,8 +205,13 @@ private:
 Simulator::Simulator(int argc, char **argv)
 	: unisim::kernel::service::Simulator(argc, argv, LoadBuiltInConfig)
 	, cpu(0)
-	, bus(0)
 	, memory(0)
+	, external_interrupt_stub(0)
+	, hard_reset_stub(0)
+	, soft_reset_stub(0)
+	, mcp_slave_stub(0)
+//	, tea_slave_stub(0)
+	, smi_slave_stub(0)
 	, gdb_server(0)
 	, inline_debugger(0)
 	, sim_time(0)
@@ -228,50 +224,25 @@ Simulator::Simulator(int argc, char **argv)
 	, enable_gdb_server(false)
 	, enable_inline_debugger(false)
 	, estimate_power(false)
-	, message_spy(false)
 	, param_enable_gdb_server("enable-gdb-server", 0, enable_gdb_server, "Enable/Disable GDB server instantiation")
 	, param_enable_inline_debugger("enable-inline-debugger", 0, enable_inline_debugger, "Enable/Disable inline debugger instantiation")
 	, param_estimate_power("estimate-power", 0, estimate_power, "Enable/Disable power estimators instantiation")
-	, param_message_spy("message-spy", 0, message_spy, "Enable/Disable message spies instantiation")
+	, exit_status(0)
 {
 	//=========================================================================
 	//===                     Component instantiations                      ===
 	//=========================================================================
 	//  - PowerPC processor
 	cpu = new CPU("cpu");
-	//  - Front side bus
-	bus = new FRONT_SIDE_BUS("bus");
-	//  - Front side bus to memory bridge
-	fsb_to_mem_bridge = new FSB_TO_MEM_BRIDGE("fsb-to-mem-bridge");
 	//  - RAM
 	memory = new MEMORY("memory");
-
-	//=========================================================================
-	//===            Debugging stuff: Transaction spy instantiations        ===
-	//=========================================================================
-
-	if(message_spy)
-	{
-		for(unsigned int i = 0; i < MAX_BUS_TRANSACTION_SPY; i++)
-		{
-			stringstream sstr;
-			sstr << "bus_msg_spy[" << i << "]";
-			string name = sstr.str();
-			bus_msg_spy[i] = new BusMsgSpyType(name.c_str());
-		}
-		for(unsigned int i = 0; i < MAX_MEM_TRANSACTION_SPY; i++)
-		{
-			stringstream sstr;
-			sstr << "mem_msg_spy[" << i << "]";
-			string name = sstr.str();
-			mem_msg_spy[i] = new MemMsgSpyType(name.c_str());
-		}
-	}
-	else
-	{
-		for(unsigned int i = 0; i < MAX_BUS_TRANSACTION_SPY; i++) bus_msg_spy[i] = 0;
-		for(unsigned int i = 0; i < MAX_MEM_TRANSACTION_SPY; i++) mem_msg_spy[i] = 0;
-	}
+	//  - IRQ Stubs
+	external_interrupt_stub = new IRQStub("external-interrupt-stub");
+	hard_reset_stub = new IRQStub("hard-reset-stub");
+	soft_reset_stub = new IRQStub("soft-reset-stub");
+	mcp_slave_stub = new IRQStub("mcp-stub");
+//	tea_slave_stub = new IRQStub("tea-stub");
+	smi_slave_stub = new IRQStub("smi-stub");
 
 	//=========================================================================
 	//===                         Service instantiations                    ===
@@ -301,56 +272,19 @@ Simulator::Simulator(int argc, char **argv)
 	//===                        Components connection                      ===
 	//=========================================================================
 
-	if(message_spy)
-	{
-		unsigned bus_msg_spy_index = 0;
-		unsigned mem_msg_spy_index = 0;
-
-		cpu->bus_port(bus_msg_spy[bus_msg_spy_index]->slave_port);
-		(*bus_msg_spy[bus_msg_spy_index])["source_module_name"] = cpu->name();
-		(*bus_msg_spy[bus_msg_spy_index])["source_port_name"] = cpu->bus_port.name();
-		bus_msg_spy[bus_msg_spy_index]->master_port(*bus->inport[0]);
-		(*bus_msg_spy[bus_msg_spy_index])["target_module_name"] = bus->name();
-		(*bus_msg_spy[bus_msg_spy_index])["target_port_name"] = bus->inport[0]->name();
-		bus_msg_spy_index++;
-
-		(*bus->outport[0])(bus_msg_spy[bus_msg_spy_index]->slave_port);
-		(*bus_msg_spy[bus_msg_spy_index])["source_module_name"] = bus->name();
-		(*bus_msg_spy[bus_msg_spy_index])["source_port_name"] = bus->outport[0]->name();
-		bus_msg_spy[bus_msg_spy_index]->master_port(cpu->snoop_port);
-		(*bus_msg_spy[bus_msg_spy_index])["target_module_name"] = cpu->name();
-		(*bus_msg_spy[bus_msg_spy_index])["target_port_name"] = cpu->snoop_port.name();
-		bus_msg_spy_index++;
-
-		(*bus->chipset_outport)(bus_msg_spy[bus_msg_spy_index]->slave_port);
-		(*bus_msg_spy[bus_msg_spy_index])["source_module_name"] = bus->name();
-		(*bus_msg_spy[bus_msg_spy_index])["source_port_name"] = bus->chipset_outport->name();
-		bus_msg_spy[bus_msg_spy_index]->master_port(fsb_to_mem_bridge->slave_port);
-		(*bus_msg_spy[bus_msg_spy_index])["target_module_name"] = fsb_to_mem_bridge->name();
-		(*bus_msg_spy[bus_msg_spy_index])["target_port_name"] = fsb_to_mem_bridge->slave_port.name();
-		bus_msg_spy_index++;
-
-		fsb_to_mem_bridge->master_port(mem_msg_spy[mem_msg_spy_index]->slave_port);
-		(*mem_msg_spy[mem_msg_spy_index])["source_module_name"] = fsb_to_mem_bridge->name();
-		(*mem_msg_spy[mem_msg_spy_index])["source_port_name"] = fsb_to_mem_bridge->master_port.name();
-		mem_msg_spy[mem_msg_spy_index]->master_port(memory->slave_port);
-		(*mem_msg_spy[mem_msg_spy_index])["target_module_name"] = memory->name();
-		(*mem_msg_spy[mem_msg_spy_index])["target_port_name"] = memory->slave_port.name();
-		mem_msg_spy_index++;
-	}
-	else
-	{
-		cpu->bus_port(*bus->inport[0]);
-		(*bus->outport[0])(cpu->snoop_port);
-		(*bus->chipset_outport)(fsb_to_mem_bridge->slave_port);
-		fsb_to_mem_bridge->master_port(memory->slave_port);
-	}
+	cpu->bus_master_sock(memory->slave_sock); // CPU <-> RAM
+	external_interrupt_stub->irq_master_sock(cpu->external_interrupt_slave_sock);
+	hard_reset_stub->irq_master_sock(cpu->hard_reset_slave_sock);
+	soft_reset_stub->irq_master_sock(cpu->soft_reset_slave_sock);
+	mcp_slave_stub->irq_master_sock(cpu->mcp_slave_sock);
+//	tea_slave_stub->irq_master_sock(cpu->tea_slave_sock);
+	smi_slave_stub->irq_master_sock(cpu->smi_slave_sock);
 
 	//=========================================================================
 	//===                        Clients/Services connection                ===
 	//=========================================================================
 
-	cpu->memory_import >> bus->memory_export;
+	cpu->memory_import >> memory->memory_export;
 	
 	if(enable_inline_debugger)
 	{
@@ -409,22 +343,20 @@ Simulator::Simulator(int argc, char **argv)
 	linux_os->registers_import >> cpu->registers_export;
 	linux_os->loader_import >> linux_loader->loader_export;
 	cpu->symbol_table_lookup_import >> elf32_loader->symbol_table_lookup_export;
-	bus->memory_import >> fsb_to_mem_bridge->memory_export;
-	fsb_to_mem_bridge->memory_import >> memory->memory_export;
 }
 
 Simulator::~Simulator()
 {
-
-	for(unsigned int i = 0; i < MAX_BUS_TRANSACTION_SPY; i++) if(bus_msg_spy[i]) delete bus_msg_spy[i];
-	for(unsigned int i = 0; i < MAX_MEM_TRANSACTION_SPY; i++) if(mem_msg_spy[i]) delete mem_msg_spy[i];
-
+	if(external_interrupt_stub) delete external_interrupt_stub;
+	if(hard_reset_stub) delete hard_reset_stub;
+	if(soft_reset_stub) delete soft_reset_stub;
+	if(mcp_slave_stub) delete mcp_slave_stub;
+//	if(tea_slave_stub) delete tea_slave_stub;
+	if(smi_slave_stub) delete smi_slave_stub;
 	if(memory) delete memory;
 	if(gdb_server) delete gdb_server;
 	if(inline_debugger) delete inline_debugger;
-	if(bus) delete bus;
 	if(cpu) delete cpu;
-	if(fsb_to_mem_bridge) delete fsb_to_mem_bridge;
 	if(il1_power_estimator) delete il1_power_estimator;
 	if(dl1_power_estimator) delete dl1_power_estimator;
 	if(l2_power_estimator) delete l2_power_estimator;
@@ -462,9 +394,6 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	//===                     Component run-time configuration              ===
 	//=========================================================================
 
-	//  - Front Side Bus
-	simulator->SetVariable("bus.cycle-time", sc_time(fsb_cycle_time, SC_PS).to_string().c_str());
-
 	//  - PowerPC processor
 	// if the following line ("cpu-cycle-time") is commented, the cpu will use the power estimators to find min cpu cycle time
 	simulator->SetVariable("cpu.cpu-cycle-time", cpu_cycle_time);
@@ -474,11 +403,10 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("cpu.nice-time", "1 ms"); // 1 ms
 	simulator->SetVariable("cpu.ipc", cpu_ipc);
 
-	//  - Front side bus to memory bridge
-	simulator->SetVariable("fsb-to-mem-bridge.fsb-cycle-time", fsb_cycle_time);
-	simulator->SetVariable("fsb-to-mem-bridge.mem-cycle-time", mem_cycle_time);
 	//  - RAM
 	simulator->SetVariable("memory.cycle-time", sc_time(mem_cycle_time, SC_PS).to_string().c_str());
+	simulator->SetVariable("memory.read-latency", sc_time(mem_cycle_time, SC_PS).to_string().c_str());
+	simulator->SetVariable("memory.write-latency", SC_ZERO_TIME.to_string().c_str());
 	simulator->SetVariable("memory.org", 0x00000000UL);
 	simulator->SetVariable("memory.bytesize", (uint32_t) -1);
 
@@ -584,7 +512,6 @@ void Simulator::Run()
 {
 	double time_start = host_time->GetTime();
 
-	EnableDebug();
 	void (*prev_sig_int_handler)(int) = 0;
 
 	if(!inline_debugger)
@@ -651,12 +578,21 @@ unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
 	return unisim::kernel::service::Simulator::Setup();
 }
 
-void Simulator::Stop(Object *object, int exit_status)
+void Simulator::Stop(Object *object, int _exit_status)
 {
-	std::cerr << object->GetName() << " has requested simulation stop" << std::endl;
+	exit_status = _exit_status;
+	if(object)
+	{
+		std::cerr << object->GetName() << " has requested simulation stop" << std::endl << std::endl;
+	}
 	std::cerr << "Program exited with status " << exit_status << std::endl;
 	sc_stop();
 	wait();
+}
+
+int Simulator::GetExitStatus() const
+{
+	return exit_status;
 }
 
 int sc_main(int argc, char *argv[])
@@ -688,11 +624,12 @@ int sc_main(int argc, char *argv[])
 			break;
 	}
 
+	int exit_status = simulator->GetExitStatus();
 	if(simulator) delete simulator;
 #ifdef WIN32
 	// releases the winsock2 resources
 	WSACleanup();
 #endif
 
-	return 0;
+	return exit_status;
 }

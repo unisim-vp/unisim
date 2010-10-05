@@ -86,12 +86,22 @@ template <class CONFIG>
 class ISIException : public Exception
 {
 public:
+	typedef enum
+	{
+		ISI_PROTECTION_VIOLATION,
+		ISI_NO_EXECUTE,
+		ISI_DIRECT_STORE,
+		ISI_PAGE_FAULT,
+		ISI_GUARDED_MEMORY
+	} Type;
 	typedef typename CONFIG::address_t address_t;
-	ISIException(const char *name, address_t addr);
+	ISIException(Type type, address_t addr);
 	virtual ~ISIException() throw();
+	Type GetType() const;
 	virtual const char * what () const throw ();
 	address_t GetAddr() const;
 private:
+	Type type;
 	address_t addr;
 	string what_str;
 };
@@ -140,13 +150,24 @@ template <class CONFIG>
 class DSIException : public Exception
 {
 public:
+	typedef enum
+	{
+		DSI_DIRECT_STORE,
+		DSI_PROTECTION_VIOLATION,
+		DSI_PAGE_FAULT,
+		DSI_DATA_ADDRESS_BREAKPOINT,
+		DSI_EXTERNAL_ACCESS_DISABLED,
+		DSI_WRITE_THROUGH_LINKED_LOAD_STORE
+	} Type;
 	typedef typename CONFIG::address_t address_t;
-	DSIException(const char *name, address_t addr, typename CONFIG::MemoryAccessType memory_access_type);
+	DSIException(Type type, address_t addr, typename CONFIG::MemoryAccessType memory_access_type);
 	virtual ~DSIException() throw();
+	Type GetType() const;
 	address_t GetAddress() const;
 	typename CONFIG::MemoryAccessType GetAccessType() const;
 	virtual const char * what () const throw ();
 private:
+	Type type;
 	address_t addr;
 	typename CONFIG::MemoryAccessType memory_access_type;
 	string what_str;
@@ -226,10 +247,19 @@ template <class CONFIG>
 class ProgramException : public Exception
 {
 public:
-	ProgramException(const char *name);
+	typedef enum
+	{
+		PX_ILLEGAL_INSTRUCTION,
+		PX_PRIVILEGE_VIOLATION,
+		PX_TRAP,
+		PX_FLOATING_POINT
+	} Type;
+	ProgramException(Type type);
 	virtual ~ProgramException() throw();
+	Type GetType() const;
 	virtual const char * what () const throw ();
 private:
+	Type type;
 	string what_str;
 };
 

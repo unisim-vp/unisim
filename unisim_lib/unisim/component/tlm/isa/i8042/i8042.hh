@@ -94,7 +94,6 @@ public:
 	virtual bool Send(const Pointer<TlmMessage<ISAReq, ISARsp> > &message);
 	virtual void TriggerKbdInterrupt(bool level);
 	virtual void TriggerAuxInterrupt(bool level);
-	virtual void Stop();
 	virtual void Reset();
 	virtual void Lock();
 	virtual void Unlock();

@@ -54,7 +54,6 @@
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/loader.hh>
 #include <unisim/service/interfaces/linux_os.hh>
-#include <unisim/service/interfaces/cpu_linux_os.hh>
 #include <unisim/service/interfaces/symbol_table_lookup.hh>
 #include <unisim/service/interfaces/cache_power_estimator.hh>
 #include <unisim/service/interfaces/power_mode.hh>
@@ -89,7 +88,6 @@ using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::Object;
 using unisim::service::interfaces::Loader;
 using unisim::service::interfaces::LinuxOS;
-using unisim::service::interfaces::CPULinuxOS;
 using unisim::util::debug::Symbol;
 using unisim::service::interfaces::SymbolTableLookup;
 using unisim::service::interfaces::Synchronizable;
@@ -579,7 +577,6 @@ class CPU :
 	public Service<unisim::service::interfaces::Registers>,
 	public Service<Memory<typename CONFIG::address_t> >,
 	public Service<MemoryInjection<typename CONFIG::address_t> >,
-	public Service<CPULinuxOS>,
 	public Client<Memory<typename CONFIG::address_t> >,
 	public Client<LinuxOS>,
 	public Client<CachePowerEstimator>,
@@ -595,7 +592,6 @@ public:
 	ServiceExport<unisim::service::interfaces::Registers> registers_export;
 	ServiceExport<Memory<typename CONFIG::address_t> > memory_export;
 	ServiceExport<MemoryInjection<typename CONFIG::address_t> > memory_injection_export;
-	ServiceExport<CPULinuxOS> cpu_linux_os_export;
 	ServiceExport<Synchronizable> synchronizable_export;
 	ServiceExport<MemoryAccessReportingControl> memory_access_reporting_control_export;
 
@@ -699,9 +695,6 @@ public:
 
 	virtual void RequiresMemoryAccessReporting(bool report);
 	virtual void RequiresFinishedInstructionReporting(bool report) ;
-
-	// PowerPC Linux OS Interface
-	virtual void PerformExit(int ret);
 
 	// Endian interface
     virtual endian_type GetEndianess();
@@ -974,39 +967,23 @@ public:
 	//=               Hardware check/acknowledgement methods              =
 	//=====================================================================
 	
-	void AckDecrementerOverflow();
-	void AckExternalInterrupt();
-	void AckHardReset();
-	void AckSoftReset();
-	void AckMCP();
-	void AckTEA();
-	void AckSMI();
-	void AckThermalManagementInterrupt();
-	void AckPerformanceMonitorInterrupt();
+	void ResetIRQ(unsigned int irq);
 
-	inline bool HasDecrementerOverflow() const { return asynchronous_interrupt & CONFIG::SIG_DECREMENTER_OVERFLOW; }
-	inline bool HasExternalInterrupt() const { return asynchronous_interrupt & CONFIG::SIG_EXTERNAL_INTERRUPT; }
-	inline bool HasHardReset() const { return asynchronous_interrupt & CONFIG::SIG_HARD_RESET; }
-	inline bool HasSoftReset() const { return asynchronous_interrupt & CONFIG::SIG_SOFT_RESET; }
-	inline bool HasMCP() const { return asynchronous_interrupt & CONFIG::SIG_MCP; }
-	inline bool HasTEA() const { return asynchronous_interrupt & CONFIG::SIG_TEA; }
-	inline bool HasSMI() const { return asynchronous_interrupt & CONFIG::SIG_SMI; }
-	inline bool HasPerformanceMonitorInterrupt() const { return asynchronous_interrupt & CONFIG::SIG_PERFORMANCE_MONITOR_INTERRUPT; }
-	inline bool HasAsynchronousInterrupt() const { return asynchronous_interrupt; }
+	inline bool HasDecrementerOverflow() const { return irq & CONFIG::IRQ_DECREMENTER_OVERFLOW; }
+	inline bool HasExternalInterrupt() const { return irq & CONFIG::IRQ_EXTERNAL_INTERRUPT; }
+	inline bool HasHardReset() const { return irq & CONFIG::IRQ_HARD_RESET; }
+	inline bool HasSoftReset() const { return irq & CONFIG::IRQ_SOFT_RESET; }
+	inline bool HasMCP() const { return irq & CONFIG::IRQ_MCP; }
+	inline bool HasTEA() const { return irq & CONFIG::IRQ_TEA; }
+	inline bool HasSMI() const { return irq & CONFIG::IRQ_SMI; }
+	inline bool HasPerformanceMonitorInterrupt() const { return irq & CONFIG::IRQ_PERFORMANCE_MONITOR_INTERRUPT; }
+	inline bool HasIRQ() const { return irq; }
 
 	//=====================================================================
 	//=                    Hardware interrupt request                     =
 	//=====================================================================
 	
-	void ReqDecrementerOverflow();
-	void ReqExternalInterrupt();
-	void ReqHardReset();
-	void ReqSoftReset();
-	void ReqMCP();
-	void ReqTEA();
-	void ReqSMI();
-	void ReqThermalManagementInterrupt();
-	void ReqPerformanceMonitorInterrupt();
+	void SetIRQ(unsigned int irq);
 
 protected:
 
@@ -1315,7 +1292,6 @@ private:
 	bool fp32_estimate_inv_warning;
 	bool fp64_estimate_inv_sqrt_warning;
 
-	int StringLength(typename CONFIG::address_t addr);                          //!< Something to compute the length of a null-terminated string at an effective address
 	inline uint64_t GetInstructionCounter() const { return instruction_counter; }
 	inline void MonitorLoad(typename CONFIG::address_t ea, uint32_t size);
 	inline void MonitorStore(typename CONFIG::address_t ea, uint32_t size);
@@ -1499,7 +1475,7 @@ private:
 	//=              PowerPC hardware interrupt signals                   =
 	//=====================================================================
 	
-	unsigned int asynchronous_interrupt;
+	unsigned int irq;
 
 	//=====================================================================
 	//=                    Exception handling methods                     =
@@ -1527,28 +1503,16 @@ private:
 	void HandleException(const InstructionAddressBreakpointException<CONFIG>& exc);
 
 	// ISI exception
-	void HandleException(const ISIProtectionViolationException<CONFIG>& exc);
-	void HandleException(const ISINoExecuteException<CONFIG>& exc);
-	void HandleException(const ISIDirectStoreException<CONFIG>& exc);
-	void HandleException(const ISIPageFaultException<CONFIG>& exc);
-	void HandleException(const ISIGuardedMemoryException<CONFIG>& exc);
+	void HandleException(const ISIException<CONFIG>& exc);
 
 	// DSI exception
-	void HandleException(const DSIDirectStoreException<CONFIG>& exc);
-	void HandleException(const DSIProtectionViolationException<CONFIG>& exc);
-	void HandleException(const DSIPageFaultException<CONFIG>& exc);
-	void HandleException(const DSIDataAddressBreakpointException<CONFIG>& exc);
-	void HandleException(const DSIExternalAccessDisabledException<CONFIG>& exc);
-	void HandleException(const DSIWriteThroughLinkedLoadStore<CONFIG>& exc);
+	void HandleException(const DSIException<CONFIG>& exc);
 	
 	// Alignment exception
 	void HandleException(const AlignmentException<CONFIG>& exc, uint32_t instruction_encoding);
 
 	// Program exceptions
-	void HandleException(const IllegalInstructionException<CONFIG>& exc);
-	void HandleException(const PrivilegeViolationException<CONFIG>& exc);
-	void HandleException(const TrapException<CONFIG>& exc);
-	void HandleException(const FloatingPointException<CONFIG>& exc);
+	void HandleException(const ProgramException<CONFIG>& exc);
 
 	// Floating point unavailable exception
 	void HandleException(const FloatingPointUnavailableException<CONFIG>& exc);

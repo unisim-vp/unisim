@@ -409,8 +409,7 @@ I_nb_transport_bw_cb(int id, transaction_type &trans, phase_type &phase, sc_core
 				<< PHASE(phase) << endl;
 			TRANS(logger, trans);
 			logger << EndDebug;
-			sc_stop();
-			wait();
+			Object::Stop(-1);
 			break;
 		case tlm::BEGIN_RESP:
 			/* a response has been received through the init_socket */
@@ -425,8 +424,7 @@ I_nb_transport_bw_cb(int id, transaction_type &trans, phase_type &phase, sc_core
 						<< TIME(time) << endl;
 					ETRANS(logger, trans);
 					logger << EndDebug;
-					sc_stop();
-					wait();
+					Object::Stop(-1);
 					return tlm::TLM_COMPLETED; // should never occur
 				}
 				if (VerboseTLM()) {
@@ -506,8 +504,7 @@ T_nb_transport_fw_cb(int id, transaction_type &trans, phase_type &phase, sc_core
 			<< PHASE(phase) << endl;
 		TRANS(logger, trans);
 		logger << EndDebug;
-		sc_stop();
-		wait();
+		Object::Stop(-1);
 		break;
 	case tlm::BEGIN_REQ:
 		{
@@ -541,8 +538,7 @@ T_nb_transport_fw_cb(int id, transaction_type &trans, phase_type &phase, sc_core
 					<< LOCATION << endl;
 				TRANS(logger, trans);
 				logger << EndDebug;
-				sc_stop();
-				wait();
+				Object::Stop(-1);
 				return tlm::TLM_COMPLETED; // should never occur
 			}
 
@@ -975,8 +971,7 @@ SendReq(unsigned int id, transaction_type &trans) {
 							<< TIME(time) << endl;
 						TRANS(logger, trans);
 						logger << EndDebug;
-						sc_stop();
-						wait();
+						Object::Stop(-1);
 					}
 					/* we can remove the request from the queue, so new ones can be sent */
 					if (VerboseTLM()) {
@@ -995,8 +990,7 @@ SendReq(unsigned int id, transaction_type &trans) {
 							<< TIME(time) << endl;
 						TRANS(logger, trans);
 						logger << EndDebug;
-						sc_stop();
-						wait();
+						Object::Stop(-1);
 					}
 					/* the request has been accepted, and the response has been produced
 					 * check when the response can be queued into the response queue through the handled port (recovering the router extension)
@@ -1011,8 +1005,7 @@ SendReq(unsigned int id, transaction_type &trans) {
 								<< TIME(time) << endl;
 							ETRANS(logger, trans);
 							logger << EndDebug;
-							sc_stop();
-							wait();
+							Object::Stop(-1);
 							return; // should never occur
 						}
 						if (VerboseTLM()) {
@@ -1045,8 +1038,7 @@ SendReq(unsigned int id, transaction_type &trans) {
 								<< TIME(time) << endl;
 							ETRANS(logger, trans);
 							logger << EndDebug;
-							sc_stop();
-							wait();
+							Object::Stop(-1);
 						}
 					}
 					break;
@@ -1058,8 +1050,7 @@ SendReq(unsigned int id, transaction_type &trans) {
 						<< PHASE(phase) << endl;
 					TRANS(logger, trans);
 					logger << EndDebug;
-					sc_stop();
-					wait();
+					Object::Stop(-1);
 					break;
 			}
 			break;
@@ -1088,8 +1079,7 @@ SendReq(unsigned int id, transaction_type &trans) {
 							<< TIME(time) << endl;
 						ETRANS(logger, trans);
 						logger << EndDebug;
-						sc_stop();
-						wait();
+						Object::Stop(-1);
 						return; // should never occur
 					}
 					if (VerboseTLM()) {

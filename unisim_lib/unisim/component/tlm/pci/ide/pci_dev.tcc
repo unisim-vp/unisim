@@ -355,7 +355,7 @@ void PCIDev<ADDRESS_TYPE, MAX_DATA_SIZE>::IntrDispatch() {
 						<< ":" << __LINE__
 						<< "): received a response for a pci message without response field"
 						<< endl;
-					sc_stop();
+					Object::Stop(-1);
 					wait();
 				}			 	
 			} */

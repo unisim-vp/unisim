@@ -60,7 +60,6 @@
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger.hh"
 #include "unisim/service/interfaces/linux_os.hh"
-#include "unisim/service/interfaces/cpu_linux_os.hh"
 #include "unisim/service/interfaces/loader.hh"
 #include "unisim/service/interfaces/memory.hh"
 #include "unisim/service/interfaces/memory_injection.hh"
@@ -116,14 +115,12 @@ LinuxOS(const char *name, Object *parent)
 	: Object(name, parent)
 	, Service<unisim::service::interfaces::LinuxOS>(name, parent)
 	, Service<Loader<ADDRESS_TYPE> >(name, parent)
-	, Client<CPULinuxOS>(name, parent)
 	, Client<Memory<ADDRESS_TYPE> >(name, parent)
 	, Client<MemoryInjection<ADDRESS_TYPE> >(name, parent)
 	, Client<Registers>(name, parent)
 	, Client<Loader<ADDRESS_TYPE> >(name, parent)
 	, linux_os_export("linux-os-export", this)
 	, loader_export("loader-export", this)
-	, cpu_linux_os_import("cpu-linux-os-import", this)
 	, memory_import("memory-import", this)
 	, memory_injection_import("memory-injection-import", this)
 	, registers_import("registers-import", this)
@@ -251,14 +248,6 @@ Load()
 {
 	syscall_impl_assoc_map.clear();
 	 
-	if (!cpu_linux_os_import) 
-	{
-		logger << DebugError
-			<< cpu_linux_os_import.GetName() << " is not connected" << endl
-			<< LOCATION
-			<< EndDebugError;
-		return false;
-	}
 	if (!memory_import) 
 	{
 		logger << DebugError
@@ -889,7 +878,7 @@ LSC_exit()
 			<< "LSC_exit with ret = 0X" << hex << ret << dec
 			<< LOCATION
 			<< EndDebugInfo;
-	cpu_linux_os_import->PerformExit(ret);
+	Object::Stop(ret);
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
@@ -1336,7 +1325,6 @@ template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 int LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 Stat(int fd, struct powerpc_stat_t *target_stat)
 {
-	std::cerr << "sizeof=" << sizeof(powerpc_stat_t) << std::endl;
 	int ret;
 	struct stat host_stat;
 	ret = fstat(fd, &host_stat);

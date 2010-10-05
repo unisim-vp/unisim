@@ -345,15 +345,15 @@ public:
 	// Additional exceptions in MPC74xx
 	static const physical_address_t EXC_ALTIVEC_UNAVAILABLE_VECTOR = 0xf20UL;
 
-	// Asynchronous interrupt signal masks
-	static const unsigned int SIG_DECREMENTER_OVERFLOW = 1;
-	static const unsigned int SIG_EXTERNAL_INTERRUPT = 2;
-	static const unsigned int SIG_SOFT_RESET = 4;
-	static const unsigned int SIG_HARD_RESET = 8;
-	static const unsigned int SIG_MCP = 16;
-	static const unsigned int SIG_TEA = 32;
-	static const unsigned int SIG_SMI = 64;
-	static const unsigned int SIG_PERFORMANCE_MONITOR_INTERRUPT = 128;
+	// Hardware interrupt signals
+	static const unsigned int IRQ_DECREMENTER_OVERFLOW = 1;                 // decrementer overflow (internal)
+	static const unsigned int IRQ_EXTERNAL_INTERRUPT = 2;                   // external interrupt (signal INT)
+	static const unsigned int IRQ_SOFT_RESET = 4;                           // soft reset (signal SRESET)
+	static const unsigned int IRQ_HARD_RESET = 8;                           // hard reset (signal HRESET)
+	static const unsigned int IRQ_MCP = 16;                                 // machine check (signal MCP)
+	static const unsigned int IRQ_TEA = 32;                                 // transfer error acknowledge (signal TEA)
+	static const unsigned int IRQ_SMI = 64;                                 // system management interrupt (signal SMI)
+	static const unsigned int IRQ_PERFORMANCE_MONITOR_INTERRUPT = 128;      // performance monitor interrupt (internal)
 
 	// start address
 	static const uint32_t START_ADDR = EXC_SYSTEM_RESET_VECTOR | ((MSR_RESET_VALUE & MSR_IP_MASK) ? 0xfff00000UL : 0x00000000UL); // processor starts at system reset interrupt handler

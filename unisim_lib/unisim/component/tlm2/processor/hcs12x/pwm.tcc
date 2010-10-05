@@ -248,26 +248,22 @@ tlm_sync_enum PWM<PWM_SIZE>::nb_transport_bw(PWM_Payload<PWM_SIZE>& payload, tlm
 		case BEGIN_REQ:
 			cout << sc_time_stamp() << ":" << name() << ": received an unexpected phase BEGIN_REQ" << endl;
 
-			sc_stop();
-			wait(); // leave control to the SystemC kernel
+			Object::Stop(-1);
 			break;
 		case END_REQ:
 			cout << sc_time_stamp() << ":" << name() << ": received an unexpected phase END_REQ" << endl;
-			sc_stop();
-			wait(); // leave control to the SystemC kernel
+			Object::Stop(-1);
 			break;
 		case BEGIN_RESP:
 			payload.release();
 			return TLM_COMPLETED;
 		case END_RESP:
 			cout << sc_time_stamp() << ":" << name() << ": received an unexpected phase END_RESP" << endl;
-			sc_stop();
-			wait(); // leave control to the SystemC kernel
+			Object::Stop(-1);
 			break;
 		default:
 			cout << sc_time_stamp() << ":" << name() << ": received an unexpected phase" << endl;
-			sc_stop();
-			wait(); // leave control to the SystemC kernel
+			Object::Stop(-1);
 			break;
 	}
 

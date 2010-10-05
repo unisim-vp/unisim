@@ -14,7 +14,7 @@ HERE=`pwd`
 DEST_DIR=$1
 UNISIM_TOOLS_DIR=$2/unisim_tools
 UNISIM_LIB_DIR=$2/unisim_lib
-UNISIM_SIMULATORS_DIR=$2/unisim_simulators/tlm/ppcemu
+UNISIM_SIMULATORS_DIR=$2/unisim_simulators/tlm2/ppcemu
 
 PPCEMU_VERSION=$(cat ${UNISIM_SIMULATORS_DIR}/VERSION)
 GENISSLIB_VERSION=$(cat ${UNISIM_TOOLS_DIR}/genisslib/VERSION)-ppcemu-${PPCEMU_VERSION}
@@ -100,7 +100,7 @@ vector"
 UNISIM_LIB_PPCEMU_SOURCE_FILES="\
 unisim/kernel/service/service.cc \
 unisim/kernel/service/xml_helper.cc \
-unisim/kernel/tlm/tlm.cc \
+unisim/kernel/tlm2/tlm.cc \
 unisim/kernel/logger/logger.cc \
 unisim/kernel/logger/logger_server.cc \
 unisim/kernel/debug/debug.cc \
@@ -143,14 +143,10 @@ unisim/component/cxx/processor/powerpc/mpc7447a/cpu_debug.cc \
 unisim/component/cxx/processor/powerpc/floating.cc \
 unisim/component/cxx/processor/powerpc/mpc7447a/config.cc \
 unisim/component/cxx/memory/ram/memory_32.cc \
-unisim/component/tlm/message/interrupt.cc \
-unisim/component/tlm/processor/powerpc/mpc7447a/cpu.cc \
-unisim/component/tlm/processor/powerpc/mpc7447a/cpu_debug.cc \
-unisim/component/tlm/fsb/snooping_bus/bus_addr32_size32_procs1.cc \
-unisim/component/tlm/memory/ram/memory_32.cc \
-unisim/component/tlm/memory/ram/memory_32_debug.cc \
-unisim/component/tlm/bridge/snooping_fsb_to_mem/addr32_burstsize32.cc \
-unisim/component/tlm/bridge/snooping_fsb_to_mem/addr32_burstsize32_debug.cc"
+unisim/component/cxx/memory/ram/memory_64.cc \
+unisim/component/tlm2/processor/powerpc/mpc7447a/cpu.cc \
+unisim/component/tlm2/processor/powerpc/mpc7447a/cpu_debug.cc \
+unisim/component/tlm2/memory/ram/memory.cc"
 
 UNISIM_LIB_PPCEMU_ISA_FILES="\
 unisim/component/cxx/processor/powerpc/isa/altivec.isa \
@@ -175,7 +171,7 @@ unisim/kernel/service/service.hh \
 unisim/kernel/service/xml_helper.hh \
 unisim/kernel/logger/logger.hh \
 unisim/kernel/logger/logger_server.hh \
-unisim/kernel/tlm/tlm.hh \
+unisim/kernel/tlm2/tlm.hh \
 unisim/kernel/debug/debug.hh \
 unisim/util/arithmetic/arithmetic.hh \
 unisim/util/debug/breakpoint.hh \
@@ -262,15 +258,9 @@ unisim/component/cxx/processor/powerpc/config.hh \
 unisim/component/cxx/processor/powerpc/mpc7447a/config.hh \
 unisim/component/cxx/cache/cache.hh \
 unisim/component/cxx/tlb/tlb.hh \
-unisim/component/tlm/message/interrupt.hh \
-unisim/component/tlm/processor/powerpc/mpc7447a/cpu.hh \
-unisim/component/tlm/message/snooping_fsb.hh \
-unisim/component/tlm/debug/transaction_spy.hh \
-unisim/component/tlm/message/memory.hh \
-unisim/component/tlm/memory/ram/memory.hh \
-unisim/component/tlm/fsb/snooping_bus/bus.hh \
-unisim/component/tlm/bridge/snooping_fsb_to_mem/bridge.hh \
-unisim/component/tlm/bridge/snooping_fsb_to_mem/config.hh"
+unisim/component/tlm2/interrupt/types.hh \
+unisim/component/tlm2/processor/powerpc/mpc7447a/cpu.hh \
+unisim/component/tlm2/memory/ram/memory.hh"
 
 UNISIM_LIB_PPCEMU_TEMPLATE_FILES="\
 unisim/util/debug/breakpoint_registry.tcc \
@@ -310,10 +300,8 @@ unisim/component/cxx/processor/powerpc/exception.tcc \
 unisim/component/cxx/memory/ram/memory.tcc \
 unisim/component/cxx/cache/cache.tcc \
 unisim/component/cxx/tlb/tlb.tcc \
-unisim/component/tlm/processor/powerpc/mpc7447a/cpu.tcc \
-unisim/component/tlm/memory/ram/memory.tcc \
-unisim/component/tlm/fsb/snooping_bus/bus.tcc \
-unisim/component/tlm/bridge/snooping_fsb_to_mem/bridge.tcc"
+unisim/component/tlm2/processor/powerpc/mpc7447a/cpu.tcc \
+unisim/component/tlm2/memory/ram/memory.tcc"
 
 UNISIM_LIB_PPCEMU_M4_FILES="\
 m4/times.m4 \
@@ -326,6 +314,7 @@ m4/bsd_sockets.m4 \
 m4/curses.m4 \
 m4/libedit.m4 \
 m4/systemc.m4 \
+m4/tlm20.m4 \
 m4/with_boost.m4 \
 m4/cacti.m4 \
 m4/check_lib.m4 \
@@ -692,6 +681,7 @@ if [ "${has_to_build_ppcemu_configure}" = "yes" ]; then
 	echo "UNISIM_CHECK_LIBXML2" >> "${PPCEMU_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_CXXABI" >> "${PPCEMU_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_SYSTEMC" >> "${PPCEMU_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_TLM20" >> "${PPCEMU_CONFIGURE_AC}"
 	echo "UNISIM_WITH_BOOST" >> "${PPCEMU_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_BOOST_GRAPH" >> "${PPCEMU_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_CACTI" >> "${PPCEMU_CONFIGURE_AC}"

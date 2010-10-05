@@ -221,8 +221,7 @@ Stop(int ret)
 	// Call BusSynchronize to account for the remaining time spent in the cpu 
 	// core
 	BusSynchronize();
-	sc_stop();
-	wait();
+	Object::Stop(-1);
 }
 
 /** Synchronization demanded from the CPU implementation.
@@ -351,8 +350,7 @@ nb_transport_bw (transaction_type &trans, phase_type &phase, sc_core::sc_time &t
 				<< PHASE(phase) << endl;
 			TRANS(logger, trans);
 			logger << EndDebug;
-			sc_stop();
-			wait();
+			Object::Stop(-1);
 			break;
 		case tlm::END_REQ:
 			/* The request phase is finished.
@@ -385,8 +383,7 @@ nb_transport_bw (transaction_type &trans, phase_type &phase, sc_core::sc_time &t
 					<< PHASE(phase) << endl;
 				TRANS(logger, trans);
 				logger << EndDebug;
-				sc_stop();
-				wait();
+				Object::Stop(-1);
 				break;
 			}
 			tmp_time = sc_time_stamp() + time;
@@ -405,8 +402,7 @@ nb_transport_bw (transaction_type &trans, phase_type &phase, sc_core::sc_time &t
 		<< PHASE(phase) << endl;
 	TRANS(logger, trans);
 	logger << EndDebug;
-	sc_stop();
-	wait();
+	Object::Stop(-1);
 	// useless return to avoid compiler warnings/errors
 	return ret;
 }

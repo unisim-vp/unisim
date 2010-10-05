@@ -71,7 +71,7 @@ b.disasm = {
 	}
 }
 
-op bc(16[6]: bo[5]: bi[5]:shl<2> sext<16> bd[14]: aa[1]: lk[1])
+op bc(16[6]: bo[5]: bi[5]:shl<2> sext<32> bd[14]: aa[1]: lk[1])
 bc.execute = {
 	uint32_t ctr_ok, cond_ok, ok;
 	
@@ -133,8 +133,8 @@ bc.disasm = {
 	os << " ";
 	switch(bo)
 	{
-		case 0: case 2: case 4: case 8: case 10: case 12: case 16: case 18: os << bi; break;
-		default: os << bo << ", " << bi;
+		case 0: case 2: case 4: case 8: case 10: case 12: case 16: case 18: os << (unsigned int) bi; break;
+		default: os << (unsigned int) bo << ", " << (unsigned int) bi;
 	}
 	os << ", 0x" << hex << target_addr << dec;
 	if(cpu)
@@ -145,7 +145,7 @@ bc.disasm = {
 
 op bcctr(19[6]: bo[5]: bi[5]:?[5]:528[10]:lk[1])
 bcctr.execute = {
-	if(bo & 8) throw IllegalInstructionException<CONFIG>();
+	if(unlikely(!(bo & 4))) throw IllegalInstructionException<CONFIG>();
 	int cond_ok ;
 	if(((bo & 16) == 0)) {
 		/* Conditional branch */
@@ -185,10 +185,10 @@ bcctr.disasm = {
 	if(lk) os << "l";
 	switch(bo)
 	{
-		case 4: case 12: os << " " << bi; break;
+		case 4: case 12: os << " " << (unsigned int) bi; break;
 		case 20: if(bi == 0) break;
 		// no break if bi != 0
-		default: os << " " << bo << ", " << bi;
+		default: os << " " << (unsigned int) bo << ", " << (unsigned int) bi;
 	}
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
@@ -253,9 +253,9 @@ bclr.disasm = {
 	if(lk) os << "l";
 	switch(bo)
 	{
-		case 0: case 2: case 4: case 8: case 10: case 12: os << " " << bi; break;
+		case 0: case 2: case 4: case 8: case 10: case 12: os << " " << (unsigned int) bi; break;
 		case 16: case 18: case 20: break;
-		default: os << " " << bo << ", " << bi;
+		default: os << " " << (unsigned int) bo << ", " << (unsigned int) bi;
 	}
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
