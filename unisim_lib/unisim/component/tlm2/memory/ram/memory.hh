@@ -56,6 +56,7 @@ using unisim::kernel::service::Client;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::logger::Logger;
 
+typedef uint64_t DEFAULT_ADDRESS;
 const unsigned int DEFAULT_BUSWIDTH = 32; // 32-bit bus
 const unsigned int DEFAULT_BURST_LENGTH = 8; // 8 beats
 const uint32_t DEFAULT_PAGE_SIZE = 1024 * 1024; // 1 MB page size (implementation detail)
@@ -66,7 +67,7 @@ const bool DEFAULT_DEBUG = false; // no debug
  * It implements a tlm2 module using the tlm_generic_payload and (as it inherits from the memory service) the 
  *   service methods (Read and WriteMemory).
  */
-template <unsigned int BUSWIDTH = DEFAULT_BUSWIDTH, class ADDRESS = uint64_t, unsigned int BURST_LENGTH = DEFAULT_BURST_LENGTH, uint32_t PAGE_SIZE = DEFAULT_PAGE_SIZE, bool DEBUG = DEFAULT_DEBUG>
+template <unsigned int BUSWIDTH = DEFAULT_BUSWIDTH, class ADDRESS = DEFAULT_ADDRESS, unsigned int BURST_LENGTH = DEFAULT_BURST_LENGTH, uint32_t PAGE_SIZE = DEFAULT_PAGE_SIZE, bool DEBUG = DEFAULT_DEBUG>
 class Memory :
 	public sc_module,
 	public unisim::component::cxx::memory::ram::Memory<ADDRESS, PAGE_SIZE>,
