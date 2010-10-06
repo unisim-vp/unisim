@@ -36,6 +36,7 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_ARM926EJS_CACHE_HH__
 
 #include <inttypes.h>
+#include "unisim/kernel/service/service.hh"
 #include "unisim/util/random/random.hh"
 
 #ifdef GCC_INLINE
@@ -56,12 +57,30 @@ namespace arm {
 namespace armemu {
 
 class Cache
+	: public unisim::kernel::service::Object
 {
 public:
 	/** Constructor */
-	Cache();
+	Cache(const char *name, unisim::kernel::service::Object *parent = 0);
 	/** Destructor */
 	~Cache();
+
+	/** Cache access counter. */
+	uint32_t accesses;
+	/** Cache read access counter. */
+	uint32_t read_accesses;
+	/** Cache write access counter. */
+	uint32_t write_accesses;
+	/** Cache prefetch access counter. */
+	uint32_t prefetch_accesses;
+	/** Cache hit access counter. */
+	uint32_t hits;
+	/** Cache read hit access counter. */
+	uint32_t read_hits;
+	/** Cache write hit access counter. */
+	uint32_t write_hits;
+	/** Cache prefetch hit access counter. */
+	uint32_t prefetch_hits;
 
 	/** Set the size of the cache.
 	 * Sets the cache size to the indicated size.
@@ -125,6 +144,37 @@ public:
 	void SetDirty(uint32_t set, uint32_t way, uint8_t dirty);
 
 private:
+	/** UNISIM Statistic of the number of read accesses to the 
+	 * cache.
+	 */
+	unisim::kernel::service::Statistic<uint32_t> stat_read_accesses;
+	/** UNISIM Statistic of the number of write accesses to the 
+	 * cache.
+	 */
+	unisim::kernel::service::Statistic<uint32_t> stat_write_accesses;
+	/** UNISIM Statistic of the number of prefetch accesses to the 
+	 * cache.
+	 */
+	unisim::kernel::service::Statistic<uint32_t> stat_prefetch_accesses;
+	/** UNISIM Formula of the number of accesses to the cache.
+	 */
+	unisim::kernel::service::Formula<uint32_t> form_accesses;
+	/** UNISIM Statistic of the number of read hits to the cache.
+	 */
+	unisim::kernel::service::Statistic<uint32_t> stat_read_hits;
+	/** UNISIM Statistic of the number of write hits to the cache.
+	 */
+	unisim::kernel::service::Statistic<uint32_t> stat_write_hits;
+	/** UNISIM Statistic of the number of prefetch hits to the cache.
+	 */
+	unisim::kernel::service::Statistic<uint32_t> stat_prefetch_hits;
+	/** UNISIM Formula of the number of hits to the cache.
+	 */
+	unisim::kernel::service::Formula<uint32_t> form_hits;
+	/** UNISIM Formula for the hit rate of the cache.
+	 */
+	unisim::kernel::service::Formula<double> form_hit_rate;
+
 	static const uint32_t m_sets_ = 1024;
 	static const uint32_t m_associativity_ = 4;
 	static const uint32_t m_line_size_ = 32;

@@ -42,10 +42,7 @@
 
 #include "unisim/component/cxx/processor/arm/cpu.hh"
 #include "unisim/component/cxx/processor/arm/masks.hh"
-// #include "unisim/component/cxx/processor/arm/config.hh"
 #include "unisim/component/cxx/processor/arm/isa_arm32.tcc"
-// #include "unisim/component/cxx/processor/arm/isa_thumb.tcc"
-// #include "unisim/component/cxx/processor/arm/instruction.tcc"
 #include "unisim/component/cxx/processor/arm/exception.tcc"
 #include "unisim/util/debug/simple_register.hh"
 #ifndef __STDC_CONSTANT_MACROS
@@ -129,8 +126,8 @@ CPU(const char *name, Object *parent)
 	, logger(*this)
 	, arm32_decoder()
 	, instruction_counter(0)
-	, icache()
-	, dcache()
+	, icache("icache", this)
+	, dcache("dcache", this)
 	, icache_size(0)
 	, dcache_size(0)
 	, verbose(0)
@@ -936,6 +933,7 @@ ReadInsn(uint32_t address, uint32_t &val)
 
 	if ( likely(icache.GetSize()) )
 	{
+		icache.read_accesses++;
 		// check the instruction cache
 		uint32_t cache_tag = icache.GetTag(address);
 		uint32_t cache_set = icache.GetSet(address);
@@ -971,6 +969,7 @@ ReadInsn(uint32_t address, uint32_t &val)
 		else
 		{
 			// cache hit
+			icache.read_hits++;
 		}
 
 		// at this point the data is in the cache, we can read it from the
@@ -1560,8 +1559,9 @@ PerformPrefetchAccess(unisim::component::cxx::processor::arm::MemoryOp
 {
 	uint32_t addr = memop->GetAddress();
 
-	if ( dcache.GetSize() )
+	if ( likely(dcache.GetSize()) )
 	{
+		dcache.prefetch_accesses++;
 		uint32_t cache_tag = dcache.GetTag(addr);
 		uint32_t cache_set = dcache.GetSet(addr);
 		uint32_t cache_way;
@@ -1576,7 +1576,7 @@ PerformPrefetchAccess(unisim::component::cxx::processor::arm::MemoryOp
 		}
 		// if the access was a miss, data needs to be fetched from main
 		//   memory and placed into the cache
-		if ( !cache_hit )
+		if ( likely(!cache_hit) )
 		{
 			// get a way to replace
 			cache_way = dcache.GetNewWay(cache_set);
@@ -1612,6 +1612,10 @@ PerformPrefetchAccess(unisim::component::cxx::processor::arm::MemoryOp
 			dcache.SetTag(cache_set, cache_way, cache_tag);
 			dcache.SetValid(cache_set, cache_way, 1);
 			dcache.SetDirty(cache_set, cache_way, 0);
+		}
+		else
+		{
+			dcache.prefetch_hits++;
 		}
 		if ( unlikely(dl1_power_estimator_import != 0) )
 			dl1_power_estimator_import->ReportReadAccess();
@@ -1671,8 +1675,9 @@ PerformWriteAccess(unisim::component::cxx::processor::arm::MemoryOp
 		break;
 	}
 
-	if ( dcache.GetSize() )
+	if ( likely(dcache.GetSize()) )
 	{
+		dcache.write_accesses++;
 		uint32_t cache_tag = dcache.GetTag(write_addr);
 		uint32_t cache_set = dcache.GetSet(write_addr);
 		uint32_t cache_way;
@@ -1688,8 +1693,9 @@ PerformWriteAccess(unisim::component::cxx::processor::arm::MemoryOp
 		// if the access was a hit the data needs to be written into
 		//   the cache, if the access was a miss the data needs to be
 		//   written into memory, but the cache doesn't need to be updated
-		if ( cache_hit )
+		if ( likely(cache_hit) )
 		{
+			dcache.write_hits++;
 			uint32_t cache_index = dcache.GetIndex(write_addr);
 			dcache.SetData(cache_set, cache_way, cache_index,
 					size, data);
@@ -1745,6 +1751,7 @@ PerformReadAccess(unisim::component::cxx::processor::arm::MemoryOp
 
 	if ( likely(dcache.GetSize()) )
 	{
+		dcache.read_accesses++;
 		uint32_t cache_tag = dcache.GetTag(read_addr);
 		uint32_t cache_set = dcache.GetSet(read_addr);
 		uint32_t cache_way;
@@ -1797,7 +1804,8 @@ PerformReadAccess(unisim::component::cxx::processor::arm::MemoryOp
 		}
 		else
 		{
-			// cache miss
+			// cache hit
+			dcache.read_hits++;
 		}
 
 		// at this point the data is in the cache, we can read it from the
@@ -1883,8 +1891,9 @@ PerformReadToPCAccess(unisim::component::cxx::processor::arm::MemoryOp
 	uint8_t data32[4];
 	uint8_t *data;
 
-	if ( dcache.GetSize() )
+	if ( likely(dcache.GetSize()) )
 	{
+		dcache.read_accesses++;
 		uint32_t cache_tag = dcache.GetTag(read_addr);
 		uint32_t cache_set = dcache.GetSet(read_addr);
 		uint32_t cache_way;
@@ -1900,7 +1909,7 @@ PerformReadToPCAccess(unisim::component::cxx::processor::arm::MemoryOp
 		}
 		// if the access was a miss, data needs to be fetched from main
 		//   memory and placed into the cache
-		if ( !cache_hit )
+		if ( unlikely(!cache_hit) )
 		{
 			// get a way to replace
 			cache_way = dcache.GetNewWay(cache_set);
@@ -1941,6 +1950,7 @@ PerformReadToPCAccess(unisim::component::cxx::processor::arm::MemoryOp
 		else
 		{
 			// cache hit
+			dcache.read_hits++;
 		}
 
 		// at this point the data is in the cache, we can read it from the
@@ -2005,8 +2015,9 @@ PerformReadToPCUpdateTAccess(
 	uint8_t data32[4];
 	uint8_t *data;
 
-	if ( dcache.GetSize() )
+	if ( likely(dcache.GetSize()) )
 	{
+		dcache.read_accesses++;
 		uint32_t cache_tag = dcache.GetTag(read_addr);
 		uint32_t cache_set = dcache.GetSet(read_addr);
 		uint32_t cache_way;
@@ -2022,7 +2033,7 @@ PerformReadToPCUpdateTAccess(
 		}
 		// if the access was a miss, data needs to be fetched from main
 		//   memory and placed into the cache
-		if ( !cache_hit )
+		if ( unlikely(!cache_hit) )
 		{
 			// get a way to replace
 			cache_way = dcache.GetNewWay(cache_set);
@@ -2062,6 +2073,7 @@ PerformReadToPCUpdateTAccess(
 		else
 		{
 			// cache hit
+			dcache.read_hits++;
 		}
 
 		// at this point the data is in the cache, we can read it from the

@@ -37,6 +37,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "unisim/component/cxx/processor/arm/armemu/cache.hh"
+#include "unisim/kernel/service/Service.hh"
 
 // #define ARMEMU_CACHE_DEBUG
 
@@ -62,11 +63,51 @@ namespace processor {
 namespace arm {
 namespace armemu {
 
-Cache::Cache() :
-rand(1, -1, rand.Max, rand.Min),
-m_is_ok(false),
-m_size(0),
-m_round_robin_replacement_policy(false)
+Cache::
+Cache(const char *name, unisim::kernel::service::Object *parent) 
+	: unisim::kernel::service::Object(name, parent)
+	, accesses(0)
+	, read_accesses(0)
+	, write_accesses(0)
+	, prefetch_accesses(0)
+	, hits(0)
+	, read_hits(0)
+	, write_hits(0)
+	, prefetch_hits(0)
+	, stat_read_accesses("read-accesses", this,
+			read_accesses,
+			"Number of read accesses to the cache.")
+	, stat_write_accesses("write-accesses", this,
+			write_accesses,
+			"Number of write accesses to the cache.")
+	, stat_prefetch_accesses("prefetch-accesses", this,
+			prefetch_accesses,
+			"Number of prefetch accesses to the cache.")
+	, form_accesses("accesses", this,
+			unisim::kernel::service::Formula<uint32_t>::OP_ADD,
+			&stat_read_accesses, &stat_write_accesses, &stat_prefetch_accesses,
+			"Number of accesses to the cache.")
+	, stat_read_hits("read-hits", this,
+			read_hits,
+			"Number of read hit accesses to the cache.")
+	, stat_write_hits("write-hits", this,
+			write_hits,
+			"Number of write hit accesses to the cache.")
+	, stat_prefetch_hits("prefetch-hits", this,
+			prefetch_hits,
+			"Number of prefetch hit accesses to the cache.")
+	, form_hits("hits", this,
+			unisim::kernel::service::Formula<uint32_t>::OP_ADD,
+			&stat_read_hits, &stat_write_hits, &stat_prefetch_hits,
+			"Number of hit accesses to the cache.")
+	, form_hit_rate("hit-rate", this,
+			unisim::kernel::service::Formula<double>::OP_DIV,
+			&form_hits, &form_accesses, 0,
+			"Cache hit rate.")
+	, rand(1, -1, rand.Max, rand.Min)
+	, m_is_ok(false)
+	, m_size(0)
+	, m_round_robin_replacement_policy(false)
 {
 	for (uint32_t set = 0; set < m_sets_; set++)
 	{
@@ -79,6 +120,22 @@ m_round_robin_replacement_policy(false)
 		}
 		m_replacement_history[set] = 0;
 	}
+	stat_read_accesses.SetFormat(
+			unisim::kernel::service::VariableBase::FMT_DEC);
+	stat_write_accesses.SetFormat(
+			unisim::kernel::service::VariableBase::FMT_DEC);
+	stat_prefetch_accesses.SetFormat(
+			unisim::kernel::service::VariableBase::FMT_DEC);
+	form_accesses.SetFormat(
+			unisim::kernel::service::VariableBase::FMT_DEC);
+	stat_read_hits.SetFormat(
+			unisim::kernel::service::VariableBase::FMT_DEC);
+	stat_write_hits.SetFormat(
+			unisim::kernel::service::VariableBase::FMT_DEC);
+	stat_prefetch_hits.SetFormat(
+			unisim::kernel::service::VariableBase::FMT_DEC);
+	form_hits.SetFormat(
+			unisim::kernel::service::VariableBase::FMT_DEC);
 }
 
 Cache::~Cache()
