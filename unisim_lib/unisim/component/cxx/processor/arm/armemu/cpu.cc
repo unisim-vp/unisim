@@ -270,15 +270,26 @@ Setup()
 				E_LITTLE_ENDIAN : E_BIG_ENDIAN);
 	}
 
+	if ( cpu_cycle_time == 0 )
+	{
+		// we can't provide a valid cpu cycle time configuration
+		//   automatically
+		logger << DebugError
+			<< "cpu-cycle-time should be bigger than 0"
+			<< EndDebugError;
+		return false;
+	}
+
 	/* Initialize the caches and power support as required. */
 	unsigned int min_cycle_time = 0;
-	uint64_t def_voltage = 0;
+	uint64_t il1_def_voltage = 0;
+	uint64_t dl1_def_voltage = 0;
 
 	if ( icache.power_mode_import )
 	{
 		min_cycle_time =
 			icache.power_mode_import->GetMinCycleTime();
-		def_voltage =
+		il1_def_voltage =
 			icache.power_mode_import->GetDefaultVoltage();
 	}
 	if ( dcache.power_mode_import )
@@ -287,10 +298,8 @@ Setup()
 				min_cycle_time )
 			min_cycle_time =
 				dcache.power_mode_import->GetMinCycleTime();
-		if ( dcache.power_mode_import->GetDefaultVoltage() >
-				def_voltage )
-			def_voltage = 
-				dcache.power_mode_import->GetDefaultVoltage();
+		dl1_def_voltage = 
+			dcache.power_mode_import->GetDefaultVoltage();
 	}
 
 	if ( min_cycle_time > 0 )
@@ -303,30 +312,40 @@ Setup()
 				<< " hardware !" << endl;
 			logger << "cpu cycle time should be >= "
 				<< min_cycle_time << " ps." << endl;
-			logger << "Setting cpu cycle time to "
-				<< min_cycle_time << " ps.";
 			logger << EndDebugWarning;
-			cpu_cycle_time = min_cycle_time;
 		}
 	}
 
 	if ( voltage == 0 )
-		voltage = def_voltage;
+	{
+		voltage = (il1_def_voltage > dl1_def_voltage) ? 
+			il1_def_voltage :
+			dl1_def_voltage;
+		logger << DebugWarning
+			<< "A cpu voltage was not defined (set to 0)."
+			<< " Using the maximum voltage found from the caches as "
+			<< " current voltage. Voltage used is "
+			<< voltage
+			<< " mV." << endl;
+		if ( icache.power_mode_import )
+			logger << "  - instruction cache voltage = "
+				<< il1_def_voltage
+				<< " mV";
+		if ( dcache.power_mode_import )
+		{
+			if ( icache.power_mode_import )
+				logger << endl;
+			logger << "  - data cache voltage = "
+				<< dl1_def_voltage
+				<< " mV";
+		}
+		logger << EndDebugWarning;
+	}
 	
 	if ( icache.power_mode_import )
 		icache.power_mode_import->SetPowerMode(cpu_cycle_time, voltage);
 	if ( dcache.power_mode_import )
 		dcache.power_mode_import->SetPowerMode(cpu_cycle_time, voltage);
-
-	if ( cpu_cycle_time == 0 )
-	{
-		// we can't provide a valid cpu cycle time configuration
-		//   automatically
-		logger << DebugError
-			<< "cpu-cycle-time should be bigger than 0"
-			<< EndDebugError;
-		return false;
-	}
 
 	if ( verbose )
 	{
