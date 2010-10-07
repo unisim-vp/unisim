@@ -195,7 +195,7 @@ private:
 
 	/** UNISIM Parameter for the cache size.
 	 */
-	unisim::kernel::service::Statistic<uint32_t> parm_size;
+	unisim::kernel::service::Parameter<uint32_t> parm_size;
 	/** UNISIM Statistic of the number of read accesses to the 
 	 * cache.
 	 */
