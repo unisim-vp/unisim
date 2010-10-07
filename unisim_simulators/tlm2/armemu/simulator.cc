@@ -395,8 +395,13 @@ DefaultConfiguration(unisim::kernel::service::Simulator *sim)
 	sim->SetVariable("kernel_logger.std_err_color", true);
 
 	sim->SetVariable("cpu.default-endianness",   "little-endian");
-	sim->SetVariable("cpu.cpu-cycle-time",       1000UL);
-	sim->SetVariable("memory.bytesize",          0xffffffffUL);
+	sim->SetVariable("cpu.cpu-cycle-time",       31250UL); // 32Mhz
+	sim->SetVariable("cpu.bus-cycle-time",       31250UL); // 32Mhz
+	sim->SetVariable("cpu.icache.size",          0x020000); // 128 KB
+	sim->SetVariable("cpu.dcache.size",          0x020000); // 128 KB
+	sim->SetVariable("cpu.nice-time",            1000000000); // 1ms
+	sim->SetVariable("cpu.ipc",                  1.0);
+	sim->SetVariable("memory.bytesize",          0xffffffffUL); 
 	sim->SetVariable("memory.cycle-time",        1000000UL);
 	sim->SetVariable("linux-loader.stack-base",  0xc0000000UL);
 	sim->SetVariable("linux-loader.max-environ", 0x4000UL);
@@ -431,6 +436,7 @@ DefaultConfiguration(unisim::kernel::service::Simulator *sim)
 #endif // SIM_INLINE_DEBUGGER_SUPPORT
 
 #ifdef SIM_POWER_ESTIMATOR_SUPPORT
+	sim->SetVariable("enable-power-estimation", true);
 	sim->SetVariable("il1-power-estimator.cache-size", 32 * 128);
 	sim->SetVariable("il1-power-estimator.line-size", 32);
 	sim->SetVariable("il1-power-estimator.associativity", 4);
