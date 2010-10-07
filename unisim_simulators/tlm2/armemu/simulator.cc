@@ -200,10 +200,10 @@ Simulator(int argc, char **argv)
 	// connecting power estimator
 	if ( enable_power_estimation )
 	{
-		cpu->il1_power_estimator_import >> il1_power_estimator->power_estimator_export;
-		cpu->il1_power_mode_import >> il1_power_estimator->power_mode_export;
-		cpu->dl1_power_estimator_import >> dl1_power_estimator->power_estimator_export;
-		cpu->dl1_power_mode_import >> dl1_power_estimator->power_mode_export;
+		cpu->icache.power_estimator_import >> il1_power_estimator->power_estimator_export;
+		cpu->icache.power_mode_import >> il1_power_estimator->power_mode_export;
+		cpu->dcache.power_estimator_import >> dl1_power_estimator->power_estimator_export;
+		cpu->dcache.power_mode_import >> dl1_power_estimator->power_mode_export;
 
 		il1_power_estimator->time_import >> time->time_export;
 		dl1_power_estimator->time_import >> time->time_export;

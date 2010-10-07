@@ -50,8 +50,6 @@
 #include "unisim/service/interfaces/memory_injection.hh"
 #include "unisim/service/interfaces/registers.hh"
 #include "unisim/service/interfaces/trap_reporting.hh"
-#include "unisim/service/interfaces/cache_power_estimator.hh"
-#include "unisim/service/interfaces/power_mode.hh"
 #include "unisim/component/cxx/processor/arm/memory_op.hh"
 // #include "unisim/component/cxx/processor/arm/exception.hh"
 #include "unisim/component/cxx/processor/arm/isa_arm32.hh"
@@ -98,10 +96,6 @@ class CPU
 	  	unisim::service::interfaces::Registers >
 	, public unisim::kernel::service::Service<
 	  	unisim::service::interfaces::Memory<uint64_t> >
-	, public unisim::kernel::service::Client<
-	  	unisim::service::interfaces::CachePowerEstimator>
-	, public unisim::kernel::service::Client<
-	  	unisim::service::interfaces::PowerMode>
 {
 public:
 	static const uint32_t MODEL = 
@@ -152,22 +146,6 @@ public:
 	unisim::kernel::service::ServiceImport<
 		unisim::service::interfaces::TrapReporting> 
 		instruction_counter_trap_reporting_import;
-	/** Cache power estimator service import for instruction cache. */
-	unisim::kernel::service::ServiceImport<
-		unisim::service::interfaces::CachePowerEstimator> 
-		il1_power_estimator_import;
-	/** Cache power estimator service import for data cache. */
-	unisim::kernel::service::ServiceImport<
-		unisim::service::interfaces::CachePowerEstimator> 
-		dl1_power_estimator_import;
-	/** Power mode service import for instruction cache. */
-	unisim::kernel::service::ServiceImport<
-		unisim::service::interfaces::PowerMode> 
-		il1_power_mode_import;
-	/** Power mode service import for data cache. */
-	unisim::kernel::service::ServiceImport<
-		unisim::service::interfaces::PowerMode> 
-		dl1_power_mode_import;
 
 	//=====================================================================
 	//=                       Logger                                      =
@@ -604,6 +582,11 @@ public:
  	 */
  	void UnpredictableInsnBehaviour();
 
+	/** Instruction cache */
+	Cache icache;
+	/** Data cache */
+	Cache dcache;
+	
 protected:
 	/** Decoder for the arm32 instruction set. */
 	unisim::component::cxx::processor::arm::isa::arm32::Decoder<
@@ -616,18 +599,6 @@ protected:
 	/** Instruction counter */
 	uint64_t instruction_counter;
 	
-	/** Instruction cache */
-	Cache icache;
-	/** Data cache */
-	Cache dcache;
-	
-	/** The instruction cache size.
-	 */
-	uint32_t icache_size;
-	/** The data cache size.
-	 */
-	uint32_t dcache_size;
-
 	/** CPU cycle time in picoseconds.
 	 */
 	uint64_t cpu_cycle_time;
@@ -660,12 +631,6 @@ protected:
 	/* UNISIM parameters, statistics and registers                    START */
 	/************************************************************************/
 
-	/** UNISIM Parameter to set the size of the instruction cache.
-	 */
-	unisim::kernel::service::Parameter<uint32_t> param_icache_size;
-	/** UNISIM Parameter to set the size of the data cache.
-	 */
-	unisim::kernel::service::Parameter<uint32_t> param_dcache_size;
 	/** UNISIM Parameter to set the default endianness.
 	 */
 	unisim::kernel::service::Parameter<std::string> param_default_endianness;

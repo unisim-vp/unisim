@@ -76,8 +76,6 @@ using unisim::service::interfaces::TrapReporting;
 using unisim::service::interfaces::Disassembly;
 using unisim::service::interfaces::Registers;
 using unisim::service::interfaces::Memory;
-using unisim::service::interfaces::CachePowerEstimator;
-using unisim::service::interfaces::PowerMode;
 using unisim::util::endian::E_BIG_ENDIAN;
 using unisim::util::endian::E_LITTLE_ENDIAN;
 using unisim::util::endian::BigEndian2Host;
@@ -105,8 +103,6 @@ CPU(const char *name, Object *parent)
 	, Service<Disassembly<uint64_t> >(name, parent)
 	, Service<Registers>(name, parent)
 	, Service<Memory<uint64_t> >(name, parent)
-	, Client<CachePowerEstimator>(name,  parent)
-	, Client<PowerMode>(name,  parent)
 	, disasm_export("disasm-export", this)
 	, registers_export("registers-export", this)
 	, memory_injection_export("memory-injection-export", this)
@@ -119,31 +115,17 @@ CPU(const char *name, Object *parent)
 	, linux_os_import("linux-os-import", this)
 	, instruction_counter_trap_reporting_import(
 			"instruction-counter-trap-reporting-import", this)
-	, il1_power_estimator_import("il1-power-estimator-import", this)
-	, dl1_power_estimator_import("dl1-power-estimator-import", this)
-	, il1_power_mode_import("il1-power-mode-import", this)
-	, dl1_power_mode_import("dl1-power-mode-import", this)
 	, logger(*this)
-	, arm32_decoder()
-	, instruction_counter(0)
 	, icache("icache", this)
 	, dcache("dcache", this)
-	, icache_size(0)
-	, dcache_size(0)
+	, arm32_decoder()
+	, instruction_counter(0)
 	, verbose(0)
 	, trap_on_instruction_counter(0)
 	, default_endianness_string(default_endianness == E_BIG_ENDIAN ? 
 			"big-endian" : "little-endian")
 	, requires_memory_access_reporting(true)
 	, requires_finished_instruction_reporting(true)
-	, param_icache_size("icache-size", this,
-			icache_size,
-			"Instruction cache size in KB (available sizes are 4KB, 8KB, 16KB,"
-			" 32KB, 64KB, and 128KB). It can be desactivated setting it to 0.")
-	, param_dcache_size("dcache-size", this,
-			dcache_size,
-			"Data cache size in KB (available sizes are 4KB, 8KB, 16KB,"
-			" 32KB, 64KB, and 128KB). It can be desactivated setting it to 0.")
 	, param_default_endianness("default-endianness", this,
 			default_endianness_string,
 			"The processor default/boot endianness. Available values are: "
@@ -214,10 +196,6 @@ CPU(const char *name, Object *parent)
 
 	// Set the right format for various of the variables
 	param_cpu_cycle_time.SetFormat(
-			unisim::kernel::service::VariableBase::FMT_DEC);
-	param_icache_size.SetFormat(
-			unisim::kernel::service::VariableBase::FMT_DEC);
-	param_dcache_size.SetFormat(
 			unisim::kernel::service::VariableBase::FMT_DEC);
 	param_voltage.SetFormat(
 			unisim::kernel::service::VariableBase::FMT_DEC);
@@ -294,91 +272,76 @@ Setup()
 
 	/* Initialize the caches and power support as required. */
 	unsigned int min_cycle_time = 0;
-	if ( icache_size != 0 )
+	uint64_t def_voltage = 0;
+
+	if ( icache.power_mode_import )
 	{
-		if ( !icache.SetSize(icache_size) )
-		{
-			logger << DebugError
-				<< "Invalid instruction cache size ("
-				<< (unsigned int)icache_size
-				<< ")"
-				<< EndDebugError;
-			return false;
-		}
-		if ( il1_power_mode_import )
-		{
-			unsigned int il1_min_cycle_time =
-				il1_power_mode_import->GetMinCycleTime();
-			if ( il1_min_cycle_time > 0 &&
-					il1_min_cycle_time > min_cycle_time )
-				min_cycle_time = il1_min_cycle_time;
-			unsigned int il1_default_voltage =
-				il1_power_mode_import->GetDefaultVoltage();
-			if ( voltage <= 0 )
-				voltage = il1_default_voltage;
-		}
+		min_cycle_time =
+			icache.power_mode_import->GetMinCycleTime();
+		def_voltage =
+			icache.power_mode_import->GetDefaultVoltage();
 	}
-	if ( dcache_size != 0 )
+	if ( dcache.power_mode_import )
 	{
-		if ( !dcache.SetSize(dcache_size) )
-		{
-			logger << DebugError
-				<< "Invalid data cache size ("
-				<< (unsigned int)dcache_size
-				<< ")"
-				<< EndDebugError;
-			return false;
-		}
-		if ( dl1_power_mode_import )
-		{
-			unsigned int dl1_min_cycle_time =
-				dl1_power_mode_import->GetMinCycleTime();
-			if ( dl1_min_cycle_time > 0 &&
-					dl1_min_cycle_time > min_cycle_time )
-			min_cycle_time = dl1_min_cycle_time;
-			unsigned int dl1_default_voltage =
-				dl1_power_mode_import->GetDefaultVoltage();
-			if ( voltage <= 0 )
-				voltage = dl1_default_voltage;
-		}
+		if ( dcache.power_mode_import->GetMinCycleTime() >
+				min_cycle_time )
+			min_cycle_time =
+				dcache.power_mode_import->GetMinCycleTime();
+		if ( dcache.power_mode_import->GetDefaultVoltage() >
+				def_voltage )
+			def_voltage = 
+				dcache.power_mode_import->GetDefaultVoltage();
 	}
 
 	if ( min_cycle_time > 0 )
 	{
-		if ( cpu_cycle_time > 0 )
+		if ( cpu_cycle_time < min_cycle_time )
 		{
-			if ( cpu_cycle_time < min_cycle_time )
-			{
-				if ( unlikely(verbose) )
-				{
-					logger << DebugWarning;
-					logger << "A cycle time of " << cpu_cycle_time
-						<< " ps is too low for the simulated"
-						<< " hardware !" << endl;
-					logger << "cpu cycle time should be >= "
-						<< min_cycle_time << " ps." << endl;
-					logger << EndDebugWarning;
-				}
-			}
-		}
-		else
-		{
+			logger << DebugWarning;
+			logger << "A cycle time of " << cpu_cycle_time
+				<< " ps is too low for the simulated"
+				<< " hardware !" << endl;
+			logger << "cpu cycle time should be >= "
+				<< min_cycle_time << " ps." << endl;
+			logger << "Setting cpu cycle time to "
+				<< min_cycle_time << " ps.";
+			logger << EndDebugWarning;
 			cpu_cycle_time = min_cycle_time;
 		}
 	}
-	else
+
+	if ( voltage == 0 )
+		voltage = def_voltage;
+	
+	if ( icache.power_mode_import )
+		icache.power_mode_import->SetPowerMode(cpu_cycle_time, voltage);
+	if ( dcache.power_mode_import )
+		dcache.power_mode_import->SetPowerMode(cpu_cycle_time, voltage);
+
+	if ( cpu_cycle_time == 0 )
 	{
-		if ( cpu_cycle_time <= 0 )
-		{
-			// we can't provide a valid cpu cycle time configuration
-			//   automatically
-			logger << DebugError
-				<< "cpu-cycle-time should be bigger than 0"
-				<< EndDebugError;
-			return false;
-		}
+		// we can't provide a valid cpu cycle time configuration
+		//   automatically
+		logger << DebugError
+			<< "cpu-cycle-time should be bigger than 0"
+			<< EndDebugError;
+		return false;
 	}
 
+	if ( verbose )
+	{
+		logger << DebugInfo
+			<< "Setting cpu cycle time to "
+			<< cpu_cycle_time
+			<< " ps."
+			<< EndDebugInfo;
+		logger << DebugInfo
+			<< "Setting cpu voltage to "
+			<< voltage
+			<< " mV."
+			<< EndDebugInfo;
+	}
+			
 	/* TODO: Remove this section once all the debuggers use the unisim
 	 *   kernel interface for registers.
 	 */
@@ -388,7 +351,8 @@ Setup()
 		<< "Initializing debugging registers"
 		<< EndDebugError;
 	
-	for(int i = 0; i < 16; i++) {
+	for (int i = 0; i < 16; i++) 
+	{
 		stringstream str;
 		str << "r" << i;
 		registers_registry[str.str().c_str()] =
@@ -980,8 +944,8 @@ ReadInsn(uint32_t address, uint32_t &val)
 		icache.GetDataCopy(cache_set, cache_way, cache_index, size,
 				(uint8_t *)&val);
 
-		if ( unlikely(il1_power_estimator_import != 0) )
-			il1_power_estimator_import->ReportReadAccess();
+		if ( unlikely(icache.power_estimator_import != 0) )
+			icache.power_estimator_import->ReportReadAccess();
 	}
 	else
 	{
@@ -1617,8 +1581,8 @@ PerformPrefetchAccess(unisim::component::cxx::processor::arm::MemoryOp
 		{
 			dcache.prefetch_hits++;
 		}
-		if ( unlikely(dl1_power_estimator_import != 0) )
-			dl1_power_estimator_import->ReportReadAccess();
+		if ( unlikely(dcache.power_estimator_import != 0) )
+			dcache.power_estimator_import->ReportReadAccess();
 	}
 	else
 	{
@@ -1706,8 +1670,8 @@ PerformWriteAccess(unisim::component::cxx::processor::arm::MemoryOp
 			PrWrite(write_addr, data, size);
 		}
 
-		if ( unlikely(dl1_power_estimator_import != 0) )
-			dl1_power_estimator_import->ReportWriteAccess();
+		if ( unlikely(dcache.power_estimator_import != 0) )
+			dcache.power_estimator_import->ReportWriteAccess();
 	}
 	else // there is no data cache
 	{
@@ -1865,8 +1829,8 @@ PerformReadAccess(unisim::component::cxx::processor::arm::MemoryOp
 	SetGPR(memop->GetTargetReg(), value);
 
 	if ( likely(dcache.GetSize()) )
-		if ( unlikely(dl1_power_estimator_import != 0) )
-			dl1_power_estimator_import->ReportReadAccess();
+		if ( unlikely(dcache.power_estimator_import != 0) )
+			dcache.power_estimator_import->ReportReadAccess();
 
 	/* report read memory access if necessary */
 	if ( requires_memory_access_reporting )
@@ -1986,8 +1950,8 @@ PerformReadToPCAccess(unisim::component::cxx::processor::arm::MemoryOp
 
 	SetGPR(PC_reg, value & ~(uint32_t)0x01);
 
-	if ( unlikely(dl1_power_estimator_import != 0) )
-		dl1_power_estimator_import->ReportReadAccess();
+	if ( unlikely(dcache.power_estimator_import != 0) )
+		dcache.power_estimator_import->ReportReadAccess();
 
 	/* report read memory access if necessary */
 	if ( requires_memory_access_reporting )
@@ -2111,8 +2075,8 @@ PerformReadToPCUpdateTAccess(
 	SetGPR(PC_reg, value & ~(uint32_t)0x01);
 	SetCPSR_T((value & (uint32_t)0x01) == 0x01);
 
-	if ( unlikely(dl1_power_estimator_import != 0) )
-		dl1_power_estimator_import->ReportReadAccess();
+	if ( unlikely(dcache.power_estimator_import != 0) )
+		dcache.power_estimator_import->ReportReadAccess();
 
 	/* report read memory access if necessary */
 	if ( requires_memory_access_reporting )

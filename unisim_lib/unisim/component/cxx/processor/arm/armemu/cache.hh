@@ -37,6 +37,9 @@
 
 #include <inttypes.h>
 #include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/logger/logger.hh"
+#include "unisim/service/interfaces/cache_power_estimator.hh"
+#include "unisim/service/interfaces/power_mode.hh"
 #include "unisim/util/random/random.hh"
 
 #ifdef GCC_INLINE
@@ -57,13 +60,35 @@ namespace arm {
 namespace armemu {
 
 class Cache
-	: public unisim::kernel::service::Object
+	: public unisim::kernel::service::Client<
+	  	unisim::service::interfaces::CachePowerEstimator>
+	, public unisim::kernel::service::Client<
+	  	unisim::service::interfaces::PowerMode>
 {
 public:
-	/** Constructor */
+	/** Constructor 
+	 *
+	 * @param name the name of this UNISIM Object
+	 * @param parent the parent UNISIM Object
+	 */
 	Cache(const char *name, unisim::kernel::service::Object *parent = 0);
 	/** Destructor */
 	~Cache();
+
+	/** Setup
+	 *
+	 * @return true on success, false otherwise
+	 */
+	virtual bool Setup();
+
+	/** Cache power estimator service import. */
+	unisim::kernel::service::ServiceImport<
+		unisim::service::interfaces::CachePowerEstimator> 
+		power_estimator_import;
+	/** Power mode service import. */
+	unisim::kernel::service::ServiceImport<
+		unisim::service::interfaces::PowerMode> 
+		power_mode_import;
 
 	/** Cache access counter. */
 	uint32_t accesses;
@@ -144,6 +169,33 @@ public:
 	void SetDirty(uint32_t set, uint32_t way, uint8_t dirty);
 
 private:
+	/** Unisim logging services. */
+	unisim::kernel::logger::Logger logger;
+	
+	static const uint32_t m_sets_ = 1024;
+	static const uint32_t m_associativity_ = 4;
+	static const uint32_t m_line_size_ = 32;
+	static const uint32_t m_set_shift_ = 5;
+	static const uint32_t m_index_mask_ = 0x01fULL;
+
+	unisim::util::random::Random rand;
+
+	bool m_is_ok;
+	uint32_t m_size;
+	/** Indicates the current replacement policy (true = round-robin, false = random) */
+	bool m_round_robin_replacement_policy;
+	uint32_t m_tag_mask;
+	uint32_t m_tag_shift;
+	uint32_t m_set_mask;
+	uint32_t m_tag[m_sets_][m_associativity_];
+	uint8_t m_data[m_sets_][m_associativity_][m_line_size_];
+	uint8_t m_valid[m_sets_][m_associativity_];
+	uint8_t m_dirty[m_sets_][m_associativity_];
+	uint32_t m_replacement_history[m_sets_];
+
+	/** UNISIM Parameter for the cache size.
+	 */
+	unisim::kernel::service::Statistic<uint32_t> parm_size;
 	/** UNISIM Statistic of the number of read accesses to the 
 	 * cache.
 	 */
@@ -174,27 +226,6 @@ private:
 	/** UNISIM Formula for the hit rate of the cache.
 	 */
 	unisim::kernel::service::Formula<double> form_hit_rate;
-
-	static const uint32_t m_sets_ = 1024;
-	static const uint32_t m_associativity_ = 4;
-	static const uint32_t m_line_size_ = 32;
-	static const uint32_t m_set_shift_ = 5;
-	static const uint32_t m_index_mask_ = 0x01fULL;
-
-	unisim::util::random::Random rand;
-
-	bool m_is_ok;
-	uint32_t m_size;
-	/** Indicates the current replacement policy (true = round-robin, false = random) */
-	bool m_round_robin_replacement_policy;
-	uint32_t m_tag_mask;
-	uint32_t m_tag_shift;
-	uint32_t m_set_mask;
-	uint32_t m_tag[m_sets_][m_associativity_];
-	uint8_t m_data[m_sets_][m_associativity_][m_line_size_];
-	uint8_t m_valid[m_sets_][m_associativity_];
-	uint8_t m_dirty[m_sets_][m_associativity_];
-	uint32_t m_replacement_history[m_sets_];
 
 public:
 	static const uint32_t LINE_SIZE = m_line_size_;

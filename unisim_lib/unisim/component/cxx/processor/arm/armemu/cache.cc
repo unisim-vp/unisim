@@ -37,7 +37,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include "unisim/component/cxx/processor/arm/armemu/cache.hh"
-#include "unisim/kernel/service/Service.hh"
+#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/logger/logger.hh"
 
 // #define ARMEMU_CACHE_DEBUG
 
@@ -45,6 +46,12 @@
 #include <iostream>
 using namespace std;
 #endif
+
+using unisim::service::interfaces::CachePowerEstimator;
+using unisim::service::interfaces::PowerMode;
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugError;
+using std::endl;
 
 #ifdef GCC_INLINE
 #undef GCC_INLINE
@@ -66,6 +73,10 @@ namespace armemu {
 Cache::
 Cache(const char *name, unisim::kernel::service::Object *parent) 
 	: unisim::kernel::service::Object(name, parent)
+	, Client<CachePowerEstimator>(name,  parent)
+	, Client<PowerMode>(name,  parent)
+	, power_estimator_import("power-estimator-import", this)
+	, power_mode_import("power-mode-import", this)
 	, accesses(0)
 	, read_accesses(0)
 	, write_accesses(0)
@@ -74,6 +85,16 @@ Cache(const char *name, unisim::kernel::service::Object *parent)
 	, read_hits(0)
 	, write_hits(0)
 	, prefetch_hits(0)
+	, logger(*this)
+	, rand(1, -1, rand.Max, rand.Min)
+	, m_is_ok(false)
+	, m_size(0)
+	, m_round_robin_replacement_policy(false)
+	, parm_size("size", this,
+			m_size,
+			"Size of the cache in bytes. Avalaible sizes are 4KB, 8KB, 16KB,"
+			" 32KB, 64KB and 128KB."
+			" The cache can be deactivated setting this value to 0.")
 	, stat_read_accesses("read-accesses", this,
 			read_accesses,
 			"Number of read accesses to the cache.")
@@ -104,10 +125,6 @@ Cache(const char *name, unisim::kernel::service::Object *parent)
 			unisim::kernel::service::Formula<double>::OP_DIV,
 			&form_hits, &form_accesses, 0,
 			"Cache hit rate.")
-	, rand(1, -1, rand.Max, rand.Min)
-	, m_is_ok(false)
-	, m_size(0)
-	, m_round_robin_replacement_policy(false)
 {
 	for (uint32_t set = 0; set < m_sets_; set++)
 	{
@@ -120,6 +137,8 @@ Cache(const char *name, unisim::kernel::service::Object *parent)
 		}
 		m_replacement_history[set] = 0;
 	}
+	parm_size.SetFormat(
+			unisim::kernel::service::VariableBase::FMT_DEC);
 	stat_read_accesses.SetFormat(
 			unisim::kernel::service::VariableBase::FMT_DEC);
 	stat_write_accesses.SetFormat(
@@ -143,6 +162,22 @@ Cache::~Cache()
 	// nothing to do
 }
 
+bool
+Cache::
+Setup()
+{
+	SetSize(m_size);
+
+	if ( !m_is_ok )
+		logger << DebugError
+			<< "Invalid cache size ("
+			<< (unsigned int)m_size
+			<< "). Avalaible values are 4KB, 8KB, 16KB, 32KB, 64KB and 128KB."
+			<< EndDebugError;
+
+	return m_is_ok;
+}
+
 bool 
 Cache::
 SetSize(uint32_t size)
@@ -163,37 +198,31 @@ SetSize(uint32_t size)
 		switch ( size )
 		{
 			case 0x01000: // 4KB
-				m_size = size;
 				m_set_mask = (uint32_t)0x01f << 5;
 				m_tag_mask = ~(m_set_mask | (uint32_t)0x01f);
 				m_tag_shift = 10;
 				break;
 			case 0x02000: // 8KB
-				m_size = size;
 				m_set_mask = (uint32_t)0x03f << 5;
 				m_tag_mask = ~(m_set_mask | (uint32_t)0x01f);
 				m_tag_shift = 11;
 				break;
 			case 0x04000: // 16KB
-				m_size = size;
 				m_set_mask = (uint32_t)0x07f << 5;
 				m_tag_mask = ~(m_set_mask | (uint32_t)0x01f);
 				m_tag_shift = 12;
 				break;
 			case 0x08000: // 32KB
-				m_size = size;
 				m_set_mask = (uint32_t)0x0ff << 5;
 				m_tag_mask = ~(m_set_mask | (uint32_t)0x01f);
 				m_tag_shift = 13;
 				break;
 			case 0x010000: // 64KB
-				m_size = size;
 				m_set_mask = (uint32_t)0x01ff << 5;
 				m_tag_mask = ~(m_set_mask | (uint32_t)0x01f);
 				m_tag_shift = 14;
 				break;
 			case 0x020000: // 128KB
-				m_size = size;
 				m_set_mask = (uint32_t)0x03ff << 5;
 				m_tag_mask = ~(m_set_mask | (uint32_t)0x01f);
 				m_tag_shift = 15;
