@@ -52,31 +52,28 @@ swi.disasm = {
 }
 
 swi.execute = {
-//	if(cpu.logger_import) 
-//		(*cpu.logger_import) << DebugInfo
-//			<< Function << __FUNCTION__
-//			<< File << __FILE__
-//			<< Line << __LINE__
-//			<< "executing swi (#" << immed << ")"
-//			<< Endl << EndDebugInfo;
-	
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
-	if(!cpu.CheckCondition(cond)) return;
+	if (!cpu.CheckCondition(cond)) return;
 
-	if(cpu.MODEL == ARMEMU) {
+	if (cpu.MODEL == ARMEMU) 
+	{
 		// we are executing on linux emulation mode
 		// use linux_os_import
-		try {
+		try 
+		{
 			cpu.linux_os_import->ExecuteSystemCall(immed);
-		} catch(exception &e) {
+		}
+		catch(exception &e)
+		{
 			cerr << e.what() << endl;
 		}
-	} else {		
+	} 
+	else 
+	{		
 		// we are executing on full system mode
 		throw SoftwareInterruptException<STATE>();
 	}
-	
 }
 
 /*

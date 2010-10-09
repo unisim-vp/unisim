@@ -6,8 +6,7 @@ include ( ${CMAKE_SOURCE_DIR}/cmake/UnisimInclude.cmake )
 
 set ( tlm2_arm926ejs_subdirs
 	unisim/kernel
-	unisim/component/cxx/processor/arm
-	unisim/component/tlm2/processor/arm
+	unisim/component/cxx/processor/arm/arm926ejs
 	)
 
 foreach ( dir ${tlm2_arm926ejs_subdirs} )
@@ -37,13 +36,12 @@ set_source_files_properties (
 target_link_libraries ( unisim__component__tlm2__processor__arm__arm926ejs
 	${OSCI_SYSTEMC_LIBRARIES} 
 	unisim__kernel
-	unisim__component__cxx__processor__arm
+	unisim__component__cxx__processor__arm__arm926ejs
 	)
 
 add_dependencies ( unisim__component__tlm2__processor__arm__arm926ejs
 	unisim__kernel
-	unisim__component__cxx__processor__arm
-	unisim__component__tlm2__processor__arm
+	unisim__component__cxx__processor__arm__arm926ejs
 	)
 
 message ( STATUS "Checking unisim::component::tlm2::processor::arm::arm926ejs - done" )

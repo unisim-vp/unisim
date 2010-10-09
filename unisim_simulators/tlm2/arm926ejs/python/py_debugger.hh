@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2010,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -31,55 +31,60 @@
  *
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
- 
-/**********************************************
 
-        THUMB EXCEPTION INSTRUCTIONS
+#ifndef __PYTHON_PY_DEBUGGER_HH__
+#define __PYTHON_PY_DEBUGGER_HH__
 
-**********************************************/
+#include <Python.h>
+#include "simulator.hh"
+#include "python/python_config.hh"
 
-/*******************************************************************
- * bkpt (breakpoint) instruction
+extern "C" {
+
+/* Variable full capsule name */
+#define PyDebugger_Module_Name PACKAGE_NAME".debugger"
+#define PyDebugger_Capsule_Name PACKAGE_NAME".debugger._C_API"
+
+/* C API functions */
+#define PyDebugger_NewDebugger_NUM 0
+#define PyDebugger_NewDebugger_RETURN PyObject *
+#define PyDebugger_NewDebugger_PROTO (const char *)
+
+/* Total number of C API pointers */
+#define PyDebugger_API_pointers 1
+
+#ifdef DEBUGGER_MODULE
+/* This section is used when compiling py_variable.cc */
+
+static PyDebugger_NewDebugger_RETURN PyDebugger_NewDebugger PyDebugger_NewDebugger_PROTO;
+
+#else // DEBUGGER_MODULE
+/* This section is used in modules that use debugger module's API */
+static void **PyDebugger_API;
+
+#define PyDebugger_NewDebugger \
+	(*(PyDebugger_NewDebugger_RETURN (*)PyDebugger_NewDebugger_PROTO) PyDebugger_API[PyDebugger_NewDebugger_NUM])
+
+/* Ensures that the initial PyDebugger_API is NULL
  */
-
-op bkpt(0b10111110[8]:imm[8])
-
-bkpt.disasm = {
-	buffer << "bkpt #" << dec << imm;
+static void import_debugger_api_init(void)
+{
+	PyDebugger_API = NULL;
 }
 
-bkpt.execute = {
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
-
-	// no need to check the model, the thumb instruction set can 
-	//  only be executed by the full system implementations (i.e.,
-	//  not ARMEMU)
-	throw PrefetchAbortException<STATE>();
-}
-
-/*
- * end of bkpt (breakpoint) instruction
- *******************************************************************/
-
-/*******************************************************************
- * swi (software interrupt) instruction
+/* Return -1 on error, 0 on success.
+ * PyCapsule_Import will set an exception if there's an error.
  */
-
-op swi(0b11011111[8]:imm[8])
-
-swi.disasm = {
-	buffer << "swi #" << dec << imm;
+static int import_debugger_api(void)
+{
+	if ( PyDebugger_API != NULL ) return 0;
+	if ( PyImport_ImportModule(PyDebugger_Module_Name) == NULL ) return -1;
+	PyDebugger_API = (void **)PyCapsule_Import(PyDebugger_Capsule_Name, 0);
+	return ( PyDebugger_API != NULL ) ? 0 : -1;
 }
 
-swi.execute = {
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
+#endif // DEBUGGER_MODULE
 
-	// no need to check the model, the thumb instruction set can 
-	//  only be executed by the full system implementations (i.e.,
-	//  not ARMEMU)
-	throw SoftwareInterruptException<STATE>();
 }
 
-/*
- * end of swi (software interrupt) instruction
- *******************************************************************/
+#endif /* __PYTHON_DEBUGGER_HH__ */

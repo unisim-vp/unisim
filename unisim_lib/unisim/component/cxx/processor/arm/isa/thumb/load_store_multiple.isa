@@ -61,9 +61,9 @@ ldmia.disasm = {
 }
 
 ldmia.execute = {
-	typename CONFIG::reg_t rn_value, rn_new_val;
-	typename CONFIG::address_t start_address, end_address;
-	typename CONFIG::address_t cur_address;
+	uint32_t rn_value, rn_new_val;
+	uint32_t start_address, end_address;
+	uint32_t cur_address;
 	uint32_t num_regs;
 	unsigned int mask = 1;
 	
@@ -114,9 +114,9 @@ pop.disasm = {
 }
 
 pop.execute = {
-	typename CONFIG::reg_t sp_value, sp_new_val;
-	typename CONFIG::address_t start_address, end_address;
-	typename CONFIG::address_t cur_address;
+	uint32_t sp_value, sp_new_val;
+	uint32_t start_address, end_address;
+	uint32_t cur_address;
 	uint32_t num_regs;
 	unsigned int mask = 1;
 	
@@ -177,9 +177,9 @@ push.disasm = {
 }
 
 push.execute = {
-	typename CONFIG::reg_t sp_value, sp_new_val, value;
-	typename CONFIG::address_t start_address, end_address;
-	typename CONFIG::address_t cur_address;
+	uint32_t sp_value, sp_new_val, value;
+	uint32_t start_address, end_address;
+	uint32_t cur_address;
 	uint32_t num_regs;
 	unsigned int mask = 1;
 	
@@ -239,9 +239,9 @@ stmia.disasm = {
 }
 
 stmia.execute = {
-	typename CONFIG::reg_t rn_value, rn_new_val, value;
-	typename CONFIG::address_t start_address, end_address;
-	typename CONFIG::address_t cur_address;
+	uint32_t rn_value, rn_new_val, value;
+	uint32_t start_address, end_address;
+	uint32_t cur_address;
 	uint32_t num_regs;
 	unsigned int mask = 1;
 	

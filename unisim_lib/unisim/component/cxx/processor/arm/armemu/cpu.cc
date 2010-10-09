@@ -42,7 +42,6 @@
 
 #include "unisim/component/cxx/processor/arm/cpu.hh"
 #include "unisim/component/cxx/processor/arm/masks.hh"
-#include "unisim/component/cxx/processor/arm/isa_arm32.tcc"
 #include "unisim/component/cxx/processor/arm/exception.tcc"
 #include "unisim/util/debug/simple_register.hh"
 #ifndef __STDC_CONSTANT_MACROS

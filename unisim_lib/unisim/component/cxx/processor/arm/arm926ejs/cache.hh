@@ -36,6 +36,10 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_ARM926EJS_CACHE_HH__
 
 #include <inttypes.h>
+#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/logger/logger.hh"
+#include "unisim/service/interfaces/cache_power_estimator.hh"
+#include "unisim/service/interfaces/power_mode.hh"
 #include "unisim/util/random/random.hh"
 
 #ifdef GCC_INLINE
@@ -56,12 +60,52 @@ namespace arm {
 namespace arm926ejs {
 
 class Cache
+	: public unisim::kernel::service::Client<
+	  	unisim::service::interfaces::CachePowerEstimator>
+	, public unisim::kernel::service::Client<
+	  	unisim::service::interfaces::PowerMode>
 {
 public:
-	/** Constructor */
-	Cache();
+	/** Constructor 
+	 *
+	 * @param name the name of this UNISIM Object
+	 * @param parent the parent UNISIM Object
+	 */
+	Cache(const char *name, unisim::kernel::service::Object *parent = 0);
 	/** Destructor */
 	~Cache();
+
+	/** Setup
+	 *
+	 * @return true on success, false otherwise
+	 */
+	virtual bool Setup();
+
+	/** Cache power estimator service import. */
+	unisim::kernel::service::ServiceImport<
+		unisim::service::interfaces::CachePowerEstimator> 
+		power_estimator_import;
+	/** Power mode service import. */
+	unisim::kernel::service::ServiceImport<
+		unisim::service::interfaces::PowerMode> 
+		power_mode_import;
+
+	/** Cache access counter. */
+	uint32_t accesses;
+	/** Cache read access counter. */
+	uint32_t read_accesses;
+	/** Cache write access counter. */
+	uint32_t write_accesses;
+	/** Cache prefetch access counter. */
+	uint32_t prefetch_accesses;
+	/** Cache hit access counter. */
+	uint32_t hits;
+	/** Cache read hit access counter. */
+	uint32_t read_hits;
+	/** Cache write hit access counter. */
+	uint32_t write_hits;
+	/** Cache prefetch hit access counter. */
+	uint32_t prefetch_hits;
 
 	/** Set the size of the cache.
 	 * Sets the cache size to the indicated size.
@@ -125,6 +169,9 @@ public:
 	void SetDirty(uint32_t set, uint32_t way, uint8_t dirty);
 
 private:
+	/** Unisim logging services. */
+	unisim::kernel::logger::Logger logger;
+	
 	static const uint32_t m_sets_ = 1024;
 	static const uint32_t m_associativity_ = 4;
 	static const uint32_t m_line_size_ = 32;
@@ -145,6 +192,40 @@ private:
 	uint8_t m_valid[m_sets_][m_associativity_];
 	uint8_t m_dirty[m_sets_][m_associativity_];
 	uint32_t m_replacement_history[m_sets_];
+
+	/** UNISIM Parameter for the cache size.
+	 */
+	unisim::kernel::service::Parameter<uint32_t> parm_size;
+	/** UNISIM Statistic of the number of read accesses to the 
+	 * cache.
+	 */
+	unisim::kernel::service::Statistic<uint32_t> stat_read_accesses;
+	/** UNISIM Statistic of the number of write accesses to the 
+	 * cache.
+	 */
+	unisim::kernel::service::Statistic<uint32_t> stat_write_accesses;
+	/** UNISIM Statistic of the number of prefetch accesses to the 
+	 * cache.
+	 */
+	unisim::kernel::service::Statistic<uint32_t> stat_prefetch_accesses;
+	/** UNISIM Formula of the number of accesses to the cache.
+	 */
+	unisim::kernel::service::Formula<uint32_t> form_accesses;
+	/** UNISIM Statistic of the number of read hits to the cache.
+	 */
+	unisim::kernel::service::Statistic<uint32_t> stat_read_hits;
+	/** UNISIM Statistic of the number of write hits to the cache.
+	 */
+	unisim::kernel::service::Statistic<uint32_t> stat_write_hits;
+	/** UNISIM Statistic of the number of prefetch hits to the cache.
+	 */
+	unisim::kernel::service::Statistic<uint32_t> stat_prefetch_hits;
+	/** UNISIM Formula of the number of hits to the cache.
+	 */
+	unisim::kernel::service::Formula<uint32_t> form_hits;
+	/** UNISIM Formula for the hit rate of the cache.
+	 */
+	unisim::kernel::service::Formula<double> form_hit_rate;
 
 public:
 	static const uint32_t LINE_SIZE = m_line_size_;

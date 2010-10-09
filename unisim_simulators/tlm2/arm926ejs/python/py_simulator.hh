@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2010,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -31,55 +31,63 @@
  *
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
- 
-/**********************************************
 
-        THUMB EXCEPTION INSTRUCTIONS
+#ifndef __PYTHON_PY_SIMULATOR_HH__
+#define __PYTHON_PY_SIMULATOR_HH__
 
-**********************************************/
+#include <Python.h>
+#include "simulator.hh"
+#include "python/python_config.hh"
 
-/*******************************************************************
- * bkpt (breakpoint) instruction
+extern "C" {
+
+/* Variable full capsule name */
+#define PySimulator_Module_Name PACKAGE_NAME".simulator"
+// i.e., "armemu041.simulator"
+#define PySimulator_Capsule_Name PACKAGE_NAME".simulator._C_API"
+// i.e., "armemu041.simulator._C_API"
+
+/* C API functions */
+#define PySimulator_GetSimRef_NUM 0
+#define PySimulator_GetSimRef_RETURN Simulator *
+#define PySimulator_GetSimRef_PROTO ()
+
+/* Total number of C API pointers */
+#define PySimulator_API_pointers 1
+
+#ifdef SIMULATOR_MODULE
+/* This section is used when compiling py_variable.cc */
+
+static PySimulator_GetSimRef_RETURN PySimulator_GetSimRef PySimulator_GetSimRef_PROTO;
+
+#else // SIMULATOR_MODULE
+
+/* This section is used in modules that use simulator module's API */
+static void **PySimulator_API;
+
+#define PySimulator_GetSimRef \
+	(*(PySimulator_GetSimRef_RETURN (*)PySimulator_GetSimRef_PROTO) PySimulator_API[PySimulator_GetSimRef_NUM])
+
+/* Ensures that the initial PySimulator_API is NULL
  */
-
-op bkpt(0b10111110[8]:imm[8])
-
-bkpt.disasm = {
-	buffer << "bkpt #" << dec << imm;
+static void import_simulator_api_init(void)
+{
+	PySimulator_API = NULL;
 }
 
-bkpt.execute = {
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
-
-	// no need to check the model, the thumb instruction set can 
-	//  only be executed by the full system implementations (i.e.,
-	//  not ARMEMU)
-	throw PrefetchAbortException<STATE>();
-}
-
-/*
- * end of bkpt (breakpoint) instruction
- *******************************************************************/
-
-/*******************************************************************
- * swi (software interrupt) instruction
+/* Return -1 on error, 0 on success.
+ * PyCapsule_Import will set an exception if there's an error.
  */
-
-op swi(0b11011111[8]:imm[8])
-
-swi.disasm = {
-	buffer << "swi #" << dec << imm;
+static int import_simulator_api(void)
+{
+	if ( PySimulator_API != NULL ) return 0;
+	if ( PyImport_ImportModule(PySimulator_Module_Name) == NULL ) return -1;
+	PySimulator_API = (void **)PyCapsule_Import(PySimulator_Capsule_Name, 0);
+	return ( PySimulator_API != NULL ) ? 0 : -1;
 }
 
-swi.execute = {
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
+#endif // SIMULATOR_MODULE
 
-	// no need to check the model, the thumb instruction set can 
-	//  only be executed by the full system implementations (i.e.,
-	//  not ARMEMU)
-	throw SoftwareInterruptException<STATE>();
 }
 
-/*
- * end of swi (software interrupt) instruction
- *******************************************************************/
+#endif /* __PYTHON_PY_SIMULATOR_HH__ */
