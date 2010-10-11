@@ -38,15 +38,14 @@
 #include "unisim/util/endian/endian.hh"
 #include "unisim/util/arithmetic/arithmetic.hh"
 #include <sstream>
+#include <string>
 #include <string.h>
+#include <assert.h>
 
 #include "unisim/component/cxx/processor/arm/cpu.hh"
 #include "unisim/component/cxx/processor/arm/masks.hh"
 #include "unisim/component/cxx/processor/arm/exception.tcc"
 #include "unisim/util/debug/simple_register.hh"
-#ifndef __STDC_CONSTANT_MACROS
-#define __STDC_CONSTANT_MACROS
-#endif // __STDC_CONSTANT_MACROS
 #include <stdint.h>
 
 #if (defined(__GNUC__) && (__GNUC__ >= 3))
@@ -81,6 +80,13 @@ using unisim::util::endian::BigEndian2Host;
 using unisim::util::endian::LittleEndian2Host;
 using unisim::util::debug::SimpleRegister;
 using unisim::util::debug::Register;
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::EndDebugInfo;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::EndDebugWarning;
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugError;
+using std::string;
 using std::stringstream;
 
 /** Constructor.
