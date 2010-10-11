@@ -117,7 +117,6 @@ set ( cxx_arm_srcs
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/arm926ejs/cache.hh
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/arm926ejs/cache.cc
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/exception.hh
-	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/exception.tcc
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/memory_op.cc
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/memory_op.hh
 	

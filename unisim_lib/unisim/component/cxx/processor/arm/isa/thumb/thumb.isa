@@ -46,7 +46,6 @@ template <{class} {STATE}>
 decl {
 #include <sstream>
 #include <iostream>
-#include <stdexcept>
 
 namespace unisim {
 namespace component {
@@ -59,7 +58,6 @@ using std::cerr;
 using std::endl;
 using std::hex;
 using std::dec;
-using std::exception;
 
 } // end of namespace arm 
 } // end of namespace processor
@@ -85,7 +83,6 @@ impl {
 #include "unisim/component/cxx/processor/arm/carry_overflow.hh"
 #include <stdint.h>
 	
-using unisim::component::cxx::processor::arm::UndefinedInstructionException;
 using unisim::util::arithmetic::Add32;
 using unisim::util::arithmetic::RotateRight;
 

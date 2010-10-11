@@ -59,7 +59,6 @@ using std::cerr;
 using std::endl;
 using std::hex;
 using std::dec;
-using std::exception;
 
 } // end of namespace arm 
 } // end of namespace processor
@@ -82,9 +81,9 @@ impl {
 #include "unisim/component/cxx/processor/arm/carry_overflow.hh"
 #include "unisim/component/cxx/processor/arm/disasm.hh"
 #include "unisim/component/cxx/processor/arm/exception.hh"
+#include <stdexcept>
 #include <stdint.h>
 	
-using unisim::component::cxx::processor::arm::UndefinedInstructionException;
 using unisim::util::arithmetic::Add32;
 using unisim::kernel::logger::DebugWarning;
 using unisim::kernel::logger::EndDebugWarning;

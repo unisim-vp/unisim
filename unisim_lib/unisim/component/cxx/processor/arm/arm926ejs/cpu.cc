@@ -443,17 +443,22 @@ StepInstruction()
 				continue;
 			}
 
-			if (dbg_cmd == DebugControl<uint64_t>::DBG_KILL) {
+			if (dbg_cmd == DebugControl<uint64_t>::DBG_KILL) 
+			{
 				Stop(0);
 			}
-			if(dbg_cmd == DebugControl<uint64_t>::DBG_RESET) {
+			if(dbg_cmd == DebugControl<uint64_t>::DBG_RESET) 
+			{
 				// TODO : memory_interface->Reset(); 
 			}
-		} while(1);
+		}
+		while(1);
 	}
 
-	if(requires_memory_access_reporting) {
-		if(memory_access_reporting_import) {
+	if (requires_memory_access_reporting) 
+	{
+		if(memory_access_reporting_import)
+		{
 			uint32_t insn_size;
 			if (GetCPSR_T())
 			{
@@ -491,6 +496,8 @@ StepInstruction()
 	/* perform the memory load/store operations */
 	PerformLoadStoreAccesses();
 
+	// check for possible exceptions
+	
 	instruction_counter++;
 	if ( unlikely((trap_on_instruction_counter == instruction_counter)
 			&& instruction_counter_trap_reporting_import) )

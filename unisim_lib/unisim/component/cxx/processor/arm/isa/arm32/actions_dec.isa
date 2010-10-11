@@ -33,7 +33,8 @@
  */
 
 action {void} execute({STATE &} {cpu}) {
-	throw UndefinedInstructionException<STATE>();
+	cpu.MarkVirtualExceptionVector(
+		unisim::component::cxx::processor::arm::exception::UNDEFINED_INSN);
 }
 
 action {void} disasm({STATE &} {cpu}, {stringstream &} {buffer}) {

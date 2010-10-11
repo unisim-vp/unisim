@@ -632,7 +632,29 @@ public:
 	 */
 	void CheckAlignmentExcep(uint32_t addr);
 	/* END TODO */
-		
+	
+	/** Mark an exception in the virtual exception vector.
+	 * This marks an new exception in the virtual exception vector for 
+	 *   later treatment.
+	 *   NOTE: exception types are available at cxx/processor/arm/exception.hh
+	 *
+	 * @param except the exception to mark
+	 */
+	void MarkVirtualExceptionVector(uint32_t except);
+
+	/** Get the virtual exception vector.
+	 * This returns the value of the virtual exception vector.
+	 *
+	 * @return the value of the exception vector
+	 */
+	uint32_t GetVirtualExceptionVector();
+
+	/** Reset the value of the virtual exception vector.
+	 *
+	 * @param mask the value to set at reset
+	 */
+	void ResetVirtualExceptionVector(uint32_t mask = 0);
+
 protected:
 	/*
 	 * Memory access variables
@@ -739,6 +761,13 @@ protected:
 	uint64_t fake_fpr[8];
 	uint32_t fake_fps;
 	/* END TODO */
+
+	/** Exception vector.
+	 * This is a virtual exception vector (it doesn't exists as such in the arm
+	 *   architecture) to rapidly set and check exceptions.
+	 *   NOTE: exceptions are defined at cxx/arm/exception.hh
+	 */
+	uint32_t exception;
 };
 	
 } // end of namespace arm

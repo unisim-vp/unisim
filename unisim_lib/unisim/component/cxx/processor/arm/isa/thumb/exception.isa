@@ -54,7 +54,8 @@ bkpt.execute = {
 	// no need to check the model, the thumb instruction set can 
 	//  only be executed by the full system implementations (i.e.,
 	//  not ARMEMU)
-	throw PrefetchAbortException<STATE>();
+	cpu.MarkVirtualExceptionVector(
+		unisim::component::cxx::processor::arm::exception::PREFETCH_ABORT);
 }
 
 /*
@@ -77,7 +78,8 @@ swi.execute = {
 	// no need to check the model, the thumb instruction set can 
 	//  only be executed by the full system implementations (i.e.,
 	//  not ARMEMU)
-	throw SoftwareInterruptException<STATE>();
+	cpu.MarkVirtualExceptionVector(
+		unisim::component::cxx::processor::arm::exception::SWI);
 }
 
 /*
