@@ -44,7 +44,6 @@
 
 #include "unisim/component/cxx/processor/arm/cpu.hh"
 #include "unisim/component/cxx/processor/arm/masks.hh"
-#include "unisim/component/cxx/processor/arm/exception.tcc"
 #include "unisim/util/debug/simple_register.hh"
 #include <stdint.h>
 
@@ -487,6 +486,16 @@ StepInstruction()
 	/* perform the memory load/store operations */
 	PerformLoadStoreAccesses();
 
+	/* check that an exception has not occurred, if so 
+	 * stop the simulation */
+	if ( GetVirtualExceptionVector() )
+	{
+		logger << DebugError
+			<< "An exception has been found, this should never happen "
+			<< "when simulating at user level."
+			<< EndDebugError;
+		Stop(-1);
+	}
 	instruction_counter++;
 	if ( unlikely((trap_on_instruction_counter == instruction_counter)
 			&& instruction_counter_trap_reporting_import) )
