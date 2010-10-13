@@ -33,7 +33,9 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 #include "unisim/component/cxx/processor/arm/arm926ejs/cpu.hh"
+#include "unisim/component/cxx/processor/arm/arm926ejs/cp15.hh"
 #include "unisim/component/cxx/processor/arm/arm926ejs/cache.hh"
+#include "unisim/component/cxx/processor/arm/arm926ejs/tlb.hh"
 #include "unisim/component/cxx/processor/arm/memory_op.hh"
 #include "unisim/util/endian/endian.hh"
 #include "unisim/util/arithmetic/arithmetic.hh"
@@ -75,7 +77,6 @@ using unisim::kernel::logger::DebugWarning;
 using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::DebugError;
 using unisim::kernel::logger::EndDebugError;
-using unisim::service::interfaces::LinuxOS;
 using unisim::service::interfaces::MemoryInjection;
 using unisim::service::interfaces::DebugControl;
 using unisim::service::interfaces::MemoryAccessReporting;
@@ -102,7 +103,7 @@ CPU::
 CPU(const char *name, Object *parent)
 	: Object(name, parent)
 	, unisim::component::cxx::processor::arm::CPU()
-	, Client<LinuxOS>(name, parent)
+	, unisim::component::cxx::processor::arm::arm926ejs::CP15Interface()
 	, Service<MemoryInjection<uint64_t> >(name, parent)
 	, Client<DebugControl<uint64_t> >(name, parent)
 	, Client<MemoryAccessReporting<uint64_t> >(name, parent)
@@ -120,24 +121,25 @@ CPU(const char *name, Object *parent)
 	, debug_control_import("debug-control-import", this)
 	, memory_access_reporting_import("memory-access-reporting-import", this)
 	, symbol_table_lookup_import("symbol-table-lookup-import", this)
-	, linux_os_import("linux-os-import", this)
 	, instruction_counter_trap_reporting_import(
 			"instruction-counter-trap-reporting-import", this)
 	, logger(*this)
 	, icache("icache", this)
 	, dcache("dcache", this)
+	, tlb("tlb", this)
 	, arm32_decoder()
 	, thumb_decoder()
+	, cp15(this)
 	, instruction_counter(0)
 	, verbose(0)
 	, trap_on_instruction_counter(0)
-	, default_endianness_string(default_endianness == E_BIG_ENDIAN ? 
+	, bigendinit_string(default_endianness == E_BIG_ENDIAN ? 
 			"big-endian" : "little-endian")
 	, requires_memory_access_reporting(true)
 	, requires_finished_instruction_reporting(true)
-	, param_default_endianness("default-endianness", this,
-			default_endianness_string,
-			"The processor default/boot endianness. Available values are: "
+	, param_bigendinit("bigendinit", this,
+			bigendinit_string,
+			"Determines the value of the BIGENDINIT signal. Available values are: "
 			"little-endian and big-endian.")
 	, param_cpu_cycle_time("cpu-cycle-time", this,
 			cpu_cycle_time,
@@ -199,9 +201,11 @@ CPU(const char *name, Object *parent)
 					this, spsr[i], ss_desc.str().c_str());
 	}
 
-	// This implementation of the arm architecture can only run in user mode,
-	//   so we can already set CPSR to that mode.
-	SetCPSR_Mode(USER_MODE);
+	// Init the processor at SUPERVISOR mode
+	SetCPSR_Mode(SUPERVISOR_MODE);
+	// Disable fast and normal interruptions
+	SetCPSR_I();
+	SetCPSR_F();
 
 	// Set the right format for various of the variables
 	param_cpu_cycle_time.SetFormat(
@@ -242,26 +246,13 @@ Setup()
 			<< "Verbose activated."
 			<< EndDebugInfo;
 	
-	/* check that the linux_os_import is connected, otherwise setup fails
-	 * NOTE: is not that the setup fails, it is that actually this implmentation
-	 *   is not supposed to work without the linux_os_import, so better to stop 
-	 *   now than later.
-	 */
-	if (!linux_os_import)
-	{
-		logger << DebugError
-			<< "The connection to the Linux OS (linux_import) is broken or has "
-			<< "not been done."
-			<< EndDebugError;
-		return false;
-	}
 	/* fix the endianness depending on the endianness parameter */
-	if ( (default_endianness_string.compare("little-endian") != 0) &&
-			(default_endianness_string.compare("big-endian") != 0) )
+	if ( (bigendinit_string.compare("little-endian") != 0) &&
+			(bigendinit_string.compare("big-endian") != 0) )
 	{
 		logger << DebugError
-			<< "Error while setting the default endianness."
-			<< " '" << default_endianness_string << "' is not a correct"
+			<< "Error while setting the default endianness (BIGENDINIT)."
+			<< " '" << bigendinit_string << "' is not a correct"
 			<< " value."
 			<< " Available values are: little-endian and big-endian."
 			<< EndDebugError;
@@ -271,11 +262,12 @@ Setup()
 	{
 		if (verbose)
 			logger << DebugInfo
-				<< "Setting endianness to "
-				<< default_endianness_string
+				<< "Setting endianness to the value of BIGENDINIT ("
+				<< bigendinit_string
+				<< ")"
 				<< EndDebugInfo;
 		SetEndianness(
-				default_endianness_string.compare("little-endian") == 0 ?
+				bigendinit_string.compare("little-endian") == 0 ?
 				E_LITTLE_ENDIAN : E_BIG_ENDIAN);
 	}
 
@@ -902,19 +894,6 @@ Disasm(uint64_t addr, uint64_t &next_addr)
 	return buffer.str();
 }
 		
-/** Exit system call.
- * The LinuxOS service calls this method when the program has finished.
- *
- * @param ret the exit cade sent by the exit system call.
- */
-void 
-CPU::
-PerformExit(int ret)
-{
-	// running = false;
-	Stop(ret);
-}
-
 /** Reads 32bits instructions from the memory system
  * This method allows the user to read instructions from the memory system,
  *   that is, it tries to read from the pertinent caches and if failed from
@@ -1377,7 +1356,7 @@ bool
 CPU::
 CoprocessorLoad(uint32_t cp_num, uint32_t address)
 {
-	assert("CoprocessorLoad not implemented" != 0);
+	assert("CoprocessorLoad not implemented" == 0);
 	return false;
 }
 
@@ -1397,7 +1376,7 @@ bool
 CPU::
 CoprocessorLoad(uint32_t cp_num, uint32_t address, uint32_t option)
 {
-	assert("CoprocessorLoad not implemented" != 0);
+	assert("CoprocessorLoad not implemented" == 0);
 	return false;
 }
 
@@ -1415,7 +1394,7 @@ bool
 CPU::
 CoprocessorStore(uint32_t cp_num, uint32_t address)
 {
-	assert("CoprocessorStore not implemented" != 0);
+	assert("CoprocessorStore not implemented" == 0);
 	return false;
 }
 
@@ -1435,7 +1414,7 @@ bool
 CPU::
 CoprocessorStore(uint32_t cp_num, uint32_t address, uint32_t option)
 {
-	assert("CoprocessorStore not implemented" != 0);
+	assert("CoprocessorStore not implemented" == 0);
 	return false;
 }
 
@@ -1453,7 +1432,7 @@ CPU::
 CoprocessorDataProcess(uint32_t cp_num, uint32_t op1, uint32_t op2,
 		uint32_t crd, uint32_t crn, uint32_t crm)
 {
-	assert("CoprocessorDataProcess not implemented" != 0);
+	assert("CoprocessorDataProcess not implemented" == 0);
 }
 
 /** Move to Coprocessor from ARM register
@@ -1472,7 +1451,13 @@ CPU::
 MoveToCoprocessor(uint32_t cp_num, uint32_t op1, uint32_t op2, 
 		uint32_t rd, uint32_t crn, uint32_t crm)
 {
-	assert("MoveToCoprocessor not implemented" != 0);
+	// the only coprocessor available is cp15
+	if ( unlikely(cp_num != 15) )
+		return;
+	cp15.WriteRegister(
+			op1, op2,
+			crn, crm,
+			GetGPR(rd));
 }
 
 /**
@@ -1494,7 +1479,52 @@ CPU::
 MoveFromCoprocessor(uint32_t cp_num, uint32_t op1, uint32_t op2, 
 		uint32_t rd, uint32_t crn, uint32_t crm)
 {
-	assert("MoveFromCoprocessor not implemented" != 0);
+	uint32_t val;
+
+	// the only coprocessor available is cp15
+	if ( unlikely(cp_num != 15) )
+		return;
+	cp15.ReadRegister(
+			op1, op2,
+			crn, crm,
+			val);
+}
+
+/** Invalidate the caches.
+ * Perform a complete invalidation of the instruction cache and/or the 
+ *   data cache.
+ *
+ * @param insn_cache whether or not the instruction cache should be 
+ *   invalidated
+ * @param data_cache whether or not the data cache should be invalidated
+ */
+void 
+CPU::
+InvalidateCache(bool insn_cache, bool data_cache)
+{
+	if ( insn_cache )
+	{
+		icache.Invalidate();
+	}
+	if ( data_cache )
+	{
+		dcache.Invalidate();
+	}
+}
+
+/** Invalidate the TLBs.
+ * Perform a complete invalidation of the instruction TLB and/or the 
+ *   data TLB.
+ *
+ * @param insn_tlb whether or not the instruction tlb should be invalidated
+ * @param data_tlb whether or not the data tlb should be invalidated
+ */
+void 
+CPU::
+InvalidateTLB()
+{
+	// only the tlb needs to be invalidated, do not touch the lockdown tlb
+	tlb.Invalidate();
 }
 
 /** Unpredictable Instruction Behaviour.

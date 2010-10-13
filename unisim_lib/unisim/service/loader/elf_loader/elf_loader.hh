@@ -114,6 +114,7 @@ private:
 	MEMORY_ADDR entry_point;
 	MEMORY_ADDR top_addr;
 	MEMORY_ADDR base_addr;
+	bool force_base_addr;
 	bool force_use_virtual_address;
 	bool dump_headers;
 	SymbolTable<MEMORY_ADDR> symbol_table;
@@ -125,6 +126,7 @@ private:
 	
 	Parameter<string> param_filename;
 	Parameter<MEMORY_ADDR> param_base_addr;
+	Parameter<bool> param_force_base_addr;
 	Parameter<bool> param_force_use_virtual_address;
 	Parameter<bool> param_dump_headers;
 	Parameter<bool> param_verbose;

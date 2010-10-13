@@ -489,6 +489,13 @@ SetDirty(uint32_t set,
 	m_dirty[set][way] = dirty;
 }
 
+void
+Cache::
+Invalidate()
+{
+	memset(m_valid, 0, sizeof(uint8_t) * m_sets_ * m_associativity_);
+}
+
 } // end of namespace arm926ejs
 } // end of namespace arm
 } // end of namespace processor

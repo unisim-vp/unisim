@@ -86,8 +86,8 @@ set ( sim_subdirs
 	unisim/service/debug/sim_debugger
 	unisim/util/debug/debugger_handler
 	unisim/service/loader/elf_loader
-	unisim/service/loader/linux_loader
-	unisim/service/os/linux_os/linux_os_32
+	# unisim/service/loader/linux_loader
+	# unisim/service/os/linux_os/linux_os_32
 	unisim/service/trap_handler
 	unisim/service/power
 	)
@@ -170,6 +170,10 @@ add_custom_target ( sim__share_test
 		${CMAKE_COMMAND} -E copy_if_different
 			${CMAKE_SOURCE_DIR}/share/test/test.armv5l
 			${SHARE_DIRECTORY}/test/install/test.armv5l
+	COMMAND
+		${CMAKE_COMMAND} -E copy_if_different
+			${CMAKE_SOURCE_DIR}/share/test/u-boot
+			${SHARE_DIRECTORY}/test/install/u-boot
 	COMMENT
 		"Setting test program source files"
 	)
@@ -276,8 +280,8 @@ set ( sim__libraries
 	unisim__service__time__host_time
 	unisim__service__time__sc_time
 	unisim__service__loader__elf_loader
-	unisim__service__loader__linux_loader
-	unisim__service__os__linux_os__linux_os_32
+	# unisim__service__loader__linux_loader
+	# unisim__service__os__linux_os__linux_os_32
 	unisim__service__debug__gdb_server
 	unisim__service__debug__inline_debugger
 	unisim__service__debug__sim_debugger
@@ -312,9 +316,6 @@ set ( PYTHON__SIM__LIBS
 	 'unisim__service__time__host_time',
 	 'unisim__service__time__sc_time',
 	 'unisim__service__loader__elf_loader',
-	 'unisim__service__loader__linux_loader',
-	 'unisim__service__os__linux_os__linux_os_32',
-	 'unisim__service__os__linux_os',
 	 'unisim__service__debug__gdb_server',
 	 'unisim__service__debug__inline_debugger',
 	 'unisim__service__debug__sim_debugger',
@@ -419,8 +420,8 @@ set ( sim__deps
 	unisim__service__debug__sim_debugger
 	unisim__util__debug__debugger_handler
 	unisim__service__loader__elf_loader
-	unisim__service__loader__linux_loader
-	unisim__service__os__linux_os__linux_os_32
+	# unisim__service__loader__linux_loader
+	# unisim__service__os__linux_os__linux_os_32
 	unisim__service__trap_handler
 	)
 if ( BUILD_POWER_SUPPORT )
@@ -555,6 +556,7 @@ install (
 install (
 	PROGRAMS
 		${SHARE_DIRECTORY}/test/install/test.armv5l
+		${SHARE_DIRECTORY}/test/install/u-boot
 	DESTINATION
 		${RELATIVE_SHARE_DIRECTORY}/test/install
 	OPTIONAL

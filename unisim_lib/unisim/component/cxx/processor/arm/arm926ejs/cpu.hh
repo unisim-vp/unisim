@@ -38,12 +38,14 @@
 #include "unisim/component/cxx/processor/arm/models.hh"
 #include "unisim/component/cxx/processor/arm/cpu.hh"
 #include "unisim/component/cxx/processor/arm/memory_op.hh"
+#include "unisim/component/cxx/processor/arm/arm926ejs/cp15.hh"
+#include "unisim/component/cxx/processor/arm/arm926ejs/cp15interface.hh"
 #include "unisim/component/cxx/processor/arm/arm926ejs/cache.hh"
+#include "unisim/component/cxx/processor/arm/arm926ejs/tlb.hh"
 #include "unisim/component/cxx/processor/arm/arm926ejs/isa_arm32.hh"
 #include "unisim/component/cxx/processor/arm/arm926ejs/isa_thumb.hh"
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger.hh"
-#include "unisim/service/interfaces/linux_os.hh"
 #include "unisim/service/interfaces/debug_control.hh"
 #include "unisim/service/interfaces/disassembly.hh"
 #include "unisim/service/interfaces/memory_access_reporting.hh"
@@ -78,8 +80,7 @@ namespace arm926ejs {
 
 class CPU
 	: public unisim::component::cxx::processor::arm::CPU
-	, public unisim::kernel::service::Client<
-	  	unisim::service::interfaces::LinuxOS>
+	, public unisim::component::cxx::processor::arm::arm926ejs::CP15Interface
 	, public unisim::kernel::service::Service<
 	  	unisim::service::interfaces::MemoryInjection<uint64_t> >
 	, public unisim::kernel::service::Client<
@@ -138,10 +139,6 @@ public:
 	unisim::kernel::service::ServiceImport<
 		unisim::service::interfaces::SymbolTableLookup<uint64_t> > 
 		symbol_table_lookup_import;
-	/** Linux OS service import. */
-	unisim::kernel::service::ServiceImport<
-		unisim::service::interfaces::LinuxOS> 
-		linux_os_import;
 	/** Trap reporting service import. */
 	unisim::kernel::service::ServiceImport<
 		unisim::service::interfaces::TrapReporting> 
@@ -353,17 +350,6 @@ public:
 	 */
 	virtual std::string Disasm(uint64_t addr, uint64_t &next_addr);
 		
-	//=====================================================================
-	//=                   LinuxOSInterface methods                        =
-	//=====================================================================
-	
-	/** Exit system call.
-	 * The LinuxOS service calls this method when the program has finished.
-	 *
-	 * @param ret the exit cade sent by the exit system call.
-	 */
-	virtual void PerformExit(int ret);
-	
 	/**************************************************************/
 	/* Memory access methods       START                          */
 	/**************************************************************/
@@ -479,9 +465,7 @@ public:
 	/**************************************************************/
 
 	/**************************************************************/
-	/* Coprocessor methods          START                         */
-	/* NOTE: These methods are only declared because the isa      */
-	/*       requires those methods, but they are not implemented */
+	/* Coprocessor methods required be the isa          START     */
 	/**************************************************************/
 
 	/** Coprocessor Load
@@ -573,9 +557,31 @@ public:
 							 uint32_t rd, uint32_t crn, uint32_t crm);
 
 	/**************************************************************/
-	/* Coprocessor methods          END                           */
+	/* Coprocessor methods required by the isa          END       */
 	/**************************************************************/
-		
+
+	/**************************************************************/
+	/* cp15 to cpu interface                           START      */
+	/**************************************************************/
+
+	/** Invalidate the caches.
+	 * Perform a complete invalidation of the instruction cache and/or the 
+	 *   data cache.
+	 *
+	 * @param insn_cache whether or not the instruction cache should be 
+	 *   invalidated
+	 * @param data_cache whether or not the data cache should be invalidated
+	 */
+	void InvalidateCache(bool insn_cache, bool data_insn);
+	/** Invalidate the TLBs.
+	 * Perform a complete invalidation of the unified TLB.
+	 */
+	void InvalidateTLB();
+
+	/**************************************************************/
+	/* cp15 to cpu interface                            END       */
+	/**************************************************************/
+
  	/** Unpredictable Instruction Behaviour.
  	 * This method is just called when an unpredictable behaviour is detected to
  	 *   notifiy the processor.
@@ -586,7 +592,12 @@ public:
 	Cache icache;
 	/** Data cache */
 	Cache dcache;
-	
+
+	/** The Lockdown TLB */
+	// LTLB ltlb;
+	/** The TLB */
+	TLB tlb;
+
 protected:
 	/** Decoder for the arm32 instruction set. */
 	unisim::component::cxx::processor::arm::isa::arm32::Decoder<
@@ -596,6 +607,9 @@ protected:
 	unisim::component::cxx::processor::arm::isa::thumb::Decoder<
 		unisim::component::cxx::processor::arm::arm926ejs::CPU>
 		thumb_decoder;
+
+	/** CP15 */
+	CP15 cp15;
 
 	/** Instruction counter */
 	uint64_t instruction_counter;
@@ -619,7 +633,7 @@ protected:
 	uint64_t trap_on_instruction_counter;
 	/** String describing the endianness of the processor.
 	 */
-	std::string default_endianness_string;
+	std::string bigendinit_string;
 	
 	/** Indicates if the memory accesses require to be reported.
 	 */
@@ -634,7 +648,7 @@ protected:
 
 	/** UNISIM Parameter to set the default endianness.
 	 */
-	unisim::kernel::service::Parameter<std::string> param_default_endianness;
+	unisim::kernel::service::Parameter<std::string> param_bigendinit;
 	/** UNISIM Parameter to set the CPU cycle time.
 	 */
 	unisim::kernel::service::Parameter<uint64_t> param_cpu_cycle_time;

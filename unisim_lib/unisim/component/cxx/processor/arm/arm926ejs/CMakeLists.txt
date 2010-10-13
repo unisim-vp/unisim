@@ -116,6 +116,10 @@ set ( cxx_arm_srcs
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/arm926ejs/cpu.cc
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/arm926ejs/cache.hh
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/arm926ejs/cache.cc
+	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/arm926ejs/tlb.hh
+	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/arm926ejs/tlb.cc
+	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/arm926ejs/cp15.hh
+	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/arm926ejs/cp15.cc
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/exception.hh
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/memory_op.cc
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/memory_op.hh

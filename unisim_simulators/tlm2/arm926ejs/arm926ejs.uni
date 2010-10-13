@@ -13,6 +13,7 @@
 			<file>share/test/src/CMakeLists.txt</file>
 			<file>share/test/src/toolchain-armv5l.cmake</file>
 			<file>share/test/test.armv5l</file>
+			<file>share/test/u-boot</file>
 			<file>share/logo/logo_unisim.icns</file>
 			<file>share/logo/logo_unisim.png</file>
 			<file>share/logo/logo_unisim256.png</file>

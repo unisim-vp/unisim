@@ -9,6 +9,8 @@
 			<file>unisim/component/cxx/processor/arm/arm926ejs/isa_thumb.cc</file>
 			<file>unisim/component/cxx/processor/arm/arm926ejs/cache.hh</file>
 			<file>unisim/component/cxx/processor/arm/arm926ejs/cache.cc</file>
+			<file>unisim/component/cxx/processor/arm/arm926ejs/cp15.hh</file>
+			<file>unisim/component/cxx/processor/arm/arm926ejs/cp15.cc</file>
 			<file>unisim/component/cxx/processor/arm/arm926ejs/CMakeLists.txt</file>
 		</files>
 		<depends>
