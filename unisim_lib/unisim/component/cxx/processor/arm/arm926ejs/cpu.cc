@@ -129,18 +129,12 @@ CPU(const char *name, Object *parent)
 	, tlb("tlb", this)
 	, arm32_decoder()
 	, thumb_decoder()
-	, cp15(this)
+	, cp15(this, "cp15", this)
 	, instruction_counter(0)
 	, verbose(0)
 	, trap_on_instruction_counter(0)
-	, bigendinit_string(default_endianness == E_BIG_ENDIAN ? 
-			"big-endian" : "little-endian")
 	, requires_memory_access_reporting(true)
 	, requires_finished_instruction_reporting(true)
-	, param_bigendinit("bigendinit", this,
-			bigendinit_string,
-			"Determines the value of the BIGENDINIT signal. Available values are: "
-			"little-endian and big-endian.")
 	, param_cpu_cycle_time("cpu-cycle-time", this,
 			cpu_cycle_time,
 			"The processor cycle time in picoseconds.")
@@ -241,35 +235,52 @@ bool
 CPU::
 Setup()
 {
+	logger << DebugInfo << "CPU Setup" << EndDebugInfo;
 	if (verbose)
 		logger << DebugInfo
 			<< "Verbose activated."
 			<< EndDebugInfo;
-	
-	/* fix the endianness depending on the endianness parameter */
-	if ( (bigendinit_string.compare("little-endian") != 0) &&
-			(bigendinit_string.compare("big-endian") != 0) )
+
+	/* endianness should be fixed by the time we arrive here by the
+	 *   cp15
+	 */
+	if ( verbose )
 	{
-		logger << DebugError
-			<< "Error while setting the default endianness (BIGENDINIT)."
-			<< " '" << bigendinit_string << "' is not a correct"
-			<< " value."
-			<< " Available values are: little-endian and big-endian."
-			<< EndDebugError;
-		return false;
-	}
-	else
-	{
-		if (verbose)
+		if ( cp15.GetEndianness() == E_LITTLE_ENDIAN )
 			logger << DebugInfo
-				<< "Setting endianness to the value of BIGENDINIT ("
-				<< bigendinit_string
-				<< ")"
+				<< "Setting endianness to little endian"
 				<< EndDebugInfo;
-		SetEndianness(
-				bigendinit_string.compare("little-endian") == 0 ?
-				E_LITTLE_ENDIAN : E_BIG_ENDIAN);
+		else
+			logger << DebugInfo
+				<< "Setting endianness to big endian"
+				<< EndDebugInfo;
 	}
+	SetEndianness(cp15.GetEndianness());
+
+//	/* fix the endianness depending on the endianness parameter */
+//	if ( (bigendinit_string.compare("little-endian") != 0) &&
+//			(bigendinit_string.compare("big-endian") != 0) )
+//	{
+//		logger << DebugError
+//			<< "Error while setting the default endianness (BIGENDINIT)."
+//			<< " '" << bigendinit_string << "' is not a correct"
+//			<< " value."
+//			<< " Available values are: little-endian and big-endian."
+//			<< EndDebugError;
+//		return false;
+//	}
+//	else
+//	{
+//		if (verbose)
+//			logger << DebugInfo
+//				<< "Setting endianness to the value of BIGENDINIT ("
+//				<< bigendinit_string
+//				<< ")"
+//				<< EndDebugInfo;
+//		SetEndianness(
+//				bigendinit_string.compare("little-endian") == 0 ?
+//				E_LITTLE_ENDIAN : E_BIG_ENDIAN);
+//	}
 
 	if ( cpu_cycle_time == 0 )
 	{

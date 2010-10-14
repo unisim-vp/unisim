@@ -35,6 +35,7 @@
 #define CP15__DEBUG
 
 #include "unisim/component/cxx/processor/arm/arm926ejs/cp15.hh"
+#include "unisim/util/endian/endian.hh"
 #include <assert.h>
 
 #ifdef CP15__DEBUG
@@ -51,15 +52,41 @@ namespace processor {
 namespace arm {
 namespace arm926ejs {
 
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::EndDebugInfo;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::EndDebugWarning;
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugError;
+using unisim::util::endian::endian_type;
+
 /** Constructor
  *
  * @param _cpu the cpu the coprocessor is attached to
  */
 CP15::
 //CP15(unisim::component::cxx::processor::arm::arm926ejs::CPU *_cpu)
-CP15(CP15Interface *_cpu)
-	: cpu(_cpu)
-	, control_register(0)
+CP15(CP15Interface *_cpu,
+		const char *name, 
+		unisim::kernel::service::Object *parent)
+	: Object(name, parent)
+	, cpu(_cpu)
+	, bigendinit_string("little-endian")
+	, param_bigendinit("bigendinit", this,
+			bigendinit_string,
+			"Determines the value of the BIGENDINIT signal."
+			" Available values are: little-endian and big-endian.")
+	, vinithi_string("low")
+	, param_vinithi("vinithi", this,
+			vinithi_string,
+			"Determines the value of the VINITHI signal."
+			" Available values are: low and high.")
+	, verbose(0)
+	, param_verbose("verbose", this,
+			verbose,
+			"Enable verbose mode (0 = non verbose, anything else = verbose).")
+	, logger(*this)
+	, control_register_c1(0)
 {
 }
 
@@ -68,6 +95,68 @@ CP15::
 ~CP15()
 {
 	cpu = 0;
+}
+
+/** Object setup method.
+ * This method is required for all UNISIM objects and will be called during
+ *   the setup phase.
+ * 
+ * @return true on success, false otherwise
+ */
+bool 
+CP15::
+Setup()
+{
+	logger << DebugInfo << "CP15 Setup" << EndDebugInfo;
+	/* check bigendinit parameter */
+	if ( (bigendinit_string.compare("little-endian") != 0) &&
+			(bigendinit_string.compare("big-endian") != 0) )
+	{
+		logger << DebugError
+			<< "Error while setting the default endianness (BIGENDINIT)."
+			<< " '" << bigendinit_string << "' is not a correct"
+			<< " value."
+			<< " Available values are: little-endian and big-endian."
+			<< EndDebugError;
+		return false;
+	}
+	/* check vinithi parameter */
+	if ( (vinithi_string.compare("low") != 0) &&
+			(vinithi_string.compare("high") != 0) )
+	{
+		logger << DebugError
+			<< "Error while setting the location of the exception vectors"
+			<< " (VINITHI). '" << vinithi_string << "' is not a correct value."
+			<< " Available values are: low and high."
+			<< EndDebugError;
+		return false;
+	}
+
+	/* fix the endianness depending on the endianness parameter */
+	if ( verbose )
+		logger << DebugInfo
+			<< "Setting endianness to the value of BIGENDINIT ("
+			<< bigendinit_string
+			<< ")"
+			<< EndDebugInfo;
+	if ( bigendinit_string.compare("little-endian") == 0 )
+		control_register_c1 &= ~CONTROL_REGISTER_C1_B;
+	else
+		control_register_c1 |= CONTROL_REGISTER_C1_B;
+
+	/* fix the location of the exception vectors depending on vinithi */
+	if ( verbose )
+		logger << DebugInfo
+			<< "Setting the location of the exception to the value of VINITHI ("
+			<< vinithi_string
+			<< ")"
+			<< EndDebugInfo;
+	if ( vinithi_string.compare("low") == 0 )
+		control_register_c1 &= ~CONTROL_REGISTER_C1_V;
+	else
+		control_register_c1 |= CONTROL_REGISTER_C1_V;
+
+	return true;
 }
 
 /** Read the value of a register
@@ -211,6 +300,15 @@ Store(uint8_t crd,
 {
 }
 
+/** Get the endianness of the processor
+ *
+ * @return the current endianness defined in the control register
+ */
+endian_type
+CP15::
+GetEndianness() const
+{
+}
 } // end of namespace arm926ejs
 } // end of namespace arm
 } // end of namespace processor

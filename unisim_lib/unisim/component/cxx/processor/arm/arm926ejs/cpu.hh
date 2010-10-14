@@ -631,9 +631,6 @@ protected:
 	/** Trap when reaching the number of instructions indicated.
 	 */
 	uint64_t trap_on_instruction_counter;
-	/** String describing the endianness of the processor.
-	 */
-	std::string bigendinit_string;
 	
 	/** Indicates if the memory accesses require to be reported.
 	 */
@@ -646,9 +643,6 @@ protected:
 	/* UNISIM parameters, statistics and registers                    START */
 	/************************************************************************/
 
-	/** UNISIM Parameter to set the default endianness.
-	 */
-	unisim::kernel::service::Parameter<std::string> param_bigendinit;
 	/** UNISIM Parameter to set the CPU cycle time.
 	 */
 	unisim::kernel::service::Parameter<uint64_t> param_cpu_cycle_time;

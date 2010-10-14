@@ -38,6 +38,10 @@
 
 #include <inttypes.h>
 #include "unisim/component/cxx/processor/arm/arm926ejs/cp15interface.hh"
+#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/logger/logger.hh"
+#include "unisim/util/endian/endian.hh"
+
 namespace unisim {
 namespace component {
 namespace cxx {
@@ -46,6 +50,7 @@ namespace arm {
 namespace arm926ejs {
 
 class CP15
+	: public unisim::kernel::service::Object
 {
 public:
 	/* TODO check if we really need the pointer to the cpu */
@@ -54,9 +59,19 @@ public:
 	 * @param _cpu the cpu the coprocessor is attached to
 	 */
 	//CP15(unisim::component::cxx::processor::arm::arm926ejs::CPU* _cpu);
-	CP15(CP15Interface *_cpu);
+	CP15(CP15Interface *_cpu, 
+			const char *name, 
+			unisim::kernel::service::Object *parent = 0);
 	/** Destructor */
 	~CP15();
+
+	/** Object setup method.
+	 * This method is required for all UNISIM objects and will be called during
+	 *   the setup phase.
+	 * 
+	 * @return true on success, false otherwise
+	 */
+	virtual bool Setup();
 
 	/** Read the value of a register
 	 *
@@ -116,10 +131,49 @@ public:
 	void Store(uint8_t crd,
 			uint32_t address);
 
+	/** Get the endianness of the processor
+	 *
+	 * @return the current endianness defined in the control register
+	 */
+	unisim::util::endian::endian_type
+		GetEndianness() const;
+
 private:
 	CP15Interface *cpu;
 
-	uint32_t control_register;
+	/** String describing the endianness of the processor. */
+	std::string bigendinit_string;
+	/** UNISIM Parameter to set the default endianness.
+	 */
+	unisim::kernel::service::Parameter<std::string> param_bigendinit;
+
+	/** String describing the location of exception vectors
+	 * This corresponds to the signal VINITHI. */
+	std::string vinithi_string;
+	/** UNISIM Parameter to set the location of exception vectors. */
+	unisim::kernel::service::Parameter<std::string> param_vinithi;
+
+	/** Verbose. */
+	uint32_t verbose;
+	/** UNISIM Parameter to set the verbose mode. */
+	unisim::kernel::service::Parameter<uint32_t> param_verbose;
+
+	/** UNISIM logger */
+	unisim::kernel::logger::Logger logger;
+
+	/** CP15 control register */
+	uint32_t control_register_c1;
+	
+	static const uint32_t CONTROL_REGISTER_C1_L4 = 0x08000UL;
+	static const uint32_t CONTROL_REGISTER_C1_RR = 0x04000UL;
+	static const uint32_t CONTROL_REGISTER_C1_V  = 0x02000UL;
+	static const uint32_t CONTROL_REGISTER_C1_I  = 0x01000UL;
+	static const uint32_t CONTROL_REGISTER_C1_R  = 0x00200UL;
+	static const uint32_t CONTROL_REGISTER_C1_S  = 0x00100UL;
+	static const uint32_t CONTROL_REGISTER_C1_B  = 0x00080UL;
+	static const uint32_t CONTROL_REGISTER_C1_C  = 0x00004UL;
+	static const uint32_t CONTROL_REGISTER_C1_A  = 0x00002UL;
+	static const uint32_t CONTROL_REGISTER_C1_M  = 0x00001UL;
 };
 
 } // end of namespace arm926ejs
