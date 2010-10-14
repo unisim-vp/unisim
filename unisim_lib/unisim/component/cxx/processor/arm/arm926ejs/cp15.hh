@@ -136,7 +136,25 @@ public:
 	 * @return the current endianness defined in the control register
 	 */
 	unisim::util::endian::endian_type
-		GetEndianness() const;
+		GetEndianness() const
+	{
+		return 
+			(control_register_c1 & CONTROL_REGISTER_C1_B)
+			? unisim::util::endian::E_BIG_ENDIAN
+			: unisim::util::endian::E_LITTLE_ENDIAN;
+	};
+
+	/** Get location of the exception vector
+	 *
+	 * @return 1 if CONTROL_REGISTER_C1_V is set, 0 otherwise
+	 */
+	uint32_t GetVINITHI() const
+	{
+		return 
+			(control_register_c1 & CONTROL_REGISTER_C1_V)
+			? 1
+			: 0;
+	}
 
 private:
 	CP15Interface *cpu;

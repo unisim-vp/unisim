@@ -35,7 +35,6 @@
 #define CP15__DEBUG
 
 #include "unisim/component/cxx/processor/arm/arm926ejs/cp15.hh"
-#include "unisim/util/endian/endian.hh"
 #include <assert.h>
 
 #ifdef CP15__DEBUG
@@ -58,7 +57,6 @@ using unisim::kernel::logger::DebugWarning;
 using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::DebugError;
 using unisim::kernel::logger::EndDebugError;
-using unisim::util::endian::endian_type;
 
 /** Constructor
  *
@@ -300,15 +298,6 @@ Store(uint8_t crd,
 {
 }
 
-/** Get the endianness of the processor
- *
- * @return the current endianness defined in the control register
- */
-endian_type
-CP15::
-GetEndianness() const
-{
-}
 } // end of namespace arm926ejs
 } // end of namespace arm
 } // end of namespace processor

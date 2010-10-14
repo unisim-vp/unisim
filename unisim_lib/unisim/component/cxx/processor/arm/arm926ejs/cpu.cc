@@ -257,30 +257,14 @@ Setup()
 	}
 	SetEndianness(cp15.GetEndianness());
 
-//	/* fix the endianness depending on the endianness parameter */
-//	if ( (bigendinit_string.compare("little-endian") != 0) &&
-//			(bigendinit_string.compare("big-endian") != 0) )
-//	{
-//		logger << DebugError
-//			<< "Error while setting the default endianness (BIGENDINIT)."
-//			<< " '" << bigendinit_string << "' is not a correct"
-//			<< " value."
-//			<< " Available values are: little-endian and big-endian."
-//			<< EndDebugError;
-//		return false;
-//	}
-//	else
-//	{
-//		if (verbose)
-//			logger << DebugInfo
-//				<< "Setting endianness to the value of BIGENDINIT ("
-//				<< bigendinit_string
-//				<< ")"
-//				<< EndDebugInfo;
-//		SetEndianness(
-//				bigendinit_string.compare("little-endian") == 0 ?
-//				E_LITTLE_ENDIAN : E_BIG_ENDIAN);
-//	}
+	/* setting initial pc by the cp15 vinithi parameter */
+	uint32_t init_pc = cp15.GetVINITHI() ? 0xFFFF0000UL : 0;
+	if ( verbose )
+		logger << DebugInfo
+			<< "Setting initial pc to 0x"
+			<< hex << init_pc << dec
+			<< EndDebugInfo;
+	SetGPR(15, init_pc);
 
 	if ( cpu_cycle_time == 0 )
 	{
