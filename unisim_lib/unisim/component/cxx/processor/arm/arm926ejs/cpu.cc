@@ -1483,6 +1483,7 @@ MoveFromCoprocessor(uint32_t cp_num, uint32_t op1, uint32_t op2,
 			op1, op2,
 			crn, crm,
 			val);
+	SetGPR(rd, val);
 }
 
 /** Invalidate the caches.

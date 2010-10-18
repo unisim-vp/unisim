@@ -46,6 +46,7 @@
 #include "unisim/kernel/service/service.hh"
 
 #include "unisim/component/tlm2/processor/arm/arm926ejs/arm926ejs.hh"
+#include "unisim/component/tlm2/chipset/arm926ejs_pxp/pxp.hh"
 #include "unisim/component/tlm2/memory/ram/memory.hh"
 
 #include "unisim/service/time/sc_time/time.hh"
@@ -96,7 +97,9 @@ protected:
 private:
 	static void DefaultConfiguration(unisim::kernel::service::Simulator *sim);
 	typedef unisim::component::tlm2::processor::arm::arm926ejs::ARM926EJS CPU;
+	typedef unisim::component::tlm2::chipset::arm926ejs_pxp::PXP DEVCHIP;
 	typedef unisim::component::tlm2::memory::ram::Memory<32, uint64_t, 8, 1024 * 1024, true> MEMORY;
+	typedef unisim::component::tlm2::memory::ram::Memory<32, uint64_t, 8, 1024 * 1024, true> FLASH;
 //	typedef unisim::service::loader::linux_loader::LinuxLoader<uint64_t> LINUX_LOADER;
 	typedef unisim::service::loader::elf_loader::ElfLoaderImpl<uint64_t, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym> ELF32_LOADER;
 //	typedef unisim::service::os::linux_os::linux_os_32::LinuxOS32 LINUX_OS;
@@ -115,7 +118,9 @@ private:
 #endif // SIM_POWER_ESTIMATOR_SUPPORT
 
 	CPU *cpu;
+	DEVCHIP *devchip;
 	MEMORY *memory;
+	FLASH *flash;
 	unisim::service::time::sc_time::ScTime *time;
 	unisim::service::time::host_time::HostTime *host_time;
 	ELF32_LOADER *elf32_loader;

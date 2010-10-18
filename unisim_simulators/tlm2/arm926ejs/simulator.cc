@@ -50,9 +50,11 @@ Simulator(int argc, char **argv)
 	, unisim::service::trap_handler::ExternalTrapHandlerInterface()
 #endif // SIM_LIBRARY
 	, cpu(0)
+	, devchip(0)
 	//, irq_master_stub(0)
 	//, fiq_master_stub(0)
 	, memory(0)
+	, flash(0)
 	, time(0)
 	, host_time(0)
 	, elf32_loader(0)
@@ -94,14 +96,14 @@ Simulator(int argc, char **argv)
 #endif // SIM_LIBRARY
 {
 	cpu = new CPU("cpu");
+	devchip = new DEVCHIP("pxp");
 	// irq_master_stub = new IRQ_MASTER_STUB("irq-master-stub");
 	// fiq_master_stub = new FIQ_MASTER_STUB("fiq-master-stub");
 	memory = new MEMORY("memory");
+	flash = new FLASH("flash");
 	time = new unisim::service::time::sc_time::ScTime("time");
 	host_time = new unisim::service::time::host_time::HostTime("host-time");
 	elf32_loader = new ELF32_LOADER("elf-loader");
-//	linux_loader = new LINUX_LOADER("linux-loader");
-//	linux_os = new LINUX_OS("linux-os");
 	trap_handler = new TRAP_HANDLER("trap-handler");
 #ifdef SIM_GDB_SERVER_SUPPORT
 	param_enable_gdb_server = new unisim::kernel::service::Parameter<bool>(
@@ -170,7 +172,10 @@ Simulator(int argc, char **argv)
 	// In Linux mode, the system is not entirely simulated.
 	// This mode allows to run Linux applications without simulating all the peripherals.
 
-	cpu->master_socket(memory->slave_sock);
+	cpu->master_socket(devchip->cpu_target_socket);
+	devchip->ssmc0_init_socket(flash->slave_sock);
+	devchip->mpmc0_init_socket(memory->slave_sock);
+	// cpu->master_socket(memory->slave_sock);
 	// irq_master_stub->out_interrupt(cpu->in_irq);
 	// fiq_master_stub->out_interrupt(cpu->in_fiq);
 
@@ -219,7 +224,9 @@ Simulator::~Simulator()
 	if ( cpu ) delete cpu;
 	// if ( irq_master_stub ) delete irq_master_stub;
 	// if ( fiq_master_stub ) delete fiq_master_stub;
+	if ( devchip ) delete devchip;
 	if ( memory ) delete memory;
+	if ( flash ) delete flash;
 	if ( time ) delete time;
 	if ( host_time ) delete host_time;
 	if ( elf32_loader ) delete elf32_loader;
@@ -403,6 +410,8 @@ DefaultConfiguration(unisim::kernel::service::Simulator *sim)
 	sim->SetVariable("cpu.ipc",                  1.0);
 	sim->SetVariable("memory.bytesize",          0xffffffffUL); 
 	sim->SetVariable("memory.cycle-time",        1000000UL);
+	sim->SetVariable("flash.bytesize",           0xffffffffUL); 
+	sim->SetVariable("flash.cycle-time",         1000000UL);
 //	sim->SetVariable("linux-loader.stack-base",  0xc0000000UL);
 //	sim->SetVariable("linux-loader.max-environ", 0x4000UL);
 //	sim->SetVariable("linux-loader.endianness",  "little-endian");

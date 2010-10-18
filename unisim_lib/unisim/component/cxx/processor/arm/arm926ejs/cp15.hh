@@ -181,7 +181,9 @@ private:
 
 	/** CP15 control register */
 	uint32_t control_register_c1;
-	
+
+	static const uint32_t CONTROL_REGISTER_C1_SBZ = 0xfffa0c00UL;
+	static const uint32_t CONTROL_REGISTER_C1_SBO = 0x00050078UL;
 	static const uint32_t CONTROL_REGISTER_C1_L4 = 0x08000UL;
 	static const uint32_t CONTROL_REGISTER_C1_RR = 0x04000UL;
 	static const uint32_t CONTROL_REGISTER_C1_V  = 0x02000UL;

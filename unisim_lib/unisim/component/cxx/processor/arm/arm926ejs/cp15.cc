@@ -84,7 +84,7 @@ CP15(CP15Interface *_cpu,
 			verbose,
 			"Enable verbose mode (0 = non verbose, anything else = verbose).")
 	, logger(*this)
-	, control_register_c1(0)
+	, control_register_c1(CONTROL_REGISTER_C1_SBO)
 {
 }
 
@@ -181,6 +181,25 @@ ReadRegister(uint8_t opcode1,
 	std::cerr << " - crn     = " << (unsigned int)crn << std::endl;
 	std::cerr << " - crm     = " << (unsigned int)crm << std::endl;
 #endif // CP15__DEBUG
+	if ( likely(opcode1 == 0) )
+	{
+		// control registers
+		if ( crn == 1 )
+		{
+			if ( crm == 0 )
+			{
+				if ( opcode2 == 0 )
+				{
+#ifdef CP15_DEBUG
+					std::cerr << "CP15: Reading control register c1"
+						<< std::endl;
+#endif // CP15_DEBUG
+					handled = true;
+					reg = control_register_c1;
+				}
+			}
+		}
+	}
 	if ( unlikely(!handled) )
 	{
 		assert("CP15 read register not handled" == 0);
@@ -203,6 +222,8 @@ WriteRegister(uint8_t opcode1,
 		uint8_t crm, 
 		uint32_t value)
 {
+	uint32_t orig = value;
+	uint32_t mod = value;
 	bool handled = false;
 #ifdef CP15__DEBUG
 	std::cerr << "CP15: Received write register command with: " << std::endl;
@@ -214,8 +235,34 @@ WriteRegister(uint8_t opcode1,
 #endif // CP15__DEBUG
 	if ( likely(opcode1 == 0) )
 	{
+		// control registers
+		if ( crn == 1 )
+		{
+			if ( crm == 0 )
+			{
+				if ( opcode2 == 0 )
+				{
+#ifdef CP15_DEBUG
+					std::cerr << "CP15: Writing control register c1"
+						<< std::endl;
+#endif // CP15_DEBUG
+					handled = true;
+					mod &= ~CONTROL_REGISTER_C1_SBZ;
+					mod |= CONTROL_REGISTER_C1_SBO;
+					if ( mod != orig )
+						logger << DebugWarning
+							<< "Writing value"
+							<< "0x" << std::hex << orig << std::dec
+							<< " into control register c1 which is not conform"
+							<< " with SBZ and SBO specification, fixing it to"
+							<< " 0x" << std::hex << mod << std::dec
+							<< EndDebugWarning;
+					control_register_c1 = mod;
+				}
+			}
+		}
 		// cache management functions
-		if ( crn == 7 )
+		else if ( crn == 7 )
 		{
 			if ( crm == 7 )
 			{
@@ -232,6 +279,7 @@ WriteRegister(uint8_t opcode1,
 				}
 			}
 		}
+		// TLB functions
 		else if ( crn == 8 )
 		{
 			if ( crm == 7 )

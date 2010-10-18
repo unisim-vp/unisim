@@ -78,6 +78,7 @@ endforeach ( C_INCLUDE )
 set ( sim_subdirs
 	unisim/kernel
 	unisim/component/tlm2/processor/arm/arm926ejs
+	unisim/component/tlm2/chipset/arm926ejs_pxp
 	unisim/component/tlm2/memory/ram
 	unisim/service/time/sc_time
 	unisim/service/time/host_time
@@ -275,6 +276,7 @@ set ( sim__libraries
 	${OSCI_SYSTEMC_LIBRARIES}
 	unisim__kernel
 	unisim__component__tlm2__processor__arm__arm926ejs
+	unisim__component__tlm2__chipset__arm926ejs_pxp
 	# unisim__component__tlm2__interrupt
 	unisim__component__tlm2__memory__ram
 	unisim__service__time__host_time
@@ -312,6 +314,7 @@ set ( PYTHON__SIM__LIBS
 	"'simulatorlib',
 	 'unisim__component__tlm2__memory__ram',
 	 'unisim__component__tlm2__processor__arm__arm926ejs',
+	 'unisim__component__tlm2__chipset__arm926ejs_pxp',
 	 'unisim__component__cxx__memory__ram',
 	 'unisim__service__time__host_time',
 	 'unisim__service__time__sc_time',
@@ -411,6 +414,7 @@ set_target_properties ( ${SIM_EXEC_TARGET}
 set ( sim__deps
 	unisim__kernel
 	unisim__component__tlm2__processor__arm__arm926ejs
+	unisim__component__tlm2__chipset__arm926ejs_pxp
 	# unisim__component__tlm2__interrupt
 	unisim__component__tlm2__memory__ram
 	unisim__service__time__sc_time
