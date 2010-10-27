@@ -107,6 +107,8 @@ public:
 	~PIM();
 	virtual bool Setup();
 	virtual void Run();
+	void GeneratePimFile();
+	void LoadPimFile();
 
 private:
 	Simulator *fSimulator;

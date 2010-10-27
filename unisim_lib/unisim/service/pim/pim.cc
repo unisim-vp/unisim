@@ -482,24 +482,32 @@ void PIM::SavePimToXml(vector<component_t*> &pim, const string file)
 
 // *************************************************************
 
-bool PIM::Setup() {
+void PIM::GeneratePimFile() {
 
-/*
 	stringstream pimfile;
 
-	pimfile << fSimulator->GetSharedDirectory() << "/" << filename;
-*/
+	pimfile << filename;
 
 	GetExportedVariables(pim_model);
-/*
+
 	SavePimToXml(pim_model, pimfile.str());
 
+}
 
-	exit(0);
+void PIM::LoadPimFile() {
 
+	stringstream pimfile;
+
+	pimfile << filename;
 
 	LoadPimFromXml(pim_model, filename);
-*/
+
+}
+
+bool PIM::Setup() {
+
+	GetExportedVariables(pim_model);
+
 	for (int i=0; i < pim_model.size(); i++) {
 		for (int j=0; j < pim_model[i]->pins.size(); j++) {
 			cerr << "VAR : " << pim_model[i]->pins[j]->name << endl;

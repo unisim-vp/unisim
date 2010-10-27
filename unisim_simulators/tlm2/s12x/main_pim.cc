@@ -136,6 +136,9 @@ public:
 	Simulator(int argc, char **argv);
 	virtual ~Simulator();
 	void Run();
+
+	void GeneratePim() { pim->GeneratePimFile(); };
+
 protected:
 private:
 	//=========================================================================
@@ -789,6 +792,7 @@ int sc_main(int argc, char *argv[])
 	switch(simulator->Setup())
 	{
 		case unisim::kernel::service::Simulator::ST_OK_DONT_START:
+			simulator->GeneratePim();
 			break;
 		case unisim::kernel::service::Simulator::ST_WARNING:
 			cerr << "Some warnings occurred during setup" << endl;
