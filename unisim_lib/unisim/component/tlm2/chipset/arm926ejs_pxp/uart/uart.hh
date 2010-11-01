@@ -32,8 +32,10 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
-#ifndef __UNISIM_COMPONENT_TLM2_CHIPSET_ARM926EJS_PXP_SYSTEM_CONTROLLER_SC_HH__
-#define __UNISIM_COMPONENT_TLM2_CHIPSET_ARM926EJS_PXP_SYSTEM_CONTROLLER_SC_HH__
+/** Models the ARM PrimeCell UART (PL011) */
+
+#ifndef __UNISIM_COMPONENT_TLM2_CHIPSET_ARM926EJS_PXP_UART_UART_HH__
+#define __UNISIM_COMPONENT_TLM2_CHIPSET_ARM926EJS_PXP_UART_UART_HH__
 
 #include <systemc.h>
 #include <tlm.h>
@@ -47,9 +49,9 @@ namespace component {
 namespace tlm2 {
 namespace chipset {
 namespace arm926ejs_pxp {
-namespace system_controller {
+namespace uart {
 
-class SystemController
+class UART
 	: public unisim::kernel::service::Object
 	, public sc_module
 {
@@ -58,26 +60,19 @@ public:
 	typedef tlm::tlm_base_protocol_types::tlm_phase_type   phase_type;
 	typedef tlm::tlm_sync_enum                             sync_enum_type;
 
-	/** Source Reference Clock port */
-	sc_out<uint64_t> refclk_out_port;
-	/** Source Timer Module Clock Enable 0 port */
-	sc_out<uint64_t> timclken0_out_port;
-	/** Source Timer Module Clock Enable 1 port */
-	sc_out<uint64_t> timclken1_out_port;
-
 	/** Target socket for the bus connection */
-	tlm_utils::passthrough_target_socket<SystemController, 32>
+	tlm_utils::passthrough_target_socket<UART, 32>
 		bus_target_socket;
 
-	SC_HAS_PROCESS(SystemController);
-	SystemController(const sc_module_name &name, Object *parent = 0);
-	~SystemController();
+	SC_HAS_PROCESS(UART);
+	UART(const sc_module_name &name, Object *parent = 0);
+	~UART();
 
 	virtual bool Setup();
 
 private:
 	/** Registers storage */
-	uint8_t regs[256];
+	uint8_t regs[4096];
 
 	/**************************************************************************/
 	/* Virtual methods for the target socket for the bus connection     START */
@@ -96,20 +91,31 @@ private:
 	/* Virtual methods for the target socket for the bus connection       END */
 	/**************************************************************************/
 
-	/** Base address of the system controller */
+	/** Base address of the uart */
 	uint32_t base_addr;
-	/** UNISIM Parameter for the base address of the system controller */
+	/** UNISIM Parameter for the base address of the uart */
 	unisim::kernel::service::Parameter<uint32_t> param_base_addr;
 
-	/** Reference clock (refclock) period in picoseconds */
-	uint64_t refclk;
+	/** Reference clock (pclock) period in picoseconds */
+	uint64_t pclk;
 	/** UNISIM Parameter for the reference clock */
-	unisim::kernel::service::Parameter<uint64_t> param_refclk;
+	unisim::kernel::service::Parameter<uint64_t> param_pclk;
 
-	/** External timer module clock (timclk) period */
-	uint64_t timclk;
-	/**UNISIM Parameter for the external timer module clock */
-	unisim::kernel::service::Parameter<uint64_t> param_timclk;
+	/** External uart clock (timclk) period in picoseconds */
+	uint64_t uartclk;
+	/** UNISIM Parameter for the external timer module clock */
+	unisim::kernel::service::Parameter<uint64_t> param_uartclk;
+
+	/** Telnet socket for uart input and output */
+	int sock;
+
+	/** TCP port used for the telnet socket */
+	unsigned int tcp_port;
+	/** UNISIM Parameter for the TCP port used for the telnet socket */
+	unisim::kernel::service::Parameter<unsigned int> param_tcp_port;
+
+	bool TelnetPutChar(uint8_t ch);
+	void TelnetPutPacket(std::string packet);
 
 	/** Interface to the UNISIM logger */
 	unisim::kernel::logger::Logger logger;

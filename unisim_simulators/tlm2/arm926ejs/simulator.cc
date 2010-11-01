@@ -54,12 +54,13 @@ Simulator(int argc, char **argv)
 	//, irq_master_stub(0)
 	//, fiq_master_stub(0)
 	, memory(0)
-	, flash(0)
+	, nor_flash_2(0)
+	, nor_flash_1(0)
 	, time(0)
 	, host_time(0)
 	, elf32_loader(0)
-//	, linux_loader(0)
-//	, linux_os(0)
+	, raw_kernel_loader(0)
+	, raw_fs_loader(0)
 	, trap_handler(0)
 	, simulation_spent_time(0.0)
 #ifdef SIM_GDB_SERVER_SUPPORT
@@ -100,10 +101,13 @@ Simulator(int argc, char **argv)
 	// irq_master_stub = new IRQ_MASTER_STUB("irq-master-stub");
 	// fiq_master_stub = new FIQ_MASTER_STUB("fiq-master-stub");
 	memory = new MEMORY("memory");
-	flash = new FLASH("flash");
+	nor_flash_2 = new FLASH("nor-flash-2");
+	nor_flash_1 = new FLASH("nor-flash-1");
 	time = new unisim::service::time::sc_time::ScTime("time");
 	host_time = new unisim::service::time::host_time::HostTime("host-time");
 	elf32_loader = new ELF32_LOADER("elf-loader");
+	raw_kernel_loader = new RAW_LOADER("raw-kernel-loader");
+	raw_fs_loader = new RAW_LOADER("raw-fs-loader");
 	trap_handler = new TRAP_HANDLER("trap-handler");
 #ifdef SIM_GDB_SERVER_SUPPORT
 	param_enable_gdb_server = new unisim::kernel::service::Parameter<bool>(
@@ -173,7 +177,8 @@ Simulator(int argc, char **argv)
 	// This mode allows to run Linux applications without simulating all the peripherals.
 
 	cpu->master_socket(devchip->cpu_target_socket);
-	devchip->ssmc0_init_socket(flash->slave_sock);
+	devchip->ssmc0_init_socket(nor_flash_2->slave_sock);
+	devchip->ssmc1_init_socket(nor_flash_1->slave_sock);
 	devchip->mpmc0_init_socket(memory->slave_sock);
 	// cpu->master_socket(memory->slave_sock);
 	// irq_master_stub->out_interrupt(cpu->in_irq);
@@ -191,6 +196,8 @@ Simulator(int argc, char **argv)
 
 	// Connect everything
 	elf32_loader->memory_import >> memory->memory_export;
+	raw_kernel_loader->memory_import >> memory->memory_export;
+	raw_fs_loader->memory_import >> memory->memory_export;
 	//linux_loader->memory_import >> memory->memory_export;
 	//linux_loader->loader_import >> elf32_loader->loader_export;
 	//cpu->linux_os_import >> linux_os->linux_os_export;
@@ -198,16 +205,20 @@ Simulator(int argc, char **argv)
 	//linux_os->memory_injection_import >> cpu->memory_injection_export;
 	//linux_os->registers_import >> cpu->registers_export;
 	//linux_os->loader_import >> linux_loader->loader_export;
-	// cpu->exception_trap_reporting_import >> *trap_handler->trap_reporting_export[0];
-	cpu->instruction_counter_trap_reporting_import >> *trap_handler->trap_reporting_export[0];
+	//cpu->exception_trap_reporting_import >> 
+	//	*trap_handler->trap_reporting_export[0];
+	cpu->instruction_counter_trap_reporting_import >> 
+		*trap_handler->trap_reporting_export[0];
 	// cpu->irq_trap_reporting_import >> *trap_handler->trap_reporting_export[2];
 #ifdef SIM_POWER_ESTIMATOR_SUPPORT
 	// connecting power estimator
 	if ( enable_power_estimation )
 	{
-		cpu->icache.power_estimator_import >> il1_power_estimator->power_estimator_export;
+		cpu->icache.power_estimator_import >> 
+			il1_power_estimator->power_estimator_export;
 		cpu->icache.power_mode_import >> il1_power_estimator->power_mode_export;
-		cpu->dcache.power_estimator_import >> dl1_power_estimator->power_estimator_export;
+		cpu->dcache.power_estimator_import >> 
+			dl1_power_estimator->power_estimator_export;
 		cpu->dcache.power_mode_import >> dl1_power_estimator->power_mode_export;
 
 		il1_power_estimator->time_import >> time->time_export;
@@ -217,6 +228,7 @@ Simulator(int argc, char **argv)
 
 	cpu->symbol_table_lookup_import >> elf32_loader->symbol_table_lookup_export;
 	// bridge->memory_import >> memory->memory_export;
+	
 }
 
 Simulator::~Simulator()
@@ -226,12 +238,13 @@ Simulator::~Simulator()
 	// if ( fiq_master_stub ) delete fiq_master_stub;
 	if ( devchip ) delete devchip;
 	if ( memory ) delete memory;
-	if ( flash ) delete flash;
+	if ( nor_flash_2 ) delete nor_flash_2;
+	if ( nor_flash_1 ) delete nor_flash_1;
 	if ( time ) delete time;
 	if ( host_time ) delete host_time;
 	if ( elf32_loader ) delete elf32_loader;
-	// if ( linux_loader ) delete linux_loader;
-	// if ( linux_os ) delete linux_os;
+	if ( raw_kernel_loader ) delete raw_kernel_loader;
+	if ( raw_fs_loader ) delete raw_fs_loader;
 	if ( trap_handler ) delete trap_handler;
 #ifdef SIM_GDB_SERVER_SUPPORT
 	if ( param_enable_gdb_server ) delete param_enable_gdb_server;
@@ -255,6 +268,17 @@ int
 Simulator ::
 Run()
 {
+	static uint32_t bootloader[] = {
+		0xe3a00000,
+		0xe3a01083,
+		0xe3811c01,
+		0xe59f2000,
+		0xe59ff000,
+		0x00000100,
+		0x00010000
+	};
+
+	memory->WriteMemory(0, bootloader, sizeof(bootloader));
 	if ( unlikely(SimulationFinished()) ) return 0;
 
 #ifndef SIM_LIBRARY
@@ -276,7 +300,8 @@ Run()
 	}
 	catch(std::runtime_error& e)
 	{
-		cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << endl;
+		cerr << "FATAL ERROR! an abnormal error occured during simulation."
+			<< " Bailing out..." << endl;
 		cerr << e.what() << endl;
 	}
 
@@ -401,7 +426,7 @@ DefaultConfiguration(unisim::kernel::service::Simulator *sim)
 	sim->SetVariable("kernel_logger.std_err", true);
 	sim->SetVariable("kernel_logger.std_err_color", true);
 
-	sim->SetVariable("cpu.bigendinit",		 "little-endian");
+	sim->SetVariable("cpu.bigendinit",           "little-endian");
 	sim->SetVariable("cpu.cpu-cycle-time",       31250UL); // 32Mhz
 	sim->SetVariable("cpu.bus-cycle-time",       31250UL); // 32Mhz
 	sim->SetVariable("cpu.icache.size",          0x020000); // 128 KB
@@ -409,22 +434,23 @@ DefaultConfiguration(unisim::kernel::service::Simulator *sim)
 	sim->SetVariable("cpu.nice-time",            1000000000); // 1ms
 	sim->SetVariable("cpu.ipc",                  1.0);
 	sim->SetVariable("memory.bytesize",          0xffffffffUL); 
-	sim->SetVariable("memory.cycle-time",        1000000UL);
-	sim->SetVariable("flash.bytesize",           0xffffffffUL); 
-	sim->SetVariable("flash.cycle-time",         1000000UL);
-//	sim->SetVariable("linux-loader.stack-base",  0xc0000000UL);
-//	sim->SetVariable("linux-loader.max-environ", 0x4000UL);
-//	sim->SetVariable("linux-loader.endianness",  "little-endian");
-//	sim->SetVariable("linux-loader.argc",        1);
-//	sim->SetVariable("linux-loader.argv[0]",     "test/install/test.armv5l");
-//	sim->SetVariable("linux-os.system",          "arm");
-//	sim->SetVariable("linux-os.endianness",      "little-endian");
+	sim->SetVariable("memory.cycle-time",        "13332ps");
+	sim->SetVariable("nor-flash-2.bytesize",     0xffffffffUL); 
+	sim->SetVariable("nor-flash-2.cycle-time",   "13332ps");
+	sim->SetVariable("nor-flash-1.bytesize",     0xffffffffUL); 
+	sim->SetVariable("nor-flash-1.cycle-time",   "13332ps");
 	sim->SetVariable("elf-loader.filename",      "test/install/u-boot");
 	sim->SetVariable("elf-loader.force-base-addr",
 												 true);
-	sim->SetVariable("elf-loader.base-addr",     0x0);
+	sim->SetVariable("elf-loader.base-addr",     0x10000);
 	sim->SetVariable("elf-loader.force-use-virtual-address",
 												 true);
+	sim->SetVariable("raw-kernel-loader.filename",      
+												 "test/install/uImage");
+	sim->SetVariable("raw-kernel-loader.base-addr",
+												 0x210000);
+	sim->SetVariable("raw-fs-loader.filename",   "test/install/rootfs.tar.gz.uimg");
+	sim->SetVariable("raw-fs-loader.base-addr",  0x410000);
 
 	sim->SetVariable("trap-handler.num-traps", 3);
 	sim->SetVariable("trap-handler.trap-reporting-export-name[0]",

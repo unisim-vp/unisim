@@ -49,6 +49,7 @@ namespace system_controller {
 using unisim::kernel::logger::DebugError;
 using unisim::kernel::logger::EndDebugError;
 using unisim::util::endian::Host2LittleEndian;
+using unisim::util::endian::LittleEndian2Host;
 
 SystemController ::
 SystemController(const sc_module_name &name, Object *parent)
@@ -58,6 +59,12 @@ SystemController(const sc_module_name &name, Object *parent)
 	, base_addr(0)
 	, param_base_addr("base-addr", this, base_addr,
 			"Base address of the system controller.")
+	, refclk(31250000)
+	, param_refclk("refclk", this, refclk,
+			"Reference clock (REFCLK) period in picoseconds.")
+	, timclk(1000000)
+	, param_timclk("timclk", this, timclk,
+			"Timer module clock (TIMCLK) period in picoseconds.")
 	, logger(*this)
 {
 	bus_target_socket.register_nb_transport_fw(this,
@@ -69,8 +76,10 @@ SystemController(const sc_module_name &name, Object *parent)
 	bus_target_socket.register_transport_dbg(this,
 			&SystemController::bus_target_transport_dbg);
 
-	uint32_t val = Host2LittleEndian(0x09);
-	memcpy(regs, &val, sizeof(val));
+	// init the registers values
+	memset(regs, 0, 256);
+	uint32_t val = Host2LittleEndian((uint32_t)0x09);
+	memcpy(&regs[0], &val, sizeof(val));
 }
 
 SystemController ::
@@ -82,6 +91,8 @@ bool
 SystemController::
 Setup()
 {
+	refclk_out_port = refclk;
+	timclken0_out_port = refclk;
 	return true;
 }
 
@@ -108,6 +119,7 @@ bus_target_b_transport(transaction_type &trans,
 	uint8_t *data = trans.get_data_ptr();
 	uint32_t size = trans.get_data_length();
 	bool is_read = trans.is_read();
+	bool handled = false;
 
 	logger << DebugError
 		<< (is_read ? "Reading" : "Writing") << " 0x" 
@@ -119,11 +131,77 @@ bus_target_b_transport(transaction_type &trans,
 
 	if ( is_read )
 	{
+		handled = true;
 		memcpy(data, &regs[addr], size);
 		trans.set_response_status(tlm::TLM_OK_RESPONSE);
-		return;
 	}
-	assert("TODO" == 0);
+	else // writing
+	{
+		uint32_t prev_value, new_value;
+		memcpy(&prev_value, &regs[addr & ~(uint32_t)0x03], 4);
+		memcpy(&regs[addr], data, size);
+		memcpy(&new_value, &regs[addr & ~(uint32_t)0x03], 4);
+		prev_value = LittleEndian2Host(prev_value);
+		new_value = LittleEndian2Host(new_value);
+		if ( (addr & ~(uint32_t)0x03) == 0x0 )
+		{
+			handled = true;
+			// writing into SCCTRL
+			uint32_t unmod_value = new_value;
+			new_value = (new_value & ~0xff000ef8UL) | 
+				(prev_value & 0xff000ef8UL);
+			logger << DebugError
+				<< "Writing 0x"
+				<< std::hex << new_value
+				<< " (previous value 0x"
+				<< prev_value
+				<< ", received 0x"
+				<< unmod_value << std::dec
+				<< ")"
+				<< EndDebugError;
+			// update timers if necessary
+			bool timeren3sel = false;
+			bool timeren2sel = false;
+			bool timeren1sel = false;
+			bool timeren0sel = false;
+			if ( new_value & (((uint32_t)1) << 21) ) timeren3sel = true;
+			if ( new_value & (((uint32_t)1) << 19) ) timeren2sel = true;
+			if ( new_value & (((uint32_t)1) << 17) ) timeren1sel = true;
+			if ( new_value & (((uint32_t)1) << 15) ) timeren0sel = true;
+			// TODO:
+			// if ( timeren3sel ) timclken3_out_port = timclk;
+			// else timclken3_out_port = refclk;
+			// if ( timeren2sel ) timclken2_out_port = timclk;
+			// else timclken2_out_port = refclk;
+			// END TODO
+			if ( timeren1sel ) timclken1_out_port = timclk;
+			else timclken1_out_port = refclk;
+			if ( timeren0sel ) timclken0_out_port = timclk;
+			else timclken0_out_port = refclk;
+			logger << DebugError
+				<< "timeren0sel = " << timeren0sel << std::endl
+				<< "timeren1sel = " << timeren1sel << std::endl
+				<< "timeren2sel = " << timeren2sel << std::endl
+				<< "timeren3sel = " << timeren3sel << std::endl
+				<< EndDebugError;
+			// store the new value in the register file
+			new_value = Host2LittleEndian(new_value);
+			memcpy(&regs[addr & ~(uint32_t)0x03], &new_value, 4);
+			trans.set_response_status(tlm::TLM_OK_RESPONSE);
+		}
+		else
+		{
+			logger << DebugError
+				<< "Writing 0x"
+				<< std::hex << new_value
+				<< " (previous value 0x"
+				<< prev_value << std::dec
+				<< ")"
+				<< EndDebugError;
+		}
+	}
+	if ( !handled )
+		assert("TODO" == 0);
 }
 
 bool 

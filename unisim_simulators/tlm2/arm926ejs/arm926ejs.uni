@@ -55,8 +55,7 @@
 			<dep>unisim::service::debug::inline_debugger</dep>
 			<dep>unisim::service::debug::sim_debugger</dep>
 			<dep>unisim::service::loader::elf_loader</dep>
-			<dep>unisim::service::loader::linux_loader</dep>
-			<dep>unisim::service::os::linux_os::linux_os_32</dep>
+			<dep>unisim::service::loader::raw_loader</dep>
 			<dep>unisim::service::power</dep>
 			<dep>unisim::service::trap_handler</dep>
 		</depends>

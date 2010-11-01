@@ -51,10 +51,9 @@
 
 #include "unisim/service/time/sc_time/time.hh"
 #include "unisim/service/time/host_time/time.hh"
+#include "unisim/service/loader/raw_loader/raw_loader.hh"
 #include "unisim/service/loader/elf_loader/elf_loader.hh"
 #include "unisim/service/loader/elf_loader/elf_loader.tcc"
-//#include "unisim/service/loader/linux_loader/linux_loader.hh"
-//#include "unisim/service/os/linux_os/linux_os_32/linux_os_32.hh"
 #include "unisim/service/trap_handler/trap_handler.hh"
 #include "config.hh"
 #ifdef SIM_GDB_SERVER_SUPPORT
@@ -100,9 +99,8 @@ private:
 	typedef unisim::component::tlm2::chipset::arm926ejs_pxp::PXP DEVCHIP;
 	typedef unisim::component::tlm2::memory::ram::Memory<32, uint64_t, 8, 1024 * 1024, true> MEMORY;
 	typedef unisim::component::tlm2::memory::ram::Memory<32, uint64_t, 8, 1024 * 1024, true> FLASH;
-//	typedef unisim::service::loader::linux_loader::LinuxLoader<uint64_t> LINUX_LOADER;
 	typedef unisim::service::loader::elf_loader::ElfLoaderImpl<uint64_t, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym> ELF32_LOADER;
-//	typedef unisim::service::os::linux_os::linux_os_32::LinuxOS32 LINUX_OS;
+	typedef unisim::service::loader::raw_loader::RawLoader RAW_LOADER;
 	typedef unisim::service::trap_handler::TrapHandler TRAP_HANDLER;
 #ifdef SIM_GDB_SERVER_SUPPORT
 	typedef unisim::service::debug::gdb_server::GDBServer<uint64_t> GDB_SERVER;
@@ -120,12 +118,13 @@ private:
 	CPU *cpu;
 	DEVCHIP *devchip;
 	MEMORY *memory;
-	FLASH *flash;
+	FLASH *nor_flash_2;
+	FLASH *nor_flash_1;
 	unisim::service::time::sc_time::ScTime *time;
 	unisim::service::time::host_time::HostTime *host_time;
 	ELF32_LOADER *elf32_loader;
-//	LINUX_LOADER *linux_loader;
-//	LINUX_OS *linux_os;
+	RAW_LOADER *raw_kernel_loader;
+	RAW_LOADER *raw_fs_loader;
 	TRAP_HANDLER *trap_handler;
 
 	double simulation_spent_time;

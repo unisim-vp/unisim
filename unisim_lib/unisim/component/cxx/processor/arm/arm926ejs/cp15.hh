@@ -146,12 +146,36 @@ public:
 
 	/** Get location of the exception vector
 	 *
-	 * @return 1 if CONTROL_REGISTER_C1_V is set, 0 otherwise
+	 * @return different than 0 if CONTROL_REGISTER_C1_V is set, 0 otherwise
 	 */
 	uint32_t GetVINITHI() const
 	{
 		return 
 			(control_register_c1 & CONTROL_REGISTER_C1_V)
+			? 1
+			: 0;
+	}
+
+	/** ICache enabled/disabled.
+	 *
+	 * @return different than 0 if enabled, 0 otherwise
+	 */
+	uint32_t IsICacheEnabled() const
+	{
+		return
+			(control_register_c1 & CONTROL_REGISTER_C1_I)
+			? 1
+			: 0;
+	}
+
+	/** DCache enabled/disabled.
+	 *
+	 * @return different than 0 if enabled, 0 otherwise
+	 */
+	uint32_t IsDCacheEnabled() const
+	{
+		return 
+			(control_register_c1 & CONTROL_REGISTER_C1_C)
 			? 1
 			: 0;
 	}

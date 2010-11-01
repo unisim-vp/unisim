@@ -44,6 +44,9 @@
 #include "unisim/kernel/tlm2/tlm.hh"
 #include <inttypes.h>
 #include "unisim/component/tlm2/chipset/arm926ejs_pxp/system_controller/sc.hh"
+#include "unisim/component/tlm2/chipset/arm926ejs_pxp/uart/uart.hh"
+#include "unisim/component/tlm2/chipset/arm926ejs_pxp/ethernet/smsc_lan91c111.hh"
+#include "unisim/component/tlm2/chipset/arm926ejs_pxp/dual_timer/dt.hh"
 #include "unisim/component/tlm2/chipset/arm926ejs_pxp/watchdog/watchdog.hh"
 
 namespace unisim {
@@ -67,18 +70,46 @@ public:
 	/** Initiator socket for the SSMC Chip Select 0, NOR flash 2 */
 	tlm_utils::simple_initiator_socket<PXP, 32>
 		ssmc0_init_socket;
+	/** Initiator socket for the SSMC Chip Select 1, NOR flash 1 */
+	tlm_utils::simple_initiator_socket<PXP, 32>
+		ssmc1_init_socket;
 	/** Initiator socket for the MPMC Chip Select 0, SDRAM 128MB */
 	tlm_utils::simple_initiator_socket<PXP, 32>
 		mpmc0_init_socket;
+	/** Initiator socket for the Ethernet Controller */
+	tlm_utils::simple_initiator_socket<PXP, 32>
+		eth_init_socket;
 	/** Initiator socket for the System Controller */
 	tlm_utils::simple_initiator_socket<PXP, 32>
 		sc_init_socket;
+	/** Initiator socket for the UART0 */
+	tlm_utils::simple_initiator_socket<PXP, 32>
+		uart0_init_socket;
+	/** Initiator socket for the Timer 1-2 */
+	tlm_utils::simple_initiator_socket<PXP, 32>
+		dt1_init_socket;
 	/** Initiator socket for the Watchdog */
 	tlm_utils::simple_initiator_socket<PXP, 32>
 		wd_init_socket;
 
+	/** The Ethernet Controller */
+	unisim::component::tlm2::chipset::arm926ejs_pxp::ethernet::SMSC_LAN91C111 eth;
+	/** The System Controller */
 	unisim::component::tlm2::chipset::arm926ejs_pxp::system_controller::SystemController sc;
+	/** The UART 0 */
+	unisim::component::tlm2::chipset::arm926ejs_pxp::uart::UART uart0;
+	/** Dual Timer for Timer 0 and 1 */
+	unisim::component::tlm2::chipset::arm926ejs_pxp::dual_timer::DualTimer dt1;
+	/** Watchdog module */
 	unisim::component::tlm2::chipset::arm926ejs_pxp::watchdog::Watchdog wd;
+
+	sc_signal<uint64_t> sc_to_dt1_signal[3];
+
+	sc_in<bool> timint0_in_port;
+	sc_in<bool> timint1_in_port;
+	sc_in<bool> timintc01_in_port;
+	sc_signal<bool> timint0_signal, timint1_signal, timintc01_signal;
+
 
 	SC_HAS_PROCESS(PXP);
 	PXP(const sc_module_name &name, Object *parent = 0);
@@ -138,6 +169,22 @@ private:
 
 	/**************************************************************************/
 	/* Virtual methods for the initiator socket for                     START */
+	/*   the Ethernet Controller                                              */
+	/**************************************************************************/
+
+	sync_enum_type eth_init_nb_transport_bw(transaction_type &trans,
+			phase_type &phase,
+			sc_core::sc_time &time);
+	void eth_init_invalidate_direct_mem_ptr(sc_dt::uint64,
+			sc_dt::uint64);
+
+	/**************************************************************************/
+	/* Virtual methods for the initiator socket for                           */
+	/*   the Ethenet Controller                                           END */
+	/**************************************************************************/
+
+	/**************************************************************************/
+	/* Virtual methods for the initiator socket for                     START */
 	/*   the System Controller                                                */
 	/**************************************************************************/
 
@@ -150,6 +197,38 @@ private:
 	/**************************************************************************/
 	/* Virtual methods for the initiator socket for                           */
 	/*   the System Controller                                            END */
+	/**************************************************************************/
+
+	/**************************************************************************/
+	/* Virtual methods for the initiator socket for                     START */
+	/*   the UART 0                                                           */
+	/**************************************************************************/
+
+	sync_enum_type uart0_init_nb_transport_bw(transaction_type &trans,
+			phase_type &phase,
+			sc_core::sc_time &time);
+	void uart0_init_invalidate_direct_mem_ptr(sc_dt::uint64,
+			sc_dt::uint64);
+
+	/**************************************************************************/
+	/* Virtual methods for the initiator socket for                           */
+	/*   the UART 0                                                       END */
+	/**************************************************************************/
+
+	/**************************************************************************/
+	/* Virtual methods for the initiator socket for                     START */
+	/*   the Dual Timer                                                       */
+	/**************************************************************************/
+
+	sync_enum_type dt1_init_nb_transport_bw(transaction_type &trans,
+			phase_type &phase,
+			sc_core::sc_time &time);
+	void dt1_init_invalidate_direct_mem_ptr(sc_dt::uint64,
+			sc_dt::uint64);
+
+	/**************************************************************************/
+	/* Virtual methods for the initiator socket for                           */
+	/*   the Dual Timer                                                   END */
 	/**************************************************************************/
 
 	/**************************************************************************/

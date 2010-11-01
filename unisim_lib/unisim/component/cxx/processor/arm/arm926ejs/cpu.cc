@@ -515,7 +515,7 @@ InjectReadMemory(uint64_t addr,
 	uint32_t base_addr = (uint32_t)addr;
 	uint32_t ef_addr;
 
-	if ( likely(dcache.GetSize()) )
+	if ( likely(cp15.IsDCacheEnabled() && dcache.GetSize()) )
 	{
 		while (size != 0)
 		{
@@ -588,7 +588,7 @@ InjectWriteMemory(uint64_t addr,
 	uint32_t base_addr = (uint32_t)addr;
 	uint32_t ef_addr;
 	
-	if ( likely(dcache.GetSize()) )
+	if ( likely(cp15.IsDCacheEnabled() && dcache.GetSize()) )
 	{
 		// access memory while using the linux_os_import
 		//   tcm is ignored
@@ -692,7 +692,7 @@ ReadMemory(uint64_t addr,
 	uint32_t base_addr = (uint32_t)addr;
 	uint32_t ef_addr;
 
-	if ( likely(dcache.GetSize()) )
+	if ( likely(cp15.IsDCacheEnabled() && dcache.GetSize()) )
 	{
 		// non intrusive access with linux support
 		while (size != 0 && status)
@@ -774,7 +774,7 @@ WriteMemory(uint64_t addr,
 	uint32_t base_addr = (uint32_t)addr;
 	uint32_t ef_addr;
 
-	if ( dcache.GetSize() )
+	if ( likely(cp15.IsDCacheEnabled() && dcache.GetSize()) )
 	{
 		// non intrusive access with linux support
 		while (size != 0 && status)
@@ -904,7 +904,7 @@ ReadInsn(uint32_t address, uint32_t &val)
 	uint32_t size = 4;
 	uint8_t *data;
 
-	if ( likely(icache.GetSize()) )
+	if ( likely(cp15.IsICacheEnabled() && icache.GetSize()) )
 	{
 		icache.read_accesses++;
 		// check the instruction cache
@@ -1584,7 +1584,7 @@ PerformPrefetchAccess(unisim::component::cxx::processor::arm::MemoryOp
 {
 	uint32_t addr = memop->GetAddress();
 
-	if ( likely(dcache.GetSize()) )
+	if ( likely(cp15.IsDCacheEnabled() && dcache.GetSize()) )
 	{
 		dcache.prefetch_accesses++;
 		uint32_t cache_tag = dcache.GetTag(addr);
@@ -1700,7 +1700,7 @@ PerformWriteAccess(unisim::component::cxx::processor::arm::MemoryOp
 		break;
 	}
 
-	if ( likely(dcache.GetSize()) )
+	if ( likely(cp15.IsDCacheEnabled() && dcache.GetSize()) )
 	{
 		dcache.write_accesses++;
 		uint32_t cache_tag = dcache.GetTag(write_addr);
@@ -1774,7 +1774,7 @@ PerformReadAccess(unisim::component::cxx::processor::arm::MemoryOp
 			break;
 	}
 
-	if ( likely(dcache.GetSize()) )
+	if ( likely(cp15.IsDCacheEnabled() && dcache.GetSize()) )
 	{
 		dcache.read_accesses++;
 		uint32_t cache_tag = dcache.GetTag(read_addr);
@@ -1916,7 +1916,7 @@ PerformReadToPCAccess(unisim::component::cxx::processor::arm::MemoryOp
 	uint8_t data32[4];
 	uint8_t *data;
 
-	if ( likely(dcache.GetSize()) )
+	if ( likely(cp15.IsDCacheEnabled() && dcache.GetSize()) )
 	{
 		dcache.read_accesses++;
 		uint32_t cache_tag = dcache.GetTag(read_addr);
@@ -2040,7 +2040,7 @@ PerformReadToPCUpdateTAccess(
 	uint8_t data32[4];
 	uint8_t *data;
 
-	if ( likely(dcache.GetSize()) )
+	if ( likely(cp15.IsDCacheEnabled() && dcache.GetSize()) )
 	{
 		dcache.read_accesses++;
 		uint32_t cache_tag = dcache.GetTag(read_addr);

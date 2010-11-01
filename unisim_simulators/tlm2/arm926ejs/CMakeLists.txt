@@ -87,8 +87,7 @@ set ( sim_subdirs
 	unisim/service/debug/sim_debugger
 	unisim/util/debug/debugger_handler
 	unisim/service/loader/elf_loader
-	# unisim/service/loader/linux_loader
-	# unisim/service/os/linux_os/linux_os_32
+	unisim/service/loader/raw_loader
 	unisim/service/trap_handler
 	unisim/service/power
 	)
@@ -282,8 +281,7 @@ set ( sim__libraries
 	unisim__service__time__host_time
 	unisim__service__time__sc_time
 	unisim__service__loader__elf_loader
-	# unisim__service__loader__linux_loader
-	# unisim__service__os__linux_os__linux_os_32
+	unisim__service__loader__raw_loader
 	unisim__service__debug__gdb_server
 	unisim__service__debug__inline_debugger
 	unisim__service__debug__sim_debugger
@@ -319,6 +317,7 @@ set ( PYTHON__SIM__LIBS
 	 'unisim__service__time__host_time',
 	 'unisim__service__time__sc_time',
 	 'unisim__service__loader__elf_loader',
+	 'unisim__service__loader__raw_loader',
 	 'unisim__service__debug__gdb_server',
 	 'unisim__service__debug__inline_debugger',
 	 'unisim__service__debug__sim_debugger',
@@ -424,8 +423,7 @@ set ( sim__deps
 	unisim__service__debug__sim_debugger
 	unisim__util__debug__debugger_handler
 	unisim__service__loader__elf_loader
-	# unisim__service__loader__linux_loader
-	# unisim__service__os__linux_os__linux_os_32
+	unisim__service__loader__raw_loader
 	unisim__service__trap_handler
 	)
 if ( BUILD_POWER_SUPPORT )

@@ -32,8 +32,8 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
-#ifndef __UNISIM_COMPONENT_TLM2_CHIPSET_ARM926EJS_PXP_SYSTEM_CONTROLLER_SC_HH__
-#define __UNISIM_COMPONENT_TLM2_CHIPSET_ARM926EJS_PXP_SYSTEM_CONTROLLER_SC_HH__
+#ifndef __UNISIM_COMPONENT_TLM2_CHIPSET_ARM926EJS_PXP_DUAL_TIMER_DT_HH__
+#define __UNISIM_COMPONENT_TLM2_CHIPSET_ARM926EJS_PXP_DUAL_TIMER_DT_HH__
 
 #include <systemc.h>
 #include <tlm.h>
@@ -47,9 +47,9 @@ namespace component {
 namespace tlm2 {
 namespace chipset {
 namespace arm926ejs_pxp {
-namespace system_controller {
+namespace dual_timer {
 
-class SystemController
+class DualTimer
 	: public unisim::kernel::service::Object
 	, public sc_module
 {
@@ -58,26 +58,37 @@ public:
 	typedef tlm::tlm_base_protocol_types::tlm_phase_type   phase_type;
 	typedef tlm::tlm_sync_enum                             sync_enum_type;
 
-	/** Source Reference Clock port */
-	sc_out<uint64_t> refclk_out_port;
-	/** Source Timer Module Clock Enable 0 port */
-	sc_out<uint64_t> timclken0_out_port;
-	/** Source Timer Module Clock Enable 1 port */
-	sc_out<uint64_t> timclken1_out_port;
+	/** Timer module clock input port */
+	sc_in<uint64_t> timclk_in_port;
+	/** Timer module clock enable 1 input port */
+	sc_in<uint64_t> timclken1_in_port;
+	/** Timer module clock enable 2 input port */
+	sc_in<uint64_t> timclken2_in_port;
+
+	/** Timer interrupt 1 output port */
+	sc_out<bool> timint1_out_port;
+	/** Timer interrupt 2 output port */
+	sc_out<bool> timint2_out_port;
+	/** Timer interrupt combined output port */
+	sc_out<bool> timintc_out_port;
 
 	/** Target socket for the bus connection */
-	tlm_utils::passthrough_target_socket<SystemController, 32>
+	tlm_utils::passthrough_target_socket<DualTimer, 32>
 		bus_target_socket;
 
-	SC_HAS_PROCESS(SystemController);
-	SystemController(const sc_module_name &name, Object *parent = 0);
-	~SystemController();
+	SC_HAS_PROCESS(DualTimer);
+	DualTimer(const sc_module_name &name, Object *parent = 0);
+	~DualTimer();
 
 	virtual bool Setup();
 
 private:
 	/** Registers storage */
 	uint8_t regs[256];
+	/** Timer 1 last update time */
+	sc_time t1_update_time;
+	/** Timer 2 last update time */
+	sc_time t2_update_time;
 
 	/**************************************************************************/
 	/* Virtual methods for the target socket for the bus connection     START */
@@ -101,26 +112,18 @@ private:
 	/** UNISIM Parameter for the base address of the system controller */
 	unisim::kernel::service::Parameter<uint32_t> param_base_addr;
 
-	/** Reference clock (refclock) period in picoseconds */
-	uint64_t refclk;
-	/** UNISIM Parameter for the reference clock */
-	unisim::kernel::service::Parameter<uint64_t> param_refclk;
-
-	/** External timer module clock (timclk) period */
-	uint64_t timclk;
-	/**UNISIM Parameter for the external timer module clock */
-	unisim::kernel::service::Parameter<uint64_t> param_timclk;
-
 	/** Interface to the UNISIM logger */
 	unisim::kernel::logger::Logger logger;
+
+	void UpdateStatus(sc_core::sc_time &delay);
 };
 
-} // end of namespace system_controller
+} // end of namespace dual_timer
 } // end of namespace arm926ejs_pxp
 } // end of namespace chipset
 } // end of namespace tlm2
 } // end of namespace component
 } // end of namespace unisim
 
-#endif // __UNISIM_COMPONENT_TLM2_CHIPSET_ARM926EJS_PXP_SYSTEM_CONTROLLER_SC_HH__
+#endif // __UNISIM_COMPONENT_TLM2_CHIPSET_ARM926EJS_PXP_DUAL_TIMER_DT_HH__
 
