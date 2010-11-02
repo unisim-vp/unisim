@@ -47,6 +47,10 @@ class CP15Interface
 public:
 	virtual ~CP15Interface() {};
 
+	/** Drain write buffer.
+	 * Perform a memory barrier by draining the write buffer.
+	 */
+	virtual void DrainWriteBuffer() = 0;
 	/** Invalidate the caches.
 	 * Perform a complete invalidation of the instruction cache and/or the 
 	 *   data cache.

@@ -564,6 +564,10 @@ public:
 	/* cp15 to cpu interface                           START      */
 	/**************************************************************/
 
+	/** Drain write buffer.
+	 * Perform a memory barrier by draining the write buffer.
+	 */
+	void DrainWriteBuffer();
 	/** Invalidate the caches.
 	 * Perform a complete invalidation of the instruction cache and/or the 
 	 *   data cache.

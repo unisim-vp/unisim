@@ -203,9 +203,19 @@ private:
 	/** UNISIM logger */
 	unisim::kernel::logger::Logger logger;
 
+	/** CP15 ID code register */
+	static const uint32_t id_code_register_c0 =
+		((uint32_t)0x041  << 24) |
+		((uint32_t)0x0    << 20) |
+		((uint32_t)0x06   << 16) |
+		((uint32_t)0x0926 << 4 ) |
+		(uint32_t)0x05;
+	/** CP15 Translation table base register */
+	uint32_t translation_table_base_register_c2;
+	static const uint32_t TRANSLATION_TABLE_BASE_REGISTER_SBZ =
+		0x00003fffUL;
 	/** CP15 control register */
 	uint32_t control_register_c1;
-
 	static const uint32_t CONTROL_REGISTER_C1_SBZ = 0xfffa0c00UL;
 	static const uint32_t CONTROL_REGISTER_C1_SBO = 0x00050078UL;
 	static const uint32_t CONTROL_REGISTER_C1_L4 = 0x08000UL;

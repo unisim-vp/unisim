@@ -1486,6 +1486,17 @@ MoveFromCoprocessor(uint32_t cp_num, uint32_t op1, uint32_t op2,
 	SetGPR(rd, val);
 }
 
+/** Drain write buffer.
+ * Perform a memory barrier by draining the write buffer.
+ */
+void 
+CPU::
+DrainWriteBuffer()
+{
+	logger << DebugWarning
+		<< "TODO: Drain write buffer once implemented"
+		<< EndDebugWarning;
+}
 /** Invalidate the caches.
  * Perform a complete invalidation of the instruction cache and/or the 
  *   data cache.

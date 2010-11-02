@@ -183,17 +183,33 @@ ReadRegister(uint8_t opcode1,
 #endif // CP15__DEBUG
 	if ( likely(opcode1 == 0) )
 	{
+		// ID Code, Cache Type, and TCM Status Registers
+		if ( crn == 0 )
+		{
+			if  ( crm == 0 )
+			{
+				if ( opcode2 == 0 )
+				{
+#ifdef CP15__DEBUG 
+					std::cerr << "CP15: Reading ID code register c0"
+						<< std::endl;
+#endif // CP15__DEBUG
+					handled = true;
+					reg = id_code_register_c0;
+				}
+			}
+		}
 		// control registers
-		if ( crn == 1 )
+		else if ( crn == 1 )
 		{
 			if ( crm == 0 )
 			{
 				if ( opcode2 == 0 )
 				{
-#ifdef CP15_DEBUG
+#ifdef CP15__DEBUG
 					std::cerr << "CP15: Reading control register c1"
 						<< std::endl;
-#endif // CP15_DEBUG
+#endif // CP15__DEBUG
 					handled = true;
 					reg = control_register_c1;
 				}
@@ -242,22 +258,48 @@ WriteRegister(uint8_t opcode1,
 			{
 				if ( opcode2 == 0 )
 				{
-#ifdef CP15_DEBUG
+#ifdef CP15__DEBUG
 					std::cerr << "CP15: Writing control register c1"
 						<< std::endl;
-#endif // CP15_DEBUG
+#endif // CP15__DEBUG
 					handled = true;
 					mod &= ~CONTROL_REGISTER_C1_SBZ;
 					mod |= CONTROL_REGISTER_C1_SBO;
 					if ( mod != orig )
 						logger << DebugWarning
 							<< "Writing value"
-							<< "0x" << std::hex << orig << std::dec
+							<< " 0x" << std::hex << orig << std::dec
 							<< " into control register c1 which is not conform"
 							<< " with SBZ and SBO specification, fixing it to"
 							<< " 0x" << std::hex << mod << std::dec
 							<< EndDebugWarning;
 					control_register_c1 = mod;
+				}
+			}
+		}
+		// translation table base register
+		else if ( crn == 2 )
+		{
+			if ( crm == 0 )
+			{
+				if ( opcode2 == 0 )
+				{
+#ifdef CP15__DEBUG
+					std::cerr << "CP15: Writing translation table base register"
+						<< " c2"
+						<< std::endl;
+#endif // CP15__DEBUG
+					handled = true;
+					mod = orig & ~TRANSLATION_TABLE_BASE_REGISTER_SBZ;
+					if ( mod != orig )
+						logger << DebugWarning
+							<< "Writing value"
+							<< " 0x" << std::hex << orig << std::dec
+							<< " into cthe translation table base register c2"
+							<< " which is not conform with SBZ specification,"
+							<< " fixing it to 0x" << std::hex << mod << std::dec
+							<< EndDebugWarning;
+					translation_table_base_register_c2 = mod;
 				}
 			}
 		}
@@ -274,6 +316,20 @@ WriteRegister(uint8_t opcode1,
 							<< " caches" << std::endl;
 #endif // CP15__DEBUG
 						cpu->InvalidateCache(true, true);
+						handled = true;
+						break;
+				}
+			}
+			else if ( crm == 10 )
+			{
+				switch ( opcode2 )
+				{
+					case 4:
+#ifdef CP15__DEBUG
+						std::cerr << "CP15: Draining write buffer"
+							<< std::endl;
+#endif // CP15__DEBUG
+						cpu->DrainWriteBuffer();
 						handled = true;
 						break;
 				}
