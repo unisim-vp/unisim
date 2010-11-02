@@ -297,14 +297,6 @@ bus_target_b_transport(transaction_type &trans,
 	bool is_read = trans.is_read();
 	bool handled = false;
 
-	logger << DebugError
-		<< (is_read ? "Reading" : "Writing") << " 0x" 
-		<< std::hex << addr
-		<< " (0x"
-		<< trans.get_address() << std::dec
-		<< ") of " << size << " bytes"
-		<< EndDebugError;
-
 	if ( is_read )
 	{
 		handled = true;
@@ -331,11 +323,6 @@ bus_target_b_transport(transaction_type &trans,
 			{
 				uint8_t ch = new_value & 0x0ff;
 				TelnetPutChar(ch);
-				logger << DebugInfo
-					<< "Writing char(0x" << std::hex
-					<< (unsigned int)ch << std::dec
-					<< "), which corresponds to:" << std::endl
-					<< (char)ch << EndDebugInfo;
 			}
 			else
 			{
