@@ -51,18 +51,6 @@ using unisim::service::pim::network::GenericThread;
 using unisim::service::pim::network::SocketServerThread;
 using unisim::service::pim::network::SocketClientThread;
 
-class pin_t { // VirtualComponent simple (getChldren() == null)
-public:
-	~pin_t() {
-	}
-
-	string				name;
-	bool				isMutable;	// e.g. true (r/w) / false (r-only)
-	string				type;	// e.g. double, integer, boolean
-
-	VariableBase		*var;
-};
-
 class component_t { // VirtualComponent Hierarchical (getChldren() != null)
 public:
 	~component_t() {
@@ -75,7 +63,7 @@ public:
 
 	string				name;
 	string				description;
-	vector<pin_t*>		pins;
+	vector<VariableBase*>		pins;
 };
 
 class PIM : public Object, public GenericThread
@@ -89,6 +77,7 @@ public:
 	virtual void Run();
 	void GeneratePimFile();
 	void LoadPimFile();
+	void getAllVariables(vector<VariableBase*> *variables);
 
 private:
 	Simulator *fSimulator;
@@ -96,8 +85,6 @@ private:
 	char* fHost;
 
 	vector<component_t*> pim_model;
-	vector<pin_t*>		input_variables;
-	vector<pin_t*>		output_variables;
 
 	string				filename;
 	Parameter<string>	param_filename;
@@ -119,25 +106,25 @@ private:
 
 class TargetThread : public GenericThread {
 public:
-	TargetThread(char* _name, vector<pin_t*> *variables, SocketThread *fd);
+	TargetThread(char* _name, vector<VariableBase*> *variables, SocketThread *fd);
 
 	virtual void Run();
 
 private:
 	char* name;
-	vector<pin_t*> *fVariables;
+	vector<VariableBase*> *fVariables;
 	SocketThread *sockfd;
 };
 
 class InitiatorThread : public GenericThread {
 public:
-	InitiatorThread(char* _name, vector<pin_t*> *variables, SocketThread *fd);
+	InitiatorThread(char* _name, vector<VariableBase*> *variables, SocketThread *fd);
 
 	virtual void Run();
 
 private:
 	char* name;
-	vector<pin_t*> *fVariables;
+	vector<VariableBase*> *fVariables;
 	SocketThread *sockfd;
 };
 

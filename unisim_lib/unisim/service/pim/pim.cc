@@ -51,8 +51,6 @@ PIM::~PIM() {
 		if (pim_model[i]) { delete pim_model[i]; pim_model[i] = NULL;}
 	}
 	pim_model.clear();
-	input_variables.clear();
-	output_variables.clear();
 }
 
 void PIM::ParseComponent (xmlDocPtr doc, xmlNodePtr componentNode, component_t *component) {
@@ -71,27 +69,19 @@ void PIM::ParseComponent (xmlDocPtr doc, xmlNodePtr componentNode, component_t *
 	xmlNodePtr 	componentChild = componentNode->xmlChildrenNode;
 	while (componentChild != NULL) {
 		if (!xmlStrcmp(componentChild->name, (const xmlChar *)"pin")) {
-			pin_t *onePin = new pin_t();
-			char* onePinName = (char*) xmlNodeListGetString(doc, componentChild->xmlChildrenNode, 1);
 
-			onePin->name = component->name + "." + onePinName;
+			string onePinName = string((char*) xmlNodeListGetString(doc, componentChild->xmlChildrenNode, 1));
 
-			if (strcmp((char*) xmlGetProp(componentChild, (const xmlChar *)"isMutable"), "false") == 0) {
-				onePin->isMutable = false;
-			} else {
-				onePin->isMutable = true;
-			}
-
-			onePin->type = (char*) xmlGetProp(componentChild, (const xmlChar *)"type");
+			onePinName = component->name + "." + onePinName;
 
 			for (std::list<VariableBase *>::iterator it = lst.begin(); it != lst.end(); it++) {
-				if (strcmp(((VariableBase *) *it)->GetName(), onePin->name.c_str()) == 0) {
-					onePin->var = (VariableBase *) *it;
+				if (strcmp(((VariableBase *) *it)->GetName(), onePinName.c_str()) == 0) {
+					component->pins.push_back((VariableBase *) *it);
+
 					break;
 				}
 			}
 
-			component->pins.push_back(onePin);
 
 		} else if ((!xmlStrcmp(componentChild->name, (const xmlChar *)"description"))) {
 			component->description = (char*) xmlNodeListGetString(doc, componentChild->xmlChildrenNode, 1);
@@ -173,13 +163,13 @@ void PIM::GetExportedVariables(vector<component_t*> &pim) {
 			pim.push_back(component);
 		}
 
-		pin_t *onePin = new pin_t();
-		onePin->name = short_var_name;
-		onePin->type = ((VariableBase *) *it)->GetDataTypeName();
-		onePin->isMutable = ((VariableBase *) *it)->IsMutable();
-		onePin->var = (VariableBase *) *it;
+//		pin_t *onePin = new pin_t();
+//		onePin->name = short_var_name;
+//		onePin->type = ((VariableBase *) *it)->GetDataTypeName();
+//		onePin->isMutable = ((VariableBase *) *it)->IsMutable();
+//		onePin->var = (VariableBase *) *it;
 
-		component->pins.push_back(onePin);
+		component->pins.push_back((VariableBase *) *it);
 
 	}
 }
@@ -356,7 +346,7 @@ void PIM::SavePimToXml(vector<component_t*> &pim, const string file)
 		        return;
 		    }
 
-		    if (pim_model[i]->pins[j]->isMutable) {
+		    if (pim_model[i]->pins[j]->IsMutable()) {
 		    	rc = xmlTextWriterWriteAttribute(writer, BAD_CAST "isMutable", BAD_CAST "true");
 		    } else {
 		    	rc = xmlTextWriterWriteAttribute(writer, BAD_CAST "isMutable", BAD_CAST "false");
@@ -367,13 +357,18 @@ void PIM::SavePimToXml(vector<component_t*> &pim, const string file)
 		        return;
 		    }
 
-		    rc = xmlTextWriterWriteAttribute(writer, BAD_CAST "type", BAD_CAST pim_model[i]->pins[j]->type.c_str());
+		    rc = xmlTextWriterWriteAttribute(writer, BAD_CAST "type", BAD_CAST pim_model[i]->pins[j]->GetDataTypeName());
 		    if (rc < 0) {
 		        printf("SavePimToXml: Error at xmlTextWriterWriteAttribute\n");
 		        return;
 		    }
 
-		    tmp = ConvertInput(pim_model[i]->pins[j]->name.c_str(), DEFAULT_XML_ENCODING);
+			string var_name(pim_model[i]->pins[j]->GetName());
+			size_t pos = var_name.find_first_of('.');
+			string component_name = var_name.substr(0, pos);
+			string short_var_name = var_name.substr(pos+1);
+
+		    tmp = ConvertInput(short_var_name.c_str(), DEFAULT_XML_ENCODING);
 		    rc = xmlTextWriterWriteString(writer, tmp);
 		    if (rc < 0) {
 		        printf
@@ -452,14 +447,13 @@ bool PIM::Setup() {
 
 	GetExportedVariables(pim_model);
 
+}
+
+void PIM::getAllVariables(vector<VariableBase*> *variables) {
+
 	for (int i=0; i < pim_model.size(); i++) {
 		for (int j=0; j < pim_model[i]->pins.size(); j++) {
-			cerr << "VAR : " << pim_model[i]->pins[j]->name << endl;
-			if (pim_model[i]->pins[j]->isMutable) {
-				input_variables.push_back(pim_model[i]->pins[j]);
-			} else {
-				output_variables.push_back(pim_model[i]->pins[j]);
-			}
+			variables->push_back(pim_model[i]->pins[j]);
 		}
 	}
 
@@ -479,11 +473,14 @@ void PIM::Run() {
 
 	cerr << "PIM connection success " << std::endl;
 
+	vector<VariableBase*> variables;
+	getAllVariables(&variables);
+
 	// Start Simulation <-> ToolBox communication
-//	target = new TargetThread("Target", &input_variables, clientSockfd);
-	target = new TargetThread("Target", &input_variables, serverSockfd);
-//	initiator = new InitiatorThread("Initiator", &output_variables, clientSockfd);
-	initiator = new InitiatorThread("Initiator", &output_variables, serverSockfd);
+//	target = new TargetThread("Target", &variables, clientSockfd);
+	target = new TargetThread("Target", &variables, serverSockfd);
+//	initiator = new InitiatorThread("Initiator", &variables, clientSockfd);
+	initiator = new InitiatorThread("Initiator", &variables, serverSockfd);
 
 	target->start();
 	initiator->start();
@@ -493,7 +490,7 @@ void PIM::Run() {
 
 }
 
-TargetThread::TargetThread(char* _name, vector<pin_t*> *variables, SocketThread *fd) :
+TargetThread::TargetThread(char* _name, vector<VariableBase*> *variables, SocketThread *fd) :
 		sockfd(fd),
 		name(_name),
 		fVariables(variables)
@@ -527,9 +524,9 @@ void TargetThread::Run(){
 			cerr << "PIM-Target receive " << buffer << std::endl;
 
 			for (int i=0; i < fVariables->size(); i++) {
-				if (name.compare((*fVariables)[i]->var->GetName()) == 0) {
+				if (name.compare((*fVariables)[i]->GetName()) == 0) {
 
-					*((*fVariables)[i]->var) = convertTo<double>(value);
+					*((*fVariables)[i]) = convertTo<double>(value);
 					break;
 				}
 			}
@@ -545,7 +542,7 @@ void TargetThread::Run(){
 
 }
 
-InitiatorThread::InitiatorThread(char* _name, vector<pin_t*> *variables, SocketThread *fd) :
+InitiatorThread::InitiatorThread(char* _name, vector<VariableBase*> *variables, SocketThread *fd) :
 		sockfd(fd),
 		name(_name),
 		fVariables(variables)
@@ -562,20 +559,13 @@ void InitiatorThread::Run(){
 
 	while (!isTerminated()) {
 
-//	var_name:time:value;
-
-
 		for (int i=0; i < fVariables->size(); i++) {
 
 			std::ostringstream os;
-			os << (*fVariables)[i]->var->GetName() << ":";
+			os << (*fVariables)[i]->GetName() << ":";
 			os << time << ":";
-			double val = *((*fVariables)[i]->var);
+			double val = *((*fVariables)[i]);
 			os << stringify(val);
-
-//			char value[10];
-//			sprintf(value,"%d", rand() % 10);
-//			os << value;
 
 			os << ";";
 
