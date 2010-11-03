@@ -291,9 +291,10 @@ BusSynchronize() {
 	while(cpu_time >= bus_time) {
 		bus_time += bus_cycle_time;
 	}
+
 	sc_time sleep_time = bus_time - sc_time_stamp();
-	std::cerr << "HCS12X: sleep_time=" << sleep_time << std::endl;
 	wait(sleep_time);
+
 	cpu_time = sc_time_stamp();
 	last_cpu_time = sc_time_stamp();
 	bus_time = sc_time_stamp();

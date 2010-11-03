@@ -4,47 +4,38 @@
     <component name="ATD0">
         <!--ATD0 exported interface-->
         <description>bla bla</description>
-        <network>
-            <socket host="127.0.0.1" port="1234"/>
-        </network>
-        <pin isMutable="true" type="64-bit floating-point">ANx[0]</pin>
-        <pin isMutable="true" type="64-bit floating-point">ANx[1]</pin>
-        <pin isMutable="true" type="64-bit floating-point">ANx[2]</pin>
-        <pin isMutable="true" type="64-bit floating-point">ANx[3]</pin>
-        <pin isMutable="true" type="64-bit floating-point">ANx[4]</pin>
-        <pin isMutable="true" type="64-bit floating-point">ANx[5]</pin>
-        <pin isMutable="true" type="64-bit floating-point">ANx[6]</pin>
-        <pin isMutable="true" type="64-bit floating-point">ANx[7]</pin>
+        <pin isMutable="true" type="double precision floating-point">ANx[0]</pin>
+        <pin isMutable="true" type="double precision floating-point">ANx[1]</pin>
+        <pin isMutable="true" type="double precision floating-point">ANx[2]</pin>
+        <pin isMutable="true" type="double precision floating-point">ANx[3]</pin>
+        <pin isMutable="true" type="double precision floating-point">ANx[4]</pin>
+        <pin isMutable="true" type="double precision floating-point">ANx[5]</pin>
+        <pin isMutable="true" type="double precision floating-point">ANx[6]</pin>
+        <pin isMutable="true" type="double precision floating-point">ANx[7]</pin>
     </component>
     <component name="ATD1">
         <!--ATD1 exported interface-->
         <description>bla bla</description>
-        <network>
-            <socket host="127.0.0.1" port="1234"/>
-        </network>
-        <pin isMutable="true" type="64-bit floating-point">ANx[0]</pin>
-        <pin isMutable="true" type="64-bit floating-point">ANx[10]</pin>
-        <pin isMutable="true" type="64-bit floating-point">ANx[11]</pin>
-        <pin isMutable="true" type="64-bit floating-point">ANx[12]</pin>
-        <pin isMutable="true" type="64-bit floating-point">ANx[13]</pin>
-        <pin isMutable="true" type="64-bit floating-point">ANx[14]</pin>
-        <pin isMutable="true" type="64-bit floating-point">ANx[15]</pin>
-        <pin isMutable="true" type="64-bit floating-point">ANx[1]</pin>
-        <pin isMutable="true" type="64-bit floating-point">ANx[2]</pin>
-        <pin isMutable="true" type="64-bit floating-point">ANx[3]</pin>
-        <pin isMutable="true" type="64-bit floating-point">ANx[4]</pin>
-        <pin isMutable="true" type="64-bit floating-point">ANx[5]</pin>
-        <pin isMutable="true" type="64-bit floating-point">ANx[6]</pin>
-        <pin isMutable="true" type="64-bit floating-point">ANx[7]</pin>
-        <pin isMutable="true" type="64-bit floating-point">ANx[8]</pin>
-        <pin isMutable="true" type="64-bit floating-point">ANx[9]</pin>
+        <pin isMutable="true" type="double precision floating-point">ANx[0]</pin>
+        <pin isMutable="true" type="double precision floating-point">ANx[10]</pin>
+        <pin isMutable="true" type="double precision floating-point">ANx[11]</pin>
+        <pin isMutable="true" type="double precision floating-point">ANx[12]</pin>
+        <pin isMutable="true" type="double precision floating-point">ANx[13]</pin>
+        <pin isMutable="true" type="double precision floating-point">ANx[14]</pin>
+        <pin isMutable="true" type="double precision floating-point">ANx[15]</pin>
+        <pin isMutable="true" type="double precision floating-point">ANx[1]</pin>
+        <pin isMutable="true" type="double precision floating-point">ANx[2]</pin>
+        <pin isMutable="true" type="double precision floating-point">ANx[3]</pin>
+        <pin isMutable="true" type="double precision floating-point">ANx[4]</pin>
+        <pin isMutable="true" type="double precision floating-point">ANx[5]</pin>
+        <pin isMutable="true" type="double precision floating-point">ANx[6]</pin>
+        <pin isMutable="true" type="double precision floating-point">ANx[7]</pin>
+        <pin isMutable="true" type="double precision floating-point">ANx[8]</pin>
+        <pin isMutable="true" type="double precision floating-point">ANx[9]</pin>
     </component>
     <component name="PWM">
         <!--PWM exported interface-->
         <description>bla bla</description>
-        <network>
-            <socket host="127.0.0.1" port="1234"/>
-        </network>
         <pin isMutable="false" type="boolean">channel[0]</pin>
         <pin isMutable="false" type="boolean">channel[1]</pin>
         <pin isMutable="false" type="boolean">channel[2]</pin>
