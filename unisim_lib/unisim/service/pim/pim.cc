@@ -95,13 +95,6 @@ void PIM::ParseComponent (xmlDocPtr doc, xmlNodePtr componentNode, component_t *
 
 		} else if ((!xmlStrcmp(componentChild->name, (const xmlChar *)"description"))) {
 			component->description = (char*) xmlNodeListGetString(doc, componentChild->xmlChildrenNode, 1);
-		} else if ((!xmlStrcmp(componentChild->name, (const xmlChar *)"network"))) {
-			xmlNodePtr networkChild = componentChild->xmlChildrenNode;
-			if ((!xmlStrcmp(networkChild->name, (const xmlChar *)"socket"))) {
-				component->host = (char*) xmlGetProp(networkChild, (const xmlChar *)"host");
-				component->port = atoi((char*) xmlGetProp(networkChild, (const xmlChar *)"port"));
-			}
-
 		}
 
 		componentChild = componentChild->next;
@@ -176,9 +169,6 @@ void PIM::GetExportedVariables(vector<component_t*> &pim) {
 
 			component->name = component_name;
 			component->description = "bla bla";
-			component->host = "127.0.0.1";
-			component->port = 1234;
-			component->network = "socket";
 
 			pim.push_back(component);
 		}
@@ -356,52 +346,6 @@ void PIM::SavePimToXml(vector<component_t*> &pim, const string file)
 	        return;
 	    }
 	    if (tmp != NULL) xmlFree(tmp);
-
-	    /* Start an element named "network" as child of "component". */
-	    rc = xmlTextWriterStartElement(writer, BAD_CAST "network");
-	    if (rc < 0) {
-	        printf("SavePimToXml: Error at xmlTextWriterStartElement\n");
-	        return;
-	    }
-
-	    if (pim_model[i]->network.compare("socket") == 0) {
-		    rc = xmlTextWriterStartElement(writer, BAD_CAST pim_model[i]->network.c_str());
-		    if (rc < 0) {
-		        printf
-		            ("SavePimToXml: Error at xmlTextWriterWriteFormatElement\n");
-		        return;
-		    }
-
-		    rc = xmlTextWriterWriteAttribute(writer, BAD_CAST "host", BAD_CAST pim_model[i]->host.c_str());
-		    if (rc < 0) {
-		        printf("SavePimToXml: Error at xmlTextWriterWriteAttribute\n");
-		        return;
-		    }
-
-		    stringstream buffer;
-		    buffer << pim_model[i]->port;
-		    rc = xmlTextWriterWriteAttribute(writer, BAD_CAST "port", BAD_CAST buffer.str().c_str());
-		    if (rc < 0) {
-		        printf("SavePimToXml: Error at xmlTextWriterWriteAttribute\n");
-		        return;
-		    }
-		    buffer.str(std::string());
-
-		    /* Close the element named "socket". */
-		    rc = xmlTextWriterEndElement(writer);
-		    if (rc < 0) {
-		        printf("SavePimToXml: Error at xmlTextWriterEndElement\n");
-		        return;
-		    }
-
-	    }
-
-	    /* Close the element named "network". */
-	    rc = xmlTextWriterEndElement(writer);
-	    if (rc < 0) {
-	        printf("SavePimToXml: Error at xmlTextWriterEndElement\n");
-	        return;
-	    }
 
 		for (int j=0; j < pim_model[i]->pins.size(); j++) {
 

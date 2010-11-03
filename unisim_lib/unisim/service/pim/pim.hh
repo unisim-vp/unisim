@@ -51,23 +51,6 @@ using unisim::service::pim::network::GenericThread;
 using unisim::service::pim::network::SocketServerThread;
 using unisim::service::pim::network::SocketClientThread;
 
-
-//class BadConversion : public std::runtime_error {
-//public:
-//  BadConversion(std::string const& s)
-//    : std::runtime_error(s)
-//    { }
-//};
-//
-//inline double convertToDouble(std::string const& s)
-//{
-//  std::istringstream i(s);
-//  double x;
-//  if (!(i >> x))
-//    throw BadConversion("convertToDouble(\"" + s + "\")");
-//  return x;
-//}
-
 class pin_t { // VirtualComponent simple (getChldren() == null)
 public:
 	~pin_t() {
@@ -91,10 +74,7 @@ public:
 	}
 
 	string				name;
-	string				host;
-	uint16_t			port;
 	string				description;
-	string				network;	// e.g. socket
 	vector<pin_t*>		pins;
 };
 
