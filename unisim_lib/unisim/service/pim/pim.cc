@@ -163,12 +163,6 @@ void PIM::GetExportedVariables(vector<component_t*> &pim) {
 			pim.push_back(component);
 		}
 
-//		pin_t *onePin = new pin_t();
-//		onePin->name = short_var_name;
-//		onePin->type = ((VariableBase *) *it)->GetDataTypeName();
-//		onePin->isMutable = ((VariableBase *) *it)->IsMutable();
-//		onePin->var = (VariableBase *) *it;
-
 		component->pins.push_back((VariableBase *) *it);
 
 	}
@@ -281,9 +275,9 @@ void PIM::SavePimToXml(vector<component_t*> &pim, const string file)
         return;
     }
 
-    /* Start an element named "object". Since thist is the first
+    /* Start an element named "pim". Since thist is the first
      * element, this will be the root element of the document. */
-    rc = xmlTextWriterStartElement(writer, BAD_CAST "object");
+    rc = xmlTextWriterStartElement(writer, BAD_CAST "pim");
     if (rc < 0) {
         printf("SavePimToXml: Error at xmlTextWriterStartElement\n");
         return;
@@ -303,7 +297,7 @@ void PIM::SavePimToXml(vector<component_t*> &pim, const string file)
 
 	for (int i=0; i < pim_model.size(); i++) {
 
-	    /* Start an element named "component" as child of "object". */
+	    /* Start an element named "component" as child of "pim". */
 	    rc = xmlTextWriterStartElement(writer, BAD_CAST "component");
 	    if (rc < 0) {
 	        printf("SavePimToXml: Error at xmlTextWriterStartElement\n");
@@ -357,7 +351,7 @@ void PIM::SavePimToXml(vector<component_t*> &pim, const string file)
 		        return;
 		    }
 
-		    rc = xmlTextWriterWriteAttribute(writer, BAD_CAST "type", BAD_CAST pim_model[i]->pins[j]->GetDataTypeName());
+		    rc = xmlTextWriterWriteAttribute(writer, BAD_CAST "dataType", BAD_CAST pim_model[i]->pins[j]->GetDataTypeName());
 		    if (rc < 0) {
 		        printf("SavePimToXml: Error at xmlTextWriterWriteAttribute\n");
 		        return;
@@ -396,12 +390,12 @@ void PIM::SavePimToXml(vector<component_t*> &pim, const string file)
 	}
 
 
-    /* Here we could close the elements "component" and "object" using the
+    /* Here we could close the elements "component" and "pim" using the
      * function xmlTextWriterEndElement, but since we do not want to
      * write any other elements, we simply call xmlTextWriterEndDocument,
      * which will do all the work. */
 
-    /* Close the element named "object".
+    /* Close the element named "pim".
      * we simply call xmlTextWriterEndDocument, which close all elements and the document
      */
 

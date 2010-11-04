@@ -1,48 +1,48 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<object>
+<pim>
     <!--This is the PIM of xyz architecture-->
     <component name="ATD0">
         <!--ATD0 exported interface-->
         <description>bla bla</description>
-        <pin isMutable="true" type="double precision floating-point">ANx[0]</pin>
-        <pin isMutable="true" type="double precision floating-point">ANx[1]</pin>
-        <pin isMutable="true" type="double precision floating-point">ANx[2]</pin>
-        <pin isMutable="true" type="double precision floating-point">ANx[3]</pin>
-        <pin isMutable="true" type="double precision floating-point">ANx[4]</pin>
-        <pin isMutable="true" type="double precision floating-point">ANx[5]</pin>
-        <pin isMutable="true" type="double precision floating-point">ANx[6]</pin>
-        <pin isMutable="true" type="double precision floating-point">ANx[7]</pin>
+        <pin isMutable="true" dataType="double precision floating-point">ANx[0]</pin>
+        <pin isMutable="true" dataType="double precision floating-point">ANx[1]</pin>
+        <pin isMutable="true" dataType="double precision floating-point">ANx[2]</pin>
+        <pin isMutable="true" dataType="double precision floating-point">ANx[3]</pin>
+        <pin isMutable="true" dataType="double precision floating-point">ANx[4]</pin>
+        <pin isMutable="true" dataType="double precision floating-point">ANx[5]</pin>
+        <pin isMutable="true" dataType="double precision floating-point">ANx[6]</pin>
+        <pin isMutable="true" dataType="double precision floating-point">ANx[7]</pin>
     </component>
     <component name="ATD1">
         <!--ATD1 exported interface-->
         <description>bla bla</description>
-        <pin isMutable="true" type="double precision floating-point">ANx[0]</pin>
-        <pin isMutable="true" type="double precision floating-point">ANx[10]</pin>
-        <pin isMutable="true" type="double precision floating-point">ANx[11]</pin>
-        <pin isMutable="true" type="double precision floating-point">ANx[12]</pin>
-        <pin isMutable="true" type="double precision floating-point">ANx[13]</pin>
-        <pin isMutable="true" type="double precision floating-point">ANx[14]</pin>
-        <pin isMutable="true" type="double precision floating-point">ANx[15]</pin>
-        <pin isMutable="true" type="double precision floating-point">ANx[1]</pin>
-        <pin isMutable="true" type="double precision floating-point">ANx[2]</pin>
-        <pin isMutable="true" type="double precision floating-point">ANx[3]</pin>
-        <pin isMutable="true" type="double precision floating-point">ANx[4]</pin>
-        <pin isMutable="true" type="double precision floating-point">ANx[5]</pin>
-        <pin isMutable="true" type="double precision floating-point">ANx[6]</pin>
-        <pin isMutable="true" type="double precision floating-point">ANx[7]</pin>
-        <pin isMutable="true" type="double precision floating-point">ANx[8]</pin>
-        <pin isMutable="true" type="double precision floating-point">ANx[9]</pin>
+        <pin isMutable="true" dataType="double precision floating-point">ANx[0]</pin>
+        <pin isMutable="true" dataType="double precision floating-point">ANx[10]</pin>
+        <pin isMutable="true" dataType="double precision floating-point">ANx[11]</pin>
+        <pin isMutable="true" dataType="double precision floating-point">ANx[12]</pin>
+        <pin isMutable="true" dataType="double precision floating-point">ANx[13]</pin>
+        <pin isMutable="true" dataType="double precision floating-point">ANx[14]</pin>
+        <pin isMutable="true" dataType="double precision floating-point">ANx[15]</pin>
+        <pin isMutable="true" dataType="double precision floating-point">ANx[1]</pin>
+        <pin isMutable="true" dataType="double precision floating-point">ANx[2]</pin>
+        <pin isMutable="true" dataType="double precision floating-point">ANx[3]</pin>
+        <pin isMutable="true" dataType="double precision floating-point">ANx[4]</pin>
+        <pin isMutable="true" dataType="double precision floating-point">ANx[5]</pin>
+        <pin isMutable="true" dataType="double precision floating-point">ANx[6]</pin>
+        <pin isMutable="true" dataType="double precision floating-point">ANx[7]</pin>
+        <pin isMutable="true" dataType="double precision floating-point">ANx[8]</pin>
+        <pin isMutable="true" dataType="double precision floating-point">ANx[9]</pin>
     </component>
     <component name="PWM">
         <!--PWM exported interface-->
         <description>bla bla</description>
-        <pin isMutable="false" type="boolean">channel[0]</pin>
-        <pin isMutable="false" type="boolean">channel[1]</pin>
-        <pin isMutable="false" type="boolean">channel[2]</pin>
-        <pin isMutable="false" type="boolean">channel[3]</pin>
-        <pin isMutable="false" type="boolean">channel[4]</pin>
-        <pin isMutable="false" type="boolean">channel[5]</pin>
-        <pin isMutable="false" type="boolean">channel[6]</pin>
-        <pin isMutable="false" type="boolean">channel[7]</pin>
+        <pin isMutable="false" dataType="boolean">channel[0]</pin>
+        <pin isMutable="false" dataType="boolean">channel[1]</pin>
+        <pin isMutable="false" dataType="boolean">channel[2]</pin>
+        <pin isMutable="false" dataType="boolean">channel[3]</pin>
+        <pin isMutable="false" dataType="boolean">channel[4]</pin>
+        <pin isMutable="false" dataType="boolean">channel[5]</pin>
+        <pin isMutable="false" dataType="boolean">channel[6]</pin>
+        <pin isMutable="false" dataType="boolean">channel[7]</pin>
     </component>
-</object>
+</pim>
