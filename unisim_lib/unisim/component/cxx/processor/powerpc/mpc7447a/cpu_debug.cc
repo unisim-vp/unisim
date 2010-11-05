@@ -33,7 +33,15 @@
  */
  
 #include <unisim/component/cxx/processor/powerpc/mpc7447a/cpu.hh>
+#include <unisim/component/cxx/processor/powerpc/mpc7447a/exception.tcc>
 #include <unisim/component/cxx/processor/powerpc/mpc7447a/cpu.tcc>
+#include <unisim/component/cxx/processor/powerpc/mpc7447a/cpu_cache.tcc>
+#include <unisim/component/cxx/processor/powerpc/mpc7447a/cpu_debugging.tcc>
+#include <unisim/component/cxx/processor/powerpc/mpc7447a/cpu_exception_handling.tcc>
+#include <unisim/component/cxx/processor/powerpc/mpc7447a/cpu_fetch.tcc>
+#include <unisim/component/cxx/processor/powerpc/mpc7447a/cpu_load_store.tcc>
+#include <unisim/component/cxx/processor/powerpc/mpc7447a/cpu_mmu.tcc>
+#include <unisim/component/cxx/processor/powerpc/mpc7447a/cpu_perf_model.tcc>
 
 namespace unisim {
 namespace component {

@@ -37,8 +37,9 @@
 
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/component/cxx/processor/powerpc/floating.hh>
-#include <unisim/component/cxx/processor/powerpc/isa/powerpc.hh>
+#include <unisim/component/cxx/processor/powerpc/mpc7447a/isa.hh>
 #include <unisim/component/cxx/processor/powerpc/mpc7447a/config.hh>
+#include <unisim/component/cxx/processor/powerpc/mpc7447a/exception.hh>
 #include <unisim/component/cxx/cache/cache.hh>
 #include <unisim/component/cxx/tlb/tlb.hh>
 #include <unisim/service/interfaces/memory.hh>
@@ -48,7 +49,6 @@
 #include <unisim/service/interfaces/disassembly.hh>
 #include <unisim/util/debug/simple_register.hh>
 #include <unisim/util/endian/endian.hh>
-#include <unisim/component/cxx/processor/powerpc/exception.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/kernel/service/service.hh>
 #include <unisim/service/interfaces/memory.hh>
@@ -149,7 +149,7 @@ public:
 	typename CONFIG::ADDRESS addr;
 	typename CONFIG::ADDRESS line_base_addr;
 	typename CONFIG::ADDRESS block_base_addr;
-	//uint32_t index;
+	uint32_t index;
 	uint32_t way;
 	uint32_t sector;
 	uint32_t offset;
@@ -487,7 +487,7 @@ public:
 	Instruction();
 	~Instruction();
 
-	unisim::component::cxx::processor::powerpc::isa::Operation<CONFIG> *operation;
+	unisim::component::cxx::processor::powerpc::mpc7447a::Operation<CONFIG> *operation;
 	CPU<CONFIG> *cpu;
 	SimulationMode sim_mode;
 	Stage stage;
@@ -566,7 +566,7 @@ private:
 
 template <class CONFIG>
 class CPU :
-	public unisim::component::cxx::processor::powerpc::isa::Decoder<CONFIG>,
+	public unisim::component::cxx::processor::powerpc::mpc7447a::Decoder<CONFIG>,
 	public Client<Loader<typename CONFIG::physical_address_t> >,
 	public Client<SymbolTableLookup<typename CONFIG::address_t> >,
 	public Client<DebugControl<typename CONFIG::address_t> >,
@@ -926,7 +926,12 @@ public:
 	void Dcbi(typename CONFIG::address_t addr);
 	void Dcbst(typename CONFIG::address_t addr);
 	void Dcbz(typename CONFIG::address_t addr);
+	void Dccci(typename CONFIG::address_t addr);
+	void Dcread(typename CONFIG::address_t addr, unsigned int rd);
 	void Icbi(typename CONFIG::address_t addr);
+	void Icbt(typename CONFIG::address_t addr);
+	void Iccci(typename CONFIG::address_t addr);
+	void Icread(typename CONFIG::address_t addr);
 	
 	//=====================================================================
 	//=  Translation look-aside buffers management instructions handling  =
@@ -936,6 +941,9 @@ public:
 	void Tlbie(typename CONFIG::address_t addr);
 	void Tlbld(typename CONFIG::address_t addr);
 	void Tlbli(typename CONFIG::address_t addr);
+	void Tlbre(unsigned int rd, unsigned int ra, unsigned int ws);
+	void Tlbsx(unsigned int rd, typename CONFIG::address_t addr);
+	void Tlbwe(unsigned int rs, unsigned int ra, unsigned int ws);
 
 	//=====================================================================
 	//=               Linked Load-Store instructions handling             =
@@ -1013,6 +1021,7 @@ protected:
 	inline bool IsVerboseSetup() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_SETUP_ENABLE && (verbose_all || verbose_setup); }
 	inline bool IsVerboseStep() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_STEP_ENABLE && (verbose_all || verbose_step); }
 	inline bool IsVerboseDTLB() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_DTLB_ENABLE && (verbose_all || verbose_dtlb); }
+	inline bool IsVerboseITLB() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_ITLB_ENABLE && (verbose_all || verbose_itlb); }
 	inline bool IsVerboseDL1() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_DL1_ENABLE && (verbose_all || verbose_dl1); }
 	inline bool IsVerboseIL1() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_IL1_ENABLE && (verbose_all || verbose_il1); }
 	inline bool IsVerboseL2() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_L2_ENABLE && (verbose_all || verbose_l2); }
@@ -1225,18 +1234,26 @@ private:
 	//=                  MMU registers set/get methods                    =
 	//=====================================================================
 	
-	inline uint32_t GetDBATL(unsigned int n) { return dbatl[n]; }
-	inline void SetDBATL(unsigned int n, uint32_t value) { dbatl[n] = value; }
+	inline uint32_t GetDBATL(unsigned int n) { return dbat[n].l; }
+	inline void SetDBATL(unsigned int n, uint32_t value) { dbat[n].l = value; ReconfigureFastBATLookup(); }
 	
-	inline uint32_t GetDBATU(unsigned int n) { return dbatu[n]; }
-	inline void SetDBATU(unsigned int n, uint32_t value) { dbatu[n] = value; }
+	inline uint32_t GetDBATU(unsigned int n) { return dbat[n].u; }
+	inline void SetDBATU(unsigned int n, uint32_t value) { dbat[n].u = value; ReconfigureFastBATLookup(); }
 	
-	inline uint32_t GetIBATL(unsigned int n) { return ibatl[n]; }
-	inline void SetIBATL(unsigned int n, uint32_t value) { ibatl[n] = value; }
+	inline uint32_t GetIBATL(unsigned int n) { return ibat[n].l; }
+	inline void SetIBATL(unsigned int n, uint32_t value) { ibat[n].l = value; ReconfigureFastBATLookup(); }
 	
-	inline uint32_t GetIBATU(unsigned int n) { return ibatu[n]; }
-	inline void SetIBATU(unsigned int n, uint32_t value) { ibatu[n] = value; }
-	
+	inline uint32_t GetIBATU(unsigned int n) { return ibat[n].u; }
+	inline void SetIBATU(unsigned int n, uint32_t value) { ibat[n].u = value; ReconfigureFastBATLookup(); }
+
+	inline uint32_t GetBATU_BEPI(uint32_t value) { return (value >> 17) & 0x7fff; }
+	inline uint32_t GetBATU_BL(uint32_t value) { return (value >> 2) & 0x7ff; }
+	inline uint32_t GetBATU_VS(uint32_t value) { return (value >> 1) & 1; }
+	inline uint32_t GetBATU_VP(uint32_t value) { return value & 1; }
+	inline uint32_t GetBATL_BRPN(uint32_t value) { return (value >> 17) & 0x7fff; }
+	inline uint32_t GetBATL_WIMG(uint32_t value) { return (value >> 3) & 0xf; }
+	inline uint32_t GetBATL_PP(uint32_t value) { return value & 3; }
+
 	// Methods for reading DBAT register bits
 	inline uint32_t GetDBATU_BEPI(unsigned int n) { return (GetDBATU(n) >> 17) & 0x7fff; }
 	inline uint32_t GetDBATU_BL(unsigned int n) { return (GetDBATU(n) >> 2) & 0x7ff; }
@@ -1271,6 +1288,7 @@ private:
 	bool verbose_setup;
 	bool verbose_step;
 	bool verbose_dtlb;
+	bool verbose_itlb;
 	bool verbose_dl1;
 	bool verbose_il1;
 	bool verbose_l2;
@@ -1302,6 +1320,7 @@ private:
 	//=====================================================================
 
 	template <bool DEBUG> void LookupBAT(MMUAccess<CONFIG>& mmu_access);
+	void ReconfigureFastBATLookup();
 	void LookupITLB(MMUAccess<CONFIG>& mmu_access);
 	void LookupDTLB(MMUAccess<CONFIG>& mmu_access);
 	void UpdateITLBReplacementPolicy(MMUAccess<CONFIG>& mmu_access);
@@ -1415,12 +1434,30 @@ private:
 	//=====================================================================
 	//=                            MMU registers                          =
 	//=====================================================================
-	uint32_t dbatu[CONFIG::NUM_BATS];	/*< data block address translation registers (upper 32 bits) */
-	uint32_t dbatl[CONFIG::NUM_BATS];	/*< data block address translation registers (lower 32 bits) */
-	uint32_t ibatu[CONFIG::NUM_BATS];	/*< instruction block address translation registers (upper 32 bits) */
-	uint32_t ibatl[CONFIG::NUM_BATS];	/*< instruction block address translation registers (lower 32 bits) */
+	
+	typedef struct BAT
+	{
+		BAT *prev;
+		BAT *next;
+		uint32_t u;
+		uint32_t l;
+	} BAT;
+	
+	BAT dbat[CONFIG::NUM_BATS];  /*< data block address translation registers */
+	BAT *mru_dbat;
+	BAT ibat[CONFIG::NUM_BATS];  /*< instruction block address translation registers */
+	BAT *mru_ibat;
 	uint32_t sr[CONFIG::NUM_SRS];	/*< segment registers */
 	uint32_t sdr1;		/*< SDR1 register */
+
+	uint32_t last_ibat_miss_bepi;
+	typename CONFIG::PrivilegeLevel last_ibat_miss_privilege_level;
+	uint32_t last_dbat_miss_bepi;
+	typename CONFIG::PrivilegeLevel last_dbat_miss_privilege_level;
+	uint64_t num_ibat_accesses;
+	uint64_t num_ibat_misses;
+	uint64_t num_dbat_accesses;
+	uint64_t num_dbat_misses;
 
 	//=====================================================================
 	//=                     L1 Instruction Cache                          =
@@ -1452,9 +1489,13 @@ private:
 
 	/* Data Translation look-aside buffer */
 	TLB<class CONFIG::DTLB_CONFIG> dtlb;
+	uint64_t num_dtlb_accesses;
+	uint64_t num_dtlb_misses;
 
 	/* Instruction Translation look-aside buffer */
 	TLB<class CONFIG::ITLB_CONFIG> itlb;
+	uint64_t num_itlb_accesses;
+	uint64_t num_itlb_misses;
 
 	//=====================================================================
 	//=               Instruction prefetch buffer                         =
@@ -1559,6 +1600,7 @@ private:
 	Parameter<bool> param_verbose_setup;
 	Parameter<bool> param_verbose_step;
 	Parameter<bool> param_verbose_dtlb;
+	Parameter<bool> param_verbose_itlb;
 	Parameter<bool> param_verbose_dl1;
 	Parameter<bool> param_verbose_il1;
 	Parameter<bool> param_verbose_l2;
@@ -1581,6 +1623,27 @@ private:
 	Statistic<uint64_t> stat_instruction_counter;
 	Statistic<uint64_t> stat_cpu_cycle;                   //!< Number of cpu cycles
 	Statistic<uint64_t> stat_bus_cycle;                   //!< Number of front side bus cycles
+	Statistic<uint64_t> stat_num_il1_accesses;
+	Statistic<uint64_t> stat_num_il1_misses;
+	Formula<double> formula_il1_miss_rate;
+	Statistic<uint64_t> stat_num_dl1_accesses;
+	Statistic<uint64_t> stat_num_dl1_misses;
+	Formula<double> formula_dl1_miss_rate;
+	Statistic<uint64_t> stat_num_l2_accesses;
+	Statistic<uint64_t> stat_num_l2_misses;
+	Formula<double> formula_l2_miss_rate;
+	Statistic<uint64_t> stat_num_ibat_accesses;
+	Statistic<uint64_t> stat_num_ibat_misses;
+	Formula<double> formula_ibat_miss_rate;
+	Statistic<uint64_t> stat_num_dbat_accesses;
+	Statistic<uint64_t> stat_num_dbat_misses;
+	Formula<double> formula_dbat_miss_rate;
+	Statistic<uint64_t> stat_num_itlb_accesses;
+	Statistic<uint64_t> stat_num_itlb_misses;
+	Formula<double> formula_itlb_miss_rate;
+	Statistic<uint64_t> stat_num_dtlb_accesses;
+	Statistic<uint64_t> stat_num_dtlb_misses;
+	Formula<double> formula_dtlb_miss_rate;
 #if 0
 	Formula<double> formula_insn_per_bus_cycle;
 #endif

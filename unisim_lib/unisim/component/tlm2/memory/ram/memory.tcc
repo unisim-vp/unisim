@@ -142,7 +142,7 @@ void Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::UpdateTime(unsig
 		do
 		{
 			t = (((time + t) >= ready_time) ? t : ready_time - time) + latency;
-			if(data_bus_word_length > BURST_LENGTH)
+			if(data_bus_word_length <= BURST_LENGTH)
 			{
 				ready_time = time + t + GetBurstLatency(data_bus_word_length);
 				data_bus_word_length = 0;

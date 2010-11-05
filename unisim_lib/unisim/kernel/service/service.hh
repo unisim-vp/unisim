@@ -431,7 +431,7 @@ template <class TYPE>
 class Statistic : public Variable<TYPE>
 {
 public:
-	Statistic(const char *name, Object *owner, TYPE& storage, const char *description = NULL) : Variable<TYPE>(name, owner, storage, VariableBase::VAR_STATISTIC, description) {}
+	Statistic(const char *name, Object *owner, TYPE& storage, const char *description = NULL) : Variable<TYPE>(name, owner, storage, VariableBase::VAR_STATISTIC, description) { VariableBase::SetFormat(unisim::kernel::service::VariableBase::FMT_DEC); }
 };
 
 template <class TYPE>
@@ -850,6 +850,9 @@ ServiceImport<SERVICE_IF>::ServiceImport(const char *_name, Client<SERVICE_IF> *
 	actual_imports(),
 	client(_client)
 {
+#ifdef DEBUG_SERVICE
+	cerr << GetName() << ".ServiceImport(" << _name << ", client " << _client->GetName() << ")" << endl;
+#endif
 }
 
 template <class SERVICE_IF>
@@ -861,6 +864,9 @@ ServiceImport<SERVICE_IF>::ServiceImport(const char *_name, Object *_owner) :
 	actual_imports(),
 	client(0)
 {
+#ifdef DEBUG_SERVICE
+	cerr << GetName() << ".ServiceImport(" << _name << ", object " << (_owner ? _owner->GetName() : "?") << ")" << endl;
+#endif
 }
 
 template <class SERVICE_IF>
@@ -896,7 +902,9 @@ void ServiceImport<SERVICE_IF>::Bind(ServiceExport<SERVICE_IF>& srv_export)
 		return;
 	}
 
-	//cerr << GetName() << " -> " << srv_export.GetName() << endl;
+#ifdef DEBUG_SERVICE
+	cerr << GetName() << " -> " << srv_export.GetName() << endl;
+#endif
 	this->srv_export = &srv_export;
 }
 
@@ -915,7 +923,9 @@ void ServiceImport<SERVICE_IF>::Bind(ServiceImport<SERVICE_IF>& alias_import)
 		return;
 	}
 
-	//cerr << GetName() << " -> " << alias_import.GetName() << endl;
+#ifdef DEBUG_SERVICE
+	cerr << GetName() << " -> " << alias_import.GetName() << endl;
+#endif
 	this->alias_import = &alias_import;
 	alias_import.actual_imports.push_back(this);
 }
@@ -946,6 +956,9 @@ Service<SERVICE_IF> *ServiceImport<SERVICE_IF>::ResolveService(Client<SERVICE_IF
 	else
 		if(srv_export) return srv_export->ResolveService(_client);
 
+#ifdef DEBUG_SERVICE
+	cerr << GetName() << ".ResolveService(" << _client->GetName() << ") failed" << endl;
+#endif
 	return 0;
 }
 

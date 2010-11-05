@@ -989,7 +989,7 @@ void Simulator::Run()
 	double time_start = host_time->GetTime();
 
 	EnableDebug();
-	void (*prev_sig_int_handler)(int);
+	void (*prev_sig_int_handler)(int) = 0;
 
 	if(!inline_debugger)
 	{

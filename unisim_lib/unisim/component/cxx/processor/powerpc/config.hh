@@ -222,68 +222,9 @@ public:
 	static const uint32_t FPRF_FOR_POSITIVE_NORMAL = 0x4UL;
 	static const uint32_t FPRF_FOR_POSITIVE_INFINITY = 0x5UL;
 };
-	
-class MSRLayout
-{
-public:
-	// MSR fields offsets
-	static const unsigned int MSR_VEC_OFFSET = 25;
-	static const unsigned int MSR_POW_OFFSET = 18;
-	static const unsigned int MSR_ILE_OFFSET = 16;
-	static const unsigned int MSR_EE_OFFSET = 15;
-	static const unsigned int MSR_PR_OFFSET = 14;
-	static const unsigned int MSR_FP_OFFSET = 13;
-	static const unsigned int MSR_ME_OFFSET = 12;
-	static const unsigned int MSR_FE0_OFFSET = 11;
-	static const unsigned int MSR_SE_OFFSET = 10;
-	static const unsigned int MSR_BE_OFFSET = 9;
-	static const unsigned int MSR_FE1_OFFSET = 8;
-	static const unsigned int MSR_IP_OFFSET = 6;
-	static const unsigned int MSR_IR_OFFSET = 5;
-	static const unsigned int MSR_DR_OFFSET = 4;
-	static const unsigned int MSR_PM_OFFSET = 2;
-	static const unsigned int MSR_RI_OFFSET = 1;
-	static const unsigned int MSR_LE_OFFSET = 0;
 
-	// MSR fields sizes
-	static const unsigned int MSR_VEC_BITSIZE = 1;
-	static const unsigned int MSR_POW_BITSIZE = 1;
-	static const unsigned int MSR_ILE_BITSIZE = 1;
-	static const unsigned int MSR_EE_BITSIZE = 1;
-	static const unsigned int MSR_PR_BITSIZE = 1;
-	static const unsigned int MSR_FP_BITSIZE = 1;
-	static const unsigned int MSR_ME_BITSIZE = 1;
-	static const unsigned int MSR_FE0_BITSIZE = 1;
-	static const unsigned int MSR_SE_BITSIZE = 1;
-	static const unsigned int MSR_BE_BITSIZE = 1;
-	static const unsigned int MSR_FE1_BITSIZE = 1;
-	static const unsigned int MSR_IP_BITSIZE = 1;
-	static const unsigned int MSR_IR_BITSIZE = 1;
-	static const unsigned int MSR_DR_BITSIZE = 1;
-	static const unsigned int MSR_PM_BITSIZE = 1;
-	static const unsigned int MSR_RI_BITSIZE = 1;
-	static const unsigned int MSR_LE_BITSIZE = 1;
 
-	static const uint32_t MSR_VEC_MASK = ((1UL << MSR_VEC_BITSIZE) - 1) << MSR_VEC_OFFSET;
-	static const uint32_t MSR_POW_MASK = ((1UL << MSR_POW_BITSIZE) - 1) << MSR_POW_OFFSET;
-	static const uint32_t MSR_ILE_MASK = ((1UL << MSR_ILE_BITSIZE) - 1) << MSR_ILE_OFFSET;
-	static const uint32_t MSR_EE_MASK = ((1UL << MSR_EE_BITSIZE) - 1) << MSR_EE_OFFSET;
-	static const uint32_t MSR_PR_MASK = ((1UL << MSR_PR_BITSIZE) - 1) << MSR_PR_OFFSET;
-	static const uint32_t MSR_FP_MASK = ((1UL << MSR_FP_BITSIZE) - 1) << MSR_FP_OFFSET;
-	static const uint32_t MSR_ME_MASK = ((1UL << MSR_ME_BITSIZE) - 1) << MSR_ME_OFFSET;
-	static const uint32_t MSR_FE0_MASK = ((1UL << MSR_FE0_BITSIZE) - 1) << MSR_FE0_OFFSET;
-	static const uint32_t MSR_SE_MASK = ((1UL << MSR_SE_BITSIZE) - 1) << MSR_SE_OFFSET;
-	static const uint32_t MSR_BE_MASK = ((1UL << MSR_BE_BITSIZE) - 1) << MSR_BE_OFFSET;
-	static const uint32_t MSR_FE1_MASK = ((1UL << MSR_FE1_BITSIZE) - 1) << MSR_FE1_OFFSET;
-	static const uint32_t MSR_IP_MASK = ((1UL << MSR_IP_BITSIZE) - 1) << MSR_IP_OFFSET;
-	static const uint32_t MSR_IR_MASK = ((1UL << MSR_IR_BITSIZE) - 1) << MSR_IR_OFFSET;
-	static const uint32_t MSR_DR_MASK = ((1UL << MSR_DR_BITSIZE) - 1) << MSR_DR_OFFSET;
-	static const uint32_t MSR_PM_MASK = ((1UL << MSR_PM_BITSIZE) - 1) << MSR_PM_OFFSET;
-	static const uint32_t MSR_RI_MASK = ((1UL << MSR_RI_BITSIZE) - 1) << MSR_RI_OFFSET;
-	static const uint32_t MSR_LE_MASK = ((1UL << MSR_RI_BITSIZE) - 1) << MSR_LE_OFFSET;
-};
-
-class Config : public CRLayout, public XERLayout, public FPSCRLayout, public MSRLayout
+class Config : public CRLayout, public XERLayout, public FPSCRLayout
 {
 public:
 	typedef enum { MAT_READ = 0, MAT_WRITE = 1 } MemoryAccessType;
@@ -321,7 +262,7 @@ public:
 		PPC440,
 		NUM_MODELS
 	} Model;
-
+	
 	typedef enum operand_type_t
 	{
 		GPR_T,    // General Purpose Register

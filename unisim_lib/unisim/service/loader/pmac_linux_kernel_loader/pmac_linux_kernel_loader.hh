@@ -77,7 +77,7 @@ public:
 	virtual ~PMACLinuxKernelLoader();
 private:
 	PMACBootX pmac_bootx;
-	Elf32Loader elf32_loader;
+	Elf32Loader<uint32_t> elf32_loader;
 };
 
 } // end of namespace pmac_linux_kernel_loader

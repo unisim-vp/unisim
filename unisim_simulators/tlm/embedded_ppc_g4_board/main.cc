@@ -242,7 +242,7 @@ private:
 	//===                         Service instantiations                    ===
 	//=========================================================================
 	//  - one elf32 loader for each of the binaries
-	vector<unisim::service::loader::elf_loader::Elf32Loader *> *elf32_loaders;
+	vector<unisim::service::loader::elf_loader::Elf32Loader<CPU_ADDRESS_TYPE> *> *elf32_loaders;
 	//  - SystemC Time
 	unisim::service::time::sc_time::ScTime *sim_time;
 	//  - Host Time
@@ -386,12 +386,12 @@ Simulator::Simulator(int argc, char **argv)
 	//===                         Service instantiations                    ===
 	//=========================================================================
 	//  - one elf32 loader for each of the binaries
-	elf32_loaders = new vector<unisim::service::loader::elf_loader::Elf32Loader *>();
+	elf32_loaders = new vector<unisim::service::loader::elf_loader::Elf32Loader<CPU_ADDRESS_TYPE> *>();
 	for(unsigned int i = 0; i < num_programs; i++)
 	{
     	stringstream str;
     	str << "elf32-loader[" << i << "]";
-	    elf32_loaders->push_back(new unisim::service::loader::elf_loader::Elf32Loader(str.str().c_str()));
+	    elf32_loaders->push_back(new unisim::service::loader::elf_loader::Elf32Loader<CPU_ADDRESS_TYPE>(str.str().c_str()));
     }
 	//  - SystemC Time
 	sim_time = new unisim::service::time::sc_time::ScTime("time");
@@ -667,7 +667,7 @@ Simulator::~Simulator()
 	if(inline_debugger) delete inline_debugger;
 	while(!elf32_loaders->empty())
 	{
-		unisim::service::loader::elf_loader::Elf32Loader *elf32_loader = elf32_loaders->back();
+		unisim::service::loader::elf_loader::Elf32Loader<CPU_ADDRESS_TYPE> *elf32_loader = elf32_loaders->back();
 		if(elf32_loader)
 		{
 			delete elf32_loader;

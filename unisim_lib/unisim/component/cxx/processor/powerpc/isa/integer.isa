@@ -45,6 +45,9 @@ namespace powerpc {
 using unisim::util::arithmetic::Add32;
 using unisim::util::arithmetic::RotateLeft;
 using unisim::util::arithmetic::CountLeadingZeros;
+using unisim::util::arithmetic::SignExtend;
+using unisim::util::arithmetic::SignedSatAdd32;
+using unisim::util::arithmetic::UnsignedSatAdd32;
 
 inline uint32_t Mask(uint32_t mb, uint32_t me)
 {
@@ -1914,3 +1917,4 @@ srw.execute = {
 srw.disasm = {
 	os << "srw" << (rc ? "." : "") << " r" << (unsigned int) ra << ", r" << (unsigned int) rs << ", r" << (unsigned int) rb;
 }
+

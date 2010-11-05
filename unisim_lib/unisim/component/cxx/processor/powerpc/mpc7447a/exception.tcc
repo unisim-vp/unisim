@@ -35,8 +35,8 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_MPC7447A_EXCEPTION_TCC__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_MPC7447A_EXCEPTION_TCC__
 
-#include <sstream>
 #include <unisim/component/cxx/processor/powerpc/exception.tcc>
+#include <sstream>
 
 namespace unisim {
 namespace component {
@@ -45,671 +45,382 @@ namespace processor {
 namespace powerpc {
 namespace mpc7447a {
 
-/* System reset exception */
 template <class CONFIG>
-void CPU<CONFIG>::HandleException(const SystemResetException<CONFIG>& exc)
+SystemResetException<CONFIG>::SystemResetException()
 {
-	if(linux_os_import)
-	{
-		logger << DebugInfo << "System reset" << EndDebugInfo;
-		Stop(0);
-		return;
-	}
-	SetSRR0(GetNIA()); // save NIA
-	
-	// clear SRR1[0-5], SRR1[6]=MSR[6], clear SSR1[7-15], SRR1[16-31]=MSR[16-31]
-	SetSRR1(GetMSR() & 0x0200ffffUL);
-	
-	// MSR[LE]=MSR[ILE], MSR[POW]=0, MSR[EE]=0, MSR[PR]=0, MSR[FP]=0, MSR[FE0]=0,
-	// MSR[SE]=0, MSR[BE]=0, MSR[FE1]=0, MSR[IR]=0, MSR[DR]=0, MSR[RI]=0
-	SetMSR((GetMSR() & 0x00011040UL) | ((GetMSR() >> 16) & 1));
-	
-	if(HasHardReset())
-	{
-		ResetHID0_NHR(); // reset HID0[NHR]
-		ResetIRQ(CONFIG::IRQ_HARD_RESET);
-	}
-	else if(HasSoftReset())
-	{
-		SetHID0_NHR(); // set HID0[NHR]
-		ResetIRQ(CONFIG::IRQ_SOFT_RESET);
-	}
-	
-	SetNIA(CONFIG::EXC_SYSTEM_RESET_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
-	
-	if(unlikely(IsVerboseException()))
-		logger << DebugInfo << exc.what() << endl << EndDebugInfo;
-}
-
-/* Machine check exception */
-template <class CONFIG>
-void CPU<CONFIG>::HandleException(const MachineCheckException<CONFIG>& exc)
-{
-	if(linux_os_import)
-	{
-		if(HasMCP())
-		{
-			logger << DebugError << "Machine check" << EndDebugError;
-		}
-	
-		if(HasTEA())
-		{
-			logger << DebugError << "Bus error" << EndDebugError;
-		}
-		Stop(-1);
-		return;
-	}
-	SetSRR0(GetNIA()); // save NIA
-		
-	// clear SRR1[0-15], SRR1[16-31]=MSR[16-31]
-	SetSRR1(GetMSR() & 0x0000ffffUL);
-	
-	if(HasMCP())
-	{
-		// set SRR1[12]
-		SetSRR1(GetSRR1() | 0x00080000UL);
-		ResetIRQ(CONFIG::IRQ_MCP);
-	}
-	
-	if(HasTEA())
-	{
-		// set SRR1[13]
-		SetSRR1(GetSRR1() | 0x00040000UL);
-		ResetIRQ(CONFIG::IRQ_TEA);
-	}
-	
-	// MSR[LE]=MSR[ILE], MSR[POW]=0, MSR[EE]=0, MSR[PR]=0, MSR[FP]=0, MSR[FE0]=0,
-	// MSR[SE]=0, MSR[BE]=0, MSR[FE1]=0, MSR[IR]=0, MSR[DR]=0, MSR[RI]=0
-	SetMSR((GetMSR() & 0x00011040UL) | ((GetMSR() >> 16) & 1));
-
-	SetNIA(CONFIG::EXC_MACHINE_CHECK_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
-	
-	if(unlikely(IsVerboseException()))
-		logger << DebugInfo << exc.what() << endl << EndDebugInfo;
-}
-
-/* Decrementer exception */
-template <class CONFIG>
-void CPU<CONFIG>::HandleException(const DecrementerException<CONFIG>& exc)
-{
-	if(linux_os_import) return; // silently ignore the IRQ when Linux ABI translation is enabled
-	SetSRR0(GetNIA()); // save NIA
-	
-	// keep SRR1[0], clear SRR1[1-4], keep SRR1[5-9], clear SRR1[10-11], set SRR1[12], clear SRR1[13-15],
-	// SRR1[16-23]=MSR[16-23], keep SRR1[24], SRR1[25-27]=MSR[25-27], keep SRR1[28-29], SRR1[30-31]=MSR[30-31]
-	SetSRR1((GetSRR1() & 0x87c0008cUL) | (GetMSR() & 0x0000ff73UL)); 
-	
-	// MSR[LE]=MSR[ILE], MSR[POW]=0, MSR[EE]=0, MSR[PR]=0, MSR[FP]=0, MSR[FE0]=0,
-	// MSR[SE]=0, MSR[BE]=0, MSR[FE1]=0, MSR[IR]=0, MSR[DR]=0, MSR[RI]=0
-	SetMSR((GetMSR() & 0x00011040UL) | ((GetMSR() >> 16) & 1));
-	
-	SetNIA(CONFIG::EXC_DECREMENTER_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
-	
-	if(unlikely(IsVerboseException()))
-		logger << DebugInfo << "bus cycle " << bus_cycle << ": " << exc.what() << endl << EndDebugInfo;
-	
-	ResetIRQ(CONFIG::IRQ_DECREMENTER_OVERFLOW);
-}
-
-/* External interrupt exception */
-template <class CONFIG>
-void CPU<CONFIG>::HandleException(const ExternalInterruptException<CONFIG>& exc)
-{
-	if(linux_os_import) return; // silently ignore the IRQ when Linux ABI translation is enabled
-	SetSRR0(GetNIA()); // save NIA
-	
-	// keep SRR1[0], clear SRR1[1-4], keep SRR1[5-9], clear SRR1[10-11], set SRR1[12], clear SRR1[13-15],
-	// SRR1[16-23]=MSR[16-23], keep SRR1[24], SRR1[25-27]=MSR[25-27], keep SRR1[28-29], SRR1[30-31]=MSR[30-31]
-	SetSRR1((GetSRR1() & 0x87c0008cUL) | (GetMSR() & 0x0000ff73UL)); 
-	
-	// MSR[LE]=MSR[ILE], MSR[POW]=0, MSR[EE]=0, MSR[PR]=0, MSR[FP]=0, MSR[FE0]=0,
-	// MSR[SE]=0, MSR[BE]=0, MSR[FE1]=0, MSR[IR]=0, MSR[DR]=0, MSR[RI]=0
-	SetMSR((GetMSR() & 0x00011040UL) | ((GetMSR() >> 16) & 1));
-	
-	SetNIA(CONFIG::EXC_EXTERNAL_INTERRUPT_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
-	
-	if(unlikely(IsVerboseException()))
-		logger << DebugInfo << exc.what() << endl << EndDebugInfo;
-
-	ResetIRQ(CONFIG::IRQ_EXTERNAL_INTERRUPT);
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::HandleException(const PerformanceMonitorInterruptException<CONFIG>& exc)
+const char * SystemResetException<CONFIG>::what () const throw ()
 {
-	if(linux_os_import) return; // silently ignore the IRQ when Linux ABI translation is enabled
-	SetSRR0(GetNIA()); // save NIA
-	
-	// keep SRR1[0], clear SRR1[1-4], keep SRR1[5-9], clear SRR1[10-11], set SRR1[12], clear SRR1[13-15],
-	// SRR1[16-23]=MSR[16-23], keep SRR1[24], SRR1[25-27]=MSR[25-27], keep SRR1[28-29], SRR1[30-31]=MSR[30-31]
-	SetSRR1((GetSRR1() & 0x87c0008cUL) | (GetMSR() & 0x0000ff73UL)); 
-	
-	// MSR[LE]=MSR[ILE], MSR[POW]=0, MSR[EE]=0, MSR[PR]=0, MSR[FP]=0, MSR[FE0]=0,
-	// MSR[SE]=0, MSR[BE]=0, MSR[FE1]=0, MSR[IR]=0, MSR[DR]=0, MSR[RI]=0
-	SetMSR((GetMSR() & 0x00011040UL) | ((GetMSR() >> 16) & 1));
-	
-	SetNIA(CONFIG::EXC_PERFORMANCE_MONITOR_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
-	
-	ResetIRQ(CONFIG::IRQ_PERFORMANCE_MONITOR_INTERRUPT);
-	
-	if(unlikely(IsVerboseException()))
-		logger << DebugInfo << exc.what() << endl << EndDebugInfo;
+	return "system reset exception";
 }
 
-/* System management interrupt exception */
 template <class CONFIG>
-void CPU<CONFIG>::HandleException(const SystemManagementInterruptException<CONFIG>& exc)
+MachineCheckException<CONFIG>::MachineCheckException()
 {
-	if(linux_os_import) return; // silently ignore the IRQ when Linux ABI translation is enabled
-	SetSRR0(GetNIA()); // save NIA
-	
-	// keep SRR1[0], clear SRR1[1-4], keep SRR1[5-9], clear SRR1[10-11], set SRR1[12], clear SRR1[13-15],
-	// SRR1[16-23]=MSR[16-23], keep SRR1[24], SRR1[25-27]=MSR[25-27], keep SRR1[28-29], SRR1[30-31]=MSR[30-31]
-	SetSRR1((GetSRR1() & 0x87c0008cUL) | (GetMSR() & 0x0000ff73UL)); 
-	
-	// MSR[LE]=MSR[ILE], MSR[POW]=0, MSR[EE]=0, MSR[PR]=0, MSR[FP]=0, MSR[FE0]=0,
-	// MSR[SE]=0, MSR[BE]=0, MSR[FE1]=0, MSR[IR]=0, MSR[DR]=0, MSR[RI]=0
-	SetMSR((GetMSR() & 0x00011040UL) | ((GetMSR() >> 16) & 1));
-	
-	SetNIA(CONFIG::EXC_SYSTEM_MANAGEMENT_INTERRUPT_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
-	
-	ResetIRQ(CONFIG::IRQ_SMI);
-
-	if(unlikely(IsVerboseException()))
-		logger << DebugInfo << exc.what() << endl << EndDebugInfo;
 }
 
-/* ISI exception */
-// SRR1 indicates to the operating system the cause of the ISI exception:
-//
-//   0   1   2   3   4   
-// +---+---+---+---+---+--
-// | ? |   | 0 |   |   | ...
-// +-+-+-+-+---+-+-+-+-+--
-//       |       |   |
-//       |       |   +-----> protection violation
-//       |       |
-//       |       +---------> either direct store exception (SR[T]=1)
-//       |                       or no execute segment (SR[NOEXECUTE]=1)
-//       |                       or guarded memory (PTE[G]=1 or DBAT[G]=1)
-//       |
-//       +-----------------> page fault
 template <class CONFIG>
-void CPU<CONFIG>::HandleException(const ISIException<CONFIG>& exc)
+const char * MachineCheckException<CONFIG>::what () const throw ()
 {
-	if(linux_os_import)
+	return "machine check exception";
+}
+
+template <class CONFIG>
+DecrementerException<CONFIG>::DecrementerException()
+{
+}
+
+template <class CONFIG>
+const char * DecrementerException<CONFIG>::what () const throw ()
+{
+	return "decrementer exception";
+}
+
+template <class CONFIG>
+ExternalInterruptException<CONFIG>::ExternalInterruptException()
+{
+}
+
+template <class CONFIG>
+const char * ExternalInterruptException<CONFIG>::what () const throw ()
+{
+	return "external interrupt exception";
+}
+
+template <class CONFIG>
+ISIException<CONFIG>::ISIException(Type _type, address_t _addr)
+	: type(_type)
+	, addr(_addr)
+{
+	std::stringstream sstr;
+	sstr.setf(std::ios::right | std::ios::hex | std::ios::showbase);
+	sstr << "ISI ";
+	switch(type)
 	{
-		logger << DebugError << exc.what() << EndDebugError;
-		Stop(-1);
-		return;
-	}
-	
-	SetSRR0(GetCIA()); // save CIA
-	
-	switch(exc.GetType())
-	{
-		case ISIException<CONFIG>::ISI_PROTECTION_VIOLATION:
-			// keep SRR1[0], clear SRR1[1-3], set SRR1[4], keep SRR1[5-9], clear SRR1[10-11], set SRR1[12], clear SRR1[13-15],
-			// SRR1[16-23]=MSR[16-23], keep SRR1[24], SRR1[25-27]=MSR[25-27], keep SRR1[28-29], SRR1[30-31]=MSR[30-31]
-			SetSRR1((GetSRR1() & 0x87c0008cUL) | (GetMSR() & 0x0000ff73UL) | 0x80000000UL); 
+		case ISI_PROTECTION_VIOLATION:
+			sstr << "protection violation";
 			break;
-		case ISIException<CONFIG>::ISI_NO_EXECUTE:
-		case ISIException<CONFIG>::ISI_DIRECT_STORE:
-		case ISIException<CONFIG>::ISI_GUARDED_MEMORY:
-			// keep SRR1[0], clear SRR1[1-2], set SRR1[3], clear SRR1[4], keep SRR1[5-9], clear SRR1[10-11], set SRR1[12], clear SRR1[13-15],
-			// SRR1[16-23]=MSR[16-23], keep SRR1[24], SRR1[25-27]=MSR[25-27], keep SRR1[28-29], SRR1[30-31]=MSR[30-31]
-			SetSRR1((GetSRR1() & 0x87c0008cUL) | (GetMSR() & 0x0000ff73UL) | 0x10000000UL); 
+		case ISI_NO_EXECUTE:
+			sstr << "no execute";
 			break;
-		case ISIException<CONFIG>::ISI_PAGE_FAULT:
-			// keep SRR1[0], set SRR1[1], clear SRR1[2-4], keep SRR1[5-9], clear SRR1[10-11], set SRR1[12], clear SRR1[13-15],
-			// SRR1[16-23]=MSR[16-23], keep SRR1[24], SRR1[25-27]=MSR[25-27], keep SRR1[28-29], SRR1[30-31]=MSR[30-31]
-			SetSRR1((GetSRR1() & 0x87c0008cUL) | (GetMSR() & 0x0000ff73UL) | 0x40000000UL); 
+		case ISI_DIRECT_STORE:
+			sstr << "direct store";
+			break;
+		case ISI_PAGE_FAULT:
+			sstr << "page fault";
+			break;
+		case ISI_GUARDED_MEMORY:
+			sstr << "guarded memory";
 			break;
 	}
-	
-	// MSR[LE]=MSR[ILE], MSR[POW]=0, MSR[EE]=0, MSR[PR]=0, MSR[FP]=0, MSR[FE0]=0,
-	// MSR[SE]=0, MSR[BE]=0, MSR[FE1]=0, MSR[IR]=0, MSR[DR]=0, MSR[RI]=0
-	SetMSR((GetMSR() & 0x00011040UL) | ((GetMSR() >> 16) & 1));
-		
-	SetNIA(CONFIG::EXC_ISI_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
-
-	if(unlikely(IsVerboseException()))
-	{
-		logger << DebugInfo;
-		logger << "At 0x" << std::hex << GetCIA() << std::dec;
-		const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
-		if(symbol) logger << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
-		logger << ":" << exc.what() << endl;
-		logger << EndDebugInfo;
-	}
-}
-
-/* DSI exception */
-// DAR indicates the faulting address to the operating system
-// DSISR indicates to the operating system the cause of the DSI exception:
-//
-//   0   1   2   3   4   5   6   7   8   9   10  11  12 .... 31
-// +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
-// |   |   | 0 | 0 |   |   |   | 0 | 0 |   | 0 |   | 0  .... 0 |
-// +-+-+-+-+---+---+-+-+-+-+-+-+---+---+-+-+---+-+-+---+---+---+
-//   |   |           |   |   |           |       |
-//   |   |           |   |   |           |       +----> eciwx/ecowx and EAR[E]=0
-//   |   |           |   |   |           |
-//   |   |           |   |   |           +------------> DABR match
-//   |   |           |   |   |
-//   |   |           |   |   +------------------------> 1 for a store, 0 for a load
-//   |   |           |   |
-//   |   |           |   +----------------------------> write through or cache inhibited (lwarx, stwcx.)
-//   |   |           |
-//   |   |           +--------------------------------> protection violation
-//   |   |
-//   |   +--------------------------------------------> page fault
-//   |
-//   +------------------------------------------------> direct store exception (load/store)
-template <class CONFIG>
-void CPU<CONFIG>::HandleException(const DSIException<CONFIG>& exc)
-{
-	if(linux_os_import)
-	{
-		logger << DebugError << exc.what() << EndDebugError;
-		Stop(-1);
-		return;
-	}
-	SetDAR(exc.GetAddress()); // DAR=effective address
-	
-	SetSRR0(GetCIA()); // save CIA
-		
-	// keep SRR1[0], clear SRR1[1-4], keep SRR1[5-9], clear SRR1[10-11], set SRR1[12], clear SRR1[13-15],
-	// SRR1[16-23]=MSR[16-23], keep SRR1[24], SRR1[25-27]=MSR[25-27], keep SRR1[28-29], SRR1[30-31]=MSR[30-31]
-	SetSRR1((GetSRR1() & 0x87c0008cUL) | (GetMSR() & 0x0000ff73UL)); 
-	
-	// MSR[LE]=MSR[ILE], MSR[POW]=0, MSR[EE]=0, MSR[PR]=0, MSR[FP]=0, MSR[FE0]=0,
-	// MSR[SE]=0, MSR[BE]=0, MSR[FE1]=0, MSR[IR]=0, MSR[DR]=0, MSR[RI]=0
-	SetMSR((GetMSR() & 0x00011040UL) | ((GetMSR() >> 16) & 1));
-	
-	switch(exc.GetType())
-	{
-		case DSIException<CONFIG>::DSI_DIRECT_STORE:
-			if(exc.GetAccessType() == CONFIG::MAT_WRITE)
-				SetDSISR(0x82000000UL); // set DSISR[0], DSISR[6], clear other bits
-			else
-				SetDSISR(0x80000000UL); // set DSISR[0], clear other bits
-			break;
-		case DSIException<CONFIG>::DSI_PROTECTION_VIOLATION:
-			if(exc.GetAccessType() == CONFIG::MAT_WRITE)
-				SetDSISR(0x0a000000UL); // set DSISR[4], set DSISR[6], clear other bits
-			else
-				SetDSISR(0x08000000UL); // set DSISR[4], clear other bits
-			break;
-		case DSIException<CONFIG>::DSI_PAGE_FAULT:
-			if(exc.GetAccessType() == CONFIG::MAT_WRITE)
-				SetDSISR(0x42000000UL); // set DSISR[1], set DSISR[6], clear other bits
-			else
-				SetDSISR(0x40000000UL); // set DSISR[1], clear other bits
-			break;
-		case DSIException<CONFIG>::DSI_DATA_ADDRESS_BREAKPOINT:
-			if(exc.GetAccessType() == CONFIG::MAT_WRITE)
-				SetDSISR(0x02400000UL); // set DSISR[6], set DSISR[9], clear other bits
-			else
-				SetDSISR(0x00400000UL); // set DSISR[9], clear other bits
-			break;
-		case DSIException<CONFIG>::DSI_EXTERNAL_ACCESS_DISABLED:
-			if(exc.GetAccessType() == CONFIG::MAT_WRITE)
-				SetDSISR(0x02100000UL); // set DSISR[6], DSISR[11], clear other bits
-			else
-				SetDSISR(0x02100000UL); // set DSISR[11], clear other bits
-			break;
-		case DSIException<CONFIG>::DSI_WRITE_THROUGH_LINKED_LOAD_STORE:
-			if(exc.GetAccessType() == CONFIG::MAT_WRITE)
-				SetDSISR(0x06000000UL); // set DSISR[5], DSISR[6], clear other bits
-			else
-				SetDSISR(0x04000000UL); // set DSISR[5], clear other bits
-			break;
-	}
-		
-	SetNIA(CONFIG::EXC_DSI_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
-	
-	if(unlikely(IsVerboseException()))
-	{
-		logger << DebugInfo;
-		logger << "At 0x" << std::hex << GetCIA() << std::dec;
-		const Symbol<typename CONFIG::address_t> *func_symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
-		if(func_symbol) logger << " (" << func_symbol->GetFriendlyName(GetCIA()) << ")";
-		logger << ":" << exc.what() << " while " << (exc.GetAccessType() == CONFIG::MAT_WRITE ? "writing" : "reading")
-				<< " data at 0x" << std::hex << exc.GetAddress() << std::dec;
-		const Symbol<typename CONFIG::address_t> *obj_symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_OBJECT) : 0;
-		if(obj_symbol) logger << " (" << obj_symbol->GetFriendlyName(exc.GetAddress()) << ")";
-		logger << endl;
-		logger << EndDebugInfo;
-	}
-}
-
-/* Alignment exception */
-// DSISR helps the operating system to implement misaligned memory accesses not handled in the hardware:
-//
-//   0 ..... 14  15  16  17  18  29  20  21  22  23  24  25  26  27  28  29  30  31
-// +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
-// | 0 ..... 0 |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |
-// +---+---+---+-+-+-+-+-+-+-+-+---+---+-+-+-+-+---+---+---+-+-+-+-+---+---+---+-+-+
-//               |   |   |   |           |   |               |   |               |
-//               +-+-+   |   +-----+-----+   +-------+-------+   +-------+-------+
-//                 |     |         |                 |                   |
-//                 |     |         |                 |                   +-----------> bits 11-15 of instruction encoding
-//                 |     |         |                 |                                 for update forms, and lmw, lswi, lswx
-//                 |     |         |                 |
-//                 |     |         |                 +-------------------------------> bits 6-10 of instruction encoding. undefined for dcbz
-//                 |     |         |
-//                 |     |         +-------------------------------------------------> index addressing: bits 21-24 of instruction encoding
-//                 |     |                                                             immediate index addressing: bits 1-4 of instruction encoding
-//                 |     |
-//                 |     +-----------------------------------------------------------> index addressing: bits 25 of instruction encoding
-//                 |                                                                   immediate index addressing: bits 5 of instruction encoding
-//                 |
-//                 +-----------------------------------------------------------------> index addressing: bits 29-30 of instruction encoding
-//                                                                                     immediate index addressing: cleared
-template <class CONFIG>
-void CPU<CONFIG>::HandleException(const AlignmentException<CONFIG>& exc, uint32_t instruction_encoding)
-{
-	if(linux_os_import)
-	{
-		logger << DebugError << "Data storage interrupt: misalignment" << EndDebugError;
-		Stop(-1);
-		return;
-	}
-	SetDAR(exc.GetAddress()); // DAR=effective address
-	
-	SetSRR0(GetCIA()); // save CIA
-		
-	// keep SRR1[0], clear SRR1[1-4], keep SRR1[5-9], clear SRR1[10-11], set SRR1[12], clear SRR1[13-15],
-	// SRR1[16-23]=MSR[16-23], keep SRR1[24], SRR1[25-27]=MSR[25-27], keep SRR1[28-29], SRR1[30-31]=MSR[30-31]
-	SetSRR1((GetSRR1() & 0x87c0008cUL) | (GetMSR() & 0x0000ff73UL)); 
-	
-	// MSR[LE]=MSR[ILE], MSR[POW]=0, MSR[EE]=0, MSR[PR]=0, MSR[FP]=0, MSR[FE0]=0,
-	// MSR[SE]=0, MSR[BE]=0, MSR[FE1]=0, MSR[IR]=0, MSR[DR]=0, MSR[RI]=0
-	SetMSR((GetMSR() & 0x00011040UL) | ((GetMSR() >> 16) & 1));
-		
-	// clear DSISR[0-14]
-	SetDSISR(GetDSISR() & 0x0001ffffUL);
-	
-	// Look at primary opcode (bits 0-5)
-	bool xform = ((instruction_encoding >> 26) & 0x3fUL) == 31;
-		
-	if(xform)
-	{
-		// X-Form: index addressing
-		
-		// copy bits 29-30 of instruction encoding to DSISR[15-16]
-		SetDSISR((GetDSISR() & 0xfffe7fffUL) | ((instruction_encoding << 14) & 0x00018000UL));
-		
-		 // copy bit 25 of instruction encoding to bits 17 of DSISR
-		SetDSISR((GetDSISR() & 0xffffbfffUL) | ((instruction_encoding << 8) & 0x00004000UL));
-		
-		 // copy bits 21-24 of instruction encoding to bits 18-21 of DSISR
-		SetDSISR((GetDSISR() & 0xffffc3ffUL) | ((instruction_encoding << 3) & 0x00003c00UL));
-	}
-	else
-	{
-		// immediate index addressing
-		
-		// clear DSISR[15-16]
-		SetDSISR(GetDSISR() & 0xfffe7fffUL);
-		
-		// copy bit 5 of instruction encoding to DSISR[17]
-		SetDSISR((GetDSISR() & 0xffffbfffUL) | ((instruction_encoding >> 12) & 0x00004000UL));
-		
-		// copy bits 1-4 of instruction encoding to DSISR[18-21]
-		SetDSISR((GetDSISR() & 0xffffc3ffUL) | ((instruction_encoding >> 17) & 0x00003c00UL));
-	}
-		
-	// copy bits 6-10 of instruction encoding to DSISR[22-26]
-	SetDSISR((GetDSISR() & 0xfffffc1fUL) | ((instruction_encoding >> 16) & 0x000003e0UL));
-		
-	// copy bits 11-15 of instruction encoding into DSISR[27-31]
-	SetDSISR((GetDSISR() & 0xffffffe0UL) | ((instruction_encoding >> 16) & 0x0000001fUL));
-		
-	SetNIA(CONFIG::EXC_ALIGNMENT_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
-	
-	if(unlikely(IsVerboseException()))
-	{
-		logger << DebugInfo;
-		logger << "At 0x" << std::hex << GetCIA() << std::dec;
-		const Symbol<typename CONFIG::address_t> *func_symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
-		if(func_symbol) logger << " (" << func_symbol->GetFriendlyName(GetCIA()) << ")";
-		logger << ":" << exc.what() << " while accessing data at 0x" << std::hex << exc.GetAddress() << std::dec;
-		const Symbol<typename CONFIG::address_t> *obj_symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_OBJECT) : 0;
-		if(obj_symbol) logger << " (" << obj_symbol->GetFriendlyName(exc.GetAddress()) << ")";
-		logger << endl;
-		logger << EndDebugInfo;
-	}
-}
-
-/* Program exceptions */
-// SRR1 indicates to the operating system the cause of the program exception:
-//
-//   0   1 ....   4   5 ....  9  10  11  12  13  14  15                             
-// +---+---+---+---+---+---+---+---+---+---+---+---+---+--
-// | ? | 0 ....  0 | ?  .... ? | 0 |   |   |   |   |   | ...
-// +---+---+---+-+-+-+-+-+-+-+-+---+-+-+-+-+-+-+-+-+-+-+--
-//                                   |   |   |   |   |
-//                                   |   |   |   |   +----> cleared if SSR0=address of faulting instruction
-//                                   |   |   |   |          set if subsequent instructions
-//                                   |   |   |   |
-//                                   |   |   |   +--------> trap
-//                                   |   |   |
-//                                   |   |   +------------> privilege violation
-//                                   |   | 
-//                                   |   +----------------> illegal instruction
-//                                   |
-//                                   +--------------------> IEEE floating point exception
-template <class CONFIG>
-void CPU<CONFIG>::HandleException(const ProgramException<CONFIG>& exc)
-{
-	if(linux_os_import)
-	{
-		logger << DebugError << exc.what() << EndDebugError;
-		Stop(-1);
-		return;
-	}
-	SetSRR0(GetCIA()); // save CIA
-	
-	switch(exc.GetType())
-	{
-		case ProgramException<CONFIG>::PX_ILLEGAL_INSTRUCTION:
-			// keep SRR1[0], clear SRR1[1-4], keep SRR1[5-9], clear SRR1[10-11], set SRR1[12], clear SRR1[13-15],
-			// SRR1[16-23]=MSR[16-23], keep SRR1[24], SRR1[25-27]=MSR[25-27], keep SRR1[28-29], SRR1[30-31]=MSR[30-31]
-			SetSRR1((GetSRR1() & 0x87c0008cUL) | (GetMSR() & 0x0000ff73UL) | 0x00080000UL); 
-			break;
-		case ProgramException<CONFIG>::PX_PRIVILEGE_VIOLATION:
-			// keep SRR1[0], clear SRR1[1-4], keep SRR1[5-9], clear SRR1[10-12], set SRR1[13], clear SRR1[14-15],
-			// SRR1[16-23]=MSR[16-23], keep SRR1[24], SRR1[25-27]=MSR[25-27], keep SRR1[28-29], SRR1[30-31]=MSR[30-31]
-			SetSRR1((GetSRR1() & 0x87c0008cUL) | (GetMSR() & 0x0000ff73UL) | 0x00040000UL); 
-			break;
-		case ProgramException<CONFIG>::PX_TRAP:
-			// keep SRR1[0], clear SRR1[1-4], keep SRR1[5-9], clear SRR1[10-13], set SRR1[14], clear SRR1[15],
-			// SRR1[16-23]=MSR[16-23], keep SRR1[24], SRR1[25-27]=MSR[25-27], keep SRR1[28-29], SRR1[30-31]=MSR[30-31]
-			SetSRR1((GetSRR1() & 0x87c0008cUL) | (GetMSR() & 0x0000ff73UL) | 0x00020000UL); 
-			break;
-		case ProgramException<CONFIG>::PX_FLOATING_POINT:
-			// keep SRR1[0], clear SRR1[1-4], keep SRR1[5-9], clear SRR1[10], set SRR1[11], clear SRR1[12-15],
-			// SRR1[16-23]=MSR[16-23], keep SRR1[24], SRR1[25-27]=MSR[25-27], keep SRR1[28-29], SRR1[30-31]=MSR[30-31]
-			SetSRR1((GetSRR1() & 0x87c0008cUL) | (GetMSR() & 0x0000ff73UL) | 0x00100000UL); 
-			break;
-	}
-	
-	// MSR[LE]=MSR[ILE], MSR[POW]=0, MSR[EE]=0, MSR[PR]=0, MSR[FP]=0, MSR[FE0]=0,
-	// MSR[SE]=0, MSR[BE]=0, MSR[FE1]=0, MSR[IR]=0, MSR[DR]=0, MSR[RI]=0
-	SetMSR((GetMSR() & 0x00011040UL) | ((GetMSR() >> 16) & 1));
-		
-	SetNIA(CONFIG::EXC_PROGRAM_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
-	
-	if(unlikely(IsVerboseException()))
-	{
-		logger << DebugInfo;
-		logger << "At 0x" << std::hex << GetCIA() << std::dec;
-		const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
-		if(symbol) logger << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
-		logger << ":" << exc.what() << endl;
-		logger << EndDebugInfo;
-	}
-}
-
-/* Floating point unavailable exception */
-template <class CONFIG>
-void CPU<CONFIG>::HandleException(const FloatingPointUnavailableException<CONFIG>& exc)
-{
-	if(linux_os_import)
-	{
-		logger << DebugError << "Floating-point unavailable exception" << EndDebugError;
-		Stop(-1);
-		return;
-	}
-	SetSRR0(GetCIA()); // save CIA
-	
-	SetSRR1((GetSRR1() & 0x87c0008cUL) | (GetMSR() & 0x0000ff73UL)); // clear SRR1[1-4], SRR1[10-15], copy MSR[16-23], MSR[25-27], and MSR[30-31]
-	
-	SetMSR((GetMSR() & 0x00011040UL) | ((GetMSR() >> 16) & 1)); // copy MSR[ILE] into MSR[LE], clear MSR[POW], MSR[EE], MSR[PR], MSR[FP], MSR[FE0], MSR[SE], MSR[BE], MSR[FE1], MSR[IR], MSR[DR] and MSR[RI]
-	
-	SetNIA(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
-	
-	if(unlikely(IsVerboseException()))
-	{
-		logger << DebugInfo;
-		logger << "At 0x" << std::hex << GetCIA() << std::dec;
-		const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
-		if(symbol) logger << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
-		logger << ":" << exc.what() << endl;
-		logger << EndDebugInfo;
-	}
-}
-
-/* System call exception */
-template <class CONFIG>
-void CPU<CONFIG>::HandleException(const SystemCallException<CONFIG>& exc)
-{
-	if(linux_os_import)
-	{
-		// Do Linux ABI translation
-		linux_os_import->ExecuteSystemCall(GetGPR(0));
-	}
-	else
-	{
-		SetSRR0(GetNIA()); // save NIA
-			
-		SetSRR1((GetSRR1() & 0x87c008cUL) | (GetMSR() & 0x0000ff73UL)); // clear SRR1[1-4], clear SRR1[10-15], save MSR[16-23], MSR[25-27], MSR[30-31]
-					
-		SetMSR((GetMSR() & 0x00011040UL) | ((GetMSR() >> 16) & 1)); // copy MSR[ILE] into MSR[LE], clear MSR[POW], MSR[EE], MSR[PR], MSR[FP], MSR[FE0], MSR[SE], MSR[BE], MSR[FE1], MSR[IR], MSR[DR] and MSR[RI]
-			
-		SetNIA(CONFIG::EXC_SYSTEM_CALL_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
-		
-		if(unlikely(IsVerboseException()))
-		{
-			logger << DebugInfo;
-			logger << "At 0x" << std::hex << GetCIA() << std::dec;
-			const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
-			if(symbol) logger << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
-			logger << ":" << exc.what() << " (syscall #" << GetGPR(0) << ")" << endl;
-			logger << EndDebugInfo;
-		}
-	}
-}
-
-/* Trace exception */
-template <class CONFIG>
-void CPU<CONFIG>::HandleException(const TraceException<CONFIG>& exc)
-{
-	if(linux_os_import) return; // silently ignore trace exception when Linux ABI translation is enabled
-	SetSRR0(GetNIA()); // save NIA
-	
-	SetSRR1((GetSRR1() & 0x87c0008cUL) | (GetMSR() & 0x0000ff73UL)); // clear SRR1[1-4], SRR1[10-15], copy MSR[16-23], MSR[25-27], and MSR[30-31]
-	
-	SetMSR((GetMSR() & 0x00011040UL) | ((GetMSR() >> 16) & 1)); // copy MSR[ILE] into MSR[LE], clear MSR[POW], MSR[EE], MSR[PR], MSR[FP], MSR[FE0], MSR[SE], MSR[BE], MSR[FE1], MSR[IR], MSR[DR] and MSR[RI]
-	
-	SetNIA(CONFIG::EXC_TRACE_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
-	
-	if(unlikely(IsVerboseException()))
-	{
-		logger << DebugInfo;
-		logger << "At 0x" << std::hex << GetCIA() << std::dec;
-		const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
-		if(symbol) logger << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
-		logger << ":" << exc.what() << endl;
-		logger << EndDebugInfo;
-	}
-}
-
-/* Instruction Address Breakpoint exception */
-template <class CONFIG>
-void CPU<CONFIG>::HandleException(const InstructionAddressBreakpointException<CONFIG>& exc)
-{
-	if(linux_os_import) return; // silently ignore the instruction address breakpoint exception when Linux ABI translation is enabled
-	SetSRR0(GetCIA()); // save CIA
-	
-	SetSRR1((GetSRR1() & 0x87c0008cUL) | (GetMSR() & 0x0000ff73UL)); // clear SRR1[1-4], SRR1[10-15], copy MSR[16-23], MSR[25-27], and MSR[30-31]
-	
-	SetMSR((GetMSR() & 0x00011040UL) | ((GetMSR() >> 16) & 1)); // copy MSR[ILE] into MSR[LE], clear MSR[POW], MSR[EE], MSR[PR], MSR[FP], MSR[FE0], MSR[SE], MSR[BE], MSR[FE1], MSR[IR], MSR[DR] and MSR[RI]
-	
-	SetNIA(CONFIG::EXC_INSTRUCTION_ADDRESS_BREAKPOINT_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
-	
-	if(unlikely(IsVerboseException()))
-	{
-		logger << DebugInfo;
-		logger << "At 0x" << std::hex << GetCIA() << std::dec;
-		const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
-		if(symbol) logger << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
-		logger << ":" << exc.what() << endl;
-		logger << EndDebugInfo;
-	}
+	sstr << " exception";
+	what_str = sstr.str();
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::HandleException(const TLBMissException<CONFIG>& exc)
+ISIException<CONFIG>::~ISIException() throw()
 {
-	if(linux_os_import)
+}
+
+template <class CONFIG>
+typename ISIException<CONFIG>::Type ISIException<CONFIG>::GetType() const
+{
+	return type;
+}
+
+template <class CONFIG>
+const char * ISIException<CONFIG>::what () const throw ()
+{
+	return what_str.c_str();
+}
+
+template <class CONFIG>
+typename CONFIG::address_t ISIException<CONFIG>::GetAddr() const
+{
+	return addr;
+}
+
+template <class CONFIG>
+ISIProtectionViolationException<CONFIG>::ISIProtectionViolationException(address_t addr) : ISIException<CONFIG>(ISIException<CONFIG>::ISI_PROTECTION_VIOLATION, addr)
+{
+}
+
+template <class CONFIG>
+ISINoExecuteException<CONFIG>::ISINoExecuteException(address_t addr) : ISIException<CONFIG>(ISIException<CONFIG>::ISI_NO_EXECUTE, addr)
+{
+}
+
+template <class CONFIG>
+ISIDirectStoreException<CONFIG>::ISIDirectStoreException(address_t addr) : ISIException<CONFIG>(ISIException<CONFIG>::ISI_DIRECT_STORE, addr)
+{
+}
+
+template <class CONFIG>
+ISIPageFaultException<CONFIG>::ISIPageFaultException(address_t addr) : ISIException<CONFIG>(ISIException<CONFIG>::ISI_PAGE_FAULT, addr)
+{
+}
+
+template <class CONFIG>
+ISIGuardedMemoryException<CONFIG>::ISIGuardedMemoryException(address_t addr) : ISIException<CONFIG>(ISIException<CONFIG>::ISI_GUARDED_MEMORY, addr)
+{
+}
+
+template <class CONFIG>
+DSIException<CONFIG>::DSIException(Type _type, address_t _addr, typename CONFIG::MemoryAccessType _memory_access_type)
+	: type(_type)
+	, addr(_addr)
+	, memory_access_type(_memory_access_type)
+	, what_str()
+{
+	std::stringstream sstr;
+	sstr.setf(std::ios::right | std::ios::hex | std::ios::showbase);
+	sstr << "DSI ";
+	switch(type)
 	{
-		logger << DebugError << "TLB Miss exception" << EndDebugError;
-		Stop(-1);
-		return;
+		case DSI_DIRECT_STORE:
+			sstr << "direct store";
+			break;
+		case DSI_PROTECTION_VIOLATION:
+			sstr << "protection violation";
+			break;
+		case DSI_PAGE_FAULT:
+			sstr << "page fault";
+			break;
+		case DSI_DATA_ADDRESS_BREAKPOINT:
+			sstr << "data address breakpoint";
+			break;
+		case DSI_EXTERNAL_ACCESS_DISABLED:
+			sstr << "external access disabled";
+			break;
+		case DSI_WRITE_THROUGH_LINKED_LOAD_STORE:
+			sstr << "write through linked load/store";
+			break;
 	}
-	SetSRR0(GetCIA()); // save CIA
-	
-	uint32_t pte_hi = ((exc.GetVSID() & 0x00ffffffUL) << 7) | (exc.GetAPI() & 0x3fUL) | 0x80000000UL;
-	
-	// SRR1[0-3]=CR0, clear SRR1[4-11], SRR1[12]=key, SRR1[13]=0, SRR1[14]=way, SRR1[15]=0, SRR1[16-31]=MSR[16-31]
-	SetSRR1((GetCR() & 0xf0000000UL) | ((exc.GetKey() & 1) << 19) | ((exc.GetWay() & 1) << 17) | (GetMSR() & 0x0000ffffUL));
-	
-	if(exc.GetMemoryType() == CONFIG::MT_INSN)
+	sstr << " exception";
+	what_str = sstr.str();
+}
+
+template <class CONFIG>
+DSIException<CONFIG>::~DSIException() throw()
+{
+}
+
+template <class CONFIG>
+typename DSIException<CONFIG>::Type DSIException<CONFIG>::GetType() const
+{
+	return type;
+}
+
+template <class CONFIG>
+typename CONFIG::address_t DSIException<CONFIG>::GetAddress() const
+{
+	return addr;
+}
+
+template <class CONFIG>
+typename CONFIG::MemoryAccessType DSIException<CONFIG>::GetAccessType() const
+{
+	return memory_access_type;
+}
+
+template <class CONFIG>
+const char * DSIException<CONFIG>::what () const throw ()
+{
+	return what_str.c_str();
+}
+
+template <class CONFIG>
+DSIDirectStoreException<CONFIG>::DSIDirectStoreException(address_t addr, typename CONFIG::MemoryAccessType memory_access_type)
+	: DSIException<CONFIG>(DSIException<CONFIG>::DSI_DIRECT_STORE, addr, memory_access_type)
+{
+}
+
+template <class CONFIG>
+DSIProtectionViolationException<CONFIG>::DSIProtectionViolationException(address_t addr, typename CONFIG::MemoryAccessType memory_access_type)
+	: DSIException<CONFIG>(DSIException<CONFIG>::DSI_PROTECTION_VIOLATION, addr, memory_access_type)
+{
+}
+
+template <class CONFIG>
+DSIPageFaultException<CONFIG>::DSIPageFaultException(address_t addr, typename CONFIG::MemoryAccessType memory_access_type)
+	: DSIException<CONFIG>(DSIException<CONFIG>::DSI_PAGE_FAULT, addr, memory_access_type)
+{
+}
+
+template <class CONFIG>
+DSIDataAddressBreakpointException<CONFIG>::DSIDataAddressBreakpointException(address_t addr, typename CONFIG::MemoryAccessType memory_access_type)
+	: DSIException<CONFIG>(DSIException<CONFIG>::DSI_DATA_ADDRESS_BREAKPOINT, addr, memory_access_type)
+{
+}
+
+template <class CONFIG>
+DSIExternalAccessDisabledException<CONFIG>::DSIExternalAccessDisabledException(address_t addr, typename CONFIG::MemoryAccessType memory_access_type)
+	: DSIException<CONFIG>(DSIException<CONFIG>::DSI_EXTERNAL_ACCESS_DISABLED, addr, memory_access_type)
+{
+}
+
+template <class CONFIG>
+DSIWriteThroughLinkedLoadStore<CONFIG>::DSIWriteThroughLinkedLoadStore(address_t addr, typename CONFIG::MemoryAccessType memory_access_type)
+	: DSIException<CONFIG>(DSIException<CONFIG>::DSI_WRITE_THROUGH_LINKED_LOAD_STORE, addr, memory_access_type)
+{
+}
+
+template <class CONFIG>
+TraceException<CONFIG>::TraceException()
+{
+}
+
+template <class CONFIG>
+const char * TraceException<CONFIG>::what () const throw ()
+{
+	return "Trace exception";
+}
+
+template <class CONFIG>
+InstructionAddressBreakpointException<CONFIG>::InstructionAddressBreakpointException()
+{
+}
+
+template <class CONFIG>
+const char * InstructionAddressBreakpointException<CONFIG>::what () const throw ()
+{
+	return "Instruction address breakpoint exception";
+}
+
+template <class CONFIG>
+TLBMissException<CONFIG>::TLBMissException(typename CONFIG::MemoryAccessType memory_access_type, typename CONFIG::MemoryType memory_type, address_t addr, uint32_t way, uint32_t key, uint32_t vsid, uint32_t api, physical_address_t primary_pteg, physical_address_t secondary_pteg)
+{
+	this->memory_access_type = memory_access_type;
+	this->memory_type = memory_type;
+	this->addr = addr;
+	this->vsid = vsid;
+	this->api = api;
+	this->way = way;
+	this->key = key;
+	this->primary_pteg = primary_pteg;
+	this->secondary_pteg = secondary_pteg;
+}
+
+template <class CONFIG>
+typename CONFIG::MemoryAccessType TLBMissException<CONFIG>::GetMemoryAccessType() const
+{
+	return memory_access_type;
+}
+
+template <class CONFIG>
+typename CONFIG::MemoryType TLBMissException<CONFIG>::GetMemoryType() const
+{
+	return memory_type;
+}
+
+template <class CONFIG>
+typename CONFIG::address_t TLBMissException<CONFIG>::GetAddress() const
+{
+	return addr;
+}
+
+template <class CONFIG>
+uint32_t TLBMissException<CONFIG>::GetVSID() const
+{
+	return vsid;
+}
+
+template <class CONFIG>
+uint32_t TLBMissException<CONFIG>::GetAPI() const
+{
+	return api;
+}
+
+template <class CONFIG>
+uint32_t TLBMissException<CONFIG>::GetWay() const
+{
+	return way;
+}
+
+template <class CONFIG>
+uint32_t TLBMissException<CONFIG>::GetKey() const
+{
+	return key;
+}
+
+template <class CONFIG>
+uint32_t TLBMissException<CONFIG>::GetPrimaryPTEG() const
+{
+	return primary_pteg;
+}
+
+template <class CONFIG>
+uint32_t TLBMissException<CONFIG>::GetSecondaryPTEG() const
+{
+	return secondary_pteg;
+}
+
+template <class CONFIG>
+const char * TLBMissException<CONFIG>::what () const throw ()
+{
+	if(memory_type & CONFIG::MT_INSN)
 	{
-		SetTLBMISS((exc.GetAddress() & 0xfffffffeUL) | (exc.GetWay() & 1));
-		SetPTEHI(pte_hi);
-		// SRR1[13]=1
-		SetSRR1(GetSRR1() | 0x00040000UL);
-		SetNIA(CONFIG::EXC_ITLB_MISS_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
-	}
-	else
-	{
-		SetTLBMISS((exc.GetAddress() & 0xfffffffeUL) | (exc.GetWay() & 1));
-		SetPTEHI(pte_hi);
-		if(exc.GetMemoryAccessType() == CONFIG::MAT_WRITE)
-		{
-			// SRR1[15]=1
-			SetSRR1(GetSRR1() | 0x00010000UL);
-			SetNIA(CONFIG::EXC_DTLB_STORE_MISS_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
-		}
-		else
-		{
-			SetNIA(CONFIG::EXC_DTLB_LOAD_MISS_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
-		}
+		return "ITLB miss exception";
 	}
 	
-	if(unlikely(IsVerboseException()))
+	if(memory_access_type & CONFIG::MAT_WRITE)
 	{
-		logger << DebugInfo;
-		logger << "At 0x" << std::hex << GetCIA() << std::dec;
-		const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
-		if(symbol) logger << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
-		logger << ":" << exc.what() << endl;
-		logger << EndDebugInfo;
+		return "DTLB store miss exception";
 	}
+	
+	if(memory_access_type & CONFIG::MAT_READ)
+	{
+		return "DTLB load miss exception";
+	}
+	
+	return "TLB Miss";
+}
+
+template <class CONFIG>
+PerformanceMonitorInterruptException<CONFIG>::PerformanceMonitorInterruptException()
+{
+}
+
+template <class CONFIG>
+const char * PerformanceMonitorInterruptException<CONFIG>::what () const throw ()
+{
+	return "Performance monitor interrupt exception";
+}
+
+template <class CONFIG>
+SystemManagementInterruptException<CONFIG>::SystemManagementInterruptException()
+{
+}
+
+template <class CONFIG>
+const char * SystemManagementInterruptException<CONFIG>::what () const throw ()
+{
+	return "System management interrupt exception";
+}
+
+template <class CONFIG>
+ThermalManagementInterruptException<CONFIG>::ThermalManagementInterruptException()
+{
+}
+
+template <class CONFIG>
+const char * ThermalManagementInterruptException<CONFIG>::what () const throw ()
+{
+	return "Thermal management interrupt exception";
+}
+
+
+template <class CONFIG>
+AltivecUnavailableException<CONFIG>::AltivecUnavailableException()
+{
+}
+
+template <class CONFIG>
+const char * AltivecUnavailableException<CONFIG>::what () const throw ()
+{
+	return "Altivec unavailable exception";
 }
 
 } // end of namespace mpc7447a

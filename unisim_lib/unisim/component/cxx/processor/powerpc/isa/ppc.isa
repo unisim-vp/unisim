@@ -31,50 +31,42 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
- 
-namespace unisim::component::cxx::processor::powerpc::isa
-set endianness big	/* instruction endian */
-set addressclass {typename CONFIG::address_t}
-template <{class} {CONFIG}>
 
 decl {
+
 #include <iosfwd>
 #include <unisim/component/cxx/processor/powerpc/exception.hh>
 
-namespace unisim {
-namespace component {
-namespace cxx {
-namespace processor {
-namespace powerpc {
-
-using std::ostream;
-
-} // end of namespace powerpc
-} // end of namespace processor
-} // end of namespace cxx
-} // end of namespace component
-} // end of namespace unisim
-
 }
+
+set addressclass {typename CONFIG::address_t}
+template <{class} {CONFIG}>
 
 action {void} execute({typename CONFIG::STATE *} {cpu}) {
 	throw IllegalInstructionException<CONFIG>();
 }
 
-action {void} disasm({typename CONFIG::STATE *} {cpu}, {ostream&} {os}) {
+action {void} disasm({typename CONFIG::STATE *} {cpu}, {std::ostream&} {os}) {
 	os << "???";
 }
 
-include "integer.isa"
-include "floating.isa"
-include "branch.isa"
-include "condition.isa"
-include "loadstore.isa"
-include "misc.isa"
-include "altivec.isa"
-include "specialization.isa"
-
-include "perf.isa"
+include "unisim/component/cxx/processor/powerpc/isa/integer.isa"
+include "unisim/component/cxx/processor/powerpc/isa/floating.isa"
+include "unisim/component/cxx/processor/powerpc/isa/optional_floating.isa"
+include "unisim/component/cxx/processor/powerpc/isa/branch.isa"
+include "unisim/component/cxx/processor/powerpc/isa/condition.isa"
+include "unisim/component/cxx/processor/powerpc/isa/int_load_store.isa"
+include "unisim/component/cxx/processor/powerpc/isa/byte_reverse_load_store.isa"
+include "unisim/component/cxx/processor/powerpc/isa/string_load_store.isa"
+include "unisim/component/cxx/processor/powerpc/isa/multiple_load_store.isa"
+include "unisim/component/cxx/processor/powerpc/isa/fp_load_store.isa"
+include "unisim/component/cxx/processor/powerpc/isa/external_control.isa"
+include "unisim/component/cxx/processor/powerpc/isa/synchronization.isa"
+include "unisim/component/cxx/processor/powerpc/isa/cache_management.isa"
+include "unisim/component/cxx/processor/powerpc/isa/tlb_management.isa"
+include "unisim/component/cxx/processor/powerpc/isa/misc.isa"
+include "unisim/component/cxx/processor/powerpc/isa/altivec.isa"
+include "unisim/component/cxx/processor/powerpc/isa/specialization.isa"
 
 /*
 include "sim_ppc.isa"

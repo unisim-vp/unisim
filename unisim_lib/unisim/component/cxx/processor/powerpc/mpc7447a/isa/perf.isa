@@ -598,11 +598,6 @@ stswx.resolve = {
 lswi.uop_execute = {
 	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) : 0) + (uop_num * 4);
 
-	if(cpu->GetMSR_LE())
-	{
-		if(!cpu->linux_os_import) throw AlignmentException<CONFIG>(ea);
-	}
-
 	uint8_t n = (nb ? nb : 32) - (uop_num * 4);
 	unsigned int r = (rd + uop_num) & 31;
 
@@ -617,8 +612,6 @@ lswx.uop_execute = {
 
 	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb)) + (uop_num * 4);
 
-	if(cpu->GetMSR_LE()) if(!cpu->linux_os_import) throw AlignmentException<CONFIG>(ea);
-
 	uint32_t xer = cpu->GetXER();
 	uint8_t n = ((xer & CONFIG::XER_BYTE_COUNT_MASK) >> CONFIG::XER_BYTE_COUNT_OFFSET) - (uop_num * 4);
 	unsigned int r = (rd + uop_num) & 31;
@@ -630,8 +623,6 @@ lswx.uop_execute = {
 stswi.uop_execute = {
 	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) : 0) + (uop_num * 4);
 
-	if(cpu->GetMSR_LE()) if(!cpu->linux_os_import) throw AlignmentException<CONFIG>(ea);
-
 	uint8_t n = (nb ? nb : 32) - (uop_num * 4);
 	unsigned int r = (rs + uop_num) & 31;
 
@@ -641,8 +632,6 @@ stswi.uop_execute = {
 
 stswx.uop_execute = {
 	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb)) + (uop_num * 4);
-
-	if(cpu->GetMSR_LE()) if(!cpu->linux_os_import) throw AlignmentException<CONFIG>(ea);
 
 	uint32_t xer = cpu->GetXER();
 	uint8_t n = ((xer & CONFIG::XER_BYTE_COUNT_MASK) >> CONFIG::XER_BYTE_COUNT_OFFSET) - (uop_num * 4);

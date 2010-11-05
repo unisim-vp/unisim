@@ -2,19 +2,25 @@
 function Usage
 {
 	echo "Usage:"
-	echo "  $0 <destination directory> <unisim repository>"
+	echo "  $0 <destination directory>"
 }
 
-if [ -z "$1" ] || [ -z "$2" ]; then
+if [ -z "$1" ]; then
 	Usage
 	exit -1
 fi
 
 HERE=`pwd`
+MY_DIR=`dirname $0`
+if test ${MY_DIR} = "."; then
+	MY_DIR=${HERE}
+elif test ${MY_DIR} = ".."; then
+	MY_DIR=${HERE}/..
+fi
 DEST_DIR=$1
-UNISIM_TOOLS_DIR=$2/unisim_tools
-UNISIM_LIB_DIR=$2/unisim_lib
-UNISIM_SIMULATORS_DIR=$2/unisim_simulators/tlm/embedded_ppc_g4_board
+UNISIM_TOOLS_DIR=${MY_DIR}/../unisim_tools
+UNISIM_LIB_DIR=${MY_DIR}/../unisim_lib
+UNISIM_SIMULATORS_DIR=${MY_DIR}/../unisim_simulators/tlm/embedded_ppc_g4_board
 
 EMBEDDED_PPC_G4_BOARD_VERSION=$(cat ${UNISIM_SIMULATORS_DIR}/VERSION)
 GENISSLIB_VERSION=$(cat ${UNISIM_TOOLS_DIR}/genisslib/VERSION)-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}
@@ -187,15 +193,22 @@ unisim/component/cxx/processor/powerpc/isa/misc.isa \
 unisim/component/cxx/processor/powerpc/isa/ppc.isa \
 unisim/component/cxx/processor/powerpc/isa/branch.isa \
 unisim/component/cxx/processor/powerpc/isa/floating.isa \
-unisim/component/cxx/processor/powerpc/isa/loadstore.isa \
+unisim/component/cxx/processor/powerpc/isa/optional_floating.isa \
+unisim/component/cxx/processor/powerpc/isa/int_load_store.isa \
+unisim/component/cxx/processor/powerpc/isa/byte_reverse_load_store.isa \
+unisim/component/cxx/processor/powerpc/isa/string_load_store.isa \
+unisim/component/cxx/processor/powerpc/isa/multiple_load_store.isa \
+unisim/component/cxx/processor/powerpc/isa/fp_load_store.isa \
+unisim/component/cxx/processor/powerpc/isa/external_control.isa \
+unisim/component/cxx/processor/powerpc/isa/synchronization.isa \
+unisim/component/cxx/processor/powerpc/isa/cache_management.isa \
+unisim/component/cxx/processor/powerpc/isa/tlb_management.isa \
 unisim/component/cxx/processor/powerpc/isa/specialization.isa \
-unisim/component/cxx/processor/powerpc/isa/perf.isa \
-unisim/component/cxx/processor/powerpc/isa/sim_dependencies.isa \
-unisim/component/cxx/processor/powerpc/isa/sim_latencies.isa \
-unisim/component/cxx/processor/powerpc/isa/sim_load.isa \
-unisim/component/cxx/processor/powerpc/isa/sim_branch.isa \
-unisim/component/cxx/processor/powerpc/isa/sim_ppc.isa \
-unisim/component/cxx/processor/powerpc/isa/sim_latencies.isa"
+unisim/component/cxx/processor/powerpc/mpc7447a/isa/mpc7447a.isa \
+unisim/component/cxx/processor/powerpc/mpc7447a/isa/synchronization.isa \
+unisim/component/cxx/processor/powerpc/mpc7447a/isa/tlb_management.isa \
+unisim/component/cxx/processor/powerpc/mpc7447a/isa/misc.isa \
+unisim/component/cxx/processor/powerpc/mpc7447a/isa/perf.isa"
 
 UNISIM_LIB_EMBEDDED_PPC_G4_BOARD_HEADER_FILES="${UNISIM_LIB_EMBEDDED_PPC_G4_BOARD_ISA_FILES} \
 unisim/kernel/service/service.hh \
@@ -283,10 +296,11 @@ unisim/service/power/cache_dynamic_power.hh \
 unisim/service/power/cache_leakage_power.hh \
 unisim/service/sdl/sdl.hh \
 unisim/component/cxx/memory/ram/memory.hh \
-unisim/component/cxx/processor/powerpc/mpc7447a/cpu.hh \
 unisim/component/cxx/processor/powerpc/exception.hh \
 unisim/component/cxx/processor/powerpc/floating.hh \
 unisim/component/cxx/processor/powerpc/config.hh \
+unisim/component/cxx/processor/powerpc/mpc7447a/cpu.hh \
+unisim/component/cxx/processor/powerpc/mpc7447a/exception.hh \
 unisim/component/cxx/processor/powerpc/mpc7447a/config.hh \
 unisim/component/cxx/cache/cache.hh \
 unisim/component/cxx/tlb/tlb.hh \
@@ -356,9 +370,16 @@ unisim/service/debug/gdb_server/gdb_server.tcc \
 unisim/service/loader/elf_loader/elf_loader.tcc \
 unisim/service/tee/memory_access_reporting/tee.tcc \
 unisim/service/tee/symbol_table_lookup/tee.tcc \
-unisim/component/cxx/processor/powerpc/mpc7447a/cpu.tcc \
-unisim/component/cxx/processor/powerpc/mpc7447a/exception.tcc \
 unisim/component/cxx/processor/powerpc/exception.tcc \
+unisim/component/cxx/processor/powerpc/mpc7447a/exception.tcc \
+unisim/component/cxx/processor/powerpc/mpc7447a/cpu.tcc \
+unisim/component/cxx/processor/powerpc/mpc7447a/cpu_cache.tcc \
+unisim/component/cxx/processor/powerpc/mpc7447a/cpu_debugging.tcc \
+unisim/component/cxx/processor/powerpc/mpc7447a/cpu_exception_handling.tcc \
+unisim/component/cxx/processor/powerpc/mpc7447a/cpu_fetch.tcc \
+unisim/component/cxx/processor/powerpc/mpc7447a/cpu_load_store.tcc \
+unisim/component/cxx/processor/powerpc/mpc7447a/cpu_mmu.tcc \
+unisim/component/cxx/processor/powerpc/mpc7447a/cpu_perf_model.tcc \
 unisim/component/cxx/memory/ram/memory.tcc \
 unisim/component/cxx/cache/cache.tcc \
 unisim/component/cxx/tlb/tlb.tcc \
@@ -689,12 +710,12 @@ if [ "${has_to_build_genisslib_configure}" = "yes" ]; then
 
 	AM_GENISSLIB_VERSION=`printf ${GENISSLIB_VERSION} | sed -e 's/\./_/g'`
 	echo "Generating GENISSLIB Makefile.am"
-	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${GENISSLIB_MAKEFILE_AM}"
+	echo "ACLOCAL_AMFLAGS=-I \$(abs_top_srcdir)/m4" > "${GENISSLIB_MAKEFILE_AM}"
 	echo "BUILT_SOURCES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "CLEANFILES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "AM_YFLAGS = -d -p yy" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "AM_LFLAGS = -l" >> "${GENISSLIB_MAKEFILE_AM}"
-	echo "INCLUDES=-I\$(top_srcdir) -I\$(top_builddir)" >> "${GENISSLIB_MAKEFILE_AM}"
+	echo "INCLUDES=-I\$(abs_top_srcdir) -I\$(abs_top_builddir)" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "noinst_PROGRAMS = genisslib" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "genisslib_SOURCES = ${UNISIM_TOOLS_GENISSLIB_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "genisslib_CPPFLAGS = -DGENISSLIB_VERSION=\\\"${GENISSLIB_VERSION}\\\"" >> "${GENISSLIB_MAKEFILE_AM}"
@@ -768,8 +789,8 @@ if [ "${has_to_build_embedded_ppc_g4_board_configure}" = "yes" ]; then
 
 	AM_EMBEDDED_PPC_G4_BOARD_VERSION=`printf ${EMBEDDED_PPC_G4_BOARD_VERSION} | sed -e 's/\./_/g'`
 	echo "Generating embedded_ppc_g4_board Makefile.am"
-	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	echo "INCLUDES=-I\$(top_srcdir) -I\$(top_builddir)" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
+	echo "ACLOCAL_AMFLAGS=-I \$(abs_top_srcdir)/m4" > "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
+	echo "INCLUDES=-I\$(abs_top_srcdir) -I\$(abs_top_builddir)" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
 	echo "noinst_LIBRARIES = libembedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}.a" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
 	echo "libembedded_ppc_g4_board_${AM_EMBEDDED_PPC_G4_BOARD_VERSION}_a_SOURCES = ${UNISIM_LIB_EMBEDDED_PPC_G4_BOARD_SOURCE_FILES}" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
 	echo "bin_PROGRAMS = unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION} unisim-embedded-ppc-g4-board-debug-${EMBEDDED_PPC_G4_BOARD_VERSION} unisim-embedded-ppc-g4-board-no-pci-stub-${EMBEDDED_PPC_G4_BOARD_VERSION} unisim-embedded-ppc-g4-board-no-pci-stub-debug-${EMBEDDED_PPC_G4_BOARD_VERSION}" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
@@ -790,36 +811,36 @@ if [ "${has_to_build_embedded_ppc_g4_board_configure}" = "yes" ]; then
 	echo "sharedir = \$(prefix)/share/unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
 	echo "dist_share_DATA = ${UNISIM_LIB_EMBEDDED_PPC_G4_BOARD_DATA_FILES} ${UNISIM_SIMULATORS_EMBEDDED_PPC_G4_BOARD_DATA_FILES}" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
 
-	echo "BUILT_SOURCES=\$(top_srcdir)/unisim/component/cxx/processor/powerpc/isa/powerpc.hh \$(top_srcdir)/unisim/component/cxx/processor/powerpc/isa/powerpc.tcc" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	echo "CLEANFILES=\$(top_srcdir)/unisim/component/cxx/processor/powerpc/isa/powerpc.hh \$(top_srcdir)/unisim/component/cxx/processor/powerpc/isa/powerpc.tcc" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	echo "\$(top_srcdir)/unisim/component/cxx/processor/powerpc/isa/powerpc.tcc: \$(top_srcdir)/unisim/component/cxx/processor/powerpc/isa/powerpc.hh" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	echo "\$(top_srcdir)/unisim/component/cxx/processor/powerpc/isa/powerpc.hh: ${UNISIM_LIB_EMBEDDED_PPC_G4_BOARD_ISA_FILES}" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
+	echo "BUILT_SOURCES=\$(abs_top_builddir)/unisim/component/cxx/processor/powerpc/mpc7447a/isa.hh \$(abs_top_builddir)/unisim/component/cxx/processor/powerpc/mpc7447a/isa.tcc" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
+	echo "CLEANFILES=\$(abs_top_builddir)/unisim/component/cxx/processor/powerpc/mpc7447a/isa.hh \$(abs_top_builddir)/unisim/component/cxx/processor/powerpc/mpc7447a/isa.tcc" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
+	echo "\$(abs_top_builddir)/unisim/component/cxx/processor/powerpc/mpc7447a/isa.tcc: \$(abs_top_builddir)/unisim/component/cxx/processor/powerpc/mpc7447a/isa.hh" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
+	echo "\$(abs_top_builddir)/unisim/component/cxx/processor/powerpc/mpc7447a/isa.hh: ${UNISIM_LIB_EMBEDDED_PPC_G4_BOARD_ISA_FILES}" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
 	printf "\t" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	echo "cd \$(top_srcdir)/unisim/component/cxx/processor/powerpc/isa; \$(GENISSLIB_PATH) -o powerpc -w 8 -I . ppc.isa" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
+	echo "\$(GENISSLIB_PATH) -o \$(abs_top_builddir)/unisim/component/cxx/processor/powerpc/mpc7447a/isa -w 8 -I \$(abs_top_srcdir) \$(abs_top_srcdir)/unisim/component/cxx/processor/powerpc/mpc7447a/isa/mpc7447a.isa" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
 
 	echo "all-local: all-local-bin all-local-share" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
 	echo "clean-local: clean-local-bin clean-local-share" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
 	echo "all-local-bin: \$(bin_PROGRAMS)" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
 	printf "\t@PROGRAMS='\$(bin_PROGRAMS)'; \\\\\n" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
 	printf "\tfor PROGRAM in \$\${PROGRAMS}; do \\\\\n" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	printf "\trm -f \"\$(top_builddir)/bin/\`basename \$\${PROGRAM}\`\"; \\\\\n" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	printf "\tmkdir -p '\$(top_builddir)/bin'; \\\\\n" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	printf "\t(cd '\$(top_builddir)/bin' && cp -f \"\$(abs_top_builddir)/\$\${PROGRAM}\" \`basename \"\$\${PROGRAM}\"\`); \\\\\n" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
+	printf "\trm -f \"\$(abs_top_builddir)/bin/\`basename \$\${PROGRAM}\`\"; \\\\\n" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
+	printf "\tmkdir -p '\$(abs_top_builddir)/bin'; \\\\\n" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
+	printf "\t(cd '\$(abs_top_builddir)/bin' && cp -f \"\$(abs_top_builddir)/\$\${PROGRAM}\" \`basename \"\$\${PROGRAM}\"\`); \\\\\n" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
 	printf "\tdone\n" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
 	echo "clean-local-bin:" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
 	printf "\t@if [ ! -z '\$(bin_PROGRAMS)' ]; then \\\\\n" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	printf "\trm -rf '\$(top_builddir)/bin'; \\\\\n" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
+	printf "\trm -rf '\$(abs_top_builddir)/bin'; \\\\\n" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
 	printf "\tfi\n" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
 	echo "all-local-share: \$(dist_share_DATA)" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
 	printf "\t@SHARED_DATAS='\$(dist_share_DATA)'; \\\\\n" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
 	printf "\tfor SHARED_DATA in \$\${SHARED_DATAS}; do \\\\\n" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	printf "\trm -f \"\$(top_builddir)/share/unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/\`basename \$\${SHARED_DATA}\`\"; \\\\\n" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	printf "\tmkdir -p '\$(top_builddir)/share/unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}'; \\\\\n" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	printf "\t(cd '\$(top_builddir)/share/unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}' && cp -f \"\$(abs_top_builddir)/\$\${SHARED_DATA}\" \`basename \"\$\${SHARED_DATA}\"\`); \\\\\n" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
+	printf "\trm -f \"\$(abs_top_builddir)/share/unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/\`basename \$\${SHARED_DATA}\`\"; \\\\\n" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
+	printf "\tmkdir -p '\$(abs_top_builddir)/share/unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}'; \\\\\n" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
+	printf "\t(cd '\$(abs_top_builddir)/share/unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}' && cp -f \"\$(abs_top_srcdir)/\$\${SHARED_DATA}\" \`basename \"\$\${SHARED_DATA}\"\`); \\\\\n" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
 	printf "\tdone\n" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
 	echo "clean-local-share:" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
 	printf "\t@if [ ! -z '\$(dist_share_DATA)' ]; then \\\\\n" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	printf "\trm -rf '\$(top_builddir)/share'; \\\\\n" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
+	printf "\trm -rf '\$(abs_top_builddir)/share'; \\\\\n" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
 	printf "\tfi\n" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
 
 	echo "Building powerpc configure"

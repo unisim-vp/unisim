@@ -1,0 +1,116 @@
+/*
+ *  Copyright (c) 2007,
+ *  Commissariat a l'Energie Atomique (CEA)
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without modification,
+ *  are permitted provided that the following conditions are met:
+ *
+ *   - Redistributions of source code must retain the above copyright notice, this
+ *     list of conditions and the following disclaimer.
+ *
+ *   - Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *
+ *   - Neither the name of CEA nor the names of its contributors may be used to
+ *     endorse or promote products derived from this software without specific prior
+ *     written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *  DISCLAIMED.
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ *  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ */
+
+/*********************************
+
+CACHE MANAGEMENT INSTRUCTIONS
+
+*********************************/
+
+op dcba(31[6]:?[5]:ra[5]:rb[5]:758[10]:?[1])
+dcba.execute = {
+	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
+
+	cpu->Dcba(ea);
+}
+dcba.disasm = {
+	os << "dcba r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+}
+
+
+op dcbf(31[6]:?[5]:ra[5]:rb[5]:86[10]:?[1])
+dcbf.execute = {
+	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
+
+	cpu->Dcbf(ea);
+}
+dcbf.disasm = {
+	os << "dcbf r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+}
+
+op dcbi(31[6]:?[5]:ra[5]:rb[5]:470[10]:?[1])
+dcbi.execute = {
+	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
+	cpu->Dcbi(ea);
+}
+dcbi.disasm = {
+	os << "dcbi r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+}
+
+op dcbst(31[6]:?[5]:ra[5]:rb[5]:54[10]:?[1])
+dcbst.execute = {
+	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
+
+	cpu->Dcbst(ea);
+}
+dcbst.disasm = {
+	os << "dcbst r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+}
+
+op dcbt(31[6]:?[5]:ra[5]:rb[5]:278[10]:?[1])
+dcbt.execute = {
+	/* this instruction has no architectural effect (software prefetching) */
+}
+dcbt.disasm = {
+	os << "dcbt r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+}
+
+op dcbtst(31[6]:?[5]:ra[5]:rb[5]:246[10]:?[1])
+dcbtst.execute = {
+	/* this instruction has no architectural effect (software prefetching) */
+}
+dcbtst.disasm = {
+	os << "dcbtst r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+}
+
+op dcbz(31[6]:?[5]:ra[5]:rb[5]:1014[10]:?[1])
+dcbz.execute = {
+	// compute the effective address
+	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
+
+	cpu->Dcbz(ea);
+}
+dcbz.disasm = {
+	os << "dcbz r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+}
+
+op icbi(31[6]:?[5]:ra[5]:rb[5]:982[10]:?[1])
+icbi.execute = {
+	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
+
+	cpu->Icbi(ea);
+}
+icbi.disasm = {
+	os << "icbi r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+}
