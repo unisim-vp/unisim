@@ -53,6 +53,195 @@ PIM::~PIM() {
 	pim_model.clear();
 }
 
+void PIM::GetExportedVariables(vector<component_t*> &pim) {
+
+	// Explore Simulator Variables to Generate PIM XML File
+	std::list<VariableBase *> lst;
+
+	fSimulator->GetRegisters(lst);
+
+	for (std::list<VariableBase *>::iterator it = lst.begin(); it != lst.end(); it++) {
+
+		if (!((VariableBase *) *it)->IsVisible()) continue;
+
+		string var_name(((VariableBase *) *it)->GetName());
+		size_t pos = var_name.find_first_of('.');
+		string component_name = var_name.substr(0, pos);
+		string short_var_name = var_name.substr(pos+1);
+
+		component_t* component = FindComponent(component_name);
+		if (component == NULL) {
+			component = new component_t();
+
+			component->name = component_name;
+			component->description = "bla bla";
+
+			pim.push_back(component);
+		}
+
+		component->pins.push_back((VariableBase *) *it);
+
+	}
+}
+
+component_t* PIM::FindComponent(const string name) {
+
+	for (int i=0; i < pim_model.size(); i++) {
+		if (pim_model[i]->name.compare(name) == 0) {
+			return pim_model[i];
+		}
+	}
+
+	return NULL;
+}
+
+
+bool PIM::Setup() {
+
+	GetExportedVariables(pim_model);
+
+}
+
+void PIM::getAllVariables(vector<VariableBase*> *variables) {
+
+	for (int i=0; i < pim_model.size(); i++) {
+		for (int j=0; j < pim_model[i]->pins.size(); j++) {
+			variables->push_back(pim_model[i]->pins[j]);
+		}
+	}
+
+}
+
+void PIM::Run() {
+
+	// Open Socket Stream
+	serverSockfd = new SocketServerThread(fHost, fPort);
+//	clientSockfd = new SocketClientThread(fHost, fPort);
+
+	serverSockfd->start();
+//	clientSockfd->start();
+
+	serverSockfd->join();
+//	clientSockfd->join();
+
+	cerr << "PIM connection success " << std::endl;
+
+	vector<VariableBase*> variables;
+	getAllVariables(&variables);
+
+	// Start Simulation <-> ToolBox communication
+//	target = new TargetThread("Target", &variables, clientSockfd);
+	target = new TargetThread("Target", &variables, serverSockfd);
+//	initiator = new InitiatorThread("Initiator", &variables, clientSockfd);
+	initiator = new InitiatorThread("Initiator", &variables, serverSockfd);
+
+	target->start();
+	initiator->start();
+
+	target->join();
+	initiator->join();
+
+}
+
+TargetThread::TargetThread(char* _name, vector<VariableBase*> *variables, SocketThread *fd) :
+		sockfd(fd),
+		name(_name),
+		fVariables(variables)
+{
+
+}
+
+void TargetThread::Run(){
+
+	cerr << "PIM::TargetThread start RUN " << std::endl;
+
+	while (!isTerminated()) {
+
+		char *buffer = sockfd->receive();
+
+		if (!isTerminated()) {
+			string buf_str(buffer);
+
+			int index = buf_str.find(';');
+			buf_str = buf_str.substr(0, index);
+
+			index = buf_str.find(':');
+			string name = buf_str.substr(0, index);
+			buf_str = buf_str.substr(index+1);
+
+			index = buf_str.find(':');
+			string time = buf_str.substr(0, index);
+
+			string value = buf_str.substr(index+1);
+
+			cerr << "PIM-Target receive " << buffer << std::endl;
+
+			for (int i=0; i < fVariables->size(); i++) {
+				if (name.compare((*fVariables)[i]->GetName()) == 0) {
+
+					*((*fVariables)[i]) = convertTo<double>(value);
+					break;
+				}
+			}
+		}
+
+
+		if (buffer != NULL) {
+			free(buffer);
+			buffer = NULL;
+		}
+
+	}
+
+}
+
+InitiatorThread::InitiatorThread(char* _name, vector<VariableBase*> *variables, SocketThread *fd) :
+		sockfd(fd),
+		name(_name),
+		fVariables(variables)
+{
+
+}
+
+void InitiatorThread::Run(){
+
+	double time = 0;
+	uint32_t period = 1e6; // 1000 millisecond
+
+	cerr << "PIM::InitiatorThread start RUN " << std::endl;
+
+	while (!isTerminated()) {
+
+		for (int i=0; i < fVariables->size(); i++) {
+
+			std::ostringstream os;
+			os << (*fVariables)[i]->GetName() << ":";
+			os << time << ":";
+			double val = *((*fVariables)[i]);
+			os << stringify(val);
+
+			os << ";";
+
+			std::string str = os.str();
+
+			const char *buffer = str.c_str();
+
+			sockfd->send(buffer);
+
+			printf("%s send: %s\n", name, buffer);
+
+			os.str(std::string());
+
+		}
+
+		usleep(period);
+		time = time + period;
+	}
+
+}
+
+// *************************************************************
+
 void PIM::ParseComponent (xmlDocPtr doc, xmlNodePtr componentNode, component_t *component) {
 
 	if ((xmlStrcmp(componentNode->name, (const xmlChar *)"component"))) {
@@ -136,50 +325,6 @@ int PIM::LoadPimFromXml(vector<component_t*> &pim, const string filename) {
 
 	return (result);
 }
-
-void PIM::GetExportedVariables(vector<component_t*> &pim) {
-
-	// Explore Simulator Variables to Generate PIM XML File
-	std::list<VariableBase *> lst;
-
-	fSimulator->GetRegisters(lst);
-
-	for (std::list<VariableBase *>::iterator it = lst.begin(); it != lst.end(); it++) {
-
-		if (!((VariableBase *) *it)->IsVisible()) continue;
-
-		string var_name(((VariableBase *) *it)->GetName());
-		size_t pos = var_name.find_first_of('.');
-		string component_name = var_name.substr(0, pos);
-		string short_var_name = var_name.substr(pos+1);
-
-		component_t* component = FindComponent(component_name);
-		if (component == NULL) {
-			component = new component_t();
-
-			component->name = component_name;
-			component->description = "bla bla";
-
-			pim.push_back(component);
-		}
-
-		component->pins.push_back((VariableBase *) *it);
-
-	}
-}
-
-component_t* PIM::FindComponent(const string name) {
-
-	for (int i=0; i < pim_model.size(); i++) {
-		if (pim_model[i]->name.compare(name) == 0) {
-			return pim_model[i];
-		}
-	}
-
-	return NULL;
-}
-
-// *************************************************************
 
 /**
  * ConvertInput:
@@ -412,9 +557,6 @@ void PIM::SavePimToXml(vector<component_t*> &pim, const string file)
     xmlFreeDoc(doc);
 }
 
-
-// *************************************************************
-
 void PIM::GeneratePimFile() {
 
 	stringstream pimfile;
@@ -437,149 +579,8 @@ void PIM::LoadPimFile() {
 
 }
 
-bool PIM::Setup() {
+// *************************************************************
 
-	GetExportedVariables(pim_model);
-
-}
-
-void PIM::getAllVariables(vector<VariableBase*> *variables) {
-
-	for (int i=0; i < pim_model.size(); i++) {
-		for (int j=0; j < pim_model[i]->pins.size(); j++) {
-			variables->push_back(pim_model[i]->pins[j]);
-		}
-	}
-
-}
-
-void PIM::Run() {
-
-	// Open Socket Stream
-	serverSockfd = new SocketServerThread(fHost, fPort);
-//	clientSockfd = new SocketClientThread(fHost, fPort);
-
-	serverSockfd->start();
-//	clientSockfd->start();
-
-	serverSockfd->join();
-//	clientSockfd->join();
-
-	cerr << "PIM connection success " << std::endl;
-
-	vector<VariableBase*> variables;
-	getAllVariables(&variables);
-
-	// Start Simulation <-> ToolBox communication
-//	target = new TargetThread("Target", &variables, clientSockfd);
-	target = new TargetThread("Target", &variables, serverSockfd);
-//	initiator = new InitiatorThread("Initiator", &variables, clientSockfd);
-	initiator = new InitiatorThread("Initiator", &variables, serverSockfd);
-
-	target->start();
-	initiator->start();
-
-	target->join();
-	initiator->join();
-
-}
-
-TargetThread::TargetThread(char* _name, vector<VariableBase*> *variables, SocketThread *fd) :
-		sockfd(fd),
-		name(_name),
-		fVariables(variables)
-{
-
-}
-
-void TargetThread::Run(){
-
-	cerr << "PIM::TargetThread start RUN " << std::endl;
-
-	while (!isTerminated()) {
-
-		char *buffer = sockfd->receive();
-
-		if (!isTerminated()) {
-			string buf_str(buffer);
-
-			int index = buf_str.find(';');
-			buf_str = buf_str.substr(0, index);
-
-			index = buf_str.find(':');
-			string name = buf_str.substr(0, index);
-			buf_str = buf_str.substr(index+1);
-
-			index = buf_str.find(':');
-			string time = buf_str.substr(0, index);
-
-			string value = buf_str.substr(index+1);
-
-			cerr << "PIM-Target receive " << buffer << std::endl;
-
-			for (int i=0; i < fVariables->size(); i++) {
-				if (name.compare((*fVariables)[i]->GetName()) == 0) {
-
-					*((*fVariables)[i]) = convertTo<double>(value);
-					break;
-				}
-			}
-		}
-
-
-		if (buffer != NULL) {
-			free(buffer);
-			buffer = NULL;
-		}
-
-	}
-
-}
-
-InitiatorThread::InitiatorThread(char* _name, vector<VariableBase*> *variables, SocketThread *fd) :
-		sockfd(fd),
-		name(_name),
-		fVariables(variables)
-{
-
-}
-
-void InitiatorThread::Run(){
-
-	double time = 0;
-	uint32_t period = 1e6; // 1000 millisecond
-
-	cerr << "PIM::InitiatorThread start RUN " << std::endl;
-
-	while (!isTerminated()) {
-
-		for (int i=0; i < fVariables->size(); i++) {
-
-			std::ostringstream os;
-			os << (*fVariables)[i]->GetName() << ":";
-			os << time << ":";
-			double val = *((*fVariables)[i]);
-			os << stringify(val);
-
-			os << ";";
-
-			std::string str = os.str();
-
-			const char *buffer = str.c_str();
-
-			sockfd->send(buffer);
-
-			printf("%s send: %s\n", name, buffer);
-
-			os.str(std::string());
-
-		}
-
-		usleep(period);
-		time = time + period;
-	}
-
-}
 
 } // end pim
 } // end service
