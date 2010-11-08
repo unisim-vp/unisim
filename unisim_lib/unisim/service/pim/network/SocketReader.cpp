@@ -112,11 +112,21 @@ char* SocketReader::receive() {
 
 	if (str != NULL) {
 
-		int str_size = strlen(str);
+		string bstr(str);
 
-		buffer = (char *) malloc(str_size+1);
-		memset(buffer, 0, str_size+1);
-		memcpy(buffer, str, str_size);
+		int diese_index = bstr.find('#');
+		if (diese_index != string::npos) {
+			buffer = (char *) malloc(diese_index);
+			memset(buffer, 0, diese_index);
+			memcpy(buffer, str+1, diese_index-1);
+
+		} else {
+			int str_size = strlen(str);
+
+			buffer = (char *) malloc(str_size+1);
+			memset(buffer, 0, str_size+1);
+			memcpy(buffer, str, str_size);
+		}
 
 		free(str);
 		str = NULL;

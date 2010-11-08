@@ -162,10 +162,7 @@ void TargetThread::Run(){
 		if (!isTerminated()) {
 			string buf_str(buffer);
 
-			int index = buf_str.find(';');
-			buf_str = buf_str.substr(0, index);
-
-			index = buf_str.find(':');
+			int index = buf_str.find(':');
 			string name = buf_str.substr(0, index);
 			buf_str = buf_str.substr(index+1);
 
@@ -219,8 +216,6 @@ void InitiatorThread::Run(){
 			os << time << ":";
 			double val = *((*fVariables)[i]);
 			os << stringify(val);
-
-			os << ";";
 
 			std::string str = os.str();
 

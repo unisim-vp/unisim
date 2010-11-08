@@ -52,4 +52,26 @@ inline T convertTo(std::string const& s, bool failIfLeftoverChars = true) {
 	return x;
 }
 
+inline char Nibble2HexChar(uint8_t v)
+{
+	v = v & 0xf; // keep only 4-bits
+	return v < 10 ? '0' + v : 'a' + v - 10;
+}
+
+inline uint8_t HexChar2Nibble(char ch)
+{
+	if(ch >= 'a' && ch <= 'f') return ch - 'a' + 10;
+	if(ch >= '0' && ch <= '9') return ch - '0';
+	if(ch >= 'A' && ch <= 'F') return ch - 'A' + 10;
+	return 0;
+}
+
+inline bool IsHexChar(char ch)
+{
+	if(ch >= 'a' && ch <= 'f') return true;
+	if(ch >= '0' && ch <= '9') return true;
+	if(ch >= 'A' && ch <= 'F') return true;
+	return false;
+}
+
 #endif /* CONVERT_HH_ */

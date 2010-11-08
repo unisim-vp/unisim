@@ -334,7 +334,7 @@ bool S19_Loader<MEMORY_ADDR>::memWrite(physical_address_t addr, const void *buff
 			}
 			else 
 			{
-				cerr << Object::GetName() << ": write into memory (@0x" << hex << addr << " - @0x" << (addr +  size - 1) << dec << ")" << endl;
+//				cerr << Object::GetName() << ": write into memory (@0x" << hex << addr << " - @0x" << (addr +  size - 1) << dec << ")" << endl;
 				success = true;
 			}
 		}

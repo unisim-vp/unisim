@@ -30,6 +30,7 @@
 #endif
 
 #include "SocketWriter.hpp"
+#include "../convert.hh"
 
 namespace unisim {
 namespace service {
@@ -112,8 +113,26 @@ void SocketWriter::Run() {
 void SocketWriter::send(const char* data) {
 
 	int data_size = strlen(data);
-	char* dd = (char *) malloc(data_size+1);
-	memcpy(dd, data, data_size+1);
+	char* dd = (char *) malloc(data_size+5);
+	memset(dd, 0, data_size+5);
+
+	dd[0] = '$';
+	uint8_t checksum = 0;
+	unsigned int pos = 0;
+	char c;
+
+	while(pos < data_size)
+	{
+		c = data[pos];
+		dd[pos+1] = c;
+		checksum += (uint8_t) c;
+		pos++;
+	}
+	dd[pos+1] = '#';
+
+	dd[pos+2] = Nibble2HexChar(checksum >> 4);
+	dd[pos+3] = Nibble2HexChar(checksum & 0xf);
+
 	buffer_queue->add(dd);
 }
 
