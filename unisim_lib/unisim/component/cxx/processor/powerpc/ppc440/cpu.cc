@@ -51,39 +51,6 @@ namespace ppc440 {
 
 template class CPU<Config>;
 
-TimeBaseRegisterInterface::TimeBaseRegisterInterface(const char *_name, uint64_t *_value, Type _type) :
-	name(_name),
-	value(_value),
-	type(_type)
-{
-}
-
-TimeBaseRegisterInterface::~TimeBaseRegisterInterface()
-{
-}
-
-const char *TimeBaseRegisterInterface::GetName() const
-{
-	return name.c_str();
-}
-
-void TimeBaseRegisterInterface::GetValue(void *buffer) const
-{
-	*(uint32_t *) buffer = (type == TB_LOW) ? (uint32_t) *value
-	                                        : (uint32_t)(*value >> 32);
-}
-
-void TimeBaseRegisterInterface::SetValue(const void *buffer)
-{
-	*value = (type == TB_LOW) ? (*value & 0xffffffff00000000ULL) | (uint64_t)(*(uint32_t *) buffer);
-	                          : (*value & 0x00000000ffffffffULL) | ((uint64_t)(*(uint32_t *) buffer) << 32);
-}
-
-int TimeBaseRegisterInterface::GetSize() const
-{
-	return 4;
-}
-
 } // end of namespace ppc440
 } // end of namespace powerpc
 } // end of namespace processor
