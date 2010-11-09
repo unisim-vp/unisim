@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 
+#include <sstream>
 #include <fstream>
 
 #ifdef WIN32
@@ -57,6 +58,7 @@ void SocketReader::Run() {
 
 	int err;
 	int n;
+	stringstream receive_buffer;
 
 	terminated = false;
 
@@ -94,9 +96,36 @@ void SocketReader::Run() {
 		    	int array[] = {sockfd};
 		    	error(array, "ERROR reading from socket");
 		    } else if (n > 0) {
-		    	buffer_queue->add(input_buffer);
+		    	receive_buffer << input_buffer;
 		    }
 
+		} else {
+			int pos = 0;
+			string bstr = receive_buffer.str();
+			receive_buffer.str("");
+			while (bstr.size() > 0) {
+				switch (bstr[pos++]) {
+					case '+': break;
+					case '-': break;
+					case '$': {
+						int diese_index = bstr.find_first_of('#');
+						char* buffer = (char *) malloc(diese_index);
+						memset(buffer, 0, diese_index);
+						memcpy(buffer, bstr.c_str()+1, diese_index-1);
+						buffer_queue->add(buffer);
+						pos = diese_index+3;
+
+					} break;
+					default : ;
+				}
+
+				if (pos < bstr.size()) {
+					bstr = bstr.substr(pos);
+				} else {
+					bstr = "";
+				}
+
+			}
 		}
 
 	}
@@ -106,33 +135,10 @@ void SocketReader::Run() {
 char* SocketReader::receive() {
 
 	char* str = NULL;
-	char* buffer = NULL;
 
 	buffer_queue->next(str);
 
-	if (str != NULL) {
-
-		string bstr(str);
-
-		int diese_index = bstr.find('#');
-		if (diese_index != string::npos) {
-			buffer = (char *) malloc(diese_index);
-			memset(buffer, 0, diese_index);
-			memcpy(buffer, str+1, diese_index-1);
-
-		} else {
-			int str_size = strlen(str);
-
-			buffer = (char *) malloc(str_size+1);
-			memset(buffer, 0, str_size+1);
-			memcpy(buffer, str, str_size);
-		}
-
-		free(str);
-		str = NULL;
-	}
-
-	return buffer;
+	return str;
 }
 
 
