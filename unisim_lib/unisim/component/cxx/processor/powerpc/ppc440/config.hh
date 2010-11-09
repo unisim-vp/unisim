@@ -889,7 +889,7 @@ public:
 		uint32_t GetSW() const { return (w[2] & TLBELayout::TLBE2_SW_MASK) >> TLBELayout::TLBE2_SW_OFFSET; }
 		uint32_t GetSR() const { return (w[2] & TLBELayout::TLBE2_SR_MASK) >> TLBELayout::TLBE2_SR_OFFSET; }
 		ACCESS_CTRL GetAccessCtrl() const { return (ACCESS_CTRL)((w[2] & TLBELayout::TLBE2_ACCESS_CTRL_MASK) >> TLBELayout::TLBE2_ACCESS_CTRL_OFFSET); }
-	private:
+	//private:
 		uint32_t w[3];
 		process_id_t tid;                       // transaction ID (TID)
 	};
@@ -988,7 +988,7 @@ public:
 	static const uint32_t FSB_WIDTH = 16; // 128-bit front side bus
 
 	// Simulation performance speed-up features
-	static const bool PREFETCH_BUFFER_ENABLE = true; // enable faster fetch
+	static const bool PREFETCH_BUFFER_ENABLE = false;//true; // enable faster fetch
 	static const unsigned int NUM_PREFETCH_BUFFER_ENTRIES = 8; //!< Maximum number of instruction in the prefetch buffer
 	static const bool FAST_DL1_LOOKUP_ENABLE = true;
 	static const bool FAST_IL1_LOOKUP_ENABLE = true;
@@ -1067,6 +1067,8 @@ public:
 	static const bool DEBUG_SETUP_ENABLE = true;
 	static const bool DEBUG_STEP_ENABLE = true;
 	static const bool DEBUG_DTLB_ENABLE = true;
+	static const bool DEBUG_ITLB_ENABLE = true;
+	static const bool DEBUG_UTLB_ENABLE = true;
 	static const bool DEBUG_DL1_ENABLE = true;
 	static const bool DEBUG_IL1_ENABLE = true;
 	static const bool DEBUG_LOAD_ENABLE = true;
@@ -1087,6 +1089,8 @@ public:
 	static const bool DEBUG_SETUP_ENABLE = true;
 	static const bool DEBUG_STEP_ENABLE = true;
 	static const bool DEBUG_DTLB_ENABLE = true;
+	static const bool DEBUG_ITLB_ENABLE = true;
+	static const bool DEBUG_UTLB_ENABLE = true;
 	static const bool DEBUG_DL1_ENABLE = true;
 	static const bool DEBUG_IL1_ENABLE = true;
 	static const bool DEBUG_LOAD_ENABLE = true;

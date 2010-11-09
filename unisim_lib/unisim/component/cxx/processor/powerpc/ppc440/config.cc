@@ -41,9 +41,46 @@ namespace processor {
 namespace powerpc {
 namespace ppc440 {
 
-// const uint32_t CRLayout::CR0_LT_MASK;
-// const uint32_t CRLayout::CR0_GT_MASK;
-// const uint32_t CRLayout::CR0_EQ_MASK;
+const uint32_t TLBELayout::TLBE0_EPN_MASK;
+const uint32_t TLBELayout::TLBE0_V_MASK;
+const uint32_t TLBELayout::TLBE0_TS_MASK;
+const uint32_t TLBELayout::TLBE0_SIZE_MASK;
+const uint32_t TLBELayout::TLBE0_TPAR_MASK;
+
+const uint32_t TLBELayout::TLBE1_RPN_MASK;
+const uint32_t TLBELayout::TLBE1_PAR1_MASK;
+const uint32_t TLBELayout::TLBE1_ERPN_MASK;
+
+const uint32_t TLBELayout::TLBE2_PAR2_MASK;
+const uint32_t TLBELayout::TLBE2_U0_MASK;
+const uint32_t TLBELayout::TLBE2_U1_MASK;
+const uint32_t TLBELayout::TLBE2_U2_MASK;
+const uint32_t TLBELayout::TLBE2_U3_MASK;
+const uint32_t TLBELayout::TLBE2_W_MASK;
+const uint32_t TLBELayout::TLBE2_I_MASK;
+const uint32_t TLBELayout::TLBE2_M_MASK;
+const uint32_t TLBELayout::TLBE2_G_MASK;
+const uint32_t TLBELayout::TLBE2_E_MASK;
+const uint32_t TLBELayout::TLBE2_STORAGE_ATTR_MASK;
+const uint32_t TLBELayout::TLBE2_UX_MASK;
+const uint32_t TLBELayout::TLBE2_UW_MASK;
+const uint32_t TLBELayout::TLBE2_UR_MASK;
+const uint32_t TLBELayout::TLBE2_SX_MASK;
+const uint32_t TLBELayout::TLBE2_SW_MASK;
+const uint32_t TLBELayout::TLBE2_SR_MASK;
+const uint32_t TLBELayout::TLBE2_ACCESS_CTRL_MASK;
+
+const uint32_t TLBELayout::TLBE0_TAG_MASK;
+
+const uint32_t TLBELayout::TLBE0_MASK;
+
+const uint32_t TLBELayout::TLBE1_DATA_MASK;
+
+const uint32_t TLBELayout::TLBE1_MASK;
+
+const uint32_t TLBELayout::TLBE2_DATA_MASK;
+
+const uint32_t TLBELayout::TLBE2_MASK;
 
 } // end of namespace ppc440
 } // end of namespace powerpc

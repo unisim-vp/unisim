@@ -125,6 +125,29 @@ void CPU<CONFIG>::EmuFetch(typename CONFIG::address_t addr, void *buffer, uint32
 			throw InstructionAsynchronousMachineCheckException<CONFIG>();
 		}
 	}
+	
+	if(mmu_access.storage_attr & CONFIG::SA_E) // little-endian ?
+	{
+#if BYTE_ORDER == BIG_ENDIAN
+		uint32_t *insn = (uint32_t *) buffer;
+		do
+		{
+			BSwap(*insn);
+		}
+		while(++insn, size -= 4);
+#endif
+	}
+	else
+	{
+#if BYTE_ORDER == LITTLE_ENDIAN
+		uint32_t *insn = (uint32_t *) buffer;
+		do
+		{
+			BSwap(*insn);
+		}
+		while(++insn, size -= 4);
+#endif
+	}
 }
 
 } // end of namespace ppc440

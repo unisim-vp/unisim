@@ -64,8 +64,15 @@ bool CPU<CONFIG>::ReadMemory(typename CONFIG::address_t addr, void *buffer, uint
 			mmu_access.memory_access_type = CONFIG::MAT_READ;
 			mmu_access.memory_type = mt;
 	
-			EmuTranslateAddress<true>(mmu_access); // debug is enabled
-	
+			try
+			{
+				EmuTranslateAddress<true>(mmu_access); // debug is enabled
+			}
+			catch(DSIException<CONFIG>& exc) { return false; }
+			catch(ISIException<CONFIG>& exc) { return false; }
+			catch(DataTLBErrorException<CONFIG>& exc) { return false; }
+			catch(InstructionTLBErrorException<CONFIG>& exc) { return false; }
+
 			storage_attr = mmu_access.storage_attr;
 			physical_addr = mmu_access.physical_addr;
 			protection_boundary = mmu_access.protection_boundary;
@@ -188,7 +195,14 @@ bool CPU<CONFIG>::WriteMemory(typename CONFIG::address_t addr, const void *buffe
 			mmu_access.memory_access_type = CONFIG::MAT_WRITE;
 			mmu_access.memory_type = mt;
 	
-			EmuTranslateAddress<true>(mmu_access); // debug is enabled
+			try
+			{
+				EmuTranslateAddress<true>(mmu_access); // debug is enabled
+			}
+			catch(DSIException<CONFIG>& exc) { return false; }
+			catch(ISIException<CONFIG>& exc) { return false; }
+			catch(DataTLBErrorException<CONFIG>& exc) { return false; }
+			catch(InstructionTLBErrorException<CONFIG>& exc) { return false; }
 	
 			storage_attr = mmu_access.storage_attr;
 			physical_addr = mmu_access.physical_addr;
@@ -319,12 +333,16 @@ string CPU<CONFIG>::Disasm(typename CONFIG::address_t addr, typename CONFIG::add
 	mmu_access.memory_access_type = CONFIG::MAT_READ;
 	mmu_access.memory_type = CONFIG::MT_INSN;
 
-	EmuTranslateAddress<true>(mmu_access);
+	try
+	{
+		EmuTranslateAddress<true>(mmu_access); // debug is enabled
+	}
+	catch(InstructionTLBErrorException<CONFIG>& exc) { string("not mapped"); }
 
 	bool hit = false;
 
 	// Is IL1 enabled ?
-	if(IsInsnCacheEnabled())
+	if(likely(!(mmu_access.storage_attr & CONFIG::SA_I) && IsInsnCacheEnabled())) // cache inhibited ?
 	{
 		// IL1 Access
 		CacheAccess<class CONFIG::IL1_CONFIG> l1_access;
@@ -348,13 +366,13 @@ string CPU<CONFIG>::Disasm(typename CONFIG::address_t addr, typename CONFIG::add
 	if(mmu_access.storage_attr & CONFIG::SA_E) // little-endian ?
 	{
 #if BYTE_ORDER == BIG_ENDIAN
-	BSwap(insn);
+		BSwap(insn);
 #endif
 	}
 	else
 	{
 #if BYTE_ORDER == LITTLE_ENDIAN
-	BSwap(insn);
+		BSwap(insn);
 #endif
 	}
 

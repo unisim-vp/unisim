@@ -73,7 +73,7 @@ typedef unisim::component::cxx::processor::powerpc::ppc440::Config CPU_CONFIG;
 void SigIntHandler(int signum)
 {
 	cerr << "Interrupted by Ctrl-C or SIGINT signal" << endl;
-	unisim::kernel::service::Simulator::simulator->Stop(0, 0);
+	sc_stop();
 }
 
 using namespace std;
@@ -262,6 +262,7 @@ Simulator::Simulator(int argc, char **argv)
 	//=========================================================================
 
 	cpu->memory_import >> memory->memory_export;
+	cpu->loader_import >> elf32_loader->loader_export;
 	
 	if(enable_inline_debugger)
 	{
@@ -377,7 +378,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("memory.read-latency", sc_time(mem_cycle_time, SC_PS).to_string().c_str());
 	simulator->SetVariable("memory.write-latency", SC_ZERO_TIME.to_string().c_str());
 	simulator->SetVariable("memory.org", 0x00000000UL);
-	simulator->SetVariable("memory.bytesize", (uint32_t) -1);
+	simulator->SetVariable("memory.bytesize", 0xffffffffffffffffULL);
 
 	//=========================================================================
 	//===                      Service run-time configuration               ===

@@ -43,6 +43,7 @@ set addressclass {typename CONFIG::address_t}
 template <{class} {CONFIG}>
 
 action {void} execute({typename CONFIG::STATE *} {cpu}) {
+	std::cerr << "isa: 0x" << std::hex << Operation<CONFIG>::GetEncoding() << " is an illegal instruction" << std::dec << std::endl;
 	throw IllegalInstructionException<CONFIG>();
 }
 

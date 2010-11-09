@@ -160,7 +160,7 @@ bool Memory<PHYSICAL_ADDR, PAGE_SIZE>::ReadMemory(PHYSICAL_ADDR physical_addr, v
 {
 	uint32_t copied;
 	PHYSICAL_ADDR addr;
-	
+
 	if(physical_addr < lo_addr || (physical_addr + (size - 1)) > hi_addr || (physical_addr + size) < physical_addr) return false;
 	// the third condition is for testing overwrapping (gdb did it !)
 	

@@ -61,7 +61,7 @@ template <class CONFIG>
 CPU<CONFIG>::CPU(const char *name, Object *parent)
 	: Object(name, parent, "PowerPC PPC440 CPU")
 	, unisim::component::cxx::processor::powerpc::ppc440::Decoder<CONFIG>()
-	, Client<Loader<typename CONFIG::physical_address_t> >(name,  parent)
+	, Client<Loader<typename CONFIG::address_t> >(name,  parent)
 	, Client<SymbolTableLookup<typename CONFIG::address_t> >(name,  parent)
 	, Client<DebugControl<typename CONFIG::address_t> >(name,  parent)
 	, Client<MemoryAccessReporting<typename CONFIG::address_t> >(name,  parent)
@@ -82,7 +82,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	, memory_injection_export("memory-injection-export",  this)
 	, synchronizable_export("synchronizable-export",  this)
 	, memory_access_reporting_control_export("memory_access_reporting_control_export",  this)
-	, kernel_loader_import("kernel-loader-import",  this)
+	, loader_import("loader-import",  this)
 	, debug_control_import("debug-control-import",  this)
 	, memory_access_reporting_import("memory-access-reporting-import",  this)
 	, symbol_table_lookup_import("symbol-table-lookup-import",  this)
@@ -99,6 +99,8 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	, itlb_power_mode_import("itlb-power-mode-import",  this)
 	, dtlb_power_mode_import("dtlb-power-mode-import",  this)
 	, utlb_power_mode_import("utlb-power-mode-import",  this)
+    , linux_printk_buf_addr(0)
+    , linux_printk_buf_size(0)
 	, logger(*this)
 	, requires_memory_access_reporting(true)
 	, requires_finished_instruction_reporting(true)
@@ -120,6 +122,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	, verbose_write_memory(false)
 	, verbose_exception(false)
 	, verbose_set_msr(false)
+	, enable_linux_printk_snooping(false)
 	, trap_on_instruction_counter(0xffffffffffffffffULL)
 	, max_inst(0xffffffffffffffffULL)
 	, registers_registry()
@@ -159,6 +162,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	, param_verbose_write_memory("verbose-write-memory",  this,  verbose_write_memory, "enable/disable verbosity when writing memory for a debug purpose")
 	, param_verbose_exception("verbose-exception",  this,  verbose_exception, "enable/disable verbosity when handling exceptions")
 	, param_verbose_set_msr("verbose-set-msr",  this,  verbose_set_msr, "enable/disable verbosity when setting MSR")
+	, param_enable_linux_printk_snooping("enable-linux-printk-snooping", this, enable_linux_printk_snooping, "enable/disable linux printk buffer snooping")
 	, param_trap_on_instruction_counter("trap-on-instruction-counter",  this,  trap_on_instruction_counter, "number of simulated instruction before traping")
 //	, param_bus_cycle_time("bus-cycle-time",  this,  bus_cycle_time, "bus cycle time in picoseconds")
 	, stat_instruction_counter("instruction-counter",  this,  instruction_counter, "number of simulated instructions")
@@ -534,6 +538,11 @@ bool CPU<CONFIG>::Setup()
 		EnableFPU();
 		SetUserPrivilegeLevel();
 	}
+	
+	if(loader_import)
+	{
+		SetCIA(loader_import->GetEntryPoint());
+	}
 
 	if(!memory_access_reporting_import) {
 		requires_memory_access_reporting = false;
@@ -551,6 +560,29 @@ bool CPU<CONFIG>::Setup()
 		logger << "Floating-point self test failed !" << endl;
 		logger << EndDebugError;
 		return false;
+	}
+
+	if(CONFIG::DEBUG_ENABLE)
+	{
+		if(enable_linux_printk_snooping)
+		{
+			if(!linux_printk_buf_addr)
+			{
+				if(symbol_table_lookup_import)
+				{
+					const Symbol<typename CONFIG::address_t> *symbol;
+
+					symbol = symbol_table_lookup_import->FindSymbolByName("printk_buf", Symbol<typename CONFIG::address_t>::SYM_OBJECT);
+					
+					if(symbol)
+					{
+						linux_printk_buf_addr = symbol->GetAddress();
+						linux_printk_buf_size = symbol->GetSize();
+						cerr << "Found Linux printk buffer at 0x" << hex << linux_printk_buf_addr << std::dec << "(" << linux_printk_buf_size << " bytes)" << endl;
+					}
+				}
+			}
+		}
 	}
 
 	return true;
@@ -732,7 +764,7 @@ uint32_t CPU<CONFIG>::GetSPR(unsigned int n) const
 			return GetSRR1();
 		case 0x030:
 			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-			return GetPIR();
+			return GetPID();
 		case 0x03a:
 			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
 			return GetCSRR0();
@@ -996,7 +1028,7 @@ void CPU<CONFIG>::SetSPR(unsigned int n, uint32_t value)
 			return;
 		case 0x030:
 			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-			SetPIR(value);
+			SetPID(value);
 			return;
 		case 0x036:
 			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
@@ -1261,9 +1293,9 @@ void CPU<CONFIG>::StepOneInstruction()
 			if(dbg_cmd == DebugControl<typename CONFIG::address_t>::DBG_KILL) Stop(0);
 			if(dbg_cmd == DebugControl<typename CONFIG::address_t>::DBG_RESET)
 			{
-				if(kernel_loader_import)
+				if(loader_import)
 				{
-					kernel_loader_import->Reset();
+					loader_import->Reset();
 				}
 			}
 		} while(1);
@@ -1296,10 +1328,6 @@ void CPU<CONFIG>::StepOneInstruction()
 		{
 			EmuFetch(addr, &insn, 4);
 		}
-
-#if BYTE_ORDER == LITTLE_ENDIAN
-		BSwap(insn);
-#endif
 
 		if(unlikely(requires_memory_access_reporting)) 
 		{
@@ -1737,6 +1765,54 @@ template <class CONFIG>
 void CPU<CONFIG>::Synchronize()
 {
 }
+
+template <class CONFIG>
+void CPU<CONFIG>::Isync()
+{
+	FlushSubsequentInstructions();
+	InvalidateITLB();
+	InvalidateDTLB();
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::Rfi()
+{
+	FlushSubsequentInstructions();
+	InvalidateITLB();
+	InvalidateDTLB();
+
+	if(unlikely(GetMSR_PR())) throw PrivilegeViolationException<CONFIG>();
+
+	SetNIA(GetSRR0());
+	SetMSR(GetSRR1());
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::Rfci()
+{
+	FlushSubsequentInstructions();
+	InvalidateITLB();
+	InvalidateDTLB();
+
+	if(unlikely(GetMSR_PR())) throw PrivilegeViolationException<CONFIG>();
+
+	SetNIA(GetCSRR0());
+	SetMSR(GetCSRR1());
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::Rfmci()
+{
+	FlushSubsequentInstructions();
+	InvalidateITLB();
+	InvalidateDTLB();
+
+	if(unlikely(GetMSR_PR())) throw PrivilegeViolationException<CONFIG>();
+
+	SetNIA(GetMCSRR0());
+	SetMSR(GetMCSRR1());
+}
+
 
 template <class CONFIG>
 ostream& operator << (ostream& os, const MMUAccess<CONFIG>& mmu_access)

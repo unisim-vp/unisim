@@ -49,12 +49,7 @@ sc.disasm = {
 
 op rfi(19[6]:?[15]:50[10]:?[1])
 rfi.execute = {
-	cpu->FlushSubsequentInstructions();
-	uint32_t msr = cpu->GetMSR();
-	if(unlikely(msr & CONFIG::MSR_PR_MASK)) throw PrivilegeViolationException<CONFIG>();
-
-	cpu->SetNIA(cpu->GetSRR0() & 0xfffffffcUL);
-	cpu->SetMSR((msr & 0xffff008cUL) | (cpu->GetSRR1() & 0x0000ff73UL));
+	cpu->Rfi();
 }
 rfi.disasm = {
 	os << "rfi" << endl;

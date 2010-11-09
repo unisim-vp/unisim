@@ -201,6 +201,7 @@ public:
 	uint32_t page_size;                               // Page size in bytes
 
 	// Output
+	typename CONFIG::TLB_ENTRY *pte;
 	typename CONFIG::physical_address_t physical_addr;
 	typename CONFIG::address_t protection_boundary;
 	typename CONFIG::STORAGE_ATTR storage_attr;
@@ -231,7 +232,7 @@ private:
 template <class CONFIG>
 class CPU :
 	public unisim::component::cxx::processor::powerpc::ppc440::Decoder<CONFIG>,
-	public Client<Loader<typename CONFIG::physical_address_t> >,
+	public Client<Loader<typename CONFIG::address_t> >,
 	public Client<SymbolTableLookup<typename CONFIG::address_t> >,
 	public Client<DebugControl<typename CONFIG::address_t> >,
 	public Client<MemoryAccessReporting<typename CONFIG::address_t> >,
@@ -259,7 +260,7 @@ public:
 	ServiceExport<Synchronizable> synchronizable_export;
 	ServiceExport<MemoryAccessReportingControl> memory_access_reporting_control_export;
 
-	ServiceImport<Loader<typename CONFIG::physical_address_t> > kernel_loader_import;
+	ServiceImport<Loader<typename CONFIG::address_t> > loader_import;
 	ServiceImport<DebugControl<typename CONFIG::address_t> > debug_control_import;
 	ServiceImport<MemoryAccessReporting<typename CONFIG::address_t> > memory_access_reporting_import;
 	ServiceImport<SymbolTableLookup<typename CONFIG::address_t> > symbol_table_lookup_import;
@@ -696,6 +697,20 @@ public:
 	void Stwcx(unsigned int rs, typename CONFIG::address_t addr);
 
 	//=====================================================================
+	//=                Synchronization instructions handling              =
+	//=====================================================================
+
+	void Isync();
+
+	//=====================================================================
+	//=           Return from interrupt instructions handling             =
+	//=====================================================================
+	
+	void Rfi();
+	void Rfci();
+	void Rfmci();
+
+	//=====================================================================
 	//=                        Debugging stuffs                           =
 	//=====================================================================
 
@@ -706,6 +721,8 @@ public:
 	virtual const char *GetArchitectureName() const;
 	string GetObjectFriendlyName(typename CONFIG::address_t addr);
 	string GetFunctionFriendlyName(typename CONFIG::address_t addr);
+	typename CONFIG::address_t linux_printk_buf_addr;
+	uint32_t linux_printk_buf_size;
 
 	
 	//=====================================================================
@@ -809,8 +826,6 @@ private:
 	void ChooseEntryToEvictITLB(MMUAccess<CONFIG>& mmu_access);
 	void ChooseEntryToEvictDTLB(MMUAccess<CONFIG>& mmu_access);
 	void ChooseEntryToEvictUTLB(MMUAccess<CONFIG>& mmu_access);
-	void EmuFillITLB(MMUAccess<CONFIG>& mmu_access);
-	void EmuFillDTLB(MMUAccess<CONFIG>& mmu_access);
 	template <bool DEBUG> void EmuTranslateAddress(MMUAccess<CONFIG>& mmu_access);
 	
 	void InvalidateDL1Set(uint32_t index);
@@ -879,6 +894,7 @@ private:
 	bool verbose_write_memory;
 	bool verbose_exception;
 	bool verbose_set_msr;
+	bool enable_linux_printk_snooping;
 	uint64_t trap_on_instruction_counter;
 	uint64_t max_inst;                                         //!< Maximum number of instructions to execute
 
@@ -1047,6 +1063,7 @@ private:
 	Parameter<bool> param_verbose_write_memory;
 	Parameter<bool> param_verbose_exception;
 	Parameter<bool> param_verbose_set_msr;
+	Parameter<bool> param_enable_linux_printk_snooping;
 	Parameter<uint64_t> param_trap_on_instruction_counter;
 
 	//=====================================================================

@@ -77,12 +77,14 @@ ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::El
 	, logger(*this)
 	, verbose(false)
 	, endianness(E_LITTLE_ENDIAN)
+	, parse_dwarf(true)
 	, param_filename("filename", this, filename, "the ELF filename to load into memory")
 	, param_base_addr("base-addr", this, base_addr, "if not null, a forced base address for a unique program segment")
 	, param_force_use_virtual_address("force-use-virtual-address", this, force_use_virtual_address, "force use of virtual addresses instead of physical addresses")
 	, param_dump_headers("dump-headers", this, dump_headers, "dump headers while loading ELF file")
 	, param_verbose("verbose", this, verbose, "enable/disable verbosity")
 	, param_dwarf_to_html_output_directory("dwarf-to-html-output-directory", this, dwarf_to_html_output_directory, "DWARF v2/v3 to HTML output directory")
+	, param_parse_dwarf("parse-dwarf", this, parse_dwarf, "Enable/Disable parsing of DWARF debugging informations")
 {
 	Object::SetupDependsOn(memory_import);
 }
@@ -393,10 +395,11 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 					}
 					free(section);
 				}
-				else if(strcmp(section_name, ".debug_line") == 0 || strcmp(section_name, ".debug_info") == 0 || strcmp(section_name, ".debug_abbrev") == 0
+				else if(parse_dwarf
+				     && (strcmp(section_name, ".debug_line") == 0 || strcmp(section_name, ".debug_info") == 0 || strcmp(section_name, ".debug_abbrev") == 0
 				     || strcmp(section_name, ".debug_aranges") == 0 || strcmp(section_name, ".debug_pubnames") == 0 || strcmp(section_name, ".debug_pubtypes") == 0
 				     || strcmp(section_name, ".debug_macinfo") == 0 || strcmp(section_name, ".debug_str") == 0 || strcmp(section_name, ".debug_loc") == 0
-				     || strcmp(section_name, ".debug_ranges") == 0 || strcmp(section_name, ".debug_frame") == 0)
+				     || strcmp(section_name, ".debug_ranges") == 0 || strcmp(section_name, ".debug_frame") == 0))
 				{
 					if(unlikely(verbose))
 					{

@@ -231,7 +231,7 @@ public:
 	
 	typedef enum { MT_DATA = 0, MT_INSN = 1 } MemoryType;
 	
-	typedef enum { PR_USER = 0, PR_SUPERVISOR = 1 } PrivilegeLevel;
+	typedef enum { PR_SUPERVISOR = 0, PR_USER = 1 } PrivilegeLevel;
 	
 	typedef enum {
 		// Freescale models

@@ -122,6 +122,7 @@ private:
 	unisim::kernel::logger::Logger logger;
 	bool verbose;
 	endian_type endianness;
+	bool parse_dwarf;
 	
 	Parameter<string> param_filename;
 	Parameter<MEMORY_ADDR> param_base_addr;
@@ -129,6 +130,7 @@ private:
 	Parameter<bool> param_dump_headers;
 	Parameter<bool> param_verbose;
 	Parameter<string> param_dwarf_to_html_output_directory;
+	Parameter<bool> param_parse_dwarf;
 
 	bool Load();
 	void SwapElfHeader(Elf_Ehdr *hdr);

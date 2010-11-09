@@ -31,49 +31,22 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
- 
-/***************************************
 
-MEMORY SYNCHRONIZATION INSTRUCTIONS
+#include <unisim/component/cxx/processor/powerpc/config.hh>
 
-***************************************/
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace processor {
+namespace powerpc {
 
-op isync(19[6]:?[15]:150[10]:?[1])
-isync.execute = {
-	/* order is always enforced in functional simulation */
-	/* but we still must flush subsequent instruction in the prefetch buffer, forcing refetch */
-	//cpu->FlushSubsequentInstructions();
-	cpu->Isync();
-}
-isync.disasm = { os << "isync"; }
+const uint32_t CRLayout::CR0_LT_MASK;
+const uint32_t CRLayout::CR0_GT_MASK;
+const uint32_t CRLayout::CR0_EQ_MASK;
+const uint32_t CRLayout::CR0_SO_MASK;
 
-op lwarx(31[6]:rd[5]:ra[5]:rb[5]:20[10]:?[1])
-lwarx.execute = {
-	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
-
-	cpu->Lwarx(rd, ea);
-}
-lwarx.disasm = {
-	os << "lwarx r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
-	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
-	{
-		typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
-		os << " <" << cpu->GetObjectFriendlyName(ea) << ">";
-	}
-}
-
-op stwcx_(31[6]:rs[5]:ra[5]:rb[5]:150[10]:1[1])
-stwcx_.execute = {
-	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
-
-	cpu->Stwcx(rs, ea);
-}
-
-stwcx_.disasm = {
-	os << "stwcx. r" << (unsigned int) rs << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
-	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
-	{
-		typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
-		os << " <" << cpu->GetObjectFriendlyName(ea) << ">";
-	}
-}
+} // end of namespace powerpc
+} // end of namespace processor
+} // end of namespace cxx
+} // end of namespace component
+} // end of namespace unisim
