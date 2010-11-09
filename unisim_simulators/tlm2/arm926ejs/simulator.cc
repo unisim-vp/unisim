@@ -448,9 +448,9 @@ DefaultConfiguration(unisim::kernel::service::Simulator *sim)
 	sim->SetVariable("raw-kernel-loader.filename",      
 												 "test/install/uImage");
 	sim->SetVariable("raw-kernel-loader.base-addr",
-												 0x210000);
-	sim->SetVariable("raw-fs-loader.filename",   "test/install/rootfs.tar.gz.uimg");
-	sim->SetVariable("raw-fs-loader.base-addr",  0x410000);
+												 0x110000);
+	sim->SetVariable("raw-fs-loader.filename",   "test/install/rootfs.cpio.gz.uimg");
+	sim->SetVariable("raw-fs-loader.base-addr",  0x1110000);
 
 	sim->SetVariable("trap-handler.num-traps", 3);
 	sim->SetVariable("trap-handler.trap-reporting-export-name[0]",

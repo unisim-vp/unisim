@@ -156,6 +156,18 @@ public:
 			: 0;
 	}
 
+	/** MMU enable/disabled.
+	 *
+	 * @return different than 0 if enabled, 0 otherwise
+	 */
+	uint32_t IsMMUEnabled() const
+	{
+		return 
+			(control_register_c1 & CONTROL_REGISTER_C1_M)
+			? 1
+			: 0;
+	}
+
 	/** ICache enabled/disabled.
 	 *
 	 * @return different than 0 if enabled, 0 otherwise
@@ -179,6 +191,27 @@ public:
 			? 1
 			: 0;
 	}
+
+	/** Get the Translation Table Base register value.
+	 *
+	 * @return the current TTB register
+	 */
+	uint32_t GetTTB() const
+	{
+		return translation_table_base_register_c2;
+	}
+
+	/** Get the current FCSE PID.
+	 *
+	 * @return the current FCSE PID
+	 */
+	uint32_t GetFCSE_PID() const
+	{
+		return fsce_pid_register_c13;
+	}
+
+	/** FCSE PID mask */
+	static const uint32_t FCSE_PID_MASK = 0xfe000000UL;
 
 private:
 	CP15Interface *cpu;
@@ -210,10 +243,6 @@ private:
 		((uint32_t)0x06   << 16) |
 		((uint32_t)0x0926 << 4 ) |
 		(uint32_t)0x05;
-	/** CP15 Translation table base register */
-	uint32_t translation_table_base_register_c2;
-	static const uint32_t TRANSLATION_TABLE_BASE_REGISTER_SBZ =
-		0x00003fffUL;
 	/** CP15 control register */
 	uint32_t control_register_c1;
 	static const uint32_t CONTROL_REGISTER_C1_SBZ = 0xfffa0c00UL;
@@ -228,6 +257,15 @@ private:
 	static const uint32_t CONTROL_REGISTER_C1_C  = 0x00004UL;
 	static const uint32_t CONTROL_REGISTER_C1_A  = 0x00002UL;
 	static const uint32_t CONTROL_REGISTER_C1_M  = 0x00001UL;
+	/** CP15 Translation table base register */
+	uint32_t translation_table_base_register_c2;
+	static const uint32_t TRANSLATION_TABLE_BASE_REGISTER_SBZ =
+		0x00003fffUL;
+	/** CP15 Domain access control register */
+	uint32_t domain_access_control_register_c3;
+	/** CP15 Process ID register */
+	uint32_t fsce_pid_register_c13;
+	uint32_t context_id_register_c13;
 };
 
 } // end of namespace arm926ejs

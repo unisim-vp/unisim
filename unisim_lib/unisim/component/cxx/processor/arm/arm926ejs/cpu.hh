@@ -42,6 +42,7 @@
 #include "unisim/component/cxx/processor/arm/arm926ejs/cp15interface.hh"
 #include "unisim/component/cxx/processor/arm/arm926ejs/cache.hh"
 #include "unisim/component/cxx/processor/arm/arm926ejs/tlb.hh"
+#include "unisim/component/cxx/processor/arm/arm926ejs/lockdown_tlb.hh"
 #include "unisim/component/cxx/processor/arm/arm926ejs/isa_arm32.hh"
 #include "unisim/component/cxx/processor/arm/arm926ejs/isa_thumb.hh"
 #include "unisim/kernel/service/service.hh"
@@ -581,6 +582,19 @@ public:
 	 * Perform a complete invalidation of the unified TLB.
 	 */
 	void InvalidateTLB();
+	/** Test and clean DCache.
+	 * Perform a test and clean operation of the DCache.
+	 *
+	 * @return return true if the complete cache is clean, false otherwise
+	 */
+	bool TestAndCleanDCache();
+	/** Test, clean and invalidate DCache.
+	 * Perform a test and clean operation of the DCache, and invalidate the
+	 *   complete cache if it is clean.
+	 *
+	 * @return return true if the complete cache is clean, false otherwise
+	 */
+	bool TestCleanAndInvalidateDCache();
 
 	/**************************************************************/
 	/* cp15 to cpu interface                            END       */
@@ -598,7 +612,7 @@ public:
 	Cache dcache;
 
 	/** The Lockdown TLB */
-	// LTLB ltlb;
+	LockdownTLB ltlb;
 	/** The TLB */
 	TLB tlb;
 
@@ -720,6 +734,37 @@ protected:
 	/** Performs the load/stores present in the queue of memory operations.
 	 */
 	void PerformLoadStoreAccesses();
+	/** Translate address from MVA to physical address.
+	 *
+	 * @param mva the generated modified virtual address
+	 * @param pa the generated physicial address
+	 * @return true on success, false on error
+	 */
+	bool TranslateMVA(uint32_t mva, uint32_t &pa);
+	/** Translate address from VA to MVA and physical address.
+	 *
+	 * @param is_read the type of access (read/write)
+	 * @param va the virtual address to handle
+	 * @param mva the generated modified virtual address
+	 * @param pa the generated physicial address
+	 * @param cacheable is the access cacheable
+	 * @param bufferable is the access bufferable
+	 * @return true on success, false on error
+	 */
+	bool TranslateVA(bool is_read, uint32_t va, uint32_t &mva, uint32_t &pa,
+			uint32_t &cacheable, uint32_t &bufferable);
+	/** Non intrusive translate address from VA to MVA and physical address.
+	 *
+	 * @param is_read the type of access (read/write)
+	 * @param va the virtual address to handle
+	 * @param mva the generated modified virtual address
+	 * @param pa the generated physicial address
+	 * @param cacheable is the access cacheable
+	 * @param bufferable is the access bufferable
+	 * @return true on success, false on error
+	 */
+	bool NonIntrusiveTranslateVA(bool is_read, uint32_t va, uint32_t &mva,
+			uint32_t &pa, uint32_t &cacheable, uint32_t &bufferable);
 	/** Performs a prefetch access.
 	 *
 	 * @param memop the memory operation containing the prefetch access

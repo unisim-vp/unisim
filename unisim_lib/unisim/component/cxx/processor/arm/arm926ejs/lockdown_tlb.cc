@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2010,
+ *  Copyright (c) 2009,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -36,13 +36,13 @@
 #include <inttypes.h>
 #include <string.h>
 #include <stdlib.h>
-#include "unisim/component/cxx/processor/arm/arm926ejs/tlb.hh"
+#include "unisim/component/cxx/processor/arm/arm926ejs/lockdown_tlb.hh"
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger.hh"
 
-// #define TLB_DEBUG
+// #define LOCKDOWN_TLB_DEBUG
 
-#ifdef TLB_DEBUG
+#ifdef LOCKDOWN_TLB_DEBUG
 #include <iostream>
 using namespace std;
 #endif
@@ -70,8 +70,8 @@ namespace processor {
 namespace arm {
 namespace arm926ejs {
 
-TLB::
-TLB(const char *name, unisim::kernel::service::Object *parent) 
+LockdownTLB::
+LockdownTLB(const char *name, unisim::kernel::service::Object *parent) 
 	: unisim::kernel::service::Object(name, parent)
 	, Client<CachePowerEstimator>(name,  parent)
 	, Client<PowerMode>(name,  parent)
@@ -87,39 +87,37 @@ TLB(const char *name, unisim::kernel::service::Object *parent)
 	, rand(1, -1, rand.Max, rand.Min)
 	, stat_read_accesses("read-accesses", this,
 			read_accesses,
-			"Number of read accesses to the cache.")
+			"Number of read accesses to the lockdown TLB.")
 	, stat_write_accesses("write-accesses", this,
 			write_accesses,
-			"Number of write accesses to the cache.")
+			"Number of write accesses to the lockdown TLB.")
 	, form_accesses("accesses", this,
 			unisim::kernel::service::Formula<uint32_t>::OP_ADD,
 			&stat_read_accesses, &stat_write_accesses, 0,
-			"Number of accesses to the cache.")
+			"Number of accesses to the lockdown TLB.")
 	, stat_read_hits("read-hits", this,
 			read_hits,
-			"Number of read hit accesses to the cache.")
+			"Number of read hit accesses to the lockdown TLB.")
 	, stat_write_hits("write-hits", this,
 			write_hits,
-			"Number of write hit accesses to the cache.")
+			"Number of write hit accesses to the lockdown TLB.")
 	, form_hits("hits", this,
 			unisim::kernel::service::Formula<uint32_t>::OP_ADD,
 			&stat_read_hits, &stat_write_hits, 0,
-			"Number of hit accesses to the cache.")
+			"Number of hit accesses to the lockdown TLB.")
 	, form_hit_rate("hit-rate", this,
 			unisim::kernel::service::Formula<double>::OP_DIV,
 			&form_hits, &form_accesses, 0,
-			"Cache hit rate.")
+			"Lockdown TLB hit rate.")
 {
-	for (uint32_t set = 0; set < m_sets_; set++)
+	for (uint32_t way = 0; way < m_associativity_; way++)
 	{
-		for (uint32_t way = 0; way < m_associativity_; way++)
-		{
-			m_tag[set][way] = 0;
-			m_data[set][way] = 0;
-			m_valid[set][way] = false;
-		}
-		m_replacement_history[set] = 0;
+		m_tag[way] = 0;
+		m_data[way] = 0;
+		m_valid[way] = false;
 	}
+	m_replacement_history = 0;
+	
 	stat_read_accesses.SetFormat(
 			unisim::kernel::service::VariableBase::FMT_DEC);
 	stat_write_accesses.SetFormat(
@@ -134,133 +132,72 @@ TLB(const char *name, unisim::kernel::service::Object *parent)
 			unisim::kernel::service::VariableBase::FMT_DEC);
 }
 
-TLB::
-~TLB()
+LockdownTLB::
+~LockdownTLB()
 {
 	// nothing to do
 }
 
 bool
-TLB::
+LockdownTLB::
 Setup()
 {
 	return true;
 }
 
-/** Invalidate all the entries of the tlb */
 void
-TLB::
+LockdownTLB::
 Invalidate()
 {
-	memset(m_valid, 0, sizeof(uint8_t) * m_sets_ * m_associativity_);
+	memset(m_valid, 0, sizeof(uint8_t) * m_associativity_);
 }
 
-/** Get the tag corresponding to the given address
+/** Get the way of the given tag
  *
- * @param addr the address to consider
- * @return the tag for the given address
- */
-uint32_t 
-TLB::
-GetTag(uint32_t addr) const
-{
-	return (addr & m_tag_mask_) >> m_tag_shift_;
-}
-
-/** Get the set corresponding to the given address
- *
- * @param addr the address to consider
- * @return the set for the given address
- */
-uint32_t 
-TLB::
-GetSet(uint32_t addr) const
-{
-	return (addr & m_set_mask_) >> m_set_shift_;
-}
-
-/** Get the way for the corresponding couple tag and set.
- *
- * @param tag the tag to search for
- * @param set the set to look for the tag in
- * @param way the way in which the tag was found
+ * @param tag the tag we are looking for 
+ * @param will be set to the way of the tag if found
  * @return true if found, false otherwise
  */
 bool 
-TLB::
-GetWay(uint32_t tag, uint32_t set, uint32_t *way) const
+LockdownTLB::
+GetWay(uint32_t tag, uint32_t *way) const
 {
 	bool found = false;
-
-	for ( unsigned int i = 0; !false && (i < m_associativity_); i++ )
+	for ( uint32_t i = 0; 
+			!found && (i < m_associativity_); 
+			i++ )
 	{
-		if ( m_tag[set][i] == tag )
+		if ( m_tag[i] == tag )
 		{
-			*way = i;
 			found = true;
+			*way = i;
 		}
 	}
-
 	return found;
 }
 
-/** Get a new way where a new entry can be placed.
+/** Get the valid bit of the given way
  *
- * @param set the set to which the entry should be placed
+ * @param the way to check
+ * @return different than 0 if valid, 0 otherwise
  */
 uint32_t 
-TLB::
-GetNewWay(uint32_t set) 
+LockdownTLB::
+GetValid(uint32_t way) const
 {
-	return rand.Generate(m_associativity_/2) +
-		(m_associativity_/2);
+	return m_valid[way];
 }
 
-/** Get the valid bit of the given set and way.
- *
- * @param set the set to consider
- * @param way the way to consider
- * @return different than 0 if found, 0 otherwise
+/** Get the data contained in one entry
+ * 
+ * @param the way to use
+ * @return the data contained in the way
  */
 uint32_t 
-TLB::
-GetValid(uint32_t set, uint32_t way) const
+LockdownTLB::
+GetData(uint32_t way) const
 {
-	return m_valid[set][way];
-}
-
-/** Get the data contained in the given set and way.
- *
- * @param set the set to consider
- * @param way the way to consider
- * @return the data in the given set and way
- */
-uint32_t 
-TLB::
-GetData(uint32_t set, uint32_t way) const
-{
-	return m_data[set][way];
-}
-
-/** Create a new entry.
- *
- * @param tag the tag to set
- * @param set the set to use
- * @param way the way to use
- * @param data the data to set
- * @param valid the value of the valid field
- */
-void 
-TLB::
-SetEntry(uint32_t tag,
-		uint32_t set,
-		uint32_t way,
-		uint32_t data,
-		uint32_t valid)
-{
-	m_tag[set][way] = tag;
-	m_data[set][way] = data;
-	m_valid[set][way] = valid;
+	return m_data[way];
 }
 
 } // end of namespace arm926ejs

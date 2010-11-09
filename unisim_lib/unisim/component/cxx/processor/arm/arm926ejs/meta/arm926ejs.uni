@@ -9,6 +9,8 @@
 			<file>unisim/component/cxx/processor/arm/arm926ejs/isa_thumb.cc</file>
 			<file>unisim/component/cxx/processor/arm/arm926ejs/cache.hh</file>
 			<file>unisim/component/cxx/processor/arm/arm926ejs/cache.cc</file>
+			<file>unisim/component/cxx/processor/arm/arm926ejs/lockdown_tlb.hh</file>
+			<file>unisim/component/cxx/processor/arm/arm926ejs/lockdown_tlb.cc</file>
 			<file>unisim/component/cxx/processor/arm/arm926ejs/tlb.hh</file>
 			<file>unisim/component/cxx/processor/arm/arm926ejs/tlb.cc</file>
 			<file>unisim/component/cxx/processor/arm/arm926ejs/cp15.hh</file>

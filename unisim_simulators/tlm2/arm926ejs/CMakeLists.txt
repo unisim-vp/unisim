@@ -170,10 +170,10 @@ add_custom_target ( sim__share_test
 		${CMAKE_COMMAND} -E copy_if_different
 			${CMAKE_SOURCE_DIR}/share/test/test.armv5l
 			${SHARE_DIRECTORY}/test/install/test.armv5l
-	COMMAND
-		${CMAKE_COMMAND} -E copy_if_different
-			${CMAKE_SOURCE_DIR}/share/test/u-boot
-			${SHARE_DIRECTORY}/test/install/u-boot
+# 	COMMAND
+# 		${CMAKE_COMMAND} -E copy_if_different
+# 			${CMAKE_SOURCE_DIR}/share/test/u-boot
+# 			${SHARE_DIRECTORY}/test/install/u-boot
 	COMMENT
 		"Setting test program source files"
 	)

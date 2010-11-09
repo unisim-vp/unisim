@@ -117,6 +117,18 @@ public:
 	 * @return the size of the cache in bytes
 	 */
 	uint32_t GetSize();
+	/** Get the number of sets of the cache
+	 * @return the number of sets of the cache
+	 */
+	uint32_t GetNumSets() const 
+	{
+		if ( m_size == 0 ) return 0;
+		return (m_set_mask >> 5) + 1; 
+	} ;
+	/** Get The number of ways of the cache
+	 * @return the number of ways of the cache
+	 */
+	uint32_t GetNumWays() const { return m_associativity_; };
 	/** Set the current replacement policy.
 	 * Sets the cache active replacement policy (round-robin/random).
 	 *

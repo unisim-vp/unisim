@@ -85,6 +85,10 @@ CP15(CP15Interface *_cpu,
 			"Enable verbose mode (0 = non verbose, anything else = verbose).")
 	, logger(*this)
 	, control_register_c1(CONTROL_REGISTER_C1_SBO)
+	, translation_table_base_register_c2(0)
+	, domain_access_control_register_c3(0)
+	, fsce_pid_register_c13(0)
+	, context_id_register_c13(0)
 {
 }
 
@@ -215,6 +219,42 @@ ReadRegister(uint8_t opcode1,
 				}
 			}
 		}
+		// cache operations register
+		else if ( crn == 7 )
+		{
+			if ( crm == 10 )
+			{
+				if ( opcode2 == 3 )
+				{
+#ifdef CP15__DEBUG
+					std::cerr << "CP15: Reading cache operation register c7"
+						", performing test and clean DCache"
+						<< std::endl;
+#endif // CP15__DEBUG
+					handled = true;
+					if ( cpu->TestAndCleanDCache() )
+						reg |= 0x40000000UL;
+					else
+						reg &= ~0x40000000UL;
+				}
+			}
+			else if ( crm == 14 )
+			{
+				if ( opcode2 == 3 )
+				{
+#ifdef CP15__DEBUG
+					std::cerr << "CP15: Reading cache operations register c7"
+						<< ", performing test, clean and invalidate DCache"
+						<< std::endl;
+#endif // CP15__DEBUG
+					handled = true;
+					if ( cpu->TestCleanAndInvalidateDCache() )
+						reg |= 0x40000000UL;
+					else
+						reg &= ~0x40000000UL;
+				}
+			}
+		}
 	}
 	if ( unlikely(!handled) )
 	{
@@ -274,6 +314,11 @@ WriteRegister(uint8_t opcode1,
 							<< " 0x" << std::hex << mod << std::dec
 							<< EndDebugWarning;
 					control_register_c1 = mod;
+					if ( control_register_c1 &
+							CONTROL_REGISTER_C1_C )
+						logger << DebugInfo
+							<< "Dcache Enabled !!!!!!!!"
+							<< EndDebugInfo;
 				}
 			}
 		}
@@ -303,9 +348,38 @@ WriteRegister(uint8_t opcode1,
 				}
 			}
 		}
+		// domain access control
+		else if ( crn == 3 )
+		{
+			if ( crm == 0 )
+			{
+				if ( opcode2 == 0 )
+				{
+#ifdef CP15__DEBUG
+					std::cerr << "CP15: Writing domain access control register"
+						<< " c3"
+						<< std::endl;
+#endif // CP15__DEBUG
+					handled = true;
+					domain_access_control_register_c3 = orig;
+				}
+			}
+		}
 		// cache management functions
 		else if ( crn == 7 )
 		{
+			if ( crm == 5 )
+			{
+				if ( opcode2 == 0 )
+				{
+#ifdef CP15__DEBUG
+					std::cerr << "CP15: Invalidating instruction cache"
+						<< std::endl;
+#endif // CP15__DEBUG
+					cpu->InvalidateCache(true, false);
+					handled = true;
+				}
+			}
 			if ( crm == 7 )
 			{
 				switch ( opcode2 )

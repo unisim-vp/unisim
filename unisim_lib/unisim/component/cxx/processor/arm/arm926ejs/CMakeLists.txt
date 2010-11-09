@@ -116,6 +116,8 @@ set ( cxx_arm_srcs
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/arm926ejs/cpu.cc
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/arm926ejs/cache.hh
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/arm926ejs/cache.cc
+	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/arm926ejs/lockdown_tlb.hh
+	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/arm926ejs/lockdown_tlb.cc
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/arm926ejs/tlb.hh
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/arm926ejs/tlb.cc
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/arm926ejs/cp15.hh

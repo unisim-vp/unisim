@@ -32,8 +32,8 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
-#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_ARM926EJS_TLB_HH__
-#define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_ARM926EJS_TLB_HH__
+#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_ARM926EJS_LOCKDOWN_TLB_HH__
+#define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_ARM926EJS_LOCKDOWN_TLB_HH__
 
 #include <inttypes.h>
 #include "unisim/kernel/service/service.hh"
@@ -59,7 +59,7 @@ namespace processor {
 namespace arm {
 namespace arm926ejs {
 
-class TLB
+class LockdownTLB
 	: public unisim::kernel::service::Client<
 	  	unisim::service::interfaces::CachePowerEstimator>
 	, public unisim::kernel::service::Client<
@@ -71,9 +71,9 @@ public:
 	 * @param name the name of this UNISIM Object
 	 * @param parent the parent UNISIM Object
 	 */
-	TLB(const char *name, unisim::kernel::service::Object *parent = 0);
+	LockdownTLB(const char *name, unisim::kernel::service::Object *parent = 0);
 	/** Destructor */
-	~TLB();
+	~LockdownTLB();
 
 	/** Setup
 	 *
@@ -93,58 +93,25 @@ public:
 	/** Invalidate all the entries of the tlb */
 	void Invalidate();
 
-	/** Get the tag corresponding to the given address
+	/** Get the way of the given tag
 	 *
-	 * @param addr the address to consider
-	 * @return the tag for the given address
-	 */
-	uint32_t GetTag(uint32_t addr) const;
-	/** Get the set corresponding to the given address
-	 *
-	 * @param addr the address to consider
-	 * @return the set for the given address
-	 */
-	uint32_t GetSet(uint32_t addr) const;
-	/** Get the way for the corresponding couple tag and set.
-	 *
-	 * @param tag the tag to search for
-	 * @param set the set to look for the tag in
-	 * @param way the way in which the tag was found
+	 * @param tag the tag we are looking for 
+	 * @param will be set to the way of the tag if found
 	 * @return true if found, false otherwise
 	 */
-	bool GetWay(uint32_t tag, uint32_t set, uint32_t *way) const;
-	/** Get a new way where a new entry can be placed.
+	bool GetWay(uint32_t tag, uint32_t *way) const;
+	/** Get the valid bit of the given way
 	 *
-	 * @param set the set to which the entry should be placed
+	 * @param the way to check
+	 * @return different than 0 if valid, 0 otherwise
 	 */
-	uint32_t GetNewWay(uint32_t set);
-	/** Get the valid bit of the given set and way.
-	 *
-	 * @param set the set to consider
-	 * @param way the way to consider
-	 * @return different than 0 if found, 0 otherwise
+	uint32_t GetValid(uint32_t way) const;
+	/** Get the data contained in one entry
+	 * 
+	 * @param the way to use
+	 * @return the data contained in the way
 	 */
-	uint32_t GetValid(uint32_t set, uint32_t way) const;
-	/** Get the data contained in the given set and way.
-	 *
-	 * @param set the set to consider
-	 * @param way the way to consider
-	 * @return the data in the given set and way
-	 */
-	uint32_t GetData(uint32_t set, uint32_t way) const;
-	/** Create a new entry.
-	 *
-	 * @param tag the tag to set
-	 * @param set the set to use
-	 * @param way the way to use
-	 * @param data the data to set
-	 * @param valid the value of the valid field
-	 */
-	void SetEntry(uint32_t tag,
-			uint32_t set,
-			uint32_t way,
-			uint32_t data,
-			uint32_t valid);
+	uint32_t GetData(uint32_t way) const;
 
 private:
 	/** Cache access counter. */
@@ -163,22 +130,16 @@ private:
 	/** Unisim logging services. */
 	unisim::kernel::logger::Logger logger;
 	
-	static const uint32_t m_sets_ = 32;
-	static const uint32_t m_associativity_ = 2;
-	static const uint32_t m_set_shift_ = 2;
-	static const uint32_t m_set_mask_ = 0x1fUL << m_set_shift_;
-	static const uint32_t m_tag_mask_ = ~(m_set_mask_ | 0x03UL);
-	static const uint32_t m_tag_shift_ = 7;
+	static const uint32_t m_associativity_ = 8;
 
 	unisim::util::random::Random rand;
 
 	uint32_t m_tag_mask;
 	uint32_t m_tag_shift;
-	uint32_t m_set_mask;
-	uint32_t m_tag[m_sets_][m_associativity_];
-	uint32_t m_data[m_sets_][m_associativity_];
-	uint8_t m_valid[m_sets_][m_associativity_];
-	uint32_t m_replacement_history[m_sets_];
+	uint32_t m_tag[m_associativity_];
+	uint32_t m_data[m_associativity_];
+	uint8_t m_valid[m_associativity_];
+	uint32_t m_replacement_history;
 
 	/** UNISIM Statistic of the number of read accesses to the 
 	 * cache.
@@ -212,4 +173,4 @@ private:
 } // end of namespace component
 } // end of namespace unisim
 
-#endif // __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_ARM926EJS_TLB_HH__
+#endif // __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_ARM926EJS_LOCKDOWN_TLB_HH__

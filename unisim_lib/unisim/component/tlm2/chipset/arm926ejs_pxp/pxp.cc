@@ -245,6 +245,12 @@ cpu_target_transport_dbg(transaction_type &trans)
 	else if ( trans.get_address()   >= 0x101f1000UL &&
 			trans.get_address()     <  0x101f2000UL )
 		return uart0_init_socket->transport_dbg(trans);
+	logger << DebugError
+		<< "Trying to access address 0x"
+		<< std::hex
+		<< trans.get_address()
+		<< std::dec
+		<< EndDebugError;
 	assert("TODO" == 0);
 }
 

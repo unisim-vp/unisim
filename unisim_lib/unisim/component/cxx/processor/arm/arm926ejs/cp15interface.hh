@@ -64,6 +64,19 @@ public:
 	 * Perform a complete invalidation of the unified TLB.
 	 */
 	virtual void InvalidateTLB() = 0;
+	/** Test and clean DCache.
+	 * Perform a test and clean operation of the DCache.
+	 *
+	 * @return return true if the complete cache is clean, false otherwise
+	 */
+	virtual bool TestAndCleanDCache() = 0;
+	/** Test, clean and invalidate DCache.
+	 * Perform a test and clean operation of the DCache, and invalidate the
+	 *   complete cache if it is clean.
+	 *
+	 * @return return true if the complete cache is clean, false otherwise
+	 */
+	virtual bool TestCleanAndInvalidateDCache() = 0;
 };
 
 } // end of namespace arm926ejs
