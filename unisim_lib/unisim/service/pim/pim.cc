@@ -42,7 +42,6 @@ PIM::PIM(const char *name, Simulator *simulator, uint16_t port, char* host, Obje
 
 PIM::~PIM() {
 	if (target) { delete target; target = NULL; }
-	if (initiator) { delete initiator; initiator = NULL; }
 
 	if (serverSockfd) { delete serverSockfd; serverSockfd = NULL; }
 	if (clientSockfd) { delete clientSockfd; clientSockfd = NULL; }
@@ -132,14 +131,10 @@ void PIM::Run() {
 	// Start Simulation <-> ToolBox communication
 //	target = new TargetThread("Target", &variables, clientSockfd);
 	target = new TargetThread("Target", &variables, serverSockfd);
-//	initiator = new InitiatorThread("Initiator", &variables, clientSockfd);
-	initiator = new InitiatorThread("Initiator", &variables, serverSockfd);
 
 	target->start();
-	initiator->start();
 
 	target->join();
-	initiator->join();
 
 }
 
@@ -159,26 +154,58 @@ void TargetThread::Run(){
 
 		char *buffer = sockfd->receive();
 
+		cerr << "PIM-Target receive " << buffer << std::endl;
+
 		if (!isTerminated()) {
 			string buf_str(buffer);
 
+
 			int index = buf_str.find(':');
-			string name = buf_str.substr(0, index);
+			string cmd = buf_str.substr(0, index);
 			buf_str = buf_str.substr(index+1);
 
 			index = buf_str.find(':');
-			string time = buf_str.substr(0, index);
+			string name = buf_str.substr(0, index);
+			buf_str = buf_str.substr(index+1);
 
-			string value = buf_str.substr(index+1);
+			if (cmd.compare("read") == 0) {
 
-			cerr << "PIM-Target receive " << buffer << std::endl;
+				for (int i=0; i < fVariables->size(); i++) {
+					if (name.compare((*fVariables)[i]->GetName()) == 0) {
 
-			for (int i=0; i < fVariables->size(); i++) {
-				if (name.compare((*fVariables)[i]->GetName()) == 0) {
+						std::ostringstream os;
+						os << (*fVariables)[i]->GetName() << ":";
 
-					*((*fVariables)[i]) = convertTo<double>(value);
-					break;
+						double val = *((*fVariables)[i]);
+						os << stringify(val);
+
+						std::string str = os.str();
+
+						const char *buffer = str.c_str();
+
+						sockfd->send(buffer);
+
+						cout << name << " send: " << buffer << endl;
+
+						os.str(std::string());
+						break;
+					}
 				}
+
+			} else if (cmd.compare("write") == 0) {
+
+				string value = buf_str.substr(index+1);
+
+				for (int i=0; i < fVariables->size(); i++) {
+					if (name.compare((*fVariables)[i]->GetName()) == 0) {
+
+						*((*fVariables)[i]) = convertTo<double>(value);
+						break;
+					}
+				}
+
+			} else {
+				cerr << "PIM-Target UNKNOWN command => " << buffer << std::endl;
 			}
 		}
 
@@ -188,49 +215,6 @@ void TargetThread::Run(){
 			buffer = NULL;
 		}
 
-	}
-
-}
-
-InitiatorThread::InitiatorThread(char* _name, vector<VariableBase*> *variables, SocketThread *fd) :
-		sockfd(fd),
-		name(_name),
-		fVariables(variables)
-{
-
-}
-
-void InitiatorThread::Run(){
-
-	double time = 0;
-	uint32_t period = 1e6; // 1000 millisecond
-
-	cerr << "PIM::InitiatorThread start RUN " << std::endl;
-
-	while (!isTerminated()) {
-
-		for (int i=0; i < fVariables->size(); i++) {
-
-			std::ostringstream os;
-			os << (*fVariables)[i]->GetName() << ":";
-			os << time << ":";
-			double val = *((*fVariables)[i]);
-			os << stringify(val);
-
-			std::string str = os.str();
-
-			const char *buffer = str.c_str();
-
-			sockfd->send(buffer);
-
-			printf("%s send: %s\n", name, buffer);
-
-			os.str(std::string());
-
-		}
-
-		usleep(period);
-		time = time + period;
 	}
 
 }

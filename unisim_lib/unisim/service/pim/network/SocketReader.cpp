@@ -100,10 +100,10 @@ void SocketReader::Run() {
 		    }
 
 		} else {
-			int pos = 0;
 			string bstr = receive_buffer.str();
 			receive_buffer.str("");
 			while (bstr.size() > 0) {
+				int pos = 0;
 				switch (bstr[pos++]) {
 					case '+': break;
 					case '-': break;
@@ -113,6 +113,7 @@ void SocketReader::Run() {
 						memset(buffer, 0, diese_index);
 						memcpy(buffer, bstr.c_str()+1, diese_index-1);
 						buffer_queue->add(buffer);
+
 						pos = diese_index+3;
 
 					} break;

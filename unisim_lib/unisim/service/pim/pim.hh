@@ -100,25 +100,12 @@ private:
 	SocketServerThread *serverSockfd;
 	SocketClientThread *clientSockfd;
 	GenericThread *target;
-	GenericThread *initiator;
 
 };
 
 class TargetThread : public GenericThread {
 public:
 	TargetThread(char* _name, vector<VariableBase*> *variables, SocketThread *fd);
-
-	virtual void Run();
-
-private:
-	char* name;
-	vector<VariableBase*> *fVariables;
-	SocketThread *sockfd;
-};
-
-class InitiatorThread : public GenericThread {
-public:
-	InitiatorThread(char* _name, vector<VariableBase*> *variables, SocketThread *fd);
 
 	virtual void Run();
 
