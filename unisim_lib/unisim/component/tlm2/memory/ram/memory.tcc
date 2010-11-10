@@ -133,7 +133,9 @@ sc_time& Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::GetBurstLate
 }
 
 template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
-void Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::UpdateTime(unsigned int data_length, const sc_time& latency, sc_time& t)
+void 
+Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::
+UpdateTime(unsigned int data_length, const sc_time& latency, sc_time& t)
 {
 	if(data_length)
 	{
@@ -335,7 +337,9 @@ tlm::tlm_sync_enum Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::nb
 }
 
 template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
-void Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t)
+void 
+Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::
+b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t)
 {
 	payload.set_dmi_allowed(true);
 
@@ -412,6 +416,7 @@ void Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::b_transport(tlm:
 		payload.set_response_status(tlm::TLM_OK_RESPONSE);
 	else
 		payload.set_response_status(tlm::TLM_ADDRESS_ERROR_RESPONSE);
+
 	
 	//std::cerr << "t=" << t << std::endl;
 }

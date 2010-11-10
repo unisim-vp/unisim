@@ -46,7 +46,7 @@ op mrs(cond[4]:0b00010[5]:r[1]:0b0[2]:0b1111[4]:rd[4]:0b0[12])
 mrs.disasm = {
 	buffer << "mrs";
 	DisasmCondition(cond, buffer);
-	buffer << "r" << rd << ", ";
+	buffer << " r" << rd << ", ";
 	if(r) buffer << "spsr";
 	else buffer << "cpsr";
 }
@@ -60,16 +60,19 @@ mrs.execute = {
 	
 	/* if rd is the pc register the behavior is unpredictable, 
 	 *   we just return */
-	if(rd == cpu.PC_reg) {
+	if(rd == cpu.PC_reg)
+	{
 		return;
 	}
 
 	run_mode = cpu.GetCPSR() & RUNNING_MODE_MASK; /* get running mode */
-	if(r) {
+	if (r) 
+	{
 		/* check current running mode, if in user or system mode then the behaviour is 
 		 *   unpredictable, so we will do a return */
 		if((run_mode == USER_MODE) ||
-				(run_mode == SYSTEM_MODE)) {
+				(run_mode == SYSTEM_MODE))
+		{
 			stringstream str;
 			this->disasm(cpu, str);
 
@@ -79,12 +82,17 @@ mrs.execute = {
 				<< " mode with the following instruction: " 
 				<< endl;
 			cpu.logger << str.str() << endl 
-				<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << EndDebugWarning;
+				<< "Location: " << __FUNCTION__ 
+				<< ":" << __FILE__ 
+				<< ":" << __LINE__ 
+				<< EndDebugWarning;
 				
 			return;
 		}
 		cpu.SetGPR(rd, cpu.GetSPSR());
-	} else {
+	} 
+	else
+	{
 		cpu.SetGPR(rd, cpu.GetCPSR());
 	}
 }

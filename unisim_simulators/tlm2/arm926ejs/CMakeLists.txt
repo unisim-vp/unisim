@@ -78,6 +78,7 @@ endforeach ( C_INCLUDE )
 set ( sim_subdirs
 	unisim/kernel
 	unisim/component/tlm2/processor/arm/arm926ejs
+	unisim/component/tlm2/chipset/arm926ejs_pxp
 	unisim/component/tlm2/memory/ram
 	unisim/service/time/sc_time
 	unisim/service/time/host_time
@@ -86,8 +87,7 @@ set ( sim_subdirs
 	unisim/service/debug/sim_debugger
 	unisim/util/debug/debugger_handler
 	unisim/service/loader/elf_loader
-	unisim/service/loader/linux_loader
-	unisim/service/os/linux_os/linux_os_32
+	unisim/service/loader/raw_loader
 	unisim/service/trap_handler
 	unisim/service/power
 	)
@@ -170,6 +170,10 @@ add_custom_target ( sim__share_test
 		${CMAKE_COMMAND} -E copy_if_different
 			${CMAKE_SOURCE_DIR}/share/test/test.armv5l
 			${SHARE_DIRECTORY}/test/install/test.armv5l
+# 	COMMAND
+# 		${CMAKE_COMMAND} -E copy_if_different
+# 			${CMAKE_SOURCE_DIR}/share/test/u-boot
+# 			${SHARE_DIRECTORY}/test/install/u-boot
 	COMMENT
 		"Setting test program source files"
 	)
@@ -271,13 +275,13 @@ set ( sim__libraries
 	${OSCI_SYSTEMC_LIBRARIES}
 	unisim__kernel
 	unisim__component__tlm2__processor__arm__arm926ejs
+	unisim__component__tlm2__chipset__arm926ejs_pxp
 	# unisim__component__tlm2__interrupt
 	unisim__component__tlm2__memory__ram
 	unisim__service__time__host_time
 	unisim__service__time__sc_time
 	unisim__service__loader__elf_loader
-	unisim__service__loader__linux_loader
-	unisim__service__os__linux_os__linux_os_32
+	unisim__service__loader__raw_loader
 	unisim__service__debug__gdb_server
 	unisim__service__debug__inline_debugger
 	unisim__service__debug__sim_debugger
@@ -308,13 +312,12 @@ set ( PYTHON__SIM__LIBS
 	"'simulatorlib',
 	 'unisim__component__tlm2__memory__ram',
 	 'unisim__component__tlm2__processor__arm__arm926ejs',
+	 'unisim__component__tlm2__chipset__arm926ejs_pxp',
 	 'unisim__component__cxx__memory__ram',
 	 'unisim__service__time__host_time',
 	 'unisim__service__time__sc_time',
 	 'unisim__service__loader__elf_loader',
-	 'unisim__service__loader__linux_loader',
-	 'unisim__service__os__linux_os__linux_os_32',
-	 'unisim__service__os__linux_os',
+	 'unisim__service__loader__raw_loader',
 	 'unisim__service__debug__gdb_server',
 	 'unisim__service__debug__inline_debugger',
 	 'unisim__service__debug__sim_debugger',
@@ -410,6 +413,7 @@ set_target_properties ( ${SIM_EXEC_TARGET}
 set ( sim__deps
 	unisim__kernel
 	unisim__component__tlm2__processor__arm__arm926ejs
+	unisim__component__tlm2__chipset__arm926ejs_pxp
 	# unisim__component__tlm2__interrupt
 	unisim__component__tlm2__memory__ram
 	unisim__service__time__sc_time
@@ -419,8 +423,7 @@ set ( sim__deps
 	unisim__service__debug__sim_debugger
 	unisim__util__debug__debugger_handler
 	unisim__service__loader__elf_loader
-	unisim__service__loader__linux_loader
-	unisim__service__os__linux_os__linux_os_32
+	unisim__service__loader__raw_loader
 	unisim__service__trap_handler
 	)
 if ( BUILD_POWER_SUPPORT )
@@ -555,6 +558,7 @@ install (
 install (
 	PROGRAMS
 		${SHARE_DIRECTORY}/test/install/test.armv5l
+		${SHARE_DIRECTORY}/test/install/u-boot
 	DESTINATION
 		${RELATIVE_SHARE_DIRECTORY}/test/install
 	OPTIONAL

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2010,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -31,67 +31,51 @@
  *
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
+ 
+#ifndef __UNISIM_SERVICE_LOADER_RAW_LOADER_RAW_LOADER_HH__
+#define __UNISIM_SERVICE_LOADER_RAW_LOADER_RAW_LOADER_HH__
 
-/**********************************************
+#include <inttypes.h>
+#include <string>
+#include "unisim/service/interfaces/memory.hh"
+#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/logger/logger.hh"
 
-      EXCEPTION-GENERATING INSTRUCTIONS
+namespace unisim {
+namespace service {
+namespace loader {
+namespace raw_loader {
 
-**********************************************/
+class RawLoader
+	: public unisim::kernel::service::Client<
+	  	unisim::service::interfaces::Memory<uint64_t> >
+{
+public:
+	unisim::kernel::service::ServiceImport<
+		unisim::service::interfaces::Memory<uint64_t> > memory_import;
 
-/*******************************************************************
- * swi instruction
- * NOTE: this instruction is used to make the system calls
- */
+	RawLoader(const char *name, unisim::kernel::service::Object *parent = 0);
+	virtual ~RawLoader();
 
-op swi(cond[4]:0b1111[4]:immed[24])
+	virtual bool Setup();
 
-swi.disasm = {
-	buffer << "swi";
-	DisasmCondition(cond, buffer);
-	buffer << " #" << dec << immed;
-}
-
-swi.execute = {
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
-
-	if (!cpu.CheckCondition(cond)) return;
-
-	// we are executing on full system mode
-	cpu.MarkVirtualExceptionVector(
-		unisim::component::cxx::processor::arm::exception::SWI);
-}
-
-/*
- * end of swi instruction
- *******************************************************************/
-
-/*******************************************************************
- * bkpt instruction
- */
-
-op bkpt(0b1110[4]:0b00010010[8]:himmed[12]:0b0111[4]:limmed[4])
-
-bkpt.disasm = {
-	uint32_t immed;
+private:
+	std::string filename;
+	uint64_t base_addr;
+	uint64_t size;
+	uint32_t verbose;
 	
-	immed = limmed + ((uint32_t)himmed << 4);
-	buffer << "bkpt";
-	buffer << " #" << dec << immed;
-}
+	unisim::kernel::service::Parameter<std::string> param_filename;
+	unisim::kernel::service::Parameter<uint64_t> param_base_addr;
+	unisim::kernel::service::Parameter<uint64_t> param_size;
+	unisim::kernel::service::Parameter<uint32_t> param_verbose;
 
-bkpt.execute = {
-	uint32_t immed;
-	
-	immed = limmed + ((uint32_t)himmed << 4);
-	
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+	unisim::kernel::logger::Logger logger;
+};
 
-	// we are executing on full system mode
-	cpu.MarkVirtualExceptionVector(
-		unisim::component::cxx::processor::arm::exception::PREFETCH_ABORT);
-}
+} // end of namespace raw_loader
+} // end of namespace loader
+} // end of namespace service
+} // end of namespace unisim
 
-/*
- * end of bkpt instruction
- *******************************************************************/
-
+#endif // __UNISIM_SERVICE_LOADER_RAW_LOADER_RAW_LOADER_HH__

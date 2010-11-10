@@ -238,6 +238,7 @@ BusSynchronize() {
 	{
 		wait(quantum_time);
 		cpu_time = sc_time_stamp();
+		quantum_time = SC_ZERO_TIME;
 	}
 	else
 	{
@@ -265,6 +266,7 @@ Run()
 		quantum_time += time_per_instruction;
 		if (quantum_time > nice_time)
 		{
+			sc_time old_time = sc_time_stamp();
 			wait(quantum_time);
 			quantum_time = SC_ZERO_TIME;
 			cpu_time = sc_time_stamp();

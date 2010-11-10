@@ -6,6 +6,7 @@
 			<file>unisim/component/cxx/processor/arm/isa/arm32/actions_dec.isa</file>
 			<file>unisim/component/cxx/processor/arm/isa/arm32/load_store_base.isa</file>
 			<file>unisim/component/cxx/processor/arm/isa/arm32/arm32.isa</file>
+			<file>unisim/component/cxx/processor/arm/isa/arm32/arm32_emu.isa</file>
 			<file>unisim/component/cxx/processor/arm/isa/arm32/load_store_multiple.isa</file>
 			<file>unisim/component/cxx/processor/arm/isa/arm32/branch.isa</file>
 			<file>unisim/component/cxx/processor/arm/isa/arm32/load_store_v4.isa</file>
@@ -22,6 +23,7 @@
 			<file>unisim/component/cxx/processor/arm/isa/arm32/dependency.isa</file>
 			<file>unisim/component/cxx/processor/arm/isa/arm32/semaphore.isa</file>
 			<file>unisim/component/cxx/processor/arm/isa/arm32/exception.isa</file>
+			<file>unisim/component/cxx/processor/arm/isa/arm32/exception_emu.isa</file>
 			<file>unisim/component/cxx/processor/arm/isa/arm32/specialization.isa</file>
 			<file>unisim/component/cxx/processor/arm/isa/arm32/execution_latency.isa</file>
 			<file>unisim/component/cxx/processor/arm/isa/arm32/status_register_access.isa</file>

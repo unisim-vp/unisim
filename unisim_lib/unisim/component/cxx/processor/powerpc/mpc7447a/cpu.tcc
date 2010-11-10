@@ -1941,6 +1941,25 @@ void CPU<CONFIG>::Synchronize()
 }
 
 template <class CONFIG>
+void CPU<CONFIG>::Isync()
+{
+	FlushSubsequentInstructions();
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::Rfi()
+{
+	FlushSubsequentInstructions();
+	InvalidateITLB();
+	InvalidateDTLB();
+
+	if(unlikely(GetMSR_PR())) throw PrivilegeViolationException<CONFIG>();
+
+	SetNIA(GetSRR0());
+	SetMSR(GetSRR1());
+}
+
+template <class CONFIG>
 void CPU<CONFIG>::Idle()
 {
 }

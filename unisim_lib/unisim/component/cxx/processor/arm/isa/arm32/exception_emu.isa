@@ -56,9 +56,16 @@ swi.execute = {
 
 	if (!cpu.CheckCondition(cond)) return;
 
-	// we are executing on full system mode
-	cpu.MarkVirtualExceptionVector(
-		unisim::component::cxx::processor::arm::exception::SWI);
+	// we are executing on linux emulation mode
+	// use linux_os_import
+	try 
+	{
+		cpu.linux_os_import->ExecuteSystemCall(immed);
+	}
+	catch(std::exception &e)
+	{
+		cerr << e.what() << endl;
+	}
 }
 
 /*
@@ -86,9 +93,8 @@ bkpt.execute = {
 	
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
-	// we are executing on full system mode
-	cpu.MarkVirtualExceptionVector(
-		unisim::component::cxx::processor::arm::exception::PREFETCH_ABORT);
+	// we are executing on linux emulation mode
+	// what should we do with this kind of call? ignore it
 }
 
 /*

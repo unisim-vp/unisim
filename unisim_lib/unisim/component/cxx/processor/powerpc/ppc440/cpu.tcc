@@ -1777,14 +1777,13 @@ void CPU<CONFIG>::Isync()
 template <class CONFIG>
 void CPU<CONFIG>::Rfi()
 {
+
 	FlushSubsequentInstructions();
-	InvalidateITLB();
-	InvalidateDTLB();
 
 	if(unlikely(GetMSR_PR())) throw PrivilegeViolationException<CONFIG>();
 
-	SetNIA(GetSRR0());
-	SetMSR(GetSRR1());
+	SetNIA(GetSRR0() & 0xfffffffcUL);
+	SetMSR((GetMSR() & 0xffff008cUL) | (GetSRR1() & 0x0000ff73UL));
 }
 
 template <class CONFIG>
