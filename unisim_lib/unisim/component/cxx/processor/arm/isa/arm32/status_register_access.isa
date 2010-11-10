@@ -73,18 +73,6 @@ mrs.execute = {
 			stringstream str;
 			this->disasm(cpu, str);
 
-#ifdef SOCLIB
-			
-			cerr << "Warning("
-				<< __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__
-				<< "trying to access SPSR while running in "
-				<< ((run_mode == USER_MODE)?"user":"system")
-				<< " mode with the following instruction: " 
-				<< endl;
-			cerr << str.str() << endl;
-
-#else // SOCLIB
-			
 			cpu.logger << DebugWarning
 				<< "trying to access SPSR while running in "
 				<< ((run_mode == USER_MODE)?"user":"system")
@@ -92,8 +80,6 @@ mrs.execute = {
 				<< endl;
 			cpu.logger << str.str() << endl 
 				<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << EndDebugWarning;
-				
-#endif // SOCLIB
 				
 			return;
 		}

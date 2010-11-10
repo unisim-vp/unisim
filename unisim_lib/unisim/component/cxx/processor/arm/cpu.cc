@@ -108,6 +108,7 @@ CPU(endian_type endianness)
 	, registers_registry()
 	, cpsr(0)
 	, fake_fps(0)
+	, exception(0)
 {
 	// Initialize general purpose registers
 	for(unsigned int i = 0; i < num_log_gprs; i++)
@@ -1240,6 +1241,43 @@ CPU::
 CheckCondition(uint32_t cond)
 {
 	return (cond == 0xe) || ((check_condition_table[cond] >> (cpsr >> 28)) & 1);
+}
+
+/** Mark an exception in the virtual exception vector.
+ * This marks an new exception in the virtual exception vector for 
+ *   later treatment.
+ *   NOTE: exception types are available at cxx/processor/arm/exception.hh
+ *
+ * @param except the exception to mark
+ */
+void 
+CPU::
+MarkVirtualExceptionVector(uint32_t except)
+{
+	exception |= except;
+}
+
+/** Get the virtual exception vector.
+ * This returns the value of the virtual exception vector.
+ *
+ * @return the value of the exception vector
+ */
+uint32_t 
+CPU::
+GetVirtualExceptionVector()
+{
+	return exception;
+}
+
+/** Reset the value of the virtual exception vector.
+ *
+ * @param mask the value to set at reset
+ */
+void 
+CPU::
+ResetVirtualExceptionVector(uint32_t mask)
+{
+	exception = mask;
 }
 
 /** Check the given condition against CPSR.
