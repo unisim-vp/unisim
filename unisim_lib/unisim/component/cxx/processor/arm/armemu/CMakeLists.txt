@@ -93,8 +93,6 @@ set ( cxx_arm_srcs
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/armemu/cpu.cc
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/armemu/cache.hh
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/armemu/cache.cc
-	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/exception.hh
-	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/exception.tcc
 	# ${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/instruction.hh
 	# ${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/cpu.step_instruction.tcc
 	# ${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/instruction.tcc
