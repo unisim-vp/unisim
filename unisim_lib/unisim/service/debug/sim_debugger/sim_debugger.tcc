@@ -497,6 +497,26 @@ DeleteBreakpoint(const char *str)
 template <class ADDRESS>
 bool
 SimDebugger<ADDRESS>::
+SetWatchpoint(uint64_t addr, uint32_t size)
+{
+	bool set = false;
+
+	set = SetReadWatchpoint(addr, size);
+	if ( set )
+	{
+		set = SetWriteWatchpoint(addr, size);
+		if ( !set )
+		{
+			DeleteReadWatchpoint(addr, size);
+		}
+	}
+
+	return set;
+}
+
+template <class ADDRESS>
+bool
+SimDebugger<ADDRESS>::
 SetReadWatchpoint(uint64_t addr, uint32_t size)
 {
 	bool set = false;
@@ -532,6 +552,20 @@ SetWriteWatchpoint(uint64_t addr, uint32_t size)
 				watchpoint_registry.HasWatchpoints());
 
 	return set;
+}
+
+template <class ADDRESS>
+bool
+SimDebugger<ADDRESS>::
+DeleteWatchpoint(uint64_t addr, uint32_t size)
+{
+	bool r_deleted = false;
+	bool w_deleted = false;
+
+	r_deleted = DeleteReadWatchpoint(addr, size);
+	w_deleted = DeleteWriteWatchpoint(addr, size);
+
+	return (r_deleted && w_deleted);
 }
 
 template <class ADDRESS>

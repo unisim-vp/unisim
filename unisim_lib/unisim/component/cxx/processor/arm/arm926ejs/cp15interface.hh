@@ -47,6 +47,12 @@ class CP15Interface
 public:
 	virtual ~CP15Interface() {};
 
+	/** Get caches info
+	 *
+	 */
+	virtual void GetCacheInfo(bool &unified, 
+			uint32_t &isize, uint32_t &iassoc, uint32_t &ilen,
+			uint32_t &dsize, uint32_t &dassoc, uint32_t &dlen) = 0;
 	/** Drain write buffer.
 	 * Perform a memory barrier by draining the write buffer.
 	 */

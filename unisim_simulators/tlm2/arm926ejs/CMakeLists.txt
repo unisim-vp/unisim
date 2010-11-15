@@ -313,6 +313,7 @@ set ( PYTHON__SIM__LIBS
 	 'unisim__component__tlm2__memory__ram',
 	 'unisim__component__tlm2__processor__arm__arm926ejs',
 	 'unisim__component__tlm2__chipset__arm926ejs_pxp',
+	 'unisim__component__cxx__processor__arm__arm926ejs',
 	 'unisim__component__cxx__memory__ram',
 	 'unisim__service__time__host_time',
 	 'unisim__service__time__sc_time',

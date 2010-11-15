@@ -47,8 +47,6 @@
 using namespace std;
 #endif
 
-using unisim::service::interfaces::CachePowerEstimator;
-using unisim::service::interfaces::PowerMode;
 using unisim::kernel::logger::DebugError;
 using unisim::kernel::logger::EndDebugError;
 using std::endl;
@@ -73,8 +71,8 @@ namespace arm926ejs {
 LockdownTLB::
 LockdownTLB(const char *name, unisim::kernel::service::Object *parent) 
 	: unisim::kernel::service::Object(name, parent)
-	, Client<CachePowerEstimator>(name,  parent)
-	, Client<PowerMode>(name,  parent)
+	, unisim::kernel::service::Client<unisim::service::interfaces::CachePowerEstimator>(name,  parent)
+	, unisim::kernel::service::Client<unisim::service::interfaces::PowerMode>(name,  parent)
 	, power_estimator_import("power-estimator-import", this)
 	, power_mode_import("power-mode-import", this)
 	, accesses(0)

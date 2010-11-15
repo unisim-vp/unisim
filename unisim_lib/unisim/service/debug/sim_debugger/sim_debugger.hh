@@ -78,6 +78,12 @@ namespace debug {
 		virtual bool SetBreakpoint(const char *str) = 0;
 		virtual bool DeleteBreakpoint(uint64_t addr) = 0;
 		virtual bool DeleteBreakpoint(const char *str) = 0;
+		virtual bool SetWatchpoint(uint64_t addr, uint32_t size) = 0;
+		virtual bool SetReadWatchpoint(uint64_t addr, uint32_t size) = 0;
+		virtual bool SetWriteWatchpoint(uint64_t addr, uint32_t size) = 0;
+		virtual bool DeleteWatchpoint(uint64_t addr, uint32_t size) = 0;
+		virtual bool DeleteReadWatchpoint(uint64_t addr, uint32_t size) = 0;
+		virtual bool DeleteWriteWatchpoint(uint64_t addr, uint32_t size) = 0;
 		virtual bool SetHandlerContext(void *context)
 		{
 			handler_context = context;

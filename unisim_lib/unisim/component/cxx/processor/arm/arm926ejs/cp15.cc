@@ -187,11 +187,14 @@ ReadRegister(uint8_t opcode1,
 #endif // CP15__DEBUG
 	if ( likely(opcode1 == 0) )
 	{
+
 		// ID Code, Cache Type, and TCM Status Registers
 		if ( crn == 0 )
 		{
+		
 			if  ( crm == 0 )
 			{
+				
 				if ( opcode2 == 0 )
 				{
 #ifdef CP15__DEBUG 
@@ -201,13 +204,152 @@ ReadRegister(uint8_t opcode1,
 					handled = true;
 					reg = id_code_register_c0;
 				}
+
+				else if ( opcode2 == 1 )
+				{
+#ifdef CP15__DEBUG
+					std::cerr << "CP15: Reading cache type register c0"
+						<< std::endl;
+#endif // CP15__DEBUG
+					handled = true;
+					bool unified = false;
+					uint32_t isize = 0;
+					uint32_t iassoc = 0;
+					uint32_t ilen = 0;
+					uint32_t dsize = 0;
+					uint32_t dassoc = 0;
+					uint32_t dlen = 0;
+					cpu->GetCacheInfo(unified,
+							isize, iassoc, ilen,
+							dsize, dassoc, dlen);
+					reg = 0x1c000000UL;
+					if ( !unified )
+						reg |= 0x01000000UL;
+					if ( unified )
+					{
+						dsize = isize;
+						dassoc = iassoc;
+						dlen = ilen;
+					}
+					switch ( isize / 1024 )
+					{
+						case 4:
+							reg |= (0x03UL << 6);
+							break;
+						case 8:
+							reg |= (0x04UL << 6);
+							break;
+						case 16:
+							reg |= (0x05UL << 6);
+							break;
+						case 32:
+							reg |= (0x06UL << 6);
+							break;
+						case 64:
+							reg |= (0x07UL << 6);
+							break;
+						case 128:
+							reg |= (0x08UL << 6);
+							break;
+						default:
+							logger << DebugError
+								<< "Incorrect insn cache size (" << isize << ")"
+								<< EndDebugError;
+							assert("Invalid insn cache size" == 0);
+							break;
+					}
+					switch ( dsize / 1024 )
+					{
+						case 4:
+							reg |= ((0x03UL << 6) << 12);
+							break;
+						case 8:
+							reg |= ((0x04UL << 6) << 12);
+							break;
+						case 16:
+							reg |= ((0x05UL << 6) << 12);
+							break;
+						case 32:
+							reg |= ((0x06UL << 6) << 12);
+							break;
+						case 64:
+							reg |= ((0x07UL << 6) << 12);
+							break;
+						case 128:
+							reg |= ((0x08UL << 6) << 12);
+							break;
+						default:
+							logger << DebugError
+								<< "Incorrect data cache size (" << isize << ")"
+								<< EndDebugError;
+							assert("Invalid data cache size" == 0);
+							break;
+					}
+					switch ( iassoc )
+					{
+						case 4:
+							reg |= (0x02UL << 3);
+							break;
+						default:
+							logger << DebugError
+								<< "Incorrect insn cache associativity (" 
+								<< iassoc << ")"
+								<< EndDebugError;
+							assert("Invalid insn cache associativity" == 0);
+							break;
+					}
+					switch ( dassoc )
+					{
+						case 4:
+							reg |= ((0x02UL << 3) << 12);
+							break;
+						default:
+							logger << DebugError
+								<< "Incorrect data cache associativity (" 
+								<< dassoc << ")"
+								<< EndDebugError;
+							assert("Invalid data cache associativity" == 0);
+							break;
+					}
+					switch ( ilen )
+					{
+						case 32:
+							reg |= 0x02UL;
+							break;
+						default:
+							logger << DebugError
+								<< "Incorrect insn cache line length ("
+								<< ilen << ")"
+								<< EndDebugError;
+							assert("Invalid insn cache line length" == 0);
+							break;
+					}
+					switch ( dlen )
+					{
+						case 32:
+							reg |= (0x02UL << 12);
+							break;
+						default:
+							logger << DebugError
+								<< "Incorrect data cache line length ("
+								<< dlen << ")"
+								<< EndDebugError;
+							assert("Invalid data cache line length" == 0);
+							break;
+					}
+					// no need to set the M bit which should be always 0
+					//   meaning that the caches are present
+				}
 			}
 		}
+
 		// control registers
 		else if ( crn == 1 )
 		{
+			
 			if ( crm == 0 )
 			{
+			
 				if ( opcode2 == 0 )
 				{
 #ifdef CP15__DEBUG
@@ -219,9 +361,11 @@ ReadRegister(uint8_t opcode1,
 				}
 			}
 		}
+
 		// cache operations register
 		else if ( crn == 7 )
 		{
+		
 			if ( crm == 10 )
 			{
 				if ( opcode2 == 3 )
@@ -238,6 +382,7 @@ ReadRegister(uint8_t opcode1,
 						reg &= ~0x40000000UL;
 				}
 			}
+			
 			else if ( crm == 14 )
 			{
 				if ( opcode2 == 3 )
@@ -256,6 +401,7 @@ ReadRegister(uint8_t opcode1,
 			}
 		}
 	}
+
 	if ( unlikely(!handled) )
 	{
 		assert("CP15 read register not handled" == 0);

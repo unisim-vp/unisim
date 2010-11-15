@@ -565,6 +565,12 @@ public:
 	/* cp15 to cpu interface                           START      */
 	/**************************************************************/
 
+	/** Get caches info
+	 *
+	 */
+	void GetCacheInfo(bool &unified, 
+			uint32_t &isize, uint32_t &iassoc, uint32_t &ilen,
+			uint32_t &dsize, uint32_t &dassoc, uint32_t &dlen);
 	/** Drain write buffer.
 	 * Perform a memory barrier by draining the write buffer.
 	 */

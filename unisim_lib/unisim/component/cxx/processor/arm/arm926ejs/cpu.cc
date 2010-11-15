@@ -1568,6 +1568,23 @@ MoveFromCoprocessor(uint32_t cp_num, uint32_t op1, uint32_t op2,
 		SetGPR(rd, val);
 }
 
+/** Get caches info
+ *
+ */
+void
+CPU::GetCacheInfo(bool &unified, 
+		uint32_t &isize, uint32_t &iassoc, uint32_t &ilen,
+		uint32_t &dsize, uint32_t &dassoc, uint32_t &dlen)
+{
+	unified = false;
+	isize = icache.GetSize();
+	iassoc = icache.GetNumWays();
+	ilen = icache.LINE_SIZE;
+	dsize = icache.GetSize();
+	dassoc = dcache.GetNumWays();
+	dlen = dcache.LINE_SIZE;
+}
+
 /** Drain write buffer.
  * Perform a memory barrier by draining the write buffer.
  */
