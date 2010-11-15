@@ -164,11 +164,11 @@ void TargetThread::Run(){
 			string cmd = buf_str.substr(0, index);
 			buf_str = buf_str.substr(index+1);
 
-			index = buf_str.find(':');
-			string name = buf_str.substr(0, index);
-			buf_str = buf_str.substr(index+1);
-
 			if (cmd.compare("read") == 0) {
+
+				index = buf_str.find(':');
+				string name = buf_str.substr(0, index);
+				buf_str = buf_str.substr(index+1);
 
 				for (int i=0; i < fVariables->size(); i++) {
 					if (name.compare((*fVariables)[i]->GetName()) == 0) {
@@ -193,6 +193,10 @@ void TargetThread::Run(){
 				}
 
 			} else if (cmd.compare("write") == 0) {
+
+				index = buf_str.find(':');
+				string name = buf_str.substr(0, index);
+				buf_str = buf_str.substr(index+1);
 
 				string value = buf_str.substr(index+1);
 

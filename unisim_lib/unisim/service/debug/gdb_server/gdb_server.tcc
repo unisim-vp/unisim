@@ -1505,6 +1505,10 @@ void GDBServer<ADDRESS>::HandleQRcmd(string command) {
 
 			}
 
+			PutPacket("T05");
+
+		} else {
+			PutPacket("E00");
 		}
 
 	}
@@ -1514,7 +1518,7 @@ void GDBServer<ADDRESS>::HandleQRcmd(string command) {
 		 *
 		 * return "O<next_address>
          *        "O<disassembled code>"
-         *        "OK"
+         *        "T05"
 		 *
 		 */
 
@@ -1536,14 +1540,14 @@ void GDBServer<ADDRESS>::HandleQRcmd(string command) {
 
 			Disasm(symbol_address, symbol_size);
 
+			PutPacket("T05");
+
 		}
 
 	}
 	else {
 		PutPacket("E00");
 	}
-
-	PutPacket("OK");
 
 }
 
