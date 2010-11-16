@@ -1,16 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <variables>
 	<object name="atd-pwm-stub">
-		<variable name="trace-enable">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>true</value>
-			<description></description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
 		<variable name="anx-stimulus-period">
 			<type>parameter</type>
 			<data_type>double precision floating-point</data_type>
@@ -22,6 +12,26 @@
 			<data_type>double precision floating-point</data_type>
 			<value>1e+09</value>
 			<description></description>
+		</variable>
+		<variable name="stub-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>true</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="trace-enable">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>true</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
 		</variable>
 		<variable name="atd0-anx-stimulus-file">
 			<type>parameter</type>
@@ -94,6 +104,16 @@
 		<variable name="debug-enabled">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="use-atd-stub">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
 			<value>true</value>
 			<description></description>
 			<enumeration>
@@ -156,6 +176,16 @@
 			<description></description>
 		</variable>
 		<variable name="debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="use-atd-stub">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
 			<value>true</value>

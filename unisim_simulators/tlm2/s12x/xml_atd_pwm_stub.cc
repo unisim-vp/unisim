@@ -177,59 +177,61 @@ void XML_ATD_PWM_STUB::ProcessATD0()
 
 	int atd0_data_size, atd0_data_index = 0;
 
+	if (enabled) {
+		LoadXmlData<ATD0_SIZE>(atd0_anx_stimulus_file.c_str(), atd0_vect);
 
-	LoadXmlData<ATD0_SIZE>(atd0_anx_stimulus_file.c_str(), atd0_vect);
 
+		atd0_data_size = atd0_vect.size();
 
-	atd0_data_size = atd0_vect.size();
-
-	if (atd0_data_size == 0) {
-		cerr << name() << " Warning: ATD0 random inputs values will be used during simulation !" << endl;
-	}
-
-	/**
-	 * Note: The Software sample the ATDDRx every 20ms. As well as for the first sampling
-	 */
-	atd0_quantumkeeper.set(sc_time(20, SC_MS));
-	if (atd0_quantumkeeper.need_sync()) atd0_quantumkeeper.sync();
-
-	while(enabled)
-	{
-		double atd0_anValue[ATD0_SIZE];
-
-		uint8_t atd0_wrap_around;
-		uint8_t atd0_start;
-
-		if (atd0_anx_wrap_around_channel < ATD0_SIZE) {
-			atd0_wrap_around = atd0_anx_wrap_around_channel;
-		} else {
-			atd0_wrap_around = ATD0_SIZE - 1;
+		if (atd0_data_size == 0) {
+			cerr << name() << " Warning: ATD0 random inputs values will be used during simulation !" << endl;
 		}
 
-		if (atd0_anx_start_channel < ATD0_SIZE) {
-			atd0_start = atd0_anx_start_channel;
-		} else {
-			atd0_start = 0;
-		}
+		/**
+		 * Note: The Software sample the ATDDRx every 20ms. As well as for the first sampling
+		 */
+		atd0_quantumkeeper.set(sc_time(20, SC_MS));
+		if (atd0_quantumkeeper.need_sync()) atd0_quantumkeeper.sync();
 
-		if (atd0_data_size > 0) {
-			atd0_data_index = (atd0_data_index + 1) % atd0_data_size;
-		}
+		while(enabled)
+		{
+			double atd0_anValue[ATD0_SIZE];
 
-		uint8_t j = 0;
-		for (uint8_t i=0; i < ATD0_SIZE; i++) {
-			if (atd0_data_size > 0) {
-				if ((i < atd0_start) || (i > atd0_wrap_around)) {
-					atd0_anValue[i] = 0;
-				} else {
-					atd0_anValue[i] = atd0_vect.at(atd0_data_index).volte[j++];
-				}
+			uint8_t atd0_wrap_around;
+			uint8_t atd0_start;
+
+			if (atd0_anx_wrap_around_channel < ATD0_SIZE) {
+				atd0_wrap_around = atd0_anx_wrap_around_channel;
 			} else {
-				atd0_anValue[i] = 5.2 * ((double) rand() / (double) RAND_MAX); // Compute a random value: 0 Volts <= anValue[i] < 5 Volts
+				atd0_wrap_around = ATD0_SIZE - 1;
 			}
-		}
 
-		Output_ATD0(atd0_anValue);
+			if (atd0_anx_start_channel < ATD0_SIZE) {
+				atd0_start = atd0_anx_start_channel;
+			} else {
+				atd0_start = 0;
+			}
+
+			if (atd0_data_size > 0) {
+				atd0_data_index = (atd0_data_index + 1) % atd0_data_size;
+			}
+
+			uint8_t j = 0;
+			for (uint8_t i=0; i < ATD0_SIZE; i++) {
+				if (atd0_data_size > 0) {
+					if ((i < atd0_start) || (i > atd0_wrap_around)) {
+						atd0_anValue[i] = 0;
+					} else {
+						atd0_anValue[i] = atd0_vect.at(atd0_data_index).volte[j++];
+					}
+				} else {
+					atd0_anValue[i] = 5.2 * ((double) rand() / (double) RAND_MAX); // Compute a random value: 0 Volts <= anValue[i] < 5 Volts
+				}
+			}
+
+			Output_ATD0(atd0_anValue);
+
+		}
 
 	}
 
@@ -242,57 +244,59 @@ void XML_ATD_PWM_STUB::ProcessATD1()
 
 	int atd1_data_size, atd1_data_index = 0;
 
-	LoadXmlData<ATD1_SIZE>(atd1_anx_stimulus_file.c_str(), atd1_vect);
+	if (enabled) {
+		LoadXmlData<ATD1_SIZE>(atd1_anx_stimulus_file.c_str(), atd1_vect);
 
-	atd1_data_size = atd1_vect.size();
+		atd1_data_size = atd1_vect.size();
 
-	if (atd1_data_size == 0) {
-		cerr << name() << " Warning: ATD1 random inputs values will be used during simulation !" << endl;
-	}
-
-	/**
-	 * Note: The Software sample the ATDDRx every 20ms. As well as for the first sampling
-	 */
-	atd1_quantumkeeper.set(sc_time(20, SC_MS));
-	if (atd1_quantumkeeper.need_sync()) atd1_quantumkeeper.sync();
-
-	while(enabled)
-	{
-		double atd1_anValue[ATD1_SIZE];
-		uint8_t atd1_wrap_around;
-		uint8_t atd1_start;
-
-		if (atd1_anx_wrap_around_channel < ATD1_SIZE) {
-			atd1_wrap_around = atd1_anx_wrap_around_channel;
-		} else {
-			atd1_wrap_around = ATD1_SIZE - 1;
+		if (atd1_data_size == 0) {
+			cerr << name() << " Warning: ATD1 random inputs values will be used during simulation !" << endl;
 		}
 
-		if (atd1_anx_start_channel < ATD1_SIZE) {
-			atd1_start = atd1_anx_start_channel;
-		} else {
-			atd1_start = 0;
-		}
+		/**
+		 * Note: The Software sample the ATDDRx every 20ms. As well as for the first sampling
+		 */
+		atd1_quantumkeeper.set(sc_time(20, SC_MS));
+		if (atd1_quantumkeeper.need_sync()) atd1_quantumkeeper.sync();
 
-		if (atd1_data_size > 0) {
-			atd1_data_index = (atd1_data_index + 1) % atd1_data_size;
-		}
+		while(enabled)
+		{
+			double atd1_anValue[ATD1_SIZE];
+			uint8_t atd1_wrap_around;
+			uint8_t atd1_start;
 
-		uint8_t j = 0;
-		for (uint8_t i=0; i < ATD1_SIZE; i++) {
-			if (atd1_data_size > 0) {
-				if ((i < atd1_start) || (i > atd1_wrap_around)) {
-					atd1_anValue[i] = 0;
-				} else {
-					atd1_anValue[i] = atd1_vect.at(atd1_data_index).volte[j++];
-				}
+			if (atd1_anx_wrap_around_channel < ATD1_SIZE) {
+				atd1_wrap_around = atd1_anx_wrap_around_channel;
 			} else {
-				atd1_anValue[i] = 5.2 * ((double) rand() / (double) RAND_MAX); // Compute a random value: 0 Volts <= anValue[i] < 5 Volts
+				atd1_wrap_around = ATD1_SIZE - 1;
 			}
+
+			if (atd1_anx_start_channel < ATD1_SIZE) {
+				atd1_start = atd1_anx_start_channel;
+			} else {
+				atd1_start = 0;
+			}
+
+			if (atd1_data_size > 0) {
+				atd1_data_index = (atd1_data_index + 1) % atd1_data_size;
+			}
+
+			uint8_t j = 0;
+			for (uint8_t i=0; i < ATD1_SIZE; i++) {
+				if (atd1_data_size > 0) {
+					if ((i < atd1_start) || (i > atd1_wrap_around)) {
+						atd1_anValue[i] = 0;
+					} else {
+						atd1_anValue[i] = atd1_vect.at(atd1_data_index).volte[j++];
+					}
+				} else {
+					atd1_anValue[i] = 5.2 * ((double) rand() / (double) RAND_MAX); // Compute a random value: 0 Volts <= anValue[i] < 5 Volts
+				}
+			}
+
+			Output_ATD1(atd1_anValue);
+
 		}
-
-		Output_ATD1(atd1_anValue);
-
 	}
 
 }
