@@ -732,7 +732,7 @@ ReadMemory(uint64_t addr,
 			if ( status && !cache_hit )
 			{
 				status = status &&
-					ExternalReadMemory(pa,
+					ExternalReadMemory(pa + index,
 									   &(((uint8_t *)buffer)[index]),
 									   1);
 				if ( status )
@@ -754,7 +754,7 @@ ReadMemory(uint64_t addr,
 						va + index, mva, pa, cacheable, bufferable);
 
 			status = status &&
-					ExternalReadMemory(pa,
+					ExternalReadMemory(pa + index,
 							&(((uint8_t *)buffer)[index]),
 							1);
 			if ( status )
@@ -937,7 +937,7 @@ ReadInsn(uint32_t address, uint32_t &val)
 	uint32_t cacheable = 1;
 	uint32_t bufferable = 1; // instruction cache ignores the bufferable status
 
-	if ( verbose & 0x02 )
+	if ( verbose & 0x04 )
 		logger << DebugInfo
 			<< "Fetching instruction at address 0x" << std::hex << va
 			<< std::dec
@@ -960,7 +960,7 @@ ReadInsn(uint32_t address, uint32_t &val)
 			{
 				// the access is a hit, nothing needs to be done
 				cache_hit = true;
-				if ( verbose & 0x02 )
+				if ( verbose & 0x04 )
 					logger << DebugInfo
 						<< "Cache hit when fetching instruction with:" << std::endl
 						<< " - va = 0x" << std::hex << va << std::endl
@@ -981,7 +981,7 @@ ReadInsn(uint32_t address, uint32_t &val)
 			// when getting the data we get the pointer to the cache line
 			//   containing the data, so no need to write the cache
 			//   afterwards
-			if ( verbose & 0x02 )
+			if ( verbose & 0x04 )
 				logger << DebugInfo
 					<< "Cache miss when fetching instruction at address with:" << std::endl
 					<< " - va = 0x" << std::hex << va << std::endl
@@ -1015,7 +1015,7 @@ ReadInsn(uint32_t address, uint32_t &val)
 	}
 	else
 	{
-		if ( verbose & 0x02 )
+		if ( verbose & 0x04 )
 			logger << DebugInfo
 				<< "Fetching instruction from memory (no cache or entry not cacheable):" << std::endl
 				<< " - va = 0x" << std::hex << va << std::endl
@@ -1675,14 +1675,6 @@ TestAndCleanDCache()
 		uint32_t mva = dcache.GetBaseAddress(dirty_set, dirty_way);
 		uint32_t pa = mva;
 		TranslateMVA(mva, pa);
-		logger << DebugInfo
-			<< "Cleaning 0x" << std::hex << mva << std::dec
-			<< std::endl
-			<< " - set = " << dirty_set << "("
-			<< num_sets << ")" << std::endl
-			<< " - way = " << dirty_way << "("
-			<< num_ways << ")" 
-			<< EndDebugInfo;
 		uint8_t *data = 0;
 		dcache.GetData(dirty_set, dirty_way, &data);
 		/* Write the data into memory */
@@ -1895,10 +1887,11 @@ NonIntrusiveTranslateVA(bool is_read,
 		mva = cp15.GetFCSE_PID() + va;
 	else
 		mva = va;
-	if ( va == 0xc0008148UL )
+	if ( verbose & 0x020 )
 	{
 		logger << DebugWarning
-			<< "va = 0x" << std::hex << va 
+			<< "Non intrusive access" << std::endl
+			<< " - va = 0x" << std::hex << va 
 			<< std::endl
 			<< " - mva = 0x" << mva << std::dec
 			<< EndDebugWarning;
@@ -1925,6 +1918,12 @@ NonIntrusiveTranslateVA(bool is_read,
 	}
 	if ( !found_first_level )
 	{
+		if ( verbose & 0x020 )
+		{
+			logger << DebugWarning
+				<< " - not found in the lookdown TLB"
+				<< EndDebugWarning;
+		}
 		// the entry was not found in the lockdown tlb
 		// check the main tlb
 		uint32_t tag = tlb.GetTag(ttb_addr);
@@ -1940,6 +1939,12 @@ NonIntrusiveTranslateVA(bool is_read,
 	}
 	if ( !found_first_level )
 	{
+		if ( verbose & 0x020 )
+		{
+			logger << DebugWarning
+				<< " - not found in the main TLB"
+				<< EndDebugWarning;
+		}
 		uint8_t first_level_data[4];
 		// oops, we are forced to perform a page walk
 		status = ExternalReadMemory(ttb_addr,
@@ -1974,6 +1979,19 @@ NonIntrusiveTranslateVA(bool is_read,
 		cacheable = c;
 		uint32_t b = (first_level >> 2) & 0x01UL;
 		bufferable = b;
+		if ( verbose & 0x020 )
+			logger << DebugInfo
+				<< "Address translated using a section descriptor:" << std::endl
+				<< "- current pc = 0x" << std::hex << GetGPR(PC_reg)
+				<< std::dec << std::endl
+				<< "- va  = 0x" << std::hex << va << std::endl
+				<< "- mva = 0x" << mva << std::endl
+				<< "- pa  = 0x" << pa << std::dec << std::endl
+				<< "- ap  = " << ap << std::endl
+				<< "- domain = " << domain << std::endl
+				<< "- c   = " << c << std::endl
+				<< "- b   = " << b
+				<< EndDebugInfo;
 	}
 	else
 	{
@@ -2251,11 +2269,11 @@ PerformPrefetchAccess(unisim::component::cxx::processor::arm::MemoryOp
 			// get a way to replace
 			cache_way = dcache.GetNewWay(cache_set);
 			// get the valid and dirty bits from the way to replace
-			bool cache_valid = dcache.GetValid(cache_set,
+			uint32_t cache_valid = dcache.GetValid(cache_set,
 					cache_way);
-			bool cache_dirty = dcache.GetDirty(cache_set,
+			uint32_t cache_dirty = dcache.GetDirty(cache_set,
 					cache_way);
-			if ( (cache_valid != 0) & (cache_dirty != 0) )
+			if ( (cache_valid != 0) && (cache_dirty != 0) )
 			{
 				// the cache line to replace is valid and dirty so it needs
 				//   to be sent to the main memory
@@ -2378,6 +2396,23 @@ PerformWriteAccess(unisim::component::cxx::processor::arm::MemoryOp
 	if ( likely(cp15.IsMMUEnabled()) )
 		TranslateVA(false, va, mva, pa, cacheable, bufferable);
 
+	if ( unlikely(verbose & 0x02) )
+	{
+		logger << DebugError 
+			<< "Writing into 0x" << std::hex << pa
+			<< " with data = "
+			<< (unsigned int)data[0]
+			<< " " << (unsigned int)data[1]
+			<< " " << (unsigned int)data[2]
+			<< " " << (unsigned int)data[3]
+			<< std::dec;
+		if ( cp15.IsDCacheEnabled() && dcache.GetSize() && cacheable )
+			logger << std::endl
+				<< " - line cacheable"
+				<< EndDebugError;
+		else
+			logger << EndDebugError;
+	}
 	if ( likely(cp15.IsDCacheEnabled() && dcache.GetSize() && cacheable) )
 	{
 		dcache.write_accesses++;
@@ -2387,14 +2422,26 @@ PerformWriteAccess(unisim::component::cxx::processor::arm::MemoryOp
 		bool cache_hit = false;
 		if ( dcache.GetWay(cache_tag, cache_set, &cache_way) )
 		{
-			if ( dcache.GetValid(cache_set, cache_way) != 0 )
+			if ( dcache.GetValid(cache_set, cache_way) )
 			{
 				// the access is a hit
 				cache_hit = true;
 			}
+			else
+				if ( unlikely(verbose & 0x02) )
+					logger << DebugError
+						<< "Way found but not valid (way = "
+						<< cache_way << ")"
+						<< EndDebugError;
 		}
 		if ( likely(cache_hit) )
 		{
+			if ( unlikely(verbose & 0x02) )
+				logger << DebugError
+					<< "Cache hit (set = "
+					<< cache_set << ", way = "
+					<< cache_way << ")"
+					<< EndDebugError;
 			dcache.write_hits++;
 			uint32_t cache_index = dcache.GetIndex(mva);
 			dcache.SetData(cache_set, cache_way, cache_index,
@@ -2403,12 +2450,26 @@ PerformWriteAccess(unisim::component::cxx::processor::arm::MemoryOp
 			// if the access is not bufferable the data has to be written to the
 			//   memory system like a write through cache
 			if ( bufferable == 0 )
+			{
+				if ( unlikely(verbose & 0x02) )
+					logger << DebugError
+						<< "Seding to memory"
+						<< EndDebugError;
 				PrWrite(pa, data, size);
+			}
 		}
 		else
 		{
+			if ( unlikely(verbose & 0x02) )
+				logger << DebugError
+					<< "Cache miss"
+					<< EndDebugError;
 			if ( bufferable )
 			{
+				if ( unlikely(verbose & 0x02) )
+					logger << DebugError
+						<< "Bufferable"
+						<< EndDebugError;
 				// the cache act as a write back cache, so the line is fetched
 				//   into cache and modified in the cache but not sent into
 				//   memory
@@ -2420,7 +2481,7 @@ PerformWriteAccess(unisim::component::cxx::processor::arm::MemoryOp
 				uint8_t cache_dirty = dcache.GetDirty(cache_set,
 						cache_way);
 
-				if ( (cache_valid != 0) & (cache_dirty != 0) )
+				if ( (cache_valid != 0) && (cache_dirty != 0) )
 				{
 					// the cache line to replace is valid and dirty so it needs
 					//   to be sent to the main memory
@@ -2433,11 +2494,28 @@ PerformWriteAccess(unisim::component::cxx::processor::arm::MemoryOp
 					if ( likely(cp15.IsMMUEnabled()) )
 						TranslateMVA(mva_cache_address,
 								pa_cache_address);
+					if ( unlikely(verbose & 0x02) )
+					{
+						uint32_t rep_tag = dcache.GetTag(cache_set, cache_way);
+						logger << DebugError
+							<< "Evicting cache line:" << std::endl
+							<< " - mva = 0x" << std::hex << mva_cache_address << std::endl
+							<< " - pa  = 0x" << pa_cache_address << std::endl
+							<< " - tag = 0x" << rep_tag << std::endl
+							<< " - set = " << std::dec << cache_set << std::endl
+							<< " - way = " << cache_way << std::hex << std::endl
+							<< " - data =";
+						for ( unsigned int i = 0; i < dcache.LINE_SIZE; i++ )
+							logger << " " << (unsigned int)rep_cache_data[i];
+						logger << std::dec
+							<< EndDebugError;
+					}
 					PrWrite(pa_cache_address, rep_cache_data, 
 							dcache.LINE_SIZE);
 				}
 				// the new data can be requested
 				uint8_t *cache_data = 0;
+				uint8_t prev_data[64];
 				uint32_t cache_address =
 						dcache.GetBaseAddressFromAddress(pa);
 				// when getting the data we get the pointer to the cache line
@@ -2447,12 +2525,40 @@ PerformWriteAccess(unisim::component::cxx::processor::arm::MemoryOp
 						cache_way, &cache_data);
 				PrRead(cache_address, cache_data,
 						cache_line_size);
+				memcpy(prev_data, cache_data, cache_line_size);
 				dcache.SetTag(cache_set, cache_way, cache_tag);
 				dcache.SetValid(cache_set, cache_way, 1);
 				uint32_t cache_index = dcache.GetIndex(mva);
 				dcache.SetData(cache_set, cache_way, cache_index,
 						size, data);
 				dcache.SetDirty(cache_set, cache_way, 1);
+				if ( unlikely(verbose & 0x02) )
+				{
+					cache_line_size = dcache.GetData(cache_set,
+							cache_way, &cache_data);
+					logger << DebugError
+						<< "Written line:" << std::endl
+						<< " - mva = 0x" << std::hex << mva << std::dec << std::endl
+						<< " - pa  = 0x" << std::hex << pa << std::dec << std::endl
+						<< " - tag = 0x" << std::hex << cache_tag << std::dec << std::endl
+						<< " - set = " << cache_set << std::endl
+						<< " - way = " << cache_way << std::endl
+						<< " - index = " << cache_index << std::endl
+						<< " - size = " << size << std::endl
+						<< " - data =" << std::hex;
+					for ( int i = 0; i < size; i++ )
+						logger << " " << (unsigned int)data[i];
+					logger << std::endl
+						<< " - pre line =";
+					for ( int i = 0; i < cache_line_size; i++ )
+						logger << " " << (unsigned int)prev_data[i];
+					logger << std::endl
+						<< " - new line =";
+					for ( int i = 0; i < cache_line_size; i++ )
+						logger << " " << (unsigned int)cache_data[i];
+					logger << std::dec
+						<< EndDebugError;
+				}
 			}
 			else
 				PrWrite(pa, data, size);
@@ -2463,9 +2569,13 @@ PerformWriteAccess(unisim::component::cxx::processor::arm::MemoryOp
 	}
 	else // there is no data cache
 	{
+		if ( unlikely(verbose & 0x02) )
+			logger << DebugError
+				<< "No cache, sending to memory"
+				<< EndDebugError;
 		// there is no data cache, so just send the request to the
 		//   memory interface
-			PrWrite(pa, data, size);
+		PrWrite(pa, data, size);
 	}
 
 	/* report read memory access if necessary */
@@ -2559,7 +2669,7 @@ PerformReadAccess(unisim::component::cxx::processor::arm::MemoryOp
 			uint8_t cache_dirty = dcache.GetDirty(cache_set,
 					cache_way);
 
-			if ( (cache_valid != 0) & (cache_dirty != 0) )
+			if ( (cache_valid != 0) && (cache_dirty != 0) )
 			{
 				// the cache line to replace is valid and dirty so it needs
 				//   to be sent to the main memory
@@ -2886,11 +2996,11 @@ PerformReadToPCUpdateTAccess(
 			// get a way to replace
 			cache_way = dcache.GetNewWay(cache_set);
 			// get the valid and dirty bits from the way to replace
-			bool cache_valid = dcache.GetValid(cache_set,
+			uint8_t cache_valid = dcache.GetValid(cache_set,
 					cache_way);
-			bool cache_dirty = dcache.GetDirty(cache_set,
+			uint8_t cache_dirty = dcache.GetDirty(cache_set,
 					cache_way);
-			if ( cache_valid & cache_dirty )
+			if ( (cache_valid != 0) && (cache_dirty != 0) )
 			{
 				// the cache line to replace is valid and dirty so it needs
 				//   to be sent to the main memory

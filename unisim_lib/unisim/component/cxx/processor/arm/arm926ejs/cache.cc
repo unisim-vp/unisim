@@ -231,7 +231,7 @@ SetSize(uint32_t size)
 				break;
 		}
 
-#ifdef ARMEMU_CACHE_DEBUG
+//#ifdef ARMEMU_CACHE_DEBUG
 		if ( m_is_ok )
 		{	
 			std::cerr << "m_set_mask   = 0x" << std::hex << m_set_mask << std::dec << std::endl;
@@ -239,7 +239,7 @@ SetSize(uint32_t size)
 			std::cerr << "m_tag_mask   = 0x" << std::hex << m_tag_mask << std::dec << std::endl;
 			std::cerr << "m_tag_shift  = " << m_tag_shift << std::endl;
 		}
-#endif
+//#endif
 	}
 
 	return m_is_ok;
@@ -274,6 +274,14 @@ GetTag(uint32_t addr)
 const
 {
 	return (addr & m_tag_mask) >> m_tag_shift;
+}
+
+uint32_t
+Cache::
+GetTag(uint32_t set, uint32_t  way)
+const
+{
+	return m_tag[set][way];
 }
 
 void
@@ -325,8 +333,8 @@ const
 
 	while (current_way < m_associativity_)
 	{
-		found = (m_tag[set][current_way] == tag);
-		if (found)
+		found = (m_tag[set][current_way] == tag) && m_valid[set][current_way];
+		if ( found )
 		{
 			*way = current_way;
 			return found;

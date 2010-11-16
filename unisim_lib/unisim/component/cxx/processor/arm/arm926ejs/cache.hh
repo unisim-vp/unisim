@@ -141,7 +141,8 @@ public:
 	 */
 	bool IsOK() const;
 	uint32_t GetTag(uint32_t addr) const;
-	void SetTag(uint32_t index, uint32_t way, uint32_t tag);
+	uint32_t GetTag(uint32_t set, uint32_t way) const;
+	void SetTag(uint32_t set, uint32_t way, uint32_t tag);
 	uint32_t GetSet(uint32_t addr) const;
 	uint32_t GetIndex(uint32_t addr) const;
 	bool HasTag(uint32_t tag, uint32_t set) const;
