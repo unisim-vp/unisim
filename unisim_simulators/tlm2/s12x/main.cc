@@ -135,6 +135,8 @@ class Simulator : public unisim::kernel::service::Simulator
 public:
 	Simulator(int argc, char **argv);
 	virtual ~Simulator();
+	virtual void Stop(Object *object, int _exit_status);
+
 	void Run();
 protected:
 private:
@@ -247,7 +249,7 @@ private:
 	string filename;
 	Parameter<bool> param_enable_gdb_server;
 	Parameter<bool> param_enable_inline_debugger;
-	
+	int exit_status;
 	bool isS19;
 
 	static void LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator);
@@ -543,6 +545,18 @@ Simulator::~Simulator()
 	if (mmc) { delete mmc; mmc = NULL; }
 
 	if(cpu) { delete cpu; cpu = NULL; }
+}
+
+void Simulator::Stop(Object *object, int _exit_status)
+{
+	exit_status = _exit_status;
+	if(object)
+	{
+		std::cerr << object->GetName() << " has requested simulation stop" << std::endl << std::endl;
+	}
+	std::cerr << "Program exited with status " << exit_status << std::endl;
+	sc_stop();
+	wait();
 }
 
 void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)

@@ -770,6 +770,7 @@ typename DebugControl<ADDRESS>::DebugCommand GDBServer<ADDRESS>::FetchDebugComma
 				break;
 
 			case 'k':
+
 				if(!extended_mode)
 				{
 					Kill();
