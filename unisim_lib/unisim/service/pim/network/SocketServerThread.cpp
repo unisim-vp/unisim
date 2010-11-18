@@ -39,13 +39,8 @@ SocketServerThread::SocketServerThread(char* host, uint16_t port, uint8_t connec
 	SocketThread(host, port)
 {
 	request_nbre = connection_req_nb;
-}
 
-void SocketServerThread::Run() {
-
-	int newsockfd;
-
-	struct sockaddr_in serv_addr, cli_addr;
+	struct sockaddr_in serv_addr;
 
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sockfd < 0) {
@@ -94,30 +89,30 @@ void SocketServerThread::Run() {
 
 #endif
 
+}
+
+void SocketServerThread::Run() {
+
 #ifdef WIN32
 		int cli_addr_len;
 #else
 		socklen_t cli_addr_len;
 #endif
 
+	struct sockaddr_in cli_addr;
+
     cli_addr_len = sizeof(cli_addr);
     do {
         newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &cli_addr_len);
     } while (newsockfd < 0);
 
-#ifdef WIN32
-	closesocket(sockfd);
-#else
-	close(sockfd);
-#endif
-
-	sockfd = newsockfd;
-
-	writer = new SocketWriter(sockfd);
-	writer->start();
-
-	reader = new SocketReader(sockfd);
-	reader->start();
+//#ifdef WIN32
+//	closesocket(sockfd);
+//#else
+//	close(sockfd);
+//#endif
+//
+//	sockfd = newsockfd;
 
 }
 

@@ -56,6 +56,11 @@ SocketThread::SocketThread(char* host, uint16_t port) {
 	hostport = port;
 }
 
+SocketThread::SocketThread(int sockfd) {
+
+	startReadWriteThreads(sockfd);
+}
+
 SocketThread::~SocketThread() {
 
 	if (reader) { reader->stop(); reader->join(); delete reader; }
@@ -68,6 +73,16 @@ SocketThread::~SocketThread() {
 		close(sockfd);
 #endif
 	}
+
+}
+
+void SocketThread::startReadWriteThreads(int sockfd) {
+
+	writer = new SocketWriter(sockfd);
+	writer->start();
+
+	reader = new SocketReader(sockfd);
+	reader->start();
 
 }
 

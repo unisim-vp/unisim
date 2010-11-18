@@ -23,8 +23,11 @@ class SocketThread: public GenericThread {
 public:
 
 	SocketThread(char* host, uint16_t port);
+	SocketThread(int sockfd);
 
 	~SocketThread();
+
+	void startReadWriteThreads(int sockfd);
 
 	virtual void Run() { };
 	virtual void send(const char* data);
@@ -32,9 +35,9 @@ public:
 
 protected:
 
-	int sockfd;
 	uint32_t hostname;
 	uint16_t hostport;
+	int sockfd;
 
 	SocketReader *reader;
 	SocketWriter *writer;

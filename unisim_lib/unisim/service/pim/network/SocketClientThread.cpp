@@ -56,10 +56,6 @@ void SocketClientThread::Run() {
 		}
 	} while (err < 0);
 
-//	if (connect(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
-//		int array[] = {sockfd};
-//        error(array, "ERROR on Connecting");
-//    }
 
 #ifdef WIN32
 
@@ -83,12 +79,6 @@ void SocketClientThread::Run() {
 	}
 
 #endif
-
-	writer = new SocketWriter(sockfd);
-	writer->start();
-
-	reader = new SocketReader(sockfd);
-	reader->start();
 
 }
 

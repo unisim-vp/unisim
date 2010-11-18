@@ -114,9 +114,11 @@ void PIM::Run() {
 
 	cerr << "PIM connection success " << std::endl;
 
+	SocketThread *read_write_threads = new SocketThread(socketfd->getLastSockfd());
+
 	// Start Simulation <-> ToolBox communication
-//	target = new TargetThread("Target", &simulator_variables, socketfd);
-	target = new TargetThread("Target", &simulator_variables, socketfd);
+//	target = new TargetThread("Target", &simulator_variables, read_write_threads);
+	target = new TargetThread("Target", &simulator_variables, read_write_threads);
 
 	target->start();
 

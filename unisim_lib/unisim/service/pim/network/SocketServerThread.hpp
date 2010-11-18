@@ -22,10 +22,11 @@ public:
 	SocketServerThread(char* host, uint16_t port, uint8_t connection_req_nb = 1);
 
 	virtual void Run();
+	int getLastSockfd() { return newsockfd; }
 
 private:
 	uint8_t request_nbre;
-
+	int newsockfd;
 };
 
 } // network 
